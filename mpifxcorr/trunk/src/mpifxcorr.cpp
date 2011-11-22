@@ -57,7 +57,7 @@ bool actOnCommand(Configuration * config, DifxMessageGeneric * difxmessage) {
     DifxMessageParameter * pmessage = &((difxmessage->body).param);
     paramname = string(pmessage->paramName);
     paramvalue = string(pmessage->paramValue);
-    cinfo << startl << "Received a parameter message for parameter " << paramname << " and value " << paramvalue << ", targetmpiid is " << pmessage->targetMpiId << endl;
+    cdebug << startl << "Received a parameter message for parameter " << paramname << " and value " << paramvalue << ", targetmpiid is " << pmessage->targetMpiId << endl;
     //is it for me
     if ((pmessage->targetMpiId == config->getMPIId()) || 
         (pmessage->targetMpiId == DIFX_MESSAGE_ALLMPIFXCORR) || 
@@ -137,7 +137,7 @@ void * launchCommandMonitorThread(void * c) {
 }
 
 //setup monitoring socket
-int setup_net(char *monhostname, int port, int window_size, int *sock) {
+int setup_net(const char *monhostname, int port, int window_size, int *sock) {
   int status;
   unsigned long ip_addr;
   struct hostent     *hostptr;
@@ -148,7 +148,7 @@ int setup_net(char *monhostname, int port, int window_size, int *sock) {
   if (hostptr==NULL) {
 
     cerror << startl << "Failed to look up monhostname " << monhostname << endl;
-    return(1);
+    return 1;
   }
   
   memcpy(&ip_addr, (char *)hostptr->h_addr, sizeof(ip_addr));
@@ -246,7 +246,7 @@ int main(int argc, char *argv[])
   string monitoropt;
   pthread_t commandthread;
   int nameslength = 1;
-  char * monhostname = new char[nameslength];
+  char monhostname[nameslength];
   int port=0, monitor_skip=0, namelen;
   char processor_name[MPI_MAX_PROCESSOR_NAME];
   char difxMessageID[DIFX_MESSAGE_PARAM_LENGTH];

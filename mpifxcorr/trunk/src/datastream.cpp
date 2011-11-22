@@ -28,7 +28,6 @@
 #include <arpa/inet.h>
 #include <errno.h>
 #include <string.h>
-#include <strings.h>
 #include <math.h>
 #include <unistd.h>
 #include "config.h"
@@ -1084,7 +1083,7 @@ int DataStream::initialiseFrame(char * frameheader)
   if (at[8] != ':') { //not an old style LBA file
     while (strncmp(at,"TIME",4)!=0)
     {
-      endline = index(at, '\n');
+      endline = strchr(at, '\n');
       if (endline==NULL || endline-frameheader>=LBA_HEADER_LENGTH-1) {
         cerror << startl << "Could not parse file header" << endl;
         keepreading=false;
@@ -1092,7 +1091,7 @@ int DataStream::initialiseFrame(char * frameheader)
       }
       at = endline+1;
     }
-    endline = index(at, '\n');
+    endline = strchr(at, '\n');
     *endline = 0;
     at += 5;  // Skip over "TIME"
     inputline = at;

@@ -70,13 +70,13 @@ public:
   * Accessor method for demux buffer segment byte size
   * @return segment size in bytes
   */
-  inline int getSegmentBytes() { return segmentbytes; }
+  inline int getSegmentBytes() const { return segmentbytes; }
 
  /**
   * Accessor method for estimated number of bytes
   * @return estimated amount of memory allocated by this object, in bytes
   */
-  inline int getEstimatedBytes() { return estimatedbytes; }
+  inline int getEstimatedBytes() const { return estimatedbytes; }
 
  /**
   * Increments the read counter, used after external source has read data into the demux buffer
@@ -162,7 +162,7 @@ protected:
   * @param bufferframe The buffer frame index to check
   * @return True if this set of frames is ok for all threads
   */
-  bool validData(int bufferframe);
+  bool validData(int bufferframe) const;
 
  /**
   * De-interlaces one segments worth of data

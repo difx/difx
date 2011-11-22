@@ -162,12 +162,12 @@ public:
  /**
   * @return Whether this Mode is writing cross-polarisation auto-corelations
   */
-  inline bool writeCrossAutoCorrs() { return calccrosspolautocorrs; }
+  inline bool writeCrossAutoCorrs() const { return calccrosspolautocorrs; }
 
  /**
   * @return Whether this Mode was initialied ok
   */
-  inline bool initialisedOK() { return initok; }
+  inline bool initialisedOK() const { return initok; }
 
  /**
   * @param dk Whether to calculate the kurtosis or not
@@ -180,7 +180,7 @@ public:
   * @param subloopindex The "subloop" index to get the visibilities from
   * @return Pointer to the FFT'd data (complex 32 bit float)
   */
-  inline cf32* getFreqs(int outputband, int subloopindex) { return fftoutputs[outputband][subloopindex]; };
+  inline cf32* getFreqs(int outputband, int subloopindex) const { return fftoutputs[outputband][subloopindex]; };
 
  /**
   * Returns a pointer to the FFT'd and conjugated data of the specified product
@@ -188,13 +188,13 @@ public:
   * @param subloopindex The "subloop" index to get the visibilities from
   * @return Pointer to the conjugate of the FFT'd data (complex 32 bit float)
   */
-  inline cf32* getConjugatedFreqs(int outputband, int subloopindex) { return conjfftoutputs[outputband][subloopindex]; }
+  inline const cf32* getConjugatedFreqs(int outputband, int subloopindex) const { return conjfftoutputs[outputband][subloopindex]; }
 
  /**
   * Returns the estimated number of bytes used by the Mode
   * @return Estimated memory size of the Mode (bytes)
   */
-  inline int getEstimatedBytes() { return estimatedbytes; }
+  inline int getEstimatedBytes() const { return estimatedbytes; }
 
   virtual ~Mode();
 
@@ -207,7 +207,7 @@ public:
    * @param tone The number of the tone to get
    * @return pcal result
    */
-  inline cf32 getPcal(int outputband, int tone) 
+  inline cf32 getPcal(int outputband, int tone) const
   { 
     return pcalresults[outputband][tone]; 
   }

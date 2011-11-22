@@ -61,7 +61,7 @@ public:
   * missing polycos when pulsar binning)
   * @return Boolean value which is true if no problems found
   */
-  inline bool configuredOK() { return configuredok; }
+  inline bool configuredOK() const { return configuredok; }
 
  /**
   * Adds one sub-integration to the accumulator
@@ -83,19 +83,19 @@ public:
  /**
   * @return The configuration index for the time period this Visibility is currently integrating
   */
-  inline int getCurrentConfig() { return currentconfigindex; }
+  inline int getCurrentConfig() const { return currentconfigindex; }
 
  /**
   * Returns the estimated number of bytes used by the Visibility
   * @return Estimated memory size of the Visibility (bytes)
   */
-  inline int getEstimatedBytes() { return estimatedbytes; }
+  inline int getEstimatedBytes() const { return estimatedbytes; }
 
  /**
   * Returns the current scan index
   * @return Current scan index
   */
-  inline int getCurrentScan() { return currentscan; }
+  inline int getCurrentScan() const { return currentscan; }
 
  /**
   * Calculates the time difference between the specified time and the start of the present integration period
@@ -104,14 +104,14 @@ public:
   * @param ns The offset from the whole seconds in nanoseconds
   * @return Difference between specified time and start of current integration period, in nanoseconds
   */
-  inline s64 timeDifference(int seconds, int ns)
+  inline s64 timeDifference(int seconds, int ns) const
   { return ((s64)(seconds-currentstartseconds))*1000000000 + (s64)ns - (s64)currentstartns; }
 
  /**
   * @return The time at the start of the current integration period, in seconds since
   *         start of experiment
   */
-  inline double getTime() { return ((double)(model->getScanStartSec(currentscan, expermjd, experseconds) + currentstartseconds)) + double(currentstartns)/1000000000.0; }
+  inline double getTime() const { return ((double)(model->getScanStartSec(currentscan, expermjd, experseconds) + currentstartseconds)) + double(currentstartns)/1000000000.0; }
 
 /**
   * Send a difxmessage containing integration time and antenna weights

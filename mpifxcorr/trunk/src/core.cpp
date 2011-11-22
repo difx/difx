@@ -639,8 +639,8 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
   f32 bweight;
   f64 * binweights;
   Mode * m1, * m2;
-  cf32 * vis1;
-  cf32 * vis2;
+  const cf32 * vis1;
+  const cf32 * vis2;
   uint64_t offsetsamples;
   double sampletimens;
   int starttimens;

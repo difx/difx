@@ -141,7 +141,7 @@ int VDIFMuxer::datacheck(u8 * checkbuffer, int bytestocheck)
   return bytestoread; 
 } 
 
-bool VDIFMuxer::validData(int bufferframe)
+bool VDIFMuxer::validData(int bufferframe) const
 {
   for(int i = 0;i < numthreads; i++) {
     if(!bufferframefull[i][bufferframe])

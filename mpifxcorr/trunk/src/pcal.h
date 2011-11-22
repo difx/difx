@@ -139,19 +139,19 @@ class PCal {
        * Get data-seconds contributing to the current PCal results.
        * @return amount of integrated data in seconds
        */
-      double getSeconds() { return ((_fs_hz==0.0f) ? 0.0f : (double(_samplecount)/_fs_hz)); }
+      double getSeconds() const { return ((_fs_hz==0.0f) ? 0.0f : (double(_samplecount)/_fs_hz)); }
 
       /**
        * Get length of vector the user should reserve for getFinalPCal() output copy.
        * @return vector length in complex tones
        */
-      int getLength() { return _N_tones; }
+      int getLength() const { return _N_tones; }
 
       /**
        * Get length of folding buffer the user should use for ensuring consistency of results.
        * @return length in complex samples of folding buffer (N bins)
        */
-      int getNBins() { return _N_bins; }
+      int getNBins() const { return _N_bins; }
 
       /**
        * Computes the final extraction result. No more sample data can be added.

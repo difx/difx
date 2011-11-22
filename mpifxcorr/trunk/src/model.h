@@ -99,48 +99,48 @@ class Model{
      * Returns whether the Model file was opened and parsed successfully
      * @return Whether this Model object was successfully created
      */
-    inline bool openSuccess() { return opensuccess; }
+    inline bool openSuccess() const { return opensuccess; }
 
     /**
      * Returns whether the pointing centre is correlated for this scan
      * @return Whether the pointing centre is correlated for the scan
      */
-    inline bool isPointingCentreCorrelated(int scan) { return scantable[scan].pointingcentrecorrelated; }
+    inline bool isPointingCentreCorrelated(int scan) const { return scantable[scan].pointingcentrecorrelated; }
 
     /**
      * Returns the estimated number of bytes used by the Model
      * @return Estimated memory size of the Model (bytes)
      */
-    inline int getEstimatedBytes() { return estimatedbytes; }
+    inline int getEstimatedBytes() const { return estimatedbytes; }
 
     /**
      * Returns the maximum geometric rate for the given antenna, in us/sec
      * @param antnum The antenna to look at
      * @return Maximum geometric rate for the given antenna, in us/sec
      */
-    inline double getMaxRate(int antnum) { return maxrate[antnum]; }
+    inline double getMaxRate(int antnum) const { return maxrate[antnum]; }
 
     ///accessor methods for number of scans, scan durations etc
-    inline int getNumScans() { return numscans; }
-    inline int getScanStartSec(int scan, int jobmjd, int jobsec) { return (modelmjd-jobmjd)*86400 + (modelstartseconds-jobsec) + scantable[scan].offsetseconds; }
-    inline double getScanStartMJD(int scan) { return modelmjd + (double)(modelstartseconds+scantable[scan].offsetseconds)/86400.0; }
-    inline int getScanEndSec(int scan, int jobmjd, int jobsec) { return (modelmjd-jobmjd)*86400 + (modelstartseconds-jobsec) + scantable[scan].offsetseconds + scantable[scan].durationseconds; }
-    inline double getScanEndMJD(int scan) { return modelmjd + (double)(modelstartseconds+scantable[scan].offsetseconds+scantable[scan].durationseconds)/86400.0; }
-    inline string getScanIdentifier(int scan) { return scantable[scan].identifier; }
-    inline int getScanDuration(int scan) { return scantable[scan].durationseconds; }
-    inline double getModelStartMJDPlusFraction() { return modelmjd + ((double)modelstartseconds)/86400.0; }
-    inline int getMaxNSBetweenXCAvg(int scan) { return scantable[scan].maxnsbetweenxcavg; }
-    inline int getMaxNSBetweenACAvg(int scan) { return scantable[scan].maxnsbetweenacavg; }
+    inline int getNumScans() const { return numscans; }
+    inline int getScanStartSec(int scan, int jobmjd, int jobsec) const { return (modelmjd-jobmjd)*86400 + (modelstartseconds-jobsec) + scantable[scan].offsetseconds; }
+    inline double getScanStartMJD(int scan) const { return modelmjd + (double)(modelstartseconds+scantable[scan].offsetseconds)/86400.0; }
+    inline int getScanEndSec(int scan, int jobmjd, int jobsec) const { return (modelmjd-jobmjd)*86400 + (modelstartseconds-jobsec) + scantable[scan].offsetseconds + scantable[scan].durationseconds; }
+    inline double getScanEndMJD(int scan) const { return modelmjd + (double)(modelstartseconds+scantable[scan].offsetseconds+scantable[scan].durationseconds)/86400.0; }
+    inline string getScanIdentifier(int scan) const { return scantable[scan].identifier; }
+    inline int getScanDuration(int scan) const { return scantable[scan].durationseconds; }
+    inline double getModelStartMJDPlusFraction() const { return modelmjd + ((double)modelstartseconds)/86400.0; }
+    inline int getMaxNSBetweenXCAvg(int scan) const { return scantable[scan].maxnsbetweenxcavg; }
+    inline int getMaxNSBetweenACAvg(int scan) const { return scantable[scan].maxnsbetweenacavg; }
 
     ///accessor methods for source information from a scan
-    inline int getPointingCentreSourceIndex(int scan) { return scantable[scan].pointingcentre->index; }
-    inline int getPhaseCentreSourceIndex(int scan, int phasecentre) { return scantable[scan].phasecentres[phasecentre]->index; }
-    inline source * getScanPointingCentreSource(int scan) { return scantable[scan].pointingcentre; }
-    inline source * getScanPhaseCentreSource(int scan, int phasecentre) { return scantable[scan].phasecentres[phasecentre]; }
+    inline int getPointingCentreSourceIndex(int scan) const { return scantable[scan].pointingcentre->index; }
+    inline int getPhaseCentreSourceIndex(int scan, int phasecentre) const { return scantable[scan].phasecentres[phasecentre]->index; }
+    inline source * getScanPointingCentreSource(int scan) const { return scantable[scan].pointingcentre; }
+    inline source * getScanPhaseCentreSource(int scan, int phasecentre) const { return scantable[scan].phasecentres[phasecentre]; }
 
     ///accessor methods for antenna information
-    inline int getNumStations() { return numstations; }
-    inline station getStation(int station) { return stationtable[station]; }
+    inline int getNumStations() const { return numstations; }
+    inline station getStation(int station) const { return stationtable[station]; }
 
     /**
      * Updates a clock value mid-correlation (intended for eVLBI only!!)
@@ -200,7 +200,7 @@ class Model{
      * Returns whether the specified phase centre is also the pointing centre
      * @return whether the specified phase centre is also the pointing centre
      */
-    inline bool isPointingCentre(int scan, int source) { return (scantable[scan].phasecentres[source] == scantable[scan].pointingcentre); }
+    inline bool isPointingCentre(int scan, int source) const { return (scantable[scan].phasecentres[source] == scantable[scan].pointingcentre); }
 
   private:
     typedef struct {

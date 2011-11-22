@@ -73,7 +73,7 @@ public:
   * @param incmjdfraction The offset in days (as a fraction) from the specified integer MJD
   * @return True if the specified time falls in this Polyco's time range
   */
-  bool includesTime(int incmjd, double incmjdfraction);
+  bool includesTime(int incmjd, double incmjdfraction) const;
 
  /**
   * Sets the frequency band information and allocates the necessary arrays for bin calculation
@@ -116,7 +116,7 @@ public:
   * Returns whether the initial file was read ok
   * @return Whether the initial file was read ok
   */
-  inline bool initialisedOK() { return readok; }
+  inline bool initialisedOK() const { return readok; }
   
 // /**
 //  * Returns the bin counts
@@ -127,23 +127,23 @@ public:
   * Returns the configuration index
   * @return The configuration index this Polyco corresponds to
   */
-  inline int getConfig() { return configindex; }
+  inline int getConfig() const { return configindex; }
  /**
   * Returns the bin weights
   * @return The bin weights for this Polyco
   */
-  inline f64* getBinWeights() { return binweights; }
+  inline f64* getBinWeights() const { return binweights; }
  /**
   * Returns the weight*width product for the specified bin
   * @return The weight*width product for the specified bin
   */
-  inline f64 getBinWeightTimesWidth(int bin) { f64 w = binphases[bin]-binphases[(bin+numbins-1)%numbins]; return (w<0.0)?binweights[bin]*(1.0+w):binweights[bin]*w; }
+  inline f64 getBinWeightTimesWidth(int bin) const { f64 w = binphases[bin]-binphases[(bin+numbins-1)%numbins]; return (w<0.0)?binweights[bin]*(1.0+w):binweights[bin]*w; }
 
 /**
   * Returns the width of the specified bin
   * @return The width of the specified bin
   */
-  inline f64 getBinWidth(int bin) { f64 w = binphases[bin]-binphases[(bin+numbins-1)%numbins]; return (w<0.0)?(1.0+w):w; }
+  inline f64 getBinWidth(int bin) const { f64 w = binphases[bin]-binphases[(bin+numbins-1)%numbins]; return (w<0.0)?(1.0+w):w; }
 
 // /**
 //  * Clears the bin counts
@@ -154,11 +154,11 @@ public:
   * Returns the estimated number of bytes used by the Polyco
   * @return Estimated memory size of the Polyco (bytes)
   */
-  inline int getEstimatedBytes() { return estimatedbytes; }
+  inline int getEstimatedBytes() const { return estimatedbytes; }
 
-  inline int getMJD() { return mjd; }
-  inline double getMJDfraction() { return mjdfraction; }
-  inline double getSpanMinutes() { return timespan; }
+  inline int getMJD() const { return mjd; }
+  inline double getMJDfraction() const { return mjdfraction; }
+  inline double getSpanMinutes() const { return timespan; }
 
   ///defines how much error will be tolerated due to frequency drift since the reference time
   static const double BIN_TOLERANCE;

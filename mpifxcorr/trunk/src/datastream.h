@@ -80,7 +80,7 @@ public:
   * Returns the estimated number of bytes used by the Datastream
   * @return Estimated memory size of the Datastream (bytes)
   */
-  inline int getEstimatedBytes() { return estimatedbytes; }
+  inline int getEstimatedBytes() const { return estimatedbytes; }
 
 protected:
   /// Structure which maintains all information necessary for a segment of the databuffer, including the configuration parameters for

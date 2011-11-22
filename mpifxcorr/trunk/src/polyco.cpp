@@ -335,7 +335,7 @@ void Polyco::setTime(int startmjd, double startmjdfraction)
     calculateDMPhaseOffsets(calclengthmins/2);
 }
 
-bool Polyco::includesTime(int incmjd, double incmjdfraction)
+bool Polyco::includesTime(int incmjd, double incmjdfraction) const
 {
     double differencemins = (incmjd - mjd)*1440 + (incmjdfraction - mjdfraction)*1440;
     double rangemins = double(timespan)/2.0 + 1.0/60.0; //allow an extra second range to avoid being bitten by roundoff
