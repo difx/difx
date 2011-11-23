@@ -148,7 +148,7 @@ static int parseVSIS(char *message, char **fields, int *nField, int *isQuery)
 	*nField = 0;
 	*isQuery = 0;
 
-	for(int i = 0; !done; i++)
+	for(int i = 0; !done; ++i)
 	{
 		if(message[i] == 0)
 		{
@@ -192,7 +192,7 @@ static int parseVSIS(char *message, char **fields, int *nField, int *isQuery)
 			}
 
 			startgood = stopgood = -1;
-			(*nField)++;
+			++(*nField);
 		}
 		else
 		{
@@ -245,7 +245,7 @@ static int processVSIS(Mk5Daemon *D, char *message, char *response, int maxRespo
 	}
 	else
 	{
-		for(int i = 0; commandSet[i].name[0] != 0; i++)
+		for(int i = 0; commandSet[i].name[0] != 0; ++i)
 		{
 			if(strcmp(commandSet[i].name, fields[0]) == 0)
 			{
@@ -309,7 +309,7 @@ int handleVSIS(Mk5Daemon *D, int sock)
 	snprintf(logMessage, DIFX_MESSAGE_LENGTH, "VSI-S received: %s\n", message);
 	Logger_logData(D->log, logMessage);
 
-	for(int i = 0; message[i]; i++)
+	for(int i = 0; message[i]; ++i)
 	{
 		if(message[i] == ';' || message[i] == 0)
 		{
@@ -393,7 +393,7 @@ void Mk5Daemon_stopVSIS(Mk5Daemon *D)
 		close(D->acceptSock);
 		D->acceptSock = 0;
 	}
-	for(int c = 0; c < MaxConnections; c++)
+	for(int c = 0; c < MaxConnections; ++c)
 	{
 		if(D->clientSocks[c] > 0)
 		{

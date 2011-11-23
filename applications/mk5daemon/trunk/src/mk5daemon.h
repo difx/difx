@@ -53,6 +53,7 @@ extern const char difxUser[];
 const int MaxConnections = 8;
 
 #define MAX_COMMAND_SIZE	768
+#define MAX_FILENAME_SIZE	256
 #define N_BANK			2
 #define N_DRIVE			8
 #define MAX_MACLIST_LENGTH	16

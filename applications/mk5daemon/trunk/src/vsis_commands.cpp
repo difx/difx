@@ -377,7 +377,7 @@ int error_Query(Mk5Daemon *D, int nField, char **fields, char *response, int max
 	n = Mk5Daemon_popVSIError(D, msg, MaxErrorLength);
 	if(n > 0)
 	{
-		n--;
+		--n;
 
 		v = snprintf(response, maxResponseLength, "!%s? 0 : -1 : %s : %d;", fields[0], msg, n);
 	}
@@ -428,7 +428,7 @@ int disk_model_Query(Mk5Daemon *D, int nField, char **fields, char *response, in
 		{
 			v = snprintf(response, maxResponseLength, "!%s? 0", fields[0]);
 
-			for(int d = 0; d < N_SMART_DRIVES; d++)
+			for(int d = 0; d < N_SMART_DRIVES; ++d)
 			{
 				const DriveInformation *drive = smart->drive + d;
 				int good = (drive->capacity > 0LL);
@@ -467,7 +467,7 @@ int disk_model_rev_Query(Mk5Daemon *D, int nField, char **fields, char *response
 		{
 			v = snprintf(response, maxResponseLength, "!%s? 0", fields[0]);
 
-			for(int d = 0; d < N_SMART_DRIVES; d++)
+			for(int d = 0; d < N_SMART_DRIVES; ++d)
 			{
 				const DriveInformation *drive = smart->drive + d;
 				int good = (drive->capacity > 0LL);
@@ -506,7 +506,7 @@ int disk_serial_Query(Mk5Daemon *D, int nField, char **fields, char *response, i
 		{
 			v = snprintf(response, maxResponseLength, "!%s? 0", fields[0]);
 
-			for(int d = 0; d < N_SMART_DRIVES; d++)
+			for(int d = 0; d < N_SMART_DRIVES; ++d)
 			{
 				const DriveInformation *drive = smart->drive + d;
 				int good = (drive->capacity > 0LL);
@@ -545,7 +545,7 @@ int disk_size_Query(Mk5Daemon *D, int nField, char **fields, char *response, int
 		{
 			v = snprintf(response, maxResponseLength, "!%s? 0", fields[0]);
 
-			for(int d = 0; d < N_SMART_DRIVES; d++)
+			for(int d = 0; d < N_SMART_DRIVES; ++d)
 			{
 				const DriveInformation *drive = smart->drive + d;
 				int good = (drive->capacity > 0LL);
@@ -682,7 +682,7 @@ int bank_info_Query(Mk5Daemon *D, int nField, char **fields, char *response, int
 		bank = 0;
 	}
 
-	for(int b = 0; b < N_BANK; b++)
+	for(int b = 0; b < N_BANK; ++b)
 	{
 		const Mk5Smart *smart = D->smartData + b;
 
@@ -737,7 +737,7 @@ int net_protocol_Command(Mk5Daemon *D, int nField, char **fields, char *response
 	}
 	else
 	{
-		for(int n = 0; n < NUM_NET_PROTOCOLS; n++)
+		for(int n = 0; n < NUM_NET_PROTOCOLS; ++n)
 		{
 			if(strcasecmp(fields[1], netProtocolStrings[n]) == 0)
 			{
@@ -916,12 +916,12 @@ int start_stats_Command(Mk5Daemon *D, int nField, char **fields, char *response,
 
 		t[XLR_MAXBINS-1] = -1;
 
-		for(int b = 0; b < XLR_MAXBINS-1; b++)
+		for(int b = 0; b < XLR_MAXBINS-1; ++b)
 		{
 			t[b] = stats[b].range;
 		}
 
-		for(int f = 1; f < XLR_MAXBINS; f++)
+		for(int f = 1; f < XLR_MAXBINS; ++f)
 		{
 			t[f-1] = stats[f-1].range;
 			if(f >= nField)
@@ -940,7 +940,7 @@ int start_stats_Command(Mk5Daemon *D, int nField, char **fields, char *response,
 		}
 		if(v == 0)
 		{
-			for(int b = 1; b < XLR_MAXBINS-1; b++)
+			for(int b = 1; b < XLR_MAXBINS-1; ++b)
 			{
 				if(t[b] <= t[b-1])
 				{
@@ -949,7 +949,7 @@ int start_stats_Command(Mk5Daemon *D, int nField, char **fields, char *response,
 			}
 			if(v == 0)
 			{
-				for(int b = 0; b < XLR_MAXBINS-1; b++)
+				for(int b = 0; b < XLR_MAXBINS-1; ++b)
 				{
 					stats[b].range = t[b];
 				}
@@ -1072,11 +1072,11 @@ int disk_state_Command(Mk5Daemon *D, int nField, char **fields, char *response, 
 	}
 	else if(strcmp(fields[1], "recorded") == 0 || strcmp(fields[1], "erased") == 0 || strcmp(fields[1], "played") == 0)
 	{
-		char command[256];
-		char message[512];
+		char command[MAX_COMMAND_SIZE];
+		char message[DIFX_MESSAGE_LENGTH];
 
-		snprintf(command, 256, "vsn --%s %c", fields[1], 'A'+D->activeBank);
-		snprintf(message, 512, "Executing: %s\n", command);
+		snprintf(command, MAX_COMMAND_SIZE, "vsn --%s %c", fields[1], 'A'+D->activeBank);
+		snprintf(message, DIFX_MESSAGE_LENGTH, "Executing: %s\n", command);
 		Logger_logData(D->log, message);
 
 		system(command);
@@ -1131,7 +1131,7 @@ int disk_state_Query(Mk5Daemon *D, int nField, char **fields, char *response, in
 		bank = 0;
 	}
 
-	for(int b = 0; b < N_BANK; b++)
+	for(int b = 0; b < N_BANK; ++b)
 	{
 		const Mk5Smart *smart = D->smartData + b;
 
@@ -1237,7 +1237,7 @@ int record_Command(Mk5Daemon *D, int nField, char **fields, char *response, int 
 #ifdef HAVE_XLRAPI_H
 	char macFilterOptions[1000] = "";
 	char packetFilterOptions[1000] = "";
-	char command[1000];
+	char command[MAX_COMMAND_SIZE];
 	char message[1200];
 	int p;
 
@@ -1299,7 +1299,7 @@ int record_Command(Mk5Daemon *D, int nField, char **fields, char *response, int 
 			}
 
 			p = 0;
-			for(std::map<MAC,bool>::const_iterator it = D->macList->begin(); it != D->macList->end(); it++)
+			for(std::map<MAC,bool>::const_iterator it = D->macList->begin(); it != D->macList->end(); ++it)
 			{
 				if(it->second)	/* if MAC is enabled */
 				{
@@ -1316,7 +1316,7 @@ int record_Command(Mk5Daemon *D, int nField, char **fields, char *response, int 
 			}
 			else
 			{
-				snprintf(command, 1000, "record5c %s %s %c %s", macFilterOptions, packetFilterOptions, 'A'+D->activeBank, scanLabel);
+				snprintf(command, MAX_COMMAND_SIZE, "record5c %s %s %c %s", macFilterOptions, packetFilterOptions, 'A'+D->activeBank, scanLabel);
 				snprintf(message, 1200, "Executing into pipe: %s\n", command);
 				Logger_logData(D->log, message);
 				D->recordPipe = popen(command, "r");
@@ -1329,7 +1329,7 @@ int record_Command(Mk5Daemon *D, int nField, char **fields, char *response, int 
 					setlinebuf(D->recordPipe);
 					D->recordState = RECORD_ON;
 					D->recordT0 = time(0);
-					D->nScan[D->activeBank]++;
+					++D->nScan[D->activeBank];
 					strcpy(D->scanLabel[D->activeBank], scanLabel);
 					v = snprintf(response, maxResponseLength, "!%s = 0;", fields[0]);
 				}
@@ -1443,11 +1443,11 @@ int reset_Command(Mk5Daemon *D, int nField, char **fields, char *response, int m
 		}
 		else
 		{
-			char command[256];
-			char message[512];
+			char command[MAX_COMMAND_SIZE];
+			char message[DIFX_MESSAGE_LENGTH];
 
-			snprintf(command, 256, "mk5erase --force --newdir %s", D->vsns[D->activeBank]);
-			snprintf(message, 512, "Executing: %s\n", command);
+			snprintf(command, MAX_COMMAND_SIZE, "mk5erase --force --newdir %s", D->vsns[D->activeBank]);
+			snprintf(message, DIFX_MESSAGE_LENGTH, "Executing: %s\n", command);
 			Logger_logData(D->log, message);
 
 			system(command);
@@ -1504,11 +1504,11 @@ int recover_Command(Mk5Daemon *D, int nField, char **fields, char *response, int
 		}
 		else
 		{
-			char command[256];
-			char message[512];
+			char command[MAX_COMMAND_SIZE];
+			char message[DIFX_MESSAGE_LENGTH];
 
-			snprintf(command, 256, "recover --force %d %c", mode, 'A'+D->activeBank);
-			snprintf(message, 512, "Executing: %s\n", command);
+			snprintf(command, MAX_COMMAND_SIZE, "recover --force %d %c", mode, 'A'+D->activeBank);
+			snprintf(message, DIFX_MESSAGE_LENGTH, "Executing: %s\n", command);
 			Logger_logData(D->log, message);
 
 			system(command);
@@ -1630,11 +1630,11 @@ int VSN_Command(Mk5Daemon *D, int nField, char **fields, char *response, int max
 	}
 	else
 	{
-		char command[256];
-		char message[512];
+		char command[MAX_COMMAND_SIZE];
+		char message[DIFX_MESSAGE_LENGTH];
 
-		snprintf(command, 256, "vsn --force %c %s", 'A'+D->activeBank, fields[1]);
-		snprintf(message, 512, "Executing: %s\n", command);
+		snprintf(command, MAX_COMMAND_SIZE, "vsn --force %c %s", 'A'+D->activeBank, fields[1]);
+		snprintf(message, DIFX_MESSAGE_LENGTH, "Executing: %s\n", command);
 		Logger_logData(D->log, message);
 
 		system(command);
@@ -1694,9 +1694,9 @@ int MAC_list_Command(Mk5Daemon *D, int nField, char **fields, char *response, in
 	{
 		int mc;
 
-		for(int p = 1; p < nField; p++)
+		for(int p = 1; p < nField; ++p)
 		{
-			for(mc = 0; mc < NUM_MAC_LIST_COMMANDS; mc++)
+			for(mc = 0; mc < NUM_MAC_LIST_COMMANDS; ++mc)
 			{
 				if(strcmp(fields[p], MacListCommandStrings[mc]) == 0)
 				{
@@ -1770,7 +1770,7 @@ int MAC_list_Command(Mk5Daemon *D, int nField, char **fields, char *response, in
 						break;
 					}
 				}
-				p++;	/* skip the MAC address and get to next arg */
+				++p;	/* skip the MAC address and get to next arg */
 			}
 		}
 	}
@@ -1802,7 +1802,7 @@ int MAC_list_Query(Mk5Daemon *D, int nField, char **fields, char *response, int 
 
 	if(D->macList->size() > 0)
 	{
-		for(it = D->macList->begin(); it != D->macList->end(); it++)
+		for(it = D->macList->begin(); it != D->macList->end(); ++it)
 		{
 			it->first.toString(macStr);
 			v += snprintf(response+v, maxResponseLength-v, " : %s : %s", macStr, it->second ? "enabled" : "disabled");

@@ -65,13 +65,13 @@ static void *mk5cpRun(void *ptr)
 
 static void makedir(Mk5Daemon *D, const char *options)
 {
-	char dir[256];
+	char dir[MAX_FILENAME_SIZE];
 	int a=-1;
 	int i, l;
 	char command[MAX_COMMAND_SIZE];
 
 	/* look for a / character and assume that is the output directory */
-	for(i = 0; options[i]; i++)
+	for(i = 0; options[i]; ++i)
 	{
 		if(a == -1)
 		{

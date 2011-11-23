@@ -65,7 +65,7 @@ int legalVSN(const char *vsn)
 {
 	int state=0;
 
-	for(int i = 0; i < 8; i++)
+	for(int i = 0; i < 8; ++i)
 	{
 		switch(state)
 		{
@@ -120,7 +120,7 @@ static int XLR_get_modules(Mk5Daemon *D)
 	}
 
 	xlrRC = XLROpen(1, &xlrDevice);
-	D->nXLROpen++;
+	++D->nXLROpen;
 	if(xlrRC != XLR_SUCCESS)
 	{
 		xlrError = XLRGetLastError();
@@ -160,7 +160,7 @@ static int XLR_get_modules(Mk5Daemon *D)
 		}
 	}
 	
-	for(int bank = N_BANK-1; bank >= 0; bank--)
+	for(int bank = N_BANK-1; bank >= 0; --bank)
 	{
 		bool updateModule = false;
 		bool newModule = false;
@@ -244,7 +244,7 @@ static int XLR_get_modules(Mk5Daemon *D)
 
 	unlockStreamstor(D, id);
 
-	for(int bank = 0; bank < N_BANK; bank++)
+	for(int bank = 0; bank < N_BANK; ++bank)
 	{
 		extractSmartTemps(temp[bank], D, bank);
 
@@ -311,7 +311,7 @@ void Mk5Daemon_getModules(Mk5Daemon *D)
 		{
 			int nextBank;
 			
-			for(int i = 1; i < N_BANK; i++)
+			for(int i = 1; i < N_BANK; ++i)
 			{
 				nextBank = (D->activeBank + i) % N_BANK;
 				if(D->vsns[nextBank][0] != 0)
@@ -340,7 +340,7 @@ void Mk5Daemon_getModules(Mk5Daemon *D)
 	}
 	else
 	{
-		for(int i = 0; i < N_BANK; i++)
+		for(int i = 0; i < N_BANK; ++i)
 		{
 			if(D->vsns[i][0] != 0)
 			{
@@ -380,7 +380,7 @@ static int XLR_disc_power(Mk5Daemon *D, const char *banks, int on)
 	}
 	
 	xlrRC = XLROpen(1, &xlrDevice);
-	D->nXLROpen++;
+	++D->nXLROpen;
 	if(xlrRC != XLR_SUCCESS)
 	{
 		xlrError = XLRGetLastError();
@@ -397,7 +397,7 @@ static int XLR_disc_power(Mk5Daemon *D, const char *banks, int on)
 		return 1;
 	}
 
-	for(int i = 0; banks[i]; i++)
+	for(int i = 0; banks[i]; ++i)
 	{
 		if(banks[i] == 'A' || banks[i] == 'a')
 		{
@@ -488,7 +488,7 @@ static int XLR_error(Mk5Daemon *D, unsigned int *xlrError , char *msg)
 	}
 
 	xlrRC = XLROpen(1, &xlrDevice);
-	D->nXLROpen++;
+	++D->nXLROpen;
 	if(xlrRC != XLR_SUCCESS)
 	{
 		*xlrError = XLRGetLastError();
@@ -524,7 +524,7 @@ static int XLR_setProtect(Mk5Daemon *D, enum WriteProtectState state, char *msg)
 	}
 
 	xlrRC = XLROpen(1, &xlrDevice);
-	D->nXLROpen++;
+	++D->nXLROpen;
 	if(xlrRC != XLR_SUCCESS)
 	{
 		xlrError = XLRGetLastError();

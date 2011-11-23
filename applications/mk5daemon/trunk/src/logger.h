@@ -33,13 +33,15 @@
 #include <cstdio>
 #include <pthread.h>
 
+#define MK5DAEMON_LOGGER_HOSTNAME_LENGTH	32
+
 typedef struct
 {
 	FILE *out;
 	time_t lastTime;
 	pthread_mutex_t lock;
 	char logPath[256];
-	char hostName[32];
+	char hostName[MK5DAEMON_LOGGER_HOSTNAME_LENGTH];
 } Logger;
 
 Logger *newLogger(const char *logPath);

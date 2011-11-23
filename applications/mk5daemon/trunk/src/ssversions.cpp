@@ -57,7 +57,7 @@ int Mk5Daemon_getStreamstorVersions(Mk5Daemon *D)
 	}
 	
 	xlrRC = XLROpen(1, &xlrDevice);
-	D->nXLROpen++;
+	++D->nXLROpen;
 	if(xlrRC != XLR_SUCCESS)
 	{
 		xlrError = XLRGetLastError();

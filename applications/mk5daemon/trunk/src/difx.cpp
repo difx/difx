@@ -49,11 +49,11 @@ static int addUse(Uses *U, const char *hostname)
 {
 	int i;
 
-	for(i = 0; U[i].n; i++)
+	for(i = 0; U[i].n; ++i)
 	{
 		if(strcmp(hostname, U[i].hostname) == 0)
 		{
-			U[i].n++;
+			++U[i].n;
 			
 			return i;
 		}
@@ -67,7 +67,7 @@ static int addUse(Uses *U, const char *hostname)
 
 static int getUse(const Uses *U, const char *hostname)
 {
-	for(int i = 0; U[i].n; i++)
+	for(int i = 0; U[i].n; ++i)
 	{
 		if(strcmp(hostname, U[i].hostname) == 0)
 		{
@@ -126,14 +126,14 @@ static int isUsed(const Mk5Daemon *D, const DifxMessageStart *S)
 	{
 		return 1;
 	}
-	for(int i = 0; i < S->nDatastream; i++)
+	for(int i = 0; i < S->nDatastream; ++i)
 	{
 		if(strcmp(S->datastreamNode[i], D->hostName) == 0)
 		{
 			return 1;
 		}
 	}
-	for(int i = 0; i < S->nProcess; i++)
+	for(int i = 0; i < S->nProcess; ++i)
 	{
 		if(strcmp(S->processNode[i], D->hostName) == 0)
 		{
@@ -232,7 +232,7 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 	/* Check to make sure the destination directory has some free space */
 	strcpy(destdir, S->inputFilename);
 	n = 0;
-	for(l = 0; destdir[l]; l++)
+	for(l = 0; destdir[l]; ++l)
 	{
 		if(destdir[l] == '/')
 		{
@@ -277,7 +277,7 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 		}
 	}
 	jobName = filebase;
-	for(int i = 0; filebase[i]; i++)
+	for(int i = 0; filebase[i]; ++i)
 	{
 		if(filebase[i] == '/')
 		{
@@ -323,11 +323,11 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 	/* determine usage of each node */
 	uses = (Uses *)calloc(1 + S->nProcess + S->nDatastream, sizeof(Uses));
 	addUse(uses, S->headNode);
-	for(int i = 0; i < S->nProcess; i++)
+	for(int i = 0; i < S->nProcess; ++i)
 	{
 		addUse(uses, S->processNode[i]);
 	}
-	for(int i = 0; i < S->nDatastream; i++)
+	for(int i = 0; i < S->nDatastream; ++i)
 	{
 		addUse(uses, S->datastreamNode[i]);
 	}
@@ -355,23 +355,23 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 
 #if 0
 	fprintf(out, "%s slots=1 max-slots=%d\n", S->headNode, getUse(uses, S->headNode));
-	for(int i = 0; i < S->nDatastream; i++)
+	for(int i = 0; i < S->nDatastream; ++i)
 	{
 		n = getUse(uses, S->datastreamNode[i]);
 		fprintf(out, "%s slots=1 max-slots=%d\n", S->datastreamNode[i], n);
 	}
-	for(int i = 0; i < S->nProcess; i++)
+	for(int i = 0; i < S->nProcess; ++i)
 	{
 		n = getUse(uses, S->processNode[i]);
 		fprintf(out, "%s slots=1 max-slots=%d\n", S->processNode[i], n);
 	}
 #endif
 	fprintf(out, "%s\n", S->headNode);
-	for(int i = 0; i < S->nDatastream; i++)
+	for(int i = 0; i < S->nDatastream; ++i)
 	{
 		fprintf(out, "%s\n", S->datastreamNode[i]);
 	}
-	for(int i = 0; i < S->nProcess; i++)
+	for(int i = 0; i < S->nProcess; ++i)
 	{
 		fprintf(out, "%s\n", S->processNode[i]);
 	}
@@ -405,7 +405,7 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 
 	fprintf(out, "NUMBER OF CORES:    %d\n", S->nProcess);
 
-	for(int i = 0; i < S->nProcess; i++)
+	for(int i = 0; i < S->nProcess; ++i)
 	{
 		n = S->nThread[i] - getUse(uses, S->processNode[i]) + 1;
 		if(n <= 0)
@@ -541,7 +541,7 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 					break;
 				}
 
-				for(int i = 0; line[i]; i++)
+				for(int i = 0; line[i]; ++i)
 				{
 					if(line[i] == '\n')
 					{

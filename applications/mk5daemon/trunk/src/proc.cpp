@@ -99,7 +99,7 @@ int procGetNet(long long *rx, long long *tx)
 		return -1;
 	}
 
-	for(int i = 0; i < MaxInterfaces; i++)
+	for(int i = 0; i < MaxInterfaces; ++i)
 	{
 		c = fgets(line, MaxLineLength, in);
 		if(!c)
@@ -269,7 +269,7 @@ int killSuProcesses()
 			}
 			if(system(cmd) != -1)
 			{
-				nKill++;
+				++nKill;
 			}
 		}
 	}

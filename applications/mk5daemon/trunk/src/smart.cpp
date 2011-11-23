@@ -63,7 +63,7 @@ static void trim(char *out, const char *in)
 {
 	int i, s=-1, e=0;
 
-	for(i = 0; in[i]; i++)
+	for(i = 0; in[i]; ++i)
 	{
 		if(in[i] > ' ')
 		{
@@ -117,7 +117,7 @@ const char *getSmartDescription(int smartId)
 {
 	int i;
 
-	for(i = 0; smartDescriptions[i].id >= 0; i++)
+	for(i = 0; smartDescriptions[i].id >= 0; ++i)
 	{
 		if(smartDescriptions[i].id == smartId)
 		{
@@ -132,7 +132,7 @@ int isSmartCritical(int smartId)
 {
 	int i;
 
-	for(i = 0; smartDescriptions[i].id >= 0; i++)
+	for(i = 0; smartDescriptions[i].id >= 0; ++i)
 	{
 		if(smartDescriptions[i].id == smartId)
 		{
@@ -292,7 +292,7 @@ int getMk5Smart(SSHANDLE xlrDevice, Mk5Daemon *D, int bank)
 	smart = &(D->smartData[bank]);
 	smart->mjd = 40587.0 + time(0)/86400.0;
 
-	for(d = 0; d < N_SMART_DRIVES; d++)
+	for(d = 0; d < N_SMART_DRIVES; ++d)
 	{
 		int v;
 		DriveInformation *drive;
@@ -325,7 +325,7 @@ int getMk5Smart(SSHANDLE xlrDevice, Mk5Daemon *D, int bank)
 			continue;
 		}
 
-		for(v = 0; v < XLR_MAX_SMARTVALUES; v++)
+		for(v = 0; v < XLR_MAX_SMARTVALUES; ++v)
 		{
 			if(smart->smartXLR[d][v].ID <= 0)
 			{
@@ -333,7 +333,7 @@ int getMk5Smart(SSHANDLE xlrDevice, Mk5Daemon *D, int bank)
 			}
 
 			smart->id[d][v] = smart->smartXLR[d][v].ID;
-			for(int i = 0; i < 6; i++)
+			for(int i = 0; i < 6; ++i)
 			{
 				smart->value[d][v] = (smart->value[d][v] << 8) + smart->smartXLR[d][v].raw[i];
 			}
@@ -373,7 +373,7 @@ int logMk5Smart(const Mk5Daemon *D, int bank)
 
 	snprintf(message, DIFX_MESSAGE_LENGTH, "SMART data for module %s\n", vsn);
 	Logger_logData(D->log, message);
-	for(int d = 0; d < N_SMART_DRIVES; d++)
+	for(int d = 0; d < N_SMART_DRIVES; ++d)
 	{
 		const DriveInformation *drive = smart->drive + d;
 
@@ -390,7 +390,7 @@ int logMk5Smart(const Mk5Daemon *D, int bank)
 		{
 			continue;
 		}
-		for(int v = 0; v < smart->nValue[d]; v++)
+		for(int v = 0; v < smart->nValue[d]; ++v)
 		{
 			int id = smart->id[d][v];
 			const char *desc = getSmartDescription(id);
@@ -412,12 +412,12 @@ int logMk5Smart(const Mk5Daemon *D, int bank)
 
 void Mk5Daemon_sendSmartData(Mk5Daemon *D)
 {
-	for(int bank = 0; bank < N_BANK; bank++)
+	for(int bank = 0; bank < N_BANK; ++bank)
 	{
 		const Mk5Smart *mk5smart = &(D->smartData[bank]);
 		const char *vsn = D->vsns[bank];
 
-		for(int d = 0; d < N_SMART_DRIVES; d++)
+		for(int d = 0; d < N_SMART_DRIVES; ++d)
 		{
 			if(mk5smart->nValue[d] > 0)
 			{
@@ -486,10 +486,10 @@ int extractSmartTemps(char *tempstr, const Mk5Daemon *D, int bank)
 
 	tempstr[0] = 0;
 
-	for(i = 0; i < N_SMART_DRIVES; i++)
+	for(i = 0; i < N_SMART_DRIVES; ++i)
 	{
 		t = -1;
-		for(j = 0; j < mk5smart->nValue[i]; j++)
+		for(j = 0; j < mk5smart->nValue[i]; ++j)
 		{
 			if(mk5smart->id[i][j] == 194)
 			{

@@ -244,12 +244,12 @@ Mk5Daemon *newMk5Daemon(const char *logPath, const char *userID, int isMk5)
 	D->recordRate = 2048;	/* just a reference value to start with */
 
 #ifdef HAVE_XLRAPI_H
-	for(int b = 0; b < XLR_MAXBINS; b++)
+	for(int b = 0; b < XLR_MAXBINS; ++b)
 	{
 		D->driveStatsConfig[b].range = defaultStatsRange[b];
 	}
 #endif
-	for(int b = 0; b < N_BANK; b++)
+	for(int b = 0; b < N_BANK; ++b)
 	{
 		D->driveFail[b] = -1;	/* no failure */
 	}
@@ -395,7 +395,7 @@ int checkStreamstor(Mk5Daemon *D, time_t t)
 	}
 	else
 	{
-		D->idleCount++;
+		++D->idleCount;
 	}
 
 	if(D->idleCount > maxIdle && D->process != PROCESS_NONE && !D->processDone)
@@ -452,7 +452,7 @@ void Mk5Daemon_addVSIError(Mk5Daemon *D, const char *errorMessage)
 	int i;
 
 	/* First replace special characters */
-	for(i = 0; i < DIFX_MESSAGE_LENGTH-1 && errorMessage[i]; i++)
+	for(i = 0; i < DIFX_MESSAGE_LENGTH-1 && errorMessage[i]; ++i)
 	{
 		if(errorMessage[i] < ' ')
 		{
@@ -488,7 +488,7 @@ void Mk5Daemon_delVSIError(Mk5Daemon *D, const char *errorMessage)
 	int i;
 
 	/* First replace special characters */
-	for(i = 0; i < DIFX_MESSAGE_LENGTH-1 && errorMessage[i]; i++)
+	for(i = 0; i < DIFX_MESSAGE_LENGTH-1 && errorMessage[i]; ++i)
 	{
 		if(errorMessage[i] < ' ')
 		{
@@ -553,7 +553,7 @@ void handleRecordMessage(Mk5Daemon *D, time_t t)
 			else if(strcmp(A[0], "Stats") == 0 && n >= 10)
 			{
 				int drive = atoi(A[1]);
-				for(int b = 0; b < 8; b++)
+				for(int b = 0; b < 8; ++b)
 				{
 					D->driveStats[D->activeBank][drive][b].count += atoi(A[2+b]);
 				}
@@ -687,7 +687,7 @@ void handleAcceptMessage(Mk5Daemon *D)
 	else
 	{
 		/* find a slot for it */
-		for(int c = 0; c < MaxConnections; c++)
+		for(int c = 0; c < MaxConnections; ++c)
 		{
 			if(D->clientSocks[c] == 0)
 			{
@@ -810,7 +810,7 @@ int main(int argc, char **argv)
 	setenv("DIFX_MESSAGE_GROUP", DefaultDifxGroup, 0);
 	setenv("STREAMSTOR_BIB_PATH", "/usr/share/streamstor/bib", 0);
 
-	if(argc > 1) for(i = 1; i < argc; i++)
+	if(argc > 1) for(i = 1; i < argc; ++i)
 	{
 		if(strcmp(argv[i], "-H") == 0 ||
 		   strcmp(argv[i], "--headnode") == 0)
@@ -837,7 +837,7 @@ int main(int argc, char **argv)
 		}
 		else if( strcmp(argv[i], "-u") == 0 || strcmp(argv[i], "--user") == 0)
 		{
-			i++;
+			++i;
 			strcpy(userID, argv[i]);
 		}
 		else if ( strcmp(argv[i], "-m") == 0 ||  strcmp(argv[i], "--isMk5") == 0)
@@ -850,7 +850,7 @@ int main(int argc, char **argv)
 			if(strcmp(argv[i], "-l") == 0 ||
 			   strcmp(argv[i], "--log-path") == 0)
 			{
-				i++;
+				++i;
 				strcpy(logPath, argv[i]);
 			}
 			else
@@ -992,7 +992,7 @@ int main(int argc, char **argv)
 			{
 				highSock = D->acceptSock;
 			}
-			for(int c = 0; c < MaxConnections; c++)
+			for(int c = 0; c < MaxConnections; ++c)
 			{
 				if(D->clientSocks[c] > 0)
 				{
@@ -1076,7 +1076,7 @@ int main(int argc, char **argv)
 				handleAcceptMessage(D);
 			}
 
-			for(int c = 0; c < MaxConnections; c++)
+			for(int c = 0; c < MaxConnections; ++c)
 			{
 				if(FD_ISSET(D->clientSocks[c], &socks))
 				{

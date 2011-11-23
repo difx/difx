@@ -43,7 +43,7 @@ int messageForMe(const Mk5Daemon *D, const DifxMessageGeneric *G)
 		return 0;
 	}
 
-	for(int t = 0; t < G->nTo; t++)
+	for(int t = 0; t < G->nTo; ++t)
 	{
 		if(strcasecmp(D->hostName, G->to[t]) == 0)
 		{
@@ -181,7 +181,7 @@ static void reown_vfastr(Mk5Daemon *D, const char *path)
 
 			return;
 		}
-		path++;
+		++path;
 	}
 
 	if(strncmp(path, "/home/boom/", 11) != 0)

@@ -32,11 +32,12 @@
 #include <cstring>
 #include <time.h>
 #include <unistd.h>
+#include "mk5daemon.h"
 #include "logger.h"
 
 static int Logger_newFile(Logger *log, int mjd)
 {
-	char filename[256];
+	char filename[MAX_FILENAME_SIZE];
 
 	if(log->out)
 	{
@@ -45,8 +46,13 @@ static int Logger_newFile(Logger *log, int mjd)
 
 	if(mjd > 0)
 	{
-		sprintf(filename, "%s/%s.%05d.log",
-			log->logPath, log->hostName, mjd);
+		int v = snprintf(filename, MAX_FILENAME_SIZE, "%s/%s.%05d.log", log->logPath, log->hostName, mjd);
+		if(v >= MAX_FILENAME_SIZE)
+		{
+			fprintf(stderr, "Developer error: Logger_newFile: filename wants to be %d bytes long.\n", v);
+
+			return -1;
+		}
 
 		log->out = fopen(filename, "a");
 	}
@@ -76,8 +82,8 @@ Logger *newLogger(const char *logPath)
 	{
 		strcpy(log->logPath, logPath);
 	}
-	gethostname(log->hostName, 32);
-	log->hostName[31] = 0;
+	gethostname(log->hostName, MK5DAEMON_LOGGER_HOSTNAME_LENGTH);
+	log->hostName[MK5DAEMON_LOGGER_HOSTNAME_LENGTH-1] = 0;
 	if(logPath && logPath[0])
 	{
 		mjd = (int)(40587.0 + t/86400.0);
