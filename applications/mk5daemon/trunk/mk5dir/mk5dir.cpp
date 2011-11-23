@@ -42,8 +42,8 @@
 
 const char program[] = "mk5dir";
 const char author[]  = "Walter Brisken";
-const char version[] = "0.11";
-const char verdate[] = "20110916";
+const char version[] = "0.12";
+const char verdate[] = "20111123";
 
 enum DMS_Mode
 {
@@ -575,7 +575,7 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
-	for(int a = 1; a < argc; a++)
+	for(int a = 1; a < argc; ++a)
 	{
 		if(strcmp(argv[a], "-h") == 0 ||
 		   strcmp(argv[a], "--help") == 0)
@@ -587,7 +587,12 @@ int main(int argc, char **argv)
 		else if(strcmp(argv[a], "-v") == 0 ||
 		        strcmp(argv[a], "--verbose") == 0)
 		{
-			verbose++;
+			++verbose;
+		}
+		else if(strcmp(argv[a], "-q") == 0 ||
+		        strcmp(argv[a], "--quiet") == 0)
+		{
+			--verbose;
 		}
 		else if(strcmp(argv[a], "-f") == 0 ||
 			strcmp(argv[a], "--force") == 0)
@@ -619,19 +624,19 @@ int main(int argc, char **argv)
 			if(strcmp(argv[a], "-b") == 0 ||
 			   strcmp(argv[a], "--begin") == 0)
 			{
-				a++;
+				++a;
 				startScan = atoi(argv[a]) - 1;
 			}
 			else if(strcmp(argv[a], "-e") == 0 ||
 			   strcmp(argv[a], "--end") == 0)
 			{
-				a++;
+				++a;
 				stopScan = atoi(argv[a]);
 			}
 			else if(strcmp(argv[a], "-w") == 0 ||
 			   strcmp(argv[a], "--write") == 0)
 			{
-				a++;
+				++a;
 				writeFile = argv[a];
 			}
 			else

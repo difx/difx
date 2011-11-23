@@ -104,11 +104,11 @@ int countZeros(const streamstordatatype *data, int len)
 	int i;
 	int nZero = 0;
 
-	for(i = 0; i < len; i++)
+	for(i = 0; i < len; ++i)
 	{
 		if(data[i] == 0)
 		{
-			nZero++;
+			++nZero;
 		}
 	}
 
@@ -121,11 +121,11 @@ void countReplaced(const streamstordatatype *data, int len,
 	int i;
 	int nBad=0;
 
-	for(i = 0; i < len; i++)
+	for(i = 0; i < len; ++i)
 	{
 		if(data[i] == MARK5_FILL_PATTERN)
 		{
-			nBad++;
+			++nBad;
 		}
 	}
 
@@ -138,7 +138,7 @@ int countbits(unsigned long int v)
 {
 	int c; // c accumulates the total bits set in v
 
-	for(c = 0; v; c++)
+	for(c = 0; v; ++c)
 	{
 		v &= v - 1; // clear the least significant bit set
 	}
@@ -210,7 +210,7 @@ int mjd2ymd(long mjd, int *pYear, int *pMonth, int *pDay)
 
 	/* calc number of months, days since jan 1 of current year */
 	iday = mjd - iyr * 365;
-	for(imon = 0; iday >= 0; imon++)
+	for(imon = 0; iday >= 0; ++imon)
 	{
 		iday = iday - monlen[imon] - ((iyr == 3 && imon == 1) ? 1 : 0);
 	}
@@ -310,17 +310,17 @@ static void convertBCDTime(int mjd, int sec, unsigned char *timeBCD)
 	mjd2ymd(mjd, &year, &month, &day);
 	doy = ymd2doy(year, month, day);
 
-	for(int i = 0; i < 6; i++)
+	for(int i = 0; i < 6; ++i)
 	{
 		nibbles[5-i] =  sec / secDivisors[i];
 		sec -= nibbles[5-i] * secDivisors[i];
 	}
-	for(int i = 0; i < 3; i++)
+	for(int i = 0; i < 3; ++i)
 	{
 		nibbles[8-i] =  doy / doyDivisors[i];
 		doy -= nibbles[8-i] * doyDivisors[i];
 	}
-	for(int i = 0; i < 4; i++)
+	for(int i = 0; i < 4; ++i)
 	{
 		nibbles[12-i] =  year / yearDivisors[i];
 		year -= nibbles[12-i] * yearDivisors[i];
@@ -359,7 +359,7 @@ static void scanName2scanHeader(struct Mark5DirectoryScanHeaderVer1 *scanHeader,
 	int start = 0;
 	int len;
 
-	for(int i = 0; ; i++)
+	for(int i = 0; ; ++i)
 	{
 		if(scanName[i] == '_' || scanName[i] == 0)
 		{
@@ -390,7 +390,7 @@ static void scanName2scanHeader(struct Mark5DirectoryScanHeaderVer1 *scanHeader,
 			}
 
 			start = i+1;
-			state++;
+			++state;
 		}
 		if(scanName[i] == 0 || state == 3)
 		{
@@ -472,7 +472,7 @@ int Mark5Scan::sanityCheck() const
 
 	if(format < 0)
 	{
-		nError++;
+		++nError;
 	}
 
 	return nError;
@@ -578,7 +578,7 @@ void Mark5Module::print() const
 		printf("Error condition: %s\n", error.str().c_str());
 	}
 
-	for(vector<Mark5Scan>::const_iterator s = scans.begin(); s != scans.end(); s++)
+	for(vector<Mark5Scan>::const_iterator s = scans.begin(); s != scans.end(); ++s)
 	{
 		printf("%3d ", ++i);
 		s->print();
@@ -629,7 +629,7 @@ int Mark5Module::load(const char *filename)
 		signature = ~0;
 	}
 
-	for(j = 4; j < n; j++)
+	for(j = 4; j < n; ++j)
 	{
 		if(strcmp(extra[j-4], "RT") == 0)
 		{
@@ -661,7 +661,7 @@ int Mark5Module::load(const char *filename)
 	bank = bankName-'A';
 	scans.resize(nscans);
 
-	for(vector<Mark5Scan>::iterator s = scans.begin(); s != scans.end(); s++)
+	for(vector<Mark5Scan>::iterator s = scans.begin(); s != scans.end(); ++s)
 	{
 		v = fgets(line, MaxLineLength, in);
 		if(!v)
@@ -698,7 +698,7 @@ int Mark5Module::save(const char *filename)
 		fast ? " Fast" : "",
 		synthetic ? " Synth" : "");
 
-	for(vector<Mark5Scan>::const_iterator s = scans.begin(); s != scans.end(); s++)
+	for(vector<Mark5Scan>::const_iterator s = scans.begin(); s != scans.end(); ++s)
 	{
 		s->writeDirEntry(out);
 	}
@@ -717,7 +717,7 @@ int Mark5Module::sanityCheck()
 {
 	int nError = 0;
 
-	for(vector<Mark5Scan>::const_iterator s = scans.begin(); s != scans.end(); s++)
+	for(vector<Mark5Scan>::const_iterator s = scans.begin(); s != scans.end(); ++s)
 	{
 		nError += s->sanityCheck();
 	}
@@ -748,13 +748,13 @@ int Mark5Module::uniquifyScanNames()
 	origIndex[0] = 0;
 	n = 1;
 
-	for(i = 1; i < nScans(); i++)
+	for(i = 1; i < nScans(); ++i)
 	{
-		for(j = 0; j < n; j++)
+		for(j = 0; j < n; ++j)
 		{
 			if(scanNames[j] == scans[i].name)
 			{
-				nameCount[j]++;
+				++nameCount[j];
 				snprintf(extension, MaxExtensionLength, "_%04d", nameCount[j]);
 				scans[i].name += extension;
 				break;
@@ -765,12 +765,12 @@ int Mark5Module::uniquifyScanNames()
 			scanNames[n] = scans[i].name;
 			nameCount[n] = 1;
 			origIndex[n] = i;
-			n++;
+			++n;
 		}
 	}
 
 	/* rename those that would have had name extension _0001 */
-	for(j = 0; j < n; j++)
+	for(j = 0; j < n; ++j)
 	{
 		if(nameCount[j] > 1)
 		{
@@ -917,7 +917,7 @@ int Mark5BankSetByVSN(SSHANDLE xlrDevice, const char *vsn)
 	}
 	else
 	{
-		for(int i = 0; i < 100; i++)
+		for(int i = 0; i < 100; ++i)
 		{
 			WATCHDOG( xlrRC = XLRGetBankStatus(xlrDevice, bank, &bank_stat) );
 			if(xlrRC != XLR_SUCCESS)
@@ -964,7 +964,7 @@ char *scans2newdir(const std::vector<Mark5Scan> &scans, const char *vsn)
 	header->status = MODULE_STATUS_PLAYED;
 	strcpy(header->vsn, vsn);
 
-	for(int i = 0; i < totalScans; i++)
+	for(int i = 0; i < totalScans; ++i)
 	{
 		struct Mark5DirectoryScanHeaderVer1 *scanHeader = (struct Mark5DirectoryScanHeaderVer1 *)(dirData + 128*i + 128);
 		struct Mark5DirectoryLegacyBodyVer1 *scanBody = (struct Mark5DirectoryLegacyBodyVer1 *)(dirData + 128*i + 192);
@@ -977,11 +977,20 @@ char *scans2newdir(const std::vector<Mark5Scan> &scans, const char *vsn)
 		scanHeader->frameLength = scan.framebytes;
 		if(scan.format == MK5_FORMAT_MARK5B) /* currently only handle Mark5B */
 		{
+			int nTrack;
+
+			nTrack = scan.tracks;
+			if(nTrack == 0)
+			{
+				fprintf(stderr, "Warning: changing nTrack from 0 to 32\n");
+				nTrack = 32;
+			}
+
 			type = 8;
 			scanBody->byteOffset = scan.frameoffset;
 			convertBCDTime(scan.mjd, scan.sec, scanBody->timeBCD);
-			scanBody->nTrack = (1LL << scan.tracks) - 1;
-			scanBody->trackRate = 2*scan.framespersecond/(25*scan.tracks);
+			scanBody->nTrack = (1LL << nTrack) - 1;	/* convert to a bitstream mask */
+			scanBody->trackRate = 2*scan.framespersecond/(25*nTrack);
 			scanBody->firstFrame = scan.framenuminsecond;
 			
 		}
@@ -1014,7 +1023,7 @@ int newdir2scans(std::vector<Mark5Scan> &scans, const unsigned char *dirData, in
 		return -1;
 	}
 
-	for(int i = startScan; i < stopScan; i++)
+	for(int i = startScan; i < stopScan; ++i)
 	{
 		const struct Mark5DirectoryScanHeaderVer1 *scanHeader = (struct Mark5DirectoryScanHeaderVer1 *)(dirData + 128*i + 128);
 		const struct Mark5DirectoryLegacyBodyVer1 *scanBody = (struct Mark5DirectoryLegacyBodyVer1 *)(dirData + 128*i + 192);
@@ -1193,7 +1202,7 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref,
 	newSignature = 1;
 	if(start < stop)
 	{
-		for(j = start/4; j < stop/4; j++)
+		for(j = start/4; j < stop/4; ++j)
 		{
 			x = ((unsigned int *)dirData)[j] + 1;
 			newSignature = newSignature ^ x;
@@ -1274,7 +1283,7 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref,
 		/* Work around possible streamstor bug */
 		WATCHDOG( xlrRC = XLRReadData(xlrDevice, buffer, 0, 0, bufferlen) );
 
-		for(int i = 0; i < nScans(); i++)
+		for(int i = 0; i < nScans(); ++i)
 		{
 			Mark5Scan &scan = scans[i];
 
@@ -1588,7 +1597,7 @@ int isLegalModuleLabel(const char *label)
 	int i;
 	int ns=0, nd=0;
 
-	for(i = 0; label[i] > ' '; i++)
+	for(i = 0; label[i] > ' '; ++i)
 	{
 		if(label[i] == '-' || label[i] == '+')
 		{
@@ -1596,11 +1605,11 @@ int isLegalModuleLabel(const char *label)
 			{
 				return 0;
 			}
-			nd++;
+			++nd;
 		}
 		else if(label[i] == '/')
 		{
-			ns++;
+			++ns;
 		}
 		else if(nd == 0 && !isalpha(label[i]))
 		{
@@ -1648,7 +1657,7 @@ int parseModuleLabel(const char *label, char *vsn, int *totalCapacity, int *rate
 	if(moduleStatus)
 	{
 		*moduleStatus = MODULE_STATUS_UNKNOWN;
-		for(i = 0; label[i]; i++)
+		for(i = 0; label[i]; ++i)
 		{
 			if(label[i] == 30)	/* Record separator */
 			{
@@ -1749,7 +1758,7 @@ int getModuleDirectoryVersion(SSHANDLE xlrDevice, int *dirVersion, int *dirLengt
 #ifdef DEBUG
 		printf("Directory information:");
 		printf("  Ver = %d  VSN = %s\n", ver, dirHeader->vsn);
-		for(int s = 0; s < nScan; s++)
+		for(int s = 0; s < nScan; ++s)
 		{
 			struct Mark5DirectoryScanHeaderVer1 *p;
 			p = (struct Mark5DirectoryScanHeaderVer1 *)(dirData + 128*(s+1));
@@ -1876,7 +1885,7 @@ static void trim(char *out, const char *in)
 {
 	int i, s=-1, e=0;
 
-	for(i = 0; in[i]; i++)
+	for(i = 0; in[i]; ++i)
 	{
 		if(in[i] > ' ')
 		{
@@ -1911,7 +1920,7 @@ int getDriveInformation(SSHANDLE xlrDevice, struct DriveInformation drive[8], in
 	long long minCapacity = 0;
 	char message[DIFX_MESSAGE_LENGTH];
 
-	for(int d = 0; d < 8; d++)
+	for(int d = 0; d < 8; ++d)
 	{
 		WATCHDOG( xlrRC = XLRGetDriveInfo(xlrDevice, d/2, d%2, &driveInfo) );
 		if(xlrRC != XLR_SUCCESS)
@@ -1946,7 +1955,7 @@ int getDriveInformation(SSHANDLE xlrDevice, struct DriveInformation drive[8], in
 		}
 		if(drive[d].capacity > 0)
 		{
-			nDrive++;
+			++nDrive;
 		}
 		if(minCapacity == 0 || 
 		   (drive[d].capacity > 0 && drive[d].capacity < minCapacity))
@@ -1972,7 +1981,7 @@ int setDiscModuleStateLegacy(SSHANDLE xlrDevice, int newState)
 
 	WATCHDOGTEST( XLRGetLabel(xlrDevice, label) );
 
-	for(labelLength = 0; labelLength < XLR_LABEL_LENGTH; labelLength++)
+	for(labelLength = 0; labelLength < XLR_LABEL_LENGTH; ++labelLength)
 	{
 		if(!label[labelLength])
 		{
@@ -1986,7 +1995,7 @@ int setDiscModuleStateLegacy(SSHANDLE xlrDevice, int newState)
 		return -1;
 	}
 
-	for(rs = 0; rs < labelLength; rs++)
+	for(rs = 0; rs < labelLength; ++rs)
 	{
 		if(label[rs] == RecordSeparator)
 		{

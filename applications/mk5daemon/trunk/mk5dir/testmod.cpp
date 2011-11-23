@@ -44,8 +44,8 @@
 
 const char program[] = "testmod";
 const char author[]  = "Walter Brisken";
-const char version[] = "0.2";
-const char verdate[] = "20111007";
+const char version[] = "0.3";
+const char verdate[] = "20111123";
 
 const int defaultBlockSize = 10000000;
 const int defaultNBlock = 50;
@@ -75,6 +75,8 @@ static void usage(const char *pgm)
 	printf("<options> can include:\n\n");
 	printf("  --verbose\n");
 	printf("  -v         Increase the verbosity\n\n");
+	printf("  --quiet\n");
+	printf("  -q         Decrease the verbosity\n\n");
 	printf("  --force\n");
 	printf("  -f         Don't ask before proceeding\n\n");
 	printf("  --help\n");
@@ -109,7 +111,7 @@ void setbuffer(int num, char *buffer, int size)
 {
 	int i;
 
-	for(i = 0; i < size; i++) 
+	for(i = 0; i < size; ++i) 
 	{
 		buffer[i] = (num+i) & 0xFF;
 	}
@@ -120,11 +122,11 @@ int comparebuffers(const char *buf1, const char *buf2, int size)
 	int n = 0;
 	int i;
 
-	for(i = 0; i < size; i++)
+	for(i = 0; i < size; ++i)
 	{
 		if(buf1[i] != buf2[i])
 		{
-			n++;
+			++n;
 		}
 	}
 
@@ -151,7 +153,7 @@ int writeblock(SSHANDLE xlrDevice, int num, char *buffer, int size, int nRep, do
 	startTime = tv.tv_sec + tv.tv_usec*1.0e-6;
 
 	printf("Writing ");
-	for(r = 0; r < nRep; r++)
+	for(r = 0; r < nRep; ++r)
 	{
 		WATCHDOGTEST( XLRWriteData(xlrDevice, buffer, size) );
 		printf("."); fflush(stdout);
@@ -192,7 +194,7 @@ static long long readblock(SSHANDLE xlrDevice, int num, char *buffer1, char *buf
 	WATCHDOGTEST( XLRReadData(xlrDevice, (streamstordatatype *)buffer2, 0, 0, size) );
 
 	printf("Reading ");
-	for(r = 0; r < nRep; r++)
+	for(r = 0; r < nRep; ++r)
 	{
 		pos = (long long)size*(num*nRep + r) + ptr;
 		a = pos>>32;
@@ -308,7 +310,7 @@ int testModule(int bank, int mode, int nWrite, int bufferSize, int nRep, int opt
 	WATCHDOGTEST( XLRSetBankMode(xlrDevice, SS_BANKMODE_NORMAL) );
 	WATCHDOGTEST( XLRSetOption(xlrDevice, options) );
 
-	for(int b = 0; b < XLR_MAXBINS; b++)
+	for(int b = 0; b < XLR_MAXBINS; ++b)
 	{
 		driveStats[b].range = statsRange[b];
 		driveStats[b].count = 0;
@@ -333,7 +335,7 @@ int testModule(int bank, int mode, int nWrite, int bufferSize, int nRep, int opt
 
 	WATCHDOGTEST( XLRGetLabel(xlrDevice, label) );
 
-	for(labelLength = 0; labelLength < XLR_LABEL_LENGTH; labelLength++)
+	for(labelLength = 0; labelLength < XLR_LABEL_LENGTH; ++labelLength)
 	{
 		if(!label[labelLength])
 		{
@@ -384,7 +386,7 @@ int testModule(int bank, int mode, int nWrite, int bufferSize, int nRep, int opt
 
 	printf("This module consists of %d drives totalling about %d GB:\n",
 		nDrive, capacity);
-	for(d = 0; d < 8; d++)
+	for(d = 0; d < 8; ++d)
 	{
 		if(drive[d].model[0] == 0)
 		{
@@ -463,7 +465,10 @@ int testModule(int bank, int mode, int nWrite, int bufferSize, int nRep, int opt
 					}
 				}
 
-				for(i = 0; i < 4; i++) buffer[i] = 0;
+				for(i = 0; i < 4; ++i)
+				{
+					buffer[i] = 0;
+				}
 
 				WATCHDOG( xlrRC = XLRSetUserDir(xlrDevice, buffer, dirLen) );
 				if(xlrRC != XLR_SUCCESS)
@@ -483,7 +488,7 @@ int testModule(int bank, int mode, int nWrite, int bufferSize, int nRep, int opt
 			printf("New disk module state will be %s\n", 
 				moduleStatusName(MODULE_STATUS_ERASED) );
 
-			for(n = 0; n < nWrite; n++)
+			for(n = 0; n < nWrite; ++n)
 			{
 				mk5status.position = (long long)bufferSize*nRep*n;
 				mk5status.scanNumber = n+1;
@@ -579,7 +584,7 @@ int testModule(int bank, int mode, int nWrite, int bufferSize, int nRep, int opt
 			}
 			printf("\n");
 
-			for(d = 0; d < 8; d++)
+			for(d = 0; d < 8; ++d)
 			{
 				DWORD nReplaced;
 
@@ -672,7 +677,7 @@ int testModule(int bank, int mode, int nWrite, int bufferSize, int nRep, int opt
 				}
 			}
 		}
-		for(n = 0; n < nWrite; n++)
+		for(n = 0; n < nWrite; ++n)
 		{
 			mk5status.position = (long long)bufferSize*nRep*n + ptr;
 			mk5status.scanNumber = n+1;
@@ -730,7 +735,7 @@ int testModule(int bank, int mode, int nWrite, int bufferSize, int nRep, int opt
 		}
 		printf("\n");
 
-		for(d = 0; d < 8; d++)
+		for(d = 0; d < 8; ++d)
 		{
 			DWORD nReplaced;
 
@@ -794,7 +799,7 @@ int main(int argc, char **argv)
 	long long ptr = 0;
 	int retval = EXIT_SUCCESS;
 
-	for(a = 1; a < argc; a++)
+	for(a = 1; a < argc; ++a)
 	{
 		if(argv[a][0] == 'A' || argv[a][0] == 'a')
 		{
@@ -809,12 +814,17 @@ int main(int argc, char **argv)
 			if(strcmp(argv[a], "-v") == 0 ||
 			   strcmp(argv[a], "--verbose") == 0)
 			{
-				verbose++;
+				++verbose;
+			}
+			else if(strcmp(argv[a], "-q") == 0 ||
+			   strcmp(argv[a], "--quiet") == 0)
+			{
+				--verbose;
 			}
 			else if(strcmp(argv[a], "-f") == 0 ||
 			   strcmp(argv[a], "--force") == 0)
 			{
-				verbose++;
+				++force;
 			}
 			else if(strcmp(argv[a], "-h") == 0 ||
 			   strcmp(argv[a], "--help") == 0)
@@ -888,7 +898,7 @@ int main(int argc, char **argv)
 
 					return EXIT_FAILURE;
 				}
-				a++;
+				++a;
 			}
 		}
 		else

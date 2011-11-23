@@ -48,8 +48,8 @@
 
 const char program[] = "fileto5c";
 const char author[]  = "Walter Brisken";
-const char version[] = "0.1";
-const char verdate[] = "20111006";
+const char version[] = "0.2";
+const char verdate[] = "20111123";
 
 const int defaultStatsRange[] = { 75000, 150000, 300000, 600000, 1200000, 2400000, 4800000, -1 };
 const unsigned int defaultChunkSizeMB = 20;
@@ -76,6 +76,8 @@ static void usage(const char *pgm)
 	printf("  -h         Print help info and quit\n\n");
 	printf("  --verbose\n");
 	printf("  -v         Be more verbose in execution\n\n");
+	printf("  --quiet\n");
+	printf("  -q         Be less verbose in execution\n\n");
 	printf("  --bytes <b>\n");
 	printf("  -b <b>     Stop copying after <b> bytes written\n\n");
 	printf("  --chunk <c>\n");
@@ -149,7 +151,7 @@ static int decode5B(SSHANDLE xlrDevice, unsigned long long pointer, int framesTo
 	if(framesToRead > 1)
 	{
 		const int searchRange=(bufferSize-Mark5BFrameSize)/4 - 8;
-		for(i = 0; i < searchRange; i++)
+		for(i = 0; i < searchRange; ++i)
 		{
 			if(buffer[i] == Mark5BSyncWord)
 			{
@@ -238,12 +240,12 @@ static int decode5B(SSHANDLE xlrDevice, unsigned long long pointer, int framesTo
 				((m/10) << 12) + 
 				((h%10) << 16) +
 				((h/10) << 20);
-			for(int k = 0; k < 3; k++)
+			for(int k = 0; k < 3; ++k)
 			{
 				*timeBCD += (unsigned long long)(doy % 10) << (24+4*k);
 				doy /= 10;
 			}
-			for(int k = 0; k < 4; k++)
+			for(int k = 0; k < 4; ++k)
 			{
 				*timeBCD += (unsigned long long)(yr % 10) << (36+4*k);
 				yr /= 10;
@@ -281,7 +283,7 @@ static void printBankStat(int bank, const S_BANKSTATUS *bankStat, DifxMessageMk5
 	const char noVSN[] = "none";
 	int nSlash = 0;
 
-	for(int i = 0; vsn[i]; i++)
+	for(int i = 0; vsn[i]; ++i)
 	{
 		if(vsn[i] == ' ')
 		{
@@ -290,7 +292,7 @@ static void printBankStat(int bank, const S_BANKSTATUS *bankStat, DifxMessageMk5
 		}
 		if(vsn[i] == '/')
 		{
-			nSlash++;
+			++nSlash;
 		}
 	}
 	if(nSlash != 2)
@@ -345,7 +347,7 @@ static int decodeScan(SSHANDLE xlrDevice, unsigned long long startByte, unsigned
 		double deltat;
 		unsigned long long length = p->stopByte - p->startByte;
 
-		for(int i = 0; i < 8; i++)
+		for(int i = 0; i < 8; ++i)
 		{
 			q->timeBCD[i] = ((unsigned char *)(&timeBCD))[i];
 		}
@@ -493,7 +495,7 @@ static int fileto(const char *filename, int bank, const char *label, unsigned in
 		return -1;
 	}
 
-	for(int b = 0; b < N_BANK; b++)
+	for(int b = 0; b < N_BANK; ++b)
 	{
 		WATCHDOGTEST( XLRGetBankStatus(xlrDevice, b, stat+b) );
 		printBankStat(b, stat+b, mk5status);
@@ -524,7 +526,7 @@ static int fileto(const char *filename, int bank, const char *label, unsigned in
 
 	dirData = (char *)calloc(len+256, 1);	/* make large enough for 2 extra entries */
 	WATCHDOGTEST( XLRGetUserDir(xlrDevice, len, 0, dirData) );
-	for(int i = 0; i < 256; i++)
+	for(int i = 0; i < 256; ++i)
 	{
 		dirData[len+i] = 0;
 	}
@@ -564,7 +566,7 @@ static int fileto(const char *filename, int bank, const char *label, unsigned in
 	mk5status->scanNumber = len/128 + 1;
 	snprintf(mk5status->scanName, DIFX_MESSAGE_MAX_SCANNAME_LEN, "%s", label);
 
-	for(int b = 0; b < XLR_MAXBINS; b++)
+	for(int b = 0; b < XLR_MAXBINS; ++b)
 	{
 		driveStats[b].range = statsRange[b];
 		driveStats[b].count = 0;
@@ -686,7 +688,7 @@ static int fileto(const char *filename, int bank, const char *label, unsigned in
 			}
 
 			/* If there is a change in any other bank, report it */
-			for(int b = 0; b < N_BANK; b++)
+			for(int b = 0; b < N_BANK; ++b)
 			{
 				if(b == bank)
 				{
@@ -725,13 +727,13 @@ static int fileto(const char *filename, int bank, const char *label, unsigned in
 	strcpy(labelCopy, label);
 	parts[0] = labelCopy;
 	nPart = 1;
-	for(int i = 0; labelCopy[i] && nPart < 3; i++)
+	for(int i = 0; labelCopy[i] && nPart < 3; ++i)
 	{
 		if(labelCopy[i] == '_' && labelCopy[i+1])
 		{
 			labelCopy[i] = 0;
 			parts[nPart] = labelCopy + i + 1;
-			nPart++;
+			++nPart;
 		}
 	}
 
@@ -764,7 +766,7 @@ static int fileto(const char *filename, int bank, const char *label, unsigned in
 
 		WATCHDOGTEST( XLRSetUserDir(xlrDevice, dirData, len+128) );
 
-		for(int d = 0; d < 8; d++)
+		for(int d = 0; d < 8; ++d)
 		{
 			WATCHDOG( xlrRC = XLRGetDriveStats(xlrDevice, d/2, d%2, driveStats) );
 			if(xlrRC == XLR_SUCCESS)
@@ -809,19 +811,24 @@ int main(int argc, char **argv)
 
 	memset((char *)(&mk5status), 0, sizeof(mk5status));
 
-	for(int b = 0; b < XLR_MAXBINS; b++)
+	for(int b = 0; b < XLR_MAXBINS; ++b)
 	{
 		statsRange[b] = defaultStatsRange[b];
 	}
 
-	for(a = 1; a < argc; a++)
+	for(a = 1; a < argc; ++a)
 	{
 		if(argv[a][0] == '-')
 		{
 			if(strcmp(argv[a], "-v") == 0 ||
 			   strcmp(argv[a], "--verbose") == 0)
 			{
-				verbose++;
+				++verbose;
+			}
+			else if(strcmp(argv[a], "-q") == 0 ||
+			   strcmp(argv[a], "--quiet") == 0)
+			{
+				--verbose;
 			}
 			else if(strcmp(argv[a], "-h") == 0 ||
 			   strcmp(argv[a], "--help") == 0)
@@ -874,7 +881,7 @@ int main(int argc, char **argv)
 
 					return EXIT_FAILURE;
 				}
-				a++;
+				++a;
 			}
 			else
 			{
@@ -963,14 +970,14 @@ int main(int argc, char **argv)
 			int nUnderscore = 0;
 
 			/* If the filename has more than 2 underscores, take only the portion after the third-to-last */
-			for(p = filename + strlen(filename) - 1; p > filename; p--)
+			for(p = filename + strlen(filename) - 1; p > filename; --p)
 			{
 				if(*p == '_')
 				{
-					nUnderscore++;
+					++nUnderscore;
 					if(nUnderscore >= 3)
 					{
-						p++;
+						++p;
 						break;
 					}
 				}

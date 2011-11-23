@@ -175,6 +175,10 @@ int Datum::populate(SSHANDLE *xlrDev, int64_t pos)
 		sec = mf->sec;
 		ns  = mf->ns;
 		format = mf->format;
+		if(mf->ntrack <= 0 && mf->format == 2)
+		{
+			mf->ntrack = 32;
+		}
 		tracks = mf->ntrack;
 		framespersecond = int(1000000000.0/mf->framens + 0.5);
 		frame = int(mf->ns/mf->framens + 0.5);
@@ -280,7 +284,7 @@ static int mk5map(char *vsn, double rate, double fraction, int64_t precision, in
 	double dRate;
 	std::list<Datum> data;
 	int64_t done = 0LL;
-	int npeek = 0;
+	int nPeek = 0;
 	int bank;
 	unsigned int signature;
 	int len;
@@ -340,7 +344,7 @@ static int mk5map(char *vsn, double rate, double fraction, int64_t precision, in
 
 		WATCHDOGTEST( XLRGetUserDir(xlrDevice, len, 0, dirData) );
 
-		for(int j = 32; j < len/4; j++)
+		for(int j = 32; j < len/4; ++j)
 		{
 			unsigned int x = ((unsigned int *)dirData)[j] + 1;
 			signature = signature ^ x;
@@ -371,7 +375,7 @@ static int mk5map(char *vsn, double rate, double fraction, int64_t precision, in
 
 	// First sample the recorded length with grid points
 
-	for(int i = 0; i < grid; i++)
+	for(int i = 0; i < grid; ++i)
 	{
 		double complete = double(i+1)*100.0/(double)grid;
 		int64_t byte = begin + (end - begin - BufferLength - 128)*i/(grid-1);
@@ -383,8 +387,8 @@ static int mk5map(char *vsn, double rate, double fraction, int64_t precision, in
 			printf("[%6.3f%%] ", complete);
 		}
 		data.push_back(Datum(&xlrDevice, byte));
-		npeek++;
-		mk5status.scanNumber = npeek;
+		++nPeek;
+		mk5status.scanNumber = nPeek;
 		mk5status.position = byte;
 		snprintf(mk5status.scanName, DIFX_MESSAGE_MAX_SCANNAME_LEN, "Pass 1: %6.3f%%", complete);
 		difxMessageSendMark5Status(&mk5status);
@@ -400,10 +404,10 @@ static int mk5map(char *vsn, double rate, double fraction, int64_t precision, in
 	printf("\nAllowed rate range = %10.0f to %10.0f bytes per second\n\n", rate - dRate, rate + dRate);
 
 	lastnewpos = 0LL;
-	for(std::list<Datum>::iterator d1 = data.begin(); ; d1++)
+	for(std::list<Datum>::iterator d1 = data.begin(); ; ++d1)
 	{
 		std::list<Datum>::iterator d2 = d1;
-		d2++;	// d2 points one ahead
+		++d2;	// d2 points one ahead
 		if(d2 == data.end())
 		{
 			break;
@@ -435,12 +439,12 @@ static int mk5map(char *vsn, double rate, double fraction, int64_t precision, in
 			}
 			lastnewpos = newpos;
 			data.insert(d2, Datum(&xlrDevice, newpos));
-			npeek++;
-			mk5status.scanNumber = npeek;
+			++nPeek;
+			mk5status.scanNumber = nPeek;
 			mk5status.position = newpos;
 			snprintf(mk5status.scanName, DIFX_MESSAGE_MAX_SCANNAME_LEN, "Pass 2: %6.3f%%", complete);
 			difxMessageSendMark5Status(&mk5status);
-			d2--;	// back off to point to the newly added member
+			--d2;	// back off to point to the newly added member
 		}
 		done += d2->byte-d1->byte;
 		if(die)
@@ -453,26 +457,26 @@ static int mk5map(char *vsn, double rate, double fraction, int64_t precision, in
 	if(verbose > 2)
 	{
 		printf("---\n");
-		for(std::list<Datum>::const_iterator d = data.begin(); d != data.end(); d++)
+		for(std::list<Datum>::const_iterator d = data.begin(); d != data.end(); ++d)
 		{
 			d->print();
 		}
 		printf("---\n");
 	}
 
-	for(std::list<Datum>::iterator d1 = data.begin(); ; d1++)
+	for(std::list<Datum>::iterator d1 = data.begin(); ; ++d1)
 	{
 		for(;;)
 		{
 			std::list<Datum>::iterator d2 = d1;
-			d2++;
+			++d2;
 			if(d2 == data.end())
 			{
 				d1 = data.end();
 				break;
 			}
 			std::list<Datum>::iterator d3 = d2;
-			d3++;
+			++d3;
 			if(d3 == data.end())
 			{
 				d1 = data.end();
@@ -527,7 +531,7 @@ static int mk5map(char *vsn, double rate, double fraction, int64_t precision, in
 	{
 		std::list<Datum>::iterator d1 = data.begin();
 		std::list<Datum>::iterator d2 = d1;
-		d2++;
+		++d2;
 		r = bytespersecond(*d1, *d2);
 		if(fabs(r - rate) > dRate)
 		{
@@ -539,9 +543,9 @@ static int mk5map(char *vsn, double rate, double fraction, int64_t precision, in
 		}
 
 		d2 = data.end();
-		d2--;
+		--d2;
 		d1 = d2;
-		d1--;
+		--d1;
 		r = bytespersecond(*d1, *d2);
 		if(fabs(r - rate) > dRate)
 		{
@@ -556,7 +560,7 @@ static int mk5map(char *vsn, double rate, double fraction, int64_t precision, in
 	if(verbose > 1)
 	{
 		printf("---\n");
-		for(std::list<Datum>::const_iterator d = data.begin(); d != data.end(); d++)
+		for(std::list<Datum>::const_iterator d = data.begin(); d != data.end(); ++d)
 		{
 			d->print();
 		}
@@ -576,11 +580,11 @@ static int mk5map(char *vsn, double rate, double fraction, int64_t precision, in
 	{
 		printf("%s %d %c %u 1 NORMAL Synth\n", vsn, data.size()/2, 'A' + bank, signature);
 	}
-	for(std::list<Datum>::const_iterator d1 = data.begin(); d1 != data.end(); d1++)
+	for(std::list<Datum>::const_iterator d1 = data.begin(); d1 != data.end(); ++d1)
 	{
-		n++;
+		++n;
 		std::list<Datum>::const_iterator d2 = d1;
-		d2++;
+		++d2;
 		if(d2 == data.end())
 		{
 			printf("*** Developer error: fractional number of scans not expected!\n");
@@ -600,13 +604,13 @@ static int mk5map(char *vsn, double rate, double fraction, int64_t precision, in
 				d1->byte, d2->byte-d1->byte, d1->mjd, d1->sec, d1->frame, d1->framespersecond, dur, d1->framebytes, 0, d1->tracks, d1->format, n);
 		}
 
-		d1++;
+		++d1;
 	}
 	
 
 	if(verbose > 0)
 	{
-		printf("\nDirectory solved with %d peeks\n", npeek);
+		printf("\nDirectory solved with %d peeks\n", nPeek);
 	}
 
 	printf("\n");
@@ -678,7 +682,7 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
-	for(int a = 1; a < argc; a++)
+	for(int a = 1; a < argc; ++a)
 	{
 		if(strcmp(argv[a], "-h") == 0 ||
 		   strcmp(argv[a], "--help") == 0)
@@ -690,12 +694,12 @@ int main(int argc, char **argv)
 		else if(strcmp(argv[a], "-v") == 0 ||
 		        strcmp(argv[a], "--verbose") == 0)
 		{
-			verbose++;
+			++verbose;
 		}
 		else if(strcmp(argv[a], "-q") == 0 ||
 		        strcmp(argv[a], "--quiet") == 0)
 		{
-			verbose--;
+			--verbose;
 		}
 /* the three options below are not yet implemented */
 #if 0
@@ -724,37 +728,37 @@ int main(int argc, char **argv)
 			if(strcmp(argv[a], "-r") == 0 ||
 			   strcmp(argv[a], "--rate") == 0)
 			{
-				a++;
+				++a;
 				rate = atof(argv[a]);
 			}
 			else if(strcmp(argv[a], "-f") == 0 ||
 				strcmp(argv[a], "--fraction") == 0)
 			{
-				a++;
+				++a;
 				fraction = atof(argv[a]);
 			}
 			else if(strcmp(argv[a], "-p") == 0 ||
 			        strcmp(argv[a], "--precision") == 0)
 			{
-				a++;
+				++a;
 				precision = atoi(argv[a]);
 			}
 			else if(strcmp(argv[a], "-g") == 0 ||
 			        strcmp(argv[a], "--grid") == 0)
 			{
-				a++;
+				++a;
 				grid = atoi(argv[a]);
 			}
 			else if(strcmp(argv[a], "-b") == 0 ||
 			        strcmp(argv[a], "--begin") == 0)
 			{
-				a++;
+				++a;
 				begin = atoll(argv[a]);
 			}
 			else if(strcmp(argv[a], "-e") == 0 ||
 			        strcmp(argv[a], "--end") == 0)
 			{
-				a++;
+				++a;
 				end = atoll(argv[a]);
 			}
 			else

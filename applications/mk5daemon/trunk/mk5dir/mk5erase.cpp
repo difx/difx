@@ -62,8 +62,8 @@
 
 const char program[] = "mk5erase";
 const char author[]  = "Walter Brisken";
-const char version[] = "0.3";
-const char verdate[] = "20110730";
+const char version[] = "0.4";
+const char verdate[] = "20111123";
 
 
 #define MJD_UNIX0       40587.0
@@ -93,6 +93,8 @@ static void usage(const char *pgm)
 	printf("  -h             Print this help message\n\n");
 	printf("  --verbose\n");
 	printf("  -v             Be more verbose\n\n");
+	printf("  --quiet\n");
+	printf("  -q             Be less verbose\n\n");
 	printf("  --condition\n");
 	printf("  -c             Do full conditioning, not just erasing\n\n");
 	printf("  --readonly\n");
@@ -187,7 +189,7 @@ int condition(SSHANDLE xlrDevice, const char *vsn, enum ConditionMode mode, Difx
 
 	/* configure collection of drive statistics */
 	WATCHDOGTEST( XLRSetOption(xlrDevice, SS_OPT_DRVSTATS) );
-	for(int b = 0; b < XLR_MAXBINS; b++)
+	for(int b = 0; b < XLR_MAXBINS; ++b)
 	{
 		driveStats[b].range = statsRange[b];
 		driveStats[b].count = 0;
@@ -229,7 +231,7 @@ int condition(SSHANDLE xlrDevice, const char *vsn, enum ConditionMode mode, Difx
 		}
 	}
 
-	for(int n = 0; ; n++)
+	for(int n = 0; ; ++n)
 	{
 		WATCHDOG( len = XLRGetLength(xlrDevice) );
 		if(lenLast < 0)
@@ -259,7 +261,7 @@ int condition(SSHANDLE xlrDevice, const char *vsn, enum ConditionMode mode, Difx
 			bytes = -(len-lenLast);	// It is counting down
 			if(lenLast < len)
 			{
-				pass++;
+				++pass;
 				if(pass >= nPass)
 				{
 					break;
@@ -281,7 +283,7 @@ int condition(SSHANDLE xlrDevice, const char *vsn, enum ConditionMode mode, Difx
 				{
 					highestRate = mk5status->rate;
 				}
-				nRate++;
+				++nRate;
 				averageRate += mk5status->rate;
 			}
 			ftime(&time2);
@@ -365,7 +367,7 @@ int condition(SSHANDLE xlrDevice, const char *vsn, enum ConditionMode mode, Difx
 			break;
 		}
 
-		for(int d = 0; d < 8; d++)
+		for(int d = 0; d < 8; ++d)
 		{
 			WATCHDOG( xlrRC = XLRGetDriveInfo(xlrDevice, d/2, d%2, &driveInfo) );
 			if(xlrRC == XLR_SUCCESS)
@@ -379,14 +381,14 @@ int condition(SSHANDLE xlrDevice, const char *vsn, enum ConditionMode mode, Difx
 					DIFX_MESSAGE_DISC_MODEL_LENGTH);
 				driveStatsMessage.diskSize = drive[d].capacity/1000000000LL;
 				printf("> Disk %d stats : %s", d, drive[d].serial);
-				for(int i = 0; i < DIFX_MESSAGE_N_CONDITION_BINS; i++)
+				for(int i = 0; i < DIFX_MESSAGE_N_CONDITION_BINS; ++i)
 				{
 					driveStatsMessage.bin[i] = -1;
 				}
 				WATCHDOG( xlrRC = XLRGetDriveStats(xlrDevice, d/2, d%2, driveStats) );
 				if(xlrRC == XLR_SUCCESS)
 				{
-					for(int i = 0; i < XLR_MAXBINS; i++)
+					for(int i = 0; i < XLR_MAXBINS; ++i)
 					{
 						if(i < DIFX_MESSAGE_N_CONDITION_BINS)
 						{
@@ -514,7 +516,7 @@ int mk5erase(const char *vsn, enum ConditionMode mode, int verbose, int dirVersi
 	nDrive = getDriveInformation(xlrDevice, drive, &totalCapacity);
 
 	printf("> Module %s consists of %d drives totalling about %d GB:\n", vsn, nDrive, totalCapacity);
-	for(int d = 0; d < 8; d++)
+	for(int d = 0; d < 8; ++d)
 	{
 		if(drive[d].model[0] == 0)
 		{
@@ -602,7 +604,7 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
-	for(int a = 1; a < argc; a++)
+	for(int a = 1; a < argc; ++a)
 	{
 		if(strcmp(argv[a], "-h") == 0 ||
 		   strcmp(argv[a], "--help") == 0)
@@ -614,7 +616,12 @@ int main(int argc, char **argv)
 		else if(strcmp(argv[a], "-v") == 0 ||
 		        strcmp(argv[a], "--verbose") == 0)
 		{
-			verbose++;
+			++verbose;
+		}
+		else if(strcmp(argv[a], "-q") == 0 ||
+		        strcmp(argv[a], "--quiet") == 0)
+		{
+			--verbose;
 		}
 		else if(strcmp(argv[a], "-c") == 0 ||
 		        strcmp(argv[a], "--condition") == 0)
@@ -683,7 +690,7 @@ int main(int argc, char **argv)
 				
 				return EXIT_FAILURE;
 			}
-			for(int i = 0; i < 8; i++)
+			for(int i = 0; i < 8; ++i)
 			{
 				vsn[i] = toupper(vsn[i]);
 			}

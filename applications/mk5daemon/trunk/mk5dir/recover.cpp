@@ -44,8 +44,8 @@
 
 const char program[] = "recover";
 const char author[]  = "Walter Brisken";
-const char version[] = "0.2";
-const char verdate[] = "20111103";
+const char version[] = "0.3";
+const char verdate[] = "20111123";
 
 static void usage(const char *pgm)
 {
@@ -57,6 +57,8 @@ static void usage(const char *pgm)
 	printf("  -h         Print help info and quit\n\n");
 	printf("  --verbose\n");
 	printf("  -v         Be more verbose in execution\n\n");
+	printf("  --quiet\n");
+	printf("  -q         Be less verbose in execution\n\n");
 	printf("  --force\n");
 	printf("  -f         Don't ask before continuing\n\n");
 	printf("<type> should be 0, 1 or 2.  See below.\n\n");
@@ -208,19 +210,24 @@ int main(int argc, char **argv)
 	int force = 0;
 	int retval = EXIT_SUCCESS;
 
-	for(a = 1; a < argc; a++)
+	for(a = 1; a < argc; ++a)
 	{
 		if(argv[a][0] == '-')
 		{
 			if(strcmp(argv[a], "-v") == 0 ||
 			   strcmp(argv[a], "--verbose") == 0)
 			{
-				verbose++;
+				++verbose;
+			}
+			else if(strcmp(argv[a], "-q") == 0 ||
+			   strcmp(argv[a], "--quiet") == 0)
+			{
+				--verbose;
 			}
 			else if(strcmp(argv[a], "-f") == 0 ||
 			   strcmp(argv[a], "--force") == 0)
 			{
-				force++;
+				++force;
 			}
 			else if(strcmp(argv[a], "-h") == 0 ||
 			   strcmp(argv[a], "--help") == 0)

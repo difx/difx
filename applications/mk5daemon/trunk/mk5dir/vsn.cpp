@@ -44,8 +44,8 @@
 
 const char program[] = "vsn";
 const char author[]  = "Walter Brisken";
-const char version[] = "0.4";
-const char verdate[] = "20110730";
+const char version[] = "0.5";
+const char verdate[] = "20111123";
 
 enum WriteProtectAction
 {
@@ -106,7 +106,7 @@ long long interpretSMART(char *smartDescription, int maxLength, const S_SMARTVAL
 	long long V=0;
 	int i;
 
-	for(i = 0; i < 6; i++)
+	for(i = 0; i < 6; ++i)
 	{
 		V = (V << 8) + smart->raw[i];
 	}
@@ -375,7 +375,7 @@ int setvsn(int bank, char *newVSN, int newStatus, enum WriteProtectAction wpa, i
 	{
 		fprintf(out, "This module consists of %d drives totalling about %d GB:\n\n\n", nDrive, capacity);
 	}
-	for(d = 0; d < 8; d++)
+	for(d = 0; d < 8; ++d)
 	{
 		if(drive[d].model[0] == 0)
 		{
@@ -410,7 +410,7 @@ int setvsn(int bank, char *newVSN, int newStatus, enum WriteProtectAction wpa, i
 				{
 					fprintf(out, "SMART values version %d\n", smartVersion);
 				}
-				for(v = 0; v < XLR_MAX_SMARTVALUES; v++)
+				for(v = 0; v < XLR_MAX_SMARTVALUES; ++v)
 				{
 					if(smartValues[v].ID > 0)
 					{
@@ -617,24 +617,24 @@ int main(int argc, char **argv)
 	enum WriteProtectAction wpa = WPA_NONE;
 	int retval = EXIT_SUCCESS;
 
-	for(a = 1; a < argc; a++)
+	for(a = 1; a < argc; ++a)
 	{
 		if(argv[a][0] == '-')
 		{
 			if(strcmp(argv[a], "-v") == 0 ||
 			   strcmp(argv[a], "--verbose") == 0)
 			{
-				verbose++;
+				++verbose;
 			}
 			else if(strcmp(argv[a], "-q") == 0 ||
 			        strcmp(argv[a], "--quiet") == 0)
 			{
-				verbose--;
+				--verbose;
 			}
 			else if(strcmp(argv[a], "-f") == 0 ||
 			   strcmp(argv[a], "--force") == 0)
 			{
-				force++;
+				++force;
 			}
 			else if(strcmp(argv[a], "-h") == 0 ||
 			   strcmp(argv[a], "--help") == 0)
@@ -757,7 +757,7 @@ int main(int argc, char **argv)
 			}
 			strcpy(newVSN, argv[a]);
 			newVSN[8] = 0;
-			for(i = 0; i < 8; i++)
+			for(i = 0; i < 8; ++i)
 			{
 				newVSN[i] = toupper(newVSN[i]);
 			}

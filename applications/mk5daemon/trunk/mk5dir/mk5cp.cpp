@@ -43,8 +43,8 @@
 
 const char program[] = "mk5cp";
 const char author[]  = "Walter Brisken";
-const char version[] = "0.9";
-const char verdate[] = "20111118";
+const char version[] = "0.10";
+const char verdate[] = "20111123";
 
 const int defaultChunkSize = 50000000;
 
@@ -92,6 +92,8 @@ int usage(const char *pgm)
 	fprintf(stderr, "  -h             Print this help message\n\n");
 	fprintf(stderr, "  --verbose\n");
 	fprintf(stderr, "  -v             Be more verbose\n\n");
+	fprintf(stderr, "  --quiet\n");
+	fprintf(stderr, "  -q             Be less verbose\n\n");
 	fprintf(stderr, "  --force\n");
 	fprintf(stderr, "  -f             Continue even if dir is screwy\n\n");
 	fprintf(stderr, "  --rt           Read using Real-Time mode\n\n");
@@ -175,7 +177,7 @@ int resetDriveStats(SSHANDLE xlrDevice)
 	const int defaultStatsRange[] = { 75000, 150000, 300000, 600000, 1200000, 2400000, 4800000, -1 };
 
 	WATCHDOGTEST( XLRSetOption(xlrDevice, SS_OPT_DRVSTATS) );
-	for(int b = 0; b < XLR_MAXBINS; b++)
+	for(int b = 0; b < XLR_MAXBINS; ++b)
 	{
 		driveStats[b].range = defaultStatsRange[b];
 		driveStats[b].count = 0;
@@ -199,9 +201,9 @@ int reportDriveStats(SSHANDLE xlrDevice, const char *vsn)
 	strcpy(driveStatsMessage.modelNumber, "Y");
 	driveStatsMessage.diskSize = 0;
 
-	for(int d = 0; d < 8; d++)
+	for(int d = 0; d < 8; ++d)
 	{
-		for(int i = 0; i < DIFX_MESSAGE_N_DRIVE_STATS_BINS; i++)
+		for(int i = 0; i < DIFX_MESSAGE_N_DRIVE_STATS_BINS; ++i)
 		{
 			driveStatsMessage.bin[i] = -1;
 		}
@@ -209,7 +211,7 @@ int reportDriveStats(SSHANDLE xlrDevice, const char *vsn)
 		WATCHDOG( xlrRC = XLRGetDriveStats(xlrDevice, d/2, d%2, driveStats) );
 		if(xlrRC == XLR_SUCCESS)
 		{
-			for(int i = 0; i < XLR_MAXBINS; i++)
+			for(int i = 0; i < XLR_MAXBINS; ++i)
 			{
 				if(i < DIFX_MESSAGE_N_DRIVE_STATS_BINS)
 				{
@@ -366,7 +368,7 @@ int copyByteRange(SSHANDLE xlrDevice, const char *outPath, const char *outName, 
 	snprintf(message, DIFX_MESSAGE_LENGTH, "Copying portion (%Ld, %Ld) of scan %d to file %s", byteStart, byteStop, scanNum+1, filename);
 	difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
 
-	for(int i = 0; togo > 0; i++)
+	for(int i = 0; togo > 0; ++i)
 	{
 		if(die)
 		{
@@ -570,7 +572,7 @@ int copyScan(SSHANDLE xlrDevice, const char *vsn, const char *outPath, int scanN
 	snprintf(message, DIFX_MESSAGE_LENGTH, "Copying scan %d to file %s", scanNum+1, filename);
 	difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
 
-	for(int i = 0; togo > 0; i++)
+	for(int i = 0; togo > 0; ++i)
 	{
 		if(die)
 		{
@@ -939,7 +941,7 @@ static int mk5cp(char *vsn, const char *scanList, const char *outPath, int force
 		/* first look for mjd range */
 		if(parseMjdRange(&mjdStart, &mjdStop, scanList))	
 		{
-			for(scanIndex = 0; scanIndex < module.nScans(); scanIndex++)
+			for(scanIndex = 0; scanIndex < module.nScans(); ++scanIndex)
 			{
 				scan = &module.scans[scanIndex];
 				if(!getByteRange(scan, &byteStart, &byteStop, mjdStart, mjdStop))
@@ -950,7 +952,7 @@ static int mk5cp(char *vsn, const char *scanList, const char *outPath, int force
 				v = copyByteRange(xlrDevice, outPath, outName, scanIndex, byteStart, byteStop, &mk5status, chunkSize);
 				if(v == 0)
 				{
-					nGood++;
+					++nGood;
 				}
 				else
 				{
@@ -958,7 +960,7 @@ static int mk5cp(char *vsn, const char *scanList, const char *outPath, int force
 					{
 						return v;
 					}
-					nBad++;
+					++nBad;
 				}
 			}
 			if(nGood == 0)
@@ -977,7 +979,7 @@ static int mk5cp(char *vsn, const char *scanList, const char *outPath, int force
 
 			if(v == 0)
 			{
-				nGood++;
+				++nGood;
 			}
 			else
 			{
@@ -985,7 +987,7 @@ static int mk5cp(char *vsn, const char *scanList, const char *outPath, int force
 				{
 					return v;
 				}
-				nBad++;
+				++nBad;
 			}
 			if(nGood == 0)
 			{
@@ -1009,7 +1011,7 @@ static int mk5cp(char *vsn, const char *scanList, const char *outPath, int force
 			}
 			if(scanList[0] == '-')
 			{
-				scanList++;
+				++scanList;
 				v = sscanf(scanList, "%d%n", &b, &s);
 				scanList += s;
 				if(v < 1)
@@ -1029,7 +1031,7 @@ static int mk5cp(char *vsn, const char *scanList, const char *outPath, int force
 
 			if(a >= 0 && b >= a && b < 1000000)
 			{
-				for(int i = a; i <= b; i++)
+				for(int i = a; i <= b; ++i)
 				{
 					if(die)
 					{
@@ -1041,7 +1043,7 @@ static int mk5cp(char *vsn, const char *scanList, const char *outPath, int force
 						v = copyScan(xlrDevice, module.label.c_str(), outPath, scanIndex, &module.scans[scanIndex], &mk5status, chunkSize);
 						if(v == 0)
 						{
-							nGood++;
+							++nGood;
 						}
 						else
 						{
@@ -1049,7 +1051,7 @@ static int mk5cp(char *vsn, const char *scanList, const char *outPath, int force
 							{
 								return v;
 							}
-							nBad++;
+							++nBad;
 						}
 					}
 					else
@@ -1057,7 +1059,7 @@ static int mk5cp(char *vsn, const char *scanList, const char *outPath, int force
 						snprintf(message, DIFX_MESSAGE_LENGTH, "Scan number %d out of range.  nScan = %d", i, module.nScans());
 						difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_WARNING);
 						fprintf(stderr, "Warning: %s\n", message);
-						nBad++;
+						++nBad;
 					}
 				}
 			}
@@ -1072,7 +1074,7 @@ static int mk5cp(char *vsn, const char *scanList, const char *outPath, int force
 			}
 			else
 			{
-				scanList++;
+				++scanList;
 			}
 		}
 		/* finally, look for scan name */
@@ -1080,7 +1082,7 @@ static int mk5cp(char *vsn, const char *scanList, const char *outPath, int force
 		{
 			l = strlen(scanList);
 			// FIXME: use iterator
-			for(int i = 0; i < module.nScans(); i++)
+			for(int i = 0; i < module.nScans(); ++i)
 			{
 				if(strncasecmp(module.scans[i].name.c_str(), scanList, l) == 0)
 				{
@@ -1088,7 +1090,7 @@ static int mk5cp(char *vsn, const char *scanList, const char *outPath, int force
 					v = copyScan(xlrDevice, module.label.c_str(), outPath, scanIndex, &module.scans[scanIndex], &mk5status, chunkSize);
 					if(v == 0) 
 					{
-						nGood++;
+						++nGood;
 					}
 					else
 					{
@@ -1096,7 +1098,7 @@ static int mk5cp(char *vsn, const char *scanList, const char *outPath, int force
 						{
 							return v;
 						}
-						nBad++;
+						++nBad;
 					}
 				}
 			}
@@ -1241,7 +1243,7 @@ static int mk5cp_nodir(char *vsn, const char *scanList, const char *outPath, int
 
 			if(v == 0)
 			{
-				nGood++;
+				++nGood;
 			}
 			else
 			{
@@ -1249,7 +1251,7 @@ static int mk5cp_nodir(char *vsn, const char *scanList, const char *outPath, int
 				{
 					return v;
 				}
-				nBad++;
+				++nBad;
 			}
 			if(nGood == 0)
 			{
@@ -1328,7 +1330,7 @@ int main(int argc, char **argv)
 		return usage(argv[0]);
 	}
 
-	for(int a = 1; a < argc; a++)
+	for(int a = 1; a < argc; ++a)
 	{
 		if(strcmp(argv[a], "-") == 0)
 		{
@@ -1349,7 +1351,12 @@ int main(int argc, char **argv)
 		else if(strcmp(argv[a], "-v") == 0 ||
 		        strcmp(argv[a], "--verbose") == 0)
 		{
-			verbose++;
+			++verbose;
+		}
+		else if(strcmp(argv[a], "-q") == 0 ||
+		        strcmp(argv[a], "--quiet") == 0)
+		{
+			--verbose;
 		}
 		else if(strcmp(argv[a], "-f") == 0 ||
 			strcmp(argv[a], "--force") == 0)
