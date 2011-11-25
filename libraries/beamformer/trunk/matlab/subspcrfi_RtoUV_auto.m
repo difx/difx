@@ -1,4 +1,4 @@
-% Convert covariance matrix autocorrelation entries into UV visibilities
+% Convert covariance matrix entries into UV visibilities
 % Array elements i assumed to be on equispaced square grid
 % and the order of Rxx values matches that of the physical layout
 %
@@ -32,7 +32,9 @@ function [uvd]=subspcrfi_RtoUV_auto(Rxx, freq_hz, elemXYZ)
     % place autocorrelation
     vis = Rxx(ii,ii);
     uvd(uvpos1(1),uvpos1(2)) = uvd(uvpos1(1),uvpos1(2)) + vis; % uvd(u,v)
+    %uvd(uvpos2(1),uvpos2(2)) = uvd(uvpos2(1),uvpos2(2)) + conj(vis); % uvd(v,u)
     weights(uvpos1(1),uvpos1(2)) = weights(uvpos1(1),uvpos1(2)) + 1;
+    %weights(uvpos2(1),uvpos2(2)) = weights(uvpos2(1),uvpos2(2)) + 1;
  end
  
  % weight down to zero any missing points
