@@ -2151,15 +2151,20 @@ static int mark5_format_vdif_init(struct mark5_stream *ms)
 	}
 	
 	ms->framesamples = ms->databytes*8/(ms->nchan*bitspersample*ms->decimation);
+
+	// Don't think these are needed..... CJP
         f->completesamplesperword = 32/(bitspersample*ms->nchan);
 
         ms->framegranularity = 1;
         if(ms->Mbps > 0)
         {
-                framensNum = 250*f->databytesperpacket*f->completesamplesperword*ms->nchan*bitspersample;
-                framensDen = ms->Mbps;
 
+	  //                framensNum = 250*f->databytesperpacket*f->completesamplesperword*ms->nchan*bitspersample;
+               framensNum = ms->databytes*8*1000;     
+	       framensDen = ms->Mbps;
+			  
                 ms->framens = (double)framensNum/(double)framensDen;
+
 
                 for(ms->framegranularity = 1; ms->framegranularity < 128; ms->framegranularity *= 2)
                 {
