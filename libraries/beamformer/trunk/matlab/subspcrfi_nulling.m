@@ -9,12 +9,13 @@
 % data should be ignored for other reasons, use the ignore_mask parameter.
 % To use all elements use a blank ignore_mask=[];
 %
+% [nulldata]=subspcrfi_nulling(alldata, rfi_evalues, rfi_evectors, Nrfi, Mint, ignore_mask)
 % Input: 
 %   alldata = 2 x Nant x Nant x Nch       fall-back data
 %   rfi_evalues = 2 x Nant x Nch          eigenvalues
 %   rfi_evectors = 2 x Nant x Nant x Nch  eigenvectors
-%   Mint = scalar                         nr of time-integrated covariances
 %   Nrfi = scalar                         max count of interferers to null
+%   Mint = scalar                         nr of time-integrated covariances
 %   ignore_mask = 1 x Nignore             list of eigenval indices to ignore
 %
 function [nulldata]=subspcrfi_nulling(alldata, rfi_evalues, rfi_evectors, Nrfi, Mint, ignore_mask)
@@ -48,18 +49,15 @@ function [nulldata]=subspcrfi_nulling(alldata, rfi_evalues, rfi_evectors, Nrfi, 
         [Nrfi_mdl,tmp,MDL_k] = subspcrfi_MDLrank(mdl_evalues, Mint);
         
         % Use thresholding: exact, estimate, or remove all dominant
-        %rfi_thresh = sorted_evalues(min(Nrfi, det_Nrfi)); % exact/clipped
-        rfi_thresh = mean(mdl_evalues) + 3*std(mdl_evalues);
-        %rfi_thresh = median(abs(mdl_evalues)) + 3*std(mdl_evalues);
-        %rfi_thresh = 0; %always remove dominant
-        
-        % Number of RFI estimated from thresholding
-        Nrfi_thresh = sum(mdl_evalues >= rfi_thresh);
+        [Nrfi_3sig, Nrfi_3mad] = subspcrfi_3Sigrank(abs(mdl_evalues));
+        % Nrfi_thresh = Nrfi; % user-specified
+        Nrfi_thresh = Nrfi_3sig; % 3-sigma
+        %Nrfi_thresh = Nrfi_3mad; % 3-mad, 6-mad or other
         
         % Choose maximum of detected RFI values, clip to user-specified limit
         Nrfi_det = max(Nrfi_mdl, Nrfi_thresh);
         Nrfi = min(Nrfi_det, Nrfi_maxclip);
-        % fprintf(1, 'Channel %d 3sig=%d mdl=%d fin=%d\n', cc, Nrfi_thresh, Nrfi_mdl, Nrfi);
+        fprintf(1, 'Channel %d 3sig=%d mdl=%d fin=%d\n', cc, Nrfi_thresh, Nrfi_mdl, Nrfi);
 
         % no RFI?
         %if (det_Nrfi>Nant/2),
