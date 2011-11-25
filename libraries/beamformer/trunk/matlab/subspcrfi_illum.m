@@ -44,20 +44,57 @@ if 1,
         img_nulled = img_nulled + abs(fft2(uvd_nulled));
         %img_orig = img_orig + uvd_orig;
         %img_nulled = img_nulled + uvd_nulled;
+        
+        % add autocorrelations
+        if 1,
+            [uvd_orig]=subspcrfi_RtoUV_auto( R_orig, frequencies(cc), elem_positions );
+            img_orig = img_orig + abs(uvd_orig);
+            [uvd_nulled]=subspcrfi_RtoUV_auto( R_nulled, frequencies(cc), elem_positions );
+            img_nulled = img_nulled + abs(uvd_nulled);
+        end
     end
     %img_orig = abs(fft2(img_orig));
     %img_nulled = abs(fft2(img_nulled));
 
+    % determine x,y axis units: APERTIF elements see 3x3 deg area on sky,
+    % usable APERTIF subarray is around 8*8 without 4 corner elements,
+    % don't know VirgoA data details (60 signals == from both polarizations, or only one?)
+    axx = linspace(-1.5,1.5, size(img_orig,1));
+    axxl = 'deg';
+    
     figure(fnr),fnr=fnr+1;
-    subplot(1,2,1),surf(img_orig), title(['UV image of original Ron-Roff data stacked over channels ' num2str(chlist(1)) '-' num2str(chlist(end))]), 
-        view([90 90]);
+    subplot(1,2,1),surf(axx,axx,img_orig), title(['UV image of original Ron-Roff data stacked over channels ' num2str(chlist(1)) '-' num2str(chlist(end))]), 
+        view([90 90]); xlabel(axxl); ylabel(axxl);
         axis equal, axis tight;
         cax=caxis();
-    subplot(1,2,2),surf(img_nulled), title(['UV image of nulled Ron-Roff data stacked over channels ' num2str(chlist(1)) '-' num2str(chlist(end))]),
-        view([90 90]);
+    subplot(1,2,2),surf(axx,axx,img_nulled), title(['UV image of nulled Ron-Roff data stacked over channels ' num2str(chlist(1)) '-' num2str(chlist(end))]),
+        view([90 90]); xlabel(axxl); ylabel(axxl);
         axis equal, axis tight;
         caxis(cax);
 end
+
+%% RFI vs Virgo A power (if autocorrelations were included in the image)
+if 1,
+    [P_rms_nulled, M_nulled] = subspcrfi_imgnoise(img_nulled);
+    P_rfi_nulled = subspcrfi_pixelpwr(img_nulled - M_nulled, 17,6);
+    P_virgo_nulled = subspcrfi_pixelpwr(img_nulled - M_nulled, 9,10);
+
+    [P_rms_orig, M_orig] = subspcrfi_imgnoise(img_orig);
+    P_rfi_orig = subspcrfi_pixelpwr(img_orig - M_orig, 17,6);
+    P_virgo_orig = subspcrfi_pixelpwr(img_orig - M_orig, 9,10);
+    
+    SNR_nulled = P_virgo_nulled/P_rms_nulled;
+    SNR_orig = P_virgo_orig/P_rms_orig;    
+    INR_nulled = P_rfi_nulled/P_rms_nulled;
+    INR_orig = P_rfi_orig/P_rms_orig;    
+    SIR_nulled = P_virgo_nulled/P_rfi_nulled;
+    SIR_orig = P_virgo_orig/P_rfi_orig;
+    fprintf(1, 'Rms noise reduction: %f\n', P_rms_orig/P_rms_nulled);
+    fprintf(1, 'SNR gain: %f\n', SNR_nulled/SNR_orig);
+    fprintf(1, 'INR gain: %f\n', INR_nulled/INR_orig);
+end
+
+return
 
 %% plot diffs
 figure(fnr),fnr=fnr+1;
