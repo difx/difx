@@ -9,24 +9,27 @@ do_subplot=0; % 1 to combine certain plots, 0 to use separate figures for each
 lambda=0.2021;     % wavelength in meters
 
 Nant=64+2;         % total number of antennas
-refIdx=[1 2];      % indices of the reference antennas
+refIdx=[1 2];    % indices of the reference antennas
 
 % Model input data: sky source
-srcDirPwr = [45 -90 1e-2];
+srcDirPwr = [45 -90 1e-3];
 
 % Model input data: RFI, un-comment the suitable one
 % rfiDirPwr = [30 -15 0]; % no interferer (zero power), toxicity test
-% rfiDirPwr = [30 -15 2]; % single interferer in one frequency channel
+ rfiDirPwr = [30 -15 2]; % single interferer in one frequency channel
 % rfiDirPwr = [10 -70 2]; % single interferer in one frequency channel, direction overlaps with source dir
-rfiDirPwr = [30 -15 2; 40 -45 3]; % two interferers in one freq channel (Kesteven subtraction will fail)
+% rfiDirPwr = [30 -15 2; 40 -45 5]; % two interferers in one freq channel (Kesteven subtraction will fail)
+%rfiDirPwr = [30 -15 2; 40 -45 3; 80 -60 5]; % three interferers in one freq channel (Kesteven subtraction will fail)
 
 % Model input data: gain of RFI reference antenna and count of expected RFIs
-ref_ant_INR = 1e1;
+ref_ant_gain = 15;
 Nrfi = size(rfiDirPwr,1);
 
 % Model input data: antenna element noise and correlated noise
-ac_pwr = 1e-7;
-xc_pwr = 0; %1e-8;
+ac_pwr = 1e-6;
+ref_ac_pwr = 3e-3;
+xc_pwr = 1e-9;
+show_briggs = 0; % which result to plot (briggs or generic)
 
 % Automatically derived values
 clight=299792458;
@@ -49,7 +52,15 @@ elseif (Nref==2),
     eps_ref=[eps_array(:,1) , eps_array(:,end)];
 else
     eps_ref=eps_array(:,1:Nref);
-end        
+end
+
+% Can randomize reference positions 
+% Has no actual effect on subtraction performance however...
+if 1,
+    eps_ref=eps_ref + 50*lambda*rand(size(eps_ref));
+end
+
+% Final positions
 eps = [eps_ref , eps_array];
 
 % Model 1 (no reference antennas) just for comparison
@@ -60,18 +71,20 @@ tRxxV1(1,:,:,1)=RxxV1;
 tRxxV1(1,:,:,2)=RxxV1;
 
 % Model 2 (reference antennas) data used for subtraction method
-RxxV2=subspcrfi_modelgen2(lambda, eps, srcDirPwr, rfiDirPwr, refIdx, ref_ant_INR, ac_pwr, xc_pwr);
+[RxxV2,dummy,RxxV2clean]=subspcrfi_modelgen2(lambda, eps, srcDirPwr, rfiDirPwr, refIdx, ref_ant_gain, ac_pwr, xc_pwr, ref_ac_pwr);
 tRxxV2=zeros(1,Nant,Nant,2); 
 tRxxV2(1,:,:,1)=RxxV2;
 tRxxV2(1,:,:,2)=RxxV2;
 
-% for models to match, should see:
-% max(max(abs(RxxV1 - RxxV2(antIdx,antIdx)))) < 1e-10 or <xc_pwr
-% surf(real(RxxV1 - RxxV2(antIdx,antIdx)));
-
 % Model 1 without RFI (and no reference antennas)
 nonref_eps = eps(:,antIdx); % discard positions of reference antennas
-RxxV3=subspcrfi_modelgen(lambda, nonref_eps, srcDirPwr, ac_pwr, xc_pwr);
+if 0,
+    % create new model output, with different random noise values
+    RxxV3=subspcrfi_modelgen(lambda, nonref_eps, srcDirPwr, ac_pwr, xc_pwr);
+else
+    % use earlier Model2 output, with old identical random noise values as RxxV2, but no RFI
+    RxxV3=RxxV2clean(antIdx,antIdx);
+end
 tRxxV3=zeros(1,Nant-Nref,Nant-Nref,2); 
 tRxxV3(1,:,:,1)=RxxV3;
 tRxxV3(1,:,:,2)=RxxV3;
@@ -79,13 +92,17 @@ tRxxV3(1,:,:,2)=RxxV3;
 
 %% Apply the subtraction method to Model2 data
 
-[briggsResult,genericResult]=subspcrfi_subtraction(tRxxV2, refIdx);
-if 1, cRxxV2=genericResult; else cRxxV2=briggsResult; end
+[briggsResult,genericResult]=subspcrfi_subtraction(tRxxV2, refIdx, RxxV3);
+if ~(show_briggs), 
+    cRxxV2=genericResult; 
+else
+    cRxxV2=briggsResult; 
+end
 
 sub_briggs = squeeze(briggsResult(1,:,:,1));
 sub_generic = squeeze(genericResult(1,:,:,1));
-error_br_vs_noRfi = abs(sub_briggs(antIdx,antIdx)) - abs(RxxV3);
-error_gen_vs_noRfi = abs(sub_generic(antIdx,antIdx)) - abs(RxxV3);
+error_br_vs_noRfi = abs(sub_briggs(antIdx,antIdx) - RxxV3);
+error_gen_vs_noRfi = abs(sub_generic(antIdx,antIdx) - RxxV3);
 
 %% Apply nulling to Model1 data, and Model2 excluding reference antennas
 
@@ -127,7 +144,7 @@ if 1,
 %% Plotting
 
     fnr=1;
-    if 1,
+    if 0,
         figure(fnr);fnr=fnr+1;clf;
         if (do_subplot), subplot(2,1,1); end
         surf(abs(squeeze(tRxxV2(1,:,:,1)))), 
@@ -147,17 +164,19 @@ if 1,
         cscale=caxis();
 
         if 1,
-            % img_delta = img_M2_subtr ./ (max(max(img_M2_subtr))) - img_M1_norfi ./ (max(max(img_M1_norfi)));
-            img_delta = img_M2_subtr - img_M1_norfi;
-            if (do_subplot), subplot(2,2,2); else figure(fnr);fnr=fnr+1;clf; end
-            surf(abs(img_delta)), view([45 45]), axis tight,
-            title(['Delta of abs(UV Subtracted - UV Without Added RFI) w/o ref ant ' refIdxStr]);
-        else
-            % img_delta = img_M2_subtr ./ (max(max(img_M2_subtr))) - img_M2_nulled ./ (max(max(img_M2_nulled)));
-            img_delta = img_M2_subtr-img_M2_nulled;
-            if (do_subplot), subplot(2,2,2); else figure(fnr);fnr=fnr+1;clf; end
-            surf(abs(img_delta)), view([45 45]), axis tight,
-            title(['Delta of abs(UV Subtracted - UV Nulled) w/o ref ant ' refIdxStr]);
+            if 1,
+                % img_delta = img_M2_subtr ./ (max(max(img_M2_subtr))) - img_M1_norfi ./ (max(max(img_M1_norfi)));
+                img_delta = img_M2_subtr - img_M1_norfi;
+                if (do_subplot), subplot(2,2,2); else figure(fnr);fnr=fnr+1;clf; end
+                surf(abs(img_delta)), view([45 45]), axis tight,
+                title(['Delta of abs(UV Subtracted - UV Without Added RFI) w/o ref ant ' refIdxStr]);
+            else
+                % img_delta = img_M2_subtr ./ (max(max(img_M2_subtr))) - img_M2_nulled ./ (max(max(img_M2_nulled)));
+                img_delta = img_M2_subtr-img_M2_nulled;
+                if (do_subplot), subplot(2,2,2); else figure(fnr);fnr=fnr+1;clf; end
+                surf(abs(img_delta)), view([45 45]), axis tight,
+                title(['Delta of abs(UV Subtracted - UV Nulled) w/o ref ant ' refIdxStr]);
+            end
         end
 
         if (do_subplot), subplot(2,2,3); else figure(fnr);fnr=fnr+1;clf; end
@@ -171,7 +190,7 @@ if 1,
         %axis(cscale);
     end
 
-    if 1,
+    if 0,
         figure(fnr);fnr=fnr+1;clf;
         subplot(1,2,1),
             surf(error_gen_vs_noRfi);
