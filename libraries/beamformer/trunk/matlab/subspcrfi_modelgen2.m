@@ -16,6 +16,7 @@
 % refant_gain = 1x1 gain of reference versus astro elements (often >1e3)
 % ac_noise_pwr = 1x1 = sigma^2 noise power of every array element
 % xc_noise_pwr = 1x1 = optional, power of correlated noise accross all elems
+% ref_ac_pwr = 1x1 = sigma^2 noise power of every reference antenna
 %
 % Angles: theta is plane tilt from array zenith, phi is azimuth.
 %         Values are in degrees.
@@ -30,10 +31,11 @@
 % surf(abs(Rxx));
 % [vv,ee]=eig(Rxx); Nsrc=subspcrfi_MDLrank(diag(ee),1)
 
-function [Rxx,x]=subspcrfi_modelgen2(lambda, elempos, src_dirpwr, rfi_dirpwr, refant_indices, refant_gain, ac_noise_pwr, xc_noise_pwr)
+function [Rxx,x,Rxx_clean]=subspcrfi_modelgen2(lambda, elempos, src_dirpwr, rfi_dirpwr, refant_indices, refant_gain, ac_noise_pwr, xc_noise_pwr, ref_ac_pwr)
 
   % Derived data
   Nant = size(elempos,2);
+  Nref = max(size(refant_indices));
   Nsrc = size(src_dirpwr,1);
   Nrfi = size(rfi_dirpwr,1);
   srcant_indices = 1:Nant;
@@ -59,8 +61,10 @@ function [Rxx,x]=subspcrfi_modelgen2(lambda, elempos, src_dirpwr, rfi_dirpwr, re
   
   % Signals before beamforming (no weighting and summation applied)
   sig_at_elems = zeros(1, Nant);
-  sig_tmp = zeros(1, Nant);
-  Rxx = zeros(Nant, Nant);
+  sig_tmp   = zeros(1, Nant);
+  Rxx_astro = zeros(Nant, Nant);
+  Rxx_rfi   = zeros(Nant, Nant);
+  Rxx_noise = zeros(Nant, Nant);
   
   % Covariance of RFI signals
   % for reference antennas, we add E<g*I,g*I> into the 2x2 submatrix
@@ -69,14 +73,14 @@ function [Rxx,x]=subspcrfi_modelgen2(lambda, elempos, src_dirpwr, rfi_dirpwr, re
       % weak RFI signal seen by array
       sig_astrorfi = rfi_dirpwr(kk,3) * vk_rfi(kk,:);
       % seen at high gain by reference antennas
-      sig_ref = refant_gain * sig_astrorfi;
+      sig_ref = sqrt(refant_gain) * sig_astrorfi;
       % assemble into single vector [ gI, gI, I, I, I, ..., I ]
       sig_tmp(refant_indices) = sig_ref(refant_indices);
       sig_tmp(srcant_indices) = sig_astrorfi(srcant_indices);
       sig_at_elems = sig_at_elems + sig_tmp;
       % Add to Rxx: assume signals uncorrelated, E<X,X*> = E<x0,x0*> + E<x1,x1*> + ...
       % This adds E<gI,gI> of Reference and E<I,I> of array
-      Rxx = Rxx + conj(transpose(sig_tmp))*sig_tmp;
+      Rxx_rfi = Rxx_rfi + conj(transpose(sig_tmp))*sig_tmp;
   end
 
   % Covariance of non-RFI source signals
@@ -91,21 +95,31 @@ function [Rxx,x]=subspcrfi_modelgen2(lambda, elempos, src_dirpwr, rfi_dirpwr, re
       sig_at_elems = sig_at_elems + sig_tmp;
       % Add to Rxx: assume signals uncorrelated, E<X,X*> = E<x0,x0*> + E<x1,x1*> + ...
       % This adds E<S,S> of array
-      Rxx = Rxx + conj(transpose(sig_tmp))*sig_tmp;
+      Rxx_astro = Rxx_astro + conj(transpose(sig_tmp))*sig_tmp;
   end
   
   % Add element-internal noise power to autocorrelations
+  % Assume reference antenna systems are 'refant_gain' times more noisy.
   if (ac_noise_pwr>0),
-    Rxx = Rxx + eye(Nant,Nant)*ac_noise_pwr;
-    sig_at_elems = sig_at_elems + ac_noise_pwr*rand(size(sig_at_elems));
+    noise = ones(Nant,1)*ac_noise_pwr;
+    noiseRef = ones(Nant,1)*ref_ac_pwr;
+    noise(refant_indices) = noiseRef(refant_indices);
+    Rxx_noise = Rxx_noise + diag(noise);
+    snoise = ac_noise_pwr*rand(size(sig_at_elems));
+    snoiseRef = ref_ac_pwr*rand(size(sig_at_elems));
+    snoise(refant_indices)= snoiseRef(refant_indices);
+    sig_at_elems = sig_at_elems + snoise;
   end
   
   % Add overall noise using Hermitian matrix
   if (xc_noise_pwr>0),
       Nxx = xc_noise_pwr*(rand(Nant,Nant) + i*rand(Nant,Nant));
       Nxx = Nxx*conj(transpose(Nxx));
-      Rxx = Rxx + Nxx;
+      Rxx_noise = Rxx_noise + Nxx;
   end
   
   x = sig_at_elems;
+
+  Rxx = Rxx_astro + Rxx_noise + Rxx_rfi;
+  Rxx_clean = Rxx_astro + Rxx_noise;
   
