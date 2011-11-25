@@ -243,6 +243,7 @@ double DecompositionAnalyzer::get3Sigma(int channel, const int Ndiscard, int& ra
       // Sort and discard some of the lowest values if requested
       eigs = arma::sort((arma::Col<bf::real> const)eigs_unsorted, /*0=asc,1=desc*/1);
       if (Ndiscard > 0) {
+         if (unsigned(Ndiscard) >= eigs.n_elem) { return 0; }
          eigs = eigs.subvec(0, eigs.n_elem - Ndiscard - 1);
       }
 
@@ -293,6 +294,7 @@ double DecompositionAnalyzer::get3MAD(int channel, const int Ndiscard, int& rank
       // Sort and discard some of the lowest values if requested
       eigs = arma::sort((arma::Col<bf::real> const)eigs_unsorted, /*0=asc,1=desc*/1);
       if (Ndiscard > 0) {
+         if (unsigned(Ndiscard) >= eigs.n_elem) { return 0; }
          eigs = eigs.subvec(0, eigs.n_elem - Ndiscard - 1);
       }
 

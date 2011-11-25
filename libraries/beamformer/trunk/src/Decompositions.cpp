@@ -126,13 +126,14 @@ int EVDecomposition::do_decomposition(const int sliceNr, arma::Mat<bf::complex> 
 int EVDecomposition::do_recomposition(const int sliceNr, arma::Mat<bf::complex>& Rxx)
 {
 
-   // Rxx = eigvecs * diagmat(eigvals) * inv(eigvecs)
+   // general Rxx:   Rxx = eigvecs * diagmat(eigvals) * inv(eigvecs)
+   // hermitian Rxx: Rxx = eigvecs * diagmat(eigvals) * trans(eigvecs) ; eigvecs is unitary (A unitary <=> inv(A)==A')
 
    if (sliceNr == 0) {
-      Rxx = _single_out_matrices[0] * arma::diagmat(_single_out_vector) * arma::inv(_single_out_matrices[0]);
+      Rxx = _single_out_matrices[0] * arma::diagmat(_single_out_vector) * arma::trans(_single_out_matrices[0]);
    } else {
       int c = sliceNr - 1;
-      Rxx = _batch_out_matrices[0].slice(c) * arma::diagmat(_batch_out_vectors.col(c)) * arma::inv(_batch_out_matrices[0].slice(c));
+      Rxx = _batch_out_matrices[0].slice(c) * arma::diagmat(_batch_out_vectors.col(c)) * arma::trans(_batch_out_matrices[0].slice(c));
    }
 
    return 0;
@@ -240,12 +241,12 @@ std::ostream &operator<<(std::ostream& os, EVDecomposition const& d)
 std::ostream &operator<<(std::ostream& os, SVDecomposition const& d)
 {
    if (d.N_chan <= 1) {
-      os << "Single channel EVD decomposition\n";
+      os << "Single channel SVD decomposition\n";
       os << "U=\n" << d._single_out_matrices[0]
          << "V=\n" << d._single_out_matrices[1]
          << "D=\n" << arma::trans(d._single_out_vector);
    } else {
-      os << "Multi-channel EVD decomposition with " << d.N_chan << " channels\n";
+      os << "Multi-channel SVD decomposition with " << d.N_chan << " channels\n";
       for (int cc=0; cc<d.N_chan; cc++) {
          os << "U[" << cc << "]=\n" << d._batch_out_matrices[0].slice(cc)
             << "V[" << cc << "]=\n" << d._batch_out_matrices[1].slice(cc)
