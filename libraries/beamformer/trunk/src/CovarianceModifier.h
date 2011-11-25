@@ -115,9 +115,10 @@ class CovarianceModifier {
        * @param[in] Nrfi    Expected number of strong RFI signals per channel
        * @param[in] startch First channel 0..Nch-1 to process
        * @param[in] endch   Last channel 0..Nch-1 to process (inclusive)
+       * @param[in] method  Method to use in generic subtraction (0=Veen(default), 1=Gen2, other=Gen3)
        * @return Returns 0 on success
        */
-      int templateSubtraction(arma::Col<int> const& Iref, const int Nrfi, const int startch, const int endch);
+      int templateSubtraction(arma::Col<int> const& Iref, const int Nrfi, const int startch, const int endch, const int method = 0);
 
    private:
       Covariance& _cov;

@@ -87,9 +87,10 @@ int CovarianceModifier::templateSubtraction(arma::Col<int> const& Iref, const in
  * @param[in] Nrfi    Expected number of strong RFI signals per channel
  * @param[in] startch First channel 0..Nch-1 to process
  * @param[in] endch   Last channel 0..Nch-1 to process (inclusive)
+ * @param[in] method  Method to use in generic subtraction (0=Veen(default), 1=Gen2, other=Gen3)
  * @return Returns 0 on success
  */
-int CovarianceModifier::templateSubtraction(arma::Col<int> const& Iref, const int Nrfi, const int startch, const int endch)
+int CovarianceModifier::templateSubtraction(arma::Col<int> const& Iref, const int Nrfi, const int startch, const int endch, const int method)
 {
    int Nant = _cov.N_ant();
    int Nref = Iref.n_elem;
@@ -129,6 +130,7 @@ int CovarianceModifier::templateSubtraction(arma::Col<int> const& Iref, const in
       arma::Mat<bf::complex> R11;
       arma::Mat<bf::complex> R01;
       arma::Mat<bf::complex> R10;
+      arma::Mat<bf::complex> A;
       R00.zeros(Nast, Nast);
       R11.zeros(Nref, Nref);
       R01.zeros(Nast, Nref);
@@ -149,10 +151,27 @@ int CovarianceModifier::templateSubtraction(arma::Col<int> const& Iref, const in
          }
 
          // Compute clean "R00 - (R01*(inv(R11)))*R10" where unfortunately the 2nd term is not 100% Hermitian
-         R01 = _cov._Rxx.slice(cc).submat( arma::span(Nref, Nant-1), arma::span(0,    Nref-1) ); 
-         R10 = _cov._Rxx.slice(cc).submat( arma::span(0,    Nref-1), arma::span(Nref, Nant-1) ); 
-         _cov._Rxx.slice(cc).submat( arma::span(Nref, Nant-1), arma::span(Nref, Nant-1) )     
-            -= (R01 * arma::inv(R11)) * R10;
+         switch (method) {
+            case 0:
+               R01 = _cov._Rxx.slice(cc).submat( arma::span(Nref, Nant-1), arma::span(0,    Nref-1) ); 
+               R10 = _cov._Rxx.slice(cc).submat( arma::span(0,    Nref-1), arma::span(Nref, Nant-1) ); 
+               _cov._Rxx.slice(cc).submat( arma::span(Nref, Nant-1), arma::span(Nref, Nant-1) )     
+                  -= (R01 * arma::inv(R11)) * R10;
+               break;
+            case 1:
+               R01 = _cov._Rxx.slice(cc).submat( arma::span(Nref, Nant-1), arma::span(0,    Nref-1) ); 
+               R10 = _cov._Rxx.slice(cc).submat( arma::span(0,    Nref-1), arma::span(Nref, Nant-1) ); 
+               A = R10 * arma::pinv(R00) * R01;
+               _cov._Rxx.slice(cc).submat( arma::span(Nref, Nant-1), arma::span(Nref, Nant-1) )
+                  -= ((R01 * arma::pinv(A)) * R10);
+               break;
+            default:
+               R01 = _cov._Rxx.slice(cc).submat( arma::span(Nref, Nant-1), arma::span(0,    Nref-1) ); 
+               A = R01 * arma::pinv(R01);
+               _cov._Rxx.slice(cc).submat( arma::span(Nref, Nant-1), arma::span(Nref, Nant-1) )
+                  -= A * R00 * arma::trans(A);
+               break;
+         }
 
          // Note: instead of arma::inv(R11) inverse,
          // may also use a pseudo-inverse e.g. SVD-based pseudo-inverse:
