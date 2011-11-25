@@ -81,6 +81,9 @@ int spec(const char *filename, const char *formatname, int nchan, int nint,
 {
 	struct mark5_stream *ms;
 	double **data, **spec;
+
+	double complex **cdata;
+
 	fftw_complex **zdata, **zx;
 	int c, i, j, status;
 	int chunk, nif;
@@ -90,8 +93,8 @@ int spec(const char *filename, const char *formatname, int nchan, int nint,
 	double re, im;
 	double f, sum;
 	double x, y;
+	int docomplex;
 
-	chunk = 2*nchan;
 
 	total = unpacked = 0;
 
@@ -108,6 +111,21 @@ int spec(const char *filename, const char *formatname, int nchan, int nint,
 
 	mark5_stream_print(ms);
 
+
+	if (ms->complex_decode != 0) 
+	  {
+	    printf("Complex decode\n");
+	    docomplex = 1;
+	  }
+	else
+	  docomplex = 0;
+
+	if (docomplex)
+	  chunk = nchan;
+	else
+	  chunk = 2*nchan;
+
+
 	out = fopen(outfile, "w");
 	if(!out)
 	{
@@ -119,32 +137,28 @@ int spec(const char *filename, const char *formatname, int nchan, int nint,
 
 	nif = ms->nchan;
 
-	data = (double **)malloc(nif*sizeof(double *));
-	spec = (double **)malloc(nif*sizeof(double *));
-	zdata = (fftw_complex **)malloc(nif*sizeof(fftw_complex *));
-	plan = (fftw_plan *)malloc(nif*sizeof(fftw_plan));
-	zx = (fftw_complex **)malloc((nif/2)*sizeof(fftw_complex *));
-	for(i = 0; i < nif; i++)
-	{
-		data[i] = (double *)malloc((chunk+2)*sizeof(double));
+	if (docomplex) {
+	  cdata = (double complex **)malloc(nif*sizeof(double complex *));
+	  spec = (double **)malloc(nif*sizeof(double *));
+	  zdata = (fftw_complex **)malloc(nif*sizeof(fftw_complex *));
+	  plan = (fftw_plan *)malloc(nif*sizeof(fftw_plan));
+	  zx = (fftw_complex **)malloc((nif/2)*sizeof(fftw_complex *));
+	  for(i = 0; i < nif; i++)
+	  {
+		cdata[i] = (double complex*)malloc(nchan*sizeof(double complex));
 		spec[i] = (double *)calloc(nchan, sizeof(double));
-		zdata[i] = (fftw_complex *)malloc((nchan+1)*sizeof(fftw_complex));
-		plan[i] = fftw_plan_dft_r2c_1d(nchan*2, data[i],
-			(fftw_complex *)zdata[i], FFTW_MEASURE);
-	}
-	for(i = 0; i < nif/2; i++)
-	{
+		zdata[i] = (fftw_complex *)malloc(nchan*sizeof(fftw_complex));
+		plan[i] = fftw_plan_dft_1d(nchan, cdata[i], (fftw_complex *)zdata[i],
+					   FFTW_FORWARD, FFTW_MEASURE);
+	  }
+	  for(i = 0; i < nif/2; i++)
+	  {
 		zx[i] = (fftw_complex *)calloc(nchan, sizeof(fftw_complex));
-	}
+	  }
 
-	for(j = 0; j < nint; j++)
-	{
-		if(die)
-		{
-			break;
-		}
-
-		status = mark5_stream_decode_double(ms, chunk, data);
+	  for(j = 0; j < nint; j++)
+	  {
+	    status = mark5_stream_decode_double_complex(ms, chunk , (double complex**)cdata);
 		
 		if(status < 0)
 		{
@@ -184,6 +198,76 @@ int spec(const char *filename, const char *formatname, int nchan, int nint,
 				zx[i][c] += zdata[2*i][c]*~zdata[2*i+1][c];
 			}
 		}
+	  }
+
+	} else {
+
+	  data = (double **)malloc(nif*sizeof(double *));
+	  spec = (double **)malloc(nif*sizeof(double *));
+	  zdata = (fftw_complex **)malloc(nif*sizeof(fftw_complex *));
+	  plan = (fftw_plan *)malloc(nif*sizeof(fftw_plan));
+	  zx = (fftw_complex **)malloc((nif/2)*sizeof(fftw_complex *));
+	  for(i = 0; i < nif; i++)
+	    {
+	      data[i] = (double *)malloc((chunk+2)*sizeof(double));
+	      spec[i] = (double *)calloc(nchan, sizeof(double));
+	      zdata[i] = (fftw_complex *)malloc((nchan+1)*sizeof(fftw_complex));
+	      plan[i] = fftw_plan_dft_r2c_1d(nchan*2, data[i],
+					     (fftw_complex *)zdata[i], FFTW_MEASURE);
+	    }
+	  for(i = 0; i < nif/2; i++)
+	    {
+	      zx[i] = (fftw_complex *)calloc(nchan, sizeof(fftw_complex));
+	    }
+	  
+	  for(j = 0; j < nint; j++)
+	    {
+	      if(die)
+		{
+		  break;
+		}
+
+	      status = mark5_stream_decode_double(ms, chunk, data);
+	      
+	      if(status < 0)
+		{
+		  break;
+		}
+	      else
+		{
+		  total += chunk;
+		  unpacked += status;
+		}
+	      
+	      if(ms->consecutivefails > 5)
+		{
+		  break;
+		}
+	      
+	      for(i = 0; i < nif; i++)
+		{
+		  /* FFT */
+		  fftw_execute(plan[i]);
+		}
+	      
+	      for(i = 0; i < nif; i++)
+		{
+		  for(c = 0; c < nchan; c++)
+		    {
+		      re = creal(zdata[i][c]);
+		      im = cimag(zdata[i][c]);
+		      spec[i][c] += re*re + im*im;
+		    }
+		}
+	      
+	      for(i = 0; i < nif/2; i++)
+		{
+		  for(c = 0; c < nchan; c++)
+		    {
+				zx[i][c] += zdata[2*i][c]*~zdata[2*i+1][c];
+		    }
+		}
+	    }
 	}
 
 	fprintf(stderr, "%Ld / %Ld samples unpacked\n", unpacked, total);
@@ -218,22 +302,27 @@ int spec(const char *filename, const char *formatname, int nchan, int nint,
 
 	fclose(out);
 
-	for(i = 0; i < nif; i++)
-	{
+	if (docomplex) {
+
+	} else {
+
+	  for(i = 0; i < nif; i++)
+	    {
 		free(data[i]);
 		free(zdata[i]);
 		free(spec[i]);
 		fftw_destroy_plan(plan[i]);
-	}
-	for(i = 0; i < nif/2; i++)
-	{
+	    }
+	  for(i = 0; i < nif/2; i++)
+	    {
 		free(zx[i]);
+	    }
+	  free(zx);
+	  free(data);
+	  free(zdata);
+	  free(spec);
+	  free(plan);
 	}
-	free(zx);
-	free(data);
-	free(zdata);
-	free(spec);
-	free(plan);
 
 	delete_mark5_stream(ms);
 
