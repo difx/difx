@@ -275,7 +275,7 @@ int killSuProcesses(int verbose)
 			continue;
 		}
 		timestr[2] = timestr[5] = 0;
-		t = 3600*atoi(timestr) + 60*atoi(timestr+2) + atoi(timestr+5);
+		t = 3600*atoi(timestr) + 60*atoi(timestr+3) + atoi(timestr+6);
 		if(t > 100)
 		{
 			n = snprintf(cmd, MaxCmdLen, "kill -9 %d", pid);
