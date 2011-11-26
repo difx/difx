@@ -10,6 +10,7 @@ streamstor_sources =
 endif
 
 bin_PROGRAMS = \
+	sukill \
 	mk5daemon
 
 mk5daemon_SOURCES = \
@@ -29,4 +30,9 @@ mk5daemon_SOURCES = \
 	mk5daemon.cpp \
 	mk5daemon.h \
 	$(streamstor_sources)
+
+sukill_SOURCES = \
+	proc.cpp \
+	proc.h \
+	sukill.c
 	

@@ -81,6 +81,8 @@ static void usage(const char *pgm)
 	printf("  -h             Print this help message\n\n");
 	printf("  --verbose\n");
 	printf("  -v             Be more verbose\n\n");
+	printf("  --quiet\n");
+	printf("  -q             Be more verbose\n\n");
 	printf("  --force\n");
 	printf("  -f             Reread directory even if not needed\n\n");
 	printf("  --fast\n");

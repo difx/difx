@@ -932,6 +932,7 @@ int main(int argc, char **argv)
 
 			if( (t % D->loadMonInterval) == 0)
 			{
+#if 0
 				if(D->isHeadNode)
 				{
 					int nKill = killSuProcesses();
@@ -941,6 +942,7 @@ int main(int argc, char **argv)
 						Logger_logData(D->log, message);
 					}
 				}
+#endif
 
 				Mk5Daemon_loadMon(D, mjd);
 			}

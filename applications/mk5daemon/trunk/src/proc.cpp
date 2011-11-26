@@ -207,33 +207,42 @@ int procGetStreamstor(int *busy)
 }
 
 /* returns number of processes killed */
-int killSuProcesses()
+int killSuProcesses(int verbose)
 {
 	const int MaxStrLen=256;
 	const int MaxCmdLen=64;
 	FILE *p;
-	char cmd[] = "ps aux | grep su | grep difxlog";
-	char str[MaxStrLen];
-	char *r;
-	char owner[16], timestr[16];
-	int pid;
-	float pcpu;
+	char cmd[MaxCmdLen];
 	int nKill=0;
-	int n, t;
+	int n;
 
 	n = snprintf(cmd, MaxCmdLen, "ps -C su -o user,pid,pcpu,time");
 	if(n >= MaxCmdLen)
 	{
 		fprintf(stderr, "Warning: MaxCmdLen too small = %d vs. %d\n", MaxCmdLen, n);
 
-		return -1;
+		return -4;
 	}
-	p = popen(cmd, "r");
 
-	str[MaxStrLen-1] = 0;
+	p = popen(cmd, "r");
+	if(!p)
+	{
+		fprintf(stderr, "Error: popen(%s) failed\n", cmd);
+
+		return -3;
+	}
+	
 	for(;;)
 	{
+		int t, v;
+		char *r;
+		int pid;
+		float pcpu;
+		char owner[16], timestr[16];
+		char str[MaxStrLen];
+
 		r = fgets(str, MaxStrLen-1, p);
+		str[MaxStrLen-1] = 0;
 		if(!r)
 		{
 			break;
@@ -242,7 +251,16 @@ int killSuProcesses()
 
 		if(n < 4)
 		{
-			return -2;
+			if(n >= 1 && strcmp(owner, "USER") == 0)
+			{
+				continue;
+			}
+
+			nKill = -2;
+
+			fprintf(stderr, "Parse error: n = %d str='%s'\n", n, str);
+
+			break;
 		}
 		if(strcmp(owner, "root") != 0)
 		{
@@ -265,14 +283,27 @@ int killSuProcesses()
 			{
 				fprintf(stderr, "Warning: MaxCmdLen too small = %d vs. %d\n", MaxCmdLen, n);
 
-				return -1;
+				nKill = -1;
+
+				break;
 			}
-			if(system(cmd) != -1)
+			if(verbose > 1)
+			{
+				printf("Executing: %s\n", cmd);
+			}
+			v = system(cmd);
+			if(verbose > 1)
+			{
+				printf("Return value = %d\n", v);
+			}
+			if(v != -1 && v != 256)
 			{
 				++nKill;
 			}
 		}
 	}
+
+	pclose(p);
 
 	return nKill;
 }
