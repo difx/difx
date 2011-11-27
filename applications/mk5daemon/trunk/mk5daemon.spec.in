@@ -1,7 +1,7 @@
 Summary: Mark5 utilities for the DiFX suite
 Name: mk5daemon
 Version: @version@
-Release: 10
+Release: 11
 License: GPL3
 Group: VLBI
 BuildRoot: /var/tmp/mk5daemon-@version@-buildroot
@@ -26,9 +26,9 @@ make
 %makeinstall
 
 %files
+/usr/bin/checkdir
 /usr/bin/fileto5c
 /usr/bin/mk5daemon
-/usr/bin/checkdir
 /usr/bin/mk5cat
 /usr/bin/mk5control
 /usr/bin/mk5cp
@@ -38,6 +38,7 @@ make
 /usr/bin/mk5map
 /usr/bin/record5c
 /usr/bin/recover
+/usr/bin/sukill
 /usr/bin/testmod
 /usr/bin/vsn
 

@@ -100,7 +100,7 @@ void siginthand(int j)
 }
 
 /* decode5B was taken straight from the DRS source code.  This code is originally (C) 2010 Walter Brisken */
-static int decode5B(SSHANDLE xlrDevice, unsigned long long pointer, int framesToRead, unsigned long long *timeBCD, int *firstFrame, int *byteOffset, int *headerMJD, int *headerSeconds)
+static int decode5B(SSHANDLE xlrDevice, long long pointer, int framesToRead, unsigned long long *timeBCD, int *firstFrame, int *byteOffset, int *headerMJD, int *headerSeconds)
 {
 	int bufferSize;
 	PUINT32 buffer;
@@ -242,12 +242,12 @@ static int decode5B(SSHANDLE xlrDevice, unsigned long long pointer, int framesTo
 				((h/10) << 20);
 			for(int k = 0; k < 3; ++k)
 			{
-				*timeBCD += (unsigned long long)(doy % 10) << (24+4*k);
+				*timeBCD += static_cast<unsigned long long>(doy % 10) << (24+4*k);
 				doy /= 10;
 			}
 			for(int k = 0; k < 4; ++k)
 			{
-				*timeBCD += (unsigned long long)(yr % 10) << (36+4*k);
+				*timeBCD += static_cast<unsigned long long>(yr % 10) << (36+4*k);
 				yr /= 10;
 			}
 		}
@@ -329,7 +329,7 @@ static void printBankStat(int bank, const S_BANKSTATUS *bankStat, DifxMessageMk5
 	fflush(stdout);
 }
 
-static int decodeScan(SSHANDLE xlrDevice, unsigned long long startByte, unsigned long long stopByte,
+static int decodeScan(SSHANDLE xlrDevice, long long startByte, long long stopByte,
 	struct Mark5DirectoryScanHeaderVer1 *p, struct Mark5DirectoryLegacyBodyVer1 *q)
 {
 	int frame, byteOffset;
@@ -345,7 +345,7 @@ static int decodeScan(SSHANDLE xlrDevice, unsigned long long startByte, unsigned
 		long long words;
 		int samplesPerWord;
 		double deltat;
-		unsigned long long length = p->stopByte - p->startByte;
+		long long length = p->stopByte - p->startByte;
 
 		for(int i = 0; i < 8; ++i)
 		{
@@ -392,7 +392,7 @@ static int decodeScan(SSHANDLE xlrDevice, unsigned long long startByte, unsigned
 	return 0;
 }
 
-static int fileto(const char *filename, int bank, const char *label, unsigned int chunkSizeMB, unsigned long long maxBytes, double maxSeconds, const int *statsRange, DifxMessageMk5Status *mk5status, int verbose)
+static int fileto(const char *filename, int bank, const char *label, unsigned int chunkSizeMB, long long maxBytes, double maxSeconds, const int *statsRange, DifxMessageMk5Status *mk5status, int verbose)
 {
 	FILE *in;
 	SSHANDLE xlrDevice;
@@ -406,8 +406,8 @@ static int fileto(const char *filename, int bank, const char *label, unsigned in
 	char vsn[XLR_LABEL_LENGTH+1];
 	int moduleStatus = MODULE_STATUS_UNKNOWN;
 	int v;
-	unsigned long long ptr;	/* record pointer */
-	unsigned long long startByte;
+	long long ptr;	/* record pointer */
+	long long startByte;
 	struct Mark5DirectoryHeaderVer1 *dirHeader;
 	struct Mark5DirectoryScanHeaderVer1 *p;
 	struct Mark5DirectoryLegacyBodyVer1 *q;

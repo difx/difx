@@ -34,5 +34,5 @@ mk5daemon_SOURCES = \
 sukill_SOURCES = \
 	proc.cpp \
 	proc.h \
-	sukill.c
+	sukill.cpp
 	

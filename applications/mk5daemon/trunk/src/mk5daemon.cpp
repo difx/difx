@@ -30,6 +30,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <cerrno>
 #include <string>
 #include <algorithm>
 #include <unistd.h>
@@ -681,8 +682,9 @@ void handleAcceptMessage(Mk5Daemon *D)
 	
 	if(newSock < 0)
 	{
-		snprintf(message, DIFX_MESSAGE_LENGTH, "VSI-S accept failure%d\n", newSock);
+		snprintf(message, DIFX_MESSAGE_LENGTH, "VSI-S accept failure: return=%d D->acceptSock=%d errno=%d error=%s\n", newSock, D->acceptSock, errno, strerror(errno));
 		Logger_logData(D->log, message);
+		sleep(2);
 	}
 	else
 	{
@@ -932,17 +934,15 @@ int main(int argc, char **argv)
 
 			if( (t % D->loadMonInterval) == 0)
 			{
-#if 0
 				if(D->isHeadNode)
 				{
-					int nKill = killSuProcesses();
+					int nKill = killSuProcesses(1);
 					if(nKill > 0)
 					{
 						snprintf(message, DIFX_MESSAGE_LENGTH, "Killed %d rogue su processes\n", nKill);
 						Logger_logData(D->log, message);
 					}
 				}
-#endif
 
 				Mk5Daemon_loadMon(D, mjd);
 			}

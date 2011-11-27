@@ -266,17 +266,13 @@ int killSuProcesses(int verbose)
 		{
 			continue;
 		}
-		if(pcpu < 90)
-		{
-			continue;
-		}
 		if(strlen(timestr) != 8 || timestr[2] != ':' || timestr[5] != ':')
 		{
 			continue;
 		}
 		timestr[2] = timestr[5] = 0;
 		t = 3600*atoi(timestr) + 60*atoi(timestr+3) + atoi(timestr+6);
-		if(t > 100)
+		if((t > 100 && pcpu >= 90) || t > 1000)
 		{
 			n = snprintf(cmd, MaxCmdLen, "kill -9 %d", pid);
 			if(n >= MaxCmdLen)
