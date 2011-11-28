@@ -2096,7 +2096,7 @@ fcreate_if_def__
 #else
 fcreate_if_def
 #endif
-(str, str2, str3, str4, str5, str6, str7, str8, str9,str10)
+(str, str2, str3, str4, str5, str6, str7, str8, str9,str10, str11)
 char **str;
 char **str2;
 char **str3;
@@ -2107,6 +2107,7 @@ char **str7;
 char **str8;
 char **str9;
 char **str10;
+char **str11;
 /*<      subroutine fcreate_if_def(ptr_ch(str)//(char *)0, >*/
 /*<                                ptr_ch(str2)//(char *)0, >*/
 /*<                                ptr_ch(str3)//(char *)0, >*/
@@ -2156,7 +2157,8 @@ char **str10;
 		*str7,
 		*str8,
 		*str9,
-		*str10);
+		*str10,
+		*str11);
   return;
 }
 /* ----------------------------------------------------------------------- */
