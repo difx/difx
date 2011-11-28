@@ -197,6 +197,9 @@ public:
 	char ifSideBand;	// U or L
 	char pol;		// R or L
 	int phaseCalIntervalMHz; // MHz, typically 1 or 5 (or 0 if none)
+
+        // special values needed for VLBA, extracted from comment line
+        string comment;
 };
 
 class VexSetup	// Container for all antenna-specific settings
