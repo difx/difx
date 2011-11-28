@@ -317,31 +317,97 @@ int pystream::writeLoifTable(const VexData *V)
 
 		if(currenttype == VLBA)
 		{
-                        if(m == 0) {
-                            init_channels = F.channels.size();
-                        } else if( init_channels != F.channels.size() ) {
-                            cerr << "number of channels from " << init_channels << " initially to " << F.channels.size() << " which is currently not supported." << endl; 
-                            exit(EXIT_FAILURE);
-                        }
+			if(m == 0) {
+				init_channels = F.channels.size();
+			} else if( init_channels != F.channels.size() ) {
+				// TODO is this really a problem?
+				cerr << "number of channels from " << init_channels << " initially to " << F.channels.size() << " which is currently not supported." << endl; 
+			}
 
 			if(setup->ifs.size() > 2)
 			{
 				cout << "Warning: mode " << mode->defName << " wants " << setup->ifs.size() << " IFs, and we can currently only use 2" << endl;
+				cout << "Might be ok for S/X setup or wideband Cband receiver" << endl;
 			}
 
 			*this << "loif" << m << " = VLBALoIfSetup()" << endl;
 			for(it = setup->ifs.begin(); it != setup->ifs.end(); ++it)
 			{
 				const VexIF &i = it->second;
-				*this << "loif" << m << ".setIf('" << i.name << "', '" << i.VLBABandName() << "', '" << i.pol << "', " << (i.ifSSLO/1.0e6) << ", '" << i.ifSideBand << "')" << endl;
-			}
-			*this << "loif" << m << ".setPhaseCal(" << (setup->phaseCalIntervalMHz()) << ")" << endl;
-                        // auto gain/attenuation control
-                        *this << "loif" << m << ".setDBEParams(0, -1, -1, 10, 0)" << endl;
-                        *this << "loif" << m << ".setDBEParams(1, -1, -1, 10, 0)" << endl;
+                char comment[256] = {0};
+                *this << "loif" << m << ".setIf('" << i.name << "', '" << i.VLBABandName() << "', '" << i.pol << "', " << (i.ifSSLO / 1.0e6)
+                        << ", '" << i.ifSideBand << "'";
 
-                        *this << "loif" << m << ".setDBERemember(0, 1)" << endl;
-                        *this << "loif" << m << ".setDBERemember(1, 1)" << endl;
+                strncpy(comment, i.comment.c_str(), 255);
+                if (comment[0] != '\0') {
+                    int len = strlen(comment);
+                    int off = 1;
+                    int field_count = 0;
+                    // parse BACKWARDS from end of string for three space-separated tokens
+                    // comment format: * [other comments] [{receiver} {FirstLO} {BROAD|NARROW|NA}]
+                    // trailing spaces are permitted
+                    while (field_count <= 2
+                            && off < len) {
+                        // remove trailing WS
+//                                    printf("removing WS\n");
+                        while (comment[len - off] == ' ' || comment[len - off] == '\t') {
+//                            printf("len: %i -- off: %i -- str: <%s>\n", len, off, (&comment[len - off]));
+                            off++;
+                        }
+                        // terminate string and advance offset past WS
+                        comment[len - (off - 1)] = '\0';
+                        off++;
+//                        printf("parsing field %i\n", field_count);
+                        while (comment[len - off] != ' '
+                                && comment[len - off] != '\t'
+                                && off < len) {
+//                            printf( "char >%c<\n", startOfComment[len-off] );
+//                            printf("len: %i -- off: %i -- str: <%s>\n", len, off, (&comment[len - off]));
+                            off++;
+                        }
+                        if (field_count == 0) {
+                            //check format of comment
+                            if (strcmp("BROAD", &(comment[len - off + 1])) != 0
+                                    && strcmp("NARROW", &(comment[len - off + 1])) != 0
+                                    && strcmp("NA", &(comment[len - off + 1])) != 0) {
+                                // comment doesn't fit our "special format", don't process
+                                field_count = 3;
+                                continue;
+                            }
+                        }
+                        // assign value to proper field
+                        switch (field_count) {
+                                // filter
+                            case 0: * this << ", '" << &(comment[len - off + 1]) << "'";
+                                field_count++;
+                                break;
+                                // firstLO
+                            case 1: * this << ", " << atoi(&comment[len - off + 1]);
+                                field_count++;
+                                break;
+                                // receiver
+                            case 2: * this << ", '" << &(comment[len - off + 1]) << "'";
+                                field_count++;
+                                break;
+                        }
+                        // terminate partial string
+                        comment[len - off] = '\0';
+                        off++;
+//                        printf("remaining comment: >%s<\n", comment);
+                    }
+                } else { // no comment to process
+                }
+
+                // close statement
+                *this << ")" << endl;
+            }
+			*this << "loif" << m << ".setPhaseCal(" << (setup->phaseCalIntervalMHz()) << ")" << endl;
+			// auto gain/attenuation control
+			*this << "loif" << m << ".setDBEParams(0, -1, -1, 10, 0)" << endl;
+			*this << "loif" << m << ".setDBEParams(1, -1, -1, 10, 0)" << endl;
+
+			*this << "loif" << m << ".setDBERemember(0, 1)" << endl;
+			*this << "loif" << m << ".setDBERemember(1, 1)" << endl;
 
 			*this << "channelSet" << m << " = [ \\" << endl;
 
@@ -560,17 +626,17 @@ int pystream::writeScans(const VexData *V)
 			const VexInterval *arange = &scan->stations.find(ant)->second;
 
 			int modeId = V->getModeIdByDefName(scan->modeDefName);
+			const VexMode* mode = V->getModeByDefName(scan->modeDefName);
+			const VexSetup* setup = mode->getSetup(ant);
+			const VexFormat F = setup->format;
 			if(modeId != lastModeId)
 			{
-				const VexMode* mode = V->getModeByDefName(scan->modeDefName);
 
 				if(mode == 0)
 				{
 					cerr << "Error: scan=" << scan->defName << " ant=" << ant << " mode=" << scan->modeDefName << " -> mode=0" << endl;
 					continue;
 				}
-
-				const VexSetup* setup = mode->getSetup(ant);
 
 				if(setup == 0)
 				{
@@ -592,8 +658,7 @@ int pystream::writeScans(const VexData *V)
 							*this << "subarray.set4x4Switch('" << switchOutput[ifit->second] << "', " << switchPosition(ifit->first.c_str()) << ")" << endl;
 						}
 					}
-
-					*this << "dbe0.setChannels(channelSet" << modeId << ")" << endl;
+					*this << "subarray.setChannels(dbe0, channelSet" << modeId << ")" << endl;
 				}
 				else if(currenttype == EVLA)
 				{
@@ -615,35 +680,46 @@ int pystream::writeScans(const VexData *V)
 				lastSourceId = sourceId;
 			}
 
-                        // TODO Once we control antenna movements, make sure we do not include antenna movement in
-                        // the setup scan if end time of first scan has already elapsed, so we do not interfere with
-                        // movement of antenna for subsequent scans. We still must execute all other setups steps.
+			// TODO Once we control antenna movements, make sure we do not include antenna movement in
+			// the setup scan if end time of first scan has already elapsed, so we do not interfere with
+			// movement of antenna for subsequent scans. We still must execute all other setups steps.
 			double deltat1 = floor((arange->mjdStart-mjd0)*86400.0 + 0.5);
 			double deltat2 = floor((arange->mjdStop-mjd0)*86400.0 + 0.5);
-	                // execute() at previous stop time minus 5 seconds
+			// execute() at previous stop time minus 5 seconds
+			// arbitrary amount picked to allow commands to get sent to MIBs before they need to get run on MIBs
 			double deltat3 = floor((lastValid-mjd0)*86400.0 + 0.5-5);
-                        // just in case our setup scan caused the auto leveling to lock onto a bad value make
-                        // it forget
-                        // TODO this only works for one RDBE now
-                        if( s == 0 ) {
-                            *this << "dbe0.setDBEForget(0)" << endl;
-                            *this << "dbe0.setDBEForget(1)" << endl;
-                        }
-                        *this << "recorder0.setPacket(0, 0, 40, 5008)" << endl;
+			// just in case our setup scan caused the auto leveling to lock onto a bad value make
+			// it forget
+			// TODO this - like a lot of things - only works for one RDBE now
+			if( s == 0 ) {
+				*this << "dbe0.setDBEForget(0)" << endl;
+				*this << "dbe0.setDBEForget(1)" << endl;
+			}
 			if( s != -1 ) {
-				*this << "subarray.setRecord(mjdStart + " << deltat1 << "*second, mjdStart+" << deltat2 << "*second, '" << scan->defName << "', obsCode, stnCode )" << endl;
-				*this << "if array.time() < mjdStart + " << deltat2 << "*second:" << endl;
-				*this << "  subarray.execute(mjdStart + " << deltat3 << "*second)" << endl;
-				*this << "else:" << endl;
-				*this << "  print \"Skipping scan which ended at time \" + str(mjdStart+" << deltat2 << "*second) + \" since array.time is \" + str(array.time())" << endl;
-				lastValid = arange->mjdStop;
-                        } else {
-				*this << "# Setup scan - run right away, but do not start recording" << endl;
-				*this << "subarray.execute( array.time() )" << endl;
-                        }
-
+				// recognize scans that do not record to Mark5C, but still set switches (need to pass scan start time)
+                if (F.format == "MARK5B") {
+					*this << "recorder0.setPacket(0, 0, 40, 5008)" << endl;
+                    * this << "subarray.setRecord(mjdStart + " << deltat1 << "*second, mjdStart+" << deltat2 \
+						<< "*second, '" << scan->defName << "', obsCode, stnCode )" << endl;
+				}
+                else {
+                    *this << "# Not a recording scan - still set switches" << endl;
+                    *this << "subarray.setSwitches(mjdStart + " << deltat1 << "*second)" << endl;
+				}
+                // only start scan if we are at least 10sec away from scan end
+                // NOTE - if this changes to a value less than 5sec may need to revisit Executor RDBE code
+                // in case of scan starting later than start time
+                *this << "if array.time() < mjdStart + (" << deltat2 << "-10)*second:" << endl;
+                *this << "  subarray.execute(mjdStart + " << deltat3 << "*second)" << endl;
+                *this << "else:" << endl;
+                *this << "  print \"Skipping scan which ended at time \" + str(mjdStart+" << deltat2 \
+					<< "*second) + \" since array.time is \" + str(array.time())" << endl;
+                lastValid = arange->mjdStop;
+            } else {
+                *this << "# Setup scan - run right away, but do not start recording" << endl;
+                *this << "subarray.execute( array.time() )" << endl;
+			}
 		}
-
 		*this << endl;
 	}
 
