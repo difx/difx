@@ -581,7 +581,8 @@ struct headstack_pos *make_headstack_pos(struct dvalue *index,
 struct if_def *make_if_def(char *if_id, char *physical, char *polar,
 			   struct dvalue *lo, char *sb,
 			   struct dvalue *pcal_spacing,
-			   struct dvalue *pcal_base)
+			   struct dvalue *pcal_base,
+			   char *comment)
 {
   NEWSTRUCT(new,if_def);
 
@@ -592,6 +593,7 @@ struct if_def *make_if_def(char *if_id, char *physical, char *polar,
   new->sb=sb;
   new->pcal_spacing=pcal_spacing;
   new->pcal_base=pcal_base;
+  new->comment=comment;
 
   return new;
 }
@@ -1610,6 +1612,9 @@ get_if_def_field(If_def *if_def,int n,int *link,
     *value=if_def->pcal_base->value;
     *units=if_def->pcal_base->units;
     *name=0;
+    break;
+  case 8:
+    *value=if_def->comment;
     break;
   default:
     return -1;
