@@ -1,4 +1,6 @@
 from difxdb.model import model
+from sqlalchemy import desc
+
 
 def experimentExists(session, code):
     '''
@@ -10,6 +12,13 @@ def experimentExists(session, code):
         return(True)
     else:
         return(False)
+
+def getLastExperimentNumber(session):
+    '''
+    Retrieves the highest experiment number assigned so far.
+    '''
+    exp = session.query(model.Experiment.number).order_by(desc(model.Experiment.number)).first()
+    return(exp.number)
     
 def getExperimentByCode(session, code):
     
@@ -26,4 +35,19 @@ def getActiveExperimentCodes(session):
         result.append(instance.code)
         
     return(result)
+ 
+def addExperiment(session, code):
+    '''
+    Adds an experiment to the database.
+    '''
     
+    if (experimentExists(session, code)):
+        return
+
+    experiment = model.Experiment()
+    experiment.code = code
+    experiment.number = int(getLastExperimentNumber(session)) + 1
+    
+
+    session.add(experiment)
+    session.commit()
