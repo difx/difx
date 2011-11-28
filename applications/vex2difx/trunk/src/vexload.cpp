@@ -150,11 +150,7 @@ static int getRecordChannel(const string &antName, const string &chanName, const
 	{
 		return n;
 	}
-/*	else if (F.format == "NONE" )
-	{
-		return -1;
-	}
-*/	else
+	else
 	{
 		cerr << "Error: Antenna=" << antName << " format \"" << F.format << "\" is not yet supported" << endl;
 		cerr << "Contact developer." << endl;
@@ -933,9 +929,6 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 			    p;
 			    p = get_all_lowl_next())
 			{
-
-//				cerr << "ant: " << antName.c_str() << "  mode: " << modeDefName  << " p@: " << p << endl;
-
 				vex_field(T_IF_DEF, p, 1, &link, &name, &value, &units);
 				VexIF &vif = setup.ifs[string(value)];
 
@@ -1001,18 +994,13 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 					exit(EXIT_FAILURE);
 					}
 				}
-//				cerr << "running comment parsing now" << endl;
                 // carry comment forward as it might contain information about IF
-//				cerr << "  ant: " << antName.c_str() << "  mode: " << modeDefName << " p2(@"<<&p2<<"): " << p2 <<endl;
                 vex_field(T_COMMENT, p2, 1, &link, &name, &value, &units);
-//				cerr << "  value(@"<< &value<<"): " << value << "  vif(@"<<&vif<<"): " << vif << endl;
                 if( value ) {
                     vif.comment = value;
                 } else {
                     vif.comment = "\0";
 				}
-//				cerr << "running comment parsing -- DONE" << endl;
-//				cerr << "  comment: >"<< vif.comment << "<" << endl;
 			}
 
 			// Get BBC to pol map for this antenna
@@ -1046,7 +1034,6 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 					{
 						F.format = "MARK5B";
 					}
-					// cerr << "############# format: " << F.format << endl;
 				}
 				else
 				{
