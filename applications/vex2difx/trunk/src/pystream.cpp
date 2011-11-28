@@ -270,7 +270,7 @@ int pystream::writeDbeInit(const VexData *V)
                     else {
                         cerr << "Incorrect number of channels: " << F.channels.size() << endl;
 
-                        exit(EXIT_FAILURE);
+//                        exit(EXIT_FAILURE);
                     }
 		}
                 // use PFB as default for now
