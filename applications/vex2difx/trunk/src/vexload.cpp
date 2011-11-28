@@ -38,6 +38,9 @@
 #include "../vex/vex.h"
 #include "../vex/vex_parse.h"
 
+// maximum number of defined IFs
+#define MAX_IF 4
+
 class Tracks
 {
 public:
@@ -147,7 +150,11 @@ static int getRecordChannel(const string &antName, const string &chanName, const
 	{
 		return n;
 	}
-	else
+/*	else if (F.format == "NONE" )
+	{
+		return -1;
+	}
+*/	else
 	{
 		cerr << "Error: Antenna=" << antName << " format \"" << F.format << "\" is not yet supported" << endl;
 		cerr << "Contact developer." << endl;
@@ -829,7 +836,10 @@ static int getScans(VexData *V, Vex *v, const CorrParams &params)
 static int getModes(VexData *V, Vex *v, const CorrParams &params)
 {
 	VexMode *M;
-	void *p;
+	void *p, *p2;
+    // p2 will hold pointers to the special comments attached to if_def; max of 4
+    void *p2array[MAX_IF];
+    int p2count;
 	char *modeDefName;
 	int link, name;
 	char *value, *units;
@@ -899,11 +909,33 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 
 			M->sampRate = sampRate;
 
+            // init array to all zeroes
+            for( p2count = 0; p2count < MAX_IF; p2count++ )
+                p2array[p2count] = 0;
+			// read all comment fields into array for later processing
+			// NOTE - need to do it this way as the *_lowl_* functions use static vars and we
+			// we can't run this where we actually process the comments as that would mess up
+			// the IF_DEF loop
+			// TODO we assign the comments below to vif.comment; should check if there is a way
+			// to do so here instead of going through this temp array
+            p2count = 0;
+			for(p = get_all_lowl(antName.c_str(), modeDefName, T_COMMENT_TRAILING, B_IF, v);
+			    p;
+			    p = get_all_lowl_next())
+			{
+			    p2array[p2count++] = p;
+            }
+
+            // the collected comments and ifdef fields will always line up, so just run a count
+            p2count = 0;
 			// Derive IF map
 			for(p = get_all_lowl(antName.c_str(), modeDefName, T_IF_DEF, B_IF, v);
 			    p;
 			    p = get_all_lowl_next())
 			{
+
+//				cerr << "ant: " << antName.c_str() << "  mode: " << modeDefName  << " p@: " << p << endl;
+
 				vex_field(T_IF_DEF, p, 1, &link, &name, &value, &units);
 				VexIF &vif = setup.ifs[string(value)];
 
@@ -950,6 +982,37 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 					++nWarn;
 					vif.phaseCalIntervalMHz = static_cast<int>((phaseCal + 0.5)/1000000.0);
 				}
+
+                p2 = p2array[p2count++];
+				if( !p2 ) {
+					// check if this is a VLBA antenna; these require the comments for proper
+					// operation, so exit in that case
+					if( strcmp(antName.c_str(), "Sc") == 0 ||
+						strcmp(antName.c_str(), "Hn") == 0 ||
+						strcmp(antName.c_str(), "Nl") == 0 ||
+						strcmp(antName.c_str(), "Fd") == 0 ||
+						strcmp(antName.c_str(), "La") == 0 ||
+						strcmp(antName.c_str(), "Pt") == 0 ||
+						strcmp(antName.c_str(), "Kp") == 0 ||
+						strcmp(antName.c_str(), "Ov") == 0 ||
+						strcmp(antName.c_str(), "Br") == 0 ||
+						strcmp(antName.c_str(), "Mk") == 0 ) {
+					cerr << "VLBA antenna detected, but no comment for if_def; can't do switching" << endl;
+					exit(EXIT_FAILURE);
+					}
+				}
+//				cerr << "running comment parsing now" << endl;
+                // carry comment forward as it might contain information about IF
+//				cerr << "  ant: " << antName.c_str() << "  mode: " << modeDefName << " p2(@"<<&p2<<"): " << p2 <<endl;
+                vex_field(T_COMMENT, p2, 1, &link, &name, &value, &units);
+//				cerr << "  value(@"<< &value<<"): " << value << "  vif(@"<<&vif<<"): " << vif << endl;
+                if( value ) {
+                    vif.comment = value;
+                } else {
+                    vif.comment = "\0";
+				}
+//				cerr << "running comment parsing -- DONE" << endl;
+//				cerr << "  comment: >"<< vif.comment << "<" << endl;
 			}
 
 			// Get BBC to pol map for this antenna
@@ -983,6 +1046,7 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 					{
 						F.format = "MARK5B";
 					}
+					// cerr << "############# format: " << F.format << endl;
 				}
 				else
 				{
