@@ -42,6 +42,7 @@ const SmartDescription smartDescriptions[] =
 	{ 4,   0, "Start/stop count"},
 	{ 5,   1, "Reallocated sector count"},
 	{ 7,   0, "Seek error count"},
+	{ 8,   0, "Seek time performance"},
 	{ 9,   0, "Power on time (hr)"},
 	{ 10,  1, "Spin retry count"},
 	{ 11,  0, "Recalibration retry count"},
@@ -49,6 +50,7 @@ const SmartDescription smartDescriptions[] =
 	{ 192, 0, "Retract cycle count"},
 	{ 193, 0, "Landing zone load count"},
 	{ 194, 0, "Temperature (C)"},
+	{ 195, 0, "Hardware ECC Recovered"},
 	{ 196, 1, "Relocation event count"},
 	{ 197, 1, "Questionable sector count"},
 	{ 198, 1, "Uncorrectable sector count"},
@@ -56,6 +58,8 @@ const SmartDescription smartDescriptions[] =
 	{ 200, 0, "Multi-zone error count"},
 	{ 201, 1, "Off-track error count"},
 	{ 202, 0, "Data Address Mark error count"},
+	{ 209, 0, "Offline Seek Performance"},
+	{ 212, 0, "Shock During Write"},
 	{ -1,  -1, "Unknown SMART id"}
 };
 
@@ -382,8 +386,7 @@ int logMk5Smart(const Mk5Daemon *D, int bank)
 			continue;
 		}
 
-		snprintf(message, DIFX_MESSAGE_LENGTH, "Drive %d : %s  %s  %s  %Ld bytes\n",
-			d, drive->model, drive->serial, drive->rev, drive->capacity);
+		snprintf(message, DIFX_MESSAGE_LENGTH, "Drive %d : %s  %s  %s  %Ld bytes\n", d, drive->model, drive->serial, drive->rev, drive->capacity);
 		Logger_logData(D->log, message);
 
 		if(!drive->smartCapable)
@@ -394,12 +397,19 @@ int logMk5Smart(const Mk5Daemon *D, int bank)
 		{
 			int id = smart->id[d][v];
 			const char *desc = getSmartDescription(id);
-			snprintf(message, DIFX_MESSAGE_LENGTH, "  SMART ID %3d : %s = %Ld\n",
-				id, desc, smart->value[d][v]);
+			int critical = isSmartCritical(id);
+
+			snprintf(message, DIFX_MESSAGE_LENGTH, "  SMART ID %3d : %s = %Ld\n", id, desc, smart->value[d][v]);
 			Logger_logData(D->log, message);
-			if(isSmartCritical(id) && smart->value[d][v] > 0)
+			if(critical > 0 && smart->value[d][v] > 0)
 			{
 				snprintf(message, DIFX_MESSAGE_LENGTH, "vsn=%s disk=%d : SMART value (%d) %s = %Ld indicates a potential disk problem", vsn, d, id, desc, smart->value[d][v]);
+
+				difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_WARNING);
+			}
+			if(critical < 0)
+			{
+				snprintf(message, DIFX_MESSAGE_LENGTH, "vsn=%s disk=%d : SMART id = %d with value %Ld not known by this software", vsn, d, id, smart->value[d][v]);
 
 				difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_WARNING);
 			}

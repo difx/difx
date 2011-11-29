@@ -132,6 +132,9 @@ long long interpretSMART(char *smartDescription, int maxLength, const S_SMARTVAL
 	case 7:
 		snprintf(smartDescription, maxLength, "Seek error rate = %Ld", V);
 		break;
+	case 8:
+		snprintf(smartDescription, maxLength, "Seek time performance = %Ld", V);
+		break;
 	case 9:
 		snprintf(smartDescription, maxLength, "Power on time = %Ld hours", V);
 		break;
@@ -153,6 +156,9 @@ long long interpretSMART(char *smartDescription, int maxLength, const S_SMARTVAL
 		break;
 	case 194:
 		snprintf(smartDescription, maxLength, "Temperature = %Ld C", V);
+		break;
+	case 195:
+		snprintf(smartDescription, maxLength, "Hardware ECC Recovered = %Ld", V);
 		break;
 	case 196:
 		snprintf(smartDescription, maxLength, "Relocation event count = %Ld", V);
@@ -178,6 +184,12 @@ long long interpretSMART(char *smartDescription, int maxLength, const S_SMARTVAL
 		break;
 	case 202:
 		snprintf(smartDescription, maxLength, "Data Address Mark error count = %Ld", V);
+		break;
+	case 209:
+		snprintf(smartDescription, maxLength, "Offline Seek Performance = %Ld\n", V);
+		break;
+	case 212:
+		snprintf(smartDescription, maxLength, "Shock During Write = %Ld\n", V);
 		break;
 	default:
 		snprintf(smartDescription, maxLength, "Unknown SMART value = %Ld", V);
