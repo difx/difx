@@ -52,7 +52,7 @@ class Schema(object):
         clear_mappers()
         mapper(ExperimentStatus, self.experimentStatusTable)
         mapper(Experiment, self.experimentTable,properties={'status':relation(ExperimentStatus, uselist = False)})
-        mapper(Module, self.moduleTable, properties={'experiments': relation(Experiment, secondary=self.experimentModuleTable, primaryjoin=self.experimentModuleTable.c.moduleID==self.moduleTable.c.id, secondaryjoin=self.experimentModuleTable.c.experimentID==self.experimentTable.c.id, foreign_keys = [self.experimentModuleTable.c.experimentID, self.experimentModuleTable.c.moduleID])})
+        mapper(Module, self.moduleTable, properties={'experiments': relation(Experiment, secondary=self.experimentModuleTable, primaryjoin=self.experimentModuleTable.c.moduleID==self.moduleTable.c.id, secondaryjoin=self.experimentModuleTable.c.experimentID==self.experimentTable.c.id, foreign_keys = [self.experimentModuleTable.c.experimentID, self.experimentModuleTable.c.moduleID], backref=backref('modules'))})
         mapper(Slot, self.slotTable,properties={'module': relation(Module, uselist = False, backref=backref('slot', uselist=False))})
         
 
