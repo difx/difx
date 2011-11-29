@@ -20,7 +20,7 @@ observTxFile = 'observ.tx'
 ccScriptDir = '/export/home/cc/vlba/scripts'
 prestartTime = 300	# seconds
 poststopTime = 30	# seconds
-difxPath = '/home/swc/DiFX-2.0.1-64/bin'
+difxPath = '/home/swc/DiFX-trunk-64/bin'
 difxbinpath = '/users/difx/bin'
 
 # ------------------
@@ -186,8 +186,8 @@ if vexFile == None:
 cwd = getcwd()
 
 if find(upper(cwd), 'MARK5C') < 0:
-	print '\nError: you must run this from within a MARK5C subdirectory\n'
-	exit(0)
+	print '\nYou are running %s from a non-Mark5C directory.' % program
+	print 'I hope this is what you want!\n'
 
 if vexFile[0] != '/':
 	vexFile = '%s/%s' % (cwd, vexFile)
@@ -228,7 +228,7 @@ for script in scripts:
 		#print '\n==========================================================================='
 		continue
 	else:
-		cc = '%s-cc' % station
+		cc = '%s-cc.vlba.nrao.edu' % station
 	
 	upperStation = upper(station)
 	timeRange = stationTimes[upperStation]

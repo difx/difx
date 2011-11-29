@@ -627,22 +627,23 @@ int pystream::writeScans(const VexData *V)
 
 			int modeId = V->getModeIdByDefName(scan->modeDefName);
 			const VexMode* mode = V->getModeByDefName(scan->modeDefName);
+			if(mode == 0)
+			{
+				cerr << "Error: scan=" << scan->defName << " ant=" << ant << " mode=" << scan->modeDefName << " -> mode=0" << endl;
+				continue;
+			}
+			
 			const VexSetup* setup = mode->getSetup(ant);
+
+			if(setup == 0)
+			{
+				cerr << "Error: scan=" << scan->defName << " ant=" << ant << " mode=" << scan->modeDefName << " -> setup=0" << endl;
+				continue;
+			}
+
 			const VexFormat F = setup->format;
 			if(modeId != lastModeId)
 			{
-
-				if(mode == 0)
-				{
-					cerr << "Error: scan=" << scan->defName << " ant=" << ant << " mode=" << scan->modeDefName << " -> mode=0" << endl;
-					continue;
-				}
-
-				if(setup == 0)
-				{
-					cerr << "Error: scan=" << scan->defName << " ant=" << ant << " mode=" << scan->modeDefName << " -> setup=0" << endl;
-					continue;
-				}
 
 				*this << "# changing to mode " << mode->defName << endl;
 				if(currenttype == VLBA)

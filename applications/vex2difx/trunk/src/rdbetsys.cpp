@@ -200,6 +200,13 @@ int loadTcals(const char *tcalFilename)
 
 	nAlloc = 4000;
 	tCals = (TCal *)malloc(nAlloc*sizeof(TCal));
+	if(tCals == 0)
+	{
+		fprintf(stderr, "Error: loadTcals: malloc(%d elements)=0\n", nAlloc);
+		fclose(in);
+
+		return -3;
+	}
 
 	for(int i = nTcal = 0; ; ++i)
 	{
@@ -214,8 +221,21 @@ int loadTcals(const char *tcalFilename)
 		}
 		if(nTcal >= nAlloc)
 		{
+			TCal *t;
 			nAlloc += 1000;
-			tCals = (TCal *)realloc(tCals, nAlloc*sizeof(TCal));
+			t = (TCal *)realloc(tCals, nAlloc*sizeof(TCal));
+			if(t == 0)
+			{
+				free(tCals);
+				fprintf(stderr, "Error: loadTcals: realloc(%d elements)=0\n", nAlloc);
+				fclose(in);
+
+				return -4;
+			}
+			else
+			{
+				tCals = t;
+			}
 		}
 		sscanf(line, "%7s%7s%f%f%f", tCals[nTcal].antenna, tCals[nTcal].receiver,
 			&tCals[nTcal].freq, &tCals[nTcal].tcalR, &tCals[nTcal].tcalL);
@@ -653,7 +673,7 @@ int main(int argc, char **argv)
 	const char *tsysFilename = 0;
 	FILE *out;
 	double nominalTsysInterval = defaultTsysInterval;
-	int p;
+	int p, v;
 	int verbose = 1;
 	const char *tcalFilename;
 
@@ -680,7 +700,7 @@ int main(int argc, char **argv)
 			}
 			else
 			{
-				printf("Unknown command line option %s\n", argv[a]);
+				fprintf(stderr, "Unknown command line option %s\n", argv[a]);
 
 				return EXIT_FAILURE;
 			}
@@ -695,7 +715,7 @@ int main(int argc, char **argv)
 		}
 		else
 		{
-			printf("Extra command line parameter : %s\n", argv[a]);
+			fprintf(stderr, "Extra command line parameter : %s\n", argv[a]);
 
 			return EXIT_FAILURE;
 		}
@@ -703,7 +723,7 @@ int main(int argc, char **argv)
 
 	if(tsysFilename == 0)
 	{
-		printf("Incomplete command line.  Run with -h for help.\n\n");
+		fprintf(stderr, "Incomplete command line.  Run with -h for help.\n\n");
 
 		return EXIT_FAILURE;
 	}
@@ -712,13 +732,20 @@ int main(int argc, char **argv)
 
 	if(tcalFilename == 0)
 	{
-		printf("Environment variable TCAL_FILE must exist\n");
+		fprintf(stderr, "Environment variable TCAL_FILE must exist\n");
 
 		return EXIT_FAILURE;
 	}
 
 
-	loadTcals(tcalFilename);
+	v = loadTcals(tcalFilename);
+
+	if(v < 0)
+	{
+		fprintf(stderr, "Error: loading of tCal file %s failed\n", tcalFilename);
+
+		return EXIT_FAILURE;
+	}
 
 	P = new CorrParams();
 	P->defaultSetup();
@@ -731,7 +758,7 @@ int main(int argc, char **argv)
 	out = fopen(tsysFilename, "w");
 	if(!out)
 	{
-		printf("Cannot open %s for write\n", tsysFilename);
+		fprintf(stderr, "Cannot open %s for write\n", tsysFilename);
 
 		return EXIT_FAILURE;
 	}
