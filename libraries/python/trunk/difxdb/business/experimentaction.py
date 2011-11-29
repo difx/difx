@@ -51,3 +51,17 @@ def addExperiment(session, code):
 
     session.add(experiment)
     session.commit()
+    
+def deleteExperimentByCode(session, code):
+    
+    
+    experiment = session.query(model.Experiment).filter_by(code=code).one()
+     
+    if (experiment is None):
+        return
+    # check if there are modules linked to this experiment
+    if (len(experiment.modules) > 0):
+        raise Exception("Experiment %s cannot be deleted because it has associated modules" % experiment.code)
+    
+    session.delete(experiment)
+    session.commit()
