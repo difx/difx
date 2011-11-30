@@ -1688,9 +1688,9 @@ create_headstack_pos(char *str, char *str2)
 void *
 create_if_def(char *str, char *str2, char *str3, char *str4,
 	      char *str5, char *str6, char *str7, char *str8,
-	      char *str9, char *str10)
+	      char *str9, char *str10, char *str11)
 {
-  char *s1, *s2, *s3, *s4, *s5, *s6, *s7, *s8, *s9, *s10;
+  char *s1, *s2, *s3, *s4, *s5, *s6, *s7, *s8, *s9, *s10, *s11;
 
   if(str7==NULL || strlen(str7)==0 ||
      str8==NULL || strlen(str8)==0)
@@ -1701,12 +1701,14 @@ create_if_def(char *str, char *str2, char *str3, char *str4,
       s4=(char *)strdup(str4);
       s5=(char *)strdup(str5);
       s6=(char *)strdup(str6);
+      s11=(char *)strdup(str11);
       qref_list = add_list(qref_list,make_lowl(T_IF_DEF,
 				     make_if_def(s1,s2,s3,
 				     make_dvalue(s4,s5),
 				     s6,
 				     NULL,
-				     NULL)));
+				     NULL,
+					s11)));
     }
   else if(str9==NULL || strlen(str9)==0 ||
 	  str10==NULL || strlen(str10)==0)
@@ -1719,12 +1721,14 @@ create_if_def(char *str, char *str2, char *str3, char *str4,
       s6=(char *)strdup(str6);
       s7=(char *)strdup(str7);
       s8=(char *)strdup(str8);
+      s11=(char *)strdup(str11);
       qref_list = add_list(qref_list,make_lowl(T_IF_DEF,
 				     make_if_def(s1,s2,s3,
 				     make_dvalue(s4,s5),
 				     s6,
 				     make_dvalue(s7,s8),
-				     NULL)));
+				     NULL,
+					s11)));
     }
   else
     {
@@ -1738,12 +1742,14 @@ create_if_def(char *str, char *str2, char *str3, char *str4,
       s8=(char *)strdup(str8);
       s9=(char *)strdup(str9);
       s10=(char *)strdup(str10);
+      s11=(char *)strdup(str11);
       qref_list = add_list(qref_list,make_lowl(T_IF_DEF,
 				     make_if_def(s1,s2,s3,
 				     make_dvalue(s4,s5),
 				     s6,
 				     make_dvalue(s7,s8),
-				     make_dvalue(s9,s10))));
+				     make_dvalue(s9,s10),
+					s11)));
     }
 }
 /*-------------------------------------------------------------------*/
