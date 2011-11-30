@@ -198,6 +198,8 @@ struct if_def {
   char *sb;
   struct dvalue *pcal_spacing;
   struct dvalue *pcal_base;
+
+  char *comment;
 };
 
 typedef struct if_def If_def; 
@@ -390,7 +392,8 @@ struct headstack_pos *make_headstack_pos(struct dvalue *index,
 struct if_def *make_if_def(char *if_id, char *physical, char *polar,
 			   struct dvalue *lo, char *sb,
 			   struct dvalue *pcal_spacing,
-			   struct dvalue *pcal_base);
+			   struct dvalue *pcal_base,
+			   char *comment);
 struct phase_cal_detect *make_phase_cal_detect(char *pcal_id,
 					       struct llist *tones);
 struct setup_always *make_setup_always(char *state, struct dvalue *time);
@@ -866,7 +869,7 @@ create_position(char *str, char *str2);
 void *
 create_if_def(char *str, char *str2, char *str3, char *str4,
 	      char *str5, char *str6, char *str7, char *str8,
-	      char *str9, char *str10);
+	      char *str9, char *str10, char *str11);
 /*-------------------------------------------------------------------*/
 /* PASS_ORDER block builders                                         */
 /*-------------------------------------------------------------------*/
