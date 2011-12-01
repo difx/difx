@@ -11,6 +11,7 @@ sub ant2window ($);
 sub ant2pos ($);
 sub arraygrep ($@);
 sub Usage ();
+sub getEOP (*$);
 
 $Astro::Time::StrSep = ':';
 $Astro::Time::StrZero = 2;
@@ -283,11 +284,14 @@ EOF
 
   print V2D "}\n\n";
 }
-close(V2D);
+
 
 # Add the EOP values
 my $mjd = int (($sched_start+$sched_stop)/2);
-system "getEOP.pl $mjd >> $v2dfile" if (!$debug);
+getEOP(*V2D, $mjd);
+#system "getEOP.pl $mjd >> $v2dfile" if (!$debug);
+
+close(V2D);
 
 # Run file
 if (!(-e 'run.sh')) {
@@ -496,3 +500,49 @@ sub arraygrep ($@) {
   return undef;
 }
 
+
+sub getEOP (*$) {
+  my $v2d = shift;
+  my $mjd = shift;
+
+  my $home = $ENV{HOME};
+  my $eops = defined($ENV{DIFX_EOP}) ? $ENV{RTFC_EOP}: "$home/.eops";
+
+  ## TODO Get TAI-UTC
+  my $tai_utc = 34;
+
+  if (! -f $eops) {
+    warn "$eops does not exist. Need EOPS to correlate\n";
+    return(1);
+  }
+
+  if (! open(EOPS, $eops)) {
+    warn "Could Not open $eops: $!\n";
+    return(1)
+  };
+
+  my $targetJD = mjd2jd($mjd);
+  my $first=1;
+  my @fields;
+  while (<EOPS>) {
+    # Skip the first line
+    if ($first) {
+      $first = 0;
+      next;
+    }
+    chomp;
+    s/#.*$//; # Remove comment character
+    next if (length()==0);
+    
+    @fields = split;
+    # print an EOP line if we're within 3 days of the target day
+    if (abs($fields[0] - $targetJD) < 3) {
+      printf $v2d "EOP %.0f { xPole=%f yPole=%f tai_utc=$tai_utc ut1_utc=%f }\n",
+	jd2mjd($fields[0]), $fields[1]/10, $fields[2]/10, 
+	  $tai_utc+$fields[3]/1000000;
+    }
+  }
+
+  close(EOPS);
+  return(0);
+}
