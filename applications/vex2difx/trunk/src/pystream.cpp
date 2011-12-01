@@ -31,6 +31,7 @@
 #include <cmath>
 #include <sstream>
 #include <time.h>
+#include <string.h>
 #include "evladefaults.h"
 #include "pystream.h"
 
