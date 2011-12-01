@@ -1,20 +1,20 @@
 /***************************************************************************
- *   Copyright (C) 2008-2011 by Walter Brisken & John Morgan               *
- *                                                                         *
+ *   Copyright (C) 2008-2011 by Walter Brisken & John Morgan	       *
+ *									 *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
  *   the Free Software Foundation; either version 3 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
+ *   (at your option) any later version.				   *
+ *									 *
  *   This program is distributed in the hope that it will be useful,       *
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
- *   GNU General Public License for more details.                          *
- *                                                                         *
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of	*
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the	 *
+ *   GNU General Public License for more details.			  *
+ *									 *
  *   You should have received a copy of the GNU General Public License     *
- *   along with this program; if not, write to the                         *
- *   Free Software Foundation, Inc.,                                       *
- *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ *   along with this program; if not, write to the			 *
+ *   Free Software Foundation, Inc.,				       *
+ *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.	     *
  ***************************************************************************/
 //===========================================================================
 // SVN properties (DO NOT CHANGE)
@@ -238,7 +238,7 @@ static int getNTone(const char *filename, double t1, double t2, int verbose)
 	FILE *in;
 	char line[MaxLineLength+1];
 	int n, nTone, maxnTone=0;
-	int maxnToneNearby = 0;
+        int maxnToneNearby = 0;
 	double t;
 	char *rv;
 	char antName1[DIFXIO_NAME_LENGTH];
@@ -274,7 +274,7 @@ static int getNTone(const char *filename, double t1, double t2, int verbose)
 		}
 		else if (nTone > maxnToneNearby)
 		{
-			maxnToneNearby = nTone;
+        		maxnToneNearby = nTone;
 		}
 	}
 	fclose(in);
@@ -305,7 +305,7 @@ static int parsePulseCal(const char *line,
 	float stateCount[2][array_MAX_STATES*array_MAX_BANDS],
 	float pulseCalRate[2][array_MAX_TONES],
 	int refDay, const DifxInput *D, int *configId, 
-	int phasecentre, int doAll)
+       int phasecentre, int doAll)
 {
 	int IFs[array_MAX_BANDS];
 	int states[array_MAX_STATES];
@@ -370,28 +370,28 @@ static int parsePulseCal(const char *line,
 	*time -= refDay;
 	mjd = *time + (int)(D->mjdStart);
 
-	if((mjd < D->mjdStart || mjd > D->mjdStop) && (doAll == 0))
+       if((mjd < D->mjdStart || mjd > D->mjdStop) && (doAll == 0))
 	{
 		return -1;
 	}
 
 	scanId = DifxInputGetScanIdByAntennaId(D, mjd, antId);
 	if(scanId < 0)
-	{
-		if(doAll)
-		{
-			scanId = 0;
-		}
-		else
-		{
-			return -3;
-		}
+       {
+	       if(doAll)
+	       {
+		       scanId = 0;
+	       }
+	       else
+	       {
+		       return -3;
+	       }
 	}
 
-        if(phasecentre >= D->scan[scanId].nPhaseCentres)
-        {
+	if(phasecentre >= D->scan[scanId].nPhaseCentres)
+	{
 		return -3;
-        }
+	}
 
 	*sourceId = D->scan[scanId].phsCentreSrcs[phasecentre];
 	*configId = D->scan[scanId].configId;
@@ -530,10 +530,10 @@ static int parsePulseCalCableCal(const char *line,
 		return -3;
 	}
 
-        if(phasecentre >= D->scan[*scanId].nPhaseCentres)
-        {
+	if(phasecentre >= D->scan[*scanId].nPhaseCentres)
+	{
 		return -3;
-        }
+	}
 
 	*sourceId = D->scan[*scanId].phsCentreSrcs[phasecentre];
 	*configId = D->scan[*scanId].configId;
@@ -655,10 +655,10 @@ static int parseDifxPulseCal(const char *line,
 		return -3;
 	}
 
-        if(phasecentre >= D->scan[*scanId].nPhaseCentres)
-        {
+	if(phasecentre >= D->scan[*scanId].nPhaseCentres)
+	{
 		return -4;
-        }
+	}
 
 	*sourceId = D->scan[*scanId].phsCentreSrcs[phasecentre];
 	*configId = D->scan[*scanId].configId;
@@ -672,7 +672,7 @@ static int parseDifxPulseCal(const char *line,
 	{
 		return -6;
 	}
-        if(isAntennaFlagged(D->job + jobId, mjd, dd->antennaId))
+	if(isAntennaFlagged(D->job + jobId, mjd, dd->antennaId))
 	{
 		return -7;
 	}
@@ -802,7 +802,7 @@ int countTones(const DifxDatastream *dd)
 
 const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out,
-	int phasecentre, double avgSeconds, int verbose)
+       int phasecentre, double avgSeconds, int verbose)
 {
 	char stateFormFloat[8];
 	char toneFormDouble[8];
@@ -841,7 +841,9 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	int lastnWindow;
 	double time, dumpTime, accumStart=0.0, accumEnd=0.0;
 	float timeInt, dumpTimeInt;
-	int cableScanId, nextCableScanId, lineCableScanId;
+	int cableScanId, nextCableScanId, 
+	    lineCableScanId, lineCableSourceId, lineCableConfigId;
+	int newScanId, newSourceId, newConfigId;
 	double cableCal, nextCableCal, cableCalOut, lineCableCal;
 	double cableTime, nextCableTime, lineCableTime;
 	float cablePeriod, nextCablePeriod, lineCablePeriod;
@@ -853,7 +855,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	float pulseCalImAcc[2][array_MAX_TONES]; 
 	float stateCount[2][array_MAX_STATES*array_MAX_BANDS];
 	float pulseCalRate[2][array_MAX_TONES];
-	int configId=0, sourceId, currentScanId;
+	int configId=0, sourceId;
 	int scanId;
 	int refDay;
 	int i, a, dsId, j, k, t, n, v;
@@ -905,7 +907,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 		{
 			if(D->datastream[i].phaseCalIntervalMHz < 1)
 			{
-				nTone = getNTone("pcal", refDay + start, refDay + stop, verbose);
+			nTone = getNTone("pcal", refDay + start, refDay + stop, verbose);
 				break;
 			}
 		}
@@ -914,15 +916,15 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	{
 		printf("    Station pcal file not found. No station pcal or cable cal measurements available\n");
 	}
-	if(nTone < 0)
-	{
-		nTone = -nTone;
-		doAll = 1;
-	}
-	if(verbose)
-	{
-		printf("    Number of tones: %d\n", nTone);
-	}
+       if(nTone < 0)
+       {
+	       nTone = -nTone;
+	       doAll = 1;
+       }
+       if(verbose)
+       {
+	       printf("    Number of tones: %d\n", nTone);
+       }
 
 	nDifxTone = DifxInputGetMaxTones(D);
 	if(nDifxTone == 0)
@@ -981,7 +983,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	{
 		if(in)
 		{
-	        	fclose(in);
+		fclose(in);
 		}
 		fprintf(stderr, "Error: DifxInput2FitsPH: Memory allocation failure\n");
 
@@ -997,7 +999,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 
 	arrayId1 = 1;
 
-	printf("   ");
+       printf("   ");
 	for(a = 0; a < D->nAntenna; a++)
 	{
 		for(k = 0; k < 2; k++)
@@ -1011,7 +1013,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 		nWindow = 0;
 		nAccum = 0;
 
-		currentScanId = -1;
+		scanId = -2;
 		printf(" %s", D->antenna[a].name);
 		fflush(stdout);
 
@@ -1063,8 +1065,6 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 			/*rewind(in) below this loop*/
 			while(1)
 			{
-				sourceId = -1;
-
 				if(in && !nDifxTone)/*try reading pcal file*/
 				{
 					rv = fgets(line, MaxLineLength, in);
@@ -1084,7 +1084,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 							}
 							v = parsePulseCal(line, a, &sourceId, &time, &timeInt, 
 								&cableCal, freqs, pulseCalReAcc, pulseCalImAcc,
-								stateCount, pulseCalRate, refDay, D, &configId, phasecentre, doAll);
+							        stateCount, pulseCalRate, refDay, D, &configId, phasecentre, doAll);
 							if(v < 0)
 							{
 								continue;/*to next line in file*/
@@ -1105,16 +1105,16 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 						}
 						else 
 						{
-							v = parseDifxPulseCal(line, dsId, nBand, nTone, &sourceId, &scanId, &time, j,
+							v = parseDifxPulseCal(line, dsId, nBand, nTone, &newSourceId, &newScanId, &time, j,
 									      freqs, pulseCalRe, pulseCalIm, stateCount, pulseCalRate,
-									      refDay, D, &configId, phasecentre);
+									      refDay, D, &newConfigId, phasecentre);
 							if(v < 0)
 							{
 								continue;/*to next line in file*/
 							}
 
 						}
-						if(scanId != currentScanId)
+						if(scanId != newScanId)
 						{
 							double s, e;
 							int nWindow;
@@ -1124,17 +1124,22 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 							 * Work out time average windows so that there is an integer number within the scan
 							 * Get all of the relevant cable cal values for this antenna
 							 * n.b. we can safely assume that we are at a valid pcal entry since v > 0 */
-							if(currentScanId != -1)
+							if(scanId != -2)
 							{
 								doDump = 1;
 							}
+							else
+							{
+								scanId = newScanId;
+								sourceId = newSourceId;
+								configId = newConfigId;
+							}
 
-							scan = D->scan + scanId;
-							configId = scan->configId;
+							scan = D->scan + newScanId;
 							s = time;	/* time of first pcal record */
 							e = scan->mjdEnd - (int)(D->mjdStart);
 
-							nWindow = (int)((e - s + (0.5*D->config[configId].tInt/86400.))/(avgSeconds/86400.0) + 0.5);
+							nWindow = (int)((e - s + (0.5*D->config[newConfigId].tInt/86400.))/(avgSeconds/86400.0) + 0.5);
 
 							if(nWindow < 1)
 							{
@@ -1142,7 +1147,6 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 							}
 							windowDuration = (e - s)/nWindow;
 							dumpWindow = s + windowDuration;
-							currentScanId = scanId;
 						}
 						else if(time > dumpWindow && dumpWindow > 0.0)
 						{
@@ -1198,8 +1202,8 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 									{
 										continue;/*to next line in file*/	
 									}
-									v = parsePulseCalCableCal(line, a, &sourceId, &lineCableScanId, &lineCableTime, &lineCablePeriod, 
-										&lineCableCal, refDay, D, &configId, phasecentre);
+									v = parsePulseCalCableCal(line, a, &lineCableSourceId, &lineCableScanId, &lineCableTime, &lineCablePeriod, 
+										&lineCableCal, refDay, D, &lineCableConfigId, phasecentre);
 									if(v < 0)
 									{
 										continue;/*to next line in file*/
@@ -1301,6 +1305,9 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 
 					nAccum = 0;
 					doDump = 0;
+					scanId = newScanId;
+					sourceId = newSourceId;
+					configId = newConfigId;
 					for(k = 0; k < nPol; k++)
 					{
 						for(t = 0; t < nTone*D->datastream[dsId].nRecFreq; t++)
@@ -1355,7 +1362,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 
 	free(fitsbuf);
 
-	printf("\n");
+       printf("\n");
 
 	return D;
 }
