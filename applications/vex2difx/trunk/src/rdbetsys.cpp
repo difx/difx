@@ -39,11 +39,11 @@
 #include "util.h"
 
 const char program[] = "rdbetsys";
-const char version[] = "0.1";
+const char version[] = "0.2";
 const char author[]  = "Walter Brisken";
 const char verdate[] = "20111130";
 
-const char defaultSwitchedPowerPath[] = "/home/swc/difx/tsys";
+const char defaultSwitchedPowerPath[] = "/users/vlbamon/switchedpower";
 const double defaultTsysInterval = 15.0;	// Seconds
 const int MaxFilenameLength = 256;
 
@@ -500,8 +500,8 @@ int processStation(FILE *out, const VexData &V, const string &stn, const string 
 	const VexMode *mode = 0;
 	const VexSetup *setup = 0;
 
-	command = "zcat " + fileList;
-	if(verbose > 0)
+	command = "zcat " + fileList + " 2> /dev/null";
+	if(verbose > 2)
 	{
 		printf("opening pipe: %s\n", command.c_str());
 	}
@@ -676,6 +676,8 @@ int main(int argc, char **argv)
 	int p, v;
 	int verbose = 1;
 	const char *tcalFilename;
+	int nZero = 0;
+	string zeroStations;
 
 	for(int a = 1; a < argc; ++a)
 	{
@@ -753,7 +755,10 @@ int main(int argc, char **argv)
 	P->vexFile = vexFilename;
 	V = loadVexFile(*P, &nWarn);
 
-	printf("Warnings: %d\n", nWarn);
+	if(nWarn > 0)
+	{
+		fprintf(stderr, "Warning %d warnings in reading the vex file: %d\n", nWarn);
+	}
 
 	out = fopen(tsysFilename, "w");
 	if(!out)
@@ -773,20 +778,52 @@ int main(int argc, char **argv)
 	map<string,VexInterval>::const_iterator it;
 	for(it = as.begin(); it != as.end(); ++it)
 	{
+		int nRecord;
+
 		// it->first is the station name
 		// it->second is the VexInterval for that station's involvement
 
 		std::string stn = it->first;
 		Lower(stn);
 
-		p = cout.precision();
-		cout << it->first << " " << it->second.mjdStart << " " << it->second.mjdStop << endl;
-		cout.precision(p);
+		if(verbose > 0)
+		{
+			p = cout.precision();
+			cout << it->first << endl;
+			cout << "  MJD time range: " << it->second.mjdStart << " to " << it->second.mjdStop << endl;
+			cout.precision(p);
+		}
 
 		fileList = genFileList(defaultSwitchedPowerPath, stn.c_str(), it->second);
-		printf("FL=%s\n", fileList.c_str());
-
-		processStation(out, *V, it->first, fileList, it->second, nominalTsysInterval, verbose);
+		if(verbose > 1)
+		{
+			printf("  FL: %s\n", fileList.c_str());
+		}
+		if(fileList.empty())
+		{
+			nRecord = 0;
+		}
+		else
+		{
+			nRecord = processStation(out, *V, it->first, fileList, it->second, nominalTsysInterval, verbose);
+		}
+		if(nRecord <= 0)
+		{
+			++nZero;
+			if(!zeroStations.empty())
+			{
+				zeroStations += ",";
+			}
+			zeroStations += stn;
+		}
+		if(verbose > 0)
+		{
+			printf("  %d records written\n", nRecord);
+		}
+	}
+	if(nZero > 0)
+	{
+		printf("\n%d stations (%s) had zero records written.  No Tsys information will be available for those antennas.\n", nZero, zeroStations.c_str());
 	}
 
 	fclose(out);

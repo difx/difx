@@ -146,9 +146,13 @@ static int getRecordChannel(const string &antName, const string &chanName, const
 	{
 		return n;
 	}
-	else if (F.format.substr(0,4) == "VDIF" || F.format.substr(0,14) == "INTERLACEDVDIF")
+	else if(F.format.substr(0, 4) == "VDIF" || F.format.substr(0, 14) == "INTERLACEDVDIF")
 	{
 		return n;
+	}
+	else if(F.format == "NONE")
+	{
+		return 0;
 	}
 	else
 	{
@@ -994,12 +998,15 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 					exit(EXIT_FAILURE);
 					}
 				}
-                // carry comment forward as it might contain information about IF
-                vex_field(T_COMMENT, p2, 1, &link, &name, &value, &units);
-                if( value ) {
-                    vif.comment = value;
-                } else {
-                    vif.comment = "\0";
+				// carry comment forward as it might contain information about IF
+				vex_field(T_COMMENT, p2, 1, &link, &name, &value, &units);
+				if(value)
+				{
+					vif.comment = value;
+				} 
+				else
+				{
+					vif.comment = "\0";
 				}
 			}
 
@@ -1019,7 +1026,7 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 			// Get datastream assignments and formats
 
 			// Is it a Mark5 mode?
-			if(F.format == "")
+			if(F.format == "") // Enter here if no format has been specified in the .v2d file
 			{
 				p = get_all_lowl(antName.c_str(), modeDefName, T_TRACK_FRAME_FORMAT, B_TRACKS, v);
 				if(p)
@@ -1034,12 +1041,17 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 					{
 						F.format = "MARK5B";
 					}
+					else if(F.format == "NONE")
+					{
+						F.format = "NONE";
+					}
 				}
 				else
 				{
 					cerr << "Unable to determine data format for antenna " << antName << endl;
 
-					exit(EXIT_FAILURE);
+					//exit(EXIT_FAILURE);
+					F.format = "NONE";
 				}
 			}
 

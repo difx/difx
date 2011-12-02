@@ -318,11 +318,14 @@ int pystream::writeLoifTable(const VexData *V)
 
 		if(currenttype == VLBA)
 		{
-			if(m == 0) {
-				init_channels = F.channels.size();
-			} else if( init_channels != F.channels.size() ) {
-				// TODO is this really a problem?
-				cerr << "number of channels from " << init_channels << " initially to " << F.channels.size() << " which is currently not supported." << endl; 
+			if(F.format != "NONE")
+			{
+				if(init_channels == 0) {
+					init_channels = F.channels.size();
+				} else if( init_channels != F.channels.size()) {
+					// TODO is this really a problem?
+					cerr << "number of channels from " << init_channels << " initially to " << F.channels.size() << " which is currently not supported." << endl; 
+				}
 			}
 
 			if(setup->ifs.size() > 2)
@@ -396,12 +399,12 @@ int pystream::writeLoifTable(const VexData *V)
                         off++;
 //                        printf("remaining comment: >%s<\n", comment);
                     }
-                } else { // no comment to process
-                }
+				} else { // no comment to process
+				}
 
-                // close statement
-                *this << ")" << endl;
-            }
+				// close statement
+				*this << ")" << endl;
+			}
 			*this << "loif" << m << ".setPhaseCal(" << (setup->phaseCalIntervalMHz()) << ")" << endl;
 			// auto gain/attenuation control
 			*this << "loif" << m << ".setDBEParams(0, -1, -1, 10, 0)" << endl;

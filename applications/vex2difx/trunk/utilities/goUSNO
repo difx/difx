@@ -2,7 +2,7 @@
 
 # update the version when significant changes are made
 program = 'goUSNO'
-version = '0.12'
+version = '0.13'
 
 
 from sys import exit, argv, stdin
@@ -16,8 +16,13 @@ from datetime import datetime
 email        = 'ut1@nrao.edu'
 baseDir      = '/home/vlbiobs/astronomy'
 templateFile = '/users/vlbaops/STDFILES/usno_template.key'
-sched_base   = '/usr/local/sched'
-sched        = '/usr/local/sched/bin/sched'
+#sched_base   = '/usr/local/sched'
+#sched        = '/usr/local/sched/bin/sched'
+
+# temporary hack to get around bug in released sched version
+sched_base   = '/users/cwalker/files/sched_beta'
+sched        = '/users/cwalker/files/sched_beta/bin/LINUX64SPICE/sched'
+
 queueVex     = 'queueVex'
 
 
