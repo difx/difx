@@ -145,6 +145,11 @@ int main(int argc, char **argv)
 
 	V = loadVexFile(*P, &nWarn);
 
+	if( V == NULL ) {
+		cerr << "ERROR loading vex file! File may not exist!" << endl;
+		exit(1);
+	}
+
 	nAntenna = V->nAntenna();
 	nScan = V->nScan();
 
