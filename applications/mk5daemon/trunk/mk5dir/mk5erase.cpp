@@ -174,9 +174,9 @@ int condition(SSHANDLE xlrDevice, const char *vsn, enum ConditionMode mode, Difx
 	int nPass, pass = 0;
 	char opName[10] = "";
 	FILE *out=0;
-	double lowestRate = 1e9;	/* Unphysically fast! */
-	double highestRate = 0.0;
-	double averageRate = 0.0;
+	double lowestRate = 1e9;	/* Mbps */
+	double highestRate = 0.0;	/* Mbps */
+	double averageRate = 0.0;	/* Mbps */
 	int nRate = 0;
 	char message[DIFX_MESSAGE_LENGTH];
 	DifxMessageDriveStats driveStatsMessage;
@@ -273,7 +273,7 @@ int condition(SSHANDLE xlrDevice, const char *vsn, enum ConditionMode mode, Difx
 			mk5status->position = devInfo.NumBuses*len;
 			mk5status->rate = 8*devInfo.NumBuses*bytes/(printInterval*1000000.0);
 			snprintf(mk5status->scanName, DIFX_MESSAGE_MAX_SCANNAME_LEN, "%s[%4.2f%%]", opName, done);
-			if(bytes > 0)
+			if(bytes > 0  && mk5status->rate < 6000)
 			{
 				if(mk5status->rate < lowestRate)
 				{
