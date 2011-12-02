@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2011 by Walter Brisken                             *
+ *   Copyright (C) 2007-2011 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -32,14 +32,13 @@
 #include "difxio/parsevis.h"
 
 const char program[] = "difxfringe";
-const char version[] = "0.0";
-const char verdate[] = "20070329";
+const char version[] = "0.1";
+const char verdate[] = "20111129";
 const char author[]  = "Walter Brisken";
 
 int usage(const char *pgm)
 {
-	fprintf(stderr, "%s ver. %s   %s %s\n\n", program, version,
-		author, verdate);
+	fprintf(stderr, "%s ver. %s   %s %s\n\n", program, version, author, verdate);
 	fprintf(stderr, "usage : %s <difx file> <nchan> [<baseline>]\n\n", pgm);
 
 	return 0;
@@ -47,6 +46,7 @@ int usage(const char *pgm)
 
 int fringe(const char *filename, int nchan, int baseline, const char *pol)
 {
+	const char outFilename[] = "vis.out";
 	DifxVisRecord *vis;
 	int i, k;
 	int v;
@@ -57,13 +57,19 @@ int fringe(const char *filename, int nchan, int baseline, const char *pol)
 	baseline = 0;
 	pol = 0;
 
-	out = fopen("vis.out", "w");
+	out = fopen(outFilename, "w");
+	if(!out)
+	{
+		fprintf(stderr, "Error opening %s for write\n", outFilename);
+	}
 
 	vis = newDifxVisRecord(filename, nchan);
 
 	if(!vis)
 	{
 		fprintf(stderr, "fringe : vis = 0\n");
+		fclose(out);
+
 		return -1;
 	}
 
@@ -71,20 +77,15 @@ int fringe(const char *filename, int nchan, int baseline, const char *pol)
 	{
 		printf("i = %d\n", i);
 		v = DifxVisRecordgetnext(vis);
-		//v = DifxVisRecordfindnext(vis, baseline, freqid, pol);
 		if(v < 0)
 		{
 			break;
 		}
 		printDifxParameters(vis->params);
-		printf("%f %f # QQQ\n", 
-			creal(vis->visdata[8]),
-			cimag(vis->visdata[8]));
+		printf("%f %f # QQQ\n", creal(vis->visdata[8]), cimag(vis->visdata[8]));
 		for(k = 0; k < nchan; k++)
 		{
-			fprintf(out, "%d %d %f %f\n", i, k,
-				creal(vis->visdata[k]),
-				cimag(vis->visdata[k]) );
+			fprintf(out, "%d %d %f %f\n", i, k, creal(vis->visdata[k]), cimag(vis->visdata[k]) );
 		}
 	}
 
@@ -110,7 +111,8 @@ int main(int argc, char **argv)
 	if(nchan < 1 || nchan > 1<<21)
 	{
 		fprintf(stderr, "nchan out of range\n");
-		return 0;
+
+		return EXIT_FAILURE;
 	}
 
 	if(argc > 3)
@@ -119,7 +121,8 @@ int main(int argc, char **argv)
 		if(baseline < 0)
 		{
 			fprintf(stderr, "baseline out of range\n");
-			return 0;
+
+			return EXIT_FAILURE;
 		}	
 	}
 
@@ -130,5 +133,5 @@ int main(int argc, char **argv)
 
 	fringe(argv[1], nchan, baseline, pol);
 
-	return 0;
+	return EXIT_SUCCESS;
 }
