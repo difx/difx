@@ -40,7 +40,7 @@ thing is to copy it to $HOME on the i/o nodes.
 
 sample/run.sh
 
-Sample scirpt to test the full maxtix of varying number of compute nodes and
+Sample script to test the full maxtix of varying number of compute nodes and
 threads per node. This launches vstart.sh on the i/o nodes, sets the thread
 file appropriately and launche DiFX. The output from DiFX and the i/o nodes are all logged.
 

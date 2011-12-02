@@ -995,7 +995,7 @@ int turns_to_string(double turns, char type, int dps, int nstr, char str[]) {
   /* Split into whole number of turns and fractional part. This allows us to
      achieve maximum precision in the seconds part since we can always add
      back a whole number of hours/degrees to the final result without worrying
-     about propogation of rounding effects. */
+     about propagation of rounding effects. */
   whole_turns = (int)turns;
   turns -= (double)whole_turns;
 
