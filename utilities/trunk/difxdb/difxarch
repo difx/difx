@@ -173,7 +173,7 @@ class FitsList:
 
 		if pretend:
 			print '\n**************************************************\n'
-			print 'Pretend mode actived; not actually doing anything!'
+			print 'Pretend mode activated; not actually doing anything!'
 			print '\n**************************************************\n'
 			return
 

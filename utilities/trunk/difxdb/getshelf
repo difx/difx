@@ -14,7 +14,7 @@ verdate = '20090427'
 
 def usage(prog):
         print '\n%s ver %s  %s  %s' % (program, version, author, verdate)
-	print '\nA program to retreive the shelf location of one or more Mark5 modules\n from the VLBA archive.'
+	print '\nA program to retrieve the shelf location of one or more Mark5 modules\n from the VLBA archive.'
         print '\nUsage: %s [options] <mod1> [<mod2> [...] ]' % prog
 	print '\n  or'
         print '\nUsage: %s [options] <shelfFile>' % prog

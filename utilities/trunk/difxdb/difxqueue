@@ -67,7 +67,7 @@ arguments.  See examples for use cases:
 
   del        Remove job(s) from the queue
 
-    arguements = <pass name> [list of job numbers (ranges OK)]
+    arguments = <pass name> [list of job numbers (ranges OK)]
 
     example 1:   difxqueue del clock
     example 2:   difxqueue del geodesy 3 4 5 11-32

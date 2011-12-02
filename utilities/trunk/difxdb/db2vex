@@ -17,8 +17,10 @@ except:
 
 program = 'db2vex'
 author = 'Walter Brisken'
-version = '0.8'
-verdate = '20111001'
+version = '0.9'
+verdate = '20111201'
+
+tsysFile = 'tsys'
 
 # Name of the Oracle VLBA legacy database
 databaseName = getenv("VLBA_DB")
@@ -308,7 +310,7 @@ def getActiveBankFromNewDB(newDb, startMJD, stopMJD, isMark5C, verbose):
 	stop  = stopMJD  + 0.1
 
 	cursor = newDb.cursor()
-	query = "select * from mcdata where devicename='MARK5C' and monpointname='ActiveBank' and timestamp > %10.4f and timestamp < %10.4f order by timestamp limit 20" % (start, stop)
+	query = "select * from mcdata where devicename='MARK5C' and monpointname='ActiveBank' and timestamp > %10.4f and timestamp < %10.4f order by timestamp" % (start, stop)
 	if verbose > 0:
 		print 'Executing database query: %s' % query
 	cursor.execute(query)
@@ -717,7 +719,7 @@ def processVexFile(vexFile, force, verbose, preobs, vsnProjectCode, isMark5C, fs
 
 	db = cx_Oracle.connect(databaseName)
 
-	if isMark5C:
+	if isMark5C and newDB:
 		newDb = psycopg2.connect(newDatabaseName)
 	
 	# fetch a bunch of stuff from the database
@@ -867,7 +869,7 @@ if isMark5C < 0:
 	print 'Cannot determine if this is Mark5A or Mark5C.  Assuming Mark5A'
 	isMark5C = 0;
 else:
-	if isMark5C and not newDB:
+	if isMark5C and not newDB and not preobs:
 		print 'Error: Mark5C processing is to be done but the VLBAMPTS database is not accessable'
 		stop = True
 
@@ -896,5 +898,12 @@ if stop:
 umask(02)
 
 processVexFile(args[0], force, verbose, preobs, vsnProjectCode, isMark5C, fsVSNs)
+
+if isMark5C > 0:
+	print '\nGetting Tsys values'
+	cmd = 'rdbetsys %s %s' % (args[0], tsysFile)
+	os.system(cmd);
+	print '\nTsys data written to file: %s' % tsysFile
+	
 
 print ''
