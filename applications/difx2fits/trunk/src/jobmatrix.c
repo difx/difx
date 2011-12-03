@@ -41,8 +41,7 @@ struct _JobMatrix
 };
 
 /* deltaT parameter is in seconds */
-JobMatrix *newJobMatrix(const DifxInput *D, const char *filebase, 
-	double deltaT)
+JobMatrix *newJobMatrix(const DifxInput *D, const char *filebase, double deltaT)
 {
 	JobMatrix *jm;
 	int a, n, t;
@@ -71,7 +70,7 @@ JobMatrix *newJobMatrix(const DifxInput *D, const char *filebase,
 	return jm;
 }
 
-void writeJobMatrix(JobMatrix *jm)
+void writeJobMatrix(const JobMatrix *jm)
 {
 	int *jobList;
 	FILE *out;
@@ -88,19 +87,26 @@ void writeJobMatrix(JobMatrix *jm)
 		return;
 	}
 
-	nJob = jm->D->nJob;
-	jobList = (int *)calloc(nJob, sizeof(int));
-	
 	v = snprintf(outname, DIFXIO_FILENAME_LENGTH, "%s.jobmatrix", jm->filebase);
 	if(v >= DIFXIO_FILENAME_LENGTH)
 	{
 		fprintf(stderr, "Developer error: writeJobMatrix: outname wants %d bytes, not %d\n", v, DIFXIO_FILENAME_LENGTH);
-
-		free(jobList);
 		
 		return;
 	}
+
+	nJob = jm->D->nJob;
+	jobList = (int *)calloc(nJob, sizeof(int));
+	
 	out = fopen(outname, "w");
+	if(!out)
+	{
+		fprintf(stderr, "Warning: cannot open %s for output.  No jobmatrix file will be produced.\n", outname);
+
+		free(jobList);
+
+		return;
+	}
 
 	for(a = 0; a < jm->nAntenna; a++)
 	{
@@ -159,12 +165,12 @@ void writeJobMatrix(JobMatrix *jm)
 
 void deleteJobMatrix(JobMatrix *jm)
 {
-	int t;
-
 	if(jm)
 	{
 		if(jm->matrix)
 		{
+			int t;
+
 			for(t = 0; t < jm->nTime; t++)
 			{
 				if(jm->matrix[t])

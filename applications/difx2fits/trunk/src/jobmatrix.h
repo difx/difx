@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009 by Walter Brisken                                  *
+ *   Copyright (C) 2009-2011 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -37,10 +37,9 @@ struct _JobMatrix;
 
 typedef struct _JobMatrix JobMatrix;
 
-JobMatrix *newJobMatrix(const DifxInput *D, const char *filebase, 
-	double deltaT);
+JobMatrix *newJobMatrix(const DifxInput *D, const char *filebase, double deltaT);
 
-void writeJobMatrix(JobMatrix *jm);
+void writeJobMatrix(const JobMatrix *jm);
 
 void deleteJobMatrix(JobMatrix *jm);
 

@@ -391,8 +391,6 @@ long long getSnifferMemoryUsage(const Sniffer *S)
 
 void deleteSniffer(Sniffer *S)
 {
-	int a;
-
 	if(S)
 	{
 		if(S->fitsSourceId2SourceId)
@@ -427,6 +425,7 @@ void deleteSniffer(Sniffer *S)
 		}
 		if(S->accum)
 		{
+			int a;
 			for(a = 0; a < S->nAntenna; a++)
 			{
 				deleteAccumulatorArray(S->accum[a], S->nAntenna);

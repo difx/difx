@@ -146,13 +146,12 @@ struct CommandLineOptions *newCommandLineOptions()
 
 void deleteCommandLineOptions(struct CommandLineOptions *opts)
 {
-	int i;
-
 	if(opts)
 	{
 		if(opts->nBaseFile > 0)
 		{
-			for(i = 0; i < opts->nBaseFile; i++)
+			int i;
+			for(i = 0; i < opts->nBaseFile; ++i)
 			{
 				if(opts->baseFile[i])
 				{
@@ -178,7 +177,7 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 
 	opts = newCommandLineOptions();
 
-	for(i = 1; i < argc; i++)
+	for(i = 1; i < argc; ++i)
 	{
 		if(argv[i][0] == '-')
 		{
@@ -190,17 +189,17 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 			else if(strcmp(argv[i], "--quiet") == 0 ||
 			        strcmp(argv[i], "-q") == 0)
 			{
-				opts->verbose--;
+				--opts->verbose;
 			}
 			else if(strcmp(argv[i], "--difx") == 0 ||
 			        strcmp(argv[i], "-d") == 0)
 			{
-				opts->doalldifx++;
+				++opts->doalldifx;
 			}
 			else if(strcmp(argv[i], "--verbose") == 0 ||
 			        strcmp(argv[i], "-v") == 0)
 			{
-				opts->verbose++;
+				++opts->verbose;
 			}
 			else if(strcmp(argv[i], "--zero") == 0 ||
 				strcmp(argv[i], "-0") == 0)
@@ -251,43 +250,43 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 				if(strcmp(argv[i], "--scale") == 0 ||
 				   strcmp(argv[i], "-s") == 0)
 				{
-					i++;
+					++i;
 					opts->scale = atof(argv[i]);
 					printf("Scaling data by %f\n", opts->scale);
 				}
 				else if(strcmp(argv[i], "--deltat") == 0 ||
 					strcmp(argv[i], "-t") == 0)
 				{
-					i++;
+					++i;
 					opts->jobMatrixDeltaT = atof(argv[i]);
 				}
 				else if(strcmp(argv[i], "--difx-tsys-interval") == 0 ||
 					strcmp(argv[i], "-i") == 0)
 				{
-					i++;
+					++i;
 					opts->DifxTsysAvgSeconds = atof(argv[i]);
 				}
 				else if(strcmp(argv[i], "--difx-pcal-interval") == 0)
 				{
-					i++;
+					++i;
 					opts->DifxPcalAvgSeconds = atof(argv[i]);
 				}
 				else if(strcmp(argv[i], "--sniff-time") == 0 ||
 					strcmp(argv[i], "-T") == 0)
 				{
-					i++;
+					++i;
 					opts->sniffTime = atof(argv[i]);
 				}
 				else if(strcmp(argv[i], "--bin") == 0 ||
 					strcmp(argv[i], "-B") == 0)
 				{
-					i++;
+					++i;
 					opts->pulsarBin = atoi(argv[i]);
 				}
 				else if(strcmp(argv[i], "--phasecentre") == 0 ||
 					strcmp(argv[i], "--phasecenter") == 0)
 				{
-					i++;
+					++i;
 					opts->phaseCentre = atoi(argv[i]);
 				}
 				else
@@ -324,7 +323,7 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 			else
 			{
 				opts->baseFile[opts->nBaseFile] = strdup(argv[i]);
-				opts->nBaseFile++;
+				++opts->nBaseFile;
 			}
 		}
 	}
@@ -348,7 +347,7 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 			return 0;
 		}
 		opts->nBaseFile = globbuf.gl_pathc;
-		for(i = 0; i < opts->nBaseFile; i++)
+		for(i = 0; i < opts->nBaseFile; ++i)
 		{
 			opts->baseFile[i] = strdup(globbuf.gl_pathv[i]);
 		}
@@ -364,7 +363,7 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 	}
 
 	/* if input file ends in .difx, trim it */
-	for(i = 0; i < opts->nBaseFile; i++)
+	for(i = 0; i < opts->nBaseFile; ++i)
 	{
 		l = strlen(opts->baseFile[i]);
 		if(l < 6)
@@ -417,9 +416,9 @@ static int populateFitsKeywords(const DifxInput *D, struct fits_keywords *keys)
 	keys->no_chan = -1;
 	keys->chan_bw = -1;
 	keys->ref_pixel = -1;
-	for(i = 0; i < D->nBaseline; i++)
+	for(i = 0; i < D->nBaseline; ++i)
 	{
-		for(j = 0; j < D->baseline[i].nFreq; j++)
+		for(j = 0; j < D->baseline[i].nFreq; ++j)
 		{
 			fqindex = DifxInputGetFreqIdByBaselineFreq(D, i, j);
 			if(fqindex < 0)
@@ -642,7 +641,7 @@ int convertFits(struct CommandLineOptions *opts, int passNum)
 
 	D = 0;
 
-	for(i = 0; i < opts->nBaseFile; i++)
+	for(i = 0; i < opts->nBaseFile; ++i)
 	{
 		if(opts->baseFile[i] == 0)
 		{
@@ -718,7 +717,7 @@ int convertFits(struct CommandLineOptions *opts, int passNum)
 			free(opts->baseFile[i]);
 			opts->baseFile[i] = 0;
 		}
-		nConverted++;
+		++nConverted;
 		if(opts->dontCombine)
 		{
 			break;
@@ -877,7 +876,7 @@ int main(int argc, char **argv)
 			break;
 		}
 		nConverted += n;
-		nFits++;
+		++nFits;
 	}
 
 	printf("%d of %d jobs converted to %d FITS files\n", nConverted, opts->nBaseFile, nFits);

@@ -86,7 +86,7 @@ static int getGainRow(GainRow *G, int nRow, const char *antName,
 	efreq = 1e11;
 	eband = N_VLBA_BANDS;
 
-	for(i = 0; i < N_VLBA_BANDS; i++)
+	for(i = 0; i < N_VLBA_BANDS; ++i)
 	{
 		if(freq > bandEdges[i] && freq < bandEdges[i+1])
 		{
@@ -98,7 +98,7 @@ static int getGainRow(GainRow *G, int nRow, const char *antName,
 		return -1;
 	}
 
-	for(r = 0; r < nRow; r++)
+	for(r = 0; r < nRow; ++r)
 	{
 		if(strcmp(antName, G[r].antName) != 0)
 		{
@@ -163,7 +163,7 @@ static int getNoQuote(char firstchar, FILE *in, char *token)
 		else if(isalnum(c) || c == '.' || c == '-' || c == '+')
 		{
 			token[i] = c;
-			i++;
+			++i;
 			if(i >= MAXTOKEN)
 			{
 				token[i] = 0;
@@ -209,7 +209,7 @@ static int getQuote(FILE *in, char *token)
 		else
 		{
 			token[i] = c;
-			i++;
+			++i;
 			if(i >= MAXTOKEN)
 			{
 				token[i] = 0;
@@ -293,24 +293,32 @@ static int parseGN(const char *filename, int row, GainRow *G)
 		}
 		else if(c == '!') /* handle comment */
 		{
+			const char *rv;
+
 			/* get rest of line */
-			(void)fgets(token, MAXTOKEN, in);
+			rv = fgets(token, MAXTOKEN, in);
 			token[0] = 0;
 			action = 0;
 			c = 0;
+			if(!rv)
+			{
+				fprintf(stderr, "Warning: parseGN: How odd, end of input after comment character!\n");
+			
+				break;
+			}
 		}
 		else if(c == ',')
 		{
 			if(ctr)
 			{
-				(*ctr)++;
+				++(*ctr);
 			}
 			action = 1;
 			c = 0;
 		}
 		if(c == '/')
 		{
-			row++;
+			++row;
 			action = 0;
 			if(row >= MAXENTRIES)
 			{
@@ -383,7 +391,7 @@ static void GainRowsSetTimeBand(GainRow *G, int nRow)
 	int i, j;
 	double freq;
 
-	for(i = 0; i < nRow; i++)
+	for(i = 0; i < nRow; ++i)
 	{
 		if(G[i].nPoly != 0 && G[i].nFreq != 0 && 
 		   G[i].nTime != 0 && G[i].nDPFU != 0)
@@ -397,7 +405,7 @@ static void GainRowsSetTimeBand(GainRow *G, int nRow)
 					    G[i].time[6]) +
 					    G[i].time[7]/24.0;
 		}
-		for(j = 0; j < N_VLBA_BANDS; j++)
+		for(j = 0; j < N_VLBA_BANDS; ++j)
 		{
 			freq = G[i].freq[0];
 			if(freq > bandEdges[j] && freq < bandEdges[j+1])
@@ -444,7 +452,7 @@ int loadGainCurves(GainRow *G)
 		return -3;
 	}
 	
-	for(f = 0; f < files.gl_pathc; f++)
+	for(f = 0; f < files.gl_pathc; ++f)
 	{
 		nRow = parseGN(files.gl_pathv[f], nRow, G);
 	}
@@ -578,28 +586,28 @@ const DifxInput *DifxInput2FitsGN(const DifxInput *D,
 	fitsWriteInteger(out, "TABREV", 1, "");
 	fitsWriteEnd(out);
 
-	for(i = 0; i < array_MAX_BANDS; i++)
+	for(i = 0; i < array_MAX_BANDS; ++i)
 	{
 		curveType[i] = 2;
 		xType[i] = 0;
 		yType[i] = 2;
 		xVal[i] = nan.f;	/* NaN */
 	}
-	for(i = 0; i < array_MAX_BANDS*MAXTAB; i++)
+	for(i = 0; i < array_MAX_BANDS*MAXTAB; ++i)
 	{
 		yVal[i] = nan.f;	/* NaN */
 	}
 	arrayId1 = 1;
 	mjd = 0.5*(D->mjdStart + D->mjdStop);
 
-	for(a = 0; a < D->nAntenna; a++)
+	for(a = 0; a < D->nAntenna; ++a)
 	{
 		freqId1 = 0;
 		antName = D->antenna[a].name;
 		antId1 = a + 1;
 		bad = 0;
 
-		for(c = 0; c < D->nConfig; c++)
+		for(c = 0; c < D->nConfig; ++c)
 		{
 			config = D->config + c;
 
@@ -608,7 +616,7 @@ const DifxInput *DifxInput2FitsGN(const DifxInput *D,
 				continue;	/* this freqId1 done already */
 			}
 			freqId1 = config->fitsFreqId + 1;
-			for(i = 0; i < nBand; i++)
+			for(i = 0; i < nBand; ++i)
 			{
 				freq = config->IF[i].freq;	/* MHz */
 				r = getGainRow(G, nRow, antName, freq, mjd);
@@ -619,16 +627,16 @@ const DifxInput *DifxInput2FitsGN(const DifxInput *D,
 						printf("\n");
 					}
 					printf("    No gain curve for station '%s'\n", antName);
-					messages++;
+					++messages;
 					bad = 1;
 					break;
 				}
 				nTerm[i] = G[r].nPoly;
-				for(j = 0; j < MAXTAB; j++)
+				for(j = 0; j < MAXTAB; ++j)
 				{
 					gain[i*MAXTAB + j] = (j < nTerm[i]) ?  G[r].poly[j] : 0.0;
 				}
-				for(p = 0; p < nPol; p++)
+				for(p = 0; p < nPol; ++p)
 				{
 					sens[p][i] = G[r].DPFU[p];
 				}
@@ -644,7 +652,7 @@ const DifxInput *DifxInput2FitsGN(const DifxInput *D,
 			FITS_WRITE_ITEM (arrayId1, p_fitsbuf);
 			FITS_WRITE_ITEM (freqId1, p_fitsbuf);
 
-			for(p = 0; p < nPol; p++)
+			for(p = 0; p < nPol; ++p)
 			{
 				FITS_WRITE_ARRAY(curveType, p_fitsbuf, nBand);
 				FITS_WRITE_ARRAY(nTerm, p_fitsbuf, nBand);
