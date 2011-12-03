@@ -47,6 +47,9 @@ const SmartDescription smartDescriptions[] =
 	{ 10,  1, "Spin retry count"},
 	{ 11,  0, "Recalibration retry count"},
 	{ 12,  0, "Power cycle count"},
+	{ 187, 0, "Reported Uncorrectable Errors"},
+	{ 189, 0, "High Fly Writes"},
+	{ 190, 0, "Airflow Temperature"},
 	{ 192, 0, "Retract cycle count"},
 	{ 193, 0, "Landing zone load count"},
 	{ 194, 0, "Temperature (C)"},
@@ -264,7 +267,7 @@ int getMk5Smart(SSHANDLE xlrDevice, Mk5Daemon *D, int bank)
 	S_DRIVEINFO driveInfo;
 	USHORT smartVersion;
 	Mk5Smart *smart;
-	int d, v;
+	int v;
 
 	if(bank < 0 || bank >= N_BANK)
 	{
@@ -296,7 +299,7 @@ int getMk5Smart(SSHANDLE xlrDevice, Mk5Daemon *D, int bank)
 	smart = &(D->smartData[bank]);
 	smart->mjd = 40587.0 + time(0)/86400.0;
 
-	for(d = 0; d < N_SMART_DRIVES; ++d)
+	for(int d = 0; d < N_SMART_DRIVES; ++d)
 	{
 		int v;
 		DriveInformation *drive;
@@ -346,13 +349,6 @@ int getMk5Smart(SSHANDLE xlrDevice, Mk5Daemon *D, int bank)
 		smart->nValue[d] = v;
 #endif
 	}
-
-//	if(d != N_SMART_DRIVES)
-//	{
-//		clearModuleInfo(D, bank);
-//
-//		return -5;
-//	}
 
 	return 0;
 }

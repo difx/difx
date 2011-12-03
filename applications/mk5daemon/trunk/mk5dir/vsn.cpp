@@ -148,6 +148,15 @@ long long interpretSMART(char *smartDescription, int maxLength, const S_SMARTVAL
 	case 12:
 		snprintf(smartDescription, maxLength, "Power cycle count = %Ld", V);
 		break;
+	case 187:
+		snprintf(smartDescription, maxLength, "Reported Uncorrectable Errors = %Ld\n", V);
+		break;
+	case 189:
+		snprintf(smartDescription, maxLength, "High Fly Writes = %Ld", V);
+		break;
+	case 190:
+		snprintf(smartDescription, maxLength, "Airflow Temperature = %Ld", V);
+		break;
 	case 192:
 		snprintf(smartDescription, maxLength, "Retract cycle count = %Ld", V);
 		break;
