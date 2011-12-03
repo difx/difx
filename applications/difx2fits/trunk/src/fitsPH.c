@@ -1,20 +1,20 @@
 /***************************************************************************
- *   Copyright (C) 2008-2011 by Walter Brisken & John Morgan	       *
- *									 *
+ *   Copyright (C) 2008-2011 by Walter Brisken & John Morgan               *
+ *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
  *   the Free Software Foundation; either version 3 of the License, or     *
- *   (at your option) any later version.				   *
- *									 *
+ *   (at your option) any later version.                                   *
+ *                                                                         *
  *   This program is distributed in the hope that it will be useful,       *
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of	*
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the	 *
- *   GNU General Public License for more details.			  *
- *									 *
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+ *   GNU General Public License for more details.                          *
+ *                                                                         *
  *   You should have received a copy of the GNU General Public License     *
- *   along with this program; if not, write to the			 *
- *   Free Software Foundation, Inc.,				       *
- *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.	     *
+ *   along with this program; if not, write to the                         *
+ *   Free Software Foundation, Inc.,                                       *
+ *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 //===========================================================================
 // SVN properties (DO NOT CHANGE)
@@ -238,7 +238,7 @@ static int getNTone(const char *filename, double t1, double t2, int verbose)
 	FILE *in;
 	char line[MaxLineLength+1];
 	int n, nTone, maxnTone=0;
-        int maxnToneNearby = 0;
+	int maxnToneNearby = 0;
 	double t;
 	char *rv;
 	char antName1[DIFXIO_NAME_LENGTH];
@@ -274,7 +274,7 @@ static int getNTone(const char *filename, double t1, double t2, int verbose)
 		}
 		else if (nTone > maxnToneNearby)
 		{
-        		maxnToneNearby = nTone;
+			maxnToneNearby = nTone;
 		}
 	}
 	fclose(in);
@@ -305,7 +305,7 @@ static int parsePulseCal(const char *line,
 	float stateCount[2][array_MAX_STATES*array_MAX_BANDS],
 	float pulseCalRate[2][array_MAX_TONES],
 	int refDay, const DifxInput *D, int *configId, 
-       int phasecentre, int doAll)
+	int phasecentre, int doAll)
 {
 	int IFs[array_MAX_BANDS];
 	int states[array_MAX_STATES];
@@ -370,22 +370,22 @@ static int parsePulseCal(const char *line,
 	*time -= refDay;
 	mjd = *time + (int)(D->mjdStart);
 
-       if((mjd < D->mjdStart || mjd > D->mjdStop) && (doAll == 0))
+	if((mjd < D->mjdStart || mjd > D->mjdStop) && (doAll == 0))
 	{
 		return -1;
 	}
 
 	scanId = DifxInputGetScanIdByAntennaId(D, mjd, antId);
 	if(scanId < 0)
-       {
-	       if(doAll)
-	       {
-		       scanId = 0;
-	       }
-	       else
-	       {
-		       return -3;
-	       }
+	{
+		if(doAll)
+		{
+			scanId = 0;
+		}
+		else
+		{
+			return -3;
+		}
 	}
 
 	if(phasecentre >= D->scan[scanId].nPhaseCentres)
@@ -802,7 +802,7 @@ int countTones(const DifxDatastream *dd)
 
 const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out,
-       int phasecentre, double avgSeconds, int verbose)
+	int phasecentre, double avgSeconds, int verbose)
 {
 	char stateFormFloat[8];
 	char toneFormDouble[8];
@@ -916,15 +916,15 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	{
 		printf("    Station pcal file not found. No station pcal or cable cal measurements available\n");
 	}
-       if(nTone < 0)
-       {
-	       nTone = -nTone;
-	       doAll = 1;
-       }
-       if(verbose)
-       {
-	       printf("    Number of tones: %d\n", nTone);
-       }
+	if(nTone < 0)
+	{
+		nTone = -nTone;
+		doAll = 1;
+	}
+	if(verbose)
+	{
+		printf("    Number of tones: %d\n", nTone);
+	}
 
 	nDifxTone = DifxInputGetMaxTones(D);
 	if(nDifxTone == 0)
@@ -999,7 +999,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 
 	arrayId1 = 1;
 
-       printf("   ");
+	printf("   ");
 	for(a = 0; a < D->nAntenna; a++)
 	{
 		for(k = 0; k < 2; k++)
@@ -1084,7 +1084,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 							}
 							v = parsePulseCal(line, a, &sourceId, &time, &timeInt, 
 								&cableCal, freqs, pulseCalReAcc, pulseCalImAcc,
-							        stateCount, pulseCalRate, refDay, D, &configId, phasecentre, doAll);
+								stateCount, pulseCalRate, refDay, D, &configId, phasecentre, doAll);
 							if(v < 0)
 							{
 								continue;/*to next line in file*/
@@ -1093,7 +1093,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 					}
 					doDump = 1;//write out every line for pcal file
 				}
-				else/*reading difx-extracted pcals*/
+				else if(in2) /*reading difx-extracted pcals*/
 				{	
 					rv = fgets(line, MaxLineLength, in2);
 					if(rv)
@@ -1106,8 +1106,8 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 						else 
 						{
 							v = parseDifxPulseCal(line, dsId, nBand, nTone, &newSourceId, &newScanId, &time, j,
-									      freqs, pulseCalRe, pulseCalIm, stateCount, pulseCalRate,
-									      refDay, D, &newConfigId, phasecentre);
+										freqs, pulseCalRe, pulseCalIm, stateCount, pulseCalRate,
+										refDay, D, &newConfigId, phasecentre);
 							if(v < 0)
 							{
 								continue;/*to next line in file*/
@@ -1362,7 +1362,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 
 	free(fitsbuf);
 
-       printf("\n");
+	printf("\n");
 
 	return D;
 }
