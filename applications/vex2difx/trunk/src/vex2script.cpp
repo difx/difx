@@ -29,6 +29,7 @@
 
 #include <fstream>
 #include <cstring>
+#include <cstdlib>
 #include "pystream.h"
 #include "corrparams.h"
 #include "vexload.h"
