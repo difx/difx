@@ -835,7 +835,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	char *fitsbuf, *p_fitsbuf;
 	char line[MaxLineLength+1];
 	int nBand, nPol;
-	int nTone=-2;
+	int nTone=0;
 	int nDifxTone;
 	int nAccum = 0;
 	int lastnWindow;
@@ -954,6 +954,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	}
 	if(nTone < 1)
 	{
+		printf("    No PC table will be written\n");
 		if(in)
 		{
 			fclose(in);
@@ -1093,7 +1094,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 					}
 					doDump = 1;//write out every line for pcal file
 				}
-				else if(in2) /*reading difx-extracted pcals*/
+				else /*reading difx-extracted pcals*/
 				{	
 					rv = fgets(line, MaxLineLength, in2);
 					if(rv)
