@@ -708,7 +708,7 @@ int pystream::writeScans(const VexData *V)
 						<< "*second, '" << scan->defName << "', obsCode, stnCode )" << endl;
 				}
                 else {
-                    *this << "# Not a recording scan - still set switches" << endl;
+                    *this << "print \"Not a recording scan - still set switches for " << scan->defName << ".\"" << endl;
                     *this << "subarray.setSwitches(mjdStart + " << deltat1 << "*second)" << endl;
 				}
                 // only start scan if we are at least 10sec away from scan end
