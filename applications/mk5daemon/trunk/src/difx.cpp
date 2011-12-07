@@ -146,12 +146,14 @@ static int isUsed(const Mk5Daemon *D, const DifxMessageStart *S)
 
 void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 {
+	const int RestartOptionLength = 16;
 	int l, n;
 	int childPid;
 	char filebase[DIFX_MESSAGE_FILENAME_LENGTH];
 	char filename[DIFX_MESSAGE_FILENAME_LENGTH];
 	char destdir[DIFX_MESSAGE_FILENAME_LENGTH];
 	char message[DIFX_MESSAGE_LENGTH];
+	char restartOption[RestartOptionLength];
 	char command[MAX_COMMAND_SIZE];
 	FILE *out;
 	Uses *uses;
@@ -209,8 +211,7 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 
 	if(returnValue < 0)
 	{
-		difxMessageSendDifxAlert("Since /tmp is full, mpifxcorr will not be started.",
-			DIFX_ALERT_LEVEL_ERROR);
+		difxMessageSendDifxAlert("Since /tmp is full, mpifxcorr will not be started.", DIFX_ALERT_LEVEL_ERROR);
 		
 		return;
 	}
@@ -219,8 +220,7 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 	if(access(S->inputFilename, R_OK) != 0)
 	{
 		snprintf(message, DIFX_MESSAGE_LENGTH, 
-			"Input file %s not found; cannot correlate it!",
-			S->inputFilename);
+			"Input file %s not found; cannot correlate it!", S->inputFilename);
 		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
 		
 		return;
@@ -501,9 +501,18 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 			system(command);
 		}
 
+		if(S->restartSeconds > 0.0)
+		{
+			snprintf(restartOption, RestartOptionLength, "-r %f", S->restartSeconds);
+		}
+		else
+		{
+			restartOption[0];
+		}
+
 		difxMessageSendDifxAlert("mk5daemon spawning mpifxcorr process", DIFX_ALERT_LEVEL_INFO);
 
-		snprintf(command, MAX_COMMAND_SIZE, "su - %s -c 'ssh -x %s \"%s -np %d --bynode --hostfile %s.machines %s %s %s\"' 2>&1", 
+		snprintf(command, MAX_COMMAND_SIZE, "su - %s -c 'ssh -x %s \"%s -np %d --bynode --hostfile %s.machines %s %s %s %s\"' 2>&1", 
 			user,
 			S->headNode,
 			mpiWrapper,
@@ -511,6 +520,7 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 			filebase,
 			mpiOptions,
 			difxProgram,
+			restartOption,
 			S->inputFilename);
 
 		snprintf(message, DIFX_MESSAGE_LENGTH, "Executing: %s", command);
