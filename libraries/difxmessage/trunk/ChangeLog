@@ -8,6 +8,7 @@ Change Condition message type to DriveStats
   attempts made to retain backward comatibility
 Add dispersion measure to transient message
 Fix parsing of Mark5 version messages and include a couple extra parameters
+Add support for "restartSeconds" to DifxStartMessage
 
 Version 2.0.1
 ~~~~~~~~~~~~~

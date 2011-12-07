@@ -285,6 +285,7 @@ typedef struct
 	char difxProgram[DIFX_MESSAGE_FILENAME_LENGTH];
 	int force;
 	char difxVersion[DIFX_MESSAGE_VERSION_LENGTH];
+	double restartSeconds;		/* Amount of time into job to actually start the correlation */
 } DifxMessageStart;
 
 typedef struct
