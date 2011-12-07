@@ -84,6 +84,11 @@ int DifxInputLoadThreads(DifxInput *D)
 	char *rv;
 	int n, nCore, i;
 
+	if (!D)
+	{
+		return 0;
+	}
+
 	if(D->job->threadsFile[0] == 0)
 	{
 		return 0;
