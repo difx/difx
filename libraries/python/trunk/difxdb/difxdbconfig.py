@@ -1,6 +1,14 @@
+#===========================================================================
+# SVN properties (DO NOT CHANGE)
+#
+# $Id$
+# $HeadURL$
+# $LastChangedRevision$
+# $Author$
+# $LastChangedDate$
+#
+#============================================================================
 __author__="Helge Rottmann"
-__date__ ="$11.11.2011 10:35:30$"
-
 
 import ConfigParser
 import os
@@ -21,7 +29,8 @@ class DifxDbConfig(object):
         
         if (not os.path.isfile(configFile)):
             if (create):
-                self.createConfig()
+                self.makeDefaultConfig()
+                self.writeConfig()
             else:
                 raise IOError("Configfile: %s does not exist" % configFile)
         
@@ -36,10 +45,9 @@ class DifxDbConfig(object):
         
         self.config.read(self.configFile)
         
-    
-    def createConfig(self):
+    def makeDefaultConfig(self):
         '''
-        Creates a minimal default (mysql) configuration 
+        Creates a minimal default (database) configuration 
         '''
         
         self.config.add_section('Database')
@@ -50,6 +58,11 @@ class DifxDbConfig(object):
         self.config.set('Database', 'database', 'difxdb')
         self.config.set('Database', 'type', 'mysql')
         
+    def writeConfig(self):
+        '''
+        Saves the configuration to disk
+        '''
+        
         # Writing  configuration file 
         with open(self.configFile, 'w') as configfile:
             self.config.write(configfile)
@@ -57,8 +70,20 @@ class DifxDbConfig(object):
     def get(self, section, key):
         '''
         Returns the configuration value for key in section 
+        If the section or key does not exist an empty string is returned
+        '''
+        try:
+            value = self.config.get(section,key)
+        except:
+            value = ""
+            
+        return(value)
+    
+    def set(self, section, key, value):
+        '''
+        Sets the configuration value for key in section 
         ''' 
-        return(self.config.get(section,key))
+        return(self.config.set(section, key, value))
     
     
     
