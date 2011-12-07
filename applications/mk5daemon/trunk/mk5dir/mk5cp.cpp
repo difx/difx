@@ -44,7 +44,7 @@
 const char program[] = "mk5cp";
 const char author[]  = "Walter Brisken";
 const char version[] = "0.10";
-const char verdate[] = "20111123";
+const char verdate[] = "20111206";
 
 const int defaultChunkSize = 50000000;
 
@@ -723,7 +723,7 @@ static int parseByteRange(long long *start, long long *stop, const char *scanLis
 {
 	if(sscanf(scanList, "%Ld_%Ld", start, stop) == 2)
 	{
-		if(*start < *stop)
+		if(*start >= 0 && *start < *stop)
 		{
 			return 1;
 		}
@@ -734,7 +734,7 @@ static int parseByteRange(long long *start, long long *stop, const char *scanLis
 	}
 	else if(sscanf(scanList, "%Ld+%Ld", start, stop) == 2)
 	{
-		if(*start > 0 && *stop > 0)
+		if(*start >= 0 && *stop > 0)
 		{
 			*stop += *start;
 
