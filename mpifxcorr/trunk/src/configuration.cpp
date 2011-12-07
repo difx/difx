@@ -555,7 +555,7 @@ int Configuration::getOppositeSidebandFreqIndex(int freqindex)
 
 int Configuration::getDataBytes(int configindex, int datastreamindex)
 {
-  int validlength, payloadbytes, framebytes;
+  int validlength, payloadbytes, framebytes, numframes;
   const datastreamdata &currentds = datastreamtable[configs[configindex].datastreamindices[datastreamindex]];
   const freqdata &arecordedfreq = freqtable[currentds.recordedfreqtableindices[0]]; 
   validlength = (arecordedfreq.decimationfactor*configs[configindex].blockspersend*currentds.numrecordedbands*2*currentds.numbits*arecordedfreq.numchannels)/8;
@@ -570,8 +570,12 @@ int Configuration::getDataBytes(int configindex, int datastreamindex)
       payloadbytes *= 2;
       framebytes = payloadbytes + VDIF_HEADER_BYTES;
     }
-    validlength = (validlength/payloadbytes + 2)*framebytes;
-
+    numframes = (validlength/payloadbytes + 2);
+    if(currentds.format == MARK5B) //be cautious in case the frame granularity is 2 (easier than checking)
+    {
+      numframes += numframes%2;
+    }
+    validlength = numframes*framebytes;
     //cout << "About to set databytes to " << validlength << " since currentds.framebytes is " << currentds.framebytes << " and blockspersend is " << configs[configindex].blockspersend << endl;
   }
   return validlength;
