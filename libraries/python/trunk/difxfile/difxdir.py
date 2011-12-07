@@ -1,6 +1,15 @@
+#===========================================================================
+# SVN properties (DO NOT CHANGE)
+#
+# $Id$
+# $HeadURL$
+# $LastChangedRevision$
+# $Author$
+# $LastChangedDate$
+#
+#============================================================================
 
 __author__="Helge Rottmann"
-__date__ ="$07.11.2011 12:47:19$"
 
 import os
 import os.path
