@@ -1,5 +1,14 @@
+#===========================================================================
+# SVN properties (DO NOT CHANGE)
+#
+# $Id$
+# $HeadURL$
+# $LastChangedRevision$
+# $Author$
+# $LastChangedDate$
+#
+#============================================================================
 __author__="Helge Rottmann"
-__date__ ="$Sep 12, 2011 9:35:56 AM$"
 
 from sqlalchemy import *
 from sqlalchemy.orm import *

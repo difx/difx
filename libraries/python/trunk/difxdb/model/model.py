@@ -1,3 +1,13 @@
+#===========================================================================
+# SVN properties (DO NOT CHANGE)
+#
+# $Id$
+# $HeadURL$
+# $LastChangedRevision$
+# $Author$
+# $LastChangedDate$
+#
+#============================================================================
 class Module(object):
     pass
     
