@@ -670,6 +670,7 @@ int readprofile(vhead *header, const char *profilename) {
 		      &header->antennaid[1]);
       if (status!=2) {
 	fprintf(stderr, "Error interpreting %s %s\n", keystr, value);
+	fclose(file);
 	return(BADVALUE);
       }
 

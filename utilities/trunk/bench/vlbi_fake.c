@@ -67,12 +67,12 @@ typedef enum {LBADR, MARK5B, VDIF} datamode;
 int main(int argc, char * const argv[]) {
   unsigned short fnamesize;
   ssize_t ntowrite;
-  int i, status, ofile, opt, tmp, sock, thisday, thismonth, thisyear, bwrote;
+  int i, status, opt, tmp, sock, thisday, thismonth, thisyear, bwrote;
   int seconds, hour, min, sec, bufsize, datarate, currentthread;
   char msg[MAXSTR+50], filetimestr[MAXSTR];
   char *buf, *headbuf, *ptr;
   long *lbuf;
-  double thismjd, finishmjd, ut, tbehind, t0, t1, t2, dtmp;
+  double thismjd, finishmjd, ut, t0, t1, t2, dtmp;
   float ftmp, speed;
   unsigned long long filesize, networksize, nwritten, totalsize;
   vhead *header=0;    // File header object
@@ -140,7 +140,6 @@ int main(int argc, char * const argv[]) {
   };
 
   bufsize  = DEFAULT_BUFSIZE * 1024;
-  ofile = -1;
   i = -1;
 
   setenv("TZ", "", 1); 
@@ -534,7 +533,6 @@ int main(int argc, char * const argv[]) {
     fprintf(stderr, "Unsupported recording mode\n");
     exit(1);
   }
-  tbehind = 0;
 
   status = setup_net(hostname, port, window_size, &udp, &sock);
   if (status) return(1);
@@ -932,7 +930,7 @@ void mjd2cal(double mjd, int *day, int *month, int *year, double *ut) {
 }
 
 double tm2mjd(struct tm date) {
-  int m, y, c, x1, x2, x3;
+  int m, y, c;
   double dayfrac;
 
   if (date.tm_mon < 2) {
@@ -945,10 +943,6 @@ double tm2mjd(struct tm date) {
 
   c = y/100;
   y = y-c*100;
-
-  x1 = 146097*c/4;
-  x2 = 1461*y/4;
-  x3 = (153*m+2)/5;
 
   dayfrac = ((date.tm_hour*60.0+date.tm_min)*60.0+date.tm_sec)/(60.0*60.0*24.0);
 
