@@ -203,6 +203,9 @@ Version 0.4
 * check for .im, not .uvw + .delay
 Version 0.5
 * -m option to use difxmessage
+Version 0.7
+* support for restart mode
+* loop over genmachines
 
 calcif
 ~~~~~~

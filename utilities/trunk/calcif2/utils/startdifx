@@ -30,13 +30,14 @@
 #============================================================================
 
 PROGRAM = 'startdifx'
-VERSION = '0.6'
-VERDATE = '20110710'
+VERSION = '0.7'
+VERDATE = '20111207'
 AUTHOR  = 'Walter Brisken'
 
 defaultgroup = "224.2.2.1"
 defaultport  = 50200
 defaultttl   = 3
+maxGenmachineFail = -1
 
 genmachines = 'genmachines -v'
 calcif      = 'calcif2'
@@ -60,7 +61,7 @@ def usage():
 	print '\n%s ver. %s  %s  %s\n' % (PROGRAM, VERSION, VERDATE, AUTHOR)
 	print 'A program to simplify the launching of mpifxcorr, specialy tuned'
 	print 'for NRAO-DiFX usage.  It can also cause model and FITS to be made.\n'
-	print 'Usage: startdifx [options] <input1> [<input2> [ ... ] ]\n'
+	print 'Usage: startdifx [options] [<start delay>] <input1> [<input2> [ ... ] ]\n'
 	print 'options can include:\n'
 	print '  -h or --help'
 	print '          print this usage info and exit\n'
@@ -86,6 +87,7 @@ def usage():
 	print '          use the current host as the head node\n'
 	print '  --override-version'
 	print '          ignore difx version differences\n'
+	print '<start delay> is an optional delay (seconds) to add to the job start time\n'
 	print '<inputN> is the file prefix for a DiFX input file (possibly including .input)\n'
 	print 'Environment variables DIFX_MESSAGE_GROUP and DIFX_MESSAGE_PORT'
 	print 'can be used to override the default group/port of %s/%d\n' % \
@@ -317,7 +319,7 @@ def getNodes(fileBase):
 	return datastreams, processors
 
 
-def sendStartMessage(fileBase, difxVersion, localHeadNode):
+def sendStartMessage(fileBase, difxVersion, localHeadNode, restartSeconds):
 	inputFile = fileBase + '.input'
 
 	group = getenv('DIFX_MESSAGE_GROUP')
@@ -356,6 +358,11 @@ def sendStartMessage(fileBase, difxVersion, localHeadNode):
 			processors = processors + q + " "
 		processors = processors.strip() + "\"/>"
 	
+	if restartSeconds > 0:
+		restartOption = '<restartSeconds>%f</restartSeconds>' % restartSeconds
+	else:
+		restartOption = ''
+
 	message = \
 		"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" \
 		"<difxMessage>" \
@@ -373,10 +380,11 @@ def sendStartMessage(fileBase, difxVersion, localHeadNode):
 		      "<datastream nodes=\"%s\"/>" \
 		      "%s" \
 		      "<difxVersion>%s</difxVersion>" \
+		      "%s" \
 		    "</difxStart>" \
 		  "</body>" \
 		"</difxMessage>\n" % \
-		(headNode, identifier, inputFile, corrHeadNode, dataStreams, processors, difxVersion)
+		(headNode, identifier, inputFile, corrHeadNode, dataStreams, processors, difxVersion, restartOption)
 
 	if verbose > 0:
 		print "Sending: ", message
@@ -417,7 +425,8 @@ def doMachines(fileBase, machinesPolicy, cache):
 		if machinesPolicy == 2:
 			system('rm -f %s' % machinesFile)
 
-		if not isfile(machinesFile):
+		nFail = 0
+		while not isfile(machinesFile):
 			if machinesPolicy > 0:
 				localHeadString = ""
 				cmd = '%s %s.input' % (genmachines, fileBase)
@@ -427,7 +436,9 @@ def doMachines(fileBase, machinesPolicy, cache):
 				if v != 0:
 					return 0
 				if not isfile(machinesFile):
-					return 0
+					nFail += 1
+					if nFail > maxGenmachineFail and maxGenmachineFail > 0:
+						return 0
 			else:
 				return 0
 
@@ -438,7 +449,7 @@ def doMachines(fileBase, machinesPolicy, cache):
 	return len(open(machinesFile).readlines())
 
 # Start difx with DifxStartMessage
-def runMessage(fileBase, machinesPolicy, deletePolicy, makeModel, override, useLocalHead, machinesCache):
+def runMessage(fileBase, machinesPolicy, deletePolicy, makeModel, override, useLocalHead, machinesCache, restartSeconds):
 
 	difxVersion = testDifxVersion(fileBase, override)
 
@@ -467,12 +478,12 @@ def runMessage(fileBase, machinesPolicy, deletePolicy, makeModel, override, useL
 	if np <= 0:
 		return 'Error: %s.machines not found' % fileBase
 
-	sendStartMessage(fileBase, difxVersion, useLocalHead)
+	sendStartMessage(fileBase, difxVersion, useLocalHead, restartSeconds)
 
 	return None
 
 # Start difx directly with mpirun
-def runDirect(fileBase, machinesPolicy, deletePolicy, makeModel, override, useLocalHead, machinesCache):
+def runDirect(fileBase, machinesPolicy, deletePolicy, makeModel, override, useLocalHead, machinesCache, restartSeconds):
 
 	difxVersion = testDifxVersion(fileBase, override)
 
@@ -518,7 +529,12 @@ def runDirect(fileBase, machinesPolicy, deletePolicy, makeModel, override, useLo
 	else:
 		difxProgram = 'runmpifxcorr.' + difxVersion
 
-	cmd = 'mpirun -np %d --bynode --hostfile %s.machines %s  %s %s.input' % (np, fileBase, mpiOptions, difxProgram, fileBase)
+	if restartSeconds > 0.0:
+		restartOption = '-r %f' % restartSeconds
+	else:
+		restartOption = ''
+
+	cmd = 'mpirun -np %d --bynode --hostfile %s.machines %s  %s %s %s.input' % (np, fileBase, mpiOptions, difxProgram, restartOption, fileBase)
 
 	sendMessage(fileBase, 'Spawning', 'Spawning %d processes' % np)
 	if verbose > 0:
@@ -543,13 +559,13 @@ def runDirect(fileBase, machinesPolicy, deletePolicy, makeModel, override, useLo
 	return None
 
 
-def run(fileBase, machinesPolicy, deletePolicy, makeModel, override, useStartMessage, useLocalHead, machinesCache):
+def run(fileBase, machinesPolicy, deletePolicy, makeModel, override, useStartMessage, useLocalHead, machinesCache, restartSeconds):
 	
 	savedEnvironment = updateEnvironment(fileBase+'.input.env')
 	if useStartMessage:
-		rv = runMessage(fileBase, machinesPolicy, deletePolicy, makeModel, override, useLocalHead, machinesCache)
+		rv = runMessage(fileBase, machinesPolicy, deletePolicy, makeModel, override, useLocalHead, machinesCache, restartSeconds)
 	else:
-		rv = runDirect(fileBase, machinesPolicy, deletePolicy, makeModel, override, useLocalHead, machinesCache)
+		rv = runDirect(fileBase, machinesPolicy, deletePolicy, makeModel, override, useLocalHead, machinesCache, restartSeconds)
 	restoreEnvironment(savedEnvironment)
 
 	return rv
@@ -563,6 +579,7 @@ deletePolicy = 0
 makeModel = True
 makeFits = False
 useLocalHead = False
+restartSeconds = 0.0
 fileBaseList = []
 cwd = getcwd()
 override = False
@@ -596,14 +613,17 @@ for a in argv[1:]:
 		elif a == '--override-version':
 			override = True
 	else:
-		if a[-6:] == '.input':
-			fb = a[:-6]
-		else:
-			fb = a
-		if fb[0] == '/':
-			fileBaseList.append(a)
-		else:
-			fileBaseList.append(cwd + '/' + fb)
+		try:
+			restartSeconds = float(a)
+		except:
+			if a[-6:] == '.input':
+				fb = a[:-6]
+			else:
+				fb = a
+			if fb[0] == '/':
+				fileBaseList.append(a)
+			else:
+				fileBaseList.append(cwd + '/' + fb)
 
 if len(fileBaseList) < 1:
 	usage()
@@ -618,7 +638,7 @@ for fileBase in fileBaseList:
 		exit(1)
 
 	v = run(fileBase, machinesPolicy, deletePolicy, makeModel, override, useStartMessage, 
-		useLocalHead, machinesCache)
+		useLocalHead, machinesCache, restartSeconds)
 
 	if v != None:
 		sendMessage(fileBase, 'ABORTED', v)
