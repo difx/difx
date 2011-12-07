@@ -1,6 +1,7 @@
 #!/usr/bin/python
 import os,sys
 import getopt
+import re
 
 # Set this to true if compiling within a master_tags checkout
 #master_tag = True
@@ -8,36 +9,38 @@ master_tag = False
 
 def main():
     """
-Install DiFX
+Build and Install DiFX
 
 Usage:
-    install-difx [-fh] [--force] [--help] [--noinstall] [--reconf] [--g77] [--clean] [--rpfits] [--perl] [--withmonitor] [--withfb] [--withhops] [--noipp] [--ipp] [--nodoc]
+    install-difx [-fhv] [--force] [--help] [--verb] \\
+        [--mk5daemon] [--withmonitor] [--rpfits] [--perl] [--withfb] \\
+        [--withhops] [--noinstall] [--reconf] [--noconf] [--clean] \\
+        [--g77] [--noipp] [--ipp] [--nodoc] \\
+        [--cache='name'] [--targ='...'] [--pristine]
 
-Builds and installs mpifxcorr and associated tools.
+Builds and installs mpifxcorr and associated tools.  If invoked from the
+setup directory, the build will be within the source directory heirarchy,
+otherwise the build will be made within the current directory.
 
-By default install-difx will stop if any errors are encountered (e.g. if
-something fails to build).
+By default install-difx will build and install the essential DiFX tools,
+but stop if any errors are encountered (e.g. if something fails to build).
 
-For the standard libraries and applications, install-difx will try to autoreconf
-first. Only if this fails will the application be configured step by step.
+For the standard libraries and applications, build-difx will try to run
+autoreconf first.  If this fails, step by step configuration will be tried.
 
 Options:
--f --force         Carry on regardless of any errors (all failed commands will
-                   be listed at the end.
+-f --force         Carry on regardless of any errors (all failed commands
+                   will be listed at the end.)
 
 -h --help          Display this help message and quit.
 
-   --noinstall     Don't install, only build.
-
-   --reconf        Don't run autoreconf but reconfigure step by step.
+-v --verb          Provide more chatter about progress.
 
    --mk5daemon     Install mk5daemon (not installed by default)
 
-   --g77           Use g77, rather than gfortran
+   --withmonitor   Try to build the difx_monitor application (requires pgplot)
 
    --rpfits        Build rpfits
-
-   --withmonitor   Try to build the difx_monitor application (requires pgplot)
 
    --perl          Install some non-standard perl utilities (deprecated)
 
@@ -45,13 +48,30 @@ Options:
 
    --withhops      Build HOPS (which requires pgplot)
 
+   --noinstall     Don't install, only build.
+
+   --reconf        Reconfigure step by step rather than with autoreconf
+
+   --noconf        Assume existing configuration is correct
+
    --clean         Run make clean for all components
+
+   --g77           Use g77, rather than gfortran
 
    --noipp         Don't try and install ipp package config file
 
-   --ipp           Force installation of ipp package config file (default don't overwrite existing)
+   --ipp           Force installation of ipp package config file
+                   (default doesn't overwrite existing)
 
    --nodoc         Don't build the documentation
+
+   --cache='name'  Speeds up the configuration using cache files
+                   'name' and 'name-CXX' in the build directory
+
+   --targ='...'    Runs make ... on each of the components
+
+   --pristine      Removes auto-built sources from source directories
+                   (and implies --clean)
 
     """
     pass
@@ -63,7 +83,11 @@ Options:
 #  * Make sure it is documented in main.__doc__
 ###############################################################################
 try:
-    opts, args = getopt.gnu_getopt(sys.argv[1:], "fh", ["help", "force", "reconf", "noinstall", "mk5daemon", "g77", "clean", "rpfits", "perl", "withmonitor", "withfb", "withhops", "noipp", "ipp"])
+    opts, args = getopt.gnu_getopt(sys.argv[1:], "fhv",
+        ["force", "help", "verb",
+        "mk5daemon", "withmonitor", "rpfits", "perl", "withfb",
+        "withhops", "noinstall", "reconf", "noconf", "clean",
+        "g77", "noipp", "ipp", "cache=", "targ=", "pristine" ])
 except getopt.GetoptError, err:
     print err
     print main.__doc__
@@ -84,94 +108,66 @@ rpfits = False
 perl = False
 doclean = False
 domonitor = False
+target = 'all'
+verb = False
+cache = 'none'
+errors = []
+noconf = False
+pristine = False
 dofb = False
 dohops = False
 dodoc = True
 doipp = 0
 orgcwd = os.getcwd()
 
-# read arguments
-
 # read options
 if len(opts) > 0:
     for o, a in opts:
+        if o in ("-f", "--force"):
+            force = True
         if o in ("-h", "--help"):
             print main.__doc__
             sys.exit(2)
-        if o in ("-f", "--force"):
-            force = True
-        if o == "--reconf":
-            reconf = True
-        if o == "--noinstall":
-            noinstall = True
+        if o in ("-v", "--verb"):
+            verb = True
         if o == "--mk5daemon":
             mk5d = True
-        if o == "--g77":
-            gfortran = False
-        if o == "--perl":
-            perl = True
-        if o == "--rpfits":
-            rpfits = True
         if o == "--withmonitor":
             domonitor = True
+        if o == "--rpfits":
+            rpfits = True
+        if o == "--perl":
+            perl = True
         if o == "--withfb":
             dofb = True
         if o == "--withhops":
             dohops = True
-        if o == "--ipp":
-            doipp = 1
-        if o == "--noipp":
-            doipp = -1
+        if o == "--noinstall":
+            noinstall = True
+        if o == "--reconf":
+            reconf = True
+        if o == "--noconf":
+            noconf = True
+            reconf = True
         if o == "--clean":
             doclean = True
         if o == "--nodoc":
             dodoc = "False"
-
-###### Subroutine to run a command and raise error if  
-###### command doesn't return 0.
-if force:
-    errors = []
-
-def run(cmd):
-    if os.system(cmd):
-        if force:
-            errors.append(os.getcwd() + ' ' + cmd + " failed.")
-        else:
-            raise RuntimeError, "Error running " + cmd + " in " + os.getcwd()
-
-###### Subroutine to do the compiling of an auto-tool ###
-def auto_compile(doreconf, dolibtoolize, doautoheader, prefix, dompicxx):
-    if (doreconf and (reconf or os.system("autoreconf"))):
-        print "reconfiguring"
-        if os.path.exists('m4'):
-            run("aclocal -I m4")
-        else:
-            run("aclocal")
-        if dolibtoolize:
-            run(LIBTOOLIZE+" --copy --force")
-        run("autoconf")
-        if doautoheader:
-            run("autoheader")
-        run("automake -a")
-        configstring = "./configure --prefix=" + prefix
-        if dompicxx:
-            configstring += " CXX=" + mpicxx
-        run(configstring)
-    run("make")
-    if not noinstall:
-        run("make install")
-
-###### Subroutine to set up documentation area ##########
-def make_doc_area(basedocdir):
-    if not os.path.exists(basedocdir):
-        os.mkdir(basedocdir)
-    orgpath = sys.argv[0]
-    if orgpath[0:2] == "./":
-        orgpath = orgpath[2:]
-    orgpath = orgcwd + orgpath
-    print os.path.abspath(orgpath)
-    setupdir = os.path.abspath(orgpath)[:-12]
-    os.system("cp -f %s/doco-index.html %s/index.html" % (setupdir, basedocdir))
+        if o == "--g77":
+            gfortran = False
+        if o == "--ipp":
+            doipp = 1
+        if o == "--noipp":
+            doipp = -1
+        if o == "--cache":
+            cache = a
+        if o == "--targ":
+            target = a
+            noinstall = True
+        if o == "--pristine":
+            pristine = True
+            doclean = True
+            force = True
 
 ###### Get all relevant environment variables ###########
 print "************************************"
@@ -180,6 +176,9 @@ print
 difxroot = os.environ.get('DIFXROOT')
 if not difxroot:
     raise RuntimeError, "DIFXROOT must be defined"
+if not re.match("/",difxroot):
+    raise RuntimeError, "DIFXROOT must be an absolute path"
+
 bindir = difxroot + '/bin/'
 libdir = difxroot + '/lib/'
 pkgdir = difxroot + '/lib/pkgconfig/'
@@ -217,7 +216,8 @@ if gfortran:
     os.environ['USEGFORTRAN'] = 'yes'
 
 
-###### Targets ##########################################
+###### Targets ####################################################
+# auto_compile(doreconf, dolibtoolize, doautoheader, ..., dompicxx)
 
 libtargets = [["difxio",     difx_version, True,True,True,False],
               ["difxmessage",difx_version, True,True,True,False],
@@ -242,80 +242,228 @@ if mk5d:
 if domonitor:
     apptargets.append(["difx_monitor", difx_version, False,False,False,False])
 
-startdir = os.getcwd()
+# a navigation aid
+def os_chdir(dir):
+    os.chdir(dir)
+    if verb:
+        print "--> " + dir
+        print "==> " + os.getcwd()
+        print
+
+# work out build and source directories
+blddir = os.getcwd()
+setupdir = os.path.dirname(sys.argv[0])
+if not setupdir:
+    setupdir = "."
+os_chdir(setupdir)
+
+# master_tags/ has no setup directory
 if not master_tag:
-    os.chdir("..")
+    os_chdir("..")
 topdir = os.getcwd()
+
+# think a bit about pkgconfig path
+pkg_config_path = blddir + "/pkgconfig"
+pkg_config_path += ":" + os.environ.get('PKG_CONFIG_PATH')
+os.environ['PKG_CONFIG_PATH'] = pkg_config_path
+
+# source dir build starts in 'setup' of the svn tree and topdir of master_tag
+if blddir == topdir + '/setup':
+    if verb:
+        print;print "Building/Installing from the source directory"
+    inbdir = False
+    startdir = topdir + '/setup'
+elif master_tag and blddir == topdir:
+    if verb:
+        print;print "Building/Installing from the master tag source directory"
+    inbdir = False
+    startdir = topdir
+else:
+    if verb:
+        print;print "Building/Installing from the build directory:"
+    inbdir = True
+    startdir = topdir + '/setup'
+
+if cache != 'none':
+    cache = ' --cache-file=' + blddir + '/' + cache
+
+if verb:
+    print "   Build dir:  " + blddir
+    print "  Source dir:  " + topdir
+    print " PkgCfg path:  " + os.environ.get('PKG_CONFIG_PATH')
+    print ""
+
+###### Subroutine to run a command and raise error on non-zero return
+def run(cmd):
+    if verb:
+        print "Run(" + cmd + ") in " + os.getcwd()
+    if os.system(cmd):
+        if force:
+            errors.append(os.getcwd() + ' ' + cmd + " failed.")
+        else:
+            raise RuntimeError, "Error running " + cmd + " in " + os.getcwd()
+
+###### Subroutine to do the compiling of an auto-tool ###
+def auto_compile(doreconf, dolibtoolize, doautoheader, prefix, dompicxx):
+    thisdir = os.getcwd()   # somewhere below topdir
+    if (doreconf and (reconf or os.system("autoreconf -if"))):
+        if noconf and os.path.exists('configure'):
+            print "Re-using existing configuration"
+        else:
+            print "Reconfiguring step by step"
+            if os.path.exists('m4'):
+                run("aclocal -I m4")
+            else:
+                run("aclocal")
+            if dolibtoolize:
+                run(LIBTOOLIZE+" --copy --force")
+            run("autoconf")
+            if doautoheader:
+                run("autoheader")
+            run("automake -acf")
+
+    if inbdir:
+        cfp = thisdir
+        blp = cfp.replace(topdir, blddir)
+        if not os.path.exists(blp):
+            os.makedirs(blp)
+            if verb:
+                print "++> " + blp + " was created"
+        os_chdir(blp)
+    else:
+        cfp = '.'
+
+    if noconf and os.path.exists('config.status'):
+        print "Re-using existing configuration"
+    else:
+        configstring = cfp + "/configure --prefix=" + prefix
+        if cache != 'none':
+            configstring += cache
+        # configstring = cfp + "/configure --prefix=" + prefix + cache
+        if dompicxx:
+            if cache != 'none':
+                configstring += "-CXX"
+            configstring += " CXX=" + mpicxx
+        run(configstring)
+
+    run("make " + target)
+    if not noinstall:
+        run("make install")
+    os_chdir(thisdir)
+
+###### Subroutine to set up documentation area ##########
+def make_doc_area(basedocdir):
+    if not os.path.exists(basedocdir):
+        os.mkdir(basedocdir)
+### setupdir was defined above
+#   orgpath = sys.argv[0]
+#   if orgpath[0:2] == "./":
+#       orgpath = orgpath[2:]
+#   orgpath = orgcwd + orgpath
+#   print os.path.abspath(orgpath)
+#   setupdir = os.path.abspath(orgpath)[:-11]
+    print "cp -f %s/doco-index.html %s/index.html" % (setupdir, basedocdir)
+    os.system("cp -f %s/doco-index.html %s/index.html" % (setupdir, basedocdir))
+
+
+###### Work ##########################################
+
+# a few of these are (randomly) svn'd...
+autojunk  = 'aclocal.m4 autom4te.cache compile config.guess'
+autojunk += ' config.h.in config.sub configure depcomp config.status'
+autojunk += ' install-sh ltmain.sh Makefile.in missing'
+# autojunk += ' COPYING INSTALL'
 
 if doclean:
     if perl:
         print "**** Cleaning vexlib"
-        os.chdir("libraries/vex/"+difx_version+"/vexlib")
+        os_chdir("libraries/vex/"+difx_version+"/vexlib")
         run("make clean")
-        os.chdir(topdir)
+        os_chdir(topdir)
     if rpfits:
         print "**** Cleaning rpfits"
         if platform == "darwin":
-            os.chdir("libraries/rpfits/"+difx_version+"/darwin_x86")
+            os_chdir("libraries/rpfits/"+difx_version+"/darwin_x86")
         else:
             if difxbits == "32":
-                os.chdir("libraries/rpfits/"+difx_version+"/linux/")
+                os_chdir("libraries/rpfits/"+difx_version+"/linux/")
             else:
-                os.chdir("libraries/rpfits/"+difx_version+"/linux64/")
+                os_chdir("libraries/rpfits/"+difx_version+"/linux64/")
         run("make clean")
-        os.chdir(topdir)
+        os_chdir(topdir)
 
-    os.chdir("libraries")
+    os_chdir("libraries")
     thisdir = os.getcwd()
     for libtarget in libtargets:
         targetdir = libtarget[0] + '/' + libtarget[1]
         if os.path.exists(targetdir):
             print
             print "**** Cleaning "+targetdir
-            os.chdir(targetdir)
-            run("make clean")
+            os_chdir(targetdir)
+            run("make -k clean distclean")
+            if pristine:
+                run("rm -rf " + autojunk)
         else:
             print
             print "**** Skipping "+targetdir
             print
-        os.chdir(thisdir)
+        os_chdir(thisdir)
 
-    os.chdir(topdir)
-    os.chdir("applications")
+    os_chdir(topdir)
+    os_chdir("applications")
     thisdir = os.getcwd()
     for apptarget in apptargets:
         targetdir = apptarget[0] + '/' + apptarget[1]
         if os.path.exists(targetdir):
             print
             print "**** Cleaning "+targetdir
-            os.chdir(targetdir)
-            run("make clean")
+            os_chdir(targetdir)
+            run("make -k clean distclean")
+            if pristine:
+                run("rm -rf " + autojunk)
         else:
             print
             print "**** Skipping "+targetdir
             print
-        os.chdir(thisdir)
+        os_chdir(thisdir)
 
-    os.chdir(topdir)
-    os.chdir("utilities")
+    os_chdir(topdir)
+    os_chdir("utilities")
     thisdir = os.getcwd()
     for utiltarget in utiltargets:
-        if (utiltarget[1] == ''):
-            targetdir = utiltarget[0]
-        else:
-            targetdir= utiltarget[1]  + '/' + utiltarget[0]
+	if (utiltarget[1] == ''):
+	    targetdir = utiltarget[0]
+	else:
+	    targetdir= utiltarget[1]  + '/' + utiltarget[0]
         if os.path.exists(targetdir):
             print
             print "**** Cleaning "+targetdir
-            os.chdir(targetdir)
-            run("make clean")
+            os_chdir(targetdir)
+            run("make -k clean distclean")
+            if pristine:
+                run("rm -rf " + autojunk)
         else:
             print
             print "**** Skipping "+targetdir
             print
-        os.chdir(thisdir)
+        os_chdir(thisdir)
 
-    os.chdir(topdir)
+    targetdir = topdir + "/mpifxcorr/" + difx_version
+    if os.path.exists(targetdir):
+        print
+        print "**** Cleaning "+targetdir
+        os_chdir(targetdir)
+        run("make -k clean distclean") 
+        if pristine:
+            run("rm -rf " + autojunk)
+        else:
+            print
+            print "**** Skipping "+targetdir
+            print
+
+    os_chdir(topdir)
+    if pristine:
+        run('find . -name Makefile.in -exec rm {} \;')
     sys.exit(0)  # Clean exit
 
 
@@ -336,10 +484,7 @@ if not noinstall:
     if not os.path.exists(incdir):
         os.mkdir(incdir)
 
-##### Install IPP package config file if appropriate  ###
-    print "************************************"
-    print "Setting up directories"
-    print
+    ##### Install IPP package config file if appropriate  ###
     if doipp<0:
         print "Not installing IPP .pc file"
         print
@@ -359,7 +504,7 @@ if perl:
     print "************************************"
     print "Building vex"
     print
-    os.chdir("libraries/vex/"+difx_version+"/vexlib")
+    os_chdir("libraries/vex/"+difx_version+"/vexlib")
     if platform == "darwin":
         run("make -f Makefile.osx")
     else:
@@ -367,23 +512,23 @@ if perl:
     if not noinstall:
         run("mv -f libvex." + SHAREDPOSTFIX + " " + libdir)
         run("mv -f libvex.a " + libdir)
-    os.chdir("../vexperl")
+    os_chdir("../vexperl")
     run("perl Makefile.PL PREFIX=" + difxroot)
     run("make")
     if not noinstall:
         run("make install")
-    os.chdir(topdir)
+    os_chdir(topdir)
 
     print
     print "************************************"
     print "Building Astro Perl"
     print
-    os.chdir("libraries/perl/"+difx_version+"/Astro")
+    os_chdir("libraries/perl/"+difx_version+"/Astro")
     run("perl Makefile.PL PREFIX="+difxroot)
     run("make")
     if not noinstall:
         run("make install")
-        os.chdir(topdir)
+        os_chdir(topdir)
 
     print
     print "************************************"
@@ -402,21 +547,21 @@ if rpfits:
     print "Building rpfits"
     print
     if platform == "darwin":
-        os.chdir("libraries/rpfits/"+difx_version+"/darwin_x86")
+        os_chdir("libraries/rpfits/"+difx_version+"/darwin_x86")
     else:
         if difxbits == "32":
-            os.chdir("libraries/rpfits/"+difx_version+"/linux/")
+            os_chdir("libraries/rpfits/"+difx_version+"/linux/")
         else:
-            os.chdir("libraries/rpfits/"+difx_version+"/linux64/")
+            os_chdir("libraries/rpfits/"+difx_version+"/linux64/")
     run("make")
     if not noinstall:
         run("mv -f librpfits.a " + libdir)
-    os.chdir(topdir)
+    os_chdir(topdir)
     if not noinstall:
         run("cp -f libraries/rpfits/"+difx_version+"/code/RPFITS.h " + incdir)
 
 ##### Make standard (autotool'd) libraries ###############
-os.chdir("libraries")
+os_chdir("libraries")
 thisdir = os.getcwd()
 for libtarget in libtargets:
     targetdir = libtarget[0]  + '/' + libtarget[1] 
@@ -426,14 +571,15 @@ for libtarget in libtargets:
         print "************************************"
         print "Building ", targetdir
         print
-        os.chdir(targetdir)
-        auto_compile(libtarget[2], libtarget[3], libtarget[4], difxroot, libtarget[5])
+        os_chdir(targetdir)
+        auto_compile(libtarget[2], libtarget[3], libtarget[4],
+            difxroot, libtarget[5])
     else:
         print
         print "******* Skipping "+targetdir
         print
-    os.chdir(thisdir)
-os.chdir(topdir)
+    os_chdir(thisdir)
+os_chdir(topdir)
 
 ##### Make mpifxcorr #####################################
 print
@@ -441,24 +587,48 @@ print "************************************"
 print "Making mpifxcorr"
 print
 
-os.chdir("mpifxcorr/" + difx_version)
+os_chdir("mpifxcorr/" + difx_version)
+thisdir = os.getcwd()
 
-run("aclocal")
-run("autoconf")
-run("autoheader")
-run("automake -a")
-rpfitsopt = ''
-if rpfits:
-    rpfitsopt = ' --with-rpfits '
-run("./configure CXX=" + mpicxx + rpfitsopt + " --prefix=" + difxroot)
-run("make")
+if noconf and os.path.exists('configure'):
+    print "Reusing mpifxcorr configuration"
+else:
+    print "Reconfiguring mpifxcorr"
+    run("aclocal")
+    run("autoconf")
+    run("autoheader")
+    run("automake -acf")
+    # the files added are all present, but that need not always be true....
+
+if inbdir:
+    cfp = thisdir
+    blp = cfp.replace(topdir, blddir)
+    if not os.path.exists(blp):
+        os.makedirs(blp)
+        if verb:
+            print "++> " + blp + " was created"
+    os_chdir(blp)
+else:
+    cfp = '.'
+
+if noconf and os.path.exists('config.status'):
+    print "Re-using existing mpifxcorr configuration"
+else:
+    configstring = cfp + "/configure CXX=" + mpicxx
+    configstring += " --prefix=" + difxroot
+    if rpfits:
+        configstring += ' --with-rpfits '
+    if cache != 'none':
+        configstring += cache + "-CXX"
+    run(configstring)
+
+run("make " + target)
 if not noinstall:
     run("make install")
-    run("cp -f src/*.h " + incdir)
-os.chdir(topdir)
+os_chdir(topdir)
 
 ##### Make standard (autotool'd) applications ############
-os.chdir("applications")
+os_chdir("applications")
 thisdir = os.getcwd()
 for apptarget in apptargets:
     targetdir = apptarget[0]  + '/' + apptarget[1] 
@@ -468,17 +638,18 @@ for apptarget in apptargets:
         print "************************************"
         print "Building ", apptarget[0]
         print
-        os.chdir(targetdir)
-        auto_compile(apptarget[2], apptarget[3], apptarget[4], difxroot, apptarget[5])
+        os_chdir(targetdir)
+        auto_compile(apptarget[2], apptarget[3], apptarget[4],
+            difxroot, apptarget[5])
     else:
         print
         print "******* Skipping "+targetdir
         print
-    os.chdir(thisdir)
-os.chdir(topdir)
+    os_chdir(thisdir)
+os_chdir(topdir)
 
 ##### Make standard (autotool'd) utilities ###############
-os.chdir("utilities")
+os_chdir("utilities")
 thisdir = os.getcwd()
 for utiltarget in utiltargets:
     if (utiltarget[1] == ''):
@@ -490,14 +661,15 @@ for utiltarget in utiltargets:
         print
         print "************************************" 
         print "Building ", utiltarget[0]
-        os.chdir(targetdir)
-        auto_compile(utiltarget[2], utiltarget[3], utiltarget[4], difxroot, utiltarget[5])
+        os_chdir(targetdir)
+        auto_compile(utiltarget[2], utiltarget[3], utiltarget[4],
+            difxroot, utiltarget[5])
     else:
         print
         print "******* Skipping "+targetdir
         print
-    os.chdir(thisdir)
-os.chdir(topdir)
+    os_chdir(thisdir)
+os_chdir(topdir)
 
 ##### Make documentation #################################
 basedocdir = difxroot + '/doc/'
