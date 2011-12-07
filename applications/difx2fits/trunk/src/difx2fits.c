@@ -30,7 +30,9 @@
 #include <string.h>
 #include <stdlib.h>
 #include <glob.h>
+#include <errno.h>
 #include <sys/stat.h>
+#include <sys/resource.h>
 #include "difx2fits.h"
 #include "../config.h"
 
@@ -167,6 +169,24 @@ void deleteCommandLineOptions(struct CommandLineOptions *opts)
 		}
 		free(opts);
 	}
+}
+
+int exceedOpenFileLimit(int numFiles)
+{
+        struct rlimit limit;
+	//
+	// Get max number of open files that the OS allows
+	if (getrlimit(RLIMIT_NOFILE, &limit) != 0) 
+	{
+	    printf("Cannot determine user file open limit (errno=%d)\n", errno);
+	    return(1);
+	}
+	//
+	// Check if the number of DIFX files exceed OS limit
+	if (numFiles >= limit.rlim_cur)
+		return(1);
+
+	return(0);
 }
 
 struct CommandLineOptions *parseCommandLine(int argc, char **argv)
@@ -307,6 +327,17 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 		}
 		else
 		{
+	
+			if (exceedOpenFileLimit(opts->nBaseFile))
+			{
+				printf("Error: The number of input files exceeds the OS limit of allowed open files!\n");
+				printf("Run ulimit -n to increase that number.\n");
+				printf("Note: This might require increasing the hard limit in /etc/security/limits.conf\n");
+				deleteCommandLineOptions(opts);
+
+				return 0;
+			}
+	
 			if(opts->nBaseFile >= MAX_INPUT_FILES)
 			{
 				printf("Error: too many input files!\n");
@@ -338,6 +369,16 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 	if(opts->doalldifx)
 	{
 		glob("*.difx", 0, 0, &globbuf);
+		if (exceedOpenFileLimit(globbuf.gl_pathc))
+		{
+			printf("Error: The number of input files exceeds the OS limit of allowed open files!\n");
+			printf("Run ulimit -n to increase that number.\n");
+			printf("Note: This might require increasing the hard limit in /etc/security/limits.conf\n");
+			deleteCommandLineOptions(opts);
+
+			return 0;
+		}
+
 		if(globbuf.gl_pathc > MAX_INPUT_FILES)
 		{
 			printf("Error: too many input files!\n");
@@ -849,6 +890,7 @@ int main(int argc, char **argv)
 	struct CommandLineOptions *opts;
 	int nConverted = 0;
 	int n, nFits = 0;
+
 
 	if(argc < 2)
 	{
