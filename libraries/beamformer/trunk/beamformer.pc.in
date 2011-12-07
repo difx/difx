@@ -4,8 +4,7 @@ libdir=@libdir@
 includedir=@includedir@/beamformer/
 	
 Name: beamformer
-Description: Library for adaptive beamforming and RFI clean-up
-Requires: Armadillo 2.x.x
+Description: Library for adaptive beamforming and RFI clean-up with BLAS linear algebra routines via Armadillo C++
 Version: @PACKAGE_VERSION@
 Libs: -L${libdir} -lbeamformer -larmadillo -lblas -llapack
 Cflags: -I${includedir}

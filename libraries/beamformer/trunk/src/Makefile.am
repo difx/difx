@@ -8,6 +8,7 @@ library_include_headers = Beamformer.h BeamformerWeights.h BeamformerData.h Arra
 lib_LTLIBRARIES = libbeamformer.la
 
 libbeamformer_la_CXXFLAGS = -Wall -O3
+#libbeamformer_la_CXXFLAGS = -Wall -O3 -DUSE_SINGLE_PRECISION=1
 
 libbeamformer_la_LDFLAGS = -larmadillo -lblas -llapack -version-info 0:1:0
 
