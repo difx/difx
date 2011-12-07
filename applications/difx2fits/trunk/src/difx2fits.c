@@ -182,8 +182,8 @@ int exceedOpenFileLimit(int numFiles)
 	    return(1);
 	}
 	//
-	// Check if the number of DIFX files exceed OS limit
-	if (numFiles >= limit.rlim_cur)
+	// Check if the number of DIFX files (plus a buffer of 20) exceed OS limit
+	if (numFiles + 20 >= limit.rlim_cur)
 		return(1);
 
 	return(0);
