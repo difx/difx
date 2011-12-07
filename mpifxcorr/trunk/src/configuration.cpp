@@ -695,6 +695,8 @@ Mode* Configuration::getMode(int configindex, int datastreamindex)
     case VLBN:
     case MARK5B:
     case VDIF:
+    case K5VSSP:
+    case K5VSSP32:
     case INTERLACEDVDIF:
       framesamples = getFramePayloadBytes(configindex, datastreamindex)*8/(getDNumBits(configindex, datastreamindex)*getDNumRecordedBands(configindex, datastreamindex)*streamdecimationfactor);
       framebytes = getFrameBytes(configindex, datastreamindex);
@@ -1080,7 +1082,11 @@ bool Configuration::processDatastreamTable(ifstream * input)
     else if(line == "LBA16BIT")
       datastreamtable[i].format = LBA16BIT;
     else if(line == "K5")
-      datastreamtable[i].format = K5;
+      datastreamtable[i].format = K5VSSP;
+    else if(line == "K5VSSP")
+      datastreamtable[i].format = K5VSSP;
+    else if(line == "K5VSSP32")
+      datastreamtable[i].format = K5VSSP32;
     else if(line == "MKIV")
       datastreamtable[i].format = MKIV;
     else if(line == "VLBA")
