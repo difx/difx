@@ -100,7 +100,6 @@ struct type_pass *pass;
         return (1);
         }
     else if (oret < 0) return (-1);
-    if (do_accounting) account ("Write output files/plots");
                                         /* Free allocated memory */
     free (sbarray);
 

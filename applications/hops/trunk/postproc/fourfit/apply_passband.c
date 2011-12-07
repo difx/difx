@@ -13,11 +13,13 @@ void apply_passband (int sb,
     {
     int i,
         ibot,
-        itop;
+        itop,
+        incband;
 
     double bw,
            bottom,
-           top;
+           top,
+           param_passband_0_, param_passband_1_;
     
     extern struct type_param param;
     extern struct type_status status;
@@ -28,6 +30,18 @@ void apply_passband (int sb,
     if (param.passband[0] == 0.0 && param.passband[1] == 1.0E6)
         return;
 
+    if (param.passband[0] < param.passband[1])
+        {
+        incband = 1;
+        param_passband_0_ = param.passband[0];
+        param_passband_1_ = param.passband[1];
+        }
+    else
+        {
+        incband = 0;
+        param_passband_0_ = param.passband[1];
+        param_passband_1_ = param.passband[0];
+        }
 
     bw = 0.5e-6 / param.samp_period;/* in MHz, assumes Nyquist sampling */
 
@@ -38,17 +52,17 @@ void apply_passband (int sb,
         top = fdata->frequency;
         bottom = top - bw;
 
-        if (param.passband[1] < bottom)
+        if (param_passband_1_ < bottom)
             ibot = npts + 1;
-        else if (param.passband[1] < top)
-            ibot = (1.0 - (param.passband[1] - bottom) / bw) * npts / 2 + 0.5;
+        else if (param_passband_1_ < top)
+            ibot = (1.0 - (param_passband_1_ - bottom) / bw) * npts / 2 + 0.5;
         else
             ibot = -1;
     
-        if (param.passband[0] < bottom)
+        if (param_passband_0_ < bottom)
             itop = npts + 1;
-        else if (param.passband[0] < top)
-            itop = (1.0 - (param.passband[0] - bottom) / bw) * npts / 2 + 0.5;
+        else if (param_passband_0_ < top)
+            itop = (1.0 - (param_passband_0_ - bottom) / bw) * npts / 2 + 0.5;
         else
             itop = -1;
         }
@@ -57,26 +71,31 @@ void apply_passband (int sb,
         bottom = fdata->frequency;
         top = bottom + bw;
 
-        if (param.passband[0] < bottom)
+        if (param_passband_0_ < bottom)
             ibot = -1;
-        else if (param.passband[0] < top)
-            ibot = (param.passband[0] - bottom) / bw * npts / 2 + 0.5;
+        else if (param_passband_0_ < top)
+            ibot = (param_passband_0_ - bottom) / bw * npts / 2 + 0.5;
         else
             ibot = npts + 1;
     
-        if (param.passband[1] < bottom)
+        if (param_passband_1_ < bottom)
             itop = -1;
-        else if (param.passband[1] < top)
-            itop = (param.passband[1] - bottom) / bw * npts / 2 + 0.5;
+        else if (param_passband_1_ < top)
+            itop = (param_passband_1_ - bottom) / bw * npts / 2 + 0.5;
         else
             itop = npts + 1;
         }
         
 
                                     /* zero out data outside of passband */
-    for (i=0; i<npts; i++)
+    for (i=0;  incband && i<npts; i++)
         if (i < ibot || i > itop)
             xp_spectrum[i] = c_zero ();
-    msg ("bw %lf bottom %lf top %lf ibot %d itop %d npts %d", 0,
-          bw, bottom, top, ibot, itop, npts);
+                                    /* OR: zero out data inside passband */
+    for (i=0; !incband && i<npts; i++)
+        if (i > ibot && i < itop)
+            xp_spectrum[i] = c_zero ();
+    msg ("bw %lf bottom %lf top %lf ibot %d itop %d npts %d %s", 0,
+          bw, bottom, top, ibot, itop, npts,
+          incband ? "include" : "exclude");
     }

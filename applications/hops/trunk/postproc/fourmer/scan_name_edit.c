@@ -1,5 +1,5 @@
 /*
- * $Id: scan_name_edit.c 260 2011-05-19 21:10:14Z gbc $
+ * $Id: scan_name_edit.c 495 2011-11-01 19:29:32Z gbc $
  *
  * Reconcile the scan names and update the lines where found.
  */
@@ -19,7 +19,7 @@ static int reconcile_names(char *scanA, char *scanB, char *scanC)
     {
     int left = 32;
     char *join = getenv("HOPS_FOURMER_JOIN");
-    while (*scanA && *scanB && (*scanA == *scanB) && left-- > 0)
+    while (*scanA && *scanB && (*scanA == *scanB) && (*scanA != ';') && left--)
 	{
 	*scanC++ = *scanA++; 
 	scanB++; 

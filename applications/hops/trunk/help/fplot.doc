@@ -5,16 +5,30 @@ COMMAND NAME:   fplot
 
 SYNOPSIS:  Displays fringe plots attached to type 2 files
 
-SYNTAX:    fplot [-x -h] [data file list]
-		All option flags must appear before the data file list.
-		The -x and -h flags are mutually exclusive, and enable
-		xwindow display and hardcopy respectively, no default.
+SYNTAX:    fplot [-x] [-d template] [-h] [-l] [-m level] [data file list]
+               All option flags must appear before the data file list.
+               The -x, -d, -h and -l flags are mutually exclusive, and
+               enable xwindow display, diskfile, and hardcopy and
+               line printer display mechinisms respectively.  The default
+               is to display the plots with gs according to the GS_DEVICE
+               environment variable.
 
 OPTION FLAGS:	-x
 			Display the fringe plot(s) on the X-window display
 			pointed to by the DISPLAY environment variable.
+		-d template
+                        Saves the fringe plots(s) using the template name.
+                        With more than one plot, %d should appear in this
+                        template name so that unique files are generated.
 		-h
-			Print a hardcopy of the fringe plot(s),
+			Print a hardcopy of the fringe plot(s), via
+                        the print utility pprint_plot
+                -l
+			Print a hardcopy of the fringe plot(s), via lpr
+                -m level
+                        Change the verbosity level of the program.  The
+                        default is 2, and a lower value may produce more
+                        commentary.
 
 ARGUMENTS:	data file list
 			A list of type-2 files, the fringe plots of which
@@ -32,7 +46,7 @@ ARGUMENTS:	data file list
 			experiments.  In such cases, specify the experiment
 			directory instead.
 
-ENVIRONMENT:	MK4_PRINTER, PRINTER
+ENVIRONMENT:	MK4_PRINTER, PRINTER, GS_DEVICE, GS_OPTIONS
 
 DESCRIPTION:
 
@@ -47,6 +61,32 @@ list of files to be displayed.  This capability is intended to save trees.
 For those who need hardcopy printout, the -h option is provided.  The
 plot is spooled using the "lpr" print spooler to an appropriate printer
 identified by the support script "pplot_print".  (PRINTER takes precedence
-over MK4_PRINTER unless you've redefined MK4_PRINTER.  And in any case you
-can put your own pplot_print earlier in your PATH.)
+over MK4_PRINTER unless you've redefined MK4_PRINTER from its default.  And
+in any case you can put your own pplot_print script earlier in your PATH to
+do what you like.)  The -l option bypasses any pplot_print script in your
+path and spools the plot to your default printer directly.
+
+The -d option allows you to extract the postscript plots from the Type-2
+fringe files and save them to disk.  In this case the template filename
+should include %d so that multiple plots are placed in multiple files (with
+%d being replaced by the ordinal number of the plot sequence).
+
+If no plotting options are specified, the default behavior is the same as
+for with the -x option.  However, the postscript is interpreted by the
+ghostscript interpreter (gs) and that program modifies its behavior in
+response to GS_* environment variables.  In any case, you should consult
+the documentation for ghostscript for complete details for your system.
+For example, however, you can make a set of JPEG plots via
+
+    GS_OPTIONS=-sOutputFile=abc%02d.jpg GS_DEVICE=jpeg fplot files ....
+
+This display mechanism (as with -x) pauses after each plot looking for 
+input:
+
+    h for a hardcopy (via pprint_plot)
+    p to return to the previous plot
+    n for the next plot
+    s to save the plot (with the name you provide)
+    q to quit
+    otherwise to continue with the next plot
 

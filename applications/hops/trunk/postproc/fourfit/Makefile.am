@@ -1,37 +1,48 @@
 #
-# $Id: Makefile.am 298 2011-06-02 20:34:12Z gbc $
+# $Id: Makefile.am 546 2011-11-15 20:55:30Z gbc $
 #
 
 SUBDIRS = .
 
 AM_CPPFLAGS = @HOPS_INC@
 
+TESTS_ENVIRONMENT = srcdir=$(srcdir)
+TESTS             = fft_chk
+
 noinst_HEADERS = control.h filter.h freqlist.h param_struct.h \
 		 parser.h pass_struct.h plot_struct.h refringe.h \
 		 statistics.h
 
+if HAVE_DEVEL
+bin_PROGRAMS = fourfit fearfit
+bin_SCRIPTS = fearfit-driver.pl
+else
 bin_PROGRAMS = fourfit
+bin_SCRIPTS = 
+endif
+check_PROGRAMS = fft_chk
+EXTRA_DIST = $(bin_SCRIPTS) new_parameters.txt
 
 if HAVE_PGPLOT
 if HAVE_X11
 if HAVE_PNG
 
-fourfit_SOURCES = fourfit.c set_defaults.c parse_cmdline.c \
+fourfit_sources = fourfit.c set_defaults.c parse_cmdline.c \
 		  check_rflist.c organize_data.c make_passes.c \
 		  fringe_search.c get_corel_data.c \
 		  parse_control_file.c refringe_list.c time_range.c \
 		  set_pointers.c pcal_interp.c fill_param.c \
 		  skip_data.c clear_pass.c generate_cblock.c \
 		  apply_filter.c precorrect.c search.c \
-		  postcorrect.c output.c read_control_file.c \
+		  postcorrect.c read_control_file.c \
 		  init_tokens.c lex.c create_fsm.c parser.c \
 		  make_flist.c nullify_cblock.c clear_freq_corel.c \
 		  default_cblock.c criteria_match.c \
-		  copy_cblock_parts.c gate_off.c norm.c \
-		  freq_spacing.c search_windows.c read_sdata.c \
+		  copy_cblock_parts.c gate_off.c \
+		  freq_spacing.c search_windows.c \
 		  delay_rate.c fft1.c update.c interp.c \
 		  create_fname.c comp_func.c parabola.c vrot.c \
-		  get_bfstring.c skip_index.c make_plotdata.c \
+		  get_bfstring.c skip_index.c \
 		  clear_plotdata.c calc_rms.c fill_fringe_info.c \
 		  display_fplot.c plot_complex.c \
 		  plot_graph.c grid.c put_char_at.c \
@@ -39,19 +50,38 @@ fourfit_SOURCES = fourfit.c set_defaults.c parse_cmdline.c \
 		  fill_202.c fill_203.c fill_204.c fill_205.c \
 		  fill_206.c fill_207.c fill_208.c fill_210.c \
 		  compute_qf.c compute_model.c make_postplot.c \
-		  tpstat_interp.c ap_mean.c linterp.c rotate_pcal.c \
+		  ap_mean.c linterp.c rotate_pcal.c \
 		  fill_212.c fill_230.c stcount_interp.c \
 		  calc_normalization.c apply_passband.c max555.c \
-		  interp555.c pcalibrate.c 
-# print_at.c print_left.c
+		  interp555.c pcalibrate.c sampler_delays.c
 
-# original order:
-#fourfit_LDADD = @PGP_LIB@ @PNG_LIB@ @DFIO_LIB@ @VEX_LIB@ \
-#		@X_FPLOT_LIB@ @AFIO_LIB@ @UTIL_LIB@ @X11_LIB@
-# more logical order:
+fourfit_SOURCES = $(fourfit_sources) \
+		  norm.c make_plotdata.c output.c \
+                  read_sdata.c
+fourfit_CPPFLAGS = -DFF_PROGNAME=\"fourfit\" \
+		   -DFF_VER_NO=\"@PACKAGE_VERSION@\" \
+		   $(AM_CPPFLAGS)
 fourfit_LDADD = @DFIO_LIB@ @VEX_LIB@ @AFIO_LIB@ @UTIL_LIB@ \
 		@PGP_LIB@ @PNG_LIB@ @X_FPLOT_LIB@ @X11_LIB@
 fourfit_DEPENDENCIES = @DFIO_DEP@ @VEX_DEP@ @AFIO_DEP@ @UTIL_DEP@
+
+#
+# fearfit is fourfit with some specific test code enabled to
+# allow side-by-side comparison of new features with old code.
+#
+if HAVE_DEVEL
+fearfit_SOURCES = $(fourfit_sources) \
+		  hook_norm.c hook_make_plotdata.c hook_output.c \
+                  hook_read_sdata.c
+fearfit_CPPFLAGS = -DFF_PROGNAME=\"fearfit\" \
+		   -DFF_VER_NO=\"@PACKAGE_VERSION@\" \
+		   $(AM_CPPFLAGS)
+fearfit_LDADD = @DFIO_LIB@ @VEX_LIB@ @AFIO_LIB@ @UTIL_LIB@ \
+		@PGP_LIB@ @PNG_LIB@ @X_FPLOT_LIB@ @X11_LIB@
+fearfit_DEPENDENCIES = @DFIO_DEP@ @VEX_DEP@ @AFIO_DEP@ @UTIL_DEP@
+endif
+
+fft_chk_SOURCES = fft_chk.c
 
 else !HAVE_PNG
 fourfit_SOURCES = you_lose.c

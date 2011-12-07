@@ -234,7 +234,7 @@ struct type_pass *pass;
                                         /*  Signal to Noise Ratio */
     status.snr = status.delres_max * param.inv_sigma 
             * sqrt((double)status.total_ap_frac) / (1.0E4 * status.amp_corr_fact);
-    msg ("SNR %f", 0, status.snr);
+    msg ("SNR %le", 0, status.snr);
 
                                         /* Probability of false detection */
     status.prob_false = 1.0 - (pow (1.0 - exp(-status.snr * status.snr / 2.0),
@@ -312,6 +312,11 @@ struct type_pass *pass;
                                         * status.snr / pass->nfreq)));
    
     calc_rms (pass);
+
+#ifdef PLOTDATA_HOOK
+#warning "plotdata hacking enabled -- see hook_make_plotdata.c"
+    PLOTDATA_HOOK;
+#endif /* PLOTDATA_HOOK */
 
     return(0);
     }

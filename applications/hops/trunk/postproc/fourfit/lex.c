@@ -129,8 +129,9 @@ char *input_string;    /* string contains conditioned input from control file */
             if (line_end[n] > nchars+1)
                 break;                    /* found line that this token is in */
         tokens[itok].line = n;                     /* save it in token struct */
-        msg ("token %d: <%s> line %d category %d", -3, 
-              itok, next_token, tokens[itok].line, tokens[itok].category);
+        msg ("token %d: <%s> line %d category %hd symbol %hd value %d", -3, 
+              itok, next_token, tokens[itok].line, tokens[itok].category,
+              tokens[itok].symbol, tokens[itok].value);
         nold = (n > 1) ? n - 1 : 1;
         nchars += strlen (next_token) + 1;   /* total chars to start of token */
         itok++;

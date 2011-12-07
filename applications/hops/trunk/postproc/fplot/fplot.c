@@ -9,14 +9,19 @@
 /*                                                              */
 /* Created July 8 1993, CJL                                     */
 /* remove mk3 code                 2010.6.8  rjc                */
+/* revised as with fourfit         2011.11.15 gbc               */
 /****************************************************************/
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
-#include "data.h"
 #include "mk4_data.h"
 #include "fstruct.h"
 #include "fplot.h"
+
+#ifdef P_tmpdir
+# define P_tmpdir "/tmp"
+#endif /* P_tmpdir */
 
 char progname[6] = "fplot";
 int msglev = 2;
@@ -25,21 +30,21 @@ main (argc, argv)
 int argc;
 char *argv[];
     {
-    int i, display, ret, mk4, size, quit;
-    char c, *ps_file, *title[2], cmd[50];
-    struct data_fringe fringe3;
+    int i, display, ret, mk4, size, quit, prompt;
+    char c, cmd[128], pmt[128], *file_name;
     struct mk4_fringe fringe4;
     fstruct *files;
     FILE *fp;
-                                        /* Initialize.  No fstruct entry with a NULL */
-                                        /* filename is valid ... don't need to clear */
-                                        /* the whole structure */
-    fringe3.fplot_alloc = fringe3.alloc_5000 = FALSE;
+    static char ps_file[1024] = "fplot_";
+                                        /* Initialize.  No fstruct entry */
+                                        /* with a NULL filename is valid */
+                                        /* no need to clear whole struct */
     fringe4.nalloc = 0;
-                                        /* Check for option flags, then fill in the */
-                                        /* files structure array, checking the file */
-                                        /* type implied by the name in each case */
-    if (parse_cmdline (argc, argv, &files, &display) != 0)
+                                        /* Check option flags, then fill */
+                                        /* in the files structure array, */
+                                        /* checking the file type implied */
+                                        /* by the name in each case */
+    if (parse_cmdline (argc, argv, &files, &display, &file_name) != 0)
         {
         msg ("Fatal error interpreting command line", 2);
         syntax();
@@ -51,14 +56,10 @@ char *argv[];
         syntax();
         exit (1);
         }
-                                        /* Just in case you were wondering, */
-                                        /* the "title" variable is declared */
-                                        /* like this to imitate argv, which */
-                                        /* is what one of the X primitives likes */
-                                        /* "make it work and don't ask questions" */
                                         /* Loop over all filenames */
     i = 0;
     quit = FALSE;
+    prompt = FALSE;
     while (files[i].order >= 0)
         {
         if (read_mk4fringe (files[i++].name, &fringe4) != 0)
@@ -67,8 +68,11 @@ char *argv[];
             continue;
             }
                                     /* Display on screen if xwindow */
-        if (display == XWINDOW)
+        if (display == XWINDOW || display == GSDEVICE)
             {
+            if (display == XWINDOW) putenv("GS_DEVICE=x11");
+            else                    prompt = TRUE;
+            if (prompt) msg ("File %d: %s", 2, i-1, files[i-1].name);
             c = display_221 (fringe4.t221, 1);
             switch (c)
                 {
@@ -86,22 +90,38 @@ char *argv[];
             if (quit) break;
             }
 
-        else if (display == HARDCOPY)
+        else if (display == HARDCOPY || display == PRINTLPR)
             {
-            ps_file = tmpnam (NULL);
-            if ((fp = fopen (ps_file, "w")) == NULL)
+            // ps_file = tmpnam (NULL);
+            // if ((fp = fopen (ps_file, "w")) == NULL)
+            strcpy(ps_file, P_tmpdir "/fplot_XXXXXX");
+            if ((fp = fdopen (size=mkstemp(ps_file), "w")) == NULL)
                 {
-                msg ("Could not open temporary postscript file for printing", 2);
-                return ('\0');
+                msg ("PS file (%s,%d) for printing failed", 2, ps_file, size);
+                return (0);
                 }
             size = strlen (fringe4.t221->pplot);
             fwrite (fringe4.t221->pplot, 1, size, fp);
             fclose (fp);
-            sprintf (cmd, "pplot_print %s", ps_file);
+            //sprintf (cmd, "pplot_print %s", ps_file);
+            sprintf (cmd, "%s %s",
+                (display==HARDCOPY)?"pplot_print":"lpr", ps_file);
             system (cmd);
-            msg ("Printing hardcopy of postscript fringe plot", 2);
-                                    /* Tidy up */
-            unlink (ps_file);
+            msg ("Printing hardcopy of fringe plot (%s)", 2, ps_file);
+            unlink (ps_file);       /* Tidy up */
+            }
+        else if (display == DISKFILE)
+            {
+            snprintf(ps_file, sizeof(ps_file), file_name, i-1);
+            if ((fp = fopen (ps_file, "w")) == NULL)
+                {
+                msg ("Could not open PS file (%s) for output", 2, ps_file);
+                return(0);
+                }
+            size = strlen (fringe4.t221->pplot);
+            fwrite (fringe4.t221->pplot, 1, size, fp);
+            fclose (fp);
+            msg ("Created PS plot %s", 1, ps_file);
             }
                                     /* Bad value for display */
         else

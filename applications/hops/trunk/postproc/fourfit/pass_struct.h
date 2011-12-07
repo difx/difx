@@ -22,13 +22,12 @@ struct interp_sdata
         float pcweight_lcp;                 /* (see pcal_interp routine) */
         complex phasecal_rcp[MAX_PCF];
         float pcweight_rcp;
-        float errate_lcp;                   /* Sidebands averaged, all tracks */
-        float errate_rcp;                   /* arithmetically averaged together */
         float bigpos[4];                    /* State count statistics as fractions: */
         float pos[4];                       /* lcp_usb, lcp_lsb, rcp_usb, rcp_lsb */
         float neg[4];
         float bigneg[4];
         complex mt_pcal[2];                 // pc phasor for multitone mode L:R or H:V
+        float mt_delay[2];                  // multitone delay (us) [L:R or H:V or X:Y]
         };
 
 struct data_corel 
@@ -48,7 +47,7 @@ struct data_corel
 
 struct freq_corel 
         {
-        char freq_code;         /* Fourfit frequency identifier (a-p) */
+        char freq_code;         /* Fourfit frequency identifier (a..zA..Z$%) */
         double frequency;       /* sky frequency (MHz) */
         char fgroup;
         char ch_usb_lcp[2][8];  /* VEX channel ids by station */

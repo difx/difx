@@ -37,6 +37,7 @@ int do_record_merge(char *, char *, char *, char *);
 char *field(char *, char *, int);
 void merge(int *, int *, int *, const int, const char *);
 static void relabel_channels(int, int, int);
+static void revise_expn(int);
 static char *make_outname(char *, char *, char *);
 
 char lineA[MAX_LINES][MAX_CHARS],       // contents of input file A, by line
@@ -72,20 +73,22 @@ int main(int argc, char **argv)
     char section[30];           // name of current section
     
                                 // list of sections to be merged
-    const char NOTICE_LIST[4][8] =     {"", 
+    const char NOTICE_LIST[5][8] =     {"", 
                                     "$BBC", 
                                     "$FREQ", 
+                                    "$EXPER",
                                     "$TRACKS"    };
     
                                 // list of keywords to identify
                                 //   lines to be merged
-    const char sortKey[4][11] =     {"",
+    const char sortKey[5][11] =     {"",
                                  "BBC_assign",
                                  "chan_def",
+                                 "exper_num",
                                  "fanout_def"    };
     
 				// which field to sort by
-    const int sortField[4] =     {0, 2, 6, 5    };
+    const int sortField[5] =     {0, 2, 6, 0, 5    };
     
     if (getcwd (pwd, MAX_FPATH) == (long)NULL)
         {
@@ -206,6 +209,7 @@ int main(int argc, char **argv)
     fclose(fileA);
     fclose(fileB);
     fclose(fileOut);
+    if (getenv("HOPS_FOURMER_ROOT_ONLY")) return(0);
     
                                 // write merged type-1 and -3 files
     if ((n = do_record_merge(argv[1], argv[2], fileOutName, rcode)))
@@ -263,10 +267,12 @@ void merge(int *n, int *m, int *numBufferLines,
 
     if (*sortKey == 'c'/*han_def*/)
 	relabel_channels(n0s, nAs, nBs);
+    if (*sortKey == 'e'/*xper_num*/)
+        revise_expn(nBs);
 
                                 // bubble sort the buffer on
                                 //   the appropriate field
-    while (swapped)
+    if (sortField > 1) while (swapped)
         {
         swapped = 0;
         for (i = 0; i < *numBufferLines-1; i++)
@@ -305,6 +311,22 @@ static void relabel_channels(int n0s, int nAs, int nBs)
     for ( ; nn < nAs; nn++) relabel_chan_def(buffer[nn], 1);
     for ( ; nn < nBs; nn++) relabel_chan_def(buffer[nn], 0);
     }
+
+/*
+ * Do the revision on the experiment number
+ */
+static void revise_expn(int n0s)
+{
+    char *eq, *en = getenv("HOPS_FOURMER_EXPN");
+    /* fprintf(stderr, "en = %s %d lines\n", en, n0s); */
+    if (!en) return;
+    while (n0s--) {
+        fputs(buffer[n0s], stderr);
+        eq = strchr(buffer[n0s], '=');
+        if (!eq) continue;
+        sprintf(eq, "= %s;", en);
+    }
+}
 
 /*
  * Generate a new output (root) filename and root code.  Since

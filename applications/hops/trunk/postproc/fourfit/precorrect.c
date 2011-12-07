@@ -28,6 +28,7 @@ struct type_pass *pass;
     double delay_offset, rate_offset, pcfreq_hz,
            pcphas[2], pcfreq[2];
     extern struct type_status status;
+    extern int do_accounting;
     static double conrad = 0.01745329252;
 
                                     /* copy over ref. frequency */
@@ -72,6 +73,7 @@ struct type_pass *pass;
     param->ionosphere[1] = (pass->control.ionosphere.rem == NULLFLOAT) ? 
                            0.0 : pass->control.ionosphere.rem;
 
+    param->dc_block = pass->control.dc_block;
                                     // Copy phase cal offsets; identify desired pcal tone freqs
     for (stn=0; stn<2; stn++)
         {
@@ -202,8 +204,9 @@ struct type_pass *pass;
                     if (k<MAX_PCF && (mask & 1) == 0)
                         {
                         pass->pcinband[stn][fr][nin] = k;
-                        msg ("pcinband[%d][%d][%d] %d", 
-                              0,stn, fr, nin, pass->pcinband[stn][fr][nin]);
+                        msg ("adding pcinband[%d][%d][%d] %d pcfreq_hz %lf sb %c", 
+                              0,stn, fr, nin, pass->pcinband[stn][fr][nin], 
+                              pcfreq_hz, ovex->st[n].channels[0].net_sideband);
                         nin++;
                         }
                                     // move on to next tone in the band
@@ -231,5 +234,6 @@ struct type_pass *pass;
     for (i=0; i<6; i++)
         param->ah_poly[i] = pass->control.adhoc_poly[i] * conrad;
 
+    if (do_accounting) account ("PreCorrect data");
     return (0);
     }

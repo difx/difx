@@ -28,7 +28,7 @@ struct type_pass *pass;
     char fringe_name[256], *create_fname();
     char sg;
     int i, dret;
-    extern int base, test_mode;
+    extern int base, test_mode, do_accounting;
     extern struct mk4_fringe fringe;
     char **fplot;
     static struct type_221 *t221;
@@ -52,6 +52,11 @@ struct type_pass *pass;
         msg ("Error filling fringe records", 2);
         return (1);
         }
+
+#ifdef OUTPUT_HOOK
+#warning "output hacking enabled -- see hook_output.c"
+    OUTPUT_HOOK;
+#endif /* OUTPUT_HOOK */
  
     if (make_postplot (root->ovex, pass, fringe_name, &t221) != 0)
         {
@@ -72,7 +77,9 @@ struct type_pass *pass;
             }
                                         /* This can be ascii plot, Xwindow plot, or */
                                         /* neither */
+    if (do_accounting) account ("Write output files/plots");
     dret = display_fplot (&fringe);
+    if (do_accounting) account ("Wait for Godot");
     if (dret > 0) msg ("Display of fringe plot failed, continuing", 2);
                                         /* Ascii plot need special free routine */
 

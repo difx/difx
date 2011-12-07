@@ -14,10 +14,11 @@ ARGUMENTS:	root-A
 		root-B
 			path to the root of the second scan
 		msglev
-			an integer -3 .. 3, inclusive controlling the
-			amount of commentary (less is more).
+			an integer -3 .. 3, inclusive, which controls the
+			amount of commentary (less is more; default is 2).
 
-ENVIRONMENT:	HOPS_FOURMER_FG, HOPS_FOURMER_JOIN
+ENVIRONMENT:	HOPS_FOURMER_FG, HOPS_FOURMER_JOIN, HOPS_FOURMER_EXPN,
+                HOPS_FOURMER_ROOT_ONLY
 
 DESCRIPTION:
 
@@ -29,11 +30,18 @@ and if the channels are disjoint.  The channel names are renamed with
 In theory the resulting scan data should be used by fourfit, but this
 has not been extensively tested.  The results of fourmer may be again
 combined by fourmer; however, note that various internal size limits
-may be thereby exceeded.
+may be thereby exceeded if you do this more than once.
 
-The environment variable HOPS_FOURMER_FG may be used to override the
-frequency group identifier with a new value.  The new scan name is
-based on the common start from the two scans with 'JOIN' appended.
-The environment variable HOPS_FOURMER_JOIN allows you to specify
-something other than 'JOIN'.
+Environment variables are presently available for minor tweaks.  The
+variable HOPS_FOURMER_FG may be used to override the frequency group
+identifier with a new value.  The new scan name is based on the common
+start from the two scans with 'JOIN' appended; HOPS_FOURMER_JOIN allows
+you to specify something other than the default string 'JOIN'.  You can
+use a null string (HOPS_FOURMER_JOIN='') if you like.  HOPS_FOURMER_EXPN
+will attempt to override the experiment number with a new value. Finally,
+HOPS_FOURMER_ROOT_ONLY is for debugging, and merely generates a new root
+file but no Type-1 or Type-3 files.
+
+The result of the join is placed in the current working directory, so if
+you are joining a hierarchy, you'll need to make your own arrangements.
 

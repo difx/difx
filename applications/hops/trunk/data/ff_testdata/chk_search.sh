@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# $Id: chk_search.sh 316 2011-06-07 16:40:13Z gbc $
+# $Id: chk_search.sh 408 2011-08-18 15:08:59Z gbc $
 #
 # Something to check search
 #
@@ -31,7 +31,7 @@ set -- `wc -l search.out` 0 0
 lines=$1
 $verb && echo lines is $lines
 
-[ -f search.ps -a "$size" -gt 80 -a -f search.out -a "$lines" -eq 3 ]
+[ -f search.ps -a "$size" -ge 76 -a -f search.out -a "$lines" -eq 3 ]
 
 #
 # eof

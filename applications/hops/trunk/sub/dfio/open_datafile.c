@@ -118,7 +118,7 @@ open_datafile (char filename[],
     if (strcmp (id_record.name, relname) != 0)
         {
         msg ("Warning, '%s' is not in a proper data directory location", 
-                1, filename);
+                0, filename);
         // return (1);                  only warn user  - rjc 2009.10.8
         }
                                         /* Everything seems OK */

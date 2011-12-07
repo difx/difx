@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# $Id: chk_frmrsrch.sh 319 2011-06-08 14:57:16Z gbc $
+# $Id: chk_frmrsrch.sh 541 2011-11-14 13:20:09Z gbc $
 #
 # Something to check search on fourmered data.
 #
@@ -38,7 +38,7 @@ set -- `wc -l frmrsrch.out` 0 0
 lines=$1
 $verb && echo lines is $lines
 
-[ -f frmrsrch.ps -a "$size" -gt 60 -a -f frmrsrch.out -a "$lines" -eq 3 ]
+[ -f frmrsrch.ps -a "$size" -ge 45 -a -f frmrsrch.out -a "$lines" -eq 3 ]
 
 #
 # eof

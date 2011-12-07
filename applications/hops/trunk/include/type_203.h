@@ -1,10 +1,10 @@
 #ifndef T203_VERSION
-#define T203_VERSION 0
+#define T203_VERSION 1
 
-
+#include "mk4_sizes.h"
                                         /* Set this to current version, */
                                         /* defined to be same as app struct */
-#define type_203_v0 type_203
+#define type_203_v1 type_203
 
 struct ch_struct
     {
@@ -20,12 +20,20 @@ struct ch_struct
     char                rem_chan_id[8];         /* Rem station channel ID */
     };
 
-struct type_203 
+struct type_203_v0
     {
     char                record_id[3];           /* Standard 3-digit id */
     char                version_no[2];          /* Standard 2-digit version # */
     char                unused1[3];             /* Reserved space */
     struct ch_struct    channels[32];           /* channel-by-channel info */
+    };
+
+struct type_203 
+    {
+    char                record_id[3];           /* Standard 3-digit id */
+    char                version_no[2];          /* Standard 2-digit version # */
+    char                unused1[3];             /* Reserved space */
+    struct ch_struct    channels[8*MAX_CHAN_PP];/* channel-by-channel info */
     };
 
 #endif

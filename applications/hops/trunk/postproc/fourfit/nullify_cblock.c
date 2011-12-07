@@ -48,9 +48,16 @@ struct c_block *cb_ptr;
     cb_ptr -> t_cohere        = NULLFLOAT;
     cb_ptr -> ionosphere.ref  = NULLFLOAT;
     cb_ptr -> ionosphere.rem  = NULLFLOAT;
+    cb_ptr -> dc_block        = NULLINT;  
+    cb_ptr -> nsamplers       = NULLINT;
+    cb_ptr -> sampler_codes[0]= NULLCHAR;
+    cb_ptr -> optimize_closure= NULLINT;  
 
     for (i=0; i<6; i++)
         cb_ptr -> adhoc_poly[i] = NULLFLOAT;
+
+    for (i=0; i<8; i++)
+        cb_ptr -> psamplers[i] = NULL;
 
     for (i=0; i<2; i++)
 	{
@@ -84,6 +91,9 @@ struct c_block *cb_ptr;
 
         cb_ptr -> gates[i].on_delay = NULLINT;
         cb_ptr -> gates[i].duration = NULLINT;
+
+        cb_ptr -> delay_offs[i].ref = NULLFLOAT;
+        cb_ptr -> delay_offs[i].rem = NULLFLOAT;
 	}
 
     for (i=0; i<2*MAX_CHAN_PP; i++)

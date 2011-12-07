@@ -17,6 +17,10 @@
 #include "vex.h"
 #include "mk4_data.h"
 #include "param_struct.h"
+#ifdef HAVE_CONFIG_H
+#include "hops_config.h"
+#endif
+
 
 int
 fill_200 (/* root, param, t200) */
@@ -31,6 +35,9 @@ struct type_200 *t200)
 
     clear_200 (t200);
 
+    #ifdef HAVE_CONFIG_H
+    t200->software_rev[0] = HOPS_SVN_REV;
+    #endif
     t200->expt_no = root->exper_num;
     strcpy (t200->exper_name, root->exper_name);
     strcpy (t200->scan_name, root->scan_name);

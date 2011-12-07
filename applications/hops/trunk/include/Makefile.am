@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.am 293 2011-06-02 18:36:01Z gbc $
+# $Id: Makefile.am 436 2011-08-29 14:05:02Z rjc $
 #
 
 SUBDIRS = .
@@ -18,11 +18,7 @@ hops_headers =  account.h adata.h cvex.h data.h evex.h \
 		type_300.h type_301.h type_302.h \
 		type_303.h type_304.h type_305.h type_306.h \
 		type_307.h type_308.h type_309.h \
-		type_1000.h type_2000.h type_2100.h type_2200.h type_2300.h \
-		type_2400.h type_2500.h type_2600.h type_2700.h type_2800.h \
-		type_4000.h type_4100.h type_4200.h type_4300.h type_4400.h \
-		type_4500.h type_5000.h \
-		type_comp.h type_corel.h vex.h
+		type_comp.h vex.h
 
 # slightly problematic (but needed)
 # cpgplot.h should be included from the local PGPLOT distribution

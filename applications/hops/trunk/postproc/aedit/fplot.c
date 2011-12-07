@@ -12,7 +12,6 @@
 /************************************************************************/
 #include <stdio.h>
 #include "aedit.h"
-#include "data.h"
 #include "mk4_data.h"
 #include "aedata.h"
 #include "pstruct.h"
@@ -24,7 +23,6 @@ esum *data;
     {
     extern struct inputs inp;
     extern struct plot_info pdata[];
-    struct data_fringe fringe;
     static struct mk4_fringe fringe4;
     int index, ret;
     char *fname, *fringename(), fullname[256];
@@ -46,7 +44,6 @@ esum *data;
         }
 
     
-    fringe.fplot_alloc = fringe.alloc_5000 = FALSE;
                                 /* Now loop until user hits 'x' */
     while ((ret = cursor_select (data, &index, 1)) > -4) 
         {

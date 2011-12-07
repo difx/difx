@@ -13,7 +13,6 @@
 /* removed mk3 code                          2010.6.8  rjc              */
 /************************************************************************/
 #include <stdio.h>
-#include "data.h"
 #include "mk4_data.h"
 #include "aedata.h"
 #include "psplot.h"
@@ -23,7 +22,6 @@ ps_fplot (psarray, fdatum)
 struct ps_array *psarray;
 fringesum *fdatum;
     {
-    struct data_fringe fringe;
     static struct mk4_fringe fringe4;
     int index, ret;
     char *fname, *fringename(), fullname[256];

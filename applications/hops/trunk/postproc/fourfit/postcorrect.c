@@ -5,6 +5,8 @@ int
 postcorrect (pass)
 struct type_pass *pass;
     {
-    msg ("Postcorrect routine stubbed for now", 1);
+    extern int do_accounting;
+    msg ("Postcorrect routine stubbed for now", 0);
+    if (do_accounting) account ("PostCorrect Data");
     return (0);
     }

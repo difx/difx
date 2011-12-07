@@ -107,11 +107,6 @@ struct type_pass *pass;
                     wtf_dsb += apwt;
                     wt_dsb += apwt;
                     }
-                                        /* Tape error statistics by pol. */
-                if (reflcp) ref_tperr += datum->ref_sdata.errate_lcp;
-                else        ref_tperr += datum->ref_sdata.errate_rcp;
-                if (remlcp) rem_tperr += datum->rem_sdata.errate_lcp;
-                else        rem_tperr += datum->rem_sdata.errate_rcp;
                                         /* State count data */
                 if (reflcp) 
                     {

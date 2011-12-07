@@ -33,6 +33,13 @@
 #include "mk4_dfio.h"
 #include "mk4_util.h"
 
+#ifndef GS_EXEC
+# define GS_EXEC "/usr/bin/gs"
+#endif /* GS_EXEC */
+#ifdef P_tmpdir
+# define P_tmpdir "/tmp"
+#endif /* P_tmpdir */
+
 #define TRUE 1
 #define FALSE 0
                                         /* Set up macro for inserting justified */
@@ -46,11 +53,12 @@ char
 display_221 (struct type_221 *t221,
              int mode)
     {
-    char *pplot, *end_of_plot, *ps_file, psbuf[2560], cmd[128], c;
+    char *pplot, *end_of_plot, psbuf[2560], cmd[128], c;
     char *ptr, response[128], fname[128];
     int i, nchar, size, xval, yval, loop;
     static int gsopen = FALSE;
     static FILE *gs;
+    static char ps_file[1024] = "sub-dfio_";
     extern char progname[];
     FILE *fp;
 
@@ -74,7 +82,8 @@ display_221 (struct type_221 *t221,
                                         /* Open gs and display the plot */
     if (! gsopen)
         {
-        gs = popen ("/usr/bin/gs -q -", "w");
+        gs = popen (GS_EXEC " -q -", "w");
+//      gs = popen ("/usr/bin/gs -q -", "w");
 //      gs = popen ("/usr/bin/gs -", "w");
         gsopen = TRUE;
         if (gs == NULL)
@@ -155,10 +164,13 @@ display_221 (struct type_221 *t221,
             case 'h':
             case 'H':
                 {
-                ps_file = tmpnam (NULL);
-                if ((fp = fopen (ps_file, "w")) == NULL)
+//              ps_file = tmpnam (NULL);
+//              if ((fp = fopen (ps_file, "w")) == NULL)
+                strcpy(ps_file, P_tmpdir "/sub-dfio_XXXXXX");
+                if ((fp = fdopen(size=mkstemp(ps_file), "w")) == NULL)
                     {
-                    msg ("Could not open temporary postscript file for printing", 2);
+                    msg ("fdopen of PS file (%s,%d) for printing failed",   
+                        2, ps_file, size);
                     return ('\0');
                     }
                 size = strlen (pplot);

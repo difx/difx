@@ -15,7 +15,6 @@
 /* deleted mk3 code                        2010.6.8  rjc                */
 /************************************************************************/
 #include <stdio.h>
-#include "data.h"
 #include "mk4_data.h"
 #include "aedata.h"
 #include "summary.h"
@@ -29,7 +28,6 @@ struct usearray *user_param;
     int i, nbadname, nbadread, nbadfill, fringe_needed, id, mk4;
     char *fname, *fringename(), fullname[256];
     fringearray *fdata;
-    static struct data_fringe fringe;
     static struct mk4_fringe fringe4;
     extern char datadir[];
     extern int fscan, fflag;

@@ -234,7 +234,7 @@ int *npass;
                                         /* This pass OK, proceed */
         (*npass)++;
         }
-    msg ("p->nfreq == %d\n", 1, p->nfreq);
+    msg ("p->nfreq == %d", 1, p->nfreq);
 
     return (0);
     }

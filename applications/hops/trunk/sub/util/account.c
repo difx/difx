@@ -27,9 +27,10 @@
 /*					Can have special values (see	*/
 /*					above)				*/
 /*									*/
-/*	Output:		return value	0=OK, !=0 BAD			*/
+/*	Output:		return value	previous segment name or 0(BAD) */
 /*									*/
 /* Created 12 January 1994 by CJL					*/
+/* output changed to previous segment gbc 4 Nov 2011                    */
 /*									*/
 /************************************************************************/
 #include <unistd.h>
@@ -38,27 +39,27 @@
 #include "account.h"
 #include "mk4_util.h"
 
-int
+char *
 account (char *segment_name)
     {
     static struct time_account t_acc[MAX_PSEGS];
+    static int prior = MAX_PSEGS - 1;	/* aka "Other" */
     static int current_real, start_real = 0, nsegment = 0;
     static int current_system = 0, current_user = 0, first = TRUE;
     static double time_unit;
     struct tms buf;
-    int i, new_real, real, ret, begin;
+    int i, new_real, real, ret, begin, oprior;
     double elapsed_real, elapsed_user, elapsed_system;
 
     ret = 0;
 					/* First, get the time */
     new_real = times (&buf);
-    if (new_real == -1) return (1);
+    if (new_real == -1) return (0);
 					/* Now decide who to charge it to */
 					/* First, check for special keywords */
-					/* Speed is important in this routine, */
-					/* and below we assume that use of the */
-					/* strcmp() system routine is much slower */
-					/* than simply comparing the 1st character */
+					/* Speed is important here, so we'll */
+					/* test the first char instead of a */
+					/* more expensive strcmp() operation. */
 					/* This will produce gains if the */
 					/* comparisons usually fail */
     begin = FALSE;
@@ -70,7 +71,7 @@ account (char *segment_name)
 	    if (start_real == 0) real = -1;
 	    else real = new_real - start_real;
 	    ret = report_times (t_acc, nsegment, &buf, real, time_unit);
-	    return (ret);
+	    return (ret ? 0 : t_acc[prior].segment_name);
 	    }
 					/* System-level accounting NYI */
 	else if (strcmp (segment_name+1, "SYSTEM") == 0) return (0);
@@ -78,21 +79,24 @@ account (char *segment_name)
 					/* Initialize things if 1st call */
     if (first)
 	{
-	for (i=0; i<MAX_PSEGS; i++) memset (t_acc+i, 0, sizeof (struct time_account));
+	for (i=0; i<MAX_PSEGS; i++)
+	    memset (t_acc+i, 0, sizeof (struct time_account));
 	time_unit = 1.0 / (double)sysconf (_SC_CLK_TCK);
 	current_real = new_real;
-					/* If 1st call not !BEGIN, don't know real */
-					/* start time for wall-clock accounting */
+					/* If 1st call not !BEGIN, don't */
+					/* know the real start time for */
+					/* wall-clock accounting */
 	if (begin) 
 	    {
 	    start_real = new_real;
 	    current_user = buf.tms_utime;
 	    current_system = buf.tms_stime;
+	    i = MAX_PSEGS - 1;
 	    }
 	else start_real = 0;
 	first = FALSE;
 	}
-					/* Continue with identification of segment */
+					/* Continue with ID of segment */
     if (! begin)
 	{
 	for (i = 0; i < nsegment; i++)
@@ -104,7 +108,7 @@ account (char *segment_name)
 					/* Not found, add to list */
 	if (i == nsegment)
 	    {
-					/* Too many, dump all new ones in "other" */
+					/* Too many, dump it in "other" */
 	    if (nsegment == MAX_PSEGS)
 		{
 		i--;
@@ -112,7 +116,7 @@ account (char *segment_name)
 		t_acc[i].namlen = 5;
 		}
 					/* Truncate new string if necessary */
-					/* Initialization provides null termination */
+					/* Null terminated ab initio */
 	    else
 		{
 		nsegment++;
@@ -120,7 +124,7 @@ account (char *segment_name)
 		t_acc[i].namlen = strlen (t_acc[i].segment_name);
 		}
 	    }
-					/* Times elapsed since last call in sec */
+					/* Times (s) elapsed since last call */
 	elapsed_real = (new_real - current_real) * time_unit;
 	elapsed_user = (buf.tms_utime - current_user) * time_unit;
 	elapsed_system = (buf.tms_stime - current_system) * time_unit;
@@ -131,11 +135,13 @@ account (char *segment_name)
 	t_acc[i].system_time += elapsed_system;
 	t_acc[i].times_called++;
 	}
-					/* Reset times so as not to count time */
-					/* expended in this routine */
+					/* Reset times so as not to count */
+					/* time expended in this routine */
     current_real = times (&buf);
     current_user = buf.tms_utime;
     current_system = buf.tms_stime;
+    oprior = prior;
+    prior = i;
 
-    return (0);
+    return (t_acc[oprior].segment_name);
     }

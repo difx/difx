@@ -17,7 +17,6 @@
 /************************************************************************/
 #include <stdio.h>
 #include "aedata.h"
-#include "data.h"
 #include "aedit.h"
 #include "param_list.h"
 

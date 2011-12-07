@@ -20,7 +20,7 @@ struct token_struct
    };
 
 
-#define MAX_TOKENS    70   /* Increase if many more tokens added */
+#define MAX_TOKENS    80   /* Increase if many more tokens added */
 #define MAX_STATES    20   /*     "    "   "    "   states   "   */
 
 
@@ -96,6 +96,10 @@ struct token_struct
 #define IONOSPHERE_      66
 #define PC_PERIOD_       67
 #define PC_TONEMASK_     68
+#define DELAY_OFFS_      69
+#define DC_BLOCK_        70
+#define SAMPLERS_        71
+#define OPTIMIZE_CLOSURE_ 72
 
 
         /* Definitions of token categories */
@@ -127,6 +131,7 @@ struct token_struct
 #define LESS_THAN           25
 #define GREATER_THAN        26
 #define TO                  27
+#define VECTOR_STRING_PARAM 28
 #define INT_CONST           1048576
 
 
@@ -151,6 +156,8 @@ struct token_struct
 #define NEED_OR             17
 #define MAY_HAVE_TO         18
 #define NEED_2ND_SCAN       19
+#define NEED_VECTOR_STRING  20
+#define NEED_VS_NUMBER      21
 
 
         /* Definitions of FSM actions */
@@ -173,4 +180,4 @@ struct token_struct
 #define SAVE_CODES          16
 #define CLEAR_FREQS         17
 #define SAVE_2ND_SCAN       18
-
+#define INSERT_STRING       19

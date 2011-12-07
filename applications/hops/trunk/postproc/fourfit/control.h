@@ -4,6 +4,8 @@
 #include "mk4_data.h"
 #include "mk4_sizes.h"
 
+#define MAX_SAMP 16
+
 
 struct gat_struct
    {
@@ -64,6 +66,8 @@ struct c_block                     /* Elemental control block structure */
    short switched_mode;            /* defines switching cycle start epoch */
    short switched_period;          /* switching cycle period (s) */
    short use_samples;              /* iff true, use sample counts to normalize */
+   short dc_block;                 // iff true, zero out DC subchannel of spectrum
+   short optimize_closure;         // iff true, keep closure triangle noise small as possible
    struct gat_struct gates[MAX_CHAN_PP]; /* relative on/off epochs (s), code, for each channel */
    int adhoc_phase;                /* defines type of ad hoc phase adjustments */
    double adhoc_tref;              /* reference time for either ad hoc model (s past hour */
@@ -73,6 +77,10 @@ struct c_block                     /* Elemental control block structure */
    double passband[2];             /* passband for spectral filtering (MHz) */
    double t_cohere;                /* coherence time (s) for co-adding fringe rates */
    struct dstats ionosphere;       // a priori ionospheres (TEC units = 1e16 el/m^2)
+   struct dstats delay_offs[MAX_CHAN_PP];// additive delay offset(ns) by channel
+   int nsamplers;                  // number of sampler strings
+   char *psamplers[MAX_SAMP];      // pointer to each sampler string (or NULL)
+   char sampler_codes[256];        // contains all sampler strings
    };
 
           /* Defined values for various structure variables */
@@ -99,5 +107,6 @@ struct c_block                     /* Elemental control block structure */
 
 #define NULLINT   -12345           /* place-holder for no assigned integer value */
 #define NULLFLOAT 508.4482826      /*   "     "     "   "    "     floating   "  */
+#define NULLCHAR  0                /*   "     "     "   "    "     char       "  */
 
 #endif

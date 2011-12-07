@@ -24,11 +24,12 @@
 #include "fstruct.h"
 #include "fplot.h"
 
-parse_cmdline (argc, argv, files, display)
+parse_cmdline (argc, argv, files, display, file_name)
 int argc;
 char **argv;
 fstruct **files;
 int *display;
+char **file_name;
     {
     int err;
     char c;
@@ -37,18 +38,29 @@ int *display;
                                         /* Interpret command line flags */
     *display = NONE;
     err = FALSE;
-    while((c=getopt(argc,argv,"xhm:")) != -1) 
+    while((c=getopt(argc,argv,"xd:hlm:")) != -1) 
         {
         switch (c) 
             {
             case 'x':
-                if (*display == HARDCOPY) err = TRUE;
+                if (*display != NONE) err = TRUE;
                 else *display = XWINDOW;
                 break;
 
+            case 'd':
+                if (*display != NONE) err = TRUE;
+                else *display = DISKFILE;
+                *file_name = optarg;
+                break;
+
             case 'h':
-                if (*display == XWINDOW) err = TRUE;
+                if (*display != NONE) err = TRUE;
                 else *display = HARDCOPY;
+                break;
+
+            case 'l':
+                if (*display != NONE) err = TRUE;
+                else *display = PRINTLPR;
                 break;
 
             case 'm':
@@ -68,13 +80,13 @@ int *display;
             }
         }
                                         /* Default behaviour */
-    if (*display == NONE) err = TRUE;
+    if (*display == NONE) *display = GSDEVICE;
                                         /* Bad syntax or -? specified */
     if (err) return (1);
-                                        /* Now extract all matching fringe files */
+                                        /* Extract all matching fringe files */
     if (get_filelist (argc-optind, argv+optind, 2, files) != 0)
         {
-        msg ("Error extracting list of files to process from command line args", 2);
+        msg ("Error extracting files to process from command line args", 2);
         return (1);
         }
 

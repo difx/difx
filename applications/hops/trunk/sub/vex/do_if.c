@@ -26,7 +26,7 @@ do_if (struct def_list *dl,
        int nchan,
        struct station_struct *stn)
     {
-    int i, st, found;
+    int i, st;
     char *str, *link;
     struct def *thisdef;
     struct chan_struct *ch;
@@ -52,7 +52,6 @@ do_if (struct def_list *dl,
         if ISNAME ("if_def")
             {
             link = p_val.dval[0].data.linkval;
-            found = FALSE;
             for (i=0; i<nchan; i++)
                 {
                                         /* Find referenced channel(s) */
@@ -69,12 +68,6 @@ do_if (struct def_list *dl,
                         ch->pcal_base_freq = p_val.dval[6].data.realval;
                     else ch->pcal_base_freq = 0.0;
                     }
-                found = TRUE;
-                }
-            if (! found)
-                {
-                msg ("IF id '%s' not found in $FREQ->$BBC", 2, link);
-                return (-1);
                 }
             }
         }

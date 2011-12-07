@@ -19,7 +19,7 @@ struct c_block *cb_ptr;
 
     {
     int i;
-
+                                                            // scalar parameters
     cb_ptr -> skip          = FALSE;
     cb_ptr -> max_parity    = 0.001;
     cb_ptr -> pc_mode.ref   = NORMAL;
@@ -54,9 +54,16 @@ struct c_block *cb_ptr;
     cb_ptr -> t_cohere      = -1.0;
     cb_ptr -> ionosphere.ref= 0.0;
     cb_ptr -> ionosphere.rem= 0.0;
-
+    cb_ptr -> dc_block      = FALSE;
+    cb_ptr -> sampler_codes[0] = 0;
+    cb_ptr -> nsamplers     = 0;
+    cb_ptr -> optimize_closure = FALSE;
+                                                                      // vectors
     for (i=0; i<6; i++)
         cb_ptr -> adhoc_poly[i] = 0.0;       /* clear ad hoc phase polynomial */
+
+    for (i=0; i<MAX_SAMP; i++)
+        cb_ptr -> psamplers[i] = 0;
          
     for (i=0; i<MAX_CHAN_PP; i++)
         {
@@ -69,6 +76,8 @@ struct c_block *cb_ptr;
         cb_ptr -> pc_tonemask[i].rem = 0;
         cb_ptr -> gates[i].on_delay = 0;            /* default gate always on */
         cb_ptr -> gates[i].duration = 32767;
+        cb_ptr -> delay_offs[i].ref = 0.0;
+        cb_ptr -> delay_offs[i].rem = 0.0;
         }
 
     return(0);

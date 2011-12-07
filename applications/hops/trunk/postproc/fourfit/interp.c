@@ -335,12 +335,12 @@ struct type_pass *pass;
                 }       
             center_mag = delay_mag[1];
 
-            msg ("...calling parabola with lower %f upper %f",-2,lower,upper);
                                        /* parabolic interpolation of 3 points */
             ret_code = parabola (delay_mag, lower, upper, &peak, &max, q);
             
-            msg ("Parabola r_c %d peak %f max %f pts %f %f %f", 0,
-                  ret_code, peak, max, delay_mag[0], delay_mag[1], delay_mag[2]);
+            msg ("parabola r_c %d peak at %f max %f range %lf %lf input pts %f %f %f",
+                  0, ret_code, peak, max, lower, upper, 
+                  delay_mag[0], delay_mag[1], delay_mag[2]);
 
 
             switch (v)                                     /* update location */

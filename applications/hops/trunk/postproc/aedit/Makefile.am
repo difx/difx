@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.am 265 2011-05-20 15:39:47Z gbc $
+# $Id: Makefile.am 436 2011-08-29 14:05:02Z rjc $
 #
 
 SUBDIRS = .
@@ -25,7 +25,7 @@ aedit_SOURCES = active_filter.c aeclr_corel.c aeclr_fringe.c \
 		display_psdata.c dup_check.c dup_flag.c edit.c \
 		erase_point.c esdesp_check.c execute.c \
 		extract_parms.c ffilter.c fill_closure.c \
-		fill_parms.c fplot.c get_axis.c get_param.c \
+		fplot.c get_axis.c get_param.c \
 		get_param_list.c get_plot_data.c get_plot_datum.c \
 		help.c init_inputs.c locate_pscurs.c make_tri.c \
 		makekey.c param_list.c parse_commands.c plot.c \

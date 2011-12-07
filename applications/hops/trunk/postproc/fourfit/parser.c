@@ -39,13 +39,15 @@ int parser ()
        nv,
        sideband,
        parsed_scan[2],
-       parsed_knot[5];
+       parsed_knot[5],
+       ns;
 
    char parsed_f_group,
         parsed_station,
         parsed_baseline[2],
         parsed_source[32],
-        parsed_codes[MAX_CHAN_PP];
+        parsed_codes[MAX_CHAN_PP],
+        *psc;
 
    float fval;
 
@@ -207,6 +209,21 @@ int parser ()
                        if (cb_ptr -> baseline[1] == WILDCARD)
                            cb_ptr -> ionosphere.ref = float_values[tval];
                        }
+                   else if (toknum == DC_BLOCK_)
+                       cb_ptr -> dc_block = tval;
+                   else if (toknum == SAMPLERS_)
+                       {
+                       if (tval >= MAX_SAMP)
+                           {
+                           msg ("too many samplers specified", 2);
+                           return (-1);
+                           }
+                       cb_ptr -> nsamplers = tval;
+                       ns = 0;           // next string encountered will be 0th
+                       psc = cb_ptr -> sampler_codes;  // point to beg of array
+                       }
+                   else if (toknum == OPTIMIZE_CLOSURE_)
+                       cb_ptr -> optimize_closure = tval;
                break;
 
 
@@ -331,7 +348,8 @@ int parser ()
                            msg ("Too many sb_win numbers",2);
                            return (-1);
                            }
-                       cb_ptr -> sb_window[nv] = float_values[tval];
+                       cb_ptr -> sb_window[nv] = 
+                           (tokens[ntok].category == INTEGER) ?  tval : float_values[tval];
                        }
 
                    else if (toknum == MB_WIN_)
@@ -341,7 +359,8 @@ int parser ()
                            msg ("Too many mb_win numbers",2);
                            return (-1);
                            }
-                       cb_ptr -> mb_window[nv] = float_values[tval];
+                       cb_ptr -> mb_window[nv] = 
+                           (tokens[ntok].category == INTEGER) ?  tval : float_values[tval];
                        }
 
                    else if (toknum == DR_WIN_)
@@ -351,7 +370,8 @@ int parser ()
                            msg ("Too many dr_win numbers",2);
                            return (-1);
                            }
-                       cb_ptr -> dr_window[nv] = float_values[tval];
+                       cb_ptr -> dr_window[nv] = 
+                           (tokens[ntok].category == INTEGER) ?  tval : float_values[tval];
                        }
 
                    else if (toknum == ADHOC_POLY_)
@@ -380,6 +400,36 @@ int parser ()
                        cb_ptr -> passband[nv] = float_values[tval];
                        }
 
+                   else if (toknum == DELAY_OFFS_) // is this a channel delay offset?
+                       {
+                       i = fcode(parsed_codes[nv]);
+                       if (i<0 || i>MAX_CHAN_PP-1)
+                           {
+                           msg ("Invalid delay offset frequency code",2);
+                           return (-1);
+                           }
+                                         /* get phases from appropriate place */
+                       if (tokens[ntok].category == INTEGER)
+                           fval = tval;
+                       else
+                           fval = float_values[tval];
+
+                                                   /* delays normally get stored
+                                                      for only one station, and
+                                                      into correct freq slot.
+                                                      If both specified, set remote
+                                                      delay offset to value, and zero
+                                                      out the reference value. */
+                       if (cb_ptr -> baseline[1] == WILDCARD)
+                           cb_ptr -> delay_offs[i].ref = fval;
+                       else if (cb_ptr -> baseline[0] == WILDCARD)
+                           cb_ptr -> delay_offs[i].rem = fval;
+                       else 
+                           {
+                           cb_ptr -> delay_offs[i].ref = 0.0;
+                           cb_ptr -> delay_offs[i].rem = fval;
+                           }
+                       }
                nv++;                       /* bump index for next vector parm */
                break;
 
@@ -399,9 +449,10 @@ int parser ()
                    sideband = DSB;
 
                i = fcode(char_values[tval]);          /* get freq. array index */
-               if (i<0 || i>MAX_CHAN_PP-1 || sideband<0)        /* trap error conditions */
+               if (i<0 || i>MAX_CHAN_PP-1 || sideband<0) /* trap error conditions */
                    {
-                   msg ("Errant freq element: %s",2,char_values[tval]);
+                   msg ("Errant freq element: %c%c", 2, 
+                         char_values[tval], char_values[tval+1]);
                    return (-1);
                    }
                                         /* OK, load into appropriate c_blocks */
@@ -409,7 +460,16 @@ int parser ()
                    cb_ptr -> frequency[i] = sideband; 
                break;
 
-
+           case INSERT_STRING:     // add string and change concatenation point
+               strcat (psc, char_values+tval);
+               for (cb_ptr=cond_start; cb_ptr!=NULL; cb_ptr=cb_ptr->cb_chain)
+                   cb_ptr -> psamplers[ns] = psc;
+               psc += strlen (char_values+tval) + 1;
+               ns++;
+                                // transition if we've read all expected strings
+               if (ns == cond_start -> nsamplers)
+                   next_state = BLOCK_INTERIOR;
+               break;
 
             case POP_TOKEN:
                ntok--;                                  /* stay on same token */

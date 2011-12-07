@@ -1,0 +1,41 @@
+To add a new (simple) parameter, one must modify a number
+of the sources.  The ones marked * are optional--depends
+on what you're changing.
+
+  1. control.h
+    most likely the paraameter value needs to be kept in struct c_block
+
+  2. parser.h
+    most likely you'll need to provide a new token for the parameter
+
+* 3. param_struct.h
+    it depends on what you're doing
+
+  4. init_tokens.c
+    maps your tokens to the control file strings
+
+  5. default_cblock.c
+    set the default value
+
+  6. nullify_cblock.c
+    set to recognizible null value
+
+  7. copy_cblock_parts.c
+    a line to copy it when non-null
+
+  8. parser.c
+    appropriate fsm changes
+
+* 9. precorrect.c
+    changes prior to fringe search
+
+* 10. create_fsm.c
+    if your change changes the fsm
+
+  11. ../../help/fourfit.doc
+    document what the new parameter does
+
+* 12. ../../data/ff_testdata/chk..sh
+    consider adding a test to verify that what you changed
+    does what you want (now and into the future).
+

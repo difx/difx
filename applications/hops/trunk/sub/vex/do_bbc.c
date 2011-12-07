@@ -26,7 +26,7 @@ do_bbc (struct def_list *dl,
         int nchan,
         struct station_struct *stn)
     {
-    int i, st, found;
+    int i, st;
     char *str, *link;
     struct def *thisdef;
     struct chan_struct *ch;
@@ -52,20 +52,13 @@ do_bbc (struct def_list *dl,
         if ISNAME ("BBC_assign")
             {
             link = p_val.dval[0].data.linkval;
-            found = FALSE;
             for (i=0; i<nchan; i++)
                 {
                 ch = stn->channels + i;
                 if (strcmp (link, ch->bbc_id) != 0) continue;
                 ch->bbc_no = p_val.dval[1].data.intval;
                 strcpy (ch->if_id, p_val.dval[2].data.linkval);
-                found = TRUE;
                 } 
-            if (! found)
-                {
-                msg ("BBC id '%s' not found in $FREQ", 2, link);
-                return (-1);
-                }
             }
         }
 

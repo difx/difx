@@ -31,18 +31,11 @@ fill_param (struct scan_struct *ovex,
             struct mk4_corel *cdata,
             struct type_param *param)
     {
-    double fact1, fact2;
+    double fact1, fact2, fact3;
     unsigned long ap_in_sysclks;
                                         /* Record the baseline */
     strncpy (param->baseline, cdata->t100->baseline, 2);
-                                        /* Set the correlation type, lags */
-/*     param->corr_type = cdata->t100->mode; */
-    if (strcmp (ovex->correlator, "difx") == 0)
-        param->corr_type = DIFX;
-    else
-        param->corr_type = MK4HDW;
 
-    param->nlags = cdata->t100->nlags;
                                         /* Bits per sample */
     if (stn1->bits_sample != stn2->bits_sample)
         {
@@ -65,30 +58,39 @@ fill_param (struct scan_struct *ovex,
         2, stn1->samplerate, stn2->samplerate);
         return (-1);
         }
-                                        /* 1 over sigma noise */
-                                        /* This depends on 1 or 2 bit */
-                                        /* samples, and the Mk4 */
-                                        /* correlator arithmetic. */
-                                        /* Initial guesses based on Thompson, */
-                                        /* Moran and Swenson p.304, VLBI */
-                                        /* geodetic memo 008, and Mark 4 memo */
-                                        /* number 148. */
-    if (param->nlags == 16)
+                                        /* Set the correlation type, lags */
+    param->nlags = cdata->t100->nlags;
+    if (param->nlags == 8)
+        fact1 = 0.96;
+    else if (param->nlags == 16)
         fact1 = 0.985;
-    else if (param->nlags > 16)
+    else 
         fact1 = 1.0;
-
+                                    // Nyquist-sampling losses
     if (stn1 -> bits_sample == 1) 
-        fact2 = 0.573;
+        fact2 = 0.637;
     else if (stn1 -> bits_sample == 2)
-        fact2 = 0.790;
-    param->inv_sigma = fact1 * fact2 * sqrt(param->acc_period / param->samp_period);
+        fact2 = 0.881;
+                                    // correlator-dependent snr loss factors
+    if (strcmp (ovex->correlator, "difx") == 0)
+        {
+        param->corr_type = DIFX;
+        fact3 = 0.970;              // bandpass (0.970)
+        }
+    else
+        {
+        param->corr_type = MK4HDW;
+        fact3 = 0.8995;             // bandpass (0.970) * rotator loss(0.960) 
+                                    // * discrete delay (0.966)
+        }
+    param->inv_sigma = fact1 * fact2 * fact3 * 
+                       sqrt(param->acc_period / param->samp_period);
                                         /* bocf period */
     param->bocf_period = ivex->bocf_period;
                                         /* calculate ap length in playback time sysclks */
     ap_in_sysclks = rint ((double)param->acc_period * 32e6 / param->speedup);
-
-    if ((ap_in_sysclks % param->bocf_period) != 0)
+                                        // bocf_period only used in hardware correlator
+    if ((ap_in_sysclks % param->bocf_period) != 0 && param->corr_type == MK4HDW)
         {
         msg ("Error, AP seems not to be integral number of frames (%d/%d)",
                     2, ap_in_sysclks, param->bocf_period);

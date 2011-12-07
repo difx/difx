@@ -41,7 +41,7 @@ int pcal_interp (struct mk4_sdata *sd1,
     char chan[9];
     char chan_buffer[MAX_CHAN_PP][9];
     int pc_index[MAX_CHAN_PP];
-    int numchans, new_chan, npts;
+    int numchans, new_chan, npts, nstart;
     int ret, desired_pol, do309, numrecs, pc_max, jmax, tshift;
     complex c_zero();
     struct freq_corel *fc;
@@ -49,6 +49,7 @@ int pcal_interp (struct mk4_sdata *sd1,
     struct type_308 *t308;
     struct type_309 *t309;
     struct interp_sdata *isd;
+    extern int do_accounting;
     
     for (i=0; i<MAX_CHAN_PP; i++)
         pc_index[i] = -1;
@@ -83,6 +84,7 @@ int pcal_interp (struct mk4_sdata *sd1,
             isd->pcweight_rcp = 0.0;
             }
         }
+
                                         /* Do it one station at a time */
     for (stn=0; stn<2; stn++)
         {
@@ -98,6 +100,7 @@ int pcal_interp (struct mk4_sdata *sd1,
             msg ("No phasecal data for station %c", 1, sd->t300->id);
             continue;
             }
+
                                         /* Loop over type 308 or 309 records */
         numrecs = (do309) ? sd->n309 : sd->n308;
                                         /* Loop over channels */
@@ -113,7 +116,6 @@ int pcal_interp (struct mk4_sdata *sd1,
                     strncpy (chan, sd->t309[n]->chan[j].chan_name, 8);
                 else
                     strncpy (chan, sd->t308[n]->pcal[j].chan_id, 8);
-                // msg ("stn=%d, j=%d, chan=%s", -1, stn, j, chan);
                 
                 if (strlen (chan) < 2)
                     continue;       // skip over null channel
@@ -254,8 +256,9 @@ int pcal_interp (struct mk4_sdata *sd1,
                     if (do309)
                         {
                         t309 = sd->t309[j];
-                
-                        if (strncmp(chan, t309->chan[pc_index[pc]].chan_name, 8))
+                                    // skip record if wrong channel or tone not present
+                        if (strncmp(chan, t309->chan[pc_index[pc]].chan_name, 8)
+                            || ipc > t309->ntones)
                             {
                             n--;
                             continue;
@@ -279,29 +282,28 @@ int pcal_interp (struct mk4_sdata *sd1,
                         pc_imag[n] = t308->pcal[pc].imaginary;
                                         /* Get mean time of each type-308 record */
                                         /* using same time base as data (sBOY) */
-			time[n] = 86400.0 *(t308->time.day - 1)
-				 + 3600.0 * t308->time.hour
-				 +   60.0 * t308->time.minute
-				 +          t308->time.second
-				 +    0.5 * t308->duration;
+                        time[n] = 86400.0 *(t308->time.day - 1)
+                                 + 3600.0 * t308->time.hour
+                                 +   60.0 * t308->time.minute
+                                 +          t308->time.second
+                                 +    0.5 * t308->duration;
                         }
                     }
                     npts = n;
+                    if (npts == 0)
+                        continue;       // no points to interpolate
                                         /* Loop over aps, interpolating values */
+                nstart = 0;
+		        if (do_accounting) 
+                    account ("Organize data");
                 for (ap=0; ap<param->num_ap; ap++)
                     {
                                         /* Start and stop of AP */
                     start = param->start + (ap * param->acc_period);
                     stop = start + param->acc_period;
                                         /* Hopefully robust interpolation */
-                    ret = ap_mean (start, stop, time, pc_real, npts, &realval);
-                    if (ret > 0) continue;
-                    else if (ret < 0)
-                        {
-                        msg ("Interpolation error in pcal_interp()", 2);
-                        return (-1);
-                        }
-                    ret = ap_mean (start, stop, time, pc_imag, npts, &imagval);
+                    ret = ap_mean (start, stop, time, pc_real, pc_imag, npts, 
+                                  &nstart, &realval, &imagval);
                     if (ret > 0) 
                         continue;
                     else if (ret < 0)
@@ -372,6 +374,8 @@ int pcal_interp (struct mk4_sdata *sd1,
                             break;
                         }
                     }               // End ap loop
+		        if (do_accounting) 
+                    account ("AP mean");
                 }                   // end ipc loop
             }                       // End channel loop
         }                           // End loop over stations

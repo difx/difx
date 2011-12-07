@@ -24,8 +24,10 @@ struct type_param *param,
 struct type_203 *t203,
 struct type_205 *t205)
     {
-    int i, j, ch, nch, int_time, sb, ind;
+    int i, j, ch, nch, int_time, sb, ind,
+        nchan;
     struct freq_corel *fc;
+    nchan = (strncmp (t203->version_no, "00", 2) == 0) ? 32 : 8*MAX_CHAN_PP;
 
     clear_205 (t205);
                                         /* For now, UCT central is same as FRT */
@@ -70,7 +72,7 @@ struct type_205 *t205)
 
     t205->ref_freq = param->ref_freq;
     
-    for (ch=0; ch<16; ch++)
+    for (ch=0; ch<MAX_CHAN_PP; ch++)
         {
         fc = pass->pass_data + ch;
         if (fc->frequency == 0.0) continue;
@@ -80,9 +82,9 @@ struct type_205 *t205)
             {
             ind = sb + 2*param->pol;
             if (fc->index[ind] <= 0) continue;
-            for (j=0; j<32; j++)
+            for (j=0; j<nchan; j++)
                 if (fc->index[ind] == t203->channels[j].index) break;
-            if (j == 32)
+            if (j == nchan)
                 {
                 msg ("Could not find index number %d in type 203 record", 
                                                 2, fc->index[ind]);

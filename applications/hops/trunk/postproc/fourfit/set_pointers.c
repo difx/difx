@@ -76,7 +76,8 @@ struct freq_corel *corel)
         
         if (st1ch < 0 || st2ch < 0)     /* sanity check */
             {
-            msg ("Can't get channel array numbers.", 2);
+            msg ("Can't identify channel array numbers in t101: either %s or %s not in root", 
+                 2, t101->ref_chan_id, t101->rem_chan_id);
             return (-1);
             }
         refch = stn1->channels + st1ch;

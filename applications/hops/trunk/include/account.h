@@ -1,3 +1,7 @@
+/*
+ * $Id$
+ */
+
 #ifndef ACCOUNT_H
 #define ACCOUNT_H
 
@@ -17,3 +21,9 @@ struct time_account
     };
 
 #endif
+
+extern char *account(char *segment_name);
+
+/*
+ * eof
+ */

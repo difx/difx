@@ -56,12 +56,16 @@ int refringe = FALSE;
 int ap_per_seg = 0;
 int reftime_offset = 0;
 
-char progname[] = "fourfit";            /* extern variables for messages */
+//char progname[] = "fourfit";            /* extern variables for messages */
+char progname[] = FF_PROGNAME;		// fourfit or fearfit from Makefile
 int msglev = 2;
-char version_no[4] = "3.0";             /* Update this with new releases 
-                                         * v2.2  ???        cjl
-                                         * v3.0  2001.5.25  rjc  first ver. change
-                                         *                       in a long, long time */
+char *pexec;                            // ptr to progam executable name
+char version_no[] = FF_VER_NO;		// PACKAGE_VERSION from Makefile
+//char version_no[4] = "3.5";             // Update this with new releases 
+                                        // v2.2  ???        cjl
+                                        // v3.0  2001.5.25  rjc  first ver. change
+                                        //                       in a long, long time
+                                        // v3.6  2011.11.21 rjc
 
 #define MAXPASS 32
 #define FALSE 0
@@ -92,6 +96,7 @@ char **argv;
         syntax();
         return (1);
         }
+    pexec = argv[0];                    // point to executable name
                                         /* Initialize IO library allocation */
     cdata.nalloc = 0;
     fringe.nalloc = 0;
@@ -196,6 +201,7 @@ char **argv;
                 msg ("Error organizing data for file %s, skipping", 2, inputname);
                 continue;
                 }
+            if (do_accounting) account ("Organize data");
                                         /* Figure out multiple passes through data */
                                         /* Put pass-specific parameters in elements */
                                         /* of the pass array */
@@ -205,7 +211,7 @@ char **argv;
                          2, inputname, fs->baseline);
                 continue;
                 }
-            if (do_accounting) account ("Organize data");
+            if (do_accounting) account ("Make passes");
                                         /* Now do the actual fringe searching. */
                                         /* Loop over all passes, accumulating */
                                         /* errors in ret.  Error reporting is */
@@ -227,12 +233,12 @@ char **argv;
                                         /* Move to next file in fileset */
             }                           /* End of baseline loop */
 
-                                        /* Some successful fringing, so update root */
-        if ((ret < totpass) && (! test_mode)) 
-            {
+                                        /* Successful fringing, update root */
+//      if ((ret < totpass) && (! test_mode)) 
+//          {
 /*            write_root (&root, rootname);  */
-            if (do_accounting) account ("Update root files");
-            }
+//          if (do_accounting) account ("Update root files");
+//          }
                                         /* Keep some statistics */
         checked += nbchecked;
         tried += nbtried;
@@ -247,7 +253,6 @@ char **argv;
                                         /* Complete accounting and exit */
     if (do_accounting) account ("Report results");
     if (do_accounting) account ("!REPORT");
-    account ("!SYSTEM");
 
     exit(ret);
     }

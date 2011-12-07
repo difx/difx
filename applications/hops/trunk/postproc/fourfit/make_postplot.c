@@ -15,11 +15,13 @@
 #include "mk4_data.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <time.h>
 #include <math.h>
 #include <string.h>
+#include <limits.h>
 #include "param_struct.h"
 #include "filter.h"
 #include "statistics.h"
@@ -27,6 +29,10 @@
 #include "ovex.h"
 #include "type_comp.h"
 #include "cpgplot.h"
+
+#ifdef P_tmpdir
+# define P_tmpdir "/tmp"
+#endif /* P_tmpdir */
 
 #define pi 3.141592654
                                         /* Set up some convenient macros */
@@ -95,20 +101,24 @@ struct type_221 **t221)
     extern int test_mode;
     extern int msglev;
     extern char control_filename[];
+    extern char *pexec;
+    extern char version_no[], progname[];
+    extern char *sprint_char_arr(), *sprint_date();
+    extern double c_phase(), c_mag();
     struct date tmp_date;
-    struct stat file_status;
-    double c_phase(), c_mag();
+    struct stat file_status, xeq_stat;
     int i, line, j, maxj, k, dist, plotchans, pcref, pcrem, ref, started, end_at;
     int start_plot, limit_plot;
-    char *rootname, *temp, *ps_file, *sprint_char_arr(), *sprint_date();
+    char *rootname, *temp;
     char buf[256], buf2[256], psbuf[256], device[256], output_filename[256];
     char pol[3],input_filename[256];
     float tempfl,mb_width;
     double phase, ampl, drate, mbd, sbd;
     time_t tm;
-    struct tm *utc_now, *gmtime();
-    float xr[2*MAXMAX], yr[2*MAXMAX], xmin, xmax, ymax, sec1, sec2, plotwidth;
-    float xpos, xposref,xposrem, ypos, spacing, offset, labelpos, lwid;
+    struct tm *utc_now, *gmtime(), *utc_pgm;
+    float xr[2*MAXMAX], yr[2*MAXMAX], zr[2*MAXMAX];
+    float xmin, xmax, ymin, ymax, sec1, sec2, plotwidth;
+    float xpos, xposref,xposrem, ypos, spacing, offset, labelpos, lwid, yplace;
     double max_dr_win, max_sb_win, max_mb_win;
     double plotstart, plotdur, plotend, totdur, tickinc, majinc, ticksize;
     float plot_time, trackerr, digitwidth, bandwidth, xstart, xend;
@@ -116,12 +126,17 @@ struct type_221 **t221)
     int totpts, wrap, len, first, nb, fd, size, filesize;
     int nlsb, nusb, izero, numsb, srate;
     int pcaref, pcarem;
-    FILE *fp, *gs;
+    FILE *fp, *gs, *popfil;
     char *pplot, *showpage, *end, trailer[1024];
+    char absexec[256], which_command[256];
+    char buffer[32];
     static char *pcstr[5]={"","NORMAL","AP BY AP","MANUAL", "MULTITONE"};
+    static char ps_file[1024];
                                         /* Create a temporary file to hold */
                                         /* the postscript output */
-    ps_file = tmpnam (NULL);
+    // ps_file = tmpnam (NULL);
+    strcpy(ps_file, P_tmpdir "/fourfit_XXXXXX");
+    close(mkstemp(ps_file));
     msg ("Temporary postscript filename = '%s'", 0, ps_file);
                                         /* Build the proper device string for */
                                         /* vertically oriented color postscript */
@@ -129,7 +144,7 @@ struct type_221 **t221)
                                         /* Open the pgplot device */
     if (cpgopen (device) <= 0)
         {
-        msg ("Postscript plot open failed", 2);
+        msg ("Postscript plot open failed (%s)", 2, ps_file);
         return (-1);
         }
                                         /* Redefine pgplot green to be a bit darker */
@@ -156,6 +171,11 @@ struct type_221 **t221)
         xr[i] = drate;
         yr[i] = plot.d_rate[i];
         if (yr[i] > ymax) ymax = yr[i];
+        }
+    if (ymax == 0.0)
+        {
+        msg ("overriding ymax of 0 in delay rate spectrum; data suspect", 2);
+        ymax = 1.0;
         }
     cpgsvp (0.05, 0.80, 0.77, 0.95);
     cpgswin(xmin, xmax, 0.0, ymax);
@@ -197,6 +217,11 @@ struct type_221 **t221)
             xr[i] = mbd;
             yr[i] = plot.mb_amp[i];
             if (yr[i] > ymax) ymax = yr[i];
+            }
+        if (ymax == 0.0)
+            {
+            msg ("overriding ymax of 0 in multiband delay plot; data suspect", 2);
+            ymax = 1.0;
             }
         cpgswin (xmin, xmax, 0.0, ymax);
         cpgsch (0.5);
@@ -250,6 +275,11 @@ struct type_221 **t221)
         xr[i] = sbd;
         yr[i] = plot.sb_amp[i];
         if (yr[i] > ymax) ymax = yr[i];
+        }
+    if (ymax == 0.0)
+        {
+        msg ("overriding ymax of 0 in singleband delay plot; data suspect", 2);
+        ymax = 1.0;
         }
     cpgsvp (0.05, 0.35, 0.63, 0.74);
     cpgswin (xmin, xmax, 0.0, ymax);
@@ -315,9 +345,18 @@ struct type_221 **t221)
         {
         xr[i] = xstart + (xend - xstart) * i / ncp;
         yr[i] = c_mag (plot.cp_spectrum[i+izero]);
+        zr[i] = c_phase (plot.cp_spectrum[i+izero]) * 57.3;
         if (yr[i] > ymax) ymax = yr[i];
         }
+    ymin = (param.passband[0] == 0.0 && param.passband[1] == 1.0E6)
+         ? 0 : ymax * 9e-3;                 /* about 3 pixels at 300px/in */
+    for (i=0; i<ncp; i++) if (yr[i] < ymin) zr[i] = 0;
     ymax *= 1.2;
+    if (ymax == 0.0)
+        {
+        msg ("overriding ymax of 0 in Xpower Spectrum plot; data suspect", 2);
+        ymax = 1.0;
+        }
     cpgsvp (0.43, 0.80, 0.63, 0.74);
     cpgswin(xstart, xend, 0.0, ymax);
     cpgsch (0.5);
@@ -342,10 +381,9 @@ struct type_221 **t221)
     cpgsch (0.5);
     cpgbox ("", 0.0, 0.0, "CMST", 90.0, 3.0);
     cpgsch (0.7);
-    for (i=0; i<ncp; i++) yr[i] = c_phase (plot.cp_spectrum[i+izero]) * 57.3;
     cpgsci (2);
     cpgslw (5.0);
-    cpgpt (ncp, xr, yr, -1);
+    cpgpt (ncp, xr, zr, -1);
     cpgslw (1.0);
     cpgmtxt ("R", 2.0, 0.5, 0.5, "phase (deg)");
                                         /* Now set up channel/time plots */
@@ -407,7 +445,13 @@ struct type_221 **t221)
             cpgdraw (plot_time, 1.0);
             }
                                         /* Switch to segment/amplitude space */
-        cpgswin (0.0, (float)pass->num_ap, 0.0, (float)status.delres_max * 4.0);
+        ymax = (float)status.delres_max * 4.0;
+        if (ymax == 0.0)
+            {
+            msg ("overriding ymax of 0 in channel plot; data suspect", 2);
+            ymax = 1.0;
+            }
+        cpgswin (0.0, (float)pass->num_ap, 0.0, ymax);
         if (i == start_plot) 
             {
             cpgsch (0.5);
@@ -511,198 +555,238 @@ struct type_221 **t221)
         cpgsci (1);
         cpgbox ("AB", 0.0, 0.0, "BC", 0.0, 0.0);
                                         /* State count plots */
-        cpgsci (1);
-        cpgslw (1.0);
-        cpgsch (0.5);
-        cpgsvp (0.05 + (i-start_plot)*plotwidth, 0.05 + (i+1-start_plot)*plotwidth, 0.395, 0.41);
-        cpgswin (0.0, (float)pass->num_ap, -0.02, 0.02);
-        cpgbox ("BC", 0.0, 0.0, "BC", 0.0, 0.0);
+        if (status.stc_present)         // draw box only if at least one plot non-empty
+            {
+            cpgsci (1);
+            cpgslw (1.0);
+            cpgsch (0.5);
+            cpgsvp (0.05 + (i-start_plot)*plotwidth, 0.05 + (i+1-start_plot)*plotwidth, 0.395, 0.41);
+            cpgswin (0.0, (float)pass->num_ap, -0.02, 0.02);
+            cpgbox ("BC", 0.0, 0.0, "BC", 0.0, 0.0);
+            }
                                         /* Ref station green */
-        cpgsci (3);
-        maxj = 0;
-        for (j=0; j<np; j++) 
+        if (status.stc_present & 1)
             {
-            yr[j] = plot.seg_refbias_usb[i][j];
-            if (yr[j] < -1.0) ;
-            else if (yr[j] < -0.02)     /* Indicate limits with bars */
+            cpgsci (3);
+            maxj = 0;
+            for (j=0; j<np; j++) 
                 {
-                cpgmove (xr[j],-.015);
-                cpgdraw (xr[j],-.02);
+                yr[j] = plot.seg_refbias_usb[i][j];
+                if (yr[j] < -1.0) ;
+                else if (yr[j] < -0.02)     /* Indicate limits with bars */
+                    {
+                    cpgmove (xr[j],-.015);
+                    cpgdraw (xr[j],-.02);
+                    }
+                else if (yr[j] > 0.02) 
+                    {
+                    cpgmove (xr[j],.015);
+                    cpgdraw (xr[j],.02);
+                    }
+                if (yr[j] > -1.0) maxj = j;
                 }
-            else if (yr[j] > 0.02) 
-                {
-                cpgmove (xr[j],.015);
-                cpgdraw (xr[j],.02);
-                }
-            if (yr[j] > -1.0) maxj = j;
+            cpgline (maxj, xr, yr);
             }
-        cpgline (maxj, xr, yr);
                                         /* Rem station magenta */
-        cpgsci (6);
-        maxj = 0;
-        for (j=0; j<np; j++) 
+        if (status.stc_present & 2)
             {
-            yr[j] = plot.seg_rembias_usb[i][j];
-            if (yr[j] < -1.0) ;
-            else if (yr[j] < -0.02)     /* Indicate limits with bars */
+            cpgsci (6);
+            maxj = 0;
+            for (j=0; j<np; j++) 
                 {
-                cpgmove (xr[j],-.015);
-                cpgdraw (xr[j],-.02);
+                yr[j] = plot.seg_rembias_usb[i][j];
+                if (yr[j] < -1.0) ;
+                else if (yr[j] < -0.02)     /* Indicate limits with bars */
+                    {
+                    cpgmove (xr[j],-.015);
+                    cpgdraw (xr[j],-.02);
+                    }
+                else if (yr[j] > 0.02) 
+                    {
+                    cpgmove (xr[j],.015);
+                    cpgdraw (xr[j],.02);
+                    }
+                if (yr[j] > -1.0) maxj = j;
                 }
-            else if (yr[j] > 0.02) 
-                {
-                cpgmove (xr[j],.015);
-                cpgdraw (xr[j],.02);
-                }
-            if (yr[j] > -1.0) maxj = j;
+            cpgline (maxj, xr, yr);
             }
-        cpgline (maxj, xr, yr);
                                         /* LSB */
-        cpgsci (1);
-        cpgslw (1.0);
-        cpgsch (0.5);
-        cpgsvp (0.05 + (i-start_plot)*plotwidth, 0.05 + (i+1-start_plot)*plotwidth, 0.38, 0.395);
-        cpgswin (0.0, (float)pass->num_ap, -0.02, 0.02);
-        cpgbox ("BC", 0.0, 0.0, "BC", 0.0, 0.0);
+        if (status.stc_present)         // draw box only if at least one plot non-empty
+            {
+            cpgsci (1);
+            cpgslw (1.0);
+            cpgsch (0.5);
+            cpgsvp (0.05 + (i-start_plot)*plotwidth, 0.05 + (i+1-start_plot)*plotwidth, 0.38, 0.395);
+            cpgswin (0.0, (float)pass->num_ap, -0.02, 0.02);
+            cpgbox ("BC", 0.0, 0.0, "BC", 0.0, 0.0);
+            }
                                         /* Ref station green */
-        cpgsci (3);
-        maxj = 0;
-        for (j=0; j<np; j++) 
+        if (status.stc_present & 1)
             {
-            yr[j] = plot.seg_refbias_lsb[i][j];
-            if (yr[j] < -1.0) ;
-            else if (yr[j] < -0.02)     /* Indicate limits with bars */
+            cpgsci (3);
+            maxj = 0;
+            for (j=0; j<np; j++) 
                 {
-                cpgmove (xr[j],-.015);
-                cpgdraw (xr[j],-.02);
+                yr[j] = plot.seg_refbias_lsb[i][j];
+                if (yr[j] < -1.0) ;
+                else if (yr[j] < -0.02)     /* Indicate limits with bars */
+                    {
+                    cpgmove (xr[j],-.015);
+                    cpgdraw (xr[j],-.02);
+                    }
+                else if (yr[j] > 0.02) 
+                    {
+                    cpgmove (xr[j],.015);
+                    cpgdraw (xr[j],.02);
+                    }
+                if (yr[j] > -1.0) maxj = j;
                 }
-            else if (yr[j] > 0.02) 
-                {
-                cpgmove (xr[j],.015);
-                cpgdraw (xr[j],.02);
-                }
-            if (yr[j] > -1.0) maxj = j;
+            cpgline (maxj, xr, yr);
             }
-        cpgline (maxj, xr, yr);
                                         /* Rem station magenta */
-        cpgsci (6);
-        maxj = 0;
-        for (j=0; j<np; j++) 
+        if (status.stc_present & 2)
             {
-            yr[j] = plot.seg_rembias_lsb[i][j];
-            if (yr[j] < -1.0) ;
-            else if (yr[j] < -0.02)     /* Indicate limits with bars */
+            cpgsci (6);
+            maxj = 0;
+            for (j=0; j<np; j++) 
                 {
-                cpgmove (xr[j],-.015);
-                cpgdraw (xr[j],-.02);
+                yr[j] = plot.seg_rembias_lsb[i][j];
+                if (yr[j] < -1.0) ;
+                else if (yr[j] < -0.02)     /* Indicate limits with bars */
+                    {
+                    cpgmove (xr[j],-.015);
+                    cpgdraw (xr[j],-.02);
+                    }
+                else if (yr[j] > 0.02) 
+                    {
+                    cpgmove (xr[j],.015);
+                    cpgdraw (xr[j],.02);
+                    }
+                if (yr[j] > -1.0) maxj = j;
                 }
-            else if (yr[j] > 0.02) 
-                {
-                cpgmove (xr[j],.015);
-                cpgdraw (xr[j],.02);
-                }
-            if (yr[j] > -1.0) maxj = j;
+            cpgline (maxj, xr, yr);
             }
-        cpgline (maxj, xr, yr);
                                         /* Big versus small */
-        cpgsci (1);
-        cpgslw (1.0);
-        cpgsch (0.5);
-        cpgsvp (0.05 + (i-start_plot)*plotwidth, 0.05 + (i+1-start_plot)*plotwidth, 0.36, 0.38);
-        cpgswin (0.0, (float)pass->num_ap, 0.54, 0.72);
-        cpgbox ("BC", 0.0, 0.0, "BC", 0.0, 0.0);
+        if (status.stc_present)         // draw box only if at least one plot non-empty
+            {
+            cpgsci (1);
+            cpgslw (1.0);
+            cpgsch (0.5);
+            cpgsvp (0.05 + (i-start_plot)*plotwidth, 0.05 + (i+1-start_plot)*plotwidth, 0.36, 0.38);
+            cpgswin (0.0, (float)pass->num_ap, 0.54, 0.72);
+            cpgbox ("BC", 0.0, 0.0, "BC", 0.0, 0.0);
+            }
+        if (status.stc_present & 1)
+            {
                                         /* Ref station blue */
-        cpgsci (4);
-        maxj = 0;
-        for (j=0; j<np; j++) 
-            {                           /* Check range of data */
-            yr[j] = plot.seg_refscnt_usb[i][j];
-            if (yr[j] < 0.0) ;
-            else if (yr[j] < 0.54)     /* Indicate limits with bars */
-                {
-                cpgmove (xr[j],0.56);
-                cpgdraw (xr[j],0.54);
+            cpgsci (4);
+            maxj = 0;
+            for (j=0; j<np; j++) 
+                {                           /* Check range of data */
+                yr[j] = plot.seg_refscnt_usb[i][j];
+                if (yr[j] < 0.0) ;
+                else if (yr[j] < 0.54)     /* Indicate limits with bars */
+                    {
+                    cpgmove (xr[j],0.56);
+                    cpgdraw (xr[j],0.54);
+                    }
+                else if (yr[j] > 0.72) 
+                    {
+                    cpgmove (xr[j],0.70);
+                    cpgdraw (xr[j],0.72);
+                    }
+                if (yr[j] > 0.0) maxj = j;
                 }
-            else if (yr[j] > 0.72) 
-                {
-                cpgmove (xr[j],0.70);
-                cpgdraw (xr[j],0.72);
-                }
-            if (yr[j] > 0.0) maxj = j;
+            cpgline (maxj, xr, yr);
             }
-        cpgline (maxj, xr, yr);
                                         /* Rem station red */
-        cpgsci (2);
-        maxj = 0;
-        for (j=0; j<np; j++) 
-            {                           /* Check range of data */
-            yr[j] = plot.seg_remscnt_usb[i][j];
-            if (yr[j] < 0.0) ;
-            else if (yr[j] < 0.54)     /* Indicate limits with bars */
-                {
-                cpgmove (xr[j],0.56);
-                cpgdraw (xr[j],0.54);
+        if (status.stc_present & 2)
+            {
+            cpgsci (2);
+            maxj = 0;
+            for (j=0; j<np; j++) 
+                {                           /* Check range of data */
+                yr[j] = plot.seg_remscnt_usb[i][j];
+                if (yr[j] < 0.0) ;
+                else if (yr[j] < 0.54)     /* Indicate limits with bars */
+                    {
+                    cpgmove (xr[j],0.56);
+                    cpgdraw (xr[j],0.54);
+                    }
+                else if (yr[j] > 0.72) 
+                    {
+                    cpgmove (xr[j],0.70);
+                    cpgdraw (xr[j],0.72);
+                    }
+                if (yr[j] > 0.0) maxj = j;
                 }
-            else if (yr[j] > 0.72) 
-                {
-                cpgmove (xr[j],0.70);
-                cpgdraw (xr[j],0.72);
-                }
-            if (yr[j] > 0.0) maxj = j;
+            cpgline (maxj, xr, yr);
             }
-        cpgline (maxj, xr, yr);
                                         /* LSB */
-        cpgsci (1);
-        cpgslw (1.0);
-        cpgsch (0.5);
-        cpgsvp (0.05 + (i-start_plot)*plotwidth, 0.05 + (i+1-start_plot)*plotwidth, 0.34, 0.36);
-        cpgswin (0.0, (float)pass->num_ap, 0.54, 0.72);
-        cpgbox ("BC", 0.0, 0.0, "BC", 0.0, 0.0);
+        if (status.stc_present)         // draw box only if at least one plot non-empty
+            {
+            cpgsci (1);
+            cpgslw (1.0);
+            cpgsch (0.5);
+            cpgsvp (0.05 + (i-start_plot)*plotwidth, 0.05 + (i+1-start_plot)*plotwidth, 0.34, 0.36);
+            cpgswin (0.0, (float)pass->num_ap, 0.54, 0.72);
+            cpgbox ("BC", 0.0, 0.0, "BC", 0.0, 0.0);
+            }
                                         /* Ref station blue */
-        cpgsci (4);
-        maxj = 0;
-        for (j=0; j<np; j++) 
+        if (status.stc_present & 1)
             {
-            yr[j] = plot.seg_refscnt_lsb[i][j];
-            if (yr[j] < 0.0) ;
-            else if (yr[j] < 0.54)     /* Indicate limits with bars */
+            cpgsci (4);
+            maxj = 0;
+            for (j=0; j<np; j++) 
                 {
-                cpgmove (xr[j],0.56);
-                cpgdraw (xr[j],0.54);
+                yr[j] = plot.seg_refscnt_lsb[i][j];
+                if (yr[j] < 0.0) ;
+                else if (yr[j] < 0.54)     /* Indicate limits with bars */
+                    {
+                    cpgmove (xr[j],0.56);
+                    cpgdraw (xr[j],0.54);
+                    }
+                else if (yr[j] > 0.72) 
+                    {
+                    cpgmove (xr[j],0.70);
+                    cpgdraw (xr[j],0.72);
+                    }
+                if (yr[j] > 0.0) maxj = j;
                 }
-            else if (yr[j] > 0.72) 
-                {
-                cpgmove (xr[j],0.70);
-                cpgdraw (xr[j],0.72);
-                }
-            if (yr[j] > 0.0) maxj = j;
+            cpgline (maxj, xr, yr);
             }
-        cpgline (maxj, xr, yr);
                                         /* Rem station red */
-        cpgsci (2);
-        maxj = 0;
-        for (j=0; j<np; j++) 
+        if (status.stc_present & 2)
             {
-            yr[j] = plot.seg_remscnt_lsb[i][j];
-            if (yr[j] < 0.0) ;
-            else if (yr[j] < 0.54)     /* Indicate limits with bars */
+            cpgsci (2);
+            maxj = 0;
+            for (j=0; j<np; j++) 
                 {
-                cpgmove (xr[j],0.56);
-                cpgdraw (xr[j],0.54);
+                yr[j] = plot.seg_remscnt_lsb[i][j];
+                if (yr[j] < 0.0) ;
+                else if (yr[j] < 0.54)     /* Indicate limits with bars */
+                    {
+                    cpgmove (xr[j],0.56);
+                    cpgdraw (xr[j],0.54);
+                    }
+                else if (yr[j] > 0.72) 
+                    {
+                    cpgmove (xr[j],0.70);
+                    cpgdraw (xr[j],0.72);
+                    }
+                if (yr[j] > 0.0) maxj = j;
                 }
-            else if (yr[j] > 0.72) 
-                {
-                cpgmove (xr[j],0.70);
-                cpgdraw (xr[j],0.72);
-                }
-            if (yr[j] > 0.0) maxj = j;
+            cpgline (maxj, xr, yr);
             }
-        cpgline (maxj, xr, yr);
+        yplace = (status.stc_present) ? 0.34 : 0.41;
+
                                         /* Phasecal phase plots */
         cpgsci (1);
         cpgslw (1.0);
         cpgsch (0.5);
-        cpgsvp (0.05 + (i-start_plot)*plotwidth, 0.05 + (i+1-start_plot)*plotwidth, 0.29, 0.34);
+        cpgsvp (0.05 + (i-start_plot)*plotwidth, 0.05 + (i+1-start_plot)*plotwidth, 
+                yplace - 0.05, yplace);
+        yplace -= 0.065;
                                         /* Draw tick marks on bottom edge, in */
                                         /* real seconds/minutes */
         xmin = plotstart;
@@ -719,7 +803,7 @@ struct type_221 **t221)
             }
                                         /* Back to AP space */
         cpgswin (0.0, (float)pass->num_ap, -180.0, 180.0);
-        cpgbox ("B", 0.0, 0.0, "B", 0.0, 0.0);
+        cpgbox ("BC", 0.0, 0.0, "B", 0.0, 0.0);
                                         /* Ref station green */
         cpgsci (3);
         cpgslw (lwid);
@@ -803,19 +887,25 @@ struct type_221 **t221)
         *(end+4) = '\0';
                                         /* Store away trailing part of file */
     if ((showpage = strstr (pplot, "PGPLOT restore showpage")) != NULL)
+        {
         strcpy (trailer, showpage);
                                         /* Null terminate what's left */
-    showpage[0] = '\0';
+        showpage[0] = '\0';
+        }
                                         /* Build up text part of file */
                                         /* Start appending strings */
     pscat ("/SL {show} def\n");
     pscat ("/SR {dup stringwidth neg exch neg exch rmoveto show} def\n");
     pscat ("/M {moveto} def\n");
     pscat ("/Helvetica-Bold findfont 180 scalefont setfont\n");
+
     if (param.corr_type == DIFX)
-        psleft (0.0, 0.98, "Mk4/DiFX Fringe Plot")
+        sprintf (buffer, "Mk4/DiFX %s %s rev %hd", 
+                 progname, version_no, fringe.t200->software_rev[0]);
     else
-        psleft (0.0, 0.98, "Mk4/Hdw. Fringe Plot")
+        sprintf (buffer, "Mk4/hdw. %s %s rev %hd", 
+                 progname, version_no, fringe.t200->software_rev[0]);
+    psleft (0.0, 0.98, buffer)
                                         /* Identification information */
     if ((rootname = strrchr (root->filename, '/')) == NULL)
         rootname = root->filename;
@@ -847,18 +937,17 @@ struct type_221 **t221)
     ypos -= spacing;
     sprintf (buf, "%.1f", fringe.t208->snr);
     psright (1.0, ypos, buf); ypos -= spacing;
-    sprintf (buf, "%.1e", fringe.t208->prob_false);
-    psright (1.0, ypos, buf); ypos -= spacing;
     sprintf (buf, "%.3f", fringe.t206->intg_time);
     psright (1.0, ypos, buf); ypos -= spacing;
     sprintf (buf, "%.3f", fringe.t208->amplitude * 10000.);
     psright (1.0, ypos, buf); ypos -= spacing;
     sprintf (buf, "%.1f", fringe.t208->resphase);
     psright (1.0, ypos, buf); ypos -= spacing;
+    sprintf (buf, "%.1e", fringe.t208->prob_false);
+    psright (1.0, ypos, buf); ypos -= spacing;
     ypos -= spacing;
     sprintf (buf, "%.6f", fringe.t208->resid_sbd);
     psright (1.0, ypos, buf); ypos -= spacing;
-    ypos -= spacing;
     sprintf (buf, "%.6f", fringe.t208->resid_mbd);
     psright (1.0, ypos, buf); ypos -= spacing;
     ypos -= spacing;
@@ -903,6 +992,7 @@ struct type_221 **t221)
                                 fringe.t200->corr_date.minute,
                                 (int)fringe.t200->corr_date.second);
     psright (1.0, ypos, buf); ypos -= 2.0 * spacing;
+                                    // fourfit execution timestamp
     year = fringe.t200->fourfit_date.year;
     if (year < 150) year += 1900;
     sprintf (buf, "%d:%03d:%02d%02d%02d", year,
@@ -910,6 +1000,18 @@ struct type_221 **t221)
                                 fringe.t200->fourfit_date.hour,
                                 fringe.t200->fourfit_date.minute,
                                 (int)fringe.t200->fourfit_date.second);
+    psright (1.0, ypos, buf); ypos -= spacing;
+                                    // fourfit executable timestamp
+    sprintf (which_command, "which %s", pexec);
+                                    // use which command to get absolute path
+    popfil = popen (which_command, "r");
+    fscanf (popfil, "%s", absexec);
+    pclose (popfil);
+                                    // use stat to get file creation timestamp
+    stat (absexec, &xeq_stat);
+    utc_pgm = gmtime (&(xeq_stat.st_mtime));
+    sprintf (buf, "%d:%03d:%02d%02d%02d", utc_pgm->tm_year+1900, utc_pgm->tm_yday+1,
+                     utc_pgm->tm_hour, utc_pgm->tm_min, utc_pgm->tm_sec);
     psright (1.0, ypos, buf); ypos -= 2.0 * spacing;
     sprintf (buf, "%02dh%02dm%7.4fs", fringe.t201->coord.ra_hrs,
                             fringe.t201->coord.ra_mins,
@@ -924,12 +1026,13 @@ struct type_221 **t221)
     ypos = 0.945;
     psleft (0.87, ypos, "Fringe quality"); ypos -= 2.0 * spacing;
     psleft (0.87, ypos, "SNR"); ypos -= spacing;
-    psleft (0.87, ypos, "PFD"); ypos -= spacing;
     psleft (0.87, ypos, "Intg.time"); ypos -= spacing;
     psleft (0.87, ypos, "Amp"); ypos -= spacing;
     psleft (0.87, ypos, "Phase"); ypos -= spacing;
-    psleft (0.87, ypos, "Sbdelay (us)"); ypos -= 2.0 * spacing;
-    psleft (0.87, ypos, "Mbdelay (us)"); ypos -= 2.0 * spacing;
+    psleft (0.87, ypos, "PFD"); ypos -= spacing;
+    psleft (0.87, ypos, "Delays (us)"); ypos -= spacing;
+    psleft (0.87, ypos, "SBD"); ypos -= spacing;
+    psleft (0.87, ypos, "MBD"); ypos -= spacing;
     psleft (0.87, ypos, "Fr. rate (Hz)"); ypos -= 2.0 * spacing;
     psleft (0.87, ypos, "Ref freq (MHz)"); ypos -= 2.0 * spacing;
     psleft (0.87, ypos, "AP (sec)"); ypos -= 1.5 * spacing;
@@ -942,10 +1045,10 @@ struct type_221 **t221)
     
     psleft (0.87, ypos, "Correlation date"); 
     ypos -= 2.0 * spacing;
-    psleft (0.87, ypos, "Fourfit date:"); ypos -= 2.0 * spacing;
-    if (fringe.t201->epoch == 1950) sprintf (buf, "Position (B1950)");
-    else if (fringe.t201->epoch == 2000) sprintf (buf, "Position (J2000)");
-    else sprintf (buf, "Position (J??? )");
+    psleft (0.87, ypos, "fourfit exec/bld:"); ypos -= 3.0 * spacing;
+    if (fringe.t201->epoch == 1950) sprintf (buf, "RA & Dec (B1950)");
+    else if (fringe.t201->epoch == 2000) sprintf (buf, "RA & Dec (J2000)");
+    else sprintf (buf, "RA & Dec (J??? )");
     psleft (0.87, ypos, buf);
     setblack;
                                         /* Channel-by-channel text */
@@ -967,39 +1070,44 @@ struct type_221 **t221)
     psright (0.050,  0.429, "U");
     psleft  (0.000,  0.422, "Validity");
     psright (0.049,  0.413, "L");
-    psright (0.050,  0.399, "U");
-    psleft  (0.000,  0.392, "Bias");
-    psright (0.049,  0.385, "L");
-    psright (0.050,  0.365, "U");
-    psleft  (0.000,  0.355, "Level");
-    psright (0.049,  0.348, "L");
                                         /* Label for tape error plots */
     xpos = labelpos + 0.003;
+    if (status.stc_present)
+        {
+        psright (0.050,  0.399, "U");
+        psleft  (0.000,  0.392, "Bias");
+        psright (0.049,  0.385, "L");
+        psright (0.050,  0.365, "U");
+        psleft  (0.000,  0.355, "Level");
+        psright (0.049,  0.348, "L");
                                         /* Color coded stations for bias */
-    sprintf (buf, "%c", param.baseline[0]);
-    setgreen;
-    psleft (xpos, 0.39, buf);
-    sprintf (buf, "%c", param.baseline[1]);
-    setmagenta;
-    xpos += 0.015;
-    psleft (xpos, 0.39, buf);
-    xpos -= 0.015;
+        sprintf (buf, "%c", param.baseline[0]);
+        setgreen;
+        psleft (xpos, 0.39, buf);
+        sprintf (buf, "%c", param.baseline[1]);
+        setmagenta;
+        xpos += 0.015;
+        psleft (xpos, 0.39, buf);
+        xpos -= 0.015;
                                         /* Color coded stations for level */
-    sprintf (buf, "%c", param.baseline[0]);
-    setblue;
-    psleft (xpos, 0.355, buf);
-    sprintf (buf, "%c", param.baseline[1]);
-    setred;
-    xpos += 0.015;
-    psleft (xpos, 0.355, buf);
+        sprintf (buf, "%c", param.baseline[0]);
+        setblue;
+        psleft (xpos, 0.355, buf);
+        sprintf (buf, "%c", param.baseline[1]);
+        setred;
+        xpos += 0.015;
+        psleft (xpos, 0.355, buf);
+        }
                                         /* Color coded stations for phasecal */
+    xpos += 0.015;
+    ypos = (status.stc_present) ? 0.310 : 0.380;
     sprintf (buf, "%c", param.baseline[0]);
     setgreen;
-    psleft (xpos, 0.310, buf);
+    psleft (xpos, ypos, buf);
     sprintf (buf, "%c", param.baseline[1]);
     setmagenta;
     xpos += 0.015;
-    psleft (xpos, 0.310, buf);
+    psleft (xpos, ypos, buf);
     setblack;
                                         /* Relocate text if only one plot */
     if (nplots == 2) labelpos = 0.30;
@@ -1028,7 +1136,7 @@ struct type_221 **t221)
                                         /* and psleft macros, to support A4 paper */
                                         /* since pgplot coord system is letter */
         xpos = 0.05 + (i-start_plot)*plotwidth * 1.0304;
-        ypos = 0.275;
+        ypos = yplace;
         spacing = 0.0095;
         sprintf (buf, "%.2f", pass->pass_data[i].frequency);
         psleft (xpos, ypos, buf);
@@ -1260,6 +1368,8 @@ struct type_221 **t221)
               + 360 * fringe.t208->resid_mbd * 
                        (pass->pass_data[i].frequency 
                       - fringe.t205->ref_freq), 360.0)));
+	    // fmod returns -360 .. 360 depending on sign of the phase
+	    // pcoffset.*lsb is identical to pcoffset.*usb
             /*fprintf (stderr, "%lf %lf %lf %lf %lf %lf\n", 
                     (double)fringe.t207->ref_pcoffset[i].lsb, 
                     (double)fringe.t207->rem_pcoffset[i].lsb,
@@ -1274,7 +1384,7 @@ struct type_221 **t221)
     if (nplots > 2)
         {
         xpos = 1.0;
-        ypos = 0.275;
+        ypos = yplace;
         psright (xpos, ypos, "All");
         ypos -= spacing;
         sprintf (buf, "%.1f", status.resid_phase);
@@ -1286,15 +1396,15 @@ struct type_221 **t221)
         sprintf (buf, "%.1f", status.sbdbox[MAXFREQ]);
         psright (xpos, ypos, buf);
         }
-/*     ypos = 0.15; */
-    ypos = 0.130;
+    yplace -= 0.145;
+    ypos = yplace;
     pscat ("/Helvetica findfont 95 scalefont setfont\n");
     psleft (0.0, ypos, "Group delay (usec)"); ypos -= 0.01;
     psleft (0.0, ypos, "Sband delay (usec)"); ypos -= 0.01;
     psleft (0.0, ypos, "Phase delay (usec)"); ypos -= 0.01;
     psleft (0.0, ypos, "Delay rate (us/s)"); ypos -= 0.01;
     psleft (0.0, ypos, "Total phase (deg)");
-    ypos = 0.130;
+    ypos = yplace;
     sprintf (buf, "%.11E", fringe.t208->tot_mbd);
     psright (0.29, ypos, buf); ypos -= 0.01;
     sprintf (buf, "%.11E", fringe.t208->tot_sbd);
@@ -1305,13 +1415,13 @@ struct type_221 **t221)
     psright (0.29, ypos, buf); ypos -= 0.01;
     sprintf (buf, "%.1f", fringe.t208->totphase);
     psright (0.29, ypos, buf);
-    ypos = 0.130;
+    ypos = yplace;
     psleft (0.32, ypos, "Apriori delay (usec)"); ypos -= 0.01;
     psleft (0.32, ypos, "Apriori clock (usec)"); ypos -= 0.01;
     psleft (0.32, ypos, "Apriori clockrate (us/s)"); ypos -= 0.01;
     psleft (0.32, ypos, "Apriori rate (us/s)"); ypos -= 0.01;
     psleft (0.32, ypos, "Apriori accel (us/s/s)");
-    ypos = 0.130;
+    ypos = yplace;
     sprintf (buf, "%.11E", fringe.t208->adelay);
     psright (0.62, ypos, buf); ypos -= 0.01;
     sprintf (buf, "%.7E", fringe.t202->rem_clock - fringe.t202->ref_clock);
@@ -1323,13 +1433,13 @@ struct type_221 **t221)
     psright (0.62, ypos, buf); ypos -= 0.01;
     sprintf (buf, "%.11E", fringe.t208->aaccel);
     psright (0.62, ypos, buf); ypos -= 0.01;
-    ypos = 0.130;
+    ypos = yplace;
     psleft (0.65, ypos, "Resid mbdelay (usec)"); ypos -= 0.01;
     psleft (0.65, ypos, "Resid sbdelay (usec)"); ypos -= 0.01;
     psleft (0.65, ypos, "Resid phdelay (usec)"); ypos -= 0.01;
     psleft (0.65, ypos, "Resid rate (us/s)"); ypos -= 0.01;
     psleft (0.65, ypos, "Resid phase (deg)");
-    ypos = 0.130;
+    ypos = yplace;
     sprintf (buf, "%.5E", fringe.t208->resid_mbd);
     psright (0.90, ypos, buf); ypos -= 0.01;
     sprintf (buf, "%.5E", fringe.t208->resid_sbd);
@@ -1340,13 +1450,13 @@ struct type_221 **t221)
     psright (0.90, ypos, buf); ypos -= 0.01;
     sprintf (buf, "%.1f", fringe.t208->resphase);
     psright (0.90, ypos, buf);
-    ypos = 0.130;
+    ypos = yplace;
     psleft (0.92, ypos, "+/-"); ypos -= 0.01;
     psleft (0.92, ypos, "+/-"); ypos -= 0.01;
     psleft (0.92, ypos, "+/-"); ypos -= 0.01;
     psleft (0.92, ypos, "+/-"); ypos -= 0.01;
     psleft (0.92, ypos, "+/-");
-    ypos = 0.130;
+    ypos = yplace;
     sprintf (buf, "%.1E", fringe.t208->mbd_error);
     psright (1.0, ypos, buf); ypos -= 0.01;
     sprintf (buf, "%.1E", fringe.t208->sbd_error);
@@ -1357,7 +1467,9 @@ struct type_221 **t221)
     psright (1.0, ypos, buf); ypos -= 0.01;
     sprintf (buf, "%.1f", status.phase_err);
     psright (1.0, ypos, buf);
-    ypos = 0.080;
+    yplace -= 0.050;
+    ypos = yplace;
+    ypos -= 0.005;
     psleft (0.1, ypos, "RMS");
     psleft (0.15, ypos, "Theor.");
     psleft (0.23, ypos, "Amplitude");
@@ -1441,7 +1553,7 @@ struct type_221 **t221)
     else
         sprintf (buf, "t_cohere infinite");
     psleft (0.75, ypos, buf);
-    ypos = 0.025;
+    ypos -= 0.015;
 
     if (test_mode) strcpy (output_filename, "Suppressed by test mode");
     else strcpy (output_filename, fringename);

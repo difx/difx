@@ -51,6 +51,7 @@ struct type_param
     short       su_number[2];           /* Ref and remote SU number */
     unsigned long error_mask;           /* Mask used to edit AP data by flags */
     short       use_sample_cnts;        /* iff true, use sample counts to normalize */
+    short       dc_block;               // iff true, zero out DC subchannel in spectrum
     double      passband[2];            /* passband for spectral filtering (MHz) */
     double      speedup;                /* ration of playback speed to record speed */
     int         first_plot;             // number of first channel to be plotted, when overridden
@@ -127,6 +128,7 @@ struct type_status
     double      prob_false;             /* Probability of false detection */
     int         nseg;                   /* Number of segments in computing time RMS */
     int         apseg;                  /* Number of APs in each segment */
+    int         stc_present;            // bits 0..1 set iff ref..rem state count records present
     double      th_timerms_phase;       /* theoretical RMS phase with time */
     double      th_timerms_amp;         /* theoretical RMS amp with time */
     double      th_freqrms_phase;       /* theoretical RMS phase with freq */
@@ -154,4 +156,5 @@ struct type_status
     double      rate_dec_width;
     double      sbd_ra_width;
     double      sbd_dec_width;
+    double      delay_offs[MAXFREQ][2]; // delay offsets (ns) by channel and station
     };

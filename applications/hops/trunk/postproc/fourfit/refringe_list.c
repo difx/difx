@@ -27,25 +27,29 @@
 #include "refringe.h"
 #include "fstruct.h"
 
+#define NF_ALLOC    1000
+#define NB_ALLOC    (5*NF_ALLOC)
+
 int
 refringe_list (afile_name, files, base_sgrp)
 char *afile_name;
 fstruct **files;
 bsgstruct **base_sgrp;
     {
-    int ret, i, version, type, nfalloc, nballoc, nroot, nbsg;
+    static char source[32], exp_scan[20], rname[256], line[512];
+    int ret, i, fc, version, type, nfalloc, nballoc, nroot, nbsg;
     int len, nbadline, nbadname;
-    char *fname, source[32], exp_scan[20], rname[256], line[512];
+    char *fname;
     char *fringename();
     bsgstruct *bsg;
     fringesum fdata;
     FILE *fp;
     extern char datadir[];
                                         /* Make some space to start with */
-    *files = (fstruct *) calloc (1000, sizeof(fstruct));
-    *base_sgrp = (bsgstruct *) calloc (5000, sizeof(bsgstruct));
-    nfalloc = 1000;
-    nballoc = 5000;
+    *files = (fstruct *) calloc (NF_ALLOC, sizeof(fstruct));
+    *base_sgrp = (bsgstruct *) calloc (NB_ALLOC, sizeof(bsgstruct));
+    nfalloc = NF_ALLOC;
+    nballoc = NB_ALLOC;
     nroot = nbsg = 0;
     if ((*base_sgrp == NULL) || (*files == NULL))
         {
@@ -60,7 +64,7 @@ bsgstruct **base_sgrp;
         }
                                         /* Read the file, looking only */
                                         /* at type 2 lines */
-    nbadline = nbadname = 0;
+    fc = nbadline = nbadname = 0;
     while (fgets (line, 511, fp) != NULL)
         {
         if (line[0] == '*') continue;
@@ -75,14 +79,15 @@ bsgstruct **base_sgrp;
             nbadline++;
             continue;
             }
-                                        /* More robust than just looking */
-                                        /* at the structure elements to figure */
+                                        /* More robust than just looking at */
+                                        /* the structure elements to figure */
                                         /* it out */
         if ((fname = fringename (&fdata)) == NULL)
             {
             nbadname++;
             continue;
             }
+        fc ++;
                                         /* Construct the root filename */
                                         /* First, copy directory part */
         len = strlen (fname);
@@ -92,7 +97,8 @@ bsgstruct **base_sgrp;
                                         /* Do proper source name mapping */
         strcpy (source, fdata.source);
         for (i=0; i<strlen(source); i++) if (source[i] == '.') source[i] = '_';
-        sprintf (rname, "%s/%s/%s.%s", datadir, exp_scan, source, fdata.root_id);
+        sprintf (rname, "%s/%s/%s.%s",
+            datadir, exp_scan, source, fdata.root_id);
                                         /* Now find root in files list */
         for (i=0; i<nroot; i++)
             if (strcmp (rname, (*files)[i].name) == 0) break;
@@ -101,27 +107,37 @@ bsgstruct **base_sgrp;
                                         /* elements */
         if (i == nroot)
             {
+            msg ("Found %d-th new root %s, fringe %d %g kB", 1,
+                i, rname, fc,
+                (double)(nfalloc*sizeof(fstruct) +
+                nballoc*sizeof(bsgstruct)) / 1024.0 );
             (*files)[i].name = strdup (rname);
             (*files)[i].order = 0;
             nroot++;
             }
-                                        /* Add to list of baselines/subgroups */
+                                        /* Add to baselines/subgroups list */
         bsg = *base_sgrp + nbsg;
         bsg->files_index = i;
         strcpy (bsg->baseline, fdata.baseline);
         bsg->subgroup = fdata.freq_code;
         nbsg++;
+        // msg ("Found at %d %s:%c", 2, fc, bsg->baseline, bsg->subgroup);
                                         /* Expand arrays as needed */
                                         /* Leave space for termination */
         if (nroot > nfalloc-2)
             {
-            nfalloc += 1000;
+            msg ("Found <nfalloc...%d", 0, nfalloc);
+            nfalloc += NF_ALLOC;
             *files = (fstruct *) realloc (*files, nfalloc*sizeof(fstruct));
+            msg ("Found  nfalloc...%d>", 0, nfalloc);
             }
-        if (nbsg > nballoc - 2)
+        if (nbsg > nballoc-2)
             {
-            nballoc += 5000;
-            *base_sgrp = (bsgstruct *) realloc (*base_sgrp, nballoc*sizeof(bsgstruct));
+            msg ("Found <nballoc...%d", 0, nballoc);
+            nballoc += NB_ALLOC;
+            *base_sgrp =
+                (bsgstruct *) realloc (*base_sgrp, nballoc*sizeof(bsgstruct));
+            msg ("Found  nballoc...%d>", 0, nballoc);
             }
         if ((*files == NULL) || (*base_sgrp == NULL))
             {
@@ -133,6 +149,8 @@ bsgstruct **base_sgrp;
                                         /* Terminate lists */
     (*files)[nroot].order = -1;
     (*base_sgrp)[nbsg].files_index = END_OF_LIST;
+    msg ("Found %d roots with %d baseline/subgroups within %s", 2,
+        nroot, nbsg, afile_name);
 
     fclose (fp);
     return (0);

@@ -18,7 +18,7 @@
 /*                                                                      */
 /* Created 25 September 1995 by CJL                                     */
 /* Redesigned 17 September 1997 by CJL                                  */
-/*                                                                      */
+/* added support for version 1 records          2011.10.6   rjc         */
 /************************************************************************/
 #include <stdio.h>
 #include <string.h>
@@ -39,6 +39,7 @@ addr_203 (short version,
     int i, malloced;
     struct type_203 *t203;
     struct type_203_v0 *t203_v0;
+    struct type_203_v1 *t203_v1;
                                         /* Create application structure, which */
                                         /* might be simply the overlay structure */
     malloced = FALSE;
@@ -81,6 +82,34 @@ addr_203 (short version,
             cp_double (t203->channels[i].rem_freq, t203_v0->channels[i].rem_freq);
             strncpy (t203->channels[i].ref_chan_id, t203_v0->channels[i].ref_chan_id, 8);
             strncpy (t203->channels[i].rem_chan_id, t203_v0->channels[i].rem_chan_id, 8);
+            }
+
+        return (t203);
+        }
+    else if (version == 1)
+        {
+                                        /* Overlay version-specific structure */
+                                        /* noting size so we can maintain */
+                                        /* pointer in file image */
+        *size = sizeof (struct type_203_v1);
+        t203_v1 = (struct type_203_v1 *)address;
+                                        /* Copy structure elements, */
+                                        /* with hidden byte flipping if needed */
+                                        /* (see bytflp.h) */
+        strncpy (t203->record_id, "203", 3);
+        strncpy (t203->version_no, "01", 2);
+        for (i=0; i<8*MAX_CHAN_PP; i++)
+            {
+            cp_short (t203->channels[i].index, t203_v1->channels[i].index);
+            cp_short (t203->channels[i].sample_rate, t203_v1->channels[i].sample_rate);
+            t203->channels[i].refsb = t203_v1->channels[i].refsb;
+            t203->channels[i].remsb = t203_v1->channels[i].remsb;
+            t203->channels[i].refpol = t203_v1->channels[i].refpol;
+            t203->channels[i].rempol = t203_v1->channels[i].rempol;
+            cp_double (t203->channels[i].ref_freq, t203_v1->channels[i].ref_freq);
+            cp_double (t203->channels[i].rem_freq, t203_v1->channels[i].rem_freq);
+            strncpy (t203->channels[i].ref_chan_id, t203_v1->channels[i].ref_chan_id, 8);
+            strncpy (t203->channels[i].rem_chan_id, t203_v1->channels[i].rem_chan_id, 8);
             }
 
         return (t203);

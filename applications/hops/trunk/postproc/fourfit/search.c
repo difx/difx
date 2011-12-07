@@ -29,6 +29,7 @@ struct type_pass *pass;
     double max_amp[2*MAXLAG], global_max, amp, c_phase(), c_mag();
     extern int do_accounting;
 
+    void pcalibrate (struct type_pass *, int);
 
         /* A few more of these initializations might be done */
         /* before SEARCH is called .                         */
@@ -63,20 +64,25 @@ struct type_pass *pass;
     msg ("nfreq=%d, num_ap=%d",-1,pass->nfreq, pass->num_ap);
     for (fr = 0; fr < pass->nfreq; fr++) 
         {      
+        status.pcals_accum[0] = status.pcals_accum[1] = 0.0;
+        
+                                        // extract phase calibration for this channel
+        pcalibrate (pass, fr);
+        }
+                                        // average delay offsets over sampler pools
+    if (pass->control.nsamplers > 0)
+        sampler_delays (pass);
+
+    for (fr = 0; fr < pass->nfreq; fr++) 
+        {      
         status.ap_num[0][fr] = 0;
         status.ap_num[1][fr] = 0;
         status.ap_frac[0][fr] = 0.0;
         status.ap_frac[1][fr] = 0.0;
-        status.pcals_accum[0] = status.pcals_accum[1] = 0.0;
-        
                                         /* This should do a single selected pol. */
                                         /* Combining RR, LL needs development */
         for (ap = pass->ap_off; ap < pass->ap_off + pass->num_ap; ap++)  
             norm (pass, (int)param.pol, fr, ap);
-                                        // do phase calibration iff there is data
-                                        // in this channel to be calibrated
-        if ((status.ap_num[0][fr] + status.ap_num[1][fr]) > 0)
-            pcalibrate (pass, fr);
         
         msg ("Freq %d, ap's by sideband through norm = %d, %d", -1,
                 fr, status.ap_num[0][fr], status.ap_num[1][fr]);

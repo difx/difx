@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# $Id: chk_baselines.sh 330 2011-06-10 13:32:10Z gbc $
+# $Id: chk_baselines.sh 471 2011-10-12 17:54:13Z gbc $
 #
 # canonical test suite for fourfit
 #
@@ -52,7 +52,7 @@ bytes=`ls -s ??.?.?.$time.ps | awk '{s+=$1}END{print s}'`
 
 $verb && echo files is $files
 $verb && echo bytes is $bytes
-[ "$files" -eq 6 -a "$bytes" -ge 450 ]
+[ "$files" -eq 6 -a "$bytes" -ge 420 ]
 
 #
 # eof

@@ -8,6 +8,7 @@
 // Initial code, replacing code in norm() and search() rjc  2010.2.2
 // multitone mode                                      rjc ~2010.10
 // variable width integration for multitone mode       rjc  2011.2.22
+// add code to copy over delay calibration delay       rjc  2011.8.9
 
 #include <stdio.h>
 #include <math.h>
@@ -138,7 +139,6 @@ void pcalibrate (struct type_pass *pass,
                       pc_avg[stn][i] = s_mult (pc_avg[stn][i], 1 / status.pcals_accum[stn]);
                   else 
                       pc_avg[stn][i] = c_zero ();
-
               if (param.pc_mode[stn] == MULTITONE)
                 {                   // in multitone mode, find peak of delay function
                                     // and correct phase to midband
@@ -186,7 +186,7 @@ void pcalibrate (struct type_pass *pass,
                         indpeak = i;
                         }
                                     // DC is in 0th element
-                indpeak = (indpeak < 128) ? indpeak : indpeak - 256;
+//              indpeak = (indpeak < 128) ? indpeak : indpeak - 256;
                 delay = indpeak / 256.0 / param.pcal_spacing[stn];       
 
                                     // interpolate to optimal value (NYI)
@@ -217,6 +217,7 @@ void pcalibrate (struct type_pass *pass,
                     kdatum = fdata->data + kap;
                     ksd = (stn == 0) ? &(kdatum->ref_sdata) : &(kdatum->rem_sdata);
                     ksd->mt_pcal[stnpol[stn][param.pol]] = pc_sub[stn];
+                    ksd->mt_delay[stnpol[stn][param.pol]] = delay;
                     }
                                     // maintain a running total
                 pc_adj[stn] = c_add (pc_sub[stn], pc_adj[stn]);
@@ -230,22 +231,31 @@ void pcalibrate (struct type_pass *pass,
             pc_adj[stn] = s_mult (pc_adj[stn], 1.0 / nsubs);
         else                        // if not multitone, just copy in phasor from
             {                       // single tone, and continue on with next freq
-            pc_adj[stn] = pc_avg[stn][ilo];
+            if (param.pc_mode[stn] != MANUAL)
+                pc_adj[stn] = pc_avg[stn][ilo];
+            else
+                {                   // manual pcal - set to unit amp, zero phase
+                pc_adj[stn].re = 1.0;
+                pc_adj[stn].im = 0.0;
+                }
                                     // and apply ionospheric phase
             pc_adj[stn] = c_mult (pc_adj[stn],c_exp(theta_ion));
+            msg ("non-multitone theta_ion %lf rad, rotated pcal phasor %lf %lf",
+                  -1, theta_ion, pc_adj[stn].re, pc_adj[stn].im);
             }
 
                                     // make copies of amplitude and phase
         status.pc_meas[fr][stn] = c_phase (pc_adj[stn]);
-        if (param.pc_mode[stn] != MANUAL)
-            status.pc_phase[fr][stn] = c_phase (pc_adj[stn]);
-        else
-            status.pc_phase[fr][stn] = 0.0;
 
+        status.pc_phase[fr][stn] = status.pc_meas[fr][stn];
         status.pc_phase[fr][stn] += M_PI * status.pc_offset[fr][stn] / 180.0;
 
         status.pc_amp[fr][stn] = c_mag (pc_adj[stn]);
-        msg ("chan %d stn %d pc_amp %lf pc_phase %lf", 1,
+        msg ("chan %d stn %d pc_amp %lf pc_phase %lf", 0,
              fr, stn, status.pc_amp[fr][stn], status.pc_phase[fr][stn]);
+
+                                    // copy delay calib. values into status array
+        status.delay_offs[fr][stn] = (stn) ? pass->control.delay_offs[fr].rem 
+                                           : pass->control.delay_offs[fr].ref;
         }                           // bottom of stn = 0..1 loop
     }

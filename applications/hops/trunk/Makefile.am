@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.am 364 2011-06-21 20:16:04Z gbc $
+# $Id: Makefile.am 533 2011-11-10 20:13:45Z gbc $
 #
 
 #
@@ -128,6 +128,13 @@ svnrev.txt:
 	[ -d $(srcdir)/.svn ] && \
 	    svn info $(srcdir) | grep Revision | cut -d' ' -f2 > svnrev.txt ||\
 	    echo 0 > svnrev.txt
+
+reversion:
+	cd $(srcdir) && svn update
+	rm -f hops_config.h stamp-h1
+	./config.status --recheck
+	./config.status
+	$(MAKE) install
 
 CLEANFILES = config.summary
 

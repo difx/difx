@@ -86,7 +86,8 @@ following works on MacOS with fink support for all the usual linux tools:
 
 In particular the X_INSANE variable is included last in the link step,
 (in fact, this gibberish works with the Fink MacOS pgplot package) so
-you can put all sorts of things here.
+you can put all sorts of things here.  The underlying issue is that
+there are too many ways that pgplot might have been compiled.
 
 Note that if you set PGPLOT_DIR as an environment variable, this directory
 should contain (at least) the three files:
@@ -105,6 +106,15 @@ suffer from some unidentified issues, so beware.  See the two files
     Fink.txt
 
 for some help on installing HOPS using those MacOS package systems.
+
+Another general issue is that the automated machinery is not always able
+to identify all the flag/linkage information needed by all the fortran
+possibilites.  (Fortran is mostly used to compile pgplot, see above.)
+E.g.
+
+    ../hops-@VERSION@/configure FLIBS='-lf2c -lgcc
+
+might be needed if f77 is really a wrapper around f2c.
 
 If nothing works, contact @PACKAGE_BUGREPORT@, who will be interested
 in your problems.  The file config.summary generated in the top of the

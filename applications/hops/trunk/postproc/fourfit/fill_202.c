@@ -77,20 +77,16 @@ struct type_202 *t202)
     else refepoch = frt;
     refdiff = frt - refepoch;
     if (fabs (refdiff) > 3.0e5)
-        {
-        msg ("Warning, ref station clockrate epoch highly discrepant from FRT", 2);
-	msg ("frt = %12.2f, ref epoch = %12.2f", 2, frt, refepoch);
-	}
+        msg ("Warning, ref station clockrate epoch highly discrepant from FRT\n"
+             "frt = %12.2f, ref epoch = %12.2f", 1, frt, refepoch);
                                         /* Rem station clockrate ref time */
     if (rem->clockrate != 0.0)
         remepoch = time_to_double (rem->clockrate_epoch);
     else remepoch = frt;
     remdiff = frt - remepoch;
     if (fabs (remdiff) > 3.0e5)
-	{
-        msg ("Warning, rem station clockrate epoch highly discrepant from FRT", 2);
-	msg ("frt = %12.2f, rem epoch = %12.2f, diff = %12.2f", 2, frt, remepoch, fabs (remdiff));
-	}
+        msg ("Warning, rem station clockrate epoch highly discrepant from FRT\n"
+             "frt = %12.2f, ref epoch = %12.2f", 1, frt, remepoch);
                                         /* Adjust clocks to frt for clockrate */
     t202->ref_clock = (ref->clock_early + (refdiff * ref->clockrate)) * 1.0e6;
     t202->rem_clock = (rem->clock_early + (remdiff * rem->clockrate)) * 1.0e6;

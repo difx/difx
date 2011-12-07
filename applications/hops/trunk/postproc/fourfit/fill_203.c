@@ -29,7 +29,6 @@ struct type_203 *t203)
     struct chan_struct *refch, *remch;
     int i, ch, chfound, rootch;
     struct type_101 *t101;
-
     clear_203 (t203);
                                         /* Get stations from root */
     refst = remst = NULL;
@@ -94,6 +93,11 @@ struct type_203 *t203)
             }
                                         /* Point to next t203 channel */
         ch++;
+        if (ch == 8 * MAX_CHAN_PP)  // ensure there aren't too many channels
+            {
+            msg ("Too many (%d) t101 channels for t203 record", 2, ch);
+            return -1;
+            }
         }
 
     return (0);

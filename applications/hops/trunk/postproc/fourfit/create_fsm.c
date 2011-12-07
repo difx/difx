@@ -79,6 +79,7 @@ create_fsm ()
     fsm_table (BLOCK_INTERIOR,	  VECTOR_INT_PARAM,  SAVE_TOKEN_NUM, NEED_VECTOR_INT);
     fsm_table (BLOCK_INTERIOR,	  VECTOR_FLOAT_PARAM,SAVE_TOKEN_NUM, NEED_VECTOR_FLOAT);
     fsm_table (BLOCK_INTERIOR,	  VECTOR_CHAR_PARAM, CLEAR_FREQS,    NEED_VECTOR_CHAR);
+    fsm_table (BLOCK_INTERIOR,	  VECTOR_STRING_PARAM,SAVE_TOKEN_NUM,NEED_VS_NUMBER);
     fsm_table (BLOCK_INTERIOR,	  CHAN_PARAM,        SAVE_TOKEN_NUM, NEED_CODES);
     fsm_table (BLOCK_INTERIOR,	  0,                 EOF_CLEANUP,    END_STATE);      
 
@@ -87,8 +88,10 @@ create_fsm ()
     fsm_table (NEED_FLOAT,        FLOAT,             INSERT_PAR,     BLOCK_INTERIOR);
 
     fsm_table (NEED_TWO_FLOAT_1,  FLOAT,             INSERT_V_PAR,   NEED_TWO_FLOAT_2);
+    fsm_table (NEED_TWO_FLOAT_1,  INTEGER,           INSERT_V_PAR,   NEED_TWO_FLOAT_2);
 
     fsm_table (NEED_TWO_FLOAT_2,  FLOAT,             INSERT_V_PAR,   BLOCK_INTERIOR);
+    fsm_table (NEED_TWO_FLOAT_2,  INTEGER,           INSERT_V_PAR,   BLOCK_INTERIOR);
 
     fsm_table (NEED_VECTOR_INT,   INTEGER,           INSERT_V_PAR,   NEED_VECTOR_INT);
     fsm_table (NEED_VECTOR_INT,	  MATCH_ALL,         POP_TOKEN,      BLOCK_INTERIOR);  
@@ -104,6 +107,12 @@ create_fsm ()
     fsm_table (NEED_CODES,        ONE_CHAR,          SAVE_CODES,     NEED_VECTOR_FLOAT);
     fsm_table (NEED_CODES,        TWO_CHAR,          SAVE_CODES,     NEED_VECTOR_FLOAT);
     fsm_table (NEED_CODES,        MANY_CHAR,         SAVE_CODES,     NEED_VECTOR_FLOAT);
+
+    fsm_table (NEED_VS_NUMBER,    INTEGER,           INSERT_PAR,     NEED_VECTOR_STRING);
+
+    fsm_table (NEED_VECTOR_STRING,ONE_CHAR,          INSERT_STRING,  NEED_VECTOR_STRING);
+    fsm_table (NEED_VECTOR_STRING,TWO_CHAR,          INSERT_STRING,  NEED_VECTOR_STRING);
+    fsm_table (NEED_VECTOR_STRING,MANY_CHAR,         INSERT_STRING,  NEED_VECTOR_STRING);
 
     fsm_table (0, 0, 0, 0);                                 /* mark table end */
     }

@@ -25,7 +25,7 @@ fringesum *fsumm)
     {
     int i, j, basenum, lastslash, p_extent, lastchan, sb, nparents, frac;
     int pcal1, pcal2, pcal3, pcal4, filetype, polerr, chan;
-    int t1000_index, btable_index, duration, fullepoch, rem, isec;
+    int btable_index, duration, fullepoch, rem, isec;
     char fname[40], buf[7], c, baseline[3], refpol, rempol;
     struct date tempdate;
     extern int output_version, dofrnge, dofourfit;

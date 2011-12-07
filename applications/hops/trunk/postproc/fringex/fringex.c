@@ -34,7 +34,6 @@ main (int argc,
                                         /* Initialize parameter structure */
     clear_fxp (&fxp, ALL);
     clear_loops (&loops);
-    account ("Initialize");
                                         /* Process the command line */
     if (parse_cmdline (argc, argv, &files, &fxp, &loops) != 0)
         {
@@ -57,8 +56,7 @@ main (int argc,
         tt_save = fxp.adata.time_tag;
         so_save = fxp.adata.scan_offset;
 
-        if (fxp.account) 
-            account ("Read binaries");
+        if (fxp.account) account ("Read binaries");
                                         /* Deal with automatic looping */
         if (set_loops (&fxp, &loops) != 0)
             continue;
@@ -91,8 +89,7 @@ main (int argc,
                     clear_fxp (&fxp, ACCUMS);
                     accum_segs (&fxp);
 
-                    if (fxp.account) 
-                        account ("Accumulate");
+                    if (fxp.account) account ("Accumulate");
                                         /* Given channel distribution, can */
                                         /* set the reference frequency parameter */
                     fxp.reffreq = set_reffreq (&fxp);
@@ -104,8 +101,7 @@ main (int argc,
                         if (calc_seg (&fxp, j) != 0)
                             continue;
 
-                        if (fxp.account) 
-                            account ("Calculate");
+                        if (fxp.account) account ("Calculate");
                                         /* Write out segment in A-file format */
                         if (fxp.mode & BINARYMODE) 
                             fwrite (&(fxp.adata), sizeof (fringesum), 1, stdout);

@@ -1,6 +1,6 @@
 ******************************************************
 *
-* $Id$
+* $Id: blk_stmt.txt 498 2011-11-03 13:25:12Z gbc $
 *
 * This file describes which statement names
 * belong in which $block.  An asterisk in the

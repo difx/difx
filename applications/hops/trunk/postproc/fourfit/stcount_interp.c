@@ -49,13 +49,15 @@ struct freq_corel *corel)
     char chan_buffer[MAX_CHAN_PP][9];
     int sc_index[MAX_CHAN_PP];
     int numchans, numscans, new_chan, is_unique;
-    int ret, first_mess, npts;
+    int ret, first_mess, npts, nstart;
     struct freq_corel *fc;
     struct mk4_sdata *sd;
     struct type_306 *t306;
     struct interp_sdata *isd;
+    extern struct type_status status;
                                         /* flag to control stc err message */
     first_mess = 1;
+    status.stc_present = 0;         // indicate neither station having state counts
     
     if (param->bits_sample == 2)
         {
@@ -103,6 +105,8 @@ struct freq_corel *corel)
             msg ("No stcount data for station %c", 1, sd->t300->id);
             continue;
             }
+                                    // indicate that this station has state counts
+        status.stc_present |= 1 << stn;
                                         /* Loop over channels */
                                         /* Assume that first 306 is like */
                                         /* all the rest, vis a vis chan order */
@@ -230,7 +234,8 @@ struct freq_corel *corel)
                 old_ratio = ratio;
                 
                                         /* Trap 0 divide, convert to fractions */
-                if (totcount == 0.0) totcount = 1.0;
+                if (totcount == 0.0) 
+                    totcount = 1.0;
                 bigpos[n] /= totcount;
                 pos[n] /= totcount;
                 neg[n] /= totcount;
@@ -243,49 +248,23 @@ struct freq_corel *corel)
             sort_time (time, bigpos, pos, neg, bigneg, npts);
             
             
-                                        /* Loop over aps, interpolating values */
+                                        /* Loop over aps, interpolating positive values */
+            nstart = 0;
             for (ap=0; ap<param->num_ap; ap++)
                 {
                                         /* Start and stop of AP */
                 start = param->start + (ap * param->acc_period);
                 stop = start + param->acc_period;
                                         /* Hopefully robust interpolation */
-                ret = ap_mean (start, stop, time, bigpos, npts, &bigposval);
-                if (ret > 0) continue;
+                ret = ap_mean (start, stop, time, bigpos, pos, npts, 
+                               &nstart, &bigposval, &posval);
+                if (ret > 0) 
+                    continue;
                 else if (ret < 0)
                     {
                     msg ("Interpolation error in stcount_interp()", 2);
                     return (-1);
                     }
-                ret = ap_mean (start, stop, time, pos, npts, &posval);
-                if (ret > 0) continue;
-                else if (ret < 0)
-                    {
-                    msg ("Interpolation error in stcount_interp()", 2);
-                    return (-1);
-                    }
-                ret = ap_mean (start, stop, time, neg, npts, &negval);
-                if (ret > 0) continue;
-                else if (ret < 0)
-                    {
-                    msg ("Interpolation error in stcount_interp()", 2);
-                    return (-1);
-                    }
-                ret = ap_mean (start, stop, time, bigneg, npts, &bignegval);
-                if (ret > 0) continue;
-                else if (ret < 0)
-                    {
-                    msg ("Interpolation error in stcount_interp()", 2);
-                    return (-1);
-                    }
-                                        /* Renormalize in case of errors */
-                                        /* by interpolation - must add to 1.0 */
-                totcount = bigposval + posval + negval + bignegval;
-                if (totcount == 0.0) totcount = 1.0;
-                bigposval /= totcount;
-                posval /= totcount;
-                negval /= totcount;
-                bignegval /= totcount;
                                         /* Apply these values to corel array */
                 if (stn == 0)
                     isd = &(fc->data[ap].ref_sdata);
@@ -294,9 +273,34 @@ struct freq_corel *corel)
 
                 isd->bigpos[ch] = bigposval;
                 isd->pos[ch] = posval;
+                }   /* End + ap loop */
+
+                                        /* Loop over aps, interpolating negative values */
+            nstart = 0;
+            for (ap=0; ap<param->num_ap; ap++)
+                {
+                                        /* Start and stop of AP */
+                start = param->start + (ap * param->acc_period);
+                stop = start + param->acc_period;
+                                        /* Hopefully robust interpolation */
+                ret = ap_mean (start, stop, time, bigneg, neg, npts, 
+                               &nstart, &bignegval, &negval);
+                if (ret > 0)
+                    continue;
+                else if (ret < 0)
+                    {
+                    msg ("Interpolation error in stcount_interp()", 2);
+                    return (-1);
+                    }
+                                        /* Apply these values to corel array */
+                if (stn == 0)
+                    isd = &(fc->data[ap].ref_sdata);
+                else  
+                    isd = &(fc->data[ap].rem_sdata);
+
                 isd->neg[ch] = negval;
                 isd->bigneg[ch] = bignegval;
-                }   /* End ap loop */
+                }   /* End - ap loop */
             }       /* End channel loop */
         }       /* End loop over stations */
 

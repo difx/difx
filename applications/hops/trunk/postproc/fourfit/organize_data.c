@@ -26,6 +26,7 @@ struct mk4_sdata *sdata;
 struct freq_corel *corel;
     {
     extern struct type_param param;
+    extern int do_accounting;
     struct station_struct *stn1, *stn2;
     struct mk4_sdata *sd1, *sd2;
     int i;
@@ -90,21 +91,19 @@ struct freq_corel *corel;
             msg ("Found station 2 sdata (%c)", 0, st2);
             }
         }
-    if (tpstat_interp (sd1, sd2, &param, corel) != 0)
-        {
-        msg ("Error interpolating tape playback statistics information.", 2);
-        return (-1);
-        }
+    if (do_accounting) account ("Organize data");
     if (stcount_interp (sd1, sd2, &param, corel) != 0)
         {
         msg ("Error interpolating state count information.", 2);
         return (-1);
         }
+    if (do_accounting) account ("STcount interp");
     if (pcal_interp (sd1, sd2, &param, corel) != 0)
         {
         msg ("Error interpolating phasecal information.", 2);
         return (-1);
         }
+    if (do_accounting) account ("PCal interp");
                                         /* Record the station unit numbers */
     param.su_number[0] = sd1->t300->SU_number;
     param.su_number[1] = sd2->t300->SU_number;

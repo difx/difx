@@ -52,7 +52,7 @@ void max555 (double drf[5][5][5],   // input: real function
         for (l=0; l<3; l++)
             center[l] = xbest[l];
         dx /= 5.0;
-        msg ("max value %lf at %lf %lf %lf", 1, 
+        msg ("max value %lf at %lf %lf %lf", 0, 
               bestval, xbest[0], xbest[1], xbest[2]);
         }
     

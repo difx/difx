@@ -9,25 +9,16 @@
 /* Overhauled and beautified by CJL April 29, 1992                      */
 /* Modified for two-bit operation.                   rjc 93.3.22        */
 /* Change scale factor from 30000 to 10000.          rjc 94.1.24        */
+/* Overhauled                                        cjl 99.4.27        */
 /* Mult. scale by 4/3 since Mk4 has valid 0 rotator  rjc 99.8.3         */
 /* Apply different normalization for 2 bit case      rjc 01.01.19       */
 /* Break out normalization code into separate func.  rjc 01.11.7        */
-/*                                                                      */
-/************************************************************************/
-
-/************************************************************************/
-/*                                                                      */
-/* Substantial rewrite needed for Mk4, including support for variable   */
-/* number of lags, multiple polarizations.                              */
+/* apply delay offset by channel if non-zero         rjc 2011.8.10      */
 /*                                                                      */
 /*      Inputs:     pass        Contains various essential parameters   */
 /*                  pol         0,1,2,3 = LL,RR,LR,RL                   */
 /*                  fr          fourfit frequency channel number        */
 /*                  ap          Sequential AP number                    */
-/*                                                                      */
-/*      Output:     t_pcal      Does this belong here?                  */
-/*                                                                      */
-/* Overhauled 27 April 1999 by CJL                                      */
 /*                                                                      */
 /************************************************************************/
 #include <stdio.h>
@@ -57,7 +48,12 @@ int pol, fr, ap;
     unsigned short bitshift;
     double theta, shift, dd, norm_const, fb_fact, fb_amp_ratio();
     double samp_per_ap, corrfact, rawcorr, factor, mean;
-    int flagmask;
+    double diff_delay, deltaf;
+    int flagmask,
+        freq_no,
+        ibegin,
+        sindex;
+    int stnpol[2][4] = {0, 1, 0, 1, 0, 1, 1, 0}; // [stn][pol] = 0:L/X/H, 1:R/Y/V
     extern struct type_param param;
     extern struct type_status status;
 
@@ -189,9 +185,9 @@ int pol, fr, ap;
                     status.sliver_errors++;
                     msg ("marking ap %d for a sliver error", 0, ap);
                                         /* mark this sideband & pol piece of this AP bad */
-                datum->flag &= ~(1 << (2 * pol + sb));
-                break;                  /* break out of loop over lags  */
-                }
+                    datum->flag &= ~(1 << (2 * pol + sb));
+                    break;              /* break out of loop over lags  */
+                    }
                                         /* Convert lag values to true correlation
                                          * coefficients. Factor of 8 is due to hidden
                                          * 3 lower order bits in accumulator */
@@ -237,7 +233,7 @@ int pol, fr, ap;
                 {
                 msg ("skipping data for ap %d pol %d sb %d", -2, ap, pol, sb);
                 continue;                   /* skip over rest of the sideband loop */
-            }
+                }
                                         /* Increment a.p. counts */
                                         /* Integer counts ... */
             (status.ap_num[sb][fr])++;
@@ -258,7 +254,7 @@ int pol, fr, ap;
                                         /* FFT to X-power spectrum  */
             FFT1 (xcor, nlags*2, 1, xp_spec, 1);
 
-                                        /* apply spectral filter, if specified */
+                                        /* apply spectral filter as needed */
             apply_passband (sb, fdata, xp_spec, nlags*2);
 
                                         /* Adjust for Bit-shift */
@@ -326,6 +322,7 @@ int pol, fr, ap;
             status.ap_num[sb][fr]++;
             status.total_ap++;
             fb_fact = 1.0;          // may want to re-examine this assumption
+            theta = 0.0;            // no fractional bit induced error correction
 
             if (sb) 
                 {
@@ -344,8 +341,19 @@ int pol, fr, ap;
                 {
                 xp_spec[i].re = rawdatum->ld.spec[i].re;
                 xp_spec[i].im = rawdatum->ld.spec[i].im;
+                                    // filter out any nan's, if present
+                if (isnan (xp_spec[i].re) || isnan (xp_spec[i].im))
+                    {
+                    msg ("clearing nan's in visibility for ap %d fr %d lag %i", 2, ap, fr, i);
+                    xp_spec[i].re = 0.0;
+                    xp_spec[i].im = 0.0;
+                    }
                 }
             }
+
+                                        /* apply spectral filter as needed */
+            apply_passband (sb, fdata, xp_spec, nlags*2);
+
                                         /* Put sidebands together.  For each sb, */
                                         /* the Xpower array, which is the FFT across */
                                         /* lags, is symmetrical about DC of the */
@@ -355,19 +363,25 @@ int pol, fr, ap;
                                         /* copy in half of the Xpower array */
                                         /* Weight each sideband by data fraction */
 
-        for (i = 1; i < nlags; i++)
-            {
-            if (sb == 0)
+                                        // skip 0th spectral pt if DC channel suppressed
+        ibegin = (pass->control.dc_block) ? 1 : 0;
+        if (sb == 0)
+            { 
+            for (i = ibegin; i < nlags; i++)
                 {
                 factor = fb_fact * datum->usbfrac;
                 S[i] = s_mult (c_mult (xp_spec[i], 
                         c_exp (theta * (double)(i-nlags/2))),factor);
                 }
-                                        /* LSB: conjugate, add phase offset */
-            else
+            }
+        else                            /* LSB: conjugate, add phase offset */
+            {
+            for (i = ibegin; i < nlags; i++)
                 {
                 factor = fb_fact * datum->lsbfrac;
-                S[nlags*4 - i] = s_mult (conju (c_mult (xp_spec[i], 
+                                        // DC goes into 1st element of the S array
+                sindex = i ? 4 * nlags - i : 0;
+                S[sindex] = s_mult (conju (c_mult (xp_spec[i], 
                                c_exp (theta * (double)(i-nlags/2) 
                              + status.lsb_phoff[0] - status.lsb_phoff[1]))),factor);
                 }
@@ -392,6 +406,41 @@ int pol, fr, ap;
     msg ("usbfrac %1f lsbfrac %1f factor %1f", -2, datum->usbfrac, datum->lsbfrac, factor);
     for (i=0; i<4*nlags; i++) S[i] = s_mult (S[i], factor);
 
+#ifdef NORM_HACK_HOOK
+#warning "spectral hacking enabled -- see hook_norm.c"
+    NORM_HACK_HOOK;
+#endif /* NORM_HACK_HOOK */
+
+                                        // corrections to phase as fn of freq based upon 
+                                        // delay calibrations
+                                        // apply delay offset phase ramp
+                                        // iff the offset is non-zero
+    freq_no = fcode(pass->pass_data[fr].freq_code);
+    diff_delay = pass->control.delay_offs[freq_no].ref 
+               - pass->control.delay_offs[freq_no].rem;
+                                        // add in phase effects if multitone delays were extracted
+    if (pass->control.nsamplers && param.pc_mode[0] == MULTITONE 
+                                && param.pc_mode[1] == MULTITONE)      
+        diff_delay += 1e9 * (datum->ref_sdata.mt_delay[stnpol[0][pol]] 
+                           - datum->rem_sdata.mt_delay[stnpol[1][pol]]);
+
+    if (diff_delay != 0.0)              // apply only non-zero delay effects
+        {
+        for (i=1, j=4*nlags-1; i<nlags; i++, j--)
+            {
+                                        // calculate offset frequency of DC edge in
+                                        // GHz from the reference frequency for USB
+                                        // for now (2011.10.5) don't phase ref to the ref freq
+            deltaf = 1e-3 * (/* fdata->frequency - param.ref_freq */
+                           + i / (2e6 * param.samp_period * nlags));
+                                        // apply phase ramp to spectral points 
+            S[i] = c_mult (S[i], c_exp (2.0 * M_PI * diff_delay * deltaf));
+                                        // ditto for LSB
+            deltaf = 1e-3 * (/* fdata->frequency - param.ref_freq */
+                           - i / (2e6 * param.samp_period * nlags));
+            S[j] = c_mult (S[j], c_exp (2.0 * M_PI * diff_delay * deltaf));
+            }
+        }
                                         /* Collect the results */
     if(datum->flag != 0)
         {
@@ -405,7 +454,11 @@ int pol, fr, ap;
             if (j < 0) j += nlags*4;
                                         /* re-normalize back to single lag */
                                         /* (property of FFTs) */
-            datum->sbdelay[i] = s_mult (xcor[j], 1.0 / (nlags - 1.0));
+                                        // nlags-1 norm. iff zeroed-out DC
+            if (pass->control.dc_block)
+                datum->sbdelay[i] = s_mult (xcor[j], 1.0 / (nlags - 1.0));
+            else
+                datum->sbdelay[i] = s_mult (xcor[j], 1.0 / nlags);
             }
          }
                                         /* No data */

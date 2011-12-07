@@ -7,7 +7,7 @@
 /*      Output:         t203            Initialization complete         */
 /*                                                                      */
 /* Created May 13 1999 by CJL                                           */
-/*                                                                      */
+/* modify for version 1 support       2011.10.6     rjc                 */
 /************************************************************************/
 #include <string.h>
 #include <stdio.h>
@@ -19,13 +19,16 @@ clear_203 (struct type_203 *t203)
     {
     char version[3];
     int i;
+    int nchan;
+
+    nchan = (T203_VERSION == 1) ? 8 * MAX_CHAN_PP : 32;
 
     strncpy (t203->record_id, "203", 3);
     sprintf (version, "%02d", T203_VERSION);
     strncpy (t203->version_no, version, 2);
     strncpy (t203->unused1, "   ", 3);
 
-    for (i=0; i<32; i++)
+    for (i=0; i<nchan; i++)
         {
         t203->channels[i].index = -1;
         t203->channels[i].sample_rate = 0;

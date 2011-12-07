@@ -91,5 +91,9 @@ init_tokens ()
     tokenize (PASSBAND_,    "passband",   VECTOR_FLOAT_PARAM);
     tokenize (T_COHERE_,    "t_cohere",   FLOAT_PARAM);
     tokenize (IONOSPHERE_,  "ionosphere", FLOAT_PARAM);
+    tokenize (DELAY_OFFS_,  "delay_offs", CHAN_PARAM);
+    tokenize (DC_BLOCK_,    "dc_block",   INT_PARAM);
+    tokenize (SAMPLERS_,    "samplers",   VECTOR_STRING_PARAM);
+    tokenize (OPTIMIZE_CLOSURE_, "optimize_closure", INT_PARAM);
     }
 
