@@ -31,8 +31,8 @@
 
 int Configuration::MONITOR_TCP_WINDOWBYTES;
 
-Configuration::Configuration(const char * configfile, int id)
-  : mpiid(id), consistencyok(true)
+Configuration::Configuration(const char * configfile, int id, double restartsec)
+  : mpiid(id), consistencyok(true), restartseconds(restartsec)
 {
   string configfilestring = configfile;
   size_t basestart = configfilestring.find_last_of('/');
@@ -911,6 +911,11 @@ void Configuration::processCommon(ifstream * input)
   getinputline(input, &line, "START SECONDS");
   startseconds = atoi(line.c_str());
   startns = (int)((atof(line.c_str()) - ((double)startseconds))*1000000000.0 + 0.5);
+  if(restartseconds > 0) {
+    startseconds = (int)(atof(line.c_str()) + restartseconds);
+    startns = (int)((atof(line.c_str()) + restartseconds - ((double)startseconds))*1000000000.0 + 0.5);
+    executeseconds -= int(restartseconds);
+  }
   getinputline(input, &line, "ACTIVE DATASTREAMS");
   numdatastreams = atoi(line.c_str());
   getinputline(input, &line, "ACTIVE BASELINES");

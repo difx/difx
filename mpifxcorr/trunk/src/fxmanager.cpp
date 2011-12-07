@@ -31,6 +31,7 @@
 #include <signal.h>
 #include <difxmessage.h>
 #include "alert.h"
+#include <dirent.h>
 #include <errno.h>
 #include <sys/socket.h>
 #include <poll.h>
@@ -581,13 +582,49 @@ void * FxManager::launchNewWriteThread(void * thismanager)
 
 void FxManager::initialiseOutput()
 {
+  ofstream output;
+  char filename[256];
+  int maxbinfiles = 1;
+  int maxphasecentres = 1;
+  for(int i=0;i<config->getNumConfigs();i++) {
+    if(config->pulsarBinOn(i) && !config->scrunchOutputOn(i))
+      maxbinfiles = config->getNumPulsarBins(i);
+    if(config->getMaxPhaseCentres(i) > maxphasecentres)
+      maxphasecentres = config->getMaxPhaseCentres(i);
+  }
+
   if(config->getOutputFormat() == Configuration::DIFX)
   {
-    //create the directory - if that doesn't work, abort as we can't guarantee no overwriting data
-    int flag = mkdir(config->getOutputFilename().c_str(), 0775);
-    if(flag < 0) {
-      cfatal << startl << "Error trying to create directory " << config->getOutputFilename() << ": " << flag << ", ABORTING!" << endl;
-      MPI_Abort(MPI_COMM_WORLD, 1);
+    //create the directory if it does not exist
+    if(opendir(config->getOutputFilename().c_str()) == NULL)
+    {
+      int flag = mkdir(config->getOutputFilename().c_str(), 0775);
+      if(flag < 0) {
+        cfatal << startl << "Error trying to create directory " << config->getOutputFilename() << ": " << flag << " which apparently didn't exist. ABORTING!" << endl;
+        MPI_Abort(MPI_COMM_WORLD, 1);
+      }
+    }
+    else if (!config->isRestart())
+    {
+      cwarn << startl << "Not a restart job, but directory " << config->getOutputFilename() << " already exists - this is unusual" << endl;
+    }
+
+    //check if the specific filename we will want to create actually exists - complain if it does, create it if it doesn't
+    for(int s=0;s<maxphasecentres;s++)
+    {
+      for(int b=0;b<maxbinfiles;b++)
+      {
+        sprintf(filename, "%s/DIFX_%05d_%06d.s%04d.b%04d", config->getOutputFilename().c_str(), config->getStartMJD(), config->getStartSeconds(), s, b);
+        ifstream testfile(filename);
+        if (testfile) {
+          cfatal << startl << "Output DIFX file " << filename << " already exists.  ABORTING!" << endl;
+          MPI_Abort(MPI_COMM_WORLD, 1);
+        }
+        else {
+          output.open(filename, ios::trunc);
+          output.close();
+        }
+      }
     }
   }
 }

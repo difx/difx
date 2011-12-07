@@ -71,8 +71,9 @@ public:
   * Constructor: Reads and stores the information in the input file
   * @param configfile The filename of the input file containing configuration information to be read
   * @param id The MPI id of the process (0 = manager, then 1 - N datastreams, N+1 onwards cores
+  * @param restartsec The restart time into the job in seconds (to restart a job which died halfway)
   */
-  Configuration(const char * configfile, int id);
+  Configuration(const char * configfile, int id, double restartsec=0.0);
 
   ~Configuration();
 
@@ -259,6 +260,7 @@ public:
   inline int getMaxNumPulsarBins() { return maxnumpulsarbins; }
   inline int getMTU() { return mtu; }
   inline int getExecuteSeconds() { return executeseconds; }
+  inline bool isRestart() { return (restartseconds>0)?true:false; }
   inline int getStartMJD() { return startmjd; }
   inline int getStartSeconds() { return startseconds; }
   inline int getStartNS() { return startns; }
@@ -818,6 +820,7 @@ private:
   int visbufferlength, databufferfactor, numdatasegments;
   int numdatastreams, numbaselines, numcoreconfs;
   int executeseconds, startmjd, startseconds, startns;
+  double restartseconds;
   int maxnumchannels, maxnumpulsarbins, maxthreadresultlength, maxcoreresultlength, maxnumbufferedffts, mtu;
   int stadumpchannels, ltadumpchannels;
   int numconfigs, numrules, baselinetablelength, telescopetablelength, datastreamtablelength, freqtablelength, estimatedbytes;

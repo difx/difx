@@ -229,7 +229,6 @@ static void generateIdentifier(const char *inputfile, char *identifier)
   }
 }
 
-
 //main method - run by everyone
 int main(int argc, char *argv[])
 {
@@ -243,11 +242,13 @@ int main(int argc, char *argv[])
   int * coreids;
   int * datastreamids;
   bool monitor = false;
+  bool restart = false;
   string monitoropt;
   pthread_t commandthread;
   int nameslength = 1;
   char monhostname[nameslength];
   int port=0, monitor_skip=0, namelen;
+  double restartseconds = 0.0;
   char processor_name[MPI_MAX_PROCESSOR_NAME];
   char difxMessageID[DIFX_MESSAGE_PARAM_LENGTH];
 
@@ -262,9 +263,9 @@ int main(int argc, char *argv[])
   MPI_Comm_dup(world, &return_comm);
   MPI_Get_processor_name(processor_name, &namelen);
 
-  if(argc < 2 || argc > 3)
+  if(argc < 2 || argc > 4)
   {
-    cerr << "Error: invoke with mpifxcorr <inputfilename> [-M<monhostname>:port[:monitor_skip]]" << endl;
+    cerr << "Error: invoke with mpifxcorr <inputfilename> [-M<monhostname>:port[:monitor_skip]] [-rNewStartSec]" << endl;
     MPI_Barrier(world);
     MPI_Finalize();
     return EXIT_FAILURE;
@@ -282,37 +283,45 @@ int main(int argc, char *argv[])
   }
 
   cinfo << startl << "MPI Process " << myID << " is running on host " << processor_name << endl;
-  
-  if(argc == 3)
+ 
+  for(int i=2;i<argc;i++)
   {
-    if(!(argv[2][0]=='-' && argv[2][1]=='M'))
+    if(argv[i][0]=='-' && argv[i][1]=='M')
+    {
+      monitor = true;
+      monitoropt = string(argv[i]);
+      size_t colindex1 = monitoropt.find_first_of(':');
+      size_t colindex2 = monitoropt.find_last_of(':');
+
+      if(colindex2 == colindex1)
+      {
+        port = atoi(monitoropt.substr(colindex1 + 1).c_str());
+        monitor_skip = 1;
+      }
+      else
+      {
+        port = atoi(monitoropt.substr(colindex1 + 1, colindex2-colindex1-1).c_str());
+        monitor_skip = atoi(monitoropt.substr(colindex2 + 1).c_str());
+      }
+      strcpy(monhostname, monitoropt.substr(2,colindex1-2).c_str());
+    }
+    else if(argv[i][0]=='-' && argv[i][1]=='r')
+    {
+      restartseconds = atof(argv[i] + 2);
+      restart = true;
+    }
+    else
     {
       cfatal << startl << "Invoke with mpifxcorr <inputfilename> [-M<monhostname>:port[:monitor_skip]]" << endl;
       MPI_Barrier(world);
       MPI_Finalize();
       return EXIT_FAILURE;
     }
-    monitor = true;
-    monitoropt = string(argv[2]);
-    size_t colindex1 = monitoropt.find_first_of(':');
-    size_t colindex2 = monitoropt.find_last_of(':');
-
-    if(colindex2 == colindex1) 
-    {
-      port = atoi(monitoropt.substr(colindex1 + 1).c_str());
-      monitor_skip = 1;	
-    }
-    else
-    {
-      port = atoi(monitoropt.substr(colindex1 + 1, colindex2-colindex1-1).c_str());
-      monitor_skip = atoi(monitoropt.substr(colindex2 + 1).c_str());
-    }
-    strcpy(monhostname, monitoropt.substr(2,colindex1-2).c_str());
   }
 
   cverbose << startl << "About to process the input file.." << endl;
   //process the input file to get all the info we need
-  config = new Configuration(argv[1], myID);
+  config = new Configuration(argv[1], myID, restartseconds);
   if(!config->consistencyOK())
   {
     //There was a problem with the input file, so shut down gracefully
