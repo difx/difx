@@ -57,6 +57,7 @@ typedef struct
 	FILE *in;
 	double U, V, W;
 	double mjd, iat;
+	double *mjdLastRecord;		/* indexed by zero-based antenna id */
 	float tInt;
 	int baseline;
 	int *antennaIdRemap;		/* to convert baseline number */

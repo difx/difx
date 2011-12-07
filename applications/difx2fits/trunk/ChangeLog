@@ -3,6 +3,10 @@ Version 3.0.2
 * Improved reporting when weights go crazy (negative)
 * --zero (or -0) option: don't write visibilities
 * makefits: pass along non-dashed options to difx2fits
+* Do better job verifying baseband data files have compliant names.
+* Improved checking on fopen return values
+* Maximum number of file descriptors checked.  For large merges this can be a problem.
+* Multiple DIFX files per job: don't write records from later files that overlap in time with those written by earlier ones.
 
 Version 3.0.1
 * Post 2.0.0

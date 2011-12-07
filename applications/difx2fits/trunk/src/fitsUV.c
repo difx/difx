@@ -33,6 +33,7 @@
 #include <strings.h>
 #include <assert.h>
 #include <difxio/parsevis.h>
+#include <regex.h>
 #include "config.h"
 #include "fitsUV.h"
 #include "jobmatrix.h"
@@ -90,6 +91,7 @@ static void DifxVisStartGlob(DifxVis *dv)
 {
 	char *globstr;
 	const char suffix[] = "/DIFX*";
+	int v;
 
 	globstr = calloc(strlen(dv->D->job[dv->jobId].outputFile) + strlen(suffix) + 8, 1);
 	if(globstr == 0)
@@ -101,10 +103,37 @@ static void DifxVisStartGlob(DifxVis *dv)
 
 	sprintf(globstr, "%s%s", dv->D->job[dv->jobId].outputFile, suffix);
 
-	glob(globstr, 0, 0, &dv->globbuf);
+	v = glob(globstr, 0, 0, &dv->globbuf);
+	if(v != 0)
+	{
+		if(v == GLOB_NOSPACE)
+		{
+			fprintf(stderr, "Error: DifxVisStartGlob: No space!\n");
+
+			exit(EXIT_FAILURE);
+		}
+		else if(v == GLOB_ABORTED)
+		{
+			fprintf(stderr, "Error: DifxVisStartGlob: Read error!\n");
+
+			exit(EXIT_FAILURE);
+		}
+		else if(v != GLOB_NOMATCH)
+		{
+			/* print handled below */
+
+			exit(EXIT_FAILURE);
+		}
+		else
+		{
+			fprintf(stderr, "Error: unknown glob() failure! %d\n", v);
+
+			exit(EXIT_FAILURE);
+		}
+	}
 	dv->nFile = dv->globbuf.gl_pathc;
 
-	if(dv->nFile == 0)
+	if(dv->nFile == 0 || v == GLOB_NOMATCH)
 	{
 		fprintf(stderr, "Error: no data files in %s\n", dv->D->job[dv->jobId].outputFile);
 
@@ -116,12 +145,40 @@ static void DifxVisStartGlob(DifxVis *dv)
 	free(globstr);
 }
 
+static int re2int(const char *str, const regmatch_t *subexpression)
+{
+	const int MaxNumLen = 16;
+	char tmp[MaxNumLen+1];
+	int n;
+	n = subexpression->rm_eo - subexpression->rm_so;
+
+	if(n > MaxNumLen)
+	{
+		fprintf(stderr, "Error: re2int: integer too long (%d characters)\n", n);
+
+		exit(EXIT_FAILURE);
+	}
+
+	strncpy(tmp, str + subexpression->rm_so, n);
+	tmp[n] = 0;
+
+	return atoi(tmp);
+}
+
 int DifxVisNextFile(DifxVis *dv, int pulsarBin, int phasecentre)
 {
-	const int MaxSuffixLength=32;
-	char suffixmatch1[MaxSuffixLength];
-	char suffixmatch2[MaxSuffixLength];
-	int v1, v2;
+	int a, v, bin, pc;
+	regex_t fileMatch;
+	regmatch_t fileSubexpressions[5];
+
+	/* FIXME: someday: move this compilation to top level? */
+	v = regcomp(&fileMatch, "\\S*/DIFX_([0-9]+)_([0-9]+)\\.s([0-9]+)\\.b([0-9]+)", REG_EXTENDED);
+	if(v != 0)
+	{
+		fprintf(stderr, "Developer error: DifxVisNextFile: regular expresson won't compile\n");
+
+		exit(EXIT_FAILURE);
+	}
 
 	if(dv->in)
 	{
@@ -135,29 +192,51 @@ int DifxVisNextFile(DifxVis *dv, int pulsarBin, int phasecentre)
 		if(dv->curFile >= dv->nFile)
 		{
 			printf("    JobId %d done.\n", dv->jobId);
-			return -1;
+
+			return -2;
 		}
-		printf("    JobId %d File %d/%d : %s\n", 
-			dv->jobId,
-			dv->curFile+1, dv->nFile,
-			dv->globbuf.gl_pathv[dv->curFile]);
-		v1 = snprintf(suffixmatch1, MaxSuffixLength, "s%04d.b%04d", phasecentre, pulsarBin);
-		v2 = snprintf(suffixmatch2, MaxSuffixLength, "s%04d.b%04d", 0, pulsarBin);
-		if(v1 >= MaxSuffixLength || v2 >= MaxSuffixLength)
+		printf("    JobId %d File %d/%d : %s\n", dv->jobId, dv->curFile+1, dv->nFile, dv->globbuf.gl_pathv[dv->curFile]);
+		if(regexec(&fileMatch, dv->globbuf.gl_pathv[dv->curFile], 5, fileSubexpressions, 0) != 0)
 		{
-			fprintf(stderr, "Developer error: DifxVisNextFile: MaxSuffixLength=%d too small: v1=%d v2=%d\n", MaxSuffixLength, v1, v2);
+			printf("\nWarning: File %s found which will be ignored because it does not match the expected filename convention for DiFX output files.\n\n", dv->globbuf.gl_pathv[dv->curFile]);
+
+			continue;
 		}
-		if(strstr(dv->globbuf.gl_pathv[dv->curFile], suffixmatch1) != NULL ||
-		   strstr(dv->globbuf.gl_pathv[dv->curFile], suffixmatch2) != NULL)
+
+		/* The filename matched the template expression */
+
+		/* slot 3 of the re match should be pulsar bin number */
+		bin = re2int(dv->globbuf.gl_pathv[dv->curFile], fileSubexpressions+3);
+		/* slot 4 of the re match should be phase center number */
+		pc  = re2int(dv->globbuf.gl_pathv[dv->curFile], fileSubexpressions+4);
+
+		if(bin == pulsarBin && (pc == 0 || pc == phasecentre))
 		{
 			dv->in = fopen(dv->globbuf.gl_pathv[dv->curFile], "r");
+			if(dv->in == 0)
+			{
+				/* should not have gotten here */
+				fprintf(stderr, "Error: cannot open file for read: %s\n", dv->globbuf.gl_pathv[dv->curFile]);
+				fprintf(stderr, "Check permissions.  Failure _could_ be related to exhausting file descriptors\n");
+
+				exit(EXIT_FAILURE);
+			}
 		}
 	}
+
+	regfree(&fileMatch);
+
 	if(!dv->in)
 	{
 		fprintf(stderr, "Error opening file %s\n", dv->globbuf.gl_pathv[dv->curFile]);
 
 		return -1;
+	}
+
+	/* Inc the last timestamp by epsilon */
+	for(a = 0; a < dv->D->nAntenna; a++)
+	{
+		dv->mjdLastRecord[a] += 0.05/86400.0;
 	}
 
 	return 0;
@@ -173,8 +252,7 @@ DifxVis *newDifxVis(const DifxInput *D, int jobId, int pulsarBin, int phasecentr
 
 	if(!dv)
 	{
-		fprintf(stderr, "Error: newDifxVis: dv=calloc failed, size=%d\n",
-			(int)(sizeof(DifxVis)));
+		fprintf(stderr, "Error: newDifxVis: dv=calloc failed, size=%d\n", (int)(sizeof(DifxVis)));
 		assert(dv);
 
 		exit(EXIT_FAILURE);
@@ -182,8 +260,7 @@ DifxVis *newDifxVis(const DifxInput *D, int jobId, int pulsarBin, int phasecentr
 
 	if(jobId < 0 || jobId >= D->nJob)
 	{
-		fprintf(stderr, "Error: newDifxVis: jobId = %d, nJob = %d\n",
-			jobId, D->nJob);
+		fprintf(stderr, "Error: newDifxVis: jobId = %d, nJob = %d\n", jobId, D->nJob);
 		free(dv);
 		
 		return 0;
@@ -218,6 +295,8 @@ DifxVis *newDifxVis(const DifxInput *D, int jobId, int pulsarBin, int phasecentr
 			}
 		}
 	}
+
+	dv->mjdLastRecord = (double *)calloc(D->nAntenna, sizeof(double));
 
 	/* check for polarization confusion */
 	if( ( (polMask & DIFXIO_POL_RL) != 0 && (polMask & DIFXIO_POL_XY) != 0 ) || 
@@ -264,10 +343,21 @@ DifxVis *newDifxVis(const DifxInput *D, int jobId, int pulsarBin, int phasecentr
 		return 0;
 	}
 
-	if(DifxVisNextFile(dv, pulsarBin, phasecentre) < 0)
+	v = DifxVisNextFile(dv, pulsarBin, phasecentre);
+	if(v < 0)
 	{
-		fprintf(stderr, "Info: newDifxVis: DifxVisNextFile(dv) < 0\n");
 		deleteDifxVis(dv);
+		if(v == -2)	/* could not open file */
+		{
+			fprintf(stderr, "Error: zero files openable for jobId = %d!\n", jobId);
+			fprintf(stderr, "Fits creation failed; partial FITS file left hanging around\n");
+
+			exit(EXIT_FAILURE);
+		}
+		else
+		{
+			fprintf(stderr, "Info: newDifxVis: DifxVisNextFile(dv) < 0\n");
+		}
 		
 		return 0;
 	}
@@ -286,18 +376,27 @@ void deleteDifxVis(DifxVis *dv)
 	if(dv->in)
 	{
 		fclose(dv->in);
+		dv->in = 0;
 	}
 	if(dv->spectrum)
 	{
 		free(dv->spectrum);
+		dv->spectrum = 0;
 	}
 	if(dv->dp)
 	{
 		deleteDifxParameters(dv->dp);
+		dv->dp = 0;
 	}
 	if(dv->record)
 	{
 		free(dv->record);
+		dv->record = 0;
+	}
+	if(dv->mjdLastRecord)
+	{
+		free(dv->mjdLastRecord);
+		dv->mjdLastRecord = 0;
 	}
 	
 	free(dv);
@@ -801,6 +900,31 @@ static int RecordIsZero(const DifxVis *dv)
 	return 1;
 }
 
+static int RecordIsOld(DifxVis *dv)
+{
+	int a1, a2;
+	double mjd;
+
+	mjd = dv->mjd + dv->iat;
+
+	a1  = (dv->record->baseline/256) - 1;
+	a2  = (dv->record->baseline%256) - 1;
+	
+	if(mjd < dv->mjdLastRecord[a1] || mjd < dv->mjdLastRecord[a2])
+	{
+		printf("%f %f %f\n", mjd, dv->mjdLastRecord[a1], dv->mjdLastRecord[a2]);
+
+		return 1;
+	}
+	else
+	{
+		dv->mjdLastRecord[a1] = mjd;
+		dv->mjdLastRecord[a2] = mjd;
+	}
+
+	return 0;
+}
+
 static int RecordHasNegativeWeight(const DifxVis *dv)
 {
 	return (dv->recweight < 0.0);
@@ -968,6 +1092,7 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D,
 	int nNegWeight = 0;
 	int nTrans = 0;
 	int nWritten = 0;
+	int nOld = 0;
 	double mjd, bestmjd;
 	double scale;
 	DifxVis **dvs;
@@ -1187,6 +1312,10 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D,
 		{
 			nTrans++;
 		}
+		else if(RecordIsOld(dv))
+		{
+			nOld++;
+		}
 		else
 		{
 			//fprintf(stdout, "Found an ok record\n");
@@ -1238,6 +1367,7 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D,
 	printf("      %d all zero records dropped\n", nZero);
 	printf("      %d negative weight records\n", nNegWeight);
 	printf("      %d scan boundary records dropped\n", nTrans);
+	printf("      %d out-of-time-range records dropped\n", nOld);
 	printf("      %d records written\n", nWritten);
 	if(opts->verbose > 1)
 	{
@@ -1273,7 +1403,7 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D,
 DifxVis *dummy_newDifxVis(const DifxInput *D, int jobId, int pulsarBin, int phasecentre)
 {
 	DifxVis *dv;
-	int i, j, c, v;
+	int v;
 	int polMask = 0;
 
 	dv = (DifxVis *)calloc(1, sizeof(DifxVis));
@@ -1310,6 +1440,7 @@ DifxVis *dummy_newDifxVis(const DifxInput *D, int jobId, int pulsarBin, int phas
 	dv->nComplex = 2;	/* for now don't write weights */
 	dv->first = 1;
 	dv->nFreq = D->nIF;
+	dv->mjdLastRecord = (double *)calloc(D->nAntenna, sizeof(double));
 	polMask |= polMaskValue(D->config[0].IF[0].pol[0]);
 	
 	/* check for polarization confusion */
@@ -1364,9 +1495,8 @@ const DifxInput *dummy_DifxInput2FitsUV(const DifxInput *D,
 	struct fits_keywords *p_fits_keys,
 	struct fitsPrivate *out, struct CommandLineOptions *opts)
 {
-	int i, j, l, v;
+	int j;
 	float visScale = 1.0;
-	char fileBase[200];
 	char dateStr[12];
 	char fluxFormFloat[8];
 	char gateFormInt[8];
@@ -1374,14 +1504,6 @@ const DifxInput *dummy_DifxInput2FitsUV(const DifxInput *D,
 	int nRowBytes;
 	int nColumn;
 	int nWeight;
-	int nJob, bestj;
-	int nInvalid = 0;
-	int nFlagged = 0;
-	int nZero = 0;
-	int nNegWeight = 0;
-	int nTrans = 0;
-	int nWritten = 0;
-	double mjd, bestmjd;
 	double scale;
 	DifxVis *dv;
 
