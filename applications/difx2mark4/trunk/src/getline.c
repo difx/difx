@@ -1,42 +1,78 @@
-/*  
- *
- * Peter Lemkin
- * Image Processing Section
- * Laboratory of Mathematical Biology
- * National Cancer Institute, FCRDC
- * Frederick, MD 21702
- *
- *    Written 1997  by Peter F. Lemkin. lemkin@ncifcrf.gov
- *
-
- * $Date: 1999/06/08 15:40:10 $  $Revision: 1.46 $
- *
- */
-
-
-/* @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
- * getline() -  get line from input stream and return EOF status
- * Derived from the NCSA HTTP util.c code.
- * REturn data in preallocated buffer of max size [0:n-1].
- * Return value of feof(f).
-*/
+/* getline implementation is copied from glibc. */
 
 #include <stdio.h>
+#include <unistd.h>
+#include <errno.h>
+#include <stdlib.h>
 
-static int getline(char *s, int n, FILE *f) {
-  int ch;
-  int nMinus1= (n-1), i= 0;
+#ifndef SIZE_MAX
+# define SIZE_MAX ((size_t) -1)
+#endif
+#ifndef SSIZE_MAX
+# define SSIZE_MAX ((ssize_t) (SIZE_MAX / 2))
+#endif
 
-  while (1) {
-    ch = getc(f);
-      
-    if (ch == '\r') ch = getc(f);
-    
-    if ((ch == '\n') || (ch == EOF) || (i == nMinus1)) {
-      *s= '\0';
-      return(feof(f) ? 1 : 0);
-    } else
-      *s++ = ch;
-    i++;
+ssize_t getline (char **lineptr, size_t *n, FILE *fp) {
+  ssize_t result;
+  size_t cur_len = 0;
+
+  if (lineptr == NULL || n == NULL || fp == NULL) {
+    errno = EINVAL;
+    return -1;
   }
-}/*getline*/
+
+  if (*lineptr == NULL || *n == 0) {
+    *n = 120;
+    *lineptr = (char *) malloc (*n);
+    if (*lineptr == NULL)
+      {
+	result = -1;
+	goto end;
+      }
+  }
+
+  for (;;) {
+    int i;
+    
+    i = getc (fp);
+    if (i == EOF) {
+      result = -1;
+      break;
+    }
+
+    /* Make enough space for len+1 (for final NUL) bytes.  */
+    if (cur_len + 1 >= *n) {
+      size_t needed_max =
+	SSIZE_MAX < SIZE_MAX ? (size_t) SSIZE_MAX + 1 : SIZE_MAX;
+      size_t needed = 2 * *n + 1;   /* Be generous. */
+      char *new_lineptr;
+      
+      if (needed_max < needed)
+	needed = needed_max;
+      if (cur_len + 1 >= needed) {
+	result = -1;
+	goto end;
+      }
+
+      new_lineptr = (char *) realloc (*lineptr, needed);
+      if (new_lineptr == NULL){
+	result = -1;
+	goto end;
+      }
+      
+      *lineptr = new_lineptr;
+      *n = needed;
+    }
+
+    (*lineptr)[cur_len] = i;
+    cur_len++;
+
+    if (i == '\n')
+      break;
+  }
+  (*lineptr)[cur_len] = '\0';
+  result = cur_len ? (ssize_t) cur_len : result;
+
+ end:
+  return result;
+}
