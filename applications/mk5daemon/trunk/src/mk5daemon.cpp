@@ -293,6 +293,18 @@ int Mk5Daemon_system(const Mk5Daemon *D, const char *command, int verbose)
 	return v;
 }
 
+FILE* Mk5Daemon_popen( const Mk5Daemon *D, const char *command, int verbose ) {
+	char message[DIFX_MESSAGE_LENGTH];
+
+	if(verbose) {
+		snprintf( message, DIFX_MESSAGE_LENGTH, "Executing: %s\n", command );
+		Logger_logData( D->log, message );
+	}
+
+    //snprintf( message, DIFX_MESSAGE_LENGTH, "/bin/sh -c %s", command );
+	return popen( command, "r" );
+}
+
 void deleteMk5Daemon(Mk5Daemon *D)
 {
 	difxMessageSendDifxInfo("mk5daemon stopping");
@@ -658,9 +670,18 @@ void handleDifxMessage(Mk5Daemon *D)
 			case DIFX_MESSAGE_START:
 				Mk5Daemon_startMpifxcorr(D, &G);
 				break;
+			case DIFX_MESSAGE_START_USNO:
+				Mk5Daemon_startMpifxcorr_USNO(D, &G);
+				break;
+		    case DIFX_MESSAGE_STOP:
+		        Mk5Daemon_stopMpifxcorr_USNO( D, &G );
+				break;
 			case DIFX_MESSAGE_CONDITION:
 				handleCondition(D, &G);
 				break;
+			case DIFX_MESSAGE_FILEREQUEST:
+			    Mk5Daemon_fileRequest_USNO( D, &G );
+			    break;
 			default:
 				break;
 			}

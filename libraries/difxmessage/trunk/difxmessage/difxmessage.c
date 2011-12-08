@@ -92,12 +92,14 @@ const char DifxMessageTypeStrings[][24] =
 	"DifxCommand",
 	"DifxParameter",
 	"DifxStart",
+	"DifxStartUSNO",
 	"DifxStop",
 	"Mark5VersionMessage",
 	"Mark5ConditionMessage", /* this is deprecated; use Mark5DriveStatsMessage instead */
 	"DifxTransientMessage",
 	"DifxSmartMessage",
-	"Mark5DriveStatsMessage"
+	"Mark5DriveStatsMessage",
+	"DifxFileRequest"
 };
 
 /* Note! Keep this in sync with enum DifxAlertLevel in difxmessage.h */

@@ -112,10 +112,17 @@ static void XMLCALL startElement(void *userData, const char *name,
 				if(strcmp(atts[i], "nodes") == 0)
 				{
 					n = addNodes(S->processNode, DIFX_MESSAGE_MAX_CORES, &S->nProcess, atts[i+1]);
-					for(j = S->nProcess-n; j < S->nProcess; j++)
-					{
-						S->nThread[j] = nThread;
-					}
+				}
+				else if ( strcmp( atts[i], "threads" ) == 0 ) {
+				    char buff[DIFX_MESSAGE_LENGTH];
+				    strcpy( buff, atts[i+1] );
+				    buff[strlen( atts[i+1] )] = 0;
+				    for ( j = 0; j < S->nProcess; ++j ) {
+				        if ( j == 0 )
+				            S->nThread[j] = atoi( strtok( buff, " " ) );
+				        else
+				            S->nThread[j] = atoi( strtok( NULL, " " ) );
+				    }
 				}
 			}
 		}
@@ -574,6 +581,7 @@ static void XMLCALL endElement(void *userData, const char *name)
 					}
 					break;
 				case DIFX_MESSAGE_START:
+				case DIFX_MESSAGE_START_USNO:
 					if(strcmp(elem, "input") == 0)
 					{
 						strncpy(G->body.start.inputFilename, s, DIFX_MESSAGE_FILENAME_LENGTH-1);
@@ -623,6 +631,14 @@ static void XMLCALL endElement(void *userData, const char *name)
 					}
 					break;
 				case DIFX_MESSAGE_STOP:
+					if( strcmp(elem, "input") == 0 ) {
+						strncpy( G->body.stop.inputFilename, s, DIFX_MESSAGE_FILENAME_LENGTH-1 );
+					}
+					break;
+				case DIFX_MESSAGE_FILEREQUEST:
+					if( strcmp(elem, "input") == 0 ) {
+						strncpy( G->body.stop.inputFilename, s, DIFX_MESSAGE_FILENAME_LENGTH-1 );
+					}
 					break;
 				case DIFX_MESSAGE_TRANSIENT:
 					if(strcmp(elem, "jobId") == 0)
@@ -870,6 +886,10 @@ void difxMessageGenericPrint(const DifxMessageGeneric *G)
 		printf("    difxVersion = %s\n", G->body.start.difxVersion);
 		break;
 	case DIFX_MESSAGE_STOP:
+		printf("    input file = %s\n", G->body.start.inputFilename);
+		break;
+	case DIFX_MESSAGE_FILEREQUEST:
+		printf("    filename = %s\n", G->body.start.inputFilename);
 		break;
 	case DIFX_MESSAGE_TRANSIENT:
 		printf("    jobId = %s\n", G->body.transient.jobId);

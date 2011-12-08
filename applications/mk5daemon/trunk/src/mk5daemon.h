@@ -216,10 +216,13 @@ void Mk5Daemon_stopVSIS(Mk5Daemon *D);
 void Mk5Daemon_resetStreamstor(Mk5Daemon *D);
 int mark5command(const char *outstr, char *instr, int maxlen);
 int Mk5Daemon_system(const Mk5Daemon *D, const char *command, int verbose);
+FILE* Mk5Daemon_popen( const Mk5Daemon *D, const char *command, int verbose );
 void Mk5Daemon_reboot(Mk5Daemon *D);
 void Mk5Daemon_poweroff(Mk5Daemon *D);
 void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G);
-
+void Mk5Daemon_startMpifxcorr_USNO( Mk5Daemon *D, const DifxMessageGeneric *G );
+void Mk5Daemon_stopMpifxcorr_USNO( Mk5Daemon *D, const DifxMessageGeneric *G );
+void Mk5Daemon_fileRequest_USNO( Mk5Daemon *D, const DifxMessageGeneric *G );
 void Mk5Daemon_addVSIError(Mk5Daemon *D, const char *errorMessage);
 void Mk5Daemon_delVSIError(Mk5Daemon *D, const char *errorMessage);
 int Mk5Daemon_popVSIError(Mk5Daemon *D, char *errorMessage, int maxLength);

@@ -162,12 +162,14 @@ enum DifxMessageType
 	DIFX_MESSAGE_COMMAND,
 	DIFX_MESSAGE_PARAMETER,
 	DIFX_MESSAGE_START,
+	DIFX_MESSAGE_START_USNO,
 	DIFX_MESSAGE_STOP,
 	DIFX_MESSAGE_MARK5VERSION,
 	DIFX_MESSAGE_CONDITION,	/* this is deprecated.  Use DIFX_MESSAGE_DISKSTAT instead */
 	DIFX_MESSAGE_TRANSIENT,
 	DIFX_MESSAGE_SMART,
 	DIFX_MESSAGE_DRIVE_STATS,
+	DIFX_MESSAGE_FILEREQUEST,
 	NUM_DIFX_MESSAGE_TYPES	/* this needs to be the last line of enum */
 };
 
@@ -290,6 +292,11 @@ typedef struct
 
 typedef struct
 {
+    char filename[DIFX_MESSAGE_FILENAME_LENGTH];
+} DifxMessageFileRequest;
+
+typedef struct
+{
 	char inputFilename[DIFX_MESSAGE_FILENAME_LENGTH];
 } DifxMessageStop;
 
@@ -374,6 +381,7 @@ typedef struct
 		DifxMessageCondition	condition;  /* same as above but here for backward compatibility */
 		DifxMessageTransient	transient;
 		DifxMessageSmart	smart;
+		DifxMessageFileRequest    fileRequest;
 	} body;
 	int _xml_level;			/* internal use only here and below */
 	char _xml_element[5][32];
