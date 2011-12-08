@@ -10,6 +10,7 @@
 #============================================================================
 from difxdb.model import model
 from sqlalchemy import desc
+from string import upper
 
 
 def experimentExists(session, code):
@@ -55,7 +56,7 @@ def addExperiment(session, code):
         return
 
     experiment = model.Experiment()
-    experiment.code = code
+    experiment.code = upper(code)
     experiment.number = int(getLastExperimentNumber(session)) + 1
     
 
