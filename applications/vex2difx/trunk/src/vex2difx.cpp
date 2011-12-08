@@ -1401,16 +1401,18 @@ static void populateEOPTable(DifxInput *D, const vector<VexEOP>& E)
 
 static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, const VexData *V, const CorrParams *P, const VexScan *S)
 {
-	int nConfig;
+	int nConfig, nFFTsPerIntegration, nSubintsPerIntegration;
+	int max5div, max2div, best5div, best2div;
 	int fftDurNS;
 	DifxConfig *config;
 	const CorrSetup *corrSetup;
 	const VexMode *mode;
 	string configName;
 	double minBW;		// [Hz]
-	double readTimeNS;
+	double test_tint, bestfractionaldiff;
+	double floatReadTimeNS, floatFFTDurNS, floatSubintDurNS;
 	double msgSize, dataRate, readSize;
-
+	long long tintNS, nscounter;
 
 	corrSetup = P->getCorrSetup(S->corrSetupName);
 	if(corrSetup == 0)
@@ -1451,47 +1453,71 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 		}
 	}
 	config->tInt = corrSetup->tInt;
+	tintNS = static_cast<long long>(1e9*corrSetup->tInt + 0.5);
 	minBW = mode->sampRate/2.0;
 	fftDurNS = static_cast<int>(corrSetup->fftSize()*(0.5/minBW)*1000000000.0 + 0.5);
+	floatFFTDurNS = corrSetup->fftSize()*(0.5/minBW)*1000000000.0;
 	dataRate = mode->sampRate*mode->getBits()*mode->subbands.size();
-	if(corrSetup->subintNS > 0)
+	nFFTsPerIntegration = static_cast<int>(1e9*corrSetup->tInt/floatFFTDurNS + 0.5);
+
+	//first test how big a single FFT is - if it is too big, fail with a warning and a suggestion
+	if(floatFFTDurNS > (1LL<<31) - 1)
+	{
+		cerr << "A single FFT is too long (" << floatFFTDurNS << " ns)!" << endl;
+		cerr << "The maximum duration of an FFT is 2^31 - 1 nanoseconds" << endl;
+		cerr << "Please reduce nFFTChan accordingly" << endl;
+
+		exit(EXIT_FAILURE);
+	}
+
+	if(corrSetup->subintNS > 0) //This is relatively easy - just see if the provided values are reasonable
 	{
 		config->subintNS = corrSetup->subintNS;
 		if(config->subintNS % fftDurNS != 0)
 		{
 			cerr << "Error: The provided subintNS (" << config->subintNS << ") is not an integer multiple of the FFT duration (" << fftDurNS << ")" << endl;
+			cerr << "You should adjust your subint time, or leave subint unset and vex2difx will set it for you" << endl;
 
 			exit(EXIT_FAILURE);
 		}
+		if(tintNS % config->subintNS != 0)
+		{
+			if(P->tweakIntTime)
+			{
+				//leave it - we will adjust the int time later
+			}
+			else
+			{
+				cerr << "Error: The provided tInt (" << config->tInt << ") is not an integer multiple of the provided subint (" << corrSetup->subintNS/1.0e9 << ")" << endl;
+				cerr << "You should adjust your subint and/or int time, or leave subint unset and vex2difx will set it for you" << endl;
+
+				exit(EXIT_FAILURE);
+			}
+		}
 	}
-	else
+	else //first try to set a reasonable subintNS
 	{
-		long long tintNS = static_cast<long long>(1e9*corrSetup->tInt + 0.5);
-		long long nscounter = tintNS/5;
-		double floatFFTDurNS = corrSetup->fftSize()*(0.5/minBW)*1000000000.0;
-		int nFFTsPerIntegration = static_cast<int>(1e9*corrSetup->tInt/floatFFTDurNS + 0.5);
-		int max5div = 0;
-		int max2div = 0;
+		nFFTsPerIntegration = static_cast<int>(1e9*corrSetup->tInt/floatFFTDurNS + 0.5);
 
 		// check that integration time is an integer number of FFTs
 		if(fabs(1e9*corrSetup->tInt/floatFFTDurNS - nFFTsPerIntegration) > 1e-9)
 		{
-			cerr << "Integration time is not an integer number of FFTs!" << endl;
-			cerr << "Please change tInt to a multiple of " << floatFFTDurNS << " nanoseconds." << endl;
-			cerr << "Try to use a number of FFTs which is factorable entirely by 2 and/or 5" << endl;
+			//it is not - no chance of a reasonable subintNS unless we tweak intTime
+			if(P->tweakIntTime)
+			{
+				cout << "Requested integration time (" << corrSetup->tInt << ") is not an integer multiple of the FFT time (" << floatFFTDurNS << " ns)" << endl;
+				cout << "Will attempt to nudge the int time to a more appropriate value" << endl;
+			}
+			else
+			{
+				cerr << "Integration time is not an integer number of FFTs!" << endl;
+				cerr << "Please change tInt to a multiple of " << floatFFTDurNS << " nanoseconds, or set tweakIntTime = true" << endl;
+				cerr << "Try to use a number of FFTs which is factorable entirely by 2 and/or 5" << endl;
 			
-			exit(EXIT_FAILURE);
+				exit(EXIT_FAILURE);
+			}
 		}
 
-		//first test how big a single FFT is - if it is too big, fail with a warning and a suggestion
-		if(floatFFTDurNS*D->dataBufferFactor/D->nDataSegments > (1LL<<31) - 1)
-		{
-			cerr << "A single FFT is too long (" << floatFFTDurNS << " ns)!" << endl;
-			cerr << "The maximum duration of an FFT is 2^31 - 1 nanoseconds" << endl;
-			cerr << "Please reduce nFFTChan accordingly" << endl;
-			
-			exit(EXIT_FAILURE);
-		}
 		config->subintNS = fftDurNS;
 		msgSize = (config->subintNS*1.0e-9)*dataRate/8.0;
 		readSize = msgSize*D->dataBufferFactor/D->nDataSegments;
@@ -1505,6 +1531,9 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 			exit(EXIT_FAILURE);
 		}
 
+		max5div = 0;
+		max2div = 0;
+		nscounter = tintNS/5;
 	 	while(nscounter > 0 && fabs(nscounter/floatFFTDurNS - static_cast<int>(nscounter/floatFFTDurNS + 0.5)) < 1e-9)
 		{
 			nscounter /= 5;
@@ -1548,19 +1577,29 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 		readSize = msgSize*D->dataBufferFactor/D->nDataSegments;
 		if(readSize < P->minReadSize)
 		{
-			cerr << "Automatic subint duration selection generated " << config->subintNS << " nanoseconds" << endl;
-			cerr << "This leads to a read size of " << readSize << " B" << endl;
-			cerr << "The minimum read size was set or defaulted to " << P->minReadSize << " B" << endl;
-			cerr << "Either decrease minReadSize (which may lead to slow correlation) or explicitly set subintNS" << endl;
-			cerr << "You may find it advantageous to tweak the tInt to a more power-of-2 friendly value" << endl;
+			if(P->tweakIntTime)
+			{
+				while(((config->subintNS*1.0e-9)*dataRate/8.0)*(D->dataBufferFactor/D->nDataSegments) < P->minReadSize)
+				{
+					config->subintNS *= 2;
+				}
+			}
+			else
+			{
+				cerr << "Automatic subint duration selection generated " << config->subintNS << " nanoseconds" << endl;
+				cerr << "This leads to a read size of " << readSize << " B" << endl;
+				cerr << "The minimum read size was set or defaulted to " << P->minReadSize << " B" << endl;
+				cerr << "Either decrease minReadSize (which may lead to slow correlation) or explicitly set subintNS" << endl;
+				cerr << "You may find it advantageous to tweak the tInt to a more power-of-2 friendly value" << endl;
 
-			exit(EXIT_FAILURE);
+				exit(EXIT_FAILURE);
+			}
 		}
 	}
 
 	// change nDataSegments if needed to get send sizes under 2^31 nanoseconds
-	readTimeNS = static_cast<double>(config->subintNS)*D->dataBufferFactor/D->nDataSegments;
-	if(readTimeNS > 2140000000.0)
+	floatReadTimeNS = static_cast<double>(config->subintNS)*D->dataBufferFactor/D->nDataSegments;
+	if(floatReadTimeNS > 2140000000.0)
 	{
 		int f = static_cast<int>(2140000000.0/config->subintNS);
 		if(f < 1)
@@ -1579,7 +1618,46 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 			cout << "But probably this is a low data rate experiment, so it won't matter" << endl;
 		}
 	}
-		
+
+	//now check that the int time is an integer number of subints, and tweak if necessary
+        floatSubintDurNS = (double)config->subintNS;
+        nSubintsPerIntegration = static_cast<int>(1e9*corrSetup->tInt/floatSubintDurNS + 0.5);
+	if(fabs(1e9*corrSetup->tInt/floatSubintDurNS - nSubintsPerIntegration) > 1e-9)
+	{
+		if(P->tweakIntTime)
+		{
+			cout << "The provided tInt (" << config->tInt << ") is not an integer multiple of the subint (" << floatSubintDurNS/1.0e9 << ")" << endl;
+			max5div = static_cast<int>(config->tInt/(5*floatSubintDurNS/1.0e9)) + 1;
+			max2div = static_cast<int>(config->tInt/(2*floatSubintDurNS/1.0e9)) + 1;
+			best5div = 0;
+			best2div = 0;
+			bestfractionaldiff = fabs(1.0 - (floatSubintDurNS/1.0e9)/config->tInt);
+			for(int i=0;i<=max5div;i++)
+			{
+				for(int j=0;j<=max5div;j++)
+				{
+					test_tint = (floatSubintDurNS/1.0e9)*pow(5.0,i)*pow(2.0,j);
+					if(fabs(1.0 - (test_tint)/config->tInt) < bestfractionaldiff)
+					{
+						bestfractionaldiff = fabs(1.0 - (test_tint)/config->tInt);
+						best5div = i;
+						best2div = j;
+					}
+				}
+			}
+			cout << "tInt has been updated from " << config->tInt << " to " << (floatSubintDurNS/1.0e9)*pow(5.0,best5div)*pow(2.0,best2div) << endl;
+			cout << "(You could also try modifying the subintNS if you want to try harder to get your desired integration time)" << endl;
+			config->tInt = (floatSubintDurNS/1.0e9)*pow(5.0,best5div)*pow(2.0,best2div);
+		}
+		else
+		{
+			cerr << "Error: The provided tInt (" << config->tInt << ") is not an integer multiple of the subint (" << floatSubintDurNS/1.0e9 << ")" << endl; 
+			cerr << "Either change your integration time to a more friendly value, or tweak number of channels or subint time, or set tweakIntTime = true" << endl;
+
+			exit(EXIT_FAILURE);
+		}
+	}
+
 	config->guardNS = corrSetup->guardNS;
 	config->fringeRotOrder = corrSetup->fringeRotOrder;
 	config->strideLength = corrSetup->strideLength;

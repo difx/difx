@@ -1201,7 +1201,7 @@ void CorrParams::defaults()
 	outputFormat = OutputFormatDIFX;
 	nCore = 0;
 	nThread = 0;
-	tweakIntegrationTime = false;
+	tweakIntTime = false;
 }
 
 void pathify(string &filename)
@@ -1367,8 +1367,7 @@ int CorrParams::setkv(const string &key, const string &value)
 	}
 	else if(key == "tweakIntTime")
 	{
-		/* No longer does anything */
-		cerr << "tweakIntTime is deprecated - no effect" << endl;
+		tweakIntTime = isTrue(value);
 	}
 	else if(key == "antennas")
 	{
