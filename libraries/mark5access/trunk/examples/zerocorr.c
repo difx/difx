@@ -153,6 +153,10 @@ DataStream *newDataStream(FILE *in)
 		       "you have %d < 0 or %d > %d with %d channels to keep\n",
 			ds->fftSize/2, ds->inputFile, ds->startChan,
 			ds->startChan, ds->fftSize/2, ds->nChan);
+
+		deleteDataStream(ds);
+		ds = 0;
+
 		return 0;
 	}
 
@@ -165,6 +169,7 @@ DataStream *newDataStream(FILE *in)
 		printf("problem opening %s\n", ds->inputFile);
 
 		deleteDataStream(ds);
+		ds = 0;
 		
 		return 0;
 	}

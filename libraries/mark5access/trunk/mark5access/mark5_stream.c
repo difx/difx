@@ -924,8 +924,8 @@ struct mark5_stream *new_mark5_stream(const struct mark5_stream_generic *s,
 	status = s->init_stream(ms);
 	if(status < 0)
 	{
-		delete_mark5_stream(ms);
 		fprintf(m5stderr, "new_mark5_format: init_stream(%s) failed\n", ms->formatname);
+		delete_mark5_stream(ms);
 		
 		return 0;
 	}

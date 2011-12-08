@@ -348,7 +348,6 @@ static int pcal(const char *inFile, const char *format, int nInt, int nFreq, con
 
 		if(nInt < 1)
 		{
-			fclose(out);
 			fprintf(stderr, "Error: no samples unpacked\n");
 		}
 		else

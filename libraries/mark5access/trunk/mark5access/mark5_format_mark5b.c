@@ -2803,6 +2803,7 @@ static int mark5_format_mark5b_init(struct mark5_stream *ms)
 	if(!ms)
 	{
 		fprintf(m5stderr, "mark5_format_mark5b_init: ms = 0\n");
+
 		return -1;
 	}
 

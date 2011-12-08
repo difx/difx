@@ -99,10 +99,6 @@ int bstate(const char *filename, const char *formatname, int nframes,
 
         chunk = ms->framesamples;
 	nif = ms->nchan;
-        data = (double **)malloc(nif*sizeof(double *));
-        bstate = (long **)malloc(nif*sizeof(long *));
-        /*Haystack gain's calculation*/
-        gfact = (double *)malloc(nif*sizeof(double *));
 
         /* bstate 2nd dim. is either 2 for the 1bit: ++ -- or 4 for the 2 bits ++ + - -- */
         if(ms->nbit == 1) 
@@ -119,6 +115,11 @@ int bstate(const char *filename, const char *formatname, int nframes,
 
                 return 0;
         }
+
+        data = (double **)malloc(nif*sizeof(double *));
+        bstate = (long **)malloc(nif*sizeof(long *));
+        /*Haystack gain's calculation*/
+        gfact = (double *)malloc(nif*sizeof(double));
  
         for(i = 0; i < nif; i++)
         {
@@ -231,8 +232,11 @@ int bstate(const char *filename, const char *formatname, int nframes,
 	for(i = 0; i < nif; i++)
 	{
 		free(data[i]);
+		free(bstate[i]);
 	}
 	free(data);
+	free(gfact);
+	free(bstate);
 
 	delete_mark5_stream(ms);
 
