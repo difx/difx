@@ -228,7 +228,7 @@ vector<DIFX_ProdConfig> change_config(Configuration *config, int configindex, in
   status = monserver_requestproducts_byoffset(client, offsets, nprod);
   if (status) exit(1);
 
-  delete offsets;
+  delete [] offsets;
 
   return allproducts;
 }

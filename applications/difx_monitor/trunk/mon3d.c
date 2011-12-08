@@ -247,7 +247,7 @@ void cb(double *t, int *kc) {
 
 
   // Get the Lag amplitude. Also translate the origin to the middle of the
-  // image, assuming symetry of the data
+  // image, assuming symmetry of the data
 
   for (i=0;i<NTIMES/2;i++) {
     status = ippsMagnitude_32fc(lags+i*DISPLAYCHAN, lagamp+i*DISPLAYCHAN+DISPLAYCHAN/2+NTIMES/2*DISPLAYCHAN, DISPLAYCHAN/2);
