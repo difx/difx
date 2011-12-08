@@ -35,11 +35,16 @@ class Schema(object):
     session = property(_get_session)
 
     def loadSchema(self):
-             
+        
+        
         self.experimentTable = Table("Experiment", self.metadata__, autoload=True)
         self.experimentStatusTable = Table("ExperimentStatus", self.metadata__, autoload=True)
         self.slotTable = Table("Slot", self.metadata__, autoload=True)
         self.moduleTable = Table("Module", self.metadata__, autoload=True)
+        self.jobTable = Table("Job", self.metadata__, autoload=True)
+        self.jobStatusTable = Table("JobStatus", self.metadata__, autoload=True)
+        self.passTable = Table("Pass", self.metadata__, autoload=True)
+        self.passTypeTable = Table("PassType", self.metadata__, autoload=True)
         
         #association table for many-to-many Experiment/Module relation 
         self.experimentModuleTable = Table('ExperimentAndModule', self.metadata__, autoload=True)
@@ -59,6 +64,11 @@ class Schema(object):
     def createMappers(self):
         
         clear_mappers()
+        mapper(Queue, self.jobTable, properties={'Pass':relation(Pass, uselist=False),'status':relation(JobStatus, uselist=False)})
+        mapper(Job, self.jobTable, properties={'status':relation(JobStatus, uselist=False)})
+        mapper(JobStatus, self.jobStatusTable)
+        mapper(Pass, self.passTable, properties={'experiment':relation(Experiment, uselist=False), 'type':relation(PassType, uselist=False)})
+        mapper(PassType, self.passTypeTable)
         mapper(ExperimentStatus, self.experimentStatusTable)
         mapper(Experiment, self.experimentTable,properties={'status':relation(ExperimentStatus, uselist = False)})
         mapper(Module, self.moduleTable, properties={'experiments': relation(Experiment, secondary=self.experimentModuleTable, primaryjoin=self.experimentModuleTable.c.moduleID==self.moduleTable.c.id, secondaryjoin=self.experimentModuleTable.c.experimentID==self.experimentTable.c.id, foreign_keys = [self.experimentModuleTable.c.experimentID, self.experimentModuleTable.c.moduleID], backref=backref('modules'))})
@@ -67,7 +77,7 @@ class Schema(object):
 
 class Connection(object):
     
-    def __init__(self):
+    def __init__(self, difxdbConfig = None):
         
         self.type = ""
         self.server = ""
@@ -75,6 +85,16 @@ class Connection(object):
         self.user = ""
         self.password = ""
         self.database = ""
+        
+        # if a configuration object was passed
+        # use it to fill the connection parameters
+        if difxdbConfig is not None:
+            self.type = difxdbConfig.get("Database", "type")
+            self.server = difxdbConfig.get("Database", "server")
+            self.port = difxdbConfig.get("Database", "port")
+            self.user = difxdbConfig.get("Database", "user")
+            self.password = difxdbConfig.get("Database", "password")
+            self.database = difxdbConfig.get("Database", "database")
         
         self.echo = False
         
