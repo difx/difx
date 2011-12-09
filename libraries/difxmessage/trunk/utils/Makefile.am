@@ -26,6 +26,7 @@ dist_bin_SCRIPTS = \
 	mk5mon \
 	smartmon \
 	statemon \
+	difxdiagnosticmon \
 	mk5display
 
 probemachine_SOURCES = \
