@@ -93,19 +93,19 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
 
                                     // fill in record boiler-plate and unchanging fields
     memcpy (t000.record_id, "000", 3);
-    memcpy (t000.version_no, "01", 3);
+    memcpy (t000.version_no, "01", 2);
     
     memcpy (t300.record_id, "300", 3);
-    memcpy (t300.version_no, "00", 3);
+    memcpy (t300.version_no, "00", 2);
     
     memcpy (t301.record_id, "301", 3);
-    memcpy (t301.version_no, "00", 3);
+    memcpy (t301.version_no, "00", 2);
     
     memcpy (t302.record_id, "302", 3);
-    memcpy (t302.version_no, "00", 3);
+    memcpy (t302.version_no, "00", 2);
     
     memcpy (t309.record_id, "309", 3);
-    memcpy (t309.version_no, "01", 3);
+    memcpy (t309.version_no, "01", 2);
                                     // pre-calculate sample rate (samples/s)
     srate = 2e6 * D->freq->bw * D->freq->overSamp;
                                     // loop over all antennas in scan
@@ -146,10 +146,11 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
         memcpy (t300.name, (stns+n)->difx_name, 2);
         t300.name[2] = 0;           // null terminate to form string
                                     // check that model was read in OK
-        if (D->scan[scanId].im == NULL || D->scan[scanId].im == 0)
+        if (D->scan[scanId].im == 0)
             {
             fprintf (stderr, "ERROR: problem accessing model array\n");
             free(line);
+            fclose(fout);
             return (-1);
             }
         t = (**(D->scan[scanId].im+n))->mjd + (**(D->scan[scanId].im+n))->sec / 86400.0;

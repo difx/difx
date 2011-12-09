@@ -21,7 +21,6 @@ int createRoot (DifxInput *D,       // difx input structure pointer
     {
     int i,
         n,
-        ifr,
         match,
         current_block,
         numchan = 0,
@@ -159,6 +158,7 @@ int createRoot (DifxInput *D,       // difx input structure pointer
         {
         perror ("difx2mark4");
         fprintf (stderr, "fatal error opening output file %s\n", rootname);
+        fclose (fin);
         return (-1);
         }
 
