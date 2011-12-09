@@ -697,7 +697,7 @@ int FxManager::locateVisIndex(int coreid)
   coresec = coretimes[infoindex][coreid][1];
   corens = coretimes[infoindex][coreid][2] + config->getSubintNS(config->getScanConfigIndex(corescan))/2;
 
-  if((newestlockedvis-oldestlockedvis+vblength)%vblength >= vblength/2) 
+  if((newestlockedvis-oldestlockedvis+vblength)%vblength >= vblength-3) 
   { 
     cwarn << startl << "Data was received which is too recent (scan " << corescan << ", " << coresec << " sec + " << corens << "ns).  Will force write-out of oldest Visibility" << endl; 
     //abandon the oldest vis, even though it hasn't been filled yet 
@@ -734,7 +734,7 @@ int FxManager::locateVisIndex(int coreid)
   else
   {
     //try locking some more visibilities til we get to what we need
-    while((newestlockedvis-oldestlockedvis+vblength)%vblength < vblength/2)
+    while((newestlockedvis-oldestlockedvis+vblength)%vblength < vblength-3)
     {
       newestlockedvis = (newestlockedvis+1)%vblength;
       //lock another visibility

@@ -160,6 +160,7 @@ Configuration::Configuration(const char * configfile, int id, double restartsec)
   delete input;
   //work out which frequencies are used in each config, and the minimum #channels
   freqdata freq;
+  int oppositefreqindex;
   for(int i=0;i<numconfigs;i++)
   {
     freq = freqtable[getBFreqIndex(i,0,0)];
@@ -174,8 +175,19 @@ Configuration::Configuration(const char * configfile, int id, double restartsec)
         //cout << "Setting frequency " << getBFreqIndex(i,j,k) << " used to true, from baseline " << j << ", baseline frequency " << k << endl; 
         freq = freqtable[getBFreqIndex(i,j,k)];
         configs[i].frequsedbybaseline[getBFreqIndex(i,j,k)] = true;
+        oppositefreqindex = getOppositeSidebandFreqIndex
         if(freq.numchannels/freq.channelstoaverage < configs[i].minpostavfreqchannels)
           configs[i].minpostavfreqchannels = freq.numchannels/freq.channelstoaverage;
+      }
+    }
+  }
+  //set any opposite sideband freqs to be "used", to ensure their autocorrelations are not lost
+  for(int i=0;i<numconfigs;i++) {
+    for(int j=0;j<freqtablelength;j++) {
+      if(configs[i].frequsedbybaseline[j]) {
+        oppositefreqindex = getOppositeSidebandFreqIndex(j);
+        if(oppositefreqindex >= 0)
+          configs[i].frequsedbybaseline[oppositefreqindex] = true;
       }
     }
   }
