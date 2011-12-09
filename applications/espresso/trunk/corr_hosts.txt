@@ -1,0 +1,21 @@
+# node, number compute threads, space separated list of data areas.
+cuppa01, 6, /exports/xraid01/l_1 /exports/xraid01/r_1
+cuppa02, 6, /exports/xraid02/l_1 /exports/xraid02/r_1
+cuppa03, 6, /exports/xraid03/l_1 /exports/xraid03/r_1 /arch/corr/bbdata
+cuppa04, 6, /exports/xraid04/l_1 /exports/xraid04/r_1 /arch/corr/bbdata
+cuppa05, 6, /exports/xraid05/l_1 /exports/xraid05/r_1 /arch/corr/bbdata
+cuppa06, 6
+cuppa07, 6
+cuppa08, 6
+cuppa09, 6
+cuppa10, 6
+cuppa11, 6
+cuppa12, 6
+cuppa13, 6
+cuppa14, 6
+cuppa15, 6 
+cuppa16, 6, /mnt/disk1 /mnt/disk2
+cuppa17, 6, /mnt/disk1
+cuppa18, 6, /mnt/disk1
+cuppa19, 6
+cuppa20, 6

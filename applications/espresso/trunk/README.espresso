@@ -1,0 +1,57 @@
+Espresso comprises a suite of python scripts to assist in disk based
+correlation with DiFX.
+
+To set up you need to carry out a few steps.
+
+1) Edit the cluster definition file (corr_hosts.txt) to contain a list of all
+your compute nodes. Indicate the areas where baseband data may be stored on
+those nodes.
+
+2) Ensure the following two environment variables are set. $CORR_HOSTS should
+point to the corr_hosts.txt file and $CORR_DATA should point to the data area
+where you want the correlator output data to end up. Add these to your .bashrc
+or similar:
+
+export CORR_HOSTS=/home/corr/corr_hosts.txt
+export CORR_DATA=/data/corr/corrdat/
+
+3) Run the install script:
+./install
+
+this will simply copy the python scripts to your DiFX installation's bin
+directory.
+
+4) The system will force you to enter a comment after every correlation run. By
+default it will open vim to let you enter the comment. If you prefer to use
+another editor then set the $EDITOR environment variable.
+
+---------------------------------------------------------------
+
+Part of espresso's job is to find and sort the baseband data on your cluster.
+To enable this you must bear a couple of things in mind.
+
+1) The root of the data storage areas is defined in the $CORR_HOSTS file. Any
+baseband data should be stored in a subdirectory of one of the data areas
+defined there.
+
+2) When loading the baseband data, data from each telescope should be stored in
+its own directory. The directory name should follow the format <exp>-<tel>
+where <exp> is the experiment name, and <tel> is the telescope name (as given
+in the .v2d file). An example directory name would be:
+
+v289b-At
+
+for telescope AT (ATCA) in experiment v289b.
+
+----------------------------------------------------------------
+
+Caveats.
+
+Espresso assumes that sorting your baseband data alphanumerically by file name
+will result in a file list that is ordered by time. This is usually the case
+for reasonable naming conventions, but you should ensure that it is so.
+
+----------------------------------------------------------------
+
+For more information on the full suite of scripts, see the documentation on the DiFX wiki: http://cira.ivec.org/dokuwiki/doku.php/difx/documentation
+
