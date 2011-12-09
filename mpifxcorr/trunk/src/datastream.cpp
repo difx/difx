@@ -29,6 +29,7 @@
 #include <errno.h>
 #include <string.h>
 #include <math.h>
+#include <time.h>
 #include <unistd.h>
 #include "config.h"
 #include "alert.h"
@@ -83,6 +84,8 @@ void DataStream::initialise()
   bufferbytes = databufferfactor*config->getMaxDataBytes(streamnum);
   readbytes = bufferbytes/numdatasegments;
   estimatedbytes = config->getEstimatedBytes();
+  consumedbytes = 0;
+  lastconsumedbytes = 0;
 
   //cinfo << startl << "******DATASTREAM " << mpiid << ": Initialise. bufferbytes=" << bufferbytes << "  numdatasegments=" << numdatasegments << "  readbytes=" << readbytes << endl;
 
@@ -184,7 +187,9 @@ void DataStream::execute()
   MPI_Status msgstatus;
   int targetcore, status, action, startpos, bufferremaining, perr;
   int receiveinfo[4];
-  
+  time_t currentseconds, lastseconds;
+
+  lastseconds = time(NULL);
   waitsegment = 0;
   atsegment = 0; //this is the section of buffer we will start in
   status = vecNoErr;
@@ -197,6 +202,13 @@ void DataStream::execute()
   
   while(status == vecNoErr)
   {
+    //check if its time to send some diagnostics
+    currentseconds = time(NULL);
+    if(currentseconds > lastseconds) {
+      lastseconds = currentseconds;
+      sendDiagnostics();
+    }
+
     //wait til the message has been received
     MPI_Wait(&msgrequest, &msgstatus);
 
@@ -528,6 +540,14 @@ int DataStream::calculateControlParams(int scan, int offsetsec, int offsetns)
   }
 
   return bufferindex;
+}
+
+void DataStream::sendDiagnostics()
+{
+  difxMessageSendDifxDiagnosticBufferStatus(0, numdatasegments, atsegment, fullbuffersegments);
+  difxMessageSendDifxDiagnosticInputDatarate(consumedbytes - lastconsumedbytes);
+  lastconsumedbytes = consumedbytes;
+  difxMessageSendDifxDiagnosticDataConsumed(consumedbytes);
 }
 
 void DataStream::initialiseMemoryBuffer()
@@ -1157,9 +1177,11 @@ void DataStream::networkToMemory(int buffersegment, uint64_t & framebytesremaini
   if (framebytesremaining<=0) {
     dataremaining = false;
   }
+  consumedbytes += bytestoread;
 
   synccatchbytes = testForSync(bufferinfo[buffersegment].configindex, buffersegment);
   if(synccatchbytes > 0) {
+    consumedbytes += synccatchbytes;
     status = readnetwork(socketnumber, ptr, synccatchbytes, &nread);
     if (status==-1) { // Error reading socket
       cerror << startl << "Datastream " << mpiid << ": Error reading socket" << endl;
@@ -1418,6 +1440,7 @@ void DataStream::diskToMemory(int buffersegment)
 
   //read some data
   input.read(readto, nbytes);
+  consumedbytes += nbytes;
 
   //deinterlace and mux if needed
   if(datamuxer) {
@@ -1439,6 +1462,7 @@ void DataStream::diskToMemory(int buffersegment)
     else
       readto = (char*)&databuffer[(buffersegment+1)*(bufferbytes/numdatasegments) - synccatchbytes];
     input.read(readto, synccatchbytes);
+    consumedbytes += synccatchbytes;
     if(datamuxer)
       caughtbytes = 0; // no way to easily do the multiplexing etc, so no we have realigned just reduce the validity of this segment
     else
@@ -1499,10 +1523,10 @@ void DataStream::waitForBuffer(int buffersegment)
   double bufferfullfraction = double((buffersegment-1-atsegment+numdatasegments)%numdatasegments)/double(numdatasegments);
   struct timespec abstime;
 
+  fullbuffersegments = (buffersegment-1-atsegment+numdatasegments)%numdatasegments;
   bufferinfo[buffersegment].scanns = readnanoseconds;
   bufferinfo[buffersegment].scanseconds = readseconds;
   bufferinfo[buffersegment].scan = readscan;
-
 
   //send a message once per pass through the buffer
   if(buffersegment == numdatasegments-1)

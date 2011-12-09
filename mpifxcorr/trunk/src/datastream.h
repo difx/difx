@@ -258,12 +258,19 @@ protected:
   */
   void waitForBuffer(int buffersegment);
 
+ /**
+  * Sends some diagnostics info using difxmessage
+  */
+  void sendDiagnostics();
+
+  //local variables
   string stationname;
-  int mpiid, filestartday, filestartseconds, numcores, numsent, delayincms, lastnearestindex, lastscan, lastvalidsegment, totaldelays, maxsendspersegment, waitsegment, portnumber, tcpwindowsizebytes, socketnumber;
+  int mpiid, filestartday, filestartseconds, numcores, numsent, delayincms, lastnearestindex, lastscan, lastvalidsegment, totaldelays, maxsendspersegment, waitsegment, portnumber, tcpwindowsizebytes, socketnumber, fullbuffersegments;
   int * coreids;
   int * filesread;
   int * confignumfiles;
   double a, b, c;
+  long long consumedbytes, lastconsumedbytes;
   bool readthreadstarted, keepreading, readfromfile, tcp, isnewfile;
   u8 * databuffer;
   pthread_t readerthread;

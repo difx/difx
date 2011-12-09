@@ -735,6 +735,7 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 		return;
 	}
 
+	consumedbytes += bytes;
 	bufferinfo[buffersegment].validbytes = bytes;
 	bufferinfo[buffersegment].readto = true;
 	lastval = buf[bytes/4-1];
