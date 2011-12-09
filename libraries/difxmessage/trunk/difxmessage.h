@@ -135,6 +135,20 @@ enum DifxState
 
 extern const char DifxStateStrings[][24];
 
+/* Note! Keep this in sync with DifxDiagnosticStrings[][24] in difxmessage.c */
+enum DifxDiagnosticType
+{
+	DIFX_DIAGNOSTIC_MEMORYUSAGE = 0,
+	DIFX_DIAGNOSTIC_BUFFERSTATUS,
+	DIFX_DIAGNOSTIC_PROCESSINGTIME,
+	DIFX_DIAGNOSTIC_DATACONSUMED,
+	DIFX_DIAGNOSTIC_INPUTDATARATE,
+	DIFX_DIAGNOSTIC_NUMSUBINTSLOST,
+	NUM_DIFX_DIAGNOSTIC_TYPES	/* this needs to be the last line of enum */
+};
+
+extern const char DifxDiagnosticStrings[][24];
+
 /* Note! Keep this in sync with DifxMessageAlertString[][16] in difxmessage.c */
 enum DifxAlertLevel
 {
@@ -180,6 +194,7 @@ enum DifxMessageType
 	DIFX_MESSAGE_TRANSIENT,
 	DIFX_MESSAGE_SMART,
 	DIFX_MESSAGE_DRIVE_STATS,
+	DIFX_MESSAGE_DIAGNOSTIC,
 	DIFX_MESSAGE_FILEREQUEST,
 	NUM_DIFX_MESSAGE_TYPES	/* this needs to be the last line of enum */
 };
@@ -367,6 +382,18 @@ typedef struct
 	double dm;	/* dispersion measure */
 } DifxMessageTransient;
 
+/* This is used to pass out diagnostic-type info like buffer states */
+typedef struct
+{
+	enum DifxDiagnosticType diagnosticType;
+	int threadid;
+	long long bytes;
+	long long counter;
+	double microsec;
+	double rateMbps;
+	int bufferstatus[3];
+} DifxMessageDiagnostic;
+
 typedef struct
 {
 	enum DifxMessageType type;
@@ -393,6 +420,7 @@ typedef struct
 		DifxMessageCondition	condition;  /* same as above but here for backward compatibility */
 		DifxMessageTransient	transient;
 		DifxMessageSmart	smart;
+		DifxMessageDiagnostic	diagnostic;
 		DifxMessageFileRequest    fileRequest;
 	} body;
 	int _xml_level;			/* internal use only here and below */
@@ -471,6 +499,13 @@ int difxMessageSendDifxStatus3(enum DifxState state, const char *stateMessage,
 int difxMessageSendLoad(const DifxMessageLoad *load);
 int difxMessageSendDifxAlert(const char *errorMessage, int severity);
 int difxMessageSendDifxInfo(const char *infoMessage);
+int difxMessageSendDifxDiagnosticBufferStatus(int threadid, int numelements, 
+	int startelement, int numactiveelements);
+int difxMessageSendDifxDiagnosticProcessingTime(int threadid, double durationMicrosec);
+int difxMessageSendDifxDiagnosticMemoryUsage(long long membytes);
+int difxMessageSendDifxDiagnosticDataConsumed(long long bytes);
+int difxMessageSendDifxDiagnosticInputDatarate(double bytespersec);
+int difxMessageSendDifxDiagnosticNumSubintsLost(int numsubintslost);
 int difxMessageSendDifxParameter(const char *name, 
 	const char *value, int mpiDestination);
 int difxMessageSendDifxParameterTo(const char *name, 

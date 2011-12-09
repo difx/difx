@@ -99,7 +99,19 @@ const char DifxMessageTypeStrings[][24] =
 	"DifxTransientMessage",
 	"DifxSmartMessage",
 	"Mark5DriveStatsMessage",
+	"DifxDiagnosticMessage",
 	"DifxFileRequest"
+};
+
+/* Note! Keep this in sync with enum DifxDiagnosticType in difxmessage.h */
+const char DifxDiagnosticStrings[][24] = 
+{
+	"MemoryUsage",
+	"BufferStatus",
+	"ProcessingTime",
+	"DataConsumed",
+	"InputDatarate",
+	"NumSubintsLost"
 };
 
 /* Note! Keep this in sync with enum DifxAlertLevel in difxmessage.h */

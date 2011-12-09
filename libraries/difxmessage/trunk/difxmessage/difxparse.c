@@ -643,6 +643,50 @@ static void XMLCALL endElement(void *userData, const char *name)
 						strncpy( G->body.stop.inputFilename, s, DIFX_MESSAGE_FILENAME_LENGTH-1 );
 					}
 					break;
+				case DIFX_MESSAGE_DIAGNOSTIC:
+					if(strcmp(elem, "diagnosticType") == 0)
+					{
+						for(t = 0; t < NUM_DIFX_DIAGNOSTIC_TYPES; t++)
+						{
+							if(strcmp(DifxDiagnosticStrings[t],s) == 0)
+							{
+								G->body.diagnostic.diagnosticType = t;
+							}
+						}
+					}
+					else if(strcmp(elem, "threadId") == 0)
+					{
+						G->body.diagnostic.threadid = atoi(s);
+					}
+					else if(strcmp(elem, "numBufElements") == 0)
+					{
+						G->body.diagnostic.bufferstatus[0] = atoi(s);
+					}
+					else if(strcmp(elem, "startBufElement") == 0)
+					{
+						G->body.diagnostic.bufferstatus[1] = atoi(s);
+					}
+					else if(strcmp(elem, "activeBufElements") == 0)
+					{
+						G->body.diagnostic.bufferstatus[2] = atoi(s);
+					}
+					else if(strcmp(elem, "numSubintsLost") == 0)
+					{
+						G->body.diagnostic.counter = atoi(s);
+					}
+					else if(strcmp(elem, "bytespersec") == 0)
+					{
+						G->body.diagnostic.rateMbps = ((double)atol(s))/1e6;
+					}
+					else if(strcmp(elem, "bytes") == 0)
+					{
+						G->body.diagnostic.bytes = atol(s);
+					}
+					else if(strcmp(elem, "microsec") == 0)
+					{
+						G->body.diagnostic.microsec = atof(s);
+					}
+					break;
 				case DIFX_MESSAGE_FILEREQUEST:
 					if( strcmp(elem, "input") == 0 ) {
 						strncpy( G->body.stop.inputFilename, s, DIFX_MESSAGE_FILENAME_LENGTH-1 );
@@ -867,6 +911,16 @@ void difxMessageGenericPrint(const DifxMessageGeneric *G)
 		}
 		printf("\n");
 		printf("    value = %s\n", G->body.param.paramValue);
+		break;
+	case DIFX_MESSAGE_DIAGNOSTIC:
+		printf("    threadid = %d\n", G->body.diagnostic.threadid);
+		printf("    bytes = %lld\n", G->body.diagnostic.bytes);
+		printf("    counter = %lld\n", G->body.diagnostic.counter);
+		printf("    microsec = %.3f\n", G->body.diagnostic.microsec);
+		printf("    rateMbps = %.3f\n", G->body.diagnostic.rateMbps);
+		printf("    numBufElements = %d\n", G->body.diagnostic.bufferstatus[0]);
+		printf("    startBufElement = %d\n", G->body.diagnostic.bufferstatus[1]);
+		printf("    activeBufElements = %d\n", G->body.diagnostic.bufferstatus[2]);
 		break;
 	case DIFX_MESSAGE_START:
 		printf("    MPI wrapper = %s\n", G->body.start.mpiWrapper);

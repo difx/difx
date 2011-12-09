@@ -1156,6 +1156,236 @@ int difxMessageSendDifxParameterGeneral(const char *name, int nIndex, const int 
 	return difxMessageSend(message);
 }
 
+int difxMessageSendDifxDiagnosticBufferStatus(int threadid, int numelements, int startelement, int numactiveelements)
+{
+	char message[DIFX_MESSAGE_LENGTH];
+	char body[DIFX_MESSAGE_LENGTH];
+	int v;
+
+	v = snprintf(body, DIFX_MESSAGE_LENGTH,
+
+		"<difxDiagnostic>"
+		  "<diagnosticType>%s</diagnosticType>"
+		  "<threadId>%d</threadId>"
+		  "<numBufElements>%d</numBufElements>"
+		  "<startBufElement>%d</startBufElement>"
+		  "<activeBufElements>%d</activeBufElements>"
+		"</difxDiagnostic>",
+		DifxDiagnosticStrings[DIFX_DIAGNOSTIC_BUFFERSTATUS],
+		threadid,
+		numelements,
+		startelement,
+		numactiveelements);
+
+	if(v >= DIFX_MESSAGE_LENGTH)
+	{
+		fprintf(stderr, "difxMessageSendDifxDiagnostic: message body overflow (%d >= %d)\n", v, DIFX_MESSAGE_LENGTH);
+	
+		return -1;
+	}
+	
+	v = snprintf(message, DIFX_MESSAGE_LENGTH,
+		difxMessageXMLFormat,
+		DifxMessageTypeStrings[DIFX_MESSAGE_DIAGNOSTIC],
+		difxMessageSequenceNumber++, body);
+	
+	if(v >= DIFX_MESSAGE_LENGTH)
+	{
+		fprintf(stderr, "difxMessageSendDifxDiagnostic: message overflow (%d >= %d)\n", v, DIFX_MESSAGE_LENGTH);
+	
+		return -1;
+	}
+	
+	return difxMessageSend(message);
+}
+
+int difxMessageSendDifxDiagnosticNumSubintsLost(int numsubintslost)
+{
+	char message[DIFX_MESSAGE_LENGTH];
+	char body[DIFX_MESSAGE_LENGTH];
+	int v;
+
+	v = snprintf(body, DIFX_MESSAGE_LENGTH,
+
+		"<difxDiagnostic>"
+		  "<diagnosticType>%s</diagnosticType>"
+		  "<numSubintsLost>%d</numSubintsLost>"
+		"</difxDiagnostic>",
+		DifxDiagnosticStrings[DIFX_DIAGNOSTIC_NUMSUBINTSLOST],
+		numsubintslost);
+
+	if(v >= DIFX_MESSAGE_LENGTH)
+	{
+		fprintf(stderr, "difxMessageSendDifxDiagnostic: message body overflow (%d >= %d)\n", v, DIFX_MESSAGE_LENGTH);
+	
+		return -1;
+	}
+	
+	v = snprintf(message, DIFX_MESSAGE_LENGTH,
+		difxMessageXMLFormat,
+		DifxMessageTypeStrings[DIFX_MESSAGE_DIAGNOSTIC],
+		difxMessageSequenceNumber++, body);
+	
+	if(v >= DIFX_MESSAGE_LENGTH)
+	{
+		fprintf(stderr, "difxMessageSendDifxDiagnostic: message overflow (%d >= %d)\n", v, DIFX_MESSAGE_LENGTH);
+	
+		return -1;
+	}
+	
+	return difxMessageSend(message);
+}
+
+int difxMessageSendDifxDiagnosticInputDatarate(double bytespersec)
+{
+	char message[DIFX_MESSAGE_LENGTH];
+	char body[DIFX_MESSAGE_LENGTH];
+	int v;
+
+	v = snprintf(body, DIFX_MESSAGE_LENGTH,
+
+		"<difxDiagnostic>"
+		  "<diagnosticType>%s</diagnosticType>"
+		  "<bytespersec>%.3f</bytespersec>"
+		"</difxDiagnostic>",
+		DifxDiagnosticStrings[DIFX_DIAGNOSTIC_INPUTDATARATE],
+		bytespersec);
+
+	if(v >= DIFX_MESSAGE_LENGTH)
+	{
+		fprintf(stderr, "difxMessageSendDifxDiagnostic: message body overflow (%d >= %d)\n", v, DIFX_MESSAGE_LENGTH);
+	
+		return -1;
+	}
+	
+	v = snprintf(message, DIFX_MESSAGE_LENGTH,
+		difxMessageXMLFormat,
+		DifxMessageTypeStrings[DIFX_MESSAGE_DIAGNOSTIC],
+		difxMessageSequenceNumber++, body);
+	
+	if(v >= DIFX_MESSAGE_LENGTH)
+	{
+		fprintf(stderr, "difxMessageSendDifxDiagnostic: message overflow (%d >= %d)\n", v, DIFX_MESSAGE_LENGTH);
+	
+		return -1;
+	}
+	
+	return difxMessageSend(message);
+}
+
+int difxMessageSendDifxDiagnosticDataConsumed(long long bytes)
+{
+	char message[DIFX_MESSAGE_LENGTH];
+	char body[DIFX_MESSAGE_LENGTH];
+	int v;
+
+	v = snprintf(body, DIFX_MESSAGE_LENGTH,
+
+		"<difxDiagnostic>"
+		  "<diagnosticType>%s</diagnosticType>"
+		  "<bytes>%lld</bytes>"
+		"</difxDiagnostic>",
+		DifxDiagnosticStrings[DIFX_DIAGNOSTIC_DATACONSUMED],
+		bytes);
+
+	if(v >= DIFX_MESSAGE_LENGTH)
+	{
+		fprintf(stderr, "difxMessageSendDifxDiagnostic: message body overflow (%d >= %d)\n", v, DIFX_MESSAGE_LENGTH);
+	
+		return -1;
+	}
+	
+	v = snprintf(message, DIFX_MESSAGE_LENGTH,
+		difxMessageXMLFormat,
+		DifxMessageTypeStrings[DIFX_MESSAGE_DIAGNOSTIC],
+		difxMessageSequenceNumber++, body);
+	
+	if(v >= DIFX_MESSAGE_LENGTH)
+	{
+		fprintf(stderr, "difxMessageSendDifxDiagnostic: message overflow (%d >= %d)\n", v, DIFX_MESSAGE_LENGTH);
+	
+		return -1;
+	}
+	
+	return difxMessageSend(message);
+}
+
+int difxMessageSendDifxDiagnosticMemoryUsage(long long membytes)
+{
+	char message[DIFX_MESSAGE_LENGTH];
+	char body[DIFX_MESSAGE_LENGTH];
+	int v;
+
+	v = snprintf(body, DIFX_MESSAGE_LENGTH,
+
+		"<difxDiagnostic>"
+		  "<diagnosticType>%s</diagnosticType>"
+		  "<bytes>%lld</bytes>"
+		"</difxDiagnostic>",
+		DifxDiagnosticStrings[DIFX_DIAGNOSTIC_MEMORYUSAGE],
+		membytes);
+
+	if(v >= DIFX_MESSAGE_LENGTH)
+	{
+		fprintf(stderr, "difxMessageSendDifxDiagnostic: message body overflow (%d >= %d)\n", v, DIFX_MESSAGE_LENGTH);
+	
+		return -1;
+	}
+	
+	v = snprintf(message, DIFX_MESSAGE_LENGTH,
+		difxMessageXMLFormat,
+		DifxMessageTypeStrings[DIFX_MESSAGE_DIAGNOSTIC],
+		difxMessageSequenceNumber++, body);
+	
+	if(v >= DIFX_MESSAGE_LENGTH)
+	{
+		fprintf(stderr, "difxMessageSendDifxDiagnostic: message overflow (%d >= %d)\n", v, DIFX_MESSAGE_LENGTH);
+	
+		return -1;
+	}
+	
+	return difxMessageSend(message);
+}
+
+int difxMessageSendDifxDiagnosticProcessingTime(int threadid, double durationMicrosec)
+{
+	char message[DIFX_MESSAGE_LENGTH];
+	char body[DIFX_MESSAGE_LENGTH];
+	int v;
+
+	v = snprintf(body, DIFX_MESSAGE_LENGTH,
+
+		"<difxDiagnostic>"
+		  "<diagnosticType>%s</diagnosticType>"
+		  "<threadId>%d</threadId>"
+		  "<microsec>%f</microsec>"
+		"</difxDiagnostic>",
+		DifxDiagnosticStrings[DIFX_DIAGNOSTIC_PROCESSINGTIME],
+		threadid,
+		durationMicrosec);
+
+	if(v >= DIFX_MESSAGE_LENGTH)
+	{
+		fprintf(stderr, "difxMessageSendDifxDiagnostic: message body overflow (%d >= %d)\n", v, DIFX_MESSAGE_LENGTH);
+	
+		return -1;
+	}
+	
+	v = snprintf(message, DIFX_MESSAGE_LENGTH,
+		difxMessageXMLFormat,
+		DifxMessageTypeStrings[DIFX_MESSAGE_DIAGNOSTIC],
+		difxMessageSequenceNumber++, body);
+	
+	if(v >= DIFX_MESSAGE_LENGTH)
+	{
+		fprintf(stderr, "difxMessageSendDifxDiagnostic: message overflow (%d >= %d)\n", v, DIFX_MESSAGE_LENGTH);
+	
+		return -1;
+	}
+	
+	return difxMessageSend(message);
+}
+
 int difxMessageSendDifxTransient(const DifxMessageTransient *transient)
 {
 	char message[DIFX_MESSAGE_LENGTH];
