@@ -489,10 +489,19 @@ bool CorrSetup::correlateFreqId(int freqId) const
 int CorrSetup::checkValidity() const
 {
 	int nWarn = 0;
+	double x;
+
+	x = getMinRecordedBandwidth()/FFTSpecRes;
+	if(fabs(x - static_cast<int>(x + 0.5)) > 0.0001)
+	{
+		cerr << "Error: FFT spectral resolution (" << (FFTSpecRes*1.0e-6) << " MHz) does not divide nicely into sub-band bandwidth (" << (getMinRecordedBandwidth()*1.0e-6) << " MHz)" << endl;
+		
+		exit(EXIT_FAILURE);
+	}
 
 	if(minInputChans() < strideLength)
 	{
-		cerr << "Array stride length " << strideLength << " is greater than the minimum number of FFT channels " << minInputChans() << " as inferred from the requested FFT spectral resolution." << endl;
+		cerr << "Warning: Array stride length " << strideLength << " is greater than the minimum number of FFT channels " << minInputChans() << " as inferred from the requested FFT spectral resolution." << endl;
 		cerr << "Probably you need to reduce the strideLength parameter" << endl;
 		++nWarn;
 	}
@@ -500,21 +509,21 @@ int CorrSetup::checkValidity() const
 #warning "FIXME: really should check that all record channel bandwidths meet this criterion (ALMA!)"
 	if(strideLength > 0 && minInputChans() % strideLength != 0)
 	{
-		cerr << "Array stride length " << strideLength << " does not divide evenly into input number of channels " << minInputChans() << endl;
+		cerr << "Warning: Array stride length " << strideLength << " does not divide evenly into input number of channels " << minInputChans() << endl;
 		cerr << "Probably you need to reduce the strideLength parameter" << endl;
 		++nWarn;
 	}
 
 	if(minInputChans() < xmacLength)
 	{
-		cerr << "XMAC stride length " << xmacLength << " is greater than the minimum number of FFT channels " << minInputChans() << " as inferred from the requested FFT spectral resolution." << endl;
+		cerr << "Warning: XMAC stride length " << xmacLength << " is greater than the minimum number of FFT channels " << minInputChans() << " as inferred from the requested FFT spectral resolution." << endl;
 		cerr << "Probably you need to reduce the xmacLength parameter" << endl;
 		++nWarn;
 	}
 
 	if(specAvgDontUse != 0)
 	{
-		cerr << "Parameter specAvg is no longer supported starting with DiFX 2.0.1.  Instead use combinations of FFTSpecRes and specRes to achieve your goals.  In simple cases you can still use combinations of nChan and nFFTChan instead." << endl;
+		cerr << "Error: Parameter specAvg is no longer supported starting with DiFX 2.0.1.  Instead use combinations of FFTSpecRes and specRes to achieve your goals.  In simple cases you can still use combinations of nChan and nFFTChan instead." << endl;
 		if(specAvgDontUse == 1)
 		{
 			cerr << "For cases like this where the desired specAvg parameter is 1, please instead set nFFTChan to be the same as nChan (which is " << nOutputChan << " in this case" << endl;

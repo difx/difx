@@ -1455,16 +1455,15 @@ static void populateEOPTable(DifxInput *D, const vector<VexEOP>& E)
 static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, const VexData *V, const CorrParams *P, const VexScan *S)
 {
 	int nConfig, nFFTsPerIntegration, nSubintsPerIntegration;
-	int max5div, max2div, best5div, best2div;
+	int max5div, max2div;
 	int fftDurNS;
 	DifxConfig *config;
 	const CorrSetup *corrSetup;
 	const VexMode *mode;
 	string configName;
-	double test_tint, bestfractionaldiff;
 	double floatReadTimeNS, floatFFTDurNS, floatSubintDurNS;
 	double msgSize, dataRate, readSize;
-	long long tintNS, nscounter;
+	long long tintNS;
 
 	corrSetup = P->getCorrSetup(S->corrSetupName);
 	if(corrSetup == 0)
@@ -1548,6 +1547,8 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 	}
 	else //first try to set a reasonable subintNS
 	{
+		long long nscounter;
+
 		nFFTsPerIntegration = static_cast<int>(1e9*corrSetup->tInt/floatFFTDurNS + 0.5);
 
 		// check that integration time is an integer number of FFTs
@@ -1677,17 +1678,19 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 	{
 		if(P->tweakIntTime)
 		{
+			int best5div = 0;
+			int best2div = 0;
+			double bestfractionaldiff;
+
 			cout << "The provided tInt (" << config->tInt << ") is not an integer multiple of the subint (" << floatSubintDurNS/1.0e9 << ")" << endl;
 			max5div = static_cast<int>(config->tInt/(5*floatSubintDurNS/1.0e9)) + 1;
 			max2div = static_cast<int>(config->tInt/(2*floatSubintDurNS/1.0e9)) + 1;
-			best5div = 0;
-			best2div = 0;
 			bestfractionaldiff = fabs(1.0 - (floatSubintDurNS/1.0e9)/config->tInt);
-			for(int i=0;i<=max5div;i++)
+			for(int i = 0; i <= max5div; ++i)
 			{
-				for(int j=0;j<=max5div;j++)
+				for(int j = 0; j <= max5div; ++j)
 				{
-					test_tint = (floatSubintDurNS/1.0e9)*pow(5.0,i)*pow(2.0,j);
+					double test_tint = (floatSubintDurNS/1.0e9)*pow(5.0,i)*pow(2.0,j);
 					if(fabs(1.0 - (test_tint)/config->tInt) < bestfractionaldiff)
 					{
 						bestfractionaldiff = fabs(1.0 - (test_tint)/config->tInt);

@@ -757,7 +757,7 @@ int main(int argc, char **argv)
 
 	if(nWarn > 0)
 	{
-		fprintf(stderr, "Warning %d warnings in reading the vex file: %d\n", nWarn, vexFilename);
+		fprintf(stderr, "Warning %d warnings in reading the vex file: %s\n", nWarn, vexFilename);
 	}
 
 	out = fopen(tsysFilename, "w");
