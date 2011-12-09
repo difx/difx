@@ -304,32 +304,26 @@ int loadBasebandFilelist(const string &fileName, vector<VexBasebandFile> &baseba
 CorrSetup::CorrSetup(const string &name) : corrSetupName(name)
 {
 	tInt = 2.0;
-	specAvgDontUse = 0;		// If set, this will trigger a bail out condition
-	nFFTChan = 128;
-	nOutputChan = 16;
+	specAvgDontUse = 0;		// If set, this will trigger a bail out condition with useful message
+	FFTSpecRes = 250000.0;		// Hz; spectral resolution at FFT stage
+	outputSpecRes = 500000.0;	// Hz; spectral resolution in Output
+	nFFTChan = 0;			// If this or nOutputChan != 0, these override SpecAvg params
+	nOutputChan = 0;
 	doPolar = true;
 	doAuto = true;
 	fringeRotOrder = 1;
 	strideLength = 0;
 	xmacLength = 0;
 	explicitXmacLength = false;
-	explicitnFFTChan = false;
+	explicitFFTSpecRes = false;
 	explicitGuardNS = false;
 	numBufferedFFTs = 10;
 	subintNS = 0;
 	guardNS = 1000;
 	maxNSBetweenUVShifts = 2000000000;
 	maxNSBetweenACAvg = 0;		// zero means set to default in vex2difx.cpp
-}
-
-int CorrSetup::fftSize() const
-{
-	return nFFTChan*2;
-}
-
-int CorrSetup::nInputChan() const
-{
-	return nFFTChan;
+	minRecordedBandwidth = 0.0;
+	maxRecordedBandwidth = 0.0;	
 }
 
 int CorrSetup::setkv(const string &key, const string &value)
@@ -358,7 +352,17 @@ int CorrSetup::setkv(const string &key, const string &value)
 	else if(key == "nFFTChan")
 	{
 		ss >> nFFTChan;
-		explicitnFFTChan = true;
+	}
+	else if(key == "outputSpecRes" || key == "specRes")
+	{
+		ss >> outputSpecRes;
+		outputSpecRes *= 1e6;	// Users use MHz, vex2difx uses Hz
+	}
+	else if(key == "FFTSpecRes")
+	{
+		ss >> FFTSpecRes;
+		FFTSpecRes *= 1e6;	// Users use MHz, vex2difx uses Hz
+		explicitFFTSpecRes = true;
 	}
 	else if(key == "doPolar")
 	{
@@ -486,35 +490,31 @@ int CorrSetup::checkValidity() const
 {
 	int nWarn = 0;
 
-	if(!isPower2(nFFTChan))
+	if(minInputChans() < strideLength)
 	{
-		cerr << "nFFTChan=" << nFFTChan << ". Non power of 2 FFTs are an experimental feature. Caution is advised." << endl;
-		cerr << "   Setting xmaclength and stridelength manually is also recommended" << endl;
-	}
-	if(nInputChan() < strideLength)
-	{
-		cerr << "Array stride length " << strideLength << " is greater than the input number of channels " << nInputChan() << endl;
+		cerr << "Array stride length " << strideLength << " is greater than the minimum number of FFT channels " << minInputChans() << " as inferred from the requested FFT spectral resolution." << endl;
 		cerr << "Probably you need to reduce the strideLength parameter" << endl;
 		++nWarn;
 	}
 
-	if(strideLength > 0 && nInputChan() % strideLength != 0)
+#warning "FIXME: really should check that all record channel bandwidths meet this criterion (ALMA!)"
+	if(strideLength > 0 && minInputChans() % strideLength != 0)
 	{
-		cerr << "Array stride length " << strideLength << " does not divide evenly into input number of channels " << nInputChan() << endl;
+		cerr << "Array stride length " << strideLength << " does not divide evenly into input number of channels " << minInputChans() << endl;
 		cerr << "Probably you need to reduce the strideLength parameter" << endl;
 		++nWarn;
 	}
 
-	if(nInputChan() < xmacLength)
+	if(minInputChans() < xmacLength)
 	{
-		cerr << "XMAC stride length " << xmacLength << " is greater than the input number of channels " << nInputChan() << endl;
+		cerr << "XMAC stride length " << xmacLength << " is greater than the minimum number of FFT channels " << minInputChans() << " as inferred from the requested FFT spectral resolution." << endl;
 		cerr << "Probably you need to reduce the xmacLength parameter" << endl;
 		++nWarn;
 	}
 
 	if(specAvgDontUse != 0)
 	{
-		cerr << "Parameter specAvg is no longer supported starting with DiFX 2.0.1.  Instead use combinations of nChan and nFFTChan to achieve your goals." << endl;
+		cerr << "Parameter specAvg is no longer supported starting with DiFX 2.0.1.  Instead use combinations of FFTSpecRes and specRes to achieve your goals.  In simple cases you can still use combinations of nChan and nFFTChan instead." << endl;
 		if(specAvgDontUse == 1)
 		{
 			cerr << "For cases like this where the desired specAvg parameter is 1, please instead set nFFTChan to be the same as nChan (which is " << nOutputChan << " in this case" << endl;
@@ -525,21 +525,21 @@ int CorrSetup::checkValidity() const
 		}
 		
 		exit(EXIT_FAILURE);
-
 	}
 
-	if(nInputChan() % nOutputChan != 0)
+	if(maxInputChans() % maxOutputChans() != 0)
 	{
-		cerr << "Error: nFFTChan must be an integer multiple of nChan.  Values found were nFFTChan=" << nFFTChan << " nChan=" << nOutputChan << endl;
+		cerr << "Error: The FFT Spectral Resolution ( " << FFTSpecRes << " Hz) must be an integral multiple of the Output Spectral Resolution (" << outputSpecRes << " Hz)" << endl;
 
 		exit(EXIT_FAILURE);
 	}
 
+#warning "FIXME: really should check that all record channel bandwidths meet this criterion (ALMA!)"
 	if(xmacLength > 0)
 	{
-		if(nInputChan() % xmacLength != 0)
+		if(minInputChans() % xmacLength != 0)
 		{
-			cerr << "XMAC stride length " << xmacLength << " does not divide evenly into input number of channels " << nInputChan() << endl;
+			cerr << "XMAC stride length " << xmacLength << " does not divide evenly into minimum number input number of channels " << minInputChans() << endl;
 			cerr << "Probably you need to reduce the xmacLength parameter" << endl;
 			++nWarn;
 		}
@@ -548,13 +548,14 @@ int CorrSetup::checkValidity() const
 	return nWarn;
 }
 
+#warning "FIXME: this assumes worst case bandwidth here"
 double CorrSetup::bytesPerSecPerBLPerBand() const
 {
 	int pols = doPolar ? 2 : 1;
 
 	// assume 8 bytes per complex
 
-	return 8*nOutputChan*pols/tInt;
+	return 8*maxOutputChans()*pols/tInt;
 }
 
 CorrRule::CorrRule(const string &name) : ruleName(name)
@@ -1738,35 +1739,98 @@ int CorrParams::load(const string &fileName)
 		addBaseline("*-*");
 	}
 
+	if(v2dMode == V2D_MODE_PROFILE)
+	{
+		for(vector<CorrSetup>::iterator c = corrSetups.begin(); c != corrSetups.end(); ++c)
+		{
+			c->doPolar = false;
+		}
+	}
+
+	return nWarn;
+}
+
+int CorrParams::checkSetupValidity()
+{
+	int nWarn = 0;
+
+	// user wants to set channels explicitly
+	for(vector<CorrSetup>::iterator c = corrSetups.begin(); c != corrSetups.end(); ++c)
+	{
+		double minBW = c->getMinRecordedBandwidth();
+		double maxBW = c->getMaxRecordedBandwidth();
+
+		if(c->nFFTChan || c->nOutputChan)
+		{
+			if(c->explicitFFTSpecRes)
+			{
+				cerr << "Warning: number of channels and spectral resolutions provided!  Ignoring number of channels\n";
+				++nWarn;
+			}
+			else if(minBW != maxBW)
+			{
+				cerr << "Warning: cannot specify number of channels when different sub-band bandwidths exist within one setup\n";
+				++nWarn;
+			}
+			else
+			{
+				if(c->nFFTChan)
+				{
+					c->FFTSpecRes = minBW/c->nFFTChan;
+					if(c->nOutputChan)
+					{
+						if(c->nFFTChan % c->nOutputChan != 0)
+						{
+							cerr << "Error: supplied number of FFT channels " << c->nFFTChan << " is not a multiple of number of supplied output channels " << c->nOutputChan << endl;
+
+							exit(EXIT_FAILURE);
+						}
+						c->outputSpecRes = minBW/c->nOutputChan;
+					}
+					else
+					{
+						c->outputSpecRes = c->nFFTChan;
+					}
+				}
+				else // here only nOutputChan is defined
+				{
+					int n = (c->nOutputChan < 128) ? 128 : c->nOutputChan;
+					c->outputSpecRes = minBW/c->nOutputChan;
+					c->FFTSpecRes = minBW/n;
+				}
+			}
+		}
+	}
+
 	// update nFFTChan if needed
 	for(vector<CorrSetup>::iterator c = corrSetups.begin(); c != corrSetups.end(); ++c)
 	{
 #warning "FIXME: This logic should consider number of antennas and possibly number of sub-bands"
-		if(c->nFFTChan < c->nOutputChan)
+		if(c->FFTSpecRes > c->outputSpecRes)
 		{
-			if(c->explicitnFFTChan)
+			if(c->explicitFFTSpecRes)
 			{
-				cerr << "You have explicitly requested " << c->nFFTChan << " channels in the FFT, but the number of output channels is set to " << c->nOutputChan << ".  This cannot be accommodated! If --force used, nFFTChan will be set to " << c->nOutputChan << endl;
+				cerr << "You have explicitly requested an FFT resolution of " << c->FFTSpecRes << " Hz, but the output spectral resolution is set to " << c->outputSpecRes << " Hz.  This cannot be accommodated! If --force used, FFTSpecRes will be set to " << c->outputSpecRes << endl;
 				++nWarn;
 			}
-			c->nFFTChan = c->nOutputChan;
+			c->FFTSpecRes = c->outputSpecRes;
 		}
 
 		if(c->xmacLength == 0)
 		{
-			if(c->nInputChan() > 128)
+			if(c->minInputChans() > 128)
 			{
 				c->xmacLength = 128;
 			}
 			else
 			{
-				c->xmacLength = c->nInputChan();
+				c->xmacLength = c->minInputChans();
 			}
 		}
 		if(c->strideLength == 0)
 		{
 			c->strideLength = 1;
-			int tempcount = c->nInputChan();
+			int tempcount = c->minInputChans();
 			while(c->strideLength < tempcount)
 			{
 				c->strideLength *= 2;
@@ -1775,18 +1839,10 @@ int CorrParams::load(const string &fileName)
 		}
 	}
 
-	//check that all setups are sensible
+	// check that all setups are sensible
 	for(vector<CorrSetup>::const_iterator c = corrSetups.begin(); c != corrSetups.end(); ++c)
 	{
 		nWarn += c->checkValidity();
-	}
-
-	if(v2dMode == V2D_MODE_PROFILE)
-	{
-		for(vector<CorrSetup>::iterator c = corrSetups.begin(); c != corrSetups.end(); ++c)
-		{
-			c->doPolar = false;
-		}
 	}
 
 	return nWarn;
@@ -1810,8 +1866,8 @@ void CorrParams::example()
 	singleSetup = false;
 	corrSetups.push_back(CorrSetup("1413+15"));
 	corrSetups.back().tInt = 1.0;
-	corrSetups.back().nOutputChan = 16;
-	corrSetups.back().nFFTChan = 128;
+	corrSetups.back().FFTSpecRes = 250000.0;
+	corrSetups.back().outputSpecRes = 500000.0;
 	corrSetups.push_back(CorrSetup("default"));
 	rules.push_back(CorrRule("1413+15"));
 	rules.back().sourceName.push_back(string("1413+15"));
@@ -1827,7 +1883,8 @@ void CorrParams::example()
 int CorrParams::sanityCheck()
 {
 	int nWarn = 0;
-	const AntennaSetup *a = 0;
+
+	nWarn += checkSetupValidity();
 
 	if(minSubarraySize > antennaList.size() && !antennaList.empty())
 	{
@@ -1835,7 +1892,7 @@ int CorrParams::sanityCheck()
 		++nWarn;
 	}
 
-	a = getAntennaSetup("DEFAULT");
+	const AntennaSetup *a = getAntennaSetup("DEFAULT");
 	if(a)
 	{
 		if(a->X != 0.0 || a->Y != 0 || a->Z != 0)
@@ -2017,6 +2074,19 @@ const CorrSetup *CorrParams::getCorrSetup(const string &name) const
 	return 0;
 }
 
+CorrSetup *CorrParams::getNonConstCorrSetup(const string &name)
+{
+	for(vector<CorrSetup>::iterator it = corrSetups.begin(); it != corrSetups.end(); ++it)
+	{
+		if(it->corrSetupName == name)
+		{
+			return &(*it);
+		}
+	}
+
+	return 0;
+}
+
 const SourceSetup *CorrParams::getSourceSetup(const string &name) const
 {
 	for(vector<SourceSetup>::const_iterator it = sourceSetups.begin(); it != sourceSetups.end(); ++it)
@@ -2096,8 +2166,8 @@ ostream& operator << (ostream &os, const CorrSetup &x)
 	os << "SETUP " << x.corrSetupName << endl;
 	os << "{" << endl;
 	os << "  tInt=" << x.tInt << endl;
-	os << "  nChan=" << x.nOutputChan << endl;
-	os << "  nFFTChan=" << x.nFFTChan << endl;
+	os << "  FFTSpecRes=" << (x.FFTSpecRes*1e-6) << endl;
+	os << "  outputSpecRes=" << (x.outputSpecRes*1e-6) << endl;
 	os << "  doPolar=" << x.doPolar << endl;
 	os << "  doAuto=" << x.doAuto << endl;
 	os << "  subintNS=" << x.subintNS << endl;
@@ -2382,10 +2452,11 @@ bool areCorrSetupsCompatible(const CorrSetup *A, const CorrSetup *B, const CorrP
 	{
 		return false;
 	}
-	if(C->singleSetup)
+	else if(C->singleSetup)
 	{
 		if(A->tInt        == B->tInt        &&
-		   A->nOutputChan == B->nOutputChan &&
+		   A->FFTSpecRes  == B->FFTSpecRes  &&
+		   A->outputSpecRes == B->outputSpecRes  &&
 		   A->doPolar     == B->doPolar     &&
 		   A->doAuto      == B->doAuto      &&
 		   A->binConfigFile.compare(B->binConfigFile) == 0)
@@ -2397,10 +2468,8 @@ bool areCorrSetupsCompatible(const CorrSetup *A, const CorrSetup *B, const CorrP
 			return false;
 		}
 	}
-	else
-	{
-		return true;
-	}
+
+	return true;
 }
 
 int CorrParams::loadShelves(const string &fileName)

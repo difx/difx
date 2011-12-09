@@ -152,23 +152,38 @@ public:
 	bool correlateFreqId(int freqId) const;
 	double bytesPerSecPerBLPerBand() const;
 	int checkValidity() const;
-	int fftSize() const;
-	int nInputChan() const;
+	void setRecordedBandwidths(double min, double max) { minRecordedBandwidth = min; maxRecordedBandwidth = max; }
+	int minInputChans() const { return static_cast<int>(minRecordedBandwidth / FFTSpecRes + 0.5); }
+	int maxInputChans() const { return static_cast<int>(maxRecordedBandwidth / FFTSpecRes + 0.5); }
+	int minOutputChans() const { return static_cast<int>(minRecordedBandwidth / outputSpecRes + 0.5); }
+	int maxOutputChans() const { return static_cast<int>(maxRecordedBandwidth / outputSpecRes + 0.5); }
+//	int fftSize() const;
+//	int nInputChan() const;
+
+	double getMinRecordedBandwidth() const { return minRecordedBandwidth; }
+	double getMaxRecordedBandwidth() const { return maxRecordedBandwidth; }
+	void setMinRecordedBandwidth(double bw) { minRecordedBandwidth = bw; }
+	void setMaxRecordedBandwidth(double bw) { maxRecordedBandwidth = bw; }
 
 	string corrSetupName;
 
 	bool explicitXmacLength;// Whether the xmacLength parameter was explicitly set
-	bool explicitnFFTChan;	// Whether the nFFTChan parameter was explicitly set
+	//bool explicitnFFTChan;	// Whether the nFFTChan parameter was explicitly set
+	bool explicitFFTSpecRes;// Whether .v2d set the resolution of FFTs
 	bool explicitGuardNS;	// Whether the guardNS parameter was explicitly set
 	double tInt;		// integration time
 	bool doPolar;		// false for no cross pol, true for full pol
 	bool doAuto;		// write autocorrelations
 	int subintNS;		// Duration of a subintegration in nanoseconds
 	int guardNS;		// Number of "guard" ns tacked on to end of a send
-	int nFFTChan;		// Pre-averaged number of channels for the narrowest band
-	int nOutputChan;	// Post-averaged number of channels for the narrowest band 
+	//int nFFTChan;		// Pre-averaged number of channels for the narrowest band
+	//int nOutputChan;	// Post-averaged number of channels for the narrowest band 
 				// (all others will have same spectral resolution)
 	int specAvgDontUse;	// This parameter is depricated now.  Use nChan and nFFTChan instead
+	double FFTSpecRes;	// Hz; resolution of initial FFTs
+	double outputSpecRes;	// Hz; resolution of averaged output FFTs
+	int nFFTChan;		// This and the next parameter can be used to override the above two if all channels are the same width
+	int nOutputChan;	//
 	int maxNSBetweenUVShifts; //Mostly for multi-phase centres
 	int maxNSBetweenACAvg;	// Mostly for sending STA dumps
 	int fringeRotOrder;	// 0, 1, or 2
@@ -181,6 +196,10 @@ public:
 	string phasedArrayConfigFile;
 private:
 	void addFreqId(int freqId);
+
+	// replace with vector<> so CorrSetup::checkValidity() can do the right thing!
+	double minRecordedBandwidth;	// Hz
+	double maxRecordedBandwidth;	// Hz
 };
 
 
@@ -208,6 +227,7 @@ class CorrParams : public VexInterval
 public:
 	CorrParams();
 	CorrParams(const string &fileName);
+	int checkSetupValidity();
 
 	int loadShelves(const string &fileName);
 	const char *getShelf(const string &vsn) const;
@@ -225,6 +245,7 @@ public:
 	bool useBaseline(const string &ant1, const string &ant2) const;
 	bool swapPol(const string &antName) const;
 	const CorrSetup *getCorrSetup(const string &name) const;
+	CorrSetup *getNonConstCorrSetup(const string &name);
 	const SourceSetup *getSourceSetup(const string &name) const;
 	const SourceSetup *getSourceSetup(const vector<string> &names) const;
 	const PhaseCentre *getPhaseCentre(const string &difxname) const;

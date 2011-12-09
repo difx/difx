@@ -4,6 +4,7 @@ Post DiFX 2.0.1
 * Bug fix: when sorting events, round to nearest 0.1 second
 * Bug fix: order of operations in computing zoom channels: don't overflow integers
 * Change parameters to be better optimized for larger bandwidths (at marginal, if any, impact to small bandwidths)
+* Fix zoom bands when statting with different bandwidths.  WFB gets a beer for this one!
 
 Version 2.0.1
 ~~~~~~~~~~~~~

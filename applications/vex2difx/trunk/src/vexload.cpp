@@ -981,7 +981,8 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 				}
 
                 p2 = p2array[p2count++];
-				if( !p2 ) {
+				if( !p2 )
+				{
 					// check if this is a VLBA antenna; these require the comments for proper
 					// operation, so exit in that case
 					if( strcmp(antName.c_str(), "Sc") == 0 ||
@@ -993,9 +994,14 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 						strcmp(antName.c_str(), "Kp") == 0 ||
 						strcmp(antName.c_str(), "Ov") == 0 ||
 						strcmp(antName.c_str(), "Br") == 0 ||
-						strcmp(antName.c_str(), "Mk") == 0 ) {
-					cerr << "VLBA antenna detected, but no comment for if_def; can't do switching" << endl;
-					exit(EXIT_FAILURE);
+						strcmp(antName.c_str(), "Mk") == 0 )
+					{
+						static bool first = true;
+						if(first)
+						{
+							cerr << "Warning: VLBA antenna detected, but no comment for if_def; can't do switching" << endl;
+							first = false;
+						}
 					}
 				}
 				// carry comment forward as it might contain information about IF
