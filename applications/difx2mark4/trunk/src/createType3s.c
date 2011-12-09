@@ -13,7 +13,11 @@
 
 
 #define NUMFILS 50                  // maximum number of station files
-#define NPC_TONES 64                // max number of pcal tones (and channels)
+#define NPC_TONES 64                // max number of pcal tones in t309 record
+#define NPC_FREQS 64                // max number of channels in t309 record
+#define LBUFF_SIZE 40 * NPC_TONES * NPC_FREQS + 256
+
+char lbuff[LBUFF_SIZE];             // buffer for a single line of an input pcal file
 
 int createType3s (DifxInput *D,     // difx input structure, already filled
                   int startJob,
@@ -45,11 +49,11 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
         isb,
         record_chan,
         once = FALSE,
+        oncef = FALSE,
         refDay,
         configId,
         nclock;
 
-        size_t linemax = 10000;
 
 
     double t,
@@ -105,12 +109,6 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                                     // pre-calculate sample rate (samples/s)
     srate = 2e6 * D->freq->bw * D->freq->overSamp;
                                     // loop over all antennas in scan
-    line = calloc(linemax, sizeof(char));
-    if(line == 0)
-        {
-        fprintf(stderr, "Error, malloc of line failed\n");
-        return (-1);
-        }
                                     // doy of start of observation
     mjd2dayno((int)(D->mjdStart), &refDay);
 
@@ -178,7 +176,7 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                 deltat = 8.64e4 * ((**(D->scan[scanId].im+n))->mjd - (D->antenna+n)->clockrefmjd) 
                                                    + (**(D->scan[scanId].im+n))->sec;
                 nclock = getDifxAntennaShiftedClock (D->antenna+n, deltat, 6, clock);
-                                    // difx delay doesn't have clodk added in, so
+                                    // difx delay doesn't have clock added in, so
                                     // we must do it here; also apply sign reversal
                                     // for opposite delay convention
                 for (l=0; l<6; l++)
@@ -217,8 +215,8 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
 
                 while (TRUE)            // read loop over all input records
                     {
-                    i = getline(&line, &linemax, fin);
-                    if (i < 0)          //EOF
+                    line = fgets (lbuff, LBUFF_SIZE, fin);
+                    if (line == NULL)          //EOF
                         break;
                     sscanf (line, "%s%lf%lf%lf%d%d%d%d%d%n", ant, &t, &tint, &cable_delay, 
                                      &npol, &nchan, &ntones, &nstates, &nrc, &nchars);
@@ -277,6 +275,18 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                                         // loop over tones within record
                     for (np=0; np<npol; np++)
                         for (nc=0; nc<nchan; nc++)
+                            {
+                                        // skip over any channels in excess of the t309 size
+                            if (nc >= NPC_FREQS)
+                                {
+                                if (!oncef)
+                                    {
+                                    fprintf (stderr, "more than %d baseband channels"
+                                                     " - ignoring the rest\n", NPC_FREQS);
+                                    oncef = TRUE;
+                                    }
+                                continue;
+                                }
                             for (nt=0; nt<ntones; nt++)
                                 {
                                         // identify channel and tone
@@ -290,7 +300,6 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                                     jf = b / npol;
                                         // skip over non-matching polarizations
                                     if (np != b % npol)
-//                                  if (np != (b+1) % npol)
                                         continue;  
                                     isb = ((D->freq+jf)->sideband == 'U') ? 1 : -1;
                                     f_rel = isb * (freq - (D->freq+jf)->freq);
@@ -325,6 +334,12 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                                                 }
                                             continue;
                                             }
+                                        // trap potential array overwrites
+                                        if (b >= NPC_FREQS)
+                                            {
+                                            printf ("skipping write for tone %d since channel %d too large\n", i, b);
+                                            break;
+                                            }
                                         // renormalize correlations to those created in the DOM
                                         norm_corr = - isb * floor (cquad * srate * t309.acc_period * 128.0 + 0.5);
                                         memcpy (&t309.chan[b].acc[i][0], &norm_corr, 4);
@@ -338,6 +353,7 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                                         }
                                     }
                                 }
+                            }
                                         // write output record
                     write_t309 (&t309, fout);
                     }
