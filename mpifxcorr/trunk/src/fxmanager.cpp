@@ -502,7 +502,7 @@ void FxManager::receiveData(bool resend)
   }
   else
   {
-    cwarn << startl << "Invalid data was recieved from core " << sourcecore << " regarding scan " << subintscan << ", offset " << scantime << " seconds" << endl;
+    cwarn << startl << "Invalid data was received from core " << sourcecore << " regarding scan " << subintscan << ", offset " << scantime << " seconds" << endl;
 
     //immediately get some more data heading to that node
     if(resend)
@@ -875,7 +875,7 @@ void FxManager::sendMonitorData(int visID) {
   if (perr==EBUSY) {
     cdebug << startl << "Monitor still sending, skipping this visibility" << endl;
   } else if (perr) {
-    csevere << startl << "Error aquiring mutex lock for monitoring" << endl;
+    csevere << startl << "Error acquiring mutex lock for monitoring" << endl;
   } else { // Clear to go
     
     visbuffer[visID]->copyVisData(&buf, &bufsize, &nbuf);

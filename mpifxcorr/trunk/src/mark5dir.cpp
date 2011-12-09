@@ -724,7 +724,7 @@ int Mark5Module::uniquifyScanNames()
 			if(scanNames[j] == scans[i].name)
 			{
 				nameCount[j]++;
-				snprintf(extension, MODULE_SCAN_NAME_LENGTH, "_%04d", nameCount[j]);
+				snprintf(extension, 8, "_%04d", nameCount[j]);
 				scans[i].name += extension;
 				break;
 			}

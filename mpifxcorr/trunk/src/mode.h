@@ -58,7 +58,7 @@ public:
   * @param recordedfreqclkoffs The time offsets in microseconds to be applied post-F for each of the frequencies
   * @param recordedfreqlooffs The LO offsets in Hz for each recorded frequency
   * @param nrecordedbands The total number of subbands recorded
-  * @param nzoombands The number of subbands to be taken from withing the recorded bands - can be zero
+  * @param nzoombands The number of subbands to be taken from within the recorded bands - can be zero
   * @param nbits The number of bits per sample
   * @param sampling The bit sampling type (real/complex)
   * @param unpacksamp The number of samples to unpack in one hit
