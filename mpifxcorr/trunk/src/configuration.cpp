@@ -175,7 +175,6 @@ Configuration::Configuration(const char * configfile, int id, double restartsec)
         //cout << "Setting frequency " << getBFreqIndex(i,j,k) << " used to true, from baseline " << j << ", baseline frequency " << k << endl; 
         freq = freqtable[getBFreqIndex(i,j,k)];
         configs[i].frequsedbybaseline[getBFreqIndex(i,j,k)] = true;
-        oppositefreqindex = getOppositeSidebandFreqIndex
         if(freq.numchannels/freq.channelstoaverage < configs[i].minpostavfreqchannels)
           configs[i].minpostavfreqchannels = freq.numchannels/freq.channelstoaverage;
       }
