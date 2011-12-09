@@ -219,6 +219,10 @@ class Model{
       f64 **** wet;
       f64 **** dry;
       f64 **** adj;
+      f64 **** az;
+      f64 **** elcorr;
+      f64 **** elgeom;
+      f64 **** parang;
       f64 *** clock;
     } scan;
 

@@ -122,6 +122,10 @@ Model::~Model()
             vectorFree(scantable[i].wet[j][k][l]);
             vectorFree(scantable[i].dry[j][k][l]);
             vectorFree(scantable[i].adj[j][k][l]);
+            vectorFree(scantable[i].az[j][k][l]);
+            vectorFree(scantable[i].elcorr[j][k][l]);
+            vectorFree(scantable[i].elgeom[j][k][l]);
+            vectorFree(scantable[i].parang[j][k][l]);
           }
           delete [] scantable[i].u[j][k];
           delete [] scantable[i].v[j][k];
@@ -130,6 +134,10 @@ Model::~Model()
           delete [] scantable[i].wet[j][k];
           delete [] scantable[i].dry[j][k];
           delete [] scantable[i].adj[j][k];
+          delete [] scantable[i].az[j][k];
+          delete [] scantable[i].elcorr[j][k];
+          delete [] scantable[i].elgeom[j][k];
+          delete [] scantable[i].parang[j][k];
         }
         for(int k=0;k<numstations;k++)
           delete [] scantable[i].clock[j][k];
@@ -140,6 +148,10 @@ Model::~Model()
         delete [] scantable[i].wet[j];
         delete [] scantable[i].dry[j];
         delete [] scantable[i].adj[j];
+        delete [] scantable[i].az[j];
+        delete [] scantable[i].elcorr[j];
+        delete [] scantable[i].elgeom[j];
+        delete [] scantable[i].parang[j];
         delete [] scantable[i].clock[j];
       }
       delete [] scantable[i].u;
@@ -149,6 +161,10 @@ Model::~Model()
       delete [] scantable[i].wet;
       delete [] scantable[i].dry;
       delete [] scantable[i].adj;
+      delete [] scantable[i].az;
+      delete [] scantable[i].elcorr;
+      delete [] scantable[i].elgeom;
+      delete [] scantable[i].parang;
       delete [] scantable[i].clock;
       delete [] scantable[i].phasecentres;
     }
@@ -644,6 +660,10 @@ bool Model::readPolynomialSamples(ifstream * input)
     scantable[i].wet = new f64***[scantable[i].nummodelsamples];
     scantable[i].dry = new f64***[scantable[i].nummodelsamples];
     scantable[i].adj = new f64***[scantable[i].nummodelsamples];
+    scantable[i].az = new f64***[scantable[i].nummodelsamples];
+    scantable[i].elcorr = new f64***[scantable[i].nummodelsamples];
+    scantable[i].elgeom = new f64***[scantable[i].nummodelsamples];
+    scantable[i].parang = new f64***[scantable[i].nummodelsamples];
     scantable[i].clock = new f64**[scantable[i].nummodelsamples];
     for(int j=0;j<scantable[i].nummodelsamples;j++) {
       config->getinputline(input, &line, "SCAN ", i);
@@ -665,6 +685,10 @@ bool Model::readPolynomialSamples(ifstream * input)
       scantable[i].wet[j] = new f64**[scantable[i].numphasecentres+1];
       scantable[i].dry[j] = new f64**[scantable[i].numphasecentres+1];
       scantable[i].adj[j] = new f64**[scantable[i].numphasecentres+1];
+      scantable[i].az[j] = new f64**[scantable[i].numphasecentres+1];
+      scantable[i].elcorr[j] = new f64**[scantable[i].numphasecentres+1];
+      scantable[i].elgeom[j] = new f64**[scantable[i].numphasecentres+1];
+      scantable[i].parang[j] = new f64**[scantable[i].numphasecentres+1];
       scantable[i].clock[j] = new f64*[numstations];
       for(int k=0;k<numstations;k++)
         scantable[i].clock[j][k] = vectorAlloc_f64(polyorder+1);
@@ -676,6 +700,10 @@ bool Model::readPolynomialSamples(ifstream * input)
         scantable[i].wet[j][k] = new f64*[numstations];
         scantable[i].dry[j][k] = new f64*[numstations];
         scantable[i].adj[j][k] = new f64*[numstations];
+        scantable[i].az[j][k] = new f64*[numstations];
+        scantable[i].elcorr[j][k] = new f64*[numstations];
+        scantable[i].elgeom[j][k] = new f64*[numstations];
+        scantable[i].parang[j][k] = new f64*[numstations];
         for(int l=0;l<numstations;l++) {
           estimatedbytes += 6*8*(polyorder + 1);
           scantable[i].u[j][k][l] = vectorAlloc_f64(polyorder+1);
@@ -685,6 +713,10 @@ bool Model::readPolynomialSamples(ifstream * input)
           scantable[i].wet[j][k][l] = vectorAlloc_f64(polyorder+1);
           scantable[i].dry[j][k][l] = vectorAlloc_f64(polyorder+1);
           scantable[i].adj[j][k][l] = vectorAlloc_f64(polyorder+1);
+          scantable[i].az[j][k][l] = vectorAlloc_f64(polyorder+1);
+          scantable[i].elcorr[j][k][l] = vectorAlloc_f64(polyorder+1);
+          scantable[i].elgeom[j][k][l] = vectorAlloc_f64(polyorder+1);
+          scantable[i].parang[j][k][l] = vectorAlloc_f64(polyorder+1);
           config->getinputline(input, &line, "SRC ", k);
           polyok = polyok && fillPolyRow(scantable[i].delay[j][k][l], line, polyorder+1);
           if(fabs(scantable[i].delay[j][k][l][1]) > fabs(maxrate[l]) &&
@@ -702,6 +734,22 @@ bool Model::readPolynomialSamples(ifstream * input)
           }
           if(key.find("ADJ") != string::npos) { //look for optional "ADJ" delay subcomponent (usually for phased arrays)
             polyok = polyok && fillPolyRow(scantable[i].adj[j][k][l], line, polyorder+1);
+            config->getinputline(input, &line, "SRC ", k);
+          }
+          if(key.find("AZ") != string::npos) { //look for optional "AZ" azimuth specification
+            polyok = polyok && fillPolyRow(scantable[i].az[j][k][l], line, polyorder+1);
+            config->getinputline(input, &line, "SRC ", k);
+          }
+          if(key.find("CORR") != string::npos) { //look for optional "EL CORR" refraction-corrected elevation specification
+            polyok = polyok && fillPolyRow(scantable[i].elcorr[j][k][l], line, polyorder+1);
+            config->getinputline(input, &line, "SRC ", k);
+          }
+          if(key.find("GEOM") != string::npos) { //look for optional "EL GEOM" geometric elevation specification
+            polyok = polyok && fillPolyRow(scantable[i].elgeom[j][k][l], line, polyorder+1);
+            config->getinputline(input, &line, "SRC ", k);
+          }
+          if(key.find("PAR") != string::npos) { //look for optional "PAR ANGLE" parallactic angle specification
+            polyok = polyok && fillPolyRow(scantable[i].parang[j][k][l], line, polyorder+1);
             config->getinputline(input, &line, "SRC ", k);
           }
           polyok = polyok && fillPolyRow(scantable[i].u[j][k][l], line, polyorder+1);
