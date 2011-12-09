@@ -125,6 +125,15 @@ const char DriveStatsTypeStrings[][24] =
 	"unknown"	/* Really, this should never be used! */
 };
 
+/* Note! Keep this in sync with enum DifxStartFunctionType in difxmessage.h */
+const char DifxStartFunctionString[][24] =
+{
+	"unknown",
+	"default",
+	"NRAO",
+	"USNO"
+};
+
 int isDifxMessageInUse()
 {
 	return difxMessageInUse;

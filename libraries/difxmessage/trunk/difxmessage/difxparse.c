@@ -581,7 +581,6 @@ static void XMLCALL endElement(void *userData, const char *name)
 					}
 					break;
 				case DIFX_MESSAGE_START:
-				case DIFX_MESSAGE_START_USNO:
 					if(strcmp(elem, "input") == 0)
 					{
 						strncpy(G->body.start.inputFilename, s, DIFX_MESSAGE_FILENAME_LENGTH-1);
@@ -628,6 +627,15 @@ static void XMLCALL endElement(void *userData, const char *name)
 					else if(strcmp(elem, "restartSeconds") == 0)
 					{
 						G->body.start.restartSeconds = atoi(s);
+					}
+					else if(strcmp(elem, "function") == 0)
+					{
+					    for ( i = 0; i < NUM_DIFX_START_FUNCTION_TYPES; ++i ) {
+						    if( strcmp( DifxStartFunctionString[i], s ) == 0 )
+							{
+							    G->body.start.function = i;
+						    }
+						}
 					}
 					break;
 				case DIFX_MESSAGE_STOP:

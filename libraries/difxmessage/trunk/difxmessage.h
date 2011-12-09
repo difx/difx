@@ -149,6 +149,18 @@ enum DifxAlertLevel
 
 extern const char difxMessageAlertString[][16];
 
+/* Note! Keep this in sync with DifxStartFunctionString[][24] in difxmessage.c */
+enum DifxStartFunction
+{
+	DIFX_START_FUNCTION_UNKNOWN = 0,
+	DIFX_START_FUNCTION_DEFAULT,
+	DIFX_START_FUNCTION_NRAO,
+	DIFX_START_FUNCTION_USNO,
+	NUM_DIFX_START_FUNCTION_TYPES /* this needs to be the last line of the enum */
+};
+
+extern const char DifxStartFunctionString[][24];
+
 /* Note! Keep this in sync with DifxMessageTypeStrings[][24] in difxmessage.c */
 enum DifxMessageType
 {
@@ -162,7 +174,6 @@ enum DifxMessageType
 	DIFX_MESSAGE_COMMAND,
 	DIFX_MESSAGE_PARAMETER,
 	DIFX_MESSAGE_START,
-	DIFX_MESSAGE_START_USNO,
 	DIFX_MESSAGE_STOP,
 	DIFX_MESSAGE_MARK5VERSION,
 	DIFX_MESSAGE_CONDITION,	/* this is deprecated.  Use DIFX_MESSAGE_DISKSTAT instead */
@@ -288,6 +299,7 @@ typedef struct
 	int force;
 	char difxVersion[DIFX_MESSAGE_VERSION_LENGTH];
 	double restartSeconds;		/* Amount of time into job to actually start the correlation */
+	int function;   /* specifies which function to use when starting DiFX - presumably a temporary option. */
 } DifxMessageStart;
 
 typedef struct

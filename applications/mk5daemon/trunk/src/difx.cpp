@@ -178,6 +178,19 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 	}
 
 	S = &G->body.start;
+	
+	/*  Use the start function specified.  USNO is only option that does anything right now.  */
+	switch ( S->function ) {
+	case DIFX_START_FUNCTION_USNO:
+		Mk5Daemon_startMpifxcorr_USNO( D,  G );
+	    return;
+	    break;
+    case DIFX_START_FUNCTION_UNKNOWN:
+	case DIFX_START_FUNCTION_DEFAULT:
+	case DIFX_START_FUNCTION_NRAO:
+	default:
+	    break;
+	}
 
 	if(S->headNode[0] == 0 || S->nDatastream <= 0 || S->nProcess <= 0 || S->inputFilename[0] != '/')
 	{
