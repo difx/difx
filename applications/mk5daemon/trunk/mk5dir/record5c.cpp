@@ -411,9 +411,9 @@ static void printBankStat(int bank, const S_BANKSTATUS *bankStat, DifxMessageMk5
 static int decodeScan(SSHANDLE xlrDevice, long long startByte, long long stopByte,
 	struct Mark5DirectoryScanHeaderVer1 *p, struct Mark5DirectoryLegacyBodyVer1 *q)
 {
+	unsigned long long timeBCD;
 	int frame, byteOffset;
 	int mjd1=0, mjd2=0, sec1=0, sec2=0;
-	unsigned long long timeBCD;
 	int v;
 
 	p->startByte = startByte;
@@ -421,9 +421,6 @@ static int decodeScan(SSHANDLE xlrDevice, long long startByte, long long stopByt
 	v = decode5B(xlrDevice, startByte, 10, &timeBCD, &frame, &byteOffset, &mjd1, &sec1);
 	if(v == 0)
 	{
-		long long words;
-		int samplesPerWord;
-		double deltat;
 		long long length = p->stopByte - p->startByte;
 
 		for(int i = 0; i < 8; ++i)
@@ -436,6 +433,9 @@ static int decodeScan(SSHANDLE xlrDevice, long long startByte, long long stopByt
 		v = decode5B(xlrDevice, p->stopByte, -10, 0, &frame, 0, &mjd2, &sec2);
 		if(v == 0)
 		{
+			long long words;
+			double deltat;
+			int samplesPerWord;
 
 			deltat = sec2 - sec1 + 86400*(mjd2 - mjd1) + 1;
 			samplesPerWord = 32/upround2(countbits(q->nTrack));

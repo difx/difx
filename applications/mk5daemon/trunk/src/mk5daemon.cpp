@@ -647,7 +647,7 @@ void handleRecordMessage(Mk5Daemon *D, time_t t)
 void handleDifxMessage(Mk5Daemon *D)
 {
 	char message[DIFX_MESSAGE_LENGTH];
-	int n, v;
+	int n;
 	DifxMessageGeneric G;
 	char from[20];
 
@@ -655,6 +655,8 @@ void handleDifxMessage(Mk5Daemon *D)
 
 	if(n > 0)
 	{
+		int v;
+
 		message[n] = 0;
 		v = difxMessageParse(&G, message);
 		if(v == 0)

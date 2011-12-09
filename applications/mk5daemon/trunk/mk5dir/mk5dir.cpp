@@ -145,7 +145,6 @@ int dirCallback(int scan, int nscan, int status, void *data)
 	static long long seconds=0;
 	struct timeval t;
 	DifxMessageMk5Status *mk5status;
-	int v;
 
 	mk5status = (DifxMessageMk5Status *)data;
 	mk5status->scanNumber = scan;
@@ -165,6 +164,8 @@ int dirCallback(int scan, int nscan, int status, void *data)
 	}
 	if(t.tv_sec - seconds > 10)
 	{
+		int v;
+
 		seconds = t.tv_sec;
 		v = getBankInfo(xlrDevice, mk5status, mk5status->activeBank == 'B' ? 'A' : 'B');
 		if(v < 0)

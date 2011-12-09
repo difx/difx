@@ -83,12 +83,13 @@ static int checkDiskFree(const char *path, long long minFree)
 	struct statvfs fiData;
 	char message[DIFX_MESSAGE_LENGTH] = "";
 	int v;
-	long long freeSpace;
 	
 	v = statvfs(path, &fiData);
 
 	if(v == 0)
 	{
+		long long freeSpace;
+
 		freeSpace = fiData.f_bsize * fiData.f_bavail;
 		if(freeSpace < minFree)
 		{

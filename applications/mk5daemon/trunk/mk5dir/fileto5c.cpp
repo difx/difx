@@ -342,9 +342,6 @@ static int decodeScan(SSHANDLE xlrDevice, long long startByte, long long stopByt
 	v = decode5B(xlrDevice, startByte, 10, &timeBCD, &frame, &byteOffset, &mjd1, &sec1);
 	if(v == 0)
 	{
-		long long words;
-		int samplesPerWord;
-		double deltat;
 		long long length = p->stopByte - p->startByte;
 
 		for(int i = 0; i < 8; ++i)
@@ -357,6 +354,9 @@ static int decodeScan(SSHANDLE xlrDevice, long long startByte, long long stopByt
 		v = decode5B(xlrDevice, p->stopByte, -10, 0, &frame, 0, &mjd2, &sec2);
 		if(v == 0)
 		{
+			long long words;
+			int samplesPerWord;
+			double deltat;
 
 			deltat = sec2 - sec1 + 86400*(mjd2 - mjd1) + 1;
 			samplesPerWord = 32/upround2(countbits(q->nTrack));
@@ -438,15 +438,6 @@ static int fileto(const char *filename, int bank, const char *label, unsigned in
 		return -1;
 	}
 
-	buffer = (char *)malloc(chunkSize);
-	if(buffer == 0)
-	{
-		printf("Error 9 Bank %c not ready\n", 'A'+bank);
-		fflush(stdout);
-		
-		return -1;
-	}
-
 	mk5status->state = MARK5_STATE_OPENING;
 	difxMessageSendMark5Status(mk5status);
 
@@ -454,6 +445,16 @@ static int fileto(const char *filename, int bank, const char *label, unsigned in
 	WATCHDOGTEST( XLRSetBankMode(xlrDevice, SS_BANKMODE_NORMAL) );
 	WATCHDOGTEST( XLRSetOption(xlrDevice, SS_OPT_DRVSTATS) );
 	WATCHDOGTEST( XLRGetBankStatus(xlrDevice, bank, &bankStat) );
+
+	buffer = (char *)malloc(chunkSize);
+	if(buffer == 0)
+	{
+		printf("Error 9 error allocating %d byte buffer", chunkSize);
+		fflush(stdout);
+		
+		return -1;
+	}
+
 	if(bankStat.State != STATE_READY)
 	{
 		printf("Error 6 Bank %c not ready\n", 'A'+bank);

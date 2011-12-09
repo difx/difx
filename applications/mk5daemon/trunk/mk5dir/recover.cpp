@@ -181,7 +181,7 @@ static int recoverModule(int type, int bank, int force)
 			{
 				dmsMask = atoi(dmsMaskStr);
 			}
-			if(dmsMask & MODULE_STATUS_RECORDED > 0)
+			if(dmsMask & MODULE_STATUS_RECORDED)
 			{
 				v = resetModuleDirectory(xlrDevice, vsn, MODULE_STATUS_RECORDED, 1, totalCapacity, rate);
 			}

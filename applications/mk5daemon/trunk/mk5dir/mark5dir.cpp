@@ -275,8 +275,6 @@ int addDecades(int mjd, int nDecade)
 
 static void convertTimeBCD(const unsigned char *timeBCD, int *mjd, int *sec)
 {
-	int year, doy;
-
 	if(sec)
 	{
 		*sec =	((timeBCD[0] & 0x0F) >> 0)*1 + 
@@ -288,6 +286,8 @@ static void convertTimeBCD(const unsigned char *timeBCD, int *mjd, int *sec)
 	}
 	if(mjd)
 	{
+		int year, doy;
+
 		doy =	((timeBCD[3] & 0x0F) >> 0)*1 +
 			((timeBCD[3] & 0xF0) >> 4)*10 +
 			((timeBCD[4] & 0x0F) >> 0)*100;
@@ -1093,18 +1093,13 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref,
 	XLR_RETURN_CODE xlrRC;
 	struct Mark5LegacyDirectory *m5dir;
 	unsigned char *dirData;
-	int len, n;
-	int j;
+	int len;
 	struct mark5_format *mf;
 	char newLabel[XLR_LABEL_LENGTH];
 	int newBank;
-	unsigned long a, b;
 	int bufferlen;
-	unsigned int x, newSignature;
+	unsigned int newSignature;
 	int die = 0;
-	long long wGood=0, wBad=0;
-	long long wGoodSum=0, wBadSum=0;
-	int nZero;
 	int newDirVersion;   /* == 0 for old style (pre-mark5-memo 81) */
 	                     /* == version number for mark5-memo 81 */
 	int oldLen1, oldLen2, oldLen3;
@@ -1202,9 +1197,9 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref,
 	newSignature = 1;
 	if(start < stop)
 	{
-		for(j = start/4; j < stop/4; ++j)
+		for(int j = start/4; j < stop/4; ++j)
 		{
-			x = ((unsigned int *)dirData)[j] + 1;
+			unsigned int x = ((unsigned int *)dirData)[j] + 1;
 			newSignature = newSignature ^ x;
 		}
 
@@ -1280,14 +1275,19 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref,
 	}
 	else
 	{
+		long long wGoodSum=0, wBadSum=0;
+		
 		/* Work around possible streamstor bug */
 		WATCHDOG( xlrRC = XLRReadData(xlrDevice, buffer, 0, 0, bufferlen) );
 
 		for(int i = 0; i < nScans(); ++i)
 		{
+			unsigned long a, b;
+			long long wGood=0, wBad=0;
+			int nZero;
+			
 			Mark5Scan &scan = scans[i];
 
-			wGood = wBad = 0;
 			if(fast)
 			{
 				printf("Fast directory read requested but not supported for this module.\n");
@@ -1393,12 +1393,12 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref,
 #warning FIXME: this should be in mark5access
 			if(mf->format == 0 || mf->format == 2)  /* VLBA or Mark5B format */
 			{
-				n = (mjdref - mf->mjd + 500) / 1000;
+				int n = (mjdref - mf->mjd + 500) / 1000;
 				mf->mjd += n*1000;
 			}
 			else if(mf->format == 1)	/* Mark4 format */
 			{
-				n = (int)((mjdref - mf->mjd + 1826)/3652.4);
+				int n = (int)((mjdref - mf->mjd + 1826)/3652.4);
 				mf->mjd = addDecades(mf->mjd, n);
 			}
 			
@@ -1631,9 +1631,6 @@ int isLegalModuleLabel(const char *label)
 
 int parseModuleLabel(const char *label, char *vsn, int *totalCapacity, int *rate, int *moduleStatus)
 {
-	int n;
-	int i;
-
 	if(!isLegalModuleLabel(label))
 	{
 		return -1;
@@ -1647,7 +1644,7 @@ int parseModuleLabel(const char *label, char *vsn, int *totalCapacity, int *rate
 
 	if(totalCapacity && rate)
 	{
-		n = sscanf(label+9, "%d/%d", totalCapacity, rate);
+		int n = sscanf(label+9, "%d/%d", totalCapacity, rate);
 		if(n != 2)
 		{
 			return -1;
@@ -1656,6 +1653,8 @@ int parseModuleLabel(const char *label, char *vsn, int *totalCapacity, int *rate
 
 	if(moduleStatus)
 	{
+		int i;
+
 		*moduleStatus = MODULE_STATUS_UNKNOWN;
 		for(i = 0; label[i]; ++i)
 		{
@@ -1738,7 +1737,6 @@ int getModuleDirectoryVersion(SSHANDLE xlrDevice, int *dirVersion, int *dirLengt
 	if(len % 128 == 0)
 	{
 		char *dirData;
-		int nScan;
 		
 		dirData = (char *)calloc(len, 1);
 		WATCHDOGTEST( XLRGetUserDir(xlrDevice, len, 0, dirData) );
@@ -1753,9 +1751,9 @@ int getModuleDirectoryVersion(SSHANDLE xlrDevice, int *dirVersion, int *dirLengt
 			ver = 1;
 		}
 
-		nScan = len/128 - 1;
-
 #ifdef DEBUG
+		int nScan = len/128 - 1;
+
 		printf("Directory information:");
 		printf("  Ver = %d  VSN = %s\n", ver, dirHeader->vsn);
 		for(int s = 0; s < nScan; ++s)

@@ -36,7 +36,6 @@
 int Mk5Daemon_loadMon(Mk5Daemon *D, double mjd)
 {
 	long long curRX, curTX;
-	long long d;
 	float l1, l5, l15;
 	int memused, memtot;
 	char message[DIFX_MESSAGE_LENGTH];
@@ -66,6 +65,8 @@ int Mk5Daemon_loadMon(Mk5Daemon *D, double mjd)
 	/* on 32 bit machines, proc stores only 32 bit values */
 	if(D->lastRX > 0 || D->lastTX > 0) 
 	{
+		long long d;
+
 		d = curRX - D->lastRX;
 		D->load.netRXRate = d/D->loadMonInterval;
 

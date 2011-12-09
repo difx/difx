@@ -225,18 +225,15 @@ int setvsn(int bank, char *newVSN, int newStatus, enum WriteProtectAction wpa, i
 	int dirVersion = -1;
 	int nDrive, capacity, rate;
 	int d;
-	char smartDescription[MaxSmartDescriptionLen];
 	char oldVSN[10];
 	char resp[12]="";
 	char *rv;
 	int v;
-	long long V;
 	int moduleStatus = MODULE_STATUS_UNKNOWN;
 	int dirLength;
 	struct DriveInformation drive[8];
 	bool needsNewDir = false;
 	FILE *out = 0;
-	int isCritical;
 
 	WATCHDOGTEST( XLROpen(1, &xlrDevice) );
 	WATCHDOGTEST( XLRSetBankMode(xlrDevice, SS_BANKMODE_NORMAL) );
@@ -336,6 +333,12 @@ int setvsn(int bank, char *newVSN, int newStatus, enum WriteProtectAction wpa, i
 		v = getModuleDirectoryVersion(xlrDevice, &dirVersion, 0, &moduleStatus);
 		if(v < 0)
 		{
+			if(out)
+			{
+				fclose(out);
+				out = 0;
+			}
+
 			return v;
 		}
 	}
@@ -383,6 +386,12 @@ int setvsn(int bank, char *newVSN, int newStatus, enum WriteProtectAction wpa, i
 	if(verbose < 0)
 	{
 		WATCHDOG( XLRClose(xlrDevice) );
+
+		if(out)
+		{
+			fclose(out);
+			out = 0;
+		}
 
 		return 0;
 	}
@@ -435,6 +444,10 @@ int setvsn(int bank, char *newVSN, int newStatus, enum WriteProtectAction wpa, i
 				{
 					if(smartValues[v].ID > 0)
 					{
+						char smartDescription[MaxSmartDescriptionLen];
+						long long V;
+						int isCritical;
+						
 						V = interpretSMART(smartDescription, MaxSmartDescriptionLen, smartValues+v, &isCritical);
 						if(isCritical && V > 0LL)
 						{

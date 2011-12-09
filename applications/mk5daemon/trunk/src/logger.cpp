@@ -116,7 +116,6 @@ int Logger_logData(Logger *log, const char *message)
 {
 	time_t t;
 	struct tm curTime;
-	double mjd;
 
 	pthread_mutex_lock(&log->lock);
 
@@ -132,6 +131,8 @@ int Logger_logData(Logger *log, const char *message)
 		
 		if(t != log->lastTime)
 		{
+			double mjd;
+
 			mjd = 40587.0 + t/86400.0;
 
 			if(t/86400 != log->lastTime/86400)

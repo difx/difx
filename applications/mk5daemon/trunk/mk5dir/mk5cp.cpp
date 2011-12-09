@@ -756,13 +756,12 @@ static int mk5cp(char *vsn, const char *scanList, const char *outPath, int force
 	int mjdNow;
 	const char *mk5dirpath;
 	int v;
-	int b, s, l, nGood, nBad;
+	int b, s, nGood, nBad;
 	int bank = -1;
 	float replacedFrac;
 	int bail = 0;
 	double mjdStart, mjdStop;
 	long long byteStart, byteStop;
-	int scanIndex;
 	Mark5Scan *scan;
 	char outName[DIFX_MESSAGE_FILENAME_LENGTH];
 	char scanrangestr[DIFX_MESSAGE_PARAM_LENGTH];
@@ -941,7 +940,7 @@ static int mk5cp(char *vsn, const char *scanList, const char *outPath, int force
 		/* first look for mjd range */
 		if(parseMjdRange(&mjdStart, &mjdStop, scanList))	
 		{
-			for(scanIndex = 0; scanIndex < module.nScans(); ++scanIndex)
+			for(int scanIndex = 0; scanIndex < module.nScans(); ++scanIndex)
 			{
 				scan = &module.scans[scanIndex];
 				if(!getByteRange(scan, &byteStart, &byteStop, mjdStart, mjdStop))
@@ -1080,7 +1079,7 @@ static int mk5cp(char *vsn, const char *scanList, const char *outPath, int force
 		/* finally, look for scan name */
 		else
 		{
-			l = strlen(scanList);
+			int l = strlen(scanList);
 			// FIXME: use iterator
 			for(int i = 0; i < module.nScans(); ++i)
 			{

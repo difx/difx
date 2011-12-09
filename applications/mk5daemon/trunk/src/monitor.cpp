@@ -123,7 +123,6 @@ static void mountdisk(Mk5Daemon *D, const char *diskdev)
 	char message[DIFX_MESSAGE_LENGTH];
 	char rv[256] = "hidden message";
 	char *c;
-	int l;
 	FILE *pin;
 
 	if(strlen(diskdev) > 10)
@@ -148,6 +147,8 @@ static void mountdisk(Mk5Daemon *D, const char *diskdev)
 
 	if(c)
 	{
+		int l;
+		
 		/* strip endline */
 		l = strlen(rv);
 		rv[l-1] = 0;
@@ -217,7 +218,6 @@ static void umountdisk(Mk5Daemon *D)
 	char message[DIFX_MESSAGE_LENGTH];
 	char rv[256] = "I like chinchillas";
 	char *c;
-	int l;
 	FILE *pin;
 
 	command = "/bin/umount /mnt/usb 2>&1";
@@ -231,6 +231,8 @@ static void umountdisk(Mk5Daemon *D)
 
 	if(c)
 	{
+		int l;
+		
 		/* strip endline */
 		l = strlen(rv);
 		rv[l-1] = 0;
@@ -249,6 +251,7 @@ void handleCommand(Mk5Daemon *D, const DifxMessageGeneric *G)
 {
 	const char *cmd;
 	char message[DIFX_MESSAGE_LENGTH];
+
 	if(!messageForMe(D, G))
 	{
 		return;
