@@ -1,0 +1,184 @@
+#!/usr/bin/env python
+
+from string import split, strip, find, upper, lower
+from sys import argv, exit
+from os import popen, getenv, geteuid
+import socket
+import subprocess
+import struct
+import time
+from xml.parsers import expat
+import time
+
+program = 'mk5watchdog'
+author  = 'Helge Rottmann'
+version = '0.2'
+verdate = '20110510'
+
+def usage():
+	exit(1)
+
+class Mk5state:
+
+	def __init__(self):
+		self.ok    = False
+		self.pid   = 0
+		self.id    = ''
+		self.mk5   = ''
+		self.seq   = 0
+		self.vsnA  = 'none'
+		self.vsnB  = 'none'
+		self.bank  = ' '
+		self.state = 'Unknown'
+		self.scan  = 0
+		self.name  = ''
+		self.pos   = 0L
+		self.rate  = 0.0
+		self.date  = 0.0
+
+
+	def getmk5(self):
+		return self.mk5
+
+class Parser:
+
+	def __init__(self):
+		self._parser = expat.ParserCreate()
+		self._parser.StartElementHandler = self.start
+		self._parser.EndElementHandler = self.end
+		self._parser.CharacterDataHandler = self.data
+		self.info = Mk5state()
+		self.tmp = ''
+		self.lastMessageTime = time.time()
+
+	def feed(self, data):
+		try:
+			self._parser.Parse(data, 0)
+		except expat.ExpatError:
+			print '\n\n XXX %s XXX' % data 
+
+	def close(self):
+		self._parser.Parse("", 1) # end of data
+		del self._parser # get rid of circular references
+
+	def start(self, tag, attrs):
+		pass
+
+	def end(self, tag):
+		if tag == 'mark5Status':
+			self.info.ok = True
+			self.lastMessageTime = time.time()
+		if tag == 'bankAVSN':
+			if len(self.tmp) != 8:
+				self.info.vsnA = 'none'
+			else:
+				self.info.vsnA = upper(self.tmp)
+		if tag == 'bankBVSN':
+			if len(self.tmp) != 8:
+				self.info.vsnB = 'none'
+			else:
+				self.info.vsnB = upper(self.tmp)
+		if tag == 'from':
+			self.info.mk5 = lower(self.tmp)
+		if tag == 'state':
+			self.info.state = self.tmp
+		if tag == 'playRate':
+			self.info.rate = float(self.tmp)
+		if tag == 'dataMJD':
+			self.info.date = float(self.tmp)
+		if tag == 'position':
+			self.info.pos = int(self.tmp)
+		if tag == 'scanNumber':
+			self.info.scan = int(self.tmp)
+		if tag == 'scanName':
+			self.info.name = self.tmp
+		if tag == 'activeBank':
+			self.info.bank = self.tmp
+
+	def data(self, data):
+		self.tmp = data
+
+
+def listen(port, group):
+	dt = 0.0
+	t = 0
+	maxtime = 6000
+
+	# Now listen for responses, until either time runs out or we get all we need
+	s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+	s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+	s.bind(('', port))
+	mreq = struct.pack("4sl", socket.inet_aton(group), socket.INADDR_ANY)
+	s.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
+	s.settimeout(0.2)
+	try:
+		while t < maxtime:
+			try:
+				message = s.recv(1500)
+			except socket.timeout:
+				t += dt
+				continue
+
+			if message[0] != '<':
+				continue
+
+			p = Parser()
+			p.feed(message)
+			restart = False
+
+			if p.info.mk5 == socket.gethostname():
+
+				#message = "%s %s\n" % (time.asctime(), p.info.state)
+				#print message
+				#logfile.write(message)
+				#logfile.flush()
+
+				if p.info.state == "Error": 
+					restart = True
+			
+				if restart:
+					try:
+					    logfile.write("%s Restarting\n" % (time.asctime()))
+					    logfile.flush()
+
+					    retcode = subprocess.call("/etc/init.d/mark5" + " restart", shell=True)
+
+					    if retcode < 0:
+						print "Child was terminated by signal", -retcode
+					    else:
+						print "Child returned", retcode
+					except Exception, e:
+					    print  "Execution failed:", e
+
+				
+			p.close()
+	except KeyboardInterrupt:
+		return 0
+	except:
+		return 1
+	return 0
+
+
+
+if geteuid() != 0:
+	print "You must be root to run this script."
+	exit(1)
+
+logfile = open('/tmp/mk5watchdog.log', 'w')
+
+
+port = getenv('DIFX_MESSAGE_PORT')
+if port == None:
+	print 'DIFX_MESSAGE_PORT needs to be defined'
+	exit(0)
+else:
+	port = int(port)
+group = getenv('DIFX_MESSAGE_GROUP')
+if group == None:
+	print 'DIFX_MESSAGE_GROUP needs to be defined'
+	exit(0)
+
+while(listen(port, group)):
+	pass
+
+logfile.close()

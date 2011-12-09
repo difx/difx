@@ -1,0 +1,66 @@
+#!/bin/sh
+#
+# Author: H. Rottmann
+# Time-stamp: <19/01/2011 15:25:02 rottmann@mpifr-bonn.mpg.de>
+#
+# /etc/init.d/mark5
+#
+### BEGIN INIT INFO
+# Provides: mark5
+# Required-Start: network nfs 
+# Required-Stop:
+# Default-Start:  3 5 S
+# Default-Stop:
+# Description:    start and stop the streamstor software
+### END INIT INFO
+
+prog="mark5"
+
+start() {
+         #echo "Mk5 start: " `uname -a` | mail -s "Mk5 start" rottmann@mpifr-bonn.mpg.de
+
+         echo -e "Loading module windrvr6 for StreamStor \n"
+         /usr/local/src/streamstor/linux/driver/redist/wdreg windrvr6.ko auto
+
+         chmod a+rw /dev/windrvr6
+	 sleep 3
+
+	 source /cluster/mark5/select_difx
+	 export STREAMSTOR_BIB_PATH=/usr/local/src/streamstor/linux/bib/
+
+         mk5daemon --user oper
+	
+	 sleep 2
+	 mk5watchdog &
+
+         return 0
+}
+
+stop() {
+	 echo -e "Stopping mk5daemon \n"
+	 killall mk5daemon
+
+	 echo -e "Stopping mk5watchdog \n"
+	 pkill -f mk5watchdog
+
+	 sleep 2
+         echo -e $"Unloading windrvr6 module \n"
+         /sbin/rmmod windrvr6
+
+         return 0
+}
+
+case "$1" in
+   start)
+         start
+         ;;
+   stop)
+         stop
+         ;;
+   restart)
+         stop && start
+         ;;
+   *)
+         echo $"Usage: $0 {start|stop|restart}"
+         exit 1
+esac
