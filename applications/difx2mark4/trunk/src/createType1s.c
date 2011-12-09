@@ -32,6 +32,8 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
           struct CommandLineOptions *opts, // ptr to input options
           char *rootname)           // full root file name
     {
+    const int header_size = (8*sizeof(int)) + (5*sizeof(double)) + (2*sizeof(char)); 
+
     int i,
         findex,
         n,
@@ -198,7 +200,6 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
                 if (errno)
                     perror ("difx2mark4");
                 fprintf (stderr, "problem finding data in %s\n", dirname);
-                closedir (pdir);
                 return (-1);
                 }
             closedir (pdir);
@@ -238,7 +239,7 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
                 break;
                 }
                                     // form pointer to current vis. record
-            rec = (vis_record *) ((char *) vrec + nvr * vrsize);  
+            rec = (vis_record *) ((char *) vrec + nvr * (long int) vrsize);  
                                     // check for new scan
             oldScan = currentScan;
             currentScan = DifxInputGetScanIdByJobId (D, rec->mjd+rec->iat/8.64e4, *jobId);

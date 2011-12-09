@@ -140,18 +140,18 @@ int get_vis (char *vf_name,                   // name of input file
                 {
                 if (sizeof(size_t) == 4)
                     printf ("realloc another mem chunk for visibilities, nvrec %d size %u\n",
-                            *nvrec, (size_t) (*nvrec + CHUNK) * vrsize);
+                            *nvrec, (size_t) (*nvrec + CHUNK) * (long int) vrsize);
                 else
-                    printf ("realloc another mem chunk for visibilities, nvrec %d size %llu\n",
-                            *nvrec, (size_t) (*nvrec + CHUNK) * vrsize);
+                    printf ("realloc another Mem chunk for visibilities, nvrec %d size %llu\n",
+                            *nvrec, (size_t) (*nvrec + CHUNK) * (long int) vrsize);
                 }
-            *vrec = realloc (*vrec, (size_t) (*nvrec + CHUNK) * vrsize);
+            *vrec = realloc (*vrec, (size_t) (*nvrec + CHUNK) * (long int) vrsize);
             if (*vrec == NULL)
                 {
                 printf ("error reallocating memory for %d records\n", *nvrec);
                 return -2;
                 }
-            pch = (char *) *vrec + *nvrec * vrsize;
+            pch = (char *) *vrec + *nvrec * (long int) vrsize;
             pv = (vis_record *) pch;
             }
         }
