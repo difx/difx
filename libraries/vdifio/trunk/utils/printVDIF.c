@@ -51,7 +51,6 @@ int main(int argc, char **argv)
   char buffer[MAX_VDIF_FRAME_BYTES];
   FILE * input;
   int readbytes, framebytes, framemjd, framesecond, framenumber, frameinvalid, datambps, framespersecond;
-  int packetdropped;
   long long framesread;
 
   if(argc != 3)
@@ -86,7 +85,6 @@ int main(int argc, char **argv)
 
   framesread = 0;
   while(!feof(input)) {
-    packetdropped = 0;
     readbytes = fread(buffer, 1, framebytes, input); //read the whole VDIF packet
     if (readbytes < framebytes) {
       fprintf(stderr, "Header read failed - probably at end of file.\n");

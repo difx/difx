@@ -74,7 +74,7 @@ void * launchNewWriteThread(void * w)
 {
   FILE * output;
   writethreaddata * wtd = (writethreaddata*)w;
-  int perr, writesegment, wrotebytes, wrotesegments;
+  int perr, writesegment, wrotebytes;
 
   //open the output file
   output = fopen(wtd->filename, "w");
@@ -95,7 +95,6 @@ void * launchNewWriteThread(void * w)
   if (perr != 0)
     fprintf(stderr, "Error trying to signal main thread to wake up!!!");
   writesegment = 0;  
-  wrotesegments = 0;
 
   //loop through writing as it becomes available
   while(wtd->keepwriting || writesegment != wtd->fillsegment) {

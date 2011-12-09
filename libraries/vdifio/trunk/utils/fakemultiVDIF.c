@@ -54,7 +54,7 @@ int main(int argc, char **argv)
   char buffer[MAX_VDIF_FRAME_BYTES*2];
   FILE * input;
   FILE * output;
-  int readbytes, framebytes, framemjd, framesecond, framenumber, frameinvalid, datambps, framespersecond;
+  int readbytes, framebytes, datambps, framespersecond;
   int bufferoffset, wrotebytes, wholemissedpackets, extrareadbytes;
   int i, verbose;
   long long framesread, invalidpackets, invalidbytes;
@@ -83,6 +83,7 @@ int main(int argc, char **argv)
   if(input == NULL)
   {
     fprintf(stderr, "Cannot open output file %s\n", argv[2]);
+    fclose(input);
     exit(EXIT_FAILURE);
   }
 
@@ -93,12 +94,10 @@ int main(int argc, char **argv)
   framebytes = getVDIFFrameBytes(buffer);
   if(framebytes > MAX_VDIF_FRAME_BYTES) {
     fprintf(stderr, "Cannot read frame with %d bytes > max (%d)\n", framebytes, MAX_VDIF_FRAME_BYTES);
+    fclose(output);
+    fclose(input);
     exit(EXIT_FAILURE);
   }
-  framemjd = getVDIFFrameMJD(buffer);
-  framesecond = getVDIFFrameSecond(buffer);
-  framenumber = getVDIFFrameNumber(buffer);
-  frameinvalid = getVDIFFrameInvalid(buffer);
   framespersecond = (int)((((long long)datambps)*1000000)/(8*(framebytes-VDIF_HEADER_BYTES)));
   printf("Frames per second is %d\n", framespersecond);
 
@@ -150,10 +149,6 @@ int main(int argc, char **argv)
         break;
       }
     }
-    framemjd = getVDIFFrameMJD(buffer+bufferoffset);
-    framesecond = getVDIFFrameSecond(buffer+bufferoffset);
-    framenumber = getVDIFFrameNumber(buffer+bufferoffset);
-    frameinvalid = getVDIFFrameInvalid(buffer+bufferoffset);
     if(getVDIFFrameBytes(buffer+bufferoffset) != framebytes) {
       fprintf(stderr, "Framebytes has changed (%d)! Can't deal with this, aborting\n", getVDIFFrameBytes(buffer+bufferoffset));
       fprintf(stderr, "Bufferoffset was %d, wholemissedpackets was %d\n", bufferoffset, wholemissedpackets);
@@ -171,6 +166,7 @@ int main(int argc, char **argv)
   }
 
   printf("Read %lld frames, skipped over %lld dodgy packets containing %lld dodgy bytes\n", framesread, invalidpackets, invalidbytes);
+  fclose(output);
   fclose(input);
 
   return EXIT_SUCCESS;

@@ -59,7 +59,6 @@ int main(int argc, char **argv)
   int nextmjd, nextsecond, nextnumber;
   int overwritemjd, overwritesecond, overwritenumber;
   int offsetmjd=0, offsetsecond=0, offsetnumber=0;
-  int packetdropped;
   long long framesread, frameswrote;
 
   if(argc != 4 && argc != 5)
@@ -117,7 +116,6 @@ int main(int argc, char **argv)
   framesread = 0;
   frameswrote = 0;
   while(!feof(input)) {
-    packetdropped = 0;
     readbytes = fread(buffer, 1, framebytes, input); //read the whole VDIF packet
     if (readbytes < framebytes) {
       fprintf(stderr, "Header read failed - probably at end of file.\n");

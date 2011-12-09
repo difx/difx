@@ -57,7 +57,7 @@ int main(int argc, char **argv)
   int readbytes, framebytes, framemjd, framesecond, framenumber, frameinvalid, datambps, framespersecond;
   int nextmjd, nextsecond, nextnumber;
   int overwritemjd, overwritesecond, overwritenumber;
-  int packetdropped, desiredthreadid;
+  int desiredthreadid;
   long long framesread, frameswrote;
 
   if(argc != 5)
@@ -106,7 +106,6 @@ int main(int argc, char **argv)
   framesread = 0;
   frameswrote = 0;
   while(!feof(input)) {
-    packetdropped = 0;
     readbytes = fread(buffer, 1, framebytes, input); //read the whole VDIF packet
     while(getVDIFThreadID(buffer) != desiredthreadid && readbytes == framebytes)
       readbytes = fread(buffer, 1, framebytes, input); //read the whole VDIF packet

@@ -143,7 +143,7 @@ int main(int argc, char **argv)
   int inputthreadmbps, numthreads, readbytes, wrotebytes, numbufferframes, threadbufmultiplier, numthreadbufframes;
   int bitspersample, samplesperframe, framespersecond;
   int inputframebytes, outputframebytes, refframemjd, refframesecond, refframenumber;
-  int outputframecount, minthreadbuffer;
+  int outputframecount;
   char * inputbuffer; // [framebytes * numbufferframes]
   char * outputbuffer; // [framebytes * numbufferframes]
   char ** threadbuffers; // [numthreads][framebytes * numbufferframes]
@@ -155,9 +155,9 @@ int main(int argc, char **argv)
   //long long * currentthreadreadframe; //[numthreads]
   //int * threadlastbufferindex; // [numthreads]
   int * threadindexmap; // [numthreads]
-  int f, i, j, k, l, count, verbose, inputatbit, outputatbit, processindex;
+  int f, i, j, k, l, verbose, processindex;
   unsigned int copyword, activemask;
-  int wordsperinputframe, wordsperoutputframe, samplesperinputword, samplesperoutputword;
+  int wordsperinputframe, samplesperinputword, samplesperoutputword;
   long long processframenumber;
 
   //check the command line arguments, store thread mapping etc
@@ -199,15 +199,31 @@ int main(int argc, char **argv)
   if(input == NULL)
   {
     fprintf(stderr, "Cannot open output file %s\n", argv[2]);
+    fclose(input);
     exit(EXIT_FAILURE);
   }
 
   //peek at the start of the file, work out framebytes and reference time
-  minthreadbuffer = 0;
   readbytes = fread(tempbuffer, 1, VDIF_HEADER_BYTES, input); //read the VDIF header
+  if (readbytes<VDIF_HEADER_BYTES) {
+    
+    if (feof(input)) {
+      fprintf(stderr, "Hit EOF reading first header from %s\n", argv[2]);
+    } else if (ferror(input)) {
+      fprintf(stderr, "Error reading first header from %s\n", argv[2]);
+    } else {
+      fprintf(stderr, "Did not read enough bytes on first header from %s\n", argv[2]);
+    }
+    fclose(input);
+    fclose(output);
+    exit(EXIT_FAILURE);
+  }
+
   inputframebytes = getVDIFFrameBytes(tempbuffer);
   if(inputframebytes > MAX_VDIF_FRAME_BYTES) {
     fprintf(stderr, "Cannot read frame with %d bytes > max (%d)\n", inputframebytes, MAX_VDIF_FRAME_BYTES);
+    fclose(input);
+    fclose(output);
     exit(EXIT_FAILURE);
   }
   outputframebytes = (inputframebytes-VDIF_HEADER_BYTES)*numthreads + VDIF_HEADER_BYTES;
@@ -219,13 +235,14 @@ int main(int argc, char **argv)
   framespersecond = (int)((((long long)inputthreadmbps)*1000000)/(8*(inputframebytes-VDIF_HEADER_BYTES)));
   samplesperframe = ((inputframebytes-VDIF_HEADER_BYTES)*8)/bitspersample;
   wordsperinputframe = (inputframebytes-VDIF_HEADER_BYTES)/4;
-  wordsperoutputframe = wordsperinputframe*numthreads;
   samplesperinputword = samplesperframe/wordsperinputframe;
   samplesperoutputword = samplesperinputword/numthreads;
   printf("Frames per second is %d\n", framespersecond);
   fseek(input, 0, SEEK_SET); //go back to the start
   if(samplesperoutputword == 0) {
     fprintf(stderr, "Too many threads/too high bit resolution - can't fit one complete timestep in a 32 bit word! Aborting\n");
+    fclose(input);
+    fclose(output);
     exit(EXIT_FAILURE);
   }
 
@@ -283,8 +300,6 @@ int main(int argc, char **argv)
         setVDIFThreadID(outputbuffer + outputframecount*outputframebytes, 0);
 
         //loop over all the samples and copy them in
-        inputatbit = 0;
-        outputatbit = 0;
         copyword = 0;
         for(i=0;i<wordsperinputframe;i++) {
           for(j=0;j<numthreads;j++)
@@ -292,7 +307,6 @@ int main(int argc, char **argv)
           for(j=0;j<numthreads;j++) {
             outputword = (unsigned int *)&(outputbuffer[outputframecount*outputframebytes + VDIF_HEADER_BYTES + (i*numthreads + j)*4]);
             copyword = 0;
-            count = 0;
             for(k=0;k<samplesperoutputword;k++) {
               for(l=0;l<numthreads;l++) {
                 copyword |= ((threadwords[l] >> ((j*samplesperoutputword + k)*bitspersample)) & (activemask)) << (k*numthreads + l)*bitspersample;
@@ -328,6 +342,14 @@ int main(int argc, char **argv)
     if(wrotebytes != outputframecount*outputframebytes)
       fprintf(stderr, "Write failed!\n");
   }
+
+  fclose(input);
+  fclose(output);
+
+  free(inputbuffer);
+  free(outputbuffer);
+  free(threadwords);
+  free(threadindexmap);
 
   return EXIT_SUCCESS;
 }
