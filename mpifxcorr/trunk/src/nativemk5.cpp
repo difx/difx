@@ -47,7 +47,7 @@ pthread_t watchdogThread;
 
 void *watchdogFunction(void *data)
 {
-	NativeMk5DataStream *nativeMk5 = (NativeMk5DataStream *)data;
+	NativeMk5DataStream *nativeMk5 = reinterpret_cast<NativeMk5DataStream *>(data);
 	int deltat;
 	int lastdeltat = 0;
 
@@ -219,7 +219,6 @@ NativeMk5DataStream::NativeMk5DataStream(Configuration * conf, int snum,
 {
 	XLR_RETURN_CODE xlrRC;
 	int perr;
-        int v;
 
 	/* each data buffer segment contains an integer number of frames, 
 	 * because thats the way config determines max bytes
@@ -242,7 +241,7 @@ NativeMk5DataStream::NativeMk5DataStream(Configuration * conf, int snum,
 	nError = 0;
 
 #if HAVE_MARK5IPC
-        v = lockMark5(5);
+        int v = lockMark5(5);
         {
                 if(v)
                 {
@@ -382,7 +381,6 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
 {
 	char defaultDirPath[] = ".";
 	double startmjd;
-	double scanstart, scanend;
 	int v, fanout;
 	long long n;
 	int doUpdate = 0;
@@ -510,8 +508,6 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
 			return;
 		}
 		cverbose << startl << "Before scan change: readscan = " << readscan << "  readsec = " << readseconds << "  readns = " << readnanoseconds << endl;
-		scanstart = scanPointer->mjdStart();
-		scanend = scanPointer->mjdEnd();
 		readpointer = scanPointer->start + scanPointer->frameoffset;
 		readseconds = (scanPointer->mjd-corrstartday)*86400 + scanPointer->sec - corrstartseconds + intclockseconds;
 		readnanoseconds = scanPointer->nsStart();
