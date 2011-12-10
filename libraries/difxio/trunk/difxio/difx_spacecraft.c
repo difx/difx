@@ -316,7 +316,7 @@ int evaluateDifxSpacecraft(const DifxSpacecraft *sc, int mjd, double fracMjd,
 
 	if(fabs(t) > 0.01 && fabs(t-1) > 0.01)
 	{
-		fprintf(stderr, "WARNING: potentially unhealthy interpolation of state vector occuring\n");
+		fprintf(stderr, "WARNING: potentially unhealthy interpolation of state vector occurring\n");
 	}
 
 	xPoly[0] = pos[r0].X;

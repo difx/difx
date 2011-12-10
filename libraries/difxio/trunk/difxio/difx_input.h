@@ -358,6 +358,10 @@ typedef struct
 	double delay[MAX_MODEL_ORDER+1];	/* (us/sec^n); n=[0, order] */
 	double dry[MAX_MODEL_ORDER+1];		/* (us/sec^n) */
 	double wet[MAX_MODEL_ORDER+1];		/* (us/sec^n) */
+	double az[MAX_MODEL_ORDER+1];		/* azimuth (deg) */
+	double elcorr[MAX_MODEL_ORDER+1];	/* el (corrected for refraction; i.e., the one used for pointing) (deg) */
+	double elgeom[MAX_MODEL_ORDER+1];	/* el (uncorrected for refraction) (deg) */
+	double parangle[MAX_MODEL_ORDER+1];	/* parallactic angle (deg) */
 	double u[MAX_MODEL_ORDER+1];		/* (m/sec^n) */
 	double v[MAX_MODEL_ORDER+1];		/* (m/sec^n) */
 	double w[MAX_MODEL_ORDER+1];		/* (m/sec^n) */

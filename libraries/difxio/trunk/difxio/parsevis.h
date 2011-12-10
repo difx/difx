@@ -81,7 +81,7 @@ void deleteDifxVisRecord(DifxVisRecord *vis);
 /* load next vis record  return -1 if eof */
 int DifxVisRecordgetnext(DifxVisRecord *vis);
 
-/* find next occurence of given parameters */
+/* find next occurrence of given parameters */
 int DifxVisRecordfindnext(DifxVisRecord *vis, int baseline, int freqid,
 	const char *pol);
 

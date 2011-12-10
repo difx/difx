@@ -2273,7 +2273,7 @@ static DifxInput *parseCalcServerInfo(DifxInput *D, DifxParameters *p)
 	return D;
 }
 
-int parsePoly1(DifxParameters *p, int r, char *key, int i1, int i2, double *array, int n)
+static int parsePoly1(DifxParameters *p, int r, char *key, int i1, int i2, double *array, int n)
 {
 	const char *v;
 	int i, l, m;
@@ -2439,18 +2439,36 @@ static DifxInput *populateIM(DifxInput *D, DifxParameters *mp)
 					scan->im[a][src][p].sec = sec;
 					scan->im[a][src][p].order = order;
 					scan->im[a][src][p].validDuration = interval;
-					r = parsePoly1(mp, r, "SRC %d ANT %d DELAY (us)", 
-						src, t, scan->im[a][src][p].delay, order+1);
-					r = parsePoly1(mp, r, "SRC %d ANT %d DRY (us)", src,
-						t, scan->im[a][src][p].dry, order+1);
-					r = parsePoly1(mp, r, "SRC %d ANT %d WET (us)", src,
-						t, scan->im[a][src][p].wet, order+1);
-					r = parsePoly1(mp, r, "SRC %d ANT %d U (m)", src,
-						t, scan->im[a][src][p].u, order+1);
-					r = parsePoly1(mp, r, "SRC %d ANT %d V (m)", src,
-						t, scan->im[a][src][p].v, order+1);
-					r = parsePoly1(mp, r, "SRC %d ANT %d W (m)", src,
-						t, scan->im[a][src][p].w, order+1);
+					r = parsePoly1(mp, r, "SRC %d ANT %d DELAY (us)", src, t, scan->im[a][src][p].delay, order+1);
+					if(r < 0)
+					{
+						fprintf(stderr, "Error: populateIM: Could not find SRC %d ANT %d DELAY (us)\n", src, t);
+						
+						return 0;
+					}
+					/* don't require the following 6 parameters, so don't adjust r when reading them */
+					    parsePoly1(mp, r, "SRC %d ANT %d DRY (us)", src, t, scan->im[a][src][p].dry, order+1);
+					    parsePoly1(mp, r, "SRC %d ANT %d WET (us)", src, t, scan->im[a][src][p].wet, order+1);
+					    parsePoly1(mp, r, "SRC %d ANT %d AZ", src, t, scan->im[a][src][p].az, order+1);
+					    parsePoly1(mp, r, "SRC %d ANT %d EL CORR", src, t, scan->im[a][src][p].elcorr, order+1);
+					    parsePoly1(mp, r, "SRC %d ANT %d EL GEOM", src, t, scan->im[a][src][p].elgeom, order+1);
+					    parsePoly1(mp, r, "SRC %d ANT %d PAR ANGLE", src, t, scan->im[a][src][p].parangle, order+1);
+					/* the next three again are required */
+					r = parsePoly1(mp, r, "SRC %d ANT %d U (m)", src, t, scan->im[a][src][p].u, order+1);
+					if(r < 0)
+					{
+						fprintf(stderr, "Error: populateIM: Could not find SRC %d ANT %d U (m)\n", src, t);
+						
+						return 0;
+					}
+					r = parsePoly1(mp, r, "SRC %d ANT %d V (m)", src, t, scan->im[a][src][p].v, order+1);
+					if(r < 0)
+					{
+						fprintf(stderr, "Error: populateIM: Could not find SRC %d ANT %d V (m)\n", src, t);
+						
+						return 0;
+					}
+					r = parsePoly1(mp, r, "SRC %d ANT %d W (m)", src, t, scan->im[a][src][p].w, order+1);
 					if(r < 0)
 					{
 						fprintf(stderr, "Error: populateIM: Could not find SRC %d ANT %d W (m)\n", src, t);
