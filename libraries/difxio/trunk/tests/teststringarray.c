@@ -29,6 +29,7 @@
 
 #include <stdio.h>
 #include <math.h>
+#include <stdlib.h>
 #include "difxio/parsedifx.h"
 #include "difxio/difx_write.h"
 
@@ -74,5 +75,5 @@ int main()
 
 	fclose(out);
 
-	return 0;
+	return EXIT_SUCCESS;
 }

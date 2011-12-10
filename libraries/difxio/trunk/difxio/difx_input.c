@@ -2926,6 +2926,7 @@ DifxInput *updateDifxInput(DifxInput *D)
 	return D;
 }
 
+#warning "FIXME: really should use full filename and not require .input to be amputated"
 DifxInput *loadDifxInput(const char *filePrefix)
 {
 	DifxParameters *ip, *cp, *mp;

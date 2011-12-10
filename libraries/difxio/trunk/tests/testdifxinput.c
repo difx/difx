@@ -29,7 +29,19 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include "difxio/difx_input.h"
+
+const char program[] = "testdifxinput";
+const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
+const char version[] = "1.0";
+const char verdate[] = "20111210";
+
+void usage()
+{
+	printf("%s  ver. %s  %s  %s\n\n", program, version, author, verdate);
+	printf("Usage : %s <inputfilebase> ...\n\n", program);
+}
 
 int main(int argc, char **argv)
 {
@@ -37,22 +49,33 @@ int main(int argc, char **argv)
 	int a;
 	int verbose = 0;
 	int mergable, compatible;
+	int nJob = 0;
 	
-	if(argc < 2)
+	for(a = 1; a < argc; ++a)
 	{
-		printf("Usage : %s <inputfilebase> ...\n", argv[0]);
-		return 0;
-	}
-	
-	for(a = 1; a < argc; a++)
-	{
-		if(strcmp(argv[a], "-v") == 0 ||
-		   strcmp(argv[a], "--verbose") == 0)
+		if(argv[a][0] == '-')
 		{
-			verbose++;
-			continue;
+			if(strcmp(argv[a], "-v") == 0 ||
+			   strcmp(argv[a], "--verbose") == 0)
+			{
+				++verbose;
+				continue;
+			}
+			else if(strcmp(argv[a], "-h") == 0 ||
+			   strcmp(argv[a], "--help") == 0)
+			{
+				usage();
+
+				exit(EXIT_SUCCESS);
+			}
+			else
+			{
+				fprintf(stderr, "Unknown option %s\n", argv[a]);
+
+				exit(EXIT_FAILURE);
+			}
 		}
-		if(D == 0)
+		else if(D == 0)
 		{
 			D = loadDifxInput(argv[a]);
 		}
@@ -74,8 +97,7 @@ int main(int argc, char **argv)
 				}
 				else
 				{
-					printf("cannot merge jobs: mergable=%d compatible=%d\n",
-						mergable, compatible);
+					printf("cannot merge job %s: mergable=%d compatible=%d\n", argv[a], mergable, compatible);
 					deleteDifxInput(D1);
 					deleteDifxInput(D2);
 					D = 0;
@@ -89,16 +111,29 @@ int main(int argc, char **argv)
 		}
 		if(!D)
 		{
-			fprintf(stderr, "D == 0.  quitting\n");
-			return 0;
+			fprintf(stderr, "File %s -> D == 0.  Quitting\n", argv[a]);
+
+			return EXIT_FAILURE;
 		}
+		else
+		{
+			++nJob;
+		}
+	}
+
+	if(nJob == 0)
+	{
+		printf("Nothing to do!  Quitting.\n");
+
+		return EXIT_SUCCESS;
 	}
 
 	D = updateDifxInput(D);
 	if(!D)
 	{
-		fprintf(stderr, "update failed: D == 0.  quitting\n");
-		return 0;
+		fprintf(stderr, "Update failed: D == 0.  Quitting\n");
+		
+		return EXIT_FAILURE;
 	}
 
 	strcpy(D->job->inputFile, "input.test");
@@ -111,8 +146,11 @@ int main(int argc, char **argv)
 
 	writeDifxCalc(D);
 	writeDifxInput(D);
+	writeDifxIM(D);
 
 	deleteDifxInput(D);
 
-	return 0;
+	printf("\nIt seems %d job(s) tested successfully.\n", nJob);
+
+	return EXIT_SUCCESS;
 }
