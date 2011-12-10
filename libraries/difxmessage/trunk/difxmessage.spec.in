@@ -1,11 +1,12 @@
 Summary: DiFX library for sending and receiving multicast messages
 Name: difxmessage
 Version: @version@
-Release: 3
+Release: 5
 License: GPL3
 Group: VLBI
 BuildRoot: /var/tmp/difxmessage-@version@-buildroot
 Requires: gcc >= 4.1.0, expat
+Requires: expat
 Prefix: /usr
 Source: difxmessage-@version@.tar.gz
 

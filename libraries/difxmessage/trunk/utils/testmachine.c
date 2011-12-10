@@ -21,7 +21,7 @@ int pingtest(const char *hostname)
 	{
 		fgets(msg, MaxMessageLength, p);
 	}
-	fclose(p);
+	pclose(p);
 
 	if(strncmp(msg, "rtt", 3) == 0)
 	{

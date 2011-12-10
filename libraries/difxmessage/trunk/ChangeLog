@@ -9,6 +9,9 @@ Change Condition message type to DriveStats
 Add dispersion measure to transient message
 Fix parsing of Mark5 version messages and include a couple extra parameters
 Add support for "restartSeconds" to DifxStartMessage
+Add options for different start "functions"
+Add support for diagnostic messages
+Add support for file request
 
 Version 2.0.1
 ~~~~~~~~~~~~~
