@@ -33,7 +33,7 @@ int main(int argc, char **argv)
 	int numprocs, rank, namelen;
 	char processor_name[MPI_MAX_PROCESSOR_NAME];
 	char *buffer;
-	const int BufferSize = 1<<26;
+	const long long BufferSize = 1<<26;
 	const int NumSends = 256;
 	time_t t0;
 	float dt;
@@ -84,11 +84,10 @@ int main(int argc, char **argv)
 
 	if(rank == 0)
 	{
-		printf("Total memory transfered = %Ld bytes in %1.0f seconds\n", 
-			(long long)NumSends * (long long)BufferSize, dt);
+		printf("Total memory transfered = %Ld bytes in %1.0f seconds\n", NumSends*BufferSize, dt);
 	
-		printf("Transfer rate was %f Mbps\n", ((long long)NumSends * (long long)BufferSize)*8.0/1000000.0/dt);
+		printf("Transfer rate was %f Mbps\n", NumSends*BufferSize*8.0/1000000.0/dt);
 	}
 
-	return 0;
+	return EXIT_SUCCESS;
 }
