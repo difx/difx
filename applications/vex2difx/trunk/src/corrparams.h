@@ -109,12 +109,24 @@ public:
 	bool correlateparent;
 };
 
+class GlobalZoom
+{
+public:
+	GlobalZoom(const string name) { difxName = name; }
+	int setkv(const string &key, const string &value, ZoomFreq * zoomFreq);
+	int setkv(const string &key, const string &value);
+
+	string difxName;	// Name in .v2d file of this global zoom band set
+	vector<ZoomFreq> zoomFreqs;
+};
+
 class AntennaSetup
 {
 public:
 	AntennaSetup(const string &name);
 	int setkv(const string &key, const string &value);
 	int setkv(const string &key, const string &value, ZoomFreq * zoomFreq);
+	void copyGlobalZoom(const GlobalZoom &globalZoom);
 
 	string vexName;		// Antenna name as it appears in vex file
 	string difxName;	// Antenna name (if different) to appear in difx
@@ -141,7 +153,10 @@ public:
 	enum ToneSelection toneSelection;	// Which tones to propagate to FITS
 	double toneGuardMHz;	// to avoid getting tones too close to band edges; default = bandwidth/8
 	int tcalFrequency;	// Hz (= 80 for VLBA)
+
+	// No more than one of the following can be used at a time:
 	vector<ZoomFreq> zoomFreqs;//List of zoom freqs to add for this antenna
+	string globalZoom;	// A reference to a global zoom table
 };
 
 class CorrSetup
@@ -152,36 +167,36 @@ public:
 	bool correlateFreqId(int freqId) const;
 	double bytesPerSecPerBLPerBand() const;
 	int checkValidity() const;
-	void setRecordedBandwidths(double min, double max) { minRecordedBandwidth = min; maxRecordedBandwidth = max; }
-	int minInputChans() const { return static_cast<int>(minRecordedBandwidth / FFTSpecRes + 0.5); }
-	int maxInputChans() const { return static_cast<int>(maxRecordedBandwidth / FFTSpecRes + 0.5); }
-	int minOutputChans() const { return static_cast<int>(minRecordedBandwidth / outputSpecRes + 0.5); }
-	int maxOutputChans() const { return static_cast<int>(maxRecordedBandwidth / outputSpecRes + 0.5); }
-//	int fftSize() const;
-//	int nInputChan() const;
 
 	double getMinRecordedBandwidth() const { return minRecordedBandwidth; }
 	double getMaxRecordedBandwidth() const { return maxRecordedBandwidth; }
-	void setMinRecordedBandwidth(double bw) { minRecordedBandwidth = bw; }
-	void setMaxRecordedBandwidth(double bw) { maxRecordedBandwidth = bw; }
+	void addRecordedBandwidth(double bw);
+	int nInputChans(double bw) const { return static_cast<int>(bw / FFTSpecRes + 0.5); }
+	int nOutputChans(double bw) const { return static_cast<int>(bw / outputSpecRes + 0.5); }
+	int minInputChans() const { return static_cast<int>(getMinRecordedBandwidth() / FFTSpecRes + 0.5); }
+	int maxInputChans() const { return static_cast<int>(getMaxRecordedBandwidth() / FFTSpecRes + 0.5); }
+	int minOutputChans() const { return static_cast<int>(getMinRecordedBandwidth() / outputSpecRes + 0.5); }
+	int maxOutputChans() const { return static_cast<int>(getMaxRecordedBandwidth() / outputSpecRes + 0.5); }
+	int testSpectralResolution() const;
+	int testXMACLength() const;
+	int testStrideLength() const;
+	int specAvg() const;
+
 
 	string corrSetupName;
 
 	bool explicitXmacLength;// Whether the xmacLength parameter was explicitly set
-	//bool explicitnFFTChan;	// Whether the nFFTChan parameter was explicitly set
 	bool explicitFFTSpecRes;// Whether .v2d set the resolution of FFTs
+	bool explicitOutputSpecRes; // Whether .v2d set the output resolution
 	bool explicitGuardNS;	// Whether the guardNS parameter was explicitly set
 	double tInt;		// integration time
 	bool doPolar;		// false for no cross pol, true for full pol
 	bool doAuto;		// write autocorrelations
 	int subintNS;		// Duration of a subintegration in nanoseconds
 	int guardNS;		// Number of "guard" ns tacked on to end of a send
-	//int nFFTChan;		// Pre-averaged number of channels for the narrowest band
-	//int nOutputChan;	// Post-averaged number of channels for the narrowest band 
-				// (all others will have same spectral resolution)
-	int specAvgDontUse;	// This parameter is depricated now.  Use nChan and nFFTChan instead
 	double FFTSpecRes;	// Hz; resolution of initial FFTs
 	double outputSpecRes;	// Hz; resolution of averaged output FFTs
+	double suppliedSpecAvg;	// specAvg supplied by .v2d file
 	int nFFTChan;		// This and the next parameter can be used to override the above two if all channels are the same width
 	int nOutputChan;	//
 	int maxNSBetweenUVShifts; //Mostly for multi-phase centres
@@ -197,9 +212,9 @@ public:
 private:
 	void addFreqId(int freqId);
 
-	// replace with vector<> so CorrSetup::checkValidity() can do the right thing!
-	double minRecordedBandwidth;	// Hz
-	double maxRecordedBandwidth;	// Hz
+	set<double> recordedBandwidths;	// Hz; list of all unique recorded bandwidths using this setup
+	double minRecordedBandwidth;	// Hz; cached by addRecordedBandwidth
+	double maxRecordedBandwidth;	// Hz; ""
 };
 
 
@@ -250,6 +265,7 @@ public:
 	const SourceSetup *getSourceSetup(const vector<string> &names) const;
 	const PhaseCentre *getPhaseCentre(const string &difxname) const;
 	const AntennaSetup *getAntennaSetup(const string &name) const;
+	const GlobalZoom *getGlobalZoom(const string &name) const;
 	const VexClock *getAntennaClock(const string &antName) const;
 
 	const string &findSetup(const string &scan, const string &source, const string &mode, char cal, int qual) const;
@@ -303,6 +319,9 @@ public:
 
 	/* rules to determine which setups to apply */
 	vector<CorrRule> rules;
+
+	/* global zoom bands (referenced from a setup; applies to all antennas) */
+	vector<GlobalZoom> globalZooms;
 
 	enum V2D_Mode v2dMode;
 

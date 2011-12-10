@@ -1562,7 +1562,7 @@ static int getExper(VexData *V, Vex *v, const CorrParams &params)
 }
 
 // Note: this is approximate, assumes all polarizations matched and no IFs being selected out
-void calculateScanSizes(VexData *V, const CorrParams &P)
+static void calculateScanSizes(VexData *V, const CorrParams &P)
 {
 	int nScan, nSubband, nBaseline;
 	const VexScan *scan;

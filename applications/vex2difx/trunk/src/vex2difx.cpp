@@ -728,16 +728,17 @@ static int getFreqId(vector<freq>& freqs, double fq, double bw, char sb, int isr
 {
 	for(vector<freq>::const_iterator it = freqs.begin(); it != freqs.end(); ++it)
 	{
-		if(fq == it->fq &&
-		   bw == it->bw &&
-		   sb == it->sideBand &&
-		   isr== it->inputSpecRes &&
-		   osr== it->outputSpecRes &&
-		   os == it->overSamp &&
-		   d  == it->decimation &&
-		   iz == it->isZoomFreq &&
-		   t  == it->toneSetId)
+		if(fq  == it->fq &&
+		   bw  == it->bw &&
+		   sb  == it->sideBand &&
+		   isr == it->inputSpecRes &&
+		   osr == it->outputSpecRes &&
+		   os  == it->overSamp &&
+		   d   == it->decimation &&
+		   iz  == it->isZoomFreq &&
+		   t   == it->toneSetId)
 		{
+			// use iterator math to get index
 			return it - freqs.begin();
 		}
 	}
@@ -1181,6 +1182,24 @@ static void populateBaselineTable(DifxInput *D, const CorrParams *P, const CorrS
 		}
 		else // Not profile mode
 		{
+			// Beware those who try to follow the logic below!
+			// Its actually not to tricky.  There are 8 cases of matching between 
+			// sub-bands to consider.
+			// First all antenna 1 recorded bands to be correlated are considered.  Pairing
+			// with sub-bands from antenna 2 is done with the following priority:
+			// 1. a recorded band with same sideband
+			// 2. a recorded band with opposite sideband
+			// 3. a zoom band with same sideband
+			// 4. a zoom band with opposite sideband
+			//
+			// Further down, the antenna 1 zoom bands are considered with priority
+			// 5. a recorded band with same sideband
+			// 6. a recorded band with opposite sideband
+			// 7. a zoom band with same sideband
+			// 8. a zoom band with opposite sideband
+
+			// Needless to say, this logic can probably be simplified some, but it seems to work!
+
 			for(int a1 = 0; a1 < config->nDatastream-1; ++a1)
 			{
 				for(int a2 = a1+1; a2 < config->nDatastream; ++a2)
@@ -1202,7 +1221,7 @@ static void populateBaselineTable(DifxInput *D, const CorrParams *P, const CorrS
 					// Note: eventually we need to loop over all datastreams associated with this antenna!
 					for(int f = 0; f < D->datastream[a1].nRecFreq; ++f)
 					{
-						bool zoom2 = false;
+						bool zoom2 = false;	// did antenna 2 zoom band make match? 
 
 						freqId = D->datastream[a1].recFreqId[f];
 
@@ -1314,7 +1333,7 @@ static void populateBaselineTable(DifxInput *D, const CorrParams *P, const CorrS
 
 					for(int f = 0; f < D->datastream[a1].nZoomFreq; ++f)
 					{
-						bool zoom2 = false;
+						bool zoom2 = false;	// did antenna 2 zoom band make match? 
 
 						freqId = D->datastream[a1].zoomFreqId[f];
 
@@ -2911,18 +2930,10 @@ int main(int argc, char **argv)
 			const VexFormat *format = mode->getFormat(sp->first);
 			for(vector<VexChannel>::const_iterator cp = format->channels.begin(); cp != format->channels.end(); ++cp)
 			{
-				if(cp->bbcBandwidth < corrSetup->getMinRecordedBandwidth() || corrSetup->getMinRecordedBandwidth() == 0.0)
-				{
-					corrSetup->setMinRecordedBandwidth(cp->bbcBandwidth);
-				}
-				if(cp->bbcBandwidth > corrSetup->getMaxRecordedBandwidth())
-				{
-					corrSetup->setMaxRecordedBandwidth(cp->bbcBandwidth);
-				}
+				corrSetup->addRecordedBandwidth(cp->bbcBandwidth);
 			}
 		}
 	}
-
 	
 	nWarn += P->sanityCheck();
 	nWarn += V->sanityCheck();

@@ -304,7 +304,7 @@ int loadBasebandFilelist(const string &fileName, vector<VexBasebandFile> &baseba
 CorrSetup::CorrSetup(const string &name) : corrSetupName(name)
 {
 	tInt = 2.0;
-	specAvgDontUse = 0;		// If set, this will trigger a bail out condition with useful message
+	suppliedSpecAvg = 0;
 	FFTSpecRes = 250000.0;		// Hz; spectral resolution at FFT stage
 	outputSpecRes = 500000.0;	// Hz; spectral resolution in Output
 	nFFTChan = 0;			// If this or nOutputChan != 0, these override SpecAvg params
@@ -316,6 +316,7 @@ CorrSetup::CorrSetup(const string &name) : corrSetupName(name)
 	xmacLength = 0;
 	explicitXmacLength = false;
 	explicitFFTSpecRes = false;
+	explicitOutputSpecRes = false;
 	explicitGuardNS = false;
 	numBufferedFFTs = 10;
 	subintNS = 0;
@@ -323,7 +324,20 @@ CorrSetup::CorrSetup(const string &name) : corrSetupName(name)
 	maxNSBetweenUVShifts = 2000000000;
 	maxNSBetweenACAvg = 0;		// zero means set to default in vex2difx.cpp
 	minRecordedBandwidth = 0.0;
-	maxRecordedBandwidth = 0.0;	
+	maxRecordedBandwidth = 0.0;
+}
+
+void CorrSetup::addRecordedBandwidth(double bw)
+{
+	recordedBandwidths.insert(bw);
+	if(bw < minRecordedBandwidth || minRecordedBandwidth == 0.0)
+	{
+		minRecordedBandwidth = bw;
+	}
+	if(bw > maxRecordedBandwidth)
+	{
+		maxRecordedBandwidth = bw;
+	}
 }
 
 int CorrSetup::setkv(const string &key, const string &value)
@@ -357,6 +371,7 @@ int CorrSetup::setkv(const string &key, const string &value)
 	{
 		ss >> outputSpecRes;
 		outputSpecRes *= 1e6;	// Users use MHz, vex2difx uses Hz
+		explicitOutputSpecRes = true;
 	}
 	else if(key == "FFTSpecRes")
 	{
@@ -391,7 +406,7 @@ int CorrSetup::setkv(const string &key, const string &value)
 	}
 	else if(key == "specAvg")
 	{
-		ss >> specAvgDontUse;
+		ss >> suppliedSpecAvg;
 	}
 	else if(key == "fringeRotOrder")
 	{
@@ -486,73 +501,98 @@ bool CorrSetup::correlateFreqId(int freqId) const
 	}
 }
 
+// Returns ratio of output to input spectral resolution
+int CorrSetup::specAvg() const
+{
+	double x = outputSpecRes / FFTSpecRes;
+	int n = static_cast<int>(x + 0.5);
+
+	if(fabs(x - n) > 0.0001)
+	{
+		n = -1;	// Signal illegal averaging
+	}
+	
+	return n;
+}
+
+int CorrSetup::testSpectralResolution() const
+{
+	int nError = 0;
+
+	for(set<double>::const_iterator it = recordedBandwidths.begin(); it != recordedBandwidths.end(); ++it)
+	{
+		double x = *it/FFTSpecRes;
+		if(fabs(x - static_cast<int>(x + 0.5)) > 0.0001)
+		{
+			cerr << "Error: FFT spectral resolution (" << (FFTSpecRes*1.0e-6) << " MHz) does not divide nicely into sub-band bandwidth (" << (*it*1.0e-6) << " MHz)" << endl;
+			
+			++nError;
+		}
+	}
+
+	return nError;
+}
+
+int CorrSetup::testXMACLength() const
+{
+	int nWarn = 0;
+
+	if(xmacLength > 0)
+	{
+		for(set<double>::const_iterator it = recordedBandwidths.begin(); it != recordedBandwidths.end(); ++it)
+		{
+			if(nInputChans(*it) % xmacLength != 0)
+			{
+				cerr << "Warning: XMAC length " << xmacLength << " does not divide evenly into " << minInputChans() << " which are requested for sub-bands with bandwidth " << (*it * 1.0e-6) << " MHz" << endl;
+				cerr << "Probably you need to reduce the xmacLength parameter" << endl;
+
+				++nWarn;
+			}
+		}
+	}
+
+	return nWarn;
+}
+
+int CorrSetup::testStrideLength() const
+{
+	int nWarn = 0;
+
+	if(xmacLength > 0)
+	{
+		for(set<double>::const_iterator it = recordedBandwidths.begin(); it != recordedBandwidths.end(); ++it)
+		{
+			if(nInputChans(*it) % strideLength != 0)
+			{
+				cerr << "Warning: stride length " << strideLength << " does not divide evenly into " << minInputChans() << " which are requested for sub-bands with bandwidth " << (*it * 1.0e-6) << " MHz" << endl;
+				cerr << "Probably you need to reduce the strideLength parameter" << endl;
+				++nWarn;
+			}
+		}
+	}
+
+	return nWarn;
+}
+
 int CorrSetup::checkValidity() const
 {
 	int nWarn = 0;
-	double x;
 
-	x = getMinRecordedBandwidth()/FFTSpecRes;
-	if(fabs(x - static_cast<int>(x + 0.5)) > 0.0001)
-	{
-		cerr << "Error: FFT spectral resolution (" << (FFTSpecRes*1.0e-6) << " MHz) does not divide nicely into sub-band bandwidth (" << (getMinRecordedBandwidth()*1.0e-6) << " MHz)" << endl;
-		
-		exit(EXIT_FAILURE);
-	}
-
-	if(minInputChans() < strideLength)
-	{
-		cerr << "Warning: Array stride length " << strideLength << " is greater than the minimum number of FFT channels " << minInputChans() << " as inferred from the requested FFT spectral resolution." << endl;
-		cerr << "Probably you need to reduce the strideLength parameter" << endl;
-		++nWarn;
-	}
-
-#warning "FIXME: really should check that all record channel bandwidths meet this criterion (ALMA!)"
-	if(strideLength > 0 && minInputChans() % strideLength != 0)
-	{
-		cerr << "Warning: Array stride length " << strideLength << " does not divide evenly into input number of channels " << minInputChans() << endl;
-		cerr << "Probably you need to reduce the strideLength parameter" << endl;
-		++nWarn;
-	}
-
-	if(minInputChans() < xmacLength)
-	{
-		cerr << "Warning: XMAC stride length " << xmacLength << " is greater than the minimum number of FFT channels " << minInputChans() << " as inferred from the requested FFT spectral resolution." << endl;
-		cerr << "Probably you need to reduce the xmacLength parameter" << endl;
-		++nWarn;
-	}
-
-	if(specAvgDontUse != 0)
-	{
-		cerr << "Error: Parameter specAvg is no longer supported starting with DiFX 2.0.1.  Instead use combinations of FFTSpecRes and specRes to achieve your goals.  In simple cases you can still use combinations of nChan and nFFTChan instead." << endl;
-		if(specAvgDontUse == 1)
-		{
-			cerr << "For cases like this where the desired specAvg parameter is 1, please instead set nFFTChan to be the same as nChan (which is " << nOutputChan << " in this case" << endl;
-		}
-		else
-		{
-			cerr << "If you meant nChan to be the number of output channels (after spectral averaging), then you should set nFFTChan=" << nOutputChan*specAvgDontUse << " and nChan=" << nOutputChan << "; if you meant for nChan to be the number of input channels (before spectral averaging), then you should set nFFTChan=" << nOutputChan << " and nChan=" << nOutputChan/specAvgDontUse << endl;
-		}
-		
-		exit(EXIT_FAILURE);
-	}
-
-	if(maxInputChans() % maxOutputChans() != 0)
+	if(specAvg() < 0)
 	{
 		cerr << "Error: The FFT Spectral Resolution ( " << FFTSpecRes << " Hz) must be an integral multiple of the Output Spectral Resolution (" << outputSpecRes << " Hz)" << endl;
 
 		exit(EXIT_FAILURE);
 	}
 
-#warning "FIXME: really should check that all record channel bandwidths meet this criterion (ALMA!)"
-	if(xmacLength > 0)
+	if(testSpectralResolution() > 0)
 	{
-		if(minInputChans() % xmacLength != 0)
-		{
-			cerr << "XMAC stride length " << xmacLength << " does not divide evenly into minimum number input number of channels " << minInputChans() << endl;
-			cerr << "Probably you need to reduce the xmacLength parameter" << endl;
-			++nWarn;
-		}
+		exit(EXIT_FAILURE);
 	}
+
+	nWarn += testXMACLength();
+
+	nWarn += testStrideLength();
 
 	return nWarn;
 }
@@ -802,10 +842,10 @@ AntennaSetup::AntennaSetup(const string &name) : vexName(name)
 	toneSelection = ToneSelectionSmart;
 	tcalFrequency = -1;
 	dataSource = DataSourceNone;
-	dataSampling = NumSamplingTypes;	/* flag that no sampling is is identified here */
+	dataSampling = NumSamplingTypes;	// flag that no sampling is is identified here
 }
 
-int AntennaSetup::setkv(const string &key, const string &value, ZoomFreq * zoomFreq)
+int AntennaSetup::setkv(const string &key, const string &value, ZoomFreq *zoomFreq)
 {
 	int nWarn = 0;
 
@@ -820,9 +860,13 @@ int AntennaSetup::setkv(const string &key, const string &value, ZoomFreq * zoomF
 	else if(key == "noparent" || key == "NOPARENT")
         {
 		if(value == "TRUE" || value == "True" || value == "true")
+		{
 	                zoomFreq->correlateparent = false;
+		}
 		else
+		{
 			zoomFreq->correlateparent = true;
+		}
         }
 	else if(key == "specAvg" || key == "SPECAVG" || key == "specavg")
         {
@@ -1127,8 +1171,25 @@ int AntennaSetup::setkv(const string &key, const string &value)
 		ss >> d;
 		loOffsets.push_back(d);
 	}
+	else if(key == "zoom")
+	{
+		if(!zoomFreqs.empty())
+		{
+			cerr << "Error: cannot specify both ANTENNA-based and ZOOM-based zoom freqs for an antenna" << endl;
+
+			exit(EXIT_FAILURE);
+		}
+		ss >> globalZoom;
+	}
 	else if(key == "addZoomFreq")
 	{
+		if(!globalZoom.empty())
+		{
+			cerr << "Error: cannot specify both ANTENNA-based and ZOOM-based zoom freqs for an antenna" << endl;
+
+			exit(EXIT_FAILURE);
+		}
+
 		// This is a bit tricky.  All parameters must be together, with @ replacing =, and separated by /
                 // e.g., addZoomFreq = freq@1649.99/bw@1.0/correlateparent@TRUE/specAvg@8
 		// only freq and bw are compulsory; default is parent values and don't correlate parent
@@ -1148,6 +1209,87 @@ int AntennaSetup::setkv(const string &key, const string &value)
 	else
 	{
 		cerr << "Warning: ANTENNA: Unknown parameter '" << key << "'." << endl; 
+		++nWarn;
+	}
+
+	return nWarn;
+}
+
+void AntennaSetup::copyGlobalZoom(const GlobalZoom &globalZoom)
+{
+	for(vector<ZoomFreq>::const_iterator it = globalZoom.zoomFreqs.begin(); it != globalZoom.zoomFreqs.end(); ++it)
+	{
+		zoomFreqs.push_back(*it);
+	}
+}
+
+int GlobalZoom::setkv(const string &key, const string &value, ZoomFreq *zoomFreq)
+{
+	int nWarn = 0;
+
+	if(key == "freq" || key == "FREQ")
+        {
+                zoomFreq->frequency = atof(value.c_str())*1000000; //convert to Hz
+        }
+	else if(key == "bw" || key == "BW")
+        {
+                zoomFreq->bandwidth = atof(value.c_str())*1000000; //convert to Hz
+        }
+	else if(key == "noparent" || key == "NOPARENT")
+        {
+		if(value == "TRUE" || value == "True" || value == "true")
+		{
+	                zoomFreq->correlateparent = false;
+		}
+		else
+		{
+			cerr << "Warning: Currently correlation of rec bands that are parents to globally defined zoom bands is not supported.  Results will be unpredictable." << endl;
+			++nWarn;
+
+			zoomFreq->correlateparent = true;
+		}
+        }
+	else if(key == "specAvg" || key == "SPECAVG" || key == "specavg")
+        {
+                zoomFreq->spectralaverage = atoi(value.c_str());
+        }
+	else
+	{
+		cerr << "Warning: ZOOM: Unknown parameter '" << key << "'." << endl; 
+		++nWarn;
+	}
+
+	return nWarn;
+	
+}
+
+int GlobalZoom::setkv(const string &key, const string &value)
+{
+	int nWarn = 0;
+
+	if(key == "addZoomFreq" || key == "zoom" || key == "zoomFreq")
+	{
+		// This is a bit tricky.  All parameters must be together, with @ replacing =, and separated by /
+                // e.g., addZoomFreq = freq@1649.99/bw@1.0/correlateparent@TRUE/specAvg@8
+		// only freq and bw are compulsory; default is parent values and don't correlate parent
+                zoomFreqs.push_back(ZoomFreq());
+                ZoomFreq * newfreq = &(zoomFreqs.back());
+                string::size_type last = 0;
+                string::size_type at = 0;
+		string::size_type splitat = 0;
+        	string nestedkeyval;
+                while(at != string::npos)
+                {
+                        at = value.find_first_of('/', last);
+                        nestedkeyval = value.substr(last, at-last);
+                        splitat = nestedkeyval.find_first_of('@');
+                        nWarn += setkv(nestedkeyval.substr(0,splitat), nestedkeyval.substr(splitat+1), newfreq);
+                        last = at+1;
+                }
+	}
+	else
+	{
+		cerr << "Warning: ZOOM: Unknown parameter '" << key << "'." << endl; 
 		++nWarn;
 	}
 
@@ -1477,6 +1619,7 @@ int CorrParams::load(const string &fileName)
 		PARSE_MODE_RULE,
 		PARSE_MODE_SOURCE,
 		PARSE_MODE_ANTENNA,
+		PARSE_MODE_GLOBAL_ZOOM,
 		PARSE_MODE_EOP
 	};
 
@@ -1489,6 +1632,7 @@ int CorrParams::load(const string &fileName)
 	CorrRule    *rule=0;
 	SourceSetup *sourceSetup=0;
 	AntennaSetup *antennaSetup=0;
+	GlobalZoom  *globalZoom=0;
 	VexEOP       *eop=0;
 	Parse_Mode parseMode = PARSE_MODE_GLOBAL;
 	int nWarn = 0;
@@ -1640,6 +1784,28 @@ int CorrParams::load(const string &fileName)
 			key = "";
 			parseMode = PARSE_MODE_ANTENNA;
 		}
+		else if(*i == "ZOOM")
+		{
+			if(parseMode != PARSE_MODE_GLOBAL)
+			{
+				cerr << "Error: ZOOM out of place." << endl;
+				
+				exit(EXIT_FAILURE);
+			}
+			++i;
+			string zoomName(*i);
+			globalZooms.push_back(GlobalZoom(zoomName));
+			globalZoom = &globalZooms.back();
+			++i;
+			if(*i != "{")
+			{
+				cerr << "Error: '{' expected." << endl;
+
+				exit(EXIT_FAILURE);
+			}
+			key = "";
+			parseMode = PARSE_MODE_GLOBAL_ZOOM;
+		}
 		else if(*i == "EOP")
 		{
 			if(parseMode != PARSE_MODE_GLOBAL)
@@ -1706,6 +1872,9 @@ int CorrParams::load(const string &fileName)
                         case PARSE_MODE_EOP:
                                 nWarn += eop->setkv(key, value);
                                 break;
+			case PARSE_MODE_GLOBAL_ZOOM:
+				nWarn += globalZoom->setkv(key, value);
+				break;
                         }
 		}
 		else
@@ -1756,6 +1925,24 @@ int CorrParams::load(const string &fileName)
 		}
 	}
 
+	// populate global zoom bands into antennas that want them
+	for(vector<AntennaSetup>::iterator it = antennaSetups.begin(); it != antennaSetups.end(); ++it)
+	{
+		if(!it->globalZoom.empty())
+		{
+			const GlobalZoom *z = getGlobalZoom(it->globalZoom);
+
+			if(!z)
+			{
+				cerr << "Error: referenced ZOOM " << it->globalZoom << " is not defined!" << endl;
+
+				exit(EXIT_FAILURE);
+			}
+
+			it->copyGlobalZoom(*z);
+		}
+	}
+
 	return nWarn;
 }
 
@@ -1763,14 +1950,71 @@ int CorrParams::checkSetupValidity()
 {
 	int nWarn = 0;
 
-	// user wants to set channels explicitly
+	// if specAvg was used
 	for(vector<CorrSetup>::iterator c = corrSetups.begin(); c != corrSetups.end(); ++c)
 	{
+		bool nChanSpecAvgOK = false;
+		bool specAvgUsed = false;
 		double minBW = c->getMinRecordedBandwidth();
 		double maxBW = c->getMaxRecordedBandwidth();
 
+		if(!c->nFFTChan && !c->nOutputChan && !c->explicitFFTSpecRes && !c->explicitOutputSpecRes)
+		{
+			cerr << "WARNING: No information was provided regarding spectral resolution.  Basic defaults WILL be used.  Please check that this suits your needs." << endl;
+			++nWarn;
+		}
+
+		if(c->suppliedSpecAvg)
+		{
+			if(c->explicitFFTSpecRes)
+			{
+				if(!c->explicitOutputSpecRes)
+				{
+					specAvgUsed = true;
+					c->outputSpecRes = c->FFTSpecRes * c->suppliedSpecAvg;
+				}
+			}
+			else
+			{
+				if(c->explicitOutputSpecRes)
+				{
+					specAvgUsed = true;
+					c->FFTSpecRes = c->outputSpecRes / c->suppliedSpecAvg;
+				}
+				else
+				{
+					nChanSpecAvgOK = true;
+				}
+			}
+		}
+	
+
+		// if user wants to set channels explicitly
+
 		if(c->nFFTChan || c->nOutputChan)
 		{
+			if(c->suppliedSpecAvg != 0)
+			{
+				if(c->nFFTChan && c->nOutputChan)
+				{
+					cerr << "Error: number of channels is overspecified.  Please don't use all three of: nFFTChan, nOutputChan and specAvg" << endl;
+
+					exit(EXIT_FAILURE);
+				}
+				if(nChanSpecAvgOK)
+				{
+					specAvgUsed = true;
+					if(c->nFFTChan)
+					{
+						c->nOutputChan = c->nFFTChan / c->suppliedSpecAvg;
+					}
+					else
+					{
+						c->nFFTChan = c->nOutputChan * c->suppliedSpecAvg;
+					}
+				}
+			}
+
 			if(c->explicitFFTSpecRes)
 			{
 				cerr << "Warning: number of channels and spectral resolutions provided!  Ignoring number of channels\n";
@@ -1809,9 +2053,14 @@ int CorrParams::checkSetupValidity()
 				}
 			}
 		}
+		if(c->suppliedSpecAvg && !specAvgUsed)
+		{
+			cerr << "Warning: the value 'specAvg' supplied in the .v2d file was not used because the averaging was already over specified.  Please verify the spectral resolutions being used are appropriate for this project!" << endl;
+			++nWarn;
+		}
 	}
 
-	// update nFFTChan if needed
+	// update spectral resolution and channels if needed
 	for(vector<CorrSetup>::iterator c = corrSetups.begin(); c != corrSetups.end(); ++c)
 	{
 #warning "FIXME: This logic should consider number of antennas and possibly number of sub-bands"
@@ -2054,6 +2303,22 @@ const AntennaSetup *CorrParams::getAntennaSetup(const string &name) const
 	}
 
 	return a;
+}
+
+const GlobalZoom *CorrParams::getGlobalZoom(const string &name) const
+{
+	const GlobalZoom *z = 0;
+
+	for(vector<GlobalZoom>::const_iterator it = globalZooms.begin(); it != globalZooms.end(); ++it)
+	{
+		if(it->difxName == name)
+		{
+			z = &(*it);
+			break;
+		}
+	}
+
+	return z;
 }
 
 void CorrParams::addSourceSetup(const SourceSetup &toAdd)
@@ -2463,11 +2728,11 @@ bool areCorrSetupsCompatible(const CorrSetup *A, const CorrSetup *B, const CorrP
 	}
 	else if(C->singleSetup)
 	{
-		if(A->tInt        == B->tInt        &&
-		   A->FFTSpecRes  == B->FFTSpecRes  &&
-		   A->outputSpecRes == B->outputSpecRes  &&
-		   A->doPolar     == B->doPolar     &&
-		   A->doAuto      == B->doAuto      &&
+		if(A->tInt          == B->tInt          &&
+		   A->FFTSpecRes    == B->FFTSpecRes    &&
+		   A->outputSpecRes == B->outputSpecRes &&
+		   A->doPolar       == B->doPolar       &&
+		   A->doAuto        == B->doAuto        &&
 		   A->binConfigFile.compare(B->binConfigFile) == 0)
 		{
 			return true;
