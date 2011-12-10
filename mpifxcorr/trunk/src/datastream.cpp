@@ -1030,7 +1030,7 @@ uint64_t DataStream::openframe()
   if (fnamesize>LBA_HEADER_LENGTH) {
     void *tmp;
     tmp = (char *)realloc(buf, fnamesize);
-    if(buf == 0) // reallocation of memory failed - we're hosed
+    if(tmp == 0) // reallocation of memory failed - we're hosed
     {
       free(buf);
       cerror << startl << "Error attempting to reallocate filename buffer to length " << fnamesize << " - aborting!" << endl;
