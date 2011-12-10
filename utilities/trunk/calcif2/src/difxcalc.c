@@ -242,6 +242,10 @@ static int extractCalcResults(DifxPolyModel *im, int index, struct CalcResults *
 	im->delay[index] = -res0->getCALC_res_u.record.delay[0]*1e6;
 	im->dry[index] = res0->getCALC_res_u.record.dry_atmos[0]*1e6;
 	im->wet[index] = res0->getCALC_res_u.record.wet_atmos[0]*1e6;
+	im->az[index] = res0->getCALC_res_u.record.az[1]*180.0/M_PI;
+
+/* FIXME: add elcorr, elgeom and parangle */
+
 	if(results->nRes == 3)
 	{
 		/* compute u, v, w by taking angular derivative of geometric delay */
@@ -300,12 +304,16 @@ static int extractCalcResults(DifxPolyModel *im, int index, struct CalcResults *
 
 static void computePolyModel(DifxPolyModel *im, double deltaT)
 {
-	computePoly(im->delay, im->order+1, deltaT);
-	computePoly(im->dry,   im->order+1, deltaT);
-	computePoly(im->wet,   im->order+1, deltaT);
-	computePoly(im->u,     im->order+1, deltaT);
-	computePoly(im->v,     im->order+1, deltaT);
-	computePoly(im->w,     im->order+1, deltaT);
+	computePoly(im->delay,    im->order+1, deltaT);
+	computePoly(im->dry,      im->order+1, deltaT);
+	computePoly(im->wet,      im->order+1, deltaT);
+	computePoly(im->az,       im->order+1, deltaT);
+	computePoly(im->elcorr,   im->order+1, deltaT);
+	computePoly(im->elgeom,   im->order+1, deltaT);
+	computePoly(im->parangle, im->order+1, deltaT);
+	computePoly(im->u,        im->order+1, deltaT);
+	computePoly(im->v,        im->order+1, deltaT);
+	computePoly(im->w,        im->order+1, deltaT);
 }
 
 /* antenna here is a pointer to a particular antenna object */
