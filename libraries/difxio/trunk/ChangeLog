@@ -1,5 +1,7 @@
 3.0.2
 * Post-DiFX-2.0.1
+* Infrastructure for az, el, parallactic angle in model added
+* Tcal managing structures and functions added
 
 3.0.1
 * Post DiFX-2.0.0

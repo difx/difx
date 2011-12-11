@@ -32,5 +32,6 @@
 #include "difxio/parsedifx.h"
 #include "difxio/parsevis.h"
 #include "difxio/difx_input.h"
+#include "difxio/difx_tcal.h"
 
 #endif
