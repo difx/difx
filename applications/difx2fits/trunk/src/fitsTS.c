@@ -30,9 +30,11 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <string.h>
+#include <glob.h>
 #include "config.h"
 #include "difx2fits.h"
 #include "other.h"
+#include "util.h"
 
 
 typedef struct
@@ -80,7 +82,7 @@ int loadTcals()
 	nAlloc = 4000;
 	tCals = (TCal *)malloc(nAlloc*sizeof(TCal));
 
-	for(i = nTcal = 0; ; i++)
+	for(i = nTcal = 0; ; ++i)
 	{
 		rv = fgets(line, MaxLineLength, in);
 		if(!rv)
@@ -109,7 +111,7 @@ int loadTcals()
 		}
 		sscanf(line, "%7s%7s%f%f%f", tCals[nTcal].antenna, tCals[nTcal].receiver,
 			&tCals[nTcal].freq, &tCals[nTcal].tcalR, &tCals[nTcal].tcalL);
-		nTcal++;
+		++nTcal;
 	}
 
 	fclose(in);
@@ -132,7 +134,7 @@ float getTcalValue(const char *antname, float freq, char pol)
 	besti = -1;
 	bestf = 1e9;
 	df = 1e9;
-	for(i = 0; i < nTcal; i++)
+	for(i = 0; i < nTcal; ++i)
 	{
 		df = fabs(freq - tCals[i].freq);
 		if(strcasecmp(antname, tCals[i].antenna) == 0 && df < bestf)
@@ -202,7 +204,7 @@ static void nanify(float X[2][array_MAX_BANDS])
 	} nan;
 	nan.i32 = -1;
 	
-	for(i = 0; i < array_MAX_BANDS; i++)
+	for(i = 0; i < array_MAX_BANDS; ++i)
 	{
 		X[0][i] = nan.f;
 		X[1][i] = nan.f;
@@ -222,7 +224,7 @@ static int parseTsys(const char *line, char *antName,
 		return -1;
 	}
 
-	for(i = 0; i < nRecBand; i++)
+	for(i = 0; i < nRecBand; ++i)
 	{
 		line += p;
 		n = sscanf(line, "%f%*s%n", tSys + i, &p);
@@ -246,7 +248,7 @@ static int readSwitchedPower(const char *line, double *mjd1, double *mjd2, Switc
 	}
 	line += p;
 
-	for(i = 0; i < max; i++)
+	for(i = 0; i < max; ++i)
 	{
 		n = sscanf(line, "%lf%lf%lf%lf%n", &sp[i].pOn, &sp[i].wOn, &sp[i].pOff, &sp[i].wOff, &p);
 		line += p;
@@ -267,7 +269,7 @@ static void clearSwitchedPower(SwitchedPower *sp, int n)
 {
 	int i;
 
-	for(i = 0; i < n; i++)
+	for(i = 0; i < n; ++i)
 	{
 		sp[i].pOn = sp[i].pOff = sp[i].wOn = sp[i].wOff = 0.0;
 	}
@@ -278,7 +280,7 @@ static void accumulateSwitchedPower(SwitchedPower *average, const SwitchedPower 
 	double w;
 	int i;
 
-	for(i = 0; i < n; i++)
+	for(i = 0; i < n; ++i)
 	{
 		w = 1.0/(meas[i].wOn*meas[i].wOn);
 		average[i].pOn += w*meas[i].pOn;
@@ -317,12 +319,12 @@ static int populateDifxTSys(float tSys[][array_MAX_BANDS], const DifxInput *D, i
 
 	dc = D->config + configId;
 
-	for(i = 0; i < D->nIF; i++)
+	for(i = 0; i < D->nIF; ++i)
 	{
-		for(p = 0; p < dc->IF[i].nPol; p++)
+		for(p = 0; p < dc->IF[i].nPol; ++p)
 		{
 			/* search for a compatible record band.  This should allow zoom bands to work. */
-			for(r = 0; r < nRecBand; r++)
+			for(r = 0; r < nRecBand; ++r)
 			{
 				v = DifxConfigRecBand2FreqPol(D, configId, antId, r, &freqId, &polId);
 
@@ -373,15 +375,16 @@ static int getDifxTsys(const DifxInput *D, int jobId, int antId, int origDsId,
 	int nColumn, const struct fitsBinTableColumn *columns,
 	struct fitsPrivate *out)
 {
-	const int MaxFilenameLength=256;
 	const int MaxLineLength=1000;
 	char line[MaxLineLength];
-	char filename[MaxFilenameLength];
+	const char *fileName;
+	char globPattern[DIFXIO_FILENAME_LENGTH];
 	char *p_fitsbuf;
-	FILE *in;
+	FILE *in = 0;
 	SwitchedPower measurement[array_MAX_BANDS*2];
 	SwitchedPower average[array_MAX_BANDS*2];
 	double mjd1, mjd2, mjd;
+	double mjdLast = 0.0;		/* to verify time ordering of records */
 	double accumStart = -1, accumEnd = -1;
 	int configId = -1;
 	int scanId = -1;
@@ -401,47 +404,108 @@ static int getDifxTsys(const DifxInput *D, int jobId, int antId, int origDsId,
 	int32_t freqId1, antId1, sourceId1, arrayId1;
 	double time;
 	float timeInt;
+	glob_t globBuffer;
+	int nFile, curFile;
+
+	clearSwitchedPower(average, array_MAX_BANDS*2);
 
 	if(tCals == 0)
 	{
 		loadTcals();
 	}
 
-	v = snprintf(filename, MaxFilenameLength, "%s/SWITCHEDPOWER_%d", D->job[jobId].outputFile, origDsId);
+	v = snprintf(globPattern, DIFXIO_FILENAME_LENGTH, "%s/SWITCHEDPOWER*_%d", D->job[jobId].outputFile, origDsId);
 
-	clearSwitchedPower(average, array_MAX_BANDS*2);
-
-	if(v >= MaxFilenameLength)
+	if(v >= DIFXIO_FILENAME_LENGTH)
 	{
 		fprintf(stderr, "Developer error: getDifxTsys jobId=%d antId=%d origDsId=%d filename length wanted to be %d bytes long, not %d\n",
-			jobId, antId, origDsId, v, MaxFilenameLength);
+			jobId, antId, origDsId, v, DIFXIO_FILENAME_LENGTH);
 		
 		return -1;
 	}
-	in = fopen(filename, "r");
-	if(!in)
+
+	v = glob2(__FUNCTION__, globPattern, 0, 0, &globBuffer);
+	
+	nFile = globBuffer.gl_pathc;
+	if(nFile < 1)
 	{
 		return -1;
 	}
+	curFile = -1;
 
 	nanify(tAnt);
 
 	for(;;)
 	{
-		rv = fgets(line, MaxLineLength, in);
-		if(!rv)
+		/* First: if no open file, try the next one */
+		if(!in)
 		{
-			scanId = -1;
-			configId = -1;
-			mjd = -1;
-			n = -1;
+			++curFile;
+			if(curFile < nFile)
+			{
+				fileName = globBuffer.gl_pathv[curFile];
+				
+				in = fopen(fileName, "r");
+				if(!in)
+				{
+					fprintf(stderr, "Warning: switched power file %s\n", fileName);
+					fprintf(stderr, "  cannot be opened for read and is being skipped!\n");
+
+					continue;
+				}
+			}
+			else
+			{
+				fileName = 0;
+			}
+		}
+
+		/* Second: if there is an open file, try reading a line */
+		if(in)
+		{
+			rv = fgets(line, MaxLineLength, in);
 		}
 		else
+		{
+			rv = 0;
+		}
+
+		/* Third: if no data was read, either go to top and try next file or prepare for the end */
+		if(!rv)
+		{
+			fclose(in);
+			in = 0;
+
+			if(curFile < nFile)
+			{
+				continue;
+			}
+			else	/* set things up to end the loop */
+			{
+				scanId = -1;
+				configId = -1;
+				mjd = -1;	/* causes exit at the end */
+				n = -1;
+			}
+		}
+		else	/* Here data was read: deal with parsing it */
 		{
 			int s1, s2;
 
 			n = readSwitchedPower(line, &mjd1, &mjd2, measurement, array_MAX_BANDS*2);
 			mjd = 0.5*(mjd1+mjd2);
+
+			if(mjd < mjdLast)
+			{
+				/* probably only occurs after a new file is opened that may overlap in time */
+
+				continue;
+			}
+			else
+			{
+				mjdLast = mjd;
+			}
+
 			s1 = DifxInputGetScanIdByAntennaId(D, mjd1, antId);
 			s2 = DifxInputGetScanIdByAntennaId(D, mjd2, antId);
 			if(s1 != s2)
@@ -454,7 +518,7 @@ static int getDifxTsys(const DifxInput *D, int jobId, int antId, int origDsId,
 			}
 		}
 
-		if(scanId != currentScanId)
+		if(scanId != currentScanId)	/* When a scan ends, trigger dump of data */
 		{
 			if(currentScanId >= 0)
 			{
@@ -480,7 +544,7 @@ static int getDifxTsys(const DifxInput *D, int jobId, int antId, int origDsId,
 				dumpWindow = s + windowDuration;
 			}
 		}
-		else if(mjd > dumpWindow && dumpWindow > 0.0)
+		else if(mjd > dumpWindow && dumpWindow > 0.0)	/* when a dump interval ends, trigger dump of data */
 		{
 			doDump = 1;
 
@@ -489,7 +553,7 @@ static int getDifxTsys(const DifxInput *D, int jobId, int antId, int origDsId,
 				dumpWindow += windowDuration;
 			}
 		}
-		else if(scanId >= 0 && n != nRecBand)
+		else if(scanId >= 0 && n != nRecBand)	/* bail if the wrong number of measurements were found */
 		{
 			fprintf(stderr, "Developer error: getDifxTsys: antId=%d origDsId=%d scanId=%d n=%d nRecBand=%d mjd1=%12.6f mjd2=%12.6f\n",
 				antId, origDsId, scanId, n, nRecBand, mjd1, mjd2);
@@ -497,7 +561,7 @@ static int getDifxTsys(const DifxInput *D, int jobId, int antId, int origDsId,
 			exit(EXIT_FAILURE);
 		}
 
-		if(doDump)
+		if(doDump)	/* here is where data goes to the file */
 		{
 			scan = D->scan + currentScanId;
 
@@ -529,7 +593,7 @@ static int getDifxTsys(const DifxInput *D, int jobId, int antId, int origDsId,
 				FITS_WRITE_ITEM (arrayId1, p_fitsbuf);
 				FITS_WRITE_ITEM (freqId1, p_fitsbuf);
 
-				for(i = 0; i < D->nPol; i++)
+				for(i = 0; i < D->nPol; ++i)
 				{
 					FITS_WRITE_ARRAY(tSys[i], p_fitsbuf, D->nIF);
 					FITS_WRITE_ARRAY(tAnt[i], p_fitsbuf, D->nIF);
@@ -562,14 +626,14 @@ static int getDifxTsys(const DifxInput *D, int jobId, int antId, int origDsId,
 				accumStart = mjd1;
 			}
 			accumEnd = mjd2;
-			nAccum++;
+			++nAccum;
 		}
 
 		currentScanId = scanId;
 		currentConfigId = configId;
 	}
 
-	fclose(in);
+	globfree(&globBuffer);
 
 	return 1;
 }
@@ -583,12 +647,12 @@ static int populateTSys(float tSys[][array_MAX_BANDS],
 
 	dc = D->config + configId;
 
-	for(i = 0; i < D->nIF; i++)
+	for(i = 0; i < D->nIF; ++i)
 	{
-		for(p = 0; p < dc->IF[i].nPol; p++)
+		for(p = 0; p < dc->IF[i].nPol; ++p)
 		{
 			/* search for a compatible record band.  This should allow zoom bands to work. */
-			for(r = 0; r < nRecBand; r++)
+			for(r = 0; r < nRecBand; ++r)
 			{
 				v = DifxConfigRecBand2FreqPol(D, configId, antId, r, &freqId, &polId);
 			
@@ -726,21 +790,21 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 
 	if(DifxTsysAvgSeconds > 0.0)
 	{
-		for(antId = 0; antId < D->nAntenna; antId++)
+		for(antId = 0; antId < D->nAntenna; ++antId)
 		{
-			for(jobId = 0; jobId < D->nJob; jobId++)
+			for(jobId = 0; jobId < D->nJob; ++jobId)
 			{
 				n = DifxInputGetOriginalDatastreamIdsByAntennaIdJobId(origDsIds, D, antId, jobId, MaxDatastreamsPerAntenna);
 				if(n > 1)
 				{
 					fprintf(stderr, "\nWarning: > 1 datastream for antennaId=%d.  This has not been tested.\n", antId);
 				}
-				for(i = 0; i < n; i++)
+				for(i = 0; i < n; ++i)
 				{
 					v = getDifxTsys(D, jobId, antId, origDsIds[i], DifxTsysAvgSeconds, phasecentre, nRowBytes, fitsbuf, nColumn, columns, out);
 					if(v >= 0)
 					{
-						hasDifxTsys[antId]++;
+						++hasDifxTsys[antId];
 					}
 				}
 			}
@@ -819,7 +883,7 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 			FITS_WRITE_ITEM (arrayId1, p_fitsbuf);
 			FITS_WRITE_ITEM (freqId1, p_fitsbuf);
 
-			for(i = 0; i < nPol; i++)
+			for(i = 0; i < nPol; ++i)
 			{
 				FITS_WRITE_ARRAY(tSys[i], p_fitsbuf, nBand);
 				FITS_WRITE_ARRAY(tAnt[i], p_fitsbuf, nBand);

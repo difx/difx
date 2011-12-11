@@ -193,7 +193,7 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 {
 	struct CommandLineOptions *opts;
 	int i, l;
-	glob_t globbuf;
+	glob_t globBuffer;
 
 	opts = newCommandLineOptions();
 
@@ -363,13 +363,14 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 	   (opts->nBaseFile == 0 && opts->doalldifx == 0))
 	{
 		deleteCommandLineOptions(opts);
+
 		return 0;
 	}
 
 	if(opts->doalldifx)
 	{
-		glob("*.difx", 0, 0, &globbuf);
-		if (exceedOpenFileLimit(globbuf.gl_pathc))
+		glob2(__FUNCTION__, "*.difx", 0, 0, &globBuffer);
+		if(exceedOpenFileLimit(globBuffer.gl_pathc))
 		{
 			printf("Error: The number of input files exceeds the OS limit of allowed open files!\n");
 			printf("Run ulimit -n to increase that number.\n");
@@ -379,7 +380,7 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 			return 0;
 		}
 
-		if(globbuf.gl_pathc > MAX_INPUT_FILES)
+		if(globBuffer.gl_pathc > MAX_INPUT_FILES)
 		{
 			printf("Error: too many input files!\n");
 			printf("Max = %d\n", MAX_INPUT_FILES);
@@ -387,12 +388,12 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 			
 			return 0;
 		}
-		opts->nBaseFile = globbuf.gl_pathc;
+		opts->nBaseFile = globBuffer.gl_pathc;
 		for(i = 0; i < opts->nBaseFile; ++i)
 		{
-			opts->baseFile[i] = strdup(globbuf.gl_pathv[i]);
+			opts->baseFile[i] = strdup(globBuffer.gl_pathv[i]);
 		}
-		globfree(&globbuf);
+		globfree(&globBuffer);
 	}
 
 	if(opts->nBaseFile > 0 && opts->dontCombine && opts->fitsFile)

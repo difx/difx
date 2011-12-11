@@ -38,5 +38,7 @@ difx2fits_SOURCES = \
 	other.h \
 	jobmatrix.c \
 	jobmatrix.h \
+	util.c \
+	util.h \
 	$(fftw_sources)
 

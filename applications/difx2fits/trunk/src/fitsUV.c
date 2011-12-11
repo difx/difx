@@ -37,6 +37,7 @@
 #include "config.h"
 #include "fitsUV.h"
 #include "jobmatrix.h"
+#include "util.h"
 #ifdef HAVE_FFTW
 #include "sniffer.h"
 #endif
@@ -89,48 +90,21 @@ static int DifxVisInitData(DifxVis *dv)
 
 static void DifxVisStartGlob(DifxVis *dv)
 {
-	char *globstr;
+	char *globPattern;
 	const char suffix[] = "/DIFX*";
 	int v;
 
-	globstr = calloc(strlen(dv->D->job[dv->jobId].outputFile) + strlen(suffix) + 8, 1);
-	if(globstr == 0)
+	globPattern = calloc(strlen(dv->D->job[dv->jobId].outputFile) + strlen(suffix) + 8, 1);
+	if(globPattern == 0)
 	{
-		assert(globstr);
+		assert(globPattern);
 
 		exit(EXIT_FAILURE);
 	}
 
-	sprintf(globstr, "%s%s", dv->D->job[dv->jobId].outputFile, suffix);
+	sprintf(globPattern, "%s%s", dv->D->job[dv->jobId].outputFile, suffix);
 
-	v = glob(globstr, 0, 0, &dv->globbuf);
-	if(v != 0)
-	{
-		if(v == GLOB_NOSPACE)
-		{
-			fprintf(stderr, "Error: DifxVisStartGlob: No space!\n");
-
-			exit(EXIT_FAILURE);
-		}
-		else if(v == GLOB_ABORTED)
-		{
-			fprintf(stderr, "Error: DifxVisStartGlob: Read error!\n");
-
-			exit(EXIT_FAILURE);
-		}
-		else if(v != GLOB_NOMATCH)
-		{
-			/* print handled below */
-
-			exit(EXIT_FAILURE);
-		}
-		else
-		{
-			fprintf(stderr, "Error: unknown glob() failure! %d\n", v);
-
-			exit(EXIT_FAILURE);
-		}
-	}
+	v = glob2(__FUNCTION__, globPattern, 0, 0, &dv->globbuf);	/* see util.c */
 	dv->nFile = dv->globbuf.gl_pathc;
 
 	if(dv->nFile == 0 || v == GLOB_NOMATCH)
@@ -142,7 +116,7 @@ static void DifxVisStartGlob(DifxVis *dv)
 
 	dv->globbuf.gl_offs = 0;
 
-	free(globstr);
+	free(globPattern);
 }
 
 static int re2int(const char *str, const regmatch_t *subexpression)
@@ -216,7 +190,7 @@ int DifxVisNextFile(DifxVis *dv, int pulsarBin, int phasecentre)
 			if(dv->in == 0)
 			{
 				/* should not have gotten here */
-				fprintf(stderr, "Error: cannot open file for read: %s\n", dv->globbuf.gl_pathv[dv->curFile]);
+				fprintf(stderr, "Error: cannot open visibility file for read: %s\n", dv->globbuf.gl_pathv[dv->curFile]);
 				fprintf(stderr, "Check permissions.  Failure _could_ be related to exhausting file descriptors\n");
 
 				exit(EXIT_FAILURE);
