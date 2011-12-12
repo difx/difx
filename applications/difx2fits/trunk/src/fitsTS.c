@@ -31,6 +31,7 @@
 #include <sys/types.h>
 #include <string.h>
 #include <glob.h>
+#include <difxio/difx_tcal.h>
 #include "config.h"
 #include "difx2fits.h"
 #include "other.h"
@@ -52,144 +53,6 @@ typedef struct
 	double wOff;	/* weight for the on state = 1/sigma^2 */
 } SwitchedPower;
 
-
-/* This is somewhat ugly.  Perhaps move these internal to some function? */
-TCal *tCals = 0;
-int nTcal;
-
-
-int loadTcals()
-{
-	const int MaxLineLength = 100;
-	char line[MaxLineLength];
-	const char *tcalFilename;
-	char *rv;
-	FILE *in;
-	int i;
-	int nAlloc = 0;
-
-	tcalFilename = getenv("TCAL_FILE");
-	if(tcalFilename == 0)
-	{
-		return -1;
-	}
-	in = fopen(tcalFilename, "r");
-	if(!in)
-	{
-		return -2;
-	}
-
-	nAlloc = 4000;
-	tCals = (TCal *)malloc(nAlloc*sizeof(TCal));
-
-	for(i = nTcal = 0; ; ++i)
-	{
-		rv = fgets(line, MaxLineLength, in);
-		if(!rv)
-		{
-			break;
-		}
-		if(line[0] == '#')
-		{
-			continue;
-		}
-		if(nTcal >= nAlloc)
-		{
-			TCal *p = tCals;
-
-			nAlloc += 1000;
-			tCals = (TCal *)realloc(tCals, nAlloc*sizeof(TCal));
-			if(tCals == 0)
-			{
-				free(p);
-				tCals = 0;
-
-				fprintf(stderr, "Error: cannot realloc tCals for %d elements\n", nAlloc);
-
-				exit(EXIT_FAILURE);
-			}
-		}
-		sscanf(line, "%7s%7s%f%f%f", tCals[nTcal].antenna, tCals[nTcal].receiver,
-			&tCals[nTcal].freq, &tCals[nTcal].tcalR, &tCals[nTcal].tcalL);
-		++nTcal;
-	}
-
-	fclose(in);
-
-	return 0;
-}
-
-float getTcalValue(const char *antname, float freq, char pol)
-{
-	int i;
-	int besti;
-	int secondbesti;
-	float bestf, w1, w2, df;
-
-	if(nTcal == 0)
-	{
-		return 1.0;
-	}
-
-	besti = -1;
-	bestf = 1e9;
-	df = 1e9;
-	for(i = 0; i < nTcal; ++i)
-	{
-		df = fabs(freq - tCals[i].freq);
-		if(strcasecmp(antname, tCals[i].antenna) == 0 && df < bestf)
-		{
-			bestf = df;
-			besti = i;
-		}
-	}
-	
-	if(besti < 0)
-	{
-		return 1.0;
-	}
-
-	bestf = tCals[besti].freq;
-
-	secondbesti = -1;
-	if(besti > 0 && bestf > freq && 
-	   strcmp(tCals[besti].antenna, tCals[besti-1].antenna) == 0 &&
-	   strcmp(tCals[besti].receiver, tCals[besti-1].receiver) == 0)
-	{
-		secondbesti = besti - 1;
-	}
-	else if(besti < nTcal-1 && bestf < freq && 
-	        strcmp(tCals[besti].antenna, tCals[besti+1].antenna) == 0 &&
-	        strcmp(tCals[besti].receiver, tCals[besti+1].receiver) == 0)
-	{
-		secondbesti = besti + 1;
-	}
-
-	if(secondbesti >= 0)
-	{
-		w1 = fabs( (tCals[secondbesti].freq - freq)/(tCals[secondbesti].freq - bestf) );
-		w2 = fabs( (tCals[besti].freq - freq)/(tCals[secondbesti].freq - bestf) );
-	}
-	else
-	{
-		secondbesti = besti;
-		w1 = 1.0;
-		w2 = 0.0;
-	}
-
-	if(pol == 'r' || pol == 'R')
-	{
-		return w1*tCals[besti].tcalR + w2*tCals[secondbesti].tcalR;
-	}
-	else if(pol == 'l' || pol == 'L')
-	{
-		return w1*tCals[besti].tcalL + w2*tCals[secondbesti].tcalL;
-	}
-	else
-	{
-		return 1.0;
-	}
-}
 
 static void nanify(float X[2][array_MAX_BANDS])
 {
@@ -310,7 +173,7 @@ static double unscaledTsys(const SwitchedPower *sp)
 }
 
 static int populateDifxTSys(float tSys[][array_MAX_BANDS], const DifxInput *D, int configId, int antId,
-	const SwitchedPower *average, int nRecBand)
+	const SwitchedPower *average, int nRecBand, DifxTcal *T)
 {
 	int i, p, r, v;
 	int freqId, polId;
@@ -358,7 +221,7 @@ static int populateDifxTSys(float tSys[][array_MAX_BANDS], const DifxInput *D, i
 					freq += dc->IF[i].bw*0.5;
 				}
 				/* Note: could do better by considering full band Tsys variations */
-				tCal = getTcalValue(D->antenna[antId].name, freq, D->config[configId].pol[polId]);
+				tCal = getDifxTcal(T, D->mjdStart, D->antenna[antId].name, "", D->config[configId].pol[polId], freq);
 				if(tCal > 0.0)
 				{
 					tSys[p][i] = tCal*unscaledTsys(average + r);
@@ -373,7 +236,7 @@ static int populateDifxTSys(float tSys[][array_MAX_BANDS], const DifxInput *D, i
 static int getDifxTsys(const DifxInput *D, int jobId, int antId, int origDsId, 
 	double avgSeconds, int phasecentre, int nRowBytes, char *fitsbuf, 
 	int nColumn, const struct fitsBinTableColumn *columns,
-	struct fitsPrivate *out)
+	struct fitsPrivate *out, DifxTcal *T)
 {
 	const int MaxLineLength=1000;
 	char line[MaxLineLength];
@@ -408,11 +271,6 @@ static int getDifxTsys(const DifxInput *D, int jobId, int antId, int origDsId,
 	int nFile, curFile;
 
 	clearSwitchedPower(average, array_MAX_BANDS*2);
-
-	if(tCals == 0)
-	{
-		loadTcals();
-	}
 
 	v = snprintf(globPattern, DIFXIO_FILENAME_LENGTH, "%s/SWITCHEDPOWER*_%d", D->job[jobId].outputFile, origDsId);
 
@@ -582,7 +440,7 @@ static int getDifxTsys(const DifxInput *D, int jobId, int antId, int origDsId,
 				freqId1 = D->config[currentConfigId].fitsFreqId + 1;
 
 				nanify(tSys);
-				populateDifxTSys(tSys, D, currentConfigId, antId, average, nRecBand);
+				populateDifxTSys(tSys, D, currentConfigId, antId, average, nRecBand, T);
 
 				p_fitsbuf = fitsbuf;
 			
@@ -732,10 +590,36 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 	int *hasDifxTsys;	/* flag per antenna specifying whether or not tsys was supplied from difx */
 	/* The following are 1-based indices for writing to FITS */
 	int32_t sourceId1, freqId1, arrayId1, antId1;
+	DifxTcal *T;
+	const char *tcalFilename;
 
 	if(D == 0)
 	{
 		return D;
+	}
+
+	T = newDifxTcal();
+
+	/* first test for VLBA case */
+	if( (tcalFilename = getenv("TCAL_PATH")) != 0)
+	{
+		v = setDifxTcalVLBA(T, tcalFilename);
+		if(v < 0)
+		{
+			fprintf(stderr, "Error initializing VLBA Tcl values\n");
+
+			exit(EXIT_FAILURE);
+		}
+	}
+	else if( (tcalFilename = getenv("TCAL_FILE")) != 0)
+	{
+		v = setDifxTcalDIFX(T, tcalFilename);
+		if(v < 0)
+		{
+			fprintf(stderr, "Error initializing VLBA Tcl values\n");
+
+			exit(EXIT_FAILURE);
+		}
 	}
 
 	nanify(tAnt);
@@ -801,7 +685,7 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 				}
 				for(i = 0; i < n; ++i)
 				{
-					v = getDifxTsys(D, jobId, antId, origDsIds[i], DifxTsysAvgSeconds, phasecentre, nRowBytes, fitsbuf, nColumn, columns, out);
+					v = getDifxTsys(D, jobId, antId, origDsIds[i], DifxTsysAvgSeconds, phasecentre, nRowBytes, fitsbuf, nColumn, columns, out, T);
 					if(v >= 0)
 					{
 						++hasDifxTsys[antId];
@@ -906,11 +790,8 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 	}
 	free(hasDifxTsys);
 	free(fitsbuf);
-	if(tCals)
-	{
-		free(tCals);
-		tCals = 0;
-	}
+
+	deleteDifxTcal(T);
 
 	return D;
 }

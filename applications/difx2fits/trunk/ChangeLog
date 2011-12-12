@@ -10,6 +10,7 @@ Version 3.0.2
 * Multiple DIFX files per job: don't write records from later files that overlap in time with those written by earlier ones.
   - perhaps later the order of things should change and the _newer_ records get kept.
   - multiple SWITCHEDPOWER and PCAL files are handled in the same way
+* Make use of new difx_tcal infrastructure
 
 Version 3.0.1
 * Post 2.0.0
