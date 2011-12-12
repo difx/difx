@@ -41,7 +41,8 @@ const char difxTcalTypeString[][MAX_DIFX_TCAL_TYPE_LENGTH] =
 {
 	"None",
 	"Constant",
-	"VLBA"
+	"VLBA",
+	"DIFX"
 };
 
 /* Note! Keep this in sync with enum DifxTcalInterpolation in difx_tcal.h */
@@ -50,6 +51,9 @@ const char difxTcalInterpolationString[][MAX_DIFX_TCAL_TYPE_LENGTH] =
 	"Nearest",
 	"Linear"
 };
+
+static int loadDifxTcalVLBA(DifxTcal *dt, const char *antenna, const char *receiver);
+static int loadDifxTcalDIFX(DifxTcal *dt);
 
 DifxTcal *newDifxTcal()
 {
@@ -591,7 +595,7 @@ static double tcalDate2mjd(double tcalDate)
 	return 40587.0 + unixTime/86400.0;
 }
 
-int loadDifxTcalVLBA(DifxTcal *dt, const char *antenna, const char *receiver)
+static int loadDifxTcalVLBA(DifxTcal *dt, const char *antenna, const char *receiver)
 {
 	if(dt)
 	{
@@ -719,6 +723,12 @@ int loadDifxTcalVLBA(DifxTcal *dt, const char *antenna, const char *receiver)
 						pol2 = 'R';
 					}
 					v = addDifxTcalValue(dt->group+g, freq, tcal1, pol1, tcal2, pol2);
+					if(v < 0)
+					{
+						fclose(in);
+
+						return -9;
+					}
 				}
 			}
 		}
@@ -730,5 +740,130 @@ int loadDifxTcalVLBA(DifxTcal *dt, const char *antenna, const char *receiver)
 	{
 		return -1;
 	}
+}
+
+
+/* 3. For DIFX format: */
+
+int setDifxTcalDIFX(DifxTcal *dt, const char *tcalFile)
+{
+	if(dt)
+	{
+		int v;
+
+		if(dt->type != DifxTcalNone)
+		{
+			return -2;
+		}
+
+		v = snprintf(dt->path, DIFX_TCAL_FILENAME_LENGTH, "%s", tcalFile);
+		if(v >= DIFX_TCAL_FILENAME_LENGTH)
+		{
+			fprintf(stderr, "Developer error: setDifxTcalVLBA: DIFX_TCAL_FILENAME_LENGTH is too short (%d); needs to be %d or more\n", DIFX_TCAL_FILENAME_LENGTH, v+1);
+			
+
+			return -3;
+		}
+
+		v = loadDifxTcalDIFX(dt);
+		if(v == 0)	/* success */
+		{
+			dt->type = DifxTcalTypeDIFX;
+		}
+
+		return v;
+	}
+	else
+	{
+		return -1;
+	}
+}
+
+static int loadDifxTcalDIFX(DifxTcal *dt)
+{
+	FILE *in;
+
+	if(!dt)
+	{
+		return -1;
+	}
+
+	if(!in)
+	{
+		return -2;
+	}
+
+	for(;;)
+	{
+		const int MaxVLBATcalLineLength = 100;
+		char line[MaxVLBATcalLineLength];
+		char *rv;
+		char antenna[MAX_DIFX_TCAL_ANTENNA_LENGTH] = "";
+		char receiver[MAX_DIFX_TCAL_RECEIVER_LENGTH] = "";
+		char lastAntenna[MAX_DIFX_TCAL_ANTENNA_LENGTH] = "";
+		char lastReceiver[MAX_DIFX_TCAL_RECEIVER_LENGTH] = "";
+		int g = -1;
+		int n;
+		float freq, tcal1, tcal2;
+
+		rv = fgets(line, MaxVLBATcalLineLength-1, in);
+		if(!rv)
+		{
+			break;
+		}
+		if(line[0] == '#')
+		{
+			continue;
+		}
+		n = sscanf(line, "%s%s%f%f%f", antenna, receiver, &freq, &tcal1, &tcal2);
+		if(n == 5)
+		{
+			int newGroup = 0;
+			int v;
+
+			if(strncmp(antenna, lastAntenna, MAX_DIFX_TCAL_ANTENNA_LENGTH) != 0)
+			{
+				strncpy(lastAntenna, antenna, MAX_DIFX_TCAL_ANTENNA_LENGTH);
+				newGroup = 1;
+			}
+
+			if(strncmp(receiver, lastReceiver, MAX_DIFX_TCAL_RECEIVER_LENGTH) != 0)
+			{
+				strncpy(lastReceiver, receiver, MAX_DIFX_TCAL_RECEIVER_LENGTH);
+
+				/* Comment this out for now.  Once proper receiver name support is available it can come back */
+				/*
+				newGroup = 1;
+				*/
+			}
+
+			if(newGroup)
+			{
+				g = addDifxTcalGroup(dt);
+				if(g < 0)
+				{
+					fclose(in);
+
+					return -6;
+				}
+				strncpy(dt->group[g].antenna, antenna, MAX_DIFX_TCAL_ANTENNA_LENGTH);
+				strncpy(dt->group[g].receiver, receiver, MAX_DIFX_TCAL_RECEIVER_LENGTH);
+				dt->group[g].serial = 0;
+				dt->group[g].mjdStart = 0;
+			}
+
+			v = addDifxTcalValue(dt->group+g, freq, tcal1, 'R', tcal2, 'L');
+			if(v < 0)
+			{
+				fclose(in);
+
+				return -9;
+			}
+		}
+
+	}
+	fclose(in);
+
+	return 0;
 }
 

@@ -303,7 +303,7 @@ void printDifxCalculatorConfig(const DifxCalculatorConfig *c)
 	printDouble("Bits per sample",         c->nBit,             "Averaged over baselines", "%3.1f");
 	printDouble("Blocks per send",         c->blocksPerSend,    "Has to be integral!", "%3.1f");
 	printInt("Spectral points per band",   c->nChan,            "As correlated");
-	printDouble("Spetral averaging",       c->specAvg,          "Averaged over bands", "%3.1f");
+	printDouble("Spectral averaging",      c->specAvg,          "Averaged over bands", "%3.1f");
 	printInt("Data buffer factor",         c->dataBufferFactor, 0);
 	printInt("Number of data segments",    c->nDataSegment,     0);
 	printf("\n");

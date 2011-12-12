@@ -39,6 +39,8 @@
 extern "C" {
 #endif
 
+#include <stdio.h>
+
 #define MAX_DIFX_TCAL_ANTENNA_LENGTH	8
 #define MAX_DIFX_TCAL_RECEIVER_LENGTH	8
 #define MAX_DIFX_TCAL_TYPE_LENGTH	16
@@ -49,7 +51,8 @@ enum DifxTcalType
 {
 	DifxTcalNone = 0,		/* the uninitialized state */
 	DifxTcalTypeConstant,
-	DifxTcalTypeVLBA,
+	DifxTcalTypeVLBA,		/* separate files per band.antenna in path[] */
+	DifxTcalTypeDIFX,		/* one file pointed to by path[] */
 	NumDifxTcalTypes		/* this line must end the enum */
 };
 
@@ -135,8 +138,10 @@ int setDifxTcalVLBA(DifxTcal *dt, const char *tcalPath);
 
 const char *defaultVLBAReceiver(float freq);
 
-int loadDifxTcalVLBA(DifxTcal *dt, const char *antenna, const char *receiver);
 
+/* 3. For DIFX format file: */
+
+int setDifxTcalDIFX(DifxTcal *dt, const char *tcalFile);
 
 
 #ifdef __cplusplus
