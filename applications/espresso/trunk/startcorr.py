@@ -10,11 +10,11 @@ def run_vex2difx(v2dfilename, vex2difx_options):
     print command
     subprocess.check_call( command, stdout=sys.stdout, shell=True)
 
-def fix_outdir(jobname, inputfilename, indir, outdir):
-    # modify the output filename in the input file
+def change_path(inputfilename, changeparm, oldpath, newpath):
+    # modify paths in the input file
     for line in fileinput.FileInput(inputfilename, inplace=1, backup='.org'):
-        if 'OUTPUT FILENAME:' in line:
-            line = line.replace(indir, outdir)
+        if re.match(changeparm, line):
+            line = line.replace(oldpath, newpath)
         print line,
 
     fileinput.close()
@@ -248,7 +248,7 @@ for jobname in args:
     # fix the output filename to point at the cuppa data disk
     if not options.novex:
         print "\nrenaming the 'OUTPUT FILENAME' in", inputfilename, "from", indir, "to", outdir, "\n"
-        fix_outdir(jobname, inputfilename, indir, outdir)
+        change_path(inputfilename, 'OUTPUT FILENAME:', indir, outdir)
 
     # run calcif2
     if not options.nocalc:
@@ -260,6 +260,14 @@ for jobname in args:
     # copy the model files to the output directory
     print "copying the model files", jobname + '.*', "to", outdir, "\n"
     copy_models(jobname, indir, outdir)
+
+    # change the path names in the copied .input and .calc to relative paths
+    print "changing absolute paths to relative paths in the copied .input and .calc files\n"
+    copy_inputfilename = outdir + os.sep + inputfilename
+    copy_calcfilename = outdir + os.sep + calcfilename
+    change_path(copy_inputfilename, 'CALC FILENAME:', indir, './')
+    change_path(copy_calcfilename, 'IM FILENAME:', indir, './')
+    change_path(copy_calcfilename, 'FLAG FILENAME:', indir, './')
 
     # copy job control files to output directory, and rename
     print "copying the job control files", expname + '.[joblist|v2d|vex]', "to", outdir, "\n"
