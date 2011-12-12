@@ -46,7 +46,7 @@
 
 const string version(VERSION);
 const string program("vex2difx");
-const string verdate("20110616");
+const string verdate("20111212");
 const string author("Walter Brisken/Adam Deller");
 
 const int defaultMaxNSBetweenACAvg = 2000000;	// 2ms, good default for use with transient detection
@@ -708,7 +708,7 @@ static int next2(int x)
 class freq
 {
 public:
-	freq(double f=0.0, double b=0.0, char s=' ', int isr=0, int osr=0, int os=0, int d=0, int iz=0, unsigned int t=0) 
+	freq(double f=0.0, double b=0.0, char s=' ', double isr=0.0, double osr=0.0, int os=0, int d=0, int iz=0, unsigned int t=0) 
 		: fq(f), bw(b), inputSpecRes(isr), outputSpecRes(osr), overSamp(os), decimation(d), isZoomFreq(iz), toneSetId(t), sideBand(s) {};
 	double fq;		// Hz
 	double bw;		// Hz
@@ -723,8 +723,7 @@ public:
 	int specAvg() const { return static_cast<int>(outputSpecRes/inputSpecRes + 0.5); }
 };
 
-static int getFreqId(vector<freq>& freqs, double fq, double bw, char sb, int isr,
-		int osr, int os, int d, int iz, unsigned int t)
+static int getFreqId(vector<freq>& freqs, double fq, double bw, char sb, double isr, double osr, int os, int d, int iz, unsigned int t)
 {
 	for(vector<freq>::const_iterator it = freqs.begin(); it != freqs.end(); ++it)
 	{
@@ -1027,7 +1026,7 @@ static void populateFreqTable(DifxInput *D, const vector<freq>& freqs, const vec
 		df->freq = freqs[f].fq/1.0e6;
 		df->bw   = freqs[f].bw/1.0e6;
 		df->sideband = freqs[f].sideBand;
-		df->nChan = freqs[f].bw/freqs[f].inputSpecRes;	// df->nChan is the number of pre-averaged channels
+		df->nChan = static_cast<int>(freqs[f].bw/freqs[f].inputSpecRes + 0.5);	// df->nChan is the number of pre-averaged channels
 		df->specAvg = freqs[f].specAvg();
 		df->overSamp = freqs[f].overSamp;
 		df->decimation = freqs[f].decimation;

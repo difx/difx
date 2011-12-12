@@ -2006,11 +2006,11 @@ int CorrParams::checkSetupValidity()
 					specAvgUsed = true;
 					if(c->nFFTChan)
 					{
-						c->nOutputChan = c->nFFTChan / c->suppliedSpecAvg;
+						c->nOutputChan = static_cast<int>(c->nFFTChan / c->suppliedSpecAvg + 0.5);
 					}
 					else
 					{
-						c->nFFTChan = c->nOutputChan * c->suppliedSpecAvg;
+						c->nFFTChan = static_cast<int>(c->nOutputChan * c->suppliedSpecAvg + 0.5);
 					}
 				}
 			}

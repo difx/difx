@@ -40,13 +40,14 @@
 #include "util.h"
 
 const char program[] = "rdbetsys";
-const char version[] = "0.3";
+const char version[] = "0.4";
 const char author[]  = "Walter Brisken";
-const char verdate[] = "20111211";
+const char verdate[] = "20111212";
 
 const char defaultSwitchedPowerPath[] = "/users/vlbamon/switchedpower";
 const double defaultTsysInterval = 15.0;	// Seconds
 const int MaxFilenameLength = 256;
+const char *defaultRxName = "0cm";
 
 static void usage(const char *pgm)
 {
@@ -170,7 +171,7 @@ std::string genFileList(const char *switchedPowerPath, const char *stn, const Ve
 class TsysAverager
 {
 public:
-	TsysAverager() : freq(0.0), bw(0.0), tCal(0.0), pOn(0.0), pOff(0.0), n(0), receiver("0cm"), pol(' ') {}
+	TsysAverager() : freq(0.0), bw(0.0), tCal(0.0), pOn(0.0), pOff(0.0), n(0), pol(' '), rxName(defaultRxName) {}
 	void reset() { pOn = pOff = 0.0; n = 0; }
 	double Tsys() const { return (n > 0) ? (0.5*tCal*(pOn + pOff)/(pOn - pOff)) : 999.0; }
 	void set(const VexChannel &vc);
@@ -181,8 +182,8 @@ public:
 	double pOn;
 	double pOff;
 	int n;
-	std::string receiver;
 	char pol;
+	const char *rxName;
 };
 
 void TsysAverager::print() const
@@ -228,12 +229,55 @@ void TsysAccumulator::setStation(const std::string &stnName)
 	Upper(stn);
 }
 
+void setRxNames(std::vector<TsysAverager> &averagers)
+{
+	bool has6cm = false;
+	bool has4cm = false;
+
+	for(std::vector<TsysAverager>::iterator ta = averagers.begin(); ta != averagers.end(); ++ta)
+	{
+		ta->rxName = defaultVLBAReceiverStrict(fabs(ta->freq + ta->bw/2.0));
+		if(strcmp(ta->rxName, "6cm") == 0)
+		{
+			has6cm = true;
+		}
+		if(strcmp(ta->rxName, "4cm") == 0)
+		{
+			has4cm = true;
+		}
+	}
+	if(has4cm && has6cm)
+	{
+		fprintf(stderr, "Warning: both 4cm and 6cm used at the same time!\n");
+	}
+	for(std::vector<TsysAverager>::iterator ta = averagers.begin(); ta != averagers.end(); ++ta)
+	{
+		if(strcmp(ta->rxName, "?") == 0)
+		{
+			if(has4cm)
+			{
+				ta->rxName = "4cm";
+			}
+			else if(has6cm)
+			{
+				ta->rxName = "6cm";
+			}
+			else
+			{
+				ta->rxName = "";	/* Cannot be determined, or out of range */
+			}
+		}
+	}
+}
+
 void TsysAccumulator::setup(const VexSetup &vexSetup, DifxTcal *T, double mjd, const string &stn)
 {
 	double midFreq;
 	std::vector<TsysAverager>::iterator ta;
 	std::vector<VexChannel>::const_iterator vc;
 	const VexFormat &format = vexSetup.format;
+
+	// write out the data!
 	flush();
 
 	chans.resize(format.channels.size());
@@ -246,15 +290,15 @@ void TsysAccumulator::setup(const VexSetup &vexSetup, DifxTcal *T, double mjd, c
 		midFreq = ta->freq;
 		if(vc->bbcSideBand == 'L')
 		{
+			/* the sign of ta->freq incorporates the sideband here */
 			ta->freq = -ta->freq;
-			midFreq -= ta->bw/2.0;
-		}
-		else
-		{
-			midFreq += ta->bw/2.0;
 		}
 		ta->pol = vexSetup.getIF(vc->ifname)->pol;
-		ta->tCal = getDifxTcal(T, mjd, stn.c_str(), "", ta->pol, midFreq);
+	}
+	setRxNames(chans);
+	for(ta = chans.begin(); ta != chans.end(); ++ta)
+	{
+		ta->tCal = getDifxTcal(T, mjd, stn.c_str(), ta->rxName, ta->pol, fabs(ta->freq + ta->bw/2.0));
 	}
 }
 
@@ -272,7 +316,7 @@ void TsysAccumulator::flush()
 		fprintf(out, "%s %12.8f %10.8f %d", stn.c_str(), day, accumTimeRange.duration(), static_cast<int>(chans.size()));
 		for(std::vector<TsysAverager>::const_iterator ta = chans.begin(); ta != chans.end(); ++ta)
 		{
-			fprintf(out, " %5.2f %s", ta->Tsys(), ta->receiver.c_str());
+			fprintf(out, " %5.2f %s", ta->Tsys(), ta->rxName);
 		}
 		fprintf(out, "\n");
 
@@ -611,6 +655,16 @@ int main(int argc, char **argv)
 	P->minSubarraySize = 1;
 	P->vexFile = vexFilename;
 	V = loadVexFile(*P, &nWarn);
+	if(!V)
+	{
+		fprintf(stderr, "Error opening vex file %s\n", vexFilename);
+		
+		delete V;
+		delete P;
+		deleteDifxTcal(T);
+
+		exit(EXIT_FAILURE);
+	}
 
 	if(nWarn > 0)
 	{
@@ -622,6 +676,8 @@ int main(int argc, char **argv)
 	{
 		fprintf(stderr, "Cannot open %s for write\n", tsysFilename);
 
+		delete V;
+		delete P;
 		deleteDifxTcal(T);
 
 		return EXIT_FAILURE;
@@ -688,6 +744,7 @@ int main(int argc, char **argv)
 	fclose(out);
 
 	delete V;
+	delete P;
 
 	deleteDifxTcal(T);
 
