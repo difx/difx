@@ -246,7 +246,7 @@ headmachine = os.uname()[1].lower()
 computemachines = []
 for host in sorted(hosts.keys()):
     # usually avoid using head node and datastream nodes as compute nodes
-    # (overridden with -a switch).
+    # (overridden with -H switch).
     if options.allcompute or (not host in [headmachine] + datamachines):
         # also only use nodes with more than 0 threads available.
         if hosts[host][0]:

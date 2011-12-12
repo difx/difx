@@ -14,11 +14,10 @@ def get_corrhosts(hostsfilename):
     for line in hostsfile:
         line.strip()
         # strip comments
-        re.sub(r'#.*','', line)
+        line = re.sub(r'#.*','', line)
         hostdata = line.split(',')
-        try:
-            hostname = hostdata[0].strip()
-        except:
+        hostname = hostdata[0].strip()
+        if not hostname:
             continue
         try:
             hostthreads = int(hostdata[1])
