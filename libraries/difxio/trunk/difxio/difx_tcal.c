@@ -30,7 +30,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include <math.h>
+#include <time.h>
+#include <ctype.h>
 #include "difx_tcal.h"
 
 /* Note! Keep this in sync with enum DifxTcalType in difx_tcal.h */
@@ -124,8 +127,8 @@ int getDifxTcalGroupIndex(const DifxTcal *dt, double mjd, const char *antenna, c
 				continue;
 			}
 
-			ma = strcmp(antenna,  dt->group[g].antenna);
-			mr = strcmp(receiver, dt->group[g].receiver);
+			ma = strcasecmp(antenna,  dt->group[g].antenna);
+			mr = strcasecmp(receiver, dt->group[g].receiver);
 
 			if(ma == 0 && mr == 0)
 			{
@@ -333,10 +336,10 @@ float getDifxTcal(DifxTcal *dt, double mjd, const char *antenna, const char *rec
 			switch(dt->group[g].interpolation)
 			{
 			case DifxTcalInterpolationNearest:
-				tcal = getDifxTcalNearest(&(dt->group[g]), pol, freq);
+				tcal = getDifxTcalNearest(dt->group+g, pol, freq);
 				break;
 			case DifxTcalInterpolationLinear:
-				tcal = getDifxTcalLinear(&(dt->group[g]), pol, freq);
+				tcal = getDifxTcalLinear(dt->group+g, pol, freq);
 				break;
 			default:
 				break;
@@ -573,8 +576,19 @@ const char *defaultVLBAReceiver(float freq)	/* freq in MHz */
 
 static double tcalDate2mjd(double tcalDate)
 {
+	int t;
+	struct tm tm;
+	time_t unixTime;
 
-	return 0.0;
+	t = (int)(tcalDate + 0.001);
+	memset(&tm, 0, sizeof(tm));
+	tm.tm_year = t / 10000 - 1900;		/* first 4 digits */
+	tm.tm_mon = (t % 10000) / 100 - 1;	/* next 2 digits */
+	tm.tm_mday = t % 100;			/* last 2 digits */
+
+	unixTime = mktime(&tm);
+
+	return 40587.0 + unixTime/86400.0;
 }
 
 int loadDifxTcalVLBA(DifxTcal *dt, const char *antenna, const char *receiver)
@@ -586,6 +600,13 @@ int loadDifxTcalVLBA(DifxTcal *dt, const char *antenna, const char *receiver)
 		int v;
 		int lineNum;
 		int g = -1;
+		char lowercaseAntenna[MAX_DIFX_TCAL_ANTENNA_LENGTH];
+
+		for(v = 0; v < MAX_DIFX_TCAL_ANTENNA_LENGTH && antenna[v]; ++v)
+		{
+			lowercaseAntenna[v] = tolower(antenna[v]);
+		}
+		lowercaseAntenna[v] = 0;
 
 		if(dt->type != DifxTcalTypeVLBA)
 		{
@@ -599,7 +620,7 @@ int loadDifxTcalVLBA(DifxTcal *dt, const char *antenna, const char *receiver)
 			return -5;
 		}
 
-		v = snprintf(fileName, DIFX_TCAL_FILENAME_LENGTH, "%s/%s.%s", dt->path, receiver, antenna);
+		v = snprintf(fileName, DIFX_TCAL_FILENAME_LENGTH, "%s/%s.%s", dt->path, receiver, lowercaseAntenna);
 		if(v >= DIFX_TCAL_FILENAME_LENGTH)
 		{
 			fprintf(stderr, "Developer error: loadDifxTcalVLBA: DIFX_TCAL_FILENAME_LENGTH is too short (%d); needs to be %d or more\n", DIFX_TCAL_FILENAME_LENGTH, v+1);
@@ -657,7 +678,7 @@ int loadDifxTcalVLBA(DifxTcal *dt, const char *antenna, const char *receiver)
 				}
 				strcpy(dt->group[g].antenna, antenna);
 				strcpy(dt->group[g].receiver, receiver);
-				if(strcmp(receiver, "50cm") == 0 || strcmp(receiver, "90cm") == 0)	/* special case */
+				if(strcasecmp(receiver, "50cm") == 0 || strcasecmp(receiver, "90cm") == 0)	/* special case */
 				{
 					dt->group[g].interpolation = DifxTcalInterpolationNearest;
 				}
