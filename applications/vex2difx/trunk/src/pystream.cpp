@@ -158,7 +158,6 @@ void pystream::close()
 		{
 			double deltat = floor((lastValid-mjd0 + 1.0/86400.0)*86400.0 + 0.5);
 			*this << "array.wait(mjdStart + " << deltat << "*second)" << endl;
-			*this << "dbe0.shutdownPoller()" << endl;
 		}
 		else
 		{
@@ -709,7 +708,8 @@ int pystream::writeScans(const VexData *V)
 				}
                 else {
                     *this << "print \"Not a recording scan - still set switches for " << scan->defName << ".\"" << endl;
-                    *this << "subarray.setSwitches(mjdStart + " << deltat1 << "*second)" << endl;
+                    *this << "subarray.setSwitches(mjdStart + " << deltat1 << "*second, mjdStart+" << deltat2 \
+                        << "*second)" << endl;
 				}
                 // only start scan if we are at least 10sec away from scan end
                 // NOTE - if this changes to a value less than 5sec may need to revisit Executor RDBE code
