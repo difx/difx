@@ -538,44 +538,31 @@ int setDifxTcalVLBA(DifxTcal *dt, const char *tcalPath)
 	return 0;
 }
 
-const char *defaultVLBAReceiver(float freq)	/* freq in MHz */
+const char *defaultVLBAReceiver(float freq)		/* freq in MHz */
 {
-	if(freq < 1000.0)
-	{
-		return "90cm";
-	}
-	else if(freq < 2000.0)
-	{
-		return "20cm";
-	}
-	else if(freq < 3800.0)
-	{
-		return "13cm";
-	}
-	else if(freq < 7900.0)
-	{
-		return "6cm";
-	}
-	else if(freq < 10000.0)
-	{
-		return "4cm";
-	}
-	else if(freq < 18000.0)
-	{
-		return "2cm";
-	}
-	else if(freq < 28000.0)
-	{
-		return "1cm";
-	}
-	else if(freq < 55000.0)
-	{
-		return "7mm";
-	}
-	else
-	{
-		return "3mm";
-	}
+	if(     freq < 1000.0)  { return "90cm"; }
+	else if(freq < 2000.0)  { return "20cm"; }
+	else if(freq < 3800.0)  { return "13cm"; }
+	else if(freq < 7900.0)  { return "6cm"; }
+	else if(freq < 10000.0) { return "4cm"; }
+	else if(freq < 18000.0) { return "2cm"; }
+	else if(freq < 28000.0) { return "1cm"; }
+	else if(freq < 55000.0) { return "7mm"; }
+	else                    { return "3mm"; }
+}
+
+const char *defaultVLBAReceiverStrict(float freq)	/* freq in MHz */
+{
+	if(     freq > 290.0   && freq < 700.0  ) { return "90cm"; }
+	else if(freq > 1100.0  && freq < 1900.0 ) { return "20cm"; }
+	else if(freq > 2000.0  && freq < 3000.0 ) { return "13cm"; }
+	else if(freq > 3800.0  && freq < 7900.0 ) { return "6cm"; }
+	else if(freq > 8100.0  && freq < 9000.0 ) { return "4cm"; }
+	else if(freq > 11000.0 && freq < 16000.0) { return "2cm"; }
+	else if(freq > 20000.0 && freq < 25000.0) { return "1cm"; }
+	else if(freq > 40000.0 && freq < 46000.0) { return "7mm"; }
+	else if(freq > 79000.0 && freq < 91000.0) { return "3mm"; }
+	else                                      { return "?"; }
 }
 
 static double tcalDate2mjd(double tcalDate)

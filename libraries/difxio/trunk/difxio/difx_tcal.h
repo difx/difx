@@ -141,7 +141,9 @@ int setDifxTcalConstant(DifxTcal *dt, float tcal1, char pol1, float tcal2, char 
 
 int setDifxTcalVLBA(DifxTcal *dt, const char *tcalPath);
 
-const char *defaultVLBAReceiver(float freq);
+const char *defaultVLBAReceiver(float freq);	/* freq in MHz */
+
+const char *defaultVLBAReceiverStrict(float freq);	/* freq in MHz */
 
 
 /* 3. For DIFX format file: */
