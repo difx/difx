@@ -29,6 +29,11 @@
 
 /* TODO:
  * o Offer more different interpolation types
+ * o newDifxTcalFromEnviron() which looks at new env var DIFX_TCAL
+ *    which could have values:  VLBA:/home/jansky3/vlbaops/TCAL
+ *                              DIFX:/users/difx/tcals
+ *                              CONSTANT:2.12,1.98
+ *    or others as they are added to this code.
  */
 
 
