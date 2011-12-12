@@ -103,9 +103,9 @@ def write_threads(expname, hosts, computemachines):
 
     THREADFILE.close()
 
-def write_run(expname, np):
+def write_run(expname, np, options):
     RUNFILE = open("run", 'w')
-    print>>RUNFILE, "mpirun -np", np, "-mca rmaps -machinefile machines.list $DIFXROOT/bin/mpifxcorr", expname + "_1.input"
+    print>>RUNFILE, "mpirun -np", np, options, "-machinefile machines.list $DIFXROOT/bin/mpifxcorr", expname + "_1.input"
     try:
         os.chmod(RUNFILE.name, 0775)
     except:
@@ -147,6 +147,9 @@ parser.add_option( "--station", "-s",
 parser.add_option( "--computehead", "-H",
         action='store_true', dest="allcompute", default=False,
         help="Allow head and data nodes to be used as compute nodes" )
+parser.add_option( "--rmaps_seq", "-m",
+        action='store_true', dest="rmaps_seq", default=False,
+        help="Pass the '--mca rmaps seq' instruction to mpirun" )
 
 (options, args) = parser.parse_args()
 
@@ -256,7 +259,10 @@ machines = [headmachine] + datamachines + computemachines
 check_machines(machines[:])
 write_machines(expname, machines)
 write_threads(expname, hosts, computemachines)
-write_run(expname, len(computemachines + datamachines) +1)
+mpirun_options = ''
+if options.rmaps_seq:
+    mpirun_options = '--mca rmaps seq'
+write_run(expname, len(computemachines + datamachines) +1, mpirun_options)
 
 
 print "All done!"
