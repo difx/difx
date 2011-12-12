@@ -464,7 +464,10 @@ def runMessage(fileBase, machinesPolicy, deletePolicy, makeModel, override, useL
 		else:
 			return 'Error: model not available for %s' % fileBase
 	
-	if isdir(fileBase+'.difx') or isfile(fileBase+'.difx'):
+	if restartSeconds > 0:
+		if not isdir(fileBase+'.difx'):
+			print 'Warning: restartSeconds = %d and no existing output!' % restartSeconds
+	elif isdir(fileBase+'.difx') or isfile(fileBase+'.difx'):
 		if deletePolicy == 1:
 			if verbose > 0:
 				print 'Removing %s.difx' % fileBase
@@ -503,7 +506,10 @@ def runDirect(fileBase, machinesPolicy, deletePolicy, makeModel, override, useLo
 		else:
 			return 'Error: model not available for %s' % fileBase
 	
-	if isdir(fileBase+'.difx') or isfile(fileBase+'.difx'):
+	if restartSeconds > 0:
+		if not isdir(fileBase+'.difx'):
+			print 'Warning: restartSeconds = %d and no existing output!' % restartSeconds
+	elif isdir(fileBase+'.difx') or isfile(fileBase+'.difx'):
 		if deletePolicy == 1:
 			if verbose > 0:
 				print 'Removing %s.difx' % fileBase
@@ -530,11 +536,11 @@ def runDirect(fileBase, machinesPolicy, deletePolicy, makeModel, override, useLo
 		difxProgram = 'runmpifxcorr.' + difxVersion
 
 	if restartSeconds > 0.0:
-		restartOption = '-r %f' % restartSeconds
+		restartOption = ' -r%f' % restartSeconds
 	else:
 		restartOption = ''
 
-	cmd = 'mpirun -np %d --bynode --hostfile %s.machines %s  %s %s %s.input' % (np, fileBase, mpiOptions, difxProgram, restartOption, fileBase)
+	cmd = 'mpirun -np %d --bynode --hostfile %s.machines %s  %s %s.input%s' % (np, fileBase, mpiOptions, difxProgram, fileBase, restartOption)
 
 	sendMessage(fileBase, 'Spawning', 'Spawning %d processes' % np)
 	if verbose > 0:
