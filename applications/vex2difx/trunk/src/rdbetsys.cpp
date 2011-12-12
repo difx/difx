@@ -34,14 +34,15 @@
 #include <glob.h>
 #include <string>
 #include <vector>
+#include <difxio/difx_tcal.h>
 #include "vextables.h"
 #include "vexload.h"
 #include "util.h"
 
 const char program[] = "rdbetsys";
-const char version[] = "0.2";
+const char version[] = "0.3";
 const char author[]  = "Walter Brisken";
-const char verdate[] = "20111130";
+const char verdate[] = "20111211";
 
 const char defaultSwitchedPowerPath[] = "/users/vlbamon/switchedpower";
 const double defaultTsysInterval = 15.0;	// Seconds
@@ -58,7 +59,7 @@ static void usage(const char *pgm)
 	printf("  -v          be more verbose in operation\n\n");
 	printf("  --quiet\n");
 	printf("  -q          be less verbose in operation\n\n");
-	printf("Note that env. var. TCAL_FILE must be set to point to TCal data\n\n");
+	printf("Note that env. var. TCAL_PATH must be set to point to TCal data\n\n");
 }
 
 void mjd2yearday(int mjd, int *year, int *doy)
@@ -166,160 +167,6 @@ std::string genFileList(const char *switchedPowerPath, const char *stn, const Ve
 
 
 
-
-typedef struct
-{
-	char antenna[8];
-	char receiver[8];
-	float freq, tcalR, tcalL;
-} TCal;
-
-
-/* This is somewhat ugly.  Perhaps move these internal to some function? */
-TCal *tCals = 0;
-int nTcal;
-
-
-int loadTcals(const char *tcalFilename)
-{
-	const int MaxLineLength = 100;
-	char line[MaxLineLength];
-	char *rv;
-	FILE *in;
-	int nAlloc = 0;
-
-	if(tcalFilename == 0)
-	{
-		return -1;
-	}
-	in = fopen(tcalFilename, "r");
-	if(!in)
-	{
-		return -2;
-	}
-
-	nAlloc = 4000;
-	tCals = (TCal *)malloc(nAlloc*sizeof(TCal));
-	if(tCals == 0)
-	{
-		fprintf(stderr, "Error: loadTcals: malloc(%d elements)=0\n", nAlloc);
-		fclose(in);
-
-		return -3;
-	}
-
-	for(int i = nTcal = 0; ; ++i)
-	{
-		rv = fgets(line, MaxLineLength, in);
-		if(!rv)
-		{
-			break;
-		}
-		if(line[0] == '#')
-		{
-			continue;
-		}
-		if(nTcal >= nAlloc)
-		{
-			TCal *t;
-			nAlloc += 1000;
-			t = (TCal *)realloc(tCals, nAlloc*sizeof(TCal));
-			if(t == 0)
-			{
-				free(tCals);
-				fprintf(stderr, "Error: loadTcals: realloc(%d elements)=0\n", nAlloc);
-				fclose(in);
-
-				return -4;
-			}
-			else
-			{
-				tCals = t;
-			}
-		}
-		sscanf(line, "%7s%7s%f%f%f", tCals[nTcal].antenna, tCals[nTcal].receiver,
-			&tCals[nTcal].freq, &tCals[nTcal].tcalR, &tCals[nTcal].tcalL);
-		++nTcal;
-	}
-
-	fclose(in);
-
-	return 0;
-}
-
-float getTcalValue(const char *antname, float freq, char pol)
-{
-	int i;
-	int besti;
-	int secondbesti;
-	float bestf, w1, w2, df;
-
-	if(nTcal == 0)
-	{
-		return 1.0;
-	}
-
-	besti = -1;
-	bestf = 1e9;
-	df = 1e9;
-	for(i = 0; i < nTcal; ++i)
-	{
-		df = fabs(freq - tCals[i].freq);
-		if(strcasecmp(antname, tCals[i].antenna) == 0 && df < bestf)
-		{
-			bestf = df;
-			besti = i;
-		}
-	}
-	
-	if(besti < 0)
-	{
-		return 1.0;
-	}
-
-	bestf = tCals[besti].freq;
-
-	secondbesti = -1;
-	if(besti > 0 && bestf > freq && 
-	   strcmp(tCals[besti].antenna, tCals[besti-1].antenna) == 0 &&
-	   strcmp(tCals[besti].receiver, tCals[besti-1].receiver) == 0)
-	{
-		secondbesti = besti - 1;
-	}
-	else if(besti < nTcal-1 && bestf < freq && 
-	        strcmp(tCals[besti].antenna, tCals[besti+1].antenna) == 0 &&
-	        strcmp(tCals[besti].receiver, tCals[besti+1].receiver) == 0)
-	{
-		secondbesti = besti + 1;
-	}
-
-	if(secondbesti >= 0)
-	{
-		w1 = fabs( (tCals[secondbesti].freq - freq)/(tCals[secondbesti].freq - bestf) );
-		w2 = fabs( (tCals[besti].freq - freq)/(tCals[secondbesti].freq - bestf) );
-	}
-	else
-	{
-		secondbesti = besti;
-		w1 = 1.0;
-		w2 = 0.0;
-	}
-
-	if(pol == 'r' || pol == 'R')
-	{
-		return w1*tCals[besti].tcalR + w2*tCals[secondbesti].tcalR;
-	}
-	else if(pol == 'l' || pol == 'L')
-	{
-		return w1*tCals[besti].tcalL + w2*tCals[secondbesti].tcalL;
-	}
-	else
-	{
-		return 1.0;
-	}
-}
-
-
 class TsysAverager
 {
 public:
@@ -356,7 +203,7 @@ public:
 	~TsysAccumulator();
 	void setOutput(FILE *outFile);
 	void setStation(const std::string &stnName);
-	void setup(const VexSetup &vexSetup, const string &str);
+	void setup(const VexSetup &vexSetup, DifxTcal *T, double mjd, const string &str);
 	void flush();
 	void feed(const VexInterval &lineTimeRange, const char *data);
 };
@@ -381,7 +228,7 @@ void TsysAccumulator::setStation(const std::string &stnName)
 	Upper(stn);
 }
 
-void TsysAccumulator::setup(const VexSetup &vexSetup, const string &stn)
+void TsysAccumulator::setup(const VexSetup &vexSetup, DifxTcal *T, double mjd, const string &stn)
 {
 	double midFreq;
 	std::vector<TsysAverager>::iterator ta;
@@ -407,7 +254,7 @@ void TsysAccumulator::setup(const VexSetup &vexSetup, const string &stn)
 			midFreq += ta->bw/2.0;
 		}
 		ta->pol = vexSetup.getIF(vc->ifname)->pol;
-		ta->tCal = getTcalValue(stn.c_str(), midFreq, ta->pol);
+		ta->tCal = getDifxTcal(T, mjd, stn.c_str(), "", ta->pol, midFreq);
 	}
 }
 
@@ -479,7 +326,7 @@ void TsysAccumulator::feed(const VexInterval &lineTimeRange, const char *data)
 	}
 }
 
-int processStation(FILE *out, const VexData &V, const string &stn, const string &fileList, const VexInterval &stnTimeRange, double nominalTsysInterval, int verbose)
+int processStation(FILE *out, const VexData &V, const string &stn, const string &fileList, const VexInterval &stnTimeRange, double nominalTsysInterval, DifxTcal *T, int verbose)
 {
 	const int MaxLineLength = 32768;	// make sure it is large enough!
 	char line[MaxLineLength];
@@ -597,7 +444,7 @@ int processStation(FILE *out, const VexData &V, const string &stn, const string 
 				break;
 			}
 
-			TA.setup(*setup, stn);  // also flushes
+			TA.setup(*setup, T, scanTimeRange.mjdStop, stn);  // also flushes
 			
 			fprintf(out, "# Scan %s\n", scan->defName.c_str());
 
@@ -666,6 +513,7 @@ int main(int argc, char **argv)
 {
 	VexData *V;
 	CorrParams *P;
+	DifxTcal *T;
 	int nWarn = 0;
 	std::string fileList;
 	map<string,VexInterval> as;
@@ -675,7 +523,7 @@ int main(int argc, char **argv)
 	double nominalTsysInterval = defaultTsysInterval;
 	int p, v;
 	int verbose = 1;
-	const char *tcalFilename;
+	const char *tcalPath;
 	int nZero = 0;
 	string zeroStations;
 
@@ -730,21 +578,30 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
-	tcalFilename = getenv("TCAL_FILE");
+	tcalPath = getenv("TCAL_PATH");
 
-	if(tcalFilename == 0)
+	if(tcalPath == 0)
 	{
-		fprintf(stderr, "Environment variable TCAL_FILE must exist\n");
+		fprintf(stderr, "Environment variable TCAL_PATH must exist\n");
 
 		return EXIT_FAILURE;
 	}
 
 
-	v = loadTcals(tcalFilename);
-
-	if(v < 0)
+	T = newDifxTcal();
+	if(!T)
 	{
-		fprintf(stderr, "Error: loading of tCal file %s failed\n", tcalFilename);
+		fprintf(stderr, "Error initializing Tcal system\n");
+
+		return EXIT_FAILURE;
+	}
+	v = setDifxTcalVLBA(T, tcalPath);
+
+	if(v != 0)
+	{
+		fprintf(stderr, "Error %d setting up Tcal system\n", v);
+
+		deleteDifxTcal(T);
 
 		return EXIT_FAILURE;
 	}
@@ -764,6 +621,8 @@ int main(int argc, char **argv)
 	if(!out)
 	{
 		fprintf(stderr, "Cannot open %s for write\n", tsysFilename);
+
+		deleteDifxTcal(T);
 
 		return EXIT_FAILURE;
 	}
@@ -797,7 +656,7 @@ int main(int argc, char **argv)
 		fileList = genFileList(defaultSwitchedPowerPath, stn.c_str(), it->second);
 		if(verbose > 1)
 		{
-			printf("  FL: %s\n", fileList.c_str());
+			printf("  File list: %s\n", fileList.c_str());
 		}
 		if(fileList.empty())
 		{
@@ -805,7 +664,7 @@ int main(int argc, char **argv)
 		}
 		else
 		{
-			nRecord = processStation(out, *V, it->first, fileList, it->second, nominalTsysInterval, verbose);
+			nRecord = processStation(out, *V, it->first, fileList, it->second, nominalTsysInterval, T, verbose);
 		}
 		if(nRecord <= 0)
 		{
@@ -829,6 +688,8 @@ int main(int argc, char **argv)
 	fclose(out);
 
 	delete V;
+
+	deleteDifxTcal(T);
 
 	return EXIT_SUCCESS;
 }
