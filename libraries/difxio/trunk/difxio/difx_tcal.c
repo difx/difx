@@ -103,12 +103,12 @@ void deleteDifxTcal(DifxTcal *dt)
 int getDifxTcalGroupIndex(const DifxTcal *dt, double mjd, const char *antenna, const char *receiver)
 {
 	int best = -1;
-	int deltamjd = 1e9;
+	float deltamjd = 1e10;
 	
 	/* a zero MJD implies take latest */
 	if(mjd < 1.0)
 	{
-		mjd = 1000000.0;
+		mjd = 1e9;
 	}
 
 	if(dt && dt->nGroup > 0)
@@ -178,23 +178,23 @@ int addDifxTcalGroup(DifxTcal *dt)
 			{
 				dt->group = tmp;
 			}
-			dt->group[n].antenna[0] = 0;
-			dt->group[n].receiver[0] = 0;
-			dt->group[n].mjdStart = 0.0;
-			dt->group[n].serial = -1;
-			dt->group[n].interpolation = DifxTcalInterpolationLinear;	/* a good default, probably */
-			dt->group[n].nValue = 0;
-			dt->group[n]._nValueAlloc = 16;
-			dt->group[n].value = (DifxTcalValue *)malloc(dt->group[n]._nValueAlloc*sizeof(DifxTcalValue));
-			if(!dt->group[n].value)
-			{
-				dt->nGroup = n;
+		}
+		dt->group[n].antenna[0] = 0;
+		dt->group[n].receiver[0] = 0;
+		dt->group[n].mjdStart = 0.0;
+		dt->group[n].serial = -1;
+		dt->group[n].interpolation = DifxTcalInterpolationLinear;	/* a good default, probably */
+		dt->group[n].nValue = 0;
+		dt->group[n]._nValueAlloc = 16;
+		dt->group[n].value = (DifxTcalValue *)malloc(dt->group[n]._nValueAlloc*sizeof(DifxTcalValue));
+		if(!dt->group[n].value)
+		{
+			dt->nGroup = n;
 
-				return -3;
-			}
+			return -3;
 		}
 
-		return dt->nGroup;
+		return dt->nGroup - 1;
 	}
 	else
 	{
@@ -239,8 +239,8 @@ static float getDifxTcalLinear(const DifxTcalGroup *group, char pol, float freq)
 {
 	float tcalLow = 0.0;
 	float tcalHigh = 0.0;
-	float freqLow = 1.0e12;
-	float freqHigh = 0.0;
+	float freqLow = 0.0;
+	float freqHigh = 1e12;
 
 	if(group)
 	{
@@ -326,19 +326,17 @@ float getDifxTcal(DifxTcal *dt, double mjd, const char *antenna, const char *rec
 			default:
 				break;
 			}
-
 			g = getDifxTcalGroupIndex(dt, mjd, antenna, receiver);
 		}
-
-		if(g)
+		if(g >= 0)
 		{
 			switch(dt->group[g].interpolation)
 			{
 			case DifxTcalInterpolationNearest:
-				tcal = getDifxTcalNearest(dt->group+g, pol, freq);
+				tcal = getDifxTcalNearest(&(dt->group[g]), pol, freq);
 				break;
 			case DifxTcalInterpolationLinear:
-				tcal = getDifxTcalLinear(dt->group+g, pol, freq);
+				tcal = getDifxTcalLinear(&(dt->group[g]), pol, freq);
 				break;
 			default:
 				break;
@@ -377,12 +375,12 @@ int addDifxTcalValue(DifxTcalGroup* group, float freq, float tcal1, char pol1, f
 			{
 				group->value = tmp;
 			}
-			group->value[n].freq = freq;
-			group->value[n].tcal[0] = tcal1;
-			group->value[n].tcal[1] = tcal2;
-			group->value[n].pol[0] = pol1;
-			group->value[n].pol[1] = pol2;
 		}
+		group->value[n].freq = freq;
+		group->value[n].tcal[0] = tcal1;
+		group->value[n].tcal[1] = tcal2;
+		group->value[n].pol[0] = pol1;
+		group->value[n].pol[1] = pol2;
 
 		return group->nValue;
 	}
@@ -414,8 +412,9 @@ static void fprintDifxTcalCore(FILE *out, const DifxTcal *dt, int summary)
 	{
 		int g;
 		
-		fprintf(out, "  nGroup = %d\n", dt->nGroup);
 		fprintf(out, "  type = %d (%s)\n", dt->type, difxTcalTypeString[dt->type]);
+		fprintf(out, "  path = %s\n", dt->path);
+		fprintf(out, "  nGroup = %d\n", dt->nGroup);
 
 		for(g = 0; g < dt->nGroup; ++g)
 		{
@@ -423,7 +422,7 @@ static void fprintDifxTcalCore(FILE *out, const DifxTcal *dt, int summary)
 			fprintf(out, "    Antenna = %s\n", dt->group[g].antenna);
 			fprintf(out, "    Receiver = %s\n", dt->group[g].receiver);
 			fprintf(out, "    Rx serial # = %d\n", dt->group[g].serial);
-			fprintf(out, "    MJD Start = %14.8f", dt->group[g].mjdStart);
+			fprintf(out, "    MJD Start = %14.8f\n", dt->group[g].mjdStart);
 			fprintf(out, "    Interpolation = %d (%s)\n", dt->group[g].interpolation, difxTcalInterpolationString[dt->group[g].interpolation]);
 			if(summary)
 			{
@@ -433,9 +432,10 @@ static void fprintDifxTcalCore(FILE *out, const DifxTcal *dt, int summary)
 			{
 				int v;
 
+				fprintf(out, "    value = %p\n", dt->group[g].value);
 				for(v = 0; v < dt->group[g].nValue; ++v)
 				{
-					fprintf(out, "      value %d  freq=%f MHz  Tcal(%c)=%f  Tcal(%c)=%f\n", v, 
+					fprintf(out, "      value %3d  freq=%f MHz  Tcal(%c)=%f  Tcal(%c)=%f\n", v, 
 						dt->group[g].value[v].freq,
 						dt->group[g].value[v].pol[0],
 						dt->group[g].value[v].tcal[0],
@@ -585,6 +585,7 @@ int loadDifxTcalVLBA(DifxTcal *dt, const char *antenna, const char *receiver)
 		char fileName[DIFX_TCAL_FILENAME_LENGTH];
 		int v;
 		int lineNum;
+		int g = -1;
 
 		if(dt->type != DifxTcalTypeVLBA)
 		{
@@ -615,7 +616,6 @@ int loadDifxTcalVLBA(DifxTcal *dt, const char *antenna, const char *receiver)
 		for(lineNum = 1;; lineNum++)
 		{
 			const int MaxVLBATcalLineLength = 100;
-			int g = -1;
 			char line[MaxVLBATcalLineLength];
 			char *rv;
 	
@@ -632,11 +632,11 @@ int loadDifxTcalVLBA(DifxTcal *dt, const char *antenna, const char *receiver)
 			}
 			else if(strncmp(line, "RECEIVER", 8) == 0)	/* start a new group */
 			{
-				int serial;
 				double tcalDate, mjd;
+				char serialName[10];
 				int n;
 
-				n = sscanf(line+9, "%d%lf", &serial, &tcalDate);
+				n = sscanf(line+9, "%s%lf", serialName, &tcalDate);
 				if(n != 2)
 				{
 					fprintf(stderr, "Error: loadDifxTcalVLBA: cannot parse line %d of %s\n", lineNum, fileName);
@@ -665,7 +665,7 @@ int loadDifxTcalVLBA(DifxTcal *dt, const char *antenna, const char *receiver)
 				{
 					dt->group[g].interpolation = DifxTcalInterpolationLinear;
 				}
-				dt->group[g].serial = serial;
+				dt->group[g].serial = atoi(serialName);
 				dt->group[g].mjdStart = mjd;
 			}
 			else
@@ -682,7 +682,7 @@ int loadDifxTcalVLBA(DifxTcal *dt, const char *antenna, const char *receiver)
 				{
 					if(g < 0)
 					{
-						fprintf(stderr, "Error: loadDifxTcalVLBA: data line %d before a RECEIVER line\n", lineNum);
+						fprintf(stderr, "Error: loadDifxTcalVLBA: data line %d before a RECEIVER line in %s (g = %d)\n", lineNum, fileName, g);
 
 						fclose(in);
 
@@ -695,7 +695,7 @@ int loadDifxTcalVLBA(DifxTcal *dt, const char *antenna, const char *receiver)
 					}
 					if(tcal2 > 0.0 && tcal2 < 999.0)
 					{
-						pol1 = 'R';
+						pol2 = 'R';
 					}
 					v = addDifxTcalValue(dt->group+g, freq, tcal1, pol1, tcal2, pol2);
 				}
