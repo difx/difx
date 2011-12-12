@@ -886,8 +886,6 @@ static int RecordIsOld(DifxVis *dv)
 	
 	if(mjd < dv->mjdLastRecord[a1] || mjd < dv->mjdLastRecord[a2])
 	{
-		printf("%f %f %f\n", mjd, dv->mjdLastRecord[a1], dv->mjdLastRecord[a2]);
-
 		return 1;
 	}
 	else
