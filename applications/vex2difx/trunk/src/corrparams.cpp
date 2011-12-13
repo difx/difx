@@ -2786,7 +2786,7 @@ int CorrParams::loadShelves(const string &fileName)
 			continue;
 		}
 
-		if(sscanf(s, "%s%s%s", a, v, ms) != 3)
+		if(sscanf(s, "%31s%31s%31s", a, v, ms) != 3)
 		{
 			cerr << "Error: line " << lineNum << " of " << fileName << " not parsable." << endl;
 

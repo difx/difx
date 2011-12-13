@@ -328,7 +328,7 @@ void TsysAccumulator::feed(const VexInterval &lineTimeRange, const char *data)
 {
 	double pOn, pOff;
 	double freq, bw;
-	char pol[100];
+	char pol[2];
 	int pos;
 	int n;
 
@@ -344,7 +344,7 @@ void TsysAccumulator::feed(const VexInterval &lineTimeRange, const char *data)
 
 	while(*data)
 	{
-		n = sscanf(data, "%lf%lf%s%lf%lf%n", &freq, &bw, pol, &pOn, &pOff, &pos);
+		n = sscanf(data, "%lf%lf%1s%lf%lf%n", &freq, &bw, pol, &pOn, &pOff, &pos);
 		if(n != 5)
 		{
 			break;

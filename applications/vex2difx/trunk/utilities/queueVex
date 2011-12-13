@@ -10,8 +10,8 @@ from glob import glob
 import datetime
 
 program = 'queueVex'
-version = 1.4
-verdate = '20111025'
+version = 1.5
+verdate = '20111212'
 author  = 'Walter Brisken'
 
 verbose = 1
@@ -154,6 +154,7 @@ vexFile = None
 priority = 0
 usnoConvert = False
 edit = False
+force = False
 
 for a in argv[1:]:
 	if a[0] == '-':
@@ -168,6 +169,8 @@ for a in argv[1:]:
 			verbose -= 1
 		elif a in ['-u', '--usno']:
 			usnoConvert = True
+		elif a in ['-f', '--force']:
+			edit = True
 		elif a in ['-e', '--edit']:
 			edit = True
 		else:
@@ -186,8 +189,26 @@ if vexFile == None:
 cwd = getcwd()
 
 if find(upper(cwd), 'MARK5C') < 0:
-	print '\nYou are running %s from a non-Mark5C directory.' % program
-	print 'I hope this is what you want!\n'
+	a(cwd+"/MARK5C")
+	if isdir(cwd+'/MARK5C') > 0:
+		if not force:
+			print '\nWarning: %s/MARK5C is presumably where you want to run this.' % cwd
+			print 'Try again with -f to force the operation'
+		else:
+			print '\nContinuing because of -f (or --force) even though %s/MARK5C' % cwd
+			print 'seems more likely to be where you want to run this.'
+	elif isdir(cwd+'/../MARK5C') > 0:
+		if not force:
+			print '\nWarning: %s/../MARK5C is presumably where you want to run this.' % cwd
+			print 'Try again with -f to force the operation'
+		else:
+			print '\nContinuing because of -f (or --force) even though %s/MARK5C' % cwd
+			print 'seems more likely to be where you want to run this.'
+	else:
+		print '\nYou are running %s from a non-Mark5C directory.' % program
+		print 'I hope this is what you want!\n'
+	
+	
 
 if vexFile[0] != '/':
 	vexFile = '%s/%s' % (cwd, vexFile)
