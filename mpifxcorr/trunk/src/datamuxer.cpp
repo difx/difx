@@ -93,10 +93,10 @@ bool VDIFMuxer::initialise()
 
   //get a reference time, calculate number of words and samples per input/output frame
   //assumes there is data at the start of the demuxbuffer already
-  char * tempbuffer = (char*)demuxbuffer;
-  refframemjd = getVDIFFrameMJD(tempbuffer);
-  refframesecond = getVDIFFrameSecond(tempbuffer);
-  refframenumber = getVDIFFrameNumber(tempbuffer);
+  vdif_header *header = (vdif_header*)demuxbuffer;
+  refframemjd = getVDIFFrameMJD(header);
+  refframesecond = getVDIFFrameSecond(header);
+  refframenumber = getVDIFFrameNumber(header);
   samplesperframe = ((inputframebytes-VDIF_HEADER_BYTES)*8)/bitspersample;
   wordsperinputframe = (inputframebytes-VDIF_HEADER_BYTES)/4;
   wordsperoutputframe = wordsperinputframe*numthreads;
@@ -118,10 +118,10 @@ int VDIFMuxer::datacheck(u8 * checkbuffer, int bytestocheck)
   consumedbytes = 0;
   bytestoread = 0;
   while(consumedbytes < bytestocheck - (inputframebytes-1)) {
-    if(getVDIFFrameBytes((char*)checkbuffer + consumedbytes) != inputframebytes) {
+    if(getVDIFFrameBytes((vdif_header*)(checkbuffer + consumedbytes)) != inputframebytes) {
       cwarn << startl << "Bad packet detected in VDIF datastream" << endl;
       byteoffset = 4;
-      while(getVDIFFrameBytes((char*)checkbuffer + consumedbytes + byteoffset) != inputframebytes && consumedbytes + byteoffset < bytestocheck) {
+      while(getVDIFFrameBytes((vdif_header*)(checkbuffer + consumedbytes + byteoffset)) != inputframebytes && consumedbytes + byteoffset < bytestocheck) {
         byteoffset += 4;
       }
       if(consumedbytes + byteoffset < bytestocheck) {
@@ -152,7 +152,7 @@ bool VDIFMuxer::validData(int bufferframe) const
 
 int VDIFMuxer::multiplex(u8 * outputbuffer)
 {
-  char * outptr;
+  vdif_header * header;
   unsigned int * outputwordptr;
   unsigned int copyword;
   int outputframecount, goodframesfromstart, processindex;
@@ -166,12 +166,12 @@ int VDIFMuxer::multiplex(u8 * outputbuffer)
     processindex = processframenumber % (readframes*DEMUX_BUFFER_FACTOR/numthreads);
     if(validData(processindex)) {
       //copy in and tweak up the VDIF header
-      outptr = (char *)(outputbuffer + outputframecount*outputframebytes);
-      memcpy(outptr, (char *)(threadbuffers[0] + processindex*inputframebytes), VDIF_HEADER_BYTES);
-      setVDIFFrameInvalid(outptr, 0);
-      setVDIFNumChannels(outptr, numthreads);
-      setVDIFFrameBytes(outptr, outputframebytes);
-      setVDIFThreadID(outptr, 0);
+      header = (vdif_header *)(outputbuffer + outputframecount*outputframebytes);
+      memcpy(header, (char *)(threadbuffers[0] + processindex*inputframebytes), VDIF_HEADER_BYTES);
+      setVDIFFrameInvalid(header, 0);
+      setVDIFNumChannels(header, numthreads);
+      setVDIFFrameBytes(header, outputframebytes);
+      setVDIFThreadID(header, 0);
 
       //loop over all the samples and copy them in
       copyword = 0;
@@ -212,12 +212,12 @@ bool VDIFMuxer::deinterlace(int validbytes)
   int frameoffset, frameindex, threadindex;
   long long currentframenumber;
   bool found;
-  char * inputptr;
+  vdif_header * inputptr;
 
   //cout << "Deinterlacing: deinterlacecount is " << deinterlacecount << endl;
   //cout << "Will start from " << (deinterlacecount%DEMUX_BUFFER_FACTOR)*readframes << " frames in" << endl;
   for(int i=0;i<validbytes/inputframebytes;i++) {
-    inputptr = (char *)(demuxbuffer + i*inputframebytes + (deinterlacecount%DEMUX_BUFFER_FACTOR)*readframes*inputframebytes);
+    inputptr = (vdif_header*)(demuxbuffer + i*inputframebytes + (deinterlacecount%DEMUX_BUFFER_FACTOR)*readframes*inputframebytes);
     framethread = getVDIFThreadID(inputptr);
     framebytes = getVDIFFrameBytes(inputptr);
     framemjd = getVDIFFrameMJD(inputptr);
