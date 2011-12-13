@@ -40,13 +40,6 @@
 
 typedef struct
 {
-	char antenna[8];
-	char receiver[8];
-	float freq, tcalR, tcalL;
-} TCal;
-
-typedef struct
-{
 	double pOn;	/* power in the on state */
 	double wOn;	/* weight for the on state = 1/sigma^2 */
 	double pOff;	/* power in the off state */
@@ -81,7 +74,7 @@ static int parseTsys(const char *line, char *antName,
 	int p;
 	int n, i, nRecBand;
 
-	n = sscanf(line, "%s%lf%f%d%n", antName, time, timeInt, &nRecBand, &p);
+	n = sscanf(line, "%31s%lf%f%d%n", antName, time, timeInt, &nRecBand, &p);
 	if(n != 4)
 	{
 		return -1;

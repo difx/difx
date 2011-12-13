@@ -232,10 +232,10 @@ static int getNTone(const char *filename, double t1, double t2, int verbose)
 		{
 			break;
 		}
-		n = sscanf(line, "%s%lf%*f%*f%*d%*d%d", antName1, &t, &nTone);
+		n = sscanf(line, "%31s%lf%*f%*f%*d%*d%d", antName1, &t, &nTone);
 		if(verbose > 2)
 		{
-			printf("ant %s, nTone %d\n", antName1, nTone);
+			printf("DEBUG: gNTone: ant %s, nTone %d\n", antName1, nTone);
 		}
 		if(n != 3)
 		{
@@ -321,7 +321,7 @@ static int parsePulseCal(const char *line,
 		}
 	}
 
-	n = sscanf(line, "%s%lf%f%lf%d%d%d%d%d%n", antName, time, timeInt, 
+	n = sscanf(line, "%31s%lf%f%lf%d%d%d%d%d%n", antName, time, timeInt, 
 		cableCal, &np, &nb, &nt, &ns, &nRecBand, &p);
 	if(n != 9)
 	{
@@ -486,7 +486,7 @@ static int parsePulseCalCableCal(const char *line,
 	} nan;
 	nan.i32 = -1;
 	
-	n = sscanf(line, "%s%lf%f%lf%n", antName, time, timeInt, cableCal, &p);
+	n = sscanf(line, "%31s%lf%f%lf%n", antName, time, timeInt, cableCal, &p);
 	if(n != 4)
 	{
 		return -1;
@@ -604,7 +604,7 @@ static int parseDifxPulseCal(const char *line,
 		}
 	}
 
-	n = sscanf(line, "%s%lf%f%lf%d%d%d%d%d%n", antName, time, &timeInt, 
+	n = sscanf(line, "%31s%lf%f%lf%d%d%d%d%d%n", antName, time, &timeInt, 
 		&cableCal, &np, &nb, &nt, &ns, &nRecBand, &p);
 	if(n != 9)
 	{
@@ -1039,7 +1039,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 				}
 				if(!in2)	/* None of the files opened! */
 				{
-					fprintf(stderr, "\nError: All %d PCAL files for job %s antenna %s could not be opened!\n", D->job[j].outputFile, D->antenna[a].name);
+					fprintf(stderr, "\nError: All %d PCAL files for job %s antenna %s could not be opened!\n", nDifxFile, D->job[j].outputFile, D->antenna[a].name);
 					fprintf(stderr, "Check file permissions and try again!\n");
 
 					continue;
@@ -1087,7 +1087,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 						}
 						else 
 						{
-							n = sscanf(line, "%s", antName);
+							n = sscanf(line, "%31s", antName);
 							if(n != 1 || strcmp(antName, D->antenna[a].name))
 							{
 								continue;/*to next line in file*/	
@@ -1242,7 +1242,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 								}
 								else 
 								{
-									n = sscanf(line, "%s", antName);
+									n = sscanf(line, "%31s", antName);
 									if(n != 1 || strcmp(antName, D->antenna[a].name))
 									{
 										continue;/*to next line in file*/	
