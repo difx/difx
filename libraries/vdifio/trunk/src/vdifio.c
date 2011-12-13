@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2010 by Adam Deller / Walter Brisken               *
+ *  Copyright (C) 2009-2011 by Adam Deller/Walter Brisken/Chris Phillips   *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -27,8 +27,29 @@
 //
 //============================================================================
 
+#include <string.h>
 #include <stdio.h>
 #include "vdifio.h"
+
+
+#define VDIF_VERSION 0
+
+#define UNIXZERO_MJD 40587
+
+void mjd2ymd(int mjd, int *year, int *month, int *day) {
+  int jd, temp1, temp2;
+
+  jd = mjd + 2400001;
+
+  // Do some rather cryptic calculations
+  
+  temp1 = 4*(jd+((6*(((4*jd-17918)/146097)))/4+1)/2-37);
+  temp2 = 10*(((temp1-237)%1461)/4)+5;
+
+  *year = temp1/1461-4712;
+  *month =((temp2/306+2)%12)+1;
+  *day = (temp2%306)/10+1;
+}
 
 int ymd2doy(int yr, int mo, int day)
 {
@@ -57,142 +78,221 @@ int ymd2mjd(int yr, int mo, int day)
         return doy-678576+365*yr1+yr1/4-yr1/100+yr1/400;
 }
 
-int parse_vdif_header(char * rawheader, vdif_header * parsedheader)
-{
-	printf("Not yet implemented");
-	return -1;
+//int epoch2mjd(int epoch) {
+//  return ymd2mjd(2000 + epoch/2, (epoch%2)*6+1, 1); // Year and Jan/July
+//}
+
+int createVDIFHeader(vdif_header *header, int framelength, int threadid,  int bits, int nchan,
+		      int iscomplex, char stationid[3]) {
+  int lognchan;
+
+  header->epoch = 0;
+
+  if (VDIF_VERSION>7) return(VDIF_ERROR);
+  if (bits>32 || bits<1) return(VDIF_ERROR);
+  if (framelength%8!=0 || framelength<0) return(VDIF_ERROR);
+  if (threadid>1023 || threadid<0) return(VDIF_ERROR);
+  //if (framepersec<0) return(VDIF_ERROR);
+
+  // Number of channels encoded as power of 2
+  if (nchan<1) return(VDIF_ERROR);
+  lognchan = 0;
+  while (nchan>1) {
+    if (nchan%2==1) return(VDIF_ERROR);
+    lognchan++;
+    nchan /=2;
+  }
+  if (lognchan>31) return(VDIF_ERROR);
+
+  memset(header, 0, VDIF_HEADER_BYTES);
+
+  header->version = VDIF_VERSION;
+  header->nchan = lognchan;
+  header->framelength8 = framelength/8;
+  if (iscomplex)
+    header->iscomplex = 1;
+  else
+    header->iscomplex = 0;
+  header->nbits = bits-1;
+  header->threadid = threadid;
+  header->stationid = stationid[0]<<8 | stationid[1];
+
+  header->frame=0;
+  //header->framepersec=framepersec;
+
+  return(VDIF_NOERROR);
 }
 
-int getVDIFThreadID(char * rawheader)
+
+int getVDIFThreadID(vdif_header *header)
 {
-	unsigned int headerword = ((unsigned int*)rawheader)[3];
-	return (int)((headerword >> 16) & 0x3FF);
+  return (int)header->threadid;
 }
 
-void setVDIFThreadID(char * rawheader, int threadid)
+void setVDIFThreadID(vdif_header *header, int threadid)
 {
-	unsigned int headerword = ((unsigned int*)rawheader)[3];
-	headerword &= 0xFC00FFFF;
-	headerword |= (threadid & 0x3FF) << 16;
-        ((unsigned int*)rawheader)[3] = headerword;
+  // Should check bounds
+  header->threadid = threadid;
 }
 
-int getVDIFFrameBytes(char * rawheader)
+int getVDIFFrameBytes(vdif_header *header)
 {
-        unsigned int headerword = ((unsigned int*)rawheader)[2];
-	return (int)(headerword & 0xFFFFFF)*8;
+  return (int)(header->framelength8)*8;
 }
 
-void setVDIFFrameBytes(char * rawheader, int bytes)
+void setVDIFFrameBytes(vdif_header *header, int bytes)
 {
-	unsigned int headerword = ((unsigned int*)rawheader)[2];
-	headerword &= 0xFF000000;
-	headerword |= (bytes & 0xFFFFFF) / 8;
-	((unsigned int*)rawheader)[2] = headerword;
+  // Should check modulo8 and not too big
+  header->framelength8 = bytes/8;
 }
 
-int getVDIFStationID(char * rawheader)
+int getVDIFStationID(vdif_header *header)
 {
-	unsigned int headerword = ((unsigned int*)rawheader)[3];
-	return (int)(headerword & 0xFFFF);
+  return (int)header->stationid;
 }
 
-int getVDIFBitsPerSample(char * rawheader)
+int getVDIFEpoch(vdif_header *header)
 {
-	unsigned int headerword = ((unsigned int*)rawheader)[3];
-	return (int)(((headerword >> 26) & 0x1F) + 1);
+  return (int)header->epoch;
 }
 
-int getVDIFNumChannels(char * rawheader)
+int getVDIFEpochMJD(vdif_header *header)
 {
-	int numchans, i;
-	unsigned int headerword = ((unsigned int*)rawheader)[2];
-	unsigned int logchans = ((headerword >> 24) & 0x1F);
-
-	numchans = 1;
-	for(i=0;i<logchans;i++)
-	{
-		numchans *= 2;
-	}
-	return numchans;
+  int epoch = (int)header->epoch;
+  return ymd2mjd(2000 + epoch/2, (epoch%2)*6+1, 1);
 }
 
-void setVDIFNumChannels(char * rawheader, int numchannels)
+int getVDIFBitsPerSample(vdif_header *header)
 {
-	unsigned int logchans = 0;
-	while(numchannels > 1)
-	{
-		numchannels /= 2;
-		logchans++;
-	}
-	unsigned int headerword = ((unsigned int*)rawheader)[2];
-	headerword &= 0x83FFFFFF;
-	headerword |= logchans << 24;
-	((unsigned int*)rawheader)[2] = headerword;
+  return ((int)header->nbits+1);
 }
 
-int getVDIFFrameMJD(char * rawheader)
+int getVDIFNumChannels(vdif_header *header)
 {
-        unsigned int headerword = ((unsigned int*)rawheader)[1];
-        int epoch = (int)((headerword >> 24) & 0x3F);
-	int mjd = ymd2mjd(2000 + epoch/2, (epoch%2)*6+1, 1);
-	headerword = ((int*)rawheader)[0];
-	int seconds = (int)(headerword & 0x3FFFFFFF);
-	return mjd + seconds/86400;
+  int numchans, i;
+  numchans = 1;
+  for(i=0;i<header->nchan;i++)
+    {
+      numchans *= 2;
+    }
+  return numchans;
 }
 
-int getVDIFFrameSecond(char * rawheader)
+void setVDIFNumChannels(vdif_header *header, int numchannels)
 {
-        unsigned int headerword = ((unsigned int*)rawheader)[0];
-        return (int)((headerword & 0x3FFFFFFF)%86400);
+  unsigned int logchans = 0;
+  while(numchannels > 1)
+    {
+      numchannels /= 2;
+      logchans++;
+    }
+  header->nchan = logchans;
 }
 
-int getVDIFFrameNumber(char * rawheader)
+int getVDIFFrameMJD(vdif_header *header)
 {
-        unsigned int headerword = ((unsigned int*)rawheader)[1];
-        return (int)(headerword & 0xFFFFFF);
+  int mjd = getVDIFEpochMJD(header);
+
+  return mjd + header->seconds/86400; // Seconds may be greater than one day
 }
 
-int getVDIFFrameInvalid(char * rawheader)
+int getVDIFFrameSecond(vdif_header *header)
 {
-	unsigned int headerword = ((unsigned int*)rawheader)[0];
-	return (int)((headerword >> 31) & 0x01);
+  return ((int)header->seconds)%86400;
 }
 
-void setVDIFFrameMJD(char * rawheader, int framemjd)
+double getVDIFDMJD(vdif_header *header, int framepersec) 
 {
-	unsigned int headerword = ((unsigned int*)rawheader)[1];
-	int epoch = (int)((headerword >> 24) & 0x3F);
-	int emjd = ymd2mjd(2000 + epoch/2, (epoch%2)*6+1, 1);
-	headerword = ((int*)rawheader)[0];
-	int seconds = (int)(headerword & 0x3FFFFFFF);
-	int mjd = emjd + seconds/86400;
-	if(emjd == framemjd) return; //its already right
-	headerword += (framemjd-mjd)*86400;
-	*((unsigned int*)rawheader) = headerword;
+  int mjd = getVDIFFrameMJD(header);
+  int sec = getVDIFFrameSecond(header);
+  return (double)mjd+(sec+(double)header->frame/(double)framepersec)/(24*60*60);
 }
 
-void setVDIFFrameSecond(char * rawheader, int framesecond)
+int getVDIFFullSecond(vdif_header *header)
 {
-	unsigned int headerword = ((unsigned int*)rawheader)[0];
-	headerword -= (headerword & 0x3FFFFFFF)%86400;
-	headerword += framesecond;
-	*((unsigned int*)rawheader) = headerword;
+  return (int)header->seconds;
 }
 
-void setVDIFFrameNumber(char * rawheader, int framenumber)
+int getVDIFFrameNumber(vdif_header *header)
 {
-	unsigned int headerword = ((unsigned int*)rawheader)[1];
-	headerword -= headerword & 0xFFFFFF;
-	headerword += framenumber;
-	*(&(((unsigned int*)rawheader)[1])) = headerword;
+  return (int)header->frame;
 }
 
-void setVDIFFrameInvalid(char * rawheader, unsigned int invalid)
+int getVDIFFrameInvalid(vdif_header *header)
 {
-	unsigned int headerword = ((unsigned int*)rawheader)[0];
-	headerword &= 0x7FFFFFFF; //clear the invalid bit
-	headerword |= (invalid << 31);
-	*((unsigned int*)rawheader) = headerword;
+  return (int)header->invalid;
 }
 
+// Note assumes the Epoch is already set
+void setVDIFFrameMJD(vdif_header *header, int framemjd)
+{
+  int emjd = getVDIFEpochMJD(header);
+  int seconds = (int)header->seconds;
+  int mjd = emjd + seconds/86400;    // BUG? I think this step is wrong CJP
+  if(emjd == framemjd) return; //its already right
+  header->seconds = (framemjd-mjd)*86400;
+}
+
+void setVDIFMJDSec(vdif_header *header, uint64_t mjdsec)
+{
+  int epoch = (int)header->epoch;
+  int emjd = ymd2mjd(2000 + epoch/2, (epoch%2)*6+1, 1);
+  header->seconds = (int)(mjdsec - ((uint64_t)emjd)*86400);
+}
+
+void setVDIFEpoch(vdif_header *header, int mjd) {
+  int year, month, day;
+  mjd2ymd(mjd, &year, &month, &day);
+  header->epoch = (year-2000)*2;
+  if (month>6) header->epoch++;
+}
+
+void setVDIFFrameSecond(vdif_header *header, int framesecond)
+{
+  header->seconds = framesecond;
+}
+
+void setVDIFFrameNumber(vdif_header *header, int framenumber)
+{
+  header->frame = framenumber;
+}
+
+void setVDIFFrameInvalid(vdif_header *header, unsigned int invalid)
+{
+  header->invalid = invalid;
+}
+
+int nextVDIFHeader(vdif_header *header, int framepersec) {
+  header->frame++;
+  if (header->frame>framepersec) {
+    return(VDIF_ERROR);
+  } else if (header->frame==framepersec) {
+    header->seconds++;
+    header->frame = 0;
+  }
+  return(VDIF_NOERROR);
+}
+
+uint64_t time2mjdsec(time_t time) {
+  return ((uint64_t)UNIXZERO_MJD*24*60*60 + (uint64_t)time);
+
+}
+int setVDIFTime(vdif_header *header, time_t time) {
+  int epoch;
+  struct tm t;
+
+  gmtime_r(&time, &t);
+  epoch = (t.tm_year-100)*2;
+  if (epoch<0)     // Year is year since 2000
+    return(VDIF_ERROR);
+  if (t.tm_mon>=6) {
+    epoch++;
+  }
+  epoch %= 32;
+  header->epoch = epoch;
+
+  uint64_t mjdsec = time2mjdsec(time);
+  setVDIFMJDSec(header, mjdsec);
+
+  return(VDIF_NOERROR);
+}

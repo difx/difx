@@ -74,6 +74,7 @@ void readdata(int inputframebytes, char * inputbuffer, FILE * input, int numbuff
   int inputframecount, readbytes, frameoffset, frameindex;
   int framebytes, framemjd, framesecond, framenumber, framethread, threadindex;
   long long currentframenumber;
+  vdif_header *header;
 
   //read from the file
   inputframecount = numbufferframes;
@@ -85,11 +86,12 @@ void readdata(int inputframebytes, char * inputbuffer, FILE * input, int numbuff
 
   //distribute packets
   for(i=0;i<inputframecount;i++) {
-    framethread = getVDIFThreadID(inputbuffer+i*inputframebytes);
-    framebytes = getVDIFFrameBytes(inputbuffer+i*inputframebytes);
-    framemjd = getVDIFFrameMJD(inputbuffer+i*inputframebytes);
-    framesecond = getVDIFFrameSecond(inputbuffer+i*inputframebytes);
-    framenumber = getVDIFFrameNumber(inputbuffer+i*inputframebytes);
+    header = (vdif_header*)inputbuffer+i*inputframebytes;
+    framethread = getVDIFThreadID(header);
+    framebytes = getVDIFFrameBytes(header);
+    framemjd = getVDIFFrameMJD(header);
+    framesecond = getVDIFFrameSecond(header);
+    framenumber = getVDIFFrameNumber(header);
     if(framebytes != inputframebytes) {
       fprintf(stderr, "Framebytes has changed, from %d to %d - aborting!\n", inputframebytes, framebytes);
       exit(EXIT_FAILURE);
@@ -159,6 +161,7 @@ int main(int argc, char **argv)
   unsigned int copyword, activemask;
   int wordsperinputframe, samplesperinputword, samplesperoutputword;
   long long processframenumber;
+  vdif_header *header;
 
   //check the command line arguments, store thread mapping etc
   if(argc < 7)
@@ -206,20 +209,20 @@ int main(int argc, char **argv)
   //peek at the start of the file, work out framebytes and reference time
   readbytes = fread(tempbuffer, 1, VDIF_HEADER_BYTES, input); //read the VDIF header
   if (readbytes<VDIF_HEADER_BYTES) {
-    
     if (feof(input)) {
       fprintf(stderr, "Hit EOF reading first header from %s\n", argv[2]);
     } else if (ferror(input)) {
       fprintf(stderr, "Error reading first header from %s\n", argv[2]);
-    } else {
+     } else {
       fprintf(stderr, "Did not read enough bytes on first header from %s\n", argv[2]);
     }
     fclose(input);
     fclose(output);
     exit(EXIT_FAILURE);
   }
-
-  inputframebytes = getVDIFFrameBytes(tempbuffer);
+  
+  header = (vdif_header*)tempbuffer;
+  inputframebytes = getVDIFFrameBytes(header);
   if(inputframebytes > MAX_VDIF_FRAME_BYTES) {
     fprintf(stderr, "Cannot read frame with %d bytes > max (%d)\n", inputframebytes, MAX_VDIF_FRAME_BYTES);
     fclose(input);
@@ -227,11 +230,11 @@ int main(int argc, char **argv)
     exit(EXIT_FAILURE);
   }
   outputframebytes = (inputframebytes-VDIF_HEADER_BYTES)*numthreads + VDIF_HEADER_BYTES;
-  bitspersample = getVDIFBitsPerSample(tempbuffer);
+  bitspersample = getVDIFBitsPerSample(header);
   activemask = bitmask[bitspersample];
-  refframemjd = getVDIFFrameMJD(tempbuffer);
-  refframesecond = getVDIFFrameSecond(tempbuffer);
-  refframenumber = getVDIFFrameNumber(tempbuffer);
+  refframemjd = getVDIFFrameMJD(header);
+  refframesecond = getVDIFFrameSecond(header);
+  refframenumber = getVDIFFrameNumber(header);
   framespersecond = (int)((((long long)inputthreadmbps)*1000000)/(8*(inputframebytes-VDIF_HEADER_BYTES)));
   samplesperframe = ((inputframebytes-VDIF_HEADER_BYTES)*8)/bitspersample;
   wordsperinputframe = (inputframebytes-VDIF_HEADER_BYTES)/4;
@@ -294,11 +297,12 @@ int main(int argc, char **argv)
       if(validData(bufferframefull, processindex, numthreads, verbose)) {
         //copy in and tweak up the VDIF header
         memcpy(outputbuffer + outputframecount*outputframebytes, threadbuffers[0] + processindex*inputframebytes, VDIF_HEADER_BYTES);
-        setVDIFFrameInvalid(outputbuffer + outputframecount*outputframebytes, 0);
-        setVDIFNumChannels(outputbuffer + outputframecount*outputframebytes, numthreads);
-        setVDIFFrameBytes(outputbuffer + outputframecount*outputframebytes, outputframebytes);
-        setVDIFThreadID(outputbuffer + outputframecount*outputframebytes, 0);
-
+	header = (vdif_header*)(outputbuffer + outputframecount*outputframebytes);
+        setVDIFFrameInvalid(header, 0);
+        setVDIFNumChannels(header, numthreads);
+        setVDIFFrameBytes(header, outputframebytes);
+        setVDIFThreadID(header, 0);
+	
         //loop over all the samples and copy them in
         copyword = 0;
         for(i=0;i<wordsperinputframe;i++) {

@@ -58,6 +58,7 @@ int main(int argc, char **argv)
   int bufferoffset, wrotebytes, wholemissedpackets, extrareadbytes;
   int i, verbose;
   long long framesread, invalidpackets, invalidbytes;
+  vdif_header *header;
 
   if(argc != 4 && argc != 5)
   {
@@ -87,7 +88,8 @@ int main(int argc, char **argv)
   invalidpackets = 0;
   invalidbytes = 0;
   readbytes = fread(buffer, 1, VDIF_HEADER_BYTES, input); //read the VDIF header
-  framebytes = getVDIFFrameBytes(buffer);
+  header = (vdif_header*)buffer;
+  framebytes = getVDIFFrameBytes(header);
   if(framebytes > MAX_VDIF_FRAME_BYTES) {
     fprintf(stderr, "Cannot read frame with %d bytes > max (%d)\n", framebytes, MAX_VDIF_FRAME_BYTES);
     exit(EXIT_FAILURE);
@@ -108,7 +110,8 @@ int main(int argc, char **argv)
       break;
     }
 
-    while(getVDIFFrameBytes(buffer+bufferoffset) != framebytes) {
+    header = (vdif_header*)(buffer+bufferoffset);
+    while(getVDIFFrameBytes(header) != framebytes) {
       //almost certainly some bogus packet.  Try looking ahead
       if(verbose)
         fprintf(stderr, "Lost the VDIF stream - skipping ahead to look for next packet\n");
@@ -143,8 +146,9 @@ int main(int argc, char **argv)
         break;
       }
     }
-    if(getVDIFFrameBytes(buffer+bufferoffset) != framebytes) {
-      fprintf(stderr, "Framebytes has changed (%d)! Can't deal with this, aborting\n", getVDIFFrameBytes(buffer+bufferoffset));
+    header = (vdif_header*)(buffer+bufferoffset);
+    if(getVDIFFrameBytes(header) != framebytes) {
+      fprintf(stderr, "Framebytes has changed (%d)! Can't deal with this, aborting\n", getVDIFFrameBytes(header));
       fprintf(stderr, "Bufferoffset was %d, wholemissedpackets was %d\n", bufferoffset, wholemissedpackets);
       break;
     }

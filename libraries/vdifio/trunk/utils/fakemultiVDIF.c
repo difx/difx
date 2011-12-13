@@ -58,6 +58,7 @@ int main(int argc, char **argv)
   int bufferoffset, wrotebytes, wholemissedpackets, extrareadbytes;
   int i, verbose;
   long long framesread, invalidpackets, invalidbytes;
+  vdif_header *header;
 
   fprintf(stdout, "REMEMBER! The input file must be single thread!\n\n");
 
@@ -91,7 +92,8 @@ int main(int argc, char **argv)
   invalidpackets = 0;
   invalidbytes = 0;
   readbytes = fread(buffer, 1, VDIF_HEADER_BYTES, input); //read the VDIF header
-  framebytes = getVDIFFrameBytes(buffer);
+  header = (vdif_header*)buffer;
+  framebytes = getVDIFFrameBytes(header);
   if(framebytes > MAX_VDIF_FRAME_BYTES) {
     fprintf(stderr, "Cannot read frame with %d bytes > max (%d)\n", framebytes, MAX_VDIF_FRAME_BYTES);
     fclose(output);
@@ -114,7 +116,7 @@ int main(int argc, char **argv)
       break;
     }
 
-    while(getVDIFFrameBytes(buffer+bufferoffset) != framebytes) {
+    while(getVDIFFrameBytes((vdif_header*)(buffer+bufferoffset)) != framebytes) {
       //almost certainly some bogus packet.  Try looking ahead
       if(verbose)
         fprintf(stderr, "Lost the VDIF stream - skipping ahead to look for next packet\n");
@@ -149,17 +151,17 @@ int main(int argc, char **argv)
         break;
       }
     }
-    if(getVDIFFrameBytes(buffer+bufferoffset) != framebytes) {
-      fprintf(stderr, "Framebytes has changed (%d)! Can't deal with this, aborting\n", getVDIFFrameBytes(buffer+bufferoffset));
+    if(getVDIFFrameBytes((vdif_header*)(buffer+bufferoffset)) != framebytes) {
+      fprintf(stderr, "Framebytes has changed (%d)! Can't deal with this, aborting\n", getVDIFFrameBytes((vdif_header*)(buffer+bufferoffset)));
       fprintf(stderr, "Bufferoffset was %d, wholemissedpackets was %d\n", bufferoffset, wholemissedpackets);
       break;
     }
     framesread++;
-    setVDIFThreadID(buffer+bufferoffset, 0);
+    setVDIFThreadID((vdif_header*)(buffer+bufferoffset), 0);
     wrotebytes = fwrite(buffer+bufferoffset, 1, framebytes, output);
     if(wrotebytes != framebytes)
       fprintf(stderr, "Write failed!\n");
-    setVDIFThreadID(buffer+bufferoffset, 1);
+    setVDIFThreadID((vdif_header*)(buffer+bufferoffset), 1);
     wrotebytes = fwrite(buffer+bufferoffset, 1, framebytes, output);
     if(wrotebytes != framebytes)
       fprintf(stderr, "Write failed!\n");

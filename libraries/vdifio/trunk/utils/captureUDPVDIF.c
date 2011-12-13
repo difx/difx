@@ -129,6 +129,7 @@ int main(int argc, char **argv)
   int serversock, status, socketnumber, receivedbytes, udpbufbytes, udpport;
   int currentframes;
   int done;
+  vdif_header *header;
   struct sockaddr_in server;    /* Socket address */
   struct msghdr msg;
   struct iovec iov[1];
@@ -156,7 +157,7 @@ int main(int argc, char **argv)
   wtd.udpframesize = -1;
   pthread_cond_init(&(wtd.writeinitcond), NULL);
   for(i=0;i<NUMSEGMENTS;i++) {
-    wtd.receivebuffers[i] = malloc(BUFFERSEGBYTES);
+    wtd.receivebuffers[i] = (char*)malloc(BUFFERSEGBYTES);
     pthread_mutex_init(&(wtd.locks[i]), NULL);
   }
   if(argc > 3)
@@ -249,18 +250,20 @@ int main(int argc, char **argv)
       else { //was the first time - set framebytes
         wtd.udpframesize = receivedbytes;
         wtd.framespersegment = BUFFERSEGBYTES/wtd.udpframesize;
+	header = (vdif_header*)(wtd.receivebuffers[wtd.fillsegment] + wtd.udpframesize*currentframes);
         printf("Setting framebytes to %d, framespersegment to %d\n", wtd.udpframesize, wtd.framespersegment);
         printf("Starting from front, framebytes is %d, MJD is %d, seconds is %d, num channels is %d\n", 
-               getVDIFFrameBytes(wtd.receivebuffers[wtd.fillsegment] + wtd.udpframesize*currentframes),
-               getVDIFFrameMJD(wtd.receivebuffers[wtd.fillsegment] + wtd.udpframesize*currentframes),
-               getVDIFFrameSecond(wtd.receivebuffers[wtd.fillsegment] + wtd.udpframesize*currentframes),
-               getVDIFNumChannels(wtd.receivebuffers[wtd.fillsegment] + wtd.udpframesize*currentframes));
+               getVDIFFrameBytes(header),
+               getVDIFFrameMJD(header),
+               getVDIFFrameSecond(header),
+               getVDIFNumChannels(header));
+	header = (vdif_header*)((char*)header+8);
         printf("Starting from 8 bytes in, framebytes is %d, MJD is %d, seconds is %d, num channels is %d\n",
-               getVDIFFrameBytes(wtd.receivebuffers[wtd.fillsegment] + wtd.udpframesize*currentframes + 8),
-               getVDIFFrameMJD(wtd.receivebuffers[wtd.fillsegment] + wtd.udpframesize*currentframes + 8),
-               getVDIFFrameSecond(wtd.receivebuffers[wtd.fillsegment] + wtd.udpframesize*currentframes + 8),
-               getVDIFNumChannels(wtd.receivebuffers[wtd.fillsegment] + wtd.udpframesize*currentframes + 8));
-        printf("The hex value of that first byte is %llx\n", 
+               getVDIFFrameBytes(header),
+               getVDIFFrameMJD(header),
+               getVDIFFrameSecond(header),
+               getVDIFNumChannels(header));
+	printf("The hex value of that first byte is %llx\n", 
                *((unsigned long long*)(wtd.receivebuffers[wtd.fillsegment] + wtd.udpframesize*currentframes)));
       }
     }

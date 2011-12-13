@@ -52,6 +52,7 @@ int main(int argc, char **argv)
   FILE * input;
   int readbytes, framebytes, framemjd, framesecond, framenumber, frameinvalid, datambps, framespersecond;
   long long framesread;
+  vdif_header *header;
 
   if(argc != 3)
   {
@@ -69,15 +70,16 @@ int main(int argc, char **argv)
 
   datambps = atoi(argv[2]);
   readbytes = fread(buffer, 1, VDIF_HEADER_BYTES, input); //read the VDIF header
-  framebytes = getVDIFFrameBytes(buffer);
+  header = (vdif_header*)buffer;
+  framebytes = getVDIFFrameBytes(header);
   if(framebytes > MAX_VDIF_FRAME_BYTES) {
     fprintf(stderr, "Cannot read frame with %d bytes > max (%d)\n", framebytes, MAX_VDIF_FRAME_BYTES);
     exit(EXIT_FAILURE);
   }
-  framemjd = getVDIFFrameMJD(buffer);
-  framesecond = getVDIFFrameSecond(buffer);
-  framenumber = getVDIFFrameNumber(buffer);
-  frameinvalid = getVDIFFrameInvalid(buffer);
+  framemjd = getVDIFFrameMJD(header);
+  framesecond = getVDIFFrameSecond(header);
+  framenumber = getVDIFFrameNumber(header);
+  frameinvalid = getVDIFFrameInvalid(header);
   framespersecond = (int)((((long long)datambps)*1000000)/(8*(framebytes-VDIF_HEADER_BYTES)));
   printf("Frames per second is %d\n", framespersecond);
  
@@ -90,13 +92,14 @@ int main(int argc, char **argv)
       fprintf(stderr, "Header read failed - probably at end of file.\n");
       break;
     }
-    framemjd = getVDIFFrameMJD(buffer);
-    framesecond = getVDIFFrameSecond(buffer);
-    framenumber = getVDIFFrameNumber(buffer);
-    frameinvalid = getVDIFFrameInvalid(buffer);
+    header = (vdif_header*)buffer;
+    framemjd = getVDIFFrameMJD(header);
+    framesecond = getVDIFFrameSecond(header);
+    framenumber = getVDIFFrameNumber(header);
+    frameinvalid = getVDIFFrameInvalid(header);
     printf("MJD is %d, second is %d, framenumber is %d, frameinvalid is %d\n", framemjd, framesecond, framenumber, frameinvalid);
-    printf("Threadid is %d, stationid is %d\n", getVDIFThreadID(buffer), getVDIFStationID(buffer));
-    if(getVDIFFrameBytes(buffer) != framebytes) { 
+    printf("Threadid is %d, stationid is %d\n", getVDIFThreadID(header), getVDIFStationID(header));
+    if(getVDIFFrameBytes(header) != framebytes) { 
       fprintf(stderr, "Framebytes has changed! Can't deal with this, aborting\n");
       break;
     }

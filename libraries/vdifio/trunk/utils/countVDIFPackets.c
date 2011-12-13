@@ -54,6 +54,7 @@ int main(int argc, char **argv)
   int readbytes, framebytes, framemjd, framesecond, framenumber, datambps, framespersecond, targetThreadId;
   int nextmjd, nextsecond, nextnumber, refmjd, refsecond, refnumber;
   long long framesread, framesmissed;
+  vdif_header *header;
 
   if(argc != 4)
   {
@@ -73,7 +74,8 @@ int main(int argc, char **argv)
   }
 
   readbytes = fread(buffer, 1, VDIF_HEADER_BYTES, input); //read the VDIF header
-  framebytes = getVDIFFrameBytes(buffer);
+  header = (vdif_header*)buffer;
+  framebytes = getVDIFFrameBytes(header);
   if(framebytes > MAX_VDIF_FRAME_BYTES) {
     fprintf(stderr, "Cannot read frame with %d bytes > max (%d)\n", framebytes, MAX_VDIF_FRAME_BYTES);
     exit(EXIT_FAILURE);
@@ -85,20 +87,21 @@ int main(int argc, char **argv)
 
   framesread = 0;
   framesmissed = 0;
-  while(!feof(input) && getVDIFThreadID(buffer) != targetThreadId) {
+  while(!feof(input) && getVDIFThreadID(header) != targetThreadId) {
     readbytes = fread(buffer, 1, framebytes, input); //read the whole VDIF packet
     if (readbytes < framebytes) {
       fprintf(stderr, "Header read failed - probably at end of file.\n");
       break;
     }
   }
-
-  refmjd = getVDIFFrameMJD(buffer);
-  refsecond = getVDIFFrameSecond(buffer);
-  refnumber = getVDIFFrameNumber(buffer);
-  nextmjd = getVDIFFrameMJD(buffer);
-  nextsecond = getVDIFFrameSecond(buffer);
-  nextnumber = getVDIFFrameNumber(buffer);
+  
+  header = (vdif_header*)buffer;
+  refmjd = getVDIFFrameMJD(header);
+  refsecond = getVDIFFrameSecond(header);
+  refnumber = getVDIFFrameNumber(header);
+  nextmjd = getVDIFFrameMJD(header);
+  nextsecond = getVDIFFrameSecond(header);
+  nextnumber = getVDIFFrameNumber(header);
 
   fseek(input, 0, SEEK_SET); //go back to the start again
 
@@ -108,15 +111,16 @@ int main(int argc, char **argv)
       fprintf(stderr, "Header read failed - probably at end of file.\n");
       break;
     }
-    if(getVDIFFrameBytes(buffer) != framebytes) {
+    header = (vdif_header*)buffer;
+    if(getVDIFFrameBytes(header) != framebytes) {
       fprintf(stderr, "Framebytes has changed! Can't deal with this, aborting\n");
       break;
     }
-    if(getVDIFThreadID(buffer) == targetThreadId) {
+    if(getVDIFThreadID(header) == targetThreadId) {
       framesread++;
-      framemjd = getVDIFFrameMJD(buffer);
-      framesecond = getVDIFFrameSecond(buffer);
-      framenumber = getVDIFFrameNumber(buffer);
+      framemjd = getVDIFFrameMJD(header);
+      framesecond = getVDIFFrameSecond(header);
+      framenumber = getVDIFFrameNumber(header);
       //check for missing frames
       while(framemjd != nextmjd || framesecond != nextsecond || framenumber != nextnumber) {
         if(VERBOSE)

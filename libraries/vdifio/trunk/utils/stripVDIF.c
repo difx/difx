@@ -58,6 +58,7 @@ int main(int argc, char **argv)
   int skipbytesinitial, skipbytesfront, skipbytesback;
   int readbytes, framebytes, stationid, numchannels, bitspersample;
   long long framesread;
+  vdif_header *header;
 
   if(argc < 3 || argc > 6)
   {
@@ -90,6 +91,7 @@ int main(int argc, char **argv)
     exit(EXIT_FAILURE);
   }
 
+  header = (vdif_header*)&buffer;
   framesread = 0;
   if(skipbytesinitial > 0)
     readbytes = fread(buffer, 1, skipbytesinitial, input); //skip some initial wireshark bytes
@@ -99,10 +101,10 @@ int main(int argc, char **argv)
     readbytes = fread(buffer, 1, VDIF_HEADER_BYTES, input); //read the VDIF header
     if (readbytes < VDIF_HEADER_BYTES)
       break;
-    stationid = getVDIFStationID(buffer);
-    bitspersample = getVDIFBitsPerSample(buffer);
-    numchannels = getVDIFNumChannels(buffer);
-    framebytes = getVDIFFrameBytes(buffer);
+    stationid = getVDIFStationID(header);
+    bitspersample = getVDIFBitsPerSample(header);
+    numchannels = getVDIFNumChannels(header);
+    framebytes = getVDIFFrameBytes(header);
     fprintf(stdout, "Station ID is %d, bitspersample is %d, numchannels is %d, framebytes is %d\n", stationid, bitspersample, numchannels, framebytes);
     if(framebytes > MAX_VDIF_FRAME_BYTES) {
       fprintf(stderr, "Cannot read frame with %d bytes > max (%d)\n", framebytes, MAX_VDIF_FRAME_BYTES);

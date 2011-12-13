@@ -59,6 +59,7 @@ int main(int argc, char **argv)
   int overwritemjd, overwritesecond, overwritenumber;
   int desiredthreadid;
   long long framesread, frameswrote;
+  vdif_header *header;
 
   if(argc != 5)
   {
@@ -90,14 +91,15 @@ int main(int argc, char **argv)
   }
   datambps = atoi(argv[3]);
   readbytes = fread(buffer, 1, VDIF_HEADER_BYTES, input); //read the VDIF header
-  framebytes = getVDIFFrameBytes(buffer);
+  header = (vdif_header*)buffer;
+  framebytes = getVDIFFrameBytes(header);
   if(framebytes > MAX_VDIF_FRAME_BYTES) {
     fprintf(stderr, "Cannot read frame with %d bytes > max (%d)\n", framebytes, MAX_VDIF_FRAME_BYTES);
     exit(EXIT_FAILURE);
   }
-  nextmjd = getVDIFFrameMJD(buffer);
-  nextsecond = getVDIFFrameSecond(buffer);
-  nextnumber = getVDIFFrameNumber(buffer);
+  nextmjd = getVDIFFrameMJD(header);
+  nextsecond = getVDIFFrameSecond(header);
+  nextnumber = getVDIFFrameNumber(header);
   framespersecond = (int)((((long long)datambps)*1000000)/(8*(framebytes-VDIF_HEADER_BYTES)));
   printf("Frames per second is %d\n", framespersecond);
  
@@ -107,17 +109,19 @@ int main(int argc, char **argv)
   frameswrote = 0;
   while(!feof(input)) {
     readbytes = fread(buffer, 1, framebytes, input); //read the whole VDIF packet
-    while(getVDIFThreadID(buffer) != desiredthreadid && readbytes == framebytes)
+    header = (vdif_header*)buffer;
+    while(getVDIFThreadID(header) != desiredthreadid && readbytes == framebytes)
       readbytes = fread(buffer, 1, framebytes, input); //read the whole VDIF packet
     if (readbytes < framebytes) {
       fprintf(stderr, "Header read failed - probably at end of file.\n");
       break;
     }
-    framemjd = getVDIFFrameMJD(buffer);
-    framesecond = getVDIFFrameSecond(buffer);
-    framenumber = getVDIFFrameNumber(buffer);
-    frameinvalid = getVDIFFrameInvalid(buffer);
-    if(getVDIFFrameBytes(buffer) != framebytes) { 
+    header = (vdif_header*)buffer;
+    framemjd = getVDIFFrameMJD(header);
+    framesecond = getVDIFFrameSecond(header);
+    framenumber = getVDIFFrameNumber(header);
+    frameinvalid = getVDIFFrameInvalid(header);
+    if(getVDIFFrameBytes(header) != framebytes) { 
       fprintf(stderr, "Framebytes has changed! Can't deal with this, aborting\n");
       break;
     }
@@ -147,10 +151,10 @@ int main(int argc, char **argv)
         overwritesecond -= 86400;
         overwritemjd--;
       }
-      setVDIFFrameMJD(buffer, overwritemjd);
-      setVDIFFrameSecond(buffer, overwritesecond);
-      setVDIFFrameNumber(buffer, overwritenumber);
-      setVDIFFrameInvalid(buffer, 1);
+      setVDIFFrameMJD(header, overwritemjd);
+      setVDIFFrameSecond(header, overwritesecond);
+      setVDIFFrameNumber(header, overwritenumber);
+      setVDIFFrameInvalid(header, 1);
       readbytes = fwrite(buffer, 1, framebytes, output); //write out the VDIF packet
       if(readbytes < framebytes) {
         fprintf(stderr, "Problem writing %lldth frame - only wrote %d bytes\n", framesread, readbytes);
@@ -186,12 +190,12 @@ int main(int argc, char **argv)
       overwritesecond -= 86400;
       overwritemjd--;
     }
-    setVDIFFrameMJD(buffer, overwritemjd);
-    setVDIFFrameSecond(buffer, overwritesecond);
-    setVDIFFrameNumber(buffer, overwritenumber);
+    setVDIFFrameMJD(header, overwritemjd);
+    setVDIFFrameSecond(header, overwritesecond);
+    setVDIFFrameNumber(header, overwritenumber);
     if(FORCE_VALID)
       frameinvalid = 0;
-    setVDIFFrameInvalid(buffer, frameinvalid);
+    setVDIFFrameInvalid(header, frameinvalid);
     readbytes = fwrite(buffer, 1, framebytes, output); //write out the VDIF packet
     if(readbytes < framebytes) {
       fprintf(stderr, "Problem writing %lldth frame - only wrote %d bytes\n", framesread, readbytes);
