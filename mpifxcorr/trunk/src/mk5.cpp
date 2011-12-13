@@ -44,7 +44,7 @@
 
 /// Mk5DataStream -------------------------------------------------------
 
-Mk5DataStream::Mk5DataStream(Configuration * conf, int snum, int id, int ncores, int * cids, int bufferfactor, int numsegments)
+Mk5DataStream::Mk5DataStream(const Configuration * conf, int snum, int id, int ncores, int * cids, int bufferfactor, int numsegments)
  : DataStream(conf, snum, id, ncores, cids, bufferfactor, numsegments)
 {
   //each data buffer segment contains an integer number of frames, because thats the way config determines max bytes
@@ -54,7 +54,7 @@ Mk5DataStream::Mk5DataStream(Configuration * conf, int snum, int id, int ncores,
   int spf_Hz = conf->getDSwitchedPowerFrequency(id-1);
   if(spf_Hz > 0)
   {
-    switchedpower = new SwitchedPower(conf->getOutputFilename(), id);
+    switchedpower = new SwitchedPower(conf, id);
     switchedpower->frequency = spf_Hz;
   }
 }

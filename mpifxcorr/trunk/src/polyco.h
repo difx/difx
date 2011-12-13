@@ -98,7 +98,7 @@ public:
   * @param offsetmins The offset from the previously set reference time, in minutes
   * @param bins The array of bin values, set by this function
   */
-  void getBins(double offsetmins, int ** bins);
+  void getBins(double offsetmins, int ** bins) const;
 
  /**
   * Loops through the provided Polyco array, and returns the one that matches the specified time, or null if none match

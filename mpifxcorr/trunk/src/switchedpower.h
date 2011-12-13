@@ -23,12 +23,13 @@
 #include <iostream>
 #include <fstream>
 #include <mark5access.h>
+#include "configuration.h"
 
 class SwitchedPower
 {
 public:
 	SwitchedPower();
-	SwitchedPower(const std::string &path, int mpiid);
+	SwitchedPower(const Configuration * conf, int mpiid);
 	~SwitchedPower();
 	void init();
 	int open();
@@ -58,4 +59,6 @@ public:
 	bool opened;
 	bool failed;
 	std::string filepath;
+	int startMJD;
+	int startSeconds;
 };

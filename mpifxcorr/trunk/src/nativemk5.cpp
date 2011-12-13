@@ -212,7 +212,7 @@ int NativeMk5DataStream::reportDriveStats()
 	resetDriveStats();
 }
 
-NativeMk5DataStream::NativeMk5DataStream(Configuration * conf, int snum, 
+NativeMk5DataStream::NativeMk5DataStream(const Configuration * conf, int snum, 
 	int id, int ncores, int * cids, int bufferfactor, int numsegments) :
 		Mk5DataStream(conf, snum, id, ncores, cids, bufferfactor, 
 	numsegments)

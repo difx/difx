@@ -81,170 +81,170 @@ public:
   * These methods simply allow other objects access to the configuration information held in tables in the input file for the correlation
   */
 //@{
-  inline int getMPIId() { return mpiid; }
-  inline string getJobName() { return jobname; }
-  inline string getObsCode() { return obscode; }
+  inline int getMPIId() const { return mpiid; }
+  inline string getJobName() const { return jobname; }
+  inline string getObsCode() const { return obscode; }
   inline void setObsCode(string ocode) { obscode = ocode; }
-  inline int getEstimatedBytes() { return estimatedbytes; }
-  inline int getVisBufferLength() { return visbufferlength; }
-  inline bool consistencyOK() {return consistencyok; }
-  inline bool anyUsbXLsb(int configindex) { return configs[configindex].anyusbxlsb; }
-  inline bool phasedArrayOn(int configindex) { return configs[configindex].phasedarray; }
-  inline int getArrayStrideLength(int configindex) { return configs[configindex].arraystridelen; }
-  inline int getXmacStrideLength(int configindex) { return configs[configindex].xmacstridelen; }
-  inline int getNumBufferedFFTs(int configindex) { return configs[configindex].numbufferedffts; }
-  inline int getThreadResultLength(int configindex) { return configs[configindex].threadresultlength; }
-  inline int getCoreResultLength(int configindex) { return configs[configindex].coreresultlength; }
-  inline int getMaxThreadResultLength() { return maxthreadresultlength; }
-  inline int getMaxCoreResultLength() { return maxcoreresultlength; }
-  inline int getMaxNumBufferedFFTs() { return maxnumbufferedffts; }
-  inline int getNumXmacStrides(int configindex, int freqindex) { return configs[configindex].numxmacstrides[freqindex]; }
-  inline int getCompleteStrideLength(int configindex, int freqindex) { return configs[configindex].completestridelength[freqindex]; }
-  inline int getThreadResultFreqOffset(int configindex, int freqindex) { return configs[configindex].threadresultfreqoffset[freqindex]; }
-  inline int getThreadResultBaselineOffset(int configindex, int freqindex, int configbaselineindex) { return configs[configindex].threadresultbaselineoffset[freqindex][configbaselineindex]; }
-  inline int getCoreResultBaselineOffset(int configindex, int freqindex, int configbaselineindex) { return configs[configindex].coreresultbaselineoffset[freqindex][configbaselineindex]; }
-  inline int getCoreResultBWeightOffset(int configindex, int freqindex, int configbaselineindex) { return configs[configindex].coreresultbweightoffset[freqindex][configbaselineindex]; }
-  inline int getCoreResultBShiftDecorrOffset(int configindex, int freqindex, int configbaselineindex) { return configs[configindex].coreresultbshiftdecorroffset[freqindex][configbaselineindex]; }
-  inline int getCoreResultAutocorrOffset(int configindex, int configdatastreamindex) { return configs[configindex].coreresultautocorroffset[configdatastreamindex]; }
-  inline int getCoreResultACWeightOffset(int configindex, int configdatastreamindex) { return configs[configindex].coreresultacweightoffset[configdatastreamindex]; }
-  inline int getCoreResultPCalOffset(int configindex, int configdatastreamindex) { return configs[configindex].coreresultpcaloffset[configdatastreamindex]; }
-  inline int getNumConfigs() { return numconfigs; }
-  inline int getBlocksPerSend(int configindex) { return configs[configindex].blockspersend; }
-  inline double getIntTime(int configindex) { return configs[configindex].inttime; }
-  inline bool writeAutoCorrs(int configindex) { return configs[configindex].writeautocorrs; }
-  inline int getMinPostAvFreqChannels(int configindex) { return configs[configindex].minpostavfreqchannels; }
-  inline outputformat getOutputFormat() { return outformat; }
-  inline string getOutputFilename() { return outputfilename; }
-  inline bool pulsarBinOn(int configindex) { return configs[configindex].pulsarbin; }
-  inline bool scrunchOutputOn(int configindex) { return configs[configindex].scrunchoutput; }
-  inline int getNumPulsarBins(int configindex) { return configs[configindex].numbins; }
-  inline int getNumPolycos(int configindex) { return configs[configindex].numpolycos; }
+  inline int getEstimatedBytes() const { return estimatedbytes; }
+  inline int getVisBufferLength() const { return visbufferlength; }
+  inline bool consistencyOK() const { return consistencyok; }
+  inline bool anyUsbXLsb(int configindex) const { return configs[configindex].anyusbxlsb; }
+  inline bool phasedArrayOn(int configindex) const { return configs[configindex].phasedarray; }
+  inline int getArrayStrideLength(int configindex) const { return configs[configindex].arraystridelen; }
+  inline int getXmacStrideLength(int configindex) const { return configs[configindex].xmacstridelen; }
+  inline int getNumBufferedFFTs(int configindex) const { return configs[configindex].numbufferedffts; }
+  inline int getThreadResultLength(int configindex) const { return configs[configindex].threadresultlength; }
+  inline int getCoreResultLength(int configindex) const { return configs[configindex].coreresultlength; }
+  inline int getMaxThreadResultLength() const { return maxthreadresultlength; }
+  inline int getMaxCoreResultLength() const { return maxcoreresultlength; }
+  inline int getMaxNumBufferedFFTs() const { return maxnumbufferedffts; }
+  inline int getNumXmacStrides(int configindex, int freqindex) const { return configs[configindex].numxmacstrides[freqindex]; }
+  inline int getCompleteStrideLength(int configindex, int freqindex) const { return configs[configindex].completestridelength[freqindex]; }
+  inline int getThreadResultFreqOffset(int configindex, int freqindex) const { return configs[configindex].threadresultfreqoffset[freqindex]; }
+  inline int getThreadResultBaselineOffset(int configindex, int freqindex, int configbaselineindex) const { return configs[configindex].threadresultbaselineoffset[freqindex][configbaselineindex]; }
+  inline int getCoreResultBaselineOffset(int configindex, int freqindex, int configbaselineindex) const { return configs[configindex].coreresultbaselineoffset[freqindex][configbaselineindex]; }
+  inline int getCoreResultBWeightOffset(int configindex, int freqindex, int configbaselineindex) const { return configs[configindex].coreresultbweightoffset[freqindex][configbaselineindex]; }
+  inline int getCoreResultBShiftDecorrOffset(int configindex, int freqindex, int configbaselineindex) const { return configs[configindex].coreresultbshiftdecorroffset[freqindex][configbaselineindex]; }
+  inline int getCoreResultAutocorrOffset(int configindex, int configdatastreamindex) const { return configs[configindex].coreresultautocorroffset[configdatastreamindex]; }
+  inline int getCoreResultACWeightOffset(int configindex, int configdatastreamindex) const { return configs[configindex].coreresultacweightoffset[configdatastreamindex]; }
+  inline int getCoreResultPCalOffset(int configindex, int configdatastreamindex) const { return configs[configindex].coreresultpcaloffset[configdatastreamindex]; }
+  inline int getNumConfigs() const { return numconfigs; }
+  inline int getBlocksPerSend(int configindex) const { return configs[configindex].blockspersend; }
+  inline double getIntTime(int configindex) const { return configs[configindex].inttime; }
+  inline bool writeAutoCorrs(int configindex) const { return configs[configindex].writeautocorrs; }
+  inline int getMinPostAvFreqChannels(int configindex) const { return configs[configindex].minpostavfreqchannels; }
+  inline outputformat getOutputFormat() const { return outformat; }
+  inline string getOutputFilename() const { return outputfilename; }
+  inline bool pulsarBinOn(int configindex) const { return configs[configindex].pulsarbin; }
+  inline bool scrunchOutputOn(int configindex) const { return configs[configindex].scrunchoutput; }
+  inline int getNumPulsarBins(int configindex) const { return configs[configindex].numbins; }
+  inline int getNumPolycos(int configindex) const { return configs[configindex].numpolycos; }
   inline Polyco ** getPolycos(int configindex) { return configs[configindex].polycos; }
-  inline bool matchingRecordedBand(int configindex, int configdatastreamindex, int datastreamfreqindex, int datastreamrecordedbandindex)
+  inline bool matchingRecordedBand(int configindex, int configdatastreamindex, int datastreamfreqindex, int datastreamrecordedbandindex) const
     { return datastreamfreqindex == datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].recordedbandlocalfreqindices[datastreamrecordedbandindex]; }
-  inline int getDDataBufferFactor() { return databufferfactor; }
-  inline int getDNumDataSegments() { return numdatasegments; }
-  inline int isDMuxed(int configindex, int configdatastreamindex) 
+  inline int getDDataBufferFactor() const { return databufferfactor; }
+  inline int getDNumDataSegments() const { return numdatasegments; }
+  inline int isDMuxed(int configindex, int configdatastreamindex) const
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].ismuxed; }
-  inline int getDTelescopeIndex(int configindex, int configdatastreamindex)
+  inline int getDTelescopeIndex(int configindex, int configdatastreamindex) const
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].telescopeindex; }
-  inline int getDModelFileIndex(int configindex, int configdatastreamindex)
+  inline int getDModelFileIndex(int configindex, int configdatastreamindex) const
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].modelfileindex; }
-  inline int getDNumRecordedFreqs(int configindex, int configdatastreamindex)
+  inline int getDNumRecordedFreqs(int configindex, int configdatastreamindex) const
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].numrecordedfreqs; }
-  inline int getDNumZoomFreqs(int configindex, int configdatastreamindex)
+  inline int getDNumZoomFreqs(int configindex, int configdatastreamindex) const
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].numzoomfreqs; }
-  inline double getDClockCoeff(int configindex, int configdatastreamindex, int coeff)
+  inline double getDClockCoeff(int configindex, int configdatastreamindex, int coeff) const
     { return telescopetable[datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].telescopeindex].clockpoly[coeff]; }
-  inline int getDOversampleFactor(int configindex, int configdatastreamindex) 
+  inline int getDOversampleFactor(int configindex, int configdatastreamindex) const
     { return freqtable[datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].recordedfreqtableindices[0]].oversamplefactor; }
-  inline int getDChannelsToAverage(int configindex, int configdatastreamindex) { return freqtable[datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].recordedfreqtableindices[0]].channelstoaverage; }
-  inline int getDDecimationFactor(int configindex, int configdatastreamindex) 
+  inline int getDChannelsToAverage(int configindex, int configdatastreamindex) const { return freqtable[datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].recordedfreqtableindices[0]].channelstoaverage; }
+  inline int getDDecimationFactor(int configindex, int configdatastreamindex) const
     { return freqtable[datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].recordedfreqtableindices[0]].decimationfactor; }
-  inline string getDStationName(int configindex, int configdatastreamindex) 
+  inline string getDStationName(int configindex, int configdatastreamindex) const
     { return telescopetable[datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].telescopeindex].name; }
-  inline double getDTsys(int configindex, int configdatastreamindex) 
+  inline double getDTsys(int configindex, int configdatastreamindex) const
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].tsys; }
-  inline int getDPhaseCalIntervalMHz(int configindex, int configdatastreamindex) 
+  inline int getDPhaseCalIntervalMHz(int configindex, int configdatastreamindex) const
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].phasecalintervalmhz; }
-  inline int getDSwitchedPowerFrequency(int datastreamindex)
+  inline int getDSwitchedPowerFrequency(int datastreamindex) const
     { return datastreamtable[datastreamindex].switchedpowerfrequency; }
-  inline int getDMaxRecordedPCalTones(int configindex, int configdatastreamindex)
+  inline int getDMaxRecordedPCalTones(int configindex, int configdatastreamindex) const
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].maxrecordedpcaltones; }
-  inline int getDNumBits(int configindex, int configdatastreamindex) 
+  inline int getDNumBits(int configindex, int configdatastreamindex) const
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].numbits; }
-  //inline int getDFramesPerSecond(int configindex, int configdatastreamindex)
+  //inline int getDFramesPerSecond(int configindex, int configdatastreamindex) const
   //  { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].framespersecond; }
-  inline int getDNumMuxThreads(int configindex, int configdatastreamindex)
+  inline int getDNumMuxThreads(int configindex, int configdatastreamindex) const
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].nummuxthreads; }
-  inline int * getDMuxThreadMap(int configindex, int configdatastreamindex)
+  inline int * getDMuxThreadMap(int configindex, int configdatastreamindex) const
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].muxthreadmap; }
-  inline datasampling getDSampling(int configindex, int configdatastreamindex) 
+  inline datasampling getDSampling(int configindex, int configdatastreamindex)const
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].sampling; }
-  inline int getDRecordedFreqIndex(int configindex, int configdatastreamindex, int datastreamrecordedbandindex)
+  inline int getDRecordedFreqIndex(int configindex, int configdatastreamindex, int datastreamrecordedbandindex) const
     { datastreamdata ds = datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]]; return ds.recordedfreqtableindices[ds.recordedbandlocalfreqindices[datastreamrecordedbandindex]]; }
-  inline int getDZoomFreqIndex(int configindex, int configdatastreamindex, int datastreamzoombandindex)
+  inline int getDZoomFreqIndex(int configindex, int configdatastreamindex, int datastreamzoombandindex) const
     { datastreamdata ds = datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]];   return ds.zoomfreqtableindices[ds.zoombandlocalfreqindices[datastreamzoombandindex]]; }
-  inline int getDTotalFreqIndex(int configindex, int configdatastreamindex, int datastreamtotalbandindex)
+  inline int getDTotalFreqIndex(int configindex, int configdatastreamindex, int datastreamtotalbandindex) const
     { datastreamdata ds = datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]];
     if (datastreamtotalbandindex < ds.numrecordedbands)
       return ds.recordedfreqtableindices[ds.recordedbandlocalfreqindices[datastreamtotalbandindex]];
     else
       return ds.zoomfreqtableindices[ds.zoombandlocalfreqindices[datastreamtotalbandindex-ds.numrecordedbands]];
     }
-  inline int getDLocalRecordedFreqIndex(int configindex, int configdatastreamindex, int datastreamrecordedbandindex)
+  inline int getDLocalRecordedFreqIndex(int configindex, int configdatastreamindex, int datastreamrecordedbandindex) const
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].recordedbandlocalfreqindices[datastreamrecordedbandindex]; }
-  inline int getDLocalZoomFreqIndex(int configindex, int configdatastreamindex, int datastreamzoombandindex)
+  inline int getDLocalZoomFreqIndex(int configindex, int configdatastreamindex, int datastreamzoombandindex) const
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].zoombandlocalfreqindices[datastreamzoombandindex]; }
-  inline char getDRecordedBandPol(int configindex, int configdatastreamindex, int datastreamrecordedbandindex)
+  inline char getDRecordedBandPol(int configindex, int configdatastreamindex, int datastreamrecordedbandindex) const
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].recordedbandpols[datastreamrecordedbandindex]; }
-  inline char getDZoomBandPol(int configindex, int configdatastreamindex, int datastreamzoombandindex)
+  inline char getDZoomBandPol(int configindex, int configdatastreamindex, int datastreamzoombandindex) const
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].zoombandpols[datastreamzoombandindex]; }
-  inline int getDBytesPerSampleNum(int configindex, int configdatastreamindex)
+  inline int getDBytesPerSampleNum(int configindex, int configdatastreamindex) const
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].bytespersamplenum; }
-  inline int getDBytesPerSampleDenom(int configindex, int configdatastreamindex)
+  inline int getDBytesPerSampleDenom(int configindex, int configdatastreamindex) const
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].bytespersampledenom; }
-  inline int getDNumFiles(int configindex, int configdatastreamindex)
+  inline int getDNumFiles(int configindex, int configdatastreamindex) const
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].numdatafiles; }
-  inline int getDPortNumber(int configindex, int configdatastreamindex)
+  inline int getDPortNumber(int configindex, int configdatastreamindex) const
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].portnumber; }
-  inline int getDTCPWindowSizeKB(int configindex, int configdatastreamindex)
+  inline int getDTCPWindowSizeKB(int configindex, int configdatastreamindex) const
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].tcpwindowsizekb; }
-  inline int getDNumRecordedBands(int configindex, int configdatastreamindex)
+  inline int getDNumRecordedBands(int configindex, int configdatastreamindex) const
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].numrecordedbands; }
-  inline int getDNumZoomBands(int configindex, int configdatastreamindex)
+  inline int getDNumZoomBands(int configindex, int configdatastreamindex) const
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].numzoombands; }
-  inline int getDNumTotalBands(int configindex, int configdatastreamindex)
+  inline int getDNumTotalBands(int configindex, int configdatastreamindex) const
     {  return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].numzoombands + datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].numrecordedbands; }
-  inline string * getDDataFileNames(int configindex, int configdatastreamindex)
+  inline string * getDDataFileNames(int configindex, int configdatastreamindex) const
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].datafilenames; }
-  inline int getDRecordedFreqNumPCalTones(int configindex, int configdatastreamindex, int recordedfreqindex)
+  inline int getDRecordedFreqNumPCalTones(int configindex, int configdatastreamindex, int recordedfreqindex) const
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].numrecordedfreqpcaltones[recordedfreqindex]; }
-  inline int getDRecordedFreqPCalToneFreq(int configindex, int configdatastreamindex, int recordedfreqindex, int tone)
+  inline int getDRecordedFreqPCalToneFreq(int configindex, int configdatastreamindex, int recordedfreqindex, int tone) const
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].recordedfreqpcaltonefreqs[recordedfreqindex][tone]; }
-  inline double getDRecordedFreqPCalOffsetsHz(int configindex, int configdatastreamindex, int recordedfreqindex)
+  inline double getDRecordedFreqPCalOffsetsHz(int configindex, int configdatastreamindex, int recordedfreqindex) const
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].recordedfreqpcaloffsetshz[recordedfreqindex]; }
-  inline double getDRecordedFreq(int configindex, int configdatastreamindex, int datastreamrecordedfreqindex)
+  inline double getDRecordedFreq(int configindex, int configdatastreamindex, int datastreamrecordedfreqindex) const
     { return freqtable[datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].recordedfreqtableindices[datastreamrecordedfreqindex]].bandedgefreq; }
-  inline double getDZoomFreq(int configindex, int configdatastreamindex, int datastreamzoomfreqindex)
+  inline double getDZoomFreq(int configindex, int configdatastreamindex, int datastreamzoomfreqindex) const
     { return freqtable[datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].zoomfreqtableindices[datastreamzoomfreqindex]].bandedgefreq; }
-  inline double getDRecordedBandwidth(int configindex, int configdatastreamindex, int datastreamrecordedfreqindex)
+  inline double getDRecordedBandwidth(int configindex, int configdatastreamindex, int datastreamrecordedfreqindex) const
     { return freqtable[datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].recordedfreqtableindices[datastreamrecordedfreqindex]].bandwidth; }
-  inline double getDZoomBandwidth(int configindex, int configdatastreamindex, int datastreamzoomfreqindex)
+  inline double getDZoomBandwidth(int configindex, int configdatastreamindex, int datastreamzoomfreqindex) const
     { return freqtable[datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].zoomfreqtableindices[datastreamzoomfreqindex]].bandwidth; }
-  inline bool getDRecordedLowerSideband(int configindex, int configdatastreamindex, int datastreamrecordedfreqindex)
+  inline bool getDRecordedLowerSideband(int configindex, int configdatastreamindex, int datastreamrecordedfreqindex) const
     { return freqtable[datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].recordedfreqtableindices[datastreamrecordedfreqindex]].lowersideband; }
-  inline bool getDZoomLowerSideband(int configindex, int configdatastreamindex, int datastreamzoomfreqindex)
+  inline bool getDZoomLowerSideband(int configindex, int configdatastreamindex, int datastreamzoomfreqindex) const
     { return freqtable[datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].zoomfreqtableindices[datastreamzoomfreqindex]].lowersideband; }
-  inline int getDZoomFreqChannelOffset(int configindex, int configdatastreamindex, int datastreamzoomfreqindex)
+  inline int getDZoomFreqChannelOffset(int configindex, int configdatastreamindex, int datastreamzoomfreqindex) const
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].zoomfreqchanneloffset[datastreamzoomfreqindex]; }
-  inline int getDZoomFreqParentFreqIndex(int configindex, int configdatastreamindex, int datastreamzoomfreqindex)
+  inline int getDZoomFreqParentFreqIndex(int configindex, int configdatastreamindex, int datastreamzoomfreqindex) const
     {  return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].zoomfreqparentdfreqindices[datastreamzoomfreqindex]; }
-  inline int getBDataStream1Index(int configindex, int configbaselineindex)
+  inline int getBDataStream1Index(int configindex, int configbaselineindex) const
     { return baselinetable[(configs[configindex].baselineindices[configbaselineindex])].datastream1index; }
-  inline int getBDataStream2Index(int configindex, int configbaselineindex)
+  inline int getBDataStream2Index(int configindex, int configbaselineindex) const
     { return baselinetable[(configs[configindex].baselineindices[configbaselineindex])].datastream2index; }
-  inline int getBOrderedDataStream1Index(int configindex, int configbaselineindex)
+  inline int getBOrderedDataStream1Index(int configindex, int configbaselineindex) const
     { return configs[configindex].ordereddatastreamindices[baselinetable[(configs[configindex].baselineindices[configbaselineindex])].datastream1index]; }
-  inline int getBOrderedDataStream2Index(int configindex, int configbaselineindex)
+  inline int getBOrderedDataStream2Index(int configindex, int configbaselineindex) const
     { return configs[configindex].ordereddatastreamindices[baselinetable[(configs[configindex].baselineindices[configbaselineindex])].datastream2index]; }
-  inline int getBNumFreqs(int configindex, int configbaselineindex)
+  inline int getBNumFreqs(int configindex, int configbaselineindex) const
     { return baselinetable[(configs[configindex].baselineindices[configbaselineindex])].numfreqs; }
-  inline int getBFreqIndex(int configindex, int configbaselineindex, int baselinefreqindex)
+  inline int getBFreqIndex(int configindex, int configbaselineindex, int baselinefreqindex) const
   {  return baselinetable[configs[configindex].baselineindices[configbaselineindex]].freqtableindices[baselinefreqindex];
     }
-  inline int getBLocalFreqIndex(int configindex, int configbaselineindex, int freqtableindex) { return baselinetable[configs[configindex].baselineindices[configbaselineindex]].localfreqindices[freqtableindex]; }
-  inline int getBFreqOddLSB(int configindex, int configbaselineindex, int freqtableindex) { return baselinetable[configs[configindex].baselineindices[configbaselineindex]].oddlsbfreqs[freqtableindex]; }
-  inline int getBNumPolProducts(int configindex, int configbaselineindex, int baselinefreqindex)
+  inline int getBLocalFreqIndex(int configindex, int configbaselineindex, int freqtableindex) const { return baselinetable[configs[configindex].baselineindices[configbaselineindex]].localfreqindices[freqtableindex]; }
+  inline int getBFreqOddLSB(int configindex, int configbaselineindex, int freqtableindex) const { return baselinetable[configs[configindex].baselineindices[configbaselineindex]].oddlsbfreqs[freqtableindex]; }
+  inline int getBNumPolProducts(int configindex, int configbaselineindex, int baselinefreqindex) const
     { return baselinetable[(configs[configindex].baselineindices[configbaselineindex])].numpolproducts[baselinefreqindex]; }
-  inline int getBDataStream1BandIndex(int configindex, int configbaselineindex, int baselinefreqindex, int baselinefreqdatastream1index)
+  inline int getBDataStream1BandIndex(int configindex, int configbaselineindex, int baselinefreqindex, int baselinefreqdatastream1index) const
     { return baselinetable[(configs[configindex].baselineindices[configbaselineindex])].datastream1bandindex[baselinefreqindex][baselinefreqdatastream1index]; }
-  inline int getBDataStream2BandIndex(int configindex, int configbaselineindex, int baselinefreqindex, int baselinefreqdatastream2index)
+  inline int getBDataStream2BandIndex(int configindex, int configbaselineindex, int baselinefreqindex, int baselinefreqdatastream2index) const
     { return baselinetable[(configs[configindex].baselineindices[configbaselineindex])].datastream2bandindex[baselinefreqindex][baselinefreqdatastream2index]; }
-  inline void getBPolPair(int configindex, int configbaselineindex, int baselinefreqindex, int freqpolindex, char polpair[3])
-    { char * tpp = baselinetable[configs[configindex].baselineindices[configbaselineindex]].polpairs[baselinefreqindex][freqpolindex]; polpair[0] = tpp[0]; polpair[1] = tpp[1];
+  inline void getBPolPair(int configindex, int configbaselineindex, int baselinefreqindex, int freqpolindex, char polpair[3]) const
+    { const char * tpp = baselinetable[configs[configindex].baselineindices[configbaselineindex]].polpairs[baselinefreqindex][freqpolindex]; polpair[0] = tpp[0]; polpair[1] = tpp[1];
     }
-  inline char getOppositePol(char pol) 
+  inline char getOppositePol(char pol) const
     {
       if (pol == 'R') return 'L';
       if (pol == 'L') return 'R';
@@ -252,35 +252,35 @@ public:
       if (pol == 'Y') return 'X';
       return 'X';
     }
-  inline int getBNumber(int configindex, int configbaselineindex)
+  inline int getBNumber(int configindex, int configbaselineindex) const
     { return (datastreamtable[baselinetable[(configs[configindex].baselineindices[configbaselineindex])].datastream1index].telescopeindex + 1)*256 + (datastreamtable[baselinetable[(configs[configindex].baselineindices[configbaselineindex])].datastream2index].telescopeindex + 1); }
-  inline int getNumDataStreams() { return numdatastreams; }
-  inline int getNumBaselines() { return numbaselines; }
-  inline int getMaxNumChannels() { return maxnumchannels; }
-  inline int getMaxNumPulsarBins() { return maxnumpulsarbins; }
-  inline int getMTU() { return mtu; }
-  inline int getExecuteSeconds() { return executeseconds; }
-  inline bool isRestart() { return (restartseconds>0)?true:false; }
-  inline int getStartMJD() { return startmjd; }
-  inline int getStartSeconds() { return startseconds; }
-  inline int getStartNS() { return startns; }
-  inline int getSubintNS(int configindex) { return configs[configindex].subintns; }
-  inline int getGuardNS(int configindex) { return configs[configindex].guardns; }
-  inline int getFreqTableLength() { return freqtablelength; }
-  inline double getFreqTableFreq(int index) { return freqtable[index].bandedgefreq; }
-  inline double getFreqTableBandwidth(int index) { return freqtable[index].bandwidth; }
-  inline bool getFreqTableLowerSideband(int index) { return freqtable[index].lowersideband; }
-  inline int getFNumChannels(int index) { return freqtable[index].numchannels; }
-  inline int getFChannelsToAverage(int index) { return freqtable[index].channelstoaverage; }
-  inline int getFMatchingWiderBandIndex(int index) { return freqtable[index].matchingwiderbandindex; }
-  inline int getFMatchingWiderBandOffset(int index) { return freqtable[index].matchingwiderbandoffset; }
-  inline bool isFrequencyUsed(int configindex, int freqindex) 
+  inline int getNumDataStreams() const { return numdatastreams; }
+  inline int getNumBaselines() const { return numbaselines; }
+  inline int getMaxNumChannels() const { return maxnumchannels; }
+  inline int getMaxNumPulsarBins() const { return maxnumpulsarbins; }
+  inline int getMTU() const { return mtu; }
+  inline int getExecuteSeconds() const { return executeseconds; }
+  inline bool isRestart() const { return (restartseconds>0)?true:false; }
+  inline int getStartMJD() const { return startmjd; }
+  inline int getStartSeconds() const { return startseconds; }
+  inline int getStartNS() const { return startns; }
+  inline int getSubintNS(int configindex) const { return configs[configindex].subintns; }
+  inline int getGuardNS(int configindex) const { return configs[configindex].guardns; }
+  inline int getFreqTableLength() const { return freqtablelength; }
+  inline double getFreqTableFreq(int index) const { return freqtable[index].bandedgefreq; }
+  inline double getFreqTableBandwidth(int index) const { return freqtable[index].bandwidth; }
+  inline bool getFreqTableLowerSideband(int index) const { return freqtable[index].lowersideband; }
+  inline int getFNumChannels(int index) const { return freqtable[index].numchannels; }
+  inline int getFChannelsToAverage(int index) const { return freqtable[index].channelstoaverage; }
+  inline int getFMatchingWiderBandIndex(int index) const { return freqtable[index].matchingwiderbandindex; }
+  inline int getFMatchingWiderBandOffset(int index) const { return freqtable[index].matchingwiderbandoffset; }
+  inline bool isFrequencyUsed(int configindex, int freqindex) const
     { return configs[configindex].frequsedbybaseline[freqindex]; }
-  inline bool circularPolarisations() 
+  inline bool circularPolarisations() const
     { return datastreamtable[0].recordedbandpols[0] == 'R' || datastreamtable[0].recordedbandpols[0] == 'L'; }
-  inline bool isReadFromFile(int configindex, int configdatastreamindex) 
+  inline bool isReadFromFile(int configindex, int configdatastreamindex) const
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].source != NETWORKSTREAM; }
-  inline bool isMkV(int datastreamindex) 
+  inline bool isMkV(int datastreamindex) const
   {
     dataformat f;
     datasource s;
@@ -288,7 +288,7 @@ public:
     s = datastreamtable[configs[0].datastreamindices[datastreamindex]].source;
     return ((f == MKIV || f == VLBA || f == VLBN || f == MARK5B || f == VDIF || f == INTERLACEDVDIF) && (s == UNIXFILE || s == NETWORKSTREAM)); 
   }
-  inline bool isNativeMkV(int datastreamindex) 
+  inline bool isNativeMkV(int datastreamindex) const
   { 
     dataformat f;
     datasource s;
@@ -296,19 +296,19 @@ public:
     s = datastreamtable[configs[0].datastreamindices[datastreamindex]].source;
     return ((f == MKIV || f == VLBA || f == VLBN || f == MARK5B) && s == MK5MODULE); 
   }
-  inline int getFrameBytes(int configindex, int configdatastreamindex)
+  inline int getFrameBytes(int configindex, int configdatastreamindex) const
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].framebytes; }
-  inline dataformat getDataFormat(int configindex, int configdatastreamindex)
+  inline dataformat getDataFormat(int configindex, int configdatastreamindex) const
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].format; }
-  inline datasource getDataSource(int configindex, int configdatastreamindex)
+  inline datasource getDataSource(int configindex, int configdatastreamindex) const
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].source; }
-  inline string getTelescopeName(int telescopeindex)
+  inline string getTelescopeName(int telescopeindex) const
     { return telescopetable[telescopeindex].name; }
-  inline int getTelescopeTableLength()
+  inline int getTelescopeTableLength() const
     { return telescopetablelength; }
-  inline int getDatastreamTableLength() { return datastreamtablelength; }
-  inline bool isCoreProcess() { return mpiid >= fxcorr::FIRSTTELESCOPEID + numdatastreams; }
-  inline bool isDatastreamProcess() { return mpiid >= fxcorr::FIRSTTELESCOPEID && mpiid < fxcorr::FIRSTTELESCOPEID + numdatastreams; }
+  inline int getDatastreamTableLength() const { return datastreamtablelength; }
+  inline bool isCoreProcess() const { return mpiid >= fxcorr::FIRSTTELESCOPEID + numdatastreams; }
+  inline bool isDatastreamProcess() const { return mpiid >= fxcorr::FIRSTTELESCOPEID && mpiid < fxcorr::FIRSTTELESCOPEID + numdatastreams; }
   inline void setCommandThreadInitialised() { commandthreadinitialised = true; }
   inline bool commandThreadInitialised() { return commandthreadinitialised; }
   inline void setDumpSTAState(bool setval) { dumpsta = setval; }
@@ -319,13 +319,13 @@ public:
   inline bool dumpKurtosis() { return dumpkurtosis; }
   inline void setSTADumpChannels(int setval) { stadumpchannels = setval; } //shared with kurtosis
   inline void setLTADumpChannels(int setval) { ltadumpchannels = setval; }
-  inline int getSTADumpChannels() { return stadumpchannels; } //shared with kurtosis
-  inline int getLTADumpChannels() { return ltadumpchannels; }
+  inline int getSTADumpChannels() const { return stadumpchannels; } //shared with kurtosis
+  inline int getLTADumpChannels() const { return ltadumpchannels; }
   inline double getFPhasedArrayDWeight(int configindex, int freqindex, int ordereddsindex)
     { return configs[configindex].paweights[freqindex][ordereddsindex]; }
-  inline int getFPhasedArrayNumPols(int configindex, int freqindex)
+  inline int getFPhasedArrayNumPols(int configindex, int freqindex) const
     { return configs[configindex].numpafreqpols[freqindex]; }
-  inline char getFPhaseArrayPol(int configindex, int freqindex, int polindex)
+  inline char getFPhaseArrayPol(int configindex, int freqindex, int polindex) const
     { return configs[configindex].papols[freqindex][polindex]; }
 
 //@}
@@ -336,21 +336,21 @@ public:
   * @param &sec The output value, seconds portion, returned by reference
   * @param &ns The output value, nanosec portion, returned by reference
   */
-  void getFrameInc(int configindex, int configdatastreamindex, int &sec, int &ns);
+  void getFrameInc(int configindex, int configdatastreamindex, int &sec, int &ns) const;
 
  /**
   * @return The number of data frames per second, always an integer for Mark5 formats
   * @param configindex The index of the configuration being used (from the table in the input file)
   * @param configdatastreamindex The index of the datastream (from the table in the input file)
   */
-  int getFramesPerSecond(int configindex, int configdatastreamindex);
+  int getFramesPerSecond(int configindex, int configdatastreamindex) const;
 
  /**
   * @return The number of payload bytes in a data frame
   * @param configindex The index of the configuration being used (from the table in the input file)
   * @param configdatastreamindex The index of the datastream (from the table in the input file)
   */
-  int getFramePayloadBytes(int configindex, int configdatastreamindex);
+  int getFramePayloadBytes(int configindex, int configdatastreamindex) const;
 
  /**
   * @return The fanout, or -1 if an error occurred
@@ -364,12 +364,12 @@ public:
   * @param numthreads The number of (interlaced) threads
   * @param formatname character array representing format name (set during method)
   */
-  int genMk5FormatName(dataformat format, int nchan, double bw, int nbits, datasampling sampling, int framebytes, int decimationfactor, int numthreads, char *formatname);
+  int genMk5FormatName(dataformat format, int nchan, double bw, int nbits, datasampling sampling, int framebytes, int decimationfactor, int numthreads, char *formatname) const;
 
  /**
   * @return The Model object which contains geometric model information
   */
-  inline Model * getModel() { return model; }
+  inline Model * getModel() const { return model; }
 
  /**
   * Creates and returns the appropriate mode object
@@ -383,70 +383,70 @@ public:
   * @param scan The scan index
   * @return The index of the configuration in use for that scan
   */
-  inline int getScanConfigIndex(int scan) { return scanconfigindices[scan]; }
+  inline int getScanConfigIndex(int scan) const { return scanconfigindices[scan]; }
 
  /**
   * @param freqindex The index of the frequency to find the opposite sideband for
   * @return The frequency table index of the freq which matches freqindex but is opposite sideband (-1 if not found)
   */
-  int getOppositeSidebandFreqIndex(int freqindex);
+  int getOppositeSidebandFreqIndex(int freqindex) const;
 
  /**
   * @param configindex The index of the configuration being used (from the table in the input file)
   * @return The maximum number of frequencies being used by any datastream during this configuration
   */
-  int getMaxNumRecordedFreqs(int configindex);
+  int getMaxNumRecordedFreqs(int configindex) const;
 
  /**
   * @return The maximum number of frequencies being used by any datastream during any configuration
   */
-  int getMaxNumRecordedFreqs();
+  int getMaxNumRecordedFreqs() const;
 
  /**
   * @param configindex The index of the configuration being used (from the table in the input file)
   * @return The index of the Datastream that uses the maximum number of frequencies during this configuration
   */
-  int getMaxNumFreqDatastreamIndex(int configindex);
+  int getMaxNumFreqDatastreamIndex(int configindex) const;
 
  /**
   * @return The maximum length of a data message from any telescope, for any configuration
   */
-  int getMaxDataBytes();
+  int getMaxDataBytes() const;
 
  /**
   * @param configindex The index of the relevant entry in the configuration table
   * @return The maximum number of phase centres in any scan for this config
   */
-  int getMaxPhaseCentres(int configindex);
+  int getMaxPhaseCentres(int configindex) const;
 
  /**
   * @param datastreamindex The index of the datastream (from the table in the input file)
   * @return The maximum length of a data message from the specified datastream, for any configuration
   */
-  int getMaxDataBytes(int datastreamindex);
+  int getMaxDataBytes(int datastreamindex) const;
 
  /**
   * @return The maximum number of whole blocks sent for any configuration (excluding guard time)
   */
-  int getMaxBlocksPerSend();
+  int getMaxBlocksPerSend() const;
 
  /**
   * @return The maximum number of products (1, 2 or 4) for any baseline in any configuration
   */
-  int getMaxProducts();
+  int getMaxProducts() const;
 
  /**
   * @param configindex The index of the configuration being used (from the table in the input file)
   * @return The maximum number of products (1, 2 or 4) for any baseline, for the specified configuration
   */
-  int getMaxProducts(int configindex);
+  int getMaxProducts(int configindex) const;
 
  /**
   * @param configindex The index of the configuration being used (from the table in the input file)
   * @param datastreamindex The index of the datastream (from the table in the input file)
   * @return The maximum length of a data message from the specified datastream and configuration
   */
-  int getDataBytes(int configindex, int datastreamindex);
+  int getDataBytes(int configindex, int datastreamindex) const;
 
  /**
   * @param configindex The index of the configuration being used (from the table in the input file)
@@ -454,19 +454,19 @@ public:
   * @param bandindex The index of the band within this datastream
   * @return The band index for this datastream in this configuration that is the same frequency, but other polarisation, as the specified band
   */
-  int getDMatchingBand(int configindex, int datastreamindex, int bandindex);
+  int getDMatchingBand(int configindex, int datastreamindex, int bandindex) const;
 
  /**
   * @param corenum The core id (indexed from 0->numcores-1)
   * @return The number of processing threads for the specified Core
   */
-  int getCNumProcessThreads(int corenum);
+  int getCNumProcessThreads(int corenum) const;
 
  /**
   * @param telescopeindex The index of the telescope (from the table in the input file)
   * @return Whether there are any active datastreams (ie datastreams used by an active configuration) that belong to this telescope
   */
-  bool stationUsed(int telescopeindex);
+  bool stationUsed(int telescopeindex) const;
 
   /// Utility function used to read header info for a difx output file record
   bool fillHeaderData(ifstream * input, int & baselinenum, int & mjd, double & seconds, int & configindex, int & sourceindex, int & freqindex, char polpair[3], int & pulsarbin, double & dataweight, double uvw[3]);
@@ -483,7 +483,7 @@ public:
   * @param line Existing string to store value in
   * @param startofheader The start of the expected keyword, to compare to the actual keyword which will be read
   */
-  void getinputline(ifstream * input, std::string * line, std::string startofheader);
+  void getinputline(ifstream * input, std::string * line, std::string startofheader) const;
 
  /**
   * Utility method which reads a line from a file, extracts a value and checks the keyword matches that expected
@@ -492,7 +492,7 @@ public:
   * @param startofheader The start of the expected keyword, to compare to the actual keyword which will be read
   * @param intval An integer value which should follow startofheader
   */
-  void getinputline(ifstream * input, std::string * line, std::string startofheader, int intval);
+  void getinputline(ifstream * input, std::string * line, std::string startofheader, int intval) const;
 
  /**
   * Utility method which reads a line from a file, splitting it into a key and a value and storing both
@@ -500,7 +500,7 @@ public:
   * @param key String to store key in
   * @param val String to store value in
   */
-  void getinputkeyval(ifstream * input, std::string * key, std::string * val);
+  void getinputkeyval(ifstream * input, std::string * key, std::string * val) const;
 
  /**
   * Utility method which converts a year,month,day into mjd and hour,minute,second into seconds from start of day
@@ -513,7 +513,7 @@ public:
   * @param minute Minute of the time to be converted
   * @param second Second of the time to be converted
   */
-  void getMJD(int & d, int & s, int year, int month, int day, int hour, int minute, int second);
+  void getMJD(int & d, int & s, int year, int month, int day, int hour, int minute, int second) const;
 
  /**
   * Utility method which converts an mjd into year,month,day
@@ -522,7 +522,7 @@ public:
   * @param month Month, which will be set
   * @param day Day, which will be set
   */
-  void mjd2ymd(int mjd, int & year, int & month, int & day);
+  void mjd2ymd(int mjd, int & year, int & month, int & day) const;
 
  /**
   * Utility method to create a Fortran style string in a character array.  The string is padded with spaces with no trailing null.
@@ -530,7 +530,7 @@ public:
   * @param length The length of the destination character buffer
   * @param destination The buffer to store the Fortran-style string
   */
-  void makeFortranString(string line, int length, char * destination);
+  void makeFortranString(string line, int length, char * destination) const;
 
 private:
   ///types of sections that can occur within an input file

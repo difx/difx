@@ -40,7 +40,7 @@
 class NativeMk5DataStream : public Mk5DataStream
 {
 public:
-	NativeMk5DataStream(Configuration * conf, int snum, int id, int ncores, int * cids, int bufferfactor, int numsegments);
+	NativeMk5DataStream(const Configuration * conf, int snum, int id, int ncores, int * cids, int bufferfactor, int numsegments);
 	virtual ~NativeMk5DataStream();
 	virtual void initialiseFile(int configindex, int fileindex);
 	virtual void openfile(int configindex, int fileindex);

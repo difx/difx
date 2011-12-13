@@ -25,7 +25,7 @@
 #include <stdio.h>
 #include <string.h>
 
-DataMuxer::DataMuxer(Configuration * conf, int dsindex, int id, int nthreads, int sbytes)
+DataMuxer::DataMuxer(const Configuration * conf, int dsindex, int id, int nthreads, int sbytes)
   : config(conf), datastreamindex(dsindex), mpiid(id), numthreads(nthreads), segmentbytes(sbytes)
 {
   readcount = 0;
@@ -54,7 +54,7 @@ DataMuxer::~DataMuxer()
 
 const unsigned int VDIFMuxer::bitmask[9] = {0, 1, 3, 7, 15, 31, 63, 127, 255};
 
-VDIFMuxer::VDIFMuxer(Configuration * conf, int dsindex, int id, int nthreads, int iframebytes, int rframes, int fpersec, int bitspersamp, int * tmap)
+VDIFMuxer::VDIFMuxer(const Configuration * conf, int dsindex, int id, int nthreads, int iframebytes, int rframes, int fpersec, int bitspersamp, int * tmap)
   : DataMuxer(conf, dsindex, id, nthreads, iframebytes*rframes), inputframebytes(iframebytes), readframes(rframes), framespersecond(fpersec), bitspersample(bitspersamp)
 {
   cverbose << startl << "VDIFMuxer: framespersecond is " << framespersecond << ", iframebytes is " << inputframebytes << endl;

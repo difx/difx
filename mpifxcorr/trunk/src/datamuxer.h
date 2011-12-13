@@ -42,7 +42,7 @@ public:
   * @param nthreads The number of source threads
   * @param sbytes The number of bytes in an individual segment in the demuxedbuffer
   */
-  DataMuxer(Configuration * conf, int dsindex, int id, int nthreads, int sbytes);
+  DataMuxer(const Configuration * conf, int dsindex, int id, int nthreads, int sbytes);
 
   virtual ~DataMuxer();
 
@@ -64,7 +64,7 @@ public:
   * Accessor method for demuxbuffer
   * @return pointer to start of demuxbuffer section to be written to
   */
-  virtual u8* getCurrentDemuxBuffer() = 0;
+  virtual u8* getCurrentDemuxBuffer() const = 0;
 
  /**
   * Accessor method for demux buffer segment byte size
@@ -106,7 +106,7 @@ protected:
   u8** threadbuffers;
 
   ///other variables
-  Configuration * config;
+  const Configuration * config;
   long long readcount, muxcount, deinterlacecount;
   int datastreamindex, mpiid, numthreads, segmentbytes, estimatedbytes;
 };
@@ -132,7 +132,7 @@ public:
   * @param bitspersamp The number of bits per sample
   * @param tmap Array containing mapping from origin threadIds to position in output single-thread file
   */
-  VDIFMuxer(Configuration * conf, int dsindex, int id, int nthreads, int iframebytes, int rframes, int fpersec, int bitspersamp, int * tmap);
+  VDIFMuxer(const Configuration * conf, int dsindex, int id, int nthreads, int iframebytes, int rframes, int fpersec, int bitspersamp, int * tmap);
 
   virtual ~VDIFMuxer();
 
@@ -154,7 +154,7 @@ public:
   * Accessor method for demuxbuffer
   * @return pointer to start of demuxbuffer section to be written to
   */
-  virtual inline u8* getCurrentDemuxBuffer() { return demuxbuffer + (readcount%DEMUX_BUFFER_FACTOR)*segmentbytes; }
+  virtual inline u8* getCurrentDemuxBuffer() const { return demuxbuffer + (readcount%DEMUX_BUFFER_FACTOR)*segmentbytes; }
 
 protected:
  /**

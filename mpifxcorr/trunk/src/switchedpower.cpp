@@ -29,12 +29,14 @@ SwitchedPower::SwitchedPower()
 	init();
 }
 
-SwitchedPower::SwitchedPower(const std::string &path, int mpiid)
+SwitchedPower::SwitchedPower(const Configuration * conf, int mpiid)
 {
 	init();
 
 	datastreamId = mpiid-1;
-	filepath = path;
+	filepath = conf->getOutputFilename();
+	startMJD = conf->getStartMJD();
+	startSeconds = conf->getStartSeconds();
 }
 
 SwitchedPower::~SwitchedPower()
@@ -59,7 +61,7 @@ int SwitchedPower::open()
 {
 	char switchedPowerFilename[256];
 
-	sprintf(switchedPowerFilename, "%s/SWITCHEDPOWER_%d", filepath.c_str(), datastreamId);
+	sprintf(switchedPowerFilename, "%s/SWITCHEDPOWER_%05d_%06d_%d", filepath.c_str(), startMJD, startSeconds, datastreamId);
 
 	output.open(switchedPowerFilename, ios::out | ios::app);
 	if(!output.fail())

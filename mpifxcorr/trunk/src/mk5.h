@@ -47,7 +47,7 @@ public:
   * @param bufferfactor The size of the buffer, in terms of number of "max send sizes" - the biggest "blocks per send*numchannels" from the possible configurations
   * @param numsegments The number of separate segments this buffer will be divided into
   */
-  Mk5DataStream(Configuration * conf, int snum, int id, int ncores, int * cids, int bufferfactor, int numsegments);
+  Mk5DataStream(const Configuration * conf, int snum, int id, int ncores, int * cids, int bufferfactor, int numsegments);
   virtual ~Mk5DataStream();
 
   virtual void initialise();

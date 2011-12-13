@@ -855,7 +855,7 @@ void Visibility::writedifx(int dumpmjd, double dumpseconds)
       }
       if(nonzero) // If at least one tone had non-zero amplitude, write the line to the file
       {
-        sprintf(pcalfilename, "%s/PCAL_%s", config->getOutputFilename().c_str(), config->getTelescopeName(i).c_str());
+        sprintf(pcalfilename, "%s/PCAL_%05d_%06d_%s", config->getOutputFilename().c_str(), config->getStartMJD(), config->getStartSeconds(), config->getTelescopeName(i).c_str());
         pcaloutput.open(pcalfilename, ios::app);
         pcaloutput << pcalline << endl;
         pcaloutput.close();

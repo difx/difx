@@ -136,20 +136,20 @@ public:
   * @param crosspol Whether to return the crosspolarisation autocorrelation for this band
   * @param outputband The band index
   */
-  inline cf32* getAutocorrelation(bool crosspol, int outputband) { return autocorrelations[(crosspol)?1:0][outputband]; }
+  inline cf32* getAutocorrelation(bool crosspol, int outputband) const { return autocorrelations[(crosspol)?1:0][outputband]; }
 
  /**
   * Grabs the pointer to a kurtosis array
   * @param outputband The band index
   */
-  inline f32* getKurtosis(int outputband) { return sk[outputband]; }
+  inline f32* getKurtosis(int outputband) const { return sk[outputband]; }
 
  /**
   * Grabs the weight for a given band
   * @param crosspol Whether to return the crosspolarisation autocorrelation for this band
   * @param outputband The band index
   */
-  inline f32 getWeight(bool crosspol, int outputband) { return weights[(crosspol)?1:0][outputband]; }
+  inline f32 getWeight(bool crosspol, int outputband) const { return weights[(crosspol)?1:0][outputband]; }
 
  /**
   * Gets the expected decorrelation ("van Vleck correction" ) for a given number of bits.

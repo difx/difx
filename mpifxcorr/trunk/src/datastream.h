@@ -61,7 +61,7 @@ public:
   * @param bufferfactor The size of the buffer, in terms of number of "max send sizes" - the biggest "blocks per send*numchannels" from the possible configurations
   * @param numsegments The number of separate segments this buffer will be divided into
   */
-  DataStream(Configuration * conf, int snum, int id, int ncores, int * cids, int bufferfactor, int numsegments);
+  DataStream(const Configuration * conf, int snum, int id, int ncores, int * cids, int bufferfactor, int numsegments);
 
   virtual ~DataStream();
 
@@ -158,7 +158,7 @@ protected:
   int streamnum, atsegment, readscan, readseconds, corrstartday, corrstartseconds, readbytes, bufferbytes, readnanoseconds, intclockseconds, estimatedbytes;
   bool dataremaining;
   readinfo * bufferinfo;
-  Configuration * config;
+  const Configuration * config;
   Model * model;
   string ** datafilenames;
   ifstream input;

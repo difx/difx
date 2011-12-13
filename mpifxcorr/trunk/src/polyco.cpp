@@ -179,7 +179,7 @@ Polyco::~Polyco()
     }
 }*/
 
-void Polyco::getBins(double offsetmins, int **bins)
+void Polyco::getBins(double offsetmins, int **bins) const
 {
     int status;
     double averagephase, modulophase;

@@ -306,7 +306,7 @@ Configuration::~Configuration()
   delete [] numprocessthreads;
 }
 
-int Configuration::genMk5FormatName(dataformat format, int nchan, double bw, int nbits, datasampling sampling, int framebytes, int decimationfactor, int numthreads, char *formatname)
+int Configuration::genMk5FormatName(dataformat format, int nchan, double bw, int nbits, datasampling sampling, int framebytes, int decimationfactor, int numthreads, char *formatname) const
 {
   int fanout=1, mbps;
 
@@ -380,7 +380,7 @@ int Configuration::genMk5FormatName(dataformat format, int nchan, double bw, int
   return fanout;
 }
 
-int Configuration::getFramePayloadBytes(int configindex, int configdatastreamindex)
+int Configuration::getFramePayloadBytes(int configindex, int configdatastreamindex) const
 {
   int payloadsize;
   int framebytes = getFrameBytes(configindex, configdatastreamindex);
@@ -406,7 +406,7 @@ int Configuration::getFramePayloadBytes(int configindex, int configdatastreamind
   return payloadsize;
 }
 
-void Configuration::getFrameInc(int configindex, int configdatastreamindex, int &sec, int &ns)
+void Configuration::getFrameInc(int configindex, int configdatastreamindex, int &sec, int &ns) const
 {
   int nchan, qb, decimationfactor;
   int payloadsize;
@@ -424,7 +424,7 @@ void Configuration::getFrameInc(int configindex, int configdatastreamindex, int 
   ns = int(1.0e9*(seconds - sec));
 }
 
-int Configuration::getFramesPerSecond(int configindex, int configdatastreamindex)
+int Configuration::getFramesPerSecond(int configindex, int configdatastreamindex) const
 {
   int nchan, qb, decimationfactor;
   int payloadsize;
@@ -440,7 +440,7 @@ int Configuration::getFramesPerSecond(int configindex, int configdatastreamindex
   return int(samplerate*nchan*qb*decimationfactor/(8*payloadsize) + 0.5); // Works for complex data
 }
 
-int Configuration::getMaxDataBytes()
+int Configuration::getMaxDataBytes() const
 {
   int length;
   int maxlength = getDataBytes(0,0);
@@ -458,7 +458,7 @@ int Configuration::getMaxDataBytes()
   return maxlength;
 }
 
-int Configuration::getMaxDataBytes(int datastreamindex)
+int Configuration::getMaxDataBytes(int datastreamindex) const
 {
   int length;
   int maxlength = getDataBytes(0,datastreamindex);
@@ -473,7 +473,7 @@ int Configuration::getMaxDataBytes(int datastreamindex)
   return maxlength;
 }
 
-int Configuration::getMaxBlocksPerSend()
+int Configuration::getMaxBlocksPerSend() const
 {
   int length;
   int maxlength = configs[0].blockspersend;
@@ -488,7 +488,7 @@ int Configuration::getMaxBlocksPerSend()
   return maxlength;
 }
 
-int Configuration::getMaxNumRecordedFreqs()
+int Configuration::getMaxNumRecordedFreqs() const
 {
   int currentnumfreqs, maxnumfreqs = 0;
   
@@ -502,7 +502,7 @@ int Configuration::getMaxNumRecordedFreqs()
   return maxnumfreqs;
 }
 
-int Configuration::getMaxNumRecordedFreqs(int configindex)
+int Configuration::getMaxNumRecordedFreqs(int configindex) const
 {
   int maxnumfreqs = 0;
   
@@ -515,7 +515,7 @@ int Configuration::getMaxNumRecordedFreqs(int configindex)
   return maxnumfreqs;
 }
 
-int Configuration::getMaxNumFreqDatastreamIndex(int configindex)
+int Configuration::getMaxNumFreqDatastreamIndex(int configindex) const
 {
   int maxindex = 0;
   int maxnumfreqs = datastreamtable[configs[configindex].datastreamindices[0]].numrecordedfreqs;
@@ -532,7 +532,7 @@ int Configuration::getMaxNumFreqDatastreamIndex(int configindex)
   return maxindex;
 }
 
-int Configuration::getMaxPhaseCentres(int configindex)
+int Configuration::getMaxPhaseCentres(int configindex) const
 {
   int maxphasecentres = 1;
   for(int i=0;i<model->getNumScans();i++) {
@@ -544,7 +544,7 @@ int Configuration::getMaxPhaseCentres(int configindex)
   return maxphasecentres;
 }
 
-int Configuration::getOppositeSidebandFreqIndex(int freqindex)
+int Configuration::getOppositeSidebandFreqIndex(int freqindex) const
 {
   int toreturn = -1;
   freqdata f1 = freqtable[freqindex];
@@ -564,7 +564,7 @@ int Configuration::getOppositeSidebandFreqIndex(int freqindex)
   return toreturn;
 }
 
-int Configuration::getDataBytes(int configindex, int datastreamindex)
+int Configuration::getDataBytes(int configindex, int datastreamindex) const
 {
   int validlength, payloadbytes, framebytes, numframes;
   const datastreamdata &currentds = datastreamtable[configs[configindex].datastreamindices[datastreamindex]];
@@ -592,7 +592,7 @@ int Configuration::getDataBytes(int configindex, int datastreamindex)
   return validlength;
 }
 
-int Configuration::getMaxProducts(int configindex)
+int Configuration::getMaxProducts(int configindex) const
 {
   baselinedata current;
   int maxproducts = 0;
@@ -608,7 +608,7 @@ int Configuration::getMaxProducts(int configindex)
   return maxproducts;
 }
 
-int Configuration::getMaxProducts()
+int Configuration::getMaxProducts() const
 {
   int maxproducts = 0;
 
@@ -621,7 +621,7 @@ int Configuration::getMaxProducts()
   return maxproducts;
 }
 
-int Configuration::getDMatchingBand(int configindex, int datastreamindex, int bandindex)
+int Configuration::getDMatchingBand(int configindex, int datastreamindex, int bandindex) const
 {
   datastreamdata ds = datastreamtable[configs[configindex].datastreamindices[datastreamindex]];
   if(bandindex >= ds.numrecordedbands) {
@@ -642,7 +642,7 @@ int Configuration::getDMatchingBand(int configindex, int datastreamindex, int ba
   return -1;
 }
 
-int Configuration::getCNumProcessThreads(int corenum)
+int Configuration::getCNumProcessThreads(int corenum) const
 {
   if(numcoreconfs == 0)
     return 1;
@@ -652,7 +652,7 @@ int Configuration::getCNumProcessThreads(int corenum)
   return numprocessthreads[numcoreconfs-1];
 }
 
-bool Configuration::stationUsed(int telescopeindex)
+bool Configuration::stationUsed(int telescopeindex) const
 {
   bool toreturn = false;
 
@@ -2779,7 +2779,8 @@ bool Configuration::fillHeaderData(ifstream * input, int & baselinenum, int & mj
   return true;
 }
 
-void Configuration::makeFortranString(string line, int length, char * destination)
+/* FIXME: should not be a member function? */
+void Configuration::makeFortranString(string line, int length, char * destination) const
 {
   int linelength = line.length();
   
@@ -2796,7 +2797,7 @@ void Configuration::makeFortranString(string line, int length, char * destinatio
   }
 }
 
-void Configuration::getinputkeyval(ifstream * input, std::string * key, std::string * val)
+void Configuration::getinputkeyval(ifstream * input, std::string * key, std::string * val) const
 {
   if(input->eof())
     cerror << startl << "Trying to read past the end of file!" << endl;
@@ -2813,7 +2814,7 @@ void Configuration::getinputkeyval(ifstream * input, std::string * key, std::str
   *key = key->substr(0, key->find_first_of(':'));
 }
 
-void Configuration::getinputline(ifstream * input, std::string * line, std::string startofheader)
+void Configuration::getinputline(ifstream * input, std::string * line, std::string startofheader) const
 {
   if(input->eof())
     cerror << startl << "Trying to read past the end of file!" << endl;
@@ -2831,21 +2832,21 @@ void Configuration::getinputline(ifstream * input, std::string * line, std::stri
   *line = line->substr(keylength);
 }
 
-void Configuration::getinputline(ifstream * input, std::string * line, std::string startofheader, int intval)
+void Configuration::getinputline(ifstream * input, std::string * line, std::string startofheader, int intval) const
 {
   char buffer[MAX_KEY_LENGTH+1];
   sprintf(buffer, "%s%i", startofheader.c_str(), intval);
   getinputline(input, line, string(buffer));
 }
 
-void Configuration::getMJD(int & d, int & s, int year, int month, int day, int hour, int minute, int second)
+void Configuration::getMJD(int & d, int & s, int year, int month, int day, int hour, int minute, int second) const
 {
   d = year*367 - int(7*(year + int((month + 9)/12))/4) + int(275*month/9) + day - 678987;
 
   s = 3600*hour + 60*minute + second;
 }
 
-void Configuration::mjd2ymd(int mjd, int & year, int & month, int & day)
+void Configuration::mjd2ymd(int mjd, int & year, int & month, int & day) const
 {
   int j = mjd + 32044 + 2400001;
   int g = j / 146097;
