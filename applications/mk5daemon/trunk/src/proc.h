@@ -32,6 +32,7 @@
 
 /* routines to get useful information from /proc */
 
+int procGetCores(int *nCore);
 int procGetMem(int *memused, int *memtot);
 int procGetNet(long long *rx, long long *tx);
 int procGetCPU(float *l1, float *l5, float *l15);

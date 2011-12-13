@@ -17,6 +17,7 @@ Version 1.4.2
 * MPI errors are captured and logged
 * Stand-alone utility "sukill" added
 * Pass on restartSeconds to mpifxcorr in support of restarting jobs
+* Send number of CPU cores in Load messages
 
 Version 1.4.1
 ~~~~~~~~~~~~

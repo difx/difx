@@ -30,9 +30,68 @@
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>
+#include <ctype.h>
 #include "proc.h"
 
 /* routines to get useful information from /proc */
+
+int procGetCores(int *nCore)
+{
+	const int MaxLineLength=256;
+	FILE *pin;
+	char line[MaxLineLength+1];
+	int val;
+
+	*nCore = 0;
+	
+	pin = popen("cat /sys/devices/system/cpu/cpu*/topology/core_siblings_list | sort | uniq", "r");
+	if(!pin)
+	{
+		return -1;
+	}
+	
+	for(;;)
+	{
+		int i;
+		char *c;
+		const char *p;
+
+		c = fgets(line, MaxLineLength, pin);
+		if(!c)
+		{
+			break;
+		}
+		line[MaxLineLength-1] = 0;
+		for(i = 0; line[i]; i++)
+		{
+			/* take out punctuation */
+			if(!isdigit(line[i]))
+			{
+				line[i] = ' ';
+			}
+		}
+		p = line;
+		for(;;)
+		{
+			int n, nc, s;
+			n = sscanf(p, "%d%n", &nc, &s);
+			if(n != 1)
+			{
+				break;
+			}
+			p += s;
+			++nc;
+			if(nc > *nCore)
+			{
+				*nCore = nc;
+			}
+		}
+	}
+
+	pclose(pin);
+
+	return 0;
+}
 
 int procGetMem(int *memused, int *memtot)
 {

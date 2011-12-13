@@ -214,6 +214,7 @@ Mk5Daemon *newMk5Daemon(const char *logPath, const char *userID, int isMk5)
 	D->loadMonInterval = 10;	/* seconds */
 	D->macList = new std::map<MAC,bool>;
 	D->errors = new std::list<std::string>;
+	procGetCores(&D->load.nCore);
 	gethostname(D->hostName, 32);
 	D->isMk5 = strncasecmp(D->hostName, "mark5", 5) == 0 ? 1 : 0;
 	if(isMk5)
@@ -928,6 +929,9 @@ int main(int argc, char **argv)
 	D->isEmbedded = isEmbedded;
 
 	snprintf(message, DIFX_MESSAGE_LENGTH, "Starting %s ver. %s\n", program, version);
+	Logger_logData(D->log, message);
+
+	snprintf(message, DIFX_MESSAGE_LENGTH, "Number of CPU cores found = %d\n", D->load.nCore);
 	Logger_logData(D->log, message);
 
 	oldsigintHandler = signal(SIGINT, sigintHandler);
