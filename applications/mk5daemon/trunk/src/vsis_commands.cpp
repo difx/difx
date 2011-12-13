@@ -238,7 +238,7 @@ int OS_rev_Query(Mk5Daemon *D, int nField, char **fields, char *response, int ma
 	else
 	{
 		n = fscanf(pin, "%s%s%s", A[0], A[1], A[2]);
-		fclose(pin);
+		pclose(pin);
 
 		if(n == 3)
 		{
@@ -832,6 +832,8 @@ int disk_state_mask_Command(Mk5Daemon *D, int nField, char **fields, char *respo
 		}
 		else
 		{
+			D->diskStateMask = d;
+
 			v = snprintf(response, maxResponseLength, "!%s = 0;", fields[0]);
 		}
 	}

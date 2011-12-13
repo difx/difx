@@ -109,7 +109,7 @@ void siginthand(int j)
 class Datum
 {
 public:
-	Datum() : byte(-1) {}
+	Datum() : byte(-1), mjd(0), sec(0), ns(0), frame(0), framespersecond(0), frameoffset(0), framebytes(0), format(0), tracks(0) {}
 	Datum(SSHANDLE *xlrDev, int64_t byte) { populate(xlrDev, byte); }
 	int populate(SSHANDLE *xlrDev, int64_t byte);
 	void print() const;
@@ -604,7 +604,7 @@ static int mk5map(char *vsn, double rate, double fraction, int64_t precision, in
 				d1->byte, d2->byte-d1->byte, d1->mjd, d1->sec, d1->frame, d1->framespersecond, dur, d1->framebytes, 0, d1->tracks, d1->format, n);
 		}
 
-		++d1;
+		d1 = d2;
 	}
 	
 

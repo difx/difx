@@ -217,7 +217,7 @@ static int decode5B(SSHANDLE xlrDevice, long long pointer, int framesToRead, uns
 			k >>= 4;
 		}
 
-		// Compute the millenia
+		// Compute the millennia
 		mjd += 1000*( (mjdnow-mjd+500)/1000 );
 
 		if(timeBCD)
