@@ -12,6 +12,7 @@ Add support for "restartSeconds" to DifxStartMessage
 Add options for different start "functions"
 Add support for diagnostic messages
 Add support for file request
+Add nCore to Load message
 
 Version 2.0.1
 ~~~~~~~~~~~~~

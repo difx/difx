@@ -262,6 +262,7 @@ typedef struct
 	int usedMemory;
 	unsigned int netRXRate;		/* Bytes per second */
 	unsigned int netTXRate;		/* Bytes per second */
+	int nCore;			/* number of cpu cores in box */
 } DifxMessageLoad;
 
 typedef struct

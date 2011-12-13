@@ -142,13 +142,15 @@ int difxMessageSendLoad(const DifxMessageLoad *load)
 		  "<usedMemory>%d</usedMemory>"
 		  "<netRXRate>%d</netRXRate>"
 		  "<netTXRate>%d</netTXRate>"
+		  "<nCore>%d</nCore>"
 		"</difxLoad>",
 
 		load->cpuLoad,
 		load->totalMemory,
 		load->usedMemory,
 		load->netRXRate,
-		load->netTXRate);
+		load->netTXRate,
+		load->nCore);
 
 	if(v >= DIFX_MESSAGE_LENGTH)
 	{

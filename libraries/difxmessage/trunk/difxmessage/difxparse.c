@@ -290,6 +290,10 @@ static void XMLCALL endElement(void *userData, const char *name)
 					{
 						G->body.load.netTXRate = atof(s);
 					}
+					else if(strcmp(elem, "nCore") == 0)
+					{
+						G->body.load.nCore = atoi(s);
+					}
 					break;
 				case DIFX_MESSAGE_ALERT:
 					if(strcmp(elem, "alertMessage") == 0)
@@ -814,6 +818,7 @@ void difxMessageGenericPrint(const DifxMessageGeneric *G)
 		printf("    used memory = %d kiB\n", G->body.load.usedMemory);
 		printf("    network Receive Rate = %d B/s\n", G->body.load.netRXRate);
 		printf("    network Transmit Rate = %d B/s\n", G->body.load.netTXRate);
+		printf("    nCore = %d\n", G->body.load.nCore);
 		break;
 	case DIFX_MESSAGE_ALERT:
 		printf("    severity = %d\n", G->body.alert.severity);
