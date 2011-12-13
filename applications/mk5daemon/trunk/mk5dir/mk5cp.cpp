@@ -1038,7 +1038,7 @@ static int mk5cp(char *vsn, const char *scanList, const char *outPath, int force
 					}
 					if(i > 0 && i <= module.nScans())
 					{
-						scanIndex = i-1;
+						int scanIndex = i-1;
 						v = copyScan(xlrDevice, module.label.c_str(), outPath, scanIndex, &module.scans[scanIndex], &mk5status, chunkSize);
 						if(v == 0)
 						{
@@ -1085,7 +1085,7 @@ static int mk5cp(char *vsn, const char *scanList, const char *outPath, int force
 			{
 				if(strncasecmp(module.scans[i].name.c_str(), scanList, l) == 0)
 				{
-					scanIndex = i;
+					int scanIndex = i;
 					v = copyScan(xlrDevice, module.label.c_str(), outPath, scanIndex, &module.scans[scanIndex], &mk5status, chunkSize);
 					if(v == 0) 
 					{

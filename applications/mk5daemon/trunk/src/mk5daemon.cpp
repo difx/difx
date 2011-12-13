@@ -672,15 +672,15 @@ void handleDifxMessage(Mk5Daemon *D)
 			case DIFX_MESSAGE_START:
 				Mk5Daemon_startMpifxcorr(D, &G);
 				break;
-		    case DIFX_MESSAGE_STOP:
-		        Mk5Daemon_stopMpifxcorr_USNO( D, &G );
+			case DIFX_MESSAGE_STOP:
+				Mk5Daemon_stopMpifxcorr_USNO(D, &G);
 				break;
 			case DIFX_MESSAGE_CONDITION:
 				handleCondition(D, &G);
 				break;
 			case DIFX_MESSAGE_FILEREQUEST:
-			    Mk5Daemon_fileRequest_USNO( D, &G );
-			    break;
+				Mk5Daemon_fileRequest_USNO(D, &G);
+				break;
 			default:
 				break;
 			}
