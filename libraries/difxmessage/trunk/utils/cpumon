@@ -37,6 +37,7 @@ class DifxLoad:
 		self.usedMemory = 0
 		self.netRXRate = 0
 		self.netTXRate = 0
+		self.nCore = 0
 		self.ok    = False
 		self.pid   = 0
 		self.id    = ''
@@ -47,9 +48,9 @@ class DifxLoad:
 		if self.ok:
 			rx = self.netRXRate*8./1000000
 			tx = self.netTXRate*8./1000000
-			str = '%10s %4.2f  %8d/%-8d  %8.4f  %8.4f' % \
+			str = '%10s %4.2f  %8d/%-8d  %8.4f  %8.4f  %2d' % \
 				(self.mk5, self.cpuLoad, self.usedMemory, \
-					self.totalMemory, rx, tx)
+					self.totalMemory, rx, tx, self.nCore)
 		else:
 			str = ''
 		return str
@@ -95,6 +96,8 @@ class Parser:
 			self.info.netRXRate = int(self.tmp)
 		if tag == 'netTXRate':
 			self.info.netTXRate = int(self.tmp)
+		if tag == 'nCore':
+			self.info.nCore = int(self.tmp);
 
 	def data(self, data):
 		self.tmp = data
