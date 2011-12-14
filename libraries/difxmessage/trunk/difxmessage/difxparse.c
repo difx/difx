@@ -112,17 +112,10 @@ static void XMLCALL startElement(void *userData, const char *name,
 				if(strcmp(atts[i], "nodes") == 0)
 				{
 					n = addNodes(S->processNode, DIFX_MESSAGE_MAX_CORES, &S->nProcess, atts[i+1]);
-				}
-				else if ( strcmp( atts[i], "threads" ) == 0 ) {
-				    char buff[DIFX_MESSAGE_LENGTH];
-				    strcpy( buff, atts[i+1] );
-				    buff[strlen( atts[i+1] )] = 0;
-				    for ( j = 0; j < S->nProcess; ++j ) {
-				        if ( j == 0 )
-				            S->nThread[j] = atoi( strtok( buff, " " ) );
-				        else
-				            S->nThread[j] = atoi( strtok( NULL, " " ) );
-				    }
+					for(j = S->nProcess-n; j < S->nProcess; j++)
+					{
+						S->nThread[j] = nThread;
+					}
 				}
 			}
 		}

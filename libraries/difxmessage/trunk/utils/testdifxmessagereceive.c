@@ -225,8 +225,7 @@ int main(int argc, char **argv)
 			l = snprintf(timestr, TimeLength, "%s", ctime(&t));
 			if(l >= TimeLength)
 			{
-				fprintf(stderr, "Developer error: TimeLength=%d is too small (wants %d\n",
-					TimeLength, l);
+				fprintf(stderr, "Developer error: TimeLength=%d is too small (wants %d)\n", TimeLength, l);
 
 				exit(0);
 			}
