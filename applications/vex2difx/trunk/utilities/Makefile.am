@@ -15,4 +15,5 @@ dist_bin_SCRIPTS = \
 	oms2v2d
 noinst_SCRIPTS = \
 	queueVex \
+	unqueueVex \
 	goUSNO

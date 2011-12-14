@@ -39,27 +39,29 @@ const string version("0.1");
 const string verdate("20100304");
 const string author("Walter Brisken & Adam Deller");
 
-int usage(int argc, char **argv)
+static void usage(int argc, char **argv)
 {
 	cout << endl;
 	cout << program << " version " << version << "  " << author << " " << verdate << endl;
-	cout << "You must provide a vex file name as the first argument" << endl;
-	cout << "The optional arguments are" << endl;
+	cout << endl;
+	cout << "Usage:  %s <vexfile> [options]" << endl;
+	cout << endl;
+	cout << "The first argument must be the name of a valid vex file." << endl;
+	cout << endl;
+	cout << "The optional arguments can be:" << endl;
         cout << "  --phasingsources=source1,source2... (for EVLA)" << endl;
         cout << "  --dbepersonality=[path/]filename (for VLBA)" << endl;
 	cout << endl;
-
-	return 0;
 }
 
-bool isVLBA(const string& ant)
+bool isVLBA(const string& antName)
 {
-	const string VLBAantennas[10] = 
-		{"BR", "FD", "HN", "KP", "LA", "MK", "NL", "OV", "PT", "SC"};
+	const string VLBAantennas[] = 
+		{"BR", "FD", "HN", "KP", "LA", "MK", "NL", "OV", "PT", "SC", ""};	// terminate list with "" !
 
-	for(unsigned int i = 0; i < 10; i++)
+	for(unsigned int i = 0; VLBAantennas[i] != ""; i++)
 	{
-		if(VLBAantennas[i] == ant)
+		if(VLBAantennas[i] == antName)
 		{
 			return true;
 		}
@@ -98,9 +100,11 @@ int main(int argc, char **argv)
 	pystream::scripttype stype;
 	int nWarn = 0;
 
-	if(argc < 2)
+	if(argc < 2 || strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0)
 	{
-		return usage(argc, argv);
+		usage(argc, argv);
+
+		return EXIT_SUCCESS;
 	}
 
 	P = new CorrParams();
@@ -146,9 +150,11 @@ int main(int argc, char **argv)
 
 	V = loadVexFile(*P, &nWarn);
 
-	if( V == NULL ) {
+	if(V == NULL)
+	{
 		cerr << "ERROR loading vex file! File may not exist!" << endl;
-		exit(1);
+
+		exit(EXIT_FAILURE);
 	}
 
 	nAntenna = V->nAntenna();
@@ -200,5 +206,5 @@ int main(int argc, char **argv)
 	}
 	
 
-	return 0;
+	return EXIT_SUCCESS;
 }

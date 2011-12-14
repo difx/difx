@@ -6,12 +6,10 @@ from sys import argv, exit, stdin
 from os import system, chdir, getcwd, environ, popen
 from os.path import isfile, isdir
 from string import replace, strip, split, lower, upper, find
-from glob import glob
-from time import time
 import datetime
 
-program = 'queueVex'
-version = 1.5
+program = 'unqueueVex'
+version = 0.1
 verdate = '20111213'
 author  = 'Walter Brisken'
 
@@ -24,7 +22,6 @@ poststopTime = 30	# seconds
 difxPath = '/home/swc/DiFX-trunk-64/bin'
 difxbinpath = '/users/difx/bin'
 linesToShow = 10
-keepDays = 45
 
 # ------------------
 
@@ -37,7 +34,6 @@ def usage():
 	print '  -q or --quiet      make less verbose.'
 	print '  -p or --priority   interrupt a conflicting obs.'
 	print '  -u or --usno       convert scripts to use USNO devices'
-	print '  -e or --edit       allow time to edit the files\n'
 	print ''
 
 
@@ -117,18 +113,15 @@ def vlba2mjd(d, t):
 	return mjd
 
 def sortmetric(x):
-        y = split(x)
+	y = split(x)
 	return vlba2mjd(y[1], y[2])
 
-def addObservation(orig, expt, startMJD, stopMJD, station):
-	startDate = mjd2datetime(startMJD)
-	stopDate = mjd2datetime(stopMJD)
-	todayMJD = time()/86400.0 + 40587
-	epsilon = 5/86400.0	# extra gap to add between experiments in overlap situations
-
+def rmObservation(orig, expt, station):
 	observations = []
 
 	for o in orig:
+		# calc time
+		# keep only obs from last 7 days and beyond
 		v = split(strip(o), '>')
 		s = split(v[0])
 		if len(s) < 5 or len(v) < 2:
@@ -136,31 +129,27 @@ def addObservation(orig, expt, startMJD, stopMJD, station):
 			continue
 		expt0 = s[0]
 		if expt0 == expt:
-			continue	# don't keep old entry for same expt
-		startDate0 = s[1]
-		startMJD0 = vlba2mjd(s[1], s[2])
-		stopMJD0 = vlba2mjd(s[3], s[4])
-		station0 = v[1]
-
-		# discard old observations
-		if stopMJD0 < todayMJD-keepDays:
-			continue
-
-		# check for overlap with another observation
-		if startMJD < stopMJD0 and stopMJD > startMJD0:	# some overlap condition exists!
-			if startMJD0 < startMJD:	# original project starts first
-				newobs = '%s %s %s > %s\n' % (expt0, mjd2datetime(startMJD0), startDate - epsilon, station0)
-				observations.append(newobs)
-			if stopMJD0 > stopMJD:		# original projects ends last
-				newobs = '%s %s %s > %s\n' % (expt0, stopDate + epsilon, mjd2datetime(stopMJD0), station0)
-				observations.append(newobs)
-		else:	# no overlap, so this is easy!
-			observations.append(o)
-	newobs = '%s %s %s > %s\n' % (expt, startDate, stopDate, station)
-	observations.append(newobs)
+			continue	# don't keep old entry
+		observations.append(o)
 
 	# sort by start time
 	observations.sort(key=sortmetric)
+
+	# glue: if removed observation was between two copies of same
+	# experiment, assume it was interrupted by the observation that
+	# was removed, so put them back together
+	index = 0
+	while len(observations) > index+1:
+		v1 = split(observations[index], '>')
+		s1 = split(v1[0])
+		v2 = split(observations[index+1], '>')
+		s2 = split(v2[0])
+		if s1[0] == s2[0] and v1[1] == v2[1]:
+			# copy end date,time from second expt to first
+			observations[index] = '%s %s %s %s %s > %s' % (s1[0], s1[1], s1[2], s2[3], s2[4], v1[1])
+			observations.pop(index+1)
+		else:
+			index += 1
 
 	return observations
 
@@ -230,25 +219,17 @@ if vexFile[0] != '/':
 
 obsCode, obsSeg, stationTimes = vexPeek(vexFile)
 
-tmpDir = '/tmp/' + replace(vexFile, '/', ',') + '.workdir'
+scripts = []
 
-if isfile(tmpDir) or isdir(tmpDir):
-	print 'Error: cannot proceed as temporary directory %s already exists.  Delete and try again.' % tmpDir
-	exit(0)
+for s in stationTimes:
+	scriptName = upper(obsCode+obsSeg+'.'+s)+'.py'
+	scripts.append(scriptName);
 
-execute('mkdir -p %s' % tmpDir)
-
-chdir(tmpDir)
-
-execute('%s/vex2script %s' % (difxPath, vexFile))
-
-scripts = glob('*.??.py')
 scripts.sort()
 
-if edit:
-	print '\nNow you can edit the .py files in %s before they are sent to the stations.' % tmpDir
-	print '\nPress enter to continue'
-	stdin.readline()
+print 'scripts=', scripts
+
+chdir('/tmp')
 
 for script in scripts:
 	s = split(script, '.')
@@ -258,11 +239,7 @@ for script in scripts:
 	if station == 'gb':
 		cc = 'gb-cc.gb.nrao.edu'
 
-# GB not yet handled per the request of GB staff
-
-		#print 'Warning: files for GB are not yet handled by this script'
-		#print '\n==========================================================================='
-		continue
+		continue	# GB not yet handled per the request of GB staff
 	else:
 		cc = '%s-cc.vlba.nrao.edu' % station
 	
@@ -270,36 +247,26 @@ for script in scripts:
 	timeRange = stationTimes[upperStation]
 	startDate = mjd2datetime(timeRange[0])
 	stopDate = mjd2datetime(timeRange[1])
-	print 'STATION %s : observing %s from %s to %s' % (upperStation, expt, startDate, stopDate)
+	print 'STATION %s : was to observe %s from %s to %s' % (upperStation, expt, startDate, stopDate)
 	print '===========================================================================\n'
 
-	if usnoConvert and (upperStation == 'MK' or upperStation == 'PT'):
-		print 'USNO Experiment %s' % (expt)
-		print 'Modifying script file for %s to use USNO equipment.' % upperStation
-		execute("mv %s %s.tmp" % (script, script))
-		execute("""sed -e "s/recorder0[ ]*=[ ]*Mark5C('-1')/recorder0 = Mark5C('usno')/" -e "s/dbe0[ ]*=[ ]*RDBE(0,[ ]*'pfb'/dbe0 = RDBE(2, 'pfb'/" -e "s/subarray.set4x4Switch('1/subarray.set4x4Switch('2/" <%s.tmp >%s""" % (script, script))
-		execute("rm %s.tmp" % script)
-		print 'Done.\n'
-
-	print 'Sending %s to %s' % (script, cc)
-	execute('scp vlbamon@%s:%s/%s . 2>&1' % (cc, ccScriptDir, observTxFile), 1)
+	print 'Removing %s from %s' % (script, cc)
+	execute('scp vlbamon@%s:%s/%s . 2>&1' % (cc, ccScriptDir, observTxFile), 0)
 	if not isfile(observTxFile):
 		execute('touch %s' % observTxFile)
 
 	observations = open(observTxFile).readlines()
-	observations = addObservation(observations, expt, timeRange[0], timeRange[1], station)
+	observations = rmObservation(observations, expt, station)
 	f = open(observTxFile, 'w')
 	for o in observations:
 		f.write(o)
 	f.close()
 
-	print 'Contents of %s at %s (only last %d lines shown):' % (observTxFile, upperStation, linesToShow)
+	print 'New contents of %s at %s: (only last %d lines shown)' % (observTxFile, upperStation, linesToShow)
 	system('tail -n %d %s' % (linesToShow, observTxFile))
 	print ''
-	execute('scp %s %s vlbamon@%s:%s 2>&1' % (script, observTxFile, cc, ccScriptDir), 1)
-	execute('rm %s' % observTxFile)
+	execute('ssh vlbamon@%s rm -f %s/%s 2>&1' % (cc, ccScriptDir, script), 0)
+	execute('scp %s vlbamon@%s:%s 2>&1' % (observTxFile, cc, ccScriptDir), 0)
 
 chdir(cwd)
 
-execute('cp %s/*.py .' % tmpDir)
-execute('rm -rf %s' % tmpDir);

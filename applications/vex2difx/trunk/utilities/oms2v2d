@@ -36,8 +36,8 @@ from os.path import isfile
 from os import umask
 
 program = 'oms2v2d'
-version = '1.0'
-verdate = '20110714'
+version = '1.1'
+verdate = '20111213'
 author = 'Walter Brisken'
 
 def usage(pgm):
@@ -49,15 +49,24 @@ def usage(pgm):
 	print '  -h       print this help info and quit\n'
 	print '  --force'
 	print '  -f       force operation, even if output file exits\n'
+	print '  --verbose'
+	print '  -v       be more verbose in execution (use -v -v for even more!)\n'
+	print '  --quiet'
+	print '  -q       be less verbose\n'
 	print '<oms file> is a .oms file produced by sched\n'
 	exit(0)
 
 
-def readOMS(filename):
+def readOMS(filename, verbose):
+	if verbose > 1:
+		print 'Reading: %s' % filename
 	data = open(filename).readlines()
 	section = []
 	current = {}
 	n = 0;
+	minbw = 1.0e9
+	maxbw = 0.0
+	spaces = ''
 	for D in data:
 		n = n + 1
 		d = strip(D)
@@ -80,15 +89,32 @@ def readOMS(filename):
 			if not last.has_key(value):
 				last[value] = []
 			last[value].append(current)
+			if verbose > 2:
+				print '%sBEGIN %s' % (spaces, value)
+			spaces = spaces + '  '
 		elif key == 'END':
+			spaces = spaces[:-2]
 			if len(section) == 0:
 				print 'Error: line %d unmatched END: %s' % (n, d)
 				exit(0)
 			oldvalue, current = section.pop()
+			if verbose > 2:
+				print '%sEND %s' % (spaces, value)
 			if oldvalue != value:
 				print 'END with value %s does not match previous BEGIN with value %s, line %d' % (value, oldvalue, n)
 				exit(0)
+		elif key == 'BANDWIDTH':
+			if verbose > 3:
+				print '%s%s = %s' % (spaces, key, value);
+			for v in split(strip(value)):
+				f = float(v)
+				if f > maxbw:
+					maxbw = f
+				if f < minbw:
+					minbw = f
 		else:
+			if verbose > 3:
+				print '%s%s = %s' % (spaces, key, value);
 			if not current.has_key(key):
 				current[key] = []
 			for v in split(strip(value)):
@@ -97,15 +123,28 @@ def readOMS(filename):
 	if len(section) > 0:
 		print 'Error: unmatched BEGIN'
 		exit(0);
+	
+	current['MINBW'] = minbw
+	current['MAXBW'] = maxbw
+
+	if verbose > 1:
+		print 'Min channel bandwidth = %f MHz' % minbw
+		print 'Max channel bandwidth = %f MHz' % maxbw
 
 	return current
 
 
-def writev2d(oms, v2dFile):
+def writev2d(oms, v2dFile, verbose):
 	corr = oms['CORRELATOR_PARAMETERS'][0]
 
-	print 'Writing: %s' % v2dFile
+	if verbose > 0:
+		print 'Writing: %s' % v2dFile
 	out = open(v2dFile, 'w')
+
+	bw = oms['MAXBW']
+	if bw != oms['MINBW']:
+		print 'Warning: different bandwidths used within this file.'
+		print 'Using the maximum bandwidth to set spectral resolution.'
 
 	try:
 		nFFT = int(corr['FFT_SIZE'][0])
@@ -158,8 +197,8 @@ def writev2d(oms, v2dFile):
 		out.write('  tInt = %s\n' % corr['TIME_AVERAGE'][0])
 
 	if specAvg != -1 and nFFT !=-1:
-		out.write('  nChan = %d\n' % (nFFT/(2*specAvg)))
-                out.write('  nFFTChan = %d\n' % (nFFT/2))
+		out.write('  fftSpecRes = %10.8f\n' % (bw/(nFFT/2)))
+		out.write('  specRes = %10.8f\n' % (bw/(nFFT/(2*specAvg))))
 	if 'POLARIZATION' in corr:
 		out.write('  doPolar = %s\n' % doPolar)
 	if nFFT > 256:
@@ -179,12 +218,17 @@ print ''
 inFile = ''
 force = False
 stop = False
+verbose = 1
 for a in argv[1:]:
 	if a[0] == '-':
 		if a in ['-h', '--help']:
 			usage(argv[0])
 		elif a in ['-f', '--force']:
 			force = True
+		elif a in ['-v', '--verbose']:
+			verbose += 1
+		elif a in ['-q', '--quiet']:
+			verbose -= 1
 		else:
 			print 'Unknown command line option: %s' % a
 			stop = True
@@ -236,11 +280,12 @@ else:
 
 if isfile(v2dFile):
 	if force:
-		print 'Warning: overwriting exisiting file %s.\n' % v2dFile
+		if verbose > 0:
+			print 'Warning: overwriting exisiting file %s.\n' % v2dFile
 	else:
 		print 'Error: output file %s exists.  Run with --force to continue.\n' % v2dFile
 		exit(0)
 
-oms = readOMS(omsFile)
+oms = readOMS(omsFile, verbose)
 
-writev2d(oms, v2dFile)
+writev2d(oms, v2dFile, verbose)
