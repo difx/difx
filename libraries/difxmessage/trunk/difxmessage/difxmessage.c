@@ -92,7 +92,6 @@ const char DifxMessageTypeStrings[][24] =
 	"DifxCommand",
 	"DifxParameter",
 	"DifxStart",
-	"DifxStartUSNO",
 	"DifxStop",
 	"Mark5VersionMessage",
 	"Mark5ConditionMessage", /* this is deprecated; use Mark5DriveStatsMessage instead */
