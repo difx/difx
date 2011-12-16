@@ -351,6 +351,13 @@ int difxMessageSendDriveStats(const DifxMessageDriveStats *driveStats)
 	int b = 0;
 	int v;
 
+	if(driveStats->type < 0 || driveStats->type >= NUM_DRIVE_STATS_TYPES)
+	{
+		fprintf(stderr, "difxMessageSendDriveStats: illegal type number=%d; needs to be in [0, %d)\n", driveStats->type, NUM_DRIVE_STATS_TYPES);
+
+		return -1;
+	}
+
 	bins[0] = 0;
 
 	if(difxMessagePort < 0)
@@ -376,8 +383,7 @@ int difxMessageSendDriveStats(const DifxMessageDriveStats *driveStats)
 	{
 		for(i = 0; i < DIFX_MESSAGE_N_CONDITION_BINS; i++)
 		{
-			b += snprintf(bins+b, DIFX_MESSAGE_LENGTH-b,
-				"<bin%d>%d</bin%d>", i, driveStats->bin[i], i);
+			b += snprintf(bins+b, DIFX_MESSAGE_LENGTH-b, "<bin%d>%d</bin%d>", i, driveStats->bin[i], i);
 			if(b >= DIFX_MESSAGE_LENGTH)
 			{
 				fprintf(stderr, "difxMessageSendDriveStats: message overflow (%d >= %d)\n", b, DIFX_MESSAGE_LENGTH);
@@ -417,8 +423,8 @@ int difxMessageSendDriveStats(const DifxMessageDriveStats *driveStats)
 			driveStats->moduleSlot,
 			driveStats->startMJD,
 			driveStats->stopMJD,
-			startByteString,
 			DriveStatsTypeStrings[driveStats->type],
+			startByteString,
 			bins);
 
 		if(v >= DIFX_MESSAGE_LENGTH)

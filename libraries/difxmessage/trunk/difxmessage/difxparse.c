@@ -366,14 +366,12 @@ static void XMLCALL endElement(void *userData, const char *name)
 					}
 					else if(strcmp(elem, "serialNumber") == 0)
 					{
-						strncpy(G->body.driveStats.serialNumber, s,
-							DIFX_MESSAGE_DISC_SERIAL_LENGTH);
+						strncpy(G->body.driveStats.serialNumber, s, DIFX_MESSAGE_DISC_SERIAL_LENGTH);
 						G->body.driveStats.serialNumber[DIFX_MESSAGE_DISC_SERIAL_LENGTH] = 0;
 					}
 					else if(strcmp(elem, "modelNumber") == 0)
 					{
-						strncpy(G->body.driveStats.modelNumber, s,
-							DIFX_MESSAGE_DISC_MODEL_LENGTH);
+						strncpy(G->body.driveStats.modelNumber, s, DIFX_MESSAGE_DISC_MODEL_LENGTH);
 						G->body.driveStats.modelNumber[DIFX_MESSAGE_DISC_MODEL_LENGTH] = 0;
 					}
 					else if(strcmp(elem, "size") == 0)
@@ -382,8 +380,7 @@ static void XMLCALL endElement(void *userData, const char *name)
 					}
 					else if(strcmp(elem, "moduleVSN") == 0)
 					{
-						strncpy(G->body.driveStats.moduleVSN, s,
-							DIFX_MESSAGE_MARK5_VSN_LENGTH);
+						strncpy(G->body.driveStats.moduleVSN, s, DIFX_MESSAGE_MARK5_VSN_LENGTH);
 						G->body.driveStats.moduleVSN[DIFX_MESSAGE_MARK5_VSN_LENGTH] = 0;
 					}
 					else if(strcmp(elem, "moduleSlot") == 0)
