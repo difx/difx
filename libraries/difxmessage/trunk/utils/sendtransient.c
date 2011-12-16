@@ -39,7 +39,7 @@ int main(int argc, char **argv)
 	{
 		printf("\nUsage: %s startMJD stopMJD priority identifier [outputDir]\n\n", argv[0]);
 
-		return 0;
+		return EXIT_SUCCESS;
 	}
 
 	difxMessageInit(-1, argv[0]);
@@ -62,5 +62,5 @@ int main(int argc, char **argv)
 
 	difxMessageSendDifxTransient(&transient);
 
-	return 0;
+	return EXIT_SUCCESS;
 }

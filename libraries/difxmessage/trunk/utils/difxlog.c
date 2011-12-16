@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2010 by Walter Brisken                             *
+ *   Copyright (C) 2009-2011 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -35,11 +35,11 @@
 #include "difxmessage.h"
 
 const char program[] = "difxlog";
-const char version[] = "0.4";
-const char verdate[] = "20101126";
+const char version[] = "0.5";
+const char verdate[] = "20111215";
 const char author[]  = "Walter Brisken";
 
-int usage(const char *prog)
+void usage(const char *prog)
 {
 	printf("\n%s ver. %s  %s %s\n\n", program, version, author, verdate);
 	printf("A program to collect multi-cast alert messages for a particular job and\nwrite them to a file.\n\n");
@@ -57,8 +57,6 @@ int usage(const char *prog)
 	printf("  %d = Verbose\n", DIFX_ALERT_LEVEL_VERBOSE);
 	printf("  %d = Debug\n", DIFX_ALERT_LEVEL_DEBUG);
 	printf("\n");
-
-	return 0;
 }
 
 /* There _must_ be a better way to do this test for existence of running PID! */
@@ -116,7 +114,9 @@ int main(int argc, char **argv)
 
 	if(argc < 3)
 	{
-		return usage(argv[0]);
+		usage(argv[0]);
+
+		return EXIT_SUCCESS;
 	}
 	if(argc > 3)
 	{
@@ -130,10 +130,9 @@ int main(int argc, char **argv)
 	l = snprintf(identifier, DIFX_MESSAGE_IDENTIFIER_LENGTH, "%s", argv[1]);
 	if(l >= DIFX_MESSAGE_IDENTIFIER_LENGTH)
 	{
-		fprintf(stderr, "Error: Identifier '%s' exceeds %d character limit\n",
-			argv[1], DIFX_MESSAGE_IDENTIFIER_LENGTH-1);
+		fprintf(stderr, "Error: Identifier '%s' exceeds %d character limit\n", argv[1], DIFX_MESSAGE_IDENTIFIER_LENGTH-1);
 
-		return -1;
+		return EXIT_FAILURE;
 	}
 
 	out = fopen(argv[2], "w");
@@ -141,7 +140,7 @@ int main(int argc, char **argv)
 	{
 		fprintf(stderr, "Error: cannot open %s for write\n", argv[2]);
 
-		return -1;
+		return EXIT_FAILURE;
 	}
 
 	difxMessageInit(-1, argv[0]);
@@ -197,8 +196,7 @@ int main(int argc, char **argv)
 
 				S = &G.body.status;
 				
-				fprintf(out, "%s  STATUS %s  %s\n", tag, DifxStateStrings[S->state],
-					S->message);
+				fprintf(out, "%s  STATUS %s  %s\n", tag, DifxStateStrings[S->state], S->message);
 				if(S->maxDS >= 0)
 				{
 					fprintf(out, "%s  WEIGHTS", tag);
@@ -231,5 +229,5 @@ int main(int argc, char **argv)
 
 	difxMessageReceiveClose(sock);
 
-	return 0;
+	return EXIT_SUCCESS;
 }

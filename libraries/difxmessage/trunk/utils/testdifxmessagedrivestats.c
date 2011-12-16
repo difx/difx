@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2011 by Walter Brisken                             *
+ *   Copyright (C) 2011 by Walter Brisken                                  *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -20,7 +20,7 @@
  * SVN properties (DO NOT CHANGE)
  *
  * $Id$
- * $HeadURL$
+ * $HeadURL: https://svn.atnf.csiro.au/difx/libraries/difxmessage/trunk/utils/testdifxmessagecondition.c $
  * $LastChangedRevision$
  * $Author$
  * $LastChangedDate$
@@ -29,99 +29,35 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <unistd.h>
 #include <stdlib.h>
-#include <time.h>
-#include "difxmessage.h"
-
-const int MAX_SENDER=1024;
-
-struct sender
-{
-	char name[DIFX_MESSAGE_PARAM_LENGTH];
-	char identifier[DIFX_MESSAGE_IDENTIFIER_LENGTH];
-	int lastseq;
-};
-
-void checkseq(const char *name, const char *identifier, int seq, struct sender *senders)
-{
-	int i;
-	time_t t;
-	char timestr[32];
-
-	if(seq < 0)
-	{
-		return;
-	}
-
-	for(i = 0; i < MAX_SENDER; i++)
-	{
-		if(senders[i].lastseq < 0)
-		{
-			break;
-		}
-		if(strcmp(name, senders[i].name) == 0 &&
-		   strcmp(identifier, senders[i].identifier) == 0)
-		{
-			if(seq != senders[i].lastseq + 1 && seq > 0)
-			{
-				time(&t);
-				strcpy(timestr, ctime(&t));
-				timestr[strlen(timestr)-1] = 0;
-				printf("[%s]  %s.%s  %d -> %d\n", 
-					timestr, name, identifier,
-					senders[i].lastseq, seq);
-				fflush(stdout);
-			}
-			senders[i].lastseq = seq;
-
-			return;
-		}
-	}
-	if(i < MAX_SENDER)
-	{
-		strcpy(senders[i].name, name);
-		strcpy(senders[i].identifier, identifier);
-		senders[i].lastseq = seq;
-	}
-	if(i+1 < MAX_SENDER)
-	{
-		senders[i+1].lastseq = -1;
-	}
-}
+#include <difxmessage.h>
 
 int main(int argc, char **argv)
 {
-	int sock;
-	int l;
-	char message[DIFX_MESSAGE_LENGTH];
-	char from[DIFX_MESSAGE_PARAM_LENGTH];
-	DifxMessageGeneric G;
-	struct sender senders[MAX_SENDER];
-
-	senders[0].lastseq = -1;
+	int i;
+	DifxMessageDriveStats stats;
 
 	difxMessageInit(-1, argv[0]);
 	difxMessagePrint();
 
-	sock = difxMessageReceiveOpen();
+	strcpy(stats.serialNumber, "123wfb");
+	strcpy(stats.modelNumber, "1.0a2.0");
+	stats.diskSize = 1212;
+	strcpy(stats.moduleVSN, "WFB-1234");
+	stats.startMJD = 50000.12;
+	stats.stopMJD = 50000.22;
+	stats.type = DRIVE_STATS_TYPE_READ;
+	stats.startByte = 10000000000LL;
 
-	for(;;)
+	for(stats.moduleSlot = 0; stats.moduleSlot < 8; stats.moduleSlot++)
 	{
-		from[0] = 0;
-		l = difxMessageReceive(sock, message, DIFX_MESSAGE_LENGTH-1, from);
-		if(l < 0)
+		for(i = 0; i < DIFX_MESSAGE_N_DRIVE_STATS_BINS; i++)
 		{
-			usleep(100000);
-			continue;
+			stats.bin[i] = i*i*i + stats.moduleSlot*1000;
 		}
-		message[l] = 0;
-		difxMessageParse(&G, message);
-	
-		checkseq(G.from, G.identifier, G.seqNumber, senders);
+		
+		difxMessageSendDriveStats(&stats);
 	}
-
-	difxMessageReceiveClose(sock);
 
 	return EXIT_SUCCESS;
 }

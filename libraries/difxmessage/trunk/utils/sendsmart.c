@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2010 by Walter Brisken                                  *
+ *   Copyright (C) 2010-2011 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -45,7 +45,7 @@ int main(int argc, char **argv)
 	{
 		printf("\nUsage: %s <nSmart>\n\n", argv[0]);
 
-		return 0;
+		return EXIT_SUCCESS;
 	}
 
 	nSmart = atoi(argv[1]);
@@ -53,7 +53,7 @@ int main(int argc, char **argv)
 	{
 		fprintf(stderr, "nSmart must be in [1..%d] inclusive.\n", DIFX_MESSAGE_MAX_SMART_IDS);
 
-		return 0;
+		return EXIT_FAILURE;
 	}
 
 	difxMessageInit(-1, argv[0]);
@@ -76,5 +76,5 @@ int main(int argc, char **argv)
 
 	difxMessageSendDifxSmart(mjdData, vsn, slot, nSmart, ids, values);
 
-	return 0;
+	return EXIT_SUCCESS;
 }

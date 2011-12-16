@@ -190,7 +190,6 @@ static void XMLCALL endElement(void *userData, const char *name)
 	DifxMessageGeneric *G;
 	const char *elem;
 	const char *s;
-	int i;
 
 	G = (DifxMessageGeneric *)userData;
 	elem = G->_xml_element[G->_xml_level];
@@ -198,10 +197,6 @@ static void XMLCALL endElement(void *userData, const char *name)
 
 	if(G->_xml_string[0] != 0)
 	{
-		enum DifxMessageType t;
-		enum Mk5State m;
-		enum DifxState d;
-
 		if(strcmp(G->_xml_element[0], "difxMessage") == 0)
 		{
 			if(strcmp(G->_xml_element[1], "header") == 0)
@@ -228,6 +223,8 @@ static void XMLCALL endElement(void *userData, const char *name)
 				}
 				else if(strcmp(elem, "type") == 0)
 				{
+					enum DifxMessageType t;
+
 					for(t = 0; t < NUM_DIFX_MESSAGE_TYPES; t++)
 					{
 						if(!strcmp(DifxMessageTypeStrings[t],s))
@@ -235,6 +232,8 @@ static void XMLCALL endElement(void *userData, const char *name)
 							G->type = t;
 							if(G->type == DIFX_MESSAGE_STATUS)
 							{
+								int i;
+
 								for(i = 0; i < DIFX_MESSAGE_MAX_DATASTREAMS; i++)
 								{
 									G->body.status.weight[i] = -1;
@@ -243,6 +242,8 @@ static void XMLCALL endElement(void *userData, const char *name)
 							}
 							else if(G->type == DIFX_MESSAGE_SMART)
 							{
+								int i;
+
 								for(i = 0; i < DIFX_MESSAGE_MAX_SMART_IDS; i++)
 								{
 									G->body.smart.id[i] = 0;
@@ -302,20 +303,17 @@ static void XMLCALL endElement(void *userData, const char *name)
 				case DIFX_MESSAGE_MARK5STATUS:
 					if(strcmp(elem, "bankAVSN") == 0)
 					{
-						strncpy(G->body.mk5status.vsnA, s, 
-							DIFX_MESSAGE_MARK5_VSN_LENGTH);
+						strncpy(G->body.mk5status.vsnA, s, DIFX_MESSAGE_MARK5_VSN_LENGTH);
 						G->body.mk5status.vsnA[DIFX_MESSAGE_MARK5_VSN_LENGTH] = 0;
 					}
 					else if(strcmp(elem, "bankBVSN") == 0)
 					{
-						strncpy(G->body.mk5status.vsnB, s, 
-							DIFX_MESSAGE_MARK5_VSN_LENGTH);
+						strncpy(G->body.mk5status.vsnB, s, DIFX_MESSAGE_MARK5_VSN_LENGTH);
 						G->body.mk5status.vsnB[DIFX_MESSAGE_MARK5_VSN_LENGTH] = 0;
 					}
 					else if(strcmp(elem, "statusWord") == 0)
 					{
-						sscanf(s, "%x", 
-							&G->body.mk5status.status);
+						sscanf(s, "%x", &G->body.mk5status.status);
 					}
 					else if(strcmp(elem, "activeBank") == 0)
 					{
@@ -323,6 +321,8 @@ static void XMLCALL endElement(void *userData, const char *name)
 					}
 					else if(strcmp(elem, "state") == 0)
 					{
+						enum Mk5State m;
+
 						G->body.mk5status.state = 0;
 						for(m = 0; m < NUM_MARK5_STATES; m++)
 						{
@@ -358,6 +358,8 @@ static void XMLCALL endElement(void *userData, const char *name)
 				case DIFX_MESSAGE_DRIVE_STATS:
 					if(strncmp(elem, "bin", 3) == 0)
 					{
+						int i;
+
 						i = atoi(elem+3);
 						if(i >= 0 && i < DIFX_MESSAGE_N_DRIVE_STATS_BINS)
 						{
@@ -511,6 +513,8 @@ static void XMLCALL endElement(void *userData, const char *name)
 					}
 					else if(strcmp(elem, "state") == 0)
 					{
+						enum DifxState d;
+
 						for(d = 0; d < NUM_DIFX_STATES; d++)
 						{
 							if(strcmp(DifxStateStrings[d], s) == 0)
@@ -553,10 +557,12 @@ static void XMLCALL endElement(void *userData, const char *name)
 					else if(strncmp(elem, "index", 5) == 0)
 					{
 						int p;
+
 						p = atoi(elem+5);
 						if(p > 1 && p < DIFX_MESSAGE_MAX_INDEX)
 						{
 							int i;
+							
 							i = atoi(s);
 							if(p > G->body.param.nIndex)
 							{
@@ -624,22 +630,28 @@ static void XMLCALL endElement(void *userData, const char *name)
 					}
 					else if(strcmp(elem, "function") == 0)
 					{
-					    for ( i = 0; i < NUM_DIFX_START_FUNCTION_TYPES; ++i ) {
-						    if( strcmp( DifxStartFunctionString[i], s ) == 0 )
+						enum DifxStartFunction f;
+
+						for(f = 0; f < NUM_DIFX_START_FUNCTION_TYPES; ++f) 
+						{
+							if(strcmp(DifxStartFunctionString[f], s) == 0)
 							{
-							    G->body.start.function = i;
-						    }
+								G->body.start.function = f;
+							}
 						}
 					}
 					break;
 				case DIFX_MESSAGE_STOP:
-					if( strcmp(elem, "input") == 0 ) {
-						strncpy( G->body.stop.inputFilename, s, DIFX_MESSAGE_FILENAME_LENGTH-1 );
+					if(strcmp(elem, "input") == 0)
+					{
+						strncpy( G->body.stop.inputFilename, s, DIFX_MESSAGE_FILENAME_LENGTH-1);
 					}
 					break;
 				case DIFX_MESSAGE_DIAGNOSTIC:
 					if(strcmp(elem, "diagnosticType") == 0)
 					{
+						enum DifxDiagnosticType t;
+
 						for(t = 0; t < NUM_DIFX_DIAGNOSTIC_TYPES; t++)
 						{
 							if(strcmp(DifxDiagnosticStrings[t],s) == 0)
@@ -682,8 +694,9 @@ static void XMLCALL endElement(void *userData, const char *name)
 					}
 					break;
 				case DIFX_MESSAGE_FILEREQUEST:
-					if( strcmp(elem, "input") == 0 ) {
-						strncpy( G->body.stop.inputFilename, s, DIFX_MESSAGE_FILENAME_LENGTH-1 );
+					if(strcmp(elem, "input") == 0 )
+					{
+						strncpy(G->body.stop.inputFilename, s, DIFX_MESSAGE_FILENAME_LENGTH-1);
 					}
 					break;
 				case DIFX_MESSAGE_TRANSIENT:
@@ -778,7 +791,7 @@ int difxMessageParse(DifxMessageGeneric *G, const char *message)
 	/* promote condition type ti disk stat type */
 	if(G->type == DIFX_MESSAGE_CONDITION)
 	{
-		fprintf(stderr, "Note: condition message received.  This is being replaced with a disk stat ,essage.  The sender should be upgraded to use the new type when convenient.\n");
+		fprintf(stderr, "Note: condition message received.  This is being replaced with a disk stat message.  The sender should be upgraded to use the new type when convenient.\n");
 		G->type = DIFX_MESSAGE_DRIVE_STATS;
 	}
 
@@ -864,20 +877,14 @@ void difxMessageGenericPrint(const DifxMessageGeneric *G)
 		break;
 	case DIFX_MESSAGE_CONDITION:	/* Should not be exercised; falls through to disk_stat */
 	case DIFX_MESSAGE_DRIVE_STATS:
-		printf("    serial number = %s\n", 
-			G->body.driveStats.serialNumber);
-		printf("    model number = %s\n",
-			G->body.driveStats.modelNumber);
-		printf("    disk size = %d GB\n",
-			G->body.driveStats.diskSize);
+		printf("    serial number = %s\n", G->body.driveStats.serialNumber);
+		printf("    model number = %s\n", G->body.driveStats.modelNumber);
+		printf("    disk size = %d GB\n", G->body.driveStats.diskSize);
 		printf("    disk stat type = %s\n", DriveStatsTypeStrings[G->body.driveStats.type]);
 		printf("    startbyte = %Ld\n", G->body.driveStats.startByte);
-		printf("    module VSN / slot = %s / %d\n", 
-			G->body.driveStats.moduleVSN,
-			G->body.driveStats.moduleSlot);
-		printf("    MJD = %7.5f to %7.5f\n",
-			G->body.driveStats.startMJD,
-			G->body.driveStats.stopMJD);
+		printf("    module VSN = %s\n", G->body.driveStats.moduleVSN);
+		printf("    drive slot = %d\n", G->body.driveStats.moduleSlot);
+		printf("    MJD = %7.5f to %7.5f\n", G->body.driveStats.startMJD, G->body.driveStats.stopMJD);
 		printf("    stats =");
 		for(i = 0; i < DIFX_MESSAGE_N_DRIVE_STATS_BINS; i++)
 		{
@@ -886,9 +893,7 @@ void difxMessageGenericPrint(const DifxMessageGeneric *G)
 		printf("\n");
 		break;
 	case DIFX_MESSAGE_STATUS:
-		printf("    state = %s %d\n", 
-			DifxStateStrings[G->body.status.state],
-			G->body.status.state);
+		printf("    state = %s %d\n", DifxStateStrings[G->body.status.state], G->body.status.state);
 		printf("    message = %s\n", G->body.status.message);
 		break;
 	case DIFX_MESSAGE_INFO:

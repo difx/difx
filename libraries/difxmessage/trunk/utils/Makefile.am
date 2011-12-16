@@ -10,6 +10,7 @@ bin_PROGRAMS = \
 	testdifxmessagereceive \
 	testdifxmessagecondition \
 	testdifxmessagereceivecond \
+	testdifxmessagedrivestats \
 	testseqnumbers \
 	testm5lock \
 	sendtransient \
@@ -63,3 +64,6 @@ difxlog_SOURCES = \
 
 testm5lock_SOURCES = \
 	testm5lock.c
+
+testdifxmessagedrivestats_SOURCES = \
+	testdifxmessagedrivestats.c

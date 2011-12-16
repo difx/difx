@@ -35,14 +35,14 @@ int main(int argc, char **argv)
 {
 	if(argc != 2)
 	{
-		printf("\nUsage: %s antennaindex:clockpoly0[:clockpoly1:clockpoly2...]\n\n", 
-			argv[0]);
-		return 0;
+		printf("\nUsage: %s antennaindex:clockpoly0[:clockpoly1:clockpoly2...]\n\n", argv[0]);
+
+		return EXIT_SUCCESS;
 	}
 
 	difxMessageInit(-1, argv[0]);
 	difxMessagePrint();
 	difxMessageSendDifxParameter("clockupdate", argv[1], DIFX_MESSAGE_ALLMPIFXCORR);
 
-	return 0;
+	return EXIT_SUCCESS;
 }

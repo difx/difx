@@ -294,7 +294,7 @@ int difxMessageSendCondition(const DifxMessageCondition *cond)
 
 		v = snprintf(body, DIFX_MESSAGE_LENGTH,
 			
-			"<difxCondition>"
+			"<difxDriveStats>"
 			  "<serialNumber>%s</serialNumber>"
 			  "<modelNumber>%s</modelNumber>"
 			  "<size>%d</size>"
@@ -304,7 +304,7 @@ int difxMessageSendCondition(const DifxMessageCondition *cond)
 			  "<stopMJD>%7.5f</stopMJD>"
 			  "<type>%s</type>"
 			  "%s"
-			"</difxCondition>",
+			"</difxDriveStats>",
 
 			cond->serialNumber,
 			cond->modelNumber,
@@ -429,19 +429,19 @@ int difxMessageSendDriveStats(const DifxMessageDriveStats *driveStats)
 
 		if(v >= DIFX_MESSAGE_LENGTH)
 		{
-			fprintf(stderr, "difxMessageSendCondition: message body overflow (%d >= %d)\n", v, DIFX_MESSAGE_LENGTH);
+			fprintf(stderr, "difxMessageSendDriveStats: message body overflow (%d >= %d)\n", v, DIFX_MESSAGE_LENGTH);
 
 			return -1;
 		}
 
 		v = snprintf(message, DIFX_MESSAGE_LENGTH,
 			difxMessageXMLFormat, 
-			DifxMessageTypeStrings[DIFX_MESSAGE_CONDITION],
+			DifxMessageTypeStrings[DIFX_MESSAGE_DRIVE_STATS],
 			difxMessageSequenceNumber++, body);
 		
 		if(v >= DIFX_MESSAGE_LENGTH)
 		{
-			fprintf(stderr, "difxMessageSendCondition: message overflow (%d >= %d)\n", v, DIFX_MESSAGE_LENGTH);
+			fprintf(stderr, "difxMessageSendDriveStats: message overflow (%d >= %d)\n", v, DIFX_MESSAGE_LENGTH);
 
 			return -1;
 		}

@@ -28,6 +28,7 @@
  *==========================================================================*/
 
 #include <stdio.h>
+#include <stdlib.h>
 #include "difxmessage.h"
 
 int main(int argc, char **argv)
@@ -54,5 +55,5 @@ int main(int argc, char **argv)
 
 	difxMessageSendCondition(&cond);
 
-	return 0;
+	return EXIT_SUCCESS;
 }
