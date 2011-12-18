@@ -1,6 +1,7 @@
 Version 1.4.3
 * Post 2.0.1 tagging
 * Adopt more unix-standard return values in utility programs
+* mk5spec: work on complex data (Chris Phillips)
 
 Version 1.4.2
 * Post 2.0.0 tagging

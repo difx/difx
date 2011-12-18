@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2011 by Walter Brisken                             *
+ *   Copyright (C) 2008-2011 by Walter Brisken & Chris Phillips            *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -37,9 +37,9 @@
 #include "../mark5access/mark5_stream.h"
 
 const char program[] = "m5spec";
-const char author[]  = "Walter Brisken";
-const char version[] = "1.1";
-const char verdate[] = "20100730";
+const char author[]  = "Walter Brisken, Chris Phillips";
+const char version[] = "1.2";
+const char verdate[] = "20111218";
 
 int die = 0;
 
@@ -60,8 +60,7 @@ static void usage(const char *pgm)
 	printf("\n");
 
 	printf("%s ver. %s   %s  %s\n\n", program, version, author, verdate);
-	printf("A Mark5 spectrometer.  Can use VLBA, Mark3/4, and Mark5B "
-		"formats using the\nmark5access library.\n\n");
+	printf("A Mark5 spectrometer.  Can use VLBA, Mark3/4, and Mark5B formats using the\nmark5access library.\n\n");
 	printf("Usage : %s <infile> <dataformat> <nchan> <nint> <outfile> [<offset>]\n\n", program);
 	printf("  <infile> is the name of the input file\n\n");
 	printf("  <dataformat> should be of the form: "
@@ -76,90 +75,30 @@ static void usage(const char *pgm)
 	printf("  <offset> is number of bytes into file to start decoding\n\n");
 }
 
-int spec(const char *filename, const char *formatname, int nchan, int nint,
-	const char *outfile, long long offset)
+int harvestComplexData(struct mark5_stream *ms, double **spec, fftw_complex **zdata, fftw_complex **zx, int nif, int nchan, int nint, int chunk, long long *total, long long *unpacked)
 {
-	struct mark5_stream *ms;
-	double **data, **spec;
-
-	double complex **cdata;
-
-	fftw_complex **zdata, **zx;
-	int c, i, j, status;
-	int chunk, nif;
-	long long total, unpacked;
-	FILE *out;
 	fftw_plan *plan;
-	double re, im;
-	double f, sum;
-	double x, y;
-	int docomplex;
+	double complex **cdata;
+	int i, j, c;
 
-
-	total = unpacked = 0;
-
-	ms = new_mark5_stream_absorb(
-		new_mark5_stream_file(filename, offset),
-		new_mark5_format_generic_from_string(formatname) );
-
-	if(!ms)
+	plan = (fftw_plan *)malloc(nif*sizeof(fftw_plan));
+	cdata = (double complex **)malloc(nif*sizeof(double complex *));
+	for(i = 0; i < nif; i++)
 	{
-		printf("Error: problem opening %s\n", filename);
-
-		return EXIT_FAILURE;
-	}
-
-	mark5_stream_print(ms);
-
-
-	if (ms->complex_decode != 0) 
-	  {
-	    printf("Complex decode\n");
-	    docomplex = 1;
-	  }
-	else
-	  docomplex = 0;
-
-	if (docomplex)
-	  chunk = nchan;
-	else
-	  chunk = 2*nchan;
-
-
-	out = fopen(outfile, "w");
-	if(!out)
-	{
-		fprintf(stderr, "Error: cannot open %s for write\n", outfile);
-		delete_mark5_stream(ms);
-
-		return EXIT_FAILURE;
-	}
-
-	nif = ms->nchan;
-
-	if (docomplex) {
-	  cdata = (double complex **)malloc(nif*sizeof(double complex *));
-	  spec = (double **)malloc(nif*sizeof(double *));
-	  zdata = (fftw_complex **)malloc(nif*sizeof(fftw_complex *));
-	  plan = (fftw_plan *)malloc(nif*sizeof(fftw_plan));
-	  zx = (fftw_complex **)malloc((nif/2)*sizeof(fftw_complex *));
-	  for(i = 0; i < nif; i++)
-	  {
 		cdata[i] = (double complex*)malloc(nchan*sizeof(double complex));
-		spec[i] = (double *)calloc(nchan, sizeof(double));
-		zdata[i] = (fftw_complex *)malloc(nchan*sizeof(fftw_complex));
-		plan[i] = fftw_plan_dft_1d(nchan, cdata[i], (fftw_complex *)zdata[i],
-					   FFTW_FORWARD, FFTW_MEASURE);
-	  }
-	  for(i = 0; i < nif/2; i++)
-	  {
-		zx[i] = (fftw_complex *)calloc(nchan, sizeof(fftw_complex));
-	  }
+		plan[i] = fftw_plan_dft_1d(nchan, cdata[i], zdata[i], FFTW_FORWARD, FFTW_MEASURE);
+	}
 
-	  for(j = 0; j < nint; j++)
-	  {
-	    status = mark5_stream_decode_double_complex(ms, chunk , (double complex**)cdata);
-		
+	for(j = 0; j < nint; j++)
+	{
+		int status;
+
+		if(die)
+		{
+			break;
+		}
+
+		status = mark5_stream_decode_double_complex(ms, chunk , (double complex**)cdata);
 		if(status < 0)
 		{
 			break;
@@ -185,6 +124,8 @@ int spec(const char *filename, const char *formatname, int nchan, int nint,
 		{
 			for(c = 0; c < nchan; c++)
 			{
+				double re, im;
+				
 				re = creal(zdata[i][c]);
 				im = cimag(zdata[i][c]);
 				spec[i][c] += re*re + im*im;
@@ -198,81 +139,174 @@ int spec(const char *filename, const char *formatname, int nchan, int nint,
 				zx[i][c] += zdata[2*i][c]*~zdata[2*i+1][c];
 			}
 		}
-	  }
+	}
 
-	} else {
+	for(i = 0; i < nif; i++)
+	{
+		fftw_destroy_plan(plan[i]);
+		free(cdata[i]);
+	}
+	free(plan);
+	free(cdata);
 
-	  data = (double **)malloc(nif*sizeof(double *));
-	  spec = (double **)malloc(nif*sizeof(double *));
-	  zdata = (fftw_complex **)malloc(nif*sizeof(fftw_complex *));
-	  plan = (fftw_plan *)malloc(nif*sizeof(fftw_plan));
-	  zx = (fftw_complex **)malloc((nif/2)*sizeof(fftw_complex *));
-	  for(i = 0; i < nif; i++)
-	    {
-	      data[i] = (double *)malloc((chunk+2)*sizeof(double));
-	      spec[i] = (double *)calloc(nchan, sizeof(double));
-	      zdata[i] = (fftw_complex *)malloc((nchan+1)*sizeof(fftw_complex));
-	      plan[i] = fftw_plan_dft_r2c_1d(nchan*2, data[i],
-					     (fftw_complex *)zdata[i], FFTW_MEASURE);
-	    }
-	  for(i = 0; i < nif/2; i++)
-	    {
-	      zx[i] = (fftw_complex *)calloc(nchan, sizeof(fftw_complex));
-	    }
-	  
-	  for(j = 0; j < nint; j++)
-	    {
-	      if(die)
+	return 0;
+}
+
+int harvestRealData(struct mark5_stream *ms, double **spec, fftw_complex **zdata, fftw_complex **zx, int nif, int nchan, int nint, int chunk, long long *total, long long *unpacked)
+{
+	fftw_plan *plan;
+	double **data;
+	int i, j, c;
+
+	plan = (fftw_plan *)malloc(nif*sizeof(fftw_plan));
+	data = (double **)malloc(nif*sizeof(double *));
+	for(i = 0; i < nif; i++)
+	{
+		data[i] = (double *)malloc((chunk+2)*sizeof(double));
+		plan[i] = fftw_plan_dft_r2c_1d(nchan*2, data[i], zdata[i], FFTW_MEASURE);
+	}
+
+	for(j = 0; j < nint; j++)
+	{
+		int status;
+
+		if(die)
 		{
-		  break;
+			break;
 		}
 
-	      status = mark5_stream_decode_double(ms, chunk, data);
-	      
-	      if(status < 0)
+		status = mark5_stream_decode_double(ms, chunk, data);
+		if(status < 0)
 		{
-		  break;
+			break;
 		}
-	      else
+		else
 		{
-		  total += chunk;
-		  unpacked += status;
+			total += chunk;
+			unpacked += status;
 		}
-	      
-	      if(ms->consecutivefails > 5)
+
+		if(ms->consecutivefails > 5)
 		{
-		  break;
+			break;
 		}
-	      
-	      for(i = 0; i < nif; i++)
+
+		for(i = 0; i < nif; i++)
 		{
-		  /* FFT */
-		  fftw_execute(plan[i]);
+			/* FFT */
+			fftw_execute(plan[i]);
 		}
-	      
-	      for(i = 0; i < nif; i++)
+
+		for(i = 0; i < nif; i++)
 		{
-		  for(c = 0; c < nchan; c++)
-		    {
-		      re = creal(zdata[i][c]);
-		      im = cimag(zdata[i][c]);
-		      spec[i][c] += re*re + im*im;
-		    }
+			for(c = 0; c < nchan; c++)
+			{
+				double re, im;
+				
+				re = creal(zdata[i][c]);
+				im = cimag(zdata[i][c]);
+				spec[i][c] += re*re + im*im;
+			}
 		}
-	      
-	      for(i = 0; i < nif/2; i++)
+
+		for(i = 0; i < nif/2; i++)
 		{
-		  for(c = 0; c < nchan; c++)
-		    {
+			for(c = 0; c < nchan; c++)
+			{
 				zx[i][c] += zdata[2*i][c]*~zdata[2*i+1][c];
-		    }
+			}
 		}
-	    }
+	}
+
+	for(i = 0; i < nif; i++)
+	{
+		fftw_destroy_plan(plan[i]);
+		free(data[i]);
+	}
+	free(plan);
+	free(data);
+
+	return 0;
+}
+
+
+int spec(const char *filename, const char *formatname, int nchan, int nint, const char *outfile, long long offset)
+{
+	struct mark5_stream *ms;
+	double **spec;
+	fftw_complex **zdata, **zx;
+	int i, c;
+	int chunk, nif;
+	long long total, unpacked;
+	FILE *out;
+	double f, sum;
+	double x, y;
+	int docomplex;
+
+	total = unpacked = 0;
+
+	ms = new_mark5_stream_absorb(
+		new_mark5_stream_file(filename, offset),
+		new_mark5_format_generic_from_string(formatname) );
+
+	if(!ms)
+	{
+		printf("Error: problem opening %s\n", filename);
+
+		return EXIT_FAILURE;
+	}
+
+	mark5_stream_print(ms);
+
+	if(ms->complex_decode != 0) 
+	{
+		printf("Complex decode\n");
+		docomplex = 1;
+		chunk = nchan;
+	}
+	else
+	{
+		docomplex = 0;
+		chunk = 2*nchan;
+	}
+
+	out = fopen(outfile, "w");
+	if(!out)
+	{
+		fprintf(stderr, "Error: cannot open %s for write\n", outfile);
+		delete_mark5_stream(ms);
+
+		return EXIT_FAILURE;
+	}
+
+	nif = ms->nchan;
+
+	spec = (double **)malloc(nif*sizeof(double *));
+	zdata = (fftw_complex **)malloc(nif*sizeof(fftw_complex *));
+	zx = (fftw_complex **)malloc((nif/2)*sizeof(fftw_complex *));
+	for(i = 0; i < nif; i++)
+	{
+		spec[i] = (double *)calloc(nchan, sizeof(double));
+		zdata[i] = (fftw_complex *)malloc(nchan*sizeof(fftw_complex));
+	}
+	for(i = 0; i < nif/2; i++)
+	{
+		zx[i] = (fftw_complex *)calloc(nchan, sizeof(fftw_complex));
+	}
+
+	if(docomplex)
+	{
+		harvestComplexData(ms, spec, zdata, zx, nif, nchan, nint, chunk, &total, &unpacked);
+	} 
+	else
+	{
+		harvestRealData(ms, spec, zdata, zx, nif, nchan, nint, chunk, &total, &unpacked);
 	}
 
 	fprintf(stderr, "%Ld / %Ld samples unpacked\n", unpacked, total);
+	delete_mark5_stream(ms);
 
-	/* normalize */
+	/* normalize across all ifs/channels */
 	sum = 0.0;
 	for(c = 0; c < nchan; c++)
 	{
@@ -302,29 +336,18 @@ int spec(const char *filename, const char *formatname, int nchan, int nint,
 
 	fclose(out);
 
-	if (docomplex) {
-
-	} else {
-
-	  for(i = 0; i < nif; i++)
-	    {
-		free(data[i]);
+	for(i = 0; i < nif; i++)
+	{
 		free(zdata[i]);
 		free(spec[i]);
-		fftw_destroy_plan(plan[i]);
-	    }
-	  for(i = 0; i < nif/2; i++)
-	    {
-		free(zx[i]);
-	    }
-	  free(zx);
-	  free(data);
-	  free(zdata);
-	  free(spec);
-	  free(plan);
 	}
-
-	delete_mark5_stream(ms);
+	for(i = 0; i < nif/2; i++)
+	{
+		free(zx[i]);
+	}
+	free(zx);
+	free(zdata);
+	free(spec);
 
 	return EXIT_SUCCESS;
 }
@@ -375,14 +398,12 @@ int main(int argc, char **argv)
 		}
 		else
 		{
-			mf = new_mark5_format_from_stream(
-				new_mark5_stream_memory(buffer, bufferlen/2));
+			mf = new_mark5_format_from_stream(new_mark5_stream_memory(buffer, bufferlen/2));
 
 			print_mark5_format(mf);
 			delete_mark5_format(mf);
 
-			mf = new_mark5_format_from_stream(
-				new_mark5_stream_memory(buffer, bufferlen/2));
+			mf = new_mark5_format_from_stream(new_mark5_stream_memory(buffer, bufferlen/2));
 
 			print_mark5_format(mf);
 			delete_mark5_format(mf);
