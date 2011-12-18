@@ -9,8 +9,8 @@ from string import replace, strip, split, lower, upper, find
 import datetime
 
 program = 'unqueueVex'
-version = 0.1
-verdate = '20111213'
+version = 0.2
+verdate = '20111214'
 author  = 'Walter Brisken'
 
 verbose = 1
@@ -27,14 +27,19 @@ linesToShow = 10
 
 def usage():
 	print '\n%s ver. %s  %s  %s\n' % (program, version, verdate, author)
-	print 'Usage: %s [options] <vexfile>\n' % argv[0]
+	print 'Usage: %s [options] <vexfile1> [vexfile2] ... [ant1] [ant2] ...\n' % argv[0]
 	print 'options can be:\n'
 	print '  -h or --help       print help info and quit.'
 	print '  -v or --verbose    make more verbose.'
 	print '  -q or --quiet      make less verbose.'
-	print '  -p or --priority   interrupt a conflicting obs.'
-	print '  -u or --usno       convert scripts to use USNO devices'
+	print '  -f or --force      proceed without question in some cases.'
 	print ''
+	print 'One or more vex files can be supplied.  All supplied vex files will'
+	print 'be handled separately in the order listed.'
+	print ''
+	print 'Optional list of antenna codes can be used to restrict which antennas'
+	print 'to operate on.  If no antennas are listed, all antennas in the vex'
+	print 'file(s) will be assumed.'
 
 
 mjd0 = datetime.datetime(1858, 11, 17, 0, 0)
@@ -71,13 +76,13 @@ def vexPeek(vexFile):
 				if obsCode[i].isalpha():
 					obsSeg = obsCode[i:]
 					obsCode = obsCode[0:i]
-					break;
+					break
 		if obsCode[0].isalpha() and obsCode[1].isdigit():
 			for i in range(2, len(obsCode)):
 				if obsCode[i].isalpha():
 					obsSeg = obsCode[i:]
 					obsCode = obsCode[0:i]
-					break;
+					break
 		
 
 	stationTimes = {}
@@ -155,10 +160,9 @@ def rmObservation(orig, expt, station):
 
 # -----------------
 
-vexFile = None
-priority = 0
-usnoConvert = False
-edit = False
+VLBAStations = ['br', 'fd', 'hn', 'kp', 'la', 'mk', 'nl', 'ov', 'pt', 'sc']
+vexFiles = []
+antennas = []
 force = False
 
 for a in argv[1:]:
@@ -166,30 +170,32 @@ for a in argv[1:]:
 		if a in ['-h', '--help']:
 			usage()
 			exit(1)
-		elif a in ['-p', '--priority']:
-			priority += 1
 		elif a in ['-v', '--verbose']:
 			verbose += 1
 		elif a in ['-q', '--quiet']:
 			verbose -= 1
-		elif a in ['-u', '--usno']:
-			usnoConvert = True
 		elif a in ['-f', '--force']:
-			edit = True
-		elif a in ['-e', '--edit']:
-			edit = True
+			force = True
 		else:
 			print 'Unknown option "%s"\n' % a
 			exit(1)
-	elif vexFile == None:
-		vexFile = a
+	elif len(a) > 3:
+		vexFiles.append(a)
 	else:
-		print 'Unexpected parameter "%s"' % a
-		exit(1)
+		antennas.append(a)
 
-if vexFile == None:
-	usage();
+if len(vexFiles) == 0:
+	usage()
 	exit(0)
+
+if len(vexFiles) > 1:
+	print 'The following vex files will be unqueued:'
+	for vexFile in vexFiles:
+		print '  %s' % vexFile
+	if not force:
+		print 'If this is not what you intend, use ^C now to stop.'
+		print 'Otherwise press Enter to continue.'
+		stdin.readline()
 
 cwd = getcwd()
 
@@ -212,61 +218,71 @@ if find(upper(cwd), 'MARK5C') < 0:
 		print '\nYou are running %s from a non-Mark5C directory.' % program
 		print 'I hope this is what you want!\n'
 	
-	
+for vexFile in vexFiles:
+	if not isfile(vexFile):
+		print 'Error: cannot find file %s' % vexFile
+		exit(0)
 
-if vexFile[0] != '/':
-	vexFile = '%s/%s' % (cwd, vexFile)
+for vexFile in vexFiles:
+	if vexFile[0] != '/':
+		vexFile = '%s/%s' % (cwd, vexFile)
 
-obsCode, obsSeg, stationTimes = vexPeek(vexFile)
+	obsCode, obsSeg, stationTimes = vexPeek(vexFile)
 
-scripts = []
+	scripts = []
 
-for s in stationTimes:
-	scriptName = upper(obsCode+obsSeg+'.'+s)+'.py'
-	scripts.append(scriptName);
+	for s in stationTimes:
+		scriptName = upper(obsCode+obsSeg+'.'+s)+'.py'
+		scripts.append(scriptName)
 
-scripts.sort()
+	scripts.sort()
 
-print 'scripts=', scripts
+	print 'scripts=', scripts
 
-chdir('/tmp')
+	chdir('/tmp')
 
-for script in scripts:
-	s = split(script, '.')
-	station = lower(s[-2])
-	expt = upper(s[0])
-	print '\n==========================================================================='
-	if station == 'gb':
-		cc = 'gb-cc.gb.nrao.edu'
+	for script in scripts:
+		s = split(script, '.')
+		station = lower(s[-2])
+		if len(antennas) > 0 and not station in antennas:
+			print '** Skipping antenna %s from vex file %s' % (upper(station), vexFile)
+			continue
+		if not station in VLBAStations:
+			print '** Non-VLBA station %s being skipped' % upper(station)
+			continue
+		expt = upper(s[0])
+		print '\n==========================================================================='
+		if station == 'gb':
+			cc = 'gb-cc.gb.nrao.edu'
 
-		continue	# GB not yet handled per the request of GB staff
-	else:
-		cc = '%s-cc.vlba.nrao.edu' % station
-	
-	upperStation = upper(station)
-	timeRange = stationTimes[upperStation]
-	startDate = mjd2datetime(timeRange[0])
-	stopDate = mjd2datetime(timeRange[1])
-	print 'STATION %s : was to observe %s from %s to %s' % (upperStation, expt, startDate, stopDate)
-	print '===========================================================================\n'
+			continue	# GB not yet handled per the request of GB staff
+		else:
+			cc = '%s-cc.vlba.nrao.edu' % station
+		
+		upperStation = upper(station)
+		timeRange = stationTimes[upperStation]
+		startDate = mjd2datetime(timeRange[0])
+		stopDate = mjd2datetime(timeRange[1])
+		print 'STATION %s : was to observe %s from %s to %s' % (upperStation, expt, startDate, stopDate)
+		print '===========================================================================\n'
 
-	print 'Removing %s from %s' % (script, cc)
-	execute('scp vlbamon@%s:%s/%s . 2>&1' % (cc, ccScriptDir, observTxFile), 0)
-	if not isfile(observTxFile):
-		execute('touch %s' % observTxFile)
+		print 'Removing %s from %s' % (script, cc)
+		execute('scp vlbamon@%s:%s/%s . 2>&1' % (cc, ccScriptDir, observTxFile), 0)
+		if not isfile(observTxFile):
+			execute('touch %s' % observTxFile)
 
-	observations = open(observTxFile).readlines()
-	observations = rmObservation(observations, expt, station)
-	f = open(observTxFile, 'w')
-	for o in observations:
-		f.write(o)
-	f.close()
+		observations = open(observTxFile).readlines()
+		observations = rmObservation(observations, expt, station)
+		f = open(observTxFile, 'w')
+		for o in observations:
+			f.write(o)
+		f.close()
 
-	print 'New contents of %s at %s: (only last %d lines shown)' % (observTxFile, upperStation, linesToShow)
-	system('tail -n %d %s' % (linesToShow, observTxFile))
-	print ''
-	execute('ssh vlbamon@%s rm -f %s/%s 2>&1' % (cc, ccScriptDir, script), 0)
-	execute('scp %s vlbamon@%s:%s 2>&1' % (observTxFile, cc, ccScriptDir), 0)
+		print 'New contents of %s at %s: (only last %d lines shown)' % (observTxFile, upperStation, linesToShow)
+		system('tail -n %d %s' % (linesToShow, observTxFile))
+		print ''
+		execute('ssh vlbamon@%s rm -f %s/%s 2>&1' % (cc, ccScriptDir, script), 0)
+		execute('scp %s vlbamon@%s:%s 2>&1' % (observTxFile, cc, ccScriptDir), 0)
 
 chdir(cwd)
 

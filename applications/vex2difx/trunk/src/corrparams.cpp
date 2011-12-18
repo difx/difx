@@ -373,7 +373,7 @@ int CorrSetup::setkv(const string &key, const string &value)
 		outputSpecRes *= 1e6;	// Users use MHz, vex2difx uses Hz
 		explicitOutputSpecRes = true;
 	}
-	else if(key == "FFTSpecRes")
+	else if(key == "FFTSpecRes" || key == "fftSpecRes")
 	{
 		ss >> FFTSpecRes;
 		FFTSpecRes *= 1e6;	// Users use MHz, vex2difx uses Hz
