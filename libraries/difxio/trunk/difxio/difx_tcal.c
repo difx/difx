@@ -769,13 +769,13 @@ int setDifxTcalDIFX(DifxTcal *dt, const char *tcalFile)
 static int loadDifxTcalDIFX(DifxTcal *dt)
 {
 	FILE *in;
-	int g0;
 
 	if(!dt)
 	{
 		return -1;
 	}
 
+	in = fopen(dt->path, "r");
 	if(!in)
 	{
 		return -2;
