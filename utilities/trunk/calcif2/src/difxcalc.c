@@ -243,6 +243,7 @@ static int extractCalcResults(DifxPolyModel *im, int index, struct CalcResults *
 	im->dry[index] = res0->getCALC_res_u.record.dry_atmos[0]*1e6;
 	im->wet[index] = res0->getCALC_res_u.record.wet_atmos[0]*1e6;
 	im->az[index] = res0->getCALC_res_u.record.az[1]*180.0/M_PI;
+	im->elgeom[index] = res0->getCALC_res_u.record.el[1]*180.0/M_PI;
 
 /* FIXME: add elcorr, elgeom and parangle */
 
