@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008 by Walter Brisken                                  *
+ *   Copyright (C) 2008-2011 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -131,9 +131,9 @@ int writeDifxIM(const DifxInput *D)
 					writeDifxLineArray2(out, "SRC %d ANT %d DELAY (us)", i, a, scan->im[a][i][p].delay, order+1);
 					writeDifxLineArray2(out, "SRC %d ANT %d DRY (us)", i, a, scan->im[a][i][p].dry, order+1);
 					writeDifxLineArray2(out, "SRC %d ANT %d WET (us)", i, a, scan->im[a][i][p].wet, order+1);
-			//		writeDifxLineArray2(out, "SRC %d ANT %d AZ", i, a, scan->im[a][i][p].az, order+1);
+					writeDifxLineArray2(out, "SRC %d ANT %d AZ", i, a, scan->im[a][i][p].az, order+1);
 			//		writeDifxLineArray2(out, "SRC %d ANT %d EL CORR", i, a, scan->im[a][i][p].elcorr, order+1);
-			//		writeDifxLineArray2(out, "SRC %d ANT %d EL GEOM", i, a, scan->im[a][i][p].elgeom, order+1);
+					writeDifxLineArray2(out, "SRC %d ANT %d EL GEOM", i, a, scan->im[a][i][p].elgeom, order+1);
 			//		writeDifxLineArray2(out, "SRC %d ANT %d PAR ANGLE", i, a, scan->im[a][i][p].parangle, order+1);
 					writeDifxLineArray2(out, "SRC %d ANT %d U (m)", i, a, scan->im[a][i][p].u, order+1);
 					writeDifxLineArray2(out, "SRC %d ANT %d V (m)", i, a, scan->im[a][i][p].v, order+1);
