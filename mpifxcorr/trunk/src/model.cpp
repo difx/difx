@@ -734,23 +734,23 @@ bool Model::readPolynomialSamples(ifstream * input)
           }
           if(key.find("ADJ") != string::npos) { //look for optional "ADJ" delay subcomponent (usually for phased arrays)
             polyok = polyok && fillPolyRow(scantable[i].adj[j][k][l], line, polyorder+1);
-            config->getinputline(input, &line, "SRC ", k);
+            config->getinputkeyval(input, &key, &line);
           }
           if(key.find("AZ") != string::npos) { //look for optional "AZ" azimuth specification
             polyok = polyok && fillPolyRow(scantable[i].az[j][k][l], line, polyorder+1);
-            config->getinputline(input, &line, "SRC ", k);
+            config->getinputkeyval(input, &key, &line);
           }
           if(key.find("CORR") != string::npos) { //look for optional "EL CORR" refraction-corrected elevation specification
             polyok = polyok && fillPolyRow(scantable[i].elcorr[j][k][l], line, polyorder+1);
-            config->getinputline(input, &line, "SRC ", k);
+            config->getinputkeyval(input, &key, &line);
           }
           if(key.find("GEOM") != string::npos) { //look for optional "EL GEOM" geometric elevation specification
             polyok = polyok && fillPolyRow(scantable[i].elgeom[j][k][l], line, polyorder+1);
-            config->getinputline(input, &line, "SRC ", k);
+            config->getinputkeyval(input, &key, &line);
           }
           if(key.find("PAR") != string::npos) { //look for optional "PAR ANGLE" parallactic angle specification
             polyok = polyok && fillPolyRow(scantable[i].parang[j][k][l], line, polyorder+1);
-            config->getinputline(input, &line, "SRC ", k);
+            config->getinputkeyval(input, &key, &line);
           }
           polyok = polyok && fillPolyRow(scantable[i].u[j][k][l], line, polyorder+1);
           config->getinputline(input, &line, "SRC ", k);
