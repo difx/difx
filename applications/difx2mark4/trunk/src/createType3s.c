@@ -131,7 +131,6 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
             {
             perror ("difx2mark4");
             fprintf (stderr, "fatal error opening output type3 file %s\n", outname);
-            free(line);
             return (-1);
             }
         printf ("      created type 3 output file %s\n", outname);
@@ -149,7 +148,6 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
         if (D->scan[scanId].im == 0)
             {
             fprintf (stderr, "ERROR: problem accessing model array\n");
-            free(line);
             fclose(fout);
             return (-1);
             }
@@ -233,7 +231,8 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                     if (mjd > D->scan[scanId].mjdEnd)
                         {
                         if (opts->verbose > 1)
-                            printf("      pcal late %13.6f>%13.6f\n", t, D->scan[scanId].mjdEnd);
+                            printf("      pcal late %13.6f -> %13.6f > %13.6f\n",
+                                    t, mjd, D->scan[scanId].mjdEnd);
                         break;
                         }
                                         // skip over any out of order mjd's
@@ -363,7 +362,6 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
             }
         fclose(fout);
         }
-    free(line);
     return 0;
     }
 // vim: shiftwidth=4:softtabstop=4:expandtab:cindent:cinoptions={1sf1s^-1s

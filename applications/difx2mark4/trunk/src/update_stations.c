@@ -29,7 +29,7 @@ static void dump_stations(char *file, char *suffix, char code_table[52][4])
     if (!name) { perror("dump_stations:malloc"); return; }
     sprintf(name, "%s.%s", file, suffix);
     ofp = fopen(name, "w");
-    if (!ofp) { perror("dump_stations:fopen"); return; }
+    if (!ofp) { perror("dump_stations:fopen"); free(name); return; }
     for (i=0; i<52 && code_table[i]; i++)   
 	fprintf(ofp, "%4.4s\n", code_table[i]);
     fflush(ofp);
