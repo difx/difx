@@ -171,9 +171,9 @@ std::string genFileList(const char *switchedPowerPath, const char *stn, const Ve
 class TsysAverager
 {
 public:
-	TsysAverager() : freq(0.0), bw(0.0), tCal(0.0), pOn(0.0), pOff(0.0), n(0), pol(' '), rxName(defaultRxName) {}
-	void reset() { pOn = pOff = 0.0; n = 0; }
-	double Tsys() const { return (n > 0) ? (0.5*tCal*(pOn + pOff)/(pOn - pOff)) : 999.0; }
+	TsysAverager() : freq(0.0), bw(0.0), tCal(0.0), pOn(0.0), pOff(0.0), n(0), pol(' '), rxName(defaultRxName), nGood(0), nBad(0) {}
+	void reset() { pOn = pOff = 0.0; n = 0; nGood = 0; nBad = 0; }
+	double Tsys();
 	void set(const VexChannel &vc);
 	void print() const;
 	double freq;	// signed, in MHz
@@ -184,7 +184,24 @@ public:
 	int n;
 	char pol;
 	const char *rxName;
+	long long nGood, nBad;
 };
+
+double TsysAverager::Tsys()
+{
+	if(n > 0)
+	{
+		++nGood;
+		
+		return 0.5*tCal*(pOn + pOff)/(pOn - pOff);
+	}
+	else
+	{
+		++nBad;
+
+		return 999.0;
+	}
+}
 
 void TsysAverager::print() const
 {
@@ -199,6 +216,7 @@ private:
 	FILE *out;
 	std::string stn;
 	std::vector<TsysAverager> chans;
+	long long nGood, nBad;
 public:
 	TsysAccumulator();
 	~TsysAccumulator();
@@ -207,9 +225,11 @@ public:
 	void setup(const VexSetup &vexSetup, DifxTcal *T, double mjd, const string &str);
 	void flush();
 	void feed(const VexInterval &lineTimeRange, const char *data);
+	long long getnGood() { return nGood; };
+	long long getnBad() { return nBad; };
 };
 
-TsysAccumulator::TsysAccumulator() : nAccum(0), out(0)
+TsysAccumulator::TsysAccumulator() : nAccum(0), out(0), nGood(0), nBad(0)
 {
 }
 
@@ -231,36 +251,63 @@ void TsysAccumulator::setStation(const std::string &stnName)
 
 void setRxNames(std::vector<TsysAverager> &averagers)
 {
-	bool has6cm = false;
 	bool has4cm = false;
+	bool has6cm = false;
+	bool has13cm = false;
+	bool has20cm = false;
 
 	for(std::vector<TsysAverager>::iterator ta = averagers.begin(); ta != averagers.end(); ++ta)
 	{
-		ta->rxName = defaultVLBAReceiverStrict(fabs(ta->freq + ta->bw/2.0));
-		if(strcmp(ta->rxName, "6cm") == 0)
-		{
-			has6cm = true;
-		}
+		double freq = fabs(ta->freq + ta->bw/2.0);
+
+		ta->rxName = defaultVLBAReceiverStrict(freq);
 		if(strcmp(ta->rxName, "4cm") == 0)
 		{
 			has4cm = true;
 		}
+		else if(strcmp(ta->rxName, "6cm") == 0)
+		{
+			has6cm = true;
+		}
+		else if(strcmp(ta->rxName, "13cm") == 0)
+		{
+			has13cm = true;
+		}
+		else if(strcmp(ta->rxName, "20cm") == 0)
+		{
+			has20cm = true;
+		}
+
 	}
 	if(has4cm && has6cm)
 	{
 		fprintf(stderr, "Warning: both 4cm and 6cm used at the same time!\n");
 	}
+	if(has13cm && has20cm)
+	{
+		fprintf(stderr, "Warning: both 13cm and 20cm used at the same time!\n");
+	}
 	for(std::vector<TsysAverager>::iterator ta = averagers.begin(); ta != averagers.end(); ++ta)
 	{
+		double freq = fabs(ta->freq + ta->bw/2.0);
+
 		if(strcmp(ta->rxName, "?") == 0)
 		{
-			if(has4cm)
+			if(has4cm && freq > 7500.0 && freq < 10000.0)
 			{
 				ta->rxName = "4cm";
 			}
-			else if(has6cm)
+			else if(has6cm && freq > 3500.0 && freq < 8500.0)
 			{
 				ta->rxName = "6cm";
+			}
+			else if(has13cm && freq > 1800.0 && freq < 4500.0)
+			{
+				ta->rxName = "13cm";
+			}
+			else if(has20cm && freq > 1000.0 && freq < 2200.0)
+			{
+				ta->rxName = "20cm";
 			}
 			else
 			{
@@ -279,12 +326,17 @@ void TsysAccumulator::setup(const VexSetup &vexSetup, DifxTcal *T, double mjd, c
 
 	// write out the data!
 	flush();
+			
+	for(ta = chans.begin(); ta != chans.end(); ++ta)
+	{
+		nGood += ta->nGood;
+		nBad += ta->nBad;
+		ta->reset();
+	}
 
 	chans.resize(format.channels.size());
 	for(vc = format.channels.begin(), ta = chans.begin(); vc != format.channels.end(); ++vc, ++ta)
 	{
-		ta->reset();
-
 		ta->bw = vc->bbcBandwidth/1000000.0;
 		ta->freq = vc->bbcFreq/1000000.0;
 		midFreq = ta->freq;
@@ -314,7 +366,7 @@ void TsysAccumulator::flush()
 		day = accumTimeRange.center() - mjd + doy;
 
 		fprintf(out, "%s %12.8f %10.8f %d", stn.c_str(), day, accumTimeRange.duration(), static_cast<int>(chans.size()));
-		for(std::vector<TsysAverager>::const_iterator ta = chans.begin(); ta != chans.end(); ++ta)
+		for(std::vector<TsysAverager>::iterator ta = chans.begin(); ta != chans.end(); ++ta)
 		{
 			fprintf(out, " %5.2f %s", ta->Tsys(), ta->rxName);
 		}
@@ -370,7 +422,7 @@ void TsysAccumulator::feed(const VexInterval &lineTimeRange, const char *data)
 	}
 }
 
-int processStation(FILE *out, const VexData &V, const string &stn, const string &fileList, const VexInterval &stnTimeRange, double nominalTsysInterval, DifxTcal *T, int verbose)
+int processStation(FILE *out, const VexData &V, const string &stn, const string &fileList, const VexInterval &stnTimeRange, double nominalTsysInterval, DifxTcal *T, int verbose, long long *nGood, long long *nBad)
 {
 	const int MaxLineLength = 32768;	// make sure it is large enough!
 	char line[MaxLineLength];
@@ -521,6 +573,16 @@ int processStation(FILE *out, const VexData &V, const string &stn, const string 
 
 	pclose(p);
 
+	if(nGood)
+	{
+		*nGood = TA.getnGood();
+	}
+
+	if(nBad)
+	{
+		*nBad = TA.getnBad();
+	}
+
 	return nRecord;
 }
 
@@ -570,6 +632,7 @@ int main(int argc, char **argv)
 	const char *tcalPath;
 	int nZero = 0;
 	string zeroStations;
+	long long nGood, nBad;
 
 	for(int a = 1; a < argc; ++a)
 	{
@@ -717,10 +780,12 @@ int main(int argc, char **argv)
 		if(fileList.empty())
 		{
 			nRecord = 0;
+			nGood = 0;
+			nBad = 0;
 		}
 		else
 		{
-			nRecord = processStation(out, *V, it->first, fileList, it->second, nominalTsysInterval, T, verbose);
+			nRecord = processStation(out, *V, it->first, fileList, it->second, nominalTsysInterval, T, verbose, &nGood, &nBad);
 		}
 		if(nRecord <= 0)
 		{
@@ -733,10 +798,19 @@ int main(int argc, char **argv)
 		}
 		if(verbose > 0)
 		{
-			printf("  %d records written\n", nRecord);
+			printf("  %d switched power records read\n", nRecord);
+			printf("  %Ld good Tsys values created\n", nGood);
+			printf("  %Ld bad (999) Tsys values created\n", nBad);
 		}
 	}
-	if(nZero > 0)
+
+	Upper(zeroStations);
+
+	if(nZero == 1)
+	{
+		printf("\n1 station (%s) had zero records written.  No Tsys information will be available for that antennas.\n", zeroStations.c_str());
+	}
+	else if(nZero > 1)
 	{
 		printf("\n%d stations (%s) had zero records written.  No Tsys information will be available for those antennas.\n", nZero, zeroStations.c_str());
 	}
