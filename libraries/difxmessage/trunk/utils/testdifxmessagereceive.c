@@ -80,6 +80,7 @@ int main(int argc, char **argv)
 	int onlyDots = 1;
 	int headers = 0;
 	int a;
+	int specialMode = 0;
 
 	for(a = 1; a < argc; a++)
 	{
@@ -114,14 +115,20 @@ int main(int argc, char **argv)
 		}
 		else
 		{
-			type = atoi(argv[a]);
-			if(type <= 0 || type >= NUM_DIFX_MESSAGE_TYPES)
+			int t = atoi(argv[a]);
+
+			type = abs(t);
+			if(type >= NUM_DIFX_MESSAGE_TYPES)
 			{
 				fprintf(stderr, "Illegal message type requested.  Run with -h for help\n");
 
 				return 0;
 			}
 			printf("Listening only for message of type %d = %s\n", type, DifxMessageTypeStrings[type]);
+			if(t < 0)
+			{
+				specialMode = 1;
+			}
 		}
 	}
 
@@ -241,15 +248,39 @@ int main(int argc, char **argv)
 			difxMessageParse(&G, message);
 			if(type == DIFX_MESSAGE_UNKNOWN || type == G.type)
 			{
-				printf("[%s %s] ", timestr, from);
-				difxMessageGenericPrint(&G);
-				printf("\n");
-				if(verbose)
+				if(specialMode)
 				{
-					printf("[%s %s] %s\n", timestr, from, message);
-					printf("\n");
+					switch(type)
+					{
+					case DIFX_MESSAGE_DRIVE_STATS:
+						printf("%s %d : %d : %8d %8d %8d %7d %6d %5d %5d %5d\n",
+							G.body.driveStats.moduleVSN, G.body.driveStats.moduleSlot, G.body.driveStats.type,
+							G.body.driveStats.bin[0],
+							G.body.driveStats.bin[1],
+							G.body.driveStats.bin[2],
+							G.body.driveStats.bin[3],
+							G.body.driveStats.bin[4],
+							G.body.driveStats.bin[5],
+							G.body.driveStats.bin[6],
+							G.body.driveStats.bin[7]);
+						break;
+					default:
+						printf("Message received\n");
+						break;
+					}
 				}
-				fflush(stdout);
+				else
+				{
+					printf("[%s %s] ", timestr, from);
+					difxMessageGenericPrint(&G);
+					printf("\n");
+					if(verbose)
+					{
+						printf("[%s %s] %s\n", timestr, from, message);
+						printf("\n");
+					}
+					fflush(stdout);
+				}
 			}
 		}
 
