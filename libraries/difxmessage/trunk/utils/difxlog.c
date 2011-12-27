@@ -35,8 +35,8 @@
 #include "difxmessage.h"
 
 const char program[] = "difxlog";
-const char version[] = "0.5";
-const char verdate[] = "20111215";
+const char version[] = "0.6";
+const char verdate[] = "20111227";
 const char author[]  = "Walter Brisken";
 
 void usage(const char *prog)
@@ -135,7 +135,7 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
-	out = fopen(argv[2], "w");
+	out = fopen(argv[2], "a");
 	if(!out)
 	{
 		fprintf(stderr, "Error: cannot open %s for write\n", argv[2]);
