@@ -1013,7 +1013,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 				char globPattern[DIFXIO_FILENAME_LENGTH];
 
 				v = snprintf(globPattern, DIFXIO_FILENAME_LENGTH, "%s/PCAL*%s", D->job[j].outputFile, D->antenna[a].name);
-				if(v <= DIFXIO_NAME_LENGTH)
+				if(v >= DIFXIO_FILENAME_LENGTH)
 				{
 					fprintf(stderr, "Developer error: DifxInput2FitsPH: DIFXIO_NAME_LENGTH = %d, need to be longer: %d\n", DIFXIO_NAME_LENGTH, v+1);
 
