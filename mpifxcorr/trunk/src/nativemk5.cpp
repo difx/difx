@@ -184,9 +184,10 @@ int NativeMk5DataStream::reportDriveStats()
 	driveStatsMessage.type = DRIVE_STATS_TYPE_READ;
 
 	/* FIXME: for now don't include complete information on drives */
-	strcpy(driveStatsMessage.serialNumber, "X");
-	strcpy(driveStatsMessage.modelNumber, "Y");
+	strcpy(driveStatsMessage.serialNumber, "");
+	strcpy(driveStatsMessage.modelNumber, "");
 	driveStatsMessage.diskSize = 0;
+	driveStatsMessage.startByte = 0;
 
 	for(int d = 0; d < 8; d++)
 	{
@@ -210,6 +211,8 @@ int NativeMk5DataStream::reportDriveStats()
 	}
 
 	resetDriveStats();
+
+	return 0;
 }
 
 NativeMk5DataStream::NativeMk5DataStream(const Configuration * conf, int snum, 
@@ -330,16 +333,19 @@ NativeMk5DataStream::~NativeMk5DataStream()
 		cinfo << startl << "Data recovery statistics: ninvalid=" << ninvalid << " nfill=" << nfill << " ngood=" << ngood << "." << endl;
 	}
 
+	reportDriveStats();
+	sendMark5Status(MARK5_STATE_CLOSE, 0, 0.0, 0.0);
+
 	if(nError == 0)
 	{
-#ifdef HAVE_DIFXMESSAGE
-		reportDriveStats();
-		sendMark5Status(MARK5_STATE_CLOSE, 0, 0.0, 0.0);
-#endif
 #if HAVE_MARK5IPC
                 unlockMark5();
 #endif
 		WATCHDOG( XLRClose(xlrDevice) );
+	}
+	else
+	{
+		cwarn << startl << nError << " errors were encountered reading this module" << endl;
 	}
 
         // stop watchdog thread
