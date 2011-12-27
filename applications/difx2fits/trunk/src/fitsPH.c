@@ -976,7 +976,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 
 	arrayId1 = 1;
 
-	printf("   ");
+	printf("  ");
 	for(a = 0; a < D->nAntenna; ++a)
 	{
 		for(k = 0; k < 2; ++k)
@@ -1001,6 +1001,8 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 			int curDifxFile = 0;
 			double mjdLast = 0.0;
 
+			printf(".", j); fflush(stdout);
+
 			dsId = DifxInputGetDatastreamId(D, j, a);
 			if(dsId < 0)
 			{
@@ -1023,25 +1025,22 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 				v = glob2(__FUNCTION__, globPattern, 0, 0, &globBuffer);
 				nDifxFile = globBuffer.gl_pathc;
 
-				if(!v)	/* no files found */
+				if(nDifxFile == 0)	/* no files found */
 				{
+					fprintf(stderr, "\nWarning: No PCAL files matching %s found for job %s antenna %s\n", globPattern, D->job[j].outputFile, D->antenna[a].name);
 					continue;	/*to next job*/
 				}
 				
 				for(curDifxFile = 0; curDifxFile < nDifxFile; ++curDifxFile)
 				{
 					in2 = fopen(globBuffer.gl_pathv[curDifxFile], "r");
-					if(in2)
+					if(!in2)
 					{
 						fprintf(stderr, "Warning: PCAL file %s could not be opened for read!\n", globBuffer.gl_pathv[curDifxFile]);
 						break;
 					}
 				}
-				if(nDifxFile == 0)
-				{
-					fprintf(stderr, "\nWarning: No PCAL files matching %s found for job %s antenna %s\n", globPattern, D->job[j].outputFile, D->antenna[a].name);
-				}
-				else if(!in2)	/* None of the files opened! */
+				if(!in2)	/* None of the files opened! */
 				{
 					fprintf(stderr, "\nError: All %d PCAL files for job %s antenna %s could not be opened!\n", nDifxFile, D->job[j].outputFile, D->antenna[a].name);
 					fprintf(stderr, "Check file permissions and try again!\n");
@@ -1112,14 +1111,14 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 					rv = fgets(line, MaxLineLength, in2);
 					if(!rv)
 					{
+						if(in2)
+						{
+							fclose(in2);
+							in2 = 0;
+						}
 						/* try advancing through the file list */
 						for(; curDifxFile < nDifxFile; ++curDifxFile)
 						{
-							if(in2)
-							{
-								fclose(in2);
-								in2 = 0;
-							}
 							in2 = fopen(globBuffer.gl_pathv[curDifxFile], "r");
 							if(in2)
 							{
