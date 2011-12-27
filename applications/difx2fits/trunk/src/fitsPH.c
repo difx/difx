@@ -1010,9 +1010,9 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 
 			if(D->datastream[dsId].phaseCalIntervalMHz > 0 && countTones(&(D->datastream[dsId])) > 0)
 			{
-				char globPattern[DIFXIO_NAME_LENGTH];
+				char globPattern[DIFXIO_FILENAME_LENGTH];
 
-				v = snprintf(globPattern, DIFXIO_NAME_LENGTH, "%s/PCAL*%s", D->job[j].outputFile, D->antenna[a].name);
+				v = snprintf(globPattern, DIFXIO_FILENAME_LENGTH, "%s/PCAL*%s", D->job[j].outputFile, D->antenna[a].name);
 				if(v <= DIFXIO_NAME_LENGTH)
 				{
 					fprintf(stderr, "Developer error: DifxInput2FitsPH: DIFXIO_NAME_LENGTH = %d, need to be longer: %d\n", DIFXIO_NAME_LENGTH, v+1);
@@ -1037,7 +1037,11 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 						break;
 					}
 				}
-				if(!in2)	/* None of the files opened! */
+				if(nDifxFile == 0)
+				{
+					fprintf(stderr, "\nWarning: No PCAL files matching %s found for job %s antenna %s\n", globPattern, D->job[j].outputFile, D->antenna[a].name);
+				}
+				else if(!in2)	/* None of the files opened! */
 				{
 					fprintf(stderr, "\nError: All %d PCAL files for job %s antenna %s could not be opened!\n", nDifxFile, D->job[j].outputFile, D->antenna[a].name);
 					fprintf(stderr, "Check file permissions and try again!\n");
