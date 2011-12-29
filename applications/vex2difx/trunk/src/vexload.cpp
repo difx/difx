@@ -837,9 +837,6 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 {
 	VexMode *M;
 	void *p, *p2;
-    // p2 will hold pointers to the special comments attached to if_def; max of 4
-    void *p2array[MAX_IF];
-    int p2count;
 	char *modeDefName;
 	int link, name;
 	char *value, *units;
@@ -857,6 +854,10 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 	map<string,Tracks> ch2tracks;
 	int nWarn =0;
 	double phaseCal;
+
+	// p2 will hold pointers to the special comments attached to if_def; max of 4
+	void *p2array[MAX_IF];
+	int p2count;
 
 	for(modeDefName = get_mode_def(v);
 	    modeDefName;
@@ -910,8 +911,10 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 			M->sampRate = sampRate;
 
             // init array to all zeroes
-            for( p2count = 0; p2count < MAX_IF; p2count++ )
-                p2array[p2count] = 0;
+            for(p2count = 0; p2count < MAX_IF; ++p2count)
+	    {
+	    	p2array[p2count] = 0;
+	    }
 			// read all comment fields into array for later processing
 			// NOTE - need to do it this way as the *_lowl_* functions use static vars and we
 			// we can't run this where we actually process the comments as that would mess up
@@ -980,8 +983,8 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 					vif.phaseCalIntervalMHz = static_cast<int>((phaseCal + 0.5)/1000000.0);
 				}
 
-                p2 = p2array[p2count++];
-				if( !p2 )
+				p2 = p2array[p2count++];
+				if(!p2)
 				{
 					// check if this is a VLBA antenna; these require the comments for proper
 					// operation, so exit in that case
@@ -1257,7 +1260,7 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 
 			if(i != F.nRecordChan)
 			{
-				if (F.nRecordChan==0)
+				if(F.nRecordChan == 0)
 				{
 					F.nRecordChan = i;
 				}
@@ -1271,6 +1274,7 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 		for(vector<VexSubband>::iterator it = M->subbands.begin(); it != M->subbands.end(); ++it)
 		{
 			int overSamp = static_cast<int>(M->sampRate/(2.0*it->bandwidth) + 0.001);
+
 			if(params.overSamp > 0)
 			{
 				if(params.overSamp > overSamp)

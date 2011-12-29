@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2010 by Walter Brisken / Adam Deller               *
+ *   Copyright (C) 2009-2011 by Walter Brisken, Adam Deller, Matthias Bark *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -35,9 +35,9 @@
 #include "vexload.h"
 
 const string program("vex2script");
-const string version("0.1");
-const string verdate("20100304");
-const string author("Walter Brisken & Adam Deller");
+const string version("0.2");
+const string verdate("20111229");
+const string author("Walter Brisken, Adam Deller, Matthias Bark");
 
 static void usage(int argc, char **argv)
 {
@@ -59,7 +59,7 @@ bool isVLBA(const string& antName)
 	const string VLBAantennas[] = 
 		{"BR", "FD", "HN", "KP", "LA", "MK", "NL", "OV", "PT", "SC", ""};	// terminate list with "" !
 
-	for(unsigned int i = 0; VLBAantennas[i] != ""; i++)
+	for(unsigned int i = 0; VLBAantennas[i] != ""; ++i)
 	{
 		if(VLBAantennas[i] == antName)
 		{
@@ -113,7 +113,7 @@ int main(int argc, char **argv)
 	P->minSubarraySize = 1;
         py.setDBEPersonality("\0");
 
-	for( int count=2; count < argc; count++)
+	for(int count=2; count < argc; ++count)
 	{
 		//this is an interim measure to set the phasing sources for EVLA
 		if(strncmp(argv[count], "--phasingsources=", 17) == 0)
@@ -126,19 +126,20 @@ int main(int argc, char **argv)
 				{
 					argv[count][atchar] = '\0';
 					py.addPhasingSource(string(argv[count]+lastchar));
-					atchar++;
+					++atchar;
 					lastchar = atchar;
 				}
-				atchar++;
+				++atchar;
 			}
 			py.addPhasingSource(string(argv[count]+lastchar));
 		}
-                else if(strncmp(argv[count], "--dbepersonality=", 17) == 0) {
+                else if(strncmp(argv[count], "--dbepersonality=", 17) == 0)
+		{
 			atchar = 17;
 			lastchar = 17;
 			while(argv[count][atchar] != '\0')
 			{
-				atchar++;
+				++atchar;
 			}
 			py.setDBEPersonality(string(argv[count]+lastchar));
                 }
@@ -162,7 +163,7 @@ int main(int argc, char **argv)
 
 	cout << "nAntenna = " << nAntenna << "  nScan = " << nScan << endl;
 
-	for(int a = 0; a < nAntenna; a++)
+	for(int a = 0; a < nAntenna; ++a)
 	{
 		A = V->getAntenna(a);
 		if(isEVLA(A->name))
@@ -189,8 +190,9 @@ int main(int argc, char **argv)
 		py.open(A->name, V, stype);
 
 		py.writeHeader(V);
-		py.writeRecorderInit(V);
+		py.writeComment(string("File written by ") + program + string(" version ") + version + string(" vintage ") + verdate);
 		py.writeDbeInit(V);
+		py.writeRecorderInit(V);
 		if(stype == pystream::GBT)
 		{
 			py.writeScansGBT(V);

@@ -187,7 +187,7 @@ def writev2d(oms, v2dFile, verbose):
 	out.write('\n')
 
 	for s in stations:
-		out.write('ANTENNA %s {  }\n' % s)
+		out.write('ANTENNA %s { toneSelection=smart }\n' % s)
 	out.write('\n')
 
 	out.write('SETUP default\n')

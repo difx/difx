@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009 by Walter Brisken                                  *
+ *   Copyright (C) 2009-2011 by Walter Brisken, Adam Deller                *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -38,17 +38,19 @@ class pystream : public ofstream
 {
 public:
 	enum scripttype {VLBA, EVLA, GBT};
+	pystream(): lastValid(0.0), lastSourceId(-1), lastModeId(-1), lastChannelSet(-1), evlaintsec(0), evlasbchan(0), evlasbbits(0), evlavciversion(0.0), mjd0(0.0) {};
 	void open(const string& antennaName, const VexData *V, scripttype stype);
 	void close();
-	void addPhasingSource(const string srcname);
+	void addPhasingSource(const string &srcname);
 	int writeHeader(const VexData *V);
+	int writeComment(const string &commentString);
 	int writeRecorderInit(const VexData *V);
 	int writeDbeInit(const VexData *V);
 	int writeLoifTable(const VexData *V);
 	int writeSourceTable(const VexData *V);
 	int writeScans(const VexData *V);
 	int writeScansGBT(const VexData *V);
-        void setDBEPersonality(string filename);
+        void setDBEPersonality(const string &filename);
 
 private:
 	scripttype currenttype;
@@ -58,6 +60,7 @@ private:
 	string obsCode;
 	string fileName;
 	string dbefileName;
+	string currentformat;
 	double lastValid;
 	int lastSourceId;
 	int lastModeId;
@@ -69,7 +72,7 @@ private:
 	vector<string> phasingsources;
 
 	void calcIfIndex(const VexData *V);
-	void writeVCI(const VexData *V, int modeindex, string filename);
+	void writeVCI(const VexData *V, int modeindex, const string &filename);
 };
 
 #endif

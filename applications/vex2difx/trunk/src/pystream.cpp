@@ -56,7 +56,7 @@ void pystream::open(const string& antennaName, const VexData *V, scripttype styp
 	{
 		obsCode = "Unknown";
 	}
-	for(int i = 0; i < 4; i++)
+	for(int i = 0; i < 4; ++i)
 	{
 		sw[i] = "";
 	}
@@ -75,7 +75,7 @@ void pystream::open(const string& antennaName, const VexData *V, scripttype styp
 	ofstream::open(fileName.c_str());
 }
 
-void pystream::addPhasingSource(const string srcname)
+void pystream::addPhasingSource(const string &srcname)
 {
 	phasingsources.push_back(srcname);
 }
@@ -128,7 +128,7 @@ void pystream::calcIfIndex(const VexData *V)
 	ifIndex.clear();
 	ifIndex.resize(nMode);
 
-	for(unsigned int m = 0; m < nMode; m++)
+	for(unsigned int m = 0; m < nMode; ++m)
 	{
 		const VexMode *mode = V->getMode(m);
 		const VexSetup *setup = mode->getSetup(ant);
@@ -142,7 +142,7 @@ void pystream::calcIfIndex(const VexData *V)
 		for(it = setup->ifs.begin(); it != setup->ifs.end(); ++it)
 		{
 			ifIndex[m][it->second.name] = nif;
-			nif++;
+			++nif;
 		}
 	}
 }
@@ -229,18 +229,27 @@ int pystream::writeHeader(const VexData *V)
 	return 0;
 }
 
+int pystream::writeComment(const string &commentString)
+{
+	*this << "# " << commentString << endl;
+	*this << endl;
+}
+
 int pystream::writeRecorderInit(const VexData *V)
 {
-	*this << "recorder0 = Mark5C('-1')" << endl;
+	if(currentformat != "")
+	{
+		*this << "recorder0 = Mark5C('-1')" << endl;
 
 #warning "FIXME For now, set up single recorder in Mark5B mode"
-	// Need to check requested format/mode first
-	*this << "recorder0.setMode('Mark5B')" << endl;
-	*this << "recorder0.setPSNMode(0)" << endl;
-	*this << "recorder0.setPacket(0, 0, 40, 5008)" << endl;
+		// Need to check requested format/mode first
+		*this << "recorder0.setMode('Mark5B')" << endl;
+		*this << "recorder0.setPSNMode(0)" << endl;
+		*this << "recorder0.setPacket(0, 0, 40, 5008)" << endl;
 
-	*this << "subarray.setRecorder(recorder0)" << endl;
-	*this << endl;
+		*this << "subarray.setRecorder(recorder0)" << endl;
+		*this << endl;
+	}
 
 	return 1;
 }
@@ -250,38 +259,54 @@ int pystream::writeDbeInit(const VexData *V)
 	if(currenttype == VLBA || currenttype == GBT)
 	{
 #warning "FIXME For now, set up single RDBE"
-                int m = 0;
+#warning "FIXME For now, inspect only the first mode to set up DBE"
+		int m = 0;
 		const VexMode *mode = V->getMode(m);
 		const VexSetup *setup = mode->getSetup(ant);
-		if(setup)
-		{
-                    const VexFormat &F = setup->format;
-                    if( F.channels.size() > 0  &&
-                        F.channels.size() <= 8 ) {
-                        // DDC
-                        *this << "dbe0 = RDBE(0, 'ddc'";
-                        if( dbefileName[0] == '\0' )
-                                *this << ")" << endl;
-                        else
-                                *this << ", '" << dbefileName << "')" << endl;
-                    } else if( F.channels.size() == 16 )
-                        // PFB
-                        *this << "dbe0 = RDBE(0, 'pfb')" << endl;
-                    else {
-                        cerr << "Incorrect number of channels: " << F.channels.size() << endl;
 
-//                        exit(EXIT_FAILURE);
-                    }
+		if(setup && setup->format.format != "" && setup->format.format != "NONE")
+		{
+			const VexFormat &F = setup->format;
+
+			currentformat = setup->format.format;
+			cout << "current format is " << currentformat << endl;
+
+			if(F.channels.size() > 0 && F.channels.size() <= 8)
+			{
+				// DDC: based purely on number of channels
+				*this << "dbe0 = RDBE(0, 'ddc'";
+				if(dbefileName[0] == '\0')
+				{
+					*this << ")" << endl;
+				}
+				else
+				{
+					*this << ", '" << dbefileName << "')" << endl;
+				}
+			} 
+			else if(F.channels.size() == 16)
+			{
+				// PFB
+				*this << "dbe0 = RDBE(0, 'pfb')" << endl;
+			}
+			else 
+			{
+				cerr << "Incorrect number of channels: " << F.channels.size() << endl;
+
+//				exit(EXIT_FAILURE);
+			}
+			*this << "dbe0.setALC(1)" << endl;
+			*this << "dbe0.setFormat('Mark5B')" << endl;
+			*this << "dbe0.setPSNMode(0)" << endl;
+			*this << "dbe0.setPacket(0, 0, 40, 5008)" << endl;
+			*this << "subarray.setDBE(dbe0)" << endl;
+			*this << endl;
 		}
                 // use PFB as default for now
                 else
-                    *this << "dbe0 = RDBE(0, 'pfb')" << endl;
-		*this << "dbe0.setALC(1)" << endl;
-		*this << "dbe0.setFormat('Mark5B')" << endl;
-                *this << "dbe0.setPSNMode(0)" << endl;
-		*this << "dbe0.setPacket(0, 0, 40, 5008)" << endl;
-		*this << "subarray.setDBE(dbe0)" << endl;
-		*this << endl;
+		{
+			currentformat = "";
+		}
 	}
 	else if(currenttype == EVLA)
 	{
@@ -303,7 +328,7 @@ int pystream::writeLoifTable(const VexData *V)
 	p = precision();
 	precision(15);
 
-	for(unsigned int m = 0; m < nMode; m++)
+	for(unsigned int m = 0; m < nMode; ++m)
 	{
 		const VexMode *mode = V->getMode(m);
 		const VexSetup *setup = mode->getSetup(ant);
@@ -319,9 +344,12 @@ int pystream::writeLoifTable(const VexData *V)
 		{
 			if(F.format != "NONE")
 			{
-				if(init_channels == 0) {
+				if(init_channels == 0)
+				{
 					init_channels = F.channels.size();
-				} else if( init_channels != F.channels.size()) {
+				}
+				else if(init_channels != F.channels.size())
+				{
 					// TODO is this really a problem?
 					cerr << "number of channels from " << init_channels << " initially to " << F.channels.size() << " which is currently not supported." << endl; 
 				}
@@ -336,69 +364,77 @@ int pystream::writeLoifTable(const VexData *V)
 			*this << "loif" << m << " = VLBALoIfSetup()" << endl;
 			for(it = setup->ifs.begin(); it != setup->ifs.end(); ++it)
 			{
+				const int MaxCommentLength = 256;
 				const VexIF &i = it->second;
-                char comment[256] = {0};
-                *this << "loif" << m << ".setIf('" << i.name << "', '" << i.VLBABandName() << "', '" << i.pol << "', " << (i.ifSSLO / 1.0e6)
-                        << ", '" << i.ifSideBand << "'";
+				char comment[MaxCommentLength] = {0};
 
-                strncpy(comment, i.comment.c_str(), 255);
-                if (comment[0] != '\0') {
-                    int len = strlen(comment);
-                    int off = 1;
-                    int field_count = 0;
-                    // parse BACKWARDS from end of string for three space-separated tokens
-                    // comment format: * [other comments] [{receiver} {FirstLO} {BROAD|NARROW|NA}]
-                    // trailing spaces are permitted
-                    while (field_count <= 2
-                            && off < len) {
-                        // remove trailing WS
-//                                    printf("removing WS\n");
-                        while (comment[len - off] == ' ' || comment[len - off] == '\t') {
-//                            printf("len: %i -- off: %i -- str: <%s>\n", len, off, (&comment[len - off]));
-                            off++;
-                        }
-                        // terminate string and advance offset past WS
-                        comment[len - (off - 1)] = '\0';
-                        off++;
-//                        printf("parsing field %i\n", field_count);
-                        while (comment[len - off] != ' '
-                                && comment[len - off] != '\t'
-                                && off < len) {
-//                            printf( "char >%c<\n", startOfComment[len-off] );
-//                            printf("len: %i -- off: %i -- str: <%s>\n", len, off, (&comment[len - off]));
-                            off++;
-                        }
-                        if (field_count == 0) {
-                            //check format of comment
-                            if (strcmp("BROAD", &(comment[len - off + 1])) != 0
-                                    && strcmp("NARROW", &(comment[len - off + 1])) != 0
-                                    && strcmp("NA", &(comment[len - off + 1])) != 0) {
-                                // comment doesn't fit our "special format", don't process
-                                field_count = 3;
-                                continue;
-                            }
-                        }
-                        // assign value to proper field
-                        switch (field_count) {
-                                // filter
-                            case 0: * this << ", '" << &(comment[len - off + 1]) << "'";
-                                field_count++;
-                                break;
-                                // firstLO
-                            case 1: * this << ", " << atoi(&comment[len - off + 1]);
-                                field_count++;
-                                break;
-                                // receiver
-                            case 2: * this << ", '" << &(comment[len - off + 1]) << "'";
-                                field_count++;
-                                break;
-                        }
-                        // terminate partial string
-                        comment[len - off] = '\0';
-                        off++;
-//                        printf("remaining comment: >%s<\n", comment);
-                    }
-				} else { // no comment to process
+ 				*this << "loif" << m << ".setIf('" << i.name << "', '" << i.VLBABandName() << "', '" << i.pol << "', " << (i.ifSSLO / 1.0e6) << ", '" << i.ifSideBand << "'";
+
+				strncpy(comment, i.comment.c_str(), MaxCommentLength-1);
+				if(comment[0] != '\0')
+				{
+					int len = strlen(comment);
+					int off = 1;
+					int field_count = 0;
+					// parse BACKWARDS from end of string for three space-separated tokens
+					// comment format: * [other comments] [{receiver} {FirstLO} {BROAD|NARROW|NA}]
+					// trailing spaces are permitted
+					while(field_count <= 2 && off < len)
+					{
+						// remove trailing WS
+						while(comment[len - off] == ' ' || comment[len - off] == '\t')
+						{
+							// printf("len: %i -- off: %i -- str: <%s>\n", len, off, (&comment[len - off]));
+							++off;
+						}
+						// terminate string and advance offset past WS
+						comment[len - (off - 1)] = '\0';
+						++off;
+						// printf("parsing field %i\n", field_count);
+						while(comment[len - off] != ' ' && comment[len - off] != '\t' && off < len)
+						{
+							// printf( "char >%c<\n", startOfComment[len-off] );
+							// printf("len: %i -- off: %i -- str: <%s>\n", len, off, (&comment[len - off]));
+							++off;
+						}
+						if(field_count == 0)
+						{
+							//check format of comment
+							if(strcmp("BROAD", &(comment[len - off + 1])) != 0 && strcmp("NARROW", &(comment[len - off + 1])) != 0 && strcmp("NA", &(comment[len - off + 1])) != 0)
+							{
+								// comment doesn't fit our "special format", don't process
+								field_count = 3;
+								continue;
+							}
+						}
+						// assign value to proper field
+						switch(field_count)
+						{
+							// filter
+							case 0: 
+								*this << ", '" << &(comment[len - off + 1]) << "'";
+								++field_count;
+								break;
+							// firstLO
+							case 1:
+								*this << ", " << atoi(&comment[len - off + 1]);
+								++field_count;
+								break;
+							// receiver
+							case 2:
+								*this << ", '" << &(comment[len - off + 1]) << "'";
+								++field_count;
+								break;
+						}
+						// terminate partial string
+						comment[len - off] = '\0';
+						++off;
+						// printf("remaining comment: >%s<\n", comment);
+					}
+				} 
+				else 
+				{
+					// no comment to process
 				}
 
 				// close statement
@@ -406,61 +442,64 @@ int pystream::writeLoifTable(const VexData *V)
 			}
 			*this << "loif" << m << ".setPhaseCal(" << (setup->phaseCalIntervalMHz()) << ")" << endl;
 			// auto gain/attenuation control
-			*this << "loif" << m << ".setDBEParams(0, -1, -1, 10, 0)" << endl;
-			*this << "loif" << m << ".setDBEParams(1, -1, -1, 10, 0)" << endl;
-
-			*this << "loif" << m << ".setDBERemember(0, 1)" << endl;
-			*this << "loif" << m << ".setDBERemember(1, 1)" << endl;
-
-			*this << "channelSet" << m << " = [ \\" << endl;
-
-			vector<unsigned int> implicitConversions;
-			for(unsigned i = 0; i < F.channels.size(); i++)
+			if(currentformat != "")
 			{
-				unsigned int inputNum = ifIndex[m][F.channels[i].ifname];
-				double bw = F.channels[i].bbcBandwidth;
-				char sb = F.channels[i].bbcSideBand;
-				unsigned int nBit = F.nBit;
-				unsigned int threadId = 0;
-				const VexIF *vif = setup->getIF(F.channels[i].ifname);
-				if(!vif)
-				{
-					cerr << "Developer error: setup->getIF(" << F.channels[i].ifname << ") returned NULL" << endl;
+				*this << "loif" << m << ".setDBEParams(0, -1, -1, 10, 0)" << endl;
+				*this << "loif" << m << ".setDBEParams(1, -1, -1, 10, 0)" << endl;
 
-					exit(EXIT_FAILURE);
-				}
-				double freq = F.channels[i].bbcFreq;
-				double tune = freq - vif->ifSSLO;
+				*this << "loif" << m << ".setDBERemember(0, 1)" << endl;
+				*this << "loif" << m << ".setDBERemember(1, 1)" << endl;
 
-				if(tune < 0.0)
-				{
-					tune = -tune;
-					sb = (sb == 'U') ? 'L' : 'U';
-				}
+				*this << "channelSet" << m << " = [ \\" << endl;
 
-				if(freq > 550e6 && freq < 650e6 && tune > 1000e6)
+				vector<unsigned int> implicitConversions;
+				for(unsigned i = 0; i < F.channels.size(); ++i)
 				{
-					tune -= 500e6;
-					implicitConversions.push_back(i);
-				}
+					unsigned int inputNum = ifIndex[m][F.channels[i].ifname];
+					double bw = F.channels[i].bbcBandwidth;
+					char sb = F.channels[i].bbcSideBand;
+					unsigned int nBit = F.nBit;
+					unsigned int threadId = 0;
+					const VexIF *vif = setup->getIF(F.channels[i].ifname);
+					if(!vif)
+					{
+						cerr << "Developer error: setup->getIF(" << F.channels[i].ifname << ") returned NULL" << endl;
 
-				*this << "  bbc(" << inputNum << ", " << (tune*1.0e-6) << ", " << (bw*1.0e-6) << ", '" << sb << "', " << nBit << ", " << threadId << ")";
-				if(i < F.channels.size()-1)
-				{
-					*this << ",";
+						exit(EXIT_FAILURE);
+					}
+					double freq = F.channels[i].bbcFreq;
+					double tune = freq - vif->ifSSLO;
+
+					if(tune < 0.0)
+					{
+						tune = -tune;
+						sb = (sb == 'U') ? 'L' : 'U';
+					}
+
+					if(freq > 550e6 && freq < 650e6 && tune > 1000e6)
+					{
+						tune -= 500e6;
+						implicitConversions.push_back(i);
+					}
+
+					*this << "  bbc(" << inputNum << ", " << (tune*1.0e-6) << ", " << (bw*1.0e-6) << ", '" << sb << "', " << nBit << ", " << threadId << ")";
+					if(i < F.channels.size()-1)
+					{
+						*this << ",";
+					}
+					*this << " \\" << endl;
 				}
-				*this << " \\" << endl;
-			}
-			*this << "  ]" << endl;
-			if(!implicitConversions.empty())
-			{
-				*this << "# implicit conversion performed on basebands:";
-				for(vector<unsigned int>::const_iterator uit = implicitConversions.begin();
-					uit != implicitConversions.end(); ++uit)
+				*this << "  ]" << endl;
+				if(!implicitConversions.empty())
 				{
-					*this << " " << *uit;
+					*this << "# implicit conversion performed on basebands:";
+					for(vector<unsigned int>::const_iterator uit = implicitConversions.begin();
+						uit != implicitConversions.end(); ++uit)
+					{
+						*this << " " << *uit;
+					}
+					*this << endl;
 				}
-				*this << endl;
 			}
 
 			*this << endl;
@@ -559,7 +598,7 @@ int pystream::writeSourceTable(const VexData *V)
 	p = precision();
 	precision(15);
 
-	for(int s = 0; s < nSource; s++)
+	for(int s = 0; s < nSource; ++s)
 	{
 		const VexSource *S = V->getSource(s);
 		*this << "source" << s << " = Source(" << S->ra << ", " << S->dec << ")" << endl;
@@ -570,7 +609,7 @@ int pystream::writeSourceTable(const VexData *V)
 			//No point putting in calibrator code until its populated in the vex file
 			//*this << "intent" << s << ".addIntent('CalibratorCode=\"" << S->calCode << "\"')" << endl;
 			intentstring = "UNSPECIFIED";
-			for(unsigned int i=0;i<phasingsources.size();i++)
+			for(unsigned int i = 0; i < phasingsources.size(); ++i)
 			{
 				if(phasingsources.at(i) == S->defName)
 				{
@@ -593,7 +632,7 @@ int pystream::writeScansGBT(const VexData *V)
 	int nScan;
 
 	nScan = V->nScan();
-	for(int s = 0; s < nScan; s++)
+	for(int s = 0; s < nScan; ++s)
 	{
 	}
 
@@ -613,13 +652,17 @@ int pystream::writeScans(const VexData *V)
 	p = precision();
 	precision(14);
 
-	for(int s = -1; s < nScan; s++)
+	for(int s = -1; s < nScan; ++s)
 	{
-		const VexScan *scan = (s==-1)?V->getScan(0):V->getScan(s);
-		if( s ==  -1 )
+		const VexScan *scan = (s==-1) ? V->getScan(0) : V->getScan(s);
+		if(s ==  -1)
+		{
 			*this << "# Setup Scan " << endl;
+		}
                 else
+		{
 			*this << "# Scan " << s << " = " << scan->defName << endl;
+		}
 		if(scan->stations.count(ant) == 0)
 		{
 			*this << "# Antenna " << ant << " not in scan " << scan->defName << endl;
@@ -662,7 +705,10 @@ int pystream::writeScans(const VexData *V)
 							*this << "subarray.set4x4Switch('" << switchOutput[ifit->second] << "', " << switchPosition(ifit->first.c_str()) << ")" << endl;
 						}
 					}
-					*this << "subarray.setChannels(dbe0, channelSet" << modeId << ")" << endl;
+					if(currentformat != "")
+					{
+						*this << "subarray.setChannels(dbe0, channelSet" << modeId << ")" << endl;
+					}
 				}
 				else if(currenttype == EVLA)
 				{
@@ -695,34 +741,37 @@ int pystream::writeScans(const VexData *V)
 			// just in case our setup scan caused the auto leveling to lock onto a bad value make
 			// it forget
 			// TODO this - like a lot of things - only works for one RDBE now
-			if( s == 0 ) {
+			if(s == 0 && currentformat != "")
+			{
 				*this << "dbe0.setDBEForget(0)" << endl;
 				*this << "dbe0.setDBEForget(1)" << endl;
 			}
-			if( s != -1 ) {
+			if(s != -1)
+			{
 				// recognize scans that do not record to Mark5C, but still set switches (need to pass scan start time)
-                if (F.format == "MARK5B") {
+				if(F.format == "MARK5B")
+				{
 					*this << "recorder0.setPacket(0, 0, 40, 5008)" << endl;
-                    * this << "subarray.setRecord(mjdStart + " << deltat1 << "*second, mjdStart+" << deltat2 \
-						<< "*second, '" << scan->defName << "', obsCode, stnCode )" << endl;
+					*this << "subarray.setRecord(mjdStart + " << deltat1 << "*second, mjdStart+" << deltat2 << "*second, '" << scan->defName << "', obsCode, stnCode )" << endl;
 				}
-                else {
-                    *this << "print \"Not a recording scan - still set switches for " << scan->defName << ".\"" << endl;
-                    *this << "subarray.setSwitches(mjdStart + " << deltat1 << "*second, mjdStart+" << deltat2 \
-                        << "*second, obsCode+'_'+stnCode+'_'+'" << scan->defName << "')" << endl;
+				else 
+				{
+					*this << "print 'Not a recording scan but still set switches for " << scan->defName << ".'" << endl;
+					*this << "subarray.setSwitches(mjdStart + " << deltat1 << "*second, mjdStart+" << deltat2 << "*second, obsCode+'_'+stnCode+'_'+'" << scan->defName << "')" << endl;
 				}
-                // only start scan if we are at least 10sec away from scan end
-                // NOTE - if this changes to a value less than 5sec may need to revisit Executor RDBE code
-                // in case of scan starting later than start time
-                *this << "if array.time() < mjdStart + (" << deltat2 << "-10)*second:" << endl;
-                *this << "  subarray.execute(mjdStart + " << deltat3 << "*second)" << endl;
-                *this << "else:" << endl;
-                *this << "  print \"Skipping scan which ended at time \" + str(mjdStart+" << deltat2 \
-					<< "*second) + \" since array.time is \" + str(array.time())" << endl;
-                lastValid = arange->mjdStop;
-            } else {
-                *this << "# Setup scan - run right away, but do not start recording" << endl;
-                *this << "subarray.execute( array.time() )" << endl;
+				// only start scan if we are at least 10sec away from scan end
+				// NOTE - if this changes to a value less than 5sec may need to revisit Executor RDBE code
+				// in case of scan starting later than start time
+				*this << "if array.time() < mjdStart + (" << deltat2 << "-10)*second:" << endl;
+				*this << "  subarray.execute(mjdStart + " << deltat3 << "*second)" << endl;
+				*this << "else:" << endl;
+				*this << "  print 'Skipping scan which ended at time ' + str(mjdStart+" << deltat2 << "*second) + ' since array.time is ' + str(array.time())" << endl;
+				lastValid = arange->mjdStop;
+			}
+			else
+			{
+				*this << "# Setup scan - run right away, but do not start recording" << endl;
+				*this << "subarray.execute( array.time() )" << endl;
 			}
 		}
 		*this << endl;
@@ -733,7 +782,7 @@ int pystream::writeScans(const VexData *V)
 	return n;
 }
 
-void pystream::writeVCI(const VexData *V, int modeindex, string filename)
+void pystream::writeVCI(const VexData *V, int modeindex, const string &filename)
 {
 	string bbnames[2] = {"A0/C0", "B0/D0"};
 	string swbbnames[2] = {"AC8BIT", "BD8BIT"};
@@ -748,8 +797,6 @@ void pystream::writeVCI(const VexData *V, int modeindex, string filename)
 	const VexMode *mode = V->getMode(modeindex);
 	const VexSetup *setup = mode->getSetup(ant);
 	const VexFormat &F = setup->format;
-	double * iffreqs = new double[setup->ifs.size()];
-	map<string,VexIF>::const_iterator it = setup->ifs.begin();
 
 	if(!output.is_open() || output.fail())
 	{
@@ -778,12 +825,16 @@ void pystream::writeVCI(const VexData *V, int modeindex, string filename)
 	output << indent << "<widar:bbParams sourceType=\"FORM\" sourceId=\"0\" sideband=\"lower\" polarization=\"L\" bbid=\"2\"/>" << endl;
 	output << indent << "<widar:bbParams sourceType=\"FORM\" sourceId=\"0\" sideband=\"lower\" polarization=\"R\" bbid=\"4\"/>" << endl;
 	output << indent << "<widar:bbParams sourceType=\"FORM\" sourceId=\"0\" sideband=\"lower\" polarization=\"L\" bbid=\"6\"/>" << endl;
+
 	numindfreqs = 0;
-	for(unsigned int i=0;i<setup->ifs.size();i++,it++)
+	double *iffreqs = new double[setup->ifs.size()];
+	map<string,VexIF>::const_iterator it = setup->ifs.begin();
+	
+	for(unsigned int i = 0; i < setup->ifs.size(); ++i, ++it)
 	{
 		const VexIF & vif = it->second;
 		found = false;
-		for(int j=0;j<numindfreqs;j++)
+		for(int j = 0; j < numindfreqs; ++j)
 		{
 			//cout << "Checking " << vif.getLowerEdgeFreq() << " against " << iffreqs[j] << endl;
 			if(vif.getLowerEdgeFreq() == iffreqs[j])
@@ -800,7 +851,7 @@ void pystream::writeVCI(const VexData *V, int modeindex, string filename)
 		iffreqs[numindfreqs++] = vif.getLowerEdgeFreq();
 		output << indent << "<widar:baseBand singlePhaseCenter=\"yes\" name=\"" << bbnames[numindfreqs] << "\" swbbName=\"" << swbbnames[numindfreqs] << "\" inQuant=\"8\" bw=\"1024000000\" bbB=\"" << 4*numindfreqs+2 << "\" bbA=\"" << 4*numindfreqs << "\">" << endl;
 		indent += "    ";
-		for(unsigned int j=0;j<F.channels.size(); j++)
+		for(unsigned int j = 0; j < F.channels.size(); ++j)
 		{
 			if(F.channels[j].ifname != vif.name) //this channel belongs to the other IF
 				continue;
@@ -840,6 +891,7 @@ void pystream::writeVCI(const VexData *V, int modeindex, string filename)
 	delete [] iffreqs;
 }
 
-void pystream::setDBEPersonality(string filename) {
+void pystream::setDBEPersonality(const string &filename)
+{
     dbefileName = filename;
 }
