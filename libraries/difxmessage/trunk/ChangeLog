@@ -14,6 +14,7 @@ Add options for different start "functions"
 Add support for diagnostic messages
 Add support for file request
 Add nCore to Load message
+Add utility restartdifx
 
 Version 2.0.1
 ~~~~~~~~~~~~~

@@ -27,6 +27,7 @@ dist_bin_SCRIPTS = \
 	mk5mon \
 	smartmon \
 	statemon \
+	restartdifx \
 	difxdiagnosticmon \
 	mk5display
 

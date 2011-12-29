@@ -1,0 +1,87 @@
+#!/bin/env python
+
+#===========================================================================
+# SVN properties (DO NOT CHANGE)
+#
+# $Id$
+# $HeadURL: $
+# $LastChangedRevision$
+# $Author$
+# $LastChangedDate$
+#
+#============================================================================
+
+from os import popen, system
+from os.path import isfile
+from sys import argv, exit
+from string import split
+
+program = 'restartdifx'
+version = '0.1'
+verdate = '20111229'
+author  = 'Walter Brisken <wbrisken@nrao.edu>'
+
+def usage()
+	print '\n%s ver %s   %s  %s\n' % (program, version, verdate, author)
+	print 'Usage: %s logFile' % argv[0]
+	print '\nWhere logFile is a .difxlog file'
+	print '\nThis program mines the log file for a DiFX job and attempts to restart'
+	print 'correlation 4 seconds after the point of failure of the previous attempt.'
+	print 'This requires that a .difxlog file (as written by difxlog) be present.\n'
+
+def getRestartSeconds(logFile, verbose):
+	if not isfile(logFile):
+		print "Cannot find %s so I assume the job hasn't even been run.  Not starting." % logFile
+		return -1
+
+	cmd = 'grep "Starting Version 2.0.1" %s' % logFile
+	if verbose > 0:
+		print 'Executing: %s' % cmd
+	if len(popen(cmd, "r").readlines()) > 0:
+		print 'Restarts cannot be done on DiFX versions earlier than 2.0.2'
+		return -1
+	
+	cmd = 'grep "STATUS Ending" %s' % logFile
+	if verbose > 0:
+		print 'Executing: %s' % cmd
+	if len(popen(cmd, "r").readlines()) > 0:
+		print 'Job ran to completion.  Not rerunning.'
+		return -1
+
+	cmd = 'grep "to write out time" %s | tail -n 1' % logFile
+	if verbose > 0:
+		print 'Executing: %s' % cmd
+	p = popen(cmd, 'r').readlines()
+
+	if len(p) != 1:
+		return 4
+	
+	return float(split(p[0])[-1]) + 4
+
+verbose = 1
+
+if len(argv) != 2:
+	usage()
+	exit(0)
+
+fileName = argv[1]
+
+suffix = split(fileName, '.')[-1]
+if not suffix in ['input', 'difx', 'difxlog', 'calc']:
+	print 'Unrecognized difx file: %s' % fileName
+	exit(0)
+
+fileBase = fileName[:-len(suffix)]
+logFile = fileBase + 'difxlog'
+inputFile = fileBase + 'input'
+
+rs = getRestartSeconds(logFile, verbose)
+
+if verbose > 0:
+	print 'RestartSeconds = %f' % rs
+
+if rs > 0:
+	cmd = 'startdifx %f -v %s' % (rs, inputFile)
+	if verbose > 0:
+		print 'Executing: %s' % cmd
+	system(cmd)
