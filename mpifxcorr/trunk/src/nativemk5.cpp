@@ -180,7 +180,7 @@ int NativeMk5DataStream::reportDriveStats()
 	S_DRIVESTATS driveStats[XLR_MAXBINS];
 	DifxMessageDriveStats driveStatsMessage;
 
-	snprintf(driveStatsMessage.moduleVSN, DIFX_MESSAGE_MARK5_VSN_LENGTH, "%s",  datafilenames[0][0].c_str());
+	snprintf(driveStatsMessage.moduleVSN, DIFX_MESSAGE_MARK5_VSN_LENGTH+1, "%s",  datafilenames[0][0].c_str());
 	driveStatsMessage.type = DRIVE_STATS_TYPE_READ;
 
 	/* FIXME: for now don't include complete information on drives */
