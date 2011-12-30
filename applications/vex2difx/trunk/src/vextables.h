@@ -115,15 +115,28 @@ class VexBasebandFile : public VexInterval
 class VexScan : public VexInterval
 {
 public:
-	string defName;		// name of this scan
+	enum Type
+	{
+		TYPE_PFB_RECORDING = 0,
+		TYPE_DDC_RECORDING,
+		TYPE_PFB_NO_RECORD,
+		TYPE_DDC_NO_RECORD,
+		TYPE_NO_DBE
+	};
+
+	string defName;			// name of this scan
 
 	string modeDefName;
 	string sourceDefName;	
 	map<string,VexInterval> stations;
-	map<string,bool> recordEnable;
-	string corrSetupName;	// points to CorrSetup entry
-	double size;		// [bytes] approx. correlated size
-	double mjdVex;		// The start time listed in the vex file
+	map<string,bool> recordEnable;	// This is true of the drive number is non-zero
+	string corrSetupName;		// points to CorrSetup entry
+	double size;			// [bytes] approx. correlated size
+	double mjdVex;			// The start time listed in the vex file
+
+	VexScan(): size(0), mjdVex(0.0) {};
+	Type getScanType(const string &antenna) const;
+	unsigned int nAntennasWithRecordedData(const VexData *V) const;
 };
 
 class VexSource
@@ -158,31 +171,17 @@ public:
 class VexChannel		// Antenna-specific baseband channel details
 {
 public:
-	VexChannel() : recordChan(0), subbandId(-1), bbcFreq(0.0), bbcBandwidth(0.0), bbcSideBand(' ') {}
+	VexChannel() : recordChan(-1), subbandId(-1), bbcFreq(0.0), bbcBandwidth(0.0), bbcSideBand(' ') {}
 	void selectTones(int toneIntervalMHz, enum ToneSelection selection, double guardBandMHz);
 	friend bool operator ==(const VexChannel &c1, const VexChannel &c2);
 
-	unsigned int recordChan;// channel number on recorded media
+	int recordChan;		// channel number on recorded media	(< 0 indicates non-recording)
 	int subbandId;		// 0-based index; -1 means unset
 	string ifname;		// name of the IF this channel came from
 	double bbcFreq;		// tuning of the BBC (Hz)
 	double bbcBandwidth;	// bandwidth (Hz)
 	char bbcSideBand;	// sideband of the BBC
 	vector<int> tones;	// pulse cal tones to extract, directly from PHASE_CAL_DETECT
-};
-
-class VexFormat
-{
-public:
-	VexFormat() : nBit(0), nRecordChan(0) {}
-
-	string name;
-
-	string format;		// e.g. VLBA, MKIV, Mk5B, VDIF, LBA, K5, ...
-	unsigned int nBit;
-	unsigned int nRecordChan;	// number of recorded channels
-	vector<VexChannel> channels;
-	friend bool operator ==(const VexFormat &f1, const VexFormat &f2);
 };
 
 class VexIF
@@ -205,11 +204,16 @@ public:
 class VexSetup	// Container for all antenna-specific settings
 {
 public:
+	VexSetup() : nBit(0), nRecordChan(0) {}
 	int phaseCalIntervalMHz() const;
 	const VexIF *getIF(const string &ifname) const;
 
-	VexFormat format;
-	map<string,VexIF> ifs;	// Indexed by name in the vex file, such as IF_A
+	map<string,VexIF> ifs;		// Indexed by name in the vex file, such as IF_A
+	vector<VexChannel> channels;
+
+	unsigned int nBit;
+	unsigned int nRecordChan;	// number of recorded channels
+	string formatName;		// e.g. VLBA, MKIV, Mk5B, VDIF, LBA, K5, ...
 };
 
 class VexMode
@@ -221,7 +225,6 @@ public:
 	int getPols(char *pols) const;
 	int getBits() const;
 	const VexSetup* getSetup(const string &antName) const;
-	const VexFormat* getFormat(const string &antName) const;
 	int getOversampleFactor() const;
 
 	string defName;
@@ -422,7 +425,6 @@ ostream& operator << (ostream &os, const VexAntenna &x);
 ostream& operator << (ostream &os, const VexSubband &x);
 ostream& operator << (ostream &os, const VexChannel &x);
 ostream& operator << (ostream &os, const VexIF &x);
-ostream& operator << (ostream &os, const VexFormat &x);
 ostream& operator << (ostream &os, const VexSetup &x);
 ostream& operator << (ostream &os, const VexMode &x);
 ostream& operator << (ostream &os, const VexEOP &x);

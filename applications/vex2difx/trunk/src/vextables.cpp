@@ -363,23 +363,23 @@ int VexMode::getBits() const
 	unsigned int nBit = 0;
 	map<string,VexSetup>::const_iterator it;
 
-	nBit = setups.begin()->second.format.nBit;
+	nBit = setups.begin()->second.nBit;
 
 	for(it = setups.begin(); it != setups.end(); ++it)
 	{
-		if(it->second.format.nBit != nBit)
+		if(it->second.nBit != nBit)
 		{
-			if(nBit != 0 && it->second.format.nBit != 0 && firstTime)
+			if(nBit != 0 && it->second.nBit != 0 && firstTime)
 			{
-				cerr << "Warning: getBits: differing number of bits: " << nBit << "," << it->second.format.nBit << endl;
+				cerr << "Warning: getBits: differing number of bits: " << nBit << "," << it->second.nBit << endl;
 				cerr << "  Will proceed, but note that some metadata may be incorrect." << endl;
 
 				firstTime = 0;
 			}
 
-			if(it->second.format.nBit > nBit)
+			if(it->second.nBit > nBit)
 			{
-				nBit = it->second.format.nBit;
+				nBit = it->second.nBit;
 			}
 		}
 
@@ -401,22 +401,6 @@ const VexSetup* VexMode::getSetup(const string &antName) const
 	}
 
 	return &it->second;
-}
-
-const VexFormat* VexMode::getFormat(const string &antName) const
-{
-	map<string,VexSetup>::const_iterator it;
-
-	it = setups.find(antName);
-	if(it == setups.end())
-	{
-		cerr << "Error: VexMode::getFormat: antName=" << antName << " not found." << endl;
-
-		exit(EXIT_FAILURE);
-	}
-
-
-	return &it->second.format;
 }
 
 double VexIF::getLowerEdgeFreq() const
@@ -1165,6 +1149,28 @@ const VexScan *VexData::getScanByDefName(const string &defName) const
 	return 0;
 }
 
+unsigned int VexScan::nAntennasWithRecordedData(const VexData *V) const
+{
+	unsigned int nAnt = 0;
+
+	const VexMode *M = V->getModeByDefName(modeDefName);
+	if(!M)
+	{
+		return 0;
+	}
+
+	for(map<string,VexInterval>::const_iterator it = stations.begin(); it != stations.end(); ++it)
+	{
+		map<string,VexSetup>::const_iterator S = M->setups.find(it->first);
+		if(S != M->setups.end() && S->second.nRecordChan > 0 && S->second.formatName != "NONE")
+		{
+			++nAnt;
+		}
+	}
+
+	return nAnt;
+}
+
 void VexData::setScanSize(unsigned int num, double size)
 {
 	if(num >= nScan())
@@ -1287,26 +1293,6 @@ bool operator ==(const VexChannel &c1, const VexChannel &c2)
 	    (c1.tones       != c2.tones) )
 	{
 		return false;
-	}
-
-	return true;
-}
-
-bool operator ==(const VexFormat &f1, const VexFormat &f2)
-{
-	if( (f1.format      != f2.format)      ||
-	    (f1.nBit        != f2.nBit)        ||
-	    (f1.nRecordChan != f2.nRecordChan) )
-	{
-		return false;
-	}
-
-	for(unsigned int r = 0; r < f1.nRecordChan; ++r)
-	{
-		if( !(f1.channels[r] == f2.channels[r]) )
-		{
-			return false;
-		}
 	}
 
 	return true;
@@ -1652,21 +1638,14 @@ ostream& operator << (ostream &os, const VexIF &x)
 	return os;
 }
 
-ostream& operator << (ostream &os, const VexFormat &x)
+ostream& operator << (ostream &os, const VexSetup &x)
 {
-	os << "[format=" << x.format << ", nBit=" << x.nBit << ", nChan=" << x.nRecordChan;
+	os << "    Format = [format=" << x.formatName << ", nBit=" << x.nBit << ", nChan=" << x.nRecordChan;
 	for(vector<VexChannel>::const_iterator it = x.channels.begin(); it != x.channels.end(); ++it)
 	{
 		os << ", " << *it;
 	}
 	os << "]";
-
-	return os;
-}
-
-ostream& operator << (ostream &os, const VexSetup &x)
-{
-	os << "    Format = " << x.format << endl;
 	for(map<string,VexIF>::const_iterator it = x.ifs.begin(); it != x.ifs.end(); ++it)
 	{
 		os << "    IF: " << it->first << " " << it->second << endl;

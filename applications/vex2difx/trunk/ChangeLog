@@ -6,8 +6,9 @@ Post DiFX 2.0.1
 * Change parameters to be better optimized for larger bandwidths (at marginal, if any, impact to small bandwidths)
 * Reimplement tweak integration time
 * Fix zoom bands when statting with different bandwidths.  WFB gets a beer for this one!
-* Start implementation of "global zoom bands" which can either be referenced
-from an ANTENNA or a SETUP
+* Start implementation of "global zoom bands" which can either be referenced from an ANTENNA or a SETUP
+* Distinction between recorded and non-recorded channels is now more clear.  Only recorded channels will be correlated.
+* No more VexFormat class.  Its contents were moved into VexSetup.
 
 Version 2.0.1
 ~~~~~~~~~~~~~

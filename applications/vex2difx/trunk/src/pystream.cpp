@@ -264,14 +264,12 @@ int pystream::writeDbeInit(const VexData *V)
 		const VexMode *mode = V->getMode(m);
 		const VexSetup *setup = mode->getSetup(ant);
 
-		if(setup && setup->format.format != "" && setup->format.format != "NONE")
+		if(setup && setup->formatName != "" && setup->formatName != "NONE")
 		{
-			const VexFormat &F = setup->format;
-
-			currentformat = setup->format.format;
+			currentformat = setup->formatName;
 			cout << "current format is " << currentformat << endl;
 
-			if(F.channels.size() > 0 && F.channels.size() <= 8)
+			if(setup->channels.size() > 0 && setup->channels.size() <= 8)
 			{
 				// DDC: based purely on number of channels
 				*this << "dbe0 = RDBE(0, 'ddc'";
@@ -284,14 +282,14 @@ int pystream::writeDbeInit(const VexData *V)
 					*this << ", '" << dbefileName << "')" << endl;
 				}
 			} 
-			else if(F.channels.size() == 16)
+			else if(setup->channels.size() == 16)
 			{
 				// PFB
 				*this << "dbe0 = RDBE(0, 'pfb')" << endl;
 			}
 			else 
 			{
-				cerr << "Incorrect number of channels: " << F.channels.size() << endl;
+				cerr << "Incorrect number of channels: " << setup->channels.size() << endl;
 
 //				exit(EXIT_FAILURE);
 			}
@@ -338,20 +336,18 @@ int pystream::writeLoifTable(const VexData *V)
 			continue;
 		}
 
-		const VexFormat &F = setup->format;
-
 		if(currenttype == VLBA)
 		{
-			if(F.format != "NONE")
+			if(setup->formatName != "NONE")
 			{
 				if(init_channels == 0)
 				{
-					init_channels = F.channels.size();
+					init_channels = setup->channels.size();
 				}
-				else if(init_channels != F.channels.size())
+				else if(init_channels != setup->channels.size())
 				{
 					// TODO is this really a problem?
-					cerr << "number of channels from " << init_channels << " initially to " << F.channels.size() << " which is currently not supported." << endl; 
+					cerr << "number of channels from " << init_channels << " initially to " << setup->channels.size() << " which is currently not supported." << endl; 
 				}
 			}
 
@@ -453,21 +449,21 @@ int pystream::writeLoifTable(const VexData *V)
 				*this << "channelSet" << m << " = [ \\" << endl;
 
 				vector<unsigned int> implicitConversions;
-				for(unsigned i = 0; i < F.channels.size(); ++i)
+				for(unsigned int i = 0; i < setup->channels.size(); ++i)
 				{
-					unsigned int inputNum = ifIndex[m][F.channels[i].ifname];
-					double bw = F.channels[i].bbcBandwidth;
-					char sb = F.channels[i].bbcSideBand;
-					unsigned int nBit = F.nBit;
+					unsigned int inputNum = ifIndex[m][setup->channels[i].ifname];
+					double bw = setup->channels[i].bbcBandwidth;
+					char sb = setup->channels[i].bbcSideBand;
+					unsigned int nBit = setup->nBit;
 					unsigned int threadId = 0;
-					const VexIF *vif = setup->getIF(F.channels[i].ifname);
+					const VexIF *vif = setup->getIF(setup->channels[i].ifname);
 					if(!vif)
 					{
-						cerr << "Developer error: setup->getIF(" << F.channels[i].ifname << ") returned NULL" << endl;
+						cerr << "Developer error: setup->getIF(" << setup->channels[i].ifname << ") returned NULL" << endl;
 
 						exit(EXIT_FAILURE);
 					}
-					double freq = F.channels[i].bbcFreq;
+					double freq = setup->channels[i].bbcFreq;
 					double tune = freq - vif->ifSSLO;
 
 					if(tune < 0.0)
@@ -483,7 +479,7 @@ int pystream::writeLoifTable(const VexData *V)
 					}
 
 					*this << "  bbc(" << inputNum << ", " << (tune*1.0e-6) << ", " << (bw*1.0e-6) << ", '" << sb << "', " << nBit << ", " << threadId << ")";
-					if(i < F.channels.size()-1)
+					if(i < setup->channels.size()-1)
 					{
 						*this << ",";
 					}
@@ -687,7 +683,6 @@ int pystream::writeScans(const VexData *V)
 				continue;
 			}
 
-			const VexFormat F = setup->format;
 			if(modeId != lastModeId)
 			{
 
@@ -749,7 +744,7 @@ int pystream::writeScans(const VexData *V)
 			if(s != -1)
 			{
 				// recognize scans that do not record to Mark5C, but still set switches (need to pass scan start time)
-				if(F.format == "MARK5B")
+				if(setup->formatName == "MARK5B")
 				{
 					*this << "recorder0.setPacket(0, 0, 40, 5008)" << endl;
 					*this << "subarray.setRecord(mjdStart + " << deltat1 << "*second, mjdStart+" << deltat2 << "*second, '" << scan->defName << "', obsCode, stnCode )" << endl;
@@ -796,7 +791,6 @@ void pystream::writeVCI(const VexData *V, int modeindex, const string &filename)
 	time_t now;
 	const VexMode *mode = V->getMode(modeindex);
 	const VexSetup *setup = mode->getSetup(ant);
-	const VexFormat &F = setup->format;
 
 	if(!output.is_open() || output.fail())
 	{
@@ -851,16 +845,16 @@ void pystream::writeVCI(const VexData *V, int modeindex, const string &filename)
 		iffreqs[numindfreqs++] = vif.getLowerEdgeFreq();
 		output << indent << "<widar:baseBand singlePhaseCenter=\"yes\" name=\"" << bbnames[numindfreqs] << "\" swbbName=\"" << swbbnames[numindfreqs] << "\" inQuant=\"8\" bw=\"1024000000\" bbB=\"" << 4*numindfreqs+2 << "\" bbA=\"" << 4*numindfreqs << "\">" << endl;
 		indent += "    ";
-		for(unsigned int j = 0; j < F.channels.size(); ++j)
+		for(unsigned int j = 0; j < setup->channels.size(); ++j)
 		{
-			if(F.channels[j].ifname != vif.name) //this channel belongs to the other IF
+			if(setup->channels[j].ifname != vif.name) //this channel belongs to the other IF
 				continue;
-			centrefreq = F.channels[j].bbcFreq - vif.getLowerEdgeFreq() + F.channels[j].bbcBandwidth/2.0;
-			if(F.channels[i].bbcSideBand == 'L')
+			centrefreq = setup->channels[j].bbcFreq - vif.getLowerEdgeFreq() + setup->channels[j].bbcBandwidth/2.0;
+			if(setup->channels[i].bbcSideBand == 'L')
 			{
-				centrefreq -= F.channels[i].bbcBandwidth;
+				centrefreq -= setup->channels[i].bbcBandwidth;
 			}
-			output << indent << "<widar:subBand sbid=\"" << j << "\" rqNumBits=\"" << evlasbbits << "\" centralFreq=\"" << ((long long)centrefreq) << "\" bw=\"" << static_cast<int>(F.channels[j].bbcBandwidth) << "\">" << endl;
+			output << indent << "<widar:subBand sbid=\"" << j << "\" rqNumBits=\"" << evlasbbits << "\" centralFreq=\"" << ((long long)centrefreq) << "\" bw=\"" << static_cast<int>(setup->channels[j].bbcBandwidth) << "\">" << endl;
 			indent += "    ";
 			output << indent << "<widar:polProducts>" << endl;
 			indent += "    ";

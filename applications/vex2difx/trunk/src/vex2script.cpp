@@ -111,7 +111,6 @@ int main(int argc, char **argv)
 	P->vexFile = string(argv[1]);
 	P->defaultSetup();
 	P->minSubarraySize = 1;
-        py.setDBEPersonality("\0");
 
 	for(int count=2; count < argc; ++count)
 	{

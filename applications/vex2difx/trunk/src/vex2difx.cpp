@@ -115,15 +115,31 @@ static bool areScansCompatible(const VexScan *A, const VexScan *B, const CorrPar
 // This does not pay attention to media or clock breaks
 static void genJobGroups(vector<VexJobGroup> &JGs, const VexData *V, const CorrParams *P, int verbose)
 {
+	unsigned int nNoRecordScan = 0;
 	list<string> scans;
 	V->getScanList(scans);
 
 	while(!scans.empty())
 	{
+		const VexScan *scan = V->getScanByDefName(scans.front());
+		int nRecordedAnt = scan->nAntennasWithRecordedData(V);
+
+		if(nRecordedAnt < P->minSubarraySize)
+		{
+			if(verbose > 2)
+			{
+				cout << "Skipping scan " << scans.front() << " because it has no recorded data." << endl;
+			}
+			
+			scans.pop_front();
+			++nNoRecordScan;
+
+			continue;
+		}
 		JGs.push_back(VexJobGroup());
 		VexJobGroup &JG = JGs.back();
 		JG.scans.push_back(scans.front());
-		JG.setTimeRange( *(V->getScanByDefName(scans.front())) );
+		JG.setTimeRange(*scan);
 		scans.pop_front();
 
 		const VexScan *scan1 = V->getScanByDefName(JG.scans.back());
@@ -156,6 +172,11 @@ static void genJobGroups(vector<VexJobGroup> &JGs, const VexData *V, const CorrP
 				++it;
 			}
 		}
+	}
+
+	if(verbose + nNoRecordScan > 0)
+	{
+		cout << nNoRecordScan << " scans dropped because they recorded no baseband data." << endl;
 	}
 
 	const list<VexEvent> *events = V->getEvents();
@@ -801,15 +822,7 @@ static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, vector<vector<
 		
 		exit(EXIT_FAILURE);
 	}
-	const VexFormat* format = mode->getFormat(antName);
 	const VexSetup* setup = mode->getSetup(antName);
-
-	if(format == 0)
-	{
-		cerr << "Developer error: setFormat(ant=" << antName << ", mode=" << mode->defName << ") -> format=0" << endl;
-
-		exit(EXIT_FAILURE);
-	}
 
 	if(setup == 0)
 	{
@@ -818,136 +831,139 @@ static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, vector<vector<
 		exit(EXIT_FAILURE);
 	}
 
-	int n2 = next2(format->nRecordChan);
+	int n2 = next2(setup->nRecordChan);
 
 	overSamp = mode->getOversampleFactor();
 	decimation = calcDecimation(overSamp);
 
-	if(format->format == string("VLBA1_1"))
+	if(setup->formatName == string("VLBA1_1"))
 	{
 		strcpy(D->datastream[dsId].dataFormat, "VLBA");
-		D->datastream[dsId].dataFrameSize = 2520*format->nBit*n2;
+		D->datastream[dsId].dataFrameSize = 2520*setup->nBit*n2;
 	}
-	else if(format->format == string("VLBA1_2"))
+	else if(setup->formatName == string("VLBA1_2"))
 	{
 		strcpy(D->datastream[dsId].dataFormat, "VLBA");
-		D->datastream[dsId].dataFrameSize = 5040*format->nBit*n2;
+		D->datastream[dsId].dataFrameSize = 5040*setup->nBit*n2;
 	}
-	else if(format->format == string("VLBA1_4"))
+	else if(setup->formatName == string("VLBA1_4"))
 	{
 		strcpy(D->datastream[dsId].dataFormat, "VLBA");
-		D->datastream[dsId].dataFrameSize = 10080*format->nBit*n2;
+		D->datastream[dsId].dataFrameSize = 10080*setup->nBit*n2;
 	}
-	else if(format->format == string("VLBN1_1"))
+	else if(setup->formatName == string("VLBN1_1"))
 	{
 		strcpy(D->datastream[dsId].dataFormat, "VLBN");
-		D->datastream[dsId].dataFrameSize = 2520*format->nBit*n2;
+		D->datastream[dsId].dataFrameSize = 2520*setup->nBit*n2;
 	}
-	else if(format->format == string("VLBN1_2"))
+	else if(setup->formatName == string("VLBN1_2"))
 	{
 		strcpy(D->datastream[dsId].dataFormat, "VLBN");
-		D->datastream[dsId].dataFrameSize = 5040*format->nBit*n2;
+		D->datastream[dsId].dataFrameSize = 5040*setup->nBit*n2;
 	}
-	else if(format->format == string("VLBN1_4"))
+	else if(setup->formatName == string("VLBN1_4"))
 	{
 		strcpy(D->datastream[dsId].dataFormat, "VLBN");
-		D->datastream[dsId].dataFrameSize = 10080*format->nBit*n2;
+		D->datastream[dsId].dataFrameSize = 10080*setup->nBit*n2;
 	}
-	else if(format->format == string("MKIV1_1"))
+	else if(setup->formatName == string("MKIV1_1"))
 	{
 		strcpy(D->datastream[dsId].dataFormat, "MKIV");
-		D->datastream[dsId].dataFrameSize = 2500*format->nBit*n2;
+		D->datastream[dsId].dataFrameSize = 2500*setup->nBit*n2;
 	}
-	else if(format->format == string("MKIV1_2"))
+	else if(setup->formatName == string("MKIV1_2"))
 	{
 		strcpy(D->datastream[dsId].dataFormat, "MKIV");
-		D->datastream[dsId].dataFrameSize = 5000*format->nBit*n2;
+		D->datastream[dsId].dataFrameSize = 5000*setup->nBit*n2;
 	}
-	else if(format->format == string("MKIV1_4"))
+	else if(setup->formatName == string("MKIV1_4"))
 	{
 		strcpy(D->datastream[dsId].dataFormat, "MKIV");
-		D->datastream[dsId].dataFrameSize = 10000*format->nBit*n2;
+		D->datastream[dsId].dataFrameSize = 10000*setup->nBit*n2;
 	}
-	else if(format->format == string("MARK5B"))
+	else if(setup->formatName == string("MARK5B"))
 	{
 		strcpy(D->datastream[dsId].dataFormat, "MARK5B");
 		D->datastream[dsId].dataFrameSize = 10016;
 	}
-	else if(format->format == string("VDIF"))
+	else if(setup->formatName == string("VDIF"))
 	{
 		strcpy(D->datastream[dsId].dataFormat, "VDIF");
 		D->datastream[dsId].dataFrameSize = 1032;
 	}
-	else if(format->format.substr(0,4) == string("VDIF"))
+	else if(setup->formatName.substr(0,4) == string("VDIF"))
 	{
 		strcpy(D->datastream[dsId].dataFormat, "VDIF");
-		D->datastream[dsId].dataFrameSize = atoi(format->format.substr(5).c_str());
+		D->datastream[dsId].dataFrameSize = atoi(setup->formatName.substr(5).c_str());
 	}
-	else if(format->format.substr(0,14) == string("INTERLACEDVDIF"))
+	else if(setup->formatName.substr(0,14) == string("INTERLACEDVDIF"))
 	{
-		strcpy(D->datastream[dsId].dataFormat, format->format.substr(0,format->format.find_last_of('/')).c_str());
-		D->datastream[dsId].dataFrameSize = atoi(format->format.substr(format->format.find_last_of('/')+1).c_str());
+		strcpy(D->datastream[dsId].dataFormat, setup->formatName.substr(0,setup->formatName.find_last_of('/')).c_str());
+		D->datastream[dsId].dataFrameSize = atoi(setup->formatName.substr(setup->formatName.find_last_of('/')+1).c_str());
 	}
-	else if(format->format == string("S2"))
+	else if(setup->formatName == string("S2"))
 	{
 		strcpy(D->datastream[dsId].dataFormat, "LBAVSOP");
-		D->datastream[dsId].dataFrameSize = 4096 + 10*format->nBit*n2*static_cast<int>(mode->sampRate+0.5)/8;
+		D->datastream[dsId].dataFrameSize = 4096 + 10*setup->nBit*n2*static_cast<int>(mode->sampRate+0.5)/8;
 		cerr << "Warning: S2 data can be in LBAVSOP or LBASTD format - defaulting to LBAVSOP!!" << endl;
 	}
-	else if(format->format == string("LBAVSOP"))
+	else if(setup->formatName == string("LBAVSOP"))
 	{
 		strcpy(D->datastream[dsId].dataFormat, "LBAVSOP");
-		D->datastream[dsId].dataFrameSize = 4096 + 10*format->nBit*n2*static_cast<int>(mode->sampRate+0.5)/8;
+		D->datastream[dsId].dataFrameSize = 4096 + 10*setup->nBit*n2*static_cast<int>(mode->sampRate+0.5)/8;
 	}
-	else if(format->format == string("LBASTD"))
+	else if(setup->formatName == string("LBASTD"))
 	{
 		strcpy(D->datastream[dsId].dataFormat, "LBASTD");
-		D->datastream[dsId].dataFrameSize = 4096 + 10*format->nBit*n2*static_cast<int>(mode->sampRate+0.5)/8;
+		D->datastream[dsId].dataFrameSize = 4096 + 10*setup->nBit*n2*static_cast<int>(mode->sampRate+0.5)/8;
 	}
 	else
 	{
-		cerr << "Error: setFormat: format " << format->format << " not currently supported.  Mode=" << mode->defName << ", ant=" << antName << "." << endl;
+		cerr << "Error: setFormat: format " << setup->formatName << " not currently supported.  Mode=" << mode->defName << ", ant=" << antName << "." << endl;
 
 		return 0;
 	}
 
-	D->datastream[dsId].quantBits = format->nBit;
+	D->datastream[dsId].quantBits = setup->nBit;
 	DifxDatastreamAllocBands(D->datastream + dsId, n2);
 
-	for(vector<VexChannel>::const_iterator i = format->channels.begin(); i != format->channels.end(); ++i)
+	for(vector<VexChannel>::const_iterator ch = setup->channels.begin(); ch != setup->channels.end(); ++ch)
 	{
-		if(i->subbandId < 0 || i->subbandId >= static_cast<int>(mode->subbands.size()))
+		if(ch->subbandId < 0 || ch->subbandId >= static_cast<int>(mode->subbands.size()))
 		{
-			cerr << "Error: setFormat: index to subband=" << i->subbandId << " is out of range" << endl;
+			cerr << "Error: setFormat: index to subband=" << ch->subbandId << " is out of range" << endl;
 
 			exit(EXIT_FAILURE);
 		}
 
-		int r = i->recordChan;
-		unsigned int toneSetId, fqId;
-		const VexSubband& subband = mode->subbands[i->subbandId];
-		
-		if(v2dMode == V2D_MODE_PROFILE || setup->phaseCalIntervalMHz() == 0)
+		int r = ch->recordChan;
+		if(r >= 0)
 		{
-			// In profile mode don't extract any tones
-			toneSetId = 0;
-		}
-		else
-		{
-			toneSetId = getToneSetId(toneSets, i->tones);
-		}
-		
-		fqId = getFreqId(freqs, subband.freq, subband.bandwidth, subband.sideBand,
-				corrSetup->FFTSpecRes, corrSetup->outputSpecRes, overSamp, decimation, 0, toneSetId);	// 0 means not zoom band
-		
-		if(r < 0 || r >= D->datastream[dsId].nRecBand)
-		{
-			cerr << "Error: setFormat: index to record channel = " << r << " is out of range" << endl;
+			unsigned int toneSetId, fqId;
+			const VexSubband& subband = mode->subbands[ch->subbandId];
+			
+			if(v2dMode == V2D_MODE_PROFILE || setup->phaseCalIntervalMHz() == 0)
+			{
+				// In profile mode don't extract any tones
+				toneSetId = 0;
+			}
+			else
+			{
+				toneSetId = getToneSetId(toneSets, ch->tones);
+			}
+			
+			fqId = getFreqId(freqs, subband.freq, subband.bandwidth, subband.sideBand,
+					corrSetup->FFTSpecRes, corrSetup->outputSpecRes, overSamp, decimation, 0, toneSetId);	// 0 means not zoom band
+			
+			if(r < 0 || r >= D->datastream[dsId].nRecBand)
+			{
+				cerr << "Error: setFormat: index to record channel = " << r << " is out of range" << endl;
 
-			exit(EXIT_FAILURE);
+				exit(EXIT_FAILURE);
+			}
+			D->datastream[dsId].recBandFreqId[r] = getBand(bandMap, fqId);
+			D->datastream[dsId].recBandPolName[r] = subband.pol;
 		}
-		D->datastream[dsId].recBandFreqId[r] = getBand(bandMap, fqId);
-		D->datastream[dsId].recBandPolName[r] = subband.pol;
 	}
 	DifxDatastreamAllocFreqs(D->datastream + dsId, bandMap.size());
 	for(unsigned int j = 0; j < bandMap.size(); ++j)
@@ -2926,8 +2942,7 @@ int main(int argc, char **argv)
 		const VexMode *mode = V->getModeByDefName(scan->modeDefName);
 		for(map<string,VexSetup>::const_iterator sp = mode->setups.begin(); sp != mode->setups.end(); ++sp)
 		{
-			const VexFormat *format = mode->getFormat(sp->first);
-			for(vector<VexChannel>::const_iterator cp = format->channels.begin(); cp != format->channels.end(); ++cp)
+			for(vector<VexChannel>::const_iterator cp = sp->second.channels.begin(); cp != sp->second.channels.end(); ++cp)
 			{
 				corrSetup->addRecordedBandwidth(cp->bbcBandwidth);
 			}
@@ -2948,8 +2963,7 @@ int main(int argc, char **argv)
 		cout << "FYI: Proceeding even though there were " << nWarn << " warnings." << endl;
 	}
 
-	//run through all the scans once, creating source setups for any sources
-	//that don't have one
+	// run through all the scans once, creating source setups for any sources that don't have one
 	for(unsigned int i = 0; i < V->nScan(); ++i)
 	{
 		SourceSetup * added;

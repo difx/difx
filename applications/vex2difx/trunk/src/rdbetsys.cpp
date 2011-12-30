@@ -317,12 +317,30 @@ void setRxNames(std::vector<TsysAverager> &averagers)
 	}
 }
 
+static void sanityCheckChannels(const VexSetup &vexSetup)
+{
+	int nRecChan = 0;
+	
+	for(std::vector<VexChannel>::const_iterator vc = vexSetup.channels.begin(); vc != vexSetup.channels.end(); ++vc)
+	{
+		if(vc->recordChan > 0)
+		{
+			nRecChan++;
+		}
+	}
+	if(nRecChan != vexSetup.nRecordChan)
+	{
+		cerr << "Developer Error: TsysAccumulator::setup: vexSetup.nRecordChan=" << vexSetup.nRecordChan << " does not equal nRecChan=" << nRecChan << " as it should!" << endl;
+
+		exit(EXIT_FAILURE);
+	}
+}
+
 void TsysAccumulator::setup(const VexSetup &vexSetup, DifxTcal *T, double mjd, const string &stn)
 {
 	double midFreq;
 	std::vector<TsysAverager>::iterator ta;
 	std::vector<VexChannel>::const_iterator vc;
-	const VexFormat &format = vexSetup.format;
 
 	// write out the data!
 	flush();
@@ -334,18 +352,27 @@ void TsysAccumulator::setup(const VexSetup &vexSetup, DifxTcal *T, double mjd, c
 		ta->reset();
 	}
 
-	chans.resize(format.channels.size());
-	for(vc = format.channels.begin(), ta = chans.begin(); vc != format.channels.end(); ++vc, ++ta)
+	// Sanity check the number of record channels
+	sanityCheckChannels(vexSetup);
+
+	chans.resize(vexSetup.nRecordChan);
+	ta = chans.begin();
+	for(vc = vexSetup.channels.begin(); vc != vexSetup.channels.end(); ++vc)
 	{
-		ta->bw = vc->bbcBandwidth/1000000.0;
-		ta->freq = vc->bbcFreq/1000000.0;
-		midFreq = ta->freq;
-		if(vc->bbcSideBand == 'L')
+		if(vc->recordChan >= 0)
 		{
-			/* the sign of ta->freq incorporates the sideband here */
-			ta->freq = -ta->freq;
+			ta->bw = vc->bbcBandwidth/1000000.0;
+			ta->freq = vc->bbcFreq/1000000.0;
+			midFreq = ta->freq;
+			if(vc->bbcSideBand == 'L')
+			{
+				/* the sign of ta->freq incorporates the sideband here */
+				ta->freq = -ta->freq;
+			}
+			ta->pol = vexSetup.getIF(vc->ifname)->pol;
+
+			++ta;
 		}
-		ta->pol = vexSetup.getIF(vc->ifname)->pol;
 	}
 	setRxNames(chans);
 	for(ta = chans.begin(); ta != chans.end(); ++ta)

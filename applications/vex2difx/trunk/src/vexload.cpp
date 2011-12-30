@@ -84,16 +84,14 @@ static void fixOhs(string &str)
 	}
 }
 
-static int getRecordChannel(const string &antName, const string &chanName, const map<string,Tracks> &ch2tracks, const VexFormat &F, unsigned int n)
+static int getRecordChannel(const string &antName, const string &chanName, const map<string,Tracks> &ch2tracks, const VexSetup &setup, unsigned int n)
 {
-	int delta, track;
-	map<string,Tracks>::const_iterator it;
-
-	if(F.format == "VLBA1_1" || F.format == "VLBN1_1" || F.format == "MKIV1_1" ||
-	   F.format == "VLBA1_2" || F.format == "VLBN1_2" || F.format == "MKIV1_2" ||
-	   F.format == "VLBA1_4" || F.format == "VLBN1_4" || F.format == "MKIV1_4")
+	if(setup.formatName == "VLBA1_1" || setup.formatName == "VLBN1_1" || setup.formatName == "MKIV1_1" ||
+	   setup.formatName == "VLBA1_2" || setup.formatName == "VLBN1_2" || setup.formatName == "MKIV1_2" ||
+	   setup.formatName == "VLBA1_4" || setup.formatName == "VLBN1_4" || setup.formatName == "MKIV1_4")
 	{
-		it = ch2tracks.find(chanName);
+		int delta, track;
+		map<string,Tracks>::const_iterator it = ch2tracks.find(chanName);
 
 		if(it == ch2tracks.end())
 		{
@@ -127,9 +125,10 @@ static int getRecordChannel(const string &antName, const string &chanName, const
 			}
 		}
 	}
-	else if(F.format == "MARK5B") 
+	else if(setup.formatName == "MARK5B") 
 	{
-		it = ch2tracks.find(chanName);
+		int delta, track;
+		map<string,Tracks>::const_iterator it = ch2tracks.find(chanName);
 
 		if(it == ch2tracks.end())
 		{
@@ -142,21 +141,21 @@ static int getRecordChannel(const string &antName, const string &chanName, const
 
 		return (track-2)/delta;
 	}
-	else if(F.format == "S2" || F.format == "LBASTD" || F.format == "LBAVSOP")
+	else if(setup.formatName == "S2" || setup.formatName == "LBASTD" || setup.formatName == "LBAVSOP")
 	{
 		return n;
 	}
-	else if(F.format.substr(0, 4) == "VDIF" || F.format.substr(0, 14) == "INTERLACEDVDIF")
+	else if(setup.formatName.substr(0, 4) == "VDIF" || setup.formatName.substr(0, 14) == "INTERLACEDVDIF")
 	{
 		return n;
 	}
-	else if(F.format == "NONE")
+	else if(setup.formatName == "NONE")
 	{
 		return 0;
 	}
 	else
 	{
-		cerr << "Error: Antenna=" << antName << " format \"" << F.format << "\" is not yet supported" << endl;
+		cerr << "Error: Antenna=" << antName << " format \"" << setup.formatName << "\" is not yet supported" << endl;
 		cerr << "Contact developer." << endl;
 
 		exit(EXIT_FAILURE);
@@ -888,7 +887,6 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 			nTrack = 0;
 			nBit = 1;
 			VexSetup &setup = M->setups[V->getAntenna(a)->name];
-			VexFormat &F = setup.format;
 			antennaSetup = params.getAntennaSetup(antName2);
 			if(antennaSetup)
 			{
@@ -896,7 +894,7 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 				{
 					cout << "Setting antenna format to " << antennaSetup->format << " for antenna " << antName << endl;
 				}
-				F.format = antennaSetup->format;
+				setup.formatName = antennaSetup->format;
 			}
 
 			// Get sample rate
@@ -910,31 +908,27 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 
 			M->sampRate = sampRate;
 
-            // init array to all zeroes
-            for(p2count = 0; p2count < MAX_IF; ++p2count)
-	    {
-	    	p2array[p2count] = 0;
-	    }
+			// init array to all zeroes
+			for(p2count = 0; p2count < MAX_IF; ++p2count)
+			{
+				p2array[p2count] = 0;
+			}
 			// read all comment fields into array for later processing
 			// NOTE - need to do it this way as the *_lowl_* functions use static vars and we
 			// we can't run this where we actually process the comments as that would mess up
 			// the IF_DEF loop
 			// TODO we assign the comments below to vif.comment; should check if there is a way
 			// to do so here instead of going through this temp array
-            p2count = 0;
-			for(p = get_all_lowl(antName.c_str(), modeDefName, T_COMMENT_TRAILING, B_IF, v);
-			    p;
-			    p = get_all_lowl_next())
+			p2count = 0;
+			for(p = get_all_lowl(antName.c_str(), modeDefName, T_COMMENT_TRAILING, B_IF, v); p; p = get_all_lowl_next())
 			{
-			    p2array[p2count++] = p;
-            }
+				p2array[p2count++] = p;
+			}
 
-            // the collected comments and ifdef fields will always line up, so just run a count
-            p2count = 0;
+			// the collected comments and ifdef fields will always line up, so just run a count
+			p2count = 0;
 			// Derive IF map
-			for(p = get_all_lowl(antName.c_str(), modeDefName, T_IF_DEF, B_IF, v);
-			    p;
-			    p = get_all_lowl_next())
+			for(p = get_all_lowl(antName.c_str(), modeDefName, T_IF_DEF, B_IF, v); p; p = get_all_lowl_next())
 			{
 				vex_field(T_IF_DEF, p, 1, &link, &name, &value, &units);
 				VexIF &vif = setup.ifs[string(value)];
@@ -1035,24 +1029,24 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 			// Get datastream assignments and formats
 
 			// Is it a Mark5 mode?
-			if(F.format == "") // Enter here if no format has been specified in the .v2d file
+			if(setup.formatName == "") // Enter here if no format has been specified in the .v2d file
 			{
 				p = get_all_lowl(antName.c_str(), modeDefName, T_TRACK_FRAME_FORMAT, B_TRACKS, v);
 				if(p)
 				{
 					vex_field(T_TRACK_FRAME_FORMAT, p, 1, &link, &name, &value, &units);
-					F.format = string(value);
-					if(F.format == "Mark4")
+					setup.formatName = string(value);
+					if(setup.formatName == "Mark4")
 					{
-						F.format = "MKIV";
+						setup.formatName = "MKIV";
 					}
-					else if(F.format == "Mark5B")
+					else if(setup.formatName == "Mark5B")
 					{
-						F.format = "MARK5B";
+						setup.formatName = "MARK5B";
 					}
-					else if(F.format == "NONE")
+					else if(setup.formatName == "NONE")
 					{
-						F.format = "NONE";
+						setup.formatName = "NONE";
 					}
 				}
 				else
@@ -1060,11 +1054,11 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 					cerr << "Unable to determine data format for antenna " << antName << endl;
 
 					//exit(EXIT_FAILURE);
-					F.format = "NONE";
+					setup.formatName = "NONE";
 				}
 			}
 
-			if(F.format == "VLBA" || F.format == "VLBN" || F.format == "MKIV" || F.format == "MARK5B")
+			if(setup.formatName == "VLBA" || setup.formatName == "VLBN" || setup.formatName == "MKIV" || setup.formatName == "MARK5B")
 			{
 				for(p = get_all_lowl(antName.c_str(), modeDefName, T_FANOUT_DEF, B_TRACKS, v);
 				    p;
@@ -1097,39 +1091,48 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 						}
 					}
 				}
-				fanout = nTrack/ch2tracks.size()/nBit;
-				if(F.format != "MARK5B")
+				if(ch2tracks.size() == 0)
 				{
-					switch(fanout)
-					{
-						case 1: 
-							F.format += "1_1"; 
-							break;
-						case 2: 
-							F.format += "1_2"; 
-							break;
-						case 4: 
-							F.format += "1_4"; 
-							break;
-						default: 
-							cerr << "Error: Antenna=" << antName << " fanout=" << fanout << " not legal for format " << F.format << ".  This could be a subtle problem in the vex file." << endl;
-
-							exit(EXIT_FAILURE);
-					}
+					setup.formatName = "NONE";
+					setup.nRecordChan = 0;
+					setup.nBit = 0;
 				}
-				F.nRecordChan = ch2tracks.size();
-				F.nBit = nBit;
+				else
+				{
+					fanout = nTrack/ch2tracks.size()/nBit;
+					if(setup.formatName != "MARK5B")
+					{
+						switch(fanout)
+						{
+							case 1: 
+								setup.formatName += "1_1"; 
+								break;
+							case 2: 
+								setup.formatName += "1_2"; 
+								break;
+							case 4: 
+								setup.formatName += "1_4"; 
+								break;
+							default: 
+								cerr << "Error: Antenna=" << antName << " fanout=" << fanout << " not legal for format " << setup.formatName << ".  This could be a subtle problem in the vex file." << endl;
+
+								exit(EXIT_FAILURE);
+						}
+					}
+					setup.nRecordChan = ch2tracks.size();
+					setup.nBit = nBit;
+				}
 			}
-			else if(F.format == "VDIF")
+			else if(setup.formatName == "VDIF")
 			{
 				cout << "Warning: Antenna " << antName << " has incompletely defined VDIF format.  Assuming 2 bits." << endl;
 
-				F.nBit = 2;
+				setup.nBit = 2;
 			}
-			else if(F.format.find_first_of("VDIF") != string::npos)
+			else if(setup.formatName.find_first_of("VDIF") != string::npos)
 			{
-				F.nBit = atoi(F.format.substr(F.format.find_last_of('/') + 1).c_str());
-				F.format = F.format.substr(0, F.format.find_last_of('/'));
+				setup.nBit = atoi(setup.formatName.substr(setup.formatName.find_last_of('/') + 1).c_str());
+				setup.formatName = setup.formatName.substr(0, setup.formatName.find_last_of('/'));
 			}
 
 			// Is it an S2 mode?
@@ -1138,12 +1141,12 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 			{
 				vex_field(T_S2_RECORDING_MODE, p, 1, &link, &name, &value, &units);
 				string s2mode(value);
-				if(F.format == "")
+				if(setup.formatName == "")
 				{
-					F.format = "S2";
+					setup.formatName = "S2";
 				}
 
-				if (s2mode != "none")
+				if(s2mode != "none")
 				{
 					size_t f = s2mode.find_last_of("x");
 					size_t g = s2mode.find_last_of("-");
@@ -1158,14 +1161,13 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 					string tracks = s2mode.substr(f+1, g-f-1);
 					string bits = s2mode.substr(g+1);
 
-					F.nBit = atoi(bits.c_str());
-					F.nRecordChan = atoi(tracks.c_str())/F.nBit; // should equal bbc2pol.size();
-					//F.nRecordChan = atoi(tracks.c_str());
+					setup.nBit = atoi(bits.c_str());
+					setup.nRecordChan = atoi(tracks.c_str())/setup.nBit; // should equal bbc2pol.size();
 				} 
 				else 
 				{
-					F.nBit = 2;
-					F.nRecordChan = 0;
+					setup.nBit = 2;
+					setup.nRecordChan = 0;
 				}
 			}
 
@@ -1223,51 +1225,48 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 				string phaseCalName(value);
 
 				vex_field(T_CHAN_DEF, p, 5, &link, &name, &value, &units);
-				recChanId = getRecordChannel(antName, value, ch2tracks, F, i);
+				recChanId = getRecordChannel(antName, value, ch2tracks, setup, i);
+				setup.channels.push_back(VexChannel());
+				setup.channels.back().subbandId = subbandId;
+				setup.channels.back().ifname = bbc2ifname[bbcname];
+				setup.channels.back().bbcFreq = freq;
+				setup.channels.back().bbcBandwidth = bandwidth;
+				setup.channels.back().bbcSideBand = sideBand;
 				if(recChanId >= 0)
 				{
-					F.channels.push_back(VexChannel());
-					F.channels.back().subbandId = subbandId;
-					F.channels.back().recordChan = recChanId;
-					F.channels.back().ifname = bbc2ifname[bbcname];
-					F.channels.back().bbcFreq = freq;
-					F.channels.back().bbcBandwidth = bandwidth;
-					F.channels.back().bbcSideBand = sideBand;
+					setup.channels.back().recordChan = recChanId;
 					if(antennaSetup && antennaSetup->toneSelection == ToneSelectionVex)
 					{
-						F.channels.back().tones = pcalMap[phaseCalName];
+						setup.channels.back().tones = pcalMap[phaseCalName];
 					}
 
-					const VexIF *vif = setup.getIF(F.channels.back().ifname);
+					const VexIF *vif = setup.getIF(setup.channels.back().ifname);
 
 					// This is called even for vex selected tones as negative tones 
 					// are turned positive and result tone order becomes sorted
 					if(antennaSetup)
 					{
-						F.channels.back().selectTones(
+						setup.channels.back().selectTones(
 							(antennaSetup->phaseCalIntervalMHz >= 0 ? antennaSetup->phaseCalIntervalMHz : vif->phaseCalIntervalMHz), 
 							antennaSetup->toneSelection,
 							antennaSetup->toneGuardMHz);
 					}
 					else
 					{
-						F.channels.back().selectTones(vif->phaseCalIntervalMHz, ToneSelectionVex, 0);
+						setup.channels.back().selectTones(vif->phaseCalIntervalMHz, ToneSelectionVex, 0);
 					}
+				}
+				else
+				{
+					setup.channels.back().recordChan = -1;
 				}
 
 				++i;
 			}
 
-			if(i != F.nRecordChan)
+			if(i != setup.nRecordChan)
 			{
-				if(F.nRecordChan == 0)
-				{
-					F.nRecordChan = i;
-				}
-				else
-				{
-					cerr << "Warning: Antenna=" << antName << " nchan=" << i << " != F.nRecordChan=" << F.nRecordChan << endl;
-				}
+				cerr << "FYI: Antenna=" << antName << " nchan=" << i << " != setup.nRecordChan=" << setup.nRecordChan << endl;
 			}
 		} // End of antenna loop
 
