@@ -28,7 +28,7 @@ int main(int argc, char** argv)
   Model * model = config->getModel();
   int dsindex, scansec, scanns, bandindex, lastscan = 0;
   int maxnumchannels = config->getMaxNumChannels();
-  float * visibilities = new float[maxnumchannels*2];
+  float *visibilities;
   int data[10];
   char autocorrs[9000];
 
@@ -50,6 +50,7 @@ int main(int argc, char** argv)
 
   ifstream difxin(argv[1]);
   ofstream fbout(argv[3], ios::trunc);
+  visibilities = new float[maxnumchannels*2];
 
   cout << "About to start reading" << endl;
   while (!(difxin.eof())) {
@@ -75,6 +76,7 @@ int main(int argc, char** argv)
     }
     if (bandindex == -1) {
       cerr << "Couldn't find appropriate band!" << endl;
+      delete [] visibilities;
       return EXIT_FAILURE;
     }
     data[0] = MAX_U32;
@@ -109,7 +111,10 @@ int main(int argc, char** argv)
     */
   }
 
+  delete [] visibilities;
+
   difxin.close();
   fbout.close();
-  return 0;
+
+  return EXIT_SUCCESS;
 }

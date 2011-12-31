@@ -619,6 +619,8 @@ int loadTransientWrapperConf(TransientWrapperConf *conf, const char *filename)
 		}
 	}
 
+	fclose(in);
+
 	return 0;
 }
 

@@ -10,7 +10,7 @@ const bool RecorrJob::operator <(const RecorrJob& rj) const
 	return priority < rj.priority;
 }
 
-RecorrQueue::RecorrQueue(const std::string file)
+RecorrQueue::RecorrQueue(const std::string &file)
 {
 	queueFile = file;
 	pthread_mutex_init(&lock, NULL);
@@ -22,7 +22,7 @@ RecorrQueue::~RecorrQueue()
 	save();
 }
 
-int RecorrQueue::add(std::string file, double threshold)
+int RecorrQueue::add(const char *file, double threshold)
 {
 	std::ifstream ifs;
 	std::string line;
@@ -31,10 +31,10 @@ int RecorrQueue::add(std::string file, double threshold)
 	RecorrJob job;
 	int n;
 
-	ifs.open(file.c_str());
+	ifs.open(file);
 	if(!ifs.good())
 	{
-		printf("Cannot open event file %s\n", file.c_str());
+		printf("Cannot open event file %s\n", file);
 		fflush(stdout);
 
 		return -1;
@@ -68,7 +68,7 @@ int RecorrQueue::add(std::string file, double threshold)
 	}
 	else
 	{
-		printf("Did not add job in %s.  Threshold was %f\n", file.c_str(), threshold);
+		printf("Did not add job in %s.  Threshold was %f\n", file, threshold);
 		fflush(stdout);
 	}
 
@@ -118,7 +118,7 @@ int RecorrQueue::save()
 
 	pthread_mutex_lock(&lock);
 	ofs.open(queueFile.c_str());
-	for(j = jobs.begin(); j != jobs.end(); j++)
+	for(j = jobs.begin(); j != jobs.end(); ++j)
 	{
 		ofs << j->priority << " " << j->inputFile << std::endl;
 	}
@@ -135,7 +135,7 @@ static void *runRecorrQueue(void *data)
 {
 	RecorrQueue *queue;
 
-	queue = (RecorrQueue *)data;
+	queue = reinterpret_cast<RecorrQueue *>(data);
 
 	while(!queue->die)
 	{

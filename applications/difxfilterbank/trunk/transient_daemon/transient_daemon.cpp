@@ -397,6 +397,8 @@ int loadTransientDaemonConf(TransientDaemonConf *conf, const char *filename)
 		/* else ignore the parameter */
 	}
 
+	fclose(in);
+
 	return 0;
 }
 
@@ -434,9 +436,9 @@ void siginthand(int j)
 
 static void generateIdentifier(const char *inputfile, int myID, char *identifier)
 {
-	int i, l, s=0;
+	int l, s=0;
 
-	for(i = 0; inputfile[i]; i++)
+	for(int i = 0; inputfile[i]; i++)
 	{
 		if(inputfile[i] == '/')
 		{
@@ -454,7 +456,7 @@ static void generateIdentifier(const char *inputfile, int myID, char *identifier
 	l = strlen(identifier);
 
 	// strip off ".input"
-	for(i = l-1; i > 0; i--)
+	for(int i = l-1; i > 0; i--)
 	{
 		if(identifier[i] == '.')
 		{
@@ -470,11 +472,11 @@ static void generateIdentifier(const char *inputfile, int myID, char *identifier
  */
 static int getDMGenCommand(const char *inputFile, char *command, const TransientDaemonConf *conf)
 {
-	int r, v, nFreq, i, maxfreq_ind;
+	int r, v, nFreq, maxfreq_ind;
 	DifxParameters *dp;
 	double freq, minFreq = 1.0e9;	/* MHz */
 	double maxFreq = 1.0;           /* MHz */
-    double bw = 16.0;               /* MHz, guess a default here */
+	double bw = 16.0;               /* MHz, guess a default here */
 
 	dp = newDifxParametersfromfile(inputFile);
 	if(!dp)
@@ -492,8 +494,8 @@ static int getDMGenCommand(const char *inputFile, char *command, const Transient
 		return -2;
 	}
 	nFreq = atoi(DifxParametersvalue(dp, r));
-    maxfreq_ind = nFreq-1;
-	for(i = 0; i < nFreq; i++)
+	maxfreq_ind = nFreq-1;
+	for(int i = 0; i < nFreq; i++)
 	{
 		r = DifxParametersfind1(dp, r, "FREQ (MHZ) %d", i);
 		if(r < 0)
@@ -513,16 +515,18 @@ static int getDMGenCommand(const char *inputFile, char *command, const Transient
             maxfreq_ind = i;    /* track the index of the highest freq, so that we can add its BW below */
 		}
 	}
-    /* need to add the bandwdith of the highest freq to overall freq span calculation*/
-    /* try to retrieve the BW from the config file, but guess a default if not */
-    r = DifxParametersfind1(dp, 0, "BW (MHZ) %d", maxfreq_ind);
-    if (r < 0) {
-        fprintf(stderr,"Warning: failed to find BW of freq index %d. Assuming %g MHz\n",nFreq-1,bw);
-    }
-    else {
-        bw = atof(DifxParametersvalue(dp, r));
-    }
-    maxFreq += bw;
+	/* need to add the bandwdith of the highest freq to overall freq span calculation*/
+	/* try to retrieve the BW from the config file, but guess a default if not */
+	r = DifxParametersfind1(dp, 0, "BW (MHZ) %d", maxfreq_ind);
+	if (r < 0)
+	{
+		fprintf(stderr, "Warning: failed to find BW of freq index %d. Assuming %g MHz\n", nFreq-1, bw);
+	}
+	else
+	{
+		bw = atof(DifxParametersvalue(dp, r));
+	}
+	maxFreq += bw;
 
 	v = snprintf(command, CommandLength, "`%s -f %f -l %f -n %d -L %f -H %f -T %f -M %d -D %f`", 
 		conf->dmgenProgram, 
@@ -536,8 +540,7 @@ static int getDMGenCommand(const char *inputFile, char *command, const Transient
 		conf->maxDispersionDelay);
 	if(v >= CommandLength)
 	{
-		fprintf(stderr, "Developer error: CommandLength=%d is too small.  Needs to be > %d.\n",
-			CommandLength, v);
+		fprintf(stderr, "Developer error: CommandLength=%d is too small.  Needs to be > %d.\n", CommandLength, v);
 		
 		return -3;
 	}
@@ -548,7 +551,6 @@ static int getDMGenCommand(const char *inputFile, char *command, const Transient
 int runCommand(const char *command, int verbose)
 {
 	int pid;
-	int v;
 
 	if(verbose > 0)
 	{
@@ -561,7 +563,7 @@ int runCommand(const char *command, int verbose)
 	}
 	else
 	{
-		v = system(command);
+		int v = system(command);
 		
 		exit(EXIT_SUCCESS);
 	}

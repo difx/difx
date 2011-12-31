@@ -172,7 +172,7 @@ int main(const int argc, char * const argv[]) {
     status = openFiles(&fp_in, &fp_out);
     if (status !=0) {
         fprintf(stderr,"ERROR: openFiles returned %d\n",status);
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 
     // init DiFX message
@@ -188,7 +188,7 @@ int main(const int argc, char * const argv[]) {
     status = set_FB_Config(&fb_config);
     if (status !=0) {
         fprintf(stderr,"ERROR: read_FB_Config returned %d\n",status);
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 
     // read flags file
@@ -200,14 +200,14 @@ int main(const int argc, char * const argv[]) {
     status = initBuffers(&fb_config,&bufinfo);
     if (status !=0) {
         fprintf(stderr,"ERROR: initBuffers returned %d\n",status);
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 
     // do the work
     status = doReorder(&fb_config,&bufinfo,fp_in,fp_out);
     if (status !=0) {
         fprintf(stderr,"ERROR: doReorder returned %d\n",status);
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 	
     // send the remaining data
@@ -222,7 +222,8 @@ int main(const int argc, char * const argv[]) {
     if (fp_out != NULL && fp_out != stdout) fclose(fp_out);
 //    delete difxconfig;
     free_FB_Config(&fb_config);
-    return 0;
+
+    return EXIT_SUCCESS;
 }
 
 
@@ -244,7 +245,7 @@ int tcal_predict(Model * model, int64_t time_offset_ns, uint32_t int_width_ns, i
     float pwf_tcal = (float)int_width_ns/(float)options.tcal_period_ns;  // packet width as a fraction of the tcal period
     int64_t offset_periods;
     int64_t time_offset_ns_withdelay=0;
-    int res;
+    bool res;
 
     // check for valid time range. Need extra half second on the end because sometimes the geotime adjusted
     // time stamps go a little over the nominated scan length

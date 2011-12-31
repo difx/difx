@@ -27,9 +27,9 @@ public:
 	pthread_t thread;
 
 	pthread_mutex_t lock;
-	RecorrQueue(const std::string file);
+	RecorrQueue(const std::string &file);
 	~RecorrQueue();
-	int add(std::string file, double threshold);	// add job to queue
+	int add(const char *file, double threshold);	// add job to queue
 	int load();	// load queue from file
 	int save();
 	int start();	// start the background procesing

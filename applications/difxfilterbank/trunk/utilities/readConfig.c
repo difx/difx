@@ -42,7 +42,7 @@ print an error message and exit if a key was not found in the config file
 ******************************/
 void readConfigMissingKeyErr(char *key) {
     fprintf(stderr,"ERROR: key <%s> not found in config file. It is required\n",key);
-    exit(1);
+    exit(EXIT_FAILURE);
 }
 
 
@@ -52,7 +52,7 @@ Load the config file into an array, removing blank lines and comment lines
 char *loadConfigFile(char *filename) {
     int n_read=0;
     char *config=NULL,*p;
-    FILE *fp=NULL;
+    FILE *fp;
     struct stat fileinfo;
 
     // load the entire config file into mem, so that we can scan it many times looking for keys
@@ -87,7 +87,8 @@ char *loadConfigFile(char *filename) {
 int readFlagsFile(char *filename, FB_Config *fb_config) {
     int stream,band,chan;
     char line[MAX_LINE];
-    FILE *fp=NULL;
+    FILE *fp;
+    int returnValue = 0;
 
     fp = fopen(filename,"r");
     if (fp==NULL) {
@@ -100,7 +101,8 @@ int readFlagsFile(char *filename, FB_Config *fb_config) {
         if(sscanf(line,"ALLCHAN %d",&chan)==1) {
             if (chan < 0 || chan >= fb_config->n_chans) {
                 fprintf(stderr,"ERROR: ALLCHAN flag specified for chan %d. Max %d\n",chan,fb_config->n_chans);
-                return 1;
+                returnValue = 1;
+		break;
             }
             fprintf(stderr,"Flagging channel %d on all stream/bands\n",chan);
             // flag the same chan on all streams/bands
@@ -114,11 +116,13 @@ int readFlagsFile(char *filename, FB_Config *fb_config) {
         if (sscanf(line,"STREAM_BAND %d %d",&stream,&band)==2) {
             if(stream < 0 || stream >= fb_config->n_streams) {
                 fprintf(stderr,"ERROR: bad stream id for stream/band flagging: %d. \n",stream);
-                return 1;
+                returnValue = 1;
+		break;
             }
             if(band < 0 || band >= fb_config->n_bands) {
                 fprintf(stderr,"ERROR: bad band id for stream/band flagging: %d.\n",band);
-                return 1;
+                returnValue = 1;
+		break;
             }
             fprintf(stderr,"Flagging all chans for stream/band %d/%d\n",stream,band);
             for (chan=0; chan < fb_config->n_chans; chan++) {
@@ -129,7 +133,8 @@ int readFlagsFile(char *filename, FB_Config *fb_config) {
         if (sscanf(line,"STREAM_ALL %d",&stream)==1) {
             if(stream < 0 || stream >= fb_config->n_streams) {
                 fprintf(stderr,"ERROR: bad stream id for full-stream flagging: %d.\n",stream);
-                return 1;
+                returnValue = 1;
+		break;
             }
             fprintf(stderr,"Flagging all bands/chans for stream %d\n",stream);
             for(band=0; band<fb_config->n_bands; band++) {
@@ -140,7 +145,7 @@ int readFlagsFile(char *filename, FB_Config *fb_config) {
         }    
     }
     fclose(fp);
-    return 0;
+    return returnValue;
 }
 
 
