@@ -338,7 +338,6 @@ static void sanityCheckChannels(const VexSetup &vexSetup)
 
 void TsysAccumulator::setup(const VexSetup &vexSetup, DifxTcal *T, double mjd, const string &stn)
 {
-	double midFreq;
 	std::vector<TsysAverager>::iterator ta;
 	std::vector<VexChannel>::const_iterator vc;
 
@@ -363,7 +362,6 @@ void TsysAccumulator::setup(const VexSetup &vexSetup, DifxTcal *T, double mjd, c
 		{
 			ta->bw = vc->bbcBandwidth/1000000.0;
 			ta->freq = vc->bbcFreq/1000000.0;
-			midFreq = ta->freq;
 			if(vc->bbcSideBand == 'L')
 			{
 				/* the sign of ta->freq incorporates the sideband here */

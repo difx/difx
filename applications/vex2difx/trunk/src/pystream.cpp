@@ -269,7 +269,7 @@ int pystream::writeDbeInit(const VexData *V)
 			currentformat = setup->formatName;
 			cout << "current format is " << currentformat << endl;
 
-			if(setup->channels.size() > 0 && setup->channels.size() <= 8)
+			if(!setup->channels.empty() && setup->channels.size() <= 8)
 			{
 				// DDC: based purely on number of channels
 				*this << "dbe0 = RDBE(0, 'ddc'";

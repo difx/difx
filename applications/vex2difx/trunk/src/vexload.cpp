@@ -1091,7 +1091,7 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 						}
 					}
 				}
-				if(ch2tracks.size() == 0)
+				if(ch2tracks.empty())
 				{
 					setup.formatName = "NONE";
 					setup.nRecordChan = 0;
