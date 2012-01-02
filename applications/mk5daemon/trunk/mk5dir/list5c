@@ -50,8 +50,11 @@ for g in G:
 			list.append([date, module, plist])
 
 list.sort()
+lastp = ''
 for l in list:
 	p = '%s %s:' % (l[1], mjd2str(l[0]))
 	for q in l[2]:
 		p = '%s %-7s' % (p, q)
-	print p
+	if lastp != p:
+		print p
+		lastp = p

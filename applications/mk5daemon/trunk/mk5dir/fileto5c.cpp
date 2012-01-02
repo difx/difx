@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2011 by Walter Brisken                                  *
+ *   Copyright (C) 2011-2012 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -48,8 +48,8 @@
 
 const char program[] = "fileto5c";
 const char author[]  = "Walter Brisken";
-const char version[] = "0.2";
-const char verdate[] = "20111123";
+const char version[] = "0.3";
+const char verdate[] = "20120102";
 
 const int defaultStatsRange[] = { 75000, 150000, 300000, 600000, 1200000, 2400000, 4800000, -1 };
 const unsigned int defaultChunkSizeMB = 20;
@@ -392,7 +392,7 @@ static int decodeScan(SSHANDLE xlrDevice, long long startByte, long long stopByt
 	return 0;
 }
 
-static int fileto(const char *filename, int bank, const char *label, unsigned int chunkSizeMB, long long maxBytes, double maxSeconds, const int *statsRange, DifxMessageMk5Status *mk5status, int verbose)
+static int filetoCore(const char *filename, int bank, const char *label, unsigned int chunkSize, long long maxBytes, double maxSeconds, const int *statsRange, DifxMessageMk5Status *mk5status, int verbose, char *buffer, char **dirData)
 {
 	FILE *in;
 	SSHANDLE xlrDevice;
@@ -402,7 +402,6 @@ static int fileto(const char *filename, int bank, const char *label, unsigned in
 	S_DIR dir;
 	S_DEVSTATUS devStatus;
 	int len;
-	char *dirData = 0;
 	char vsn[XLR_LABEL_LENGTH+1];
 	int moduleStatus = MODULE_STATUS_UNKNOWN;
 	int v;
@@ -419,8 +418,6 @@ static int fileto(const char *filename, int bank, const char *label, unsigned in
 	double t0, t=0, t_ref, t_next_ref, rate;
 	long long p_ref, p_next_ref;
 	UINT32 nReject = 0;
-	char *buffer = 0;
-	unsigned int chunkSize = chunkSizeMB * 1024*1024;
 	__time_t lastsec;
 
 	if(bank == BANK_A)
@@ -445,15 +442,6 @@ static int fileto(const char *filename, int bank, const char *label, unsigned in
 	WATCHDOGTEST( XLRSetBankMode(xlrDevice, SS_BANKMODE_NORMAL) );
 	WATCHDOGTEST( XLRSetOption(xlrDevice, SS_OPT_DRVSTATS) );
 	WATCHDOGTEST( XLRGetBankStatus(xlrDevice, bank, &bankStat) );
-
-	buffer = (char *)malloc(chunkSize);
-	if(buffer == 0)
-	{
-		printf("Error 9 error allocating %d byte buffer", chunkSize);
-		fflush(stdout);
-		
-		return -1;
-	}
 
 	if(bankStat.State != STATE_READY)
 	{
@@ -525,36 +513,36 @@ static int fileto(const char *filename, int bank, const char *label, unsigned in
 		len = 128;
 	}
 
-	dirData = (char *)calloc(len+256, 1);	/* make large enough for 2 extra entries */
-	WATCHDOGTEST( XLRGetUserDir(xlrDevice, len, 0, dirData) );
+	*dirData = (char *)calloc(len+256, 1);	/* make large enough for 2 extra entries */
+	WATCHDOGTEST( XLRGetUserDir(xlrDevice, len, 0, *dirData) );
 	for(int i = 0; i < 256; ++i)
 	{
-		dirData[len+i] = 0;
+		*dirData[len+i] = 0;
 	}
-	dirHeader = (struct Mark5DirectoryHeaderVer1 *)dirData;
+	dirHeader = (struct Mark5DirectoryHeaderVer1 *)(*dirData);
 	printf("Directory %d %d\n", dirHeader->version, len/128-1);
 	fflush(stdout);
-	p = (struct Mark5DirectoryScanHeaderVer1 *)(dirData + len);
-	q = (struct Mark5DirectoryLegacyBodyVer1 *)(dirData + len + sizeof(struct Mark5DirectoryScanHeaderVer1));
+	p = (struct Mark5DirectoryScanHeaderVer1 *)(*dirData + len);
+	q = (struct Mark5DirectoryLegacyBodyVer1 *)(*dirData + len + sizeof(struct Mark5DirectoryScanHeaderVer1));
 
 	WATCHDOG( ptr = XLRGetLength(xlrDevice) );
 
 	if(len >= 256)
 	{
-		long long lastEndByte = ((struct Mark5DirectoryScanHeaderVer1 *)(dirData + len - 128))->stopByte;
+		long long lastEndByte = ((struct Mark5DirectoryScanHeaderVer1 *)(*dirData + len - 128))->stopByte;
 		if(ptr - lastEndByte > 1LL<<23)
 		{
 			/* Here there must have been a problem where the previous scan was not recorded in the dir table. */
 			strcpy(p->expName, "UKNOWN");
-			strncpy(p->station, ((struct Mark5DirectoryScanHeaderVer1 *)(dirData + len - 128))->station, 2);
+			strncpy(p->station, ((struct Mark5DirectoryScanHeaderVer1 *)(*dirData + len - 128))->station, 2);
 			sprintf(p->scanName, "%d", (len/128));
 			p->typeNumber = 9 + (len/128)*256;	/* format and scan number */
 			p->frameLength = 10016;	/* FIXME */
 			decodeScan(xlrDevice, lastEndByte, ptr, p, q);
 
 			len += 128;
-			p = (struct Mark5DirectoryScanHeaderVer1 *)(dirData + len);
-			q = (struct Mark5DirectoryLegacyBodyVer1 *)(dirData + len + sizeof(struct Mark5DirectoryScanHeaderVer1));
+			p = (struct Mark5DirectoryScanHeaderVer1 *)(*dirData + len);
+			q = (struct Mark5DirectoryLegacyBodyVer1 *)(*dirData + len + sizeof(struct Mark5DirectoryScanHeaderVer1));
 		}
 		else if(lastEndByte - ptr > 1LL<<23)
 		{
@@ -722,8 +710,6 @@ static int fileto(const char *filename, int bank, const char *label, unsigned in
 	}
 	in = 0;
 
-	free(buffer);
-
 
 	strcpy(labelCopy, label);
 	parts[0] = labelCopy;
@@ -765,7 +751,7 @@ static int fileto(const char *filename, int bank, const char *label, unsigned in
 
 		dirHeader->status = MODULE_STATUS_RECORDED;
 
-		WATCHDOGTEST( XLRSetUserDir(xlrDevice, dirData, len+128) );
+		WATCHDOGTEST( XLRSetUserDir(xlrDevice, *dirData, len+128) );
 
 		for(int d = 0; d < 8; ++d)
 		{
@@ -788,12 +774,34 @@ static int fileto(const char *filename, int bank, const char *label, unsigned in
 
 	WATCHDOG( XLRClose(xlrDevice) );
 
+	return 0;
+}
+
+static int fileto(const char *filename, int bank, const char *label, unsigned int chunkSizeMB, long long maxBytes, double maxSeconds, const int *statsRange, DifxMessageMk5Status *mk5status, int verbose)
+{
+	int rv;
+	unsigned int chunkSize = chunkSizeMB * 1024*1024;
+	char *dirData = 0;
+
+	char *buffer = 0;
+	buffer = (char *)malloc(chunkSize);
+	if(buffer == 0)
+	{
+		printf("Error 9 error allocating %d byte buffer", chunkSize);
+		fflush(stdout);
+		
+		return -1;
+	}
+
+	rv = filetoCore(filename, bank, label, chunkSize, maxBytes, maxSeconds, statsRange, mk5status, verbose, buffer, &dirData);
+
+	free(buffer);
 	if(dirData)
 	{
 		free(dirData);
 	}
 
-	return 0;
+	return rv;
 }
 
 int main(int argc, char **argv)

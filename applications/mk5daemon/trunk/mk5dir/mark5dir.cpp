@@ -1458,14 +1458,15 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref,
 int Mark5Module::writeDirectory(SSHANDLE xlrDevice) const
 {
 	char *dirData;
-	int dirLength;
 	int v;
 
-	dirLength = scans.size()*128 + 128;
 	dirData = scans2newdir(scans, label.c_str());
 
 	if(dirData)
 	{
+		int dirLength;
+		
+		dirLength = scans.size()*128 + 128;
 		WATCHDOGTEST( XLRSetUserDir(xlrDevice, dirData, dirLength) );
 		free(dirData);
 	
@@ -1692,14 +1693,11 @@ int setModuleLabel(SSHANDLE xlrDevice, const char *vsn,  int newStatus, int dirV
 	/* reset the label */
 	if(dirVersion == 0)
 	{
-		v = snprintf(label, XLR_LABEL_LENGTH+1, "%8s/%d/%d%c%s", 
-			vsn, totalCapacity, rate, RecordSeparator,
-			moduleStatusName(newStatus) );
+		v = snprintf(label, XLR_LABEL_LENGTH+1, "%8s/%d/%d%c%s", vsn, totalCapacity, rate, RecordSeparator, moduleStatusName(newStatus) );
 	}
 	else
 	{
-		v = snprintf(label, XLR_LABEL_LENGTH+1, "%8s/%d/%d", 
-			vsn, totalCapacity, rate);
+		v = snprintf(label, XLR_LABEL_LENGTH+1, "%8s/%d/%d", vsn, totalCapacity, rate);
 	}
 	
 	if(v > XLR_LABEL_LENGTH)
@@ -1848,8 +1846,7 @@ int resetModuleDirectory(SSHANDLE xlrDevice, const char *vsn, int newStatus, int
 		dirHeader = (struct Mark5DirectoryHeaderVer1 *)dirData;
 		dirHeader->version = dirVersion;
 		dirHeader->status = newStatus;
-		snprintf(dirHeader->vsn, MODULE_EXTENDED_VSN_LENGTH,
-			"%s/%d/%d", vsn, totalCapacity, rate);
+		snprintf(dirHeader->vsn, MODULE_EXTENDED_VSN_LENGTH, "%s/%d/%d", vsn, totalCapacity, rate);
 		strcpy(dirHeader->vsnPrev, "NA");
 		strcpy(dirHeader->vsnNext, "NA");
 	}
@@ -1923,8 +1920,7 @@ int getDriveInformation(SSHANDLE xlrDevice, struct DriveInformation drive[8], in
 		WATCHDOG( xlrRC = XLRGetDriveInfo(xlrDevice, d/2, d%2, &driveInfo) );
 		if(xlrRC != XLR_SUCCESS)
 		{
-			snprintf(message, DIFX_MESSAGE_LENGTH,
-				"XLRGetDriveInfo failed for disk %d (perhaps the disk isn't present)", d);
+			snprintf(message, DIFX_MESSAGE_LENGTH, "XLRGetDriveInfo failed for disk %d (perhaps the disk isn't present)", d);
 			printf("%s\n", message);
 			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_WARNING);
 
@@ -1955,8 +1951,7 @@ int getDriveInformation(SSHANDLE xlrDevice, struct DriveInformation drive[8], in
 		{
 			++nDrive;
 		}
-		if(minCapacity == 0 || 
-		   (drive[d].capacity > 0 && drive[d].capacity < minCapacity))
+		if(minCapacity == 0 || (drive[d].capacity > 0 && drive[d].capacity < minCapacity))
 		{
 			minCapacity = drive[d].capacity;
 		}

@@ -521,7 +521,7 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 		}
 		else
 		{
-			restartOption[0];
+			restartOption[0] = 0;
 		}
 
 		difxMessageSendDifxAlert("mk5daemon spawning mpifxcorr process", DIFX_ALERT_LEVEL_INFO);

@@ -221,6 +221,7 @@ int condition(SSHANDLE xlrDevice, const char *vsn, enum ConditionMode mode, Difx
 	{
 		const int FilenameLength = 256;
 		char fileName[FilenameLength];
+
 		snprintf(fileName, FilenameLength, "%s.timedata", vsn);
 		printf("Opening %s for output...\n", fileName);
 		out = fopen(fileName, "w");

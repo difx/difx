@@ -370,6 +370,8 @@ int copyByteRange(SSHANDLE xlrDevice, const char *outPath, const char *outName, 
 
 	for(int i = 0; togo > 0; ++i)
 	{
+		XLR_RETURN_CODE xlrRC;
+
 		if(die)
 		{
 			difxMessageSendDifxAlert("Data copy aborted due to die signal", DIFX_ALERT_LEVEL_WARNING);
@@ -396,7 +398,13 @@ int copyByteRange(SSHANDLE xlrDevice, const char *outPath, const char *outName, 
 		a = readptr >> 32;
 		b = readptr % (1LL<<32);
 
-		WATCHDOGTEST( XLRReadData(xlrDevice, data, a, b, len) );
+		WATCHDOG( xlrRC = XLRReadData(xlrDevice, data, a, b, len) );
+		if(xlrRC != XLR_SUCCESS)
+		{
+			fprintf(stderr, "Read error: position=%Ld, length=%d\n", readptr, len);
+
+			return -1;
+		}
 
 		countReplaced(data, len/4, &wGood, &wBad);
 
@@ -574,6 +582,8 @@ int copyScan(SSHANDLE xlrDevice, const char *vsn, const char *outPath, int scanN
 
 	for(int i = 0; togo > 0; ++i)
 	{
+		XLR_RETURN_CODE xlrRC;
+
 		if(die)
 		{
 			difxMessageSendDifxAlert("Data copy aborted due to die signal", DIFX_ALERT_LEVEL_WARNING);
@@ -596,7 +606,13 @@ int copyScan(SSHANDLE xlrDevice, const char *vsn, const char *outPath, int scanN
 		a = readptr >> 32;
 		b = readptr % (1LL<<32);
 
-		WATCHDOGTEST( XLRReadData(xlrDevice, data, a, b, len) );
+		WATCHDOG( xlrRC = XLRReadData(xlrDevice, data, a, b, len) );
+		if(xlrRC != XLR_SUCCESS)
+		{
+			fprintf(stderr, "Read error: position=%Ld, length=%d\n", readptr, len);
+
+			return -1;
+		}
 
 		countReplaced(data, len/4, &wGood, &wBad);
 

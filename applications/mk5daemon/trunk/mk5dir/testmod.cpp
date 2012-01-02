@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2010-2011 by Walter Brisken                             *
+ *   Copyright (C) 2010-2012 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -44,8 +44,8 @@
 
 const char program[] = "testmod";
 const char author[]  = "Walter Brisken";
-const char version[] = "0.3";
-const char verdate[] = "20111123";
+const char version[] = "0.4";
+const char verdate[] = "20120102";
 
 const int defaultBlockSize = 10000000;
 const int defaultNBlock = 50;
@@ -267,7 +267,8 @@ int getLabels(SSHANDLE xlrDevice, DifxMessageMk5Status *mk5status)
 	return 0;
 }
 
-int testModule(int bank, int mode, int nWrite, int bufferSize, int nRep, int options, int force, const char *dirFile, long long ptr, int fast)
+/*  This function has multiple hidden returns from the WATCHDOG macros.  It is thus best to put any memory alloc/dealloc in the calling function */
+static int testModuleCore(int bank, int mode, int nWrite, int bufferSize, int nRep, int options, int force, const char *dirFile, long long ptr, int fast, char *buffer1, char *buffer2)
 {
 	SSHANDLE xlrDevice;
 	XLR_RETURN_CODE xlrRC;
@@ -281,7 +282,6 @@ int testModule(int bank, int mode, int nWrite, int bufferSize, int nRep, int opt
 	int nDrive;
 	int n, d, v, i;
 	long long L, totalError=0, totalBytes=0;
-	char *buffer1, *buffer2;
 	int dirVersion = 0;
 	DifxMessageMk5Status mk5status;
 	char vsn[10], message[DIFX_MESSAGE_LENGTH];
@@ -297,8 +297,6 @@ int testModule(int bank, int mode, int nWrite, int bufferSize, int nRep, int opt
 	double readTime = 0.0;
 	double readRate, writeRate;
 
-	buffer1 = (char *)malloc(bufferSize);
-	buffer2 = (char *)malloc(bufferSize);
 	memset(&mk5status, 0, sizeof(mk5status));
 	
 	if(fast)
@@ -363,8 +361,7 @@ int testModule(int bank, int mode, int nWrite, int bufferSize, int nRep, int opt
 		printf("Current module status is %s\n", moduleStatusName(moduleStatus));
 	}
 
-	v = getModuleDirectoryVersion(xlrDevice, &dirVersion, 0, 
-		(moduleStatus ? 0 : &moduleStatus) );
+	v = getModuleDirectoryVersion(xlrDevice, &dirVersion, 0, (moduleStatus ? 0 : &moduleStatus) );
 	if(v < 0)
 	{
 		return v;
@@ -384,8 +381,7 @@ int testModule(int bank, int mode, int nWrite, int bufferSize, int nRep, int opt
 
 	nDrive = getDriveInformation(xlrDevice, drive, &capacity);
 
-	printf("This module consists of %d drives totalling about %d GB:\n",
-		nDrive, capacity);
+	printf("This module consists of %d drives totalling about %d GB:\n", nDrive, capacity);
 	for(d = 0; d < 8; ++d)
 	{
 		if(drive[d].model[0] == 0)
@@ -485,8 +481,7 @@ int testModule(int bank, int mode, int nWrite, int bufferSize, int nRep, int opt
 			printf("\n");
 
 			WATCHDOGTEST( XLRSetLabel(xlrDevice, label, strlen(label)) );
-			printf("New disk module state will be %s\n", 
-				moduleStatusName(MODULE_STATUS_ERASED) );
+			printf("New disk module state will be %s\n", moduleStatusName(MODULE_STATUS_ERASED) );
 
 			for(n = 0; n < nWrite; ++n)
 			{
@@ -777,10 +772,36 @@ int testModule(int bank, int mode, int nWrite, int bufferSize, int nRep, int opt
 
 	WATCHDOG( XLRClose(xlrDevice) );
 
+	return 0;
+}
+
+static int testModule(int bank, int mode, int nWrite, int bufferSize, int nRep, int options, int force, const char *dirFile, long long ptr, int fast)
+{
+	int rv;
+	char *buffer1, *buffer2;
+
+	buffer1 = (char *)malloc(bufferSize);
+	if(buffer1 == 0)
+	{
+		fprintf(stderr, "Error allocating %d bytes for buffer1\n", bufferSize);
+
+		return -1;
+	}
+	buffer2 = (char *)malloc(bufferSize);
+	if(buffer2 == 0)
+	{
+		free(buffer1);
+		fprintf(stderr, "Error allocating %d bytes for buffer2\n", bufferSize);
+
+		return -1;
+	}
+
+	rv = testModuleCore(bank, mode, nWrite, bufferSize, nRep, options, force, dirFile, ptr, fast, buffer1, buffer2);
+
 	free(buffer1);
 	free(buffer2);
 
-	return 0;
+	return rv;
 }
 
 int main(int argc, char **argv)
@@ -949,9 +970,7 @@ int main(int argc, char **argv)
 			if(watchdogXLRError[0] != 0)
 			{
 				char message[DIFX_MESSAGE_LENGTH];
-				snprintf(message, DIFX_MESSAGE_LENGTH, 
-					"StreamStor error executing: %s : %s",
-					watchdogStatement, watchdogXLRError);
+				snprintf(message, DIFX_MESSAGE_LENGTH, "StreamStor error executing: %s : %s", watchdogStatement, watchdogXLRError);
 				difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
 			}
 
