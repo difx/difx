@@ -34,7 +34,7 @@
 const char program[] = "fakemultiVDIF";
 const char author[]  = "Adam Deller <adeller@nrao.edu>";
 const char version[] = "0.1";
-const char verdate[] = "20110114";
+const char verdate[] = "20120102";
 
 static void usage()
 {
@@ -81,7 +81,7 @@ int main(int argc, char **argv)
     exit(EXIT_FAILURE);
   }
   output = fopen(argv[2], "w");
-  if(input == NULL)
+  if(output == NULL)
   {
     fprintf(stderr, "Cannot open output file %s\n", argv[2]);
     fclose(input);
