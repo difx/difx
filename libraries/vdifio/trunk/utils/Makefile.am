@@ -13,7 +13,8 @@ bin_PROGRAMS = \
 	fakemultiVDIF \
 	extractSingleVDIFThread \
 	countVDIFPackets \
-	printVDIF 
+	printVDIF \
+	searchVDIF
 
 stripVDIF_SOURCES = \
 	stripVDIF.c
@@ -44,3 +45,6 @@ fakemultiVDIF_SOURCES = \
 
 printVDIF_SOURCES = \
 	printVDIF.c
+
+searchVDIF_SOURCES = \
+	searchVDIF.c
