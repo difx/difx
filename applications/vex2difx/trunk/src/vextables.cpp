@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2011 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2009-2012 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -1169,6 +1169,27 @@ unsigned int VexScan::nAntennasWithRecordedData(const VexData *V) const
 	}
 
 	return nAnt;
+}
+
+unsigned int VexScan::nRecordChan(const VexData *V, const string &antName) const
+{
+	unsigned int nRecChan = 0;
+	const VexMode *M = V->getModeByDefName(modeDefName);
+
+	if(M)
+	{
+		map<string,VexSetup>::const_iterator it = M->setups.find(antName);
+		if(it != M->setups.end())
+		{
+			nRecChan = it->second.nRecordChan;
+		}
+		else
+		{
+			cerr << "Warning: Ant " << antName << " not found in mode " << M->defName << endl;
+		}
+	}
+
+	return nRecChan;
 }
 
 void VexData::setScanSize(unsigned int num, double size)

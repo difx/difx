@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2011 by Walter Brisken, Adam Deller, Matthias Bark *
+ *   Copyright (C) 2009-2012 by Walter Brisken, Adam Deller, Matthias Bark *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -35,8 +35,8 @@
 #include "vexload.h"
 
 const string program("vex2script");
-const string version("0.2");
-const string verdate("20111229");
+const string version("0.3");
+const string verdate("20120103");
 const string author("Walter Brisken, Adam Deller, Matthias Bark");
 
 static void usage(int argc, char **argv)
@@ -51,6 +51,7 @@ static void usage(int argc, char **argv)
 	cout << "The optional arguments can be:" << endl;
         cout << "  --phasingsources=source1,source2... (for EVLA)" << endl;
         cout << "  --dbepersonality=[path/]filename (for VLBA)" << endl;
+	cout << "  --mark5a  Set up DBE as PFB, but don't record" << endl;
 	cout << endl;
 }
 
@@ -97,7 +98,7 @@ int main(int argc, char **argv)
 	const VexAntenna *A;
 	int nAntenna, nScan, atchar, lastchar;
 	pystream py;
-	pystream::scripttype stype;
+	pystream::ScriptType sType;
 	int nWarn = 0;
 
 	if(argc < 2 || strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0)
@@ -112,7 +113,7 @@ int main(int argc, char **argv)
 	P->defaultSetup();
 	P->minSubarraySize = 1;
 
-	for(int count=2; count < argc; ++count)
+	for(int count = 2; count < argc; ++count)
 	{
 		//this is an interim measure to set the phasing sources for EVLA
 		if(strncmp(argv[count], "--phasingsources=", 17) == 0)
@@ -142,6 +143,12 @@ int main(int argc, char **argv)
 			}
 			py.setDBEPersonality(string(argv[count]+lastchar));
                 }
+		else if(strcasecmp(argv[count], "--mark5A") == 0)
+		{
+			py.setMark5A(true);
+			py.setDBEPersonalityType(pystream::RDBE_PFB);
+			py.setRecorderType(pystream::RECORDER_NONE);
+		}
                 else
 		{
 			cout << "Ignoring argument " << argv[count] << endl;
@@ -168,17 +175,17 @@ int main(int argc, char **argv)
 		if(isEVLA(A->name))
 		{
 			cout << "VLA antenna " << a << " = " << A->name << endl;
-			stype = pystream::EVLA;
+			sType = pystream::SCRIPT_EVLA;
 		}
 		else if(isGBT(A->name))
 		{
 			cout << "GBT antenna " << a << " = " << A->name << endl;
-			stype = pystream::GBT;
+			sType = pystream::SCRIPT_GBT;
 		}
 		else if(isVLBA(A->name))
 		{
 			cout << "VLBA antenna " << a << " = " << A->name << endl;
-			stype = pystream::VLBA;
+			sType = pystream::SCRIPT_VLBA;
 		}
 		else 
 		{
@@ -186,13 +193,13 @@ int main(int argc, char **argv)
 			continue;
 		}
 
-		py.open(A->name, V, stype);
+		py.open(A->name, V, sType);
 
 		py.writeHeader(V);
 		py.writeComment(string("File written by ") + program + string(" version ") + version + string(" vintage ") + verdate);
 		py.writeDbeInit(V);
 		py.writeRecorderInit(V);
-		if(stype == pystream::GBT)
+		if(sType == pystream::SCRIPT_GBT)
 		{
 			py.writeScansGBT(V);
 		}

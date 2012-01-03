@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2011 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2009-2012 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -106,24 +106,13 @@ class VexBasebandFile : public VexInterval
 	public:
 	string filename;
 
-	VexBasebandFile(const string &name, const VexInterval &timeRange) : 
-		VexInterval(timeRange), filename(name) {} 
-	VexBasebandFile(const string &name, double start=-1.0e9, double stop=1.0e9) :
-		VexInterval(start, stop), filename(name) {}
+	VexBasebandFile(const string &name, const VexInterval &timeRange) : VexInterval(timeRange), filename(name) {} 
+	VexBasebandFile(const string &name, double start=-1.0e9, double stop=1.0e9) : VexInterval(start, stop), filename(name) {}
 };
 
 class VexScan : public VexInterval
 {
 public:
-	enum Type
-	{
-		TYPE_PFB_RECORDING = 0,
-		TYPE_DDC_RECORDING,
-		TYPE_PFB_NO_RECORD,
-		TYPE_DDC_NO_RECORD,
-		TYPE_NO_DBE
-	};
-
 	string defName;			// name of this scan
 
 	string modeDefName;
@@ -135,8 +124,8 @@ public:
 	double mjdVex;			// The start time listed in the vex file
 
 	VexScan(): size(0), mjdVex(0.0) {};
-	Type getScanType(const string &antenna) const;
 	unsigned int nAntennasWithRecordedData(const VexData *V) const;
+	unsigned int nRecordChan(const VexData *V, const string &antName) const;
 };
 
 class VexSource

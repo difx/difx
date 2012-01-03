@@ -11,8 +11,8 @@ from time import time
 import datetime
 
 program = 'queueVex'
-version = 1.6
-verdate = '20111214'
+version = 1.7
+verdate = '20120103'
 author  = 'Walter Brisken'
 
 verbose = 1
@@ -180,6 +180,7 @@ priority = 0
 usnoConvert = False
 edit = False
 force = False
+options = ''
 
 for a in argv[1:]:
 	if a[0] == '-':
@@ -239,6 +240,7 @@ if find(upper(cwd), 'MARK5C') < 0:
 	else:
 		print '\nYou are running %s from a non-Mark5C directory.' % program
 		print 'I hope this is what you want!\n'
+		options = options + " --mark5A"
 	
 for vexFile in vexFiles:
 	if not isfile(vexFile):
@@ -262,7 +264,7 @@ for vexFile in vexFiles:
 
 	obsCode, obsSeg, stationTimes = vexPeek(vexFile)
 
-	execute('%s/vex2script %s' % (difxPath, vexFile))
+	execute('%s/vex2script %s %s' % (difxPath, vexFile, options))
 
 	scripts = glob('*.??.py')
 	scripts.sort()

@@ -9,6 +9,7 @@ Post DiFX 2.0.1
 * Start implementation of "global zoom bands" which can either be referenced from an ANTENNA or a SETUP
 * Distinction between recorded and non-recorded channels is now more clear.  Only recorded channels will be correlated.
 * No more VexFormat class.  Its contents were moved into VexSetup.
+* vex2script: better job allocating RDBE personality and choosing whether or not to record
 
 Version 2.0.1
 ~~~~~~~~~~~~~

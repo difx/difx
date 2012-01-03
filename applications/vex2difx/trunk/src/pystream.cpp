@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2011 by Walter Brisken / Adam Deller               *
+ *   Copyright (C) 2009-2012 by Walter Brisken / Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -35,16 +35,16 @@
 #include "evladefaults.h"
 #include "pystream.h"
 
-void pystream::open(const string& antennaName, const VexData *V, scripttype stype)
+void pystream::open(const string& antennaName, const VexData *V, ScriptType sType)
 {
 	string extension;
 
 	evlaintsec     = DEFAULT_EVLA_INT_SEC;
 	evlasbbits     = DEFAULT_EVLA_SB_BITS;
 	evlasbchan     = DEFAULT_EVLA_SB_CHAN;
-	evlavcidir     = DEFAULT_EVLA_VCI_DIR;
+	evlaVCIDir     = DEFAULT_EVLA_VCI_DIR;
 	evlavciversion = DEFAULT_EVLA_VCI_VER;
-	currenttype = stype;
+	scriptType = sType;
 	ant = antennaName;
 	lastValid = 0.0;
 	lastSourceId = -1;
@@ -62,7 +62,7 @@ void pystream::open(const string& antennaName, const VexData *V, scripttype styp
 	}
 	mjd0 = V->obsStart();
 	
-	if(stype == GBT)
+	if(sType == SCRIPT_GBT)
 	{
 		extension = ".turtle";
 	}
@@ -75,9 +75,9 @@ void pystream::open(const string& antennaName, const VexData *V, scripttype styp
 	ofstream::open(fileName.c_str());
 }
 
-void pystream::addPhasingSource(const string &srcname)
+void pystream::addPhasingSource(const string &sourceName)
 {
-	phasingsources.push_back(srcname);
+	phasingsources.push_back(sourceName);
 }
 
 int switchPosition(const char *val)
@@ -154,7 +154,7 @@ void pystream::close()
 
 	if(lastValid != 0.0)
 	{
-		if(currenttype == VLBA)
+		if(scriptType == SCRIPT_VLBA)
 		{
 			double deltat = floor((lastValid-mjd0 + 1.0/86400.0)*86400.0 + 0.5);
 			*this << "array.wait(mjdStart + " << deltat << "*second)" << endl;
@@ -190,24 +190,24 @@ int pystream::writeHeader(const VexData *V)
         lastValid  = mjd0-(5.0/86400.0);
 
 	*this << "from edu.nrao.evla.observe import Mark5C" << endl;
-	if(currenttype == VLBA)
+	switch(scriptType)
 	{
+	case SCRIPT_VLBA:
 		*this << "from edu.nrao.evla.observe import MatrixSwitch" << endl;
 		*this << "from edu.nrao.evla.observe import RDBE" << endl;
 		*this << "from edu.nrao.evla.observe import VLBALoIfSetup" << endl;
 		*this << "from edu.nrao.evla.observe import Parameters" << endl;
 		*this << "from edu.nrao.evla.observe import bbc" << endl;
-	}
-	else if(currenttype == EVLA)
-	{
+		break;
+	case SCRIPT_EVLA:
 		*this << "includePath = \"/home/mchost/evla/include/\"" << endl;
 		*this << "execfile(includePath+\"printers.py\")" << endl;
 		*this << "execfile(includePath+\"tmjd.py\")" << endl;
-	}
-	else if(currenttype == GBT)
-	{
+		break;
+	case SCRIPT_GBT:
 		*this << "execfile(\"/users/gbvlbi/obs/newvlbadefs.py\")" << endl;
 		*this << "execfile(\"/users/gbvlbi/obs/" << obsCode << "_setup.py\")" << endl; 
+		break;
 	}
 	*this << endl;
 	*this << "second = 1.0/86400.0" << endl;
@@ -215,11 +215,11 @@ int pystream::writeHeader(const VexData *V)
 	*this << "deltat2 = 1" << endl;
 	*this << endl;
 	*this << "obsCode = '" << obsCode << "'" << endl;
-	if(currenttype == VLBA)
+	if(scriptType == SCRIPT_VLBA)
 	{
 		*this << "stnCode = '" << ant << "'" << endl;
 	}
-	else if(currenttype == EVLA)
+	else if(scriptType == SCRIPT_EVLA)
 	{
 		*this << "programName = 'vex2script'\n" << endl;
 	}
@@ -237,7 +237,7 @@ int pystream::writeComment(const string &commentString)
 
 int pystream::writeRecorderInit(const VexData *V)
 {
-	if(currentformat != "")
+	if(currentformat != "" && !isMark5A)
 	{
 		*this << "recorder0 = Mark5C('-1')" << endl;
 
@@ -254,45 +254,184 @@ int pystream::writeRecorderInit(const VexData *V)
 	return 1;
 }
 
-int pystream::writeDbeInit(const VexData *V)
+static int bwValidDDC(int bwHz)
 {
-	if(currenttype == VLBA || currenttype == GBT)
+	for(int bw = 128000000; bw > 10000; bw /= 2)
 	{
-#warning "FIXME For now, set up single RDBE"
-#warning "FIXME For now, inspect only the first mode to set up DBE"
-		int m = 0;
+		if(bw == bwHz)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+static int tuneValidPFB(int tuneHz)
+{
+	int n;
+
+	n = (1040000000 - tuneHz) / 32000000;
+
+	return (tuneHz == 1040000000 - 32000000*n);
+}
+
+void pystream::figurePersonality(const VexData *V)
+{
+	if(personalityType != RDBE_UNKNOWN)
+	{
+		cerr << "Developer error: pystream::figurePersonality called with personalityType != RDBE_UNKNOWN (" << RDBE_UNKNOWN << ").  It was " << personalityType << "." << endl;
+
+		exit(EXIT_FAILURE);
+	}
+
+	for(int m = 0; m < V->nMode(); ++m)
+	{
 		const VexMode *mode = V->getMode(m);
 		const VexSetup *setup = mode->getSetup(ant);
+		int nChan = setup->channels.size();
+		int nRecChan = setup->nRecordChan;
+		bool pfbOK = true;
+		bool ddcOK = true;
 
-		if(setup && setup->formatName != "" && setup->formatName != "NONE")
+		// don't let trivialities determine mode
+		if(setup->formatName == "" || setup->formatName == "NONE" || nChan == 0)
 		{
-			currentformat = setup->formatName;
-			cout << "current format is " << currentformat << endl;
+			continue;
+		}
 
-			if(!setup->channels.empty() && setup->channels.size() <= 8)
+		if(nRecChan != 1 && nRecChan != 2 && nRecChan != 4 && nRecChan != 8)	// Currently this is true, may change with VDIF
+		{
+			ddcOK = false;
+		}
+		if(nRecChan != 16)
+		{
+			pfbOK = false;
+		}
+
+		for(unsigned int i = 0; i < setup->channels.size(); ++i)
+		{
+			double bw = setup->channels[i].bbcBandwidth;
+			int bwHz = static_cast<int>(bw + 0.5);
+			char sb = setup->channels[i].bbcSideBand;
+			unsigned int nBit = setup->nBit;
+			const VexIF *vif = setup->getIF(setup->channels[i].ifname);
+			if(!vif)
 			{
-				// DDC: based purely on number of channels
-				*this << "dbe0 = RDBE(0, 'ddc'";
-				if(dbefileName[0] == '\0')
-				{
-					*this << ")" << endl;
-				}
-				else
-				{
-					*this << ", '" << dbefileName << "')" << endl;
-				}
-			} 
-			else if(setup->channels.size() == 16)
+				cerr << "Developer error: pystream::figurePersonality: setup->getIF(" << setup->channels[i].ifname << ") returned NULL" << endl;
+
+				exit(EXIT_FAILURE);
+			}
+			double freq = setup->channels[i].bbcFreq;
+			double tune = freq - vif->ifSSLO;
+			int tuneHz;
+
+			if(tune < 0.0)
 			{
-				// PFB
+				tune = -tune;
+				sb = (sb == 'U') ? 'L' : 'U';
+			}
+			tuneHz = static_cast<int>(tune + 0.5);
+			
+			if(nBit != 2 && setup->channels[i].recordChan >= 0)
+			{
+				cerr << "Error: " << nBit << " bits Quantization requested for mode " << mode->defName << ".  Only 2 bits are allowed now." << endl;
+
+				exit(EXIT_FAILURE);
+			}
+			if(sb != 'L')
+			{
+				pfbOK = false;
+			}
+			if(bwHz != 32000000)
+			{
+				pfbOK = false;
+			}
+			if(!bwValidDDC(bwHz))
+			{
+				ddcOK = false;
+			}
+			if(!tuneValidPFB(tuneHz))
+			{
+				pfbOK = false;
+			}
+		}
+
+		if(!pfbOK && !ddcOK)
+		{
+			cerr << "Error: mode " << mode->defName << " is not suitable for either PFB or DDC on antenna " << ant << endl;
+
+			exit(EXIT_FAILURE);
+		}
+		else if(!ddcOK)
+		{
+			if(personalityType == RDBE_DDC)
+			{
+				cerr << "Error: conflicting modes.  PFB needed for mode " << mode->defName << " whereas at least one prior mode required DDC." << endl;
+
+				exit(EXIT_FAILURE);
+			}
+			personalityType = RDBE_PFB;
+		}
+		else if(!pfbOK)
+		{
+			if(personalityType == RDBE_PFB)
+			{
+				cerr << "Error: conflicting modes.  DDC needed for mode " << mode->defName << " whereas at least one prior mode required PFB." << endl;
+
+				exit(EXIT_FAILURE);
+			}
+			personalityType = RDBE_DDC;
+		}
+	}
+
+	if(personalityType == RDBE_UNKNOWN)
+	{
+		personalityType = RDBE_PFB;	// most sensible default for now
+	}
+}
+
+int pystream::writeDbeInit(const VexData *V)
+{
+	if(scriptType == SCRIPT_VLBA || scriptType == SCRIPT_GBT)
+	{
+#warning "FIXME For now, set up single RDBE"
+		if(personalityType == RDBE_UNKNOWN)
+		{
+			figurePersonality(V);
+		}
+		if(personalityType == RDBE_PFB)
+		{
+			if(dbeFilename[0])
+			{
+				if(strcasestr(dbeFilename.c_str(), "DDC") != 0)
+				{
+					cerr << "Warning: Personality " << dbeFilename << " looks to be for DDC, but this project is using PFB." << endl;
+				}
+				*this << "dbe0 = RDBE(0, 'pfb', " << dbeFilename << ")" << endl;
+			}
+			else
+			{
 				*this << "dbe0 = RDBE(0, 'pfb')" << endl;
 			}
-			else 
+		}
+		else if(personalityType == RDBE_DDC)
+		{
+			if(dbeFilename[0])
 			{
-				cerr << "Incorrect number of channels: " << setup->channels.size() << endl;
-
-//				exit(EXIT_FAILURE);
+				if(strcasestr(dbeFilename.c_str(), "PFB") != 0)
+				{
+					cerr << "Warning: Personality " << dbeFilename << " looks to be for PFB, but this project is using DDC." << endl;
+				}
+				*this << "dbe0 = RDBE(0, 'ddc', " << dbeFilename << ")" << endl;
 			}
+			else
+			{
+				*this << "dbe0 = RDBE(0, 'ddc')" << endl;
+			}
+		}
+		if(personalityType == RDBE_PFB || personalityType == RDBE_DDC)
+		{
 			*this << "dbe0.setALC(1)" << endl;
 			*this << "dbe0.setFormat('Mark5B')" << endl;
 			*this << "dbe0.setPSNMode(0)" << endl;
@@ -300,13 +439,8 @@ int pystream::writeDbeInit(const VexData *V)
 			*this << "subarray.setDBE(dbe0)" << endl;
 			*this << endl;
 		}
-                // use PFB as default for now
-                else
-		{
-			currentformat = "";
-		}
 	}
-	else if(currenttype == EVLA)
+	else if(scriptType == SCRIPT_EVLA)
 	{
 		//do nothing - the correlator setup gets done at the same time as the LO/IF
 	}
@@ -314,21 +448,319 @@ int pystream::writeDbeInit(const VexData *V)
 	return 1;
 }
 
+void pystream::writeImplicitConversionComment(const vector<unsigned int> &implicitConversions)
+{
+	if(!implicitConversions.empty())
+	{
+		*this << "# implicit conversion performed on basebands:";
+		for(vector<unsigned int>::const_iterator uit = implicitConversions.begin(); uit != implicitConversions.end(); ++uit)
+		{
+			*this << " " << *uit;
+		}
+		*this << endl;
+	}
+}
+
+int pystream::writeChannelSet(const VexSetup *setup, int modeNum)
+{
+	*this << "channelSet" << modeNum << " = [ \\" << endl;
+
+	vector<unsigned int> implicitConversions;
+	for(unsigned int i = 0; i < setup->channels.size(); ++i)
+	{
+		unsigned int inputNum = ifIndex[modeNum][setup->channels[i].ifname];
+		double bw = setup->channels[i].bbcBandwidth;
+		char sb = setup->channels[i].bbcSideBand;
+		unsigned int nBit = setup->nBit;
+		unsigned int threadId = 0;
+		const VexIF *vif = setup->getIF(setup->channels[i].ifname);
+		if(!vif)
+		{
+			cerr << "Developer error: setup->getIF(" << setup->channels[i].ifname << ") returned NULL" << endl;
+
+			exit(EXIT_FAILURE);
+		}
+		double freq = setup->channels[i].bbcFreq;
+		double tune = freq - vif->ifSSLO;
+
+		if(tune < 0.0)
+		{
+			tune = -tune;
+			sb = (sb == 'U') ? 'L' : 'U';
+		}
+
+		if(freq > 550e6 && freq < 650e6 && tune > 1000e6)
+		{
+			tune -= 500e6;
+			implicitConversions.push_back(i);
+		}
+
+		*this << "  bbc(" << inputNum << ", " << (tune*1.0e-6) << ", " << (bw*1.0e-6) << ", '" << sb << "', " << nBit << ", " << threadId << ")";
+		if(i < setup->channels.size()-1)
+		{
+			*this << ",";
+		}
+		*this << " \\" << endl;
+	}
+	*this << "  ]" << endl;
+
+	writeImplicitConversionComment(implicitConversions);
+
+	return 0;
+}
+
+static int roundChanNum(double fchan, char sb)
+{
+	int chan = static_cast<int>(fchan);
+	if(sb == 'U')
+	{
+		if(fchan - chan < 1.0e-9)	// is less than one nano-channel offset?
+		{
+			--chan;			// then since upper side-band cross the boundary
+		}
+	}
+	else
+	{
+		if(chan+1 - fchan < 1.0e-9)	// is less than one nano-channel offset?
+		{
+			++chan;			// then since lower side-band cross the boundary
+		}
+	}
+
+	return chan;
+}
+
+int pystream::writeChannelSet5A(const VexSetup *setup, int modeNum)
+{
+	const int MaxChannels = 16;
+	const int bwMHz = 32;				// MHz;
+	const double bwDBE = bwMHz*1.0e6;		// Hz
+	bool channelMask[2][MaxChannels] = {false};	// first index: IF, second index: freq chan
+	int channelCount[2];				// index: IF
+							// 0 = 1040-1008 MHz, 1 = 1008-976 MHz, ..., 15 = 560-528 MHz
+	vector<unsigned int> implicitConversions;
+
+	// First go through to find required DBE channels
+	for(unsigned int i = 0; i < setup->channels.size(); ++i)
+	{
+		unsigned int inputNum = ifIndex[modeNum][setup->channels[i].ifname];
+		double bw = setup->channels[i].bbcBandwidth;
+		char sb = setup->channels[i].bbcSideBand;
+		int chan;
+		double fchan, freq, tune;
+		const VexIF *vif = setup->getIF(setup->channels[i].ifname);
+		if(!vif)
+		{
+			cerr << "Developer error: pystream.writeChannelSet5A: setup->getIF(" << setup->channels[i].ifname << ") returned NULL" << endl;
+
+			exit(EXIT_FAILURE);
+		}
+		freq = setup->channels[i].bbcFreq;
+		tune = freq - vif->ifSSLO;
+
+		if(inputNum < 0 || inputNum > 1)
+		{
+			cerr << "Developer error: pystream.writeChannelSet5A: inputNum = " << inputNum << endl;
+
+			exit(EXIT_FAILURE);
+		}
+
+		if(tune < 0.0)
+		{
+			tune = -tune;
+			sb = (sb == 'U') ? 'L' : 'U';
+		}
+
+		if(freq > 550e6 && freq < 650e6 && tune > 1000e6)
+		{
+			tune -= 500e6;
+			implicitConversions.push_back(i);
+		}
+
+		// In this case, at most 2 channels are needed to span the original channel
+		// DC end of band
+
+		// Handle DC side here
+		fchan = (1.040e9-tune)/bwDBE;
+		chan = roundChanNum(fchan, sb);
+
+		if(chan >= 0 && chan < MaxChannels)
+		{
+			channelMask[inputNum][chan] = true;
+		}
+
+		// Handle Nyquist side here
+		if(sb == 'U')
+		{
+			fchan += bw/bwDBE;
+		}
+		else
+		{
+			fchan -= bw/bwDBE;
+		}
+		fchan = (1.040e9-tune)/bwDBE;
+		chan = roundChanNum(fchan, sb);
+
+		if(chan >= 0 && chan < MaxChannels)
+		{
+			channelMask[inputNum][chan] = true;
+		}
+	}
+
+	for(int i = 0; i < 2; ++i)
+	{
+		channelCount[i] = 0;
+		for(int c = 0; c < MaxChannels; ++c)
+		{
+			if(channelMask[i][c])
+			{
+				++channelCount[i];
+			}
+		}
+	}
+
+#warning "FIXME: Really should detect here 90/50cm and be smarter about channel selection"
+	if(channelCount[0] == 0 && channelCount[1] == 0)
+	{
+		// Use every other channel
+
+		for(int i = 0; i < 2; ++i)
+		{
+			for(int c = 1; c < MaxChannels; c += 2)
+			{
+				channelMask[i][c] = true;
+			}
+		}
+		channelCount[0] = MaxChannels/2;
+		channelCount[1] = MaxChannels/2;
+	}
+	else if(channelCount[1] == 0)
+	{
+		// Use all of input zero
+		for(int c = 0; c < MaxChannels; ++c)
+		{
+			channelMask[0][c] = true;
+		}
+		channelCount[0] = MaxChannels;
+	}
+	else if(channelCount[0] == 0)
+	{
+		// Use all of input one
+		for(int c = 0; c < MaxChannels; ++c)
+		{
+			channelMask[1][c] = true;
+		}
+		channelCount[1] = MaxChannels;
+	}
+	else
+	{
+		// The general case.
+
+		// First: match corresponding channels across-wise
+		for(int c = 0; c < MaxChannels; ++c)
+		{
+			if(channelMask[0][c] && !channelMask[1][c])
+			{
+				channelMask[1][c] = true;
+				++channelCount[1];
+			}
+			else if(channelMask[1][c] && !channelMask[0][c])
+			{
+				channelMask[0][c] = true;
+				++channelCount[0];
+			}
+			if(channelCount[0] + channelCount[1] >= MaxChannels)
+			{
+				break;
+			}
+		}
+		if(channelCount[0] + channelCount[1] < MaxChannels)
+		{
+			// Then: work outward from middle filling in additional channels
+			for(int x = 0; x < MaxChannels/2; ++x)
+			{
+				int c;
+				
+				if(channelCount[0] >= MaxChannels/2)
+				{
+					break;
+				}
+				c = MaxChannels/2-1 + x;
+				if(!channelMask[0][c])
+				{
+					channelMask[0][c] = channelMask[1][c] = true;
+					++channelCount[0];
+					++channelCount[1];
+				}
+
+				if(channelCount[0] >= MaxChannels/2)
+				{
+					break;
+				}
+				c = MaxChannels/2-1 - x;
+				if(!channelMask[0][c])
+				{
+					channelMask[0][c] = channelMask[1][c] = true;
+					++channelCount[0];
+					++channelCount[1];
+				}
+			}
+		}
+	}
+
+	if(channelCount[0] + channelCount[1] != MaxChannels)
+	{
+		cerr << "Developer error: pystream.writeChannelSet5A: Total number of channels is " << (channelCount[0] + channelCount[1]) << " but should be " << MaxChannels << endl;
+
+		exit(EXIT_FAILURE);
+	}
+
+	// Finally, write out all selected channels
+	*this << "channelSet" << modeNum << " = [";
+	bool first = true;
+	for(int i = 0; i < 2; ++i)
+	{
+		for(int c = 0; c < MaxChannels; ++c)
+		{
+			if(channelMask[i][c])
+			{
+				int freqMHz = 1040 - 32*c;
+
+				if(first)
+				{
+					first = false;
+				}
+				else
+				{
+					*this << ",";
+				}
+				*this << " \\" << endl;
+
+				*this << "  bbc(" << i << ", " << freqMHz << ", " << bwMHz << ", 'L', 2, 0)";
+			}
+		}
+	}
+	*this << " \\" << endl;
+	*this << "  ]" << endl;
+
+	writeImplicitConversionComment(implicitConversions);
+
+	return 0;
+}
+
 int pystream::writeLoifTable(const VexData *V)
 {
 	map<string,VexIF>::const_iterator it;
 	int p;
 	stringstream ss;
-        unsigned int init_channels = 0;
-
 	unsigned int nMode = V->nMode();
 
 	p = precision();
 	precision(15);
 
-	for(unsigned int m = 0; m < nMode; ++m)
+	for(unsigned int modeNum = 0; modeNum < nMode; ++modeNum)
 	{
-		const VexMode *mode = V->getMode(m);
+		const VexMode *mode = V->getMode(modeNum);
 		const VexSetup *setup = mode->getSetup(ant);
 
 		if(!setup)
@@ -336,35 +768,22 @@ int pystream::writeLoifTable(const VexData *V)
 			continue;
 		}
 
-		if(currenttype == VLBA)
+		if(scriptType == SCRIPT_VLBA)
 		{
-			if(setup->formatName != "NONE")
-			{
-				if(init_channels == 0)
-				{
-					init_channels = setup->channels.size();
-				}
-				else if(init_channels != setup->channels.size())
-				{
-					// TODO is this really a problem?
-					cerr << "number of channels from " << init_channels << " initially to " << setup->channels.size() << " which is currently not supported." << endl; 
-				}
-			}
-
 			if(setup->ifs.size() > 2)
 			{
 				cout << "Warning: mode " << mode->defName << " wants " << setup->ifs.size() << " IFs, and we can currently only use 2" << endl;
 				cout << "Might be ok for S/X setup or wideband Cband receiver" << endl;
 			}
 
-			*this << "loif" << m << " = VLBALoIfSetup()" << endl;
+			*this << "loif" << modeNum << " = VLBALoIfSetup()" << endl;
 			for(it = setup->ifs.begin(); it != setup->ifs.end(); ++it)
 			{
 				const int MaxCommentLength = 256;
 				const VexIF &i = it->second;
 				char comment[MaxCommentLength] = {0};
 
- 				*this << "loif" << m << ".setIf('" << i.name << "', '" << i.VLBABandName() << "', '" << i.pol << "', " << (i.ifSSLO / 1.0e6) << ", '" << i.ifSideBand << "'";
+ 				*this << "loif" << modeNum << ".setIf('" << i.name << "', '" << i.VLBABandName() << "', '" << i.pol << "', " << (i.ifSSLO / 1.0e6) << ", '" << i.ifSideBand << "'";
 
 				strncpy(comment, i.comment.c_str(), MaxCommentLength-1);
 				if(comment[0] != '\0')
@@ -436,71 +855,27 @@ int pystream::writeLoifTable(const VexData *V)
 				// close statement
 				*this << ")" << endl;
 			}
-			*this << "loif" << m << ".setPhaseCal(" << (setup->phaseCalIntervalMHz()) << ")" << endl;
+			*this << "loif" << modeNum << ".setPhaseCal(" << (setup->phaseCalIntervalMHz()) << ")" << endl;
+
 			// auto gain/attenuation control
-			if(currentformat != "")
+			*this << "loif" << modeNum << ".setDBEParams(0, -1, -1, 10, 0)" << endl;
+			*this << "loif" << modeNum << ".setDBEParams(1, -1, -1, 10, 0)" << endl;
+
+			*this << "loif" << modeNum << ".setDBERemember(0, 1)" << endl;
+			*this << "loif" << modeNum << ".setDBERemember(1, 1)" << endl;
+
+			if(isMark5A)
 			{
-				*this << "loif" << m << ".setDBEParams(0, -1, -1, 10, 0)" << endl;
-				*this << "loif" << m << ".setDBEParams(1, -1, -1, 10, 0)" << endl;
-
-				*this << "loif" << m << ".setDBERemember(0, 1)" << endl;
-				*this << "loif" << m << ".setDBERemember(1, 1)" << endl;
-
-				*this << "channelSet" << m << " = [ \\" << endl;
-
-				vector<unsigned int> implicitConversions;
-				for(unsigned int i = 0; i < setup->channels.size(); ++i)
-				{
-					unsigned int inputNum = ifIndex[m][setup->channels[i].ifname];
-					double bw = setup->channels[i].bbcBandwidth;
-					char sb = setup->channels[i].bbcSideBand;
-					unsigned int nBit = setup->nBit;
-					unsigned int threadId = 0;
-					const VexIF *vif = setup->getIF(setup->channels[i].ifname);
-					if(!vif)
-					{
-						cerr << "Developer error: setup->getIF(" << setup->channels[i].ifname << ") returned NULL" << endl;
-
-						exit(EXIT_FAILURE);
-					}
-					double freq = setup->channels[i].bbcFreq;
-					double tune = freq - vif->ifSSLO;
-
-					if(tune < 0.0)
-					{
-						tune = -tune;
-						sb = (sb == 'U') ? 'L' : 'U';
-					}
-
-					if(freq > 550e6 && freq < 650e6 && tune > 1000e6)
-					{
-						tune -= 500e6;
-						implicitConversions.push_back(i);
-					}
-
-					*this << "  bbc(" << inputNum << ", " << (tune*1.0e-6) << ", " << (bw*1.0e-6) << ", '" << sb << "', " << nBit << ", " << threadId << ")";
-					if(i < setup->channels.size()-1)
-					{
-						*this << ",";
-					}
-					*this << " \\" << endl;
-				}
-				*this << "  ]" << endl;
-				if(!implicitConversions.empty())
-				{
-					*this << "# implicit conversion performed on basebands:";
-					for(vector<unsigned int>::const_iterator uit = implicitConversions.begin();
-						uit != implicitConversions.end(); ++uit)
-					{
-						*this << " " << *uit;
-					}
-					*this << endl;
-				}
+				writeChannelSet5A(setup, modeNum); 
+			}
+			else
+			{
+				writeChannelSet(setup, modeNum); 
 			}
 
 			*this << endl;
 		}
-		else if(currenttype == EVLA)
+		else if(scriptType == SCRIPT_EVLA)
 		{
 			double freq1, freq2;
 			freq1 = -1;
@@ -557,16 +932,16 @@ int pystream::writeLoifTable(const VexData *V)
 			{
 				freq2 = i2->getLowerEdgeFreq();
 			}
-			*this << "loif" << m << " = LoIfSetup('" << i1.VLBABandName() << "', " << freq1/1.0e6 << ", 0.0, " << freq2/1.0e6 << ", 0.0)" << endl;
+			*this << "loif" << modeNum << " = LoIfSetup('" << i1.VLBABandName() << "', " << freq1/1.0e6 << ", 0.0, " << freq2/1.0e6 << ", 0.0)" << endl;
 			//write an appropriate VCI document, and set it up to be used
-			ss << m;
-			string vcifilename = evlavcidir + "/" + obsCode + ss.str() + ".vci";
-			writeVCI(V, m, vcifilename);
-			*this << "setup" << m << " = '" << vcifilename << "'" << endl;
+			ss << modeNum;
+			string vcifilename = evlaVCIDir + "/" + obsCode + ss.str() + ".vci";
+			writeVCI(V, modeNum, vcifilename);
+			*this << "setup" << modeNum << " = '" << vcifilename << "'" << endl;
 			*this << endl;
 		}
 	}
-	if(currenttype == EVLA)
+	if(scriptType == SCRIPT_EVLA)
 	{
 		*this << "autophase0 = subarray.registerPhasing('A')" << endl;
 		*this << "autophase1 = subarray.registerPhasing('B')" << endl;
@@ -599,7 +974,7 @@ int pystream::writeSourceTable(const VexData *V)
 		const VexSource *S = V->getSource(s);
 		*this << "source" << s << " = Source(" << S->ra << ", " << S->dec << ")" << endl;
 		*this << "source" << s << ".setName('" << S->defName << "')" << endl;
-		if(currenttype == EVLA)
+		if(scriptType == SCRIPT_EVLA)
 		{
 			*this << "intent" << s << " = Intention()" << endl;
 			//No point putting in calibrator code until its populated in the vex file
@@ -687,7 +1062,7 @@ int pystream::writeScans(const VexData *V)
 			{
 
 				*this << "# changing to mode " << mode->defName << endl;
-				if(currenttype == VLBA)
+				if(scriptType == SCRIPT_VLBA)
 				{
 					*this << "subarray.setVLBALoIfSetup(loif" << modeId << ")" << endl;
 
@@ -700,12 +1075,9 @@ int pystream::writeScans(const VexData *V)
 							*this << "subarray.set4x4Switch('" << switchOutput[ifit->second] << "', " << switchPosition(ifit->first.c_str()) << ")" << endl;
 						}
 					}
-					if(currentformat != "")
-					{
-						*this << "subarray.setChannels(dbe0, channelSet" << modeId << ")" << endl;
-					}
+					*this << "subarray.setChannels(dbe0, channelSet" << modeId << ")" << endl;
 				}
-				else if(currenttype == EVLA)
+				else if(scriptType == SCRIPT_EVLA)
 				{
 					*this << "subarray.setLoIfSetup(loif" << modeId << ")" << endl;
 					*this << "subarray.setWidarSetup('setup" << modeId << "')" << endl;
@@ -715,7 +1087,7 @@ int pystream::writeScans(const VexData *V)
 			}
 
 			int sourceId = V->getSourceIdByDefName(scan->sourceDefName);
-			if(currenttype == EVLA)
+			if(scriptType == SCRIPT_EVLA)
 			{
 				*this << "intent" << sourceId << ".addIntent('ScanNumber=" << s+1 << "')" << endl;
 			}
@@ -744,16 +1116,23 @@ int pystream::writeScans(const VexData *V)
 			if(s != -1)
 			{
 				// recognize scans that do not record to Mark5C, but still set switches (need to pass scan start time)
-				if(setup->formatName == "MARK5B")
-				{
-					*this << "recorder0.setPacket(0, 0, 40, 5008)" << endl;
-					*this << "subarray.setRecord(mjdStart + " << deltat1 << "*second, mjdStart+" << deltat2 << "*second, '" << scan->defName << "', obsCode, stnCode )" << endl;
-				}
-				else 
+				if(scan->nRecordChan(V, ant) == 0 || recorderType == RECORDER_NONE)
 				{
 					*this << "print 'Not a recording scan but still set switches for " << scan->defName << ".'" << endl;
 					*this << "subarray.setSwitches(mjdStart + " << deltat1 << "*second, mjdStart+" << deltat2 << "*second, obsCode+'_'+stnCode+'_'+'" << scan->defName << "')" << endl;
 				}
+				else if(setup->formatName == "MARK5B")
+				{
+					*this << "recorder0.setPacket(0, 0, 40, 5008)" << endl;
+					*this << "subarray.setRecord(mjdStart + " << deltat1 << "*second, mjdStart+" << deltat2 << "*second, '" << scan->defName << "', obsCode, stnCode )" << endl;
+				}
+				else
+				{
+					cerr << "Error: pystream::writeScans: Can't figure out how to record!  formatName=" << setup->formatName << "  nRecChan=" << scan->nRecordChan(V, ant) << "  recType=" << recorderType << endl;
+
+					exit(EXIT_FAILURE);
+				}
+
 				// only start scan if we are at least 10sec away from scan end
 				// NOTE - if this changes to a value less than 5sec may need to revisit Executor RDBE code
 				// in case of scan starting later than start time
@@ -887,5 +1266,14 @@ void pystream::writeVCI(const VexData *V, int modeindex, const string &filename)
 
 void pystream::setDBEPersonality(const string &filename)
 {
-    dbefileName = filename;
+	dbeFilename = filename;
+
+	if(strcasestr(dbeFilename.c_str(), "DDC") != 0)
+	{
+		setDBEPersonalityType(RDBE_DDC);
+	}
+	else if(strcasestr(dbeFilename.c_str(), "PFB") != 0)
+	{
+		setDBEPersonalityType(RDBE_PFB);
+	}
 }
