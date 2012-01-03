@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2011 by Walter Brisken                             *
+ *   Copyright (C) 2008-2012 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -443,6 +443,7 @@ void Mark5Scan::parseDirEntry(const char *line)
 int Mark5Scan::writeDirEntry(FILE *out) const
 {
 	const int ErrorStrLen = 60;
+	const char *scanLabel;
 	char errorStr[ErrorStrLen];
 	int v;
 
@@ -459,9 +460,18 @@ int Mark5Scan::writeDirEntry(FILE *out) const
 		strcpy(errorStr, "");
 	}
 
+	if(!name.empty())
+	{
+		scanLabel = name.c_str();
+	}
+	else
+	{
+		scanLabel = "Unknown";
+	}
+
 	v = fprintf(out, "%14Ld %14Ld %5d %d %d %d %12.6f %6d %6d %2d %1d %s%s\n",
 		start, length, mjd, sec, framenuminsecond, framespersecond, duration,
-		framebytes, frameoffset, tracks, format, name.c_str(), errorStr);
+		framebytes, frameoffset, tracks, format, scanLabel, errorStr);
 
 	return v;
 }

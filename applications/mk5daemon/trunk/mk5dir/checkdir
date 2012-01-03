@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #**************************************************************************
-#   Copyright (C) 2009-2011 by Walter Brisken                             *
+#   Copyright (C) 2009-2012 by Walter Brisken                             *
 #                                                                         *
 #   This program is free software; you can redistribute it and/or modify  *
 #   it under the terms of the GNU General Public License as published by  *
@@ -118,9 +118,7 @@ class Scan:
 		self.stopMJD = 0.0
 		self.endBytes = 0
 		s = split(text)
-		if len(s) < 12:
-			self.error = 'Too few columns in directory (%d < 12)' % len(s)
-		else:
+		if len(s) >= 11:
 			try:
 				self.startBytes   = int(s[0])
 				self.bytes        = int(s[1])
@@ -133,9 +131,18 @@ class Scan:
 				self.byteOffset   = int(s[8])
 				self.nTrack       = int(s[9])
 				self.format       = int(s[10])
-				self.name         = s[11]
+				if len(s) > 11:
+					self.name = s[11]
+				else:
+					self.name = 'Unknown'	
 			except ValueError:
 				self.error = 'Conversion error'
+		else:
+			print 'Deformed line in file: %s' % text
+			print 'Cannot continue'
+			exit(0)
+		if len(s) < 12:
+			self.error = 'Scan with no label'
 
 	def dataRate(self):
 		if self.duration < 1.0:

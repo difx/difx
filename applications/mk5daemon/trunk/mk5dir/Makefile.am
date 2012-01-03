@@ -11,14 +11,12 @@ bin_PROGRAMS = \
 	recover \
 	testmod \
 	vsn
+else
+bin_PROGRAMS = 
+endif
 
 dist_bin_SCRIPTS = \
 	checkdir
-else
-bin_PROGRAMS = 
-dist_bin_SCRIPTS = 
-endif
-
 
 fileto5c_SOURCES = \
 	watchdog.cpp \
