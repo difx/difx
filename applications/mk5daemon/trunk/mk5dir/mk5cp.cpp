@@ -402,6 +402,10 @@ int copyByteRange(SSHANDLE xlrDevice, const char *outPath, const char *outName, 
 		if(xlrRC != XLR_SUCCESS)
 		{
 			fprintf(stderr, "Read error: position=%Ld, length=%d\n", readptr, len);
+			if(out != stdout)
+			{
+				fclose(out);
+			}
 
 			return -1;
 		}
@@ -610,6 +614,10 @@ int copyScan(SSHANDLE xlrDevice, const char *vsn, const char *outPath, int scanN
 		if(xlrRC != XLR_SUCCESS)
 		{
 			fprintf(stderr, "Read error: position=%Ld, length=%d\n", readptr, len);
+			if(out != stdout)
+			{
+				fclose(out);
+			}
 
 			return -1;
 		}

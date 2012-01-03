@@ -448,7 +448,6 @@ static int filetoCore(const char *filename, int bank, const char *label, unsigne
 		printf("Error 6 Bank %c not ready\n", 'A'+bank);
 		fflush(stdout);
 		WATCHDOG( XLRClose(xlrDevice) );
-		free(buffer);
 		
 		return -1;
 	}
@@ -479,7 +478,6 @@ static int filetoCore(const char *filename, int bank, const char *label, unsigne
 		printf("Error 7 No VSN set\n");
 		fflush(stdout);
 		WATCHDOG( XLRClose(xlrDevice) );
-		free(buffer);
 
 		return -1;
 	}
@@ -503,7 +501,6 @@ static int filetoCore(const char *filename, int bank, const char *label, unsigne
 		printf("Error 8 directory format problem\n");
 		fflush(stdout);
 		WATCHDOG( XLRClose(xlrDevice) );
-		free(buffer);
 
 		return -1;
 	}
@@ -586,7 +583,6 @@ static int filetoCore(const char *filename, int bank, const char *label, unsigne
 			printf("Error 10 Cannot open input file %s\n", filename);
 			fflush(stdout);
 			WATCHDOG( XLRClose(xlrDevice) );
-			free(buffer);
 			
 			return -1;
 		}
