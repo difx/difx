@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2011 by Walter Brisken                             *
+ *   Copyright (C) 2009-2012 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -849,7 +849,7 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 	int subbandId, recChanId;
 	bool sign;
 	map<string,char> bbc2pol;
-	map<string,string> bbc2ifname;
+	map<string,string> bbc2ifName;
 	map<string,Tracks> ch2tracks;
 	int nWarn =0;
 	double phaseCal;
@@ -882,7 +882,7 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 			Upper(antName2);
 			bool swapPol = params.swapPol(antName2);
 			bbc2pol.clear();
-			bbc2ifname.clear();
+			bbc2ifName.clear();
 			ch2tracks.clear();
 			nTrack = 0;
 			nBit = 1;
@@ -1023,7 +1023,7 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 
 				vex_field(T_BBC_ASSIGN, p, 1, &link, &name, &value, &units);
 				bbc2pol[value] = vif.pol;
-				bbc2ifname[value] = vif.name;
+				bbc2ifName[value] = vif.name;
 			}
 
 			// Get datastream assignments and formats
@@ -1228,7 +1228,7 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 				recChanId = getRecordChannel(antName, value, ch2tracks, setup, i);
 				setup.channels.push_back(VexChannel());
 				setup.channels.back().subbandId = subbandId;
-				setup.channels.back().ifname = bbc2ifname[bbcname];
+				setup.channels.back().ifName = bbc2ifName[bbcname];
 				setup.channels.back().bbcFreq = freq;
 				setup.channels.back().bbcBandwidth = bandwidth;
 				setup.channels.back().bbcSideBand = sideBand;
@@ -1240,7 +1240,7 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 						setup.channels.back().tones = pcalMap[phaseCalName];
 					}
 
-					const VexIF *vif = setup.getIF(setup.channels.back().ifname);
+					const VexIF *vif = setup.getIF(setup.channels.back().ifName);
 
 					// This is called even for vex selected tones as negative tones 
 					// are turned positive and result tone order becomes sorted

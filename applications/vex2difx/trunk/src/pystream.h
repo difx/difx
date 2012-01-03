@@ -41,7 +41,7 @@ public:
 	enum PersonalityType {RDBE_UNKNOWN, RDBE_NONE, RDBE_PFB, RDBE_DDC};
 	enum RecorderType {RECORDER_NONE, RECORDER_MARK5C};
 
-	pystream(): scriptType(SCRIPT_VLBA), personalityType(RDBE_UNKNOWN), recorderType(RECORDER_MARK5C), lastValid(0.0), lastSourceId(-1), lastModeId(-1), lastChannelSet(-1), evlaintsec(0), evlasbchan(0), evlasbbits(0), evlavciversion(0.0), mjd0(0.0), isMark5A(false) {};
+	pystream(): scriptType(SCRIPT_VLBA), personalityType(RDBE_UNKNOWN), recorderType(RECORDER_MARK5C), lastValid(0.0), lastSourceId(-1), lastModeId(-1), lastChannelSet(-1), evlaIntSec(0), evlasbChan(0), evlasbBits(0), evlaVCIVersion(0.0), mjd0(0.0), isMark5A(false) {};
 	void open(const string& antennaName, const VexData *V, ScriptType sType);
 	void close();
 	void addPhasingSource(const string &sourceName);
@@ -72,20 +72,19 @@ private:
 	string obsCode;
 	string fileName;
 	string dbeFilename;
-	string currentformat;
 	double lastValid;
 	int lastSourceId;
 	int lastModeId;
 	int lastChannelSet;
-	int evlaintsec, evlasbchan, evlasbbits;
-	double evlavciversion;
+	int evlaIntSec, evlasbChan, evlasbBits;
+	double evlaVCIVersion;
 	double mjd0;
 	bool isMark5A;
 	vector<map<string,unsigned int> > ifIndex;	// for each scan, map from IF name to number
-	vector<string> phasingsources;
+	vector<string> phasingSources;
 
 	void calcIfIndex(const VexData *V);
-	void writeVCI(const VexData *V, int modeindex, const string &filename);
+	void writeVCI(const VexData *V, int modeIndex, const string &filename);
 };
 
 #endif

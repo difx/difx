@@ -39,11 +39,11 @@ void pystream::open(const string& antennaName, const VexData *V, ScriptType sTyp
 {
 	string extension;
 
-	evlaintsec     = DEFAULT_EVLA_INT_SEC;
-	evlasbbits     = DEFAULT_EVLA_SB_BITS;
-	evlasbchan     = DEFAULT_EVLA_SB_CHAN;
+	evlaIntSec     = DEFAULT_EVLA_INT_SEC;
+	evlasbBits     = DEFAULT_EVLA_SB_BITS;
+	evlasbChan     = DEFAULT_EVLA_SB_CHAN;
 	evlaVCIDir     = DEFAULT_EVLA_VCI_DIR;
-	evlavciversion = DEFAULT_EVLA_VCI_VER;
+	evlaVCIVersion = DEFAULT_EVLA_VCI_VER;
 	scriptType = sType;
 	ant = antennaName;
 	lastValid = 0.0;
@@ -77,7 +77,7 @@ void pystream::open(const string& antennaName, const VexData *V, ScriptType sTyp
 
 void pystream::addPhasingSource(const string &sourceName)
 {
-	phasingsources.push_back(sourceName);
+	phasingSources.push_back(sourceName);
 }
 
 int switchPosition(const char *val)
@@ -237,7 +237,8 @@ int pystream::writeComment(const string &commentString)
 
 int pystream::writeRecorderInit(const VexData *V)
 {
-	if(currentformat != "" && !isMark5A)
+#warning "FIXME For now, use of recorder is based purely on Mark5A or not"
+	if(!isMark5A)
 	{
 		*this << "recorder0 = Mark5C('-1')" << endl;
 
@@ -315,10 +316,10 @@ void pystream::figurePersonality(const VexData *V)
 			int bwHz = static_cast<int>(bw + 0.5);
 			char sb = setup->channels[i].bbcSideBand;
 			unsigned int nBit = setup->nBit;
-			const VexIF *vif = setup->getIF(setup->channels[i].ifname);
+			const VexIF *vif = setup->getIF(setup->channels[i].ifName);
 			if(!vif)
 			{
-				cerr << "Developer error: pystream::figurePersonality: setup->getIF(" << setup->channels[i].ifname << ") returned NULL" << endl;
+				cerr << "Developer error: pystream::figurePersonality: setup->getIF(" << setup->channels[i].ifName << ") returned NULL" << endl;
 
 				exit(EXIT_FAILURE);
 			}
@@ -468,15 +469,15 @@ int pystream::writeChannelSet(const VexSetup *setup, int modeNum)
 	vector<unsigned int> implicitConversions;
 	for(unsigned int i = 0; i < setup->channels.size(); ++i)
 	{
-		unsigned int inputNum = ifIndex[modeNum][setup->channels[i].ifname];
+		unsigned int inputNum = ifIndex[modeNum][setup->channels[i].ifName];
 		double bw = setup->channels[i].bbcBandwidth;
 		char sb = setup->channels[i].bbcSideBand;
 		unsigned int nBit = setup->nBit;
 		unsigned int threadId = 0;
-		const VexIF *vif = setup->getIF(setup->channels[i].ifname);
+		const VexIF *vif = setup->getIF(setup->channels[i].ifName);
 		if(!vif)
 		{
-			cerr << "Developer error: setup->getIF(" << setup->channels[i].ifname << ") returned NULL" << endl;
+			cerr << "Developer error: setup->getIF(" << setup->channels[i].ifName << ") returned NULL" << endl;
 
 			exit(EXIT_FAILURE);
 		}
@@ -543,15 +544,15 @@ int pystream::writeChannelSet5A(const VexSetup *setup, int modeNum)
 	// First go through to find required DBE channels
 	for(unsigned int i = 0; i < setup->channels.size(); ++i)
 	{
-		unsigned int inputNum = ifIndex[modeNum][setup->channels[i].ifname];
+		unsigned int inputNum = ifIndex[modeNum][setup->channels[i].ifName];
 		double bw = setup->channels[i].bbcBandwidth;
 		char sb = setup->channels[i].bbcSideBand;
 		int chan;
 		double fchan, freq, tune;
-		const VexIF *vif = setup->getIF(setup->channels[i].ifname);
+		const VexIF *vif = setup->getIF(setup->channels[i].ifName);
 		if(!vif)
 		{
-			cerr << "Developer error: pystream.writeChannelSet5A: setup->getIF(" << setup->channels[i].ifname << ") returned NULL" << endl;
+			cerr << "Developer error: pystream.writeChannelSet5A: setup->getIF(" << setup->channels[i].ifName << ") returned NULL" << endl;
 
 			exit(EXIT_FAILURE);
 		}
@@ -980,9 +981,9 @@ int pystream::writeSourceTable(const VexData *V)
 			//No point putting in calibrator code until its populated in the vex file
 			//*this << "intent" << s << ".addIntent('CalibratorCode=\"" << S->calCode << "\"')" << endl;
 			intentstring = "UNSPECIFIED";
-			for(unsigned int i = 0; i < phasingsources.size(); ++i)
+			for(unsigned int i = 0; i < phasingSources.size(); ++i)
 			{
-				if(phasingsources.at(i) == S->defName)
+				if(phasingSources.at(i) == S->defName)
 				{
 					intentstring = "CALIBRATE_AUTOPHASE";
 				}
@@ -1108,7 +1109,7 @@ int pystream::writeScans(const VexData *V)
 			// just in case our setup scan caused the auto leveling to lock onto a bad value make
 			// it forget
 			// TODO this - like a lot of things - only works for one RDBE now
-			if(s == 0 && currentformat != "")
+			if(s == 0)
 			{
 				*this << "dbe0.setDBEForget(0)" << endl;
 				*this << "dbe0.setDBEForget(1)" << endl;
@@ -1156,19 +1157,19 @@ int pystream::writeScans(const VexData *V)
 	return n;
 }
 
-void pystream::writeVCI(const VexData *V, int modeindex, const string &filename)
+void pystream::writeVCI(const VexData *V, int modeIndex, const string &filename)
 {
-	string bbnames[2] = {"A0/C0", "B0/D0"};
-	string swbbnames[2] = {"AC8BIT", "BD8BIT"};
-	char timestring[64];
-	int msgid, subarrayid, numindfreqs;
-	double centrefreq;
+	string bbNames[2] = {"A0/C0", "B0/D0"};
+	string swbbNames[2] = {"AC8BIT", "BD8BIT"};
+	char timeString[64];
+	int msgId, subarrayId, numIndFreqs;
+	double centreFreq;
 	bool found;
-	string descstring, indent, activatestring;
+	string descString, indent, activateString;
 	ofstream output(filename.c_str(), ios::trunc);
 	struct tm tim;
 	time_t now;
-	const VexMode *mode = V->getMode(modeindex);
+	const VexMode *mode = V->getMode(modeIndex);
 	const VexSetup *setup = mode->getSetup(ant);
 
 	if(!output.is_open() || output.fail())
@@ -1178,19 +1179,19 @@ void pystream::writeVCI(const VexData *V, int modeindex, const string &filename)
 		exit(EXIT_FAILURE);
 	}
 
-	subarrayid = 1;
+	subarrayId = 1;
 	indent = "";
-	descstring = "Project " + obsCode;
-	activatestring = "vlbistart" + obsCode;
+	descString = "Project " + obsCode;
+	activateString = "vlbistart" + obsCode;
 	now = time(NULL);
 	tim = *(gmtime(&now));
-	strftime(timestring,64,"%Y-%m-%dT%H:%M:%S.000-00:00",&tim);
-	msgid = (tim.tm_sec + 11)*tim.tm_mday*tim.tm_year;
+	strftime(timeString,64,"%Y-%m-%dT%H:%M:%S.000-00:00",&tim);
+	msgId = (tim.tm_sec + 11)*tim.tm_mday*tim.tm_year;
 
 	output << indent << "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>" << endl;
-	output << indent << "<widar:vciRequest version=\"" << evlavciversion << "\" timeStamp=\"" << timestring << "\" msgId=\"" << msgid++ << "\" desc=\"" << descstring << "\" xmlns:widar=\"http://www.nrc.ca/namespaces/widar\">" << endl;
+	output << indent << "<widar:vciRequest version=\"" << evlaVCIVersion << "\" timeStamp=\"" << timeString << "\" msgId=\"" << msgId++ << "\" desc=\"" << descString << "\" xmlns:widar=\"http://www.nrc.ca/namespaces/widar\">" << endl;
 	indent += "    ";
-	output << indent << "<widar:subArray timeStamp=\"" << timestring << "\" subarrayId=\"" << subarrayid << "\" activationId=\"" << activatestring << "\" action=\"create\">" << endl;
+	output << indent << "<widar:subArray timeStamp=\"" << timeString << "\" subarrayId=\"" << subarrayId << "\" activationId=\"" << activateString << "\" action=\"create\">" << endl;
 	indent += "    ";
 	output << indent << "<widar:stationInputOutput sid=\"all\">" << endl;
 	indent += "    ";
@@ -1199,18 +1200,18 @@ void pystream::writeVCI(const VexData *V, int modeindex, const string &filename)
 	output << indent << "<widar:bbParams sourceType=\"FORM\" sourceId=\"0\" sideband=\"lower\" polarization=\"R\" bbid=\"4\"/>" << endl;
 	output << indent << "<widar:bbParams sourceType=\"FORM\" sourceId=\"0\" sideband=\"lower\" polarization=\"L\" bbid=\"6\"/>" << endl;
 
-	numindfreqs = 0;
-	double *iffreqs = new double[setup->ifs.size()];
+	numIndFreqs = 0;
+	double *ifFreqs = new double[setup->ifs.size()];
 	map<string,VexIF>::const_iterator it = setup->ifs.begin();
 	
 	for(unsigned int i = 0; i < setup->ifs.size(); ++i, ++it)
 	{
 		const VexIF & vif = it->second;
 		found = false;
-		for(int j = 0; j < numindfreqs; ++j)
+		for(int j = 0; j < numIndFreqs; ++j)
 		{
-			//cout << "Checking " << vif.getLowerEdgeFreq() << " against " << iffreqs[j] << endl;
-			if(vif.getLowerEdgeFreq() == iffreqs[j])
+			//cout << "Checking " << vif.getLowerEdgeFreq() << " against " << ifFreqs[j] << endl;
+			if(vif.getLowerEdgeFreq() == ifFreqs[j])
 			{
 				cout << "Skipping IF " << i+1 << "/" << setup->ifs.size() << endl;
 				found = true; //skip this "IF", its the same frequency as a previous one
@@ -1221,28 +1222,30 @@ void pystream::writeVCI(const VexData *V, int modeindex, const string &filename)
 		{
 			continue;
 		}
-		iffreqs[numindfreqs++] = vif.getLowerEdgeFreq();
-		output << indent << "<widar:baseBand singlePhaseCenter=\"yes\" name=\"" << bbnames[numindfreqs] << "\" swbbName=\"" << swbbnames[numindfreqs] << "\" inQuant=\"8\" bw=\"1024000000\" bbB=\"" << 4*numindfreqs+2 << "\" bbA=\"" << 4*numindfreqs << "\">" << endl;
+		ifFreqs[numIndFreqs++] = vif.getLowerEdgeFreq();
+		output << indent << "<widar:baseBand singlePhaseCenter=\"yes\" name=\"" << bbNames[numIndFreqs] << "\" swbbName=\"" << swbbNames[numIndFreqs] << "\" inQuant=\"8\" bw=\"1024000000\" bbB=\"" << 4*numIndFreqs+2 << "\" bbA=\"" << 4*numIndFreqs << "\">" << endl;
 		indent += "    ";
 		for(unsigned int j = 0; j < setup->channels.size(); ++j)
 		{
-			if(setup->channels[j].ifname != vif.name) //this channel belongs to the other IF
+			if(setup->channels[j].ifName != vif.name) //this channel belongs to the other IF
+			{
 				continue;
-			centrefreq = setup->channels[j].bbcFreq - vif.getLowerEdgeFreq() + setup->channels[j].bbcBandwidth/2.0;
+			}
+			centreFreq = setup->channels[j].bbcFreq - vif.getLowerEdgeFreq() + setup->channels[j].bbcBandwidth/2.0;
 			if(setup->channels[i].bbcSideBand == 'L')
 			{
-				centrefreq -= setup->channels[i].bbcBandwidth;
+				centreFreq -= setup->channels[i].bbcBandwidth;
 			}
-			output << indent << "<widar:subBand sbid=\"" << j << "\" rqNumBits=\"" << evlasbbits << "\" centralFreq=\"" << ((long long)centrefreq) << "\" bw=\"" << static_cast<int>(setup->channels[j].bbcBandwidth) << "\">" << endl;
+			output << indent << "<widar:subBand sbid=\"" << j << "\" rqNumBits=\"" << evlasbBits << "\" centralFreq=\"" << ((long long)centreFreq) << "\" bw=\"" << static_cast<int>(setup->channels[j].bbcBandwidth) << "\">" << endl;
 			indent += "    ";
 			output << indent << "<widar:polProducts>" << endl;
 			indent += "    ";
-			output << indent << "<widar:pp spectralChannels=\"" << evlasbchan << "\" id=\"1\" correlation=\"A*A\"/>" << endl;
-			output << indent << "<widar:pp spectralChannels=\"" << evlasbchan << "\" id=\"2\" correlation=\"A*B\"/>" << endl;
-			output << indent << "<widar:pp spectralChannels=\"" << evlasbchan << "\" id=\"3\" correlation=\"B*A\"/>" << endl;
-			output << indent << "<widar:pp spectralChannels=\"" << evlasbchan << "\" id=\"4\" correlation=\"B*B\"/>" << endl;
-			output << indent << "<widar:blbProdIntegration recirculation=\"1\" minIntegTime=\"200.0\" ltaIntegFactor=\"2500\" ccIntegFactor=\"2\" cbeIntegFactor=\"" << evlaintsec << "\"/>" << endl;
-			output << indent << "<widar:blbPair quadrant=\"" << numindfreqs+1 << "\" numBlbPairs=\"1\" firstBlbPair=\"" << j+1 << "\"/>" << endl;
+			output << indent << "<widar:pp spectralChannels=\"" << evlasbChan << "\" id=\"1\" correlation=\"A*A\"/>" << endl;
+			output << indent << "<widar:pp spectralChannels=\"" << evlasbChan << "\" id=\"2\" correlation=\"A*B\"/>" << endl;
+			output << indent << "<widar:pp spectralChannels=\"" << evlasbChan << "\" id=\"3\" correlation=\"B*A\"/>" << endl;
+			output << indent << "<widar:pp spectralChannels=\"" << evlasbChan << "\" id=\"4\" correlation=\"B*B\"/>" << endl;
+			output << indent << "<widar:blbProdIntegration recirculation=\"1\" minIntegTime=\"200.0\" ltaIntegFactor=\"2500\" ccIntegFactor=\"2\" cbeIntegFactor=\"" << evlaIntSec << "\"/>" << endl;
+			output << indent << "<widar:blbPair quadrant=\"" << numIndFreqs+1 << "\" numBlbPairs=\"1\" firstBlbPair=\"" << j+1 << "\"/>" << endl;
 			output << indent << "<widar:stationPacking algorithm=\"maxPack\"/>" << endl;
 			output << indent << "<widar:productPacking algorithm=\"maxPack\"/>" << endl;
 			indent = indent.substr(0, indent.length()-4);
@@ -1257,11 +1260,11 @@ void pystream::writeVCI(const VexData *V, int modeindex, const string &filename)
 	output << indent << "</widar:stationInputOutput>" << endl;
 	indent = indent.substr(0, indent.length()-4);
 	output << indent << "</widar:subArray>" << endl;
-	output << indent << "<widar:activationTrigger timeStamp=\"" << timestring << "\" msgId=\"" << msgid++ << "\" activationTime=\"" << timestring << "\" activationId=\"" << activatestring << "\"/>" << endl;
+	output << indent << "<widar:activationTrigger timeStamp=\"" << timeString << "\" msgId=\"" << msgId++ << "\" activationTime=\"" << timeString << "\" activationId=\"" << activateString << "\"/>" << endl;
 	indent = indent.substr(0, indent.length()-4);
 	output << indent << "</widar:vciRequest>" << endl;
 	output.close();
-	delete [] iffreqs;
+	delete [] ifFreqs;
 }
 
 void pystream::setDBEPersonality(const string &filename)

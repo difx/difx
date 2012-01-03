@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2011 by Walter Brisken                                  *
+ *   Copyright (C) 2011-2012 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -367,7 +367,7 @@ void TsysAccumulator::setup(const VexSetup &vexSetup, DifxTcal *T, double mjd, c
 				/* the sign of ta->freq incorporates the sideband here */
 				ta->freq = -ta->freq;
 			}
-			ta->pol = vexSetup.getIF(vc->ifname)->pol;
+			ta->pol = vexSetup.getIF(vc->ifName)->pol;
 
 			++ta;
 		}

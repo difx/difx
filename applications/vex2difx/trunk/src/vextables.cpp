@@ -1291,11 +1291,11 @@ int VexSetup::phaseCalIntervalMHz() const
 	return pc;
 }
 
-const VexIF *VexSetup::getIF(const string &ifname) const
+const VexIF *VexSetup::getIF(const string &ifName) const
 {
 	for(map<string,VexIF>::const_iterator it = ifs.begin(); it != ifs.end(); ++it)
 	{
-		if(it->second.name == ifname)
+		if(it->second.name == ifName)
 		{
 			return &it->second;
 		}
@@ -1308,7 +1308,7 @@ bool operator ==(const VexChannel &c1, const VexChannel &c2)
 {
 	if( (c1.recordChan  != c2.recordChan)   ||
 	    (c1.subbandId   != c2.subbandId)    ||
-	    (c1.ifname      != c2.ifname)       ||
+	    (c1.ifName      != c2.ifName)       ||
 	    (c1.bbcFreq     != c2.bbcFreq)      ||
 	    (c1.bbcSideBand != c2.bbcSideBand)  ||
 	    (c1.tones       != c2.tones) )
@@ -1638,7 +1638,7 @@ ostream& operator << (ostream &os, const VexSubband &x)
 
 ostream& operator << (ostream &os, const VexChannel &x)
 {
-	os << "[IF=" << x.ifname << " s=" << x.subbandId << " -> r=" << x.recordChan << " tones=";
+	os << "[IF=" << x.ifName << " s=" << x.subbandId << " -> r=" << x.recordChan << " tones=";
 	for(vector<int>::const_iterator v = x.tones.begin(); v != x.tones.end(); ++v)
 	{
 		if(v != x.tones.begin())
