@@ -95,6 +95,7 @@ typedef struct
 
 typedef struct
 {
+	int verbose;
 	enum DifxTcalType type;
 	char path[DIFX_TCAL_FILENAME_LENGTH];	/* type-dependent value; could be filename or directory */
 
