@@ -258,7 +258,9 @@ int main(int argc, char **argv)
 
 	if(argc != 3 && argc != 4)
 	{
-		return usage(argv[0]);
+		usage(argv[0]);
+	
+		return EXIT_FAILURE;
 	}
 
 	dir = argv[1];
@@ -286,6 +288,6 @@ int main(int argc, char **argv)
 	(void) closedir (dp);
 
 
-	return 0;
+	return EXIT_SUCCESS;
 }
 
