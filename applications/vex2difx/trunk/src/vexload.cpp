@@ -694,9 +694,7 @@ static int getScans(VexData *V, Vex *v, const CorrParams &params)
 	map<string,bool> recordEnable;
 	int nWarn = 0;
 
-	for(L = (Llist *)get_scan(&scanId, v);
-	    L != 0;
-	    L = (Llist *)get_scan_next(&scanId))
+	for(L = (Llist *)get_scan(&scanId, v); L != 0; L = (Llist *)get_scan_next(&scanId))
 	{
 		map<string, double> antStart, antStop;
 
@@ -836,10 +834,10 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 {
 	VexMode *M;
 	void *p, *p2;
-	char *modeDefName;
+	const char *modeDefName;
 	int link, name;
 	char *value, *units;
-	char *bbcname;
+	char *bbcName;
 	double freq, bandwidth, sampRate;
 	string format, chanName;
 	int chanNum;
@@ -858,9 +856,7 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 	void *p2array[MAX_IF];
 	int p2count;
 
-	for(modeDefName = get_mode_def(v);
-	    modeDefName;
-	    modeDefName = get_mode_def_next())
+	for(modeDefName = get_mode_def(v); modeDefName; modeDefName = get_mode_def_next())
 	{
 		// don't bother building up modes that are not used
 		if(!V->usesMode(modeDefName))
@@ -1172,9 +1168,7 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 			}
 
 			// Get pulse cal extraction information
-			for(p = get_all_lowl(antName.c_str(), modeDefName, T_PHASE_CAL_DETECT, B_PHASE_CAL_DETECT, v);
-			    p;
-			    p = get_all_lowl_next())
+			for(p = get_all_lowl(antName.c_str(), modeDefName, T_PHASE_CAL_DETECT, B_PHASE_CAL_DETECT, v); p; p = get_all_lowl_next())
 			{
 				vex_field(T_PHASE_CAL_DETECT, p, 1, &link, &name, &value, &units);
 				vector<int> &Q = pcalMap[string(value)];
@@ -1218,8 +1212,8 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 				vex_field(T_CHAN_DEF, p, 4, &link, &name, &value, &units);
 				fvex_double(&value, &units, &bandwidth);
 
-				vex_field(T_CHAN_DEF, p, 6, &link, &name, &bbcname, &units);
-				subbandId = M->addSubband(freq, bandwidth, sideBand, bbc2pol[bbcname]);
+				vex_field(T_CHAN_DEF, p, 6, &link, &name, &bbcName, &units);
+				subbandId = M->addSubband(freq, bandwidth, sideBand, bbc2pol[bbcName]);
 
 				vex_field(T_CHAN_DEF, p, 7, &link, &name, &value, &units);
 				string phaseCalName(value);
@@ -1228,7 +1222,7 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 				recChanId = getRecordChannel(antName, value, ch2tracks, setup, i);
 				setup.channels.push_back(VexChannel());
 				setup.channels.back().subbandId = subbandId;
-				setup.channels.back().ifName = bbc2ifName[bbcname];
+				setup.channels.back().ifName = bbc2ifName[bbcName];
 				setup.channels.back().bbcFreq = freq;
 				setup.channels.back().bbcBandwidth = bandwidth;
 				setup.channels.back().bbcSideBand = sideBand;
