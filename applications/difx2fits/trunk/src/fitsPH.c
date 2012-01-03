@@ -1001,7 +1001,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 			int curDifxFile = 0;
 			double mjdLast = 0.0;
 
-			printf(".", j); fflush(stdout);
+			printf("."); fflush(stdout);
 
 			dsId = DifxInputGetDatastreamId(D, j, a);
 			if(dsId < 0)
