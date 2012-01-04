@@ -28,6 +28,7 @@ def run_calcif2(jobname, calcfilename):
         if os.path.exists(file):
             os.remove(file)
     command = 'calcif2 ' + calcfilename
+    #command = '/nfs/apps/corr/DiFX-2.0.1/bin/calcif2 ' + calcfilename
     print command
     subprocess.check_call(command, stdout=sys.stdout, shell=True)
 
@@ -96,16 +97,18 @@ def make_new_runfiles(jobname):
 
 def parse_joblistfile(joblistfilename):
     # get the full list of jobs from the joblist file
+    # Return a dictionary. keys are the job names. Values are the stations in
+    # the job
     joblistfile = open(joblistfilename).readlines()
 
     joblistfile.pop(0)
-    joblist = []
-    stations = []
+    joblist = dict()
     for line in joblistfile:
-        joblist.append(line.split()[0])
-        stations.append(re.search(r'#\s+(.*)', line).group(1))
+        jobname = line.split()[0]
+        stations = re.search(r'#\s+(.*)', line).group(1)
+        joblist[jobname] = stations
 
-    return joblist, stations
+    return joblist
 
 def run_lbafilecheck(datafilename, stations, computehead):
     # run lbafilecheck creating machines and .threads files for this job
@@ -139,7 +142,14 @@ usage = '''%prog <jobname>
     copy model information to correlator data area
     start errormon2
     start the correlator!
-    quit errormon2 and copy the log file to the output directory'''
+    quit errormon2 and copy the log file to the output directory
+    accept an operator comment for storing with the output
+    
+<jobname> may be a space separated list.
+<jobname> may also include a python regular expression after the '_' in the job
+name to match multiple jobs. The job name up to the '_' must be given
+explicitly)'''
+
 
 parser = optparse.OptionParser(usage=usage, version='%prog ' + '1.0')
 parser.add_option( "--clock", "-c",
@@ -192,7 +202,7 @@ if options.clockjob:
 if options.expt_all:
     expname = options.expt_all
 else:
-    expname = re.match(r'(.*)_\d+', args[0]).group(1)
+    expname = re.match(r'(.*)_', args[0]).group(1)
 
 # run vex2difx. 
 v2dfilename = expname + '.v2d'
@@ -201,30 +211,36 @@ if not options.novex:
     run_vex2difx(v2dfilename, vex2difx_options)
 
 joblistfilename = expname + '.joblist'
-(joblist, stations) = parse_joblistfile(joblistfilename) 
+(fulljoblist) = parse_joblistfile(joblistfilename) 
 
-print "joblist = ", pprint.pformat(zip(joblist, stations)), "\n";
+# figure out the list of jobs to run this time
+corrjoblist = dict()
+# if the -a switch was used, then do all jobs
+if options.expt_all:
+    corrjoblist = fulljoblist
+else:
+    # if no -a, then match any patterns given on the command line
+    for jobpattern in args:
+        for jobname in fulljoblist.keys():
+            if re.search(jobpattern + '$', jobname):
+                corrjoblist[jobname] = fulljoblist[jobname]
+
+print "job list to correlate = ", pprint.pformat(corrjoblist), "\n";
 #print "stations = ", pprint.pformat(stations), "\n";
 
-
 # create the mpi files for each job
-for jobnum in range(len(joblist)):
+for jobname in sorted(corrjoblist.keys()):
     # run lbafilecheck to get the new machines and .threads files
-    jobname = joblist[jobnum]
     datafilename = expname + '.datafiles'
-    run_lbafilecheck(datafilename, stations[jobnum], options.computehead)
+    run_lbafilecheck(datafilename, corrjoblist[jobname], options.computehead)
 
     # duplicate the run and thread and machines files for the full number of
     # jobs
     print "\nduplicating the run file, machines file and .threads files for ", jobname, "\n"
     make_new_runfiles(jobname)
 
-# figure out the list of jobs if the -a switch was used
-if options.expt_all:
-    args = joblist
 
-
-for jobname in args:
+for jobname in sorted(corrjoblist.keys()):
     # figure out filenames, directories, etc. using normal difx/cuppa conventions
     indir = os.getcwd() + os.sep
     #outdirbase = "/data/corr/corrdat/"
