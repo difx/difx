@@ -3,9 +3,9 @@ correlation with DiFX.
 
 To set up you need to carry out a few steps.
 
-1) Edit the cluster definition file (corr_hosts.txt) to contain a list of all
-your compute nodes. Indicate the areas where baseband data may be stored on
-those nodes.
+1) Edit the cluster definition file (see corr_hosts.txt for an example) to
+contain a list of all your cluster nodes. Indicate the areas where baseband
+data may be stored on those nodes.
 
 2) Ensure the following two environment variables are set. $CORR_HOSTS should
 point to the corr_hosts.txt file and $CORR_DATA should point to the data area

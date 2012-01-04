@@ -18,6 +18,7 @@ def get_corrhosts(hostsfilename):
         hostdata = line.split(',')
         hostname = hostdata[0].strip()
         if not hostname:
+            # empty line
             continue
         try:
             hostthreads = int(hostdata[1])

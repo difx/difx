@@ -8,7 +8,8 @@
 import optparse, re, urllib, espressolib, sys
 
 usage = '''%prog <date>
-<date> can either be MJD or VEX time'''
+<date> can either be MJD or VEX time
+Returns 5 days of EOPs around <date> in .v2d format'''
 parser = optparse.OptionParser(usage=usage, version='%prog ' + '1.0')
 (options, args) = parser.parse_args()
 
@@ -31,7 +32,7 @@ tai_utc = None;
 
 # dates before June 1979 not valid (earliest EOPs)
 if (targetJD < 2444055.5):
-    raise Exception('Date too early. Dates before 1980 not valid')
+    raise Exception('Date too early. No valid EOPs before July 1979')
 
 # fetch EOP data
 eop_url = "http://gemini.gsfc.nasa.gov/solve_save/usno_finals.erp"
