@@ -28,7 +28,6 @@ def run_calcif2(jobname, calcfilename):
         if os.path.exists(file):
             os.remove(file)
     command = 'calcif2 ' + calcfilename
-    #command = '/nfs/apps/corr/DiFX-2.0.1/bin/calcif2 ' + calcfilename
     print command
     subprocess.check_call(command, stdout=sys.stdout, shell=True)
 
@@ -61,19 +60,9 @@ def copy_jobcontrol(expname, jobname, indir, outdir):
         infile = indir + expname + extension
         outfile = outdir + jobname + extension
         if os.path.isfile(infile):
-            #print "copy", file, outdir
             shutil.copy2(infile, outfile)
         else:
             sys.stderr.write(infile + ' not found!')
-
-
-#def get_jobname(ijob, njobs):
-#    jobstr = str(ijob)
-#    if njobs > 9:
-#        jobstr = '%02d' % ijob
-#    elif njobs > 99:
-#        jobstr = '%03d' % ijob
-#    return jobstr
 
 def make_new_runfiles(jobname):
     # make copies of the prototype run and .thread files
@@ -82,14 +71,12 @@ def make_new_runfiles(jobname):
     shutil.copy('run', runfile)
     for line in fileinput.FileInput(runfile, inplace=1):
         if '_1.input' in line:
-            #line = line.replace('1.input', jobname + '.input')
             line = re.sub(r'\S*_1.input', jobname + '.input', line)
             line = re.sub(r'machines.list', machinesfilename, line)
         print line,
     fileinput.close()
     os.chmod(runfile, 0775)
 
-    #threadfilename = expname + '_' + jobname + '.threads'
     threadfilename = jobname + '.threads'
     shutil.copy(expname + '.threads', threadfilename)
 
@@ -97,7 +84,7 @@ def make_new_runfiles(jobname):
 
 def parse_joblistfile(joblistfilename):
     # get the full list of jobs from the joblist file
-    # Return a dictionary. keys are the job names. Values are the stations in
+    # Return a dictionary. Keys are the job names. Values are the stations in
     # the job
     joblistfile = open(joblistfilename).readlines()
 
@@ -183,7 +170,6 @@ if not options.novex:
     if options.expt_all:
         for filename in os.listdir(os.getcwd()):
             if re.match(options.expt_all +  r'_\d+\.input$', filename):
-                #print "renaming", filename
                 os.rename(filename, filename + '.bak')
 
     for jobname in args:
@@ -243,7 +229,6 @@ for jobname in sorted(corrjoblist.keys()):
 for jobname in sorted(corrjoblist.keys()):
     # figure out filenames, directories, etc. using normal difx/cuppa conventions
     indir = os.getcwd() + os.sep
-    #outdirbase = "/data/corr/corrdat/"
     try:
         outdirbase = os.environ.get('CORR_DATA') + os.sep
     except:
@@ -293,14 +278,13 @@ if not options.nopause:
     raw_input('Press return to initiate the correlator job or ^C to quit ')
 
 try:
-    for jobname in args:
+    for jobname in sorted(corrjoblist.keys()):
         # start the correlator log
         print "starting errormon2 in the background"
         errormon2 = subprocess.Popen('errormon2')
 
         try:
             runfile = jobname
-            #runfile = runfile.replace(expname, '')
             runfile = './run_' + runfile
             print "starting the correlator running", runfile
             subprocess.check_call(runfile, shell=True, stdout=sys.stdout)
