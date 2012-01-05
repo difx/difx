@@ -36,7 +36,7 @@
 
 const string program("vex2script");
 const string version("0.3");
-const string verdate("20120103");
+const string verdate("20120104");
 const string author("Walter Brisken, Adam Deller, Matthias Bark");
 
 static void usage(int argc, char **argv)

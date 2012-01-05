@@ -46,6 +46,7 @@ public:
 	void close();
 	void addPhasingSource(const string &sourceName);
 	void figurePersonality(const VexData *V);
+	int maxIFs(const VexData *V) const;
 	int writeHeader(const VexData *V);
 	int writeComment(const string &commentString);
 	int writeRecorderInit(const VexData *V);

@@ -1304,6 +1304,23 @@ const VexIF *VexSetup::getIF(const string &ifName) const
 	return 0;
 }
 
+double VexSetup::firstTuningForIF(const string &ifName) const	// return Hz
+{
+	double tune = 0.0;
+	string cn;
+
+	for(vector<VexChannel>::const_iterator ch=channels.begin(); ch != channels.end(); ++ch)
+	{
+		if(ch->ifName == ifName && (cn == "" || ch->bbcName < cn))
+		{
+			cn = ch->bbcName;
+			tune = ch->bbcFreq;
+		}
+	}
+
+	return tune;
+}
+
 bool operator ==(const VexChannel &c1, const VexChannel &c2)
 {
 	if( (c1.recordChan  != c2.recordChan)   ||
@@ -1638,7 +1655,7 @@ ostream& operator << (ostream &os, const VexSubband &x)
 
 ostream& operator << (ostream &os, const VexChannel &x)
 {
-	os << "[IF=" << x.ifName << " s=" << x.subbandId << " -> r=" << x.recordChan << " tones=";
+	os << "[name=" << x.bbcName << " IF=" << x.ifName << " s=" << x.subbandId << " -> r=" << x.recordChan << " tones=";
 	for(vector<int>::const_iterator v = x.tones.begin(); v != x.tones.end(); ++v)
 	{
 		if(v != x.tones.begin())

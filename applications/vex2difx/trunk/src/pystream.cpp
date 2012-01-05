@@ -147,6 +147,30 @@ void pystream::calcIfIndex(const VexData *V)
 	}
 }
 
+int pystream::maxIFs(const VexData *V) const
+{
+	unsigned int nMode = V->nMode();
+	unsigned int maxIFs = 0;
+
+	for(unsigned int modeNum = 0; modeNum < nMode; ++modeNum)
+	{
+		const VexMode *mode = V->getMode(modeNum);
+		const VexSetup *setup = mode->getSetup(ant);
+
+		if(!setup)
+		{
+			continue;
+		}
+
+		if(setup->ifs.size() > maxIFs)
+		{
+			maxIFs = setup->ifs.size();
+		}
+	}
+
+	return maxIFs;
+}
+
 void pystream::close()
 {
 	int p = precision();
@@ -437,7 +461,14 @@ int pystream::writeDbeInit(const VexData *V)
 			*this << "dbe0.setFormat('Mark5B')" << endl;
 			*this << "dbe0.setPSNMode(0)" << endl;
 			*this << "dbe0.setPacket(0, 0, 40, 5008)" << endl;
-			*this << "subarray.setDBE(dbe0)" << endl;
+			if(maxIFs(V) <= 2)
+			{
+				*this << "subarray.setDBE(dbe0)" << endl;
+			}
+			else
+			{
+				*this << "# subarray.setDBE(dbe0)  # Not set because max number of IFs is " << maxIFs(V) << endl;
+			}
 			*this << endl;
 		}
 	}
@@ -561,9 +592,7 @@ int pystream::writeChannelSet5A(const VexSetup *setup, int modeNum)
 
 		if(inputNum < 0 || inputNum > 1)
 		{
-			cerr << "Developer error: pystream.writeChannelSet5A: inputNum = " << inputNum << endl;
-
-			exit(EXIT_FAILURE);
+			continue;
 		}
 
 		if(tune < 0.0)
@@ -783,8 +812,11 @@ int pystream::writeLoifTable(const VexData *V)
 				const int MaxCommentLength = 256;
 				const VexIF &i = it->second;
 				char comment[MaxCommentLength] = {0};
+				double firstTune = fabs(setup->firstTuningForIF(i.name) - i.ifSSLO);
 
+				*this << "# first tuning = " << (firstTune * 1.0e-6) << " MHz" << endl;
  				*this << "loif" << modeNum << ".setIf('" << i.name << "', '" << i.VLBABandName() << "', '" << i.pol << "', " << (i.ifSSLO / 1.0e6) << ", '" << i.ifSideBand << "'";
+
 
 				strncpy(comment, i.comment.c_str(), MaxCommentLength-1);
 				if(comment[0] != '\0')

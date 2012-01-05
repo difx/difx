@@ -167,9 +167,10 @@ public:
 	int recordChan;		// channel number on recorded media	(< 0 indicates non-recording)
 	int subbandId;		// 0-based index; -1 means unset
 	string ifName;		// name of the IF this channel came from
-	double bbcFreq;		// tuning of the BBC (Hz)
+	double bbcFreq;		// sky frequency tuning of the BBC (Hz)
 	double bbcBandwidth;	// bandwidth (Hz)
 	char bbcSideBand;	// sideband of the BBC
+	string bbcName;		// name given in VEX of this channel in the BBC table
 	vector<int> tones;	// pulse cal tones to extract, directly from PHASE_CAL_DETECT
 };
 
@@ -196,6 +197,7 @@ public:
 	VexSetup() : nBit(0), nRecordChan(0) {}
 	int phaseCalIntervalMHz() const;
 	const VexIF *getIF(const string &ifName) const;
+	double firstTuningForIF(const string &ifName) const;	// returns Hz
 
 	map<string,VexIF> ifs;		// Indexed by name in the vex file, such as IF_A
 	vector<VexChannel> channels;

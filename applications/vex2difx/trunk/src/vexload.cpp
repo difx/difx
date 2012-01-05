@@ -1226,6 +1226,7 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 				setup.channels.back().bbcFreq = freq;
 				setup.channels.back().bbcBandwidth = bandwidth;
 				setup.channels.back().bbcSideBand = sideBand;
+				setup.channels.back().bbcName = bbcName;
 				if(recChanId >= 0)
 				{
 					setup.channels.back().recordChan = recChanId;
