@@ -1121,14 +1121,24 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 			}
 			else if(setup.formatName == "VDIF")
 			{
-				cout << "Warning: Antenna " << antName << " has incompletely defined VDIF format.  Assuming 2 bits." << endl;
+				cout << "Warning: Antenna " << antName << " has incompletely defined VDIF format.  Assuming 1 chan with 2 bits." << endl;
 
 				setup.nBit = 2;
+				setup.nRecordChan = 1;
 			}
 			else if(setup.formatName.find_first_of("VDIF") != string::npos)
 			{
 				setup.nBit = atoi(setup.formatName.substr(setup.formatName.find_last_of('/') + 1).c_str());
 				setup.formatName = setup.formatName.substr(0, setup.formatName.find_last_of('/'));
+				setup.nRecordChan = 1;
+#warning "handling of INTERLACED VDIF nRecordChan may not be correct in all cases"
+				size_t lpos = setup.formatName.find_first_of(':');
+				while (lpos != string::npos)
+				{
+					// and an additional channel for every ':'
+					setup.nRecordChan++;
+					lpos = setup.formatName.find_first_of(':', lpos + 1);
+				}
 			}
 
 			// Is it an S2 mode?
