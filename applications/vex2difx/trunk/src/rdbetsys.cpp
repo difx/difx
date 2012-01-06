@@ -40,9 +40,9 @@
 #include "util.h"
 
 const char program[] = "rdbetsys";
-const char version[] = "0.4";
+const char version[] = "0.5";
 const char author[]  = "Walter Brisken";
-const char verdate[] = "20111212";
+const char verdate[] = "20120105";
 
 const char defaultSwitchedPowerPath[] = "/users/vlbamon/switchedpower";
 const double defaultTsysInterval = 15.0;	// Seconds
@@ -323,7 +323,7 @@ static void sanityCheckChannels(const VexSetup &vexSetup)
 	
 	for(std::vector<VexChannel>::const_iterator vc = vexSetup.channels.begin(); vc != vexSetup.channels.end(); ++vc)
 	{
-		if(vc->recordChan > 0)
+		if(vc->recordChan >= 0)
 		{
 			nRecChan++;
 		}
@@ -752,6 +752,12 @@ int main(int argc, char **argv)
 		deleteDifxTcal(T);
 
 		exit(EXIT_FAILURE);
+	}
+
+	if(verbose > 2)
+	{
+		cout << "Vex Data:" << endl;
+		cout << *V << endl;
 	}
 
 	if(nWarn > 0)

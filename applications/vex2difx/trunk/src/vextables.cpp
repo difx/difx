@@ -1678,12 +1678,12 @@ ostream& operator << (ostream &os, const VexIF &x)
 
 ostream& operator << (ostream &os, const VexSetup &x)
 {
-	os << "    Format = [format=" << x.formatName << ", nBit=" << x.nBit << ", nChan=" << x.nRecordChan;
+	os << "    Format = [format=" << x.formatName << ", nBit=" << x.nBit << ", nRecordChan=" << x.nRecordChan;
 	for(vector<VexChannel>::const_iterator it = x.channels.begin(); it != x.channels.end(); ++it)
 	{
 		os << ", " << *it;
 	}
-	os << "]";
+	os << "]" << endl;
 	for(map<string,VexIF>::const_iterator it = x.ifs.begin(); it != x.ifs.end(); ++it)
 	{
 		os << "    IF: " << it->first << " " << it->second << endl;

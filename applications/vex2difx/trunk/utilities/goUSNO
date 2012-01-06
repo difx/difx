@@ -2,7 +2,7 @@
 
 # update the version when significant changes are made
 program = 'goUSNO'
-version = '0.13'
+version = '0.14'
 
 
 from sys import exit, argv, stdin
@@ -105,7 +105,7 @@ if len(args) != 4:
 	exit(0)
 
 start = args2time(args[1:], now)
-defaultProjectCode = 'n%d%d' % (start[0]%10, start[7])
+defaultProjectCode = 'n%d%03d' % (start[0]%10, start[7])
 
 projectCode = lower(args[0])
 if projectCode == 'auto':
