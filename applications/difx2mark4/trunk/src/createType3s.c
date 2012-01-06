@@ -8,6 +8,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <math.h>
+#include <glob.h>                   // for restart case
 #include "difx2mark4.h"
 #include "other.h"
 
@@ -78,6 +79,7 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
 
     FILE *fin;
     FILE *fout;
+    glob_t pcalglob;                // for restart case
 
     struct type_000 t000;
     struct type_300 t300;
@@ -200,10 +202,14 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
         for (j = startJob; j <= endJob; j++)
             {
             strncpy (pcal_filnam, D->job[j].outputFile, 242);
-            strcat (pcal_filnam, "/PCAL_"); 
+            strcat (pcal_filnam, "/PCAL_*");    // for restart case
             strcat (pcal_filnam, t300.name); 
-            
-            fin = fopen (pcal_filnam, "r");
+            pcalglob.gl_offs = 0;
+            if (0 == glob(pcal_filnam, 0, 0, &pcalglob) && 1 == pcalglob.gl_pathc)
+                fin = fopen ( pcalglob.gl_pathv[0], "r");
+            else
+                fin = NULL;
+            // fin = fopen (pcal_filnam, "r");  // for restart case
             if (fin == NULL)
                 printf ("      No input phase cal file %s for antenna %s\n",
                         pcal_filnam, t300.name);
