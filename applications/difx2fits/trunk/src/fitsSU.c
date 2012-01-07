@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008, 2009 by Walter Brisken                            *
+ *   Copyright (C) 2008-2012 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -32,8 +32,7 @@
 #include "config.h"
 #include "difx2fits.h"
 
-const DifxInput *DifxInput2FitsSU(const DifxInput *D,
-	struct fits_keywords *p_fits_keys, struct fitsPrivate *out)
+const DifxInput *DifxInput2FitsSU(const DifxInput *D, struct fits_keywords *p_fits_keys, struct fitsPrivate *out)
 {
 	char bandFormDouble[8];
 	char bandFormFloat[8];
@@ -56,8 +55,7 @@ const DifxInput *DifxInput2FitsSU(const DifxInput *D,
 		{"EQUINOX", "8A", "Mean equinox"},
 		{"RAAPP", "1D", "apparent RA at 0 IAT ref day", "DEGREES"},
 		{"DECAPP", "1D", "apparent Dec at 0 IAT ref day", "DEGREES"},
-		{"SYSVEL", bandFormDouble, "systemic velocity at ref pixel", 
-			"M/SEC"},
+		{"SYSVEL", bandFormDouble, "systemic velocity at ref pixel", "M/SEC"},
 		{"VELTYP", "8A", "velocity type", 0},
 		{"VELDEF", "8A", "velocity def: radio, optical", 0},
 		{"RESTFREQ", bandFormDouble, "line rest frequency", "HZ"},
@@ -116,19 +114,18 @@ const DifxInput *DifxInput2FitsSU(const DifxInput *D,
 	nColumn = NELEMENTS(columns);
 	nRowBytes = FitsBinTableSize(columns, nColumn);
 
-	
 	fitsWriteBinTable(out, nColumn, columns, nRowBytes, "SOURCE");
 	arrayWriteKeys(p_fits_keys, out);
 	fitsWriteInteger(out, "TABREV", 1, "");
 	fitsWriteEnd(out);
 
-	for(i = 0; i < array_MAX_BANDS; i++)
+	for(i = 0; i < array_MAX_BANDS; ++i)
 	{
 		freqOffset[i] = 0.0;
 	}
 	
 	/* no knowledge of these from inputs */
-	for(b = 0; b < nBand; b++)
+	for(b = 0; b < nBand; ++b)
 	{
 		sysVel[b] = 0.0;
 		fluxI[b] = 0.0;
@@ -150,14 +147,14 @@ const DifxInput *DifxInput2FitsSU(const DifxInput *D,
 	
 	fitsSource = (int *)malloc(D->nSource*D->nConfig*sizeof(int));
 	fitsConfig = (int *)malloc(D->nSource*D->nConfig*sizeof(int));
-	for(sourceId = 0; sourceId < D->nSource*D->nConfig; sourceId++)
+	for(sourceId = 0; sourceId < D->nSource*D->nConfig; ++sourceId)
 	{
 		fitsSource[sourceId] = -1;
 	}
 	nFitsSource = -1;
-	for(sourceId = 0; sourceId < D->nSource; sourceId++)
+	for(sourceId = 0; sourceId < D->nSource; ++sourceId)
 	{
-		for(configId = 0; configId < D->nConfig; configId++)
+		for(configId = 0; configId < D->nConfig; ++configId)
 		{
 			i = D->source[sourceId].fitsSourceIds[configId];
 			if(i < 0)
@@ -175,9 +172,9 @@ const DifxInput *DifxInput2FitsSU(const DifxInput *D,
 			}
 		}
 	}
-	nFitsSource++;
+	++nFitsSource;
 
-	for(i = 0; i < nFitsSource; i++)
+	for(i = 0; i < nFitsSource; ++i)
 	{
 		sourceId = fitsSource[i];
 		if(sourceId < 0)
@@ -190,8 +187,7 @@ const DifxInput *DifxInput2FitsSU(const DifxInput *D,
 		configId = fitsConfig[i];
 		if(configId < 0 || configId >= D->nConfig)
 		{
-			fprintf(stderr, "Error: configId out of range = %d\n",
-				configId);
+			fprintf(stderr, "Error: configId out of range = %d\n", configId);
 			continue;
 		}
 		config = D->config + configId;
@@ -202,7 +198,6 @@ const DifxInput *DifxInput2FitsSU(const DifxInput *D,
 		muDec = 0.0;
 		parallax = 0.0;
 		epoch = 2000.0;
-
 
 		sourceId1 = i + 1;	/* FITS sourceId1 is 1-based */
 		qual = source->qual;

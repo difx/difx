@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2011 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2008-2012 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -139,7 +139,7 @@ static int re2int(const char *str, const regmatch_t *subexpression)
 	return atoi(tmp);
 }
 
-int DifxVisNextFile(DifxVis *dv, int pulsarBin, int phasecentre)
+int DifxVisNextFile(DifxVis *dv, int pulsarBin, int phaseCentre)
 {
 	int a, v, bin, pc;
 	regex_t fileMatch;
@@ -184,7 +184,7 @@ int DifxVisNextFile(DifxVis *dv, int pulsarBin, int phasecentre)
 		/* slot 4 of the re match should be phase center number */
 		pc  = re2int(dv->globbuf.gl_pathv[dv->curFile], fileSubexpressions+4);
 
-		if(bin == pulsarBin && (pc == 0 || pc == phasecentre))
+		if(bin == pulsarBin && (pc == 0 || pc == phaseCentre))
 		{
 			dv->in = fopen(dv->globbuf.gl_pathv[dv->curFile], "r");
 			if(dv->in == 0)
@@ -216,7 +216,7 @@ int DifxVisNextFile(DifxVis *dv, int pulsarBin, int phasecentre)
 	return 0;
 }
 
-DifxVis *newDifxVis(const DifxInput *D, int jobId, int pulsarBin, int phasecentre)
+DifxVis *newDifxVis(const DifxInput *D, int jobId, int pulsarBin, int phaseCentre)
 {
 	DifxVis *dv;
 	int i, j, c, v;
@@ -317,7 +317,7 @@ DifxVis *newDifxVis(const DifxInput *D, int jobId, int pulsarBin, int phasecentr
 		return 0;
 	}
 
-	v = DifxVisNextFile(dv, pulsarBin, phasecentre);
+	v = DifxVisNextFile(dv, pulsarBin, phaseCentre);
 	if(v < 0)
 	{
 		deleteDifxVis(dv);
@@ -416,7 +416,7 @@ static double evalPoly(const double *p, int n, double x)
 
 	y = p[n-1];
 
-	for(i = n-2; i >= 0; i--)
+	for(i = n-2; i >= 0; --i)
 	{
 		y = x*y + p[i];
 	}
@@ -425,16 +425,16 @@ static double evalPoly(const double *p, int n, double x)
 }
 
 	
-int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phasecentre)
+int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phaseCentre)
 {
 	int i, i1, v;
 	int antId1, antId2;	/* These reference the DifxInput Antenna */
 	int bl;			/* bl number computed from antId1 and antId2 */
 	int dsId1, dsId2;	/* This refers to DifxInput Datastream table */
-	int scanId, binhdrversion, headerconfindex, intmjd;
+	int scanId, binHeaderVersion, headerConfigIndex, intmjd;
 	double mjd, iat, dt, dt2, weight;
 	double uvw[3];
-	char polpair[3];
+	char polPair[3];
 	int changed = 0;
 	int nFloat, readSize;
 	int freqId;
@@ -444,7 +444,7 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phasecentre)
 	const DifxPolyModel *im1, *im2;
 	int terms1, terms2;
 	int configBaselineId, configAntennaId1, configAntennaId2;	/* These are local to the config */
-	int bin, srcindex, sync;
+	int bin, sourceId, sync;
 
 	resetDifxParameters(dv->dp);
 
@@ -452,7 +452,7 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phasecentre)
 	v = fread(&sync, sizeof(int), 1, dv->in);
 	if(v != 1)
 	{
-		v = DifxVisNextFile(dv, pulsarBin, phasecentre);
+		v = DifxVisNextFile(dv, pulsarBin, phaseCentre);
 		if(v < 0)
 		{
 			return NEXT_FILE_ERROR;
@@ -468,8 +468,8 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phasecentre)
 	}
 	else if(sync == VISRECORD_SYNC_WORD_DIFX2) //new style binary header
 	{
-		v = fread(&binhdrversion, sizeof(int), 1, dv->in);
-		if(binhdrversion == 1) //new style binary header
+		v = fread(&binHeaderVersion, sizeof(int), 1, dv->in);
+		if(binHeaderVersion == 1) //new style binary header
 		{
 			/* Note: the following 9 freads have their return value ignored.  The value is captured to prevent warning at compile time. */
 			v = fread(&configBaselineId, sizeof(int), 1, dv->in);
@@ -477,11 +477,11 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phasecentre)
 			mjd = intmjd;
 			v = fread(&iat, sizeof(double), 1, dv->in);
 			iat /= 86400.0;
-			v = fread(&headerconfindex, sizeof(int), 1, dv->in);
-			v = fread(&srcindex, sizeof(int), 1, dv->in);
+			v = fread(&headerConfigIndex, sizeof(int), 1, dv->in);
+			v = fread(&sourceId, sizeof(int), 1, dv->in);
 			v = fread(&freqId, sizeof(int), 1, dv->in);
-			v = fread(polpair, 1, 2, dv->in);
-			polpair[2] = 0;
+			v = fread(polPair, 1, 2, dv->in);
+			polPair[2] = 0;
 			v = fread(&bin, sizeof(int), 1, dv->in);
 			v = fread(&weight, sizeof(double), 1, dv->in);
 
@@ -499,7 +499,7 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phasecentre)
                 }
                 else //dunno what to do
                 {
-                        fprintf(stderr, "Error parsing header: got a sync of %x and version of %d\n", sync, binhdrversion);
+                        fprintf(stderr, "Error parsing header: got a sync of %x and version of %d\n", sync, binHeaderVersion);
                         
 			return HEADER_READ_ERROR;
                 }
@@ -561,26 +561,26 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phasecentre)
 		
 		return SKIPPED_RECORD;
 	}
-	if(phasecentre >= scan->nPhaseCentres)
+	if(phaseCentre >= scan->nPhaseCentres)
 	{
 		return SKIPPED_RECORD;
 	}
-	//if((configBaselineId % 257 == 0) && ((scan->nPhaseCentres == 1 && srcindex != scan->orgjobPhsCentreSrcs[0]) || 
-	//   (scan->nPhaseCentres > 1  && srcindex != scan->orgjobPointingCentreSrc)))
+	//if((configBaselineId % 257 == 0) && ((scan->nPhaseCentres == 1 && sourceId != scan->orgjobPhsCentreSrcs[0]) || 
+	//   (scan->nPhaseCentres > 1  && sourceId != scan->orgjobPointingCentreSrc)))
 	//{
-	//	printf("srcindex has been incorrectly recorded for baseline %d as %d - overriding!\n", configBaselineId, srcindex);
+	//	printf("sourceId has been incorrectly recorded for baseline %d as %d - overriding!\n", configBaselineId, sourceId);
 	//	printf("number of phase centres for scan %d is %d, (original indices) pointing centre source was %d and 1st phase centre source was %d\n", scanId, scan->nPhaseCentres, scan->orgjobPointingCentreSrc, scan->orgjobPhsCentreSrcs[0]);
 	//	if(scan->nPhaseCentres == 1)
-	//		srcindex = scan->orgjobPhsCentreSrcs[0];
+	//		sourceId = scan->orgjobPhsCentreSrcs[0];
 	//	else
-	//		srcindex = scan->orgjobPointingCentreSrc;
+	//		sourceId = scan->orgjobPointingCentreSrc;
 	//}
-	//printf("Sourceindex is %d, scanId is %d, baseline is %d\n", srcindex, scanId, configBaselineId);
-	if(srcindex != scan->orgjobPhsCentreSrcs[phasecentre] && (configBaselineId % 257 != 0) ) //don't skip autocorrelations
+	//printf("Sourceindex is %d, scanId is %d, baseline is %d\n", sourceId, scanId, configBaselineId);
+	if(sourceId != scan->orgjobPhsCentreSrcs[phaseCentre] && (configBaselineId % 257 != 0) ) //don't skip autocorrelations
 	{
 		if(verbose > 2)
 		{
-			printf("Skipping record with srcindex %d because orgjobphasecentresrc[%d] is %d\n", srcindex, phasecentre,  scan->orgjobPhsCentreSrcs[phasecentre]);
+			printf("Skipping record with sourceId %d because orgjobphaseCentresrc[%d] is %d\n", sourceId, phaseCentre,  scan->orgjobPhsCentreSrcs[phaseCentre]);
 		}
 
 		return SKIPPED_RECORD;
@@ -647,15 +647,15 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phasecentre)
 	{
 		printf("        MJD=%11.5f jobId=%d scanId=%d dv->scanId=%d Source=%s  FITS SourceId=%d\n", 
 			mjd+iat, dv->jobId, scanId, dv->scanId, 
-			dv->D->source[scan->phsCentreSrcs[phasecentre]].name, 
-			dv->D->source[scan->phsCentreSrcs[phasecentre]].fitsSourceIds[configId]+1);
+			dv->D->source[scan->phsCentreSrcs[phaseCentre]].name, 
+			dv->D->source[scan->phsCentreSrcs[phaseCentre]].fitsSourceIds[configId]+1);
 	}
 
 	dv->scanId = scanId;
-	dv->sourceId = scan->phsCentreSrcs[phasecentre];
+	dv->sourceId = scan->phsCentreSrcs[phaseCentre];
 	dv->freqId = config->fitsFreqId;
 	dv->bandId = config->freqId2IF[freqId];
-	dv->polId  = getPolProdId(dv, polpair);
+	dv->polId  = getPolProdId(dv, polPair);
 
 	/* stash the weight for later incorporation into a record */
 	dv->recweight = weight;
@@ -688,8 +688,8 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phasecentre)
 			if(scan->im[antId1] && scan->im[antId2])
 			{
 				//printf("About to look at the actual im object\n");
-				im1 = scan->im[antId1][phasecentre + 1];
-	                        im2 = scan->im[antId2][phasecentre + 1];
+				im1 = scan->im[antId1][phaseCentre + 1];
+	                        im2 = scan->im[antId2][phaseCentre + 1];
 				//printf("Got the im structures - they are %p and %p\n", im1, im2);
 				if(!(im1 && im2))
 				{
@@ -750,14 +750,14 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phasecentre)
 
 	if(dv->bandId <  0 || dv->bandId >= dv->nFreq)
 	{
-		fprintf(stderr, "Parameter problem: bandId should be in [0, %d), was %d\n", dv->nFreq, dv->bandId);
+		fprintf(stderr, "Baseline %d: Parameter problem: bandId should be in [0, %d), was %d\n", dv->baseline, dv->nFreq, dv->bandId);
 		
 		return BAND_ID_ERROR;
 	}
 	
 	if(dv->polId  <  0 || dv->polId  >= dv->D->nPolar)
 	{
-		fprintf(stderr, "Parameter problem: polId should be in [0, %d), was %d\n", dv->D->nPolar, dv->polId);
+		fprintf(stderr, "Baseline %d: Parameter problem: polId should be in [0, %d), was %d; polPair was '%s'\n", dv->baseline, dv->D->nPolar, dv->polId, polPair);
 
 		return POL_ID_ERROR;
 	}
@@ -1019,7 +1019,7 @@ static int storevis(DifxVis *dv)
 	return 0;
 }
 
-static int readvisrecord(DifxVis *dv, int verbose, int pulsarBin, int phasecentre)
+static int readvisrecord(DifxVis *dv, int verbose, int pulsarBin, int phaseCentre)
 {
 	/* blank array */
 	memset(dv->weight, 0, dv->nFreq*dv->D->nPolar*sizeof(float));
@@ -1033,7 +1033,7 @@ static int readvisrecord(DifxVis *dv, int verbose, int pulsarBin, int phasecentr
 		{
 			storevis(dv);
 		}
-		dv->changed = DifxVisNewUVData(dv, verbose, pulsarBin, phasecentre);
+		dv->changed = DifxVisNewUVData(dv, verbose, pulsarBin, phaseCentre);
 		if(verbose > 3)
 		{
 			printf("readvisrecord: changed is %d\n", dv->changed);
@@ -1123,7 +1123,7 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D,
 
 	strcpy(fileBase, out->filename);
 	l = strlen(fileBase);
-	for(i = l-1; i > 0; i--)
+	for(i = l-1; i > 0; --i)
 	{
 		if(fileBase[i] == '.')
 		{
@@ -1311,7 +1311,7 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D,
 		if(dv->changed < 0)
 		{
 			deleteDifxVis(dv);
-			nJob--;
+			--nJob;
 			dvs[bestj] = dvs[nJob];
 		}
 		else
@@ -1372,7 +1372,7 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D,
 }
 
 
-DifxVis *dummy_newDifxVis(const DifxInput *D, int jobId, int pulsarBin, int phasecentre)
+DifxVis *dummy_newDifxVis(const DifxInput *D, int jobId, int pulsarBin, int phaseCentre)
 {
 	DifxVis *dv;
 	int v;

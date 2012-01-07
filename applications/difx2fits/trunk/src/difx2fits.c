@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2011 by Walter Brisken                             *
+ *   Copyright (C) 2008-2012 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -99,7 +99,7 @@ static void usage(const char *pgm)
 	fprintf(stderr, "  --difx-pcal-interval\n");
 	fprintf(stderr, "           <interval> Set the Difx-derived pcal interval (sec) (default %3.1f)\n", DefaultDifxPCalInterval);
 	fprintf(stderr, "\n");
-	fprintf(stderr, "  --phasecentre <p>\n");
+	fprintf(stderr, "  --phaseCentre <p>\n");
 	fprintf(stderr, "  --phasecenter <p>   Create a fits file for all the " "<p>th phase centres (default 0)\n");
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --keep-order\n");
@@ -303,8 +303,8 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 					++i;
 					opts->pulsarBin = atoi(argv[i]);
 				}
-				else if(strcmp(argv[i], "--phasecentre") == 0 ||
-					strcmp(argv[i], "--phasecenter") == 0)
+				else if(strcasecmp(argv[i], "--phaseCentre") == 0 ||
+					strcasecmp(argv[i], "--phasecenter") == 0)
 				{
 					++i;
 					opts->phaseCentre = atoi(argv[i]);
@@ -431,22 +431,22 @@ static int populateFitsKeywords(const DifxInput *D, struct fits_keywords *keys)
 	keys->no_stkd = D->nPolar;
 	switch(D->polPair[0])
 	{
-		case 'R':
-			keys->stk_1 = -1;
-			break;
-		case 'L':
-			keys->stk_1 = -2;
-			break;
-		case 'X':
-			keys->stk_1 = -5;
-			break;
-		case 'Y':
-			keys->stk_1 = -6;
-			break;
-		default:
-			fprintf(stderr, "Error: unknown polarization (%c)\n", D->polPair[0]);
+	case 'R':
+		keys->stk_1 = -1;
+		break;
+	case 'L':
+		keys->stk_1 = -2;
+		break;
+	case 'X':
+		keys->stk_1 = -5;
+		break;
+	case 'Y':
+		keys->stk_1 = -6;
+		break;
+	default:
+		fprintf(stderr, "Error: unknown polarization (%c)\n", D->polPair[0]);
 
-			exit(EXIT_FAILURE);
+		exit(EXIT_FAILURE);
 	}
 	keys->no_band = D->nIF;
 	if(D->nIF > array_MAX_BANDS)
@@ -782,6 +782,7 @@ int convertFits(struct CommandLineOptions *opts, int passNum)
 	if(!D)
 	{
 		fprintf(stderr, "updateDifxInput failed.  Aborting\n");
+
 		return 0;
 	}
 
@@ -815,8 +816,7 @@ int convertFits(struct CommandLineOptions *opts, int passNum)
 
 	if(D->nIF <= 0 || D->nPolar <= 0)
 	{
-		fprintf(stderr, "Data geometry changes during obs, cannot "
-			"make into FITS.\n");
+		fprintf(stderr, "Data geometry changes during obs, cannot make into FITS.\n");
 		deleteDifxInput(D);
 
 		return 0;
@@ -824,8 +824,7 @@ int convertFits(struct CommandLineOptions *opts, int passNum)
 
 	if(strcmp(D->job->taperFunction, "UNIFORM") != 0)
 	{
-		fprintf(stderr, "Taper func %s not supported.  "
-			"Using UNIFORM.\n", D->job->taperFunction);
+		fprintf(stderr, "Taper func %s not supported.  Using UNIFORM.\n", D->job->taperFunction);
 		strcpy(D->job->taperFunction, "UNIFORM");
 	}
 

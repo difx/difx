@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2010 by Walter Brisken                             *
+ *   Copyright (C) 2008-2012 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -84,13 +84,13 @@ const DifxInput *DifxInput2FitsFR(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out);
 
 const DifxInput *DifxInput2FitsML(const DifxInput *D,
-	struct fits_keywords *p_fits_keys, struct fitsPrivate *out, int phasecentre);
+	struct fits_keywords *p_fits_keys, struct fitsPrivate *out, int phaseCentre);
 
 const DifxInput *DifxInput2FitsCT(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out);
 
 const DifxInput *DifxInput2FitsMC(const DifxInput *D,
-	struct fits_keywords *p_fits_keys, struct fitsPrivate *out, int phasecentre);
+	struct fits_keywords *p_fits_keys, struct fitsPrivate *out, int phaseCentre);
 
 const DifxInput *DifxInput2FitsUV(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out, 
@@ -104,10 +104,10 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out);
 
 const DifxInput *DifxInput2FitsTS(const DifxInput *D,
-	struct fits_keywords *p_fits_keys, struct fitsPrivate *out, int phasecentre, double DifxTcalAvgSeconds);
+	struct fits_keywords *p_fits_keys, struct fitsPrivate *out, int phaseCentre, double DifxTcalAvgSeconds);
 
 const DifxInput *DifxInput2FitsPH(const DifxInput *D,
-	struct fits_keywords *p_fits_keys, struct fitsPrivate *out, int phasecentre, double DifxTcalAvgSeconds, int verbose);
+	struct fits_keywords *p_fits_keys, struct fitsPrivate *out, int phaseCentre, double DifxTcalAvgSeconds, int verbose);
 
 const DifxInput *DifxInput2FitsWR(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out);

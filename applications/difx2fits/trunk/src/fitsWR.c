@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2010 by Walter Brisken                             *
+ *   Copyright (C) 2008-2012 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -55,8 +55,7 @@ static int parseWeather(const char *line, WRrow *wr, char *antName)
 	return 1;
 }
 
-const DifxInput *DifxInput2FitsWR(const DifxInput *D,
-	struct fits_keywords *p_fits_keys, struct fitsPrivate *out)
+const DifxInput *DifxInput2FitsWR(const DifxInput *D, struct fits_keywords *p_fits_keys, struct fitsPrivate *out)
 {
 	const int MaxLineLength=1000;
 
@@ -64,8 +63,7 @@ const DifxInput *DifxInput2FitsWR(const DifxInput *D,
 	struct fitsBinTableColumn columns[] =
 	{
 		{"TIME", "1D", "time of measurement", "DAYS"},
-		{"TIME_INTERVAL", "1E", "time span over which data applies", 
-			"DAYS"},
+		{"TIME_INTERVAL", "1E", "time span over which data applies", "DAYS"},
 		{"ANTENNA_NO", "1J", "antenna id from antennas tbl", 0},
 		{"TEMPERATURE", "1E", "ambient temperature", "CENTIGRADE"},
 		{"PRESSURE", "1E", "atmospheric pressuresure", "MILLIBARS"},
@@ -111,7 +109,7 @@ const DifxInput *DifxInput2FitsWR(const DifxInput *D,
 
 	/* calloc space for storing table in FITS format */
 	fitsbuf = (char **)malloc(D->nAntenna*sizeof(char *));
-	for(i = 0; i < D->nAntenna; i++)
+	for(i = 0; i < D->nAntenna; ++i)
 	{
 		fitsbuf[i] = (char *)calloc(nRowBytes, 1);
 	}
@@ -143,7 +141,7 @@ const DifxInput *DifxInput2FitsWR(const DifxInput *D,
 		}
 
 		/* take out * from line */
-		for(i = 0; line[i]; i++)
+		for(i = 0; line[i]; ++i)
 		{
 			if(line[i] == '*')
 			{
@@ -205,7 +203,7 @@ const DifxInput *DifxInput2FitsWR(const DifxInput *D,
 
 	/* close the file, free memory, and return */
 	fclose(in);
-	for(i = 0; i < D->nAntenna; i++)
+	for(i = 0; i < D->nAntenna; ++i)
 	{
 		free(fitsbuf[i]);
 	}

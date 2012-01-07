@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2011 by Walter Brisken                             *
+ *   Copyright (C) 2008-2012 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -33,8 +33,7 @@
 #include "difx2fits.h"
 
 const DifxInput *DifxInput2FitsMC(const DifxInput *D,
-	struct fits_keywords *p_fits_keys, struct fitsPrivate *out,
-	int phasecentre)
+	struct fits_keywords *p_fits_keys, struct fitsPrivate *out, int phaseCentre)
 {
 	char bandFormFloat[8];
 
@@ -60,8 +59,7 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 		{"LO_OFFSET_2", bandFormFloat, "station lo_offset for polar. 2", "HZ"},
 		{"DLO_OFFSET_2", bandFormFloat, "station lo_offset rate for polar. 2", "HZ/SEC"},
 		{"DISP_2", "1E", "dispersive delay for polar 2", "SECONDS"},
-		{"DDISP_2", "1E", "dispersive delay rate for polar 2", 
-			"SEC/SEC"}
+		{"DDISP_2", "1E", "dispersive delay rate for polar 2", "SEC/SEC"}
 	};
 
 	int nColumn;
@@ -119,8 +117,7 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 	fitsWriteInteger(out, "FFT_SIZE", D->nInChan*2, "");
 	fitsWriteInteger(out, "OVERSAMP", 0, "");
 	fitsWriteInteger(out, "ZERO_PAD", 0, "");
-	fitsWriteInteger(out, "FFT_TWID", 1, 
-		"Version of FFT twiddle table used");
+	fitsWriteInteger(out, "FFT_TWID", 1, "Version of FFT twiddle table used");
 	fitsWriteString(out, "TAPER_FN", D->job->taperFunction, "");
 	fitsWriteInteger(out, "TABREV", 1, "");
 #warning "populate the new keyword below"
@@ -131,7 +128,7 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 	arrayId1 = 1;
 
 	/* some values that are always zero */
-	for(b = 0; b < nBand; b++)
+	for(b = 0; b < nBand; ++b)
 	{
 		LOOffset[b] = 0.0;
 		LORate[b] = 0.0;
@@ -142,130 +139,130 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 
 	skip = (int *)calloc(D->nAntenna, sizeof(int));
 
-	for(s = 0; s < D->nScan; s++)
+	for(s = 0; s < D->nScan; ++s)
 	{
-	   scan = D->scan + s;
-	   configId = scan->configId;
-	   if(configId < 0)
-	   {
-	   	continue;
-	   }
-	   if(phasecentre >= scan->nPhaseCentres)
-	   {
-	     printf("Skipping scan %d as the requested phase centre > number of phase centres\n", s);
-	     continue;
-	   }
-	   config = D->config + configId;
-	   freqId1 = config->fitsFreqId + 1;
-	   sourceId1 = D->source[scan->phsCentreSrcs[phasecentre]].fitsSourceIds[configId] + 1;
-
-	   if(scan->im)
-	   {
-	   	np = scan->nPoly;
-	   }
-	   else
-	   {
-	   	fprintf(stderr, "No im table available; aborting MC file creation\n");
-		continue;
-	   }
-
-	   for(p = 0; p < np; p++)
-	   {
-	      /* loop over original .input file antenna list */
-	      for(a = 0; a < config->nAntenna; a++)
-	      {
-	        dsId = config->ant2dsId[a];
-		if(dsId < 0 || dsId >= D->nDatastream)
+		scan = D->scan + s;
+		configId = scan->configId;
+		if(configId < 0)
 		{
 			continue;
 		}
-		/* convert to D->antenna[] index ... */
-		antId = D->datastream[dsId].antennaId;
-
-		if(antId < 0 || antId >= scan->nAntenna)
+		if(phaseCentre >= scan->nPhaseCentres)
 		{
-		  continue;
+			printf("Skipping scan %d as the requested phase centre > number of phase centres\n", s);
+			continue;
+		}
+		config = D->config + configId;
+		freqId1 = config->fitsFreqId + 1;
+		sourceId1 = D->source[scan->phsCentreSrcs[phaseCentre]].fitsSourceIds[configId] + 1;
+
+		if(scan->im)
+		{
+			np = scan->nPoly;
+		}
+		else
+		{
+			fprintf(stderr, "No im table available; aborting MC file creation\n");
+			continue;
 		}
 
-		/* ... and to FITS antennaId */
-		antId1 = antId + 1;
-
-		if(scan->im[antId] == 0)
+		for(p = 0; p < np; ++p)
 		{
-		  if(skip[antId] == 0)
-		  {
-		    printf("\n    Polynomial model error : skipping antId %d = %s", 
-		      antId, D->antenna[antId].name);
-		    skip[antId]++;
-		    printed++;
-		    skipped++;
-		  }
-		  continue;
-		}
+			/* loop over original .input file antenna list */
+			for(a = 0; a < config->nAntenna; ++a)
+			{
+				dsId = config->ant2dsId[a];
+				if(dsId < 0 || dsId >= D->nDatastream)
+				{
+					continue;
+				}
+				/* convert to D->antenna[] index ... */
+				antId = D->datastream[dsId].antennaId;
 
-		P = scan->im[antId][phasecentre] + p;
+				if(antId < 0 || antId >= scan->nAntenna)
+				{
+					continue;
+				}
 
-		time = P->mjd - (int)(D->mjdStart) + P->sec/86400.0;
-		deltat = (P->mjd - D->antenna[antId].clockrefmjd)*86400.0 + P->sec;
+				/* ... and to FITS antennaId */
+				antId1 = antId + 1;
 
-		/* in general, convert from (us) to (sec) */
-		atmosDelay = (P->dry[0] + P->wet[0])*1.0e-6;
-		atmosRate  = (P->dry[1] + P->wet[1])*1.0e-6;
+				if(scan->im[antId] == 0)
+				{
+					if(skip[antId] == 0)
+					{
+						printf("\n    Polynomial model error : skipping antId %d = %s", 
+						antId, D->antenna[antId].name);
+						++skip[antId];
+						++printed;
+						++skipped;
+					}
+					continue;
+				}
 
-		/* here correct the sign of delay, and remove atmospheric
-		 * portion of it. */
-		delay     = -P->delay[0]*1.0e-6 - atmosDelay;
-		delayRate = -P->delay[1]*1.0e-6 - atmosRate;
+				P = scan->im[antId][phaseCentre] + p;
 
-		deltatn = 1.0;
-		c1 = 0.0;
-		for(j = 0; j < D->antenna[antId].clockorder; j++)
-		{
-			c1 = c1 + D->antenna[antId].clockcoeff[j] * deltatn;
-			deltatn = deltatn * deltat;
-		}
-		deltat2 = deltat + P->validDuration/86400.0;
-		deltatn = 1.0;
-		c2 = 0.0;
-		for(j=0; j<D->antenna[antId].clockorder; j++)
-		{
-			c2 = c2 + D->antenna[antId].clockcoeff[j] * deltatn;
-			deltatn = deltatn * deltat2;
-		}
-		
-		clockRate = ((c2-c1)/P->validDuration)*1.0e-6;
-		clock     = c1*1.0e-6;
-          
-	        p_fitsbuf = fitsbuf;
+				time = P->mjd - (int)(D->mjdStart) + P->sec/86400.0;
+				deltat = (P->mjd - D->antenna[antId].clockrefmjd)*86400.0 + P->sec;
 
-		FITS_WRITE_ITEM (time, p_fitsbuf);
-		FITS_WRITE_ITEM (sourceId1, p_fitsbuf);
-		FITS_WRITE_ITEM (antId1, p_fitsbuf);
-		FITS_WRITE_ITEM (arrayId1, p_fitsbuf);
-		FITS_WRITE_ITEM (freqId1, p_fitsbuf);
-		FITS_WRITE_ITEM (atmosDelay, p_fitsbuf);
-		FITS_WRITE_ITEM (atmosRate, p_fitsbuf);
-		FITS_WRITE_ITEM (delay, p_fitsbuf);
-		FITS_WRITE_ITEM (delayRate, p_fitsbuf);
-	  
-		for(j = 0; j < nPol; j++)
-                {
-			FITS_WRITE_ITEM (clock, p_fitsbuf);
-			FITS_WRITE_ITEM (clockRate, p_fitsbuf);
-			FITS_WRITE_ARRAY(LOOffset, p_fitsbuf, nBand);
-			FITS_WRITE_ARRAY(LORate, p_fitsbuf, nBand);
-			FITS_WRITE_ITEM (dispDelay, p_fitsbuf);
-			FITS_WRITE_ITEM (dispDelayRate, p_fitsbuf);
-		} /* Polar loop */
+				/* in general, convert from (us) to (sec) */
+				atmosDelay = (P->dry[0] + P->wet[0])*1.0e-6;
+				atmosRate  = (P->dry[1] + P->wet[1])*1.0e-6;
 
-      		testFitsBufBytes(p_fitsbuf - fitsbuf, nRowBytes, "MC");
-      
-#ifndef WORDS_BIGENDIAN
-		FitsBinRowByteSwap(columns, nColumn, fitsbuf);
-#endif
-		fitsWriteBinRow(out, fitsbuf);
-	      } /* Antenna loop */
-	   } /* Intervals in scan loop */
+				/* here correct the sign of delay, and remove atmospheric
+				* portion of it. */
+				delay     = -P->delay[0]*1.0e-6 - atmosDelay;
+				delayRate = -P->delay[1]*1.0e-6 - atmosRate;
+
+				deltatn = 1.0;
+				c1 = 0.0;
+				for(j = 0; j < D->antenna[antId].clockorder; ++j)
+				{
+					c1 = c1 + D->antenna[antId].clockcoeff[j] * deltatn;
+					deltatn = deltatn * deltat;
+				}
+				deltat2 = deltat + P->validDuration/86400.0;
+				deltatn = 1.0;
+				c2 = 0.0;
+				for(j=0; j<D->antenna[antId].clockorder; ++j)
+				{
+					c2 = c2 + D->antenna[antId].clockcoeff[j] * deltatn;
+					deltatn = deltatn * deltat2;
+				}
+
+				clockRate = ((c2-c1)/P->validDuration)*1.0e-6;
+				clock     = c1*1.0e-6;
+
+				p_fitsbuf = fitsbuf;
+
+				FITS_WRITE_ITEM (time, p_fitsbuf);
+				FITS_WRITE_ITEM (sourceId1, p_fitsbuf);
+				FITS_WRITE_ITEM (antId1, p_fitsbuf);
+				FITS_WRITE_ITEM (arrayId1, p_fitsbuf);
+				FITS_WRITE_ITEM (freqId1, p_fitsbuf);
+				FITS_WRITE_ITEM (atmosDelay, p_fitsbuf);
+				FITS_WRITE_ITEM (atmosRate, p_fitsbuf);
+				FITS_WRITE_ITEM (delay, p_fitsbuf);
+				FITS_WRITE_ITEM (delayRate, p_fitsbuf);
+
+				for(j = 0; j < nPol; ++j)
+				{
+					FITS_WRITE_ITEM (clock, p_fitsbuf);
+					FITS_WRITE_ITEM (clockRate, p_fitsbuf);
+					FITS_WRITE_ARRAY(LOOffset, p_fitsbuf, nBand);
+					FITS_WRITE_ARRAY(LORate, p_fitsbuf, nBand);
+					FITS_WRITE_ITEM (dispDelay, p_fitsbuf);
+					FITS_WRITE_ITEM (dispDelayRate, p_fitsbuf);
+				} /* Polar loop */
+
+				testFitsBufBytes(p_fitsbuf - fitsbuf, nRowBytes, "MC");
+
+				#ifndef WORDS_BIGENDIAN
+				FitsBinRowByteSwap(columns, nColumn, fitsbuf);
+				#endif
+				fitsWriteBinRow(out, fitsbuf);
+			} /* Antenna loop */
+		} /* Intervals in scan loop */
 	} /* Scan loop */
 
 	if(printed)

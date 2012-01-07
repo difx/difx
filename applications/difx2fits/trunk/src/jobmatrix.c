@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2011 by Walter Brisken                             *
+ *   Copyright (C) 2009-2012 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -56,10 +56,10 @@ JobMatrix *newJobMatrix(const DifxInput *D, const char *filebase, double deltaT)
 	jm->nTime = (D->mjdStop - jm->mjdStart)/(deltaT/86400.0) + 1;
 	jm->nAntenna = D->nAntenna;
 	jm->matrix = (int **)calloc(jm->nTime, sizeof(int *));
-	for(t = 0; t < jm->nTime; t++)
+	for(t = 0; t < jm->nTime; ++t)
 	{
 		jm->matrix[t] = (int *)calloc(jm->nAntenna, sizeof(int));
-		for(a = 0; a < jm->nAntenna; a++)
+		for(a = 0; a < jm->nAntenna; ++a)
 		{
 			jm->matrix[t][a] = -1;
 		}
@@ -108,7 +108,7 @@ void writeJobMatrix(const JobMatrix *jm)
 		return;
 	}
 
-	for(a = 0; a < jm->nAntenna; a++)
+	for(a = 0; a < jm->nAntenna; ++a)
 	{
 		strncpy(name, jm->D->antenna[a].name, 2);
 		name[2] = 0;
@@ -117,9 +117,9 @@ void writeJobMatrix(const JobMatrix *jm)
 	fprintf(out, "\n\n");
 
 	j = 0;
-	for(t = 0; t < jm->nTime; t++)
+	for(t = 0; t < jm->nTime; ++t)
 	{
-		for(a = 0; a < jm->nAntenna; a++)
+		for(a = 0; a < jm->nAntenna; ++a)
 		{
 			if(jm->matrix[t][a] < 0)
 			{
@@ -153,7 +153,7 @@ void writeJobMatrix(const JobMatrix *jm)
 		{
 			generateDifxJobFileBase(jm->D->job + j, label);
 			fprintf(out, "   %c = %s", 'A'+(j%26), label);
-			j++;
+			++j;
 		}
 
 		fprintf(out, "\n");
@@ -171,7 +171,7 @@ void deleteJobMatrix(JobMatrix *jm)
 		{
 			int t;
 
-			for(t = 0; t < jm->nTime; t++)
+			for(t = 0; t < jm->nTime; ++t)
 			{
 				if(jm->matrix[t])
 				{

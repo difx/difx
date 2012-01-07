@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2011 by Walter Brisken                             *
+ *   Copyright (C) 2008-2012 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -227,7 +227,7 @@ static int populateDifxTSys(float tSys[][array_MAX_BANDS], const DifxInput *D, i
 }
 
 static int getDifxTsys(const DifxInput *D, int jobId, int antId, int origDsId, 
-	double avgSeconds, int phasecentre, int nRowBytes, char *fitsbuf, 
+	double avgSeconds, int phaseCentre, int nRowBytes, char *fitsbuf, 
 	int nColumn, const struct fitsBinTableColumn *columns,
 	struct fitsPrivate *out, DifxTcal *T)
 {
@@ -417,14 +417,14 @@ static int getDifxTsys(const DifxInput *D, int jobId, int antId, int origDsId,
 			scan = D->scan + currentScanId;
 
 			if(nAccum > 0 && currentScanId >= 0 && currentConfigId >= 0 && 
-			   phasecentre < scan->nPhaseCentres && 
-			   scan->phsCentreSrcs[phasecentre] >= 0)
+			   phaseCentre < scan->nPhaseCentres && 
+			   scan->phsCentreSrcs[phaseCentre] >= 0)
 			{
 				// write Tsys row to file
 				time = (accumStart + accumEnd)*0.5 - (int)(D->mjdStart);
 				timeInt = accumEnd - accumStart;
 
-				sourceId = scan->phsCentreSrcs[phasecentre];
+				sourceId = scan->phsCentreSrcs[phaseCentre];
 
 				/* 1-based values for FITS */
 				sourceId1 = D->source[sourceId].fitsSourceIds[currentConfigId] + 1;
@@ -537,7 +537,7 @@ static int populateTSys(float tSys[][array_MAX_BANDS],
 
 const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out,
-	int phasecentre, double DifxTsysAvgSeconds)
+	int phaseCentre, double DifxTsysAvgSeconds)
 {
 	const int MaxLineLength=1000;
 	const int MaxDatastreamsPerAntenna=8;
@@ -678,7 +678,7 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 				}
 				for(i = 0; i < n; ++i)
 				{
-					v = getDifxTsys(D, jobId, antId, origDsIds[i], DifxTsysAvgSeconds, phasecentre, nRowBytes, fitsbuf, nColumn, columns, out, T);
+					v = getDifxTsys(D, jobId, antId, origDsIds[i], DifxTsysAvgSeconds, phaseCentre, nRowBytes, fitsbuf, nColumn, columns, out, T);
 					if(v >= 0)
 					{
 						++hasDifxTsys[antId];
@@ -729,13 +729,13 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 			}
 			scan = D->scan + scanId;
 
-			if(phasecentre >= scan->nPhaseCentres)
+			if(phaseCentre >= scan->nPhaseCentres)
 			{
 				printf("Skipping scan %d as the requested phase centre was not used\n", scanId);
 				continue;
 			}
 
-			sourceId = scan->phsCentreSrcs[phasecentre];
+			sourceId = scan->phsCentreSrcs[phaseCentre];
 			if(sourceId < 0)
 			{
 				continue;

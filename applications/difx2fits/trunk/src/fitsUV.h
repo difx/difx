@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008, 2009 by Walter Brisken                            *
+ *   Copyright (C) 2008-2012 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -84,10 +84,10 @@ typedef struct
 	int flagTransition;
 } DifxVis;
 
-DifxVis *newDifxVis(const DifxInput *D, int jobId, int pulsarBin, int phasecentre);
+DifxVis *newDifxVis(const DifxInput *D, int jobId, int pulsarBin, int phaseCentre);
 void deleteDifxVis(DifxVis *dv);
-int DifxVisNextFile(DifxVis *dv, int pulsarBin, int phasecentre);
-int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phasecentre);
+int DifxVisNextFile(DifxVis *dv, int pulsarBin, int phaseCentre);
+int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phaseCentre);
 int DifxVisCollectRandomParams(const DifxVis *dv);
 
 

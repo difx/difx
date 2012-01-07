@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2011 by Walter Brisken & John Morgan               *
+ *   Copyright (C) 2008-2012 by Walter Brisken & John Morgan               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -281,7 +281,7 @@ static int parsePulseCal(const char *line,
 	float stateCount[2][array_MAX_STATES*array_MAX_BANDS],
 	float pulseCalRate[2][array_MAX_TONES],
 	int refDay, const DifxInput *D, int *configId, 
-	int phasecentre, int doAll)
+	int phaseCentre, int doAll)
 {
 	int IFs[array_MAX_BANDS];
 	int states[array_MAX_STATES];
@@ -364,12 +364,12 @@ static int parsePulseCal(const char *line,
 		}
 	}
 
-	if(phasecentre >= D->scan[scanId].nPhaseCentres)
+	if(phaseCentre >= D->scan[scanId].nPhaseCentres)
 	{
 		return -3;
 	}
 
-	*sourceId = D->scan[scanId].phsCentreSrcs[phasecentre];
+	*sourceId = D->scan[scanId].phsCentreSrcs[phaseCentre];
 	*configId = D->scan[scanId].configId;
 	if(*sourceId < 0 || *configId < 0)	/* not in scan */
 	{
@@ -471,7 +471,7 @@ static int parsePulseCalCableCal(const char *line,
 	int *sourceId, int *scanId,
 	double *time, float *timeInt, double *cableCal,
 	int refDay, const DifxInput *D, int *configId, 
-	int phasecentre)
+	int phaseCentre)
 {
 	int n, p;
 	double mjd;
@@ -506,12 +506,12 @@ static int parsePulseCalCableCal(const char *line,
 		return -3;
 	}
 
-	if(phasecentre >= D->scan[*scanId].nPhaseCentres)
+	if(phaseCentre >= D->scan[*scanId].nPhaseCentres)
 	{
 		return -3;
 	}
 
-	*sourceId = D->scan[*scanId].phsCentreSrcs[phasecentre];
+	*sourceId = D->scan[*scanId].phsCentreSrcs[phaseCentre];
 	*configId = D->scan[*scanId].configId;
 	if(*sourceId < 0 || *configId < 0)	/* not in scan */
 	{
@@ -542,7 +542,7 @@ static int parseDifxPulseCal(const char *line,
 	float stateCount[2][array_MAX_STATES*array_MAX_BANDS],
 	float pulseCalRate[2][array_MAX_TONES],
 	int refDay, const DifxInput *D, int *configId, 
-	int phasecentre)
+	int phaseCentre)
 {
 	static int tooMany[2][array_MAX_BANDS] = { {0} };	/* zeros the values */
 	static int tooFew[2][array_MAX_BANDS] = { {0} };	/* zeros the values */
@@ -631,12 +631,12 @@ static int parseDifxPulseCal(const char *line,
 		return -3;
 	}
 
-	if(phasecentre >= D->scan[*scanId].nPhaseCentres)
+	if(phaseCentre >= D->scan[*scanId].nPhaseCentres)
 	{
 		return -4;
 	}
 
-	*sourceId = D->scan[*scanId].phsCentreSrcs[phasecentre];
+	*sourceId = D->scan[*scanId].phsCentreSrcs[phaseCentre];
 	*configId = D->scan[*scanId].configId;
 	if(*sourceId < 0 || *configId < 0)	/* not in scan */
 	{
@@ -778,7 +778,7 @@ int countTones(const DifxDatastream *dd)
 
 const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out,
-	int phasecentre, double avgSeconds, int verbose)
+	int phaseCentre, double avgSeconds, int verbose)
 {
 	char stateFormFloat[8];
 	char toneFormDouble[8];
@@ -1097,7 +1097,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 							}
 							v = parsePulseCal(line, a, &sourceId, &time, &timeInt, 
 								&cableCal, freqs, pulseCalReAcc, pulseCalImAcc,
-								stateCount, pulseCalRate, refDay, D, &configId, phasecentre, doAll);
+								stateCount, pulseCalRate, refDay, D, &configId, phaseCentre, doAll);
 							if(v < 0)
 							{
 								continue;/*to next line in file*/
@@ -1143,7 +1143,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 							
 							v = parseDifxPulseCal(line, dsId, nBand, nTone, &newSourceId, &newScanId, &time, j,
 										freqs, pulseCalRe, pulseCalIm, stateCount, pulseCalRate,
-										refDay, D, &newConfigId, phasecentre);
+										refDay, D, &newConfigId, phaseCentre);
 							if(v < 0)
 							{
 								continue;	/*to next line in file*/
@@ -1251,7 +1251,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 										continue;/*to next line in file*/	
 									}
 									v = parsePulseCalCableCal(line, a, &lineCableSourceId, &lineCableScanId, &lineCableTime, &lineCablePeriod, 
-										&lineCableCal, refDay, D, &lineCableConfigId, phasecentre);
+										&lineCableCal, refDay, D, &lineCableConfigId, phaseCentre);
 									if(v < 0)
 									{
 										continue;/*to next line in file*/
@@ -1410,8 +1410,6 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	}
 	if(in2)	/* this should never be true the way things work */
 	{
-		fprintf(stderr, "Developer warning: DifxInput2FitsPH: in2 != 0\n");
-
 		fclose(in2);
 		in2 =0;
 	}
