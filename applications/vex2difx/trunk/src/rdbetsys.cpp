@@ -40,9 +40,9 @@
 #include "util.h"
 
 const char program[] = "rdbetsys";
-const char version[] = "0.5";
+const char version[] = "1.0";
 const char author[]  = "Walter Brisken";
-const char verdate[] = "20120105";
+const char verdate[] = "20120109";
 
 const char defaultSwitchedPowerPath[] = "/users/vlbamon/switchedpower";
 const double defaultTsysInterval = 15.0;	// Seconds
@@ -482,6 +482,8 @@ int processStation(FILE *out, const VexData &V, const string &stn, const string 
 	}
 
 	fprintf(out, "# %s %14.8f %14.8f\n", stn.c_str(), stnTimeRange.mjdStart, stnTimeRange.mjdStop);
+	// FIXME: it would be good to print filenames as the next line does, but with one file per line so line lengths stay confined.
+	// fprintf(out, "# Files: %s\n", fileList.c_str());
 	fprintf(out, "# ant D.O.Y. dur(days) nRecChan (tsys, bandName)[nRecChan]\n");
 
 	TA.setOutput(out);
@@ -520,8 +522,6 @@ int processStation(FILE *out, const VexData &V, const string &stn, const string 
 			
 			do
 			{
-				map<string,VexInterval>::const_iterator it;
-
 				if(scan)
 				{
 					++scanNum;
@@ -551,7 +551,7 @@ int processStation(FILE *out, const VexData &V, const string &stn, const string 
 
 					continue;
 				}
-				for(it = scan->stations.begin(); it != scan->stations.end(); ++it)
+				for(map<string,VexInterval>::const_iterator it = scan->stations.begin(); it != scan->stations.end(); ++it)
 				{
 					if(it->first == stn)
 					{
@@ -578,21 +578,40 @@ int processStation(FILE *out, const VexData &V, const string &stn, const string 
 			slotDeltaT = scanTimeRange.duration() / nSlot;
 			slotTimeRange.setTimeRange(scanTimeRange.mjdStart, scanTimeRange.mjdStart + slotDeltaT);
 		}
-		if(lineTimeRange.mjdStart >= scanTimeRange.mjdStart &&
-		   lineTimeRange.mjdStop  <= scanTimeRange.mjdStop)
+		if(scanTimeRange.contains(lineTimeRange))
 		{
 			// data to consider
+			int n = 0;
 			double t = lineTimeRange.center();
+			VexInterval origSlot(slotTimeRange);
 			
-			while(!slotTimeRange.contains(t))
+			if(t > slotTimeRange.mjdStart)
 			{
-				TA.flush();
-				slotTimeRange.shift(slotDeltaT);
+				while(!slotTimeRange.contains(t))
+				{
+					TA.flush();
+					slotTimeRange.shift(slotDeltaT);
+					n++;
+
+					if(n > nSlot)
+					{
+						cout << "Developer error handling line: " << line << endl;
+						cout << "nSlot = " << nSlot << "  line=" << lineTimeRange << "  center=" << t << "  scan=" << scanTimeRange << "  origslot=" << origSlot << endl;
+						break;
+					}
+				}
+
+				if(n < nSlot)
+				{
+					TA.feed(lineTimeRange, line+pos);
+
+					++nRecord;
+				}
+				else
+				{
+					cout << "Warning: lineTimeRange = " << lineTimeRange << " did not fit with scan " << scanTimeRange << endl;
+				}
 			}
-
-			TA.feed(lineTimeRange, line+pos);
-
-			++nRecord;
 		}
 	}
 

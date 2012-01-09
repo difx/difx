@@ -97,7 +97,9 @@ public:
 	void logicalOr(double start, double stop);
 	void logicalOr(const VexInterval &v);
 	bool contains(double mjd) const { return (mjdStart <= mjd) && (mjd <= mjdStop); }
+	bool contains(const VexInterval &v) const { return (mjdStart <= v.mjdStart) && (mjdStop >= v.mjdStop); }
 	bool containsAbsolutely(double mjd) const { return (mjdStart < mjd) && (mjd < mjdStop); }
+	bool containsAbsolutely(const VexInterval &v) const { return (mjdStart < v.mjdStart) && (mjdStop > v.mjdStop); }
 	bool isCausal() const { return (mjdStart <= mjdStop); }
 };
 

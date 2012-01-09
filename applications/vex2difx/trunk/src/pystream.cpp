@@ -1050,6 +1050,7 @@ int pystream::writeScans(const VexData *V)
 	int nScan;
 	map<string,VexIF>::const_iterator it;
 	const char *switchOutput[] = {"1A", "1B", "2A", "2B"};
+	double recordSeconds = 0.0;
 
 	nScan = V->nScan();
 
@@ -1158,6 +1159,7 @@ int pystream::writeScans(const VexData *V)
 				{
 					*this << "recorder0.setPacket(0, 0, 40, 5008)" << endl;
 					*this << "subarray.setRecord(mjdStart + " << deltat1 << "*second, mjdStart+" << deltat2 << "*second, '" << scan->defName << "', obsCode, stnCode )" << endl;
+					recordSeconds += (deltat2-deltat1);
 				}
 				else
 				{
@@ -1183,6 +1185,8 @@ int pystream::writeScans(const VexData *V)
 		}
 		*this << endl;
 	}
+
+	cout << "There are " << static_cast<int>(recordSeconds) << " seconds of recording at " << ant << endl;
 
 	precision(p);
 
