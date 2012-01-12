@@ -105,15 +105,13 @@ def run_lbafilecheck(datafilename, stations, computehead):
     options = ''
     if computehead:
         options += ' -H '
-    command = "lbafilecheck.py -F -s " + options + stations + " " + datafilename
+    command = "lbafilecheck.py -F " + options + " -s " + stations + " " + datafilename
     print command
     subprocess.check_call( command, stdout=sys.stdout, shell=True)
 
 def fill_operator_log(logfile):
     # Fire up an editor for operator comments
-    editor = os.environ.get('EDITOR')
-    if not editor:
-        editor = 'vim'
+    editor = os.environ.get('EDITOR', 'vim')
     command = editor + ' ' + logfile
     subprocess.check_call( command, stdout=sys.stdout, shell=True)
 
@@ -212,7 +210,6 @@ else:
                 corrjoblist[jobname] = fulljoblist[jobname]
 
 print "job list to correlate = ", pprint.pformat(corrjoblist), "\n";
-#print "stations = ", pprint.pformat(stations), "\n";
 
 # create the mpi files for each job
 for jobname in sorted(corrjoblist.keys()):
