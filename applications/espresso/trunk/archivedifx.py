@@ -26,15 +26,15 @@ def transfer_command(protocol, preamble, source, dest):
     elif protocol == 'gridftp':
         verbose = ''
         if options.verbose:
-            verbose = '-vb'
-        command = preamble + ' globus-url-copy -cd ' + verbose + ' ' + source + ' sshftp://' + dest
+            verbose = ' -vb '
+        command = preamble + ' globus-url-copy -cd ' + verbose + source + ' sshftp://' + dest
     else:
         raise Exception('Unrecognised transfer protocol!')
 
     return command
 
 usage = '''%prog <path> <destination>
-will transfer <path> and all its subdirectories to <destination>. Small files (<10 MB) are tarred before transfer. Larger files are transferred unmodified.
+will transfer <path> and all its subdirectories to <destination>. Small files are tarred before transfer. Larger files are transferred unmodified.
 
 e.g.
 %prog /data/corr/corrdata/vt13b cormac@cortex.ivec.org/pbstore/groupfs/astrotmp/Archive/vt13/vt13b
@@ -42,7 +42,7 @@ e.g.
 
 parser = optparse.OptionParser(usage=usage, version='%prog ' + '1.0')
 parser.add_option( "--maxtarsize", "-m",
-        type='float', dest="maxtarsize", default=5,
+        type='float', dest="maxtarsize", default=10,
         help='files larger than MAXTARSIZE (MB) will be transferred untarred [default = %default]' )
 parser.add_option( "--ssh", "-s",
         dest="usessh", action="store_true", default=False,

@@ -16,7 +16,7 @@ export CORR_HOSTS=/home/corr/corr_hosts.txt
 export CORR_DATA=/data/corr/corrdat/
 
 3) Run the install script:
-./install
+./install.py $DIFXROOT
 
 this will simply copy the python scripts to your DiFX installation's bin
 directory.
@@ -55,3 +55,5 @@ for reasonable naming conventions, but you should ensure that it is so.
 
 For more information on the full suite of scripts, see the documentation on the DiFX wiki: http://cira.ivec.org/dokuwiki/doku.php/difx/documentation
 
+Bugs and feature requests should be sent to Cormac Reynolds
+(c.reynolds@curtin.edu.au) or submitted to the DiFX 'trac' bug tracking tool.
