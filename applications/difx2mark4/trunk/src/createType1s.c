@@ -202,11 +202,10 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
                 fprintf (stderr, "problem finding data in %s\n", dirname);
                 return (-1);
                 }
-            closedir (pdir);
-
             strcpy (inname, dirname);
             strcat (inname, "/");
             strcat (inname, dent->d_name);
+            closedir (pdir);
                                     // open and read a complete Swinburne file
             gv_stat = get_vis (inname, opts, nvis, vrsize, &vrec, &nvrtot, corrdate);
             if (gv_stat < -1)       // -1 is normal (EOF); anything less is an error

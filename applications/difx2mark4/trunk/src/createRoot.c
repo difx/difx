@@ -456,8 +456,9 @@ int createRoot (DifxInput *D,       // difx input structure pointer
                     if (i < 0)
                         {
                         if (opts->verbose > 0)
-                            printf ("        discarding unused def for site %s\n",
-                                     current_site);
+                            printf ("        intl_name %c%c difx_name -- mk4_id - "
+                                             "difx site index --\n",
+                                     current_site[0], current_site[1]);
                         line[0] = 0;
                         break;
                         }
@@ -661,12 +662,10 @@ int isValidAntenna(const DifxInput *D, char *antName, int scanId)
                                     //antenna in input?
     for(i = 0; i < strlen(antName); i++)
         antUpper[i] = toupper(antName[i]);
-    antUpper[i+1] = '\0';
-
+    antUpper[i] = '\0';
     antId = DifxInputGetAntennaId(D, antUpper);
     if (antId < 0)
         return(-1);
-
                                     //antenna in scan?
     if (D->scan[scanId].im != NULL && D->scan[scanId].im[antId] == 0)
         return(-1);
