@@ -80,13 +80,18 @@ def write_machines(expname, machines):
 def check_machines(machines):
     # check that if a machine appears more than once, all appearances are
     # consecutive in the list
+    machine_error = str()
     while len(machines) > 1:
         machine = machines.pop(0)
         while machines and machines[0] == machine:
             machines.pop()
         if machine in machines:
-            print '\n' * 2, '!' * 20
-            print "Warning:", machine, "appears multiple times in the machines.list file, but not in consecutive order. This machine file will not work unless you have openmpi v1.4 or greater!"
+            machine_error += ' ' + machine 
+
+
+    if machine_error:
+       print '\n' * 2, '!' * 20
+       print "Warning:", machine_error, "appear(s) multiple times in the machines.list file, but not in consecutive order. This machine file will not work unless you have openmpi v1.4 or greater!"
 
 
 def write_threads(expname, hosts, computemachines):
