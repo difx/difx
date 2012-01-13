@@ -1170,29 +1170,109 @@ void Mk5Daemon_stopMpifxcorr_USNO( Mk5Daemon *D, const DifxMessageGeneric *G ) {
 }
 
 //-----------------------------------------------------------------------------
-//!  Provide the contents of a specified file in a message.  This is
-//!  responding to a request, presumably from the GUI.
+//!  Transfer the contents of a specified file from/to a client using a
+//!  TCP connection.  This is responding to a request, presumably from the GUI.
 //-----------------------------------------------------------------------------	
-void Mk5Daemon_fileRequest_USNO( Mk5Daemon *D, const DifxMessageGeneric *G ) {
-	const DifxMessageStop *S;
+void Mk5Daemon_fileTransfer( Mk5Daemon *D, const DifxMessageGeneric *G ) {
+	const DifxMessageFileTransfer *S;
 	char message[DIFX_MESSAGE_LENGTH];
 	
 	if( !G ) {
 		difxMessageSendDifxAlert(
-								 "Developer error: Mk5Daemon_inputFile() received null DifxMessageGeneric",
+								 "Developer error: Mk5Daemon_fileTransfer() received null DifxMessageGeneric",
 								 DIFX_ALERT_LEVEL_ERROR);
 		return;
 	}
 	
-	S = &G->body.stop;
+	S = &G->body.fileTransfer;
 	
-	if( S->inputFilename[0] != '/' ) {
-		difxMessageSendDifxAlert( "Malformed DifxInputFileRequest message received", DIFX_ALERT_LEVEL_ERROR );
-		Logger_logData( D->log, "Mk5Daemon_stopMpifxcorr: degenerate request\n" );
+	if( S->origin[0] != '/' || S->destination[0] != '/' || S->address[0] == 0 || S->port <= 0 ||
+	    ( strcmp( S->direction, "from client" ) && strcmp( S->direction, "to client" ) ) ) {
+		difxMessageSendDifxAlert( "Malformed DifxFileTransfer message received", DIFX_ALERT_LEVEL_ERROR );
+		Logger_logData( D->log, "Mk5Daemon_FileTransfer: degenerate request\n" );
 		return;
 	}
 	
-	sprintf( message, "Request for input file %s", S->inputFilename );
+	if ( !strcmp( S->direction, "from client" ) )
+	    sprintf( message, "Request for trasfer of file %s from GUI client to %s on DiFX host", S->origin, S->destination );
+	else if ( !strcmp( S->direction, "to client" ) )
+	    sprintf( message, "Request for trasfer of file %s from DiFX host to %s on GUI client", S->origin, S->destination );
+	difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_WARNING );
+	sprintf( message, "Client address: %s   port: %d", S->address, S->port );
+	difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_WARNING );
+		
+}
+
+//-----------------------------------------------------------------------------
+//!  Perform a file or directory operation on a specified path.  A limited
+//!  number of operations are considered legal, and all are done as the
+//!  difx user (not root) for obvious security reasons.
+//-----------------------------------------------------------------------------	
+void Mk5Daemon_fileOperation( Mk5Daemon *D, const DifxMessageGeneric *G ) {
+	const DifxMessageFileOperation *S;
+	char message[DIFX_MESSAGE_LENGTH];
+	char command[MAX_COMMAND_SIZE];
+	const char *user;
+	
+	if( !G ) {
+		difxMessageSendDifxAlert(
+								 "Developer error: Mk5Daemon_fileOperation() received null DifxMessageGeneric",
+								 DIFX_ALERT_LEVEL_ERROR);
+		return;
+	}
+	
+	S = &G->body.fileOperation;
+	
+	if( S->path[0] != '/' ) {
+		difxMessageSendDifxAlert( "Malformed DifxFileOperation message received", DIFX_ALERT_LEVEL_ERROR );
+		Logger_logData( D->log, "Mk5Daemon_FileOperation: degenerate request\n" );
+		return;
+	}
+	
+	user = getenv( "DIFX_USER_ID" );
+	if(!user)
+	{
+		user = difxUser;
+	}
+
+	//  Check the file operation against the list of "legal" operations.
+	if ( !strcmp( S->operation, "mkdir" ) ) {
+	    //  Make a new directory with the given path.  The "-p" option will make the entire path.  The
+	    //  operation should be silent if all goes well - any output from popen will be something bad
+	    //  (thus we generate an error message).
+		snprintf( command, MAX_COMMAND_SIZE, "ssh -x %s@%s 'mkdir -p %s'", 
+				 user,
+				 S->dataNode,
+				 S->path );
+  		FILE* fp = Mk5Daemon_popen( D, command, 1 );
+  		while ( fgets( message, DIFX_MESSAGE_LENGTH, fp ) != NULL )
+  		    difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_INFO );
+  		pclose( fp );	    
+  		sprintf( message, "%s performed!", command );
+	}
+	else if ( !strcmp( S->operation, "rmdir" ) ) {
+    	sprintf( message, "rmdir %s", S->path );
+	}
+	else if ( !strcmp( S->operation, "rm" ) ) {
+    	sprintf( message, "rm %s", S->path );
+	}
+	else if ( !strcmp( S->operation, "mv" ) ) {
+	    if ( S->arg[0] != '/' ) {
+    		sprintf( message, "Destination of DifxFileOperation \"mv\" request (%s) must be a complete path", S->arg );
+    		difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_ERROR );
+    		strcat( message, "\n" );
+    		Logger_logData( D->log, message );
+    		return;
+	    }
+    	sprintf( message, "mv %s %s", S->path, S->arg );
+	}
+	else {
+		sprintf( message, "Illegal DifxFileOperation request received - operation \"%s\" is not permitted", S->operation );
+		difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_ERROR );
+		strcat( message, "\n" );
+		Logger_logData( D->log, message );
+		return;
+	}
 	difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_WARNING );
 		
 }

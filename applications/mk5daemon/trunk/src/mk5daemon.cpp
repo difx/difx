@@ -679,8 +679,11 @@ void handleDifxMessage(Mk5Daemon *D)
 			case DIFX_MESSAGE_CONDITION:
 				handleCondition(D, &G);
 				break;
-			case DIFX_MESSAGE_FILEREQUEST:
-				Mk5Daemon_fileRequest_USNO(D, &G);
+			case DIFX_MESSAGE_FILETRANSFER:
+				Mk5Daemon_fileTransfer(D, &G);
+				break;
+			case DIFX_MESSAGE_FILEOPERATION:
+				Mk5Daemon_fileOperation(D, &G);
 				break;
 			default:
 				break;
