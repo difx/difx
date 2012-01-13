@@ -30,7 +30,13 @@ def getLastExperimentNumber(session):
     '''
     exp = session.query(model.Experiment.number).order_by(desc(model.Experiment.number)).first()
     return(exp.number)
-    
+
+def getExperiments(session):
+    '''
+    Returns a list of all Experiment objects found in the database
+    '''
+    return(session.query(model.Experiment).all())
+
 def getExperimentByCode(session, code):
     '''
     Returns the Experiment object referencesd by the given experiment code
