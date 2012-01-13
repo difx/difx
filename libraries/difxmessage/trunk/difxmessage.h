@@ -195,7 +195,8 @@ enum DifxMessageType
 	DIFX_MESSAGE_SMART,
 	DIFX_MESSAGE_DRIVE_STATS,
 	DIFX_MESSAGE_DIAGNOSTIC,
-	DIFX_MESSAGE_FILEREQUEST,
+	DIFX_MESSAGE_FILETRANSFER,
+	DIFX_MESSAGE_FILEOPERATION,
 	NUM_DIFX_MESSAGE_TYPES	/* this needs to be the last line of enum */
 };
 
@@ -320,8 +321,20 @@ typedef struct
 
 typedef struct
 {
-    char filename[DIFX_MESSAGE_FILENAME_LENGTH];
-} DifxMessageFileRequest;
+    char origin[DIFX_MESSAGE_FILENAME_LENGTH];
+    char destination[DIFX_MESSAGE_FILENAME_LENGTH];
+    char address[DIFX_MESSAGE_PARAM_LENGTH];
+    int port;
+    char direction[DIFX_MESSAGE_PARAM_LENGTH];
+} DifxMessageFileTransfer;
+
+typedef struct
+{
+    char path[DIFX_MESSAGE_FILENAME_LENGTH];
+    char operation[DIFX_MESSAGE_PARAM_LENGTH];
+    char dataNode[DIFX_MESSAGE_PARAM_LENGTH];
+    char arg[DIFX_MESSAGE_FILENAME_LENGTH];
+} DifxMessageFileOperation;
 
 typedef struct
 {
@@ -422,7 +435,8 @@ typedef struct
 		DifxMessageTransient	transient;
 		DifxMessageSmart	smart;
 		DifxMessageDiagnostic	diagnostic;
-		DifxMessageFileRequest    fileRequest;
+		DifxMessageFileTransfer    fileTransfer;
+		DifxMessageFileOperation    fileOperation;
 	} body;
 	int _xml_level;			/* internal use only here and below */
 	char _xml_element[5][32];

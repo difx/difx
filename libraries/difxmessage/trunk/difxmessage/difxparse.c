@@ -693,10 +693,44 @@ static void XMLCALL endElement(void *userData, const char *name)
 						G->body.diagnostic.microsec = atof(s);
 					}
 					break;
-				case DIFX_MESSAGE_FILEREQUEST:
-					if(strcmp(elem, "input") == 0 )
+				case DIFX_MESSAGE_FILETRANSFER:
+					if(strcmp(elem, "origin") == 0 )
 					{
-						strncpy(G->body.stop.inputFilename, s, DIFX_MESSAGE_FILENAME_LENGTH-1);
+						strncpy(G->body.fileTransfer.origin, s, DIFX_MESSAGE_FILENAME_LENGTH-1);
+					}
+					else if(strcmp(elem, "destination") == 0 )
+					{
+						strncpy(G->body.fileTransfer.destination, s, DIFX_MESSAGE_FILENAME_LENGTH-1);
+					}
+					else if(strcmp(elem, "direction") == 0 )
+					{
+						strncpy(G->body.fileTransfer.direction, s, DIFX_MESSAGE_PARAM_LENGTH-1);
+					}
+					else if(strcmp(elem, "address") == 0 )
+					{
+						strncpy(G->body.fileTransfer.address, s, DIFX_MESSAGE_PARAM_LENGTH-1);
+					}
+					else if(strcmp(elem, "port") == 0 )
+					{
+						G->body.fileTransfer.port = atoi( s );
+					}
+					break;
+				case DIFX_MESSAGE_FILEOPERATION:
+					if(strcmp(elem, "path") == 0 )
+					{
+						strncpy(G->body.fileOperation.path, s, DIFX_MESSAGE_FILENAME_LENGTH-1);
+					}
+					else if(strcmp(elem, "operation") == 0 )
+					{
+						strncpy(G->body.fileOperation.operation, s, DIFX_MESSAGE_PARAM_LENGTH-1);
+					}
+					else if(strcmp(elem, "arg") == 0 )
+					{
+						strncpy(G->body.fileOperation.arg, s, DIFX_MESSAGE_FILENAME_LENGTH-1);
+					}
+					else if(strcmp(elem, "dataNode") == 0 )
+					{
+						strncpy(G->body.fileOperation.dataNode, s, DIFX_MESSAGE_PARAM_LENGTH-1);
 					}
 					break;
 				case DIFX_MESSAGE_TRANSIENT:
@@ -950,8 +984,18 @@ void difxMessageGenericPrint(const DifxMessageGeneric *G)
 	case DIFX_MESSAGE_STOP:
 		printf("    input file = %s\n", G->body.start.inputFilename);
 		break;
-	case DIFX_MESSAGE_FILEREQUEST:
-		printf("    filename = %s\n", G->body.start.inputFilename);
+	case DIFX_MESSAGE_FILETRANSFER:
+		printf("    origin = %s\n", G->body.fileTransfer.origin);
+		printf("    destination = %s\n", G->body.fileTransfer.destination);
+		printf("    direction = %s\n", G->body.fileTransfer.direction);
+		printf("    address = %s\n", G->body.fileTransfer.address);
+		printf("    port = %s\n", G->body.fileTransfer.port);
+		break;
+	case DIFX_MESSAGE_FILEOPERATION:
+		printf("    path = %s\n", G->body.fileOperation.path);
+		printf("    operation = %s\n", G->body.fileOperation.operation);
+		printf("    arg = %s\n", G->body.fileOperation.arg);
+		printf("    dataNode = %s\n", G->body.fileOperation.dataNode);
 		break;
 	case DIFX_MESSAGE_TRANSIENT:
 		printf("    jobId = %s\n", G->body.transient.jobId);

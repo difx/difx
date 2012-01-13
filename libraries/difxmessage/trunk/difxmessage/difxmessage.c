@@ -99,7 +99,8 @@ const char DifxMessageTypeStrings[][24] =
 	"DifxSmartMessage",
 	"Mark5DriveStatsMessage",
 	"DifxDiagnosticMessage",
-	"DifxFileRequest"
+	"DifxFileTransfer",
+	"DifxFileOperation"
 };
 
 /* Note! Keep this in sync with enum DifxDiagnosticType in difxmessage.h */
