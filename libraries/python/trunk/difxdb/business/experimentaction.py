@@ -32,6 +32,9 @@ def getLastExperimentNumber(session):
     return(exp.number)
     
 def getExperimentByCode(session, code):
+    '''
+    Returns the Experiment object referencesd by the given experiment code
+    '''
     
     return(session.query(model.Experiment).filter_by(code=code).one())
     
