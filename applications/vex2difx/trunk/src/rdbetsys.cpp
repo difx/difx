@@ -60,6 +60,8 @@ static void usage(const char *pgm)
 	printf("  -v          be more verbose in operation\n\n");
 	printf("  --quiet\n");
 	printf("  -q          be less verbose in operation\n\n");
+	printf("  --interval <t>\n");
+	printf("  -i <t>      use averaging interval of <t> seconds [%f]\n\n", defaultTsysInterval);
 	printf("Note that env. var. TCAL_PATH must be set to point to TCal data\n\n");
 }
 
@@ -127,7 +129,7 @@ std::string genFileList(const char *switchedPowerPath, const char *stn, const Ve
 		char match[MaxFilenameLength];
 
 		mjd2yearday(mjd, &year, &doy);
-		snprintf(match, MaxFilenameLength, "%s/%s_%d_%03d_*.switched_power.gz", switchedPowerPath, stn, year, doy);
+		snprintf(match, MaxFilenameLength, "%s/%s_%d_%03d_*.switched_power.xz", switchedPowerPath, stn, year, doy);
 
 		if(glob(match, 0, 0, &globbuf) == 0)
 		{
@@ -468,7 +470,7 @@ int processStation(FILE *out, const VexData &V, const string &stn, const string 
 	const VexMode *mode = 0;
 	const VexSetup *setup = 0;
 
-	command = "zcat " + fileList + " 2> /dev/null";
+	command = "xzcat " + fileList + " 2> /dev/null";
 	if(verbose > 2)
 	{
 		printf("opening pipe: %s\n", command.c_str());
@@ -698,6 +700,20 @@ int main(int argc, char **argv)
 			   strcmp(argv[a], "--quiet") == 0)
 			{
 				--verbose;
+			}
+			else if(strcmp(argv[a], "-i") == 0 ||
+			   strcmp(argv[a], "--interval") == 0)
+			{
+				if(a+1 < argc)
+				{
+					nominalTsysInterval = atof(argv[++a]);
+				}
+				else
+				{
+					fprintf(stderr, "Interval parameter requires a numeric value\n");
+
+					return EXIT_FAILURE;
+				}
 			}
 			else
 			{
