@@ -271,7 +271,11 @@ int main(int argc, const char * argv[]) {
 	  ss << "-"  << products[iprod[i]].getTelescopeName2();
 	}
 	ss << " " <<  polpair << " "
-	   << products[iprod[i]].getFreq() << " MHz";
+	   << products[iprod[i]].getFreq() << " MHz  ";
+	if (products[iprod[i]].getLSB()) 
+	  ss << "LSB";
+	else 
+	  ss << "USB";
 
 	cpgsch(3);
 	cpgsci(cols[i]);

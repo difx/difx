@@ -75,6 +75,7 @@ int main(int argc, const char * argv[])
   }
   model = config->getModel();
   startsec = config->getStartSeconds();
+  mjd = config->getStartMJD();
 
   if(argc == 4)
     intseconds = atof(argv[3]);

@@ -331,6 +331,9 @@ vector<DIFX_ProdConfig> monserver_productconfig(Configuration *config, int confi
 	  for(int k=0;k<config->getBNumPolProducts(configindex, i, j);k++) {
 	    config->getBPolPair(configindex,i,j,k,polpair);
 
+
+
+
 	    products.push_back(DIFX_ProdConfig(ds1index,
 					       ds2index,
 					       config->getTelescopeName(ds1index), 
@@ -341,7 +344,8 @@ vector<DIFX_ProdConfig> monserver_productconfig(Configuration *config, int confi
 					       s,
 					       b,
 					       resultindex,
-					       freqchannels));
+					       freqchannels,
+					       config->getFreqTableLowerSideband(freqindex)));
 	    resultindex += freqchannels;
 	  }
 	}
@@ -377,7 +381,8 @@ vector<DIFX_ProdConfig> monserver_productconfig(Configuration *config, int confi
 					   0,
 					   0,
 					   offset,
-					   nchan));
+					   nchan,
+					   config->getFreqTableLowerSideband(freqindex)));
 	offset += nchan;
       }
     }
@@ -389,7 +394,7 @@ vector<DIFX_ProdConfig> monserver_productconfig(Configuration *config, int confi
 DIFX_ProdConfig::DIFX_ProdConfig(int TelIndex1, int TelIndex2, string TelName1, 
 				 string TelName2, double freq, double bandwidth, 
 				 char polpair[3], int nbin, int nphasecentre, int offset,
-				 int nchan) {
+				 int nchan, bool lsbval) {
   TelescopeIndex1 = TelIndex1;
   TelescopeIndex2 = TelIndex2;
   TelescopeName1 = TelName1;
@@ -403,6 +408,7 @@ DIFX_ProdConfig::DIFX_ProdConfig(int TelIndex1, int TelIndex2, string TelName1,
   Nphasecentre = nphasecentre;
   Offset = offset;
   Nchan = nchan;
+  lsb = lsbval;
 }
 
 DIFX_ProdConfig::~DIFX_ProdConfig() {

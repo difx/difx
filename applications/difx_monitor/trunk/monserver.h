@@ -38,7 +38,7 @@ struct monclient {
 class DIFX_ProdConfig {
  public:
 
-  DIFX_ProdConfig(int TelIndex1, int TelIndex2, string TelName1, string TelName2, double freq, double bandwidth, char polpair[3], int nbin, int nphasecentre, int offset, int nchan);
+  DIFX_ProdConfig(int TelIndex1, int TelIndex2, string TelName1, string TelName2, double freq, double bandwidth, char polpair[3], int nbin, int nphasecentre, int offset, int nchan, bool lsb);
   ~DIFX_ProdConfig();
 
   inline int getTelescopeIndex1 () { return TelescopeIndex1; }
@@ -50,6 +50,7 @@ class DIFX_ProdConfig {
   inline void getPolPair(char polpair[3]) {polpair[0]=PolPair[0]; polpair[1]=PolPair[1]; polpair[2]=0;}
   inline int getOffset () { return Offset; }
   inline int getNFreqChannels () { return Nchan; }
+  inline int getLSB () { return lsb; }
 
  private:
 
@@ -58,6 +59,7 @@ class DIFX_ProdConfig {
   string TelescopeName1;
   string TelescopeName2;
   char PolPair[3];
+  bool lsb;
   double Freq;
   double Bandwidth;
   int Nbin;
