@@ -85,3 +85,15 @@ def deleteExperimentByCode(session, code):
     
     session.delete(experiment)
     session.commit()
+    
+def isExperimentReleased(session, code):
+    
+    experiment = session.query(model.Experiment).filter_by(code=code).one()
+    
+    if (experiment is None):
+        return
+    
+    if (experiment.status.statuscode >= 100):
+        return(True)
+    else:
+        return(False)
