@@ -1,0 +1,150 @@
+#!/bin/env python
+
+from sys import argv, exit
+from string import split
+from pyx import *
+
+
+def readTsysFile(tsysFile, verbose):
+	
+	data = {}	# indexed by antenna name
+	nBad = 0
+	nComment = 0
+	nData = 0
+	nTsys = 0
+	nOverflow = 0
+	nMask = 0
+
+	if verbose > 0:
+		print 'Opening: %s' % tsysFile
+	lines = open(tsysFile, 'r').readlines()
+	lastAnt = ''
+	for line in lines:
+		s = split(split(line, '#')[0])
+		l = len(s)
+		if l < 4:
+			nComment += 1
+			continue
+		nChan = int(s[3])
+		if l != nChan*2 + 4:
+			if verbose > 1:
+				print 'Malformed line: %s' % line
+			nBad += 1
+		else:
+			nData += 1
+		if s[0] != lastAnt:
+			lastAnt = s[0]
+			if verbose > 0:
+				print 'Reading antenna: %s' % lastAnt
+			if data.has_key(lastAnt):
+				antArray = data[lastAnt]
+			else:
+				antArray = []
+				data[lastAnt] = antArray
+		while len(antArray) < nChan:
+			antArray.append([[],[]])
+		doy = float(s[1])
+		for c in range(nChan):
+			tsys = float(s[4 + 2*c])
+			if tsys == 999:
+				nMask += 1
+			elif tsys < 999.0 and tsys > 0.0:
+				antArray[c][0].append(doy)
+				antArray[c][1].append(tsys)
+				nTsys += 1
+			else:
+				nOverflow += 1
+	
+	if verbose > 0:
+		print '%d lines were malformed' % nBad
+		print '%d lines were comments' % nComment
+		print '%d lines were valid' % nData
+		print '%d Tsys values were read' % nTsys
+		print '%d overflow values were read' % nOverflow
+		print '%d masked values were read' % nMask
+
+	return data
+
+
+def plotAntennaTsys(pages, data, antName, verbose):
+
+	lastPage = -1
+
+	tmax = 0
+	tmin = 999
+
+	for chan in range(len(data)):
+		chanData = data[chan]
+		m = max(chanData[1])
+		if m > tmax:
+			tmax = m
+		m = min(chanData[1])
+		if m < tmin:
+			tmin = m
+	tmin = 0
+
+	for chan in range(len(data)):
+		chanData = data[chan]
+		col = chan/4
+		row = chan%4
+		page = chan/8
+
+		if page != lastPage:
+			lastPage = page
+			c = canvas.canvas()
+			p = document.page(c, paperformat=document.paperformat.Letter)
+			pages.append(p)
+
+		if len(chanData[0]) < 2:
+			continue;
+
+		g = graph.graphxy(width=8, \
+			x=graph.axis.linear(title='%s.%d'%(antName,chan), min=min(chanData[0])*0.99, max=max(chanData[0])*1.01), \
+			y=graph.axis.linear(title="$y$", min=tmin, max=tmax))
+		g.plot(graph.data.values(x=chanData[0], y=chanData[1]), [graph.style.symbol(graph.style.symbol.circle, size=0.02)])
+		g.dolayout()
+
+		c.insert(g, [trafo.translate(col*9, row*6)])
+
+def plotTsys(tsysFile, plotFile, verbose):
+	data = readTsysFile(tsysFile, verbose)
+	pages = []
+	ants = data.keys()
+	ants.sort()
+	for a in ants:
+		if verbose > 0:
+			print 'Plotting antenna %s' % a
+		plotAntennaTsys(pages, data[a], a, verbose)
+	doc = document.document(pages)
+	doc.writePDFfile(plotFile, title=tsysFile)
+
+
+verbose = 1
+tsysFile = ''
+plotFile = ''
+
+for a in argv[1:]:
+	if a[0] == '-':
+		if a in ['-v', '--verbose']:
+			verbose += 1
+		elif a in ['-q', '--quiet']:
+			verbose += 1
+		else:
+			print 'Error: unknown option: %s' % a
+			exit(0)
+	elif tsysFile == '':
+		tsysFile = a
+	elif plotFile == '':
+		plotFile = a
+	else:
+		print 'Error: unexpected argument: %s' % a
+		exit(0)
+
+if tsysFile == '':
+	print 'Error: Tsys filename required.'
+	exit(0)
+
+if plotFile == '':
+	plotFile = tsysFile + '.pdf'
+
+plotTsys(tsysFile, plotFile, verbose)
