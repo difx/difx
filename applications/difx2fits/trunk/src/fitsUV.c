@@ -179,10 +179,10 @@ int DifxVisNextFile(DifxVis *dv, int pulsarBin, int phaseCentre)
 
 		/* The filename matched the template expression */
 
-		/* slot 3 of the re match should be pulsar bin number */
-		bin = re2int(dv->globbuf.gl_pathv[dv->curFile], fileSubexpressions+3);
-		/* slot 4 of the re match should be phase center number */
-		pc  = re2int(dv->globbuf.gl_pathv[dv->curFile], fileSubexpressions+4);
+		/* slot 3 of the re match should be phase center number */
+		pc  = re2int(dv->globbuf.gl_pathv[dv->curFile], fileSubexpressions+3);
+		/* slot 4 of the re match should be pulsar bin number */
+		bin = re2int(dv->globbuf.gl_pathv[dv->curFile], fileSubexpressions+4);
 
 		if(bin == pulsarBin && (pc == 0 || pc == phaseCentre))
 		{
