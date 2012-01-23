@@ -831,7 +831,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	float pulseCalImAcc[2][array_MAX_TONES]; 
 	float stateCount[2][array_MAX_STATES*array_MAX_BANDS];
 	float pulseCalRate[2][array_MAX_TONES];
-	int configId=0, sourceId;
+	int configId, sourceId;
 	int scanId;
 	int refDay;
 	int i, a, dsId, j, k, t, n, v;
@@ -991,6 +991,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 		nAccum = 0;
 
 		scanId = -2;
+		sourceId = -2;
 		printf(" %s", D->antenna[a].name);
 		fflush(stdout);
 
@@ -1321,7 +1322,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 
 					p_fitsbuf = fitsbuf;
 				
-					if(!nDifxTone || nAccum*D->config[configId].tInt > 0.25*avgSeconds || lastnWindow == 1)	/* only write a row if a reasonable amount of data were averaged */
+					if(!nDifxTone || nAccum*D->config[configId].tInt > 0.25*avgSeconds || (nAccum > 0 && lastnWindow == 1))	/* only write a row if a reasonable amount of data were averaged */
 					{
 						FITS_WRITE_ITEM(dumpTime, p_fitsbuf);
 						FITS_WRITE_ITEM(dumpTimeInt, p_fitsbuf);
