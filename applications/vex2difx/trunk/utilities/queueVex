@@ -11,8 +11,8 @@ from time import time
 import datetime
 
 program = 'queueVex'
-version = 1.7
-verdate = '20120103'
+version = 1.8
+verdate = '20120126'
 author  = 'Walter Brisken'
 
 verbose = 1
@@ -263,6 +263,14 @@ for vexFile in vexFiles:
 		vexFile = '%s/%s' % (cwd, vexFile)
 
 	obsCode, obsSeg, stationTimes = vexPeek(vexFile)
+
+	stns = stationTimes.keys()
+	stns.sort()
+	print stns
+	if stns == ['MK', 'PT'] and not usnoConvert:
+		print 'Warning: This looks like a USNO experiment because it has only MK and PT, but the --usno flag was not provided.'
+		print 'Press enter to continue or Ctrl-C to stop this process'
+		stdin.readline()
 
 	execute('%s/vex2script %s %s' % (difxPath, vexFile, options))
 

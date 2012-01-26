@@ -814,7 +814,7 @@ int pystream::writeLoifTable(const VexData *V)
 				char comment[MaxCommentLength] = {0};
 				double firstTune = fabs(setup->firstTuningForIF(i.name) - i.ifSSLO);
 
-				*this << "# first tuning = " << (firstTune * 1.0e-6) << " MHz" << endl;
+				//*this << "# first tuning = " << (firstTune * 1.0e-6) << " MHz" << endl;
  				*this << "loif" << modeNum << ".setIf('" << i.name << "', '" << i.VLBABandName() << "', '" << i.pol << "', " << (i.ifSSLO / 1.0e6) << ", '" << i.ifSideBand << "'";
 
 
@@ -884,6 +884,9 @@ int pystream::writeLoifTable(const VexData *V)
 				{
 					// no comment to process
 				}
+
+				// tuning of first channel attached to this IF
+				*this << ", " << (firstTune * 1.0e-6);
 
 				// close statement
 				*this << ")" << endl;

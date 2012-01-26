@@ -12,7 +12,8 @@
 
 dist_bin_SCRIPTS = \
 	padCalcScans \
-	oms2v2d
+	oms2v2d \
+	plottsys
 noinst_SCRIPTS = \
 	queueVex \
 	unqueueVex \
