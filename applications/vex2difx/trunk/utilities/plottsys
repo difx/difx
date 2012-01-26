@@ -98,13 +98,15 @@ def plotAntennaTsys(pages, data, antName, verbose):
 		if len(chanData[0]) < 2:
 			continue;
 
+		xmin = min(chanData[0])
+		xmax = max(chanData[0])
 		g = graph.graphxy(width=8, \
-			x=graph.axis.linear(title='%s.%d'%(antName,chan), min=min(chanData[0])*0.99, max=max(chanData[0])*1.01), \
-			y=graph.axis.linear(title="$y$", min=tmin, max=tmax))
+			x=graph.axis.linear(title='Hours since UT midnight', min=xmin, max=xmax), \
+			y=graph.axis.linear(title="%s Chan %d   $T_{\\rm sys}$ [K]" % (antName,chan), min=tmin, max=tmax))
 		g.plot(graph.data.values(x=chanData[0], y=chanData[1]), [graph.style.symbol(graph.style.symbol.circle, size=0.02)])
 		g.dolayout()
 
-		c.insert(g, [trafo.translate(col*9, row*6)])
+		c.insert(g, [trafo.translate(col*10, row*7)])
 
 def plotTsys(tsysFile, plotFile, verbose):
 	data = readTsysFile(tsysFile, verbose)

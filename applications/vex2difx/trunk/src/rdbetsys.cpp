@@ -44,7 +44,7 @@ const char version[] = "1.0";
 const char author[]  = "Walter Brisken";
 const char verdate[] = "20120109";
 
-const char defaultSwitchedPowerPath[] = "/users/vlbamon/switchedpower";
+const char defaultSwitchedPowerPath[] = "/home/vlba/metadata/switchedpower";
 const double defaultTsysInterval = 15.0;	// Seconds
 const int MaxFilenameLength = 256;
 const char *defaultRxName = "0cm";
@@ -62,6 +62,8 @@ static void usage(const char *pgm)
 	printf("  -q          be less verbose in operation\n\n");
 	printf("  --interval <t>\n");
 	printf("  -i <t>      use averaging interval of <t> seconds [%f]\n\n", defaultTsysInterval);
+	printf("  --scan\n");
+	printf("  -s          average over whole scans\n\n");
 	printf("Note that env. var. TCAL_PATH must be set to point to TCal data\n\n");
 }
 
@@ -714,6 +716,11 @@ int main(int argc, char **argv)
 
 					return EXIT_FAILURE;
 				}
+			}
+			else if(strcmp(argv[a], "-s") == 0 ||
+			  strcmp(argv[a], "--scan") == 0)
+			{
+				nominalTsysInterval = 86400.0;	/* set to the whole day; scan breaks are automatic */
 			}
 			else
 			{
