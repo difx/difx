@@ -323,6 +323,7 @@ typedef struct
 {
     char origin[DIFX_MESSAGE_FILENAME_LENGTH];
     char destination[DIFX_MESSAGE_FILENAME_LENGTH];
+    char dataNode[DIFX_MESSAGE_PARAM_LENGTH];
     char address[DIFX_MESSAGE_PARAM_LENGTH];
     int port;
     char direction[DIFX_MESSAGE_PARAM_LENGTH];

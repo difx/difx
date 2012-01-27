@@ -702,6 +702,10 @@ static void XMLCALL endElement(void *userData, const char *name)
 					{
 						strncpy(G->body.fileTransfer.destination, s, DIFX_MESSAGE_FILENAME_LENGTH-1);
 					}
+					else if(strcmp(elem, "dataNode") == 0 )
+					{
+						strncpy(G->body.fileTransfer.dataNode, s, DIFX_MESSAGE_PARAM_LENGTH-1);
+					}
 					else if(strcmp(elem, "direction") == 0 )
 					{
 						strncpy(G->body.fileTransfer.direction, s, DIFX_MESSAGE_PARAM_LENGTH-1);
