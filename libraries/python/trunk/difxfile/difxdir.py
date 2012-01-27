@@ -32,6 +32,7 @@ class DifxDir(object):
         self.scans = deque()
         self.experiments = deque()
         self.fileDate = 0.0
+        self.parseErrors = 0
         
         if (not os.path.isdir(self.dirPath)):
             raise IOError("DiFX directory path: %s does not exist. " % self.dirPath)
@@ -46,9 +47,13 @@ class DifxDir(object):
         self._parse()
       
     def _parse(self):
+        '''
+        Parses the module directory file
+        '''
         
         scanCount = 0
         lineCount = 0
+      
         
         file = open(self.filename, "r")
         
@@ -81,11 +86,14 @@ class DifxDir(object):
                     scan.format = fields[10]
                     #scan.scanName = fields[11]
                     
+                    # try to separate the scan name into experiment stationcode and scanname
                     nameSplit = fields[11].split("_")
                     if (len(nameSplit) == 3):
                         scan.expName = upper(nameSplit[0])
                         scan.stationCode = upper(nameSplit[1])
                         scan.scanName = upper(nameSplit[2])
+                    else:
+                        self.parseErrors += 1
                    
                   
                     if (scan.expName != ""):
@@ -106,11 +114,13 @@ class DifxDir(object):
         if (scanCount != (lineCount -1)):
             raise Exception("Scan mismatch. File %s contains %s scans, but header claims it should be: %s" % (self.filename, lineCount-1, scanCount))
      
-    def getFileDate(self):
-        
+    def getFileDate(self):      
         return(self.fileDate)
     
     def getFilename(self):
+        '''
+        Return the full path name of the module directory file
+        '''
         return(self.filename)
     
     def exists(self):
@@ -120,16 +130,34 @@ class DifxDir(object):
         return(os.path.isfile(self.filename))
     
     def getScanCount(self):
+        '''
+        Returns the total number of scans found in the module directory
+        '''
         
         return(len(self.scans))
     
     def getStationCode(self):
-        
+        '''
+        Returns the station code that was obtained
+        by parsing the scan names found on this
+        module directory.
+        '''
         return(self.stationCode)
         
     def getExperiments(self):
-        
+        '''
+        Returns the list of experiment codes obtained
+        by parsing the scan names found on this
+        module directory.
+        '''
         return(self.experiments)
+    
+    def getParseErrorCount(self):
+        '''
+        Returns the number of lines in the module directory that
+        could not be parsed to obtain experiment, stationcode, scanname
+        '''
+        return(self.parseErrors)
     
     class DirLine(object):
         '''
