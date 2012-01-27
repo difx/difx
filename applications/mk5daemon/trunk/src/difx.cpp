@@ -30,7 +30,13 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <sys/stat.h>
+#include <errno.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <fcntl.h>
 #include <unistd.h>
+#include <arpa/inet.h>
 #include <pwd.h>
 #include <sys/statvfs.h>
 #include "mk5daemon.h"
@@ -1176,6 +1182,9 @@ void Mk5Daemon_stopMpifxcorr_USNO( Mk5Daemon *D, const DifxMessageGeneric *G ) {
 void Mk5Daemon_fileTransfer( Mk5Daemon *D, const DifxMessageGeneric *G ) {
 	const DifxMessageFileTransfer *S;
 	char message[DIFX_MESSAGE_LENGTH];
+	char command[MAX_COMMAND_SIZE];
+	const char *user;
+	pid_t childPid;
 	
 	if( !G ) {
 		difxMessageSendDifxAlert(
@@ -1186,20 +1195,256 @@ void Mk5Daemon_fileTransfer( Mk5Daemon *D, const DifxMessageGeneric *G ) {
 	
 	S = &G->body.fileTransfer;
 	
-	if( S->origin[0] != '/' || S->destination[0] != '/' || S->address[0] == 0 || S->port <= 0 ||
-	    ( strcmp( S->direction, "from client" ) && strcmp( S->direction, "to client" ) ) ) {
+	//  Check the sanity of the transfer message.
+	if( S->address[0] == 0 || S->port <= 0 ||
+	    ( strcmp( S->direction, "to DiFX" ) && strcmp( S->direction, "from DiFX" ) ) ) {
 		difxMessageSendDifxAlert( "Malformed DifxFileTransfer message received", DIFX_ALERT_LEVEL_ERROR );
 		Logger_logData( D->log, "Mk5Daemon_FileTransfer: degenerate request\n" );
 		return;
 	}
 	
-	if ( !strcmp( S->direction, "from client" ) )
-	    sprintf( message, "Request for trasfer of file %s from GUI client to %s on DiFX host", S->origin, S->destination );
-	else if ( !strcmp( S->direction, "to client" ) )
-	    sprintf( message, "Request for trasfer of file %s from DiFX host to %s on GUI client", S->origin, S->destination );
-	difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_WARNING );
-	sprintf( message, "Client address: %s   port: %d", S->address, S->port );
-	difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_WARNING );
+	user = getenv( "DIFX_USER_ID" );
+	if(!user)
+	{
+		user = difxUser;
+	}
+
+	if ( !strcmp( S->direction, "to DiFX" ) ) {
+	
+    	//  Fork a process to do the file transfer via a TCP client.
+    	childPid = fork();
+    	if( childPid == 0 ) {
+    	    //  Open a TCP socket connection to the server that should be running for us on the
+    	    //  remote host.
+    	    int sockfd;
+    	    struct sockaddr_in servaddr;
+    	    sockfd = socket( AF_INET, SOCK_STREAM, 0 );
+    	    bzero( &servaddr, sizeof( servaddr ) );
+    	    servaddr.sin_family = AF_INET;
+    	    servaddr.sin_port = htons( S->port );
+    	    inet_pton( AF_INET, S->address, &servaddr.sin_addr );
+      	    int filesize = connect( sockfd, (const sockaddr*)&servaddr, sizeof( servaddr ) );
+      	    
+      	    //  Assuming the socket connection was successful, write the file contents to the socket.
+      	    if ( filesize == 0 ) {
+            	//sprintf( message, "Client address: %s   port: %d - connection looks good", S->address, S->port );
+            	//difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_WARNING );
+            	//  Get the number of bytes we expect.
+            	int n;
+            	read( sockfd, &n, sizeof( int ) );
+            	filesize = ntohl( n );
+            	//printf( "reading %d bytes total\n", filesize );
+            	//  Then read the data.
+            	int ret = 0;
+            	int count = 0;
+            	short blockSize = 1024;
+            	char blockData[blockSize];
+            	char tmpFile[100];
+            	sprintf( tmpFile, "/tmp/filetransfer_%d", S->port );
+            	int fd = open( tmpFile, O_WRONLY | O_CREAT );
+            	while ( count < filesize && ret != -1 ) {
+            	    int readn = blockSize;
+            	    if ( filesize - count < readn )
+            	        readn = filesize - count;
+            	    ret = read( sockfd, blockData, readn );
+            	    if ( ret != -1 ) {
+            	        count += ret;
+            	        //printf( "returned %d bytes for %d/%d\n", ret, count, filesize );
+            	        write( fd, blockData, ret );
+                    }
+            	}
+            	close( fd );
+            	       
+      	    }
+      	    else {
+            	sprintf( message, "Client address: %s   port: %d - transfer FAILED", S->address, S->port );
+            	difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_ERROR );
+      	    }
+    
+    	    //  Check the destination filename
+        	if( S->destination[0] != '/' )  {
+        		filesize = -1;
+        	}
+        	else {
+        	    //  Check the existence of the destination directory
+        	    char path[DIFX_MESSAGE_FILENAME_LENGTH];
+        	    sprintf( path, "%s", S->destination );
+        	    int i = strlen( path );
+        	    while ( i > 0 && path[i] != '/' ) --i;
+        	    path[i] = 0;
+    	        struct stat stt;
+    	        int ret = stat( path, &stt );
+    	        if ( ret == -1 ) {
+    	            //  Either we aren't allowed to view this directory
+    	            if ( errno == EACCES )
+    	                filesize = -3;
+    	            //  Or it doesn't exist at all
+    	            else
+    	                filesize = -2;
+    	        }
+    	        //  Make sure the destination is a directory
+    	        else if ( !(stt.st_mode & S_IFDIR) ) {
+    	            filesize = -5;
+    	        }
+    	        else {
+    	            //  Check write permissions and uid for the difx user
+    	            struct passwd *pwd = getpwnam( user );
+    	            if ( pwd == NULL ) {
+    	                sprintf( message, "DiFX username %s is not valid", user );
+    	                difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_ERROR );
+    	                filesize = -4;
+    	            }
+    	            else {
+    	                //  Make sure the DiFX user has write permission in the destination directory (via owner, group, or world).
+    	                if ( ( stt.st_uid == pwd->pw_uid && stt.st_mode & S_IRUSR ) || ( stt.st_gid == pwd->pw_gid && stt.st_mode & S_IRGRP ) ||
+    	                     ( stt.st_mode & S_IROTH ) ) {
+                      		//  Change permissions on the temporary file so the DiFX user can read it.
+                    		snprintf( command, MAX_COMMAND_SIZE, "chmod 644 /tmp/filetransfer_%d", S->port );
+                            Mk5Daemon_system( D, command, 1 );
+      		
+                            //  Copy the new file to its specified location (as the DiFX user).
+                    		snprintf( command, MAX_COMMAND_SIZE, "ssh -x %s@%s 'cp /tmp/filetransfer_%d %s'", 
+                    				 user,
+                    				 S->dataNode,
+                    				 S->port,
+                    				 S->destination );
+                      		Mk5Daemon_system( D, command, 1 );
+                  		}
+     	                //  Otherwise, we can't read it.
+    	                else
+    	                    filesize = -3;
+    	            }
+    	        }
+    	    }
+
+            int n = htonl( filesize );            	
+            write( sockfd, &n, sizeof( int ) );
+
+      		//  Then clean up our litter.
+    		snprintf( command, MAX_COMMAND_SIZE, "rm -f /tmp/filetransfer_%d", S->port );
+            Mk5Daemon_system( D, command, 1 );
+      		
+    		exit(EXIT_SUCCESS);
+    	}
+	}
+	    
+	else if ( !strcmp( S->direction, "from DiFX" ) ) {
+	    //  This is a request for a file transfer from the DiFX host (i.e. this host) to a remote host.
+	    //  Before we transfer the data, we will transfer the size of the file (an integer).  We use
+	    //  negative integer values to indicate different problems.
+	    //   -1:  bad file name (incomplete path)
+	    //   -2:  file not found
+	    //   -3:  read permission denied for DiFX user
+	    //   -4:  bad DiFX user name
+	    //    0:  zero length file
+	    int filesize = 0;
+	    //  Make sure the file desired has a sensible name....
+	    if ( S->origin[0] != '/' )
+	        filesize = -1;   // bad file name
+	    else {
+	        //  Do a "stat" on the file to see if it exists, what permissions there are on it, and then
+	        //  find its size.
+	        struct stat stt;
+	        int ret = stat( S->origin, &stt );
+	        if ( ret == -1 ) {
+	            //  stat errors are due to mangled files or permission problems
+	            if ( errno == EACCES )
+	                filesize = -3;
+	            else
+	                filesize = -2;
+	        }
+	        else {
+	            //  Check read permissions for the difx user (for which we need the uid)
+	            struct passwd *pwd = getpwnam( user );
+	            if ( pwd == NULL ) {
+	                sprintf( message, "DiFX username %s is not valid", user );
+	                difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_ERROR );
+	                filesize = -4;
+	            }
+	            else {
+	                //  If the DiFX user has read permission on the file (via owner, group, or world),
+	                //  get the file size.
+	                if ( ( stt.st_uid == pwd->pw_uid && stt.st_mode & S_IRUSR ) || ( stt.st_gid == pwd->pw_gid && stt.st_mode & S_IRGRP ) ||
+	                     ( stt.st_mode & S_IROTH ) )
+	                    filesize = stt.st_size;
+	                //  Otherwise, we can't read it.
+	                else
+	                    filesize = -3;
+	            }
+	        }	    
+	    }
+    	//sprintf( message, "Request for transfer of file from %s on DiFX host to remote host - filesize is %d", S->origin, filesize );
+        //difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_WARNING );
+    	
+    	//  Use the DiFX user to copy the requested file to a temporary location (if there is anything to copy, that is...).
+    	if ( filesize > 0 ) {
+    		snprintf( command, MAX_COMMAND_SIZE, "rm -f /tmp/filetransfer_%d", S->port );
+            Mk5Daemon_system( D, command, 1 );
+    		snprintf( command, MAX_COMMAND_SIZE, "ssh -x %s@%s 'cp %s /tmp/filetransfer_%d'", 
+    				 user,
+    				 S->dataNode,
+    				 S->origin,
+    				 S->port );
+      		Mk5Daemon_system( D, command, 1 );
+  		}
+    	
+    	//  Fork a process to do the file transfer via a TCP client.
+    	childPid = fork();
+    	if( childPid == 0 ) {
+    	    //  Open a TCP socket connection to the server that should be running for us on the
+    	    //  remote host.
+    	    int sockfd;
+    	    struct sockaddr_in servaddr;
+    	    sockfd = socket( AF_INET, SOCK_STREAM, 0 );
+    	    bzero( &servaddr, sizeof( servaddr ) );
+    	    servaddr.sin_family = AF_INET;
+    	    servaddr.sin_port = htons( S->port );
+    	    inet_pton( AF_INET, S->address, &servaddr.sin_addr );
+      	    int ret = connect( sockfd, (const sockaddr*)&servaddr, sizeof( servaddr ) );
+      	    
+      	    //  Assuming the socket connection was successful, write the file contents to the socket.
+      	    if ( ret == 0 ) {
+            	//sprintf( message, "Client address: %s   port: %d - connection looks good", S->address, S->port );
+            	//difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_WARNING );
+            	//  Send the total size first.
+            	int n = htonl( filesize );            	
+            	write( sockfd, &n, sizeof( int ) );
+            	if ( filesize > 0 ) {
+            	    //  Then break the file up into "blocks" for sending.
+            	    short blockSize = 1024;
+            	    char blockData[blockSize];
+            	    char tmpFile[100];
+            	    sprintf( tmpFile, "/tmp/filetransfer_%d", S->port );
+            	    int fd = open( tmpFile, O_RDONLY );
+            	    while ( filesize > 0 ) {
+            	        short readsize = read( fd, blockData, blockSize );
+            	        short ns = htons( readsize );
+            	        write( sockfd, &ns, sizeof( short ) );
+            	        write( sockfd, blockData, readsize );
+            	        filesize -= readsize;
+            	    }
+            	    close( fd );
+            	}
+      	    }
+      	    else {
+            	sprintf( message, "Client address: %s   port: %d - connection FAILED", S->address, S->port );
+            	difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_ERROR );
+      	    }
+    
+            //  Clean up our litter and bail out of this forked process
+    		snprintf( command, MAX_COMMAND_SIZE, "rm -f /tmp/filetransfer_%d", S->port );
+            Mk5Daemon_system( D, command, 1 );
+    		snprintf( command, MAX_COMMAND_SIZE, "ssh -x %s@%s 'cp %s /tmp/filetransfer_%d'", 
+    				 user,
+    				 S->dataNode,
+    				 S->origin,
+    				 S->port );
+      		Mk5Daemon_system( D, command, 1 );
+      		
+    		exit(EXIT_SUCCESS);
+    	}
+    	
+	}
 		
 }
 
@@ -1264,7 +1509,16 @@ void Mk5Daemon_fileOperation( Mk5Daemon *D, const DifxMessageGeneric *G ) {
     		Logger_logData( D->log, message );
     		return;
 	    }
-    	sprintf( message, "mv %s %s", S->path, S->arg );
+		snprintf( command, MAX_COMMAND_SIZE, "ssh -x %s@%s 'mv %s %s'", 
+				 user,
+				 S->dataNode,
+				 S->path,
+				 S->arg );
+  		FILE* fp = Mk5Daemon_popen( D, command, 1 );
+  		while ( fgets( message, DIFX_MESSAGE_LENGTH, fp ) != NULL )
+  		    difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_INFO );
+  		pclose( fp );	    
+  		sprintf( message, "%s performed!", command );
 	}
 	else {
 		sprintf( message, "Illegal DifxFileOperation request received - operation \"%s\" is not permitted", S->operation );
