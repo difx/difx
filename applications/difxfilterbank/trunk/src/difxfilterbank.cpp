@@ -2,6 +2,7 @@
 #include <string.h>
 #include <string>
 #include <fstream>
+#include <unistd.h>
 #include "architecture.h"
 #include "configuration.h"
 #include "difxmessage.h"
@@ -245,7 +246,7 @@ void * launchWriteThread(void * nothing) {
           cerr<<"Writer error: buf index "<<writesegment<< ". record thinks there are "<<starecord->nChan <<" channels. Printing STA header and exiting"<<endl;
           fprintDifxMessageSTARecord(stdout,starecord,0);
           keepwriting=false;
-          return false;
+          return 0;
         }
 
         //write it out (main thread already filtered out those not belonging to this job)
