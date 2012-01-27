@@ -22,7 +22,6 @@ ccScriptDir = '/export/home/cc/vlba/scripts'
 prestartTime = 300	# seconds
 poststopTime = 30	# seconds
 difxPath = '/home/swc/DiFX-trunk-64/bin'
-difxbinpath = '/users/difx/bin'
 linesToShow = 10
 keepDays = 45
 
