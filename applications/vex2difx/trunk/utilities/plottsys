@@ -66,7 +66,7 @@ def readTsysFile(tsysFile, verbose):
 	return data
 
 
-def plotAntennaTsys(pages, data, antName, verbose):
+def plotAntennaTsys(pages, data, antName, obsCode, verbose):
 
 	lastPage = -1
 
@@ -86,7 +86,7 @@ def plotAntennaTsys(pages, data, antName, verbose):
 	for chan in range(len(data)):
 		chanData = data[chan]
 		col = chan/4
-		row = chan%4
+		row = 3-(chan%4)
 		page = chan/8
 
 		if page != lastPage:
@@ -100,15 +100,17 @@ def plotAntennaTsys(pages, data, antName, verbose):
 
 		xmin = min(chanData[0])
 		xmax = max(chanData[0])
-		g = graph.graphxy(width=8, \
-			x=graph.axis.linear(title='Hours since UT midnight', min=xmin, max=xmax), \
-			y=graph.axis.linear(title="%s Chan %d   $T_{\\rm sys}$ [K]" % (antName,chan), min=tmin, max=tmax))
+		g = graph.graphxy(width=8, height=5, \
+			x=graph.axis.linear(title='Day of year', min=xmin, max=xmax), \
+			y=graph.axis.linear(title='$T_{\\rm sys}$ [K]', min=tmin, max=tmax))
 		g.plot(graph.data.values(x=chanData[0], y=chanData[1]), [graph.style.symbol(graph.style.symbol.circle, size=0.02)])
+		g.text(0.25, 4.75, '%s Chan %d' % (antName,chan), [text.halign.left, text.valign.top])
+		g.text(7.75, 4.75, '%s' % obsCode, [text.halign.right, text.valign.top])
 		g.dolayout()
 
 		c.insert(g, [trafo.translate(col*10, row*7)])
 
-def plotTsys(tsysFile, plotFile, verbose):
+def plotTsys(tsysFile, plotFile, obsCode, verbose):
 	data = readTsysFile(tsysFile, verbose)
 	pages = []
 	ants = data.keys()
@@ -116,14 +118,57 @@ def plotTsys(tsysFile, plotFile, verbose):
 	for a in ants:
 		if verbose > 0:
 			print 'Plotting antenna %s' % a
-		plotAntennaTsys(pages, data[a], a, verbose)
+		plotAntennaTsys(pages, data[a], a, obsCode, verbose)
 	doc = document.document(pages)
 	doc.writePDFfile(plotFile, title=tsysFile)
+
+def vexPeek(vexFile):
+	
+	cmd = '%s/vexpeek %s' % (difxPath, vexFile)
+	if verbose > 0:
+		print 'Executing command: %s' % cmd
+
+	p = popen(cmd)
+	data = p.readlines()
+
+	if len(data) == 0:
+		return 'Error', 'Error', 'Error'
+	
+	obsCode = upper(strip(data[0]))
+	obsSeg = ''
+
+	if obsCode[0:5] == 'ERROR':
+		return 'Error', 'Error', 'Error'
+
+	if len(obsCode) > 3:
+		if obsCode[0].isalpha() and obsCode[1].isalpha() and obsCode[2].isdigit():
+			for i in range(3, len(obsCode)):
+				if obsCode[i].isalpha():
+					obsSeg = obsCode[i:]
+					obsCode = obsCode[0:i]
+					break
+		if obsCode[0].isalpha() and obsCode[1].isdigit():
+			for i in range(2, len(obsCode)):
+				if obsCode[i].isalpha():
+					obsSeg = obsCode[i:]
+					obsCode = obsCode[0:i]
+					break
+		
+
+	stationTimes = {}
+	for d in data[1:]:
+		s = split(strip(d))
+		stationTimes[upper(s[0])] = [float(s[1])-prestartTime/86400.0, float(s[2])+poststopTime/86400.0]
+
+	print 'This is experiment %s %s' % (obsCode, obsSeg)
+
+	return obsCode, obsSeg, stationTimes
 
 
 verbose = 1
 tsysFile = ''
 plotFile = ''
+obsCode = ''
 
 for a in argv[1:]:
 	if a[0] == '-':
@@ -136,8 +181,10 @@ for a in argv[1:]:
 			exit(0)
 	elif tsysFile == '':
 		tsysFile = a
-	elif plotFile == '':
+	elif plotFile == '' and a[-4:] == '.pdf':
 		plotFile = a
+	elif obsCode == '':
+		obsCode = a
 	else:
 		print 'Error: unexpected argument: %s' % a
 		exit(0)
@@ -146,7 +193,18 @@ if tsysFile == '':
 	print 'Error: Tsys filename required.'
 	exit(0)
 
+if tsysFile[-4:] == '.vex':
+	vexFile = tsysFile
+	tsysFile = '/tmp/' + split(vexFile[0:-4], '/')[-1] + '.tsys.avg'
+	cmd = 'rdbetsys --interval 300 %s %s' % (vexFile, tsysFile)
+	if verbose > 0:
+		print 'Executing: %s' % cmd
+	system(cmd)
+	obsCode, obsSeg, stationTimes = vexPeek(vexFile)
+	obsCode = obsCode + obsSeg
+	plotFile = obsCode + '.pdf'
+
 if plotFile == '':
 	plotFile = tsysFile + '.pdf'
 
-plotTsys(tsysFile, plotFile, verbose)
+plotTsys(tsysFile, plotFile, obsCode, verbose)
