@@ -58,7 +58,7 @@ def getActiveExperimentCodes(session):
  
 def addExperiment(session, code):
     '''
-    Adds an experiment to the database.
+    Adds an experiment to the database. New experiments receive the default state (=unknown)
     '''
     
     if (experimentExists(session, code)):
@@ -68,11 +68,45 @@ def addExperiment(session, code):
     experiment.code = upper(code)
     experiment.number = int(getLastExperimentNumber(session)) + 1
     
+    try:
+        session.add(experiment)
+        session.commit()     
+    except:
+        session.rollback()
+        
+    session.flush()
+        
+def addExperimentWithState(session, code, statuscode):
+    '''
+    Adds an experiment to the database giving it the statuscode
+    '''
+    
+    if (experimentExists(session, code)):
+        return
 
-    session.add(experiment)
-    session.commit()
+    experiment = model.Experiment()
+    experiment.code = upper(code)
+    experiment.number = int(getLastExperimentNumber(session)) + 1
+    
+    try:
+        status = session.query(model.ExperimentStatus).filter_by(statuscode=statuscode).one()
+    except:
+        raise Exception("Trying to set an unknown statuscode (%s)" % (statuscode))
+    
+    experiment.status = status
+    
+    try:
+        session.add(experiment)
+        session.commit()       
+    except:
+        session.rollback()
+        
+    session.flush()
     
 def deleteExperimentByCode(session, code):
+    '''
+    Deletes the experiment with the given code
+    '''
     
     
     experiment = session.query(model.Experiment).filter_by(code=code).one()
@@ -84,16 +118,49 @@ def deleteExperimentByCode(session, code):
         raise Exception("Experiment %s cannot be deleted because it has associated modules" % experiment.code)
     
     session.delete(experiment)
-    session.commit()
+    try:
+        session.commit() 
+    except:
+        session.rollback()
+        
+    session.flush()
     
 def isExperimentReleased(session, code):
+    '''
+    Checks if the given experiment has a status that indicates that it is released
+    '''
     
     experiment = session.query(model.Experiment).filter_by(code=code).one()
     
     if (experiment is None):
         return
     
+    # status codes > 100 means experiment is released
     if (experiment.status.statuscode >= 100):
         return(True)
     else:
         return(False)
+    
+def changeExperimentState(session, code, statuscode):
+    '''
+    Set the status of the given experiment to the status with the given statuscode
+    Raises an Exception if the statuscode does not exist in the database
+    '''
+    try:
+        experiment = session.query(model.Experiment).filter_by(code=code).one
+    except:
+        raise Exception ("Unknown experiment %s" % code)
+    
+    try:
+        status = session.query(model.ExperimentStatus).filter_by(statuscode=statuscode).one()
+    except:
+        raise Exception("Trying to set an unknown statuscode (%s) for experiment %s" % (statuscode, code))
+   
+    experiment.status = status
+    try:
+        session.commit()
+    except:
+        session.rollback()
+
+    session.flush()
+    
