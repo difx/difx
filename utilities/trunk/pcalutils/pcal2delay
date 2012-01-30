@@ -1,0 +1,390 @@
+#!/usr/bin/python
+"""
+Time-average pcals, 
+
+Usage:
+    difx2pcal obscode -ahop 
+                      [--average] [--help] [--outfile]
+
+-a --average float  average time in seconds (default 60)
+-h --help           show this help
+-o --outfile string outfile prefix for plots (default "dft")
+-p --pack int       factor by which to zero-pack the input data (default=4)
+   --doplot         create plots
+
+For each PCAL file in the first job found, a corresponding DELAY file is created.
+The format of this file is very similar to the PCAL file (see the documentation
+for the definition of the terms below.)
+
+Each line starts with
+antId day dur nPol nBand nRecChan
+
+Next there is one triplet per subband (in the order [nPol][nBand])
+
+The first value of the triplet is the reference frequency (which is the 
+frequency of the first tone)
+
+The second value is the delay in microseconds corresponding to the slope in 
+the pcal files (calculated from the peak amplitude of the complex FFT of the
+complex pcal values)
+
+The 3rd value is the phase (in radians) of the vector average of the pcal 
+tones after they have been derotated by the delay w.r.t the reference 
+frequency. Assuming no noise and an accurate delay, this would be the phase 
+of the first tone.
+
+Note that this script is UNTESTED with
+ - LSB data
+ - Band matching/zoom bands
+"""
+
+import sys
+import os
+import getopt
+from glob import glob
+from math import hypot, atan2, degrees, pi
+from numpy import complex64, float32, zeros, arange, angle, concatenate, linspace, cos, sin, sum, array
+from numpy.fft import fft
+import pylab as plt
+import matplotlib.ticker as ticker
+
+fig = plt.figure()
+
+def fft_slope(cplx_array, pad_factor=16):
+    """
+    Determine the gradient (i.e. phase rate) of a complex array via a zero-padded fft
+    returns change in phase per point in radians 
+
+    See http://en.wikipedia.org/wiki/Atan2 for definition of which gradients are positive and which are negative
+
+    >>> print "%.12f" % fft_slope(array([0+1j, 1+0j, 0-1j, -1+0j]))
+    -1.570796326795
+    >>> print "%.12f" % fft_slope(array([0-1j, 1+0j, 0+1j, -1+0j]))
+    1.570796326795
+    """
+
+    # add pad_factor zeros to cplx_array
+    padding_array = zeros((cplx_array.size * (pad_factor-1)), dtype = complex64)
+
+    cplx_array = concatenate((cplx_array, padding_array), axis = 0)
+
+    # take the fftpython array  of complex numbers 
+    FT = fft(cplx_array)
+
+    # find the max
+    index_of_max = abs(FT).argmax()
+
+    midpoint_of_fft = FT.size/2
+
+    #FIXME do quadratic fit to the peak and neighbours
+
+    # convert to a number of radians per point
+    if index_of_max > midpoint_of_fft:
+
+        new_index = -midpoint_of_fft + index_of_max % (midpoint_of_fft)
+        
+        radians_per_point = new_index * pi/(midpoint_of_fft)
+
+    else:
+        radians_per_point =  index_of_max % (midpoint_of_fft) * pi/(midpoint_of_fft)
+
+
+    return radians_per_point
+
+
+
+def intercept(cplx_array, gradient=0.0):
+
+   # generate a complex array length len(cplx_array) whose first element is 1+0j
+
+	data = zeros((cplx_array.size), dtype = complex64)
+
+
+    # and each subsequent element's phase is rotated by gradient radians (phi is the array that holds the rotations
+
+	frequency = -(2*pi)/gradient
+
+	num_points = cplx_array.size
+
+	phi = linspace(0, (2*pi*num_points)/frequency, num_points, endpoint=False)
+
+	data.real = cos(phi)
+	data.imag = sin(phi)
+
+    # multiply cplx_array by the new array (data)
+	rotated_array = cplx_array * data
+
+    # sum all the complex values in the new array and find the phase
+	sum_rotated_array = sum(rotated_array)
+	phase = atan2(sum_rotated_array.imag, sum_rotated_array.real)
+
+    # return the phase
+	return phase
+	
+def plot_fft(data, FT, outfile, pol, band, pack):
+    phase = angle(data, deg=True)
+    amp = abs(data)
+    n = len(FT)
+    points = n/pack
+    #print n
+    #print points
+    #print 'amp:',
+    #print amp
+    filename = '%spol%dband%d.png' % (outfile, pol, band)
+    print "plotting %s len %d" % (filename, n)
+    ydeg = (-180,-135,-90,-45,0,45,90,135,180)
+    xpoints = arange(points)+1
+    xFT = arange(n)
+
+    ax1 = fig.add_subplot(211)
+    plt.xlabel(u'Freq')
+    plt.ylabel(u'Phase (degrees)')
+    plt.title(outfile)
+
+    #ax2.xaxis.set_major_locator(ticker.FixedLocator(x4))
+    ax1.plot(xpoints,phase[:points],'ko')
+    ax1.set_xbound(lower=0,upper=points+2)
+    ax1.set_ybound(lower=-180,upper=180)
+    ax1.set_yticks(ydeg)
+    #plt.xlim([0,45])
+    ax3 = ax1.twinx()
+    ax3.plot(xpoints,amp[:points])
+    ax3.set_ybound(lower=0)
+    ax3.set_xbound(lower=0,upper=points+1)
+    plt.ylabel(u'Amplitude (line)')
+
+
+    ax2 = fig.add_subplot(212)
+    plt.xlabel(u'DFT bins')
+    plt.ylabel(u'DFT Amplitude')
+    #ax2.plot(xFT/600.,FT[0],'*')
+    ax2.bar(xFT, abs(FT),align='center',width=0.32/n)
+    ax2.set_xbound(lower=0,upper=n+0.5)
+    #ax2.set_xticks(x3)
+    #ax2.xaxis.set_ticklabels(x2)
+
+    plt.savefig(filename)
+    plt.clf()
+
+
+
+def parsepcalfile(infile, outfile, delayfile, timeavg, pack, doplot):
+    """
+    Make dft plots for each subband 
+    timeavg in seconds
+    tonesperif (int)
+    fiddle (float factor)
+    """
+    
+
+    inttime= 0.
+    acc = 0.
+    n = 0
+    start=True
+
+
+    for line in infile:
+
+        line = line.split()
+
+	
+        if n == 0:
+            # read header of first line
+            station = line[0]
+            tint = float(line[2])
+            npol = int(line[4])
+            nfreq = int(line[5])
+            ntones = int(line[6])
+            nsubband = int(line[8])
+            ntimeavg = int(round(timeavg/(tint*86400)))
+
+            if ntimeavg < 1:
+                ntimeavg = 1
+
+            #initialize variables & accumulators
+            timeacc = 0.0
+            inttimeacc = 0.0
+
+            acc = zeros((npol, nsubband/npol, ntones*pack), dtype=complex64)
+            delay_acc = zeros((npol, nsubband/npol), dtype=float32)
+            offset_acc = zeros((npol, nsubband/npol), dtype=float32)
+            freq_acc = zeros((npol, nsubband, ntones), dtype=float32)
+
+            #variable freq_increment measures the value at which the frequencies are being incremented (in MHZ)
+            #used later when calculating the delay
+            freq_increment = float(line[14]) - float(line[10])
+
+
+        time = float(line[1])
+        timeacc += time
+
+        inttime = float(line[2])
+	inttimeacc += inttime
+	
+        tones = [float(x) for x in line[9:]]
+
+	#loop variables	
+        i = 0
+        j = 0
+
+
+
+	#Commence file parsing
+	#read tones into accumulator
+        for pol in range(npol):
+            for band in range(nsubband/npol):
+                for tone in range(ntones):
+                    freq_acc[pol, band, tone] = tones[i*4+1]
+                    acc[pol, band, tone] += complex(tones[i*4+2], tones[i*4+3])
+
+                    i+=1
+
+	#increment line counter		   
+        n+=1
+
+	
+        if n == ntimeavg:
+
+            timeacc /= n
+
+            #write delay file header
+            print >> delayfile, "%s %11.7f %9.7f %s" % (line[0], timeacc, inttimeacc,
+                                                       ' '.join((line[4], line[5], line[8]))),
+            
+            #FFT and Calculate delay
+            for pol in range(npol):
+                for band in range(nsubband/npol):
+                    array_to_be_FFT = acc[pol, band, :]
+
+                    if doplot:
+                        plot_fft(acc[pol, band, :], fft(array_to_be_FFT), outfile, pol, band, pack)
+
+                    #call fft_slope & calculate delay from slope
+                    delay_acc[pol, band] = fft_slope(array_to_be_FFT)/(2*pi*freq_increment)
+                    offset_acc[pol, band] = intercept(array_to_be_FFT, fft_slope(array_to_be_FFT))
+
+		
+            for pol in range(npol):
+                for band in range(nsubband/npol):
+                    #print out delays to delay file
+                    print >> delayfile, "%d %+.4e %+6.4f" % (freq_acc[pol, band,0], delay_acc[pol, band], offset_acc[pol ,band]),
+            print >> delayfile
+
+            #reset accumulators & other variables
+            acc = zeros((npol, nsubband/npol, ntones), dtype=complex64)
+            delay_acc = zeros((npol, nsubband/npol), dtype=float32)
+            offset_acc = zeros((npol, nsubband/npol), dtype=float32)
+            freq_acc = zeros((npol, nsubband, ntones), dtype=float32)
+
+            n = 0
+            doplot = False
+
+    #write out any incomplete accumulation
+    #FIXME get rid of this boilerplate
+    if not n == 0:
+
+        timeacc /= n
+
+        #write delay file header
+        print >> delayfile, "%s %11.7f %9.7f %s" % (line[0], timeacc, inttimeacc,
+                                                   ' '.join((line[4], line[5], line[8]))),
+        
+        #FFT and Calculate delay
+        for pol in range(npol):
+            for band in range(nsubband/npol):
+                array_to_be_FFT = acc[pol, band, :]
+
+                if doplot:
+                    plot_fft(acc[pol, band, :], fft(array_to_be_FFT), outfile, pol, band, pack)
+
+                #call fft_slope & calculate delay from slope
+                delay_acc[pol, band] = fft_slope(array_to_be_FFT)/(2*pi*freq_increment)
+
+                offset_acc[pol, band] = intercept(array_to_be_FFT, fft_slope(array_to_be_FFT))
+
+    
+        for pol in range(npol):
+            for band in range(nsubband/npol):
+                #print out delays to delay file
+                print >> delayfile, "%d %+.4e %+6.4f" % (freq_acc[pol, band,0], delay_acc[pol, band], offset_acc[pol ,band]),
+        print >> delayfile
+    return
+
+
+
+
+def main(argv=None):
+    if argv is None:
+        argv = sys.argv
+    try:
+        opts, args = getopt.gnu_getopt(argv[1:], "a:ho:p:", ["average=", "help", "outfile=", "pack=", "doplot"])
+    except getopt.error, msg:
+        print msg
+        print
+        print __doc__
+        return 2
+
+    # set defaults
+    outfilename = "dft"
+    timeavg = 60.
+    pack=4
+    doplot = False
+    # get options
+    for o, a in opts:
+        if o in ("-h", "--help"):
+            print __doc__
+            return 0
+        if o in ("-a", "--average"):
+            timeavg = float(a)
+        if o in ("-o", "--outfile"):
+            outfilename = a
+        if o in ("-p", "--pack"):
+            pack= int(a)
+        if o in ("--doplot"):
+            doplot=True
+    #get arguments
+    if not len(args) == 1:
+        print args
+        print __doc__
+        return 2
+    obscode=args[0]
+
+
+    # save any existing pcal file
+    if outfilename == "pcal" and os.path.exists("pcal") and not os.path.exists("pcal.vlba"):
+          print "renaming old pcal file to pcal.vlba"
+          os.rename("pcal", "pcal.vlba")
+
+    jobfiles = glob("%s_*.difx" % obscode)
+    jobfiles.sort()
+
+
+    if len(jobfiles) < 1:
+        print "Error: files not found"
+
+    for jobfile in jobfiles:
+
+        antennafiles = glob("%s/PCAL_*" % jobfile)
+
+        if antennafiles == []:
+
+            print "Error: files not found"
+            return 2
+
+        for filename in antennafiles:
+
+            print "processing file %s" % filename
+ 
+            infile = open(filename)
+            outfile = outfilename + filename[-2:]
+
+            delayfile = '%s/DELAY_%s' % (jobfile, filename[-2:])
+            print "writing file %s" % delayfile
+            fileDelay_x = open(delayfile, 'w')
+
+            parsepcalfile(infile, outfile, fileDelay_x, timeavg, pack, doplot)
+
+            fileDelay_x.close()
+
+if __name__ == '__main__':
+    sys.exit(main())
