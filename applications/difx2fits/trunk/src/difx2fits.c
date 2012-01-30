@@ -34,6 +34,7 @@
 #include <sys/stat.h>
 #include <sys/resource.h>
 #include "difx2fits.h"
+#include "util.h"
 #include "../config.h"
 
 const char program[] = PACKAGE_NAME;
