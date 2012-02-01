@@ -8,6 +8,7 @@
 #include <difxio/parsedifx.h>
 #include <sys/inotify.h>
 #include <sys/select.h>
+#include <sys/statfs.h>
 #include "recorr.h"
 
 const char program[] = "transient_daemon";
@@ -25,6 +26,7 @@ const char archiveModeName[][8] = {"none", "all", "raw"};
 
 /* default parameters to use if no config file is found */
 const int defaultVfastrEnable = 1;
+const int defaultMinDiskSpaceGB = 100;
 const double defaultDetectionThreshold = 5.0;
 const double defaultRecorrThreshold = 5.0;
 const char defaultOutputPath[] = "/home/boom/data/products";
@@ -73,6 +75,7 @@ public:
 typedef struct
 {
 	int vfastrEnable;
+    int min_disk_space_GB;
 	double detectionThreshold;
 	double recorrThreshold;
 	char outputPath[DIFX_MESSAGE_FILENAME_LENGTH];
@@ -171,6 +174,26 @@ void logExecute(const char *str)
 	fflush(stdout);
 }
 
+
+/* check available disk space on the output file system and return 1 if there is
+    enough space available or 0 otherwise */
+int diskSpaceIsAvailable(const TransientDaemonConf *conf) {
+    struct statfs fs;
+    int res;
+
+    res = statfs(conf->outputPath,&fs);
+    if (res==0) {
+        long long bytes_available,min_required;
+        min_required = 1000000000LL*conf->min_disk_space_GB;
+        bytes_available = (long long)fs.f_bsize*(long long)fs.f_bavail;
+        printf("Available disk space: %lld GB. Min required: %d GB\n",
+                bytes_available/1000000000,conf->min_disk_space_GB);
+        if (bytes_available > min_required) return 1;
+    }
+    return 0;
+}
+
+
 int setTransientDispatcherOptions(char *options, int maxLength, const TransientDaemonConf *conf)
 {
 	int v;
@@ -225,6 +248,7 @@ TransientDaemonConf *newTransientDaemonConf()
 		exit(EXIT_FAILURE);
 	}
 	conf->vfastrEnable = defaultVfastrEnable;
+    conf->min_disk_space_GB = defaultMinDiskSpaceGB;
 	conf->detectionThreshold = defaultDetectionThreshold;
 	snprintf(conf->outputPath, DIFX_MESSAGE_FILENAME_LENGTH, "%s", defaultOutputPath);
 	conf->difxStaChannels = defaultDifxStaChannels;
@@ -302,6 +326,10 @@ int loadTransientDaemonConf(TransientDaemonConf *conf, const char *filename)
 		if(strcmp(A, "vfastr_enable") == 0)
 		{
 			conf->vfastrEnable = atoi(B);
+		}
+		else if(strcmp(A, "min_disk_space_GB") == 0)
+		{
+			conf->min_disk_space_GB = atoi(B);
 		}
 		else if(strcmp(A, "detection_threshold") == 0)
 		{
@@ -406,6 +434,7 @@ void printTransientDaemonConf(const TransientDaemonConf *conf)
 {
 	printf("TransientDaemonConf [%p]\n", conf);
 	printf("  vfastrEnable = %d\n", conf->vfastrEnable);
+	printf("  minDiskSpaceGB = %d\n", conf->min_disk_space_GB);
 	printf("  detectionThreshold = %f\n", conf->detectionThreshold);
 	printf("  outputPath = %s\n", conf->outputPath);
 	printf("  difxStaChannels = %d\n", conf->difxStaChannels);
@@ -606,6 +635,10 @@ static int handleMessage(const char *message, TransientDaemonState *state, const
 	case DIFX_MESSAGE_START:
 		if(conf->vfastrEnable)
 		{
+            if (!diskSpaceIsAvailable(conf)) {
+                printf("Received start message, but not enough space is left on disk. Ignoring\n");
+                return -3;
+            }
 			state->lastCommand[0] = 0;
 			if(state->verbose > 1)
 			{
