@@ -9,6 +9,8 @@
 #include <sys/inotify.h>
 #include <sys/select.h>
 #include <sys/statfs.h>
+#include <fcntl.h>
+#include <arpa/inet.h>
 #include "recorr.h"
 
 const char program[] = "transient_daemon";
@@ -47,6 +49,7 @@ const int defaultNegDM = 0;
 const int defaultNDM = 200;
 const double defaultTDM = 2;	/* ms */
 const double defaultMaxDispersionDelay = 2;	/* seconds */
+const int defaultTCPPort = 31000;
 
 
 int die = 0;
@@ -69,13 +72,14 @@ public:
 
 	TransientDaemonState();
 	~TransientDaemonState();
+	void fprint(FILE *out) const;
 	void print() const;
 };
 
 typedef struct
 {
 	int vfastrEnable;
-    int min_disk_space_GB;
+	int min_disk_space_GB;
 	double detectionThreshold;
 	double recorrThreshold;
 	char outputPath[DIFX_MESSAGE_FILENAME_LENGTH];
@@ -97,6 +101,7 @@ typedef struct
 	int nDM;
 	double tDM;
 	double maxDispersionDelay;
+	int TCPPort;
 } TransientDaemonConf;
 
 TransientDaemonState::TransientDaemonState()
@@ -120,14 +125,21 @@ TransientDaemonState::~TransientDaemonState()
 	}
 }
 
+void TransientDaemonState::fprint(FILE *out) const
+{
+	fprintf(out, "TransientDaemonState [%s]:\n", hostname);
+	fprintf(out, "  verbose=%d\n", verbose);
+	fprintf(out, "  selfTest=%d\n", selfTest);
+	fprintf(out, "  startEnable=%d\n", startEnable);
+	fprintf(out, "  nLaunch=%d\n", nLaunch);
+	fprintf(out, "  Last Command=%s\n", lastCommand);
+
+	fflush(out);
+}
+
 void TransientDaemonState::print() const
 {
-	printf("TransientDaemonState [%s]:\n", hostname);
-	printf("  verbose=%d\n", verbose);
-	printf("  selfTest=%d\n", selfTest);
-	printf("  startEnable=%d\n", startEnable);
-	printf("  nLaunch=%d\n", nLaunch);
-	printf("  Last Command=%s\n", lastCommand);
+	fprint(stdout);
 }
 
 int usage(const char *cmd)
@@ -149,6 +161,25 @@ int usage(const char *cmd)
 	printf("To quite: Ctrl-c or send a sigint\n\n");
 	printf("Env. var VFASTR_CONFIG_FILE can point to a configuration file\n");
 	printf("If this variable is not set, the default (%s) will be used\n\n", defaultConfigFile);
+
+	return 0;
+}
+
+static int setNonBlocking(int sock)
+{
+	int opts;
+
+	opts = fcntl(sock, F_GETFL);
+	if(opts < 0)
+	{
+		return -1;
+	}
+
+	opts = (opts | O_NONBLOCK);
+	if(fcntl(sock, F_SETFL, opts) < 0)
+	{
+		return -1;
+	}
 
 	return 0;
 }
@@ -268,6 +299,7 @@ TransientDaemonConf *newTransientDaemonConf()
 	conf->negDM = defaultNegDM;
 	conf->nDM = defaultNDM;
 	conf->tDM = defaultTDM;
+	conf->TCPPort = defaultTCPPort;
 	conf->maxDispersionDelay = defaultMaxDispersionDelay;
 
 	return conf;
@@ -276,6 +308,116 @@ TransientDaemonConf *newTransientDaemonConf()
 void deleteTransientDaemonConf(TransientDaemonConf *conf)
 {
 	free(conf);
+}
+
+// A is key, B is value
+void setTransientDaemonConf(TransientDaemonConf *conf, const char *A, const char *B)
+{
+	/* transient_wrapper specific code here */
+	if(strcmp(A, "vfastr_enable") == 0)
+	{
+		conf->vfastrEnable = atoi(B);
+	}
+	else if(strcmp(A, "min_disk_space_GB") == 0)
+	{
+		conf->min_disk_space_GB = atoi(B);
+	}
+	else if(strcmp(A, "detection_threshold") == 0)
+	{
+		conf->detectionThreshold = atof(B);
+	}
+	else if(strcmp(A, "recorr_threshold") == 0)
+	{
+		conf->recorrThreshold = atof(B);
+	}
+	else if(strcmp(A, "output_path") == 0)
+	{
+		snprintf(conf->outputPath, DIFX_MESSAGE_FILENAME_LENGTH, "%s", B);
+	}
+	else if(strcmp(A, "difx_sta_channels") == 0)
+	{
+		conf->difxStaChannels = atoi(B);
+	}
+	else if(strcmp(A, "online_training_enable") == 0)
+	{
+		conf->onlineTrainingEnable = atoi(B);
+	}
+	else if(strcmp(A, "archive_dedispersed") == 0)
+	{
+		conf->archiveDedispersed = atoi(B);
+	}
+	else if(strcmp(A, "archive_pulses") == 0)
+	{
+		conf->archivePulses = atoi(B);
+	}
+	else if(strcmp(A, "archive_merged") == 0)
+	{
+		conf->archiveMerged = atoi(B);
+	}
+	else if(strcmp(A, "archive_detectorscores") == 0)
+	{
+		conf->archiveScores = atoi(B);
+	}
+	else if(strcmp(A, "archive_filterbank") == 0)
+	{
+		if(strcasecmp(B, "none") == 0)
+		{
+			conf->archiveFilterbank = NONE;
+		}
+		else if(strcasecmp(B, "all") == 0)
+		{
+			conf->archiveFilterbank = ALL;
+		}
+		else if(strcasecmp(B, "raw") == 0)
+		{
+			conf->archiveFilterbank = RAW;
+		}
+	}
+	else if(strcmp(A, "concurrent_pipeline") == 0)
+	{
+		conf->concurrentPipeline = atoi(B);
+	}
+	else if(strcmp(A, "stub_pipeline") == 0)
+	{
+		conf->stubPipeline = atoi(B);
+	}
+	else if(strcmp(A, "recorr_queue") == 0)
+	{
+		snprintf(conf->recorrQueueFile, DIFX_MESSAGE_FILENAME_LENGTH, "%s", B);
+	}
+	else if(strcmp(A, "dm_generator_program") == 0)
+	{
+		snprintf(conf->dmgenProgram, DIFX_MESSAGE_FILENAME_LENGTH, "%s", B);
+	}
+	else if(strcmp(A, "min_search_dm") == 0)
+	{
+		conf->minDM = atof(B);
+	}
+	else if(strcmp(A, "max_search_dm") == 0)
+	{
+		conf->maxDM = atof(B);
+	}
+	else if(strcmp(A, "negative_dm_sparsity") == 0)
+	{
+		conf->negDM = atoi(B);
+	}
+	else if(strcmp(A, "max_dm_values") == 0)
+	{
+		conf->nDM = atoi(B);
+	}
+	else if(strcmp(A, "dm_delta_t") == 0)
+	{
+		conf->tDM = atof(B);
+	}
+	else if(strcmp(A, "max_dispersion_delay") == 0)
+	{
+		conf->maxDispersionDelay = atof(B);
+	}
+	else if(strcmp(A, "TCP_port") == 0)
+	{
+		conf->TCPPort = atoi(B);
+	}
+	/* else ignore the parameter */
 }
 
 int loadTransientDaemonConf(TransientDaemonConf *conf, const char *filename)
@@ -321,108 +463,7 @@ int loadTransientDaemonConf(TransientDaemonConf *conf, const char *filename)
 		{
 			fprintf(stderr, "Config file %s : parse error line %d n=%d\n", filename, l, n);
 		}
-
-		/* transient_wrapper specific code here */
-		if(strcmp(A, "vfastr_enable") == 0)
-		{
-			conf->vfastrEnable = atoi(B);
-		}
-		else if(strcmp(A, "min_disk_space_GB") == 0)
-		{
-			conf->min_disk_space_GB = atoi(B);
-		}
-		else if(strcmp(A, "detection_threshold") == 0)
-		{
-			conf->detectionThreshold = atof(B);
-		}
-		else if(strcmp(A, "recorr_threshold") == 0)
-		{
-			conf->recorrThreshold = atof(B);
-		}
-		else if(strcmp(A, "output_path") == 0)
-		{
-			snprintf(conf->outputPath, DIFX_MESSAGE_FILENAME_LENGTH, "%s", B);
-		}
-		else if(strcmp(A, "difx_sta_channels") == 0)
-		{
-			conf->difxStaChannels = atoi(B);
-		}
-		else if(strcmp(A, "online_training_enable") == 0)
-		{
-			conf->onlineTrainingEnable = atoi(B);
-		}
-		else if(strcmp(A, "archive_dedispersed") == 0)
-		{
-			conf->archiveDedispersed = atoi(B);
-		}
-		else if(strcmp(A, "archive_pulses") == 0)
-		{
-			conf->archivePulses = atoi(B);
-		}
-		else if(strcmp(A, "archive_merged") == 0)
-		{
-			conf->archiveMerged = atoi(B);
-		}
-		else if(strcmp(A, "archive_detectorscores") == 0)
-		{
-			conf->archiveScores = atoi(B);
-		}
-		else if(strcmp(A, "archive_filterbank") == 0)
-		{
-			if(strcasecmp(B, "none") == 0)
-			{
-				conf->archiveFilterbank = NONE;
-			}
-			else if(strcasecmp(B, "all") == 0)
-			{
-				conf->archiveFilterbank = ALL;
-			}
-			else if(strcasecmp(B, "raw") == 0)
-			{
-				conf->archiveFilterbank = RAW;
-			}
-		}
-		else if(strcmp(A, "concurrent_pipeline") == 0)
-		{
-			conf->concurrentPipeline = atoi(B);
-		}
-		else if(strcmp(A, "stub_pipeline") == 0)
-		{
-			conf->stubPipeline = atoi(B);
-		}
-		else if(strcmp(A, "recorr_queue") == 0)
-		{
-			snprintf(conf->recorrQueueFile, DIFX_MESSAGE_FILENAME_LENGTH, "%s", B);
-		}
-		else if(strcmp(A, "dm_generator_program") == 0)
-		{
-			snprintf(conf->dmgenProgram, DIFX_MESSAGE_FILENAME_LENGTH, "%s", B);
-		}
-		else if(strcmp(A, "min_search_dm") == 0)
-		{
-			conf->minDM = atof(B);
-		}
-		else if(strcmp(A, "max_search_dm") == 0)
-		{
-			conf->maxDM = atof(B);
-		}
-		else if(strcmp(A, "negative_dm_sparsity") == 0)
-		{
-			conf->negDM = atoi(B);
-		}
-		else if(strcmp(A, "max_dm_values") == 0)
-		{
-			conf->nDM = atoi(B);
-		}
-		else if(strcmp(A, "dm_delta_t") == 0)
-		{
-			conf->tDM = atof(B);
-		}
-		else if(strcmp(A, "max_dispersion_delay") == 0)
-		{
-			conf->maxDispersionDelay = atof(B);
-		}
-		/* else ignore the parameter */
+		setTransientDaemonConf(conf, A, B);
 	}
 
 	fclose(in);
@@ -430,32 +471,38 @@ int loadTransientDaemonConf(TransientDaemonConf *conf, const char *filename)
 	return 0;
 }
 
+void fprintTransientDaemonConf(FILE *out, const TransientDaemonConf *conf)
+{
+	fprintf(out, "TransientDaemonConf [%p]\n", conf);
+	fprintf(out, "  vfastrEnable = %d\n", conf->vfastrEnable);
+	fprintf(out, "  minDiskSpaceGB = %d\n", conf->min_disk_space_GB);
+	fprintf(out, "  detectionThreshold = %f\n", conf->detectionThreshold);
+	fprintf(out, "  outputPath = %s\n", conf->outputPath);
+	fprintf(out, "  difxStaChannels = %d\n", conf->difxStaChannels);
+	fprintf(out, "  onlineTrainingEnable = %d\n", conf->onlineTrainingEnable);
+	fprintf(out, "  archiveDedispersed = %d\n", conf->archiveDedispersed);
+	fprintf(out, "  archivePulses = %d\n", conf->archivePulses);
+	fprintf(out, "  archiveMerged = %d\n", conf->archiveMerged);
+	fprintf(out, "  archiveScores = %d\n", conf->archiveScores);
+	fprintf(out, "  archiveFilterbank = %d -> %s\n", conf->archiveFilterbank, archiveModeName[conf->archiveFilterbank]);
+	fprintf(out, "  stubPipeline = %d\n", conf->stubPipeline);
+	fprintf(out, "  recorrQueueFile = %s\n", conf->recorrQueueFile);
+	fprintf(out, "  recorrThreshold = %f\n", conf->recorrThreshold);
+	fprintf(out, "  dmgenProgram = %s\n", conf->dmgenProgram);
+	fprintf(out, "  minDM = %f\n", conf->minDM);
+	fprintf(out, "  maxDM = %f\n", conf->maxDM);
+	fprintf(out, "  negative DM sparsity factor = %d\n", conf->negDM);
+	fprintf(out, "  max number of DM trials (including negative) = %d\n", conf->nDM);
+	fprintf(out, "  time interval to consider in DM setting = %f ms\n", conf->tDM);
+	fprintf(out, "  max dispersion delay = %f sec\n", conf->maxDispersionDelay);
+	fprintf(out, "  TCP port = %d\n", conf->TCPPort);
+
+	fflush(out);
+}
+
 void printTransientDaemonConf(const TransientDaemonConf *conf)
 {
-	printf("TransientDaemonConf [%p]\n", conf);
-	printf("  vfastrEnable = %d\n", conf->vfastrEnable);
-	printf("  minDiskSpaceGB = %d\n", conf->min_disk_space_GB);
-	printf("  detectionThreshold = %f\n", conf->detectionThreshold);
-	printf("  outputPath = %s\n", conf->outputPath);
-	printf("  difxStaChannels = %d\n", conf->difxStaChannels);
-	printf("  onlineTrainingEnable = %d\n", conf->onlineTrainingEnable);
-	printf("  archiveDedispersed = %d\n", conf->archiveDedispersed);
-	printf("  archivePulses = %d\n", conf->archivePulses);
-	printf("  archiveMerged = %d\n", conf->archiveMerged);
-	printf("  archiveScores = %d\n", conf->archiveScores);
-	printf("  archiveFilterbank = %d -> %s\n", conf->archiveFilterbank, archiveModeName[conf->archiveFilterbank]);
-	printf("  stubPipeline = %d\n", conf->stubPipeline);
-	printf("  recorrQueueFile = %s\n", conf->recorrQueueFile);
-	printf("  recorrThreshold = %f\n", conf->recorrThreshold);
-	printf("  dmgenProgram = %s\n", conf->dmgenProgram);
-	printf("  minDM = %f\n", conf->minDM);
-	printf("  maxDM = %f\n", conf->maxDM);
-	printf("  negative DM sparsity factor = %d\n", conf->negDM);
-	printf("  max number of DM trials (including negative) = %d\n", conf->nDM);
-	printf("  time interval to consider in DM setting = %f ms\n", conf->tDM);
-	printf("  max dispersion delay = %f sec\n", conf->maxDispersionDelay);
-
-	fflush(stdout);
+	fprintTransientDaemonConf(stdout, conf);
 }
 
 void siginthand(int j)
@@ -781,10 +828,48 @@ static int handleMessage(const char *message, TransientDaemonState *state, const
 	return 0;
 }
 
+int handleTCP(TransientDaemonState *state, TransientDaemonConf *conf, int sock, FILE *sockfd)
+{
+	int n, v;
+	char message[DIFX_MESSAGE_LENGTH];
+	char A[100], B[100], C[100];
+
+	fflush(stdout);
+
+
+	v = recv(sock, message, DIFX_MESSAGE_LENGTH-1, 0);
+	if(v <= 0)
+	{
+		return -1;
+	}
+	message[v] = 0;
+
+	n = sscanf(message, "%s %s %s", A, B, C);
+
+	if(strcmp(A, "get") == 0 && n == 2)
+	{
+		if(strcmp(B, "state") == 0)
+		{
+			state->fprint(sockfd);
+		}
+		else if(strcmp(B, "conf") == 0)
+		{
+			fprintTransientDaemonConf(sockfd, conf);
+		}
+	}
+	else if(strcmp(A, "set") == 0 && n == 3)
+	{
+		setTransientDaemonConf(conf, B, C);
+	}
+
+	return 0;
+}
+
 int transientdaemon(TransientDaemonState *state)
 {
 	TransientDaemonConf *conf;
 	const int MaxLineLength = 512;
+	const int MaxConnections = 8;
 	char message[DIFX_MESSAGE_LENGTH];
 	char from[DIFX_MESSAGE_PARAM_LENGTH];
 	char str[MaxLineLength+1];
@@ -793,6 +878,11 @@ int transientdaemon(TransientDaemonState *state)
 	struct timeval tv;
 	fd_set readset;
 	int maxfd;
+	int acceptSock;
+	int clientSocks[MaxConnections];
+	FILE *clientFDs[MaxConnections];
+	const int reuse_addr = 1;
+	struct sockaddr_in server_address;
 	const char *vfastrConfigFile;
 
 	signal(SIGINT, siginthand);
@@ -824,11 +914,53 @@ int transientdaemon(TransientDaemonState *state)
 
 	sock = difxMessageReceiveOpen();
 
+	for(int c = 0; c < MaxConnections; ++c)
+	{
+		clientSocks[c] = -1;
+	}
+	acceptSock = socket(AF_INET, SOCK_STREAM, 0);
+	if(acceptSock < 0)
+	{
+		printf("acceptSock creation failed.\n");
+	}
+	else
+	{
+		setsockopt(acceptSock, SOL_SOCKET, SO_REUSEADDR, &reuse_addr, sizeof(reuse_addr));
+
+		if(setNonBlocking(acceptSock) < 0)
+		{
+			printf("Cannot non-block acceptSock\n");
+			close(acceptSock);
+			acceptSock = -1;
+		}
+		else
+		{
+			memset((char *)(&server_address), 0, sizeof(server_address));
+			server_address.sin_family = AF_INET;
+			server_address.sin_addr.s_addr = htonl(INADDR_ANY);
+			server_address.sin_port = htons(conf->TCPPort);
+			if(bind(acceptSock, (struct sockaddr *)(&server_address), sizeof(server_address)) < 0 )
+			{
+				printf("Cannot bind acceptSock\n");
+				close(acceptSock);
+				acceptSock = -1;
+			}
+			else
+			{
+				listen(acceptSock, MaxConnections);
+			}
+		}
+	}
+
 	inotify_fd = inotify_init();
 	wd = inotify_add_watch(inotify_fd, vfastrConfigFile, IN_CLOSE_WRITE | IN_DELETE_SELF);
 	
-	maxfd = (sock > inotify_fd ? sock : inotify_fd) + 1;
-	
+	maxfd = sock > inotify_fd ? sock : inotify_fd;
+	if(acceptSock > maxfd)
+	{
+		maxfd = acceptSock;
+	}
+
 	if(state->verbose > 0)
 	{
 		printf("inotify watch descriptor for %s is %d\n", vfastrConfigFile, wd);
@@ -839,12 +971,30 @@ int transientdaemon(TransientDaemonState *state)
 	/* Program event loop */
 	for(;;)
 	{
+		int fdCeiling = maxfd;
+
 		FD_ZERO(&readset);
 		FD_SET(sock, &readset);
 		FD_SET(inotify_fd, &readset);
+		if(acceptSock >= 0)
+		{
+			FD_SET(acceptSock, &readset);
+		}
+		for(int c = 0; c < MaxConnections; ++c)
+		{
+			if(clientSocks[c] > 0)
+			{
+				FD_SET(clientSocks[c], &readset);
+				if(clientSocks[c] > fdCeiling)
+				{
+					fdCeiling = clientSocks[c];
+				}
+			}
+		}
 		tv.tv_sec = 1;
 		tv.tv_usec = 0;
-		
+		++fdCeiling;
+
 		if(state->selfTest > 0)
 		{
 			state->selfTest--;
@@ -855,7 +1005,7 @@ int transientdaemon(TransientDaemonState *state)
 			}
 		}
 
-		v = select(maxfd, &readset, 0, 0, &tv);
+		v = select(fdCeiling, &readset, 0, 0, &tv);
 		if(v < 0)
 		{
 			if(!die)
@@ -912,6 +1062,52 @@ int transientdaemon(TransientDaemonState *state)
 				if(state->verbose > 0)
 				{
 					printTransientDaemonConf(conf);
+				}
+			}
+		}
+		if(FD_ISSET(acceptSock, &readset))
+		{
+			int newSock = accept(acceptSock, 0, 0);
+
+			if(newSock < 0)
+			{
+				printf("Error accepting acceptSock\n");
+				sleep(1);
+			}
+			else
+			{
+				for(int c = 0; c < MaxConnections; ++c)
+				{
+					if(clientSocks[c] == -1)
+					{
+						clientSocks[c] = newSock;
+						clientFDs[c] = fdopen(clientSocks[c], "w");
+						newSock = -1;
+						printf("New connection %d to slot %d of %d\n", clientSocks[c], c, MaxConnections);
+						break;
+					}
+
+				}
+				if(newSock != -1)
+				{
+					printf("No room for new TCP connection\n");
+					close(newSock);
+				}
+			}	
+		}
+		for(int c = 0; c < MaxConnections; ++c)
+		{
+			if(clientSocks[c] > 0 && FD_ISSET(clientSocks[c], &readset))
+			{
+				int v;
+
+				v = handleTCP(state, conf, clientSocks[c], clientFDs[c]);
+				if(v < 0)  // Connection closed?
+				{
+					close(clientSocks[c]);
+					fclose(clientFDs[c]);
+					clientSocks[c] = -1;
+					printf("Connection on slot %d closed\n", c);
 				}
 			}
 		}
