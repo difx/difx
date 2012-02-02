@@ -15,8 +15,8 @@
 
 const char program[] = "transient_daemon";
 const char author[]  = "Walter Brisken";
-const char version[] = "0.3";
-const char verdate[] = "2011 Jul 27";
+const char version[] = "0.4";
+const char verdate[] = "2012 Feb 02";
 
 const char defaultConfigFile[] = "/home/boom/difx/vfastr.conf";	/* overridden by env var VFASTR_CONFIG_FILE */
 
@@ -66,6 +66,7 @@ public:
 	int selfTest;
 	int startEnable;
 	int nLaunch;
+	time_t startTime;
 	char lastCommand[CommandLength];
 	char hostname[DIFX_MESSAGE_PARAM_LENGTH];
 	RecorrQueue *recorrQueue;
@@ -113,6 +114,7 @@ TransientDaemonState::TransientDaemonState()
 	lastCommand[0] = 0;
 	gethostname(hostname, DIFX_MESSAGE_PARAM_LENGTH);
 	recorrQueue = 0;
+	time(&startTime);
 }
 
 TransientDaemonState::~TransientDaemonState()
@@ -127,12 +129,25 @@ TransientDaemonState::~TransientDaemonState()
 
 void TransientDaemonState::fprint(FILE *out) const
 {
+	char timeStr[100];
+	struct tm timeinfo;
+	int l;
+
+	localtime_r(&startTime, &timeinfo);
+	asctime_r(&timeinfo, timeStr);
+	l = strlen(timeStr);
+	if(l > 0)
+	{
+		timeStr[l-1] = 0;
+	}
+
 	fprintf(out, "TransientDaemonState [%s]:\n", hostname);
+	fprintf(out, "  startTime=%d # %s\n", startTime, timeStr);
 	fprintf(out, "  verbose=%d\n", verbose);
 	fprintf(out, "  selfTest=%d\n", selfTest);
 	fprintf(out, "  startEnable=%d\n", startEnable);
 	fprintf(out, "  nLaunch=%d\n", nLaunch);
-	fprintf(out, "  Last Command=%s\n", lastCommand);
+	fprintf(out, "  last command=%s\n", lastCommand);
 
 	fflush(out);
 }
@@ -311,7 +326,7 @@ void deleteTransientDaemonConf(TransientDaemonConf *conf)
 }
 
 // A is key, B is value
-void setTransientDaemonConf(TransientDaemonConf *conf, const char *A, const char *B)
+int setTransientDaemonConf(TransientDaemonConf *conf, const char *A, const char *B)
 {
 	/* transient_wrapper specific code here */
 	if(strcmp(A, "vfastr_enable") == 0)
@@ -417,7 +432,12 @@ void setTransientDaemonConf(TransientDaemonConf *conf, const char *A, const char
 	{
 		conf->TCPPort = atoi(B);
 	}
-	/* else ignore the parameter */
+	else
+	{
+		return -1;
+	}
+
+	return 0;
 }
 
 int loadTransientDaemonConf(TransientDaemonConf *conf, const char *filename)
@@ -474,28 +494,28 @@ int loadTransientDaemonConf(TransientDaemonConf *conf, const char *filename)
 void fprintTransientDaemonConf(FILE *out, const TransientDaemonConf *conf)
 {
 	fprintf(out, "TransientDaemonConf [%p]\n", conf);
-	fprintf(out, "  vfastrEnable = %d\n", conf->vfastrEnable);
-	fprintf(out, "  minDiskSpaceGB = %d\n", conf->min_disk_space_GB);
-	fprintf(out, "  detectionThreshold = %f\n", conf->detectionThreshold);
-	fprintf(out, "  outputPath = %s\n", conf->outputPath);
-	fprintf(out, "  difxStaChannels = %d\n", conf->difxStaChannels);
-	fprintf(out, "  onlineTrainingEnable = %d\n", conf->onlineTrainingEnable);
-	fprintf(out, "  archiveDedispersed = %d\n", conf->archiveDedispersed);
-	fprintf(out, "  archivePulses = %d\n", conf->archivePulses);
-	fprintf(out, "  archiveMerged = %d\n", conf->archiveMerged);
-	fprintf(out, "  archiveScores = %d\n", conf->archiveScores);
-	fprintf(out, "  archiveFilterbank = %d -> %s\n", conf->archiveFilterbank, archiveModeName[conf->archiveFilterbank]);
-	fprintf(out, "  stubPipeline = %d\n", conf->stubPipeline);
-	fprintf(out, "  recorrQueueFile = %s\n", conf->recorrQueueFile);
-	fprintf(out, "  recorrThreshold = %f\n", conf->recorrThreshold);
-	fprintf(out, "  dmgenProgram = %s\n", conf->dmgenProgram);
-	fprintf(out, "  minDM = %f\n", conf->minDM);
-	fprintf(out, "  maxDM = %f\n", conf->maxDM);
-	fprintf(out, "  negative DM sparsity factor = %d\n", conf->negDM);
-	fprintf(out, "  max number of DM trials (including negative) = %d\n", conf->nDM);
-	fprintf(out, "  time interval to consider in DM setting = %f ms\n", conf->tDM);
-	fprintf(out, "  max dispersion delay = %f sec\n", conf->maxDispersionDelay);
-	fprintf(out, "  TCP port = %d\n", conf->TCPPort);
+	fprintf(out, "  vfastr_enable = %d\n", conf->vfastrEnable);
+	fprintf(out, "  min_disk_space_GB = %d\n", conf->min_disk_space_GB);
+	fprintf(out, "  detection_threshold = %f\n", conf->detectionThreshold);
+	fprintf(out, "  output_path = %s\n", conf->outputPath);
+	fprintf(out, "  difx_sta_channels = %d\n", conf->difxStaChannels);
+	fprintf(out, "  online_training_enable = %d\n", conf->onlineTrainingEnable);
+	fprintf(out, "  archive_dedispersed = %d\n", conf->archiveDedispersed);
+	fprintf(out, "  archive_pulses = %d\n", conf->archivePulses);
+	fprintf(out, "  archive_merged = %d\n", conf->archiveMerged);
+	fprintf(out, "  archive_scores = %d\n", conf->archiveScores);
+	fprintf(out, "  archive_filterbank = %d # %s\n", conf->archiveFilterbank, archiveModeName[conf->archiveFilterbank]);
+	fprintf(out, "  stub_pipeline = %d\n", conf->stubPipeline);
+	fprintf(out, "  recorr_queue_file = %s\n", conf->recorrQueueFile);
+	fprintf(out, "  recorr_threshold = %f\n", conf->recorrThreshold);
+	fprintf(out, "  dmgen_program = %s\n", conf->dmgenProgram);
+	fprintf(out, "  min_search_dm = %f\n", conf->minDM);
+	fprintf(out, "  max_search_dm = %f\n", conf->maxDM);
+	fprintf(out, "  negative_dm_sparsity = %d # sparsity factor\n", conf->negDM);
+	fprintf(out, "  max_dm_values = %d # including negative\n", conf->nDM);
+	fprintf(out, "  dm_delta_t = %f # ms\n", conf->tDM);
+	fprintf(out, "  max_dispersion_delay = %f # sec\n", conf->maxDispersionDelay);
+	fprintf(out, "  TCP_port = %d\n", conf->TCPPort);
 
 	fflush(out);
 }
@@ -856,10 +876,49 @@ int handleTCP(TransientDaemonState *state, TransientDaemonConf *conf, int sock, 
 		{
 			fprintTransientDaemonConf(sockfd, conf);
 		}
+		else if(strcmp(B, "program") == 0)
+		{
+			fprintf(sockfd, "%s ver. %s   %s\n", program, version, verdate);
+			fflush(sockfd);
+		}
 	}
 	else if(strcmp(A, "set") == 0 && n == 3)
 	{
-		setTransientDaemonConf(conf, B, C);
+		if(strcmp(B, "verbose") == 0)
+		{
+			state->verbose = atoi(C);
+			fprintf(sockfd, "verbose = %d\n", state->verbose);
+		}
+		else if(strcmp(B, "enable") == 0)
+		{
+			state->startEnable = atoi(C);
+			fprintf(sockfd, "startEnable = %d\n", state->startEnable);
+		}
+		else
+		{
+			v = setTransientDaemonConf(conf, B, C);
+			if(v == 0)
+			{
+				fprintf(sockfd, "%s = %s\n", B, C);
+			}
+			else
+			{
+				fprintf(sockfd, "Error: unknown parameter %s\n", B);
+			}
+		}
+		fflush(sockfd);
+	}
+	else if(strcmp(A, "exit") == 0)
+	{
+		fprintf(sockfd, "Bye.\n");
+		fflush(sockfd);
+
+		return 1;
+	}
+	else
+	{
+		fprintf(sockfd, "Unrecognized command.\n");
+		fflush(sockfd);
 	}
 
 	return 0;
@@ -941,7 +1000,8 @@ int transientdaemon(TransientDaemonState *state)
 			server_address.sin_port = htons(conf->TCPPort);
 			if(bind(acceptSock, (struct sockaddr *)(&server_address), sizeof(server_address)) < 0 )
 			{
-				printf("Cannot bind acceptSock\n");
+				printf("Cannot bind acceptSock to port %d\n", conf->TCPPort);
+				printf("Possibly another %s is running\n", program);
 				close(acceptSock);
 				acceptSock = -1;
 			}
@@ -1108,6 +1168,13 @@ int transientdaemon(TransientDaemonState *state)
 					fclose(clientFDs[c]);
 					clientSocks[c] = -1;
 					printf("Connection on slot %d closed\n", c);
+				}
+				if(v == 1)	// close requested remotely
+				{
+					close(clientSocks[c]);
+					fclose(clientFDs[c]);
+					clientSocks[c] = -1;
+					printf("Connection on slot %d exited\n", c);
 				}
 			}
 		}
