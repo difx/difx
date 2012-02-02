@@ -776,6 +776,10 @@ int setDifxTcalDIFX(DifxTcal *dt, const char *tcalFile)
 static int loadDifxTcalDIFX(DifxTcal *dt)
 {
 	FILE *in;
+	char lastAntenna[MAX_DIFX_TCAL_ANTENNA_LENGTH] = "";
+	char lastReceiver[MAX_DIFX_TCAL_RECEIVER_LENGTH] = "";
+	int g = -1;
+	int gAnt = -1;
 
 	if(!dt)
 	{
@@ -795,10 +799,6 @@ static int loadDifxTcalDIFX(DifxTcal *dt)
 		char *rv;
 		char antenna[MAX_DIFX_TCAL_ANTENNA_LENGTH] = "";
 		char receiver[MAX_DIFX_TCAL_RECEIVER_LENGTH] = "";
-		char lastAntenna[MAX_DIFX_TCAL_ANTENNA_LENGTH] = "";
-		char lastReceiver[MAX_DIFX_TCAL_RECEIVER_LENGTH] = "";
-		int g = -1;
-		int gAnt = -1;
 		int n;
 		float freq, tcal1, tcal2;
 
@@ -817,13 +817,14 @@ static int loadDifxTcalDIFX(DifxTcal *dt)
 			int newGroup = 0;
 			int v;
 
+		printf("%s%s%f%f%f\n", antenna, receiver, freq, tcal1, tcal2);
 			if(strncmp(antenna, lastAntenna, MAX_DIFX_TCAL_ANTENNA_LENGTH) != 0)
 			{
 				strncpy(lastAntenna, antenna, MAX_DIFX_TCAL_ANTENNA_LENGTH);
 				newGroup = 1;
 
 				/* also make a new group for just the antenna */
-				/* this results in each entry being duplicated: one indexex w/ receiver and one without */
+				/* this results in each entry being duplicated: one indexed w/ receiver and one without */
 				/* which will make it practical for look-ups based on receiver name or not */
 				gAnt = addDifxTcalGroup(dt);
 				if(gAnt < 0)
