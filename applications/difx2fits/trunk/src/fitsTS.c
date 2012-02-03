@@ -218,6 +218,10 @@ static int populateDifxTSys(float tSys[][array_MAX_BANDS], const DifxInput *D, i
 				if(tCal > 0.0)
 				{
 					tSys[p][i] = tCal*unscaledTsys(average + r);
+					if(tSys[p][i] < 0.0)
+					{
+						tSys[p][i] = 999.0;
+					}
 				}
 			}
 		}
@@ -324,8 +328,11 @@ static int getDifxTsys(const DifxInput *D, int jobId, int antId, int origDsId,
 		/* Third: if no data was read, either go to top and try next file or prepare for the end */
 		if(!rv)
 		{
-			fclose(in);
-			in = 0;
+			if(in)
+			{
+				fclose(in);
+				in = 0;
+			}
 
 			if(curFile < nFile)
 			{
@@ -599,7 +606,7 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 		v = setDifxTcalVLBA(T, tcalFilename);
 		if(v < 0)
 		{
-			fprintf(stderr, "Error initializing VLBA Tcl values\n");
+			fprintf(stderr, "Error initializing VLBA Tcal values\n");
 
 			exit(EXIT_FAILURE);
 		}
@@ -609,7 +616,7 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 		v = setDifxTcalDIFX(T, tcalFilename);
 		if(v < 0)
 		{
-			fprintf(stderr, "Error initializing VLBA Tcl values\n");
+			fprintf(stderr, "Error initializing VLBA Tcal values\n");
 
 			exit(EXIT_FAILURE);
 		}
@@ -703,8 +710,7 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 		}
 		else 
 		{
-			nRecBand = parseTsys(line, antName, &time, 
-				&timeInt, tSysRecBand);
+			nRecBand = parseTsys(line, antName, &time, &timeInt, tSysRecBand);
 
 			/* discard records for unused antennas */
 			antId = DifxInputGetAntennaId(D, antName);
