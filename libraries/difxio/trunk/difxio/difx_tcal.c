@@ -817,7 +817,6 @@ static int loadDifxTcalDIFX(DifxTcal *dt)
 			int newGroup = 0;
 			int v;
 
-		printf("%s%s%f%f%f\n", antenna, receiver, freq, tcal1, tcal2);
 			if(strncmp(antenna, lastAntenna, MAX_DIFX_TCAL_ANTENNA_LENGTH) != 0)
 			{
 				strncpy(lastAntenna, antenna, MAX_DIFX_TCAL_ANTENNA_LENGTH);
