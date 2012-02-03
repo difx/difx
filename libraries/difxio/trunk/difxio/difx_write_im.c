@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2011 by Walter Brisken                             *
+ *   Copyright (C) 2008-2012 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -45,8 +45,8 @@ int writeDifxIM(const DifxInput *D)
 
 	if(D->nJob != 1)
 	{
-		fprintf(stderr, "writeDifxIM: nJob = %d (not 1)\n", 
-			D->nJob);
+		fprintf(stderr, "writeDifxIM: nJob = %d (not 1)\n", D->nJob);
+
 		return -1;
 	}
 
@@ -59,6 +59,7 @@ int writeDifxIM(const DifxInput *D)
 	if(!out)
 	{
 		fprintf(stderr, "Cannot open %s for write\n", D->job->imFile);
+
 		return -1;
 	}
 
@@ -84,18 +85,15 @@ int writeDifxIM(const DifxInput *D)
 
 	writeDifxLineInt(out, "NUM SCANS", D->nScan);
 
-	for(s = 0; s < D->nScan; s++)
+	for(s = 0; s < D->nScan; ++s)
 	{
 		scan = D->scan + s;
 
-		writeDifxLine1(out, "SCAN %d POINTING SRC", s, 
-			       D->source[scan->pointingCentreSrc].name);
-		writeDifxLineInt1(out, "SCAN %d NUM PHS CTRS", s, 
-				  scan->nPhaseCentres);
+		writeDifxLine1(out, "SCAN %d POINTING SRC", s, D->source[scan->pointingCentreSrc].name);
+		writeDifxLineInt1(out, "SCAN %d NUM PHS CTRS", s, scan->nPhaseCentres);
 		for(i=0;i<scan->nPhaseCentres;i++)
 		{
-			writeDifxLine2(out, "SCAN %d PHS CTR %d SRC", s, i,
-                                       D->source[scan->phsCentreSrcs[i]].name);
+			writeDifxLine2(out, "SCAN %d PHS CTR %d SRC", s, i, D->source[scan->phsCentreSrcs[i]].name);
 		}
 		
 		for(refAnt = 0; refAnt < scan->nAntenna; refAnt++)
@@ -115,13 +113,11 @@ int writeDifxIM(const DifxInput *D)
 		
 		for(p = 0; p < scan->nPoly; p++)
 		{
-			writeDifxLineInt2(out, "SCAN %d POLY %d MJD",
-				s, p, scan->im[refAnt][0][p].mjd);
-			writeDifxLineInt2(out, "SCAN %d POLY %d SEC",
-				s, p, scan->im[refAnt][0][p].sec);
-			for(i=0;i<scan->nPhaseCentres+1;i++)
+			writeDifxLineInt2(out, "SCAN %d POLY %d MJD", s, p, scan->im[refAnt][0][p].mjd);
+			writeDifxLineInt2(out, "SCAN %d POLY %d SEC", s, p, scan->im[refAnt][0][p].sec);
+			for(i = 0; i < scan->nPhaseCentres+1; ++i)
 			{
-				for(a = 0; a < scan->nAntenna; a++)
+				for(a = 0; a < scan->nAntenna; ++a)
 				{
 					if(scan->im[a] == 0)
 					{

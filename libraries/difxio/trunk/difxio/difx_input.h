@@ -187,7 +187,8 @@ typedef struct
 	double mjd;		/* center time for first polynomial */
 	int nCoef;		/* number of coefficients per polynomial */
 	int nBlk;		/* number of minutes spanned by each */
-	double p0, f0;
+	double p0;		/* reference phase */
+	double f0;		/* reference spin frequency */
 	double *coef;
 } DifxPolyco;
 
@@ -827,6 +828,7 @@ int polMaskValue(char polName);
 int writeDifxIM(const DifxInput *D);
 int writeDifxCalc(const DifxInput *D);
 int writeDifxInput(const DifxInput *D);
+int writeDifxPulsarFiles(const DifxInput *D);
 
 /* Remap functions */
 void fprintRemap(FILE *out, const char *name, const int *Remap);
