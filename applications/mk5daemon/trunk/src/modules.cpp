@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2011 by Walter Brisken                             *
+ *   Copyright (C) 2008-2012 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -192,10 +192,10 @@ static int XLR_get_modules(Mk5Daemon *D)
 
 			if(legalVSN(D->bank_stat[bank].Label))
 			{
-				difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_VERBOSE);
 				strncpy(D->vsns[bank], D->bank_stat[bank].Label, 8);
 				D->vsns[bank][8] = 0;
 				snprintf(message, DIFX_MESSAGE_LENGTH, "Module %s inserted into bank %c", D->vsns[bank], 'A'+bank);
+				difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_VERBOSE);
 				updateModule = true;
 				newModule = true;
 			}

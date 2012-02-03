@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2011 by Walter Brisken                             *
+ *   Copyright (C) 2008-2012 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -450,7 +450,7 @@ void handleCommand(Mk5Daemon *D, const DifxMessageGeneric *G)
 	{
 		umountdisk(D);
 	}
-	else if(strncmp(cmd, "reown_vfastr", 12) == 0)
+	else if(strncmp(cmd, "reown_vfastr", 12) == 0 && strlen(cmd) > 12)
 	{
 		reown_vfastr(D, cmd+12);
 	}
@@ -533,7 +533,10 @@ void Mk5Daemon_poweroff(Mk5Daemon *D)
 	dm.state = MARK5_STATE_POWEROFF;
 	difxMessageSendMark5Status(&dm);
 
-	D->dieNow = 1;
+	Logger_logData(D->log, "PowerOff message received.");
+	deleteLogger(D->log);
+
+	sleep(1);
 	Mk5Daemon_system(D, command, 1);
 }
 

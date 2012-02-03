@@ -47,6 +47,7 @@ int lockStreamstor(Mk5Daemon *D, const char *identifier, int wait)
 	char message[DIFX_MESSAGE_LENGTH];
 
 	v = lockMark5(wait);
+#if 0
 	if(v)
 	{
 		if(D->streamstorLockIdentifer[0])
@@ -68,6 +69,7 @@ int lockStreamstor(Mk5Daemon *D, const char *identifier, int wait)
 			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_VERBOSE);
 		}
 	}
+#endif
 
 	return v;
 }
