@@ -176,7 +176,7 @@ int loadPulsarPolycoFile(DifxPolyco **dpArray, int *nPolyco, const char *filenam
 		DifxPolyco *dp;
 		char buffer[BufferSize];
 		char *ptr;
-		int r, c, len;
+		int n, r, c, len;
 
 		ptr = fgets(buffer, BufferSize-1, in);
 		if(ptr == 0)
@@ -237,8 +237,8 @@ int loadPulsarPolycoFile(DifxPolyco **dpArray, int *nPolyco, const char *filenam
 		{
 			char *rv;
 			
-			rv = fgets(buffer, BufferSize-1, in);
-			if(!rv)
+			n = fscanf(in, "%s", buffer);
+			if(n == 0)
 			{
 				fprintf(stderr, "Error: loadPulsarPolycoFile: early end of file in %s\n", filename);
 				fclose(in);
