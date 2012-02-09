@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2011 by Walter Brisken and Adam Deller             *
+ *   Copyright (C) 2007-2012 by Walter Brisken and Adam Deller             *
  *                                                                         *
  *   This program is free for non-commercial use: see the license file     *
  *   at http://astronomy.swin.edu.au:~adeller/software/difx/ for more      *
@@ -77,8 +77,15 @@ private:
 	double lastrate;
 	int nrate;
 	int nError;
-	bool nomoredata;
+        int nDMAError;
+	bool noMoreData;
+        bool noDataOnModule;
 	int nfill, ninvalid, ngood;
+        int readDelayMicroseconds;
+
+        void openStreamstor();
+        void closeStreamstor();
+        void resetStreamstor();
 };
 
 #endif
