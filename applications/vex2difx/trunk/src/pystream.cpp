@@ -883,6 +883,10 @@ int pystream::writeLoifTable(const VexData *V)
 				else 
 				{
 					// no comment to process
+					cerr << "Error: vex file contains if_def without needed receiver information" << endl;
+					cerr << "Receiver and filter information is required in if_def line comments" << endl;
+
+					exit(EXIT_FAILURE);
 				}
 
 				// tuning of first channel attached to this IF
