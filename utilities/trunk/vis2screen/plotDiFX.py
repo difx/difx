@@ -84,6 +84,7 @@ freqindex   = []
 baseline    = []
 polpair     = []
 nchan       = []
+med         = []
 for filename in args:
     difxinputs.append(open(filename))
     freqindex.append(0)
@@ -91,6 +92,7 @@ for filename in args:
     baseline.append(0)
     mjd.append(0)
     seconds.append(0.0)
+    med.append(0.0)
     polpair.append("")
     nextheader.append([])
 
@@ -126,7 +128,7 @@ while not len(nextheader[0]) == 0:
             vis[i][j] = complex(cvis[0], cvis[1])
             amp[i][j] = math.sqrt(cvis[0]*cvis[0] + cvis[1]*cvis[1])
             phase[i][j] = math.atan2(cvis[1], cvis[0])
-	phase[i] = (numpy.unwrap(phase[i]))*180.0/math.pi
+        phase[i] = (numpy.unwrap(phase[i]))*180.0/math.pi
 	if (targetbaseline < 0 or targetbaseline == baseline[i]) and \
 	    (targetfreq < 0 or targetfreq == freqindex[i]) and (polpair[i] in pollist):
             lag[i] = fft.ifft(vis[i], nchan[i])
@@ -134,6 +136,7 @@ while not len(nextheader[0]) == 0:
                 lagamp[i][j+nchan[i]/2] = abs(lag[i][j])
             for j in range(nchan[i]/2):
                 lagamp[i][j] = abs(lag[i][j+nchan[i]/2])
+            med[i] = numpy.median(amp[i][:nchan[i]])
             if i > 0:
                 for j in range(len(nextheader[0])):
                     if nextheader[i][j] != nextheader[0][j]:
@@ -195,6 +198,11 @@ while not len(nextheader[0]) == 0:
         else:
             pylab.savefig("%s_baseline%03d_freq_%02d_pol_%s.png" % (inputfile, baseline[i], freqindex[i], polpair[i]))
         pylab.clf()
+        print "Median values were:"
+        for i in range(numfiles):
+            print "File %d: %.6f" % (i, med[i])
+        if numfiles == 2:
+            print "Ratio of medians was " + str(med[1]/med[0])
     for i in range(numfiles):
         nextheader[i] = parseDiFX.parse_output_header(difxinputs[i])
     
