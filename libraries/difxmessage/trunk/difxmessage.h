@@ -197,6 +197,7 @@ enum DifxMessageType
 	DIFX_MESSAGE_DIAGNOSTIC,
 	DIFX_MESSAGE_FILETRANSFER,
 	DIFX_MESSAGE_FILEOPERATION,
+	DIFX_MESSAGE_VEX2DIFXRUN,
 	NUM_DIFX_MESSAGE_TYPES	/* this needs to be the last line of enum */
 };
 
@@ -339,6 +340,15 @@ typedef struct
 
 typedef struct
 {
+    char user[DIFX_MESSAGE_PARAM_LENGTH];
+    char headNode[DIFX_MESSAGE_PARAM_LENGTH];
+    char difxPath[DIFX_MESSAGE_FILENAME_LENGTH];
+    char passPath[DIFX_MESSAGE_FILENAME_LENGTH];
+    char v2dFile[DIFX_MESSAGE_FILENAME_LENGTH];
+} DifxMessageVex2DifxRun;
+
+typedef struct
+{
 	char inputFilename[DIFX_MESSAGE_FILENAME_LENGTH];
 } DifxMessageStop;
 
@@ -438,6 +448,7 @@ typedef struct
 		DifxMessageDiagnostic	diagnostic;
 		DifxMessageFileTransfer    fileTransfer;
 		DifxMessageFileOperation    fileOperation;
+		DifxMessageVex2DifxRun    vex2DifxRun;
 	} body;
 	int _xml_level;			/* internal use only here and below */
 	char _xml_element[5][32];

@@ -737,6 +737,28 @@ static void XMLCALL endElement(void *userData, const char *name)
 						strncpy(G->body.fileOperation.dataNode, s, DIFX_MESSAGE_PARAM_LENGTH-1);
 					}
 					break;
+				case DIFX_MESSAGE_VEX2DIFXRUN:
+					if(strcmp(elem, "user") == 0 )
+					{
+						strncpy(G->body.vex2DifxRun.user, s, DIFX_MESSAGE_PARAM_LENGTH-1);
+					}
+					else if(strcmp(elem, "node") == 0 )
+					{
+						strncpy(G->body.vex2DifxRun.headNode, s, DIFX_MESSAGE_PARAM_LENGTH-1);
+					}
+					else if(strcmp(elem, "difxPath") == 0 )
+					{
+						strncpy(G->body.vex2DifxRun.difxPath, s, DIFX_MESSAGE_FILENAME_LENGTH-1);
+					}
+					else if(strcmp(elem, "passPath") == 0 )
+					{
+						strncpy(G->body.vex2DifxRun.passPath, s, DIFX_MESSAGE_FILENAME_LENGTH-1);
+					}
+					else if(strcmp(elem, "file") == 0 )
+					{
+						strncpy(G->body.vex2DifxRun.v2dFile, s, DIFX_MESSAGE_FILENAME_LENGTH-1);
+					}
+					break;
 				case DIFX_MESSAGE_TRANSIENT:
 					if(strcmp(elem, "jobId") == 0)
 					{
