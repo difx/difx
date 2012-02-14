@@ -685,6 +685,9 @@ void handleDifxMessage(Mk5Daemon *D)
 			case DIFX_MESSAGE_FILEOPERATION:
 				Mk5Daemon_fileOperation(D, &G);
 				break;
+			case DIFX_MESSAGE_VEX2DIFXRUN:
+				Mk5Daemon_vex2DifxRun(D, &G);
+				break;
 			default:
 				break;
 			}

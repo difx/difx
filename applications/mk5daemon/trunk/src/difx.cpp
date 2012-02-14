@@ -1317,6 +1317,7 @@ void Mk5Daemon_fileTransfer( Mk5Daemon *D, const DifxMessageGeneric *G ) {
     	        }
     	    }
 
+            //printf( "sending %d as confirmation\n", filesize );
             int n = htonl( filesize );            	
             write( sockfd, &n, sizeof( int ) );
 
@@ -1527,10 +1528,73 @@ void Mk5Daemon_fileOperation( Mk5Daemon *D, const DifxMessageGeneric *G ) {
 		Logger_logData( D->log, message );
 		return;
 	}
-	difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_WARNING );
+	//difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_WARNING );
 		
 }
 
+//-----------------------------------------------------------------------------
+//!  Run vex2difx using specified data.  This is a command from the GUI.
+//-----------------------------------------------------------------------------	
+void Mk5Daemon_vex2DifxRun( Mk5Daemon *D, const DifxMessageGeneric *G ) {
+	const DifxMessageVex2DifxRun *S;
+	char message[DIFX_MESSAGE_LENGTH];
+	char command[MAX_COMMAND_SIZE];
+	const char *user;
+	char roundup[DIFX_MESSAGE_LENGTH];
+	pid_t childPid;
+	
+	if( !G ) {
+		difxMessageSendDifxAlert(
+								 "Developer error: Mk5Daemon_fileTransfer() received null DifxMessageGeneric",
+								 DIFX_ALERT_LEVEL_ERROR);
+		return;
+	}
+	
+	S = &G->body.vex2DifxRun;
+	
+	//sprintf( message, "vex2difx command....%s, %s, %s, %s, %s",
+    //         S->user,
+    //         S->headNode,
+    //         S->difxPath,
+    //         S->passPath,
+    //         S->v2dFile );
+	//difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_WARNING );
+
+	childPid = fork();
+	
+	//  Forked process runs vex2difx...
+	if(childPid == 0)
+	{
+		
+		snprintf(command, MAX_COMMAND_SIZE, "ssh -x %s@%s 'source %s/setup/setup.bash; cd %s; vex2difx -f %s'", 
+				 S->user,
+				 S->headNode,
+				 S->difxPath,
+				 S->passPath,
+				 S->v2dFile );
+		
+		//snprintf(message, DIFX_MESSAGE_LENGTH, "Executing: %s", command);
+		//difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
+
+        roundup[0] = 0;		
+		FILE* fp = Mk5Daemon_popen( D, command, 1 );
+		while ( fgets( message, DIFX_MESSAGE_LENGTH, fp ) != NULL ) {
+		    //  Try to create a clean "# jobs" message for transmission back to the GUI.
+		    if ( strstr( message, "created" ) != NULL ) {
+		        strncat( roundup, message, strcspn( message, "(" ) );
+		        sprintf( roundup + strlen( roundup ), "(s) created in %s", S->passPath );
+		        difxMessageSendDifxAlert( roundup, DIFX_ALERT_LEVEL_INFO );
+		    }
+		}
+		pclose( fp );
+		
+		//difxMessageSendDifxAlert("vex2difx completed", DIFX_ALERT_LEVEL_INFO);
+    	exit(EXIT_SUCCESS);
+		
+	}
+}
+
+	
 
 
 

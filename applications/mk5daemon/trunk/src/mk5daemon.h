@@ -224,6 +224,7 @@ void Mk5Daemon_startMpifxcorr_USNO( Mk5Daemon *D, const DifxMessageGeneric *G );
 void Mk5Daemon_stopMpifxcorr_USNO( Mk5Daemon *D, const DifxMessageGeneric *G );
 void Mk5Daemon_fileTransfer( Mk5Daemon *D, const DifxMessageGeneric *G );
 void Mk5Daemon_fileOperation( Mk5Daemon *D, const DifxMessageGeneric *G );
+void Mk5Daemon_vex2DifxRun( Mk5Daemon *D, const DifxMessageGeneric *G );
 void Mk5Daemon_addVSIError(Mk5Daemon *D, const char *errorMessage);
 void Mk5Daemon_delVSIError(Mk5Daemon *D, const char *errorMessage);
 int Mk5Daemon_popVSIError(Mk5Daemon *D, char *errorMessage, int maxLength);
