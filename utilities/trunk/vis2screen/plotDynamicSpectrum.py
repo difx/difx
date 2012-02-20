@@ -1,4 +1,6 @@
 #!/usr/bin/python
+import matplotlib
+matplotlib.use('Agg')
 import sys, os, struct, time, pylab, math, numpy
 import parseDiFX
 from optparse import OptionParser
@@ -37,8 +39,16 @@ parser.add_option("-i", "--inputfile", dest="inputfile", default="",
                   help="An input file to use as guide for number of channels for each freq")
 parser.add_option("--toscreen", dest="toscreen", default=False, action="store_true",
                   help="Plot to the screen, otherwise to png files")
+parser.add_option("--logamp", dest="logamp", default=False, action="store_true",
+                  help="Take the log of amplitudes, for a flatter scaling")
+parser.add_option("--maxtimestep", dest="maxtimestep", default="-1",
+                  help="Max timestep number, if you want to limit the range")
+parser.add_option("--chanrange", dest="chanrange", default="-1,-1",
+                  help="Channel range to plot, in form min,max (-1,-1 for all)")
 parser.add_option("--scrunchbaselines", dest="scrunchbaselines", action="store_true",
                   help="Scalar add all baseline amplitudes")
+parser.add_option("--showlegend", dest="showlegend", default=False, action="store_true",
+                  help="Show a legend on the plot")
 (options, args) = parser.parse_args()
 
 if len(args) != 1:
@@ -48,10 +58,19 @@ targetbaseline = int(options.baseline)
 targetfreq     = int(options.freq)
 targetpolpair  = options.polpair
 maxchannels    = int(options.maxchannels)
+maxtimestep    = int(options.maxtimestep)
 verbose        = options.verbose
 inputfile      = options.inputfile
 toscreen       = options.toscreen
+logamp         = options.logamp
+showlegend     = options.showlegend
 scrunchbaselines= options.scrunchbaselines
+chanrange      = options.chanrange.split(',')
+
+if len(chanrange) != 2:
+    parser.error("Channel range must be in form min,max")
+chanrange[0] = int(chanrange[0])
+chanrange[1] = int(chanrange[1])
 
 if inputfile == "":
     parser.error("You must supply an input file!")
@@ -97,8 +116,8 @@ while not len(nextheader) == 0:
     freqindex = nextheader[5]
     polpair   = nextheader[6]
     nchan     = freqs[freqindex].numchan/freqs[freqindex].specavg
-    if nchan > maxchannels:
-        print "How embarrassing - you have tried to read files with more than " + \
+    if nchan >= maxchannels:
+        print "How embarrassing - you have tried to diff files with more than " + \
             str(maxchannels) + " channels.  Please rerun with --maxchannels=<bigger number>!"
         sys.exit()
     if seconds != lastseconds:
@@ -108,6 +127,8 @@ while not len(nextheader) == 0:
 		phase[i][j].append(0.0)
         lastseconds = seconds
 	vislen += 1
+        if maxtimestep > 0 and vislen > maxtimestep:
+            break
     buffer    = difxinput.read(8*nchan)
     if (targetbaseline < 0 or targetbaseline == baseline) and \
        (targetfreq < 0 or targetfreq == freqindex):
@@ -124,24 +145,38 @@ while not len(nextheader) == 0:
             phase[freqindex][j][-1] = math.atan2(cvis[1], cvis[0])*180.0/math.pi
     nextheader = parseDiFX.parse_output_header(difxinput)
 
+if chanrange[0] < 0:
+    chanrange[0] = 0
+if chanrange[1] < 0:
+    chanrange[1] = savednchan
+
 if savednchan > 0:
     if targetfreq >= 0: # We want amplitude and phase from just one freq
         offsetfreq = freqs[targetfreq].freq
         chanwidth = freqs[targetfreq].bandwidth / (freqs[freqindex].numchan/freqs[freqindex].specavg)
-        numpyamp = numpy.zeros((savednchan, vislen), numpy.float32)
-        numpyphase = numpy.zeros((savednchan, vislen), numpy.float32)
-        for i in range(savednchan):
+        numpyamp = numpy.zeros((chanrange[1]-chanrange[0], vislen), numpy.float32)
+        numpyphase = numpy.zeros((chanrange[1]-chanrange[0], vislen), numpy.float32)
+        for i in range(chanrange[1]-chanrange[0]):
             for j in range(vislen):
-	        numpyamp[i][j] = amp[0][i][j]
-	        numpyphase[i][j] = phase[0][i][j]
+	        numpyamp[i][j] = amp[0][i+chanrange[0]][j]
+	        numpyphase[i][j] = phase[0][i+chanrange[0]][j]
+            if logamp:
+                numpyamp[i] = numpy.log10(numpyamp[i])
 	ax = pylab.subplot(2,1,1)
 	xformatter = FuncFormatter(xindex2ms)
         yformatter = FuncFormatter(make_yindex2MHz(offsetfreq))
-	pylab.title("Amplitude")
+        if logamp:
+            pylab.title("Amplitude (log10 correlation coefficients)")
+        else:
+            pylab.title("Amplitude (correlation coefficients)")
         pylab.ylabel("Freq (MHz)")
 	ax.xaxis.set_major_formatter(xformatter)
         ax.yaxis.set_major_formatter(yformatter)
+        stddev = numpy.std(numpyamp, dtype=numpy.float64)
+        print "Std deviation of the amplitudes was %.6f" % stddev
         pylab.imshow(numpyamp, aspect='auto', origin='lower')
+        if showlegend:
+            matplotlib.pyplot.colorbar(ax=ax)
 	ax = pylab.subplot(2,1,2)
 	pylab.title("Phase")
         pylab.xlabel("Time (s)")
@@ -149,10 +184,12 @@ if savednchan > 0:
         ax.xaxis.set_major_formatter(xformatter)
         ax.yaxis.set_major_formatter(yformatter)
         pylab.imshow(numpyphase, aspect='auto', origin='lower')
+        if showlegend:
+            matplotlib.pyplot.colorbar(ax=ax)
 	if targetbaseline < 0:
-            pylab.savefig("dynamicspectra.bscrunch.f%d.png" % (targetfreq), format="png")
+            pylab.savefig("dynamicspectra.bscrunch.f%d.%s.png" % (targetfreq,targetpolpair), format="png")
 	else:
-	    pylab.savefig("dynamicspectra.b%d.f%d.png" % (targetbaseline, targetfreq), format="png")
+	    pylab.savefig("dynamicspectra.b%d.f%d.%s.png" % (targetbaseline, targetfreq, targetpolpair), format="png")
     else: # Want to display all freqs, one after another
         pylab.figure(figsize=(15,9))
         pylab.suptitle('All frequencies for %s' % inputfile)
@@ -164,10 +201,12 @@ if savednchan > 0:
             a = amp[sortedfreqinds[i]]
             offsetfreq = f.freq
             chanwidth = f.bandwidth / (f.numchan/f.specavg)
-	    numpyamp = numpy.zeros((savednchan, vislen), numpy.float32)
-	    for j in range(savednchan):
+	    numpyamp = numpy.zeros((chanrange[1]-chanrange[0], vislen), numpy.float32)
+	    for j in range(chanrange[1]-chanrange[0]):
 	        for k in range(vislen):
-		    numpyamp[j][k] = a[j][k]
+		    numpyamp[j][k] = a[j+chanrange[0]][k]
+                if logamp:
+                    numpyamp[i] = numpy.log10(numpyamp[i])
 	    ax = pylab.subplot(numfreqs,1,i+1)
             pylab.subplots_adjust(wspace=0.05, hspace=0.02,
                                   top=0.95, bottom=0.08, left=0.125, right = 0.9)
@@ -184,11 +223,11 @@ if savednchan > 0:
             ax.yaxis.set_major_locator(MaxNLocator(4))
 	    pylab.ylabel("Freq (MHz)")
 	    pylab.imshow(numpyamp, aspect='auto', origin='lower')
-
-	if toscreen:
-	    pylab.show()
+            if showlegend:
+                matplotlib.pyplot.colorbar(ax=ax)
+	if targetbaseline < 0:
+	    pylab.savefig("dynamicspectra.bscrunch.png", format="png")
 	else:
-	    if targetbaseline < 0:
-	        pylab.savefig("dynamicspectra.bscrunch.png", format="png")
-	    else:
-	        pylab.savefig("dynamicspectra.b%d.png" % (targetbaseline), format="png")
+	    pylab.savefig("dynamicspectra.b%d.png" % (targetbaseline), format="png")
+else:
+    print "Didn't find any matching visibilities!"
