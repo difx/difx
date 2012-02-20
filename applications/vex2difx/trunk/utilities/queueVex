@@ -11,8 +11,8 @@ from time import time
 import datetime
 
 program = 'queueVex'
-version = 1.8
-verdate = '20120126'
+version = 1.10
+verdate = '20120220'
 author  = 'Walter Brisken'
 
 verbose = 1
@@ -37,7 +37,8 @@ def usage():
 	print '  -f or --force      proceed without question in some cases.'
 	print '  -p or --priority   interrupt a conflicting obs.'
 	print '  -u or --usno       convert scripts to use USNO devices'
-	print '  -e or --edit       allow time to edit the files\n'
+	print '  -e or --edit       allow time to edit the files'
+	print '  -n or --nocopy     don\'t copy files to stations\n'
 	print ''
 	print 'One or more vex files can be supplied.  All supplied vex files will'
 	print 'be handled separately in the order listed.'
@@ -54,9 +55,12 @@ def execute(cmd, nostdout=0):
 	if verbose > 0:
 		print 'About to execute: %s' % cmd
 	if nostdout == 0:
-		system(cmd)
+		v = system(cmd)
 	else:
+		v = -1
 		popen(cmd).readlines()
+	
+	return v
 
 def vexPeek(vexFile):
 	
@@ -139,7 +143,6 @@ def addObservation(orig, expt, startMJD, stopMJD, station):
 		v = split(strip(o), '>')
 		s = split(v[0])
 		if len(s) < 5 or len(v) < 2:
-			observations.append(o)
 			continue
 		expt0 = s[0]
 		if expt0 == expt:
@@ -179,6 +182,7 @@ priority = 0
 usnoConvert = False
 edit = False
 force = False
+nocopy = False
 options = ''
 
 for a in argv[1:]:
@@ -198,6 +202,8 @@ for a in argv[1:]:
 			force = True
 		elif a in ['-e', '--edit']:
 			edit = True
+		elif a in ['-n', '--nocopy']:
+			nocopy = True
 		else:
 			print 'Unknown option "%s"\n' % a
 			exit(1)
@@ -271,7 +277,10 @@ for vexFile in vexFiles:
 		print 'Press enter to continue or Ctrl-C to stop this process'
 		stdin.readline()
 
-	execute('%s/vex2script %s %s' % (difxPath, vexFile, options))
+	v = execute('%s/vex2script %s %s' % (difxPath, vexFile, options))
+	if v != 0:
+		print 'An error occurred running vex2script on file %s.  Stopping.' % vexFile
+		exit(0)
 
 	scripts = glob('*.??.py')
 	scripts.sort()
@@ -330,7 +339,10 @@ for vexFile in vexFiles:
 		print 'Contents of %s at %s (only last %d lines shown):' % (observTxFile, upperStation, linesToShow)
 		system('tail -n %d %s' % (linesToShow, observTxFile))
 		print ''
-		execute('scp %s %s vlbamon@%s:%s 2>&1' % (script, observTxFile, cc, ccScriptDir), 1)
+		if nocopy:
+			print '*** Not copying %s and %s to vlbamon@%s:%s 2>&1' % (script, observTxFile, cc, ccScriptDir)
+		else:
+			execute('scp %s %s vlbamon@%s:%s 2>&1' % (script, observTxFile, cc, ccScriptDir), 1)
 		execute('rm %s' % observTxFile)
 
 chdir(cwd)
