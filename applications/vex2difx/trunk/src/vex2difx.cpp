@@ -46,7 +46,7 @@
 
 const string version(VERSION);
 const string program("vex2difx");
-const string verdate("20120103");
+const string verdate("20120222");
 const string author("Walter Brisken/Adam Deller");
 
 const int defaultMaxNSBetweenACAvg = 2000000;	// 2ms, good default for use with transient detection
@@ -2955,13 +2955,28 @@ int main(int argc, char **argv)
 	nWarn += sanityCheckConsistency(V, P);
 	if(strict && nWarn > 0)
 	{
-		cerr << "Quitting since " << nWarn << " warnings were found and strict mode was enabled." << endl;
+		if(nWarn == 1)
+		{
+			cerr << "Quitting since there was a warning and strict mode was enabled." << endl;
+		}
+		else
+		{
+			cerr << "Quitting since " << nWarn << " warnings were found and strict mode was enabled." << endl;
+		}
+		cerr << "Strict mode can be disabled with --force if needed." << endl;
 		
 		exit(EXIT_FAILURE);
 	}
 	else if(nWarn > 0)
 	{
-		cout << "FYI: Proceeding even though there were " << nWarn << " warnings." << endl;
+		if(nWarn == 1)
+		{
+			cout << "FYI: Proceeding even though there was a warning." << endl;
+		}
+		else
+		{
+			cout << "FYI: Proceeding even though there were " << nWarn << " warnings." << endl;
+		}
 	}
 
 	// run through all the scans once, creating source setups for any sources that don't have one

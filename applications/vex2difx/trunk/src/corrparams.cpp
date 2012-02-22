@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2011 by Walter Brisken                             *
+ *   Copyright (C) 2009-2012 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -770,6 +770,21 @@ int SourceSetup::setkv(const string &key, const string &value, PhaseCentre * pc)
 	else if(key == "naifFile")
 	{
 		ss >> pc->naifFile;
+		if(pc->naifFile < "naif0010.tls")
+		{
+			if(time(0) > 1341100800)	// July 1, 2012
+			{
+				cout << "Error: naif0010.tls or newer is needed for correct ephemeris evaluation.  An old or unrecognized file, " << pc->naifFile << " was supplied." << endl;
+
+				exit(EXIT_FAILURE);
+			}
+			else
+			{
+				cout << "Warning: Using old NAIF file: " << pc->naifFile << ".  Please upgrade to naif0010.tls or newer." << endl;
+				cout << "After July 1, 2012, this will be an error and vex2difx will not run." << endl;
+				nWarn++;
+			}
+		}
 	}
 	else if(key == "doPointingCentre" || key == "doPointingCenter")
 	{
