@@ -21,6 +21,7 @@ difx2mark4_SOURCES = \
 	write_t300.c \
 	write_t301.c \
 	write_t302.c \
+	write_t303.c \
 	write_t309.c \
 	other.c \
     normalize.c \
@@ -32,6 +33,7 @@ difx2mark4_SOURCES = \
 	type_300.h \
 	type_301.h \
 	type_302.h \
+	type_303.h \
 	type_309.h \
 	difx2mark4.h \
 	other.h

@@ -3,6 +3,7 @@
 //
 //  first created                          rjc  2010.2.23
 //  added type 309 pcal record creation    rjc  2010.8.9
+//  added type 303 az, el, pa, record      rjc  2012.2.21
 
 #include <stdio.h>
 #include <string.h>
@@ -53,7 +54,8 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
         oncef = FALSE,
         refDay,
         configId,
-        nclock;
+        nclock,
+        sourceId;
 
 
 
@@ -69,7 +71,9 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
            squad,
            xtones[NPC_TONES],
            deltat,
-           clock[6];
+           clock[6],
+           geoc_lat,
+           geod_lat;
 
     char outname[256],
          pcal_filnam[256],
@@ -85,12 +89,14 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
     struct type_300 t300;
     struct type_301 t301;
     struct type_302 t302;
+    struct type_303 t303;
     struct type_309 t309;
                                     // initialize memory
     memset (&t000, 0, sizeof (t000));
     memset (&t300, 0, sizeof (t300));
     memset (&t301, 0, sizeof (t301));
     memset (&t302, 0, sizeof (t302));
+    memset (&t303, 0, sizeof (t303));
     memset (&t309, 0, sizeof (t309));
 
                                     // fill in record boiler-plate and unchanging fields
@@ -105,6 +111,9 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
     
     memcpy (t302.record_id, "302", 3);
     memcpy (t302.version_no, "00", 2);
+    
+    memcpy (t303.record_id, "303", 3);
+    memcpy (t303.version_no, "00", 2);
     
     memcpy (t309.record_id, "309", 3);
     memcpy (t309.version_no, "01", 2);
@@ -160,18 +169,20 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
         t300.nsplines = (short int) D->scan[scanId].nPoly;
         write_t300 (&t300, fout);
 
-                                    // construct type 301 and 302's and write them
+                                    // construct type 301, 302, and 303's and write them
                                     // loop over channels
         for (i=0; i<D->nFreq; i++)
             {
             sprintf (t301.chan_id, "%c%02d?", getband (D->freq[i].freq), i);
             t301.chan_id[3] = (D->freq+i)->sideband;
             strcpy (t302.chan_id, t301.chan_id); 
+            strcpy (t303.chan_id, t301.chan_id); 
                                     // loop over polynomial intervals
             for (j=0; j<D->scan[scanId].nPoly; j++)
                 {
                 t301.interval = (short int) j;
                 t302.interval = t301.interval;
+                t303.interval = t301.interval;
                                     // units of difx are usec, ff uses sec
                                     // shift clock polynomial to start of model interval
                 deltat = 8.64e4 * ((**(D->scan[scanId].im+n))->mjd - (D->antenna+n)->clockrefmjd) 
@@ -189,10 +200,33 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                         t301.delay_spline[l] -= 1e-6 * clock[l];
 
                     t302.phase_spline[l] = t301.delay_spline[l] * (D->freq+i)->freq;
+                                    // fill t303 with az and el polynomials
+                    t303.azimuth[l] = (**(D->scan[scanId].im+n)+j)->az[l];
+                    t303.elevation[l] = (**(D->scan[scanId].im+n)+j)->elgeom[l];
+                    t303.u[l] = (**(D->scan[scanId].im+n)+j)->u[l];
+                    t303.v[l] = (**(D->scan[scanId].im+n)+j)->v[l];
+                    t303.w[l] = (**(D->scan[scanId].im+n)+j)->w[l];
+                                    // par. angle from calc program is NYI
+                    if (l == 0)
+                        {
+                                    // calculate geocentric latitude (rad)
+                        geoc_lat = atan2 (D->antenna[n].Z, 
+                                          sqrt (D->antenna[n].X * D->antenna[n].X
+                                              + D->antenna[n].Y * D->antenna[n].Y));
+                                    // approximate (first order in f) conversion
+                        geod_lat = atan (1.00674 * tan (geoc_lat));
+                        sourceId = D->scan[scanId].pointingCentreSrc;
+                        t303.parallactic_angle[l] = 180 / M_PI *
+                            asin (-cos (geod_lat) * sin (t303.azimuth[0] / 180 * M_PI)
+                                                  / cos (D->source[sourceId].dec));
+                        }
+                    else
+                        t303.parallactic_angle[l] = 0.0;
                     }
 
                 write_t301 (&t301, fout);
                 write_t302 (&t302, fout);
+                write_t303 (&t303, fout);
                 }
             }
 

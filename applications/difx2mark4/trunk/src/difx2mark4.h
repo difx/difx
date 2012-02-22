@@ -101,6 +101,7 @@ struct fbands
 #include "type_300.h"
 #include "type_301.h"
 #include "type_302.h"
+#include "type_303.h"
 #include "type_309.h"
 
 
