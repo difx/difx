@@ -653,7 +653,7 @@ void handleDifxMessage(Mk5Daemon *D)
 	char from[20];
 
 	n = difxMessageReceive(D->difxSock, message, DIFX_MESSAGE_LENGTH-1, from);
-
+	
 	if(n > 0)
 	{
 		int v;

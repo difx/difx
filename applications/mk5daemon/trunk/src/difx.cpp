@@ -31,11 +31,13 @@
 #include <cstdlib>
 #include <cstring>
 #include <sys/stat.h>
+#include <sys/time.h>
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <dirent.h>
 #include <arpa/inet.h>
 #include <pwd.h>
 #include <sys/statvfs.h>
@@ -1441,6 +1443,7 @@ void Mk5Daemon_fileTransfer( Mk5Daemon *D, const DifxMessageGeneric *G ) {
     				 S->origin,
     				 S->port );
       		Mk5Daemon_system( D, command, 1 );
+      		close( sockfd );
       		
     		exit(EXIT_SUCCESS);
     	}
@@ -1459,6 +1462,7 @@ void Mk5Daemon_fileOperation( Mk5Daemon *D, const DifxMessageGeneric *G ) {
 	char message[DIFX_MESSAGE_LENGTH];
 	char command[MAX_COMMAND_SIZE];
 	const char *user;
+	pid_t childPid;
 	
 	if( !G ) {
 		difxMessageSendDifxAlert(
@@ -1521,6 +1525,65 @@ void Mk5Daemon_fileOperation( Mk5Daemon *D, const DifxMessageGeneric *G ) {
   		pclose( fp );	    
   		sprintf( message, "%s performed!", command );
 	}
+	//  The "ls" operation actually returns data, so it must be provided with a TCP port and address.
+	else if ( !strcmp( S->operation, "ls" ) ) {
+	    //  Fork a process to do this.
+    	childPid = fork();
+    	if(childPid == 0)
+    	{
+        	//  Open a TCP socket connection to the server that should be running for us on the
+            //  remote host.  This is used to transfer the list of files.
+            int sockfd;
+            struct sockaddr_in servaddr;
+            sockfd = socket( AF_INET, SOCK_STREAM, 0 );
+            bzero( &servaddr, sizeof( servaddr ) );
+            servaddr.sin_family = AF_INET;
+            servaddr.sin_port = htons( S->port );
+            inet_pton( AF_INET, S->address, &servaddr.sin_addr );
+            int ret = connect( sockfd, (const sockaddr*)&servaddr, sizeof( servaddr ) );
+        
+            //  Make sure the connection worked....
+            if ( ret == 0 ) {
+                //sprintf( message, "Client address: %s   port: %d - connection looks good", S->address, S->port );
+                //difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_WARNING );
+
+        		snprintf( command, MAX_COMMAND_SIZE, "ssh -x %s@%s 'ls %s %s'", 
+        				 user,
+        				 S->dataNode,
+        				 S->arg,
+        				 S->path );
+        		//snprintf(message, DIFX_MESSAGE_LENGTH, "Executing: %s", command);
+        		//difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
+
+          		FILE* fp = Mk5Daemon_popen( D, command, 1 );
+          		char fullPath[DIFX_MESSAGE_FILENAME_LENGTH];
+          		//  Each line of response from the ls should be a filename...
+          		while ( fgets( fullPath, DIFX_MESSAGE_FILENAME_LENGTH, fp ) != NULL ) {
+          		    //  Send the full path.
+                	//  Each separate file is preceeded by its string length.
+                	int sz = htonl( strlen( fullPath ) );
+                	write( sockfd, &sz, sizeof( int ) );
+                	write( sockfd, fullPath, strlen( fullPath ) );
+          		    //difxMessageSendDifxAlert( fullPath, DIFX_ALERT_LEVEL_INFO );
+          	    }
+                pclose( fp );	    
+          		//  Sending a zero length tells the GUI that the list is finished.
+                int zero = 0;
+                write( sockfd, &zero, sizeof( int ) );
+
+    		} 
+		
+    		//  Error with the socket...
+    		else {
+                sprintf( message, "Client address: %s   port: %d - connection FAILED", S->address, S->port );
+              	difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_ERROR );
+            }
+            close( sockfd );
+        
+        	exit(EXIT_SUCCESS);		
+    	}
+    	
+	}
 	else {
 		sprintf( message, "Illegal DifxFileOperation request received - operation \"%s\" is not permitted", S->operation );
 		difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_ERROR );
@@ -1539,6 +1602,7 @@ void Mk5Daemon_vex2DifxRun( Mk5Daemon *D, const DifxMessageGeneric *G ) {
 	const DifxMessageVex2DifxRun *S;
 	char message[DIFX_MESSAGE_LENGTH];
 	char command[MAX_COMMAND_SIZE];
+	char difxPath[DIFX_MESSAGE_FILENAME_LENGTH];
 	const char *user;
 	char roundup[DIFX_MESSAGE_LENGTH];
 	pid_t childPid;
@@ -1562,18 +1626,30 @@ void Mk5Daemon_vex2DifxRun( Mk5Daemon *D, const DifxMessageGeneric *G ) {
 
 	childPid = fork();
 	
+	//  Use a specified path to the DiFX software if the user has chosen one.  Otherwise, use
+	//  the default path.
+	if ( strlen( S->difxPath ) > 0 )
+	    strncpy( difxPath, S->difxPath, DIFX_MESSAGE_FILENAME_LENGTH );
+	else
+	    strncpy( difxPath, getenv( "DIFX_PREFIX" ), DIFX_MESSAGE_FILENAME_LENGTH );
+	
 	//  Forked process runs vex2difx...
 	if(childPid == 0)
 	{
+	
+	    //  Get the current time, used below to figure out which files in the directory
+	    //  are new.
+	    struct timeval tv;
+	    gettimeofday( &tv, NULL );
 		
 		snprintf(command, MAX_COMMAND_SIZE, "ssh -x %s@%s 'source %s/setup/setup.bash; cd %s; vex2difx -f %s'", 
 				 S->user,
 				 S->headNode,
-				 S->difxPath,
+				 difxPath,
 				 S->passPath,
 				 S->v2dFile );
 		
-		//snprintf(message, DIFX_MESSAGE_LENGTH, "Executing: %s", command);
+		snprintf(message, DIFX_MESSAGE_LENGTH, "Executing: %s", command);
 		//difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
 
         roundup[0] = 0;		
@@ -1588,6 +1664,62 @@ void Mk5Daemon_vex2DifxRun( Mk5Daemon *D, const DifxMessageGeneric *G ) {
 		}
 		pclose( fp );
 		
+    	//  Open a TCP socket connection to the server that should be running for us on the
+        //  remote host.  This is used to transfer a list of all of the files we have created.
+        int sockfd;
+        struct sockaddr_in servaddr;
+        sockfd = socket( AF_INET, SOCK_STREAM, 0 );
+        bzero( &servaddr, sizeof( servaddr ) );
+        servaddr.sin_family = AF_INET;
+        servaddr.sin_port = htons( S->port );
+        inet_pton( AF_INET, S->address, &servaddr.sin_addr );
+        int ret = connect( sockfd, (const sockaddr*)&servaddr, sizeof( servaddr ) );
+        
+        //  Hopefully the connection worked....
+        if ( ret == 0 ) {
+            //sprintf( message, "Client address: %s   port: %d - connection looks good", S->address, S->port );
+            //difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_WARNING );
+		    //  Produce a list of the files in the target directory and send that back to the GUI.
+		    //  Include only those files that have been modified/created since the beginning of this
+	    	//  function call (measured in integer seconds).  This will include a bunch of things
+	    	//  we aren't interested in, but *should* only include those .input files that are new
+	    	//  (unless someone is simultaneously running vex2difx during the same second!).
+            struct dirent **namelist;
+            int n = scandir( S->passPath, &namelist, 0, alphasort );
+            if ( n < 0 ) {
+                sprintf( message, "%s", strerror( errno ) );
+                difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_ERROR );
+            } else {
+                while ( n-- ) {
+                	char fullPath[DIFX_MESSAGE_FILENAME_LENGTH];
+                	sprintf( fullPath, "%s/%s", S->passPath, namelist[n]->d_name );
+                	struct stat buf;
+                	stat( fullPath, &buf );
+                	//  Compare the last modification time of each file in the pass directory
+                	//  with the "gettimeofday" result at the top of this function.
+                	if ( buf.st_mtime >= tv.tv_sec ) {
+                	    //  Send the full path name of this file.
+                	    //  Each separate file is preceeded by its string length.
+                	    int sz = htonl( strlen( fullPath ) );
+                	    write( sockfd, &sz, sizeof( int ) );
+                	    write( sockfd, fullPath, strlen( fullPath ) );
+                	}
+                    free( namelist[n] );
+                }
+                free( namelist );
+                //  Sending a zero length tells the GUI that the list is finished.
+                int zero = 0;
+                write( sockfd, &zero, sizeof( int ) );
+            }
+		} 
+		
+		//  Error with the socket...
+		else {
+            sprintf( message, "Client address: %s   port: %d - connection FAILED", S->address, S->port );
+          	difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_ERROR );
+        }
+        close( sockfd );
+        
 		//difxMessageSendDifxAlert("vex2difx completed", DIFX_ALERT_LEVEL_INFO);
     	exit(EXIT_SUCCESS);
 		
