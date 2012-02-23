@@ -326,8 +326,8 @@ typedef struct
     char destination[DIFX_MESSAGE_FILENAME_LENGTH];
     char dataNode[DIFX_MESSAGE_PARAM_LENGTH];
     char address[DIFX_MESSAGE_PARAM_LENGTH];
-    int port;
     char direction[DIFX_MESSAGE_PARAM_LENGTH];
+    int port;
 } DifxMessageFileTransfer;
 
 typedef struct
@@ -336,6 +336,8 @@ typedef struct
     char operation[DIFX_MESSAGE_PARAM_LENGTH];
     char dataNode[DIFX_MESSAGE_PARAM_LENGTH];
     char arg[DIFX_MESSAGE_FILENAME_LENGTH];
+    char address[DIFX_MESSAGE_PARAM_LENGTH];
+    int port;
 } DifxMessageFileOperation;
 
 typedef struct
@@ -345,6 +347,8 @@ typedef struct
     char difxPath[DIFX_MESSAGE_FILENAME_LENGTH];
     char passPath[DIFX_MESSAGE_FILENAME_LENGTH];
     char v2dFile[DIFX_MESSAGE_FILENAME_LENGTH];
+    char address[DIFX_MESSAGE_PARAM_LENGTH];
+    int port;
 } DifxMessageVex2DifxRun;
 
 typedef struct

@@ -736,6 +736,14 @@ static void XMLCALL endElement(void *userData, const char *name)
 					{
 						strncpy(G->body.fileOperation.dataNode, s, DIFX_MESSAGE_PARAM_LENGTH-1);
 					}
+					else if(strcmp(elem, "address") == 0 )
+					{
+						strncpy(G->body.fileOperation.address, s, DIFX_MESSAGE_PARAM_LENGTH-1);
+					}
+					else if(strcmp(elem, "port") == 0 )
+					{
+						G->body.fileOperation.port = atoi( s );
+					}
 					break;
 				case DIFX_MESSAGE_VEX2DIFXRUN:
 					if(strcmp(elem, "user") == 0 )
@@ -757,6 +765,14 @@ static void XMLCALL endElement(void *userData, const char *name)
 					else if(strcmp(elem, "file") == 0 )
 					{
 						strncpy(G->body.vex2DifxRun.v2dFile, s, DIFX_MESSAGE_FILENAME_LENGTH-1);
+					}
+					else if(strcmp(elem, "address") == 0 )
+					{
+						strncpy(G->body.vex2DifxRun.address, s, DIFX_MESSAGE_PARAM_LENGTH-1);
+					}
+					else if(strcmp(elem, "port") == 0 )
+					{
+						G->body.vex2DifxRun.port = atoi( s );
 					}
 					break;
 				case DIFX_MESSAGE_TRANSIENT:
