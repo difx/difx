@@ -871,9 +871,9 @@ void Visibility::multicastweights()
   int dumpmjd, intsec;
   double dumpseconds;
 
-  if(currentscan >= model->getNumScans() || (model->getScanStartSec(currentscan, expermjd, experseconds) + currentstartseconds) >= executeseconds)
+  if(currentscan >= model->getNumScans() || (model->getScanStartSec(currentscan, expermjd, experseconds) + currentstartseconds) >= executeseconds || currentsubints == 0)
   {
-    cdebug << startl << "Vis. " << visID << " is not multicasting any weights, since the time is past the end of the correlation" << endl;
+    cdebug << startl << "Vis. " << visID << " is not multicasting any weights, since there was no valid data in this integration" << endl;
     return; //NOTE EXIT HERE!!!
   }
 
