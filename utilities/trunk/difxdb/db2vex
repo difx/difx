@@ -3,7 +3,7 @@
 import datetime
 import cx_Oracle
 from sys import argv, exit
-from os import getenv, popen, umask, getcwd
+from os import getenv, popen, umask, getcwd, system
 from os.path import isfile
 from string import find, upper, lower, strip, split
 
@@ -17,8 +17,8 @@ except:
 
 program = 'db2vex'
 author = 'Walter Brisken'
-version = '0.9'
-verdate = '20111201'
+version = '0.10'
+verdate = '20120227'
 
 tsysFile = 'tsys'
 
@@ -899,10 +899,10 @@ umask(02)
 
 processVexFile(args[0], force, verbose, preobs, vsnProjectCode, isMark5C, fsVSNs)
 
-if isMark5C > 0:
+if isMark5C > 0 and not preobs:
 	print '\nGetting Tsys values'
 	cmd = 'rdbetsys %s %s' % (args[0], tsysFile)
-	os.system(cmd);
+	system(cmd);
 	print '\nTsys data written to file: %s' % tsysFile
 	
 
