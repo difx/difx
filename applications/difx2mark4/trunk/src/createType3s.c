@@ -73,7 +73,12 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
            deltat,
            clock[6],
            geoc_lat,
-           geod_lat;
+           geod_lat,
+           sha,
+           cha,
+           az,
+           el,
+           dec;
 
     char outname[256],
          pcal_filnam[256],
@@ -180,6 +185,7 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                                     // loop over polynomial intervals
             for (j=0; j<D->scan[scanId].nPoly; j++)
                 {
+                                    // insert polynomial indices
                 t301.interval = (short int) j;
                 t302.interval = t301.interval;
                 t303.interval = t301.interval;
@@ -213,12 +219,23 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                         geoc_lat = atan2 (D->antenna[n].Z, 
                                           sqrt (D->antenna[n].X * D->antenna[n].X
                                               + D->antenna[n].Y * D->antenna[n].Y));
-                                    // approximate (first order in f) conversion
-                        geod_lat = atan (1.00674 * tan (geoc_lat));
+                                    // get declination for this source
                         sourceId = D->scan[scanId].pointingCentreSrc;
+                        dec = D->source[sourceId].dec;
+                                    // evaluate az & el at midpoint of model interval
+                        el = M_PI / 180.0 * (t303.elevation[0] 
+                                + 0.5 * D->scan[scanId].durSeconds * t303.elevation[1]);
+                        az = M_PI / 180.0 * (t303.azimuth[0] 
+                                + 0.5 * D->scan[scanId].durSeconds * t303.azimuth[1]);
+                                    // evaluate sin and cos of the local hour angle
+                        sha = - cos(el) * sin(az) / cos(dec);
+                        cha = (sin(el) - sin(geoc_lat) * sin(dec)) 
+                            / (cos(geoc_lat) * cos(dec));
+                                    // approximate (first order in f) conversion
+                        geod_lat = atan(1.00674 * tan(geoc_lat));
+                                    // finally ready for par. angle
                         t303.parallactic_angle[l] = 180 / M_PI *
-                            asin (-cos (geod_lat) * sin (t303.azimuth[0] / 180 * M_PI)
-                                                  / cos (D->source[sourceId].dec));
+                            atan2 (sha, (cos (dec) * tan(geod_lat) - sin(dec) * cha));
                         }
                     else
                         t303.parallactic_angle[l] = 0.0;
