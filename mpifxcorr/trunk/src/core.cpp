@@ -209,6 +209,20 @@ void Core::execute()
   }
   //cverbose << startl << "Core has filled up receive ring buffer" << endl;
 
+  if(numreceived == 0) //such a short job, I had nothing to do!
+  {
+    cinfo << startl << "Received no data before being told to shut down - shutting down quietly..." << endl;
+    //unlock the mutex that is held, and simply return
+    for(int i=0;i<numprocessthreads;i++)
+    {
+      perr = pthread_mutex_unlock(&(procslots[0].slotlocks[i]));
+      if(perr != 0)
+        csevere << startl << "Error in main thread attempting to unlock mutex " << 0 << "/" << i << " when shutting down an unused Core node!" << endl;
+    }
+    delete [] threadinfos;
+    return;
+  }
+
   //also lock the second last slot, to keep any cheeky thread from getting round the entire
   //RECEIVE_RING before we wake back up
   for(int i=0;i<numprocessthreads;i++)
