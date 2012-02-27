@@ -13,8 +13,7 @@
 dist_bin_SCRIPTS = \
 	padCalcScans \
 	oms2v2d \
-	plottsys
-noinst_SCRIPTS = \
+	plottsys \
 	queueVex \
 	unqueueVex \
 	goUSNO

@@ -2,7 +2,7 @@
 
 # update the version when significant changes are made
 program = 'goUSNO'
-version = '0.14'
+version = '0.15'
 
 
 from sys import exit, argv, stdin
@@ -27,10 +27,10 @@ queueVex     = 'queueVex'
 
 
 # add to environment
-environ['PYTHONPATH']      = '/home/swc/DiFX-trunk-64/lib64/python2.4/site-packages'
-environ['LD_LIBRARY_PATH'] = '%s:%s' % (environ['LD_LIBRARY_PATH'], '/home/swc/DiFX-trunk-64/lib')
+environ['PYTHONPATH']      = '/home/swc/difx/x86_64/lib/python2.4/site-packages'
+environ['LD_LIBRARY_PATH'] = '%s:%s' % (environ['LD_LIBRARY_PATH'], '/home/swc/DiFX-trunk/lib')
 environ['LD_LIBRARY_PATH'] = '%s:%s' % (environ['LD_LIBRARY_PATH'], '/home/oracle/LinuxClient_x86_64/product/10.2.0.1/lib')
-environ['PATH']            = '%s:%s' % (environ['PATH'],            '/home/swc/DiFX-trunk-64/bin')
+environ['PATH']            = '%s:%s' % (environ['PATH'],            '/home/swc/DiFX-trunk/bin')
 environ['ORACLE_BASE']     = '/home/oracle'
 environ['ORACLE_VERSION']  = '10.2.0.1'
 environ['ORACLE_HOME']     = '/home/oracle/LinuxClient_x86_64/product/10.2.0.1'
@@ -95,13 +95,18 @@ for a in argv[1:]:
 
 if len(args) != 4:
 	print '\n%s version %s\n' % (program, version)
-	print 'Usage: %s [options] <projectCode> <month> <day> <utc>\n' % argv[0]
+	print 'Usage: %s [options] <prjCode> <month> <day> <utc>\n' % argv[0]
 	print 'options can include:'
 	print '  -f or --force    : proceed even if this project has already been queued'
 	print '  -v or --verbose  : print more output'
 	print '  -q or --quiet    : print less output'
 	print '  -t or --test     : schedule project as test'
 	print '  -e or --edit     : allow .py files to be edited\n'
+	print '  <prjCode> is the project code to be used (e.g., N2059)\n'
+	print '  <month> is the numeric month of year to run the project (e.g., 2)\n'
+	print '  <day> is the numeric day of the month (e.g., 29)\n'
+	print '  <utc> is the UTC time to start obsserving (HH or HH:MM or HH:MM:SS)'
+	print '        (e.g., 18 or 18:30 or 18:30:00)\n'
 	exit(0)
 
 start = args2time(args[1:], now)

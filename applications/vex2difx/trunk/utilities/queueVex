@@ -21,7 +21,7 @@ observTxFile = 'observ.tx'
 ccScriptDir = '/export/home/cc/vlba/scripts'
 prestartTime = 300	# seconds
 poststopTime = 30	# seconds
-difxPath = '/home/swc/DiFX-trunk-64/bin'
+difxPath = '/home/swc/DiFX-trunk/bin'
 linesToShow = 10
 keepDays = 45
 
