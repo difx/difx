@@ -736,6 +736,8 @@ void Mk5Daemon_fileTransfer( Mk5Daemon *D, const DifxMessageGeneric *G ) {
 
 	if ( !strcmp( S->direction, "to DiFX" ) ) {
 	
+    	//sprintf( message, "Request for transfer of file from %s on remote host to DiFX host - filesize is unknown", S->origin );
+        //difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_WARNING );
     	//  Fork a process to do the file transfer via a TCP client.
     	childPid = fork();
     	if( childPid == 0 ) {
@@ -755,10 +757,19 @@ void Mk5Daemon_fileTransfer( Mk5Daemon *D, const DifxMessageGeneric *G ) {
             	//sprintf( message, "Client address: %s   port: %d - connection looks good", S->address, S->port );
             	//difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_WARNING );
             	//  Get the number of bytes we expect.
-            	int n;
-            	read( sockfd, &n, sizeof( int ) );
+            	int n = 0;
+            	fd_set rfds;
+                struct timeval tv;
+                tv.tv_sec = 0;
+                tv.tv_usec = 10000;
+            	int rn = 0;
+            	while ( rn < sizeof( int ) ) {
+            	    FD_ZERO(&rfds);
+                    FD_SET( sockfd, &rfds );
+                    int retval = select(1, &rfds, NULL, NULL, &tv );
+            	    rn += read( sockfd, &n + rn, sizeof( int ) - rn );
+            	}
             	filesize = ntohl( n );
-            	//printf( "reading %d bytes total\n", filesize );
             	//  Then read the data.
             	int ret = 0;
             	int count = 0;
