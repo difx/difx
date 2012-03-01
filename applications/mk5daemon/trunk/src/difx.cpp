@@ -160,11 +160,13 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 	int childPid;
 	char filebase[DIFX_MESSAGE_FILENAME_LENGTH];
 	char filename[DIFX_MESSAGE_FILENAME_LENGTH];
+	char workingDir[DIFX_MESSAGE_FILENAME_LENGTH];
 	char destdir[DIFX_MESSAGE_FILENAME_LENGTH];
 	char message[DIFX_MESSAGE_LENGTH];
     char difxPath[DIFX_MESSAGE_FILENAME_LENGTH];
   	char restartOption[RestartOptionLength];
 	char command[MAX_COMMAND_SIZE];
+	char chmodCommand[MAX_COMMAND_SIZE];
 	FILE *out;
 	Uses *uses;
 	const char *jobName;
@@ -289,7 +291,7 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 
 		return;
 	}
-
+	
 	/* generate filebase */
 	strcpy(filebase, S->inputFilename);
 	l = strlen(filebase);
@@ -309,6 +311,53 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 			jobName = filebase + i + 1;
 		}
 	}
+	
+	user = getenv("DIFX_USER_ID");
+	if(!user)
+	{
+		user = difxUser;
+	}
+
+	//  Record the current permissions on the filebase (the working directory), and then
+	//  change them to allow root to write there.  This is required if the working directory
+	//  is on a disk mounted by the headnode, where root wouldn't necessarily be able to write.
+	//  It is done only for "USNO" start requests because that's where it proved necessary,
+	//  but might be useful generally?
+	if ( S->function == DIFX_START_FUNCTION_USNO ) {
+    	strcpy( workingDir, S->inputFilename );
+    	l = strlen( workingDir );
+    	for( int i = l-1; i > 0; i-- )
+    	{
+    		if( workingDir[i] == '/')
+    		{
+    			workingDir[i] = 0;
+    			break;
+    		}
+    	}	
+	    struct stat statBuf;
+	    stat( workingDir, &statBuf );
+	    //  Build a command string for changing the directory BACK to this mode.  Maybe there
+	    //  is a better way to do this...
+	    snprintf( chmodCommand, MAX_COMMAND_SIZE, "ssh -x %s@%s 'chmod ", user, S->headNode );
+	    int newperm = 0;
+	    if ( statBuf.st_mode & S_IRUSR ) newperm += 4;
+	    if ( statBuf.st_mode & S_IWUSR ) newperm += 2;
+	    if ( statBuf.st_mode & S_IXUSR ) newperm += 1;
+	    snprintf( chmodCommand + strlen( chmodCommand ), MAX_COMMAND_SIZE - strlen( chmodCommand ), "%d", newperm );
+	    newperm = 0;
+	    if ( statBuf.st_mode & S_IRGRP ) newperm += 4;
+	    if ( statBuf.st_mode & S_IWGRP ) newperm += 2;
+	    if ( statBuf.st_mode & S_IXGRP ) newperm += 1;
+	    snprintf( chmodCommand + strlen( chmodCommand ), MAX_COMMAND_SIZE - strlen( chmodCommand ), "%d", newperm );
+	    newperm = 0;
+	    if ( statBuf.st_mode & S_IROTH ) newperm += 4;
+	    if ( statBuf.st_mode & S_IWOTH ) newperm += 2;
+	    if ( statBuf.st_mode & S_IXOTH ) newperm += 1;
+	    snprintf( chmodCommand + strlen( chmodCommand ), MAX_COMMAND_SIZE - strlen( chmodCommand ), "%d %s'", newperm, workingDir );
+	    //  Change the permissions as the difx user.
+		snprintf( command, MAX_COMMAND_SIZE, "ssh -x %s@%s 'chmod 777 %s'", user, S->headNode, workingDir );
+    	Mk5Daemon_system( D, command, 1 );
+	}
 
 	if(access(S->inputFilename, F_OK) != 0)
 	{
@@ -318,6 +367,9 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 		snprintf(message, DIFX_MESSAGE_LENGTH, "Mk5Daemon_startMpifxcorr: input file %s does not exist\n", S->inputFilename);
 		Logger_logData(D->log, message);
 
+        if ( S->function == DIFX_START_FUNCTION_USNO )
+            Mk5Daemon_system( D, chmodCommand, 1 );
+            
 		return;
 	}
 
@@ -339,6 +391,9 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 			filename);
 		Logger_logData(D->log, message);
 
+        if ( S->function == DIFX_START_FUNCTION_USNO )
+            Mk5Daemon_system( D, chmodCommand, 1 );
+            
 		return;
 	}
 
@@ -360,7 +415,10 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 
 	/* write machines file */
 	sprintf(filename, "%s.machines", filebase);
-	out = fopen(filename, "w");
+	if ( S->function == DIFX_START_FUNCTION_USNO )
+	    out = fopen( "/tmp/machinefile", "w" );
+	else
+		out = fopen(filename, "w");
 	if(!out)
 	{
 		snprintf(message, DIFX_MESSAGE_LENGTH,
@@ -375,6 +433,9 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 		pthread_mutex_unlock(&D->processLock);
 		free(uses);
 		
+        if ( S->function == DIFX_START_FUNCTION_USNO )
+            Mk5Daemon_system( D, chmodCommand, 1 );
+            
 		return;
 	}
 
@@ -403,17 +464,26 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 
 	fclose(out);
 	/* change ownership and permissions to match the input file */
-	snprintf(command, MAX_COMMAND_SIZE, "chown --reference=%s %s", S->inputFilename, filename);
+    if ( S->function == DIFX_START_FUNCTION_USNO )
+		snprintf( command, MAX_COMMAND_SIZE, "ssh -x %s@%s 'cp /tmp/machinefile %s'", user, S->headNode, filename );
+    else
+        snprintf(command, MAX_COMMAND_SIZE, "chown --reference=%s %s", S->inputFilename, filename);
 	Mk5Daemon_system(D, command, 1);
 	
-	snprintf(command, MAX_COMMAND_SIZE, "chmod --reference=%s %s", S->inputFilename, filename);
+    if ( S->function == DIFX_START_FUNCTION_USNO )
+		snprintf( command, MAX_COMMAND_SIZE, "ssh -x %s@%s 'chmod --reference=%s %s'", user, S->headNode, S->inputFilename, filename );
+    else
+    	snprintf(command, MAX_COMMAND_SIZE, "chmod --reference=%s %s", S->inputFilename, filename);
 	Mk5Daemon_system(D, command, 1);
 
 
 	/* write threads file */
 	sprintf(filename, "%s.threads", filebase);
 	
-	out = fopen(filename, "w");
+	if ( S->function == DIFX_START_FUNCTION_USNO )
+	    out = fopen( "/tmp/threadfile", "w" );
+	else
+	    out = fopen(filename, "w");
 	if(!out)
 	{
 		snprintf(message, DIFX_MESSAGE_LENGTH, "Cannot open %s for write", filename);
@@ -425,6 +495,9 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 		pthread_mutex_unlock(&D->processLock);
 		free(uses);
 
+        if ( S->function == DIFX_START_FUNCTION_USNO )
+            Mk5Daemon_system( D, chmodCommand, 1 );
+            
 		return;
 	}
 
@@ -442,10 +515,16 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 
 	fclose(out);
 	/* change ownership and permissions to match the input file */
-	snprintf(command, MAX_COMMAND_SIZE, "chown --reference=%s %s", S->inputFilename, filename);
+    if ( S->function == DIFX_START_FUNCTION_USNO )
+		snprintf( command, MAX_COMMAND_SIZE, "ssh -x %s@%s 'cp /tmp/threadfile %s'", user, S->headNode, filename );
+    else
+        snprintf(command, MAX_COMMAND_SIZE, "chown --reference=%s %s", S->inputFilename, filename);
 	Mk5Daemon_system(D, command, 1);
 
-	snprintf(command, MAX_COMMAND_SIZE, "chmod --reference=%s %s", S->inputFilename, filename);
+    if ( S->function == DIFX_START_FUNCTION_USNO )
+		snprintf( command, MAX_COMMAND_SIZE, "ssh -x %s@%s 'chmod --reference=%s %s'", user, S->headNode, S->inputFilename, filename );
+    else
+    	snprintf(command, MAX_COMMAND_SIZE, "chmod --reference=%s %s", S->inputFilename, filename);
 	Mk5Daemon_system(D, command, 1);
 
 
@@ -495,12 +574,6 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 		snprintf(message, DIFX_MESSAGE_LENGTH, 
 			"Warning: using default Difx Program: %s", difxProgram);
 		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_WARNING);
-	}
-
-	user = getenv("DIFX_USER_ID");
-	if(!user)
-	{
-		user = difxUser;
 	}
 
 	childPid = fork();
@@ -636,15 +709,27 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
 
 			/* change ownership to match input file */
-			snprintf(command, MAX_COMMAND_SIZE, "chown --recursive --reference=%s %s.difx", S->inputFilename, filebase);
+            if ( S->function == DIFX_START_FUNCTION_USNO )
+        		snprintf( command, MAX_COMMAND_SIZE, "ssh -x %s@%s 'chown --recursive --reference=%s %s.difx'", user, S->headNode, S->inputFilename, filebase );
+            else
+                snprintf(command, MAX_COMMAND_SIZE, "chown --recursive --reference=%s %s.difx", S->inputFilename, filebase);
 			returnValue = system(command);
 
-			snprintf(command, MAX_COMMAND_SIZE, "chmod g+w %s.difx", filebase);
+            if ( S->function == DIFX_START_FUNCTION_USNO )
+        		snprintf( command, MAX_COMMAND_SIZE, "ssh -x %s@%s 'chmod g+w %s.difx'", user, S->headNode, filebase );
+            else
+    			snprintf(command, MAX_COMMAND_SIZE, "chmod g+w %s.difx", filebase);
 			returnValue = system(command);
 
-			snprintf(command, MAX_COMMAND_SIZE, "chmod --reference=%s %s.difx/*", S->inputFilename, filebase);
+            if ( S->function == DIFX_START_FUNCTION_USNO )
+        		snprintf( command, MAX_COMMAND_SIZE, "ssh -x %s@%s 'chmod --reference=%s %s.difx/*'", user, S->headNode, S->inputFilename, filebase );
+            else
+    			snprintf(command, MAX_COMMAND_SIZE, "chmod --reference=%s %s.difx/*", S->inputFilename, filebase);
 			returnValue = system(command);
 
+            if ( S->function == DIFX_START_FUNCTION_USNO )
+                Mk5Daemon_system( D, chmodCommand, 1 );
+            
 			exit(EXIT_SUCCESS);
 		}
 	}
@@ -653,20 +738,30 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 	/* now spawn the difxlog process. */
 	if(fork() == 0)
 	{
-		snprintf(command, MAX_COMMAND_SIZE,
-			"su - %s -c 'ssh -x %s \"difxlog %s %s.difxlog 4 %d &> /dev/null\"'",
-			user, S->headNode, jobName, filebase, childPid);
+        if ( S->function == DIFX_START_FUNCTION_USNO )
+        	snprintf( command, MAX_COMMAND_SIZE, 
+        	    "ssh -x %s@%s 'difxlog %s %s.difxlog 4 %d &> /dev/null'",
+        	     user, S->headNode, jobName, filebase, childPid );
+        else
+		    snprintf(command, MAX_COMMAND_SIZE,
+			    "su - %s -c 'ssh -x %s \"difxlog %s %s.difxlog 4 %d &> /dev/null\"'",
+			    user, S->headNode, jobName, filebase, childPid);
 		Mk5Daemon_system(D, command, 1);
 
 		/* change ownership to match input file */
-		snprintf(command, MAX_COMMAND_SIZE,
-			"chown --reference=%s %s.difxlog", 
-			S->inputFilename, filebase);
-		Mk5Daemon_system(D, command, 1);
+		if ( S->function != DIFX_START_FUNCTION_USNO ) {
+    		snprintf(command, MAX_COMMAND_SIZE,
+    			"chown --reference=%s %s.difxlog", 
+    			S->inputFilename, filebase);
+    		Mk5Daemon_system(D, command, 1);
+        }
 
-		snprintf(command, MAX_COMMAND_SIZE, 
-			"chmod --reference=%s %s.difxlog", 
-			S->inputFilename, filebase);
+        if ( S->function == DIFX_START_FUNCTION_USNO )
+    		snprintf( command, MAX_COMMAND_SIZE, "ssh -x %s@%s 'chmod --reference=%s %s.difxlog'", user, S->headNode, S->inputFilename, filebase );
+        else
+    		snprintf(command, MAX_COMMAND_SIZE, 
+    			"chmod --reference=%s %s.difxlog", 
+    			S->inputFilename, filebase);
 		Mk5Daemon_system(D, command, 1);
 
 		exit(EXIT_SUCCESS);
@@ -762,11 +857,11 @@ void Mk5Daemon_fileTransfer( Mk5Daemon *D, const DifxMessageGeneric *G ) {
                 struct timeval tv;
                 tv.tv_sec = 0;
                 tv.tv_usec = 10000;
-            	int rn = 0;
+            	unsigned int rn = 0;
             	while ( rn < sizeof( int ) ) {
             	    FD_ZERO(&rfds);
                     FD_SET( sockfd, &rfds );
-                    int retval = select(1, &rfds, NULL, NULL, &tv );
+                    select(1, &rfds, NULL, NULL, &tv );
             	    rn += read( sockfd, &n + rn, sizeof( int ) - rn );
             	}
             	filesize = ntohl( n );
