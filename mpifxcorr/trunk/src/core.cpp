@@ -222,6 +222,20 @@ void Core::execute()
     delete [] threadinfos;
     return;
   }
+  else if (numreceived < RECEIVE_RING_LENGTH-1) //didn't get a full buffer before job ended. Proceed with caution
+  {
+    cinfo << startl << "Processing buffer was not completely filled before job termination - ensuring all subintegrations are safely processed" << endl;
+    //unlock the held mutex and instead lock the last one, where we should have made it to
+    for(int i=0;i<numprocessthreads;i++)
+    {
+      perr = pthread_mutex_unlock(&(procslots[numreceived].slotlocks[i]));
+      if(perr != 0)
+        csevere << startl << "Error in main thread attempting to unlock mutex " << numreceived << "/" << i << " when shutting down an underused Core node!" << endl;
+      perr = pthread_mutex_lock(&(procslots[RECEIVE_RING_LENGTH-1].slotlocks[i]));
+      if(perr != 0)
+        csevere << startl << "Error in main thread attempting to lock mutex " << RECEIVE_RING_LENGTH-1 << " of thread " << i << " during startup" << endl;
+    }
+  }
 
   //also lock the second last slot, to keep any cheeky thread from getting round the entire
   //RECEIVE_RING before we wake back up
@@ -247,7 +261,7 @@ void Core::execute()
   {
     while(!processthreadinitialised[i])
     {
-      perr = pthread_cond_wait(&processconds[i], &(procslots[numreceived].slotlocks[i]));
+      perr = pthread_cond_wait(&processconds[i], &(procslots[RECEIVE_RING_LENGTH-1].slotlocks[i]));
       if (perr != 0)
         csevere << startl << "Error waiting on processthreadinitialised condition!!!!" << endl;
     }
