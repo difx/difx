@@ -1540,7 +1540,7 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 	}
 	config->tInt = corrSetup->tInt;
 	tintNS = static_cast<long long>(1e9*corrSetup->tInt + 0.5);
-	floatFFTDurNS = 500000000.0/corrSetup->FFTSpecRes;  // FIXME: check for factor of 2!
+	floatFFTDurNS = 1000000000.0/corrSetup->FFTSpecRes;
 	fftDurNS = static_cast<int>(floatFFTDurNS);
 	dataRate = mode->sampRate*mode->getBits()*mode->subbands.size();
 	nFFTsPerIntegration = static_cast<int>(1e9*corrSetup->tInt/floatFFTDurNS + 0.5);
@@ -2122,7 +2122,7 @@ static int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int 
 		scan->configId = getConfigIndex(configs, D, V, P, S);
 		scan->maxNSBetweenUVShifts = corrSetup->maxNSBetweenUVShifts;
 		mode = V->getModeByDefName(configs[scan->configId].first);
-		fftDurNS = static_cast<int>(500000000.0/corrSetup->FFTSpecRes);  // FIXME: check for factor of 2!
+		fftDurNS = static_cast<int>(1000000000.0/corrSetup->FFTSpecRes);  
 		if(corrSetup->maxNSBetweenACAvg > 0)
 		{
 			scan->maxNSBetweenACAvg = corrSetup->maxNSBetweenACAvg;
