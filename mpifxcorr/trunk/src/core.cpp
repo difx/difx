@@ -184,7 +184,7 @@ Core::~Core()
 
 void Core::execute()
 {
-  int perr, status, lastconfigindex, adjust, countdown;
+  int perr, status, lastconfigindex, adjust, countdown, tounlock;
   bool terminate;
   processthreadinfo * threadinfos = new processthreadinfo[numprocessthreads];
   
@@ -304,13 +304,17 @@ void Core::execute()
     procslots[numreceived%RECEIVE_RING_LENGTH].resultsvalid = CR_VALIDVIS;
   }
 
+  tounlock = numreceived % RECEIVE_RING_LENGTH;
+  if(numreceived < RECEIVE_RING_LENGTH-1)
+    tounlock = RECEIVE_RING_LENGTH-1; //adjusted lock in the case of a short job
+
   //Run through the shutdown sequence
   for(int i=0;i<numprocessthreads;i++)
   {
     //Unlock the mutex we are currently holding for this thread
-    perr = pthread_mutex_unlock(&(procslots[numreceived % RECEIVE_RING_LENGTH].slotlocks[i]));
+    perr = pthread_mutex_unlock(&(procslots[tounlock].slotlocks[i]));
     if(perr != 0)
-      csevere << startl << "Error in Core " << mpiid << " attempt to unlock mutex" << (numreceived+RECEIVE_RING_LENGTH-1) % RECEIVE_RING_LENGTH << " of thread " << i << endl;
+      csevere << startl << "Error in Core " << mpiid << " attempt to unlock mutex" << tounlock << " of thread " << i << endl;
   }
 
   adjust = 0;
