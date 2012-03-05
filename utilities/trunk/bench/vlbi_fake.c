@@ -34,8 +34,10 @@
 
 #include "vheader.h"
 #include "mk5blib.h"
-#include "vdif.h"
+#include "vdifio.h"
 
+
+#define MAXVDIFTHREADS       64
 #define DEFAULT_BUFSIZE    1000  //  KB
 #define MAXSTR              200 
 
@@ -68,10 +70,11 @@ int main(int argc, char * const argv[]) {
   unsigned short fnamesize;
   ssize_t ntowrite;
   int i, status, opt, tmp, sock, thisday, thismonth, thisyear, bwrote;
-  int seconds, hour, min, sec, bufsize, datarate, currentthread;
+  int seconds, hour, min, sec, bufsize, datarate, currentthread, framepersec;
   char msg[MAXSTR+50], filetimestr[MAXSTR];
   char *buf, *headbuf, *ptr;
   long *lbuf;
+  uint64_t mjdsec;
   double thismjd, finishmjd, ut, t0, t1, t2, dtmp;
   float ftmp, speed;
   unsigned long long filesize, networksize, nwritten, totalsize;
@@ -146,6 +149,8 @@ int main(int argc, char * const argv[]) {
   tzset();
 
   setlinebuf(stdout);
+
+  framepersec = 0;
   
   /* Read command line options */
   while (1) {
@@ -439,7 +444,7 @@ int main(int argc, char * const argv[]) {
 
   } else if (mode==VDIF) {
     if (udp.enabled) 
-      bufsize = udp.size-VDIFHEADERSIZE;
+      bufsize = udp.size-VDIF_HEADER_BYTES;
     else 
       bufsize=framesize;
     // Need to to have an integral number of frames/sec
@@ -452,20 +457,23 @@ int main(int argc, char * const argv[]) {
       exit(1);
     }
     printf("VDIF: Using data frame size of %d bytes\n", bufsize);
-    bufsize += VDIFHEADERSIZE;
+    bufsize += VDIF_HEADER_BYTES;
     filesize = bufsize;
     if (udp.enabled) udp.size = bufsize;
 
+    framepersec =  datarate*1e6/((bufsize-VDIF_HEADER_BYTES)*8);
+
     for(i=0;i<numthread;i++) {
-      status = vdif_createheader(&vdif_headers[i], bufsize, 
-				 datarate*1e6/((bufsize-VDIFHEADERSIZE)*8),
-			         i, bits, numchan, complex, "Tt");
+
+      status = createVDIFHeader(&vdif_headers[i], bufsize, i, bits, numchan, complex, "Tt");
       if (status!=VDIF_NOERROR) {
         fprintf(stderr, "Error creating header (%d)\n", status);
         exit(1);
       }
     
-      status = vdif_setmjd(&vdif_headers[i], mjd);
+      mjdsec = lround(mjd*24*60*60);
+      setVDIFEpoch(&vdif_headers[i],mjdsec/(24*60*60));
+      setVDIFMJDSec(&vdif_headers[i], mjdsec);
       if (status!=VDIF_NOERROR) {
         fprintf(stderr, "Error setting VDIF file (%d)\n", status);
         exit(1);
@@ -525,8 +533,7 @@ int main(int argc, char * const argv[]) {
     header = NULL; 
     strcpy(buf+MK5BHEADSIZE*4, "Chris was here");
   } else if (mode==VDIF) {
-    //strcpy(buf+VDIFHEADERSIZE, "Chris was here");
-    for (i=VDIFHEADERSIZE;i<bufsize;i++) {
+    for (i=VDIF_HEADER_BYTES;i<bufsize;i++) {
       buf[i] = (char)(i%256);
     }
   } else {
@@ -550,7 +557,7 @@ int main(int argc, char * const argv[]) {
 
     } else if (mode==VDIF) {
       ptr = buf;
-      memcpy(ptr, &vdif_headers[currentthread], VDIFHEADERSIZE); // Inefficent, but oh well
+      memcpy(ptr, &vdif_headers[currentthread], VDIF_HEADER_BYTES); // Inefficent, but oh well
     } else { // LBADR
       // Create LBADR header
       mjd2cal(mjd, &day, &month, &year, &ut);
@@ -628,8 +635,8 @@ int main(int argc, char * const argv[]) {
       next_mark5bheader(&mk5_header);
 
     } else if (mode==VDIF) {
-      mjd = vdif_mjd(&vdif_headers[currentthread]);
-      vdif_nextheader(&vdif_headers[currentthread]);
+      mjd = getVDIFDMJD(&vdif_headers[currentthread], framepersec);
+      nextVDIFHeader(&vdif_headers[currentthread], framepersec);
       currentthread++;
       if(currentthread == numthread)
         currentthread = 0;
