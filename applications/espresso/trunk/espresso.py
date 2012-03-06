@@ -296,6 +296,6 @@ finally:
     raw_input('\nHit return, then enter an operator comment, minimally: PROD/CLOCK/TEST/FAIL')
     operator_log = 'comment.txt'
     fill_operator_log( operator_log )
-    for jobname in args:
+    for jobname in corrjoblist.keys():
         operator_joblog = outdir + jobname + '.comment.txt'
         shutil.copy2(operator_log, operator_joblog)
