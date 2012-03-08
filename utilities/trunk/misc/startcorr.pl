@@ -92,6 +92,7 @@ die "OUTPUT FILENAME not found\n" if (!defined $outfile);
 checkfile('Calc file', $calc);
 checkfile('Thread file', $threads);
 
+my $restart = '';
 if ($evlbi) {
   my $startmjd = now2mjd();
   {
@@ -111,9 +112,9 @@ if ($evlbi) {
 
     my $finishmjd = $mjd+$duration/(60*60*24);
 
-    $duration = sprintf "%.0f", ($finishmjd-$startmjd)*60*60*24;
+    $restart = sprintf " -r%.0f", ($startmjd-$mjd)*60*60*24;
 
-    die "Experiment has finished already!\n" if ($duration<0);
+    die "Experiment has finished already!\n" if ($finishmjd<$startmjd);
   }
 
   $mjd = floor($startmjd);
@@ -125,44 +126,10 @@ if ($evlbi) {
   my $min = int ($seconds-$hour*3600)/60;
   my $filetime = sprintf("%04d-%02d-%02d-%02d%02d%02d",
 			 $year, $month, $day, $hour, $min, $sec);
-  if ($outfile =~ /^(.*)\.([^.]+)$/) {
-    $outfile = "$1-${filetime}.$2";
-  } else {
-    $outfile .= "-$filetime";
-  }
   printf "Will start at %02d:%02d:%02d\n", $hour, $min, $sec;
 
-  # Rewrite the output file
-  my $output;
-  if ($finput =~ /^(.*)\.([^.]+)$/) {
-    $output = "$1-${filetime}.$2";
-  } else {
-    $output = "$finput-${filetime}";
-  }
-
-  open(INPUT, $finput) || die "Could not reopen $finput: $!\n";
-  open(OUTPUT, '>', $output) || die "Could not open $output: $!\n";
-
-  while (<INPUT>) {
-    if (/EXECUTE TIME \(SEC\):/) {
-      print OUTPUT "EXECUTE TIME \(SEC\): $duration\n";
-    } elsif (/START MJD:/) {
-      print OUTPUT "START MJD:          $mjd\n";
-    } elsif (/START SECONDS:/) {
-      print OUTPUT "START SECONDS:      $seconds\n";
-    } elsif (/OUTPUT FILENAME:/) {
-      print OUTPUT "OUTPUT FILENAME:    $outfile\n";
-    } else {
-      print OUTPUT;
-    }
-  }
-  close(INPUT);
-  close(OUTPUT);
-
-  $finput = $output;
 }
 
-die "Output file $outfile already exists!\n" if (-e $outfile);
 
 ##########
 # Launch clients
@@ -248,7 +215,7 @@ my  $mpioptions = "-machinefile $machinefile -np $numproc";
 
 $mpioptions .= ' --bynode' if ($bynode);
 
-my $difx_options = '';
+my $difx_options = "$restart";
 if ($monitor) {
   $difx_options .= " -M${monitor}:9999";
 }
