@@ -2753,14 +2753,9 @@ static void setOrbitingAntennas(DifxInput *D)
 
 static void setGlobalValues(DifxInput *D)
 {
-	DifxConfig *dc;
-	int i, j, c, p, n, nIF, nPol;
-	int doPolar, qb;
-	double bw;
+	int j, c;
 	int hasR = 0;
 	int hasL = 0;
-	char pol[2];
-	double mjdStop;
 
 	if(!D)
 	{
@@ -2777,8 +2772,10 @@ static void setGlobalValues(DifxInput *D)
 
 	D->mjdStart = D->mjdStop = D->job->mjdStart;
 
-	for(j = 0; j < D->nJob; j++)
+	for(j = 0; j < D->nJob; ++j)
 	{
+		double mjdStop;
+		
 		if(D->job[j].mjdStart < D->mjdStart)
 		{
 			D->mjdStart = D->job[j].mjdStart;
@@ -2790,8 +2787,13 @@ static void setGlobalValues(DifxInput *D)
 		}
 	}
 
-	for(c = 0; c < D->nConfig; c++)
+	for(c = 0; c < D->nConfig; ++c)
 	{
+		DifxConfig *dc;
+		int doPolar;
+		int i;
+		int nIF, qb;
+		
 		dc = D->config + c;
 
 		nIF = dc->nIF;
@@ -2813,8 +2815,12 @@ static void setGlobalValues(DifxInput *D)
 		{
 			D->doPolar = doPolar;
 		}
-		for(i = 0; i < nIF; i++)
+		for(i = 0; i < nIF; ++i)
 		{
+			double bw;
+			int p, nPol;
+			char pol[2];
+
 			nPol   = dc->IF[i].nPol;
 			bw     = dc->IF[i].bw;
 			pol[0] = dc->IF[i].pol[0];
@@ -2838,8 +2844,10 @@ static void setGlobalValues(DifxInput *D)
 			}
 			if(nPol > 0)
 			{
+				int n;
+
 				n = nPol > 1 ? 2 : 1;
-				for(p = 0; p < n; p++)
+				for(p = 0; p < n; ++p)
 				{
 					switch(pol[p])
 					{
@@ -2883,15 +2891,17 @@ static void setGlobalValues(DifxInput *D)
 
 static int sameFQ(const DifxConfig *C1, const DifxConfig *C2)
 {
-	int i, p;
+	int i;
 	
 	if(C1->nIF != C2->nIF)
 	{
 		return 0;
 	}
 
-	for(i = 0; i < C1->nIF; i++)
+	for(i = 0; i < C1->nIF; ++i)
 	{
+		int p;
+
 		if(C1->IF[i].freq != C2->IF[i].freq)
 		{
 			return 0;
@@ -2908,7 +2918,7 @@ static int sameFQ(const DifxConfig *C1, const DifxConfig *C2)
 		{
 			return 0;
 		}
-		for(p = 0; p < C1->IF[i].nPol; p++)
+		for(p = 0; p < C1->IF[i].nPol; ++p)
 		{
 			if(C1->IF[i].pol[p] != C2->IF[i].pol[p])
 			{
@@ -2922,7 +2932,7 @@ static int sameFQ(const DifxConfig *C1, const DifxConfig *C2)
 
 static int calcFreqIds(DifxInput *D)
 {
-	int c, d;
+	int c;
 	int nFQ = 0;
 
 	if(!D)
@@ -2936,17 +2946,19 @@ static int calcFreqIds(DifxInput *D)
 	}
 	
 	D->config[0].fitsFreqId = nFQ;
-	nFQ++;
+	++nFQ;
 	
 	if(D->nConfig < 2)
 	{
 		return 1;
 	}
 
-	for(c = 1; c < D->nConfig; c++)
+	for(c = 1; c < D->nConfig; ++c)
 	{
+		int d;
+
 		D->config[c].fitsFreqId = -1;
-		for(d = 0; d < c; d++)
+		for(d = 0; d < c; ++d)
 		{
 			if(sameFQ(&(D->config[c]), &(D->config[d])))
 			{
@@ -2957,7 +2969,7 @@ static int calcFreqIds(DifxInput *D)
 		if(D->config[c].fitsFreqId == -1)
 		{
 			D->config[c].fitsFreqId = nFQ;
-			nFQ++;
+			++nFQ;
 		}
 	}
 
@@ -3026,8 +3038,7 @@ DifxInput *loadDifxInput(const char *filePrefix)
 	v = snprintf(D->job->inputFile, DIFXIO_FILENAME_LENGTH, "%s", inputFile);
 	if(v >= DIFXIO_FILENAME_LENGTH)
 	{
-		fprintf(stderr, "Developer error: loadDifxInput: inputFile wants %d bytes which is more than %d\n",
-			v, DIFXIO_FILENAME_LENGTH);
+		fprintf(stderr, "Developer error: loadDifxInput: inputFile wants %d bytes which is more than %d\n", v, DIFXIO_FILENAME_LENGTH);
 		D = 0;
 	}
 
@@ -3078,9 +3089,7 @@ DifxInput *loadDifxCalc(const char *filePrefix)
 	r = snprintf(inputFile, DIFXIO_FILENAME_LENGTH, "%s.input", filePrefix);
 	if(r >= DIFXIO_FILENAME_LENGTH)
 	{
-		fprintf(stderr, 
-			"Developer error: loadDifxCalc: inputFile wanted %d bytes, not %d\n",
-			r, DIFXIO_FILENAME_LENGTH);
+		fprintf(stderr, "Developer error: loadDifxCalc: inputFile wanted %d bytes, not %d\n", r, DIFXIO_FILENAME_LENGTH);
 
 		return 0;
 	}
@@ -3106,7 +3115,7 @@ DifxInput *loadDifxCalc(const char *filePrefix)
 	cp = newDifxParametersfromfile(calcFile);
 	if(!cp)
 	{
-		fprintf(stderr, "Error: newDifxParametersfromfile returned 0\n");
+		fprintf(stderr, "Error: loadDifxCalc: newDifxParametersfromfile returned 0\n");
 
 		deleteDifxParameters(ip);
 		
@@ -3167,10 +3176,9 @@ int DifxInputGetScanIdByJobId(const DifxInput *D, double mjd, int jobId)
 		return -1;
 	}
 
-	for(scanId = 0; scanId < D->nScan; scanId++)
+	for(scanId = 0; scanId < D->nScan; ++scanId)
 	{
-		if(mjd <= D->scan[scanId].mjdEnd && 
-		   D->scan[scanId].jobId == jobId)
+		if(mjd <= D->scan[scanId].mjdEnd && D->scan[scanId].jobId == jobId)
 		{
 			return scanId;
 		}
@@ -3189,7 +3197,7 @@ int DifxInputGetScanIdByAntennaId(const DifxInput *D, double mjd, int antennaId)
 		return -1;
 	}
 
-	for(scanId = 0; scanId < D->nScan; +scanId)
+	for(scanId = 0; scanId < D->nScan; ++scanId)
 	{
 		const DifxConfig *config;
 		int d, configId;
