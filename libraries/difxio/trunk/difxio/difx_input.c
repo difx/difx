@@ -1631,8 +1631,7 @@ static DifxInput *parseDifxInputNetworkTable(DifxInput *D,
 
 static DifxInput *deriveDifxInputValues(DifxInput *D)
 {
-	int dsId, fqId, c, e, qb, v;
-	DifxDatastream *ds;
+	int fqId, c;
 	
 	if(!D)
 	{
@@ -1648,7 +1647,7 @@ static DifxInput *deriveDifxInputValues(DifxInput *D)
 
 	/* Set reference frequency to the lowest of the freqs */
 	D->refFreq = 0.0;
-	for(fqId = 0; fqId < D->nFreq; fqId++)
+	for(fqId = 0; fqId < D->nFreq; ++fqId)
 	{
 		if(D->freq[fqId].freq < D->refFreq || D->refFreq <= 0.0)
 		{
@@ -1656,15 +1655,21 @@ static DifxInput *deriveDifxInputValues(DifxInput *D)
 		}
 	}
 
-	for(c = 0; c < D->nConfig; c++)
+	for(c = 0; c < D->nConfig; ++c)
 	{
+		int dsId;
+		int qb;
+		
 		/* determine number of bits, or zero if different among
 		 * antennas */
 		D->config[c].quantBits = -1;
 		qb = 0;
 
-		for(dsId = 0; dsId < D->config[c].nDatastream; dsId++)
+		for(dsId = 0; dsId < D->config[c].nDatastream; ++dsId)
 		{
+			DifxDatastream *ds;
+			int e;
+
 			e = D->config[c].datastreamId[dsId];
 			if(e < 0)
 			{
@@ -1688,8 +1693,10 @@ static DifxInput *deriveDifxInputValues(DifxInput *D)
 		D->config[c].quantBits = qb;
 	}
 
-	for(c = 0; c < D->nConfig; c++)
+	for(c = 0; c < D->nConfig; ++c)
 	{
+		int v;
+
 		v = generateAipsIFs(D, c);
 		if(v < 0)
 		{
@@ -1832,8 +1839,7 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 	}
 	if(nTel < D->nAntenna)
 	{
-		fprintf(stderr, "Error: populateCalc: NUM TELESCOPES too small: \n"
-			"%d < %d\n", nTel, D->nAntenna);
+		fprintf(stderr, "Error: populateCalc: NUM TELESCOPES too small: %d < %d\n", nTel, D->nAntenna);
 
 		return 0;
 	}
@@ -1910,8 +1916,7 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 	nFound = 0;
 	for(i = 0; i < nTel; i++)
 	{
-		N = DifxParametersbatchfind1(cp, rows[N_ANT_ROWS-1], antKeys,
-			i, N_ANT_ROWS, rows);
+		N = DifxParametersbatchfind1(cp, rows[N_ANT_ROWS-1], antKeys, i, N_ANT_ROWS, rows);
 		if(N < N_ANT_ROWS)
 		{
 			if(i == 0)
@@ -1929,16 +1934,14 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 		a = DifxInputGetAntennaId(D, DifxParametersvalue(cp, rows[0]));
 		if(a < 0)
 		{
-			fprintf(stderr, "populateCalc: skipping telescope \n"
-				"table entry %d\n", i);
+			fprintf(stderr, "populateCalc: skipping telescope table entry %d\n", i);
 			continue;
 		}
 		nFound++;
 		D->antenna[a].mount = stringToMountType(DifxParametersvalue(cp, rows[1]));
 		if(D->antenna[a].mount >= AntennaMountOther)
 		{
-			fprintf(stderr, "Warning: populateCalc: unknown antenna mount type encountered\n"
-				"for telescope table entry %d: %s.  Changing to AZEL\n",
+			fprintf(stderr, "Warning: populateCalc: unknown antenna mount type encountered for telescope table entry %d: %s.  Changing to AZEL\n",
 				i, DifxParametersvalue(cp, rows[1]));
 		}
 		D->antenna[a].offset[0]= atof(DifxParametersvalue(cp, rows[2]));
@@ -1953,8 +1956,7 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 		row = DifxParametersfind1(cp, 0, "TELESCOPE %d SHELF", a);
 		if(row > 0)
 		{
-			snprintf(D->antenna[a].shelf, DIFXIO_SHELF_LENGTH, "%s", 
-				DifxParametersvalue(cp, row));
+			snprintf(D->antenna[a].shelf, DIFXIO_SHELF_LENGTH, "%s", DifxParametersvalue(cp, row));
 		}
 	}
 	
@@ -1968,8 +1970,7 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
         rows[N_SRC_ROWS-1] = 0;         /* initialize start */
 	for(i = 0; i < D->nSource; i++)
         {
-                N = DifxParametersbatchfind1(cp, rows[N_SRC_ROWS-1], srcKeys,
-                        i, N_SRC_ROWS, rows);
+                N = DifxParametersbatchfind1(cp, rows[N_SRC_ROWS-1], srcKeys, i, N_SRC_ROWS, rows);
                 if(N < N_SRC_ROWS)
                 {
 			fprintf(stderr, "Error reading source table %d\n", i);
@@ -2165,8 +2166,7 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 	rows[N_SPACECRAFT_ROWS-1] = 0;
 	if(D->spacecraft) for(s = 0; s < D->nSpacecraft; s++)
 	{
-		N = DifxParametersbatchfind1(cp, rows[N_SPACECRAFT_ROWS-1], 
-			spacecraftKeys, s, N_SPACECRAFT_ROWS, rows);
+		N = DifxParametersbatchfind1(cp, rows[N_SPACECRAFT_ROWS-1], spacecraftKeys, s, N_SPACECRAFT_ROWS, rows);
 		if(N < N_SPACECRAFT_ROWS)
 		{
 			fprintf(stderr, "Spacecraft %d table screwed up\n", s);
@@ -2285,6 +2285,38 @@ static int parsePoly1(DifxParameters *p, int r, char *key, int i1, int i2, doubl
 	}
 
 	r = DifxParametersfind2(p, r, key, i1, i2);
+	if(r < 0)
+	{
+		return -1;
+	}
+
+	v = DifxParametersvalue(p, r);
+	m = 0;
+	for(i = 0; i < n; i++)
+	{
+		if(sscanf(v+m, "%lf%n", &d, &l) < 1)
+		{
+			return -1;
+		}
+		m += l;
+		array[i] = d;
+	}
+
+	return r;
+}
+
+static int parsePoly1_limited(DifxParameters *p, int r, int dr, char *key, int i1, int i2, double *array, int n)
+{
+	const char *v;
+	int i, l, m;
+	double d;
+
+	if(r < 0)
+	{
+		return -1;
+	}
+
+	r = DifxParametersfind2_limited(p, r, dr, key, i1, i2);
 	if(r < 0)
 	{
 		return -1;
@@ -2447,12 +2479,12 @@ static DifxInput *populateIM(DifxInput *D, DifxParameters *mp)
 						return 0;
 					}
 					/* don't require the following 6 parameters, so don't adjust r when reading them */
-					    parsePoly1(mp, r, "SRC %d ANT %d DRY (us)", src, t, scan->im[a][src][p].dry, order+1);
-					    parsePoly1(mp, r, "SRC %d ANT %d WET (us)", src, t, scan->im[a][src][p].wet, order+1);
-					    parsePoly1(mp, r, "SRC %d ANT %d AZ", src, t, scan->im[a][src][p].az, order+1);
-					    parsePoly1(mp, r, "SRC %d ANT %d EL CORR", src, t, scan->im[a][src][p].elcorr, order+1);
-					    parsePoly1(mp, r, "SRC %d ANT %d EL GEOM", src, t, scan->im[a][src][p].elgeom, order+1);
-					    parsePoly1(mp, r, "SRC %d ANT %d PAR ANGLE", src, t, scan->im[a][src][p].parangle, order+1);
+					    parsePoly1_limited(mp, r, 10, "SRC %d ANT %d DRY (us)", src, t, scan->im[a][src][p].dry, order+1);
+					    parsePoly1_limited(mp, r, 10, "SRC %d ANT %d WET (us)", src, t, scan->im[a][src][p].wet, order+1);
+					    parsePoly1_limited(mp, r, 10, "SRC %d ANT %d AZ", src, t, scan->im[a][src][p].az, order+1);
+					    parsePoly1_limited(mp, r, 10, "SRC %d ANT %d EL CORR", src, t, scan->im[a][src][p].elcorr, order+1);
+					    parsePoly1_limited(mp, r, 10, "SRC %d ANT %d EL GEOM", src, t, scan->im[a][src][p].elgeom, order+1);
+					    parsePoly1_limited(mp, r, 10, "SRC %d ANT %d PAR ANGLE", src, t, scan->im[a][src][p].parangle, order+1);
 					/* the next three again are required */
 					r = parsePoly1(mp, r, "SRC %d ANT %d U (m)", src, t, scan->im[a][src][p].u, order+1);
 					if(r < 0)

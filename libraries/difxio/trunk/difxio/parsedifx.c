@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2011 by Walter Brisken                             *
+ *   Copyright (C) 2007-2012 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -60,19 +60,21 @@ static void copyrow(DifxRow *dest, const DifxRow *src)
 /* double number of allocated rows */
 void growDifxParameters(DifxParameters *dp)
 {
-	DifxRow *newrows, *row;
+	DifxRow *newrows;
 	int alloc_rows;
 	int i;
 
 	alloc_rows = dp->alloc_rows;
 
 	newrows = (DifxRow *)malloc(2*alloc_rows*sizeof(DifxRow));
-	for(i = 0; i < alloc_rows; i++)
+	for(i = 0; i < alloc_rows; ++i)
 	{
-		copyrow(newrows+i, dp->rows+i);
+		copyrow(newrows + i, dp->rows + i);
 	}
-	for(i = alloc_rows; i < 2*alloc_rows; i++)
+	for(i = alloc_rows; i < 2*alloc_rows; ++i)
 	{
+		DifxRow *row;
+
 		row = newrows + i;
 		row->line = 0;
 		row->key = 0;
@@ -85,15 +87,16 @@ void growDifxParameters(DifxParameters *dp)
 
 void deleteDifxParameters(DifxParameters *dp)
 {
-	int i;
-	DifxRow *row;
-
 	if(dp)
 	{
 		if(dp->alloc_rows > 0)
 		{
-			for(i = 0; i < dp->alloc_rows; i++)
+			int i;
+
+			for(i = 0; i < dp->alloc_rows; ++i)
 			{
+				DifxRow *row;
+				
 				row = dp->rows + i;
 				if(row->line)
 				{
@@ -110,7 +113,6 @@ void deleteDifxParameters(DifxParameters *dp)
 			}
 			free(dp->rows);
 		}
-
 		free(dp);
 	}
 }
@@ -125,7 +127,7 @@ static void parserow(DifxRow *row)
 
 	line = row->line;
 
-	for(i = 0; line[i]; i++)
+	for(i = 0; line[i]; ++i)
 	{
 		if(line[i] == ':')
 		{
@@ -153,7 +155,7 @@ static void parserow(DifxRow *row)
 
 	/* determine extent of printable characters of "value" */
 
-	for(i = colon+1; line[i]; i++)
+	for(i = colon+1; line[i]; ++i)
 	{
 		if(line[i] > ' ')
 		{
@@ -172,13 +174,12 @@ static void parserow(DifxRow *row)
 	}
 	else
 	{
-		row->value = (char *)calloc(2, 1);
+		row->value = (char *)calloc(2, sizeof(char));
 	}
 }
 
 void resetDifxParameters(DifxParameters *dp)
 {
-	DifxRow *row;
 	int i;
 
 	if(!dp)
@@ -193,8 +194,10 @@ void resetDifxParameters(DifxParameters *dp)
 		return;
 	}
 
-	for(i = 0; i < dp->num_rows; i++)
+	for(i = 0; i < dp->num_rows; ++i)
 	{
+		DifxRow *row;
+		
 		row = &dp->rows[i];
 		if(row->line)
 		{
@@ -223,6 +226,7 @@ int DifxParametersaddrow(DifxParameters *dp, const char *line)
 	if(!dp)
 	{
 		fprintf(stderr, "DifxParametersaddrow : dp = 0\n");
+
 		return -1;
 	}
 
@@ -232,7 +236,7 @@ int DifxParametersaddrow(DifxParameters *dp, const char *line)
 	}
 
 	row = &dp->rows[dp->num_rows];
-	dp->num_rows++;
+	++dp->num_rows;
 
 	row->line = strdup(line);
 
@@ -245,13 +249,13 @@ DifxParameters *newDifxParametersfromfile(const char *filename)
 {
 	DifxParameters *dp;
 	char line[MAX_DIFX_INPUT_LINE_LENGTH+1];
-	char *ptr;
 	FILE *in;
 
 	in = fopen(filename, "r");
 	if(!in)
 	{
 		fprintf(stderr, "Cannot open %s for read\n", filename);
+
 		return 0;
 	}
 
@@ -259,6 +263,8 @@ DifxParameters *newDifxParametersfromfile(const char *filename)
 
 	for(;;)
 	{
+		char *ptr;
+		
 		ptr = fgets(line, MAX_DIFX_INPUT_LINE_LENGTH, in);
 		if(ptr == 0)
 		{
@@ -275,19 +281,21 @@ DifxParameters *newDifxParametersfromfile(const char *filename)
 void printDifxParameters(const DifxParameters *dp)
 {
 	int i;
-	const DifxRow *row;
 	
 	if(!dp)
 	{
 		fprintf(stderr, "printDifxParameters : dp = 0\n");
+		
 		return;
 	}
 	
 	printf("DifxParameters : nrow = %d\n", dp->num_rows);
 
-	for(i = 0; i < dp->num_rows; i++)
+	for(i = 0; i < dp->num_rows; ++i)
 	{
-		row = dp->rows+i;
+		const DifxRow *row;
+		
+		row = dp->rows + i;
 		if(row->value)
 		{
 			printf("%d\t<%s> = <%s>\n", i, row->key, row->value);
@@ -303,19 +311,28 @@ void printDifxParameters(const DifxParameters *dp)
 	}
 }
 
-int DifxParametersfind(const DifxParameters *dp, int start_row, const char *key)
+int DifxParametersfind_limited(const DifxParameters *dp, int start_row, int max_rows, const char *key)
 {
 	int i;
+	int max_r;
+
+	max_r = start_row + max_rows;
+	if(max_r > dp->num_rows)
+	{
+		max_r = dp->num_rows;
+	}
 
 	if(!dp)
 	{
 		fprintf(stderr, "DifxParametersgetstring : dp = 0\n");
+
 		return -1;
 	}
 
 	if(!key)
 	{
 		fprintf(stderr, "DifxParametersgetstring : key = 0\n");
+		
 		return -1;
 	}
 
@@ -324,7 +341,7 @@ int DifxParametersfind(const DifxParameters *dp, int start_row, const char *key)
 		return -1;
 	}
 
-	for(i = start_row; i < dp->num_rows; i++)
+	for(i = start_row; i < max_r; ++i)
 	{
 		if(dp->rows[i].key == 0)
 		{
@@ -337,6 +354,62 @@ int DifxParametersfind(const DifxParameters *dp, int start_row, const char *key)
 	}
 
 	return -1;
+}
+
+int DifxParametersfind(const DifxParameters *dp, int start_row, const char *key)
+{
+	int i;
+
+	if(!dp)
+	{
+		fprintf(stderr, "DifxParametersgetstring : dp = 0\n");
+
+		return -1;
+	}
+
+	if(!key)
+	{
+		fprintf(stderr, "DifxParametersgetstring : key = 0\n");
+		
+		return -1;
+	}
+
+	if(start_row < 0 || start_row >= dp->num_rows)
+	{
+		return -1;
+	}
+
+	for(i = start_row; i < dp->num_rows; ++i)
+	{
+		if(dp->rows[i].key == 0)
+		{
+			continue;
+		}
+		if(strcmp(key, dp->rows[i].key) == 0)
+		{
+			return i;
+		}
+	}
+
+	return -1;
+}
+
+int DifxParametersfind1_limited(const DifxParameters *dp, int start_row, int max_rows, const char *key, int index1)
+{
+	char newkey[MAX_DIFX_KEY_LEN+1];
+
+	snprintf(newkey, MAX_DIFX_KEY_LEN+1, key, index1);
+
+	return DifxParametersfind_limited(dp, start_row, max_rows, newkey);
+}
+
+int DifxParametersfind2_limited(const DifxParameters *dp, int start_row, int max_rows, const char *key, int index1, int index2)
+{
+	char newkey[MAX_DIFX_KEY_LEN+1];
+
+	snprintf(newkey, MAX_DIFX_KEY_LEN+1, key, index1, index2);
+
+	return DifxParametersfind_limited(dp, start_row, max_rows, newkey);
 }
 
 int DifxParametersfind1(const DifxParameters *dp, int start_row, const char *key, int index1)
@@ -375,14 +448,13 @@ const char *DifxParametersvalue(const DifxParameters *dp, int row)
 }
 
 /* return number of found symbols */
-int DifxParametersbatchfind(const DifxParameters *dp, int start, 
-	const char keys[][MAX_DIFX_KEY_LEN], int n, int rows[])
+int DifxParametersbatchfind(const DifxParameters *dp, int start, const char keys[][MAX_DIFX_KEY_LEN], int n, int rows[])
 {
 	int i;
 	int s;
 
 	s = start;
-	for(i = 0; i < n; i++)
+	for(i = 0; i < n; ++i)
 	{
 		rows[i] = DifxParametersfind(dp, s, keys[i]);
 		if(rows[i] < 0)
@@ -398,14 +470,13 @@ int DifxParametersbatchfind(const DifxParameters *dp, int start,
 }
 
 /* return number of found symbols */
-int DifxParametersbatchfind1(const DifxParameters *dp, int start, 
-	const char keys[][MAX_DIFX_KEY_LEN], int index1, int n, int rows[])
+int DifxParametersbatchfind1(const DifxParameters *dp, int start, const char keys[][MAX_DIFX_KEY_LEN], int index1, int n, int rows[])
 {
 	int i;
 	int s;
 
 	s = start;
-	for(i = 0; i < n; i++)
+	for(i = 0; i < n; ++i)
 	{
 		rows[i] = DifxParametersfind1(dp, s, keys[i], index1);
 		if(rows[i] < 0)
@@ -423,15 +494,13 @@ int DifxParametersbatchfind1(const DifxParameters *dp, int start,
 }
 
 /* return number of found symbols */
-int DifxParametersbatchfind2(const DifxParameters *dp, int start, 
-	const char keys[][MAX_DIFX_KEY_LEN], int index1, int index2,
-	int n, int rows[])
+int DifxParametersbatchfind2(const DifxParameters *dp, int start, const char keys[][MAX_DIFX_KEY_LEN], int index1, int index2, int n, int rows[])
 {
 	int i;
 	int s;
 
 	s = start;
-	for(i = 0; i < n; i++)
+	for(i = 0; i < n; ++i)
 	{
 		rows[i] = DifxParametersfind2(dp, s, keys[i], index1, index2);
 		if(rows[i] < 0)
@@ -490,7 +559,7 @@ int DifxStringArrayadd(DifxStringArray *sa, const char *str, int max)
 		sa->str[sa->n] = strdup("");
 	}
 
-	sa->n++;
+	++sa->n;
 
 	return sa->n;
 }
@@ -499,27 +568,28 @@ int DifxStringArrayaddlist(DifxStringArray *sa, const char *str)
 {
 	int start = 0;
 	int i;
-	int a, b;
 
 	if(!sa)
 	{
 		return -1;
 	}
 
-	for(i = 0; ; i++)
+	for(i = 0; ; ++i)
 	{
 		if(str[i] == 0 || str[i] == ',')
 		{
 			if(i > start)
 			{
-				for(a = start; a < i; a++)
+				int a, b;
+				
+				for(a = start; a < i; ++a)
 				{
 					if(str[a] > ' ')
 					{
 						break;
 					}
 				}
-				for(b = i-1; b >= start; b--)
+				for(b = i-1; b >= start; --b)
 				{
 					if(str[b] > ' ')
 					{
@@ -528,11 +598,11 @@ int DifxStringArrayaddlist(DifxStringArray *sa, const char *str)
 				}
 				if(b >= a)
 				{
-					DifxStringArrayadd(sa, str+a, b-a+1);
+					DifxStringArrayadd(sa, str + a, b - a + 1);
 				}
 			}
 
-			start = i+1;
+			start = i + 1;
 		}
 
 		if(str[i] == 0)
@@ -548,11 +618,11 @@ int DifxStringArrayaddlist(DifxStringArray *sa, const char *str)
 
 int DifxStringArrayappend(DifxStringArray *dest, const DifxStringArray *src)
 {
-	int i;
-
 	if(src->n > 0)
 	{
-		for(i = 0; i < src->n; i++)
+		int i;
+		
+		for(i = 0; i < src->n; ++i)
 		{
 			DifxStringArrayadd(dest, src->str[i], 0);
 		}
@@ -573,7 +643,7 @@ int DifxStringArraycontains(const DifxStringArray *sa, const char *str)
 	{
 		return 0;
 	}
-	for(i = 0; i < sa->n; i++)
+	for(i = 0; i < sa->n; ++i)
 	{
 		if(strcmp(sa->str[i], str) == 0)
 		{
@@ -586,15 +656,15 @@ int DifxStringArraycontains(const DifxStringArray *sa, const char *str)
 
 void DifxStringArrayprint(const DifxStringArray *sa)
 {
-	int i;
-
 	printf("DifxStringArray [%p]\n", sa);
 	if(sa)
 	{
 		printf("  n=%d\n", sa->n);
 		if(sa->n > 0)
 		{
-			for(i = 0; i < sa->n; i++)
+			int i;
+			
+			for(i = 0; i < sa->n; ++i)
 			{
 				printf("  str[%d]=%s\n", i, sa->str[i]);
 			}
@@ -604,8 +674,6 @@ void DifxStringArrayprint(const DifxStringArray *sa)
 
 void DifxStringArrayclear(DifxStringArray *sa)
 {
-	int i;
-
 	if(!sa)
 	{
 		return;
@@ -613,7 +681,9 @@ void DifxStringArrayclear(DifxStringArray *sa)
 
 	if(sa->nAlloc > 0)
 	{
-		for(i = 0; i < sa->n; i++)
+		int i;
+
+		for(i = 0; i < sa->n; ++i)
 		{
 			if(sa->str[i])
 			{

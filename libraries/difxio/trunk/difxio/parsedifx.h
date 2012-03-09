@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2011 by Walter Brisken                             *
+ *   Copyright (C) 2007-2012 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -112,29 +112,27 @@ int DifxStringArraycontains(const DifxStringArray *sa, const char *str);
 void printDifxParameters(const DifxParameters *dp);
 
 /* Return index of first match to "key" starting from start_row */
-int DifxParametersfind(const DifxParameters *dp, int start_row,
-	const char *key);
+int DifxParametersfind(const DifxParameters *dp, int start_row, const char *key);
 
 /* Same as above, but allow key with a particular index value.  for example
  * to match "TELESCOPE 1 INDEX" set key = "TELESCOPE %d INDEX" and index = 1 */
-int DifxParametersfind1(const DifxParameters *dp, int start_row,
-	const char *key, int index1);
+int DifxParametersfind1(const DifxParameters *dp, int start_row, const char *key, int index1);
 
 /* Same as above, but allow two indexes */
-int DifxParametersfind2(const DifxParameters *dp, int start_row,
-	const char *key, int index1, int index2);
+int DifxParametersfind2(const DifxParameters *dp, int start_row, const char *key, int index1, int index2);
+
+/* the _limited versions of these limits the range of row to search */
+int DifxParametersfind_limited(const DifxParameters *dp, int start_row, int max_rows, const char *key);
+int DifxParametersfind1_limited(const DifxParameters *dp, int start_row, int max_rows, const char *key, int index1);
+int DifxParametersfind2_limited(const DifxParameters *dp, int start_row, int max_rows, const char *key, int index1, int index2);
 
 /* Safely get the value of a row */
 const char *DifxParametersvalue(const DifxParameters *dp, int row);
 
 /* find row indicies for several keys */
-int DifxParametersbatchfind(const DifxParameters *dp, int start,
-	const char keys[][MAX_DIFX_KEY_LEN], int n, int rows[]);
-int DifxParametersbatchfind1(const DifxParameters *dp, int start,
-	const char keys[][MAX_DIFX_KEY_LEN], int index1, int n, int rows[]);
-int DifxParametersbatchfind2(const DifxParameters *dp, int start,
-	const char keys[][MAX_DIFX_KEY_LEN], int index1, int index2,
-	int n, int rows[]);
+int DifxParametersbatchfind(const DifxParameters *dp, int start, const char keys[][MAX_DIFX_KEY_LEN], int n, int rows[]);
+int DifxParametersbatchfind1(const DifxParameters *dp, int start, const char keys[][MAX_DIFX_KEY_LEN], int index1, int n, int rows[]);
+int DifxParametersbatchfind2(const DifxParameters *dp, int start, const char keys[][MAX_DIFX_KEY_LEN], int index1, int index2, int n, int rows[]);
 
 #ifdef __cplusplus
 }
