@@ -169,7 +169,6 @@ int DifxVisNextFile(DifxVis *dv, int pulsarBin, int phaseCentre)
 
 			return -2;
 		}
-		printf("    JobId %d File %d/%d : %s\n", dv->jobId, dv->curFile+1, dv->nFile, dv->globbuf.gl_pathv[dv->curFile]);
 		if(regexec(&fileMatch, dv->globbuf.gl_pathv[dv->curFile], 5, fileSubexpressions, 0) != 0)
 		{
 			printf("\nWarning: File %s found which will be ignored because it does not match the expected filename convention for DiFX output files.\n\n", dv->globbuf.gl_pathv[dv->curFile]);
@@ -184,8 +183,9 @@ int DifxVisNextFile(DifxVis *dv, int pulsarBin, int phaseCentre)
 		/* slot 4 of the re match should be pulsar bin number */
 		bin = re2int(dv->globbuf.gl_pathv[dv->curFile], fileSubexpressions+4);
 
-		if(bin == pulsarBin && (pc == 0 || pc == phaseCentre))
+		if(bin == pulsarBin && pc == phaseCentre)
 		{
+			printf("    JobId %d File %d/%d : %s\n", dv->jobId, dv->curFile+1, dv->nFile, dv->globbuf.gl_pathv[dv->curFile]);
 			dv->in = fopen(dv->globbuf.gl_pathv[dv->curFile], "r");
 			if(dv->in == 0)
 			{
@@ -1371,7 +1371,7 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D,
 	return D;
 }
 
-
+#if 0
 DifxVis *dummy_newDifxVis(const DifxInput *D, int jobId, int pulsarBin, int phaseCentre)
 {
 	DifxVis *dv;
@@ -1601,3 +1601,5 @@ printf("  nd = %d  nw = %d\n", dv->nData, nWeight);
 
 	return D;
 }
+
+#endif

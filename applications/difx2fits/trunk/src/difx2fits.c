@@ -622,12 +622,16 @@ static const DifxInput *DifxInput2FitsTables(const DifxInput *D,
 	}
 	else
 	{
+#if 0
 		printf("  *** No visibility data being written to file ***\n");
 		D = dummy_DifxInput2FitsUV(D, &keys, out, opts);
 		printf("  UV -- visibility          \n");
 		fflush(stdout);
 		printf("%lld bytes\n", out->bytes_written - last_bytes);
 		last_bytes = out->bytes_written;
+#endif
+		fprintf(stdout, "The dontIncludeVisibilities option is not currently available\n");
+		exit(EXIT_FAILURE);
 	}
 
 	printf("  FL -- flag                ");
@@ -667,7 +671,7 @@ static const DifxInput *DifxInput2FitsTables(const DifxInput *D,
 	return D;
 }
 
-int convertFits(struct CommandLineOptions *opts, int passNum)
+static int convertFits(struct CommandLineOptions *opts, int passNum, int *nWithoutPhaseCentre)
 {
 	DifxInput *D, *D1, *D2;
 	struct fitsPrivate outfile;
@@ -701,6 +705,21 @@ int convertFits(struct CommandLineOptions *opts, int passNum)
 			fprintf(stderr, "loadDifxInput failed on <%s>.\n", opts->baseFile[i]);
 
 			return 0;
+		}
+		if(DifxInputGetMaxPhaseCentres(D2) <= opts->phaseCentre)
+		{
+			if(opts->verbose > 0)
+			{
+				printf("Skipping %s because it doesn't contain phase centre %d\n", opts->baseFile[i], opts->phaseCentre);
+			}
+
+			deleteDifxInput(D2);
+			free(opts->baseFile[i]);
+			opts->baseFile[i] = 0;
+
+			++(*nWithoutPhaseCentre);
+
+			continue;
 		}
 		if(opts->specAvg)
 		{
@@ -890,6 +909,7 @@ int main(int argc, char **argv)
 {
 	struct CommandLineOptions *opts;
 	int nConverted = 0;
+	int nWithoutPhaseCentre = 0;
 	int n, nFits = 0;
 
 
@@ -913,7 +933,7 @@ int main(int argc, char **argv)
 
 	for(;;)
 	{
-		n = convertFits(opts, nFits);
+		n = convertFits(opts, nFits, &nWithoutPhaseCentre);
 		if(n <= 0)
 		{
 			break;
@@ -923,8 +943,12 @@ int main(int argc, char **argv)
 	}
 
 	printf("%d of %d jobs converted to %d FITS files\n", nConverted, opts->nBaseFile, nFits);
+	if(nWithoutPhaseCentre > 0)
+	{
+		printf("%d of %d jobs lacked requested phase centre (%d)\n", nWithoutPhaseCentre, opts->nBaseFile, opts->phaseCentre);
+	}
 
-	if(nConverted != opts->nBaseFile)
+	if(nConverted + nWithoutPhaseCentre != opts->nBaseFile)
 	{
 		printf("\n*** Warning: not all input files converted!\n");
 	}

@@ -819,7 +819,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	float timeInt, dumpTimeInt;
 	int cableScanId, nextCableScanId, 
 	    lineCableScanId, lineCableSourceId, lineCableConfigId;
-	int newScanId, newSourceId, newConfigId;
+	int newScanId, newSourceId, newConfigId = -1;
 	double cableCal, nextCableCal, cableCalOut, lineCableCal;
 	double cableTime, nextCableTime, lineCableTime;
 	float cablePeriod, nextCablePeriod, lineCablePeriod;
@@ -831,7 +831,8 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	float pulseCalImAcc[2][array_MAX_TONES]; 
 	float stateCount[2][array_MAX_STATES*array_MAX_BANDS];
 	float pulseCalRate[2][array_MAX_TONES];
-	int configId, sourceId;
+	int configId = -1;
+	int sourceId = -1;
 	int scanId;
 	int refDay;
 	int i, a, dsId, j, k, t, n, v;
@@ -883,7 +884,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 		{
 			if(D->datastream[i].phaseCalIntervalMHz < 1)
 			{
-			nTone = getNTone("pcal", refDay + start, refDay + stop, verbose);
+				nTone = getNTone("pcal", refDay + start, refDay + stop, verbose);
 				break;
 			}
 		}
@@ -1213,7 +1214,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 						doDump = 1;
 					}
 				}
-				if(doDump)
+				if(doDump && configId >= 0)
 				{
 					if(nDifxTone)
 					{
@@ -1412,7 +1413,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	if(in2)	/* this should never be true the way things work */
 	{
 		fclose(in2);
-		in2 =0;
+		in2 = 0;
 	}
 
 	free(fitsbuf);

@@ -149,7 +149,6 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 		}
 		if(phaseCentre >= scan->nPhaseCentres)
 		{
-			printf("Skipping scan %d as the requested phase centre > number of phase centres\n", s);
 			continue;
 		}
 		config = D->config + configId;
@@ -162,7 +161,7 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 		}
 		else
 		{
-			fprintf(stderr, "No im table available; aborting MC file creation\n");
+			fprintf(stderr, "No IM table available for scan %d; aborting MC file creation\n", s);
 			continue;
 		}
 

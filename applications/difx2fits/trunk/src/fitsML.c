@@ -79,24 +79,15 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D, struct fits_keywords *p_fi
 	int nColumn;
 	int nRowBytes;
 	char str[80];
-	int a, i, k, p, s, antId;
-	double ppoly[array_MAX_BANDS][array_N_POLY];
-	double gpoly[array_N_POLY];
-	double prate[array_MAX_BANDS][array_N_POLY];
-	double grate[array_N_POLY];
+	int32_t arrayId1;
+	int a, i, k, p, s;
 	double shiftedClock[array_N_POLY];
 	float freqVar[array_MAX_BANDS];
 	float faraday;
-	int configId, jobId, dsId;
 	double time;
 	float timeInt;
 	int nPol, np;
 	char *p_fitsbuf;
-	const DifxScan *scan;
-	const DifxJob *job;
-	const DifxConfig *config;
-	const DifxAntenna *da;
-	const DifxPolyModel *P;
 	float dispDelay;
 	float dispDelayRate;
 	double deltat;
@@ -105,7 +96,6 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D, struct fits_keywords *p_fi
 	int skipped=0;
 	int printed=0;
 	/* 1-based indices for FITS */
-	int32_t sourceId1, freqId1, arrayId1, antId1;
 
 	if(D == 0)
 	{
@@ -174,6 +164,12 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D, struct fits_keywords *p_fi
 
 	for(s = 0; s < D->nScan; ++s)
 	{
+		const DifxScan *scan;
+		const DifxJob *job;
+		const DifxConfig *config;
+		int configId, jobId;
+		int32_t sourceId1, freqId1;
+		
 		scan = D->scan + s;
 		jobId = scan->jobId;
 		job = D->job + jobId;
@@ -184,8 +180,6 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D, struct fits_keywords *p_fi
 		}
 		if(phaseCentre >= scan->nPhaseCentres)
 		{
-			printf("Skipping scan %d as the requested phase centre was not used\n", s);
-
 			continue;
 		}
 
@@ -200,7 +194,7 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D, struct fits_keywords *p_fi
 		}
 		else
 		{
-			fprintf(stderr, "No IM info available: skipping generation of ML table\n");
+			fprintf(stderr, "No IM info available for scan %d: skipping generation of ML table\n", s);
 			continue;
 		}
 
@@ -208,6 +202,15 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D, struct fits_keywords *p_fi
 		{
 			for(a = 0; a < config->nAntenna; ++a)
 			{
+				const DifxAntenna *da;
+				const DifxPolyModel *P;
+				int dsId, antId;
+				int32_t antId1;
+				double ppoly[array_MAX_BANDS][array_N_POLY];
+				double gpoly[array_N_POLY];
+				double prate[array_MAX_BANDS][array_N_POLY];
+				double grate[array_N_POLY];
+
 				dsId = config->ant2dsId[a];
 				if(dsId < 0 || dsId >= D->nDatastream)
 				{
