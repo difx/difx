@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2011 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2007-2012 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -50,7 +50,7 @@ enum ToneSelection stringToToneSelection(const char *str)
 {
 	enum ToneSelection ts;
 
-	for(ts = 0; ts < NumToneSelections; ts++)
+	for(ts = 0; ts < NumToneSelections; ++ts)
 	{
 		if(strcasecmp(str, toneSelectionNames[ts]) == 0)
 		{
@@ -79,18 +79,15 @@ void deleteDifxInput(DifxInput *D)
 	{
 		if(D->config)
 		{
-			deleteDifxConfigArray(D->config,
-				D->nConfig);
+			deleteDifxConfigArray(D->config, D->nConfig);
 		}
 		if(D->datastream)
 		{
-			deleteDifxDatastreamArray(D->datastream, 
-				D->nDatastream);
+			deleteDifxDatastreamArray(D->datastream, D->nDatastream);
 		}
 		if(D->baseline)
 		{
-			deleteDifxBaselineArray(D->baseline,
-				D->nBaseline);
+			deleteDifxBaselineArray(D->baseline, D->nBaseline);
 		}
 		if(D->freq)
 		{
@@ -179,68 +176,71 @@ void fprintDifxInput(FILE *fp, const DifxInput *D)
 	fprintf(fp, "  output Channels = %d\n", D->nOutChan);
 
 	fprintf(fp, "  nJob = %d\n", D->nJob);
-	for(i = 0; i < D->nJob; i++)
+	for(i = 0; i < D->nJob; ++i)
 	{
 		fprintDifxJob(fp, D->job + i);
 	}
 
 	fprintf(fp, "  nConfig = %d\n", D->nConfig);
-	for(i = 0; i < D->nConfig; i++)
+	for(i = 0; i < D->nConfig; ++i)
 	{
 		fprintDifxConfig(fp, D->config + i);
 	}
 
 	fprintf(fp, "  nFreq = %d\n", D->nFreq);
-	for(i = 0; i < D->nFreq; i++)
+	for(i = 0; i < D->nFreq; ++i)
 	{
 		fprintDifxFreq(fp, D->freq + i);
 	}
 
 	fprintf(fp, "  nAntenna = %d\n", D->nAntenna);
-	for(i = 0; i < D->nAntenna; i++)
+	for(i = 0; i < D->nAntenna; ++i)
 	{
 		fprintDifxAntenna(fp, D->antenna + i);
 	}
 
 	fprintf(fp, "  nSource = %d\n", D->nSource);
-	for(i = 0; i < D->nSource; i++)
+	for(i = 0; i < D->nSource; ++i)
 	{
 		fprintDifxSource(fp, D->source + i);
 	}
 
 	fprintf(fp, "  nScan = %d\n", D->nScan);
-	for(i = 0; i < D->nScan; i++)
+	for(i = 0; i < D->nScan; ++i)
 	{
 		fprintDifxScan(fp, D->scan + i);
 	}
 
 	fprintf(fp, "  nEOP = %d\n", D->nEOP);
-	if(D->eop) for(i = 0; i < D->nEOP; i++)
+	if(D->eop) 
 	{
-		fprintDifxEOP(fp, D->eop + i);
+		for(i = 0; i < D->nEOP; ++i)
+		{
+			fprintDifxEOP(fp, D->eop + i);
+		}
 	}
 
 	fprintf(fp, "  nDatastreamEntries = %d\n", D->nDatastream);
-	for(i = 0; i < D->nDatastream; i++)
+	for(i = 0; i < D->nDatastream; ++i)
 	{
 		fprintDifxDatastream(fp, D->datastream + i);
 	}
 
 	fprintf(fp, "  nBaselineEntries = %d\n", D->nBaseline);
-	for(i = 0; i < D->nBaseline; i++)
+	for(i = 0; i < D->nBaseline; ++i)
 	if(D->nBaseline > 1)
 	{
 		fprintDifxBaseline(fp, D->baseline + i);
 	}
 
 	fprintf(fp, "  nSpacecraft = %d\n", D->nSpacecraft);
-	for(i = 0; i < D->nSpacecraft; i++)
+	for(i = 0; i < D->nSpacecraft; ++i)
 	{
 		fprintDifxSpacecraft(fp, D->spacecraft + i);
 	}
 
 	fprintf(fp, "  nPulsar = %d\n", D->nPulsar);
-	for(i = 0; i < D->nPulsar; i++)
+	for(i = 0; i < D->nPulsar; ++i)
 	{
 		fprintDifxPulsar(fp, D->pulsar + i);
 	}
@@ -271,37 +271,37 @@ void fprintDifxInputSummary(FILE *fp, const DifxInput *D)
 	//fprintf(fp, "  Output Channels = %d\n", D->nOutChan);
 
 	fprintf(fp, "  nJob = %d\n", D->nJob);
-	for(i = 0; i < D->nJob; i++)
+	for(i = 0; i < D->nJob; ++i)
 	{
 		fprintDifxJob(fp, D->job + i);
 	}
 
 	fprintf(fp, "  nConfig = %d\n", D->nConfig);
-	for(i = 0; i < D->nConfig; i++)
+	for(i = 0; i < D->nConfig; ++i)
 	{
 		fprintDifxConfigSummary(fp, D->config + i);
 	}
 
 	fprintf(fp, "  nAntenna = %d\n", D->nAntenna);
-	for(i = 0; i < D->nAntenna; i++)
+	for(i = 0; i < D->nAntenna; ++i)
 	{
 		fprintDifxAntennaSummary(fp, D->antenna + i);
 	}
 
 	fprintf(fp, "  nSource = %d\n", D->nSource);
-	for(i = 0; i < D->nSource; i++)
+	for(i = 0; i < D->nSource; ++i)
 	{
 		fprintDifxSourceSummary(fp, D->source + i);
 	}
 
 	fprintf(fp, "  nScan = %d\n", D->nScan);
-	for(i = 0; i < D->nScan; i++)
+	for(i = 0; i < D->nScan; ++i)
 	{
 		fprintDifxScanSummary(fp, D->scan + i);
 	}
 
 	fprintf(fp, "  nEOP = %d\n", D->nEOP);
-	if(D->eop) for(i = 0; i < D->nEOP; i++)
+	if(D->eop) for(i = 0; i < D->nEOP; ++i)
 	{
 		fprintDifxEOPSummary(fp, D->eop + i);
 	}
@@ -310,7 +310,7 @@ void fprintDifxInputSummary(FILE *fp, const DifxInput *D)
 	{
 		fprintf(fp, "  nSpacecraft = %d\n", D->nSpacecraft);
 	}
-	for(i = 0; i < D->nSpacecraft; i++)
+	for(i = 0; i < D->nSpacecraft; ++i)
 	{
 		fprintDifxSpacecraft(fp, D->spacecraft + i);
 	}
@@ -319,7 +319,7 @@ void fprintDifxInputSummary(FILE *fp, const DifxInput *D)
 	{
 		fprintf(fp, "  nPulsar = %d\n", D->nPulsar);
 	}
-	for(i = 0; i < D->nPulsar; i++)
+	for(i = 0; i < D->nPulsar; ++i)
 	{
 		fprintDifxPulsar(fp, D->pulsar + i);
 	}
@@ -499,7 +499,7 @@ static int generateAipsIFs(DifxInput *D, int configId)
 				{
 					fprintf(stderr, "Error: generateAipsIFs: bandA=%d out of range: baselineId=%d nRecBandA=%d nZoomBandA=%d\n", band, bl, ds->nRecBand, ds->nZoomBand);
 					
-					exit(0);
+					exit(EXIT_FAILURE);
 				}
 				if(band < ds->nRecBand)	/* this is a rec band */
 				{
@@ -529,7 +529,7 @@ static int generateAipsIFs(DifxInput *D, int configId)
 				{
 					fprintf(stderr, "Error: generateAipsIFs: bandB=%d out of range: baselineId=%d nRecBandB=%d nZoomBandB=%d\n", band, bl, ds->nRecBand, ds->nZoomBand);
 					
-					exit(0);
+					exit(EXIT_FAILURE);
 				}
 				if(band < ds->nRecBand)	/* this is a rec band */
 				{

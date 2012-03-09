@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008 by Walter Brisken                                  *
+ *   Copyright (C) 2008-2012 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -235,8 +235,6 @@ int loadPulsarPolycoFile(DifxPolyco **dpArray, int *nPolyco, const char *filenam
 
 		for(c = 0; c < dp->nCoef; ++c)
 		{
-			char *rv;
-			
 			n = fscanf(in, "%s", buffer);
 			if(n == 0)
 			{
