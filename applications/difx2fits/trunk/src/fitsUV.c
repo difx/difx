@@ -166,6 +166,7 @@ int DifxVisNextFile(DifxVis *dv, int pulsarBin, int phaseCentre)
 		if(dv->curFile >= dv->nFile)
 		{
 			printf("    JobId %d done.\n", dv->jobId);
+			regfree(&fileMatch);
 
 			return -2;
 		}
