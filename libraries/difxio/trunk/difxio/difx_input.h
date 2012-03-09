@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2011 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2007-2012 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -734,8 +734,7 @@ void fprintDifxEOP(FILE *fp, const DifxEOP *de);
 void printDifxEOPSummary(const DifxEOP *de);
 void fprintDifxEOPSummary(FILE *fp, const DifxEOP *de);
 void copyDifxEOP(DifxEOP *dest, const DifxEOP *src);
-DifxEOP *mergeDifxEOPArrays(const DifxEOP *de1, int nde1,
-	const DifxEOP *de2, int nde2, int *nde);
+DifxEOP *mergeDifxEOPArrays(const DifxEOP *de1, int nde1, const DifxEOP *de2, int nde2, int *nde);
 int writeDifxEOPArray(FILE *out, int nEOP, const DifxEOP *de);
 
 /* DifxSpacecraft functions */
@@ -746,10 +745,8 @@ void deleteDifxSpacecraftArray(DifxSpacecraft *ds, int nSpacecraft);
 void printDifxSpacecraft(const DifxSpacecraft *ds);
 void fprintDifxSpacecraft(FILE *fp, const DifxSpacecraft *ds);
 int computeDifxSpacecraftEphemeris(DifxSpacecraft *ds, double mjd0, double deltat, int nPoint, const char *name, const char *naifFile, const char *ephemFile);
-DifxSpacecraft *mergeDifxSpacecraft(const DifxSpacecraft *ds1, int nds1,
-	const DifxSpacecraft *ds2, int nds2, int *spacecraftIdRemap, int *nds);
-int evaluateDifxSpacecraft(const DifxSpacecraft *sc, int mjd, double fracMjd,
-	sixVector *interpolatedPosition);
+DifxSpacecraft *mergeDifxSpacecraft(const DifxSpacecraft *ds1, int nds1, const DifxSpacecraft *ds2, int nds2, int *spacecraftIdRemap, int *nds);
+int evaluateDifxSpacecraft(const DifxSpacecraft *sc, int mjd, double fracMjd, sixVector *interpolatedPosition);
 int writeDifxSpacecraftArray(FILE *out, int nSpacecraft, DifxSpacecraft *ds);
 
 /* DifxSource functions */
@@ -759,8 +756,7 @@ void printDifxSource(const DifxSource *ds);
 void fprintDifxSource(FILE *fp, const DifxSource *ds);
 void printDifxSourceSummary(const DifxSource *ds);
 void fprintDifxSourceSummary(FILE *fp, const DifxSource *ds);
-int writeDifxSourceArray(FILE *out, int nSource, const DifxSource *ds,
-        int doCalcode, int doQual, int doSpacecraftID);
+int writeDifxSourceArray(FILE *out, int nSource, const DifxSource *ds, int doCalcode, int doQual, int doSpacecraftID);
 int isSameDifxSource(const DifxSource *ds1, const DifxSource *ds2);
 void copyDifxSource(DifxSource *dest, const DifxSource *src);
 DifxSource *mergeDifxSourceArrays(const DifxSource *ds1, int nds1, const DifxSource *ds2, int nds2, int *sourceIdRemap, int *nds);
@@ -779,11 +775,8 @@ DifxAntennaFlag *newDifxAntennaFlagArray(int nFlag);
 void deleteDifxAntennaFlagArray(DifxAntennaFlag *df);
 void printDifxAntennaFlagArray(const DifxAntennaFlag *df, int nf);
 void fprintDifxAntennaFlagArray(FILE *fp, const DifxAntennaFlag *df, int nf);
-void copyDifxAntennaFlag(DifxAntennaFlag *dest, const DifxAntennaFlag *src,
-	const int *antennaIdRemap);
-DifxAntennaFlag *mergeDifxAntennaFlagArrays(const DifxAntennaFlag *df1, 
-	int ndf1, const DifxAntennaFlag *df2, int ndf2, 
-	const int *antennaIdRemap, int *ndf);
+void copyDifxAntennaFlag(DifxAntennaFlag *dest, const DifxAntennaFlag *src, const int *antennaIdRemap);
+DifxAntennaFlag *mergeDifxAntennaFlagArrays(const DifxAntennaFlag *df1, int ndf1, const DifxAntennaFlag *df2, int ndf2, const int *antennaIdRemap, int *ndf);
 
 /* DifxInput functions */
 enum ToneSelection stringToToneSelection(const char *str);
@@ -801,19 +794,17 @@ DifxInput *allocateSourceTable(DifxInput *D, int length);
 DifxInput *updateDifxInput(DifxInput *D);
 int areDifxInputsMergable(const DifxInput *D1, const DifxInput *D2);
 int areDifxInputsCompatible(const DifxInput *D1, const DifxInput *D2);
-DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2,
-	int verbose);
+DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2, int verbose);
 int isAntennaFlagged(const DifxJob *J, double mjd, int antennaId);
 int DifxInputGetPointingSourceIdByJobId(const DifxInput *D, double mjd, int jobId);
-int DifxInputGetPointingSourceIdByAntennaId(const DifxInput *D, double mjd, 
-	int antennaId);
+int DifxInputGetPointingSourceIdByAntennaId(const DifxInput *D, double mjd, int antennaId);
 int DifxInputGetScanIdByJobId(const DifxInput *D, double mjd, int jobId);
-int DifxInputGetScanIdByAntennaId(const DifxInput *D, double mjd, 
-	int antennaId);
+int DifxInputGetScanIdByAntennaId(const DifxInput *D, double mjd, int antennaId);
 int DifxInputGetAntennaId(const DifxInput *D, const char *antennaName);
 int DifxInputGetDatastreamIdsByAntennaId(int *dsIds, const DifxInput *D, int antennaId, int maxCount);
 int DifxInputGetOriginalDatastreamIdsByAntennaIdJobId(int *dsIds, const DifxInput *D, int antennaId, int jobId, int maxCount);
 int DifxInputGetMaxTones(const DifxInput *D);
+int DifxInputGetMaxPhaseCentres(const DifxInput *D);
 int DifxInputGetFreqIdByBaselineFreq(const DifxInput *D, int baselineId, int baselineFreq);
 int DifxInputGetDatastreamId(const DifxInput *D, int jobId, int antId);
 int DifxInputSortAntennas(DifxInput *D, int verbose);

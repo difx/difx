@@ -3144,7 +3144,7 @@ DifxInput *loadDifxCalc(const char *filePrefix)
 	deleteDifxParameters(ip);
 	deleteDifxParameters(cp);
 
-	for(c = 0; c < D->nConfig; c++)
+	for(c = 0; c < D->nConfig; ++c)
 	{
 		DifxConfigMapAntennas(D->config + c, D->datastream);
 	}
@@ -3182,16 +3182,19 @@ int DifxInputGetScanIdByJobId(const DifxInput *D, double mjd, int jobId)
 /* return -1 if no suitable scan found */
 int DifxInputGetScanIdByAntennaId(const DifxInput *D, double mjd, int antennaId)
 {
-	int d, configId, scanId, dsId, antId=0;
-	const DifxConfig *config;
+	int scanId;
 
 	if(!D)
 	{
 		return -1;
 	}
 
-	for(scanId = 0; scanId < D->nScan; scanId++)
+	for(scanId = 0; scanId < D->nScan; +scanId)
 	{
+		const DifxConfig *config;
+		int d, configId;
+		int antId = -1;
+
 		if(mjd > D->scan[scanId].mjdEnd  ||
 		   mjd < D->scan[scanId].mjdStart)
 		{
@@ -3205,11 +3208,12 @@ int DifxInputGetScanIdByAntennaId(const DifxInput *D, double mjd, int antennaId)
 		config = D->config + configId;
 
 		/* here "d" is "datastream # within conf.", not "antenanId" */
-		for(d = 0; d < config->nDatastream; d++)
+		for(d = 0; d < config->nDatastream; ++d)
 		{
+			int dsId;
+
 			dsId = config->datastreamId[d];
-			if(dsId < 0 || 
-			   dsId >= D->nDatastream)
+			if(dsId < 0 || dsId >= D->nDatastream)
 			{
 				continue;
 			}
@@ -3221,7 +3225,7 @@ int DifxInputGetScanIdByAntennaId(const DifxInput *D, double mjd, int antennaId)
 				break;
 			}
 		}
-		if(d == config->nDatastream)
+		if(d == config->nDatastream || antId < 0)
 		{
 			/* end of loop reached without finding a match */
 			continue;
@@ -3256,8 +3260,7 @@ int DifxInputGetPointingSourceIdByJobId(const DifxInput *D, double mjd, int jobI
 	}
 }
 
-int DifxInputGetPointingSourceIdByAntennaId(const DifxInput *D, double mjd, 
-	int antennaId)
+int DifxInputGetPointingSourceIdByAntennaId(const DifxInput *D, double mjd, int antennaId)
 {
 	int scanId;
 
@@ -3275,18 +3278,16 @@ int DifxInputGetPointingSourceIdByAntennaId(const DifxInput *D, double mjd,
 /* return 0-based index of antName, or -1 if not in array */
 int DifxInputGetAntennaId(const DifxInput *D, const char *antennaName)
 {
-	int a;
+	if(D)
+	{
+		int a;
 	
-	if(!D)
-	{
-		return -1;
-	}
-
-	for(a = 0; a < D->nAntenna; a++)
-	{
-		if(strcmp(D->antenna[a].name, antennaName) == 0)
+		for(a = 0; a < D->nAntenna; ++a)
 		{
-			return a;
+			if(strcmp(D->antenna[a].name, antennaName) == 0)
+			{
+				return a;
+			}
 		}
 	}
 
@@ -3307,9 +3308,7 @@ static int AntennaCompare(const void *a1, const void *a2)
  * damage */ 
 int DifxInputSortAntennas(DifxInput *D, int verbose)
 {
-	DifxJob *job;
-	DifxPolyModel ***p2;
-	int i, n, a, a2, d, f, s, j;
+	int i, n, a, d, f, s, j;
 	int *old2new;
 	int nChanged = 0;
 
@@ -3325,7 +3324,7 @@ int DifxInputSortAntennas(DifxInput *D, int verbose)
 	old2new = newRemap(D->nAntenna);
 	
 	/* sort antenna table and derive reorder table */
-	for(a = 0; a < D->nAntenna; a++)
+	for(a = 0; a < D->nAntenna; ++a)
 	{
 		D->antenna[a].origId = a;
 	}
@@ -3333,7 +3332,7 @@ int DifxInputSortAntennas(DifxInput *D, int verbose)
 	if(verbose > 0)
 	{
 		printf("Pre-sort :");
-		for(a = 0; a < D->nAntenna; a++)
+		for(a = 0; a < D->nAntenna; ++a)
 		{
 			printf(" %s", D->antenna[a].name);
 		}
@@ -3343,7 +3342,7 @@ int DifxInputSortAntennas(DifxInput *D, int verbose)
 	if(verbose > 0)
 	{
 		printf("Post-sort:");
-		for(a = 0; a < D->nAntenna; a++)
+		for(a = 0; a < D->nAntenna; ++a)
 		{
 			printf(" %s", D->antenna[a].name);
 		}
@@ -3356,7 +3355,7 @@ int DifxInputSortAntennas(DifxInput *D, int verbose)
 		old2new[D->antenna[a].origId] = a;
 		if(D->antenna[a].origId != a)
 		{
-			nChanged++;
+			++nChanged;
 		}
 	}
 	if(nChanged == 0)
@@ -3369,17 +3368,19 @@ int DifxInputSortAntennas(DifxInput *D, int verbose)
 	/* OK -- antennas have been reordered.  Fix the tables. */
 
 	/* 1. Datastream table */
-	for(d = 0; d < D->nDatastream; d++)
+	for(d = 0; d < D->nDatastream; ++d)
 	{
 		D->datastream[d].antennaId = old2new[D->datastream[d].antennaId];
 	}
 
 	/* 2. Flags & antenna id remaps */
-	for(j = 0; j < D->nJob; j++)
+	for(j = 0; j < D->nJob; ++j)
 	{
+		DifxJob *job;
+		
 		job = D->job + j;
 
-		for(f = 0; f < job->nFlag; f++)
+		for(f = 0; f < job->nFlag; ++f)
 		{
 			job->flag[f].antennaId = old2new[job->flag[f].antennaId];
 		}
@@ -3387,7 +3388,7 @@ int DifxInputSortAntennas(DifxInput *D, int verbose)
 		if(job->antennaIdRemap)
 		{
 			n = sizeofRemap(job->antennaIdRemap);
-			for(i = 0; i < n; i++)
+			for(i = 0; i < n; ++i)
 			{
 				job->antennaIdRemap[i] = old2new[job->antennaIdRemap[i]];
 			}
@@ -3404,17 +3405,19 @@ int DifxInputSortAntennas(DifxInput *D, int verbose)
 		/* correct the polynomial model table */
 		if(D->scan[s].im)
 		{
+			DifxPolyModel ***p2;
+			
 			p2 = (DifxPolyModel ***)calloc(D->nAntenna*(D->scan[s].nPhaseCentres+1), sizeof(DifxPolyModel *));
 			for(a = 0; a < D->scan[s].nAntenna; a++)
 			{
 				if(D->scan[s].im[a])
 				{
+					int a2;
+
 					a2 = old2new[a];
 					if(a2 < 0 || a2 >= D->nAntenna)
 					{
-						fprintf(stderr, 
-							"Developer error: DifxInputSortAntennas: old2new[%d] = %d; nAnt = %d\n",
-                                                	a, a2, D->scan[s].nAntenna);
+						fprintf(stderr, "Developer error: DifxInputSortAntennas: old2new[%d] = %d; nAnt = %d\n", a, a2, D->scan[s].nAntenna);
 
 	                                        continue;
 					}
@@ -3439,8 +3442,6 @@ int DifxInputSortAntennas(DifxInput *D, int verbose)
 /* note -- this will not work if different integration times are requested within one job */
 int DifxInputSimFXCORR(DifxInput *D)
 {
-	DifxConfig *dc;
-	const DifxDatastream *dd;
 	double quantum;
 	double tInt, sec, mjdStart;
 	double sec_old, deltasec;
@@ -3464,8 +3465,10 @@ int DifxInputSimFXCORR(DifxInput *D)
 		return -2;
 	}
 
-	for(d = 0; d < D->nDatastream; d++)
+	for(d = 0; d < D->nDatastream; ++d)
 	{
+		const DifxDatastream *dd;
+
 		dd = D->datastream + d;
 		if(dd->quantBits < 1)
 		{
@@ -3501,8 +3504,10 @@ int DifxInputSimFXCORR(DifxInput *D)
 	/* the quantum of integration time */
 	quantum = 0.131072*speedUp;
 
-	for(c = 0; c < D->nConfig; c++)
+	for(c = 0; c < D->nConfig; ++c)
 	{
+		DifxConfig *dc;
+		
 		dc = D->config + c;
 		n = (int)(dc->tInt/quantum + 0.5);
 		dc->tInt = n * quantum;
@@ -3522,7 +3527,7 @@ int DifxInputSimFXCORR(DifxInput *D)
 	mjdStart = mjd + sec/86400.0;
 	if(mjdStart < D->mjdStart)
 	{
-		n++;
+		++n;
 		mjdStart += tInt/86400.0;
 		deltasec += tInt;
 	}
@@ -3530,7 +3535,7 @@ int DifxInputSimFXCORR(DifxInput *D)
 	/* Work around problem that occurs if frac sec >= 0.5 */
 	while(86400.0*mjdStart - (long long)(86400.0*mjdStart) > 0.49999)
 	{
-		n++;
+		++n;
 		mjdStart += tInt/86400.0;
 		deltasec += tInt;
 	}
@@ -3542,8 +3547,7 @@ int DifxInputSimFXCORR(DifxInput *D)
 	D->job[0].jobStart = D->mjdStart;
 	D->fracSecondStartTime = 1;
 
-	printf("FXCORR Simulator: delayed job start time by %8.6f seconds\n",
-                deltasec);
+	printf("FXCORR Simulator: delayed job start time by %8.6f seconds\n", deltasec);
 
 	/* Now that clocks have their own reference times, this doesn't matter */
 
@@ -3552,17 +3556,21 @@ int DifxInputSimFXCORR(DifxInput *D)
 
 int DifxInputGetMaxTones(const DifxInput *D)
 {
-	int f, d, fd;
+	int d;
 	int maxTones = 0;
 
 	for(d = 0; d < D->nDatastream; d++)
 	{
+		int f;
+
 		if(D->datastream[d].phaseCalIntervalMHz == 0)
 		{
 			continue;
 		}
 		for(f = 0; f < D->datastream[d].nRecFreq; f++)
 		{
+			int fd;
+
 			fd = D->datastream[d].recFreqId[f];
 			if (fd < 0)
 			{
@@ -3574,13 +3582,13 @@ int DifxInputGetMaxTones(const DifxInput *D)
 			}
 		}
 	}
+
 	return maxTones;
 }
 
 int DifxInputGetDatastreamId(const DifxInput *D, int jobId, int antId)
 {
-	int s, d;
-	int configId, dsId;
+	int s;
 
 	if(!D)
 	{
@@ -3600,6 +3608,9 @@ int DifxInputGetDatastreamId(const DifxInput *D, int jobId, int antId)
 	/* This is a bit convoluted.  Loop over scans attempting to connect a configId to the jobId, ... */
 	for(s = 0; s < D->nScan; s++)
 	{
+		int configId;
+		int d;
+
 		if(D->scan[s].jobId != jobId)
 		{
 			continue;
@@ -3611,6 +3622,8 @@ int DifxInputGetDatastreamId(const DifxInput *D, int jobId, int antId)
 		}
 		for(d = 0; d < D->config[configId].nDatastream; d++)
 		{
+			int dsId;
+
 			dsId = D->config[configId].datastreamId[d];
 			if(dsId < 0 || dsId >= D->nDatastream)
 			{
@@ -3690,7 +3703,7 @@ int DifxInputGetDatastreamIdsByAntennaId(int *dsIds, const DifxInput *D, int ant
 		return 0;
 	}
 
-	for(d = 0; d < D->nDatastream; d++)
+	for(d = 0; d < D->nDatastream; ++d)
 	{
 		if(D->datastream[d].antennaId == antennaId)
 		{
@@ -3698,7 +3711,7 @@ int DifxInputGetDatastreamIdsByAntennaId(int *dsIds, const DifxInput *D, int ant
 			{
 				dsIds[n] = d;
 			}
-			n++;
+			++n;
 		}
 	}
 
@@ -3709,7 +3722,7 @@ int DifxInputGetOriginalDatastreamIdsByAntennaIdJobId(int *dsIds, const DifxInpu
 {
 	int n;
 	int m = 0;
-	int i, j;
+	int i;
 
 	if(D->nJob <= jobId)
 	{
@@ -3724,14 +3737,16 @@ int DifxInputGetOriginalDatastreamIdsByAntennaIdJobId(int *dsIds, const DifxInpu
 	}
 
 	/* There may be fewer datastreans here */
-	for(i = 0; i < n; i++)
+	for(i = 0; i < n; ++i)
 	{
-		for(j = 0; D->job[jobId].datastreamIdRemap[j] >= 0; j++)
+		int j;
+
+		for(j = 0; D->job[jobId].datastreamIdRemap[j] >= 0; ++j)
 		{
 			if(D->job[jobId].datastreamIdRemap[j] == dsIds[i])
 			{
 				dsIds[m] = j;
-				m++;
+				++m;
 
 				break;
 			}
@@ -3739,4 +3754,27 @@ int DifxInputGetOriginalDatastreamIdsByAntennaIdJobId(int *dsIds, const DifxInpu
 	}
 
 	return m;
+}
+
+int DifxInputGetMaxPhaseCentres(const DifxInput *D)
+{
+	int maxPhaseCentres = 0;
+
+	if(D)
+	{
+		int s;
+
+		for(s = 0; s < D->nScan; ++s)
+		{
+			int n;
+			
+			n = D->scan[s].nPhaseCentres;
+			if(n > maxPhaseCentres)
+			{
+				maxPhaseCentres = n;
+			}
+		}
+	}
+	
+	return maxPhaseCentres;
 }
