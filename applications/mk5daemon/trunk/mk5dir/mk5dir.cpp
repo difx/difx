@@ -354,7 +354,7 @@ static int mk5dir(char *vsn, int force, int fast, enum DMS_Mode dmsMode, int sta
 			v = getDirCore(&module, mk5status.vsnA, &mk5status, force, fast, dmsMode, startScan, stopScan);
 			if(v >= 0)
 			{
-				mv = snprintf(modules, "%s", modulesLength, mk5status.vsnA);
+				mv = snprintf(modules, modulesLength, "%s", mk5status.vsnA);
 			}
 		}
 		
@@ -368,11 +368,11 @@ static int mk5dir(char *vsn, int force, int fast, enum DMS_Mode dmsMode, int sta
 			{
 				if(modules[0])
 				{
-					mv = snprintf(modules, "%s and %s", modulesLength, mk5status.vsnA, mk5status.vsnB);
+					mv = snprintf(modules, modulesLength, "%s and %s", mk5status.vsnA, mk5status.vsnB);
 				}
 				else
 				{
-					mv = snprintf(modules, "%s", modulesLength, mk5status.vsnB);
+					mv = snprintf(modules, modulesLength, "%s", mk5status.vsnB);
 				}
 			}
 		}
@@ -394,7 +394,7 @@ static int mk5dir(char *vsn, int force, int fast, enum DMS_Mode dmsMode, int sta
 			v = getDirCore(&module, vsn, &mk5status, force, fast, dmsMode, startScan, stopScan);
 			if(v >= 0)
 			{
-				mv = snprintf(modules, "%s", modulesLength, vsn);
+				mv = snprintf(modules, modulesLength, "%s", vsn);
 			}
 		}
 	}

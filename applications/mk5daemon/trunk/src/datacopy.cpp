@@ -116,7 +116,7 @@ void Mk5Daemon_startMk5Copy(Mk5Daemon *D, const char *options)
 		D->process = PROCESS_MK5COPY;
 
 		P->D = D;
-		snprintf(P->options, "%s", OPTIONS_LENGTH, options);
+		snprintf(P->options, OPTIONS_LENGTH, "%s", options);
 		pthread_create(&D->processThread, 0, &mk5cpRun, P);
 	}
 

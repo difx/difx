@@ -124,4 +124,6 @@ vsn_SOURCES = \
 	mark5dir.cpp \
 	mark5dir.h \
 	mark5directorystructs.h \
+	nraobaddrives.cpp \
+	nraobaddrives.h \
 	vsn.cpp

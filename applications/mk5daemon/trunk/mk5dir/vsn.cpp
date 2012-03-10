@@ -40,12 +40,15 @@
 #include "config.h"
 #include "mark5dir.h"
 #include "watchdog.h"
+#include "nraobaddrives.h"
 #include "../config.h"
 
 const char program[] = "vsn";
 const char author[]  = "Walter Brisken";
-const char version[] = "0.5";
+const char version[] = "0.6";
 const char verdate[] = "20120310";
+
+
 
 enum WriteProtectAction
 {
@@ -412,20 +415,40 @@ int setvsn(int bank, char *newVSN, int newStatus, enum WriteProtectAction wpa, i
 	}
 	for(d = 0; d < 8; ++d)
 	{
+		const char *badDriveMessage = "";
+
 		if(drive[d].model[0] == 0)
 		{
 			continue;
 		}
+
+		if(isDriveBad(drive[d].serial))
+		{
+			badDriveMessage = "* THIS DRIVE IS ON THE BAD DRIVE LIST";
+		}
+		else if(inBadDriveRange(drive[d].serial))
+		{
+			badDriveMessage = "* In bad drive serial number range";
+		}
+
 		printf("Disk %d info : %s : %s : %s : %d : %s\n",
 			d, drive[d].model, drive[d].serial, drive[d].rev,
 			roundModuleSize(drive[d].capacity),
 			drive[d].failed ? "FAILED" : "OK");
+		if(badDriveMessage[0])
+		{
+			printf("  %s\n", badDriveMessage);
+		}
 		if(out)
 		{
 			fprintf(out, "Disk %d info : %s : %s : %s : %d : %s\n\n",
 				d, drive[d].model, drive[d].serial, drive[d].rev,
 				roundModuleSize(drive[d].capacity),
 				drive[d].failed ? "FAILED" : "OK");
+			if(badDriveMessage[0])
+			{
+				fprintf(out, "  %s\n", badDriveMessage);
+			}
 		}
 
 #ifdef XLR_MAX_SMARTVALUES

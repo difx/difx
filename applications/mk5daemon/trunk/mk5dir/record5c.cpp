@@ -802,7 +802,7 @@ static int record(int bank, const char *label, unsigned int packetSize, int payl
 	WATCHDOGTEST( XLRSelectChannel(xlrDevice, 0) );
 	WATCHDOGTEST( XLRBindOutputChannel(xlrDevice, 0) );
 
-	snprintf(labelCopy, "%s", XLR_LABEL_LENGTH, label);
+	snprintf(labelCopy, XLR_LABEL_LENGTH, "%s", label);
 	parts[0] = labelCopy;
 	nPart = 1;
 	for(int i = 0; labelCopy[i] && nPart < 3; ++i)

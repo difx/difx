@@ -452,7 +452,7 @@ int Mark5Scan::writeDirEntry(FILE *out) const
 		v = snprintf(errorStr, ErrorStrLen, " Error='%s'", ScanFormatErrorName[-format]);
 		if(v >= ErrorStrLen)
 		{
-			cerr << "Developer error: Mark5Scan::writeDirEntry: ErrorStrLen too small (" << ErrorStrLen " < " (v+1) << ") for error number " << -format << ";truncating." << endl;
+			cerr << "Developer error: Mark5Scan::writeDirEntry: ErrorStrLen too small (" << ErrorStrLen << " < " << (v+1) << ") for error number " << -format << ";truncating." << endl;
 		}
 	}
 	else
@@ -974,7 +974,7 @@ char *scans2newdir(const std::vector<Mark5Scan> &scans, const char *vsn)
 	header->version = 1;
 	header->status = MODULE_STATUS_PLAYED;
 	strcpy(header->vsn, vsn);
-	v = snprintf(header->vsn, "%s", MODULE_EXTENDED_VSN_LENGTH, vsn);
+	v = snprintf(header->vsn, MODULE_EXTENDED_VSN_LENGTH, "%s", vsn);
 	if(v >= MODULE_EXTENDED_VSN_LENGTH)
 	{
 		cerr << "Developer warning: scans2newdir: vsn length too long (" << v << " > " << (MODULE_EXTENDED_VSN_LENGTH - 1) << endl;
@@ -2022,9 +2022,11 @@ int setDiscModuleStateLegacy(SSHANDLE xlrDevice, int newState)
 
 	if(strcmp(label+rs+1, moduleStatusName(newState)) != 0)
 	{
+		int v;
+
 		cout << "Directory version 0: setting module DMS to " << moduleStatusName(newState) << endl;
 		label[rs] = RecordSeparator;	// ASCII "RS" == "Record separator"
-		v = snprintf(label+rs+1, "%s", XLR_LABEL_LENGTH-rs-1, moduleStatusName(newState));
+		v = snprintf(label+rs+1, XLR_LABEL_LENGTH-rs-1, "%s", moduleStatusName(newState));
 		if(v >= XLR_LABEL_LENGTH-rs-1)
 		{
 			cerr << "Developer error: setDiscModuleStateLegacy: label length overflow" << endl;

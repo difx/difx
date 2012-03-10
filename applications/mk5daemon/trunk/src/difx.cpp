@@ -246,8 +246,7 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 	/* Check to make sure the input file exists */
 	if(access(S->inputFilename, R_OK) != 0)
 	{
-		snprintf(message, DIFX_MESSAGE_LENGTH, 
-			"Input file %s not found; cannot correlate it!", S->inputFilename);
+		snprintf(message, DIFX_MESSAGE_LENGTH, "Input file %s not found; cannot correlate it!", S->inputFilename);
 		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
 		
 		return;

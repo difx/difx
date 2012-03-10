@@ -59,7 +59,7 @@ extern int watchdogXLRErrorCode;
 	if(WATCHDOG_PRINT) printf("WD[[ %s ]]\n", #statement); \
 	pthread_mutex_lock(&watchdogLock); \
 	watchdogTime = time(0); \
-	snprintf(watchdogStatement, "%s", WATCHDOG_STATEMENT_LENGTH, #statement); \
+	snprintf(watchdogStatement, WATCHDOG_STATEMENT_LENGTH, "%s", #statement); \
 	if(watchdogVerbose > 1) printf("Executing (at time %d): %s\n", (int)(watchdogTime), watchdogStatement); \
 	pthread_mutex_unlock(&watchdogLock); \
 	statement; \
@@ -77,7 +77,7 @@ extern int watchdogXLRErrorCode;
 	XLR_RETURN_CODE watchdogRC; \
 	pthread_mutex_lock(&watchdogLock); \
 	watchdogTime = time(0); \
-	snprintf(watchdogStatement, "%s", WATCHDOG_STATEMENT_LENGTH, #statement); \
+	snprintf(watchdogStatement, WATCHDOG_STATEMENT_LENGTH, "%s", #statement); \
 	if(watchdogVerbose > 1) printf("Executing (at time %d): xlrRC = %s\n", (int)(watchdogTime), watchdogStatement); \
 	pthread_mutex_unlock(&watchdogLock); \
 	watchdogRC = (statement); \
