@@ -257,6 +257,8 @@ int pystream::writeComment(const string &commentString)
 {
 	*this << "# " << commentString << endl;
 	*this << endl;
+
+	return 0;
 }
 
 int pystream::writeRecorderInit(const VexData *V)
@@ -565,12 +567,20 @@ static int roundChanNum(double fchan, char sb)
 int pystream::writeChannelSet5A(const VexSetup *setup, int modeNum)
 {
 	const int MaxChannels = 16;
-	const int bwMHz = 32;				// MHz;
-	const double bwDBE = bwMHz*1.0e6;		// Hz
-	bool channelMask[2][MaxChannels] = {false};	// first index: IF, second index: freq chan
-	int channelCount[2];				// index: IF
-							// 0 = 1040-1008 MHz, 1 = 1008-976 MHz, ..., 15 = 560-528 MHz
+	const int bwMHz = 32;			// MHz;
+	const double bwDBE = bwMHz*1.0e6;	// Hz
+	bool channelMask[2][MaxChannels];	// first index: IF, second index: freq chan
+	int channelCount[2];			// index: IF
+						// 0 = 1040-1008 MHz, 1 = 1008-976 MHz, ..., 15 = 560-528 MHz
 	vector<unsigned int> implicitConversions;
+
+	for(int i = 0; i < 2; ++i)
+	{
+		for(int c = 0; c < MaxChannels; ++c)
+		{
+			channelMask[i][c] = false;
+		}
+	}
 
 	// First go through to find required DBE channels
 	for(unsigned int i = 0; i < setup->channels.size(); ++i)
