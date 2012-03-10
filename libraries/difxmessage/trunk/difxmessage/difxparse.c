@@ -1,4 +1,21 @@
-
+/***************************************************************************
+ *   Copyright (C) 2007-2012 by Walter Brisken                             *
+ *                                                                         *
+ *   This program is free software; you can redistribute it and/or modify  *
+ *   it under the terms of the GNU General Public License as published by  *
+ *   the Free Software Foundation; either version 3 of the License, or     *
+ *   (at your option) any later version.                                   *
+ *                                                                         *
+ *   This program is distributed in the hope that it will be useful,       *
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+ *   GNU General Public License for more details.                          *
+ *                                                                         *
+ *   You should have received a copy of the GNU General Public License     *
+ *   along with this program; if not, write to the                         *
+ *   Free Software Foundation, Inc.,                                       *
+ *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ ***************************************************************************/
 //===========================================================================
 // SVN properties (DO NOT CHANGE)
 //
@@ -19,13 +36,12 @@
 int addNodes(char nodes[][DIFX_MESSAGE_PARAM_LENGTH], int maxNodes, int *n, const char *nodeList)
 {
 	char *str, *p;
-	char name[DIFX_MESSAGE_LENGTH];
 	int nnew=0;
-	int i, l;
+	int i;
 
 	str = strdup(nodeList);
 
-	for(i = 0; str[i]; i++)
+	for(i = 0; str[i]; ++i)
 	{
 		if(str[i] == ',' || 
 		   str[i] == '(' || str[i] == ')' ||
@@ -39,6 +55,9 @@ int addNodes(char nodes[][DIFX_MESSAGE_PARAM_LENGTH], int maxNodes, int *n, cons
 	p = str;
 	for(;;)
 	{
+		char name[DIFX_MESSAGE_LENGTH];
+		int l;
+
 		if(*n >= maxNodes)
 		{
 			break;
@@ -52,8 +71,8 @@ int addNodes(char nodes[][DIFX_MESSAGE_PARAM_LENGTH], int maxNodes, int *n, cons
 		p += l;
 		strncpy(nodes[*n], name, DIFX_MESSAGE_PARAM_LENGTH-1);
 		nodes[*n][DIFX_MESSAGE_PARAM_LENGTH-1] = 0;
-		(*n)++;
-		nnew++;
+		++(*n);
+		++nnew;
 	}
 
 	free(str);
@@ -1031,7 +1050,7 @@ void difxMessageGenericPrint(const DifxMessageGeneric *G)
 		printf("    destination = %s\n", G->body.fileTransfer.destination);
 		printf("    direction = %s\n", G->body.fileTransfer.direction);
 		printf("    address = %s\n", G->body.fileTransfer.address);
-		printf("    port = %s\n", G->body.fileTransfer.port);
+		printf("    port = %d\n", G->body.fileTransfer.port);
 		break;
 	case DIFX_MESSAGE_FILEOPERATION:
 		printf("    path = %s\n", G->body.fileOperation.path);
