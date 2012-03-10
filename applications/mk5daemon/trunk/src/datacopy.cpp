@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2010 by Walter Brisken                             *
+ *   Copyright (C) 2009-2012 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -33,10 +33,12 @@
 #include <unistd.h>
 #include "mk5daemon.h"
 
+#define OPTIONS_LENGTH	512
+
 struct mk5cpParams
 {
 	Mk5Daemon *D;
-	char options[512];
+	char options[OPTIONS_LENGTH];
 };
 
 static void *mk5cpRun(void *ptr)
@@ -48,8 +50,7 @@ static void *mk5cpRun(void *ptr)
 
 	Logger_logData(params->D->log, "mk5cp starting\n");
 
-	snprintf(command, MAX_COMMAND_SIZE, "su -l %s -c 'mk5cp %s'", params->D->userID,
-		params->options);
+	snprintf(command, MAX_COMMAND_SIZE, "su -l %s -c 'mk5cp %s'", params->D->userID, params->options);
 	Mk5Daemon_system(params->D, command, 1);
 
 	Logger_logData(params->D->log, "mk5cp done\n");
@@ -115,7 +116,7 @@ void Mk5Daemon_startMk5Copy(Mk5Daemon *D, const char *options)
 		D->process = PROCESS_MK5COPY;
 
 		P->D = D;
-		strcpy(P->options, options);
+		snprintf(P->options, "%s", OPTIONS_LENGTH, options);
 		pthread_create(&D->processThread, 0, &mk5cpRun, P);
 	}
 

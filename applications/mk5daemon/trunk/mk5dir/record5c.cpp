@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2011 by Walter Brisken                                  *
+ *   Copyright (C) 2012 by Walter Brisken                                  *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -58,7 +58,7 @@
 const char program[] = "record5c";
 const char author[]  = "Walter Brisken";
 const char version[] = "0.3";
-const char verdate[] = "20111123";
+const char verdate[] = "20120310";
 
 const unsigned int psnMask[3] = { 0x01, 0x02, 0x04 };
 const unsigned int defaultPacketSize = 0;	/* 0x80000000 (+ 5008 for Mark5B) */
@@ -490,7 +490,7 @@ static int record(int bank, const char *label, unsigned int packetSize, int payl
 	struct Mark5DirectoryHeaderVer1 *dirHeader;
 	struct Mark5DirectoryScanHeaderVer1 *p;
 	struct Mark5DirectoryLegacyBodyVer1 *q;
-	char labelCopy[100];
+	char labelCopy[XLR_LABEL_LENGTH+1];
 	char *parts[3];
 	int nPart = 0;
 	struct timeval tv;
@@ -802,7 +802,7 @@ static int record(int bank, const char *label, unsigned int packetSize, int payl
 	WATCHDOGTEST( XLRSelectChannel(xlrDevice, 0) );
 	WATCHDOGTEST( XLRBindOutputChannel(xlrDevice, 0) );
 
-	strcpy(labelCopy, label);
+	snprintf(labelCopy, "%s", XLR_LABEL_LENGTH, label);
 	parts[0] = labelCopy;
 	nPart = 1;
 	for(int i = 0; labelCopy[i] && nPart < 3; ++i)

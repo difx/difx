@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2011 by Walter Brisken                             *
+ *   Copyright (C) 2008-2012 by Walter Brisken & John Spitzak              *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -163,7 +163,7 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 	char workingDir[DIFX_MESSAGE_FILENAME_LENGTH];
 	char destdir[DIFX_MESSAGE_FILENAME_LENGTH];
 	char message[DIFX_MESSAGE_LENGTH];
-    char difxPath[DIFX_MESSAGE_FILENAME_LENGTH];
+	char difxPath[DIFX_MESSAGE_FILENAME_LENGTH];
   	char restartOption[RestartOptionLength];
 	char command[MAX_COMMAND_SIZE];
 	char chmodCommand[MAX_COMMAND_SIZE];
@@ -373,7 +373,7 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 		return;
 	}
 
-	sprintf(filename, "%s.difx", filebase);
+	snprintf(filename, DIFX_MESSAGE_FILENAME_LENGTH, "%s.difx", filebase);
 	if(access(filename, F_OK) == 0)
 	{
 		outputExists = 1;
@@ -414,7 +414,7 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 
 
 	/* write machines file */
-	sprintf(filename, "%s.machines", filebase);
+	snprintf(filename, DIFX_MESSAGE_FILENAME_LENGTH, "%s.machines", filebase);
 	if ( S->function == DIFX_START_FUNCTION_USNO )
 	    out = fopen( "/tmp/machinefile", "w" );
 	else
@@ -478,7 +478,7 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 
 
 	/* write threads file */
-	sprintf(filename, "%s.threads", filebase);
+	snprintf(filename, DIFX_MESSAGE_FILENAME_LENGTH, "%s.threads", filebase);
 	
 	if ( S->function == DIFX_START_FUNCTION_USNO )
 	    out = fopen( "/tmp/threadfile", "w" );
@@ -790,7 +790,7 @@ void Mk5Daemon_stopMpifxcorr_USNO( Mk5Daemon *D, const DifxMessageGeneric *G ) {
 		return;
 	}
 	
-	sprintf( message, "Stop request associated with %s - stop does not work at this time", S->inputFilename );
+	snprintf( message, DIFX_MESSAGE_LENGTH, "Stop request associated with %s - stop does not work at this time", S->inputFilename );
 	difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_ERROR );
 		
 }
@@ -831,7 +831,7 @@ void Mk5Daemon_fileTransfer( Mk5Daemon *D, const DifxMessageGeneric *G ) {
 
 	if ( !strcmp( S->direction, "to DiFX" ) ) {
 	
-    	//sprintf( message, "Request for transfer of file from %s on remote host to DiFX host - filesize is unknown", S->origin );
+    	//snprintf( message, DIFX_MESSAGE_LENGTH, "Request for transfer of file from %s on remote host to DiFX host - filesize is unknown", S->origin );
         //difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_WARNING );
     	//  Fork a process to do the file transfer via a TCP client.
     	childPid = fork();
@@ -849,7 +849,7 @@ void Mk5Daemon_fileTransfer( Mk5Daemon *D, const DifxMessageGeneric *G ) {
       	    
       	    //  Assuming the socket connection was successful, write the file contents to the socket.
       	    if ( filesize == 0 ) {
-            	//sprintf( message, "Client address: %s   port: %d - connection looks good", S->address, S->port );
+            	//snprintf( message, DIFX_MESSAGE_LENGTH, "Client address: %s   port: %d - connection looks good", S->address, S->port );
             	//difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_WARNING );
             	//  Get the number of bytes we expect.
             	int n = 0;
@@ -870,8 +870,9 @@ void Mk5Daemon_fileTransfer( Mk5Daemon *D, const DifxMessageGeneric *G ) {
             	int count = 0;
             	short blockSize = 1024;
             	char blockData[blockSize];
-            	char tmpFile[100];
-            	sprintf( tmpFile, "/tmp/filetransfer_%d", S->port );
+		const int tmpFileSize = 100;
+            	char tmpFile[tmpFileSize];
+            	snprintf( tmpFile, tmpFileSize, "/tmp/filetransfer_%d", S->port );
             	int fd = open( tmpFile, O_WRONLY | O_CREAT );
             	while ( count < filesize && ret != -1 ) {
             	    int readn = blockSize;
@@ -888,7 +889,7 @@ void Mk5Daemon_fileTransfer( Mk5Daemon *D, const DifxMessageGeneric *G ) {
             	       
       	    }
       	    else {
-            	sprintf( message, "Client address: %s   port: %d - transfer FAILED", S->address, S->port );
+            	snprintf( message, DIFX_MESSAGE_LENGTH, "Client address: %s   port: %d - transfer FAILED", S->address, S->port );
             	difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_ERROR );
       	    }
     
@@ -899,7 +900,7 @@ void Mk5Daemon_fileTransfer( Mk5Daemon *D, const DifxMessageGeneric *G ) {
         	else {
         	    //  Check the existence of the destination directory
         	    char path[DIFX_MESSAGE_FILENAME_LENGTH];
-        	    sprintf( path, "%s", S->destination );
+        	    snprintf( path, DIFX_MESSAGE_FILENAME_LENGTH, "%s", S->destination );
         	    int i = strlen( path );
         	    while ( i > 0 && path[i] != '/' ) --i;
         	    path[i] = 0;
@@ -921,7 +922,7 @@ void Mk5Daemon_fileTransfer( Mk5Daemon *D, const DifxMessageGeneric *G ) {
     	            //  Check write permissions and uid for the difx user
     	            struct passwd *pwd = getpwnam( user );
     	            if ( pwd == NULL ) {
-    	                sprintf( message, "DiFX username %s is not valid", user );
+    	                snprintf( message, DIFX_MESSAGE_LENGTH, "DiFX username %s is not valid", user );
     	                difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_ERROR );
     	                filesize = -4;
     	            }
@@ -989,7 +990,7 @@ void Mk5Daemon_fileTransfer( Mk5Daemon *D, const DifxMessageGeneric *G ) {
 	            //  Check read permissions for the difx user (for which we need the uid)
 	            struct passwd *pwd = getpwnam( user );
 	            if ( pwd == NULL ) {
-	                sprintf( message, "DiFX username %s is not valid", user );
+	                snprintf( message, DIFX_MESSAGE_LENGTH, "DiFX username %s is not valid", user );
 	                difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_ERROR );
 	                filesize = -4;
 	            }
@@ -1005,7 +1006,7 @@ void Mk5Daemon_fileTransfer( Mk5Daemon *D, const DifxMessageGeneric *G ) {
 	            }
 	        }	    
 	    }
-    	//sprintf( message, "Request for transfer of file from %s on DiFX host to remote host - filesize is %d", S->origin, filesize );
+    	//snprintf( message, DIFX_MESSAGE_LENGTH, "Request for transfer of file from %s on DiFX host to remote host - filesize is %d", S->origin, filesize );
         //difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_WARNING );
     	
     	//  Use the DiFX user to copy the requested file to a temporary location (if there is anything to copy, that is...).
@@ -1036,7 +1037,7 @@ void Mk5Daemon_fileTransfer( Mk5Daemon *D, const DifxMessageGeneric *G ) {
       	    
       	    //  Assuming the socket connection was successful, write the file contents to the socket.
       	    if ( ret == 0 ) {
-            	//sprintf( message, "Client address: %s   port: %d - connection looks good", S->address, S->port );
+            	//snprintf( message, DIFX_MESSAGE_LENGTH, "Client address: %s   port: %d - connection looks good", S->address, S->port );
             	//difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_WARNING );
             	//  Send the total size first.
             	int n = htonl( filesize );            	
@@ -1045,8 +1046,9 @@ void Mk5Daemon_fileTransfer( Mk5Daemon *D, const DifxMessageGeneric *G ) {
             	    //  Then break the file up into "blocks" for sending.
             	    short blockSize = 1024;
             	    char blockData[blockSize];
-            	    char tmpFile[100];
-            	    sprintf( tmpFile, "/tmp/filetransfer_%d", S->port );
+		    const int tmpFileSize = 100;
+            	    char tmpFile[tmpFileSize];
+            	    snprintf( tmpFile, tmpFileSize, "/tmp/filetransfer_%d", S->port );
             	    int fd = open( tmpFile, O_RDONLY );
             	    while ( filesize > 0 ) {
             	        short readsize = read( fd, blockData, blockSize );
@@ -1059,7 +1061,7 @@ void Mk5Daemon_fileTransfer( Mk5Daemon *D, const DifxMessageGeneric *G ) {
             	}
       	    }
       	    else {
-            	sprintf( message, "Client address: %s   port: %d - connection FAILED", S->address, S->port );
+            	snprintf( message, DIFX_MESSAGE_LENGTH, "Client address: %s   port: %d - connection FAILED", S->address, S->port );
             	difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_ERROR );
       	    }
     
@@ -1127,17 +1129,17 @@ void Mk5Daemon_fileOperation( Mk5Daemon *D, const DifxMessageGeneric *G ) {
   		while ( fgets( message, DIFX_MESSAGE_LENGTH, fp ) != NULL )
   		    difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_INFO );
   		pclose( fp );	    
-  		sprintf( message, "%s performed!", command );
+  		snprintf( message, DIFX_MESSAGE_LENGTH, "%s performed!", command );
 	}
 	else if ( !strcmp( S->operation, "rmdir" ) ) {
-    	sprintf( message, "rmdir %s", S->path );
+    	snprintf( message, DIFX_MESSAGE_LENGTH, "rmdir %s", S->path );
 	}
 	else if ( !strcmp( S->operation, "rm" ) ) {
-    	sprintf( message, "rm %s", S->path );
+    	snprintf( message, DIFX_MESSAGE_LENGTH, "rm %s", S->path );
 	}
 	else if ( !strcmp( S->operation, "mv" ) ) {
 	    if ( S->arg[0] != '/' ) {
-    		sprintf( message, "Destination of DifxFileOperation \"mv\" request (%s) must be a complete path", S->arg );
+    		snprintf( message, DIFX_MESSAGE_LENGTH, "Destination of DifxFileOperation \"mv\" request (%s) must be a complete path", S->arg );
     		difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_ERROR );
     		strcat( message, "\n" );
     		Logger_logData( D->log, message );
@@ -1152,7 +1154,7 @@ void Mk5Daemon_fileOperation( Mk5Daemon *D, const DifxMessageGeneric *G ) {
   		while ( fgets( message, DIFX_MESSAGE_LENGTH, fp ) != NULL )
   		    difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_INFO );
   		pclose( fp );	    
-  		sprintf( message, "%s performed!", command );
+  		snprintf( message, DIFX_MESSAGE_LENGTH, "%s performed!", command );
 	}
 	//  The "ls" operation actually returns data, so it must be provided with a TCP port and address.
 	else if ( !strcmp( S->operation, "ls" ) ) {
@@ -1173,7 +1175,7 @@ void Mk5Daemon_fileOperation( Mk5Daemon *D, const DifxMessageGeneric *G ) {
         
             //  Make sure the connection worked....
             if ( ret == 0 ) {
-                //sprintf( message, "Client address: %s   port: %d - connection looks good", S->address, S->port );
+                //snprintf( message, DIFX_MESSAGE_LENGTH, "Client address: %s   port: %d - connection looks good", S->address, S->port );
                 //difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_WARNING );
 
         		snprintf( command, MAX_COMMAND_SIZE, "ssh -x %s@%s 'ls %s %s'", 
@@ -1204,7 +1206,7 @@ void Mk5Daemon_fileOperation( Mk5Daemon *D, const DifxMessageGeneric *G ) {
 		
     		//  Error with the socket...
     		else {
-                sprintf( message, "Client address: %s   port: %d - connection FAILED", S->address, S->port );
+                snprintf( message, DIFX_MESSAGE_LENGTH, "Client address: %s   port: %d - connection FAILED", S->address, S->port );
               	difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_ERROR );
             }
             close( sockfd );
@@ -1214,7 +1216,7 @@ void Mk5Daemon_fileOperation( Mk5Daemon *D, const DifxMessageGeneric *G ) {
     	
 	}
 	else {
-		sprintf( message, "Illegal DifxFileOperation request received - operation \"%s\" is not permitted", S->operation );
+		snprintf( message, DIFX_MESSAGE_LENGTH, "Illegal DifxFileOperation request received - operation \"%s\" is not permitted", S->operation );
 		difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_ERROR );
 		strcat( message, "\n" );
 		Logger_logData( D->log, message );
@@ -1244,7 +1246,7 @@ void Mk5Daemon_vex2DifxRun( Mk5Daemon *D, const DifxMessageGeneric *G ) {
 	
 	S = &G->body.vex2DifxRun;
 	
-	//sprintf( message, "vex2difx command....%s, %s, %s, %s, %s",
+	//snprintf( message, DIFX_MESSAGE_LENGTH, "vex2difx command....%s, %s, %s, %s, %s",
     //         S->user,
     //         S->headNode,
     //         S->difxPath,
@@ -1334,7 +1336,7 @@ void Mk5Daemon_vex2DifxRun( Mk5Daemon *D, const DifxMessageGeneric *G ) {
         
         //  Hopefully the connection worked....
         if ( ret == 0 ) {
-            //sprintf( message, "Client address: %s   port: %d - connection looks good", S->address, S->port );
+            //snprintf( message, DIFX_MESSAGE_LENGTH, "Client address: %s   port: %d - connection looks good", S->address, S->port );
             //difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_WARNING );
 		    //  Produce a list of the files in the target directory and send that back to the GUI.
 		    //  Include only those files that have been modified/created since the beginning of this
@@ -1344,12 +1346,12 @@ void Mk5Daemon_vex2DifxRun( Mk5Daemon *D, const DifxMessageGeneric *G ) {
             struct dirent **namelist;
             int n = scandir( S->passPath, &namelist, 0, alphasort );
             if ( n < 0 ) {
-                sprintf( message, "%s", strerror( errno ) );
+                snprintf( message, DIFX_MESSAGE_LENGTH, "%s", strerror( errno ) );
                 difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_ERROR );
             } else {
                 while ( n-- ) {
                 	char fullPath[DIFX_MESSAGE_FILENAME_LENGTH];
-                	sprintf( fullPath, "%s/%s", S->passPath, namelist[n]->d_name );
+                	snprintf( fullPath, DIFX_MESSAGE_FILENAME_LENGTH, "%s/%s", S->passPath, namelist[n]->d_name );
                 	struct stat buf;
                 	stat( fullPath, &buf );
                 	//  Compare the last modification time of each file in the pass directory
@@ -1372,7 +1374,7 @@ void Mk5Daemon_vex2DifxRun( Mk5Daemon *D, const DifxMessageGeneric *G ) {
 		
 		//  Error with the socket...
 		else {
-            sprintf( message, "Client address: %s   port: %d - connection FAILED", S->address, S->port );
+            snprintf( message, DIFX_MESSAGE_LENGTH, "Client address: %s   port: %d - connection FAILED", S->address, S->port );
           	difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_ERROR );
         }
         close( sockfd );

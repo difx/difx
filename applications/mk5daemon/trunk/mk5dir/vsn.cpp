@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2010-2011 by Walter Brisken                             *
+ *   Copyright (C) 2010-2012 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -45,7 +45,7 @@
 const char program[] = "vsn";
 const char author[]  = "Walter Brisken";
 const char version[] = "0.5";
-const char verdate[] = "20111123";
+const char verdate[] = "20120310";
 
 enum WriteProtectAction
 {
@@ -264,23 +264,28 @@ int setvsn(int bank, char *newVSN, int newStatus, enum WriteProtectAction wpa, i
 
 	WATCHDOGTEST( XLRGetLabel(xlrDevice, label) );
 	label[XLR_LABEL_LENGTH] = 0;
-	strcpy(oldLabel, label);
+	strncpy(oldLabel, label, XLR_LABEL_LENGTH+1);
 
 #ifdef XLR_MAX_SMARTVALUES
 	if(getSMART)
 	{
-		char SMARTfile[20];
+		const int SMARTFileLength = 48;
+		char SMARTfile[SMARTFileLength];
 
 		if(strlen(newVSN) == 8)
 		{
-			sprintf(SMARTfile, "%s.smart", newVSN);
+			v = snprintf(SMARTfile, SMARTFileLength, "%s.smart", newVSN);
 		}
 		else
 		{
 			char tmp[10];
 			strncpy(tmp, label, 8);
 			tmp[8] = 0;
-			sprintf(SMARTfile, "%s.smart", tmp);
+			v = snprintf(SMARTfile, SMARTFileLength, "%s.smart", tmp);
+		}
+		if(v >= SMARTFileLength)
+		{
+			fprintf(stderr, "Developer error: setvsn: SMARTFileLength is too small (%d < %d)\n", SMARTFileLength, v+1);
 		}
 		out = fopen(SMARTfile, "w");
 		if(!out)
@@ -789,7 +794,7 @@ int main(int argc, char **argv)
 
 				return EXIT_FAILURE;
 			}
-			strcpy(newVSN, argv[a]);
+			strncpy(newVSN, argv[a], 8);
 			newVSN[8] = 0;
 			for(i = 0; i < 8; ++i)
 			{

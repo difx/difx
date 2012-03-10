@@ -452,7 +452,7 @@ int Mark5Scan::writeDirEntry(FILE *out) const
 		v = snprintf(errorStr, ErrorStrLen, " Error='%s'", ScanFormatErrorName[-format]);
 		if(v >= ErrorStrLen)
 		{
-			fprintf(stderr, "Developer error: ErrorStrLen too small in function Mark5Scan::writeDirEntry");
+			cerr << "Developer error: Mark5Scan::writeDirEntry: ErrorStrLen too small (" << ErrorStrLen " < " (v+1) << ") for error number " << -format << ";truncating." << endl;
 		}
 	}
 	else
@@ -962,6 +962,7 @@ char *scans2newdir(const std::vector<Mark5Scan> &scans, const char *vsn)
 	int totalScans = scans.size();
 	int dirLength = totalScans*128 + 128;
 	char *dirData;
+	int v;
 
 	dirData = (char *)calloc(dirLength, 1);
 	if(!dirData)
@@ -973,6 +974,11 @@ char *scans2newdir(const std::vector<Mark5Scan> &scans, const char *vsn)
 	header->version = 1;
 	header->status = MODULE_STATUS_PLAYED;
 	strcpy(header->vsn, vsn);
+	v = snprintf(header->vsn, "%s", MODULE_EXTENDED_VSN_LENGTH, vsn);
+	if(v >= MODULE_EXTENDED_VSN_LENGTH)
+	{
+		cerr << "Developer warning: scans2newdir: vsn length too long (" << v << " > " << (MODULE_EXTENDED_VSN_LENGTH - 1) << endl;
+	}
 
 	for(int i = 0; i < totalScans; ++i)
 	{
@@ -1712,7 +1718,7 @@ int setModuleLabel(SSHANDLE xlrDevice, const char *vsn,  int newStatus, int dirV
 	
 	if(v > XLR_LABEL_LENGTH)
 	{
-		fprintf(stderr, "Error: label too long! Truncating!\n");
+		cerr << "Developer error: setModuleLabel: label too long (" << v << " > " << (XLR_LABEL_LENGTH-1) << "); truncating!" << endl;
 	}
 
 	WATCHDOGTEST( XLRSetLabel(xlrDevice, label, strlen(label)) );
@@ -2018,7 +2024,11 @@ int setDiscModuleStateLegacy(SSHANDLE xlrDevice, int newState)
 	{
 		cout << "Directory version 0: setting module DMS to " << moduleStatusName(newState) << endl;
 		label[rs] = RecordSeparator;	// ASCII "RS" == "Record separator"
-		strcpy(label+rs+1, moduleStatusName(newState));
+		v = snprintf(label+rs+1, "%s", XLR_LABEL_LENGTH-rs-1, moduleStatusName(newState));
+		if(v >= XLR_LABEL_LENGTH-rs-1)
+		{
+			cerr << "Developer error: setDiscModuleStateLegacy: label length overflow" << endl;
+		}
 		if(wp == 1)
 		{
 			WATCHDOGTEST( XLRClearWriteProtect(xlrDevice) );

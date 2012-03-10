@@ -410,7 +410,7 @@ static int filetoCore(const char *filename, int bank, const char *label, unsigne
 	struct Mark5DirectoryHeaderVer1 *dirHeader;
 	struct Mark5DirectoryScanHeaderVer1 *p;
 	struct Mark5DirectoryLegacyBodyVer1 *q;
-	char labelCopy[100];
+	char labelCopy[XLR_LABEL_LENGTH];
 	char *parts[3];
 	int nPart = 0;
 	struct timeval tv;
@@ -550,7 +550,11 @@ static int filetoCore(const char *filename, int bank, const char *label, unsigne
 	}
 
 	mk5status->scanNumber = len/128 + 1;
-	snprintf(mk5status->scanName, DIFX_MESSAGE_MAX_SCANNAME_LEN, "%s", label);
+	v = snprintf(mk5status->scanName, DIFX_MESSAGE_MAX_SCANNAME_LEN, "%s", label);
+	if(v >= DIFX_MESSAGE_MAX_SCANNAME_LEN)
+	{
+		fprintf(stderr, "Developer Warning: filetoCore: scanName has length %d which is longer than allowed (%d)\n", v, DIFX_MESSAGE_MAX_SCANNAME_LEN - 1);
+	}
 
 	for(int b = 0; b < XLR_MAXBINS; ++b)
 	{
@@ -707,7 +711,11 @@ static int filetoCore(const char *filename, int bank, const char *label, unsigne
 	in = 0;
 
 
-	strcpy(labelCopy, label);
+	v = snprintf(labelCopy, XLR_LABEL_LENGTH, "%s", label);
+	if(v >= XLR_LABEL_LENGTH)
+	{
+		fprintf(stderr, "Developer Warning: filetoCore: label has length %d which is longer than allowed (%d)\n", v, XLR_LABEL_LENGTH - 1);
+	}
 	parts[0] = labelCopy;
 	nPart = 1;
 	for(int i = 0; labelCopy[i] && nPart < 3; ++i)

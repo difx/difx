@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2011 by Walter Brisken                             *
+ *   Copyright (C) 2008-2012 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -43,7 +43,7 @@
 const char program[] = "mk5dir";
 const char author[]  = "Walter Brisken";
 const char version[] = "0.12";
-const char verdate[] = "20111123";
+const char verdate[] = "20120310";
 
 enum DMS_Mode
 {
@@ -308,7 +308,9 @@ static int mk5dir(char *vsn, int force, int fast, enum DMS_Mode dmsMode, int sta
 	Mark5Module module;
 	DifxMessageMk5Status mk5status;
 	char message[DIFX_MESSAGE_LENGTH];
-	char modules[100] = "";
+	const int modulesLength = 100;
+	char modules[modulesLength] = "";
+	int mv = 0;
 	int v;
 
 	memset(&mk5status, 0, sizeof(mk5status));
@@ -352,7 +354,7 @@ static int mk5dir(char *vsn, int force, int fast, enum DMS_Mode dmsMode, int sta
 			v = getDirCore(&module, mk5status.vsnA, &mk5status, force, fast, dmsMode, startScan, stopScan);
 			if(v >= 0)
 			{
-				strcpy(modules, mk5status.vsnA);
+				mv = snprintf(modules, "%s", modulesLength, mk5status.vsnA);
 			}
 		}
 		
@@ -366,15 +368,15 @@ static int mk5dir(char *vsn, int force, int fast, enum DMS_Mode dmsMode, int sta
 			{
 				if(modules[0])
 				{
-					strcat(modules, " and ");
-					strcat(modules, mk5status.vsnB);
+					mv = snprintf(modules, "%s and %s", modulesLength, mk5status.vsnA, mk5status.vsnB);
 				}
 				else
 				{
-					strcpy(modules, mk5status.vsnB);
+					mv = snprintf(modules, "%s", modulesLength, mk5status.vsnB);
 				}
 			}
 		}
+
 	}
 	else
 	{
@@ -392,9 +394,14 @@ static int mk5dir(char *vsn, int force, int fast, enum DMS_Mode dmsMode, int sta
 			v = getDirCore(&module, vsn, &mk5status, force, fast, dmsMode, startScan, stopScan);
 			if(v >= 0)
 			{
-				strcpy(modules, vsn);
+				mv = snprintf(modules, "%s", modulesLength, vsn);
 			}
 		}
+	}
+
+	if(mv > modulesLength)
+	{
+		fprintf(stderr, "Developer error: mk5dir: modulesLength is too small (%d < %d)\n", modulesLength, mv+1);
 	}
 
 	if(die)

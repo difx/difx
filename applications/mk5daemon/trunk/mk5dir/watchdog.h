@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2010 by Walter Brisken                                  *
+ *   Copyright (C) 2010-2012 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -44,9 +44,11 @@ extern "C" {
 #define WATCHDOG_PRINT 0
 #endif
 
+#define WATCHDOG_STATEMENT_LENGTH	256
+
 extern time_t watchdogTime;
 extern int watchdogVerbose;
-extern char watchdogStatement[256];
+extern char watchdogStatement[WATCHDOG_STATEMENT_LENGTH];
 extern pthread_mutex_t watchdogLock;
 extern char watchdogXLRError[XLR_ERROR_LENGTH+1];
 extern int watchdogXLRErrorCode;
@@ -57,7 +59,7 @@ extern int watchdogXLRErrorCode;
 	if(WATCHDOG_PRINT) printf("WD[[ %s ]]\n", #statement); \
 	pthread_mutex_lock(&watchdogLock); \
 	watchdogTime = time(0); \
-	strcpy(watchdogStatement, #statement); \
+	snprintf(watchdogStatement, "%s", WATCHDOG_STATEMENT_LENGTH, #statement); \
 	if(watchdogVerbose > 1) printf("Executing (at time %d): %s\n", (int)(watchdogTime), watchdogStatement); \
 	pthread_mutex_unlock(&watchdogLock); \
 	statement; \
@@ -75,7 +77,7 @@ extern int watchdogXLRErrorCode;
 	XLR_RETURN_CODE watchdogRC; \
 	pthread_mutex_lock(&watchdogLock); \
 	watchdogTime = time(0); \
-	strcpy(watchdogStatement, #statement); \
+	snprintf(watchdogStatement, "%s", WATCHDOG_STATEMENT_LENGTH, #statement); \
 	if(watchdogVerbose > 1) printf("Executing (at time %d): xlrRC = %s\n", (int)(watchdogTime), watchdogStatement); \
 	pthread_mutex_unlock(&watchdogLock); \
 	watchdogRC = (statement); \
