@@ -114,8 +114,9 @@ def run(maxlevel):
 					print asctime(), info
 			except socket.timeout:
 				pass
-			except xml.parsers.expat.ExpatError:
+			except expat.ExpatError:
 				print asctime(), '*** Unparsable message received ***'
+				print message
 	except KeyboardInterrupt:
 		pass
 

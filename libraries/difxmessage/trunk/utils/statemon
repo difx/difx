@@ -100,9 +100,9 @@ class Parser:
 		if self.state == 'Running':
 			for i in range(0, self.maxant+1):
 				if not self.weight.has_key(i) or self.weight[i] <= 0.0001:
-					wtstr = wtstr + " %d:0    " % i
+					wtstr = wtstr + "  .000"
 				else:
-					wtstr = wtstr + " %d:%5.3f" % (i, self.weight[i])
+					wtstr = wtstr + " %5.3f" % (self.weight[i])
 		if self.state == 'Running' and self.mjdStart > 50000.0 and self.mjdStop > self.mjdStart:
 			statestr = '%5.2f%%' % ( 100.0*(self.mjd - self.mjdStart)/(self.mjdStop - self.mjdStart) )
 		else:
@@ -144,8 +144,10 @@ def run(maxlevel):
 					print asctime(), info
 			except socket.timeout:
 				pass
-			except xml.parsers.expat.ExpatError:
+			except expat.ExpatError:
 				print asctime(), '*** Unparsable message received ***'
+				print message
+				exit(0)
 	except KeyboardInterrupt:
 		pass
 

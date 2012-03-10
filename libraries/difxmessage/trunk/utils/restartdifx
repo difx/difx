@@ -15,13 +15,14 @@ from os import popen, system
 from os.path import isfile
 from sys import argv, exit
 from string import split
+from glob import glob
 
 program = 'restartdifx'
-version = '0.1'
-verdate = '20111229'
+version = '0.3'
+verdate = '20120214'
 author  = 'Walter Brisken <wbrisken@nrao.edu>'
 
-def usage()
+def usage():
 	print '\n%s ver %s   %s  %s\n' % (program, version, verdate, author)
 	print 'Usage: %s logFile' % argv[0]
 	print '\nWhere logFile is a .difxlog file'
@@ -58,6 +59,36 @@ def getRestartSeconds(logFile, verbose):
 	
 	return float(split(p[0])[-1]) + 4
 
+def file2time(fileName):
+	f = split(fileName, '/')[-1]	# strip directory
+	g = split(f, '.')[0]	# strip source/bin suffixes
+	h = split(g, '_')
+	if len(h) != 3:
+		print 'Developer error: filename %s is not parsable.  n = %d, not 3' % (fileName, len(h))
+		print 'h = ', h
+		exit(0)
+	mjd = int(h[1])
+	sec = int(h[2])
+
+	return mjd*86400 + sec
+
+def getLastRestartSeconds(dataDir, verbose):
+	dataFiles = glob(dataDir+'/DIFX_*')
+	l = len(dataFiles)
+	if l < 2:
+		return 0
+	dataFiles.sort()
+	t1 = file2time(dataFiles[0])
+	t2 = file2time(dataFiles[-1])
+
+	dt = t2 - t1
+
+	if verbose > 0:
+		print 'This is restart # %d for this job' % l
+		print 'The last restart was %d seconds after original job start time' % dt
+
+	return dt
+
 verbose = 1
 
 if len(argv) != 2:
@@ -74,8 +105,11 @@ if not suffix in ['input', 'difx', 'difxlog', 'calc']:
 fileBase = fileName[:-len(suffix)]
 logFile = fileBase + 'difxlog'
 inputFile = fileBase + 'input'
+dataDir = fileBase + 'difx'
 
 rs = getRestartSeconds(logFile, verbose)
+
+rs = rs + getLastRestartSeconds(dataDir, verbose)
 
 if verbose > 0:
 	print 'RestartSeconds = %f' % rs

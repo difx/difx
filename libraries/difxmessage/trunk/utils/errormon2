@@ -197,8 +197,10 @@ def run():
 				log(alertLevels[level], info)
 		except socket.timeout:
 		    pass
-		except xml.parsers.expat.ExpatError:
+		except expat.ExpatError:
 		    print asctime(), '*** Unparsable message received ***'
+		    print message
+		    exit(0)
     except KeyboardInterrupt:
 	    pass
 
