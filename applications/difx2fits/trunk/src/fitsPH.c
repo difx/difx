@@ -819,7 +819,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	float timeInt, dumpTimeInt;
 	int cableScanId, nextCableScanId, 
 	    lineCableScanId, lineCableSourceId, lineCableConfigId;
-	int newScanId, newSourceId, newConfigId = -1;
+	int newScanId = -1, newSourceId = -1, newConfigId = -1;
 	double cableCal, nextCableCal, cableCalOut, lineCableCal;
 	double cableTime, nextCableTime, lineCableTime;
 	float cablePeriod, nextCablePeriod, lineCablePeriod;

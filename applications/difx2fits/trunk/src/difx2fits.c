@@ -106,6 +106,9 @@ static void usage(const char *pgm)
 	fprintf(stderr, "  --keep-order\n");
 	fprintf(stderr, "  -k                  Keep antenna order\n");
 	fprintf(stderr, "\n");
+	fprintf(stderr, "  --ac-always\n");
+	fprintf(stderr, "  -a                  Always write autocorrelations\n");
+	fprintf(stderr, "\n");
 #ifdef HAVE_FFTW
 	fprintf(stderr, "  --sniff-all\n");
 	fprintf(stderr, "  -S                  Sniff all bins and centers\n");
@@ -257,12 +260,17 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 				deleteCommandLineOptions(opts);
 				return 0;
 			}
-			else if (strcmp(argv[i], "--keep-order") == 0 ||
-				 strcmp(argv[i], "-k") == 0)
+			else if(strcmp(argv[i], "--keep-order") == 0 ||
+				strcmp(argv[i], "-k") == 0)
 			{
 				opts->keepOrder = 1;
 			}
-			else if (strcmp(argv[i], "--override-version") == 0)
+			else if(strcmp(argv[i], "--ac-always") == 0 ||
+				strcmp(argv[i], "-a") == 0)
+			{
+				opts->alwaysWriteAutocorr = 1;
+			}
+			else if(strcmp(argv[i], "--override-version") == 0)
 			{
 				opts->overrideVersion = 1;
 			}

@@ -51,6 +51,7 @@ struct CommandLineOptions
 	int verbose;
 	int sniffAllPhaseCentres;
 	int sniffAllBins;
+	int alwaysWriteAutocorr;
 	/* some overrides */
 	int specAvg;
 	int doalldifx;
