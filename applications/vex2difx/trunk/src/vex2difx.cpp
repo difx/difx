@@ -208,10 +208,9 @@ ostream& operator << (ostream& os, const MediaChange& x)
 
 static int nGap(const list<MediaChange> &m, double mjd)
 {
-	list<MediaChange>::const_iterator it;
 	int n = 0;
 
-	for(it = m.begin(); it != m.end(); ++it)
+	for(list<MediaChange>::const_iterator it = m.begin(); it != m.end(); ++it)
 	{
 		if(mjd >= it->mjdStart && mjd <= it->mjdStop)
 		{
@@ -224,9 +223,6 @@ static int nGap(const list<MediaChange> &m, double mjd)
 
 static void genJobs(vector<VexJob> &Js, const VexJobGroup &JG, VexData *V, const CorrParams *P, int verbose)
 {
-	list<VexEvent>::const_iterator e;
-	list<double>::const_iterator t;
-	list<MediaChange>::iterator c;
 	map<string,double> recordStop;
 	map<double,int> usage;
 	map<double,int> clockBreaks;
@@ -235,18 +231,14 @@ static void genJobs(vector<VexJob> &Js, const VexJobGroup &JG, VexData *V, const
 	list<double> times;
 	list<double> breaks;
 	double mjdLast = -1.0;
-	int score, scoreBest;
 	double mjdBest = 0.0;
 	double start;
 	int nAnt;
 	int nLoop = 0;
-	int nEvent;
 	VexInterval scanRange;
 
-	nEvent = JG.events.size();
-
 	// first initialize recordStop and usage
-	for(e = JG.events.begin(); e != JG.events.end(); ++e)
+	for(list<VexEvent>::const_iterator e = JG.events.begin(); e != JG.events.end(); ++e)
 	{
 		if(e->eventType == VexEvent::RECORD_START)
 		{
@@ -269,7 +261,7 @@ static void genJobs(vector<VexJob> &Js, const VexJobGroup &JG, VexData *V, const
 	scanRange.logicalAnd(*P);	// Shrink time range to v2d start / stop interval
 
 	// populate changes, times, and usage
-	for(e = JG.events.begin(); e != JG.events.end(); ++e)
+	for(list<VexEvent>::const_iterator e = JG.events.begin(); e != JG.events.end(); ++e)
 	{
 		if(mjdLast > 0.0 && e->mjd > mjdLast)
 		{
@@ -334,6 +326,9 @@ static void genJobs(vector<VexJob> &Js, const VexJobGroup &JG, VexData *V, const
 	// now go through and set breakpoints
 	while(!changes.empty() || nClockBreaks > 0)
 	{
+		int scoreBest;
+		int nEvent = JG.events.size();
+
 		++nLoop;
 		if(nLoop > nEvent+3) // There is clearly a problem converging!
 		{
@@ -361,9 +356,9 @@ static void genJobs(vector<VexJob> &Js, const VexJobGroup &JG, VexData *V, const
 		// look for break with highest score
 		// Try as hard as possible to minimize number of breaks
 		scoreBest = -1;
-		for(t = times.begin(); t != times.end(); ++t)
+		for(list<double>::const_iterator t = times.begin(); t != times.end(); ++t)
 		{
-			score = nGap(changes, *t) * (nAnt-usage[*t]+1) + 100*clockBreaks[*t];
+			int score = nGap(changes, *t) * (nAnt-usage[*t]+1) + 100*clockBreaks[*t];
 			if(score > scoreBest)
 			{
 				scoreBest = score;
@@ -376,7 +371,7 @@ static void genJobs(vector<VexJob> &Js, const VexJobGroup &JG, VexData *V, const
 		clockBreaks[mjdBest] = 0;
 
 		// find modules that change in the new gap
-		for(c = changes.begin(); c != changes.end();)
+		for(list<MediaChange>::iterator c = changes.begin(); c != changes.end();)
 		{
 			if(c->mjdStart <= mjdBest && c->mjdStop >= mjdBest)
 			{
@@ -395,7 +390,7 @@ static void genJobs(vector<VexJob> &Js, const VexJobGroup &JG, VexData *V, const
 
 	// form jobs
 	start = JG.mjdStart;
-	for(t = breaks.begin(); t != breaks.end(); ++t)
+	for(list<double>::const_iterator t = breaks.begin(); t != breaks.end(); ++t)
 	{
 		VexInterval jobTimeRange(start, *t);
 		if(jobTimeRange.duration() > P->minLength)
@@ -543,9 +538,8 @@ static DifxJob *makeDifxJob(string directory, const VexJob& J, int nAntenna, con
 
 static DifxAntenna *makeDifxAntennas(const VexJob& J, const VexData *V, const CorrParams *P, int *n, vector<string>& antList)
 {
-	const VexAntenna *ant;
 	DifxAntenna *A;
-	double clockrefmjd, mjd;
+	double mjd;
 	map<string,string>::const_iterator a;
 	int i;
 
@@ -559,7 +553,10 @@ static DifxAntenna *makeDifxAntennas(const VexJob& J, const VexData *V, const Co
 
 	for(i = 0, a = J.vsns.begin(); a != J.vsns.end(); ++i, ++a)
 	{
-		ant = V->getAntenna(a->first);
+		double clockrefmjd;
+		
+		const VexAntenna *ant = V->getAntenna(a->first);
+		
 		snprintf(A[i].name, DIFXIO_NAME_LENGTH, "%s", a->first.c_str());
 		A[i].X = ant->x + ant->dx*(mjd-ant->posEpoch)*86400.0;
 		A[i].Y = ant->y + ant->dy*(mjd-ant->posEpoch)*86400.0;
@@ -622,9 +619,7 @@ static DifxAntenna *makeDifxAntennas(const VexJob& J, const VexData *V, const Co
 static DifxDatastream *makeDifxDatastreams(const VexJob& J, const VexData *V, const CorrParams *P, int nSet)
 {
 	DifxDatastream *datastreams;
-	DifxDatastream *dd;
 	map<string,string>::const_iterator a;
-	const VexAntenna *ant;
 	int nDatastream;
 	
 	nDatastream = J.vsns.size() * nSet;
@@ -632,12 +627,12 @@ static DifxDatastream *makeDifxDatastreams(const VexJob& J, const VexData *V, co
 	datastreams = newDifxDatastreamArray(nDatastream);
 	for(int i = 0; i < nDatastream; ++i)
 	{
-		dd = datastreams + i;
+		DifxDatastream *dd = datastreams + i;
 
 		dd->antennaId = i % J.vsns.size();
 		dd->tSys = 0.0;
 
-		ant = V->getAntenna(a->first);
+		const VexAntenna *ant = V->getAntenna(a->first);
 		dd->dataSource = ant->dataSource;
 
 		const AntennaSetup *antennaSetup = P->getAntennaSetup(ant->name);
@@ -978,22 +973,20 @@ static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, vector<vector<
 
 static void populateRuleTable(DifxInput *D, const CorrParams *P)
 {
-	list<string>::const_iterator s;
-
 	D->nRule = P->rules.size();
 	D->rule = newDifxRuleArray(D->nRule);
 	for(int i = 0; i < D->nRule; ++i)
 	{
 		if(!P->rules[i].scanName.empty())
 		{
-			for(s = (P->rules[i].scanName).begin(); s != (P->rules[i].scanName).end(); ++s)
+			for(list<string>::const_iterator s = (P->rules[i].scanName).begin(); s != (P->rules[i].scanName).end(); ++s)
 			{
 				DifxStringArrayadd(&D->rule[i].scanId, s->c_str(), 0);
 			}
 		}
 		if(!P->rules[i].sourceName.empty())
 		{
-			for(s = (P->rules[i].sourceName).begin(); s != (P->rules[i].sourceName).end(); ++s)
+			for(list<string>::const_iterator s = (P->rules[i].sourceName).begin(); s != (P->rules[i].sourceName).end(); ++s)
 			{
 				DifxStringArrayadd(&D->rule[i].sourceName, s->c_str(), 0);
 			}
@@ -1030,15 +1023,14 @@ static void populateRuleTable(DifxInput *D, const CorrParams *P)
 
 static void populateFreqTable(DifxInput *D, const vector<freq>& freqs, const vector<vector<int> > &toneSets)
 {
-	static int firstChanBWWarning=1;
-	DifxFreq *df;
-	double chanBW;
-
 	D->nFreq = freqs.size();
 	D->freq = newDifxFreqArray(D->nFreq);
+
 	for(int f = 0; f < D->nFreq; ++f)
 	{
-		df = D->freq + f;
+		static int firstChanBWWarning=1;
+		DifxFreq *df = D->freq + f;
+		double chanBW;
 
 		df->freq = freqs[f].fq/1.0e6;
 		df->bw   = freqs[f].bw/1.0e6;

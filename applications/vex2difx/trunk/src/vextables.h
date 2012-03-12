@@ -150,8 +150,7 @@ public:
 class VexSubband		// Mode-specific frequency details for all antennas
 {
 public:
-	VexSubband(double f=0.0, double b=0.0, char s=' ', char p=' ', string name="") : 
-		freq(f), bandwidth(b), sideBand(s), pol(p) {}
+	VexSubband(double f=0.0, double b=0.0, char s=' ', char p=' ', string name="") : freq(f), bandwidth(b), sideBand(s), pol(p) {}
 
 	double freq;		// (Hz)
 	double bandwidth;	// (Hz)
@@ -410,7 +409,7 @@ public:
 	void setExper(const string &name, const VexInterval &experTimeRange);
 };
 
-bool operator<(const VexEvent &a, const VexEvent &b);
+bool operator < (const VexEvent &a, const VexEvent &b);
 ostream& operator << (ostream &os, const VexInterval &x);
 ostream& operator << (ostream &os, const VexSource &x);
 ostream& operator << (ostream &os, const VexScan &x);

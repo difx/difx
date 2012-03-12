@@ -191,7 +191,7 @@ def plotTsys(tsysFile, plotFile, obsCode, stationTimes, verbose):
 	if nPartial > 0:
 		print ''
 		print 'NOTE: %d stations only had partial Tsys for the experiment plotted.' % nPartial
-		print 'Some of the data may not have been transfered to Socorro yet.'
+		print 'Some of the data may not have been transferred to Socorro yet.'
 		print 'Rerunning this plotting program several minutes after the experiment'
 		print 'may yield more complete results.'
 		print ''
