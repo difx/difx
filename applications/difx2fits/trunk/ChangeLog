@@ -11,6 +11,8 @@ Version 3.0.2
   - perhaps later the order of things should change and the _newer_ records get kept.
   - multiple SWITCHEDPOWER and PCAL files are handled in the same way
 * Make use of new difx_tcal infrastructure
+* Support DiFX job restarts
+* Better support for mixed 1 and 2 bit data: include antenna-based numbers in FITS and scale accordingly
 
 Version 3.0.1
 * Post 2.0.0

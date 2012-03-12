@@ -79,7 +79,7 @@ typedef struct
 	float *data;
 	int changed;
 	int first;
-	double scale;
+	double *scale;			/* scale factor, indexed by 0-based antennaId */
 	int flagTransition;
 	int keepAC;			/* 0 prevents auto-correlations from being preserved */
 	int keepXC;			/* 0 prevents cross-correlations from being preserved */
@@ -87,7 +87,7 @@ typedef struct
 	int phaseCentre;
 } DifxVis;
 
-DifxVis *newDifxVis(const DifxInput *D, int jobId, int pulsarBin, int phaseCentre);
+DifxVis *newDifxVis(const DifxInput *D, int jobId, int pulsarBin, int phaseCentre, double scaleFactor);
 void deleteDifxVis(DifxVis *dv);
 int DifxVisNextFile(DifxVis *dv);
 int DifxVisNewUVData(DifxVis *dv, int verbose);

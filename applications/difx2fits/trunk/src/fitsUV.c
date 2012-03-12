@@ -229,7 +229,65 @@ int DifxVisNextFile(DifxVis *dv)
 	return 0;
 }
 
-DifxVis *newDifxVis(const DifxInput *D, int jobId, int pulsarBin, int phaseCentre)
+static double *getDifxScaleFactor(const DifxInput *D, double s)
+{
+	double *scale;
+	int antennaId;
+	
+	scale = (double *)calloc(D->nAntenna, sizeof(double));
+	if(!scale)
+	{
+		fprintf(stderr, "\nError: getDifxScaleFactor: cannot allocate %d doubles for scale factor\n", D->nAntenna);
+
+		exit(EXIT_FAILURE);
+	}
+
+	for(antennaId = 0; antennaId < D->nAntenna; ++antennaId)
+	{
+		/* Now all scale factors here are antenna-based voltage scalings -WFB 20120312 */
+
+		const int maxDatastreams = 8;
+		int dsIds[maxDatastreams];
+		int n;
+		int quantBits;
+
+		n = DifxInputGetDatastreamIdsByAntennaId(dsIds, D, antennaId, maxDatastreams);
+
+		if(n < 1)	/* should never happen */
+		{
+			quantBits = D->quantBits;	/* a fallback in case of oddness */
+		}
+		else
+		{
+			quantBits = D->datastream[dsIds[0]].quantBits;
+		}
+
+		/* An emperical fudge factor used to get scaling same as for VLBA hardware correlator */
+		scale[antennaId] = 2.1392;
+
+		if(quantBits == 2)
+		{
+			scale[antennaId] /= 3.3359;
+		}
+		// Add other options below here...
+
+		if(s > 0.0)
+		{
+			static int first = 1;
+
+			if(first)
+			{
+				first = 0;
+				printf("      Overriding scale factor %e with %e\n", scale[antennaId], s);
+			}
+			scale[antennaId] = s;
+		}
+	}
+
+	return scale;
+}
+
+DifxVis *newDifxVis(const DifxInput *D, int jobId, int pulsarBin, int phaseCentre, double scaleFactor)
 {
 	DifxVis *dv;
 	int configId;
@@ -262,7 +320,7 @@ DifxVis *newDifxVis(const DifxInput *D, int jobId, int pulsarBin, int phaseCentr
 	dv->sourceId = -1;
 	dv->scanId = -1;
 	dv->baseline = -1;
-	dv->scale = 1.0;
+	dv->scale = getDifxScaleFactor(D, scaleFactor);
 	dv->pulsarBin = pulsarBin;
 	dv->phaseCentre = phaseCentre;
 	dv->keepAC = 1;
@@ -391,6 +449,11 @@ void deleteDifxVis(DifxVis *dv)
 	{
 		free(dv->mjdLastRecord);
 		dv->mjdLastRecord = 0;
+	}
+	if(dv->scale)
+	{
+		free(dv->scale);
+		dv->scale = 0;
 	}
 	
 	free(dv);
@@ -713,19 +776,15 @@ int DifxVisNewUVData(DifxVis *dv, int verbose)
 				}
 				else if(n < 0)
 				{
-					fprintf(stderr, "Error: interferometer model index out of range: scanId=%d mjd=%12.6f\n",
-					scanId, mjd+iat);
+					fprintf(stderr, "Error: interferometer model index out of range: scanId=%d mjd=%12.6f\n", scanId, mjd+iat);
 				}
 				else
 				{
 					terms1 = im1->order + 1;
 					terms2 = im2->order + 1;
-					dv->U = evalPoly(im2[n].u, terms2, dt) 
-					       -evalPoly(im1[n].u, terms1, dt);
-					dv->V = evalPoly(im2[n].v, terms2, dt) 
-					       -evalPoly(im1[n].v, terms1, dt);
-					dv->W = evalPoly(im2[n].w, terms2, dt) 
-					       -evalPoly(im1[n].w, terms1, dt);
+					dv->U = evalPoly(im2[n].u, terms2, dt) - evalPoly(im1[n].u, terms1, dt);
+					dv->V = evalPoly(im2[n].v, terms2, dt) - evalPoly(im1[n].v, terms1, dt);
+					dv->W = evalPoly(im2[n].w, terms2, dt) - evalPoly(im1[n].w, terms1, dt);
 				}
 			}
 			else
@@ -955,30 +1014,6 @@ static int RecordIsFlagged(const DifxVis *dv)
 	return 0;
 }
 
-static double getDifxScaleFactor(const DifxInput *D, double s, int verbose)
-{
-	double scale;
-	
-	/* A fudge factor */
-	scale = 4.576;
-
-	if(D->quantBits == 2)
-	{
-		scale /= (3.3359*3.3359);
-	}
-
-	if(s > 0.0)
-	{
-		if(verbose > 0)
-		{
-			printf("      Overriding scale factor %e with %e\n", scale, s);
-		}
-		scale = s;
-	}
-
-	return scale;
-}
-
 static int storevis(DifxVis *dv)
 {
 	const DifxInput *D;
@@ -986,10 +1021,25 @@ static int storevis(DifxVis *dv)
 	int startChan;
 	int stopChan;
 	int i;
+	double scale;
 
 	if(dv->configId < 0)
 	{
 		return -1;
+	}
+
+	if(dv->scale)
+	{	
+		/* form baseline-based power scale factor from antenna-based voltage scale factors */
+		int a1, a2;
+
+		a1 = dv->baseline % 256 - 1;
+		a2 = dv->baseline / 256 - 1;
+		scale = dv->scale[a1]*dv->scale[a2];
+	}
+	else
+	{
+		scale = 1.0;
 	}
 	
 	D = dv->D;
@@ -998,39 +1048,35 @@ static int storevis(DifxVis *dv)
 	startChan = D->startChan;
 	stopChan = startChan + D->nOutChan*D->specAvg;
 
-	dv->weight[D->nPolar*dv->bandId + dv->polId] = 
-		dv->recweight;
+	dv->weight[D->nPolar*dv->bandId + dv->polId] = dv->recweight;
 	
 	for(i = startChan; i < stopChan; ++i)
 	{
 		int k;
+		int j;
 		int index;
 
 		if(isLSB)
 		{
-			int j;
-
 			j = stopChan - 1 - i;
-			index = ((dv->bandId*D->nOutChan + 
-				j/D->specAvg)*
-				D->nPolar+dv->polId)*dv->nComplex;
 		}
 		else
 		{
-			index = ((dv->bandId*D->nOutChan + 
-				(i-startChan)/D->specAvg)*
-				D->nPolar+dv->polId)*dv->nComplex;
+			j = i - startChan;
 		}
+		
+		index = ((dv->bandId*D->nOutChan + j/D->specAvg)*D->nPolar+dv->polId)*dv->nComplex;
+
 		for(k = 0; k < dv->nComplex; ++k)
 		{
 			/* swap phase/uvw for FITS-IDI conformance */
 			if(k % 3 == 1 && !isLSB)
 			{
-				dv->data[index+k] -= dv->scale*dv->spectrum[dv->nComplex*i+k];
+				dv->data[index+k] -= scale*dv->spectrum[dv->nComplex*i+k];
 			}
 			else
 			{
-				dv->data[index+k] += dv->scale*dv->spectrum[dv->nComplex*i+k];
+				dv->data[index+k] += scale*dv->spectrum[dv->nComplex*i+k];
 			}
 		}
 	}
@@ -1083,7 +1129,6 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fi
 	int nWritten = 0;
 	int nOld = 0;
 	double mjd, bestmjd;
-	double scale;
 	DifxVis **dvs;
 	DifxVis *dv;
 	JobMatrix *jobMatrix = 0;
@@ -1120,7 +1165,6 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fi
 	printf("\n");
 	/* allocate one DifxVis per job */
 
-	scale = getDifxScaleFactor(D, opts->scale, opts->verbose);
 
 	if( (opts->pulsarBin == 0 && opts->phaseCentre == 0) || opts->alwaysWriteAutocorr == 0)
 	{
@@ -1147,14 +1191,13 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fi
 	/* here allocate all the "normal" DifxVis objects */
 	for(jobId = 0; jobId < D->nJob; ++jobId)
 	{
-		dvs[jobId] = newDifxVis(D, jobId, opts->pulsarBin, opts->phaseCentre);
+		dvs[jobId] = newDifxVis(D, jobId, opts->pulsarBin, opts->phaseCentre, opts->scale);
 		if(!dvs[jobId])
 		{
 			fprintf(stderr, "Error allocating DifxVis[%d/%d]\n", jobId, nDifxVis);
 
 			return 0;
 		}
-		dvs[jobId]->scale = scale;
 		if(opts->pulsarBin > 0 || opts->phaseCentre > 0)
 		{
 			dvs[jobId]->keepAC = 0;	/* Really a no-op since these data don't come with ACs */
@@ -1167,14 +1210,13 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fi
 		/* here allocate special AC-only DifxVis objects */
 		for(jobId = 0; jobId < D->nJob; ++jobId)
 		{
-			dvs[jobId + D->nJob] = newDifxVis(D, jobId, 0, 0);
+			dvs[jobId + D->nJob] = newDifxVis(D, jobId, 0, 0, opts->scale);
 			if(!dvs[jobId + D->nJob])
 			{
 				fprintf(stderr, "Error allocating DifxVis[%d/%d]\n", jobId + D->nJob, nDifxVis);
 
 				return 0;
 			}
-			dvs[jobId + D->nJob]->scale = scale;
 			dvs[jobId + D->nJob]->keepXC = 0; /* this is for AC only */
 		}
 	}
@@ -1465,7 +1507,6 @@ DifxVis *dummy_newDifxVis(const DifxInput *D, int jobId, int pulsarBin, int phas
 	dv->sourceId = 0;
 	dv->scanId = 0;
 	dv->baseline = 0;
-	dv->scale = 1.0;
 
 	/* For now, the difx format only provides 1 weight for the entire
 	 * vis record, so we don't need weights per channel */
@@ -1536,7 +1577,6 @@ const DifxInput *dummy_DifxInput2FitsUV(const DifxInput *D,
 	int nRowBytes;
 	int nColumn;
 	int nWeight;
-	double scale;
 	DifxVis *dv;
 
 	/* define the columns in the UV data FITS Table */
@@ -1564,10 +1604,7 @@ const DifxInput *dummy_DifxInput2FitsUV(const DifxInput *D,
 
 	/* allocate one DifxVis per job */
 
-	scale = getDifxScaleFactor(D, opts->scale, opts->verbose);
-
 	dv = dummy_newDifxVis(D, j, opts->pulsarBin, opts->phaseCentre);
-	dv->scale = scale;
 	dv->sourceId = 0;
 	dv->scanId = 0;
 

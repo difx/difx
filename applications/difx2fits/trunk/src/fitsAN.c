@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2011 by Walter Brisken                             *
+ *   Copyright (C) 2008-2012 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -32,8 +32,7 @@
 #include "config.h"
 #include "difx2fits.h"
 
-const DifxInput *DifxInput2FitsAN(const DifxInput *D,
-	struct fits_keywords *p_fits_keys, struct fitsPrivate *out)
+const DifxInput *DifxInput2FitsAN(const DifxInput *D, struct fits_keywords *p_fits_keys, struct fitsPrivate *out)
 {
 	/*  define the antenna characteristic FITS table columns */
 	char bandFormFloat[8];
@@ -60,8 +59,8 @@ const DifxInput *DifxInput2FitsAN(const DifxInput *D,
 	char *fitsbuf;
 	double start, stop;
 	char *p_fitsbuf;
-	int a, b, c;
-	char antName[DIFXIO_NAME_LENGTH];
+	int bandId;
+	int configId;
 	double time;
 	float timeInt;
 	char polTypeA;
@@ -70,9 +69,8 @@ const DifxInput *DifxInput2FitsAN(const DifxInput *D,
 	char polTypeB;
 	float polAB[array_MAX_BANDS];
 	float polCalB[array_MAX_BANDS];
-	int32_t nLevel;
 	/* 1-based indices for FITS file */
-	int32_t antId1, arrayId1, freqId1;
+	int32_t arrayId1;
 
 	if(D == 0)
 	{
@@ -104,32 +102,53 @@ const DifxInput *DifxInput2FitsAN(const DifxInput *D,
 	stop  = D->mjdStop  - (int)D->mjdStart; 
 
 	arrayId1 = 1;
-	freqId1 = 0;
-	nLevel = 1 << (D->quantBits);
 	polTypeA = 'R';
 	polTypeB = 'L';
 	time = 0.5 * (stop + start);
 	timeInt = stop - start;
-	for(b = 0; b < nBand; b++)
+	for(bandId = 0; bandId < nBand; ++bandId)
 	{
-		polAA[b] = 0.0;
-		polCalA[b] = 0.0;
-		polAB[b] = 0.0;
-		polCalB[b] = 0.0;
+		polAA[bandId] = 0.0;
+		polCalA[bandId] = 0.0;
+		polAB[bandId] = 0.0;
+		polCalB[bandId] = 0.0;
 	}
 
-	for(c = 0; c < D->nConfig; c++)
+	for(configId = 0; configId < D->nConfig; ++configId)
 	{
-		if(D->config[c].fitsFreqId < freqId1)
+		int antennaId;
+		int32_t freqId1 = 0;
+		
+		if(D->config[configId].fitsFreqId < freqId1)
 		{
 			continue;	/* already got this freqid */
 		}
-		freqId1 = D->config[c].fitsFreqId + 1; /* FITS fqId starts at 1 */
-		for(a = 0; a < D->nAntenna; a++)
+		freqId1 = D->config[configId].fitsFreqId + 1; /* FITS fqId starts at 1 */
+		for(antennaId = 0; antennaId < D->nAntenna; ++antennaId)
 		{
+			const int maxDatastreams = 8;
+			char antName[DIFXIO_NAME_LENGTH];
+			int n;
+			int dsIds[maxDatastreams];
+			int32_t nLevel;
+			int32_t antId1;
+
+			n = DifxInputGetDatastreamIdsByAntennaId(dsIds, D, antennaId, maxDatastreams);
+			if(n < 1)
+			{
+				/* This should never happen, but if it does assign the global quantBits */
+				nLevel = 1 << (D->quantBits);
+				printf("\nWarning: DifxInput2FitsAN: antennaId=%d seems to have no associated datastreams!\n\n                            ");
+			}
+			else
+			{
+				nLevel = 1 << (D->datastream[dsIds[0]].quantBits);
+			}
+			/* FIXME: if n > 1, verify all datastreams have same quantization */
+
 			p_fitsbuf = fitsbuf;
-			antId1 = a + 1;	  /* FITS antId1 starts at 1 */
-			strcpypad(antName, D->antenna[a].name, 8);
+			antId1 = antennaId + 1;	  /* FITS antId1 starts at 1 */
+			strcpypad(antName, D->antenna[antennaId].name, 8);
 
 			FITS_WRITE_ITEM (time, p_fitsbuf);
 			FITS_WRITE_ITEM (timeInt, p_fitsbuf);
@@ -155,7 +174,7 @@ const DifxInput *DifxInput2FitsAN(const DifxInput *D,
 	}
 
 	/* clean up and return */
-	free (fitsbuf);
+	free(fitsbuf);
 
 	return D;
 }
