@@ -227,8 +227,7 @@ int condition(SSHANDLE xlrDevice, const char *vsn, enum ConditionMode mode, Difx
 		out = fopen(fileName, "w");
 		if(!out)
 		{
-			fprintf(stderr, "Warning: cannot open %s for output.\nContuniung anyway.\n",
-				fileName);
+			fprintf(stderr, "Warning: cannot open %s for output.\nContuniung anyway.\n", fileName);
 		}
 	}
 
@@ -242,6 +241,14 @@ int condition(SSHANDLE xlrDevice, const char *vsn, enum ConditionMode mode, Difx
 		WATCHDOGTEST( XLRGetDeviceStatus(xlrDevice, &devStatus) );
 		if(!devStatus.Recording)
 		{
+			if(lenLast > 1000000000LL)
+			{
+				// more than 5 seconds at 2 Gbps remaining, indicates early completion
+				snprintf(message, DIFX_MESSAGE_LENGTH, "Pass %d of conditioning ended prematurely at around %Ld bytes", pass+1, lenLast);
+				fprintf(stderr, "Warning: %s\n", message);
+				difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+			}
+
 			break;	/* must be done */
 		}
 		if(die)
@@ -252,16 +259,27 @@ int condition(SSHANDLE xlrDevice, const char *vsn, enum ConditionMode mode, Difx
 
 			break;
 		}
-		if(n == printInterval)
+		if(n == printInterval || lenLast < len)
 		{
 			long long bytes;
 			double done;
 
-			n = 0;
+			if(n == printInterval)
+			{
+				n = 0;
+			}
 
 			bytes = -(len-lenLast);	// It is counting down
 			if(lenLast < len)
 			{
+				if(lenLast > 1000000000LL)
+				{
+					// more than 5 seconds at 2 Gbps remaining, indicates early completion
+					snprintf(message, DIFX_MESSAGE_LENGTH, "Pass %d of conditioning ended prematurely at around %Ld bytes", pass+1, lenLast);
+					fprintf(stderr, "Warning: %s\n", message);
+					difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+				}
+
 				++pass;
 				if(pass >= nPass)
 				{
@@ -274,7 +292,7 @@ int condition(SSHANDLE xlrDevice, const char *vsn, enum ConditionMode mode, Difx
 			mk5status->position = devInfo.NumBuses*len;
 			mk5status->rate = 8*devInfo.NumBuses*bytes/(printInterval*1000000.0);
 			snprintf(mk5status->scanName, DIFX_MESSAGE_MAX_SCANNAME_LEN, "%s[%4.2f%%]", opName, done);
-			if(bytes > 0  && mk5status->rate < 6000)
+			if(bytes > 0 && mk5status->rate < 6000)
 			{
 				if(mk5status->rate < lowestRate)
 				{
@@ -302,9 +320,7 @@ int condition(SSHANDLE xlrDevice, const char *vsn, enum ConditionMode mode, Difx
 			mk5status->dataMJD = dt/SEC_DAY;
 			difxMessageSendMark5Status(mk5status);
 
-			snprintf(message, DIFX_MESSAGE_LENGTH,
-				". Time = %8.3f  Pos = %14Ld  Rate = %7.2f  Done = %5.2f %%\n",
-				dt, mk5status->position, mk5status->rate, done);
+			snprintf(message, DIFX_MESSAGE_LENGTH, ". Time = %8.3f  Pos = %14Ld  Rate = %7.2f  Done = %5.2f %%\n", dt, mk5status->position, mk5status->rate, done);
 			printf("%s", message);
 			if(out)
 			{
@@ -374,12 +390,8 @@ int condition(SSHANDLE xlrDevice, const char *vsn, enum ConditionMode mode, Difx
 			if(xlrRC == XLR_SUCCESS)
 			{
 				driveStatsMessage.moduleSlot = d;
-				strncpy(driveStatsMessage.serialNumber, 
-					drive[d].serial, 
-					DIFX_MESSAGE_DISC_SERIAL_LENGTH);
-				strncpy(driveStatsMessage.modelNumber,
-					drive[d].model,
-					DIFX_MESSAGE_DISC_MODEL_LENGTH);
+				strncpy(driveStatsMessage.serialNumber, drive[d].serial, DIFX_MESSAGE_DISC_SERIAL_LENGTH);
+				strncpy(driveStatsMessage.modelNumber, drive[d].model, DIFX_MESSAGE_DISC_MODEL_LENGTH);
 				driveStatsMessage.diskSize = drive[d].capacity/1000000000LL;
 				printf("> Disk %d stats : %s", d, drive[d].serial);
 				for(int i = 0; i < DIFX_MESSAGE_N_CONDITION_BINS; ++i)
@@ -411,8 +423,7 @@ int condition(SSHANDLE xlrDevice, const char *vsn, enum ConditionMode mode, Difx
 				printf("! Disk %d stats : Not found!\n", d);
 			}
 		}
-		printf("> Rates (Mpbs): Lowest = %7.2f  Average = %7.2f  Highest = %7.2f\n",
-			lowestRate, averageRate, highestRate);
+		printf("> Rates (Mpbs): Lowest = %7.2f  Average = %7.2f  Highest = %7.2f\n", lowestRate, averageRate, highestRate);
 	}
 
 	return 0;
@@ -445,8 +456,7 @@ int mk5erase(const char *vsn, enum ConditionMode mode, int verbose, int dirVersi
 	{
 		if(label[0])
 		{
-			snprintf(message, DIFX_MESSAGE_LENGTH,
-				"Conditioning requires module %s to be alone in bank A.", vsn);
+			snprintf(message, DIFX_MESSAGE_LENGTH, "Conditioning requires module %s to be alone in bank A.", vsn);
 			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
 			fprintf(stderr, "%s\n", message);
 			WATCHDOG( XLRClose(xlrDevice) );
@@ -460,8 +470,7 @@ int mk5erase(const char *vsn, enum ConditionMode mode, int verbose, int dirVersi
 		getModuleLabel(xlrDevice, BANK_A, label);
 		if(strncmp(vsn, label, 8) != 0)
 		{
-			snprintf(message, DIFX_MESSAGE_LENGTH, 
-				"Module %s not found", vsn);
+			snprintf(message, DIFX_MESSAGE_LENGTH, "Module %s not found", vsn);
 			fprintf(stderr, "%s\n", message);
 			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
 			WATCHDOG( XLRClose(xlrDevice) );
@@ -491,8 +500,7 @@ int mk5erase(const char *vsn, enum ConditionMode mode, int verbose, int dirVersi
 		}
 		else
 		{
-			snprintf(message, DIFX_MESSAGE_LENGTH,
-				"Extended VSN is corrupt.  Assuming rate = 1024 Mbps.");
+			snprintf(message, DIFX_MESSAGE_LENGTH, "Extended VSN is corrupt.  Assuming rate = 1024 Mbps.");
 			fprintf(stderr, "Warning: %s\n", message);
 			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
 			rate = 1024;
@@ -500,8 +508,7 @@ int mk5erase(const char *vsn, enum ConditionMode mode, int verbose, int dirVersi
 	}
 	else
 	{
-		snprintf(message, DIFX_MESSAGE_LENGTH,
-			"No extended VSN found.  Assuming rate = 1024 Mbps.");
+		snprintf(message, DIFX_MESSAGE_LENGTH, "No extended VSN found.  Assuming rate = 1024 Mbps.");
 		fprintf(stderr, "Warning: %s\n", message);
 		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
 		rate = 1024;
@@ -529,17 +536,15 @@ int mk5erase(const char *vsn, enum ConditionMode mode, int verbose, int dirVersi
 			drive[d].failed ? "FAILED" : "OK");
 	}
 
-	if(mode == CONDITION_ERASE_ONLY)
+	/* Module gets erased first, regardless of conditioning... */
+	v = erase(xlrDevice);
+	if(v < 0)
 	{
-		/* here just erasing */
-		v = erase(xlrDevice);
-		if(v < 0)
-		{
-			/* Something bad happened.  Bail! */
-			return v;
-		}
+		/* Something bad happened.  Bail! */
+		return v;
 	}
-	else
+	
+	if(mode != CONDITION_ERASE_ONLY)
 	{
 		/* here doing the full condition */
 		v = condition(xlrDevice, vsn, mode, &mk5status, verbose, getData, drive, &rate);

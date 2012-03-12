@@ -1190,7 +1190,7 @@ void Mk5Daemon_fileOperation( Mk5Daemon *D, const DifxMessageGeneric *G ) {
           		//  Each line of response from the ls should be a filename...
           		while ( fgets( fullPath, DIFX_MESSAGE_FILENAME_LENGTH, fp ) != NULL ) {
           		    //  Send the full path.
-                	//  Each separate file is preceeded by its string length.
+                	//  Each separate file is preceded by its string length.
                 	int sz = htonl( strlen( fullPath ) );
                 	write( sockfd, &sz, sizeof( int ) );
                 	write( sockfd, fullPath, strlen( fullPath ) );
@@ -1357,7 +1357,7 @@ void Mk5Daemon_vex2DifxRun( Mk5Daemon *D, const DifxMessageGeneric *G ) {
                 	//  with the "gettimeofday" result at the top of this function.
                 	if ( buf.st_mtime >= tv.tv_sec ) {
                 	    //  Send the full path name of this file.
-                	    //  Each separate file is preceeded by its string length.
+                	    //  Each separate file is preceded by its string length.
                 	    int sz = htonl( strlen( fullPath ) );
                 	    write( sockfd, &sz, sizeof( int ) );
                 	    write( sockfd, fullPath, strlen( fullPath ) );
