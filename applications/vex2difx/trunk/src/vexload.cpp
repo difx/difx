@@ -691,6 +691,11 @@ static int getScans(VexData *V, Vex *v, const CorrParams &params)
 		char *value, *units;
 		void *p;
 
+		stations.clear();
+		recordEnable.clear();
+		antStart.clear();
+		antStop.clear();
+
 		p = get_scan_start(L);
 		vex_field(T_START, p, 1, &link, &name, &value, &units);
 		mjd = vexDate(value);
@@ -861,6 +866,11 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 
 			int nBit = 1;
 			int nTrack = 0;
+
+
+			bbc2pol.clear();
+			bbc2ifName.clear();
+			ch2tracks.clear();
 
 			Upper(antName2);
 			bool swapPol = params.swapPol(antName2);
@@ -1229,7 +1239,8 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 					if(first)
 					{
 						cerr << "Warning: Sample rate = " << sampRate << " bandwidth = " << bandwidth << endl;
-						cerr << "Changing expect oversampled bandpasses unless zoom bands are used" << endl;
+						cerr << "Changing bandwidth to match sample rate.  Expect oversampled bandpasses" << endl;
+						cerr << "unless zoom bands are used" << endl;
 						first = false;
 					}
 					bandwidth = sampRate/2;
