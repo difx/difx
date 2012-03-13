@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2011 by Walter Brisken                             *
+ *   Copyright (C) 2008-2012 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -52,14 +52,12 @@ typedef struct
 } FlagDatum;
 
 
-static int parseFlag(char *line, int refDay, char *antName, float timeRange[2], 
-	char *reason, int *recBand)
+static int parseFlag(char *line, int refDay, char *antName, float timeRange[2], char *reason, int *recBand)
 {
 	int l;
 	int n;
 
-	n = sscanf(line, "%s%f%f%d%n", antName, timeRange+0, timeRange+1,
-		recBand, &l);
+	n = sscanf(line, "%s%f%f%d%n", antName, timeRange+0, timeRange+1, recBand, &l);
 
 	if(n < 4)
 	{
@@ -75,8 +73,7 @@ static int parseFlag(char *line, int refDay, char *antName, float timeRange[2],
 }
 
 
-static void writeFLrow(struct fitsPrivate *out, char *fitsbuf, int nRowBytes,
-	struct fitsBinTableColumn *columns, int nColumn, const FlagDatum *FL)
+static void writeFLrow(struct fitsPrivate *out, char *fitsbuf, int nRowBytes, struct fitsBinTableColumn *columns, int nColumn, const FlagDatum *FL)
 {
 	char *p_fitsbuf;
 	int polMask[4];
@@ -123,11 +120,8 @@ static void writeFLrow(struct fitsPrivate *out, char *fitsbuf, int nRowBytes,
 	fitsWriteBinRow(out, fitsbuf);
 }
 
-const DifxInput *DifxInput2FitsFL(const DifxInput *D,
-	struct fits_keywords *p_fits_keys, struct fitsPrivate *out)
+const DifxInput *DifxInput2FitsFL(const DifxInput *D, struct fits_keywords *p_fits_keys, struct fitsPrivate *out)
 {
-	const int MaxLineLength=1000;
-
 	char bandFormInt[8];
 
 	/*  define the flag FITS table columns */
@@ -149,26 +143,15 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D,
 	int nRowBytes;
 	char *fitsbuf;
 	double start, stop;
-	char line[MaxLineLength+1];
-	char antName[DIFXIO_NAME_LENGTH];
 	int refDay;
-	int i, v;
-	int recBand;
-#warning "FIXME: only one configId supported here"
-	int configId = 0;
-	int antennaId;
-	int freqId;
+	int i;
 	FILE *in;
 	FlagDatum FL;
-	const DifxConfig *dc;
-	char *rv;
-#if 0
-	int p, d, c;
-	const DifxDatastream *ds;
-	char polName;
-	int hasData[2][array_MAX_BANDS];
-#endif	
-	if(D==0)
+
+#warning "FIXME: only one configId supported here"
+	int configId = 0;
+
+	if(D == 0)
 	{
 		return D;
 	}
@@ -217,6 +200,14 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D,
 	/* Write flags from file "flag" */
 	for(;;)
 	{
+		const int MaxLineLength=1000;
+		const DifxConfig *dc;
+		char *rv;
+		char antName[DIFXIO_NAME_LENGTH];
+		char line[MaxLineLength+1];
+		int recBand;
+		int v;
+		
 		rv = fgets(line, MaxLineLength, in);
 		if(!rv)
 		{
@@ -230,6 +221,9 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D,
 		}
 		else if(parseFlag(line, refDay, antName, FL.timeRange, FL.reason, &recBand))
 		{
+			int antennaId;
+			int freqId;
+			
 			if(strncmp(FL.reason, "recorder", 8) == 0)
 			{
 				/* No need to propagate flags for recorder not recording */
@@ -279,7 +273,7 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D,
 			}
 
 			/* Then cycle through all IFs to see if that IF is flagged or not */
-			for(i = 0; i < D->nIF; i++)
+			for(i = 0; i < D->nIF; ++i)
 			{
 				if(recBand < 0 || isDifxIFInsideDifxFreq(dc->IF + i, D->freq + freqId))
 				{
@@ -302,15 +296,20 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D,
 	/* Assumption here is all antennas observed the same frequencies and pols */
 	/* If that assumption fails, no real harm is done as the vis records would contain all zeros */
 
-	dc = D->config + configId;
-	for(i = 0; i < D->nIF; i++)
+	for(i = 0; i < D->nIF; ++i)
 	{
 		FL.bandMask[i] = 0;
 	}
-	for(i = 0; i < D->nIF; i++)
+	for(i = 0; i < D->nIF; ++i)
 	{
+		const DifxConfig *dc;
+
+		dc = D->config + configId;
+			
 		if(dc->IF[i].nPol < dc->nPol)	/* Aha, a pol is missing.  Flag it */
 		{
+			int antennaId;
+
 			FL.bandMask[i] = 1;
 			
 			if(dc->IF[i].nPol > 0 && dc->IF[i].pol[0] == dc->pol[0])
@@ -337,81 +336,6 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D,
 			FL.bandMask[i] = 0;
 		}
 	}
-
-#if 0
-	FL.freqId1 = 0;
-	for(configId = 0; configId < D->nConfig; configId++)
-	{
-	    dc = D->config + configId;
-
-	    /* want to loop only over unique freqIds */
-	    if(dc->fitsFreqId < FL.freqId1)
-	    {
-	    	continue;       /* this freqId1 done already */
-	    }
-	    FL.freqId1 = dc->fitsFreqId + 1;
-	    for(d = 0; d < dc->nDatastream; d++)
-	    {
-		if(dc->datastreamId[d] < 0)
-		{
-			continue;
-		}
-
-#warning "FIXME: here we assume 1:1 mapping between antennaId and datastreamId"
-		ds = D->datastream + dc->datastreamId[d];
-		FL.baselineId1[0] = ds->antennaId + 1;
-
-		/* populate a "presence" matrix. */
-		for(p = 0; p < dc->nPol; p++)
-		{
-			for(i = 0; i < dc->nIF; i++)
-			{
-				hasData[p][i] = 0;
-			}
-		}
-		for(c = 0; c < ds->nRecBand; c++)
-		{
-			polName = ds->recBandPolName[c];
-			if(ds->recBandFreqId[c] < 0 || ds->recBandFreqId[c] >= ds->nRecFreq)
-			{
-				fprintf(stderr, "Error: recBandFreqId[%d] is %d, nRecFreq is %d\n",
-				        c, ds->recBandFreqId[c], ds->nRecFreq);
-				continue;
-			}
-			freqId = ds->recFreqId[ds->recBandFreqId[c]];
-			i = dc->freqId2IF[freqId];
-			if(polName == dc->pol[0])
-			{
-				p = 0;
-			}
-			else if(polName == dc->pol[1])
-			{
-				p = 1;
-			}
-			else
-			{
-				/* no polarization I heard of! */
-				continue;
-			}
-			hasData[p][i] = 1;
-		}
-		
-		/* if not present, write a flag */
-		for(p = 0; p < dc->nPol; p++)
-		{
-			for(i = 0; i < dc->nIF; i++)
-			{
-				if(hasData[p][i] == 0)
-				{
-					FL.bandId = i;
-					FL.polId = p;
-					writeFLrow(out, fitsbuf, nRowBytes, columns, nColumn, &FL);
-				}
-			}
-		}
-	    }
-	}
-#endif
 
 	/* close the file, free memory, and return */
 	fclose(in);

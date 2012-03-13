@@ -138,7 +138,7 @@ const DifxInput *DifxInput2FitsAN(const DifxInput *D, struct fits_keywords *p_fi
 			{
 				/* This should never happen, but if it does assign the global quantBits */
 				nLevel = 1 << (D->quantBits);
-				printf("\nWarning: DifxInput2FitsAN: antennaId=%d seems to have no associated datastreams!\n\n                            ");
+				printf("\nWarning: DifxInput2FitsAN: antennaId=%d seems to have no associated datastreams!\n\n                            ", antennaId);
 			}
 			else
 			{

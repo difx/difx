@@ -85,6 +85,8 @@ typedef struct
 	int keepXC;			/* 0 prevents cross-correlations from being preserved */
 	int pulsarBin;
 	int phaseCentre;
+	int nRec;			/* number of records read from file */
+	int maxRec;			/* maximum number of records to read from file */
 } DifxVis;
 
 DifxVis *newDifxVis(const DifxInput *D, int jobId, int pulsarBin, int phaseCentre, double scaleFactor);

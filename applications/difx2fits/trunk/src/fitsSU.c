@@ -32,6 +32,8 @@
 #include "config.h"
 #include "difx2fits.h"
 
+#warning "FIXME: implement RAOBS and DECOBS columns"
+
 const DifxInput *DifxInput2FitsSU(const DifxInput *D, struct fits_keywords *p_fits_keys, struct fitsPrivate *out)
 {
 	char bandFormDouble[8];
@@ -50,8 +52,8 @@ const DifxInput *DifxInput2FitsSU(const DifxInput *D, struct fits_keywords *p_fi
 		{"VFLUX", bandFormFloat, "vpol flux density at ref freq", "JY"},
 		{"ALPHA", bandFormFloat, "spectral index", 0},
 		{"FREQOFF", bandFormDouble, "freq. offset from ref freq.","HZ"},
-		{"RAEPO", "1D", "Right Ascension at EPOCH", "DEGREES"},
-		{"DECEPO", "1D", "Declination at EPOCH", "DEGREES"},
+		{"RAEPO", "1D", "Right Ascension at EQUINOX", "DEGREES"},
+		{"DECEPO", "1D", "Declination at EQUINOX", "DEGREES"},
 		{"EQUINOX", "8A", "Mean equinox"},
 		{"RAAPP", "1D", "apparent RA at 0 IAT ref day", "DEGREES"},
 		{"DECAPP", "1D", "apparent Dec at 0 IAT ref day", "DEGREES"},
@@ -62,43 +64,32 @@ const DifxInput *DifxInput2FitsSU(const DifxInput *D, struct fits_keywords *p_fi
 		{"PMRA", "1D", "proper motion in RA", "DEG/DAY"},
 		{"PMDEC", "1D", "proper motion in Dec", "DEG/DAY"},
 		{"PARALLAX", "1E", "parallax of source", "ARCSEC"},
-		{"EPOCH", "1D", "Epoch of observation", "YEARS"}
+		{"EPOCH", "1D", "Epoch of EQUINOX", "YEARS"},
+ 		{"RAOBS", "1D", "Pointing RA at EQUINOX", "DEGREES"},
+ 		{"DECOBS", "1D", "Pointing Dec at EQUINOX", "DEGREES"}
 	};
 
 	int nColumn;
 	int nRowBytes;
 	int nBand;
-	int b, sourceId;
+	int b;
 	char *fitsbuf;
 	char *p_fitsbuf;
-	char sourceName[16];
-	int configId;
-	int qual;
-	char calCode[4];
 	float fluxI[array_MAX_BANDS];
 	float fluxQ[array_MAX_BANDS];
 	float fluxU[array_MAX_BANDS];
 	float fluxV[array_MAX_BANDS];
 	float alpha[array_MAX_BANDS];
 	double freqOffset[array_MAX_BANDS];
-	double RAEpoch, decEpoch;	/* position of Epoch */
-	double RAApp, decApp;		/* apparent position */
-	double epoch;
 	char equinox[8];
 	double sysVel[array_MAX_BANDS];
 	double restFreq[array_MAX_BANDS];
 	char velType[8];
 	char velDef[8];
-	double muRA;			/* proper motion */
-	double muDec;
-	float parallax;
-	/* 1-based indices for FITS file */
-	int32_t sourceId1, freqId1;
 	int *fitsSource;
 	int *fitsConfig;
 	int i, nFitsSource;
-	const DifxSource *source;
-	const DifxConfig *config;
+	int sourceId;
 
 	if(D == 0)
 	{
@@ -154,6 +145,8 @@ const DifxInput *DifxInput2FitsSU(const DifxInput *D, struct fits_keywords *p_fi
 	nFitsSource = -1;
 	for(sourceId = 0; sourceId < D->nSource; ++sourceId)
 	{
+		int configId;
+
 		for(configId = 0; configId < D->nConfig; ++configId)
 		{
 			i = D->source[sourceId].fitsSourceIds[configId];
@@ -176,6 +169,22 @@ const DifxInput *DifxInput2FitsSU(const DifxInput *D, struct fits_keywords *p_fi
 
 	for(i = 0; i < nFitsSource; ++i)
 	{
+		int configId;
+		const DifxSource *source;
+		const DifxConfig *config;
+		double muRA;			/* proper motion */
+		double muDec;
+		float parallax;
+		double epoch;
+		double RAEpoch, decEpoch;	/* position of Epoch */
+		double RAApp, decApp;		/* apparent position */
+		double RAObs, decObs;		/* pointing center of antennas */
+		char sourceName[16];
+		int32_t sourceId1, freqId1;	/* 1-based indices for FITS file */
+		int qual;
+		int pointingCentreSrc;
+		char calCode[4];
+		
 		sourceId = fitsSource[i];
 		if(sourceId < 0)
 		{
@@ -206,6 +215,17 @@ const DifxInput *DifxInput2FitsSU(const DifxInput *D, struct fits_keywords *p_fi
 		decEpoch = source->dec * 180.0 / M_PI;
 		RAApp = RAEpoch;
 		decApp = decEpoch;
+		pointingCentreSrc = DifxInputGetPointingCentreSource(D, sourceId);
+		if(pointingCentreSrc >= 0)
+		{
+			RAObs = D->source[pointingCentreSrc].ra * 180.0 / M_PI;
+			decObs = D->source[pointingCentreSrc].dec * 180.0 / M_PI;
+		}
+		else
+		{
+			RAObs = RAEpoch;
+			decObs = decEpoch;
+		}
 		freqId1 = config->fitsFreqId + 1;  /* FITS 1-based */
 		strcpypad(sourceName, source->name, 16);
 
@@ -235,6 +255,8 @@ const DifxInput *DifxInput2FitsSU(const DifxInput *D, struct fits_keywords *p_fi
 		FITS_WRITE_ITEM (muDec, p_fitsbuf);
 		FITS_WRITE_ITEM (parallax, p_fitsbuf);
 		FITS_WRITE_ITEM (epoch, p_fitsbuf);
+		FITS_WRITE_ITEM (RAObs, p_fitsbuf);
+		FITS_WRITE_ITEM (decObs, p_fitsbuf);
 
 		testFitsBufBytes(p_fitsbuf - fitsbuf, nRowBytes, "SU");
 

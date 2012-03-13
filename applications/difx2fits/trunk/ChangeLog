@@ -1,7 +1,7 @@
 Version 3.0.2
 * Post DiFX-2.0.1
 * Improved reporting when weights go crazy (negative)
-* --zero (or -0) option: don't write visibilities
+* --zero (or -0) option: don't write visibilities (well, write one per input file)
   - not useful for AIPS as AIPS requires a UV table
 * makefits: pass along non-dashed options to difx2fits
 * Do better job verifying baseband data files have compliant names.
@@ -13,6 +13,7 @@ Version 3.0.2
 * Make use of new difx_tcal infrastructure
 * Support DiFX job restarts
 * Better support for mixed 1 and 2 bit data: include antenna-based numbers in FITS and scale accordingly
+* Populate the new RAOBS and DECOBS (pointing center) columns of the source table
 
 Version 3.0.1
 * Post 2.0.0

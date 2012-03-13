@@ -34,6 +34,7 @@
 #include <assert.h>
 #include <difxio/parsevis.h>
 #include <regex.h>
+#include <limits.h>
 #include "config.h"
 #include "fitsUV.h"
 #include "jobmatrix.h"
@@ -159,6 +160,7 @@ int DifxVisNextFile(DifxVis *dv)
 	{
 		fclose(dv->in);
 		dv->in = 0;
+		dv->nRec = 0;
 	}
 
 	while(dv->in == 0)
@@ -198,7 +200,7 @@ int DifxVisNextFile(DifxVis *dv)
 
 		if(bin == dv->pulsarBin && pc == dv->phaseCentre)
 		{
-			printf("    JobId %d File %d/%d : %s\n", dv->jobId, dv->curFile+1, dv->nFile, dv->globbuf.gl_pathv[dv->curFile]);
+			printf("    JobId %d file %d/%d : %s\n", dv->jobId, dv->curFile+1, dv->nFile, dv->globbuf.gl_pathv[dv->curFile]);
 			dv->in = fopen(dv->globbuf.gl_pathv[dv->curFile], "r");
 			if(dv->in == 0)
 			{
@@ -325,6 +327,7 @@ DifxVis *newDifxVis(const DifxInput *D, int jobId, int pulsarBin, int phaseCentr
 	dv->phaseCentre = phaseCentre;
 	dv->keepAC = 1;
 	dv->keepXC = 1;
+	dv->maxRec = INT_MAX;
 
 	/* For now, the difx format only provides 1 weight for the entire
 	 * vis record, so we don't need weights per channel */
@@ -533,7 +536,7 @@ int DifxVisNewUVData(DifxVis *dv, int verbose)
 
 	//first of all, figure out what kind of header we are dealing with
 	v = fread(&sync, sizeof(int), 1, dv->in);
-	if(v != 1)
+	if(v != 1 || dv->nRec >= dv->maxRec)
 	{
 		v = DifxVisNextFile(dv);
 		if(v < 0)
@@ -542,6 +545,7 @@ int DifxVisNewUVData(DifxVis *dv, int verbose)
 		}
                 v = fread(&(sync), sizeof(int), 1, dv->in);
 	}
+	++dv->nRec;
 
 	if(sync == VISRECORD_SYNC_WORD_DIFX1) //old style ascii header
 	{
@@ -567,7 +571,6 @@ int DifxVisNewUVData(DifxVis *dv, int verbose)
 			polPair[2] = 0;
 			v = fread(&bin, sizeof(int), 1, dv->in);
 			v = fread(&weight, sizeof(double), 1, dv->in);
-
 			v = fread(uvw, sizeof(double), 3, dv->in);
                         if(v < 3)
                         {
@@ -1202,6 +1205,10 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fi
 		{
 			dvs[jobId]->keepAC = 0;	/* Really a no-op since these data don't come with ACs */
 		}
+		if(opts->dontIncludeVisibilities)
+		{
+			dvs[jobId]->maxRec = 2;
+		}
 	}
 
 	if(nDifxVis > D->nJob)
@@ -1218,6 +1225,10 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fi
 				return 0;
 			}
 			dvs[jobId + D->nJob]->keepXC = 0; /* this is for AC only */
+			if(opts->dontIncludeVisibilities)
+			{
+				dvs[jobId + D->nJob]->maxRec = 2;
+			}
 		}
 	}
 	printf("\n");
@@ -1472,231 +1483,3 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fi
 
 	return D;
 }
-
-#if 0
-DifxVis *dummy_newDifxVis(const DifxInput *D, int jobId, int pulsarBin, int phaseCentre)
-{
-	DifxVis *dv;
-	int v;
-	int polMask = 0;
-
-	dv = (DifxVis *)calloc(1, sizeof(DifxVis));
-
-	if(!dv)
-	{
-		fprintf(stderr, "Error: newDifxVis: dv=calloc failed, size=%d\n",
-			(int)(sizeof(DifxVis)));
-		assert(dv);
-
-		exit(EXIT_FAILURE);
-	}
-
-	if(jobId < 0 || jobId >= D->nJob)
-	{
-		fprintf(stderr, "Error: newDifxVis: jobId = %d, nJob = %d\n",
-			jobId, D->nJob);
-		free(dv);
-		
-		return 0;
-	}
-	
-	dv->jobId = jobId;
-	dv->D = D;
-	dv->curFile = 0;
-	dv->configId = 0;
-	dv->sourceId = 0;
-	dv->scanId = 0;
-	dv->baseline = 0;
-
-	/* For now, the difx format only provides 1 weight for the entire
-	 * vis record, so we don't need weights per channel */
-	dv->nComplex = 2;	/* for now don't write weights */
-	dv->first = 1;
-	dv->nFreq = D->nIF;
-	dv->mjdLastRecord = (double *)calloc(D->nAntenna, sizeof(double));
-	polMask |= polMaskValue(D->config[0].IF[0].pol[0]);
-	
-	/* check for polarization confusion */
-	if( ( (polMask & DIFXIO_POL_RL) != 0 && (polMask & DIFXIO_POL_XY) != 0 ) || 
-	    (polMask & DIFXIO_POL_ERROR) != 0 ||
-	    (polMask == 0) )
-	{
-		fprintf(stderr, "Error: bad polarization combinations : %x\n", polMask);
-		deleteDifxVis(dv);
-
-		return 0;
-	}
-
-	if(polMask & DIFXIO_POL_R)
-	{
-		dv->polStart = -1;
-	}
-	else if(polMask & DIFXIO_POL_L)
-	{
-		dv->polStart = -2;
-	}
-	else if(polMask & DIFXIO_POL_X)
-	{
-		dv->polStart = -5;
-	}
-	else /* must be YY only! who would do that? */
-	{
-		dv->polStart = -6;
-	}
-
-	/* room for input vis record: 3 for real, imag, weight */
-	dv->spectrum = (float *)calloc(3*dv->D->nInChan, sizeof(float));
-	assert(dv->spectrum);
-
-	dv->dp = newDifxParameters();
-
-	v = DifxVisInitData(dv);
-	if(v < 0)
-	{
-		fprintf(stderr, "Error %d allocating %d + %d bytes\n",
-			v, (int)(sizeof(struct UVrow)),
-			dv->nComplex*dv->nFreq*dv->D->nPolar*dv->D->nOutChan);
-		deleteDifxVis(dv);
-		
-		return 0;
-	}
-
-	return dv;
-}
-
-const DifxInput *dummy_DifxInput2FitsUV(const DifxInput *D,
-	struct fits_keywords *p_fits_keys,
-	struct fitsPrivate *out, struct CommandLineOptions *opts)
-{
-	int j;
-	float visScale = 1.0;
-	char dateStr[12];
-	char fluxFormFloat[8];
-	char gateFormInt[8];
-	char weightFormFloat[8];
-	int nRowBytes;
-	int nColumn;
-	int nWeight;
-	DifxVis *dv;
-
-	/* define the columns in the UV data FITS Table */
-	struct fitsBinTableColumn columns[] =
-	{
-		{"UU--SIN", "1E", "u", "SECONDS"},
-		{"VV--SIN", "1E", "v", "SECONDS"},
-		{"WW--SIN", "1E", "w", "SECONDS"},
-		{"DATE", "1D", "Julian day at 0 hr current day", "DAYS"},
-		{"TIME", "1D", "IAT time", "DAYS"},
-		{"BASELINE", "1J", "baseline: ant1*256 + ant2", 0},
-		{"FILTER", "1J", "filter id number", 0},
-		{"SOURCE", "1J", "source id number from source tbl", 0},
-		{"FREQID", "1J", "freq id number from frequency tbl", 0},
-		{"INTTIM", "1E", "time span of datum", "SECONDS"},
-		{"WEIGHT", weightFormFloat, "weights proportional to time", 0},
-		{"GATEID", gateFormInt, "gate id from gate model table", 0},
-		{"FLUX", fluxFormFloat, "data matrix", "UNCALIB"}
-	};
-
-	if(D == 0)
-	{
-		return 0;
-	}
-
-	/* allocate one DifxVis per job */
-
-	dv = dummy_newDifxVis(D, j, opts->pulsarBin, opts->phaseCentre);
-	dv->sourceId = 0;
-	dv->scanId = 0;
-
-	nWeight = dv->nFreq*D->nPolar;
-
-	/* set the number of weight and flux values*/
-	sprintf(weightFormFloat, "%dE", nWeight);
-	sprintf(gateFormInt, "%dJ", 0);
-	sprintf(fluxFormFloat, "%dE", dv->nData);
-
-printf("  nd = %d  nw = %d\n", dv->nData, nWeight);
-
-	nColumn = NELEMENTS(columns);
-	nRowBytes = FitsBinTableSize(columns, nColumn);
-
-	fitsWriteBinTable(out, nColumn, columns, nRowBytes, "UV_DATA");
-	fitsWriteInteger(out, "NMATRIX", 1, "");
-
-	/* get the job ref_date from the fits_keyword struct, convert it into
-	   a FITS string and save it in the FITS header */
-	mjd2fits((int)D->mjdStart, dateStr);
-	fitsWriteString(out, "DATE-OBS", dateStr, "");
-
-	fitsWriteString(out, "EQUINOX", "J2000", "");
-	fitsWriteString(out, "WEIGHTYP", "CORRELAT", "");
-
-	fitsWriteString(out, "TELESCOP", "VLBA", "");
-	fitsWriteString(out, "OBSERVER", "PLUTO", "");
-	
-	arrayWriteKeys(p_fits_keys, out);
-	
-	fitsWriteInteger(out, "TABREV", 2, "ARRAY changed to FILTER");
-	fitsWriteFloat(out, "VIS_SCAL", visScale, "");
-
-	fitsWriteString(out, "SORT", "T*", "");
-
-	/* define the data matrix columns */
-	fitsWriteInteger(out, "MAXIS", 6, "");
-	fitsWriteInteger(out, "MAXIS1", dv->nComplex, "");
-
-	fitsWriteString(out, "CTYPE1", "COMPLEX", "");
-	fitsWriteFloat(out, "CDELT1", 1.0, "");
-	fitsWriteFloat(out, "CRPIX1", 1.0, "");
-	fitsWriteFloat(out, "CRVAL1", 1.0, "");
-	fitsWriteInteger(out, "MAXIS2", D->nPolar, "");
-	fitsWriteString(out, "CTYPE2", "STOKES", "");
-	fitsWriteFloat(out, "CDELT2", -1.0, "");
-	fitsWriteFloat(out, "CRPIX2", 1.0, "");
-	fitsWriteFloat(out, "CRVAL2", (float)dv->polStart, "");
-	fitsWriteInteger(out, "MAXIS3", D->nOutChan, "");
-	fitsWriteString(out, "CTYPE3", "FREQ", "");
-	fitsWriteFloat(out, "CDELT3", D->chanBW*D->specAvg*1.0e6/D->nOutChan, "");
-	fitsWriteFloat(out, "CRPIX3", p_fits_keys->ref_pixel, "");
-	fitsWriteFloat(out, "CRVAL3", D->refFreq*1000000.0, "");
-	fitsWriteInteger(out, "MAXIS4", dv->nFreq, "");
-	fitsWriteString(out, "CTYPE4", "BAND", "");
-	fitsWriteFloat(out, "CDELT4", 1.0, "");
-	fitsWriteFloat(out, "CRPIX4", 1.0, "");
-	fitsWriteFloat(out, "CRVAL4", 1.0, "");
-	fitsWriteInteger(out, "MAXIS5", 1, "");
-	fitsWriteString(out, "CTYPE5", "RA", "");
-	fitsWriteFloat(out, "CDELT5", 0.0, "");
-	fitsWriteFloat(out, "CRPIX5", 1.0, "");
-	fitsWriteFloat(out, "CRVAL5", 0.0, "");
-	fitsWriteInteger(out, "MAXIS6", 1, "");
-	fitsWriteString(out, "CTYPE6", "DEC", "");
-	fitsWriteFloat(out, "CDELT6", 0.0, "");
-	fitsWriteFloat(out, "CRPIX6", 1.0, "");
-	fitsWriteFloat(out, "CRVAL6", 0.0, "");
-	fitsWriteLogical(out, "TMATX11", 1, "");
-	
-	fitsWriteEnd(out);
-
-	dv->record->U = 0.0;
-	dv->record->V = 0.0;
-	dv->record->W = 0.0;
-	dv->record->intTime = 1.0;
-	dv->record->jd =  (int)(D->mjdStart + 2400000.5);
-	dv->record->iat = D->mjdStart - (int)(D->mjdStart);
-	dv->record->data[0] = 1;
-	dv->record->baseline = 257;
-	dv->record->filter = 0;
-	dv->record->sourceId1 = 1;
-	dv->record->freqId1 = 1;
-
-#ifndef WORDS_BIGENDIAN
-	FitsBinRowByteSwap(columns, nColumn, dv->record);
-	printf("  (wrote one dummy record)\n");
-#endif
-	fitsWriteBinRow(out, (char *)dv->record);
-
-	return D;
-}
-
-#endif

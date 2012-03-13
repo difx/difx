@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008, 2009 by Walter Brisken                            *
+ *   Copyright (C) 2008-2012 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -32,8 +32,7 @@
 #include "config.h"
 #include "difx2fits.h"
 
-const DifxInput *DifxInput2FitsSO(const DifxInput *D,
-	struct fits_keywords *p_fits_keys, struct fitsPrivate *out)
+const DifxInput *DifxInput2FitsSO(const DifxInput *D, struct fits_keywords *p_fits_keys, struct fitsPrivate *out)
 {
 	struct fitsBinTableColumn columns[] =
 	{
@@ -47,12 +46,7 @@ const DifxInput *DifxInput2FitsSO(const DifxInput *D,
 	int nRowBytes;
 	char *fitsbuf;
 	char *p_fitsbuf;
-	int s, p;
-	const sixVector *pos;
-
-	char name[16];
-	double time;
-	double xyz[3], vel[3];
+	int s;
 	
 	if(D == 0)
 	{
@@ -78,12 +72,19 @@ const DifxInput *DifxInput2FitsSO(const DifxInput *D,
 		return 0;
 	}
 	
-	for(s = 0; s < D->nSpacecraft; s++)
+	for(s = 0; s < D->nSpacecraft; ++s)
 	{
+		int p;
+		char name[16];
+
 		strcpypad(name, D->spacecraft[s].name, 16);
 
-		for(p = 0; p < D->spacecraft[s].nPoint; p++)
+		for(p = 0; p < D->spacecraft[s].nPoint; ++p)
 		{
+			double xyz[3], vel[3];
+			const sixVector *pos;
+			double time;
+
 			pos = D->spacecraft[s].pos + p;
 
 			time = pos->mjd + pos->fracDay;

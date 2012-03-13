@@ -620,27 +620,11 @@ static const DifxInput *DifxInput2FitsTables(const DifxInput *D,
 	printf("%lld bytes\n", out->bytes_written - last_bytes);
 	last_bytes = out->bytes_written;
 
-	if(!opts->dontIncludeVisibilities)
-	{
-		printf("  UV -- visibility          \n");
-		fflush(stdout);
-		D = DifxInput2FitsUV(D, &keys, out, opts);
-		printf("%lld bytes\n", out->bytes_written - last_bytes);
-		last_bytes = out->bytes_written;
-	}
-	else
-	{
-#if 0
-		printf("  *** No visibility data being written to file ***\n");
-		D = dummy_DifxInput2FitsUV(D, &keys, out, opts);
-		printf("  UV -- visibility          \n");
-		fflush(stdout);
-		printf("%lld bytes\n", out->bytes_written - last_bytes);
-		last_bytes = out->bytes_written;
-#endif
-		fprintf(stdout, "The dontIncludeVisibilities option is not currently available\n");
-		exit(EXIT_FAILURE);
-	}
+	printf("  UV -- visibility          \n");
+	fflush(stdout);
+	D = DifxInput2FitsUV(D, &keys, out, opts);
+	printf("%lld bytes\n", out->bytes_written - last_bytes);
+	last_bytes = out->bytes_written;
 
 	printf("  FL -- flag                ");
 	fflush(stdout);
