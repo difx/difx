@@ -315,7 +315,6 @@ typedef struct
 	/* note: band in excess of nRecBand are assumed to be zoom bands */
 	int **bandA;		/* [freq][productIndex] */
 	int **bandB;		/* [freq][productIndex] */
-
 } DifxBaseline;
 
 typedef struct
@@ -324,8 +323,7 @@ typedef struct
 	int origId;		/* antennaId before a sort */
 	double clockrefmjd;	/* Reference time for clock polynomial */
 	int clockorder;		/* Polynomial order of the clock model */
-	double clockcoeff[MAX_MODEL_ORDER+1];	/* clock polynomial 
-				   coefficients (us, us/s, us/s^2... */
+	double clockcoeff[MAX_MODEL_ORDER+1];	/* clock polynomial coefficients (us, us/s, us/s^2... */
 	enum AntennaMountType mount;
 	double offset[3];	/* axis offset, (m) */
 	double X, Y, Z;		/* telescope position, (m) */
@@ -503,7 +501,7 @@ typedef struct
 				/* 2 for dual pol, parallel hands only */
 				/* 4 for full pol */
 	double chanBW;		/* MHz common channel bandwidth. 0 if differ */
-	int quantBits;		/* 0 if if different in configs; or 1 or 2 */
+	int quantBits;		/* 0 if different in configs; or 1 or 2 */
 	char polPair[4];	/* "  " if different in configs */
 	int dataBufferFactor;
         int nDataSegments;
@@ -809,6 +807,7 @@ int DifxInputGetFreqIdByBaselineFreq(const DifxInput *D, int baselineId, int bas
 int DifxInputGetDatastreamId(const DifxInput *D, int jobId, int antId);
 int DifxInputSortAntennas(DifxInput *D, int verbose);
 int DifxInputSimFXCORR(DifxInput *D);
+int DifxInputGetPointingCentreSource(const DifxInput *D, int sourceId);
 void DifxInputAllocThreads(DifxInput *D, int nCore);
 void DifxInputSetThreads(DifxInput *D, int nThread);
 int DifxInputLoadThreads(DifxInput *D);

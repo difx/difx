@@ -3838,3 +3838,35 @@ int DifxInputGetMaxPhaseCentres(const DifxInput *D)
 	
 	return maxPhaseCentres;
 }
+
+/* Warning: this function returns the pointing center for the first scan containing 
+ * the given sourceId.  Nothing stops multiple distinct pointing centers from
+ * containing the same source!
+ */
+int DifxInputGetPointingCentreSource(const DifxInput *D, int sourceId)
+{
+	if(D)
+	{
+		int s;
+
+		for(s = 0; s < D->nScan; ++s)
+		{
+			const DifxScan *ds;
+			int p, n;
+
+			n = D->scan[s].nPhaseCentres;
+
+			ds = D->scan + s;
+
+			for(p = 0; p < n; ++p)
+			{
+				if(ds->phsCentreSrcs[p] == sourceId)
+				{
+					return ds->pointingCentreSrc;
+				}
+			}
+		}
+	}
+
+	return -1;
+}
