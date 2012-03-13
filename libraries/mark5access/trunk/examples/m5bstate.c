@@ -203,7 +203,7 @@ int bstate(const char *filename, const char *formatname, int nframes,
 	/* normalize */
 	for(i = 0; i < nif; i++)
 	{
-                printf("%2d", i);
+                printf("%2d ", i);
                 sum = 0.0;
 		for(j = 0; j < nstates; j++)
 		{
@@ -211,7 +211,7 @@ int bstate(const char *filename, const char *formatname, int nframes,
 		}
                 for(j = 0; j < nstates; j++)
                 {
-                       printf("%7ld", bstate[i][j]);
+                       printf("%7ld ", bstate[i][j]);
                 }
                 printf("    ");
                 for(j = 0; j < nstates; j++)
