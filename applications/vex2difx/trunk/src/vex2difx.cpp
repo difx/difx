@@ -1343,6 +1343,8 @@ static void populateBaselineTable(DifxInput *D, const CorrParams *P, const CorrS
 					{
 						bool zoom2 = false;	// did antenna 2 zoom band make match? 
 
+						n2 = 0;
+
 						freqId = D->datastream[a1].zoomFreqId[f];
 
 						// Unlike for recbands, don't query corrSetup->correlateFreqId as all defined zoom bands should be correlated
@@ -2342,22 +2344,19 @@ static int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int 
 					{
 						if(D->datastream[D->nDatastream].nRecFreq != nFreqClockOffsets)
 						{
-							cerr << "Error: AntennaSetup for " << antName << " has only " << nFreqClockOffsets << 
-								" freqClockOffsets specified but " << dd->nRecFreq << " recorded frequencies" << endl;
+							cerr << "Error: AntennaSetup for " << antName << " has only " << nFreqClockOffsets << " freqClockOffsets specified but " << dd->nRecFreq << " recorded frequencies" << endl;
 
 							exit(EXIT_FAILURE);
 						}
 						if(antennaSetup->freqClockOffs.front() != 0.0)
 						{
-							cerr << "Error: AntennaSetup for " << antName << " has a non-zero clock offset for the first" << 
-								" frequency offset. This is not allowed for model " << "accountability reasons." << endl;
+							cerr << "Error: AntennaSetup for " << antName << " has a non-zero clock offset for the first" << " frequency offset. This is not allowed for model " << "accountability reasons." << endl;
 							
 							exit(EXIT_FAILURE);
 						}
 						for(int i = 0; i < nFreqClockOffsets; ++i)
 						{
-							D->datastream[D->nDatastream].clockOffset[i] = 
-								antennaSetup->freqClockOffs.at(i);
+							D->datastream[D->nDatastream].clockOffset[i] = antennaSetup->freqClockOffs.at(i);
 						}
 					}
 
@@ -2366,15 +2365,13 @@ static int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int 
 					{
 						if(D->datastream[D->nDatastream].nRecFreq != nLoOffsets)
 						{
-							cerr << "Error: AntennaSetup for " << antName << " has only " << nLoOffsets <<
-								" loOffsets specified but " << dd->nRecFreq << " recorded frequencies" << endl;
+							cerr << "Error: AntennaSetup for " << antName << " has only " << nLoOffsets << " loOffsets specified but " << dd->nRecFreq << " recorded frequencies" << endl;
 
 							exit(EXIT_FAILURE);
 						}
 						for(int i = 0; i < nLoOffsets; ++i)
 						{
-							D->datastream[D->nDatastream].freqOffset[i] = 
-								antennaSetup->loOffsets.at(i);
+							D->datastream[D->nDatastream].freqOffset[i] = antennaSetup->loOffsets.at(i);
 						}
 					}
 				}
