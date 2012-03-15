@@ -1810,16 +1810,17 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 
 static bool matchingFreq(const ZoomFreq &zoomfreq, const DifxDatastream *dd, int dfreqIndex, const vector<freq> freqs)
 {
+	const double epsilon = 0.000001;
 	double channeloffset;
 	const freq &f = freqs[dd->recFreqId[dfreqIndex]];
 
 	if(f.sideBand == 'L')
 	{
-		if(zoomfreq.frequency > f.fq)
+		if(zoomfreq.frequency > f.fq + epsilon)
 		{
 			return false;
 		}
-		if(zoomfreq.frequency - zoomfreq.bandwidth < f.fq - f.bw)
+		if(zoomfreq.frequency - zoomfreq.bandwidth < f.fq - f.bw - epsilon)
 		{
 			return false;
 		}
@@ -1828,7 +1829,7 @@ static bool matchingFreq(const ZoomFreq &zoomfreq, const DifxDatastream *dd, int
 			return false;
 		}
 		channeloffset = (f.fq - zoomfreq.frequency)/f.inputSpecRes;
-		if(fabs(channeloffset - static_cast<int>(channeloffset+0.5)) > 0.000001)
+		if(fabs(channeloffset - static_cast<int>(channeloffset+0.5)) > epsilon)
 		{
 			return false;
 		}
@@ -1837,11 +1838,11 @@ static bool matchingFreq(const ZoomFreq &zoomfreq, const DifxDatastream *dd, int
 	}
 	else
 	{
-		if(zoomfreq.frequency < f.fq)
+		if(zoomfreq.frequency < f.fq - epsilon)
 		{
 			return false;
 		}
-		if(zoomfreq.frequency + zoomfreq.bandwidth > f.fq + f.bw)
+		if(zoomfreq.frequency + zoomfreq.bandwidth > f.fq + f.bw + epsilon)
 		{
 			return false;
 		}
@@ -1850,7 +1851,7 @@ static bool matchingFreq(const ZoomFreq &zoomfreq, const DifxDatastream *dd, int
 			return false;
 		}
 		channeloffset = (zoomfreq.frequency - f.fq)/f.inputSpecRes;
-		if(fabs(channeloffset - static_cast<int>(channeloffset+0.5)) > 0.000001)
+		if(fabs(channeloffset - static_cast<int>(channeloffset+0.5)) > epsilon)
 		{
 			return false;
 		}
@@ -1871,7 +1872,6 @@ static int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int 
 	const PhaseCentre *phaseCentre;
 	const PhaseCentre * pointingCentre;
 	const AntennaSetup *antennaSetup;
-	const VexMode *mode;
 	const VexSetup* setup;
 	const VexScan *S;
 	set<string> configSet;
@@ -1976,6 +1976,8 @@ static int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int 
 	scan = D->scan;
 	for(vector<string>::const_iterator si = J.scans.begin(); si != J.scans.end(); ++si, ++scan)
 	{
+		const VexMode *mode;
+		
 		S = V->getScanByDefName(*si);
 		if(!S)
 		{
@@ -2163,9 +2165,9 @@ static int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int 
 		}
 	}
 
-	for(int c = 0; c < D->nConfig; ++c)
+	for(int configId = 0; configId < D->nConfig; ++configId)
 	{
-		corrSetup = P->getCorrSetup(configs[c].second);
+		corrSetup = P->getCorrSetup(configs[configId].second);
 		if(!corrSetup->binConfigFile.empty())
 		{
 			++nPulsar;
@@ -2179,12 +2181,14 @@ static int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int 
 	// configure datastreams
 	D->datastream = makeDifxDatastreams(J, V, P, D->nConfig);
 	D->nDatastream = 0;
-	for(int c = 0; c < D->nConfig; ++c)
+	for(int configId = 0; configId < D->nConfig; ++configId)
 	{
-		mode = V->getModeByDefName(configs[c].first);
+		const VexMode *mode;
+		
+		mode = V->getModeByDefName(configs[configId].first);
 		if(mode == 0)
 		{
-			cerr << "Developer error: writeJob: mode[" << configs[c].first << "] is null" << endl;
+			cerr << "Developer error: writeJob: mode[" << configs[configId].first << "] is null" << endl;
 
 			exit(EXIT_FAILURE);
 		}
@@ -2199,17 +2203,17 @@ static int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int 
 		}
 		decimation = calcDecimation(overSamp);
 
-		corrSetup = P->getCorrSetup(configs[c].second);
+		corrSetup = P->getCorrSetup(configs[configId].second);
 		if(corrSetup == 0)
 		{
-			cerr << "Developer error: writeJob: correlator setup[" << configs[c].second << "] is null" << endl;
+			cerr << "Developer error: writeJob: correlator setup[" << configs[configId].second << "] is null" << endl;
 
 			exit(EXIT_FAILURE);
 		}
 
 		if(!corrSetup->binConfigFile.empty())
 		{
-			D->config[c].pulsarId = D->nPulsar;
+			D->config[configId].pulsarId = D->nPulsar;
 			loadPulsarConfigFile(D, corrSetup->binConfigFile.c_str());
 			nbin = D->pulsar[D->nPulsar-1].nBin;
 			if(D->pulsar[D->nPulsar-1].scrunch > 0)
@@ -2224,7 +2228,7 @@ static int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int 
 
 		if(!corrSetup->phasedArrayConfigFile.empty())
 		{
-			D->config[c].phasedArrayId = D->nPhasedArray;
+			D->config[configId].phasedArrayId = D->nPhasedArray;
 			snprintf(D->phasedarray[D->nPhasedArray].fileName, DIFXIO_FILENAME_LENGTH, "%s", corrSetup->phasedArrayConfigFile.c_str());
 			++D->nPhasedArray;
 		}
@@ -2232,16 +2236,16 @@ static int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int 
 		int d = 0;
 
 		//first iterate over all antennas, making sure all recorded bands are allocated
-		for(int a = 0; a < D->nAntenna; ++a)
+		for(int antennaId = 0; antennaId < D->nAntenna; ++antennaId)
 		{
-			string antName = antList[a];
+			string antName = antList[antennaId];
 			setFormat(D, D->nDatastream, freqs, toneSets, mode, antName, corrSetup, P->v2dMode);
 		}
 
 		minChans = corrSetup->minInputChans();
-		for(int a = 0; a < D->nAntenna; ++a)
+		for(int antennaId = 0; antennaId < D->nAntenna; ++antennaId)
 		{
-			string antName = antList[a];
+			string antName = antList[antennaId];
 			int v = setFormat(D, D->nDatastream, freqs, toneSets, mode, antName, corrSetup, P->v2dMode);
 			if(v)
 			{
@@ -2285,12 +2289,12 @@ static int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int 
 							}
 							if(parentFreqIndices[i] < 0)
 							{
-								cerr << "Error: Cannot find a parent freq for zoom band " << i << " of datastream " << a << endl;
+								cerr << "Error: Cannot find a parent freq for zoom band " << i << " of datastream " << antennaId << endl;
 								cerr << "Note: This might be caused by a frequency offset that is not a multiple of the spectral resolution" << endl;
 							
 								exit(EXIT_FAILURE);
 							}
-							zoomChans = static_cast<int>(corrSetup->FFTSpecRes*zf.bandwidth);
+							zoomChans = static_cast<int>(zf.bandwidth/corrSetup->FFTSpecRes);
 							fqId = getFreqId(freqs, zf.frequency, zf.bandwidth,
 									freqs[dd->recFreqId[parentFreqIndices[i]]].sideBand,
 									corrSetup->FFTSpecRes, corrSetup->outputSpecRes, overSamp, decimation, 1, 0);	// final zero points to the noTone pulse cal setup.
@@ -2303,7 +2307,7 @@ static int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int 
 							nZoomBands += dd->nRecPol[parentFreqIndices[i]];
 							if(!zf.correlateparent)
 							{
-								blockedfreqids[a].insert(dd->recFreqId[parentFreqIndices[i]]);
+								blockedfreqids[antennaId].insert(dd->recFreqId[parentFreqIndices[i]]);
 							}
 						}
 						DifxDatastreamAllocZoomBands(dd, nZoomBands);
@@ -2375,7 +2379,7 @@ static int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int 
 						}
 					}
 				}
-				D->config[c].datastreamId[d] = D->nDatastream;
+				D->config[configId].datastreamId[d] = D->nDatastream;
 				++D->nDatastream;
 				++d;
 			}
@@ -2390,13 +2394,13 @@ static int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int 
 			}
 			else
 			{
-				D->config[c].xmacLength = minChans;
+				D->config[configId].xmacLength = minChans;
 			}
 		}
-		worstcaseguardns = calculateWorstcaseGuardNS(mode->sampRate, D->config[c].subintNS);
-		if(D->config[c].guardNS < worstcaseguardns)
+		worstcaseguardns = calculateWorstcaseGuardNS(mode->sampRate, D->config[configId].subintNS);
+		if(D->config[configId].guardNS < worstcaseguardns)
 		{
-			cerr << "vex2difx calculates the worst-case guardNS as " << worstcaseguardns << ", but you have explicitly set " << D->config[c].guardNS << ". It is possible that mpifxcorr will refuse to run! Unless you know what you are doing, you should probably set guardNS to " << worstcaseguardns << " or above, or just leave it unset!" << endl;
+			cerr << "vex2difx calculates the worst-case guardNS as " << worstcaseguardns << ", but you have explicitly set " << D->config[configId].guardNS << ". It is possible that mpifxcorr will refuse to run! Unless you know what you are doing, you should probably set guardNS to " << worstcaseguardns << " or above, or just leave it unset!" << endl;
 			if(strict)
 			{
 				cerr << "\nExiting since strict mode was enabled" << endl;
