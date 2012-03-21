@@ -35,3 +35,6 @@ class PassType(object):
 class Queue(object):
     pass
 
+class VersionHistory(object):
+    pass
+
