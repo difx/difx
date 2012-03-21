@@ -86,4 +86,19 @@ class DifxDbConfig(object):
         return(self.config.set(section, key, value))
     
     
+    def sectionExists(self, section):
+        '''
+        Checks whether a section already exists in the configuration. Returns true in case the section exists, false otherwise.
+        '''
+        return(self.config.has_section(section))
+    
+        
+    def addSection(self, section):
+        '''
+        Adds a new section to the configuration if it does not exist yet. Note: in order to make this change
+        permanent writeConfig needs to be called.
+        '''
+        
+        if (not self.config.has_section(section)):
+            self.config.add_section(section)
     
