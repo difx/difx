@@ -33,9 +33,9 @@ class Schema(object):
     def _get_session(self):
         return scoped_session(sessionmaker(bind=self.engine__))
     session = property(_get_session)
+    
 
     def loadSchema(self):
-        
         
         self.experimentTable = Table("Experiment", self.metadata__, autoload=True)
         self.experimentStatusTable = Table("ExperimentStatus", self.metadata__, autoload=True)
@@ -45,6 +45,7 @@ class Schema(object):
         self.jobStatusTable = Table("JobStatus", self.metadata__, autoload=True)
         self.passTable = Table("Pass", self.metadata__, autoload=True)
         self.passTypeTable = Table("PassType", self.metadata__, autoload=True)
+        self.versionHistoryTable = Table("VersionHistory", self.metadata__, autoload=True)
         
         #association table for many-to-many Experiment/Module relation 
         self.experimentModuleTable = Table('ExperimentAndModule', self.metadata__, autoload=True)
@@ -73,7 +74,7 @@ class Schema(object):
         mapper(Experiment, self.experimentTable,properties={'status':relation(ExperimentStatus, uselist = False)})
         mapper(Module, self.moduleTable, properties={'experiments': relation(Experiment, secondary=self.experimentModuleTable, primaryjoin=self.experimentModuleTable.c.moduleID==self.moduleTable.c.id, secondaryjoin=self.experimentModuleTable.c.experimentID==self.experimentTable.c.id, foreign_keys = [self.experimentModuleTable.c.experimentID, self.experimentModuleTable.c.moduleID], backref=backref('modules'))})
         mapper(Slot, self.slotTable,properties={'module': relation(Module, uselist = False, backref=backref('slot', uselist=False))})
-        
+        mapper(VersionHistory, self.versionHistoryTable)
 
 class Connection(object):
     
