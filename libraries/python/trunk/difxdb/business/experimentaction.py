@@ -164,3 +164,20 @@ def changeExperimentState(session, code, statuscode):
 
     session.flush()
     
+def isExperimentArchived(session, code):
+    '''
+    Checks whether the given experiment has been archived. 
+    Returns True / False.
+    Raises an exception if the experiment does not exist in the database
+    '''
+    try:
+        experiment = session.query(model.Experiment).filter_by(code=code).one()
+        
+        if (experiment.dateArchived is None):
+            return(False)
+        else:
+            return (True)
+        
+    except:
+        raise Exception ("Unknown experiment %s" % code)
+    
