@@ -172,6 +172,23 @@ def syncReferenceDir(path, referencePath):
     remainder = proc.communicate()[0]
     print remainder
     return
+
+def confirmAction():
+    
+     # if --force option was used skip confirmation
+    if not options.force:
+            
+        print 'Are you sure you want to proceed? [y/N]'
+        a = lower(sys.stdin.readline())
+        if strip(a) == 'y':
+            print 'OK -- proceeding\n'
+        else:
+            print 'Not continuing.\n'
+
+            # destroy kerberos tickets
+            destroyTicket()
+            exit(0)
+    
     
 if __name__ == "__main__":
 
@@ -212,6 +229,13 @@ if __name__ == "__main__":
     if not experimentExists(session, code):
         exitOnError("Experiment with code %s not found in the database." % code)
         
+    # check if the experiment has already been archived
+    if isExperimentArchived(session, code):
+        print "Experiment has been archived already."
+        confirmAction()
+        
+        
+        
     # check that path exists
     if not isdir(path):
         exitOnError("Directory %s does not exists: %s" % (path))
@@ -245,20 +269,7 @@ if __name__ == "__main__":
 
         # delete files
         print 'Archival process completed. Now deleting path %s including all files ans subdirectories' % path
-       
-
-        # if --force option was used skip confirmation
-        if not options.force:
-            
-            print 'Are you sure you want to proceed? [y/N]'
-            a = lower(sys.stdin.readline())
-            if strip(a) == 'y':
-                    print 'OK -- proceeding\n'
-            else:
-                    print 'Not continuing.\n'
-                    # destroy kerberos tickets
-                    destroyTicket()
-                    exit(0)
+        confirmAction()
 
         shutil.rmtree(path)
 
