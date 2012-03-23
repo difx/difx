@@ -28,8 +28,10 @@ def isSchemaVersion(session, major, minor):
     '''
     
     dbMajor, dbMinor = getCurrentSchemaVersionNumber(session)
+    dbVersion = dbMajor*1000 + dbMinor
+    version = major*1000 + minor
     
-    if (major <= dbMajor) and (minor <= dbMinor):
+    if (version <= dbVersion):
         return(True)
     else:
         return(False)
