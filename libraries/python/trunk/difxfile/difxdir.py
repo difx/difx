@@ -58,7 +58,7 @@ class DifxDir(object):
         file = open(self.filename, "r")
         
         for line in file:
-            
+
             fields = line.split()
             
             #extract header fields
@@ -69,7 +69,7 @@ class DifxDir(object):
                 if (vsn != self.vsn):
                     raise Exception("VSN mismatch. File %s contains VSN: %s" % (self.filename, vsn))
                     
-            else: 
+            else:         
                 if (len(fields) == 12):
                     
                     scan = self.DirLine()
@@ -91,7 +91,7 @@ class DifxDir(object):
                     if (len(nameSplit) == 3):
                         scan.expName = upper(nameSplit[0])
                         scan.stationCode = upper(nameSplit[1])
-                        scan.scanName = upper(nameSplit[2])
+                        scan.scanName = upper(nameSplit[2])                      
                     else:
                         self.parseErrors += 1
                    
@@ -100,10 +100,10 @@ class DifxDir(object):
                         if (scan.expName not in self.experiments):
                             self.experiments.append(scan.expName)
                     
-                    if (len(scan.stationCode) == 2):
+                    if (len(scan.stationCode) == 2) and (len(self.stationCode) == 0):
                         self.stationCode = scan.stationCode
-                    
-
+    
+                                    
                     self.scans.append(scan)
                     
             lineCount += 1
@@ -111,9 +111,10 @@ class DifxDir(object):
         if (lineCount == 0):
             raise Exception("Empty .dir file: %s" % self.filename)
         
+        # check that .dir file contains as many entries as claimed in the header line
         if (scanCount != (lineCount -1)):
             raise Exception("Scan mismatch. File %s contains %s scans, but header claims it should be: %s" % (self.filename, lineCount-1, scanCount))
-     
+        
     def getFileDate(self):      
         return(self.fileDate)
     
