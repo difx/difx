@@ -263,6 +263,7 @@ if __name__ == "__main__":
         # update database
         experiment = getExperimentByCode(session, code)
         experiment.dateArchived = datetime.datetime.now()
+        experiment.achivedBy = user
         session.commit()
         session.flush()
        
