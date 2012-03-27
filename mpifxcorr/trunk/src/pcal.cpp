@@ -1074,6 +1074,8 @@ void test_pcal_auto()
       { 16e6,    10e3,      1e6,   "auto" },
       { 16e6,    10e3,      3e6,   "auto" },
       { 16e6,    10e3,      5e6,   "auto" },
+      { 16e6,       0,      5e6,   "auto" },
+      { 16e6,       0,      5e6,   "implicit" }, // fails, TODO?
       {  1e6,    10e3,      5e6,   "auto" },
       {  1e6,    10e3,        0,   "auto" },
       {  1e6,       0,        0,   "auto" },
@@ -1083,7 +1085,7 @@ void test_pcal_auto()
    /* Go through test cases; doesn't yet check PASS/FAIL automatically though! */
    int Ncases = sizeof(cases) / sizeof(struct tcase_t);
    for (int i = 0; i < Ncases; i++) {
-      test_pcal_case(samplecount, cases[i].bandwidth, cases[i].offset, cases[i].spacing, sampleoffset, "auto");
+      test_pcal_case(samplecount, cases[i].bandwidth, cases[i].offset, cases[i].spacing, sampleoffset, cases[i].mode);
    }
 
    return;
@@ -1213,10 +1215,13 @@ void print_32fc_phase(const cf32* v, const size_t len) {
 void compare_32fc_phase(const cf32* v, const size_t len, f32 angle, f32 step) {
    bool pass = true;
    const float merr = 0.1;
+   int num_suspicious = 0;
+
    for (size_t i=0; i<len; i++) { 
       f32 phi = (180/M_PI)*std::atan2(v[i].im, v[i].re);
       //f32 mag = sqrt(v[i].im*v[i].im + v[i].re*v[i].re);
       cerr << "tone #" << (i+1) << ": expect " << angle << ", got " << phi;
+
       if (std::abs(phi - angle) > merr) { 
           // allow Nyquist or DC components to have zero phase (assumes
           // here that zero phase comps are indeed from DC/Nyq, we don't know here...)
@@ -1225,13 +1230,17 @@ void compare_32fc_phase(const cf32* v, const size_t len, f32 angle, f32 step) {
              cerr << " : error>" << merr << "deg\n";
           } else {
              cerr << " : DC/Nyquist? error>" << merr << "deg\n";
+             num_suspicious++;
+             if (++num_suspicious > 1) {
+                pass = false;
+             }
           }
       } else {
           cerr << " : ok\n";
       }
       angle += step;
    }
-   cerr << "Extracted versus expected:\n" << ((pass) ? "PASS\n" : "NO PASS (or PASS but missed phase ambiguity)\n") << "\n";
+   cerr << "Extracted versus expected:\n" << ((pass) ? "PASS\n" : "FAIL (or PASS but missed phase ambiguity)\n") << "\n";
 }
 
 #endif
