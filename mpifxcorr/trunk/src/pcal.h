@@ -80,7 +80,7 @@ class pcal_config_pimpl;
 class PCal {
 
    public:
-      PCal() { /* C++: static storage (_N_tones etc) are zero-initialized before c'stor, not required to zero here */ };
+      PCal();
       virtual ~PCal() {};
    private:
       PCal(const PCal& o); /* no copy */

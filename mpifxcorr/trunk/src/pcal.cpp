@@ -206,6 +206,23 @@ int PCal::calcNumTones(double bw, double offset, double step)
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
+// BASE CLASS: c'stor
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+PCal::PCal()
+{
+    // defaults, in case base class is created via "PCal pcobj;"
+    _samplecount = 0;
+    _fs_hz = 0.0f;
+    _pcaloffset_hz = 0.0f;
+    _pcalspacing_hz = 0.0f;
+    _N_bins = 0;
+    _N_tones = 0;
+    _finalized = false;
+    _cfg = NULL;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
 // BASE CLASS: reference extractor, very slow but should be accurate
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -1070,12 +1087,12 @@ void test_pcal_auto()
    tcase_t cases[] = {
       // BW   1st tone  spacing
       { 16e6,       0,      1e6,   "auto" },
-      { 16e6,       0,      1e6,   "implicit" },
+      { 16e6,       0,      1e6,   "implicit" }, // fails, could be made to work
       { 16e6,    10e3,      1e6,   "auto" },
       { 16e6,    10e3,      3e6,   "auto" },
       { 16e6,    10e3,      5e6,   "auto" },
       { 16e6,       0,      5e6,   "auto" },
-      { 16e6,       0,      5e6,   "implicit" }, // fails, TODO?
+      { 16e6,       0,      5e6,   "implicit" }, // fails, could be made to work (merger of implicit&trivial)
       {  1e6,    10e3,      5e6,   "auto" },
       {  1e6,    10e3,        0,   "auto" },
       {  1e6,       0,        0,   "auto" },
@@ -1102,6 +1119,7 @@ void test_pcal_case(long samplecount, long bandwidth, long offset, long spacing,
 
    /* Get an extractor */
    PCal* extractor;
+   bool using_auto = false;
    if (!strcasecmp(extname, "trivial")) {
       extractor = new PCalExtractorTrivial(bandwidth, spacing, sampleoffset);
    } else if (!strcasecmp(extname, "shift")) {
@@ -1111,8 +1129,12 @@ void test_pcal_case(long samplecount, long bandwidth, long offset, long spacing,
    } else if (!strcasecmp(extname, "dummy")) {
       extractor = new PCalExtractorDummy(bandwidth, spacing, offset, sampleoffset);
    } else {
-       cerr << "Using pcal extractor factory to select suitable extractor\n";
-       extractor = PCal::getNew(bandwidth, spacing, offset, sampleoffset);
+      cerr << "Using pcal extractor factory to select suitable extractor\n";
+      extractor = PCal::getNew(bandwidth, spacing, offset, sampleoffset);
+      using_auto = true;
+   }
+   if (!using_auto) {
+      cerr << "User-requested extractor -- may not be suitable for given input parameters\n";
    }
 
    /* Number of tones in the test signal bandwidth */
