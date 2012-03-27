@@ -1230,7 +1230,6 @@ void compare_32fc_phase(const cf32* v, const size_t len, f32 angle, f32 step) {
              cerr << " : error>" << merr << "deg\n";
           } else {
              cerr << " : DC/Nyquist? error>" << merr << "deg\n";
-             num_suspicious++;
              if (++num_suspicious > 1) {
                 pass = false;
              }
