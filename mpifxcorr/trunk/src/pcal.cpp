@@ -52,6 +52,7 @@
  * @license  GNU GPL v3
  *
  * Changelog:
+ *   27Mar2012 - better count of tones in band, added corner cases like no tones in band, zero spacing
  *   05Oct2009 - added support for arbitrary input segment lengths
  *   08Oct2009 - added Briskens rotationless method
  *   02Nov2009 - added sub-subintegration sample offset, DFT for f-d results, tone bin copying to user buf
@@ -79,7 +80,12 @@ using namespace std;
     #define cwarn   std::cout
     #define cdebug  std::cout
     const char startl[] = "";
+    // #define VERBOSE_UNIT_TEST
 #endif
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+// IMPL class: implementation specific storage and variables
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 class pcal_config_pimpl {
   public:
@@ -87,10 +93,10 @@ class pcal_config_pimpl {
     ~pcal_config_pimpl() {};
   public:
     double   dphi;
-    cf32* rotator;        // pre-cooked oscillator values
-    cf32* rotated;        // temporary
-    cf32* pcal_complex;   // temporary unassembled output, later final output
-    f32*  pcal_real;      // temporary unassembled output for the pcaloffsethz==0.0f case
+    cf32*    rotator;        // pre-cooked oscillator values
+    cf32*    rotated;        // temporary
+    cf32*    pcal_complex;   // temporary unassembled output, later final output
+    f32*     pcal_real;      // temporary unassembled output for the pcaloffsethz==0.0f case
     size_t   rotatorlen;
     size_t   pcal_index;     // zero, changes when extract() is called at least once with "leftover" samples
     size_t   rotator_index;  // zero, changes when extract() is called at least once with "leftover" samples
@@ -102,7 +108,7 @@ class pcal_config_pimpl {
 
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
-// BASE CLASS: factory and helpers
+// BASE CLASS: Factory Method
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /**
@@ -116,33 +122,44 @@ class pcal_config_pimpl {
  */
 PCal* PCal::getNew(double bandwidth_hz, double pcal_spacing_hz, int pcal_offset_hz, const size_t sampleoffset) 
 {
-    //NOTE Added for testing
-    //return new PCalExtractorDummy(bandwidth_hz, pcal_spacing_hz, sampleoffset);
+    int No, Np, Nt;
+    double fs = 2.0 * bandwidth_hz;
 
-    //cout << "bandwidth_hz = " << bandwidth_hz << ", pcal_spacing_hz = " << pcal_spacing_hz << ", pcal_offset_hz = " << pcal_offset_hz << ", sampleoffset = " << sampleoffset << endl;
+    // Compute the repetition periods and number of tones in the band
+    No = (int)(fs / gcd(fs, (double)pcal_offset_hz));
+    Np = (int)(fs / gcd(fs, pcal_spacing_hz));
+    Nt = calcNumTones(bandwidth_hz, (double)pcal_offset_hz, pcal_spacing_hz);
 
+    // If no tones: placeholder class
+    if (Nt == 0)
+        return new PCalExtractorDummy(bandwidth_hz, pcal_spacing_hz, pcal_offset_hz, sampleoffset);
+
+    // First tone in DC bin: smallest footprint extractor
     if (pcal_offset_hz == 0.0f) {
         //cwarn << startl << "Warning: non-standard pcal mode (0 offset)" << endl;
         return new PCalExtractorTrivial(bandwidth_hz, (int)pcal_spacing_hz, sampleoffset);
     }
-    // if ( __unlikely ((2*bandwidth_hz / gcd(2*bandwidth_hz,pcal_spacing_hz)) > someLengthLimit) ) {
-    //    use oscillator implementation instead
-    // } else {
-    int No, Np;
-    No = (int)(2*bandwidth_hz / gcd(pcal_offset_hz, (long int)(2*bandwidth_hz)));
-    Np = (int)(2*bandwidth_hz / gcd((long int)(pcal_spacing_hz), (long int)(2*bandwidth_hz)));
+
+    // First tone in higher frequency bin: moderate footprint extractor
     if ((No % Np) == 0 /* && (!want_timedomain_delay) */) {
         return new PCalExtractorImplicitShift(bandwidth_hz, pcal_spacing_hz, pcal_offset_hz, sampleoffset);
     }
-    //cwarn << startl << "Warning: non-standard pcal mode.  Bandwidth = " << bandwidth_hz << "Hz; offset = " << pcal_offset_hz << "Hz; pcal spacing = " << pcal_spacing_hz << "Hz" <<endl;
+  
+    // Complex setup: need spectral shift to reduce FFT length to manageable size
     return new PCalExtractorShifting(bandwidth_hz, pcal_spacing_hz, pcal_offset_hz, sampleoffset);
 }
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+// BASE CLASS: Static helper funcs
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /**
  * Greatest common divisor.
  */
 long long PCal::gcd(long a, long b)
 {
+    if (a == 0 || b == 0)
+        return std::max(a,b);
     while (true) {
         a = a%b;
         if (a == 0) {
@@ -154,6 +171,37 @@ long long PCal::gcd(long a, long b)
         }
     }
 }
+
+/**
+ * Greatest common divisor, with rounding of floating point input args.
+ */
+long long PCal::gcd(double a, double b)
+{
+    return gcd((long)floor(a + 0.5), (long)floor(b + 0.5));
+}
+
+/**
+ * Return number of tones that fit the band, including any
+ * tones that fall onto DC or the upper band edge.
+ */
+int PCal::calcNumTones(double bw, double offset, double step)
+{
+    int n = 0;
+    if (bw <= 0.0f) { return 0; }
+
+    // loop is better than "n = 1 + floor((bw - offset) / step); n=n-1 if offset==0;"
+    double ftone = offset;
+    while (ftone <= bw) {
+        n++;
+        ftone += step;
+        if (step <= 0.0f) { break; }
+    }
+    return n;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+// BASE CLASS: reference extractor, very slow but should be accurate
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /**
  * Processes samples and accumulates the detected phase calibration tone vector.
@@ -222,32 +270,34 @@ bool PCal::extractAndIntegrate_reference(f32 const* data, const size_t len, cf32
 
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
-// DERIVED CLASS: extraction of zero-offset PCal signals
+// DERIVED CLASS: extraction of Phase Cal signals with first tone at 0 Hertz
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-PCalExtractorTrivial::PCalExtractorTrivial(double bandwidth_hz, int pcal_spacing_hz, const size_t sampleoffset)
+PCalExtractorTrivial::PCalExtractorTrivial(double bandwidth_hz, double pcal_spacing_hz, const size_t sampleoffset)
 {
     vecStatus s;
+    pcal_spacing_hz = std::abs(pcal_spacing_hz);
+
     /* Derive config */
-    _cfg = new pcal_config_pimpl();
-    _fs_hz   = 2*bandwidth_hz;
+    _fs_hz          = 2*bandwidth_hz;
     _pcaloffset_hz  = 0;
     _pcalspacing_hz = pcal_spacing_hz;
-    _N_bins  = (int)(_fs_hz / gcd((long int)(std::abs((double)pcal_spacing_hz)),(long int)( _fs_hz)));
-    _N_tones = (int)(std::ceil(bandwidth_hz / pcal_spacing_hz)) - 1;    // -1 is to avoid tonefreq == lofreq
-    tonestep = (int)(std::abs((double)pcal_spacing_hz) / gcd((long int)(std::abs((double)pcal_spacing_hz)),(long int)( _fs_hz)));
+    _N_bins         = (int)(_fs_hz / gcd(_fs_hz, pcal_spacing_hz));
+    _N_tones        = calcNumTones(bandwidth_hz, 0.0f, pcal_spacing_hz) - 1; // -1 is to exclude tone at 0 Hertz
+    _tone_step      = (int)(pcal_spacing_hz / gcd(_fs_hz, pcal_spacing_hz));
+    _cfg = new pcal_config_pimpl();
 
     /* Prep for FFT/DFT */
     int wbufsize = 0;
     s = vectorInitDFTC_cf32(&(_cfg->dftspec), _N_bins, vecFFT_NoReNorm, vecAlgHintAccurate);
-    if (s != vecNoErr) 
+    if (s != vecNoErr)
         csevere << startl << "Error in DFTInitAlloc in PCalExtractorTrivial::PCalExtractorTrivial " << vectorGetStatusString(s) << endl; 
     s = vectorGetDFTBufSizeC_cf32(_cfg->dftspec, &wbufsize);
     if (s != vecNoErr) 
         csevere << startl << "Error in DFTGetBufSize PCalExtractorTrivial::PCalExtractorTrivial " << vectorGetStatusString(s) << endl; 
     _cfg->dftworkbuf = vectorAlloc_u8(wbufsize);
 
-    /* Allocate */
+    /* Allocate twice the amount strictly necessary */
     _cfg->pcal_complex = vectorAlloc_cf32(_N_bins * 2);
     _cfg->pcal_real    = vectorAlloc_f32(_N_bins * 2);
     _cfg->dft_out      = vectorAlloc_cf32(_N_bins * 1);
@@ -347,6 +397,8 @@ bool PCalExtractorTrivial::extractAndIntegrate(f32 const* samples, const size_t 
 uint64_t PCalExtractorTrivial::getFinalPCal(cf32* out)
 {
     vecStatus s;
+    invariant();
+
     if (!_finalized) 
     {
         _finalized = true;
@@ -357,10 +409,22 @@ uint64_t PCalExtractorTrivial::getFinalPCal(cf32* out)
             csevere << startl << "Error in DFTFwd PCalExtractorTrivial::getFinalPCal " << vectorGetStatusString(s) << endl;
     }
 
-    // Copy only the tone bins; also discard the DC bin that has zero phase.
+    // Show all bin phases
+    #ifdef VERBOSE_UNIT_TEST
+    cout << "PCalExtractorTrivial::getFinalPCal phases are: ";
+    for (int i = 0; i < _N_bins; i++)
+    {
+        f32 phi = (180/M_PI)*std::atan2(_cfg->dft_out[i].im, _cfg->dft_out[i].re);
+        cout << "p[" << i << "]=" << phi << " ";
+    }
+    cout << "deg\n";
+    #endif
+
+    // Copy only the tone bins; also discard the DC bin that has zero phase,
+    // but keep highest tone even if it is at the band edge (Nyquist, zero phase)
     for (int i = 0; i < _N_tones; i++)
     {
-        out[i] = _cfg->dft_out[(i+1)*tonestep];
+        out[i] = _cfg->dft_out[(i+1)*_tone_step];
     }
 
     return _samplecount;
@@ -368,20 +432,23 @@ uint64_t PCalExtractorTrivial::getFinalPCal(cf32* out)
 
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
-// DERIVED CLASS: extraction of PCal signals with non-zero offset
+// DERIVED CLASS: extraction of PCal signals with non-zero offset via spectral shift
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 PCalExtractorShifting::PCalExtractorShifting(double bandwidth_hz, double pcal_spacing_hz, int pcal_offset_hz, const size_t sampleoffset)
 {
-    /* Derive config */
-    _fs_hz          = 2 * bandwidth_hz;
-    _pcaloffset_hz  = pcal_offset_hz;
-    _pcalspacing_hz = pcal_spacing_hz;
-    _N_bins         = (int)(_fs_hz / gcd((long int)(std::abs((double)pcal_spacing_hz)),(long int)( _fs_hz)));
-    _N_tones        = (int)(std::floor((bandwidth_hz - pcal_offset_hz) / pcal_spacing_hz) + 1);
-    _cfg = new pcal_config_pimpl();
-    _cfg->rotatorlen = (size_t)(_fs_hz / gcd((long int)(std::abs((double)_pcaloffset_hz)), (long int)(_fs_hz)));
+    pcal_spacing_hz = std::abs(pcal_spacing_hz);
 
+    /* Derive config */
+    _fs_hz           = 2 * bandwidth_hz;
+    _pcaloffset_hz   = pcal_offset_hz;
+    _pcalspacing_hz  = pcal_spacing_hz;
+    _N_bins          = (int)(_fs_hz / gcd(_fs_hz, pcal_spacing_hz));
+    _N_tones         = calcNumTones(bandwidth_hz, pcal_offset_hz, pcal_spacing_hz);
+//(int)(std::floor((bandwidth_hz - pcal_offset_hz) / pcal_spacing_hz) + 1);
+
+    _cfg = new pcal_config_pimpl();
+    _cfg->rotatorlen = (size_t)(_fs_hz / gcd(_fs_hz, _pcaloffset_hz));
     _cfg->rotatorlen = _N_bins * _cfg->rotatorlen / gcd ((long int)(_cfg->rotatorlen), (long int)(_N_bins));
 
     /* Prep for FFT/DFT */
@@ -397,7 +464,7 @@ PCalExtractorShifting::PCalExtractorShifting(double bandwidth_hz, double pcal_sp
         csevere << startl << "Error in DFTGetBufSize in PCalExtractorShifting::PCalExtractorShifting " << vectorGetStatusString(s) << endl;
     _cfg->dftworkbuf = vectorAlloc_u8(wbufsize);
 
-    /* Allocate */
+    /* Allocate twice the amount strictly necessary */
     _cfg->pcal_complex = vectorAlloc_cf32(_N_bins * 2);
     _cfg->pcal_real    = vectorAlloc_f32(_N_bins * 2);
     _cfg->rotator = vectorAlloc_cf32(_cfg->rotatorlen * 2);
@@ -492,6 +559,9 @@ bool PCalExtractorShifting::extractAndIntegrate(f32 const* samples, const size_t
      * The complex oscillator has a period of _fs_hz/gcd(_fs_hz,_pcaloffset_hz).
      * The period is usually very short, say, 1600 samples. We precomputed those
      * in the constructor and use them here.
+     * If the values _fs_hz and _pcaloffset_hz are co-prime, a precomputed sin/cos vector
+     * would need a lot of memory. At that point a live sin/cos computation can be
+     * faster than the memory access.
      */
 
     /* Process the first part that fits perfectly (and note: rotatorlen modulo _N_bins is 0!) */
@@ -542,6 +612,8 @@ bool PCalExtractorShifting::extractAndIntegrate(f32 const* samples, const size_t
 uint64_t PCalExtractorShifting::getFinalPCal(cf32* out)
 {
     vecStatus s;
+    invariant();
+
     if (!_finalized) {
         _finalized = true;
         vectorAdd_cf32_I(/*src*/&(_cfg->pcal_complex[_N_bins]), /*srcdst*/&(_cfg->pcal_complex[0]), _N_bins);
@@ -551,20 +623,25 @@ uint64_t PCalExtractorShifting::getFinalPCal(cf32* out)
         
     }
 
+    // Show all bin phases
+    #ifdef VERBOSE_UNIT_TEST
+    cout << "PCalExtractorShifting::getFinalPCal phases are: ";
+    for (int i = 0; i < _N_bins; i++)
+    {
+        f32 phi = (180/M_PI)*std::atan2(_cfg->dft_out[i].im, _cfg->dft_out[i].re);
+        cout << "p[" << i << "]=" << phi << " ";
+    }
+    cout << "deg\n";
+    #endif
+
     // Copy only the interesting bins. 
     // Note the "DC" bin has phase info in 1st shifted tone, do not discard.
-    if (false && _pcalspacing_hz == 1e6) {
-        s = vectorCopy_cf32(_cfg->dft_out, (cf32*)out, _N_tones);
-        if (s != vecNoErr)
-            csevere << startl << "Error in Copy in PCalExtractorShifting::getFinalPCal " << vectorGetStatusString(s) << endl;
-    } else {
-        size_t step = (size_t)(std::floor(_N_bins*(_pcalspacing_hz/_fs_hz)));
-        for (size_t n=0; n<(size_t)_N_tones; n++) {
-            size_t idx = n*step;
-            if (idx >= (size_t)_N_bins) { break; }
-            out[n].re = _cfg->dft_out[idx].re;
-            out[n].im = _cfg->dft_out[idx].im;
-        }
+    size_t step = (size_t)(std::floor(_N_bins*(_pcalspacing_hz/_fs_hz)));
+    for (size_t n=0; n<(size_t)_N_tones; n++) {
+        size_t idx = n*step;
+        if (idx >= (size_t)_N_bins) { break; }
+        out[n].re = _cfg->dft_out[idx].re;
+        out[n].im = _cfg->dft_out[idx].im;
     }
     return _samplecount;
 }
@@ -573,16 +650,16 @@ uint64_t PCalExtractorShifting::getFinalPCal(cf32* out)
 // DERIVED CLASS: extraction of PCal signals with non-zero offset and FFT-implicit rotation possible
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-PCalExtractorImplicitShift::PCalExtractorImplicitShift(double bandwidth_hz, double pcal_spacing_hz, int pcal_offset_hz, const size_t sampleoffset)
+PCalExtractorImplicitShift::PCalExtractorImplicitShift(double bandwidth_hz, double pcal_spacing_hz, 
+int pcal_offset_hz, const size_t sampleoffset)
 {
     /* Derive config */
     _fs_hz          = 2 * bandwidth_hz;
     _pcalspacing_hz = pcal_spacing_hz;
     _pcaloffset_hz  = pcal_offset_hz;
-    _N_bins         = (int)(_fs_hz / gcd((long int)(std::abs((double)_pcaloffset_hz)), (long int)(_fs_hz)));
-    _N_tones        = (int)(std::floor((bandwidth_hz - pcal_offset_hz) / pcal_spacing_hz) + 1);
+    _N_bins         = (int)(_fs_hz / gcd(_fs_hz, _pcaloffset_hz));
+    _N_tones        = calcNumTones(bandwidth_hz, _pcaloffset_hz, _pcalspacing_hz);
     _cfg = new pcal_config_pimpl();
-    cdebug << startl << "fs_hz is " << _fs_hz << ", pcaloffset_hz is " << _pcaloffset_hz << endl;
 
     /* Prep for FFT/DFT */
     int wbufsize = 0;
@@ -596,7 +673,7 @@ PCalExtractorImplicitShift::PCalExtractorImplicitShift(double bandwidth_hz, doub
         csevere << startl << "Error in DFTGetBufSize in PCalExtractorImplicitShift::PCalExtractorImplicitShift " << vectorGetStatusString(s) << endl;
     _cfg->dftworkbuf = vectorAlloc_u8(wbufsize);
 
-    /* Allocate */
+    /* Allocate twice the amount strictly necessary */
     _cfg->pcal_complex = vectorAlloc_cf32(_N_bins * 2);
     _cfg->pcal_real    = vectorAlloc_f32(_N_bins * 2);
     _cfg->dft_out      = vectorAlloc_cf32(_N_bins * 1);
@@ -707,6 +784,8 @@ bool PCalExtractorImplicitShift::extractAndIntegrate(f32 const* samples, const s
 uint64_t PCalExtractorImplicitShift::getFinalPCal(cf32* out)
 {
    vecStatus s;
+   invariant();
+
    if (!_finalized) 
    {
         _finalized = true;
@@ -717,10 +796,20 @@ uint64_t PCalExtractorImplicitShift::getFinalPCal(cf32* out)
             csevere << startl << "Error in DFTFwd in PCalExtractorImplicitShift::getFinalPCal " << vectorGetStatusString(s) << endl;
     }
  
+    // Show all bin phases
+    #ifdef VERBOSE_UNIT_TEST
+    cout << "PCalExtractorImplicitShift::getFinalPCal phases are: ";
+    for (int i = 0; i < _N_bins; i++)
+    {
+        f32 phi = (180/M_PI)*std::atan2(_cfg->dft_out[i].im, _cfg->dft_out[i].re);
+        cout << "p[" << i << "]=" << phi << " ";
+    }
+    cout << "deg\n";
+    #endif
+
     /* Copy only the interesting bins */
     size_t step = (size_t)(std::floor(double(_N_bins)*(_pcalspacing_hz/_fs_hz)));
     size_t offset = (size_t)(std::floor(double(_N_bins)*(_pcaloffset_hz/_fs_hz)));
-    // cout << "step=" << step << " offset=" << offset << endl;
     for (size_t n=0; n<(size_t)_N_tones; n++) {
         size_t idx = offset + n*step;
         if (idx >= (size_t)_N_bins) { 
@@ -821,15 +910,17 @@ void PCal::extract_continuous(f32* data, size_t len)
 // DERIVED CLASS: PCal class that returns only known dummy values.
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-PCalExtractorDummy::PCalExtractorDummy(double bandwidth_hz, double pcal_spacing_hz, const size_t sampleoffset)
+PCalExtractorDummy::PCalExtractorDummy(double bandwidth_hz, double pcal_spacing_hz, int pcal_offset_hz, 
+const size_t sampleoffset)
 {
-  /* ignore all */
-  _fs_hz   = 2*bandwidth_hz;
-  _N_bins  = (int)(_fs_hz / gcd((long int)(std::abs(pcal_spacing_hz)), (long int)(_fs_hz)));
-  _N_tones = (int)(std::floor(bandwidth_hz / pcal_spacing_hz));
-  _cfg = (pcal_config_pimpl*)1;
-  this->clear();
-  cdebug << startl << "PCalExtractorDummy: _Ntones=" << _N_tones << ", _N_bins=" << _N_bins << endl;
+    /* Set only the absolutely required members */
+    _fs_hz          = 2*bandwidth_hz;
+    _pcaloffset_hz  = pcal_offset_hz;
+    _pcalspacing_hz = pcal_spacing_hz;
+    _N_tones        = calcNumTones(bandwidth_hz, (double)_pcaloffset_hz, _pcalspacing_hz);
+    _N_bins         = 2*_N_tones;
+    this->clear();
+    cdebug << startl << "PCalExtractorDummy: _Ntones=" << _N_tones << ", _N_bins=" << _N_bins << endl;
 }
 
 PCalExtractorDummy::~PCalExtractorDummy()
@@ -871,9 +962,6 @@ bool PCalExtractorDummy::extractAndIntegrate(f32 const* samples, const size_t le
       return false; 
   }
   _samplecount += len;
-  if (false && _samplecount>0 && _samplecount<1024) { // print just a few times
-     cdebug << startl << "_samplecount=" << _samplecount << endl;
-  }
   return true;
 }
 
@@ -892,8 +980,8 @@ uint64_t PCalExtractorDummy::getFinalPCal(cf32* out)
 
     // Fill the output array with dummy values  
     for (int i = 0; i < _N_tones; i++) {
-        out[i].re = sqrt(2.0); // * _samplecount;
-        out[i].im = sqrt(2.0) * _samplecount;
+        out[i].re = 0.0f;
+        out[i].im = 0.0f;
     }
     return _samplecount;
 }
@@ -905,8 +993,8 @@ uint64_t PCalExtractorDummy::getFinalPCal(cf32* out)
 #ifdef UNIT_TEST
 
 /* Example:
-g++ -m64 -DUNIT_TEST -Wall -O3 -I$(IPPROOT)/include/ -pthread -I.. pcal.cpp -o test \
- -L$(IPPROOT)/sharedlib -L$(IPPROOT)/lib -lippsem64t -lguide -lippvmem64t -lippcoreem64t
+g++ -m64 -DUNIT_TEST -Wall -O3 -I$IPPROOT/include/ -pthread -I.. pcal.cpp -o test \
+ -L$IPPROOT/sharedlib -L$IPPROOT/lib -lippsem64t -lguide -lippvmem64t -lippcoreem64t
 
 ./test 32000 16e6 1e6 510e3 0
 */
@@ -940,7 +1028,7 @@ int main(int argc, char** argv)
            << "           spacingHz    : spacing of PCal tones in Hz\n"
            << "           offsetHz     : distance of first tone from 0 Hz\n"
            << "           sampleoffset : non-zero to test sample adjuster, 0 otherwise\n"
-           << "           class        : specify extractor explicitly ('trivial', 'shift' or 'implicit')\n\n";
+           << "           class        : specify extractor explicitly ('trivial', 'shift', 'implicit' or 'dummy')\n\n";
       return -1;
    }
    long samplecount = atof(argv[1]);
@@ -948,7 +1036,14 @@ int main(int argc, char** argv)
    long spacing = atof(argv[3]);
    long offset = atof(argv[4]);
    long sampleoffset = atof(argv[5]);
-   cerr << "BWHz=" << bandwidth << " spcHz=" << spacing << ", offHz=" << offset << ", sampOff=" << sampleoffset << "\n";
+   cerr << "Settings: BWHz=" << bandwidth << " spcHz=" << spacing << ", offHz=" << offset << ", sampOff=" << sampleoffset << "\n";
+
+   /* Check GCD functions */
+   assert(PCal::gcd(32771.0, 32783.0) == 1);
+   assert(PCal::gcd(32771.0, 32771.0*32783.0) == 32771);
+   assert(PCal::gcd(32771.0*32783.0, 32771.0) == 32771);
+   assert(PCal::gcd((long)0, (long)1) == 1);
+   assert(PCal::gcd((long)0, (long)0) == 0);
 
    /* Get an extractor */
    PCal* extractor;
@@ -959,6 +1054,8 @@ int main(int argc, char** argv)
            extractor = new PCalExtractorShifting(bandwidth, spacing, offset, sampleoffset);
        } else if (!strcasecmp(argv[6], "implicit")) {
            extractor = new PCalExtractorImplicitShift(bandwidth, spacing, offset, sampleoffset);
+       } else if (!strcasecmp(argv[6], "dummy")) {
+           extractor = new PCalExtractorDummy(bandwidth, spacing, offset, sampleoffset);
        } else {
            cerr << "Unknown extractor <class> " << argv[6] << ", reverting to factory chooser\n";
            extractor = PCal::getNew(bandwidth, spacing, offset, sampleoffset);
@@ -967,20 +1064,24 @@ int main(int argc, char** argv)
        extractor = PCal::getNew(bandwidth, spacing, offset, sampleoffset);
    }
 
-   int numtones = extractor->getLength();
-   cerr << "extractor->getLength() tone count is " << numtones << "\n";
-   cf32* out = vectorAlloc_cf32(numtones);
-   cf32* ref = vectorAlloc_cf32(numtones);
+   /* Number of tones in the test signal bandwidth */
+   int numtones_actual = PCal::calcNumTones(bandwidth, offset, spacing);
+   int numtones_extracted = extractor->getLength();
+   cf32* out = vectorAlloc_cf32(numtones_actual);
+   cf32* ref = vectorAlloc_cf32(numtones_actual);
 
-   /* Make test data for fixed or sloping phase */
-   float* data = vectorAlloc_f32(samplecount);
-   double wtone[numtones];
-   for (int tone=0; tone<numtones; tone++) {
+   cerr << "Actual N_tones = " << numtones_actual << " in synthesized band\n";
+   cerr << "Extractor uses N_tones = " << numtones_extracted << "\n";
+
+   /* Make test signal with tones phases having a slope */
+   double wtone[numtones_actual];
+   for (int tone=0; tone<numtones_actual; tone++) {
        wtone[tone] = 2*M_PI * (offset + tone*spacing) / (2*bandwidth);
    }
+   float* data = vectorAlloc_f32(samplecount);
    for (long n=0; n<samplecount; n++) {
       data[n] = 0; //rand()*1e-9;
-      for (int tone=0; tone<numtones; tone++) {
+      for (int tone=0; tone<numtones_actual; tone++) {
           double phi = wtone[tone] * (n+sampleoffset);
           if (sloping_reference_data)
               phi += tone*tone_phase_slope*(M_PI/180);
@@ -1005,11 +1106,11 @@ int main(int argc, char** argv)
    /* Freeze the result */
    usedsamplecount = extractor->getFinalPCal(out);
 
-   /* Compare result to expectation */
+   /* Compare extracted phase slope to expected phase slope */
    float expected_start = tone_phase_start;
    float expected_slope = (sloping_reference_data) ? tone_phase_slope : 0.0f;
-   if (offset == 0.0f) {
-       // exclude phaseless tone at DC if offset=0Hz
+   if (offset == 0.0f && sloping_reference_data) {
+       // if first tone at DC, skip its "phase"
        expected_start += expected_slope;
    }
 
@@ -1020,9 +1121,9 @@ int main(int argc, char** argv)
    }
 
    cerr << "final PCal data:\n";
-   // print_32fc(out, numtones);
-   // print_32fc_phase(out, numtones);
-   compare_32fc_phase(out, numtones, expected_start, expected_slope);
+   // print_32fc(out, numtones_extracted);
+   // print_32fc_phase(out, numtones_extracted);
+   compare_32fc_phase(out, numtones_extracted, expected_start, expected_slope);
 
    /* Comparison with the (poorer) "reference" extracted result */
    if (0) {
@@ -1030,10 +1131,10 @@ int main(int argc, char** argv)
        extractor->extractAndIntegrate_reference(data, samplecount, ref, sampleoffset);
 
        cerr << "reference PCal data:\n";
-       // print_32fc(ref, numtones);
-       // print_32fc_phase(ref, numtones);
+       // print_32fc(ref, numtones_actual);
+       // print_32fc_phase(ref, numtones_actual);
 
-       compare_32fc_phase(ref, numtones, expected_start, expected_slope);
+       compare_32fc_phase(ref, numtones_actual, expected_start, expected_slope);
    }
 
    return 0;

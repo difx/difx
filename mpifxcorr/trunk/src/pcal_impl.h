@@ -72,12 +72,14 @@ class pcal_config_pimpl;
 
 class PCalExtractorTrivial : public PCal {
    public:
-      PCalExtractorTrivial(double bandwidth_hz, int pcal_spacing_hz, const size_t sampleoffset);
+      PCalExtractorTrivial(double bandwidth_hz, double pcal_spacing_hz, const size_t sampleoffset);
       ~PCalExtractorTrivial();
    private:
      PCalExtractorTrivial& operator= (const PCalExtractorTrivial& o); /* no copy */
      PCalExtractorTrivial(const PCalExtractorTrivial& o); /* no copy */
-     int tonestep;
+
+   private:
+     int _tone_step;
 
    public:
       /**
@@ -249,7 +251,8 @@ class PCalExtractorImplicitShift : public PCal {
 
 class PCalExtractorDummy : public PCal {
   public:
-    PCalExtractorDummy(double bandwidth_hz, double pcal_spacing_hz, const size_t sampleoffset);
+    PCalExtractorDummy(double bandwidth_hz, double pcal_spacing_hz, int pcal_offset_hz, 
+                       const size_t sampleoffset);
     ~PCalExtractorDummy();
   private:
     PCalExtractorDummy& operator= (const PCalExtractorDummy& o); /* no copy */

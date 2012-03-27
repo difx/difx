@@ -80,7 +80,7 @@ class pcal_config_pimpl;
 class PCal {
 
    public:
-      PCal() {};
+      PCal() { /* C++: static storage (_N_tones etc) are zero-initialized before c'stor, not required to zero here */ };
       virtual ~PCal() {};
    private:
       PCal(const PCal& o); /* no copy */
@@ -97,6 +97,12 @@ class PCal {
        * @return new PCal extractor class instance 
        */
       static PCal* getNew(double bandwidth_hz, double pcal_spacing_hz, int pcal_offset_hz, const size_t sampleoffset);
+
+     /**
+      * Return number of tones that fit the band, including any
+      * tones that fall onto DC or the upper band edge.
+      */
+      static int calcNumTones(double bw, double offset, double step);
 
    public:
       /**
@@ -173,11 +179,16 @@ class PCal {
        */
       bool extractAndIntegrate_reference(f32 const* data, const size_t len, cf32* pcalout, const uint64_t sampleoffset);
 
-   private:
+   public:
      /**
       * Return greatest common divisor.
       */
       static long long gcd(long, long);
+
+     /**
+      * Return greatest common divisor, with rounding of floating point input args.
+      */
+      static long long gcd(double, double);
 
    private:
       /* Testing */
@@ -186,9 +197,9 @@ class PCal {
           assert(_fs_hz>0.0f);
           assert(_pcaloffset_hz>=0.0f);
           assert(_pcalspacing_hz>=0.0f);
-          assert(_pcaloffset_hz<_pcalspacing_hz);
-          assert(_N_bins>0);
-          assert(_N_tones>0);
+          assert((_pcalspacing_hz==0.0f) || (_pcalspacing_hz!=0.0f && _pcaloffset_hz<_pcalspacing_hz));
+          assert(_N_bins>=0);
+          assert(_N_tones>=0);
           assert(_cfg != NULL);
       }
 
