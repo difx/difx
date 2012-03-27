@@ -160,7 +160,7 @@ def syncReferenceDir(path, referencePath):
     for pattern in includePattern:
         cmd += " --include '%s' " % pattern
     
-    cmd += " --exclude '*' %s %s" % ( path, referencePath) 
+    cmd += " --exclude '*' --exclude '*.difx' %s %s" % ( path, referencePath) 
 
     print cmd
     
@@ -260,19 +260,19 @@ if __name__ == "__main__":
         # copy subset of files to the reference backup location
         syncReferenceDir(path, config.get("difxarchive", "refbackuppath"))
 
-        # update database
-        experiment = getExperimentByCode(session, code)
-        experiment.dateArchived = datetime.datetime.now()
-        experiment.achivedBy = user
-        session.commit()
-        session.flush()
-       
-
         # delete files
-        print 'Archival process completed. Now deleting path %s including all files ans subdirectories' % path
+        print 'Archival process completed. Now deleting path %s including all files and subdirectories' % path
         confirmAction()
 
         shutil.rmtree(path)
+        
+        
+        # update database
+        experiment = getExperimentByCode(session, code)
+        experiment.dateArchived = datetime.datetime.now()
+        experiment.archivedBy = user
+        session.commit()
+        session.flush()
 
 
     except Exception as e:
