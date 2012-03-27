@@ -130,6 +130,12 @@ PCal* PCal::getNew(double bandwidth_hz, double pcal_spacing_hz, int pcal_offset_
     Np = (int)(fs / gcd(fs, pcal_spacing_hz));
     Nt = calcNumTones(bandwidth_hz, (double)pcal_offset_hz, pcal_spacing_hz);
 
+    cdebug << startl << "PCal Factory: " 
+           << "bw " << bandwidth_hz << ", spacing " << pcal_spacing_hz << ", "
+           << "offset " << pcal_offset_hz << ", "
+           << Nt << " tones fit including band edges"
+           << endl;
+
     // If no tones: placeholder class
     if (Nt == 0)
         return new PCalExtractorDummy(bandwidth_hz, pcal_spacing_hz, pcal_offset_hz, sampleoffset);
@@ -445,7 +451,6 @@ PCalExtractorShifting::PCalExtractorShifting(double bandwidth_hz, double pcal_sp
     _pcalspacing_hz  = pcal_spacing_hz;
     _N_bins          = (int)(_fs_hz / gcd(_fs_hz, pcal_spacing_hz));
     _N_tones         = calcNumTones(bandwidth_hz, pcal_offset_hz, pcal_spacing_hz);
-//(int)(std::floor((bandwidth_hz - pcal_offset_hz) / pcal_spacing_hz) + 1);
 
     _cfg = new pcal_config_pimpl();
     _cfg->rotatorlen = (size_t)(_fs_hz / gcd(_fs_hz, _pcaloffset_hz));
@@ -932,8 +937,8 @@ PCalExtractorDummy::~PCalExtractorDummy()
  */
 void PCalExtractorDummy::clear()
 {
-  _samplecount = 0;
-  _finalized   = false;
+    _samplecount = 0;
+    _finalized   = false;
 }
 
 /**
@@ -957,12 +962,12 @@ void PCalExtractorDummy::adjustSampleOffset(const size_t sampleoffset)
  */
 bool PCalExtractorDummy::extractAndIntegrate(f32 const* samples, const size_t len)
 {
-  if (false && _finalized) { 
-      cerror << startl << "Dummy::extract on finalized results!" << endl;
-      return false; 
-  }
-  _samplecount += len;
-  return true;
+    if (false && _finalized) { 
+        cerror << startl << "Dummy::extract on finalized results!" << endl;
+        return false; 
+    }
+    _samplecount += len;
+    return true;
 }
 
 /**
@@ -1009,19 +1014,14 @@ void print_32f(const f32* v, const size_t len);
 void print_32fc(const cf32* v, const size_t len);
 void print_32fc_phase(const cf32* v, const size_t len);
 void compare_32fc_phase(const cf32* v, const size_t len, f32 angle, f32 step);
+void test_pcal_case(long samplecount, long bandwidth, long offset, long spacing, long sampleoffset, const char* extname);
+void test_pcal_auto();
 
 int main(int argc, char** argv)
 {
-   bool sloping_reference_data = true;
-   bool skip_some_data = true;
-   uint64_t usedsamplecount;
-
-   const float tone_phase_start = -90.0f;
-   const float tone_phase_slope = 5.0f;
-
-   if (argc < 6) {
-      cerr << "\nUsage:   " << argv[0] << " <samplecount> <bandwidthHz> <spacingHz> <offsetHz> <sampleoffset> [<class>]\n"
-           << "Example: " << argv[0] << " 32000 16e6 1e6 510e3 0 triv\n\n"
+   if (argc < 6 && argc != 2) {
+      cerr << "\nUsage:   " << argv[0] << " <auto> | < <samplecount> <bandwidthHz> <spacingHz> <offsetHz> <sampleoffset> [<class>] >\n"
+           << "Example: " << argv[0] << " 32000 16e6 1e6 510e3 0 implicit\n\n"
            << "Options:\n"
            << "           samplecount  : number of test samples to generate\n"
            << "           bandwidthHz  : bandwidth of test signal (half the sampling rate)\n"
@@ -1031,12 +1031,6 @@ int main(int argc, char** argv)
            << "           class        : specify extractor explicitly ('trivial', 'shift', 'implicit' or 'dummy')\n\n";
       return -1;
    }
-   long samplecount = atof(argv[1]);
-   long bandwidth = atof(argv[2]);
-   long spacing = atof(argv[3]);
-   long offset = atof(argv[4]);
-   long sampleoffset = atof(argv[5]);
-   cerr << "Settings: BWHz=" << bandwidth << " spcHz=" << spacing << ", offHz=" << offset << ", sampOff=" << sampleoffset << "\n";
 
    /* Check GCD functions */
    assert(PCal::gcd(32771.0, 32783.0) == 1);
@@ -1045,22 +1039,77 @@ int main(int argc, char** argv)
    assert(PCal::gcd((long)0, (long)1) == 1);
    assert(PCal::gcd((long)0, (long)0) == 0);
 
+   /* Run user-specified test */
+   if (argc > 2) {
+      long samplecount = atof(argv[1]);
+      long bandwidth = atof(argv[2]);
+      long spacing = atof(argv[3]);
+      long offset = atof(argv[4]);
+      long sampleoffset = atof(argv[5]);
+      cerr << "Settings: BWHz=" << bandwidth << " spcHz=" << spacing << ", offHz=" << offset << ", sampOff=" << sampleoffset << "\n";
+      if (argc > 6)
+         test_pcal_case(samplecount, bandwidth, offset, spacing, sampleoffset, argv[6]);
+      else
+         test_pcal_case(samplecount, bandwidth, offset, spacing, sampleoffset, "auto");
+   } else {
+      cerr << "Running through several test cases\n";
+      test_pcal_auto();
+   }
+
+   return 0;
+}
+
+void test_pcal_auto()
+{
+   long sampleoffset = 11;
+   long samplecount  = 32e3;
+   struct tcase_t {
+      long bandwidth, offset, spacing;
+      const char* mode;
+   };
+   tcase_t cases[] = {
+      // BW   1st tone  spacing
+      { 16e6,       0,      1e6,   "auto" },
+      { 16e6,       0,      1e6,   "implicit" },
+      { 16e6,    10e3,      1e6,   "auto" },
+      { 16e6,    10e3,      3e6,   "auto" },
+      { 16e6,    10e3,      5e6,   "auto" },
+      {  1e6,    10e3,      5e6,   "auto" },
+      {  1e6,    10e3,        0,   "auto" },
+      {  1e6,       0,        0,   "auto" },
+      {  1e6,     2e6,        0,   "auto" },
+   };
+
+   /* Go through test cases; doesn't yet check PASS/FAIL automatically though! */
+   int Ncases = sizeof(cases) / sizeof(struct tcase_t);
+   for (int i = 0; i < Ncases; i++) {
+      test_pcal_case(samplecount, cases[i].bandwidth, cases[i].offset, cases[i].spacing, sampleoffset, "auto");
+   }
+
+   return;
+}
+
+void test_pcal_case(long samplecount, long bandwidth, long offset, long spacing, long sampleoffset, const char* extname)
+{
+   bool sloping_reference_data = true;
+   bool skip_some_data = true;
+   uint64_t usedsamplecount;
+
+   const float tone_phase_start = -90.0f;
+   const float tone_phase_slope = 5.0f;
+
    /* Get an extractor */
    PCal* extractor;
-   if (argc > 6) {
-       if (!strcasecmp(argv[6], "trivial")) {
-           extractor = new PCalExtractorTrivial(bandwidth, spacing, sampleoffset);
-       } else if (!strcasecmp(argv[6], "shift")) {
-           extractor = new PCalExtractorShifting(bandwidth, spacing, offset, sampleoffset);
-       } else if (!strcasecmp(argv[6], "implicit")) {
-           extractor = new PCalExtractorImplicitShift(bandwidth, spacing, offset, sampleoffset);
-       } else if (!strcasecmp(argv[6], "dummy")) {
-           extractor = new PCalExtractorDummy(bandwidth, spacing, offset, sampleoffset);
-       } else {
-           cerr << "Unknown extractor <class> " << argv[6] << ", reverting to factory chooser\n";
-           extractor = PCal::getNew(bandwidth, spacing, offset, sampleoffset);
-       }
+   if (!strcasecmp(extname, "trivial")) {
+      extractor = new PCalExtractorTrivial(bandwidth, spacing, sampleoffset);
+   } else if (!strcasecmp(extname, "shift")) {
+      extractor = new PCalExtractorShifting(bandwidth, spacing, offset, sampleoffset);
+   } else if (!strcasecmp(extname, "implicit")) {
+      extractor = new PCalExtractorImplicitShift(bandwidth, spacing, offset, sampleoffset);
+   } else if (!strcasecmp(extname, "dummy")) {
+      extractor = new PCalExtractorDummy(bandwidth, spacing, offset, sampleoffset);
    } else {
+       cerr << "Using pcal extractor factory to select suitable extractor\n";
        extractor = PCal::getNew(bandwidth, spacing, offset, sampleoffset);
    }
 
@@ -1070,8 +1119,8 @@ int main(int argc, char** argv)
    cf32* out = vectorAlloc_cf32(numtones_actual);
    cf32* ref = vectorAlloc_cf32(numtones_actual);
 
-   cerr << "Actual N_tones = " << numtones_actual << " in synthesized band\n";
-   cerr << "Extractor uses N_tones = " << numtones_extracted << "\n";
+   cerr << "Tone count: actual is " << numtones_actual 
+        << ", extractor keeps " << numtones_extracted << "\n";
 
    /* Make test signal with tones phases having a slope */
    double wtone[numtones_actual];
@@ -1097,7 +1146,7 @@ int main(int argc, char** argv)
    if (skip_some_data) {
        long noffset = 11;
        if (samplecount > noffset) {
-           cerr << "Adding same data but skipping first +" << noffset << " samples\n";
+           //cerr << "Adding same data but skipping first +" << noffset << " samples\n";
            extractor->adjustSampleOffset(sampleoffset + noffset);
            extractor->extractAndIntegrate(data + noffset, samplecount - noffset);
        }
@@ -1137,7 +1186,12 @@ int main(int argc, char** argv)
        compare_32fc_phase(ref, numtones_actual, expected_start, expected_slope);
    }
 
-   return 0;
+   /* Done */
+   vectorFree(data);
+   vectorFree(out);
+   vectorFree(ref);
+   delete extractor;
+   return;
 }
 
 void print_32f(const f32* v, const size_t len) {
@@ -1164,8 +1218,14 @@ void compare_32fc_phase(const cf32* v, const size_t len, f32 angle, f32 step) {
       //f32 mag = sqrt(v[i].im*v[i].im + v[i].re*v[i].re);
       cerr << "tone #" << (i+1) << ": expect " << angle << ", got " << phi;
       if (std::abs(phi - angle) > merr) { 
-          cerr << " : error>" << merr << "deg\n";
-          pass = false;
+          // allow Nyquist or DC components to have zero phase (assumes
+          // here that zero phase comps are indeed from DC/Nyq, we don't know here...)
+          if ((std::abs(phi - 0.0f)>merr && std::abs(phi - 180.0f)>merr)) {
+             pass = false;
+             cerr << " : error>" << merr << "deg\n";
+          } else {
+             cerr << " : DC/Nyquist? error>" << merr << "deg\n";
+          }
       } else {
           cerr << " : ok\n";
       }
