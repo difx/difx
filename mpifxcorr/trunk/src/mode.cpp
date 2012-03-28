@@ -35,7 +35,6 @@ Mode::Mode(Configuration * conf, int confindex, int dsindex, int recordedbandcha
 {
   int status, localfreqindex, parentfreqindex;
   int decimationfactor = config->getDDecimationFactor(configindex, datastreamindex);
-  int pcalOffset;
   estimatedbytes = 0;
 
   if (sampling==Configuration::COMPLEX) 
@@ -347,19 +346,20 @@ Mode::Mode(Configuration * conf, int confindex, int dsindex, int recordedbandcha
     pcalnbins = new int[numrecordedbands];
     for(int i=0;i<numrecordedbands;i++)
     {
+      int pcalOffset;
+      
       localfreqindex = conf->getDLocalRecordedFreqIndex(confindex, dsindex, i);
 
       pcalresults[i] = new cf32[conf->getDRecordedFreqNumPCalTones(configindex, dsindex, localfreqindex)];
 
-      pcalOffset = static_cast<int>(config->getDRecordedFreqPCalOffsetsHz(configindex, dsindex, localfreqindex) + 0.5);
+      pcalOffset = config->getDRecordedFreqPCalOffsetsHz(configindex, dsindex, localfreqindex);
 
       extractor[i] = PCal::getNew(1e6*recordedbandwidth, 
                                   1e6*config->getDPhaseCalIntervalMHz(configindex, datastreamindex),
                                       pcalOffset, 0);
       if (extractor[i]->getLength() != conf->getDRecordedFreqNumPCalTones(configindex, dsindex, localfreqindex))
-        csevere << startl << "Developer Error: configuration.cpp and pcal.cpp do not agree on the number of tones." << endl;
+        csevere << startl << "Developer Error: configuration.cpp and pcal.cpp do not agree on the number of tones: " << extractor[i]->getLength() << " != " << conf->getDRecordedFreqNumPCalTones(configindex, dsindex, localfreqindex) << " ." << endl;
       pcalnbins[i] = extractor[i]->getNBins();
-      cdebug << startl << "Band " << i << " phase cal extractor buffer length (N bins)" << pcalnbins[i] << endl;
     }
   }
 }

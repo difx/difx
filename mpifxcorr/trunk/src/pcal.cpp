@@ -125,10 +125,17 @@ PCal* PCal::getNew(double bandwidth_hz, double pcal_spacing_hz, int pcal_offset_
     int No, Np, Nt;
     double fs = 2.0 * bandwidth_hz;
 
-    // Compute the repetition periods and number of tones in the band
-    No = (int)(fs / gcd(fs, (double)pcal_offset_hz));
-    Np = (int)(fs / gcd(fs, pcal_spacing_hz));
-    Nt = calcNumTones(bandwidth_hz, (double)pcal_offset_hz, pcal_spacing_hz);
+    if(pcal_offset_hz == -1)    // Test for flag value indicating no real tones
+    {
+        No = Np = Nt = 0;
+    }
+    else
+    {
+      // Compute the repetition periods and number of tones in the band
+      No = (int)(fs / gcd(fs, (double)pcal_offset_hz));
+      Np = (int)(fs / gcd(fs, pcal_spacing_hz));
+      Nt = calcNumTones(bandwidth_hz, (double)pcal_offset_hz, pcal_spacing_hz);
+    }
 
     cdebug << startl << "PCal Factory: " 
            << "bw " << bandwidth_hz << ", spacing " << pcal_spacing_hz << ", "
@@ -193,7 +200,7 @@ long long PCal::gcd(double a, double b)
 int PCal::calcNumTones(double bw, double offset, double step)
 {
     int n = 0;
-    if (bw <= 0.0f) { return 0; }
+    if (bw <= 0.0f || step <= 0.0f) { return 0; }
 
     // loop is better than "n = 1 + floor((bw - offset) / step); n=n-1 if offset==0;"
     double ftone = offset;
@@ -214,7 +221,7 @@ PCal::PCal()
     // defaults, in case base class is created via "PCal pcobj;"
     _samplecount = 0;
     _fs_hz = 0.0f;
-    _pcaloffset_hz = 0.0f;
+    _pcaloffset_hz = 0;
     _pcalspacing_hz = 0.0f;
     _N_bins = 0;
     _N_tones = 0;

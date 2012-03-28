@@ -1310,37 +1310,65 @@ bool Configuration::processDatastreamTable(ifstream * input)
         lofreq = freqtable[freqindex].bandedgefreq;
 
         if(freqtable[freqindex].lowersideband)
-          {     // LSB
+        {     // LSB
           tonefreq = (int(lofreq)/dsdata->phasecalintervalmhz)*dsdata->phasecalintervalmhz;
           if(tonefreq == lofreq)
             tonefreq -= dsdata->phasecalintervalmhz;
-          while(tonefreq - dsdata->numrecordedfreqpcaltones[j]*dsdata->phasecalintervalmhz >= lofreq - freqtable[freqindex].bandwidth)
-            dsdata->numrecordedfreqpcaltones[j]++;
+          if(tonefreq >= lofreq - freqtable[freqindex].bandwidth)
+          {
+            while(tonefreq - dsdata->numrecordedfreqpcaltones[j]*dsdata->phasecalintervalmhz >= lofreq - freqtable[freqindex].bandwidth)
+              dsdata->numrecordedfreqpcaltones[j]++;
+          }
           if(dsdata->numrecordedfreqpcaltones[j] > dsdata->maxrecordedpcaltones)
             dsdata->maxrecordedpcaltones = dsdata->numrecordedfreqpcaltones[j];
-          datastreamtable[i].recordedfreqpcaltonefreqs[j] = new int[datastreamtable[i].numrecordedfreqpcaltones[j]];
-          estimatedbytes += sizeof(int)*datastreamtable[i].numrecordedfreqpcaltones[j];
-          for(int k=0;k<datastreamtable[i].numrecordedfreqpcaltones[j];k++) {
-            datastreamtable[i].recordedfreqpcaltonefreqs[j][k] = tonefreq - k*dsdata->phasecalintervalmhz;
+          if(datastreamtable[i].numrecordedfreqpcaltones[j] > 0)
+          {
+            datastreamtable[i].recordedfreqpcaltonefreqs[j] = new int[datastreamtable[i].numrecordedfreqpcaltones[j]];
+            estimatedbytes += sizeof(int)*datastreamtable[i].numrecordedfreqpcaltones[j];
+            for(int k=0;k<datastreamtable[i].numrecordedfreqpcaltones[j];k++) {
+              datastreamtable[i].recordedfreqpcaltonefreqs[j][k] = tonefreq - k*dsdata->phasecalintervalmhz;
+            }
+            dsdata->recordedfreqpcaloffsetshz[j] = long(1e6*lofreq - 1e6*datastreamtable[i].recordedfreqpcaltonefreqs[j][0] + 0.5);
           }
-          dsdata->recordedfreqpcaloffsetshz[j] = long(1e6*lofreq - 1e6*datastreamtable[i].recordedfreqpcaltonefreqs[j][0] + 0.5);
+          else
+          {
+            datastreamtable[i].numrecordedfreqpcaltones[j] = 1;
+            datastreamtable[i].recordedfreqpcaltonefreqs[j] = new int[1];
+            datastreamtable[i].recordedfreqpcaltonefreqs[j][0] = 0;
+
+            dsdata->recordedfreqpcaloffsetshz[j] = -1; /* A flag to indicate this is not real */
           }
+        }
         else
-          {     // USB
+        {     // USB
           tonefreq = (int(lofreq)/dsdata->phasecalintervalmhz)*dsdata->phasecalintervalmhz;
           if(tonefreq <= lofreq)
             tonefreq += dsdata->phasecalintervalmhz;
-          while(tonefreq + dsdata->numrecordedfreqpcaltones[j]*dsdata->phasecalintervalmhz <= lofreq + freqtable[freqindex].bandwidth)
-            dsdata->numrecordedfreqpcaltones[j]++;
+          if(tonefreq <= lofreq + freqtable[freqindex].bandwidth)
+          {
+            while(tonefreq + dsdata->numrecordedfreqpcaltones[j]*dsdata->phasecalintervalmhz <= lofreq + freqtable[freqindex].bandwidth)
+              dsdata->numrecordedfreqpcaltones[j]++;
+          }
           if(dsdata->numrecordedfreqpcaltones[j] > dsdata->maxrecordedpcaltones)
             dsdata->maxrecordedpcaltones = dsdata->numrecordedfreqpcaltones[j];
-          datastreamtable[i].recordedfreqpcaltonefreqs[j] = new int[datastreamtable[i].numrecordedfreqpcaltones[j]];
-          estimatedbytes += sizeof(int)*datastreamtable[i].numrecordedfreqpcaltones[j];
-          for(int k=0;k<datastreamtable[i].numrecordedfreqpcaltones[j];k++) {
-            datastreamtable[i].recordedfreqpcaltonefreqs[j][k] = tonefreq + k*dsdata->phasecalintervalmhz;
+          if(datastreamtable[i].numrecordedfreqpcaltones[j] > 0)
+          {
+            datastreamtable[i].recordedfreqpcaltonefreqs[j] = new int[datastreamtable[i].numrecordedfreqpcaltones[j]];
+            estimatedbytes += sizeof(int)*datastreamtable[i].numrecordedfreqpcaltones[j];
+            for(int k=0;k<datastreamtable[i].numrecordedfreqpcaltones[j];k++) {
+              datastreamtable[i].recordedfreqpcaltonefreqs[j][k] = tonefreq + k*dsdata->phasecalintervalmhz;
+            }
+            dsdata->recordedfreqpcaloffsetshz[j] = long(1e6*datastreamtable[i].recordedfreqpcaltonefreqs[j][0] - 1e6*lofreq + 0.5);
           }
-          dsdata->recordedfreqpcaloffsetshz[j] = long(1e6*datastreamtable[i].recordedfreqpcaltonefreqs[j][0] - 1e6*lofreq + 0.5);
+          else
+          {
+            datastreamtable[i].numrecordedfreqpcaltones[j] = 1;
+            datastreamtable[i].recordedfreqpcaltonefreqs[j] = new int[1];
+            datastreamtable[i].recordedfreqpcaltonefreqs[j][0] = 0;
+
+            dsdata->recordedfreqpcaloffsetshz[j] = -1; /* A flag to indicate this is not real */
           }
+        }  
       }
     }
     datastreamtable[i].tcpwindowsizekb = 0;
