@@ -1088,6 +1088,7 @@ void test_pcal_auto()
       // BW   1st tone  spacing
       { 16e6,       0,      1e6,   "auto" },
       { 16e6,       0,      1e6,   "implicit" }, // fails, could be made to work
+      {  3e6,       0,      2e6,   "auto" },
       { 16e6,    10e3,      1e6,   "auto" },
       { 16e6,    10e3,      3e6,   "auto" },
       { 16e6,    10e3,      5e6,   "auto" },
@@ -1097,6 +1098,7 @@ void test_pcal_auto()
       {  1e6,    10e3,        0,   "auto" },
       {  1e6,       0,        0,   "auto" },
       {  1e6,     2e6,        0,   "auto" },
+      { 32e3,     2e6,    100e3,   "auto" },
    };
 
    /* Go through test cases; doesn't yet check PASS/FAIL automatically though! */
