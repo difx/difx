@@ -10,6 +10,7 @@ Post DiFX 2.0.1
 * Distinction between recorded and non-recorded channels is now more clear.  Only recorded channels will be correlated.
 * No more VexFormat class.  Its contents were moved into VexSetup.
 * vex2script: better job allocating RDBE personality and choosing whether or not to record
+* set xmacLength and strideLength automatically for powers of 2 and powers of 5 FFT sizes
 
 Version 2.0.1
 ~~~~~~~~~~~~~

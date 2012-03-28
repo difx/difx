@@ -315,6 +315,7 @@ CorrSetup::CorrSetup(const string &name) : corrSetupName(name)
 	strideLength = 0;
 	xmacLength = 0;
 	explicitXmacLength = false;
+	explicitStrideLength = false;
 	explicitFFTSpecRes = false;
 	explicitOutputSpecRes = false;
 	explicitGuardNS = false;
@@ -415,6 +416,7 @@ int CorrSetup::setkv(const string &key, const string &value)
 	else if(key == "strideLength")
 	{
 		ss >> strideLength;
+		explicitStrideLength = true;
 	}
 	else if(key == "xmacLength")
 	{
@@ -543,7 +545,7 @@ int CorrSetup::testXMACLength() const
 		{
 			if(nInputChans(*it) % xmacLength != 0)
 			{
-				cerr << "Warning: XMAC length " << xmacLength << " does not divide evenly into " << minInputChans() << " which are requested for sub-bands with bandwidth " << (*it * 1.0e-6) << " MHz" << endl;
+				cerr << "Warning: xmacLength=" << xmacLength << " does not divide evenly into " << minInputChans() << " which are requested for sub-bands with bandwidth " << (*it * 1.0e-6) << " MHz" << endl;
 				cerr << "Probably you need to reduce the xmacLength parameter" << endl;
 
 				++nWarn;
@@ -564,7 +566,7 @@ int CorrSetup::testStrideLength() const
 		{
 			if(nInputChans(*it) % strideLength != 0)
 			{
-				cerr << "Warning: stride length " << strideLength << " does not divide evenly into " << minInputChans() << " which are requested for sub-bands with bandwidth " << (*it * 1.0e-6) << " MHz" << endl;
+				cerr << "Warning: strideLength=" << strideLength << " does not divide evenly into " << minInputChans() << " which are requested for sub-bands with bandwidth " << (*it * 1.0e-6) << " MHz" << endl;
 				cerr << "Probably you need to reduce the strideLength parameter" << endl;
 				++nWarn;
 			}
@@ -2091,23 +2093,44 @@ int CorrParams::checkSetupValidity()
 
 		if(c->xmacLength == 0)
 		{
-			if(c->minInputChans() > 128)
+			if(c->minInputChans() > 0)
 			{
-				c->xmacLength = 128;
-			}
-			else
-			{
-				c->xmacLength = c->minInputChans();
+				if(c->minInputChans() > 128)
+				{
+					const int trialXmacLength[] = {128, 125, 100, 80, 64, 50, 40, 25, 20, 10, 8, 5, 4, 2, 1};
+
+					for(int i = 0; ; ++i)
+					{
+						if(c->minInputChans() % trialXmacLength[i] == 0)
+						{
+							c->xmacLength = trialXmacLength[i];
+							break;
+						}
+					}
+				}
+				else
+				{
+					c->xmacLength = c->minInputChans();
+				}
 			}
 		}
 		if(c->strideLength == 0)
 		{
-			c->strideLength = 1;
-			int tempcount = c->minInputChans();
-			while(c->strideLength < tempcount)
+			if(c->minInputChans() > 0)
 			{
-				c->strideLength *= 2;
-				tempcount /= 2;
+				const int trialStrideLength[] = {128, 125, 100, 80, 64, 50, 40, 25, 20, 10, 8, 5, 4, 2, 1};
+				int goal;
+
+				goal = static_cast<int>(sqrt(c->minInputChans()) + 0.5);
+
+				for(int i = 0; ; ++i)
+				{
+					if(c->minInputChans() % trialStrideLength[i] == 0 && trialStrideLength[i] <= goal)
+					{
+						c->strideLength = trialStrideLength[i];
+						break;
+					}
+				}
 			}
 		}
 	}

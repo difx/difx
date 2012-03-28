@@ -186,6 +186,7 @@ public:
 	string corrSetupName;
 
 	bool explicitXmacLength;// Whether the xmacLength parameter was explicitly set
+	bool explicitStrideLength;// Whether the strideLength parameter was explicitly set
 	bool explicitFFTSpecRes;// Whether .v2d set the resolution of FFTs
 	bool explicitOutputSpecRes; // Whether .v2d set the output resolution
 	bool explicitGuardNS;	// Whether the guardNS parameter was explicitly set
