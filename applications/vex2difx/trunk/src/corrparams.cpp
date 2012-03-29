@@ -2121,7 +2121,7 @@ int CorrParams::checkSetupValidity()
 				const int trialStrideLength[] = {128, 125, 100, 80, 64, 50, 40, 25, 20, 10, 8, 5, 4, 2, 1};
 				int goal;
 
-				goal = static_cast<int>(sqrt(c->minInputChans()) + 0.5);
+				goal = static_cast<int>(sqrt(static_cast<double>(c->minInputChans())) + 0.5);
 
 				for(int i = 0; ; ++i)
 				{
