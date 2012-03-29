@@ -238,7 +238,7 @@ if __name__ == "__main__":
         
     # check that path exists
     if not isdir(path):
-        exitOnError("Directory %s does not exists: %s" % (path))
+        exitOnError("Directory %s does not exist" % (path))
 
     if not isSchemaVersion(session, minSchemaMajor, minSchemaMinor):
         major, minor = getCurrentSchemaVersionNumber(session)
