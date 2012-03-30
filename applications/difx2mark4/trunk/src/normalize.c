@@ -20,13 +20,13 @@ void normalize (struct CommandLineOptions *opts,  // array of command line optio
         n,
         nbeg,
         nend,
-        a1,
-        a2,
+        aref,
+        arem,
         ant,
         fr,
         pol,
-        pol1,
-        pol2;
+        polref,
+        polrem;
 
     double t,                       // time of current records
            factor,
@@ -36,6 +36,7 @@ void normalize (struct CommandLineOptions *opts,  // array of command line optio
     char polchar[2];
 
     vis_record *vr;                 // convenience pointer
+    enum indices {REF, REM};
                                     // initialize for looping 
     nbeg = 0;
                                     // loop over all records in buffer
@@ -52,41 +53,40 @@ void normalize (struct CommandLineOptions *opts,  // array of command line optio
         vr = (vis_record *)((char *) vrec + (size_t) nbeg * vrsize);
         t = vr->iat;
                                     // find ending index for this time
-        for (n=nbeg; n<nvrtot-1; n++)
+        for (n=nbeg; n<nvrtot; n++)
             {
             vr = (vis_record *)((char *) vrec + (size_t) n * vrsize);
             if (vr->iat != t)
                 break;
             }
-        nend = n;
+        nend = n - 1;
                                     // read and calc all autocorr powers for current time
                                     // by building a table of antenna powers from autos
         for (n=nbeg; n<=nend; n++)
             {
             vr = (vis_record *)((char *) vrec + (size_t) n * vrsize);
                                     // decode antennas
-            a1 = vr->baseline / 256 - 1; 
-            a2 = vr->baseline % 256 - 1;
-            if (a1 == a2            // only want powers from autocorrelations, same pol
-             && vr->pols[0] == vr->pols[1])
+            aref = vr->baseline / 256 - 1; 
+            arem = vr->baseline % 256 - 1;
+            if (aref == arem        // only want powers from autocorrelations, same pol
+             && vr->pols[REF] == vr->pols[REM])
                 {
                 fr = vr->freq_index;
                 for (pol=0; pol<2; pol++)
-                    {
-                    if (vr->pols[0] == polchar[pol])
+                    if (vr->pols[REF] == polchar[pol])
                         break;
-                    }
+                     
                                     // if pol. wasn't there, try to add it
                 if (pol == 2)
                     {
                     if (polchar[0] == 0)
                         {
-                        polchar[0] = vr->pols[0];
+                        polchar[0] = vr->pols[REF];
                         pol = 0;
                         }
                     else if (polchar[1] == 0)
                         {
-                        polchar[1] = vr->pols[0];
+                        polchar[1] = vr->pols[REF];
                         pol = 1;
                         }
                     else            // more than 2 polarizations present at this time!
@@ -99,7 +99,7 @@ void normalize (struct CommandLineOptions *opts,  // array of command line optio
                 sum = 0.0;
                 for (i=0; i<nvis; i++)
                     sum += vr->comp[i].real * vr->comp[i].real;
-                pant[a1][fr][pol] = sqrt (sqrt (sum / nvis));
+                pant[aref][fr][pol] = sqrt (sqrt (sum / nvis));
                 }
             }
                                     // go through all records for current time again
@@ -108,39 +108,41 @@ void normalize (struct CommandLineOptions *opts,  // array of command line optio
             {
             vr = (vis_record *)((char *) vrec + (size_t) n * vrsize);
                                     // decode antennas
-            a1 = vr->baseline / 256 - 1; 
-            a2 = vr->baseline % 256 - 1;
+            aref = vr->baseline / 256 - 1; 
+            arem = vr->baseline % 256 - 1;
 
             fr = vr->freq_index;
                                     // identify polarization for reference antenna
-            for (pol1=0; pol1<2; pol1++)
+            for (polref=0; polref<2; polref++)
                 {
-                if (vr->pols[0] == polchar[pol1])
+                if (vr->pols[REF] == polchar[polref])
                     break;
                 }
-            if (pol1 == 2)
+            if (polref == 2)
                 {
-                printf ("ref stn of baseline %d not in pol table, skipping record\n",
-                         vr->baseline);
+                printf ("ref stn fr %d pol %c for bl #%d at time %f has no "
+                        "autocorr(%c%c) - won't normalize\n",
+                         fr, vr->pols[REF], vr->baseline, vr->iat, polchar[0], polchar[1]);
                 continue;
                 }
                                     // identify polarization for remote antenna
-            for (pol2=0; pol2<2; pol2++)
+            for (polrem=0; polrem<2; polrem++)
                 {
-                if (vr->pols[1] == polchar[pol2])
+                if (vr->pols[REM] == polchar[polrem])
                     break;
                 }
-            if (pol2 == 2)
+            if (polrem == 2)
                 {
-                printf ("rem stn of baseline %d not in pol table, skipping record\n",
-                         vr->baseline);
+                printf ("rem stn fr %d pol %c for bl #%d at time %f has no "
+                        "autocorr(%c%c) - won't normalize\n",
+                         fr, vr->pols[REM], vr->baseline, vr->iat, polchar[0], polchar[1]);
                 continue;
                 }
                                     // ensure that there is no 0-divide
-            if (pant[a1][fr][pol1] == 0.0 || pant[a2][fr][pol2] == 0.0)
+            if (pant[aref][fr][polref] == 0.0 || pant[arem][fr][polrem] == 0.0)
                 factor = 1.0;
             else
-                factor = 1.0 / (pant[a1][fr][pol1] * pant[a2][fr][pol2]);
+                factor = 1.0 / (pant[aref][fr][polref] * pant[arem][fr][polrem]);
             for (i=0; i<nvis; i++)
                 {
                 vr->comp[i].real *= factor;
