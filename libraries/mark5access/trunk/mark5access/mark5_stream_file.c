@@ -88,7 +88,7 @@ static int mark5_stream_file_fill(struct mark5_stream *ms)
 		{
 			break;
 		}
-		F->in = open64(F->files[F->curfile], O_RDONLY);
+		F->in = open(F->files[F->curfile], O_RDONLY);
 		if(F->in < 0)
 		{
 			fprintf(m5stderr, "File cannot be opened (2) : <%s> : "
@@ -277,7 +277,7 @@ struct mark5_stream_generic *new_mark5_stream_file(const char *filename,
 	}
 	else
 	{
-		in = open64(filename, O_RDONLY);
+		in = open(filename, O_RDONLY);
 	}
 
 	if(in < 0)
