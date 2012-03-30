@@ -64,7 +64,7 @@ struct mark5_stream_file
 static int mark5_stream_file_fill(struct mark5_stream *ms)
 {
 	struct mark5_stream_file *F;
-	struct stat64 fileStatus;
+	struct stat fileStatus;
 	int n;
 	int err;
 
@@ -97,7 +97,7 @@ static int mark5_stream_file_fill(struct mark5_stream *ms)
 
 			return -1;
 		}
-		err = fstat64(F->in, &fileStatus);
+		err = fstat(F->in, &fileStatus);
 		if(err < 0)
 		{
 			fprintf(m5stderr, "Error looking at file (2) : "
@@ -145,7 +145,7 @@ static int mark5_stream_file_init(struct mark5_stream *ms)
 
 	if(F->offset > 0)
 	{
-		lseek64(F->in, F->offset, SEEK_SET);
+		lseek(F->in, F->offset, SEEK_SET);
 	}
 	F->buffer = (unsigned char *)calloc(1, F->buffersize);
 	ms->datawindow = F->buffer;
@@ -178,7 +178,7 @@ static int mark5_stream_file_next(struct mark5_stream *ms)
 
 		/* back up stream a bit to load whole frames */
 
-		lseek64(F->in, F->offset + ms->frameoffset + nf*ms->framebytes, SEEK_SET);
+		lseek(F->in, F->offset + ms->frameoffset + nf*ms->framebytes, SEEK_SET);
 	}
 
 	/* usually this is all that needs to be done */
@@ -231,7 +231,7 @@ static int mark5_stream_file_seek(struct mark5_stream *ms, long long framenum)
 	F->last = F->end;
 	ms->frame = F->buffer;
 
-	lseek64(F->in, pos, SEEK_SET);
+	lseek(F->in, pos, SEEK_SET);
 
 	status = mark5_stream_file_fill(ms);
 	if(status < 0)
@@ -267,7 +267,7 @@ struct mark5_stream_generic *new_mark5_stream_file(const char *filename,
 {
 	struct mark5_stream_generic *V;
 	struct mark5_stream_file *F;
-	struct stat64 fileStatus;
+	struct stat fileStatus;
 	int in;
 	int err;
 
@@ -287,7 +287,7 @@ struct mark5_stream_generic *new_mark5_stream_file(const char *filename,
 
 		return 0;
 	}
-	err = fstat64(in, &fileStatus);
+	err = fstat(in, &fileStatus);
 	if(err < 0)
 	{
 		fprintf(m5stderr, "Error looking at file (1) : <%s> : " "err = %d\n", filename, err);
