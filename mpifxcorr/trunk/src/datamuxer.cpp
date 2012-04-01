@@ -110,19 +110,26 @@ bool VDIFMuxer::initialise()
   return true;
 }
 
-int VDIFMuxer::datacheck(u8 * checkbuffer, int bytestocheck)
+int VDIFMuxer::datacheck(u8 * checkbuffer, int bytestocheck, int startfrom)
 {
   int consumedbytes, byteoffset, bytestoread;
+  char * currentptr;
+  char * lastptr;
 
   //loop over one read's worth of data, shifting any time we find a bad packet
-  consumedbytes = 0;
+  consumedbytes = (startfrom/inputframebytes)*inputframebytes;
+  currentptr = (char*)checkbuffer + consumedbytes;
   bytestoread = 0;
   while(consumedbytes < bytestocheck - (inputframebytes-1)) {
-    if(getVDIFFrameBytes((vdif_header*)(checkbuffer + consumedbytes)) != inputframebytes) {
-      cwarn << startl << "Bad packet detected in VDIF datastream" << endl;
-      byteoffset = 4;
-      while(getVDIFFrameBytes((vdif_header*)(checkbuffer + consumedbytes + byteoffset)) != inputframebytes && consumedbytes + byteoffset < bytestocheck) {
+    byteoffset = 0;
+    if(getVDIFFrameBytes((vdif_header*)currentptr) != inputframebytes) {
+      cwarn << startl << "Bad packet detected in VDIF datastream after " << consumedbytes << " bytes" << endl;
+      lastptr = currentptr;
+      byteoffset += 4;
+      currentptr += 4;
+      while(getVDIFFrameBytes((vdif_header*)currentptr) != inputframebytes && consumedbytes + byteoffset < bytestocheck) {
         byteoffset += 4;
+        currentptr += 4;
       }
       if(consumedbytes + byteoffset < bytestocheck) {
         cwarn << startl << "Length of interloper packet was " << byteoffset << " bytes" << endl;
@@ -131,12 +138,12 @@ int VDIFMuxer::datacheck(u8 * checkbuffer, int bytestocheck)
         cwarn << startl << "Reached end of checkbuffer before end of interloper packet - " << byteoffset << " bytes read" << endl;
       }
       bytestoread += byteoffset;
-      memmove((char*)checkbuffer + consumedbytes, (char*)checkbuffer + consumedbytes + byteoffset, bytestocheck - (consumedbytes + byteoffset));
+      memmove(lastptr, currentptr, bytestocheck - (consumedbytes + byteoffset));
       consumedbytes += byteoffset;
+      currentptr -= byteoffset; //go back to where we should be, after having moved the memory...
     }
-    else {
-      consumedbytes += inputframebytes;
-    }
+    consumedbytes += inputframebytes;
+    currentptr += inputframebytes;
   }
   return bytestoread; 
 } 
@@ -153,12 +160,13 @@ bool VDIFMuxer::validData(int bufferframe) const
 int VDIFMuxer::multiplex(u8 * outputbuffer)
 {
   vdif_header * header;
+  vdif_header * copyheader;
   unsigned int * outputwordptr;
   unsigned int copyword;
-  int outputframecount, goodframesfromstart, processindex;
+  int outputframecount, processindex;
+  bool foundframe;
 
   outputframecount = 0;
-  goodframesfromstart = 0;
 
   //loop over one read's worth of data
   for(int f=0;f<readframes/numthreads;f++) {
@@ -189,21 +197,54 @@ int VDIFMuxer::multiplex(u8 * outputbuffer)
           *outputwordptr = copyword;
         }
       }
-
-      //clear the data we just used
-      for(int i=0;i<numthreads;i++)
-        bufferframefull[i][processindex] = false;
-      if(outputframecount == goodframesfromstart)
-        goodframesfromstart++;
       outputframecount++;
     }
-    else{
+    else {
       cdebug << startl << "Not all threads had valid data for frame " << processframenumber << endl;
+      //just copy in a header, tweak it up for the right time/threadid and set it to invalid
+      foundframe = false;
+      for(int i = 0;i < numthreads; i++) {
+        if(bufferframefull[i][processindex]) {
+          header = (vdif_header *)(outputbuffer + outputframecount*outputframebytes); 
+          memcpy(header, (char *)(threadbuffers[i] + processindex*inputframebytes), VDIF_HEADER_BYTES);
+          setVDIFFrameInvalid(header, 1);
+          setVDIFFrameBytes(header, outputframebytes);
+          setVDIFThreadID(header, 0);
+          foundframe = true;
+          break;
+        }
+      }
+      if(foundframe) {
+        outputframecount++;
+      }
+      else {
+        if(outputframecount>0) { //take the preceding output frame instead
+          header = (vdif_header *)(outputbuffer + outputframecount*outputframebytes);
+          copyheader = (vdif_header *)(outputbuffer + (outputframecount-1)*outputframebytes);
+          memcpy(header, copyheader, VDIF_HEADER_BYTES);
+          setVDIFFrameInvalid(header, 1);
+          setVDIFFrameNumber(header, getVDIFFrameNumber(header)+1);
+          if(getVDIFFrameNumber(header) == framespersecond) {
+            setVDIFFrameNumber(header, 0);
+            setVDIFFrameSecond(header, getVDIFFrameSecond(header)+1);
+          }
+          outputframecount++;
+        }
+        else {
+          //if NONE of the input thread frames are valid, *and* this is the first output frame, we have to make sure this is ignored
+          cwarn << startl << "No valid input frames for frame " << processframenumber << "; the rest of this data segment will be lost" << endl;
+          //don't increment outputframecount
+        }
+      }
     }
+
+    //clear the data we just used
+    for(int i=0;i<numthreads;i++)
+      bufferframefull[i][processindex] = false;
     processframenumber++;
   }
 
-  return goodframesfromstart*outputframebytes;
+  return outputframecount*outputframebytes;
 }
 
 bool VDIFMuxer::deinterlace(int validbytes)

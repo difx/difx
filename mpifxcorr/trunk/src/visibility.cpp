@@ -146,7 +146,7 @@ bool Visibility::addData(cf32* subintresults)
   currentsubints++;
 
   if(currentsubints>subintsthisintegration)
-    cerror << startl << "Somehow Visibility " << visID << " ended up with " << currentsubints << " subintegrations - was expecting only " << subintsthisintegration << endl;
+    cwarn << startl << "Somehow Visibility " << visID << " ended up with " << currentsubints << " subintegrations - was expecting only " << subintsthisintegration << endl;
 
   return (currentsubints>=subintsthisintegration); //are we finished integrating?
 }
@@ -299,7 +299,7 @@ void Visibility::writedata()
   int dumpmjd, intsec;
   double dumpseconds;
 
-  cdebug << startl << "Vis. " << visID << " is starting to write out data" << endl;
+//  cdebug << startl << "Vis. " << visID << " is starting to write out data" << endl;
 
   if(currentscan >= model->getNumScans() || currentstartseconds + model->getScanStartSec(currentscan, expermjd, experseconds) >= executeseconds)
   {
@@ -530,7 +530,7 @@ void Visibility::writedata()
   else
     writeascii(dumpmjd, dumpseconds);
 
-  cdebug << startl << "Vis. " << visID << " has finished writing data" << endl;
+//  cdebug << startl << "Vis. " << visID << " has finished writing data" << endl;
 
   return;
 }
@@ -873,7 +873,7 @@ void Visibility::multicastweights()
 
   if(currentscan >= model->getNumScans() || (model->getScanStartSec(currentscan, expermjd, experseconds) + currentstartseconds) >= executeseconds || currentsubints == 0)
   {
-    cdebug << startl << "Vis. " << visID << " is not multicasting any weights, since there was no valid data in this integration" << endl;
+    //cdebug << startl << "Vis. " << visID << " is not multicasting any weights, since there was no valid data in this integration" << endl;
     return; //NOTE EXIT HERE!!!
   }
 

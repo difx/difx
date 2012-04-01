@@ -202,7 +202,7 @@ public:
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].numrecordedfreqpcaltones[recordedfreqindex]; }
   inline int getDRecordedFreqPCalToneFreq(int configindex, int configdatastreamindex, int recordedfreqindex, int tone) const
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].recordedfreqpcaltonefreqs[recordedfreqindex][tone]; }
-  inline double getDRecordedFreqPCalOffsetsHz(int configindex, int configdatastreamindex, int recordedfreqindex) const
+  inline int getDRecordedFreqPCalOffsetsHz(int configindex, int configdatastreamindex, int recordedfreqindex) const
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].recordedfreqpcaloffsetshz[recordedfreqindex]; }
   inline double getDRecordedFreq(int configindex, int configdatastreamindex, int datastreamrecordedfreqindex) const
     { return freqtable[datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].recordedfreqtableindices[datastreamrecordedfreqindex]].bandedgefreq; }

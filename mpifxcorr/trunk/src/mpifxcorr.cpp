@@ -57,7 +57,7 @@ bool actOnCommand(Configuration * config, DifxMessageGeneric * difxmessage) {
     DifxMessageParameter * pmessage = &((difxmessage->body).param);
     paramname = string(pmessage->paramName);
     paramvalue = string(pmessage->paramValue);
-    cdebug << startl << "Received a parameter message for parameter " << paramname << " and value " << paramvalue << ", targetmpiid is " << pmessage->targetMpiId << endl;
+//    cdebug << startl << "Received a parameter message for parameter " << paramname << " and value " << paramvalue << ", targetmpiid is " << pmessage->targetMpiId << endl;
     //is it for me
     if ((pmessage->targetMpiId == config->getMPIId()) || 
         (pmessage->targetMpiId == DIFX_MESSAGE_ALLMPIFXCORR) || 

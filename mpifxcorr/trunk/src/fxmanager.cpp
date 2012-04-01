@@ -24,6 +24,7 @@
 #include <iostream>
 #include "datastream.h"
 #include "core.h"
+#include <limits.h>
 #include <sys/stat.h>
 #include <stdio.h>     /* standard I/O functions                         */
 #include <unistd.h>    /* standard unix functions, like getpid()         */
@@ -449,7 +450,7 @@ void FxManager::receiveData(bool resend)
   if(numsent[sourceid] < Core::RECEIVE_RING_LENGTH)
     infoindex = extrareceived[sourceid];
   subintscan = coretimes[infoindex][sourceid][0];
-  scantime = coretimes[infoindex][sourceid][1] + double(coretimes[infoindex][sourceid][2])/1000000000.0;
+  scantime = coretimes[infoindex][sourceid][1] + coretimes[infoindex][sourceid][2]/1000000000.0;
 
   //put the data in the appropriate slot
   if(mpistatus.MPI_TAG == CR_VALIDVIS) // the data is valid
@@ -685,7 +686,7 @@ int FxManager::locateVisIndex(int coreid)
   bool tooold = true;
   int perr, count, infoindex, vblength;
   int corescan, coresec, corens;
-  s64 difference;
+  s64 difference; // difference in nanosec
   Visibility * vis;
 
   vblength = config->getVisBufferLength();
@@ -715,15 +716,15 @@ int FxManager::locateVisIndex(int coreid)
   {
     vis = visbuffer[(oldestlockedvis+i)%vblength];
     if(corescan > vis->getCurrentScan())
-      difference = (s64)1e15; //its in the future cf the start of this vis, but doesn't belong here
+      difference = LLONG_MAX; //its in the future cf the start of this vis, but doesn't belong here
     else if (corescan < vis->getCurrentScan())
-      difference = (s64)-1e15; //its in a previous scan, so definitely doesn't belong here
+      difference = LLONG_MIN; //its in a previous scan, so definitely doesn't belong here
     else //does belong to this scan - safe to call timeDifference
       difference = vis->timeDifference(coresec, corens);
     if(difference >= 0)
     {
       tooold = false;
-      if(difference < (s64)(inttime*1000000000.0)) //we have found the correct Visibility
+      if(difference < static_cast<s64>(inttime*1000000000.0)) //we have found the correct Visibility
       {
         return (oldestlockedvis+i)%vblength;
       }
@@ -745,12 +746,12 @@ int FxManager::locateVisIndex(int coreid)
       //check if its good
       vis = visbuffer[newestlockedvis];
       if(corescan > vis->getCurrentScan())
-        difference = (s64)1e15; //its in the future cf the start of this vis, but doesn't belong here
+        difference = LLONG_MAX; //its in the future cf the start of this vis, but doesn't belong here
       else if (corescan < vis->getCurrentScan())
-        difference = (s64)-1e15; //its in a previous scan, so definitely doesn't belong here
+        difference = LLONG_MIN; //its in a previous scan, so definitely doesn't belong here
       else //does belong to this scan - safe to call timeDifference
         difference = vis->timeDifference(coresec, corens);
-      if(difference < (s64)(inttime*1000000000.0))
+      if(difference < static_cast<s64>(inttime*1000000000.0))
         return newestlockedvis;
     }
     //d'oh - its newer than we can handle - have to drop old data until we catch up
@@ -778,12 +779,12 @@ int FxManager::locateVisIndex(int coreid)
         islocked[newestlockedvis] = true;
         vis = visbuffer[newestlockedvis];
         if(corescan > vis->getCurrentScan())
-          difference = (s64)1e15; //its in the future cf the start of this vis, but doesn't belong here
+          difference = LLONG_MAX; //its in the future cf the start of this vis, but doesn't belong here
         else if (corescan < vis->getCurrentScan())
-          difference = (s64)-1e15; //its in a previous scan, so definitely doesn't belong here
+          difference = LLONG_MIN; //its in a previous scan, so definitely doesn't belong here
         else //does belong to this scan - safe to call timeDifference
           difference = vis->timeDifference(coresec, corens);
-        if(difference < (s64)(inttime*1000000000.0)) //we've finally caught up
+        if(difference < static_cast<s64>(inttime*1000000000.0)) //we've finally caught up
           break;
       }
     }

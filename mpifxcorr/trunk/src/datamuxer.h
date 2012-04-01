@@ -50,9 +50,10 @@ public:
   * Looks for any bad data in the demux buffer and excises it
   * @param checkbuffer The place to start checking
   * @param bytestocheck The number of bytes which must be checked
+  * @param startfrom Up to this far was already checked, only need to do from here onwards
   * @return Number of additional bytes which must be read in at the end of the buffer to refill it
   */
-  virtual int datacheck(u8 * checkbuffer, int bytestocheck) = 0;
+  virtual int datacheck(u8 * checkbuffer, int bytestocheck, int startfrom) = 0;
 
  /**
   * Does the initialising - sets up reference times, etc
@@ -140,9 +141,10 @@ public:
   * Looks for any bad data in the demux buffer and excises it
   * @param checkbuffer The place to start checking
   * @param bytestocheck The number of bytes which must be checked
+  * @param startfrom Up to this far was already checked, only need to do from here onwards
   * @return Number of additional bytes which must be read in at the end of the buffer to refill it
   */
-  virtual int datacheck(u8 * checkbuffer, int bytestocheck);
+  virtual int datacheck(u8 * checkbuffer, int bytestocheck, int startfrom);
 
  /**
   * Does the initialising - looks at first frame and sets reference times etc

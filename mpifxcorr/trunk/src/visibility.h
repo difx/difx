@@ -105,7 +105,7 @@ public:
   * @return Difference between specified time and start of current integration period, in nanoseconds
   */
   inline s64 timeDifference(int seconds, int ns) const
-  { return ((s64)(seconds-currentstartseconds))*1000000000 + (s64)ns - (s64)currentstartns; }
+  { return (static_cast<s64>(seconds-currentstartseconds))*1000000000LL + static_cast<s64>(ns) - static_cast<s64>(currentstartns); }
 
  /**
   * @return The time at the start of the current integration period, in seconds since

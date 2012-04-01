@@ -197,7 +197,7 @@ class PCal {
           assert(_fs_hz>0.0f);
           assert(_pcaloffset_hz>=0.0f);
           assert(_pcalspacing_hz>=0.0f);
-          assert((_pcalspacing_hz==0.0f) || (_pcalspacing_hz!=0.0f && _pcaloffset_hz<_pcalspacing_hz));
+          assert((_pcalspacing_hz==0.0f) || (_pcalspacing_hz!=0.0f && _pcaloffset_hz<=_pcalspacing_hz));
           assert(_N_bins>=0);
           assert(_N_tones>=0);
           assert(_cfg != NULL);

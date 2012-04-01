@@ -96,7 +96,7 @@ void DataStream::initialise()
   }
   cinfo << startl << "About to allocate " << bufferbytes << " + " << overflowbytes << " bytes in datastream databuffer" << endl;
   databuffer = vectorAlloc_u8(bufferbytes + overflowbytes + 4); // a couple extra for mark5 case
-  estimatedbytes += bufferbytes + overflowbytes + 4;
+  estimatedbytes += bufferbytes + overflowbytes + 8;
   if(databuffer == NULL) {
     cfatal << startl << "Datastream " << mpiid << " could not allocate databuffer (length " << bufferbytes + overflowbytes << ") - aborting!!!" << endl;
     MPI_Abort(MPI_COMM_WORLD, 1);
@@ -456,7 +456,7 @@ int DataStream::calculateControlParams(int scan, int offsetsec, int offsetns)
     }
     else
     {
-      cwarn << startl << "Developer error - bufferindex == bufferbytes in a 'normal' situation" << endl;
+      cwarn << startl << "Developer error regular: bufferindex == bufferbytes in a 'normal' situation" << endl;
     }
   }
 
@@ -655,6 +655,29 @@ void * DataStream::launchNewNetworkReadThread(void * thisstream)
   return 0;
 }
 
+void DataStream::readonedemux(bool isfirst)
+{
+  int fixbytes, readbytes;
+  bool ok;
+
+  input.read((char*)datamuxer->getCurrentDemuxBuffer(), datamuxer->getSegmentBytes());
+  if(isfirst)
+    datamuxer->initialise();
+  readbytes = input.gcount();
+  if(readbytes != datamuxer->getSegmentBytes()) {
+    cerror << startl << "Data muxer did not fill demux buffer properly" << endl;
+  }
+  fixbytes = datamuxer->datacheck(datamuxer->getCurrentDemuxBuffer(), readbytes, 0);
+  while(fixbytes > 0) {
+    input.read(((char*)datamuxer->getCurrentDemuxBuffer()) + readbytes - fixbytes, fixbytes);
+    fixbytes = datamuxer->datacheck(datamuxer->getCurrentDemuxBuffer(), readbytes, readbytes - fixbytes);
+  }
+  datamuxer->incrementReadCounter();
+  ok = datamuxer->deinterlace(readbytes);
+  if(!ok)
+    MPI_Abort(MPI_COMM_WORLD, 1);
+}
+
 void DataStream::loopfileread()
 {
   int perr;
@@ -674,13 +697,8 @@ void DataStream::loopfileread()
   }
   if(keepreading) {
     if(datamuxer) {
-      input.read((char*)datamuxer->getCurrentDemuxBuffer(), datamuxer->getSegmentBytes());
-      datamuxer->incrementReadCounter();
-      datamuxer->initialise();
-      datamuxer->deinterlace(input.gcount());
-      input.read((char*)datamuxer->getCurrentDemuxBuffer(), datamuxer->getSegmentBytes());
-      datamuxer->incrementReadCounter();
-      datamuxer->deinterlace(input.gcount());
+      readonedemux(true);
+      readonedemux(false);
     }
     diskToMemory(numread++);
     diskToMemory(numread++);
@@ -1423,7 +1441,6 @@ void DataStream::diskToMemory(int buffersegment)
 {
   int synccatchbytes, previoussegment, validns, nextns, status, bytestocopy, nbytes, caughtbytes;
   char * readto;
-  bool valid;
 
   //do the buffer housekeeping
   waitForBuffer(buffersegment);
@@ -1438,22 +1455,17 @@ void DataStream::diskToMemory(int buffersegment)
     nbytes = readbytes;
   }
 
-  //read some data
-  input.read(readto, nbytes);
-  consumedbytes += nbytes;
-
   //deinterlace and mux if needed
   if(datamuxer) {
-    datamuxer->incrementReadCounter();
+    readonedemux(false);
     readto = (char*)&databuffer[buffersegment*(bufferbytes/numdatasegments)];
-    valid = datamuxer->deinterlace(input.gcount());
-    if(!valid)
-      MPI_Abort(MPI_COMM_WORLD, 1);
     bufferinfo[buffersegment].validbytes = datamuxer->multiplex((u8*)readto);
   }
   else {
+    input.read(readto, nbytes);
     bufferinfo[buffersegment].validbytes = input.gcount();
   }
+  consumedbytes += nbytes;
   bufferinfo[buffersegment].readto = true;
   synccatchbytes = testForSync(bufferinfo[buffersegment].configindex, buffersegment);
   if(synccatchbytes > 0) {
@@ -1529,8 +1541,8 @@ void DataStream::waitForBuffer(int buffersegment)
   bufferinfo[buffersegment].scan = readscan;
 
   //send a message once per pass through the buffer
-  if(buffersegment == numdatasegments-1)
-    cverbose << startl << "Datastream databuffer is " << int(bufferfullfraction*100 + 0.5) << "% full (max " << int(100.0*double(numdatasegments-1)/double(numdatasegments)) << "%)" << endl;
+//  if(buffersegment == numdatasegments-1)
+//cverbose << startl << "Datastream databuffer is " << int(bufferfullfraction*100 + 0.5) << "% full (max " << int(100.0*double(numdatasegments-1)/double(numdatasegments)) << "%)" << endl;
 
   //if we need to, change the config
   if(config->getScanConfigIndex(readscan) != bufferinfo[buffersegment].configindex)

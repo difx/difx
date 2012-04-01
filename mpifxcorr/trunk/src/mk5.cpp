@@ -201,7 +201,7 @@ int Mk5DataStream::calculateControlParams(int scan, int offsetsec, int offsetns)
   {
     cfatal << startl << "Mk5DataStream::calculateControlParams: vlbaoffset<0: vlbaoffset=" << vlbaoffset << " bufferindex=" << bufferindex << " atsegment=" << atsegment << " readbytes=" << readbytes << ", framebytes=" << framebytes << ", payloadbytes=" << payloadbytes << endl;
     bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][1] = Mode::INVALID_SUBINT;
-    MPI_Abort(MPI_COMM_WORLD, 1);
+    // WFB20120123 MPI_Abort(MPI_COMM_WORLD, 1);
     return 0;
   }
 
@@ -228,11 +228,11 @@ int Mk5DataStream::calculateControlParams(int scan, int offsetsec, int offsetns)
     }
     else
     {
-      cwarn << startl << "Developer error - bufferindex == bufferbytes in a 'normal' situation" << endl;
+      cwarn << startl << "Developer error mk5: bufferindex == bufferbytes in a 'normal' situation" << endl;
     }
   }
 
-  if(bufferindex >= bufferbytes)
+  if(bufferindex > bufferbytes) /* WFB: this was >= */
   {
     cfatal << startl << "Mk5DataStream::calculateControlParams: bufferindex>=bufferbytes: bufferindex=" << bufferindex << " >= bufferbytes=" << bufferbytes << " atsegment = " << atsegment << endl;
     bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][1] = Mode::INVALID_SUBINT;

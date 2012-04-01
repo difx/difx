@@ -137,11 +137,11 @@ PCal* PCal::getNew(double bandwidth_hz, double pcal_spacing_hz, int pcal_offset_
       Nt = calcNumTones(bandwidth_hz, (double)pcal_offset_hz, pcal_spacing_hz);
     }
 
-    cdebug << startl << "PCal Factory: " 
-           << "bw " << bandwidth_hz << ", spacing " << pcal_spacing_hz << ", "
-           << "offset " << pcal_offset_hz << ", "
-           << Nt << " tones fit including band edges"
-           << endl;
+    //cdebug << startl << "PCal Factory: " 
+    //       << "bw " << bandwidth_hz << ", spacing " << pcal_spacing_hz << ", "
+    //       << "offset " << pcal_offset_hz << ", "
+    //       << Nt << " tones fit including band edges"
+    //       << endl;
 
     // If no tones: placeholder class
     if (Nt == 0)
@@ -260,8 +260,8 @@ bool PCal::extractAndIntegrate_reference(f32 const* data, const size_t len, cf32
         pcalout[bin].im += sin(phi) * data[n];
     }
     _samplecount += len;
-    cdebug << startl << "PCal::extractAndIntegrate_reference Ntones=" << _N_tones << " Nbins=" << Nbins;
-    cdebug << " toneperiod=" << maxtoneperiod << endl;
+    //cdebug << startl << "PCal::extractAndIntegrate_reference Ntones=" << _N_tones << " Nbins=" << Nbins;
+    //cdebug << " toneperiod=" << maxtoneperiod << endl;
 
     int wbufsize = 0;
     vecDFTSpecC_cf32* dftspec;
@@ -332,7 +332,7 @@ PCalExtractorTrivial::PCalExtractorTrivial(double bandwidth_hz, double pcal_spac
     _cfg->pcal_real    = vectorAlloc_f32(_N_bins * 2);
     _cfg->dft_out      = vectorAlloc_cf32(_N_bins * 1);
     this->clear();
-    cdebug << startl << "PCalExtractorTrivial: _Ntones=" << _N_tones << ", _N_bins=" << _N_bins << ", wbufsize=" << wbufsize << endl;
+    //cdebug << startl << "PCalExtractorTrivial: _Ntones=" << _N_tones << ", _N_bins=" << _N_bins << ", wbufsize=" << wbufsize << endl;
 }
 
 PCalExtractorTrivial::~PCalExtractorTrivial()
@@ -508,7 +508,7 @@ PCalExtractorShifting::PCalExtractorShifting(double bandwidth_hz, double pcal_sp
         _cfg->rotator[n].re = f32(cos(arg));
         _cfg->rotator[n].im = f32(sin(arg));
     }
-    cdebug << startl << "PcalExtractorShifting: _Ntones=" << _N_tones << ", _N_bins=" << _N_bins << ", wbufsize=" << wbufsize  << ", rotatorlen=" << _cfg->rotatorlen << endl;
+    //cdebug << startl << "PcalExtractorShifting: _Ntones=" << _N_tones << ", _N_bins=" << _N_bins << ", wbufsize=" << wbufsize  << ", rotatorlen=" << _cfg->rotatorlen << endl;
 }
 
 PCalExtractorShifting::~PCalExtractorShifting()
@@ -707,7 +707,7 @@ int pcal_offset_hz, const size_t sampleoffset)
     _cfg->pcal_real    = vectorAlloc_f32(_N_bins * 2);
     _cfg->dft_out      = vectorAlloc_cf32(_N_bins * 1);
     this->clear();
-    cdebug << startl << "PCalExtractorImplicitShift: _Ntones = " << _N_tones << ", _N_bins = " << _N_bins << ", wbufsize = " << wbufsize << endl;
+    //cdebug << startl << "PCalExtractorImplicitShift: _Ntones = " << _N_tones << ", _N_bins = " << _N_bins << ", wbufsize = " << wbufsize << endl;
 }
 
 
@@ -949,7 +949,7 @@ const size_t sampleoffset)
     _N_tones        = calcNumTones(bandwidth_hz, (double)_pcaloffset_hz, _pcalspacing_hz);
     _N_bins         = 2*_N_tones;
     this->clear();
-    cdebug << startl << "PCalExtractorDummy: _Ntones=" << _N_tones << ", _N_bins=" << _N_bins << endl;
+    //cdebug << startl << "PCalExtractorDummy: _Ntones=" << _N_tones << ", _N_bins=" << _N_bins << endl;
 }
 
 PCalExtractorDummy::~PCalExtractorDummy()
