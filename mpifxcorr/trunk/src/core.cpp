@@ -285,7 +285,7 @@ void Core::execute()
 
     //send off a message if we are back at the start of the buffer
     if(numreceived % RECEIVE_RING_LENGTH == 0)
-//      cverbose << startl << "CORE: " << numreceived-(numcomplete+1) << " unprocessed segments, 1 being processed, and " << RECEIVE_RING_LENGTH-(numreceived-numcomplete) << " to be sent" << endl;
+      cverbose << startl << "CORE: " << numreceived-(numcomplete+1) << " unprocessed segments, 1 being processed, and " << RECEIVE_RING_LENGTH-(numreceived-numcomplete) << " to be sent" << endl;
 
     if(terminate)
       break;
@@ -323,7 +323,7 @@ void Core::execute()
     adjust = (RECEIVE_RING_LENGTH-1)-numreceived;
     countdown = numreceived;
   }
-#if 0
+
   //ensure all the results we have sitting around have been sent
   for(int i=1;i<RECEIVE_RING_LENGTH;i++)
   {
@@ -342,13 +342,12 @@ void Core::execute()
         csevere << startl << "Error in Core " << mpiid << " attempt to unlock mutex" << (numreceived+i+adjust) % RECEIVE_RING_LENGTH << " of thread " << j << endl;
     }
     //send the results
-    MPI_Request req;
-    MPI_Isend(procslots[(numreceived+i+adjust)%RECEIVE_RING_LENGTH].results, procslots[(numreceived+i+adjust)%RECEIVE_RING_LENGTH].coreresultlength*2, MPI_FLOAT, fxcorr::MANAGERID, procslots[(numreceived+i+adjust)%RECEIVE_RING_LENGTH].resultsvalid, return_comm, &req);
+    MPI_Ssend(procslots[(numreceived+i+adjust)%RECEIVE_RING_LENGTH].results, procslots[(numreceived+i+adjust)%RECEIVE_RING_LENGTH].coreresultlength*2, MPI_FLOAT, fxcorr::MANAGERID, procslots[(numreceived+i+adjust)%RECEIVE_RING_LENGTH].resultsvalid, return_comm);
 
     countdown--;
   }
 
-  //cinfo << startl << "CORE " << mpiid << " is about to join the processthreads" << endl;
+//  cinfo << startl << "CORE " << mpiid << " is about to join the processthreads" << endl;
 
   //join the process threads, they have to already be finished anyway
   for(int i=0;i<numprocessthreads;i++)
@@ -356,39 +355,10 @@ void Core::execute()
     perr = pthread_join(processthreads[i], NULL);
     if(perr != 0)
       csevere << startl << "Error in Core " << mpiid << " attempt to join processthread " << i << endl;
-cinfo << startl << "PROCESS THREAD " << i << "/" << numprocessthreads << " Joined OK" << endl;
   }
   delete [] threadinfos;
-#endif
-  
-// Walter's alternate order of things:
 
-
-  //cinfo << startl << "CORE " << mpiid << " is about to join the processthreads" << endl;
-
-  //join the process threads, they have to already be finished anyway
-  for(int i=0;i<numprocessthreads;i++)
-  {
-    perr = pthread_join(processthreads[i], NULL);
-    if(perr != 0)
-      csevere << startl << "Error in Core " << mpiid << " attempt to join processthread " << i << endl;
-cinfo << startl << "PROCESS THREAD " << i << "/" << numprocessthreads << " Joined OK" << endl;
-  }
-  delete [] threadinfos;
 //  cinfo << startl << "CORE " << mpiid << " terminating" << endl;
-
-  //ensure all the results we have sitting around have been sent
-  for(int i=1;i<RECEIVE_RING_LENGTH;i++)
-  {
-    if(countdown == 0)
-      break;
-
-    //send the results
-    MPI_Request req;
-    MPI_Isend(procslots[(numreceived+i+adjust)%RECEIVE_RING_LENGTH].results, procslots[(numreceived+i+adjust)%RECEIVE_RING_LENGTH].coreresultlength*2, MPI_FLOAT, fxcorr::MANAGERID, procslots[(numreceived+i+adjust)%RECEIVE_RING_LENGTH].resultsvalid, return_comm, &req);
-
-    countdown--;
-  }
 }
 
 void * Core::launchNewProcessThread(void * tdata)
@@ -571,8 +541,6 @@ void Core::loopprocess(int threadid)
       lastconfigindex = currentslot->configindex;
     }
   }
-  
-  cinfo << startl << "PROCESS " << mpiid << " " << threadid << "/" << numprocessthreads << " process thread done!!!" << endl;
 
   //fallen out of loop, so must be finished.  Unlock held mutex
 //  cinfo << startl << "PROCESS " << mpiid << "/" << threadid << " process thread about to free resources and exit" << endl;
@@ -614,7 +582,7 @@ void Core::loopprocess(int threadid)
   }
   delete scratchspace;
 
-  cinfo << startl << "PROCESS " << mpiid << " " << threadid << "/" << numprocessthreads << " process thread exiting!!!" << endl;
+  cinfo << startl << "PROCESS " << mpiid << "/" << threadid << " process thread exiting!!!" << endl;
 }
 
 int Core::receivedata(int index, bool * terminate)

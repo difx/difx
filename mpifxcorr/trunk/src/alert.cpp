@@ -45,21 +45,16 @@ Alert cwarn(DIFX_ALERT_LEVEL_WARNING);		// alert level 3
 Alert cinfo(DIFX_ALERT_LEVEL_INFO);		// alert level 4
 // Purely informational message indicating progress
 
-//Alert cverbose(DIFX_ALERT_LEVEL_VERBOSE);	// alert level 5
-Alert cverbose(DIFX_ALERT_LEVEL_DO_NOT_SEND);	// don't send this level alert
+Alert cverbose(DIFX_ALERT_LEVEL_VERBOSE);	// alert level 5
 // Extra purely informational messages that 
 
-//Alert cdebug(DIFX_ALERT_LEVEL_DEBUG);		// alert level 6
-Alert cdebug(DIFX_ALERT_LEVEL_DO_NOT_SEND);	// don't send this level alert
+Alert cdebug(DIFX_ALERT_LEVEL_DEBUG);		// alert level 6
 // Overly verbose messages that would be of use only to developers
 
 Alert& Alert::sendAlert()
 {
 	// Send alert to appropriate place
-        if(alertLevel != DIFX_ALERT_LEVEL_DO_NOT_SEND)
-        {
-	  difxMessageSendDifxAlert(alertString.str().c_str(), alertLevel);
-        }
+	difxMessageSendDifxAlert(alertString.str().c_str(), alertLevel);
 
 	// Reset alert stream
 	alertString.str("");
