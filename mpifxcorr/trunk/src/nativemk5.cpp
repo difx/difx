@@ -727,18 +727,17 @@ void NativeMk5DataStream::readonedemux(bool isfirst, int buffersegment)
   }
   fixbytes = datamuxer->datacheck(datamuxer->getCurrentDemuxBuffer(), rbytes, 0);
   while(fixbytes > 0) {
-    readto = ((char*)datamuxer->getCurrentDemuxBuffer()) + rbytes - fixbytes;
-    moduleRead((unsigned long*)readto, fixbytes, readpointer, buffersegment);
+    readto = reinterpret_cast<char*>(datamuxer->getCurrentDemuxBuffer()) + rbytes - fixbytes;
+    moduleRead(reinterpret_cast<unsigned long*>(readto), fixbytes, readpointer, buffersegment);
     fixbytes = datamuxer->datacheck(datamuxer->getCurrentDemuxBuffer(), rbytes, rbytes - fixbytes);
   }
   datamuxer->incrementReadCounter();
   ok = datamuxer->deinterlace(rbytes);
   if(!ok)
     MPI_Abort(MPI_COMM_WORLD, 1);
-  return rbytes;
 }
 
-int NativeMk5DataStream::moduleRead(unsigned long * destination, int nbytes, long long start, int buffersegment)
+int NativeMk5DataStream::moduleRead(unsigned long *destination, int nbytes, long long start, int buffersegment)
 {
 	unsigned long a, b;
 	int bytes = nbytes;
@@ -760,7 +759,7 @@ int NativeMk5DataStream::moduleRead(unsigned long * destination, int nbytes, lon
 		bufferinfo[buffersegment].validbytes = 0;
 		dataremaining = false;
 
-		return;
+		return 0;
 	}
 
 	//if this will be the last read, shorten if necessary
@@ -807,7 +806,7 @@ int NativeMk5DataStream::moduleRead(unsigned long * destination, int nbytes, lon
 			// first fill buffer with fill pattern
 			for(int w = 0; w < bytes/4; ++w)
 			{
-				(reinterpret_cast<unsigned int *>(buf))[w] = MARK5_FILL_PATTERN;
+				(reinterpret_cast<unsigned int *>(destination))[w] = MARK5_FILL_PATTERN;
 			}
 
 			// then try to reset card
@@ -832,7 +831,7 @@ int NativeMk5DataStream::moduleRead(unsigned long * destination, int nbytes, lon
 	consumedbytes += bytes;
 	bufferinfo[buffersegment].validbytes = bytes;
 	bufferinfo[buffersegment].readto = true;
-	lastval = buf[bytes/4-1];
+	lastval = destination[bytes/4-1];
 
 	return bytes;
 }
@@ -866,6 +865,12 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 	else
 	{
 		bytes = moduleRead(buf, readbytes, readpointer, buffersegment);
+	}
+
+	//if there was no valid data read, return
+	if(bytes == 0)
+	{
+		return;
 	}
 
 	// Check for validity
