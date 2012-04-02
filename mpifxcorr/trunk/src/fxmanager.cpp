@@ -40,6 +40,14 @@
 #include <fcntl.h>
 #include <netdb.h>
 
+/* Cf. C99 <features.h> */
+#ifndef LLONG_MAX
+# define LLONG_MAX LONG_LONG_MAX
+#endif /* LLONG_MAX */
+#ifndef LLONG_MIN
+# define LLONG_MIN LONG_LONG_MIN
+#endif /* LLONG_MIN */
+
 bool terminatenow;
 
 /* first, here is the signal handler */
