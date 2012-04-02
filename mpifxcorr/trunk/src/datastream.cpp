@@ -657,23 +657,23 @@ void * DataStream::launchNewNetworkReadThread(void * thisstream)
 
 void DataStream::readonedemux(bool isfirst)
 {
-  int fixbytes, readbytes;
+  int fixbytes, rbytes;
   bool ok;
 
   input.read((char*)datamuxer->getCurrentDemuxBuffer(), datamuxer->getSegmentBytes());
   if(isfirst)
     datamuxer->initialise();
-  readbytes = input.gcount();
-  if(readbytes != datamuxer->getSegmentBytes()) {
+  rbytes = input.gcount();
+  if(rbytes != datamuxer->getSegmentBytes()) {
     cerror << startl << "Data muxer did not fill demux buffer properly" << endl;
   }
-  fixbytes = datamuxer->datacheck(datamuxer->getCurrentDemuxBuffer(), readbytes, 0);
+  fixbytes = datamuxer->datacheck(datamuxer->getCurrentDemuxBuffer(), rbytes, 0);
   while(fixbytes > 0) {
-    input.read(((char*)datamuxer->getCurrentDemuxBuffer()) + readbytes - fixbytes, fixbytes);
-    fixbytes = datamuxer->datacheck(datamuxer->getCurrentDemuxBuffer(), readbytes, readbytes - fixbytes);
+    input.read(((char*)datamuxer->getCurrentDemuxBuffer()) + rbytes - fixbytes, fixbytes);
+    fixbytes = datamuxer->datacheck(datamuxer->getCurrentDemuxBuffer(), rbytes, rbytes - fixbytes);
   }
   datamuxer->incrementReadCounter();
-  ok = datamuxer->deinterlace(readbytes);
+  ok = datamuxer->deinterlace(rbytes);
   if(!ok)
     MPI_Abort(MPI_COMM_WORLD, 1);
 }

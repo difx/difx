@@ -245,7 +245,7 @@ protected:
   * Reads one chunk of data into the demux object
   * @param isfirst True if this is the very first read, meaning demux object must be initialised
   */
-  void readonedemux(bool isfirst);
+  virtual void readonedemux(bool isfirst);
 
  /**
   * Launches the read thread (whether from file or network) and waits until it has initialised itself

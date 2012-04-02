@@ -578,7 +578,7 @@ int Configuration::getDataBytes(int configindex, int datastreamindex) const
     framebytes = currentds.framebytes;
     if(currentds.format == INTERLACEDVDIF) //account for change to larger packets after muxing
     {
-      payloadbytes *= 2;
+      payloadbytes *= currentds.numrecordedbands;
       framebytes = payloadbytes + VDIF_HEADER_BYTES;
     }
     numframes = (validlength/payloadbytes + 2);

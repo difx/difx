@@ -289,6 +289,7 @@ NativeMk5DataStream::NativeMk5DataStream(const Configuration * conf, int snum,
 	nDMAError = 0;
 	readDelayMicroseconds = 0;
 	noDataOnModule = false;
+	nReads = 0;
 
 #if HAVE_MARK5IPC
         int v = lockMark5(5);
@@ -421,9 +422,10 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
 	nrecordedbands = config->getDNumRecordedBands(configindex, streamnum);
 	framebytes = config->getFrameBytes(configindex, streamnum);
         bw = config->getDRecordedBandwidth(configindex, streamnum, 0);
+	/* mark5stream is only ever used for checking after the data comes into memory (scanPointer is used here in initialiseFile
+           accordingly, adjust framebytes for multiplexed data, if multiplexing is being performed (nBands does not change). */
         if(config->isDMuxed(configindex, streamnum)) {
           framebytes = (framebytes-32)*config->getDNumMuxThreads(configindex, streamnum) + 32;
-          nrecordedbands = 1;
         }
 	fanout = config->genMk5FormatName(format, nrecordedbands, bw, nbits, config->getDSampling(configindex, streamnum), framebytes, config->getDDecimationFactor(configindex, streamnum), config->getDNumMuxThreads(configindex, streamnum), formatname);
         if(fanout < 0)
@@ -711,38 +713,48 @@ void NativeMk5DataStream::openfile(int configindex, int fileindex)
 	initialiseFile(configindex, fileindex);
 }
 
-void NativeMk5DataStream::moduleToMemory(int buffersegment)
+void NativeMk5DataStream::readonedemux(bool isfirst, int buffersegment)
 {
-	long long start;
-	unsigned long *buf, *data;
-	unsigned long a, b;
-	S_READDESC      xlrRD;
-	XLR_RETURN_CODE xlrRC;
-	XLR_ERROR_CODE  xlrEC;
-	int bytes;
-	char errStr[XLR_ERROR_LENGTH];
-	double tv_us;
-	static double now_us;
-	static long long lastpos = 0;
-	struct timeval tv;
-	int mjd, sec, sec2;
-	double ns;
-	bool hasFilledData;
-	static int nReads = 0;
+  int fixbytes, rbytes;
+  char * readto;
+  bool ok;
 
-	/* All reads of a module must be 64 bit aligned */
-	bytes = readbytes;
-	start = readpointer;
-	data = buf = reinterpret_cast<unsigned long *>(&databuffer[buffersegment*(bufferbytes/numdatasegments)]);
+  rbytes = moduleRead((unsigned long*)datamuxer->getCurrentDemuxBuffer(), datamuxer->getSegmentBytes(), readpointer, buffersegment);
+  if(isfirst)
+    datamuxer->initialise();
+  if(rbytes != datamuxer->getSegmentBytes()) {
+    cerror << startl << "Data muxer did not fill demux buffer properly" << endl;
+  }
+  fixbytes = datamuxer->datacheck(datamuxer->getCurrentDemuxBuffer(), rbytes, 0);
+  while(fixbytes > 0) {
+    readto = ((char*)datamuxer->getCurrentDemuxBuffer()) + rbytes - fixbytes;
+    moduleRead((unsigned long*)readto, fixbytes, readpointer, buffersegment);
+    fixbytes = datamuxer->datacheck(datamuxer->getCurrentDemuxBuffer(), rbytes, rbytes - fixbytes);
+  }
+  datamuxer->incrementReadCounter();
+  ok = datamuxer->deinterlace(rbytes);
+  if(!ok)
+    MPI_Abort(MPI_COMM_WORLD, 1);
+  return rbytes;
+}
+
+int NativeMk5DataStream::moduleRead(unsigned long * destination, int nbytes, long long start, int buffersegment)
+{
+	unsigned long a, b;
+	int bytes = nbytes;
+	XLR_RETURN_CODE xlrRC;
+	S_READDESC      xlrRD;
+	XLR_ERROR_CODE  xlrEC;
+	char errStr[XLR_ERROR_LENGTH];
 
 	if(start & 4)
 	{
 		start += 4;
-		*buf = lastval;
-		++buf;
+		*destination = lastval;
+		++destination;
 	}
 
-	// we're starting after the end of the scan.  Just set flags and return
+	// if we're starting after the end of the scan, then just set flags and return
 	if(start >= scanPointer->start + scanPointer->length)
 	{
 		bufferinfo[buffersegment].validbytes = 0;
@@ -751,11 +763,12 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 		return;
 	}
 
+	//if this will be the last read, shorten if necessary
 	if(start + bytes > scanPointer->start + scanPointer->length)
 	{
 		bytes = scanPointer->start + scanPointer->length - start;
 
-		cverbose << startl << "At end of scan: shortening read to only " << bytes << " bytes " << "(was " << readbytes << ")" << endl;
+		cverbose << startl << "At end of scan: shortening read to only " << bytes << " bytes " << "(was " << nbytes << ")" << endl;
 	}
 
 	/* always read multiples of 8 bytes */
@@ -764,17 +777,19 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 	a = start >> 32;
 	b = start & 0xFFFFFFFF; 
 
-	waitForBuffer(buffersegment);
-
+	// set up the XLR info
 	xlrRD.AddrHi = a;
 	xlrRD.AddrLo = b;
 	xlrRD.XferLength = bytes;
-	xlrRD.BufferAddr = reinterpret_cast<streamstordatatype *>(buf);
+	xlrRD.BufferAddr = reinterpret_cast<streamstordatatype *>(destination);
 
+	// delay the read if needed
 	if(readDelayMicroseconds > 0)
 	{
 		usleep(readDelayMicroseconds);
 	}
+
+	//execute the XLR read
 	WATCHDOG( xlrRC = XLRReadData(xlrDevice, xlrRD.BufferAddr, xlrRD.AddrHi, xlrRD.AddrLo, xlrRD.XferLength) );
 	if(xlrRC != XLR_SUCCESS)
 	{
@@ -809,7 +824,7 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 			sendMark5Status(MARK5_STATE_ERROR, readpointer, errorTime, 0.0);
 			++nError;
 
-			return;
+			return 0;
 		}
 	}
 	++nReads;
@@ -818,6 +833,40 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 	bufferinfo[buffersegment].validbytes = bytes;
 	bufferinfo[buffersegment].readto = true;
 	lastval = buf[bytes/4-1];
+
+	return bytes;
+}
+
+void NativeMk5DataStream::moduleToMemory(int buffersegment)
+{
+	unsigned long *buf, *data;
+	char *readto;
+	int bytes;
+	double tv_us;
+	static double now_us;
+	static long long lastpos = 0;
+	struct timeval tv;
+	int mjd, sec, sec2;
+	double ns;
+	bool hasFilledData;
+
+	/* All reads of a module must be 64 bit aligned */
+	data = buf = reinterpret_cast<unsigned long *>(&databuffer[buffersegment*(bufferbytes/numdatasegments)]);
+
+	waitForBuffer(buffersegment);
+
+	//deinterlace and mux if needed
+	if(datamuxer)
+	{
+		readonedemux(false, buffersegment);
+		readto = (char*)&databuffer[buffersegment*(bufferbytes/numdatasegments)];
+		bufferinfo[buffersegment].validbytes = datamuxer->multiplex((u8*)readto); //this corrects validbytes, which may have been corrupted by multiple moduleReads
+		bytes = bufferinfo[buffersegment].validbytes;
+	}
+	else
+	{
+		bytes = moduleRead(buf, readbytes, readpointer, buffersegment);
+	}
 
 	// Check for validity
 	mark5stream->frame = (unsigned char *)data;
@@ -1074,6 +1123,10 @@ void NativeMk5DataStream::loopfileread()
 
   //lock the first section to start reading
   openfile(bufferinfo[0].configindex, 0);
+  if(datamuxer) {
+    readonedemux(true, 0);
+    readonedemux(false, 0);
+  }
   moduleToMemory(numread++);
   moduleToMemory(numread++);
   perr = pthread_mutex_lock(&(bufferlock[numread]));
