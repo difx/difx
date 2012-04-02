@@ -1884,7 +1884,7 @@ static int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int 
 	int nTotalPhaseCentres, nbin, maxPulsarBins, maxScanPhaseCentres, fftDurNS;
 	double srcra, srcdec;
 	int pointingSrcIndex, foundSrcIndex, atSource;
-	int nZoomBands, fqId, zoomsrc, polcount, zoomChans, minChans;
+	int nZoomBands, fqId, zoomsrc, polcount, zoomChans = 0, minChans;
 	int overSamp, decimation, worstcaseguardns;
 	DifxDatastream *dd;
 	vector<set <int> > blockedfreqids;
@@ -2499,7 +2499,7 @@ static int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int 
 	populateEOPTable(D, V->getEOPs());
 
 	// Merge identical table entries
-	simplifyDifxFreqs(D);
+	if (!zoomChans) simplifyDifxFreqs(D);
 	simplifyDifxDatastreams(D);
 	simplifyDifxBaselines(D);
 	simplifyDifxConfigs(D);
