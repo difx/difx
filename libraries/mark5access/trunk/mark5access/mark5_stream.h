@@ -30,11 +30,6 @@
 #ifndef __MARK5_STREAM_H__
 #define __MARK5_STREAM_H__
 
-/* needed for open64 */
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE
-#endif
-
 // Pinched from Linux features.h, as OSX does not have it
 #if defined __GNUC__ && defined __GNUC_MINOR__
 # define __GNUC_PREREQ(maj, min) \

@@ -31,8 +31,8 @@
 #define _GNU_SOURCE
 #endif
 
-#define _LARGEFILE64_SOURCE
-#define __USE_FILE_OFFSET64
+#include "config.h"
+
 #include <sys/types.h>
 #include <unistd.h>
 #include <fcntl.h>
