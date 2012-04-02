@@ -2888,3 +2888,21 @@ const char *CorrParams::getShelf(const string &vsn) const
 		return it->second.c_str();
 	}
 }
+
+const string &CorrParams::getNewSourceName(const string &origName) const
+{
+	vector<SourceSetup>::const_iterator it;
+
+	for(it = sourceSetups.begin(); it != sourceSetups.end(); ++it)
+	{
+		if(it->vexName == origName)
+		{
+			if(it->pointingCentre.difxName != PhaseCentre::DEFAULT_NAME)
+			{
+				return it->pointingCentre.difxName;
+			}
+		}
+	}
+
+	return origName;
+}

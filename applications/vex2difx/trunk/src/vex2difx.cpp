@@ -988,7 +988,7 @@ static void populateRuleTable(DifxInput *D, const CorrParams *P)
 		{
 			for(list<string>::const_iterator s = (P->rules[i].sourceName).begin(); s != (P->rules[i].sourceName).end(); ++s)
 			{
-				DifxStringArrayadd(&D->rule[i].sourceName, s->c_str(), 0);
+				DifxStringArrayadd(&D->rule[i].sourceName, P->getNewSourceName(*s).c_str(), 0);
 			}
 		}
 		if(!P->rules[i].modeName.empty())

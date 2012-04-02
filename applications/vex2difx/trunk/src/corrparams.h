@@ -270,6 +270,7 @@ public:
 	const VexClock *getAntennaClock(const string &antName) const;
 
 	const string &findSetup(const string &scan, const string &source, const string &mode, char cal, int qual) const;
+	const string &getNewSourceName(const string &origName) const;
 	
 	/* global parameters */
 	int parseWarnings;
