@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2011 by Adam Deller & Walter Brisken               *
+ *   Copyright (C) 2009-2012 by Adam Deller & Walter Brisken               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -39,7 +39,7 @@ DifxRule *newDifxRuleArray(int nRule)
 	int r;
 
         dr = (DifxRule *)calloc(nRule, sizeof(DifxRule));
-        for(r = 0; r < nRule; r++)
+        for(r = 0; r < nRule; ++r)
         {
 		dr[r].qual = -1;
 		dr[r].mjdStart = -1.0;
@@ -69,13 +69,13 @@ void deleteDifxRuleArray(DifxRule *dr)
 
 void fprintDifxRule(FILE *fp, const DifxRule *dr)
 {
-	int i;
-
 	fprintf(fp, "  Difx Rule for config %s : %p\n", dr->configName, dr);
 	fprintf(fp, "    source  = ");
 	if(dr->sourceName.n > 0)
 	{
-		for(i = 0; i < dr->sourceName.n; i++)
+		int i;
+
+		for(i = 0; i < dr->sourceName.n; ++i)
 		{
 			if(i > 0)
 			{
@@ -88,7 +88,9 @@ void fprintDifxRule(FILE *fp, const DifxRule *dr)
 	fprintf(fp, "    scanId  = ");
 	if(dr->scanId.n > 0)
 	{
-		for(i = 0; i < dr->scanId.n; i++)
+		int i;
+
+		for(i = 0; i < dr->scanId.n; ++i)
 		{
 			if(i > 0)
 			{
@@ -113,12 +115,13 @@ int writeDifxRuleArray(FILE *out, const DifxInput *D)
 {
 	int n; //number of lines written
 	int i;
-	DifxRule * dr;
 
 	writeDifxLineInt(out, "NUM RULES", D->nRule);
 	n = 1;
-	for(i = 0; i < D->nRule; i++)
+	for(i = 0; i < D->nRule; ++i)
 	{
+		DifxRule * dr;
+		
 		dr = D->rule + i;
 		if(dr->sourceName.n > 0)
 		{
@@ -177,17 +180,20 @@ int ruleAppliesToScanSource(const DifxRule *dr, const DifxScan *ds, const DifxSo
 
 int simplifyDifxRules(DifxInput *D)
 {
-	int r, c, used, numdeleted;
-	DifxRule *dr;
-	DifxConfig *dc;
+	int r;
+	int numdeleted = 0;
 
-	numdeleted = 0;
-	for(r = 0; r < D->nRule; r++)
+	for(r = 0; r < D->nRule; ++r)
 	{
+		DifxRule *dr;
+		int c;
+		int used = 0;
+
 		dr = D->rule + r;
-		used = 0;
-		for(c = 0; c < D->nConfig; c++)
+		for(c = 0; c < D->nConfig; ++c)
 		{
+			DifxConfig *dc;
+			
 			dc = D->config+c;
 			if(strcmp(dc->name, dr->configName) == 0)
 			{
@@ -196,7 +202,7 @@ int simplifyDifxRules(DifxInput *D)
 		}
 		if(!used)
 		{
-			numdeleted++;
+			++numdeleted;
 		}
 		if(numdeleted > 0 && r+1 > numdeleted && used)
 		{
@@ -204,15 +210,10 @@ int simplifyDifxRules(DifxInput *D)
 		}
 	}
 	D->nRule -= numdeleted;
+
 	if(numdeleted > 0)
 	{
 		D->rule = realloc(D->rule, D->nRule*sizeof(DifxRule));
-		if(D->rule == 0)
-		{
-			fprintf(stderr, "Error: simplifyDifxRules: cannot reallocate DifxRule array!\n");
-			
-			exit(1);
-		}
 	}
 	
 	return numdeleted;

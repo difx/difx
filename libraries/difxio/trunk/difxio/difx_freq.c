@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2011 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2008-2012 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -74,11 +74,11 @@ void deleteDifxFreqInternals(DifxFreq *df)
 
 void deleteDifxFreqArray(DifxFreq *df, int nFreq)
 {
-	int f;
-
 	if(df)
 	{
-		for(f = 0; f < nFreq; f++)
+		int f;
+
+		for(f = 0; f < nFreq; ++f)
 		{
 			deleteDifxFreqInternals(df + f);
 		}
@@ -88,8 +88,6 @@ void deleteDifxFreqArray(DifxFreq *df, int nFreq)
 
 void fprintDifxFreq(FILE *fp, const DifxFreq *df)
 {
-	int t;
-
 	fprintf(fp, "  Difx Freq : %p\n", df);
 	fprintf(fp, "    Freq = %f MHz\n", df->freq);
 	fprintf(fp, "    Bandwidth = %f MHz\n", df->bw);
@@ -101,6 +99,8 @@ void fprintDifxFreq(FILE *fp, const DifxFreq *df)
 	fprintf(fp, "    Num tones = %d  [", df->nTone);
 	if(df->nTone > 0)
 	{
+		int t;
+
 		for(t = 0; t < df->nTone; t++)
 		{
 			if(t > 0)
@@ -120,8 +120,6 @@ void printDifxFreq(const DifxFreq *df)
 
 int isSameDifxFreqToneSet(const DifxFreq *df1, const DifxFreq *df2)
 {
-	int t;
-
 	if(df1->nTone != df2->nTone)
 	{
 		return 0;
@@ -129,7 +127,9 @@ int isSameDifxFreqToneSet(const DifxFreq *df1, const DifxFreq *df2)
 
 	if(df1->nTone > 0)
 	{
-		for(t = 0; t < df1->nTone; t++)
+		int t;
+
+		for(t = 0; t < df1->nTone; ++t)
 		{
 			if(df1->tone[t] != df2->tone[t])
 			{
@@ -204,8 +204,6 @@ int isDifxIFInsideDifxFreq(const DifxIF *di, const DifxFreq *df)
 
 void copyDifxFreq(DifxFreq *dest, const DifxFreq *src)
 {
-	int t;
-
 	dest->freq       = src->freq;
 	dest->bw         = src->bw;
 	dest->sideband   = src->sideband;
@@ -217,7 +215,9 @@ void copyDifxFreq(DifxFreq *dest, const DifxFreq *src)
 	DifxFreqAllocTones(dest, src->nTone);
 	if(src->nTone > 0)
 	{
-		for(t = 0; t < src->nTone; t++)
+		int t;
+
+		for(t = 0; t < src->nTone; ++t)
 		{
 			dest->tone[t] = src->tone[t];
 		}
@@ -226,10 +226,7 @@ void copyDifxFreq(DifxFreq *dest, const DifxFreq *src)
 
 int simplifyDifxFreqs(DifxInput *D)
 {
-	int f, f1;
-	int f0;
-	int d, r;
-	int n0;
+	int f, f0, n0;
 
 	n0 = D->nFreq;
 	if(n0 < 2)
@@ -239,12 +236,14 @@ int simplifyDifxFreqs(DifxInput *D)
 
 	for(f=1;;)
 	{
+		int f1;
+
 		if(f >= D->nFreq)
 		{
 			break;
 		}
 
-		for(f1 = 0; f1 < f; f1++)
+		for(f1 = 0; f1 < f; ++f1)
 		{
 			if(isSameDifxFreq(D->freq+f, D->freq+f1))
 			{
@@ -253,14 +252,18 @@ int simplifyDifxFreqs(DifxInput *D)
 		}
 		if(f == f1)	/* no match found */
 		{
-			f++;	/* advance to next freq */
+			++f;	/* advance to next freq */
 		}
 		else		/* found match */
 		{
+			int d;
+
 			/* 1. Renumber this and all higher freqs */
-			for(d = 0; d < D->nDatastream; d++)
+			for(d = 0; d < D->nDatastream; ++d)
 			{
-				for(r = 0; r < D->datastream[d].nRecFreq; r++)
+				int r;
+
+				for(r = 0; r < D->datastream[d].nRecFreq; ++r)
 				{
 					f0 = D->datastream[d].recFreqId[r];
 					if(f0 == f)
@@ -269,11 +272,11 @@ int simplifyDifxFreqs(DifxInput *D)
 					}
 					else if(f0 > f)
 					{
-						f0--;
+						--f0;
 					}
 					D->datastream[d].recFreqId[r] = f0;
 				}
-				for(r = 0; r < D->datastream[d].nZoomFreq; r++)
+				for(r = 0; r < D->datastream[d].nZoomFreq; ++r)
 				{
 					f0 = D->datastream[d].zoomFreqId[r];
 					if(f0 == f)
@@ -282,19 +285,19 @@ int simplifyDifxFreqs(DifxInput *D)
 					}
 					else if(f0 > f)
 					{
-						f0--;
+						--f0;
 					}
 					D->datastream[d].zoomFreqId[r] = f0;
 				}
 			}
 
 			/* 2. reduce number of freqs */
-			D->nFreq--;
+			--D->nFreq;
 
 			/* 3. Delete this freq and bump up higher ones */
 			if(f < D->nFreq)
 			{
-				for(f1 = f; f1 < D->nFreq; f1++)
+				for(f1 = f; f1 < D->nFreq; ++f1)
 				{
 					copyDifxFreq(D->freq+f1, D->freq+f1+1);
 				}
@@ -308,9 +311,7 @@ int simplifyDifxFreqs(DifxInput *D)
 /* merge two DifxFreq tables into an new one.  freqIdRemap will contain the
  * mapping from df2's old freq entries to that of the merged set
  */
-DifxFreq *mergeDifxFreqArrays(const DifxFreq *df1, int ndf1,
-	const DifxFreq *df2, int ndf2, int *freqIdRemap,
-	int *ndf)
+DifxFreq *mergeDifxFreqArrays(const DifxFreq *df1, int ndf1, const DifxFreq *df2, int ndf2, int *freqIdRemap, int *ndf)
 {
 	DifxFreq *df;
 	int i, j;
@@ -318,9 +319,9 @@ DifxFreq *mergeDifxFreqArrays(const DifxFreq *df1, int ndf1,
 	*ndf = ndf1;
 
 	/* first identify entries that differ and assign new freqIds to them */
-	for(j = 0; j < ndf2; j++)
+	for(j = 0; j < ndf2; ++j)
 	{
-		for(i = 0; i < ndf1; i++)
+		for(i = 0; i < ndf1; ++i)
 		{
 			if(isSameDifxFreq(df1 + i, df2 + j))
 			{
@@ -331,17 +332,17 @@ DifxFreq *mergeDifxFreqArrays(const DifxFreq *df1, int ndf1,
 		if(i == ndf1)
 		{
 			freqIdRemap[j] = *ndf;
-			(*ndf)++;
+			++(*ndf);
 		}
 	}
 
 	/* Allocate and copy */
 	df = newDifxFreqArray(*ndf);
-	for(i = 0; i < ndf1; i++)
+	for(i = 0; i < ndf1; ++i)
 	{
 		copyDifxFreq(df + i, df1 + i);
 	}
-	for(j = 0; j < ndf2; j++)
+	for(j = 0; j < ndf2; ++j)
 	{
 		i = freqIdRemap[j];
 		if(i >= ndf1)
@@ -355,19 +356,17 @@ DifxFreq *mergeDifxFreqArrays(const DifxFreq *df1, int ndf1,
 
 int writeDifxFreqArray(FILE *out, int nFreq, const DifxFreq *df)
 {
-	int n, i, t;
+	int n, i;
 	char sb[2];
 
 	writeDifxLineInt(out, "FREQ ENTRIES", nFreq);
 	n = 1;
 	sb[1] = 0;
 
-	for(i = 0; i < nFreq; i++)
+	for(i = 0; i < nFreq; ++i)
 	{
-		writeDifxLineDouble1(out, "FREQ (MHZ) %d", i, 
-			"%13.11f", df[i].freq);
-		writeDifxLineDouble1(out, "BW (MHZ) %d", i,
-			"%13.11f", df[i].bw);
+		writeDifxLineDouble1(out, "FREQ (MHZ) %d", i, "%13.11f", df[i].freq);
+		writeDifxLineDouble1(out, "BW (MHZ) %d", i, "%13.11f", df[i].bw);
 		sb[0] = df[i].sideband;
 		writeDifxLine1(out, "SIDEBAND %d", i, sb);
                 writeDifxLineInt1(out, "NUM CHANNELS %d", i, df[i].nChan);
@@ -377,7 +376,9 @@ int writeDifxFreqArray(FILE *out, int nFreq, const DifxFreq *df)
 		writeDifxLineInt1(out, "PHASE CALS %d OUT", i, df[i].nTone);
 		if(df[i].nTone > 0)
 		{
-			for(t = 0; t < df[i].nTone; t++)
+			int t;
+
+			for(t = 0; t < df[i].nTone; ++t)
 			{
 				writeDifxLineInt2(out, "PHASE CAL %d/%d INDEX", i, t, df[i].tone[t]);
 			}
