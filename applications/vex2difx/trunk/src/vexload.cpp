@@ -858,7 +858,6 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 			map<string,char> bbc2pol;
 			map<string,string> bbc2ifName;
 			map<string,Tracks> ch2tracks;
-			double sampRate;
 
 			// p2 will hold pointers to the special comments attached to if_def; max of 4
 			void *p2array[MAX_IF];
@@ -892,9 +891,7 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 				continue;
 			}
 			vex_field(T_SAMPLE_RATE, p, 1, &link, &name, &value, &units);
-			fvex_double(&value, &units, &sampRate);
-
-			M->sampRate = sampRate;
+			fvex_double(&value, &units, &setup.sampRate);
 
 			// init array to all zeroes
 			for(p2count = 0; p2count < MAX_IF; ++p2count)
@@ -1224,26 +1221,26 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 				vex_field(T_CHAN_DEF, p, 4, &link, &name, &value, &units);
 				fvex_double(&value, &units, &bandwidth);
 
-				if(bandwidth > sampRate/2)
+				if(bandwidth > setup.sampRate/2)
 				{
-					cerr << "Error: sample rate = " << sampRate << " bandwidth = " << bandwidth << endl;
+					cerr << "Error: sample rate = " << setup.sampRate << " bandwidth = " << bandwidth << endl;
 					cerr << "Sample rate must be no less than twice the bandwidth in all cases." << endl;
 
 					exit(EXIT_FAILURE);
 				}
 
-				if(bandwidth < sampRate/2)
+				if(bandwidth < setup.sampRate/2)
 				{
 					static bool first = true;
 
 					if(first)
 					{
-						cerr << "Warning: Sample rate = " << sampRate << " bandwidth = " << bandwidth << endl;
+						cerr << "Warning: Sample rate = " << setup.sampRate << " bandwidth = " << bandwidth << endl;
 						cerr << "Changing bandwidth to match sample rate.  Expect oversampled bandpasses" << endl;
 						cerr << "unless zoom bands are used" << endl;
 						first = false;
 					}
-					bandwidth = sampRate/2;
+					bandwidth = setup.sampRate/2;
 				}
 
 				vex_field(T_CHAN_DEF, p, 6, &link, &name, &bbcName, &units);
@@ -1299,9 +1296,10 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 			}
 		} // End of antenna loop
 
+#if 0
 		for(vector<VexSubband>::iterator it = M->subbands.begin(); it != M->subbands.end(); ++it)
 		{
-			int overSamp = static_cast<int>(M->sampRate/(2.0*it->bandwidth) + 0.001);
+			int overSamp = static_cast<int>(setup.sampRate/(2.0*it->bandwidth) + 0.001);
 
 			if(params.overSamp > 0)
 			{
@@ -1310,6 +1308,8 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 					cerr << "Warning: Mode=" << M->defName << " subband=" << M->overSamp.size() << 
 						": requested oversample factor " << params.overSamp << 
 						" is greater than the observed oversample factor " << overSamp << endl;
+					cerr << "This was triggered because the sample rate was " << setup.sampRate <<
+						" and the bandwidth was " << it->bandwidth << endl;
 					++nWarn;
 				}
 				overSamp = params.overSamp;
@@ -1321,6 +1321,9 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 
 			M->overSamp.push_back(overSamp);
 		}
+#endif
+		M->overSamp.push_back(1);
+
 		M->overSamp.sort();
 		M->overSamp.unique();
 	}

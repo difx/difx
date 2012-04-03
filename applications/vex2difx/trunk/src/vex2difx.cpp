@@ -73,18 +73,18 @@ static int calcDecimation(int overSamp)
 	}
 }
 
-static int calculateWorstcaseGuardNS(double samplerate, int subintNS)
+static int calculateWorstcaseGuardNS(double sampleRate, int subintNS)
 {
-	double sampleTimeNS = 1.0e9/samplerate;
-	double nsaccumulate = sampleTimeNS;
-	const double MaxEarthGeomSlitRate = 1600.0;	// ns/sec
+	double sampleTimeNS = 1.0e9/sampleRate;
+	double nsAccumulate = sampleTimeNS;
+	const double MaxEarthGeomSlipRate = 1600.0;	// ns/sec
 	
-	while(fabs(nsaccumulate - static_cast<int>(nsaccumulate)) > 1.0e-12)
+	while(fabs(nsAccumulate - static_cast<int>(nsAccumulate)) > 1.0e-12)
 	{
-		nsaccumulate += sampleTimeNS;
+		nsAccumulate += sampleTimeNS;
 	}
 
-	return static_cast<int>(nsaccumulate + MaxEarthGeomSlitRate*subintNS*1.0e-9 + 1.0);
+	return static_cast<int>(nsAccumulate + MaxEarthGeomSlipRate*subintNS*1.0e-9 + 1.0);
 }
 
 // A is assumed to be the first scan in time order
@@ -828,7 +828,7 @@ static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, vector<vector<
 
 	int n2 = next2(setup->nRecordChan);
 
-	overSamp = mode->getOversampleFactor();
+	overSamp = 1;	// FIXME: eventually allow other values?
 	decimation = calcDecimation(overSamp);
 
 	if(setup->formatName == string("VLBA1_1"))
@@ -900,18 +900,18 @@ static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, vector<vector<
 	else if(setup->formatName == string("S2"))
 	{
 		strcpy(D->datastream[dsId].dataFormat, "LBAVSOP");
-		D->datastream[dsId].dataFrameSize = 4096 + 10*setup->nBit*n2*static_cast<int>(mode->sampRate+0.5)/8;
+		D->datastream[dsId].dataFrameSize = 4096 + 10*setup->nBit*n2*static_cast<int>(setup->sampRate+0.5)/8;
 		cerr << "Warning: S2 data can be in LBAVSOP or LBASTD format - defaulting to LBAVSOP!!" << endl;
 	}
 	else if(setup->formatName == string("LBAVSOP"))
 	{
 		strcpy(D->datastream[dsId].dataFormat, "LBAVSOP");
-		D->datastream[dsId].dataFrameSize = 4096 + 10*setup->nBit*n2*static_cast<int>(mode->sampRate+0.5)/8;
+		D->datastream[dsId].dataFrameSize = 4096 + 10*setup->nBit*n2*static_cast<int>(setup->sampRate+0.5)/8;
 	}
 	else if(setup->formatName == string("LBASTD"))
 	{
 		strcpy(D->datastream[dsId].dataFormat, "LBASTD");
-		D->datastream[dsId].dataFrameSize = 4096 + 10*setup->nBit*n2*static_cast<int>(mode->sampRate+0.5)/8;
+		D->datastream[dsId].dataFrameSize = 4096 + 10*setup->nBit*n2*static_cast<int>(setup->sampRate+0.5)/8;
 	}
 	else
 	{
@@ -1536,7 +1536,7 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 	tintNS = static_cast<long long>(1e9*corrSetup->tInt + 0.5);
 	floatFFTDurNS = 1000000000.0/corrSetup->FFTSpecRes;
 	fftDurNS = static_cast<int>(floatFFTDurNS);
-	dataRate = mode->sampRate*mode->getBits()*mode->subbands.size();
+	dataRate = mode->getHighestSampleRate()*mode->getBits()*mode->subbands.size();
 	nFFTsPerIntegration = static_cast<int>(1e9*corrSetup->tInt/floatFFTDurNS + 0.5);
 
 	//first test how big a single FFT is - if it is too big, fail with a warning and a suggestion
@@ -1759,7 +1759,7 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 	//adjustment to get to an integer NS + geometric rate slippage (assumes Earth-based antenna)
 	if(!corrSetup->explicitGuardNS)
 	{
-		config->guardNS = calculateWorstcaseGuardNS(mode->sampRate, config->subintNS);
+		config->guardNS = calculateWorstcaseGuardNS(mode->getLowestSampleRate(), config->subintNS);
 	}
 	//config->overSamp = static_cast<int>(mode->sampRate/(2.0*mode->subbands[0].bandwidth) + 0.001);
 	//if(config->overSamp <= 0)
@@ -2193,14 +2193,8 @@ static int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int 
 			exit(EXIT_FAILURE);
 		}
 
-		if(os < 0)
-		{
-			overSamp = mode->getOversampleFactor();
-		}
-		else
-		{
-			overSamp = os;
-		}
+		overSamp = 1;	// Currently only this is supported
+
 		decimation = calcDecimation(overSamp);
 
 		corrSetup = P->getCorrSetup(configs[configId].second);
@@ -2397,7 +2391,7 @@ static int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int 
 				D->config[configId].xmacLength = minChans;
 			}
 		}
-		worstcaseguardns = calculateWorstcaseGuardNS(mode->sampRate, D->config[configId].subintNS);
+		worstcaseguardns = calculateWorstcaseGuardNS(mode->getLowestSampleRate(), D->config[configId].subintNS);
 		if(D->config[configId].guardNS < worstcaseguardns)
 		{
 			cerr << "vex2difx calculates the worst-case guardNS as " << worstcaseguardns << ", but you have explicitly set " << D->config[configId].guardNS << ". It is possible that mpifxcorr will refuse to run! Unless you know what you are doing, you should probably set guardNS to " << worstcaseguardns << " or above, or just leave it unset!" << endl;

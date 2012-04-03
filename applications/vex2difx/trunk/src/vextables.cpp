@@ -288,10 +288,12 @@ int VexMode::addSubband(double freq, double bandwidth, char sideband, char pol)
 	return subbands.size() - 1;
 }
 
+#if 0
 int VexMode::getOversampleFactor() const
 {
 	return static_cast<int>(sampRate/(2.0*subbands[0].bandwidth) + 0.001);
 }
+#endif
 
 int VexMode::getPols(char *pols) const
 {
@@ -401,6 +403,71 @@ const VexSetup* VexMode::getSetup(const string &antName) const
 	}
 
 	return &it->second;
+}
+
+double VexMode::getLowestSampleRate() const
+{
+	if(setups.empty())
+	{
+		return 0.0;
+	}
+	else
+	{
+		double sr = 1.0e30;	// A very large number
+		
+		for(map<string,VexSetup>::const_iterator it = setups.begin(); it != setups.end(); ++it)
+		{
+			if(it->second.sampRate < sr)
+			{
+				sr = it->second.sampRate;
+			}
+		}
+
+		return sr;
+	}
+}
+
+double VexMode::getHighestSampleRate() const
+{
+	if(setups.empty())
+	{
+		return 0.0;
+	}
+	else
+	{
+		double sr = 0.0;
+		
+		for(map<string,VexSetup>::const_iterator it = setups.begin(); it != setups.end(); ++it)
+		{
+			if(it->second.sampRate > sr)
+			{
+				sr = it->second.sampRate;
+			}
+		}
+
+		return sr;
+	}
+}
+
+double VexMode::getAverageSampleRate() const
+{
+	if(setups.empty())
+	{
+		return 0.0;
+	}
+	else
+	{
+		double sr = 0.0;
+		
+		for(map<string,VexSetup>::const_iterator it = setups.begin(); it != setups.end(); ++it)
+		{
+			sr += it->second.sampRate;
+		}
+
+		sr /= setups.size();
+
+		return sr;
+	}
 }
 
 double VexIF::getLowerEdgeFreq() const
@@ -705,7 +772,7 @@ double VexJob::calcOps(const VexData *V, int fftSize, bool doPolar) const
 			return 0.0;
 		}
 		
-		sampRate = M->sampRate;
+		sampRate = M->getAverageSampleRate();
 		nPol = M->getPols(pols);
 		if(nPol > 1 && doPolar)
 		{

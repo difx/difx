@@ -195,7 +195,7 @@ public:
 class VexSetup	// Container for all antenna-specific settings
 {
 public:
-	VexSetup() : nBit(0), nRecordChan(0) {}
+	VexSetup() : sampRate(0.0), nBit(0), nRecordChan(0) {}
 	int phaseCalIntervalMHz() const;
 	const VexIF *getIF(const string &ifName) const;
 	double firstTuningForIF(const string &ifName) const;	// returns Hz
@@ -203,6 +203,7 @@ public:
 	map<string,VexIF> ifs;		// Indexed by name in the vex file, such as IF_A
 	vector<VexChannel> channels;
 
+	double sampRate;		// (Hz)
 	unsigned int nBit;
 	unsigned int nRecordChan;	// number of recorded channels
 	string formatName;		// e.g. VLBA, MKIV, Mk5B, VDIF, LBA, K5, ...
@@ -211,17 +212,21 @@ public:
 class VexMode
 {
 public:
-	VexMode() : sampRate(0.0) {}
+	VexMode() {}
 
 	int addSubband(double freq, double bandwidth, char sideband, char pol);
 	int getPols(char *pols) const;
 	int getBits() const;
 	const VexSetup* getSetup(const string &antName) const;
+	double getLowestSampleRate() const;
+	double getHighestSampleRate() const;
+	double getAverageSampleRate() const;
+#if 0
 	int getOversampleFactor() const;
+#endif
 
 	string defName;
 
-	double sampRate;		// (Hz)
 	vector<VexSubband> subbands;
 	map<string,VexSetup> setups;	// indexed by antenna name
 	list<int> overSamp;		// list of the oversample factors used by this mode
