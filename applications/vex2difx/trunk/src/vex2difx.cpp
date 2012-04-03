@@ -2493,7 +2493,7 @@ static int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int 
 	populateEOPTable(D, V->getEOPs());
 
 	// Merge identical table entries
-	if (!zoomChans) simplifyDifxFreqs(D);
+	simplifyDifxFreqs(D);
 	simplifyDifxDatastreams(D);
 	simplifyDifxBaselines(D);
 	simplifyDifxConfigs(D);
