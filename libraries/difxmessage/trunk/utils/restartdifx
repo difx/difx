@@ -18,8 +18,8 @@ from string import split
 from glob import glob
 
 program = 'restartdifx'
-version = '0.3'
-verdate = '20120214'
+version = '0.4'
+verdate = '20120403'
 author  = 'Walter Brisken <wbrisken@nrao.edu>'
 
 def usage():
@@ -89,6 +89,16 @@ def getLastRestartSeconds(dataDir, verbose):
 
 	return dt
 
+def getJobDuration(inputFile, verbose):
+	cmd = 'grep EXECUTE %s' % inputFile
+	if verbose > 1:
+		print 'Reading from pipe: %s' % cmd
+	line = popen(cmd).readline()
+	if len(line) > 0:
+		return float(split(line)[-1])
+	else:
+		return 0
+
 verbose = 1
 
 if len(argv) != 2:
@@ -106,16 +116,21 @@ fileBase = fileName[:-len(suffix)]
 logFile = fileBase + 'difxlog'
 inputFile = fileBase + 'input'
 dataDir = fileBase + 'difx'
+jd = getJobDuration(inputFile, verbose)
 
 rs = getRestartSeconds(logFile, verbose)
 
 rs = rs + getLastRestartSeconds(dataDir, verbose)
 
 if verbose > 0:
-	print 'RestartSeconds = %f' % rs
+	print 'Restart offset = %f seconds' % rs
+	print 'Job duration = %f seconds' % jd
 
-if rs > 0:
-	cmd = 'startdifx %f -v %s' % (rs, inputFile)
-	if verbose > 0:
-		print 'Executing: %s' % cmd
-	system(cmd)
+if rs > jd-4:	# restarting within 4 seconds of job end time
+	print "Won't restart because it looks like the job finished already"
+else:
+	if rs > 0:
+		cmd = 'startdifx %f -v %s' % (rs, inputFile)
+		if verbose > 0:
+			print 'Executing: %s' % cmd
+		system(cmd)
