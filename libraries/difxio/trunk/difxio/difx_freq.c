@@ -305,16 +305,6 @@ int reorderDifxFreqs(DifxInput *D)
 		exit(EXIT_FAILURE);
 	}
 
-printf("lessThan:\n");
-for(j = 0; j < n; ++j)
-{
-	for(i = 0; i < n; ++i)
-	{
-		printf("% d", lessThan[i][j]);
-	}
-	printf("\n");
-}
-
 	/* 3. iterate, collecting those that aren't preceded by anything else */
 
 	for(o = 0; o < n; ++o)
@@ -372,13 +362,6 @@ for(j = 0; j < n; ++j)
 	}
 
 	/* 5. Do reordering */
-
-printf("FREQ Reorder List:");
-for(i = 0; i < n; ++i)
-{
-	printf(" %d", newOrder[i]);
-}
-printf("\n");
 
 	oldFreq = D->freq;
 	D->freq = newDifxFreqArray(n);
