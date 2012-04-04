@@ -92,10 +92,12 @@ void fprintDifxFreq(FILE *fp, const DifxFreq *df)
 	fprintf(fp, "    Freq = %f MHz\n", df->freq);
 	fprintf(fp, "    Bandwidth = %f MHz\n", df->bw);
 	fprintf(fp, "    Sideband = %c\n", df->sideband);
-        fprintf(fp, "    Num Chan = %d\n", df->nChan);
-        fprintf(fp, "    Spec Avg = %d\n", df->specAvg);
-        fprintf(fp, "    Oversamp = %d\n", df->overSamp);
-        fprintf(fp, "    Decimation = %d\n", df->decimation);
+	fprintf(fp, "    Num Chan = %d\n", df->nChan);
+	fprintf(fp, "    Spec Avg = %d\n", df->specAvg);
+#if 0
+	fprintf(fp, "    Oversamp = %d\n", df->overSamp);
+	fprintf(fp, "    Decimation = %d\n", df->decimation);
+#endif
 	fprintf(fp, "    Num tones = %d  [", df->nTone);
 	if(df->nTone > 0)
 	{
@@ -224,9 +226,192 @@ void copyDifxFreq(DifxFreq *dest, const DifxFreq *src)
 	}
 }
 
+/* this function possibly rearranges the FREQ table entries to be in 
+ * an order such that for each datastream all record freqs precede
+ * all zoom freqs */
+int reorderDifxFreqs(DifxInput *D)
+{
+	int n;			/* number of frequencies */
+	int i, j, d, o;
+	char **lessThan;	/* if lessThan[a][b] then a needs to precede b */
+	int *newOrder;
+	DifxFreq *oldFreq;
+	int nError = 0;
+
+	/* 1. Initialize arrays */
+
+	n = D->nFreq;
+
+	newOrder = (int *)malloc(n*sizeof(int));
+	for(i = 0; i < n; ++i)
+	{
+		newOrder[i] = -1;	/* not yet determined */
+	}
+
+	lessThan = (char **)malloc(n*sizeof(char *));
+	for(i = 0; i < n; ++i)
+	{
+		lessThan[i] = (char *)calloc(n, sizeof(char));	/* zero is false */
+	}
+
+	/* 2. populate lessThan array */
+
+	for(d = 0; d < D->nDatastream; ++d)
+	{
+		if(D->datastream[d].nRecFreq == 0 && D->datastream[d].nZoomFreq == 0)
+		{
+			continue;	/* no constraint here */
+		}
+		for(i = 0; i < D->datastream[d].nRecFreq; ++i)
+		{
+			int recFreqIndex;
+
+			recFreqIndex = D->datastream[d].recFreqId[i];
+			if(recFreqIndex < 0 || recFreqIndex >= n)
+			{
+				fprintf(stderr, "Developer error: reorderDifxFreqs: recFreqIndex=%d nFreq=%d\n", recFreqIndex, n);
+
+				exit(EXIT_FAILURE);
+			}
+
+			for(j = 0; j < D->datastream[d].nZoomFreq; ++j)
+			{
+				int zoomFreqIndex;
+
+				zoomFreqIndex = D->datastream[d].zoomFreqId[j];
+				if(zoomFreqIndex < 0 || zoomFreqIndex >= n)
+				{
+					fprintf(stderr, "Developer error: reorderDifxFreqs: zoomFreqIndex=%d nFreq=%d\n", zoomFreqIndex, n);
+
+					exit(EXIT_FAILURE);
+				}
+
+				lessThan[recFreqIndex][zoomFreqIndex] = 1;
+
+				if(recFreqIndex == zoomFreqIndex)
+				{
+					int antId = D->datastream[d].antennaId;
+
+					fprintf(stderr, "Error: Antenna %s has a zoom band that is the same as a parent band\n", D->antenna[antId].name);
+					fprintDifxFreq(stderr, D->freq + recFreqIndex);
+					++nError;
+				}
+			}
+		}
+	}
+
+	if(nError > 0)
+	{
+		exit(EXIT_FAILURE);
+	}
+
+printf("lessThan:\n");
+for(j = 0; j < n; ++j)
+{
+	for(i = 0; i < n; ++i)
+	{
+		printf("% d", lessThan[i][j]);
+	}
+	printf("\n");
+}
+
+	/* 3. iterate, collecting those that aren't preceded by anything else */
+
+	for(o = 0; o < n; ++o)
+	{
+		for(i = 0; i < n; ++i)
+		{
+			if(newOrder[i] >= 0)
+			{
+				continue;	/* this one already found */
+			}
+			for(j = 0; j < n; ++j)
+			{
+				if(j == i)
+				{
+					continue;
+				}
+				if(lessThan[j][i])	/* i not ready to be selected */
+				{
+					break;
+				}
+			}
+			if(j == n)	/* nothing proceeds i */
+			{
+				for(j = 0; j < n; ++j)
+				{
+					lessThan[j][i] = lessThan[i][j] = 0;	/* take i out of circulation */
+				}
+
+				newOrder[i] = o;
+
+				break;
+			}
+		}
+		if(i == n)	/* bad news: no option found */
+		{
+			break;
+		}
+	}
+
+	/* 4. Partial clean up */
+
+	for(i = 0; i < n; ++i)
+	{
+		free(lessThan[i]);
+	}
+	free(lessThan);
+
+	if(o < n)	/* failure! */
+	{
+		free(newOrder);
+		fprintf(stderr, "Error: reorderDifxFreqs: No ordering of FREQ table will satisfy mpifxcorr\n");
+		fprintf(stderr, "Files will be written but mpifxcorr will not cope with them!\n");
+
+		return -1;
+	}
+
+	/* 5. Do reordering */
+
+printf("FREQ Reorder List:");
+for(i = 0; i < n; ++i)
+{
+	printf(" %d", newOrder[i]);
+}
+printf("\n");
+
+	oldFreq = D->freq;
+	D->freq = newDifxFreqArray(n);
+
+	for(i = 0; i < n; ++i)
+	{
+		copyDifxFreq(D->freq+newOrder[i], oldFreq+i);
+	}
+
+	for(d = 0; d < D->nDatastream; ++d)
+	{
+		for(i = 0; i < D->datastream[d].nRecFreq; ++i)
+		{
+			D->datastream[d].recFreqId[i] = newOrder[i];
+		}
+		for(i = 0; i < D->datastream[d].nZoomFreq; ++i)
+		{
+			D->datastream[d].zoomFreqId[i] = newOrder[i];
+		}
+	}
+
+	/* 6. Final cleanup */
+
+	deleteDifxFreqArray(oldFreq, n);
+	free(newOrder);
+
+	return 0;
+}
+
+
 int simplifyDifxFreqs(DifxInput *D)
 {
-	int f, f0, n0;
+	int f, f0, n0, v;
 
 	n0 = D->nFreq;
 	if(n0 < 2)
@@ -234,7 +419,7 @@ int simplifyDifxFreqs(DifxInput *D)
 		return 0;
 	}
 
-	for(f=1;;)
+	for(f = 1;;)
 	{
 		int f1;
 
@@ -305,7 +490,16 @@ int simplifyDifxFreqs(DifxInput *D)
 		}
 	}
 
-	return n0 - D->nFreq;
+	v = reorderDifxFreqs(D);
+
+	if(v < 0)
+	{
+		return 0;
+	}
+	else
+	{
+		return n0 - D->nFreq;
+	}
 }
 
 /* merge two DifxFreq tables into an new one.  freqIdRemap will contain the
