@@ -126,24 +126,46 @@ def getTransferFileCount(path, user, config):
     
     return(fileCount)
     
-def syncDir(path, user, config):
+def syncDir(path, user, config, fileCount, dryRun):
     
     
     server = config.get("difxarchive", "archiveserver")
     remotePath = config.get("difxarchive", "archiveremotepath")
     
-    cmd = 'rsync -av  %s %s@%s:%s' % ( path, user, server, remotePath) 
+    print "Copying files to: %s" % server
+    
+    if dryRun:
+        cmd = 'rsync -av  --dry-run %s %s@%s:%s' % ( path, user, server, remotePath) 
+    else:    
+        cmd = 'rsync -av  --progress %s %s@%s:%s' % ( path, user, server, remotePath) 
+        
     proc = subprocess.Popen(cmd,
                                        shell=True,
                                        stdin=subprocess.PIPE,
                                        stdout=subprocess.PIPE,
                                        )
-    remainder = proc.communicate()[0]
-    print remainder
+    
+    while True and not dryRun:
+        output = proc.stdout.readline()
+
+        if 'to-check' in output:
+            
+             m = re.findall(r'to-check=(\d+)/(\d+)', output)
+             progress = (100 * (int(m[0][1]) - int(m[0][0]))) / fileCount
+             
+             sys.stdout.write('\rDone: ' + str(progress) + '%')
+             sys.stdout.flush()
+             
+             if int(m[0][0]) == 0:
+                      break
+                      
+    print('\rFinished')
+
+        
     
     return
 
-def syncReferenceDir(path, referencePath):
+def syncReferenceDir(path, referencePath, dryRun):
     
     includePattern = ["*.vex", "*.skd", "*.v2d", "*.input", "*.difxlog", "*.log"]
     
@@ -155,22 +177,26 @@ def syncReferenceDir(path, referencePath):
     if  path.endswith(os.path.sep):
         path = path[:-1]
     
-    cmd = "rsync -av --include '*/' "  
+    cmd = "rsync -av --progress --include '*/' "  
     
     for pattern in includePattern:
         cmd += " --include '%s' " % pattern
     
+    if dryRun:
+        cmd += " --dry-run "
+    
     cmd += " --exclude '*' --exclude '*.difx' %s %s" % ( path, referencePath) 
 
-    print cmd
+    print "Copying reference files to: %s" % referencePath
     
     proc = subprocess.Popen(cmd,
                                        shell=True,
                                        stdin=subprocess.PIPE,
                                        stdout=subprocess.PIPE,
                                        )
-    remainder = proc.communicate()[0]
-    print remainder
+   
+    
+    print('\rFinished')
     return
 
 def confirmAction():
@@ -198,6 +224,7 @@ if __name__ == "__main__":
     
     parser.add_option("-u", "--user", dest="user", type="string" ,action="store", help="Do the archival as the specified user. This overrides the defaultuser directive in difxdb.ini")
     parser.add_option("-f", "--force", dest="force" ,action="store_true", default=False, help="Delete files without further confirmation ")
+    parser.add_option("-d", "--dry-run", dest="dryRun" ,action="store_true", default=False, help="Simulate archival. Don't rsync files, don't update database. ")
     # parse the command line. Options will be stored in the options list. Leftover arguments will be stored in the args list
     (options, args) = parser.parse_args()   
      
@@ -249,30 +276,36 @@ if __name__ == "__main__":
         getTicket(user)
 
         while True:
-            # copy files to the archive server
-            syncDir(path, user, config)
-
-            # confirm that everything has been transferred
+            
             fileCount = getTransferFileCount(path, user, config)
+            
             if (fileCount == 0):
                 break
+                
+            # copy files to the archive server
+            syncDir(path, user, config, fileCount, options.dryRun, )
+            
+            if options.dryRun:
+                break
+                
 
         # copy subset of files to the reference backup location
-        syncReferenceDir(path, config.get("difxarchive", "refbackuppath"))
-
-        # delete files
-        print 'Archival process completed. Now deleting path %s including all files and subdirectories' % path
-        confirmAction()
-
-        shutil.rmtree(path)
+        syncReferenceDir(path, config.get("difxarchive", "refbackuppath"), options.dryRun)
         
         
-        # update database
-        experiment = getExperimentByCode(session, code)
-        experiment.dateArchived = datetime.datetime.now()
-        experiment.archivedBy = user
-        session.commit()
-        session.flush()
+        if not options.dryRun:
+            # delete files
+            print 'Archival process completed. Now deleting path %s including all files and subdirectories' % path
+            confirmAction()
+
+            shutil.rmtree(path)
+            
+            # update database
+            experiment = getExperimentByCode(session, code)
+            experiment.dateArchived = datetime.datetime.now()
+            experiment.archivedBy = user
+            session.commit()
+            session.flush()
 
 
     except Exception as e:
