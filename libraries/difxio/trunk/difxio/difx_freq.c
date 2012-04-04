@@ -392,11 +392,11 @@ printf("\n");
 	{
 		for(i = 0; i < D->datastream[d].nRecFreq; ++i)
 		{
-			D->datastream[d].recFreqId[i] = newOrder[i];
+			D->datastream[d].recFreqId[i] = newOrder[D->datastream[d].recFreqId[i]];
 		}
 		for(i = 0; i < D->datastream[d].nZoomFreq; ++i)
 		{
-			D->datastream[d].zoomFreqId[i] = newOrder[i];
+			D->datastream[d].zoomFreqId[i] = newOrder[D->datastream[d].zoomFreqId[i]];
 		}
 	}
 
@@ -411,7 +411,7 @@ printf("\n");
 
 int simplifyDifxFreqs(DifxInput *D)
 {
-	int f, f0, n0, v;
+	int f, n0, v;
 
 	n0 = D->nFreq;
 	if(n0 < 2)
@@ -450,6 +450,8 @@ int simplifyDifxFreqs(DifxInput *D)
 
 				for(r = 0; r < D->datastream[d].nRecFreq; ++r)
 				{
+					int f0;
+
 					f0 = D->datastream[d].recFreqId[r];
 					if(f0 == f)
 					{
@@ -463,6 +465,8 @@ int simplifyDifxFreqs(DifxInput *D)
 				}
 				for(r = 0; r < D->datastream[d].nZoomFreq; ++r)
 				{
+					int f0;
+
 					f0 = D->datastream[d].zoomFreqId[r];
 					if(f0 == f)
 					{
@@ -526,7 +530,7 @@ DifxFreq *mergeDifxFreqArrays(const DifxFreq *df1, int ndf1, const DifxFreq *df2
 		if(i == ndf1)
 		{
 			freqIdRemap[j] = *ndf;
-			++(*ndf);
+			++*ndf;
 		}
 	}
 
