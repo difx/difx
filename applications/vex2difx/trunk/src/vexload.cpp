@@ -141,7 +141,23 @@ static int getRecordChannel(const string &antName, const string &chanName, const
 
 		return (track-2)/delta;
 	}
-	else if(setup.formatName == "S2" || setup.formatName == "LBASTD" || setup.formatName == "LBAVSOP")
+	else if( setup.formatName == "LBAVSOP" || setup.formatName == "LBASTD" ) 
+	{
+		/* int delta, track;
+		map<string,Tracks>::const_iterator it = ch2tracks.find(chanName);
+
+		if(it == ch2tracks.end())
+		{
+			return -1;
+		}
+
+		const Tracks &T = it->second;
+		delta = T.sign.size() + T.mag.size();
+		track = T.sign[0];
+                */
+		return n;
+	}
+	else if(setup.formatName == "S2" )
 	{
 		return n;
 	}
@@ -1114,6 +1130,45 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 					setup.nBit = nBit;
 				}
 			}
+			else if(setup.formatName == "LBAVSOP" || setup.formatName == "LBASTD")
+			{
+				for(p = get_all_lowl(antName.c_str(), modeDefName, T_FANOUT_DEF, B_TRACKS, v); p; p = get_all_lowl_next())
+				{
+				    string chanName;
+				    bool sign;
+				    int dasNum;
+				    
+				    vex_field(T_FANOUT_DEF, p, 2, &link, &name, &value, &units);
+				    chanName = value;
+				    vex_field(T_FANOUT_DEF, p, 3, &link, &name, &value, &units);
+				    sign = (value[0] == 's');
+				    vex_field(T_FANOUT_DEF, p, 4, &link, &name, &value, &units);
+				    sscanf(value, "%d", &dasNum);
+
+				    int chanNum;
+				    
+				    if(vex_field(T_FANOUT_DEF, p, 5, &link, &name, &value, &units) < 0)
+				    {
+				    	break;
+				    }
+				    sscanf(value, "%d", &chanNum);
+				    chanNum += 32*(dasNum-1);
+				    if(sign)
+				    {
+				    	ch2tracks[chanName].sign.push_back(chanNum);
+				    }
+				    else
+				    {
+				    	nBit = 2;
+				    	ch2tracks[chanName].mag.push_back(chanNum);
+				    }
+
+                                }
+				setup.nRecordChan = ch2tracks.size();
+				setup.nBit = nBit;
+		                //cout << "nRecordChan=" << setup.nRecordChan << endl;
+		                //cout << "nBit=" << setup.nBit << endl;
+			}
 			else if(setup.formatName == "VDIF")
 			{
 				cout << "Warning: Antenna " << antName << " has incompletely defined VDIF format.  Assuming 1 chan with 2 bits." << endl;
@@ -1123,6 +1178,7 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 			}
 			else if(setup.formatName.find_first_of("VDIF") != string::npos)
 			{
+#warning: "FIXME: note: the use of find_first_of on this test doesn't seem appropriate. It will match any formatName, even if it doesn't have 'VDIF' in it."
 				setup.nBit = atoi(setup.formatName.substr(setup.formatName.find_last_of('/') + 1).c_str());
 				setup.formatName = setup.formatName.substr(0, setup.formatName.find_last_of('/'));
 				setup.nRecordChan = 1;
@@ -1142,13 +1198,13 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 			{
 				vex_field(T_S2_RECORDING_MODE, p, 1, &link, &name, &value, &units);
 				string s2mode(value);
-				if(setup.formatName == "")
-				{
-					setup.formatName = "S2";
-				}
-
 				if(s2mode != "none")
 				{
+				        if(setup.formatName == "")
+				        {
+				        	setup.formatName = "S2";
+				        }
+
 					size_t f = s2mode.find_last_of("x");
 					size_t g = s2mode.find_last_of("-");
 
@@ -1164,12 +1220,17 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 
 					setup.nBit = atoi(bits.c_str());
 					setup.nRecordChan = atoi(tracks.c_str())/setup.nBit; // should equal bbc2pol.size();
+				    if(ch2tracks.empty())
+				    {
+				    	setup.formatName = "NONE";
+				    	setup.nRecordChan = 0;
+				    	setup.nBit = 0;
+				    }
+                                    else {
+				        setup.nRecordChan = ch2tracks.size();
+                                        setup.nBit = nBit;
+                                    }
 				} 
-				else 
-				{
-					setup.nBit = 2;
-					setup.nRecordChan = 0;
-				}
 			}
 
 			// Get pulse cal extraction information
