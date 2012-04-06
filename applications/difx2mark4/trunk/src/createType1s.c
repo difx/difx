@@ -36,6 +36,9 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
 
     int i,
         findex,
+        gindex,
+        indA,
+        indB,
         n,
         nvis,
         vrsize,                     // size of vis. records in bytes
@@ -52,7 +55,8 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
         gv_stat,
         oldScan,
         configId,
-        cn_lab;                     // channel # used as a label in the channel name
+        cn_lab,                     // channel # used as a label in the channel name
+        numchan;
 
     char inname[DIFXIO_FILENAME_LENGTH],    // file name of input data file
          dirname[DIFXIO_FILENAME_LENGTH],
@@ -365,23 +369,48 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
                     pdsB = &D->datastream[D->baseline[blind].dsB];
 
                                     // construct and write type 101 records for each chan
+                    numchan = 0;
                     for (i=0; i<D->baseline[blind].nFreq; i++)
-                        {
                                     // loop over 1, 2, or 4 pol'n. products
                         for (pol=0; pol<D->baseline[blind].nPolProd[i]; pol++)
                             {
                                     // find actual freq index of this recorded band
-                            findex = pdsA->recBandFreqId[D->baseline[blind].bandA[i][pol]];
+                                    // or possibly of a zoomed in band
+                            indA = D->baseline[blind].bandA[i][pol];
+                            if (indA < 0 || indA >= pdsA->nRecBand + pdsA->nZoomBand)
+                                {
+                                printf ("Error! bandA[%d][%d] = %d out of range\n",
+                                        i, pol, indA);
+                                return (-1);
+                                }
+                            if (indA < pdsA->nRecBand)
+                                findex = pdsA->recFreqId[pdsA->recBandFreqId[indA]];
+                            else
+                                findex = pdsA->zoomFreqId[pdsA->zoomBandFreqId[indA-pdsA->nRecBand]];
+
+                            indB = D->baseline[blind].bandB[i][pol];
+                            if (indB < 0 || indB >= pdsB->nRecBand + pdsB->nZoomBand)
+                                {
+                                printf ("Error! bandB[%d][%d] = %d out of range\n",
+                                        i, pol, indB);
+                                return (-1);
+                                }
+                            if (indB < pdsB->nRecBand)
+                                gindex = pdsB->recFreqId[pdsB->recBandFreqId[indB]];
+                            else
+                                gindex = pdsB->zoomFreqId[pdsB->zoomBandFreqId[indB-pdsB->nRecBand]];
+
                                     // sanity check that both stations refer to same freq
-                            if (findex != pdsB->recBandFreqId[D->baseline[blind].bandB[i][pol]])
-                                printf ("Warning, mismatching frequency indices!\n");
+                            if (findex != gindex)
+                              printf ("Warning, mismatching frequency indices! (%d vs %d)\n",
+                                        findex, gindex);
                                     // generate index that is 10 * freq_index + pol + 1
                             t101.index = 10 * findex + pol + 1;
                             c = getband (D->freq[findex].freq);
                                     // prepare ID strings for both pols, if there
                             if (D->baseline[blind].nPolProd[i] > 1)
                                 {
-                                cn_lab = 2 * findex;
+                                cn_lab = 2 * numchan;
                                 sprintf (lchan_id, "%c%02d?", c, cn_lab);
                                 lchan_id[3] = (D->freq+findex)->sideband;
                                 cn_lab++; 
@@ -390,7 +419,7 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
                                 }
                             else    // both the same (only one used)
                                 {
-                                sprintf (lchan_id, "%c%02d?", c, findex);
+                                sprintf (lchan_id, "%c%02d?", c, numchan);
                                 lchan_id[3] = (D->freq+findex)->sideband;
                                 strcpy (rchan_id, lchan_id);
                                 }
@@ -400,6 +429,7 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
                                 case 0: // LL
                                     strcpy (t101.ref_chan_id, lchan_id);
                                     strcpy (t101.rem_chan_id, lchan_id);
+                                    numchan++;
                                     break;
                                 case 1: // RR
                                     strcpy (t101.ref_chan_id, rchan_id);
@@ -416,7 +446,6 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
                                 }
                             write_t101 (&t101, fout[n]);
                             }
-                        }
                     break;
                     }                   // end of block to append new baseline
                 }                       // either found baseline file or created new one
