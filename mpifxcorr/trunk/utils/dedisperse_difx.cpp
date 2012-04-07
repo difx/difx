@@ -53,17 +53,24 @@ int main(int argc, char *argv[])
   int mindelayoffset, maxdelayoffset, poloffset;
   int startmjd, currentmjd, currentfreq, baseline, offset=0;
   double dm, dur, inttime, chanfreq, startseconds, currentseconds, lastseconds=0;
+  double snipstartmjd, snipendmjd;
+  bool dotrim = false;
   pol[2] = 0;
 
-  if(argc != 4)
+  if(argc != 4 && argc != 6)
   {
-    cerr << "Error - invoke with dedisperse_difx <inputfilename> <inputdifxfile> <dm>" << endl;
+    cerr << "Error - invoke with dedisperse_difx <inputfilename> <inputdifxfile> <dm> [startsnipmjd] [endsnipmjd]" << endl;
     return EXIT_FAILURE;
   }
 
   config = new Configuration(argv[1], 0);
   inputdifxfile = argv[2];
   dm = atof(argv[3]);
+  if(argc == 6) {
+    dotrim = true;
+    snipstartmjd = atof(argv[4]);
+    snipendmjd = atof(argv[5]);
+  }
 
   //check that the config is ok
   if(!config->consistencyOK())
@@ -118,34 +125,11 @@ int main(int argc, char *argv[])
     lastslash = -1;
   savedifxfile = savedir + string(inputdifxfile).substr(lastslash+1);
 
-  //work out the maximum buffer length required
-  maxnumintegrations = 0;
   inttime = 0.0;
-  for(int i=0;i<model->getNumScans();i++) {
-    if(model->getScanDuration(i) > config->getExecuteSeconds())
-      dur = model->getScanDuration(i);
-    else
-      dur = config->getExecuteSeconds();
+  for(int i=0;i<model->getNumScans();i++)
     inttime = config->getIntTime(config->getScanConfigIndex(i));
-    if(dur/inttime > maxnumintegrations)
-      maxnumintegrations = (int)(dur/inttime + 0.99999); //round up if non-integer
-  }
 
-  //bail out if its too long to fit in one big buffer
-  if(maxnumintegrations > 100000) {
-    cerr << "Due to lazy buffering, can't do huge files yet - aborting!" << endl;
-    exit(1);
-  }
-
-  //create the array of dm delays, dm offsets and the visibility buffer
-  lastconfigindex = -1;
-  tempbuffer = new char[Visibility::HEADER_BYTES + sizeof(cf32)*config->getMaxNumChannels()];
-  visibilities = new char****[maxnumintegrations];
-  vistimes = new double[maxnumintegrations];
-  for(int i=0;i<maxnumintegrations;i++) {
-    visibilities[i] = new char***[config->getNumBaselines() + config->getNumDataStreams()];
-  }
-
+  //create the dmoffsets/dmdelays arrays
   mindelayoffset = 9999999;
   maxdelayoffset = 0;
   dmdelays = new double*[config->getFreqTableLength()];
@@ -163,6 +147,35 @@ int main(int argc, char *argv[])
       if(dmoffsets[i][j] > maxdelayoffset)
         maxdelayoffset = dmoffsets[i][j];
     }
+  }
+
+  //work out the maximum buffer length required
+  maxnumintegrations = 0;
+  for(int i=0;i<model->getNumScans();i++) {
+    if(model->getScanDuration(i) > config->getExecuteSeconds())
+       dur = model->getScanDuration(i);
+     else
+       dur = config->getExecuteSeconds();
+     if(dotrim)
+       dur = (snipstartmjd - snipendmjd)*86400.0 + maxdelayoffset - mindelayoffset;
+     inttime = config->getIntTime(config->getScanConfigIndex(i));
+     if(dur/inttime > maxnumintegrations)
+       maxnumintegrations = (int)(dur/inttime + 0.99999); //round up if non-integer
+  }
+
+  //bail out if its too long to fit in one big buffer
+  if(maxnumintegrations > 100000) {
+    cerr << "Due to lazy buffering, can't do huge files yet - aborting!" << endl;
+    exit(1);
+  }
+
+  //create the visibility buffer
+  lastconfigindex = -1;
+  tempbuffer = new char[Visibility::HEADER_BYTES + sizeof(cf32)*config->getMaxNumChannels()];
+  visibilities = new char****[maxnumintegrations];
+  vistimes = new double[maxnumintegrations];
+  for(int i=0;i<maxnumintegrations;i++) {
+    visibilities[i] = new char***[config->getNumBaselines() + config->getNumDataStreams()];
   }
 
   //open the input and output files, step through each visibility and delay as appropriate
@@ -195,6 +208,8 @@ int main(int argc, char *argv[])
       currentseconds  = *((double*)(tempbuffer+16));
       lastseconds = currentseconds;
       offset = int(((currentmjd-startmjd)*86400 + (currentseconds-startseconds))/inttime);
+      if(dotrim)
+        offset = (currentmjd + currentseconds/86400.0 - snipstartmjd)/inttime - mindelayoffset;
     }
     int readcount = 0;
     while(!input.eof()) {
@@ -221,8 +236,12 @@ int main(int argc, char *argv[])
       else if(pol[0] == 'L' && pol[1] == 'R')
         poloffset = 3;
       fchan = config->getFNumChannels(currentfreq)/config->getFChannelsToAverage(currentfreq);
-      memcpy(visibilities[offset][baselineindices[baseline]][currentfreq][poloffset], tempbuffer, Visibility::HEADER_BYTES);
-      input.read(visibilities[offset][baselineindices[baseline]][currentfreq][poloffset] + Visibility::HEADER_BYTES, sizeof(cf32)*fchan);
+      if (offset >= 0) {
+        memcpy(visibilities[offset][baselineindices[baseline]][currentfreq][poloffset], tempbuffer, Visibility::HEADER_BYTES);
+        input.read(visibilities[offset][baselineindices[baseline]][currentfreq][poloffset] + Visibility::HEADER_BYTES, sizeof(cf32)*fchan);
+      }
+      else
+        input.read(tempbuffer, sizeof(cf32)*fchan); //throw away data we don't want
       input.read(tempbuffer, Visibility::HEADER_BYTES);
     }
     cout << "Read " << readcount << " visibility dumps" << endl;

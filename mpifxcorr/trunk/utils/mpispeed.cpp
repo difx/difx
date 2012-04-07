@@ -51,6 +51,8 @@ int main(int argc, char **argv)
 	if(numprocs %2 != 0)
 	{
 		printf("Sorry, must run with even number of processes\n");
+		printf("This program should be invoked in a manner similar to:\n");
+		printf("\nmpirun -H host1,host2,...,hostN %s\n", argv[0]);
 		MPI_Barrier(world);
 		MPI_Finalize();
 
@@ -84,7 +86,7 @@ int main(int argc, char **argv)
 
 	if(rank == 0)
 	{
-		printf("Total memory transfered = %Ld bytes in %1.0f seconds\n", NumSends*BufferSize, dt);
+		printf("Total memory transferred = %Ld bytes in %1.0f seconds\n", NumSends*BufferSize, dt);
 	
 		printf("Transfer rate was %f Mbps\n", NumSends*BufferSize*8.0/1000000.0/dt);
 	}
