@@ -213,7 +213,27 @@ int simplifyDifxRules(DifxInput *D)
 
 	if(numdeleted > 0)
 	{
-		D->rule = realloc(D->rule, D->nRule*sizeof(DifxRule));
+		if(D->nRule == 0)
+		{
+			D->nRule = 1;
+			--numdeleted;
+			
+			deleteDifxRuleArray(D->rule);
+			D->rule = newDifxRuleArray(D->nRule);
+
+			strcpy(D->rule[0].configName, D->config[0].name);
+
+			if(D->nConfig != 1)
+			{
+				fprintf(stderr, "Developer error: simplifyDifxRules: nRule = 0 and nConfig = %d\n", D->nConfig);
+
+				exit(EXIT_FAILURE);
+			}
+		}
+		else
+		{
+			D->rule = realloc(D->rule, D->nRule*sizeof(DifxRule));
+		}
 	}
 	
 	return numdeleted;
