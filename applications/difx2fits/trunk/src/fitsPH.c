@@ -1131,6 +1131,10 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 								break;
 							}
 						}
+						if(!in2)
+						{
+							break;
+						}
 					}
 					if(rv)
 					{
@@ -1208,7 +1212,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 							}
 						}
 					}
-					else if(j == D->nJob -1)
+					else if(j == D->nJob-1)
 					{
 						/* end of last job reached */
 						doDump = 1;

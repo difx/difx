@@ -264,7 +264,7 @@ static double *getDifxScaleFactor(const DifxInput *D, double s)
 			quantBits = D->datastream[dsIds[0]].quantBits;
 		}
 
-		/* An emperical fudge factor used to get scaling same as for VLBA hardware correlator */
+		/* An empirical fudge factor used to get scaling same as for VLBA hardware correlator */
 		scale[antennaId] = 2.1392;
 
 		if(quantBits == 2)
