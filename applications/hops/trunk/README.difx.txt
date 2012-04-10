@@ -16,7 +16,8 @@ Perform these autoconfiguration steps in this source directory:
     autoheader
     automake -acf
 
-Ignore the messages about missing files and directories.
+There should be no messages about missing files and directories.
+It is not necessary to define HOPS_ROOT although you may.
 
 You can build the tools anywhere (and delete the build directory
 afterwards if you like), e.g.
@@ -36,7 +37,7 @@ make install should have placed hops.bash in ~/bin if you have one;
 thereafter you can source it (from there or wherever else you've put it):
 
     . ~/bin/hops.bash
-      Setup HOPS v3.4 with HOPS_ROOT=... for i686-3.4
+    Setup HOPS vX.X with HOPS_ROOT=... for arch-X.X
 
 This will define HOPS_ROOT and set up a working environment (path
 adjustments and some environment variables).
