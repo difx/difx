@@ -287,6 +287,30 @@ static void extractnibbles(const unsigned char *data, int ntracks, int numnibble
 	}
 }
 
+#if 0
+static void injectnibbles(unsigned char *data, int ntracks, int numnibbles,
+	const char *nibbles)
+{
+	int i, j, f, n;
+	unsigned char v;
+
+	n = ntracks/8;
+
+	for(i = 0; i < numnibbles; ++i)
+	{
+		for(f = 8; f > 0; f >>= 1)
+		{
+			v = (nibbles[i] & f) ? 0xFF : 0x00;
+			for(j = 0; j < n; ++j)
+			{
+				*data = v;
+				++data;
+			}
+		}
+	}
+}
+#endif
+
 static int mark5_format_vlba_frame_time_int(const struct mark5_stream *ms, 
 	int *mjd, int *sec, int *ns)
 {
@@ -326,6 +350,36 @@ static int mark5_format_vlba_frame_time_int(const struct mark5_stream *ms,
 	return 0;
 }
 
+#if 0
+static void time_to_vlba_nibbles(int mjd, int sec, int ns, char *nibbles)
+{
+	mjd = mjd % 1000;
+	nibbles[0] = mjd/100;
+	mjd -= nibbles[0]*100;
+	nibbles[1] = mjd/10;
+	mjd -= nibbles[1]*10;
+	nibbles[2] = mjd;
+
+	nibbles[3] = sec/10000;
+	sec -= nibbles[3]*10000;
+	nibbles[4] = sec/1000;
+	sec -= nibbles[4]*1000;
+	nibbles[5] = sec/100;
+	sec -= nibbles[5]*100;
+	nibbles[6] = sec/10;
+	sec -= nibbles[6]*10;
+	nibbles[7] = sec;
+
+	nibbles[8] = ns/100000000;
+	ns -= nibbles[8]*100000000;
+	nibbles[9] = ns/10000000;
+	ns -= nibbles[9]*10000000;
+	nibbles[10] = ns/1000000;
+	ns -= nibbles[10]*1000000;
+	nibbles[11] = ns/100000;
+}
+#endif
+
 /* return in more general double value for ns */
 static int mark5_format_vlba_frame_time(const struct mark5_stream *ms, 
 	int *mjd, int *sec, double *ns)
@@ -351,6 +405,7 @@ static int mark5_format_vlba_validate(const struct mark5_stream *ms)
 	if(!ms)
 	{
 		fprintf(m5stdout, "mark5_format_vlba_validate: ms=0\n");
+
 		return 0;
 	}
 
@@ -370,6 +425,7 @@ static int mark5_format_vlba_validate(const struct mark5_stream *ms)
 	if(e > 0)
 	{
 //		fprintf(m5stdout, "mark5_format_vlba_validate[%s]: e=%d\n", ms->streamname, e);
+
 		return 0;
 	}
 
@@ -387,15 +443,47 @@ static int mark5_format_vlba_validate(const struct mark5_stream *ms)
 
 		if(mjd_t != mjd_d || sec_t != sec_d || ns_t != ns_d)
 		{
-			return 0;
 //			fprintf(m5stdout, "VLBA validate[%lld]: %d %d %d : %d %d %lld\n", 
 //				ms->framenum, 
 //				mjd_d, sec_d, ns_d, 
 //				mjd_t, sec_t, ns_t);
+
+			return 0;
 		}
 	}
 
 	return 1;
+}
+
+static void mark5_format_vlba_genheaders(struct mark5_stream *ms, int n, unsigned char *where)
+{
+	int t, i, f;
+	char nibbles[12];
+	int ntrack;
+	struct mark5_format_vlba *v;
+
+	if(!ms)
+	{
+		fprintf(m5stdout, "mark5_format_vlba_genheaders: ms=0\n");
+
+		return;
+	}
+
+	v = (struct mark5_format_vlba *)(ms->formatdata);
+	ntrack = v->ntrack;
+
+	for(i = 0; i < n; i += ms->framegranularity)
+	{
+		for(f = 0; f < ms->framegranularity; ++f)
+		{
+			/* write sync word */
+			for(t = 0; t < 4*ntrack; ++t)
+			{
+				where[t] = 0xFF;
+			}
+			where += ms->framebytes;
+		}
+	}
 }
 
 static int mark5_format_vlba_fixmjd(struct mark5_stream *ms, int refmjd)
@@ -9740,6 +9828,7 @@ struct mark5_format_generic *new_mark5_format_vlba(int Mbps, int nchan,
 	else
 	{
 		fprintf(m5stderr, "ntrack must be 2^n : n = 0..6\n");
+		
 		return 0;
 	}
 
@@ -9758,6 +9847,7 @@ struct mark5_format_generic *new_mark5_format_vlba(int Mbps, int nchan,
 	else
 	{
 		fprintf(m5stderr, "fanout must be 1, 2 or 4\n");
+
 		return 0;
 	}
 
@@ -9778,6 +9868,7 @@ struct mark5_format_generic *new_mark5_format_vlba(int Mbps, int nchan,
 	f->init_format = mark5_format_vlba_init;
 	f->final_format = mark5_format_vlba_final;
 	f->validate = mark5_format_vlba_validate;
+	f->genheaders = mark5_format_vlba_genheaders;
 	f->decimation = decimation;
 	f->complex_decode = 0;
 	f->count = 0;
@@ -10134,6 +10225,7 @@ struct mark5_format_generic *new_mark5_format_vlba(int Mbps, int nchan,
 		fprintf(m5stderr, "Illegal combination of fanout, tracks and bits\n");
 		free(v);
 		free(f);
+
 		return 0;
 	}
 

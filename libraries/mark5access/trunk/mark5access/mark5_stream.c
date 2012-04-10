@@ -53,11 +53,11 @@ void mark5_library_init(void)
 {
 	// Apply all defaults
 	// Note: Apple OS X: during auto-((constructor)) the C-lib stdout, stderr may still be uninitialized/null
-	if (stdout != NULL)
+	if(stdout != NULL)
 	{
 		m5stdout = stdout;
 	}
-	if (stderr != NULL)
+	if(stderr != NULL)
 	{
 		m5stderr = stderr;
 	}
@@ -66,11 +66,11 @@ void mark5_library_init(void)
 static void mark5_library_consistent(void)
 {
 	// Re-apply individual defaults if necessary
-	if (m5stdout == NULL)
+	if(m5stdout == NULL)
 	{
 		m5stdout = stdout;
 	}
-	if (m5stderr == NULL)
+	if(m5stderr == NULL)
 	{
 		m5stderr = stderr;
 	}
@@ -229,6 +229,7 @@ static int set_format(struct mark5_stream *ms,
 		ms->count = f->count;
 		ms->complex_decode = f->complex_decode;
 		ms->validate = f->validate;
+		ms->genheaders = f->genheaders;
 		ms->gettime = f->gettime;
 		ms->fixmjd = f->fixmjd;
 		if(f->formatdatasize > 0)
