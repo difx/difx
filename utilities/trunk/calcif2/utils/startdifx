@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #**************************************************************************
-#   Copyright (C) 2008-2011 by Walter Brisken                             *
+#   Copyright (C) 2008-2012 by Walter Brisken                             *
 #                                                                         *
 #   This program is free software; you can redistribute it and/or modify  *
 #   it under the terms of the GNU General Public License as published by  *
@@ -31,7 +31,7 @@
 
 PROGRAM = 'startdifx'
 VERSION = '0.7'
-VERDATE = '20111207'
+VERDATE = '20120410'
 AUTHOR  = 'Walter Brisken'
 
 defaultgroup = "224.2.2.1"
@@ -42,7 +42,7 @@ maxGenmachineFail = -1
 genmachines = 'genmachines -v'
 calcif      = 'calcif2'
 difx2fits   = 'difx2fits -v'
-mpiOptions  = '--mca mpi_yield_when_idle 1 --mca rmaps seq --mca btl_openib_if_include ib0'
+mpiOptions  = '--mca mpi_yield_when_idle 1 --mca rmaps seq'
 
 from sys import argv, exit, stdout
 from os import popen, getcwd, system, getenv, getpid, environ
