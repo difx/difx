@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2011 by Walter Brisken                             *
+ *   Copyright (C) 2008-2012 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -40,8 +40,8 @@ const char dataSourceNames[][MAX_DATA_SOURCE_NAME_LENGTH] =
 	"MODULE",
 	"FILE",
 	"NETWORK",
-	"SHM",
-	"ERROR"		/* takes place of NumDatastreamTypes */
+	"FAKE",
+	"ERROR"		/* takes place of NumDataSources */
 };
 
 /* Note: these values cannot have whitespace */
@@ -49,7 +49,7 @@ const char samplingTypeNames[][MAX_SAMPLING_NAME_LENGTH] =
 {
 	"REAL",
 	"COMPLEX",
-	"ERROR"		/* takes place of NumDatastreamTypes */
+	"ERROR"		/* takes place of NumSamplingTypes */
 };
 
 enum DataSource stringToDataSource(const char *str)

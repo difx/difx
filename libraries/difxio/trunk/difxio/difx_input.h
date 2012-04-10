@@ -97,7 +97,7 @@ enum DataSource
 	DataSourceModule,
 	DataSourceFile,
 	DataSourceNetwork,
-	DataSourceSHM,		/* for future use */
+	DataSourceFake,
 	NumDataSources		/* must remain as last entry */
 };
 
