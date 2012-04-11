@@ -1348,6 +1348,7 @@ void CorrParams::defaults()
 	minSubarraySize = 2;
 	maxGap = 180.0/86400.0;		// 3 minutes
 	singleScan = false;
+	fakeDatasource = false;
 	singleSetup = true;
 	allowOverlap = false;
 	mediaSplit = true;
@@ -1441,6 +1442,10 @@ int CorrParams::setkv(const string &key, const string &value)
 	else if(key == "singleScan")
 	{
 		singleScan = isTrue(value);
+	}
+	else if(key == "fake")
+	{
+		fakeDatasource = isTrue(value);
 	}
 	else if(key == "nCore")
 	{

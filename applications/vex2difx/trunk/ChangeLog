@@ -11,6 +11,7 @@ Post DiFX 2.0.1
 * No more VexFormat class.  Its contents were moved into VexSetup.
 * vex2script: better job allocating RDBE personality and choosing whether or not to record
 * set xmacLength and strideLength automatically for powers of 2 and powers of 5 FFT sizes
+* Can set up "fake" correlations
 
 Version 2.0.1
 ~~~~~~~~~~~~~

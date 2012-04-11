@@ -600,7 +600,7 @@ int pystream::writeChannelSet5A(const VexSetup *setup, int modeNum)
 		freq = setup->channels[i].bbcFreq;
 		tune = freq - vif->ifSSLO;
 
-		if(inputNum < 0 || inputNum > 1)
+		if(inputNum > 1)
 		{
 			continue;
 		}

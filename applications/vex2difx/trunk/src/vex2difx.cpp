@@ -563,7 +563,7 @@ static DifxAntenna *makeDifxAntennas(const VexJob& J, const VexData *V, const Co
 		A[i].Z = ant->z + ant->dz*(mjd-ant->posEpoch)*86400.0;
 		A[i].mount = stringToMountType(ant->axisType.c_str());
 		clockrefmjd = ant->getVexClocks(J.mjdStart, A[i].clockcoeff);
-		if(clockrefmjd < 0.0)
+		if(clockrefmjd < 0.0 && !P->fakeDatasource)
 		{
 			cerr << "WARNING: Job " << J.jobSeries << " " << J.jobId << ": no clock offsets being applied to antenna " << a->first << endl;
 			cerr << "          Unless this is intentional, your results will suffer!" << endl;
@@ -1976,8 +1976,6 @@ static int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int 
 	scan = D->scan;
 	for(vector<string>::const_iterator si = J.scans.begin(); si != J.scans.end(); ++si, ++scan)
 	{
-		const VexMode *mode;
-		
 		S = V->getScanByDefName(*si);
 		if(!S)
 		{
@@ -2117,7 +2115,6 @@ static int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int 
 		}
 		scan->configId = getConfigIndex(configs, D, V, P, S);
 		scan->maxNSBetweenUVShifts = corrSetup->maxNSBetweenUVShifts;
-		mode = V->getModeByDefName(configs[scan->configId].first);
 		fftDurNS = static_cast<int>(1000000000.0/corrSetup->FFTSpecRes);  
 		if(corrSetup->maxNSBetweenACAvg > 0)
 		{
@@ -2938,7 +2935,22 @@ int main(int argc, char **argv)
 	}
 	
 	nWarn += P->sanityCheck();
-	nWarn += V->sanityCheck();
+	if(!P->fakeDatasource)
+	{
+		nWarn += V->sanityCheck();
+	}
+	else
+	{
+		cout << "Note: some sanity checks have been disabled because fake data is selected." << endl;
+		if(V->nEOP() == 0)
+		{
+			cout << "Assuming EOPs with zero values" << endl;
+			for(int i = -2; i <= 2; ++i)
+			{
+				V->newEOP()->mjd = static_cast<int>(V->getExper()->mjdStart) + i;
+			}
+		}
+	}
 	nWarn += sanityCheckConsistency(V, P);
 	if(strict && nWarn > 0)
 	{

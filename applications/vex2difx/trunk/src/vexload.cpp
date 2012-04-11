@@ -488,51 +488,58 @@ static int getAntennas(VexData *V, Vex *v, const CorrParams &params)
 
 		if(!antennaSetup || antennaSetup->dataSource == DataSourceNone)
 		{
-			for(void *c = get_station_lowl(stn, T_VSN, B_TAPELOG_OBS, v); c; c = get_station_lowl_next())
+			if(params.fakeDatasource)
 			{
-				char *value;
-				char *units;
-				int name;
-				int link;
-				double t1 = 0.0, t2 = 0.0;
+				A->dataSource = DataSourceFake;
+			}
+			else
+			{
+				for(void *c = get_station_lowl(stn, T_VSN, B_TAPELOG_OBS, v); c; c = get_station_lowl_next())
+				{
+					char *value;
+					char *units;
+					int name;
+					int link;
+					double t1 = 0.0, t2 = 0.0;
 
-				vex_field(T_VSN, c, 2, &link, &name, &value, &units);
-				if(!value)
-				{
-					cerr << "VSN absent for antenna " << stn << endl;
-					break;
-				}
-				string vsn(value);
-				fixOhs(vsn);
+					vex_field(T_VSN, c, 2, &link, &name, &value, &units);
+					if(!value)
+					{
+						cerr << "VSN absent for antenna " << stn << endl;
+						break;
+					}
+					string vsn(value);
+					fixOhs(vsn);
 
-				vex_field(T_VSN, c, 3, &link, &name, &value, &units);
-				if(value)
-				{
-					t1 = vexDate(value);
-				}
-				vex_field(T_VSN, c, 4, &link, &name, &value, &units);
-				if(value)
-				{
-					t2 = vexDate(value);
-				}
+					vex_field(T_VSN, c, 3, &link, &name, &value, &units);
+					if(value)
+					{
+						t1 = vexDate(value);
+					}
+					vex_field(T_VSN, c, 4, &link, &name, &value, &units);
+					if(value)
+					{
+						t2 = vexDate(value);
+					}
 
-				if(t1 == 0.0 || t2 == 0.0)
-				{
-					cerr << "VSN " << vsn << "doesn't have proper time range" << endl;
-					break;
-				}
+					if(t1 == 0.0 || t2 == 0.0)
+					{
+						cerr << "VSN " << vsn << "doesn't have proper time range" << endl;
+						break;
+					}
 
-				VexInterval vsnTimeRange(t1+0.001/86400.0, t2);
+					VexInterval vsnTimeRange(t1+0.001/86400.0, t2);
 
-				if(!vsnTimeRange.isCausal())
-				{
-					cerr << "Error: Record stop (" << t2 << ") precedes record start (" << t1 << ") for antenna " << stn << ", module " << vsn << " ." << endl;
-				}
-				else
-				{
-					V->addVSN(antName, vsn, vsnTimeRange);
-					V->addEvent(vsnTimeRange.mjdStart, VexEvent::RECORD_START, antName);
-					V->addEvent(vsnTimeRange.mjdStop, VexEvent::RECORD_STOP, antName);
+					if(!vsnTimeRange.isCausal())
+					{
+						cerr << "Error: Record stop (" << t2 << ") precedes record start (" << t1 << ") for antenna " << stn << ", module " << vsn << " ." << endl;
+					}
+					else
+					{
+						V->addVSN(antName, vsn, vsnTimeRange);
+						V->addEvent(vsnTimeRange.mjdStart, VexEvent::RECORD_START, antName);
+						V->addEvent(vsnTimeRange.mjdStop, VexEvent::RECORD_STOP, antName);
+					}
 				}
 			}
 		}

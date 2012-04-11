@@ -279,6 +279,7 @@ public:
 	unsigned int minSubarraySize;
 	double maxGap;		// days
 	bool singleScan;
+	bool fakeDatasource;	// if true, configure all datasources as FAKE
 	bool singleSetup;
 	bool allowOverlap;
 	bool mediaSplit;	// split jobs on media change
