@@ -1153,10 +1153,12 @@ bool Configuration::processDatastreamTable(ifstream * input)
       datastreamtable[i].source = MK5MODULE;
     else if(line == "NETWORK")
       datastreamtable[i].source = NETWORKSTREAM;
+    else if(line == "FAKE")
+      datastreamtable[i].source = FAKESTREAM;
     else
     {
       if(mpiid == 0) //only write one copy of this error message
-        cfatal << startl << "Unknown data source " << line << " (case sensitive choices are FILE, MODULE and NETWORK)" << endl;
+        cfatal << startl << "Unknown data source " << line << " (case sensitive choices are FILE, MODULE, NETWORK and FAKE)" << endl;
       return false;
     }
     getinputline(input, &line, "FILTERBANK USED");
@@ -1949,7 +1951,7 @@ bool Configuration::populateResultLengths()
 void Configuration::setDatastreamMuxInfo(int datastreamindex, string muxinfo)
 {
   int threadindices[500];
-  int at = muxinfo.find_first_of(":");
+  size_t at = muxinfo.find_first_of(":");
   datastreamtable[datastreamindex].nummuxthreads = 0;
 
   while(at != string::npos) {

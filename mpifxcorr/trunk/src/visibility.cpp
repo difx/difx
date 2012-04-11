@@ -539,7 +539,8 @@ void Visibility::writeascii(int dumpmjd, double dumpseconds)
 {
   ofstream output;
   int binloop, freqchannels, freqindex;
-  char datetimestring[26], sbuf[10];
+  char datetimestring[26];
+  //char sbuf[10];
 
   int resultindex, atindex;
   int mjd = dumpmjd;

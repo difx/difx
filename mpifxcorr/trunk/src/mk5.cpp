@@ -264,6 +264,30 @@ void Mk5DataStream::updateConfig(int segmentindex)
   bufferinfo[segmentindex].sendbytes = int(((((double)bufferinfo[segmentindex].sendbytes)* ((double)config->getSubintNS(bufferinfo[segmentindex].configindex)))/(config->getSubintNS(bufferinfo[segmentindex].configindex) + config->getGuardNS(bufferinfo[segmentindex].configindex)) + 0.5));
 }
 
+void Mk5DataStream::deriveFormatName(int configindex)
+{
+    int nbits, nrecordedbands, fanout, framebytes;
+    Configuration::dataformat format;
+    Configuration::datasampling sampling;
+    double bw;
+
+    format = config->getDataFormat(configindex, streamnum);
+    nbits = config->getDNumBits(configindex, streamnum);
+    sampling = config->getDSampling(configindex, streamnum);
+    nrecordedbands = config->getDNumRecordedBands(configindex, streamnum);
+    bw = config->getDRecordedBandwidth(configindex, streamnum, 0);
+    framebytes = config->getFrameBytes(configindex, streamnum);
+    if(config->isDMuxed(configindex, streamnum)) {
+      framebytes = (framebytes-VDIF_HEADER_BYTES)*config->getDNumMuxThreads(configindex, streamnum) + VDIF_HEADER_BYTES;
+      nrecordedbands = 1;
+    }
+    fanout = config->genMk5FormatName(format, nrecordedbands, bw, nbits, sampling, framebytes, config->getDDecimationFactor(configindex, streamnum), config->getDNumMuxThreads(configindex, streamnum), formatname);
+    if (fanout < 0) {
+      cfatal << startl << "Fanount is " << fanout << ", which is impossible - no choice but to abort!" << endl;
+      MPI_Abort(MPI_COMM_WORLD, 1);
+    }
+}
+
 void Mk5DataStream::initialiseFile(int configindex, int fileindex)
 {
   int offset, framebytes;
@@ -272,6 +296,8 @@ void Mk5DataStream::initialiseFile(int configindex, int fileindex)
   Configuration::dataformat format;
   double bw, bytespersecond;
   long long dataoffset = 0;
+
+  // FIXME: at some point start using deriveFormatName ???
 
   format = config->getDataFormat(configindex, streamnum);
   sampling = config->getDSampling(configindex, streamnum);
@@ -362,6 +388,16 @@ void Mk5DataStream::initialiseFile(int configindex, int fileindex)
     dataremaining = false;
     input.clear();
   }
+}
+
+
+void Mk5DataStream::initialiseFake(int configindex)
+{
+  DataStream::initialiseFake(configindex);
+
+  deriveFormatName(configindex);
+
+  cwarn << startl << "Correlating fake data with format " << formatname << endl;
 }
 
 int Mk5DataStream::testForSync(int configindex, int buffersegment)
@@ -491,15 +527,43 @@ double tim(void) {
   return t;
 }
 
+
+void Mk5DataStream::fakeToMemory(int buffersegment)
+{
+  int nbytes;
+  char * readto;
+  mark5_stream *ms;
+
+  DataStream::fakeToMemory(buffersegment);
+
+  //get the right place to read to
+  if(datamuxer) {
+    readto = (char*)datamuxer->getCurrentDemuxBuffer();
+    nbytes = datamuxer->getSegmentBytes();
+  }
+  else {
+    readto =  (char*)&databuffer[buffersegment*(bufferbytes/numdatasegments)];
+    nbytes = readbytes;
+  }
+  
+  // Here we insert, as necessary, data framing to keep mk5mode happy
+  ms = new_mark5_stream(new_mark5_stream_unpacker(1), new_mark5_format_generic_from_string(formatname) );
+  if(ms == 0)
+  {
+    cerror << startl << "Could not create a mark5stream for frame generation! format=" << formatname << endl;;
+  }
+  else 
+  {
+    if(ms->genheaders != 0)
+    {
+      ms->genheaders(ms, nbytes/ms->framebytes, (unsigned char *)readto);
+    }
+    delete_mark5_stream(ms);
+  }
+}
+
 void Mk5DataStream::networkToMemory(int buffersegment, uint64_t & framebytesremaining)
 {
-  int nbits, nrecordedbands, fanout, framebytes;
-  Configuration::dataformat format;
-  Configuration::datasampling sampling;
-  double bw;
-
-
-  
   if (!tcp && udp_offset>readbytes) { // What does this do to networkToMempory - does packet head need updating
     int skip = udp_offset-(udp_offset%readbytes);
     cinfo << startl << "DataStream " << mpiid << ": Skipping over " << skip/1024/1024 << " Mbytes" << endl;
@@ -511,22 +575,7 @@ void Mk5DataStream::networkToMemory(int buffersegment, uint64_t & framebytesrema
   }
   if(bufferinfo[buffersegment].configindex != lastconfig)
   {
-    //regenerate formatname (only ever likely in eVLBI, and probably not even then)
-    format = config->getDataFormat(bufferinfo[buffersegment].configindex, streamnum);
-    nbits = config->getDNumBits(bufferinfo[buffersegment].configindex, streamnum);
-    sampling = config->getDSampling(bufferinfo[buffersegment].configindex, streamnum);
-    nrecordedbands = config->getDNumRecordedBands(bufferinfo[buffersegment].configindex, streamnum);
-    bw = config->getDRecordedBandwidth(bufferinfo[buffersegment].configindex, streamnum, 0);
-    framebytes = config->getFrameBytes(bufferinfo[buffersegment].configindex, streamnum);
-    if(config->isDMuxed(bufferinfo[buffersegment].configindex, streamnum)) {
-      framebytes = (framebytes-VDIF_HEADER_BYTES)*config->getDNumMuxThreads(bufferinfo[buffersegment].configindex, streamnum) + VDIF_HEADER_BYTES;
-      nrecordedbands = 1;
-    }
-    fanout = config->genMk5FormatName(format, nrecordedbands, bw, nbits, sampling, framebytes, config->getDDecimationFactor(bufferinfo[buffersegment].configindex, streamnum), config->getDNumMuxThreads(bufferinfo[buffersegment].configindex, streamnum), formatname);
-    if (fanout < 0) {
-      cfatal << startl << "Fanount is " << fanout << ", which is impossible - no choice but to abort!" << endl;
-      MPI_Abort(MPI_COMM_WORLD, 1);
-    }
+    deriveFormatName(bufferinfo[buffersegment].configindex);
   }
 
   DataStream::networkToMemory(buffersegment, framebytesremaining);
@@ -598,7 +647,7 @@ int Mk5DataStream::readnetwork(int sock, char* ptr, int bytestoread, int* nread)
     unsigned long long sequence;
     struct msghdr msg;
     struct iovec iov[2];
-    int headerpackets;
+    unsigned int headerpackets;
 
     memset(&msg, 0, sizeof(msg));
     msg.msg_iov        = &iov[0];

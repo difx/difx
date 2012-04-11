@@ -59,7 +59,7 @@ public:
   enum dataformat {LBASTD, LBAVSOP, LBA8BIT, LBA16BIT, K5VSSP, K5VSSP32, MKIV, VLBA, MARK5B, VDIF, INTERLACEDVDIF, VLBN};
 
   /// Supported sources of data
-  enum datasource {UNIXFILE, MK5MODULE, NETWORKSTREAM};
+  enum datasource {UNIXFILE, MK5MODULE, NETWORKSTREAM, FAKESTREAM};
 
   /// Supported types of recorded data sampling types
   enum datasampling {REAL, COMPLEX};
@@ -280,13 +280,15 @@ public:
     { return datastreamtable[0].recordedbandpols[0] == 'R' || datastreamtable[0].recordedbandpols[0] == 'L'; }
   inline bool isReadFromFile(int configindex, int configdatastreamindex) const
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].source != NETWORKSTREAM; }
+  inline bool isFake(int configindex, int configdatastreamindex) const
+    { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].source == FAKESTREAM; }
   inline bool isMkV(int datastreamindex) const
   {
     dataformat f;
     datasource s;
     f = datastreamtable[configs[0].datastreamindices[datastreamindex]].format;
     s = datastreamtable[configs[0].datastreamindices[datastreamindex]].source;
-    return ((f == MKIV || f == VLBA || f == VLBN || f == MARK5B || f == VDIF || f == INTERLACEDVDIF) && (s == UNIXFILE || s == NETWORKSTREAM)); 
+    return ((f == MKIV || f == VLBA || f == VLBN || f == MARK5B || f == VDIF || f == INTERLACEDVDIF) && (s == UNIXFILE || s == NETWORKSTREAM || s == FAKESTREAM)); 
   }
   inline bool isNativeMkV(int datastreamindex) const
   { 

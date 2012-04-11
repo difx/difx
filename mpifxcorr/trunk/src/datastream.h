@@ -115,6 +115,12 @@ protected:
   static void * launchNewFileReadThread(void * thisstream);
 
  /** 
+  * Launches a new fake data generating thread, that will look to the rest of mpifxcorr like a valid data source
+  * @param thisstream Pointer to this Datastream object
+  */
+  static void * launchNewFakeReadThread(void * thisstream);
+
+ /** 
   * Launches a new reading thread, that will read from a network socket and populate the databuffer as fast as possible
   * @param thisstream Pointer to this Datastream object
   */
@@ -133,6 +139,8 @@ protected:
   * @param fileindex The number of the file to be opened
   */
   virtual void initialiseFile(int configindex, int fileindex);
+
+  virtual void initialiseFake(int configindex);
 
  /** 
   * Reads in the header information from a buffer read in from the network, and sets the current segment time information accordingly
@@ -207,6 +215,11 @@ protected:
   virtual void loopfileread();
 
  /** 
+  * While the correlation continues keep generating fake data
+  */
+  void loopfakeread();
+
+ /** 
   * While the correlation continues and the network socket remains open, continues reading data into the databuffer as fast as possible
   */
   void loopnetworkread();
@@ -216,6 +229,12 @@ protected:
   * @param buffersegment The segment of the databuffer that this read will be stored in
   */
   void diskToMemory(int buffersegment);
+
+ /** 
+  * Generates one segment's worth of data and places into the specified segment
+  * @param buffersegment The segment of the databuffer that this read will be stored in
+  */
+  virtual void fakeToMemory(int buffersegment);
 
  /** 
   * Reads one segment's worth of data from the currently open network socket into the specified segment
@@ -277,7 +296,7 @@ protected:
   int * confignumfiles;
   double a, b, c;
   long long consumedbytes, lastconsumedbytes;
-  bool readthreadstarted, keepreading, readfromfile, tcp, isnewfile;
+  bool readthreadstarted, keepreading, readfromfile, isfake, tcp, isnewfile;
   u8 * databuffer;
   pthread_t readerthread;
   pthread_cond_t readcond;

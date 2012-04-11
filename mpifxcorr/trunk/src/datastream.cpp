@@ -48,6 +48,7 @@ DataStream::DataStream(const Configuration * conf, int snum, int id, int ncores,
   switchedpowerincrement = 4;  // by default look at 1/4 of the samples
   datamuxer = 0;
   isnewfile = false;
+  isfake = false;
 }
 
 
@@ -128,6 +129,7 @@ void DataStream::initialise()
   readseconds = 0;
   readnanoseconds = 0;
   readfromfile = config->isReadFromFile(currentconfigindex, streamnum);
+  isfake = config->isFake(currentconfigindex, streamnum);
 
 #ifdef DIFX_STRICTMUTEX
   pthread_mutexattr_t mattr;
@@ -573,7 +575,14 @@ void DataStream::initialiseMemoryBuffer()
   pthread_cond_init(&readcond, NULL);
   pthread_cond_init(&initcond, NULL);
 
-  if(readfromfile)
+  if(isfake)
+  {
+    //launch the fake data creation thread
+    perr = pthread_create(&readerthread, NULL, DataStream::launchNewFakeReadThread, (void *)(this));
+    if(perr != 0)
+      csevere << startl << "Error in launching telescope readerthread!!!" << endl;
+  }
+  else if(readfromfile)
   {
     //launch the file reader thread
     perr = pthread_create(&readerthread, NULL, DataStream::launchNewFileReadThread, (void *)(this));
@@ -643,6 +652,14 @@ void * DataStream::launchNewFileReadThread(void * thisstream)
 {
   DataStream * me = (DataStream *)thisstream;
   me->loopfileread();
+
+  return 0;
+}
+
+void * DataStream::launchNewFakeReadThread(void * thisstream)
+{
+  DataStream * me = (DataStream *)thisstream;
+  me->loopfakeread();
 
   return 0;
 }
@@ -799,6 +816,146 @@ void DataStream::loopfileread()
   }
   if(input.is_open())
     input.close();
+  if(numread > 0) {
+    //cdebug << startl << "READTHREAD: loopfileread: Unlock buffer " << lastvalidsegment << endl; 
+    perr = pthread_mutex_unlock(&(bufferlock[lastvalidsegment]));
+    if(perr != 0)
+      csevere << startl << "Error (" << perr << ") in telescope readthread unlock of buffer section!!!" << lastvalidsegment << endl;
+  }
+
+  //unlock the outstanding send lock
+  perr = pthread_mutex_unlock(&outstandingsendlock);
+  if(perr != 0)
+    csevere << startl << "Error (" << perr << ") in telescope readthread unlock of outstandingsendlock!!!" << endl;
+
+  if(lastvalidsegment >= 0)
+    cverbose << startl << "Datastream " << mpiid << "'s readthread is exiting!!! Filecount was " << filesread[bufferinfo[lastvalidsegment].configindex] << ", confignumfiles was " << confignumfiles[bufferinfo[lastvalidsegment].configindex] << ", dataremaining was " << dataremaining << ", keepreading was " << keepreading << endl;
+  else
+    cverbose << startl << "Datastream " << mpiid << "'s readthread is exiting, after not finding any data at all!" << endl;
+}
+
+void DataStream::initialiseFake(int configindex)
+{
+  readseconds = 0;
+  readnanoseconds = 0;
+  readscan = 0;
+}
+
+void DataStream::loopfakeread()
+{
+  int perr;
+  int numread = 0;
+
+  //lock the outstanding send lock
+  perr = pthread_mutex_lock(&outstandingsendlock);
+  if(perr != 0)
+    csevere << startl << "Error in initial telescope readthread lock of outstandingsendlock!!!" << endl;
+
+  initialiseFake(bufferinfo[0].configindex);
+
+  //lock the first section to start reading
+  dataremaining = true;
+  if(keepreading) {
+    if(datamuxer) {
+      readonedemux(true);
+      readonedemux(false);
+    }
+    fakeToMemory(numread++);
+    fakeToMemory(numread++);
+    //cdebug << startl << "READTHREAD: loopfileread: Try lock buffer " << numread << endl;
+    perr = pthread_mutex_lock(&(bufferlock[numread]));
+    if(perr != 0)
+      csevere << startl << "Error in initial telescope readthread lock of first buffer section!!!" << endl;
+    //cdebug << startl << "READTHREAD:               Got it" << endl;
+  }
+  else
+  {
+    csevere << startl << "Couldn't find any valid data - will be shutting down gracefully!!!" << endl;
+  }
+  readthreadstarted = true;
+  //cdebug << startl << "READTHREAD: loopfileread: cond_signal initcond" << endl;
+  perr = pthread_cond_signal(&initcond);
+  if(perr != 0)
+    csevere << startl << "Datastream readthread " << mpiid << " error trying to signal main thread to wake up!!!" << endl;
+  if(keepreading)
+    fakeToMemory(numread++);
+
+  lastvalidsegment = (numread-1)%numdatasegments;
+  while(keepreading && (bufferinfo[lastvalidsegment].configindex < 0 || filesread[bufferinfo[lastvalidsegment].configindex] <= confignumfiles[bufferinfo[lastvalidsegment].configindex]))
+  {
+    while(dataremaining && keepreading)
+    {
+      lastvalidsegment = (lastvalidsegment + 1)%numdatasegments;
+
+      //lock the next section
+      //cdebug << startl << "READTHREAD: loopfileread: Try lock buffer " << lastvalidsegment << endl;
+      perr = pthread_mutex_lock(&(bufferlock[lastvalidsegment]));
+      if(perr != 0)
+        csevere << startl << "Error in telescope readthread lock of buffer section!!!" << lastvalidsegment << endl;
+      //cdebug << startl << "READTHREAD:               Got it" << endl;
+
+      if(!isnewfile) //can unlock previous section immediately
+      {
+        //unlock the previous section
+	//cdebug << startl << "READTHREAD: loopfileread: Unlock buffer " << (lastvalidsegment-1+numdatasegments)% numdatasegments << endl;
+        perr = pthread_mutex_unlock(&(bufferlock[(lastvalidsegment-1+numdatasegments)% numdatasegments]));    
+	if(perr != 0)
+          csevere << startl << "Error (" << perr << ") in telescope readthread unlock of buffer section!!!" << (lastvalidsegment-1+numdatasegments)%numdatasegments << endl;
+      }
+
+      //do the read
+      fakeToMemory(lastvalidsegment);
+      numread++;
+
+      if(isnewfile) //had to wait before unlocking file
+      {
+        //unlock the previous section
+	//cdebug << startl << "READTHREAD: loopfileread: Unlock buffer " << (lastvalidsegment-1+numdatasegments)% numdatasegments << endl;
+        perr = pthread_mutex_unlock(&(bufferlock[(lastvalidsegment-1+numdatasegments)% numdatasegments]));
+        if(perr != 0)
+          csevere << startl << "Error (" << perr << ") in telescope readthread unlock of buffer section!!!" << (lastvalidsegment-1+numdatasegments)%numdatasegments << endl;
+      }
+      isnewfile = false;
+    }
+    if(keepreading)
+    {
+      //if we need to, change the config
+      int nextconfigindex = config->getScanConfigIndex(readscan);
+      while(nextconfigindex < 0 && readscan < model->getNumScans()) {
+        readseconds = 0; 
+        nextconfigindex = config->getScanConfigIndex(++readscan);
+      }
+      if(readscan == model->getNumScans())
+      {
+        bufferinfo[(lastvalidsegment+1)%numdatasegments].scan = model->getNumScans()-1;
+        bufferinfo[(lastvalidsegment+1)%numdatasegments].scanseconds = model->getScanDuration(model->getNumScans()-1);
+        bufferinfo[(lastvalidsegment+1)%numdatasegments].scanns = 0;
+        keepreading = false;
+      }
+      else
+      {
+        if(config->getScanConfigIndex(readscan) != bufferinfo[(lastvalidsegment + 1)%numdatasegments].configindex)
+          updateConfig((lastvalidsegment + 1)%numdatasegments);
+        //if the datastreams for two or more configs are common, they'll all have the same 
+        //files.  Therefore work with the lowest one
+        int lowestconfigindex = bufferinfo[(lastvalidsegment+1)%numdatasegments].configindex;
+        for(int i=config->getNumConfigs()-1;i>=0;i--)
+        {
+          if(config->getDDataFileNames(i, streamnum) == config->getDDataFileNames(lowestconfigindex, streamnum))
+            lowestconfigindex = i;
+        }
+        openfile(lowestconfigindex, filesread[lowestconfigindex]++);
+        bool skipsomefiles = (config->getScanConfigIndex(readscan) < 0)?true:false;
+        while(skipsomefiles) {
+          int nextscan = peekfile(lowestconfigindex, filesread[lowestconfigindex]);
+          if(nextscan == readscan || (nextscan == readscan+1 && config->getScanConfigIndex(nextscan) < 0))
+            openfile(lowestconfigindex, filesread[lowestconfigindex]++);
+          else
+            skipsomefiles = false;
+        }
+      }
+    }
+  }
   if(numread > 0) {
     //cdebug << startl << "READTHREAD: loopfileread: Unlock buffer " << lastvalidsegment << endl; 
     perr = pthread_mutex_unlock(&(bufferlock[lastvalidsegment]));
@@ -1523,6 +1680,74 @@ void DataStream::diskToMemory(int buffersegment)
     dataremaining = false;
   }
 }
+
+void DataStream::fakeToMemory(int buffersegment)
+{
+  int previoussegment, validns, nextns, status, bytestocopy, nbytes;
+  char * readto;
+
+  //do the buffer housekeeping
+  waitForBuffer(buffersegment);
+
+  //get the right place to read to
+  if(datamuxer) {
+    readto = (char*)datamuxer->getCurrentDemuxBuffer();
+    nbytes = datamuxer->getSegmentBytes();
+  }
+  else {
+    readto =  (char*)&databuffer[buffersegment*(bufferbytes/numdatasegments)];
+    nbytes = readbytes;
+  }
+
+  //deinterlace and mux if needed
+  if(datamuxer) {
+    readonedemux(false);
+    readto = (char*)&databuffer[buffersegment*(bufferbytes/numdatasegments)];
+    bufferinfo[buffersegment].validbytes = datamuxer->multiplex((u8*)readto);
+  }
+  else {
+    bufferinfo[buffersegment].validbytes = nbytes;
+  }
+  consumedbytes += nbytes;
+  bufferinfo[buffersegment].readto = true;
+  readnanoseconds += (bufferinfo[buffersegment].nsinc % 1000000000);
+  readseconds += (bufferinfo[buffersegment].nsinc / 1000000000);
+  readseconds += readnanoseconds/1000000000;
+  readnanoseconds %= 1000000000;
+  if(readseconds >= model->getScanDuration(readscan)) {
+    if(readscan < (model->getNumScans()-1)) {
+      readscan++;
+      readseconds -= model->getScanStartSec(readscan, corrstartday, corrstartseconds) - model->getScanStartSec(readscan-1, corrstartday, corrstartseconds);
+    }
+    else
+      keepreading = false;
+  }
+
+  previoussegment  = (buffersegment + numdatasegments - 1 )% numdatasegments;
+  if(bufferinfo[previoussegment].readto && bufferinfo[previoussegment].validbytes < bufferinfo[previoussegment].sendbytes && bufferinfo[previoussegment].configindex == bufferinfo[buffersegment].configindex)
+  {
+    validns =((long long)bufferinfo[previoussegment].validbytes)*((long long)bufferinfo[previoussegment].nsinc)/readbytes;
+    nextns = bufferinfo[previoussegment].scanns + validns;
+    if(bufferinfo[buffersegment].scan == bufferinfo[previoussegment].scan && bufferinfo[buffersegment].scanns == (nextns%1000000000) && bufferinfo[buffersegment].scanseconds == (bufferinfo[previoussegment].scanseconds + nextns/1000000000))
+    {
+      //copy some data into the previous segment to make sure it stays contiguous
+      bytestocopy = readbytes - bufferinfo[previoussegment].validbytes;
+      if(bytestocopy > bufferinfo[previoussegment].sendbytes) //one send is the worst case we need to deal with
+        bytestocopy = bufferinfo[previoussegment].sendbytes;
+      if(bytestocopy > bufferinfo[buffersegment].validbytes)
+        bytestocopy = bufferinfo[buffersegment].validbytes;
+      if(bytestocopy > 0)
+      {
+        cinfo << startl << "Copying " << bytestocopy << " bytes to ensure databuffer segment " << previoussegment << " has enough data for a full send" << endl;
+        status = vectorCopy_u8(&databuffer[buffersegment*(bufferbytes/numdatasegments) + bufferinfo[previoussegment].validbytes],
+                               &databuffer[previoussegment*(bufferbytes/numdatasegments)], bytestocopy);
+        if(status != vecNoErr)
+          cerror << startl << "Error copying " << bytestocopy << " bytes back to segment " << previoussegment << endl;
+      }
+    }
+  }
+}
+
 int DataStream::testForSync(int configindex, int buffersegment)
 {
   //can't test for sync with LBA files
@@ -1532,7 +1757,7 @@ int DataStream::testForSync(int configindex, int buffersegment)
 void DataStream::waitForBuffer(int buffersegment)
 {
   int perr;
-  double bufferfullfraction = double((buffersegment-1-atsegment+numdatasegments)%numdatasegments)/double(numdatasegments);
+//  double bufferfullfraction = double((buffersegment-1-atsegment+numdatasegments)%numdatasegments)/double(numdatasegments);
   struct timespec abstime;
 
   fullbuffersegments = (buffersegment-1-atsegment+numdatasegments)%numdatasegments;

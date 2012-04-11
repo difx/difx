@@ -64,6 +64,8 @@ protected:
   */
   virtual int calculateControlParams(int scan, int offsetsec, int offsetns);
 
+  void deriveFormatName(int configindex);
+
  /** 
   * Updates all the parameters (numchannels, sendbytes etc) for the specified segment of the databuffer.  Allows for
   * the fact that Mk5 data must be sent as an integer number of frames, starting at a frame boundary
@@ -77,6 +79,10 @@ protected:
   * @param fileindex The number of the file to be opened
   */
   virtual void initialiseFile(int configindex, int fileindex);
+
+  virtual void initialiseFake(int configindex);
+
+  virtual void fakeToMemory(int buffersegment);
 
   virtual void networkToMemory(int buffersegment, uint64_t & framebytesremaining);
 
