@@ -7,6 +7,8 @@ Version 2.0.2
 * "Mk5DataStream::calculateControlParams: bufferindex>=bufferbytes" bug fixed
 * Low weight reads could result in uninitialized memory
 * Streamstor XLRRead() bug work-around installed several places (read at position 0 before reading at position > 0)
+* mpifxcorr terminates correctly for all short jobs - previously it hung for jobs with a number of subints between nCores and 4 x nCores
+* multithread VDIF support enabled for nativemk5datastream (reading from a module) inclduing stripping of non-VDIF packets
 
 Version 2.0.1, 2011 June 12
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
