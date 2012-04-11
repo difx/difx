@@ -1156,7 +1156,17 @@ void Mk5Daemon_fileOperation( Mk5Daemon *D, const DifxMessageGeneric *G ) {
     	snprintf( message, DIFX_MESSAGE_LENGTH, "rmdir %s", S->path );
 	}
 	else if ( !strcmp( S->operation, "rm" ) ) {
-    	snprintf( message, DIFX_MESSAGE_LENGTH, "rm %s", S->path );
+	    //  Remove the files matching the given path description.
+		snprintf( command, MAX_COMMAND_SIZE, "ssh -x %s@%s 'rm %s %s'", 
+				 user,
+				 S->dataNode,
+				 S->arg,
+				 S->path );
+  		FILE* fp = Mk5Daemon_popen( D, command, 1 );
+  		while ( fgets( message, DIFX_MESSAGE_LENGTH, fp ) != NULL )
+  		    difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_INFO );
+  		pclose( fp );	    
+  		snprintf( message, DIFX_MESSAGE_LENGTH, "%s performed!", command );
 	}
 	else if ( !strcmp( S->operation, "mv" ) ) {
 	    if ( S->arg[0] != '/' ) {
