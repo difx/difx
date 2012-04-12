@@ -97,7 +97,7 @@ def parse_joblistfile(joblistfilename):
 
     return joblist
 
-def run_lbafilecheck(datafilename, stations, computehead):
+def run_lbafilecheck(datafilename, stations, computehead, rmaps_seq):
     # run lbafilecheck creating machines and .threads files for this job
     stations = stations.strip()
     stations = re.sub(r'\s+', ',', stations)
@@ -105,6 +105,8 @@ def run_lbafilecheck(datafilename, stations, computehead):
     options = ''
     if computehead:
         options += ' -H '
+    if rmaps_seq:
+        options += ' -m '
     command = "lbafilecheck.py -F " + options + " -s " + stations + " " + datafilename
     print command
     subprocess.check_call( command, stdout=sys.stdout, shell=True)
@@ -155,6 +157,9 @@ parser.add_option( "--alljobs", "-a",
 parser.add_option( "--computehead", "-H",
         dest="computehead", action="store_true", default=False,
         help='Use head and datastream nodes as compute nodes' )
+parser.add_option( "--rmaps_seq", "-m",
+        dest="rmaps_seq", action="store_true", default=False,
+        help="Pass the '--mca rmaps seq' instruction to mpirun"  )
 
 (options, args) = parser.parse_args()
 
@@ -215,7 +220,7 @@ print "job list to correlate = ", pprint.pformat(corrjoblist), "\n";
 for jobname in sorted(corrjoblist.keys()):
     # run lbafilecheck to get the new machines and .threads files
     datafilename = expname + '.datafiles'
-    run_lbafilecheck(datafilename, corrjoblist[jobname], options.computehead)
+    run_lbafilecheck(datafilename, corrjoblist[jobname], options.computehead, options.rmaps_seq)
 
     # duplicate the run and thread and machines files for the full number of
     # jobs
