@@ -105,17 +105,16 @@ def readConfig():
     
     return (config)
 
-def getTransferFileCount(path, user, config):
-    
-    server = config.get("difxarchive", "archiveserver")
-    remotePath = config.get("difxarchive", "archiveremotepath")
+def getTransferFileCount(source, destination, options=""):
+
    
-    cmd = 'rsync -az --stats --dry-run %s %s@%s:%s' % ( path, user, server, remotePath) 
+    cmd = 'rsync -az --stats --dry-run %s %s %s' % ( options, source, destination) 
     proc = subprocess.Popen(cmd,
                                        shell=True,
                                        stdin=subprocess.PIPE,
                                        stdout=subprocess.PIPE,
                                        )
+    
     remainder = proc.communicate()[0]
     
     
@@ -125,7 +124,7 @@ def getTransferFileCount(path, user, config):
     print "Number of files to be transferred: %d " % fileCount
     
     return(fileCount)
-    
+
 def syncDir(path, user, config, fileCount, dryRun):
     
     
@@ -148,26 +147,41 @@ def syncDir(path, user, config, fileCount, dryRun):
     while True and not dryRun:
         output = proc.stdout.readline()
 
+        if not output:
+            break
+            
         if 'to-check' in output:
             
              m = re.findall(r'to-check=(\d+)/(\d+)', output)
-             progress = (100 * (int(m[0][1]) - int(m[0][0]))) / fileCount
+             #progress = (100 * (int(m[0][1]) - int(m[0][0]))) / fileCount
              
-             sys.stdout.write('\rDone: ' + str(progress) + '%')
+             sys.stdout.write('\rRemaining: %s / %s' % (m[0][0], m[0][1]) )
              sys.stdout.flush()
              
              if int(m[0][0]) == 0:
                       break
                       
-    print('\rFinished')
+    print('\nFinished')
 
         
     
     return
 
-def syncReferenceDir(path, referencePath, dryRun):
+def buildReferenceOptions():
     
     includePattern = ["*.vex", "*.skd", "*.v2d", "*.input", "*.difxlog", "*.log"]
+    
+    cmd = " --include '*/' "
+    for pattern in includePattern:
+        cmd += " --include '%s' " % pattern
+    
+    cmd += " --exclude '*' --exclude '*.difx' "
+    
+    return(cmd)
+    
+    
+def syncReferenceDir(path, referencePath, dryRun):
+    
     
     # check that destination path has trailing slash
     if not referencePath.endswith(os.path.sep):
@@ -176,17 +190,14 @@ def syncReferenceDir(path, referencePath, dryRun):
     # check that source path has NO trailing slash
     if  path.endswith(os.path.sep):
         path = path[:-1]
-    
-    cmd = "rsync -av --progress --include '*/' "  
-    
-    for pattern in includePattern:
-        cmd += " --include '%s' " % pattern
+     
+    cmd = "rsync -av --progress " + buildReferenceOptions()
     
     if dryRun:
         cmd += " --dry-run "
     
-    cmd += " --exclude '*' --exclude '*.difx' %s %s" % ( path, referencePath) 
-
+    cmd += path + " " + referencePath
+    
     print "Copying reference files to: %s" % referencePath
     
     proc = subprocess.Popen(cmd,
@@ -194,9 +205,23 @@ def syncReferenceDir(path, referencePath, dryRun):
                                        stdin=subprocess.PIPE,
                                        stdout=subprocess.PIPE,
                                        )
-   
     
-    print('\rFinished')
+    while True and not dryRun:
+        output = proc.stdout.readline()
+        
+        if not output:
+            break
+            
+        if 'to-check' in output:
+             m = re.findall(r'to-check=(\d+)/(\d+)', output)
+
+             sys.stdout.write('\rRemaining: %s / %s' % (m[0][0], m[0][1]))
+             sys.stdout.flush()
+
+             if int(m[0][0]) == 0 :
+                      break
+    
+    print('\nFinished')
     return
 
 def confirmAction():
@@ -271,13 +296,20 @@ if __name__ == "__main__":
         major, minor = getCurrentSchemaVersionNumber(session)
         exitOnError("Current difxdb database schema is %s.%s but %s.%s is minimum requirement." % (major, minor, minSchemaMajor, minSchemaMinor))
     
+    
+    server = config.get("difxarchive", "archiveserver")
+    remotePath = config.get("difxarchive", "archiveremotepath")
+    
+    destination = user + "@" + server + ":" + remotePath
+    
+
     try:
         # obtain kerberos ticket
         getTicket(user)
 
         while True:
             
-            fileCount = getTransferFileCount(path, user, config)
+            fileCount = getTransferFileCount(path, destination)
             
             if (fileCount == 0):
                 break
@@ -289,8 +321,16 @@ if __name__ == "__main__":
                 break
                 
 
-        # copy subset of files to the reference backup location
-        syncReferenceDir(path, config.get("difxarchive", "refbackuppath"), options.dryRun)
+        
+        while True:
+            
+            fileCount = getTransferFileCount(path, config.get("difxarchive", "refbackuppath"), buildReferenceOptions())
+            
+            if (fileCount == 0):
+                break
+            
+            # copy subset of files to the reference backup location
+            syncReferenceDir(path, config.get("difxarchive", "refbackuppath"), options.dryRun)
         
         
         if not options.dryRun:
@@ -300,12 +340,15 @@ if __name__ == "__main__":
 
             shutil.rmtree(path)
             
+            print "Updating database status."
             # update database
             experiment = getExperimentByCode(session, code)
             experiment.dateArchived = datetime.datetime.now()
             experiment.archivedBy = user
             session.commit()
             session.flush()
+            
+            print "Done"
 
 
     except Exception as e:
