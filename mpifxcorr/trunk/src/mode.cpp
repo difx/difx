@@ -69,6 +69,7 @@ Mode::Mode(Configuration * conf, int confindex, int dsindex, int recordedbandcha
   if(blockspersend%FLAGS_PER_INT > 0)
     flaglength++;
   validflags = vectorAlloc_s32(flaglength);
+  estimatedbytes += sizeof(s32)*flaglength;
   fractionalLoFreq = false;
   for(int i=0;i<numrecordedfreqs;i++)
   {
@@ -134,7 +135,7 @@ Mode::Mode(Configuration * conf, int confindex, int dsindex, int recordedbandcha
             fftoutputs[j][k] = vectorAlloc_cf32(recordedbandchannels);
             conjfftoutputs[j][k] = vectorAlloc_cf32(recordedbandchannels);
 	  }
-          estimatedbytes += 2*4*recordedbandchannels;
+          estimatedbytes += 2*sizeof(cf32)*recordedbandchannels;
         }
         else
         {
@@ -252,6 +253,7 @@ Mode::Mode(Configuration * conf, int confindex, int dsindex, int recordedbandcha
     }
 
     fftbuffer = vectorAlloc_u8(fftbuffersize);
+    estimatedbytes += fftbuffersize;
 
     subfracsamparg = vectorAlloc_f32(arraystridelength);
     subfracsampsin = vectorAlloc_f32(arraystridelength);
@@ -311,6 +313,7 @@ Mode::Mode(Configuration * conf, int confindex, int dsindex, int recordedbandcha
     for(int i=0;i<autocorrwidth;i++)
     {
       weights[i] = new f32[numrecordedbands];
+      estimatedbytes += sizeof(f32)*numrecordedbands;
       autocorrelations[i] = new cf32*[numrecordedbands+numzoombands];
       for(int j=0;j<numrecordedbands;j++) {
         autocorrelations[i][j] = vectorAlloc_cf32(recordedbandchannels);
@@ -357,6 +360,9 @@ Mode::Mode(Configuration * conf, int confindex, int dsindex, int recordedbandcha
       extractor[i] = PCal::getNew(1e6*recordedbandwidth, 
                                   1e6*config->getDPhaseCalIntervalMHz(configindex, datastreamindex),
                                       pcalOffset, 0);
+
+      estimatedbytes += extractor[i]->getEstimatedBytes();
+
       if (extractor[i]->getLength() != conf->getDRecordedFreqNumPCalTones(configindex, dsindex, localfreqindex))
         csevere << startl << "Developer Error: configuration.cpp and pcal.cpp do not agree on the number of tones: " << extractor[i]->getLength() << " != " << conf->getDRecordedFreqNumPCalTones(configindex, dsindex, localfreqindex) << " ." << endl;
       pcalnbins[i] = extractor[i]->getNBins();

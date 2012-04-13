@@ -194,7 +194,7 @@ public:
   * Returns the estimated number of bytes used by the Mode
   * @return Estimated memory size of the Mode (bytes)
   */
-  inline int getEstimatedBytes() const { return estimatedbytes; }
+  inline long long getEstimatedBytes() const { return estimatedbytes; }
 
   virtual ~Mode();
 
@@ -227,7 +227,8 @@ protected:
   virtual float unpack(int sampleoffset);
   
   Configuration * config;
-  int configindex, datastreamindex, recordedbandchannels, channelstoaverage, blockspersend, guardsamples, fftchannels, numrecordedfreqs, numrecordedbands, numzoombands, numbits, bytesperblocknumerator, bytesperblockdenominator, currentscan, offsetseconds, offsetns, order, flag, fftbuffersize, unpacksamples, unpackstartsamples, estimatedbytes, datasamples, avgdelsamples;
+  int configindex, datastreamindex, recordedbandchannels, channelstoaverage, blockspersend, guardsamples, fftchannels, numrecordedfreqs, numrecordedbands, numzoombands, numbits, bytesperblocknumerator, bytesperblockdenominator, currentscan, offsetseconds, offsetns, order, flag, fftbuffersize, unpacksamples, unpackstartsamples, datasamples, avgdelsamples;
+  long long estimatedbytes;
   int fringerotationorder, arraystridelength, numfrstrides, numfracstrides;
   double recordedbandwidth, blockclock, sampletime; //MHz, microseconds
   double a0, b0, c0, a, b, c, quadadd1, quadadd2;

@@ -160,6 +160,12 @@ class PCal {
       int getNBins() const { return _N_bins; }
 
       /**
+       * Get estimated size of this object in bytes;
+       * @return estimated size in bytes
+       */
+      long long getEstimatedBytes() const { return _estimatedbytes; }
+
+      /**
        * Computes the final extraction result. No more sample data can be added.
        * The PCal extraction results are copied into the specified output array.
        *
@@ -211,6 +217,7 @@ class PCal {
       int _N_bins;
       int _N_tones;
       bool _finalized;
+      long long _estimatedbytes;
 
       pcal_config_pimpl* _cfg;
 

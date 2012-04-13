@@ -89,7 +89,7 @@ public:
   * Returns the estimated number of bytes used by the Visibility
   * @return Estimated memory size of the Visibility (bytes)
   */
-  inline int getEstimatedBytes() const { return estimatedbytes; }
+  inline long long getEstimatedBytes() const { return estimatedbytes; }
 
  /**
   * Returns the current scan index
@@ -177,7 +177,8 @@ private:
   void writeDiFXHeader(ofstream * output, int baselinenum, int dumpmjd, double dumpseconds, int configindex, int sourceindex, int freqindex, const char polproduct[3], int pulsarbin, int flag, float weight, double buvw[3], int filecount);
 
   Configuration * config;
-  int visID, expermjd, experseconds, currentscan, currentstartseconds, currentstartns, offsetns, offsetnsperintegration, subintsthisintegration, subintns, numvisibilities, numdatastreams, numbaselines, currentsubints, resultlength, currentconfigindex, maxproducts, executeseconds, autocorrwidth, estimatedbytes, todiskbufferlength, maxfiles;
+  int visID, expermjd, experseconds, currentscan, currentstartseconds, currentstartns, offsetns, offsetnsperintegration, subintsthisintegration, subintns, numvisibilities, numdatastreams, numbaselines, currentsubints, resultlength, currentconfigindex, maxproducts, executeseconds, autocorrwidth, todiskbufferlength, maxfiles;
+  long long estimatedbytes;
   double fftsperintegration, meansubintsperintegration;
   const string * polnames;
   bool first, pulsarbinon, configuredok;

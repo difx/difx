@@ -80,7 +80,7 @@ public:
   * Returns the estimated number of bytes used by the Datastream
   * @return Estimated memory size of the Datastream (bytes)
   */
-  inline int getEstimatedBytes() const { return estimatedbytes; }
+  inline long long getEstimatedBytes() const { return estimatedbytes; }
 
 protected:
   /// Structure which maintains all information necessary for a segment of the databuffer, including the configuration parameters for
@@ -163,7 +163,8 @@ protected:
   
   const int databufferfactor, numdatasegments;
   int activescan, activesec, activens;
-  int streamnum, atsegment, readscan, readseconds, corrstartday, corrstartseconds, readbytes, bufferbytes, readnanoseconds, intclockseconds, estimatedbytes;
+  int streamnum, atsegment, readscan, readseconds, corrstartday, corrstartseconds, readbytes, bufferbytes, readnanoseconds, intclockseconds;
+  long long estimatedbytes;
   bool dataremaining;
   readinfo * bufferinfo;
   const Configuration * config;

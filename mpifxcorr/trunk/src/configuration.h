@@ -85,7 +85,7 @@ public:
   inline string getJobName() const { return jobname; }
   inline string getObsCode() const { return obscode; }
   inline void setObsCode(string ocode) { obscode = ocode; }
-  inline int getEstimatedBytes() const { return estimatedbytes; }
+  inline long long getEstimatedBytes() const { return estimatedbytes; }
   inline int getVisBufferLength() const { return visbufferlength; }
   inline bool consistencyOK() const { return consistencyok; }
   inline bool anyUsbXLsb(int configindex) const { return configs[configindex].anyusbxlsb; }
@@ -825,7 +825,8 @@ private:
   double restartseconds;
   int maxnumchannels, maxnumpulsarbins, maxthreadresultlength, maxcoreresultlength, maxnumbufferedffts, mtu;
   int stadumpchannels, ltadumpchannels;
-  int numconfigs, numrules, baselinetablelength, telescopetablelength, datastreamtablelength, freqtablelength, estimatedbytes;
+  int numconfigs, numrules, baselinetablelength, telescopetablelength, datastreamtablelength, freqtablelength;
+  long long estimatedbytes;
   string calcfilename, modelfilename, coreconffilename, outputfilename, jobname, obscode;
   int * numprocessthreads;
   int * scanconfigindices;

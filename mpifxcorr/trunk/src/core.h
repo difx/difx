@@ -60,7 +60,7 @@ public:
   * Returns the estimated number of bytes used by the Core
   * @return Estimated memory size of the Core (bytes)
   */
-  int getEstimatedBytes();
+  long long getEstimatedBytes();
 
   /// The number of elements in the send/receive circular buffer
   static const int RECEIVE_RING_LENGTH = 4;
@@ -248,7 +248,8 @@ private:
   MPI_Request * datarequests;
   MPI_Request * controlrequests;
   MPI_Status * msgstatuses;
-  int numdatastreams, numbaselines, databytes, controllength, numreceived, numcomplete, currentconfigindex, numprocessthreads, maxthreadresultlength, maxcoreresultlength, startmjd, startseconds, estimatedbytes;
+  int numdatastreams, numbaselines, databytes, controllength, numreceived, numcomplete, currentconfigindex, numprocessthreads, maxthreadresultlength, maxcoreresultlength, startmjd, startseconds;
+  long long estimatedbytes;
   int * threadbytes;
   int * datastreamids;
   processslot * procslots;

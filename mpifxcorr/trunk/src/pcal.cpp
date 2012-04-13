@@ -227,6 +227,7 @@ PCal::PCal()
     _N_tones = 0;
     _finalized = false;
     _cfg = NULL;
+    _estimatedbytes = 0;
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -316,6 +317,7 @@ PCalExtractorTrivial::PCalExtractorTrivial(double bandwidth_hz, double pcal_spac
     _N_tones        = calcNumTones(bandwidth_hz, 0.0f, pcal_spacing_hz) - 1; // -1 is to exclude tone at 0 Hertz
     _tone_step      = (int)(pcal_spacing_hz / gcd(_fs_hz, pcal_spacing_hz));
     _cfg = new pcal_config_pimpl();
+    _estimatedbytes = 0;
 
     /* Prep for FFT/DFT */
     int wbufsize = 0;
@@ -326,11 +328,13 @@ PCalExtractorTrivial::PCalExtractorTrivial(double bandwidth_hz, double pcal_spac
     if (s != vecNoErr) 
         csevere << startl << "Error in DFTGetBufSize PCalExtractorTrivial::PCalExtractorTrivial " << vectorGetStatusString(s) << endl; 
     _cfg->dftworkbuf = vectorAlloc_u8(wbufsize);
+    _estimatedbytes += wbufsize;
 
     /* Allocate twice the amount strictly necessary */
     _cfg->pcal_complex = vectorAlloc_cf32(_N_bins * 2);
     _cfg->pcal_real    = vectorAlloc_f32(_N_bins * 2);
     _cfg->dft_out      = vectorAlloc_cf32(_N_bins * 1);
+    _estimatedbytes   += _N_bins*4*(4+2+2);
     this->clear();
     cdebug << startl << "PCalExtractorTrivial: _Ntones=" << _N_tones << ", _N_bins=" << _N_bins << ", wbufsize=" << wbufsize << endl;
 }
@@ -475,6 +479,7 @@ PCalExtractorShifting::PCalExtractorShifting(double bandwidth_hz, double pcal_sp
     _pcalspacing_hz  = pcal_spacing_hz;
     _N_bins          = (int)(_fs_hz / gcd(_fs_hz, pcal_spacing_hz));
     _N_tones         = calcNumTones(bandwidth_hz, pcal_offset_hz, pcal_spacing_hz);
+    _estimatedbytes  = 0;
 
     _cfg = new pcal_config_pimpl();
     _cfg->rotatorlen = (size_t)(_fs_hz / gcd(_fs_hz, _pcaloffset_hz));
@@ -492,6 +497,7 @@ PCalExtractorShifting::PCalExtractorShifting(double bandwidth_hz, double pcal_sp
     if (s != vecNoErr)
         csevere << startl << "Error in DFTGetBufSize in PCalExtractorShifting::PCalExtractorShifting " << vectorGetStatusString(s) << endl;
     _cfg->dftworkbuf = vectorAlloc_u8(wbufsize);
+    _estimatedbytes += wbufsize;
 
     /* Allocate twice the amount strictly necessary */
     _cfg->pcal_complex = vectorAlloc_cf32(_N_bins * 2);
@@ -499,6 +505,8 @@ PCalExtractorShifting::PCalExtractorShifting(double bandwidth_hz, double pcal_sp
     _cfg->rotator = vectorAlloc_cf32(_cfg->rotatorlen * 2);
     _cfg->rotated = vectorAlloc_cf32(_cfg->rotatorlen * 2);
     _cfg->dft_out = vectorAlloc_cf32(_N_bins * 1);
+    _estimatedbytes += _N_bins*4*(4+2+2);
+    _estimatedbytes += _cfg->rotatorlen*2*8*2;
     this->clear();
 
     /* Prepare frequency shifter/mixer lookup */
@@ -689,6 +697,7 @@ int pcal_offset_hz, const size_t sampleoffset)
     _N_bins         = (int)(_fs_hz / gcd(_fs_hz, _pcaloffset_hz));
     _N_tones        = calcNumTones(bandwidth_hz, _pcaloffset_hz, _pcalspacing_hz);
     _cfg = new pcal_config_pimpl();
+    _estimatedbytes = 0;
 
     /* Prep for FFT/DFT */
     int wbufsize = 0;
@@ -701,11 +710,13 @@ int pcal_offset_hz, const size_t sampleoffset)
     if (s != vecNoErr)
         csevere << startl << "Error in DFTGetBufSize in PCalExtractorImplicitShift::PCalExtractorImplicitShift " << vectorGetStatusString(s) << endl;
     _cfg->dftworkbuf = vectorAlloc_u8(wbufsize);
+    _estimatedbytes += wbufsize;
 
     /* Allocate twice the amount strictly necessary */
     _cfg->pcal_complex = vectorAlloc_cf32(_N_bins * 2);
     _cfg->pcal_real    = vectorAlloc_f32(_N_bins * 2);
     _cfg->dft_out      = vectorAlloc_cf32(_N_bins * 1);
+    _estimatedbytes   += _N_bins*4*(4+2+2);
     this->clear();
     cdebug << startl << "PCalExtractorImplicitShift: _Ntones = " << _N_tones << ", _N_bins = " << _N_bins << ", wbufsize = " << wbufsize << endl;
 }
@@ -948,6 +959,7 @@ const size_t sampleoffset)
     _pcalspacing_hz = pcal_spacing_hz;
     _N_tones        = calcNumTones(bandwidth_hz, (double)_pcaloffset_hz, _pcalspacing_hz);
     _N_bins         = 2*_N_tones;
+    _estimatedbytes = 0;
     this->clear();
     cdebug << startl << "PCalExtractorDummy: _Ntones=" << _N_tones << ", _N_bins=" << _N_bins << endl;
 }

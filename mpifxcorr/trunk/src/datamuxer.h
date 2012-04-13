@@ -77,7 +77,7 @@ public:
   * Accessor method for estimated number of bytes
   * @return estimated amount of memory allocated by this object, in bytes
   */
-  inline int getEstimatedBytes() const { return estimatedbytes; }
+  inline long long getEstimatedBytes() const { return estimatedbytes; }
 
  /**
   * Increments the read counter, used after external source has read data into the demux buffer
@@ -108,8 +108,8 @@ protected:
 
   ///other variables
   const Configuration * config;
-  long long readcount, muxcount, deinterlacecount;
-  int datastreamindex, mpiid, numthreads, segmentbytes, estimatedbytes;
+  long long readcount, muxcount, deinterlacecount, estimatedbytes;
+  int datastreamindex, mpiid, numthreads, segmentbytes;
 };
 
 /**

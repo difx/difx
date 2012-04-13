@@ -111,7 +111,7 @@ class Model{
      * Returns the estimated number of bytes used by the Model
      * @return Estimated memory size of the Model (bytes)
      */
-    inline int getEstimatedBytes() const { return estimatedbytes; }
+    inline long long getEstimatedBytes() const { return estimatedbytes; }
 
     /**
      * Returns the maximum geometric rate for the given antenna, in us/sec
@@ -238,7 +238,8 @@ class Model{
     axistype getMount(string mount);
 
     int modelmjd, modelstartseconds, numstations, numsources, numscans, numeops, numspacecraft;
-    int polyorder, modelincsecs, estimatedbytes;
+    int polyorder, modelincsecs;
+    long long estimatedbytes;
     bool opensuccess;
     Configuration * config;
     string calcfilename, imfilename;

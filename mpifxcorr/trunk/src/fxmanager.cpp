@@ -71,7 +71,6 @@ FxManager::FxManager(Configuration * conf, int ncores, int * dids, int * cids, i
   double headerbloatfactor;
   const string * polnames;
 
-  estimatedbytes = 0;
   cinfo << startl << "STARTING " << PACKAGE_NAME << " version " << VERSION << endl;
 
   difxMessageSendDifxStatus(DIFX_STATE_STARTING, "Version " VERSION, 0.0, 0, 0);
@@ -86,7 +85,7 @@ FxManager::FxManager(Configuration * conf, int ncores, int * dids, int * cids, i
   initns = config->getStartNS();
   executetimeseconds = config->getExecuteSeconds();
   model = config->getModel();
-  estimatedbytes += config->getEstimatedBytes();
+  estimatedbytes = config->getEstimatedBytes();
 
   initscan = 0;
   while(model->getScanEndSec(initscan, startmjd, startseconds) < 0)

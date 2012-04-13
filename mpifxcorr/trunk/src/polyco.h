@@ -154,7 +154,7 @@ public:
   * Returns the estimated number of bytes used by the Polyco
   * @return Estimated memory size of the Polyco (bytes)
   */
-  inline int getEstimatedBytes() const { return estimatedbytes; }
+  inline long long getEstimatedBytes() const { return estimatedbytes; }
 
   inline int getMJD() const { return mjd; }
   inline double getMJDfraction() const { return mjdfraction; }
@@ -174,7 +174,8 @@ protected:
   void calculateDMPhaseOffsets(double offsetmins);
 
   string pulsarname;
-  int configindex, numbins, maxchannels, numfreqs, observatory, timespan, numcoefficients, mjd, estimatedbytes;
+  int configindex, numbins, maxchannels, numfreqs, observatory, timespan, numcoefficients, mjd;
+  long long estimatedbytes;
   double mjdfraction, dt0, dm, dopplershift, logresidual, refphase, f0, obsfrequency, binaryphase, minbinwidth, calclengthmins;
   bool readok;
   double * coefficients;

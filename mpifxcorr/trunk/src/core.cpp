@@ -369,9 +369,9 @@ void * Core::launchNewProcessThread(void * tdata)
   return 0;
 }
 
-int Core::getEstimatedBytes()
+long long Core::getEstimatedBytes()
 {
-  int toreturn = estimatedbytes;
+  long long toreturn = estimatedbytes;
   for(int i=0;i<numprocessthreads;i++)
     toreturn += threadbytes[i];
   return toreturn;
@@ -430,7 +430,7 @@ void Core::loopprocess(int threadid)
   scratchspace->rotated = vectorAlloc_cf32(maxchan);
   scratchspace->channelsums = vectorAlloc_cf32(maxchan);
   scratchspace->argument = vectorAlloc_f32(3*maxrotatestrideplussteplength);
-  threadbytes[threadid] += 20*maxchan + 100*maxrotatestrideplussteplength;
+  threadbytes[threadid] += 16*maxchan + 28*maxrotatestrideplussteplength;
 
   //work out whether we'll need to do any pulsar binning, and work out the maximum # channels (and # polycos if applicable)
   for(int i=0;i<config->getNumConfigs();i++)
