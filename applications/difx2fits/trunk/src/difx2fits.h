@@ -52,6 +52,7 @@ struct CommandLineOptions
 	int sniffAllPhaseCentres;
 	int sniffAllBins;
 	int alwaysWriteAutocorr;
+        int skipExtraAutocorrs;
 	/* some overrides */
 	int specAvg;
 	int doalldifx;

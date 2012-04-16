@@ -92,7 +92,7 @@ typedef struct
 DifxVis *newDifxVis(const DifxInput *D, int jobId, int pulsarBin, int phaseCentre, double scaleFactor);
 void deleteDifxVis(DifxVis *dv);
 int DifxVisNextFile(DifxVis *dv);
-int DifxVisNewUVData(DifxVis *dv, int verbose);
+int DifxVisNewUVData(DifxVis *dv, int verbose, int skipextraautocorrs);
 int DifxVisCollectRandomParams(const DifxVis *dv);
 
 

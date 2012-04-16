@@ -109,6 +109,7 @@ static void usage(const char *pgm)
 	fprintf(stderr, "  --ac-always\n");
 	fprintf(stderr, "  -a                  Always write autocorrelations\n");
 	fprintf(stderr, "\n");
+        fprintf(stderr, "  --skip-extra-autocorrs Ignore e.g. LL autocorrs in a job with only RR cross-corrs\n");
 #ifdef HAVE_FFTW
 	fprintf(stderr, "  --sniff-all\n");
 	fprintf(stderr, "  -S                  Sniff all bins and centers\n");
@@ -144,6 +145,7 @@ struct CommandLineOptions *newCommandLineOptions()
 	opts->sniffTime = DefaultSniffInterval;
 	opts->jobMatrixDeltaT = DefaultJobMatrixInterval;
 	opts->phaseCentre = 0;
+        opts->skipExtraAutocorrs = 0;
 	opts->DifxTsysAvgSeconds = DefaultDifxTsysInterval;
 	opts->DifxPcalAvgSeconds = DefaultDifxPCalInterval;
 
@@ -274,6 +276,10 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 			{
 				opts->overrideVersion = 1;
 			}
+                        else if(strcmp(argv[i], "--skip-extra-autocorrs") == 0)
+                        {
+                                opts->skipExtraAutocorrs = 1;
+                        }
 			else if(i+1 < argc) /* one parameter arguments */
 			{
 				if(strcmp(argv[i], "--scale") == 0 ||
