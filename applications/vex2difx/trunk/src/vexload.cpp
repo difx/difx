@@ -1173,8 +1173,6 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
                                 }
 				setup.nRecordChan = ch2tracks.size();
 				setup.nBit = nBit;
-		                //cout << "nRecordChan=" << setup.nRecordChan << endl;
-		                //cout << "nBit=" << setup.nBit << endl;
 			}
 			else if(setup.formatName == "VDIF")
 			{

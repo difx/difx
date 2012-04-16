@@ -1092,6 +1092,7 @@ static void populateBaselineTable(DifxInput *D, const CorrParams *P, const CorrS
 	int freqId, altFreqId, blId, configId;
 	double lowedgefreq, altlowedgefreq;
 
+
 	// Calculate maximum number of possible baselines based on list of configs
 	D->nBaseline = 0;
 
@@ -1158,12 +1159,19 @@ static void populateBaselineTable(DifxInput *D, const CorrParams *P, const CorrS
 					n1 = DifxDatastreamGetRecBands(D->datastream+a1, freqId, a1p, a1c);
 
 					nPol = 0;
-					for(int u = 0; u < n1; ++u)
-					{
-						bl->bandA[nFreq][nPol] = a1c[u];
-						bl->bandB[nFreq][nPol] = a1c[u];
-						++nPol;
-					}
+                                        for(int u = 0; u < n1; ++u)
+                                        {
+                                                for(int v = 0; v < n1; ++v)
+                                                {
+                                                        if(corrSetup->doPolar || (a1p[u] == a1p[v] && (corrSetup->onlyPol == ' ' || corrSetup->onlyPol == a1p[u])))
+                                                        {
+                                                                
+                                                                bl->bandA[nFreq][nPol] = a1c[u];
+                                                                bl->bandB[nFreq][nPol] = a1c[v];
+                                                                ++nPol;
+                                                        }
+                                                }
+                                        }
 					bl->nPolProd[nFreq] = nPol;
 
 					if(nPol == 0)
@@ -1314,7 +1322,7 @@ static void populateBaselineTable(DifxInput *D, const CorrParams *P, const CorrS
 						{
 							for(int v = 0; v < n2; ++v)
 							{
-								if(corrSetup->doPolar || a1p[u] == a2p[v])
+								if(corrSetup->doPolar || (a1p[u] == a2p[v] && (corrSetup->onlyPol == ' ' || corrSetup->onlyPol == a1p[u])))
 								{
 									bl->bandA[nFreq][nPol] = a1c[u];
 									bl->bandB[nFreq][nPol] = a2c[v];
@@ -1420,7 +1428,7 @@ static void populateBaselineTable(DifxInput *D, const CorrParams *P, const CorrS
 						{
 							for(int v = 0; v < n2; ++v)
 							{
-								if(corrSetup->doPolar || a1p[u] == a2p[v])
+								if(corrSetup->doPolar || (a1p[u] == a2p[v] && (corrSetup->onlyPol == ' ' || corrSetup->onlyPol == a1p[u])))
 								{
 									bl->bandA[nFreq][nPol] = D->datastream[a1].nRecBand + a1c[u];
 									bl->bandB[nFreq][nPol] = a2c[v];

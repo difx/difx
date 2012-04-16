@@ -326,6 +326,7 @@ CorrSetup::CorrSetup(const string &name) : corrSetupName(name)
 	maxNSBetweenACAvg = 0;		// zero means set to default in vex2difx.cpp
 	minRecordedBandwidth = 0.0;
 	maxRecordedBandwidth = 0.0;
+        onlyPol = ' ';
 }
 
 void CorrSetup::addRecordedBandwidth(double bw)
@@ -477,6 +478,10 @@ int CorrSetup::setkv(const string &key, const string &value)
 		ss >> freqId;
 		addFreqId(freqId);
 	}
+        else if(key == "onlyPol")
+        {
+                ss >> onlyPol;
+        }
 	else
 	{
 		cerr << "Warning: SETUP: Unknown parameter '" << key << "'." << endl; 
@@ -1937,14 +1942,6 @@ int CorrParams::load(const string &fileName)
 	if(baselineList.empty())
 	{
 		addBaseline("*-*");
-	}
-
-	if(v2dMode == V2D_MODE_PROFILE)
-	{
-		for(vector<CorrSetup>::iterator c = corrSetups.begin(); c != corrSetups.end(); ++c)
-		{
-			c->doPolar = false;
-		}
 	}
 
 	// populate global zoom bands into antennas that want them

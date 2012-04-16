@@ -210,6 +210,7 @@ public:
 	set<int> freqIds;       // which bands to correlate
 	string binConfigFile;
 	string phasedArrayConfigFile;
+        char onlyPol;          // which polarization to correlate
 private:
 	void addFreqId(int freqId);
 
