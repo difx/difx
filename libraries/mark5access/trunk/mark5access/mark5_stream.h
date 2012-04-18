@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2006-2011 by Walter Brisken                             *
+ *   Copyright (C) 2006-2012 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -344,7 +344,7 @@ void print_mark5_format(const struct mark5_format *mf);
 /* OTHER USEFUL FUNCTIONS */
 double correct_2bit_power(double x);
 double high_state_fraction_to_power(double x);
-
+int find_vdif_frame(const unsigned char *data, size_t length, size_t *offset, int *framesize);
 
 /* BELOW HERE USER BEWARE: If you are using any functionality defined
  * below this comment then your code may not function properly with

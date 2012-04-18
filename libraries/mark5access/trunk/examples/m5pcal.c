@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2010-2011 by Walter Brisken                             *
+ *   Copyright (C) 2010-2012 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -39,8 +39,8 @@
 
 const char program[] = "m5pcal";
 const char author[]  = "Walter Brisken";
-const char version[] = "0.3";
-const char verdate[] = "20110730";
+const char version[] = "0.4";
+const char verdate[] = "20120418";
 
 const int ChunkSize = 6400;
 const int MaxTones = 64;
@@ -65,12 +65,10 @@ static void usage(const char *pgm)
 	printf("\n");
 
 	printf("%s ver. %s   %s  %s\n\n", program, version, author, verdate);
-	printf("An offline pulse cal extractor.  Can use VLBA, Mark3/4, and Mark5B "
-		"formats using the\nmark5access library.\n\n");
+	printf("An offline pulse cal extractor.  Can use VLBA, Mark3/4, and Mark5B formats using the\nmark5access library.\n\n");
 	printf("Usage: %s [options] <infile> <dataformat> <freq1> [<freq2> ... ] <outfile>\n\n", program);
 	printf("  <infile> is the name of the input file\n\n");
-	printf("  <dataformat> should be of the form: "
-		"<FORMAT>-<Mbps>-<nchan>-<nbit>, e.g.:\n");
+	printf("  <dataformat> should be of the form: <FORMAT>-<Mbps>-<nchan>-<nbit>, e.g.:\n");
 	printf("    VLBA1_2-256-8-2\n");
 	printf("    MKIV1_4-128-2-1\n");
 	printf("    Mark5B-512-16-2\n");
@@ -81,6 +79,8 @@ static void usage(const char *pgm)
 	printf("  -v           Be more verbose in operation\n\n");
 	printf("  --quiet\n");
 	printf("  -q           Be quieter\n\n");
+	printf("  --help\n");
+	printf("  -h           Print this help info and quit\n\n");
 	printf("  -n <number>  Integrate over <number> chunks of data [1000]\n\n");
 	printf("  -N <number>  Number of outer loops to perform\n\n");
 	printf("  --offset <number>\n");
@@ -106,7 +106,7 @@ static double calcDelay(int nTone, int *toneFreq_MHz, double *toneAmp, double *t
 
 	ref = tonePhase[nTone/2+1] - tonePhase[nTone/2];
 
-	for(i = 1; i < nTone; i++)
+	for(i = 1; i < nTone; ++i)
 	{
 		double f0 = toneFreq_MHz[i-1];
 		double f1 = toneFreq_MHz[i];
@@ -210,7 +210,7 @@ static int getTones(int freq_kHz, double complex *spectrum, int nChan, double bw
 		}
 		f0_kHz = -freq_kHz - bw_kHz;
 
-		for(nTone = 0; nTone < MaxTones; nTone++)
+		for(nTone = 0; nTone < MaxTones; ++nTone)
 		{
 			f = (startTone - nTone)*df_kHz;
 			if(f <= f0_kHz)
@@ -283,29 +283,29 @@ static int pcal(const char *inFile, const char *format, int nInt, int nFreq, con
 	}
 
 	data = (double **)malloc(ms->nchan*sizeof(double *));
-	for(i = 0; i < ms->nchan; i++)
+	for(i = 0; i < ms->nchan; ++i)
 	{
 		data[i] = (double *)malloc(ChunkSize*sizeof(double));
 	}
 
 	bins = (double complex **)malloc(nFreq*sizeof(double *));
-	for(i = 0; i < nFreq; i++)
+	for(i = 0; i < nFreq; ++i)
 	{
 		bins[i] = (double complex *)malloc(ChunkSize*sizeof(double complex));
 	}
 
 	stopSec = ms->sec + ms->ns*1.0e-9;
 
-	for(N = 0; N < nDelay; N++)
+	for(N = 0; N < nDelay; ++N)
 	{
 		startSec = stopSec;
 
-		for(i = 0; i < nFreq; i++)
+		for(i = 0; i < nFreq; ++i)
 		{
 			memset(bins[i], 0, ChunkSize*sizeof(double complex));
 		}
 
-		for(k = 0; k < nInt; k++)
+		for(k = 0; k < nInt; ++k)
 		{
 			if(die)
 			{
@@ -329,9 +329,9 @@ static int pcal(const char *inFile, const char *format, int nInt, int nFreq, con
 				break;
 			}
 			
-			for(i = 0; i < nFreq; i++)
+			for(i = 0; i < nFreq; ++i)
 			{
-				for(j = 0; j < ChunkSize; j++)
+				for(j = 0; j < ChunkSize; ++j)
 				{
 					bins[i][j] += data[i][j];
 				}
@@ -358,16 +358,16 @@ static int pcal(const char *inFile, const char *format, int nInt, int nFreq, con
 			}
 
 			/* normalize */
-			for(i = 0; i < nFreq; i++)
+			for(i = 0; i < nFreq; ++i)
 			{
-				for(j = 0; j < ChunkSize; j++)
+				for(j = 0; j < ChunkSize; ++j)
 				{
 					bins[i][j] /= nInt;	/* FIXME: correct for FFT size? */
 				}
 			}
 
 			/* FFT */
-			for(i = 0; i < nFreq; i++)
+			for(i = 0; i < nFreq; ++i)
 			{
 				double sum = 0.0;
 				double factor;
@@ -376,12 +376,12 @@ static int pcal(const char *inFile, const char *format, int nInt, int nFreq, con
 				fftw_execute(plan);
 				fftw_destroy_plan(plan);
 
-				for(j = 0; j < ChunkSize/2; j++)
+				for(j = 0; j < ChunkSize/2; ++j)
 				{
 					sum += bins[i][j]*~bins[i][j];
 				}
 				factor = 1.0/sqrt(sum);
-				for(j = 0; j < ChunkSize; j++)
+				for(j = 0; j < ChunkSize; ++j)
 				{
 					bins[i][j] *= factor;
 				}
@@ -389,7 +389,7 @@ static int pcal(const char *inFile, const char *format, int nInt, int nFreq, con
 
 			/* write data out */
 
-			for(i = 0; i < nFreq; i++)
+			for(i = 0; i < nFreq; ++i)
 			{
 				double bandCenter, bandValid;
 				double f0, f1, delay;
@@ -400,8 +400,7 @@ static int pcal(const char *inFile, const char *format, int nInt, int nFreq, con
 				bandCenter = 0.5*(f0+f1);
 				bandValid = 0.5*fabs(bw_MHz) - edge_MHz;
 
-				nTone = getTones(freq_kHz[i], bins[i], ChunkSize/2, bw_MHz, interval_MHz, ns,
-					toneFreq, toneAmp, tonePhase);
+				nTone = getTones(freq_kHz[i], bins[i], ChunkSize/2, bw_MHz, interval_MHz, ns, toneFreq, toneAmp, tonePhase);
 
 				delay = calcDelay(nTone, toneFreq, toneAmp, tonePhase, bandCenter, bandValid);
 
@@ -416,7 +415,7 @@ static int pcal(const char *inFile, const char *format, int nInt, int nFreq, con
 				}
 				else
 				{
-					for(j = 0; j < nTone; j++)
+					for(j = 0; j < nTone; ++j)
 					{
 						if(verbose >= 0)
 						{
@@ -444,14 +443,14 @@ static int pcal(const char *inFile, const char *format, int nInt, int nFreq, con
 	fclose(out);
 
 	delete_mark5_stream(ms);
-	for(i = 0; i < ms->nchan; i++)
+	for(i = 0; i < ms->nchan; ++i)
 	{
 		free(data[i]);
 	}
 	free(data);
 	data = 0;
 
-	for(i = 0; i < nFreq; i++)
+	for(i = 0; i < nFreq; ++i)
 	{
 		free(bins[i]);
 	}
@@ -466,7 +465,7 @@ int isNumber(const char *str)
 	int i;
 	int nDot=0, nDash=0;
 
-	for(i = 0; str[i]; i++)
+	for(i = 0; str[i]; ++i)
 	{
 		if(isdigit(str[i]))
 		{
@@ -474,7 +473,7 @@ int isNumber(const char *str)
 		}
 		if(str[i] == '.')
 		{
-			nDot++;
+			++nDot;
 			if(nDot > 1)
 			{
 				return 0;
@@ -482,7 +481,7 @@ int isNumber(const char *str)
 		}
 		if(str[i] == '-')
 		{
-			nDash++;
+			++nDash;
 			if(nDash > 1)
 			{
 				return 0;
@@ -516,14 +515,13 @@ int main(int argc, char **argv)
 
 	oldsiginthand = signal(SIGINT, siginthand);
 
-	for(i = 1; i < argc; i++)
+	for(i = 1; i < argc; ++i)
 	{
 		if(isNumber(argv[i]))
 		{
 			if(nFreq >= MaxFreqs)
 			{
-				fprintf(stderr, "Warning: too many frequencies specified.  Stopping at %d\n",
-					MaxFreqs);
+				fprintf(stderr, "Warning: too many frequencies specified.  Stopping at %d\n", MaxFreqs);
 			}
 			else
 			{
@@ -544,12 +542,12 @@ int main(int argc, char **argv)
 			if(strcmp(argv[i], "--verbose") == 0 ||
 				strcmp(argv[i], "-v") == 0)
 			{
-				verbose++;
+				++verbose;
 			}
 			else if(strcmp(argv[i], "--quiet") == 0 ||
 				strcmp(argv[i], "-q") == 0)
 			{
-				verbose--;
+				--verbose;
 			}
 			else if(strcmp(argv[i], "--help") == 0 ||
 				strcmp(argv[i], "-h") == 0)
@@ -562,44 +560,42 @@ int main(int argc, char **argv)
 			{
 				if(strcmp(argv[i], "-n") == 0)
 				{
-					i++;
+					++i;
 					nInt = atol(argv[i]);
 				}
 				else if(strcmp(argv[i], "-N") == 0)
 				{
-					i++;
+					++i;
 					nDelay = atol(argv[i]);
 				}
 				else if(strcmp(argv[i], "--offset") == 0 ||
 					strcmp(argv[i], "-o") == 0)
 				{
-					i++;
+					++i;
 					offset = atoll(argv[i]);
 				}
 				else if(strcmp(argv[i], "--interval") == 0 ||
 					strcmp(argv[i], "-i") == 0)
 				{
-					i++;
+					++i;
 					interval_MHz = atol(argv[i]);
 				}
 				else if(strcmp(argv[i], "--edge") == 0 ||
 					strcmp(argv[i], "-e") == 0)
 				{
-					i++;
+					++i;
 					edge_MHz = atof(argv[i]);
 				}
 				else
 				{
-					fprintf(stderr, "I'm not sure what to do with command line argument '%s'\n",
-						argv[i]);
+					fprintf(stderr, "I'm not sure what to do with command line argument '%s'\n", argv[i]);
 
 					return EXIT_FAILURE;
 				}
 			}
 			else
 			{
-				fprintf(stderr, "I'm not sure what to do with command line argument '%s'\n",
-					argv[i]);
+				fprintf(stderr, "I'm not sure what to do with command line argument '%s'\n", argv[i]);
 
 				return EXIT_FAILURE;
 			}
@@ -619,8 +615,7 @@ int main(int argc, char **argv)
 		}
 		else
 		{
-			fprintf(stderr, "I'm not sure what to do with command line argument '%s'\n",
-				argv[i]);
+			fprintf(stderr, "I'm not sure what to do with command line argument '%s'\n", argv[i]);
 
 
 			return EXIT_FAILURE;

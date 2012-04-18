@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2011 by Walter Brisken                             *
+ *   Copyright (C) 2009-2012 by Walter Brisken, Adam Deller, Chris Phillips*
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -2130,13 +2130,17 @@ static int mark5_format_vdif_init(struct mark5_stream *ms)
 	if(!ms)
 	{
 		fprintf(m5stderr, "mark5_format_vdif_init: ms = 0\n");
+
 		return -1;
 	}
 
 	f = (struct mark5_format_vdif *)(ms->formatdata);
 
 	bitspersample = ms->nbit;
-	if (ms->complex_decode) bitspersample *= 2;
+	if(ms->complex_decode)
+	{
+		bitspersample *= 2;
+	}
 
 	ms->payloadoffset = f->frameheadersize;
 	ms->databytes = f->databytesperpacket;
@@ -2158,33 +2162,32 @@ static int mark5_format_vdif_init(struct mark5_stream *ms)
         ms->framegranularity = 1;
         if(ms->Mbps > 0)
         {
+//		framensNum = 250*f->databytesperpacket*f->completesamplesperword*ms->nchan*bitspersample;
+		framensNum = ms->databytes*8*1000;     
+		framensDen = ms->Mbps;
 
-	  //                framensNum = 250*f->databytesperpacket*f->completesamplesperword*ms->nchan*bitspersample;
-               framensNum = ms->databytes*8*1000;     
-	       framensDen = ms->Mbps;
-			  
-                ms->framens = (double)framensNum/(double)framensDen;
+		ms->framens = (double)framensNum/(double)framensDen;
 
+		for(ms->framegranularity = 1; ms->framegranularity < 128; ms->framegranularity *= 2)
+		{
+			if((ms->framegranularity*framensNum) % framensDen == 0)
+			{
+				break;
+			}
+		}
 
-                for(ms->framegranularity = 1; ms->framegranularity < 128; ms->framegranularity *= 2)
-                {
-                        if((ms->framegranularity*framensNum) % framensDen == 0)
-                        {
-                                break;
-                        }
-                }
-
-                if(ms->framegranularity >= 128)
-                {
-                        fprintf(m5stderr, "VDIF Warning: cannot calculate gframens %d/%d\n",
-                                framensNum, framensDen);
-                        ms->framegranularity = 1;
-                }
-                ms->samprate = ms->framesamples*(1000000000.0/ms->framens);
+		if(ms->framegranularity >= 128)
+		{
+			fprintf(m5stderr, "VDIF Warning: cannot calculate gframens %d/%d\n",
+			framensNum, framensDen);
+			ms->framegranularity = 1;
+		}
+		ms->samprate = ms->framesamples*(1000000000.0/ms->framens);
         }
         else
         {
-                fprintf(m5stderr, "Error - you must specify the Mbps for a VDIF mode (was set to %d)!", ms->Mbps);
+                fprintf(m5stderr, "Error: you must specify the data rate (Mbps) for a VDIF mode (was set to %d)!", ms->Mbps);
+
 		return -1;
         }
 
@@ -2270,12 +2273,11 @@ static int mark5_format_vdif_init(struct mark5_stream *ms)
 	}
 	else
 	{
-		fprintf(m5stderr, "Error: mark5_format_vdif_init: unsupported frameheadersize=%d\n",
-			f->frameheadersize);
+		fprintf(m5stderr, "Error: mark5_format_vdif_init: unsupported frameheadersize=%d\n", f->frameheadersize);
+		
 		return -1;
 	}
 	mark5_format_vdif_make_formatname(ms);
-
 
 	return 0;
 }
@@ -2321,6 +2323,7 @@ static int mark5_format_vdif_validate(const struct mark5_stream *ms)
 				ms->framenum,
 				mjd_d, sec_d, ns_d,
 				mjd_t, sec_t, ns_t);
+			
 			return 0;
 		}
 	}
@@ -2371,6 +2374,7 @@ struct mark5_format_generic *new_mark5_format_vdif(int Mbps,
 	else
 	{
 		fprintf(m5stderr, "VDIF decimation must be 1 for now\n");
+		
 		return 0;
 	}
 
@@ -2397,6 +2401,7 @@ struct mark5_format_generic *new_mark5_format_vdif(int Mbps,
 	else
 	{
 		fprintf(m5stderr, "VDIF nbit must be 1, 2, 4, 8 or 16 for now\n");
+		
 		return 0;
 	}
 
@@ -2431,13 +2436,12 @@ struct mark5_format_generic *new_mark5_format_vdif(int Mbps,
 	else
 	{
 		fprintf(m5stderr, "VDIF nchan must be 1, 2, 4, 8, 16, 32 or 64 for now\n");
+
 		return 0;
 	}
 
-	v = (struct mark5_format_vdif *)calloc(1,
-		sizeof(struct mark5_format_vdif));
-	f = (struct mark5_format_generic *)calloc(1, 
-		sizeof(struct mark5_format_generic));
+	v = (struct mark5_format_vdif *)calloc(1, sizeof(struct mark5_format_vdif));
+	f = (struct mark5_format_generic *)calloc(1, sizeof(struct mark5_format_generic));
 
 	v->frameheadersize = frameheadersize;
 	v->databytesperpacket = databytesperpacket;
@@ -2458,7 +2462,7 @@ struct mark5_format_generic *new_mark5_format_vdif(int Mbps,
 	f->complex_decode = 0;
 	f->count = 0;
 
-	if (!usecomplex) 
+	if(!usecomplex) 
 	{
 	    switch(decoderindex)
 	    {
@@ -2498,10 +2502,11 @@ struct mark5_format_generic *new_mark5_format_vdif(int Mbps,
 		fprintf(m5stderr, "VDIF: Illegal combination of decimation, channels and bits\n");
 		free(v);
 		free(f);
+		
 		return 0;
 	    }
 	}
-	else 
+	else
 	{
 	    switch(decoderindex)
 	    {
@@ -2543,10 +2548,116 @@ struct mark5_format_generic *new_mark5_format_vdif(int Mbps,
 		fprintf(m5stderr, "VDIF: Illegal combination of decimation, channels and bits\n");
 		free(v);
 		free(f);
+
 		return 0;
 	    }
 
 	}
 
 	return f;
+}
+
+/* here framesize includes the 32 byte header 
+ *
+ * return value: 1 if true, 0 if false
+ *
+ * Note: this only works for nbit = 2^n
+ */
+static int is_legal_vdif_framesize(int framesize)
+{
+	framesize -= 32;
+
+	if(framesize % 8 != 0)
+	{
+		return 0;
+	}
+
+	framesize /= 8;
+
+	while(framesize % 2 == 0)
+	{
+		framesize /= 2;
+	}
+	while(framesize % 5 == 0)
+	{
+		framesize /= 5;
+	}
+
+	if(framesize != 1)
+	{
+		return 0;
+	}
+	else
+	{
+		return 1;
+	}
+}
+
+/* if *framesize is set to 0, the frame size will be determined by this call
+ * and returned into the same variable.
+ *
+ * return value is -1 on error (no VDIF found) or 0 if found.
+ *
+ * here framesize includes the 32 byte header
+ */
+int find_vdif_frame(const unsigned char *data, size_t length, size_t *offset, int *framesize)
+{
+	int fs, fs0, fs1;
+
+	if(framesize && *framesize)
+	{
+		fs0 = fs1 = *framesize;
+	}
+	else
+	{
+		fs0 = 40;
+		fs1 = 8232;
+	}
+
+	for(fs = fs0; fs <= fs1; ++fs)
+	{
+		size_t maxOffset;
+
+		if(!is_legal_vdif_framesize(fs))
+		{
+			continue;
+		}
+
+		maxOffset = 5*fs;	/* check over a maximum of 5 frame lengths */
+		if(maxOffset > length - fs - 32)
+		{
+			maxOffset = length - fs - 32;
+		}
+
+		for(*offset = 0; *offset < maxOffset; *offset += 8)
+		{
+			unsigned int secA, secB;
+			unsigned int refEpochA, refEpochB;
+			unsigned int fsA, fsB;
+			unsigned int edvA, edvB;
+			const unsigned int *frame;
+
+			frame = ((int *)data) + *offset/4;
+			secA      = frame[0] & 0x3FFFFFFF;
+			refEpochA = (frame[1] >> 24) & 0x3F;
+			fsA       = (frame[2] & 0x00FFFFFF) << 3;
+			edvA      = frame[4] >> 24;
+			frame += fs/4;
+			secB      = frame[0] & 0x3FFFFFFF;
+			refEpochB = (frame[1] >> 24) & 0x3F;
+			fsB       = (frame[2] & 0x00FFFFFF) << 3;
+			edvB      = frame[4] >> 24;
+
+			/* does it look reasonable? */
+			if(fsA == fs && fsB == fs && refEpochA == refEpochB && (secA == secB || secA+1 == secB) && edvA == edvB)
+			{
+				*framesize = fs;
+
+				return 0;
+			}
+
+		}
+	}
+
+	return -1;
 }
