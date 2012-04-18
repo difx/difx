@@ -711,13 +711,14 @@ struct mark5_format *new_mark5_format_from_name(const char *formatname)
 	return f;
 }
 
-struct mark5_format *new_mark5_format_from_stream(
-	struct mark5_stream_generic *s)
+struct mark5_format *new_mark5_format_from_stream(struct mark5_stream_generic *s)
 {
 	struct mark5_stream *ms;
 	struct mark5_format_generic *f;
 	struct mark5_format *mf;
 	int status, ntrack;
+	size_t offset;
+	int framesize;
 
 	mark5_library_consistent();
 	
@@ -735,8 +736,7 @@ struct mark5_format *new_mark5_format_from_stream(
 		free(mf);
 		free(ms);
 
-		fprintf(m5stderr, "new_mark5_format_from_stream: "
-				"Incomplete stream.\n");
+		fprintf(m5stderr, "new_mark5_format_from_stream: Incomplete stream.\n");
 		
 		return 0;
 	}
@@ -746,8 +746,7 @@ struct mark5_format *new_mark5_format_from_stream(
 	{
 		free(mf);
 		delete_mark5_stream(ms);
-		fprintf(m5stderr, "new_mark5_format_from_stream: "
-				"init_stream() failed\n");
+		fprintf(m5stderr, "new_mark5_format_from_stream: init_stream() failed\n");
 		
 		return 0;
 	}
@@ -828,6 +827,41 @@ struct mark5_format *new_mark5_format_from_stream(
 		return mf;
 	}
 
+	/* VDIF */
+	framesize = 0;
+	if(find_vdif_frame(ms->datawindow, ms->datawindowsize, &offset, &framesize) >= 0)
+	{
+		ms->frameoffset = offset;
+		f = new_mark5_format_vdif(
+			1024, 
+			get_vdif_chans_per_thread(ms->datawindow+offset),
+			get_vdif_quantization_bits(ms->datawindow+offset),
+			1,
+			framesize-32,
+			32,
+			get_vdif_complex(ms->datawindow+offset) );
+
+		set_format(ms, f);
+		status = mark5_format_init(ms);
+		if(status < 0)
+		{
+			if(f->final_format)
+			{
+				f->final_format(ms);
+			}
+			free(f);
+		}
+		else
+		{
+			copy_format(ms, mf);
+			mf->format = MK5_FORMAT_VDIF;
+			mf->ntrack = get_vdif_threads(ms->datawindow+offset, ms->datawindowsize-offset, framesize);
+			delete_mark5_stream(ms);
+			
+			return mf;
+		}
+	}
+
 #if K5WORKS
 	/* k5 */
 	f = new_mark5_format_k5(0, 0, 0, -1);
@@ -866,6 +900,7 @@ void print_mark5_format(const struct mark5_format *mf)
 	{
 		return;
 	}
+	fprintf(m5stdout, "  format ID = %d\n", mf->format);
 	fprintf(m5stdout, "  Mbps = %d\n", mf->Mbps);
 	fprintf(m5stdout, "  nchan = %d\n", mf->nchan);
 	fprintf(m5stdout, "  nbit = %d\n", mf->nbit);
@@ -873,8 +908,18 @@ void print_mark5_format(const struct mark5_format *mf)
 	fprintf(m5stdout, "  framebytes = %d\n", mf->framebytes);
 	fprintf(m5stdout, "  framens = %f\n", mf->framens);
 	fprintf(m5stdout, "  mjd = %d sec = %d ns = %d\n", mf->mjd, mf->sec, mf->ns);
-	fprintf(m5stdout, "  ntrack = %d\n", mf->ntrack);
-	fprintf(m5stdout, "  fanout = %d\n", mf->fanout);
+	if(mf->format == MK5_FORMAT_VDIF || mf->format == MK5_FORMAT_VDIFL)
+	{
+		fprintf(m5stdout, "  nthread = %d\n", mf->ntrack);
+	}
+	else
+	{
+		fprintf(m5stdout, "  ntrack = %d\n", mf->ntrack);
+	}
+	if(mf->format == MK5_FORMAT_VLBA || mf->format == MK5_FORMAT_MARK4 || mf->format == MK5_FORMAT_VLBN)
+	{
+		fprintf(m5stdout, "  fanout = %d\n", mf->fanout);
+	}
 	fprintf(m5stdout, "  decimation = %d\n", mf->decimation);
 }
 

@@ -2194,7 +2194,7 @@ static int mark5_format_vdif_init(struct mark5_stream *ms)
 	/* Aha: we have some data to look at to further refine the format... */
 	if(ms->datawindow)
 	{
-		ms->frame = ms->datawindow;
+		ms->frame = ms->datawindow + ms->frameoffset;
 		ms->payload = ms->frame + ms->payloadoffset;
 
 		headerwords = (unsigned int *)(ms->frame);
@@ -2366,10 +2366,6 @@ struct mark5_format_generic *new_mark5_format_vdif(int Mbps,
 	if(decimation == 1) /* inc by 1024 for each successive value to allow full range of nchan and nbit */
 	{
 		decoderindex += 0;
-	}
-	else if(decimation == 2)
-	{
-		decoderindex += 1024;
 	}
 	else
 	{
@@ -2637,7 +2633,7 @@ int find_vdif_frame(const unsigned char *data, size_t length, size_t *offset, in
 			unsigned int edvA, edvB;
 			const unsigned int *frame;
 
-			frame = ((int *)data) + *offset/4;
+			frame = ((unsigned int *)data) + *offset/4;
 			secA      = frame[0] & 0x3FFFFFFF;
 			refEpochA = (frame[1] >> 24) & 0x3F;
 			fsA       = (frame[2] & 0x00FFFFFF) << 3;
@@ -2660,4 +2656,69 @@ int find_vdif_frame(const unsigned char *data, size_t length, size_t *offset, in
 	}
 
 	return -1;
+}
+
+int get_vdif_chans_per_thread(const unsigned char *data)
+{
+	return 1 << (data[11] & 0x1F);
+}
+
+int get_vdif_quantization_bits(const unsigned char *data)
+{
+	return ((data[15] >> 2) & 0x1F) + 1;
+}
+
+int get_vdif_complex(const unsigned char *data)
+{
+	return data[15] >> 7;
+}
+
+int get_vdif_threads(const unsigned char *data, size_t length, int dataframesize)
+{
+	const int maxThreads = 128;
+	size_t i;
+	unsigned short int threads[maxThreads];
+	unsigned int nThread = 0;
+
+	for(i = 0; i < length-32; i += dataframesize)
+	{
+		const unsigned int *frame;
+		unsigned short int thread;
+		unsigned short int t; 
+		
+		frame = (unsigned int *)(data+i);
+
+		// sanity check that we are still in sync
+		if(dataframesize != (frame[2] & 0x00FFFFFF) << 3)
+		{
+			break;
+		}
+		thread = (frame[3] >> 16) & 0x03FF;
+		if(nThread == 0)
+		{
+			threads[0] = thread;
+			++nThread;
+		}
+		else
+		{
+			for(t = 0; t < nThread; ++t)
+			{
+				if(threads[t] == thread)
+				{
+					break;
+				}
+			}
+			if(t == nThread)
+			{
+				if(nThread == maxThreads)
+				{
+					return -1;
+				}
+				threads[nThread] = thread;
+				++nThread;
+			}
+		}
+	}
+
+	return nThread;
 }
