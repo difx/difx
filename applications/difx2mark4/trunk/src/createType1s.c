@@ -407,26 +407,27 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
                                     // generate index that is 10 * freq_index + pol + 1
                             t101.index = 10 * findex + pol + 1;
                             c = getband (D->freq[findex].freq);
-                                    // prepare ID strings for both pols, if there
-                            if (D->baseline[blind].nPolProd[i] > 1)
-                                {
-                                cn_lab = 2 * numchan;
-                                sprintf (lchan_id, "%c%02d?", c, cn_lab);
-                                lchan_id[3] = (D->freq+findex)->sideband;
-                                cn_lab++; 
-                                sprintf (rchan_id, "%c%02d?", c, cn_lab);
-                                rchan_id[3] = (D->freq+findex)->sideband;
-                                }
-                            else    // both the same (only one used)
-                                {
-                                sprintf (lchan_id, "%c%02d?", c, numchan);
-                                lchan_id[3] = (D->freq+findex)->sideband;
-                                strcpy (rchan_id, lchan_id);
-                                }
 
                             switch (pol)
                                 {
                                 case 0: // LL
+                                    // prepare ID strings for both pols, if there
+                                    if (D->baseline[blind].nPolProd[i] > 1)
+                                        {
+                                        cn_lab = 2 * numchan;
+                                        sprintf (lchan_id, "%c%02d?", c, cn_lab);
+                                        lchan_id[3] = (D->freq+findex)->sideband;
+                                        cn_lab++; 
+                                        sprintf (rchan_id, "%c%02d?", c, cn_lab);
+                                        rchan_id[3] = (D->freq+findex)->sideband;
+                                        }
+                                    else    // both the same (only one used)
+                                        {
+                                        sprintf (lchan_id, "%c%02d?", c, numchan);
+                                        lchan_id[3] = (D->freq+findex)->sideband;
+                                        strcpy (rchan_id, lchan_id);
+                                        }
+
                                     strcpy (t101.ref_chan_id, lchan_id);
                                     strcpy (t101.rem_chan_id, lchan_id);
                                     numchan++;
