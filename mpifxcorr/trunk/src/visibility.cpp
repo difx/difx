@@ -416,9 +416,9 @@ void Visibility::writedata()
             ds2bandindex = config->getBDataStream2BandIndex(currentconfigindex, i, j, k);
             if(config->getDTsys(currentconfigindex, ds1) > 0.0 && config->getDTsys(currentconfigindex, ds2) > 0.0)
             {
-              divisor = (Mode::getDecorrelationPercentage(config->getDNumBits(currentconfigindex, ds1)))*(Mode::getDecorrelationPercentage(config->getDNumBits(currentconfigindex, ds2)))*autocorrcalibs[ds1][ds1bandindex].re*autocorrcalibs[ds2][ds2bandindex].re;
-              if(divisor > 0.0) //only do it if there is something to calibrate with
-                scale = sqrt(config->getDTsys(currentconfigindex, ds1)*config->getDTsys(currentconfigindex, ds2)/divisor);
+              divisor = (Mode::getDecorrelationPercentage(config->getDNumBits(currentconfigindex, ds1)))*(Mode::getDecorrelationPercentage(config->getDNumBits(currentconfigindex, ds2)))*autocorrcalibs[ds1][ds1bandindex].re*autocorrcalibs[ds2][ds2bandindex].re/(autocorrweights[ds1][0][ds1bandindex]*autocorrweights[ds2][0][ds2bandindex]);
+              if(divisor > 0.0 && baselineweights[i][j][b][k] > 0) //only do it if there is something to calibrate with
+                scale = sqrt(config->getDTsys(currentconfigindex, ds1)*config->getDTsys(currentconfigindex, ds2)/divisor)/baselineweights[i][j][b][k];
               else
                 scale = 0.0;
             }
