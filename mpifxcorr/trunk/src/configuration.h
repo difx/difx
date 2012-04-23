@@ -296,7 +296,7 @@ public:
     datasource s;
     f = datastreamtable[configs[0].datastreamindices[datastreamindex]].format;
     s = datastreamtable[configs[0].datastreamindices[datastreamindex]].source;
-    return ((f == MKIV || f == VLBA || f == VLBN || f == MARK5B) && s == MK5MODULE); 
+    return ((f == MKIV || f == VLBA || f == VLBN || f == MARK5B || f == VDIF || f == INTERLACEDVDIF) && s == MK5MODULE); 
   }
   inline int getFrameBytes(int configindex, int configdatastreamindex) const
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].framebytes; }
