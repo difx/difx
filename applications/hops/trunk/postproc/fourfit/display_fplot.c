@@ -25,7 +25,7 @@ display_fplot (fringe)
 struct mk4_fringe *fringe;
     {
     FILE *fp, *fopen();
-    char c, temp[100], cmd[128];
+    char c;
     int i, size;
     extern int displayopt;
     extern char display_name[];
@@ -40,6 +40,7 @@ struct mk4_fringe *fringe;
     static int noptions = 5;
     static int gsopen = FALSE;
     static FILE *gs;
+    static char temp[1024], cmd[1280];
     static char ps_file[1024] = "fourfit_";
 
     strcpy (temp, display_name);

@@ -42,7 +42,7 @@ int pcal_interp (struct mk4_sdata *sd1,
     char chan_buffer[MAX_CHAN_PP][9];
     int pc_index[MAX_CHAN_PP];
     int numchans, new_chan, npts, nstart;
-    int ret, desired_pol, do309, numrecs, pc_max, jmax, tshift;
+    int ret, do309, numrecs, pc_max, jmax, tshift;
     complex c_zero();
     struct freq_corel *fc;
     struct mk4_sdata *sd;
@@ -202,23 +202,9 @@ int pcal_interp (struct mk4_sdata *sd1,
                     }
                 }
                 
-                                        /* We will ignore anything except
-                                           a tone in USB for now */
                                         // allow lsb pcal rjc 2007.2.1
             // if ((ch == LSB_LCP) || (ch == LSB_RCP)) continue;
 
-                                        /* reject unwanted pol. pcals rjc 01.04.13 */
-            if ((stn == 0 && (param->pol == POL_LL || param->pol == POL_LR))
-             || (stn == 1 && (param->pol == POL_LL || param->pol == POL_RL)))
-                desired_pol = LCP;
-            else
-                desired_pol = RCP;
-            if (ch == USB_LCP && desired_pol == RCP
-             || ch == USB_RCP && desired_pol == LCP
-             || ch == LSB_LCP && desired_pol == RCP
-             || ch == LSB_RCP && desired_pol == LCP)
-                continue;
-            
 
                                         /* either find this tone in list, or
                                          * add it to the list, iff type 308 */

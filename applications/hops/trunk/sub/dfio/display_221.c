@@ -53,11 +53,11 @@ char
 display_221 (struct type_221 *t221,
              int mode)
     {
-    char *pplot, *end_of_plot, psbuf[2560], cmd[128], c;
-    char *ptr, response[128], fname[128];
+    char *pplot, *end_of_plot, c, *ptr;
     int i, nchar, size, xval, yval, loop;
     static int gsopen = FALSE;
     static FILE *gs;
+    static char psbuf[2560], cmd[1280], response[1024], fname[1024];
     static char ps_file[1024] = "sub-dfio_";
     extern char progname[];
     FILE *fp;

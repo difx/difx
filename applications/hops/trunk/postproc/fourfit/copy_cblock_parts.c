@@ -12,10 +12,8 @@
 
 int
 copy_cblock_parts (f,t)
-struct c_block *f,*t;           /* f (from) is source pointer
-                                  t (to)   is destination pointer */
-
-
+struct c_block *f,*t;               // f (from) is source pointer
+                                    // t (to)   is destination pointer
     {
     int i,j;
 
@@ -100,6 +98,30 @@ struct c_block *f,*t;           /* f (from) is source pointer
     if (f->optimize_closure != NULLINT)
         t->optimize_closure = f->optimize_closure;
 
+    if (f->ion_npts != NULLINT)
+        t->ion_npts = f->ion_npts;
+
+    if (f->interpolator != NULLINT)
+        t->interpolator = f->interpolator;
+
+    if (f->station_delay.ref != NULLFLOAT)
+        t->station_delay.ref = f->station_delay.ref;
+
+    if (f->station_delay.rem != NULLFLOAT)
+        t->station_delay.rem = f->station_delay.rem;
+
+    if (f->pc_delay_l.ref != NULLFLOAT)
+        t->pc_delay_l.ref = f->pc_delay_l.ref;
+
+    if (f->pc_delay_l.rem != NULLFLOAT)
+        t->pc_delay_l.rem = f->pc_delay_l.rem;
+
+    if (f->pc_delay_r.ref != NULLFLOAT)
+        t->pc_delay_r.ref = f->pc_delay_r.ref;
+
+    if (f->pc_delay_r.rem != NULLFLOAT)
+        t->pc_delay_r.rem = f->pc_delay_r.rem;
+
     if (f->nsamplers != NULLINT)
         {
         t->nsamplers = f->nsamplers;
@@ -112,7 +134,7 @@ struct c_block *f,*t;           /* f (from) is source pointer
         for (i=0; i<6; i++)
             if (f->adhoc_poly[i] != NULLFLOAT)
                 t->adhoc_poly[i] = f->adhoc_poly[i];
-            else               /* pad extant poly. with high order zero terms */
+            else                    // pad extant poly. with high order zero terms
                 t->adhoc_poly[i] = 0.0;
 
     for (i=0; i<2; i++)
@@ -131,29 +153,33 @@ struct c_block *f,*t;           /* f (from) is source pointer
 
         if (f->passband[i] != NULLFLOAT)
             t->passband[i] = f->passband[i];
+
+        if (f->ion_window[i] != NULLFLOAT)
+            t->ion_window[i] = f->ion_window[i];
         }
 
 
-    if (f->index[0] != NULLINT)                            /* this needs work */
+    if (f->index[0] != NULLINT)     // this needs work (deprecated)
         for (i=0; i<32; i++)
             t->index[i] = f->index[i];
 
-                                              /* only sidebands that are
-                                                 present in both the from-list
-                                                 and the to-list are present
-                                                 in the resulting to-list     */
+                                    // only sidebands that are present in both the from-list
+                                    // and the to-list are present in the resulting to-list
     for (i=0; i<MAX_CHAN_PP; i++)                         
         {
         if (f->frequency[i] != NULLINT)
             t->frequency[i] &= f->frequency[i];
 
-        if (t->frequency[i])              /* copy iff this freq. still active */
+        if (t->frequency[i])        // copy iff this freq. still active
             {
-            if (f->pc_phase[i].ref != NULLFLOAT)
-                t->pc_phase[i].ref = f->pc_phase[i].ref;
+            for (j=0; j<2; j++)     // copy phases for both polarizations
+                {
+                if (f->pc_phase[i][j].ref != NULLFLOAT)
+                    t->pc_phase[i][j].ref = f->pc_phase[i][j].ref;
 
-            if (f->pc_phase[i].rem != NULLFLOAT)
-                t->pc_phase[i].rem = f->pc_phase[i].rem;
+                if (f->pc_phase[i][j].rem != NULLFLOAT)
+                    t->pc_phase[i][j].rem = f->pc_phase[i][j].rem;
+                }
 
             if (f->pc_freq[i].ref != NULLFLOAT)
                 t->pc_freq[i].ref = f->pc_freq[i].ref;

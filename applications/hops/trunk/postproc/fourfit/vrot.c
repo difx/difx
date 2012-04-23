@@ -17,6 +17,8 @@
 *  2001.1.17 - rjc   fix sbd correction bug        *
 *  2011.5.11 - rjc   use mbd from center of band   *
 *                    that was actually observed    *
+*  2012.1.4  - rjc   remove pcal rotation (done in *
+*                    norm to support multiple pols)*                  
 ***************************************************/
 
 #include <math.h>
@@ -55,9 +57,6 @@ struct type_pass *pass;
         theta += (param.nlags - status.max_delchan + status.sbd_max / status.sbd_sep) * 0.125 * sb;
         }
     theta *= (-2.0 * M_PI);             // convert to radians
-
-                                        // rotate by differential phase cal (already in radians)
-    theta += status.pc_phase[fr][1] - status.pc_phase[fr][0] ;
 
     return (c_exp(theta));              // return unit phasor
     }

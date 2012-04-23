@@ -8,11 +8,18 @@
 
 #define USB_FLAG 1
 #define LSB_FLAG 2
-#define POL_UNDEF -1
+                                    // polarization values in pass array structure
 #define POL_LL 0
 #define POL_RR 1
 #define POL_LR 2
 #define POL_RL 3
+                                    // polarization values in param array structure
+#define POL_ALL 0
+#define POLMASK_LL 1
+#define POLMASK_RR 2
+#define POLMASK_LR 4
+#define POLMASK_RL 8
+#define POL_IXY 31
                            /* maximum # of pcal tones per channel */
 #define MAX_PCF 64
 
@@ -27,7 +34,7 @@ struct interp_sdata
         float neg[4];
         float bigneg[4];
         complex mt_pcal[2];                 // pc phasor for multitone mode L:R or H:V
-        float mt_delay[2];                  // multitone delay (us) [L:R or H:V or X:Y]
+        double mt_delay[2];                 // multitone delay (us) [L:R or H:V or X:Y]
         };
 
 struct data_corel 
@@ -43,6 +50,7 @@ struct data_corel
         struct interp_sdata rem_sdata;
         float usbfrac;
         float lsbfrac;
+        complex pc_phasor[4];  // extracted in rotate_pcal [LL:RR:LR:RL]
         };
 
 struct freq_corel 
@@ -76,6 +84,8 @@ struct type_pass
         int                     num_ap;
         int                     npctones;     // max number of pcal tones in any freq
         int                     ap_off;
+        int                     pol;          // 0|1|2|3 = LL|RR|LR|RL or last pol if param.pol!=0
+        int                     npols;        // number of polarizations in coherent sum
         int                     autocorr;
         int                     pci[2][MAX_CHAN_PP];  /* index of desired pcal tone by stn */
         int                     pcinband[2][MAX_CHAN_PP][MAX_PCF];

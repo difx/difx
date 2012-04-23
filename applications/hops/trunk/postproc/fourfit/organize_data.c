@@ -12,6 +12,7 @@
 /*                                                                             */
 /*******************************************************************************/
 #include <stdio.h>
+#include <math.h>
 #include "mk4_data.h"
 #include "vex.h"
 #include "pass_struct.h"
@@ -107,6 +108,17 @@ struct freq_corel *corel;
                                         /* Record the station unit numbers */
     param.su_number[0] = sd1->t300->SU_number;
     param.su_number[1] = sd2->t300->SU_number;
+                                        // insert appropriate parallactic angles
+                                        // FIXME - should evaluate at frt
+    if (sd1->model[0].t303[0] != NULL)
+        param.par_angle[0] = sd1->model[0].t303[0]->parallactic_angle[0] / 180.0 * M_PI;
+    else
+        param.par_angle[0] = 0.0;
+
+    if (sd2->model[0].t303[0] != NULL)
+        param.par_angle[1] = sd2->model[0].t303[0]->parallactic_angle[0] / 180.0 * M_PI;
+    else
+        param.par_angle[1] = 0.0;
   
     return(0);
     }

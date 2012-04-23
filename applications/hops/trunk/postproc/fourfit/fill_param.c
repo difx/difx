@@ -50,14 +50,15 @@ fill_param (struct scan_struct *ovex,
         return (-1);
         }
                                         /* Sample period comes from inverse sample rate */
-    param->samp_period = 1.0  / stn1->samplerate;
     msg ("samplerates %lf %lf\n", 0, stn1->samplerate, stn2->samplerate);
     if (stn1->samplerate != stn2->samplerate)
-        {
-        msg ("Mismatching sample rates between stations %g %g",
-        2, stn1->samplerate, stn2->samplerate);
-        return (-1);
-        }
+        msg ("Sample rate mismatch for stations %g %g, assuming zoom mode",
+        1, stn1->samplerate, stn2->samplerate);
+    if (stn1->samplerate < stn2->samplerate)
+        param->samp_period = 1.0  / stn1->samplerate;
+    else
+        param->samp_period = 1.0  / stn2->samplerate;
+   
                                         /* Set the correlation type, lags */
     param->nlags = cdata->t100->nlags;
     if (param->nlags == 8)

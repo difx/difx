@@ -33,6 +33,7 @@ write_mk4sdata (struct mk4_sdata *sdata,
     struct type_000 t000;
     struct type_301 *t301;
     struct type_302 *t302;
+    struct type_302 *t303;
                                         /* Check for legal and sensible */
                                         /* filename input */
     ptr = (char *)strrchr (filename, '/');
@@ -75,6 +76,7 @@ write_mk4sdata (struct mk4_sdata *sdata,
             {
             t301 = sdata->model[i].t301[j];
             t302 = sdata->model[i].t302[j];
+            t303 = sdata->model[i].t303[j];
             if (t301 != NULL)
                 {
                 if (write_record ((char*)t301, fp, &bytes) < 0) quit;
@@ -85,15 +87,15 @@ write_mk4sdata (struct mk4_sdata *sdata,
                 if (write_record ((char*)t302, fp, &bytes) < 0) quit;
                 totbytes += bytes;
                 }
+            if (t303 != NULL)
+                {
+                if (write_record ((char*)t303, fp, &bytes) < 0) quit;
+                totbytes += bytes;
+                }
         }
 
     for (i=0; i<MAXSTATPER; i++)
         {
-        if (i < sdata->n303)
-            {
-            if (write_record ((char*)sdata->t303[i], fp, &bytes) < 0) quit;
-            totbytes += bytes;
-            }
         if (i < sdata->n304)
             {
             if (write_record ((char*)sdata->t304[i], fp, &bytes) < 0) quit;

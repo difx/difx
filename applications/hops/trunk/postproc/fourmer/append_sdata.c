@@ -1,5 +1,5 @@
 /*
- * $Id: append_sdata.c 259 2011-05-19 18:36:09Z gbc $
+ * $Id: append_sdata.c 656 2012-02-27 18:35:21Z rjc $
  *
  * Append sdataB to sdataC and edit channel names in the process.
  */
@@ -38,21 +38,11 @@ static void append_model(struct mk4_sdata *sdataC, struct mk4_sdata *sdataB)
 		revise_cid(sdataC->model[n].t301[sp]->chan_id, isA, 0);
 	    if (sdataC->model[n].t302[sp])
 		revise_cid(sdataC->model[n].t302[sp]->chan_id, isA, 0);
+	    if (sdataC->model[n].t303[sp])
+		revise_cid(sdataC->model[n].t303[sp]->chan_id, isA, 0);
 	    }
 	}
     msg("fixed %d (%d + %d) model records", 1, nC, nA, nC - nA);
-    }
-
-/*
- * append B's data to C for type_303 -- NO chan id renaming required
- */
-static void append_t303(struct mk4_sdata *sdataC, struct mk4_sdata *sdataB)
-    {
-    int n, nA = sdataC->n303;
-    for (n = 0; n < sdataB->n303; n++)
-	sdataC->t303[nA + n] = sdataB->t303[n];
-    sdataC->n303 += sdataB->n303;
-    msg("joined %d (%d + %d) 303 records", 1, sdataC->n303, nA, sdataB->n303);
     }
 
 /*
@@ -151,7 +141,6 @@ static void append_t309(struct mk4_sdata *sdataC, struct mk4_sdata *sdataB)
 void append_sdata(struct mk4_sdata *sdataC, struct mk4_sdata *sdataB)
     {
     append_model(sdataC, sdataB);
-    if (sdataB->n303 > 0) append_t303(sdataC, sdataB);
     if (sdataB->n304 > 0) append_t304(sdataC, sdataB);
     if (sdataB->n305 > 0) append_t305(sdataC, sdataB);
     if (sdataB->n306 > 0) append_t306(sdataC, sdataB);

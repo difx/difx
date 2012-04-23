@@ -58,6 +58,17 @@ struct c_block *cb_ptr;
     cb_ptr -> sampler_codes[0] = 0;
     cb_ptr -> nsamplers     = 0;
     cb_ptr -> optimize_closure = FALSE;
+    cb_ptr -> ion_window[0]  = -20.0;
+    cb_ptr -> ion_window[1]  =  20.0;
+    cb_ptr -> ion_npts       = 1;
+    cb_ptr -> interpolator   = ITERATE;
+    cb_ptr -> station_delay.ref  = 150e-9;   // a priori station delay of 150 ns
+    cb_ptr -> station_delay.rem  = 150e-9;
+    cb_ptr -> pc_delay_l.ref = 0.0;
+    cb_ptr -> pc_delay_l.rem = 0.0;
+    cb_ptr -> pc_delay_r.ref = 0.0;
+    cb_ptr -> pc_delay_r.rem = 0.0;
+
                                                                       // vectors
     for (i=0; i<6; i++)
         cb_ptr -> adhoc_poly[i] = 0.0;       /* clear ad hoc phase polynomial */
@@ -68,8 +79,10 @@ struct c_block *cb_ptr;
     for (i=0; i<MAX_CHAN_PP; i++)
         {
         cb_ptr -> frequency[i] = DSB;        /* accept all frequency channels */
-        cb_ptr -> pc_phase[i].ref = 0.0;
-        cb_ptr -> pc_phase[i].rem = 0.0;
+        cb_ptr -> pc_phase[i][0].ref = 0.0;
+        cb_ptr -> pc_phase[i][1].ref = 0.0;
+        cb_ptr -> pc_phase[i][0].rem = 0.0;
+        cb_ptr -> pc_phase[i][1].rem = 0.0;
         cb_ptr -> pc_freq[i].ref = 1;        /* default to 1st phase cal tone */
         cb_ptr -> pc_freq[i].rem = 1;
         cb_ptr -> pc_tonemask[i].ref = 0;    // default is to include all tones

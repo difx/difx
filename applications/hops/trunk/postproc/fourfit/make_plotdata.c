@@ -27,12 +27,12 @@ struct type_pass *pass;
     complex wght_phsr;
     int maxchan[MAXFREQ], i, j, np, fr, ap, lag, st, seg, lagbit;
     double ap_seg, c_mag(), c_phase(), max[MAXFREQ], maxv, peak, frac,
-                        sbdbox[MAXFREQ], rj, c, ap_cnt[MAXAP], nap;
-    double offset, maxamp, sumwt, q[3];
-    double temp[MAXAP];
-    double yy[3];
-    int n, ij;
-    int maxi, npmax, nl;
+                        sbdbox[MAXFREQ], rj, c, ap_cnt[MAXAP], nap,
+           offset, maxamp, sumwt, q[3],
+           temp[MAXAP],
+           yy[3], eff_npol;
+    int n, ij,
+        maxi, npmax, nl;
                                         /* Make sure data will fit */
     if (param.nlags*param.num_ap > MAX_APXLAG)
         {
@@ -123,8 +123,11 @@ struct type_pass *pass;
                                         /* Apply rotator to single band delay */
                                         /* values and add up over time. */
                                         /* MBD FFT size hardcoded to 256 at present */
-    for (i = 0; i < 512; i++) Y[i] = c_zero();
-    for (i = 0; i < 512; i++) X[i] = c_zero();
+    for (i = 0; i < 512; i++)
+        {
+        X[i] = c_zero();
+        Y[i] = c_zero();
+        }
     for (fr = 0; fr < pass->nfreq; fr++)
         {
         for (ap = pass->ap_off; ap < pass->ap_off+pass->num_ap; ap++)
@@ -174,8 +177,8 @@ struct type_pass *pass;
                 {
                 datum = pdata[fr].data + ap;
                 Z = c_mult (datum->sbdelay[lag],
-                    vrot (ap, status.dr_max_global, status.mbd_max_global, fr, 
-                                        datum->sband, pass));
+                                        // sb correction made by spectral below
+                    vrot (ap, status.dr_max_global, status.mbd_max_global, fr, 0, pass));
                                         /* Weight by fractional AP */
                 frac = 0.0;
                 if (datum->usbfrac >= 0.0) frac  = datum->usbfrac;
@@ -228,12 +231,12 @@ struct type_pass *pass;
        status.sbdbox[fr] = maxchan[fr] + peak + 1;
        }
     status.sbdbox[MAXFREQ] = nl + 1 + status.sbd_max / status.sbd_sep;
-
-                                        /*  Fill in phase cal - done elsewhere */
-
+                                        // effective number of polarizations
+    eff_npol = pass->npols > 2 ? 2 : pass->npols;
                                         /*  Signal to Noise Ratio */
     status.snr = status.delres_max * param.inv_sigma 
-            * sqrt((double)status.total_ap_frac) / (1.0E4 * status.amp_corr_fact);
+            * sqrt((double)status.total_ap_frac * eff_npol)
+                       / (1.0E4 * status.amp_corr_fact);
     msg ("SNR %le", 0, status.snr);
 
                                         /* Probability of false detection */
@@ -279,27 +282,26 @@ struct type_pass *pass;
                                         /* take mean */
                 if ((datum->usbfrac >= 0.0) && (datum->lsbfrac >= 0.0))
                     plot.weights[fr][ap] /= 2.0;
+
                 Z = c_mult (datum->sbdelay[status.max_delchan],
-                                vrot(ap, status.dr_max_global, 
-                                        status.mbd_max_global, fr, 
-                                        datum->sband, pass));
+                      vrot(ap, status.dr_max_global, status.mbd_max_global, fr, 0, pass));
                 plot.phasor[fr][ap] = Z;
-/*                 plot.phasor[fr][ap] = s_mult (Z, plot.weights[fr][ap]); */
                 }
-            else plot.phasor[fr][ap] = c_zero();
+            else
+                plot.phasor[fr][ap] = c_zero();
             wght_phsr = s_mult (plot.phasor[fr][ap], plot.weights[fr][ap]);
             sum_all = c_add(sum_all, wght_phsr);
             sum_freq = c_add(sum_freq, wght_phsr);
             sum_ap[ap] = c_add(sum_ap[ap], wght_phsr);
             }
                                         /* Changed to reflect fractional APs */
-        if (sumwt > 0.0)
-            c = status.amp_corr_fact/sumwt;
-        else c = 0.0;
+        c = (sumwt > 0.0) ? status.amp_corr_fact/sumwt : 0.0;
+
         status.fringe[fr] = s_mult(sum_freq, c);
         msg ("status.fringe[%d] %f %f", 0, fr, status.fringe[fr].re, status.fringe[fr].im);
         status.inc_avg_amp_freq += c_mag(sum_freq) * status.amp_corr_fact;
         }
+                                        // generate data for sum over all channels
     for (ap = pass->ap_off; ap < pass->ap_off+pass->num_ap; ap++)
         {
         plot.phasor[pass->nfreq][ap] = sum_ap[ap];
@@ -312,11 +314,6 @@ struct type_pass *pass;
                                         * status.snr / pass->nfreq)));
    
     calc_rms (pass);
-
-#ifdef PLOTDATA_HOOK
-#warning "plotdata hacking enabled -- see hook_make_plotdata.c"
-    PLOTDATA_HOOK;
-#endif /* PLOTDATA_HOOK */
 
     return(0);
     }

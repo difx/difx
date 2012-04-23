@@ -10,7 +10,7 @@
  * is an example of a correlator data file.  Replace xxx with any
  * one of:  000, 100, 101, 120, 130, 131, 141, 142, 143, 144, 150, 
  * 200, 201, 202, 203, 204, 205, 206, 207, 208, 210, 212, 220, 221, 230, 
- * 300, 301, 302, 304, 306, 307, 308, 309, or TDB. 
+ * 300, 301, 302, 303, 304, 306, 307, 308, 309, or TDB. 
  * Revised:  I can now print multiple file types, that is I accept 
  * multiple xxx on the command line, and I count and print the number 
  * of each record type that I read. 
@@ -44,6 +44,7 @@
 #include "type_300.h"
 #include "type_301.h"
 #include "type_302.h"
+#include "type_303.h"
 #include "type_304.h"
 #include "type_306.h"
 #include "type_307.h"
@@ -81,10 +82,10 @@ int main (int argc, char *argv[])
     "000", "100", "101", "120", "130", "131", "141", "142", "143", "144",
     "150", "200", "201", "202", "203", "204", "205", "206", "207", "208",
     "210", "212", "220", "221", "230",
-    "300", "301", "302", "304", "306", "307", "308", "309"
+    "300", "301", "302", "303", "304", "306", "307", "308", "309"
     };
                                     // change NNAMES to match above array
-    #define NNAMES 33
+    #define NNAMES 34
     int countt[NNAMES];                 /* Count number of times each record was found */
     
     char flip = *byte;
@@ -170,6 +171,7 @@ int main (int argc, char *argv[])
     struct type_300 *t300 = (struct type_300 *) buff;
     struct type_301 *t301 = (struct type_301 *) buff;
     struct type_302 *t302 = (struct type_302 *) buff;
+    struct type_303 *t303 = (struct type_303 *) buff;
     struct type_304 *t304 = (struct type_304 *) buff;
     struct type_306 *t306 = (struct type_306 *) buff;
     struct type_307 *t307 = (struct type_307 *) buff;
@@ -459,29 +461,35 @@ int main (int argc, char *argv[])
             nbuff = sizeof (struct type_302) - k;
             countt[27]++;       /* Increment record count */
             }
+        /* ** Type-303 record? ** */
+        else if (strncmp (t1->recId, "303", 3) == 0)
+            {
+            nbuff = sizeof (struct type_303) - k;
+            countt[28]++;       /* Increment record count */
+            }
         /* ** Type-304 record? ** */
         else if (strncmp (t1->recId, "304", 3) == 0)
             {
             nbuff = sizeof (struct type_304) - k;
-            countt[28]++;       /* Increment record count */
+            countt[29]++;       /* Increment record count */
             }
         /* ** Type-306 record? ** */
         else if (strncmp (t1->recId, "306", 3) == 0)
             {
             nbuff = sizeof (struct type_306) - k;
-            countt[29]++;       /* Increment record count */
+            countt[30]++;       /* Increment record count */
             }
         /* ** Type-307 record? ** */
         else if (strncmp (t1->recId, "307", 3) == 0)
             {
             nbuff = sizeof (struct type_307) - k;
-            countt[30]++;       /* Increment record count */
+            countt[31]++;       /* Increment record count */
             }
         /* ** Type-308 record? ** */
         else if (strncmp (t1->recId, "308", 3) == 0)
             {
             nbuff = sizeof (struct type_308) - k;
-            countt[31]++;       /* Increment record count */
+            countt[32]++;       /* Increment record count */
             }
         /* ** Type-309 record? ** */
         else if (strncmp (t1->recId, "309", 3) == 0)
@@ -489,7 +497,7 @@ int main (int argc, char *argv[])
             nbuff = (strncmp (t309->version_no, "00", 2) == 0)
                   ? sizeof (struct type_309_v0) - k
                   : sizeof (struct type_309_v1) - k;
-            countt[32]++;       /* Increment record count */
+            countt[33]++;       /* Increment record count */
             }
         /* ** tapeDB record? ** */
         else if (strncasecmp (t1->recId, "TDB", 3) == 0)
@@ -667,7 +675,7 @@ int main (int argc, char *argv[])
           strncmp (t1->recId, "15", 2) == 0)
             {           /* or type 15x? */
             /* T1 Record Header */
-            (void) printf ("%s got type %.3s \n", me, t1->recId);
+            // (void) printf ("%s got type %.3s \n", me, t1->recId);
             (void) printf (" recId = %.3s ", t1->recId);
             (void) printf (" recVer = %.2s ", t1->recVer);
             (void) printf (" recFmt = %#x ", t1->recFmt);
@@ -805,7 +813,7 @@ int main (int argc, char *argv[])
           strncmp (t1->recId, "3", 1) == 0)
             {           /* or type 3xx? */
             /* Type-2xx or type-3xx record header */
-            (void) printf ("%s got type %.3s \n", me, t1->recId);
+            // (void) printf ("%s got type %.3s \n", me, t1->recId);
             (void) printf (" record_id = %.3s ", t1->recId);
             (void) printf (" version_no = %.2s ", t1->recVer);
             }           /* End of if type 2xx or 3xx */
@@ -1305,6 +1313,39 @@ int main (int argc, char *argv[])
             (void) printf (" \n");
             continue;
             }           /* End of if type 302 */
+        /* * Type-303 record? * */
+        if (strncmp (t1->recId, "303", 3) == 0)
+            {           /* Type 303? */
+            /* Az, el, pa, u, v, w */
+            printf (" interval = %d ", flip_short(t303->interval));
+            printf (" chan_id = %s \n", t303->chan_id);
+            printf ("azimuth %g %g %g %g %g %g\n", flip_double(t303->azimuth[0]),
+                   flip_double(t303->azimuth[1]), flip_double(t303->azimuth[2]),
+                   flip_double(t303->azimuth[3]), flip_double(t303->azimuth[4]),
+                   flip_double(t303->azimuth[5]));
+            printf ("elevation %g %g %g %g %g %g\n", flip_double(t303->elevation[0]),
+                   flip_double(t303->elevation[1]), flip_double(t303->elevation[2]),
+                   flip_double(t303->elevation[3]), flip_double(t303->elevation[4]),
+                   flip_double(t303->elevation[5]));
+            printf ("parallactic angle %g %g %g %g %g %g\n", flip_double(t303->parallactic_angle[0]),
+                   flip_double(t303->parallactic_angle[1]), flip_double(t303->parallactic_angle[2]),
+                   flip_double(t303->parallactic_angle[3]), flip_double(t303->parallactic_angle[4]),
+                   flip_double(t303->parallactic_angle[5]));
+            printf ("u %g %g %g %g %g %g\n", flip_double(t303->u[0]),
+                   flip_double(t303->u[1]), flip_double(t303->u[2]),
+                   flip_double(t303->u[3]), flip_double(t303->u[4]),
+                   flip_double(t303->u[5]));
+            printf ("v %g %g %g %g %g %g\n", flip_double(t303->v[0]),
+                   flip_double(t303->v[1]), flip_double(t303->v[2]),
+                   flip_double(t303->v[3]), flip_double(t303->v[4]),
+                   flip_double(t303->v[5]));
+            printf ("w %g %g %g %g %g %g\n", flip_double(t303->w[0]),
+                   flip_double(t303->w[1]), flip_double(t303->w[2]),
+                   flip_double(t303->w[3]), flip_double(t303->w[4]),
+                   flip_double(t303->w[5]));
+            printf ("\n");
+            continue;
+            }           /* End of if type 303 */
         /* * Type-304 record? * */
         if (strncmp (t1->recId, "304", 3) == 0)
             {           /* Type 304? */

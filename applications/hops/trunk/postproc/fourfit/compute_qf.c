@@ -31,6 +31,7 @@ char *tape_qcode)
     int i, qf, missing_track, low_chan, low_pcal[2], e_code;
     int t1000_index, btable_index, fr, min, max, num_ap, ratio, perr;
     int slip_measure, slip_pct;
+    int stnpol[2][4] = {0, 1, 0, 1, 0, 1, 1, 0}; // [stn][pol] = 0:L, 1:R
     double diff1, diff2, intg_time, dur, fract, c_mag();
     extern struct type_statistics statistics;
     extern struct type_filter filter;
@@ -54,10 +55,10 @@ char *tape_qcode)
                                         /* re-enable the following test;
                                          * change threshold units  rjc 2001.10.25 
                                          * also mark high amp bad  rjc 2005.10.26 */
-        if (status->pc_amp[i][0] < 0.005
-         || status->pc_amp[i][0] > 0.500) low_pcal[0] = TRUE;
-        if (status->pc_amp[i][1] < 0.005
-         || status->pc_amp[i][1] > 0.500) low_pcal[1] = TRUE;
+        if (status->pc_amp[i][0][stnpol[0][pass->pol]] < 0.005
+         || status->pc_amp[i][0][stnpol[0][pass->pol]] > 0.500) low_pcal[0] = TRUE;
+        if (status->pc_amp[i][1][stnpol[1][pass->pol]] < 0.005
+         || status->pc_amp[i][1][stnpol[1][pass->pol]] > 0.500) low_pcal[1] = TRUE;
         }
                                         /* Zero-width windows nullify B/E-codes */
     if (param->win_sb[0] == param->win_sb[1]) 

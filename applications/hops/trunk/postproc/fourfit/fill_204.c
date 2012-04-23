@@ -53,8 +53,10 @@ struct type_204 *t204)
     strncpy (t204->override, control_string, 128);
     if (strlen (control_string) > 127)
         {
-        msg ("Warning, command line override string in type 204 record", 2);
-        msg ("truncated at 128 characters", 2);
+        msg ("Warning, command line override string in type 204 record", 1);
+        msg ("truncated at 128 characters", 1);
+        t204->override[124] = t204->override[125] = t204->override[126] = '.';
+        t204->override[127] = 0;
         }
 
     return (0);

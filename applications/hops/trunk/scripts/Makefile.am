@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.am 323 2011-06-08 18:19:11Z gbc $
+# $Id: Makefile.am 577 2012-01-04 21:42:51Z gbc $
 #
 
 SUBDIRS = .
@@ -7,7 +7,7 @@ SUBDIRS = .
 helpdir = $(pkgdatadir)/vhelp
 
 dist_bin_SCRIPTS =  vhelp env_check vhelper.sh pplot_print \
-		    hops_data_links.pl
+		    hops_data_links.pl vhelp.sh
 dist_help_DATA   =  vhelp1.awk vhelp2.awk
 
 orig_scripts = vhelp.dist
@@ -49,15 +49,17 @@ vhelp2.awk: $(srcdir)/Makefile.am
 	echo 'here == 1          {print $$0;ok++}' >> $@
 
 vhelp vhelper.sh:	$(srcdir)/Makefile.am $(srcdir)/vhelp.dist
-	xx=`type -p less` && \
+	-sed -e 's,$$SRC/awk_scripts/,,' $(srcdir)/vhelp.dist > vhelp
+	-xx=`type -p less` && \
+	    echo 'exec vhelp.sh "$$@" | '$$xx > vhelp
+	-xx=`type -p less` && yy=`type -p csh` && \
 	    sed -e '/template/s+|.more++' \
 		-e '/more.vhelp.doc/s/more/cat/' \
 		-e '/more..progname/s/more/cat/' \
 		-e 's,$$SRC/awk_scripts/,,' \
 		$(srcdir)/vhelp.dist \
 		    > vhelper.sh && \
-	    echo 'exec vhelper.sh "$$@" | '$$xx > vhelp || \
-	sed -e 's,$$SRC/awk_scripts/,,' $(srcdir)/vhelp.dist > vhelp
+	    echo 'exec vhelper.sh "$$@" | '$$xx > vhelp
 	touch vhelper.sh
 	chmod +x vhelp vhelper.sh
 

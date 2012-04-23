@@ -120,12 +120,6 @@ struct freq_corel *corel)
             if (ref < rem) polarization = POL_LR;
             else polarization = POL_RL;
             }
-                                        /* Crude selection now provided */
-                                        /* via -P command line flag */
-                                        /* If unused, process 1st pol */
-                                        /* encountered */
-        if (param->pol == POL_UNDEF) param->pol = polarization;
-        
 
                                         /* Now start filling up corel struct */
         fc = corel + fqno;
@@ -274,12 +268,5 @@ struct freq_corel *corel)
                 }
             }                           /* End ap loop */
         }                               /* End index loop */
-
-                                        /* Report polarization */
-    if (param->pol == POL_LL) msg ("Processing LL data", 1);
-    else if (param->pol == POL_RR) msg ("Processing RR data", 1);
-    else if (param->pol == POL_LR) msg ("Processing LR data", 1);
-    else if (param->pol == POL_RL) msg ("Processing RL data", 1);
-
     return(0);
     }

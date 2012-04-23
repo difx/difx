@@ -34,8 +34,8 @@ struct type_pass *pass;
     extern int ap_per_seg;
                                         /* Get polarization state */
     reflcp = remlcp = FALSE;
-    if ((param.pol == POL_LL) || (param.pol == POL_LR)) reflcp = TRUE;
-    if ((param.pol == POL_LL) || (param.pol == POL_RL)) remlcp = TRUE;
+    if ((param.pol == POLMASK_LL) || (param.pol == POLMASK_LR)) reflcp = TRUE;
+    if ((param.pol == POLMASK_LL) || (param.pol == POLMASK_RL)) remlcp = TRUE;
                                         /* Figure out segmenting */
                                         /* Default - segment to generate 200 */
                                         /* dots across the fringe plot page */
@@ -66,7 +66,7 @@ struct type_pass *pass;
         {
         vsum = c_zero();
         wt = 0.0;                       /* Loop over freqs, and ap's in segment */
-        wt_dsb = 0.0;                       /* Loop over freqs, and ap's in segment */
+        wt_dsb = 0.0;                   /* Loop over freqs, and ap's in segment */
                                         /* forming vector sum */
         for(fr = 0; fr < pass->nfreq; fr++)
             {
@@ -86,7 +86,8 @@ struct type_pass *pass;
             rem_bias_usb = rem_bias_lsb = 0.0;
             for (ap = seg * apseg; ap < (seg+1)*apseg; ap++)
                 {
-                if (ap >= pass->num_ap) break;
+                if (ap >= pass->num_ap)
+                    break;
                 trueap = ap + pass->ap_off;
                 datum = pass->pass_data[fr].data + trueap;
                 apwt = fabs (plot.weights[fr][trueap]);
@@ -145,17 +146,18 @@ struct type_pass *pass;
                                     - datum->rem_sdata.neg[3] - datum->rem_sdata.bigneg[3];
                     }
                                         /* The actual data */
-                if (apwt > 0.0) totap += 1.0;
+                if (apwt > 0.0)
+                    totap += 1.0;
                 wght_phsr = s_mult (plot.phasor[fr][trueap], apwt);
                 vsum = c_add (vsum, wght_phsr);
                 vsumf = c_add (vsumf, wght_phsr);
                                         /* Phasecals */
                 if (param.pc_mode[0] == MULTITONE)  // reference multitone?
                     {
-                    pcal = datum->ref_sdata.mt_pcal[stnpol[0][param.pol]];
+                    pcal = datum->ref_sdata.mt_pcal[stnpol[0][pass->pol]];
                     refpc = c_add (refpc, pcal);
                                     // add in appropriate weight
-                    if (stnpol[0][param.pol])
+                    if (stnpol[0][pass->pol])
                         refpcwt += datum->ref_sdata.pcweight_rcp;
                     else
                         refpcwt += datum->ref_sdata.pcweight_lcp;
@@ -173,10 +175,10 @@ struct type_pass *pass;
 
                 if (param.pc_mode[1] == MULTITONE)  // remote multitone?
                     {
-                    pcal = datum->rem_sdata.mt_pcal[stnpol[1][param.pol]];
+                    pcal = datum->rem_sdata.mt_pcal[stnpol[1][pass->pol]];
                     rempc = c_add (rempc, pcal);
                                     // add in appropriate weight
-                    if (stnpol[1][param.pol])
+                    if (stnpol[1][pass->pol])
                         rempcwt += datum->rem_sdata.pcweight_rcp;
                     else
                         rempcwt += datum->rem_sdata.pcweight_lcp;
@@ -195,7 +197,8 @@ struct type_pass *pass;
                                         /* Record amp/phase in plot arrays */
                                         /* Also compute data fraction */
                                         /* tape errors, statecounts and phasecals */
-            if (wtf == 0.0) plot.seg_amp[fr][seg] = 0.0;
+            if (wtf == 0.0) 
+                plot.seg_amp[fr][seg] = 0.0;
             else 
                 {
                 plot.mean_ap[fr][seg] = mean_ap / wtf;
@@ -223,10 +226,14 @@ struct type_pass *pass;
                 }
             plot.seg_phs[fr][seg] = c_phase (vsumf);
                                         /* Pcals */
-            if (refpcwt == 0.0) plot.seg_refpcal[fr][seg] = 1000.0;
-            else plot.seg_refpcal[fr][seg] = c_phase (refpc) * 180.0 / M_PI;
-            if (rempcwt == 0.0) plot.seg_rempcal[fr][seg] = 1000.0;
-            else plot.seg_rempcal[fr][seg] = c_phase (rempc) * 180.0 / M_PI;
+            if (refpcwt == 0.0)
+                plot.seg_refpcal[fr][seg] = 1000.0;
+            else 
+                plot.seg_refpcal[fr][seg] = c_phase (refpc) * 180.0 / M_PI;
+            if (rempcwt == 0.0) 
+                plot.seg_rempcal[fr][seg] = 1000.0;
+            else
+                plot.seg_rempcal[fr][seg] = c_phase (rempc) * 180.0 / M_PI;
             }
                                         /* Record amp/phase for all freqs */
         if (pass->nfreq > 1)
@@ -255,8 +262,10 @@ struct type_pass *pass;
                                         /* over all freqs */
         c = c_mag(vsum);
         status.inc_avg_amp += c * status.amp_corr_fact;
-        if (wt_dsb == 0) c = 0.0;
-        else c = c / wt_dsb;
+        if (wt_dsb == 0) 
+            c = 0.0;
+        else 
+            c = c / wt_dsb;
                                         /* delres_max is amplitude at peak */
         c = c * status.amp_corr_fact - status.delres_max;
         status.timerms_amp += wt_dsb * c*c;
@@ -265,8 +274,6 @@ struct type_pass *pass;
                                         /* This removes noise bias based on */
                                         /* SNR of each segment/freq */
     status.inc_avg_amp /= ((1.0 + (float)status.nseg/(2.0 * status.snr * status.snr)));
-/*    status.inc_avg_amp /= ((1.0 + (float)status.nseg/(2.0 * status.snr
-                                        * status.snr / pass->nfreq)));  */
     status.inc_avg_amp /= totwt;
 
 

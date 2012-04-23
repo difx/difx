@@ -4,31 +4,36 @@
 use warnings;           # turns on optional warnings
 use diagnostics;        # and makes them not terse
 use strict;             # makes unsafe constructs illegal
-use Getopt::Std;	# for standard option processing
+use Getopt::Std;        # for standard option processing
 #
 # A generalized version of Mike's new_make_links.prl which takes an
 # alist file as input and create sufficient links to allow work on
 # the data in some new location.
 #
 my %opts;
-my $VERSION='$Id: hops_data_links.pl.in 326 2011-06-09 18:58:18Z gbc $'."\n";
+my $VERSION='$Id: hops_data_links.pl.in 576 2012-01-03 21:57:50Z gbc $'."\n";
 my $USAGE="Usage: $0 [options]
 
 where the options are
 
-    -a <file>	to specify an alist file for the data to be linked
-    -l <file>	is the script file to be created to make the links
+    -a <file>   to specify an alist file for the data to be linked
+    -l <file>   is the script file to be created to make the links
     -d <dir>    destination data directory
     -s <dir>    source data directory
+    -f          link only the root and fringe files
 
-The alist file (-a) is required, and the source and destination
-directories cannot be the same.  Either may be specified relative to
-the current directory and are automatically converted to absolute paths
-for the linkages.  The current directory (.) is the default for both.
+The alist file (-a) defaults to \"alist.out\"; and the source (-s) and
+destination (-d) directories should not be the same.  These may be given
+relative to the current directory and are automatically converted to
+absolute paths for the linkages.  The current directory (.) is the default
+for both, so you need to specify one of them.  \"data directory\" in
+both cases refers to the parent of the numbered experiment directories.
 
 If the -l option is omitted, a temporary file is used and deleted
 after the links are made.  If present, a script file is created which
 you can review and then run yourself.  (Use this if you are chicken.)
+With the -f option the links to the correlator data and station files
+are omitted.
 
 In any case the script creates a directory hierarchy starting with
 the experiment number in the destination directory with symbolic links
@@ -37,50 +42,86 @@ to files of the same name in the source data directory heirarchy.
 ";
 if ( $#ARGV < 0 || $ARGV[0] eq "--help" ) { print "$USAGE"; exit(0); }
 if ( $ARGV[0] eq "--version" ) { print "$VERSION" . "\n"; exit(0); }
+$opts{'a'} = 'alist.out';
 $opts{'s'} = '.';
 $opts{'d'} = '.';
 $opts{'l'} = './ln_temp.sh';
-getopts('a:e:l:s:d:', \%opts);
+$opts{'f'} = 0;
+getopts('a:fl:s:d:', \%opts);
 
 # parse arguments
-my ($alist, $linkr, $src, $dst);
-$alist=$opts{'a'};	    # alist file name
-$linkr=$opts{'l'};	    # linker script
-$src=$opts{'s'};	    # source directory
-$dst=$opts{'d'};	    # dest directory
+my ($alist, $linkr, $src, $dst, $filt);
+$alist=$opts{'a'};          # alist file name
+$linkr=$opts{'l'};          # linker script
+$src=$opts{'s'};            # source directory
+$dst=$opts{'d'};            # dest directory
+$filt=$opts{'f'};           # filter alist
 
 my ($ref, $rem, $exp, $bnd, $num, $dir, $dat, @aline, %did);
 
-die "Required alist ($alist) is missing\n" if ( ! -f $alist );
-die "Source directory ($src) does not exist\n" if ( ! -d $src );
+die "Required alist is missing:\n\t\t($alist)\n" if ( ! -f $alist );
+die "Source directory does not exist:\n\t\t($src)\n" if ( ! -d $src );
 
-chomp($src = `cd $src ; pwd`) || die "cannot determine source directory\n";
+my ($osc, $tmp) = ($src, 'no-such-dir');
+mkdir $dst if ( ! -d $dst );
+die "Cannot create destination directory\n\t\t($dst)\n" if ( ! -d $dst );
+chomp($tmp = `cd $dst ; pwd`) || die "Cannot determine dest. directory.\n";
+chomp($src = `cd $src ; pwd`) || die "Cannot determine source directory.\n";
 
-die "Source ($src) and destination ($dst) are the same\n" if ( $src eq $dst );
+die "Source and destination are the same:" .
+    "\n\t\t($src)\n\t\t($dst)\n" if ( $src eq $dst );
+die "Source and destination are equivalent:" .
+    "\n\t\t($osc -> $src)\n\t\t($dst -> $tmp)\n" if ( $src eq $tmp );
+
+# test for expn in $src or $dst
+die "The source directory name has an experiment number:\n\t($src)\n"
+    if ( $src =~ m/[0-9]{4}[\/]*$/ );
+die "The destination directory name has an experiment number:\n\t($dst)\n"
+    if ( $dst =~ m/[0-9]{4}[\/]*$/ );
 
 unlink($linkr) if ( -f $linkr );
 open(FILIN,$alist) || die "Alist file \"$alist\" not found\n";
 open(FILOUT,">$linkr") || die "Cannot create \"$linkr\" \n";
 
+print FILOUT "#!/bin/sh\n";
+print FILOUT "#\n";
+print FILOUT "# hops data linkage script created with:\n";
+print FILOUT "# $0 \\\n";
+print FILOUT "#  -a $alist \\\n";
+print FILOUT "#  -s $src \\\n";
+print FILOUT "#  -d $dst \\\n";
+print FILOUT "#  -f \\\n" if ($filt);
+print FILOUT "#  -l $linkr\n";
+print FILOUT "#\n";
+print FILOUT "skip0=0\n";
+print FILOUT "skip1=$filt\n";
+print FILOUT "skip2=0\n";
+print FILOUT "skip3=$filt\n";
+print FILOUT "#\n";
+
+#
+# This generates the command for each link.
+# The link is considered as done ($did set) when first seen.
+#
 sub slinky {
-    my ($src,$dir,$dat) = @_;
+    my ($src,$dir,$dat,$typ) = @_;
     $did{"$dir/$dat"} = $src;
-    return " [ -h $dst/$dir/$dat ] ||\n" .
-	   "  ln -s $src/$dir/$dat $dst/$dir/$dat\n";
+    return " [ -h $dst/$dir/$dat -o \$skip$typ -eq 1 ] ||\n" .
+           "  ln -s $src/$dir/$dat $dst/$dir/$dat\n";
 }
 
 # process certain fields of every line of the alist file
 # root[1]...num[3]...expn[7] scan[8]...target[13] baseline[14]...band[16]
 while (<FILIN>) {
     chomp;
-    next if (/^[\*]/);		    # skip comments
+    next if (/^[\*]/);              # skip comments
     @aline = split();
-    next if ($#aline lt 14);	    # skip partial lines
+    next if ($#aline lt 14);        # skip partial lines
     print FILOUT "# line " . $. . " of $alist\n";
     $ref = substr($aline[14],0,1);  # reference station of baseline
     $rem = substr($aline[14],1,1);  # remote station of baseline
     $bnd = substr($aline[16],0,1);  # the S,X,... band identifier
-    $num = $aline[3];		    # the fourfit file number
+    $num = $aline[3];               # the fourfit file number
     $dir = "$aline[7]/$aline[8]";   # local exp. directory
     # make directory
     print FILOUT "[ -d $dst/$dir ] || mkdir -p $dst/$dir\n";
@@ -88,19 +129,19 @@ while (<FILIN>) {
     print FILOUT "[ -d $src/$dir ] && {\n";
     # target root file
     $dat = "$aline[13].$aline[1]";
-    print FILOUT &slinky($src,$dir,$dat) if (not exists($did{"$dir/$dat"}));
-    # baseline root file
+    print FILOUT &slinky($src,$dir,$dat,0) if (not exists($did{"$dir/$dat"}));
+    # baseline correlation file
     $dat = "$aline[14]..$aline[1]";
-    print FILOUT &slinky($src,$dir,$dat) if (not exists($did{"$dir/$dat"}));
+    print FILOUT &slinky($src,$dir,$dat,1) if (not exists($did{"$dir/$dat"}));
     # reference station file
     $dat = "$ref..$aline[1]";
-    print FILOUT &slinky($src,$dir,$dat) if (not exists($did{"$dir/$dat"}));
+    print FILOUT &slinky($src,$dir,$dat,3) if (not exists($did{"$dir/$dat"}));
     # remote station file
     $dat = "$rem..$aline[1]";
-    print FILOUT &slinky($src,$dir,$dat) if (not exists($did{"$dir/$dat"}));
+    print FILOUT &slinky($src,$dir,$dat,3) if (not exists($did{"$dir/$dat"}));
     # fourfit file
     $dat = "$aline[14].$bnd.$num.$aline[1]";
-    print FILOUT &slinky($src,$dir,$dat) if (not exists($did{"$dir/$dat"}));
+    print FILOUT &slinky($src,$dir,$dat,2) if (not exists($did{"$dir/$dat"}));
     print FILOUT "}\n"
 }
 close(FILIN);
@@ -110,14 +151,17 @@ if ($linkr eq './ln_temp.sh') {
     chmod(0755,$linkr);
     system($linkr);
     if ($? eq 0) {
-	unlink($linkr);
-	print "Links made without issues\n";
+        unlink($linkr);
+        print "Links made without issues\n";
     } else {
-	print "There were issues making the links review $linkr\n";
+        print "There were issues making the links review $linkr\n";
     }
 } else {
     chmod(0755,$linkr);
     print "Created $linkr for you to review and run\n";
+    rmdir($dst) || die "Unable to remove destination directory.\n" .
+        "\tThis is not a problem if this directory exists\n" .
+        "\tand had data within it when you ran this script.\n";
 }
 
 #

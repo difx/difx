@@ -31,8 +31,8 @@ int symbol[3];
     if (pd->xebar) cpgerrx (pd->ngood, pt->xerrl, pt->xerrh, pt->y, 0.0);
     if (pd->yebar) cpgerry (pd->ngood, pt->x, pt->yerrl, pt->yerrh, 0.0);
 
-                                        /* Yellow for suspect */
-    cpgsci (7);
+                                        /* Orange for suspect */
+    cpgsci (8);
     pt = &(pp->suspect);
     cpgpt (pd->nsusp, pt->x, pt->y, symbol[1]);
     if (pd->xebar) cpgerrx (pd->nsusp, pt->xerrl, pt->xerrh, pt->y, 0.0);

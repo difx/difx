@@ -50,7 +50,8 @@ struct c_block                     /* Elemental control block structure */
    struct istats pc_mode;          /* phase cal modes */
    struct istats pc_period;        // phase cal integration period (in ap's)
    struct dstats pc_freq[MAX_CHAN_PP]; /* phase cal freqs (KHz) by channel */
-   struct dstats pc_phase[MAX_CHAN_PP];/* phase cal phases by channel for manual or additive*/
+   struct dstats pc_phase[MAX_CHAN_PP][2];/* phase cal phases by channel and pol 
+                                             for manual or additive pcal */
    struct istats pc_tonemask[MAX_CHAN_PP];// tone exclusion mask by channel in multitone
    struct dstats lsb_offset;       /* LSB phase offset in degrees */
    short x_crc;                    /* flag to keep/discard AP having a crc error */
@@ -60,8 +61,10 @@ struct c_block                     /* Elemental control block structure */
    double sb_window[2];            /* bounds of single band delay search window (us) */
    double mb_window[2];            /* bounds of multi-band delay search window (us) */
    double dr_window[2];            /* bounds of delay-rate search window (us/s) */
+   double ion_window[2];           // bounds of ionospheric search window (TEC units)
    double ra_offset;               /* offset RA (arcsec) to shift windows by */
    double dec_offset;              /*    "   DEC    "     "   "      "     " */
+   int ion_npts;                   // # of pts in ionosphere coarse search
    int  time_span[2];              /* acceptance window start and stop (s BOY) */
    short switched_mode;            /* defines switching cycle start epoch */
    short switched_period;          /* switching cycle period (s) */
@@ -81,6 +84,10 @@ struct c_block                     /* Elemental control block structure */
    int nsamplers;                  // number of sampler strings
    char *psamplers[MAX_SAMP];      // pointer to each sampler string (or NULL)
    char sampler_codes[256];        // contains all sampler strings
+   int interpolator;               // interpolation method
+   struct dstats station_delay;    // station delay pc inject->digitizer (s)
+   struct dstats pc_delay_l;       // delay diff (feed->inject)-(pulsegen->inject) (s)
+   struct dstats pc_delay_r;       // same, but for RCP (or Y or V)
    };
 
           /* Defined values for various structure variables */
@@ -108,5 +115,9 @@ struct c_block                     /* Elemental control block structure */
 #define NULLINT   -12345           /* place-holder for no assigned integer value */
 #define NULLFLOAT 508.4482826      /*   "     "     "   "    "     floating   "  */
 #define NULLCHAR  0                /*   "     "     "   "    "     char       "  */
+
+                                   // interpolation methods
+#define ITERATE 0
+#define SIMUL 1
 
 #endif

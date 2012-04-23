@@ -1,4 +1,5 @@
 Documentation for the program "fourfit"
+-- last update 2012.3.21
 ---------------------------------------
 
 COMMAND NAME:   fourfit
@@ -249,7 +250,12 @@ if station A
    pc_mode multitone
    pc_period 30
    pc_tonemask abcdefgh 0 0 8 0 4 0 5 0
+   pc_phases_l abcdefgh 12 13 11 12 24 -6 38 110
+   pc_phases_r abcdefgh 11 29 14 11 64 -2 44 132
    samplers 2 abcd efgh
+   pc_delay_l 30.2
+   pc_delay_r -5.9
+   ionosphere 18.0
 
 if (station V or baseline KT) and source 3C279       * parentheses NYI
    sb_win -0.5 0.5    mb_win 0.02 0.02  dr_win -1.0E-6 0.5E-6
@@ -309,14 +315,21 @@ ACTION KEYWORDS         VALUES
    freqs              n chars
    gates              n char string, followed by 2n floats
    index              n ints
+   interpolator       'iterate' or 'simul' (default: iterate)
    ionosphere         float
+   ion_npts           int
+   ion_win            2 floats
    lsb_offset         float
    max_parity         float
    mb_win             2 floats
    optimize_closure   'true' or 'false' (default: false)
    passband           2 floats
    period             int
+   pc_delay_l         float
+   pc_delay_r         float
    pc_phases          n char string, followed by n floats
+   pc_phases_l        n char string, followed by n floats
+   pc_phases_r        n char string, followed by n floats
    pc_freqs           n char string, followed by n floats
    pc_mode            `normal', `ap_by_ap', `manual', or 'multitone'
    pc_period          int
@@ -327,6 +340,7 @@ ACTION KEYWORDS         VALUES
    sb_win             2 floats
    skip               `true' or `false'
    start              integer
+   station_delay      float
    stop               integer  
    switched           `scan_start' or `each_minute'
    t_cohere           float
@@ -395,8 +409,15 @@ KEYWORD SEMANTICS
                  order to handle the case of a delay near to the multiband
                  (semi-) ambiguity.
    dr_win        delay_rate search window bounds, in us/s 
+   ion_npts      number of evaluation points in ionospheric coarse search
+   ion_win       ionospheric coarse search window in TEC units
    ra_offset     apply right asc.offset (asec) to re-center search windows
    dec_offset      "   declination  "   (asec) "      "        "      "
+   interpolator  selects method of fit interpolation. Classically, an
+                 iterative search has been done over sbd, mbd, drate, one
+                 dimension at a time, for 3 cycles. The simultaneous mode
+                 constructs a 5x5x5 cube of data points and does a 3D
+                 quintic interpolation.
 
 
 **corrections**  apply corrections to the data, either before or after fit
@@ -405,11 +426,17 @@ KEYWORD SEMANTICS
               - normal (model linear in time is extracted from the data)
               - manual (specified totally by the user) 
               - ap_by_ap (phase cal is extracted independently for each AP)
+                DEPRECATED: use normal or manual with pc_period 1 or more
               - multitone (all tones in band are coherently fit, and phase 
                 is extrapolated to the center of the band).
    pc_phases phase_cal phases in deg, for each of the listed freq channels;
              these offset phases are added to the underlying model, as
-             specified by pc_mode, above
+             specified by pc_mode, above. If 2 polarizations are present,
+             the same values are applied to both pols.
+   pc_phases_l specified in same manner as pc_phases, but the tone phases
+             so specified are applied only to the first pol (L, X, or H)
+   pc_phases_r specified in same manner as pc_phases, but the tone phases
+             so specified are applied only to the second pol (R, Y, or V)
    pc_freqs  phase cal tone frequencies in KHz, for each of the listed
              freq channels iff not in range -64..64. Inside of this
              range, the value is interpreted as a tone #, with 1 being
@@ -425,6 +452,11 @@ KEYWORD SEMANTICS
              lowest tone, etc. A value of 5, for example, would exclude 
              the lowest and the 3rd lowest tones (perhaps 10 KHz and 2.01
              MHz).  
+   pc_delay_l a time value in ns representing the difference between the
+   pc_delay_r the travel time from the feed phase center to the pcal
+             injection point, minus the the travel time from the pcal
+             pulse generator to the injection point. It is specified
+             separately for the two polarization senses.
    lsb_offset additive phase in degrees, for the LSB relative to the USB;
              often necessary when correlating VLBA data against Mk 3
    ref_freq  specifies a frequency in MHz at which the phase delay
@@ -452,6 +484,8 @@ KEYWORD SEMANTICS
    optimize_closure modifies fine fringe search so as to minimize the
              contribution of non-closing delay errors to the closure phase;
              can result in poorer single-baseline fits
+   station_delay a priori guess at the delay from the pcal injection point
+             down to the digitizers (ns).
 
 
 SPECIAL KEYWORD VALUES

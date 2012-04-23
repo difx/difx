@@ -52,6 +52,14 @@ struct c_block *cb_ptr;
     cb_ptr -> nsamplers       = NULLINT;
     cb_ptr -> sampler_codes[0]= NULLCHAR;
     cb_ptr -> optimize_closure= NULLINT;  
+    cb_ptr -> ion_npts        = NULLINT;
+    cb_ptr -> interpolator    = NULLINT;
+    cb_ptr -> station_delay.ref = NULLFLOAT;
+    cb_ptr -> station_delay.rem = NULLFLOAT;
+    cb_ptr -> pc_delay_l.ref = NULLFLOAT;
+    cb_ptr -> pc_delay_l.rem = NULLFLOAT;
+    cb_ptr -> pc_delay_r.ref = NULLFLOAT;
+    cb_ptr -> pc_delay_r.rem = NULLFLOAT;
 
     for (i=0; i<6; i++)
         cb_ptr -> adhoc_poly[i] = NULLFLOAT;
@@ -60,7 +68,7 @@ struct c_block *cb_ptr;
         cb_ptr -> psamplers[i] = NULL;
 
     for (i=0; i<2; i++)
-	{
+        {
         cb_ptr -> baseline[i]  = WILDCARD;
         cb_ptr -> scan[i]      = NULLINT;
         cb_ptr -> sb_window[i] = NULLFLOAT;
@@ -68,20 +76,23 @@ struct c_block *cb_ptr;
         cb_ptr -> dr_window[i] = NULLFLOAT;
         cb_ptr -> time_span[i] = NULLINT;
         cb_ptr -> passband[i]  = NULLFLOAT; 
-	}
+        cb_ptr -> ion_window[i]= NULLFLOAT;
+        }
 
     for (i=0; i<4; i++)
-	cb_ptr -> knot[i] = FALSE;
+        cb_ptr -> knot[i] = FALSE;
 
     for (i=0; i<32; i++)
-	cb_ptr -> source[i] = WILDCARD;
+        cb_ptr -> source[i] = WILDCARD;
 
     for (i=0; i<MAX_CHAN_PP; i++)
-	{
+        {
         cb_ptr -> frequency[i] = NULLINT;
 
-        cb_ptr -> pc_phase[i].ref = NULLFLOAT;
-        cb_ptr -> pc_phase[i].rem = NULLFLOAT;
+        cb_ptr -> pc_phase[i][0].ref = NULLFLOAT;
+        cb_ptr -> pc_phase[i][1].ref = NULLFLOAT;
+        cb_ptr -> pc_phase[i][0].rem = NULLFLOAT;
+        cb_ptr -> pc_phase[i][1].rem = NULLFLOAT;
 
         cb_ptr -> pc_freq[i].ref = NULLFLOAT;
         cb_ptr -> pc_freq[i].rem = NULLFLOAT;
@@ -94,7 +105,7 @@ struct c_block *cb_ptr;
 
         cb_ptr -> delay_offs[i].ref = NULLFLOAT;
         cb_ptr -> delay_offs[i].rem = NULLFLOAT;
-	}
+        }
 
     for (i=0; i<2*MAX_CHAN_PP; i++)
         cb_ptr -> index[i]= NULLINT;

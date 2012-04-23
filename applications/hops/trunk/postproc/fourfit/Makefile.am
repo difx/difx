@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.am 546 2011-11-15 20:55:30Z gbc $
+# $Id: Makefile.am 592 2012-01-24 21:37:06Z gbc $
 #
 
 SUBDIRS = .
@@ -13,13 +13,8 @@ noinst_HEADERS = control.h filter.h freqlist.h param_struct.h \
 		 parser.h pass_struct.h plot_struct.h refringe.h \
 		 statistics.h
 
-if HAVE_DEVEL
-bin_PROGRAMS = fourfit fearfit
-bin_SCRIPTS = fearfit-driver.pl
-else
 bin_PROGRAMS = fourfit
 bin_SCRIPTS = 
-endif
 check_PROGRAMS = fft_chk
 EXTRA_DIST = $(bin_SCRIPTS) new_parameters.txt
 
@@ -27,7 +22,8 @@ if HAVE_PGPLOT
 if HAVE_X11
 if HAVE_PNG
 
-fourfit_sources = fourfit.c set_defaults.c parse_cmdline.c \
+fourfit_sources = \
+		  fourfit.c set_defaults.c parse_cmdline.c \
 		  check_rflist.c organize_data.c make_passes.c \
 		  fringe_search.c get_corel_data.c \
 		  parse_control_file.c refringe_list.c time_range.c \
@@ -53,11 +49,11 @@ fourfit_sources = fourfit.c set_defaults.c parse_cmdline.c \
 		  ap_mean.c linterp.c rotate_pcal.c \
 		  fill_212.c fill_230.c stcount_interp.c \
 		  calc_normalization.c apply_passband.c max555.c \
-		  interp555.c pcalibrate.c sampler_delays.c
-
-fourfit_SOURCES = $(fourfit_sources) \
+		  interp555.c pcalibrate.c sampler_delays.c \
 		  norm.c make_plotdata.c output.c \
-                  read_sdata.c
+		  read_sdata.c
+fourfit_SOURCES = $(fourfit_sources)
+
 fourfit_CPPFLAGS = -DFF_PROGNAME=\"fourfit\" \
 		   -DFF_VER_NO=\"@PACKAGE_VERSION@\" \
 		   $(AM_CPPFLAGS)
@@ -65,22 +61,7 @@ fourfit_LDADD = @DFIO_LIB@ @VEX_LIB@ @AFIO_LIB@ @UTIL_LIB@ \
 		@PGP_LIB@ @PNG_LIB@ @X_FPLOT_LIB@ @X11_LIB@
 fourfit_DEPENDENCIES = @DFIO_DEP@ @VEX_DEP@ @AFIO_DEP@ @UTIL_DEP@
 
-#
-# fearfit is fourfit with some specific test code enabled to
-# allow side-by-side comparison of new features with old code.
-#
-if HAVE_DEVEL
-fearfit_SOURCES = $(fourfit_sources) \
-		  hook_norm.c hook_make_plotdata.c hook_output.c \
-                  hook_read_sdata.c
-fearfit_CPPFLAGS = -DFF_PROGNAME=\"fearfit\" \
-		   -DFF_VER_NO=\"@PACKAGE_VERSION@\" \
-		   $(AM_CPPFLAGS)
-fearfit_LDADD = @DFIO_LIB@ @VEX_LIB@ @AFIO_LIB@ @UTIL_LIB@ \
-		@PGP_LIB@ @PNG_LIB@ @X_FPLOT_LIB@ @X11_LIB@
-fearfit_DEPENDENCIES = @DFIO_DEP@ @VEX_DEP@ @AFIO_DEP@ @UTIL_DEP@
-endif
-
+# check the fft code
 fft_chk_SOURCES = fft_chk.c
 
 else !HAVE_PNG

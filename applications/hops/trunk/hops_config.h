@@ -38,6 +38,9 @@
 /* Define to 1 if you have the <fcntl.h> header file. */
 #define HAVE_FCNTL_H 1
 
+/* 1=has FFTW */
+/* #undef HAVE_FFTW */
+
 /* Define to 1 if you have the <float.h> header file. */
 #define HAVE_FLOAT_H 1
 
@@ -90,6 +93,9 @@
 
 /* Define to 1 if you have the `modf' function. */
 #define HAVE_MODF 1
+
+/* Define to 1 if you have the `mremap' function. */
+/* #undef HAVE_MREMAP */
 
 /* Define to 1 if you have the <ndir.h> header file, and it defines `DIR'. */
 /* #undef HAVE_NDIR_H */
@@ -183,10 +189,10 @@
 #define HAVE_XLRGetDriveTemp 0
 
 /* HOPS package rev number */
-#define HOPS_REVISION 3.5
+#define HOPS_REVISION 3.7
 
 /* Haystack SVN rev number */
-#define HOPS_SVN_REV 563
+#define HOPS_SVN_REV 708
 
 /* Define to 1 if `lstat' dereferences a symlink specified with a trailing
    slash. */
@@ -202,13 +208,13 @@
 #define PACKAGE_NAME "hops"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "hops 3.5"
+#define PACKAGE_STRING "hops 3.7"
 
 /* Define to the one symbol short name of this package. */
 #define PACKAGE_TARNAME "hops"
 
 /* Define to the version of this package. */
-#define PACKAGE_VERSION "3.5"
+#define PACKAGE_VERSION "3.7"
 
 /* If using the C implementation of alloca, define if you know the
    direction of stack growth for your system; otherwise it will be
@@ -225,7 +231,7 @@
 /* #undef TM_IN_SYS_TIME */
 
 /* Version number of package */
-#define VERSION "3.5"
+#define VERSION "3.7"
 
 /* this is a LittleEndian Host */
 #define WORDS_BIGENDIAN 0

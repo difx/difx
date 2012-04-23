@@ -73,16 +73,18 @@ struct type_pass *pass;
     if (pass->control.nsamplers > 0)
         sampler_delays (pass);
 
+                                        // calculate phase cal corrections
+    rotate_pcal (pass);
+
     for (fr = 0; fr < pass->nfreq; fr++) 
         {      
         status.ap_num[0][fr] = 0;
         status.ap_num[1][fr] = 0;
         status.ap_frac[0][fr] = 0.0;
         status.ap_frac[1][fr] = 0.0;
-                                        /* This should do a single selected pol. */
-                                        /* Combining RR, LL needs development */
+                                        // convert the digital results to analog equivalents
         for (ap = pass->ap_off; ap < pass->ap_off + pass->num_ap; ap++)  
-            norm (pass, (int)param.pol, fr, ap);
+            norm (pass, fr, ap);
         
         msg ("Freq %d, ap's by sideband through norm = %d, %d", -1,
                 fr, status.ap_num[0][fr], status.ap_num[1][fr]);
@@ -96,8 +98,6 @@ struct type_pass *pass;
         }
     status.epoch_off_cent = -(status.epoch_off_cent / status.total_ap + 0.5)
                 * param.acc_period - param.frt_offset;
-                                        /* Correct for ap-by-ap and adhoc phase - cal */
-    rotate_pcal (pass);
         
     freq_spacing (pass);                /* Calculate spacing of freq channels */
                                         /* trap for mbd grid having too many pts */
@@ -159,7 +159,9 @@ struct type_pass *pass;
                 {
                 mbd_index = (mbd_index+1) % status.grid_points;
                 status.mbd = mbd_index;
-                amps[mbd_index][dr_index] = c_mag (mb_delay[mbd_index]) / status.total_ap_frac;
+                                        // mean amplitude
+                amps[mbd_index][dr_index] = c_mag (mb_delay[mbd_index]) 
+                                            / status.total_ap_frac;
                 }  
             while (mbd_index != status.win_mb[1]);
             }

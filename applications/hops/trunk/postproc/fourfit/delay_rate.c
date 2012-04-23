@@ -4,6 +4,7 @@
 /* then grids it into delay rate.               */
 /*                                              */
 /*      8/2/91          - cmn                   */
+/* 2012.1.4 - rjc - remove pcal rotation here   */
 /************************************************/
 #include <stdio.h>
 #include <math.h>
@@ -21,6 +22,7 @@ complex rate_spectrum[MAXAP];
     complex s_mult(), c_mult(), c_add(), c_zero(), c_exp();
     double c_mag();
     int fl, L, ap, np, i, j, l_int, size, l_int2;
+    int stnpol[2][4] = {0, 1, 0, 1, 0, 1, 1, 0}; // [stn][pol] = 0:L, 1:R
     double b, l_fp, frac;
     struct freq_corel *pd;
     struct data_corel *datum;
@@ -44,7 +46,7 @@ complex rate_spectrum[MAXAP];
         apval = datum->sbdelay[status.lag];
                                         /* Weight by fractional AP */
         frac = 0.0;
-        if (datum->usbfrac >= 0.0) frac = datum->usbfrac;
+        if (datum->usbfrac >= 0.0) frac  = datum->usbfrac;
         if (datum->lsbfrac >= 0.0) frac += datum->lsbfrac;
                                         /* When both sidebands added together, */
                                         /* we use the mean fraction */
@@ -61,8 +63,6 @@ complex rate_spectrum[MAXAP];
         fringe_spect[i] = X[j];
         }
         
-    a = c_exp(-(status.pc_phase[fr][0] 
-                        - status.pc_phase[fr][1]));
     b = (pass->pass_data[fr].frequency / param.ref_freq) * size / np;
 /*              / pass->pass_data[0].frequency) * size / np;  */
 
@@ -79,7 +79,6 @@ complex rate_spectrum[MAXAP];
         rate_spectrum[L] = s_mult (fringe_spect[l_int], (1.0 - l_fp + l_int));
         rate_spectrum[L] = c_add (rate_spectrum[L], s_mult (fringe_spect[l_int2],
                                                         (l_fp - l_int)));
-        rate_spectrum[L] = c_mult (rate_spectrum[L], a);
         msg("fr %d cmag(rate_spectrum[%d]) %f",-3,fr,L,c_mag(rate_spectrum[L]));
         }
      }

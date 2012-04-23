@@ -120,15 +120,14 @@ struct mk4_sdata
         char chan_id[32];
         struct type_301 *t301[MAXSPLINES];
         struct type_302 *t302[MAXSPLINES];
+        struct type_303 *t303[MAXSPLINES];
         } model[MAX_CHAN_PP];
-    int n303;
     int n304;
     int n305;
     int n306;
     int n307;
     int n308;
     int n309;
-    struct type_303 *t303[MAXSTATPER];
     struct type_304 *t304[MAXSTATPER];
     struct type_305 *t305[MAXSTATPER];
     struct type_306 *t306[MAXSTATPER];

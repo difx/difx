@@ -35,7 +35,8 @@ void pcalibrate (struct type_pass *pass,
         nsubs,
         ap_subint_start,
         kap,
-        stnpol[2][4] = {0, 1, 0, 1, 0, 1, 1, 0}; // [stn][pol] = 0:L, 1:R
+        ipol,                       // 0:1 = L:R or X:Y
+        ndelpts;
 
     double minf,
            peak,
@@ -43,7 +44,15 @@ void pcalibrate (struct type_pass *pass,
            fcenter,
            deltaf,
            theta,
-           theta_ion;
+           theta_ion,
+           delta_phase[2],
+           pc_amb,
+           sdelay,
+           y[3],
+           q[3],
+           ymax,
+           ampmax,
+           del_avg;
         
     complex pc_avg[2][MAX_PCF],
             pc_adj[2],
@@ -69,12 +78,14 @@ void pcalibrate (struct type_pass *pass,
             s_mult (complex, double),
             c_mean (complex *, int),
             c_exp (double);
-    
+    int parabola (double *, double, double, double *, double *, double *);
  
     fdata = pass->pass_data + fr;
                                     // loop over reference and remote stations
     for (stn = 0; stn < 2; stn++) 
         {
+        sdelay = (stn) ? pass->control.station_delay.rem 
+                       : pass->control.station_delay.ref;
         if (param.pc_mode[stn] == MULTITONE)
             {                       // in multitone mode we may need to use all the tones
             ilo = 0;
@@ -91,18 +102,27 @@ void pcalibrate (struct type_pass *pass,
 
         if (fdata->pc_freqs[stn][pass->pcinband[stn][fr][ilo]] < 0.0)
             fcenter = -fcenter;     // LSB case
+
                                     // calculate a priori differential ionosphere rotation
                                     // FIXME - this is an ad hoc place for the ionosphere
-        theta_ion = 8.42e9 * param.ionosphere[stn] / (1e6 * fdata->frequency + fcenter);
+        theta_ion = -8.448e9 * param.ion_diff / (1e6 * fdata->frequency + fcenter);
+        theta_ion = stn ?           // spread differential between ref. and remote
+            0.5 * theta_ion : 
+           -0.5 * theta_ion;
         msg ("a priori ionospheric phase for stn %d %lf rad at %g Hz", -1, 
              stn,theta_ion, 1e6 * fdata->frequency + fcenter);
-
-        ip = 0;
-        nsubs = 0;
-        pc_adj[stn] = c_zero ();
-
+                                    // loop over each of 2 polarizations
+        for (ipol=0; ipol<2; ipol++)
+          {
+          ip = 0;
+          nsubs = 0;
+          pc_adj[stn] = c_zero ();
+          ndelpts = 0;
+          del_avg = 0.0;
+                                    // apply manual or offset pcal phase
+          delta_phase[stn] = theta_ion + M_PI * status.pc_offset[fr][stn][ipol] / 180.0;
                                     // loop over time within the scan
-        for (ap = pass->ap_off; ap < pass->ap_off + pass->num_ap; ap++, ip++)  
+          for (ap = pass->ap_off; ap < pass->ap_off + pass->num_ap; ap++, ip++)  
             {
             if (ip % param.pc_period[stn] == 0)
                 {                  // clear counters on sub-integration start
@@ -117,17 +137,17 @@ void pcalibrate (struct type_pass *pass,
             isd = (stn == 0) ? &(datum->ref_sdata) : &(datum->rem_sdata);
 
                                     // add in appropriate weight
-            if (stnpol[stn][param.pol])
-                status.pcals_accum[stn] += isd->pcweight_rcp;
-            else
+            if (ipol == 0)
                 status.pcals_accum[stn] += isd->pcweight_lcp;
+            else
+                status.pcals_accum[stn] += isd->pcweight_rcp;
 
                                     // find time average for all tones in this channel
                                     // if in multitone mode, otherwise of single tone
             for (i=ilo; i<ihi; i++)
-                pc_avg[stn][i] = (stnpol[stn][param.pol]) ?
-                    c_add (isd->phasecal_rcp[pass->pcinband[stn][fr][i]], pc_avg[stn][i]):
-                    c_add (isd->phasecal_lcp[pass->pcinband[stn][fr][i]], pc_avg[stn][i]);
+                pc_avg[stn][i] = (ipol == 0) ?
+                    c_add (isd->phasecal_lcp[pass->pcinband[stn][fr][i]], pc_avg[stn][i]):
+                    c_add (isd->phasecal_rcp[pass->pcinband[stn][fr][i]], pc_avg[stn][i]);
 
                                     // do calculations only at sub-integration end
                                     // or for last ap, when in multitone mode
@@ -139,15 +159,21 @@ void pcalibrate (struct type_pass *pass,
                       pc_avg[stn][i] = s_mult (pc_avg[stn][i], 1 / status.pcals_accum[stn]);
                   else 
                       pc_avg[stn][i] = c_zero ();
-              if (param.pc_mode[stn] == MULTITONE)
-                {                   // in multitone mode, find peak of delay function
-                                    // and correct phase to midband
+              
 
+
+
+                                    // in multitone mode, find peak of delay function
+                                    // and correct phase to midband
+              if (param.pc_mode[stn] == MULTITONE)
+                {
                                     // debug printout of all tone contributions
                 for (i=0; i<pass->npctones; i++)
-                    msg ("stn %d subint ap %d..%d tone %d pc phasor %lf %lf freq %10.1lf",
-                    -1, stn, ap_subint_start, ap, i, pc_avg[stn][i].re, pc_avg[stn][i].im,
-                    fdata->pc_freqs[stn][pass->pcinband[stn][fr][i]]);
+                    if (pass->pcinband[stn][fr][i] >= 0)
+                        msg ("stn %d subint ap %d..%d tone %d freq %10.f pc phasor %7.2f %7.2f",
+                        0, stn, ap_subint_start, ap, i,
+                        fdata->pc_freqs[stn][pass->pcinband[stn][fr][i]],
+                        1e3 * c_mag(pc_avg[stn][i]), 180.0 / M_PI * c_phase(pc_avg[stn][i]));
 
                                     // find lowest (USB) or highest (LSB) tone frequency
                 minf = 1e12;
@@ -185,12 +211,20 @@ void pcalibrate (struct type_pass *pass,
                         peak = c_mag (delay_fn[i]);
                         indpeak = i;
                         }
-                                    // DC is in 0th element
-//              indpeak = (indpeak < 128) ? indpeak : indpeak - 256;
-                delay = indpeak / 256.0 / param.pcal_spacing[stn];       
+                                    // interpolate to optimal value
+                y[1] = peak;
+                y[0] = c_mag (delay_fn[(indpeak+FFTSIZE-1)%FFTSIZE]);
+                y[2] = c_mag (delay_fn[(indpeak+FFTSIZE+1)%FFTSIZE]);
+                parabola (y, -1.0, 1.0, &ymax, &ampmax, q);
 
-                                    // interpolate to optimal value (NYI)
+                                    // DC is in 0th element
+                delay = (indpeak+ymax) / 256.0 / param.pcal_spacing[stn];       
                                     // find corresponding delay in suitable range
+                pc_amb = 1 / param.pcal_spacing[stn];
+                while (delay < sdelay - pc_amb / 2.0)
+                    delay += pc_amb;
+                msg ("fr %d stn %d ipol %d delay %6.1f ns", 0, fr, stn, ipol, 1e9 * delay);
+
                                     // find mean of delay-adjusted phases at center frequency
                 nin = 0;
             
@@ -200,62 +234,77 @@ void pcalibrate (struct type_pass *pass,
                         deltaf = fcenter - fdata->pc_freqs[stn][pass->pcinband[stn][fr][i]];
                         if (fdata->pc_freqs[stn][pass->pcinband[stn][fr][i]] < 0.0)
                             deltaf = -deltaf;
-                        theta = 2.0 * M_PI * delay * deltaf + theta_ion;
+                        theta = 2.0 * M_PI * delay * deltaf;
 
                         rotval[i] = c_mult (pc_avg[stn][i], c_exp (theta));
-                        msg ("tone %d delay %g theta %lf rotated pcal phasor %lf %lf", -1, 
-                             i, delay, theta, rotval[i].re, rotval[i].im);
+                        msg ("stn %d chan %d pol %d ap %d-%d tone %d "
+                             "rotated pcal phasor %7.2f %7.2f", 0, 
+                             stn, fr, ipol, ap_subint_start, ap, i,
+                             1e3 * c_mag(rotval[i]), 180.0 / M_PI * c_phase(rotval[i]));
                         nin++;
                         }
                 if (nin >  0)       // use mean iff it exists
                     pc_sub[stn] = c_mean (rotval, nin);
                 else
                     pc_sub[stn] = c_zero ();
+                                    // conjugate LSB phase to USB equivalent
+                if (fcenter < 0.0) 
+                    pc_sub[stn].im *= -1.0;
                                     // write this value into all ap's of sub-int.
                 for (kap=ap_subint_start; kap<=ap; kap++)
                     {
                     kdatum = fdata->data + kap;
                     ksd = (stn == 0) ? &(kdatum->ref_sdata) : &(kdatum->rem_sdata);
-                    ksd->mt_pcal[stnpol[stn][param.pol]] = pc_sub[stn];
-                    ksd->mt_delay[stnpol[stn][param.pol]] = delay;
+                                    // also rotate by offsets and ionosphere
+                    ksd->mt_pcal[ipol] = c_mult (pc_sub[stn], c_exp(delta_phase[stn]));
+                    ksd->mt_delay[ipol] = delay;
+                                    // keep track of avg delay for ch/stn/pol
+                    del_avg += delay;
+                    ndelpts++;
                     }
                                     // maintain a running total
                 pc_adj[stn] = c_add (pc_sub[stn], pc_adj[stn]);
                 nsubs++;
-                }                   // end of sub-integration calculation block
-              }
+                }                   // bottom of if multitone
+              }                     // end of sub-integration calculation block
             }                       // end of loop over all ap's
 
                                     // find average pcal phasor for multitone
-        if (param.pc_mode[stn] == MULTITONE)
-            pc_adj[stn] = s_mult (pc_adj[stn], 1.0 / nsubs);
-        else                        // if not multitone, just copy in phasor from
-            {                       // single tone, and continue on with next freq
-            if (param.pc_mode[stn] != MANUAL)
-                pc_adj[stn] = pc_avg[stn][ilo];
-            else
-                {                   // manual pcal - set to unit amp, zero phase
-                pc_adj[stn].re = 1.0;
-                pc_adj[stn].im = 0.0;
-                }
-                                    // and apply ionospheric phase
-            pc_adj[stn] = c_mult (pc_adj[stn],c_exp(theta_ion));
-            msg ("non-multitone theta_ion %lf rad, rotated pcal phasor %lf %lf",
-                  -1, theta_ion, pc_adj[stn].re, pc_adj[stn].im);
-            }
-
+          if (param.pc_mode[stn] == MULTITONE)
+              {
+              pc_adj[stn] = s_mult (pc_adj[stn], 1.0 / nsubs);
+              }
+          else                      // if not multitone, just copy in phasor from
+              {                     // single tone, and continue on with next freq
+              if (param.pc_mode[stn] != MANUAL)
+                  pc_adj[stn] = pc_avg[stn][ilo];
+              else
+                  {                 // manual pcal - set to unit amp, zero phase
+                  pc_adj[stn].re = 1.0;
+                  pc_adj[stn].im = 0.0;
+                  }
+              if (fcenter < 0.0)    // conjugate LSB phase to USB equivalent
+                  pc_adj[stn].im *= -1.0;
+              msg ("non-multitone pcal phasor %7.2f %7.2f", -1, 
+                      1e3 * c_mag (pc_adj[stn]), 180.0 / M_PI * c_phase (pc_adj[stn]));
+              }
                                     // make copies of amplitude and phase
-        status.pc_meas[fr][stn] = c_phase (pc_adj[stn]);
+          status.pc_meas[fr][stn][ipol] = c_phase (pc_adj[stn]);
+          status.pc_phase[fr][stn][ipol] = status.pc_meas[fr][stn][ipol];
+                                    // store delay average per channel, stn, and pol
+          status.pc_delay[fr][stn][ipol] = del_avg / ndelpts;
+                                    // rotate by iono. and offset if not already done
+          if (param.pc_mode[stn] != MULTITONE)
+              status.pc_phase[fr][stn][ipol] += delta_phase[stn];
 
-        status.pc_phase[fr][stn] = status.pc_meas[fr][stn];
-        status.pc_phase[fr][stn] += M_PI * status.pc_offset[fr][stn] / 180.0;
-
-        status.pc_amp[fr][stn] = c_mag (pc_adj[stn]);
-        msg ("chan %d stn %d pc_amp %lf pc_phase %lf", 0,
-             fr, stn, status.pc_amp[fr][stn], status.pc_phase[fr][stn]);
+          status.pc_amp[fr][stn][ipol] = c_mag (pc_adj[stn]);
+          msg ("chan %d stn %d ipol %d pc_amp %6.2f pc_phase %7.2f", 0,
+               fr, stn, ipol, 1e3 * status.pc_amp[fr][stn][ipol], 
+               180.0 / M_PI * status.pc_phase[fr][stn][ipol]);
 
                                     // copy delay calib. values into status array
-        status.delay_offs[fr][stn] = (stn) ? pass->control.delay_offs[fr].rem 
-                                           : pass->control.delay_offs[fr].ref;
+          status.delay_offs[fr][stn] = (stn) ? pass->control.delay_offs[fr].rem 
+                                             : pass->control.delay_offs[fr].ref;
+          }                         // end of polarizaton loop
         }                           // bottom of stn = 0..1 loop
     }

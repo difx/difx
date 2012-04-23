@@ -35,6 +35,11 @@
 #endif /* P_tmpdir */
 
 #define pi 3.141592654
+                                        // polararization bit masks
+#define LREF 1
+#define RREF 2
+#define LREM 4
+#define RREM 8
                                         /* Set up some convenient macros */
                                         /* for inserting justified text using */         
                                         /* native postscript fonts */
@@ -111,7 +116,7 @@ struct type_221 **t221)
     int start_plot, limit_plot;
     char *rootname, *temp;
     char buf[256], buf2[256], psbuf[256], device[256], output_filename[256];
-    char pol[3],input_filename[256];
+    char pol[3],input_filename[256], polstr[13];
     float tempfl,mb_width;
     double phase, ampl, drate, mbd, sbd;
     time_t tm;
@@ -126,6 +131,7 @@ struct type_221 **t221)
     int totpts, wrap, len, first, nb, fd, size, filesize;
     int nlsb, nusb, izero, numsb, srate;
     int pcaref, pcarem;
+    int eff_npols, polars;
     FILE *fp, *gs, *popfil;
     char *pplot, *showpage, *end, trailer[1024];
     char absexec[256], which_command[256];
@@ -134,7 +140,6 @@ struct type_221 **t221)
     static char ps_file[1024];
                                         /* Create a temporary file to hold */
                                         /* the postscript output */
-    // ps_file = tmpnam (NULL);
     strcpy(ps_file, P_tmpdir "/fourfit_XXXXXX");
     close(mkstemp(ps_file));
     msg ("Temporary postscript filename = '%s'", 0, ps_file);
@@ -445,7 +450,7 @@ struct type_221 **t221)
             cpgdraw (plot_time, 1.0);
             }
                                         /* Switch to segment/amplitude space */
-        ymax = (float)status.delres_max * 4.0;
+        ymax = status.delres_max * 3.0;
         if (ymax == 0.0)
             {
             msg ("overriding ymax of 0 in channel plot; data suspect", 2);
@@ -807,11 +812,13 @@ struct type_221 **t221)
                                         /* Ref station green */
         cpgsci (3);
         cpgslw (lwid);
-        for (j=0; j<np; j++) yr[j] = plot.seg_refpcal[i][j];
+        for (j=0; j<np; j++) 
+            yr[j] = plot.seg_refpcal[i][j];
         cpgpt (np, xr, yr, -1);
                                         /* Rem station magenta */
         cpgsci (6);
-        for (j=0; j<np; j++) yr[j] = plot.seg_rempcal[i][j];
+        for (j=0; j<np; j++)
+            yr[j] = plot.seg_rempcal[i][j];
         cpgpt (np, xr, yr, -1);
                                         /* Left ticks, axis labels */
         cpgslw (1.0);
@@ -913,12 +920,62 @@ struct type_221 **t221)
     sprintf (buf, "%s, %s, %s", rootname, root->scan_name, param.baseline);
     psright (1.0, 0.98, buf);
                                         /* Convert to pol. string */
-    if (param.pol == 0) sprintf (pol, "LL");
-    else if (param.pol == 1) sprintf (pol, "RR");
-    else if (param.pol == 2) sprintf (pol, "LR");
-    else if (param.pol == 3) sprintf (pol, "RL");
+    polars = 0;
+    if (param.pol == 0)
+        {
+        if (pass->pol == POL_LL) 
+            {
+            sprintf (polstr, "LL");
+            polars |= LREF | LREM;
+            }
+        else if (pass->pol == POL_RR)
+            {
+            sprintf (polstr, "RR");
+            polars |= RREF | RREM;
+            }
+        else if (pass->pol == POL_LR) 
+            {
+            sprintf (polstr, "LR");
+            polars |= LREF | RREM;
+            }
+        else if (pass->pol == POL_RL) 
+            {
+            sprintf (polstr, "RL");
+            polars |= RREF | LREM;
+            }
+        }
+    else if (param.pol < 16)
+        {
+        polstr[0] = '\0';
+        if (param.pol & POLMASK_LL)
+            {
+            strcat (polstr, "+LL");
+            polars |= LREF | LREM;
+            }
+        if (param.pol & POLMASK_RR)
+            {
+            strcat (polstr, "+RR");
+            polars |= RREF | RREM;
+            }
+        if (param.pol & POLMASK_LR)
+            {
+            strcat (polstr, "+LR");
+            polars |= LREF | RREM;
+            }
+        if (param.pol & POLMASK_RL)
+            {
+            strcat (polstr, "+RL");
+            polars |= RREF | LREM;
+            }
+        strcpy (polstr, polstr+1);      // chop off leading '+'
+        }
+    else
+        {
+        sprintf (polstr, "Ixy");
+        polars |= LREF | LREM | RREF | RREM;
+        }
     sprintf (buf, "%.8s - %.8s, fgroup %c, pol %s", fringe.t202->ref_name,
-                    fringe.t202->rem_name, pass->pass_data[0].fgroup, pol);
+                    fringe.t202->rem_name, pass->pass_data[0].fgroup, polstr);
     pscat ("/Helvetica-Bold findfont 140 scalefont setfont\n");
     psright (1.0, 0.965, buf);
                                         /* Some solution essentials in a visible spot */
@@ -952,6 +1009,8 @@ struct type_221 **t221)
     psright (1.0, ypos, buf); ypos -= spacing;
     ypos -= spacing;
     sprintf (buf, "%.6f", status.dr_max_global * param.ref_freq);
+    psright (1.0, ypos, buf); ypos -= spacing;
+    sprintf (buf, "%6.2f", param.ion_diff);
     psright (1.0, ypos, buf); ypos -= spacing;
     ypos -= spacing;
     sprintf (buf, "%.4f", fringe.t205->ref_freq);
@@ -991,7 +1050,7 @@ struct type_221 **t221)
                                 fringe.t200->corr_date.hour,
                                 fringe.t200->corr_date.minute,
                                 (int)fringe.t200->corr_date.second);
-    psright (1.0, ypos, buf); ypos -= 2.0 * spacing;
+    psright (1.0, ypos, buf); ypos -= spacing;
                                     // fourfit execution timestamp
     year = fringe.t200->fourfit_date.year;
     if (year < 150) year += 1900;
@@ -1026,14 +1085,15 @@ struct type_221 **t221)
     ypos = 0.945;
     psleft (0.87, ypos, "Fringe quality"); ypos -= 2.0 * spacing;
     psleft (0.87, ypos, "SNR"); ypos -= spacing;
-    psleft (0.87, ypos, "Intg.time"); ypos -= spacing;
+    psleft (0.87, ypos, "Int time"); ypos -= spacing;
     psleft (0.87, ypos, "Amp"); ypos -= spacing;
     psleft (0.87, ypos, "Phase"); ypos -= spacing;
     psleft (0.87, ypos, "PFD"); ypos -= spacing;
     psleft (0.87, ypos, "Delays (us)"); ypos -= spacing;
     psleft (0.87, ypos, "SBD"); ypos -= spacing;
     psleft (0.87, ypos, "MBD"); ypos -= spacing;
-    psleft (0.87, ypos, "Fr. rate (Hz)"); ypos -= 2.0 * spacing;
+    psleft (0.87, ypos, "Fringe rate (Hz)"); ypos -= 2.0 * spacing;
+    psleft (0.87, ypos, "Ion TEC "); ypos -= spacing;
     psleft (0.87, ypos, "Ref freq (MHz)"); ypos -= 2.0 * spacing;
     psleft (0.87, ypos, "AP (sec)"); ypos -= 1.5 * spacing;
     psleft (0.87, ypos, "Exp."); ypos -= spacing;
@@ -1043,9 +1103,8 @@ struct type_221 **t221)
     psleft (0.87, ypos, "Stop"); ypos -= spacing;
     psleft (0.87, ypos, "FRT"); ypos -= spacing;
     
-    psleft (0.87, ypos, "Correlation date"); 
-    ypos -= 2.0 * spacing;
-    psleft (0.87, ypos, "fourfit exec/bld:"); ypos -= 3.0 * spacing;
+    psleft (0.87, ypos, "Corr/FF/build"); 
+    ypos -= 4.0 * spacing;
     if (fringe.t201->epoch == 1950) sprintf (buf, "RA & Dec (B1950)");
     else if (fringe.t201->epoch == 2000) sprintf (buf, "RA & Dec (J2000)");
     else sprintf (buf, "RA & Dec (J??? )");
@@ -1163,30 +1222,86 @@ struct type_221 **t221)
             }
         ypos -= spacing;
 
-        sprintf (buf, "%d",                   // reference pcal frequencies
-            (param.pc_mode[0] == MULTITONE) ? // source of pcal freqs dep. on mode
-                (int) (500 * bandwidth) :     // midband in KHz
+        if (param.pc_mode[0] != MULTITONE)    // don't print mt freq (at center)
+            {
+            sprintf (buf, "%d",               // reference pcal frequencies
                 (int)pass->pass_data[i].pc_freqs[0][pass->pci[0][i]]/1000);
-        psleft (xpos, ypos, buf);
-        if (i == start_plot) 
-            {
-            psleft (labelpos, ypos, "PC freqs");
-            sprintf (buf, "%c", param.baseline[0]);
-            psright (0.04, ypos, buf);
+            psleft (xpos, ypos, buf);
+            if (i == start_plot) 
+                {
+                psleft (labelpos, ypos, "PC freqs");
+                sprintf (buf, "%c", param.baseline[0]);
+                psright (0.04, ypos, buf);
+                }
+            ypos -= spacing;
             }
-        ypos -= spacing;
 
-        sprintf (buf, "%d",                   // remote pcal frequencies
-            (param.pc_mode[1] == MULTITONE) ? // source of pcal freqs dep. on mode
-                (int) (500 * bandwidth) :     // midband in KHz
-                (int)pass->pass_data[i].pc_freqs[1][pass->pci[1][i]]/1000);
-        psleft (xpos, ypos, buf);
-        if (i == start_plot) 
+        if (param.pc_mode[1] != MULTITONE)    // don't print mt freq (at center)
             {
-            sprintf (buf, "%c", param.baseline[1]);
-            psright (0.04, ypos, buf);
+            sprintf (buf, "%d",               // remote pcal frequencies
+                (int)pass->pass_data[i].pc_freqs[1][pass->pci[1][i]]/1000);
+            psleft (xpos, ypos, buf);
+            if (i == start_plot) 
+                {
+                psleft (labelpos, ypos, "PC freqs");
+                sprintf (buf, "%c", param.baseline[1]);
+                psright (0.04, ypos, buf);
+                }
+            ypos -= spacing;
             }
-        ypos -= spacing;
+                                        // reference mt delays by channel
+        if (param.pc_mode[0] == MULTITONE && polars & LREF)
+            {
+            sprintf (buf, "%.1f", 1e9 * status.pc_delay[i][0][0]);
+            psleft (xpos, ypos, buf);
+            if (i == start_plot) 
+                {
+                psleft (labelpos, ypos, "PC L/X/H delays (ns)");
+                sprintf (buf, "%c", param.baseline[0]);
+                psright (0.04, ypos, buf);
+                }
+            ypos -= spacing;
+            }
+
+        if (param.pc_mode[1] == MULTITONE && polars & LREM) 
+            {
+            sprintf (buf, "%.1f", 1e9 * status.pc_delay[i][1][0]);
+            psleft (xpos, ypos, buf);
+            if (i == start_plot) 
+                {
+                psleft (labelpos, ypos, "PC L/X/H delays (ns)");
+                sprintf (buf, "%c", param.baseline[1]);
+                psright (0.04, ypos, buf);
+                }
+            ypos -= spacing;
+            }
+
+        if (param.pc_mode[0] == MULTITONE && polars & RREF)
+            {
+            sprintf (buf, "%.1f", 1e9 * status.pc_delay[i][0][1]);
+            psleft (xpos, ypos, buf);
+            if (i == start_plot) 
+                {
+                psleft (labelpos, ypos, "PC R/Y/V delays (ns)");
+                sprintf (buf, "%c", param.baseline[0]);
+                psright (0.04, ypos, buf);
+                }
+            ypos -= spacing;
+            }
+
+        if (param.pc_mode[1] == MULTITONE && polars & RREM)
+            {
+            sprintf (buf, "%.1f", 1e9 * status.pc_delay[i][1][1]);
+            psleft (xpos, ypos, buf);
+            if (i == start_plot) 
+                {
+                psleft (labelpos, ypos, "PC R/Y/V delays (ns)");
+                sprintf (buf, "%c", param.baseline[1]);
+                psright (0.04, ypos, buf);
+                }
+            ypos -= spacing;
+            }
+
         sprintf (buf, "%d:%d", (int)rint((double)fringe.t207->ref_pcphase[i].lsb),
                                (int)rint((double)fringe.t207->rem_pcphase[i].lsb));
         psleft (xpos, ypos, buf);
@@ -1244,20 +1359,11 @@ struct type_221 **t221)
             psright (0.04, ypos, buf);
             }
         ypos -= spacing;
-/*         sprintf (buf, "00:00"); */
-/*         psleft (xpos, ypos, buf); */
-/*         if (i == 0)  */
-/*             { */
-/*             psleft (labelpos, ypos, "PC rms"); */
-/*             sprintf (buf, "%c:%c", param.baseline[0], param.baseline[1]); */
-/*             psright (0.04, ypos, buf); */
-/*             } */
-/*         ypos -= spacing; */
                                         /* Channel ids, reference station */
-        if (pol[0] == 'L')
+        if (polstr[0] == 'L')
             sprintf (buf, "%s %s", pass->pass_data[i].ch_usb_lcp[0],
                                    pass->pass_data[i].ch_lsb_lcp[0]);
-        else if (pol[0] == 'R')
+        else if (polstr[0] == 'R')
             sprintf (buf, "%s %s", pass->pass_data[i].ch_usb_rcp[0],
                                    pass->pass_data[i].ch_lsb_rcp[0]);
         stripbuf (buf);
@@ -1283,7 +1389,7 @@ struct type_221 **t221)
         first = TRUE;
         for (j=0; j<16; j++)
             {
-            if ((pass->pass_data[i].trk_lcp[0][j] > 0) && (pol[0] == 'L'))
+            if ((pass->pass_data[i].trk_lcp[0][j] > 0) && (polstr[0] == 'L'))
                 {
                 sprintf (buf, "%d", pass->pass_data[i].trk_lcp[0][j]);
                 xposref = xpos + offset;
@@ -1293,7 +1399,7 @@ struct type_221 **t221)
                 offset += digitwidth * strlen (buf);
                 first = FALSE;
                 }
-            if ((pass->pass_data[i].trk_rcp[0][j] > 0) && (pol[0] == 'R'))
+            if ((pass->pass_data[i].trk_rcp[0][j] > 0) && (polstr[0] == 'R'))
                 {
                 sprintf (buf, "%d", pass->pass_data[i].trk_rcp[0][j]);
                 xposref = xpos + offset;
@@ -1308,10 +1414,10 @@ struct type_221 **t221)
         if (i == start_plot+limit_plot-2 && labelpos > xposref)  psleft (labelpos, ypos, "Tracks");
         ypos -= spacing;
                                         /* Channel ids, remote station */
-        if (pol[1] == 'L')
+        if (polstr[1] == 'L')
             sprintf (buf, "%s %s", pass->pass_data[i].ch_usb_lcp[1],
                     pass->pass_data[i].ch_lsb_lcp[1]);
-        if (pol[1] == 'R')
+        if (polstr[1] == 'R')
             sprintf (buf, "%s %s", pass->pass_data[i].ch_usb_rcp[1],
                     pass->pass_data[i].ch_lsb_rcp[1]);
         stripbuf (buf);
@@ -1335,7 +1441,7 @@ struct type_221 **t221)
         first = TRUE;
         for (j=0; j<16; j++)
             {
-            if ((pass->pass_data[i].trk_lcp[1][j] > 0) && (pol[1] == 'L'))
+            if ((pass->pass_data[i].trk_lcp[1][j] > 0) && (polstr[1] == 'L'))
                 {
                 sprintf (buf, "%d", pass->pass_data[i].trk_lcp[1][j]);
                 xposrem = xpos + offset;
@@ -1345,7 +1451,7 @@ struct type_221 **t221)
                 offset += digitwidth * strlen (buf);
                 first = FALSE;
                 }
-            if ((pass->pass_data[i].trk_rcp[1][j] > 0) && (pol[1] == 'R'))
+            if ((pass->pass_data[i].trk_rcp[1][j] > 0) && (polstr[1] == 'R'))
                 {
                 sprintf (buf, "%d", pass->pass_data[i].trk_rcp[1][j]);
                 xposrem = xpos + offset;
@@ -1362,15 +1468,15 @@ struct type_221 **t221)
                                     // to allow zeroing out phase and mbd residuals for
                                     // combining multiple bands    rjc 2010.1.5
         if (msglev < 2)
-            fprintf (stderr, "%d ", (int)rint(fmod((double)fringe.t207->ref_pcoffset[i].lsb 
+            fprintf (stderr, "%6.1f ", fmod((double)fringe.t207->ref_pcoffset[i].lsb 
               - (double)fringe.t207->rem_pcoffset[i].lsb
               + c_phase (status.fringe[i]) * 180.0 / pi
               + 360 * fringe.t208->resid_mbd * 
                        (pass->pass_data[i].frequency 
-                      - fringe.t205->ref_freq), 360.0)));
+                      - fringe.t205->ref_freq), 360.0));
 	    // fmod returns -360 .. 360 depending on sign of the phase
 	    // pcoffset.*lsb is identical to pcoffset.*usb
-            /*fprintf (stderr, "%lf %lf %lf %lf %lf %lf\n", 
+        /*  fprintf (stderr, "%f %f %f %f %f %f\n", 
                     (double)fringe.t207->ref_pcoffset[i].lsb, 
                     (double)fringe.t207->rem_pcoffset[i].lsb,
                     c_phase (status.fringe[i]) * 180.0 / pi,
@@ -1542,8 +1648,9 @@ struct type_221 **t221)
     psleft (0.23, ypos, "Inc. frq. avg.");
     sprintf (buf, "%.3f", fringe.t208->inc_chan_ampl);
     psleft (0.35, ypos, buf);
-
-    sprintf (buf, "Data rate(Mb/s): %d", numsb * srate * param.bits_sample);
+                                    // effective number of polarizations is max of 2
+    eff_npols = (pass->npols > 2) ? 2 : pass->npols;
+    sprintf (buf, "Data rate(Mb/s): %d", numsb * eff_npols * srate * param.bits_sample);
     psleft (0.5, ypos, buf);
     sprintf (buf, "nlags: %d", param.nlags);
     psleft (0.65, ypos, buf);
@@ -1552,7 +1659,31 @@ struct type_221 **t221)
         sprintf (buf,"t_cohere (s) %.1f", pass->control.t_cohere);
     else
         sprintf (buf, "t_cohere infinite");
-    psleft (0.75, ypos, buf);
+    psleft (0.72, ypos, buf);
+                                    // ionosphere window limits
+    sprintf (buf, "ion window (TEC)");
+    psleft (0.82, ypos, buf);
+    sprintf (buf, "%8.2f %8.2f", param.win_ion[0], param.win_ion[1]);
+    psleft (0.92, ypos, buf);
+    ypos -= 0.015;
+                                    // az, el, par. angle
+    sprintf (buf, "%c: az %.1f  el %.1f  pa %.1f", param.baseline[0],
+            fringe.t202->ref_az, fringe.t202->ref_elev, 
+            param.par_angle[0] * 180 / M_PI);
+    psleft (0.00, ypos, buf);
+    sprintf (buf, "%c: az %.1f  el %.1f  pa %.1f", param.baseline[1], 
+            fringe.t202->rem_az, fringe.t202->rem_elev,
+            param.par_angle[1] * 180 / M_PI);
+    psleft (0.20, ypos, buf);
+                                    // u and v
+    sprintf (buf, "u,v (fr/asec) %.3f  %.3f", fringe.t202->u, fringe.t202->v);
+    psleft (0.40, ypos, buf);
+                                    // print interpolation method
+    if (param.interpol == ITERATE)
+        sprintf (buf, "iterative interpolator");
+    else if (param.interpol == SIMUL)
+        sprintf (buf, "simultaneous interpolator");
+    psleft (0.90, ypos, buf);
     ypos -= 0.015;
 
     if (test_mode) strcpy (output_filename, "Suppressed by test mode");

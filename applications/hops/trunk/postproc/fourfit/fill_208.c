@@ -19,8 +19,6 @@
 #include "mk4_data.h"
 #include "param_struct.h"
 
-#define pi 3.141592654
-
 int
 fill_208 (/* pass, param, status, t202, t208) */
 struct type_pass *pass,
@@ -73,7 +71,7 @@ struct type_208 *t208)
     t208->resid_sbd = status->sbd_max;
     t208->resid_rate = status->corr_dr_max;
     t208->mbd_error = (float)(1.0 
-                        / (2.0 * pi * status->freq_spread * status->snr));
+                        / (2.0 * M_PI * status->freq_spread * status->snr));
                                         /* get proper weighting for sbd error estimate */
     status->sbavg = 0.0;
     for (fr = 0; fr < pass->nfreq; fr++)
@@ -81,10 +79,10 @@ struct type_208 *t208)
             status->sbavg += pass->pass_data[fr].data[ap].sband;
     status->sbavg /= status->total_ap;
     t208->sbd_error = (float)(sqrt (12.0) * status->sbd_sep * 4.0
-                / (2.0 * pi * status->snr * (2.0 - fabs (status->sbavg) )));
+                / (2.0 * M_PI * status->snr * (2.0 - fabs (status->sbavg) )));
     temp = status->total_ap * param->acc_period / pass->channels;
     t208->rate_error = (float)(sqrt(12.0) 
-                        / ( 2.0 * pi * status->snr * param->ref_freq * temp));
+                        / ( 2.0 * M_PI * status->snr * param->ref_freq * temp));
 
     t208->ambiguity = 1.0 / status->freq_space;
     t208->amplitude = status->delres_max/10000.;
@@ -94,15 +92,15 @@ struct type_208 *t208)
     t208->prob_false = status->prob_false;
     status->apphase = fmod (param->ref_freq * t208->adelay * 360.0, 360.0);
     t208->totphase = fmod (status->apphase + status->coh_avg_phase
-                        * (180.0/pi) , 360.0);
+                        * (180.0/M_PI) , 360.0);
                                         /* Ref stn frame apriori delay usec */
     adelay_ref *= 1.0e6;
                                         /* ref_stn_delay in sec, rate in usec/sec */
     adelay_ref -= ref_stn_delay * t208->resid_rate;
     apphase_ref = fmod (param->ref_freq * adelay_ref * 360.0, 360.0);
     t208->totphase_ref = fmod (apphase_ref + status->coh_avg_phase
-                        * (180.0/pi) , 360.0);
-    t208->resphase = fmod (status->coh_avg_phase * (180.0/pi), 360.0);
+                        * (180.0/M_PI) , 360.0);
+    t208->resphase = fmod (status->coh_avg_phase * (180.0/M_PI), 360.0);
 
     return (0);
     }

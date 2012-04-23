@@ -75,15 +75,18 @@ struct type_205 *t205)
     for (ch=0; ch<MAX_CHAN_PP; ch++)
         {
         fc = pass->pass_data + ch;
-        if (fc->frequency == 0.0) continue;
+        if (fc->frequency == 0.0) 
+            continue;
         t205->ffit_chan[ch].ffit_chan_id = fc->freq_code;
         nch = 0;
         for (sb=0; sb<2; sb++)
             {
-            ind = sb + 2*param->pol;
-            if (fc->index[ind] <= 0) continue;
+            ind = sb + 2 * pass->pol;
+            if (fc->index[ind] <= 0) 
+                continue;
             for (j=0; j<nchan; j++)
-                if (fc->index[ind] == t203->channels[j].index) break;
+                if (fc->index[ind] == t203->channels[j].index) 
+                    break;
             if (j == nchan)
                 {
                 msg ("Could not find index number %d in type 203 record", 

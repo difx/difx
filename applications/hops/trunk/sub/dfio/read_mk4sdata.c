@@ -30,6 +30,7 @@ read_mk4sdata (char *filename,
     FILE *fp;
     struct type_301 *temp_301;
     struct type_302 *temp_302;
+    struct type_303 *temp_303;
     struct type_304 **ptr_304;
     struct type_306 **ptr_306;
     struct type_307 **ptr_307;
@@ -104,7 +105,8 @@ read_mk4sdata (char *filename,
 
             case 301:
             case 302:
-                                        /* Do 301 and 302 together due to */
+            case 303:
+                                        /* Do 301/302/303 together due to */
                                         /* identical logic */
                 if (rec_id == 301)
                     {
@@ -117,6 +119,12 @@ read_mk4sdata (char *filename,
                     temp_302 = addr_302 (version, ptr, &size);
                     if (temp_302 != (struct type_302 *)ptr) alloc_ptr = temp_302;
                     strcpy (chan_id, temp_302->chan_id);
+                    }
+                else if (rec_id == 303)
+                    {
+                    temp_303 = addr_303 (version, ptr, &size);
+                    if (temp_303 != (struct type_303 *)ptr) alloc_ptr = temp_303;
+                    strcpy (chan_id, temp_303->chan_id);
                     }
                                         /* Identify channel and catch array */
                                         /* overflow condition */
@@ -148,10 +156,19 @@ read_mk4sdata (char *filename,
                     {
                     if (rec_id == 301)
                         {
-                        if (sdata->model[chan].t301[i] == NULL) break;
+                        if (sdata->model[chan].t301[i] == NULL)
+                            break;
                         }
                     else if (rec_id == 302)
-                        if (sdata->model[chan].t302[i] == NULL) break;
+                        {
+                        if (sdata->model[chan].t302[i] == NULL) 
+                            break;
+                        }
+                    else if (rec_id == 303)
+                        {
+                        if (sdata->model[chan].t303[i] == NULL) 
+                            break;
+                        }
                     }
                 if (i == MAXSPLINES)
                     {
@@ -159,8 +176,12 @@ read_mk4sdata (char *filename,
                     return (-1);
                     }
                                         /* Assign pointer to correct location */
-                if (rec_id == 301) sdata->model[chan].t301[i] = temp_301;
-                else if (rec_id == 302) sdata->model[chan].t302[i] = temp_302;
+                if (rec_id == 301) 
+                    sdata->model[chan].t301[i] = temp_301;
+                else if (rec_id == 302) 
+                    sdata->model[chan].t302[i] = temp_302;
+                else if (rec_id == 303) 
+                    sdata->model[chan].t303[i] = temp_303;
                 break;
 
                                         /* Types 304/6/8 all of the same form */
@@ -227,10 +248,6 @@ read_mk4sdata (char *filename,
                 break;
 
                                         /* Throw away raw records for now */
-            case 303:
-                dummy = (char *)addr_303 (version, ptr, &size);
-                if (dummy != ptr) free (dummy);
-                break;
             case 305:
                 dummy = (char *)addr_305 (version, ptr, &size);
                 if (dummy != ptr) free (dummy);

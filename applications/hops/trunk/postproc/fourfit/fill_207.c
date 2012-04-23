@@ -26,6 +26,7 @@ struct type_param *param,
 struct type_207 *t207)
     {
     int i, j, pol;
+    int stnpol[2][4] = {0, 1, 0, 1, 0, 1, 1, 0}; // [stn][pol] = 0:L, 1:R
     float ref_errate, rem_errate, nreftrk, nremtrk;
     double midband;
     struct freq_corel *p;
@@ -36,18 +37,18 @@ struct type_207 *t207)
     t207->pcal_mode = 10 * param->pc_mode[0] + param->pc_mode[1];
     for (i=0; i<pass->nfreq; i++)
         {
-        t207->ref_pcamp[i].lsb = status->pc_amp[i][0];
-        t207->rem_pcamp[i].lsb = status->pc_amp[i][1];
-        t207->ref_pcphase[i].lsb = status->pc_meas[i][0] * DEGRAD;
-        t207->rem_pcphase[i].lsb = status->pc_meas[i][1] * DEGRAD;
-        t207->ref_pcoffset[i].lsb = status->pc_offset[i][0];
-        t207->rem_pcoffset[i].lsb = status->pc_offset[i][1];
-        t207->ref_pcamp[i].usb = status->pc_amp[i][0];
-        t207->rem_pcamp[i].usb = status->pc_amp[i][1];
-        t207->ref_pcphase[i].usb = status->pc_meas[i][0] * DEGRAD;
-        t207->rem_pcphase[i].usb = status->pc_meas[i][1] * DEGRAD;
-        t207->ref_pcoffset[i].usb = status->pc_offset[i][0];
-        t207->rem_pcoffset[i].usb = status->pc_offset[i][1];
+        t207->ref_pcamp[i].lsb = status->pc_amp[i][0][stnpol[0][pass->pol]];
+        t207->rem_pcamp[i].lsb = status->pc_amp[i][1][stnpol[1][pass->pol]];
+        t207->ref_pcphase[i].lsb = status->pc_meas[i][0][stnpol[0][pass->pol]] * DEGRAD;
+        t207->rem_pcphase[i].lsb = status->pc_meas[i][1][stnpol[1][pass->pol]] * DEGRAD;
+        t207->ref_pcoffset[i].lsb = status->pc_offset[i][0][stnpol[0][pass->pol]];
+        t207->rem_pcoffset[i].lsb = status->pc_offset[i][1][stnpol[1][pass->pol]];
+        t207->ref_pcamp[i].usb = status->pc_amp[i][0][stnpol[0][pass->pol]];
+        t207->rem_pcamp[i].usb = status->pc_amp[i][1][stnpol[1][pass->pol]];
+        t207->ref_pcphase[i].usb = status->pc_meas[i][0][stnpol[0][pass->pol]] * DEGRAD;
+        t207->rem_pcphase[i].usb = status->pc_meas[i][1][stnpol[1][pass->pol]] * DEGRAD;
+        t207->ref_pcoffset[i].usb = status->pc_offset[i][0][stnpol[0][pass->pol]];
+        t207->rem_pcoffset[i].usb = status->pc_offset[i][1][stnpol[1][pass->pol]];
                                         /* LSB unused for now  rjc 2001.6.19 */
         if (param->pc_mode[0] == MULTITONE)
             t207->ref_pcfreq[i].usb = midband;
@@ -58,21 +59,13 @@ struct type_207 *t207)
         else
             t207->rem_pcfreq[i].usb = pass->pass_data[i].pc_freqs[1][pass->pci[1][i]];
         }
-/*
-printf ("\nREF %f ", t207->ref_pcfreq[0].usb);
-for (i=0; i<pass->nfreq; i++)
-printf ("%f %f ", t207->ref_pcamp[i].usb, t207->ref_pcphase[i].usb);
-printf ("\nREM %f ", t207->rem_pcfreq[0].usb);
-for (i=0; i<pass->nfreq; i++)
-printf ("%f %f ", t207->rem_pcamp[i].usb, t207->rem_pcphase[i].usb);
-printf ("\n");
-*/
+
     t207->ref_pcrate = status->pc_rate[0];
     t207->rem_pcrate = status->pc_rate[1];
                                         /* Mean error rates, sidebands averaged */
-    pol = param->pol;
     for (i=0; i<pass->nfreq; i++)
         {
+        pol = pass->pol;
         p = pass->pass_data + i;
         nreftrk = nremtrk = 0.0;
         ref_errate = rem_errate = 0.0;
@@ -93,8 +86,10 @@ printf ("\n");
                     { rem_errate += p->mean_rcp_trk_err[1][j];nremtrk += 1.0; }
             }
                                         /* Record arithmetic average */
-        if (nreftrk > 0.0) t207->ref_errate[i] = ref_errate / nreftrk;
-        if (nremtrk > 0.0) t207->rem_errate[i] = rem_errate / nremtrk;
+        if (nreftrk > 0.0) 
+            t207->ref_errate[i] = ref_errate / nreftrk;
+        if (nremtrk > 0.0) 
+            t207->rem_errate[i] = rem_errate / nremtrk;
         }
 
     return (0);

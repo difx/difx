@@ -6,7 +6,7 @@
 # to detect endianism in bytflp.h for some of the tools.
 #
 AC_PREREQ(2.59)
-AC_INIT(hops, 3.5, gbc@haystack.mit.edu)
+AC_INIT(hops, 3.7, gbc@haystack.mit.edu)
 #AM_INIT_AUTOMAKE([foreign std-options])
 AM_INIT_AUTOMAKE([foreign])
 AC_CONFIG_SRCDIR([hops.bash.in])
@@ -203,6 +203,7 @@ fi
 have_gsl=false
 ### option disabled
 AM_CONDITIONAL(HAVE_GSL, $have_gsl)
+AM_CONDITIONAL(HAVE_FFTW, $hasfftw)
 
 AC_ARG_VAR(X_INSANE, [Anything you need to append to the X11 link chain])
 
@@ -432,6 +433,10 @@ if [ $have_hops = "true" ] ; then
     AC_CONFIG_FILES(
 	[scripts/hops_data_links.pl],
 	[chmod +x scripts/hops_data_links.pl]
+    )
+    AC_CONFIG_FILES(
+	[scripts/vhelp.sh],
+	[chmod +x scripts/vhelp.sh]
     )
 fi
 

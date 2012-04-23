@@ -15,6 +15,9 @@
 
 #define FALSE 0
 #define TRUE 1
+                                    // multiple pols. mapped into index 0 and 1
+#define LXH 0
+#define RYV 1
 
 int parser ()
    {
@@ -209,6 +212,27 @@ int parser ()
                        if (cb_ptr -> baseline[1] == WILDCARD)
                            cb_ptr -> ionosphere.ref = float_values[tval];
                        }
+                   else if (toknum == STATION_DELAY_)
+                       {
+                       if (cb_ptr -> baseline[0] == WILDCARD)
+                           cb_ptr -> station_delay.rem = 1e-9 * float_values[tval];
+                       if (cb_ptr -> baseline[1] == WILDCARD)
+                           cb_ptr -> station_delay.ref = 1e-9 * float_values[tval];
+                       }
+                   else if (toknum == PC_DELAY_L_)
+                       {
+                       if (cb_ptr -> baseline[0] == WILDCARD)
+                           cb_ptr -> pc_delay_l.rem = 1e-9 * float_values[tval];
+                       if (cb_ptr -> baseline[1] == WILDCARD)
+                           cb_ptr -> pc_delay_l.ref = 1e-9 * float_values[tval];
+                       }
+                   else if (toknum == PC_DELAY_R_)
+                       {
+                       if (cb_ptr -> baseline[0] == WILDCARD)
+                           cb_ptr -> pc_delay_r.rem = 1e-9 * float_values[tval];
+                       if (cb_ptr -> baseline[1] == WILDCARD)
+                           cb_ptr -> pc_delay_r.ref = 1e-9 * float_values[tval];
+                       }
                    else if (toknum == DC_BLOCK_)
                        cb_ptr -> dc_block = tval;
                    else if (toknum == SAMPLERS_)
@@ -224,6 +248,10 @@ int parser ()
                        }
                    else if (toknum == OPTIMIZE_CLOSURE_)
                        cb_ptr -> optimize_closure = tval;
+                   else if (toknum == ION_NPTS_)
+                       cb_ptr -> ion_npts = tval;
+                   else if (toknum == INTERPOLATOR_)
+                       cb_ptr -> interpolator = tval;
                break;
 
 
@@ -260,13 +288,83 @@ int parser ()
                                                       phase cal to value, and zero
                                                       out the reference value. */
                        if (cb_ptr -> baseline[1] == WILDCARD)
-                           cb_ptr -> pc_phase[i].ref = fval;
+                           {        // both polarizations get the same value
+                           cb_ptr -> pc_phase[i][LXH].ref = fval;
+                           cb_ptr -> pc_phase[i][RYV].ref = fval;
+                           }
                        else if (cb_ptr -> baseline[0] == WILDCARD)
-                           cb_ptr -> pc_phase[i].rem = fval;
+                           {
+                           cb_ptr -> pc_phase[i][LXH].rem = fval;
+                           cb_ptr -> pc_phase[i][RYV].rem = fval;
+                           }
                        else 
                            {
-                           cb_ptr -> pc_phase[i].ref = 0.0;
-                           cb_ptr -> pc_phase[i].rem = fval;
+                           cb_ptr -> pc_phase[i][LXH].ref = 0.0;
+                           cb_ptr -> pc_phase[i][RYV].ref = 0.0;
+                           cb_ptr -> pc_phase[i][LXH].rem = fval;
+                           cb_ptr -> pc_phase[i][RYV].rem = fval;
+                           }
+                       }
+
+                   else if (toknum == PC_PHASE_L_)  // is this L/X/H phase cal phase?
+                       {
+                       i = fcode(parsed_codes[nv]);
+                       if (i<0 || i>MAX_CHAN_PP-1)
+                           {
+                           msg ("Invalid phase cal frequency code",2);
+                           return (-1);
+                           }
+                                         /* get phases from appropriate place */
+                       if (tokens[ntok].category == INTEGER)
+                           fval = tval;
+                       else
+                           fval = float_values[tval];
+
+                                                   /* phase normally gets stored
+                                                      for only one station, and
+                                                      into correct freq slot.
+                                                      If both specified, set remote
+                                                      phase cal to value, and zero
+                                                      out the reference value. */
+                       if (cb_ptr -> baseline[1] == WILDCARD)
+                           cb_ptr -> pc_phase[i][LXH].ref = fval;
+                       else if (cb_ptr -> baseline[0] == WILDCARD)
+                           cb_ptr -> pc_phase[i][LXH].rem = fval;
+                       else 
+                           {
+                           cb_ptr -> pc_phase[i][LXH].ref = 0.0;
+                           cb_ptr -> pc_phase[i][LXH].rem = fval;
+                           }
+                       }
+
+                   else if (toknum == PC_PHASE_R_)  // is this R/Y/V phase cal phase?
+                       {
+                       i = fcode(parsed_codes[nv]);
+                       if (i<0 || i>MAX_CHAN_PP-1)
+                           {
+                           msg ("Invalid phase cal frequency code",2);
+                           return (-1);
+                           }
+                                         /* get phases from appropriate place */
+                       if (tokens[ntok].category == INTEGER)
+                           fval = tval;
+                       else
+                           fval = float_values[tval];
+
+                                                   /* phase normally gets stored
+                                                      for only one station, and
+                                                      into correct freq slot.
+                                                      If both specified, set remote
+                                                      phase cal to value, and zero
+                                                      out the reference value. */
+                       if (cb_ptr -> baseline[1] == WILDCARD)
+                           cb_ptr -> pc_phase[i][RYV].ref = fval;
+                       else if (cb_ptr -> baseline[0] == WILDCARD)
+                           cb_ptr -> pc_phase[i][RYV].rem = fval;
+                       else 
+                           {
+                           cb_ptr -> pc_phase[i][RYV].ref = 0.0;
+                           cb_ptr -> pc_phase[i][RYV].rem = fval;
                            }
                        }
 
@@ -374,6 +472,17 @@ int parser ()
                            (tokens[ntok].category == INTEGER) ?  tval : float_values[tval];
                        }
 
+                   else if (toknum == ION_WIN_)
+                       {
+                       if (nv > 1)
+                           {
+                           msg ("Too many ion_win numbers",2);
+                           return (-1);
+                           }
+                       cb_ptr -> ion_window[nv] = 
+                           (tokens[ntok].category == INTEGER) ?  tval : float_values[tval];
+                       }
+
                    else if (toknum == ADHOC_POLY_)
                        {
                        if (nv > 5)
@@ -397,7 +506,10 @@ int parser ()
                            msg ("Too many passband numbers",2);
                            return (-1);
                            }
-                       cb_ptr -> passband[nv] = float_values[tval];
+                       if (tokens[ntok].category == INTEGER)
+                           cb_ptr -> passband[nv] = tval;
+                       else
+                           cb_ptr -> passband[nv] = float_values[tval];
                        }
 
                    else if (toknum == DELAY_OFFS_) // is this a channel delay offset?

@@ -9,7 +9,7 @@
 /* structure param.                                                     */
 /*                                                                      */
 /* Created April 13 1992 by CJL                                         */
-/*                                                                      */
+/* new code to search for maximum over ionospheric values 2012.1.27 rjc */
 /************************************************************************/
 #include <stdio.h>
 #include <stdlib.h>
@@ -18,16 +18,33 @@
 #include "pass_struct.h"
 #include "param_struct.h"
 
+#define MAX_ION_PTS 100
+
 int
 fringe_search (root, param, pass)
 struct vex *root;
 struct type_param *param;
 struct type_pass *pass;
     {
-    int i, fr, ap, size, oret;
+    int i, fr, ap, size, oret, 
+        k,
+        kmax,
+        ilmax,
+        level,
+        ionloop,
+        fine_pts;
+    double coarse_spacing,
+           fine_spacing,
+           step,
+           bottom,
+           center,
+           valmax;
     struct data_corel *datum;
     complex *sbarray, *sbptr;
     extern int do_accounting;
+    extern struct type_status status;
+    double values[MAX_ION_PTS];
+
 
     msg  ("Baseline %c%c subgroup %c", 1, 
            param->baseline[0], param->baseline[1], pass->pass_data[0].fgroup);
@@ -42,6 +59,13 @@ struct type_pass *pass;
     if (apply_filter (param, pass) != 0)
         {
         msg ("Error filtering data", 2);
+        return (1);
+        }
+                                        /* Load in parameters needed for the */
+                                        /* fringe search; do all precorrections */
+    if (precorrect(root->ovex, param, pass) != 0)
+        {
+        msg ("Error precorrecting data", 2);
         return (1);
         }
                                         /* Allocate memory for SBD functions */
@@ -66,27 +90,95 @@ struct type_pass *pass;
             datum->sbdelay = sbptr;
             sbptr += 2*param->nlags;
             }
-                                        /* Load in parameters needed for the */
-                                        /* fringe search; do all precorrections */
-    if (precorrect(root->ovex, param, pass) != 0)
+                                        // prepare for ionospheric search
+    center = (param->win_ion[0] + param->win_ion[1]) / 2.0;
+    if (param->ion_pts > MAX_ION_PTS)   // condition total # of points
         {
-        msg ("Error precorrecting data", 2);
-        return (1);
+        param->ion_pts = MAX_ION_PTS;
+        msg ("limited ion search to %d points", 2, param->ion_pts);
         }
+    coarse_spacing = param->win_ion[1] - param->win_ion[0];
+    if (param->ion_pts > 1)
+        coarse_spacing /= param->ion_pts - 1;
+    fine_spacing = 0.2 * coarse_spacing;
+    fine_pts = 7;
+                                        // do search over ionosphere differential
+                                        // TEC (if desired)
+    for (level=0; level<3; level++)     // search level (coarse, fine, final)
+        {
+        switch (level)
+            {
+            case 0:                     // set up for coarse ion search
+                ilmax = param->ion_pts;
+                step = coarse_spacing;
+                bottom = center - (ilmax - 1) / 2.0 * step;
+                if (param->ion_pts == 1)// if no ionospheric search, proceed
+                    level = 2;          // immediately to final delay & rate search
+                break;
+            case 1:                     // set up for fine ion search 
+                                        // find maximum from coarse search
+                                        // should do parabolic interpolation here
+                valmax = -1.0;
+                for (k=0; k<ilmax; k++)
+                    if (values[k] > valmax)
+                        {
+                        valmax = values[k];
+                        kmax = k;
+                        }
+                if (kmax == 0)          // coarse maximum up against lower edge?
+                    center = bottom + (fine_pts - 1) / 2.0 * fine_spacing;
+                else if (kmax == param->ion_pts) // upper edge?
+                    center = bottom + (kmax - 1) * step 
+                                    - (fine_pts - 1) / 2.0 * fine_spacing;
+                else                    // max was one of the interior points
+                    center = bottom + kmax * step;
+
+                ilmax = fine_pts;
+                step = fine_spacing;
+                                        // make fine search symmetric about level 0 max
+                bottom = center - (ilmax - 1) / 2.0 * step;
+                break;
+            case 2:                     // final evaluation
+                                        // find maximum from fine search
+                valmax = -1.0;
+                for (k=0; k<ilmax; k++)
+                    if (values[k] > valmax)
+                        {
+                        valmax = values[k];
+                        kmax = k;
+                        }
+                                        // should do parabolic interpolation here
+                center = bottom + kmax * step;
+                bottom = center;
+                ilmax = 1;
+                step = 0.0;
+                break;
+            }
+        for (ionloop=0; ionloop<ilmax; ionloop++)
+            {
+                                        // offset ionosphere by search offset
+            param->ion_diff = bottom + ionloop * step;
+
                                         /* Crunch numbers. */
-    if (search(pass) != 0)
-        {
-        msg ("Error fringe searching", 2);
-        return (1);
-        }
+            if (search(pass) != 0)
+                {
+                msg ("Error fringe searching", 2);
+                return (1);
+                }
                                         /* Correct for various effects here, */
                                         /* which typically depend on where */
                                         /* and what strength fringes were found */
                                         /* A stubbed routine for now */
-    if (postcorrect(pass) != 0)
-        {
-        msg ("Error postcorrecting data", 2);
-        return (1);
+            if (postcorrect(pass) != 0)
+                {
+                msg ("Error postcorrecting data", 2);
+                return (1);
+                }
+                                        // save values for iterative search
+            values[ionloop] = status.delres_max;
+            msg ("ion search differential TEC %f amp %f",
+                  1, param->ion_diff, status.delres_max);
+            }
         }
                                         /* Write the fringe file to disk, with */
                                         /* or without traditional fringe plot */

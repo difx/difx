@@ -53,11 +53,6 @@ struct type_pass *pass;
         return (1);
         }
 
-#ifdef OUTPUT_HOOK
-#warning "output hacking enabled -- see hook_output.c"
-    OUTPUT_HOOK;
-#endif /* OUTPUT_HOOK */
- 
     if (make_postplot (root->ovex, pass, fringe_name, &t221) != 0)
         {
         msg ("Error creating postscript plot", 2);

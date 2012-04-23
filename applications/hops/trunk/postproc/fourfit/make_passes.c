@@ -10,7 +10,7 @@
 /* Created April 10 1992 by CJL                                         */
 /* Overhauled for Mk4, April 23 1998 by CJL                             */
 /* Increased length of source string, July 17 2001, CJL                 */
-/*                                                                      */
+/* Generate multiple passes for multiple polar. prods.  rjc 2011.12.21  */
 /************************************************************************/
 #include <stdio.h>
 #include <stdlib.h>
@@ -32,11 +32,20 @@ int *npass;
     {
     char fgroups[10], baseline[3], source[32], group;            
     struct freq_corel *fc;
-    int i, j, k, sb, nsub, start_offset, stop_offset, nindices, usb, lsb;
+    int i, j, k, sb, nsub, start_offset, stop_offset, nindices, usb, lsb, f, ngpt;
     int scantime,f_c_index, pol, sbpol, ng, nsbind;     
+    int polprod_present[4];
+                                        // table of last polarizations (for summing, etc.)
+    int lptab[16] = {0, 0, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3};
     double pstart, cstart, cstop;
     static int pass_alloc = FALSE;
     struct type_pass *p;
+    struct gptab_table
+        {
+        char fgr;
+        int pol;
+        int npols;
+        } gptab[40];
                                         /* Integer format for scantime from */
                                         /* UTIL library */
 
@@ -58,7 +67,8 @@ int *npass;
     ng = 0;
     for (i=0; i<MAXFREQ; i++)
         {                               /* Don't process empty freq. table entries */
-        if (corel[i].freq_code == ' ') continue;   
+        if (corel[i].freq_code == ' ') 
+            continue;   
         group = corel[i].fgroup;
                                         /* Check if this subgroup even needed in */
                                         /* refringe mode */
@@ -74,32 +84,86 @@ int *npass;
             fgroups[ng] = '\0';
             }
         }
-                                        /* Loop over fgroups */
-    *npass = 0;
-    if (pass_alloc) free (*pass);
-    *pass = (struct type_pass *)malloc(1);      /* Makes realloc() behave like malloc() */
+                                        // expand list of groups into (possible) multipasses
+                                        // over used polarizations
+                                        // for each freq group, figure out which
+                                        // polarization products are present
+    ngpt = 0;
+
     for (i=0; i<ng; i++)
         {
+        if (param->pol)                 // non-zero param.pol is single pass
+            {
+            gptab[ngpt].fgr = fgroups[i];
+            gptab[ngpt].npols = 0;
+            if (param->pol == POL_IXY)
+                {
+                gptab[ngpt].npols = 4;
+                gptab[ngpt++].pol = 3;  // combine all 4 pols in I mode
+                }
+            else                        // 1..15 is bit-encoded; count the set bits
+                {
+                for (j=0; j<4; j++)
+                    if (param->pol & 1<<j) // if this is a requested pol product
+                        gptab[ngpt].npols++;
+                                        // for now, let pass pol be the last from the sum
+                gptab[ngpt++].pol = lptab[param->pol];
+                }
+            }
+        else                            // do one pass for each product present
+            {
+            for (j=0; j<4; j++)         // mark none used yet for this fgroup
+                polprod_present[j] = FALSE;
 
+            for (f=0; f<MAXFREQ; f++)   // search all frequency channels...
+                                        // ...matching the current group
+                if (corel[f].fgroup == fgroups[i])
+                    for (j=0; j<4; j++)
+                        if (polprod_present[j] == FALSE
+                            && (corel[f].index[2*j] != 0 || corel[f].index[2*j+1] != 0))
+                            {           // if either usb or lsb have data, add pass
+                            gptab[ngpt].fgr = fgroups[i];
+                            gptab[ngpt].npols = 1;
+                            gptab[ngpt++].pol = j;
+                            polprod_present[j] = TRUE;
+                            }
+            }
+        }
+
+                                        /* Loop over fgroups and polar products */
+    *npass = 0;
+    if (pass_alloc) 
+        free (*pass);
+                                        /* Make realloc() behave like malloc() */
+    *pass = (struct type_pass *) malloc(1); 
+
+    msg ("constructing %d passes over %d frequency groups", 0, ngpt, ng);
+    for (i=0; i<ngpt; i++)
+        {
                                         /* Allocate memory as required */
-        *pass = (struct type_pass *)realloc (*pass, 
-                                (*npass+1) * sizeof (struct type_pass));
+        *pass = (struct type_pass *)
+            realloc (*pass, (*npass+1) * sizeof (struct type_pass));
         if (*pass == NULL)
             {
             msg ("Error allocating memory for passes", 2);
             pass_alloc = FALSE;
             return (1);
             }
-        else pass_alloc = TRUE;
+        else 
+            pass_alloc = TRUE;
                                         /* Convenience pointers */
         p = *pass + *npass;
         fc = p->pass_data;
                                         /* realloc() does not initialize */
-        for (j=0; j<MAXFREQ; j++) p->pass_data[j].data_alloc = FALSE;
+        for (j=0; j<MAXFREQ; j++) 
+            p->pass_data[j].data_alloc = FALSE;
         clear_pass (p);
+
+        p->pol = gptab[*npass].pol;
+        p->npols = gptab[*npass].npols;
                                         /* Fill in cblock for this pass... */
                                         /* first have to fill in subgroup info */
-        fc->fgroup = fgroups[i];
+        fc->fgroup = gptab[i].fgr;
         if (generate_cblock (ovex, param, p) != 0)
             {
             msg ("Failure generating cblock, skipping pass",2);
@@ -155,7 +219,7 @@ int *npass;
             {
                                         /* Pluck out freqs with matching fgroups */ 
                                         /* that are in frequency list, if it's there */
-            if (corel[j].fgroup != fgroups[i] || corel[j].freq_code == ' ')
+            if (corel[j].fgroup != gptab[i].fgr || corel[j].freq_code == ' ')
                 continue;
                                         /* Copy freq_corel struct into this pass */
             msg ("[make_passes] corel[j].freq_code %c",-3,corel[j].freq_code);
@@ -219,22 +283,25 @@ int *npass;
                 }
                                         /* Keep count of "channels" included */
                                         /* THIS NEEDS CLOSER EXAMINATION */
-              if (nsbind > 0) p->channels++;
+              if (nsbind > 0) 
+                  p->channels++;
               }
                                         /* If no index numbers for this */
                                         /* frequency pass skip_index(), */
                                         /* do not insert freq at all */
-            if (nindices == 0) continue;
+            if (nindices == 0) 
+                continue;
             fc->data = corel[j].data;
             fc++;
             p->nfreq++;
             msg ("Pass %d, freq = %f", -1, *npass + 1, corel[j].frequency);
             }                           /* Don't waste time with absent data */
-        if (p->nfreq == 0) continue;
+        if (p->nfreq == 0) 
+            continue;
                                         /* This pass OK, proceed */
         (*npass)++;
         }
-    msg ("p->nfreq == %d", 1, p->nfreq);
+    msg ("p->nfreq == %d  p->npols == %d", 1, p->nfreq, p->npols);
 
     return (0);
     }

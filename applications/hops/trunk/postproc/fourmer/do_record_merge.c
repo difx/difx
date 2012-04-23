@@ -36,7 +36,7 @@
 static void relabel_chan_ids(struct type_101 *, int isA);
 
 int do_record_merge(char *fileAName, char *fileBName,
-		    char *rootfile, char *rcode)
+                    char *rootfile, char *rcode)
     {
     
     struct fileset fsetA, fsetB;
@@ -102,10 +102,10 @@ int do_record_merge(char *fileAName, char *fileBName,
     
             i = -1;
             fileset (fileBFullName, &fsetB);
-	    msg ("fsetB.maxfile is %d", 1, fsetB.maxfile);
+            msg ("fsetB.maxfile is %d", 1, fsetB.maxfile);
     
                             // find matching (same baseline) file for B
-	    rc = -2;
+            rc = -2;
             while (fsetB.file[++i].type > 0)
                 {
                 fsB = fsetB.file + i;
@@ -113,7 +113,7 @@ int do_record_merge(char *fileAName, char *fileBName,
                 if (fsB->type == 1)
                     {
                     if (!(fsA->name[0] == fsB->name[0] &&
-		          fsA->name[1] == fsB->name[1]))
+                          fsA->name[1] == fsB->name[1]))
                         continue;
                     strcpy (fullname, fsetB.scandir);
                     strcat (fullname, "/");
@@ -121,27 +121,27 @@ int do_record_merge(char *fileAName, char *fileBName,
                     rc = read_mk4corel (fullname, &cdataB);
                     msg("  read_mk4corel() returned %d", 1, rc);
                     msg("fsB->name == %s", 1, fsB->name);
-		    break;  // got it!
+                    break;  // got it!
                     }
                 }
 
-	    if (rc < 0)
-		{
-		msg("Unable to find a match for %s, continuing", 2, fsA->name);
-		// fprintf(stderr, "Unable to find a match for A?\n");
-		// read_mk4corel() does an internal clear_mk4corel ()
-		continue;
-		}
+            if (rc < 0)
+                {
+                msg("Unable to find a match for %s, continuing", 2, fsA->name);
+                // fprintf(stderr, "Unable to find a match for A?\n");
+                // read_mk4corel() does an internal clear_mk4corel ()
+                continue;
+                }
 
             msg("----> index_map[0]=%x, index_map[MAX]=%x, A,B nindex=%d,%d",
                 0, index_map[0], index_map[NUM_CH_MAP-1],
-		cdataA.t100->nindex, cdataB.t100->nindex);
+                cdataA.t100->nindex, cdataB.t100->nindex);
 
-	    if (cdataA.t100->nindex + cdataB.t100->nindex > NUM_CH_MAP)
-		{
-		fprintf(stderr, "Too many indices to remap\n");
-		return(1);
-		}
+            if (cdataA.t100->nindex + cdataB.t100->nindex > NUM_CH_MAP)
+                {
+                fprintf(stderr, "Too many indices to remap\n");
+                return(1);
+                }
 
                             // initialize index_map with A's indices
             for (i = 0; i < cdataA.t100->nindex; i++)
@@ -160,11 +160,11 @@ int do_record_merge(char *fileAName, char *fileBName,
                 if ((t101b = idxb->t101) == NULL)
                     continue;
                 msg("encountered B index %d", 0, t101b->index);
-		new_idx = index_map[i+j][0] = t101b->index;
+                new_idx = index_map[i+j][0] = t101b->index;
                 for (n = 0; n < NUM_CH_MAP; n++)
                     while (new_idx == index_map[n][1])
-			new_idx += IDX_INC;
-		index_map[i+j][1] = new_idx;
+                        new_idx += IDX_INC;
+                index_map[i+j][1] = new_idx;
                 }
         
                             // debug info
@@ -216,18 +216,18 @@ int do_record_merge(char *fileAName, char *fileBName,
             cdataC.t100->ndrec = cdataA.t100->ndrec + cdataB.t100->ndrec;
             cdataC.t100->nindex = cdataA.t100->nindex + cdataB.t100->nindex;
 
-	    msg ("new ndrec: %d = %d + %d", 0, cdataC.t100->ndrec,
-		cdataC.t100->ndrec - cdataB.t100->ndrec, cdataB.t100->ndrec);
-	    msg ("new nindex: %d = %d + %d", 0, cdataC.t100->nindex,
-		cdataC.t100->nindex - cdataB.t100->nindex, cdataB.t100->nindex);
+            msg ("new ndrec: %d = %d + %d", 0, cdataC.t100->ndrec,
+                cdataC.t100->ndrec - cdataB.t100->ndrec, cdataB.t100->ndrec);
+            msg ("new nindex: %d = %d + %d", 0, cdataC.t100->nindex,
+                cdataC.t100->nindex - cdataB.t100->nindex, cdataB.t100->nindex);
 
                             // adjust index space to new number of index items
             while (cdataC.t100->nindex > cdataC.index_space)
                 {
                 cdataC.index_space += IDX_INC;
                 cdataA.index = (struct index_tag *)
-		    realloc ((void *)cdataA.index, 
-			cdataC.index_space * sizeof (struct index_tag));
+                    realloc ((void *)cdataA.index, 
+                        cdataC.index_space * sizeof (struct index_tag));
                 }
 
                             // point C copy to (possibly) enlarged index array 
@@ -244,7 +244,7 @@ int do_record_merge(char *fileAName, char *fileBName,
             for (i=0; i< cdataC.t100->nindex; i++)
                 {
                 idxc = cdataC.index + i;
-		relabel_chan_ids(idxc->t101, i < nindex_A_save);
+                relabel_chan_ids(idxc->t101, i < nindex_A_save);
                 msg ("i %d index %hd primary %hd ref %s rem %s", 0,
                         i, idxc->t101->index, idxc->t101->primary,
                            idxc->t101->ref_chan_id, idxc->t101->rem_chan_id);
@@ -266,9 +266,9 @@ int do_record_merge(char *fileAName, char *fileBName,
             strncpy(temp2 + strlen(temp2) - 6, rcode, 6);
             msg("new filename = %s", 1, temp2);
 
-			    // a rather verbose diagnostic
-	    if (msglev < 0)
-		print_cdata_cmp(fsA->name, fsB->name, &cdataA, &cdataB);
+                            // a rather verbose diagnostic
+            if (msglev < 0)
+                print_cdata_cmp(fsA->name, fsB->name, &cdataA, &cdataB);
 
             msg("Overwriting t120 rootcodes", 1);
             for (i = 0; i < cdataC.t100->nindex; i++)
@@ -331,7 +331,7 @@ int do_record_merge(char *fileAName, char *fileBName,
             do              // find matching B file
                 {
                 fsB = fsetB.file + j++;
-		if (fsB->type < 0) break;
+                if (fsB->type < 0) break;
                 strcpy(temp, fsA->name);
                 strncpy(temp + strlen(temp) - 6, rcode, 6);
                 strcpy(temp2, fsB->name);
@@ -339,11 +339,11 @@ int do_record_merge(char *fileAName, char *fileBName,
                 }
             while (strcmp(temp, temp2) != 0);
 
-	    if (fsB->type < 0)
-		{
-		msg("No match for %s, continuing", 2, fsA->name);
-		continue;
-		}
+            if (fsB->type < 0)
+                {
+                msg("No match for %s, continuing", 2, fsA->name);
+                continue;
+                }
             
             strcpy (fullname, fsetB.scandir);
             strcat (fullname, "/");
@@ -360,61 +360,9 @@ int do_record_merge(char *fileAName, char *fileBName,
                             // copy A's data into C
             sdataC = malloc(sizeof(sdataA));
             memcpy(sdataC, &sdataA, sizeof(sdataA));
-
-	    // following section moved to append_sdata.c ...
-#ifdef dead_code
-                            // append B's data to C for type_301 and type_302
-            for (n = 0; n < NUM_CH_MAP; n++)
-                {
-                if (sdataC->model[n].chan_id[0] == '\0')
-                    {
-                    int numChans = n;
-                    
-                    for (n = 0; n < NUM_CH_MAP; n++)
-                        {
-                        if (sdataB.model[n].chan_id[0] == '\0')
-                            break;
-                        memcpy(&(sdataC->model[numChans + n]),
-                               &(sdataB.model[n]), sizeof(sdataB.model[n]));
-                        }
-                    break;
-                    }
-                }
-            
-                            // append B's data to C for type_303 .. type_309
-            for (n = 0; n < sdataB.n303; n++)
-                sdataC->t303[sdataA.n303 + n] = sdataB.t303[n];
-            sdataC->n303 += sdataB.n303;
-            
-            for (n = 0; n < sdataB.n304; n++)
-                sdataC->t304[sdataA.n304 + n] = sdataB.t304[n];
-            sdataC->n304 += sdataB.n304;
-            
-            for (n = 0; n < sdataB.n305; n++)
-                sdataC->t305[sdataA.n305 + n] = sdataB.t305[n];
-            sdataC->n305 += sdataB.n305;
-            
-            for (n = 0; n < sdataB.n306; n++)
-                sdataC->t306[sdataA.n306 + n] = sdataB.t306[n];
-            sdataC->n306 += sdataB.n306;
-            
-            for (n = 0; n < sdataB.n307; n++)
-                sdataC->t307[sdataA.n307 + n] = sdataB.t307[n];
-            sdataC->n307 += sdataB.n307;
-            
-            for (n = 0; n < sdataB.n308; n++)
-                sdataC->t308[sdataA.n308 + n] = sdataB.t308[n];
-            sdataC->n308 += sdataB.n308;
-            
-            for (n = 0; n < sdataB.n309; n++)
-                sdataC->t309[sdataA.n309 + n] = sdataB.t309[n];
-            sdataC->n309 += sdataB.n309;
-            
-            msg("writing %d 309 records, from A=%d + B=%d", 1,
-                sdataC->n309, sdataA.n309, sdataB.n309);
-#else /* dead_code */
-	    append_sdata(sdataC, &sdataB);
-#endif /* dead_code */
+                            // append copy B to copy C
+                            // editing channel names as required
+            append_sdata(sdataC, &sdataB);
 
             msg("  write_mk4sdata(C) returned %d", 1,
                 write_mk4sdata(sdataC, fileFullName));

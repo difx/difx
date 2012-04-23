@@ -25,11 +25,13 @@ struct type_202 *t202)
     {
     char refst, remst;
     int i;
-    double refepoch, remepoch, frt, refdiff, remdiff, time_to_double();
+    double refepoch, remepoch, frt, refdiff, remdiff, time_to_double(), lambda;
     struct station_struct *ref, *rem;
     struct station_log *lref, *lrem;
     struct date tempdate;
-
+    extern struct mk4_sdata sdata[];
+    struct mk4_sdata *refsd, 
+                     *remsd;
     clear_202 (t202);
 
     strncpy (t202->baseline, param->baseline, 2);
@@ -39,8 +41,10 @@ struct type_202 *t202)
     ref = rem = NULL;
     for (i=0; i<root->ovex->nst; i++)
         {
-        if (root->ovex->st[i].mk4_site_id == refst) ref = root->ovex->st + i;
-        if (root->ovex->st[i].mk4_site_id == remst) rem = root->ovex->st + i;
+        if (root->ovex->st[i].mk4_site_id == refst) 
+            ref = root->ovex->st + i;
+        if (root->ovex->st[i].mk4_site_id == remst) 
+            rem = root->ovex->st + i;
         }
     if ((ref == NULL) || (rem == NULL))
         {
@@ -61,8 +65,6 @@ struct type_202 *t202)
     t202->rem_ypos = rem->coordinates[1];
     t202->ref_zpos = ref->coordinates[2];
     t202->rem_zpos = rem->coordinates[2];
-                                        /* Baseline u,v,derivs here */
-
                                         /* Fourfit ref time is relative to start of year */
                                         /* So need to convert to secs since 1980 */
     tempdate.year = root->ovex->start_time.year;
@@ -93,11 +95,38 @@ struct type_202 *t202)
     t202->ref_clockrate = ref->clockrate;
     t202->rem_clockrate = rem->clockrate;
                                         /* Instrumental delays(?) here */
-
     t202->ref_zdelay = ref->zenith_atm * 1.0e6;
     t202->rem_zdelay = rem->zenith_atm * 1.0e6;
                                         /* elevations/azimuths here */
+    for (i=0; i<MAXSTATIONS; i++)       // find correct splines
+        if (sdata[i].t300 != NULL)
+            {
+            if (sdata[i].t300->id == refst)
+                refsd = sdata + i;
+            if (sdata[i].t300->id == remst) 
+                remsd = sdata + i;
+            }
+    if ((refsd == NULL) || (remsd == NULL))
+        {
+        msg ("Could not find stations in t303 records in fill_202()", 2);
+        return (-1);
+        }
 
+                                        // should actually evaluate these polys at frt
+    if (refsd->model[0].t303[0] != NULL && remsd->model[0].t303[0] != NULL)
+        {
+        t202->ref_elev = refsd->model[0].t303[0]->elevation[0];
+        t202->rem_elev = remsd->model[0].t303[0]->elevation[0];
+        t202->ref_az   = refsd->model[0].t303[0]->azimuth[0];
+        t202->rem_az   = remsd->model[0].t303[0]->azimuth[0];
+                                        // Baseline u,v in fr / asec
+                                        // should evaluate these polys at frt, too!
+        lambda = 299.792458 / param->ref_freq; // wavelength (m)
+        t202->u = 4.848137e-6 * (remsd->model[0].t303[0]->u[0] 
+                               - refsd->model[0].t303[0]->u[0]) / lambda;
+        t202->v = 4.848137e-6 * (remsd->model[0].t303[0]->v[0] 
+                               - refsd->model[0].t303[0]->v[0]) / lambda;
+        }
                                         /* Now find stations in lvex for VSNs */
     for (i=0; i<root->lvex->nstation; i++)
         {

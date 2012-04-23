@@ -1,5 +1,4 @@
-    /*  Definitions of major parameter structures */
-
+                                        /*  Definitions of major parameter structures */
 #define MAXFREQ   64
 #define MAXINDEX 256
 #define LAG 0
@@ -24,11 +23,11 @@ struct type_param
     int         num_ap;                 /* Number of Accumulation Periods */
     char        baseline[2];            /* Carried for convenience */
     short       corr_type;              /* Determines type_120 format */
-    short       pol;                    /* Polarization type (LL,RR,LR,RL=0,1,2,3) */
+    short       pol;                    // Polarization type - vals def'd in pass_struct.h
     char        *rf_fglist;             /* List of fgroups when refringing */
     double      cor_limit;              /* Maximum correlation amplitude */
     int         bits_sample;            /* Bits per sample (1 or 2) */
-    double      samp_period;            /* Len sample period (interval between samp in s) */
+    double      samp_period;            // Len sample period (interval between samp in s)
     short       pc_mode[2];             /* Phase cal mode by station */
     short       pc_period[2];           // Phase cal integration period (ap's)
     double      pc_freq[MAXFREQ][2];    /* phase cal tone freq (KHz) by chan & stn */
@@ -36,6 +35,7 @@ struct type_param
     double      win_sb[2];              /* Single band search window microsec */
     double      win_dr[2];              /* Delay rate search window microsec per sec */
     double      win_mb[2];              /* Multi band search window  microsec */
+    double      win_ion[2];             // bounds of ionosphere search window (TEC units)
     double      inv_sigma;              /* 1 / (1 sigma noise) */
     double      epoch_time;             /* Epoch time */
     int         cormode;                /* determines type 120 union */
@@ -54,10 +54,13 @@ struct type_param
     short       dc_block;               // iff true, zero out DC subchannel in spectrum
     double      passband[2];            /* passband for spectral filtering (MHz) */
     double      speedup;                /* ration of playback speed to record speed */
-    int         first_plot;             // number of first channel to be plotted, when overridden
+    int         first_plot;             // number of first chan to plot, when overridden
     int         nplot_chans;            // number of plot channels when overridden
+    int         interpol;               // interpolation method
     double      pcal_spacing[2];        // pcal tone spacing (Hz) for ref & rem
-    double      ionosphere[2];          // ionosphere (TEC units) for ref & rem
+    double      ion_diff;               // differential ionosphere (rem-ref in TEC units)
+    int         ion_pts;                // number of pts in ionosphere coarse search
+    double      par_angle[2];           // parallactic angle (rad) for ref & rem
     };
 
 #define WIN_EDGE_SBD   0x01             /* masks for status.interp_err */
@@ -76,8 +79,8 @@ struct type_status
     int         grid_points;            /* # of points in FFT to MBdelay */
     double      freq_spread;            /* Sum of (Freq - avg freq) squared */
     int         large_errors;           /* # of large errors */
-    int         sliver_errors;          /* # of AP's with sliver (too little data) errors */
-    int         zero_errors;            /* # of AP's with zero (some lag count 0) errors */
+    int         sliver_errors;          // # of AP's with sliver (too little data) errors
+    int         zero_errors;            // # of AP's with zero (some lag count 0) errors
     int         total_ap;               /* Total # of ap's processed (both sb's )*/
     float       total_ap_frac;          /* Same, but with microediting */
     int         ap_num[2][MAXFREQ];     /* # of aps for each sideband & freq */
@@ -85,12 +88,13 @@ struct type_status
     double      epoch_err[MAXFREQ];     /* Epoch error (offset from ref. time) */
     double      epoch_off_cent;         /* Epoch offset from center  */
     int         mb_index[MAXFREQ];      /* index for freq in FFT to MBdelay */
-    double      pc_meas[MAXFREQ][2];    /* phase-cal phase as measured */
-    double      pc_phase[MAXFREQ][2];   /* phase-cal phase as used */
-    double      pc_amp[MAXFREQ][2];     /* phase-cal magnitude */
-    double      pc_offset[MAXFREQ][2];  /* Additive/manual phasecal values */
+    double      pc_meas[MAXFREQ][2][2]; // phase-cal phase as measured[chan][ref:rem][L:R]
+    double      pc_phase[MAXFREQ][2][2];// phase-cal phase as used    [chan][ref:rem][L:R]
+    double      pc_amp[MAXFREQ][2][2];  // phase-cal magnitude        [chan][ref:rem][L:R]
+    double      pc_offset[MAXFREQ][2][2];//Additive/manual pcal values[chan][ref:rem][L:R]
     double      pcals_accum[2];         /* # of phase-cals for current channel */
     double      lsb_phoff[2];           /* LSB phase offset in radians */
+    double      pc_delay[MAXFREQ][2][2];// multitone pcal based delays[chan][ref:rem][L:R]
     int         space_err;              /* =1 if error if freq spacing is too large */
     int         drsp_size;              /* # of points in delay rate spectrum */
     int         f_rate_size;            /* # of points in FFT to Fringe rate */
@@ -128,7 +132,7 @@ struct type_status
     double      prob_false;             /* Probability of false detection */
     int         nseg;                   /* Number of segments in computing time RMS */
     int         apseg;                  /* Number of APs in each segment */
-    int         stc_present;            // bits 0..1 set iff ref..rem state count records present
+    int         stc_present;            // bits 0|1 set iff ref|rem state counts present
     double      th_timerms_phase;       /* theoretical RMS phase with time */
     double      th_timerms_amp;         /* theoretical RMS amp with time */
     double      th_freqrms_phase;       /* theoretical RMS phase with freq */

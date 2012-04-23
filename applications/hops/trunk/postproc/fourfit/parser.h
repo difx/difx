@@ -20,7 +20,7 @@ struct token_struct
    };
 
 
-#define MAX_TOKENS    80   /* Increase if many more tokens added */
+#define MAX_TOKENS    90   /* Increase if many more tokens added */
 #define MAX_STATES    20   /*     "    "   "    "   states   "   */
 
 
@@ -100,6 +100,16 @@ struct token_struct
 #define DC_BLOCK_        70
 #define SAMPLERS_        71
 #define OPTIMIZE_CLOSURE_ 72
+#define PC_PHASE_L_      73
+#define PC_PHASE_R_      74
+#define ION_WIN_         75
+#define ION_NPTS_        76
+#define INTERPOLATOR_    77
+#define ITERATE_         78
+#define SIMUL_           79
+#define STATION_DELAY_   80
+#define PC_DELAY_L_      81
+#define PC_DELAY_R_      82
 
 
         /* Definitions of token categories */

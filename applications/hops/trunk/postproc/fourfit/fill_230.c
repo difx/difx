@@ -25,6 +25,7 @@ struct type_230 *t230)
     complex c_zero(), c_mult(), c_exp();
     double theta;
     int i, j, lag, nl;
+    int stnpol[2][4] = {0, 1, 0, 1, 0, 1, 1, 0}; // [stn][pol] = 0:L, 1:R
     extern struct type_status status;
 
     clear_230 (t230);
@@ -47,7 +48,8 @@ struct type_230 *t230)
         if (j < 0) j += 4 * nl;
         value = datum->sbdelay[lag];
                                         /* Remove mean phasecal */
-        theta = (status.pc_phase[fr][1] - status.pc_phase[fr][0]);
+        theta = (status.pc_phase[fr][1][stnpol[1][pass->pol]] 
+               - status.pc_phase[fr][0][stnpol[0][pass->pol]]);
         work_array[j] = c_mult (value, c_exp (theta));
         }
                                         /* FFT sband delay to xpower spectrum */

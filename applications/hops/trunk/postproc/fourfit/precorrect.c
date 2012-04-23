@@ -26,7 +26,8 @@ struct type_pass *pass;
     {
     int i, j, k, stn, n, fr, ntones, nin, mask;
     double delay_offset, rate_offset, pcfreq_hz,
-           pcphas[2], pcfreq[2];
+           pcphas[2][2],            // indexed by [stn][pol]
+           pcfreq[2];
     extern struct type_status status;
     extern int do_accounting;
     static double conrad = 0.01745329252;
@@ -38,8 +39,8 @@ struct type_pass *pass;
                                          
     param->cor_limit = 16000.0;     /* Initialize large number threshold */
     param->use_sample_cnts = pass->control.use_samples;
-
-
+                                    // get interpolation method for this pass
+    param->interpol = pass->control.interpolator;
                                     // calculate offsets of windows due to position offsets
                             
     // delay_offset = (pass->control.ra_offset  * rbase->t2600.u_obsfreq
@@ -47,16 +48,25 @@ struct type_pass *pass;
     //
     // rate_offset =  (pass->control.ra_offset  * rbase->t2600.u_obsfreq_rate
     //               + pass->control.dec_offset * rbase->t2600.v_obsfreq_rate) * 1e-6;
-    
+
     delay_offset = 0.0;             // for now, just force 0 offset  rjc 99.8.13
     rate_offset = 0.0;
     
+    param->ion_pts = pass->control.ion_npts;
     for (i=0; i<2; i++)             // Copy windows into working area
         {
         param->win_sb[i] = pass->control.sb_window[i] + delay_offset;
         param->win_mb[i] = pass->control.mb_window[i] + delay_offset;
         param->win_dr[i] = pass->control.dr_window[i] + rate_offset;
         param->passband[i] = pass->control.passband[i];
+                                    // ionosphere window is about differential a priori
+                                    // collapses if only 1 pt (i.e. no search)
+        param->win_ion[i] = (param->ion_pts > 1) ?
+            pass->control.ion_window[i] : 0.0;
+        param->win_ion[i] += (pass->control.ionosphere.rem == NULLFLOAT) ? 
+                           0.0 : pass->control.ionosphere.rem;
+        param->win_ion[i] -= (pass->control.ionosphere.ref == NULLFLOAT) ? 
+                           0.0 : pass->control.ionosphere.ref;
         }
 
     param->pc_mode[0] = pass->control.pc_mode.ref;
@@ -66,12 +76,6 @@ struct type_pass *pass;
    
     status.lsb_phoff[0] = pass->control.lsb_offset.ref * conrad;
     status.lsb_phoff[1] = pass->control.lsb_offset.rem * conrad;
-                                    // copy in ionosphere iff it is non-null
-    param->ionosphere[0] = (pass->control.ionosphere.ref == NULLFLOAT) ? 
-                           0.0 : pass->control.ionosphere.ref;
-
-    param->ionosphere[1] = (pass->control.ionosphere.rem == NULLFLOAT) ? 
-                           0.0 : pass->control.ionosphere.rem;
 
     param->dc_block = pass->control.dc_block;
                                     // Copy phase cal offsets; identify desired pcal tone freqs
@@ -96,16 +100,20 @@ struct type_pass *pass;
                                     // find corresponding freq index in control structure
                 if (stn == 0)
                     {
-                    pcphas[stn] = pass->control.pc_phase[j].ref;
+                    for (i=0; i<2; i++)
+                        pcphas[stn][i] = pass->control.pc_phase[j][i].ref;
                     pcfreq[stn] = pass->control.pc_freq[j].ref;
                     }
                 else
                     {
-                    pcphas[stn] = pass->control.pc_phase[j].rem;
+                    for (i=0; i<2; i++)
+                        pcphas[stn][i] = pass->control.pc_phase[j][i].rem;
                     pcfreq[stn] = pass->control.pc_freq[j].rem;
                     }
                    
-                status.pc_offset[fr][stn] = (pcphas[stn] != NULLFLOAT) ? pcphas[stn] : 0.0;
+                for (i=0; i<2; i++)
+                    status.pc_offset[fr][stn][i] = (pcphas[stn][i] != NULLFLOAT) ? pcphas[stn][i] 
+                                                                                 : 0.0;
 
                                     // expand tone #'s into frequencies, if necessary
                 if (fabs (pcfreq[stn]) > 64)
@@ -166,16 +174,21 @@ struct type_pass *pass;
                 }                   // end of fr loop
             else
                 {                   // process all tones in multitone mode
-                pcphas[stn] = (stn == 0) ? pass->control.pc_phase[j].ref
-                                         : pass->control.pc_phase[j].rem;
-                status.pc_offset[fr][stn] = (pcphas[stn] != NULLFLOAT) ? pcphas[stn] : 0.0;
+                for (i=0; i<2; i++)
+                    pcphas[stn][i] = (stn == 0) ? pass->control.pc_phase[j][i].ref
+                                                : pass->control.pc_phase[j][i].rem;
+                                    // apply a priori phase offset to each pol
+                for (i=0; i<2; i++)
+                    status.pc_offset[fr][stn][i] = (pcphas[stn][i] != NULLFLOAT) ? pcphas[stn][i] 
+                                                                                 : 0.0;
+
                                     // assume for now that all ovex channels the same spacing
                 pcfreq_hz = fmod (pass->pass_data[fr].frequency * 1e6
                                 - ovex->st[n].channels[0].pcal_base_freq,
                                   ovex->st[n].channels[0].pcal_spacing);
 
                                     // pcfreq_hz is positive distance from next lower line
-                if (pcfreq_hz < 0.0)
+                if (pcfreq_hz <= 0.0)
                     pcfreq_hz += ovex->st[n].channels[0].pcal_spacing;
                                     // nearest freq rail depends on sideband
                 if (ovex->st[n].channels[0].net_sideband == 'U')

@@ -29,7 +29,7 @@
 #define FALSE 0
 #define TRUE 1
 
-char display_name[50];
+char display_name[1024];
 char control_filename[100];
 char *control_string;
 char afile_name[100];
@@ -50,14 +50,18 @@ struct type_param *param)
     		   do_accounting;
     extern int write_xpower;
     extern int refringe, msglev, ap_per_seg, reftime_offset;
-    int do_parse = FALSE, bf_override = FALSE, cs_too_big = FALSE;
+    int do_parse = FALSE, 
+        bf_override = FALSE, 
+        cs_too_big = FALSE;
     char *get_bfstring (char *);
+                                        // local prototype
+    int parse_polar (char *, short int *);
 
     strcpy (control_filename, "default");
                                         /* Default polarization */
-    param->pol = POL_UNDEF;
-    param-> first_plot = 0;
-    param-> nplot_chans = 0;
+    param->pol = POL_ALL;
+    param->first_plot = 0;
+    param->nplot_chans = 0;
                                         /* Interpret command line flags */
     while((c=getopt(argc,argv,"+ab:c:d:f:m:n:pr:s:tuxP:T:X")) != -1) 
         {
@@ -69,17 +73,18 @@ struct type_param *param)
 
             case 'b':
                 bf_override = TRUE;
-                strncpy (base_freq, optarg, 20);
+                strncpy (base_freq, optarg, sizeof(base_freq)-1);
+                base_freq[sizeof(base_freq)-1] = 0;
                 break;
 
             case 'c':
                 do_parse = TRUE;
-                strncpy (control_filename,optarg,100);
+                strncpy (control_filename,optarg,sizeof(control_filename));
                 break;
 
             case 'd':
                 displayopt = TRUE;
-                strncpy (display_name,optarg,50);
+                strncpy (display_name,optarg,sizeof(display_name));
                 break;
             
             case 'f':
@@ -134,11 +139,8 @@ struct type_param *param)
                 break;
 
             case 'P':
-                if (strcmp (optarg, "LL") == 0) param->pol = POL_LL;
-                else if (strcmp (optarg, "RR") == 0) param->pol = POL_RR;
-                else if (strcmp (optarg, "LR") == 0) param->pol = POL_LR;
-                else if (strcmp (optarg, "RL") == 0) param->pol = POL_RL;
-                else msg ("Bad -P argument (LL,RR,LR,RL are valid)", 2);
+                if (parse_polar (optarg, &param->pol))
+                    msg ("Bad -P argument, doing all sequentially)", 2);
                 break;
 
             case 'T':
@@ -243,4 +245,64 @@ struct type_param *param)
         }
 
     return (0);
+    }
+                                        // parse polarization string into encoded int
+int parse_polar (char *field, short *code)
+    {
+    int i,
+        error,
+        kode = -1,
+        rc = 1;
+    char buff[12];
+    if (strcmp (field, "all") == 0)
+        kode = POL_ALL;                 // we will do all present polarizations, one at a time
+    else if (strcmp (field, "I") == 0)
+        kode = POL_IXY;                 // form Stokes I for linear polarization data
+    else if (strlen (field) < 12)
+        {
+        strcpy (buff, field);
+                                        // replace all X's & Y's by L's & R's
+        error = 0;
+        for (i=0; i<strlen(buff); i++)
+            if (buff[i] == 'X')
+                buff[i] = 'L';
+            else if (buff[i] == 'Y')
+                buff[i] = 'R';
+            else if (buff[i] == '+'
+                    && (i==2 || i==5 || i==8))
+                ;
+            else if (buff[i] == 'L' || buff[i] == 'R')
+                ;
+            else
+                {
+                error = 1;
+                break;
+                }
+                                        // only legal lengths are 2, 5, 8, or 11
+        if ((strlen (buff) - 2) % 3)
+            error = 1;
+                                        // no syntax errors, now decode fields
+        if (!error)
+            {
+            kode = 0;
+            for (i=0; i<strlen(buff); i+=3)
+                {
+                if (strncmp (buff+i, "LL", 2) == 0)
+                    kode |= POLMASK_LL;
+                else if (strncmp (buff+i, "RR", 2) == 0)
+                    kode |= POLMASK_RR;
+                else if (strncmp (buff+i, "LR", 2) == 0)
+                    kode |= POLMASK_LR;
+                else if (strncmp (buff+i, "RL", 2) == 0)
+                    kode |= POLMASK_RL;
+                }
+            }
+        }
+
+    if (kode != -1)                     // return without error only if kode is valid
+        {
+        *code = kode;
+        rc = 0;
+        }
+    return rc;
     }
