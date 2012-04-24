@@ -713,13 +713,16 @@ void NativeMk5DataStream::openfile(int configindex, int fileindex)
 	initialiseFile(configindex, fileindex);
 }
 
-void NativeMk5DataStream::readonedemux(bool isfirst, int buffersegment)
+int NativeMk5DataStream::readonedemux(bool isfirst, int buffersegment)
 {
+  long long localreadpointer;
   int fixbytes, rbytes;
   char * readto;
   bool ok;
 
   rbytes = moduleRead((unsigned long*)datamuxer->getCurrentDemuxBuffer(), datamuxer->getSegmentBytes(), readpointer, buffersegment);
+  localreadpointer = readpointer + rbytes;
+  //the main readpointer will be updated outside of this routine
   if(isfirst)
     datamuxer->initialise();
   if(rbytes != datamuxer->getSegmentBytes()) {
@@ -728,13 +731,16 @@ void NativeMk5DataStream::readonedemux(bool isfirst, int buffersegment)
   fixbytes = datamuxer->datacheck(datamuxer->getCurrentDemuxBuffer(), rbytes, 0);
   while(fixbytes > 0) {
     readto = reinterpret_cast<char*>(datamuxer->getCurrentDemuxBuffer()) + rbytes - fixbytes;
-    moduleRead(reinterpret_cast<unsigned long*>(readto), fixbytes, readpointer, buffersegment);
+    moduleRead(reinterpret_cast<unsigned long*>(readto), fixbytes, localreadpointer, buffersegment);
+    readpointer += fixbytes; //but if we need extra reads, then we must add these "extra" values to the readpointer
+    localreadpointer += fixbytes; //and to the local one also of course
     fixbytes = datamuxer->datacheck(datamuxer->getCurrentDemuxBuffer(), rbytes, rbytes - fixbytes);
   }
   datamuxer->incrementReadCounter();
   ok = datamuxer->deinterlace(rbytes);
   if(!ok)
     MPI_Abort(MPI_COMM_WORLD, 1);
+  return rbytes;
 }
 
 int NativeMk5DataStream::moduleRead(unsigned long *destination, int nbytes, long long start, int buffersegment)
@@ -840,7 +846,7 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 {
 	unsigned long *buf, *data;
 	char *readto;
-	int bytes;
+	int rbytes, obytes;
 	double tv_us;
 	static double now_us;
 	static long long lastpos = 0;
@@ -857,18 +863,19 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 	//deinterlace and mux if needed
 	if(datamuxer)
 	{
-		readonedemux(false, buffersegment);
+		rbytes = readonedemux(false, buffersegment); //tells you how many bytes were read, used for changing the readpointer
 		readto = (char*)&databuffer[buffersegment*(bufferbytes/numdatasegments)];
 		bufferinfo[buffersegment].validbytes = datamuxer->multiplex((u8*)readto); //this corrects validbytes, which may have been corrupted by multiple moduleReads
-		bytes = bufferinfo[buffersegment].validbytes;
+		obytes = bufferinfo[buffersegment].validbytes; //this is the number of bytes relevant for downstream processing
 	}
 	else
 	{
-		bytes = moduleRead(buf, readbytes, readpointer, buffersegment);
+		rbytes = moduleRead(buf, readbytes, readpointer, buffersegment);
+		obytes = rbytes;
 	}
 
 	//if there was no valid data read, return
-	if(bytes == 0)
+	if(rbytes == 0)
 	{
 		return;
 	}
@@ -881,7 +888,7 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 	sec2 = (model->getScanStartSec(readscan, corrstartday, corrstartseconds) + readseconds + corrstartseconds) % 86400;
 
 	hasFilledData = (data[1] == MARK5_FILL_PATTERN && data[2] == MARK5_FILL_PATTERN);
-	if(!hasFilledData && bytes > 4000)
+	if(!hasFilledData && obytes > 4000)
 	{
 		hasFilledData = (data[998] == MARK5_FILL_PATTERN && data[999] == MARK5_FILL_PATTERN);
 	}
@@ -954,13 +961,13 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 		// use Brian Kernighan's bit counting trick to see if invalidtime is a power of 2 
 		if((invalidtime & (invalidtime-1)) == 0 && !noDataOnModule)
 		{
-			cwarn << startl << invalidtime << " consecutive sync errors starting at readpos " << invalidstart << " (" << mjd << "," << sec << "," << ns << ")!=(" << sec2 << "," << readnanoseconds << ")" << " length=" << bytes << endl ;
+			cwarn << startl << invalidtime << " consecutive sync errors starting at readpos " << invalidstart << " (" << mjd << "," << sec << "," << ns << ")!=(" << sec2 << "," << readnanoseconds << ")" << " length=" << obytes << endl ;
 		}
 		// After 5 sync errors try to find the sync word again
 		if(invalidtime % 6 == 5)
 		{
 			struct mark5_format *mf;
-			mf = new_mark5_format_from_stream(new_mark5_stream_memory(data, bytes));
+			mf = new_mark5_format_from_stream(new_mark5_stream_memory(data, obytes));
 			if(mf)
 			{
 				readpointer += mf->frameoffset;
@@ -992,7 +999,7 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 		if(switchedpower && (nt % switchedpowerincrement == 0) )
 		{
 			struct mark5_stream *m5stream = new_mark5_stream_absorb(
-				new_mark5_stream_memory(data, bytes),
+				new_mark5_stream_memory(data, obytes),
 				new_mark5_format_generic_from_string(formatname) );
 			if(m5stream)
 			{
@@ -1035,7 +1042,7 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 				const int LowRealTimeRate = 1300;
 
 				state = MARK5_STATE_PLAY;
-				rate = (static_cast<double>(readpointer) + static_cast<double>(bytes) - static_cast<double>(lastpos))*8.0/(tv_us - now_us);
+				rate = (static_cast<double>(readpointer) + static_cast<double>(rbytes) - static_cast<double>(lastpos))*8.0/(tv_us - now_us);
 //				if(nrate > 1)
 //				{
 //					rate = (nrate*lastrate + 4*rate)/(nrate+4);
@@ -1073,7 +1080,7 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 
 			sendMark5Status(state, readpointer, fmjd, rate);
 		}
-		lastpos = readpointer + bytes;
+		lastpos = readpointer + rbytes;
 		now_us = tv_us;
 	}
 
@@ -1102,13 +1109,13 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 			keepreading = false;
 		}
 	}
-	if(bytes < readbytes)
+	if(rbytes < readbytes)
 	{
 		dataremaining = false;
 	}
 	else
 	{
-		readpointer += bytes;
+		readpointer += rbytes;
 	}
 	if(readpointer >= scanPointer->start + scanPointer->length)
 	{
@@ -1118,7 +1125,7 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 
 void NativeMk5DataStream::loopfileread()
 {
-  int perr;
+  int perr, rbytes;
   int numread = 0;
 
   //lock the outstanding send lock
@@ -1129,8 +1136,10 @@ void NativeMk5DataStream::loopfileread()
   //lock the first section to start reading
   openfile(bufferinfo[0].configindex, 0);
   if(datamuxer) {
-    readonedemux(true, 0);
-    readonedemux(false, 0);
+    rbytes = readonedemux(true, 0);
+    readpointer += rbytes;
+    rbytes = readonedemux(false, 0);
+    readpointer += rbytes;
   }
   moduleToMemory(numread++);
   moduleToMemory(numread++);

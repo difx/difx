@@ -46,7 +46,7 @@ public:
 	virtual void openfile(int configindex, int fileindex);
 	virtual void loopfileread();
 	virtual int calculateControlParams(int scan, int offsetsec, int offsetns);
-	virtual void readonedemux(bool isfirst, int buffersegment);
+	virtual int readonedemux(bool isfirst, int buffersegment);
 	int moduleRead(unsigned long * destination, int nbytes, long long start, int buffersegment);
 	int sendMark5Status(enum Mk5State state, long long position, double dataMJD, float rate);
 	int resetDriveStats();

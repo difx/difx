@@ -294,7 +294,7 @@ bool VDIFMuxer::deinterlace(int validbytes)
     frameoffset  = (int) (currentframenumber - processframenumber);
     if(frameoffset < 0) {
       cwarn << startl << "Discarding a frame from thread " << framethread << " which is timestamped " << -frameoffset << " frames earlier than the current frame being processed" << endl;
-      cdebug << startl << "Currentframenumber is " << currentframenumber << ", processframenumber is " << processframenumber << ", framesecond is " << framesecond << ", refframesecond is " << refframesecond << ", framenumber is " << framenumber << ", refframenumber is " << refframenumber << ", framespersecond is " << framespersecond << endl;
+      cwarn << startl << "Currentframenumber is " << currentframenumber << ", processframenumber is " << processframenumber << ", framesecond is " << framesecond << ", refframesecond is " << refframesecond << ", framenumber is " << framenumber << ", refframenumber is " << refframenumber << ", framespersecond is " << framespersecond << endl;
       continue;
     }
     if(frameoffset > readframes*DEMUX_BUFFER_FACTOR/numthreads) {

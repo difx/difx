@@ -672,7 +672,7 @@ void * DataStream::launchNewNetworkReadThread(void * thisstream)
   return 0;
 }
 
-void DataStream::readonedemux(bool isfirst)
+int DataStream::readonedemux(bool isfirst)
 {
   int fixbytes, rbytes;
   bool ok;
@@ -693,11 +693,12 @@ void DataStream::readonedemux(bool isfirst)
   ok = datamuxer->deinterlace(rbytes);
   if(!ok)
     MPI_Abort(MPI_COMM_WORLD, 1);
+  return rbytes;
 }
 
 void DataStream::loopfileread()
 {
-  int perr;
+  int perr, rbytes;
   int numread = 0;
 
   //lock the outstanding send lock
@@ -714,8 +715,8 @@ void DataStream::loopfileread()
   }
   if(keepreading) {
     if(datamuxer) {
-      readonedemux(true);
-      readonedemux(false);
+      rbytes = readonedemux(true);
+      rbytes = readonedemux(false);
     }
     diskToMemory(numread++);
     diskToMemory(numread++);
@@ -843,7 +844,7 @@ void DataStream::initialiseFake(int configindex)
 
 void DataStream::loopfakeread()
 {
-  int perr;
+  int perr, rbytes;
   int numread = 0;
 
   //lock the outstanding send lock
@@ -857,8 +858,8 @@ void DataStream::loopfakeread()
   dataremaining = true;
   if(keepreading) {
     if(datamuxer) {
-      readonedemux(true);
-      readonedemux(false);
+      rbytes = readonedemux(true);
+      rbytes = readonedemux(false);
     }
     fakeToMemory(numread++);
     fakeToMemory(numread++);
@@ -1596,7 +1597,7 @@ void DataStream::initialiseFile(int configindex, int fileindex)
 
 void DataStream::diskToMemory(int buffersegment)
 {
-  int synccatchbytes, previoussegment, validns, nextns, status, bytestocopy, nbytes, caughtbytes;
+  int synccatchbytes, previoussegment, validns, nextns, status, bytestocopy, nbytes, caughtbytes, rbytes;
   char * readto;
 
   //do the buffer housekeeping
@@ -1614,7 +1615,7 @@ void DataStream::diskToMemory(int buffersegment)
 
   //deinterlace and mux if needed
   if(datamuxer) {
-    readonedemux(false);
+    rbytes = readonedemux(false);
     readto = (char*)&databuffer[buffersegment*(bufferbytes/numdatasegments)];
     bufferinfo[buffersegment].validbytes = datamuxer->multiplex((u8*)readto);
   }
@@ -1683,7 +1684,7 @@ void DataStream::diskToMemory(int buffersegment)
 
 void DataStream::fakeToMemory(int buffersegment)
 {
-  int previoussegment, validns, nextns, status, bytestocopy, nbytes;
+  int previoussegment, validns, nextns, status, bytestocopy, nbytes, rbytes;
   char * readto;
 
   //do the buffer housekeeping
@@ -1701,7 +1702,7 @@ void DataStream::fakeToMemory(int buffersegment)
 
   //deinterlace and mux if needed
   if(datamuxer) {
-    readonedemux(false);
+    rbytes = readonedemux(false);
     readto = (char*)&databuffer[buffersegment*(bufferbytes/numdatasegments)];
     bufferinfo[buffersegment].validbytes = datamuxer->multiplex((u8*)readto);
   }

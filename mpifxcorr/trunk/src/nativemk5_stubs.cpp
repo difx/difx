@@ -41,7 +41,7 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 {
 }
 
-void NativeMk5DataStream::readonedemux(bool isfirst, int buffersegment)
+int NativeMk5DataStream::readonedemux(bool isfirst, int buffersegment)
 {
 }
 
