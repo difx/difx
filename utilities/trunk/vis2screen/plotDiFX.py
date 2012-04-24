@@ -24,6 +24,10 @@ parser.add_option("--toscreen", dest="toscreen", default=False, action="store_tr
                   help="Plot to the screen, otherwise to png files")
 parser.add_option("--singlevis", dest="singlevis", default=False, action="store_true",
                   help="Stop plotting as soon as there is a time change")
+parser.add_option("--singleplot", dest="singleplot", default=False, action="store_true",
+                  help="Plot everything on one axis")
+parser.add_option("--amprange", dest="amprange", default="-1,-1", 
+                  help="Range for the y axis for amplitude subplot in form min,max")
 (options, args) = parser.parse_args()
 
 if len(args) < 1:
@@ -39,14 +43,20 @@ verbose        = options.verbose
 inputfile      = options.inputfile
 toscreen       = options.toscreen
 singlevis      = options.singlevis
+singleplot     = options.singleplot
+amprange       = options.amprange.split(',')
 
 if inputfile == "":
     parser.error("You must supply an input file!")
+if len(amprange) != 2:
+    parser.error("Supply amprange in the form min,max!")
 
 (numfreqs, freqs) = parseDiFX.get_freqtable_info(inputfile)
 (numtelescopes, telescopes) = parseDiFX.get_telescopetable_info(inputfile)
 (numdatastreams, datastreams) = parseDiFX.get_datastreamtable_info(inputfile)
 (numbaselines, baselines) = parseDiFX.get_baselinetable_info(inputfile)
+amprange[0] = float(amprange[0])
+amprange[1] = float(amprange[1])
 
 if numfreqs == 0 or numtelescopes == 0 or numdatastreams == 0 or numbaselines == 0:
     parser.error("Couldn't parse input file " + inputfile + " correctly")
@@ -99,9 +109,11 @@ for filename in args:
 for i in range(numfiles):
     nextheader[i] = parseDiFX.parse_output_header(difxinputs[i])
 
+count = 0
+keeplooping = True
 if not len(nextheader[0]) == 0:
     startseconds = nextheader[0][2]
-while not len(nextheader[0]) == 0:
+while not len(nextheader[0]) == 0 and keeplooping:
     print "Looping..."
     for i in range(numfiles):
         snr = 0
@@ -114,7 +126,8 @@ while not len(nextheader[0]) == 0:
         seconds[i] = nextheader[i][2]
         if singlevis and seconds[i] > startseconds:
             print "Exiting since singlevis was specified"
-            sys.exit()
+	    keeplooping = False
+            break
         freqindex[i] = nextheader[i][5]
         polpair[i] = nextheader[i][6]
         nchan[i] = freqs[freqindex[i]].numchan/freqs[freqindex[i]].specavg
@@ -150,12 +163,20 @@ while not len(nextheader[0]) == 0:
                 maxlag = max(lagamp[i])
                 maxindex = lagamp[i].index(maxlag)
                 delayoffsetus = (maxindex - nchan[i]/2) * 1.0/(freqs[freqindex[0]].bandwidth*2)
+		if singleplot:
+		    ls = linestyles[count%len(linestyles)]
+		    print "Setting linestyle to " + ls
+		    count += 1
+		else:
+		    ls = linestyles[i]
                 pylab.subplot(311)
-                pylab.plot(chans[:nchan[i]], amp[i][:nchan[i]], linestyles[i])
+		if amprange[1] > 0:
+		    pylab.ylim(amprange)
+                pylab.plot(chans[:nchan[i]], amp[i][:nchan[i]], ls)
                 pylab.subplot(312)
-                pylab.plot(chans[:nchan[i]], phase[i][:nchan[i]], linestyles[i])
+                pylab.plot(chans[:nchan[i]], phase[i][:nchan[i]], ls)
                 pylab.subplot(313)
-                pylab.plot(chans[:nchan[i]], lagamp[i][:nchan[i]], linestyles[i])
+                pylab.plot(chans[:nchan[i]], lagamp[i][:nchan[i]], ls)
                 lagamp[i][maxindex] = 0
                 if maxindex > 0:
                     lagamp[i][maxindex-1] = 0
@@ -184,25 +205,31 @@ while not len(nextheader[0]) == 0:
         mjdstring = "%d %02d:%02d:%02d" % (mjd[0], hour, minute, second)
         titlestr = "Baseline %s-%s, Freq %.2f-%.2f, pol %s, date %s" % \
                    (ant1name, ant2name, lowfreq, hifreq, polpair[0], mjdstring)
-        pylab.title(titlestr)
         pylab.ylabel("Amplitude")
         pylab.subplot(312)
         pylab.ylabel("Phase (deg)")
         pylab.subplot(313)
         pylab.ylabel("Lag")
         pylab.xlabel("Channel")
-        pylab.figtext(0.0,0.0,"Fringe S/N %0.2f @ offset %0.2f us (%s)" % \
-                      (snr, delayoffsetus, "raw S/N is overestimated - corrected value ~%0.2f" % ((snr-3)/2)))
-        if toscreen:
-            pylab.show()
-        else:
-            pylab.savefig("%s_baseline%03d_freq_%02d_pol_%s.png" % (inputfile, baseline[i], freqindex[i], polpair[i]))
-        pylab.clf()
+	if not singleplot:
+            pylab.title(titlestr)
+            pylab.figtext(0.0,0.0,"Fringe S/N %0.2f @ offset %0.2f us (%s)" % \
+                          (snr, delayoffsetus, "raw S/N is overestimated - corrected value ~%0.2f" % ((snr-3)/2)))
+            if toscreen:
+                pylab.show()
+            else:
+	        pylab.savefig("%s_baseline%03d_freq_%02d_pol_%s.png" % (inputfile, baseline[i], freqindex[i], polpair[i]))
+            pylab.clf()
         print "Median values were:"
         for i in range(numfiles):
             print "File %d: %.6f" % (i, med[i])
         if numfiles == 2:
             print "Ratio of medians was " + str(med[1]/med[0])
-    for i in range(numfiles):
-        nextheader[i] = parseDiFX.parse_output_header(difxinputs[i])
-    
+    if keeplooping:
+        for i in range(numfiles):
+            nextheader[i] = parseDiFX.parse_output_header(difxinputs[i])
+if singleplot:
+    if toscreen:
+        pylab.show()
+    else:
+        pylab.savefig("%s_baselineALL_freq_ALL_pol_ALL.png" % (inputfile))

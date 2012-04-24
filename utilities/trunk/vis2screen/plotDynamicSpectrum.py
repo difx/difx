@@ -75,11 +75,17 @@ chanrange[1] = int(chanrange[1])
 if inputfile == "":
     parser.error("You must supply an input file!")
 
-if targetbaseline < 0 and not scrunchbaselines:
-    parser.error("If you want all baselines, they must be scrunched (--scrunchbaselines)")
+if targetbaseline < 0 and not (scrunchbaselines or scrunchautocorrs):
+    parser.error("If you want all baselines, they must be scrunched (--scrunchbaselines or --scrunchautocorrs)")
 
 if scrunchbaselines and targetbaseline >= 0:
     parser.error("If you scrunch baselines, you must allow all of them (targetbaseline < 0)")
+
+if scrunchbaselines and scrunchautocorrs:
+    parser.error("You can only scrunch baselines, or autocorrs, not both!")
+
+if scrunchautocorrs and targetbaseline >= 0:
+    parser.error("If you scrunch autocorrs, you must allow all of them (targetbaseline < 0)")
 
 (numconfigs, configs) = parseDiFX.get_configtable_info(inputfile)
 (numfreqs, freqs) = parseDiFX.get_freqtable_info(inputfile)
@@ -126,12 +132,21 @@ while not len(nextheader) == 0:
 	        amp[i][j].append(0.0)
 		phase[i][j].append(0.0)
         lastseconds = seconds
-	vislen += 1
+	if (seconds > secondswindow[0] or secondswindow[0] < 0) and \
+	   (seconds < secondswindow[1] or secondswindow[1] < 0):
+    	    vislen += 1
         if maxtimestep > 0 and vislen > maxtimestep:
             break
     buffer    = difxinput.read(8*nchan)
     if (targetbaseline < 0 or targetbaseline == baseline) and \
        (targetfreq < 0 or targetfreq == freqindex):
+        if (seconds < secondswindow[0] and secondswindow[0] >= 0) or \
+           (seconds > secondswindow[1] and secondswindow[1] >= 0):
+            nextheader = parseDiFX.parse_output_header(difxinput)
+            continue
+        if scrunchautocorrs and baseline%257 != 0:
+            nextheader = parseDiFX.parse_output_header(difxinput)
+            continue
 	if scrunchbaselines and baseline%257 == 0:
 	    nextheader = parseDiFX.parse_output_header(difxinput)
 	    continue

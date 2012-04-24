@@ -24,6 +24,8 @@ parser.add_option("-p", "--printinterval", dest="printinterval", metavar="PRINTI
 parser.add_option("-c", "--maxchannels", dest="maxchannels", metavar="MAXCHANNELS",
 		  default="16384", 
 		  help="The length of the array that will be allocated to hold vis results")
+parser.add_option("--matchheaders", dest="matchheaders", action="store_true", default=False,
+                  help="On seeing a header mismatch, skip through file 2 looking for match")
 parser.add_option("-v", "--verbose", dest="verbose", action="store_true", default=False,
                   help="Turn verbose printing on")
 parser.add_option("-i", "--inputfile", dest="inputfile", default="",
@@ -44,6 +46,7 @@ maxrecords     = int(options.maxrecords)
 printinterval  = int(options.printinterval)
 maxchannels    = int(options.maxchannels)
 verbose        = options.verbose
+matchheaders   = options.matchheaders
 inputfile      = options.inputfile
 
 if skiprecords < 0:
@@ -82,8 +85,10 @@ for i in range(numfiles):
     nextheader[i] = parseDiFX.parse_output_header(difxinputs[i])
 
 recordcount = 0
+headerdisagreecount = 0
 longtermabsdiff = 0.0
-longtermmeandiff = 0.0
+longtermmeandiff = complex(0.0, 0.0)
+disagreeskip = -1
 while not len(nextheader[0]) == 0 and not len(nextheader[1]) == 0:
     if maxrecords > 0:
         readrecords = recordcount - skiprecords
@@ -96,27 +101,43 @@ while not len(nextheader[0]) == 0 and not len(nextheader[1]) == 0:
         nchan[i] = freqs[freqindex[i]].numchan/freqs[freqindex[i]].specavg
         mjd[i] = nextheader[i][1]
         seconds[i] = nextheader[i][2]
-        buffer = difxinputs[i].read(8*nchan[i])
         if nchan[i] > maxchannels:
             print "How embarrassing - you have tried to read files with more than " + \
-                str(maxchannels) + " channels.  Please rerun with --maxchannels=<bigger number>!"
+                  str(maxchannels) + " channels.  Please rerun with --maxchannels=<bigger number>!"
             sys.exit()
-        for j in range(nchan[i]):
-            cvis = struct.unpack("ff", buffer[8*j:8*(j+1)])
-            vis[i][j] = complex(cvis[0], cvis[1])
+	if i != disagreeskip:
+	    buffer = difxinputs[i].read(8*nchan[i])
+            for j in range(nchan[i]):
+                cvis = struct.unpack("ff", buffer[8*j:8*(j+1)])
+                vis[i][j] = complex(cvis[0], cvis[1])
+    compare = []
+    compare.append([mjd[0], mjd[1]])
+    compare.append([seconds[0], seconds[1]])
+    compare.append([baseline[0], baseline[1]])
+    compare.append([freqindex[0], freqindex[1]])
+    disagreeskip = -1
+    for j in range(len(nextheader[0])):
+        if nextheader[0][j] != nextheader[1][j]:
+            headerdisagreecount += 1
+            if verbose:
+	        print "Headers disagree!"
+                print nextheader[0]
+                print nextheader[1]
+            break
+    for c in compare:
+        if c[0] > c[1]:
+            disagreeskip = 0
+        elif c[1] > c[0]:
+            disagreeskip = 1
+    if disagreeskip >= 0 and verbose:
+        print "Disagreeskip is now set to %d" % disagreeskip
+	print compare
     if (targetbaseline < 0 or targetbaseline == baseline[0]) and \
         (targetfreq < 0 or targetfreq == freqindex[0]):
-        for j in range(len(nextheader[0])):
-            if nextheader[0][j] != nextheader[1][j]:
-                print "Headers disagree!"
-                if verbose:
-                    print nextheader[0]
-                    print nextheader[1]
-                break
         absdiffavg = 0.0
         meandiffavg = 0.0
         refavg = 0.0
-	if recordcount >= skiprecords:
+	if recordcount >= skiprecords and disagreeskip < 0:
 	    nonequalchanslist = []
             for j in range(nchan[0]):
                 diff = vis[1][j] - vis[0][j]
@@ -141,12 +162,15 @@ while not len(nextheader[0]) == 0 and not len(nextheader[1]) == 0:
 	        if (epsilon > 0) and verbose:
 	            print "Record: baseline %d, freq %d at MJD/sec %d/%7.2f: data identical to numerical precision" % (baseline[0], freqindex[0], mjd[0], seconds[0])
     if (targetbaseline < 0 or targetbaseline == baseline[0]) and \
-            (targetfreq < 0 or targetfreq == freqindex[0]):
+            (targetfreq < 0 or targetfreq == freqindex[0]) and \
+	    disagreeskip < 0:
         recordcount += 1
-    if recordcount > 0 and printinterval>0 and recordcount%printinterval == 0:
-        print "After %d records, the mean percentage absolute difference is %10.8f and the mean percentage mean difference is %10.8f + %10.8f i" % (recordcount-skiprecords, 100.0*longtermabsdiff/(recordcount-skiprecords), 100.0*longtermmeandiff.real/(recordcount-skiprecords), 100.0*longtermmeandiff.imag/(recordcount-skiprecords))
+    if (recordcount-skiprecords) > 0 and printinterval>0 and recordcount%printinterval == 0:
+        print "After %d records, %d headers disagreed, the mean percentage absolute difference is %10.8f and the mean percentage mean difference is %10.8f + %10.8f i" % (recordcount-skiprecords, headerdisagreecount, 100.0*longtermabsdiff/(recordcount-skiprecords), 100.0*longtermmeandiff.real/(recordcount-skiprecords), 100.0*longtermmeandiff.imag/(recordcount-skiprecords))
     for i in range(numfiles):
-        nextheader[i] = parseDiFX.parse_output_header(difxinputs[i])
+        if i != disagreeskip:
+            nextheader[i] = parseDiFX.parse_output_header(difxinputs[i])
 
+print "At the end, %d records disagreed on the header" % headerdisagreecount
 if recordcount > 0:
     print "After %d records, the mean percentage absolute difference is %10.8f and the mean percentage mean difference is %10.8f + %10.8f i" % (recordcount-skiprecords, 100.0*longtermabsdiff/  (recordcount-skiprecords), 100.0*longtermmeandiff.real/(recordcount-skiprecords), 100.0*longtermmeandiff.imag/(recordcount-skiprecords))
