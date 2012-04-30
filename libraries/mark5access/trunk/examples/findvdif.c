@@ -67,6 +67,7 @@ int main(int argc, char **argv)
 	size_t n;
 	unsigned char *buffer;
 	FILE *in;
+	struct mark5_format *mf;
 
 	for(i = 1; i < argc; i++)
 	{
@@ -162,7 +163,18 @@ int main(int argc, char **argv)
 		}
 	}
 
+	printf("Testing memory stream:\n");
+	mf = new_mark5_format_from_stream(new_mark5_stream_memory(buffer, bufferLength));
+	print_mark5_format(mf);
+	delete_mark5_format(mf);
+
 	free(buffer);
+
+	printf("Testing file stream:\n");
+	mf = new_mark5_format_from_stream(new_mark5_stream_file(inFile, 0));
+	print_mark5_format(mf);
+	delete_mark5_format(mf);
+
 
 	return EXIT_SUCCESS;
 }

@@ -833,7 +833,7 @@ struct mark5_format *new_mark5_format_from_stream(struct mark5_stream_generic *s
 	{
 		ms->frameoffset = offset;
 		f = new_mark5_format_vdif(
-			1024, 
+			1024, 	// Need to give it something.  This will be wrong in general and will have to be fixed by downstream software.
 			get_vdif_chans_per_thread(ms->datawindow+offset),
 			get_vdif_quantization_bits(ms->datawindow+offset),
 			1,
