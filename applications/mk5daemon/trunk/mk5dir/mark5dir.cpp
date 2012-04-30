@@ -36,6 +36,7 @@
 #include <unistd.h>
 #include <difxmessage.h>
 #include <mark5access.h>
+#include <cmath>
 #include "mark5dir.h"
 #include "mark5directorystructs.h"
 #include "watchdog.h"
@@ -698,6 +699,7 @@ int Mark5Module::save(const char *filename)
 	if(!out)
 	{
 		error << "Cannot write to file: " << filename << "\n";
+		fprintf(stderr, "Error: cannot open %s for write\n", filename);
 
 		return -1;
 	}
@@ -1113,7 +1115,7 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref,
 	struct mark5_format *mf;
 	char newLabel[XLR_LABEL_LENGTH];
 	int newBank;
-	int bufferlen;
+	int bufferLength;
 	unsigned int newSignature;
 	int die = 0;
 	int newDirVersion;   /* == 0 for old style (pre-mark5-memo 81) */
@@ -1123,7 +1125,7 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref,
 	int oldFast;
 	int nscans;
 
-	streamstordatatype *buffer;
+	streamstordatatype *bufferStart, *bufferStop;
 
 	if(replacedFrac)
 	{
@@ -1131,7 +1133,7 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref,
 	}
 
 	/* allocate a bit more than the minimum needed */
-	bufferlen = 20160*8*10;
+	bufferLength = 20160*8*10;
 
 	newBank = Mark5BankGet(xlrDevice);
 	if(newBank < 0)
@@ -1248,7 +1250,8 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref,
 
 	/* If we got this far, we're going to attempt to do the directory read */
 
-	buffer = (streamstordatatype *)malloc(bufferlen);
+	bufferStart = (streamstordatatype *)malloc(bufferLength);
+	bufferStop  = (streamstordatatype *)malloc(bufferLength);
 	
 	oldFast = fast;		/* don't forget if we want to do this in fast mode or not */
 	clear();
@@ -1294,7 +1297,7 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref,
 		long long wGoodSum=0, wBadSum=0;
 		
 		/* Work around possible streamstor bug */
-		WATCHDOG( xlrRC = XLRReadData(xlrDevice, buffer, 0, 0, bufferlen) );
+		WATCHDOG( xlrRC = XLRReadData(xlrDevice, bufferStart, 0, 0, bufferLength) );
 
 		for(int i = 0; i < nScans(); ++i)
 		{
@@ -1325,7 +1328,7 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref,
 				scan.start  = scanHeader->startByte;
 				scan.length = scanHeader->stopByte - scanHeader->startByte;
 			}
-			if(scan.length < bufferlen)
+			if(scan.length < bufferLength)
 			{
 				if(callback)
 				{
@@ -1357,7 +1360,10 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref,
 
 			a = scan.start>>32;
 			b = scan.start % (1LL<<32);
-			WATCHDOG( xlrRC = XLRReadData(xlrDevice, buffer, a, b, bufferlen) );
+			WATCHDOG( xlrRC = XLRReadData(xlrDevice, bufferStart, a, b, bufferLength) );
+			a = (scan.start+scan.length-bufferLength)>>32;
+			b = (scan.start+scan.length-bufferLength) % (1LL<<32);
+			WATCHDOG( xlrRC = XLRReadData(xlrDevice, bufferStop, a, b, bufferLength) );
 
 			if(xlrRC == XLR_FAIL)
 			{
@@ -1370,8 +1376,8 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref,
 				continue;
 			}
 
-			nZero = countZeros(buffer, bufferlen/4);
-			if(nZero > bufferlen/8)	/* more than half 32-bit words are pure zero */
+			nZero = countZeros(bufferStart, bufferLength/4);
+			if(nZero > bufferLength/8)	/* more than half 32-bit words are pure zero */
 			{
 				if(callback)
 				{
@@ -1380,16 +1386,116 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref,
 				scan.format = -SCAN_FORMAT_ERROR_ZEROS;
 			}
 
-			countReplaced(buffer, bufferlen/4, &wGood, &wBad);
+			countReplaced(bufferStart, bufferLength/4, &wGood, &wBad);
+			countReplaced(bufferStop, bufferLength/4, &wGood, &wBad);
 
 			if(die)
 			{
 				break;
 			}
 
-			mf = new_mark5_format_from_stream(new_mark5_stream_memory(buffer, bufferlen));
-		
-			if(!mf)
+			if( (mf = new_mark5_format_from_stream(new_mark5_stream_memory(bufferStart, bufferLength))) != 0)
+			{
+				/* Fix mjd. */
+#warning FIXME: this should be in mark5access
+				if(mf->format == MK5_FORMAT_VLBA || mf->format == MK5_FORMAT_MARK5B)
+				{
+					int n = (mjdref - mf->mjd + 500) / 1000;
+					mf->mjd += n*1000;
+				}
+				else if(mf->format == MK5_FORMAT_MARK4)
+				{
+					int n = static_cast<int>((mjdref - mf->mjd + 1826)/3652.4);
+					mf->mjd = addDecades(mf->mjd, n);
+				}
+				
+				scan.mjd = mf->mjd;
+				scan.sec = mf->sec;
+				scan.format      = mf->format;
+				scan.frameoffset = mf->frameoffset;
+				scan.tracks      = mf->ntrack;
+				scan.framespersecond = int(1000000000.0/mf->framens + 0.5);
+				scan.framenuminsecond = int(mf->ns/mf->framens + 0.5);
+				scan.framebytes  = mf->framebytes;
+				scan.duration    = (int)((scan.length - scan.frameoffset) / scan.framebytes)/(double)(scan.framespersecond);
+				
+				delete_mark5_format(mf);
+
+				// Look at end of scan to verify things look OK
+				mf = new_mark5_format_from_stream(new_mark5_stream_memory(bufferStop, bufferLength));
+
+				if(mf)
+				{
+					const int maxIter = 5;	// max number of times to loop in calculating frame rate
+					long long deltaBytes;
+					int iter;
+
+					/* Fix mjd. */
+#warning FIXME: this should be in mark5access
+					if(mf->format == MK5_FORMAT_VLBA || mf->format == MK5_FORMAT_MARK5B)
+					{
+						int n = (mjdref - mf->mjd + 500) / 1000;
+						mf->mjd += n*1000;
+					}
+					else if(mf->format == MK5_FORMAT_MARK4)
+					{
+						int n = static_cast<int>((mjdref - mf->mjd + 1826)/3652.4);
+						mf->mjd = addDecades(mf->mjd, n);
+					}
+				
+					deltaBytes = (scan.start+scan.length-bufferLength+mf->frameoffset) - (scan.start+scan.frameoffset);
+					int deltaFrames = int(mf->ns/mf->framens + 0.5) - scan.framenuminsecond;
+
+					scan.duration = mf->sec - scan.sec;
+					if(scan.duration < 0)
+					{
+						scan.duration += 86400.0;
+					}
+
+					for(iter = 0; iter < maxIter; ++iter)
+					{
+						int frameRate;		// [frames per second]
+						int dataRate;		// [Mbps]
+
+						frameRate = scan.framespersecond;
+						dataRate = static_cast<int>((deltaBytes*static_cast<double>(mf->databytes)/static_cast<double>(mf->framebytes))/((scan.duration + deltaFrames/static_cast<double>(scan.framespersecond))*125000.0 + 0.9));
+
+						if(mf->format == MK5_FORMAT_VDIF)
+						{
+							dataRate /= mf->ntrack;		// div by nThread
+						}
+						if(dataRate <= 1)
+						{
+							dataRate = 1;
+						}
+						else
+						{
+							// Change to nearest power of two
+							int n = static_cast<int>(log(static_cast<double>(dataRate))/log(2.0) + 0.5);
+							dataRate = 1 << n;
+						}
+						scan.framespersecond = dataRate*125000/mf->databytes;
+				
+						if(mf->format == MK5_FORMAT_VDIF)
+						{
+							dataRate *= mf->ntrack;
+						}
+						if(frameRate == scan.framespersecond)
+						{
+							break;
+						}
+					}
+					if(iter >= maxIter)
+					{
+						fprintf(stderr, "Developer error: Cannot converge on frame rate.  Last value was %d\n", scan.framespersecond);
+					}
+
+					scan.duration += static_cast<double>(deltaFrames)/scan.framespersecond;
+
+					delete_mark5_format(mf);
+				}
+			}
+			else 
 			{
 				if(callback)
 				{
@@ -1399,37 +1505,11 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref,
 
 				continue;
 			}
-			
+
 			if(die)
 			{
 				break;
 			}
-
-			/* Fix mjd. */
-#warning FIXME: this should be in mark5access
-			if(mf->format == 0 || mf->format == 2)  /* VLBA or Mark5B format */
-			{
-				int n = (mjdref - mf->mjd + 500) / 1000;
-				mf->mjd += n*1000;
-			}
-			else if(mf->format == 1)	/* Mark4 format */
-			{
-				int n = (int)((mjdref - mf->mjd + 1826)/3652.4);
-				mf->mjd = addDecades(mf->mjd, n);
-			}
-			
-			scan.mjd = mf->mjd;
-			scan.sec = mf->sec;
-			scan.format      = mf->format;
-			scan.frameoffset = mf->frameoffset;
-			scan.tracks      = mf->ntrack;
-			scan.framespersecond = int(1000000000.0/mf->framens + 0.5);
-			scan.framenuminsecond = int(mf->ns/mf->framens + 0.5);
-			scan.framebytes  = mf->framebytes;
-			scan.duration    = (int)((scan.length - scan.frameoffset)
-				/ scan.framebytes)/(double)(scan.framespersecond);
-			
-			delete_mark5_format(mf);
 
 			if(callback)
 			{
@@ -1461,7 +1541,8 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref,
 		}
 	}
 
-	free(buffer);
+	free(bufferStart);
+	free(bufferStop);
 	free(dirData);
 
 	uniquifyScanNames();

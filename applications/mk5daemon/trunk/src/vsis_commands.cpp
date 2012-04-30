@@ -1342,7 +1342,7 @@ int record_Command(Mk5Daemon *D, int nField, char **fields, char *response, int 
 	{
 		if(D->recordState == RECORD_OFF)
 		{
-			v = snprintf(response, maxResponseLength, "!%s = 4 : Not recording;", fields[0]);
+			v = snprintf(response, maxResponseLength, "!%s = 2 : Not recording;", fields[0]);
 		}
 		else
 		{

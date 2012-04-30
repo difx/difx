@@ -154,7 +154,7 @@ int dirCallback(int scan, int nscan, int status, void *data)
 
 	if(verbose)
 	{
-		printf("%d/%d -> %d\n", scan, nscan, status);
+		printf("%d/%d -> %d %s\n", scan, nscan, status, Mark5DirDescription[status]);
 	}
 
 	gettimeofday(&t, 0);
@@ -220,14 +220,10 @@ static int getDirCore(struct Mark5Module *module, char *vsn, DifxMessageMk5Statu
 		mk5dirpath = ".";
 	}
 
-	v = module->getCachedDirectory(xlrDevice, mjdnow, 
-		vsn, mk5dirpath, &dirCallback, 
-		mk5status, &replacedFrac, force, fast, 0, startScan, stopScan);
+	v = module->getCachedDirectory(xlrDevice, mjdnow, vsn, mk5dirpath, &dirCallback, mk5status, &replacedFrac, force, fast, 0, startScan, stopScan);
 	if(replacedFrac > 0.01)
 	{
-		snprintf(message, DIFX_MESSAGE_LENGTH, 
-			"Module %s directory read encountered %4.2f%% data replacement rate",
-			vsn, replacedFrac);
+		snprintf(message, DIFX_MESSAGE_LENGTH, "Module %s directory read encountered %4.2f%% data replacement rate", vsn, replacedFrac);
 		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_WARNING);
 		fprintf(stderr, "Warning: %s\n", message);
 	}
@@ -235,9 +231,7 @@ static int getDirCore(struct Mark5Module *module, char *vsn, DifxMessageMk5Statu
 	{
 		if(!die)
 		{
-			snprintf(message, DIFX_MESSAGE_LENGTH, 
-				"Directory read for module %s unsuccessful, error code=%d",
-				vsn, v);
+			snprintf(message, DIFX_MESSAGE_LENGTH, "Directory read for module %s unsuccessful, error code=%d", vsn, v);
 			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
 			fprintf(stderr, "Error: %s\n", message);
 		}
@@ -279,9 +273,7 @@ static int getDirCore(struct Mark5Module *module, char *vsn, DifxMessageMk5Statu
 		else
 		{
 			/* should not get here */
-			snprintf(message, DIFX_MESSAGE_LENGTH,
-				"Developer error: DMS_MODE_FAIL_UNLESS_SAFE reached after "
-				"directory read!  vsn = %s", vsn);
+			snprintf(message, DIFX_MESSAGE_LENGTH, "Developer error: DMS_MODE_FAIL_UNLESS_SAFE reached after directory read!  vsn = %s", vsn);
 			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
 			fprintf(stderr, "Error: %s\n", message);
 			dmsUpdate = 0;
