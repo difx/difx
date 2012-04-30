@@ -1,5 +1,6 @@
 Version 2.0.2
 ~~~~~~~~~~~~~
+* Correctly scale cross-correlation amplitudes for pulsar binning when using Tsys>0 (accounts for varying # samples per bin c.f. nominal)
 * Correctly scale LBA format visibilities, reducing the size of ACCOR corrections
 * Fix bug when pulsar binning/gating and xmaclength > nfftchan
 * Add collection of drive statistics to native Mark5
