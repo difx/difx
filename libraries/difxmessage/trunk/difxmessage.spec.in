@@ -1,7 +1,7 @@
 Summary: DiFX library for sending and receiving multicast messages
 Name: difxmessage
 Version: @version@
-Release: 5
+Release: 6
 License: GPL3
 Group: VLBI
 BuildRoot: /var/tmp/difxmessage-@version@-buildroot
@@ -57,7 +57,14 @@ make
 /usr/bin/getsmart
 /usr/bin/sendsmart
 /usr/bin/smartmon
+/usr/bin/difxdiagnosticmon
+/usr/bin/probemachine
+/usr/bin/restartdifx
+/usr/bin/testdifxmessagedrivestats
 
 %changelog
+* Mon Apr 30 2012 Walter Brisken <wbrisken@nrao.edu>
+- Some updates prior to DiFX 2.1
+
 * Fri Mar 11 2011 Walter Brisken <wbrisken@nrao.edu>
 - First rpm version
