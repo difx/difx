@@ -38,8 +38,8 @@
 
 const char program[] = "m5spec";
 const char author[]  = "Walter Brisken, Chris Phillips";
-const char version[] = "1.2";
-const char verdate[] = "20111218";
+const char version[] = "1.3";
+const char verdate[] = "20120501";
 
 int die = 0;
 
@@ -75,23 +75,24 @@ static void usage(const char *pgm)
 	printf("  <offset> is number of bytes into file to start decoding\n\n");
 }
 
-int harvestComplexData(struct mark5_stream *ms, double **spec, fftw_complex **zdata, fftw_complex **zx, int nif, int nchan, int nint, int chunk, long long *total, long long *unpacked)
+int harvestComplexData(struct mark5_stream *ms, double **spec, fftw_complex **zdata, fftw_complex **zx, int nchan, int nint, int chunk, long long *total, long long *unpacked)
 {
 	fftw_plan *plan;
 	double complex **cdata;
-	int i, j, c;
+	int j;
 
-	plan = (fftw_plan *)malloc(nif*sizeof(fftw_plan));
-	cdata = (double complex **)malloc(nif*sizeof(double complex *));
-	for(i = 0; i < nif; i++)
+	plan = (fftw_plan *)malloc(ms->nchan*sizeof(fftw_plan));
+	cdata = (double complex **)malloc(ms->nchan*sizeof(double complex *));
+	for(j = 0; j < ms->nchan; ++j)
 	{
-		cdata[i] = (double complex*)malloc(nchan*sizeof(double complex));
-		plan[i] = fftw_plan_dft_1d(nchan, cdata[i], zdata[i], FFTW_FORWARD, FFTW_MEASURE);
+		cdata[j] = (double complex*)malloc(nchan*sizeof(double complex));
+		plan[j] = fftw_plan_dft_1d(nchan, cdata[j], zdata[j], FFTW_FORWARD, FFTW_MEASURE);
 	}
 
-	for(j = 0; j < nint; j++)
+	for(j = 0; j < nint; ++j)
 	{
 		int status;
+		int i;
 
 		if(die)
 		{
@@ -105,8 +106,8 @@ int harvestComplexData(struct mark5_stream *ms, double **spec, fftw_complex **zd
 		}
 		else
 		{
-			total += chunk;
-			unpacked += status;
+			*total += chunk;
+			*unpacked += status;
 		}
 
 		if(ms->consecutivefails > 5)
@@ -114,15 +115,17 @@ int harvestComplexData(struct mark5_stream *ms, double **spec, fftw_complex **zd
 			break;
 		}
 
-		for(i = 0; i < nif; i++)
+		for(i = 0; i < ms->nchan; ++i)
 		{
 			/* FFT */
 			fftw_execute(plan[i]);
 		}
 
-		for(i = 0; i < nif; i++)
+		for(i = 0; i < ms->nchan; ++i)
 		{
-			for(c = 0; c < nchan; c++)
+			int c;
+
+			for(c = 0; c < nchan; ++c)
 			{
 				double re, im;
 				
@@ -132,19 +135,21 @@ int harvestComplexData(struct mark5_stream *ms, double **spec, fftw_complex **zd
 			}
 		}
 
-		for(i = 0; i < nif/2; i++)
+		for(i = 0; i < ms->nchan/2; ++i)
 		{
-			for(c = 0; c < nchan; c++)
+			int c;
+
+			for(c = 0; c < nchan; ++c)
 			{
 				zx[i][c] += zdata[2*i][c]*~zdata[2*i+1][c];
 			}
 		}
 	}
 
-	for(i = 0; i < nif; i++)
+	for(j = 0; j < ms->nchan; ++j)
 	{
-		fftw_destroy_plan(plan[i]);
-		free(cdata[i]);
+		fftw_destroy_plan(plan[j]);
+		free(cdata[j]);
 	}
 	free(plan);
 	free(cdata);
@@ -152,23 +157,23 @@ int harvestComplexData(struct mark5_stream *ms, double **spec, fftw_complex **zd
 	return 0;
 }
 
-int harvestRealData(struct mark5_stream *ms, double **spec, fftw_complex **zdata, fftw_complex **zx, int nif, int nchan, int nint, int chunk, long long *total, long long *unpacked)
+int harvestRealData(struct mark5_stream *ms, double **spec, fftw_complex **zdata, fftw_complex **zx, int nchan, int nint, int chunk, long long *total, long long *unpacked)
 {
 	fftw_plan *plan;
 	double **data;
-	int i, j, c;
+	int j;
 
-	plan = (fftw_plan *)malloc(nif*sizeof(fftw_plan));
-	data = (double **)malloc(nif*sizeof(double *));
-	for(i = 0; i < nif; i++)
+	plan = (fftw_plan *)malloc(ms->nchan*sizeof(fftw_plan));
+	data = (double **)malloc(ms->nchan*sizeof(double *));
+	for(j = 0; j < ms->nchan; ++j)
 	{
-		data[i] = (double *)malloc((chunk+2)*sizeof(double));
-		plan[i] = fftw_plan_dft_r2c_1d(nchan*2, data[i], zdata[i], FFTW_MEASURE);
+		data[j] = (double *)malloc((chunk+2)*sizeof(double));
+		plan[j] = fftw_plan_dft_r2c_1d(nchan*2, data[j], zdata[j], FFTW_MEASURE);
 	}
-
-	for(j = 0; j < nint; j++)
+	for(j = 0; j < nint; ++j)
 	{
 		int status;
+		int i;
 
 		if(die)
 		{
@@ -182,8 +187,8 @@ int harvestRealData(struct mark5_stream *ms, double **spec, fftw_complex **zdata
 		}
 		else
 		{
-			total += chunk;
-			unpacked += status;
+			*total += chunk;
+			*unpacked += status;
 		}
 
 		if(ms->consecutivefails > 5)
@@ -191,15 +196,17 @@ int harvestRealData(struct mark5_stream *ms, double **spec, fftw_complex **zdata
 			break;
 		}
 
-		for(i = 0; i < nif; i++)
+		for(i = 0; i < ms->nchan; ++i)
 		{
 			/* FFT */
 			fftw_execute(plan[i]);
 		}
 
-		for(i = 0; i < nif; i++)
+		for(i = 0; i < ms->nchan; ++i)
 		{
-			for(c = 0; c < nchan; c++)
+			int c;
+
+			for(c = 0; c < nchan; ++c)
 			{
 				double re, im;
 				
@@ -209,19 +216,20 @@ int harvestRealData(struct mark5_stream *ms, double **spec, fftw_complex **zdata
 			}
 		}
 
-		for(i = 0; i < nif/2; i++)
+		for(i = 0; i < ms->nchan/2; ++i)
 		{
-			for(c = 0; c < nchan; c++)
+			int c;
+
+			for(c = 0; c < nchan; ++c)
 			{
 				zx[i][c] += zdata[2*i][c]*~zdata[2*i+1][c];
 			}
 		}
 	}
-
-	for(i = 0; i < nif; i++)
+	for(j = 0; j < ms->nchan; ++j)
 	{
-		fftw_destroy_plan(plan[i]);
-		free(data[i]);
+		fftw_destroy_plan(plan[j]);
+		free(data[j]);
 	}
 	free(plan);
 	free(data);
@@ -236,7 +244,7 @@ int spec(const char *filename, const char *formatname, int nchan, int nint, cons
 	double **spec;
 	fftw_complex **zdata, **zx;
 	int i, c;
-	int chunk, nif;
+	int chunk;
 	long long total, unpacked;
 	FILE *out;
 	double f, sum;
@@ -279,53 +287,50 @@ int spec(const char *filename, const char *formatname, int nchan, int nint, cons
 		return EXIT_FAILURE;
 	}
 
-	nif = ms->nchan;
-
-	spec = (double **)malloc(nif*sizeof(double *));
-	zdata = (fftw_complex **)malloc(nif*sizeof(fftw_complex *));
-	zx = (fftw_complex **)malloc((nif/2)*sizeof(fftw_complex *));
-	for(i = 0; i < nif; i++)
+	spec = (double **)malloc(ms->nchan*sizeof(double *));
+	zdata = (fftw_complex **)malloc(ms->nchan*sizeof(fftw_complex *));
+	zx = (fftw_complex **)malloc((ms->nchan/2)*sizeof(fftw_complex *));
+	for(i = 0; i < ms->nchan; ++i)
 	{
 		spec[i] = (double *)calloc(nchan, sizeof(double));
-		zdata[i] = (fftw_complex *)malloc(nchan*sizeof(fftw_complex));
+		zdata[i] = (fftw_complex *)malloc((nchan+2)*sizeof(fftw_complex));
 	}
-	for(i = 0; i < nif/2; i++)
+	for(i = 0; i < ms->nchan/2; ++i)
 	{
 		zx[i] = (fftw_complex *)calloc(nchan, sizeof(fftw_complex));
 	}
 
 	if(docomplex)
 	{
-		harvestComplexData(ms, spec, zdata, zx, nif, nchan, nint, chunk, &total, &unpacked);
+		harvestComplexData(ms, spec, zdata, zx, nchan, nint, chunk, &total, &unpacked);
 	} 
 	else
 	{
-		harvestRealData(ms, spec, zdata, zx, nif, nchan, nint, chunk, &total, &unpacked);
+		harvestRealData(ms, spec, zdata, zx, nchan, nint, chunk, &total, &unpacked);
 	}
 
 	fprintf(stderr, "%Ld / %Ld samples unpacked\n", unpacked, total);
-	delete_mark5_stream(ms);
 
 	/* normalize across all ifs/channels */
 	sum = 0.0;
-	for(c = 0; c < nchan; c++)
+	for(c = 0; c < nchan; ++c)
 	{
-		for(i = 0; i < nif; i++)
+		for(i = 0; i < ms->nchan; ++i)
 		{
 			sum += spec[i][c];
 		}
 	}
 
-	f = nif*nchan/sum;
+	f = ms->nchan*nchan/sum;
 
-	for(c = 0; c < nchan; c++)
+	for(c = 0; c < nchan; ++c)
 	{
 		fprintf(out, "%f ", (double)c*ms->samprate/(2.0e6*nchan));
-		for(i = 0; i < nif; i++)
+		for(i = 0; i < ms->nchan; ++i)
 		{
 			fprintf(out, " %f", f*spec[i][c]);
 		}
-		for(i = 0; i < nif/2; i++)
+		for(i = 0; i < ms->nchan/2; ++i)
 		{
 			x = creal(zx[i][c])*f;
 			y = cimag(zx[i][c])*f;
@@ -336,18 +341,19 @@ int spec(const char *filename, const char *formatname, int nchan, int nint, cons
 
 	fclose(out);
 
-	for(i = 0; i < nif; i++)
+	for(i = 0; i < ms->nchan; ++i)
 	{
 		free(zdata[i]);
 		free(spec[i]);
 	}
-	for(i = 0; i < nif/2; i++)
+	for(i = 0; i < ms->nchan/2; ++i)
 	{
 		free(zx[i]);
 	}
 	free(zx);
 	free(zdata);
 	free(spec);
+	delete_mark5_stream(ms);
 
 	return EXIT_SUCCESS;
 }
