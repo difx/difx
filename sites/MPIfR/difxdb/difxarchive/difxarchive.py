@@ -118,12 +118,14 @@ def getTransferFileCount(source, destination, options=""):
     remainder = proc.communicate()[0]
     
     
+    matchTotal = re.findall(r'Number of files: (\d+)', remainder)
+    totalCount = int(matchTotal[0])
     mn = re.findall(r'Number of files transferred: (\d+)', remainder)
     fileCount = int(mn[0])
     
     print "Number of files to be transferred: %d " % fileCount
     
-    return(fileCount)
+    return(totalCount, fileCount)
 
 def syncDir(path, user, config, fileCount, dryRun):
     
@@ -153,9 +155,9 @@ def syncDir(path, user, config, fileCount, dryRun):
         if 'to-check' in output:
             
              m = re.findall(r'to-check=(\d+)/(\d+)', output)
-             #progress = (100 * (int(m[0][1]) - int(m[0][0]))) / fileCount
-             
-             sys.stdout.write('\rRemaining: %s / %s' % (m[0][0], m[0][1]) )
+             progress = (100 * (int(m[0][1]) - int(m[0][0]))) / fileCount
+             sys.stdout.write('\rDone: %s %%' % progress)
+             #sys.stdout.write('\rRemaining: %s / %s' % (m[0][0], m[0][1]) )
              sys.stdout.flush()
              
              if int(m[0][0]) == 0:
@@ -180,7 +182,7 @@ def buildReferenceOptions():
     return(cmd)
     
     
-def syncReferenceDir(path, referencePath, dryRun):
+def syncReferenceDir(path, referencePath, fileCount, dryRun):
     
     
     # check that destination path has trailing slash
@@ -214,8 +216,8 @@ def syncReferenceDir(path, referencePath, dryRun):
             
         if 'to-check' in output:
              m = re.findall(r'to-check=(\d+)/(\d+)', output)
-
-             sys.stdout.write('\rRemaining: %s / %s' % (m[0][0], m[0][1]))
+             progress = (100 * (int(m[0][1]) - int(m[0][0]))) / fileCount
+             sys.stdout.write('\rDone: %s %%' % progress)
              sys.stdout.flush()
 
              if int(m[0][0]) == 0 :
@@ -250,6 +252,7 @@ if __name__ == "__main__":
     parser.add_option("-u", "--user", dest="user", type="string" ,action="store", help="Do the archival as the specified user. This overrides the defaultuser directive in difxdb.ini")
     parser.add_option("-f", "--force", dest="force" ,action="store_true", default=False, help="Delete files without further confirmation ")
     parser.add_option("-d", "--dry-run", dest="dryRun" ,action="store_true", default=False, help="Simulate archival. Don't rsync files, don't update database. ")
+    parser.add_option("-D", "--db-only", dest="dbOnly" ,action="store_true", default=False, help="Update database only, don't copy files (use with care!) ")
     # parse the command line. Options will be stored in the options list. Leftover arguments will be stored in the args list
     (options, args) = parser.parse_args()   
      
@@ -288,9 +291,12 @@ if __name__ == "__main__":
         
         
         
-    # check that path exists
-    if not isdir(path):
-        exitOnError("Directory %s does not exist" % (path))
+    
+    if not options.dbOnly:
+        
+        # check that path exists
+        if not isdir(path):
+            exitOnError("Directory %s does not exist" % (path))
 
     if not isSchemaVersion(session, minSchemaMajor, minSchemaMinor):
         major, minor = getCurrentSchemaVersionNumber(session)
@@ -304,41 +310,43 @@ if __name__ == "__main__":
     
 
     try:
-        # obtain kerberos ticket
-        getTicket(user)
+        if not options.dbOnly:
+            # obtain kerberos ticket
+            getTicket(user)
 
-        while True:
-            
-            fileCount = getTransferFileCount(path, destination)
-            
-            if (fileCount == 0):
-                break
-                
-            # copy files to the archive server
-            syncDir(path, user, config, fileCount, options.dryRun, )
-            
-            if options.dryRun:
-                break
-                
+            while True:
 
-        
-        while True:
-            
-            fileCount = getTransferFileCount(path, config.get("difxarchive", "refbackuppath"), buildReferenceOptions())
-            
-            if (fileCount == 0):
-                break
-            
-            # copy subset of files to the reference backup location
-            syncReferenceDir(path, config.get("difxarchive", "refbackuppath"), options.dryRun)
-        
-        
+                total, fileCount = getTransferFileCount(path, destination)
+
+                if (fileCount == 0):
+                    break
+
+                # copy files to the archive server
+                syncDir(path, user, config, total, options.dryRun )
+
+                if options.dryRun:
+                    break
+
+
+
+            while True:
+
+                total, fileCount = getTransferFileCount(path, config.get("difxarchive", "refbackuppath"), buildReferenceOptions())
+                print fileCount 
+                if (fileCount == 0):
+                    break
+
+                # copy subset of files to the reference backup location
+                syncReferenceDir(path, config.get("difxarchive", "refbackuppath"), total, options.dryRun)
+
+
         if not options.dryRun:
-            # delete files
-            print 'Archival process completed. Now deleting path %s including all files and subdirectories' % path
-            confirmAction()
+            if not options.dbOnly:
+                # delete files
+                print 'Archival process completed. Now deleting path %s including all files and subdirectories' % path
+                confirmAction()
 
-            shutil.rmtree(path)
+                shutil.rmtree(path)
             
             print "Updating database status."
             # update database
@@ -348,7 +356,7 @@ if __name__ == "__main__":
             session.commit()
             session.flush()
             
-            print "Done"
+            
 
 
     except Exception as e:
@@ -358,6 +366,7 @@ if __name__ == "__main__":
     finally:
         # destroy kerberos tickets
         destroyTicket()
+        print "Done"
         
     
    
