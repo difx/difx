@@ -149,6 +149,9 @@ Version 1.2
 
 genmachines
 ~~~~~~~~~~~
+Version 0.14
+* add option --difxdb to obtain the module location from the database
+
 Version 0.11
 * fix for > 10 antennas and do some cleanup
 
