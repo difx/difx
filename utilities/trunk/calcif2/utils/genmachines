@@ -35,14 +35,15 @@ from os import popen, getenv, umask
 from glob import glob
 import socket
 import struct
+import subprocess
 from xml.parsers import expat
 from copy import deepcopy
 
 
 program = 'genmachines'
 author  = 'Walter Brisken'
-version = '0.13'
-verdate = '20110404'
+version = '0.14'
+verdate = '20120420'
 
 defaultDifxMessagePort = 50200
 defaultDifxMessageGroup = '224.2.2.1'
@@ -64,6 +65,8 @@ def usage():
 	print '          use <machinesfile> instead of $DIFX_MACHINES'
 	print '\n  -n or --no-threads'
 	print '          don\'t write a .threads file'
+	print '\n  -d or --difxdb'
+	print '          use difxdb database to obtain module slots'
 	print '\n<input> is a DiFX .input file.'
 	print '\nEnv. Var. DIFX_MACHINES must point to the machines file if no <machinesfile>'
 	print 'is specifided.\n'
@@ -394,7 +397,7 @@ def uniqueVsns(vsns):
 	else:
 		return 1
 
-def run(files, machinesfile, overheadcores, verbose, dothreads):
+def run(files, machinesfile, overheadcores, verbose, dothreads, useDifxDb):
 	ok = True
 
 	machines, cores, ismk5 = readmachines(machinesfile, verbose)
@@ -435,7 +438,14 @@ def run(files, machinesfile, overheadcores, verbose, dothreads):
 		ok = False
 		print 'Missing modules:'
 		for m in missing:
-			print '  %s' % m
+
+			slot = "unknown"
+			if useDifxDb:
+				child = subprocess.Popen(["getslot", m], stdout=subprocess.PIPE)
+				(slot, stderr) = child.communicate()
+
+			
+			print '  %s (slot = %s )' % (m, strip(slot))
 
 	if len(notidle) > 0:
 		ok = False
@@ -465,6 +475,7 @@ machinesfile = getenv('DIFX_MACHINES')
 overheadcores = 1
 verbose = 0
 dothreads = True
+useDifxDb = False
 if getenv('DIFX_GROUP_ID'):
 	umask(2)
 
@@ -489,6 +500,8 @@ while a < len(argv):
 			print 'No overhead cores specified1'
 			exit(1)
 		overheadcores = int(argv[a])
+	elif arg == '-d' or arg == '--difxdb':
+		useDifxDb = True
 	else:
 		files.append(arg)
 	a += 1
@@ -517,6 +530,6 @@ if quit:
 if verbose > 0:
 	print 'DIFX_MACHINES -> %s' % machinesfile
 	
-v = run(files, machinesfile, overheadcores, verbose, dothreads)
+v = run(files, machinesfile, overheadcores, verbose, dothreads, useDifxDb)
 if v != 0:
 	exit(v)
