@@ -842,9 +842,16 @@ void Visibility::writedifx(int dumpmjd, double dumpseconds)
 		continue; //move on
 	    }
 	    tonefreq = config->getDRecordedFreqPCalToneFreq(currentconfigindex, i, config->getDLocalRecordedFreqIndex(currentconfigindex, i, j), t);
-            sprintf(pcalstr, " %3d %d %12.5e %12.5e", p, tonefreq, 
-	            results[resultindex].re,
-	            -results[resultindex].im);
+            if (config->getDRecordedLowerSideband(currentconfigindex, i, config->getDLocalRecordedFreqIndex(currentconfigindex, i, j))) {
+                sprintf(pcalstr, " %3d %d %12.5e %12.5e", p, tonefreq, 
+                        results[resultindex].re,
+                        results[resultindex].im);
+            }
+            else {
+                sprintf(pcalstr, " %3d %d %12.5e %12.5e", p, tonefreq, 
+                        results[resultindex].re,
+                        -results[resultindex].im);
+            }
             if(results[resultindex].re != 0.0 && -results[resultindex].im != 0.0)
             {
               nonzero = true;
