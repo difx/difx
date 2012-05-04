@@ -461,7 +461,7 @@ static int scanCalc(int scanId, const DifxInput *D, CalcParams *p, int isLast)
 	for(antId = 0; antId < scan->nAntenna; antId++)
 	{
 		scan->im[antId] = (DifxPolyModel **)calloc(scan->nPhaseCentres+1, sizeof(DifxPolyModel*));
-		for(k=0;k<scan->nPhaseCentres+1;k++)
+		for(k = 0; k < scan->nPhaseCentres + 1; ++k)
 		{
 			scan->im[antId][k] = (DifxPolyModel *)calloc(nInt, sizeof(DifxPolyModel));
 			im = scan->im[antId][k];
