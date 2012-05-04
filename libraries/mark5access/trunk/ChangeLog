@@ -1,3 +1,6 @@
+Version 1.4.4
+* Post 2.1 tagging
+
 Version 1.4.3
 * Post 2.0.1 tagging
 * Adopt more unix-standard return values in utility programs
