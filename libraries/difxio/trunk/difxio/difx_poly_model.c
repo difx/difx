@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008 by Walter Brisken                                  *
+ *   Copyright (C) 2008-2012 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -33,16 +33,18 @@
 #include "difxio/difx_input.h"
 
 
-DifxPolyModel *** newDifxPolyModelArray(int nAntenna, int nSrcs, int nPoly)
+DifxPolyModel ***newDifxPolyModelArray(int nAntenna, int nSrcs, int nPoly)
 {
-	DifxPolyModel *** dpm;
-	int a, s;
+	DifxPolyModel ***dpm;
+	int a;
 
 	dpm = (DifxPolyModel ***)calloc(nAntenna, sizeof(DifxPolyModel **));
-	for(a = 0; a < nAntenna; a++)
+	for(a = 0; a < nAntenna; ++a)
 	{
+		int s;
+
 		dpm[a] = (DifxPolyModel **)calloc(nSrcs, sizeof(DifxPolyModel *));
-		for(s = 0; s < nSrcs; s++)
+		for(s = 0; s < nSrcs; ++s)
 		{
 			dpm[a][s] = (DifxPolyModel *)calloc(nPoly, sizeof(DifxPolyModel));
 		}
@@ -69,15 +71,17 @@ DifxPolyModel *dupDifxPolyModelColumn(const DifxPolyModel *src, int nPoly)
 
 void deleteDifxPolyModelArray(DifxPolyModel *** dpm, int nAntenna, int nSrcs)
 {
-	int a, s;
-
 	if(dpm)
 	{
-		for(a = 0; a < nAntenna; a++)
+		int a;
+
+		for(a = 0; a < nAntenna; ++a)
 		{
 			if(dpm[a])
 			{
-				for(s = 0; s < nSrcs; s++)
+				int s;
+
+				for(s = 0; s < nSrcs; ++s)
 				{
 					free(dpm[a][s]);
 				}
@@ -94,10 +98,7 @@ void fprintDifxPolyModel(FILE *fp, const DifxPolyModel *dpm)
 	if(dpm)
 	{
 		fprintf(fp, "        mjd, sec = %d, %d\n", dpm->mjd, dpm->sec);
-		fprintf(fp, "        delay = %22.15e %22.15e %22.15e\n", 
-			dpm->delay[0],
-			dpm->delay[1],
-			dpm->delay[2]);
+		fprintf(fp, "        delay = %22.15e %22.15e %22.15e\n", dpm->delay[0], dpm->delay[1], dpm->delay[2]);
 	}
 }
 

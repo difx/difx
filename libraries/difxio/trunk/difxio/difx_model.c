@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008 by Walter Brisken                                  *
+ *   Copyright (C) 2008-2012 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -42,12 +42,12 @@ DifxModel **newDifxModelArray(int nAntenna, int nPoint)
 
 	N = nPoint + 3;
 
-	for(a = 0; a < nAntenna; a++)
+	for(a = 0; a < nAntenna; ++a)
 	{
 		dm[a] = (DifxModel *)calloc(N, sizeof(DifxModel));
 
 		/* offset the array so we can index -1 */
-		dm[a]++;
+		++dm[a];
 	}
 
 	return dm;
@@ -75,16 +75,16 @@ DifxModel *dupDifxModelColumn(const DifxModel *src, int nPoint)
 
 void deleteDifxModelArray(DifxModel **dm, int nAntenna)
 {
-	int a;
-	
 	if(dm)
 	{
-		for(a = 0; a < nAntenna; a++)
+		int a;
+	
+		for(a = 0; a < nAntenna; ++a)
 		{
 			if(dm[a])
 			{
 				/* free memory from actual start of array */
-				dm[a]--;
+				--dm[a];
 				free(dm[a]);
 			}
 		}
@@ -97,8 +97,7 @@ void fprintDifxModel(FILE *fp, const DifxModel *dm)
 	fprintf(fp, "    DifxModel : %p\n", dm);
 	if(dm)
 	{
-		fprintf(fp, "      U, V, W = %f %f %f m\n", 
-			dm->u, dm->v, dm->w);
+		fprintf(fp, "      U, V, W = %f %f %f m\n", dm->u, dm->v, dm->w);
 		fprintf(fp, "      Delay   = %f us\n", dm->t);
 	}
 }

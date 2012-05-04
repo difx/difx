@@ -3,6 +3,7 @@
 * Infrastructure for az, el, parallactic angle in model added
 * Tcal managing structures and functions added
 * Bug fix: simplifyDifxRules: allow number of rules to go to zero
+* Version for DiFX-2.1, May 4, 2012
 
 3.0.1
 * Post DiFX-2.0.0
