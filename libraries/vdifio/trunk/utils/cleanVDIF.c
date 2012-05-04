@@ -94,8 +94,9 @@ int main(int argc, char **argv)
     fprintf(stderr, "Cannot read frame with %d bytes > max (%d)\n", framebytes, MAX_VDIF_FRAME_BYTES);
     exit(EXIT_FAILURE);
   }
-  framespersecond = (int)((((long long)datambps)*1000000)/(8*(framebytes-VDIF_HEADER_BYTES)));
+  framespersecond = (int)((((long long)datambps)*1000000LL)/(8LL*(framebytes-VDIF_HEADER_BYTES)));
   printf("Frames per second is %d\n", framespersecond);
+  printf("datambps=%d framebytes=%d\n", datambps, framebytes);
 
   fseek(input, 0, SEEK_SET); //go back to the start
 

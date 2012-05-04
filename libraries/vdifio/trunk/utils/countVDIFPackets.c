@@ -141,6 +141,7 @@ int main(int argc, char **argv)
       if(nextnumber == framespersecond) {
         nextnumber = 0;
         nextsecond++;
+	printf("For thread %d, at second %d, read %lld frames, spotted %lld missing frames\n", targetThreadId, nextsecond, framesread, framesmissed);
         if(nextsecond == 86400) {
           nextsecond = 0;
           nextmjd++;
@@ -149,7 +150,7 @@ int main(int argc, char **argv)
     }
   }
 
-  printf("For thread %d, read %lld frames, spotted %lld missing frames\n", targetThreadId, framesread, framesmissed);
+  printf("\n** For thread %d, read %lld frames, spotted %lld missing frames\n", targetThreadId, framesread, framesmissed);
   fclose(input);
 
   return EXIT_SUCCESS;
