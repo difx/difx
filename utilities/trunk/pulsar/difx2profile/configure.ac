@@ -1,5 +1,5 @@
 AC_PREREQ(2.50)
-AC_INIT([DIFX2PROFILE], [0.3], [difxusers at googlegroups.com])
+AC_INIT([DIFX2PROFILE], [0.4], [difxusers at googlegroups.com])
 PACKAGE_VERSION=AC_PACKAGE_VERSION
 AC_SUBST([PACKAGE_VERSION])
 AC_SUBST([LIBRARY_VERSION])
