@@ -1,3 +1,8 @@
+Version 2.1
+~~~~~~~~~~~
+* Version number change from 2.0.2 prior to tagging
+* Tagging Version 2.1, May 4, 2012
+
 Version 2.0.2
 ~~~~~~~~~~~~~
 * Correctly scale cross-correlation amplitudes for pulsar binning when using Tsys>0 (accounts for varying # samples per bin c.f. nominal)
@@ -10,6 +15,7 @@ Version 2.0.2
 * Streamstor XLRRead() bug work-around installed several places (read at position 0 before reading at position > 0)
 * mpifxcorr terminates correctly for all short jobs - previously it hung for jobs with a number of subints between nCores and 4 x nCores
 * multithread VDIF support enabled for nativemk5datastream (reading from a module) inclduing stripping of non-VDIF packets
+* Add "FAKE" as new datastream type.  Results will be useless but benchmarking and bugfixing may benefit
 
 Version 2.0.1, 2011 June 12
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
