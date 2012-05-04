@@ -1,6 +1,11 @@
-Version 2.1.0
+Version 2.2.0
 ~~~~~~~~~~~~~
 Post DiFX-2.1
+
+Version 2.1.0
+~~~~~~~~~~~~
+Version number change prior to DiFX-2.1
+Version for DiFX-2.1, May 4, 2012
 
 Version 2.0.2
 ~~~~~~~~~~~~~
@@ -19,7 +24,6 @@ Add support for diagnostic messages
 Add support for file request
 Add nCore to Load message
 Add utility restartdifx
-Version for DiFX-2.1, May 4, 2012
 
 Version 2.0.1
 ~~~~~~~~~~~~~
