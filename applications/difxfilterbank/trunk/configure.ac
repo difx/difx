@@ -1,7 +1,7 @@
 AC_INIT(src/difxfilterbank.cpp)
 
 PACKAGE=difxfilterbank
-VERSION=0.4
+VERSION=0.5
 
 AM_INIT_AUTOMAKE($PACKAGE, $VERSION)
 
