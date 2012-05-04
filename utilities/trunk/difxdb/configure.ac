@@ -1,4 +1,4 @@
-AC_INIT([difx_db], [1.15], [Walter Brisken <wbrisken@nrao.edu>])
+AC_INIT([difx_db], [1.16], [Walter Brisken <wbrisken@nrao.edu>])
 
 AC_PROG_CC
 
