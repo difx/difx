@@ -1,5 +1,9 @@
-Version 3.1.0
+Version 3.2.0
 * Post DiFX-2.1
+
+Version 3.1.0
+* Version renumber from 3.0.2 prior to DiFX-2.1 release
+* Version for DiFX-2.1, 4 May 2012
 
 Version 3.0.2
 * Post DiFX-2.0.1
@@ -17,7 +21,6 @@ Version 3.0.2
 * Support DiFX job restarts
 * Better support for mixed 1 and 2 bit data: include antenna-based numbers in FITS and scale accordingly
 * Populate the new RAOBS and DECOBS (pointing center) columns of the source table
-* Version for DiFX-2.1, 4 May 2012
 
 Version 3.0.1
 * Post 2.0.0
