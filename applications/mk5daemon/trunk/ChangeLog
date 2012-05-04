@@ -1,4 +1,9 @@
-Version 1.4.2
+Version 2.1.0
+~~~~~~~~~~~~~
+* Rename from 1.4.2 prior to DiFX-2.1 tagging
+* Version for DiFX-2.1, May 4, 2012
+
+Version 2.0.2
 ~~~~~~~~~~~~~
 * Post DiFX-2.0.1
 * Add SMART dump option to vsn
@@ -21,7 +26,7 @@ Version 1.4.2
 * mk5dir: don't write .dir files with empty scan labels.  Make one up instead.
 
 Version 1.4.1
-~~~~~~~~~~~~
+~~~~~~~~~~~~~
 * Post DiFX-1.5.4/DiFX-2.0.0
 * NOTE: Active version is now in DiFX-2.0 / trunk
 * Respect DEFAULT_DMS_MASK
