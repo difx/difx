@@ -1,6 +1,7 @@
 Version 0.4
 ~~~~~~~~~~~
 * transient_daemon and transient_wrapper now look at the VFASTR_CONFIG_FILE
+* Version for DiFX-2.1, May 4, 2012
 
 Version 0.3
 ~~~~~~~~~~~
