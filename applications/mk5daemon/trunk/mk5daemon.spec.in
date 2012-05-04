@@ -6,8 +6,8 @@ License: GPL3
 Group: VLBI
 BuildRoot: /var/tmp/mk5daemon-@version@-buildroot
 Requires: streamstor >= 8.2
-Requires: difxmessage >= 2.1.0
-Requires: mark5access >= 1.4.2
+Requires: difxmessage >= 2.2.0
+Requires: mark5access >= 1.4.4
 Requires: expat
 Prefix: /usr
 Source: mk5daemon-@version@.tar.gz
