@@ -2,6 +2,8 @@ Version 1.4.3
 * Post 2.0.1 tagging
 * Adopt more unix-standard return values in utility programs
 * mk5spec: work on complex data (Chris Phillips)
+* VDIF format determination by data peeking added
+* Version for DiFX-2.1, May 4, 2012
 
 Version 1.4.2
 * Post 2.0.0 tagging
