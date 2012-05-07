@@ -17,8 +17,8 @@ export USEGFORTRAN="yes"
 ####### IPP libraries needed for linking #############
 ## Alternate lines may be needed for old versions ####
 ## of IPP (<=4 for 32bit, <=5 for 64 bit #############
-IPPLIB32="-lipps -lguide -lippvm -lippcore"
-IPPLIB64="-lippsem64t -lguide -lippvmem64t -liomp5 -lippcoreem64t"
+#IPPLIB32="-lipps -lguide -lippvm -lippcore"
+#IPPLIB64="-lippsem64t -lguide -lippvmem64t -liomp5 -lippcoreem64t"
 ## Uncomment the following for old 32 bit IPP
 #PrependPath LD_LIBRARY_PATH  ${IPPROOT}/sharedlib/linux
 ## Uncomment the following (and comment other IPPLIB64 line) 
@@ -31,15 +31,15 @@ perlsver="5.8.8"
 
 ####### PORTS FOR DIFXMESSAGE ###############
 # Uncomment these to enable DIFX_MESSAGES
-#export DIFX_MESSAGE_GROUP=224.2.2.1
-#export DIFX_MESSAGE_PORT=50201
-#export DIFX_BINARY_GROUP=224.2.2.1
-#export DIFX_BINARY_PORT=50202
+export DIFX_MESSAGE_GROUP=224.2.2.1
+export DIFX_MESSAGE_PORT=50201
+export DIFX_BINARY_GROUP=224.2.2.1
+export DIFX_BINARY_PORT=50202
 
 ####### No User configurable values below here
 
 ####### Operating System, use $OSTYPE
-if [ $OSTYPE = "darwin" -o $OSTYPE = "linux" -o $OSTYPE = "linux-gnu" ] 
+if [ $OSTYPE = "darwin" -o $OSTYPE = "darwin9.0" -o $OSTYPE = "linux" -o $OSTYPE = "linux-gnu" ] 
 then
   OS=$OSTYPE
 else
@@ -91,7 +91,7 @@ fi
 
 ####### LIBRARY/EXECUTABLE PATHS ############
 PrependPath PATH             ${DIFXROOT}/bin
-if [ $OS = "darwin" ] 
+if [ $OS = "darwin" -o $OS = "darwin9.0" ] 
 then
   PrependPath DYLD_LIBRARY_PATH  ${DIFXROOT}/lib
   PrependPath DYLD_LIBRARY_PATH  ${PGPLOTDIR}
