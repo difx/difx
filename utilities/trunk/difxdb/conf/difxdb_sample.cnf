@@ -1,0 +1,14 @@
+#
+# sample MySQL options file that is used by difxqueue to obtain
+# the database connection parameters. 
+#
+# Change host, user, password according to your local MySQL environment
+# and save your changes as difxdb.cnf under $DIFXROOT/conf
+#
+ 
+[difxdb]
+host=localhost
+user=root
+password=
+database=difxdb
+

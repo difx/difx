@@ -1,0 +1,64 @@
+This directory contains the database schema required for
+running the difxdb infrastructure.
+
+1) Database versioning and file naming rules
+
+The database schema is organized with a version number of the
+form <major.minor>. The name of the files in this directory
+should always reflect the version number the particular file
+is asociated with. Also the schema file can contain
+the full schema definition or only the updates from the last version
+number. This is also reflected by the file name. Filenames containing
+the word "full" have the full schema definition, wherease file names
+containing "update" will only update the existing schema to the new version
+number.
+Note: The dixdb suite of programs can in principle 
+be operated with various database servers, e.g. MySQL, PostGreSQL,
+Oracle etc. However, the different architectures use slightly
+different schema defintions. Therefore the filenames also should make
+clear for which database server the schema defintion is intended.
+
+Example:
+
+difxdb_mysql_full_1_0.sql: Full schema definition of version 1.0 with MySQL specfic definitions
+
+difxdb_oracle_update_1.1.sql. Update schema defition for version 1.1 with oracle specific definitions
+
+
+2) Importing the schema
+
+The schema needs to be imported into the database server.
+To import the schema into a MySQL server run the following command:
+
+mysql -h <dbserver> -u <dbuser> -p < difxdb_mysql_full_1_0.sql
+
+This will import the the full schema version 1.0.
+
+Beware: Importing the full schema will ALWAYS DROP all tables
+already existing in the database consequently leading to loss of 
+all data stored within. Before importing full schema defintions
+you should always make a backup of the existing database.
+Importing schema updates will leave existing tables/data untouched.
+
+In order to update your schema to the highest version ALL update
+files with version numbers higher than your current one need to be 
+imported.
+
+3) Adding new files to this directory
+
+When adding new files to this directory always follow
+the naming scheme described above:
+difxdb_<architecture>_<full|update>_major_minor.sql
+
+All files should set the version number (which is stored in 
+table VersionHistory) at the end of the SQL script:
+
+INSERT INTO `difxdb`.`VersionHistory` (
+`major` ,
+`minor`
+)
+VALUES (
+'1', '1'
+);
+
+As a rule the major revision number should be increased whenever the changes in the schema introduce incompatibilities with previous versions (e.g. by dropping fields, changing the field types etc.). Changes that extend the schema (e.g. by adding tables or fields to existing tables) should increase the minor version number only.

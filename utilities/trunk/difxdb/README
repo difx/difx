@@ -1,0 +1,77 @@
+This document describes the neccessary steps to setup the difxdb infrastructure running with
+a MySQL database server.
+
+1) Install a MySQL database server.
+  
+The MySQL community server (which is the free edition) can be obtained at:
+http://dev.mysql.com/downloads/mysql/
+
+Even though the MySQL version is not a critical issue, we recommend to use
+a version of 5.0 or more recent.
+
+Please consult your IT department regarding configuration/saftey of your MySQL
+server installation!
+
+2) Import the difxdb database schema
+
+The database schema is located in the database subdirectory.
+Import the schema into the database server e.g. with the mysql client:
+
+mysql -h <mysqlhost> -u <username> -p < difxdb_schema_mysql.sql
+
+where <mysqlhost> is the name of the host running the MySQL server
+
+This needs to be done as a database user having the privileges to create 
+a new database (e.g. root).
+
+3) Import the difxdb database content
+
+The database content is located in the database subdirectory.
+Import the content into the database server e.g. with the mysql client:
+
+mysql -h <mysqlhost> -u <username> -p < difxdb_data.sql
+
+where <mysqlhost> is the name of the host running the MySQL server
+
+This needs to be done as a database user having the privileges to access
+the difxdb database (must have the INSERT privilege). 
+
+4) Create a database user for use with difxdb
+
+Because the username and password of the database connection will be stored 
+in unencrypted form (see section 4) one should not use the database root
+account for difxdb database connections. Instead create a new user with only
+minimal access rights limited to the "difxdb" database.
+
+This can be most easily done with the MySQL Administrator tool.
+The new user must have SELECT, INSERT, DELETE, UPDATE privileges on the database
+"difxdb"
+
+5) Store the database connection parameters
+
+The database connection parameters are stored in an external options file. A sample
+options file can be found in the conf subdirectory.
+Make the following changes in the sample options file:
+
+username: add the username of the database user you have created in step 3)
+password: add the password of the database user you have created in step 3)
+host: add the name of the host running the MySQL server
+
+Note: Other MySQL configuration options, e.g. non-standard ports etc. should also
+be set in the options file (see MySQL documentation for details).
+
+When done save this file under: $DIFXROOT/conf/difxdb.cnf
+
+6) Set PYTHONPATH environment
+
+the difxdb scripts import some python libraries e.g. difxdb.py which which must be made
+available by setting the PYTHONPATH environment:
+
+export PYTHONPATH=<path to python libs>
+
+The python libs are located under libraries/python/trunk in the DiFX svn checkout tree.
+
+7) Verify installation Python DB Module 
+
+difxqueue (for mysql) requires the MySQLdb python package. Make sure this is installed on your system.
+For RHEL the relavant package is: MySQL-python.

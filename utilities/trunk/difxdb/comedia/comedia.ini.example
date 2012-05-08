@@ -1,0 +1,17 @@
+# example comedia configuration file
+# edit the fields below according to your local settings 
+# rename to comedia.ini and place next to comedia.py
+#
+[Database]
+database = difxdb
+server = localhost
+user = difxdb_user
+password = difxdb_password
+type = mysql
+port = 3306
+
+[Label]
+printcommand = lpr -P YourPrinter
+fontsize = 24
+headerline = Correlator Media Library
+

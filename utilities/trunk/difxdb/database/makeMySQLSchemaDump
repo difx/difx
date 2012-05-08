@@ -1,0 +1,8 @@
+# script for doing a full MySQL schema dump
+# the setting for host/user must be adapted 
+# to your local settings
+# The major and minor version numbers in the output filename should
+# be replaced manually
+
+mysqldump --databases difxdb --complete-insert --extended-insert --dump-date --no-data -u difxdb_admin -p -h 127.0.1 > difxdb_mysql_full_X_X.sql
+mysqldump -t --complete-insert --extended-insert -u difxdb_admin -p -h 127.0.1 difxdb ExperimentStatus JobStatus PassType >> difxdb_mysql_full_X_X.sql
