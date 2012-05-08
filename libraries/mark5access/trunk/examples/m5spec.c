@@ -27,6 +27,9 @@
 //
 //============================================================================
 
+// Change this to configure detection, if possible
+#define USEGETOPT 1
+
 #include <stdio.h>
 #include <complex.h>
 #include <stdlib.h>
@@ -36,12 +39,18 @@
 #include <signal.h>
 #include "../mark5access/mark5_stream.h"
 
+#if USEGETOPT
+#include <getopt.h>
+#endif
+
 const char program[] = "m5spec";
 const char author[]  = "Walter Brisken, Chris Phillips";
 const char version[] = "1.3";
 const char verdate[] = "20120501";
 
 int die = 0;
+
+typedef enum {VLBA=1, DBBC, NOPOL} polmodetype;
 
 typedef void (*sighandler_t)(int);
 
@@ -363,10 +372,41 @@ int main(int argc, char **argv)
 	long long offset = 0;
 	int nchan, nint;
 	int retval;
+	polmodetype polmode = VLBA;
+#if USEGETOPT
+	int opt;
+	struct option options[] = {
+	  {"dbbc", 0, 0, 'B'},
+	  {"nopol", 0, 0, 'P'},
+	  {"help", 0, 0, 'h'},
+	  {0, 0, 0, 0}
+	};
+
+	while ((opt = getopt_long_only(argc, argv, "h", options, NULL)) != EOF)
+	  switch (opt) {
+	  case 'B': // DBBC Pol mode (all Rcp then all LCP)
+	    polmode = DBBC;
+	    printf("Assuming DBBC polarisation order\n");
+	    break;
+	    
+	  case 'P': // Don't compute cross pols
+	    polmode = NOPOL;
+	    printf("Not computing cross pol terms\n");
+	    break;
+	    
+	  case 'h': // help
+	    usage(argv[0]);
+	    return EXIT_SUCCESS;
+	    break;
+	  }
+#endif
 
 	oldsiginthand = signal(SIGINT, siginthand);
 
-	if(argc == 2)
+
+	printf("ARGC==%d   OPTIND==%d\n", argc, optind);
+
+	if (argc-optind == 1)
 	{
 		struct mark5_format *mf;
 		int bufferlen = 1<<11;
@@ -421,26 +461,26 @@ int main(int argc, char **argv)
 		return EXIT_SUCCESS;
 	}
 
-	else if(argc < 6)
+	else if(argc-optind < 5)
 	{
 		usage(argv[0]);
 
 		return EXIT_FAILURE;
 	}
 
-	nchan = atol(argv[3]);
-	nint  = atol(argv[4]);
+	nchan = atol(argv[optind+2]);
+	nint  = atol(argv[optind+3]);
 	if(nint <= 0)
 	{
 		nint = 2000000000L;
 	}
 
-	if(argc > 6)
+	if(argc-optind > 5)
 	{
-		offset=atoll(argv[6]);
+		offset=atoll(argv[optind+5]);
 	}
 
-	retval = spec(argv[1], argv[2], nchan, nint, argv[5], offset);
+	retval = spec(argv[optind], argv[optind+1], nchan, nint, argv[optind+4], offset);
 
 	return retval;
 }
