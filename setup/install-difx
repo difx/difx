@@ -226,7 +226,7 @@ libtargets = [["difxio",     difx_version, True,True,True,False],
 
 utiltargets = [["calcif2",   difx_version, True,False,True,False], 
                ["pulsar/difx2profile", difx_version, True,False,True,True],
-	       ["misc", difx_version, True, False, True, False],
+	       ["misc",      difx_version, True,False,False,False],
                ["vis2screen",difx_version, True,False,False,True]]
 
 apptargets = [["calcserver", difx_version, True,True,False,False],
