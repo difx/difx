@@ -283,7 +283,10 @@ else:
     if verb:
         print;print "Building/Installing from the build directory:"
     inbdir = True
-    startdir = topdir + '/setup'
+    if master_tag:
+        startdir = topdir
+    else:
+        startdir = topdir + '/setup'
 
 if cache != 'none':
     cache = ' --cache-file=' + blddir + '/' + cache
@@ -356,13 +359,7 @@ def auto_compile(doreconf, dolibtoolize, doautoheader, prefix, dompicxx):
 def make_doc_area(basedocdir):
     if not os.path.exists(basedocdir):
         os.mkdir(basedocdir)
-### setupdir was defined above
-#   orgpath = sys.argv[0]
-#   if orgpath[0:2] == "./":
-#       orgpath = orgpath[2:]
-#   orgpath = orgcwd + orgpath
-#   print os.path.abspath(orgpath)
-#   setupdir = os.path.abspath(orgpath)[:-11]
+    # setupdir was defined above
     print "cp -f %s/doco-index.html %s/index.html" % (setupdir, basedocdir)
     os.system("cp -f %s/doco-index.html %s/index.html" % (setupdir, basedocdir))
 
