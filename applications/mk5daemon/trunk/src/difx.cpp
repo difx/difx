@@ -800,6 +800,7 @@ void Mk5Daemon_fileTransfer( Mk5Daemon *D, const DifxMessageGeneric *G ) {
 	const DifxMessageFileTransfer *S;
 	char message[DIFX_MESSAGE_LENGTH];
 	char command[MAX_COMMAND_SIZE];
+	char hostname[DIFX_MESSAGE_LENGTH];
 	const char *user;
 	pid_t childPid;
 	
@@ -811,6 +812,12 @@ void Mk5Daemon_fileTransfer( Mk5Daemon *D, const DifxMessageGeneric *G ) {
 	}
 	
 	S = &G->body.fileTransfer;
+	
+	//  Make sure this message is intended for this host
+	gethostname( hostname, DIFX_MESSAGE_LENGTH );
+	if ( strcmp( S->dataNode, hostname ) ) {
+		return;
+	}
 	
 	//  Check the sanity of the transfer message.
 	if( S->address[0] == 0 || S->port <= 0 ||
@@ -1002,6 +1009,7 @@ void Mk5Daemon_fileTransfer( Mk5Daemon *D, const DifxMessageGeneric *G ) {
 	        int ret = stat( S->origin, &stt );
 	        if ( ret == -1 ) {
 	            //  stat errors are due to mangled files or permission problems
+	            perror( "stat error" );
 	            if ( errno == EACCES )
 	                filesize = -3;
 	            else
@@ -1074,7 +1082,7 @@ void Mk5Daemon_fileTransfer( Mk5Daemon *D, const DifxMessageGeneric *G ) {
             	    while ( filesize > 0 ) {
             	        short readsize = read( fd, blockData, blockSize );
             	        short ns = htons( readsize );
-            	        write( sockfd, &ns, sizeof( short ) );
+            	        //write( sockfd, &ns, sizeof( short ) );
             	        write( sockfd, blockData, readsize );
             	        filesize -= readsize;
             	    }
@@ -1113,6 +1121,7 @@ void Mk5Daemon_fileOperation( Mk5Daemon *D, const DifxMessageGeneric *G ) {
 	const DifxMessageFileOperation *S;
 	char message[DIFX_MESSAGE_LENGTH];
 	char command[MAX_COMMAND_SIZE];
+	char hostname[DIFX_MESSAGE_LENGTH];
 	const char *user;
 	pid_t childPid;
 	
@@ -1124,6 +1133,12 @@ void Mk5Daemon_fileOperation( Mk5Daemon *D, const DifxMessageGeneric *G ) {
 	}
 	
 	S = &G->body.fileOperation;
+	
+	//  Make sure this message is intended for this host
+	gethostname( hostname, DIFX_MESSAGE_LENGTH );
+	if ( strcmp( S->dataNode, hostname ) ) {
+		return;
+	}
 	
 	if( S->path[0] != '/' ) {
 		difxMessageSendDifxAlert( "Malformed DifxFileOperation message received", DIFX_ALERT_LEVEL_ERROR );
@@ -1266,6 +1281,7 @@ void Mk5Daemon_vex2DifxRun( Mk5Daemon *D, const DifxMessageGeneric *G ) {
 	char command[MAX_COMMAND_SIZE];
 	char difxPath[DIFX_MESSAGE_FILENAME_LENGTH];
 	char roundup[DIFX_MESSAGE_LENGTH];
+	char hostname[DIFX_MESSAGE_LENGTH];
 	pid_t childPid;
 	
 	if( !G ) {
@@ -1276,6 +1292,12 @@ void Mk5Daemon_vex2DifxRun( Mk5Daemon *D, const DifxMessageGeneric *G ) {
 	}
 	
 	S = &G->body.vex2DifxRun;
+	
+	//  Make sure this message is intended for this host
+	gethostname( hostname, DIFX_MESSAGE_LENGTH );
+	if ( strcmp( S->headNode, hostname ) ) {
+		return;
+	}
 	
 	snprintf( message, DIFX_MESSAGE_LENGTH, "vex2difx command....%s, %s, %s, %s, %s",
              S->user,
