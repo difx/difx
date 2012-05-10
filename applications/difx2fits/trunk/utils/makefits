@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #**************************************************************************
-#   Copyright (C) 2009-2011 by Walter Brisken                             *
+#   Copyright (C) 2009-2012 by Walter Brisken                             *
 #                                                                         *
 #   This program is free software; you can redistribute it and/or modify  *
 #   it under the terms of the GNU General Public License as published by  *
@@ -38,9 +38,9 @@ from os.path import isfile, isdir, getsize
 from time import gmtime, time
 
 program = 'makefits'
-version = '0.6'
+version = '0.7'
 author  = 'Walter Brisken'
-verdate = '20110813'
+verdate = '20120510'
 
 calFiles = ['flag', 'pcal', 'tsys', 'weather']
 
@@ -56,6 +56,8 @@ def usage(prog):
 	print '             To force operation with mixed DiFX versions\n'
 	print '  --allow-partial'
 	print '             Bypass check for complete set of correlated\n'
+	print '  --cwd'
+	print '             Look for files in the current working directory\n'
 	exit(0)
 
 def testgainfiles():
@@ -236,12 +238,15 @@ class JobList:
 
 		return difxVersion
 
-	def makefits(self, queuedir, verbose, sniff, options=''):
+	def makefits(self, queuedir, verbose, sniff, usecwd, options=''):
 
 		groupId = getenv('DIFX_GROUP_ID')
 
-		dir = queuedir + '/' + self.kv['exper']
 		cwd = getcwd()
+		if usecwd:
+			dir = cwd
+		else:
+			dir = queuedir + '/' + self.kv['exper']
 		
 		t = time()
 
@@ -414,8 +419,11 @@ class JobList:
 
 		return True
 
-	def verify(self, queuedir, allowPartial):
-		dir = queuedir + '/' + self.kv['exper']
+	def verify(self, queuedir, allowPartial, usecwd):
+		if usecwd:
+			dir = getcwd()
+		else:
+			dir = queuedir + '/' + self.kv['exper']
 
 		completeJobs = []
 
@@ -469,6 +477,7 @@ overrideVersion = False
 allowPartial = False
 verbose = False
 sniff = True
+usecwd = False
 
 opts = ''
 args = []
@@ -479,6 +488,8 @@ for a in argv[1:]:
 			opts = opts + ' ' + '--override-version'
 		elif a == '--allow-partial':
 			allowPartial = True
+		elif a == '--cwd':
+			usecwd = True
 		elif a in ('-h', '--help'):
 			usage(argv[0])
 			opts = opts + ' -v'
@@ -523,7 +534,7 @@ for arg in args:
 	if verbose:
 		jl.show()
 
-	OK = jl.verify(difxQueueBase, allowPartial)
+	OK = jl.verify(difxQueueBase, allowPartial, usecwd)
 
 	if not OK:
 		if not allowPartial:
@@ -531,7 +542,7 @@ for arg in args:
 			print 'Run with --allow-partial to process a subset of data.\n'
 		exit(0)
 
-	OK = jl.makefits(difxQueueBase, verbose, sniff, opts)
+	OK = jl.makefits(difxQueueBase, verbose, sniff, usecwd, opts)
 
 if len(gcFilesMissing) > 0:
 	print '\nWarning: some gain curve files were not found:'
