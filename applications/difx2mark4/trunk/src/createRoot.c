@@ -500,7 +500,11 @@ int createRoot (DifxInput *D,       // difx input structure pointer
                     break;
 
             case STATION:           // need to add ref to clock section
-                if (strncmp (pst[0], "enddef", 6) == 0)
+                                    // comment out vex's clock
+                if (strncmp (pst[1], "$CLOCK", 6) == 0)
+                    line[0] = '*';
+
+                else if (strncmp (pst[0], "enddef", 6) == 0)
                     {
                     strcpy (buff, "    ref $CLOCK = ");
                     strcat (buff, current_def);

@@ -8,6 +8,7 @@ difx2mark4_SOURCES = \
 	difx2mark4.c \
 	createRoot.c \
 	createType1s.c \
+    new_type1.c \
 	createType3s.c \
 	root_id.c \
 	single_code.c \

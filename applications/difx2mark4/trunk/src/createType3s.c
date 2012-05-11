@@ -371,7 +371,8 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                                         // find out which tone slot this goes in
                                         for (i=0; i<NPC_TONES; i++)
                                             {
-                                            if (f_rel == xtones[i])
+                                        // allow for round-off in comparing tone f's
+                                            if (fabs (f_rel - xtones[i]) < 1e-9)
                                                 break;
                                             else if (xtones[i] == 0.0)
                                                 {

@@ -61,6 +61,8 @@ static int usage (const char *pgm)
     fprintf (stderr, "  -k or --keep-order        don't sort antenna order\n\n");
     fprintf (stderr, "  -r or --raw               use raw mode - suppresses normalization\n\n");
     fprintf (stderr, "  -p or --pretend           dry run\n\n");
+    fprintf (stderr, "  -b <code> <flo> <fhi>     Override freq band codes\n");
+    fprintf (stderr, "                            (can have multiple triplets)\n\n");
 
     return 0;
     }
@@ -112,9 +114,10 @@ int main(int argc, char **argv)
     for(;;)
         {
         n = convertMark4(opts, &nScan);
-        if(n <= 0)
-            break;
-        nConverted += n;
+        if (n > 0)
+            nConverted += n;
+        else
+            break;                  // all done, exit loop
         }
 
     printf ("%d of %d DiFX filesets converted to %d Mark4 filesets\n", nConverted,
@@ -160,7 +163,8 @@ int convertMark4 (struct CommandLineOptions *opts, int *nScan)
             {
             fprintf (stderr, "loadDifxInput failed on <%s>.\n",
                 opts->baseFile[i]);
-            return 0;
+            opts->baseFile[i] = 0;
+            continue; 
             }
         if(opts->specAvg)
             D2->specAvg = opts->specAvg;
@@ -202,7 +206,8 @@ int convertMark4 (struct CommandLineOptions *opts, int *nScan)
                 {
                 fprintf (stderr, "Merging failed on <%s>.\n",
                     opts->baseFile[i]);
-                return 0;
+                opts->baseFile[i] = 0;
+                continue; 
                 }
             }
         else
@@ -215,7 +220,7 @@ int convertMark4 (struct CommandLineOptions *opts, int *nScan)
              
         }
     if(!D)
-        return 0;
+        return 0;                   // no more work; force quit
          
     if(opts->verbose > 2)
         printDifxInput(D);
@@ -224,8 +229,9 @@ int convertMark4 (struct CommandLineOptions *opts, int *nScan)
 
     if(!D)
         {
-        fprintf (stderr, "updateDifxInput failed.  Aborting\n");
-        return 0;
+        printf ("updateDifxInput failed.  Aborting\n");
+        opts->baseFile[i] = 0;
+        return 0; 
         }
 
     if(difxVersion && D->job->difxVersion[0])
@@ -246,7 +252,7 @@ int convertMark4 (struct CommandLineOptions *opts, int *nScan)
                 fprintf (stderr, " Not converting:  use --override-version\n"
                                  "  if you are sure it is safe to proceed.\n");
                 deleteDifxInput(D);
-                return 0;
+                return 0; 
                 }
             }
         }
@@ -259,8 +265,7 @@ int convertMark4 (struct CommandLineOptions *opts, int *nScan)
     if(D->nIF <= 0 || D->nPolar <= 0)
         {
         fprintf (stderr, "Data geometry changes during obs\n");
-        deleteDifxInput(D);
-        return 0;
+        return 0; 
         }
 
     if(strcmp (D->job->taperFunction, "UNIFORM") != 0)
@@ -294,7 +299,6 @@ int convertMark4 (struct CommandLineOptions *opts, int *nScan)
                 if(mkdir(opts->exp_no, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH))
                     {
                     fprintf (stderr, "Error creating output directory %s\n", opts->exp_no);
-                    return 0;
                     }
             }
         strcpy (node, opts->exp_no);
@@ -321,7 +325,7 @@ int convertMark4 (struct CommandLineOptions *opts, int *nScan)
                 {
                 fprintf(stderr, "Developer Error (difxio) scanId %d has no scan identifier!\n", scanId);
                 scanId++;
-                return -1;
+                return 0; 
                 }
             printf("  Processing scan %d/%d: %s\n", scanId, D->nScan, D->scan[scanId].identifier);
                                                 // convert scan

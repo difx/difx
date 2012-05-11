@@ -18,7 +18,6 @@
 
 #define XS_CONVENTION
 
-#define NUMFILS 500                 // max number of type 1 output files
 #define SCALE 10000.0               // amplitude factor to normalize for fourfit
 #define NOVIS -9999                 // indicates no visibility records in RAM
 
@@ -35,10 +34,7 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
     const int header_size = (8*sizeof(int)) + (5*sizeof(double)) + (2*sizeof(char)); 
 
     int i,
-        findex,
-        gindex,
-        indA,
-        indB,
+        j,
         n,
         nvis,
         vrsize,                     // size of vis. records in bytes
@@ -55,20 +51,13 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
         gv_stat,
         oldScan,
         configId,
-        cn_lab,                     // channel # used as a label in the channel name
-        numchan;
+        rc;
 
-    char inname[DIFXIO_FILENAME_LENGTH],    // file name of input data file
+    char inname[DIFXIO_FILENAME_LENGTH], // file name of input data file
          dirname[DIFXIO_FILENAME_LENGTH],
-         outname[DIFXIO_FILENAME_LENGTH],
-         blines[NUMFILS][3],        // null-terminated baselines list
+         blines[2*NUMFILS],         // baselines list, as in ABXYJK
          poltab [4][3] = {"LL", "RR", "LR", "RL"},
-         lchan_id[5],
-         rchan_id[5],
          c;
-
-    DifxDatastream *pdsA,
-                   *pdsB;
                                     // variables that need persistence due to exit
                                     // up into caller over scan boundaries
     static char corrdate[16];
@@ -88,9 +77,9 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
     DIR *pdir;
     struct dirent *dent;
 
-    struct type_000 t000;
+    struct type_000 t000;           // just used for pointer arithmetic
     struct type_100 t100;
-    struct type_101 t101;
+
     union u_tag
         {
         struct type_120 t120;
@@ -101,6 +90,9 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
     int recordIsFlagged (double, int, int, const DifxJob *);
     int getBaselineIndex (DifxInput *, int, int);
     int openReadVisFile (FILE *, vis_record *, int);
+    int new_type1 (DifxInput *, int, int, int, int, int *, struct stations *,
+                   char *, struct CommandLineOptions *, FILE **, int, char *, 
+                   char *, char *, char *, int, int);
 
                                     // initialize memory as necessary
                                     // quantization correction factor is pi/2 for
@@ -132,37 +124,7 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
                                     // calculate (variable) size of visibility record
     vrsize = sizeof (vis_record) - sizeof (vrec->comp) + 2 * nvis * sizeof (float);
 
-                                    // clear record areas
-    memset (&t000, 0, sizeof (t000));
-    memset (&t100, 0, sizeof (t100));
-    memset (&t101, 0, sizeof (t101));
     memset (&u, 0, sizeof (u));
-                                    // fill in record boiler-plate and unchanging fields
-                                    // type_100
-    memcpy (t000.record_id, "000", 3);
-    memcpy (t000.version_no, "01", 2);
-    memcpy (t000.unused1,   "000", 3);
-
-    memcpy (t100.record_id, "100", 3);
-    memcpy (t100.version_no, "00", 2);
-    memcpy (t100.unused1,   "000", 3);
-    t100.nlags = nvis;
-    strncpy (t100.rootname, rootname, 34);
-    conv2date (D->scan[scanId].mjdStart, &t100.start);
-    conv2date (D->scan[scanId].mjdEnd,   &t100.stop);
-    if (opts->verbose > 0)
-        printf ("      mjdStart %g start %hd %hd %hd %hd %f\n", D->scan[scanId].mjdStart, 
-                 t100.start.year, t100.start.day, 
-                 t100.start.hour, t100.start.minute, t100.start.second);
-                                    // dummy procdate - *could* set to file creation time
-    conv2date (54321.0,   &t100.procdate);
-
-    t100.nblocks = 1;               // blocks are mk4 corr. specific
-
-                                    // type_101
-    memcpy (t101.record_id, "101", 3);
-    memcpy (t101.version_no, "00", 2);
-    t101.nblocks = 1;               // blocks are mk4 corr. specific
 
                                     // type_120
     memcpy (u.t120.record_id, "120", 3);
@@ -312,7 +274,7 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
                     break;          // found baseline, exit loop
 
                 else if (base_index[n] < 0)
-                    {               // at list end, must add a new baseline
+                    {               // at list end, add new type 1 file for this baseline
                                     // determine which baseline array to use
                     if ((blind = getBaselineIndex (D, a1, a2)) < 0)
                         {
@@ -321,132 +283,11 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
                                 rec->baseline);
                         blind = 0;      // use first one in list and muster on
                         }
-                                    // append new baseline to list
-                    base_index[n] = rec->baseline;
-                    (stns + a1)->invis = TRUE;
-                    (stns + a2)->invis = TRUE;
-
-                                    // create name & open new output file
-                                    // assume that site ID order is same as station order
-                                    // probably not valid, though - THIS NEEDS WORK!!  
-                    strcpy (outname, node);
-                    strcat (outname, "/");
-                    blines[n][0] = (stns+a1)->mk4_id;
-                    blines[n][1] = (stns+a2)->mk4_id;
-                    blines[n][2] = 0;
-                    if (opts->verbose > 0)
-                        printf ("      rec->baseline %d blines <%s>\n", rec->baseline, blines[n]);
-                    strcat (outname, &blines[n][0]);
-                    strcat (outname, "..");
-                    strcat (outname, rcode);
-
-                    fout[n] = fopen (outname, "w");
-                    if (fout[n] == NULL)
-                        {
-                        perror ("difx2mark4");
-                        fprintf (stderr, "fatal error opening output type1 file %s\n", outname);
-                        return (-1);
-                        }
-                    printf ("      created type 1 output file %s\n", outname);
-
-                                    // construct and write type 000 record
-                    strncpy (t000.date, corrdate, 16);
-                    if (opts->verbose > 0)
-                        printf ("        t000.date will be set to %s\n",corrdate);
-                    strncpy (t000.name, outname, 40);
-                    fwrite (&t000, sizeof (t000), 1, fout[n]);
-
-                                    // construct and write type 100 record
-                    memcpy (t100.baseline, &blines[n][0], 2);
-                    t100.nindex = D->baseline[blind].nFreq * D->baseline[blind].nPolProd[0];
-                    write_t100 (&t100, fout[n]);
-
-                                    // determine index into frequency table which
-                                    // depends on the recorded subbands that are correlated
-
-                                    // point to reference/A and remote/B datastreams
-                    pdsA = &D->datastream[D->baseline[blind].dsA];
-                    pdsB = &D->datastream[D->baseline[blind].dsB];
-
-                                    // construct and write type 101 records for each chan
-                    numchan = 0;
-                    for (i=0; i<D->baseline[blind].nFreq; i++)
-                                    // loop over 1, 2, or 4 pol'n. products
-                        for (pol=0; pol<D->baseline[blind].nPolProd[i]; pol++)
-                            {
-                                    // find actual freq index of this recorded band
-                                    // or possibly of a zoomed in band
-                            indA = D->baseline[blind].bandA[i][pol];
-                            if (indA < 0 || indA >= pdsA->nRecBand + pdsA->nZoomBand)
-                                {
-                                printf ("Error! bandA[%d][%d] = %d out of range\n",
-                                        i, pol, indA);
-                                return (-1);
-                                }
-                            if (indA < pdsA->nRecBand)
-                                findex = pdsA->recFreqId[pdsA->recBandFreqId[indA]];
-                            else
-                                findex = pdsA->zoomFreqId[pdsA->zoomBandFreqId[indA-pdsA->nRecBand]];
-
-                            indB = D->baseline[blind].bandB[i][pol];
-                            if (indB < 0 || indB >= pdsB->nRecBand + pdsB->nZoomBand)
-                                {
-                                printf ("Error! bandB[%d][%d] = %d out of range\n",
-                                        i, pol, indB);
-                                return (-1);
-                                }
-                            if (indB < pdsB->nRecBand)
-                                gindex = pdsB->recFreqId[pdsB->recBandFreqId[indB]];
-                            else
-                                gindex = pdsB->zoomFreqId[pdsB->zoomBandFreqId[indB-pdsB->nRecBand]];
-
-                                    // sanity check that both stations refer to same freq
-                            if (findex != gindex)
-                              printf ("Warning, mismatching frequency indices! (%d vs %d)\n",
-                                        findex, gindex);
-                                    // generate index that is 10 * freq_index + pol + 1
-                            t101.index = 10 * findex + pol + 1;
-                            c = getband (D->freq[findex].freq);
-
-                            switch (pol)
-                                {
-                                case 0: // LL
-                                    // prepare ID strings for both pols, if there
-                                    if (D->baseline[blind].nPolProd[i] > 1)
-                                        {
-                                        cn_lab = 2 * numchan;
-                                        sprintf (lchan_id, "%c%02d?", c, cn_lab);
-                                        lchan_id[3] = (D->freq+findex)->sideband;
-                                        cn_lab++; 
-                                        sprintf (rchan_id, "%c%02d?", c, cn_lab);
-                                        rchan_id[3] = (D->freq+findex)->sideband;
-                                        }
-                                    else    // both the same (only one used)
-                                        {
-                                        sprintf (lchan_id, "%c%02d?", c, numchan);
-                                        lchan_id[3] = (D->freq+findex)->sideband;
-                                        strcpy (rchan_id, lchan_id);
-                                        }
-
-                                    strcpy (t101.ref_chan_id, lchan_id);
-                                    strcpy (t101.rem_chan_id, lchan_id);
-                                    numchan++;
-                                    break;
-                                case 1: // RR
-                                    strcpy (t101.ref_chan_id, rchan_id);
-                                    strcpy (t101.rem_chan_id, rchan_id);
-                                    break;
-                                case 2: // LR
-                                    strcpy (t101.ref_chan_id, lchan_id);
-                                    strcpy (t101.rem_chan_id, rchan_id);
-                                    break;
-                                case 3: // RL
-                                    strcpy (t101.ref_chan_id, rchan_id);
-                                    strcpy (t101.rem_chan_id, lchan_id);
-                                    break;
-                                }
-                            write_t101 (&t101, fout[n]);
-                            }
+                    rc = new_type1 (D, n, a1, a2, blind, base_index, stns, blines, opts, 
+                               fout, nvis, rootname, node, rcode, corrdate, 
+                               rec->baseline, scanId);
+                    if (rc < 0)
+                        return (rc);
                     break;
                     }                   // end of block to append new baseline
                 }                       // either found baseline file or created new one
@@ -469,8 +310,8 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
                         || isinf (rscaled) || isinf (iscaled) 
                         || isnan (rscaled) || isnan (iscaled))
                     {               // impossibly large values overwritten with 0
-                    printf ("Warning! Corrupt visibility %le %le for baseline %s in input file\n",
-                            rscaled, iscaled, blines[n]);
+                    printf ("Warning! Corrupt visibility %le %le for baseline %c%c in input file\n",
+                            rscaled, iscaled, blines[2*n], blines[2*n+1]);
                     rscaled = 0.0;
                     iscaled = 0.0;
                     }
@@ -491,16 +332,14 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
                     u.t120.ld.spec[nvis-i-1].im = -iscaled;
                     }
                 }
-            strncpy (u.t120.baseline, blines[n], 2);
+            strncpy (u.t120.baseline, blines+2*n, 2);
                                     // FIXME (perhaps) -assumes all freqs have same PolProds as 0
                                     // insert index# for this channel
             u.t120.index = 10 * rec->freq_index + 1;
                                     // tack on offset that represents polarization
-                                    // iff there is more than one polarization present
-            if (D->baseline[blind].nPolProd[0] > 1)
-                for (i=0; i<4; i++)     
-                    if (strncmp (poltab[i], rec->pols, 2) == 0)
-                        u.t120.index += i;
+            for (i=0; i<4; i++)     
+                if (strncmp (poltab[i], rec->pols, 2) == 0)
+                    u.t120.index += i;
 
                                     // calculate accumulation period index from start of scan
             u.t120.ap = (8.64e4 * (rec->mjd - D->scan[scanId].mjdStart) + rec->iat)
@@ -523,7 +362,7 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
         if (base_index[i] < 0)      // bail out at end of list
             break;
         if (opts->verbose > 0)
-            printf ("      n120[%s] %d\n", blines[i], n120[i]);
+            printf ("      n120[%c%c] %d\n", blines[2*i], blines[2*i+1], n120[i]);
                                     // position to ndrec in t100 record in file
         fseek (fout[i], 
               (long)(sizeof(t000)+((char *)&t100.ndrec-(char *)&t100.record_id)), 
@@ -591,5 +430,3 @@ int recordIsFlagged (double t, int a1, int a2, const DifxJob *job)
         }
     return 0;
     }
-
-// vim: shiftwidth=4:softtabstop=4:expandtab:cindent:cinoptions={1sf1s^-1s

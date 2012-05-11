@@ -26,8 +26,8 @@
 #define MAX_STN 50
 #define MAX_FBANDS 20 
 #define EXP_CODE_LEN 4
-                                    // threshold magnitude for vis. rejection
-#define MAGLIM 10000.0
+#define NUMFILS 500                 // max number of type 1 output files
+#define MAGLIM 10000.0              // threshold magnitude for vis. rejection
 
 enum booleans {FALSE, TRUE};
 
