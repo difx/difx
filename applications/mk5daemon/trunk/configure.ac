@@ -8,6 +8,8 @@ AM_INIT_AUTOMAKE
 AC_PROG_CXX
 AM_SANITY_CHECK
 
+AC_LANG(C++)
+
 AC_CHECK_HEADER(expat.h)
 
 AC_CHECK_LIB(m, erf,,[AC_MSG_ERROR("need libm")])

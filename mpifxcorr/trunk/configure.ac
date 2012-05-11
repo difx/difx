@@ -9,6 +9,7 @@ AC_PROG_CXX
 AC_PROG_RANLIB
 AC_C_BIGENDIAN
 
+AC_LANG(C++)
 
 AC_ARG_ENABLE(quiet, [AS_HELP_STRING([--enable-quiet],[disable some verbiage])], [CFLAG_QUIET="-DQUIET"], [CFLAG_QUIET=" "])
 
