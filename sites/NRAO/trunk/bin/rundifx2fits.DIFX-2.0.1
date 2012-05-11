@@ -1,0 +1,6 @@
+#! /bin/bash
+. /home/swc/DiFX-2.0.1/setup_difx
+if [[ `hostname` = "boom" ]] ; then
+  export GAIN_CURVE_PATH=/home/boom/gaincurves
+fi
+difx2fits $@

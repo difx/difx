@@ -1,0 +1,11 @@
+. "$DIFX_PREFIX"/setup_difx
+
+env
+
+echo $@
+
+#mpifxcorr "$@"
+
+which mpifxcorr
+
+ldd `which mpifxcorr`

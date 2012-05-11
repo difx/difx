@@ -1,0 +1,38 @@
+#!/bin/env python
+
+from glob import glob
+from sys import argv, exit
+from string import split, lower, find
+from os import system
+
+program = 'copyScript'
+version = '1.0'
+verdate = '20110627'
+
+stations = ['br', 'fd', 'gb', 'hn', 'kp', 'la', 'mk', 'nl', 'ov', 'pt', 'sc']
+observtxfile = 'observ.tx'
+
+print '\nThis is %s version %s  %s\n' % (program, version, verdate)
+
+if len(argv) != 1:
+	print ''
+	print 'Usage: %s' % argv[0]
+	print ''
+	print 'This program copies a file "observ.tx" to all VLBA+GBT CCs'
+	print ''
+
+	exit(0)
+
+if len(glob(observtxfile)) != 1:
+	print 'Error: no file %s in this directory!' % observtxfile
+	exit(0)
+
+for stn in stations:
+	if stn == 'gb':
+		cc = 'gb-cc.gb.nrao.edu'
+	else:
+		cc = '%s-cc' % stn
+	print 'Sending %s to %s' % (observtxfile, cc)
+	cmd = 'scp %s vlbamon@%s:/export/home/cc/vlba/scripts' % (observtxfile, cc)
+	print 'Executing: %s' % cmd
+	system(cmd)
