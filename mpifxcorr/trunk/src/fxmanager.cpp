@@ -39,6 +39,7 @@
 #include <arpa/inet.h>
 #include <fcntl.h>
 #include <netdb.h>
+#include <string.h>
 
 /* Cf. C99 <features.h> */
 #ifndef LLONG_MAX
