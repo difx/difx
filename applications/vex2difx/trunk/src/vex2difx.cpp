@@ -1153,6 +1153,10 @@ static void populateBaselineTable(DifxInput *D, const CorrParams *P, const CorrS
 					{
 						continue;
 					}
+					if(!blockedfreqids[a1].empty() && blockedfreqids[a1].find(freqId) != blockedfreqids[a1].end())
+					{
+						continue;
+					}
 
 					DifxBaselineAllocPolProds(bl, nFreq, 4);
 
@@ -1172,6 +1176,39 @@ static void populateBaselineTable(DifxInput *D, const CorrParams *P, const CorrS
                                                         }
                                                 }
                                         }
+					bl->nPolProd[nFreq] = nPol;
+
+					if(nPol == 0)
+					{
+						// This deallocates
+						DifxBaselineAllocPolProds(bl, nFreq, 0);
+
+						continue;
+					}
+
+					++nFreq;
+				}
+				for(int f = 0; f < D->datastream[a1].nZoomFreq; ++f)
+				{
+					freqId = D->datastream[a1].zoomFreqId[f];
+
+					DifxBaselineAllocPolProds(bl, nFreq, 4);
+
+					n1 = DifxDatastreamGetZoomBands(D->datastream+a1, freqId, a1p, a1c);
+
+					nPol = 0;
+					for(int u = 0; u < n1; ++u)
+					{
+						for(int v = 0; v < n1; ++v)
+						{
+							if(corrSetup->doPolar || (a1p[u] == a1p[v] && (corrSetup->onlyPol == ' ' || corrSetup->onlyPol == a1p[u])))
+							{
+								bl->bandA[nFreq][nPol] = D->datastream[a1].nRecBand + a1c[u];
+								bl->bandB[nFreq][nPol] = D->datastream[a1].nRecBand + a1c[v];
+								++nPol;
+							}
+						}
+					}
 					bl->nPolProd[nFreq] = nPol;
 
 					if(nPol == 0)
