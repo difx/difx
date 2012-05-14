@@ -28,6 +28,7 @@
 #include <sys/stat.h>
 #include <signal.h>
 #include <fstream>
+#include <string.h>
 
 #define BUFFER_SIZE 2000
 
