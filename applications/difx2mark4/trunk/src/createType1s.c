@@ -231,7 +231,7 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
             configId = D->scan[scanId].configId;
 
                                     // compute antenna indices for this record
-            if (D->job->antennaIdRemap)
+            if ((D->job+*jobId)->antennaIdRemap)
                 {
                 a1 = *((D->job+*jobId)->antennaIdRemap + rec->baseline / 256 - 1); 
                 a2 = *((D->job+*jobId)->antennaIdRemap + rec->baseline % 256 - 1); 

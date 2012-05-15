@@ -332,11 +332,16 @@ int convertMark4 (struct CommandLineOptions *opts, int *nScan)
                                                 // scanId and jobId can be incremented
                                                 // by newScan
             newScanId = newScan(D, opts, node, scanId, &jobId);
-            *nScan += 1;
             if(newScanId < 0)
-                break;
+                {
+                printf ("error detected, attempting to proceed\n");
+                jobId++;
+                }
             else
+                {
+                *nScan += 1;
                 scanId = newScanId;
+                }
             }
         printf("%d of %d scans converted!\n", *nScan, D->nScan);
         deleteDifxInput(D);
