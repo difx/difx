@@ -23,10 +23,10 @@ from time import asctime
 
 program = 'errormon'
 author  = 'Walter Brisken'
-version = '0.4'
-verdate = '20110912'
+version = '0.5'
+verdate = '20120516'
 
-alertLevels = ['FATAL', 'SEVERE', 'ERROR', 'WARNING', 'INFO', 'VERBOSE', 'DEBUG']
+alertLevels = ['FATAL', 'SEVERE', 'ERROR', 'WARNING', 'INFO', 'VERBOSE', 'DEBUG', 'IGNORE']
 
 class Parser:
 

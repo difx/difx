@@ -26,8 +26,8 @@ from time import asctime
 
 program = 'errormon2'
 author  = 'Walter Brisken + ?'
-version = '0.4'
-verdate = '20110912'
+version = '0.5'
+verdate = '20120516'
 
 ##############################################################################
 # Parameters
@@ -59,6 +59,7 @@ logging.addLevelName(50, 'WARNING')
 logging.addLevelName(40, 'INFO')
 logging.addLevelName(30, 'VERBOSE')
 logging.addLevelName(20, 'DEBUG')
+logging.addLevelName(10, 'IGNORE')
 
 # The following is just to overwrite the python DEBUG level.
 logging.addLevelName(10, 'VERBOSE_DEBUG')
