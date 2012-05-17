@@ -80,7 +80,7 @@ void pystream::addPhasingSource(const string &sourceName)
 	phasingSources.push_back(sourceName);
 }
 
-int switchPosition(const char *val)
+int switchPosition(int ifCount, const char *val)
 {
 	char c = val[0];
 
@@ -96,11 +96,17 @@ int switchPosition(const char *val)
 	}
 	else if(c == 'B')
 	{
-		return 2;
+		if( ifCount == 0 )
+			return 2;
+		else
+			return 3;
 	}
 	else if(c == 'C')
 	{
-		return 3;
+		if( ifCount == 1 )
+			return 3;
+		else
+			return 2;
 	}
 	else if(c == 'D')
 	{
@@ -1115,16 +1121,30 @@ int pystream::writeScans(const VexData *V)
 				*this << "# changing to mode " << mode->defName << endl;
 				if(scriptType == SCRIPT_VLBA)
 				{
+					int ifCount = 0;
+
 					*this << "subarray.setVLBALoIfSetup(loif" << modeId << ")" << endl;
 
 					map<string,unsigned int>::const_iterator ifit;
 					for(ifit = ifIndex[modeId].begin(); ifit != ifIndex[modeId].end(); ++ifit)
 					{
+						*this << "# ifC: " << ifCount << " ifit->first: " << ifit->first; 
 						if(ifit->first != sw[ifit->second])
 						{
+							*this << " changed switches" << endl;
 							sw[ifit->second] = ifit->first;
-							*this << "subarray.set4x4Switch('" << switchOutput[ifit->second] << "', " << switchPosition(ifit->first.c_str()) << ")" << endl;
-						}
+// 							*this << "# ifC: " << ifCount << " ifit->first: " << ifit->first
+//									<< " first.c_str(): " << ifit->first.c_str()
+//									<< " ifit->second: "<< ifit->second
+//									<< " sw[ifit->second]: " <<  sw[ifit->second]
+//									<< " switchOutput[ifit->second]: " << switchOutput[ifit->second]
+//									<< " switchPos: " << switchPosition(ifCount, ifit->first.c_str()) << endl;
+							*this << "subarray.set4x4Switch('" << switchOutput[ifit->second] << "', "
+									<< switchPosition(ifCount, ifit->first.c_str()) << ")" << endl;
+						} else
+							*this << " no change" << endl;
+
+						ifCount++;
 					}
 					*this << "subarray.setChannels(dbe0, channelSet" << modeId << ")" << endl;
 				}
@@ -1153,9 +1173,9 @@ int pystream::writeScans(const VexData *V)
 			// movement of antenna for subsequent scans. We still must execute all other setups steps.
 			double deltat1 = floor((arange->mjdStart-mjd0)*86400.0 + 0.5);
 			double deltat2 = floor((arange->mjdStop-mjd0)*86400.0 + 0.5);
-			// execute() at previous stop time minus 5 seconds
+			// execute() at stop time minus 5 seconds
 			// arbitrary amount picked to allow commands to get sent to MIBs before they need to get run on MIBs
-			double deltat3 = floor((lastValid-mjd0)*86400.0 + 0.5-5);
+			double deltat3 = floor((arange->mjdStop-mjd0)*86400.0 + 0.5-5);
 			// just in case our setup scan caused the auto leveling to lock onto a bad value make
 			// it forget
 			// TODO this - like a lot of things - only works for one RDBE now
