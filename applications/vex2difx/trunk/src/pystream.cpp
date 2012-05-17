@@ -1128,7 +1128,7 @@ int pystream::writeScans(const VexData *V)
 					map<string,unsigned int>::const_iterator ifit;
 					for(ifit = ifIndex[modeId].begin(); ifit != ifIndex[modeId].end(); ++ifit)
 					{
-						*this << "# ifC: " << ifCount << " ifit->first: " << ifit->first; 
+						//*this << "# ifC: " << ifCount << " ifit->first: " << ifit->first; 
 						if(ifit->first != sw[ifit->second])
 						{
 							*this << " changed switches" << endl;
