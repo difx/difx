@@ -1176,7 +1176,7 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 			}
 			else if(setup.formatName == "VDIF")
 			{
-				cout << "Warning: Antenna " << antName << " has incompletely defined VDIF format.  Assuming 1 chan with 2 bits." << endl;
+				cerr << "Warning: Antenna " << antName << " has incompletely defined VDIF format.  Assuming 1 chan with 2 bits." << endl;
 
 				setup.nBit = 2;
 				setup.nRecordChan = 1;

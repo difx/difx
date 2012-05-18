@@ -1131,7 +1131,7 @@ int pystream::writeScans(const VexData *V)
 						//*this << "# ifC: " << ifCount << " ifit->first: " << ifit->first; 
 						if(ifit->first != sw[ifit->second])
 						{
-							*this << " changed switches" << endl;
+							*this << "# changed switches" << endl;
 							sw[ifit->second] = ifit->first;
 // 							*this << "# ifC: " << ifCount << " ifit->first: " << ifit->first
 //									<< " first.c_str(): " << ifit->first.c_str()
@@ -1142,7 +1142,7 @@ int pystream::writeScans(const VexData *V)
 							*this << "subarray.set4x4Switch('" << switchOutput[ifit->second] << "', "
 									<< switchPosition(ifCount, ifit->first.c_str()) << ")" << endl;
 						} else
-							*this << " no change" << endl;
+							*this << "# no change" << endl;
 
 						ifCount++;
 					}
