@@ -20,6 +20,7 @@ int createRoot (DifxInput *D,       // difx input structure pointer
                 char *rootname)     // address to write root filename into
     {
     int i,
+        j,
         n,
         match,
         current_block,
@@ -183,6 +184,10 @@ int createRoot (DifxInput *D,       // difx input structure pointer
             if (pst[i] == NULL)
                 break;
             }
+                                    // ensure that pointers are valid
+        for (j=i; j<50; j++)
+            pst[j] = "";
+
                                     // see if this is a block stmt
         match = FALSE;
         i = -1;
