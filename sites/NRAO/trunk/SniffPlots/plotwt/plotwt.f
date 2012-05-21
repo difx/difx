@@ -1,0 +1,112 @@
+      PROGRAM PLOTWT
+C
+C     A program to plot weights from a file produced from a VLBA
+C     export tape by John Benson's program.
+C
+C     An average time will be used.  The minimum, maximum, and 
+C     average weight across all IF's for a station during each
+C     average interval will be plotted.
+C
+      INCLUDE    'plotwt.inc'
+C
+      INTEGER    NP1, ST1, VLBOPE, IER
+      INTEGER    TIN(8), I, LEN1
+      DOUBLE PRECISION  GETNUM
+      CHARACTER  CBUFF*256
+C -------------------------------------------------------------------
+C     Get the file names.
+C
+      GOTSUM = .FALSE.
+100   WRITE(*,*) 'Name of weights file: '
+      READ(*,'(A)') WTFILE
+      IER = VLBOPE( INUNIT, WTFILE, 'TEXT', 'OLD', CBUFF )
+      IF( IER .NE. 1 ) GO TO 100
+      NWORDS = MWORDS
+      CALL RDLINE( WORD, WLEN, NWORDS, INUNIT, 6 )
+      IF( NWORDS .EQ. -1 ) THEN
+         WRITE(*,*) ' No data. '
+         GO TO 999
+      END IF
+      EXPNAM = WORD(NWORDS)
+C
+C     Detect whether the input file is a summary or an original sniffer
+C     file.
+C
+      GOTSUM = WORD(2)(1:WLEN(2)) .EQ. 'summary:'
+C
+C     Open the plot file.
+C
+      WRITE(*,*) 'Name of plot file (eg wtsfile.ps/vps):'
+      READ(*,'(A)') PLTFILE
+C
+C     Get the desired time range.
+C
+      WRITE(*,*) 'Time range to plot (dd hh mm ss dd mm hh ss, '//
+     1     'first day is day 0.  Blank for all.):'
+      NWORDS = MWORDS
+      CALL RDLINE( WORD, WLEN, NWORDS, 5, 6 )
+      DO I = 1, 8
+         IF( I .LE. NWORDS ) THEN
+            TIN(I) = GETNUM( WORD(I), 1, WLEN(I) )
+         ELSE
+            TIN(I) = 0
+         END IF
+      END DO
+      TMINA = TIN(1)*24*3600 + TIN(2)*3600 + TIN(3)*60 + TIN(4)
+      TMAXA = TIN(5)*24*3600 + TIN(6)*3600 + TIN(7)*60 + TIN(8)
+      IF( TMAXA .EQ. 0 ) TMAXA = 1.E10
+C
+C     Get the desired average time per point.
+C
+      WRITE(*,*) 'Time average for each point (Sec. - Default 30)'
+      NWORDS = MWORDS
+      CALL RDLINE( WORD, WLEN, NWORDS, 5, 6 )
+      IF( NWORDS .LE. 0 ) THEN
+         TAVG = 30.0
+      ELSE
+         TAVG = GETNUM( WORD(1), 1, WLEN(1) )
+      END IF
+C
+C     Open the summary output file.
+C     Write the first line to it.
+C     
+      IF( .NOT. GOTSUM ) THEN
+         WRTSUM = .TRUE.
+         IER = VLBOPE( SUNIT, WTFILE(1:LEN1(WTFILE))//'.sum', 
+     1                 'TEXT', 'NEW', CBUFF )
+         IF( IER .EQ. 1 ) THEN
+            WRITE( SUNIT, '( A, A )' )
+     1          'PLOTWT summary: ', EXPNAM
+         ELSE
+            WRITE(*,*) ' ****** Warning: Unable to open summary file'
+            WRITE(*,*) CBUFF
+            WRTSUM = .FALSE.
+         END IF
+      END IF
+C
+C     Get the data.
+C
+      CALL GETWT
+C
+C     Plot the data - First set up so that no more than 10
+C     stations are plotted on one sheet. 
+C
+      IF( NSTA .GT. 12 ) THEN
+          NP1 = NSTA / 2 + 1
+      ELSE
+          NP1 = NSTA
+      END IF
+C
+C     Now call PLTWT once for each page
+C
+      CALL PLTWT( 1, NP1 )
+      IF( NP1 .LT. NSTA ) THEN
+         ST1 = NP1 + 1
+         CALL PLTWT( ST1, NSTA )
+      END IF
+C
+C     Finished
+C
+  999 CONTINUE
+      STOP
+      END
