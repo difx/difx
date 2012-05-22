@@ -282,4 +282,5 @@ int new_type1 (DifxInput *D,                    // ptr to a filled-out difx inpu
             write_t101 (&t101, fout[nb]);
             }
         }
+    return (0);
     }
