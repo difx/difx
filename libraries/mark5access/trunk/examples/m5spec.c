@@ -28,7 +28,7 @@
 //============================================================================
 
 // Change this to configure detection, if possible
-#define USEGETOPT 1
+#define USEGETOPT 0
 
 #include <stdio.h>
 #include <complex.h>
@@ -45,8 +45,8 @@
 
 const char program[] = "m5spec";
 const char author[]  = "Walter Brisken, Chris Phillips";
-const char version[] = "1.3";
-const char verdate[] = "20120501";
+const char version[] = "1.3.1";
+const char verdate[] = "20120508";
 
 int die = 0;
 
@@ -166,7 +166,7 @@ int harvestComplexData(struct mark5_stream *ms, double **spec, fftw_complex **zd
 	return 0;
 }
 
-int harvestRealData(struct mark5_stream *ms, double **spec, fftw_complex **zdata, fftw_complex **zx, int nchan, int nint, int chunk, long long *total, long long *unpacked)
+int harvestRealData(struct mark5_stream *ms, double **spec, fftw_complex **zdata, fftw_complex **zx, int nchan, int nint, int chunk, long long *total, long long *unpacked, polmodetype polmode)
 {
 	fftw_plan *plan;
 	double **data;
@@ -225,14 +225,29 @@ int harvestRealData(struct mark5_stream *ms, double **spec, fftw_complex **zdata
 			}
 		}
 
-		for(i = 0; i < ms->nchan/2; ++i)
+		if (polmode==VLBA) 
 		{
+		  for(i = 0; i < ms->nchan/2; ++i)
+		  {
 			int c;
 
 			for(c = 0; c < nchan; ++c)
 			{
 				zx[i][c] += zdata[2*i][c]*~zdata[2*i+1][c];
 			}
+		  }
+		} 
+		else if (polmode==DBBC) 
+		{
+		  for(i = 0; i < ms->nchan/2; ++i)
+		  {
+			int c;
+
+			for(c = 0; c < nchan; ++c)
+			{
+				zx[i][c] += zdata[i][c]*~zdata[i+ms->nchan/2][c];
+			}
+		  }
 		}
 	}
 	for(j = 0; j < ms->nchan; ++j)
@@ -247,7 +262,7 @@ int harvestRealData(struct mark5_stream *ms, double **spec, fftw_complex **zdata
 }
 
 
-int spec(const char *filename, const char *formatname, int nchan, int nint, const char *outfile, long long offset)
+int spec(const char *filename, const char *formatname, int nchan, int nint, const char *outfile, long long offset, polmodetype polmode)
 {
 	struct mark5_stream *ms;
 	double **spec;
@@ -315,7 +330,7 @@ int spec(const char *filename, const char *formatname, int nchan, int nint, cons
 	} 
 	else
 	{
-		harvestRealData(ms, spec, zdata, zx, nchan, nint, chunk, &total, &unpacked);
+	  harvestRealData(ms, spec, zdata, zx, nchan, nint, chunk, &total, &unpacked, polmode);
 	}
 
 	fprintf(stderr, "%Ld / %Ld samples unpacked\n", unpacked, total);
@@ -399,12 +414,13 @@ int main(int argc, char **argv)
 	    return EXIT_SUCCESS;
 	    break;
 	  }
+
+#else
+	int optind=1;
 #endif
 
 	oldsiginthand = signal(SIGINT, siginthand);
 
-
-	printf("ARGC==%d   OPTIND==%d\n", argc, optind);
 
 	if (argc-optind == 1)
 	{
@@ -480,7 +496,7 @@ int main(int argc, char **argv)
 		offset=atoll(argv[optind+5]);
 	}
 
-	retval = spec(argv[optind], argv[optind+1], nchan, nint, argv[optind+4], offset);
+	retval = spec(argv[optind], argv[optind+1], nchan, nint, argv[optind+4], offset, polmode);
 
 	return retval;
 }
