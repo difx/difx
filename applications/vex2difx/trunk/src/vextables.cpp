@@ -487,6 +487,52 @@ double VexIF::getLowerEdgeFreq() const
 	return bandCenter - 500.0e6;
 }
 
+char VexChannel::bandCode() const
+{
+	if(bbcFreq < 1.0e9)
+	{
+		return 'P';
+	}
+	else if(bbcFreq < 2.0e9)
+	{
+		return 'L';
+	}
+	else if(bbcFreq < 3.0e9)
+	{
+		return 'S';
+	}
+	else if(bbcFreq < 6.0e9)
+	{
+		return 'C';
+	}
+	else if(bbcFreq < 9.5e9)
+	{
+		return 'X';
+	}
+	else if(bbcFreq < 17.0e9)
+	{
+		return 'U';
+	}
+	else if(bbcFreq < 25.0e9)
+	{
+		return 'K';
+	}
+	else if(bbcFreq < 40.5e9)
+	{
+		return 'A';
+	}
+	else if(bbcFreq < 60.0e9)
+	{
+		return 'Q';
+	}
+	else if(bbcFreq < 100.0e9)
+	{
+		return 'W';
+	}
+
+	return '?';
+}
+
 string VexIF::VLBABandName() const
 {
 	double bandCenter = ifSSLO;

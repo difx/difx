@@ -35,7 +35,7 @@
 #include "vexload.h"
 
 const string program("vex2script");
-const string version("0.5");
+const string version("0.6");
 const string verdate("20120517");
 const string author("Walter Brisken, Adam Deller, Matthias Bark");
 

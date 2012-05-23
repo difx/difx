@@ -163,6 +163,7 @@ class VexChannel		// Antenna-specific baseband channel details
 public:
 	VexChannel() : recordChan(-1), subbandId(-1), bbcFreq(0.0), bbcBandwidth(0.0), bbcSideBand(' ') {}
 	void selectTones(int toneIntervalMHz, enum ToneSelection selection, double guardBandMHz);
+	char bandCode() const;
 	friend bool operator ==(const VexChannel &c1, const VexChannel &c2);
 
 	int recordChan;		// channel number on recorded media	(< 0 indicates non-recording)

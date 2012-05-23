@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2011 by Walter Brisken                             *
+ *   Copyright (C) 2009-2012 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -38,9 +38,9 @@
 #include "vextables.h"
 #include "vexload.h"
 
-const string program("vexpeep");
-const string version("0.2");
-const string verdate("20110319");
+const string program("vexpeek");
+const string version("0.3");
+const string verdate("20120523");
 const string author("Walter Brisken");
 
 void usage(const char *pgm)
@@ -52,8 +52,9 @@ void usage(const char *pgm)
 	cout << endl;
 	cout << "Usage: " << pgm << " <vex filename> [-v]" << endl;
 	cout << endl;
-	cout << "Option:" << endl;
+	cout << "Options:" << endl;
 	cout << "  -v or --verbose : print entire vextables structure of vexfile" << endl;
+	cout << "  -b or --bands : print list of band codes" << endl;
 	cout << endl;
 }
 
@@ -97,6 +98,30 @@ void antennaSummary(const VexData *V)
 	}
 
 	cout.precision(p);
+}
+
+void bandList(const VexData *V)
+{
+	int nMode = V->nMode();
+	set<char> bands;
+
+	for(int m = 0; m < nMode; ++m)
+	{
+		const VexMode *M = V->getMode(m);
+		for(map<string,VexSetup>::const_iterator s = M->setups.begin(); s != M->setups.end(); ++s)
+		{
+			for(vector<VexChannel>::const_iterator v = s->second.channels.begin(); v != s->second.channels.end(); ++v)
+			{
+				bands.insert(v->bandCode());
+			}
+		}
+	}
+
+	for(set<char>::const_iterator b=bands.begin(); b != bands.end(); ++b)
+	{
+		cout << *b << " ";
+	}
+	cout << endl;
 }
 
 int testVex(const string &vexFile)
@@ -167,10 +192,14 @@ int main(int argc, char **argv)
 
 	V = loadVexFile(*P, &nWarn);
 
-	if(argc > 2 && (strcmp(argv[2], "-v") == 0 || strcmp(argv[2], "--verbose")) )
+	if(argc > 2 && (strcmp(argv[2], "-v") == 0 || strcmp(argv[2], "--verbose") == 0) )
 	{
 		cout << *V << endl;
 		cout << endl;
+	}
+	else if(argc > 2 && (strcmp(argv[2], "-b") == 0 || strcmp(argv[2], "--bands") == 0) )
+	{
+		bandList(V);
 	}
 	else
 	{
