@@ -659,6 +659,14 @@ static void XMLCALL endElement(void *userData, const char *name)
 							}
 						}
 					}
+					else if(strcmp(elem, "address") == 0 )
+					{
+						strncpy(G->body.start.address, s, DIFX_MESSAGE_PARAM_LENGTH-1);
+					}
+					else if(strcmp(elem, "port") == 0 )
+					{
+						G->body.start.port = atoi( s );
+					}
 					break;
 				case DIFX_MESSAGE_STOP:
 					if(strcmp(elem, "input") == 0)
