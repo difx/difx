@@ -1140,7 +1140,8 @@ int mark5_stream_seek(struct mark5_stream *ms, int mjd, int sec, double ns)
 		}
 		n = jumpns / ms->framens - 1;
 
-		status = ms->seek(ms, n + ms->framenum);
+		//status = ms->seek(ms, n + ms->framenum);
+		status = ms->seek(ms, n);
 
 		if(status < 0)
 		{
