@@ -122,7 +122,7 @@ prestage() {
 # Create destination directory if required, ensure that we can write to it 
 echo "ssu $2 /bin/date</dev/null>/dev/null 2>&1 "
 ssu $2 /bin/date</dev/null>/dev/null 2>&1 || fail 1 "Remote-userid is invalid"
-ssu $2 "mkdir -p -m 775 $3"   2>/dev/null || fail 1 "Remote-directory problem"
+ssu $2 "umask 0002; mkdir -p $3"   2>/dev/null || fail 1 "Remote-directory problem"
 ssu $2 "test -w         $3"   2>/dev/null || fail 1 "Remote-directory problem"
 
 # Create temporary file, set traps
@@ -139,7 +139,7 @@ if [ -n "$Recurse" ] ; then
     for Dir in `find ./* -type d`; do
         InDirList[${#InDirList[*]}]="$1/$Dir"
         OutDirList[${#OutDirList[*]}]="$3/$Dir"
-        ssu $2 "mkdir -p -m 775 $3/$Dir"   2>/dev/null || fail 1 "Remote-directory problem: $3/$Dir"
+        ssu $2 "umask 0002; mkdir -p $3/$Dir"   2>/dev/null || fail 1 "Remote-directory problem: $3/$Dir"
     done
 fi
 
