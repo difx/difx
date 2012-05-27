@@ -1,4 +1,4 @@
 #! /bin/bash
-. /home/usno/users/difxmgr/difx/DiFX-trunk/setup_difx
+. /home/usno/users/difxmgr/difx/DiFX-2.1/setup_difx
 
 mpispeed
