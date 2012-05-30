@@ -280,6 +280,11 @@ if __name__ == "__main__":
     code = lower(args[0])
     path = args[1]
 
+    # remove a trailing slash if it exists
+    if path[-1:] == "/":
+	path = path[0:-1]
+
+
     # check that experiment exists in the database
     if not experimentExists(session, code):
         exitOnError("Experiment with code %s not found in the database." % code)
