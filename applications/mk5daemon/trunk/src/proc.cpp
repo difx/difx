@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2011 by Walter Brisken                             *
+ *   Copyright (C) 2008-2012 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -40,7 +40,6 @@ int procGetCores(int *nCore)
 	const int MaxLineLength=256;
 	FILE *pin;
 	char line[MaxLineLength+1];
-	int val;
 
 	*nCore = 0;
 	
@@ -62,7 +61,7 @@ int procGetCores(int *nCore)
 			break;
 		}
 		line[MaxLineLength-1] = 0;
-		for(i = 0; line[i]; i++)
+		for(i = 0; line[i]; ++i)
 		{
 			/* take out punctuation */
 			if(!isdigit(line[i]))
@@ -97,10 +96,6 @@ int procGetMem(int *memused, int *memtot)
 {
 	const int MaxLineLength=256;
 	FILE *in;
-	char line[MaxLineLength+1];
-	char key[MaxLineLength+1];
-	char *c;
-	int val;
 
 	*memused = 0;
 	*memtot = 0;
@@ -113,6 +108,11 @@ int procGetMem(int *memused, int *memtot)
 	
 	for(;;)
 	{
+		char *c;
+		char line[MaxLineLength+1];
+		char key[MaxLineLength+1];
+		int val;
+		
 		c = fgets(line, MaxLineLength, in);
 		if(!c)
 		{
@@ -144,10 +144,6 @@ int procGetNet(long long *rx, long long *tx)
 	static long long lastrx[MaxInterfaces] = {0};
 	static long long lasttx[MaxInterfaces] = {0};
 	FILE *in;
-	char line[MaxLineLength+1];
-	char *c;
-	long long a, b;
-	int v;
 
 	*rx = 0LL;
 	*tx = 0LL;
@@ -160,6 +156,9 @@ int procGetNet(long long *rx, long long *tx)
 
 	for(int i = 0; i < MaxInterfaces; ++i)
 	{
+		char line[MaxLineLength+1];
+		char *c;
+		
 		c = fgets(line, MaxLineLength, in);
 		if(!c)
 		{
@@ -167,10 +166,12 @@ int procGetNet(long long *rx, long long *tx)
 		}
 		if(strncmp(line, "  eth", 5) == 0 || strncmp(line, "   ib", 5) == 0)
 		{
+			long long a, b;
+			int v;
+			
 			v = sscanf(line+7, "%lld%*d%*d%*d%*d%*d%*d%*d%lld", &a, &b);
 			if(v >= 2)
 			{
-
 				/* take into account 32 bit counters on 32-bit machines */
 				if(a < lastrx[i])
 				{
@@ -234,8 +235,6 @@ int procGetStreamstor(int *busy)
 {
 	const int MaxLineLength=256;
 	FILE *in;
-	char line[MaxLineLength+1];
-	char *c;
 
 	*busy = 0;
 
@@ -247,6 +246,9 @@ int procGetStreamstor(int *busy)
 
 	for(;;)
 	{
+		char line[MaxLineLength+1];
+		char *c;
+
 		c = fgets(line, MaxLineLength, in);
 		if(!c)
 		{
