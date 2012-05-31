@@ -80,7 +80,7 @@ void pystream::addPhasingSource(const string &sourceName)
 	phasingSources.push_back(sourceName);
 }
 
-int switchPosition(int ifCount, const char *val)
+int switchPosition(const char *val)
 {
 	char c = val[0];
 
@@ -96,17 +96,11 @@ int switchPosition(int ifCount, const char *val)
 	}
 	else if(c == 'B')
 	{
-		if( ifCount == 0 )
 			return 2;
-		else
-			return 3;
 	}
 	else if(c == 'C')
 	{
-		if( ifCount == 1 )
 			return 3;
-		else
-			return 2;
 	}
 	else if(c == 'D')
 	{
@@ -1121,30 +1115,17 @@ int pystream::writeScans(const VexData *V)
 				*this << "# changing to mode " << mode->defName << endl;
 				if(scriptType == SCRIPT_VLBA)
 				{
-					int ifCount = 0;
-
 					*this << "subarray.setVLBALoIfSetup(loif" << modeId << ")" << endl;
 
 					map<string,unsigned int>::const_iterator ifit;
 					for(ifit = ifIndex[modeId].begin(); ifit != ifIndex[modeId].end(); ++ifit)
 					{
-						//*this << "# ifC: " << ifCount << " ifit->first: " << ifit->first; 
 						if(ifit->first != sw[ifit->second])
 						{
-							*this << "# changed switches" << endl;
 							sw[ifit->second] = ifit->first;
-// 							*this << "# ifC: " << ifCount << " ifit->first: " << ifit->first
-//									<< " first.c_str(): " << ifit->first.c_str()
-//									<< " ifit->second: "<< ifit->second
-//									<< " sw[ifit->second]: " <<  sw[ifit->second]
-//									<< " switchOutput[ifit->second]: " << switchOutput[ifit->second]
-//									<< " switchPos: " << switchPosition(ifCount, ifit->first.c_str()) << endl;
-							*this << "subarray.set4x4Switch('" << switchOutput[ifit->second] << "', "
-									<< switchPosition(ifCount, ifit->first.c_str()) << ")" << endl;
-						} else
-							*this << "# no change" << endl;
-
-						ifCount++;
+                            *this << "subarray.set4x4Switch('" << switchOutput[ifit->second] << "', "
+                                         << switchPosition(ifit->first.c_str()) << ")" << endl;
+						}
 					}
 					*this << "subarray.setChannels(dbe0, channelSet" << modeId << ")" << endl;
 				}
