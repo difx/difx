@@ -2621,7 +2621,7 @@ bool Configuration::processPulsarConfig(string filename, int configindex)
   if(!pulsarinput.is_open() || pulsarinput.bad())
   {
     if(mpiid == 0) //only write one copy of this error message
-      cfatal << startl << "Could not open pulsar config file " << line << " - aborting!!!" << endl;
+      cfatal << startl << "Could not open pulsar config file " << filename << " - aborting!!!" << endl;
     return false;
   }
   getinputline(&pulsarinput, &line, "NUM POLYCO FILES");
@@ -2634,6 +2634,11 @@ bool Configuration::processPulsarConfig(string filename, int configindex)
     getinputline(&pulsarinput, &(polycofilenames[i]), "POLYCO FILE");
     numsubpolycos[i] = 0;
     temppsrinput.open(polycofilenames[i].c_str());
+    if(!temppsrinput.is_open() || temppsrinput.bad()) {
+      if(mpiid == 0) //only write one copy of this error message
+        cerror << startl << "Could not open polyco file " << polycofilenames[i] << ", but continuing..." << endl;
+      continue;
+    }
     temppsrinput.getline(psrline, 128);
     temppsrinput.getline(psrline, 128);
     while(!(temppsrinput.eof() || temppsrinput.fail())) {
@@ -2645,6 +2650,11 @@ bool Configuration::processPulsarConfig(string filename, int configindex)
       configs[configindex].numpolycos++;
     }
     temppsrinput.close();
+  }
+  if(configs[configindex].numpolycos == 0) {
+    if(mpiid == 0) //only write one copy of this error message
+      cfatal << startl << "No polycos were parsed from the binconfig file " << filename << " - aborting!!!" << endl;
+    return false;
   }
   getinputline(&pulsarinput, &line, "NUM PULSAR BINS");
   configs[configindex].numbins = atoi(line.c_str());
