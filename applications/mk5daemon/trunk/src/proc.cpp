@@ -31,6 +31,7 @@
 #include <cstring>
 #include <cstdlib>
 #include <ctype.h>
+#include <regex.h>
 #include "proc.h"
 
 /* routines to get useful information from /proc */
@@ -40,6 +41,9 @@ int procGetCores(int *nCore)
 	const int MaxLineLength=256;
 	FILE *pin;
 	char line[MaxLineLength+1];
+	regex_t filter;
+	regmatch_t match[4];
+	int v;
 
 	*nCore = 0;
 	
@@ -49,11 +53,18 @@ int procGetCores(int *nCore)
 		return -1;
 	}
 	
+	/* look for strings of form # or #-# */
+	v = regcomp(&filter, "([0-9]+)(-([0-9]+))?", REG_EXTENDED);
+
+	if(v != 0)
+	{
+		fprintf(stderr, "Error: procGetCores: compiling regex\n");
+	}
+
 	for(;;)
 	{
 		int i;
 		char *c;
-		const char *p;
 
 		c = fgets(line, MaxLineLength, pin);
 		if(!c)
@@ -61,31 +72,35 @@ int procGetCores(int *nCore)
 			break;
 		}
 		line[MaxLineLength-1] = 0;
-		for(i = 0; line[i]; ++i)
+
+		for(i = 0;;)
 		{
-			/* take out punctuation */
-			if(!isdigit(line[i]))
-			{
-				line[i] = ' ';
-			}
-		}
-		p = line;
-		for(;;)
-		{
-			int n, nc, s;
-			n = sscanf(p, "%d%n", &nc, &s);
-			if(n != 1)
+			int b, e;
+
+			if(regexec(&filter, line+i, 4, match, 0) != 0)
 			{
 				break;
 			}
-			p += s;
-			++nc;
-			if(nc > *nCore)
+
+			line[i+match[1].rm_eo] = 0;
+			b = atoi(line+i+match[1].rm_so);
+			if(match[3].rm_so > match[1].rm_eo)
 			{
-				*nCore = nc;
+				line[i+match[3].rm_eo] = 0;
+				e = atoi(line+i+match[3].rm_so);
 			}
+			else
+			{
+				e = b;
+			}
+
+			i += match[0].rm_eo + 1;
+
+			*nCore += (e-b+1);
 		}
 	}
+
+	regfree(&filter);
 
 	pclose(pin);
 
