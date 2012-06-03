@@ -2,6 +2,7 @@ prefix=@prefix@
 exec_prefix=@exec_prefix@
 libdir=@libdir@
 includedir=@includedir@
+StaticLibs=${libdir}/libmark5access.a
 
 Name: mark5access
 Description: library to parse difx input and output files
