@@ -38,14 +38,15 @@ else
 fi
 AM_CONDITIONAL(WITH_STREAMSTOR, $streamstor_enabled)
 
-LIBS="${LIBS} ${STREAMSTOR_LIBS} ${prefix}/lib/libdifxmessage.a ${prefix}/lib/libmark5ipc.a ${prefix}/lib/libmark5access.a"
+LIBS="${LIBS} ${STREAMSTOR_LIBS} `pkg-config --variable=StaticLibs difxmessage` `pkg-config --variable=StaticLibs mark5ipc` `pkg-config --variable=StaticLibs mark5access`"
 CPPFLAGS="-D_LARGE_FILE_SOURCE -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64 ${M5ACCESS_CFLAGS} ${DIFXMESSAGE_CFLAGS} ${MARK5IPC_CFLAGS} ${STREAMSTOR_CFLAGS} -O2 -Wall"
 CXXFLAGS="${CPPFLAGS}"
 
 version=AC_PACKAGE_VERSION
 AC_SUBST(version)
 
-echo "CFLAGS=" $CFLAGS
+echo "CPPFLAGS=${CPPFLAGS}"
+echo "LIBS=${LIBS}"
 
 AC_OUTPUT([ \
 	Makefile \
