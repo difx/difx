@@ -25,12 +25,11 @@ version=AC_PACKAGE_VERSION
 AC_SUBST(version)
 
 
-AM_INIT_AUTOMAKE
+AM_INIT_AUTOMAKE([foreign])
 
 AC_PROG_CC
 AC_PROG_LIBTOOL
 AM_SANITY_CHECK
-dnl AM_PATH_PYTHON([2.3])
 
 dnl **********************************************************
 dnl **** Look for expat libraries                         ****

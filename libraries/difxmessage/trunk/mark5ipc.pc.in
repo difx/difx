@@ -2,6 +2,7 @@ prefix=@prefix@
 exec_prefix=@exec_prefix@
 libdir=@libdir@
 includedir=@includedir@
+StaticLibs=${libdir}/libmark5ipc.a
 
 Name: mark5ipc
 Description: library to handle locking and shared memory access related to Mark5 units

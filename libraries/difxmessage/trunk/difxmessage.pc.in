@@ -2,10 +2,12 @@ prefix=@prefix@
 exec_prefix=@exec_prefix@
 libdir=@libdir@
 includedir=@includedir@
+StaticLibs=${libdir}/libdifxmessage.a -lexpat
 
 Name: difxmessage
 Description: library to handle multicasts of difx information from mpifxcorr
 Requires:
 Version: @PACKAGE_VERSION@
 Libs: -L${libdir} -ldifxmessage
+Libs.private: -lexpat
 Cflags: -I${includedir}
