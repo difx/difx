@@ -7,5 +7,6 @@ Name: difxio
 Description: library to parse difx input and output files
 Requires: 
 Version: @PACKAGE_VERSION@
-Libs: -L${libdir} -ldifxio -lm
+Libs: -L${libdir} -ldifxio
+Libs.private: -lm
 Cflags: -I${includedir}

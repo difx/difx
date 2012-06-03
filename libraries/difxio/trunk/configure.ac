@@ -21,7 +21,7 @@ PACKAGE_VERSION=AC_PACKAGE_VERSION
 AC_SUBST([PACKAGE_VERSION])
 AC_SUBST([LIBRARY_VERSION])
 
-AM_INIT_AUTOMAKE
+AM_INIT_AUTOMAKE([foreign])
 
 AC_PROG_CC
 AC_PROG_LIBTOOL
@@ -56,6 +56,6 @@ AC_OUTPUT([
 	difxio.spec \
 	difxio/Makefile \
 	tests/Makefile \
-	utils/Makefile
+	utils/Makefile \
 ])
 
