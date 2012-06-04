@@ -166,6 +166,7 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
                 if (errno)
                     perror ("difx2mark4");
                 fprintf (stderr, "problem finding data in %s\n", dirname);
+                closedir (pdir);
                 return (-1);
                 }
             strcpy (inname, dirname);
