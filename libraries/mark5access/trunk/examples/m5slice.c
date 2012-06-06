@@ -51,6 +51,7 @@
 #include <stdint.h>
 #include <time.h>
 #include <math.h>
+#include <sys/stat.h>
 #include <fcntl.h>
 #include <errno.h>
 #include "../mark5access/mark5_stream.h"
@@ -161,7 +162,7 @@ int main(int argc, char **argv) {
     }
   }
 
-  outfile = creat(outname, S_IREAD|S_IWRITE|S_IRGRP);
+  outfile = creat(outname, S_IRUSR|S_IWUSR|S_IRGRP);
   if (outfile == -1) {
     fprintf(stderr, "Error creating output file \"%s\"\n", outfile);
     perror(NULL);
