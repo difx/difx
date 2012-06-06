@@ -25,6 +25,7 @@ bin_PROGRAMS = \
 	m5tsys \
 	m5test \
 	m5time \
+	m5slice \
 	m5findformats \
 	test5b \
 	test_mark5_stream \
