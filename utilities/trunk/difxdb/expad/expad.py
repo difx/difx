@@ -1,4 +1,6 @@
 #! /usr/bin/python
+# coding: latin-1
+
 #===========================================================================
 # SVN properties (DO NOT CHANGE)
 #
