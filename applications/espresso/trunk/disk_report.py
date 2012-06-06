@@ -22,7 +22,7 @@ for machine in data_areas:
             du = proc.communicate()[0]
             diskreport[machine][data_area]['du'] = (du.split('\n'))
 
-            command = "ssh " + machine +  " 'df -h " + data_area + "'"
+            command = "ssh " + machine +  " 'df -B 1G " + data_area + "'"
             sys.stderr.write(command + '\n')
             proc = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE)
             df = proc.communicate()[0]
