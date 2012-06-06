@@ -91,7 +91,11 @@ class DifxDir(object):
                     if (len(nameSplit) == 3):
                         scan.expName = upper(nameSplit[0])
                         scan.stationCode = upper(nameSplit[1])
-                        scan.scanName = upper(nameSplit[2])                      
+                        scan.scanName = nameSplit[2]
+                    elif (len(nameSplit) == 4):
+                        scan.expName = upper(nameSplit[0])
+                        scan.stationCode = upper(nameSplit[1])
+                        scan.scanName = nameSplit[2] + "_" + nameSplit[3]
                     else:
                         self.parseErrors += 1
                    
