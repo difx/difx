@@ -486,6 +486,9 @@ void Visibility::writedata()
               if(autocorrweights[i][j][k] > 0.0)
               {
                 scale = 1.0/(autocorrweights[i][j][k]*meansubintsperintegration*((float)(config->getBlocksPerSend(currentconfigindex)*2*freqchannels*config->getFChannelsToAverage(freqindex))));
+                if(config->getDataFormat(currentconfigindex, i) == Configuration::LBASTD || config->getDataFormat(currentconfigindex, i) == Configuration::LBAVSOP)
+                  scale *= 4.0;
+
               }
             }
             if(scale > 0.0)
