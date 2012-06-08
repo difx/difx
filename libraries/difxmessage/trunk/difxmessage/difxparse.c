@@ -139,6 +139,55 @@ static void XMLCALL startElement(void *userData, const char *name,
 			}
 		}
 	}
+	else if(G->type == DIFX_MESSAGE_MACHINESDEFINITION)
+	{
+		DifxMessageMachinesDefinition *S;
+		int nThread = 1;
+		
+		S = &G->body.machinesDefinition;
+		for(i = 0; atts[i]; i+=2)
+		{
+			if(strcmp(atts[i], "threads") == 0)
+			{
+				nThread = atoi(atts[i+1]);
+			}
+		}
+		if(strcmp(name, "manager") == 0)
+		{
+			for(i = 0; atts[i]; i+=2)
+			{
+				if(strcmp(atts[i], "node") == 0)
+				{
+					strncpy(S->headNode, atts[i+1], DIFX_MESSAGE_PARAM_LENGTH-1);
+					S->headNode[DIFX_MESSAGE_PARAM_LENGTH-1] = 0;
+				}
+			}
+		}
+		else if(strcmp(name, "datastream") == 0)
+		{
+			for(i = 0; atts[i]; i+=2)
+			{
+				if(strcmp(atts[i], "nodes") == 0)
+				{
+					addNodes(S->datastreamNode, DIFX_MESSAGE_MAX_DATASTREAMS, &S->nDatastream, atts[i+1]);
+				}
+			}
+		}
+		else if(strcmp(name, "process") == 0)
+		{
+			for(i = 0; atts[i]; i+=2)
+			{
+				if(strcmp(atts[i], "nodes") == 0)
+				{
+					n = addNodes(S->processNode, DIFX_MESSAGE_MAX_CORES, &S->nProcess, atts[i+1]);
+					for(j = S->nProcess-n; j < S->nProcess; j++)
+					{
+						S->nThread[j] = nThread;
+					}
+				}
+			}
+		}
+	}
 	else if(G->type == DIFX_MESSAGE_STATUS)
 	{
 		DifxMessageStatus *S;
@@ -666,6 +715,28 @@ static void XMLCALL endElement(void *userData, const char *name)
 					else if(strcmp(elem, "port") == 0 )
 					{
 						G->body.start.port = atoi( s );
+					}
+					break;
+				case DIFX_MESSAGE_MACHINESDEFINITION:
+					if(strcmp(elem, "input") == 0)
+					{
+						strncpy(G->body.machinesDefinition.inputFilename, s, DIFX_MESSAGE_FILENAME_LENGTH-1);
+					}
+					else if(strcmp(elem, "machinesFile") == 0)
+					{
+						strncpy(G->body.machinesDefinition.machinesFilename, s, DIFX_MESSAGE_FILENAME_LENGTH-1);
+					}
+					else if(strcmp(elem, "threadsFile") == 0)
+					{
+						strncpy(G->body.machinesDefinition.threadsFilename, s, DIFX_MESSAGE_FILENAME_LENGTH-1);
+					}
+					else if(strcmp(elem, "address") == 0 )
+					{
+						strncpy(G->body.machinesDefinition.address, s, DIFX_MESSAGE_PARAM_LENGTH-1);
+					}
+					else if(strcmp(elem, "port") == 0 )
+					{
+						G->body.machinesDefinition.port = atoi( s );
 					}
 					break;
 				case DIFX_MESSAGE_STOP:

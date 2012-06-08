@@ -199,6 +199,7 @@ enum DifxMessageType
 	DIFX_MESSAGE_FILETRANSFER,
 	DIFX_MESSAGE_FILEOPERATION,
 	DIFX_MESSAGE_VEX2DIFXRUN,
+	DIFX_MESSAGE_MACHINESDEFINITION,
 	NUM_DIFX_MESSAGE_TYPES	/* this needs to be the last line of enum */
 };
 
@@ -356,6 +357,20 @@ typedef struct
 
 typedef struct
 {
+	int nDatastream, nProcess;
+	char inputFilename[DIFX_MESSAGE_FILENAME_LENGTH];
+	char headNode[DIFX_MESSAGE_PARAM_LENGTH];
+	char datastreamNode[DIFX_MESSAGE_MAX_DATASTREAMS][DIFX_MESSAGE_PARAM_LENGTH];
+	char processNode[DIFX_MESSAGE_MAX_CORES][DIFX_MESSAGE_PARAM_LENGTH];
+	int nThread[DIFX_MESSAGE_MAX_CORES];
+	char machinesFilename[DIFX_MESSAGE_FILENAME_LENGTH];
+	char threadsFilename[DIFX_MESSAGE_FILENAME_LENGTH];
+	char address[DIFX_MESSAGE_PARAM_LENGTH];  /* IP address for reporting diagnostics during run */
+	int port;  /* port for reporting diagnostics during run */
+} DifxMessageMachinesDefinition;
+
+typedef struct
+{
 	char inputFilename[DIFX_MESSAGE_FILENAME_LENGTH];
 } DifxMessageStop;
 
@@ -456,6 +471,7 @@ typedef struct
 		DifxMessageFileTransfer    fileTransfer;
 		DifxMessageFileOperation    fileOperation;
 		DifxMessageVex2DifxRun    vex2DifxRun;
+		DifxMessageMachinesDefinition   machinesDefinition;
 	} body;
 	int _xml_level;			/* internal use only here and below */
 	char _xml_element[5][32];

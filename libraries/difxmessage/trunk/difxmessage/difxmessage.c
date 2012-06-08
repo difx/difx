@@ -101,7 +101,8 @@ const char DifxMessageTypeStrings[][24] =
 	"DifxDiagnosticMessage",
 	"DifxFileTransfer",
 	"DifxFileOperation",
-	"DifxVex2DifxRun"
+	"DifxVex2DifxRun",
+	"DifxMachinesDefinition"
 };
 
 /* Note! Keep this in sync with enum DifxDiagnosticType in difxmessage.h */
