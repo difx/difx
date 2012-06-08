@@ -122,7 +122,7 @@ Astro::Vex - Perl interface to the Haystack VEX parser
   same as above. E.g. to get the same result as the above you could do
 
     my %modes = $vex->mode();
-    my %statiinmode = $mode{v120_B12};
+    my %stationmode = $mode{v120_B12};
 
 =item B<source>
 
@@ -856,6 +856,7 @@ make_field('clock_early', 'CLOCKEARLY');
 make_field('clock_early_epoch', 'CLOCKEARLYEPOCH');
 make_field('rate', 'RATE');
 
+
 package Astro::Vex::EOP;
 use Carp;
 use Astro::VexParser;
@@ -903,6 +904,7 @@ sub new {
   my $tai_utc = get_global_unit_field(T_TAI_UTC, B_EOP, $vexptr);
   my $eop_ref_epoch = get_global_field(T_EOP_REF_EPOCH, B_EOP, $vexptr);
   my $num_eop_points = get_global_field(T_NUM_EOP_POINTS, B_EOP, $vexptr);
+  $num_eop_points = 0 if (! defined $num_eop_points);
   my $eop_interval = get_global_unit_field(T_EOP_INTERVAL, B_EOP, $vexptr);
   my @x_wobble = ();
   my @y_wobble = ();
@@ -946,6 +948,7 @@ sub y_wobble {
   my $self = shift;
   return @{$self->[Y_WOBBLE]};
 }
+
 
 package Astro::Vex::DAS;
 use Carp;
@@ -1017,6 +1020,7 @@ use Astro::Vex qw( make_field );
 =head2 Fields
 
     station
+    tracks                  Astro::Vex::Tracks object  ($TRACK block)
     sample_rate
     s2_recording_mode
     record_transport_type
@@ -1024,30 +1028,32 @@ use Astro::Vex qw( make_field );
 
 =head2 Missing
 
-    Lots. Needs to be changed to access $TRACKS, $FREQ, $IF etc separately
+    Lots. Needs to be changed to access, $FREQ, $IF etc separately
 
 =cut
 
 # Specifically missing
 # $FREQ:             Switching cycle
 
-use constant STATION => 0;
-use constant SAMPLE_RATE => 1;
-use constant S2_RECORDING_MODE => 2;
-use constant TRANSPORT_TYPE => 3;
-use constant CHANDEF => 4;
+use constant STATION           => 0;
+use constant TRACKS            => 1;
+use constant SAMPLE_RATE       => 2;
+use constant S2_RECORDING_MODE => 3;
+use constant TRANSPORT_TYPE    => 4;
+use constant CHANDEF           => 5;
 
 sub new {
   my $proto = shift;
   my $class = ref($proto) || $proto;
 
-  my $self = [@_];       # Just copy the passed arguments directly, the third is
-  bless ($self, $class); # an array of objects so must be handled differently
+  my $self = [@_];       # Just copy the passed arguments directly
+  bless ($self, $class);
 
   return $self;
 }
 
 make_field('station', 'STATION');
+make_field('tracks', 'TRACKS');
 make_field('sample_rate', 'SAMPLE_RATE');
 make_field('s2_recording_mode', 'S2_RECORDING_MODE');
 make_field('record_transport_type', 'TRANSPORT_TYPE');
@@ -1140,6 +1146,50 @@ make_field('phasecal', 'PHASECAL');
 #  my $self = shift;
 #  return $self->[CHAN];
 #}
+
+package Astro::Vex::Tracks;
+use Carp;
+use Astro::VexParser;
+use Astro::Vex qw(make_field get_global_field get_global_unit_field);
+
+=head1 Astro::Vex::Tracks
+
+  Values from TRACKS block. Assess is via the Astro::StationMode object ->tracks method.
+
+=head2 Fields
+
+    S2_data_source
+    S2_recording_mode
+    data_modulation
+    track_frame_format
+
+=head2 Missing
+
+    fanout_def
+    Lots 
+
+=cut
+
+use constant S2_DATA_SOURCE => 0;
+use constant S2_RECORDING_MODE => 1;
+use constant DATA_MODULATION => 2;
+use constant TRACK_FRAME_FORMAT => 3;
+
+sub new {
+  my $proto = shift;
+  my $class = ref($proto) || $proto;
+
+  my $self = [@_];
+
+  bless ($self, $class);
+
+  return $self;
+}
+
+make_field('S2_data_source', 'S2_DATA_SOURCE');
+make_field('S2_recording_mode', 'S2_RECORDING_MODE');
+make_field('data_modulation', 'DATA_MODULATION');
+make_field('track_frame_format', 'TRACK_FRAME_FORMAT');
 
 package Astro::Vex;
 use Astro::Quanta;
@@ -1376,16 +1426,41 @@ sub mode {
 	$lowl = get_all_lowl($_, $mode, T_SAMPLE_RATE, B_FREQ, $vexptr);
 	if ($lowl==0) {
 	  warn "Skipping $_ in mode $mode\n";
+	  next;
 	};
 	my $sample_rate = get_unit_field(T_SAMPLE_RATE, 1, $lowl,
 					 'SAMPLE_RATE', $_);
 
+	# Read $TRACKS block
 	my $s2_recording_mode = undef;
 	$lowl = get_all_lowl($_, $mode, T_S2_RECORDING_MODE, B_TRACKS, $vexptr);
 	if ($lowl!=0) {
 	  $s2_recording_mode = get_simple_field(T_S2_RECORDING_MODE, 1, $lowl,
-						 'S2_RECORDING_MODE', $_);
+						'S2_RECORDING_MODE', $_);
 	}
+
+	my $s2_data_source = undef;
+	$lowl = get_all_lowl($_, $mode, T_S2_DATA_SOURCE, B_TRACKS, $vexptr);
+	if ($lowl!=0) {
+	  $s2_data_source = get_simple_field(T_S2_DATA_SOURCE, 1, $lowl,
+					     'S2_DATA_SOURCE', $_);
+	}
+
+	my $track_frame_format = undef;
+	$lowl = get_all_lowl($_, $mode, T_TRACK_FRAME_FORMAT, B_TRACKS, $vexptr);
+	if ($lowl!=0) {
+	  $track_frame_format = get_simple_field(T_TRACK_FRAME_FORMAT, 1, $lowl,
+					     'TRACK_FRAME_FORMAT', $_);
+	}
+
+	my $data_modulation = undef;
+	$lowl = get_all_lowl($_, $mode, T_DATA_MODULATION, B_TRACKS, $vexptr);
+	if ($lowl!=0) {
+	  $data_modulation = get_simple_field(T_DATA_MODULATION, 1, $lowl,
+					      'DATA_MODULATION', $_);
+	}
+
+	my $tracks = new Astro::Vex::Tracks($s2_data_source, $s2_recording_mode, $data_modulation, $track_frame_format);
 
 	my $s2_transport_type = undef;
 	$lowl = get_all_lowl($_, $mode, T_RECORD_TRANSPORT_TYPE, B_DAS, $vexptr);
@@ -1459,7 +1534,8 @@ sub mode {
 	  $lowl = get_all_lowl_next();
 	}
 
-	$modes{$mode}->{$_} = new Astro::Vex::StationMode($_, $sample_rate,
+	$modes{$mode}->{$_} = new Astro::Vex::StationMode($_, $tracks, 
+							  $sample_rate, # Should be deprecated
 							  $s2_recording_mode,
 							  $s2_transport_type,
 							  [@chans]);
@@ -1694,22 +1770,21 @@ sub clock {
     while ($station) {
 
       $lowl = get_station_lowl($station, T_CLOCK_EARLY, B_CLOCK, $vexptr);
-      croak "Error reading SITENAME for $station\n" if !$lowl;
+      if ($lowl) {
 
-      my $validfrom = get_simple_field(T_CLOCK_EARLY, 1, $lowl,
-				       'CLOCK_EARLY', $station);
-      my $clock_early = get_unit_field(T_CLOCK_EARLY, 2, $lowl,
-				       'CLOCK_EARLY', $station);
-      my $clock_early_epoch = get_simple_field(T_CLOCK_EARLY, 3, $lowl,
-					     'CLOCK_EARLY', $station);
-      my $rate = get_simple_field(T_CLOCK_EARLY, 4, $lowl,
-				'RATE', $station);
-
-      push @{$clocks}, new Astro::Vex::Clock($station, $validfrom, $clock_early,
-					     $clock_early_epoch, $rate);
-
+	my $validfrom = get_simple_field(T_CLOCK_EARLY, 1, $lowl,
+					 'CLOCK_EARLY', $station);
+	my $clock_early = get_unit_field(T_CLOCK_EARLY, 2, $lowl,
+					 'CLOCK_EARLY', $station);
+	my $clock_early_epoch = get_simple_field(T_CLOCK_EARLY, 3, $lowl,
+						 'CLOCK_EARLY', $station);
+	my $rate = get_simple_field(T_CLOCK_EARLY, 4, $lowl,
+				    'RATE', $station);
+	
+	push @{$clocks}, new Astro::Vex::Clock($station, $validfrom, $clock_early,
+					       $clock_early_epoch, $rate);
+      }
       $station = get_station_def_next();
-
     }
     $self->{CLOCK} = $clocks;
   }
