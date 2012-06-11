@@ -1,3 +1,5 @@
+specfile = difxmessage.spec
+
 SUBDIRS = \
 	difxmessage \
 	mark5ipc \
@@ -6,8 +8,8 @@ SUBDIRS = \
 EXTRA_DIST = \
 	difxmessage.spec.in
 
-dist-hook: difxmessage.spec
-	cp difxmessage.spec $(distdir)
+dist-hook: $(specfile)
+	cp $(specfile) $(distdir)
 
 library_includedir = $(includedir)
 library_include_HEADERS = \
@@ -19,3 +21,7 @@ pkgconfig_DATA = \
 	difxmessage.pc \
 	mark5ipc.pc
 
+rpm: distdir
+	tardir=$(distdir) && $(am__tar) | GZIP=$(GZIP_ENV) gzip -c >$(distdir).tar.gz
+	rpmbuild -tb $(distdir).tar.gz
+	$(am__remove_distdir)
