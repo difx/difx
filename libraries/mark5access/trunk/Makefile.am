@@ -23,3 +23,8 @@ library_include_HEADERS = mark5access.h
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = mark5access.pc
 
+rpm: distdir
+	tardir=$(distdir) && $(am__tar) | GZIP=$(GZIP_ENV) gzip -c >$(distdir).tar.gz
+	rpmbuild -tb $(distdir).tar.gz
+	$(am__remove_distdir)
+
