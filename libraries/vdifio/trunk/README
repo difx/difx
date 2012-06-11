@@ -1,5 +1,6 @@
 svn co []
 aclocal
+libtoolize --copy --force
 autoconf
 autoheader
 automake -a

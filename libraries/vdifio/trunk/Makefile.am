@@ -11,3 +11,8 @@ dist-hook: vdifio.spec
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = vdifio.pc
 
+rpm: distdir
+	tardir=$(distdir) && $(am__tar) | GZIP=$(GZIP_ENV) gzip -c >$(distdir).tar.gz
+	rpmbuild -tb $(distdir).tar.gz
+	$(am__remove_distdir)
+

@@ -1,10 +1,17 @@
-h_sources = vdifio.h
+h_sources = \
+	vdifio.h
 
-library_includedir = $(includedir)/vdifio
-library_include_headers = vdifio.h
+c_sources = \
+	vdifio.c
 
-lib_LIBRARIES = libvdifio.a
-libvdifio_a_SOURCES = vdifio.c
+library_includedir = $(includedir)
+library_include_HEADERS = \
+	$(h_sources)
 
-include_HEADERS = vdifio.h
+lib_LTLIBRARIES = \
+	libvdifio.la
+
+libvdifio_la_SOURCES = \
+	$(h_sources) \
+	$(c_sources)
 

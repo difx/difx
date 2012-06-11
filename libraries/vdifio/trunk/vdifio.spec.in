@@ -23,18 +23,24 @@ make
 %makeinstall
 
 %files
-/usr/lib/libvdifio.a
-/usr/lib/pkgconfig/vdifio.pc
-/usr/include/vdifio.h
-/usr/bin/stripVDIF
-/usr/bin/captureUDPVDIF
-/usr/bin/multi2singlethreadVDIF
-/usr/bin/padVDIF
-/usr/bin/cleanVDIF
-/usr/bin/fakemultiVDIF
-/usr/bin/extractSingleVDIFThread
-/usr/bin/countVDIFPackets
-/usr/bin/printVDIF
+%defattr(-,root,root)
+%{_libdir}/libvdifio.a
+%{_libdir}/libvdifio.la
+%{_libdir}/libvdifio.so
+%{_libdir}/libvdifio.so.0
+%{_libdir}/libvdifio.so.0.0.0
+%{_libdir}/pkgconfig/vdifio.pc
+%{_includedir}/vdifio.h
+%{_bindir}/stripVDIF
+%{_bindir}/captureUDPVDIF
+%{_bindir}/multi2singlethreadVDIF
+%{_bindir}/padVDIF
+%{_bindir}/cleanVDIF
+%{_bindir}/fakemultiVDIF
+%{_bindir}/extractSingleVDIFThread
+%{_bindir}/countVDIFPackets
+%{_bindir}/printVDIF
+%{_bindir}/searchVDIF
 
 
 %changelog

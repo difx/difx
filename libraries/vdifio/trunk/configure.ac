@@ -6,13 +6,13 @@ AC_PREREQ(2.50)
 PACKAGE_VERSION=AC_PACKAGE_VERSION
 AC_SUBST([PACKAGE_VERSION])
 AC_SUBST([LIBRARY_VERSION])
-AM_INIT_AUTOMAKE
+AM_INIT_AUTOMAKE([foreign])
 AC_CONFIG_SRCDIR([src/vdifio.h])
 AM_CONFIG_HEADER([config.h])
 
 # Checks for programs.
 AC_PROG_CC
-AC_PROG_RANLIB
+AC_PROG_LIBTOOL
 
 # Checks for libraries.
 
@@ -27,11 +27,10 @@ AC_PROG_RANLIB
 version=AC_PACKAGE_VERSION
 AC_SUBST(version)
 
-AC_CONFIG_FILES([
-	Makefile
-	vdifio.spec
-	src/Makefile
-	utils/Makefile
-	vdifio.pc
+AC_OUTPUT([ \
+	Makefile \
+	vdifio.spec \
+	src/Makefile \
+	utils/Makefile \
+	vdifio.pc \
 ])
-AC_OUTPUT

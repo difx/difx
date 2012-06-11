@@ -2,7 +2,7 @@ INCLUDES = \
 	-I$(top_srcdir)/src -D_FILE_OFFSET_BITS=64
 
 LDADD = \
-	$(top_builddir)/src/libvdifio.a
+	$(top_builddir)/src/libvdifio.la
 
 bin_PROGRAMS = \
 	stripVDIF \
