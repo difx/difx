@@ -23,23 +23,26 @@ make
 %makeinstall
 
 %files
-/usr/lib/libdifxio.la
-/usr/lib/libdifxio.so.0.0.0
-/usr/lib/libdifxio.so.0
-/usr/lib/libdifxio.so
-/usr/lib/libdifxio.a
-/usr/lib/pkgconfig/difxio.pc
-/usr/include/difxio.h
-/usr/include/difxio/difx_input.h
-/usr/include/difxio/parsedifx.h
-/usr/include/difxio/parsevis.h
-/usr/include/difxio/difx_write.h
-/usr/include/difxio/difx_calculator.h
-/usr/bin/difxcalculator
-/usr/bin/testdifxinput
-/usr/bin/testparsedifx
-/usr/bin/testparsevis
-/usr/bin/teststringarray
+%defattr(-,root,root)
+%{_libdir}/libdifxio.la
+%{_libdir}/libdifxio.so.0.0.0
+%{_libdir}/libdifxio.so.0
+%{_libdir}/libdifxio.so
+%{_libdir}/libdifxio.a
+%{_libdir}/pkgconfig/difxio.pc
+%{_includedir}/difxio.h
+%{_includedir}/difxio/difx_input.h
+%{_includedir}/difxio/parsedifx.h
+%{_includedir}/difxio/parsevis.h
+%{_includedir}/difxio/difx_write.h
+%{_includedir}/difxio/difx_calculator.h
+%{_includedir}/difxio/difx_tcal.h
+%{_bindir}/difxcalculator
+%{_bindir}/testtcal
+%{_bindir}/testdifxinput
+%{_bindir}/testparsedifx
+%{_bindir}/testparsevis
+%{_bindir}/teststringarray
 
 %changelog
 * Fri Mar 11 2011 Walter Brisken <wbrisken@nrao.edu>
