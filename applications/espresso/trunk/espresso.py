@@ -52,19 +52,17 @@ def copy_models(jobname, indir, outdir):
                 #print "copy", file, outdir
                 shutil.copy2(indir + file, outdir)
 
-def copy_jobcontrol(expname, jobname, indir, outdir):
-    # copy the vex, v2d and joblist files to the output directory for archiving
-    # purposes. Rename to match the jobname.
-    extensions = ['.vex', '.v2d', '.joblist']
-    for extension in extensions:
-        infile = indir + expname + extension
-        outfile = outdir + jobname + extension
-        if os.path.isfile(infile):
-            shutil.copy2(infile, outfile)
-        else:
-            sys.stderr.write(infile + ' not found!')
+def copy_jobcontrol(expname, jobname, indir, outdir, extension):
+    # copy files to the output directory for archiving purposes. Rename to
+    # match the jobname.
+    infile = indir + expname + extension
+    outfile = outdir + jobname + extension
+    if os.path.isfile(infile):
+        shutil.copy2(infile, outfile)
+    else:
+        sys.stderr.write(infile + ' not found!')
 
-def make_new_runfiles(jobname):
+def make_new_runfiles(jobname, expname):
     # make copies of the prototype run and .thread files
     runfile = 'run_' + jobname
     machinesfilename = jobname + '.machines'
@@ -97,7 +95,21 @@ def parse_joblistfile(joblistfilename):
 
     return joblist
 
-def run_lbafilecheck(datafilename, stations, computehead, rmaps_seq):
+def parse_v2dfile(v2dfilename):
+    '''extract the vex file name from the v2d file'''
+    v2dfile = open(v2dfilename).readlines()
+    vexfilename = str()
+    for line in v2dfile:
+        # remove comments
+        line = re.sub(r'#.*', '', line)
+        vexmatch = re.search(r'vex\s*=\s*(\S*)', line)
+        if vexmatch:
+            vexfilename = vexmatch.group(1)
+            break
+
+    return vexfilename
+
+def run_lbafilecheck(datafilename, stations, computehead, no_rmaps_seq):
     # run lbafilecheck creating machines and .threads files for this job
     stations = stations.strip()
     stations = re.sub(r'\s+', ',', stations)
@@ -105,8 +117,8 @@ def run_lbafilecheck(datafilename, stations, computehead, rmaps_seq):
     options = ''
     if computehead:
         options += ' -H '
-    if rmaps_seq:
-        options += ' -m '
+    if no_rmaps_seq:
+        options += ' -M '
     command = "lbafilecheck.py -F " + options + " -s " + stations + " " + datafilename
     print command
     subprocess.check_call( command, stdout=sys.stdout, shell=True)
@@ -142,6 +154,9 @@ parser = optparse.OptionParser(usage=usage, version='%prog ' + '1.0')
 parser.add_option( "--clock", "-c",
         dest="clockjob", action="store_true", default=False,
         help='Store output in a clock subdirectory. Also passes -f to vex2difx' )
+parser.add_option( "--test", "-t",
+        dest="testjob", action="store_true", default=False,
+        help='Store output in a test subdirectory. Also passes -f to vex2difx' )
 parser.add_option( "--nocalc", "-C",
         dest="nocalc", action="store_true", default=False,
         help='Do not re-run calc' )
@@ -157,12 +172,14 @@ parser.add_option( "--alljobs", "-a",
 parser.add_option( "--computehead", "-H",
         dest="computehead", action="store_true", default=False,
         help='Use head and datastream nodes as compute nodes' )
-parser.add_option( "--rmaps_seq", "-m",
-        dest="rmaps_seq", action="store_true", default=False,
-        help="Pass the '--mca rmaps seq' instruction to mpirun"  )
+parser.add_option( "--no_rmaps_seq", "-M",
+        dest="no_rmaps_seq", action="store_true", default=False,
+        help="Don't Pass the '--mca rmaps seq' instruction to mpirun"  )
 
 (options, args) = parser.parse_args()
 
+if options.testjob and options.clockjob:
+    raise Exception ("Don't use both -t and -c together!")
 
 if len(args) < 1 and not options.expt_all:
     parser.print_help()
@@ -184,22 +201,34 @@ if not options.novex:
 
 
 vex2difx_options = ''
-if options.clockjob:
+if options.clockjob or options.testjob:
     vex2difx_options = ' -f '
 
-# Determine the experiment name from the first jobname or the -a switch
+# Determine the name of the correlator pass from the first jobname or the -a
+# switch
 if options.expt_all:
-    expname = options.expt_all
+    passname = options.expt_all
 else:
-    expname = re.match(r'(.*)_', args[0]).group(1)
+    passname = re.match(r'(.*)_', args[0]).group(1)
+
+# a '-' is used to distinguish different correlator passes. If only one pass,
+# then the expname and passname are the same
+passid = str()
+expname = passname
+if '-' in passname:
+    expname, passid = expname.split('-')
 
 # run vex2difx. 
-v2dfilename = expname + '.v2d'
+v2dfilename = passname + '.v2d'
+vexfilename = parse_v2dfile(v2dfilename)
+if not vexfilename:
+    raise Exception('Could not find VEX file in ' + v2dfilename)
 
 if not options.novex:
     run_vex2difx(v2dfilename, vex2difx_options)
 
-joblistfilename = expname + '.joblist'
+
+joblistfilename = passname + '.joblist'
 (fulljoblist) = parse_joblistfile(joblistfilename) 
 
 # figure out the list of jobs to run this time
@@ -220,12 +249,12 @@ print "job list to correlate = ", pprint.pformat(corrjoblist), "\n";
 for jobname in sorted(corrjoblist.keys()):
     # run lbafilecheck to get the new machines and .threads files
     datafilename = expname + '.datafiles'
-    run_lbafilecheck(datafilename, corrjoblist[jobname], options.computehead, options.rmaps_seq)
+    run_lbafilecheck(datafilename, corrjoblist[jobname], options.computehead, options.no_rmaps_seq)
 
     # duplicate the run and thread and machines files for the full number of
     # jobs
     print "\nduplicating the run file, machines file and .threads files for ", jobname, "\n"
-    make_new_runfiles(jobname)
+    make_new_runfiles(jobname, expname)
 
 
 for jobname in sorted(corrjoblist.keys()):
@@ -240,6 +269,8 @@ for jobname in sorted(corrjoblist.keys()):
     outdir = outdirbase + expname + os.sep
     if options.clockjob:
         outdir += 'clocks/'
+    if options.testjob:
+        outdir += 'test/'
 
     inputfilename = jobname + '.input'
     calcfilename = jobname + '.calc' 
@@ -273,8 +304,14 @@ for jobname in sorted(corrjoblist.keys()):
     change_path(copy_calcfilename, 'FLAG FILENAME:', indir, './')
 
     # copy job control files to output directory, and rename
-    print "copying the job control files", expname + '.[joblist|v2d|vex]', "to", outdir, "\n"
-    copy_jobcontrol(expname, jobname, indir, outdir)
+    print "copying the job control files", passname + '.[joblist|v2d]', "to", outdir, "\n"
+    copy_jobcontrol(passname, jobname, indir, outdir, '.joblist')
+    copy_jobcontrol(passname, jobname, indir, outdir, '.v2d')
+
+    print "copying the vex file", vexfilename, "to", outdir, "\n"
+    outputvex = outdir + jobname + '.vex'
+    print vexfilename
+    shutil.copy2(vexfilename, outputvex)
 
 if not options.nopause:
     raw_input('Press return to initiate the correlator job or ^C to quit ')
