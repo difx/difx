@@ -13,7 +13,7 @@ def sortbyfilename(x):
     sortstring = x.split('/')[-1]
     return sortstring
 
-def makefilelists(telescope, data_area, machine, dir_patterns, globpatterns):
+def makefilelists(telescope, data_area, machine, dir_patterns, globpatterns, expname):
     #outfile = telescope + '.filelist'
     filepattern = str()
     for pattern in dir_patterns:
@@ -21,7 +21,7 @@ def makefilelists(telescope, data_area, machine, dir_patterns, globpatterns):
             filepattern += pattern + globpattern + ' '
 
     #TEMPFILE = tempfile.NamedTemporaryFile()
-    tempfilename = telescope+'tempfilenamexxx.txt'
+    tempfilename = expname + '_' + telescope+'tempfilenamexxx.txt'
     TEMPFILE = open(tempfilename,'w')
     command = "ssh " + machine + " 'ls " + filepattern + "'"
     print command
@@ -39,7 +39,7 @@ def makefilelists(telescope, data_area, machine, dir_patterns, globpatterns):
 
     TEMPFILE = open(tempfilename,'r')
 
-    outfilename = telescope + '.filelist'
+    outfilename = expname + '_' + telescope + '.filelist'
     OUTFILE = open(outfilename, 'w')
     chk_vlbi = espressolib.which('chk_vlbi.pl')
     if not chk_vlbi:
@@ -152,9 +152,9 @@ parser.add_option( "--station", "-s",
 parser.add_option( "--computehead", "-H",
         action='store_true', dest="allcompute", default=False,
         help="Allow head and data nodes to be used as compute nodes" )
-parser.add_option( "--rmaps_seq", "-m",
-        action='store_true', dest="rmaps_seq", default=False,
-        help="Pass the '--mca rmaps seq' instruction to mpirun" )
+parser.add_option( "--no_rmaps_seq", "-M",
+        action='store_true', dest="no_rmaps_seq", default=False,
+        help="Do not pass the '--mca rmaps seq' instruction to mpirun" )
 
 (options, args) = parser.parse_args()
 
@@ -220,7 +220,7 @@ for line in sorted(telescopedirs):
             pid = os.fork()
             pids.append(pid)
             if pid == 0:
-                nfiles, nbad = makefilelists(telescope, data_area, machine, dir_patterns, globpatterns)
+                nfiles, nbad = makefilelists(telescope, data_area, machine, dir_patterns, globpatterns, expname)
                 print "got", nfiles, "files for", telescope, 
                 if nbad: 
                     print '(', nbad, 'corrupt )',
@@ -265,7 +265,7 @@ check_machines(machines[:])
 write_machines(expname, machines)
 write_threads(expname, hosts, computemachines)
 mpirun_options = ''
-if options.rmaps_seq:
+if not options.no_rmaps_seq:
     mpirun_options = '--mca rmaps seq'
 write_run(expname, len(computemachines + datamachines) +1, mpirun_options)
 
