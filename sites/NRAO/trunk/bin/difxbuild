@@ -1,0 +1,219 @@
+#!/bin/env python
+
+from os import environ, system, getcwd, chdir
+from os.path import isdir
+from sys import argv, exit
+import getopt
+
+
+def execute(cmd, verbose, pretend):
+	if pretend:
+		print '%s# %s' % (getcwd(), cmd)
+	else:
+		if verbose:
+			print 'In: %s   Executing: %s' % (getcwd(), cmd)
+		system(cmd)
+
+
+components = {}	# indexed by ${DIFX_VERSION}
+
+# components each have the following elements:
+# [
+#	0 name
+#	1 svn path
+#	2 [build flags]
+# ]
+
+component_difxio_trunk = \
+[ \
+	'difxio', \
+	'https://svn.atnf.csiro.au/difx/libraries/difxio/trunk', \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake'], \
+]
+
+component_difx2fits_trunk = \
+[ \
+	'difx2fits', \
+	'https://svn.atnf.csiro.au/difx/applications/difx2fits/trunk' ,\
+	['aclocal', 'autoconf', 'autoheader', 'automake'], \
+]
+
+components['DIFX_DEVEL'] = \
+[ \
+	component_difxio_trunk, \
+	component_difx2fits_trunk, \
+]
+
+# commands each have the following elements:
+# [
+#	0 Name
+#	1 Description
+#	2 Needed env variables
+#	3 Command line values
+#	4 Function to call
+# ]
+
+def list(comps, params, args, verbose, pretend):
+	print 'Components being managed for %s are:' % environ['DIFX_VERSION']
+	for c in comps:
+		print '  %s' % c[0]
+	print ''
+
+def svnupdate(comps, params, args, verbose, pretend):
+	srcDir = environ['DIFXROOT'] + '/src/'
+	if not isdir(srcDir):
+		execute('mkdir -p %s' % srcDir, verbose, pretend);
+		
+	for comp in comps:
+		path = srcDir + comp[0] + '/'
+		if isdir(path):
+			chdir(path)
+			cmd = 'svn update'
+		else:
+			chdir(srcDir)
+			cmd = 'svn co %s %s' % (comp[1], comp[0])
+		execute(cmd, verbose, pretend)
+
+def autotool(comps, params, args, verbose, pretend):
+	srcDir = environ['DIFXROOT'] + '/src/'
+	ok = True
+	for comp in comps:
+		path = srcDir + comp[0] + '/'
+		if not isdir(path):
+			if 'ok' in args:
+				print 'Warning: %s does not exist.  Skipping.' % path
+			else:
+				print 'Error: %s does not exist.  You need to check out the code first.' % path
+				ok = False;
+	if ok:
+		for comp in comps:
+			path = srcDir + comp[0] + '/'
+			buildFlags = comp[2]
+			if isdir(path):
+				chdir(path)
+				if 'aclocal' in buildFlags:
+					execute('aclocal', verbose, pretend)
+				if 'libtoolize' in buildFlags:
+					execute('libtoolize --copy --force', verbose, pretend)
+				if 'autoconf' in buildFlags:
+					execute('autoconf', verbose, pretend)
+				if 'autoheader' in buildFlags:
+					execute('autoheader', verbose, pretend)
+				if 'automake' in buildFlags:
+					execute('automake -a', verbose, pretend)
+
+
+command_list = \
+[ \
+	'list', \
+	'List the components managed by this script for this DiFX version', \
+	['DIFXROOT'], \
+	[], \
+	list, \
+]
+
+command_svn = \
+[ \
+	'svn', \
+	'Checkout or update from svn repository', \
+	['DIFXROOT'], \
+	[], \
+	svnupdate, \
+]
+
+command_autotool = \
+[ \
+	'autotool', \
+	'Prepare source directory for configuring', \
+	['DIFXROOT'], \
+	[], \
+	autotool, \
+]
+
+commands = \
+[ \
+	command_list, \
+	command_svn, \
+	command_autotool, \
+]
+
+
+def run_command(commandName, args, verbose, pretend):
+	command = None
+	for c in commands:
+		if c[0] == commandName:
+			command = c
+	if not command == None:
+		print '=== Running command: %s ===\n' % command[0]
+		hasEnviron = True
+		hasParams = True
+		for e in command[2]:
+			if not environ.has_key(e):
+				print 'Env. Var. %s needs to be set' % e
+				hasEnviron = False
+		nParam = len(command[3])
+		params = {}
+		if len(args) < nParam:
+			print 'Two few arguments provided'
+			hasParams = False
+		else:
+			for i in range(nParam):
+				params[command[3][i]] = args[i]
+		if hasEnviron and hasParams:
+			if verbose > 1:
+				print '  params=', params
+				print '  extras=', args[nParam:]
+				print '  pretend=', pretend
+				print '  verbose=', verbose
+				print ''
+			command[4](components[environ['DIFX_VERSION']], params, args[nParam:], verbose, pretend)
+		else:
+			print 'Not going to run.'
+			
+	else:
+		print 'Command "%s" not recognized.  Seek help.' % commandName
+
+
+def usage(prog):
+	print 'usage:  %s [options] <command> [<command arguments>]\n' % prog
+	print 'The possible commands are:\n'
+	for command in commands:
+		print command[0]
+		print '  %s\n' % command[1]
+
+def main():
+	if not environ.has_key('DIFX_VERSION'):
+		print 'Env. Var. DIFX_VERSION needs to be set'
+		exit(2)
+	if not components.has_key(environ['DIFX_VERSION']):
+		print 'This script is not set up to handle version %s' % environ['DIFX_VERSION']
+		exit(2)
+	try:
+		opts, args = getopt.getopt(argv[1:], "hqvp", ["help", "quiet", "verbose", "pretend"])
+	except getopt.GetoptError, err:
+		print '%s\n' % str(err)
+		usage(argv[0])
+		exit(2)
+	verbose = 1
+	pretend = False
+	for o, a in opts:
+		if o == '-v':
+			verbose += 1
+		elif o == '-q':
+			verbose -= 1
+		elif o == '-h':
+			usage(argv[0])
+			exit(0)
+		elif o == '-p':
+			pretend = True
+
+	if len(args) <= 0:
+		usage(argv[0])
+		exit(0)
+		
+	run_command(args[0], args[1:], verbose, pretend)
+
+#----
+
+if __name__ == "__main__":
+	main()
