@@ -92,6 +92,8 @@ int main(int argc, char **argv) {
   struct tm *tp;
   struct mark5_stream *ms;
 
+  outname = NULL;
+
   // m5slice test.m5b Mark5B-512-8-2 <offset> <length>
 
   if(argc !=5 )	{
@@ -135,6 +137,7 @@ int main(int argc, char **argv) {
       else
 	fprintf(stderr, "Could not offset to right place in file\n");
       close(infile);
+      free(outname);
       free(buf);
       return EXIT_FAILURE;
     }
@@ -150,6 +153,7 @@ int main(int argc, char **argv) {
     if (outname==NULL) {
       close(infile);
       free(buf);
+      free(outname);
       return EXIT_FAILURE;
     }
 
@@ -164,7 +168,7 @@ int main(int argc, char **argv) {
 
   outfile = creat(outname, S_IRUSR|S_IWUSR|S_IRGRP);
   if (outfile == -1) {
-    fprintf(stderr, "Error creating output file \"%s\"\n", outfile);
+    fprintf(stderr, "Error creating output file \"%s\"\n", outname);
     perror(NULL);
     return(0);
   }
@@ -185,12 +189,14 @@ int main(int argc, char **argv) {
       close(infile);
       close(outfile);
       free(buf);
-      return EXIT_FAILURE;
+      free(outname);
+      return EXIT_SUCCESS;
 
     } else if (nread==-1) {
       perror("Error reading file");
       close(outfile);
       close(infile);
+      free(outname);
       free(buf);
       return EXIT_FAILURE;
     }
@@ -207,6 +213,7 @@ int main(int argc, char **argv) {
 	close(outfile);
 	close(infile);
 	free(buf);
+	free(outname);
 	return EXIT_FAILURE;
       }
       nread -= nwrote;
@@ -215,6 +222,7 @@ int main(int argc, char **argv) {
 
   close(infile);
   close(outfile);
+  free(outname);
 
   return EXIT_SUCCESS;
 }
