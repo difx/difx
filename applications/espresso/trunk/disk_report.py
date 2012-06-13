@@ -3,31 +3,31 @@
 # Cormac Reynolds: 2010 June 2
 import os, subprocess, sys, time
 import espressolib
+import multiprocessing
+from multiprocessing import Process, Queue
+from Queue import Empty
 
+def remote_command(inputq, outputq):
+    while True:
+        try:
+            disk_query, machine, data_area  = inputq.get(block=False)
+            command = str()
+            if disk_query == 'du':
+                command = "ssh MACHINE 'du -c -B 1G DATA_AREA/*'"
+            elif disk_query == 'df':
+                command = "ssh MACHINE 'df -B 1G DATA_AREA'"
 
-data_areas = espressolib.get_corrhosts(os.environ.get('CORR_HOSTS'))
-
-diskreport = dict()
-for machine in data_areas:
-    if data_areas[machine][1]:
-        sys.stderr.write(machine + '\n')
-        diskreport[machine] = dict()
-        for data_area in data_areas[machine][1]:
-            diskreport[machine][data_area] = dict()
-            #command = ["ssh", machine, "'du -csh " + data_area + "/*'"]
-            command = "ssh " + machine +  " 'du -c -B 1G " + data_area + "/*'"
+            command = command.replace('MACHINE', machine)
+            command = command.replace('DATA_AREA', data_area)
             sys.stderr.write(command + '\n')
-            #proc = subprocess.Popen(command, shell=True)
-            proc = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE)
-            du = proc.communicate()[0]
-            diskreport[machine][data_area]['du'] = (du.split('\n'))
 
-            command = "ssh " + machine +  " 'df -B 1G " + data_area + "'"
-            sys.stderr.write(command + '\n')
             proc = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE)
-            df = proc.communicate()[0]
-            diskreport[machine][data_area]['df'] = df
-
+            output = proc.communicate()[0]
+            #print output
+            outputq.put([machine, data_area, output])
+        except Empty:
+            break
+    #return output
 
 def sizesort(x):
     try:
@@ -35,6 +35,48 @@ def sizesort(x):
     except: 
         sortstring = -1
     return sortstring
+
+#def data_summary():
+    #print 'here'
+
+data_areas = espressolib.get_corrhosts(os.environ.get('CORR_HOSTS'))
+
+# run two processes per available cpu (the work is all being done remotely)
+nproc = multiprocessing.cpu_count()
+diskreport = dict()
+disk_queries = []
+disk_queries = ['du', 'df']
+for disk_query in disk_queries:
+    # do the disk queries in parallel
+    inputq = Queue()
+    outputq = Queue()
+    for machine in data_areas:
+        if data_areas[machine][1]:
+            #sys.stderr.write(machine + '\n')
+    
+            for data_area in data_areas[machine][1]:
+                # form a queue of data areas
+                inputq.put([disk_query, machine, data_area])
+                    
+    # nproc is the number of parallel processes to initiate (each process will
+    # take jobs from the inputq until it is empty)
+    processes = [Process(target=remote_command, args=(inputq,outputq)) for i in range(nproc)]
+    for p in processes:
+        p.start()
+    for p in processes:
+        #sys.stderr.write( str(p.pid) + "\n" )
+        p.join()
+    
+    while not outputq.empty():
+        machine, data_area, output = outputq.get()
+        if not machine in diskreport.keys():
+            diskreport[machine] = dict()
+        if not data_area in diskreport[machine].keys():
+            diskreport[machine][data_area] = dict()
+        if disk_query == 'du':
+            diskreport[machine][data_area]['du'] = (output.split('\n'))
+        elif disk_query == 'df':
+            diskreport[machine][data_area]['df'] = output
 
 print "-" * 50
 print "Summary of disk availability at ", time.asctime(), "\n"
