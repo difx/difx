@@ -1,11 +1,14 @@
 #!/bin/env python
 
-from os import environ, system, getcwd, chdir
+from os import environ, system, getcwd, chdir, popen
 from os.path import isdir, isfile
 from sys import argv, exit
 import getopt
-from string import split
+from string import split, strip
+from platform import machine
 
+openmpiVersion = "1.6"
+numMakeCpus = 4
 
 def execute(cmd, verbose, pretend):
 	if pretend:
@@ -133,7 +136,7 @@ component_vex2difx_trunk = \
 	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake'], \
 ]
 
-components['DIFX_DEVEL'] = \
+components['DIFX-DEVEL'] = \
 [ \
 	component_difxio_trunk, \
 	component_difxmessage_trunk, \
@@ -219,7 +222,7 @@ def build(origComps, params, args, verbose, pretend):
 					configureExtras += ' CXX=${MPICXX}'
 				cmd = '%s/configure --prefix=${DIFXROOT}%s' % (srcPath, configureExtras)
 				execute(cmd, verbose, pretend)
-			execute('make -j 3', verbose, pretend)
+			execute('make -j %d' % numMakeCpus, verbose, pretend)
 			execute('make install', verbose, pretend)
 			
 def rebuild(origComps, params, args, verbose, pretend):
@@ -232,7 +235,7 @@ def rebuild(origComps, params, args, verbose, pretend):
 		buildPath = buildDir + comp[0] + '/'
 		if isdir(buildPath):
 			chdir(buildPath)
-			execute('make -j 3', verbose, pretend)
+			execute('make -j %d' % numMakeCpus, verbose, pretend)
 			execute('make install', verbose, pretend)
 			
 def uninstall(origComps, params, args, verbose, pretend):
@@ -251,6 +254,49 @@ def uninstall(origComps, params, args, verbose, pretend):
 def remove(origComps, params, args, verbose, pretend):
 	print 'Feature not yet implemented'
 
+def openmpi(origComps, params, args, verbose, pretend):
+	openmpiWeb = 'http://www.open-mpi.org/software/ompi/v%s/downloads' % openmpiVersion
+	difxBase = environ['DIFX_BASE'] + '/'
+	tarDir = difxBase + 'tar/'
+	cpuDir = difxBase + machine() + '/'
+	cpuSrcDir = cpuDir + 'src/'
+	if not isdir(tarDir):
+		execute('mkdir -p %s' % tarDir, verbose, pretend)
+	if not isdir(cpuSrcDir):
+		execute('mkdir -p %s' % cpuSrcDir, verbose, pretend)
+	openmpiFiles = popen('wget %s/md5sums.txt -O - | grep stable.tar.bz2' % openmpiWeb, 'r').readlines()
+	if len(openmpiFiles) != 1:
+		print "I'm confused: expecting one stable.tar.bz2 file in %s/md5sums.txt, but found %d" % (len(openmpiFiles), openmpiWeb)
+		return
+	goodsum = split(strip(openmpiFiles[0]))[0]
+	openmpiTarFile = split(strip(openmpiFiles[0]))[1]
+	download = True
+	if isfile(tarDir+openmpiTarFile):
+		sum = split(popen('md5sum %s%s' % (tarDir, openmpiTarFile), 'r').readline())[0]
+		if sum != goodsum:
+			print 'Old or corrupt file %s.  File is being moved to /tmp' % (tarDir+openmpiTarFile)
+			execute('mv %s%s /tmp' % (tarDir, openmpiTarFile), verbose, pretend)
+		else:
+			print 'Existing file %s%s looks OK' % (tarDir, openmpiTarFile)
+			download = False
+	if download:
+		chdir(tarDir)
+		execute('wget %s/%s' % (openmpiWeb, openmpiTarFile), verbose, pretend)
+		sum = split(popen('md5sum %s%s' % (tarDir, openmpiTarFile), 'r').readline())[0]
+		if sum != goodsum:
+			print 'Newly downloaded file %s%s does not match expected md5sum %s' % (openmpiWeb, openmpiTarFile, goodsum)
+			return
+	# get ompi src dir
+	openmpiSrcDir = cpuSrcDir + strip(popen('tar tjf %s%s' % (tarDir, openmpiTarFile), 'r').readline())
+	if isdir(openmpiSrcDir):
+		print '%s already untarred in %s; assuming this is a good copy' % (openmpiTarFile, cpuSrcDir)
+	else:
+		chdir(cpuSrcDir)
+		execute('tar jxvf %s%s' % (tarDir, openmpiTarFile), verbose, pretend)
+	chdir(openmpiSrcDir)
+	execute('./configure --prefix=%s --enable-heterogeneous' % cpuDir, verbose, pretend)
+	execute('make -j %d' % numMakeCpus, verbose, pretend)
+	execute('make install', verbose, pretend)
 
 
 
@@ -284,10 +330,19 @@ command_autotool = \
 command_build = \
 [ \
 	'build', \
-	'Optionally run configure for each component then build/install', \
+	'Run configure for each component then build/install', \
 	['DIFX_SRC', 'DIFXROOT', 'MPICXX'], \
 	[], \
 	build \
+]
+
+command_rebuild = \
+[ \
+	'rebuild', \
+	'Build/install each component', \
+	['DIFX_SRC', 'DIFXROOT'], \
+	[], \
+	rebuild \
 ]
 
 command_uninstall = \
@@ -308,6 +363,15 @@ command_remove = \
 	remove \
 ]
 
+command_openmpi = \
+[ \
+	'openmpi', \
+	'Download (if needed), compile, and install openmpi version %s' % openmpiVersion, \
+	['DIFX_BASE'], \
+	[], \
+	openmpi \
+]
+
 commands = \
 [ \
 	command_list, \
@@ -315,8 +379,10 @@ commands = \
 #	command_tar, \
 	command_autotool, \
 	command_build, \
+	command_rebuild, \
 	command_uninstall, \
 #	command_remove, \
+	command_openmpi, \
 ]
 
 
@@ -326,7 +392,6 @@ def run_command(commandName, args, verbose, pretend):
 		if c[0] == commandName:
 			command = c
 	if not command == None:
-		print '=== Running command: %s ===\n' % command[0]
 		hasEnviron = True
 		hasParams = True
 		for e in command[2]:
@@ -348,6 +413,7 @@ def run_command(commandName, args, verbose, pretend):
 				print '  pretend=', pretend
 				print '  verbose=', verbose
 				print ''
+			print '=== Running command: %s ===\n' % command[0]
 			command[4](components[environ['DIFX_VERSION']], params, args[nParam:], verbose, pretend)
 		else:
 			print 'Not going to run.'
