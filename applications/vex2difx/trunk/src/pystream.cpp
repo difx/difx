@@ -1157,14 +1157,7 @@ int pystream::writeScans(const VexData *V)
 			// execute() at stop time minus 5 seconds
 			// arbitrary amount picked to allow commands to get sent to MIBs before they need to get run on MIBs
 			double deltat3 = floor((arange->mjdStop-mjd0)*86400.0 + 0.5-5);
-			// just in case our setup scan caused the auto leveling to lock onto a bad value make
-			// it forget
-			// TODO this - like a lot of things - only works for one RDBE now
-			if(s == 0)
-			{
-				*this << "dbe0.setDBEForget(0)" << endl;
-				*this << "dbe0.setDBEForget(1)" << endl;
-			}
+
 			if(s != -1)
 			{
 				// recognize scans that do not record to Mark5C, but still set switches (need to pass scan start time)
@@ -1198,7 +1191,7 @@ int pystream::writeScans(const VexData *V)
 			else
 			{
 				*this << "# Setup scan - run right away, but do not start recording" << endl;
-				*this << "subarray.execute( array.time() )" << endl;
+				*this << "subarray.execute( array.time() + 2*second )" << endl;
 			}
 		}
 		*this << endl;
