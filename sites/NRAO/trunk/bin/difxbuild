@@ -1,9 +1,10 @@
 #!/bin/env python
 
 from os import environ, system, getcwd, chdir
-from os.path import isdir
+from os.path import isdir, isfile
 from sys import argv, exit
 import getopt
+from string import split
 
 
 def execute(cmd, verbose, pretend):
@@ -13,7 +14,66 @@ def execute(cmd, verbose, pretend):
 		if verbose:
 			print 'In: %s   Executing: %s' % (getcwd(), cmd)
 		system(cmd)
+def checkDirs(comps, dir, args):
+	okComps = []
+	for comp in comps:
+		path = dir + comp[0] + '/'
+		if not isdir(path):
+			if 'ok' in args:
+				print 'Warning: %s does not exist.  Skipping.' % path
+			else:
+				print 'Error: %s does not exist.  Stopping.' % path
+		else:
+			okComps.append(comp)
 
+	if not 'ok' in args and len(comps) != len(okComps):
+		okComps = []
+
+	return okComps
+
+def checkFiles(comps, dir, fileName, args):
+	okComps = []
+	for comp in comps:
+		file = dir + comp[0] + '/' + fileName
+		if not isfile(file):
+			if 'ok' in args:
+				print 'Warning: %s does not exist.  Skipping.' % file
+			else:
+				print 'Error: %s does not exist.  Stopping.' % file
+		else:
+			okComps.append(comp)
+
+	if not 'ok' in args and len(comps) != len(okComps):
+		okComps = []
+
+	return okComps
+
+def componentList(comps):
+	i = 0
+	str = ''
+	for c in comps:
+		if i > 0:
+			str += ', '
+		str += c[0]
+		i += 0
+	return str
+
+def filterComponents(origComps, args):
+	if 'cwd' in args:
+		local = split(getcwd(), '/')[-2:]
+	else:
+		local = []
+	
+	comps = []
+	for c in origComps:
+		if c[0] in local or c[0] in args:
+			comps.append(c)
+	if len(comps) == 0:
+		if 'cwd' in args:
+			print "Error: cannot build in local directory: don't know where I am!"
+		else:
+			comps = origComps
+	return comps
 
 components = {}	# indexed by ${DIFX_VERSION}
 
@@ -31,6 +91,34 @@ component_difxio_trunk = \
 	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake'], \
 ]
 
+component_difxmessage_trunk = \
+[ \
+	'difxmessage', \
+	'https://svn.atnf.csiro.au/difx/libraries/difxmessage/trunk', \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake'], \
+]
+
+component_mark5access_trunk = \
+[ \
+	'mark5access', \
+	'https://svn.atnf.csiro.au/difx/libraries/mark5access/trunk', \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake'], \
+]
+
+component_vdifio_trunk = \
+[ \
+	'vdifio', \
+	'https://svn.atnf.csiro.au/difx/libraries/vdifio/trunk', \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake'], \
+]
+
+component_mpifxcorr_trunk = \
+[ \
+	'mpifxcorr', \
+	'https://svn.atnf.csiro.au/difx/mpifxcorr/trunk', \
+	['aclocal', 'autoconf', 'autoheader', 'automake', 'mpicxx', 'ipp'] \
+]
+
 component_difx2fits_trunk = \
 [ \
 	'difx2fits', \
@@ -38,10 +126,22 @@ component_difx2fits_trunk = \
 	['aclocal', 'autoconf', 'autoheader', 'automake'], \
 ]
 
+component_vex2difx_trunk = \
+[ \
+	'vex2difx', \
+	'https://svn.atnf.csiro.au/difx/applications/vex2difx/trunk' ,\
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake'], \
+]
+
 components['DIFX_DEVEL'] = \
 [ \
 	component_difxio_trunk, \
+	component_difxmessage_trunk, \
+	component_mpifxcorr_trunk, \
+	component_vdifio_trunk, \
+	component_mpifxcorr_trunk, \
 	component_difx2fits_trunk, \
+	component_vex2difx_trunk, \
 ]
 
 # commands each have the following elements:
@@ -59,8 +159,9 @@ def list(comps, params, args, verbose, pretend):
 		print '  %s' % c[0]
 	print ''
 
-def svnupdate(comps, params, args, verbose, pretend):
-	srcDir = environ['DIFXROOT'] + '/src/'
+def svnupdate(origComps, params, args, verbose, pretend):
+	comps = filterComponents(origComps, args)
+	srcDir = environ['DIFX_SRC'] + '/'
 	if not isdir(srcDir):
 		execute('mkdir -p %s' % srcDir, verbose, pretend);
 		
@@ -74,67 +175,148 @@ def svnupdate(comps, params, args, verbose, pretend):
 			cmd = 'svn co %s %s' % (comp[1], comp[0])
 		execute(cmd, verbose, pretend)
 
-def autotool(comps, params, args, verbose, pretend):
-	srcDir = environ['DIFXROOT'] + '/src/'
-	ok = True
-	for comp in comps:
+def autotool(origComps, params, args, verbose, pretend):
+	comps = filterComponents(origComps, args)
+	srcDir = environ['DIFX_SRC'] + '/'
+	okComps = checkDirs(comps, srcDir, args)
+	if verbose > 1:
+		print 'Autotooling: %s' % componentList(okComps)
+	for comp in okComps:
 		path = srcDir + comp[0] + '/'
-		if not isdir(path):
-			if 'ok' in args:
-				print 'Warning: %s does not exist.  Skipping.' % path
-			else:
-				print 'Error: %s does not exist.  You need to check out the code first.' % path
-				ok = False;
-	if ok:
-		for comp in comps:
-			path = srcDir + comp[0] + '/'
-			buildFlags = comp[2]
-			if isdir(path):
-				chdir(path)
-				if 'aclocal' in buildFlags:
-					execute('aclocal', verbose, pretend)
-				if 'libtoolize' in buildFlags:
-					execute('libtoolize --copy --force', verbose, pretend)
-				if 'autoconf' in buildFlags:
-					execute('autoconf', verbose, pretend)
-				if 'autoheader' in buildFlags:
-					execute('autoheader', verbose, pretend)
-				if 'automake' in buildFlags:
-					execute('automake -a', verbose, pretend)
+		chdir(path)
+		buildFlags = comp[2]
+		if 'aclocal' in buildFlags:
+			execute('aclocal', verbose, pretend)
+		if 'libtoolize' in buildFlags:
+			execute('libtoolize --copy --force', verbose, pretend)
+		if 'autoconf' in buildFlags:
+			execute('autoconf', verbose, pretend)
+		if 'autoheader' in buildFlags:
+			execute('autoheader', verbose, pretend)
+		if 'automake' in buildFlags:
+			execute('automake -a', verbose, pretend)
+
+def build(origComps, params, args, verbose, pretend):
+	comps = filterComponents(origComps, args)
+	buildDir = environ['DIFXROOT'] + '/build/'
+	srcDir = environ['DIFX_SRC'] + '/'
+	okComps = checkDirs(comps, srcDir, args)
+	if len(okComps) > 0:
+		if verbose > 1:
+			print 'Building: %s' % componentList(okComps)
+		if not isdir(buildDir):
+			execute('mkdir -p %s' % buildDir, verbose, pretend)
+		for comp in okComps:
+			srcPath = srcDir + comp[0] + '/'
+			buildPath = buildDir + comp[0] + '/'
+			if not isdir(buildPath):
+				execute('mkdir -p %s' % buildPath, verbose, pretend)
+			chdir(buildPath)
+			if not 'noconf' in args:
+				buildFlags = comp[2]
+				configureExtras = ''
+				if 'mpicxx' in buildFlags:
+					configureExtras += ' CXX=${MPICXX}'
+				cmd = '%s/configure --prefix=${DIFXROOT}%s' % (srcPath, configureExtras)
+				execute(cmd, verbose, pretend)
+			execute('make -j 3', verbose, pretend)
+			execute('make install', verbose, pretend)
+			
+def rebuild(origComps, params, args, verbose, pretend):
+	comps = filterComponents(origComps, args)
+	buildDir = environ['DIFXROOT'] + '/build/'
+	okComps = checkFiles(comps, buildDir, 'Makefile', args)
+	if verbose > 1:
+		print 'Rebuilding: %s' % componentList(okComps)
+	for comp in okComps:
+		buildPath = buildDir + comp[0] + '/'
+		if isdir(buildPath):
+			chdir(buildPath)
+			execute('make -j 3', verbose, pretend)
+			execute('make install', verbose, pretend)
+			
+def uninstall(origComps, params, args, verbose, pretend):
+	comps = filterComponents(origComps, args)
+	buildDir = environ['DIFXROOT'] + '/build/'
+	okComps = checkFiles(comps, buildDir, 'Makefile', args)
+	okComps.reverse()	# best done in reverse for reasons of dependency
+	if verbose > 1:
+		print 'Uninstalling: %s' % componentList(okComps)
+	for comp in okComps:
+		buildPath = buildDir + comp[0] + '/'
+		if isdir(buildPath):
+			chdir(buildPath)
+			execute('make uninstall', verbose, pretend)
+
+def remove(origComps, params, args, verbose, pretend):
+	print 'Feature not yet implemented'
+
+
 
 
 command_list = \
 [ \
 	'list', \
 	'List the components managed by this script for this DiFX version', \
-	['DIFXROOT'], \
 	[], \
-	list, \
+	[], \
+	list \
 ]
 
 command_svn = \
 [ \
 	'svn', \
 	'Checkout or update from svn repository', \
-	['DIFXROOT'], \
+	['DIFX_SRC'], \
 	[], \
-	svnupdate, \
+	svnupdate \
 ]
 
 command_autotool = \
 [ \
 	'autotool', \
 	'Prepare source directory for configuring', \
+	['DIFX_SRC'], \
+	[], \
+	autotool \
+]
+
+command_build = \
+[ \
+	'build', \
+	'Optionally run configure for each component then build/install', \
+	['DIFX_SRC', 'DIFXROOT', 'MPICXX'], \
+	[], \
+	build \
+]
+
+command_uninstall = \
+[ \
+	'uninstall', \
+	'Uninstall each component but leave source and build directories in tact', \
 	['DIFXROOT'], \
 	[], \
-	autotool, \
+	uninstall \
+]
+
+command_remove = \
+[ \
+	'remove', \
+	'Uninstall each component and remove source and build directories', \
+	['DIFX_SRC', 'DIFXROOT'], \
+	[], \
+	remove \
 ]
 
 commands = \
 [ \
 	command_list, \
 	command_svn, \
+#	command_tar, \
 	command_autotool, \
+	command_build, \
+	command_uninstall, \
+#	command_remove, \
 ]
 
 
