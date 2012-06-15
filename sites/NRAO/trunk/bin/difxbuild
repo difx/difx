@@ -1,22 +1,122 @@
 #!/bin/env python
 
 from os import environ, system, getcwd, chdir, popen
-from os.path import isdir, isfile
-from sys import argv, exit
+from os.path import isdir, isfile, islink, join, dirname
+from sys import argv, exit, platform
+from re import search
 import getopt
-from string import split, strip
+from string import split, strip, find
 from platform import machine
 
 openmpiVersion = "1.6"
 numMakeCpus = 4
 
+
+def getippversion(path):
+	if islink(path):
+		path = join(dirname(path), readlink(path))
+# First try ippversion.h
+        ippheader = path+'/include/ippversion.h'
+	if not isfile(ippheader):
+		ippheader = path+'/ipp/include/ippversion.h'
+		if not isfile(ippheader):
+			ippheader = ''
+
+	if (ippheader==''):
+		print "Warning: ippversion.h not found, relying on IPP path ", path
+		s = split(path, '/')
+		possibilities = []
+		for part in s:
+			t = split(part, '.')
+			if len(t) > 1:
+				possibilities.append(part)
+				if len(possibilities) < 1:
+					print 'Sorry, cannot determine ipp version from path'
+					exit(0)
+					if len(possibilities) > 1:
+						print 'Guessing version == %s' % possibilities[-1]
+
+						return possibilities[-1]
+					
+	else:
+		print "Reading version from ", ippheader
+		major = minor = None
+		for line in open(ippheader):
+			m = search('#define\s+IPP_VERSION_STR\s+"(\S+)"', line)
+			if (m != None):
+				print "Got version ", m.group(1)
+				return m.group(1)
+			if (major == None):
+			    major = search('#define\s+IPP_VERSION_MAJOR\s+(\S)', line)
+			if (minor == None):
+			    minor = search('#define\s+IPP_VERSION_MINOR\s+(\S)', line)
+		if (major != None and minor != None):
+			print "Have version ", major.group(1) + "." + minor.group(1)
+			return major.group(1) + "." + minor.group(1)
+		print "Sorry, cannot find IPP_VERSION_STR in ", ippheader
+		exit(0)
+	
+# fixme: possibly should use uname to get this information
+def getarch():
+	bs = environ['DIFXBITS']
+	if bs != None:
+		return int(bs)
+	else:
+		print 'Warning: defaulting to 32 bit assumption'
+		return 32
+
+def genipppc(path):
+	ippversion = getippversion(path)
+	ipparch = getarch()
+
+	major = int(split(ippversion, '.')[0])
+	out = open('ipp.pc', 'w')
+	out.write('base = %s\n' % path)
+	out.write('\n')
+	out.write('Name: ipp\n')
+	out.write('Description: Intel Performance Primitives\n')
+	out.write('Requires:\n')
+	out.write('Version: %s\n' % ippversion)
+	
+	mac = False
+	if platform == "darwin":
+		mac = True
+
+	if major == 6 or major == 5:
+		if mac:
+			libdir = 'Libraries'
+		else:
+			libdir = 'sharedlib'
+		if ipparch == 32:
+			out.write('Libs: -Wl,-rpath,${base}/%s -L${base}/%s -lipps -lguide -lippvm -lippcore\n' % (libdir, libdir))
+			out.write('Cflags: -I${base}/include\n')
+		else:
+			out.write('Libs: -Wl,-rpath,${base}/%s -L${base}/%s -lippsem64t -lguide -lippvmem64t -lippcoreem64t\n' % (libdir, libdir))
+			out.write('Cflags: -I${base}/include\n')
+	elif major == 7:
+		if ipparch == 32:
+			libdir = 'ia32'
+		else:
+			libdir = 'intel64'
+		out.write('Libs: -L${base}/lib/%s -L${base}/ipp/lib/%s -lipps -lippvm -lippcore -liomp5\n' % (libdir, libdir))
+		out.write('Cflags: -I${base}/ipp/include\n')
+
+	else:
+		print 'Sorry, IPP %d not yet supported by this script\n' % major
+
+	out.close()
+
+nExecute = 0
 def execute(cmd, verbose, pretend):
+	global nExecute
+	nExecute += 1
 	if pretend:
 		print '%s# %s' % (getcwd(), cmd)
 	else:
 		if verbose:
-			print 'In: %s   Executing: %s' % (getcwd(), cmd)
+			print '[%d] In: %s   Executing: %s' % (nExecute, getcwd(), cmd)
 		system(cmd)
+
 def checkDirs(comps, dir, args):
 	okComps = []
 	for comp in comps:
@@ -91,28 +191,28 @@ component_difxio_trunk = \
 [ \
 	'difxio', \
 	'https://svn.atnf.csiro.au/difx/libraries/difxio/trunk', \
-	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake'], \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake'] \
 ]
 
 component_difxmessage_trunk = \
 [ \
 	'difxmessage', \
 	'https://svn.atnf.csiro.au/difx/libraries/difxmessage/trunk', \
-	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake'], \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake'] \
 ]
 
 component_mark5access_trunk = \
 [ \
 	'mark5access', \
 	'https://svn.atnf.csiro.au/difx/libraries/mark5access/trunk', \
-	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake'], \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake'] \
 ]
 
 component_vdifio_trunk = \
 [ \
 	'vdifio', \
 	'https://svn.atnf.csiro.au/difx/libraries/vdifio/trunk', \
-	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake'], \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake'] \
 ]
 
 component_mpifxcorr_trunk = \
@@ -126,21 +226,49 @@ component_difx2fits_trunk = \
 [ \
 	'difx2fits', \
 	'https://svn.atnf.csiro.au/difx/applications/difx2fits/trunk' ,\
-	['aclocal', 'autoconf', 'autoheader', 'automake'], \
+	['aclocal', 'autoconf', 'autoheader', 'automake'] \
+]
+
+component_difx2mark4_trunk = \
+[ \
+	'difx2mark4', \
+	'https://svn.atnf.csiro.au/difx/applications/difx2mark4/trunk' ,\
+	['aclocal', 'autoconf', 'autoheader', 'automake'] \
 ]
 
 component_vex2difx_trunk = \
 [ \
 	'vex2difx', \
 	'https://svn.atnf.csiro.au/difx/applications/vex2difx/trunk' ,\
-	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake'], \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake'] \
 ]
 
 component_calcif2_trunk = \
 [ \
 	'calcif2', \
 	'https://svn.atnf.csiro.au/difx/utilities/trunk/calcif2' ,\
-	['aclocal', 'autoconf', 'autoheader', 'automake'], \
+	['aclocal', 'autoconf', 'autoheader', 'automake'] \
+]
+
+component_calcserver_trunk = \
+[ \
+	'calcserver', \
+	'https://svn.atnf.csiro.au/difx/applications/calcserver/trunk', \
+	['aclocal', 'autoconf', 'autoheader', 'automake'] \
+]
+
+component_rcwlib_trunk = \
+[ \
+	'rcwlib', \
+	'https://svn.atnf.csiro.au/difx/sites/NRAO/trunk/rcwlib', \
+	['aclocal', 'libtoolize', 'autoconf', 'automake'] \
+]
+
+component_sniff_trunk = \
+[ \
+	'SniffPlots', \
+	'https://svn.atnf.csiro.au/difx/sites/NRAO/trunk/SniffPlots', \
+	['aclocal', 'autoconf', 'automake'] \
 ]
 
 components['DIFX-DEVEL'] = \
@@ -151,36 +279,40 @@ components['DIFX-DEVEL'] = \
 	component_vdifio_trunk, \
 	component_mpifxcorr_trunk, \
 	component_difx2fits_trunk, \
+	component_difx2mark4_trunk, \
 	component_vex2difx_trunk, \
 	component_calcif2_trunk, \
+	component_calcserver_trunk, \
+	component_rcwlib_trunk, \
+	component_sniff_trunk, \
 ]
 
 component_difxio_2_1 = \
 [ \
 	'difxio', \
 	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.1/libraries/difxio', \
-	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake'], \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake'] \
 ]
 
 component_difxmessage_2_1 = \
 [ \
 	'difxmessage', \
 	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.1/libraries/difxmessage', \
-	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake'], \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake'] \
 ]
 
 component_mark5access_2_1 = \
 [ \
 	'mark5access', \
 	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.1/libraries/mark5access', \
-	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake'], \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake'] \
 ]
 
 component_vdifio_2_1 = \
 [ \
 	'vdifio', \
 	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.1/libraries/vdifio', \
-	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake'], \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake'] \
 ]
 
 component_mpifxcorr_2_1 = \
@@ -194,14 +326,21 @@ component_difx2fits_2_1 = \
 [ \
 	'difx2fits', \
 	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.1/applications/difx2fits' ,\
-	['aclocal', 'autoconf', 'autoheader', 'automake'], \
+	['aclocal', 'autoconf', 'autoheader', 'automake'] \
+]
+
+component_difx2mark4_2_1 = \
+[ \
+	'difx2mark4', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.1/applications/difx2mark4' ,\
+	['aclocal', 'autoconf', 'autoheader', 'automake'] \
 ]
 
 component_vex2difx_2_1 = \
 [ \
 	'vex2difx', \
 	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.1/applications/vex2difx' ,\
-	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake'], \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake'] \
 ]
 
 component_calcif2_2_1 = \
@@ -209,6 +348,27 @@ component_calcif2_2_1 = \
 	'calcif2', \
 	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.1/applications/calcif2' ,\
 	['aclocal', 'autoconf', 'autoheader', 'automake'], \
+]
+
+component_calcserver_2_1 = \
+[ \
+	'calcserver', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.1/applications/calcserver', \
+	['aclocal', 'autoconf', 'autoheader', 'automake'] \
+]
+
+component_rcwlib_2_1 = \
+[ \
+	'rcwlib', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.1/sites/NRAO/rcwlib', \
+	['aclocal', 'libtoolize', 'autoconf', 'automake'] \
+]
+
+component_sniff_2_1 = \
+[ \
+	'SniffPlots', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.1/sites/NRAO/SniffPlots', \
+	['aclocal', 'autoconf', 'automake'] \
 ]
 
 components['DIFX-2.1'] = \
@@ -219,8 +379,12 @@ components['DIFX-2.1'] = \
 	component_vdifio_2_1, \
 	component_mpifxcorr_2_1, \
 	component_difx2fits_2_1, \
+	component_difx2mark4_2_1, \
 	component_vex2difx_2_1, \
 	component_calcif2_2_1, \
+	component_calcserver_2_1, \
+	component_rcwlib_2_1, \
+	component_sniff_2_1, \
 ]
 
 # commands each have the following elements:
@@ -238,6 +402,25 @@ def list(comps, params, args, verbose, pretend):
 		print '  %s' % c[0]
 	print ''
 
+def default(comps, params, args, verbose, pretend):
+	execute('rm %s/setup_difx' % environ['HOME'], verbose, pretend)
+	if isfile('%s/setup_difx' % environ['HOME']):
+		print 'Error: could not unlink existing DiFX version'
+		exit(2)
+	execute('ln -s %s/setup_difx %s/' % (environ['DIFXROOT'], environ['HOME']), verbose, pretend)
+	if not isfile('%s/setup_difx' % environ['HOME']):
+		print 'Error: could not link new DiFX version.  NO version is default now!'
+		exit(2)
+	print 'New default version of DiFX selected.'
+	print 'Make sure ". ~/setup_difx" is in your .bashrc file!'
+
+def splitequals(str):
+	p = find(str, '=')
+	if p < 0:
+		return [str]
+	else:
+		return [strip(str[:p]), strip(str[p+1:])]
+
 def bootstrap(comps, params, args, verbose, pretend):
 	if not isfile(params['ConfigFile']):
 		print 'Error: bootstrapping needs the specified configuration file, %s, to exist.' % params['ConfigFile']
@@ -247,7 +430,7 @@ def bootstrap(comps, params, args, verbose, pretend):
 	env = {}
 	for c in configData:
 		c = split(c, '#')[0]	# strip comments
-		s = split(strip(c), '=')
+		s = splitequals(strip(c))
 		if len(s) == 2:
 			t = split(s[0])
 			if len(t) == 1:
@@ -275,7 +458,7 @@ def bootstrap(comps, params, args, verbose, pretend):
 		if verbose > 0:
 			print 'Writing setup file %s' % setupFile
 
-		dirs = [config['root'], '%s/directories' % config['difxbase'], '~/bin/']
+		dirs = [config['root'], '%s/directories' % config['difxbase'], '%s/bin/' % environ['HOME']]
 		for d in dirs:
 			if not isdir(d):
 				execute('mkdir -p %s' % d, verbose, pretend)
@@ -289,6 +472,22 @@ def bootstrap(comps, params, args, verbose, pretend):
 			if not aarch in platforms:
 				platforms[aarch] = []
 			platforms[aarch].append([config['altplatform%d' % i], config['altplatform%dtest' % i]])
+
+		if config.has_key('mca'):
+			print 'Making .openmpi/mca-params.conf'
+			execute('mkdir -p %s/.openmpi' % environ['HOME'], verbose, pretend)
+			out = open('%s/.openmpi/mca-params.conf' % environ['HOME'], 'w')
+			out.write('%s\n' % config['mca'])
+			out.close()
+
+
+		out = open('%s/bin/runmpifxcorr.%s' % (environ['HOME'], config['version']), 'w')
+		out.write('#!/bin/bash\n\n')
+		out.write('. %s\n' % setupFile)
+		if config.has_key('wrapper'):
+			out.write('%s ' % config['wrapper'])
+		out.write('mpifxcorr $@\n')
+		out.close()
 		
 		out = open(setupFile, 'w')
 		
@@ -297,7 +496,7 @@ def bootstrap(comps, params, args, verbose, pretend):
 		out.write('DIFX_PROMPT_EXTRA=""\n')
 		out.write('HWPLATFORM=`uname --processor`\n')
 		out.write('\n')
-		out.write('export DIFX_ARCH_ROOT=%s/${HWPLATFORM}\n' % config['root'])
+		out.write('export DIFX_ARCH_ROOT=%s/${HWPLATFORM}\n' % config['difxbase'])
 		for arch in platforms.keys():
 			out.write('if [[ ${HWPLATFORM} = "%s" ]]; then\n' % arch)
 			if arch in ['x86_64']:
@@ -337,13 +536,14 @@ def bootstrap(comps, params, args, verbose, pretend):
 			out.write('export CFLAGS="-O2 -Wall -march=core2"\n')
 		if not env.has_key('CXXFLAGS'):
 			out.write('export CXXFLAGS="-O2 -Wall -march=core2"\n')
-		out.write('export MPICXX=${DIFX_ARCH_ROOT}/bin/mpicxx')
+		out.write('export MPICXX=${DIFX_ARCH_ROOT}/bin/mpicxx\n')
 		out.write('export PKG_CONFIG_PATH=${DIFXROOT}/lib/pkgconfig\n')
 		out.write('export MARK5_DIR_PATH=${DIFX_BASE}/directories\n')
+		out.write('export DIFX_VERSION=%s\n' % config['version'])
 		if not env.has_key('DIFX_MESSAGE_GROUP'):
-			out.write('export DIFX_MESSAGE_GROUP=224.2.2.1')
+			out.write('export DIFX_MESSAGE_GROUP=224.2.2.1\n')
 		if not env.has_key('DIFX_MESSAGE_PORT'):
-			out.write('export DIFX_MESSAGE_PORT=50200')
+			out.write('export DIFX_MESSAGE_PORT=50200\n')
 
 		out.write('\n')
 		out.write('export PATH=${DIFX_ARCH_ROOT}/bin:${DIFXROOT}/bin:~/bin:/bin:/usr/bin\n')
@@ -356,6 +556,8 @@ def bootstrap(comps, params, args, verbose, pretend):
 		out.write("alias bld='cd ${DIFX_PREFIX}/build'\n")
 
 		out.close()
+
+		print '\nBootstrap complete.  Now source %s and continue with svn.\n' % setupFile
 
 	except KeyError:
 		print 'Parse error'
@@ -401,9 +603,16 @@ def autotool(origComps, params, args, verbose, pretend):
 def build(origComps, params, args, verbose, pretend):
 	comps = filterComponents(origComps, args)
 	buildDir = environ['DIFXROOT'] + '/build/'
+	pkgDir = environ['DIFXROOT'] + '/lib/pkgconfig/'
 	srcDir = environ['DIFX_SRC'] + '/'
 	okComps = checkFiles(comps, srcDir, 'configure', args)
 	if len(okComps) > 0:
+		if verbose > 1:
+			print 'Generating ipp.pc'
+		if not isdir(pkgDir):
+			execute('mkdir -p %s' % pkgDir, verbose, pretend)
+		chdir(pkgDir)
+		genipppc('%s/%s' % (environ['IPPROOT'], environ['IPPARCH']))
 		if verbose > 1:
 			print 'Building: %s' % componentList(okComps)
 		if not isdir(buildDir):
@@ -508,11 +717,20 @@ command_list = \
 	list \
 ]
 
+command_default = \
+[ \
+	'default', \
+	'Set the default version of DiFX to that identified in the current environment', \
+	['DIFXROOT', 'HOME'], \
+	[], \
+	default \
+]
+
 command_bootstrap = \
 [ \
 	'bootstrap', \
 	'Begin installation process for one DiFX Version', \
-	[], \
+	['HOME'], \
 	['ConfigFile'], \
 	bootstrap \
 ]
@@ -529,7 +747,7 @@ command_svn = \
 command_autotool = \
 [ \
 	'autotool', \
-	'Prepare source directory for configuring', \
+	'Prepare source directories for configuring', \
 	['DIFX_SRC'], \
 	[], \
 	autotool \
@@ -539,7 +757,7 @@ command_build = \
 [ \
 	'build', \
 	'Run configure for each component then build/install', \
-	['DIFX_SRC', 'DIFXROOT', 'MPICXX', 'PKG_CONFIG_PATH'], \
+	['DIFX_SRC', 'DIFXROOT', 'MPICXX', 'PKG_CONFIG_PATH', 'DIFXBITS', 'IPPROOT', 'IPPARCH'], \
 	[], \
 	build \
 ]
@@ -584,7 +802,7 @@ commands = \
 [ \
 	command_list, \
 	command_bootstrap, \
-#	command_default, \
+	command_default, \
 	command_svn, \
 #	command_tar, \
 	command_autotool, \
@@ -624,7 +842,11 @@ def run_command(commandName, args, verbose, pretend):
 				print '  verbose=', verbose
 				print ''
 			print '=== Running command: %s ===\n' % command[0]
-			command[4](components[environ['DIFX_VERSION']], params, args[nParam:], verbose, pretend)
+			if command[0] == 'bootstrap':
+				comps = []
+			else:
+				comps = components[environ['DIFX_VERSION']]
+			command[4](comps, params, args[nParam:], verbose, pretend)
 		else:
 			print 'Not going to run.'
 			
@@ -636,16 +858,13 @@ def usage(prog):
 	print 'usage:  %s [options] <command> [<command arguments>]\n' % prog
 	print 'The possible commands are:\n'
 	for command in commands:
-		print command[0]
+		extras = ''
+		for c in command[3]:
+			extras = extras + ' <' + c + '>'
+		print '%s%s' % (command[0], extras)
 		print '  %s\n' % command[1]
 
 def main():
-	if not environ.has_key('DIFX_VERSION'):
-		print 'Env. Var. DIFX_VERSION needs to be set'
-		exit(2)
-	if not components.has_key(environ['DIFX_VERSION']):
-		print 'This script is not set up to handle version %s' % environ['DIFX_VERSION']
-		exit(2)
 	try:
 		opts, args = getopt.getopt(argv[1:], "hqvp", ["help", "quiet", "verbose", "pretend"])
 	except getopt.GetoptError, err:
@@ -669,6 +888,14 @@ def main():
 		usage(argv[0])
 		exit(0)
 		
+	if args[0] != 'bootstrap':
+		if not environ.has_key('DIFX_VERSION'):
+			print 'Env. Var. DIFX_VERSION needs to be set'
+			exit(2)
+		if not components.has_key(environ['DIFX_VERSION']):
+			print 'This script is not set up to handle version %s' % environ['DIFX_VERSION']
+			exit(2)
+
 	run_command(args[0], args[1:], verbose, pretend)
 
 #----
