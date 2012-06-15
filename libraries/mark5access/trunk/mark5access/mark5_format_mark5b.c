@@ -164,8 +164,7 @@ static int mark5_stream_frame_time_mark5b(const struct mark5_stream *ms,
 	}
 	if(sec) 
 	{
-		*sec = nibs[3]*10000 + nibs[4]*1000 + nibs[5]*100 + nibs[6]*10
-	        	+ nibs[7];
+		*sec = nibs[3]*10000 + nibs[4]*1000 + nibs[5]*100 + nibs[6]*10 + nibs[7];
 	}
 	if(ns)
 	{
@@ -175,8 +174,7 @@ static int mark5_stream_frame_time_mark5b(const struct mark5_stream *ms,
 		}
 		else
 		{
-			*ns = nibs[8]*100000000 + nibs[9]*10000000 
-				+ nibs[10]*1000000+ nibs[11]*100000;
+			*ns = nibs[8]*100000000 + nibs[9]*10000000 + nibs[10]*1000000+ nibs[11]*100000;
 			/* "unround" the number */
 			*ns = 156250*(((int)(*ns)+156249)/156250);
 		}
@@ -2882,16 +2880,13 @@ static int mark5_format_mark5b_init(struct mark5_stream *ms)
 				{
 					ms->framens += 1000000000;
 				}
-				ms->samprate = ms->framesamples*
-					(1000000000/ms->framens);
+				ms->samprate = ms->framesamples*(1000000000/ms->framens);
 				datarate = ms->samprate*ms->nbit*ms->nchan/1000000;
 				if(datarate != ms->Mbps)
 				{
 					if(ms->Mbps > 0)
 					{
-						fprintf(m5stderr, "Warning: data rate "
-							"disagrees : %d != %d\n",
-							datarate, ms->Mbps);
+						fprintf(m5stderr, "Warning: data rate disagrees : %d != %d\n", datarate, ms->Mbps);
 					}
 					ms->Mbps = datarate;
 				}
@@ -3008,8 +3003,8 @@ struct mark5_format_generic *new_mark5_format_mark5b(int Mbps,
 	}
 	else
 	{
-		fprintf(m5stderr, "new_mark5_format_mark5b : "
-			"nbit needs to be 1 or 2\n");
+		fprintf(m5stderr, "new_mark5_format_mark5b : nbit needs to be 1 or 2\n");
+
 		return 0;
 	}
 	
@@ -3039,8 +3034,8 @@ struct mark5_format_generic *new_mark5_format_mark5b(int Mbps,
 	}
 	else
 	{
-		fprintf(m5stderr, "new_mark5_format_mark5b : "
-			"nbitstream needs to be 1, 2, 4, 8, 16 or 32\n");
+		fprintf(m5stderr, "new_mark5_format_mark5b : nbitstream needs to be 1, 2, 4, 8, 16 or 32\n");
+
 		return 0;
 	}
 

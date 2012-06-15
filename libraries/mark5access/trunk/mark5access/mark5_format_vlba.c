@@ -93,15 +93,15 @@ static void initluts()
 	const float lut2level[2] = {1.0, -1.0};
 	const float lut4level[4] = {-HiMag, 1.0, -1.0, HiMag};
 
-	for(i = 0; i < 8; i++)
+	for(i = 0; i < 8; ++i)
 	{
 		zeros[i] = 0.0;
 	}
 
-	for(b = 0; b < 256; b++)
+	for(b = 0; b < 256; ++b)
 	{
 		/* lut1bit */
-		for(i = 0; i < 8; i++)
+		for(i = 0; i < 8; ++i)
 		{
 			l = (b>>i)&1;
 			lut1bit[0][b][i] =  lut2level[l];
@@ -109,7 +109,7 @@ static void initluts()
 		}
 
 		/* lut2bit1 */
-		for(i = 0; i < 4; i++)
+		for(i = 0; i < 4; ++i)
 		{
 			s = i*2;	/* 0, 2, 4, 6 */
 			m = s+1;	/* 1, 3, 5, 7 */
@@ -127,7 +127,7 @@ static void initluts()
 		}
 
 		/* lut2bit2 */
-		for(i = 0; i < 4; i++)
+		for(i = 0; i < 4; ++i)
 		{
 			s = i+(i/2)*2;	/* 0, 1, 4, 5 */
 			m = s+2;	/* 2, 3, 6, 7 */
@@ -145,7 +145,7 @@ static void initluts()
 		}
 
 		/* lut2bit3 */
-		for(i = 0; i < 4; i++)
+		for(i = 0; i < 4; ++i)
 		{
 			s = i;		/* 0, 1, 2, 3 */
 			m = s+4;	/* 4, 5, 6, 7 */
@@ -174,7 +174,7 @@ static void initmodulate()
 		modulate = (unsigned int *)calloc(PAYLOADSIZE, sizeof(unsigned int));
 	}
 	
-	for(i = 0; i < PAYLOADSIZE; i++)
+	for(i = 0; i < PAYLOADSIZE; ++i)
 	{
 		k = ff[10] ^ ff[12] ^ ff[13] ^ ff[15];
 		for(n = 15; n > 0; n--) ff[n] = ff[n-1];
@@ -192,7 +192,7 @@ static void initmodulate()
 int countbits(unsigned char v)
 {
 	unsigned int c; // c accumulates the total bits set in v
-	for (c = 0; v; c++)
+	for (c = 0; v; ++c)
 	{
 		v &= v - 1; // clear the least significant bit set
 	}
@@ -202,7 +202,7 @@ int countbits(unsigned char v)
 int countbits32(unsigned int v)
 {
 	unsigned int c; // c accumulates the total bits set in v
-	for (c = 0; v; c++)
+	for (c = 0; v; ++c)
 	{
 		v &= v - 1; // clear the least significant bit set
 	}
@@ -215,48 +215,84 @@ int countbits32(unsigned int v)
  * 32*tracks bits set at offset+2520*tracks bytes
  * 2*tracks bits unset at offset+2518*tracks bytes
  *
- * With up to tol bits not set correctly
- *
  * return offset;
  */
-static int findfirstframe(const unsigned char *data, int bytes, int tracks, int tol)
+static int findfirstframe(const unsigned char *data, int bytes, int tracks)
 {
 	int offset;
 	int wrong = 0;
 	int i, a, b;
+	int cbits[256];
+	unsigned char c;
 
 	if(bytes < 2600*tracks)
 	{
 		return -1;
 	}
-	
+
+	for(c = 0;; ++c)
+	{
+		cbits[c] = countbits(c);
+		if(c == 255)
+		{
+			break;
+		}
+	}
+
 	bytes -= 2600*tracks;
 
 	b = tracks*2520;
 	a = b - tracks/4;
 
-	for(i = 0; i < 4*tracks; i++)
+	for(i = 0; i < 4*tracks; ++i)
 	{
-		wrong += countbits(~data[i]);
-		wrong += countbits(~data[i+b]);
+		if(cbits[(unsigned char)(data[i])] < 6)
+		{
+			++wrong;
+		}
+		if(cbits[(unsigned char)(data[i+b])] < 6)
+		{
+			++wrong;
+		}
 	}
-	for(i = 0; i < tracks/4; i++)
+	for(i = 0; i < tracks/4; ++i)
 	{
-		wrong += countbits(data[i+a]);
+		if(cbits[(unsigned char)(data[i+a])] > 2)
+		{
+			++wrong;
+		}
 	}
 
-	for(offset = 0; offset < bytes; offset++)
+	for(offset = 0; offset < bytes; ++offset)
 	{
-		if(wrong < tol)
+		if(wrong == 0)
 		{
 			return offset;
 		}
-		wrong -= countbits(~data[offset]);
-		wrong += countbits(~data[offset+4*tracks]);
-		wrong -= countbits(~data[offset+b]);
-		wrong += countbits(~data[offset+b+4*tracks]);
-		wrong -= countbits(data[offset+a]);
-		wrong += countbits(data[offset+a+tracks/4]);
+		if(cbits[(unsigned char)(data[offset])] < 6)
+		{
+			--wrong;
+		}
+		if(cbits[(unsigned char)(data[offset+4*tracks])] < 6)
+		{
+			++wrong;
+		}
+		if(cbits[(unsigned char)(data[offset+b])] < 6)
+		{
+			--wrong;
+		}
+		if(cbits[(unsigned char)(data[offset+b+4*tracks])] < 6)
+		{
+			++wrong;
+		}
+		if(cbits[(unsigned char)(data[offset+a])] > 2)
+		{
+			--wrong;
+		}
+		if(cbits[(unsigned char)(data[offset+a+tracks/4])] > 2)
+		{
+			++wrong;
+		}
 	}
 
 	return -1;
@@ -272,13 +308,13 @@ static void extractnibbles(const unsigned char *data, int ntracks, int numnibble
 
 	n = ntracks/8;
 
-	for(i = 0; i < numnibbles; i++)
+	for(i = 0; i < numnibbles; ++i)
 	{
 		nibbles[i] = 0;
-		for(b = 0; b < 4; b++)
+		for(b = 0; b < 4; ++b)
 		{
 			c = 0;
-			for(j = 0; j < n; j++)
+			for(j = 0; j < n; ++j)
 			{
 				c += countbits(data[n*(4*i+3-b)+j]);
 			}
@@ -412,13 +448,13 @@ static int mark5_format_vlba_validate(const struct mark5_stream *ms)
 	v = (struct mark5_format_vlba *)(ms->formatdata);
 	ntrack = v->ntrack;
 	data = (unsigned int *)ms->frame;
-	for(t = 0; t < ntrack; t++)
+	for(t = 0; t < ntrack; ++t)
 	{
 		/* allow 1 of every 32 bits to be incorrect */
-		if(countbits32(data[t]) < 31)
+		if(countbits32(data[t]) < 29)
 		{
 //			fprintf(m5stdout, "<%s %d %d>", ms->streamname, t, data[t]);
-			e++;
+			++e;
 		}
 	}
 
@@ -525,7 +561,7 @@ static int vlba_decode_1bit_1track_fanout1_decimation1(struct mark5_stream *ms,
 	buf = ms->payload;
 	i = ms->readposition;
 
-	for(o = 0; o < nsamp; o++)
+	for(o = 0; o < nsamp; ++o)
 	{
 		zone = i >> ms->log2blankzonesize;
 
@@ -533,13 +569,13 @@ static int vlba_decode_1bit_1track_fanout1_decimation1(struct mark5_stream *ms,
 		   i >= ms->blankzoneendvalid[zone])
 		{
 			fp = zeros;
-			nblank++;
+			++nblank;
 		}
 		else
 		{
 			fp = lut1bit[modulate[i]][buf[i]];
 		}
-		i++;
+		++i;
 
 		data[0][o] = fp[0];
 
@@ -9636,7 +9672,6 @@ static int mark5_format_vlba_init(struct mark5_stream *ms)
 {
 	struct mark5_format_vlba *f;
 	int bytes;
-	int tol=5;
 	int mjd1, sec1, ns1;
 	double dns1, dns;
 	int datarate;
@@ -9678,8 +9713,7 @@ static int mark5_format_vlba_init(struct mark5_stream *ms)
 		/* look through entire data window, up to 1Mibytes */
 		bytes = ms->datawindowsize < (1<<20) ?
 			ms->datawindowsize : (1<<20);
-		ms->frameoffset = findfirstframe(ms->datawindow, bytes, 
-			nRealTrack, tol);
+		ms->frameoffset = findfirstframe(ms->datawindow, bytes, nRealTrack);
 		if(ms->frameoffset < 0)
 		{
 			return -1;
@@ -9705,16 +9739,13 @@ static int mark5_format_vlba_init(struct mark5_stream *ms)
 			{
 				ms->framens += 1000000000;
 			}
-			ms->samprate = ms->framesamples*
-				(1000000000/ms->framens);
+			ms->samprate = ms->framesamples*(1000000000/ms->framens);
 			datarate = ms->samprate*ms->nbit*ms->nchan/1000000;
 			if(datarate != ms->Mbps)
 			{
 				if(ms->Mbps > 0)
 				{
-					fprintf(m5stderr, "Warning: data rate "
-						"disagrees : %d != %d\n",
-						datarate, ms->Mbps);
+					fprintf(m5stderr, "Warning: data rate disagrees : %d != %d\n", datarate, ms->Mbps);
 				}
 				ms->Mbps = datarate;
 			}

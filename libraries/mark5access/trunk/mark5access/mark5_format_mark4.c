@@ -141,49 +141,86 @@ static void initluts()
  *
  * return offset;
  */
-static int findfirstframe(const unsigned char *data, int bytes, int tracks, int tol)
+static int findfirstframe(const unsigned char *data, int bytes, int tracks)
 {
 	int offset;
 	int wrong = 0;
 	int i, a, b;
+	int cbits[256];
+	unsigned char c;
 
 	if(bytes < 2600*tracks)
 	{
 		return -1;
 	}
-	
+
+	for(c = 0;; ++c)
+	{
+		cbits[c] = countbits(c);
+		if(c == 255)
+		{
+			break;
+		}
+	}
+
 	bytes -= 2600*tracks;
 
 	b = tracks*2500;
 	a = b - tracks/8;
 
-	for(i = 0; i < 4*tracks; i++)
+	for(i = 0; i < 4*tracks; ++i)
 	{
-		wrong += countbits(~data[i]);
-		wrong += countbits(~data[i+b]);
+		if(cbits[(unsigned char)(data[i])] < 6)
+		{
+			++wrong;
+		}
+		if(cbits[(unsigned char)(data[i+b])] < 6)
+		{
+			++wrong;
+		}
 	}
-	for(i = 0; i < tracks/8; i++)
+	for(i = 0; i < tracks/8; ++i)
 	{
-		wrong += countbits(data[i+a]);
+		if(cbits[(unsigned char)(data[i+a])] > 2)
+		{
+			++wrong;
+		}
 	}
 
-	for(offset = 0; offset < bytes; offset++)
+	for(offset = 0; offset < bytes; ++offset)
 	{
-		if(wrong < tol)
+		if(wrong == 0)
 		{
 			return offset;
 		}
-		wrong -= countbits(~data[offset]);
-		wrong += countbits(~data[offset+4*tracks]);
-		wrong -= countbits(~data[offset+b]);
-		wrong += countbits(~data[offset+b+4*tracks]);
-		wrong -= countbits(data[offset+a]);
-		wrong += countbits(data[offset+a+tracks/8]);
+		if(cbits[(unsigned char)(data[offset])] < 6)
+		{
+			--wrong;
+		}
+		if(cbits[(unsigned char)(data[offset+4*tracks])] < 6)
+		{
+			++wrong;
+		}
+		if(cbits[(unsigned char)(data[offset+b])] < 6)
+		{
+			--wrong;
+		}
+		if(cbits[(unsigned char)(data[offset+b+4*tracks])] < 6)
+		{
+			++wrong;
+		}
+		if(cbits[(unsigned char)(data[offset+a])] > 2)
+		{
+			--wrong;
+		}
+		if(cbits[(unsigned char)(data[offset+a+tracks/8])] > 2)
+		{
+			++wrong;
+		}
 	}
 
 	return -1;
 }
-
 /* look at encoded nibbles.  Count bits in each track, assume set if
  * more than half are
  */
@@ -6802,8 +6839,7 @@ static int mark5_format_mark4_init(struct mark5_stream *ms)
 		/* look through entire data window, up to 1Mibytes */
 		bytes = ms->datawindowsize < (1<<20) ?
 			ms->datawindowsize : (1<<20);
-		ms->frameoffset = findfirstframe(ms->datawindow, bytes,
-			f->ntrack, tol);
+		ms->frameoffset = findfirstframe(ms->datawindow, bytes, f->ntrack);
 		if(ms->frameoffset < 0)
 		{
 			return -1;
@@ -6829,16 +6865,13 @@ static int mark5_format_mark4_init(struct mark5_stream *ms)
 			{
 				ms->framens += 1000000000;
 			}
-			ms->samprate = ms->framesamples*
-				(1000000000/ms->framens);
+			ms->samprate = ms->framesamples*(1000000000/ms->framens);
 			datarate = ms->samprate*ms->nbit*ms->nchan/1000000;
 			if(datarate != ms->Mbps)
 			{
 				if(ms->Mbps > 0)
 				{
-					fprintf(m5stderr, "Warning: data rate "
-						"disagrees : %d != %d\n",
-						datarate, ms->Mbps);
+					fprintf(m5stderr, "Warning: data rate disagrees : %d != %d\n", datarate, ms->Mbps);
 				}
 				ms->Mbps = datarate;
 			}
