@@ -358,11 +358,14 @@ typedef struct
 typedef struct
 {
 	int nDatastream, nProcess;
+	char mpiWrapper[DIFX_MESSAGE_FILENAME_LENGTH];
+	char mpiOptions[DIFX_MESSAGE_FILENAME_LENGTH];
 	char inputFilename[DIFX_MESSAGE_FILENAME_LENGTH];
 	char headNode[DIFX_MESSAGE_PARAM_LENGTH];
 	char datastreamNode[DIFX_MESSAGE_MAX_DATASTREAMS][DIFX_MESSAGE_PARAM_LENGTH];
 	char processNode[DIFX_MESSAGE_MAX_CORES][DIFX_MESSAGE_PARAM_LENGTH];
 	int nThread[DIFX_MESSAGE_MAX_CORES];
+	int testProcessors;
 	char machinesFilename[DIFX_MESSAGE_FILENAME_LENGTH];
 	char threadsFilename[DIFX_MESSAGE_FILENAME_LENGTH];
 	char address[DIFX_MESSAGE_PARAM_LENGTH];  /* IP address for reporting diagnostics during run */

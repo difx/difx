@@ -722,6 +722,23 @@ static void XMLCALL endElement(void *userData, const char *name)
 					{
 						strncpy(G->body.machinesDefinition.inputFilename, s, DIFX_MESSAGE_FILENAME_LENGTH-1);
 					}
+					else if(strcmp(elem, "mpiWrapper") == 0)
+					{
+						strncpy(G->body.machinesDefinition.mpiWrapper, s, DIFX_MESSAGE_FILENAME_LENGTH-1);
+						G->body.machinesDefinition.mpiWrapper[DIFX_MESSAGE_FILENAME_LENGTH-1] = 0;
+					}
+					else if(strcmp(elem, "mpiOptions") == 0)
+					{
+						strncpy(G->body.machinesDefinition.mpiOptions, s, DIFX_MESSAGE_FILENAME_LENGTH-1);
+						G->body.machinesDefinition.mpiOptions[DIFX_MESSAGE_FILENAME_LENGTH-1] = 0;
+					}
+					else if(strcmp(elem, "testProcessors") == 0 )
+					{
+					    if ( !strncmp( s, "true", 4 ) )
+						    G->body.machinesDefinition.testProcessors = 1;
+						else
+						    G->body.machinesDefinition.testProcessors = 0;						
+					}
 					else if(strcmp(elem, "machinesFile") == 0)
 					{
 						strncpy(G->body.machinesDefinition.machinesFilename, s, DIFX_MESSAGE_FILENAME_LENGTH-1);
@@ -961,7 +978,7 @@ int difxMessageParse(DifxMessageGeneric *G, const char *message)
 	XML_SetUserData(parser, G);
 	XML_Parse(parser, message, strlen(message), 0);
 	XML_ParserFree(parser);
-
+	
 	/* promote condition type ti disk stat type */
 	if(G->type == DIFX_MESSAGE_CONDITION)
 	{
