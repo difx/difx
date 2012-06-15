@@ -191,7 +191,7 @@ component_difxio_trunk = \
 [ \
 	'difxio', \
 	'https://svn.atnf.csiro.au/difx/libraries/difxio/trunk', \
-	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake'] \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'spice'] \
 ]
 
 component_difxmessage_trunk = \
@@ -291,7 +291,7 @@ component_difxio_2_1 = \
 [ \
 	'difxio', \
 	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.1/libraries/difxio', \
-	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake'] \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'spice'] \
 ]
 
 component_difxmessage_2_1 = \
@@ -403,16 +403,16 @@ def list(comps, params, args, verbose, pretend):
 	print ''
 
 def default(comps, params, args, verbose, pretend):
-	execute('rm %s/setup_difx' % environ['HOME'], verbose, pretend)
-	if isfile('%s/setup_difx' % environ['HOME']):
+	execute('rm %s/bin/setup_difx' % environ['DIFX_BASE'], verbose, pretend)
+	if isfile('%s/bin/setup_difx' % environ['DIFX_BASE']):
 		print 'Error: could not unlink existing DiFX version'
 		exit(2)
-	execute('ln -s %s/setup_difx %s/' % (environ['DIFXROOT'], environ['HOME']), verbose, pretend)
-	if not isfile('%s/setup_difx' % environ['HOME']):
+	execute('ln -s %s/setup_difx %s/bin' % (environ['DIFXROOT'], environ['DIFX_BASE']), verbose, pretend)
+	if not isfile('%s/bin/setup_difx' % environ['DIFX_BASE']):
 		print 'Error: could not link new DiFX version.  NO version is default now!'
 		exit(2)
 	print 'New default version of DiFX selected.'
-	print 'Make sure ". ~/setup_difx" is in your .bashrc file!'
+	print 'Make sure ". %s/bin/setup_difx" is in your .bashrc file' % environ['DIFX_BASE']
 
 def splitequals(str):
 	p = find(str, '=')
@@ -458,7 +458,7 @@ def bootstrap(comps, params, args, verbose, pretend):
 		if verbose > 0:
 			print 'Writing setup file %s' % setupFile
 
-		dirs = [config['root'], '%s/directories' % config['difxbase'], '%s/bin/' % environ['HOME']]
+		dirs = [config['root'], '%s/directories' % config['difxbase'], '%s/bin/' % environ['DIFX_BASE']]
 		for d in dirs:
 			if not isdir(d):
 				execute('mkdir -p %s' % d, verbose, pretend)
@@ -481,9 +481,9 @@ def bootstrap(comps, params, args, verbose, pretend):
 			out.close()
 
 
-		out = open('%s/bin/runmpifxcorr.%s' % (environ['HOME'], config['version']), 'w')
+		out = open('%s/bin/runmpifxcorr.%s' % (config['difxbase'], config['version']), 'w')
 		out.write('#!/bin/bash\n\n')
-		out.write('. %s\n' % setupFile)
+		out.write('. %s/bin/%s\n' % setupFile)
 		if config.has_key('wrapper'):
 			out.write('%s ' % config['wrapper'])
 		out.write('mpifxcorr $@\n')
@@ -628,6 +628,18 @@ def build(origComps, params, args, verbose, pretend):
 				configureExtras = ''
 				if 'mpicxx' in buildFlags:
 					configureExtras += ' CXX=${MPICXX}'
+				if 'spice' in buildFlags:
+					spiceRoot = environ['DIFX_BASE'] + '/' + machine() + '/cspice/'
+					if isfile(spiceRoot+'lib/cspice.a'):
+						print 'Spice library found!'
+						configureExtras += ' --with-spice-root=' + spiceRoot
+					else:
+						print 'Spice library %slib/cspice.a not found' % spiceRoot
+						if 'strict' in args:
+							print 'Bailing'
+							exit(2)
+						else:
+							print 'Continuing anyway'	
 				cmd = '%s/configure --prefix=${DIFXROOT}%s' % (srcPath, configureExtras)
 				execute(cmd, verbose, pretend)
 			execute('make -j %d' % numMakeCpus, verbose, pretend)
@@ -661,6 +673,26 @@ def uninstall(origComps, params, args, verbose, pretend):
 
 def remove(origComps, params, args, verbose, pretend):
 	print 'Feature not yet implemented'
+
+def spice(origComps, params, args, verbose, pretend):
+	arch = machine()
+	if arch == 'x86_64':
+		spiceUrl = 'ftp://naif.jpl.nasa.gov/pub/naif/toolkit//C/PC_Linux_GCC_64bit/packages/cspice.tar.Z'
+	elif arch == 'i386':
+		spiceUrl = 'ftp://naif.jpl.nasa.gov/pub/naif/toolkit//C/PC_Linux_GCC_32bit/packages/cspice.tar.Z'
+	difxBase = environ['DIFX_BASE'] + '/'
+	tarDir = difxBase + 'tar/'
+	if not isdir(tarDir):
+		execute('mkdir -p %s' % tarDir, verbose, pretend)
+	if not isfile(tarDir + 'cspice.tar.Z'):
+		chdir(tarDir)
+		execute('wget %s' % spiceUrl, verbose, pretend)
+	else:
+		print 'Spice file already downloaded.'
+	if not isdir(difxBase + arch):
+		execute('mkdir -p %s%s' % (difxBase, arch), verbose, pretend)
+	chdir(difxBase + arch)
+	execute('tar zxvf %s/cspice.tar.Z' % tarDir, verbose, pretend)
 
 def openmpi(origComps, params, args, verbose, pretend):
 	openmpiWeb = 'http://www.open-mpi.org/software/ompi/v%s/downloads' % openmpiVersion
@@ -721,7 +753,7 @@ command_default = \
 [ \
 	'default', \
 	'Set the default version of DiFX to that identified in the current environment', \
-	['DIFXROOT', 'HOME'], \
+	['DIFXROOT', 'DIFX_BASE'], \
 	[], \
 	default \
 ]
@@ -789,6 +821,15 @@ command_remove = \
 	remove \
 ]
 
+command_spice = \
+[ \
+	'spice', \
+	'Download (if needed) and install spice', \
+	['DIFX_BASE'], \
+	[], \
+	spice \
+]
+
 command_openmpi = \
 [ \
 	'openmpi', \
@@ -806,11 +847,12 @@ commands = \
 	command_svn, \
 #	command_tar, \
 	command_autotool, \
+	command_openmpi, \
+	command_spice, \
 	command_build, \
 	command_rebuild, \
 	command_uninstall, \
 #	command_remove, \
-	command_openmpi, \
 ]
 
 
@@ -863,6 +905,14 @@ def usage(prog):
 			extras = extras + ' <' + c + '>'
 		print '%s%s' % (command[0], extras)
 		print '  %s\n' % command[1]
+	
+	print '\nCurrently the following key variables are set:'
+	vars = ['DIFXROOT', 'DIFX_BASE', 'DIFX_ARCH_ROOT']
+	for v in vars:
+		if environ.has_key(v):
+			print '%s = %s' % (v, environ[v])
+		else:
+			print '%s is unset' % v
 
 def main():
 	try:
