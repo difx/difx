@@ -26,22 +26,26 @@ make
 %makeinstall
 
 %files
-/usr/bin/checkdir
-/usr/bin/fileto5c
-/usr/bin/mk5daemon
-/usr/bin/mk5cat
-/usr/bin/mk5control
-/usr/bin/mk5cp
-/usr/bin/mk5dir
-/usr/bin/mk5erase
-/usr/bin/mk5lock
-/usr/bin/mk5map
-/usr/bin/record5c
-/usr/bin/recover
-/usr/bin/sukill
-/usr/bin/testmod
-/usr/bin/vsn
+%defattr(-,root,root)
+%{_bindir}/checkdir
+%{_bindir}/fileto5c
+%{_bindir}/mk5daemon
+%{_bindir}/mk5cat
+%{_bindir}/mk5control
+%{_bindir}/mk5cp
+%{_bindir}/mk5dir
+%{_bindir}/mk5erase
+%{_bindir}/mk5lock
+%{_bindir}/mk5map
+%{_bindir}/record5c
+%{_bindir}/recover
+%{_bindir}/sukill
+%{_bindir}/testmod
+%{_bindir}/vsn
 
 %changelog
+* Fri Jun 15 2011 Walter Brisken <wbrisken@nrao.edu>
+- Non-root-building capability
+
 * Fri Mar 11 2011 Walter Brisken <wbrisken@nrao.edu>
 - First rpm version

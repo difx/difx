@@ -1125,7 +1125,7 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref,
 	int oldFast;
 	int nscans;
 
-	streamstordatatype *bufferStart, *bufferStop;
+	streamstordatatype *bufferStart, *bufferStop, *bufferPrefil;
 
 	if(replacedFrac)
 	{
@@ -1133,7 +1133,7 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref,
 	}
 
 	/* allocate a bit more than the minimum needed */
-	bufferLength = 20160*8*10;
+	bufferLength = 20160*8*4;
 
 	newBank = Mark5BankGet(xlrDevice);
 	if(newBank < 0)
@@ -1251,8 +1251,9 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref,
 	/* If we got this far, we're going to attempt to do the directory read */
 
 	bufferStart = (streamstordatatype *)malloc(bufferLength);
-	bufferStop  = (streamstordatatype *)malloc(bufferLength);
-	
+	bufferStop  = (streamstordatatype *)malloc(bufferLength*2);
+	bufferPrefil = (streamstordatatype *)((char *)bufferStop + bufferLength);
+
 	oldFast = fast;		/* don't forget if we want to do this in fast mode or not */
 	clear();
 	fast = oldFast;
@@ -1295,6 +1296,7 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref,
 	else
 	{
 		long long wGoodSum=0, wBadSum=0;
+		int lastread = -10;
 		
 		/* Work around possible streamstor bug */
 		WATCHDOG( xlrRC = XLRReadData(xlrDevice, bufferStart, 0, 0, bufferLength) );
@@ -1358,12 +1360,27 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref,
 				continue;
 			}
 
-			a = scan.start>>32;
-			b = scan.start % (1LL<<32);
-			WATCHDOG( xlrRC = XLRReadData(xlrDevice, bufferStart, a, b, bufferLength) );
+			if(lastread == i-1)
+			{
+				memcpy(bufferStart, bufferPrefil, bufferLength);
+			}
+			else
+			{
+				a = scan.start>>32;
+				b = scan.start % (1LL<<32);
+				WATCHDOG( xlrRC = XLRReadData(xlrDevice, bufferStart, a, b, bufferLength) );
+			}
 			a = (scan.start+scan.length-bufferLength)>>32;
 			b = (scan.start+scan.length-bufferLength) % (1LL<<32);
-			WATCHDOG( xlrRC = XLRReadData(xlrDevice, bufferStop, a, b, bufferLength) );
+			if(i < nScans() - 1)
+			{
+				WATCHDOG( xlrRC = XLRReadData(xlrDevice, bufferStop, a, b, 2*bufferLength) );
+				lastread = i;
+			}
+			else
+			{
+				WATCHDOG( xlrRC = XLRReadData(xlrDevice, bufferStop, a, b, bufferLength) );
+			}
 
 			if(xlrRC == XLR_FAIL)
 			{

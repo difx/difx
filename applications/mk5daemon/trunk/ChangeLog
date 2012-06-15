@@ -1,6 +1,8 @@
 Version 2.2.0
 ~~~~~~~~~~~~~
 * Post DiFX-2.1
+* Speed up directory reading
+* Better .rpm infrastructure
 
 Version 2.1.0
 ~~~~~~~~~~~~~
