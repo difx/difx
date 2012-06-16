@@ -7,6 +7,7 @@ from re import search
 import getopt
 from string import split, strip, find
 from platform import machine
+from time import asctime
 
 openmpiVersion = "1.6"
 numMakeCpus = 4
@@ -111,10 +112,9 @@ def execute(cmd, verbose, pretend):
 	global nExecute
 	nExecute += 1
 	if pretend:
-		print '%s# %s' % (getcwd(), cmd)
+		print '[%d] In: %s  Pretending: %s' % (nExecute, getcwd(), cmd)
 	else:
-		if verbose:
-			print '[%d] In: %s   Executing: %s' % (nExecute, getcwd(), cmd)
+		print '[%d] In: %s   Executing: %s' % (nExecute, getcwd(), cmd)
 		system(cmd)
 
 def checkDirs(comps, dir, args):
@@ -478,7 +478,7 @@ def bootstrap(comps, params, args, verbose, pretend):
 		if verbose > 0:
 			print 'Writing setup file %s' % setupFile
 
-		dirs = [config['root'], '%s/directories' % config['difxbase'], '%s/bin/' % config['difxbase']]
+		dirs = [config['root'], '%s/directories' % config['difxbase'], '%s/bootstrap' % config['difxbase'], '%s/bin/' % config['difxbase']]
 		for d in dirs:
 			if not isdir(d):
 				execute('mkdir -p %s' % d, verbose, pretend)
@@ -606,6 +606,10 @@ def bootstrap(comps, params, args, verbose, pretend):
 
 		out.write("$@  # this must be the last statement in the file\n")
 		out.close()
+
+		execute('chmod +x %s' % setupFile, verbose, pretend)
+
+		execute('cp %s %s/bootstrap/"%s.%s"' % (params['ConfigFile'], config['difxbase'], split(params['ConfigFile'], '/')[-1], asctime()), verbose, pretend)
 
 		print '\nBootstrap complete.  Now source %s and continue with svn.\n' % setupFile
 
@@ -975,6 +979,8 @@ def run_command(commandName, args, verbose, pretend):
 			else:
 				comps = components[environ['DIFX_VERSION']]
 			command[4](comps, params, args[nParam:], verbose, pretend)
+			if pretend:
+				print '\n*** PRETEND MODE WAS USED ***\n'
 		else:
 			print 'Not going to run.'
 			
