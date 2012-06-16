@@ -161,7 +161,7 @@ def componentList(comps):
 		i += 0
 	return str
 
-def filterComponents(origComps, args):
+def filterComponentsOrig(origComps, args):
 	if 'cwd' in args:
 		local = split(getcwd(), '/')[-2:]
 	else:
@@ -177,6 +177,25 @@ def filterComponents(origComps, args):
 		else:
 			comps = origComps
 	return comps
+
+def filterComponents(origComps, args):
+	if 'all' in args:
+		comps = origComps
+	else:
+		comps = []
+		local = split(getcwd(), '/')[-2:]
+		for c in origComps:
+			if c[0] in args:
+				comps.append(c)
+			elif c[0] in local and 'cwd' in args:
+				comps.append(c)
+		if len(comps) == 0:
+			for c in origComps:
+				if c[0] in local:
+					comps.append(c)
+	return comps				
+				
+
 
 components = {}	# indexed by ${DIFX_VERSION}
 
@@ -453,17 +472,19 @@ def bootstrap(comps, params, args, verbose, pretend):
 		for e in env.keys():
 			print '  %s = %s' % (e, env[e])
 
-	try:
+#	try:
+	if 1:
 		setupFile = config['root'] + '/setup_difx'
 		if verbose > 0:
 			print 'Writing setup file %s' % setupFile
 
-		dirs = [config['root'], '%s/directories' % config['difxbase'], '%s/bin/' % environ['DIFX_BASE']]
+		dirs = [config['root'], '%s/directories' % config['difxbase'], '%s/bin/' % config['difxbase']]
 		for d in dirs:
 			if not isdir(d):
 				execute('mkdir -p %s' % d, verbose, pretend)
 
-		platforms = {}
+		platforms = {}	# indexed by arch
+		platformhostsStr = ''
 		platforms[machine()] = []
 		for i in range(1, 10):
 			if not config.has_key('altplatform%d' % i):
@@ -472,6 +493,10 @@ def bootstrap(comps, params, args, verbose, pretend):
 			if not aarch in platforms:
 				platforms[aarch] = []
 			platforms[aarch].append([config['altplatform%d' % i], config['altplatform%dtest' % i]])
+			if config.has_key('altplatform%dhost' % i):
+				if i > 1:
+					platformhostsStr += ','
+				platformhostsStr += config['altplatform%dhost' % i]
 
 		if config.has_key('mca'):
 			print 'Making .openmpi/mca-params.conf'
@@ -480,10 +505,23 @@ def bootstrap(comps, params, args, verbose, pretend):
 			out.write('%s\n' % config['mca'])
 			out.close()
 
+		ipproot = {}	# indexed by arch
+		for a in platforms.keys():
+			if config.has_key('ipproot'+a):
+				ipproot[a] = config['ipproot'+a]
+			elif config.has_key('ipproot'):
+				ipproot[a] = config['ipproot']
+			else:
+				print 'Error: no ipproot set for architecture %s' % a
+				ipproot = {}
+				break
+		if len(ipproot) == 0:
+			return
+
 
 		out = open('%s/bin/runmpifxcorr.%s' % (config['difxbase'], config['version']), 'w')
 		out.write('#!/bin/bash\n\n')
-		out.write('. %s/bin/%s\n' % setupFile)
+		out.write('. %s\n' % setupFile)
 		if config.has_key('wrapper'):
 			out.write('%s ' % config['wrapper'])
 		out.write('mpifxcorr $@\n')
@@ -499,6 +537,7 @@ def bootstrap(comps, params, args, verbose, pretend):
 		out.write('export DIFX_ARCH_ROOT=%s/${HWPLATFORM}\n' % config['difxbase'])
 		for arch in platforms.keys():
 			out.write('if [[ ${HWPLATFORM} = "%s" ]]; then\n' % arch)
+			out.write('export IPPROOT=%s\n' % ipproot[arch])
 			if arch in ['x86_64']:
 				out.write('  export DIFXBITS=64\n')
 				out.write('  export IPPARCH=intel64\n')
@@ -527,7 +566,6 @@ def bootstrap(comps, params, args, verbose, pretend):
 					
 			out.write('fi\n')
 		out.write('export DIFX_SRC=%s/src\n' % config['root'])
-		out.write('export IPPROOT=%s\n' % config['ipproot'])
 		out.write('export X11LIBS=-lX11\n')
 		out.write('export CALC_SERVER=%s\n' % config['calcserver'])
 		out.write('export DIFX_HEAD_NODE=%s\n' % config['headnode'])
@@ -544,27 +582,42 @@ def bootstrap(comps, params, args, verbose, pretend):
 			out.write('export DIFX_MESSAGE_GROUP=224.2.2.1\n')
 		if not env.has_key('DIFX_MESSAGE_PORT'):
 			out.write('export DIFX_MESSAGE_PORT=50200\n')
+		if len(platformhostsStr) > 0:
+			out.write('export PLATFORM_HOSTS=%s\n' % platformhostsStr)
 
 		out.write('\n')
-		out.write('export PATH=${DIFX_ARCH_ROOT}/bin:${DIFXROOT}/bin:~/bin:/bin:/usr/bin\n')
-		out.write('export LD_LIBRARY_PATH=${DIFX_ARCH_ROOT}/lib:/lib:/usr/lib:${DIFXROOT}/lib:${IPPROOT}/${IPPARCH}/ipp/lib/${IPPARCH}:${IPPROOT}/${IPPARCH}/lib/${IPPARCH}\n')
+		if config.has_key('pathextra'):
+			pathExtra = ':%s' % config['pathextra']
+		else:
+			pathExtra = ''
+		out.write('export PATH=${DIFX_ARCH_ROOT}/bin:${DIFXROOT}/bin:~/bin:/bin:/usr/bin%s\n' % pathExtra)
+		if config.has_key('ldextra'):
+			ldExtra = ':%s' % config['ldextra']
+		else:
+			ldExtra = ''
+		out.write('export LD_LIBRARY_PATH=${DIFX_ARCH_ROOT}/lib:/lib:/usr/lib:${DIFXROOT}/lib:${IPPROOT}/lib/${IPPARCH}:${IPPROOT}/ipp/lib/${IPPARCH}%s\n' % ldExtra)
 
 		for e in env.keys():
 			out.write('export %s=%s\n' % (e, env[e]))
 
 		out.write("alias src='cd ${DIFX_SRC}'\n")
 		out.write("alias bld='cd ${DIFX_PREFIX}/build'\n")
+		out.write('export PS1="\\u@\\h $DIFX_VERSION$DIFX_PROMPT_EXTRA \\W> "\n')
 
+		out.write("$@  # this must be the last statement in the file\n")
 		out.close()
 
 		print '\nBootstrap complete.  Now source %s and continue with svn.\n' % setupFile
 
-	except KeyError:
-		print 'Parse error'
+##	except KeyError as e:
+##		print 'Parse error: ', e.errno, e.strerror
 
 
 def svnupdate(origComps, params, args, verbose, pretend):
 	comps = filterComponents(origComps, args)
+	if len(comps) == 0:
+		print 'No components selected.  Did you mean to append "all" to the command line?'
+		return
 	srcDir = environ['DIFX_SRC'] + '/'
 	if not isdir(srcDir):
 		execute('mkdir -p %s' % srcDir, verbose, pretend);
@@ -581,6 +634,9 @@ def svnupdate(origComps, params, args, verbose, pretend):
 
 def autotool(origComps, params, args, verbose, pretend):
 	comps = filterComponents(origComps, args)
+	if len(comps) == 0:
+		print 'No components selected.  Did you mean to append "all" to the command line?'
+		return
 	srcDir = environ['DIFX_SRC'] + '/'
 	okComps = checkDirs(comps, srcDir, args)
 	if verbose > 1:
@@ -602,6 +658,9 @@ def autotool(origComps, params, args, verbose, pretend):
 
 def build(origComps, params, args, verbose, pretend):
 	comps = filterComponents(origComps, args)
+	if len(comps) == 0:
+		print 'No components selected.  Did you mean to append "all" to the command line?'
+		return
 	buildDir = environ['DIFXROOT'] + '/build/'
 	pkgDir = environ['DIFXROOT'] + '/lib/pkgconfig/'
 	srcDir = environ['DIFX_SRC'] + '/'
@@ -612,7 +671,7 @@ def build(origComps, params, args, verbose, pretend):
 		if not isdir(pkgDir):
 			execute('mkdir -p %s' % pkgDir, verbose, pretend)
 		chdir(pkgDir)
-		genipppc('%s/%s' % (environ['IPPROOT'], environ['IPPARCH']))
+		genipppc('%s' % (environ['IPPROOT']))
 		if verbose > 1:
 			print 'Building: %s' % componentList(okComps)
 		if not isdir(buildDir):
@@ -647,6 +706,9 @@ def build(origComps, params, args, verbose, pretend):
 			
 def rebuild(origComps, params, args, verbose, pretend):
 	comps = filterComponents(origComps, args)
+	if len(comps) == 0:
+		print 'No components selected.  Did you mean to append "all" to the command line?'
+		return
 	buildDir = environ['DIFXROOT'] + '/build/'
 	okComps = checkFiles(comps, buildDir, 'Makefile', args)
 	if verbose > 1:
@@ -657,6 +719,20 @@ def rebuild(origComps, params, args, verbose, pretend):
 			chdir(buildPath)
 			execute('make -j %d' % numMakeCpus, verbose, pretend)
 			execute('make install', verbose, pretend)
+
+def pbuild(origComps, params, args, verbose, pretend):
+	comps = filterComponents(origComps, args)
+	if len(comps) == 0:
+		print 'No components selected for build'
+		return
+	verb = ''
+	for i in range(1, verbose):
+		verb += ' -v'
+	compStr = ''
+	for c in comps:
+		compStr += (' %s' % c[0])
+	cmd = 'mpirun -host localhost,%s %s/setup_difx %s %s rebuild %s' % (environ['PLATFORM_HOSTS'], environ['DIFXROOT'], argv[0], verb, compStr)
+	execute(cmd, verbose, pretend)
 			
 def uninstall(origComps, params, args, verbose, pretend):
 	comps = filterComponents(origComps, args)
@@ -676,9 +752,9 @@ def remove(origComps, params, args, verbose, pretend):
 
 def spice(origComps, params, args, verbose, pretend):
 	arch = machine()
-	if arch == 'x86_64':
+	if arch in ['x86_64']:
 		spiceUrl = 'ftp://naif.jpl.nasa.gov/pub/naif/toolkit//C/PC_Linux_GCC_64bit/packages/cspice.tar.Z'
-	elif arch == 'i386':
+	elif arch in ['i386', 'i686']:
 		spiceUrl = 'ftp://naif.jpl.nasa.gov/pub/naif/toolkit//C/PC_Linux_GCC_32bit/packages/cspice.tar.Z'
 	difxBase = environ['DIFX_BASE'] + '/'
 	tarDir = difxBase + 'tar/'
@@ -789,7 +865,7 @@ command_build = \
 [ \
 	'build', \
 	'Run configure for each component then build/install', \
-	['DIFX_SRC', 'DIFXROOT', 'MPICXX', 'PKG_CONFIG_PATH', 'DIFXBITS', 'IPPROOT', 'IPPARCH'], \
+	['DIFX_SRC', 'DIFXROOT', 'MPICXX', 'PKG_CONFIG_PATH', 'DIFXBITS', 'IPPROOT'], \
 	[], \
 	build \
 ]
@@ -801,6 +877,15 @@ command_rebuild = \
 	['DIFX_SRC', 'DIFXROOT'], \
 	[], \
 	rebuild \
+]
+
+command_pbuild = \
+[ \
+	'pbuild', \
+	'Parallel build/install each component on each platform', \
+	['DIFX_SRC', 'DIFXROOT', 'PLATFORM_HOSTS'], \
+	[], \
+	pbuild \
 ]
 
 command_uninstall = \
@@ -851,6 +936,7 @@ commands = \
 	command_spice, \
 	command_build, \
 	command_rebuild, \
+	command_pbuild, \
 	command_uninstall, \
 #	command_remove, \
 ]
