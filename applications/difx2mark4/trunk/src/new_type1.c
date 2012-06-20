@@ -42,6 +42,8 @@ int new_type1 (DifxInput *D,                    // ptr to a filled-out difx inpu
         gindex,
         indA,
         indB,
+        indA_orig,
+        indB_orig,
         overrideA,
         done[4];
 
@@ -169,6 +171,8 @@ int new_type1 (DifxInput *D,                    // ptr to a filled-out difx inpu
                                     // or possibly of a zoomed-in band
             indA = D->baseline[blind].bandA[i][pol];
             indB = D->baseline[blind].bandB[i][pol];
+            indA_orig = indA;
+            indB_orig = indB;
                                     // override A or B for autocorrelation
             if (a1 == a2)
                 {
@@ -190,7 +194,7 @@ int new_type1 (DifxInput *D,                    // ptr to a filled-out difx inpu
                 {
                 j = pdsA->recBandFreqId[indA];
                 findex = pdsA->recFreqId[j];
-                refpol = pdsA->recBandPolName[indA];
+                refpol = pdsA->recBandPolName[indA_orig];
                 }
             else                    // zoom mode
                 {
@@ -211,7 +215,7 @@ int new_type1 (DifxInput *D,                    // ptr to a filled-out difx inpu
                 {
                 j = pdsB->recBandFreqId[indB];
                 gindex = pdsB->recFreqId[j];
-                rempol = pdsB->recBandPolName[indB];
+                rempol = pdsB->recBandPolName[indB_orig];
                 }
             else                    // zoom mode
                 {

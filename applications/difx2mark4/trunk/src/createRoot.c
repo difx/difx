@@ -30,7 +30,9 @@ int createRoot (DifxInput *D,       // difx input structure pointer
         scan_found = FALSE,
         tarco = FALSE,              // true iff target_correlator = has been done
         sourceId,
-        configId;
+        configId,
+        delete_mode = FALSE,
+        delete_freq = FALSE;
 
 
     char s[256],
@@ -38,6 +40,7 @@ int createRoot (DifxInput *D,       // difx input structure pointer
          source[DIFXIO_NAME_LENGTH], // for filename only, otherwise get from D
          current_def[32],
          current_scan[DIFXIO_NAME_LENGTH],
+         current_freq[80],
          buff[256],
          hms[18],
          dms[18],
@@ -106,6 +109,7 @@ int createRoot (DifxInput *D,       // difx input structure pointer
                                     // initialize memory as necessary
     current_def[0] = 0;
     current_scan[0] = 0;
+    current_freq[0] = 0;
 
                                     // create scan identifier
 
@@ -146,7 +150,8 @@ int createRoot (DifxInput *D,       // difx input structure pointer
     if (fin == NULL)
         {
         perror ("difx2mark4");
-        fprintf (stderr, "fatal error opening input vex file %s for job %d\n", D->job[jobId].vexFile, jobId);
+        fprintf (stderr, "fatal error opening input vex file %s for job %d\n", 
+                 D->job[jobId].vexFile, jobId);
         return (-1);
         }
 
@@ -299,6 +304,18 @@ int createRoot (DifxInput *D,       // difx input structure pointer
                 break;
 
             case FREQ:          
+                if (strncmp (pst[0], "def", 3) == 0
+                 && strncmp (pst[1], current_freq, 80) != 0)
+                                    // enter deletion mode if this freq seq not active
+                    delete_freq = TRUE;
+                                    // delete all lines for unused freq def's
+                if (delete_freq)
+                    {
+                    line[0] = 0;
+                    if (strncmp (pst[0], "enddef", 6) == 0)
+                        delete_freq = FALSE;
+                    break;
+                    }
                                     // start renumbering ch's for each freq seq
                 if (strncmp (pst[0], "def", 3) == 0)
                     numchan = 0;
@@ -346,10 +363,26 @@ int createRoot (DifxInput *D,       // difx input structure pointer
                     line[0] = '*';  // comment out ref to real EOP section
                 break;
 
-            case MODE:
-                if (strncmp (pst[0], "ref", 3) == 0 
+            case MODE:              // delete all modes other than current one
+                if (strncmp (pst[0], "def", 3) == 0 
+                 && strncmp (pst[1], D->scan[scanId].obsModeName, 30) != 0)
+                    delete_mode = TRUE;
+                if (delete_mode)
+                    {
+                    line[0] = 0;
+                                    // exit delete mode at enddef
+                    if (strncmp (pst[0], "enddef", 6) == 0)
+                        delete_mode = FALSE;
+                    }
+                else                // mode is currently active
+                    {
+                    if (strncmp (pst[0], "ref", 3) == 0 
+                     && strncmp (pst[1], "$FREQ", 5) == 0)
+                        strncpy (current_freq, pst[3], 80);
+                    if (strncmp (pst[0], "ref", 3) == 0 
                       && strncmp (pst[1], "$PASS_ORDER", 11) == 0)
-                    line[0] = '*';  // comment out to avoid pass# problems
+                        line[0] = '*';  // comment out to avoid pass# problems
+                    }
                 break;
                 
             case NO_BLOCK:          // insert ovex revision number
@@ -373,7 +406,8 @@ int createRoot (DifxInput *D,       // difx input structure pointer
                     //FIXME calculate this properly taking into account different scan lengths
                     //      for different antennas. See also stcodes/compute_reftime.c
                     scan_found = TRUE;
-                    conv2date (D->scan[scanId].mjdStart + D->scan[scanId].durSeconds / 172800.0, &caltime);
+                    conv2date (D->scan[scanId].mjdStart + D->scan[scanId].durSeconds / 172800.0, 
+                               &caltime);
                     sprintf (buff, 
                              "    fourfit_reftime = %04hdy%03hdd%02hdh%02hdm%02ds;\n",
                              caltime.year, caltime.day, 
@@ -552,8 +586,9 @@ int createRoot (DifxInput *D,       // difx input structure pointer
 
         if(scan_found == FALSE)
             {
-            fprintf(stderr, "Error: scan with Id %d and identifier \"%s\" cannot be found in vex file\n",
-                    scanId, D->scan[scanId].identifier);
+            fprintf (stderr, "Error: scan with Id %d and identifier \"%s\" cannot "
+                     "be found in vex file\n",
+                     scanId, D->scan[scanId].identifier);
             fclose (fin);
             fclose (fout);
             return(-1);
