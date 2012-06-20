@@ -206,17 +206,20 @@ int closeMultiCastSocket(int sock)
 
 int MultiCastReceive(int sock, char *message, int maxlen, char *from)
 {
-	struct sockaddr_in addr;
+	struct sockaddr_storage addr;
 	int nbytes;
 	socklen_t addrlen;
 
-	addrlen = sizeof(struct sockaddr_in);
+	addrlen = sizeof(addr);
 
 	nbytes = recvfrom(sock, message, maxlen, 0, (struct sockaddr *) &addr, &addrlen);
 
 	if(nbytes > 0 && addrlen > 0 && from != 0)
 	{
-		strncpy(from, inet_ntoa(addr.sin_addr), DIFX_MESSAGE_MAX_INET_ADDRESS_LENGTH);
+		inet_ntop(addr.ss_family, addr.ss_family == AF_INET ? 
+						&(((struct sockaddr_in *)(&addr))->sin_addr) : 
+						&(((struct sockaddr_in6 *)(&addr))->sin6_addr), 
+			from, DIFX_MESSAGE_MAX_INET_ADDRESS_LENGTH);
 	}
 
 	return nbytes;
