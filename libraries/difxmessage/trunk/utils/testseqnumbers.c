@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2011 by Walter Brisken                             *
+ *   Copyright (C) 2009-2012 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -54,7 +54,7 @@ void checkseq(const char *name, const char *identifier, int seq, struct sender *
 		return;
 	}
 
-	for(i = 0; i < MAX_SENDER; i++)
+	for(i = 0; i < MAX_SENDER; ++i)
 	{
 		if(senders[i].lastseq < 0)
 		{
@@ -68,9 +68,7 @@ void checkseq(const char *name, const char *identifier, int seq, struct sender *
 				time(&t);
 				strcpy(timestr, ctime(&t));
 				timestr[strlen(timestr)-1] = 0;
-				printf("[%s]  %s.%s  %d -> %d\n", 
-					timestr, name, identifier,
-					senders[i].lastseq, seq);
+				printf("[%s]  %s.%s  %d -> %d\n", timestr, name, identifier, senders[i].lastseq, seq);
 				fflush(stdout);
 			}
 			senders[i].lastseq = seq;
@@ -95,7 +93,7 @@ int main(int argc, char **argv)
 	int sock;
 	int l;
 	char message[DIFX_MESSAGE_LENGTH];
-	char from[DIFX_MESSAGE_PARAM_LENGTH];
+	char from[DIFX_MESSAGE_MAX_INET_ADDRESS_LENGTH];
 	DifxMessageGeneric G;
 	struct sender senders[MAX_SENDER];
 

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2011 by Walter Brisken                             *
+ *   Copyright (C) 2009-2012 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -102,7 +102,8 @@ int main(int argc, char **argv)
 	int pidWatch = -1;
 	int sock;
 	int i, l;
-	char message[DIFX_MESSAGE_LENGTH], from[DIFX_MESSAGE_PARAM_LENGTH];
+	char message[DIFX_MESSAGE_LENGTH];
+	char from[DIFX_MESSAGE_MAX_INET_ADDRESS_LENGTH];
 	DifxMessageGeneric G;
 	FILE *out;
 	time_t t, lastt;
@@ -200,7 +201,7 @@ int main(int argc, char **argv)
 				if(S->maxDS >= 0)
 				{
 					fprintf(out, "%s  WEIGHTS", tag);
-					for(i = 0; i <= S->maxDS; i++)
+					for(i = 0; i <= S->maxDS; ++i)
 					{
 						fprintf(out, " %4.2f", S->weight[i]);
 					}

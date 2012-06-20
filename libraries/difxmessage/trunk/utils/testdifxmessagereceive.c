@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2011 by Walter Brisken                             *
+ *   Copyright (C) 2008-2012 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -71,7 +71,7 @@ int main(int argc, char **argv)
 	int i, l, v;
 	int verbose = 1;
 	int binary = 0;
-	char from[DIFX_MESSAGE_PARAM_LENGTH];
+	char from[DIFX_MESSAGE_MAX_INET_ADDRESS_LENGTH];
 	time_t t, lastt = 0;
 	int np=0;
 	char timestr[TimeLength];
