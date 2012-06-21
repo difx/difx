@@ -147,6 +147,8 @@ static void usage(const char *pgm)
 		"path from default\n");
 	fprintf(stderr, "  DIFX_USER_ID : change user account for executing remote commands from default [%s]\n", difxUser);
 	fprintf(stderr, "\n");
+	fprintf(stderr, "IPv6 compliance: VSIS TCP port: likely\n");
+	fprintf(stderr, "                 DiFX multicast: yes, vis difxmessage\n");
 }
 
 

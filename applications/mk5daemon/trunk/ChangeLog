@@ -3,6 +3,7 @@ Version 2.2.0
 * Post DiFX-2.1
 * Speed up directory reading
 * Better .rpm infrastructure
+* IPv6 support added to VSI interface; the whole package at this point is likely IPv6 compliant.
 
 Version 2.1.0
 ~~~~~~~~~~~~~

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2011 by Walter Brisken                                  *
+ *   Copyright (C) 2012 by Walter Brisken                                  *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the Lesser GNU General Public License as published by  *
@@ -37,6 +37,9 @@
 #include <sys/time.h>
 #include <fcntl.h>
 #include <arpa/inet.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
 #include "vsis_commands.h"
 #include "config.h"
 #include "mk5daemon.h"
@@ -348,15 +351,35 @@ int handleVSIS(Mk5Daemon *D, int sock)
 int Mk5Daemon_startVSIS(Mk5Daemon *D)
 {
 	const int reuse_addr = 1;
-	struct sockaddr_in server_address;
+	struct addrinfo hints, *res;
+	char portstr[6];
+	int v;
 
 	Mk5Daemon_stopVSIS(D);
 
-	D->acceptSock = socket(AF_INET, SOCK_STREAM, 0);
+	snprintf(portstr, 6, "%d", VSIS_PORT);
+
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_family = AF_UNSPEC;  // use IPv4 or IPv6, whichever
+	hints.ai_socktype = SOCK_STREAM;
+	hints.ai_flags = AI_PASSIVE;     // fill in my IP for me
+
+	v = getaddrinfo(0, portstr, &hints, &res);
+	if(v != 0)
+	{
+		Logger_logData(D->log, "getaddringo(0, VSIS_PORT) failed:");
+		Logger_logData(D->log, gai_strerror(v));
+		Logger_logData(D->log, "\n");
+
+		return -1;
+	}
+
+	D->acceptSock = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
 
 	if(D->acceptSock < 0)
 	{
 		Logger_logData(D->log, "Cannot create accept socket for VSI-S\n");
+		freeaddrinfo(res);
 
 		return -1;
 	}
@@ -366,15 +389,14 @@ int Mk5Daemon_startVSIS(Mk5Daemon *D)
 	if(setNonBlocking(D->acceptSock) < 0)
 	{
 		Logger_logData(D->log, "Cannot non-block accept socket for VSI-S\n");
+		freeaddrinfo(res);
 
 		return -1;
 	}
 
-	memset((char *)(&server_address), 0, sizeof(server_address));
-	server_address.sin_family = AF_INET;
-	server_address.sin_addr.s_addr = htonl(INADDR_ANY);
-	server_address.sin_port = htons(VSIS_PORT);
-	if(bind(D->acceptSock, (struct sockaddr *)(&server_address), sizeof(server_address)) < 0 )
+	v = bind(D->acceptSock, res->ai_addr, res->ai_addrlen);
+	freeaddrinfo(res);
+	if(v < 0)
 	{
 		Logger_logData(D->log, "Cannot bind accept socket for VSI-S\n");
 
