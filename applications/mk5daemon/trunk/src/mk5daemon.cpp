@@ -652,7 +652,7 @@ void handleDifxMessage(Mk5Daemon *D)
 	char message[DIFX_MESSAGE_LENGTH];
 	int n;
 	DifxMessageGeneric G;
-	char from[20];
+	char from[DIFX_MESSAGE_MAX_INET_ADDRESS_LENGTH];
 
 	n = difxMessageReceive(D->difxSock, message, DIFX_MESSAGE_LENGTH-1, from);
 	

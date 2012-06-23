@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2011 by Walter Brisken                                  *
+ *   Copyright (C) 2012 by Walter Brisken                                  *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -158,8 +158,6 @@ int Datum::populate(SSHANDLE *xlrDev, int64_t pos)
 	}
 	else
 	{
-		unsigned char *ptr;
-
 		if(mf->format == 0 || mf->format == 2)  /* VLBA or Mark5B format */
 		{
 			n = (mjdref - mf->mjd + 500) / 1000;
@@ -184,13 +182,20 @@ int Datum::populate(SSHANDLE *xlrDev, int64_t pos)
 		frame = int(mf->ns/mf->framens + 0.5);
 		framebytes = mf->framebytes;
 		frameoffset = mf->frameoffset;
+
+		printf("tracks=%d framespersecond=%d framebytes=%d framenum=%d frameoffset=%d framens=%f\n", tracks, framespersecond, framebytes, frame, frameoffset, mf->framens);
 		
 		delete_mark5_format(mf);
 
 		byte = pos + mf->frameoffset;
 
-		ptr = (unsigned char *)buffer + mf->frameoffset;
-		frame = ptr[4] + 256*ptr[5];
+		if(mf->format == 2)
+		{
+			unsigned char *ptr;
+
+			ptr = (unsigned char *)buffer + mf->frameoffset;
+			frame = ptr[4] + 256*ptr[5];
+		}
 	}
 
 
@@ -205,6 +210,7 @@ int Datum::populate(SSHANDLE *xlrDev, int64_t pos)
 void Datum::print() const
 {
 	printf("%14Ld  %5d %5d %5d/%5d  %d %d %d  %d\n", byte, mjd, sec, frame, framespersecond, framebytes, format, tracks, frameoffset);
+	fflush(stdout);
 }
 
 double bytespersecond(const Datum &d1, const Datum &d2)

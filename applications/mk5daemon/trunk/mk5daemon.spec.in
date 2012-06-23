@@ -24,6 +24,9 @@ make
 
 %install
 %makeinstall
+chmod a+x /sbin/poweroff
+chmod a+x /sbin/reboot
+chmod a+x /sbib/halt
 
 %files
 %defattr(-,root,root)
