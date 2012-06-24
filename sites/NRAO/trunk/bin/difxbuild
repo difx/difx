@@ -9,6 +9,11 @@ from string import split, strip, find
 from platform import machine
 from time import asctime
 
+program = 'difxbuild'
+version = '0.8'
+verdate = '20120623'
+author = 'Walter Brisken <wbrisken@nrao.edu>'
+
 openmpiVersion = "1.6"
 numMakeCpus = 4
 
@@ -271,6 +276,13 @@ component_vex2difx_trunk = \
 	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake'] \
 ]
 
+component_mk5daemon_trunk = \
+[ \
+	'mk5daemon', \
+	'https://svn.atnf.csiro.au/difx/applications/mk5daemon/trunk' ,\
+	['aclocal', 'autoconf', 'autoheader', 'automake', 'streamstor'] \
+]
+
 component_calcif2_trunk = \
 [ \
 	'calcif2', \
@@ -309,6 +321,7 @@ components['DIFX-DEVEL'] = \
 	component_difx2fits_trunk, \
 	component_difx2mark4_trunk, \
 	component_vex2difx_trunk, \
+	component_mk5daemon_trunk, \
 	component_calcif2_trunk, \
 	component_calcserver_trunk, \
 	component_rcwlib_trunk, \
@@ -370,6 +383,12 @@ component_vex2difx_2_1 = \
 	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.1/applications/vex2difx' ,\
 	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake'] \
 ]
+component_mk5daemon_2_1 = \
+[ \
+	'mk5daemon', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.1/applications/mk5daemon' ,\
+	['aclocal', 'autoconf', 'autoheader', 'automake', 'streamstor'] \
+]
 
 component_calcif2_2_1 = \
 [ \
@@ -409,6 +428,7 @@ components['DIFX-2.1'] = \
 	component_difx2fits_2_1, \
 	component_difx2mark4_2_1, \
 	component_vex2difx_2_1, \
+	component_mk5daemon_2_1, \
 	component_calcif2_2_1, \
 	component_calcserver_2_1, \
 	component_rcwlib_2_1, \
@@ -697,11 +717,12 @@ def build(origComps, params, args, verbose, pretend):
 	if len(okComps) > 0 or 'none' in args:
 		if not isdir(pkgDir):
 			execute('mkdir -p %s' % pkgDir, verbose, pretend)
-		if not 'noipp' in args:
-			if verbose > 1:
-				print 'Generating ipp.pc'
-			chdir(pkgDir)
-			genipppc('%s' % (environ['IPPROOT']))
+		if not isfile(pkgDir+'/ipp.pc'):
+			if not 'noipp' in args:
+				if verbose > 1:
+					print 'Generating ipp.pc'
+				chdir(pkgDir)
+				genipppc('%s' % (environ['IPPROOT']))
 		if verbose > 1:
 			print 'Building: %s' % componentList(okComps)
 		if not isdir(buildDir):
@@ -775,7 +796,10 @@ def clean(origComps, params, args, verbose, pretend):
 		buildPath = buildDir + comp[0] + '/'
 		if isdir(buildPath):
 			chdir(buildPath)
-			execute('make clean', verbose, pretend)
+			if 'distclean' in args:
+				execute('make distclean', verbose, pretend)
+			else:
+				execute('make clean', verbose, pretend)
 
 def pclean(origComps, params, args, verbose, pretend):
 	comps = filterComponents(origComps, args)
@@ -1062,6 +1086,7 @@ def run_command(commandName, args, verbose, pretend):
 
 
 def usage(prog):
+	print '\n%s ver. %s  %s  %s\n' % (program, version, author, verdate)
 	print 'usage:  %s [options] <command> [<command arguments>]\n' % prog
 	print 'The possible commands are:\n'
 	for command in commands:
