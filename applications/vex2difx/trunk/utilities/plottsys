@@ -109,18 +109,26 @@ def plotAntennaTsys(pages, data, antName, obsCode, timeRange, verbose):
 
 	for chan in range(len(data)):
 		chanData = data[chan]
-		m = max(chanData[0])
-		if m > xmax:
-			xmax = m
-		m = min(chanData[0])
-		if m < xmin:
-			xmin = m
-		m = max(chanData[1])
-		if m > tmax:
-			tmax = m
-		m = min(chanData[1])
-		if m < tmin:
-			tmin = m
+		if len(chanData[0]) == 0 or len(chanData[1]) == 0:
+			print 'Warning: no data for %s 0-based channel %d' % (antName, chan)
+		else:
+			m = max(chanData[0])
+			if m > xmax:
+				xmax = m
+			m = min(chanData[0])
+			if m < xmin:
+				xmin = m
+			m = max(chanData[1])
+			if m > tmax:
+				tmax = m
+			m = min(chanData[1])
+			if m < tmin:
+				tmin = m
+	
+	if tmin >= tmax:
+		print 'Error: No data to plot!'
+
+		return -1
 
 	if len(timeRange) == 2:
 		startTime = mjd2yd(timeRange[0])
