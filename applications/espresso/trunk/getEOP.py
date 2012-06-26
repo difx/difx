@@ -7,6 +7,16 @@
 
 import optparse, re, urllib, espressolib, sys
 
+def get_leapsec(leapsec_page, targetJD):
+    # parse the leap seconds page
+    for line in leapsec_page:
+        linedate = float(line[17:27])
+        if linedate > targetJD:
+            break
+        else:
+            tai_utc = float(line[38:49])
+    return tai_utc
+
 usage = '''%prog <date>
 <date> can either be MJD or VEX time
 Returns 5 days of EOPs around <date> in .v2d format'''
@@ -26,9 +36,9 @@ except:
     # convert from VEX to MJD if necessary
     targetMJD = espressolib.mjd2vex(targetMJD)
 
+print targetMJD
 
 targetJD  = targetMJD + 2400000.5;
-tai_utc = None;
 
 # dates before June 1979 not valid (earliest EOPs)
 if (targetJD < 2444055.5):
@@ -46,16 +56,7 @@ print >>sys.stderr, "Fetching Leap second data..."
 leapsec_page = urllib.FancyURLopener().open(leapsec_url).readlines()
 print >>sys.stderr, "...got it.\n";
 
-# parse the leap seconds page
-for line in leapsec_page:
-    linedate = float(line[17:27])
-    if linedate > targetJD:
-        break
-    else:
-        tai_utc = float(line[38:49])
 
-if not tai_utc:
-    raise Exception("Leap seconds not found! Check your dates")
 
 # parse the eop page
 nlines = 0
@@ -72,6 +73,10 @@ for line in eop_page:
     eop_fields = [float(field) for field in eop_fields]
     # print an EOP line if we're within 3 days of the target day
     if (abs(eop_fields[0] - targetJD) < 3):
+        tai_utc = None;
+        tai_utc = get_leapsec(leapsec_page, eop_fields[0])
+        if not tai_utc:
+            raise Exception("Leap seconds not found! Check your dates")
         print "EOP %d { xPole=%f yPole=%f tai_utc=%d ut1_utc=%f }" % (eop_fields[0]-2400000.5,eop_fields[1]/10.,eop_fields[2]/10.,tai_utc,tai_utc+eop_fields[3]/1000000.)
 
 print >>sys.stderr, "Processed %d lines" % nlines;
