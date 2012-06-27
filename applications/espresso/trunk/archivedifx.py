@@ -27,7 +27,7 @@ def transfer_command(protocol, preamble, source, dest):
             command = preamble + ' scp ' + scpoptions + source + ' ' + host + ':' + directory
 
     elif protocol == 'gridftp':
-        verbose = ' '
+        verbosity = ' '
         if options.verbose:
             verbosity = ' -vb '
         command = preamble + ' globus-url-copy -cd ' + options.globusoptions + verbosity  + source + ' sshftp://' + dest
