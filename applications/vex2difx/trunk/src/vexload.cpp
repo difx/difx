@@ -713,13 +713,27 @@ static int getScans(VexData *V, Vex *v, const CorrParams &params)
 		int link, name;
 		char *value, *units;
 		void *p;
+		string intent;
 
 		stations.clear();
 		recordEnable.clear();
 		antStart.clear();
 		antStop.clear();
 
+		Llist *lowls = L;
+		lowls=find_lowl(lowls,T_COMMENT);
+		if(lowls!=NULL) {
+			int pos;
+			vex_field(T_COMMENT, (void *)((Lowl *)lowls->ptr)->item, 1, &link, &name, &value, &units);
+			intent = (!value)?"":value;
+			// +10 to skip the search string
+			pos = intent.find("intent = \"", 0) + 10;
+			// trim everything except the actual intent string
+			intent = intent.substr(pos, intent.size()-pos-1);
+		}
+
 		p = get_scan_start(L);
+
 		vex_field(T_START, p, 1, &link, &name, &value, &units);
 		mjd = vexDate(value);
 		startScan = 1e99;
@@ -828,6 +842,7 @@ static int getScans(VexData *V, Vex *v, const CorrParams &params)
 		S->modeDefName = modeDefName;
 		S->sourceDefName = sourceDefName;
 		S->corrSetupName = corrSetupName;
+		S->intent = intent;
 		S->mjdVex = mjd;
 
 		// Add to event list
