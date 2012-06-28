@@ -116,6 +116,7 @@ class VexScan : public VexInterval
 {
 public:
 	string defName;			// name of this scan
+	string intent;			// intent of this scan
 
 	string modeDefName;
 	string sourceDefName;	
