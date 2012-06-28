@@ -1,6 +1,7 @@
 bin_PROGRAMS = \
 	vex2difx \
 	vex2script \
+	vex2opt \
 	rdbetsys \
 	vexpeek
 
@@ -36,6 +37,19 @@ vex2script_SOURCES = \
 	pystream.h \
 	pystream.cpp \
 	vex2script.cpp 
+
+vex2opt_SOURCES = \
+	vextables.h \
+	vextables.cpp \
+	vexload.h \
+	vexload.cpp \
+	corrparams.h \
+	corrparams.cpp \
+	optscans.h \
+	optscans.cpp \
+	optsources.cpp \
+	optsources.h \
+	vex2opt.cpp 
 
 vexpeek_SOURCES = \
 	vexpeek.cpp \
