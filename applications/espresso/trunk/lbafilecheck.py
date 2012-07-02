@@ -41,12 +41,13 @@ def makefilelists(telescope, data_area, machine, dir_patterns, globpatterns, exp
 
     outfilename = expname + '_' + telescope + '.filelist'
     OUTFILE = open(outfilename, 'w')
-    chk_vlbi = espressolib.which('chk_vlbi.pl')
+    chk_vlbi = espressolib.which('chk_vlbi.py')
+    #chk_vlbi = '/nfs/apps/corr/DiFX-trunk/applications/espresso/trunk/chk_vlbi.py'
     if not chk_vlbi:
         ERRORFILE = espressolib.openlock('file_errors.txt')
-        print>>ERRORFILE, 'chk_vlbi.pl not found in $PATH'
+        print>>ERRORFILE, 'chk_vlbi.py not found in $PATH'
         ERRORFILE.close()
-        raise Exception('chk_vlbi.pl not found in $PATH')
+        raise Exception('chk_vlbi.py not found in $PATH')
     command = "ssh " + machine + " '" + chk_vlbi + " " + os.getcwd() + os.sep + TEMPFILE.name + "'"
     #filelist = pexpect.run(command)
     #print filelist
