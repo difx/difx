@@ -1,4 +1,5 @@
 #! /usr/bin/python
+# coding: latin-1
 
 #===========================================================================
 # SVN properties (DO NOT CHANGE)
@@ -307,6 +308,7 @@ if __name__ == "__main__":
         major, minor = getCurrentSchemaVersionNumber(session)
         exitOnError("Current difxdb database schema is %s.%s but %s.%s is minimum requirement." % (major, minor, minSchemaMajor, minSchemaMinor))
     
+    session.close()
     
     server = config.get("difxarchive", "archiveserver")
     remotePath = config.get("difxarchive", "archiveremotepath")
@@ -355,11 +357,13 @@ if __name__ == "__main__":
             
             print "Updating database status."
             # update database
+            session = dbConn.session()
             experiment = getExperimentByCode(session, code)
             experiment.dateArchived = datetime.datetime.now()
             experiment.archivedBy = user
             session.commit()
             session.flush()
+            session.close()
             
             
 
