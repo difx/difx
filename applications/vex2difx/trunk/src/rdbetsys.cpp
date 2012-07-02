@@ -334,7 +334,7 @@ static void sanityCheckChannels(const VexSetup &vexSetup)
 	}
 	if(nRecChan != vexSetup.nRecordChan)
 	{
-		cerr << "Developer Error: TsysAccumulator::setup: vexSetup.nRecordChan=" << vexSetup.nRecordChan << " does not equal nRecChan=" << nRecChan << " as it should!" << endl;
+		cerr << "Developer Error: TsysAccumulator::sanityCheckChannels: vexSetup.nRecordChan=" << vexSetup.nRecordChan << " does not equal nRecChan=" << nRecChan << " as it should!" << endl;
 
 		exit(EXIT_FAILURE);
 	}
@@ -398,6 +398,9 @@ void TsysAccumulator::flush()
 		for(std::vector<TsysAverager>::iterator ta = chans.begin(); ta != chans.end(); ++ta)
 		{
 			fprintf(out, " %5.2f %s", ta->Tsys(), ta->rxName);
+			nGood += ta->nGood;
+			nBad += ta->nBad;
+			ta->reset();
 		}
 		fprintf(out, "\n");
 
