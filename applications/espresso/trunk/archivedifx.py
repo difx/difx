@@ -89,12 +89,12 @@ for directory in os.walk(os.curdir):
     tarlist = str()
     for file in directory[2]:
         fileWithPath = os.path.join(os.path.abspath(directory[0]), file)
-        if (os.path.getsize(fileWithPath)/1e6 > options.maxtarsize):
+        if (os.path.exists(fileWithPath) and os.path.getsize(fileWithPath)/1e6 > options.maxtarsize):
             # transfer this large file without tarring
-            transfer.append(fileWithPath)
+            transfer.append(re.escape(fileWithPath))
         else:
             # add to list of files to be tarred
-            tarlist += ' ' + file
+            tarlist += ' ' + re.escape(file)
 
     tarfile = args[1] + os.sep + directory[0] + os.sep + os.path.basename(os.path.abspath(directory[0])) + '.tar'
 
