@@ -2,7 +2,7 @@
 
 # update the version when significant changes are made
 program = 'goUSNO'
-version = '0.15'
+version = '0.16'
 
 
 from sys import exit, argv, stdin
@@ -73,6 +73,7 @@ now = gmtime()	# format: (2011, 9, 12, 15, 47, 47, 0, 255, 0)
 force = False
 testmode = False
 edit = False
+nrao = False
 
 if strip(popen('uname -s').readline()) != 'Linux':
 	print 'Must be run on a Linux machine'
@@ -90,6 +91,8 @@ for a in argv[1:]:
 		testmode = True
 	elif a in ['-e', '--edit']:
 		edit = True
+	elif a in ['--nrao']:
+		nrao = True
 	else:
 		args.append(a)
 
@@ -102,6 +105,7 @@ if len(args) != 4:
 	print '  -q or --quiet    : print less output'
 	print '  -t or --test     : schedule project as test'
 	print '  -e or --edit     : allow .py files to be edited\n'
+	print '  --nrao           : use NRAO Mark5C/DBE, not USNO\n'
 	print '  <prjCode> is the project code to be used (e.g., N2059)\n'
 	print '  <month> is the numeric month of year to run the project (e.g., 2)\n'
 	print '  <day> is the numeric day of the month (e.g., 29)\n'
@@ -160,7 +164,10 @@ execute("%s < %s" % (sched, newFile) )
 
 execute('db2vex --preobs --force %s.vex' % projectCode)
 
-options = "--usno"
+if nrao:
+	options = ""
+else:
+	options = "--usno"
 
 if edit:
 	options += " --edit"
