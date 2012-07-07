@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2011 by Walter Brisken                             *
+ *   Copyright (C) 2008-2012 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -34,6 +34,7 @@
 #include <string>
 #include <sstream>
 #include <xlrapi.h>
+#include "../config.h"
 
 #ifndef MARK5_FILL_PATTERN
 #ifdef WORDS_BIGENDIAN

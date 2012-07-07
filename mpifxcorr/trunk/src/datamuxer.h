@@ -62,6 +62,11 @@ public:
   virtual bool initialise() = 0;
 
  /**
+  * Resets all counters - done in conjunction with an initialisations
+  */
+  virtual void resetcounters();
+
+ /**
   * Accessor method for demuxbuffer
   * @return pointer to start of demuxbuffer section to be written to
   */
@@ -74,6 +79,12 @@ public:
   inline int getSegmentBytes() const { return segmentbytes; }
 
  /**
+  * Add to the skip count for this muxer
+  * @param sframes The number of frames to add to the skipcount
+  */
+ inline void addSkipFrames(int sframes) { skipframes += sframes; }
+
+ /**
   * Accessor method for estimated number of bytes
   * @return estimated amount of memory allocated by this object, in bytes
   */
@@ -83,6 +94,12 @@ public:
   * Increments the read counter, used after external source has read data into the demux buffer
   */
   inline void incrementReadCounter() { readcount++; }
+
+ /**
+  * Returns the number of threads in this datamuxer
+  * @return The number of threads in this datamuxer
+  */
+  inline int getNumThreads() { return numthreads; }
 
  /**
   * De-interlaces one segments worth of data
@@ -108,7 +125,7 @@ protected:
 
   ///other variables
   const Configuration * config;
-  long long readcount, muxcount, deinterlacecount, estimatedbytes;
+  long long readcount, muxcount, deinterlacecount, estimatedbytes, skipframes, lastskipframes;
   int datastreamindex, mpiid, numthreads, segmentbytes;
 };
 
@@ -153,6 +170,12 @@ public:
   virtual bool initialise();
 
  /**
+  * Resets all counters - done in conjunction with an initialisations
+  */
+  virtual void resetcounters();
+
+
+ /**
   * Accessor method for demuxbuffer
   * @return pointer to start of demuxbuffer section to be written to
   */
@@ -180,9 +203,6 @@ protected:
   */
   virtual int multiplex(u8 * outputbuffer);
 
-  ///constants
-  static const unsigned int bitmask[9];
-
   ///other variables
   int  *  threadindexmap;     // [numthreads]
   unsigned int * threadwords; // [numthreads]
@@ -192,6 +212,14 @@ protected:
   int samplesperframe, wordsperinputframe, wordsperoutputframe, samplesperinputword, samplesperoutputword;
   unsigned int copyword, activemask;
   long long processframenumber;
+  void (VDIFMuxer::*cornerturn)(u8 * outputbuffer, int processindex, int outputframecount);
+
+private:
+  void cornerturn_generic(u8 * outputbuffer, int processindex, int outputframecount);
+  void cornerturn_1thread(u8 * outputbuffer, int processindex, int outputframecount);
+  void cornerturn_2thread_2bit(u8 * outputbuffer, int processindex, int outputframecount);
+  void cornerturn_4thread_2bit(u8 * outputbuffer, int processindex, int outputframecount);
+  void cornerturn_8thread_2bit(u8 * outputbuffer, int processindex, int outputframecount);
 };
 
 
