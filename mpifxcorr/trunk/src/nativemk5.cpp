@@ -412,7 +412,7 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
 	long long n;
 	int doUpdate = 0;
 	char *mk5dirpath;
-	int nbits, nrecordedbands, framebytes;
+	int nbits, nrecordedbands, framebytes, fbytes;
 	Configuration::dataformat format;
 	double bw;
 	XLR_RETURN_CODE xlrRC;
@@ -600,7 +600,12 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
 					( ( (corrstartday - scanPointer->mjd)*86400 
 					+ corrstartseconds - scanPointer->sec) - scanPointer->nsStart()*1.e-9)
 					*config->getFramesPerSecond(configindex, streamnum)) + 0.5);
-				readpointer += n*scanPointer->framebytes;
+				fbytes = scanPointer->framebytes;
+				if(datamuxer)
+				{
+					fbytes *= datamuxer->getNumThreads();
+				}
+				readpointer += n*fbytes;
 				readseconds = 0;
 				readnanoseconds = 0;
 				while(readscan < (model->getNumScans()-1) && model->getScanEndSec(readscan, corrstartday, corrstartseconds) < readseconds)
@@ -713,33 +718,39 @@ void NativeMk5DataStream::openfile(int configindex, int fileindex)
 	initialiseFile(configindex, fileindex);
 }
 
-int NativeMk5DataStream::readonedemux(bool isfirst, int buffersegment)
+int NativeMk5DataStream::readonedemux(bool resetreference, int buffersegment)
 {
   long long localreadpointer;
   int fixbytes, rbytes;
   char * readto;
   bool ok;
+  int nfix = 0;
 
+  cinfo << startl << "At the beginning of readonedemux, readpointer is " << readpointer << endl;
   rbytes = moduleRead((unsigned long*)datamuxer->getCurrentDemuxBuffer(), datamuxer->getSegmentBytes(), readpointer, buffersegment);
+  //the main readpointer will be updated outside of this routine, use localreadpointer for here
   localreadpointer = readpointer + rbytes;
-  //the main readpointer will be updated outside of this routine
-  if(isfirst)
-    datamuxer->initialise();
   if(rbytes != datamuxer->getSegmentBytes()) {
     cerror << startl << "Data muxer did not fill demux buffer properly" << endl;
   }
   fixbytes = datamuxer->datacheck(datamuxer->getCurrentDemuxBuffer(), rbytes, 0);
   while(fixbytes > 0) {
+    ++nfix;
     readto = reinterpret_cast<char*>(datamuxer->getCurrentDemuxBuffer()) + rbytes - fixbytes;
     moduleRead(reinterpret_cast<unsigned long*>(readto), fixbytes, localreadpointer, buffersegment);
     readpointer += fixbytes; //but if we need extra reads, then we must add these "extra" values to the readpointer
     localreadpointer += fixbytes; //and to the local one also of course
     fixbytes = datamuxer->datacheck(datamuxer->getCurrentDemuxBuffer(), rbytes, rbytes - fixbytes);
   }
+  if(nfix>0)
+    cwarn << startl << "Number of extra reads required due to interlopers was " << nfix << endl;
+  if(resetreference)
+    datamuxer->initialise();
   datamuxer->incrementReadCounter();
   ok = datamuxer->deinterlace(rbytes);
   if(!ok)
     MPI_Abort(MPI_COMM_WORLD, 1);
+  cinfo << startl << "At the end of readonedemux, readpointer will be  " << localreadpointer << endl;
   return rbytes;
 }
 
@@ -851,7 +862,7 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 	static double now_us;
 	static long long lastpos = 0;
 	struct timeval tv;
-	int mjd, sec, sec2;
+	int mjd, sec, sec2, fbytes;
 	double ns;
 	bool hasFilledData;
 
@@ -931,14 +942,19 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 			readnanoseconds = (int)(ns + 0.4);
 			if(!noDataOnModule)
 			{
-				cwarn << startl << "Nudged time just a bit" << endl;
+				cwarn << startl << "Nudged time just a bit; sec2 was " << sec2 << " and ns was " << readnanoseconds << ", now sec = " << sec << " and ns = " << ns << endl;
 			}
 		}
 		else if(invalidtime > 3 && mjd == corrstartday)	// if a large time difference persists
 		{
 			// try correcting the read position, hopefully putting the datastream within 5 seconds of the target
 			long long origreadpointer = readpointer;
-			readpointer -= (sec-sec2)*scanPointer->framebytes*scanPointer->framespersecond;
+			fbytes = scanPointer->framebytes;
+			if(datamuxer)
+			{
+				fbytes *= datamuxer->getNumThreads();
+			}
+			readpointer -= (sec-sec2)*fbytes*scanPointer->framespersecond;
 			readpointer -= (readpointer % 4);
 			if(readpointer < scanPointer->start)
 			{
@@ -1085,33 +1101,9 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 	}
 
 	// Update various counters
-	readnanoseconds += (bufferinfo[buffersegment].nsinc % 1000000000);
-	readseconds += (bufferinfo[buffersegment].nsinc / 1000000000);
-	readseconds += readnanoseconds/1000000000;
-	readnanoseconds %= 1000000000;
-	if(readseconds >= model->getScanDuration(readscan))
-	{
-		if(readscan < model->getNumScans()-1)
-		{
-			++readscan;
-			readseconds -= model->getScanStartSec(readscan, corrstartday, corrstartseconds) - model->getScanStartSec(readscan-1, corrstartday, corrstartseconds);
-			cdebug << startl << "Incrementing scan to " << readscan << ", readseconds is now " << readseconds << endl;
-			if(readseconds < -1)
-			{
-				int skipseconds = -readseconds-1;
-				readpointer += static_cast<long long>(skipseconds)*static_cast<long long>(scanPointer->framebytes)*static_cast<long long>(scanPointer->framespersecond);
-				readseconds += skipseconds;
-				cdebug << startl << "Skipping " << skipseconds << " seconds at scan boundary." << endl;
-			}
-		}
-		else
-		{
-			keepreading = false;
-		}
-	}
 	if(rbytes < readbytes)
 	{
-		dataremaining = false;
+		 dataremaining = false;
 	}
 	else
 	{
@@ -1120,6 +1112,75 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 	if(readpointer >= scanPointer->start + scanPointer->length)
 	{
 		dataremaining = false;
+	}
+	readnanoseconds += (bufferinfo[buffersegment].nsinc % 1000000000);
+	readseconds += (bufferinfo[buffersegment].nsinc / 1000000000);
+	readseconds += readnanoseconds/1000000000;
+	readnanoseconds %= 1000000000;
+	if(readseconds >= model->getScanDuration(readscan))
+	{
+		if(readscan < model->getNumScans()-1)
+		{
+			cinfo << startl << "Going to next scan!" << endl;
+			cinfo << startl << "Currently, sec2 is " << (model->getScanStartSec(readscan, corrstartday, corrstartseconds) + readseconds + corrstartseconds) % 86400 << endl;
+			++readscan;
+			readseconds -= model->getScanStartSec(readscan, corrstartday, corrstartseconds) - model->getScanStartSec(readscan-1, corrstartday, corrstartseconds);
+			cinfo << startl << "Incrementing scan to " << readscan << ", readseconds is now " << readseconds << endl;
+			if(readseconds < -1)
+			{
+				int skipseconds, windbacksec;
+				skipseconds = -readseconds-1;
+				windbacksec = 0;
+				fbytes = scanPointer->framebytes;
+				if(datamuxer)
+				{
+					fbytes *= datamuxer->getNumThreads();
+					datamuxer->addSkipFrames(skipseconds*scanPointer->framespersecond);
+					windbacksec = (int)((2.0*bufferinfo[buffersegment].nsinc)/1000000000.0);
+					if((2.0*bufferinfo[buffersegment].nsinc)/1000000000.0 - windbacksec > 0)
+					{
+						++windbacksec;
+					}
+				}
+				if(skipseconds > windbacksec)
+				{
+					cinfo << startl << "Going to skip " << skipseconds << " (windbacksec " << windbacksec << "), readpointer is currently " << readpointer << endl;
+					readpointer += static_cast<long long>(skipseconds)*static_cast<long long>(fbytes)*static_cast<long long>(scanPointer->framespersecond);
+					cinfo << startl << "Skipping forward " << static_cast<long long>(skipseconds)*static_cast<long long>(fbytes)*static_cast<long long>(scanPointer->framespersecond) << " bytes - fbytes is " << fbytes << " and framespersecond is " << scanPointer->framespersecond << ", and so now readpointer is " << readpointer << endl;
+					readseconds += skipseconds;
+					if (datamuxer)
+					{
+						// Clear the interlacing cache in the datamuxer, so that times will align (requires shuffling the readpointer back first)
+						readpointer -= (2*static_cast<long long>(bufferinfo[buffersegment].nsinc)*static_cast<long long>(fbytes)*static_cast<long long>(scanPointer->framespersecond))/1000000000;
+						cinfo << startl << "In order to refill buffer, winding back " << (2*static_cast<long long>(bufferinfo[buffersegment].nsinc)*static_cast<long long>(fbytes)*static_cast<long long>(scanPointer->framespersecond))/1000000000 << " bytes" << endl;
+						datamuxer->resetcounters(); //needed to clear all of the counters so we get the right demux buffer in the following function
+						rbytes = readonedemux(true, buffersegment);
+						readpointer += rbytes;
+						rbytes = readonedemux(false, buffersegment);
+						readpointer += rbytes;
+					}
+				}
+			}
+			/*if(readseconds < -1)
+			{
+				int skipseconds = -readseconds-1;
+				fbytes = scanPointer->framebytes;
+				if(datamuxer)
+				{
+					fbytes *= datamuxer->getNumThreads();
+					datamuxer->addSkipFrames(skipseconds*scanPointer->framespersecond);
+				}
+				readpointer += static_cast<long long>(skipseconds)*static_cast<long long>(fbytes)*static_cast<long long>(scanPointer->framespersecond);
+				readseconds += skipseconds;
+				cinfo << startl << "After skipping " << skipseconds << " seconds, sec2 is now " << (model->getScanStartSec(readscan, corrstartday, corrstartseconds) + readseconds + corrstartseconds) % 86400 << endl;
+				cinfo << startl << "Corrstartseconds is " << corrstartseconds << ", startseconds for this scan is " << model->getScanStartSec(readscan, corrstartday, corrstartseconds) << ", and readseconds is " << readseconds << endl;
+				cinfo << startl << "Skipping " << skipseconds << " seconds at scan boundary, which is " << static_cast<long long>(skipseconds)*static_cast<long long>(fbytes)*static_cast<long long>(scanPointer->framespersecond) << "bytes.  Readpointer was " << readpointer-static_cast<long long>(skipseconds)*static_cast<long long>(fbytes)*static_cast<long long>(scanPointer->framespersecond) << ", is now " << readpointer << endl;
+			}*/
+		}
+		else
+		{
+			keepreading = false;
+		}
 	}
 }
 
@@ -1136,6 +1197,7 @@ void NativeMk5DataStream::loopfileread()
   //lock the first section to start reading
   openfile(bufferinfo[0].configindex, 0);
   if(datamuxer) {
+    datamuxer->resetcounters();
     rbytes = readonedemux(true, 0);
     readpointer += rbytes;
     rbytes = readonedemux(false, 0);
