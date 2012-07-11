@@ -1,5 +1,5 @@
 clockhist_SOURCES = \
-	slock.inc \
+	clock.inc \
 	clockhist.f \
 	getclk.f \
 	getcmd.f \
