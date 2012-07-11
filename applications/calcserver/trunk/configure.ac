@@ -10,7 +10,6 @@ AC_LANG_C
 AC_PROG_F77
 AM_PROG_LIBTOOL
 
-AC_CHECK_LIB(g2c, getenv_,,)
 AC_CHECK_LIB(m, sin,,)
 
 AC_OUTPUT(Makefile \
