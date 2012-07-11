@@ -1,6 +1,6 @@
 #!/bin/env python
 
-from os import environ, system, getcwd, chdir, popen
+from os import environ, system, getcwd, chdir, popen, readlink
 from os.path import isdir, isfile, islink, join, dirname
 from sys import argv, exit, platform
 from re import search
@@ -10,8 +10,8 @@ from platform import machine
 from time import asctime
 
 program = 'difxbuild'
-version = '0.8'
-verdate = '20120623'
+version = '0.9'
+verdate = '20120711'
 author = 'Walter Brisken <wbrisken@nrao.edu>'
 
 openmpiVersion = "1.6"
@@ -117,9 +117,9 @@ def execute(cmd, verbose, pretend):
 	global nExecute
 	nExecute += 1
 	if pretend:
-		print '[%d] In: %s  Pretending: %s' % (nExecute, getcwd(), cmd)
+		print '[%d] In: %s\n[%d] Pretending: %s\n' % (nExecute, getcwd(), nExecute, cmd)
 	else:
-		print '[%d] In: %s   Executing: %s' % (nExecute, getcwd(), cmd)
+		print '[%d] In: %s\n[%d] Executing: %s\n' % (nExecute, getcwd(), nExecute, cmd)
 		system(cmd)
 
 def checkDirs(comps, dir, args):
@@ -459,6 +459,7 @@ def default(comps, params, args, verbose, pretend):
 	if not isfile('%s/bin/setup_difx' % environ['DIFX_BASE']):
 		print 'Error: could not link new DiFX version.  NO version is default now!'
 		exit(2)
+	writeinitfile()
 	print 'New default version of DiFX selected.'
 	print 'Make sure ". %s/bin/setup_difx" is in your .bashrc file' % environ['DIFX_BASE']
 
@@ -469,8 +470,87 @@ def splitequals(str):
 	else:
 		return [strip(str[:p]), strip(str[p+1:])]
 
+def writeinitfile():
+	initfile = environ['DIFX_BASE'] + '/init.d/difx'
+	print 'Writing init file: %s' % initfile
+	out = open(initfile, 'w')
+	out.write('#!/bin/sh\n')
+	out.write('#\n')
+	out.write('# Author: %s version %s\n' % (program, version))
+	out.write('#\n')
+	out.write('# chkconfig: 345 99 1\n')
+	out.write('# description: start / stop difx daemons (mk5daemon, calserver?)\n')
+	out.write('\n')
+	out.write('LOCKFILE=/var/lock/subsys/`basename $0`\n')
+	out.write('\n')
+	out.write('# source function library\n')
+	out.write('. /etc/init.d/functions\n')
+	out.write('\n')
+	out.write('# source difx setup script\n')
+	out.write('. %s/setup_difx\n' % environ['DIFXROOT'])
+	out.write('\n')
+	out.write('# set up some env vars for calcserver\n')
+	out.write('export CALC_USER=C\n')
+	out.write('export WET_ATM=Y\n')
+	out.write('export JPLEPH=%s/share/CalcServer/JPLEPH\n' % environ['DIFXROOT'])
+	out.write('export SERVERLOG=ON\n')
+	out.write('export HORIZONS_FILENAME=%s/share/CalcServer/Horizons.lis\n' % environ['DIFXROOT'])
+	out.write('export HORIZONS_SRCNAME=TSTCURVE\n')
+	out.write('\n')
+	out.write('\n')
+	out.write('start() {\n')
+	out.write('    if [[ `hostanme` == ${CALC_SERVER} ]]; then\n')
+	out.write('        echo -n $"Starting calcserver: "\n')
+	out.write('        pushd /tmp\n')
+	out.write('        daemon \'CalcServer > /dev/null\'\n')
+	out.write('        popd\n')
+	out.write('    fi\n')
+	out.write('    echo -n $"Starting mk5daemon: "\n')
+	out.write('    if [[ `hostanme` == ${DIFX_HEAD_NODE} ]]; then\n')
+	out.write('        daemon \'mk5daemon -H -e > /dev/null\'\n')
+	out.write('    else\n')
+	out.write('        daemon \'mk5daemon -e > /dev/null\'\n')
+	out.write('    fi\n')
+	out.write('    RETVAL=$?\n')
+	out.write('    echo\n')
+	out.write('    [ $RETVAL = 0 ] && touch $LOCKFILE\n')
+	out.write('    return $RETVAL\n')
+	out.write('}\n')
+	out.write('\n')
+	out.write('\n')
+	out.write('stop() {\n')
+	out.write('    if [[ `hostanme` == ${CALC_SERVER} ]]; then\n')
+	out.write('        echo -n $"Stopping calcserver: "\n')
+	out.write('        killproc CalcServer\n')
+	out.write('    fi\n')
+	out.write('    echo -n $"Stopping mk5daemon: "\n')
+	out.write('    killproc mk5daemon\n')
+	out.write('    RETVAL=$?\n')
+	out.write('    echo\n')
+	out.write('    [ $RETVAL = 0 ] && rm -f $LOCKFILE\n')
+	out.write('    return $RETVAL\n')
+	out.write('}\n')
+	out.write('\n')
+	out.write('\n')
+	out.write('case "$1" in\n')
+	out.write('    start)\n')
+	out.write('        start\n')
+	out.write('        ;;\n')
+	out.write('    stop)\n')
+	out.write('        stop\n')
+	out.write('        ;;\n')
+	out.write('    restart)\n')
+	out.write('        stop && start\n')
+	out.write('        ;;\n')
+	out.write('    *)\n')
+	out.write('        echo $"Usage: $0 {start|stop|restart}"\n')
+	out.write('        exit 1\n')
+	out.write('esac\n')
+	out.close()
+
+
 def bootstrap(comps, params, args, verbose, pretend):
-	requiredConfigParams = ['root', 'difxbase', 'version']
+	requiredConfigParams = ['difxbase', 'version']
 	if not isfile(params['ConfigFile']):
 		print 'Error: bootstrapping needs the specified configuration file, %s, to exist.' % params['ConfigFile']
 		return
@@ -502,6 +582,10 @@ def bootstrap(comps, params, args, verbose, pretend):
 			ok = False
 	if not ok:
 		return
+
+	# default root
+	if not 'root' in config.keys():
+		config['root'] = config['difxbase'] + '/' + config['version']
 	
 	if verbose > 0:
 		print 'Config:'
@@ -517,10 +601,15 @@ def bootstrap(comps, params, args, verbose, pretend):
 		if verbose > 0:
 			print 'Writing setup file %s' % setupFile
 
-		dirs = [config['root'], '%s/directories' % config['difxbase'], '%s/bootstrap' % config['difxbase'], '%s/bin/' % config['difxbase']]
+		dirPath = '%s/directories' % config['difxbase']
+		initPath = '%s/init.d' % config['difxbase']
+		dirs = [config['root'], dirPath, '%s/bootstrap' % config['difxbase'], '%s/bin/' % config['difxbase'], initPath]
 		for d in dirs:
 			if not isdir(d):
 				execute('mkdir -p %s' % d, verbose, pretend)
+
+		# make sure dir path is world writable
+		execute('chmod a+w %s' % dirPath);
 
 		platforms = {}	# indexed by arch
 		platformhostsStr = ''
@@ -572,7 +661,7 @@ def bootstrap(comps, params, args, verbose, pretend):
 		out.write('export DIFX_VERSION=%s\n\n' % config['version'])
 		out.write('# DiFX setup file automatically generated by difxbuild\n\n')
 		out.write('DIFX_PROMPT_EXTRA=""\n')
-		out.write('HWPLATFORM=`uname --processor`\n')
+		out.write('HWPLATFORM=`uname -m`\n')
 		out.write('\n')
 		out.write('export DIFX_ARCH_ROOT=%s/${HWPLATFORM}\n' % config['difxbase'])
 		m = 0
@@ -651,7 +740,8 @@ def bootstrap(comps, params, args, verbose, pretend):
 		execute('cp %s %s/bootstrap/"%s.%s"' % (params['ConfigFile'], config['difxbase'], split(params['ConfigFile'], '/')[-1], asctime()), verbose, pretend)
 
 		if config.has_key('mca'):
-			print '*** IMPORTANT NOTE: $HOME/.openmpi/mca-params.conf should be copied into the directory $HOME/.openmpi/ of each account from which DiFX will be run ***\n'
+			print '*** IMPORTANT NOTE: $HOME/.openmpi/mca-params.conf should be copied into'
+			print '*** the directory $HOME/.openmpi/ of each account from which DiFX will be run\n'
 
 		print '\nBootstrap complete.  Now source %s and continue with svn.\n' % setupFile
 
@@ -662,7 +752,7 @@ def bootstrap(comps, params, args, verbose, pretend):
 def svnupdate(origComps, params, args, verbose, pretend):
 	comps = filterComponents(origComps, args)
 	if len(comps) == 0:
-		print 'No components selected.  Did you mean to append "all" to the command line?'
+		print 'No components selected.  Did you mean to append "all" to the command line?\n'
 		return
 	srcDir = environ['DIFX_SRC'] + '/'
 	if not isdir(srcDir):
@@ -681,7 +771,7 @@ def svnupdate(origComps, params, args, verbose, pretend):
 def autotool(origComps, params, args, verbose, pretend):
 	comps = filterComponents(origComps, args)
 	if len(comps) == 0:
-		print 'No components selected.  Did you mean to append "all" to the command line?'
+		print 'No components selected.  Did you mean to append "all" to the command line?\n'
 		return
 	srcDir = environ['DIFX_SRC'] + '/'
 	okComps = checkDirs(comps, srcDir, args)
@@ -708,7 +798,7 @@ def build(origComps, params, args, verbose, pretend):
 	else:
 		comps = filterComponents(origComps, args)
 		if len(comps) == 0:
-			print 'No components selected.  Did you mean to append "all" to the command line?'
+			print 'No components selected.  Did you mean to append "all" to the command line?\n'
 			return
 	buildDir = environ['DIFXROOT'] + '/build/'
 	pkgDir = environ['DIFXROOT'] + '/lib/pkgconfig/'
@@ -758,7 +848,7 @@ def build(origComps, params, args, verbose, pretend):
 def rebuild(origComps, params, args, verbose, pretend):
 	comps = filterComponents(origComps, args)
 	if len(comps) == 0:
-		print 'No components selected.  Did you mean to append "all" to the command line?'
+		print 'No components selected.  Did you mean to append "all" to the command line?\n'
 		return
 	buildDir = environ['DIFXROOT'] + '/build/'
 	okComps = checkFiles(comps, buildDir, 'Makefile', args)
