@@ -210,7 +210,7 @@ public:
 	set<int> freqIds;       // which bands to correlate
 	string binConfigFile;
 	string phasedArrayConfigFile;
-        char onlyPol;          // which polarization to correlate
+        char onlyPol;		// which polarization to correlate
 private:
 	void addFreqId(int freqId);
 
@@ -328,6 +328,8 @@ public:
 	vector<GlobalZoom> globalZooms;
 
 	enum V2D_Mode v2dMode;
+
+	list<string> machines;	// List of computers for generation of .machines file
 
 private:
 	void addAntenna(const string &antName);

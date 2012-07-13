@@ -2573,6 +2573,29 @@ static int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int 
 			DifxInputWriteThreads(D);
 		}
 
+		if(!P->machines.empty())
+		{
+			char machinesFile[DIFXIO_FILENAME_LENGTH];
+			FILE *out;
+
+			generateDifxJobFileBase(D->job, machinesFile);
+			strcat(machinesFile, ".machines");
+
+			out = fopen(machinesFile, "w");
+			if(!out)
+			{
+				cerr << "Error: cannot open " << machinesFile << " for write." << endl;
+			}
+			else
+			{
+				for(list<string>::const_iterator m = P->machines.begin(); m != P->machines.end(); ++m)
+				{
+					fprintf(out, "%s\n", m->c_str());
+				}
+				fclose(out);
+			}
+		}
+
 		// write flag file
 		J.generateFlagFile(*V, D->job->flagFile, P->invalidMask);
 

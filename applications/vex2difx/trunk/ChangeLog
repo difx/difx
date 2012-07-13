@@ -2,6 +2,8 @@ Version 2.2.0
 ~~~~~~~~~~~~~
 * Post DiFX-2.1
 * vexpeek: --bands mode
+* Support writing of .machines file
+* Improved support for FAKE
 
 Version 2.1.0
 ~~~~~~~~~~~~~

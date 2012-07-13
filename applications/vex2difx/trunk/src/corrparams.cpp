@@ -1155,6 +1155,12 @@ int AntennaSetup::setkv(const string &key, const string &value)
 		basebandFiles.clear();
 		basebandFiles.push_back(VexBasebandFile(value));
 	}
+	else if(key == "fake")
+	{
+		dataSource = DataSourceFake;
+		basebandFiles.clear();
+		basebandFiles.push_back(VexBasebandFile(value));
+	}
 	else if(key == "phaseCalInt")
 	{
 		ss >> phaseCalIntervalMHz;
@@ -1594,6 +1600,13 @@ int CorrParams::setkv(const string &key, const string &value)
 	else if(key == "overSamp")
 	{
 		ss >> overSamp;
+	}
+	else if(key == "machines")
+	{
+	        string s;
+	        ss >> s;
+		Lower(s);
+		machines.push_back(s);
 	}
 	else
 	{

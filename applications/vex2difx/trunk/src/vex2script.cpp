@@ -174,6 +174,9 @@ int main(int argc, char **argv)
 		A = V->getAntenna(a);
 		if(isEVLA(A->name))
 		{
+			cout << "Skipping VLA antenna" << endl;
+			continue;
+
 			cout << "VLA antenna " << a << " = " << A->name << endl;
 			sType = pystream::SCRIPT_EVLA;
 		}
