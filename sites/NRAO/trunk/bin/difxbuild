@@ -294,7 +294,7 @@ component_calcserver_trunk = \
 [ \
 	'calcserver', \
 	'https://svn.atnf.csiro.au/difx/applications/calcserver/trunk', \
-	['aclocal', 'autoconf', 'autoheader', 'automake'] \
+	['aclocal', 'libtoolize', 'autoconf', 'automake'] \
 ]
 
 component_rcwlib_trunk = \
@@ -401,7 +401,7 @@ component_calcserver_2_1 = \
 [ \
 	'calcserver', \
 	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.1/applications/calcserver', \
-	['aclocal', 'autoconf', 'autoheader', 'automake'] \
+	['aclocal', 'libtoolize', 'autoconf', 'automake'] \
 ]
 
 component_rcwlib_2_1 = \
@@ -459,7 +459,7 @@ def default(comps, params, args, verbose, pretend):
 	if not isfile('%s/bin/setup_difx' % environ['DIFX_BASE']):
 		print 'Error: could not link new DiFX version.  NO version is default now!'
 		exit(2)
-	writeinitfile()
+	writeinitfile(verbose, pretend)
 	print 'New default version of DiFX selected.'
 	print 'Make sure ". %s/bin/setup_difx" is in your .bashrc file' % environ['DIFX_BASE']
 
@@ -470,8 +470,8 @@ def splitequals(str):
 	else:
 		return [strip(str[:p]), strip(str[p+1:])]
 
-def writeinitfile():
-	initfile = environ['DIFX_BASE'] + '/init.d/difx'
+def writeinitfile(verbose, pretend):
+	initfile = environ['DIFX_BASE'] + '/init.d/nrao-difx'
 	print 'Writing init file: %s' % initfile
 	out = open(initfile, 'w')
 	out.write('#!/bin/sh\n')
@@ -486,30 +486,26 @@ def writeinitfile():
 	out.write('# source function library\n')
 	out.write('. /etc/init.d/functions\n')
 	out.write('\n')
-	out.write('# source difx setup script\n')
-	out.write('. %s/setup_difx\n' % environ['DIFXROOT'])
-	out.write('\n')
-	out.write('# set up some env vars for calcserver\n')
-	out.write('export CALC_USER=C\n')
-	out.write('export WET_ATM=Y\n')
-	out.write('export JPLEPH=%s/share/CalcServer/JPLEPH\n' % environ['DIFXROOT'])
-	out.write('export SERVERLOG=ON\n')
-	out.write('export HORIZONS_FILENAME=%s/share/CalcServer/Horizons.lis\n' % environ['DIFXROOT'])
-	out.write('export HORIZONS_SRCNAME=TSTCURVE\n')
-	out.write('\n')
 	out.write('\n')
 	out.write('start() {\n')
-	out.write('    if [[ `hostanme` == ${CALC_SERVER} ]]; then\n')
+	out.write('    if [[ `hostname` == %s ]]; then\n' % environ['CALC_SERVER'])
+	out.write('        # set up some env vars for calcserver\n')
+	out.write('        export CALC_USER=C\n')
+	out.write('        export WET_ATM=Y\n')
+	out.write('        export JPLEPH=%s/share/CalcServer/JPLEPH\n' % environ['DIFXROOT'])
+	out.write('        export SERVERLOG=OFF\n')
+	out.write('        export HORIZONS_FILENAME=%s/share/CalcServer/Horizons.lis\n' % environ['DIFXROOT'])
+	out.write('        export HORIZONS_SRCNAME=TSTCURVE\n')
 	out.write('        echo -n $"Starting calcserver: "\n')
-	out.write('        pushd /tmp\n')
-	out.write('        daemon \'CalcServer > /dev/null\'\n')
-	out.write('        popd\n')
+	out.write('        daemon \'%s/bin/CalcServer > /dev/null &\'\n' % environ['DIFXROOT'])
+	out.write('        echo\n')
 	out.write('    fi\n')
-	out.write('    echo -n $"Starting mk5daemon: "\n')
-	out.write('    if [[ `hostanme` == ${DIFX_HEAD_NODE} ]]; then\n')
-	out.write('        daemon \'mk5daemon -H -e > /dev/null\'\n')
+	out.write('    if [[ `hostname` == %s ]]; then\n' % environ['DIFX_HEAD_NODE'])
+	out.write('        echo -n $"Starting mk5daemon with head node capabilities: "\n')
+	out.write('        daemon \'%s/bin/mk5daemon -H -e > /dev/null &\'\n' % environ['DIFXROOT'])
 	out.write('    else\n')
-	out.write('        daemon \'mk5daemon -e > /dev/null\'\n')
+	out.write('        echo -n $"Starting mk5daemon: "\n')
+	out.write('        daemon \'%s/bin/mk5daemon -e > /dev/null &\'\n' % environ['DIFXROOT'])
 	out.write('    fi\n')
 	out.write('    RETVAL=$?\n')
 	out.write('    echo\n')
@@ -519,9 +515,10 @@ def writeinitfile():
 	out.write('\n')
 	out.write('\n')
 	out.write('stop() {\n')
-	out.write('    if [[ `hostanme` == ${CALC_SERVER} ]]; then\n')
+	out.write('    if [[ `hostname` == %s ]]; then\n' % environ['CALC_SERVER'])
 	out.write('        echo -n $"Stopping calcserver: "\n')
 	out.write('        killproc CalcServer\n')
+	out.write('        echo\n')
 	out.write('    fi\n')
 	out.write('    echo -n $"Stopping mk5daemon: "\n')
 	out.write('    killproc mk5daemon\n')
@@ -547,6 +544,8 @@ def writeinitfile():
 	out.write('        exit 1\n')
 	out.write('esac\n')
 	out.close()
+
+	execute('chmod +x %s' % initfile, verbose, pretend)
 
 
 def bootstrap(comps, params, args, verbose, pretend):
@@ -609,7 +608,7 @@ def bootstrap(comps, params, args, verbose, pretend):
 				execute('mkdir -p %s' % d, verbose, pretend)
 
 		# make sure dir path is world writable
-		execute('chmod a+w %s' % dirPath);
+		execute('chmod a+w %s' % dirPath, verbose, pretend);
 
 		platforms = {}	# indexed by arch
 		platformhostsStr = ''
@@ -718,7 +717,7 @@ def bootstrap(comps, params, args, verbose, pretend):
 			pathExtra = ':%s' % config['pathextra']
 		else:
 			pathExtra = ''
-		out.write('export PATH=${DIFX_ARCH_ROOT}/bin:${DIFXROOT}/bin:~/bin:/bin:/usr/bin%s\n' % pathExtra)
+		out.write('export PATH=${DIFX_ARCH_ROOT}/bin:${DIFXROOT}/bin:${DIFX_BASE}/bin:~/bin:/bin:/usr/bin%s\n' % pathExtra)
 		if config.has_key('ldextra'):
 			ldExtra = ':%s' % config['ldextra']
 		else:
@@ -729,7 +728,7 @@ def bootstrap(comps, params, args, verbose, pretend):
 			out.write('export %s=%s\n' % (e[0], e[1]))
 
 		out.write("alias src='cd ${DIFX_SRC}'\n")
-		out.write("alias bld='cd ${DIFX_PREFIX}/build'\n")
+		out.write("alias bld='cd ${DIFXROOT}/build'\n")
 		out.write('export PS1="\\u@\\h $DIFX_VERSION$DIFX_PROMPT_EXTRA \\W> "\n')
 
 		out.write("$@  # this must be the last statement in the file\n")
@@ -812,7 +811,7 @@ def build(origComps, params, args, verbose, pretend):
 				if verbose > 1:
 					print 'Generating ipp.pc'
 				chdir(pkgDir)
-				genipppc('%s' % (environ['IPPROOT']))
+				genipppc(environ['IPPROOT'])
 		if verbose > 1:
 			print 'Building: %s' % componentList(okComps)
 		if not isdir(buildDir):
@@ -860,6 +859,26 @@ def rebuild(origComps, params, args, verbose, pretend):
 			chdir(buildPath)
 			execute('make -j %d' % numMakeCpus, verbose, pretend)
 			execute('make install', verbose, pretend)
+			
+def dist(origComps, params, args, verbose, pretend):
+	comps = filterComponents(origComps, args)
+	if len(comps) == 0:
+		print 'No components selected.  Did you mean to append "all" to the command line?\n'
+		return
+	buildDir = environ['DIFXROOT'] + '/build/'
+	okComps = checkFiles(comps, buildDir, 'Makefile', args)
+	if verbose > 1:
+		print 'Rebuilding: %s' % componentList(okComps)
+	distDir = environ['DIFXROOT'] + '/dist/'
+	if not isdir(distDir):
+		execute('mkdir -p %s' % distDir, verbose, pretend)
+	for comp in okComps:
+		buildPath = buildDir + comp[0] + '/'
+		if isdir(buildPath):
+			chdir(buildPath)
+			execute('rm -f *.tar.gz', verbose, pretend)
+			execute('make dist', verbose, pretend)
+			execute('mv -f *.tar.gz %s' % distDir, verbose, pretend)
 
 def pbuild(origComps, params, args, verbose, pretend):
 	comps = filterComponents(origComps, args)
@@ -999,8 +1018,8 @@ command_list = \
 command_default = \
 [ \
 	'default', \
-	'Set the default version of DiFX to that identified in the current environment', \
-	['DIFXROOT', 'DIFX_BASE'], \
+	'Set the default version of DiFX to that identified in the current environment and update the difx boot script', \
+	['DIFXROOT', 'DIFX_BASE', 'CALC_SERVER', 'DIFX_HEAD_NODE'], \
 	[], \
 	default \
 ]
@@ -1068,6 +1087,15 @@ command_clean = \
 	clean, \
 ]
 
+command_dist = \
+[ \
+	'dist', \
+	'Generate tar.gz for each component', \
+	['DIFXROOT'], \
+	[], \
+	dist, \
+]
+
 command_pclean = \
 [ \
 	'pclean', \
@@ -1119,13 +1147,13 @@ commands = \
 	command_bootstrap, \
 	command_default, \
 	command_svn, \
-#	command_tar, \
 	command_autotool, \
 	command_openmpi, \
 	command_spice, \
 	command_build, \
 	command_rebuild, \
 	command_pbuild, \
+	command_dist, \
 	command_clean, \
 	command_pclean, \
 	command_uninstall, \
