@@ -1,4 +1,4 @@
-#!/bin/env python
+#!/usr/bin/env python
 
 from os import environ, system, getcwd, chdir, popen, readlink
 from os.path import isdir, isfile, islink, join, dirname
@@ -549,7 +549,7 @@ def writeinitfile(verbose, pretend):
 
 
 def bootstrap(comps, params, args, verbose, pretend):
-	requiredConfigParams = ['difxbase', 'version']
+	requiredConfigParams = ['difxbase', 'version', 'headnode']
 	if not isfile(params['ConfigFile']):
 		print 'Error: bootstrapping needs the specified configuration file, %s, to exist.' % params['ConfigFile']
 		return
@@ -608,7 +608,7 @@ def bootstrap(comps, params, args, verbose, pretend):
 				execute('mkdir -p %s' % d, verbose, pretend)
 
 		# make sure dir path is world writable
-		execute('chmod a+w %s' % dirPath, verbose, pretend);
+		execute('chmod a+w %s' % dirPath, verbose, pretend)
 
 		platforms = {}	# indexed by arch
 		platformhostsStr = ''
@@ -646,13 +646,15 @@ def bootstrap(comps, params, args, verbose, pretend):
 			return
 
 
-		out = open('%s/bin/runmpifxcorr.%s' % (config['difxbase'], config['version']), 'w')
+		runscript = '%s/bin/runmpifxcorr.%s' % (config['difxbase'], config['version']) 
+		out = open(runscript, 'w')
 		out.write('#!/bin/bash\n\n')
 		out.write('. %s\n' % setupFile)
 		if config.has_key('wrapper'):
 			out.write('%s ' % config['wrapper'])
 		out.write('mpifxcorr $@\n')
 		out.close()
+		execute('chmod a+x %s' % runscript, verbose, pretend)
 		
 		out = open(setupFile, 'w')
 		
@@ -699,7 +701,11 @@ def bootstrap(comps, params, args, verbose, pretend):
 		out.write('fi\n')
 		out.write('export DIFX_SRC=%s/src\n' % config['root'])
 		out.write('export X11LIBS=-lX11\n')
-		out.write('export CALC_SERVER=%s\n' % config['calcserver'])
+		if config.has_key('calcserver'):
+			calcserver = config['calcserver']
+		else:
+			calcserver = config['headnode']
+		out.write('export CALC_SERVER=%s\n' % calcserver)
 		out.write('export DIFX_HEAD_NODE=%s\n' % config['headnode'])
 		out.write('export DIFX_BASE=%s\n' % config['difxbase'])
 		out.write('export CFLAGS="-O2 -Wall -march=core2"\n')
