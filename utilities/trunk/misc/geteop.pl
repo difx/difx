@@ -13,7 +13,6 @@
 
 $FINALS_FILE = "usno_finals.erp";
 $FINALS_URL = "http://gemini.gsfc.nasa.gov/solve_save/$FINALS_FILE";
-$TAIUTC = 34;
 
 $eopCount = 0;
 
@@ -32,13 +31,24 @@ if ($date =~ /(\d{4})-(\d+)/)
 	$year = $1;
 	$doy = $2;
 	#print "year: $year $doy\n";
-	$jdate = &calcJD($year,$doy, 0, 0,0);
+	$jdate = &calcJD($year,$doy, 23, 59, 59);
 }
 else
 {
 	&printUsage;
 }
 
+print $jdate;
+
+# Leap second 30.Jun 2012
+if ($jdate > 2456109.5) 
+{
+	$TAIUTC = 35;
+}
+else
+{
+	$TAIUTC = 34;
+}
 
 # get the solution file
 system ("rm $FINALS_FILE");
