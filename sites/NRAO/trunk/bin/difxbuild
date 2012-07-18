@@ -11,7 +11,7 @@ from time import asctime
 
 program = 'difxbuild'
 version = '0.9'
-verdate = '20120711'
+verdate = '20120718'
 author = 'Walter Brisken <wbrisken@nrao.edu>'
 
 openmpiVersion = "1.6"
@@ -488,7 +488,7 @@ def writeinitfile(verbose, pretend):
 	out.write('\n')
 	out.write('\n')
 	out.write('start() {\n')
-	out.write('    if [[ `hostname` == %s ]]; then\n' % environ['CALC_SERVER'])
+	out.write('    if [[ `hostname -s` == %s ]]; then\n' % environ['CALC_SERVER'])
 	out.write('        # set up some env vars for calcserver\n')
 	out.write('        export CALC_USER=C\n')
 	out.write('        export WET_ATM=Y\n')
@@ -500,7 +500,7 @@ def writeinitfile(verbose, pretend):
 	out.write('        daemon \'%s/bin/CalcServer > /dev/null &\'\n' % environ['DIFXROOT'])
 	out.write('        echo\n')
 	out.write('    fi\n')
-	out.write('    if [[ `hostname` == %s ]]; then\n' % environ['DIFX_HEAD_NODE'])
+	out.write('    if [[ `hostname -s` == %s ]]; then\n' % environ['DIFX_HEAD_NODE'])
 	out.write('        echo -n $"Starting mk5daemon with head node capabilities: "\n')
 	out.write('        daemon \'%s/bin/mk5daemon -H -e > /dev/null &\'\n' % environ['DIFXROOT'])
 	out.write('    else\n')
@@ -737,7 +737,7 @@ def bootstrap(comps, params, args, verbose, pretend):
 		out.write("alias bld='cd ${DIFXROOT}/build'\n")
 		out.write('export PS1="\\u@\\h $DIFX_VERSION$DIFX_PROMPT_EXTRA \\W> "\n')
 
-		out.write("$@  # this must be the last statement in the file\n")
+		out.write("\nif [[ ${1: -9} == difxbuild ]]; then $@; fi  # this must be the last statement in the file\n")
 		out.close()
 
 		execute('chmod +x %s' % setupFile, verbose, pretend)
@@ -795,7 +795,7 @@ def autotool(origComps, params, args, verbose, pretend):
 		if 'autoheader' in buildFlags:
 			execute('autoheader', verbose, pretend)
 		if 'automake' in buildFlags:
-			execute('automake -a', verbose, pretend)
+			execute('automake --add-missing --copy', verbose, pretend)
 
 def build(origComps, params, args, verbose, pretend):
 	if 'none' in args:
@@ -954,11 +954,15 @@ def spice(origComps, params, args, verbose, pretend):
 		spiceUrl = 'ftp://naif.jpl.nasa.gov/pub/naif/toolkit//C/PC_Linux_GCC_32bit/packages/cspice.tar.Z'
 	difxBase = environ['DIFX_BASE'] + '/'
 	tarDir = difxBase + 'tar/'
+	wgetOptions = ''
+	if 'nopassive' in args:
+		wgetOptions = wgetOptions + ' --no-nopassive-ftp'
 	if not isdir(tarDir):
 		execute('mkdir -p %s' % tarDir, verbose, pretend)
 	if not isfile(tarDir + 'cspice.tar.Z'):
+		print '* NOTE: if FTP hangs, try again with the nopassive argument added to the difxbuild command line'
 		chdir(tarDir)
-		execute('wget %s' % spiceUrl, verbose, pretend)
+		execute('wget %s %s' % (wgetOptions, spiceUrl), verbose, pretend)
 	else:
 		print 'Spice file already downloaded.'
 	if not isdir(difxBase + arch):

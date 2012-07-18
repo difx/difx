@@ -6,10 +6,11 @@ from os import environ, system, getcwd
 from string import strip, split
 from re import search
 from time import sleep
+from math import sqrt
 
 program = 'difxspeed'
 version = '0.1'
-verdate = '20120716'
+verdate = '20120718'
 author = 'Walter Brisken <wbrisken@nrao.edu>'
 
 inputFileExtension = '.difxspeed'
@@ -21,8 +22,10 @@ inputFileExtension = '.difxspeed'
 
 def usage(pgm):
 	print '\n%s ver. %s  %s  %s' % (program, version, author, verdate) % pgm
-	print '\nUsage: %s <benchmarkFile>\n'
-	print 'Where <benchmarkFile> describes the series of benchmarks to run.\n'
+	print '\nUsage: %s <benchmarkFile> [<numIterations>]\n'
+	print 'Where:'
+	print '  <benchmarkFile> describes the series of benchmarks to run.\n'
+	print '  <numIterations> is the number of times to run the test.\n'
 
 nExecute = 0
 def execute(cmd, verbose, pretend):
@@ -79,8 +82,13 @@ def writeheader(fd, config, cluster):
 		if len(c[2]) > 1:
 			fd.write('# %d  %s\n' % (col, c[0]))
 			col += 1
-	fd.write('# %d  Execute time (seconds)\n' % col)
+	fd.write('# %d  Average execute time (seconds)\n' % col)
 	col += 1
+	fd.write('# %d  RMS of execute times (seconds)\n' % col)
+	col += 1
+	fd.write('# %d...  Individual execute times (seconds)\n' % col)
+
+	fd.flush()
 
 def getnant(config, cluster):
 	maxAnt = len(cluster['antennas'])
@@ -106,9 +114,9 @@ def getncore(config, cluster):
 
 	return maxCore
 
-def runtest(fd, config, cluster, filebase, verbose):
+def runtest(fd, config, cluster, filebase, verbose, run):
 
-	setupParams = ['tInt', 'fftSpecRes', 'specRes']
+	setupParams = ['tInt', 'fftSpecRes', 'specRes', 'strideLength', 'xmacLength', 'numBufferedFFTs']
 	antennaParams = ['toneSelection']
 	dontWriteParams = ['nAnt']
 	writeparams(fd, config)
@@ -117,70 +125,86 @@ def runtest(fd, config, cluster, filebase, verbose):
 	nCore = getncore(config, cluster)
 	antennas = cluster['antennas']
 
-	# write v2d file
-	v2dfile = filebase + '.v2d'
-	o = open(v2dfile, 'w')
-	o.write('# written by %s ver %s\n\n' % (program, version))
+	if run:
+		# write v2d file
+		v2dfile = filebase + '.v2d'
+		o = open(v2dfile, 'w')
+		o.write('# written by %s ver %s\n\n' % (program, version))
 
-	o.write('fake = true\n')
-	o.write('singleScan = false\n')
-	o.write('startSeries = 0\n')
+		o.write('fake = true\n')
+		o.write('singleScan = false\n')
+		o.write('startSeries = 0\n')
 
-	# machines info goes here
-	o.write('machines = %s' % environ['DIFX_HEAD_NODE'])
-	for a in range(nAnt):
-		o.write(',%s' % cluster['datastreams'][a])
-	for c in range(nCore):
-		o.write(',%s' % cluster['cores'][c])
-	o.write('\n')
+		# machines info goes here
+		o.write('machines = %s' % environ['DIFX_HEAD_NODE'])
+		for a in range(nAnt):
+			o.write(',%s' % cluster['datastreams'][a])
+		for c in range(nCore):
+			o.write(',%s' % cluster['cores'][c])
+		o.write('\n')
 
-	o.write('antennas = ')
-	for a in range(nAnt):
-		if a > 0:
-			o.write(',')
-		o.write(antennas[a])
-	o.write('\n')
-	# FIXME: add other antenna parameters here
-	for a in range(nAnt):
-		o.write('ANTENNA %s\n' % antennas[a])
+		o.write('antennas = ')
+		for a in range(nAnt):
+			if a > 0:
+				o.write(',')
+			o.write(antennas[a])
+		o.write('\n')
+		# FIXME: add other antenna parameters here
+		for a in range(nAnt):
+			o.write('ANTENNA %s\n' % antennas[a])
+			o.write('{\n')
+			o.write('  fake = x\n')
+			o.write('}\n')
+		
+		# write non-setup parameters here
+		for c in config:
+			if c[0] not in setupParams and c[0] not in antennaParams and c[0] not in dontWriteParams:
+				o.write('%s = %s\n' % (c[0], c[2][c[1]]))
+
+		# write setup
+		o.write('SETUP default\n')
 		o.write('{\n')
-		o.write('  fake = x\n')
+		for c in config:
+			if c[0] in setupParams and c[0] not in dontWriteParams:
+				o.write('  %s = %s\n' % (c[0], c[2][c[1]]))
 		o.write('}\n')
-	
-	# write non-setup parameters here
-	for c in config:
-		if c[0] not in setupParams and c[0] not in antennaParams and c[0] not in dontWriteParams:
-			o.write('%s = %s\n' % (c[0], c[2][c[1]]))
 
-	# write setup
-	o.write('SETUP default\n')
-	o.write('{\n')
-	for c in config:
-		if c[0] in setupParams and c[0] not in dontWriteParams:
-			o.write('  %s = %s\n' % (c[0], c[2][c[1]]))
-	o.write('}\n')
+		o.close()
 
-	o.close()
+		# run vex2difx
+		execute('vex2difx %s' % v2dfile, verbose, False)
 
-	# run vex2difx
-	execute('vex2difx %s' % v2dfile, verbose, False)
+		# run calcif2
+		execute('calcif2 %s' % filebase, verbose, False)
 
-	# run calcif2
-	execute('calcif2 %s' % filebase, verbose, False)
+		# run difx
+		execute('startdifx -n -f %s' % filebase, verbose, False)
 
-	# run difx
-	execute('startdifx -n -f %s' % filebase, verbose, False)
-
-	# make sure difxlog is closed
-	sleep(1)
+		# make sure difxlog is closed
+		sleep(1)
 
 	try:
+		executeTime = []
+		n = 0
+		s = 0.0
+		ss = 0.0
 		logdata = open('%s.difxlog' % filebase, 'r').readlines()
 		for l in logdata:
 			m = search('\*\*([0-9.]+)\*\*', l)
 			if m != None:
-				executeTime = m.group(1)
-				fd.write(' %s' % executeTime)
+				et = float(m.group(1))
+				n += 1
+				s += et
+				ss += et*et
+				executeTime.append(et)
+
+		if n > 0:
+			a = s/n
+			r = sqrt(ss/n - a*a);
+			fd.write(' %f %f ' % (a, r))
+			for et in executeTime:
+				fd.write(' %f' % et)
+
 	except IOError:
 		print 'Error reading %s.difxlog' % filebase
 		return -1
@@ -188,10 +212,11 @@ def runtest(fd, config, cluster, filebase, verbose):
 
 	fd.write('  # %s' % filebase)
 	fd.write('\n')
+	fd.flush()
 
 	return 0
 
-def benchmark(basename, verbose):
+def benchmark(basename, verbose, run):
 	inputFile = basename + inputFileExtension
 	params = {}
 	cluster = {}
@@ -237,10 +262,10 @@ def benchmark(basename, verbose):
 		filebase = '%s-%03d' % (basename, sequenceNumber)
 		if sequenceNumber == 1:
 			# run a first dummy test
-			v = runtest(fd, it, cluster, '%s-dummy' % basename, verbose)
+			v = runtest(fd, it, cluster, '%s-dummy' % basename, verbose, run)
 			if v < 0:
 				break
-		v = runtest(fd, it, cluster, filebase, verbose)
+		v = runtest(fd, it, cluster, filebase, verbose, run)
 		if v < 0:
 			break
 		it = nextconfig(it)
@@ -292,6 +317,9 @@ if basename == None:
 	print 'Error: input file must end with %s, must start with a letter, and must not have any special characters in it.' % inputFileExtension
 	exit(0)
 
-for i in range(nIter):
-	print 'Iteration %d of %d' % (i+1, nIter)
-	benchmark(basename, verbose)
+if nIter > 0:
+	for i in range(nIter):
+		print 'Iteration %d of %d' % (i+1, nIter)
+		benchmark(basename, verbose, True)
+else:
+	benchmark(basename, verbose, False)
