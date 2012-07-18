@@ -38,7 +38,6 @@ else
 	&printUsage;
 }
 
-print $jdate;
 
 # Leap second 30.Jun 2012
 if ($jdate > 2456109.5) 
