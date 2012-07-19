@@ -5,13 +5,13 @@ from os.path import isdir, isfile, islink, join, dirname
 from sys import argv, exit, platform
 from re import search
 import getopt
-from string import split, strip, find
-from platform import machine
+from string import split, strip, find, lower
+import platform
 from time import asctime
 
 program = 'difxbuild'
-version = '0.9'
-verdate = '20120718'
+version = '0.10'
+verdate = '20120719'
 author = 'Walter Brisken <wbrisken@nrao.edu>'
 
 openmpiVersion = "1.6"
@@ -297,6 +297,13 @@ component_calcserver_trunk = \
 	['aclocal', 'libtoolize', 'autoconf', 'automake'] \
 ]
 
+component_guiserver_trunk = \
+[ \
+	'guiServer', \
+	'https://svn.atnf.csiro.au/difx/applications/doi/branches/USNO/guiServer', \
+	['aclocal', 'autoconf', 'automake'], \
+]
+
 component_rcwlib_trunk = \
 [ \
 	'rcwlib', \
@@ -309,6 +316,13 @@ component_sniff_trunk = \
 	'SniffPlots', \
 	'https://svn.atnf.csiro.au/difx/sites/NRAO/trunk/SniffPlots', \
 	['aclocal', 'autoconf', 'automake', 'pgplot'] \
+]
+
+component_hops_trunk = \
+[ \
+	'hops', \
+	'https://svn.atnf.csiro.au/difx/applications/hops/trunk', \
+	['aclocalm4', 'autoconf', 'autoheader', 'automake', 'pgplot'] \
 ]
 
 components['DIFX-DEVEL'] = \
@@ -324,8 +338,10 @@ components['DIFX-DEVEL'] = \
 	component_mk5daemon_trunk, \
 	component_calcif2_trunk, \
 	component_calcserver_trunk, \
+	component_guiserver_trunk, \
 	component_rcwlib_trunk, \
 	component_sniff_trunk, \
+	component_hops_trunk, \
 ]
 
 component_difxio_2_1 = \
@@ -612,7 +628,7 @@ def bootstrap(comps, params, args, verbose, pretend):
 
 		platforms = {}	# indexed by arch
 		platformhostsStr = ''
-		platforms[machine()] = []
+		platforms[platform.machine()] = []
 		for i in range(1, 10):
 			if not config.has_key('altplatform%d' % i):
 				break;
@@ -687,7 +703,7 @@ def bootstrap(comps, params, args, verbose, pretend):
 				out.write(' %s; then\n' % plat[1])
 				out.write('    export DIFXROOT=%s-%s\n' % (config['root'], plat[0]))
 				out.write('    DIFX_PROMPT_EXTRA="${DIFX_PROMPT_EXTRA} %s"\n' % plat[0])
-			if arch == machine():
+			if arch == platform.machine():
 				if n > 0:
 					out.write('  else\n')
 					out.write('    export DIFXROOT=%s\n' % config['root'])
@@ -713,6 +729,7 @@ def bootstrap(comps, params, args, verbose, pretend):
 		out.write('export MPICXX=${DIFX_ARCH_ROOT}/bin/mpicxx\n')
 		out.write('export PKG_CONFIG_PATH=${DIFXROOT}/lib/pkgconfig\n')
 		out.write('export MARK5_DIR_PATH=${DIFX_BASE}/directories\n')
+		out.write('export PGPLOT_DIR=${DIFX_ARCH_ROOT}/pgplot\n')
 		out.write('export DIFX_MESSAGE_GROUP=224.2.2.1\n')
 		out.write('export DIFX_MESSAGE_PORT=50200\n')
 		if len(platformhostsStr) > 0:
@@ -788,6 +805,8 @@ def autotool(origComps, params, args, verbose, pretend):
 		buildFlags = comp[2]
 		if 'aclocal' in buildFlags:
 			execute('aclocal', verbose, pretend)
+		if 'aclocalm4' in buildFlags:
+			execute('aclocal -I m4', verbose, pretend)
 		if 'libtoolize' in buildFlags:
 			execute('libtoolize --copy --force', verbose, pretend)
 		if 'autoconf' in buildFlags:
@@ -834,7 +853,7 @@ def build(origComps, params, args, verbose, pretend):
 				if 'mpicxx' in buildFlags:
 					configureExtras += ' CXX=${MPICXX}'
 				if 'spice' in buildFlags:
-					spiceRoot = environ['DIFX_BASE'] + '/' + machine() + '/cspice/'
+					spiceRoot = environ['DIFX_BASE'] + '/' + platform.machine() + '/cspice/'
 					if isfile(spiceRoot+'lib/cspice.a'):
 						print 'Spice library found!'
 						configureExtras += ' --with-spice-root=' + spiceRoot
@@ -947,20 +966,22 @@ def remove(origComps, params, args, verbose, pretend):
 	print 'Feature not yet implemented'
 
 def spice(origComps, params, args, verbose, pretend):
-	arch = machine()
+	arch = platform.machine()
+	srcFile = 'cspice.tar.Z'
 	if arch in ['x86_64']:
-		spiceUrl = 'ftp://naif.jpl.nasa.gov/pub/naif/toolkit//C/PC_Linux_GCC_64bit/packages/cspice.tar.Z'
+		spiceUrl = 'ftp://naif.jpl.nasa.gov/pub/naif/toolkit//C/PC_Linux_GCC_64bit/packages/%s' % srcFile
 	elif arch in ['i386', 'i686']:
-		spiceUrl = 'ftp://naif.jpl.nasa.gov/pub/naif/toolkit//C/PC_Linux_GCC_32bit/packages/cspice.tar.Z'
+		spiceUrl = 'ftp://naif.jpl.nasa.gov/pub/naif/toolkit//C/PC_Linux_GCC_32bit/packages/%s' % srcFile
 	difxBase = environ['DIFX_BASE'] + '/'
 	tarDir = difxBase + 'tar/'
 	wgetOptions = ''
 	if 'nopassive' in args:
 		wgetOptions = wgetOptions + ' --no-nopassive-ftp'
+	else:
+		print '* NOTE: if FTP hangs, try again with the nopassive argument added to the difxbuild command line'
 	if not isdir(tarDir):
 		execute('mkdir -p %s' % tarDir, verbose, pretend)
-	if not isfile(tarDir + 'cspice.tar.Z'):
-		print '* NOTE: if FTP hangs, try again with the nopassive argument added to the difxbuild command line'
+	if not isfile(tarDir + srcFile):
 		chdir(tarDir)
 		execute('wget %s %s' % (wgetOptions, spiceUrl), verbose, pretend)
 	else:
@@ -968,13 +989,68 @@ def spice(origComps, params, args, verbose, pretend):
 	if not isdir(difxBase + arch):
 		execute('mkdir -p %s%s' % (difxBase, arch), verbose, pretend)
 	chdir(difxBase + arch)
-	execute('tar zxvf %s/cspice.tar.Z' % tarDir, verbose, pretend)
+	execute('tar zxvf %s/%s' % (tarDir, srcFile), verbose, pretend)
+
+def pgplot(origComps, params, args, verbose, pretend):
+	arch = platform.machine()
+	opsys = lower(platform.system())
+	srcFile = 'pgplot5.2.tar.gz'
+	pgplotUrl = 'ftp://ftp.astro.caltech.edu/pub/pgplot/%s' % srcFile
+	difxBase = environ['DIFX_BASE'] + '/'
+	tarDir = difxBase + 'tar/'
+	wgetOptions = ''
+	if 'nopassive' in args:
+		wgetOptions = wgetOptions + ' --no-nopassive-ftp'
+	else:
+		print '* NOTE: if FTP hangs, try again with the nopassive argument added to the difxbuild command line'
+	if not isdir(tarDir):
+		execute('mkdir -p %s' % tarDir, verbose, pretend)
+	if not isfile(tarDir + srcFile):
+		chdir(tarDir)
+		execute('wget %s %s' % (wgetOptions, pgplotUrl), verbose, pretend)
+	else:
+		print 'pgplot file already downloaded.'
+	# untar source
+	srcDir = environ['DIFX_SRC'] + '/'
+	if not isdir(srcDir):
+		execute('mkdir -p %s' % srcDir, verbose, pretend)
+	chdir(srcDir)
+	execute('tar zxvf %s/%s' % (tarDir, srcFile), verbose, pretend)
+	# make dest dir
+	pgplotDir = difxBase + arch + '/pgplot'
+	if not isdir(pgplotDir):
+		execute('mkdir -p %s' % pgplotDir, verbose, pretend)
+	chdir(pgplotDir)
+	# make drivers file
+	o = open('drivers.list', 'w')
+	o.write('  NUDRIV 0 /NULL      Null device (no output)                           Std F77\n')
+	o.write('  PNDRIV 2 /TPNG      Portable Network Graphics file - transparent background C\n')
+	o.write('  PSDRIV 1 /PS        PostScript printers, monochrome, landscape        Std F77\n')
+	o.write('  PSDRIV 2 /VPS       Postscript printers, monochrome, portrait         Std F77\n')
+	o.write('  PSDRIV 3 /CPS       PostScript printers, color, landscape             Std F77\n')
+	o.write('  PSDRIV 4 /VCPS      PostScript printers, color, portrait              Std F77\n')
+	o.write('  XWDRIV 1 /XWINDOW   Workstations running X Window System              C\n')
+	o.write('  XWDRIV 2 /XSERVE    Persistent window on X Window System              C\n')
+	o.close()
+	# generate makefile
+	execute('%s/pgplot/makemake %s/pgplot %s g77_gcc' % (srcDir, srcDir, opsys), verbose, pretend)
+	# modify makefile : remove bogus png.h req, optionally change g77 to gfortran, ...
+	execute('mv makefile makefile.orig', verbose, pretend)
+	fixpng = "-e 's/pndriv.o : .\\/png.h .\\/pngconf.h .\\/zlib.h .\\/zconf.h/pndriv.o :/'"
+	fixg77 = "-e 's/=g77/=gfortran/' -e 's/-u -Wall -fPIC -O/-ffixed-form -ffixed-line-length-none -u -Wall -fPIC -O/'"
+	fixg77 = ""
+	execute('sed %s %s <makefile.orig >makefile' % (fixpng, fixg77), verbose, pretend)
+	# make fortran and c package
+	execute('make', verbose, pretend)
+	execute('make cpg', verbose, pretend)
+	execute('ln -s libpgplot.a libpgplot.so %s/%s/lib' % (difxBase, arch), verbose, pretend)
+
 
 def openmpi(origComps, params, args, verbose, pretend):
 	openmpiWeb = 'http://www.open-mpi.org/software/ompi/v%s/downloads' % openmpiVersion
 	difxBase = environ['DIFX_BASE'] + '/'
 	tarDir = difxBase + 'tar/'
-	cpuDir = difxBase + machine() + '/'
+	cpuDir = difxBase + platform.machine() + '/'
 	cpuSrcDir = cpuDir + 'src/'
 	if not isdir(tarDir):
 		execute('mkdir -p %s' % tarDir, verbose, pretend)
@@ -1142,6 +1218,16 @@ command_spice = \
 	spice \
 ]
 
+command_pgplot = \
+[ \
+	'pgplot', \
+	'Download (if needed) and install pgplot', \
+	['DIFX_BASE'], \
+	[], \
+	pgplot \
+]
+
+
 command_openmpi = \
 [ \
 	'openmpi', \
@@ -1160,6 +1246,7 @@ commands = \
 	command_autotool, \
 	command_openmpi, \
 	command_spice, \
+	command_pgplot, \
 	command_build, \
 	command_rebuild, \
 	command_pbuild, \
