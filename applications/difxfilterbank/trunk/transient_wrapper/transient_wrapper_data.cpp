@@ -80,7 +80,7 @@ void printTransientWrapperData(const TransientWrapperData *T)
 		printf("  nTransient = %d\n", T->nTransient);
 		printf("  nMerged = %d\n", T->nMerged);
 		printf("  nEvent = %d\n", T->nEvent);
-		for(e = 0; e < T->nEvent; e++)
+		for(e = 0; e < T->nEvent; ++e)
 		{
 			printf("    event[%d] = [%12.6f,%12.6f] P=%f DM=%f\n", e, 
 				T->event[e].startMJD, T->event[e].stopMJD,
@@ -127,13 +127,14 @@ void sortEvents(TransientWrapperData *T)
 
 void addEvent(TransientWrapperData *T, const DifxMessageTransient *transient)
 {
-	char message[DIFX_MESSAGE_LENGTH];
 	int merged = 0;
 
-	T->nTransient++;
+	++T->nTransient;
 
 	if(transient->startMJD > T->D->job->jobStop || transient->stopMJD < T->D->job->jobStart)
 	{
+		char message[DIFX_MESSAGE_LENGTH];
+		
 		snprintf(message, DIFX_MESSAGE_LENGTH,
 			"Transient received out of job time range ([%12.6f,%12.6f] not in [%12.6f,%12.6f])",
 			transient->startMJD, transient->stopMJD,
@@ -170,7 +171,7 @@ void addEvent(TransientWrapperData *T, const DifxMessageTransient *transient)
 			T->event[T->nEvent].stopMJD  = transient->stopMJD;
 			T->event[T->nEvent].priority = transient->priority;
 			T->event[T->nEvent].dm       = transient->dm;
-			T->nEvent++;
+			++T->nEvent;
 		}
 	}
 
@@ -244,7 +245,7 @@ static void genDifxFiles(const TransientWrapperData *T, int eventId)
 
 	strcpy(origDir, T->filePrefix);
 	l = strlen(origDir);
-	for(i = l-1; i > 0; i--)
+	for(i = l-1; i > 0; --i)
 	{
 		if(origDir[i] == '/')
 		{
@@ -287,13 +288,13 @@ static void genDifxFiles(const TransientWrapperData *T, int eventId)
 		newD->nPulsar = 0;
 		newD->pulsar = 0;
 	}
-	for(int c = 0; c < newD->nConfig; c++)
+	for(int c = 0; c < newD->nConfig; ++c)
 	{
 		newD->config[c].pulsarId = -1;
 	}
 
 	/* Then change all data sources to FILE and point to those files */
-	for(int dsId = 0; dsId < newD->nDatastream; dsId++)
+	for(int dsId = 0; dsId < newD->nDatastream; ++dsId)
 	{
 		if(newD->datastream[dsId].dataSource == DataSourceModule)
 		{
@@ -314,7 +315,7 @@ static void genDifxFiles(const TransientWrapperData *T, int eventId)
 	/* Finally change correlation parameters */
 	newD->config[configId].tInt = T->conf->recorr_tInt;
 	newD->config[configId].subintNS = (int)(T->conf->recorr_tInt*1.0e9 + 0.5);
-	for(int freqId = 0; freqId <= newD->nFreq; freqId++)
+	for(int freqId = 0; freqId <= newD->nFreq; ++freqId)
 	{
 		newD->freq[freqId].nChan = T->conf->recorr_nChan;
 		newD->freq[freqId].specAvg = T->conf->recorr_specAvg;
@@ -330,7 +331,7 @@ static void genDifxFiles(const TransientWrapperData *T, int eventId)
 
 	snprintf(fileName, DIFXIO_FILENAME_LENGTH, "%s.machines", baseNameFB);
 	out = fopen(fileName, "w");
-	for(i = 0; i < newD->nDatastream+3; i++)
+	for(i = 0; i < newD->nDatastream+3; ++i)
 	{
 		fprintf(out, "%s\n", T->conf->vfastrHost);
 	}
@@ -348,7 +349,7 @@ static void genDifxFiles(const TransientWrapperData *T, int eventId)
 	snprintf(newD->job->outputFile,  DIFXIO_FILENAME_LENGTH, "%s.difx", baseNameIm);
 	newD->config[configId].tInt = T->conf->recorr2_tInt;
 	newD->config[configId].subintNS = (int)(T->conf->recorr2_tInt*1.0e9 + 0.5);
-	for(int freqId = 0; freqId <= newD->nFreq; freqId++)
+	for(int freqId = 0; freqId <= newD->nFreq; ++freqId)
 	{
 		newD->freq[freqId].nChan = T->conf->recorr2_nChan;
 		newD->freq[freqId].specAvg = T->conf->recorr2_specAvg;
@@ -363,7 +364,7 @@ static void genDifxFiles(const TransientWrapperData *T, int eventId)
 	newD->pulsar[0].binWeight = (double *)calloc(newD->pulsar[0].nBin, sizeof(double));
 	newD->pulsar[0].scrunch = 1;
 	snprintf(newD->pulsar[0].fileName, DIFXIO_FILENAME_LENGTH, "%s.binconfig", baseNameIm);
-	for(int c = 0; c < newD->nConfig; c++)
+	for(int c = 0; c < newD->nConfig; ++c)
 	{
 		newD->config[c].pulsarId = 0;
 	}
@@ -374,7 +375,7 @@ static void genDifxFiles(const TransientWrapperData *T, int eventId)
 	DifxInputWriteThreads(newD);
 	snprintf(fileName, DIFXIO_FILENAME_LENGTH, "%s.machines", baseNameIm);
 	out = fopen(fileName, "w");
-	for(i = 0; i < newD->nDatastream+3; i++)
+	for(i = 0; i < newD->nDatastream+3; ++i)
 	{
 		fprintf(out, "%s\n", T->conf->vfastrHost);
 	}
@@ -436,7 +437,7 @@ int copyBasebandData(const TransientWrapperData *T)
 	}
 
 	t1 = t2 = time(0);
-	for(e = 0; e < T->nEvent; e++)
+	for(e = 0; e < T->nEvent; ++e)
 	{
 		if(t2-t1 > T->executeTime*T->conf->maxCopyOverhead)
 		{
@@ -543,14 +544,14 @@ int loadTransientWrapperConf(TransientWrapperConf *conf, const char *filename)
 		return -1;
 	}
 
-	for(int l = 1;; l++)
+	for(int l = 1;; ++l)
 	{
 		fgets(line, DIFX_MESSAGE_COMMENT_LENGTH-1, in);
 		if(feof(in))
 		{
 			break;
 		}
-		for(int i = 0; line[i]; i++)
+		for(int i = 0; line[i]; ++i)
 		{
 			if(line[i] == '#')	/* break at a comment charcter */
 			{

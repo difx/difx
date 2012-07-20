@@ -51,7 +51,7 @@ static int execute(int argc, char **argv, TransientWrapperData *T)
 	int start = 1;
 	time_t t1, t2;
 
-	for(a = 1; a < argc; a++)
+	for(a = 1; a < argc; ++a)
 	{
 		if(strcmp(argv[a], "--") == 0)
 		{
@@ -60,7 +60,7 @@ static int execute(int argc, char **argv, TransientWrapperData *T)
 	}
 
 	command[0] = 0;
-	for(a = start; a < argc; a++)
+	for(a = start; a < argc; ++a)
 	{
 		if(command[0] != 0)
 		{
@@ -95,10 +95,8 @@ static int execute(int argc, char **argv, TransientWrapperData *T)
 static void updateenvironment(const char *inputFile)
 {
 	const int MaxLineLength = 1024;
-	char line[MaxLineLength], key[MaxLineLength], value[MaxLineLength];
 	char envFile[DIFXIO_FILENAME_LENGTH];
 	int v;
-	char *rv;
 	FILE *in;
 
 	v = snprintf(envFile, DIFXIO_FILENAME_LENGTH, "%s.env", inputFile);
@@ -114,6 +112,9 @@ static void updateenvironment(const char *inputFile)
 	{
 		while(!feof(in))
 		{
+			char *rv;
+			char line[MaxLineLength], key[MaxLineLength], value[MaxLineLength];
+			
 			rv = fgets(line, MaxLineLength, in);
 			if(!rv)
 			{
@@ -138,7 +139,7 @@ static int parseCommandLine(int argc, char **argv, TransientWrapperData *T)
 	int a;
 	int stop = 0;
 
-	for(a = 1; a < argc; a++)
+	for(a = 1; a < argc; ++a)
 	{
 		if(strcmp(argv[a], "--") == 0)
 		{
@@ -148,17 +149,17 @@ static int parseCommandLine(int argc, char **argv, TransientWrapperData *T)
 
 	if(stop)
 	{
-		for(a = 1; a < stop; a++)
+		for(a = 1; a < stop; ++a)
 		{
 			if(strcmp(argv[a], "-v") == 0 ||
 			   strcmp(argv[a], "--verbose") == 0)
 			{
-				T->verbose++;
+				++T->verbose;
 			}
 			else if(strcmp(argv[a], "-q") == 0 ||
 			   strcmp(argv[a], "--quiet") == 0)
 			{
-				T->verbose--;
+				--T->verbose;
 			}
 			else if(strcmp(argv[a], "-h") == 0 ||
 			   strcmp(argv[a], "--help") == 0)
@@ -224,10 +225,9 @@ static int getFreeMB(const char *path)
 	const int MaxCommandLength = 256;
 	const int MaxLineLength = 256;
 	char cmd[MaxCommandLength];
-	char line[MaxLineLength];
 	FILE *pin;
-	int v, size = 0;
-	char *s;
+	int v;
+	int size = 0;
 
 	v = snprintf(cmd, MaxCommandLength, "df -m %s\n", path);
 
@@ -240,6 +240,9 @@ static int getFreeMB(const char *path)
 	{
 		while(!feof(pin))
 		{
+			char line[MaxLineLength];
+			char *s;
+
 			s = fgets(line, MaxLineLength-1, pin);
 			if(!s)
 			{
@@ -269,7 +272,6 @@ TransientWrapperData *initialize(int argc, char **argv, const TransientWrapperCo
 {
 	TransientWrapperData *T;
 	const char *inputFile, *pgm;
-	char message[DIFX_MESSAGE_LENGTH];
 	int df, i, index;
 
 	T = newTransientWrapperData(conf);
@@ -289,6 +291,8 @@ TransientWrapperData *initialize(int argc, char **argv, const TransientWrapperCo
 
 	if(index < 0)
 	{
+		char message[DIFX_MESSAGE_LENGTH];
+		
 		snprintf(message, DIFX_MESSAGE_LENGTH, "%s", "Malformed command line (run with -h for usage)");
 		difxMessageSendDifxAlert("Malformed command line", DIFX_ALERT_LEVEL_ERROR);
 		printf("Error: %s\n", message);
@@ -303,6 +307,8 @@ TransientWrapperData *initialize(int argc, char **argv, const TransientWrapperCo
 	T->filePrefix = stripInputFile(inputFile);
 	if(!T->filePrefix)
 	{
+		char message[DIFX_MESSAGE_LENGTH];
+		
 		snprintf(message, DIFX_MESSAGE_LENGTH, "Malformed .input file name: %s", inputFile);
 		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
 		printf("Error: %s\n", message);
@@ -315,6 +321,8 @@ TransientWrapperData *initialize(int argc, char **argv, const TransientWrapperCo
 	T->D = loadDifxInput(T->filePrefix);
 	if(!T->D)
 	{
+		char message[DIFX_MESSAGE_LENGTH];
+		
 		snprintf(message, DIFX_MESSAGE_LENGTH, "Problem opening DiFX job %s", T->filePrefix);
 		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
 		printf("Error: %s\n", message);
@@ -325,7 +333,7 @@ TransientWrapperData *initialize(int argc, char **argv, const TransientWrapperCo
 	}
 
 	T->identifier = T->filePrefix;
-	for(i = 0; T->filePrefix[i]; i++)
+	for(i = 0; T->filePrefix[i]; ++i)
 	{
 		if(T->filePrefix[i] == '/')
 		{

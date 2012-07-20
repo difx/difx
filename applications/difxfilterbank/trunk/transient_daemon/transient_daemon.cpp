@@ -142,7 +142,7 @@ void TransientDaemonState::fprint(FILE *out) const
 	}
 
 	fprintf(out, "TransientDaemonState [%s]:\n", hostname);
-	fprintf(out, "  startTime=%d # %s\n", startTime, timeStr);
+	fprintf(out, "  startTime=%d # %s\n", static_cast<int>(startTime), timeStr);
 	fprintf(out, "  verbose=%d\n", verbose);
 	fprintf(out, "  selfTest=%d\n", selfTest);
 	fprintf(out, "  startEnable=%d\n", startEnable);
@@ -223,20 +223,27 @@ void logExecute(const char *str)
 
 /* check available disk space on the output file system and return 1 if there is
     enough space available or 0 otherwise */
-int diskSpaceIsAvailable(const TransientDaemonConf *conf) {
-    struct statfs fs;
-    int res;
+int diskSpaceIsAvailable(const TransientDaemonConf *conf)
+{
+	struct statfs fs;
+	int res;
 
-    res = statfs(conf->outputPath,&fs);
-    if (res==0) {
-        long long bytes_available,min_required;
-        min_required = 1000000000LL*conf->min_disk_space_GB;
-        bytes_available = (long long)fs.f_bsize*(long long)fs.f_bavail;
-        printf("Available disk space: %lld GB. Min required: %d GB\n",
-                bytes_available/1000000000,conf->min_disk_space_GB);
-        if (bytes_available > min_required) return 1;
-    }
-    return 0;
+	res = statfs(conf->outputPath,&fs);
+	if(res==0)
+	{
+		long long bytes_available,min_required;
+
+		min_required = 1000000000LL*conf->min_disk_space_GB;
+		bytes_available = static_cast<long long>(fs.f_bsize)*static_cast<long long>(fs.f_bavail);
+		printf("Available disk space: %lld GB. Min required: %d GB\n",
+		bytes_available/1000000000,conf->min_disk_space_GB);
+		if(bytes_available > min_required)
+		{
+			return 1;
+		}
+	}
+
+	return 0;
 }
 
 
@@ -294,7 +301,7 @@ TransientDaemonConf *newTransientDaemonConf()
 		exit(EXIT_FAILURE);
 	}
 	conf->vfastrEnable = defaultVfastrEnable;
-    conf->min_disk_space_GB = defaultMinDiskSpaceGB;
+	conf->min_disk_space_GB = defaultMinDiskSpaceGB;
 	conf->detectionThreshold = defaultDetectionThreshold;
 	snprintf(conf->outputPath, DIFX_MESSAGE_FILENAME_LENGTH, "%s", defaultOutputPath);
 	conf->difxStaChannels = defaultDifxStaChannels;
@@ -455,14 +462,14 @@ int loadTransientDaemonConf(TransientDaemonConf *conf, const char *filename)
 		return -1;
 	}
 
-	for(int l = 1;; l++)
+	for(int l = 1;; ++l)
 	{
 		fgets(line, DIFX_MESSAGE_COMMENT_LENGTH-1, in);
 		if(feof(in))
 		{
 			break;
 		}
-		for(int i = 0; line[i]; i++)
+		for(int i = 0; line[i]; ++i)
 		{
 			if(line[i] == '#')	/* break at a comment charcter */
 			{
@@ -534,7 +541,7 @@ static void generateIdentifier(const char *inputfile, int myID, char *identifier
 {
 	int l, s=0;
 
-	for(int i = 0; inputfile[i]; i++)
+	for(int i = 0; inputfile[i]; ++i)
 	{
 		if(inputfile[i] == '/')
 		{
@@ -552,7 +559,7 @@ static void generateIdentifier(const char *inputfile, int myID, char *identifier
 	l = strlen(identifier);
 
 	// strip off ".input"
-	for(int i = l-1; i > 0; i--)
+	for(int i = l-1; i > 0; --i)
 	{
 		if(identifier[i] == '.')
 		{
@@ -591,7 +598,7 @@ static int getDMGenCommand(const char *inputFile, char *command, const Transient
 	}
 	nFreq = atoi(DifxParametersvalue(dp, r));
 	maxfreq_ind = nFreq-1;
-	for(int i = 0; i < nFreq; i++)
+	for(int i = 0; i < nFreq; ++i)
 	{
 		r = DifxParametersfind1(dp, r, "FREQ (MHZ) %d", i);
 		if(r < 0)
@@ -608,7 +615,7 @@ static int getDMGenCommand(const char *inputFile, char *command, const Transient
 		if(freq > maxFreq)
 		{
 			maxFreq = freq;
-            maxfreq_ind = i;    /* track the index of the highest freq, so that we can add its BW below */
+			maxfreq_ind = i;    /* track the index of the highest freq, so that we can add its BW below */
 		}
 	}
 	/* need to add the bandwdith of the highest freq to overall freq span calculation*/
@@ -702,10 +709,12 @@ static int handleMessage(const char *message, TransientDaemonState *state, const
 	case DIFX_MESSAGE_START:
 		if(conf->vfastrEnable)
 		{
-            if (!diskSpaceIsAvailable(conf)) {
-                printf("Received start message, but not enough space is left on disk. Ignoring\n");
-                return -3;
-            }
+ 			if(!diskSpaceIsAvailable(conf))
+			{
+ 				printf("Received start message, but not enough space is left on disk. Ignoring\n");
+			
+				return -3;
+			}
 			state->lastCommand[0] = 0;
 			if(state->verbose > 1)
 			{
@@ -742,7 +751,7 @@ static int handleMessage(const char *message, TransientDaemonState *state, const
 			if(state->startEnable)
 			{
 				pid = runCommand(command, state->verbose);
-				state->nLaunch++;
+				++state->nLaunch;
 				if(state->verbose > 1)
 				{
 					logExecute(command);
@@ -780,7 +789,7 @@ static int handleMessage(const char *message, TransientDaemonState *state, const
 			else if(strcmp(G.body.param.paramName, "restart") == 0)
 			{
 				runCommand(state->lastCommand, state->verbose);
-				state->nLaunch++;
+				++state->nLaunch;
 			}
 			else if(strcmp(G.body.param.paramName, "queuerecorr") == 0)
 			{
@@ -856,7 +865,6 @@ int handleTCP(TransientDaemonState *state, TransientDaemonConf *conf, int sock, 
 
 	fflush(stdout);
 
-
 	v = recv(sock, message, DIFX_MESSAGE_LENGTH-1, 0);
 	if(v <= 0)
 	{
@@ -924,6 +932,7 @@ int handleTCP(TransientDaemonState *state, TransientDaemonConf *conf, int sock, 
 	return 0;
 }
 
+/* FIXME: IPv6 non-compliant code lurks here */
 int transientdaemon(TransientDaemonState *state)
 {
 	TransientDaemonConf *conf;
@@ -1057,7 +1066,7 @@ int transientdaemon(TransientDaemonState *state)
 
 		if(state->selfTest > 0)
 		{
-			state->selfTest--;
+			--state->selfTest;
 			v = handleMessage(testMessage, state, conf);
 			if(v)
 			{
@@ -1198,19 +1207,19 @@ int main(int argc, char **argv)
 
 	state = new TransientDaemonState;
 
-	for(a = 1; a < argc; a++)
+	for(a = 1; a < argc; ++a)
 	{
 		if(argv[a][0] == '-')
 		{
 			if(strcmp(argv[a], "--verbose") == 0 ||
 				strcmp(argv[a], "-v") == 0)
 			{
-				state->verbose++;
+				++state->verbose;
 			}
 			else if(strcmp(argv[a], "--quiet") == 0 ||
 				strcmp(argv[a], "-q") == 0)
 			{
-				state->verbose--;
+				--state->verbose;
 			}
 			else if(strcmp(argv[a], "--help") == 0 ||
 				strcmp(argv[a], "-h") == 0)

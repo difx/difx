@@ -4,11 +4,10 @@
 
 static void handleDifxStatus(TransientWrapperData *T, const DifxMessageGeneric *G)
 {
-	const DifxMessageStatus *status;
-
-
 	if(strncmp(G->identifier, T->identifier, DIFX_MESSAGE_IDENTIFIER_LENGTH) == 0)
 	{
+		const DifxMessageStatus *status;
+		
 		status = &G->body.status;
 
 		T->difxState = status->state;
@@ -23,13 +22,14 @@ static void handleDifxStatus(TransientWrapperData *T, const DifxMessageGeneric *
 
 static void handleTransient(TransientWrapperData *T, const DifxMessageGeneric *G)
 {
-	char message[DIFX_MESSAGE_LENGTH];
 	const DifxMessageTransient *transient;
 
 	transient = &G->body.transient;
 
 	if(strncmp(transient->jobId, T->identifier, DIFX_MESSAGE_IDENTIFIER_LENGTH) == 0)
 	{
+		char message[DIFX_MESSAGE_LENGTH];
+		
 		snprintf(message, DIFX_MESSAGE_LENGTH, 
 			"Adding transient [%12.6f,%12.6f] with prioritiy %f",
 			transient->startMJD, transient->stopMJD,
@@ -49,8 +49,7 @@ static void handleTransient(TransientWrapperData *T, const DifxMessageGeneric *G
 static void *multicastMonitor(void *ptr)
 {
 	TransientWrapperData *T;
-	int sock, n, v;
-	char message[DIFX_MESSAGE_LENGTH], from[20];
+	int sock;
 	DifxMessageGeneric G;
 
 	T = (TransientWrapperData *)ptr;
@@ -65,6 +64,10 @@ static void *multicastMonitor(void *ptr)
 
 	while(!T->monitorThreadDie)
 	{
+		char message[DIFX_MESSAGE_LENGTH];
+		char from[DIFX_MESSAGE_MAX_INET_ADDRESS_LENGTH];
+		int n, v;
+
 		n = difxMessageReceive(sock, message, DIFX_MESSAGE_LENGTH-1, from);
 		if(n > 0)
 		{
