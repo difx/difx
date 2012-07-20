@@ -20,26 +20,8 @@ AC_CHECK_LIB(m, erf,,[AC_MSG_ERROR("need libm")])
 PKG_CHECK_MODULES(DIFXIO, difxio >= 3.2.0)
 PKG_CHECK_MODULES(DIFXMESSAGE, [difxmessage >= 2.2.0 difxmessage < 7])
 
-AC_ARG_WITH(spice-root, [  --with-spice-root=ROOT
-                            spice root is ROOT (optional).],
-spice_root="$withval", spice_root="$SPICE_ROOT")
-if test x"$spice_root" != "x"; then
-	SPICE_CFLAGS="-I$spice_root/include"
-	SPICE_LIBS="$spice_root/lib/cspice.a"
-	spice_enabled=true
-	echo "Spice enabled"
-	AC_DEFINE([HAVE_SPICE], [1], [1=has spice library])
-else
-	SPICE_CFLAGS=""
-	SPICE_LIBS=""
-	spice_enabled=false
-	echo "Spice disabled"
-	AC_DEFINE([HAVE_SPICE], [0], [1=has spice library])
-fi
-AM_CONDITIONAL(HAVE_SPICE, $spice_enabled)
-
-LIBS="${LIBS} ${DIFXIO_LIBS} ${SPICE_LIBS}"
-CFLAGS="${CFLAGS} ${DIFXIO_CFLAGS} ${DIFXMESSAGE_CFLAGS} ${SPICE_CFLAGS}"
+LIBS="${LIBS} ${DIFXIO_LIBS}"
+CFLAGS="${CFLAGS} ${DIFXIO_CFLAGS} ${DIFXMESSAGE_CFLAGS}"
 CXXFLAGS="${CFLAGS}"
 
 AC_OUTPUT([ \
