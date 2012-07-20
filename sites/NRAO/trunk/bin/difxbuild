@@ -10,11 +10,12 @@ import platform
 from time import asctime
 
 program = 'difxbuild'
-version = '0.10'
-verdate = '20120719'
+version = '0.11'
+verdate = '20120720'
 author = 'Walter Brisken <wbrisken@nrao.edu>'
 
-openmpiVersion = "1.6"
+openmpiVersion = '1.6'
+pgplotVersion = '5.2'
 numMakeCpus = 4
 
 
@@ -187,6 +188,11 @@ def filterComponentsOrig(origComps, args):
 def filterComponents(origComps, args):
 	if 'all' in args:
 		comps = origComps
+	elif 'slave' in args:
+		comps = []
+		for c in origComps:
+			if 'slave' in c[2]:
+				comps.append(c)
 	else:
 		comps = []
 		local = split(getcwd(), '/')[-2:]
@@ -224,35 +230,35 @@ component_difxio_trunk = \
 [ \
 	'difxio', \
 	'https://svn.atnf.csiro.au/difx/libraries/difxio/trunk', \
-	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'spice'] \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'spice', 'slave'] \
 ]
 
 component_difxmessage_trunk = \
 [ \
 	'difxmessage', \
 	'https://svn.atnf.csiro.au/difx/libraries/difxmessage/trunk', \
-	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake'] \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'slave'] \
 ]
 
 component_mark5access_trunk = \
 [ \
 	'mark5access', \
 	'https://svn.atnf.csiro.au/difx/libraries/mark5access/trunk', \
-	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake'] \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'slave'] \
 ]
 
 component_vdifio_trunk = \
 [ \
 	'vdifio', \
 	'https://svn.atnf.csiro.au/difx/libraries/vdifio/trunk', \
-	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake'] \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'slave'] \
 ]
 
 component_mpifxcorr_trunk = \
 [ \
 	'mpifxcorr', \
 	'https://svn.atnf.csiro.au/difx/mpifxcorr/trunk', \
-	['aclocal', 'autoconf', 'autoheader', 'automake', 'mpicxx', 'ipp'] \
+	['aclocal', 'autoconf', 'autoheader', 'automake', 'mpicxx', 'ipp', 'slave'] \
 ]
 
 component_difx2fits_trunk = \
@@ -280,7 +286,7 @@ component_mk5daemon_trunk = \
 [ \
 	'mk5daemon', \
 	'https://svn.atnf.csiro.au/difx/applications/mk5daemon/trunk' ,\
-	['aclocal', 'autoconf', 'autoheader', 'automake', 'streamstor'] \
+	['aclocal', 'autoconf', 'autoheader', 'automake', 'streamstor', 'slave'] \
 ]
 
 component_calcif2_trunk = \
@@ -348,35 +354,35 @@ component_difxio_2_1 = \
 [ \
 	'difxio', \
 	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.1/libraries/difxio', \
-	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'spice'] \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'spice', 'slave'] \
 ]
 
 component_difxmessage_2_1 = \
 [ \
 	'difxmessage', \
 	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.1/libraries/difxmessage', \
-	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake'] \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'slave'] \
 ]
 
 component_mark5access_2_1 = \
 [ \
 	'mark5access', \
 	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.1/libraries/mark5access', \
-	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake'] \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'slave'] \
 ]
 
 component_vdifio_2_1 = \
 [ \
 	'vdifio', \
 	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.1/libraries/vdifio', \
-	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake'] \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'slave'] \
 ]
 
 component_mpifxcorr_2_1 = \
 [ \
 	'mpifxcorr', \
 	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.1/mpifxcorr', \
-	['aclocal', 'autoconf', 'autoheader', 'automake', 'mpicxx', 'ipp'] \
+	['aclocal', 'autoconf', 'autoheader', 'automake', 'mpicxx', 'ipp', 'slave'] \
 ]
 
 component_difx2fits_2_1 = \
@@ -403,7 +409,7 @@ component_mk5daemon_2_1 = \
 [ \
 	'mk5daemon', \
 	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.1/applications/mk5daemon' ,\
-	['aclocal', 'autoconf', 'autoheader', 'automake', 'streamstor'] \
+	['aclocal', 'autoconf', 'autoheader', 'automake', 'streamstor', 'slave'] \
 ]
 
 component_calcif2_2_1 = \
@@ -434,6 +440,13 @@ component_sniff_2_1 = \
 	['aclocal', 'autoconf', 'automake', 'pgplot'] \
 ]
 
+component_hops_2_1 = \
+[ \
+	'hops', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.1/applications/hops', \
+	['aclocalm4', 'autoconf', 'autoheader', 'automake', 'pgplot'] \
+]
+
 components['DIFX-2.1'] = \
 [ \
 	component_difxio_2_1, \
@@ -449,6 +462,7 @@ components['DIFX-2.1'] = \
 	component_calcserver_2_1, \
 	component_rcwlib_2_1, \
 	component_sniff_2_1, \
+	component_hops_2_1, \
 ]
 
 # commands each have the following elements:
@@ -565,6 +579,7 @@ def writeinitfile(verbose, pretend):
 
 
 def bootstrap(comps, params, args, verbose, pretend):
+	setupFileName = 'setup_difx'
 	requiredConfigParams = ['difxbase', 'version', 'headnode']
 	if not isfile(params['ConfigFile']):
 		print 'Error: bootstrapping needs the specified configuration file, %s, to exist.' % params['ConfigFile']
@@ -612,7 +627,7 @@ def bootstrap(comps, params, args, verbose, pretend):
 
 #	try:
 	if 1:
-		setupFile = config['root'] + '/setup_difx'
+		setupFile = config['root'] + '/' + setupFileName
 		if verbose > 0:
 			print 'Writing setup file %s' % setupFile
 
@@ -740,12 +755,12 @@ def bootstrap(comps, params, args, verbose, pretend):
 			pathExtra = ':%s' % config['pathextra']
 		else:
 			pathExtra = ''
-		out.write('export PATH=${DIFX_ARCH_ROOT}/bin:${DIFXROOT}/bin:${DIFX_BASE}/bin:~/bin:/bin:/usr/bin%s\n' % pathExtra)
+		out.write('export PATH=./:${DIFX_ARCH_ROOT}/bin:${DIFXROOT}/bin:${DIFX_BASE}/bin:~/bin:/bin:/usr/bin%s\n' % pathExtra)
 		if config.has_key('ldextra'):
 			ldExtra = ':%s' % config['ldextra']
 		else:
 			ldExtra = ''
-		out.write('export LD_LIBRARY_PATH=${DIFX_ARCH_ROOT}/lib:/lib:/usr/lib:${DIFXROOT}/lib:${IPPROOT}/lib/${IPPARCH}:${IPPROOT}/ipp/lib/${IPPARCH}%s\n' % ldExtra)
+		out.write('export LD_LIBRARY_PATH=${DIFX_ARCH_ROOT}/lib:/lib:/usr/lib:${DIFXROOT}/lib:${IPPROOT}/lib/${IPPARCH}:${IPPROOT}/ipp/lib/${IPPARCH}%s:${PGPLOT_DIR}\n' % ldExtra)
 
 		for e in env:
 			out.write('export %s=%s\n' % (e[0], e[1]))
@@ -758,6 +773,7 @@ def bootstrap(comps, params, args, verbose, pretend):
 		out.close()
 
 		execute('chmod +x %s' % setupFile, verbose, pretend)
+		execute('cp %s %s/bin/%s.%s' % (setupFile, config['difxbase'], setupFileName, config['version']), verbose, pretend)
 
 		execute('cp %s %s/bootstrap/"%s.%s"' % (params['ConfigFile'], config['difxbase'], split(params['ConfigFile'], '/')[-1], asctime()), verbose, pretend)
 
@@ -828,6 +844,8 @@ def build(origComps, params, args, verbose, pretend):
 	pkgDir = environ['DIFXROOT'] + '/lib/pkgconfig/'
 	srcDir = environ['DIFX_SRC'] + '/'
 	okComps = checkFiles(comps, srcDir, 'configure', args)
+	archRoot = environ['DIFX_BASE'] + '/' + platform.machine() + '/'
+	haspgplot = isfile(archRoot + 'pgplot/libpgplot.a')	# not the most robust test...
 	if len(okComps) > 0 or 'none' in args:
 		if not isdir(pkgDir):
 			execute('mkdir -p %s' % pkgDir, verbose, pretend)
@@ -844,16 +862,19 @@ def build(origComps, params, args, verbose, pretend):
 		for comp in okComps:
 			srcPath = srcDir + comp[0] + '/'
 			buildPath = buildDir + comp[0] + '/'
+			buildFlags = comp[2]
+			if 'pgplot' in buildFlags and not haspgplot:
+				print 'Not building %s because pgplot was not successfully built' % comp[0]
+				continue
 			if not isdir(buildPath):
 				execute('mkdir -p %s' % buildPath, verbose, pretend)
 			chdir(buildPath)
 			if not 'noconf' in args:
-				buildFlags = comp[2]
 				configureExtras = ''
 				if 'mpicxx' in buildFlags:
 					configureExtras += ' CXX=${MPICXX}'
 				if 'spice' in buildFlags:
-					spiceRoot = environ['DIFX_BASE'] + '/' + platform.machine() + '/cspice/'
+					spiceRoot = archRoot + 'cspice/'
 					if isfile(spiceRoot+'lib/cspice.a'):
 						print 'Spice library found!'
 						configureExtras += ' --with-spice-root=' + spiceRoot
@@ -965,6 +986,20 @@ def uninstall(origComps, params, args, verbose, pretend):
 def remove(origComps, params, args, verbose, pretend):
 	print 'Feature not yet implemented'
 
+def ftpFile(url, tarDir, srcFile, args, verbose, pretend):
+	wgetOptions = ''
+	if 'nopassive' in args:
+		wgetOptions = wgetOptions + ' --no-passive-ftp'
+	else:
+		print '* NOTE: if FTP hangs, try again with the nopassive argument added to the difxbuild command line'
+	if not isdir(tarDir):
+		execute('mkdir -p %s' % tarDir, verbose, pretend)
+	if not isfile(tarDir + srcFile):
+		chdir(tarDir)
+		execute('wget %s %s' % (wgetOptions, url), verbose, pretend)
+	else:
+		print '%s file already downloaded.' % srcFile
+
 def spice(origComps, params, args, verbose, pretend):
 	arch = platform.machine()
 	srcFile = 'cspice.tar.Z'
@@ -974,42 +1009,21 @@ def spice(origComps, params, args, verbose, pretend):
 		spiceUrl = 'ftp://naif.jpl.nasa.gov/pub/naif/toolkit//C/PC_Linux_GCC_32bit/packages/%s' % srcFile
 	difxBase = environ['DIFX_BASE'] + '/'
 	tarDir = difxBase + 'tar/'
-	wgetOptions = ''
-	if 'nopassive' in args:
-		wgetOptions = wgetOptions + ' --no-nopassive-ftp'
-	else:
-		print '* NOTE: if FTP hangs, try again with the nopassive argument added to the difxbuild command line'
-	if not isdir(tarDir):
-		execute('mkdir -p %s' % tarDir, verbose, pretend)
-	if not isfile(tarDir + srcFile):
-		chdir(tarDir)
-		execute('wget %s %s' % (wgetOptions, spiceUrl), verbose, pretend)
-	else:
-		print 'Spice file already downloaded.'
-	if not isdir(difxBase + arch):
-		execute('mkdir -p %s%s' % (difxBase, arch), verbose, pretend)
+	# get file
+	ftpFile(spiceUrl, tarDir, srcFile, args, verbose, pretend)
+	# untar file
 	chdir(difxBase + arch)
 	execute('tar zxvf %s/%s' % (tarDir, srcFile), verbose, pretend)
 
 def pgplot(origComps, params, args, verbose, pretend):
 	arch = platform.machine()
 	opsys = lower(platform.system())
-	srcFile = 'pgplot5.2.tar.gz'
+	srcFile = 'pgplot%s.tar.gz' % pgplotVersion
 	pgplotUrl = 'ftp://ftp.astro.caltech.edu/pub/pgplot/%s' % srcFile
 	difxBase = environ['DIFX_BASE'] + '/'
 	tarDir = difxBase + 'tar/'
-	wgetOptions = ''
-	if 'nopassive' in args:
-		wgetOptions = wgetOptions + ' --no-nopassive-ftp'
-	else:
-		print '* NOTE: if FTP hangs, try again with the nopassive argument added to the difxbuild command line'
-	if not isdir(tarDir):
-		execute('mkdir -p %s' % tarDir, verbose, pretend)
-	if not isfile(tarDir + srcFile):
-		chdir(tarDir)
-		execute('wget %s %s' % (wgetOptions, pgplotUrl), verbose, pretend)
-	else:
-		print 'pgplot file already downloaded.'
+	# get file
+	ftpFile(pgplotUrl, tarDir, srcFile, args, verbose, pretend)
 	# untar source
 	srcDir = environ['DIFX_SRC'] + '/'
 	if not isdir(srcDir):
@@ -1043,7 +1057,8 @@ def pgplot(origComps, params, args, verbose, pretend):
 	# make fortran and c package
 	execute('make', verbose, pretend)
 	execute('make cpg', verbose, pretend)
-	execute('ln -s libpgplot.a libpgplot.so %s/%s/lib' % (difxBase, arch), verbose, pretend)
+	for f in ['libpgplot.a', 'libcpgplot.a', 'libpgplot.so']:
+		execute('ln -s %s/%s %s/%s/lib/%s' % (pgplotDir, f, difxBase, arch, f), verbose, pretend)
 
 
 def openmpi(origComps, params, args, verbose, pretend):
@@ -1141,7 +1156,7 @@ command_build = \
 [ \
 	'build', \
 	'Run configure for each component then build/install', \
-	['DIFX_SRC', 'DIFXROOT', 'MPICXX', 'PKG_CONFIG_PATH', 'DIFXBITS', 'IPPROOT'], \
+	['DIFX_SRC', 'DIFXROOT', 'MPICXX', 'PKG_CONFIG_PATH', 'DIFXBITS', 'IPPROOT', 'PGPLOT_DIR'], \
 	[], \
 	build \
 ]
@@ -1221,7 +1236,7 @@ command_spice = \
 command_pgplot = \
 [ \
 	'pgplot', \
-	'Download (if needed) and install pgplot', \
+	'Download (if needed), configure, compile and install pgplot version %s' % pgplotVersion, \
 	['DIFX_BASE'], \
 	[], \
 	pgplot \
@@ -1231,7 +1246,7 @@ command_pgplot = \
 command_openmpi = \
 [ \
 	'openmpi', \
-	'Download (if needed), compile, and install openmpi version %s' % openmpiVersion, \
+	'Download (if needed), configure, compile, and install openmpi version %s' % openmpiVersion, \
 	['DIFX_BASE'], \
 	[], \
 	openmpi \

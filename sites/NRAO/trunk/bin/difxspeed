@@ -9,8 +9,8 @@ from time import sleep
 from math import sqrt
 
 program = 'difxspeed'
-version = '0.1'
-verdate = '20120718'
+version = '0.2'
+verdate = '20120719'
 author = 'Walter Brisken <wbrisken@nrao.edu>'
 
 inputFileExtension = '.difxspeed'
@@ -21,8 +21,8 @@ inputFileExtension = '.difxspeed'
 # 6. compute average, rms of all runs
 
 def usage(pgm):
-	print '\n%s ver. %s  %s  %s' % (program, version, author, verdate) % pgm
-	print '\nUsage: %s <benchmarkFile> [<numIterations>]\n'
+	print '\n%s ver. %s  %s  %s' % (program, version, author, verdate)
+	print '\nUsage: %s <benchmarkFile> [<numIterations>]\n' % pgm
 	print 'Where:'
 	print '  <benchmarkFile> describes the series of benchmarks to run.\n'
 	print '  <numIterations> is the number of times to run the test.\n'
