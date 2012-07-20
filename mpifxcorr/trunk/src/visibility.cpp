@@ -293,7 +293,7 @@ void Visibility::copyVisData(char **buf, int *bufsize, int *nbuf) {
 
 void Visibility::writedata()
 {
-  f32 scale, divisor;
+  f32 scale, divisor, modifier;
   int ds1, ds2, ds1bandindex, ds2bandindex, localfreqindex, freqindex, freqchannels;
   int status, resultindex, binloop;
   int dumpmjd, intsec;
@@ -428,6 +428,23 @@ void Visibility::writedata()
               //samples rather than datastream tsys and decorrelation correction
               if(baselineweights[i][j][b][k] > 0.0) {
                 scale = 1.0/(baselineweights[i][j][b][k]*meansubintsperintegration*((float)(config->getBlocksPerSend(currentconfigindex)*2*freqchannels*config->getFChannelsToAverage(freqindex))));
+                //adjust for number of samples if one or both antennas used zoom bands
+                if(ds1bandindex >= config->getDNumRecordedBands(currentconfigindex, ds1))
+                {
+                  modifier = 1.0;
+                  localfreqindex = config->getDLocalZoomFreqIndex(currentconfigindex, ds1, ds1bandindex-config->getDNumRecordedBands(currentconfigindex, ds1));
+                  modifier *= config->getDZoomBandwidth(currentconfigindex, ds1, localfreqindex);
+                  modifier /= config->getDRecordedBandwidth(currentconfigindex, ds1, config->getDZoomFreqParentFreqIndex(currentconfigindex, ds1, localfreqindex));
+                  scale *= modifier;
+                }
+                if(ds2bandindex >= config->getDNumRecordedBands(currentconfigindex, ds2))
+                {
+                  modifier = 1.0;
+                  localfreqindex = config->getDLocalZoomFreqIndex(currentconfigindex, ds2, ds2bandindex-config->getDNumRecordedBands(currentconfigindex, ds2));
+                  modifier *= config->getDZoomBandwidth(currentconfigindex, ds2, localfreqindex);
+                  modifier /= config->getDRecordedBandwidth(currentconfigindex, ds2, config->getDZoomFreqParentFreqIndex(currentconfigindex, ds2, localfreqindex));
+                  scale *= modifier;
+                }
                 if(config->getDataFormat(currentconfigindex, ds1) == Configuration::LBASTD || config->getDataFormat(currentconfigindex, ds1) == Configuration::LBAVSOP)
                   scale *= 4.0;
                 if(config->getDataFormat(currentconfigindex, ds2) == Configuration::LBASTD || config->getDataFormat(currentconfigindex, ds2) == Configuration::LBAVSOP)
@@ -486,6 +503,14 @@ void Visibility::writedata()
               if(autocorrweights[i][j][k] > 0.0)
               {
                 scale = 1.0/(autocorrweights[i][j][k]*meansubintsperintegration*((float)(config->getBlocksPerSend(currentconfigindex)*2*freqchannels*config->getFChannelsToAverage(freqindex))));
+                if(k >= config->getDNumRecordedBands(currentconfigindex, i))
+                {
+                  modifier = 1.0;
+                  localfreqindex = config->getDLocalZoomFreqIndex(currentconfigindex, i, k-config->getDNumRecordedBands(currentconfigindex, i));
+                  modifier *= config->getDZoomBandwidth(currentconfigindex, i, localfreqindex);
+                  modifier /= config->getDRecordedBandwidth(currentconfigindex, i, config->getDZoomFreqParentFreqIndex(currentconfigindex, i, localfreqindex));
+                  scale *= modifier*modifier;
+                }
                 if(config->getDataFormat(currentconfigindex, i) == Configuration::LBASTD || config->getDataFormat(currentconfigindex, i) == Configuration::LBAVSOP)
                   scale *= 16.0;
               }

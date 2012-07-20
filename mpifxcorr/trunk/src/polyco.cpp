@@ -392,8 +392,10 @@ bool Polyco::loadPolycoFile(string filename, int subcount)
     double timedouble, second, mjddouble;
 
     ifstream input(filename.c_str(), ios::in);
-    if(!input.is_open() || input.bad())
+    if(!input.is_open() || input.bad()) {
+      cerror << startl << "Error trying to open polyco file " << filename << endl;
       return false; //note return with failure here!!!
+    }
 
     coefficients = 0;
     iss.precision(20);

@@ -1,6 +1,8 @@
 Version 2.2
 ~~~~~~~~~~~
+* Correct scaling of autocorrelations for LBA-format data
 * Optimized corner turners implemented for interlaced VDIF
+* Fixed a scaling bug for zoom band data
 
 Version 2.1
 ~~~~~~~~~~~
