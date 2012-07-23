@@ -976,14 +976,10 @@ class ChangeSlotWindow(GenericWindow):
         
         module = self.selectedSlot.module
         
-        print module.vsn
-        print module.slot.id, module.slot.location
         newLocation =  self.lstSlot.get(self.lstSlot.curselection()[0])
         
-        print newLocation
         newSlot = getSlotByLocation(session, newLocation )
         
-        print newSlot.id, newSlot.location
         self.selectedSlot.module = None
         session.commit()
         
