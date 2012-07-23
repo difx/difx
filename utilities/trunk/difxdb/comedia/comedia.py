@@ -60,6 +60,7 @@ class MainWindow(GenericWindow):
         
         # sub dialogs
         self.checkinDlg = CheckinWindow(self, rootWidget)  
+        self.changeSlotDlg = ChangeSlotWindow(self, rootWidget)  
         self.labelOptionsDlg= LabelOptionsWindow(self,rootWidget)
         self.databaseOptionsDlg= DatabaseOptionsWindow(self,rootWidget)
         self.scanModulesDlg = ScanModulesWindow(self, rootWidget)
@@ -144,7 +145,8 @@ class MainWindow(GenericWindow):
         Label(self.frmDetail, text = "received: ").grid(row=5, column=0, sticky=W)
         Label(self.frmDetail, text = "experiment(s): ").grid(row=6, column=0, sticky=W) 
         Label(self.frmDetail, text = "comments: ").grid(row=8, column=0, sticky=W) 
-        self.txtLocationContent = Entry(self.frmDetail, text = "", state=DISABLED) 
+        self.txtLocationContent = Entry(self.frmDetail, text = "", state=DISABLED)
+        self.btnChangeSlot = Button(self.frmDetail, text = "Change slot", state=DISABLED, command=self.showChangeSlotWindow)
         self.lblVSNContent = Entry(self.frmDetail, text = "", state=DISABLED)
         self.lblStationContent = Entry(self.frmDetail, text = "", state=DISABLED)
         self.lblCapacityContent = Entry(self.frmDetail, text = "", state=DISABLED)
@@ -189,14 +191,15 @@ class MainWindow(GenericWindow):
         
         #arrange objects on frmDetail
         self.txtLocationContent.grid(row=0, column=1, sticky=E+W)
-        self.lblVSNContent.grid(row=1, column=1, sticky=E+W)
-        self.lblStationContent.grid(row=2, column=1, sticky=E+W)
-        self.lblCapacityContent.grid(row=3, column=1, sticky=E+W)
-        self.lblDatarateContent.grid(row=4, column=1, sticky=E+W)
-        self.lblReceivedContent.grid(row=5, column=1, sticky=E+W)
-        self.cboExperiments.grid(row=6, column=1, sticky=E+W+N+S)
-        scrollCboExperiments.grid(row=6,column=2, rowspan=2, sticky=W+N+S)
-        self.txtComment.grid(row=8, column=1, sticky=E+W)
+        self.btnChangeSlot.grid(row=0, column=2, sticky=E+W)
+        self.lblVSNContent.grid(row=1, column=1, columnspan=2, sticky=E+W)
+        self.lblStationContent.grid(row=2, column=1, columnspan=2, sticky=E+W)
+        self.lblCapacityContent.grid(row=3, column=1, columnspan=2, sticky=E+W)
+        self.lblDatarateContent.grid(row=4, column=1, columnspan=2, sticky=E+W)
+        self.lblReceivedContent.grid(row=5, column=1, columnspan=2, sticky=E+W)
+        self.cboExperiments.grid(row=6, column=1, columnspan=2, sticky=E+W+N+S)
+        scrollCboExperiments.grid(row=6,column=3, rowspan=2, sticky=W+N+S)
+        self.txtComment.grid(row=8, column=1, columnspan=2, sticky=E+W)
         self.btnEditModule.grid(row=20, column=0, sticky=E+W)
         self.btnDeleteModule.grid(row=20, column=1, sticky=E+W)
         self.btnPrintLibraryLabel.grid(row=21,column=0, sticky=E+W)
@@ -396,6 +399,7 @@ class MainWindow(GenericWindow):
         self.lblReceivedContent["state"] = NORMAL
         self.cboExperiments["state"] = NORMAL
         self.txtComment["state"] = NORMAL
+        self.btnChangeSlot["state"] = NORMAL
         
         self.txtLocationContent.delete(0,END)
         self.lblVSNContent.delete(0,END)
@@ -480,6 +484,7 @@ class MainWindow(GenericWindow):
         self.btnPrintVSNLabel["state"] = DISABLED
         self.btnPrintLibraryLabel["state"] = DISABLED
         self.btnDeleteModule["state"] = DISABLED
+        self.btnChangeSlot["state"] = DISABLED
         
         # reset colors
         self.txtLocationContent["bg"] = self.defaultBgColor
@@ -736,6 +741,17 @@ class MainWindow(GenericWindow):
              
         self.databaseOptionsDlg.config = self.config
         self.databaseOptionsDlg.show()
+    
+    def showChangeSlotWindow(self):
+        
+        if (self.selectedSlotIndex < 0):
+            return
+        
+        slot = model.Slot()
+        slot = getSlotByLocation(session, self.grdSlot.get(self.selectedSlotIndex)[0])
+        
+        self.changeSlotDlg.selectedSlot = slot
+        self.changeSlotDlg.show()
         
 class CheckinWindow(GenericWindow):
      
@@ -792,7 +808,7 @@ class CheckinWindow(GenericWindow):
         yScroll2.config(command=self.lstExp.yview)
 
         # populate slot list
-        ciSlotItems = getEmptySlots()
+        ciSlotItems = getEmptySlots(session)
         for instance in ciSlotItems:
             self.lstSlot.insert(END, instance.location)
 
@@ -904,6 +920,85 @@ class CheckinWindow(GenericWindow):
 
         return
     
+class ChangeSlotWindow(GenericWindow):
+    
+    def __init__(self, parent, rootWidget=None):
+        
+        # call super class constructor
+        super( ChangeSlotWindow, self ).__init__(parent, rootWidget) 
+        
+        self.selectedSlot = None
+        self.chkPrintLibLabelVar = IntVar()
+        self.chkPrintLibLabelVar.set(1)
+        
+    def show(self):
+        
+        # create modal dialog
+        self.dlg = Toplevel(self.rootWidget, takefocus=True)
+        self.dlg.title ("Change module slot")
+        self.dlg.transient(self.rootWidget)
+        self.dlg.state("normal")
+        self.dlg.grab_set()
+        
+        self._setupWidgets()
+    
+    
+    def _setupWidgets(self):
+        
+        yScroll = Scrollbar ( self.dlg, orient=VERTICAL )
+        
+        Label(self.dlg, text="Change slot for module " ).grid(row=1, column=0, sticky=W)
+        Label(self.dlg, text=self.selectedSlot.module.vsn).grid(row=1, column=1, sticky=W)
+        Label(self.dlg, text="Current slot: " ).grid(row=2, column=0, sticky=W)
+        Label(self.dlg, text=self.selectedSlot.location).grid(row=2, column=1, sticky=W)
+        Label(self.dlg, text="New slot: " ).grid(row=3, sticky=W)
+        self.lstSlot = Listbox(self.dlg, yscrollcommand=yScroll.set, height=5, exportselection = False)   
+        yScroll.config(command=self.lstSlot.yview)
+        chkPrintLibLabel = Checkbutton(self.dlg, text = "Print new library label", variable = self.chkPrintLibLabelVar).grid(row=5, column=0, sticky=W)
+        
+        Button(self.dlg, text="OK", command=self._persistSlot).grid(row=10, column=0, sticky=E+W)
+        Button(self.dlg, text="Cancel", command=self.dlg.destroy).grid(row=10, column=1, sticky=E+W) 
+        
+        # populate slot list
+        ciSlotItems = getEmptySlots(session)
+        for instance in ciSlotItems:
+            self.lstSlot.insert(END, instance.location)
+      
+        self.lstSlot.grid(row=3, column=1)
+        yScroll.grid ( row=3, column=2, sticky=W+N+S )
+        
+    def _persistSlot(self):
+        
+        if self.selectedSlot == None:
+            return
+        if self.lstSlot.get(self.lstSlot.curselection()[0]) == "":
+            return
+        
+        module = self.selectedSlot.module
+        
+        print module.vsn
+        print module.slot.id, module.slot.location
+        newLocation =  self.lstSlot.get(self.lstSlot.curselection()[0])
+        
+        print newLocation
+        newSlot = getSlotByLocation(session, newLocation )
+        
+        print newSlot.id, newSlot.location
+        self.selectedSlot.module = None
+        session.commit()
+        
+        module.slot = newSlot
+            
+        session.commit()
+        session.flush()
+        
+        if (self.chkPrintLibLabelVar.get() == 1):
+            self.parent.printLibraryLabel(slotName = newSlot.location)
+        
+        self.parent.updateSlotListbox()
+        
+        self.dlg.destroy()
+        
 class DatabaseOptionsWindow(GenericWindow):
      
     def __init__(self, parent, rootWidget=None):
@@ -1371,11 +1466,11 @@ class ComediaConfig(DifxDbConfig):
         self.config.set('Comedia', 'fontSize', '24')
         self.config.set('Comedia', 'printCommand', 'lpr -P')   
           
-def getEmptySlots():   
+#def getEmptySlots():   
     
-    result =  session.query(model.Slot).order_by(model.Slot.location).filter_by(isActive = 1).order_by(model.Slot.location).filter(model.Slot.moduleID == None)
+#    result =  session.query(model.Slot).order_by(model.Slot.location).filter_by(isActive = 1).order_by(model.Slot.location).filter(model.Slot.moduleID == None)
     
-    return(result)
+#    return(result)
 
 if __name__ == "__main__":
     
