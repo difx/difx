@@ -27,3 +27,12 @@ def getOccupiedSlots(session):
     '''
     
     return(session.query(model.Slot).filter(model.Slot.moduleID != None).order_by(model.Slot.location).all())
+
+def getEmptySlots(session):   
+    '''
+    Returns a collection of Slot objects that are currently not occupied by modules 
+    '''
+    
+    result =  session.query(model.Slot).order_by(model.Slot.location).filter_by(isActive = 1).order_by(model.Slot.location).filter(model.Slot.moduleID == None)
+    
+    return(result)
