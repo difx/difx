@@ -1302,7 +1302,7 @@ void Mk5Daemon_vex2DifxRun( Mk5Daemon *D, const DifxMessageGeneric *G ) {
 	snprintf( message, DIFX_MESSAGE_LENGTH, "vex2difx command....%s, %s, %s, %s, %s",
              S->user,
              S->headNode,
-             S->difxPath,
+             S->difxVersion,
              S->passPath,
              S->v2dFile );
 	//difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_WARNING );
@@ -1311,9 +1311,9 @@ void Mk5Daemon_vex2DifxRun( Mk5Daemon *D, const DifxMessageGeneric *G ) {
 	
 	//  Use a specified path to the DiFX software if the user has chosen one.  Otherwise, use
 	//  the default path.
-	if ( strlen( S->difxPath ) > 0 )
-	    strncpy( difxPath, S->difxPath, DIFX_MESSAGE_FILENAME_LENGTH );
-	else
+//	if ( strlen( S->difxVersion ) > 0 )
+//	    strncpy( difxPath, S->difxVersion, DIFX_MESSAGE_FILENAME_LENGTH );
+//	else
 	    strncpy( difxPath, getenv( "DIFX_PREFIX" ), DIFX_MESSAGE_FILENAME_LENGTH );
 	
 	//  Forked process runs vex2difx...

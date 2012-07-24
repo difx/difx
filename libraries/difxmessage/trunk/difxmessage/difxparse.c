@@ -869,9 +869,9 @@ static void XMLCALL endElement(void *userData, const char *name)
 					{
 						strncpy(G->body.vex2DifxRun.headNode, s, DIFX_MESSAGE_PARAM_LENGTH-1);
 					}
-					else if(strcmp(elem, "difxPath") == 0 )
+					else if(strcmp(elem, "difxVersion") == 0 )
 					{
-						strncpy(G->body.vex2DifxRun.difxPath, s, DIFX_MESSAGE_FILENAME_LENGTH-1);
+						strncpy(G->body.vex2DifxRun.difxVersion, s, DIFX_MESSAGE_FILENAME_LENGTH-1);
 					}
 					else if(strcmp(elem, "passPath") == 0 )
 					{
@@ -888,6 +888,10 @@ static void XMLCALL endElement(void *userData, const char *name)
 					else if(strcmp(elem, "port") == 0 )
 					{
 						G->body.vex2DifxRun.port = atoi( s );
+					}
+					else if(strcmp(elem, "calcifOnly") == 0 )
+					{
+						G->body.vex2DifxRun.calcifOnly = atoi( s );
 					}
 					break;
 				case DIFX_MESSAGE_TRANSIENT:

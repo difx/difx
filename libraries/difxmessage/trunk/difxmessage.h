@@ -349,11 +349,12 @@ typedef struct
 {
     char user[DIFX_MESSAGE_PARAM_LENGTH];
     char headNode[DIFX_MESSAGE_PARAM_LENGTH];
-    char difxPath[DIFX_MESSAGE_FILENAME_LENGTH];
+    char difxVersion[DIFX_MESSAGE_VERSION_LENGTH];
     char passPath[DIFX_MESSAGE_FILENAME_LENGTH];
     char v2dFile[DIFX_MESSAGE_FILENAME_LENGTH];
     char address[DIFX_MESSAGE_PARAM_LENGTH];
     int port;
+    int calcifOnly;
 } DifxMessageVex2DifxRun;
 
 typedef struct
