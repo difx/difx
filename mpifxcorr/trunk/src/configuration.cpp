@@ -2349,7 +2349,7 @@ bool Configuration::consistencyCheck()
           f1 -= freqtable[freq1index].bandwidth;
         if(freqtable[freq2index].lowersideband)
           f2 -= freqtable[freq2index].bandwidth;
-        if(freqtable[freq1index].bandedgefreq == freqtable[freq2index].bandedgefreq &&  freqtable[freq1index].bandedgefreq == freqtable[freq2index].bandedgefreq)
+        if(freqtable[freq1index].bandedgefreq == freqtable[freq2index].bandedgefreq &&  freqtable[freq1index].bandwidth == freqtable[freq2index].bandwidth)
         {
           //different freqs, same value??
           if(mpiid == 0) //only write one copy of this error message
