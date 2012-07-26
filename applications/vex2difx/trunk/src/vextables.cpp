@@ -417,10 +417,15 @@ double VexMode::getLowestSampleRate() const
 		
 		for(map<string,VexSetup>::const_iterator it = setups.begin(); it != setups.end(); ++it)
 		{
-			if(it->second.sampRate < sr)
+			if(it->second.sampRate < sr && it->second.sampRate > 0.0)
 			{
 				sr = it->second.sampRate;
 			}
+		}
+
+		if(sr > 1.0e29)
+		{
+			sr = 0.0;
 		}
 
 		return sr;
