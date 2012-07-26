@@ -362,6 +362,7 @@ typedef struct
 	int nDatastream, nProcess;
 	char mpiWrapper[DIFX_MESSAGE_FILENAME_LENGTH];
 	char mpiOptions[DIFX_MESSAGE_FILENAME_LENGTH];
+    char difxVersion[DIFX_MESSAGE_VERSION_LENGTH];
 	char inputFilename[DIFX_MESSAGE_FILENAME_LENGTH];
 	char headNode[DIFX_MESSAGE_PARAM_LENGTH];
 	char datastreamNode[DIFX_MESSAGE_MAX_DATASTREAMS][DIFX_MESSAGE_PARAM_LENGTH];

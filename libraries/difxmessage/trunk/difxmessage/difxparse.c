@@ -732,6 +732,11 @@ static void XMLCALL endElement(void *userData, const char *name)
 						strncpy(G->body.machinesDefinition.mpiOptions, s, DIFX_MESSAGE_FILENAME_LENGTH-1);
 						G->body.machinesDefinition.mpiOptions[DIFX_MESSAGE_FILENAME_LENGTH-1] = 0;
 					}
+					else if(strcmp(elem, "difxVersion") == 0)
+					{
+						strncpy(G->body.machinesDefinition.difxVersion, s, DIFX_MESSAGE_VERSION_LENGTH-1);
+						G->body.machinesDefinition.difxVersion[DIFX_MESSAGE_VERSION_LENGTH-1] = 0;
+					}
 					else if(strcmp(elem, "testProcessors") == 0 )
 					{
 					    if ( !strncmp( s, "true", 4 ) )
