@@ -179,7 +179,7 @@ int procGetNet(long long *rx, long long *tx)
 		{
 			break;
 		}
-		if(strncmp(line, "  eth", 5) == 0 || strncmp(line, "   ib", 5) == 0)
+		if(strncmp(line, "    lo", 6) != 0 && line[6] == ':')	/* count all interfaces except lo */
 		{
 			long long a, b;
 			int v;

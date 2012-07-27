@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2012 by Walter Brisken                                  *
+ *   Copyright (C) 2011-2012 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the Lesser GNU General Public License as published by  *
@@ -54,22 +54,22 @@ typedef struct
 	int(*command)(Mk5Daemon *, int, char **, char *, int);
 } Command;
 
-int defaultCommand(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength)
+static int defaultCommand(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength)
 {
 	return snprintf(response, maxResponseLength, "!%s = 7 : No such keyword;", fields[0]);
 }
 
-int noCommand(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength)
+static int noCommand(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength)
 {
         return snprintf(response, maxResponseLength, "!%s = 7 : This query has no corresponding command;", fields[0]);
 }
 
-int defaultQuery(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength)
+static int defaultQuery(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength)
 {
 	return snprintf(response, maxResponseLength, "!%s ? 7 : No such keyword;", fields[0]);
 }
 
-int noQuery(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength)
+static int noQuery(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength)
 {
 	return snprintf(response, maxResponseLength, "!%s ? 7 : This command has no corresponding query;", fields[0]);
 }

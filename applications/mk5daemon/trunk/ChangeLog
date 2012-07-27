@@ -4,6 +4,7 @@ Version 2.2.0
 * Speed up directory reading
 * Better .rpm infrastructure
 * IPv6 support added to VSI interface; the whole package at this point is likely IPv6 compliant.
+* Count network traffic from all interfaces, not just eth* and ib*.  lo is ignored.
 
 Version 2.1.0
 ~~~~~~~~~~~~~

@@ -46,7 +46,7 @@
 const char program[] = "vsn";
 const char author[]  = "Walter Brisken";
 const char version[] = "0.6";
-const char verdate[] = "20120310";
+const char verdate[] = "20120713";
 
 
 
@@ -76,7 +76,7 @@ static void usage(const char *pgm)
 	printf("  --recorded\n");
 	printf("  -r         Set module state to 'Recorded'\n\n");
 	printf("  --erased\n");
-	printf("  -e         Set module state to 'Erased'\n\n");
+	printf("  -e         Set module state to 'Erased'; this doesn't erase the module\n\n");
 	printf("  --writeprotect\n");
 	printf("  -w         Write protect the module\n\n");
 	printf("  --unwriteprotect\n");
