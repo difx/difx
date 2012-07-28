@@ -14,10 +14,14 @@ bin_PROGRAMS = \
 	extractSingleVDIFThread \
 	countVDIFPackets \
 	printVDIF \
+	peekVDIF \
 	searchVDIF
 
 stripVDIF_SOURCES = \
 	stripVDIF.c
+
+peekVDIF_SOURCES = \
+	peekVDIF.c
 
 captureUDPVDIF_SOURCES = \
 	captureUDPVDIF.c

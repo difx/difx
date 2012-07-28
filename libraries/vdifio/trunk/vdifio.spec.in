@@ -41,6 +41,7 @@ make
 %{_bindir}/countVDIFPackets
 %{_bindir}/printVDIF
 %{_bindir}/searchVDIF
+%{_bindir}/peekVDIF
 
 
 %changelog
