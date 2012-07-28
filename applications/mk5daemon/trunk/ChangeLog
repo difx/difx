@@ -5,6 +5,7 @@ Version 2.2.0
 * Better .rpm infrastructure
 * IPv6 support added to VSI interface; the whole package at this point is likely IPv6 compliant.
 * Count network traffic from all interfaces, not just eth* and ib*.  lo is ignored.
+* Fixed bugs preventing packet length filtering working in record5c
 
 Version 2.1.0
 ~~~~~~~~~~~~~

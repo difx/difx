@@ -657,10 +657,10 @@ static int record(int bank, const char *label, unsigned int packetSize, int payl
 	/* configure 10G input daughter board */
 	WATCHDOGTEST( XLRWriteDBReg32(xlrDevice, DATA_PAYLD_OFFSET, payloadOffset) );
 	WATCHDOGTEST( XLRWriteDBReg32(xlrDevice, DATA_FRAME_OFFSET, dataFrameOffset) );
-	WATCHDOGTEST( XLRWriteDBReg32(xlrDevice, BYTE_LENGTH, packetSize) );
+	WATCHDOGTEST( XLRWriteDBReg32(xlrDevice, BYTE_LENGTH, packetSize & 0xFFFFFFF) );
 	WATCHDOGTEST( XLRWriteDBReg32(xlrDevice, PSN_OFFSET, psnOffset) );
 	WATCHDOGTEST( XLRWriteDBReg32(xlrDevice, MAC_FLTR_CTRL, m5cFilterControl) );
-	WATCHDOGTEST( XLRWriteDBReg32(xlrDevice, ETH_PACKET_LENGTH, packetSize) );
+	WATCHDOGTEST( XLRWriteDBReg32(xlrDevice, ETH_PACKET_LENGTH, packetSize + payloadOffset) );
 
 	/* set MAC list here */
 	{
@@ -939,7 +939,7 @@ int main(int argc, char **argv)
 				if(strcmp(argv[a], "-s") == 0 ||
 				   strcmp(argv[a], "--packetsize") == 0)
 				{
-					packetSize = 0x8000000 + atoi(argv[a+1]);
+					packetSize = 0x80000000 + atoi(argv[a+1]);
 					m5cFilterControl |= 0x10;	/* enable packet length filter */
 				}
 				else if(strcmp(argv[a], "-d") == 0 ||

@@ -1293,11 +1293,11 @@ int record_Command(Mk5Daemon *D, int nField, char **fields, char *response, int 
 
 			if(D->packetSize == 0)
 			{
-				snprintf(packetFilterOptions, 1000, "--psnmode %d", D->psnMode);
+				snprintf(packetFilterOptions, 1000, "--psnmode %d --payloadoffset %d", D->psnMode, D->payloadOffset);
 			}
 			else
 			{
-				snprintf(packetFilterOptions, 1000, "--psnmode %d --packetsize %d", D->psnMode, D->packetSize);
+				snprintf(packetFilterOptions, 1000, "--psnmode %d --payloadoffset %d --packetsize %d", D->psnMode, D->payloadOffset, D->packetSize);
 			}
 
 			p = 0;
