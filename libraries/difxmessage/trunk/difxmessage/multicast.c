@@ -122,8 +122,6 @@ int openMultiCastSocket(const char *ip, int port)
 
 	snprintf(portstr, 6, "%d", port);
 
-	printf("%d -> %s\n", port, portstr);
-
 	l = getaddrinfo(ip, portstr, &hints, &servinfo);
 	if(l != 0)
 	{
