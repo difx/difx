@@ -568,11 +568,11 @@ void handleRecordMessage(Mk5Daemon *D, time_t t)
 			}
 			else if(strcmp(A[0], "Filter") == 0 && n > 5)
 			{
-				D->totalPackets = atof(A[1]);
-				D->ethernetPackets = atof(A[2]);
-				D->addressRejects = atof(A[3]);
-				D->lengthRejects = atof(A[4]);
-				D->fscRejects = atof(A[5]);
+				D->totalPackets = atoi(A[1]);
+				D->ethernetPackets = atoi(A[2]);
+				D->addressRejects = atoi(A[3]);
+				D->lengthRejects = atoi(A[4]);
+				D->fscRejects = atoi(A[5]);
 			}
 			else if(strcmp(A[0], "Stats") == 0 && n >= 10)
 			{
