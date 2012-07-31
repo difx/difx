@@ -205,6 +205,12 @@ typedef struct
 	int macFilterControl;
 	enum NetProtocolType netProtocol;
 	int diskStateMask;
+
+	unsigned int totalPackets;
+	unsigned int ethernetPackets;
+	unsigned int addressRejects;
+	unsigned int lengthRejects;
+	unsigned int fscRejects;
 } Mk5Daemon;
 
 int Mk5Daemon_loadMon(Mk5Daemon *D, double mjd);

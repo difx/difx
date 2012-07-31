@@ -101,6 +101,7 @@ const Command commandSet[] =
 	{ "record",		record_Query,		record_Command		},
 	{ "fill_pattern",	fill_pattern_Query,	fill_pattern_Command	},
 	{ "packet",		packet_Query,		packet_Command		},
+	{ "filter",		filter_Query,		noCommand		},
 
 	/* Bank management */
 	{ "bank_info",		bank_info_Query,	noCommand		},
@@ -250,7 +251,7 @@ static int processVSIS(Mk5Daemon *D, char *message, char *response, int maxRespo
 	{
 		for(int i = 0; commandSet[i].name[0] != 0; ++i)
 		{
-			if(strcmp(commandSet[i].name, fields[0]) == 0)
+			if(strcasecmp(commandSet[i].name, fields[0]) == 0)
 			{
 				if(isQuery)
 				{
@@ -281,7 +282,7 @@ static int processVSIS(Mk5Daemon *D, char *message, char *response, int maxRespo
 		}
 	}
 
-	if(nField >= 2 && strcmp(fields[0], "protect") == 0 && strcmp(fields[1], "off") == 0)
+	if(nField >= 2 && strcasecmp(fields[0], "protect") == 0 && strcasecmp(fields[1], "off") == 0)
 	{
 		D->unprotected = 1;
 	}

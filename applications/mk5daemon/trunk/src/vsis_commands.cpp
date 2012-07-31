@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2011 by Walter Brisken                                  *
+ *   Copyright (C) 2011-2012 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the Lesser GNU General Public License as published by  *
@@ -55,6 +55,12 @@ int packet_Query(Mk5Daemon *D, int nField, char **fields, char *response, int ma
 {
 	return snprintf(response, maxResponseLength, "!%s? 0 : %d : %d : %d : %d : %d;", fields[0],
 		D->payloadOffset, D->dataFrameOffset, D->packetSize, D->psnMode, D->psnOffset);
+}
+
+int filter_Query(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength)
+{
+	return snprintf(response, maxResponseLength, "!%s? 0 : %u : %u : %u : %u : %u;", fields[0],
+		D->totalPackets, D->ethernetPackets, D->addressRejects, D->lengthRejects, D->fscRejects);
 }
 
 int packet_Command(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength)
@@ -302,7 +308,7 @@ int protect_Command(Mk5Daemon *D, int nField, char **fields, char *response, int
 	enum WriteProtectState state;
 	char msg[256];
 
-	if(nField != 2 || (strcmp(fields[1], "on") != 0 && strcmp(fields[1], "off") != 0))
+	if(nField != 2 || (strcasecmp(fields[1], "on") != 0 && strcasecmp(fields[1], "off") != 0))
 	{
 		v = snprintf(response, maxResponseLength, "!%s = 6 : on or off expected;", fields[0]);
 	}
@@ -316,7 +322,7 @@ int protect_Command(Mk5Daemon *D, int nField, char **fields, char *response, int
 	}
 	else
 	{
-		state = (strcmp(fields[1], "on") == 0 ? PROTECT_ON : PROTECT_OFF);
+		state = (strcasecmp(fields[1], "on") == 0 ? PROTECT_ON : PROTECT_OFF);
 		v = Mk5Daemon_setProtect(D, state, msg);
 
 		if(v < 0)
@@ -1072,7 +1078,7 @@ int disk_state_Command(Mk5Daemon *D, int nField, char **fields, char *response, 
 	{
 		v = snprintf(response, maxResponseLength, "!%s = 4 : Previous protect off required;", fields[0]);
 	}
-	else if(strcmp(fields[1], "recorded") == 0 || strcmp(fields[1], "erased") == 0 || strcmp(fields[1], "played") == 0)
+	else if(strcasecmp(fields[1], "recorded") == 0 || strcasecmp(fields[1], "erased") == 0 || strcasecmp(fields[1], "played") == 0)
 	{
 		char command[MAX_COMMAND_SIZE];
 		char message[DIFX_MESSAGE_LENGTH];
@@ -1247,7 +1253,7 @@ int record_Command(Mk5Daemon *D, int nField, char **fields, char *response, int 
 	{
 		v = snprintf(response, maxResponseLength, "!%s = 6 : One to four parameters needed;", fields[0]);
 	}
-	else if(strcmp(fields[1], "on") == 0)
+	else if(strcasecmp(fields[1], "on") == 0)
 	{
 		char scanLabel[MODULE_LEGACY_SCAN_LENGTH];
 
@@ -1338,7 +1344,7 @@ int record_Command(Mk5Daemon *D, int nField, char **fields, char *response, int 
 			}
 		}
 	}
-	else if(strcmp(fields[1], "off") == 0)
+	else if(strcasecmp(fields[1], "off") == 0)
 	{
 		if(D->recordState == RECORD_OFF)
 		{
@@ -1361,7 +1367,7 @@ int record_Command(Mk5Daemon *D, int nField, char **fields, char *response, int 
 			D->stopRecordRequestTime = time(0);
 		}
 	}
-	else if(strcmp(fields[1], "kill") == 0)
+	else if(strcasecmp(fields[1], "kill") == 0)
 	{
 		if(D->recordState == RECORD_OFF)
 		{
@@ -1389,7 +1395,7 @@ int reset_Command(Mk5Daemon *D, int nField, char **fields, char *response, int m
 	{
 		v = snprintf(response, maxResponseLength, "!%s = 6 : One to two parameters needed;", fields[0]);
 	}
-	if(strcmp(fields[1], "mount") == 0 || strcmp(fields[1], "dismount") == 0)
+	if(strcasecmp(fields[1], "mount") == 0 || strcasecmp(fields[1], "dismount") == 0)
 	{
 		if(nField != 3)
 		{
@@ -1413,7 +1419,7 @@ int reset_Command(Mk5Daemon *D, int nField, char **fields, char *response, int m
 			}
 			else
 			{
-				if(strcmp(fields[1], "mount") == 0)
+				if(strcasecmp(fields[1], "mount") == 0)
 				{
 					Mk5Daemon_diskOn(D, fields[2]);
 				}
@@ -1425,7 +1431,7 @@ int reset_Command(Mk5Daemon *D, int nField, char **fields, char *response, int m
 			}
 		}
 	}
-	else if(strcmp(fields[1], "erase") == 0)
+	else if(strcasecmp(fields[1], "erase") == 0)
 	{
 		if(nField != 2)
 		{
@@ -1700,7 +1706,7 @@ int MAC_list_Command(Mk5Daemon *D, int nField, char **fields, char *response, in
 		{
 			for(mc = 0; mc < NUM_MAC_LIST_COMMANDS; ++mc)
 			{
-				if(strcmp(fields[p], MacListCommandStrings[mc]) == 0)
+				if(strcasecmp(fields[p], MacListCommandStrings[mc]) == 0)
 				{
 					break;
 				}

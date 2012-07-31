@@ -57,12 +57,12 @@
  */
 const char program[] = "record5c";
 const char author[]  = "Walter Brisken";
-const char version[] = "0.3";
-const char verdate[] = "20120310";
+const char version[] = "0.4";
+const char verdate[] = "20120730";
 
 const unsigned int psnMask[3] = { 0x01, 0x02, 0x04 };
 const unsigned int defaultPacketSize = 0;	/* 0x80000000 (+ 5008 for Mark5B) */
-const int defaultPayloadOffset = 40;
+const int defaultPayloadOffset = 36;
 const int defaultDataFrameOffset = 0;
 const int defaultPSNMode = 0;
 const int defaultPSNOffset = 0;
@@ -90,10 +90,14 @@ int die = 0;
 #define BYTE_LENGTH		0x06
 #define FILL_PATTERN_ADDR	0x07
 #define TOTAL_PACKETS		0x08
+#define ERROR_PACKETS		0x09
 #define ETH_FILTER		0x0C
   /* 0x10 : set: Promiscuous mode; reset: filter on MAC */
 #define ETH_PACKET_LENGTH	0x0D
   /* 0x0000xxxx : bits 15-0 are packet length */
+#define ETH_PACKETS		0x0E
+#define FSC_REJECT_PACKETS	0x0F
+#define LEN_REJECT_PACKETS	0x10
 #define ETH_REJECT_PACKETS	0x11
 #define MAC_ADDR_BASE		0x12	/* Note: this is the start of a 2x16 block of addresses */
   /* Even addresses are low portion of address, odd addresses are high portion of addresses */
@@ -495,10 +499,9 @@ static int record(int bank, const char *label, unsigned int packetSize, int payl
 	int nPart = 0;
 	struct timeval tv;
 	struct timezone tz;
-	double t0, t=0, t_ref, t_next_ref, rate;
+	double t0, t=0, t_ref, t_next_ref;
 	long long p_ref, p_next_ref;
 	long long totalChunks = 0LL;
-	UINT32 nReject = 0;
 
 	if(bank == BANK_A)
 	{
@@ -662,6 +665,10 @@ static int record(int bank, const char *label, unsigned int packetSize, int payl
 	WATCHDOGTEST( XLRWriteDBReg32(xlrDevice, MAC_FLTR_CTRL, m5cFilterControl) );
 	WATCHDOGTEST( XLRWriteDBReg32(xlrDevice, ETH_PACKET_LENGTH, packetSize + payloadOffset) );
 
+	WATCHDOGTEST( XLRWriteDBReg32(xlrDevice, FSC_REJECT_PACKETS, 0) );
+	WATCHDOGTEST( XLRWriteDBReg32(xlrDevice, LEN_REJECT_PACKETS, 0) );
+	WATCHDOGTEST( XLRWriteDBReg32(xlrDevice, ETH_REJECT_PACKETS, 0) );
+
 	/* set MAC list here */
 	{
 		int i = 0;
@@ -697,7 +704,7 @@ static int record(int bank, const char *label, unsigned int packetSize, int payl
 
 	gettimeofday(&tv, &tz);
 	t_ref = t_next_ref = t0 = tv.tv_sec + tv.tv_usec*1.0e-6;
-	p_ref = p_next_ref = ptr;
+	p_ref = p_next_ref = ptr = XLRGetLength(xlrDevice);
 	for(int n = 1; !die; ++n)
 	{
 		usleep(1000);
@@ -715,6 +722,13 @@ static int record(int bank, const char *label, unsigned int packetSize, int payl
 			}
 			if(n % 1000 == 0)
 			{
+				UINT32 nAddressReject = 0;
+				UINT32 nLengthReject = 0;
+				UINT32 nFSCReject = 0;
+				UINT32 packets = 0;
+				UINT32 ethPackets = 0;
+				double rate;
+
 				WATCHDOG( ptr = XLRGetLength(xlrDevice) );
 				if(ptr >= startByte + maxBytes)
 				{
@@ -728,9 +742,15 @@ static int record(int bank, const char *label, unsigned int packetSize, int payl
 				rate = 8.0e-6*(ptr - p_ref) / (t - t_ref);
 
 				/* FIXME: not tested.  I think this reads number of rejected packets, but I am not sure. */
-				WATCHDOG( xlrRC = XLRReadDBReg32(xlrDevice, ETH_REJECT_PACKETS, &nReject) );
+				WATCHDOG( xlrRC = XLRReadDBReg32(xlrDevice, ETH_REJECT_PACKETS, &nAddressReject) );
+				WATCHDOG( xlrRC = XLRReadDBReg32(xlrDevice, FSC_REJECT_PACKETS, &nFSCReject) );
 
-				printf("Pointer %Ld %4.2f %u\n", ptr, rate, nReject);
+				WATCHDOG( xlrRC = XLRReadDBReg32(xlrDevice, TOTAL_PACKETS, &packets) );
+				WATCHDOG( xlrRC = XLRReadDBReg32(xlrDevice, ETH_PACKETS, &ethPackets) );
+				WATCHDOG( xlrRC = XLRReadDBReg32(xlrDevice, LEN_REJECT_PACKETS, &nLengthReject) );
+
+				printf("Pointer %Ld %4.2f\n", ptr, rate);
+				printf("Filter %u %u %u %u %u\n", packets, ethPackets, nAddressReject, nLengthReject, nFSCReject);
 				mk5status->position = ptr;
 				mk5status->rate = rate;
 				fflush(stdout);

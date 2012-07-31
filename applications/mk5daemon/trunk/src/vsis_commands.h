@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2011 by Walter Brisken                                  *
+ *   Copyright (C) 2011-2012 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the Lesser GNU General Public License as published by  *
@@ -36,6 +36,8 @@ int DTS_id_Query(Mk5Daemon *D, int nField, char **fields, char *response, int ma
 
 int packet_Query(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength);
 int packet_Command(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength);
+
+int filter_Query(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength);
 
 int bank_set_Query(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength);
 int bank_set_Command(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength);

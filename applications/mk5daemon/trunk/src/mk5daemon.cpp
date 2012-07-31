@@ -59,8 +59,8 @@ const char difxUser[] = "difx";
 const int maxIdle = 25;		/* if streamstor card is idle this long */
 				/* set current process to NONE */
 
-const int defaultPacketSize = 0;
-const int defaultPayloadOffset = 40;
+const int defaultPacketSize = 0;	/* 0 means don't care */
+const int defaultPayloadOffset = 36;	/* works for RDBE DDC and PFB */
 const int defaultDataFrameOffset = 0;
 const int defaultPSNMode = 0;
 const int defaultPSNOffset = 0;
@@ -565,6 +565,14 @@ void handleRecordMessage(Mk5Daemon *D, time_t t)
 			{
 				D->bytesUsed[D->activeBank] = atoll(A[1]);
 				D->recordRate = atof(A[2]);
+			}
+			else if(strcmp(A[0], "Filter") == 0 && n > 5)
+			{
+				D->totalPackets = atof(A[1]);
+				D->ethernetPackets = atof(A[2]);
+				D->addressRejects = atof(A[3]);
+				D->lengthRejects = atof(A[4]);
+				D->fscRejects = atof(A[5]);
 			}
 			else if(strcmp(A[0], "Stats") == 0 && n >= 10)
 			{

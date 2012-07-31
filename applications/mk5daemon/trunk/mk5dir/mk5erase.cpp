@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2010-2011 by Walter Brisken                             *
+ *   Copyright (C) 2010-2012 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -27,9 +27,10 @@
 //
 //============================================================================
 
-#include <stdio.h> 
-#include <stdlib.h>
-#include <string.h> 
+#include <vector>
+#include <cstdio> 
+#include <cstdlib>
+#include <cstring> 
 #include <unistd.h>
 #include <ctype.h>
 #include <sys/timeb.h>
@@ -62,8 +63,8 @@
 
 const char program[] = "mk5erase";
 const char author[]  = "Walter Brisken";
-const char version[] = "0.4";
-const char verdate[] = "20111123";
+const char version[] = "0.5";
+const char verdate[] = "20120730";
 
 
 #define MJD_UNIX0       40587.0
@@ -160,6 +161,43 @@ int erase(SSHANDLE xlrDevice)
 	return 0;
 }
 
+double summarizeRates(const std::vector<double> &r, const char *passName)
+{
+	double max = 1.0e19;
+	double min = 0.0;
+	double avg = 0.0;
+	printf("Summary for %s pass\n", passName);
+	printf("  Number of rate samples: %d\n", r.size());
+	if(r.size() < 4)
+	{
+		printf("  (This is too few samples for statistical analysis)\n");
+	}
+	else
+	{
+		unsigned int n = r.size();
+		for(unsigned int i = 2; i < n-2; ++i)	/* don't include end points in statistics */
+		{
+			avg += r[i];
+			if(r[i] > max)
+			{
+				max = r[i];
+			}
+			if(r[i] < min)
+			{
+				min = r[i];
+			}
+		}
+		avg /= (r.size() - 4);
+		printf("  Maximum rate = %7.2f Mbps\n", max);
+		printf("  Average rate = %7.2f Mbps\n", avg);
+		printf("  Minimum rate = %7.2f Mbps\n", min);
+		printf("  First two rates were %7.2f and %7.2f Mbps\n", r[0], r[1]);
+		printf("  Last two rates were %7.2f and %7.2f Mbps\n", r[n-2], r[n-1]);
+	}
+
+	return min;
+}
+
 int condition(SSHANDLE xlrDevice, const char *vsn, enum ConditionMode mode, DifxMessageMk5Status *mk5status, int verbose, int getData, const struct DriveInformation drive[8], int *rate)
 {
 	XLR_RETURN_CODE xlrRC;
@@ -174,10 +212,8 @@ int condition(SSHANDLE xlrDevice, const char *vsn, enum ConditionMode mode, Difx
 	int nPass, pass = 0;
 	char opName[10] = "";
 	FILE *out=0;
-	double lowestRate = 1e9;	/* Mbps */
-	double highestRate = 0.0;	/* Mbps */
-	double averageRate = 0.0;	/* Mbps */
-	int nRate = 0;
+	std::vector<double> rate0;
+	std::vector<double> rate1;
 	char message[DIFX_MESSAGE_LENGTH];
 	DifxMessageDriveStats driveStatsMessage;
 	const int printInterval = 10;
@@ -294,16 +330,14 @@ int condition(SSHANDLE xlrDevice, const char *vsn, enum ConditionMode mode, Difx
 			snprintf(mk5status->scanName, DIFX_MESSAGE_MAX_SCANNAME_LEN, "%s[%4.2f%%]", opName, done);
 			if(bytes > 0 && mk5status->rate < 6000)
 			{
-				if(mk5status->rate < lowestRate)
+				if(pass == 0)
 				{
-					lowestRate = mk5status->rate;
+					rate0.push_back(mk5status->rate);
 				}
-				if(mk5status->rate > highestRate)
+				else
 				{
-					highestRate = mk5status->rate;
+					rate1.push_back(mk5status->rate);
 				}
-				++nRate;
-				averageRate += mk5status->rate;
 			}
 			ftime(&time2);
 			dt = time2.time + time2.millitm/1000.0 
@@ -333,10 +367,6 @@ int condition(SSHANDLE xlrDevice, const char *vsn, enum ConditionMode mode, Difx
 		sleep(1);
 	}
 
-	if(nRate > 0)
-	{
-		averageRate /= nRate;
-	}
 
 	if(out)
 	{
@@ -358,13 +388,12 @@ int condition(SSHANDLE xlrDevice, const char *vsn, enum ConditionMode mode, Difx
 	{
 		const int hostnameLength = 32;
 		char hostname[hostnameLength];
+		double lowestRate = 0.0;
 
 		printf("> %s Conditioning %s took %7.2f seconds\n", opName, vsn, dt);
 
 		gethostname(hostname, hostnameLength);
 		printf("> Hostname %s\n", hostname);
-
-		*rate = 128*(int)(lowestRate/128.0);
 
 		driveStatsMessage.startMJD = MJD_UNIX0 + time1.time/SEC_DAY + time1.millitm/MSEC_DAY;
 		driveStatsMessage.stopMJD = MJD_UNIX0 + time2.time/SEC_DAY + time2.millitm/MSEC_DAY;
@@ -374,15 +403,21 @@ int condition(SSHANDLE xlrDevice, const char *vsn, enum ConditionMode mode, Difx
 		switch(mode)
 		{
 		case CONDITION_WRITE_ONLY:
+			lowestRate = summarizeRates(rate0, "Write");
 			driveStatsMessage.type = DRIVE_STATS_TYPE_CONDITION_W;
 			break;
 		case CONDITION_READ_ONLY:
+			lowestRate = summarizeRates(rate0, "Read");
 			driveStatsMessage.type = DRIVE_STATS_TYPE_CONDITION_R;
 			break;
 		default:
+			summarizeRates(rate0, "Read");
+			lowestRate = summarizeRates(rate1, "Write");
 			driveStatsMessage.type = DRIVE_STATS_TYPE_CONDITION;
 			break;
 		}
+
+		*rate = 128*(int)(lowestRate/128.0);
 
 		for(int d = 0; d < 8; ++d)
 		{
@@ -423,7 +458,6 @@ int condition(SSHANDLE xlrDevice, const char *vsn, enum ConditionMode mode, Difx
 				printf("! Disk %d stats : Not found!\n", d);
 			}
 		}
-		printf("> Rates (Mpbs): Lowest = %7.2f  Average = %7.2f  Highest = %7.2f\n", lowestRate, averageRate, highestRate);
 	}
 
 	return 0;
