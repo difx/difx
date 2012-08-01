@@ -272,7 +272,7 @@ int pystream::writeRecorderInit(const VexData *V)
 		// Need to check requested format/mode first
 		*this << "recorder0.setMode('Mark5B')" << endl;
 		*this << "recorder0.setPSNMode(0)" << endl;
-		*this << "recorder0.setPacket(0, 0, 40, 5008)" << endl;
+		*this << "recorder0.setPacket(0, 0, 36, 5008)" << endl;
 
 		*this << "subarray.setRecorder(recorder0)" << endl;
 		*this << endl;
@@ -1168,7 +1168,7 @@ int pystream::writeScans(const VexData *V)
 				}
 				else if(setup->formatName == "MARK5B")
 				{
-					*this << "recorder0.setPacket(0, 0, 40, 5008)" << endl;
+					*this << "recorder0.setPacket(0, 0, 36, 5008)" << endl;
 					*this << "subarray.setRecord(mjdStart + " << deltat1 << "*second, mjdStart+" << deltat2 << "*second, '" << scan->defName << "', obsCode, stnCode )" << endl;
 					recordSeconds += (deltat2-deltat1);
 				}
