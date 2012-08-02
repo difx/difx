@@ -64,7 +64,7 @@
 const char program[] = "mk5erase";
 const char author[]  = "Walter Brisken";
 const char version[] = "0.5";
-const char verdate[] = "20120730";
+const char verdate[] = "20120801";
 
 
 #define MJD_UNIX0       40587.0
@@ -163,8 +163,8 @@ int erase(SSHANDLE xlrDevice)
 
 double summarizeRates(const std::vector<double> &r, const char *passName)
 {
-	double max = 1.0e19;
-	double min = 0.0;
+	double min = 1.0e19;
+	double max = 0.0;
 	double avg = 0.0;
 	printf("Summary for %s pass\n", passName);
 	printf("  Number of rate samples: %d\n", r.size());
@@ -191,8 +191,8 @@ double summarizeRates(const std::vector<double> &r, const char *passName)
 		printf("  Maximum rate = %7.2f Mbps\n", max);
 		printf("  Average rate = %7.2f Mbps\n", avg);
 		printf("  Minimum rate = %7.2f Mbps\n", min);
-		printf("  First two rates were %7.2f and %7.2f Mbps\n", r[0], r[1]);
-		printf("  Last two rates were %7.2f and %7.2f Mbps\n", r[n-2], r[n-1]);
+		printf("  First three rates were %7.2f, %7.2f and %7.2f Mbps\n", r[0], r[1], r[2]);
+		printf("  Last three rates were  %7.2f, %7.2f and %7.2f Mbps\n", r[n-3], r[n-2], r[n-1]);
 	}
 
 	return min;
