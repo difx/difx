@@ -344,7 +344,7 @@ NativeMk5DataStream::~NativeMk5DataStream()
 		sendMark5Status(MARK5_STATE_ERROR, 0, 0.0, 0.0);
 		++nError;
 	}
-	else if(9*(ninvalid + nfill) >= ngood)
+	else if(9*(ninvalid + nfill) > ngood)
 	{
 		int f = 100*(ninvalid + nfill)/(ninvalid + nfill + ngood);
 		cwarn << startl << f <<" percent of the data from this module was discarded: ninvalid=" << ninvalid << " nfill=" << nfill << " ngood=" <<     ngood << "." << endl;
@@ -726,7 +726,7 @@ int NativeMk5DataStream::readonedemux(bool resetreference, int buffersegment)
   bool ok;
   int nfix = 0;
 
-  cinfo << startl << "At the beginning of readonedemux, readpointer is " << readpointer << endl;
+  //cinfo << startl << "At the beginning of readonedemux, readpointer is " << readpointer << endl;
   rbytes = moduleRead((unsigned long*)datamuxer->getCurrentDemuxBuffer(), datamuxer->getSegmentBytes(), readpointer, buffersegment);
   //the main readpointer will be updated outside of this routine, use localreadpointer for here
   localreadpointer = readpointer + rbytes;
@@ -750,7 +750,7 @@ int NativeMk5DataStream::readonedemux(bool resetreference, int buffersegment)
   ok = datamuxer->deinterlace(rbytes);
   if(!ok)
     MPI_Abort(MPI_COMM_WORLD, 1);
-  cinfo << startl << "At the end of readonedemux, readpointer will be  " << localreadpointer << endl;
+  //cinfo << startl << "At the end of readonedemux, readpointer will be  " << localreadpointer << endl;
   return rbytes;
 }
 
@@ -938,12 +938,13 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 		{
 			// If offset is small, just nudge it 
 			// Data will be invalid this time through, but should be OK next time
-			readseconds += (sec-sec2);
-			readnanoseconds = (int)(ns + 0.4);
 			if(!noDataOnModule)
 			{
 				cwarn << startl << "Nudged time just a bit; sec2 was " << sec2 << " and ns was " << readnanoseconds << ", now sec = " << sec << " and ns = " << ns << endl;
+				cwarn << startl << "The difference between ns_old and ns_new was " << ns - readnanoseconds << endl;
 			}
+			readseconds += (sec-sec2);
+			readnanoseconds = (int)(ns + 0.4);
 		}
 		else if(invalidtime > 3 && mjd == corrstartday)	// if a large time difference persists
 		{
