@@ -1191,22 +1191,24 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 			}
 			else if(setup.formatName == "VDIF")
 			{
-				cerr << "Warning: Antenna " << antName << " has incompletely defined VDIF format.  Assuming 1 chan with 2 bits." << endl;
-
+				cerr << "Warning: Antenna " << antName << " format treated as (one channel) VDIF/1032/2." << endl;
 				setup.nBit = 2;
 				setup.nRecordChan = 1;
 			}
-			else if(setup.formatName.find_first_of("VDIF") != string::npos)
+			else if(setup.formatName.find("VDIF") != string::npos)  // VDIF... or // INTERLACEDVDIF...
 			{
-#warning: "FIXME: note: the use of find_first_of on this test doesn't seem appropriate. It will match any formatName, even if it doesn't have 'VDIF' in it."
+#warning "handling of VDIF or INTERLACEDVDIF nRecordChan may not be correct in all cases"
 				setup.nBit = atoi(setup.formatName.substr(setup.formatName.find_last_of('/') + 1).c_str());
 				setup.formatName = setup.formatName.substr(0, setup.formatName.find_last_of('/'));
 				setup.nRecordChan = 1;
-#warning "handling of INTERLACED VDIF nRecordChan may not be correct in all cases"
 				size_t lpos = setup.formatName.find_first_of(':');
-				while(lpos != string::npos)
+				if (lpos == string::npos)
 				{
-					// and an additional channel for every ':'
+					setup.nRecordChan = -7777;  // use all channels of vex file, see below
+				}
+				while(lpos != string::npos)         // else
+				{
+					// and an additional channel for every ':' in INTERLACEDVDIF/.../size/bits
 					++setup.nRecordChan;
 					lpos = setup.formatName.find_first_of(':', lpos + 1);
 				}
@@ -1369,6 +1371,12 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 				}
 
 				++nRecordChan;
+			}
+
+			if (setup.nRecordChan == -7777)     // then use the number of that we just counted out
+			{
+				setup.nRecordChan = nRecordChan;
+				cout << "FYI: Antenna=" << antName << " will use the full number of recorded channels, " << setup.nRecordChan << endl;
 			}
 
 			if(nRecordChan != setup.nRecordChan)
