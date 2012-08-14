@@ -6,6 +6,7 @@ Support for IPv6 within C code.  Likely overall performance improvement at the s
   - warning: all code linking to difxmessage that might use IPv6 should change
     the size of from[] to DIFX_MESSAGE_MAX_INET_ADDRESS_LENGTH or face
     possible segfaulting
+NOTE: these changes have been backed out until a concurrency issue is fixed
 
 Version 2.1.0
 ~~~~~~~~~~~~
