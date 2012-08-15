@@ -24,6 +24,8 @@ parser.add_option("--toscreen", dest="toscreen", default=False, action="store_tr
                   help="Plot to the screen, otherwise to png files")
 parser.add_option("--singlevis", dest="singlevis", default=False, action="store_true",
                   help="Stop plotting as soon as there is a time change")
+parser.add_option("--firstpermatch", dest="firstpermatch", default=False, action="store_true",
+                  help="For each baseline plot only the first matching entry")
 parser.add_option("--singleplot", dest="singleplot", default=False, action="store_true",
                   help="Plot everything on one axis")
 parser.add_option("--amprange", dest="amprange", default="-1,-1", 
@@ -44,6 +46,7 @@ inputfile      = options.inputfile
 toscreen       = options.toscreen
 singlevis      = options.singlevis
 singleplot     = options.singleplot
+firstpermatch  = options.firstpermatch
 amprange       = options.amprange.split(',')
 
 if inputfile == "":
@@ -105,6 +108,10 @@ for filename in args:
     med.append(0.0)
     polpair.append("")
     nextheader.append([])
+unplottedbaselines=[]
+for i in range(16):
+	for j in range(16):
+		unplottedbaselines.append(j*256+i)
 
 for i in range(numfiles):
     nextheader[i] = parseDiFX.parse_output_header(difxinputs[i])
@@ -136,6 +143,24 @@ while not len(nextheader[0]) == 0 and keeplooping:
             print "How embarrassing - you have tried to read files with more than " + \
                 str(maxchannels) + " channels.  Please rerun with --maxchannels=<bigger number>!"
             sys.exit()
+	if firstpermatch:
+		match_freq = (targetfreq < 0) or (freqindex[i] == targetfreq)
+		match_pol = (polpair[i]) in pollist
+		match_new = baseline[i] in unplottedbaselines
+		if match_new and match_freq and match_pol:
+			targetbaseline = baseline[i]
+			try:
+				unplottedbaselines.remove(baseline[i])
+				unplottedbaselines.remove(baseline[i])
+			except:
+				pass
+			print 'Got new baseline %s, freq %d' % (str(targetbaseline),freqindex[i])
+		else:
+			if match_new:
+				print 'Skip new baseline %s with wrong freq %d != %d' % (str(baseline[i]),freqindex[i],targetfreq)
+			if match_freq:
+				print 'Skip old baseline %s with desired freq %d = %d' % (str(baseline[i]),freqindex[i],targetfreq)
+			targetbaseline = 13
         for j in range(nchan[i]):
             cvis = struct.unpack("ff", buffer[8*j:8*(j+1)])
             vis[i][j] = complex(cvis[0], cvis[1])
