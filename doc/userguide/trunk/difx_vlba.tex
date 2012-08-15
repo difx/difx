@@ -11,52 +11,52 @@ While there are several steps in performing the software correlation, nothing is
 
 Note that this section will see considerable enhancements as experience in running the correlator is gained.
 
-\subsection{Sharing resources with hardware correlator}
-
-The Mark5 units attached to the VLBA correlator are used in three different ways for correlation: 1.~An installed module can be played through the VLBA hardware correlator, 2.~The CPU(s) inside the Mark5 unit can be used for software correlator processing, and 3.~An installed module can be played into the software correlator.
-Functions 1 and 2 can be done simultaneously without conflict.  
-Likewise, functions 2 and 3 can also be done simultaneously without conflict.
-Functions 1 and 3 cannot be done at the same time.
-In fact, the software correlator will refuse to use Mark5 units that are currently ``Online'' with regard to the hardware correlator.
-The Mark5 units need to be explicitly set to playback on a particular correlator.  
-See \S\S\ref{sec:take} \& \ref{sec:return} for instructions.
-These two functions cleanly stop and start, respectively, the {\tt Mark5A} program that is needed for the hardware correlator.
-It is only the playback of the Mark5 modules that has any chance of conflict between the software and hardware correlators.
-The hardware correlator can be correlating, idle, in standby, or completely off during software correlation.
-
-\subsubsection{Taking a Mark5 unit} \label{sec:take}
-
-Two actions must be taken to safely transfer a Mark5 unit from serving the hardware to serving the software correlator.
-Here ``safely'' implies no loss of data and no need for an unnecessary reboot; if done properly, no reboots of any computer should be needed.
-First the Mark5 unit must be taken off-line from the hardware correlator {\tt SYSDISCS} screen.
-Multiple units can be taken off-line simultaneously by highlighting multiple units.
-Like usual, units currently assigned to a job cannot be taken off-line.
-Second, the Mark5A program must be stopped on the Mark5 unit(s).
-This can be done with the {\tt mk5take} program (\S\ref{sec:mk5takeprogram}).
-For example, to ``take'' units 8, 9 and 11, one would issue the following command from the shell prompt
-
-\begin{itemize}
-\item[] {\tt mk5take 08 09 11}
-\end{itemize}
-
-Any number of units can be taken off-line at once with {\tt mk5take}.
-Note: if a Mark5 unit is rebooted, {\tt mk5take} will need to be run on that unit again once it comes to life as the {\tt Mark5A} will be automatically started on each reboot (except for units fx01 through fx03 which never run the {\tt Mark5A} program).
-You may need to wait 15 seconds or so after reboot is complete for this to work.
-
-\subsubsection{Returning a Mark5 unit} \label{sec:return}
-
-Once a Mark5 unit is again needed for use with the hardware correlator, it must be returned.
-It is important to make sure the software correlator is not using the particular Mark5 unit for playback before continuing.
-First the Mark5A program must be restarted, which can be done with the {\tt mk5return} program (\S\ref{sec:mk5returnprogram}), e.g.,
-
-\begin{itemize}
-\item[] {\tt mk5return 08 09 11}
-\end{itemize}
-
-Again, any number of Mark5 units can be returned in one call.
-After a few seconds the effectiveness of this can be tested with the {\tt mk5status program}; all units expected to be used for the hardware correlator should be in the READY state.
-Once this is the case, the units can once again be put Online with the {\tt SYSDISCS} screen.
-No reboots should be needed if things go well.
+% \subsection{Sharing resources with hardware correlator}
+% 
+%The Mark5 units attached to the VLBA correlator are used in three different ways for correlation: 1.~An installed module can be played through the VLBA hardware correlator, 2.~The CPU(s) inside the Mark5 unit can be used for software correlator processing, and 3.~An installed module can be played into the software correlator.
+%Functions 1 and 2 can be done simultaneously without conflict.  
+%Likewise, functions 2 and 3 can also be done simultaneously without conflict.
+%Functions 1 and 3 cannot be done at the same time.
+%In fact, the software correlator will refuse to use Mark5 units that are currently ``Online'' with regard to the hardware correlator.
+%The Mark5 units need to be explicitly set to playback on a particular correlator.  
+%See \S\S\ref{sec:take} \& \ref{sec:return} for instructions.
+%These two functions cleanly stop and start, respectively, the {\tt Mark5A} program that is needed for the hardware correlator.
+%It is only the playback of the Mark5 modules that has any chance of conflict between the software and hardware correlators.
+%The hardware correlator can be correlating, idle, in standby, or completely off during software correlation.
+%
+%\subsubsection{Taking a Mark5 unit} \label{sec:take}
+%
+%Two actions must be taken to safely transfer a Mark5 unit from serving the hardware to serving the software correlator.
+%Here ``safely'' implies no loss of data and no need for an unnecessary reboot; if done properly, no reboots of any computer should be needed.
+%First the Mark5 unit must be taken off-line from the hardware correlator {\tt SYSDISCS} screen.
+%Multiple units can be taken off-line simultaneously by highlighting multiple units.
+%Like usual, units currently assigned to a job cannot be taken off-line.
+%Second, the Mark5A program must be stopped on the Mark5 unit(s).
+%This can be done with the {\tt mk5take} program (\S\ref{sec:mk5takeprogram}).
+%For example, to ``take'' units 8, 9 and 11, one would issue the following command from the shell prompt
+%
+%\begin{itemize}
+%\item[] {\tt mk5take 08 09 11}
+%\end{itemize}
+%
+%Any number of units can be taken off-line at once with {\tt mk5take}.
+%Note: if a Mark5 unit is rebooted, {\tt mk5take} will need to be run on that unit again once it comes to life as the {\tt Mark5A} will be automatically started on each reboot (except for units fx01 through fx03 which never run the {\tt Mark5A} program).
+%You may need to wait 15 seconds or so after reboot is complete for this to work.
+%
+%\subsubsection{Returning a Mark5 unit} \label{sec:return}
+%
+%Once a Mark5 unit is again needed for use with the hardware correlator, it must be returned.
+%It is important to make sure the software correlator is not using the particular Mark5 unit for playback before continuing.
+%First the Mark5A program must be restarted, which can be done with the {\tt mk5return} program (\S\ref{sec:mk5returnprogram}), e.g.,
+%
+%\begin{itemize}
+%\item[] {\tt mk5return 08 09 11}
+%\end{itemize}
+%
+%Again, any number of Mark5 units can be returned in one call.
+%After a few seconds the effectiveness of this can be tested with the {\tt mk5status program}; all units expected to be used for the hardware correlator should be in the READY state.
+%Once this is the case, the units can once again be put Online with the {\tt SYSDISCS} screen.
+%No reboots should be needed if things go well.
 
 
 
@@ -165,45 +165,45 @@ Note that this final step is needed only after the entire project is ready for r
 
 
 
-\subsection{Software correlation based on FXCORR job files}
-
-The initial deployment of the software correlator at the VLBA relied on conversion of hardware correlator (FXCORR) job scripts ({\tt .fx} files) to DiFX {\tt .input} files.
-This procedure is being phased out in favor of correlation based on {\tt .vex} files; the instructions for correlation based on this earlier pathway is explained below mainly for historical reference.
-This pathway into DiFX may still be useful in some circumstances.
-The procedure below does not go into any detail about what is actually happening at each step, please find details in other sections of this manual.
-Only steps \ref{item:take} though \ref{item:done} below require the correlator-specific hardware so the pre- and post- correlation steps could all be run by the analysts rather than operators.
-In the example that follows, project BM264 segment G will be correlated:
-\begin{enumerate}
-\item Log into the head node as user: {\tt ssh -l difx \$DIFX\_HEAD\_NODE}
-\item Change directories to the job root directory: {\tt cd \$JOB\_ROOT}
-\item Copy the job scripts and monitor data over: {\tt getjobs bm264g} (\S\ref{sec:getjobs})
-\item Enter the project directory: {\tt cd bm264g}
-\item At this time it would be convenient to open another terminal, log into {\tt \$DIFX\_HEAD\_NODE} as difx, and change to the {\tt \$JOB\_ROOT} directory so that it is easy to monitor the progress in one window while running the correlation in the other.
-\item Generate the DiFX input files: {\tt job2difx *.fx} (\S\ref{sec:job2difx}).
-\item Look over the list of jobs to be done: {\tt joblist} (\S\ref{sec:joblist}). \label{item:jl}
-\item Determine which modules are needed, either by looking at the {\tt .fx} files or with the use of {\tt jobdisks} (\S\ref{sec:jobdisks}).
-Install these modules into Mark5 units, making sure not to put two modules that are needed by the same job into the same unit.
-\item Off-line the units using the hardware correlator {\tt SYSDISCS} screen and ``take'' them (\S\ref{sec:take}). \label{item:take}
-Note that if no hardware correlation is to occur it is okay to ``take'' all of the Mark5 units for convenience.
-\item \label{item:sd} At this point one could start the correlation of all the jobs with a single command: {\tt startdifx *.input} (\S\ref{sec:startdifx}), but it is recommended to start just one job first to make sure things are working: {e.g. \tt startdifx job1240.000.input} .
-\item When output stops and the command prompt is given back, the processing is either done or something failed.
-If a job is encountered that requires a module that is not mounted, processing will stop with a warning that the module could not be found.
-At this point, you should load the desired module and again type {\tt startdifx *.input} to continue processing. 
-\item When done, return the Mark5 units if they are needed by the hardware correlator (\S\ref{sec:return}). \label{item:done}
-\item Generate fits files for all correlated jobs: {\tt difx2fits -d} (\S\ref{sec:difx2fits}). \label{item:end}
-\end{enumerate}
-
-If a job is encountered and a required module for that job is not installed in a Mark5 unit that has been ``taken'', the correlation process will stop.
-The needed module will be listed in an error report, or can be identified using the {\tt jobdisks} (\S\ref{sec:jobdisks}) program.
-
-
-\subsection{Common failure modes}
-
-Here is a list of some common failure modes and some hints to identifying and solving them.
-In general, it is often useful to look at the correlator log.
-The DOI will keep in a buffer the running log from the recent correlation sessions.
-Copies of all logs are stored in {\tt \$DIFX\_QUEUE/}{\em project} .
-Note that {\em project} in this context includes the segment code and is completely capitalized.
+%\subsection{Software correlation based on FXCORR job files}
+%
+%The initial deployment of the software correlator at the VLBA relied on conversion of hardware correlator (FXCORR) job scripts ({\tt .fx} files) to DiFX {\tt .input} files.
+%This procedure is being phased out in favor of correlation based on {\tt .vex} files; the instructions for correlation based on this earlier pathway is explained below mainly for historical reference.
+%This pathway into DiFX may still be useful in some circumstances.
+%The procedure below does not go into any detail about what is actually happening at each step, please find details in other sections of this manual.
+%Only steps \ref{item:take} though \ref{item:done} below require the correlator-specific hardware so the pre- and post- correlation steps could all be run by the analysts rather than operators.
+%In the example that follows, project BM264 segment G will be correlated:
+%\begin{enumerate}
+%\item Log into the head node as user: {\tt ssh -l difx \$DIFX\_HEAD\_NODE}
+%\item Change directories to the job root directory: {\tt cd \$JOB\_ROOT}
+%\item Copy the job scripts and monitor data over: {\tt getjobs bm264g} (\S\ref{sec:getjobs})
+%\item Enter the project directory: {\tt cd bm264g}
+%\item At this time it would be convenient to open another terminal, log into {\tt \$DIFX\_HEAD\_NODE} as difx, and change to the {\tt \$JOB\_ROOT} directory so that it is easy to monitor the progress in one window while running the correlation in the other.
+%\item Generate the DiFX input files: {\tt job2difx *.fx} (\S\ref{sec:job2difx}).
+%\item Look over the list of jobs to be done: {\tt joblist} (\S\ref{sec:joblist}). \label{item:jl}
+%\item Determine which modules are needed, either by looking at the {\tt .fx} files or with the use of {\tt jobdisks} (\S\ref{sec:jobdisks}).
+%Install these modules into Mark5 units, making sure not to put two modules that are needed by the same job into the same unit.
+%\item Off-line the units using the hardware correlator {\tt SYSDISCS} screen and ``take'' them (\S\ref{sec:take}). \label{item:take}
+%Note that if no hardware correlation is to occur it is okay to ``take'' all of the Mark5 units for convenience.
+%\item \label{item:sd} At this point one could start the correlation of all the jobs with a single command: {\tt startdifx *.input} (\S\ref{sec:startdifx}), but it is recommended to start just one job first to make sure things are working: {e.g. \tt startdifx job1240.000.input} .
+%\item When output stops and the command prompt is given back, the processing is either done or something failed.
+%If a job is encountered that requires a module that is not mounted, processing will stop with a warning that the module could not be found.
+%At this point, you should load the desired module and again type {\tt startdifx *.input} to continue processing. 
+%\item When done, return the Mark5 units if they are needed by the hardware correlator (\S\ref{sec:return}). \label{item:done}
+%\item Generate fits files for all correlated jobs: {\tt difx2fits -d} (\S\ref{sec:difx2fits}). \label{item:end}
+%\end{enumerate}
+%
+%If a job is encountered and a required module for that job is not installed in a Mark5 unit that has been ``taken'', the correlation process will stop.
+%The needed module will be listed in an error report, or can be identified using the {\tt jobdisks} (\S\ref{sec:jobdisks}) program.
+%
+%
+%\subsection{Common failure modes}
+%
+%Here is a list of some common failure modes and some hints to identifying and solving them.
+%In general, it is often useful to look at the correlator log.
+%The DOI will keep in a buffer the running log from the recent correlation sessions.
+%Copies of all logs are stored in {\tt \$DIFX\_QUEUE/}{\em project} .
+%Note that {\em project} in this context includes the segment code and is completely capitalized.
 
 \subsubsection{Directory contains undecoded scans}
 
@@ -254,6 +254,94 @@ or
 $\longrightarrow$ {\tt ssh 12 /sbin/reboot} if it really refuses to reboot.
 
 Once the unit comes back, try retrieving the directory again.
+
+\subsubsection{Mark5 directory reading fails partway through}
+
+When the GUI button GetDir fails, the program {\tt mk5dir} can be used directly to read a module directory.
+
+Things to try first:
+\begin{enumerate}
+\item Log into the fx unit and run {\tt vsn} to look for obvious module problems
+\item Move the module
+\item Erase (or move/rename) the preexisting directory file
+\item Reboot the correlator Mark5 unit
+\end{enumerate}
+
+When GetDir fails or crashes the Mark5 unit, it is likely because there are one or more spots on the module that can't be read.
+Using {\tt mk5dir}, you can read most of the directory while skipping any problematic scans.
+
+The {\tt mk5dir} program will work on both Mark5A and Mark5C modules.
+It is best to put them, respectively, in SDK 8 and 9 units.
+As with most utilities, typing {\tt mk5dir} by itself will print help information.
+
+The output directory will be named the usual {\em vsn}.dir and will overwrite
+any existing file of that name. It will be written to {\tt \$MARK5\_DIR\_PATH}, which is the same place to which GetDir writes directories.
+
+The relevant options in this case are:
+
+\begin{itemize}
+\item {\tt -f} (force a directory read even if a file already exists)
+\item {\tt -v} (be verbose)
+\item {\tt -e} {\em scan number} (stop reading the directory at a certain scan number)
+\item {\tt -b} {\em scan number} (begin reading the directory at a certain scan number)
+\end{itemize}
+
+The scan numbering is worth noting.
+The command line options {\tt -e} and {\tt -b} number the scans starting at 1 (the first scan is 1).
+But the on-screen output of {\tt mk5dir} will begin with a scan numbered 0.
+
+The first step is to read as much of the directory before the first problem scan.
+
+\begin{enumerate}
+\item Log in to the fx unit
+\item Run {\tt vsn} {\em bank} to get an overview of the health of the module
+\item Run {\tt mk5dir -f -v} {\em bank}
+\end{enumerate}
+
+As it reads each scan, it will print a line indicating its progress.
+
+\noindent
+{\tt 0/228 -> 3 Decoded} \\
+{\tt 1/228 -> 3 Decoded} 
+
+etc \ldots
+
+The first number is the scan it just decoded and the second number is the total number of scans on the module.
+The ``3'' is related to the data format and should be 3 for Mark5C at all VLBA sites.
+VLA modules will show ``4''.
+Legacy VLBA and foreign stations may show other numbers.
+The ``Decoded'' indicates success, as opposed to something like ``XLR Read Error''.
+
+Presumably, it will fail at some point.
+When it fails it probably won't write an output directory file.
+Note which scan it failed to read. Remember that scan $x/228$ is actually the $x$+1$^{\mathrm th}$ scan because it started counting at zero.
+You may have to reboot the fx unit at this point.
+
+Now run {\tt mk5dir} again, this time stopping one scan previous to the one where it died last time.
+
+\begin{enumerate}
+\item Run {\tt vsn} {\em bank} (whether you had to reboot or not, checking the module with {\tt vsn} is probably a good idea)
+\item Run {\tt mk5dir -f -v -e} $x$ {\em bank} ({\tt mk5dir} will stop once it has read $x$ scans)
+\item Rename the output file so it doesn't get overwritten.
+\end{enumerate}
+
+Now we can skip past the bad parts and read the rest of the directory.
+
+\begin{enumerate}
+\item Run {\tt mk5dir -f -v -b} $x$+2 {\em bank} ({\tt mk5dir} will start with the scan after the one it originally failed on)
+\end{enumerate}
+
+If it fails, reboot as necessary, run vsn again, and try starting with scan $x$+3 instead.
+Keep incrementing the start scan until it works; sometimes it might be faster to try a bigger jump, and on success work backwards to find where failing starts.
+Eventually, you will have skipped past the bad scans and read the rest of the directory.
+There are likely to only be one or two bad scans, so this step should actually be fairly simple.
+
+Now you will have two directory files, the renamed file with the first $x$ scans, and the second file with all the scans after the bad scan(s).
+Each file will also have entries for the scans that weren't read by that particular invocation of {\tt mk5dir}, and these lines need to be deleted.
+Then using your preference of linux commands and/or text editor, combine the two files in the appropriate order.
+Make sure there is a single header line at the top which lists the correct number of scans.
+
+If there are nonsequential bad scans you will have to concatenate three or more files, but the steps remain the same.
 
 
 \subsubsection{Mark5 unit hung} %FIXME
