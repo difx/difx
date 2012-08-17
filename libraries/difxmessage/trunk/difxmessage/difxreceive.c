@@ -9,17 +9,30 @@
 //
 //============================================================================
 #include <stdio.h>
+#include <sys/socket.h>
 #include "../difxmessage.h"
 #include "difxmessageinternal.h"
 
 int difxMessageReceiveOpen()
 {
+	int sock;
+
 	if(difxMessagePort < 0)
 	{
 		return -1;
 	}
 
-	return openMultiCastSocket(difxMessageGroup, difxMessagePort);
+	sock = openMultiCastSocket(difxMessageGroup, difxMessagePort);
+
+	if(sock > 0)
+	{
+		int recBufSize = 768000;
+
+		/* Increase receive buffer size to accomodate bursty traffic */
+		setsockopt(sock, SOL_SOCKET, SO_RCVBUF, &recBufSize, sizeof(recBufSize));
+	}
+
+	return sock;
 }
 
 int difxMessageReceiveClose(int sock)
