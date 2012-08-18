@@ -10,8 +10,8 @@ import platform
 from time import asctime
 
 program = 'difxbuild'
-version = '0.11'
-verdate = '20120720'
+version = '0.12'
+verdate = '20120725'
 author = 'Walter Brisken <wbrisken@nrao.edu>'
 
 openmpiVersion = '1.6'
@@ -660,7 +660,9 @@ def bootstrap(comps, params, args, verbose, pretend):
 			print 'Making .openmpi/mca-params.conf'
 			execute('mkdir -p %s/.openmpi' % environ['HOME'], verbose, pretend)
 			out = open('%s/.openmpi/mca-params.conf' % environ['HOME'], 'w')
-			out.write('%s\n' % config['mca'])
+			mca = split(config['mca'], ';')
+			for m in mca:
+				out.write('%s\n' % m)
 			out.close()
 
 		ipproot = {}	# indexed by arch
@@ -1009,10 +1011,13 @@ def spice(origComps, params, args, verbose, pretend):
 		spiceUrl = 'ftp://naif.jpl.nasa.gov/pub/naif/toolkit//C/PC_Linux_GCC_32bit/packages/%s' % srcFile
 	difxBase = environ['DIFX_BASE'] + '/'
 	tarDir = difxBase + 'tar/'
+	archDir = difxBase + arch
 	# get file
 	ftpFile(spiceUrl, tarDir, srcFile, args, verbose, pretend)
 	# untar file
-	chdir(difxBase + arch)
+	if not isdir(archDir):
+		execute('mkdir -p %s' % archDir, verbose, pretend)
+	chdir(archDir)
 	execute('tar zxvf %s/%s' % (tarDir, srcFile), verbose, pretend)
 
 def pgplot(origComps, params, args, verbose, pretend):
@@ -1057,8 +1062,11 @@ def pgplot(origComps, params, args, verbose, pretend):
 	# make fortran and c package
 	execute('make', verbose, pretend)
 	execute('make cpg', verbose, pretend)
+	linkDir = '%s/%s/lib' % (difxBase, arch)
+	if not isdir(linkDir):
+		execute('mkdir -p %s' % linkDir, verbose, pretend)
 	for f in ['libpgplot.a', 'libcpgplot.a', 'libpgplot.so']:
-		execute('ln -s %s/%s %s/%s/lib/%s' % (pgplotDir, f, difxBase, arch, f), verbose, pretend)
+		execute('ln -s %s/%s %s/%s' % (pgplotDir, f, linkDir, f), verbose, pretend)
 
 
 def openmpi(origComps, params, args, verbose, pretend):
