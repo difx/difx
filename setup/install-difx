@@ -250,6 +250,7 @@ def os_chdir(dir):
         print "--> " + dir
         print "==> " + os.getcwd()
         print
+    sys.stdout.flush()
 
 # work out build and source directories
 blddir = os.getcwd()
@@ -287,13 +288,21 @@ else:
         startdir = topdir
     else:
         startdir = topdir + '/setup'
+    # allow use of symbolic links in partial checkouts
+    repldir = os.environ.get('DIFX_REPLDIR_PATH')
+    if not repldir:
+        repldir = 'no-repldir-to-replace-with-blddir'
+    if verb:
+        print " Replace dir:  " + repldir
 
 if cache != 'none':
     cache = ' --cache-file=' + blddir + '/' + cache
 
 if verb:
-    print "   Build dir:  " + blddir
+    print "   Setup dir:  " + setupdir
     print "  Source dir:  " + topdir
+    print "   Start dir:  " + startdir
+    print "   Build dir:  " + blddir
     print " PkgCfg path:  " + os.environ.get('PKG_CONFIG_PATH')
     print ""
 
@@ -301,6 +310,7 @@ if verb:
 def run(cmd):
     if verb:
         print "Run(" + cmd + ") in " + os.getcwd()
+    sys.stdout.flush()
     if os.system(cmd):
         if force:
             errors.append(os.getcwd() + ' ' + cmd + " failed.")
@@ -329,6 +339,7 @@ def auto_compile(doreconf, dolibtoolize, doautoheader, prefix, dompicxx):
     if inbdir:
         cfp = thisdir
         blp = cfp.replace(topdir, blddir)
+        blp = blp.replace(repldir, blddir)
         if not os.path.exists(blp):
             os.makedirs(blp)
             if verb:
@@ -359,9 +370,8 @@ def auto_compile(doreconf, dolibtoolize, doautoheader, prefix, dompicxx):
 def make_doc_area(basedocdir):
     if not os.path.exists(basedocdir):
         os.mkdir(basedocdir)
-    # setupdir was defined above
-    print "cp -f %s/doco-index.html %s/index.html" % (setupdir, basedocdir)
-    os.system("cp -f %s/doco-index.html %s/index.html" % (setupdir, basedocdir))
+    print "cp -f %s/doco-index.html %s/index.html" % (startdir, basedocdir)
+    os.system("cp -f %s/doco-index.html %s/index.html" % (startdir, basedocdir))
 
 
 ###### Work ##########################################
@@ -601,6 +611,7 @@ else:
 if inbdir:
     cfp = thisdir
     blp = cfp.replace(topdir, blddir)
+    blp = blp.replace(repldir, blddir)
     if not os.path.exists(blp):
         os.makedirs(blp)
         if verb:
