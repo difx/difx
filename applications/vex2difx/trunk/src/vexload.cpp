@@ -1081,6 +1081,17 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 				}
 			}
 
+			if(setup.formatName == "VLBA" || setup.formatName == "VLBN")
+			{
+				float totalDataRate = 0.0;
+				
+				totalDataRate = setup.sampRate*setup.nBit*setup.nRecordChan;
+				if(totalDataRate > 0.0 && totalDataRate < 1.7e7)
+				{
+					cout << "*** Warning: a " << setup.formatName << " mode was found with sample rate " << (totalDataRate*10e-6) << " Mbps, which is less than the minimum 16 Mbps that can make use of this record format.  It is likely this mode will produce unusual results.  The suggested fix is to add additional channels in the vex file to bring the total bit rate up to 16 Mbps, which is very likely what the formatter did at the time of recording." << endl;
+				}
+			}
+
 			if(setup.formatName == "VLBA" || setup.formatName == "VLBN" || setup.formatName == "MKIV" || setup.formatName == "MARK5B")
 			{
 				for(p = get_all_lowl(antName.c_str(), modeDefName, T_FANOUT_DEF, B_TRACKS, v); p; p = get_all_lowl_next())

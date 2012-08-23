@@ -867,30 +867,6 @@ bool VexJobGroup::hasScan(const string &scanName) const
 
 void VexJobGroup::genEvents(const list<VexEvent> &eventList)
 {
-#if 0
-	bool save = true;
-
-	for(list<VexEvent>::const_iterator it = eventList.begin(); it != eventList.end(); ++it)
-	{
-		if(it->eventType == VexEvent::SCAN_START)
-		{
-			if(!hasScan(it->name))
-			{
-				save = false;
-			}
-		}
-		if(save || 
-		   it->eventType == VexEvent::RECORD_START ||
-		   it->eventType == VexEvent::RECORD_STOP)
-		{
-			events.push_back(*it);
-		}
-		if(it->eventType == VexEvent::SCAN_STOP)
-		{
-			save = true;
-		}
-	}
-#endif
 	for(list<VexEvent>::const_iterator it = eventList.begin(); it != eventList.end(); ++it)
 	{
 		if(it->eventType == VexEvent::SCAN_START ||
