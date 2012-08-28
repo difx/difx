@@ -191,8 +191,8 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                 t303.interval = t301.interval;
                                     // units of difx are usec, ff uses sec
                                     // shift clock polynomial to start of model interval
-                deltat = 8.64e4 * ((**(D->scan[scanId].im+n))->mjd - (D->antenna+n)->clockrefmjd) 
-                                                   + (**(D->scan[scanId].im+n))->sec;
+                deltat = 8.64e4 * ((**(D->scan[scanId].im+n)+j)->mjd - (D->antenna+n)->clockrefmjd) 
+                                                   + (**(D->scan[scanId].im+n)+j)->sec;
                 nclock = getDifxAntennaShiftedClock (D->antenna+n, deltat, 6, clock);
                                     // difx delay doesn't have clock added in, so
                                     // we must do it here; also apply sign reversal
