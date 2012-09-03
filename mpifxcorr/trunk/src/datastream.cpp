@@ -34,6 +34,8 @@
 #include "config.h"
 #include "alert.h"
 
+//#define DIFX_STRICTMUTEX
+
 DataStream::DataStream(const Configuration * conf, int snum, int id, int ncores, int * cids, int bufferfactor, int numsegments)
   : databufferfactor(bufferfactor), numdatasegments(numsegments), streamnum(snum), config(conf), mpiid(id), numcores(ncores)
 {
@@ -164,7 +166,12 @@ void DataStream::initialise()
     for(int j=0;j<maxsendspersegment;j++)
       bufferinfo[i].controlbuffer[j] = vectorAlloc_s32(config->getMaxBlocksPerSend()/FLAGS_PER_INT + 4);
   }
+
+#ifdef DIFX_STRICTMUTEX
+  pthread_mutex_init(&outstandingsendlock, &mattr);
+#else
   pthread_mutex_init(&outstandingsendlock, NULL);
+#endif
 
   filesread = new int[config->getNumConfigs()];
   confignumfiles = new int[config->getNumConfigs()];
@@ -552,6 +559,28 @@ void DataStream::sendDiagnostics()
   difxMessageSendDifxDiagnosticDataConsumed(consumedbytes);
 }
 
+void set_abstime(struct timespec *abstime, double timeout) {
+  int status;
+
+  status = clock_gettime(CLOCK_REALTIME, abstime);
+
+  if (status) {
+    cerror << startl << "Error setting abstime for wait" << endl;
+    return;
+  }
+
+  while (timeout>1) {
+    abstime->tv_sec++;
+    timeout -= 1;
+  }
+  abstime->tv_nsec += timeout *1e9;
+
+  while (abstime->tv_nsec>1e9) {
+    abstime->tv_sec++;
+    abstime->tv_nsec -= 1e9;
+  }
+}
+
 void DataStream::initialiseMemoryBuffer()
 {
   int perr;
@@ -599,11 +628,10 @@ void DataStream::initialiseMemoryBuffer()
   
   while(!readthreadstarted) //wait to ensure the thread got started ok
   {
-    abstime.tv_sec = 0;
-    abstime.tv_nsec = 500000000;  // 0.5 sec
+    set_abstime(&abstime, 0.5); // 0.5 sec
     perr = pthread_cond_timedwait(&initcond, &(bufferlock[1]), &abstime);
     if (perr != 0 && perr != ETIMEDOUT)
-      csevere << startl << "Error waiting on readthreadstarted condition!!!!" << endl;
+      csevere << startl << "Error " << perr << " waiting on condwait of initcond condition!!!!" << endl;
   }
 
   cverbose << startl << "Datastream " << mpiid << " finished initialising memory buffer" << endl;
@@ -720,6 +748,7 @@ void DataStream::loopfileread()
     }
     diskToMemory(numread++);
     diskToMemory(numread++);
+    lastvalidsegment = numread;
     //cdebug << startl << "READTHREAD: loopfileread: Try lock buffer " << numread << endl;
     perr = pthread_mutex_lock(&(bufferlock[numread]));
     if(perr != 0)
@@ -738,7 +767,6 @@ void DataStream::loopfileread()
   if(keepreading)
     diskToMemory(numread++);
 
-  lastvalidsegment = (numread-1)%numdatasegments;
   while(keepreading && (bufferinfo[lastvalidsegment].configindex < 0 || filesread[bufferinfo[lastvalidsegment].configindex] <= confignumfiles[bufferinfo[lastvalidsegment].configindex]))
   {
     while(dataremaining && keepreading)
@@ -863,7 +891,7 @@ void DataStream::loopfakeread()
     }
     fakeToMemory(numread++);
     fakeToMemory(numread++);
-    //cdebug << startl << "READTHREAD: loopfileread: Try lock buffer " << numread << endl;
+    //cdebug << startl << "READTHREAD: loopfakeread: Try lock buffer " << numread << endl;
     perr = pthread_mutex_lock(&(bufferlock[numread]));
     if(perr != 0)
       csevere << startl << "Error in initial telescope readthread lock of first buffer section!!!" << endl;
@@ -889,7 +917,7 @@ void DataStream::loopfakeread()
       lastvalidsegment = (lastvalidsegment + 1)%numdatasegments;
 
       //lock the next section
-      //cdebug << startl << "READTHREAD: loopfileread: Try lock buffer " << lastvalidsegment << endl;
+      //cdebug << startl << "READTHREAD: loopfakeread: Try lock buffer " << lastvalidsegment << endl;
       perr = pthread_mutex_lock(&(bufferlock[lastvalidsegment]));
       if(perr != 0)
         csevere << startl << "Error in telescope readthread lock of buffer section!!!" << lastvalidsegment << endl;
@@ -898,7 +926,7 @@ void DataStream::loopfakeread()
       if(!isnewfile) //can unlock previous section immediately
       {
         //unlock the previous section
-	//cdebug << startl << "READTHREAD: loopfileread: Unlock buffer " << (lastvalidsegment-1+numdatasegments)% numdatasegments << endl;
+	//cdebug << startl << "READTHREAD: loopfakeread: Unlock buffer " << (lastvalidsegment-1+numdatasegments)% numdatasegments << endl;
         perr = pthread_mutex_unlock(&(bufferlock[(lastvalidsegment-1+numdatasegments)% numdatasegments]));    
 	if(perr != 0)
           csevere << startl << "Error (" << perr << ") in telescope readthread unlock of buffer section!!!" << (lastvalidsegment-1+numdatasegments)%numdatasegments << endl;
@@ -958,7 +986,7 @@ void DataStream::loopfakeread()
     }
   }
   if(numread > 0) {
-    //cdebug << startl << "READTHREAD: loopfileread: Unlock buffer " << lastvalidsegment << endl; 
+    //cdebug << startl << "READTHREAD: loopfakeread: Unlock buffer " << lastvalidsegment << endl; 
     perr = pthread_mutex_unlock(&(bufferlock[lastvalidsegment]));
     if(perr != 0)
       csevere << startl << "Error (" << perr << ") in telescope readthread unlock of buffer section!!!" << lastvalidsegment << endl;
@@ -1777,8 +1805,7 @@ void DataStream::waitForBuffer(int buffersegment)
   //ensure all the sends from this index have actually been made
   while(bufferinfo[buffersegment].numsent > 0)
   {
-    abstime.tv_sec = 0;
-    abstime.tv_nsec = 500000000;  // 0.5 sec
+    set_abstime(&abstime, 0.5); // 0.5 sec
     perr = pthread_cond_timedwait(&readcond, &outstandingsendlock, &abstime);
     if (perr != 0 && perr != ETIMEDOUT)
       csevere << startl << "Error waiting on ok to read condition!!!!" << endl;
