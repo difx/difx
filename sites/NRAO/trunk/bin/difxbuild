@@ -10,14 +10,22 @@ import platform
 from time import asctime
 
 program = 'difxbuild'
-version = '0.12'
-verdate = '20120725'
+version = '0.13'
+verdate = '20120904'
 author = 'Walter Brisken <wbrisken@nrao.edu>'
 
 openmpiVersion = '1.6'
 pgplotVersion = '5.2'
 numMakeCpus = 4
 
+# TODO
+# install from .tar.gz
+# generic arch install (e.g., fftw)
+# handle prerequisites better
+#   - option to list required packages
+#     - even better if OS-specific!
+#   - option to test required packages
+#     - even better if OS-specific!
 
 def getippversion(path):
 	if islink(path):
@@ -741,10 +749,14 @@ def bootstrap(comps, params, args, verbose, pretend):
 		out.write('export CALC_SERVER=%s\n' % calcserver)
 		out.write('export DIFX_HEAD_NODE=%s\n' % config['headnode'])
 		out.write('export DIFX_BASE=%s\n' % config['difxbase'])
-		out.write('export CFLAGS="-O2 -Wall -march=core2"\n')
-		out.write('export CXXFLAGS="-O2 -Wall -march=core2"\n')
+		if config.has_key('cflags'):
+			cflags = config['cflags']
+		else:
+			cflags = '-O2 -Wall -march=core2'
+		out.write('export CFLAGS="%s"\n' % cflags)
+		out.write('export CXXFLAGS="%s"\n' % cflags)
 		out.write('export MPICXX=${DIFX_ARCH_ROOT}/bin/mpicxx\n')
-		out.write('export PKG_CONFIG_PATH=${DIFXROOT}/lib/pkgconfig\n')
+		out.write('export PKG_CONFIG_PATH=${DIFXROOT}/lib/pkgconfig:${DIFX_ARCH_ROOT}/lib/pkgconfig\n')
 		out.write('export MARK5_DIR_PATH=${DIFX_BASE}/directories\n')
 		out.write('export PGPLOT_DIR=${DIFX_ARCH_ROOT}/pgplot\n')
 		out.write('export DIFX_MESSAGE_GROUP=224.2.2.1\n')
@@ -777,7 +789,10 @@ def bootstrap(comps, params, args, verbose, pretend):
 		execute('chmod +x %s' % setupFile, verbose, pretend)
 		execute('cp %s %s/bin/%s.%s' % (setupFile, config['difxbase'], setupFileName, config['version']), verbose, pretend)
 
-		execute('cp %s %s/bootstrap/"%s.%s"' % (params['ConfigFile'], config['difxbase'], split(params['ConfigFile'], '/')[-1], asctime()), verbose, pretend)
+		# copy bootstrap file for future reference
+		execute('cp %s %s/bootstrap/"%s.%s.%s"' % (params['ConfigFile'], config['difxbase'], split(params['ConfigFile'], '/')[-1], asctime(), version), verbose, pretend)
+		# copy setup file for future reference
+		execute('cp %s %s/bootstrap/"%s.%s.%s"' % (setupFile, config['difxbase'], split(setupFile, '/')[-1], asctime(), version), verbose, pretend)
 
 		if config.has_key('mca'):
 			print '*** IMPORTANT NOTE: $HOME/.openmpi/mca-params.conf should be copied into'
@@ -1070,7 +1085,6 @@ def pgplot(origComps, params, args, verbose, pretend):
 
 
 def openmpi(origComps, params, args, verbose, pretend):
-	openmpiWeb = 'http://www.open-mpi.org/software/ompi/v%s/downloads' % openmpiVersion
 	difxBase = environ['DIFX_BASE'] + '/'
 	tarDir = difxBase + 'tar/'
 	cpuDir = difxBase + platform.machine() + '/'
@@ -1079,35 +1093,52 @@ def openmpi(origComps, params, args, verbose, pretend):
 		execute('mkdir -p %s' % tarDir, verbose, pretend)
 	if not isdir(cpuSrcDir):
 		execute('mkdir -p %s' % cpuSrcDir, verbose, pretend)
-	openmpiFiles = popen('wget %s/md5sums.txt -O - | grep stable.tar.bz2' % openmpiWeb, 'r').readlines()
-	if len(openmpiFiles) != 1:
-		print "I'm confused: expecting one stable.tar.bz2 file in %s/md5sums.txt, but found %d" % (len(openmpiFiles), openmpiWeb)
-		return
-	goodsum = split(strip(openmpiFiles[0]))[0]
-	openmpiTarFile = split(strip(openmpiFiles[0]))[1]
-	download = True
-	if isfile(tarDir+openmpiTarFile):
-		sum = split(popen('md5sum %s%s' % (tarDir, openmpiTarFile), 'r').readline())[0]
-		if sum != goodsum:
-			print 'Old or corrupt file %s.  File is being moved to /tmp' % (tarDir+openmpiTarFile)
-			execute('mv %s%s /tmp' % (tarDir, openmpiTarFile), verbose, pretend)
-		else:
-			print 'Existing file %s%s looks OK' % (tarDir, openmpiTarFile)
-			download = False
-	if download:
-		chdir(tarDir)
-		execute('wget %s/%s' % (openmpiWeb, openmpiTarFile), verbose, pretend)
-		sum = split(popen('md5sum %s%s' % (tarDir, openmpiTarFile), 'r').readline())[0]
-		if sum != goodsum:
-			print 'Newly downloaded file %s%s does not match expected md5sum %s' % (openmpiWeb, openmpiTarFile, goodsum)
+
+	if params.has_key('altSrcFile'):
+		if not isfile(params['altSrcFile']):
+			print 'Error: %s is not a file!' % params['altSrcFile']
+			exit(2)
+		execute('cp -n %s %s' % (params['altSrcFile'], tarDir), verbose, pretend)
+		openmpiTarFile = split(params['altSrcFile'], '/')[-1]
+	else:
+		openmpiWeb = 'http://www.open-mpi.org/software/ompi/v%s/downloads' % openmpiVersion
+		openmpiFiles = popen('wget %s/md5sums.txt -O - | grep stable.tar.bz2' % openmpiWeb, 'r').readlines()
+		if len(openmpiFiles) != 1:
+			print "I'm confused: expecting one stable.tar.bz2 file in %s/md5sums.txt, but found %d" % (len(openmpiFiles), openmpiWeb)
 			return
-	# get ompi src dir
-	openmpiSrcDir = cpuSrcDir + strip(popen('tar tjf %s%s' % (tarDir, openmpiTarFile), 'r').readline())
+		goodsum = split(strip(openmpiFiles[0]))[0]
+		openmpiTarFile = split(strip(openmpiFiles[0]))[1]
+		download = True
+		if isfile(tarDir+openmpiTarFile):
+			sum = split(popen('md5sum %s%s' % (tarDir, openmpiTarFile), 'r').readline())[0]
+			if sum != goodsum:
+				print 'Old or corrupt file %s.  File is being moved to /tmp' % (tarDir+openmpiTarFile)
+				execute('mv %s%s /tmp' % (tarDir, openmpiTarFile), verbose, pretend)
+			else:
+				print 'Existing file %s%s looks OK' % (tarDir, openmpiTarFile)
+				download = False
+		if download:
+			chdir(tarDir)
+			execute('wget %s/%s' % (openmpiWeb, openmpiTarFile), verbose, pretend)
+			sum = split(popen('md5sum %s%s' % (tarDir, openmpiTarFile), 'r').readline())[0]
+			if sum != goodsum:
+				print 'Newly downloaded file %s%s does not match expected md5sum %s' % (openmpiWeb, openmpiTarFile, goodsum)
+				return
+	
+	srcFileExt = split(openmpiTarFile, '.')[-1]
+	if srcFileExt == 'bz2':
+		td = 'j'
+	elif srcFileExt == 'gz':
+		td = 'z'
+	else:
+		td = ''
+
+	openmpiSrcDir = cpuSrcDir + strip(popen('tar t%sf %s%s' % (td, tarDir, openmpiTarFile), 'r').readline())
 	if isdir(openmpiSrcDir):
 		print '%s already untarred in %s; assuming this is a good copy' % (openmpiTarFile, cpuSrcDir)
 	else:
 		chdir(cpuSrcDir)
-		execute('tar jxvf %s%s' % (tarDir, openmpiTarFile), verbose, pretend)
+		execute('tar %sxvf %s%s' % (td, tarDir, openmpiTarFile), verbose, pretend)
 	chdir(openmpiSrcDir)
 	execute('./configure --prefix=%s --enable-heterogeneous' % cpuDir, verbose, pretend)
 	execute('make -j %d' % numMakeCpus, verbose, pretend)
@@ -1250,13 +1281,12 @@ command_pgplot = \
 	pgplot \
 ]
 
-
 command_openmpi = \
 [ \
 	'openmpi', \
 	'Download (if needed), configure, compile, and install openmpi version %s' % openmpiVersion, \
 	['DIFX_BASE'], \
-	[], \
+	['altSrcFile'], \
 	openmpi \
 ]
 
