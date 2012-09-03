@@ -69,9 +69,11 @@ dnl **********************************************************
 PKG_CHECK_MODULES(M5ACCESS, mark5access >= 1.4.4)
 dnl **********************************************************
 
+dnl for Mutex lock in datastream.cpp
+AC_CHECK_LIB(rt, clock_gettime)
 
 CXXFLAGS="${CXXFLAGS} ${M5ACCESS_CFLAGS} ${VDIFIO_CFLAGS} ${IPP_CFLAGS} ${DIFXMESSAGE_CFLAGS} ${MARK5IPC_CFLAGS} ${CFLAG_QUIET}"
-LIBS="${M5ACCESS_LIBS} ${VDIFIO_LIBS} ${SS_LIBS} ${IPP_LIBS} ${DIFXMESSAGE_LIBS} ${MARK5IPC_LIBS}"
+LIBS="${M5ACCESS_LIBS} ${VDIFIO_LIBS} ${SS_LIBS} ${IPP_LIBS} ${DIFXMESSAGE_LIBS} ${MARK5IPC_LIBS} $LIBS"
 
 echo "CXXFLAGS = ${CXXFLAGS}"
 echo "LIBS = ${LIBS}"
