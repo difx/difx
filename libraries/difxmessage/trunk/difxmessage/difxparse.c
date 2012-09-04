@@ -865,6 +865,28 @@ static void XMLCALL endElement(void *userData, const char *name)
 						G->body.fileOperation.port = atoi( s );
 					}
 					break;
+				case DIFX_MESSAGE_GETDIRECTORY:
+					if(strcmp(elem, "mark5") == 0 )
+					{
+						strncpy(G->body.getDirectory.mark5, s, DIFX_MESSAGE_PARAM_LENGTH-1);
+					}
+					else if(strcmp(elem, "vsn") == 0 )
+					{
+						strncpy(G->body.getDirectory.vsn, s, DIFX_MESSAGE_PARAM_LENGTH-1);
+					}
+					else if(strcmp(elem, "address") == 0 )
+					{
+						strncpy(G->body.getDirectory.address, s, DIFX_MESSAGE_PARAM_LENGTH-1);
+					}
+					else if(strcmp(elem, "port") == 0 )
+					{
+						G->body.getDirectory.port = atoi( s );
+					}
+					else if(strcmp(elem, "generateNew") == 0 )
+					{
+						G->body.getDirectory.generateNew = atoi( s );
+					}
+					break;
 				case DIFX_MESSAGE_VEX2DIFXRUN:
 					if(strcmp(elem, "user") == 0 )
 					{
