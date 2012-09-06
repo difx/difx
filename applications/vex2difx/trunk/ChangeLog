@@ -4,6 +4,7 @@ Version 2.2.0
 * vexpeek: --bands mode
 * Support writing of .machines file
 * Improved support for FAKE
+* Verify input files do not have DOS end of line characters
 
 Version 2.1.0
 ~~~~~~~~~~~~~

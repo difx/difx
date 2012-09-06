@@ -16,6 +16,8 @@ vex2difx_SOURCES = \
 	vexload.cpp \
 	corrparams.h \
 	corrparams.cpp \
+	util.h \
+	util.cpp \
 	vex2difx.cpp 
 
 rdbetsys_SOURCES = \

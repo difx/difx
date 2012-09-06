@@ -42,6 +42,7 @@
 #include "vextables.h"
 #include "corrparams.h"
 #include "vexload.h"
+#include "util.h"
 #include "../config.h"
 
 const string version(VERSION);
@@ -2249,6 +2250,16 @@ static int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int 
 
 		if(!corrSetup->binConfigFile.empty())
 		{
+			int ok;
+
+			ok = checkCRLF(corrSetup->binConfigFile.c_str());
+			if(ok < 0)
+			{
+				cerr << "The pulsar bin config file " << corrSetup->binConfigFile << " has problems.  Exiting." << endl;
+
+				exit(EXIT_FAILURE);
+			}
+
 			D->config[configId].pulsarId = D->nPulsar;
 			loadPulsarConfigFile(D, corrSetup->binConfigFile.c_str());
 			nbin = D->pulsar[D->nPulsar-1].nBin;
@@ -2259,6 +2270,17 @@ static int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int 
 			if(nbin > maxPulsarBins)
 			{
 				maxPulsarBins = nbin;
+			}
+
+			for(int p = 0; p < D->pulsar[D->nPulsar-1].nPolyco; ++p)
+			{
+				ok = checkCRLF(D->pulsar[D->nPulsar-1].polyco[p].fileName);
+				if(ok < 0)
+				{
+					cerr << "The pulsar polyco file " << D->pulsar[D->nPulsar-1].polyco[p].fileName << " has problems.  Exiting." << endl;
+
+					exit(EXIT_FAILURE);
+				}
 			}
 		}
 
@@ -2853,6 +2875,7 @@ int main(int argc, char **argv)
 	vector<VexJob> J;
 	string shelfFile;
 	int verbose = 0;
+	int ok;
 	string v2dFile;
 	bool writeParams = 0;
 	bool deleteOld = 0;
@@ -2962,11 +2985,27 @@ int main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
+	ok = checkCRLF(v2dFile.c_str());
+	if(ok < 0)
+	{
+		cerr << "The .v2d file has problems.  Exiting." << endl;
+
+		exit(EXIT_FAILURE);
+	}
+
 	P = new CorrParams(v2dFile);
 	if(P->vexFile.empty())
 	{
 		cerr << "Error: vex file parameter (vex) not found in file." << endl;
 		
+		exit(EXIT_FAILURE);
+	}
+
+	ok = checkCRLF(P->vexFile.c_str());
+	if(ok < 0)
+	{
+		cerr << "The vex file has problems.  Exiting." << endl;
+
 		exit(EXIT_FAILURE);
 	}
 

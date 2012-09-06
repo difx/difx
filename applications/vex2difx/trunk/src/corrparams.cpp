@@ -2222,7 +2222,7 @@ int CorrParams::sanityCheck()
 	{
 		if(nThread <= 0 || nCore <= 0)
 		{
-			cerr << "Warning: nThreads and nCore must either both or neither be set." << endl;
+			cerr << "Warning: nThread and nCore must either both or neither be set." << endl;
 			++nWarn;
 		}
 	}

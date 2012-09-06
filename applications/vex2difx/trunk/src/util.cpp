@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2011 by Walter Brisken                             *
+ *   Copyright (C) 2012 by Walter Brisken                                  *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -20,30 +20,57 @@
  * SVN properties (DO NOT CHANGE)
  *
  * $Id$
- * $HeadURL$
+ * $HeadURL: $
  * $LastChangedRevision$
  * $Author$
  * $LastChangedDate$
  *
  *==========================================================================*/
 
-#ifndef __UTIL_H__
-#define __UTIL_H__
+#include <cstdio>
+#include "util.h"
 
-#include <algorithm>
+/* Function to look through a file to make sure it is not DOS formatted */
+int checkCRLF(const char *filename)
+{
+	const int bufferSize = 1024;
+	const char cr = 0x0d;
+	FILE *in;
+	char buffer[bufferSize];
+	int n;
 
-// To capitalize a string
-#define Upper(s) transform(s.begin(), s.end(), s.begin(), (int(*)(int))toupper)
+	printf("Checking %s\n", filename);
 
-// To uncapitalize a string
-#define Lower(s) transform(s.begin(), s.end(), s.begin(), (int(*)(int))tolower)
+	in = fopen(filename, "rb");
+	if(!in)
+	{
+		fprintf(stderr, "Error: cannot open %s\n", filename);
 
-extern "C" {
-int fvex_double(char **field, char **units, double *d);
-int fvex_ra(char **field, double *ra);
-int fvex_dec(char **field, double *dec);
+		return -1;
+	}
+
+	for(;;)
+	{
+		n = fread(buffer, 1, bufferSize, in);
+		if(n < 1)
+		{
+			break;
+		}
+
+		for(int i = 0; i < n; ++i)
+		{
+			if(buffer[i] == cr)
+			{
+				fprintf(stderr, "Error: %s appears to be in DOS format.  Please run dos2unix or equivalent and try again.\n", filename);
+
+				fclose(in);
+
+				return -1;
+			}
+		}
+	}
+
+	fclose(in);
+
+	return 0;
 }
-
-int checkCRLF(const char *filename);
-
-#endif
