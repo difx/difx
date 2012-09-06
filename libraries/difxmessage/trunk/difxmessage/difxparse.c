@@ -766,6 +766,21 @@ static void XMLCALL endElement(void *userData, const char *name)
 					{
 						strncpy( G->body.stop.inputFilename, s, DIFX_MESSAGE_FILENAME_LENGTH-1);
 					}
+					else if(strcmp(elem, "difxVersion") == 0)
+					{
+						strncpy(G->body.stop.difxVersion, s, DIFX_MESSAGE_VERSION_LENGTH-1);
+						G->body.stop.difxVersion[DIFX_MESSAGE_VERSION_LENGTH-1] = 0;
+					}
+					else if(strcmp(elem, "difxProgram") == 0)
+					{
+						strncpy(G->body.stop.difxProgram, s, DIFX_MESSAGE_FILENAME_LENGTH-1);
+						G->body.stop.difxProgram[DIFX_MESSAGE_FILENAME_LENGTH-1] = 0;
+					}
+					else if(strcmp(elem, "mpiWrapper") == 0)
+					{
+						strncpy(G->body.stop.mpiWrapper, s, DIFX_MESSAGE_FILENAME_LENGTH-1);
+						G->body.stop.mpiWrapper[DIFX_MESSAGE_FILENAME_LENGTH-1] = 0;
+					}
 					break;
 				case DIFX_MESSAGE_DIAGNOSTIC:
 					if(strcmp(elem, "diagnosticType") == 0)
@@ -1170,6 +1185,9 @@ void difxMessageGenericPrint(const DifxMessageGeneric *G)
 		printf("    difxVersion = %s\n", G->body.start.difxVersion);
 		break;
 	case DIFX_MESSAGE_STOP:
+		printf("    MPI wrapper = %s\n", G->body.stop.mpiWrapper);
+		printf("    program = %s\n", G->body.stop.difxProgram);
+		printf("    difxVersion = %s\n", G->body.stop.difxVersion);
 		printf("    input file = %s\n", G->body.start.inputFilename);
 		break;
 	case DIFX_MESSAGE_FILETRANSFER:

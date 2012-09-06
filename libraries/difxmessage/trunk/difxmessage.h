@@ -322,8 +322,8 @@ typedef struct
 	char difxVersion[DIFX_MESSAGE_VERSION_LENGTH];
 	double restartSeconds;		/* Amount of time into job to actually start the correlation */
 	int function;   /* specifies which function to use when starting DiFX - presumably a temporary option. */
-    	char address[DIFX_MESSAGE_PARAM_LENGTH];  /* IP address for reporting diagnostics during run */
-    	int port;  /* port for reporting diagnostics during run */
+	char address[DIFX_MESSAGE_PARAM_LENGTH];  /* IP address for reporting diagnostics during run */
+	int port;  /* port for reporting diagnostics during run */
 } DifxMessageStart;
 
 typedef struct
@@ -387,6 +387,9 @@ typedef struct
 
 typedef struct
 {
+	char mpiWrapper[DIFX_MESSAGE_FILENAME_LENGTH];
+	char difxVersion[DIFX_MESSAGE_VERSION_LENGTH];
+	char difxProgram[DIFX_MESSAGE_FILENAME_LENGTH];
 	char inputFilename[DIFX_MESSAGE_FILENAME_LENGTH];
 } DifxMessageStop;
 
