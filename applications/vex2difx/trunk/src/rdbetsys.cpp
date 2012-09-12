@@ -884,7 +884,7 @@ int main(int argc, char **argv)
 
 	if(nZero == 1)
 	{
-		printf("\n1 station (%s) had zero records written.  No Tsys information will be available for that antennas.\n", zeroStations.c_str());
+		printf("\n1 station (%s) had zero records written.  No Tsys information will be available for that antenna.\n", zeroStations.c_str());
 	}
 	else if(nZero > 1)
 	{
