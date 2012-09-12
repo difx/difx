@@ -5,14 +5,14 @@ C     that plots the bandpass summary files.  For the autocorrelations,
 C     the average and extrema seen for each station/band are plotted.
 C     For the cross correlation, the highest-average-amplitude 
 C     spectrum from each station/band is plotted.  The data for these
-C     plots is gathered in routine ACCUM.
+C     plots is gathered in routine ACCSUM.
 C
       INCLUDE   'plotbp.inc'
 C
-      INTEGER    ICH, IFR, ISTA, IIF, IPT, JPT, ICH1
+      INTEGER    ICH, IFR, ISTA, IIF, ICH1
       INTEGER    IER, PGBEG, LEN1
       REAL       XMIN, XMAX, XCH, YCH
-      REAL       XLINE(MCHAN*2), YLINE(MCHAN*2), XCHAN(MCHAN)
+      REAL       XCHAN(MCHAN)
       REAL       LEFT, RIGHT, BOTTOM, ATOP, PTOP
       REAL       CHSIZE, XD(2), YD(2)
       LOGICAL    GOTAC, GOTXC
@@ -51,114 +51,21 @@ C
          END IF
 C
 C        Loop through the antenna/band plots.
+C        Put the plotting in a subroutine that can be used with
+C        different scales to allow expansion of scale when there
+C        are strong RFI spikes.
 C
          DO ISTA = 1, NSTA
             DO IFR = 1, NFR
                IF( NORMAC(IFR,ISTA) .GT. 0 ) THEN
 C
-C                 Normalize the data.
-C
-                  DO ICH = 1, SNCHAN(IFR)
-                     SUMAC(ICH,IFR,ISTA) = SUMAC(ICH,IFR,ISTA) /
-     1                        NORMAC(IFR,ISTA)
-                  END DO
-C
-C                 Get some labels.
-C
-                  HDLINE = STA1(ISTA)(1:LEN1(STA1(ISTA)))//' '//
-     1               SEXPNAM(IFR,ISTA)(1:LEN1(SEXPNAM(IFR,ISTA)))//' '//
-     2               JDATE( SJDAY(IFR,ISTA) )//' '//
-     3               SCTIME(1,IFR,ISTA)//'-'//
-     4               SCTIME(2,IFR,ISTA)
-                  WRITE( BTLINE, '( A, F7.3, A )' )
-     1                'Channel (', SBW(IFR),' MHz/BBCh. )'
-C
-C                 Get the plot limits.
-C
-                  XMIN = 0.0
-                  XMAX = SNCHAN(IFR) + 1
                   AMAX = 0.0
-                  DO ICH = 1, SNCHAN(IFR)
-                     AMAX = MAX( AMAX, SUMAC2(ICH,IFR,ISTA) )
-                  END DO
-                  AMAX = AMAX * 1.1
-                  IF( AMAX .EQ. 0.0 ) AMAX = 1.1
+                  CALL PACSUM( ISTA, IFR )
 C
-C                 Set up the plot window
-C
-                  CALL PGPAGE
-                  CHSIZE = 2.0
-                  CALL PGSCH( CHSIZE )
-                  CALL PGSLW( 1 )
-                  CALL PGSLS( 1 )
-                  CALL PGSVP( LEFT, RIGHT, BOTTOM, PTOP )
-                  CALL PGSWIN( XMIN, XMAX, 0.0, AMAX )
-                  CALL PGBOX( 'BCNTS', 0, 0, 'BCNTS', 0, 0 )
-                  CALL PGMTXT( 'T', 0.6, 0.5, 0.5, HDLINE )
-                  CALL PGMTXT( 'B', 2.3, 0.5, 0.5, BTLINE )
-                  CALL PGLAB( ' ', 'Amp', ' ' )
-C
-C                 Actually draw the data - one IF at a time.
-C
-                  DO ICH = 1, SNCHAN(IFR)
-                     XCHAN(ICH) = ICH
-                  END DO
-C
-                  DO IIF = 1, SNIF(IFR)
-                     ICH1 = ( IIF - 1 ) * SNCHIF(IFR) + 1
-                     CALL PGSLS( 1 )
-C
-C                    Shade the region.
-C
-                     IPT = 0
-                     DO ICH = ICH1, ICH1 + SNCHIF(IFR) - 1
-                        IPT = IPT + 1                     
-                        XLINE(IPT) = ICH
-                        YLINE(IPT) = SUMAC1(ICH,IFR,ISTA)
-                        JPT = 2 * SNCHIF(IFR) + 1 - IPT
-                        XLINE(JPT) = ICH
-                        YLINE(JPT) = SUMAC2(ICH,IFR,ISTA)
-                     END DO
-                     CALL PGSHLS( 2, 0.0, 0.8, 0.0 )
-                     CALL PGSCI( 2 )
-                     CALL PGPOLY( 2 * SNCHIF(IFR), XLINE, YLINE )
-                     CALL PGSCI( 1 )
-C
-C                    Now draw the lines, after the shading to overwrite
-C                    that.
-C
-                     CALL PGSLW( 3 )
-                     CALL PGLINE( SNCHIF(IFR), XCHAN(ICH1), 
-     1                       SUMAC(ICH1,IFR,ISTA) )
-                     CALL PGSLW( 1 )
-                     CALL PGLINE( SNCHIF(IFR), XCHAN(ICH1), 
-     1                       SUMAC1(ICH1,IFR,ISTA) )
-                     CALL PGSLW( 1 )
-                     CALL PGLINE( SNCHIF(IFR), XCHAN(ICH1), 
-     1                       SUMAC2(ICH1,IFR,ISTA) )
-                     CALL PGSLW( 1 )
-                  END DO
-C
-C                 Draw lines between the BB channels and label them.
-C
-                  DO IIF = 1, SNIF(IFR)
-                     ICH1 =  ( IIF - 1 ) * SNCHIF(IFR)
-                     XD(1) = ICH1 + 0.5
-                     XD(2) = XD(1)
-                     YD(1) = 0.0
-                     YD(2) = AMAX
-                     IF( IIF .NE. 1 ) CALL PGLINE( 2, XD, YD )
-                     XCH = ICH1 + 0.05 * SNCHIF(IFR)
-                     YCH = AMAX * 0.1
-                     WRITE( PRSCH, '(F9.2)' ) SFREQ(IIF,IFR)
-                     IF( NIF .GE. 8 ) CALL PGSCH( CHSIZE*0.75 )
-                     CALL PGTEXT( XCH, YCH, PRSCH )
-                     XCH = ICH1 + 0.15 * SNCHIF(IFR)
-                     YCH = AMAX * 0.03
-                     CALL PGTEXT( XCH, YCH, SSTOKE(IIF,IFR)//' '//
-     1                            SSBD(IIF,IFR) )
-                     CALL PGSCH(CHSIZE)
-                  END DO
+                  IF( AMAX .GT. 3.0 * AMPAVG ) THEN
+                     AMAX = 3.0 * AMPAVG
+                     CALL PACSUM( ISTA, IFR )
+                  END IF
 C
                END IF
             END DO

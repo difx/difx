@@ -4,7 +4,7 @@ C     Routine to read and plot the data from John Benson's bandpass files.
 C
       INCLUDE 'plotbp.inc'
 C
-      INTEGER    ICH, IER, INCHAN, LINCHAN
+      INTEGER    ICH, IER, INCHAN, LINCHAN, NAVG
       DOUBLE PRECISION  GETNUM
       LOGICAL    GOTDAT, FIRST, WARNLONG
 C -------------------------------------------------------------------
@@ -63,6 +63,14 @@ C           Plot the spectrum if this is a desired station.
 C
             IF( DOSTA .EQ. ' ' .OR. ( DOSTA .EQ. NAME1 .OR.
      1          DOSTA .EQ. NAME2 ))  THEN
+C
+C           Get the average and the plot limit for a possible expanded plot.
+C    
+               AMPAVG = AMPAVG / NAVG
+               ALMAX = MIN( AMAX, AMPAVG * 3.0 )
+               DO ICH = 1, NCHAN
+                  ALIM(ICH) = MIN( AMP(ICH), ALMAX )
+               END DO
                CALL PLTBP
             END IF
 C
@@ -93,8 +101,11 @@ C
          IF( FIRST .OR. INCHAN .LT. LINCHAN ) THEN
             DO ICH = 1, MCHAN
                AMP(ICH) = 0.0
+               ALIM(ICH) = 0.0
                PHASE(ICH) = 0.0
             END DO
+            AMPAVG = 0.0
+            NAVG = 0
 C
 C           Initialize plot limits
 C
@@ -111,6 +122,8 @@ C
             TYPE = 'AC'
             NAME1 = WORD(2)
             AMP(INCHAN)  = GETNUM(WORD(4), 1, WLEN(4) )
+            AMPAVG = AMPAVG + AMP(INCHAN) 
+            NAVG = NAVG + 1
          ELSE IF( NWORDS .EQ. 8 .OR. NWORDS .EQ. 7 ) THEN
             TYPE = 'XC'
             NAME1 = WORD(3)

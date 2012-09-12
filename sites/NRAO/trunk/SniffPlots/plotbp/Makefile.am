@@ -5,7 +5,8 @@ plotbp_SOURCES = \
 	plotbp.f \
 	plotbp.inc \
 	pltbp.f \
-	pltsum.f
+	pltsum.f \
+	pacsum.f
 
 bin_PROGRAMS = \
 	plotbp

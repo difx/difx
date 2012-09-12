@@ -5,8 +5,8 @@ C
       PARAMETER  (MAXIF=32)
       PARAMETER  (MCHAN=2048*8)
 C
-      REAL       AMP(MCHAN), PHASE(MCHAN)
-      REAL       AMAX, PMIN, PMAX, FREQ(MAXIF), BW
+      REAL       AMP(MCHAN), PHASE(MCHAN), ALIM(MCHAN)
+      REAL       AMAX, AMPAVG, ALMAX, PMIN, PMAX, FREQ(MAXIF), BW
       INTEGER    NCHAN, NCHIF, NIF, JDAY1
       LOGICAL    XWIN, NEWFMT
       CHARACTER  NAME1*8, NAME2*8, TYPE*2, EXPNAM*8, DOSTA*8
@@ -18,16 +18,17 @@ C     Putting the COMMON for BPDAT after the other 2 seems to have
 C     fixed the problem.  g77 bug?
 C
       COMMON / BPDAT2 / NCHAN, NCHIF, NIF, JDAY1, XWIN,
-     1                 NEWFMT, AMAX, PMIN, PMAX, FREQ, BW
+     1                 NEWFMT, AMAX, AMPAVG, ALMAX, PMIN, PMAX, FREQ, BW
       COMMON / BPCHR / NAME1, NAME2, TYPE, EXPNAM, DOSTA, CTIME, 
      1                 SOURCE, STOKES, SBD, PLTFILE, TF
-      COMMON / BPDAT / AMP, PHASE
+      COMMON / BPDAT / AMP, ALIM, PHASE
 C
 C     Variables for reading lines of data.  Put in common to
 C     avoid compiler complaints about unused variables.
+C     July 2011 increase MWORDS for some of the big files I've seen.
 C
       INTEGER    MWORDS
-      PARAMETER  (MWORDS=20)
+      PARAMETER  (MWORDS=200)
       INTEGER    WLEN(MWORDS), NWORDS
       CHARACTER  WORD(MWORDS)*20
       COMMON / RLNDAT / WLEN, NWORDS

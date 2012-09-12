@@ -2,6 +2,9 @@
 C
 C     Actually plot the bandpasses for PLOTBP
 C
+C     If the scale is set by a few very high points, make a second plot
+C     with expanded scale.  This is for autocorrelations only.
+C
       INCLUDE  'plotbp.inc'
 C
       INTEGER  ICH, LEN1, IIF, ICH1, NX, NY
@@ -9,7 +12,7 @@ C
       REAL  LEFT, RIGHT, BOTTOM, ATOP, PTOP, XCH, YCH
       REAL  CHSIZE
       CHARACTER  JDATE*9, HDLINE*80, BTLINE*80, PRSCH*9
-      LOGICAL    FIRSTS
+      LOGICAL    FIRSTS, DOZOOM
       DATA  LEFT, RIGHT / 0.1, 0.95 /
       DATA  BOTTOM, ATOP, PTOP / 0.15, 0.6, 0.85 /
       DATA  FIRSTS / .TRUE. /
@@ -43,6 +46,7 @@ C
 C     Adjust amplitude scale.  Set phase range to +- 180.
 C     Avoid scale with range of zero.
 C
+      DOZOOM = AMAX .GT. ALMAX
       AMAX = AMAX * 1.1
       IF( AMAX .EQ. 0.0 ) AMAX = 0.1
       PMIN = MIN( PMIN, -185.0 )
@@ -124,6 +128,50 @@ C
                CALL PGSCH(CHSIZE)
             END IF
          END DO
+C
+C        Expanded scale version.
+C
+         IF( DOZOOM ) THEN
+            CALL PGPAGE
+            CALL PGSLS( 1 )
+            CALL PGSVP( LEFT, RIGHT, BOTTOM, PTOP )
+            CALL PGSWIN( XMIN, XMAX, 0.0, ALMAX )
+            CALL PGBOX( 'BCNTS', 0.0, 0, 'BCNTS', 0.0, 0 )
+C            HDLINE = NAME1(1:LEN1(NAME1))//
+C     1          SOURCE(1:LEN1(SOURCE))//'  Last plot, expanded scale.'
+            CALL PGMTXT( 'T', 0.6, 0.5, 0.5, HDLINE )
+            CALL PGMTXT( 'B', 2.3, 0.5, 0.5, BTLINE )
+            CALL PGLAB( ' ', 'Amp * 1000 (Expanded Scale)', ' ' )
+            DO IIF = 1, NIF
+               ICH1 = ( IIF - 1 ) * NCHIF + 1
+               IF( ICH1 .GT. MCHAN ) ICH1 = MCHAN
+               CALL PGSLS( 1 )
+               CALL PGLINE( NCHIF, XCHAN(ICH1), ALIM(ICH1) )
+               CALL PGSLS( 2 )
+            END DO
+C    
+C           Draw lines between the BB channels and label them.
+C    
+            DO IIF = 1, NIF
+               ICH1 =  ( IIF - 1 ) * NCHIF
+               XD(1) = ICH1 + 0.5
+               XD(2) = XD(1)
+               YD(1) = 0.0
+               YD(2) = ALMAX
+               IF( IIF .NE. 1 ) CALL PGLINE( 2, XD, YD )
+               IF( NEWFMT .OR. IIF .EQ. 1 ) THEN
+                  XCH = ICH1 + 0.05 * NCHIF
+                  YCH = ALMAX * 0.1
+                  WRITE( PRSCH, '(F9.2)' ) FREQ(IIF)
+                  IF( NIF .GE. 8 ) CALL PGSCH( CHSIZE*0.6 )
+                  CALL PGTEXT( XCH, YCH, PRSCH )
+                  XCH = ICH1 + 0.15 * NCHIF
+                  YCH = ALMAX * 0.03
+                  CALL PGTEXT( XCH, YCH, STOKES(IIF)//' '//SBD(IIF) )
+                  CALL PGSCH(CHSIZE)
+               END IF
+            END DO
+         END IF
 C
 C     Then XC.
 C
