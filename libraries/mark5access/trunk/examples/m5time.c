@@ -38,6 +38,11 @@ const char author[]  = "Chris Phillips";
 const char version[] = "0.1";
 const char verdate[] = "20120330";
 
+int cal2mjd(int day, int month, int year);
+void mjd2cal(int mjd, int *year, int *month, int *day);
+int cal2dayno (int day, int month, int year);
+void dayno2cal (int dayno, int year, int *day, int *month);
+
 static void usage(const char *pgm)
 {
 	printf("\n");
@@ -55,10 +60,8 @@ static void usage(const char *pgm)
 	printf("    VDIF_1000-64-1-2 (here 1000 is payload size in bytes)\n\n");
 }
 
-int cal2mjd(int day, int month, int year);
-
 int main(int argc, char **argv) {
-  int day, month, year, mjdnow, vlbanow, basenow, mjd, millisec, hours, minutes;
+  int day, month, year, mjdnow, mjd, millisec, hours, minutes;
   time_t currenttime;
   struct tm *tp;
   struct mark5_stream *ms;
@@ -84,14 +87,30 @@ int main(int argc, char **argv) {
  
   mjdnow = cal2mjd(day, month, year);
 
-  vlbanow = mjdnow % 1000;
-  basenow = mjdnow - vlbanow;
+  if (ms->format==0 || ms->format==2) {
+    printf("Formart=%d\n", ms->format);
+    int basenow = mjdnow - (mjdnow % 1000);
+    mjd = ms->mjd + basenow;
+    if (mjd>mjdnow) mjd -= 1000;
 
-  mjd = ms->mjd + basenow;
+  } else if (ms->format==1) {
+    int month, day, obsyear, nowbaseyear;
 
-  if (mjd+1>mjdnow) mjd -= 1000;
+    mjd2cal(mjdnow, &nowbaseyear, &month, &day);
+    nowbaseyear -= nowbaseyear%10;
 
-  printf("Assuming MJD = %d/", mjd);
+    mjd2cal(ms->mjd, &obsyear, &month, &day);
+
+    int obsdayno = cal2dayno(day, month, obsyear);
+    obsyear = obsyear%10+nowbaseyear;
+    dayno2cal(obsdayno, obsyear, &day, &month);
+    mjd = cal2mjd(day, month, obsyear);
+
+  } else {
+    mjd = ms->mjd;
+  }
+
+  printf("MJD = %d/", mjd);
 
   millisec = ms->sec*1000 + ms->ns/1e6;
 
@@ -130,10 +149,63 @@ int cal2mjd(int day, int month, int year) {
   return (x1+x2+x3+day-678882);
 }
 
+void mjd2cal(int mjd, int *year, int *month, int *day) {
+  // Get the integral Julian Day number
+  int jd = mjd + 2400001;
 
+  // Do some rather cryptic calculations
 
+  int temp1 = 4*(jd+((6*(((4*jd-17918)/146097)))/4+1)/2-37);
+  int temp2 = 10*(((temp1-237)%1461)/4)+5;
 
+  *year = temp1/1461-4712;
+  *month =((temp2/306+2)%12)+1;
+  *day = (temp2%306)/10+1;
 
+  return;
+}
 
+int leap (int year) {
+  return (((!(year%4))&&(year%100))||(!(year%400)));
+}
 
+static int days[] = {31,28,31,30,31,30,31,31,30,31,30,31};
+int cal2dayno (int day, int month, int year) {
+
+  month--; // For array indexing
+
+  if (leap(year)) {
+    days[1] = 29;
+  } else {
+    days[1] = 28;
+  }
+
+  int mon;
+  int dayno = day;
+  for (mon=0; mon<month; mon++) {
+    dayno += days[mon];
+  }
+
+  return(dayno);
+}
+
+void dayno2cal (int dayno, int year, int *day, int *month) {
+  if (leap(year)) {
+    days[1] = 29;
+  } else {
+    days[1] = 28;
+  }
+
+  *month = 0;
+  int end = days[0];
+  while (dayno>end) {
+    (*month)++;
+    end+= days[*month];
+  }
+  end -= days[*month];
+  *day = dayno - end;
+  (*month)++;
+
+  return;
+}
 
