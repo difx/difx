@@ -376,7 +376,7 @@ sub new {
   my $self = [@_];
 
   bless ($self, $class);
-
+  
   return $self;
 }
 
@@ -408,8 +408,6 @@ sub new {
   my $proto = shift;
   my $class = ref($proto) || $proto;
 
-  my %baseline = @_;
-
   my $self = [@_];
 
   bless ($self, $class);
@@ -419,6 +417,70 @@ sub new {
 
 make_field('index', 'INDEX');
 make_field('pol', 'POL');
+
+package DIFX::Input::DataStream::ZoomFreq;
+use Carp;
+use DIFX::Input qw(make_field);
+
+=head1 DIFX::Input::DataStream::ZoomFreq
+
+  Zoom Band Frequency table
+
+=head2 Fields
+
+    npol           Integer
+    index          Integer
+
+=cut
+
+use constant INDEX => 0;
+use constant NPOL => 1;
+
+sub new {
+  my $proto = shift;
+  my $class = ref($proto) || $proto;
+
+  my $self = [@_];
+
+  bless ($self, $class);
+
+  return $self;
+}
+
+make_field('index', 'INDEX');
+make_field('npol', 'NPOL');
+
+package DIFX::Input::DataStream::ZoomBand;
+use Carp;
+use DIFX::Input qw(make_field);
+
+=head1 DIFX::Input::DataStream::ZoomBand
+
+  Zoom Band List
+
+=head2 Fields
+
+    pol            Integer
+    index          Integer
+
+=cut
+
+use constant INDEX =>1;
+use constant POL => 0;
+
+sub new {
+  my $proto = shift;
+  my $class = ref($proto) || $proto;
+
+  my $self = [@_];
+
+  bless ($self, $class);
+
+  return $self;
+}
+
+make_field('pol', 'POL');
+make_field('index', 'INDEX');
 
 package DIFX::Input::DataStream;
 use Carp;
@@ -453,8 +515,10 @@ use constant FILTERBANK => 6;
 use constant PHASECAL   => 7;
 use constant FREQS      => 8;
 use constant RECBAND    => 9;
-use constant NFREQ      => 10;
-use constant NRECBAND   => 10;
+use constant ZOOMFREQ   => 10;
+use constant ZOOMBAND   => 11;
+use constant NFREQ      => 12;
+use constant NRECBAND   => 13;
 
 sub new {
   my $proto = shift;
@@ -468,13 +532,8 @@ sub new {
 						  $_->{CLKOFFSET},
 						  $_->{FREQOFFSET},
 						  $_->{NPOL});
-  }
+  }  
 
-  my @recband;
-  foreach (@{$datastream{RECBAND}}) {
-    push @recband, new DIFX::Input::DataStream::RecBand($_->{POL}, $_->{INDEX});
-  }
-  
   my $self = [$datastream{TSYS},
 	      $datastream{DATAFORMAT},
 	      $datastream{QUANTISATION},
@@ -484,7 +543,9 @@ sub new {
 	      $datastream{FILTERBANK},
 	      $datastream{PHASECALINT},
 	      [@freq],
-	      [@recband]
+	      $datastream{RECBAND},
+	      $datastream{ZOOMFREQ},
+	      $datastream{ZOOMBAND},
 	     ];
 
   bless ($self, $class);
@@ -516,6 +577,16 @@ sub nrecband {
     $self->[NRECBAND] = scalar(@{$self->[RECBAND]});
   }
   return $self->[NRECBAND];
+}
+
+sub nzoomband {
+  my $self = shift;
+  return  scalar(@{$self->[ZOOMBAND]});
+}
+
+sub nzoomfreq {
+  my $self = shift;
+  return  scalar(@{$self->[ZOOMFREQ]});
 }
 
 sub freqs {
@@ -564,6 +635,51 @@ sub recbands {
   return undef;
 }
 
+sub zoomfreq {
+  my $self = shift;
+
+  if (@_==0) { # No arguments, return a copy of the entire array
+    return @{$self->[ZOOMFREQ]};
+  } else {
+    my $n = $_[0];
+    if ($n =~ /^\s*\d+\s*$/) { # Number, so we want nth scan
+      if ($n>=$self->nzoomfreq) {
+	warn "$n out of range for zoom frequency table\n";
+	return undef;
+      } else {
+	return $self->[ZOOMFREQ]->[$n];
+      }
+    } else {
+      warn "$_[0] is an invalid zoom frequency table index\n";
+    }
+  }
+  # Only get here on error
+
+  return undef;
+}
+
+sub zoomband {
+  my $self = shift;
+
+  if (@_==0) { # No arguments, return a copy of the entire array
+    return @{$self->[ZOOMBAND]};
+  } else {
+    my $n = $_[0];
+    if ($n =~ /^\s*\d+\s*$/) { # Number, so we want nth scan
+      if ($n>=$self->nzoomband) {
+	warn "$n out of range for zoom band table\n";
+	return undef;
+      } else {
+	return $self->[ZOOMBAND]->[$n];
+      }
+    } else {
+      warn "$_[0] is an invalid zoom band table index\n";
+    }
+  }
+  # Only get here on error
+
+  return undef;
+}
 
 package DIFX::Input::DataStreamTable;
 use Carp;
@@ -1208,14 +1324,20 @@ sub parse_datastream($) {
   my %datastream = ();
   my %datastreams = ();
   my %freq = ();
-  my %recband = ();
   my @recband = ();
+  my @zoomfreq = ();
+  my @zoomband = ();
   my @freq = ();
   my ($key, $val, $line);
   my $nstream = 0;
   my $istream = 0;
   my $ifreq = 0;
   my $iband = 0;
+  my $izoom = 0;
+  my $jzoom = 0;
+  my $tmppol = undef;
+  my $tmpzoomindex = undef;
+  my $tmpzoompol = undef;
   my $tindex  = undef;
   while ($line = nextline($fh)) {
     ($key, $val) = parseline($line);
@@ -1223,6 +1345,8 @@ sub parse_datastream($) {
       if (defined $tindex) {
 	push @freq, {%freq} if (%freq);
 	$datastream{RECBAND} = [@recband];
+	$datastream{ZOOMFREQ} = [@zoomfreq];
+	$datastream{ZOOMBAND} = [@zoomband];
 	$datastream{FREQ} = [@freq];
 	$datastream[$tindex] =  {%datastream};
       }
@@ -1245,17 +1369,25 @@ sub parse_datastream($) {
       if (defined $tindex) {
 	push @freq, {%freq} if (%freq);
 	$datastream{RECBAND} = [@recband];
+	$datastream{ZOOMFREQ} = [@zoomfreq];
+	$datastream{ZOOMBAND} = [@zoomband];
 	$datastream{FREQ} = [@freq];
 	$datastream[$tindex] =  {%datastream};
+
 	%datastream = ();
 	%freq = ();
-	%recband = ();
 	@freq = ();
+	@zoomband = ();
 	@recband = ();
+	@zoomfreq = ();
+	$tmppol = undef;
+
       }
       $tindex = $val;
       $ifreq = 0;
       $iband = 0;
+      $izoom = 0;
+      $jzoom = 0;
     } elsif ($key eq 'TSYS') {
       $datastream{TSYS} = $val;
     } elsif ($key eq 'DATA FORMAT') {
@@ -1278,6 +1410,24 @@ sub parse_datastream($) {
       $datastream{NFREQ} = $val;
     } elsif ($key eq 'NUM ZOOM FREQS') {
       $datastream{NZOOM} = $val;
+      $izoom = 0;     
+      $jzoom = 0;     
+    } elsif ($key =~ /ZOOM FREQ INDEX (\d+)/) {
+      warn "Inconsistent datastream indexing: $line ($izoom)\n" if ($izoom != $1);
+      $tmpzoomindex = $val;
+    } elsif ($key =~ /NUM ZOOM POLS (\d+)/) {
+      warn "Inconsistent datastream indexing: $line ($izoom)\n" if ($izoom != $1);
+      push @zoomfreq, new DIFX::Input::DataStream::ZoomFreq($tmpzoomindex, $val);
+      $tmpzoomindex = undef;
+      $izoom++;
+    } elsif ($key =~ /ZOOM BAND (\d+) POL/) {
+      warn "Inconsistent datastream indexing: $line ($jzoom)\n" if ($jzoom != $1);
+      $tmpzoompol = $val;
+    } elsif ($key =~ /ZOOM BAND (\d+) INDEX/) {
+      warn "Inconsistent datastream indexing: $line ($jzoom)\n" if ($jzoom != $1);
+      push @zoomband, new DIFX::Input::DataStream::ZoomBand($tmpzoompol, $val);
+      $tmpzoompol = ();
+      $jzoom++;
     } elsif ($key =~ /REC FREQ INDEX (\d+)/){ 
       if (%freq) { 
 	push @freq, {%freq};
@@ -1297,12 +1447,11 @@ sub parse_datastream($) {
       $freq{NPOL} = $val;
     } elsif ($key =~ /REC BAND (\d+) POL/) {
       warn "Inconsistent datastream indexing: $line ($iband)\n" if ($iband != $1);
-      $recband{POL} = $val;
+      $tmppol = $val;
     } elsif ($key =~ /REC BAND (\d+) INDEX/) {
       warn "Inconsistent datastream indexing: $line ($iband)\n" if ($iband != $1);
-      $recband{INDEX} = $val;
-      push @recband, {%recband};
-      %recband = ();
+      push @recband, new DIFX::Input::DataStream::RecBand($tmppol, $val);
+      $tmppol = undef;
       $iband++;
     } else {
       warn "Ignoring $key\n";
@@ -1311,6 +1460,8 @@ sub parse_datastream($) {
   if (defined $tindex) {
     push @freq, {%freq} if (%freq);
     $datastream{RECBAND} = [@recband];
+    $datastream{ZOOMFREQ} = [@zoomfreq];
+    $datastream{ZOOMBAND} = [@zoomband];
     $datastream{FREQ} = [@freq];
     $datastream[$tindex] =  {%datastream};
   }

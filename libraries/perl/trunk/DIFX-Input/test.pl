@@ -91,8 +91,24 @@ foreach ($datastream->datastreams) {
     printf "REC BAND %d POL:     %s\n", $i, $_->pol;
     printf "REC BAND %d INDEX:   %d\n", $i, $_->index;
     $i++;
+  }  
+  my $nzoom = $_->nzoomfreq();
+  printf "NUM ZOOM FREQS:     $nzoom\n";
+
+  $i = 0;
+  foreach ($_->zoomfreq) {
+    printf "ZOOM FREQ INDEX %d:  %s\n", $i, $_->index;
+    printf "NUM ZOOM POLS %d:    %d\n", $i, $_->npol;
+    $i++;
   }
-  printf "NUM ZOOM FREQS:     0\n";
+
+  $i = 0;
+  foreach ($_->zoomband) {
+    printf "ZOOM BAND %d POL:    %s\n", $i, $_->pol;
+    printf "ZOOM BAND %d INDEX:  %d\n", $i, $_->index;
+    $i++;
+  }
+
   $j++;
 }
 
