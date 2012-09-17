@@ -24,7 +24,7 @@ const int MIN_SEND_GAP=20;
  * Returns:
  *   Increse of string size on success, or -1 on error.
  */
-int expandEntityRefrences(char *dest, const char *src, int maxLength)
+static int expandEntityReferences(char *dest, const char *src, int maxLength)
 {
 	int i, j;
 
@@ -195,7 +195,7 @@ int difxMessageSendDifxAlert(const char *alertMessage, int severity)
 	}
 	else
 	{
-		v = expandEntityRefrences(alertMessageExpanded, alertMessage, DIFX_MESSAGE_LENGTH);
+		v = expandEntityReferences(alertMessageExpanded, alertMessage, DIFX_MESSAGE_LENGTH);
 
 		if(v < 0)
 		{
@@ -646,7 +646,7 @@ int difxMessageSendDifxStatus(enum DifxState state, const char *stateMessage, do
 	char body[DIFX_MESSAGE_LENGTH];
 	int i, n, v;
 	
-	v = expandEntityRefrences(stateMessageExpanded, stateMessage, DIFX_MESSAGE_LENGTH);
+	v = expandEntityReferences(stateMessageExpanded, stateMessage, DIFX_MESSAGE_LENGTH);
 
 	if(v < 0)
 	{
@@ -716,7 +716,7 @@ int difxMessageSendDifxStatus2(const char *jobName, enum DifxState state, const 
 	char stateMessageExpanded[DIFX_MESSAGE_LENGTH];
 	int v;
 
-	v = expandEntityRefrences(stateMessageExpanded, stateMessage, DIFX_MESSAGE_LENGTH);
+	v = expandEntityReferences(stateMessageExpanded, stateMessage, DIFX_MESSAGE_LENGTH);
 
 	if(v < 0)
 	{
@@ -770,7 +770,7 @@ int difxMessageSendDifxStatus3(enum DifxState state, const char *stateMessage,
 	char body[DIFX_MESSAGE_LENGTH];
 	int i, n, v;
 	
-	v = expandEntityRefrences(stateMessageExpanded, stateMessage, DIFX_MESSAGE_LENGTH);
+	v = expandEntityReferences(stateMessageExpanded, stateMessage, DIFX_MESSAGE_LENGTH);
 
 	if(v < 0)
 	{
@@ -843,7 +843,7 @@ int difxMessageSendDifxInfo(const char *infoMessage)
 	char infoMessageExpanded[DIFX_MESSAGE_LENGTH];
 	int v;
 
-	v = expandEntityRefrences(infoMessageExpanded, infoMessage, DIFX_MESSAGE_LENGTH);
+	v = expandEntityReferences(infoMessageExpanded, infoMessage, DIFX_MESSAGE_LENGTH);
 
 	if(v < 0)
 	{
@@ -889,7 +889,7 @@ int difxMessageSendDifxCommand(const char *command)
 	char commandExpanded[DIFX_MESSAGE_LENGTH];
 	int v;
 
-	v = expandEntityRefrences(commandExpanded, command, DIFX_MESSAGE_LENGTH);
+	v = expandEntityReferences(commandExpanded, command, DIFX_MESSAGE_LENGTH);
 	
 	if(v < 0)
 	{

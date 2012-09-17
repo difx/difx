@@ -28,7 +28,7 @@ int difxMessageReceiveOpen()
 	{
 		int recBufSize = 768000;
 
-		/* Increase receive buffer size to accomodate bursty traffic */
+		/* Increase receive buffer size to accommodate bursty traffic */
 		setsockopt(sock, SOL_SOCKET, SO_RCVBUF, &recBufSize, sizeof(recBufSize));
 	}
 
