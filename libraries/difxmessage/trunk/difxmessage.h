@@ -378,6 +378,8 @@ typedef struct
 
 typedef struct
 {
+	char mpiWrapper[DIFX_MESSAGE_FILENAME_LENGTH];
+	char difxVersion[DIFX_MESSAGE_VERSION_LENGTH];
     char mark5[DIFX_MESSAGE_PARAM_LENGTH];
     char vsn[DIFX_MESSAGE_PARAM_LENGTH];
     char address[DIFX_MESSAGE_PARAM_LENGTH];

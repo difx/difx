@@ -885,6 +885,16 @@ static void XMLCALL endElement(void *userData, const char *name)
 					{
 						strncpy(G->body.getDirectory.mark5, s, DIFX_MESSAGE_PARAM_LENGTH-1);
 					}
+					else if(strcmp(elem, "difxVersion") == 0)
+					{
+						strncpy(G->body.getDirectory.difxVersion, s, DIFX_MESSAGE_VERSION_LENGTH-1);
+						G->body.getDirectory.difxVersion[DIFX_MESSAGE_VERSION_LENGTH-1] = 0;
+					}
+					else if(strcmp(elem, "mpiWrapper") == 0)
+					{
+						strncpy(G->body.getDirectory.mpiWrapper, s, DIFX_MESSAGE_FILENAME_LENGTH-1);
+						G->body.getDirectory.mpiWrapper[DIFX_MESSAGE_FILENAME_LENGTH-1] = 0;
+					}
 					else if(strcmp(elem, "vsn") == 0 )
 					{
 						strncpy(G->body.getDirectory.vsn, s, DIFX_MESSAGE_PARAM_LENGTH-1);
