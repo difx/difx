@@ -796,7 +796,6 @@ int main(int argc, char **argv)
 	char str[16];
 	int isHeadNode = 0;
 	int isEmbedded = 0;
-	int isMk5 = 0;
 	int i;
 	char logPath[256];
 	const char *p, *u;
@@ -812,12 +811,9 @@ int main(int argc, char **argv)
 	int ok = 0;	/* FIXME: combine with D->ready? */
 	int justStarted = 1;
 	int recordFD;
-#endif
-
-#ifdef HAVE_XLRAPI_H
-	isMk5 = 1;
+	int isMk5 = 1;
 #else
-	isMk5 = 0;
+	int isMk5 = 0;
 #endif
 
 	// Prevent any zombies

@@ -1318,7 +1318,7 @@ int record_Command(Mk5Daemon *D, int nField, char **fields, char *response, int 
 				}
 			}
 
-			if(p == 0 && D->macList->size() > 0)	/* filtering on, but all disabled */
+			if(p == 0 && !D->macList->empty())	/* filtering on, but all disabled */
 			{
 				v = snprintf(response, maxResponseLength, "!%s = 4 : MAC filtering requested but all addresses are disabled;", fields[0]);
 			}
@@ -1543,7 +1543,7 @@ int status_Query(Mk5Daemon *D, int nField, char **fields, char *response, int ma
 	{
 		status |= 0x0001;
 	}
-	if(D->errors->size() > 0)
+	if(!D->errors->empty())
 	{
 		status |= 0x0002;
 	}
@@ -1808,7 +1808,7 @@ int MAC_list_Query(Mk5Daemon *D, int nField, char **fields, char *response, int 
 
 	v = snprintf(response, maxResponseLength, "!%s? 0", fields[0]);
 
-	if(D->macList->size() > 0)
+	if(!D->macList->empty())
 	{
 		for(it = D->macList->begin(); it != D->macList->end(); ++it)
 		{

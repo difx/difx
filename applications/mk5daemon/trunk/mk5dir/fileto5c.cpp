@@ -786,12 +786,12 @@ static int fileto(const char *filename, int bank, const char *label, unsigned in
 	int rv;
 	unsigned int chunkSize = chunkSizeMB * 1024*1024;
 	char *dirData = 0;
-
-	char *buffer = 0;
+	char *buffer;
+	
 	buffer = (char *)malloc(chunkSize);
 	if(buffer == 0)
 	{
-		printf("Error 9 error allocating %d byte buffer", chunkSize);
+		printf("Error 9 error allocating %u byte buffer", chunkSize);
 		fflush(stdout);
 		
 		return -1;

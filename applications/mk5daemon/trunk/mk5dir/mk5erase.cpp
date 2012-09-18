@@ -624,7 +624,6 @@ int mk5erase(const char *vsn, enum ConditionMode mode, int verbose, int dirVersi
 
 int main(int argc, char **argv)
 {
-	void (*oldsiginthand)(int);
 	enum ConditionMode mode = CONDITION_ERASE_ONLY;
 	int verbose = 0;
 	int force = 0;
@@ -799,7 +798,7 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
-	oldsiginthand = signal(SIGINT, siginthand);
+	signal(SIGINT, siginthand);
 
 	/* 60 seconds should be enough to complete any XLR command */
 	setWatchdogTimeout(60);

@@ -301,7 +301,6 @@ int getMk5Smart(SSHANDLE xlrDevice, Mk5Daemon *D, int bank)
 
 	for(int d = 0; d < N_SMART_DRIVES; ++d)
 	{
-		int v;
 		DriveInformation *drive;
 
 		drive = smart->drive + d;

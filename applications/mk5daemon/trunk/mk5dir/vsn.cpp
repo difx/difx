@@ -642,6 +642,12 @@ int setvsn(int bank, char *newVSN, int newStatus, enum WriteProtectAction wpa, i
 		{
 			printf("Is this OK? [y|n]\n");
 			rv = fgets(resp, 10, stdin);
+			if(!rv)
+			{
+				printf("Odd... stdin EOF encountered.  Quitting.\n");
+
+				return 0;
+			}
 		}
 		if(force || resp[0] == 'Y' || resp[0] == 'y')
 		{
