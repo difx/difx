@@ -43,6 +43,7 @@ make
 %{_bindir}/m5test
 %{_bindir}/m5time
 %{_bindir}/m5tsys
+%{_bindir}/m5slice
 %{_bindir}/test5b
 %{_bindir}/test_mark5_stream
 %{_bindir}/test_unpacker

@@ -62,22 +62,22 @@ static void initluts()
 	const float lut2level[2] = {1.0, -1.0};
 	const float lut4level[4] = {-HiMag, 1.0, -1.0, HiMag};
 
-	for(i = 0; i < 8; i++)
+	for(i = 0; i < 8; ++i)
 	{
 		zeros[i] = 0.0;
 	}
 
-	for(b = 0; b < 256; b++)
+	for(b = 0; b < 256; ++b)
 	{
 		/* lut1bit */
-		for(i = 0; i < 8; i++)
+		for(i = 0; i < 8; ++i)
 		{
 			l = (b>>i)&1;
 			lut1bit[b][i] =  lut2level[l];
 		}
 
 		/* lut2bit */
-		for(i = 0; i < 4; i++)
+		for(i = 0; i < 4; ++i)
 		{
 			s = i*2;	/* 0, 2, 4, 6 */
 			m = s+1;	/* 1, 3, 5, 7 */
@@ -112,7 +112,7 @@ static int findfirstframe(const unsigned char *data, int bytes, unsigned int syn
 	}
 	
 	/* look for two consecutive frame sync words */
-	for(i = 0; i < bytes; i++)
+	for(i = 0; i < bytes; ++i)
 	{
 		if(data[0]     == sb0 &&
 		   data[1]     == sb1 &&
@@ -125,7 +125,7 @@ static int findfirstframe(const unsigned char *data, int bytes, unsigned int syn
 		{
 			return i;
 		}
-		data++;
+		++data;
 	}
 
 	return -1;
@@ -136,12 +136,12 @@ static int mark5_stream_frame_num_mark5b(const struct mark5_stream *ms)
 	return ms->frame[4] + (ms->frame[5] & 0x7F)*256;
 }
 
-static int mark5_stream_frame_time_mark5b(const struct mark5_stream *ms,
-	int *mjd, int *sec, double *ns)
+static int mark5_stream_frame_time_mark5b(const struct mark5_stream *ms, int *mjd, int *sec, double *ns)
 {
 	struct mark5_format_mark5b *m;
 	const unsigned char *buf;
-	int i, framenum;
+	int i;
+	int framenum;
 	unsigned char nibs[16];
 
 	m = (struct mark5_format_mark5b *)(ms->formatdata);
@@ -150,7 +150,7 @@ static int mark5_stream_frame_time_mark5b(const struct mark5_stream *ms,
 
 	framenum = mark5_stream_frame_num_mark5b(ms);
 
-	for(i = 0; i < 4; i++)
+	for(i = 0; i < 4; ++i)
 	{
 		nibs[2*i+0] = buf[3-i] >> 4;
 		nibs[2*i+1] = buf[3-i] & 0x0F;
@@ -168,13 +168,18 @@ static int mark5_stream_frame_time_mark5b(const struct mark5_stream *ms,
 	}
 	if(ns)
 	{
+// 20120802: It seems frame num is not super reliable...
 		if(ms->framens > 0)
 		{
 			*ns = ms->framens*framenum;
 		}
 		else
 		{
-			*ns = nibs[8]*100000000 + nibs[9]*10000000 + nibs[10]*1000000+ nibs[11]*100000;
+			*ns = nibs[8]*100000000 + nibs[9]*10000000 + nibs[10]*1000000 + nibs[11]*100000;
+//			if(*ns < 0.0 || *ns > 1.0e9)
+//			{
+//				printf("Weird! %d %d %d %d\n", nibs[8], nibs[9], nibs[10], nibs[11]);
+//			}
 			/* "unround" the number */
 			*ns = 156250*(((int)(*ns)+156249)/156250);
 		}
@@ -208,8 +213,7 @@ static int mark5_format_mark5b_fixmjd(struct mark5_stream *ms, int refmjd)
 
 /************************* decode routines **************************/
 
-static int mark5b_decode_1bitstream_1bit_decimation1(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark5b_decode_1bitstream_1bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp;
@@ -219,34 +223,34 @@ static int mark5b_decode_1bitstream_1bit_decimation1(struct mark5_stream *ms,
 	buf = ms->payload;
 	i = ms->readposition;
 
-	for(o = 0; o < nsamp; o++)
+	for(o = 0; o < nsamp; ++o)
 	{
 		if(i <  ms->blankzonestartvalid[0] ||
 		   i >= ms->blankzoneendvalid[0])
 		{
 			fp = zeros;
-			nblank++;
+			++nblank;
 		}
 		else
 		{
 			fp = lut1bit[buf[i]];
 		}
-		i++;
+		++i;
 
 		data[0][o] = fp[0];
-		o++;
+		++o;
 		data[0][o] = fp[1];
-		o++;
+		++o;
 		data[0][o] = fp[2];
-		o++;
+		++o;
 		data[0][o] = fp[3];
-		o++;
+		++o;
 		data[0][o] = fp[4];
-		o++;
+		++o;
 		data[0][o] = fp[5];
-		o++;
+		++o;
 		data[0][o] = fp[6];
-		o++;
+		++o;
 		data[0][o] = fp[7];
 
 		if(i >= MK5B_PAYLOADSIZE)
@@ -265,8 +269,7 @@ static int mark5b_decode_1bitstream_1bit_decimation1(struct mark5_stream *ms,
 	return nsamp-8*nblank;
 }
 
-static int mark5b_decode_1bitstream_1bit_decimation2(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark5b_decode_1bitstream_1bit_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp;
@@ -276,26 +279,26 @@ static int mark5b_decode_1bitstream_1bit_decimation2(struct mark5_stream *ms,
 	buf = ms->payload;
 	i = ms->readposition;
 
-	for(o = 0; o < nsamp; o++)
+	for(o = 0; o < nsamp; ++o)
 	{
 		if(i <  ms->blankzonestartvalid[0] ||
 		   i >= ms->blankzoneendvalid[0])
 		{
 			fp = zeros;
-			nblank++;
+			++nblank;
 		}
 		else
 		{
 			fp = lut1bit[buf[i]];
 		}
-		i++;
+		++i;
 
 		data[0][o] = fp[0];
-		o++;
+		++o;
 		data[0][o] = fp[2];
-		o++;
+		++o;
 		data[0][o] = fp[4];
-		o++;
+		++o;
 		data[0][o] = fp[6];
 
 		if(i >= MK5B_PAYLOADSIZE)
@@ -314,8 +317,7 @@ static int mark5b_decode_1bitstream_1bit_decimation2(struct mark5_stream *ms,
 	return nsamp-8*nblank;
 }
 
-static int mark5b_decode_1bitstream_1bit_decimation4(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark5b_decode_1bitstream_1bit_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp;
@@ -325,22 +327,22 @@ static int mark5b_decode_1bitstream_1bit_decimation4(struct mark5_stream *ms,
 	buf = ms->payload;
 	i = ms->readposition;
 
-	for(o = 0; o < nsamp; o++)
+	for(o = 0; o < nsamp; ++o)
 	{
 		if(i <  ms->blankzonestartvalid[0] ||
 		   i >= ms->blankzoneendvalid[0])
 		{
 			fp = zeros;
-			nblank++;
+			++nblank;
 		}
 		else
 		{
 			fp = lut1bit[buf[i]];
 		}
-		i++;
+		++i;
 
 		data[0][o] = fp[0];
-		o++;
+		++o;
 		data[0][o] = fp[4];
 
 		if(i >= MK5B_PAYLOADSIZE)
@@ -359,8 +361,7 @@ static int mark5b_decode_1bitstream_1bit_decimation4(struct mark5_stream *ms,
 	return nsamp-8*nblank;
 }
 
-static int mark5b_decode_1bitstream_1bit_decimation8(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark5b_decode_1bitstream_1bit_decimation8(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp;
@@ -371,13 +372,13 @@ static int mark5b_decode_1bitstream_1bit_decimation8(struct mark5_stream *ms,
 	i = ms->readposition;
 	df = ms->decimation/8;
 
-	for(o = 0; o < nsamp; o++)
+	for(o = 0; o < nsamp; ++o)
 	{
 		if(i <  ms->blankzonestartvalid[0] ||
 		   i >= ms->blankzoneendvalid[0])
 		{
 			fp = zeros;
-			nblank++;
+			++nblank;
 		}
 		else
 		{
@@ -403,8 +404,7 @@ static int mark5b_decode_1bitstream_1bit_decimation8(struct mark5_stream *ms,
 	return nsamp-8*nblank;
 }
 
-static int mark5b_decode_2bitstream_1bit_decimation1(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark5b_decode_2bitstream_1bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp;
@@ -414,29 +414,29 @@ static int mark5b_decode_2bitstream_1bit_decimation1(struct mark5_stream *ms,
 	buf = ms->payload;
 	i = ms->readposition;
 
-	for(o = 0; o < nsamp; o++)
+	for(o = 0; o < nsamp; ++o)
 	{
 		if(i <  ms->blankzonestartvalid[0] ||
 		   i >= ms->blankzoneendvalid[0])
 		{
 			fp = zeros;
-			nblank++;
+			++nblank;
 		}
 		else
 		{
 			fp = lut1bit[buf[i]];
 		}
-		i++;
+		++i;
 
 		data[0][o] = fp[0];
 		data[1][o] = fp[1];
-		o++;
+		++o;
 		data[0][o] = fp[2];
 		data[1][o] = fp[3];
-		o++;
+		++o;
 		data[0][o] = fp[4];
 		data[1][o] = fp[5];
-		o++;
+		++o;
 		data[0][o] = fp[6];
 		data[1][o] = fp[7];
 
@@ -456,8 +456,7 @@ static int mark5b_decode_2bitstream_1bit_decimation1(struct mark5_stream *ms,
 	return nsamp - 4*nblank;
 }
 
-static int mark5b_decode_2bitstream_1bit_decimation2(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark5b_decode_2bitstream_1bit_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp;
@@ -467,23 +466,23 @@ static int mark5b_decode_2bitstream_1bit_decimation2(struct mark5_stream *ms,
 	buf = ms->payload;
 	i = ms->readposition;
 
-	for(o = 0; o < nsamp; o++)
+	for(o = 0; o < nsamp; ++o)
 	{
 		if(i <  ms->blankzonestartvalid[0] ||
 		   i >= ms->blankzoneendvalid[0])
 		{
 			fp = zeros;
-			nblank++;
+			++nblank;
 		}
 		else
 		{
 			fp = lut1bit[buf[i]];
 		}
-		i++;
+		++i;
 
 		data[0][o] = fp[0];
 		data[1][o] = fp[1];
-		o++;
+		++o;
 		data[0][o] = fp[4];
 		data[1][o] = fp[5];
 
@@ -503,8 +502,7 @@ static int mark5b_decode_2bitstream_1bit_decimation2(struct mark5_stream *ms,
 	return nsamp - 4*nblank;
 }
 
-static int mark5b_decode_2bitstream_1bit_decimation4(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark5b_decode_2bitstream_1bit_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp;
@@ -515,13 +513,13 @@ static int mark5b_decode_2bitstream_1bit_decimation4(struct mark5_stream *ms,
 	i = ms->readposition;
 	df = ms->decimation/4;
 
-	for(o = 0; o < nsamp; o++)
+	for(o = 0; o < nsamp; ++o)
 	{
 		if(i <  ms->blankzonestartvalid[0] ||
 		   i >= ms->blankzoneendvalid[0])
 		{
 			fp = zeros;
-			nblank++;
+			++nblank;
 		}
 		else
 		{
@@ -548,8 +546,7 @@ static int mark5b_decode_2bitstream_1bit_decimation4(struct mark5_stream *ms,
 	return nsamp - 4*nblank;
 }
 
-static int mark5b_decode_4bitstream_1bit_decimation1(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark5b_decode_4bitstream_1bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp;
@@ -559,25 +556,25 @@ static int mark5b_decode_4bitstream_1bit_decimation1(struct mark5_stream *ms,
 	buf = ms->payload;
 	i = ms->readposition;
 
-	for(o = 0; o < nsamp; o++)
+	for(o = 0; o < nsamp; ++o)
 	{
 		if(i <  ms->blankzonestartvalid[0] ||
 		   i >= ms->blankzoneendvalid[0])
 		{
 			fp = zeros;
-			nblank++;
+			++nblank;
 		}
 		else
 		{
 			fp = lut1bit[buf[i]];
 		}
-		i++;
+		++i;
 
 		data[0][o] = fp[0];
 		data[1][o] = fp[1];
 		data[2][o] = fp[2];
 		data[3][o] = fp[3];
-		o++;
+		++o;
 		data[0][o] = fp[4];
 		data[1][o] = fp[5];
 		data[2][o] = fp[6];
@@ -599,8 +596,7 @@ static int mark5b_decode_4bitstream_1bit_decimation1(struct mark5_stream *ms,
 	return nsamp - 2*nblank;
 }
 
-static int mark5b_decode_4bitstream_1bit_decimation2(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark5b_decode_4bitstream_1bit_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp;
@@ -610,19 +606,19 @@ static int mark5b_decode_4bitstream_1bit_decimation2(struct mark5_stream *ms,
 	buf = ms->payload;
 	i = ms->readposition;
 
-	for(o = 0; o < nsamp; o++)
+	for(o = 0; o < nsamp; ++o)
 	{
 		if(i <  ms->blankzonestartvalid[0] ||
 		   i >= ms->blankzoneendvalid[0])
 		{
 			fp = zeros;
-			nblank++;
+			++nblank;
 		}
 		else
 		{
 			fp = lut1bit[buf[i]];
 		}
-		i++;
+		++i;
 
 		data[0][o] = fp[0];
 		data[1][o] = fp[1];
@@ -645,8 +641,7 @@ static int mark5b_decode_4bitstream_1bit_decimation2(struct mark5_stream *ms,
 	return nsamp - 2*nblank;
 }
 
-static int mark5b_decode_4bitstream_1bit_decimation4(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark5b_decode_4bitstream_1bit_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp;
@@ -657,13 +652,13 @@ static int mark5b_decode_4bitstream_1bit_decimation4(struct mark5_stream *ms,
 	i = ms->readposition;
 	df = ms->decimation/2;
 
-	for(o = 0; o < nsamp; o++)
+	for(o = 0; o < nsamp; ++o)
 	{
 		if(i <  ms->blankzonestartvalid[0] ||
 		   i >= ms->blankzoneendvalid[0])
 		{
 			fp = zeros;
-			nblank++;
+			++nblank;
 		}
 		else
 		{
@@ -692,8 +687,7 @@ static int mark5b_decode_4bitstream_1bit_decimation4(struct mark5_stream *ms,
 	return nsamp - 2*nblank;
 }
 
-static int mark5b_decode_8bitstream_1bit_decimation1(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark5b_decode_8bitstream_1bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp;
@@ -703,19 +697,19 @@ static int mark5b_decode_8bitstream_1bit_decimation1(struct mark5_stream *ms,
 	buf = ms->payload;
 	i = ms->readposition;
 
-	for(o = 0; o < nsamp; o++)
+	for(o = 0; o < nsamp; ++o)
 	{
 		if(i <  ms->blankzonestartvalid[0] ||
 		   i >= ms->blankzoneendvalid[0])
 		{
 			fp = zeros;
-			nblank++;
+			++nblank;
 		}
 		else
 		{
 			fp = lut1bit[buf[i]];
 		}
-		i++;
+		++i;
 
 		data[0][o] = fp[0];
 		data[1][o] = fp[1];
@@ -742,8 +736,7 @@ static int mark5b_decode_8bitstream_1bit_decimation1(struct mark5_stream *ms,
 	return nsamp - nblank;
 }
 
-static int mark5b_decode_8bitstream_1bit_decimation2(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark5b_decode_8bitstream_1bit_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp;
@@ -753,13 +746,13 @@ static int mark5b_decode_8bitstream_1bit_decimation2(struct mark5_stream *ms,
 	buf = ms->payload;
 	i = ms->readposition;
 
-	for(o = 0; o < nsamp; o++)
+	for(o = 0; o < nsamp; ++o)
 	{
 		if(i <  ms->blankzonestartvalid[0] ||
 		   i >= ms->blankzoneendvalid[0])
 		{
 			fp = zeros;
-			nblank++;
+			++nblank;
 		}
 		else
 		{
@@ -792,8 +785,7 @@ static int mark5b_decode_8bitstream_1bit_decimation2(struct mark5_stream *ms,
 	return nsamp - nblank;
 }
 
-static int mark5b_decode_8bitstream_1bit_decimation4(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark5b_decode_8bitstream_1bit_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp;
@@ -804,13 +796,13 @@ static int mark5b_decode_8bitstream_1bit_decimation4(struct mark5_stream *ms,
 	i = ms->readposition;
 	df = ms->decimation;
 
-	for(o = 0; o < nsamp; o++)
+	for(o = 0; o < nsamp; ++o)
 	{
 		if(i <  ms->blankzonestartvalid[0] ||
 		   i >= ms->blankzoneendvalid[0])
 		{
 			fp = zeros;
-			nblank++;
+			++nblank;
 		}
 		else
 		{
@@ -843,8 +835,7 @@ static int mark5b_decode_8bitstream_1bit_decimation4(struct mark5_stream *ms,
 	return nsamp - nblank;
 }
 
-static int mark5b_decode_16bitstream_1bit_decimation1(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark5b_decode_16bitstream_1bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp0, *fp1;
@@ -854,21 +845,21 @@ static int mark5b_decode_16bitstream_1bit_decimation1(struct mark5_stream *ms,
 	buf = ms->payload;
 	i = ms->readposition;
 
-	for(o = 0; o < nsamp; o++)
+	for(o = 0; o < nsamp; ++o)
 	{
 		if(i <  ms->blankzonestartvalid[0] ||
 		   i >= ms->blankzoneendvalid[0])
 		{
 			fp0 = fp1 = zeros;
 			i += 2;
-			nblank++;
+			++nblank;
 		}
 		else
 		{
 			fp0 = lut1bit[buf[i]];
-			i++;
+			++i;
 			fp1 = lut1bit[buf[i]];
-			i++;
+			++i;
 		}
 
 		data[0][o]  = fp0[0];
@@ -904,8 +895,7 @@ static int mark5b_decode_16bitstream_1bit_decimation1(struct mark5_stream *ms,
 	return nsamp - nblank;
 }
 
-static int mark5b_decode_16bitstream_1bit_decimation2(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark5b_decode_16bitstream_1bit_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp0, *fp1;
@@ -915,19 +905,19 @@ static int mark5b_decode_16bitstream_1bit_decimation2(struct mark5_stream *ms,
 	buf = ms->payload;
 	i = ms->readposition;
 
-	for(o = 0; o < nsamp; o++)
+	for(o = 0; o < nsamp; ++o)
 	{
 		if(i <  ms->blankzonestartvalid[0] ||
 		   i >= ms->blankzoneendvalid[0])
 		{
 			fp0 = fp1 = zeros;
 			i += 4;
-			nblank++;
+			++nblank;
 		}
 		else
 		{
 			fp0 = lut1bit[buf[i]];
-			i++;
+			++i;
 			fp1 = lut1bit[buf[i]];
 			i += 3;
 		}
@@ -965,8 +955,7 @@ static int mark5b_decode_16bitstream_1bit_decimation2(struct mark5_stream *ms,
 	return nsamp - nblank;
 }
 
-static int mark5b_decode_16bitstream_1bit_decimation4(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark5b_decode_16bitstream_1bit_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp0, *fp1;
@@ -977,20 +966,20 @@ static int mark5b_decode_16bitstream_1bit_decimation4(struct mark5_stream *ms,
 	i = ms->readposition;
 	df = ms->decimation*2 - 1;
 
-	for(o = 0; o < nsamp; o++)
+	for(o = 0; o < nsamp; ++o)
 	{
 		if(i <  ms->blankzonestartvalid[0] ||
 		   i >= ms->blankzoneendvalid[0])
 		{
 			fp0 = zeros;
-			i++;
+			++i;
 			fp1 = zeros;
-			nblank++;
+			++nblank;
 		}
 		else
 		{
 			fp0 = lut1bit[buf[i]];
-			i++;
+			++i;
 			fp1 = lut1bit[buf[i]];
 		}
 		i += df;
@@ -1028,8 +1017,7 @@ static int mark5b_decode_16bitstream_1bit_decimation4(struct mark5_stream *ms,
 	return nsamp - nblank;
 }
 
-static int mark5b_decode_32bitstream_1bit_decimation1(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark5b_decode_32bitstream_1bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp0, *fp1, *fp2, *fp3;
@@ -1039,25 +1027,25 @@ static int mark5b_decode_32bitstream_1bit_decimation1(struct mark5_stream *ms,
 	buf = ms->payload;
 	i = ms->readposition;
 
-	for(o = 0; o < nsamp; o++)
+	for(o = 0; o < nsamp; ++o)
 	{
 		if(i <  ms->blankzonestartvalid[0] ||
 		   i >= ms->blankzoneendvalid[0])
 		{
 			fp0 = fp1 = fp2 = fp3 = zeros;
 			i += 4;
-			nblank++;
+			++nblank;
 		}
 		else
 		{
 			fp0 = lut1bit[buf[i]];
-			i++;
+			++i;
 			fp1 = lut1bit[buf[i]];
-			i++;
+			++i;
 			fp2 = lut1bit[buf[i]];
-			i++;
+			++i;
 			fp3 = lut1bit[buf[i]];
-			i++;
+			++i;
 		}
 
 		data[0][o]  = fp0[0];
@@ -1109,8 +1097,7 @@ static int mark5b_decode_32bitstream_1bit_decimation1(struct mark5_stream *ms,
 	return nsamp - nblank;
 }
 
-static int mark5b_decode_32bitstream_1bit_decimation2(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark5b_decode_32bitstream_1bit_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp0, *fp1, *fp2, *fp3;
@@ -1120,23 +1107,23 @@ static int mark5b_decode_32bitstream_1bit_decimation2(struct mark5_stream *ms,
 	buf = ms->payload;
 	i = ms->readposition;
 
-	for(o = 0; o < nsamp; o++)
+	for(o = 0; o < nsamp; ++o)
 	{
 		if(i <  ms->blankzonestartvalid[0] ||
 		   i >= ms->blankzoneendvalid[0])
 		{
 			fp0 = fp1 = fp2 = fp3 = zeros;
 			i += 8;
-			nblank++;
+			++nblank;
 		}
 		else
 		{
 			fp0 = lut1bit[buf[i]];
-			i++;
+			++i;
 			fp1 = lut1bit[buf[i]];
-			i++;
+			++i;
 			fp2 = lut1bit[buf[i]];
-			i++;
+			++i;
 			fp3 = lut1bit[buf[i]];
 			i += 5;
 		}
@@ -1190,8 +1177,7 @@ static int mark5b_decode_32bitstream_1bit_decimation2(struct mark5_stream *ms,
 	return nsamp - nblank;
 }
 
-static int mark5b_decode_32bitstream_1bit_decimation4(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark5b_decode_32bitstream_1bit_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp0, *fp1, *fp2, *fp3;
@@ -1202,23 +1188,23 @@ static int mark5b_decode_32bitstream_1bit_decimation4(struct mark5_stream *ms,
 	i = ms->readposition;
 	df = ms->decimation*4 - 3;
 
-	for(o = 0; o < nsamp; o++)
+	for(o = 0; o < nsamp; ++o)
 	{
 		if(i <  ms->blankzonestartvalid[0] ||
 		   i >= ms->blankzoneendvalid[0])
 		{
 			fp0 = fp1 = fp2 = fp3 = zeros;
 			i += 3;
-			nblank++;
+			++nblank;
 		}
 		else
 		{
 			fp0 = lut1bit[buf[i]];
-			i++;
+			++i;
 			fp1 = lut1bit[buf[i]];
-			i++;
+			++i;
 			fp2 = lut1bit[buf[i]];
-			i++;
+			++i;
 			fp3 = lut1bit[buf[i]];
 		}
 		i += df;
@@ -1274,8 +1260,7 @@ static int mark5b_decode_32bitstream_1bit_decimation4(struct mark5_stream *ms,
 
 /************************ 2-bit decoders *********************/
 
-static int mark5b_decode_2bitstream_2bit_decimation1(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark5b_decode_2bitstream_2bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp;
@@ -1285,26 +1270,26 @@ static int mark5b_decode_2bitstream_2bit_decimation1(struct mark5_stream *ms,
 	buf = ms->payload;
 	i = ms->readposition;
 
-	for(o = 0; o < nsamp; o++)
+	for(o = 0; o < nsamp; ++o)
 	{
 		if(i <  ms->blankzonestartvalid[0] ||
 		   i >= ms->blankzoneendvalid[0])
 		{
 			fp = zeros;
-			nblank++;
+			++nblank;
 		}
 		else
 		{
 			fp = lut2bit[buf[i]];
 		}
-		i++;
+		++i;
 
 		data[0][o] = fp[0];
-		o++;
+		++o;
 		data[0][o] = fp[1];
-		o++;
+		++o;
 		data[0][o] = fp[2];
-		o++;
+		++o;
 		data[0][o] = fp[3];
 
 		if(i >= MK5B_PAYLOADSIZE)
@@ -1323,8 +1308,7 @@ static int mark5b_decode_2bitstream_2bit_decimation1(struct mark5_stream *ms,
 	return nsamp - 4*nblank;
 }
 
-static int mark5b_decode_2bitstream_2bit_decimation2(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark5b_decode_2bitstream_2bit_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp;
@@ -1334,22 +1318,22 @@ static int mark5b_decode_2bitstream_2bit_decimation2(struct mark5_stream *ms,
 	buf = ms->payload;
 	i = ms->readposition;
 
-	for(o = 0; o < nsamp; o++)
+	for(o = 0; o < nsamp; ++o)
 	{
 		if(i <  ms->blankzonestartvalid[0] ||
 		   i >= ms->blankzoneendvalid[0])
 		{
 			fp = zeros;
-			nblank++;
+			++nblank;
 		}
 		else
 		{
 			fp = lut2bit[buf[i]];
 		}
-		i++;
+		++i;
 
 		data[0][o] = fp[0];
-		o++;
+		++o;
 		data[0][o] = fp[2];
 
 		if(i >= MK5B_PAYLOADSIZE)
@@ -1368,8 +1352,7 @@ static int mark5b_decode_2bitstream_2bit_decimation2(struct mark5_stream *ms,
 	return nsamp - 4*nblank;
 }
 
-static int mark5b_decode_2bitstream_2bit_decimation4(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark5b_decode_2bitstream_2bit_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp;
@@ -1380,13 +1363,13 @@ static int mark5b_decode_2bitstream_2bit_decimation4(struct mark5_stream *ms,
 	i = ms->readposition;
 	df = ms->decimation/4;
 
-	for(o = 0; o < nsamp; o++)
+	for(o = 0; o < nsamp; ++o)
 	{
 		if(i <  ms->blankzonestartvalid[0] ||
 		   i >= ms->blankzoneendvalid[0])
 		{
 			fp = zeros;
-			nblank++;
+			++nblank;
 		}
 		else
 		{
@@ -1412,8 +1395,7 @@ static int mark5b_decode_2bitstream_2bit_decimation4(struct mark5_stream *ms,
 	return nsamp - 4*nblank;
 }
 
-static int mark5b_decode_4bitstream_2bit_decimation1(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark5b_decode_4bitstream_2bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp;
@@ -1423,23 +1405,23 @@ static int mark5b_decode_4bitstream_2bit_decimation1(struct mark5_stream *ms,
 	buf = ms->payload;
 	i = ms->readposition;
 
-	for(o = 0; o < nsamp; o++)
+	for(o = 0; o < nsamp; ++o)
 	{
 		if(i <  ms->blankzonestartvalid[0] ||
 		   i >= ms->blankzoneendvalid[0])
 		{
 			fp = zeros;
-			nblank++;
+			++nblank;
 		}
 		else
 		{
 			fp = lut2bit[buf[i]];
 		}
-		i++;
+		++i;
 
 		data[0][o] = fp[0];
 		data[1][o] = fp[1];
-		o++;
+		++o;
 		data[0][o] = fp[2];
 		data[1][o] = fp[3];
 
@@ -1459,8 +1441,7 @@ static int mark5b_decode_4bitstream_2bit_decimation1(struct mark5_stream *ms,
 	return nsamp - 2*nblank;
 }
 
-static int mark5b_decode_4bitstream_2bit_decimation2(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark5b_decode_4bitstream_2bit_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp;
@@ -1470,19 +1451,19 @@ static int mark5b_decode_4bitstream_2bit_decimation2(struct mark5_stream *ms,
 	buf = ms->payload;
 	i = ms->readposition;
 
-	for(o = 0; o < nsamp; o++)
+	for(o = 0; o < nsamp; ++o)
 	{
 		if(i <  ms->blankzonestartvalid[0] ||
 		   i >= ms->blankzoneendvalid[0])
 		{
 			fp = zeros;
-			nblank++;
+			++nblank;
 		}
 		else
 		{
 			fp = lut2bit[buf[i]];
 		}
-		i++;
+		++i;
 
 		data[0][o] = fp[0];
 		data[1][o] = fp[1];
@@ -1503,8 +1484,7 @@ static int mark5b_decode_4bitstream_2bit_decimation2(struct mark5_stream *ms,
 	return nsamp - 2*nblank;
 }
 
-static int mark5b_decode_4bitstream_2bit_decimation4(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark5b_decode_4bitstream_2bit_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp;
@@ -1515,13 +1495,13 @@ static int mark5b_decode_4bitstream_2bit_decimation4(struct mark5_stream *ms,
 	i = ms->readposition;
 	df = ms->decimation/2;
 
-	for(o = 0; o < nsamp; o++)
+	for(o = 0; o < nsamp; ++o)
 	{
 		if(i <  ms->blankzonestartvalid[0] ||
 		   i >= ms->blankzoneendvalid[0])
 		{
 			fp = zeros;
-			nblank++;
+			++nblank;
 		}
 		else
 		{
@@ -1548,8 +1528,7 @@ static int mark5b_decode_4bitstream_2bit_decimation4(struct mark5_stream *ms,
 	return nsamp - 2*nblank;
 }
 
-static int mark5b_decode_8bitstream_2bit_decimation1(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark5b_decode_8bitstream_2bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp;
@@ -1559,19 +1538,19 @@ static int mark5b_decode_8bitstream_2bit_decimation1(struct mark5_stream *ms,
 	buf = ms->payload;
 	i = ms->readposition;
 
-	for(o = 0; o < nsamp; o++)
+	for(o = 0; o < nsamp; ++o)
 	{
 		if(i <  ms->blankzonestartvalid[0] ||
 		   i >= ms->blankzoneendvalid[0])
 		{
 			fp = zeros;
-			nblank++;
+			++nblank;
 		}
 		else
 		{
 			fp = lut2bit[buf[i]];
 		}
-		i++;
+		++i;
 
 		data[0][o] = fp[0];
 		data[1][o] = fp[1];
@@ -1594,8 +1573,7 @@ static int mark5b_decode_8bitstream_2bit_decimation1(struct mark5_stream *ms,
 	return nsamp - nblank;
 }
 
-static int mark5b_decode_8bitstream_2bit_decimation2(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark5b_decode_8bitstream_2bit_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp;
@@ -1605,13 +1583,13 @@ static int mark5b_decode_8bitstream_2bit_decimation2(struct mark5_stream *ms,
 	buf = ms->payload;
 	i = ms->readposition;
 
-	for(o = 0; o < nsamp; o++)
+	for(o = 0; o < nsamp; ++o)
 	{
 		if(i <  ms->blankzonestartvalid[0] ||
 		   i >= ms->blankzoneendvalid[0])
 		{
 			fp = zeros;
-			nblank++;
+			++nblank;
 		}
 		else
 		{
@@ -1640,8 +1618,7 @@ static int mark5b_decode_8bitstream_2bit_decimation2(struct mark5_stream *ms,
 	return nsamp - nblank;
 }
 
-static int mark5b_decode_8bitstream_2bit_decimation4(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark5b_decode_8bitstream_2bit_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp;
@@ -1652,13 +1629,13 @@ static int mark5b_decode_8bitstream_2bit_decimation4(struct mark5_stream *ms,
 	i = ms->readposition;
 	df = ms->decimation;
 
-	for(o = 0; o < nsamp; o++)
+	for(o = 0; o < nsamp; ++o)
 	{
 		if(i <  ms->blankzonestartvalid[0] ||
 		   i >= ms->blankzoneendvalid[0])
 		{
 			fp = zeros;
-			nblank++;
+			++nblank;
 		}
 		else
 		{
@@ -1687,8 +1664,7 @@ static int mark5b_decode_8bitstream_2bit_decimation4(struct mark5_stream *ms,
 	return nsamp - nblank;
 }
 
-static int mark5b_decode_16bitstream_2bit_decimation1(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark5b_decode_16bitstream_2bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp0, *fp1;
@@ -1698,21 +1674,21 @@ static int mark5b_decode_16bitstream_2bit_decimation1(struct mark5_stream *ms,
 	buf = ms->payload;
 	i = ms->readposition;
 
-	for(o = 0; o < nsamp; o++)
+	for(o = 0; o < nsamp; ++o)
 	{
 		if(i <  ms->blankzonestartvalid[0] ||
 		   i >= ms->blankzoneendvalid[0])
 		{
 			fp0 = fp1 = zeros;
 			i += 2;
-			nblank++;
+			++nblank;
 		}
 		else
 		{
 			fp0 = lut2bit[buf[i]];
-			i++;
+			++i;
 			fp1 = lut2bit[buf[i]];
-			i++;
+			++i;
 		}
 
 		data[0][o] = fp0[0];
@@ -1740,8 +1716,7 @@ static int mark5b_decode_16bitstream_2bit_decimation1(struct mark5_stream *ms,
 	return nsamp - nblank;
 }
 
-static int mark5b_decode_16bitstream_2bit_decimation2(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark5b_decode_16bitstream_2bit_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp0, *fp1;
@@ -1751,19 +1726,19 @@ static int mark5b_decode_16bitstream_2bit_decimation2(struct mark5_stream *ms,
 	buf = ms->payload;
 	i = ms->readposition;
 
-	for(o = 0; o < nsamp; o++)
+	for(o = 0; o < nsamp; ++o)
 	{
 		if(i <  ms->blankzonestartvalid[0] ||
 		   i >= ms->blankzoneendvalid[0])
 		{
 			fp0 = fp1 = zeros;
 			i += 4;
-			nblank++;
+			++nblank;
 		}
 		else
 		{
 			fp0 = lut2bit[buf[i]];
-			i++;
+			++i;
 			fp1 = lut2bit[buf[i]];
 			i += 3;
 		}
@@ -1793,8 +1768,7 @@ static int mark5b_decode_16bitstream_2bit_decimation2(struct mark5_stream *ms,
 	return nsamp - nblank;
 }
 
-static int mark5b_decode_16bitstream_2bit_decimation4(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark5b_decode_16bitstream_2bit_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp0, *fp1;
@@ -1805,19 +1779,19 @@ static int mark5b_decode_16bitstream_2bit_decimation4(struct mark5_stream *ms,
 	i = ms->readposition;
 	df = ms->decimation*2 - 1;
 
-	for(o = 0; o < nsamp; o++)
+	for(o = 0; o < nsamp; ++o)
 	{
 		if(i <  ms->blankzonestartvalid[0] ||
 		   i >= ms->blankzoneendvalid[0])
 		{
 			fp0 = fp1 = zeros;
-			i++;
-			nblank++;
+			++i;
+			++nblank;
 		}
 		else
 		{
 			fp0 = lut2bit[buf[i]];
-			i++;
+			++i;
 			fp1 = lut2bit[buf[i]];
 		}
 		i += df;
@@ -1847,8 +1821,7 @@ static int mark5b_decode_16bitstream_2bit_decimation4(struct mark5_stream *ms,
 	return nsamp - nblank;
 }
 
-static int mark5b_decode_32bitstream_2bit_decimation1(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark5b_decode_32bitstream_2bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp0, *fp1, *fp2, *fp3;
@@ -1858,25 +1831,25 @@ static int mark5b_decode_32bitstream_2bit_decimation1(struct mark5_stream *ms,
 	buf = ms->payload;
 	i = ms->readposition;
 
-	for(o = 0; o < nsamp; o++)
+	for(o = 0; o < nsamp; ++o)
 	{
 		if(i <  ms->blankzonestartvalid[0] ||
 		   i >= ms->blankzoneendvalid[0])
 		{
 			fp0 = fp1 = fp2 = fp3 = zeros;
 			i += 4;
-			nblank++;
+			++nblank;
 		}
 		else
 		{
 			fp0 = lut2bit[buf[i]];
-			i++;
+			++i;
 			fp1 = lut2bit[buf[i]];
-			i++;
+			++i;
 			fp2 = lut2bit[buf[i]];
-			i++;
+			++i;
 			fp3 = lut2bit[buf[i]];
-			i++;
+			++i;
 		}
 
 		data[0][o]  = fp0[0];
@@ -1912,8 +1885,7 @@ static int mark5b_decode_32bitstream_2bit_decimation1(struct mark5_stream *ms,
 	return nsamp - nblank;
 }
 
-static int mark5b_decode_32bitstream_2bit_decimation2(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark5b_decode_32bitstream_2bit_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp0, *fp1, *fp2, *fp3;
@@ -1923,23 +1895,23 @@ static int mark5b_decode_32bitstream_2bit_decimation2(struct mark5_stream *ms,
 	buf = ms->payload;
 	i = ms->readposition;
 
-	for(o = 0; o < nsamp; o++)
+	for(o = 0; o < nsamp; ++o)
 	{
 		if(i <  ms->blankzonestartvalid[0] ||
 		   i >= ms->blankzoneendvalid[0])
 		{
 			fp0 = fp1 = fp2 = fp3 = zeros;
 			i += 8;
-			nblank++;
+			++nblank;
 		}
 		else
 		{
 			fp0 = lut2bit[buf[i]];
-			i++;
+			++i;
 			fp1 = lut2bit[buf[i]];
-			i++;
+			++i;
 			fp2 = lut2bit[buf[i]];
-			i++;
+			++i;
 			fp3 = lut2bit[buf[i]];
 			i += 5;
 		}
@@ -1977,8 +1949,7 @@ static int mark5b_decode_32bitstream_2bit_decimation2(struct mark5_stream *ms,
 	return nsamp - nblank;
 }
 
-static int mark5b_decode_32bitstream_2bit_decimation4(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark5b_decode_32bitstream_2bit_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp0, *fp1, *fp2, *fp3;
@@ -1989,23 +1960,23 @@ static int mark5b_decode_32bitstream_2bit_decimation4(struct mark5_stream *ms,
 	i = ms->readposition;
 	df = ms->decimation*4 - 3;
 
-	for(o = 0; o < nsamp; o++)
+	for(o = 0; o < nsamp; ++o)
 	{
 		if(i <  ms->blankzonestartvalid[0] ||
 		   i >= ms->blankzoneendvalid[0])
 		{
 			fp0 = fp1 = fp2 = fp3 = zeros;
 			i += 3;
-			nblank++;
+			++nblank;
 		}
 		else
 		{
 			fp0 = lut2bit[buf[i]];
-			i++;
+			++i;
 			fp1 = lut2bit[buf[i]];
-			i++;
+			++i;
 			fp2 = lut2bit[buf[i]];
-			i++;
+			++i;
 			fp3 = lut2bit[buf[i]];
 		}
 		i += df;
@@ -2045,8 +2016,7 @@ static int mark5b_decode_32bitstream_2bit_decimation4(struct mark5_stream *ms,
 
 /************************ 2-bit counters *********************/
 
-static int mark5b_count_2bitstream_2bit_decimation1(struct mark5_stream *ms,
-	int nsamp, unsigned int *highstates)
+static int mark5b_count_2bitstream_2bit_decimation1(struct mark5_stream *ms, int nsamp, unsigned int *highstates)
 {
 	unsigned char *buf;
 	unsigned char *fp;
@@ -2061,7 +2031,7 @@ static int mark5b_count_2bitstream_2bit_decimation1(struct mark5_stream *ms,
 		if(i <  ms->blankzonestartvalid[0] ||
 		   i >= ms->blankzoneendvalid[0])
 		{
-			nblank++;
+			++nblank;
 		}
 		else
 		{
@@ -2071,7 +2041,7 @@ static int mark5b_count_2bitstream_2bit_decimation1(struct mark5_stream *ms,
 			highstates[0] += fp[2];
 			highstates[0] += fp[3];
 		}
-		i++;
+		++i;
 
 		if(i >= MK5B_PAYLOADSIZE)
 		{
@@ -2089,8 +2059,7 @@ static int mark5b_count_2bitstream_2bit_decimation1(struct mark5_stream *ms,
 	return nsamp - 4*nblank;
 }
 
-static int mark5b_count_2bitstream_2bit_decimation2(struct mark5_stream *ms,
-	int nsamp, unsigned int *highstates)
+static int mark5b_count_2bitstream_2bit_decimation2(struct mark5_stream *ms, int nsamp, unsigned int *highstates)
 {
 	unsigned char *buf;
 	unsigned char *fp;
@@ -2105,7 +2074,7 @@ static int mark5b_count_2bitstream_2bit_decimation2(struct mark5_stream *ms,
 		if(i <  ms->blankzonestartvalid[0] ||
 		   i >= ms->blankzoneendvalid[0])
 		{
-			nblank++;
+			++nblank;
 		}
 		else
 		{
@@ -2113,7 +2082,7 @@ static int mark5b_count_2bitstream_2bit_decimation2(struct mark5_stream *ms,
 			highstates[0] += fp[0];
 			highstates[0] += fp[2];
 		}
-		i++;
+		++i;
 
 		if(i >= MK5B_PAYLOADSIZE)
 		{
@@ -2131,8 +2100,7 @@ static int mark5b_count_2bitstream_2bit_decimation2(struct mark5_stream *ms,
 	return nsamp - 4*nblank;
 }
 
-static int mark5b_count_2bitstream_2bit_decimation4(struct mark5_stream *ms,
-	int nsamp, unsigned int *highstates)
+static int mark5b_count_2bitstream_2bit_decimation4(struct mark5_stream *ms, int nsamp, unsigned int *highstates)
 {
 	unsigned char *buf;
 	unsigned char *fp;
@@ -2143,12 +2111,12 @@ static int mark5b_count_2bitstream_2bit_decimation4(struct mark5_stream *ms,
 	i = ms->readposition;
 	df = ms->decimation/4;
 
-	for(o = 0; o < nsamp; o++)
+	for(o = 0; o < nsamp; ++o)
 	{
 		if(i <  ms->blankzonestartvalid[0] ||
 		   i >= ms->blankzoneendvalid[0])
 		{
-			nblank++;
+			++nblank;
 		}
 		else
 		{
@@ -2173,8 +2141,7 @@ static int mark5b_count_2bitstream_2bit_decimation4(struct mark5_stream *ms,
 	return nsamp - 4*nblank;
 }
 
-static int mark5b_count_4bitstream_2bit_decimation1(struct mark5_stream *ms,
-	int nsamp, unsigned int *highstates)
+static int mark5b_count_4bitstream_2bit_decimation1(struct mark5_stream *ms, int nsamp, unsigned int *highstates)
 {
 	unsigned char *buf;
 	unsigned char *fp;
@@ -2189,7 +2156,7 @@ static int mark5b_count_4bitstream_2bit_decimation1(struct mark5_stream *ms,
 		if(i <  ms->blankzonestartvalid[0] ||
 		   i >= ms->blankzoneendvalid[0])
 		{
-			nblank++;
+			++nblank;
 		}
 		else
 		{
@@ -2199,7 +2166,7 @@ static int mark5b_count_4bitstream_2bit_decimation1(struct mark5_stream *ms,
 			highstates[0] += fp[2];
 			highstates[1] += fp[3];
 		}
-		i++;
+		++i;
 
 		if(i >= MK5B_PAYLOADSIZE)
 		{
@@ -2217,8 +2184,7 @@ static int mark5b_count_4bitstream_2bit_decimation1(struct mark5_stream *ms,
 	return nsamp - 2*nblank;
 }
 
-static int mark5b_count_4bitstream_2bit_decimation2(struct mark5_stream *ms,
-	int nsamp, unsigned int *highstates)
+static int mark5b_count_4bitstream_2bit_decimation2(struct mark5_stream *ms, int nsamp, unsigned int *highstates)
 {
 	unsigned char *buf;
 	unsigned char *fp;
@@ -2228,12 +2194,12 @@ static int mark5b_count_4bitstream_2bit_decimation2(struct mark5_stream *ms,
 	buf = ms->payload;
 	i = ms->readposition;
 
-	for(o = 0; o < nsamp; o++)
+	for(o = 0; o < nsamp; ++o)
 	{
 		if(i <  ms->blankzonestartvalid[0] ||
 		   i >= ms->blankzoneendvalid[0])
 		{
-			nblank++;
+			++nblank;
 		}
 		else
 		{
@@ -2241,7 +2207,7 @@ static int mark5b_count_4bitstream_2bit_decimation2(struct mark5_stream *ms,
 			highstates[0] += fp[0];
 			highstates[1] += fp[1];
 		}
-		i++;
+		++i;
 
 		if(i >= MK5B_PAYLOADSIZE)
 		{
@@ -2259,8 +2225,7 @@ static int mark5b_count_4bitstream_2bit_decimation2(struct mark5_stream *ms,
 	return nsamp - 2*nblank;
 }
 
-static int mark5b_count_4bitstream_2bit_decimation4(struct mark5_stream *ms,
-	int nsamp, unsigned int *highstates)
+static int mark5b_count_4bitstream_2bit_decimation4(struct mark5_stream *ms, int nsamp, unsigned int *highstates)
 {
 	unsigned char *buf;
 	unsigned char *fp;
@@ -2271,12 +2236,12 @@ static int mark5b_count_4bitstream_2bit_decimation4(struct mark5_stream *ms,
 	i = ms->readposition;
 	df = ms->decimation/2;
 
-	for(o = 0; o < nsamp; o++)
+	for(o = 0; o < nsamp; ++o)
 	{
 		if(i <  ms->blankzonestartvalid[0] ||
 		   i >= ms->blankzoneendvalid[0])
 		{
-			nblank++;
+			++nblank;
 		}
 		else
 		{
@@ -2302,8 +2267,7 @@ static int mark5b_count_4bitstream_2bit_decimation4(struct mark5_stream *ms,
 	return nsamp - 2*nblank;
 }
 
-static int mark5b_count_8bitstream_2bit_decimation1(struct mark5_stream *ms,
-	int nsamp, unsigned int *highstates)
+static int mark5b_count_8bitstream_2bit_decimation1(struct mark5_stream *ms, int nsamp, unsigned int *highstates)
 {
 	unsigned char *buf;
 	unsigned char *fp;
@@ -2313,12 +2277,12 @@ static int mark5b_count_8bitstream_2bit_decimation1(struct mark5_stream *ms,
 	buf = ms->payload;
 	i = ms->readposition;
 
-	for(o = 0; o < nsamp; o++)
+	for(o = 0; o < nsamp; ++o)
 	{
 		if(i <  ms->blankzonestartvalid[0] ||
 		   i >= ms->blankzoneendvalid[0])
 		{
-			nblank++;
+			++nblank;
 		}
 		else
 		{
@@ -2328,7 +2292,7 @@ static int mark5b_count_8bitstream_2bit_decimation1(struct mark5_stream *ms,
 			highstates[2] += fp[2];
 			highstates[3] += fp[3];
 		}
-		i++;
+		++i;
 
 		if(i >= MK5B_PAYLOADSIZE)
 		{
@@ -2346,8 +2310,7 @@ static int mark5b_count_8bitstream_2bit_decimation1(struct mark5_stream *ms,
 	return nsamp - nblank;
 }
 
-static int mark5b_count_8bitstream_2bit_decimation2(struct mark5_stream *ms,
-	int nsamp, unsigned int *highstates)
+static int mark5b_count_8bitstream_2bit_decimation2(struct mark5_stream *ms, int nsamp, unsigned int *highstates)
 {
 	unsigned char *buf;
 	unsigned char *fp;
@@ -2357,12 +2320,12 @@ static int mark5b_count_8bitstream_2bit_decimation2(struct mark5_stream *ms,
 	buf = ms->payload;
 	i = ms->readposition;
 
-	for(o = 0; o < nsamp; o++)
+	for(o = 0; o < nsamp; ++o)
 	{
 		if(i <  ms->blankzonestartvalid[0] ||
 		   i >= ms->blankzoneendvalid[0])
 		{
-			nblank++;
+			++nblank;
 		}
 		else
 		{
@@ -2390,8 +2353,7 @@ static int mark5b_count_8bitstream_2bit_decimation2(struct mark5_stream *ms,
 	return nsamp - nblank;
 }
 
-static int mark5b_count_8bitstream_2bit_decimation4(struct mark5_stream *ms,
-	int nsamp, unsigned int *highstates)
+static int mark5b_count_8bitstream_2bit_decimation4(struct mark5_stream *ms, int nsamp, unsigned int *highstates)
 {
 	unsigned char *buf;
 	unsigned char *fp;
@@ -2402,12 +2364,12 @@ static int mark5b_count_8bitstream_2bit_decimation4(struct mark5_stream *ms,
 	i = ms->readposition;
 	df = ms->decimation;
 
-	for(o = 0; o < nsamp; o++)
+	for(o = 0; o < nsamp; ++o)
 	{
 		if(i <  ms->blankzonestartvalid[0] ||
 		   i >= ms->blankzoneendvalid[0])
 		{
-			nblank++;
+			++nblank;
 		}
 		else
 		{
@@ -2435,8 +2397,7 @@ static int mark5b_count_8bitstream_2bit_decimation4(struct mark5_stream *ms,
 	return nsamp - nblank;
 }
 
-static int mark5b_count_16bitstream_2bit_decimation1(struct mark5_stream *ms,
-	int nsamp, unsigned int *highstates)
+static int mark5b_count_16bitstream_2bit_decimation1(struct mark5_stream *ms, int nsamp, unsigned int *highstates)
 {
 	unsigned char *buf;
 	unsigned char *fp0, *fp1;
@@ -2446,20 +2407,20 @@ static int mark5b_count_16bitstream_2bit_decimation1(struct mark5_stream *ms,
 	buf = ms->payload;
 	i = ms->readposition;
 
-	for(o = 0; o < nsamp; o++)
+	for(o = 0; o < nsamp; ++o)
 	{
 		if(i <  ms->blankzonestartvalid[0] ||
 		   i >= ms->blankzoneendvalid[0])
 		{
 			i += 2;
-			nblank++;
+			++nblank;
 		}
 		else
 		{
 			fp0 = countlut2bit[buf[i]];
-			i++;
+			++i;
 			fp1 = countlut2bit[buf[i]];
-			i++;
+			++i;
 			highstates[0] += fp0[0];
 			highstates[1] += fp0[1];
 			highstates[2] += fp0[2];
@@ -2486,8 +2447,7 @@ static int mark5b_count_16bitstream_2bit_decimation1(struct mark5_stream *ms,
 	return nsamp - nblank;
 }
 
-static int mark5b_count_16bitstream_2bit_decimation2(struct mark5_stream *ms,
-	int nsamp, unsigned int *highstates)
+static int mark5b_count_16bitstream_2bit_decimation2(struct mark5_stream *ms, int nsamp, unsigned int *highstates)
 {
 	unsigned char *buf;
 	unsigned char *fp0, *fp1;
@@ -2497,18 +2457,18 @@ static int mark5b_count_16bitstream_2bit_decimation2(struct mark5_stream *ms,
 	buf = ms->payload;
 	i = ms->readposition;
 
-	for(o = 0; o < nsamp; o++)
+	for(o = 0; o < nsamp; ++o)
 	{
 		if(i <  ms->blankzonestartvalid[0] ||
 		   i >= ms->blankzoneendvalid[0])
 		{
 			i += 4;
-			nblank++;
+			++nblank;
 		}
 		else
 		{
 			fp0 = countlut2bit[buf[i]];
-			i++;
+			++i;
 			fp1 = countlut2bit[buf[i]];
 			i += 3;
 			highstates[0] += fp0[0];
@@ -2537,8 +2497,7 @@ static int mark5b_count_16bitstream_2bit_decimation2(struct mark5_stream *ms,
 	return nsamp - nblank;
 }
 
-static int mark5b_count_16bitstream_2bit_decimation4(struct mark5_stream *ms,
-	int nsamp, unsigned int *highstates)
+static int mark5b_count_16bitstream_2bit_decimation4(struct mark5_stream *ms, int nsamp, unsigned int *highstates)
 {
 	unsigned char *buf;
 	unsigned char *fp0, *fp1;
@@ -2549,18 +2508,18 @@ static int mark5b_count_16bitstream_2bit_decimation4(struct mark5_stream *ms,
 	i = ms->readposition;
 	df = ms->decimation*2 - 1;
 
-	for(o = 0; o < nsamp; o++)
+	for(o = 0; o < nsamp; ++o)
 	{
 		if(i <  ms->blankzonestartvalid[0] ||
 		   i >= ms->blankzoneendvalid[0])
 		{
-			i++;
-			nblank++;
+			++i;
+			++nblank;
 		}
 		else
 		{
 			fp0 = countlut2bit[buf[i]];
-			i++;
+			++i;
 			fp1 = countlut2bit[buf[i]];
 			highstates[0] += fp0[0];
 			highstates[1] += fp0[1];
@@ -2589,8 +2548,7 @@ static int mark5b_count_16bitstream_2bit_decimation4(struct mark5_stream *ms,
 	return nsamp - nblank;
 }
 
-static int mark5b_count_32bitstream_2bit_decimation1(struct mark5_stream *ms,
-	int nsamp, unsigned int *highstates)
+static int mark5b_count_32bitstream_2bit_decimation1(struct mark5_stream *ms, int nsamp, unsigned int *highstates)
 {
 	unsigned char *buf;
 	unsigned char *fp0, *fp1, *fp2, *fp3;
@@ -2600,24 +2558,24 @@ static int mark5b_count_32bitstream_2bit_decimation1(struct mark5_stream *ms,
 	buf = ms->payload;
 	i = ms->readposition;
 
-	for(o = 0; o < nsamp; o++)
+	for(o = 0; o < nsamp; ++o)
 	{
 		if(i <  ms->blankzonestartvalid[0] ||
 		   i >= ms->blankzoneendvalid[0])
 		{
 			i += 4;
-			nblank++;
+			++nblank;
 		}
 		else
 		{
 			fp0 = countlut2bit[buf[i]];
-			i++;
+			++i;
 			fp1 = countlut2bit[buf[i]];
-			i++;
+			++i;
 			fp2 = countlut2bit[buf[i]];
-			i++;
+			++i;
 			fp3 = countlut2bit[buf[i]];
-			i++;
+			++i;
 			highstates[0] += fp0[0];
 			highstates[1] += fp0[1];
 			highstates[2] += fp0[2];
@@ -2652,8 +2610,7 @@ static int mark5b_count_32bitstream_2bit_decimation1(struct mark5_stream *ms,
 	return nsamp - nblank;
 }
 
-static int mark5b_count_32bitstream_2bit_decimation2(struct mark5_stream *ms,
-	int nsamp, unsigned int *highstates)
+static int mark5b_count_32bitstream_2bit_decimation2(struct mark5_stream *ms, int nsamp, unsigned int *highstates)
 {
 	unsigned char *buf;
 	unsigned char *fp0, *fp1, *fp2, *fp3;
@@ -2663,22 +2620,22 @@ static int mark5b_count_32bitstream_2bit_decimation2(struct mark5_stream *ms,
 	buf = ms->payload;
 	i = ms->readposition;
 
-	for(o = 0; o < nsamp; o++)
+	for(o = 0; o < nsamp; ++o)
 	{
 		if(i <  ms->blankzonestartvalid[0] ||
 		   i >= ms->blankzoneendvalid[0])
 		{
 			i += 8;
-			nblank++;
+			++nblank;
 		}
 		else
 		{
 			fp0 = countlut2bit[buf[i]];
-			i++;
+			++i;
 			fp1 = countlut2bit[buf[i]];
-			i++;
+			++i;
 			fp2 = countlut2bit[buf[i]];
-			i++;
+			++i;
 			fp3 = countlut2bit[buf[i]];
 			i += 5;
 			highstates[0] += fp0[0];
@@ -2715,8 +2672,7 @@ static int mark5b_count_32bitstream_2bit_decimation2(struct mark5_stream *ms,
 	return nsamp - nblank;
 }
 
-static int mark5b_count_32bitstream_2bit_decimation4(struct mark5_stream *ms,
-	int nsamp, unsigned int *highstates)
+static int mark5b_count_32bitstream_2bit_decimation4(struct mark5_stream *ms, int nsamp, unsigned int *highstates)
 {
 	unsigned char *buf;
 	unsigned char *fp0, *fp1, *fp2, *fp3;
@@ -2727,22 +2683,22 @@ static int mark5b_count_32bitstream_2bit_decimation4(struct mark5_stream *ms,
 	i = ms->readposition;
 	df = ms->decimation*4 - 3;
 
-	for(o = 0; o < nsamp; o++)
+	for(o = 0; o < nsamp; ++o)
 	{
 		if(i <  ms->blankzonestartvalid[0] ||
 		   i >= ms->blankzoneendvalid[0])
 		{
 			i += 3;
-			nblank++;
+			++nblank;
 		}
 		else
 		{
 			fp0 = countlut2bit[buf[i]];
-			i++;
+			++i;
 			fp1 = countlut2bit[buf[i]];
-			i++;
+			++i;
 			fp2 = countlut2bit[buf[i]];
-			i++;
+			++i;
 			fp3 = countlut2bit[buf[i]];
 			highstates[0] += fp0[0];
 			highstates[1] += fp0[1];
@@ -2795,8 +2751,7 @@ static int mark5_format_mark5b_init(struct mark5_stream *ms)
 	int mjd1, sec1, ns1;
 	double dns, dns1;
 	int datarate;
-	int bytes;
-	int k, df, framenum;
+	int k, df;
 
 	if(!ms)
 	{
@@ -2824,6 +2779,8 @@ static int mark5_format_mark5b_init(struct mark5_stream *ms)
 
 	if(ms->datawindow)
 	{
+		int bytes;
+
 		if(ms->datawindowsize < ms->framebytes)
 		{
 			return -1;
@@ -2834,8 +2791,7 @@ static int mark5_format_mark5b_init(struct mark5_stream *ms)
 			ms->datawindowsize : (1<<20);
 
 		/* first look for normal Mark5B sync word */
-		ms->frameoffset = findfirstframe(ms->datawindow, bytes,
-			mark5bSync);
+		ms->frameoffset = findfirstframe(ms->datawindow, bytes, mark5bSync);
 
 		if(ms->frameoffset < 0)
 		{
@@ -2850,13 +2806,12 @@ static int mark5_format_mark5b_init(struct mark5_stream *ms)
 
 		if(ms->Mbps > 0)
 		{
-			ms->samprate = ms->framesamples*
-				(1000000000.0/ms->framens);
+			ms->samprate = ms->framesamples*(1000000000.0/ms->framens);
 		}
 		else
 		{
 			k = 8;
-			while((k+2)*ms->framebytes > ms->datawindowsize && k>1)
+			while((k+2)*ms->framebytes > ms->datawindowsize && k > 1)
 			{
 				k /= 2;
 			}
@@ -2913,6 +2868,8 @@ static int mark5_format_mark5b_init(struct mark5_stream *ms)
 	{
 		if(ms->datawindow)
 		{
+			int framenum;
+
 			framenum = mark5_stream_frame_num_mark5b(ms);
 			df = k - framenum % k;
 			if(df != k)
@@ -2959,8 +2916,7 @@ static int one(const struct mark5_stream *ms)
 	return 1;
 }
 
-struct mark5_format_generic *new_mark5_format_mark5b(int Mbps,
-	int nchan, int nbit, int decimation)
+struct mark5_format_generic *new_mark5_format_mark5b(int Mbps, int nchan, int nbit, int decimation)
 {
 	static int first = 1;
 	struct mark5_format_generic *f;
@@ -3045,10 +3001,8 @@ struct mark5_format_generic *new_mark5_format_mark5b(int Mbps,
 		return 0;
 	}
 
-	m = (struct mark5_format_mark5b *)calloc(1, 
-		sizeof(struct mark5_format_mark5b));
-	f = (struct mark5_format_generic *)calloc(1, 
-		sizeof(struct mark5_format_generic));
+	m = (struct mark5_format_mark5b *)calloc(1, sizeof(struct mark5_format_mark5b));
+	f = (struct mark5_format_generic *)calloc(1, sizeof(struct mark5_format_generic));
 
 	m->nbitstream = nbitstream;
 

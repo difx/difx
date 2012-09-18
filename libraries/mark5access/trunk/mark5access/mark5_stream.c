@@ -218,8 +218,7 @@ static int set_stream(struct mark5_stream *ms,
 	return -1;
 }
 
-static int set_format(struct mark5_stream *ms, 
-	const struct mark5_format_generic *f)
+static int set_format(struct mark5_stream *ms, const struct mark5_format_generic *f)
 {
 	if(f && ms)
 	{
@@ -287,8 +286,7 @@ static int mark5_format_init(struct mark5_stream *ms)
 }
 
 /* Compatibility function */
-struct mark5_stream *mark5_stream_open(const char *filename, 
-	int nbit, int fanout, long long offset)
+struct mark5_stream *mark5_stream_open(const char *filename, int nbit, int fanout, long long offset)
 {
 	struct mark5_stream_generic *s;
 	struct mark5_format_generic *f;
@@ -325,8 +323,7 @@ struct mark5_stream *mark5_stream_open(const char *filename,
 	/* VLBA modes */
 	for(ntrack = 8; ntrack <= 64; ntrack*=2)
 	{
-		f = new_mark5_format_vlba(0, ntrack/(nbit*fanout), 
-			nbit, fanout, 1);
+		f = new_mark5_format_vlba(0, ntrack/(nbit*fanout), nbit, fanout, 1);
 		set_format(ms, f);
 		status = mark5_format_init(ms);
 		if(status < 0)
@@ -347,8 +344,7 @@ struct mark5_stream *mark5_stream_open(const char *filename,
 	/* Mark4 modes */
 	for(ntrack = 8; ntrack <= 64; ntrack*=2)
 	{
-		f = new_mark5_format_mark4(0, ntrack/(nbit*fanout), 
-			nbit, fanout, 1);
+		f = new_mark5_format_mark4(0, ntrack/(nbit*fanout), nbit, fanout, 1);
 		set_format(ms, f);
 		status = mark5_format_init(ms);
 		if(status < 0)
