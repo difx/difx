@@ -112,7 +112,7 @@ public:
 class GlobalZoom
 {
 public:
-	GlobalZoom(const string name) { difxName = name; }
+	GlobalZoom(const string &name) : difxName(name) {};
 	int setkv(const string &key, const string &value, ZoomFreq * zoomFreq);
 	int setkv(const string &key, const string &value);
 

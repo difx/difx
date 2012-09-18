@@ -362,10 +362,9 @@ int VexMode::getPols(char *pols) const
 int VexMode::getBits() const
 {
 	static int firstTime = 1;
-	unsigned int nBit = 0;
+	unsigned int nBit = setups.begin()->second.nBit;
 	map<string,VexSetup>::const_iterator it;
 
-	nBit = setups.begin()->second.nBit;
 
 	for(it = setups.begin(); it != setups.end(); ++it)
 	{

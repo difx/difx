@@ -1854,7 +1854,7 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 	return nConfig;
 }
 
-static bool matchingFreq(const ZoomFreq &zoomfreq, const DifxDatastream *dd, int dfreqIndex, const vector<freq> freqs)
+static bool matchingFreq(const ZoomFreq &zoomfreq, const DifxDatastream *dd, int dfreqIndex, const vector<freq> &freqs)
 {
 	const double epsilon = 0.000001;
 	double channeloffset;

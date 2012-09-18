@@ -323,13 +323,13 @@ void setRxNames(std::vector<TsysAverager> &averagers)
 
 static void sanityCheckChannels(const VexSetup &vexSetup)
 {
-	int nRecChan = 0;
+	unsigned int nRecChan = 0;
 	
 	for(std::vector<VexChannel>::const_iterator vc = vexSetup.channels.begin(); vc != vexSetup.channels.end(); ++vc)
 	{
 		if(vc->recordChan >= 0)
 		{
-			nRecChan++;
+			++nRecChan;
 		}
 	}
 	if(nRecChan != vexSetup.nRecordChan)
@@ -540,7 +540,7 @@ int processStation(FILE *out, const VexData &V, const string &stn, const string 
 				scan = V.getScan(scanNum);
 				if(!scan)
 				{
-					printf("Error: scan %d does not exist\n", scanNum);
+					printf("Error: scan %u does not exist\n", scanNum);
 
 					return -1;
 				}
@@ -588,7 +588,7 @@ int processStation(FILE *out, const VexData &V, const string &stn, const string 
 		if(scanTimeRange.contains(lineTimeRange))
 		{
 			// data to consider
-			int n = 0;
+			unsigned int n = 0;
 			double t = lineTimeRange.center();
 			VexInterval origSlot(slotTimeRange);
 			
@@ -598,7 +598,7 @@ int processStation(FILE *out, const VexData &V, const string &stn, const string 
 				{
 					TA.flush();
 					slotTimeRange.shift(slotDeltaT);
-					n++;
+					++n;
 
 					if(n > nSlot)
 					{
