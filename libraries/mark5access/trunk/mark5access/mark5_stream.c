@@ -1292,12 +1292,13 @@ int mark5_stream_decode_complex(struct mark5_stream *ms, int nsamp,
 	float *f;
 	int c, i, r;
 	
+	if(!ms) 
+	{
+		return -1;
+	} 
+
 	if(ms->complex_decode) 
 	{
-		if(!ms) 
-		{
-			return -1;
-		} 
 		if(ms->readposition<0)
 		{
 			return -1 ;

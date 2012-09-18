@@ -1,6 +1,8 @@
 Version 1.4.4
 * Post 2.1 tagging
 * Slightly faster and more relaxed frame finding for VLBA and Mark4 formats
+* Numerous small improvements based on improved cppcheck exposed by Martin
+Ettl
 
 Version 1.4.3
 * Post 2.0.1 tagging

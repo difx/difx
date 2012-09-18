@@ -136,7 +136,7 @@ static int mark5_stream_frame_time_vdif(const struct mark5_stream *ms,
 	int *mjd, int *sec, double *ns)
 {
 	struct mark5_format_vdif *v;
-	unsigned int *headerwords, word0, word1;
+	unsigned int word0, word1;
 	int seconds, days;
 	int refepoch;
 
@@ -160,8 +160,6 @@ static int mark5_stream_frame_time_vdif(const struct mark5_stream *ms,
 	}
 	v = (struct mark5_format_vdif *)(ms->formatdata);
 
-	headerwords = (unsigned int *)(ms->frame);
-
 #ifdef WORDS_BIGENDIAN
 	{
 		unsigned char *headerbytes;
@@ -173,9 +171,13 @@ static int mark5_stream_frame_time_vdif(const struct mark5_stream *ms,
 		word1 = (headerbytes[0] << 24) | (headerbytes[1] << 16) | (headerbytes[2] << 8) | headerbytes[3];
 	}
 #else
-	/* Intel byte order does not */
-	word0 = headerwords[0];
-	word1 = headerwords[1];
+	{
+		unsigned int *headerwords = (unsigned int *)(ms->frame);
+
+		/* Intel byte order does not */
+		word0 = headerwords[0];
+		word1 = headerwords[1];
+	}
 #endif
 
 	seconds = word0 & 0x3FFFFFFF;	/* bits 0 to 29 */
@@ -1832,7 +1834,7 @@ static int vdif_complex_decode_4channel_8bit_decimation1(struct mark5_stream *ms
 	int nsamp, float complex **data)
 {
 	unsigned char *buf;
-	int o, i=0;
+	int o, i;
 	int nblank = 0;
 
 	buf = ms->payload;
@@ -2122,7 +2124,7 @@ static int mark5_format_vdif_make_formatname(struct mark5_stream *ms)
 static int mark5_format_vdif_init(struct mark5_stream *ms)
 {
 	struct mark5_format_vdif *f;
-	unsigned int *headerwords, word2;
+	unsigned int word2;
 	unsigned char *headerbytes, bitspersample;
 	int framensNum, framensDen, dataframelength;
 	double dns;
@@ -2197,15 +2199,17 @@ static int mark5_format_vdif_init(struct mark5_stream *ms)
 		ms->frame = ms->datawindow + ms->frameoffset;
 		ms->payload = ms->frame + ms->payloadoffset;
 
-		headerwords = (unsigned int *)(ms->frame);
-
 #ifdef WORDS_BIGENDIAN
 		/* Motorola byte order requires some fiddling */
 		headerbytes = ms->frame + 8;
 		word2 = (headerbytes[0] << 24) | (headerbytes[1] << 16) | (headerbytes[2] << 8) | headerbytes[3];
 #else
-		/* Intel byte order does not */
-		word2 = headerwords[2];
+		{
+			unsigned int *headerwords = (unsigned int *)(ms->frame);
+
+			/* Intel byte order does not */
+			word2 = headerwords[2];
+		}
 #endif
 		headerbytes = ms->frame;
 		

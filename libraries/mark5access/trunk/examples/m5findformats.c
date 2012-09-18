@@ -68,14 +68,16 @@ int main(int argc, char* argv[])
                                  break;
                              case 1:
                                  snprintf(formatstring, 256, "VLBA1_%d-%d-%d-%d", fanout, rates[rate], channels, bitreso);
+				 break;
                              case 2:
                                  snprintf(formatstring, 256, "Mark5B-%d-%d-%d", rates[rate], channels, bitreso);
                                  if (fanout != 1) continue;
                                  break;
                              default:
                                  snprintf(formatstring, 256, "unknown format=%d", format);
+				 break;
                          }
-                         combinations_tested++;
+                         ++combinations_tested;
                          ms = new_mark5_stream(
                             new_mark5_stream_file(filename, 0),
                             new_mark5_format_generic_from_string(formatstring)

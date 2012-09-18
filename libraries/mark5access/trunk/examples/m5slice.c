@@ -82,14 +82,11 @@ static void usage(const char *pgm)
 }
 
 int main(int argc, char **argv) {
-  int day, month, year, mjdnow, vlbanow, basenow, mjd, millisec, hours, minutes;
-  int status, i, frameoffset, infile, outfile, bufsize;
-  size_t readbytes, offsetbytes, lengthbytes, offsetframes, thisread, nread, nwrote;
+  int frameoffset, infile, outfile, bufsize;
+  size_t readbytes, offsetbytes, thisread, nread, nwrote;
   off_t sook;
-  double thismjd, lastmjd, offset, length, framens;
-  time_t currenttime;
+  double offset, length, framens;
   char msg[512], *buf, *bptr, *outname, *inname, *dotptr;
-  struct tm *tp;
   struct mark5_stream *ms;
 
   outname = NULL;
@@ -147,7 +144,7 @@ int main(int argc, char **argv) {
   if (outname==NULL) {
 
     // File name contained in buffer
-    dotptr = rindex(inname, '.');
+    dotptr = strrchr(inname, '.');
 
     outname = malloc(strlen(inname)+strlen("-slice")+1);
     if (outname==NULL) {
@@ -161,7 +158,7 @@ int main(int argc, char **argv) {
       sprintf(outname, "%s-slice", inname);
     } else {
       *dotptr = 0;
-      dotptr++;
+      ++dotptr;
       sprintf(outname, "%s-slice.%s", inname, dotptr);
     }
   }
@@ -170,6 +167,7 @@ int main(int argc, char **argv) {
   if (outfile == -1) {
     fprintf(stderr, "Error creating output file \"%s\"\n", outname);
     perror(NULL);
+    close(infile);
     return(0);
   }
 

@@ -74,7 +74,7 @@ int usage(const char *pgm)
 	printf("    VLBA1_2-256-8-2\n");
 	printf("    MKIV1_4-128-2-1\n");
 	printf("    Mark5B-512-16-2\n\n");
-	printf("  [<refMJD>]  changes the reference MJD (default is %u)\n\n", DEFAULT_MJD);
+	printf("  [<refMJD>]  changes the reference MJD (default is %d)\n\n", DEFAULT_MJD);
 
 	return 0;
 }

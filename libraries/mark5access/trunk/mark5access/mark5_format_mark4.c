@@ -137,8 +137,6 @@ static void initluts()
  * 32*tracks bits set at offset+2500*tracks bytes
  * 1*tracks bits unset at offset+2499*tracks bytes
  *
- * With up to tol bits not set correctly
- *
  * return offset;
  */
 static int findfirstframe(const unsigned char *data, int bytes, int tracks)
@@ -6797,7 +6795,6 @@ static int mark5_format_mark4_init(struct mark5_stream *ms)
 {
 	struct mark5_format_mark4 *f;
 	int bytes;
-	int tol=5;
 	int mjd1, sec1, ns1;
 	double dns, dns1;
 	int datarate;
