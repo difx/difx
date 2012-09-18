@@ -370,22 +370,16 @@ int checkStreamstor(Mk5Daemon *D, time_t t)
 	if(v < 0 && D->noDriver == 0)
 	{
 		D->noDriver = t;
-		Logger_logData(D->log, 
-			"windrvr6 driver went missing!\n");
-		difxMessageSendDifxAlert(
-			"windrvr6 disappeared!", 
-			DIFX_ALERT_LEVEL_ERROR);
+		Logger_logData(D->log, "windrvr6 driver went missing!\n");
+		difxMessageSendDifxAlert("windrvr6 disappeared!", DIFX_ALERT_LEVEL_ERROR);
 	}
 	else
 	{
 		if(D->noDriver != 0)
 		{
 			D->noDriver = 0;
-			Logger_logData(D->log, 
-				"windrvr6 driver came back!\n");
-			difxMessageSendDifxAlert(
-				"windrvr6 reappeared!", 
-				DIFX_ALERT_LEVEL_WARNING);
+			Logger_logData(D->log, "windrvr6 driver came back!\n");
+			difxMessageSendDifxAlert("windrvr6 reappeared!", DIFX_ALERT_LEVEL_WARNING);
 		}
 	}
 
@@ -400,11 +394,8 @@ int checkStreamstor(Mk5Daemon *D, time_t t)
 		pthread_mutex_lock(&D->processLock);
 		if(D->process == PROCESS_NONE)
 		{
-			Logger_logData(D->log, 
-				"Some process took control of windrvr6\n");
-			difxMessageSendDifxAlert(
-				"Some process took control of windrvr6", 
-				DIFX_ALERT_LEVEL_INFO);
+			Logger_logData(D->log, "Some process took control of windrvr6\n");
+			difxMessageSendDifxAlert("Some process took control of windrvr6", DIFX_ALERT_LEVEL_INFO);
 			D->process = PROCESS_UNKNOWN;
 		}
 		pthread_mutex_unlock(&D->processLock);
@@ -417,11 +408,8 @@ int checkStreamstor(Mk5Daemon *D, time_t t)
 	if(D->idleCount > maxIdle && D->process != PROCESS_NONE && !D->processDone)
 	{
 		pthread_mutex_lock(&D->processLock);
-		Logger_logData(D->log, 
-			"Some process gave back control of windrvr6\n");
-		difxMessageSendDifxAlert(
-			"Some process gave back control of windrvr6", 
-			DIFX_ALERT_LEVEL_INFO);
+		Logger_logData(D->log, "Some process gave back control of windrvr6\n");
+		difxMessageSendDifxAlert("Some process gave back control of windrvr6", DIFX_ALERT_LEVEL_INFO);
 
 #warning FIXME: watch for a timeout here
 

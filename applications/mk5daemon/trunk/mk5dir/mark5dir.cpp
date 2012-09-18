@@ -1459,7 +1459,7 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref,
 						int n = static_cast<int>((mjdref - mf->mjd + 1826)/3652.4);
 						mf->mjd = addDecades(mf->mjd, n);
 					}
-				
+
 					deltaBytes = (scan.start+scan.length-bufferLength+mf->frameoffset) - (scan.start+scan.frameoffset);
 					int deltaFrames = int(mf->ns/mf->framens + 0.5) - scan.framenuminsecond;
 
