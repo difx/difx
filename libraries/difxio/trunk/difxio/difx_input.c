@@ -624,13 +624,9 @@ static int generateAipsIFs(DifxInput *D, int configId)
 		}
 		for(i = 0; i < dc->nIF; ++i)
 		{
-			
-			if(dc->IF[i].freq     == D->freq[fqId].freq &&
-			   dc->IF[i].bw       == D->freq[fqId].bw &&
-			   dc->IF[i].sideband == D->freq[fqId].sideband &&
-			   dc->IF[i].nPol     == dc->nPol &&
-			   dc->IF[i].pol[0]   == dc->pol[0] &&
-			   dc->IF[i].pol[1]   == dc->pol[1])
+			if(D->freq[fqId].bw == dc->IF[i].bw && (
+				(D->freq[fqId].sideband == 'U' && D->freq[fqId].freq == dc->IF[i].freq) ||
+				(D->freq[fqId].sideband == 'L' && D->freq[fqId].freq == dc->IF[i].freq + dc->IF[i].bw) ))
 			{
 				break;
 			}
@@ -642,9 +638,17 @@ static int generateAipsIFs(DifxInput *D, int configId)
 		else
 		{
 			dc->freqId2IF[fqId] = i;
-			dc->IF[i].freq      = D->freq[fqId].freq;
+			/* Be nice to downstream code and make _everything_ USB */
+			if(D->freq[fqId].sideband == 'L')
+			{
+				dc->IF[i].freq = D->freq[fqId].freq - D->freq[fqId].bw;
+			}
+			else
+			{
+				dc->IF[i].freq = D->freq[fqId].freq;
+			}
+			dc->IF[i].sideband  = 'U';
 			dc->IF[i].bw        = D->freq[fqId].bw;
-			dc->IF[i].sideband  = D->freq[fqId].sideband;
 			dc->IF[i].nPol      = dc->nPol;
 			dc->IF[i].pol[0]    = dc->pol[0];
 			dc->IF[i].pol[1]    = dc->pol[1];

@@ -242,9 +242,10 @@ typedef struct
 	int *baselineId;	/* baseline table indicies for this config */
 				/* -1 terminated [bl # < nBaseline] */
 	
+	/* FIXME: Really these don't belong in here.  Someday (DiFX-3?) move these out. */
 	int nIF;		/* number of FITS IFs to create */
 	DifxIF *IF;		/* FITS IF definitions */
-	int fitsFreqId;		/* 0-based number -- uniq FITS IF[] index NOT AN INDEX TO DifxFreq[]! */
+	int fitsFreqId;		/* 0-based number -- unique FITS IF[] index NOT AN INDEX TO DifxFreq[]! */
 	int *freqId2IF;		/* map from freq table [0 to nFreq] index to IF [0 to nIF-1] or -1 */
 				/* a value of -1 indicates this Freq is not used */
 	int *freqIdUsed;	/* Is the Freq table index used by this config? */

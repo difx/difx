@@ -1,5 +1,7 @@
 3.2.0
 * Post DiFX-2.1
+* Now the DifxIF structures are _always_ set to be USB.  This will break
+compatibility with earlier versions of difx2fits and maybe difx2mark4.
 
 3.1.0
 * Rename from 3.0.2 prior to DiFX-2.1

@@ -43,14 +43,14 @@ int writeDifxPolyco(const DifxPolyco *polyco, int appendFile)
 	FILE *out;
 	int c;
 
-	unixtime = (polyco->mjd - unix_mjd0)*86400;
-	gmtime_r(&unixtime, &t);
-	strftime(datetime, MaxTimeLen, "%d-%b-%y  %H%M%S.00", &t);
-
 	if(polyco == 0)
 	{
 		return -1;
 	}
+
+	unixtime = (polyco->mjd - unix_mjd0)*86400;
+	gmtime_r(&unixtime, &t);
+	strftime(datetime, MaxTimeLen, "%d-%b-%y  %H%M%S.00", &t);
 
 	out = fopen(polyco->fileName, appendFile ? "a" : "w");
 	if(!out)
@@ -107,7 +107,7 @@ int writeDifxPulsar(const DifxPulsar *pulsar)
 		{
 			int j;
 
-			for(j = 0; j < pp; j++)
+			for(j = 0; j < pp; ++j)
 			{
 				if(strcmp(polyco->fileName, pulsar->polyco[j].fileName) == 0)
 				{
