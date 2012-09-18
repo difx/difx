@@ -1,5 +1,7 @@
 Version 3.2.0
 * Post DiFX-2.1
+* Fix for correlation of mismatched sidebands.  Requires contemporaneous
+upgrade of difxio.
 
 Version 3.1.0
 * Version renumber from 3.0.2 prior to DiFX-2.1 release

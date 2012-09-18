@@ -556,25 +556,32 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int skipextraautocorrs)
 	else if(sync == VISRECORD_SYNC_WORD_DIFX2) //new style binary header
 	{
 		v = fread(&binHeaderVersion, sizeof(int), 1, dv->in);
-		if(binHeaderVersion == 1) //new style binary header
+		if(v != 1)
 		{
-			/* Note: the following 9 freads have their return value ignored.  The value is captured to prevent warning at compile time. */
-			v = fread(&configBaselineId, sizeof(int), 1, dv->in);
-			v = fread(&intmjd, sizeof(int), 1, dv->in);
+			fprintf(stderr, "Error reading difs output header version\n");
+
+			return HEADER_READ_ERROR;
+		}
+		else if(binHeaderVersion == 1) //new style binary header
+		{
+			const int headerFields = 13;	/* should equal sum of 3rd argument of following freads */
+
+			v  = fread(&configBaselineId, sizeof(int), 1, dv->in);
+			v += fread(&intmjd, sizeof(int), 1, dv->in);
 			mjd = intmjd;
-			v = fread(&iat, sizeof(double), 1, dv->in);
-			iat /= 86400.0;
-			v = fread(&headerConfigIndex, sizeof(int), 1, dv->in);
-			v = fread(&sourceId, sizeof(int), 1, dv->in);
-			v = fread(&freqId, sizeof(int), 1, dv->in);
-			v = fread(polPair, 1, 2, dv->in);
+			v += fread(&iat, sizeof(double), 1, dv->in);
+			iat /= 86400.0;	/* convert seconds to days */
+			v += fread(&headerConfigIndex, sizeof(int), 1, dv->in);
+			v += fread(&sourceId, sizeof(int), 1, dv->in);
+			v += fread(&freqId, sizeof(int), 1, dv->in);
+			v += fread(polPair, 1, 2, dv->in);
 			polPair[2] = 0;
-			v = fread(&bin, sizeof(int), 1, dv->in);
-			v = fread(&weight, sizeof(double), 1, dv->in);
-			v = fread(uvw, sizeof(double), 3, dv->in);
-                        if(v < 3)
+			v += fread(&bin, sizeof(int), 1, dv->in);
+			v += fread(&weight, sizeof(double), 1, dv->in);
+			v += fread(uvw, sizeof(double), 3, dv->in);
+                        if(v != 13)
                         {
-				fprintf(stderr, "Error parsing header: got a return val of %d when reading uvw\n", v);
+				fprintf(stderr, "Error parsing header: %d fields read; %d expected.\n", v, headerFields);
 
 				return HEADER_READ_ERROR;
                         }
@@ -733,11 +740,15 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int skipextraautocorrs)
 			dv->D->source[scan->phsCentreSrcs[dv->phaseCentre]].fitsSourceIds[configId]+1);
 	}
 
-	dv->scanId = scanId;
+	dv->scanId   = scanId;
 	dv->sourceId = scan->phsCentreSrcs[dv->phaseCentre];
-	dv->freqId = config->fitsFreqId;
-	dv->bandId = config->freqId2IF[freqId];
-	dv->polId  = getPolProdId(dv, polPair);
+	dv->freqId   = config->fitsFreqId;
+	dv->bandId   = config->freqId2IF[freqId];
+	dv->polId    = getPolProdId(dv, polPair);
+
+	/* freqId should correspond to the freqId table for the actual sideband produced in the 
+	 * case of mixed-sideband correlation.  Check with Adam that this is true! */
+	dv->sideband = dv->D->freq[freqId].sideband;
 
 	/* stash the weight for later incorporation into a record */
 	dv->recweight = weight;
@@ -1059,7 +1070,7 @@ static int storevis(DifxVis *dv)
 	
 	D = dv->D;
 
-	isLSB = D->config[dv->configId].IF[dv->bandId].sideband == 'L';
+	isLSB = dv->sideband == 'L';
 	startChan = D->startChan;
 	stopChan = startChan + D->nOutChan*D->specAvg;
 

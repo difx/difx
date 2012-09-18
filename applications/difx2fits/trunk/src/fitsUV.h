@@ -87,6 +87,7 @@ typedef struct
 	int phaseCentre;
 	int nRec;			/* number of records read from file */
 	int maxRec;			/* maximum number of records to read from file */
+	char sideband;			/* sideband, as correlated */
 } DifxVis;
 
 DifxVis *newDifxVis(const DifxInput *D, int jobId, int pulsarBin, int phaseCentre, double scaleFactor);
