@@ -156,7 +156,7 @@ int main(int argc, char **argv)
   wtd.filename     = argv[2];
   wtd.udpframesize = -1;
   pthread_cond_init(&(wtd.writeinitcond), NULL);
-  for(i=0;i<NUMSEGMENTS;i++) {
+  for(i=0;i<NUMSEGMENTS;++i) {
     wtd.receivebuffers[i] = (char*)malloc(BUFFERSEGBYTES);
     pthread_mutex_init(&(wtd.locks[i]), NULL);
   }
@@ -206,8 +206,12 @@ int main(int argc, char **argv)
     fprintf(stderr, "Cannot create UDP socket to read VDIF packets!\n");
     exit(EXIT_FAILURE);
   }
-  status = setsockopt(serversock, SOL_SOCKET, SO_RCVBUF,
-                      (char *) &udpbufbytes, sizeof(udpbufbytes));
+  status = setsockopt(serversock, SOL_SOCKET, SO_RCVBUF, (char *) &udpbufbytes, sizeof(udpbufbytes));
+  if (status!=0) {
+    fprintf(stderr, "Cannot setsocket SO_RCVBUF socket\n");
+    close(serversock);
+    exit(EXIT_FAILURE);
+  } 
   status = bind(serversock, (struct sockaddr *)&server, sizeof(server));
   if (status!=0) {
     fprintf(stderr, "Cannot bind UDP socket\n");
@@ -272,8 +276,8 @@ int main(int argc, char **argv)
       memmove(wtd.receivebuffers[wtd.fillsegment] + wtd.udpframesize*currentframes, 
               wtd.receivebuffers[wtd.fillsegment] + wtd.udpframesize*currentframes + skipbytesfront,
               wtd.udpframesize - skipbytesfront - skipbytesback);
-    currentframes++;
-    framesread++;
+    ++currentframes;
+    ++framesread;
     if(currentframes == wtd.framespersegment) {
       perr = pthread_mutex_lock(&(wtd.locks[(wtd.fillsegment+1)%NUMSEGMENTS]));
       if(perr != 0) {

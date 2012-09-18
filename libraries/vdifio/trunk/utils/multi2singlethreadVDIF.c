@@ -61,7 +61,7 @@ int validData(int ** bufferframefull, int bufferframe, int numthreads, int verbo
   if(verbose) {
     printf("Looking at bufferframe %d\n", bufferframe);
   }
-  for(i = 0;i < numthreads; i++) {
+  for(i = 0;i < numthreads; ++i) {
     if(!bufferframefull[i][bufferframe])
       return 0;
   }
@@ -85,7 +85,7 @@ void readdata(int inputframebytes, char * inputbuffer, FILE * input, int numbuff
   }
 
   //distribute packets
-  for(i=0;i<inputframecount;i++) {
+  for(i=0;i<inputframecount;++i) {
     header = (vdif_header*)inputbuffer+i*inputframebytes;
     framethread = getVDIFThreadID(header);
     framebytes = getVDIFFrameBytes(header);
@@ -98,7 +98,7 @@ void readdata(int inputframebytes, char * inputbuffer, FILE * input, int numbuff
     }
     //check that this thread is wanted
     threadindex = -1;
-    for(j=0;j<numthreads;j++) {
+    for(j=0;j<numthreads;++j) {
       if(threadindexmap[j] == framethread) {
         threadindex = j;
         break;
@@ -189,7 +189,7 @@ int main(int argc, char **argv)
 
   inputthreadmbps = atoi(argv[4]);
   threadindexmap = (int *) malloc(numthreads * sizeof(int));
-  for(i=0;i<numthreads;i++)
+  for(i=0;i<numthreads;++i)
     threadindexmap[i] = atoi(argv[5+i]);
 
   input = fopen(argv[1], "r");
@@ -264,10 +264,10 @@ int main(int argc, char **argv)
   //threadlastbufferindex = (int *) malloc(numthreads * sizeof(int));
   //currentthreadwriteframe = (long long *) malloc(numthreads * sizeof(long long));
   //currentthreadreadframe = (long long *) malloc(numthreads * sizeof(long long));
-  for(i=0;i<numthreads;i++) {
+  for(i=0;i<numthreads;++i) {
     threadbuffers[i] = malloc(inputframebytes*numthreadbufframes);
     bufferframefull[i] = malloc(numthreadbufframes*sizeof(int));
-    for(j=0;j<numthreadbufframes;j++) {
+    for(j=0;j<numthreadbufframes;++j) {
       bufferframefull[i][j] = 0;
     }
   }
@@ -275,7 +275,7 @@ int main(int argc, char **argv)
   //initialise the read buffer, do some checking
   outputframecount = 0;
   processframenumber = 0;
-  for(i=0;i<threadbufmultiplier*numthreads/2;i++) {
+  for(i=0;i<threadbufmultiplier*numthreads/2;++i) {
     if(!feof(input))
       readdata(inputframebytes, inputbuffer, input, numbufferframes, numthreadbufframes, framespersecond, threadindexmap, threadbuffers, bufferframefull, processframenumber, numthreads, refframemjd, refframesecond, refframenumber, verbose);
   }
@@ -291,7 +291,7 @@ int main(int argc, char **argv)
     }
 
     //loop over the equivalent amount of data we just read in
-    for(f=0;f<numbufferframes/numthreads;f++) {
+    for(f=0;f<numbufferframes/numthreads;++f) {
       //rearrange one frame
       processindex = processframenumber % numthreadbufframes;
       if(validData(bufferframefull, processindex, numthreads, verbose)) {
@@ -305,14 +305,14 @@ int main(int argc, char **argv)
 	
         //loop over all the samples and copy them in
         copyword = 0;
-        for(i=0;i<wordsperinputframe;i++) {
-          for(j=0;j<numthreads;j++)
+        for(i=0;i<wordsperinputframe;++i) {
+          for(j=0;j<numthreads;++j)
             threadwords[j] = *(unsigned int *)(&(threadbuffers[j][processindex*inputframebytes + VDIF_HEADER_BYTES + i*4]));
-          for(j=0;j<numthreads;j++) {
+          for(j=0;j<numthreads;++j) {
             outputword = (unsigned int *)&(outputbuffer[outputframecount*outputframebytes + VDIF_HEADER_BYTES + (i*numthreads + j)*4]);
             copyword = 0;
-            for(k=0;k<samplesperoutputword;k++) {
-              for(l=0;l<numthreads;l++) {
+            for(k=0;k<samplesperoutputword;++k) {
+              for(l=0;l<numthreads;++l) {
                 copyword |= ((threadwords[l] >> ((j*samplesperoutputword + k)*bitspersample)) & (activemask)) << (k*numthreads + l)*bitspersample;
               }
             }
@@ -321,14 +321,14 @@ int main(int argc, char **argv)
         }
 
         //clear the data we just used
-        for(i=0;i<numthreads;i++)
+        for(i=0;i<numthreads;++i)
           bufferframefull[i][processframenumber % numthreadbufframes] = 0;
-        outputframecount++;
+        ++outputframecount;
       }
       else{
         fprintf(stderr, "Not all threads had valid data for frame %lld\n", processframenumber);
       }  
-      processframenumber++;
+      ++processframenumber;
 
       //if output buffer is full, dump it to output file
       if(outputframecount == numbufferframes/numthreads) {
@@ -354,6 +354,10 @@ int main(int argc, char **argv)
   free(outputbuffer);
   free(threadwords);
   free(threadindexmap);
+  for(i=0;i<numthreads;++i) {
+    free(threadbuffers[i]);
+  }
+  free(threadbuffers);
 
   return EXIT_SUCCESS;
 }

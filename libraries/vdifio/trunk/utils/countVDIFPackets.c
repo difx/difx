@@ -52,7 +52,9 @@ int main(int argc, char **argv)
   char buffer[MAX_VDIF_FRAME_BYTES];
   FILE * input;
   int readbytes, framebytes, framemjd, framesecond, framenumber, datambps, framespersecond, targetThreadId;
-  int nextmjd, nextsecond, nextnumber, refmjd, refsecond, refnumber;
+  int nextmjd, nextsecond, nextnumber;
+//  Following not seemingly used...  -WFB
+//  int refmjd, refsecond, refnumber;
   long long framesread, framesmissed;
   vdif_header *header;
 
@@ -74,10 +76,16 @@ int main(int argc, char **argv)
   }
 
   readbytes = fread(buffer, 1, VDIF_HEADER_BYTES, input); //read the VDIF header
+  if(readbytes < VDIF_HEADER_BYTES) {
+    fprintf(stderr, "Header read failed: even first frame came up short.\n");
+    fclose(input);
+    exit(EXIT_FAILURE);
+  }
   header = (vdif_header*)buffer;
   framebytes = getVDIFFrameBytes(header);
   if(framebytes > MAX_VDIF_FRAME_BYTES) {
     fprintf(stderr, "Cannot read frame with %d bytes > max (%d)\n", framebytes, MAX_VDIF_FRAME_BYTES);
+    fclose(input);
     exit(EXIT_FAILURE);
   }
   framespersecond = (int)((((long long)datambps)*1000000)/(8*(framebytes-VDIF_HEADER_BYTES)));
@@ -96,9 +104,10 @@ int main(int argc, char **argv)
   }
   
   header = (vdif_header*)buffer;
-  refmjd = getVDIFFrameMJD(header);
-  refsecond = getVDIFFrameSecond(header);
-  refnumber = getVDIFFrameNumber(header);
+// Following not seemingly used... -WFB
+//  refmjd = getVDIFFrameMJD(header);
+//  refsecond = getVDIFFrameSecond(header);
+//  refnumber = getVDIFFrameNumber(header);
   nextmjd = getVDIFFrameMJD(header);
   nextsecond = getVDIFFrameSecond(header);
   nextnumber = getVDIFFrameNumber(header);
