@@ -1757,6 +1757,7 @@ bool Configuration::populateResultLengths()
       threadfindex = 0;
       if(configs[c].padomain == FREQUENCY)
       {
+      // WFB: from cppcheck, this {} block is the same as ...
         for(int f=0;f<freqtablelength;f++)
         {
           threadfindex += configs[c].numpafreqpols[f]*freqtable[f].numchannels;
@@ -1765,6 +1766,7 @@ bool Configuration::populateResultLengths()
       }
       else
       {
+      // WFB: ... this one!
         for(int f=0;f<freqtablelength;f++)
         {
           threadfindex += configs[c].numpafreqpols[f]*freqtable[f].numchannels;
@@ -2654,6 +2656,7 @@ bool Configuration::processPulsarConfig(string filename, int configindex)
   if(configs[configindex].numpolycos == 0) {
     if(mpiid == 0) //only write one copy of this error message
       cfatal << startl << "No polycos were parsed from the binconfig file " << filename << " - aborting!!!" << endl;
+    delete [] numsubpolycos;
     return false;
   }
   getinputline(&pulsarinput, &line, "NUM PULSAR BINS");

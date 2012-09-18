@@ -154,8 +154,6 @@ int SwitchedPower::flush()
 					double dfOn, dfOff;
 					double sigmaPowerOn, sigmaPowerOff;
 
-					sigmaPowerOn = sigmaPowerOff = 0.0;	// FIXME
-
 					fOn = highOn[i]/nOn[i];
 					fOff = highOff[i]/nOff[i];
 

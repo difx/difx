@@ -39,6 +39,7 @@ Core::Core(int id, Configuration * conf, int * dids, MPI_Comm rcomm)
   maxcoreresultlength = config->getMaxCoreResultLength();
   numprocessthreads = config->getCNumProcessThreads(mpiid - numdatastreams - fxcorr::FIRSTTELESCOPEID);
   currentconfigindex = 0;
+  numreceived = 0;
   startmjd = config->getStartMJD();
   startseconds = config->getStartSeconds();
 
