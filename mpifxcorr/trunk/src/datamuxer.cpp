@@ -68,7 +68,7 @@ VDIFMuxer::VDIFMuxer(const Configuration * conf, int dsindex, int id, int nthrea
   outputframebytes = (inputframebytes-VDIF_HEADER_BYTES)*numthreads + VDIF_HEADER_BYTES;
   processframenumber = 0;
   numthreadbufframes = readframes * DEMUX_BUFFER_FACTOR / numthreads;
-  activemask = (1<<bitspersample - 1);
+  activemask = (1<<bitspersample) - 1;
   threadindexmap = new int[numthreads];
   bufferframefull = new bool*[numthreads];
   threadwords = new unsigned int[numthreads];

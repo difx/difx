@@ -43,6 +43,7 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 
 int NativeMk5DataStream::readonedemux(bool isfirst, int buffersegment)
 {
+	return -1;
 }
 
 int NativeMk5DataStream::calculateControlParams(int scan, int offsetsec, int offsetns)
