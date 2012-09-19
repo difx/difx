@@ -1,0 +1,460 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+  <head>
+    <meta content="text/html; charset=ISO-8859-1"
+      http-equiv="Content-Type">
+    <title>Queue Browser</title>
+    <link type="text/css" rel="stylesheet" href="style.css">
+  </head>
+  <body>
+    <h1>Experiment Editor<br>
+    </h1>
+    The Experiment Editor allows you to create a new DiFX experiment (or
+    "session"), optionally containing a pass and/or a list of
+    jobs.&nbsp; It also allows an existing experiment to be edited and
+    new passes and job sets to be created.&nbsp; All directory
+    structures and files associated with the experiment are created on
+    the DiFX host, as well as in the DiFX database (if it is being
+    used), and the experiment, pass(es), and job(s) are listed on the
+    Queue Browser on the GUI from where DiFX can be run.<br>
+    <br>
+    As a user you control the specifics of a DiFX job using two files -
+    the ".vex" file, which describes your observations, and the ".v2d"
+    file, which (loosely) describes how you wish DiFX to process those
+    observations (these definitions with apologies to the DiFX creators
+    who defined these files and can certainly better - and perhaps
+    differently - describe what they do).&nbsp; The Experiment Editor
+    needs to be provided with a .vex file - one was presumably made
+    available with your observations.&nbsp; Almost all of what the
+    Experiment Editor does involves creating a detailed .v2d file.&nbsp;
+    The .v2d file is then used by the <span style="font-style: italic;">vex2difx</span>
+    application to produce a ".input" file - which in turn can be used
+    to run DiFX.&nbsp; There are associated files and directory
+    structures that are created as well, and some other details are seen
+    to, but the point to take away is that until you hit the "Apply"
+    button on the Experiment Editor you are using it to define a .v2d
+    file.<br>
+    <br>
+    Alternatively, specified as an outline, the steps to creating a new
+    DiFX experiment with the Experiment Editor involve:<br>
+    <ol>
+      <li>Specify where your experiment will go and what it will be
+        called</li>
+      <li>Get a .vex file</li>
+      <li>Detail all of the stuff that goes into the .v2d file</li>
+      <li>Hit "Apply" to generate the specified directory and dump the
+        .vex and .v2d file in it<br>
+      </li>
+    </ol>
+    <br>
+    The Experiment Editor is launched either to create a new experiment
+    (by picking "New" from the Queue Browser) in which case its title is
+    "Create New Experiment", or to edit an existing experiment (by
+    right-clicking on the experiment name in the Queue Browser and
+    choosing "Edit Properties") in which case its title is "Edit
+    Experiment Properties".&nbsp; While the controls are identical,
+    applying changes to an existing experiment has slightly different
+    effects than those applied to a new experiment, as described below.<br>
+    <h3>Some General Information</h3>
+    <p>The Experiment Editor controls are organized in a browser form,
+      with a small number of "top level" panels that can be opened or
+      closed based on whether you are interested in them or not (some of
+      these panels also contain browser structures).&nbsp; To open or
+      close a panel, click on the "title" bar at the top of the
+      panel.&nbsp; If you open many panels the Editor can easily expand
+      in size beyond the window limits, in which case the scroll bar on
+      the right may be used to navigate up and down (the mouse wheel
+      tries to do the same thing, as well as dragging the screen up and
+      down with the mouse, although sometimes the panels trap these
+      events for other purposes - the scroll bar will <span
+        style="font-style: italic;">always</span> work).&nbsp; The
+      "Identification Data" panel at the top of the Editor and the
+      "Apply/Cancel" panel at the bottom are "permanent" - they cannot
+      be closed.<br>
+    </p>
+    <p><img style=" width: 1201px; height: 458px;" alt=""
+        src="images/experimentEditor/exp.png"><br>
+    </p>
+    <p>Many of the settings in the Experiment Editor are "remembered" if
+      you run it a subsequent time (and even between sessions of running
+      the GUI).&nbsp; This is done to ease repetitive tasks, making the
+      assumption that any time you run the Experiment Editor, a very
+      good guess for the way you wish to run it is somewhat similar to
+      the way you last ran it.&nbsp; For the most part this should save
+      you time, however it bears watching here and there.&nbsp; If you
+      change a setting that you never touch and don't even fully
+      understand the consequences of just for fun, it may very well <span
+        style="font-style: italic;">stay</span> changed until you
+      actively undo it.</p>
+    <p>Nothing happens to the DiFX host, the database, or your
+      experiments until you hit the "Apply" button, so don't worry about
+      playing with the controls (bearing in mind the caveat in the
+      previous paragraph).&nbsp; You can always "Cancel" and start again
+      if you get in a position you can't figure out how to back out of.<br>
+    </p>
+    <h3>Identification Data<br>
+    </h3>
+    <p>The experiment name, ID, directory, and some other items are used
+      to uniquely identify an experiment and to access it in the
+      database.&nbsp; Some of these items are not changed after the
+      experiment is created, others can be but generally aren't, and
+      some are meant to be changed.&nbsp; They are contained in the top
+      section of Experiment Editor.<br>
+    </p>
+    <p><span style="font-weight: bold;">Name</span><br>
+      This is the name of the experiment which appears in the Queue
+      Browser.&nbsp; When an experiment is initially created, a default
+      name will be generated - a combination of the word "Experiment"
+      and the Database ID number.&nbsp; It can be changed to reflect
+      something that better describes the experiment to the user.&nbsp;
+      Due to restrictions imposed by the database, a 20 character limit
+      is placed on the name length.&nbsp; Changes to the name are
+      propagated to the "Directory" and ".vex File" parameters, unless
+      those items have been previously changed (you have to hit return
+      to make changes do this).<br>
+    </p>
+    <p><span style="font-weight: bold;">Number</span><br>
+      The number is contained in the database, and I'm not sure what it
+      is.&nbsp; I'll get back to you on this one.&nbsp; This is <span
+        style="font-style: italic;">not</span> the database ID.<br>
+    </p>
+    <p><span style="font-weight: bold;">Status</span><br>
+      The status describes the current state of the experiment<span
+        style="font-style: italic;"></span>.&nbsp; No doubt this will be
+      used by the GUI in the future, but for the moment it is simply
+      something the user can set for their own tracking purposes.&nbsp;
+      If the database is being used the options permitted by the
+      database are given for status.&nbsp; If no database is being used
+      the status currently doesn't work and can't be changed, but
+      ultimately a way of allowing the user to specify their own status
+      strings will be implemented.<br>
+    </p>
+    <p><span style="font-weight: bold;">In Database</span><br>
+      This check box will determine whether the experiment is put in the
+      database (for experiments that are already created, it will
+      indicate whether they exist in the database).&nbsp; If the
+      database is not being used, this item should remain
+      unchecked.&nbsp; An experiment that was not, for whatever reason,
+      originally created with this item checked can later be put in the
+      database by checking it.<br>
+    </p>
+    <p><span style="font-weight: bold;">Database ID</span><br>
+      This is the unique ID generated by the database to track the
+      experiment.&nbsp; When an experiment is initially created, a
+      "guess" for this number is generated (usually it is a pretty good
+      guess).&nbsp; Later if the experiment is edited the number will
+      accurately reflect the ID used by the database.&nbsp; If the
+      database is not being used, the original guess is retained.&nbsp;
+      This number cannot be changed by the user.<br>
+    </p>
+    <p><span style="font-weight: bold;">Created</span><br>
+      This field contains the creation time and date for the
+      experiment.&nbsp; When a new experiment is created, the field will
+      show the local time of the GUI host at the moment the Experiment
+      Editor was opened.&nbsp; Once the experiment is put in the
+      database, this time will change (hopefully not much) to reflect
+      the actual creation time on the database host.&nbsp; This is not a
+      user-settable item.<br>
+    </p>
+    <p><span style="font-weight: bold;">Working Directory</span><br>
+      This is the "working directory" on the DiFX host under which all
+      files and sub-directories associated with an experiment
+      reside.&nbsp; It should be an absolute (not relative) path name -
+      starting with a "/".&nbsp; When an experiment is created, this
+      directory is created on the DiFX host (if necessary).&nbsp; If
+      this parameter is later changed, it will cause the directory to be
+      moved on the DiFX host.&nbsp; For either of these operations to
+      occur, the DiFX user must have write permission to do them on the
+      DiFX host.<br>
+    </p>
+    <p><span style="font-weight: bold;">.vex File</span><br>
+      This is the name of the <span style="font-family: monospace;">.vex</span>
+      file that will be stored (if creating a new experiment) or is
+      already stored (if editing an experiment) under the working
+      directory.&nbsp; A session of the Experiment Editor may work with
+      only one <span style="font-family: monospace;">.vex</span> file
+      at a time, however any number of <span style="font-family:
+        monospace;">.vex</span> files may be associated with an
+      experiment.&nbsp; The data stored in the <span
+        style="font-family: monospace;">.vex</span> file is obtained
+      using the "Get .vex File Content" as described in the next
+      section.<br>
+    </p>
+    <p>If you already have a <span style="font-family: monospace;">.vex</span>
+      file associated with an experiment and wish to create a new one,
+      enter a new name in this field and obtain new content using "Get
+      .vex File Content".&nbsp; If you have several <span
+        style="font-family: monospace;">.vex</span> files associated
+      with an experiment and wish to use a previous one, the <span
+        style="font-weight: bold;">Previous Files</span> button can be
+      used to load it.<br>
+    </p>
+    <h3>Getting <span style="font-family: monospace;">.vex</span> File
+      Content</h3>
+    <p>An experiment is associated with at least one <span
+        style="font-family: monospace;">.vex</span> file - in most cases
+      only one (although more can be added).&nbsp; The <span
+        style="font-family: monospace;">.vex</span> file contains a
+      complete description of an observing session, including times,
+      frequencies, antennas used, sources observed, and scans collected
+      (as well as other things).&nbsp; The GUI uses the <span
+        style="font-family: monospace;">.vex</span> file to provide the
+      user with the options that may be applied to tailor DiFX
+      processing of the observations.<br>
+    </p>
+    <p>If you are creating a new experiment, you need a <span
+        style="font-family: monospace;">.vex</span> file before you can
+      go anywhere.&nbsp; Any set of observations should have an
+      associated <span style="font-family: monospace;">.vex</span> file
+      supplied with them (or provide some way of producing a
+      file).&nbsp; The "Get .vex File Content" of the Experiment Editor
+      provides you with a number of ways of obtaining <span
+        style="font-family: monospace;">.vex</span> file data,
+      including:<br>
+    </p>
+    <ol>
+      <li>Grabbing a file from a location on the DiFX Host.</li>
+      <li>Obtaining a file via HTTP.</li>
+      <li>Obtaining a file via FTP.<br>
+      </li>
+      <li>Using a file on the GUI Host.<br>
+      </li>
+      <li>Copying a file used in another experiment.</li>
+    </ol>
+    Note that when you pick a .vex file in this interface (when you hit
+    "Go"), you are getting the <span style="font-style: italic;">content</span>
+    of the source you specify - the source itself is <span
+      style="font-style: italic;">not</span> used for your
+    experiment.&nbsp; The content is stored in the file location
+    specified in the <span style="font-weight: bold;">.vex File</span>
+    field in the Identification Data section (see above) when the
+    "Apply" button is hit.<br>
+    <h3><span style="font-family: monospace;">.vex</span> File Editor</h3>
+    <p>The .vex File Editor panel provides a view of the .vex file
+      content - the text that is written to the .vex file on the DiFX
+      host (and that ultimately governs how DiFX will be run).&nbsp; The
+      panel was created to support GUI development, and may be removed
+      in the future.<br>
+    </p>
+    <p>The "Alternate Editor" button doesn't do anything.<br>
+    </p>
+    <p>The content can be edited (the panel is a rudimentary editor with
+      cut, copy and paste capabilities), bearing in mind that <span
+        style="font-style: italic;">no effort is made to check edits for
+        sanity</span>.&nbsp; Any changes are propagated verbatim to the
+      <span style="font-family: monospace;">.vex</span> file stored on
+      the DiFX host, which is then used to produce <span
+        style="font-family: monospace;">.input</span> files that are
+      read by DiFX when it runs.&nbsp; Typographic or logic errors in
+      the <span style="font-family: monospace;">.vex</span> content can
+      produce any number of obscure and opaque errors.&nbsp; Don't mess
+      around with the <span style="font-family: monospace;">.vex</span>
+      file content unless you are confident you know what you are doing!<br>
+    </p>
+    <h3>Correlation Parameters</h3>
+    <p>The Correlation Parameters section is something of a catch-all
+      for items that don't fit neatly in any other sections.&nbsp; Most
+      of these parameters end up in the "Setup" section of the .v2d
+      file.<br>
+    </p>
+    <h6 style="margin-left: 40px;">Spectral Resolution/Channels<br>
+    </h6>
+    <p style="margin-left: 40px;">This is the spectral resolution of the
+      visibilities produced by the correlation (in MHz).&nbsp; This
+      should be the bandwidth divided by the number of channels.&nbsp;
+      The "Channels" setting can be used to change the spectral
+      resolution, although the reverse is not true.&nbsp; The reason for
+      this is that the channels setting is limited to factors of 2 in
+      the DiFX documentation, while the spectral resolution has no such
+      limitations.&nbsp; Whether or not this makes any sense is another
+      matter.<br>
+    </p>
+    <p> </p>
+    <h3>Stations</h3>
+    <h3>Sources</h3>
+    <h3>Scan Selection</h3>
+    <h3>EOP Data</h3>
+    <p><img style=" width: 830px; height: 310px;" alt=""
+        src="images/experimentEditor/eop.png"><br>
+    </p>
+    Earth Orientation Parameter (EOP) data are necessary for a
+    correlation process to run (they are required by <span
+      style="font-style: italic;">calcif2</span>).&nbsp; The Experiment
+    Editor provides EOP data, when available, from two different
+    sources:<br>
+    <ol>
+      <li>The <span style="font-family: monospace;">.vex</span> file
+        may contain EOP data.&nbsp; Often these data are a "projection"
+        into the future, as they are produced when observations occur
+        (and before actual EOP measurements are made).&nbsp; They are
+        usually reasonably accurate.</li>
+      <li>EOP data is obtained from a URL, as specified in the Settings
+        menu.&nbsp; If the URL is set up correctly, and the connection
+        to the internet is good, these data should always be
+        available.&nbsp; They will be at least as accurate as the
+        "projected" data that may already exist in the <span
+          style="font-family: monospace;">.vex</span> file, and in fact
+        may represent actual measurements and thus be better (they most
+        likely will never be worse).&nbsp; The GUI updates these data
+        when it is started and roughly every hour thereafter.</li>
+    </ol>
+    Of the two sources, the updated EOP data are probably preferred (the
+    Experiment Editor will pick them when available).<br>
+    <h3>Names, Etc.</h3>
+    <p>The Names section can be used to change the way <span
+        style="font-style: italic;">vex2difx</span> will name input
+      files (each "job" has its own input file).&nbsp; By default, the <span
+        style="font-style: italic;">vex2difx</span> naming scheme is to
+      use the "base" name of the vex file (e.g. "<span
+        style="font-family: Courier New,Courier,monospace;">foo</span>"
+      for the file "<span style="font-family: Courier
+        New,Courier,monospace;">foo.vex</span>") with an appended
+      integer followed by "<span style="font-family: Courier
+        New,Courier,monospace;">.input</span>".&nbsp; For the first
+      input file created the appended integer will be 1; the integer
+      will increment for subsequent input files.&nbsp; For instance, if
+      the "<span style="font-family: Courier New,Courier,monospace;">foo.vex</span>"
+      file is used to create three jobs, their input files will be
+      called "<span style="font-family: Courier New,Courier,monospace;">foo_1.input</span>",
+      "<span style="font-family: Courier New,Courier,monospace;">foo_2.input</span>",
+      and "<span style="font-family: Courier New,Courier,monospace;">foo_3.input</span>".<br>
+    </p>
+    <p>If for some reason you don't like the default scheme, the Names
+      section can give you some control over the names of the files that
+      will be created.<br>
+    </p>
+    <h3>.v2d File</h3>
+    <p>The .v2d file is the "configuration" file used by <span
+        style="font-style: italic;">vex2difx</span> to implement user
+      adjustments when using the .vex file content to create one or more
+      .input files.&nbsp; Most of the controls in the Experiment Editor
+      are used to make changes to this file.<br>
+    </p>
+    <p>The .v2d File section shows the content the .v2d file that will
+      be created in your working directory (when you hit "Apply").&nbsp;
+      This content is continually updated as you make changes to other
+      controls.&nbsp; If you feel confident you know what you are doing
+      you can edit the content by hand, however any changes you make to
+      other controls (any of those <span style="font-style: italic;">above</span>
+      the .v2d file section in the GUI that is) will cause the .v2d
+      content to be recreated and will erase your changes.&nbsp; If you
+      need to change something by hand, do it last.<br>
+    </p>
+    <h3>Applying Your Changes</h3>
+    <h5><span style="font-weight: bold;">Creating a New Pass (or not!)</span></h5>
+    <h5><span style="font-weight: bold;">Combine Scans in One Job</span></h5>
+    <p> The GUI can create jobs out of the specified scans in one of two
+      ways, either as a series of individual scans with one job per
+      scan, or a single job containing all scans.&nbsp; Those who know <span
+        style="font-style: italic;">vex2difx</span> well will recognize
+      this as a slight change from what it does.&nbsp; <span
+        style="font-style: italic;">Vex2difx</span> can be set to create
+      single-scan jobs, but otherwise it arranges scans in one or more
+      jobs based on the "maxGap" parameter - breaking into new jobs only
+      when the gap between two correlations exceeds this value.&nbsp; In
+      fact, the GUI essentially cheats by setting the "maxGap" parameter
+      to something huge so scans are never broken into more than one
+      job.<br>
+    </p>
+    <h3>Status Bar<br>
+    </h3>
+    <h3>What is the GUI Doing?</h3>
+    <p>When you hit the "Apply" button, the GUI "creates" jobs on the
+      DiFX Host that can then be run.&nbsp; But what exactly is going
+      on?&nbsp; Following is a step-by-step description of the
+      operations performed.<br>
+    </p>
+    <h6 style="margin-left: 40px;">EOP Data</h6>
+    <p style="margin-left: 40px;">Your choice of source (either <span
+        style="font-family: monospace;">.vex</span> file or external
+      URL) and the availability of EOP data will cause a number of
+      things to happen.&nbsp; The following is a list of actions taken
+      by the GUI based on what it can do, and what it is told to do
+      (note that the GUI will not allow you to choose a source for which
+      data are unavailable):<br>
+    </p>
+    <ul>
+      <ul>
+        <li><span style="font-weight: bold;">You choose the <span
+              style="font-family: monospace;">.vex</span> file as the
+            EOP source:</span> No EOP data will be installed in the <span
+            style="font-family: monospace;">.v2d</span> file, and the <span
+            style="font-family: monospace;">.vex</span> file will be
+          copied to the DiFX host as is, with its EOP data intact.</li>
+        <li><span style="font-weight: bold;">EOP data are available <span
+              style="font-style: italic;">ONLY</span> from the .vex
+            file:</span> Same as above.</li>
+        <li><span style="font-weight: bold;">You choose the&nbsp;
+            external URL as the EOP source:</span> The EOP data in the <span
+            style="font-family: monospace;">.vex</span> file is edited
+          out before the file is copied to the DiFX host (this is the
+          only instance where any changes are made to <span
+            style="font-family: monospace;">.vex</span> files, but this
+          action is necessary because combining EOP data from multiple
+          sources is messy and dangerous).&nbsp; The EOP data from the
+          external URL are put into the <span style="font-family:
+            monospace;">.v2d</span> file.</li>
+        <li><span style="font-weight: bold;">EOP data are available <span
+              style="font-style: italic;">ONLY</span> from the external
+            URL:</span> The <span style="font-family: monospace;">.vex</span>
+          file is copied unchanged.&nbsp; The EOP data from the external
+          URL are put into the <span style="font-family: monospace;">.v2d</span>
+          file.<br>
+        </li>
+        <li><span style="font-weight: bold;">No EOP data available from
+            either <span style="font-family: monospace;">.vex</span> or
+            external URL:</span>&nbsp; Because a correlation won't run
+          without EOP data, this is a "fail" condition.&nbsp; An error
+          pop-up will be produced and no further "apply" actions will be
+          taken.</li>
+      </ul>
+    </ul>
+    <h3>Be Yourself</h3>
+    <p>Running DiFX correlation jobs is a complex process, and to some
+      degree it may seem that the GUI "steers" users toward a particular
+      way of doing things.&nbsp; However it is recognized that the DiFX
+      user community is diverse and experimental, and some effort has
+      been put into allowing flexibility in how the GUI is used to
+      create and run jobs.&nbsp; A few examples are given below.&nbsp;
+      If you find the GUI forcing you to do things you don't want to do,
+      or even preventing you from using it to do your DiFX work, please
+      tell us so we can accommodate you.&nbsp; It is likely that if you
+      have a complaint, others share it.<br>
+    </p>
+    <p> </p>
+    <h5 style="margin-left: 40px;">Ignoring the Database<br>
+    </h5>
+    <p style="margin-left: 40px;">The database is useful for tracking
+      large numbers of experiments and jobs, which is quite important
+      for installations that do &nbsp;&nbsp;&nbsp; many
+      regularly-scheduled correlations for large numbers of users.&nbsp;
+      However it does require installation and maintenance (of the
+      database itself and of the underlying MySQL software) and if you
+      use DiFX strictly for your own work you may not wish to bother
+      with it.<br>
+    </p>
+    <p style="margin-left: 40px;">In short, the DiFX GUI works fine
+      without using the database at all - it can create and run DiFX
+      experiments.&nbsp; The database is used to track large numbers of
+      past experiments and/or allow some users to create experiments and
+      other users to see them and run them - essentially it is used to
+      communicate the details of experiments between different sessions
+      of the GUI (it has other purposes of course - we are speaking here
+      in the context of the GUI).&nbsp; If you do not use the database
+      each session of the GUI will be operating as an island, blind to
+      what other sessions are doing or have done.&nbsp; If you shut down
+      the GUI and restart it, you will lose all information about
+      experiments you have created and run (except what you remember
+      yourself - the experiment data are all still there).&nbsp; You
+      will not see experiments created by others (although you should
+      see them if they are running).&nbsp; If none of this matters to
+      you, the database may not be worth the bother.<br>
+    </p>
+    <h5 style="margin-left: 40px;">Skipping the Experiment/Pass/Job
+      Structure<span style="font-weight: bold;"></span></h5>
+    <h5 style="margin-left: 40px;"><span style="font-weight: bold;">Using
+        Multiple .vex Files in an Experiment</span></h5>
+    <h5 style="margin-left: 40px;">Creating Passes Using Existing Data</h5>
+    <p></p>
+  </body>
+</html>

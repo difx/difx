@@ -1,0 +1,117 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+  <head>
+    <meta http-equiv="content-type" content="text/html;
+      charset=ISO-8859-1">
+    <link type="text/css" rel="stylesheet" href="style.css">
+    <title></title>
+  </head>
+  <body>
+    <h2>DiFX GUI and the Database<br>
+    </h2>
+    The DiFX GUI is designed to interact smoothly with the database
+    scheme developed at Bonn.&nbsp; The database resides on a designated
+    server in the DiFX network, where it tracks experiments, passes,
+    jobs, and modules, including all vital data and file
+    locations.&nbsp; The GUI can read these items from the database,
+    augment and update them as they change, and be set to automatically
+    monitor them for changes from other sources.<br>
+    <br>
+    <span style="font-style: italic; font-weight: bold;">You don't have
+      to use the database if you don't want to!</span>&nbsp; While many
+    installations employing DiFX and the GUI, particularly those where
+    many correlation jobs are performed by many different users, may
+    find the database useful, for some the setup and maintenance of the
+    database may not be worth the bother.&nbsp; The GUI can be set to
+    ignore the database completely - it will operate perfectly fine (or
+    as well as it ever does) without it.<br>
+    <h3>Database Controls in the Settings Menu</h3>
+    <p><img style=" width: 1200px; height: 420px;" alt=""
+        src="images/database/configmenu.png"><br>
+    </p>
+    <h3>The Database Host</h3>
+    <h3>Database Tables</h3>
+    <h3>Database Versions</h3>
+    <p>The database maintains its own version numbering system as
+      changes are made to its structure (not its content - that is <span
+        style="font-style: italic;">supposed</span> to change).&nbsp; It
+      is probable that one version of the database will not work
+      particularly well, or at all, with a GUI that is designed to work
+      with a different version. &nbsp; GUI development will attempt to
+      keep up with the most recent database version, however it will not
+      lock you to the most recent version - it will try to remain
+      backwardly compatible with older ones (time will tell how well
+      this works).&nbsp; In this way, an upgrade to the GUI will not
+      require you to change your database (an action that might cause
+      havoc with your data if the database changes are dramatic).&nbsp;
+      The reverse will, unfortunately, not be true - an upgrade of your
+      database will require a current version of the GUI.&nbsp; There is
+      no way to see the future.<br>
+    </p>
+    <p>The GUI is currently compatible with database version 1.1.&nbsp;
+      At the moment, there is no version it is backwardly compatible
+      with.&nbsp; The database version comes from the "VersionHistory"
+      table.&nbsp; The GUI reports it in the "Version" field of the
+      "Database Configuration" section in the Settings Menu (see
+      illustration above).<br>
+    </p>
+    <h3>Automatic Updates</h3>
+    <p>In addition to the GUI, it is possible that other applications
+      may make changes to the database (the DiFX source tree contains a
+      number of Python scripts that have been developed to do so).&nbsp;
+      It is also possible to change the database directly from the
+      command line on the database host.&nbsp; To accommodate possible
+      external changes, the GUI can be set to automatically consult the
+      database periodically and refresh its displays and lists to
+      reflect any changes.&nbsp; <br>
+    </p>
+    <p>Because consulting the database and changing the GUI to reflect
+      its content is a time consuming (and possibly intrusive) process,
+      it is recommended that you only turn on automatic updates if you
+      expect changes to the database from another source.&nbsp; If you
+      are the only party using the database, automatic updates serve no
+      purpose.<br>
+    </p>
+    <h3>With-Database vs. Without-Database Operational Differences<br>
+    </h3>
+    For the most part, the GUI will appear to work the same both with
+    and without using the database.&nbsp; However there are some
+    inevitable differences, which are outlined here:<br>
+    <ol>
+      <li><span style="font-weight: bold;">Existing Experiments
+          Accessibility On Startup</span><br>
+        If you run the GUI with a connection to the database it display
+        information about other experiments that have previously been
+        created and/or run on the same DiFX host.&nbsp; Jobs in these
+        experiments can be edited, deleted, and rerun exactly as if you
+        had created them.&nbsp; Without the database you have none of
+        this.&nbsp; A GUI session will know only about the experiments
+        it created - each time it is run it will start with a clean
+        slate.&nbsp; Previous experiments will still linger in the form
+        of directories and data files on the DiFX host (the proper term
+        for this might be "litter"), but any further manipulation of
+        them will have to be done by hand.<br>
+      </li>
+      <li><span style="font-weight: bold;">Real-time Monitoring of
+          Changes to Database and Queue Items (Automatic Updates)</span><br>
+        The GUI isn't the only game in town when it comes to queueing or
+        running jobs, or making changes to the database.&nbsp; However,
+        it can be set up to monitor the database for changes, so that as
+        long as other parties keep the database up to date these changes
+        will be reflected on the GUI.&nbsp; Without the database, the
+        GUI will be blind to these changes.</li>
+      <li><span style="font-weight: bold;">Status/Type Lists</span><br>
+        The GUI maintains a number of lists used to categorize items,
+        including Experiment Status, Job Status, and Pass Type.&nbsp;
+        The items in these lists (i.e. all of the "types" in the "Pass
+        Type" list) are maintained in the database when it is
+        connected.&nbsp; Users can add new types or statuses and these
+        are added to the database (and will appear from then on).&nbsp;
+        If there is no database the GUI must maintain its own
+        lists.&nbsp; These can be added to as well, and they will be
+        remembered between GUI sessions, but they will be completely
+        independent lists.&nbsp; <br>
+      </li>
+    </ol>
+  </body>
+</html>

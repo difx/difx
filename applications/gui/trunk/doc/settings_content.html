@@ -1,0 +1,557 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+  <head>
+    <meta content="text/html; charset=ISO-8859-1"
+      http-equiv="Content-Type">
+    <title>Settings Window</title>
+    <link type="text/css" rel="stylesheet" href="style.css">
+  </head>
+  <body>
+    <h1>DiFX GUI System Settings Window</h1>
+    The DiFX GUI System Settings window contains all user-editable
+    parameters that control the configuration and appearance of the GUI,
+    as well as its communication with the core DiFX software.&nbsp; The
+    System Settings are organized in a browse-able hierarchy of
+    "sub-topics" that can be opened and closed as needed.&nbsp;
+    Sub-topics include:<br>
+    <ul>
+      <li>Settings File</li>
+      <li><a href="#DiFX_Control_Connection">DiFX Control Connection</a><br>
+      </li>
+      <li><a href="#Broadcast_Network">DiFX Mulitcast Messages</a></li>
+      <li><a href="#Database_Configuration">Database Configuration</a></li>
+      <li>Documentation Locations</li>
+    </ul>
+    <h2><a name="DiFX_Control_Connection"></a>DiFX Control Connection</h2>
+    <p>The DiFX Control Connection settings determine how the GUI
+      communicates with and controls DiFX.&nbsp; In normal operation the
+      GUI makes a TCP connection with the <span style="font-style:
+        italic;">guiServer</span> process running on the DiFX "head
+      node" (sometimes called the "DiFX host" in this
+      documentation).&nbsp; To complicate matters however, there are
+      actually three ways the GUI and DiFX can interact:<br>
+    </p>
+    <ol>
+      <li>The connection between the GUI and <span style="font-style:
+          italic;">guiServer</span> is used for all controls and data
+        exchanges.&nbsp; DiFX multicast message traffic is collected by
+        <span style="font-style: italic;">guiServer</span> and relayed
+        over the TCP socket to the GUI (for more information about
+        message traffic, see the <a href="#Broadcast_Network">DiFX
+          Multicast Messages</a> section below).&nbsp; This
+        configuration is used when the GUI is running outside the LAN on
+        which the multicast messages can be received directly.</li>
+      <li>The connection between the GUI and <span style="font-style:
+          italic;">guiServer</span> is used for controls and all data
+        from <span style="font-style: italic;">guiServer</span> itself,
+        however DiFX multicast messages are received directly using a
+        UDP socket.&nbsp; For multicast messaging to work, the GUI must
+        be running on the multicast LAN.</li>
+      <li>No connection is made to guiServer.&nbsp; DiFX multicast
+        messages are received directly using a UDP socket.&nbsp; The GUI
+        can also issue commands directly to DiFX using its own multicast
+        messages, however the command set available is limited and in
+        the long run this capability will not be supported.<br>
+      </li>
+    </ol>
+    <div style="text-align: center;"><img style=" width: 902px; height:
+        243px;" alt="" src="images/settings/DifxControlConnection.png"><br>
+    </div>
+    The DiFX Control Connection setting determine how commands are sent
+    to DiFX.&nbsp; Processing and data nodes should all be running <span
+      style="font-style: italic;">mk5daemon</span> to send and receive
+    XML messages (if the "Broadcast Monitor" light next to a node in the
+    Hardware Monitor window is blinking green occasionally, then <span
+      style="font-style: italic;">mk5daemon</span> is running on that
+    node).&nbsp; Control commands that start, stop, and otherwise
+    manipulate jobs are sent to the <span style="font-style: italic;">mk5daemon</span>
+    running on one particular node (usually this is the "head node", but
+    this is not a requirement).<br>
+    <h4>Host</h4>
+    This is the hostname of the node which is to receive DiFX control
+    commands (job start, stop, etc).&nbsp; This node must be running <span
+      style="font-style: italic;">mk5daemon</span>, obviously, for this
+    to work.&nbsp; In addition, the "root" user on this node must be
+    able to "ssh" to the DiFX user (see below) on each processing and
+    data source node without typing a password or RSA key.&nbsp; If you
+    are having trouble with RSA (we did), try the following.&nbsp; As
+    "root" on the DiFX host, make sure you have an RSA key (in the file
+    <span style="font-family: monospace;">.ssh/id_rsa.pub</span> in
+    root's home directory).&nbsp; If you don't, create one with the
+    following command (answer any questions by hitting "return"):<br>
+    <pre>	ssh-keygen -t rsa</pre>
+    You will have to log out and log back in for the new key to be
+    active, or type:<br>
+    <pre>	ssh-add</pre>
+    Then type this for <span style="font-weight: bold;">every node</span>
+    you are using, including the DiFX host itself.&nbsp; You should use
+    complete addresses for machine names, not aliases (it is not
+    entirely clear that this is a problem, but we had some issues with
+    it):<br>
+    <pre>	ssh-copy-id user@node<br></pre>
+    For instance, if your DiFX user is "difx", your DiFX host is "king"
+    and your other processing nodes and mark 5's are "pawn1", "pawn2",
+    "mark5-1" and "mark5-2" you would need to do the following (as root
+    on "king"):<br>
+    <pre>	ssh-copy-id difx@king<br>	ssh-copy-id difx@pawn1<br>	ssh-copy-id difx@pawn2<br>	ssh-copy-id difx@mark5-1<br>	ssh-copy-id difx@mark5-2<br></pre>
+    These commands must be run as "root" on the DiFX host node.&nbsp; It
+    is important that you log in as root (i.e. not ssh!) because you
+    want to guarantee that it is the root key that is being
+    copied.&nbsp; Log completely out of the machine and log in as
+    root!&nbsp; Trust us on this!<br>
+    <br>
+    To test whether this has worked, you should be able to "ssh" to your
+    DiFX user on all nodes from root on the DiFX host node without
+    entering a password or key.&nbsp; If you can't do this, things are
+    not set up right and jobs will not run.<br>
+    <br>
+    These changes should survive reboots, as well as RSA key stuff ever
+    does.<br>
+    <h4>Port</h4>
+    This is the broadcast port for control communications.&nbsp;
+    Normally it is the same as the Port setting under Broadcast Network
+    (default is currently 50200).<br>
+    <h4>User<br>
+    </h4>
+    This is the DiFX user - the owner of all DiFX-related data files and
+    directories.&nbsp; Normally this user is "difx" but this is not a
+    requirement.<br>
+    <h4>Password</h4>
+    The password for the DiFX user.<br>
+    <h4>DiFX Version</h4>
+    The DiFX Version is passed to <span style="font-style: italic;">mk5daemon</span>
+    when running a correlator job.&nbsp; It should match the version of
+    DiFX being run on the head node.&nbsp; <span style="font-style:
+      italic;">Don't worry too much about this field - currently it does
+      nothing!</span><br>
+    <h4>DiFX Path</h4>
+    <p>The DiFX Path field allows you to set the path <span
+        style="font-style: italic;">mk5daemon</span> will follow when
+      running DiFX executables (specifically <span style="font-style:
+        italic;">vex2difx </span>and <span style="font-style: italic;">mpirun</span>)
+      - it points to the top level of your DiFX software tree on your
+      DiFX host (e.g. "<span style="font-family: monospace;">/usr/local/difx</span>"
+      or something similar).&nbsp; Using this field you can easily
+      switch your processing between different versions of DiFX
+      software, if, for instance, you want to test an upgrade of the
+      software.&nbsp; For normal operation you can leave this field
+      blank, in which case <span style="font-style: italic;">mk5daemon</span>
+      will use the environment variable <span style="font-family:
+        monospace;">DIFX_PREFIX</span> to determine the path.<br>
+    </p>
+    <h2><a name="Broadcast_Network"></a>DiFX Multicast Messages<br>
+    </h2>
+    DiFX processes use UDP multicast messages to communicate with one
+    another and periodically broadcast their status and the state of
+    running jobs - information the user interface displays.&nbsp; This
+    same system can be used by the user interface <span
+      style="font-style: italic;"></span>to communicate with <span
+      style="font-style: italic;">mk5daemon</span> and control the
+    software correlator.&nbsp; <br>
+    <h4>Relay Using guiServer Connection<br>
+    </h4>
+    Being based on UDP, the multicasts will only work within a local
+    area network.&nbsp; However, if you are connecting to the <span
+      style="font-style: italic;">guiServer</span> to control DiFX you
+    can elect this option to "relay" all multicast messages through the
+    TCP connection between the user interface and <span
+      style="font-style: italic;">guiServer</span>.&nbsp; All messages
+    on the DiFX subnet are collected by <span style="font-style:
+      italic;">guiServer</span> and retransmitted to the user interface
+    where they are parsed and displayed exactly as if the user interface
+    were on the subnet.&nbsp; This option is only available if the DiFX
+    Control Connection is set to "guiServer" (see above).<br>
+    <h4>Group Address</h4>
+    This address is used to identify the UDP multicast "group" that <span
+      style="font-style: italic;">mk5daemon</span> is using.&nbsp; It
+    should match the DIFX_MESSAGE_GROUP environment variable setting
+    used when starting <span style="font-style: italic;">mk5daemon</span>
+    on all processing and data source nodes (run <span
+      style="font-style: italic;">mk5daemon</span> with the "-h" option
+    for details).&nbsp; At the moment the default value for this
+    environment variable, and thus the setting you should probably use
+    here, is "224.2.2.1".<br>
+    <h4>Port</h4>
+    The port is used for UDP multicasts.&nbsp; This should match the
+    value of the DIFX_MESSAGE_PORT environment variable in place when <span
+      style="font-style: italic;">mk5daemon</span> was started.&nbsp; At
+    the moment the default value for the environment variable, and thus
+    this field, is 50200.<br>
+    <h4>Buffer Size</h4>
+    This is the maximum size of a broadcast message, in bytes.&nbsp;
+    Probably this shouldn't be fiddled with too much - making it too
+    small will cause UDP messages to be incompletely read.&nbsp; It is a
+    block of memory that must be allocated for each incoming message, so
+    it shouldn't be huge either.&nbsp; <br>
+    <h4>Timeout (ms)</h4>
+    The timeout is the number of milliseconds that the system will wait
+    for an incoming broadcast message.&nbsp; It can be set to 0, which
+    means "wait forever", although this might be unhealthy (killing the
+    thread that reads messages will become difficult).&nbsp; Otherwise
+    it does little more than govern the update rate of the Packet
+    Traffic Plot (see below).<br>
+    <h4>Packet Traffic Plot</h4>
+    The Packet Traffic Plot shows all received UDP messages as they are
+    read in real time.&nbsp; If you are receiving messages (i.e. all of
+    the above settings are set properly) this should have a heartbeat
+    appearance - there should be occasional spikes as messages come in
+    (the height of the spikes is the size of messages relative to the
+    Buffer Size).&nbsp; If, on the other hand, you get a "flat line",
+    your settings are wrong, or <span style="font-style: italic;">mk5daemon</span>
+    isn't running anywhere visible on the local area network.<br>
+    <br>
+    Below is a "healthy" Packet Traffic Plot showing a series of UDP
+    messages over time:<br>
+    <img style=" width: 302px; height: 124px;" alt=""
+      src="images/settings/good_packet_traffic_plot.gif"><br>
+    <br>
+    <h4>Suppress "Unknown Message" Warnings</h4>
+    <p>This check box was put in place to avoid annoying error messages
+      during development and is largely obsolete.&nbsp; It will probably
+      be removed in the near future.<br>
+    </p>
+    <h4>Identify Mark5 Unit Names by Pattern</h4>
+    <p>This check box and text field cause the GUI (primarily in the
+      Hardware Monitor Window) to determine whether multicast messages
+      are from Mark 5 Modules or Processor Nodes based on machine
+      names.&nbsp; If the box is checked the machine name of the source
+      of each message is compared to a list of comma-separated "regular
+      expressions" contained in the text field.&nbsp; If it matches any
+      one of them, the message is assumed to be from a Mark 5 unit and
+      is sorted accordingly.<br>
+    </p>
+    <p>Regular expressions are extremely useful for pattern matching,
+      but if you haven't used them before they can be less than 100%
+      intuitive.&nbsp; There are many online resources that explain them
+      in excruciating detail.&nbsp; The default value for patterns
+      "mark5.*" matches the NRAO practice (duplicated at USNO) of naming
+      all Mark 5 machines such that they start with the five characters
+      "mark5", as in "mark5-101.foo.edu".<br>
+      <br>
+    </p>
+    <ul>
+    </ul>
+    <h2><a name="Database_Configuration"></a>Database Configuration</h2>
+    Database trouble?&nbsp; See <a
+      href="#Testing_the_Database_Configuration"><span
+        style="font-style: italic;">Trouble-shooting the Database
+        Configuration</span></a>.<br>
+    <br>
+    The Database Configuration settings control the access the GUI has
+    to the DiFX database.&nbsp; The DiFX database contains settings and
+    status for experiments, passes, and jobs that appear in the Queue
+    Browser window.&nbsp; The GUI remotely accesses the database using a
+    network connection (the database can also be consulted on the
+    command line by running a client program either remotely or on the
+    DiFX database host).&nbsp; The following fields govern the GUI's
+    remote access to the database:<br>
+    <h4>Use Data Base</h4>
+    This checkbox determines whether the GUI is using the database at
+    all.&nbsp; If checked, changes to experiments, passes, and jobs in
+    the Queue Browser will be reflected in the database, and items in
+    the database will appear in the Queue Browser.&nbsp; If not,
+    experiments, passes, and jobs will only appear in the Queue Browser
+    if they are created by the same instance of the GUI - any
+    information about them will be lost if the GUI is shut down and
+    restarted.&nbsp; Beyond this capability, the database is not
+    required - the GUI will still be able to run DiFX without it.<br>
+    <h4>Version</h4>
+    <p>The version field is not currently in use, but may be used in the
+      future to coordinate the GUI with changes that may be made to the
+      database structure.&nbsp; It is set to the most recent version of
+      the database that the GUI can properly parse (at the moment this
+      is the <span style="font-style: italic;">only</span> version is
+      can parse).&nbsp; Changing it will have no effect.<br>
+    </p>
+    <h4>Host</h4>
+    The database Host is the hostname of the host that contains the DiFX
+    database.&nbsp; The named host should be accessible through normal
+    network connections, and the hostname itself must be recognized by
+    the name lookup scheme on the GUI machine.&nbsp; The <a
+      href="#Database_Ping_Test">ping test</a> can be used to test the
+    hostname.<br>
+    <h4>User</h4>
+    The user is the username for the DiFX database.&nbsp; This is the
+    name you would use when running the a database command line client
+    on the DiFX host as in the following example (using a mySQL client):<br>
+    <pre>mysql -u USER<br></pre>
+    It does not necessarily match the username you may use to log into
+    the DiFX host.&nbsp; The database must be set up to recognize this
+    user, <span style="font-style: italic;">including access to the
+      database from the host where the DiFX GUI is running</span>.&nbsp;
+    See <a href="#Database_Remote_Access">Problems with Database Remote
+      Access</a> in the trouble-shooting section for details.<br>
+    <h4>Port</h4>
+    The JDBC Port is the port over which remote communication with the
+    database occurs.&nbsp; The default port for most mySQL installations
+    is 3306, so that is probably what you should be setting yours to (if
+    you are using the mySQL database management system).&nbsp; Consult
+    the <code>/etc/services</code> file on the database host to find
+    out which port is being used.<br>
+    <h4>Password</h4>
+    This is the password for the username in the database.&nbsp; This is
+    the password you would use when prompted by the database command
+    line client on the database host.&nbsp; This password is set by the
+    database administrator or by the user through the database
+    client.&nbsp; It is not necessarily the same password you would use
+    to log into the database host.<br>
+    <span style="font-weight: bold;"><span style="font-weight: bold;"></span></span>
+    <h4>DifX Database</h4>
+    The DifX Database is the name of the database.&nbsp; At the time of
+    this writing the rest of the DiFX software (difxqueue, etc) uses the
+    database named "difxdb", so that is the default value for this
+    field.&nbsp; Unless you feel you know better, it probably shouldn't
+    be changed.&nbsp; <br>
+    <h4>Management System</h4>
+    <p>The database management system is the "application" used to
+      administer and access the DiFX database for your location, such as
+      mySQL, Postgresql, etc. (this is sometimes called the database
+      "vendor").&nbsp; The management system is set up by your database
+      administrator when the DiFX database is initialized (this is all
+      done using a management system-specific "schema", as described in
+      the database documentation).&nbsp; Management systems known to
+      function with the GUI include mySQL and Postgresql.&nbsp; If you
+      change the management system you will also have to change the
+      driver - see the table below for drivers that are known to work
+      with each management system.<br>
+    </p>
+    <h4>Driver</h4>
+    This is the "driver" used by Java to give the GUI access to the
+    database.&nbsp; The driver is specific to the database management
+    system, and must be something Java has access to.&nbsp; The GUI is
+    delivered with drivers appropriate for a couple of popular (and
+    free) management systems, as outlined in the table below.<br>
+    <meta http-equiv="content-type" content="text/html;
+      charset=ISO-8859-1">
+    <br>
+    <table style="text-align: left; width: 814px; height: 91px;"
+      border="1" cellpadding="2" cellspacing="2">
+      <tbody>
+        <tr>
+          <td style="vertical-align: top;"><span style="font-weight:
+              bold;">Management System</span><br>
+          </td>
+          <td style="vertical-align: top;"><span style="font-weight:
+              bold;">Driver</span><br>
+          </td>
+        </tr>
+        <tr>
+          <td style="vertical-align: top;">mySQL<br>
+          </td>
+          <td style="vertical-align: top;">com.mysql.jdbc.Driver<br>
+          </td>
+        </tr>
+        <tr>
+          <td style="vertical-align: top;">Postgresql<br>
+          </td>
+          <td style="vertical-align: top;">org.postgresql.Driver<br>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <br>
+    If your database installation uses a different management system,
+    you may wish to petition the GUI development group to include it.<br>
+    <h4>Periodic Update <br>
+    </h4>
+    This check box tells the Queue Browser to automatically check the
+    database for changes after a given time interval, which you can
+    set.&nbsp; The usefulness of automatic checking is dependent on
+    whether or not other users might be changing the database while you
+    are running the GUI.&nbsp; If your GUI instance is the only source
+    of database changes it is essentially pointless as all changes you
+    make will be recognized anyway.&nbsp; If, on the other hand, other
+    users are making changes, the automatic update will make them appear
+    in real time (or reasonably close to it if you make your interval
+    short).
+    <h2><a name="Testing_the_Database_Configuration"></a>Trouble-shooting
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      the Database Configuration</h2>
+    A number of things can go wrong when trying to access the DiFX
+    database remotely.&nbsp; The Database Configuration panel contains a
+    few tests that can be used to troubleshoot the database connection.<br>
+    <h3><a name="Database_Ping_Test"></a>Ping Test</h3>
+    The Ping Test is run by hitting the "Ping Host" button.&nbsp; It can
+    be used to establish two things:<br>
+    <ol>
+      <li>Can the name for the DiFX host be resolved - i.e. does the
+        host name make any sense?</li>
+      <li>Is the host reachable with the current network configuration -
+        i.e. is it out there?</li>
+    </ol>
+    The Ping Test performs attempts six "pings" of the named host,
+    reporting the results in the results panel.&nbsp; A successful ping
+    test will return statistics for each of the pings along with an
+    overall statistical summary:<br>
+    <br>
+    <img style=" width: 476px; height: 196px;" alt=""
+      src="images/settings/good_ping_test.gif"><br>
+    <br>
+    Ping Test failures will produce alarming red text in the results
+    panel.&nbsp; The reported failure should give you an idea what is
+    wrong.&nbsp; For instance, the following indicates that the given
+    hostname cannot be resolved, either by your local host table or by
+    your name server:<br>
+    <br>
+    <img style=" width: 456px; height: 191px;" alt=""
+      src="images/settings/bad_hostname_ping_test.gif"><br>
+    <br>
+    The following screen would indicate a bad network connection at the
+    GUI machine:<br>
+    <br>
+    <img style=" width: 465px; height: 189px;" alt=""
+      src="images/settings/bad_network_ping_test.gif"><br>
+    <br>
+    Finally, the name may be resolved and the network may be good but
+    the named host may not answer either because it is down or it is not
+    properly connected to the network:<br>
+    <br>
+    <img style=" width: 501px; height: 186px;" alt=""
+      src="images/settings/lost_host_ping_test.gif"><br>
+    <br>
+    <h3>Database Connection Test</h3>
+    The Database Connection Test makes a comprehensive test of the
+    current database settings by trying to access the DiFX job queue and
+    getting a list of all jobs out of it (this is exactly what the Queue
+    Browser does to access the queue data).&nbsp; It is run using the
+    "Test Database" button.&nbsp; When run, the test forms a URL out of
+    host name and port number (this URL is reported in parenthesis in
+    the results panel), then attempts to create a connection using the
+    URL, the user, and the password.&nbsp; If this is successful, the
+    DiFX database is consulted to obtain a list of all queued
+    jobs.&nbsp; The Database Connection Test reports the number of jobs
+    in the queue and exits.<br>
+    <br>
+    <img style=" width: 646px; height: 188px;" alt=""
+      src="images/settings/good_database_test.gif"><br>
+    <h3><a name="Database_Remote_Access"></a>Problems with Database
+      Remote Access</h3>
+    The following is a list of some of the errors that might be produced
+    by the Database Connection Test and what can be done about
+    them.&nbsp; Note that these errors may also be reported in the
+    Message Window as the GUI tries to access the DiFX queue in the
+    database.<br>
+    <code></code> <code></code><code></code><code><br>
+      <br>
+      <br>
+    </code>
+    <div style="margin-left: 40px; font-weight: bold;">
+      <h6><code>SQLException: Communications link failure The last
+          packet sent successfully to the server was 0 milliseconds ago.
+          The driver has not received any packets from the server.</code></h6>
+    </div>
+    <div style="margin-left: 40px;"><br>
+    </div>
+    This error indicates that the connection to the remote mySQL
+    database failed.&nbsp; Check that the DiFX host exits and in on the
+    network (using the <a href="#Database_Ping_Test">Ping Test</a>).&nbsp;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    Then remote log into that host and see if the mySQL server is
+    runing:<br>
+    <ul style="margin-left: 40px;">
+    </ul>
+    <pre style="margin-left: 40px;">ps -ef | grep mysql
+</pre>
+    Both <span style="font-style: italic;">mysql_safe</span> and <span
+      style="font-style: italic;">mysqld</span> should be running.&nbsp;
+    The latter is the mySQL server, the former is used to start it
+    when/if it shuts down.&nbsp; In a proper installation of mySQL these
+    programs should be running automatically after boot up.&nbsp; If
+    they ARE running, see if a mySQL client can be run (the path may be
+    different):<span style="font-family: monospace;"><br>
+    </span>
+    <div style="margin-left: 40px;">
+      <pre><span style="font-family: monospace;"></span>/usr/bin/mysql</pre>
+    </div>
+    If it cannot be run, this may indicate an incorrect or incomplete
+    mySQL installation.<br>
+    <br>
+    <br>
+    <div style="margin-left: 40px; font-weight: bold;">
+      <h6><code>SQLException: Access denied for user 'difxw'@'10.1.2.45'
+          (using password: YES)</code></h6>
+      <h6><code></code></h6>
+      <code><br>
+      </code></div>
+    Access to the database can be denied for a number of reasons.&nbsp;
+    Check your user name and password (these need to be mySQL user name
+    and password, not necessarily the user name and password you use to
+    remotely log into the DiFX host).&nbsp; If you can, run the mySQL
+    client on the DiFX host as root from the command line (you will
+    require the root password):<br>
+    <pre style="margin-left: 40px;">/usr/bin/mysql -u root -p</pre>
+    Then generate a list of all users and hosts recognized by mySQL:<br>
+    <pre style="margin-left: 40px;">mysql&gt; select user, host from mysql.user;</pre>
+    <pre style="margin-left: 40px;">+------+---------------------+<br>| user | host&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; |<br>+------+---------------------+<br>| difx | 10.1.2.45&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; |<br>| difx | 127.0.0.1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; |<br>| root | 127.0.0.1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; |<br>|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | localhost&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; |<br>| difx | localhost&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; |<br>| root | localhost&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; |<br>|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | swc02.usno.navy.mil |<br>| difx | swc02.usno.navy.mil |<br>| root | swc02.usno.navy.mil |<br>+------+---------------------+<br>9 rows in set (0.00 sec)</pre>
+    In this list somewhere should be the user name you are using paired
+    with the GUI host name.&nbsp; Note that mySQL treats user/host pairs
+    almost as separate users - you must designate both your user name
+    and host as a "user".&nbsp; To do this, the following command will
+    both "create" the user/host pair and give it access to all databases
+    (note that "grant" is a complex command used for many things - you
+    should consult mySQL documentation before using this command with
+    reckless abandon):<br>
+    <pre style="margin-left: 40px;">mysql&gt; grant all privileges on *.* to 'difx'@'new.host.name';<br>Query OK, 0 rows affected (0.00 sec)</pre>
+    You should then see the user/host pair in the user list:<br>
+    <pre style="margin-left: 40px;">mysql&gt; select user, host from mysql.user;<br><br>+------+---------------------+<br>| user | host&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; |<br>+------+---------------------+<br>| difx | 10.1.2.45&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; |<br>| difx | 127.0.0.1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; |<br>| root | 127.0.0.1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; |<br>|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | localhost&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; |<br>| difx | localhost&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; |<br>| root | localhost&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; |<br>| difx | new.host.name&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; |   &lt;---------------- HERE!!!!<br>|&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | swc02.usno.navy.mil |<br>| difx | swc02.usno.navy.mil |<br>| root | swc02.usno.navy.mil |<br>+------+---------------------+<br>10 rows in set (0.00 sec)</pre>
+    The user/host pair needs its own password specification - even if
+    your user name already had a password, this is not enough!&nbsp; To
+    specifiy the password for the new user/host pair (or to make sure
+    your password is set properly on an existing user/host pair), do the
+    following (replaced "PASSWORD" with your new password):<br>
+    <pre style="margin-left: 40px;">mysql&gt; set password for 'difx'@'new.host.name'=password( 'PASSWORD' );<br>Query OK, 0 rows affected (0.00 sec)</pre>
+    At this point we reach the limits of my personal mySQL knowledge.<br>
+    <br>
+    <br>
+    <h6> <span style="font-weight: bold; font-family: monospace;">&nbsp;&nbsp;&nbsp;
+
+
+
+
+        Database contains 0 jobs.</span></h6>
+    <br>
+    This is not an error, however you may encounter this message.&nbsp;
+    It simply means there are no jobs queued in the specified
+    database.&nbsp; If this is not what you expect (because, for
+    instance, you've recently queued something), check the value in the
+    "DiFX Database" field.&nbsp; It should match your the name of the
+    database where queuing is going on (which is probably "difxdb").<br>
+    <br>
+  </body>
+</html>

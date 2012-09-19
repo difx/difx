@@ -1,0 +1,14 @@
+For the GUI to work properly, but it and the guiServer should be running.
+The guiServer executable should be running on your "head node".  It does
+NOT need to run as root (in fact, for security reasons, it SHOULD NOT).  It
+is started with an (optional) TCP communications port number as an argument:
+
+        guiServer/src/guiServer [PORT#]
+
+The GUI itself can be run anywhere that has a screen, Java, and TCP network
+access to the port specified above.  It is run as a ".jar" file:
+
+        java -jar gui/dist/gui.jar
+
+For more detailed information go to the top level of the GUI documentation 
+in "doc/intro.html".

@@ -1,0 +1,12 @@
+
+After a fresh svn checkout, run the following to build the programs:
+
+aclocal
+automake -a
+autoconf
+
+./configure --prefix=${DIFXROOT}
+
+make
+
+make install
