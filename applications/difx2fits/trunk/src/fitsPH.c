@@ -1412,12 +1412,11 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	if(in)
 	{
 		fclose(in);
-		in = 0;
 	}
 	if(in2)	/* this should never be true the way things work */
 	{
+		fprintf(stderr, "Developer error: Somehow in2 != 0 at end of DifxInput2FitsPH.\nPlease file a bug report\n");
 		fclose(in2);
-		in2 = 0;
 	}
 
 	free(fitsbuf);
