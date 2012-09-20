@@ -22,15 +22,15 @@
     <h3><a name="WHERE_TO_FIND_IT"></a>Where to Find the DiFX GUI</h3>
     The DiFX GUI is part of the DiFX software tree, currently located in
     the sub-directory:<br>
-    <pre><tt>	applications/doi/branches/USNO</tt></pre>
-    Under this path are directories containing the <i>guiServer </i>executable:<br>
-    <pre>	applications/doi/branches/USNO/guiServer/src/guiServer<br></pre>
+    <pre><tt>	applications/gui/trunk</tt></pre>
+    This is the path to the directory containing the <i>guiServer </i>executable:<br>
+    <pre>	applications/gui/trunk/guiServer/src<br></pre>
     The Java archive (".jar") file used to run the GUI itself:<br>
-    <pre>	applications/doi/branches/USNO/DiFXUIs/dist/DiFXUIs.jar<br></pre>
+    <pre>	applications/gui/trunk/gui/dist/gui.jar<br></pre>
     And the top-level of this documentation:<br>
-    <pre>	applications/doi/branches/USNO/doc/intro.html<br></pre>
-    These are not ideal locations and will likely change in the near
-    future.&nbsp;
+    <pre>	applications/gui/trunk/doc/intro.html<br></pre>
+    Some of these are not ideal locations and will likely change in the
+    near future.&nbsp;
     <h3><a name="RUNNING_THE_GUI"></a>Running the GUI</h3>
     There are two components to the DiFX GUI.&nbsp; A single instance of
     the application <span style="font-style: italic;">guiServer</span>
@@ -59,12 +59,13 @@
     run anywhere that a network connection to the DiFX cluster is
     available (not necessarily on the LAN of the DiFX cluster) on any
     platform that can run Java using its ".jar" file:<br>
-    <pre>	java -jar DiFXUIs.jar<br></pre>
+    <pre>	java -jar gui.jar<br></pre>
     Once the GUI is running, the address of the DiFX Host (where <span
       style="font-style: italic;">guiServer</span> is running) and the
     port number (what <span style="font-style: italic;">guiServer</span>
     told you above) can be entered to connect the two.&nbsp; See <a
 href="file:///Users/johnspitzak/NetBeansProjects/doi/USNO/doc/settings_content.html#DiFX_Control_Connection">DiFX
+
       Control Connection</a> in the Settings documentation for
     details.&nbsp; The GUI and <span style="font-style: italic;">guiServer</span>
     can be started in any order - the GUI will connect as soon as a <span
