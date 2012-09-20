@@ -715,9 +715,9 @@ void PhaseCentre::initialise(double r, double d, string name)
 	calCode = ' ';
 	ephemDeltaT = 24.0; //seconds; 24 seconds is perfectly matched to the default behavior of calcif2
 	qualifier = 0;
-	string ephemObject = "";
-	string ephemFile = "";
-	string naifFile = "";  
+	ephemObject = "";
+	ephemFile = "";
+	naifFile = "";  
 }
 
 SourceSetup::SourceSetup(const string &name) : vexName(name)

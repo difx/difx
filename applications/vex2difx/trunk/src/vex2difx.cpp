@@ -1930,7 +1930,7 @@ static int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int 
 	int nTotalPhaseCentres, nbin, maxPulsarBins, maxScanPhaseCentres, fftDurNS;
 	double srcra, srcdec;
 	int pointingSrcIndex, foundSrcIndex, atSource;
-	int nZoomBands, fqId, zoomsrc, polcount, zoomChans = 0, minChans;
+	int nZoomBands, fqId, polcount, zoomChans = 0, minChans;
 	int overSamp, decimation, worstcaseguardns;
 	DifxDatastream *dd;
 	vector<set <int> > blockedfreqids;
@@ -2373,17 +2373,15 @@ static int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int 
 						nZoomBands = 0;
 						for(int i = 0; i < nZoomFreqs; ++i)
 						{
-							zoomsrc = 0;
 							polcount = 0;
 							for(int j = 0; j < dd->nZoomPol[i]; ++j)
 							{
 								dd->zoomBandFreqId[nZoomBands] = i;
-								for(int k = zoomsrc; k < dd->nRecBand; ++k)
+								for(int k = 0; k < dd->nRecBand; ++k)
 								{
 									if(dd->recBandFreqId[k] == parentFreqIndices[i])
 									{
 										dd->zoomBandPolName[nZoomBands] = dd->recBandPolName[k];
-										zoomsrc = k + 1;
 										++polcount;
 
 										break;

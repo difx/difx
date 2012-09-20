@@ -1067,7 +1067,6 @@ int pystream::writeScans(const VexData *V)
 	int p;
 	int n = 0;
 	int nScan;
-	map<string,VexIF>::const_iterator it;
 	const char *switchOutput[] = {"1A", "1B", "2A", "2B"};
 	double recordSeconds = 0.0;
 
