@@ -59,7 +59,7 @@ void update_stations(char *file, char code_table[52][4])
 {
     FILE *ifp;
     int debug, three;
-    char this[3], that[3];
+    char this[4], that[4];
     if (update_stations_done) return;	/* once is normally enough */
     update_stations_done = 1;
 #if STANDALONE_CHECK
@@ -74,7 +74,7 @@ void update_stations(char *file, char code_table[52][4])
 	    edit_stations(this, that, code_table);
 	else if (strlen(this) == 2 && strlen(that) == 1)
 	    edit_stations(that, this, code_table);
-	else if (three == 3) /* possibly ambigous */
+	else if (three == 3) /* possibly ambiguous */
 	    edit_stations(this, that, code_table);
 	else
 	    fprintf(stderr, "Bad station pairing %s <==> %s\n", this, that);
