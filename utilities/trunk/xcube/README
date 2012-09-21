@@ -1,0 +1,30 @@
+Contents of x3c/ were provided by X3C.
+The libraries are compiled under 64-bit gcc-4 linux.  Binaries for 
+other architectures are not available.
+
+Other code is (c) 2012 Walter Brisken, but is based heavily on
+X3C example program: lf1ReaderSample.cpp
+
+Building Instructions
+---------------------
+
+If you are checking out code from SVN you will need to run the next four
+commands to generate the build file and configure insfrastructure:
+
+aclocal
+autoconf
+autoheader
+automake -a
+
+
+To configure and build the code:
+
+./configure   # other options, such as --prefix may be supplied here
+
+make
+
+
+To install:
+
+make install
+

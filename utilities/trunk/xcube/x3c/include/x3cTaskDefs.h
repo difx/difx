@@ -1,0 +1,86 @@
+/*
+ * x3cTaskDefs.h
+ *
+ *  Created on: Feb 17, 2012
+ *      Author: jtrier
+ */
+
+#ifndef X3CTASKDEFS_H_
+#define X3CTASKDEFS_H_
+
+// TASK TYPE NAME STRINGS
+#define TASK_NAME_UNKNOWN   "UNKNOWN_TASK"
+#define TASK_NAME_LGRMGR    "LOGGER_MGR"
+#define TASK_NAME_MSGMGR    "MSG_MGR"
+#define TASK_NAME_STATSMGR  "STATS_MGR"
+#define TASK_NAME_USERMGR   "USER_MGR"
+#define TASK_NAME_BUFMGR    "BUF_MGR"
+#define TASK_NAME_ETHERNET  "ENET_MGR"
+#define TASK_NAME_1394A     "1394A_MGR"
+#define TASK_NAME_1394B     "1394B_MGR"
+#define TASK_NAME_CANK      "CANK_MGR"
+#define TASK_NAME_USB       "USB_MGR"
+#define TASK_NAME_DGEN      "DGEN_MGR"
+#define TASK_NAME_AVTCAMERA "AVTCAMERA_MGR"
+#define TASK_NAME_CANP      "CANP_MGR"
+#define TASK_NAME_HRFT      "HRFT_MGR"
+#define TASK_NAME_GPU       "GPU_MGR"
+#define TASK_NAME_MRR       "MRR_MGR"  //Medium Range Radar
+#define TASK_NAME_OTHER     "OTHER_TASK"
+
+#define TASK_NAME_SIMXMGR   "SIMEXEC_MGR"
+
+//Identifies the TYPE of task,
+typedef enum _TASK_TYPE_
+{
+    TASK_TYPE_UNKNOWN=0,
+    TASK_TYPE_LGRMGR,
+    TASK_TYPE_MSGMGR,
+    TASK_TYPE_STATSMGR,
+    TASK_TYPE_USERMGR,
+    TASK_TYPE_BUFMGR,
+    TASK_TYPE_SIMXMGR,          // RESIM_BUILD
+
+    // DSSC Interfaces
+    TASK_TYPE_DSSC_INTERFACES = 30,
+    TASK_TYPE_GENERIC_PLAYER,
+    TASK_TYPE_ASC_PLAYER,
+    TASK_TYPE_CAN_PLAYER,
+    TASK_TYPE_AVI_PLAYER,
+    TASK_TYPE_CAM_PLAYER,
+    TASK_TYPE_BAN_PLAYER,
+
+    TASK_TYPE_INTERFACES=50,    // Not really a task - it separates IFs from others
+    TASK_TYPE_IF_ETHERNET,
+    TASK_TYPE_IF_CANK,          // Kvaser
+    TASK_TYPE_IF_USB,
+    TASK_TYPE_IF_1394A,
+    TASK_TYPE_IF_1394B,
+    TASK_TYPE_IF_DGEN,
+    TASK_TYPE_IF_AVTCAMERA,
+    TASK_TYPE_IF_CANP,          // PEAK/Grid Connect
+    TASK_TYPE_IF_HRFT,          // FOI HRFT Bus Master DMA Hardware
+    TASK_TYPE_IF_GPU,           // 60
+    TASK_TYPE_IF_MRR,           // Denso Medium Range Radar
+    TASK_TYPE_IF_XML,           // XML
+    TASK_TYPE_OTHER,
+
+    TASK_TYPE_IF_USER=256
+} LGR_TASK_TYPE;
+
+//What is the Task currently doing?
+typedef enum _TASK_STATE_
+{
+    TASK_STATE_UNKNOWN   = 0,
+    TASK_STATE_INIT,
+    TASK_STATE_EXIT,
+    TASK_STATE_IDLE,
+    TASK_STATE_RUNNING,
+    TASK_STATE_PAUSED,
+    TASK_STATE_ERROR,
+    TASK_STATE_FINISHED,
+    TASK_STATE_LAST
+} LGR_TASK_STATE;
+
+
+#endif /* X3CTASKDEFS_H_ */

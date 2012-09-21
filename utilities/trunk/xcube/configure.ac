@@ -1,0 +1,17 @@
+AC_INIT([xcube], [0.1], [Walter Brisken <wbrisken@nrao.edu>], [xcube])
+
+AM_CONFIG_HEADER([config.h])
+
+AM_INIT_AUTOMAKE([foreign])
+
+AC_PROG_CXX
+
+AC_CHECK_LIB(pthread, pthread_create,,[AC_MSG_ERROR("need libpthread")])
+AC_CHECK_LIB(rt, timer_gettime,,[AC_MSG_ERROR("need librt")])
+
+version=AC_PACKAGE_VERSION
+
+AC_OUTPUT([
+	Makefile \
+	src/Makefile \
+])
