@@ -42,7 +42,6 @@ make
 %{_includedir}/difxmessage/difxmessageinternal.h
 %{_bindir}/testdifxmessagesend
 %{_bindir}/testdifxmessagereceive
-%{_bindir}/testdifxmessagecondition
 %{_bindir}/testdifxmessagereceivecond
 %{_bindir}/testm5lock
 %{_bindir}/testseqnumbers

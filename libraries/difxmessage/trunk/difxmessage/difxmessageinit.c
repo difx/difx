@@ -1,3 +1,21 @@
+/***************************************************************************
+ *   Copyright (C) 2007-2012 by Walter Brisken                             *
+ *                                                                         *
+ *   This program is free software; you can redistribute it and/or modify  *
+ *   it under the terms of the GNU General Public License as published by  *
+ *   the Free Software Foundation; either version 3 of the License, or     *
+ *   (at your option) any later version.                                   *
+ *                                                                         *
+ *   This program is distributed in the hope that it will be useful,       *
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+ *   GNU General Public License for more details.                          *
+ *                                                                         *
+ *   You should have received a copy of the GNU General Public License     *
+ *   along with this program; if not, write to the                         *
+ *   Free Software Foundation, Inc.,                                       *
+ *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ ***************************************************************************/
 //===========================================================================
 // SVN properties (DO NOT CHANGE)
 //
@@ -78,6 +96,33 @@ int difxMessageInit(int mpiId, const char *identifier)
 		difxMessageInUse = 0;
 	}
 
+	size = snprintf(difxMessageXMLFormat, DIFX_MESSAGE_FORMAT_LENGTH,
+		
+		"<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
+		"<difxMessage>"
+		  "<header>"
+		    "<from>%s</from>"
+		    "<mpiProcessId>%d</mpiProcessId>"
+		    "<identifier>%s</identifier>"
+		    "<type>%%s</type>"
+		  "</header>"
+		  "<body>"
+		    "<seqNumber>%%d</seqNumber>"
+		    "%%s"
+		  "</body>"
+		"</difxMessage>",
+		
+		difxMessageHostname, 
+		difxMessageMpiProcessId,
+		difxMessageIdentifier);
+
+	if(size >= DIFX_MESSAGE_FORMAT_LENGTH)
+	{
+		fprintf(stderr, "Error: difxMessageInit: format string overflow: difxMessageXMLFormat\n");
+
+		return -1;
+	}
+
 	size = snprintf(difxMessageToXMLFormat, DIFX_MESSAGE_FORMAT_LENGTH,
 		
 		"<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
@@ -101,7 +146,7 @@ int difxMessageInit(int mpiId, const char *identifier)
 
 	if(size >= DIFX_MESSAGE_FORMAT_LENGTH)
 	{
-		fprintf(stderr, "Error: difxMessageInit: format string overflow\n");
+		fprintf(stderr, "Error: difxMessageInit: format string overflow: difxMessageToXMLFormat\n");
 
 		return -1;
 	}

@@ -8,7 +8,6 @@ LDADD = \
 bin_PROGRAMS = \
 	testdifxmessagesend \
 	testdifxmessagereceive \
-	testdifxmessagecondition \
 	testdifxmessagereceivecond \
 	testdifxmessagedrivestats \
 	testseqnumbers \
@@ -41,9 +40,6 @@ testdifxmessagesend_SOURCES = \
 
 testdifxmessagereceive_SOURCES = \
 	testdifxmessagereceive.c
-
-testdifxmessagecondition_SOURCES = \
-	testdifxmessagecondition.c
 
 testseqnumbers_SOURCES = \
 	testseqnumbers.c

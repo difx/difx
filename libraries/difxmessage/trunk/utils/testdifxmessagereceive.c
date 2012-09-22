@@ -237,10 +237,10 @@ int main(int argc, char **argv)
 			}
 			message[l] = 0;
 			time(&t);
-			l = snprintf(timestr, TimeLength, "%s", ctime(&t));
-			if(l >= TimeLength)
+			v = snprintf(timestr, TimeLength, "%s", ctime(&t));
+			if(v >= TimeLength)
 			{
-				fprintf(stderr, "Developer error: TimeLength=%d is too small (wants %d)\n", TimeLength, l);
+				fprintf(stderr, "Developer error: TimeLength=%d is too small (wants %d)\n", TimeLength, v);
 
 				exit(0);
 			}
@@ -279,7 +279,7 @@ int main(int argc, char **argv)
 				}
 				else
 				{
-					printf("[%s %s] ", timestr, from);
+					printf("[%s %s] <%d> ", timestr, from, l);
 					difxMessageGenericPrint(&G);
 					printf("\n");
 					if(verbose)
