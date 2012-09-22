@@ -30,7 +30,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <time.h>
 #include "difxmessage.h"
 
@@ -52,9 +51,9 @@ int usage(const char *cmd)
 	printf("Options can be:\n\n");
 	printf("  -h or --help   : Print this help info\n\n");
 	printf("  -b or --binary : Write binary records to file %s\n\n", BINARY_OUTPUT_FILE);
-	printf("Type is a number from 1 to %d and refers to the following message types\n\n",
-		NUM_DIFX_MESSAGE_TYPES-1);
-	for(i = 1; i < NUM_DIFX_MESSAGE_TYPES; i++)
+	printf("  -l or --length : Print lengths, not dots\n\n");
+	printf("Type is a number from 1 to %d and refers to the following message types\n\n", NUM_DIFX_MESSAGE_TYPES-1);
+	for(i = 1; i < NUM_DIFX_MESSAGE_TYPES; ++i)
 	{
 		printf("  %2d : %s\n", i, DifxMessageTypeStrings[i]);
 	}
@@ -82,7 +81,7 @@ int main(int argc, char **argv)
 	int a;
 	int specialMode = 0;
 
-	for(a = 1; a < argc; a++)
+	for(a = 1; a < argc; ++a)
 	{
 		if(strcmp(argv[a], "-h") == 0 ||
 		   strcmp(argv[a], "--help") == 0)
@@ -92,14 +91,15 @@ int main(int argc, char **argv)
 		else if(strcmp(argv[a], "-v") == 0 ||
 		   strcmp(argv[a], "--verbose") == 0)
 		{
-			verbose++;
+			++verbose;
 		}
 		else if(strcmp(argv[a], "-B") == 0 ||
 		   strcmp(argv[a], "--Binary") == 0)
 		{
 			binary+=2;
 		}
-		else if(strcmp(argv[a], "-l") == 0)
+		else if(strcmp(argv[a], "-l") == 0 ||
+		   strcmp(argv[a], "--length") == 0)
 		{
 			onlyDots = 0;
 			printf("Printing lengths, not dots\n");
@@ -111,7 +111,7 @@ int main(int argc, char **argv)
 		else if(strcmp(argv[a], "-b") == 0 ||
 		   strcmp(argv[a], "--binary") == 0)
 		{
-			binary++;
+			++binary;
 		}
 		else
 		{
@@ -164,13 +164,17 @@ int main(int argc, char **argv)
 			}
 			if(l <= 0)
 			{
-				usleep(100000);
+				struct timespec ts;
+				
+				ts.tv_sec = 0;
+				ts.tv_nsec = 100000000;
+				nanosleep(&ts, 0);
 
 				continue;
 			}
 			else
 			{
-				np++;
+				++np;
 				if(out)
 				{
 					v = fwrite(message, 1, l, out);
@@ -223,7 +227,11 @@ int main(int argc, char **argv)
 			l = difxMessageReceive(sock, message, DIFX_MESSAGE_LENGTH-1, from);
 			if(l < 0)
 			{
-				usleep(100000);
+				struct timespec ts;
+				
+				ts.tv_sec = 0;
+				ts.tv_nsec = 100000000;
+				nanosleep(&ts, 0);
 
 				continue;
 			}
@@ -237,7 +245,7 @@ int main(int argc, char **argv)
 				exit(0);
 			}
 
-			for(i = 0; timestr[i]; i++)
+			for(i = 0; timestr[i]; ++i)
 			{
 				if(timestr[i] < ' ')
 				{

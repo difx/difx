@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2011 by Walter Brisken                             *
+ *   Copyright (C) 2007-2012 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -103,7 +103,7 @@ const char DifxMessageTypeStrings[][24] =
 	"DifxFileOperation",
 	"DifxVex2DifxRun",
 	"DifxMachinesDefinition",
-    "DifxGetDirectory",
+	"DifxGetDirectory",
 };
 
 /* Note! Keep this in sync with enum DifxDiagnosticType in difxmessage.h */
@@ -137,7 +137,8 @@ const char DriveStatsTypeStrings[][24] =
 	"condition_write",
 	"read",
 	"write",
-	"unknown"	/* Really, this should never be used! */
+	"unknown",	/* Really, this should never be used! */
+	"test"		/* Testing the send mechansim */
 };
 
 /* Note! Keep this in sync with enum DifxStartFunctionType in difxmessage.h */

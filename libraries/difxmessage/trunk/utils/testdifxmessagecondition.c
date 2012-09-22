@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2010 by Walter Brisken                             *
+ *   Copyright (C) 2008-2012 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -33,27 +33,29 @@
 
 int main(int argc, char **argv)
 {
-	DifxMessageCondition cond;
+	DifxMessageDriveStats stats;
 	int i;
 	int N = 1000000;
 
 	difxMessageInit(-1, argv[0]);
 	difxMessagePrint();
 
-	sprintf(cond.serialNumber, "X1Y2Z3Wxxx001");
-	sprintf(cond.modelNumber, "Boomerang9000");
-	cond.diskSize = 250;
-	sprintf(cond.moduleVSN, "WFB-0123");
-	cond.moduleSlot = 4;
-	cond.startMJD = 54321.9876;
-	cond.stopMJD = 54324.9876;
+	sprintf(stats.serialNumber, "X1Y2Z3Wxxx001");
+	sprintf(stats.modelNumber, "Boomerang9000");
+	stats.diskSize = 250;
+	sprintf(stats.moduleVSN, "WFB-0123");
+	stats.moduleSlot = 4;
+	stats.startMJD = 54321.9876;
+	stats.stopMJD = 54324.9876;
 	for(i = 0; i < DIFX_MESSAGE_N_CONDITION_BINS; i++)
 	{
-		cond.bin[i] = N;
+		stats.bin[i] = N;
 		N /= 3;
 	}
+	stats.type = DRIVE_STATS_TYPE_TEST;
+	stats.startByte = 0;
 
-	difxMessageSendCondition(&cond);
+	difxMessageSendDriveStats(&stats);
 
 	return EXIT_SUCCESS;
 }

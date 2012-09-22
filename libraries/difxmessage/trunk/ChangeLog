@@ -7,6 +7,11 @@ Support for IPv6 within C code.  Likely overall performance improvement at the s
     the size of from[] to DIFX_MESSAGE_MAX_INET_ADDRESS_LENGTH or face
     possible segfaulting
 NOTE: these changes have been backed out until a concurrency issue is fixed
+Fix a spelling error (Refrences)
+After a period of deprecation finally removed difxMessageSendCondition().  Use
+  difxMessageSendDriveStats() instead.
+Prefer to use new function DifxMessageSend2 over DifxMessageSend.  It is more
+  efficient.
 
 Version 2.1.0
 ~~~~~~~~~~~~

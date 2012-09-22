@@ -19,7 +19,13 @@ int pingtest(const char *hostname)
 
 	while(!feof(p))
 	{
-		fgets(msg, MaxMessageLength, p);
+		const char *v;
+
+		v = fgets(msg, MaxMessageLength, p);
+		if(!v)
+		{
+			break;
+		}
 	}
 	pclose(p);
 

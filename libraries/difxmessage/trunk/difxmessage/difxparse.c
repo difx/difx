@@ -35,49 +35,51 @@
 /* allow space or comma separated list of nodes */
 int addNodes(char nodes[][DIFX_MESSAGE_PARAM_LENGTH], int maxNodes, int *n, const char *nodeList)
 {
-	char *str, *p;
-	int nnew=0;
 	int i;
+	int s=-1;
+	int nNew = 0;
 
-	str = strdup(nodeList);
-
-	for(i = 0; str[i]; ++i)
+	for(i = 0;; ++i)
 	{
-		if(str[i] == ',' || 
-		   str[i] == '(' || str[i] == ')' ||
-		   str[i] == '{' || str[i] == '}' ||
-		   str[i] == '[' || str[i] == ']')
-		{
-			str[i] = ' ';
-		}
-	}
-
-	p = str;
-	for(;;)
-	{
-		char name[DIFX_MESSAGE_LENGTH];
-		int l;
+		char c = nodeList[i];
 
 		if(*n >= maxNodes)
 		{
 			break;
 		}
-		name[0] = 0;
-		sscanf(p, "%s%n", name, &l);
-		if(name[0] == 0)
+
+		if(c <= ' ' || c == ',' || 
+		   c == '(' || c == ')' ||
+		   c == '{' || c == '}' ||
+		   c == '[' || c == ']')
+		{
+			if(s >= 0)
+			{
+				int l = i-s;
+				if(l >= DIFX_MESSAGE_PARAM_LENGTH)
+				{
+					fprintf(stderr, "Developer error: addNodes: DIFX_MESSAGE_PARAM_LENGTH=%d is too small.  Wants to be %d\n", DIFX_MESSAGE_PARAM_LENGTH, l+1);
+					l = DIFX_MESSAGE_PARAM_LENGTH-1;
+				}
+				memcpy(nodes[*n], nodeList+s, l);
+				nodes[*n][l] = 0;
+				++(*n);
+				++nNew;
+				s = -1;
+			}
+		}
+		else if(s < 0)
+		{	
+			s = i;
+		}
+
+		if(!c)
 		{
 			break;
 		}
-		p += l;
-		strncpy(nodes[*n], name, DIFX_MESSAGE_PARAM_LENGTH-1);
-		nodes[*n][DIFX_MESSAGE_PARAM_LENGTH-1] = 0;
-		++(*n);
-		++nnew;
 	}
 
-	free(str);
-
-	return nnew;
+	return nNew;
 }
 
 static void XMLCALL startElement(void *userData, const char *name, 
@@ -381,7 +383,7 @@ static void XMLCALL endElement(void *userData, const char *name)
 					}
 					else if(strcmp(elem, "statusWord") == 0)
 					{
-						sscanf(s, "%x", &G->body.mk5status.status);
+						sscanf(s, "%16x", &G->body.mk5status.status);
 					}
 					else if(strcmp(elem, "activeBank") == 0)
 					{
@@ -923,7 +925,7 @@ static void XMLCALL endElement(void *userData, const char *name)
 					}
 					else if(strcmp(elem, "difxVersion") == 0 )
 					{
-						strncpy(G->body.vex2DifxRun.difxVersion, s, DIFX_MESSAGE_FILENAME_LENGTH-1);
+						strncpy(G->body.vex2DifxRun.difxVersion, s, DIFX_MESSAGE_VERSION_LENGTH-1);
 					}
 					else if(strcmp(elem, "passPath") == 0 )
 					{

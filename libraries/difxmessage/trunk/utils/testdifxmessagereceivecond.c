@@ -54,7 +54,12 @@ int main(int argc, char **argv)
 		l = difxMessageReceive(sock, message, DIFX_MESSAGE_LENGTH-1, from);
 		if(l < 0)
 		{
-			usleep(100000);
+			struct timespec ts;
+			
+			ts.tv_sec = 0;
+			ts.tv_nsec = 100000000;
+			nanosleep(&ts, 0);
+
 			continue;
 		}
 		message[l] = 0;
@@ -68,7 +73,7 @@ int main(int argc, char **argv)
 		}
 
 		difxMessageParse(&G, message);
-		if(G.type != DIFX_MESSAGE_CONDITION)
+		if(G.type != DIFX_MESSAGE_DRIVE_STATS && G.type != DIFX_MESSAGE_CONDITION)
 		{
 			continue;
 		}

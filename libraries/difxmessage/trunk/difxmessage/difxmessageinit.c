@@ -40,7 +40,7 @@ const char *getDifxMessageIdentifier()
 int difxMessageInit(int mpiId, const char *identifier)
 {
 	const char *envstr;
-	int v;
+	int size;
 
 	difxMessageSequenceNumber = 0;
 	difxMessageInUse = 1;
@@ -55,8 +55,8 @@ int difxMessageInit(int mpiId, const char *identifier)
 	envstr = getenv("DIFX_MESSAGE_GROUP");
 	if(envstr != 0)
 	{
-		v = snprintf(difxMessageGroup, MAX_GROUP_SIZE, "%s", envstr);
-		if(v >= MAX_GROUP_SIZE)
+		size = snprintf(difxMessageGroup, MAX_GROUP_SIZE, "%s", envstr);
+		if(size >= MAX_GROUP_SIZE)
 		{
 			fprintf(stderr, "Error: difxMessageInit: env var DIFX_MESSAGE_GROUP too long\n");
 
@@ -78,27 +78,7 @@ int difxMessageInit(int mpiId, const char *identifier)
 		difxMessageInUse = 0;
 	}
 
-	v = snprintf(difxMessageXMLFormat, DIFX_MESSAGE_FORMAT_LENGTH,
-		
-		"<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
-		"<difxMessage>"
-		  "<header>"
-		    "<from>%s</from>"
-		    "<mpiProcessId>%d</mpiProcessId>"
-		    "<identifier>%s</identifier>"
-		    "<type>%%s</type>"
-		  "</header>"
-		  "<body>"
-		    "<seqNumber>%%d</seqNumber>"
-		    "%%s"
-		  "</body>"
-		"</difxMessage>",
-		
-		difxMessageHostname, 
-		difxMessageMpiProcessId,
-		difxMessageIdentifier);
-
-	v = snprintf(difxMessageToXMLFormat, DIFX_MESSAGE_FORMAT_LENGTH,
+	size = snprintf(difxMessageToXMLFormat, DIFX_MESSAGE_FORMAT_LENGTH,
 		
 		"<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
 		"<difxMessage>"
@@ -119,7 +99,7 @@ int difxMessageInit(int mpiId, const char *identifier)
 		difxMessageMpiProcessId,
 		difxMessageIdentifier);
 
-	if(v >= DIFX_MESSAGE_FORMAT_LENGTH)
+	if(size >= DIFX_MESSAGE_FORMAT_LENGTH)
 	{
 		fprintf(stderr, "Error: difxMessageInit: format string overflow\n");
 

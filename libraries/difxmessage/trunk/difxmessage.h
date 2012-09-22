@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2011 by Walter Brisken                             *
+ *   Copyright (C) 2007-2012 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -207,6 +207,7 @@ enum DifxMessageType
 
 extern const char DifxMessageTypeStrings[][24];
 
+/* Note! Keep this in sync with DifxMessageTypeStrings[][24] in difxmessage.c */
 enum DriveStatsType
 {
 	DRIVE_STATS_TYPE_CONDITION = 0,
@@ -215,6 +216,7 @@ enum DriveStatsType
 	DRIVE_STATS_TYPE_READ,
 	DRIVE_STATS_TYPE_WRITE,
 	DRIVE_STATS_TYPE_UNKNOWN,
+	DRIVE_STATS_TYPE_TEST,	/* to test the mechanism without entering things into databases... */
 	NUM_DRIVE_STATS_TYPES	/* this needs to be the last line of enum */
 };
 
@@ -328,34 +330,34 @@ typedef struct
 
 typedef struct
 {
-    char origin[DIFX_MESSAGE_FILENAME_LENGTH];
-    char destination[DIFX_MESSAGE_FILENAME_LENGTH];
-    char dataNode[DIFX_MESSAGE_PARAM_LENGTH];
-    char address[DIFX_MESSAGE_PARAM_LENGTH];
-    char direction[DIFX_MESSAGE_PARAM_LENGTH];
-    int port;
+	char origin[DIFX_MESSAGE_FILENAME_LENGTH];
+	char destination[DIFX_MESSAGE_FILENAME_LENGTH];
+	char dataNode[DIFX_MESSAGE_PARAM_LENGTH];
+	char address[DIFX_MESSAGE_PARAM_LENGTH];
+	char direction[DIFX_MESSAGE_PARAM_LENGTH];
+	int port;
 } DifxMessageFileTransfer;
 
 typedef struct
 {
-    char path[DIFX_MESSAGE_FILENAME_LENGTH];
-    char operation[DIFX_MESSAGE_PARAM_LENGTH];
-    char dataNode[DIFX_MESSAGE_PARAM_LENGTH];
-    char arg[DIFX_MESSAGE_FILENAME_LENGTH];
-    char address[DIFX_MESSAGE_PARAM_LENGTH];
-    int port;
+	char path[DIFX_MESSAGE_FILENAME_LENGTH];
+	char operation[DIFX_MESSAGE_PARAM_LENGTH];
+	char dataNode[DIFX_MESSAGE_PARAM_LENGTH];
+	char arg[DIFX_MESSAGE_FILENAME_LENGTH];
+	char address[DIFX_MESSAGE_PARAM_LENGTH];
+	int port;
 } DifxMessageFileOperation;
 
 typedef struct
 {
-    char user[DIFX_MESSAGE_PARAM_LENGTH];
-    char headNode[DIFX_MESSAGE_PARAM_LENGTH];
-    char difxVersion[DIFX_MESSAGE_VERSION_LENGTH];
-    char passPath[DIFX_MESSAGE_FILENAME_LENGTH];
-    char v2dFile[DIFX_MESSAGE_FILENAME_LENGTH];
-    char address[DIFX_MESSAGE_PARAM_LENGTH];
-    int port;
-    int calcifOnly;
+	char user[DIFX_MESSAGE_PARAM_LENGTH];
+	char headNode[DIFX_MESSAGE_PARAM_LENGTH];
+	char difxVersion[DIFX_MESSAGE_VERSION_LENGTH];
+	char passPath[DIFX_MESSAGE_FILENAME_LENGTH];
+	char v2dFile[DIFX_MESSAGE_FILENAME_LENGTH];
+	char address[DIFX_MESSAGE_PARAM_LENGTH];
+	int port;
+	int calcifOnly;
 } DifxMessageVex2DifxRun;
 
 typedef struct
@@ -363,7 +365,7 @@ typedef struct
 	int nDatastream, nProcess;
 	char mpiWrapper[DIFX_MESSAGE_FILENAME_LENGTH];
 	char mpiOptions[DIFX_MESSAGE_FILENAME_LENGTH];
-    char difxVersion[DIFX_MESSAGE_VERSION_LENGTH];
+	char difxVersion[DIFX_MESSAGE_VERSION_LENGTH];
 	char inputFilename[DIFX_MESSAGE_FILENAME_LENGTH];
 	char headNode[DIFX_MESSAGE_PARAM_LENGTH];
 	char datastreamNode[DIFX_MESSAGE_MAX_DATASTREAMS][DIFX_MESSAGE_PARAM_LENGTH];
@@ -380,11 +382,11 @@ typedef struct
 {
 	char mpiWrapper[DIFX_MESSAGE_FILENAME_LENGTH];
 	char difxVersion[DIFX_MESSAGE_VERSION_LENGTH];
-    char mark5[DIFX_MESSAGE_PARAM_LENGTH];
-    char vsn[DIFX_MESSAGE_PARAM_LENGTH];
-    char address[DIFX_MESSAGE_PARAM_LENGTH];
-    int port;
-    int generateNew;
+	char mark5[DIFX_MESSAGE_PARAM_LENGTH];
+	char vsn[DIFX_MESSAGE_PARAM_LENGTH];
+	char address[DIFX_MESSAGE_PARAM_LENGTH];
+	int port;
+	int generateNew;
 } DifxMessageGetDirectory;
 
 typedef struct
@@ -394,21 +396,6 @@ typedef struct
 	char difxProgram[DIFX_MESSAGE_FILENAME_LENGTH];
 	char inputFilename[DIFX_MESSAGE_FILENAME_LENGTH];
 } DifxMessageStop;
-
-/* This message type contains conditioning statistics for one disk
- * of a Mark5 module.  Typically 8 such messages will be needed to 
- * convey results from the conditioning of one module.
- */
-typedef struct	/* Note: this is being deprecated */
-{
-	char serialNumber[DIFX_MESSAGE_DISC_SERIAL_LENGTH+1];
-	char modelNumber[DIFX_MESSAGE_DISC_MODEL_LENGTH+1];
-	int diskSize;	/* GB */
-	char moduleVSN[DIFX_MESSAGE_MARK5_VSN_LENGTH+2];
-	int moduleSlot;
-	double startMJD, stopMJD;
-	int bin[DIFX_MESSAGE_N_DRIVE_STATS_BINS];
-} DifxMessageCondition;
 
 typedef struct
 {
@@ -485,7 +472,6 @@ typedef struct
 		DifxMessageStart	start;
 		DifxMessageStop		stop;
 		DifxMessageDriveStats	driveStats;
-		DifxMessageCondition	condition;  /* same as above but here for backward compatibility */
 		DifxMessageTransient	transient;
 		DifxMessageSmart	smart;
 		DifxMessageDiagnostic	diagnostic;
@@ -556,38 +542,28 @@ void difxMessageGetMulticastGroupPort(char *group, int *port);
 
 const char *getDifxMessageIdentifier();
 
-int difxMessageSend(const char *message);
+int difxMessageSend2(const char *message, int size);
 int difxMessageSendProcessState(const char *state);
 int difxMessageSendMark5Status(const DifxMessageMk5Status *mk5status);
 int difxMessageSendMk5Version(const DifxMessageMk5Version *mk5version);
-int difxMessageSendCondition(const DifxMessageCondition *cond);
 int difxMessageSendDriveStats(const DifxMessageDriveStats *driveStats);
-int difxMessageSendDifxStatus(enum DifxState state, const char *stateMessage, 
-	double visMJD, int numdatastreams, float *weight);
-int difxMessageSendDifxStatus2(const char *jobName, enum DifxState state, 
-	const char *stateMessage);
-int difxMessageSendDifxStatus3(enum DifxState state, const char *stateMessage,
-	double visMJD, int numdatastreams, float *weight, double mjdStart, double mjdStop);
+int difxMessageSendDifxStatus(enum DifxState state, const char *stateMessage, double visMJD, int numdatastreams, float *weight);
+int difxMessageSendDifxStatus2(const char *jobName, enum DifxState state, const char *stateMessage);
+int difxMessageSendDifxStatus3(enum DifxState state, const char *stateMessage, double visMJD, int numdatastreams, float *weight, double mjdStart, double mjdStop);
 int difxMessageSendLoad(const DifxMessageLoad *load);
 int difxMessageSendDifxAlert(const char *errorMessage, int severity);
 int difxMessageSendDifxInfo(const char *infoMessage);
-int difxMessageSendDifxDiagnosticBufferStatus(int threadid, int numelements, 
-	int startelement, int numactiveelements);
+int difxMessageSendDifxDiagnosticBufferStatus(int threadid, int numelements, int startelement, int numactiveelements);
 int difxMessageSendDifxDiagnosticProcessingTime(int threadid, double durationMicrosec);
 int difxMessageSendDifxDiagnosticMemoryUsage(long long membytes);
 int difxMessageSendDifxDiagnosticDataConsumed(long long bytes);
 int difxMessageSendDifxDiagnosticInputDatarate(double bytespersec);
 int difxMessageSendDifxDiagnosticNumSubintsLost(int numsubintslost);
-int difxMessageSendDifxParameter(const char *name, 
-	const char *value, int mpiDestination);
-int difxMessageSendDifxParameterTo(const char *name, 
-	const char *value, const char *to);
-int difxMessageSendDifxParameter1(const char *name, int index1, 
-	const char *value, int mpiDestination);
-int difxMessageSendDifxParameter2(const char *name, int index1, int index2, 
-	const char *value, int mpiDestination);
-int difxMessageSendDifxParameterGeneral(const char *name, int nIndex, const int *index,
-	const char *value, int mpiDestination);
+int difxMessageSendDifxParameter(const char *name, const char *value, int mpiDestination);
+int difxMessageSendDifxParameterTo(const char *name, const char *value, const char *to);
+int difxMessageSendDifxParameter1(const char *name, int index1, const char *value, int mpiDestination);
+int difxMessageSendDifxParameter2(const char *name, int index1, int index2, const char *value, int mpiDestination);
+int difxMessageSendDifxParameterGeneral(const char *name, int nIndex, const int *index, const char *value, int mpiDestination);
 int difxMessageSendDifxTransient(const DifxMessageTransient *transient);
 int difxMessageSendDifxSmart(double mjdData, const char *vsn, int slot, int nValue, const int *ids, const long long *values);
 int difxMessageSendBinary(const char *data, int destination, int size);
@@ -607,6 +583,10 @@ int difxMessageParse(DifxMessageGeneric *G, const char *message);
 void difxMessageGenericPrint(const DifxMessageGeneric *G);
 
 enum DriveStatsType stringToDriveStatsType(const char *str);
+
+
+/* The following function should not be used anymore.  Instead use difxMessageSend2 */
+int difxMessageSend(const char *message);
 
 #ifdef __cplusplus
 }

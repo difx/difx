@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2010 by Walter Brisken                                  *
+ *   Copyright (C) 2010-2012 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -28,7 +28,7 @@
  *==========================================================================*/
 
 #include <stdio.h>
-#include <unistd.h>
+#include <time.h>
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/sem.h>
@@ -82,12 +82,16 @@ int lockMark5(int wait)
 
 	do
 	{
+		struct timespec ts;
+
 		v = semop(semid, sops, 2);
 		if(v == 0)
 		{
 			break;
 		}
-		usleep(100000);
+		ts.tv_sec = 0;
+		ts.tv_nsec = 100000000;
+		nanosleep(&ts, 0);
 		i++;
 	}
 	while(i < wait*10);
