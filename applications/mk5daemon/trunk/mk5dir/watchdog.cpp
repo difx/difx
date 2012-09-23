@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2010 by Walter Brisken                                  *
+ *   Copyright (C) 2010-2012 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -29,7 +29,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
+#include <time.h>
 #include <string.h>
 #include "watchdog.h"
 
@@ -59,7 +59,11 @@ void *watchdogFunction(void *data)
 
 	for(;;)
 	{
-		usleep(100000);
+		struct timespec ts;
+
+		ts.tv_sec = 0;
+		ts.tv_nsec = 100000000;
+		usleep(&ts, 0);
 		pthread_mutex_lock(&watchdogLock);
 
 		if(strcmp(watchdogStatement, "DIE") == 0)

@@ -674,8 +674,8 @@ void handleDifxMessage(Mk5Daemon *D)
 			case DIFX_MESSAGE_STOP:
 				Mk5Daemon_stopMpifxcorr_USNO(D, &G);
 				break;
-			case DIFX_MESSAGE_CONDITION:
-				handleCondition(D, &G);
+			case DIFX_MESSAGE_DRIVE_STATS:
+				handleDriveStats(D, &G);
 				break;
 			case DIFX_MESSAGE_FILETRANSFER:
 				Mk5Daemon_fileTransfer(D, &G);

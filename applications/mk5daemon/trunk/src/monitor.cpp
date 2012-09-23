@@ -465,20 +465,20 @@ void handleCommand(Mk5Daemon *D, const DifxMessageGeneric *G)
 	}
 }
 
-void handleCondition(Mk5Daemon *D, const DifxMessageGeneric *G)
+void handleDriveStats(Mk5Daemon *D, const DifxMessageGeneric *G)
 {
 	char message[DIFX_MESSAGE_LENGTH];
-	const DifxMessageCondition *c;
+	const DifxMessageDriveStats *c;
 
 	if(!messageForMe(D, G))
 	{
 		return;
 	}
 
-	c = &G->body.condition;
+	c = &G->body.driveStats;
 
 	snprintf(message, DIFX_MESSAGE_LENGTH, 
-		"Condition report: from=%s identifier=%s disk=%s[%d]=%s\n", 
+		"Drive statistivs report: from=%s identifier=%s disk=%s[%d]=%s\n", 
 		G->from, G->identifier, c->moduleVSN, c->moduleSlot, c->serialNumber);
 	Logger_logData(D->log, message);
 }

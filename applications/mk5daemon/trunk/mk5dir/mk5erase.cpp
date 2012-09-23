@@ -69,7 +69,7 @@ const char verdate[] = "20120801";
 
 #define MJD_UNIX0       40587.0
 #define SEC_DAY         86400.0
-#define MSEC_DAY        86400000.0 
+#define USEC_DAY        86400000000.0 
 
 
 int die = 0;
@@ -207,7 +207,7 @@ int condition(SSHANDLE xlrDevice, const char *vsn, enum ConditionMode mode, Difx
 	S_DRIVEINFO driveInfo;
 	long long len, lenLast=-1;
 	long long lenFirst=0;
-	struct timeb time1, time2;
+	struct timeval time1, time2;
 	double dt;
 	int nPass, pass = 0;
 	char opName[10] = "";
@@ -251,7 +251,7 @@ int condition(SSHANDLE xlrDevice, const char *vsn, enum ConditionMode mode, Difx
 		strcpy(opName, "RW");
 	}
 
-	ftime(&time1);
+	gettimeofday(&time1, 0);
 
 	if(getData)
 	{
@@ -339,9 +339,8 @@ int condition(SSHANDLE xlrDevice, const char *vsn, enum ConditionMode mode, Difx
 					rate1.push_back(mk5status->rate);
 				}
 			}
-			ftime(&time2);
-			dt = time2.time + time2.millitm/1000.0 
-			   - time1.time - time1.millitm/1000.0;
+			gettimeofday(&time2, 0);
+			dt = (time2.tv_sec - time1.tv_sec) + (time2.tv_usec - time1.usec)/1000000.0;
 			
 			if(len != lenLast)
 			{
@@ -373,9 +372,8 @@ int condition(SSHANDLE xlrDevice, const char *vsn, enum ConditionMode mode, Difx
 		fclose(out);
 	}
 
-	ftime(&time2);
-	dt = time2.time + time2.millitm/1000.0 
-	   - time1.time - time1.millitm/1000.0;
+	gettimeofday(&time2, 0);
+	dt = (time2.tv_sec - time1.tv_sec) + (time2.tv_usec - time1.usec)/1000000.0;
 
 	printf("\n");
 
@@ -395,8 +393,8 @@ int condition(SSHANDLE xlrDevice, const char *vsn, enum ConditionMode mode, Difx
 		gethostname(hostname, hostnameLength);
 		printf("> Hostname %s\n", hostname);
 
-		driveStatsMessage.startMJD = MJD_UNIX0 + time1.time/SEC_DAY + time1.millitm/MSEC_DAY;
-		driveStatsMessage.stopMJD = MJD_UNIX0 + time2.time/SEC_DAY + time2.millitm/MSEC_DAY;
+		driveStatsMessage.startMJD = MJD_UNIX0 + time1.tv_sec/SEC_DAY + time1.tv_usec/USEC_DAY;
+		driveStatsMessage.stopMJD = MJD_UNIX0 + time2.tv_sec/SEC_DAY + time2.tv_usec/USEC_DAY;
 		strncpy(driveStatsMessage.moduleVSN, vsn, DIFX_MESSAGE_MARK5_VSN_LENGTH);
 		driveStatsMessage.moduleVSN[DIFX_MESSAGE_MARK5_VSN_LENGTH] = 0;
 		driveStatsMessage.startByte = 0LL;

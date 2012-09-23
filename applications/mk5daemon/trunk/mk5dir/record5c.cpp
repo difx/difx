@@ -32,6 +32,7 @@
 #include <list>
 #include "mark5dir.h"
 #if SDKVERSION >= 9
+#include <time.h>
 #include <unistd.h>
 #include <ctype.h>
 #include <cstring>
@@ -707,7 +708,11 @@ static int record(int bank, const char *label, unsigned int packetSize, int payl
 	p_ref = p_next_ref = ptr = XLRGetLength(xlrDevice);
 	for(int n = 1; !die; ++n)
 	{
-		usleep(1000);
+		struct timespec ts;
+		
+		ts.tv_sec = 0;
+		ts.tv_nsec = 1000000;
+		nanosleep(&ts, 0);
 		
 		if(n % 20 == 0)
 		{

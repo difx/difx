@@ -214,12 +214,12 @@ long long interpretSMART(char *smartDescription, int maxLength, const S_SMARTVAL
 
 int setvsn(int bank, char *newVSN, int newStatus, enum WriteProtectAction wpa, int force, int verbose, int getSMART)
 {
-	const int MaxSmartDescriptionLen=100;
 	SSHANDLE xlrDevice;
 	XLR_RETURN_CODE xlrRC;
 	S_BANKSTATUS bankStat;
 	S_DIR dir;
 #ifdef XLR_MAX_SMARTVALUES
+	const int MaxSmartDescriptionLen=100;
 	S_SMARTVALUES smartValues[XLR_MAX_SMARTVALUES];
 	USHORT smartVersion;
 #endif

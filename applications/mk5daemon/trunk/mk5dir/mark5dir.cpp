@@ -34,6 +34,7 @@
 #include <cstdlib>
 #include <algorithm>
 #include <unistd.h>
+#include <time.h>
 #include <difxmessage.h>
 #include <mark5access.h>
 #include <cmath>
@@ -931,6 +932,8 @@ int Mark5BankSetByVSN(SSHANDLE xlrDevice, const char *vsn)
 	{
 		for(int i = 0; i < 100; ++i)
 		{
+			struct timespec ts;
+
 			WATCHDOG( xlrRC = XLRGetBankStatus(xlrDevice, bank, &bank_stat) );
 			if(xlrRC != XLR_SUCCESS)
 			{
@@ -940,7 +943,10 @@ int Mark5BankSetByVSN(SSHANDLE xlrDevice, const char *vsn)
 			{
 				break;
 			}
-			usleep(100000);
+
+			ts.tv_sec = 0;
+			ts.tv_nsec = 100000000;
+			nanosleep(&ts, 0);
 		}
 
 		if(bank_stat.State != STATE_READY || !bank_stat.Selected)

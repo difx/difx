@@ -845,7 +845,7 @@ void Mk5Daemon_fileTransfer( Mk5Daemon *D, const DifxMessageGeneric *G ) {
     	    int sockfd;
     	    struct sockaddr_in servaddr;
     	    sockfd = socket( AF_INET, SOCK_STREAM, 0 );
-    	    bzero( &servaddr, sizeof( servaddr ) );
+    	    memset( &servaddr, 0, sizeof( servaddr ) );
     	    servaddr.sin_family = AF_INET;
     	    servaddr.sin_port = htons( S->port );
     	    inet_pton( AF_INET, S->address, &servaddr.sin_addr );
@@ -1058,7 +1058,7 @@ void Mk5Daemon_fileTransfer( Mk5Daemon *D, const DifxMessageGeneric *G ) {
     	    int sockfd;
     	    struct sockaddr_in servaddr;
     	    sockfd = socket( AF_INET, SOCK_STREAM, 0 );
-    	    bzero( &servaddr, sizeof( servaddr ) );
+    	    memset( &servaddr, 0, sizeof( servaddr ) );
     	    servaddr.sin_family = AF_INET;
     	    servaddr.sin_port = htons( S->port );
     	    inet_pton( AF_INET, S->address, &servaddr.sin_addr );
@@ -1213,7 +1213,7 @@ void Mk5Daemon_fileOperation( Mk5Daemon *D, const DifxMessageGeneric *G ) {
             int sockfd;
             struct sockaddr_in servaddr;
             sockfd = socket( AF_INET, SOCK_STREAM, 0 );
-            bzero( &servaddr, sizeof( servaddr ) );
+            memset( &servaddr, 0, sizeof( servaddr ) );
             servaddr.sin_family = AF_INET;
             servaddr.sin_port = htons( S->port );
             inet_pton( AF_INET, S->address, &servaddr.sin_addr );
@@ -1390,7 +1390,7 @@ void Mk5Daemon_vex2DifxRun( Mk5Daemon *D, const DifxMessageGeneric *G ) {
         int sockfd;
         struct sockaddr_in servaddr;
         sockfd = socket( AF_INET, SOCK_STREAM, 0 );
-        bzero( &servaddr, sizeof( servaddr ) );
+        memset( &servaddr, 0, sizeof( servaddr ) );
         servaddr.sin_family = AF_INET;
         servaddr.sin_port = htons( S->port );
         inet_pton( AF_INET, S->address, &servaddr.sin_addr );

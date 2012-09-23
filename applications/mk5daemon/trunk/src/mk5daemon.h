@@ -270,6 +270,6 @@ int handleVSIS(Mk5Daemon *D, int sock);
 int handleVSIS(Mk5Daemon *D, int sock);
 void handleMk5Status(Mk5Daemon *D, const DifxMessageGeneric *G);
 void handleCommand(Mk5Daemon *D, const DifxMessageGeneric *G);
-void handleCondition(Mk5Daemon *D, const DifxMessageGeneric *G);
+void handleDriveStats(Mk5Daemon *D, const DifxMessageGeneric *G);
 
 #endif

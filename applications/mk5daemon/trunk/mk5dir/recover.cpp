@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2010-2011 by Walter Brisken                             *
+ *   Copyright (C) 2010-2012 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -183,7 +183,7 @@ static int recoverModule(int type, int bank, int force)
 			}
 			if(dmsMask & MODULE_STATUS_RECORDED)
 			{
-				v = resetModuleDirectory(xlrDevice, vsn, MODULE_STATUS_RECORDED, 1, totalCapacity, rate);
+				resetModuleDirectory(xlrDevice, vsn, MODULE_STATUS_RECORDED, 1, totalCapacity, rate);
 			}
 		}
 		else
