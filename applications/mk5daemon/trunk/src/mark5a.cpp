@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2010 by Walter Brisken                             *
+ *   Copyright (C) 2008-2012 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -44,12 +44,13 @@
 int lockStreamstor(Mk5Daemon *D, const char *identifier, int wait)
 {
 	int v;
-	char message[DIFX_MESSAGE_LENGTH];
 
 	v = lockMark5(wait);
 #if 0
 	if(v)
 	{
+		char message[DIFX_MESSAGE_LENGTH];
+		
 		if(D->streamstorLockIdentifer[0])
 		{
 			snprintf(message, DIFX_MESSAGE_LENGTH,

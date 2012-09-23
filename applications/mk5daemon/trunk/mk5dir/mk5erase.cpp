@@ -33,7 +33,7 @@
 #include <cstring> 
 #include <unistd.h>
 #include <ctype.h>
-#include <sys/timeb.h>
+#include <sys/time.h>
 #include <signal.h>
 #include <difxmessage.h>
 #include <mark5ipc.h>
@@ -340,7 +340,7 @@ int condition(SSHANDLE xlrDevice, const char *vsn, enum ConditionMode mode, Difx
 				}
 			}
 			gettimeofday(&time2, 0);
-			dt = (time2.tv_sec - time1.tv_sec) + (time2.tv_usec - time1.usec)/1000000.0;
+			dt = (time2.tv_sec - time1.tv_sec) + (time2.tv_usec - time1.tv_usec)/1000000.0;
 			
 			if(len != lenLast)
 			{
@@ -373,7 +373,7 @@ int condition(SSHANDLE xlrDevice, const char *vsn, enum ConditionMode mode, Difx
 	}
 
 	gettimeofday(&time2, 0);
-	dt = (time2.tv_sec - time1.tv_sec) + (time2.tv_usec - time1.usec)/1000000.0;
+	dt = (time2.tv_sec - time1.tv_sec) + (time2.tv_usec - time1.tv_usec)/1000000.0;
 
 	printf("\n");
 

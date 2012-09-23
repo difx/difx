@@ -63,7 +63,7 @@ void *watchdogFunction(void *data)
 
 		ts.tv_sec = 0;
 		ts.tv_nsec = 100000000;
-		usleep(&ts, 0);
+		nanosleep(&ts, 0);
 		pthread_mutex_lock(&watchdogLock);
 
 		if(strcmp(watchdogStatement, "DIE") == 0)
