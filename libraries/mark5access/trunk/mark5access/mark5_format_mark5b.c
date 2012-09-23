@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2011 by Walter Brisken                             *
+ *   Copyright (C) 2007-2012 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -188,10 +188,31 @@ static int mark5_stream_frame_time_mark5b(const struct mark5_stream *ms, int *mj
 	return 0;
 }
 
+static void mark5_format_mark5b_genheaders(struct mark5_stream *ms, int n, unsigned char *where)
+{
+	int i;
+
+	if(!ms)
+	{
+		fprintf(m5stdout, "mark5_format_mark5b_genheaders: ms=0\n");
+
+		return;
+	}
+
+	for(i = 0; i < n; i += ms->framegranularity)
+	{
+		int f;
+
+		for(f = 0; f < ms->framegranularity; ++f)
+		{
+			*((unsigned int *)where) = mark5bSync;
+		}
+	}
+}
+
 static int mark5_format_mark5b_fixmjd(struct mark5_stream *ms, int refmjd)
 {
 	struct mark5_format_mark5b *m;
-	int n;
 
 	if(!ms)
 	{
@@ -201,6 +222,8 @@ static int mark5_format_mark5b_fixmjd(struct mark5_stream *ms, int refmjd)
 	m = (struct mark5_format_mark5b *)(ms->formatdata);
 	if(m->kday == 0)
 	{
+		int n;
+		
 		n = (refmjd - ms->mjd + 500) / 1000;
 		ms->mjd += n*1000;
 		m->kday = n*1000;
@@ -3016,6 +3039,7 @@ struct mark5_format_generic *new_mark5_format_mark5b(int Mbps, int nchan, int nb
 	f->final_format = mark5_format_mark5b_final;
 	f->fixmjd = mark5_format_mark5b_fixmjd;
 	f->validate = one;
+	f->genheaders = mark5_format_mark5b_genheaders;
 	f->decimation = decimation;
 	f->decode = 0;
 	f->complex_decode = 0;

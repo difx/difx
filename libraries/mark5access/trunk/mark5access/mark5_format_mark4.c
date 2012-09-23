@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2006-2011 by Walter Brisken                             *
+ *   Copyright (C) 2006-2012 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -88,22 +88,22 @@ static void initluts()
 	const float lut2level[2] = {1.0, -1.0};
 	const float lut4level[4] = {-HiMag, 1.0, -1.0, HiMag};
 
-	for(i = 0; i < 8; i++)
+	for(i = 0; i < 8; ++i)
 	{
 		zeros[i] = 0.0;
 	}
 
-	for(b = 0; b < 256; b++)
+	for(b = 0; b < 256; ++b)
 	{
 		/* lut1bit */
-		for(i = 0; i < 8; i++)
+		for(i = 0; i < 8; ++i)
 		{
 			l = (b>>i)&1;
 			lut1bit[b][i] = lut2level[l];
 		}
 
 		/* lut2bit1 */
-		for(i = 0; i < 4; i++)
+		for(i = 0; i < 4; ++i)
 		{
 			s = i*2;	/* 0, 2, 4, 6 */
 			m = s+1;	/* 1, 3, 5, 7 */
@@ -112,7 +112,7 @@ static void initluts()
 		}
 
 		/* lut2bit2 */
-		for(i = 0; i < 4; i++)
+		for(i = 0; i < 4; ++i)
 		{
 			s = i+(i/2)*2;	/* 0, 1, 4, 5 */
 			m = s+2;	/* 2, 3, 6, 7 */
@@ -121,7 +121,7 @@ static void initluts()
 		}
 
 		/* lut2bit3 */
-		for(i = 0; i < 4; i++)
+		for(i = 0; i < 4; ++i)
 		{
 			s = i;		/* 0, 1, 2, 3 */
 			m = s+4;	/* 4, 5, 6, 7 */
@@ -229,13 +229,13 @@ static void extractnibbles(const unsigned char *data, int ntracks, int numnibble
 
 	n = ntracks/8;
 
-	for(i = 0; i < numnibbles; i++)
+	for(i = 0; i < numnibbles; ++i)
 	{
 		nibbles[i] = 0;
-		for(b = 0; b < 4; b++)
+		for(b = 0; b < 4; ++b)
 		{
 			c = 0;
-			for(j = 0; j < n; j++)
+			for(j = 0; j < n; ++j)
 			{
 				c += countbits(data[n*(4*i+3-b)+j]);
 			}
@@ -244,8 +244,7 @@ static void extractnibbles(const unsigned char *data, int ntracks, int numnibble
 	}
 }
 
-static int mark5_format_mark4_frame_time_int(const struct mark5_stream *ms,
-	int *mjd, int *sec, int *ns)
+static int mark5_format_mark4_frame_time_int(const struct mark5_stream *ms, int *mjd, int *sec, int *ns)
 {
 	char nibs[13];
 	struct mark5_format_mark4 *v;
@@ -263,25 +262,21 @@ static int mark5_format_mark4_frame_time_int(const struct mark5_stream *ms,
 
 	if(mjd)
 	{
-		*mjd = 51543 + 365*nibs[0] + nibs[1]*100
-			+ nibs[2]*10 + nibs[3] + (int)((nibs[0]+3)/4);
+		*mjd = 51543 + 365*nibs[0] + nibs[1]*100 + nibs[2]*10 + nibs[3] + (int)((nibs[0]+3)/4);
 	}
 	if(sec)
 	{
-		*sec = nibs[4]*36000 + nibs[5]*3600 + nibs[6]*600
-			+ nibs[7]*60 + nibs[8]*10 + nibs[9];
+		*sec = nibs[4]*36000 + nibs[5]*3600 + nibs[6]*600 + nibs[7]*60 + nibs[8]*10 + nibs[9];
 	}
 	if(ns)
 	{
-		*ns = nibs[10]*100000000 + nibs[11]*10000000
-			+ lastdig[(unsigned int)(nibs[12])];
+		*ns = nibs[10]*100000000 + nibs[11]*10000000 + lastdig[(unsigned int)(nibs[12])];
 	}
 
 	return 0;
 }
 
-static int mark5_format_mark4_frame_time(const struct mark5_stream *ms,
-	int *mjd, int *sec, double *ns)
+static int mark5_format_mark4_frame_time(const struct mark5_stream *ms, int *mjd, int *sec, double *ns)
 {
 	int ins, v;
 
@@ -310,17 +305,20 @@ static int mark5_format_mark4_validate(const struct mark5_stream *ms)
 	v = (struct mark5_format_mark4 *)(ms->formatdata);
 	ntrack = v->ntrack;
 	data = (unsigned int *)ms->frame;
-	for(t = 0; t < ntrack; t++)
+	for(t = 0; t < ntrack; ++t)
 	{
 		if(data[t] != 0xFFFFFFFFUL)
 		{
-			e++;
+			++e;
 		}
 	}
 
 	if(e > 0)
 	{
-		//fprintf(m5stdout, "mark5_format_mark4_validate[%s]: e=%d\n", ms->streamname, e);
+#ifdef DEBUG
+		fprintf(m5stdout, "mark5_format_mark4_validate[%s]: e=%d\n", ms->streamname, e);
+#endif
+
 		return 0;
 	}
 
@@ -338,15 +336,52 @@ static int mark5_format_mark4_validate(const struct mark5_stream *ms)
 
 		if(mjd_t != mjd_d || sec_t != sec_d || ns_t != ns_d)
 		{
-//			fprintf(m5stdout, "Mark4 validate[%lld]: %d %d %d : %d %d %lld\n",
-//				ms->framenum,
-//				mjd_d, sec_d, ns_d,
-//				mjd_t, sec_t, ns_t);
+#ifdef DEBUG
+			fprintf(m5stdout, "Mark4 validate[%lld]: %d %d %d : %d %d %lld\n",
+				ms->framenum,
+				mjd_d, sec_d, ns_d,
+				mjd_t, sec_t, ns_t);
+#endif
+
 			return 0;
 		}
 	}
 
 	return 1;
+}
+
+static void mark5_format_mark4_genheaders(struct mark5_stream *ms, int n, unsigned char *where)
+{
+	int i;
+	int ntrack;
+	struct mark5_format_mark4 *v;
+
+	if(!ms)
+	{
+		fprintf(m5stdout, "mark5_format_mark4_genheaders: ms=0\n");
+
+		return;
+	}
+
+	v = (struct mark5_format_mark4 *)(ms->formatdata);
+	ntrack = v->ntrack;
+
+	for(i = 0; i < n; i += ms->framegranularity)
+	{
+		int f;
+
+		for(f = 0; f < ms->framegranularity; ++f)
+		{
+			int t;
+
+			/* write sync word */
+			for(t = 0; t < 4*ntrack; ++t)
+			{
+				where[t] = 0xFF;
+			}
+			where += ms->framebytes;
+		}
+	}
 }
 
 static int mark5_format_mark4_fixmjd(struct mark5_stream *ms, int refmjd)
@@ -371,8 +406,7 @@ static int mark5_format_mark4_fixmjd(struct mark5_stream *ms, int refmjd)
 		extractnibbles(ms->frame + 4*v->ntrack, v->ntrack, 4, nibs);
 		nibs[0] += v->decade;
 
-		ms->mjd = 51543 + 365*nibs[0] + nibs[1]*100
-			+ nibs[2]*10 + nibs[3] + (int)((nibs[0]+3)/4);
+		ms->mjd = 51543 + 365*nibs[0] + nibs[1]*100 + nibs[2]*10 + nibs[3] + (int)((nibs[0]+3)/4);
 
 		return 1;
 	}
@@ -382,8 +416,7 @@ static int mark5_format_mark4_fixmjd(struct mark5_stream *ms, int refmjd)
 
 /*********************** data unpack routines **********************/
 
-static int mark4_decode_1bit_1track_fanout1_decimation1(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_1bit_1track_fanout1_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp;
@@ -428,8 +461,7 @@ static int mark4_decode_1bit_1track_fanout1_decimation1(struct mark5_stream *ms,
 	return nsamp - nblank;
 }
 
-static int mark4_decode_1bit_1track_fanout1_decimation2(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_1bit_1track_fanout1_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp;
@@ -474,8 +506,7 @@ static int mark4_decode_1bit_1track_fanout1_decimation2(struct mark5_stream *ms,
 	return nsamp - nblank;
 }
 
-static int mark4_decode_1bit_1track_fanout1_decimation4(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_1bit_1track_fanout1_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp;
@@ -521,8 +552,7 @@ static int mark4_decode_1bit_1track_fanout1_decimation4(struct mark5_stream *ms,
 	return nsamp - nblank;
 }
 
-static int mark4_decode_1bit_2track_fanout1_decimation1(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_1bit_2track_fanout1_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp;
@@ -568,8 +598,7 @@ static int mark4_decode_1bit_2track_fanout1_decimation1(struct mark5_stream *ms,
 	return nsamp - nblank;
 }
 
-static int mark4_decode_1bit_2track_fanout1_decimation2(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_1bit_2track_fanout1_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp;
@@ -615,8 +644,7 @@ static int mark4_decode_1bit_2track_fanout1_decimation2(struct mark5_stream *ms,
 	return nsamp - nblank;
 }
 
-static int mark4_decode_1bit_2track_fanout1_decimation4(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_1bit_2track_fanout1_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp;
@@ -663,8 +691,7 @@ static int mark4_decode_1bit_2track_fanout1_decimation4(struct mark5_stream *ms,
 	return nsamp - nblank;
 }
 
-static int mark4_decode_1bit_2track_fanout2_decimation1(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_1bit_2track_fanout2_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp;
@@ -711,8 +738,7 @@ static int mark4_decode_1bit_2track_fanout2_decimation1(struct mark5_stream *ms,
 	return nsamp - 2*nblank;
 }
 
-static int mark4_decode_1bit_2track_fanout2_decimation2(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_1bit_2track_fanout2_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp;
@@ -757,8 +783,7 @@ static int mark4_decode_1bit_2track_fanout2_decimation2(struct mark5_stream *ms,
 	return nsamp - 2*nblank;
 }
 
-static int mark4_decode_1bit_2track_fanout2_decimation4(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_1bit_2track_fanout2_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp;
@@ -804,8 +829,7 @@ static int mark4_decode_1bit_2track_fanout2_decimation4(struct mark5_stream *ms,
 	return nsamp - 2*nblank;
 }
 
-static int mark4_decode_1bit_4track_fanout1_decimation1(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_1bit_4track_fanout1_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp;
@@ -853,8 +877,7 @@ static int mark4_decode_1bit_4track_fanout1_decimation1(struct mark5_stream *ms,
 	return nsamp - nblank;
 }
 
-static int mark4_decode_1bit_4track_fanout1_decimation2(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_1bit_4track_fanout1_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp;
@@ -902,8 +925,7 @@ static int mark4_decode_1bit_4track_fanout1_decimation2(struct mark5_stream *ms,
 	return nsamp - nblank;
 }
 
-static int mark4_decode_1bit_4track_fanout1_decimation4(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_1bit_4track_fanout1_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp;
@@ -952,8 +974,7 @@ static int mark4_decode_1bit_4track_fanout1_decimation4(struct mark5_stream *ms,
 	return nsamp - nblank;
 }
 
-static int mark4_decode_1bit_4track_fanout2_decimation1(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_1bit_4track_fanout2_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp;
@@ -1002,8 +1023,7 @@ static int mark4_decode_1bit_4track_fanout2_decimation1(struct mark5_stream *ms,
 	return nsamp - 2*nblank;
 }
 
-static int mark4_decode_1bit_4track_fanout2_decimation2(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_1bit_4track_fanout2_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp;
@@ -1049,8 +1069,7 @@ static int mark4_decode_1bit_4track_fanout2_decimation2(struct mark5_stream *ms,
 	return nsamp - 2*nblank;
 }
 
-static int mark4_decode_1bit_4track_fanout2_decimation4(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_1bit_4track_fanout2_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp;
@@ -1097,8 +1116,7 @@ static int mark4_decode_1bit_4track_fanout2_decimation4(struct mark5_stream *ms,
 	return nsamp - 2*nblank;
 }
 
-static int mark4_decode_1bit_4track_fanout4_decimation1(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_1bit_4track_fanout4_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp;
@@ -1149,8 +1167,7 @@ static int mark4_decode_1bit_4track_fanout4_decimation1(struct mark5_stream *ms,
 	return nsamp - 4*nblank;
 }
 
-static int mark4_decode_1bit_4track_fanout4_decimation2(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_1bit_4track_fanout4_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp;
@@ -1197,8 +1214,7 @@ static int mark4_decode_1bit_4track_fanout4_decimation2(struct mark5_stream *ms,
 	return nsamp - 4*nblank;
 }
 
-static int mark4_decode_1bit_4track_fanout4_decimation4(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_1bit_4track_fanout4_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp;
@@ -1244,8 +1260,7 @@ static int mark4_decode_1bit_4track_fanout4_decimation4(struct mark5_stream *ms,
 	return nsamp - 4*nblank;
 }
 
-static int mark4_decode_1bit_8track_fanout1_decimation1(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_1bit_8track_fanout1_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp;
@@ -1297,8 +1312,7 @@ static int mark4_decode_1bit_8track_fanout1_decimation1(struct mark5_stream *ms,
 	return nsamp - nblank;
 }
 
-static int mark4_decode_1bit_8track_fanout1_decimation2(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_1bit_8track_fanout1_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp;
@@ -1350,8 +1364,7 @@ static int mark4_decode_1bit_8track_fanout1_decimation2(struct mark5_stream *ms,
 	return nsamp - nblank;
 }
 
-static int mark4_decode_1bit_8track_fanout1_decimation4(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_1bit_8track_fanout1_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp;
@@ -1404,8 +1417,7 @@ static int mark4_decode_1bit_8track_fanout1_decimation4(struct mark5_stream *ms,
 	return nsamp - nblank;
 }
 
-static int mark4_decode_1bit_8track_fanout2_decimation1(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_1bit_8track_fanout2_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp;
@@ -1458,8 +1470,7 @@ static int mark4_decode_1bit_8track_fanout2_decimation1(struct mark5_stream *ms,
 	return nsamp - 2*nblank;
 }
 
-static int mark4_decode_1bit_8track_fanout2_decimation2(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_1bit_8track_fanout2_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp;
@@ -1507,8 +1518,7 @@ static int mark4_decode_1bit_8track_fanout2_decimation2(struct mark5_stream *ms,
 	return nsamp - 2*nblank;
 }
 
-static int mark4_decode_1bit_8track_fanout2_decimation4(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_1bit_8track_fanout2_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp;
@@ -1557,8 +1567,7 @@ static int mark4_decode_1bit_8track_fanout2_decimation4(struct mark5_stream *ms,
 	return nsamp - 2*nblank;
 }
 
-static int mark4_decode_1bit_8track_fanout4_decimation1(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_1bit_8track_fanout4_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp;
@@ -1613,8 +1622,7 @@ static int mark4_decode_1bit_8track_fanout4_decimation1(struct mark5_stream *ms,
 	return nsamp - 4*nblank;
 }
 
-static int mark4_decode_1bit_8track_fanout4_decimation2(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_1bit_8track_fanout4_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp;
@@ -1663,8 +1671,7 @@ static int mark4_decode_1bit_8track_fanout4_decimation2(struct mark5_stream *ms,
 	return nsamp - 4*nblank;
 }
 
-static int mark4_decode_1bit_8track_fanout4_decimation4(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_1bit_8track_fanout4_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp;
@@ -1711,8 +1718,7 @@ static int mark4_decode_1bit_8track_fanout4_decimation4(struct mark5_stream *ms,
 	return nsamp - 4*nblank;
 }
 
-static int mark4_decode_1bit_16track_fanout1_decimation1(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_1bit_16track_fanout1_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp0, *fp1;
@@ -1778,8 +1784,7 @@ static int mark4_decode_1bit_16track_fanout1_decimation1(struct mark5_stream *ms
 	return nsamp - nblank;
 }
 
-static int mark4_decode_1bit_16track_fanout1_decimation2(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_1bit_16track_fanout1_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp0, *fp1;
@@ -1845,8 +1850,7 @@ static int mark4_decode_1bit_16track_fanout1_decimation2(struct mark5_stream *ms
 	return nsamp - nblank;
 }
 
-static int mark4_decode_1bit_16track_fanout1_decimation4(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_1bit_16track_fanout1_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp0, *fp1;
@@ -1913,8 +1917,7 @@ static int mark4_decode_1bit_16track_fanout1_decimation4(struct mark5_stream *ms
 	return nsamp - nblank;
 }
 
-static int mark4_decode_1bit_16track_fanout2_decimation1(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_1bit_16track_fanout2_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp0, *fp1;
@@ -1981,8 +1984,7 @@ static int mark4_decode_1bit_16track_fanout2_decimation1(struct mark5_stream *ms
 	return nsamp - 2*nblank;
 }
 
-static int mark4_decode_1bit_16track_fanout2_decimation2(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_1bit_16track_fanout2_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp0, *fp1;
@@ -2040,8 +2042,7 @@ static int mark4_decode_1bit_16track_fanout2_decimation2(struct mark5_stream *ms
 	return nsamp - 2*nblank;
 }
 
-static int mark4_decode_1bit_16track_fanout2_decimation4(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_1bit_16track_fanout2_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp0, *fp1;
@@ -2100,8 +2101,7 @@ static int mark4_decode_1bit_16track_fanout2_decimation4(struct mark5_stream *ms
 	return nsamp - 2*nblank;
 }
 
-static int mark4_decode_1bit_16track_fanout4_decimation1(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_1bit_16track_fanout4_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp0, *fp1;
@@ -2170,8 +2170,7 @@ static int mark4_decode_1bit_16track_fanout4_decimation1(struct mark5_stream *ms
 	return nsamp - 4*nblank;
 }
 
-static int mark4_decode_1bit_16track_fanout4_decimation2(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_1bit_16track_fanout4_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp0, *fp1;
@@ -2230,8 +2229,7 @@ static int mark4_decode_1bit_16track_fanout4_decimation2(struct mark5_stream *ms
 	return nsamp - 4*nblank;
 }
 
-static int mark4_decode_1bit_16track_fanout4_decimation4(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_1bit_16track_fanout4_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp0, *fp1;
@@ -2286,8 +2284,7 @@ static int mark4_decode_1bit_16track_fanout4_decimation4(struct mark5_stream *ms
 	return nsamp - 4*nblank;
 }
 
-static int mark4_decode_1bit_32track_fanout1_decimation1(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_1bit_32track_fanout1_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp0, *fp1, *fp2, *fp3;
@@ -2373,8 +2370,7 @@ static int mark4_decode_1bit_32track_fanout1_decimation1(struct mark5_stream *ms
 	return nsamp - nblank;
 }
 
-static int mark4_decode_1bit_32track_fanout1_decimation2(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_1bit_32track_fanout1_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp0, *fp1, *fp2, *fp3;
@@ -2460,8 +2456,7 @@ static int mark4_decode_1bit_32track_fanout1_decimation2(struct mark5_stream *ms
 	return nsamp - nblank;
 }
 
-static int mark4_decode_1bit_32track_fanout1_decimation4(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_1bit_32track_fanout1_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp0, *fp1, *fp2, *fp3;
@@ -2548,8 +2543,7 @@ static int mark4_decode_1bit_32track_fanout1_decimation4(struct mark5_stream *ms
 	return nsamp - nblank;
 }
 
-static int mark4_decode_1bit_32track_fanout2_decimation1(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_1bit_32track_fanout2_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp0, *fp1, *fp2, *fp3;
@@ -2636,8 +2630,7 @@ static int mark4_decode_1bit_32track_fanout2_decimation1(struct mark5_stream *ms
 	return nsamp - 2*nblank;
 }
 
-static int mark4_decode_1bit_32track_fanout2_decimation2(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_1bit_32track_fanout2_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp0, *fp1, *fp2, *fp3;
@@ -2707,8 +2700,7 @@ static int mark4_decode_1bit_32track_fanout2_decimation2(struct mark5_stream *ms
 	return nsamp - 2*nblank;
 }
 
-static int mark4_decode_1bit_32track_fanout2_decimation4(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_1bit_32track_fanout2_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp0, *fp1, *fp2, *fp3;
@@ -2779,8 +2771,7 @@ static int mark4_decode_1bit_32track_fanout2_decimation4(struct mark5_stream *ms
 	return nsamp - 2*nblank;
 }
 
-static int mark4_decode_1bit_32track_fanout4_decimation1(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_1bit_32track_fanout4_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp0, *fp1, *fp2, *fp3;
@@ -2869,8 +2860,7 @@ static int mark4_decode_1bit_32track_fanout4_decimation1(struct mark5_stream *ms
 	return nsamp - 4*nblank;
 }
 
-static int mark4_decode_1bit_32track_fanout4_decimation2(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_1bit_32track_fanout4_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp0, *fp1, *fp2, *fp3;
@@ -2941,8 +2931,7 @@ static int mark4_decode_1bit_32track_fanout4_decimation2(struct mark5_stream *ms
 	return nsamp - 4*nblank;
 }
 
-static int mark4_decode_1bit_32track_fanout4_decimation4(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_1bit_32track_fanout4_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp0, *fp1, *fp2, *fp3;
@@ -3005,8 +2994,7 @@ static int mark4_decode_1bit_32track_fanout4_decimation4(struct mark5_stream *ms
 	return nsamp - 4*nblank;
 }
 
-static int mark4_decode_1bit_64track_fanout1_decimation1(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_1bit_64track_fanout1_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp0, *fp1, *fp2, *fp3, *fp4, *fp5, *fp6, *fp7;
@@ -3132,8 +3120,7 @@ static int mark4_decode_1bit_64track_fanout1_decimation1(struct mark5_stream *ms
 	return nsamp - nblank;
 }
 
-static int mark4_decode_1bit_64track_fanout1_decimation2(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_1bit_64track_fanout1_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp0, *fp1, *fp2, *fp3, *fp4, *fp5, *fp6, *fp7;
@@ -3259,8 +3246,7 @@ static int mark4_decode_1bit_64track_fanout1_decimation2(struct mark5_stream *ms
 	return nsamp - nblank;
 }
 
-static int mark4_decode_1bit_64track_fanout1_decimation4(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_1bit_64track_fanout1_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp0, *fp1, *fp2, *fp3, *fp4, *fp5, *fp6, *fp7;
@@ -3387,8 +3373,7 @@ static int mark4_decode_1bit_64track_fanout1_decimation4(struct mark5_stream *ms
 	return nsamp - nblank;
 }
 
-static int mark4_decode_1bit_64track_fanout2_decimation1(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_1bit_64track_fanout2_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp0, *fp1, *fp2, *fp3, *fp4, *fp5, *fp6, *fp7;
@@ -3515,8 +3500,7 @@ static int mark4_decode_1bit_64track_fanout2_decimation1(struct mark5_stream *ms
 	return nsamp - 2*nblank;
 }
 
-static int mark4_decode_1bit_64track_fanout2_decimation2(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_1bit_64track_fanout2_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp0, *fp1, *fp2, *fp3, *fp4, *fp5, *fp6, *fp7;
@@ -3610,8 +3594,7 @@ static int mark4_decode_1bit_64track_fanout2_decimation2(struct mark5_stream *ms
 	return nsamp - 2*nblank;
 }
 
-static int mark4_decode_1bit_64track_fanout2_decimation4(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_1bit_64track_fanout2_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp0, *fp1, *fp2, *fp3, *fp4, *fp5, *fp6, *fp7;
@@ -3706,8 +3689,7 @@ static int mark4_decode_1bit_64track_fanout2_decimation4(struct mark5_stream *ms
 	return nsamp - 2*nblank;
 }
 
-static int mark4_decode_1bit_64track_fanout4_decimation1(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_1bit_64track_fanout4_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp0, *fp1, *fp2, *fp3, *fp4, *fp5, *fp6, *fp7;
@@ -3836,8 +3818,7 @@ static int mark4_decode_1bit_64track_fanout4_decimation1(struct mark5_stream *ms
 	return nsamp - 4*nblank;
 }
 
-static int mark4_decode_1bit_64track_fanout4_decimation2(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_1bit_64track_fanout4_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp0, *fp1, *fp2, *fp3, *fp4, *fp5, *fp6, *fp7;
@@ -3932,8 +3913,7 @@ static int mark4_decode_1bit_64track_fanout4_decimation2(struct mark5_stream *ms
 	return nsamp - 4*nblank;
 }
 
-static int mark4_decode_1bit_64track_fanout4_decimation4(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_1bit_64track_fanout4_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp0, *fp1, *fp2, *fp3, *fp4, *fp5, *fp6, *fp7;
@@ -4014,8 +3994,7 @@ static int mark4_decode_1bit_64track_fanout4_decimation4(struct mark5_stream *ms
 
 /************************ 2-bit decoders *********************/
 
-static int mark4_decode_2bit_2track_fanout1_decimation1(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_2bit_2track_fanout1_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp;
@@ -4060,8 +4039,7 @@ static int mark4_decode_2bit_2track_fanout1_decimation1(struct mark5_stream *ms,
 	return nsamp - nblank;
 }
 
-static int mark4_decode_2bit_2track_fanout1_decimation2(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_2bit_2track_fanout1_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp;
@@ -4106,8 +4084,7 @@ static int mark4_decode_2bit_2track_fanout1_decimation2(struct mark5_stream *ms,
 	return nsamp - nblank;
 }
 
-static int mark4_decode_2bit_2track_fanout1_decimation4(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_2bit_2track_fanout1_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp;
@@ -4153,8 +4130,7 @@ static int mark4_decode_2bit_2track_fanout1_decimation4(struct mark5_stream *ms,
 	return nsamp - nblank;
 }
 
-static int mark4_decode_2bit_4track_fanout1_decimation1(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_2bit_4track_fanout1_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp;
@@ -4200,8 +4176,7 @@ static int mark4_decode_2bit_4track_fanout1_decimation1(struct mark5_stream *ms,
 	return nsamp - nblank;
 }
 
-static int mark4_decode_2bit_4track_fanout1_decimation2(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_2bit_4track_fanout1_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp;
@@ -4247,8 +4222,7 @@ static int mark4_decode_2bit_4track_fanout1_decimation2(struct mark5_stream *ms,
 	return nsamp - nblank;
 }
 
-static int mark4_decode_2bit_4track_fanout1_decimation4(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_2bit_4track_fanout1_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp;
@@ -4295,8 +4269,7 @@ static int mark4_decode_2bit_4track_fanout1_decimation4(struct mark5_stream *ms,
 	return nsamp - nblank;
 }
 
-static int mark4_decode_2bit_4track_fanout2_decimation1(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_2bit_4track_fanout2_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp;
@@ -4343,8 +4316,7 @@ static int mark4_decode_2bit_4track_fanout2_decimation1(struct mark5_stream *ms,
 	return nsamp - 2*nblank;
 }
 
-static int mark4_decode_2bit_4track_fanout2_decimation2(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_2bit_4track_fanout2_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp;
@@ -4389,8 +4361,7 @@ static int mark4_decode_2bit_4track_fanout2_decimation2(struct mark5_stream *ms,
 	return nsamp - 2*nblank;
 }
 
-static int mark4_decode_2bit_4track_fanout2_decimation4(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_2bit_4track_fanout2_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp;
@@ -4436,8 +4407,7 @@ static int mark4_decode_2bit_4track_fanout2_decimation4(struct mark5_stream *ms,
 	return nsamp - 2*nblank;
 }
 
-static int mark4_decode_2bit_8track_fanout1_decimation1(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_2bit_8track_fanout1_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp;
@@ -4485,8 +4455,7 @@ static int mark4_decode_2bit_8track_fanout1_decimation1(struct mark5_stream *ms,
 	return nsamp - nblank;
 }
 
-static int mark4_decode_2bit_8track_fanout1_decimation2(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_2bit_8track_fanout1_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp;
@@ -4534,8 +4503,7 @@ static int mark4_decode_2bit_8track_fanout1_decimation2(struct mark5_stream *ms,
 	return nsamp - nblank;
 }
 
-static int mark4_decode_2bit_8track_fanout1_decimation4(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_2bit_8track_fanout1_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp;
@@ -4584,8 +4552,7 @@ static int mark4_decode_2bit_8track_fanout1_decimation4(struct mark5_stream *ms,
 	return nsamp - nblank;
 }
 
-static int mark4_decode_2bit_8track_fanout2_decimation1(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_2bit_8track_fanout2_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp;
@@ -4634,8 +4601,7 @@ static int mark4_decode_2bit_8track_fanout2_decimation1(struct mark5_stream *ms,
 	return nsamp - 2*nblank;
 }
 
-static int mark4_decode_2bit_8track_fanout2_decimation2(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_2bit_8track_fanout2_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp;
@@ -4681,8 +4647,7 @@ static int mark4_decode_2bit_8track_fanout2_decimation2(struct mark5_stream *ms,
 	return nsamp - 2*nblank;
 }
 
-static int mark4_decode_2bit_8track_fanout2_decimation4(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_2bit_8track_fanout2_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp;
@@ -4729,8 +4694,7 @@ static int mark4_decode_2bit_8track_fanout2_decimation4(struct mark5_stream *ms,
 	return nsamp - 2*nblank;
 }
 
-static int mark4_decode_2bit_8track_fanout4_decimation1(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_2bit_8track_fanout4_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp;
@@ -4781,8 +4745,7 @@ static int mark4_decode_2bit_8track_fanout4_decimation1(struct mark5_stream *ms,
 	return nsamp - 4*nblank;
 }
 
-static int mark4_decode_2bit_8track_fanout4_decimation2(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_2bit_8track_fanout4_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp;
@@ -4829,8 +4792,7 @@ static int mark4_decode_2bit_8track_fanout4_decimation2(struct mark5_stream *ms,
 	return nsamp - 4*nblank;
 }
 
-static int mark4_decode_2bit_8track_fanout4_decimation4(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_2bit_8track_fanout4_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp;
@@ -4876,8 +4838,7 @@ static int mark4_decode_2bit_8track_fanout4_decimation4(struct mark5_stream *ms,
 	return nsamp - 4*nblank;
 }
 
-static int mark4_decode_2bit_16track_fanout1_decimation1(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_2bit_16track_fanout1_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp0, *fp1;
@@ -4935,8 +4896,7 @@ static int mark4_decode_2bit_16track_fanout1_decimation1(struct mark5_stream *ms
 	return nsamp - nblank;
 }
 
-static int mark4_decode_2bit_16track_fanout1_decimation2(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_2bit_16track_fanout1_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp0, *fp1;
@@ -4994,8 +4954,7 @@ static int mark4_decode_2bit_16track_fanout1_decimation2(struct mark5_stream *ms
 	return nsamp - nblank;
 }
 
-static int mark4_decode_2bit_16track_fanout1_decimation4(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_2bit_16track_fanout1_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp0, *fp1;
@@ -5054,8 +5013,7 @@ static int mark4_decode_2bit_16track_fanout1_decimation4(struct mark5_stream *ms
 	return nsamp - nblank;
 }
 
-static int mark4_decode_2bit_16track_fanout2_decimation1(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_2bit_16track_fanout2_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp0, *fp1;
@@ -5114,8 +5072,7 @@ static int mark4_decode_2bit_16track_fanout2_decimation1(struct mark5_stream *ms
 	return nsamp - 2*nblank;
 }
 
-static int mark4_decode_2bit_16track_fanout2_decimation2(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_2bit_16track_fanout2_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp0, *fp1;
@@ -5169,8 +5126,7 @@ static int mark4_decode_2bit_16track_fanout2_decimation2(struct mark5_stream *ms
 	return nsamp - 2*nblank;
 }
 
-static int mark4_decode_2bit_16track_fanout2_decimation4(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_2bit_16track_fanout2_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp0, *fp1;
@@ -5225,8 +5181,7 @@ static int mark4_decode_2bit_16track_fanout2_decimation4(struct mark5_stream *ms
 	return nsamp - 2*nblank;
 }
 
-static int mark4_decode_2bit_16track_fanout4_decimation1(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_2bit_16track_fanout4_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp0, *fp1;
@@ -5287,8 +5242,7 @@ static int mark4_decode_2bit_16track_fanout4_decimation1(struct mark5_stream *ms
 	return nsamp - 4*nblank;
 }
 
-static int mark4_decode_2bit_16track_fanout4_decimation2(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_2bit_16track_fanout4_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp0, *fp1;
@@ -5343,8 +5297,7 @@ static int mark4_decode_2bit_16track_fanout4_decimation2(struct mark5_stream *ms
 	return nsamp - 4*nblank;
 }
 
-static int mark4_decode_2bit_16track_fanout4_decimation4(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_2bit_16track_fanout4_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp0, *fp1;
@@ -5397,8 +5350,7 @@ static int mark4_decode_2bit_16track_fanout4_decimation4(struct mark5_stream *ms
 	return nsamp - 4*nblank;
 }
 
-static int mark4_decode_2bit_32track_fanout1_decimation1(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_2bit_32track_fanout1_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp0, *fp1, *fp2, *fp3;
@@ -5468,8 +5420,7 @@ static int mark4_decode_2bit_32track_fanout1_decimation1(struct mark5_stream *ms
 	return nsamp - nblank;
 }
 
-static int mark4_decode_2bit_32track_fanout1_decimation2(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_2bit_32track_fanout1_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp0, *fp1, *fp2, *fp3;
@@ -5539,8 +5490,7 @@ static int mark4_decode_2bit_32track_fanout1_decimation2(struct mark5_stream *ms
 	return nsamp - nblank;
 }
 
-static int mark4_decode_2bit_32track_fanout1_decimation4(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_2bit_32track_fanout1_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp0, *fp1, *fp2, *fp3;
@@ -5611,8 +5561,7 @@ static int mark4_decode_2bit_32track_fanout1_decimation4(struct mark5_stream *ms
 	return nsamp - nblank;
 }
 
-static int mark4_decode_2bit_32track_fanout2_decimation1(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_2bit_32track_fanout2_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp0, *fp1, *fp2, *fp3;
@@ -5683,8 +5632,7 @@ static int mark4_decode_2bit_32track_fanout2_decimation1(struct mark5_stream *ms
 	return nsamp - 2*nblank;
 }
 
-static int mark4_decode_2bit_32track_fanout2_decimation2(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_2bit_32track_fanout2_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp0, *fp1, *fp2, *fp3;
@@ -5746,8 +5694,7 @@ static int mark4_decode_2bit_32track_fanout2_decimation2(struct mark5_stream *ms
 	return nsamp - 2*nblank;
 }
 
-static int mark4_decode_2bit_32track_fanout2_decimation4(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_2bit_32track_fanout2_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp0, *fp1, *fp2, *fp3;
@@ -5810,8 +5757,7 @@ static int mark4_decode_2bit_32track_fanout2_decimation4(struct mark5_stream *ms
 	return nsamp - 2*nblank;
 }
 
-static int mark4_decode_2bit_32track_fanout4_decimation1(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_2bit_32track_fanout4_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned int *buf, bits;
 	float *fp0, *fp1, *fp2, *fp3;
@@ -5882,8 +5828,7 @@ static int mark4_decode_2bit_32track_fanout4_decimation1(struct mark5_stream *ms
 	return nsamp - 4*nblank;
 }
 
-static int mark4_decode_2bit_32track_fanout4_decimation2(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_2bit_32track_fanout4_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned int *buf, bits;
 	float *fp0, *fp1, *fp2, *fp3;
@@ -5944,8 +5889,7 @@ static int mark4_decode_2bit_32track_fanout4_decimation2(struct mark5_stream *ms
 	return nsamp - 4*nblank;
 }
 
-static int mark4_decode_2bit_32track_fanout4_decimation4(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_2bit_32track_fanout4_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned int *buf, bits;
 	float *fp0, *fp1, *fp2, *fp3;
@@ -6002,8 +5946,7 @@ static int mark4_decode_2bit_32track_fanout4_decimation4(struct mark5_stream *ms
 	return nsamp - 4*nblank;
 }
 
-static int mark4_decode_2bit_64track_fanout1_decimation1(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_2bit_64track_fanout1_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp0, *fp1, *fp2, *fp3, *fp4, *fp5, *fp6, *fp7;
@@ -6097,8 +6040,7 @@ static int mark4_decode_2bit_64track_fanout1_decimation1(struct mark5_stream *ms
 	return nsamp - nblank;
 }
 
-static int mark4_decode_2bit_64track_fanout1_decimation2(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_2bit_64track_fanout1_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp0, *fp1, *fp2, *fp3, *fp4, *fp5, *fp6, *fp7;
@@ -6192,8 +6134,7 @@ static int mark4_decode_2bit_64track_fanout1_decimation2(struct mark5_stream *ms
 	return nsamp - nblank;
 }
 
-static int mark4_decode_2bit_64track_fanout1_decimation4(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_2bit_64track_fanout1_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp0, *fp1, *fp2, *fp3, *fp4, *fp5, *fp6, *fp7;
@@ -6289,8 +6230,7 @@ static int mark4_decode_2bit_64track_fanout1_decimation4(struct mark5_stream *ms
 	return nsamp - nblank;
 }
 
-static int mark4_decode_2bit_64track_fanout2_decimation1(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_2bit_64track_fanout2_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp0, *fp1, *fp2, *fp3, *fp4, *fp5, *fp6, *fp7;
@@ -6385,8 +6325,7 @@ static int mark4_decode_2bit_64track_fanout2_decimation1(struct mark5_stream *ms
 	return nsamp - 2*nblank;
 }
 
-static int mark4_decode_2bit_64track_fanout2_decimation2(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_2bit_64track_fanout2_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp0, *fp1, *fp2, *fp3, *fp4, *fp5, *fp6, *fp7;
@@ -6464,8 +6403,7 @@ static int mark4_decode_2bit_64track_fanout2_decimation2(struct mark5_stream *ms
 	return nsamp - 2*nblank;
 }
 
-static int mark4_decode_2bit_64track_fanout2_decimation4(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_2bit_64track_fanout2_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned char *buf;
 	float *fp0, *fp1, *fp2, *fp3, *fp4, *fp5, *fp6, *fp7;
@@ -6545,8 +6483,7 @@ static int mark4_decode_2bit_64track_fanout2_decimation4(struct mark5_stream *ms
 	return nsamp - 2*nblank;
 }
 
-static int mark4_decode_2bit_64track_fanout4_decimation1(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_2bit_64track_fanout4_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned long long *buf, bits;
 	float *fp0, *fp1, *fp2, *fp3, *fp4, *fp5, *fp6, *fp7;
@@ -6637,8 +6574,7 @@ static int mark4_decode_2bit_64track_fanout4_decimation1(struct mark5_stream *ms
 	return nsamp - 4*nblank;
 }
 
-static int mark4_decode_2bit_64track_fanout4_decimation2(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_2bit_64track_fanout4_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned long long *buf, bits;
 	float *fp0, *fp1, *fp2, *fp3, *fp4, *fp5, *fp6, *fp7;
@@ -6711,8 +6647,7 @@ static int mark4_decode_2bit_64track_fanout4_decimation2(struct mark5_stream *ms
 	return nsamp - 4*nblank;
 }
 
-static int mark4_decode_2bit_64track_fanout4_decimation4(struct mark5_stream *ms,
-	int nsamp, float **data)
+static int mark4_decode_2bit_64track_fanout4_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
 	unsigned long long *buf, bits;
 	float *fp0, *fp1, *fp2, *fp3, *fp4, *fp5, *fp6, *fp7;
@@ -7003,10 +6938,8 @@ struct mark5_format_generic *new_mark5_format_mark4(int Mbps, int nchan,
 		return 0;
 	}
 
-	v = (struct mark5_format_mark4 *)calloc(1,
-		sizeof(struct mark5_format_mark4));
-	f = (struct mark5_format_generic *)calloc(1,
-		sizeof(struct mark5_format_generic));
+	v = (struct mark5_format_mark4 *)calloc(1, sizeof(struct mark5_format_mark4));
+	f = (struct mark5_format_generic *)calloc(1, sizeof(struct mark5_format_generic));
 
 	v->ntrack = ntrack;
 	v->fanout = fanout;
@@ -7021,6 +6954,7 @@ struct mark5_format_generic *new_mark5_format_mark4(int Mbps, int nchan,
 	f->fixmjd = mark5_format_mark4_fixmjd;
 	f->init_format = mark5_format_mark4_init;
 	f->final_format = mark5_format_mark4_final;
+	f->genheaders = mark5_format_mark4_genheaders;
 	f->validate = mark5_format_mark4_validate;
 	f->decimation = decimation;
 	f->decode = 0;
@@ -7135,6 +7069,7 @@ struct mark5_format_generic *new_mark5_format_mark4(int Mbps, int nchan,
 		fprintf(m5stderr, "Illegal combination of fanout, tracks and bits\n");
 		free(v);
 		free(f);
+
 		return 0;
 	}
 
