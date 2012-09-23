@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2010 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2007-2012 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -137,7 +137,7 @@ int DifxVisRecordgetnext(DifxVisRecord *vis)
 			return -1;
 		}
 		DifxParametersaddrow(vis->params, line);
-		for(i = 1; i < 13; i++)
+		for(i = 1; i < 13; ++i)
 		{
 			ptr = fgets(line, MaxLineLength, vis->infile);
 			if(ptr == 0)
@@ -165,33 +165,31 @@ int DifxVisRecordgetnext(DifxVisRecord *vis)
 		v = fread(&(vis->headerversion), sizeof(int), 1, vis->infile);
 		if(vis->headerversion == 1) /* new style binary header */
 		{
-			v = fread(&(vis->baseline), sizeof(int), 1, vis->infile);
-			v = fread(&(vis->mjd), sizeof(int), 1, vis->infile);
-			v = fread(&(vis->seconds), sizeof(double), 1, vis->infile);
-			v = fread(&(vis->configindex), sizeof(int), 1, vis->infile);
-			v = fread(&(vis->sourceindex), sizeof(int), 1, vis->infile);
-			v = fread(&(vis->freqindex), sizeof(int), 1, vis->infile);
-			v = fread(&(vis->polpair), 1, 2, vis->infile);
-			v = fread(&(vis->pulsarbin), sizeof(int), 1, vis->infile);
-			v = fread(&(vis->dataweight), sizeof(double), 1, vis->infile);
-			v = fread(&(vis->uvw), sizeof(double), 3, vis->infile);
-			if(v < 3)
+			v  = fread(&(vis->baseline), sizeof(int), 1, vis->infile);
+			v += fread(&(vis->mjd), sizeof(int), 1, vis->infile);
+			v += fread(&(vis->seconds), sizeof(double), 1, vis->infile);
+			v += fread(&(vis->configindex), sizeof(int), 1, vis->infile);
+			v += fread(&(vis->sourceindex), sizeof(int), 1, vis->infile);
+			v += fread(&(vis->freqindex), sizeof(int), 1, vis->infile);
+			v += fread(&(vis->polpair), 1, 2, vis->infile);
+			v += fread(&(vis->pulsarbin), sizeof(int), 1, vis->infile);
+			v += fread(&(vis->dataweight), sizeof(double), 1, vis->infile);
+			v += fread(&(vis->uvw), sizeof(double), 3, vis->infile);
+			if(v != 13)	/* 13 is total number of items read above */
 			{
 				return -1;
 			}
 		}
 		else /* dunno what to do */
 		{
-			fprintf(stderr, "Error: DifxVisRecordgetnext: got a sync of %x and version of %d for visibility number %d\n", 
-				vis->sync, vis->headerversion, vis->visnum);
+			fprintf(stderr, "Error: DifxVisRecordgetnext: got a sync of %x and version of %d for visibility number %d\n", vis->sync, vis->headerversion, vis->visnum);
 
 			return -1;
 		}
 	}
 	else
 	{
-		fprintf(stderr, "Error: DifxVisRecordgetnext: got a sync of %x for visibility number %d\n", 
-			vis->sync, vis->visnum);
+		fprintf(stderr, "Error: DifxVisRecordgetnext: got a sync of %x for visibility number %d\n", vis->sync, vis->visnum);
 
 		return -1;
 	}
@@ -205,7 +203,7 @@ int DifxVisRecordgetnext(DifxVisRecord *vis)
 		return -1;
 	}
 
-	vis->visnum++;
+	++vis->visnum;
 
 	return vis->visnum;
 }

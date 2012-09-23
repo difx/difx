@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2011 by Walter Brisken                             *
+ *   Copyright (C) 2008-2012 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -336,12 +336,14 @@ int evaluateDifxSpacecraft(const DifxSpacecraft *sc, int mjd, double fracMjd,
 	evalPoly(yPoly, t, &Y);
 	evalPoly(zPoly, t, &Z);
 
+#if 0
 	/* linear interpolation of velocity gives smoother results than
 	 * evaluating derivative polynomial.  Why??? 
 	 */
 	dX = pos[r0].dX + t*(pos[r1].dX - pos[r0].dX);
 	dY = pos[r0].dY + t*(pos[r1].dY - pos[r0].dY);
 	dZ = pos[r0].dZ + t*(pos[r1].dZ - pos[r0].dZ);
+#endif
 
 	/* override interpolation with linear... */
 	X  = pos[r0].X*(1.0-t) + pos[r1].X*t;
