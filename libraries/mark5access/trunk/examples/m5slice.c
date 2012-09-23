@@ -18,11 +18,11 @@
 //===========================================================================
 // SVN properties (DO NOT CHANGE)
 //
-// $Id: $
+// $Id$
 // $HeadURL:  $
-// $LastChangedRevision:  $
-// $Author:  $
-// $LastChangedDate:  $
+// $LastChangedRevision$
+// $Author$
+// $LastChangedDate$
 //
 //============================================================================
 
@@ -49,6 +49,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include <unistd.h>
 #include <time.h>
 #include <math.h>
 #include <sys/stat.h>
@@ -82,7 +83,7 @@ static void usage(const char *pgm)
 }
 
 int main(int argc, char **argv) {
-  int frameoffset, infile, outfile, bufsize;
+  int infile, outfile, bufsize;
   size_t readbytes, offsetbytes, thisread, nread, nwrote;
   off_t sook;
   double offset, length, framens;
@@ -135,7 +136,6 @@ int main(int argc, char **argv) {
 	fprintf(stderr, "Could not offset to right place in file\n");
       close(infile);
       free(outname);
-      free(buf);
       return EXIT_FAILURE;
     }
   }
@@ -149,7 +149,6 @@ int main(int argc, char **argv) {
     outname = malloc(strlen(inname)+strlen("-slice")+1);
     if (outname==NULL) {
       close(infile);
-      free(buf);
       free(outname);
       return EXIT_FAILURE;
     }
