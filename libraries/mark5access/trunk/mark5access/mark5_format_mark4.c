@@ -222,8 +222,7 @@ static int findfirstframe(const unsigned char *data, int bytes, int tracks)
 /* look at encoded nibbles.  Count bits in each track, assume set if
  * more than half are
  */
-static void extractnibbles(const unsigned char *data, int ntracks, int numnibbles,
-	char *nibbles)
+static void extractnibbles(const unsigned char *data, int ntracks, int numnibbles, char *nibbles)
 {
 	int i, j, b, n, c;
 
@@ -418,8 +417,8 @@ static int mark5_format_mark4_fixmjd(struct mark5_stream *ms, int refmjd)
 
 static int mark4_decode_1bit_1track_fanout1_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i;
 	int zone;
 	int nblank = 0;
@@ -463,8 +462,8 @@ static int mark4_decode_1bit_1track_fanout1_decimation1(struct mark5_stream *ms,
 
 static int mark4_decode_1bit_1track_fanout1_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i;
 	int zone;
 	int nblank = 0;
@@ -508,8 +507,8 @@ static int mark4_decode_1bit_1track_fanout1_decimation2(struct mark5_stream *ms,
 
 static int mark4_decode_1bit_1track_fanout1_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i, df;
 	int zone;
 	int nblank = 0;
@@ -554,8 +553,8 @@ static int mark4_decode_1bit_1track_fanout1_decimation4(struct mark5_stream *ms,
 
 static int mark4_decode_1bit_2track_fanout1_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i;
 	int zone;
 	int nblank = 0;
@@ -600,8 +599,8 @@ static int mark4_decode_1bit_2track_fanout1_decimation1(struct mark5_stream *ms,
 
 static int mark4_decode_1bit_2track_fanout1_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i;
 	int zone;
 	int nblank = 0;
@@ -646,8 +645,8 @@ static int mark4_decode_1bit_2track_fanout1_decimation2(struct mark5_stream *ms,
 
 static int mark4_decode_1bit_2track_fanout1_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i, df;
 	int zone;
 	int nblank = 0;
@@ -693,8 +692,8 @@ static int mark4_decode_1bit_2track_fanout1_decimation4(struct mark5_stream *ms,
 
 static int mark4_decode_1bit_2track_fanout2_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i;
 	int zone;
 	int nblank = 0;
@@ -740,8 +739,8 @@ static int mark4_decode_1bit_2track_fanout2_decimation1(struct mark5_stream *ms,
 
 static int mark4_decode_1bit_2track_fanout2_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i;
 	int zone;
 	int nblank = 0;
@@ -785,8 +784,8 @@ static int mark4_decode_1bit_2track_fanout2_decimation2(struct mark5_stream *ms,
 
 static int mark4_decode_1bit_2track_fanout2_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i, df;
 	int zone;
 	int nblank = 0;
@@ -831,8 +830,8 @@ static int mark4_decode_1bit_2track_fanout2_decimation4(struct mark5_stream *ms,
 
 static int mark4_decode_1bit_4track_fanout1_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i;
 	int zone;
 	int nblank = 0;
@@ -879,8 +878,8 @@ static int mark4_decode_1bit_4track_fanout1_decimation1(struct mark5_stream *ms,
 
 static int mark4_decode_1bit_4track_fanout1_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i;
 	int zone;
 	int nblank = 0;
@@ -927,8 +926,8 @@ static int mark4_decode_1bit_4track_fanout1_decimation2(struct mark5_stream *ms,
 
 static int mark4_decode_1bit_4track_fanout1_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i, df;
 	int zone;
 	int nblank = 0;
@@ -976,8 +975,8 @@ static int mark4_decode_1bit_4track_fanout1_decimation4(struct mark5_stream *ms,
 
 static int mark4_decode_1bit_4track_fanout2_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i;
 	int zone;
 	int nblank = 0;
@@ -1025,8 +1024,8 @@ static int mark4_decode_1bit_4track_fanout2_decimation1(struct mark5_stream *ms,
 
 static int mark4_decode_1bit_4track_fanout2_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i;
 	int zone;
 	int nblank = 0;
@@ -1071,8 +1070,8 @@ static int mark4_decode_1bit_4track_fanout2_decimation2(struct mark5_stream *ms,
 
 static int mark4_decode_1bit_4track_fanout2_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i, df;
 	int zone;
 	int nblank = 0;
@@ -1118,8 +1117,8 @@ static int mark4_decode_1bit_4track_fanout2_decimation4(struct mark5_stream *ms,
 
 static int mark4_decode_1bit_4track_fanout4_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i;
 	int zone;
 	int nblank = 0;
@@ -1169,8 +1168,8 @@ static int mark4_decode_1bit_4track_fanout4_decimation1(struct mark5_stream *ms,
 
 static int mark4_decode_1bit_4track_fanout4_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i;
 	int zone;
 	int nblank = 0;
@@ -1216,8 +1215,8 @@ static int mark4_decode_1bit_4track_fanout4_decimation2(struct mark5_stream *ms,
 
 static int mark4_decode_1bit_4track_fanout4_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i, df;
 	int zone;
 	int nblank = 0;
@@ -1262,8 +1261,8 @@ static int mark4_decode_1bit_4track_fanout4_decimation4(struct mark5_stream *ms,
 
 static int mark4_decode_1bit_8track_fanout1_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i;
 	int zone;
 	int nblank = 0;
@@ -1314,8 +1313,8 @@ static int mark4_decode_1bit_8track_fanout1_decimation1(struct mark5_stream *ms,
 
 static int mark4_decode_1bit_8track_fanout1_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i;
 	int zone;
 	int nblank = 0;
@@ -1366,8 +1365,8 @@ static int mark4_decode_1bit_8track_fanout1_decimation2(struct mark5_stream *ms,
 
 static int mark4_decode_1bit_8track_fanout1_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i, df;
 	int zone;
 	int nblank = 0;
@@ -1419,8 +1418,8 @@ static int mark4_decode_1bit_8track_fanout1_decimation4(struct mark5_stream *ms,
 
 static int mark4_decode_1bit_8track_fanout2_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i;
 	int zone;
 	int nblank = 0;
@@ -1472,8 +1471,8 @@ static int mark4_decode_1bit_8track_fanout2_decimation1(struct mark5_stream *ms,
 
 static int mark4_decode_1bit_8track_fanout2_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i;
 	int zone;
 	int nblank = 0;
@@ -1520,8 +1519,8 @@ static int mark4_decode_1bit_8track_fanout2_decimation2(struct mark5_stream *ms,
 
 static int mark4_decode_1bit_8track_fanout2_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i, df;
 	int zone;
 	int nblank = 0;
@@ -1569,8 +1568,8 @@ static int mark4_decode_1bit_8track_fanout2_decimation4(struct mark5_stream *ms,
 
 static int mark4_decode_1bit_8track_fanout4_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i;
 	int zone;
 	int nblank = 0;
@@ -1624,8 +1623,8 @@ static int mark4_decode_1bit_8track_fanout4_decimation1(struct mark5_stream *ms,
 
 static int mark4_decode_1bit_8track_fanout4_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i;
 	int zone;
 	int nblank = 0;
@@ -1673,8 +1672,8 @@ static int mark4_decode_1bit_8track_fanout4_decimation2(struct mark5_stream *ms,
 
 static int mark4_decode_1bit_8track_fanout4_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i, df;
 	int zone;
 	int nblank = 0;
@@ -1720,8 +1719,8 @@ static int mark4_decode_1bit_8track_fanout4_decimation4(struct mark5_stream *ms,
 
 static int mark4_decode_1bit_16track_fanout1_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp0, *fp1;
+	const unsigned char *buf;
+	const float *fp0, *fp1;
 	int o, i, m;
 	int zone;
 	int nblank = 0;
@@ -1786,8 +1785,8 @@ static int mark4_decode_1bit_16track_fanout1_decimation1(struct mark5_stream *ms
 
 static int mark4_decode_1bit_16track_fanout1_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp0, *fp1;
+	const unsigned char *buf;
+	const float *fp0, *fp1;
 	int o, i, m;
 	int zone;
 	int nblank = 0;
@@ -1852,8 +1851,8 @@ static int mark4_decode_1bit_16track_fanout1_decimation2(struct mark5_stream *ms
 
 static int mark4_decode_1bit_16track_fanout1_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp0, *fp1;
+	const unsigned char *buf;
+	const float *fp0, *fp1;
 	int o, i, m, df;
 	int zone;
 	int nblank = 0;
@@ -1919,8 +1918,8 @@ static int mark4_decode_1bit_16track_fanout1_decimation4(struct mark5_stream *ms
 
 static int mark4_decode_1bit_16track_fanout2_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp0, *fp1;
+	const unsigned char *buf;
+	const float *fp0, *fp1;
 	int o, i, m;
 	int zone;
 	int nblank = 0;
@@ -1986,8 +1985,8 @@ static int mark4_decode_1bit_16track_fanout2_decimation1(struct mark5_stream *ms
 
 static int mark4_decode_1bit_16track_fanout2_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp0, *fp1;
+	const unsigned char *buf;
+	const float *fp0, *fp1;
 	int o, i, m;
 	int zone;
 	int nblank = 0;
@@ -2044,8 +2043,8 @@ static int mark4_decode_1bit_16track_fanout2_decimation2(struct mark5_stream *ms
 
 static int mark4_decode_1bit_16track_fanout2_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp0, *fp1;
+	const unsigned char *buf;
+	const float *fp0, *fp1;
 	int o, i, m, df;
 	int zone;
 	int nblank = 0;
@@ -2103,8 +2102,8 @@ static int mark4_decode_1bit_16track_fanout2_decimation4(struct mark5_stream *ms
 
 static int mark4_decode_1bit_16track_fanout4_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp0, *fp1;
+	const unsigned char *buf;
+	const float *fp0, *fp1;
 	int o, i, m;
 	int zone;
 	int nblank = 0;
@@ -2172,8 +2171,8 @@ static int mark4_decode_1bit_16track_fanout4_decimation1(struct mark5_stream *ms
 
 static int mark4_decode_1bit_16track_fanout4_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp0, *fp1;
+	const unsigned char *buf;
+	const float *fp0, *fp1;
 	int o, i, m;
 	int zone;
 	int nblank = 0;
@@ -2231,8 +2230,8 @@ static int mark4_decode_1bit_16track_fanout4_decimation2(struct mark5_stream *ms
 
 static int mark4_decode_1bit_16track_fanout4_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp0, *fp1;
+	const unsigned char *buf;
+	const float *fp0, *fp1;
 	int o, i, m, df;
 	int zone;
 	int nblank = 0;
@@ -2286,8 +2285,8 @@ static int mark4_decode_1bit_16track_fanout4_decimation4(struct mark5_stream *ms
 
 static int mark4_decode_1bit_32track_fanout1_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp0, *fp1, *fp2, *fp3;
+	const unsigned char *buf;
+	const float *fp0, *fp1, *fp2, *fp3;
 	int o, i, m;
 	int zone;
 	int nblank = 0;
@@ -2372,8 +2371,8 @@ static int mark4_decode_1bit_32track_fanout1_decimation1(struct mark5_stream *ms
 
 static int mark4_decode_1bit_32track_fanout1_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp0, *fp1, *fp2, *fp3;
+	const unsigned char *buf;
+	const float *fp0, *fp1, *fp2, *fp3;
 	int o, i, m;
 	int zone;
 	int nblank = 0;
@@ -2458,8 +2457,8 @@ static int mark4_decode_1bit_32track_fanout1_decimation2(struct mark5_stream *ms
 
 static int mark4_decode_1bit_32track_fanout1_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp0, *fp1, *fp2, *fp3;
+	const unsigned char *buf;
+	const float *fp0, *fp1, *fp2, *fp3;
 	int o, i, m, df;
 	int zone;
 	int nblank = 0;
@@ -2545,8 +2544,8 @@ static int mark4_decode_1bit_32track_fanout1_decimation4(struct mark5_stream *ms
 
 static int mark4_decode_1bit_32track_fanout2_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp0, *fp1, *fp2, *fp3;
+	const unsigned char *buf;
+	const float *fp0, *fp1, *fp2, *fp3;
 	int o, i, m;
 	int zone;
 	int nblank = 0;
@@ -2632,8 +2631,8 @@ static int mark4_decode_1bit_32track_fanout2_decimation1(struct mark5_stream *ms
 
 static int mark4_decode_1bit_32track_fanout2_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp0, *fp1, *fp2, *fp3;
+	const unsigned char *buf;
+	const float *fp0, *fp1, *fp2, *fp3;
 	int o, i, m;
 	int zone;
 	int nblank = 0;
@@ -2702,8 +2701,8 @@ static int mark4_decode_1bit_32track_fanout2_decimation2(struct mark5_stream *ms
 
 static int mark4_decode_1bit_32track_fanout2_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp0, *fp1, *fp2, *fp3;
+	const unsigned char *buf;
+	const float *fp0, *fp1, *fp2, *fp3;
 	int o, i, m, df;
 	int zone;
 	int nblank = 0;
@@ -2773,8 +2772,8 @@ static int mark4_decode_1bit_32track_fanout2_decimation4(struct mark5_stream *ms
 
 static int mark4_decode_1bit_32track_fanout4_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp0, *fp1, *fp2, *fp3;
+	const unsigned char *buf;
+	const float *fp0, *fp1, *fp2, *fp3;
 	int o, i, m;
 	int zone;
 	int nblank = 0;
@@ -2862,8 +2861,8 @@ static int mark4_decode_1bit_32track_fanout4_decimation1(struct mark5_stream *ms
 
 static int mark4_decode_1bit_32track_fanout4_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp0, *fp1, *fp2, *fp3;
+	const unsigned char *buf;
+	const float *fp0, *fp1, *fp2, *fp3;
 	int o, i, m;
 	int zone;
 	int nblank = 0;
@@ -2933,8 +2932,8 @@ static int mark4_decode_1bit_32track_fanout4_decimation2(struct mark5_stream *ms
 
 static int mark4_decode_1bit_32track_fanout4_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp0, *fp1, *fp2, *fp3;
+	const unsigned char *buf;
+	const float *fp0, *fp1, *fp2, *fp3;
 	int o, i, m, df;
 	int zone;
 	int nblank = 0;
@@ -2996,8 +2995,8 @@ static int mark4_decode_1bit_32track_fanout4_decimation4(struct mark5_stream *ms
 
 static int mark4_decode_1bit_64track_fanout1_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp0, *fp1, *fp2, *fp3, *fp4, *fp5, *fp6, *fp7;
+	const unsigned char *buf;
+	const float *fp0, *fp1, *fp2, *fp3, *fp4, *fp5, *fp6, *fp7;
 	int o, i, m;
 	int zone;
 	int nblank = 0;
@@ -3122,8 +3121,8 @@ static int mark4_decode_1bit_64track_fanout1_decimation1(struct mark5_stream *ms
 
 static int mark4_decode_1bit_64track_fanout1_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp0, *fp1, *fp2, *fp3, *fp4, *fp5, *fp6, *fp7;
+	const unsigned char *buf;
+	const float *fp0, *fp1, *fp2, *fp3, *fp4, *fp5, *fp6, *fp7;
 	int o, i, m;
 	int zone;
 	int nblank = 0;
@@ -3248,8 +3247,8 @@ static int mark4_decode_1bit_64track_fanout1_decimation2(struct mark5_stream *ms
 
 static int mark4_decode_1bit_64track_fanout1_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp0, *fp1, *fp2, *fp3, *fp4, *fp5, *fp6, *fp7;
+	const unsigned char *buf;
+	const float *fp0, *fp1, *fp2, *fp3, *fp4, *fp5, *fp6, *fp7;
 	int o, i, m, df;
 	int zone;
 	int nblank = 0;
@@ -3375,8 +3374,8 @@ static int mark4_decode_1bit_64track_fanout1_decimation4(struct mark5_stream *ms
 
 static int mark4_decode_1bit_64track_fanout2_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp0, *fp1, *fp2, *fp3, *fp4, *fp5, *fp6, *fp7;
+	const unsigned char *buf;
+	const float *fp0, *fp1, *fp2, *fp3, *fp4, *fp5, *fp6, *fp7;
 	int o, i, m;
 	int zone;
 	int nblank = 0;
@@ -3502,8 +3501,8 @@ static int mark4_decode_1bit_64track_fanout2_decimation1(struct mark5_stream *ms
 
 static int mark4_decode_1bit_64track_fanout2_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp0, *fp1, *fp2, *fp3, *fp4, *fp5, *fp6, *fp7;
+	const unsigned char *buf;
+	const float *fp0, *fp1, *fp2, *fp3, *fp4, *fp5, *fp6, *fp7;
 	int o, i, m;
 	int zone;
 	int nblank = 0;
@@ -3596,8 +3595,8 @@ static int mark4_decode_1bit_64track_fanout2_decimation2(struct mark5_stream *ms
 
 static int mark4_decode_1bit_64track_fanout2_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp0, *fp1, *fp2, *fp3, *fp4, *fp5, *fp6, *fp7;
+	const unsigned char *buf;
+	const float *fp0, *fp1, *fp2, *fp3, *fp4, *fp5, *fp6, *fp7;
 	int o, i, m, df;
 	int zone;
 	int nblank = 0;
@@ -3691,8 +3690,8 @@ static int mark4_decode_1bit_64track_fanout2_decimation4(struct mark5_stream *ms
 
 static int mark4_decode_1bit_64track_fanout4_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp0, *fp1, *fp2, *fp3, *fp4, *fp5, *fp6, *fp7;
+	const unsigned char *buf;
+	const float *fp0, *fp1, *fp2, *fp3, *fp4, *fp5, *fp6, *fp7;
 	int o, i, m;
 	int zone;
 	int nblank = 0;
@@ -3820,8 +3819,8 @@ static int mark4_decode_1bit_64track_fanout4_decimation1(struct mark5_stream *ms
 
 static int mark4_decode_1bit_64track_fanout4_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp0, *fp1, *fp2, *fp3, *fp4, *fp5, *fp6, *fp7;
+	const unsigned char *buf;
+	const float *fp0, *fp1, *fp2, *fp3, *fp4, *fp5, *fp6, *fp7;
 	int o, i, m;
 	int zone;
 	int nblank = 0;
@@ -3915,8 +3914,8 @@ static int mark4_decode_1bit_64track_fanout4_decimation2(struct mark5_stream *ms
 
 static int mark4_decode_1bit_64track_fanout4_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp0, *fp1, *fp2, *fp3, *fp4, *fp5, *fp6, *fp7;
+	const unsigned char *buf;
+	const float *fp0, *fp1, *fp2, *fp3, *fp4, *fp5, *fp6, *fp7;
 	int o, i, m, df;
 	int zone;
 	int nblank = 0;
@@ -3996,8 +3995,8 @@ static int mark4_decode_1bit_64track_fanout4_decimation4(struct mark5_stream *ms
 
 static int mark4_decode_2bit_2track_fanout1_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i;
 	int zone;
 	int nblank = 0;
@@ -4041,8 +4040,8 @@ static int mark4_decode_2bit_2track_fanout1_decimation1(struct mark5_stream *ms,
 
 static int mark4_decode_2bit_2track_fanout1_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i;
 	int zone;
 	int nblank = 0;
@@ -4086,8 +4085,8 @@ static int mark4_decode_2bit_2track_fanout1_decimation2(struct mark5_stream *ms,
 
 static int mark4_decode_2bit_2track_fanout1_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i, df;
 	int zone;
 	int nblank = 0;
@@ -4132,8 +4131,8 @@ static int mark4_decode_2bit_2track_fanout1_decimation4(struct mark5_stream *ms,
 
 static int mark4_decode_2bit_4track_fanout1_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i;
 	int zone;
 	int nblank = 0;
@@ -4178,8 +4177,8 @@ static int mark4_decode_2bit_4track_fanout1_decimation1(struct mark5_stream *ms,
 
 static int mark4_decode_2bit_4track_fanout1_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i;
 	int zone;
 	int nblank = 0;
@@ -4224,8 +4223,8 @@ static int mark4_decode_2bit_4track_fanout1_decimation2(struct mark5_stream *ms,
 
 static int mark4_decode_2bit_4track_fanout1_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i, df;
 	int zone;
 	int nblank = 0;
@@ -4271,8 +4270,8 @@ static int mark4_decode_2bit_4track_fanout1_decimation4(struct mark5_stream *ms,
 
 static int mark4_decode_2bit_4track_fanout2_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i;
 	int zone;
 	int nblank = 0;
@@ -4318,8 +4317,8 @@ static int mark4_decode_2bit_4track_fanout2_decimation1(struct mark5_stream *ms,
 
 static int mark4_decode_2bit_4track_fanout2_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i;
 	int zone;
 	int nblank = 0;
@@ -4363,8 +4362,8 @@ static int mark4_decode_2bit_4track_fanout2_decimation2(struct mark5_stream *ms,
 
 static int mark4_decode_2bit_4track_fanout2_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i, df;
 	int zone;
 	int nblank = 0;
@@ -4409,8 +4408,8 @@ static int mark4_decode_2bit_4track_fanout2_decimation4(struct mark5_stream *ms,
 
 static int mark4_decode_2bit_8track_fanout1_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i;
 	int zone;
 	int nblank = 0;
@@ -4457,8 +4456,8 @@ static int mark4_decode_2bit_8track_fanout1_decimation1(struct mark5_stream *ms,
 
 static int mark4_decode_2bit_8track_fanout1_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i;
 	int zone;
 	int nblank = 0;
@@ -4505,8 +4504,8 @@ static int mark4_decode_2bit_8track_fanout1_decimation2(struct mark5_stream *ms,
 
 static int mark4_decode_2bit_8track_fanout1_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i, df;
 	int zone;
 	int nblank = 0;
@@ -4554,8 +4553,8 @@ static int mark4_decode_2bit_8track_fanout1_decimation4(struct mark5_stream *ms,
 
 static int mark4_decode_2bit_8track_fanout2_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i;
 	int zone;
 	int nblank = 0;
@@ -4603,8 +4602,8 @@ static int mark4_decode_2bit_8track_fanout2_decimation1(struct mark5_stream *ms,
 
 static int mark4_decode_2bit_8track_fanout2_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i;
 	int zone;
 	int nblank = 0;
@@ -4649,8 +4648,8 @@ static int mark4_decode_2bit_8track_fanout2_decimation2(struct mark5_stream *ms,
 
 static int mark4_decode_2bit_8track_fanout2_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i, df;
 	int zone;
 	int nblank = 0;
@@ -4696,8 +4695,8 @@ static int mark4_decode_2bit_8track_fanout2_decimation4(struct mark5_stream *ms,
 
 static int mark4_decode_2bit_8track_fanout4_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i;
 	int zone;
 	int nblank = 0;
@@ -4747,8 +4746,8 @@ static int mark4_decode_2bit_8track_fanout4_decimation1(struct mark5_stream *ms,
 
 static int mark4_decode_2bit_8track_fanout4_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i;
 	int zone;
 	int nblank = 0;
@@ -4794,8 +4793,8 @@ static int mark4_decode_2bit_8track_fanout4_decimation2(struct mark5_stream *ms,
 
 static int mark4_decode_2bit_8track_fanout4_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp;
+	const unsigned char *buf;
+	const float *fp;
 	int o, i, df;
 	int zone;
 	int nblank = 0;
@@ -4840,8 +4839,8 @@ static int mark4_decode_2bit_8track_fanout4_decimation4(struct mark5_stream *ms,
 
 static int mark4_decode_2bit_16track_fanout1_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp0, *fp1;
+	const unsigned char *buf;
+	const float *fp0, *fp1;
 	int o, i, m;
 	int zone;
 	int nblank = 0;
@@ -4898,8 +4897,8 @@ static int mark4_decode_2bit_16track_fanout1_decimation1(struct mark5_stream *ms
 
 static int mark4_decode_2bit_16track_fanout1_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp0, *fp1;
+	const unsigned char *buf;
+	const float *fp0, *fp1;
 	int o, i, m;
 	int zone;
 	int nblank = 0;
@@ -4956,8 +4955,8 @@ static int mark4_decode_2bit_16track_fanout1_decimation2(struct mark5_stream *ms
 
 static int mark4_decode_2bit_16track_fanout1_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp0, *fp1;
+	const unsigned char *buf;
+	const float *fp0, *fp1;
 	int o, i, m, df;
 	int zone;
 	int nblank = 0;
@@ -5015,8 +5014,8 @@ static int mark4_decode_2bit_16track_fanout1_decimation4(struct mark5_stream *ms
 
 static int mark4_decode_2bit_16track_fanout2_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp0, *fp1;
+	const unsigned char *buf;
+	const float *fp0, *fp1;
 	int o, i, m;
 	int zone;
 	int nblank = 0;
@@ -5074,8 +5073,8 @@ static int mark4_decode_2bit_16track_fanout2_decimation1(struct mark5_stream *ms
 
 static int mark4_decode_2bit_16track_fanout2_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp0, *fp1;
+	const unsigned char *buf;
+	const float *fp0, *fp1;
 	int o, i, m;
 	int zone;
 	int nblank = 0;
@@ -5128,8 +5127,8 @@ static int mark4_decode_2bit_16track_fanout2_decimation2(struct mark5_stream *ms
 
 static int mark4_decode_2bit_16track_fanout2_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp0, *fp1;
+	const unsigned char *buf;
+	const float *fp0, *fp1;
 	int o, i, m, df;
 	int zone;
 	int nblank = 0;
@@ -5183,8 +5182,8 @@ static int mark4_decode_2bit_16track_fanout2_decimation4(struct mark5_stream *ms
 
 static int mark4_decode_2bit_16track_fanout4_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp0, *fp1;
+	const unsigned char *buf;
+	const float *fp0, *fp1;
 	int o, i, m;
 	int zone;
 	int nblank = 0;
@@ -5244,8 +5243,8 @@ static int mark4_decode_2bit_16track_fanout4_decimation1(struct mark5_stream *ms
 
 static int mark4_decode_2bit_16track_fanout4_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp0, *fp1;
+	const unsigned char *buf;
+	const float *fp0, *fp1;
 	int o, i, m;
 	int zone;
 	int nblank = 0;
@@ -5299,8 +5298,8 @@ static int mark4_decode_2bit_16track_fanout4_decimation2(struct mark5_stream *ms
 
 static int mark4_decode_2bit_16track_fanout4_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp0, *fp1;
+	const unsigned char *buf;
+	const float *fp0, *fp1;
 	int o, i, m, df;
 	int zone;
 	int nblank = 0;
@@ -5352,8 +5351,8 @@ static int mark4_decode_2bit_16track_fanout4_decimation4(struct mark5_stream *ms
 
 static int mark4_decode_2bit_32track_fanout1_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp0, *fp1, *fp2, *fp3;
+	const unsigned char *buf;
+	const float *fp0, *fp1, *fp2, *fp3;
 	int o, i, m;
 	int zone;
 	int nblank = 0;
@@ -5422,8 +5421,8 @@ static int mark4_decode_2bit_32track_fanout1_decimation1(struct mark5_stream *ms
 
 static int mark4_decode_2bit_32track_fanout1_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp0, *fp1, *fp2, *fp3;
+	const unsigned char *buf;
+	const float *fp0, *fp1, *fp2, *fp3;
 	int o, i, m;
 	int zone;
 	int nblank = 0;
@@ -5492,8 +5491,8 @@ static int mark4_decode_2bit_32track_fanout1_decimation2(struct mark5_stream *ms
 
 static int mark4_decode_2bit_32track_fanout1_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp0, *fp1, *fp2, *fp3;
+	const unsigned char *buf;
+	const float *fp0, *fp1, *fp2, *fp3;
 	int o, i, m, df;
 	int zone;
 	int nblank = 0;
@@ -5563,8 +5562,8 @@ static int mark4_decode_2bit_32track_fanout1_decimation4(struct mark5_stream *ms
 
 static int mark4_decode_2bit_32track_fanout2_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp0, *fp1, *fp2, *fp3;
+	const unsigned char *buf;
+	const float *fp0, *fp1, *fp2, *fp3;
 	int o, i, m;
 	int zone;
 	int nblank = 0;
@@ -5634,8 +5633,8 @@ static int mark4_decode_2bit_32track_fanout2_decimation1(struct mark5_stream *ms
 
 static int mark4_decode_2bit_32track_fanout2_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp0, *fp1, *fp2, *fp3;
+	const unsigned char *buf;
+	const float *fp0, *fp1, *fp2, *fp3;
 	int o, i, m;
 	int zone;
 	int nblank = 0;
@@ -5696,8 +5695,8 @@ static int mark4_decode_2bit_32track_fanout2_decimation2(struct mark5_stream *ms
 
 static int mark4_decode_2bit_32track_fanout2_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp0, *fp1, *fp2, *fp3;
+	const unsigned char *buf;
+	const float *fp0, *fp1, *fp2, *fp3;
 	int o, i, m, df;
 	int zone;
 	int nblank = 0;
@@ -5759,18 +5758,19 @@ static int mark4_decode_2bit_32track_fanout2_decimation4(struct mark5_stream *ms
 
 static int mark4_decode_2bit_32track_fanout4_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned int *buf, bits;
-	float *fp0, *fp1, *fp2, *fp3;
+	const unsigned int *buf;
+	unsigned int bits;
+	const float *fp0, *fp1, *fp2, *fp3;
 	int o, i;
-	unsigned char *bytes;
+	const unsigned char *bytes;
 	int zone, l2;
 	int nblank = 0;
 
-	buf = (unsigned int *)(ms->payload);
+	buf = (const unsigned int *)(ms->payload);
 	i = ms->readposition >> 2;  /* note here that i counts 32-bit words */
 	l2 = ms->log2blankzonesize - 2;
 
-	bytes = (unsigned char *)(& bits);
+	bytes = (const unsigned char *)(& bits);
 
 	for(o = 0; o < nsamp; o++)
 	{
@@ -5818,7 +5818,7 @@ static int mark4_decode_2bit_32track_fanout4_decimation1(struct mark5_stream *ms
 			{
 				return -1;
 			}
-			buf = (unsigned int *)(ms->payload);
+			buf = (const unsigned int *)(ms->payload);
 			i = 0;
 		}
 	}
@@ -5830,18 +5830,19 @@ static int mark4_decode_2bit_32track_fanout4_decimation1(struct mark5_stream *ms
 
 static int mark4_decode_2bit_32track_fanout4_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned int *buf, bits;
-	float *fp0, *fp1, *fp2, *fp3;
+	const unsigned int *buf;
+	unsigned int bits;
+	const float *fp0, *fp1, *fp2, *fp3;
 	int o, i;
-	unsigned char *bytes;
+	const unsigned char *bytes;
 	int zone, l2;
 	int nblank = 0;
 
-	buf = (unsigned int *)(ms->payload);
+	buf = (const unsigned int *)(ms->payload);
 	i = ms->readposition >> 2;  /* note here that i counts 32-bit words */
 	l2 = ms->log2blankzonesize - 2;
 
-	bytes = (unsigned char *)(& bits);
+	bytes = (const unsigned char *)(& bits);
 
 	for(o = 0; o < nsamp; o++)
 	{
@@ -5879,7 +5880,7 @@ static int mark4_decode_2bit_32track_fanout4_decimation2(struct mark5_stream *ms
 			{
 				return -1;
 			}
-			buf = (unsigned int *)(ms->payload);
+			buf = (const unsigned int *)(ms->payload);
 			i = 0;
 		}
 	}
@@ -5891,19 +5892,20 @@ static int mark4_decode_2bit_32track_fanout4_decimation2(struct mark5_stream *ms
 
 static int mark4_decode_2bit_32track_fanout4_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned int *buf, bits;
-	float *fp0, *fp1, *fp2, *fp3;
+	const unsigned int *buf;
+	unsigned int bits;
+	const float *fp0, *fp1, *fp2, *fp3;
 	int o, i, df;
-	unsigned char *bytes;
+	const unsigned char *bytes;
 	int zone, l2;
 	int nblank = 0;
 
-	buf = (unsigned int *)(ms->payload);
+	buf = (const unsigned int *)(ms->payload);
 	i = ms->readposition >> 2;  /* note here that i counts 32-bit words */
 	l2 = ms->log2blankzonesize - 2;
 	df = ms->decimation/4;
 
-	bytes = (unsigned char *)(& bits);
+	bytes = (const unsigned char *)(& bits);
 
 	for(o = 0; o < nsamp; o++)
 	{
@@ -5936,7 +5938,7 @@ static int mark4_decode_2bit_32track_fanout4_decimation4(struct mark5_stream *ms
 			{
 				return -1;
 			}
-			buf = (unsigned int *)(ms->payload);
+			buf = (const unsigned int *)(ms->payload);
 			i = 0;
 		}
 	}
@@ -5948,8 +5950,8 @@ static int mark4_decode_2bit_32track_fanout4_decimation4(struct mark5_stream *ms
 
 static int mark4_decode_2bit_64track_fanout1_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp0, *fp1, *fp2, *fp3, *fp4, *fp5, *fp6, *fp7;
+	const unsigned char *buf;
+	const float *fp0, *fp1, *fp2, *fp3, *fp4, *fp5, *fp6, *fp7;
 	int o, i, m;
 	int zone;
 	int nblank = 0;
@@ -6042,8 +6044,8 @@ static int mark4_decode_2bit_64track_fanout1_decimation1(struct mark5_stream *ms
 
 static int mark4_decode_2bit_64track_fanout1_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp0, *fp1, *fp2, *fp3, *fp4, *fp5, *fp6, *fp7;
+	const unsigned char *buf;
+	const float *fp0, *fp1, *fp2, *fp3, *fp4, *fp5, *fp6, *fp7;
 	int o, i, m;
 	int zone;
 	int nblank = 0;
@@ -6136,8 +6138,8 @@ static int mark4_decode_2bit_64track_fanout1_decimation2(struct mark5_stream *ms
 
 static int mark4_decode_2bit_64track_fanout1_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp0, *fp1, *fp2, *fp3, *fp4, *fp5, *fp6, *fp7;
+	const unsigned char *buf;
+	const float *fp0, *fp1, *fp2, *fp3, *fp4, *fp5, *fp6, *fp7;
 	int o, i, m, df, df2;
 	int zone;
 	int nblank = 0;
@@ -6232,8 +6234,8 @@ static int mark4_decode_2bit_64track_fanout1_decimation4(struct mark5_stream *ms
 
 static int mark4_decode_2bit_64track_fanout2_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp0, *fp1, *fp2, *fp3, *fp4, *fp5, *fp6, *fp7;
+	const unsigned char *buf;
+	const float *fp0, *fp1, *fp2, *fp3, *fp4, *fp5, *fp6, *fp7;
 	int o, i, m;
 	int zone;
 	int nblank = 0;
@@ -6327,8 +6329,8 @@ static int mark4_decode_2bit_64track_fanout2_decimation1(struct mark5_stream *ms
 
 static int mark4_decode_2bit_64track_fanout2_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp0, *fp1, *fp2, *fp3, *fp4, *fp5, *fp6, *fp7;
+	const unsigned char *buf;
+	const float *fp0, *fp1, *fp2, *fp3, *fp4, *fp5, *fp6, *fp7;
 	int o, i, m;
 	int zone;
 	int nblank = 0;
@@ -6405,8 +6407,8 @@ static int mark4_decode_2bit_64track_fanout2_decimation2(struct mark5_stream *ms
 
 static int mark4_decode_2bit_64track_fanout2_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned char *buf;
-	float *fp0, *fp1, *fp2, *fp3, *fp4, *fp5, *fp6, *fp7;
+	const unsigned char *buf;
+	const float *fp0, *fp1, *fp2, *fp3, *fp4, *fp5, *fp6, *fp7;
 	int o, i, m, df, df2;
 	int zone;
 	int nblank = 0;
@@ -6485,18 +6487,19 @@ static int mark4_decode_2bit_64track_fanout2_decimation4(struct mark5_stream *ms
 
 static int mark4_decode_2bit_64track_fanout4_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned long long *buf, bits;
-	float *fp0, *fp1, *fp2, *fp3, *fp4, *fp5, *fp6, *fp7;
+	const unsigned long long *buf;
+	unsigned long long bits;
+	const float *fp0, *fp1, *fp2, *fp3, *fp4, *fp5, *fp6, *fp7;
 	int o, i;
-	unsigned char *bytes;
+	const unsigned char *bytes;
 	int zone, l2;
 	int nblank = 0;
 
-	buf = (unsigned long long *)(ms->payload);
+	buf = (const unsigned long long *)(ms->payload);
 	i = ms->readposition >> 3;  /* note here that i counts 64-bit words */
 	l2 = ms->log2blankzonesize - 3;
 
-	bytes = (unsigned char *)(& bits);
+	bytes = (const unsigned char *)(& bits);
 
 	for(o = 0; o < nsamp; o++)
 	{
@@ -6564,7 +6567,7 @@ static int mark4_decode_2bit_64track_fanout4_decimation1(struct mark5_stream *ms
 			{
 				return -1;
 			}
-			buf = (unsigned long long *)(ms->payload);
+			buf = (const unsigned long long *)(ms->payload);
 			i = 0;
 		}
 	}
@@ -6576,18 +6579,19 @@ static int mark4_decode_2bit_64track_fanout4_decimation1(struct mark5_stream *ms
 
 static int mark4_decode_2bit_64track_fanout4_decimation2(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned long long *buf, bits;
-	float *fp0, *fp1, *fp2, *fp3, *fp4, *fp5, *fp6, *fp7;
+	const unsigned long long *buf;
+	unsigned long long bits;
+	const float *fp0, *fp1, *fp2, *fp3, *fp4, *fp5, *fp6, *fp7;
 	int o, i;
-	unsigned char *bytes;
+	const unsigned char *bytes;
 	int zone, l2;
 	int nblank = 0;
 
-	buf = (unsigned long long *)(ms->payload);
+	buf = (const unsigned long long *)(ms->payload);
 	i = ms->readposition >> 3;  /* note here that i counts 64-bit words */
 	l2 = ms->log2blankzonesize - 3;
 
-	bytes = (unsigned char *)(& bits);
+	bytes = (const unsigned char *)(& bits);
 
 	for(o = 0; o < nsamp; o++)
 	{
@@ -6637,7 +6641,7 @@ static int mark4_decode_2bit_64track_fanout4_decimation2(struct mark5_stream *ms
 			{
 				return -1;
 			}
-			buf = (unsigned long long *)(ms->payload);
+			buf = (const unsigned long long *)(ms->payload);
 			i = 0;
 		}
 	}
@@ -6649,19 +6653,20 @@ static int mark4_decode_2bit_64track_fanout4_decimation2(struct mark5_stream *ms
 
 static int mark4_decode_2bit_64track_fanout4_decimation4(struct mark5_stream *ms, int nsamp, float **data)
 {
-	unsigned long long *buf, bits;
-	float *fp0, *fp1, *fp2, *fp3, *fp4, *fp5, *fp6, *fp7;
+	const unsigned long long *buf;
+	unsigned long long bits;
+	const float *fp0, *fp1, *fp2, *fp3, *fp4, *fp5, *fp6, *fp7;
 	int o, i, df;
-	unsigned char *bytes;
+	const unsigned char *bytes;
 	int zone, l2;
 	int nblank = 0;
 
-	buf = (unsigned long long *)(ms->payload);
+	buf = (const unsigned long long *)(ms->payload);
 	i = ms->readposition >> 3;  /* note here that i counts 64-bit words */
 	l2 = ms->log2blankzonesize - 3;
 	df = ms->decimation/4;
 
-	bytes = (unsigned char *)(& bits);
+	bytes = (const unsigned char *)(& bits);
 
 	for(o = 0; o < nsamp; o++)
 	{
@@ -6702,7 +6707,7 @@ static int mark4_decode_2bit_64track_fanout4_decimation4(struct mark5_stream *ms
 			{
 				return -1;
 			}
-			buf = (unsigned long long *)(ms->payload);
+			buf = (const unsigned long long *)(ms->payload);
 			i = 0;
 		}
 	}
@@ -6716,9 +6721,9 @@ static int mark4_decode_2bit_64track_fanout4_decimation4(struct mark5_stream *ms
 
 static int mark5_format_mark4_make_formatname(struct mark5_stream *ms)
 {
-	struct mark5_format_mark4 *f;
+	const struct mark5_format_mark4 *f;
 
-	f = (struct mark5_format_mark4 *)(ms->formatdata);
+	f = (const struct mark5_format_mark4 *)(ms->formatdata);
 	
 	snprintf(ms->formatname, MARK5_STREAM_ID_LENGTH, "MKIV1_%d-%d-%d-%d/%d",
 		f->fanout, ms->Mbps, ms->nchan, ms->nbit, ms->decimation);
@@ -6737,6 +6742,7 @@ static int mark5_format_mark4_init(struct mark5_stream *ms)
 	if(!ms)
 	{
 		fprintf(m5stderr, "mark5_format_mark4_init: ms = 0\n");
+
 		return -1;
 	}
 
