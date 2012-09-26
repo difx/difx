@@ -36,14 +36,16 @@ from glob import glob
 import socket
 import struct
 import subprocess
+import signal
+import sys
 from xml.parsers import expat
 from copy import deepcopy
 
 
 program = 'genmachines'
 author  = 'Walter Brisken'
-version = '0.14'
-verdate = '20120420'
+version = '0.15'
+verdate = '20120927'
 
 defaultDifxMessagePort = 50200
 defaultDifxMessageGroup = '224.2.2.1'
@@ -467,8 +469,16 @@ def run(files, machinesfile, overheadcores, verbose, dothreads, useDifxDb):
 
 	return 0
 
+def signal_handler(signal, frame):
+        print 'You pressed Ctrl+C!'
+        sys.exit(8)
+
 if len(argv) < 2:
 	usage()
+
+# catch ctrl+c
+signal.signal(signal.SIGINT, signal_handler)
+
 
 files = []
 machinesfile = getenv('DIFX_MACHINES')

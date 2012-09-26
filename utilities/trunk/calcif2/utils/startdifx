@@ -30,8 +30,8 @@
 #============================================================================
 
 PROGRAM = 'startdifx'
-VERSION = '0.7'
-VERDATE = '20120410'
+VERSION = '0.8'
+VERDATE = '20120927'
 AUTHOR  = 'Walter Brisken'
 
 defaultgroup = "224.2.2.1"
@@ -54,6 +54,9 @@ from copy import deepcopy
 from xml.parsers import expat
 import socket
 import struct
+import signal
+import subprocess
+
 
 verbose = 1
 
@@ -432,9 +435,12 @@ def doMachines(fileBase, machinesPolicy, cache):
 				cmd = '%s %s.input' % (genmachines, fileBase)
 				if verbose > 1:
 					print 'Executing: %s' % cmd
-				v = system(cmd)
-				if v != 0:
-					return 0
+				v = -1
+				while v !=0 :
+					v = subprocess.call(cmd, shell=True)
+					# CTRL+C
+					if v==8:
+						exit(0)
 				if not isfile(machinesFile):
 					nFail += 1
 					if nFail > maxGenmachineFail and maxGenmachineFail > 0:
@@ -447,6 +453,10 @@ def doMachines(fileBase, machinesPolicy, cache):
 	cache[2] = files
 
 	return len(open(machinesFile).readlines())
+
+def handler(signum, frame):
+    print 'Signal handler called with signal', signum
+    exit(0)
 
 # Start difx with DifxStartMessage
 def runMessage(fileBase, machinesPolicy, deletePolicy, makeModel, override, useLocalHead, machinesCache, restartSeconds):
@@ -591,6 +601,9 @@ cwd = getcwd()
 override = False
 useStartMessage = False
 machinesCache = ['','',['Nothing to see here']]
+
+signal.signal(signal.SIGINT, handler)
+
 
 for a in argv[1:]:
 	if a[0] == '-':
