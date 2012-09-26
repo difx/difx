@@ -54,6 +54,7 @@ public class GuiServerConnection {
     public final int AVAILABLE_DIFX_VERSION         = 10;
     public final int DIFX_BASE                      = 11;
     public final int GUISERVER_ENVIRONMENT          = 12;
+    public final int DIFX_SETUP_PATH                = 13;
 
     
     public GuiServerConnection( SystemSettings settings, String IP, int port, int timeout ) {

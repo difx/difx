@@ -255,7 +255,7 @@ public class SystemSettings extends JFrame {
         settingsFilePanel.add( defaultsButton );
         
         IndexedPanel difxControlPanel = new IndexedPanel( "DiFX Control Connection" );
-        difxControlPanel.openHeight( 240 );
+        difxControlPanel.openHeight( 270 );
         difxControlPanel.closedHeight( 20 );
         _scrollPane.addNode( difxControlPanel );
         _difxUDPCheck = new JCheckBox( "Multicast" );
@@ -395,6 +395,18 @@ public class SystemSettings extends JFrame {
                     _difxVersion.addItem( _difxVersion.getEditor().getItem() );
                     _difxVersion.setSelectedIndex( _difxVersion.getItemCount() - 1 );
                 }
+                //  Set the DiFX setup path to match this version.
+                _difxSetupPath.setText( _difxBase.getText() + "/setup_difx." + (String)_difxVersion.getSelectedItem() );
+                guiServerConnection().sendPacket( guiServerConnection().DIFX_SETUP_PATH, 
+                        _difxSetupPath.getText().length(), _difxSetupPath.getText().getBytes() );
+            }
+        });
+        _difxVersion.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                //  Set the DiFX setup path to match this version.
+                _difxSetupPath.setText( _difxBase.getText() + "/bin/setup_difx." + (String)_difxVersion.getSelectedItem() );
+                guiServerConnection().sendPacket( guiServerConnection().DIFX_SETUP_PATH, 
+                        _difxSetupPath.getText().length(), _difxSetupPath.getText().getBytes() );
             }
         });
         difxControlPanel.add( _difxVersion );
@@ -410,6 +422,20 @@ public class SystemSettings extends JFrame {
         difxBaseLabel.setBounds( 10, 175, 150, 25 );
         difxBaseLabel.setHorizontalAlignment( JLabel.RIGHT );
         difxControlPanel.add( difxBaseLabel );
+        _difxSetupPath = new SaneTextField();
+        _difxSetupPath.setToolTipText( "Full path to the setup file run before all DiFX commands." );
+        _difxSetupPath.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                //  Send the new path to the guiServer
+                guiServerConnection().sendPacket( guiServerConnection().DIFX_SETUP_PATH, 
+                        _difxSetupPath.getText().length(), _difxSetupPath.getText().getBytes() );
+            }
+        });
+        difxControlPanel.add( _difxSetupPath );
+        JLabel difxSetupPathLabel = new JLabel( "DiFX Setup Path:" );
+        difxSetupPathLabel.setHorizontalAlignment( JLabel.RIGHT );
+        difxSetupPathLabel.setBounds( 10, 235, 150, 25 );
+        difxControlPanel.add( difxSetupPathLabel );
         
         IndexedPanel networkPanel = new IndexedPanel( "DiFX Multicast Messages" );
         networkPanel.openHeight( 240 );
@@ -888,6 +914,7 @@ public class SystemSettings extends JFrame {
             _difxControlUser.setBounds( 165, 115, 300, 25 );
             _difxControlPWD.setBounds( 165, 145, 300, 25 );
             _difxVersion.setBounds( 165, 205, 300, 25 );
+            _difxSetupPath.setBounds( 165, 235, w - 195, 25 );
             _difxBase.setBounds( 165, 175, w - 195, 25 );
             //  Broadcast network settings
             _ipAddress.setBounds( 165, 55, 300, 25 );
@@ -3625,6 +3652,7 @@ public class SystemSettings extends JFrame {
     
     protected JTextField _guiServerVersion;
     protected JTextField _guiServerDifxVersion;
+    protected SaneTextField _difxSetupPath;
     
     //  Used to store information about a specific SMART attribute type.
     //  This includes...
