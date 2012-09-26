@@ -23,6 +23,8 @@ numMakeCpus = 4
 # generic arch install (e.g., fftw)
 # option to update self
 # wget option to clobber
+# a real option for no IPP
+# add difx_monitor, ...
 
 def getippversion(path):
 	if islink(path):
@@ -339,6 +341,20 @@ component_hops_trunk = \
 	['aclocalm4', 'autoconf', 'autoheader', 'automake', 'pgplot'] \
 ]
 
+component_python_trunk = \
+[ \
+	'python', \
+	'https://svn.atnf.csiro.au/difx/libraries/python/trunk', \
+	['aclocal', 'autoconf', 'automake'] \
+]
+
+component_difxdb_trunk = \
+[ \
+	'difxdb', \
+	'https://svn.atnf.csiro.au/difx/libraries/python/trunk', \
+	['aclocal', 'autoconf', 'automake'] \
+]
+
 component_difxmonitor_trunk = \
 [ \
 	'difx_monitor', \
@@ -363,6 +379,8 @@ components['DIFX-DEVEL'] = \
 	component_rcwlib_trunk, \
 	component_sniff_trunk, \
 	component_hops_trunk, \
+	component_python_trunk, \
+	component_difxdb_trunk, \
 #	component_difxmonitor_trunk, \
 ]
 
