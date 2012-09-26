@@ -25,6 +25,7 @@ numMakeCpus = 4
 # wget option to clobber
 # a real option for no IPP
 # add difx_monitor, ...
+# plplot
 
 def getippversion(path):
 	if islink(path):
@@ -722,7 +723,6 @@ def bootstrap(comps, params, args, verbose, pretend):
 		if len(ipproot) == 0:
 			return
 
-
 		runscript = '%s/bin/runmpifxcorr.%s' % (config['difxbase'], label) 
 		out = open(runscript, 'w')
 		out.write('#!/bin/bash\n\n')
@@ -745,6 +745,9 @@ def bootstrap(comps, params, args, verbose, pretend):
 		out.write('export DIFX_ARCH_ROOT=%s/${HWPLATFORM}\n' % config['difxbase'])
 		m = 0
 		for arch in platforms.keys():
+			if ipproot[arch] == 'none':
+				ipproot[arch] = ''
+
 			if m > 0:
 				out.write('el')
 			out.write('if [[ ${HWPLATFORM} = "%s" ]]; then\n' % arch)
@@ -904,7 +907,7 @@ def build(origComps, params, args, verbose, pretend):
 	if len(okComps) > 0 or 'none' in args:
 		if not isdir(pkgDir):
 			execute('mkdir -p %s' % pkgDir, verbose, pretend)
-		if not isfile(pkgDir+'/ipp.pc'):
+		if not isfile(pkgDir+'/ipp.pc') and len(environ['IPPROOT']) > 0:
 			if not 'noipp' in args:
 				if verbose > 1:
 					print 'Generating ipp.pc'
@@ -942,7 +945,14 @@ def build(origComps, params, args, verbose, pretend):
 							print 'Continuing anyway'	
 				cmd = '%s/configure --prefix=${DIFXROOT}%s' % (srcPath, configureExtras)
 				execute(cmd, verbose, pretend)
-			v = execute('make -j %d' % numMakeCpus, verbose, pretend)
+			
+			# building mpifxcorr sometimes fails if done in parallel
+			if comp[0] == 'mpifxcorr':
+				cpus = 1
+			else:
+				cpus = numMakeCpus
+			
+			v = execute('make -j %d' % cpus, verbose, pretend)
 			if v == 0:
 				v = execute('make install', verbose, pretend)
 			if v != 0:
@@ -966,7 +976,14 @@ def rebuild(origComps, params, args, verbose, pretend):
 		buildPath = buildDir + comp[0] + '/'
 		if isdir(buildPath):
 			chdir(buildPath)
-			v = execute('make -j %d' % numMakeCpus, verbose, pretend)
+
+			# building mpifxcorr sometimes fails if done in parallel
+			if comp[0] == 'mpifxcorr':
+				cpus = 1
+			else:
+				cpus = numMakeCpus
+			
+			v = execute('make -j %d' % cpus, verbose, pretend)
 			if v == 0:
 				v = execute('make install', verbose, pretend)
 			if v != 0:
