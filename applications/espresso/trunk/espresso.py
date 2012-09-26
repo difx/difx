@@ -308,9 +308,8 @@ for jobname in sorted(corrjoblist.keys()):
     copy_jobcontrol(passname, jobname, indir, outdir, '.joblist')
     copy_jobcontrol(passname, jobname, indir, outdir, '.v2d')
 
-    print "copying the vex file", vexfilename, "to", outdir, "\n"
     outputvex = outdir + jobname + '.vex'
-    print vexfilename
+    print "copying the vex file", vexfilename, "to", outputvex, "\n"
     shutil.copy2(vexfilename, outputvex)
 
 if not options.nopause:

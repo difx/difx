@@ -42,7 +42,7 @@ def sizesort(x):
 data_areas = espressolib.get_corrhosts(os.environ.get('CORR_HOSTS'))
 
 # run two processes per available cpu (the work is all being done remotely)
-nproc = multiprocessing.cpu_count()
+nproc = multiprocessing.cpu_count()*2
 diskreport = dict()
 disk_queries = []
 disk_queries = ['du', 'df']

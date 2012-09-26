@@ -83,7 +83,7 @@ stage_and_wait() {
   #sfind $InDir/$File -offline -exec echo 'staging' {} \; -exec stage -w {} \;
   # actually stage -w seems to put a load on pbstore, so:
   if [ -n "`sfind $InDir/$File -offline `" ] ; then
-    echo -n "staging $InDir/$File "
+    echo -n "waiting $InDir/$File "
     waittime=0
     while [ -n "`sfind $InDir/$File -offline `" -a $waittime -lt $maxwait ]; do
         waittime=$(( waittime+1 ))

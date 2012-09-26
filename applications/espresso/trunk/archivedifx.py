@@ -45,7 +45,7 @@ e.g.
 
 parser = optparse.OptionParser(usage=usage, version='%prog ' + '1.0')
 parser.add_option( "--maxtarsize", "-m",
-        type='float', dest="maxtarsize", default=10,
+        type='float', dest="maxtarsize", default=50,
         help='files larger than MAXTARSIZE (MB) will be transferred untarred [default = %default]' )
 parser.add_option( "--taroptions", "-t",
         type='str', dest="taroptions", default=' ',

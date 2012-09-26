@@ -36,7 +36,7 @@ except:
     # convert from VEX to MJD if necessary
     targetMJD = espressolib.mjd2vex(targetMJD)
 
-print targetMJD
+#print targetMJD
 
 targetJD  = targetMJD + 2400000.5;
 
