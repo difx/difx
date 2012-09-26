@@ -95,7 +95,7 @@ const DifxInput *DifxInput2FitsFR(const DifxInput *D,
 
 	freqId1 = 0;
 
-	for(configId = 0; configId < D->nConfig; configId++)
+	for(configId = 0; configId < D->nConfig; ++configId)
 	{
 		config = D->config + configId;
 
@@ -106,18 +106,16 @@ const DifxInput *DifxInput2FitsFR(const DifxInput *D,
 		}
 		freqId1 = config->fitsFreqId + 1;
 
-		for(i = 0; i < nBand; i++)
+		for(i = 0; i < nBand; ++i)
 		{
 			IF = config->IF + i;
 			bandFreq[i] = (IF->freq - D->refFreq)*1.0e6;
 			chanBW[i] = (IF->bw*D->specAvg/D->nOutChan)*1.0e6;
-			//printf("D->specAvg is %d, D->refFreq is %f, D->nOutChan is %d, IF->bw was already %f, so chanBW is %f\n", D->specAvg, D->refFreq, D->nOutChan, IF->bw, chanBW[i]);
 			bandBW[i] = chanBW[i]*D->nOutChan;
 			netSide[i] = ( IF->sideband == 'U' ? 1 : -1 );
 			bbChan[i] = 0;	/* vistigial */
 			/* correct for skipping some channels */
-			bandFreq[i] += netSide[i]*IF->bw*
-				D->startChan*1.0e6/(double)(D->nInChan);
+			bandFreq[i] += netSide[i]*IF->bw*D->startChan*1.0e6/(double)(D->nInChan);
 			//printf("Writing IF with freq %f, chanBW %f, bandBW %f\n", bandFreq[i], chanBW[i], bandBW[i]);
 		}
 		

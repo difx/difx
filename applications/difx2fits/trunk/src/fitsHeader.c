@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008, 2009 by Walter Brisken                            *
+ *   Copyright (C) 2008-2012 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -29,6 +29,7 @@
 #include <sys/time.h>
 #include <unistd.h>
 #include <string.h>
+#include <stdlib.h>
 #include "difx2fits.h"
 
 #define SEC_DAY         86400.0             /* seconds in a mean solar day */
@@ -47,9 +48,11 @@ double timeMjd()
 const DifxInput *DifxInput2FitsHeader(const DifxInput *D, 
 	struct fitsPrivate *out)
 {
+	const char maxLength = 132;
 	char ref_date[12];
-	char str[64], strng[132];
+	char str[64], strng[maxLength];
 	char local_time[48];
+	const char *difxLabel;
 	int j;
 
 	if(D == 0)
@@ -63,7 +66,6 @@ const DifxInput *DifxInput2FitsHeader(const DifxInput *D,
 	fitsWriteInteger(out, "BITPIX", 8, "");
 	fitsWriteInteger(out, "NAXIS",  0, "");
 
-
 	fitsWriteLogical(out, "EXTEND", 1, "");
 	fitsWriteLogical(out, "BLOCKED", 1, "");
 	fitsWriteString(out, "OBJECT", "BINARYTB", "");
@@ -72,63 +74,67 @@ const DifxInput *DifxInput2FitsHeader(const DifxInput *D,
 	fitsWriteString(out, "ORIGIN", "VLBA Correlator", "");
 	fitsWriteString(out, "CORRELAT", "DIFX", "");
 	fitsWriteString(out, "DATE-OBS", ref_date, "");
-	mjd2fits((int)timeMjd (), strng);
+	mjd2fits((int)timeMjd(), strng);
 	fitsWriteString(out, "DATE-MAP", strng, "Correlation date");
 	fitsWriteLogical(out, "GROUPS", 1, "");
 	fitsWriteInteger(out, "GCOUNT", 0, "");
 	fitsWriteInteger(out, "PCOUNT", 0, "");
 
 	/* get current local date and time */
-	timeMjd2str (timeMjd (), local_time);
-	strcpy(strng, "OPENED FITS FILE : ");
-	strcat(strng, local_time);
+	timeMjd2str(timeMjd(), local_time);
+	snprintf(strng, maxLength, "OPENED FITS FILE : %s", local_time);
 	fitsWriteComment(out, "HISTORY", strng);
 
 	fitsWriteComment(out, "HISTORY", "CORRELATOR = 'DIFX'");
 
 	if(D->job->difxVersion[0])
 	{
-		sprintf(strng, "CORRVERS = %s", D->job->difxVersion);
+		snprintf(strng, maxLength, "CORRVERS = %s", D->job->difxVersion);
+		fitsWriteComment(out, "HISTORY", strng);
+	}
+	difxLabel = getenv("DIFX_LABEL");
+	if(difxLabel[0])
+	{
+		snprintf(strng, maxLength, "CORRLABL = %s", difxLabel);
 		fitsWriteComment(out, "HISTORY", strng);
 	}
 
-	sprintf (strng, "LOG FILE : /To/be/implemented");
+	snprintf(strng, maxLength, "LOG FILE : /To/be/implemented");
 	fitsWriteComment(out, "HISTORY", strng);
 
-	sprintf (strng, "OBSCODE : %s", D->job->obsCode);
+	snprintf(strng, maxLength, "OBSCODE : %s", D->job->obsCode);
 	fitsWriteComment(out, "HISTORY", strng);
 
 	if(D->job->obsSession[0])
 	{
-		sprintf (strng, "SESSION : %s", D->job->obsSession);
+		snprintf(strng, maxLength, "SESSION : %s", D->job->obsSession);
 		fitsWriteComment(out, "HISTORY", strng);
 	}
 	
-	sprintf (strng, "JOBNUM : %d", D->job->jobId);
+	snprintf(strng, maxLength, "JOBNUM : %d", D->job->jobId);
 	fitsWriteComment(out, "HISTORY", strng);
 
 	time2str(D->mjdStart, "", str);
-	sprintf (strng, "JOBSTART : %s", str);
+	snprintf(strng, maxLength, "JOBSTART : %s", str);
 	fitsWriteComment(out, "HISTORY", strng);
 
 	time2str(D->mjdStop, "", str);
-	sprintf (strng, "JOBSTOP : %s", str);
+	snprintf(strng, maxLength, "JOBSTOP : %s", str);
 	fitsWriteComment(out, "HISTORY", strng);
 
-	for(j = 0; j < D->nJob; j++)
+	for(j = 0; j < D->nJob; ++j)
 	{
-		sprintf (strng, "DIFXJOB : %d.%d.%d", 
+		snprintf(strng, maxLength, "DIFXJOB : %d.%d.%d", 
 			D->job[j].jobId, D->job[j].subjobId, 
 			D->job[j].subarrayId);
 		fitsWriteComment(out, "HISTORY", strng);
 
 		time2str(D->job[j].mjdStart, "", str);
-		sprintf (strng, "FILESTART : %s", str);
+		snprintf(strng, maxLength, "FILESTART : %s", str);
 		fitsWriteComment(out, "HISTORY", strng);
 
-		time2str(D->job[j].mjdStart + D->job[j].duration/86400.0, 
-			"", str);
-		sprintf (strng, "FILESTOP  : %s", str);
+		time2str(D->job[j].mjdStart + D->job[j].duration/86400.0, "", str);
+		snprintf(strng, maxLength, "FILESTOP  : %s", str);
 		fitsWriteComment(out, "HISTORY", strng);
 	}
 	
