@@ -1,7 +1,7 @@
-AC_INIT([python], [1.0] )
+AC_INIT([python], [1.0])
 
 
-AM_INIT_AUTOMAKE
+AM_INIT_AUTOMAKE([foreign])
 
 AC_SUBST([pylibdir], [$libdir/python])
 
