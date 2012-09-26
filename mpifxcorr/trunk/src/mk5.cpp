@@ -550,7 +550,7 @@ void Mk5DataStream::fakeToMemory(int buffersegment)
   ms = new_mark5_stream(new_mark5_stream_unpacker(1), new_mark5_format_generic_from_string(formatname) );
   if(ms == 0)
   {
-    cerror << startl << "Could not create a mark5stream for frame generation! format=" << formatname << endl;;
+    cerror << startl << "Could not create a mark5stream for frame generation! format=" << formatname << endl;
   }
   else 
   {

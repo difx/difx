@@ -23,12 +23,18 @@
 #include "core.h"
 #include "fxmanager.h"
 #include "alert.h"
+#include "config.h"
 
 Core::Core(int id, Configuration * conf, int * dids, MPI_Comm rcomm)
   : mpiid(id), config(conf), return_comm(rcomm)
 {
   int status, perr;
   double guardratio, maxguardratio;
+
+#ifndef HAVE_IPP
+  cwarn << startl << "This CORE process is not linked against a high performance math library.  Expect reduced performance." << endl;
+#endif
+
   estimatedbytes = config->getEstimatedBytes();
 
   //Get all the correlation parameters from config

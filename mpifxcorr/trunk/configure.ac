@@ -17,8 +17,21 @@ dnl **********************************************************
 dnl **** Set path for Intel Performance Primitive library ****
 dnl **********************************************************
 
-PKG_CHECK_MODULES(IPP, ipp)
+ipp_enabled=true
+PKG_CHECK_MODULES(IPP, ipp, [AC_DEFINE([HAVE_IPP], 1, [1=has IPP])], ipp_enabled=false)
+AM_CONDITIONAL(WITH_IPP, $ipp_enabled)
 dnl **********************************************************
+
+if test ${ipp_enabled} = false; then
+	PKG_CHECK_MODULES(FFTW3, fftw3, [hasfftw=true], [hasfftw=false])
+	if test "$hasfftw" == "false"; then
+		AC_MSG_ERROR([Error: fftw needs to be installed if IPP is not])
+	fi
+	PKG_CHECK_MODULES(FFTW3F, fftw3f, [hasfftwf=true], [hasfftwf=false])
+	if test "$hasfftwf" == "false"; then
+		AC_MSG_ERROR([Error: fftwf needs to be installed if IPP is not])
+	fi
+fi
 
 
 dnl **********************************************************
@@ -72,8 +85,8 @@ dnl **********************************************************
 dnl for Mutex lock in datastream.cpp
 AC_CHECK_LIB(rt, clock_gettime)
 
-CXXFLAGS="${CXXFLAGS} ${M5ACCESS_CFLAGS} ${VDIFIO_CFLAGS} ${IPP_CFLAGS} ${DIFXMESSAGE_CFLAGS} ${MARK5IPC_CFLAGS} ${CFLAG_QUIET}"
-LIBS="${M5ACCESS_LIBS} ${VDIFIO_LIBS} ${SS_LIBS} ${IPP_LIBS} ${DIFXMESSAGE_LIBS} ${MARK5IPC_LIBS} $LIBS"
+CXXFLAGS="${CXXFLAGS} ${M5ACCESS_CFLAGS} ${VDIFIO_CFLAGS} ${IPP_CFLAGS} ${FFTW3_CFLAGS} ${FFTW3F_CFLAGS} ${DIFXMESSAGE_CFLAGS} ${MARK5IPC_CFLAGS} ${CFLAG_QUIET}"
+LIBS="${M5ACCESS_LIBS} ${VDIFIO_LIBS} ${SS_LIBS} ${IPP_LIBS} ${FFTW3_LIBS} ${FFTW3F_LIBS} ${DIFXMESSAGE_LIBS} ${MARK5IPC_LIBS} $LIBS"
 
 echo "CXXFLAGS = ${CXXFLAGS}"
 echo "LIBS = ${LIBS}"
