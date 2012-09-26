@@ -23,7 +23,6 @@ numMakeCpus = 4
 # generic arch install (e.g., fftw)
 # option to update self
 # wget option to clobber
-# accountability of builds
 
 def getippversion(path):
 	if islink(path):
@@ -879,6 +878,7 @@ def build(origComps, params, args, verbose, pretend):
 			return
 	buildDir = environ['DIFXROOT'] + '/build/'
 	pkgDir = environ['DIFXROOT'] + '/lib/pkgconfig/'
+	bldLog = environ['DIFXROOT'] + '/buildlog'
 	srcDir = environ['DIFX_SRC'] + '/'
 	okComps = checkFiles(comps, srcDir, 'configure', args)
 	archRoot = environ['DIFX_BASE'] + '/' + platform.machine() + '/'
@@ -930,6 +930,8 @@ def build(origComps, params, args, verbose, pretend):
 			if v != 0:
 				print '\n*** Error building %s ***\n' % comp[0]
 				return 
+			chdir(srcDir+comp[0])
+			execute('echo `date`  $DIFX_VERSION  %s  BUILD  `svn info | grep "Changed Rev"` >> %s' % (comp[0], bldLog), verbose, pretend)
 			
 def rebuild(origComps, params, args, verbose, pretend):
 	comps = filterComponents(origComps, args)
@@ -937,6 +939,8 @@ def rebuild(origComps, params, args, verbose, pretend):
 		print 'No components selected.  Did you mean to append "all" to the command line?\n'
 		return
 	buildDir = environ['DIFXROOT'] + '/build/'
+	srcDir = environ['DIFX_SRC'] + '/'
+	bldLog = environ['DIFXROOT'] + '/buildlog'
 	okComps = checkFiles(comps, buildDir, 'Makefile', args)
 	if verbose > 1:
 		print 'Rebuilding: %s' % componentList(okComps)
@@ -950,6 +954,8 @@ def rebuild(origComps, params, args, verbose, pretend):
 			if v != 0:
 				print '\n*** Error rebuilding %s ***\n' % comp[0]
 				return
+			chdir(srcDir+comp[0])
+			execute('echo `date`  $DIFX_VERSION  %s  REBUILD  `svn info | grep "Changed Rev"` >> %s' % (comp[0], bldLog), verbose, pretend)
 			
 def dist(origComps, params, args, verbose, pretend):
 	comps = filterComponents(origComps, args)
