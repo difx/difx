@@ -210,9 +210,8 @@ void ServerSideConnection::machinesDefinition( DifxMessageGeneric* G ) {
             //  Create a test file name.
             snprintf( testPath, DIFX_MESSAGE_FILENAME_LENGTH, "%s/test_%s", workingDir, nodename );
             //  Execute an mpirun command to create a new file using each processor.
-            snprintf( command, MAX_COMMAND_SIZE, "source %s/bin/setup_difx.%s; %s -host %s touch %s &", 
-                _difxBase,
-                S->difxVersion,
+            snprintf( command, MAX_COMMAND_SIZE, "source %s; %s -host %s touch %s &", 
+                _difxSetupPath,
                 mpiWrapper,
                 nodename,
                 testPath );

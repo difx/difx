@@ -102,8 +102,8 @@ void ServerSideConnection::getDirectory( DifxMessageGeneric* G ) {
   		//  Find the directory path on the Mark5 where the VSN lives.
   		fullPath[0] = 0;
         snprintf( command, MAX_COMMAND_SIZE, 
-            "source %s/bin/setup_difx.%s; %s -host %s /bin/echo $MARK5_DIR_PATH",
-            _difxBase, difxVersion, mpiWrapper, mark5 );
+            "source %s; %s -host %s /bin/echo $MARK5_DIR_PATH",
+            _difxSetupPath, mpiWrapper, mark5 );
         diagnostic( WARNING, "executing: %s\n", command );
         ExecuteSystem* executor = new ExecuteSystem( command );
         if ( executor->pid() > -1 ) {
@@ -139,8 +139,8 @@ void ServerSideConnection::getDirectory( DifxMessageGeneric* G ) {
         if ( noErrors ) {
             creationDate[0] = 0;
             snprintf( command, MAX_COMMAND_SIZE, 
-                "source %s/bin/setup_difx.%s; %s -host %s /bin/ls -l %s",
-                _difxBase, difxVersion, mpiWrapper, mark5, fullPath );
+                "source %s; %s -host %s /bin/ls -l %s",
+                _difxSetupPath, mpiWrapper, mark5, fullPath );
             diagnostic( WARNING, "executing: %s\n", command );
             executor = new ExecuteSystem( command );
             if ( executor->pid() > -1 ) {
@@ -177,8 +177,8 @@ void ServerSideConnection::getDirectory( DifxMessageGeneric* G ) {
         if ( noErrors ) {
             packetExchange->sendPacket( GETDIRECTORY_FILESTART, NULL, 0 );
             snprintf( command, MAX_COMMAND_SIZE, 
-                "source %s/bin/setup_difx.%s; %s -host %s /bin/cat %s",
-                _difxBase, difxVersion, mpiWrapper, mark5, fullPath );
+                "source %s; %s -host %s /bin/cat %s",
+                _difxSetupPath, mpiWrapper, mark5, fullPath );
             diagnostic( WARNING, "executing: %s\n", command );
             executor = new ExecuteSystem( command );
             if ( executor->pid() > -1 ) {

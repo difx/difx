@@ -50,9 +50,8 @@ void ServerSideConnection::vex2difxRun( DifxMessageGeneric* G ) {
 	    gettimeofday( &tv, NULL );
 		
 		//  This is where we actually run vex2difx
-		snprintf( command, MAX_COMMAND_SIZE, "source %s/bin/setup_difx.%s; cd %s; vex2difx -f %s", 
-		          _difxBase,
-				  S->difxVersion,
+		snprintf( command, MAX_COMMAND_SIZE, "source %s; cd %s; vex2difx -f %s", 
+		          _difxSetupPath,
 				  S->passPath,
 				  S->v2dFile );
 		
@@ -73,9 +72,8 @@ void ServerSideConnection::vex2difxRun( DifxMessageGeneric* G ) {
         delete executor;
 
 		//  Next thing to run - calcif2.
-		snprintf( command, MAX_COMMAND_SIZE, "source %s/bin/setup_difx.%s; cd %s; calcif2 -f -a", 
-				  _difxBase,
-				  S->difxVersion,
+		snprintf( command, MAX_COMMAND_SIZE, "source %s; cd %s; calcif2 -f -a", 
+				  _difxSetupPath,
 				  S->passPath );
 		
 		diagnostic( WARNING, "Executing: %s", command );

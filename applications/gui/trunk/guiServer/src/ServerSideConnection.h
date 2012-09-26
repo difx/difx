@@ -44,6 +44,7 @@ namespace guiServer {
         static const int AVAILABLE_DIFX_VERSION         = 10;
         static const int DIFX_BASE                      = 11;
         static const int GUISERVER_ENVIRONMENT          = 12;
+        static const int DIFX_SETUP_PATH                = 13;
 
     public:
 
@@ -164,6 +165,9 @@ namespace guiServer {
                     break;
                 case GUISERVER_VERSION:
                     guiServerVersionRequest();
+                    break;
+                case DIFX_SETUP_PATH:
+                    difxSetupPath( data, nBytes );
                     break;
                 default:
                     break;
@@ -343,6 +347,16 @@ namespace guiServer {
         }
         
         //---------------------------------------------------------------------
+        //!  Get the DiFX setup path from the GUI.
+        //---------------------------------------------------------------------
+        void difxSetupPath( char* data, const int nBytes ) {
+            if ( nBytes < DIFX_MESSAGE_FILENAME_LENGTH ) {
+                strncpy( _difxSetupPath, data, nBytes );
+                _difxSetupPath[nBytes] = 0;
+            }
+        }
+        
+        //---------------------------------------------------------------------
         //!  Types of messages - used as the "severity" in calls to the diagnostic()
         //!  function.
         //---------------------------------------------------------------------
@@ -478,6 +492,7 @@ namespace guiServer {
         int _multicastPort;
         char _clientIP[16];
         char _difxBase[DIFX_MESSAGE_LENGTH];
+        char _difxSetupPath[DIFX_MESSAGE_FILENAME_LENGTH];
         char** _envp;
         std::list<std::string> _runningJobs;
         pthread_mutex_t _runningJobsMutex;

@@ -109,8 +109,8 @@ void ServerSideConnection::stopDifx( DifxMessageGeneric* G ) {
         
             //  Run "ps" to get all running mpi processes that contain the input file.
             snprintf( command, MAX_COMMAND_SIZE, 
-                "source %s/bin/setup_difx.%s; %s -host %s /bin/ps -ef | /bin/grep %s | /bin/grep %s | /bin/grep -v /bin/grep",
-                _difxBase, S->difxVersion, mpiWrapper, machineName, difxProgram, S->inputFilename );
+                "source %s; %s -host %s /bin/ps -ef | /bin/grep %s | /bin/grep %s | /bin/grep -v /bin/grep",
+                _difxSetupPath, mpiWrapper, machineName, difxProgram, S->inputFilename );
             diagnostic( WARNING, "executing: %s\n", command );
             ExecuteSystem* executor = new ExecuteSystem( command );
             if ( executor->pid() > -1 ) {
@@ -126,8 +126,8 @@ void ServerSideConnection::stopDifx( DifxMessageGeneric* G ) {
                             if ( pid > 0 ) {
                                 diagnostic( WARNING, "killing PID %d on %s", pid, machineName );
                                 snprintf( command, MAX_COMMAND_SIZE, 
-                                    "source %s/bin/setup_difx.%s; %s -host %s /bin/kill -9 %d",
-                                    _difxBase, S->difxVersion, mpiWrapper, machineName, pid );
+                                    "source %s; %s -host %s /bin/kill -9 %d",
+                                    _difxSetupPath, mpiWrapper, machineName, pid );
                                 system( command );
                             }
                         }
