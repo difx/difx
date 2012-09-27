@@ -58,7 +58,7 @@ import signal
 import subprocess
 
 
-verbose = 1
+verbose = 0
 
 def usage():
 	print '\n%s ver. %s  %s  %s\n' % (PROGRAM, VERSION, VERDATE, AUTHOR)
@@ -519,7 +519,14 @@ def runDirect(fileBase, machinesPolicy, deletePolicy, makeModel, override, useLo
 	
 	if not isfile(fileBase+'.im'):
 		if makeModel and isfile(fileBase+'.calc'):
-			system('%s %s.calc' % (calcif, fileBase))
+			calcOptions = ""
+			if override:
+				calcOptions += "--override-version " 
+
+			for i in range(verbose):
+				calcOptions += "-v "
+
+			system('%s %s %s.calc' % (calcif, calcOptions, fileBase))
 		else:
 			return 'Error: model not available for %s' % fileBase
 	
