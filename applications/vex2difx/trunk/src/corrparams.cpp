@@ -2112,7 +2112,7 @@ int CorrParams::checkSetupValidity()
 			{
 				if(c->minInputChans() > 128)
 				{
-					const int trialXmacLength[] = {128, 125, 100, 80, 64, 50, 40, 25, 20, 10, 8, 5, 4, 2, 1};
+					const int trialXmacLength[] = {512, 400, 256, 250, 128, 125, 100, 80, 64, 50, 40, 25, 20, 10, 8, 5, 4, 2, 1};
 
 					for(int i = 0; ; ++i)
 					{
