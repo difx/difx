@@ -15,15 +15,6 @@ PKG_CHECK_MODULES(DIFXMESSAGE, difxmessage >= $DIFXMESSAGE_REQUIRED_VERSION)
 AC_SUBST(DIFXMESSAGE_CFLAGS)
 AC_SUBST(DIFXMESSAGE_LIBS)
 
-dnl **********************************************************
-dnl **** Set path for Intel Performance Primitive library ****
-dnl **********************************************************
-PKG_CHECK_MODULES(IPP, ipp)
-
-AC_SUBST(IPP_CFLAGS)
-AC_SUBST(IPP_LIBS)
-dnl **********************************************************
-
 AC_PROG_CXX
 
 AC_OUTPUT(Makefile)
