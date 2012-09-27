@@ -252,7 +252,7 @@ except:
 headmachine = os.uname()[1].lower()
 if len(hosts) == 0:
     raise Exception('Did not find any hosts in your $CORR_HOSTS file')
-elif len(hosts) <= len(datamachines) + 1:
+elif len(hosts) <= len(set(datamachines + [headmachine])):
    # all nodes already occupied by master and datastreams
    options.allcompute = True
 
