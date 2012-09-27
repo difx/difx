@@ -38,8 +38,6 @@ fi
 AC_SUBST(X11LIBS)
 AC_SUBST(PGPLOTINC)
 AC_SUBST(PGPLOTLIB)
-AC_SUBST(IPP_CFLAGS)
-AC_SUBST(IPP_LIBS)
 dnl **********************************************************
 
 AC_PROG_CXX
