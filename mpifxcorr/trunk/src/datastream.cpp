@@ -573,11 +573,11 @@ void set_abstime(struct timespec *abstime, double timeout) {
     abstime->tv_sec++;
     timeout -= 1;
   }
-  abstime->tv_nsec += timeout *1e9;
+  abstime->tv_nsec += static_cast<long int>(timeout *1e9);
 
-  while (abstime->tv_nsec>1e9) {
+  while (abstime->tv_nsec>1000000000) {
     abstime->tv_sec++;
-    abstime->tv_nsec -= 1e9;
+    abstime->tv_nsec -= 1000000000;
   }
 }
 

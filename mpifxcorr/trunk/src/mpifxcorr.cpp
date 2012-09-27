@@ -254,7 +254,9 @@ int main(int argc, char *argv[])
 
   char myhostname[200];
   gethostname(myhostname, sizeof(myhostname)-1);
+#if(ARCH == INTEL)
   ippSetNumThreads(1);
+#endif
   cout << "About to run MPIInit on node " << myhostname << endl;
 
   MPI_Init(&argc, &argv);

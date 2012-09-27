@@ -810,13 +810,13 @@ inline vecStatus genericConvert_16s32f(const s16 *src, f32 *dest, int length, in
 
 /* #define vectorConvertScaled_f32s16(src, dest, length, rndmode, scalefactor) ippsConvert_32f16s_Sfs(src, dest, length, rndmode, scalefactor) */
 inline vecStatus genericConvert_32f16s(const f32 *src, s16 *dest, int length, int rndmode, int scalefactor) 
-{f32 tmp;tmp=powf(2,-scalefactor); for(int i=0;i<length;i++) dest[i] = src[i]*tmp; return vecNoErr; }
+{f32 tmp;tmp=powf(2,-scalefactor); for(int i=0;i<length;i++) dest[i] = static_cast<s16>(src[i]*tmp); return vecNoErr; }
 /* #define vectorConvertScaled_f32u8(src, dest, length, rndmode, scalefactor)  ippsConvert_32f8u_Sfs(src, dest, length, rndmode, scalefactor) */
 inline vecStatus genericConvert_32f8u(const f32 *src, u8 *dest, int length, int rndmode, int scalefactor) 
-{f32 tmp;tmp=powf(2,-scalefactor); for(int i=0;i<length;i++) dest[i] = src[i]*tmp; return vecNoErr; }
+{f32 tmp;tmp=powf(2,-scalefactor); for(int i=0;i<length;i++) dest[i] = static_cast<u8>(src[i]*tmp); return vecNoErr; }
 /* #define vectorConvert_f32s32(src, dest, length, rndmode)                    ippsConvert_32f32s_Sfs(src, dest, length, rndmode, 0) */
 inline vecStatus genericConvert_32f32s(const f32 * src, s32 * dest, int length, int rndmode) // Have not included rounding mode!!!
-{ for(int i=0;i<length;i++) dest[i] = src[i]; return vecNoErr; }
+{ for(int i=0;i<length;i++) dest[i] = static_cast<s32>(src[i]); return vecNoErr; }
 inline vecStatus genericConvert_16s32f(const s16 * src, f32 * dest, int length)
 { for(int i=0;i<length;i++) dest[i] = src[i]; return vecNoErr; }
 inline vecStatus genericConvert_32s32f(const s32 * src, f32 * dest, int length)
