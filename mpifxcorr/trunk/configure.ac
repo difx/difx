@@ -22,6 +22,8 @@ PKG_CHECK_MODULES(IPP, ipp, [AC_DEFINE([HAVE_IPP], 1, [1=has IPP])], ipp_enabled
 AC_SUBST(ipp_enabled)
 dnl **********************************************************
 
+AC_CHECK_LIB(pthread, pthread_create,,[AC_MSG_ERROR("need libpthread")])
+
 if test ${ipp_enabled} = 0; then
 	PKG_CHECK_MODULES(FFTW3, fftw3, [hasfftw=true], [hasfftw=false])
 	if test "$hasfftw" == "false"; then
@@ -34,7 +36,7 @@ if test ${ipp_enabled} = 0; then
 	MATH_LIBS="${FFTW3_LIBS} ${FFTW3F_LIBS}"
 	MATH_CFLAGS="${FFTW3_CFLAGS} ${FFTW3F_CFLAGS}"
 else
-	MATH_LIBS="${IPP_LIBS}"
+	MATH_LIBS="${IPP_LIBS} ${LIBS}"
 	MATH_CFLAGS="${IPP_CFLAGS}"
 fi
 
