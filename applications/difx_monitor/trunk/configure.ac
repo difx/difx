@@ -62,12 +62,6 @@ PKG_CHECK_MODULES(MPIFXCORR, [mpifxcorr >= 2.2])
 LIBS="$MPIFXCORR_LIBS $LIBS"
 CPPFLAGS="$MPIFXCORR_CFLAGS $CPPFLAGS"
 
-# IPP wasn't detected by scan...hmmm.
-PKG_CHECK_MODULES(IPP, ipp)
-LIBS="$IPP_LIBS $LIBS"
-CPPFLAGS="$IPP_CFLAGS $CPPFLAGS"
-
-
 # Checks for header files.
 AC_HEADER_STDC
 AC_CHECK_HEADERS([arpa/inet.h limits.h netdb.h netinet/in.h stdint.h])
@@ -84,7 +78,7 @@ AC_FUNC_MALLOC
 AC_TYPE_SIGNAL
 AC_CHECK_FUNCS([gethostbyname inet_ntoa memset socket])
 
-AC_CONFIG_FILES([makefile])
+AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
 
 # eof
