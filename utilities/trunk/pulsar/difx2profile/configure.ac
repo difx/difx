@@ -15,12 +15,6 @@ AC_PROG_CXX
 AC_PROG_RANLIB
 
 dnl **********************************************************
-dnl **** Set path for Intel Performance Primitive library ****
-dnl **********************************************************
-
-PKG_CHECK_MODULES(IPP, ipp)
-
-dnl **********************************************************
 
 # Checks for libraries.
 PKG_CHECK_MODULES(DIFXIO, difxio >= 3.0.2)
@@ -33,8 +27,8 @@ PKG_CHECK_MODULES(DIFXMESSAGE, difxmessage >= 2.0.2)
 
 # Checks for library functions.
 
-CXXFLAGS="${CXXFLAGS} ${IPP_CFLAGS} ${DIFXIO_CFLAGS} ${DIFXMESSAGE_CFLAGS} ${FXCORR_CFLAGS}"
-LIBS=" ${FXCORR_LIBS} ${IPP_LIBS} ${DIFXIO_LIBS} ${DIFXMESSAGE_LIBS} -lpthread"
+CXXFLAGS="${CXXFLAGS} ${DIFXIO_CFLAGS} ${DIFXMESSAGE_CFLAGS} ${FXCORR_CFLAGS}"
+LIBS=" ${FXCORR_LIBS} ${DIFXIO_LIBS} ${DIFXMESSAGE_LIBS} -lpthread"
 
 AC_CONFIG_FILES([Makefile src/Makefile scripts/Makefile])
 AC_OUTPUT
