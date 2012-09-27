@@ -31,8 +31,6 @@
  *  \brief File contains mapping for vector functions to specific architectures
  */
 
-#include "config.h"
- 
 #ifndef ARCHITECTURE_H
 #define ARCHITECTURE_H
 
@@ -50,7 +48,7 @@
 #define DS_PROCESS        6
 
 //define the architecture to be compiled for here
-#if HAVE_IPP
+#if @ipp_enabled@
 #define ARCH INTEL
 #endif
 

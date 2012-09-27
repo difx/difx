@@ -4,6 +4,7 @@ Version 2.2
 * Optimized corner turners implemented for interlaced VDIF
 * Fixed a scaling bug for zoom band data
 * Allow building without IPP (needs fftw) [Thanks Richard Dodson!]
+* .pc files now include full compile-in info for ipp or fftw as appropriate
 
 Version 2.1
 ~~~~~~~~~~~

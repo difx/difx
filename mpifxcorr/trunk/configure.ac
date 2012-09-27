@@ -17,9 +17,9 @@ dnl **********************************************************
 dnl **** Set path for Intel Performance Primitive library ****
 dnl **********************************************************
 
-ipp_enabled=true
-PKG_CHECK_MODULES(IPP, ipp, [AC_DEFINE([HAVE_IPP], 1, [1=has IPP])], ipp_enabled=false)
-AM_CONDITIONAL(WITH_IPP, $ipp_enabled)
+ipp_enabled=1
+PKG_CHECK_MODULES(IPP, ipp, [AC_DEFINE([HAVE_IPP], 1, [1=has IPP])], ipp_enabled=0)
+AC_SUBST(ipp_enabled)
 dnl **********************************************************
 
 if test ${ipp_enabled} = false; then
@@ -31,8 +31,15 @@ if test ${ipp_enabled} = false; then
 	if test "$hasfftwf" == "false"; then
 		AC_MSG_ERROR([Error: fftwf needs to be installed if IPP is not])
 	fi
+	MATH_LIBS="${FFTW3_LIBS} ${FFTW3F_LIBS}"
+	MATH_CLFAGS="${FFTW3_CFLAGS} ${FFTW3F_CFLAGS}"
+else
+	MATH_LIBS="${IPP_LIBS}"
+	MATH_CFLAGS="${IPP_CFLAGS}"
 fi
 
+AC_SUBST(mathlibs, [${MATH_LIBS}])
+AC_SUBST(mathcflags, [${MATH_CFLAGS}])
 
 dnl **********************************************************
 dnl **** Find difxmessage library                         ****
@@ -85,9 +92,17 @@ dnl **********************************************************
 dnl for Mutex lock in datastream.cpp
 AC_CHECK_LIB(rt, clock_gettime)
 
-CXXFLAGS="${CXXFLAGS} ${M5ACCESS_CFLAGS} ${VDIFIO_CFLAGS} ${IPP_CFLAGS} ${FFTW3_CFLAGS} ${FFTW3F_CFLAGS} ${DIFXMESSAGE_CFLAGS} ${MARK5IPC_CFLAGS} ${CFLAG_QUIET}"
-LIBS="${M5ACCESS_LIBS} ${VDIFIO_LIBS} ${SS_LIBS} ${IPP_LIBS} ${FFTW3_LIBS} ${FFTW3F_LIBS} ${DIFXMESSAGE_LIBS} ${MARK5IPC_LIBS} $LIBS"
+CXXFLAGS="${CXXFLAGS} ${M5ACCESS_CFLAGS} ${VDIFIO_CFLAGS} ${MATH_CFLAGS} ${FFTW3_CFLAGS} ${DIFXMESSAGE_CFLAGS} ${MARK5IPC_CFLAGS} ${CFLAG_QUIET}"
+LIBS="${M5ACCESS_LIBS} ${VDIFIO_LIBS} ${SS_LIBS} ${MATH_LIBS} ${DIFXMESSAGE_LIBS} ${MARK5IPC_LIBS} $LIBS"
 
 echo "CXXFLAGS = ${CXXFLAGS}"
 echo "LIBS = ${LIBS}"
-AC_OUTPUT(Makefile mpifxcorr.pc fxcorr.pc src/Makefile scripts/Makefile utils/Makefile)
+AC_OUTPUT([
+	Makefile \
+	mpifxcorr.pc \
+	fxcorr.pc \
+	src/Makefile \
+	src/architecture.h \
+	scripts/Makefile \
+	utils/Makefile\
+])
