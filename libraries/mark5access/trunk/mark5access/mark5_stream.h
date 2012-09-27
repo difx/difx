@@ -181,6 +181,8 @@ void delete_mark5_stream_generic(struct mark5_stream_generic *s);
 
 void delete_mark5_format_generic(struct mark5_format_generic *f);
 
+void mark5_format_generic_print(const struct mark5_format_generic *f);
+
 struct mark5_stream *new_mark5_stream(const struct mark5_stream_generic *s, const struct mark5_format_generic *f);
 
 /* same as new_mark5_stream() but deletes s and f upon creation */

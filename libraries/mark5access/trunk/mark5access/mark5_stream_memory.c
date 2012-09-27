@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2006-2011 by Walter Brisken                             *
+ *   Copyright (C) 2006-2012 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -71,7 +71,7 @@ static int mark5_stream_memory_next(struct mark5_stream *ms)
 	}
 
 	/* successfully got new frame, so increment it */
-	ms->framenum++;
+	++ms->framenum;
 	ms->readposition = 0;
 
 	return ms->framebytes;
@@ -102,16 +102,13 @@ static int mark5_stream_memory_final(struct mark5_stream *ms)
 	return 0;
 }
 
-struct mark5_stream_generic *new_mark5_stream_memory(void *data, 
-	unsigned int nbytes)
+struct mark5_stream_generic *new_mark5_stream_memory(void *data, unsigned int nbytes)
 {
 	struct mark5_stream_generic *s;
 	struct mark5_stream_memory *M;
 
-	s = (struct mark5_stream_generic *)calloc(1,
-		sizeof(struct mark5_stream_generic));
-	M = (struct mark5_stream_memory *)calloc(1,
-		sizeof(struct mark5_stream_memory));
+	s = (struct mark5_stream_generic *)calloc(1, sizeof(struct mark5_stream_generic));
+	M = (struct mark5_stream_memory *)calloc(1, sizeof(struct mark5_stream_memory));
 	M->start = (unsigned char *)data;
 	M->nbytes = nbytes;
 

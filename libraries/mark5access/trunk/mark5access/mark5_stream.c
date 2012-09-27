@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2006-2011 by Walter Brisken                             *
+ *   Copyright (C) 2006-2012 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -135,7 +135,7 @@ static void mark5_stream_blank_frame(struct mark5_stream *ms)
 {
 	int z;
 
-	for(z = 0; z < MAXBLANKZONES; z++)
+	for(z = 0; z < MAXBLANKZONES; ++z)
 	{
 		ms->blankzonestartvalid[z] = 1<<30;
 		ms->blankzoneendvalid[z] = 0;
@@ -164,12 +164,12 @@ int mark5_stream_next_frame(struct mark5_stream *ms)
 		v = ms->validate(ms);
 		if(!v)
 		{
-			ms->nvalidatefail++;
-			ms->consecutivefails++;
+			++ms->nvalidatefail;
+			++ms->consecutivefails;
 		}
 		else
 		{
-			ms->nvalidatepass++;
+			++ms->nvalidatepass;
 			ms->consecutivefails = 0;
 		}
 	}
@@ -193,8 +193,7 @@ int mark5_stream_next_frame(struct mark5_stream *ms)
 	return 0;
 }
 
-static int set_stream(struct mark5_stream *ms, 
-	const struct mark5_stream_generic *s)
+static int set_stream(struct mark5_stream *ms, const struct mark5_stream_generic *s)
 {
 	if(s && ms)
 	{
@@ -241,9 +240,17 @@ static int set_format(struct mark5_stream *ms, const struct mark5_format_generic
 		ms->nbit = f->nbit;
 		ms->decimation = f->decimation;
 
-		if(!f->init_format || !(f->decode || f->complex_decode) || !f->gettime)
+		if(!f->init_format)
 		{
-			return -1;
+			return -2;
+		}
+		if(!(f->decode || f->complex_decode))
+		{
+			return -3;
+		}
+		if(!f->gettime)
+		{
+			return -4;
 		}
 		
 		return 0;
@@ -252,8 +259,7 @@ static int set_format(struct mark5_stream *ms, const struct mark5_format_generic
 	return -1;
 }
 
-static int copy_format(const struct mark5_stream *ms,
-	struct mark5_format *mf)
+static int copy_format(const struct mark5_stream *ms, struct mark5_format *mf)
 {
 	mf->frameoffset = ms->frameoffset;
 	mf->framebytes  = ms->framebytes;
@@ -368,8 +374,7 @@ struct mark5_stream *mark5_stream_open(const char *filename, int nbit, int fanou
 	return 0;
 }
 
-struct mark5_format_generic *new_mark5_format_generic_from_string(
-	const char *formatname)
+struct mark5_format_generic *new_mark5_format_generic_from_string( const char *formatname)
 {
 	int a, b, c, d, e, r;
 
@@ -927,8 +932,7 @@ void delete_mark5_format(struct mark5_format *mf)
 	}
 }
 
-struct mark5_stream *new_mark5_stream(const struct mark5_stream_generic *s, 
-	const struct mark5_format_generic *f)
+struct mark5_stream *new_mark5_stream(const struct mark5_stream_generic *s, const struct mark5_format_generic *f)
 {
 	struct mark5_stream *ms;
 	int status;
@@ -986,8 +990,7 @@ struct mark5_stream *new_mark5_stream(const struct mark5_stream_generic *s,
 	return ms;
 }
 
-struct mark5_stream *new_mark5_stream_absorb(struct mark5_stream_generic *s,
-	struct mark5_format_generic *f)
+struct mark5_stream *new_mark5_stream_absorb(struct mark5_stream_generic *s, struct mark5_format_generic *f)
 {
 	struct mark5_stream *ms;
 	int failed = 0;
@@ -1250,11 +1253,10 @@ int mark5_stream_decode(struct mark5_stream *ms, int nsamp, float **data)
 	return ms->decode(ms, nsamp, data);
 }
 
-int mark5_stream_decode_double(struct mark5_stream *ms, int nsamp, 
-	double **data)
+int mark5_stream_decode_double(struct mark5_stream *ms, int nsamp, double **data)
 {
 	double *d;
-	float *f;
+	const float *f;
 	int c;
 	int i;
 	int r;
@@ -1266,14 +1268,14 @@ int mark5_stream_decode_double(struct mark5_stream *ms, int nsamp,
 	}
 
 	/* convert in place */
-	for(c = 0; c < ms->nchan; c++)
+	for(c = 0; c < ms->nchan; ++c)
 	{
 		d = data[c]+nsamp;
-		f = ((float *)(data[c]))+nsamp;
-		for(i = 0; i < nsamp; i++)
+		f = ((const float *)(data[c]))+nsamp;
+		for(i = 0; i < nsamp; ++i)
 		{
-			d--;
-			f--;
+			--d;
+			--f;
 			*d = *f;
 		}
 	}
@@ -1281,11 +1283,10 @@ int mark5_stream_decode_double(struct mark5_stream *ms, int nsamp,
 	return r;
 }
 
-int mark5_stream_decode_complex(struct mark5_stream *ms, int nsamp, 
-	mark5_float_complex **data)
+int mark5_stream_decode_complex(struct mark5_stream *ms, int nsamp, mark5_float_complex **data)
 {
 	mark5_float_complex *fc;
-	float *f;
+	const float *f;
 	int c, i, r;
 	
 	if(!ms) 
@@ -1309,14 +1310,14 @@ int mark5_stream_decode_complex(struct mark5_stream *ms, int nsamp,
 		{
 
 			/* convert in place */
-			for(c = 0; c < ms->nchan; c++)
+			for(c = 0; c < ms->nchan; ++c)
 			{
 				fc = data[c]+nsamp;
-				f = ((float *)(data[c]))+nsamp;
-				for(i = 0; i < nsamp; i++)
+				f = ((const float *)(data[c]))+nsamp;
+				for(i = 0; i < nsamp; ++i)
 				{
-					fc--;
-					f--;
+					--fc;
+					--f;
 					*fc= *f;
 				}
 			}
@@ -1326,12 +1327,11 @@ int mark5_stream_decode_complex(struct mark5_stream *ms, int nsamp,
 	}
 }
 
-int mark5_stream_decode_double_complex(struct mark5_stream *ms, int nsamp, 
-	mark5_double_complex **data)
+int mark5_stream_decode_double_complex(struct mark5_stream *ms, int nsamp, mark5_double_complex **data)
 {
 	mark5_double_complex *dc;
-	float *f;
-	mark5_float_complex *fc;
+	const float *f;
+	const mark5_float_complex *fc;
 	int c, i, r;
 
 	if (ms->complex_decode) 
@@ -1343,14 +1343,14 @@ int mark5_stream_decode_double_complex(struct mark5_stream *ms, int nsamp,
 		}
 
 		/* convert in place */
-		for(c = 0; c < ms->nchan; c++)
+		for(c = 0; c < ms->nchan; ++c)
 		{
 			dc = data[c]+nsamp;
-			fc = ((mark5_float_complex*)data[c])+nsamp;
-			for(i = 0; i < nsamp; i++)
+			fc = ((const mark5_float_complex *)data[c])+nsamp;
+			for(i = 0; i < nsamp; ++i)
 			{
-				dc--;
-				fc--;
+				--dc;
+				--fc;
 				*dc = *fc;
 			}
 		}
@@ -1365,14 +1365,14 @@ int mark5_stream_decode_double_complex(struct mark5_stream *ms, int nsamp,
 		}
 
 		/* convert in place */
-		for(c = 0; c < ms->nchan; c++)
+		for(c = 0; c < ms->nchan; ++c)
 		{
 			dc = data[c]+nsamp;
-			f = ((float *)(data[c]))+nsamp;
-			for(i = 0; i < nsamp; i++)
+			f = ((const float *)(data[c]))+nsamp;
+			for(i = 0; i < nsamp; ++i)
 			{
-				dc--;
-				f--;
+				--dc;
+				--f;
 				*dc = *f;
 			}
 		}
@@ -1408,6 +1408,18 @@ void delete_mark5_format_generic(struct mark5_format_generic *f)
 	}
 }
 
+void mark5_format_generic_print(const struct mark5_format_generic *f)
+{
+	printf("mark5_format_generic [%p]\n", f);
+	if(f)
+	{
+		printf("  formatdatasize = %d\n", f->formatdatasize);
+		printf("  Mbps = %d\n", f->Mbps);
+		printf("  nchan = %d\n", f->nchan);
+		printf("  nbit = %d\n", f->nbit);
+		printf("  decimation = %d\n", f->decimation);
+	}
+}
 
 int mark5_stream_count_high_states(struct mark5_stream *ms, int nsamp,
 	unsigned int *highstates)

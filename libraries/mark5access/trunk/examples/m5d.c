@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2006-2011 by Walter Brisken                             *
+ *   Copyright (C) 2006-2012 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -34,8 +34,8 @@
 
 const char program[] = "m5d";
 const char author[]  = "Walter Brisken";
-const char version[] = "1.1";
-const char verdate[] = "20110730";
+const char version[] = "1.2";
+const char verdate[] = "20120927";
 
 static void usage(const char *pgm)
 {
@@ -62,7 +62,7 @@ static int decode(const char *filename, const char *formatname, const char *f,
 	struct mark5_stream *ms;
 	float **data;
 	int i, j, k, status;
-	long long chunk = 1024;
+	long long chunk = 20000;
 	long long total, unpacked;
 
 	total = unpacked = 0;
@@ -145,7 +145,7 @@ int main(int argc, char **argv)
 	if(argc == 2)
 	{
 		struct mark5_format *mf;
-		int bufferlen = 1<<11;
+		int bufferlen = 1<<19;	/* should not be less than twice the largest data frame that could be encountered */
 		char *buffer;
 		FILE *in;
 
@@ -179,12 +179,6 @@ int main(int argc, char **argv)
 		}
 		else
 		{
-			mf = new_mark5_format_from_stream(
-				new_mark5_stream_memory(buffer, bufferlen/2));
-
-			print_mark5_format(mf);
-			delete_mark5_format(mf);
-
 			mf = new_mark5_format_from_stream(
 				new_mark5_stream_memory(buffer, bufferlen/2));
 
