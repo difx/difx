@@ -82,6 +82,8 @@ def usage():
 	print '          will not run genmachines, even if needed\n'
 	print '  -d or --dont-calc'
 	print '          will not run calcif, even if needed\n'
+	print '  -D or --difxdb'
+	print '          make use of difxdb\n'
 	print '  -m or --message'
 	print '          start difx via DifxStartMessage\n'
 	print '  -F or --fits'
@@ -432,7 +434,12 @@ def doMachines(fileBase, machinesPolicy, cache):
 		while not isfile(machinesFile):
 			if machinesPolicy > 0:
 				localHeadString = ""
-				cmd = '%s %s.input' % (genmachines, fileBase)
+
+				options = ""
+				if difxdb:
+					options += " -d "
+
+				cmd = '%s %s %s.input' % (genmachines, options, fileBase)
 				if verbose > 1:
 					print 'Executing: %s' % cmd
 				v = -1
@@ -594,6 +601,7 @@ machinesPolicy = 2
 deletePolicy = 0
 makeModel = True
 makeFits = False
+difxdb = False
 useLocalHead = False
 restartSeconds = 0.0
 fileBaseList = []
@@ -621,6 +629,8 @@ for a in argv[1:]:
 			deletePolicy = 1
 		elif a == '-d' or a == '--dont-calc':
 			makeModel = False
+		elif a == '-D' or a == '--difxdb':
+			difxdb = True
 		elif a == '-F' or a == '--fits':
 			makeFits = True
 		elif a == '-v' or a == '--verbose':
