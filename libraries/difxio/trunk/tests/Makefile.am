@@ -8,6 +8,7 @@ bin_PROGRAMS = \
 	testparsedifx \
 	testparsevis \
 	testtcal \
+	pbgen \
 	teststringarray
 
 testdifxinput_SOURCES = \
@@ -21,6 +22,9 @@ testparsevis_SOURCES  = \
 
 testtcal_SOURCES = \
 	testtcal.c
+
+testtcal_SOURCES = \
+	pbgen.c
 
 teststringarray_SOURCES  = \
 	teststringarray.c
