@@ -1,0 +1,7 @@
+aclocal
+autoheader
+autoconf
+automake -a
+./configure --prefix=${DIFXROOT} CXX=${MPICXX}
+make
+make install
