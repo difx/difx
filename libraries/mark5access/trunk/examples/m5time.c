@@ -88,7 +88,6 @@ int main(int argc, char **argv) {
   mjdnow = cal2mjd(day, month, year);
 
   if (ms->format==0 || ms->format==2) {
-    printf("Formart=%d\n", ms->format);
     int basenow = mjdnow - (mjdnow % 1000);
     mjd = ms->mjd + basenow;
     if (mjd>mjdnow) mjd -= 1000;
