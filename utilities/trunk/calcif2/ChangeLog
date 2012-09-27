@@ -156,6 +156,9 @@ Version 1.2
 
 genmachines
 ~~~~~~~~~~~
+Version 0.15
+* properly react to ctrl+c
+
 Version 0.14
 * add option --difxdb to obtain the module location from the database
 
@@ -216,7 +219,12 @@ Version 0.5
 * -m option to use difxmessage
 Version 0.7
 * support for restart mode
+Version 0.8
 * loop over genmachines
+* respect CTRL-C
+* add option to enable difxdb usage
+* pass on --override-version and -v options  to calcif2
+* enable giving a .joblist file to execute
 
 calcif
 ~~~~~~
