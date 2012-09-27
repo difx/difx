@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Simple wrapper for ls and chk_vlbi.pl to create and check the data files for
+# Simple wrapper for ls and chk_vlbi.py to create and check the data files for
 # the correlator
 # Cormac Reynolds: 2010 June 
 import os, subprocess, time, re, tempfile, optparse, time
@@ -250,6 +250,12 @@ except:
     raise Exception('You must set $CORR_HOSTS. No machines file created')
 
 headmachine = os.uname()[1].lower()
+if len(hosts) == 0:
+    raise Exception('Did not find any hosts in your $CORR_HOSTS file')
+elif len(hosts) <= len(datamachines) + 1:
+   # all nodes already occupied by master and datastreams
+   options.allcompute = True
+
 #print 'head=', headmachine 
 
 computemachines = []
@@ -260,6 +266,9 @@ for host in sorted(hosts.keys()):
         # also only use nodes with more than 0 threads available.
         if hosts[host][0]:
             computemachines.append(host)
+
+if not computemachines:
+    raise Exception('You have no compute nodes left after the master node and datastream nodes have been allocated! Check your hosts in $CORR_HOSTS. Consider using the -H switch.')
 
 machines = [headmachine] + datamachines + computemachines
 check_machines(machines[:])
