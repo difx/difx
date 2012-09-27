@@ -621,6 +621,7 @@ signal.signal(signal.SIGINT, handler)
 
 
 for a in argv[1:]:
+	fb = None
 	if a[0] == '-':
 		if a == '-h' or a == '--help':
 			usage()
@@ -654,12 +655,28 @@ for a in argv[1:]:
 		except:
 			if a[-6:] == '.input':
 				fb = a[:-6]
+			elif a[-8:] == '.joblist':
+				d = open(a).readlines()
+				for l in d:
+					parts = l.split()
+					if len(parts) == 0:
+						job = strip(l)
+					else:
+						job = strip(parts[0])
+
+					if job.startswith("#") or job.startswith("exper"):
+						continue
+					if parts[0] == '/':
+						fileBaseList.append(parts[0])
+					else:
+						fileBaseList.append(cwd + '/' + parts[0])
 			else:
 				fb = a
-			if fb[0] == '/':
-				fileBaseList.append(a)
-			else:
-				fileBaseList.append(cwd + '/' + fb)
+			if fb != None:
+				if fb[0] == '/':
+					fileBaseList.append(a)
+				else:
+					fileBaseList.append(cwd + '/' + fb)
 
 if len(fileBaseList) < 1:
 	usage()
