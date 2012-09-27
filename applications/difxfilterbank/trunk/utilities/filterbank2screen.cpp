@@ -5,7 +5,7 @@
 #include <math.h>
 #include <string.h>
 #include <unistd.h>
-#include <cpgplot.h>
+#include <plplot/plplot.h>
 #include "architecture.h"
 #include "configuration.h"
 
@@ -19,7 +19,8 @@ float miny, maxy;
 int dsindex, nchan, bandindex, threadindex, coreindex, nthreads, configindex;
 string pol, antennaname;
 float data[MAX_CHANNELS];
-float xaxis[MAX_CHANNELS];
+double ddata[MAX_CHANNELS];	// because plplot wants to operate on doubles
+double xaxis[MAX_CHANNELS];
 char title[256];
 char junk[256];
 ifstream * input;
@@ -43,10 +44,9 @@ int main(int argc, char *argv[])
   config = new Configuration(argv[2], -1);
   model = config->getModel();
 
-  //set up pgplot and the xaxis data
-  if(cpgbeg(0, "?", 1, 1) != 1)
-    exit(EXIT_FAILURE);
-  cpgask(0);
+  //set up plplot and the xaxis data
+  plstart("xwin", 1, 1);
+  plspause(0);
   for(int i=0;i<MAX_CHANNELS;i++)
     xaxis[i] = i;
 
@@ -56,10 +56,13 @@ int main(int argc, char *argv[])
       getMinMax(data, nchan, &miny, &maxy);
       if(maxy != 0.0 || miny != 0.0) {
         sprintf(title, "Antenna=%s, Freq=%8.2f, Pol=%s, Time=%f, Int time (ms)=%5.2f, CoreID=%i, ThreadID=%i", antennaname.c_str(), freq, pol.c_str(), dumptime, inttimems, coreindex, threadindex);
-        cpgpage();
-        cpgenv(0.0, static_cast<float>(nchan), miny, maxy, 0, 1);
-        cpglab("Channel number", "Unnormalised amplitude", title);
-        cpgline(nchan, xaxis, data);
+        //cpgpage();
+        plenv(0.0, static_cast<float>(nchan), miny, maxy, 0, 1);
+        pllab("Channel number", "Unnormalised amplitude", title);
+	for(int q = 0; q < nchan; ++q) {
+	  ddata[q] = data[q];
+	}
+        plline(nchan, xaxis, ddata);
         usleep(100000);
       }
       else {
