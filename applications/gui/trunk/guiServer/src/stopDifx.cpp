@@ -69,6 +69,7 @@ void ServerSideConnection::stopDifx( DifxMessageGeneric* G ) {
     //  Get the machines file name.  This is the input file name with ".input" replaced
     //  by ".machines".
     strncpy( machinesFilename, S->inputFilename, DIFX_MESSAGE_FILENAME_LENGTH );
+    machinesFilename[ DIFX_MESSAGE_FILENAME_LENGTH - 1 ] = 0;
     l = strlen( machinesFilename );
     for( int i = l-1; i > 0; i-- ) {
 	    if( machinesFilename[i] == '.' ) {
