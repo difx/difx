@@ -991,7 +991,7 @@ int VexJob::generateFlagFile(const VexData &V, const char *fileName, unsigned in
 			exit(EXIT_FAILURE);
 		}
 
-		if(!ant->basebandFiles.empty())
+		if(!ant->basebandFiles.empty() || ant->dataSource == DataSourceNetwork)
 		{
 			// Aha! not module based so unflag JOB_FLAG_RECORD
 			flagMask[antIds[a->first]] &= ~VexJobFlag::JOB_FLAG_RECORD;
