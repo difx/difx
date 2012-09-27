@@ -671,15 +671,15 @@ void VDIF_Server::VDIF_Copier::drainsegment(int segment) {
 
   numframes = (parent->readbufinfo[segment]).framesfilled;
   buffer = &((parent->readbuffer)[parent->readbuffersegmentbytes*segment]);
-  framebytes = getVDIFFrameBytes(buffer);
+  framebytes = getVDIFFrameBytes((vdif_header*)buffer);
 
   cout << "Draining read segment " << segment << ", numframes is " << numframes << endl;
 
   for(int i=0;i<numframes;i++) {
-    framethread = getVDIFThreadID(buffer);
-    framemjd    = getVDIFFrameMJD(buffer);
-    framesecond = getVDIFFrameSecond(buffer);
-    framenumber = getVDIFFrameNumber(buffer);
+    framethread = getVDIFThreadID((vdif_header*)buffer);
+    framemjd    = getVDIFFrameMJD((vdif_header*)buffer);
+    framesecond = getVDIFFrameSecond((vdif_header*)buffer);
+    framenumber = getVDIFFrameNumber((vdif_header*)buffer);
     //cout << "Just read a frame with thread " << framethread << ", mjd " << framemjd << ", framesecond " << framesecond << ", framenumber " << framenumber << endl;
     jobsecond   = (framemjd-parent->startmjd)*86400 + framesecond - parent->startseconds;
     threadbufferindex = getThreadBufferIndex(jobsecond, framenumber, framethread);
@@ -804,9 +804,9 @@ void VDIF_Server::VDIF_Reader::loopread()
     cout << "Segment filled" << endl;
     nextsegment = (atsegment + 1)%parent->numreadbuffersegments;
     lastdata = &(parent->readbuffer[parent->readbuffersegmentbytes*atsegment]);
-    framemjd    = getVDIFFrameMJD(lastdata);
-    framesecond = getVDIFFrameSecond(lastdata);
-    startframe  = getVDIFFrameNumber(lastdata);
+    framemjd    = getVDIFFrameMJD((vdif_header*)lastdata);
+    framesecond = getVDIFFrameSecond((vdif_header*)lastdata);
+    startframe  = getVDIFFrameNumber((vdif_header*)lastdata);
     readsecond = (framemjd-parent->startmjd)*86400 + (framesecond - parent->startseconds);
     if(readsecond >= parent->executeseconds || (readsecond == parent->executeseconds-1 &&
        parent->readbufinfo[atsegment].framesfilled + startframe == 
@@ -848,8 +848,8 @@ void VDIF_Server::VDIF_File_Reader::fillsegment(int segment)
     openfile(atfile++);
   }
   input.read(writeto, parent->readbuffersegmentbytes);
-  framemjd = getVDIFFrameMJD(writeto);
-  framesecond = getVDIFFrameSecond(writeto);
+  framemjd = getVDIFFrameMJD((vdif_header*)writeto);
+  framesecond = getVDIFFrameSecond((vdif_header*)writeto);
   readsecond = (framemjd-parent->startmjd)*86400 + (framesecond - parent->startseconds);
   info->framesfilled = input.gcount()/parent->serversettings[parent->setting_indices[readsecond]].framebytes;
   if(input.eof() || input.peek() == EOF)
@@ -904,8 +904,8 @@ void VDIF_Server::VDIF_Network_Reader::fillsegment(int segment)
     return; //something went awry
   }
 
-  framemjd = getVDIFFrameMJD(writeto);
-  framesecond = getVDIFFrameSecond(writeto);
+  framemjd = getVDIFFrameMJD((vdif_header*)writeto);
+  framesecond = getVDIFFrameSecond((vdif_header*)writeto);
   readsecond = (framemjd-parent->startmjd)*86400 + (framesecond - parent->startseconds);
   cout << "In the filler, bytesread was " << bytesread << endl;
   info->framesfilled = bytesread/parent->serversettings[parent->setting_indices[readsecond]].framebytes;
@@ -1102,7 +1102,7 @@ void VDIF_Server::sendToSocket(char * buffer, int thread, int sendbytes)
   char * ptr = buffer;
   int * socket_handle = socket_handles[thread];
 
-  cout << "MAIN THREAD: About to send " << sendbytes << " bytes from MJD " << getVDIFFrameMJD(buffer) << endl;
+  cout << "MAIN THREAD: About to send " << sendbytes << " bytes from MJD " << getVDIFFrameMJD((vdif_header*)buffer) << endl;
   bytesremaining = sendbytes;
   while (bytesremaining>0) {
     byteswrote = send(*socket_handle, ptr, bytesremaining, 0);
