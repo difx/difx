@@ -321,7 +321,15 @@ int procGetStreamstor(int *busy)
 	return 0;
 }
 
-/* returns number of processes killed */
+/**
+* Kill rogue su processes. Processes will be killed if they
+* either have been running for more than 1000 seconds, or 
+* have been running for more than 100 seconds but take 
+* up more than 90% of cpu resources.
+* @param verbose verbose output will be printed if > 0
+* @return returns number of processes killed 
+* @author Walter Brisken
+*/
 int killSuProcesses(int verbose)
 {
 	const int MaxStrLen=256;
