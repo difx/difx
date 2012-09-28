@@ -1,20 +1,11 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-# generated with autoscan, vers 2.59, hacked by gbc
+# generated with autoscan, vers 2.59, hacked by gbc, wfb
 
 AC_PREREQ(2.59)
 AC_INIT([difx_monitor],[0.0],[Chris Phillips difx-users@googlegroups.com])
 AM_INIT_AUTOMAKE([foreign])
-AC_CONFIG_SRCDIR([vcal.cpp])
-AC_CONFIG_HEADER([config.h])
-
-if test [ -n "$DIFX_DM_LIBS" ] ; then
-    LIBS="$DIFX_DM_LIBS $LIBS"
-fi
-if test [ -n "$DIFX_DM_FLAGS" ] ; then
-    CPPFLAGS="$DIFX_DM_FLAGS $CPPFLAGS"
-fi
 
 # Checks for programs.
 AC_PROG_CXX
@@ -22,43 +13,24 @@ AC_PROG_CC
 AC_PROG_INSTALL
 
 # Checks for libraries.
-LIBS="$LIBS $FLIBS"
+LIBS="$LIBS"
 
-# the X11/PGPLOT problem is a mess.
-if test [ -n "$PGPLOT_DIR" -a -z "$PGPLOTDIR" ] ; then
-    PGPLOTDIR=$PGPLOT_DIR
-fi
-if test [ -d "$PGPLOTDIR" ] ; then
-    CPPFLAGS="-I$PGPLOTDIR"
-    LIBS="-L$PGPLOTDIR $LIBS"
-fi
-AC_CHECK_LIB([X11], [XOpenDisplay])
-AC_CHECK_LIB([pgplot], [pgbeg_])
-AC_CHECK_LIB([cpgplot], [cpgbeg])
-AC_CHECK_LIB([png], [png_access_version_number])
-
-AC_MSG_NOTICE([
-%%%
-%%% Support for X11, PGPLOT (which may require PNG)
-%%% installations.  You may be able to solve problems
-%%% by setting environment variables with appropriate
-%%% compile (DIFX_DM_FLAGS) and link (DIFX_DM_LIBS) flags.
-%%%])
-
-# AC_CHECK_LIB([difxmessage], [main])
 PKG_CHECK_MODULES(DIFXMESSAGE, [difxmessage >= 2.2.0 difxmessage < 7])
-LIBS="$DIFXMESSAGE_LIBS $LIBS"
-CPPFLAGS="$DIFXMESSAGE_CFLAGS $CPPFLAGS"
-
-# AC_CHECK_LIB([mark5access], [main])
 PKG_CHECK_MODULES(M5ACCESS, [mark5access >= 1.4.4])
-LIBS="$M5ACCESS_LIBS $LIBS"
-CPPFLAGS="$M5ACCESS_CFLAGS $CPPFLAGS"
-
-# AC_CHECK_LIB([fxcorr], [main])
 PKG_CHECK_MODULES(FXCORR, [fxcorr >= 2.2])
-LIBS="$FXCORR_LIBS $LIBS"
-CPPFLAGS="$FXCORR_CFLAGS $CPPFLAGS"
+
+
+PKG_CHECK_MODULES(PLPLOT, plplot, [hasplplot=true], [hasplplot=false])
+if test "$hasplplot" == "false"; then
+  PKG_CHECK_MODULES(PLPLOT, plplotd, [hasplplot=true], [hasplplot=false])
+fi
+if test "$hasplplot" == "false"; then
+  AC_MSG_NOTICE([PLPLOT was not found on your system.  Some utilities wont be built])
+fi
+AM_CONDITIONAL(WITH_PLPLOT, $hasplplot)
+
+CXXFLAGS="${CXXFLAGS} ${M5ACCESS_CFLAGS} ${DIFXMESSAGE_CFLAGS} ${FXCORR_CFLAGS} ${PLPLOT_CFLAGS}"
+LIBS=" ${FXCORR_LIBS} ${M5ACCESS_LIBS} ${DIFXMESSAGE_LIBS} ${PLPLOT_LIBS}"
 
 
 # Checks for header files.
@@ -77,7 +49,6 @@ AC_FUNC_MALLOC
 AC_TYPE_SIGNAL
 AC_CHECK_FUNCS([gethostbyname inet_ntoa memset socket])
 
-AC_CONFIG_FILES([Makefile])
-AC_OUTPUT
-
-# eof
+AC_OUTPUT([
+	Makefile \
+])

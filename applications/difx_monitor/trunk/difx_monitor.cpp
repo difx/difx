@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2006 by Adam Deller                                     *
+ *   Copyright (C) 2006-2012 by Adam Deller and Walter Brisken             *
  *                                                                         *
  *   This program is free for non-commercial use: see the license file     *
  *   at http://astronomy.swin.edu.au:~adeller/software/difx/ for more      *
@@ -17,7 +17,7 @@
 #include <errno.h>
 #include <limits.h>
 #include <math.h>
-#include <cpgplot.h>
+#include <plplot/plplot.h>
 #include <string.h>
 #include <sstream>
 #include <fstream>
@@ -42,7 +42,7 @@ IppsFFTSpec_R_32f* fftspec=NULL;
 cf32 ** productvis=NULL;
 f32  *phase[MAXPOL], *amplitude[MAXPOL];
 f32 *lags[MAXPOL];
-f32 *xval=NULL;
+PLFLT *xval=NULL;
 
 int main(int argc, const char * argv[])
 {
@@ -179,7 +179,7 @@ int main(int argc, const char * argv[])
 void plot_results(Configuration * config, Model * model)
 {
   int i, j, k, npol;
-  char pgplotname[256];
+  char plplotname[256];
   char polpair[MAXPOL][3];
   char timestr[10];
   string sourcename;
@@ -248,48 +248,60 @@ void plot_results(Configuration * config, Model * model)
 	}
 
 	//plot something - data is from resultbuffer[at] to resultbuffer[at+numchannels+1]
-	sprintf(pgplotname, "lba-%d-f%d-b%d.png/png", i, j, b);
+	sprintf(plplotname, "lba-%d-f%d-b%d.png/png", i, j, b);
 
-	status = cpgbeg(0,pgplotname,1,3);
+	plstart(plplotname,1,3);
+
+	//FIXME
+	status = 1;
+
 	if (status != 1) {
-	  cout << "Error opening pgplot device: " << pgplotname << endl;
+	  cout << "Error opening plplot device: " << plplotname << endl;
 	} else {
 	  float max, min;
+	  PLFLT *pllags;
+	  PLFLT *plamp;
+	  PLFLT *plphase;
 
-	  cpgscr(0,1,1,1);
-	  cpgscr(1,0,0,0);
+	  // FIXME
+	  //cpgscr(0,1,1,1);
+	  //cpgscr(1,0,0,0);
 
 	  // Plot lags
 	  maxmin(lags, numchannels*2, npol, &max, &min);
 
-	  cpgsch(1.5);
-	  cpgsci(1);
-	  cpgenv(0,numchannels*2,min,max,0,0);
-	  cpglab("Channel", "Correlation coefficient", "");
-	  cpgsci(2);
+	  plschr(0,1.3);
+	  plcol0(1);
+	  plenv(0,numchannels*2,min,max,0,0);
+	  pllab("Channel", "Correlation coefficient", "");
+	  plcol0(2);
 
+
+	  pllags = new PLFLT[numchannels*2];
 	  for (k=0; k<npol; k++) {
-	    cpgsci(colours[k]);
-	    cpgline(numchannels*2, xval, lags[k]);
+	    for(int q = 0; q < numchannels*2; ++q) pllags[q] = lags[k][q];
+	    plcol0(colours[k]);
+	    plline(numchannels*2, xval, pllags);
 	  }
+	  delete [] pllags;
 
 	  // Annotate
 	  //sourcename = model->getScanIdentifier(currentscan);
 	  sourcename = model->getScanPointingCentreSource(currentscan)->name;
 
-	  cpgsci(4);
-	  cpgsch(2.5);
+	  plcol1(4);
+	  plschr(0, 1.5);
 
 	  ss << config->getTelescopeName(ds1index) 
 	     << "-" 
 	     <<  config->getTelescopeName(ds2index)
 	     << "  " << sourcename; 
 
-	  cpgmtxt("T", -1.5,0.02, 0, ss.str().c_str());	    
+	  plmtex("T", -1.5,0.02, 0, ss.str().c_str());	    
 	  ss.str("");
 
 	  ss << config->getFreqTableFreq(freqindex) << " MHz";
-	  cpgmtxt("T", -2.6,0.98,1,ss.str().c_str());	    
+	  plmtex("T", -2.6,0.98,1,ss.str().c_str());	    
 	  ss.str("");
 
 	  int seconds = atseconds+config->getStartSeconds();
@@ -298,45 +310,51 @@ void plot_results(Configuration * config, Model * model)
 	  int minutes = seconds/60;
 	  seconds %= 60;
 	  sprintf(timestr, "%02d:%02d:%02d", hours, minutes, seconds);
-	  cpgmtxt("T", -1.5,0.98,1,timestr);
+	  plmtex("T", -1.5,0.98,1,timestr);
 
 	  for (k=0; k<npol; k++) {
 	    int p = npol-k-1;
-	    cpgsci(colours[p]);
-	    cpgmtxt("B", -1,0.97-0.03*k,1,polpair[p]);
+	    plcol0(colours[p]);
+	    plmtex("B", -1,0.97-0.03*k,1,polpair[p]);
 	  }
 
-	  cpgsch(1.5);
-	  cpgsci(1);
+	  plschr(0, 1.5);
+	  plcol0(1);
 
 	  // Plot Amplitude
 	  maxmin(amplitude, numchannels, npol, &max, &min);
 
-	  cpgsci(1);
-	  cpgenv(0,numchannels,min,max,0,0);
-	  cpglab("Channel", "Amplitude (Jy)", "");
-	  cpgsci(2);
+	  plcol0(1);
+	  plenv(0,numchannels,min,max,0,0);
+	  pllab("Channel", "Amplitude (Jy)", "");
+	  plcol0(2);
 
+	  plamp = new PLFLT[numchannels];
 	  for (k=0; k<npol; k++) {
-	    cpgsci(colours[k]);
-	    cpgline(numchannels, xval, amplitude[k]);
+	    plcol0(colours[k]);
+	    for(int q = 0; q < numchannels; ++q) plamp[q] = amplitude[k][q];
+	    plline(numchannels, xval, plamp);
 	  }
+	  delete [] plamp;
 
 
 	  // Plot Phase
-	  cpgsci(1);
-	  cpgenv(0,numchannels,-180,180,0,0);
-	  cpglab("Channel", "Phase (deg)", "");
-	  cpgsci(2);
-	  cpgsch(2);
+	  plcol0(1);
+	  plenv(0,numchannels,-180,180,0,0);
+	  pllab("Channel", "Phase (deg)", "");
+	  plcol0(2);
+	  plschr(0, 1);
 
+	  plphase = new PLFLT[numchannels];
 	  for (k=0; k<npol; k++) {
-	    cpgsci(colours[k]);
-	    cpgpt(numchannels, xval, phase[k], 17);
+	    plcol0(colours[k]);
+	    for(int q = 0; q < numchannels; ++q) plphase[q] = phase[k][q];
+	    plsym(numchannels, xval, plphase, 17);
 	  }
-	  cpgsch(1);
+	  delete [] plphase;
+	  plcol0(1);
 
-	  cpgend();
+	  plend();
 
         }
       }
@@ -349,21 +367,21 @@ void plot_results(Configuration * config, Model * model)
       for(int k=0;k<config->getDNumRecordedBands(currentconfig, i); k++) {
 
 	if (j==0) {
-	  sprintf(pgplotname, "lba-auto%d-f%d-b0.png/png",
+	  sprintf(plplotname, "lba-auto%d-f%d-b0.png/png",
 		  i, k);
-	  status = cpgbeg(0,pgplotname,1,1);
+	  plstart(plplotname,1,1);
 	} else {
-	  sprintf(pgplotname, "lba-autocross%d-b%d.png/png",
+	  sprintf(plplotname, "lba-autocross%d-b%d.png/png",
 		  i, k);
-	  status = cpgbeg(0,pgplotname,1,2);
+	  plstart(plplotname,1,2);
 	}
-	if (status != 1) {
-	  cout << "Error opening pgplot device: " << pgplotname << endl;
-	} else {
+	{
 	  float max, min;
+	  PLFLT *plamp;
 
-	  cpgscr(0,1,1,1);
-	  cpgscr(1,0,0,0);
+	  //FIXME
+	  //cpgscr(0,1,1,1);
+	  //cpgscr(1,0,0,0);
 
 	  // Plot Amplitude
 
@@ -384,29 +402,31 @@ void plot_results(Configuration * config, Model * model)
 	    max+=1;
 	  }
 
-	  cpgsci(1);
-	  cpgenv(0,numchannels+1,min,max,0,0);
-	  cpglab("Channel", "Amplitude (Jy)", "");
-	  cpgsci(2);
-	  cpgline(numchannels, xval, amplitude[0]);
-
+	  plcol0(1);
+	  plenv(0,numchannels+1,min,max,0,0);
+	  pllab("Channel", "Amplitude (Jy)", "");
+	  plcol0(2);
+	  plamp = new PLFLT[numchannels];
+	  for(int q = 0; q < numchannels; ++q) plamp[q] = amplitude[0][q];
+	  plline(numchannels, xval, plamp);
+	  delete [] plamp;
 	  // Annotate
-	  cpgsci(4);
+	  plcol0(4);
 
 	  if (j==0) {
-	    cpgsch(1);
+	    plschr(0, 1);
 	  } else {
-	    cpgsch(2);
+	    plschr(0, 1.5);
 	  }
 
 	  ss << config->getDStationName(currentconfig, i) 
 	     << "  " << sourcename; 
-	  cpgmtxt("T", -1.5,0.02, 0, ss.str().c_str());	    
+	  plmtex("T", -1.5,0.02, 0, ss.str().c_str());	    
 	  ss.str("");
 
 	  int freqindex = config->getDRecordedFreqIndex(currentconfig, i, k);
 	  ss << config->getFreqTableFreq(freqindex) << " MHz";
-	  cpgmtxt("T", -2.6,0.98,1,ss.str().c_str());	    
+	  plmtex("T", -2.6,0.98,1,ss.str().c_str());	    
 	  ss.str("");
 
 	  ss << timestr << "     " 
@@ -415,10 +435,11 @@ void plot_results(Configuration * config, Model * model)
 	    ss << config->getDRecordedBandPol(currentconfig, i, k);
 	  else
 	    ss << ((config->getDRecordedBandPol(currentconfig, i, k) == 'R')?'L':'R');
-	  cpgmtxt("T", -1.5,0.98,1,ss.str().c_str());
+	  plmtex("T", -1.5,0.98,1,ss.str().c_str());
 	  ss.str("");
 
 	  if (j!=0) {
+	    PLFLT *plphase;
 	    status = vectorPhase_cf32(productvis[at], phase[0], numchannels);
 	    if(status != vecNoErr) {
 	      cerr << "Error trying to calculate phase - aborting!" << endl;
@@ -427,15 +448,19 @@ void plot_results(Configuration * config, Model * model)
 	    vectorMulC_f32_I(180/M_PI, phase[0], numchannels);
 
 	    // Plot Phase
-	    cpgsci(1);
-	    cpgsch(1);
-	    cpgenv(0,numchannels,-180,180,0,0);
-	    cpglab("Channel", "Phase (deg)", "");
-	    cpgsci(2);
-	    cpgline(numchannels, xval, phase[0]);
+	    plcol0(1);
+	    plschr(0, 1);
+	    plenv(0,numchannels,-180,180,0,0);
+	    pllab("Channel", "Phase (deg)", "");
+	    plcol0(2);
+	    
+	    plphase = new PLFLT[numchannels];
+	    for(int q = 0; q < numchannels; ++q) plphase[q] = phase[0][q];
+	    plline(numchannels, xval, plphase);
+	    delete [] plphase;
 	  }
 
-	  cpgend();
+	  plend();
 	}
 	at++;
       }
@@ -453,7 +478,7 @@ void change_config(Configuration * config, int configindex, const char *inputfil
 
   cout << "New config " << currentconfig << " at " << atseconds << endl;
 
-  if(xval) vectorFree(xval);
+  if(xval) delete [] xval;
   if(fftspec) ippsFFTFree_R_32f(fftspec);
 
   for (i=0; i<MAXPOL; i++) {
@@ -469,7 +494,7 @@ void change_config(Configuration * config, int configindex, const char *inputfil
     delete [] productvis;
   }
 
-  xval = vectorAlloc_f32(numchannels*2);
+  xval = new PLFLT[numchannels*2];
   for(int i=0;i<numchannels*2;i++)
     xval[i] = i;
 

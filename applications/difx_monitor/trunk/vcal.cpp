@@ -17,7 +17,6 @@
 #include <errno.h>
 #include <limits.h>
 #include <math.h>
-#include <cpgplot.h>
 #include <string.h>
 #include <sstream>
 #include "architecture.h"
