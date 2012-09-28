@@ -32,6 +32,7 @@
 
 /* routines to get useful information from /proc */
 
+int procGetCoresFromCpuInfo(int *nCore);
 int procGetCores(int *nCore);
 int procGetMem(int *memused, int *memtot);
 int procGetNet(long long *rx, long long *tx);

@@ -36,6 +36,45 @@
 
 /* routines to get useful information from /proc */
 
+/**
+ * get number of CPU cores by parsing /proc/cpuinfo. This routine
+ * is meant to superseed procGetCores, which does not work on
+ * all linux OS versions.
+ * @param nCore the number of cores determined
+ * @return -1 in case reading /proc/cpuinfo has failed, 0 otherwise
+ * @author Helge Rottmann
+ */
+int procGetCoresFromCpuInfo(int *nCore)
+{
+        const int MaxLineLength=256;
+        FILE *in;
+        char line[MaxLineLength+1];
+        char *c;
+        int val;
+
+
+        in = fopen("cat /proc/cpuinfo | grep siblings | uniq", "r");
+        if(!in)
+        {
+                return -1;
+        }
+
+        for(;;)
+        {
+                c = fgets(line, MaxLineLength, in);
+                if(!c)
+                {
+                        break;
+                }
+                sscanf(line, "%*s : %d", &val);
+                *nCore = val;
+        }
+
+        fclose(in);
+
+        return 0;
+}
+
 int procGetCores(int *nCore)
 {
 	const int MaxLineLength=256;
