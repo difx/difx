@@ -53,7 +53,7 @@ int procGetCoresFromCpuInfo(int *nCore)
         int val;
 
 
-        in = fopen("cat /proc/cpuinfo | grep siblings | uniq", "r");
+        in = popen("cat /proc/cpuinfo | grep siblings | uniq", "r");
         if(!in)
         {
                 return -1;
