@@ -189,21 +189,6 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 
 	S = &G->body.start;
 	
-	/*  Use the start function specified.  USNO is only option that does anything right now.  */
-	/*
-	switch ( S->function ) {
-	case DIFX_START_FUNCTION_USNO:
-		Mk5Daemon_startMpifxcorr_USNO( D,  G );
-	    return;
-	    break;
-    case DIFX_START_FUNCTION_UNKNOWN:
-	case DIFX_START_FUNCTION_DEFAULT:
-	case DIFX_START_FUNCTION_NRAO:
-	default:
-	    break;
-	}
-	*/
-
 	if(S->headNode[0] == 0 || S->nDatastream <= 0 || S->nProcess <= 0 || S->inputFilename[0] != '/')
 	{
 		difxMessageSendDifxAlert("Malformed DifxStart message received", DIFX_ALERT_LEVEL_ERROR);
@@ -321,40 +306,70 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 	//  is on a disk mounted by the headnode, where root wouldn't necessarily be able to write.
 	//  It is done only for "USNO" start requests because that's where it proved necessary,
 	//  but might be useful generally?
-	if ( S->function == DIFX_START_FUNCTION_USNO ) {
-    	strcpy( workingDir, S->inputFilename );
-    	l = strlen( workingDir );
-    	for( int i = l-1; i > 0; i-- )
-    	{
-    		if( workingDir[i] == '/')
-    		{
-    			workingDir[i] = 0;
-    			break;
-    		}
-    	}	
-	    struct stat statBuf;
-	    stat( workingDir, &statBuf );
-	    //  Build a command string for changing the directory BACK to this mode.  Maybe there
-	    //  is a better way to do this...
-	    snprintf( chmodCommand, MAX_COMMAND_SIZE, "ssh -x %s@%s 'chmod ", user, S->headNode );
-	    int newperm = 0;
-	    if ( statBuf.st_mode & S_IRUSR ) newperm += 4;
-	    if ( statBuf.st_mode & S_IWUSR ) newperm += 2;
-	    if ( statBuf.st_mode & S_IXUSR ) newperm += 1;
-	    snprintf( chmodCommand + strlen( chmodCommand ), MAX_COMMAND_SIZE - strlen( chmodCommand ), "%d", newperm );
-	    newperm = 0;
-	    if ( statBuf.st_mode & S_IRGRP ) newperm += 4;
-	    if ( statBuf.st_mode & S_IWGRP ) newperm += 2;
-	    if ( statBuf.st_mode & S_IXGRP ) newperm += 1;
-	    snprintf( chmodCommand + strlen( chmodCommand ), MAX_COMMAND_SIZE - strlen( chmodCommand ), "%d", newperm );
-	    newperm = 0;
-	    if ( statBuf.st_mode & S_IROTH ) newperm += 4;
-	    if ( statBuf.st_mode & S_IWOTH ) newperm += 2;
-	    if ( statBuf.st_mode & S_IXOTH ) newperm += 1;
-	    snprintf( chmodCommand + strlen( chmodCommand ), MAX_COMMAND_SIZE - strlen( chmodCommand ), "%d %s'", newperm, workingDir );
-	    //  Change the permissions as the difx user.
-		snprintf( command, MAX_COMMAND_SIZE, "ssh -x %s@%s 'chmod 777 %s'", user, S->headNode, workingDir );
-    	Mk5Daemon_system( D, command, 1 );
+	if(S->function == DIFX_START_FUNCTION_USNO)
+	{
+		strcpy(workingDir, S->inputFilename);
+		l = strlen( workingDir );
+		for(int i = l-1; i > 0; --i)
+		{
+			if(workingDir[i] == '/')
+			{
+				workingDir[i] = 0;
+				break;
+			}
+		}
+		
+		struct stat statBuf;
+		stat(workingDir, &statBuf);
+		//  Build a command string for changing the directory BACK to this mode.  Maybe there
+		//  is a better way to do this...
+		snprintf(chmodCommand, MAX_COMMAND_SIZE, "ssh -x %s@%s 'chmod ", user, S->headNode);
+
+		int newperm = 0;
+		if(statBuf.st_mode & S_IRUSR)
+		{
+			newperm += 4;
+		}
+		if(statBuf.st_mode & S_IWUSR)
+		{
+			newperm += 2;
+		}
+		if(statBuf.st_mode & S_IXUSR)
+		{
+			newperm += 1;
+		}
+		snprintf(chmodCommand + strlen(chmodCommand), MAX_COMMAND_SIZE - strlen(chmodCommand), "%d", newperm);
+		newperm = 0;
+		if(statBuf.st_mode & S_IRGRP)
+		{
+			newperm += 4;
+		}
+		if(statBuf.st_mode & S_IWGRP)
+		{
+			newperm += 2;
+		}
+		if(statBuf.st_mode & S_IXGRP)
+		{
+			newperm += 1;
+		}
+		snprintf(chmodCommand + strlen(chmodCommand), MAX_COMMAND_SIZE - strlen(chmodCommand), "%d", newperm);
+		newperm = 0;
+		if(statBuf.st_mode & S_IROTH)
+		{
+			newperm += 4;
+		}
+		if(statBuf.st_mode & S_IWOTH)
+		{
+			newperm += 2;
+		}
+		if(statBuf.st_mode & S_IXOTH)
+		{
+			newperm += 1;
+		}
+		snprintf(chmodCommand + strlen(chmodCommand), MAX_COMMAND_SIZE - strlen(chmodCommand), "%d %s'", newperm, workingDir);
+		//  Change the permissions as the difx user.
+		snprintf(command, MAX_COMMAND_SIZE, "ssh -x %s@%s 'chmod 777 %s'", user, S->headNode, workingDir);
+		Mk5Daemon_system(D, command, 1);
 	}
 
 	if(access(S->inputFilename, F_OK) != 0)
@@ -365,9 +380,11 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 		snprintf(message, DIFX_MESSAGE_LENGTH, "Mk5Daemon_startMpifxcorr: input file %s does not exist\n", S->inputFilename);
 		Logger_logData(D->log, message);
 
-        if ( S->function == DIFX_START_FUNCTION_USNO )
-            Mk5Daemon_system( D, chmodCommand, 1 );
-            
+		if(S->function == DIFX_START_FUNCTION_USNO)
+		{
+			Mk5Daemon_system(D, chmodCommand, 1);
+		}
+
 		return;
 	}
 
@@ -379,155 +396,168 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 	
 	if(outputExists && !S->force)
 	{
-		snprintf(message, DIFX_MESSAGE_LENGTH, 
-			"Output file %s exists.  Aborting correlation.", 
-			filename);
+		snprintf(message, DIFX_MESSAGE_LENGTH, "Output file %s exists.  Aborting correlation.", filename);
 		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
 		
-		snprintf(message, DIFX_MESSAGE_LENGTH,
-			"Mk5Daemon_startMpifxcorr: output file %s exists\n", 
-			filename);
+		snprintf(message, DIFX_MESSAGE_LENGTH, "Mk5Daemon_startMpifxcorr: output file %s exists\n", filename);
 		Logger_logData(D->log, message);
 
-        if ( S->function == DIFX_START_FUNCTION_USNO )
-            Mk5Daemon_system( D, chmodCommand, 1 );
-            
+		if(S->function == DIFX_START_FUNCTION_USNO)
+		{
+			Mk5Daemon_system(D, chmodCommand, 1);
+		}
+
 		return;
 	}
 
 	/* lock state.  Make sure to unlock if early return happens! */
 	pthread_mutex_lock(&D->processLock);
 
-	/* determine usage of each node */
-	uses = (Uses *)calloc(1 + S->nProcess + S->nDatastream, sizeof(Uses));
-	addUse(uses, S->headNode);
-	for(int i = 0; i < S->nProcess; ++i)
+	/* unless no core processes are identified in the start message, write the machines, threads files */
+	if(S->nCore > 0)
 	{
-		addUse(uses, S->processNode[i]);
-	}
-	for(int i = 0; i < S->nDatastream; ++i)
-	{
-		addUse(uses, S->datastreamNode[i]);
-	}
-
-
-	/* write machines file */
-	snprintf(filename, DIFX_MESSAGE_FILENAME_LENGTH, "%s.machines", filebase);
-	if ( S->function == DIFX_START_FUNCTION_USNO )
-	    out = fopen( "/tmp/machinefile", "w" );
-	else
-		out = fopen(filename, "w");
-	if(!out)
-	{
-		snprintf(message, DIFX_MESSAGE_LENGTH,
-			"Cannot open %s for write", filename);
-		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
-
-		snprintf(message, DIFX_MESSAGE_LENGTH,
-			"Mk5Daemon_startMpifxcorr: cannot open %s for write\n", 
-			filename);
-		Logger_logData(D->log, message);
-
-		pthread_mutex_unlock(&D->processLock);
-		free(uses);
-		
-        if ( S->function == DIFX_START_FUNCTION_USNO )
-            Mk5Daemon_system( D, chmodCommand, 1 );
-            
-		return;
-	}
-
-#if 0
-	fprintf(out, "%s slots=1 max-slots=%d\n", S->headNode, getUse(uses, S->headNode));
-	for(int i = 0; i < S->nDatastream; ++i)
-	{
-		n = getUse(uses, S->datastreamNode[i]);
-		fprintf(out, "%s slots=1 max-slots=%d\n", S->datastreamNode[i], n);
-	}
-	for(int i = 0; i < S->nProcess; ++i)
-	{
-		n = getUse(uses, S->processNode[i]);
-		fprintf(out, "%s slots=1 max-slots=%d\n", S->processNode[i], n);
-	}
-#endif
-	fprintf(out, "%s\n", S->headNode);
-	for(int i = 0; i < S->nDatastream; ++i)
-	{
-		fprintf(out, "%s\n", S->datastreamNode[i]);
-	}
-	for(int i = 0; i < S->nProcess; ++i)
-	{
-		fprintf(out, "%s\n", S->processNode[i]);
-	}
-
-	fclose(out);
-	/* change ownership and permissions to match the input file */
-    if ( S->function == DIFX_START_FUNCTION_USNO )
-		snprintf( command, MAX_COMMAND_SIZE, "ssh -x %s@%s 'cp /tmp/machinefile %s'", user, S->headNode, filename );
-    else
-        snprintf(command, MAX_COMMAND_SIZE, "chown --reference=%s %s", S->inputFilename, filename);
-	Mk5Daemon_system(D, command, 1);
-	
-    if ( S->function == DIFX_START_FUNCTION_USNO )
-		snprintf( command, MAX_COMMAND_SIZE, "ssh -x %s@%s 'chmod --reference=%s %s'", user, S->headNode, S->inputFilename, filename );
-    else
-    	snprintf(command, MAX_COMMAND_SIZE, "chmod --reference=%s %s", S->inputFilename, filename);
-	Mk5Daemon_system(D, command, 1);
-
-
-	/* write threads file */
-	snprintf(filename, DIFX_MESSAGE_FILENAME_LENGTH, "%s.threads", filebase);
-	
-	if ( S->function == DIFX_START_FUNCTION_USNO )
-	    out = fopen( "/tmp/threadfile", "w" );
-	else
-	    out = fopen(filename, "w");
-	if(!out)
-	{
-		snprintf(message, DIFX_MESSAGE_LENGTH, "Cannot open %s for write", filename);
-		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
-		
-		snprintf(message, DIFX_MESSAGE_LENGTH, "Mk5Daemon_startMpifxcorr: cannot open %s for write\n", filename);
-
-		Logger_logData(D->log, message);
-		pthread_mutex_unlock(&D->processLock);
-		free(uses);
-
-        if ( S->function == DIFX_START_FUNCTION_USNO )
-            Mk5Daemon_system( D, chmodCommand, 1 );
-            
-		return;
-	}
-
-	fprintf(out, "NUMBER OF CORES:    %d\n", S->nProcess);
-
-	for(int i = 0; i < S->nProcess; ++i)
-	{
-		n = S->nThread[i] - getUse(uses, S->processNode[i]) + 1;
-		if(n <= 0)
+		/* determine usage of each node */
+		uses = (Uses *)calloc(1 + S->nProcess + S->nDatastream, sizeof(Uses));
+		addUse(uses, S->headNode);
+		for(int i = 0; i < S->nProcess; ++i)
 		{
-			n = 1;
+			addUse(uses, S->processNode[i]);
 		}
-		fprintf(out, "%d\n", n);
+		for(int i = 0; i < S->nDatastream; ++i)
+		{
+			addUse(uses, S->datastreamNode[i]);
+		}
+
+
+		/* write machines file */
+		snprintf(filename, DIFX_MESSAGE_FILENAME_LENGTH, "%s.machines", filebase);
+		if(S->function == DIFX_START_FUNCTION_USNO)
+		{
+			out = fopen("/tmp/machinefile", "w");
+		}
+		else
+		{
+			out = fopen(filename, "w");
+		}
+		if(!out)
+		{
+			snprintf(message, DIFX_MESSAGE_LENGTH, "Cannot open %s for write", filename);
+			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+
+			snprintf(message, DIFX_MESSAGE_LENGTH, "Mk5Daemon_startMpifxcorr: cannot open %s for write\n", filename);
+			Logger_logData(D->log, message);
+
+			pthread_mutex_unlock(&D->processLock);
+			free(uses);
+			
+			if(S->function == DIFX_START_FUNCTION_USNO)
+			{
+				Mk5Daemon_system(D, chmodCommand, 1);
+			}
+
+			return;
+		}
+
+		fprintf(out, "%s\n", S->headNode);
+		for(int i = 0; i < S->nDatastream; ++i)
+		{
+			fprintf(out, "%s\n", S->datastreamNode[i]);
+		}
+		for(int i = 0; i < S->nProcess; ++i)
+		{
+			fprintf(out, "%s\n", S->processNode[i]);
+		}
+
+		fclose(out);
+		/* change ownership and permissions to match the input file */
+		if(S->function == DIFX_START_FUNCTION_USNO)
+		{
+			snprintf(command, MAX_COMMAND_SIZE, "ssh -x %s@%s 'cp /tmp/machinefile %s'", user, S->headNode, filename);
+		}
+		else
+		{
+			snprintf(command, MAX_COMMAND_SIZE, "chown --reference=%s %s", S->inputFilename, filename);
+		}
+		Mk5Daemon_system(D, command, 1);
+
+		if(S->function == DIFX_START_FUNCTION_USNO)
+		{
+			snprintf(command, MAX_COMMAND_SIZE, "ssh -x %s@%s 'chmod --reference=%s %s'", user, S->headNode, S->inputFilename, filename);
+		}
+		else
+		{
+			snprintf(command, MAX_COMMAND_SIZE, "chmod --reference=%s %s", S->inputFilename, filename);
+		}
+		Mk5Daemon_system(D, command, 1);
+
+		/* write threads file */
+		snprintf(filename, DIFX_MESSAGE_FILENAME_LENGTH, "%s.threads", filebase);
+		
+		if(S->function == DIFX_START_FUNCTION_USNO)
+		{
+			out = fopen("/tmp/threadfile", "w");
+		}
+		else
+		{
+			out = fopen(filename, "w");
+		}
+		if(!out)
+		{
+			snprintf(message, DIFX_MESSAGE_LENGTH, "Cannot open %s for write", filename);
+			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+			
+			snprintf(message, DIFX_MESSAGE_LENGTH, "Mk5Daemon_startMpifxcorr: cannot open %s for write\n", filename);
+
+			Logger_logData(D->log, message);
+			pthread_mutex_unlock(&D->processLock);
+			free(uses);
+
+			if(S->function == DIFX_START_FUNCTION_USNO)
+			{
+				Mk5Daemon_system(D, chmodCommand, 1);
+			}
+
+			return;
+		}
+
+		fprintf(out, "NUMBER OF CORES:    %d\n", S->nProcess);
+
+		for(int i = 0; i < S->nProcess; ++i)
+		{
+			n = S->nThread[i] - getUse(uses, S->processNode[i]) + 1;
+			if(n <= 0)
+			{
+				n = 1;
+			}
+			fprintf(out, "%d\n", n);
+		}
+
+		fclose(out);
+		/* change ownership and permissions to match the input file */
+		if(S->function == DIFX_START_FUNCTION_USNO)
+		{
+			snprintf( command, MAX_COMMAND_SIZE, "ssh -x %s@%s 'cp /tmp/threadfile %s'", user, S->headNode, filename );
+		}
+		else
+		{
+			snprintf(command, MAX_COMMAND_SIZE, "chown --reference=%s %s", S->inputFilename, filename);
+		}
+		Mk5Daemon_system(D, command, 1);
+
+		if(S->function == DIFX_START_FUNCTION_USNO)
+		{
+			snprintf( command, MAX_COMMAND_SIZE, "ssh -x %s@%s 'chmod --reference=%s %s'", user, S->headNode, S->inputFilename, filename );
+		}
+		else
+		{
+			snprintf(command, MAX_COMMAND_SIZE, "chmod --reference=%s %s", S->inputFilename, filename);
+		}
+		Mk5Daemon_system(D, command, 1);
+
+
+		/* Don't need usage info anymore */
+		free(uses);
 	}
-
-	fclose(out);
-	/* change ownership and permissions to match the input file */
-    if ( S->function == DIFX_START_FUNCTION_USNO )
-		snprintf( command, MAX_COMMAND_SIZE, "ssh -x %s@%s 'cp /tmp/threadfile %s'", user, S->headNode, filename );
-    else
-        snprintf(command, MAX_COMMAND_SIZE, "chown --reference=%s %s", S->inputFilename, filename);
-	Mk5Daemon_system(D, command, 1);
-
-    if ( S->function == DIFX_START_FUNCTION_USNO )
-		snprintf( command, MAX_COMMAND_SIZE, "ssh -x %s@%s 'chmod --reference=%s %s'", user, S->headNode, S->inputFilename, filename );
-    else
-    	snprintf(command, MAX_COMMAND_SIZE, "chmod --reference=%s %s", S->inputFilename, filename);
-	Mk5Daemon_system(D, command, 1);
-
-
-	/* Don't need usage info anymore */
-	free(uses);
 
 	pthread_mutex_unlock(&D->processLock);
 
