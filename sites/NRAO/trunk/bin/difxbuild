@@ -10,8 +10,8 @@ import platform
 from time import asctime
 
 program = 'difxbuild'
-version = '0.13'
-verdate = '20120926'
+version = '0.14'
+verdate = '20120928'
 author = 'Walter Brisken <wbrisken@nrao.edu>'
 
 openmpiVersion = '1.6'
@@ -355,6 +355,27 @@ component_misc_utils_trunk = \
 	['aclocal', 'autoconf', 'automake'] \
 ]
 
+component_vis2screen_trunk = \
+[ \
+	'vis2screen', \
+	'https://svn.atnf.csiro.au/difx/utilities/trunk/vis2screen', \
+	['aclocal', 'autoconf', 'automake', 'mpicxx'] \
+]
+
+component_difx2profile_trunk = \
+[ \
+	'difx2profile', \
+	'https://svn.atnf.csiro.au/difx/utilities/trunk/pulsar/difx2profile', \
+	['aclocal', 'autoconf', 'autoheader', 'automake', 'mpicxx'] \
+]
+
+component_vdifserver_trunk = \
+[ \
+	'vdif_server', \
+	'https://svn.atnf.csiro.au/difx/applications/vdif_server/trunk',
+	['aclocal', 'autoconf', 'autoheader', 'automake', 'mpicxx'] \
+]
+
 component_difxdb_trunk = \
 [ \
 	'difxdb', \
@@ -366,7 +387,14 @@ component_difxmonitor_trunk = \
 [ \
 	'difx_monitor', \
 	'https://svn.atnf.csiro.au/difx/applications/difx_monitor/trunk', \
-	[] \
+	['aclocal', 'autoconf', 'automake', 'mpicxx'] \
+]
+
+component_difxfilterbank_trunk = \
+[ \
+	'difxfilterbank', \
+	'https://svn.atnf.csiro.au/difx/applications/difxfilterbank/trunk', \
+	['aclocal', 'autoconf', 'automake', 'mpicxx'] \
 ]
 
 components['DIFX-DEVEL'] = \
@@ -388,8 +416,12 @@ components['DIFX-DEVEL'] = \
 	component_hops_trunk, \
 	component_python_trunk, \
 	component_misc_utils_trunk, \
+	component_vis2screen_trunk, \
+	component_difx2profile_trunk, \
+	component_vdifserver_trunk, \
 	component_difxdb_trunk, \
-#	component_difxmonitor_trunk, \
+	component_difxfilterbank_trunk, \
+	component_difxmonitor_trunk, \
 ]
 
 component_difxio_2_1 = \
