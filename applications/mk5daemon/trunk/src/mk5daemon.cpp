@@ -891,12 +891,13 @@ int main(int argc, char **argv)
 		}
 	}
 
-	if(isHeadNode && setuid(0) != 0)
+/*	if(isHeadNode && setuid(0) != 0)
 	{
 		fprintf(stderr, "Head node status requires running as root.  Bailing.\n");
 
 		return EXIT_FAILURE;
 	}
+*/
 
 	if(!isEmbedded)
 	{
