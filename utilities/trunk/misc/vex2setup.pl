@@ -187,12 +187,16 @@ maxGap = 86400
 maxSize =  1000000
 minLength=1
 
+dataBufferFactor = 256
+nDataSegments = 64
+
 antennas = $antlist
 
 threadsFile = threads
 nCore = $nCore
 nThread = $nThread
 startSeries = 0
+
 
 EOF
 
