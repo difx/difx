@@ -599,11 +599,11 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
 				n = static_cast<long long>((
 					( ( (corrstartday - scanPointer->mjd)*86400 
 					+ corrstartseconds - scanPointer->sec) - scanPointer->nsStart()*1.e-9)
-					*config->getFramesPerSecond(configindex, streamnum)) + 0.5);
+					*scanPointer->framespersecond) + 0.5);
 				fbytes = scanPointer->framebytes;
 				if(datamuxer)
 				{
-					fbytes *= datamuxer->getNumThreads();
+					fbytes *= scanPointer->tracks;
 				}
 				readpointer += n*fbytes;
 				readseconds = 0;
@@ -731,7 +731,7 @@ int NativeMk5DataStream::readonedemux(bool resetreference, int buffersegment)
   //the main readpointer will be updated outside of this routine, use localreadpointer for here
   localreadpointer = readpointer + rbytes;
   if(rbytes != datamuxer->getSegmentBytes()) {
-    cerror << startl << "Data muxer did not fill demux buffer properly" << endl;
+    cerror << startl << "Data muxer did not fill demux buffer properly! Read " << rbytes << " bytes, wanted " << datamuxer->getSegmentBytes() << " bytes" << endl;
   }
   fixbytes = datamuxer->datacheck(datamuxer->getCurrentDemuxBuffer(), rbytes, 0);
   while(fixbytes > 0) {
