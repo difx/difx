@@ -19,8 +19,8 @@ float miny, maxy;
 int dsindex, nchan, bandindex, threadindex, coreindex, nthreads, configindex;
 string pol, antennaname;
 float data[MAX_CHANNELS];
-double ddata[MAX_CHANNELS];	// because plplot wants to operate on doubles
-double xaxis[MAX_CHANNELS];
+PLFLT ddata[MAX_CHANNELS];	// because plplot may want to operate on doubles
+PLFLT xaxis[MAX_CHANNELS];
 char title[256];
 char junk[256];
 ifstream * input;

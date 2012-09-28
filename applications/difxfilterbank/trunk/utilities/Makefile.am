@@ -1,6 +1,19 @@
-bin_PROGRAMS = filterbankcount fb_reorder split_fb_scan printfilterbank difx2fb filterbank2screen
+if WITH_PLPLOT
+plplotprograms = \
+	filterbank2screen
 
 filterbank2screen_SOURCES = filterbank2screen.cpp
+else
+plplotprograms = 
+endif
+
+bin_PROGRAMS = \
+	filterbankcount \
+	fb_reorder \
+	split_fb_scan \
+	printfilterbank \
+	difx2fb \
+	$(plplotprograms)
 
 filterbankcount_SOURCES = filterbankcount.cpp
 
