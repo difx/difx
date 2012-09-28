@@ -428,9 +428,20 @@ int DataStream::calculateControlParams(int scan, int offsetsec, int offsetns)
   //now that we obviously have a lock on all the data we need, fill the control buffer
   blockbytes = (bufferinfo[atsegment].numchannels*2*bufferinfo[atsegment].bytespersamplenum)/bufferinfo[atsegment].bytespersampledenom;
 
-  if(bufferinfo[atsegment].validbytes < readbytes || bufferinfo[(atsegment+1)%numdatasegments].scanseconds - bufferinfo[atsegment].scanseconds > 5) //need to be careful - could be a big gap between this segment and the next that would cause int overflows
+  //if the next segment has not been filled and we are beyond the current segment, bail out
+  double currentsegmenttime = bufferinfo[atsegment].scanseconds + ((double)bufferinfo[atsegment].scanns)/1e9;
+  double nextsegmenttime = bufferinfo[(atsegment+1)%numdatasegments].scanseconds + ((double)bufferinfo[(atsegment+1)%numdatasegments].scanns)/1e9;
+
+  if(bufferinfo[atsegment].validbytes < readbytes || bufferinfo[(atsegment+1)%numdatasegments].scanseconds - bufferinfo[atsegment].scanseconds > 2 || nextsegmenttime < currentsegmenttime) //need to be careful - could be a big gap between this segment and the next that would cause int overflows
   {
     double dbufferindex = atsegment*readbytes + (((double(offsetsec - bufferinfo[atsegment].scanseconds)*1000000000.0 + (firstoffsetns - bufferinfo[atsegment].scanns))/bufferinfo[atsegment].sampletimens)*bufferinfo[atsegment].bytespersamplenum)/bufferinfo[atsegment].bytespersampledenom;
+    segoffbytes = int(dbufferindex - atsegment*readbytes);
+    // if there is no data from the current atsegment and the next segment is also not valid, bail out immediately
+    if (nextsegmenttime < currentsegmenttime && segoffbytes > bufferinfo[atsegment].validbytes)
+    {
+      bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][1] = Mode::INVALID_SUBINT;
+      return 0; //note exit here!!!!
+    }
     if(dbufferindex < double(-blockbytes*bufferinfo[atsegment].blockspersend) || dbufferindex > double(bufferbytes)) //its way off, bail out
     {
       //if(mpiid == 1)
@@ -447,7 +458,6 @@ int DataStream::calculateControlParams(int scan, int offsetsec, int offsetns)
   //cout << "Datastream " << mpiid << " has a firstoffsetns of " << firstoffsetns << " and an offsetsec of " << offsetsec << endl;
   bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][1] = bufferinfo[atsegment].scanseconds;
   bufferindex = atsegment*readbytes + (int(((offsetsec - bufferinfo[atsegment].scanseconds)*1000000000 + (firstoffsetns - bufferinfo[atsegment].scanns))/bufferinfo[atsegment].sampletimens + 0.5)*bufferinfo[atsegment].bytespersamplenum)/bufferinfo[atsegment].bytespersampledenom;
-  //cout << "And so the bufferindex is " << bufferindex << endl;
 
   //align the index to nearest previous 16 bit boundary
   if(bufferindex % 2 != 0)
