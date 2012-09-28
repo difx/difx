@@ -187,6 +187,8 @@ def watchJob(jobId):
 				p.feed(message)
 				info = p.getInfo()
 				p.close()
+				now = time()
+	#			print now
 				if p.ok and p.id == jobId:
 					if p.state == 'Running':
 						if verbose > 0:
@@ -680,6 +682,12 @@ for a in argv[1:]:
 
 if len(fileBaseList) < 1:
 	usage()
+
+headNode = getenv('DIFX_HEADNODE')
+if useStartMessage and useLocalHead == False and headNode == None:
+	print "Environment variable DIFX_HEADNODE must be defined."
+	print "Alternatively  you can use the -l option in case mk5daemon -H is running locally on this host."
+	exit(1)
 	
 for fileBase in fileBaseList:
 	a = rfind(fileBase, "/")
