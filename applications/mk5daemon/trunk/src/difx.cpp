@@ -414,7 +414,7 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 	pthread_mutex_lock(&D->processLock);
 
 	/* unless no core processes are identified in the start message, write the machines, threads files */
-	if(S->nCore > 0)
+	if(S->nProcess > 0)
 	{
 		/* determine usage of each node */
 		uses = (Uses *)calloc(1 + S->nProcess + S->nDatastream, sizeof(Uses));
