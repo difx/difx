@@ -141,7 +141,7 @@ struct mark5_stream
 	 * that has the time in the mark5_stream struct and appropriate framing information
 	 * to satisfy the matching validate function
 	 */
-	void (*genheaders)(struct mark5_stream *ms, int n, unsigned char *where);
+	void (*genheaders)(const struct mark5_stream *ms, int n, unsigned char *where);
 };
 
 struct mark5_stream_generic
@@ -174,7 +174,7 @@ struct mark5_format_generic
 	int nchan;
 	int nbit;
 	int decimation;					/* decimationling factor */
-	void (*genheaders)(struct mark5_stream *ms, int n, unsigned char *where);
+	void (*genheaders)(const struct mark5_stream *ms, int n, unsigned char *where);
 };
 
 void delete_mark5_stream_generic(struct mark5_stream_generic *s);

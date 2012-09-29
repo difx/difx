@@ -2521,13 +2521,14 @@ static int mark5_format_vdif_final(struct mark5_stream *ms)
 
 static int mark5_format_vdif_validate(const struct mark5_stream *ms)
 {
-	int mjd_d, mjd_t, sec_d, sec_t;
-	double ns_d;
-	long long ns_t;
-	unsigned int *header;
+	const unsigned int *header;
 
 	if(ms->mjd && ms->framenum % ms->framegranularity == 0)
 	{
+		int mjd_d, mjd_t, sec_d, sec_t;
+		double ns_d;
+		long long ns_t;
+		
 		mark5_stream_frame_time_vdif(ms, &mjd_d, &sec_d, &ns_d);
 
 		ns_t = (long long)(ms->framenum)*(long long)(ms->gframens/ms->framegranularity) + (long long)(ms->ns);
@@ -2541,19 +2542,20 @@ static int mark5_format_vdif_validate(const struct mark5_stream *ms)
 		if(mjd_t != mjd_d || sec_t != sec_d || fabs((double)ns_t - ns_d) > 0.000001)
 		{
 			fprintf(m5stdout, "VDIF validate[%lld]: %d %d %f : %d %d %lld\n",
-				ms->framenum,
-				mjd_d, sec_d, ns_d,
-				mjd_t, sec_t, ns_t);
+				ms->framenum,   mjd_d, sec_d, ns_d,   mjd_t, sec_t, ns_t);
 			
 			return 0;
 		}
 	}
 
 	/* Check the invalid bit */
-	header = (unsigned int *)ms->frame;
+	header = (const unsigned int *)ms->frame;
 	if((header[0] >> 31) & 0x01)
 	{
-		//fprintf(m5stderr, "Skipping invalid frame\n");
+#ifdef DEBUG
+		fprintf(m5stderr, "mark5_format_vdif_validate: Skipping invalid frame\n");
+#endif
+
 		return 0;
 	}
 

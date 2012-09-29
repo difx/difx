@@ -288,9 +288,9 @@ static int mark5_format_mark4_frame_time(const struct mark5_stream *ms, int *mjd
 
 static int mark5_format_mark4_validate(const struct mark5_stream *ms)
 {
-	struct mark5_format_mark4 *v;
+	const struct mark5_format_mark4 *v;
 	int ntrack, t, e=0;
-	unsigned int *data;
+	const unsigned int *data;
 	int mjd_d, mjd_t, sec_d, sec_t;
 	int ns_d;
 	long long ns_t;
@@ -298,12 +298,13 @@ static int mark5_format_mark4_validate(const struct mark5_stream *ms)
 	if(!ms)
 	{
 		fprintf(m5stdout, "mark5_format_mark4_validate: ms=0\n");
+
 		return 0;
 	}
 
-	v = (struct mark5_format_mark4 *)(ms->formatdata);
+	v = (const struct mark5_format_mark4 *)(ms->formatdata);
 	ntrack = v->ntrack;
-	data = (unsigned int *)ms->frame;
+	data = (const unsigned int *)ms->frame;
 	for(t = 0; t < ntrack; ++t)
 	{
 		if(data[t] != 0xFFFFFFFFUL)
@@ -349,11 +350,11 @@ static int mark5_format_mark4_validate(const struct mark5_stream *ms)
 	return 1;
 }
 
-static void mark5_format_mark4_genheaders(struct mark5_stream *ms, int n, unsigned char *where)
+static void mark5_format_mark4_genheaders(const struct mark5_stream *ms, int n, unsigned char *where)
 {
 	int i;
 	int ntrack;
-	struct mark5_format_mark4 *v;
+	const struct mark5_format_mark4 *v;
 
 	if(!ms)
 	{
@@ -362,7 +363,7 @@ static void mark5_format_mark4_genheaders(struct mark5_stream *ms, int n, unsign
 		return;
 	}
 
-	v = (struct mark5_format_mark4 *)(ms->formatdata);
+	v = (const struct mark5_format_mark4 *)(ms->formatdata);
 	ntrack = v->ntrack;
 
 	for(i = 0; i < n; i += ms->framegranularity)

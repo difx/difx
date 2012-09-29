@@ -188,7 +188,7 @@ static int mark5_stream_frame_time_mark5b(const struct mark5_stream *ms, int *mj
 	return 0;
 }
 
-static void mark5_format_mark5b_genheaders(struct mark5_stream *ms, int n, unsigned char *where)
+static void mark5_format_mark5b_genheaders(const struct mark5_stream *ms, int n, unsigned char *where)
 {
 	int i;
 
