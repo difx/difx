@@ -5,6 +5,7 @@ Version 2.2.0
 * Support writing of .machines file
 * Improved support for FAKE
 * Verify input files do not have DOS end of line characters
+* Populate difxLabel in difxio->.calc and in .joblist
 
 Version 2.1.0
 ~~~~~~~~~~~~~

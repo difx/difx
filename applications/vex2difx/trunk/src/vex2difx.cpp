@@ -451,20 +451,30 @@ static void makeJobs(vector<VexJob>& J, VexData *V, const CorrParams *P, int ver
 static DifxJob *makeDifxJob(string directory, const VexJob& J, int nAntenna, const string& obsCode, int *n, int nDigit, char ext, const string &vexFile, const string &threadsFile)
 {
 	DifxJob *job;
-	const char *difxVer;
+	const char *difxVersion;
+	const char *difxLabel;
 	char fileBase[DIFXIO_FILENAME_LENGTH];
 	int v;
 
 	*n = 1;
 	job = newDifxJobArray(*n);
-	difxVer = getenv("DIFX_VERSION");
-	if(difxVer)
+	difxVersion = getenv("DIFX_VERSION");
+	if(difxVersion)
 	{
-		snprintf(job->difxVersion, DIFXIO_VERSION_LENGTH, "%s", difxVer);
+		snprintf(job->difxVersion, DIFXIO_VERSION_LENGTH, "%s", difxVersion);
 	}
 	else
 	{
 		snprintf(job->difxVersion, DIFXIO_VERSION_LENGTH, "%s", "Unknown");
+	}
+	difxLabel = getenv("DIFX_LABEL");
+	if(difxLabel)
+	{
+		snprintf(job->difxLabel, DIFXIO_VERSION_LENGTH, "%s", difxLabel);
+	}
+	else
+	{
+		job->difxLabel[0] = 0;
 	}
 	snprintf(job->vexFile, DIFXIO_FILENAME_LENGTH, "%s", vexFile.c_str());
 	job->jobStart = J.mjdStart;
@@ -3143,15 +3153,11 @@ int main(int argc, char **argv)
 
 	ofstream of;
 	string jobListFile = P->jobSeries + ".joblist";
-	string difxVersion;
-	const char *dvstr;
+	const char *difxVersion;
+	const char *difxLabel;
 
-	dvstr = getenv("DIFX_VERSION");
-	if(dvstr)
-	{
-		difxVersion = dvstr;
-	}
-	else
+	difxVersion = getenv("DIFX_VERSION");
+	if(!difxVersion)
 	{
 		cout << endl;
 		cout << "Warning: env. variable DIFX_VERSION is not set.  Setting to 'Unknown'" << endl;
@@ -3159,9 +3165,15 @@ int main(int argc, char **argv)
 		cout << endl;
 		difxVersion = "Unknown";
 	}
+	difxLabel = getenv("DIFX_LABEL");
 	of.open(jobListFile.c_str());
 	of.precision(12);
-	of << "exper=" << V->getExper()->name << "  v2d=" << v2dFile <<"  pass=" << P->jobSeries << "  mjd=" << current_mjd() << "  DiFX=" << difxVersion << "  vex2difx=" << version << endl;
+	of << "exper=" << V->getExper()->name << "  v2d=" << v2dFile <<"  pass=" << P->jobSeries << "  mjd=" << current_mjd() << "  DiFX=" << difxVersion << "  vex2difx=" << version;
+	if(difxLabel)
+	{
+		of << "  label=" << difxLabel;
+	}
+	of << endl;
 	
 	nDigit=0;
 	for(int l = J.size()+P->startSeries-1; l > 0; l /= 10)
