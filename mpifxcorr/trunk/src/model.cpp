@@ -365,6 +365,7 @@ bool Model::addClockTerms(string antennaname, double refmjd, int order, double *
 bool Model::readInfoData(ifstream * input)
 {
   string line = "";
+  string key = "";
   //nothing here is worth saving, so just skip it all
   config->getinputline(input, &line, "JOB ID");
   config->getinputline(input, &line, "JOB START TIME");
@@ -373,7 +374,17 @@ bool Model::readInfoData(ifstream * input)
   config->getinputline(input, &line, "OBSCODE");
   config->setObsCode(line);
   config->getinputline(input, &line, "DIFX VERSION");
-  config->getinputline(input, &line, "SUBJOB ID");
+  cinfo << startl << "DIFX VERSION = " << line << endl;
+  config->getinputkeyval(input, &key, &line);
+  if(key.find("DIFX LABEL") != string::npos) { //look for the VEX line, skip it if present
+    cinfo << startl << "DIFX LABEL = " << line << endl;
+    config->getinputline(input, &line, "SUBJOB ID");
+  }
+  else {
+    if(key.find("SUBJOB ID") == string::npos) {
+      cerror << startl << "Went looking for DIFX LABEL (or maybe SUBJOB ID), but got " << key << endl;
+    }
+  }
   config->getinputline(input, &line, "SUBARRAY ID");
   return true;
 }
