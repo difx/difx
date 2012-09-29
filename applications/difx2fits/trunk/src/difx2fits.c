@@ -440,7 +440,6 @@ static int populateFitsKeywords(const DifxInput *D, struct fits_keywords *keys)
 {
 	int i, j;
 	int fqindex=-1;
-	double d_tmp;
 
 	strcpy(keys->obscode, D->job->obsCode);
 	keys->no_stkd = D->nPolar;
@@ -477,6 +476,8 @@ static int populateFitsKeywords(const DifxInput *D, struct fits_keywords *keys)
 	{
 		for(j = 0; j < D->baseline[i].nFreq; ++j)
 		{
+			double d_tmp;
+			
 			fqindex = DifxInputGetFreqIdByBaselineFreq(D, i, j);
 			if(fqindex < 0)
 			{
@@ -496,26 +497,26 @@ static int populateFitsKeywords(const DifxInput *D, struct fits_keywords *keys)
 				exit(EXIT_FAILURE);
 			}
 
-			/*extra precision to deal with non ^2 rounding errors*/
+			/* extra precision to deal with non ^2 rounding errors */
 			d_tmp = 1.0e6*D->freq[fqindex].bw*D->freq[fqindex].specAvg/D->freq[fqindex].nChan;
 			if(keys->chan_bw == -1)
 			{
-				keys->chan_bw = (float) d_tmp;
+				keys->chan_bw = (float)d_tmp;
 			}
-			else if(keys->chan_bw != (float) d_tmp)
+			else if(keys->chan_bw != (float)d_tmp)
 			{
 				fprintf(stderr, "Error: populateFitsKeywords: not all used frequencies have the same final channel bandwidth\n");
 
 				exit(EXIT_FAILURE);
 			}
 
-			/*extra precision to deal with non ^2 rounding errors*/
+			/* extra precision to deal with non ^2 rounding errors */
 			d_tmp = 0.5 + 1.0/(2.0*D->freq[fqindex].specAvg*D->specAvg);
 			if(keys->ref_pixel == -1)
 			{
-				keys->ref_pixel = (float) d_tmp;
+				keys->ref_pixel = (float)d_tmp;
 			}
-			else if(keys->ref_pixel != (float) d_tmp)
+			else if(keys->ref_pixel != (float)d_tmp)
 			{
 				fprintf(stderr, "Error: populateFitsKeywords: not all used frequencies have the same reference pixel\n");
 
@@ -531,7 +532,11 @@ static int populateFitsKeywords(const DifxInput *D, struct fits_keywords *keys)
 	}
 	keys->ref_freq = D->refFreq*1.0e6;
 	keys->ref_date = D->mjdStart;
-        //printf("Channel bandwidth is %f, ref pixel is %f\n", keys->chan_bw, keys->ref_pixel);
+
+#ifdef DEBUG
+        printf("Channel bandwidth is %f, ref pixel is %f\n", keys->chan_bw, keys->ref_pixel);
+#endif
+
 	if(D->nPolar > 1)
 	{
 		keys->no_pol = 2;
@@ -673,15 +678,21 @@ static int convertFits(struct CommandLineOptions *opts, int passNum, int *nWitho
 {
 	DifxInput *D, *D1, *D2;
 	struct fitsPrivate outfile;
-	char outFitsName[256];
+	char outFitsName[DIFXIO_FILENAME_LENGTH];
 	int i;
 	int nConverted = 0;
 	const char *difxVersion;
+	const char *difxLabel;
 
 	difxVersion = getenv("DIFX_VERSION");
 	if(!difxVersion)
 	{
-		printf("Warning: env. var. DIFX_VERSION is not set\n");
+		printf("Warning: env. var. DIFX_VERSION is not set.\n");
+	}
+	difxLabel = getenv("DIFX_LABEL");
+	if(!difxLabel && opts->verbose > 0)
+	{
+		printf("Note: env. var. DIFX_LABEL is not set.\n");
 	}
 
 	D = 0;
@@ -806,7 +817,7 @@ static int convertFits(struct CommandLineOptions *opts, int passNum, int *nWitho
 
 	if(difxVersion && D->job->difxVersion[0])
 	{
-		if(strncmp(difxVersion, D->job->difxVersion, 63))
+		if(strncmp(difxVersion, D->job->difxVersion, DIFXIO_VERSION_LENGTH))
 		{
 			fprintf(stderr, "Attempting to run difx2fits from version %s on a job make for version %s\n", difxVersion, D->job->difxVersion);
 			if(opts->overrideVersion)
@@ -818,6 +829,7 @@ static int convertFits(struct CommandLineOptions *opts, int passNum, int *nWitho
 			{
 				fprintf(stderr, "Not converting.\n");
 				deleteDifxInput(D);
+
 				return 0;
 			}
 		}
@@ -825,6 +837,27 @@ static int convertFits(struct CommandLineOptions *opts, int passNum, int *nWitho
 	else if(!D->job->difxVersion[0])
 	{
 		fprintf(stderr, "Warning: working on unversioned job\n");
+	}
+
+	/* Check user-defined DIFX LABEL and complain if discrepancies are found */
+	if(difxLabel && D->job->difxLabel[0])
+	{
+		if(strncmp(difxLabel, D->job->difxLabel, DIFXIO_VERSION_LENGTH))
+		{
+			fprintf(stderr, "Attempting to run difx2fits from label %s on a job make for label %s\n", difxLabel, D->job->difxLabel);
+			if(opts->overrideVersion)
+			{
+				fprintf(stderr, "Continuing because of --override-version but not setting a version\n");
+				D->job->difxLabel[0] = 0;
+			}
+			else
+			{
+				fprintf(stderr, "Not converting.\n");
+				deleteDifxInput(D);
+
+				return 0;
+			}
+		}
 	}
 
 	if(opts->verbose > 1)
@@ -856,8 +889,7 @@ static int convertFits(struct CommandLineOptions *opts, int passNum, int *nWitho
 		{
 #warning "FIXME: multi-setup input would overwrite previously generated FITS, make tidier fix than a rename"
 			sprintf(outFitsName, "%s_setup%d", opts->fitsFile, passNum+1);
-			fprintf(stderr, "Warning: input file list contains difx with different setup(s). Writing setup %d to '%s'\n",
-				passNum+1, outFitsName);
+			fprintf(stderr, "Warning: input file list contains difx with different setup(s). Writing setup %d to '%s'\n", passNum+1, outFitsName);
 		}
 	}
 	else
@@ -908,8 +940,7 @@ int main(int argc, char **argv)
 	struct CommandLineOptions *opts;
 	int nConverted = 0;
 	int nWithoutPhaseCentre = 0;
-	int n, nFits = 0;
-
+	int nFits = 0;
 
 	if(argc < 2)
 	{
@@ -931,6 +962,8 @@ int main(int argc, char **argv)
 
 	for(;;)
 	{
+		int n;
+
 		n = convertFits(opts, nFits, &nWithoutPhaseCentre);
 		if(n <= 0)
 		{
