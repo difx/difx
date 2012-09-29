@@ -10,8 +10,8 @@ import platform
 from time import asctime
 
 program = 'difxbuild'
-version = '0.14'
-verdate = '20120928'
+version = '0.15'
+verdate = '20120929'
 author = 'Walter Brisken <wbrisken@nrao.edu>'
 
 openmpiVersion = '1.6'
@@ -25,6 +25,139 @@ numMakeCpus = 4
 # wget option to clobber
 # add difx_monitor, ...
 # plplot
+# python path
+# svnstatus
+
+documentation = """
+
+             In-line documentation for difxbuild
+
+                Sep 29, 2012  Walter Brisken
+
+Some assumptions:
+
+* All user directories and the difxbase paths are cross mounted and
+  appear the same on all machines that will be installed with DiFX.
+  Note that a DiFX installation is on a cluster, not on individual
+  machines.
+
+* The machine used for downloading has external access via the svn,
+  http, and ftp protocols.
+
+Some definitions:
+
+* architecture: A CPU architecture.  Multiple architectures can be
+  used in the same DiFX cluster.  Multiple platforms can be specified
+  per architecture.  Some files are common across all versions or 
+  platforms of a given architecture.  difxbuild will ensure that 
+  no redundant copies are installed, simplifying cross-version and
+  cross-platform maintenance.
+
+* platform: The could be different variants of DiFX machines across
+  a single cpu architecture.  For example, in the i686 architecture
+  one could have multiple different Mark5 types running different 
+  Conduant SDK versions, each of which needs to link to a different
+  set of libraries.  difxbuild uses out-of-source-tree building so
+  that all platforms for a given DiFX installation can use the same
+  source tree.  Very handy for developers.
+
+* version: The formal DiFX version (e.g., DIFX-2.1), or the development
+  version (called DIFX-DEVEL).
+
+* label: A user-defined name for the DiFX installation (to be applied
+  across all platforms).  By default this is the same as the version.
+  Different bootstrap files using different labels can manage multiple
+  instances of a single DiFX version.  This is potentially useful if
+  different DIFX-DEVEL snapshots are to be used in production.
+
+Some useful tips for users of difxbuild:
+
+* You can rerun bootstrap as many times as needed, changing parameters
+  each time.  It may be necessary to rebuild code after a bootstrap.
+
+* You can run "difxbuild rebuild" without any parameters if you are in
+  the source component of a particular component.  Same for "build"
+
+* After each successful (re)build/install of a component, a line of
+  text is added to a file called buildlog in each platform's base
+  directory.  This can be used to trace back the subversion history
+  of any binary at any time.
+
+Bootstrap parameter options include:
+
+* version: which version of difx to install.  Currently supported values
+  are DIFX-DEVEL and DIFX-2.1.  The DIFX_VERSION environment varialbe will
+  reflect this value.  This parameter is required.
+
+* headnode: the computer that will be singled out as the head node.  The
+  DIFX_HEAD_NODE environment variable will reflect this value.  This
+  parameter is required.
+
+* difxbase: the top level directory for DiFX software.  DiFX version
+  independent files will be placed beneath this directory.  By default
+  DiFX version specific files will be installed in a subdirectory of this
+  (see information about the root parameter below).  It is
+  okay (and encouraged) to use the same difxbase for all installed 
+  versions.  This parameter is required.
+
+* root: the base directory for DiFX version/label specific files for the
+  primary platform.  Secondary platforms will use the same but with a
+  provided extension (see altplatformX below).  If not provided, this
+  parameter will default to <difxbase>/<label> .
+
+* ipproot: path to the base of the Intel Performance Primitives library.
+  This is IPP version dependent and may require a bit of trial and error
+  to get right.  If this is set to  none  then an IPP-free DiFX will be
+  installed.  This requires FFTW to be installed.  Each architecture
+  can have its own ipproot value.  ipproot specifies the the default;
+  architecture-dependent overrides are specified with a parameter such as
+  ipprooti686 or ipprootx86_64.
+
+* label: a label used to identify an installation of DiFX.  By default it
+  is set equal to the specified version.  Setting it to an alternate value
+  allows multiple installations of the same DiFX version to be later 
+  identifyable.  The DIFX_LABEL environment variable will reflect this
+  value.
+
+* calcserver: the computer to send RPC model requests to.  If not
+  specified, this will default to the value of the headnode parameter.
+
+* cflags: default c and c++ compiler flags to use.  If not specified,
+  the default of "-O2 -Wall -march=core2" will be used.
+
+* pathextra: extra binary search paths to add the the PATH environment
+  variable that is set in the setup_difx script.
+
+* ldextra: extra paths to be added to the LD_LIBRARY_PATH environment
+  variable that is set in the setup_difx script.
+
+* wrapper: an optional wrapper program that can be used to spawn
+  mpifxcorr.  This value gets coded into the runmpifxcorr.$DIFX-LABEL 
+  launcher script.  For example, valgrind could be used as the 
+  wrapper program if memory leek checking is desired.  Use this parameter
+  with caution.
+
+* mca: parameters to add to the .openmpi/mca-params.conf file.  If not
+  provided, no such file will be created.  This can be useful to include
+  or exclude certain network interfaces.
+
+* altplatformX: Here X is a number from 1 to 9.  This parameter gives a
+  sub-label to each non-primary platform.  Examples might be SDK8 and SDK9
+  for Mark5 units using two different Conduant library versions.  For each
+  specified alternate platform the following three additional parameters
+  are needed...
+
+* altplatformXarch: The CPU architecture, as determined by "uname -m", 
+  that this platform is based upon.
+
+* altplatformXhost: A representative computer making use of this platform.
+  This is used when spawning a parallel build process.
+
+* altplatformXtest: A bash conditional expression used to determine if the
+  computer running the setup_bash script belongs to this platform.  An 
+  example is  FIXME
+
+"""
 
 def getippversion(path):
 	if islink(path):
@@ -902,6 +1035,22 @@ def svnupdate(origComps, params, args, verbose, pretend):
 			cmd = 'svn co %s %s' % (comp[1], comp[0])
 		execute(cmd, verbose, pretend)
 
+def svnstatus(origComps, params, args, verbose, pretend):
+	comps = filterComponents(origComps, args)
+	if len(comps) == 0:
+		print 'No components selected.  Did you mean to append "all" to the command line?\n'
+		return
+	srcDir = environ['DIFX_SRC'] + '/'
+	if not isdir(srcDir):
+		print 'Top level source directory %s does not exist.\n' % srcDir
+		
+	for comp in comps:
+		path = srcDir + comp[0] + '/'
+		if isdir(path):
+			chdir(path)
+			cmd = 'svn status -q'
+			execute(cmd, verbose, pretend)
+
 def autotool(origComps, params, args, verbose, pretend):
 	comps = filterComponents(origComps, args)
 	if len(comps) == 0:
@@ -1324,6 +1473,15 @@ command_svn = \
 	svnupdate \
 ]
 
+command_svnstatus = \
+[ \
+	'svnstatus', \
+	'View local svn changes', \
+	['DIFX_SRC'], \
+	[], \
+	svnstatus \
+]
+
 command_autotool = \
 [ \
 	'autotool', \
@@ -1438,6 +1596,7 @@ commands = \
 	command_bootstrap, \
 	command_default, \
 	command_svn, \
+	command_svnstatus, \
 	command_autotool, \
 	command_openmpi, \
 	command_spice, \
@@ -1498,6 +1657,17 @@ def run_command(commandName, args, verbose, pretend):
 def usage(prog):
 	print '\n%s ver. %s  %s  %s\n' % (program, version, author, verdate)
 	print 'usage:  %s [options] <command> [<command arguments>]\n' % prog
+	print 'Options include:\n'
+	print '  -h or --help'
+	print '       print this help and exit\n'
+	print '  -d or --documentation'
+	print '       print the in-line documentation\n'
+	print '  -v or --verbose'
+	print '       be more verbose\n'
+	print '  -q or --quiet'
+	print '       be less verbose\n'
+	print '  -p or --pretend'
+	print '       go through all the steps but don\'t actually do anything\n'
 	print 'The possible commands are:\n'
 	for command in commands:
 		extras = ''
@@ -1516,7 +1686,7 @@ def usage(prog):
 
 def main():
 	try:
-		opts, args = getopt.getopt(argv[1:], "hqvp", ["help", "quiet", "verbose", "pretend"])
+		opts, args = getopt.getopt(argv[1:], "hdqvp", ["help", "documentation", "quiet", "verbose", "pretend"])
 	except getopt.GetoptError, err:
 		print '%s\n' % str(err)
 		usage(argv[0])
@@ -1530,6 +1700,9 @@ def main():
 			verbose -= 1
 		elif o == '-h':
 			usage(argv[0])
+			exit(0)
+		elif o == '-d':
+			print documentation
 			exit(0)
 		elif o == '-p':
 			pretend = True
