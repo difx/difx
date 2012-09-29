@@ -434,6 +434,7 @@ typedef struct
 typedef struct
 {
 	char difxVersion[DIFXIO_VERSION_LENGTH];  /* Name of difx version in .calc file */
+	char difxLabel[DIFXIO_VERSION_LENGTH];    /* Name of difx label in .calc file */
 	double jobStart;	/* cjobgen job start time (mjd) */
 	double jobStop;		/* cjobgen job start time (mjd) */
 	double mjdStart;	/* subjob start time (mjd) */

@@ -1876,6 +1876,12 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 		snprintf(D->job->difxVersion, DIFXIO_VERSION_LENGTH, "%s", DifxParametersvalue(cp, row));
 	}
 
+	row = DifxParametersfind(cp, 0, "DIFX LABEL");
+	if(row > 0)
+	{
+		snprintf(D->job->difxLabel, DIFXIO_VERSION_LENGTH, "%s", DifxParametersvalue(cp, row));
+	}
+
 	row = DifxParametersfind(cp, 0, "SESSION");
 	if(row >= 0)
 	{

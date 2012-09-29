@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2010 by Walter Brisken                             *
+ *   Copyright (C) 2008-2012 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -42,8 +42,8 @@ int writeDifxCalc(const DifxInput *D)
 
 	if(D->nJob != 1)
 	{
-		fprintf(stderr, "writeDifxCalc: nJob = %d (not 1)\n", 
-			D->nJob);
+		fprintf(stderr, "writeDifxCalc: nJob = %d (not 1)\n", D->nJob);
+
 		return -1;
 	}
 
@@ -86,6 +86,10 @@ int writeDifxCalc(const DifxInput *D)
 	}
 	writeDifxLine(out, "OBSCODE", D->job->obsCode);
 	writeDifxLine(out, "DIFX VERSION", D->job->difxVersion);
+	if(strlen(D->job->difxLabel) > 0)
+	{
+		writeDifxLine(out, "DIFX LABEL", D->job->difxLabel);
+	}
 	writeDifxLineInt(out, "SUBJOB ID", D->job->subjobId);
 	writeDifxLineInt(out, "SUBARRAY ID", D->job->subarrayId);
 	if(D->job->vexFile[0] != 0)

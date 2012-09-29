@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2011 by Walter Brisken                             *
+ *   Copyright (C) 2008-2012 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -38,11 +38,9 @@ int areDifxInputsMergable(const DifxInput *D1, const DifxInput *D2)
 {
 #warning "FIXME: startChan, nInChan and nOutChan are probably vestigial; clean them up?"
 	if(D1->specAvg != D2->specAvg ||
-	   //D1->startChan != D2->startChan ||
-	   //D1->nInChan != D2->nInChan ||
-	   //D1->nOutChan != D2->nOutChan ||
 	   D1->job->aberCorr != D2->job->aberCorr ||
-	   strncmp(D1->job->difxVersion, D2->job->difxVersion, 64))
+	   strncmp(D1->job->difxVersion, D2->job->difxVersion, DIFXIO_VERSION_LENGTH) ||
+	   strncmp(D1->job->difxLabel, D2->job->difxLabel, DIFXIO_VERSION_LENGTH))
 	{
 		return 0;
 	}
@@ -58,14 +56,14 @@ int areDifxInputsMergable(const DifxInput *D1, const DifxInput *D2)
 int areDifxInputsCompatible(const DifxInput *D1, const DifxInput *D2)
 {
 	int f;
-	int a1, a2;
+	int a1;
 
 	if(D1->nFreq != D2->nFreq)
 	{
 		return 0;
 	}
 
-	for(f = 0; f < D1->nFreq; f++)
+	for(f = 0; f < D1->nFreq; ++f)
 	{
 		if(isSameDifxFreq(D1->freq + f, D2->freq + f) == 0)
 		{
@@ -73,9 +71,11 @@ int areDifxInputsCompatible(const DifxInput *D1, const DifxInput *D2)
 		}
 	}
 
-	for(a1 = 0; a1 < D1->nAntenna; a1++)
+	for(a1 = 0; a1 < D1->nAntenna; ++a1)
 	{
-		for(a2 = 0; a2 < D2->nAntenna; a2++)
+		int a2;
+
+		for(a2 = 0; a2 < D2->nAntenna; ++a2)
 		{
 			if(isSameDifxAntenna(D1->antenna + a1, D2->antenna + a2))
 			{
@@ -232,9 +232,5 @@ DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2, int verbose
 	job->sourceIdRemap = sourceIdRemap;
 	job->spacecraftIdRemap = spacecraftIdRemap;
 
-#warning "FIXME: should these functions be needed?"
-	//simplifyDifxDatastreams(D);
-	//simplifyDifxBaselines(D);
-	
 	return D;
 }
