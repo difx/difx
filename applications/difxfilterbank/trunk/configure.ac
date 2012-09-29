@@ -19,7 +19,7 @@ if test "$hasplplot" == "false"; then
   PKG_CHECK_MODULES(PLPLOT, plplotd, [hasplplot=true], [hasplplot=false])
 fi
 if test "$hasplplot" == "false"; then
-  AC_MSG_NOTICE([PLPLOT was not found on your system.  Some utilities won't be built])
+  AC_MSG_NOTICE([PLPLOT was not found on your system.  Some utilities wont be built])
 fi
 AM_CONDITIONAL(WITH_PLPLOT, $hasplplot)
 
