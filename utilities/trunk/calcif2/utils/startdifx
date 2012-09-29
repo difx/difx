@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #**************************************************************************
-#   Copyright (C) 2008-2012 by Walter Brisken                             *
+#   Copyright (C) 2008-2012 by Walter Brisken and Helge Rottmann          *
 #                                                                         *
 #   This program is free software; you can redistribute it and/or modify  *
 #   it under the terms of the GNU General Public License as published by  *
@@ -30,9 +30,9 @@
 #============================================================================
 
 PROGRAM = 'startdifx'
-VERSION = '0.8'
-VERDATE = '20120927'
-AUTHOR  = 'Walter Brisken'
+VERSION = '0.9'
+VERDATE = '20120929'
+AUTHOR  = 'Walter Brisken and Helge Rottmann'
 
 defaultgroup = "224.2.2.1"
 defaultport  = 50200
@@ -95,8 +95,7 @@ def usage():
 	print '<start delay> is an optional delay (seconds) to add to the job start time\n'
 	print '<inputN> is the file prefix for a DiFX input file (possibly including .input)\n'
 	print 'Environment variables DIFX_MESSAGE_GROUP and DIFX_MESSAGE_PORT'
-	print 'can be used to override the default group/port of %s/%d\n' % \
-		(defaultgroup, defaultport)
+	print 'can be used to override the default group/port of %s/%d\n' % (defaultgroup, defaultport)
 	exit(0)
 
 
@@ -172,6 +171,7 @@ def watchJob(jobId):
 		print 'DIFX_MESSAGE_GROUP needs to be defined'
 		exit(0)
 
+	# FIXME: eventually migrate to IPv6 compliant multicast receive
 	s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 	s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 	s.bind(('', port))
@@ -233,30 +233,48 @@ def restoreEnvironment(savedEnvironment):
 
 
 def getjobdifxversion(fileBase):
+	version = ''
+	label = ''
+
 	files = glob(fileBase+'.calc')
 	if len(files) < 1:
 		return None
 	d = open(files[0]).readlines()
 	for l in d:
 		if l[:12] == 'DIFX VERSION':
-			return strip(l[20:])
+			version = strip(l[20:])
+		if l[:12] == 'DIFX LABEL':
+			label = strip(l[20:])
+	
+	return version, label
 
 def testDifxVersion(fileBase, override):
-	jobver = getjobdifxversion(fileBase)
-	ver    = getenv('DIFX_VERSION')
-	if ver == None:
+	jobversion, joblabel = getjobdifxversion(fileBase)
+	version = getenv('DIFX_VERSION')
+	label = getenv('DIFX_LABEL')
+	if label == None:
+		label == ''
+	if version == None:
 		print 'Warning: env. var. DIFX_VERSION not defined!'
-	if jobver == None:
+	if jobversion == None:
 		print 'Warning: %s.calc does not contain version info' %fileBase
-	if ver != None and jobver != None and ver != jobver:
-		print 'Warning: $DIFX_VERSION and job version mismatch'
+	if version != None and jobversion != None and version != jobversion:
+		print 'Warning: $DIFX_VERSION and job version (in .calc file) mismatch'
 		print '    <%s> != <%s>' % (ver, jobver)
 		if override:
 			print 'Continuing anyway due to --override-version'
 		else:
 			print 'Quitting since --override-version not specified'
 			exit(0)
-	return ver
+
+	if label != '' and joblabel != '' and label != joblabel:
+		print 'Warning: $DIFX_LABEL and job label (in .calc file) mismatch'
+		print '    <%s> != <%s>' % (ver, jobver)
+
+	if label == '':
+		label = version
+	
+	return version, label
 	
 
 def sendMessage(fileBase, state, statusmessage):
@@ -470,7 +488,7 @@ def handler(signum, frame):
 # Start difx with DifxStartMessage
 def runMessage(fileBase, machinesPolicy, deletePolicy, makeModel, override, useLocalHead, machinesCache, restartSeconds):
 
-	difxVersion = testDifxVersion(fileBase, override)
+	difxVersion, difxLabel = testDifxVersion(fileBase, override)
 
 	identifier = split(fileBase, '/')[-1]
 
@@ -500,14 +518,14 @@ def runMessage(fileBase, machinesPolicy, deletePolicy, makeModel, override, useL
 	if np <= 0:
 		return 'Error: %s.machines not found' % fileBase
 
-	sendStartMessage(fileBase, difxVersion, useLocalHead, restartSeconds)
+	sendStartMessage(fileBase, difxLabel, useLocalHead, restartSeconds)
 
 	return None
 
 # Start difx directly with mpirun
 def runDirect(fileBase, machinesPolicy, deletePolicy, makeModel, override, useLocalHead, machinesCache, restartSeconds):
 
-	difxVersion = testDifxVersion(fileBase, override)
+	difxVersion, difxLabel = testDifxVersion(fileBase, override)
 
 	identifier = split(fileBase, '/')[-1]
 
@@ -556,10 +574,10 @@ def runDirect(fileBase, machinesPolicy, deletePolicy, makeModel, override, useLo
 		print 'Executing: %s' % cmd
 	system(cmd);
 
-	if difxVersion == None:
+	if difxLabel == None or difxLabel == '':
 		difxProgram = 'mpifxcorr'
 	else:
-		difxProgram = 'runmpifxcorr.' + difxVersion
+		difxProgram = 'runmpifxcorr.' + difxLabel
 
 	if restartSeconds > 0.0:
 		restartOption = ' -r%f' % restartSeconds

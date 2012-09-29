@@ -225,6 +225,7 @@ Version 0.8
 * add option to enable difxdb usage
 * pass on --override-version and -v options  to calcif2
 * enable giving a .joblist file to execute
+* look for runmpifxcorr.$DIFX_LABEL if that env var is defined
 
 calcif
 ~~~~~~
