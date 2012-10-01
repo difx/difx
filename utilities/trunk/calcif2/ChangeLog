@@ -225,7 +225,10 @@ Version 0.8
 * add option to enable difxdb usage
 * pass on --override-version and -v options  to calcif2
 * enable giving a .joblist file to execute
+Version 0.9
 * look for runmpifxcorr.$DIFX_LABEL if that env var is defined
+* check for DIFX_HEAD_NODE on startup
+* -l option consistently overrides DIFX_HEAD_NODE
 
 calcif
 ~~~~~~
