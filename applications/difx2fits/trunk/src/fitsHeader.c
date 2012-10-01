@@ -93,7 +93,7 @@ const DifxInput *DifxInput2FitsHeader(const DifxInput *D,
 		fitsWriteComment(out, "HISTORY", strng);
 	}
 	difxLabel = getenv("DIFX_LABEL");
-	if(difxLabel[0])
+	if(difxLabel)
 	{
 		snprintf(strng, maxLength, "CORRLABL = %s", difxLabel);
 		fitsWriteComment(out, "HISTORY", strng);
