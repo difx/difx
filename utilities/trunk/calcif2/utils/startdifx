@@ -65,6 +65,7 @@ def usage():
 	print 'A program to simplify the launching of mpifxcorr, specialy tuned'
 	print 'for NRAO-DiFX usage.  It can also cause model and FITS to be made.\n'
 	print 'Usage: startdifx [options] [<start delay>] <input1> [<input2> [ ... ] ]\n'
+	print 'or:    startdifx [options] [<start delay>] <joblist> \n'
 	print 'options can include:\n'
 	print '  -h or --help'
 	print '          print this usage info and exit\n'
@@ -89,13 +90,14 @@ def usage():
 	print '  -F or --fits'
 	print '          generate 1 fits file per job at end of each\n'
 	print '  -l or --localhead'
-	print '          use the current host as the head node\n'
+	print '          use the current host as the head node. Overrides DIFX_HEAD_NODE.\n'
 	print '  --override-version'
 	print '          ignore difx version differences\n'
 	print '<start delay> is an optional delay (seconds) to add to the job start time\n'
 	print '<inputN> is the file prefix for a DiFX input file (possibly including .input)\n'
 	print 'Environment variables DIFX_MESSAGE_GROUP and DIFX_MESSAGE_PORT'
 	print 'can be used to override the default group/port of %s/%d\n' % (defaultgroup, defaultport)
+	print 'If using -m option DIFX_HEAD_NODE environment must name the correlation head node.\n'
 	exit(0)
 
 
@@ -358,9 +360,10 @@ def sendStartMessage(fileBase, difxVersion, localHeadNode, restartSeconds):
 		port = int(port)
 		
 	headNode = getenv('DIFX_HEAD_NODE')
-	corrHeadNode = headNode
+	# -l option overrides DIFX_HEAD_NODE
 	if localHeadNode:
-		corrHeadNode = socket.gethostname()
+		headNode = socket.gethostname()
+	corrHeadNode = headNode
 
 	identifier = split(fileBase, '/')[-1]
 	
@@ -701,9 +704,9 @@ for a in argv[1:]:
 if len(fileBaseList) < 1:
 	usage()
 
-headNode = getenv('DIFX_HEADNODE')
+headNode = getenv('DIFX_HEAD_NODE')
 if useStartMessage and useLocalHead == False and headNode == None:
-	print "Environment variable DIFX_HEADNODE must be defined."
+	print "Environment variable DIFX_HEAD_NODE must be defined."
 	print "Alternatively  you can use the -l option in case mk5daemon -H is running locally on this host."
 	exit(1)
 	
