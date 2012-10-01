@@ -48,7 +48,7 @@ double timeMjd()
 const DifxInput *DifxInput2FitsHeader(const DifxInput *D, 
 	struct fitsPrivate *out)
 {
-	const char maxLength = 132;
+	const int maxLength = 132;
 	char ref_date[12];
 	char str[64], strng[maxLength];
 	char local_time[48];
