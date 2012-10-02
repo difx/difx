@@ -14,6 +14,7 @@ import edu.nrao.difx.xmllib.difxmessage.DifxMachinesDefinition;
 import edu.nrao.difx.xmllib.difxmessage.DifxStart;
 import edu.nrao.difx.xmllib.difxmessage.DifxStop;
 import edu.nrao.difx.xmllib.difxmessage.DifxStatus;
+import java.awt.*;
 
 import javax.swing.JFrame;
 import javax.swing.JMenuBar;
@@ -29,16 +30,13 @@ import javax.swing.JProgressBar;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.Frame;
-import java.awt.Point;
 import java.io.DataInputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 
 import java.util.*;
+import java.util.List;
 
 import javax.swing.event.EventListenerList;
 
@@ -405,6 +403,14 @@ public class JobEditorMonitor extends JFrame {
         restartSecondsLabel.setBounds( 335, 30, 90, 25 );
         restartSecondsLabel.setHorizontalAlignment( JLabel.LEFT );
         runControlPanel.add( restartSecondsLabel );
+        _showMonitorButton = new JButton( "Show Monitor" );
+        _showMonitorButton.setToolTipText( "Launch real-time fringe monitoring for this job." );
+        _showMonitorButton.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                showLiveMonitor();
+            }
+        } );
+        runControlPanel.add( _showMonitorButton );
         
         //  The Status Panel shows the current state of the job.
         _statusPanel = new IndexedPanel( "" );
@@ -519,11 +525,19 @@ public class JobEditorMonitor extends JFrame {
             _threadsFileName.setBounds( 10, 30, w - 350, 25 );
             _refreshThreadsButton.setBounds( w - 125, 30, 100, 25 );
             _uploadThreadsButton.setBounds( w - 230, 30, 100, 25 );
+            _showMonitorButton.setBounds( w - 150, 60, 125, 25 );
             _messageDisplayPanel.setBounds( 2, 25, w - 23, 173 );
             _state.setBounds( 10, 30, 200, 25 );
             _progress.setBounds( 220, 30, w - 245, 25 );
             _statusLabel.setBounds( 10, 0, w - 35, 25 );
         }
+    }
+    
+    public void showLiveMonitor() {
+        if ( _liveMonitorWindow == null )
+            _liveMonitorWindow = new LiveMonitorWindow( MouseInfo.getPointerInfo().getLocation().x, 
+                MouseInfo.getPointerInfo().getLocation().y, _settings, _inputFileName.getText() );
+        _liveMonitorWindow.setVisible( true );
     }
     
     public void statusInfo( String newText ) {
@@ -1279,21 +1293,29 @@ public class JobEditorMonitor extends JFrame {
         if ( difxMsg.getBody().getDifxStatus() != null ) {
             if ( difxMsg.getBody().getDifxStatus().getVisibilityMJD() != null &&
                     difxMsg.getBody().getDifxStatus().getJobstartMJD() != null &&
-                    difxMsg.getBody().getDifxStatus().getJobstopMJD() != null )
+                    difxMsg.getBody().getDifxStatus().getJobstopMJD() != null ) {
                 _progress.setValue( (int)( 0.5 + 100.0 * ( Double.valueOf( difxMsg.getBody().getDifxStatus().getVisibilityMJD() ) -
                         Double.valueOf( difxMsg.getBody().getDifxStatus().getJobstartMJD() ) ) /
                         ( Double.valueOf( difxMsg.getBody().getDifxStatus().getJobstopMJD() ) -
                         Double.valueOf( difxMsg.getBody().getDifxStatus().getJobstartMJD() ) ) ) );
+                //  Set the restart value.  Possibly some number of seconds should be added
+                //  to this in the event a bad disk sector is causing a crash?
+                _restartSeconds.value( ( Double.valueOf( difxMsg.getBody().getDifxStatus().getJobstopMJD() ) -
+                        Double.valueOf( difxMsg.getBody().getDifxStatus().getJobstartMJD() ) ) / 3600.0 / 24.0 );
+            }
             else if ( !difxMsg.getBody().getDifxStatus().getState().equalsIgnoreCase( "ending" ) )
                 _progress.setValue( 0 );
             //  Only change the "state" of this job if it hasn't been "locked" by the GUI.  This
             //  happens when the GUI detects an error.  If this job is "starting" the state should
             //  be unlocked - it means another attempt is being made to run it.
-            if ( difxMsg.getBody().getDifxStatus().getState().equalsIgnoreCase( "starting" ) )
+            if ( difxMsg.getBody().getDifxStatus().getState().equalsIgnoreCase( "starting" ) ) {
                 _jobNode.lockState( false );
+                _restartSeconds.value( 0.0 );
+            }
             if ( !_jobNode.lockState() ) {
                 _state.setText( difxMsg.getBody().getDifxStatus().getState() );
                 if ( _state.getText().equalsIgnoreCase( "done" ) || _state.getText().equalsIgnoreCase( "mpidone" ) ) {
+                    _restartSeconds.value( 0.0 );
                     if ( _doneWithErrors )  {
                         _state.setText( "Complete with Errors" );
                         _state.setBackground( Color.ORANGE );
@@ -1875,18 +1897,11 @@ public class JobEditorMonitor extends JFrame {
                 sInput = sInput.substring(sInput.indexOf(":") + 1);
                 _jobNode.numAntennas( Integer.parseInt( sInput.trim() ) );
             } else if (sInput.contains("TELESCOPE NAME ")) {
-                // Create antenna for the job
-//                Module newMod = new Module();
-//                newMod.setObjType("Module");
-//
-//                String sInputObjID = sInput.substring(sInput.indexOf(":") - 2, sInput.indexOf(":"));
-//                String sInputObjName = sInput.substring(sInput.indexOf(":") + 1);
-//
-//                // Note: the .input file is zero based
-//                newMod.setObjId(Integer.parseInt(sInputObjID.trim()));
-//                newMod.setObjName(sInputObjName.trim());
-//
-//                addModule(newMod);
+                //  Get the names of the antennas used in this job
+                String sInputObjID = sInput.substring(sInput.indexOf(":") - 2, sInput.indexOf(":"));
+                String sInputObjName = sInput.substring(sInput.indexOf(":") + 1);
+                // Note: the .input file is zero based
+                _jobNode.antennaName( Integer.parseInt( sInputObjID.trim() ), sInputObjName.trim() );
             } else if (sInput.contains("FILE ")) {
                 //  The "FILE" line has lists the data sources used in a job.  We need
                 //  to use these to make a list of data sources for eventual transmission
@@ -2049,6 +2064,7 @@ public class JobEditorMonitor extends JFrame {
     protected JLabel _busyPercentageLabel;
     protected JCheckBox _chooseBasedOnModule;
     protected JLabel _statusLabel;
+    protected JButton _showMonitorButton;
     
     protected ArrayList<String> _dataObjects;
     
@@ -2065,6 +2081,8 @@ public class JobEditorMonitor extends JFrame {
     
     protected JProgressBar _progress;
     protected ColumnTextArea _state;
+    
+    protected LiveMonitorWindow _liveMonitorWindow;
     
     protected boolean _doneWithErrors;
     public boolean doneWithErrors() { return _doneWithErrors; }

@@ -174,6 +174,15 @@ public class JobNode extends QueueBrowserNode {
         });
         _monitorMenuItem.setEnabled( false );
         _popup.add( _monitorMenuItem );
+        _liveMonitorMenuItem = new JMenuItem( "Real-time Fringe Monitor" );
+        _liveMonitorMenuItem.addActionListener(new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                updateEditorMonitor();
+                _editorMonitor.showLiveMonitor();
+            }
+        });
+        _liveMonitorMenuItem.setEnabled( false );
+        _popup.add( _liveMonitorMenuItem );
         _popup.add( new JSeparator() );
         JMenuItem selectMenuItem = new JMenuItem( "Toggle Selection" );
         selectMenuItem.addActionListener(new ActionListener() {
@@ -234,23 +243,38 @@ public class JobNode extends QueueBrowserNode {
         _xOff += _widthState;
         _progress.setBounds( _xOff + 1, 1, _widthProgressBar - 2, 18 );
         _xOff += _widthProgressBar;
-        if ( _showWeights && _weights != null ) {
+        if ( _showWeights && _weightsBuilt ) {
             //  The weights are a bit complicated...
             if ( _weights.length > 0 ) {
+                //  Antenna labels are (for the moment) assumed to be only two letters
+                //  long.  Thus they don't need a lot of room.  We try to adjust here to
+                //  give as much room as possible to the plots or weight outputs.
                 int boxSize = _widthWeights / _weights.length / 2;
+                int labelSize = boxSize;
+                if ( boxSize > 50 ) {
+                    boxSize += labelSize - 50;
+                    labelSize = 50;
+                }
                 for ( int i = 0; i < _weights.length; ++i ) {
-                    setTextArea( _antenna[i], boxSize );
-                    _antenna[i].setVisible( true );
-//                    if ( _showWeightsAsPlots ) {
-//                        setTextArea( _weightPlotWindow[i], boxSize );
-//                        _weightPlotWindow[i].setVisible( true );
-//                        _weight[i].setVisible( false );
-//                    }
-//                    else {
-                        setTextArea( _weight[i], boxSize );
-                        _weight[i].setVisible( true );
-//                        _weightPlotWindow[i].setVisible( false );
-//                    }
+                    if ( _antenna[i] != null ) { // why is this necessary??
+                        setTextArea( _antenna[i], labelSize );
+                        _antenna[i].setVisible( true );
+                    }
+                    if ( _showWeightsAsPlots ) {
+                        if ( _weightPlotWindow[i] != null ) {
+                            setTextArea( _weightPlotWindow[i], boxSize );
+                            _weightPlotWindow[i].setVisible( true );
+                            _weight[i].setVisible( false );
+                        }
+                    }
+                    else {
+                        if ( _weight[i] != null ) {
+                            setTextArea( _weight[i], boxSize );
+                            _weight[i].setVisible( true );
+                            _weightPlotWindow[i].setVisible( false );
+                        }
+                        
+                    }
                 }
             }
             else
@@ -263,7 +287,8 @@ public class JobNode extends QueueBrowserNode {
                         _antenna[i].setVisible( false );
                     if ( _weight[i] != null )
                         _weight[i].setVisible( false );
-//                    _weightPlotWindow[i].setVisible( false );
+                    if ( _weightPlotWindow[i] != null )
+                        _weightPlotWindow[i].setVisible( false );
                 }
             }
         }
@@ -444,6 +469,7 @@ public class JobNode extends QueueBrowserNode {
                             _startJobItem.setEnabled( true );
                             _stopJobItem.setEnabled( true );
                             _monitorMenuItem.setEnabled( true );
+                            _liveMonitorMenuItem.setEnabled( true );
                         }
                         else if ( ext.contentEquals( "calc" ) ) {
                             _editorMonitor.calcFileName( fileStr );
@@ -560,7 +586,7 @@ public class JobNode extends QueueBrowserNode {
             }
             List<DifxStatus.Weight> weightList = difxMsg.getBody().getDifxStatus().getWeight();
             //  Create a new list of antennas/weights if one hasn't been created yet.
-            if ( _weights == null )
+            if ( !_weightsBuilt )
                 newWeightDisplay( weightList.size() );
             for ( Iterator<DifxStatus.Weight> iter = weightList.iterator(); iter.hasNext(); ) {
                 DifxStatus.Weight thisWeight = iter.next();
@@ -579,14 +605,16 @@ public class JobNode extends QueueBrowserNode {
      * This function is used to generate antenna/weight display areas.
      */
     protected void newWeightDisplay( int numAntennas ) {
+        if ( _weightsBuilt )
+            return;
         _weights = new double[ numAntennas ];
         _antennas = new String[ numAntennas ];
         _weight = new ColumnTextArea[ numAntennas ];
         _antenna = new ColumnTextArea[ numAntennas ];
-//        _weightPlotWindow = new PlotWindow[ numAntennas ];
-//        _weightPlot = new Plot2DObject[ numAntennas ];
-//        _weightTrack = new Track2D[ numAntennas ];
-//        _weightTrackSize = new int[ numAntennas ];
+        _weightPlotWindow = new PlotWindow[ numAntennas ];
+        _weightPlot = new Plot2DObject[ numAntennas ];
+        _weightTrack = new Track2D[ numAntennas ];
+        _weightTrackSize = new int[ numAntennas ];
         //  Give the antennas "default" names.
         for ( Integer i = 0; i < numAntennas; ++i ) {
             _antenna[i] = new ColumnTextArea( i.toString() + ": " );
@@ -596,26 +624,27 @@ public class JobNode extends QueueBrowserNode {
             this.add( _weight[i] );
             _antennas[i] = i.toString();
 //            //  This stuff is used to make a plot of the weight.
-//            _weightPlotWindow[i] = new PlotWindow();
-//            this.add( _weightPlotWindow[i] );
-//            _weightPlot[i] = new Plot2DObject();
-//            _weightPlotWindow[i].add2DPlot( _weightPlot[i] );
-//            _weightTrack[i] = new Track2D();
-//            _weightPlot[i].name( "Weight Plot " + i.toString() );
-//            _weightPlot[i].drawBackground( true );
-//            _weightPlot[i].drawFrame( true );
-//            _weightPlot[i].frameColor( Color.GRAY );
-//            _weightPlot[i].clip( true );
-//            _weightPlot[i].addTopGrid( Plot2DObject.X_AXIS, 10.0, Color.BLACK );
-//            _weightTrack[i] = new Track2D();
-//            _weightTrack[i].fillCurve( true );
-//            _weightPlot[i].addTrack( _weightTrack[i] );
-//            _weightTrack[i].color( Color.GREEN );
-//            _weightTrack[i].sizeLimit( 200 );
-//            _weightPlot[i].frame( 0.0, 0.0, 1.0, 1.0 );
-//            _weightPlot[i].backgroundColor( Color.BLACK );
-//            _weightTrackSize[i] = 0;
+            _weightPlotWindow[i] = new PlotWindow();
+            this.add( _weightPlotWindow[i] );
+            _weightPlot[i] = new Plot2DObject();
+            _weightPlotWindow[i].add2DPlot( _weightPlot[i] );
+            _weightTrack[i] = new Track2D();
+            _weightPlot[i].name( "Weight Plot " + i.toString() );
+            _weightPlot[i].drawBackground( true );
+            _weightPlot[i].drawFrame( true );
+            _weightPlot[i].frameColor( Color.GRAY );
+            _weightPlot[i].clip( true );
+            _weightPlot[i].addTopGrid( Plot2DObject.X_AXIS, 10.0, Color.BLACK );
+            _weightTrack[i] = new Track2D();
+            _weightTrack[i].fillCurve( true );
+            _weightPlot[i].addTrack( _weightTrack[i] );
+            _weightTrack[i].color( Color.GREEN );
+            _weightTrack[i].sizeLimit( 200 );
+            _weightPlot[i].frame( 0.0, 0.0, 1.0, 1.0 );
+            _weightPlot[i].backgroundColor( Color.BLACK );
+            _weightTrackSize[i] = 0;
         }
+        _weightsBuilt = true;
     }
     
     public void experiment( String newVal ) { _experiment.setText( newVal ); }
@@ -678,10 +707,10 @@ public class JobNode extends QueueBrowserNode {
             if ( _antennas[i].contentEquals( antenna ) ) {
                 _weights[i] = newVal;
                 _weight[i].setText( newString );
-//                _weightPlot[i].limits( (double)(_weightTrackSize[i] - 20), (double)(_weightTrackSize[i]), 0.0, 1.05 );
-//                _weightTrack[i].add( (double)(_weightTrackSize[i]), newVal );
-//                _weightTrackSize[i] += 1;
-//                _weightPlotWindow[i].updateUI();
+                _weightPlot[i].limits( (double)(_weightTrackSize[i] - 20), (double)(_weightTrackSize[i]), 0.0, 1.05 );
+                _weightTrack[i].add( (double)(_weightTrackSize[i]), newVal );
+                _weightTrackSize[i] += 1;
+                _weightPlotWindow[i].updateUI();
             }
         }
     }
@@ -692,8 +721,17 @@ public class JobNode extends QueueBrowserNode {
         return 0.0;
     }
     public void antennaName( int i, String name ) {
-        if ( i < _antennas.length )
+        if ( i < _antennas.length ) {
             _antennas[i] = name;
+            _antenna[i].setText( name + ": " );
+            _antenna[i].updateUI();
+        }
+    }
+    public String antennaName( int i ) {
+        if ( i < _antennas.length )
+            return _antennas[i];
+        else
+            return null;
     }
     public void numForeignAntennas( int newVal ) { _numForeignAntennas.setText( String.format( "%10d", newVal ) ); }
     public int numForeignAntennas() { return new Integer( _numForeignAntennas.getText() ).intValue(); }
@@ -737,10 +775,10 @@ public class JobNode extends QueueBrowserNode {
         _showWeights = newVal;
         this.updateUI();
     }
-//    public void showWeightsAsPlots( boolean newVal ) { 
-//        _showWeightsAsPlots = newVal;
-//        this.updateUI();
-//    }
+    public void showWeightsAsPlots( boolean newVal ) { 
+        _showWeightsAsPlots = newVal;
+        this.updateUI();
+    }
     
     public void widthName( int newVal ) { _widthName = newVal; }
     public void widthProgressBar( int newVal ) { _widthProgressBar = newVal; }
@@ -852,12 +890,13 @@ public class JobNode extends QueueBrowserNode {
     protected int _widthWeights;
     protected ColumnTextArea[] _weight;
     protected ColumnTextArea[] _antenna;
-//    protected PlotWindow[] _weightPlotWindow;
-//    protected Plot2DObject[] _weightPlot;
-//    protected Track2D[] _weightTrack;
+    protected PlotWindow[] _weightPlotWindow;
+    protected Plot2DObject[] _weightPlot;
+    protected Track2D[] _weightTrack;
     protected int[] _weightTrackSize;
     
     protected JMenuItem _monitorMenuItem;
+    protected JMenuItem _liveMonitorMenuItem;
     
     protected boolean _colorColumn;
     protected Color _columnColor;
@@ -874,5 +913,7 @@ public class JobNode extends QueueBrowserNode {
     
     protected JMenuItem _startJobItem;
     protected JMenuItem _stopJobItem;
+    
+    protected boolean _weightsBuilt;
 
 }

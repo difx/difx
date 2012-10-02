@@ -85,7 +85,7 @@ import java.sql.ResultSet;
 
 public class SystemSettings extends JFrame {
     
-    SystemSettings( String settingsFile ) {
+    public SystemSettings( String settingsFile ) {
         
         //  The "look and feel" isn't a setting in the sense that these others are...it
         //  must be set prior to building menus, so ONLY the default value will be
@@ -321,6 +321,20 @@ public class SystemSettings extends JFrame {
         transferPortLabel.setBounds( 210, 85, 150, 25 );
         transferPortLabel.setHorizontalAlignment( JLabel.RIGHT );
         difxControlPanel.add( transferPortLabel );
+        _difxMonitorHost = new SaneTextField();
+        difxControlPanel.add( _difxMonitorHost );
+        JLabel difxMonitorHostLabel = new JLabel( "Monitor Host:" );
+        difxMonitorHostLabel.setBounds( 420, 55, 150, 25 );
+        difxMonitorHostLabel.setHorizontalAlignment( JLabel.RIGHT );
+        difxControlPanel.add( difxMonitorHostLabel );
+        _difxMonitorPort = new NumberBox();
+        _difxMonitorPort.setHorizontalAlignment( NumberBox.LEFT );
+        _difxMonitorPort.minimum( 0 );
+        difxControlPanel.add( _difxMonitorPort );
+        JLabel monitorPortLabel = new JLabel( "Monitor Port:" );
+        monitorPortLabel.setBounds( 420, 85, 150, 25 );
+        monitorPortLabel.setHorizontalAlignment( JLabel.RIGHT );
+        difxControlPanel.add( monitorPortLabel );
         _difxControlUser = new JFormattedTextField();
         _difxControlUser.setFocusLostBehavior( JFormattedTextField.COMMIT );
         _difxControlUser.addActionListener( new ActionListener() {
@@ -911,6 +925,8 @@ public class SystemSettings extends JFrame {
             _difxControlAddress.setBounds( 165, 55, 300, 25 );
             _difxControlPort.setBounds( 165, 85, 100, 25 );
             _difxTransferPort.setBounds( 365, 85, 100, 25 );
+            _difxMonitorHost.setBounds( 575, 55, 300, 25 );
+            _difxMonitorPort.setBounds( 575, 85, 100, 25 );
             _difxControlUser.setBounds( 165, 115, 300, 25 );
             _difxControlPWD.setBounds( 165, 145, 300, 25 );
             _difxVersion.setBounds( 165, 205, 300, 25 );
@@ -1401,6 +1417,8 @@ public class SystemSettings extends JFrame {
         _difxControlAddress.setText( "swc01.usno.navy.mil" );
         _difxControlPort.intValue( 50200 );
         _difxTransferPort.intValue( 50300 );
+        _difxMonitorPort.intValue( 52300 );
+        _difxMonitorHost.setText( "swc01.usno.navy.mil" );
         _difxControlUser.setText( "difx" );
         _difxControlPWD.setText( "difx2010" );
         //_difxVersion.setText( "trunk" );
@@ -1459,6 +1477,8 @@ public class SystemSettings extends JFrame {
         _windowConfiguration.environmentVariableDisplayH = 300;
         _windowConfiguration.directoryDisplayW = 600;
         _windowConfiguration.directoryDisplayH = 500;
+        _windowConfiguration.monitorDisplayW = 600;
+        _windowConfiguration.monitorDisplayH = 500;
         _defaultNames.vexFileSource = "";
         _defaultNames.viaHttpLocation = "";
         _defaultNames.viaFtpLocation = "";
@@ -1709,6 +1729,12 @@ public class SystemSettings extends JFrame {
             _newDifxTransferPort = 0;
         return _newDifxTransferPort + _difxTransferPort.intValue();
     }
+
+    public void difxMonitorPort( int newVal ) { _difxMonitorPort.intValue( newVal ); }
+    public int difxMonitorPort() { return _difxMonitorPort.intValue(); }
+
+    public void difxMonitorHost( String newVal ) { _difxMonitorHost.setText( newVal ); }
+    public String difxMonitorHost() { return _difxMonitorHost.getText(); }
 
     public void difxControlUser( String newVal ) { _difxControlUser.setText( newVal ); }
     public String difxControlUser() { return _difxControlUser.getText(); }
@@ -2078,6 +2104,10 @@ public class SystemSettings extends JFrame {
                 this.difxControlPort( doiConfig.getDifxControlPort() );
             if ( doiConfig.getDifxTransferPort() != 0 )
                 this.difxTransferPort( doiConfig.getDifxTransferPort() );
+            if ( doiConfig.getDifxMonitorHost() != null )
+                this.difxMonitorHost( doiConfig.getDifxMonitorHost() );
+            if ( doiConfig.getDifxMonitorPort() != 0 )
+                this.difxMonitorPort( doiConfig.getDifxMonitorPort() );
             if ( doiConfig.getDifxControlUser() != null )
                 this.difxControlUser( doiConfig.getDifxControlUser() );
             if ( doiConfig.getDifxControlPWD() != null )
@@ -2172,6 +2202,10 @@ public class SystemSettings extends JFrame {
                 _windowConfiguration.directoryDisplayW = doiConfig.getWindowConfigDirectoryDisplayW();
             if ( doiConfig.getWindowConfigDirectoryDisplayH() != 0 )
                 _windowConfiguration.directoryDisplayH = doiConfig.getWindowConfigDirectoryDisplayH();
+            if ( doiConfig.getWindowConfigMonitorDisplayW() != 0 )
+                _windowConfiguration.monitorDisplayW = doiConfig.getWindowConfigMonitorDisplayW();
+            if ( doiConfig.getWindowConfigMonitorDisplayH() != 0 )
+                _windowConfiguration.monitorDisplayH = doiConfig.getWindowConfigMonitorDisplayH();
             if ( doiConfig.getDefaultNamesVexFileSource() != null )
                 _defaultNames.vexFileSource = doiConfig.getDefaultNamesVexFileSource();
             if ( doiConfig.getDefaultNamesViaHttpLocation() != null )
@@ -2483,6 +2517,8 @@ public class SystemSettings extends JFrame {
         doiConfig.setDifxControlAddress( this.difxControlAddress() );
         doiConfig.setDifxControlPort( this.difxControlPort() );
         doiConfig.setDifxTransferPort( this.difxTransferPort() );
+        doiConfig.setDifxMonitorHost( this.difxMonitorHost() );
+        doiConfig.setDifxMonitorPort( this.difxMonitorPort() );
         doiConfig.setDifxControlUser( this.difxControlUser() );
         doiConfig.setDifxControlPWD( new String( this.difxControlPassword() ) );
         doiConfig.setDifxVersion( this.difxVersion() );
@@ -2536,6 +2572,8 @@ public class SystemSettings extends JFrame {
         doiConfig.setWindowConfigEnvironmentVariableDisplayH( _windowConfiguration.environmentVariableDisplayH );
         doiConfig.setWindowConfigDirectoryDisplayW( _windowConfiguration.directoryDisplayW );
         doiConfig.setWindowConfigDirectoryDisplayH( _windowConfiguration.directoryDisplayH );
+        doiConfig.setWindowConfigMonitorDisplayW( _windowConfiguration.monitorDisplayW );
+        doiConfig.setWindowConfigMonitorDisplayH( _windowConfiguration.monitorDisplayH );
         
         doiConfig.setDefaultNamesVexFileSource( _defaultNames.vexFileSource );
         doiConfig.setDefaultNamesViaHttpLocation( _defaultNames.viaHttpLocation );
@@ -3357,6 +3395,8 @@ public class SystemSettings extends JFrame {
     protected NumberBox _difxControlPort;
     protected NumberBox _difxTransferPort;
     protected int _newDifxTransferPort;
+    protected SaneTextField _difxMonitorHost;
+    protected NumberBox _difxMonitorPort;
     protected JFormattedTextField _difxControlUser;
     protected JPasswordField _difxControlPWD;
     protected JComboBox _difxVersion;
@@ -3469,6 +3509,8 @@ public class SystemSettings extends JFrame {
         int environmentVariableDisplayH;
         int directoryDisplayW;
         int directoryDisplayH;
+        int monitorDisplayW;
+        int monitorDisplayH;
     }
     protected WindowConfiguration _windowConfiguration;
     

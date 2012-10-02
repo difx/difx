@@ -1842,6 +1842,9 @@ public class ExperimentEditor extends JFrame {
                             }
                         }
                     }
+                    else if ( antenna.useEVLBI() ) {
+                        str += "   networkPort = " + antenna.networkPort() + "\n";
+                    }
                     //  Position changes.
                     if ( antenna.positionXChange() )
                         str += "   X = " + antenna.positionX().toString() + "\n";

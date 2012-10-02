@@ -89,24 +89,24 @@ public class JobNodesHeader extends BrowserNode {
             }
         });
         _popup.add( _showWeights );
-//        JMenu weightMenu = new JMenu( "Show Weights As..." );
-//        _popup.add( weightMenu );
-//        _showWeightsAsNumbers = new JCheckBoxMenuItem( "Numbers" );
-//        _showWeightsAsNumbers.addActionListener(new ActionListener() {
-//            public void actionPerformed( ActionEvent e ) {
-//                setWeightsAsPlots( false );
-//                updateDisplayedData();
-//            }
-//        });
-//        weightMenu.add( _showWeightsAsNumbers );
-//        _showWeightsAsPlots = new JCheckBoxMenuItem( "Plots" );
-//        _showWeightsAsPlots.addActionListener(new ActionListener() {
-//            public void actionPerformed( ActionEvent e ) {
-//                setWeightsAsPlots( true );
-//                updateDisplayedData();
-//            }
-//        });
-//        weightMenu.add( _showWeightsAsPlots );
+        JMenu weightMenu = new JMenu( "Show Weights As..." );
+        _popup.add( weightMenu );
+        _showWeightsAsNumbers = new JCheckBoxMenuItem( "Numbers" );
+        _showWeightsAsNumbers.addActionListener(new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                setWeightsAsPlots( false );
+                updateDisplayedData();
+            }
+        });
+        weightMenu.add( _showWeightsAsNumbers );
+        _showWeightsAsPlots = new JCheckBoxMenuItem( "Plots" );
+        _showWeightsAsPlots.addActionListener(new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                setWeightsAsPlots( true );
+                updateDisplayedData();
+            }
+        });
+        weightMenu.add( _showWeightsAsPlots );
         _showExperiment = new JCheckBoxMenuItem( "Experiment" );
         _showExperiment.addActionListener(new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
@@ -429,10 +429,10 @@ public class JobNodesHeader extends BrowserNode {
         this.add( _weights );
     }
     
-//    public void setWeightsAsPlots( boolean newVal ) {
-//        _showWeightsAsPlots.setState( newVal );
-//        _showWeightsAsNumbers.setState( !newVal );
-//    }
+    public void setWeightsAsPlots( boolean newVal ) {
+        _showWeightsAsPlots.setState( newVal );
+        _showWeightsAsNumbers.setState( !newVal );
+    }
     
     /*
      * This function makes everything in the popup menu visible.
@@ -652,8 +652,8 @@ public class JobNodesHeader extends BrowserNode {
         _showActive.setState( _settings.jobColumnSpecs().active.show );
         _showStatusId.setState( _settings.jobColumnSpecs().statusId.show );
         _showWeights.setState( _settings.jobColumnSpecs().weights.show );
-//        _showWeightsAsPlots.setState( _settings.jobColumnSpecs().weightsAsPlots.show );
-//        _showWeightsAsNumbers.setState( _settings.jobColumnSpecs().weightsAsNumbers.show );
+        _showWeightsAsPlots.setState( _settings.jobColumnSpecs().weightsAsPlots.show );
+        _showWeightsAsNumbers.setState( _settings.jobColumnSpecs().weightsAsNumbers.show );
     }
     
     /*
@@ -1056,7 +1056,7 @@ public class JobNodesHeader extends BrowserNode {
             thisJob.showActive( _showActive.getState() );
             thisJob.showStatusId( _showStatusId.getState() );
             thisJob.showWeights( _showWeights.getState() );
-//            thisJob.showWeightsAsPlots( _showWeightsAsPlots.getState() );
+            thisJob.showWeightsAsPlots( _showWeightsAsPlots.getState() );
             thisJob.updateUI();
         }
         //  Update the headers as well.
@@ -1227,8 +1227,8 @@ public class JobNodesHeader extends BrowserNode {
     protected JCheckBoxMenuItem _showWeights;
     protected int _positionWeights;
     protected boolean _adjustWeights;
-//    JCheckBoxMenuItem _showWeightsAsNumbers;
-//    JCheckBoxMenuItem _showWeightsAsPlots;
+    JCheckBoxMenuItem _showWeightsAsNumbers;
+    JCheckBoxMenuItem _showWeightsAsPlots;
     
     SystemSettings _settings;
     

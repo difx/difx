@@ -243,12 +243,25 @@ public class StationPanel extends IndexedPanel {
             }
         } );
         _dataSourcePanel.add( _eVLBICheck );
-        JLabel eVLBILabel = new JLabel( "E-Transfer: " );
+        JLabel eVLBILabel = new JLabel( "Network: " );
         eVLBILabel.setBounds( 100, 90, 95, 25 );
         eVLBILabel.setHorizontalAlignment( JLabel.RIGHT );
         _dataSourcePanel.add( eVLBILabel );
         //  Default setup.  This should come from the SystemSettings class so
         //  it is saved between runs.
+        _eVLBIPort = new NumberBox();
+        _eVLBIPort.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent evt ) {
+                setEnabledItems( _eVLBICheck );
+                dispatchChangeCallback();
+            }
+        } );
+        _eVLBIPort.setToolTipText( "The port number used for network transfer of this station's data." );
+        _eVLBIPort.setBounds( 230, 90, 150, 25 );
+        _eVLBIPort.precision( 0 );
+        _eVLBIPort.intValue( 5000 );
+        _eVLBIPort.minimum( 0 );
+        _dataSourcePanel.add( _eVLBIPort );
         setEnabledItems( _vsnCheck );
         
         //  The antenna panel contains information about the antenna - mount, offsets,
@@ -406,7 +419,7 @@ public class StationPanel extends IndexedPanel {
         }
         else if ( selector == _eVLBICheck ) {
             _eVLBICheck.setSelected( true );
-            _dataSourcePanel.name( "Data Source: " + "eVLBI" );
+            _dataSourcePanel.name( "Data Source: " + "network (port " + networkPort() + ")" );
         }
         this.updateUI();
     }
@@ -685,6 +698,7 @@ public class StationPanel extends IndexedPanel {
     public String toneSelection() { return (String)_toneSelection.getSelectedItem(); }
     public String dirListLocation() { return _dirListLocation.getText(); }
     public int phaseCalInt() { return _phaseCalInt.intValue(); }
+    public int networkPort() { return _eVLBIPort.intValue(); }
     
     public boolean positionChange() {
         if ( _positionX.value() != _xpos ||
@@ -899,6 +913,7 @@ public class StationPanel extends IndexedPanel {
     protected JCheckBox _vsnCheck;
     protected JCheckBox _fileCheck;
     protected JCheckBox _eVLBICheck;
+    protected NumberBox _eVLBIPort;
     protected JComboBox _vsnList;
     protected JComboBox _dataFormat;
     protected JLabel _dataSource;
