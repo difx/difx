@@ -129,6 +129,9 @@ static void usage(const char *pgm)
 	fprintf(stderr, "  --user <user>\n");
 	fprintf(stderr, "  -u <user>      use <user> when executing remote commands (default is 'difx')\n"); 
 	fprintf(stderr, "\n");
+	fprintf(stderr, "  --nosu \n");
+	fprintf(stderr, "  -n             Don't use su when executing su commands\n"); 
+	fprintf(stderr, "\n");
 	fprintf(stderr, "  --isMk5 \n");
 	fprintf(stderr, "  -m             force mk5daemon on this host to act as Mark5 regardless of hostname\n"); 
 	fprintf(stderr, "\n");
@@ -643,7 +646,7 @@ void handleRecordMessage(Mk5Daemon *D, time_t t)
 }
 #endif
 
-void handleDifxMessage(Mk5Daemon *D)
+void handleDifxMessage(Mk5Daemon *D, int noSu)
 {
 	char message[DIFX_MESSAGE_LENGTH];
 	int n;
@@ -669,7 +672,7 @@ void handleDifxMessage(Mk5Daemon *D)
 				handleCommand(D, &G);
 				break;
 			case DIFX_MESSAGE_START:
-				Mk5Daemon_startMpifxcorr(D, &G);
+				Mk5Daemon_startMpifxcorr(D, &G, noSu);
 				break;
 			case DIFX_MESSAGE_STOP:
 				Mk5Daemon_stopMpifxcorr_USNO(D, &G);
@@ -784,6 +787,7 @@ int main(int argc, char **argv)
 	char str[16];
 	int isHeadNode = 0;
 	int isEmbedded = 0;
+	int noSu = 0;
 	int i;
 	char logPath[256];
 	const char *p, *u;
@@ -863,9 +867,12 @@ int main(int argc, char **argv)
 			++i;
 			strcpy(userID, argv[i]);
 		}
+		else if ( strcmp(argv[i], "-n") == 0 ||  strcmp(argv[i], "--nosu") == 0)
+		{
+			noSu = 1;
+                }
 		else if ( strcmp(argv[i], "-m") == 0 ||  strcmp(argv[i], "--isMk5") == 0)
 		{
-                        strcpy(userID, argv[i]);
 			isMk5 = 1;
                 }
 		else if(i < argc-1)
@@ -1121,7 +1128,7 @@ int main(int argc, char **argv)
 		}
 		if(D->difxSock && FD_ISSET(D->difxSock, &socks))
 		{
-			handleDifxMessage(D);
+			handleDifxMessage(D, noSu);
 		}
 		if(D->processDone)
 		{

@@ -7,6 +7,9 @@ Version 2.2.0
 * Count network traffic from all interfaces, not just eth* and ib*.  lo is ignored.
 * Fixed bugs preventing packet length filtering working in record5c
 * Allow case mismatches in VSI processing
+* Respect -u option when calling system commands
+* -n option allows enables running external commands without su
+* obtain full path to difxlog by reading $DIFXROOT environment
 
 Version 2.1.0
 ~~~~~~~~~~~~~
