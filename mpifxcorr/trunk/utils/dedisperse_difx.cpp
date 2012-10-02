@@ -210,7 +210,7 @@ int main(int argc, char *argv[])
       lastseconds = currentseconds;
       offset = int(((currentmjd-startmjd)*86400 + (currentseconds-startseconds))/inttime);
       if(dotrim)
-        offset = (currentmjd + currentseconds/86400.0 - snipstartmjd)/inttime - mindelayoffset;
+        offset = static_cast<int>((currentmjd + currentseconds/86400.0 - snipstartmjd)/inttime - mindelayoffset);
     }
     int readcount = 0;
     while(!input.eof()) {
