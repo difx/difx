@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2011 by Walter Brisken & John Morgan               *
+ *   Copyright (C) 2012 by John Morgan                                     *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -27,18 +27,20 @@
  *
  *==========================================================================*/
 
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <glob.h>
 #include <util.h>
+#include <math.h>
 #include <errno.h>
 #include <sys/resource.h>
 #include "difxio/difx_input.h"
 #include "pbgen.h"
 const double pi = 3.141592653589793;
 const char program[] = "pbgen";
-const char author[]  = "Walter Brisken <wbrisken@nrao.edu>, John Morgan <john.morgan@icrar.org>";
+const char author[]  = "John Morgan <john.morgan@icrar.org>";
 const char version[] = "0.1";
 const char verdate[] = "20120927";
 
@@ -126,6 +128,7 @@ int exceedOpenFileLimit(int numFiles)
 }
 int getMergedDifxInput(int argc, char **argv, DifxInput *D)
 {
+	return 0;
 }
 
 int main(int argc, char **argv)
@@ -476,6 +479,7 @@ int main(int argc, char **argv)
 		printf("\n");
 		} /* time integration loop */
 	new_scan= 1;
-	} /* Scan loop */
-	return D;
+	} /* Scan loop */ 
+
+	return EXIT_SUCCESS;
 }
