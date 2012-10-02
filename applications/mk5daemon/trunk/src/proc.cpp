@@ -70,7 +70,7 @@ int procGetCoresFromCpuInfo(int *nCore)
                 *nCore = val;
         }
 
-        fclose(in);
+        pclose(in);
 
         return 0;
 }
