@@ -23,8 +23,10 @@ testparsevis_SOURCES  = \
 testtcal_SOURCES = \
 	testtcal.c
 
-testtcal_SOURCES = \
-	pbgen.c
+pbgen_SOURCES = \
+	pbgen.c \
+	util.c \
+	util.h
 
 teststringarray_SOURCES  = \
 	teststringarray.c

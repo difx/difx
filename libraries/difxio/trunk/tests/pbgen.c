@@ -30,6 +30,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <glob.h>
+#include <util.h>
+#include <errno.h>
+#include <sys/resource.h>
 #include "difxio/difx_input.h"
 #include "pbgen.h"
 const double pi = 3.141592653589793;
@@ -37,6 +41,9 @@ const char program[] = "pbgen";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>, John Morgan <john.morgan@icrar.org>";
 const char version[] = "0.1";
 const char verdate[] = "20120927";
+
+#define MAX_INPUT_FILES		4096
+const double DefaultTInc= 30;
 
 void usage()
 {
@@ -78,7 +85,7 @@ double haversine(double az1, double el1, double az2, double el2)
 	 * all must be in radians
 	 */
 	double a;
-	a = pow(sin((el1 - el2)/2), 2) + (pow(sin((az1 - az2)/2), 2) * pow(cos(el1), 2));
+	a = pow(sin((el1 - el2)/2), 2.) + (pow(sin((az1 - az2)/2), 2.) * pow(cos(el1), 2.));
 	return 2 * atan2(sqrt(a), sqrt(1-a));
 }
 
@@ -99,6 +106,24 @@ double azbearing(double az1, double el1, double az2, double el2)
 
 	return -atan2(sa21*ce1, (ce2*se1) - (se2*ce1*ca21));
 }
+
+int exceedOpenFileLimit(int numFiles)
+{
+        struct rlimit limit;
+	//
+	// Get max number of open files that the OS allows
+	if (getrlimit(RLIMIT_NOFILE, &limit) != 0) 
+	{
+	    printf("Cannot determine user file open limit (errno=%d)\n", errno);
+	    return(1);
+	}
+	//
+	// Check if the number of DIFX files (plus a buffer of 20) exceed OS limit
+	if (numFiles + 20 >= limit.rlim_cur)
+		return(1);
+
+	return(0);
+}
 int getMergedDifxInput(int argc, char **argv, DifxInput *D)
 {
 }
@@ -107,106 +132,215 @@ int main(int argc, char **argv)
 {
 	int error;
 	DifxInput *D = 0;
+	DifxInput *D1 = 0;
+	DifxInput *D2 = 0;
 	DifxAntenna *da = 0;
 	//FIXME need to choose phase centre and time increment at command line!!
 	int n, s, a, np, dsId, antId;
-	int phaseCentre = 3;//FIXME get from co
-	int tInc = 30; //seconds
-	int first_line= 1;
+	int phaseCentre = 0;
+	int tInc;
+	int new_scan= 1;
+	int header= 1;
 	double distance, pangle; 
-	int arg;
+	int i, l;
 	int verbose = 0;
 	int mergable, compatible;
 	int nJob = 0;
+
+	char *baseFile[MAX_INPUT_FILES];
+	int nBaseFile = 0;
+	int nWithoutPhaseCentre = 0;
+	int doalldifx = 0;
+	glob_t globBuffer;
+
 	
-	for(arg = 1; arg < argc; ++arg)
+	tInc= DefaultTInc;
+
+	for(i = 1; i < argc; ++i)
 	{
-		if(argv[arg][0] == '-')
+		if(argv[i][0] == '-')
 		{
-			if(strcmp(argv[arg], "-v") == 0 ||
-			   strcmp(argv[arg], "--verbose") == 0)
+			if(strcmp(argv[i], "-v") == 0 ||
+			   strcmp(argv[i], "--verbose") == 0)
 			{
 				++verbose;
 				continue;
 			}
-			else if(strcmp(argv[arg], "-h") == 0 ||
-			   strcmp(argv[arg], "--help") == 0)
+			else if(strcmp(argv[i], "-h") == 0 ||
+			   strcmp(argv[i], "--help") == 0)
 			{
 				usage();
 
 				exit(2);
 			}
+			else if(strcmp(argv[i], "--difx") == 0 ||
+			        strcmp(argv[i], "-d") == 0)
+			{
+				++doalldifx;
+			}
+			else if(i+1 < argc) /* one parameter arguments */
+			{
+				if(strcmp(argv[i], "-a") == 0 ||
+				   strcmp(argv[i], "--avgseconds") == 0)
+				{
+					++i;
+					tInc = atof(argv[i]);
+				}
+				else if(strcasecmp(argv[i], "-p") == 0 ||
+					strcasecmp(argv[i], "--phaseCentre") == 0 ||
+					strcasecmp(argv[i], "--phasecenter") == 0)
+				{
+					++i;
+					phaseCentre = atoi(argv[i]);
+				}
+			}
 			else
 			{
-				fprintf(stderr, "Unknown option %s\n", argv[arg]);
+				fprintf(stderr, "Unknown option %s\n", argv[i]);
 
 				exit(EXIT_FAILURE);
 			}
 		}
-		else if(D == 0)
-		{
-			D = loadDifxInput(argv[arg]);
-		}
 		else
 		{
-			DifxInput *D1, *D2;
+	
+			if (exceedOpenFileLimit(nBaseFile))
+			{
+				printf("Error: The number of input files exceeds the OS limit of allowed open files!\n");
+				printf("Run ulimit -n to increase that number.\n");
+				printf("Note: This might require increasing the hard limit in /etc/security/limits.conf\n");
 
+				return 0;
+			}
+	
+			if(nBaseFile >= MAX_INPUT_FILES)
+			{
+				printf("Error: too many input files!\n");
+				printf("Max = %d\n", MAX_INPUT_FILES);
+
+				return 0;
+			}
+			baseFile[nBaseFile] = strdup(argv[i]);
+			++nBaseFile;
+		}
+	}
+	if((nBaseFile >  0 && doalldifx >  0) ||
+	   (nBaseFile == 0 && doalldifx == 0))
+	{
+		return 0;
+	}
+	if(doalldifx)
+	{
+		glob2(__FUNCTION__, "*.im", 0, 0, &globBuffer);
+		if(exceedOpenFileLimit(globBuffer.gl_pathc))
+		{
+			printf("Error: The number of input files exceeds the OS limit of allowed open files!\n");
+			printf("Run ulimit -n to increase that number.\n");
+			printf("Note: This might require increasing the hard limit in /etc/security/limits.conf\n");
+
+			return 0;
+		}
+
+		if(globBuffer.gl_pathc > MAX_INPUT_FILES)
+		{
+			printf("Error: too many input files!\n");
+			printf("Max = %d\n", MAX_INPUT_FILES);
+			
+			return 0;
+		}
+		nBaseFile = globBuffer.gl_pathc;
+		for(i = 0; i < nBaseFile; ++i)
+		{
+			baseFile[i] = strdup(globBuffer.gl_pathv[i]);
+		}
+		globfree(&globBuffer);
+	}
+	/* if input file ends in .im, trim it */
+	for(i = 0; i < nBaseFile; ++i)
+	{
+		l = strlen(baseFile[i]);
+		if(l < 4)
+		{
+			continue;
+		}
+		if(strcmp(baseFile[i]+l-3, ".im") == 0)
+		{
+			baseFile[i][l-3] = 0;
+		}
+	}
+
+	for(i = 0; i < nBaseFile; ++i)
+	{
+		if(baseFile[i] == 0)
+		{
+			continue;
+		}
+
+		if(verbose > 1)
+		{
+			printf("Loading %s\n", baseFile[i]);
+		}
+		D2 = loadDifxInput(baseFile[i]);
+		if(!D2)
+		{
+			fprintf(stderr, "loadDifxInput failed on <%s>.\n", baseFile[i]);
+
+			return 0;
+		}
+		if(DifxInputGetMaxPhaseCentres(D2) <= phaseCentre)
+		{
+			if(verbose > 0)
+			{
+				printf("Skipping %s because it doesn't contain phase centre %d\n", baseFile[i], phaseCentre);
+			}
+
+			deleteDifxInput(D2);
+			free(baseFile[i]);
+			baseFile[i] = 0;
+
+			++nWithoutPhaseCentre;
+
+			continue;
+		}
+
+		if(D)
+		{
 			D1 = D;
-			D2 = loadDifxInput(argv[arg]);
-			if(D2)
-			{
-				mergable = areDifxInputsMergable(D1, D2);
-				compatible = areDifxInputsCompatible(D1, D2);
-				if(mergable && compatible)
-				{
-					D = mergeDifxInputs(D1, D2, verbose);
-					deleteDifxInput(D1);
-					deleteDifxInput(D2);
-				}
-				else
-				{
-					printf("cannot merge job %s: mergable=%d compatible=%d\n", argv[arg], mergable, compatible);
-					deleteDifxInput(D1);
-					deleteDifxInput(D2);
-					D = 0;
-				}
-			}
-			else
-			{
-				deleteDifxInput(D);
-				D = 0;
-			}
-		}
-		if(!D)
-		{
-			fprintf(stderr, "File %s -> D == 0.  Quitting\n", argv[arg]);
 
-			return EXIT_FAILURE;
+			if(!areDifxInputsMergable(D1, D2) ||
+			   !areDifxInputsCompatible(D1, D2))
+			{
+				deleteDifxInput(D2);
+
+				continue;
+			}
+			else if(verbose > 1)
+			{
+				printf("Merging %s\n", baseFile[i]);
+			}
+
+			D = mergeDifxInputs(D1, D2, verbose);
+
+			deleteDifxInput(D1);
+			deleteDifxInput(D2);
+
+			if(!D)
+			{
+				fprintf(stderr, "Merging failed on <%s>.\n", baseFile[i]);
+
+				return 0;
+			}
 		}
 		else
 		{
-			++nJob;
+			D = D2;
+		}
+		if(baseFile[i])
+		{
+			free(baseFile[i]);
+			baseFile[i] = 0;
 		}
 	}
-
-	if(nJob == 0)
-	{
-		printf("No Jobs!  Quitting.\n");
-
-		return 2;
-	}
-
-	D = updateDifxInput(D);
-	if(!D)
-	{
-		fprintf(stderr, "Update failed: D == 0.  Quitting\n");
-		
-		return EXIT_FAILURE;
-	}
-	printDifxInput(D);
-
-	error = getMergedDifxInput(argc, argv, D);
-	printDifxInput(D);
 
 	for(s = 0; s < D->nScan; ++s)
 	{
@@ -233,6 +367,8 @@ int main(int argc, char **argv)
 		}
 
 		config = D->config + configId;
+		//FIXME should check if this changes (at least check if nAnt changes)
+		//maybe just rewrite participating antennas at the start of each scan.
 
 		if(scan->im)
 		{
@@ -253,15 +389,18 @@ int main(int argc, char **argv)
 		while (mjd < scan->mjdEnd)
 		{
 			n = getDifxScanIMIndex(scan, (int) floor(mjd), mjd - floor(mjd), &dt);
-			if(first_line)
+			if(new_scan)
 			{
-				printf("# first number is offset in arcminutes, 2nd number is parallactic angle in degrees\n");
+				if(header)
+				{
+					printf("# first number is offset in arcminutes, 2nd number is parallactic angle in degrees\n");
+				}
 				printf("# mjd        ");
-				for(a = 0; a < config->nAntenna; ++a)
+				for (a = 0; a < config->nAntenna; ++a)
 				{
 					dsId = config->ant2dsId[a];
 					antId = D->datastream[dsId].antennaId;
-					printf("%s            ", da = D->antenna[antId].name);
+					printf("%s             ", D->antenna[antId].name);
 				}
 				printf("\n");
 			}
@@ -327,14 +466,16 @@ int main(int argc, char **argv)
 						pangle = azbearing(az_pointing, el_pointing, az_source, el_source);
 						//printf("%04.1f %04.1f , ", az_pointing*180./pi, el_pointing*180./pi);
 						//printf("%04.1f %04.1f , ", az_source*180./pi, el_source*180./pi);
-						printf("%07.4f %05.1f ", distance*180.*60./pi, pangle*180./pi);
+						printf("%07.4f %+06.1f ", distance*180.*60./pi, pangle*180./pi);
 					}
 				}
 			} /* end antenna loop */
 		mjd += tInc/86400.;
-		first_line = 0;
+		new_scan= 0;
+		header = 0;
 		printf("\n");
 		} /* time integration loop */
+	new_scan= 1;
 	} /* Scan loop */
 	return D;
 }
