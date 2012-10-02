@@ -47,8 +47,9 @@ typedef struct udp {
   int enabled;
   int size;
   int extra;
-  unsigned long long sequence;
+  u_int64_t sequence;
   u_int64_t usleep;
+  struct sockaddr_in dest;
 } udp;
 
 double tim(void);
@@ -349,7 +350,7 @@ int main(int argc, char * const argv[]) {
       printf("  -mjd <MJD>            MJD of start time\n");
       printf("  -mark5b/mk5b          Send Mark5b format data\n");
       printf("  -vdif                 Send VDIF format data\n");
-      printf("  -udp <MTU>            Use UDP with given datagram size (Mark5b only)\n");
+      printf("  -udp <MTU>            Use UDP with given datagram size (Mark5b and VDIF only)\n");
       printf("  -sleep <USEC>         Sleep (usec) between udp packets\n");
       printf("  -u/-update <SEC>      Number of seconds to average timing statistics\n");
       printf("  -w/-window <SIZE>     TCP window size (kB)\n");
@@ -533,7 +534,12 @@ int main(int argc, char * const argv[]) {
     header = NULL; 
     strcpy(buf+MK5BHEADSIZE*4, "Chris was here");
   } else if (mode==VDIF) {
-    for (i=VDIF_HEADER_BYTES;i<bufsize;i++) {
+    char start[] = "AAAA        AAAA";
+    char end[] = "ZZZZ        ZZZZ";
+
+    memcpy(buf+VDIF_HEADER_BYTES, start, sizeof(start));
+    memcpy(buf+bufsize-sizeof(end), end, sizeof(end));
+    for (i=VDIF_HEADER_BYTES+sizeof(start);i<bufsize-sizeof(end);i++) {
       buf[i] = (char)(i%256);
     }
   } else {
@@ -658,6 +664,10 @@ int main(int argc, char * const argv[]) {
   speed = totalsize/(t2-t0)/1e6*8;
   printf("\n  Rate = %.2f Mbps/s (%.1f sec)\n\n", speed, t2-t0);
 
+  if (udp.enabled) 
+    printf("   Sent %Lu packets\n", (unsigned long long)udp.sequence);
+
+
   return(0);
 }
   
@@ -689,17 +699,18 @@ int setup_net(char *hostname, int port, int window_size, udp *udp, int *sock) {
   server.sin_family = AF_INET;
   server.sin_port = htons((unsigned short)port); 
   server.sin_addr.s_addr = ip_addr;
-  
-  printf("Connecting to %s\n",inet_ntoa(server.sin_addr));
-    
-
+      
   if (udp->enabled) {
     *sock = socket(AF_INET,SOCK_DGRAM, IPPROTO_UDP); 
     if (*sock==-1) {
       perror("Failed to allocate UDP socket");
       return(1);
     }
+    memcpy(&udp->dest, &server, sizeof(server)); // Save socket for non-connection oriented UDP
+
   } else {
+    printf("Connecting to %s\n",inet_ntoa(server.sin_addr));
+
     *sock = socket(AF_INET, SOCK_STREAM, 0);
     if (*sock==-1) {
       perror("Failed to allocate socket");
@@ -733,14 +744,12 @@ int setup_net(char *hostname, int port, int window_size, udp *udp, int *sock) {
       }
       printf("Sending TCP buffersize set to %d Kbytes\n", window_size/1024);
     }
+    status = connect(*sock, (struct sockaddr *) &server, sizeof(server));
+    if (status!=0) {
+      perror("Failed to connect to server");
+      return(1);
+    }
   }
-
-  status = connect(*sock, (struct sockaddr *) &server, sizeof(server));
-  if (status!=0) {
-    perror("Failed to connect to server");
-    return(1);
-  }
-  
   return(0);
 }
 
@@ -751,8 +760,8 @@ int netsend(int sock, char *buf, size_t len, udp *udp) {
     struct iovec  iovect[2];
     ssize_t nsent, ntosend;
   
-    msg.msg_name       = 0;
-    msg.msg_namelen    = 0;
+    msg.msg_name       = &udp->dest;
+    msg.msg_namelen    = sizeof(udp->dest);
     msg.msg_iov        = &iovect[0];
     msg.msg_iovlen     = 2;
     msg.msg_control    = 0;
