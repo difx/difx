@@ -500,7 +500,15 @@ def runMessage(fileBase, machinesPolicy, deletePolicy, makeModel, override, useL
 	
 	if not isfile(fileBase+'.im'):
 		if makeModel and isfile(fileBase+'.calc'):
-			system('%s %s.calc' % (calcif, fileBase))
+			calcOptions = ""
+                        if override:
+                                calcOptions += "--override-version "
+
+                        for i in range(verbose):
+                                calcOptions += "-v "
+
+                        system('%s %s %s.calc' % (calcif, calcOptions, fileBase))
+	
 		else:
 			return 'Error: model not available for %s' % fileBase
 	
