@@ -255,7 +255,7 @@ def testDifxVersion(fileBase, override):
 	version = getenv('DIFX_VERSION')
 	label = getenv('DIFX_LABEL')
 	if label == None:
-		label == ''
+		label = ''
 	if version == None:
 		print 'Warning: env. var. DIFX_VERSION not defined!'
 	if jobversion == None:
