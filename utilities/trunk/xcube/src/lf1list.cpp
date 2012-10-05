@@ -6,17 +6,25 @@
  */
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
+#include <stdint.h>
+#include <arpa/inet.h>
+ #include <sys/socket.h>
+#include <netinet/in.h>
 
+#include <iostream>
 #include <string.h>
 #include <string>
 #include <vector>
+
+#include "vdifio.h"
 
 #include "packetReader/CPacketReader.h"
 #include "X3cPacket.h"
 #include "CTimeFilter.h"
 #include "projectManagement/Projects.h"
 
-#define DEVELOPMENT_MACHINE 1
+//#define DEVELOPMENT_MACHINE 1
 
 
 /**
@@ -39,12 +47,28 @@
 #define READ_BUFFER_CHUNK 16
 #endif
 
-
-
-int readLF1file()
+void getVDIFStationIDStr(vdif_header *header, char stationid[3])
 {
-	char *fileNames[16];
+  stationid[1] = header->stationid & 0xFF;
+  stationid[0] = (header->stationid>>8) & 0xFF;
+  stationid[2] = 0;
+  return;
+}
+
+
+int readLF1file(string project, string stream, int npkt)
+{
+        char *fileNames[16], stationid[3];
 	int nFile = 0;
+	char datestr[100];
+	struct tm *date;
+	struct in_addr addr;
+	vdif_header *header;
+
+	uint16_t IPv4val, ARPval, LOOPval;
+	IPv4val = htons(0x0800);
+	ARPval = htons(0x0806);
+	LOOPval = htons(0x9000);
 
 	/***
 	 * This section of code shows how to use the Projects class.  From this, we can
@@ -65,21 +89,21 @@ int readLF1file()
 
 	Projects projects(mnt, base, 16);
 	vector <PROJECT> prjs = projects.pmGetProjects();
-	projects.pmActivateProject("proj_LGR1011_2012_09_20_215011");
+	projects.pmActivateProject(project);
 
 	vector<STREAM> strms;
-    if (projects.pmGetStreams(strms) != 0)
-    {
-        fprintf(stdout, "Error retrieving streams for current project\n");
-        return -1;
-    }
+	if (projects.pmGetStreams(strms) != 0)
+	{
+	  fprintf(stdout, "Error retrieving streams for current project\n");
+	  return -1;
+	}
 
     vector<STREAM>::iterator it1;
     for (it1 = strms.begin(); it1 < strms.end(); it1++)
     {
         STREAM st = *it1;
-        if(st.strmName.compare("T51_E0_R0_2012_09_20_215022.lf1") != 0)
-            continue;
+        if(st.strmName.compare(stream) != 0)
+	  continue;
 
         vector<string> streamFiles;
         projects.pmGetStreamFiles(&st, streamFiles);
@@ -102,17 +126,9 @@ int readLF1file()
     // Create the packet reader
     CPacketReader *pktReader = new CPacketReader();
 
-    /***
-     * Create a time stamp filter.  This will be used for the start/end times of the
-     * stream.
-     *
-     * If the stream has been indexed, it will also seek to that position.  Also included
-     * are a couple of time sample tests.
-     */
     CTimeFilter startFlt;
-    startFlt.setStartTime(0x00000000, 0x14700);
+    startFlt.setStartTime(0x00000000, 0x0);
     startFlt.setEndTime(0x99999999, 0x1200000);
-
     pktReader->setTimeFilter(startFlt);
 
     /**
@@ -131,15 +147,12 @@ int readLF1file()
             // skip to the correct frame
             int currentPacket = 0;
             bool isDone = false;
-            while (currentPacket < 30)  // way to limit number of packets
-//            while (false == isDone)
+            while (currentPacket < npkt)  // way to limit number of packets
             {
                 X3cPacket *pkt = pktReader->getPacket();
-                //currentFrame++;
                 if (NULL == pkt)
                 {
                     fprintf(stdout, "Finished reading. packet <%d>\n", currentPacket);
-                    currentPacket = 10;
                     isDone = true;
                 }
                 else
@@ -150,26 +163,86 @@ int readLF1file()
                      * do something with it.  In the sample code, we are just
                      * writing out the timestamp for the LF1 header.
                      */
-                    UINT32 sec, nsec;
+		  UINT32 usec;
+		    time_t sec;
                     sec = pkt->getHeader()->ts.tv_sec;
-                    nsec = pkt->getHeader()->ts.tv_nsec;
+                    usec = pkt->getHeader()->ts.tv_nsec/1000;
+
+		    date = gmtime(&sec);
+		    strftime(datestr, 99, "%F %H:%M:%S", date);
 
 		    const unsigned char *p = (unsigned char *)(pkt->getData());
 
-                    printf("Packet: %d  Time = 0x%x:0x%x  Size = %d", currentPacket, sec, nsec, pkt->getLen());
-		    printf("  Start =");
-		    for(int i = 0; i < 42; ++i) printf("%s%02x", (i%8==0?" ":""), p[i]);
-		    printf("  VH =");
-		    for(int i = 0; i < 40; ++i) printf("%s%02x", (i%8==0?" ":""), p[i+42]);
-		    printf("  Data =");
-		    for(int i = 0; i < 40; ++i) printf("%s%02x", (i%8==0?" ":""), p[i+82]);
+                    printf("Packet: %3d  %s.%06d  %4d ", currentPacket, datestr, usec, pkt->getLen());
+		    // MAC destination
+		    for(int i = 0; i < 6; ++i) printf("%s%02x", (i==0?"":":"), p[i]);
+		    printf("  ");
+		    // MAC source
+		    for(int i = 6; i < 12; ++i) printf("%s%02x", (i==6?"":":"), p[i]);
+
+		    // Ethertype
+		    uint16_t ethertype = *((uint16_t*)&p[12]); // Note network byte order
+
+		    bool IPv4 = false;
+		    if (ethertype==IPv4val) {
+		      printf("  IPv4 ");
+		      IPv4 = true;
+		    } else if (ethertype==ARPval) {
+		      printf("   ARP ");
+		    } else if (ethertype==LOOPval) {
+		      printf("  Loop ");
+		    } else {
+		      printf(" 0x%04X", ntohs(ethertype));
+		    }
+		    
+                    currentPacket++;
+		    if (!IPv4) {
+		      printf("\n");
+		      continue;
+		    }
+
+		    for(int i = 14; i < 26; ++i) printf("%s%02x", ((i-14)%4==0?" ":""), p[i]);
+
+		    // Source IP
+		    addr.s_addr = *((in_addr_t*)&p[26]);
+		    printf(" %s", inet_ntoa(addr));
+		    // Destination IP
+		    addr.s_addr = *((in_addr_t*)&p[30]);
+		    printf(" %s", inet_ntoa(addr));
+
+		    // UDP headers 
+		    uint16_t source = ntohs(*((uint16_t*)&p[34]));
+		    uint16_t dest = ntohs(*((uint16_t*)&p[36]));
+		    uint16_t len = ntohs(*((uint16_t*)&p[38]));
+		    uint16_t checksum = ntohs(*((uint16_t*)&p[40]));
+		    printf(" %d %d %d %5d ", source, dest, len, checksum);
+
+		    //printf("  VH =");
+		    //for(int i = 0; i < 12; ++i) printf("%s%02x", (i%8==0?" ":""), p[i+42]);
+
+		    // VTP Sequence 
+		    uint64_t sequence = *((uint64_t*)&p[42]);
+		    printf(" 0x%llx", (unsigned long long)sequence);
+
+		    // VDIF Header
+		    header = (vdif_header*)(&p[50]);
+		    getVDIFStationIDStr(header, stationid);
+		    printf(" %2s", stationid);
+
+		    printf(" %d",  getVDIFFrameBytes(header));
+		    printf(" 0x%X",  getVDIFFullSecond(header));
+		    printf(" %4d",  getVDIFFrameNumber(header));
+		    printf(" %d",  getVDIFNumChannels(header));
+		    printf(" %d  ",  getVDIFBitsPerSample(header));
+	    
+		    // Data ");
+		    for(int i = 0; i < 16; ++i) printf("%s%02x", (i%8==0?" ":""), p[i+82]);
 		    printf("\n");
 
                     /**
                      * MAKE SURE TO DELETE the packet when finished!!!
                      */
                     pktReader->freePacket(pkt);
-                    currentPacket++;
                 }
             }
 	    printf("Stopping pktReader\n");
@@ -184,12 +257,20 @@ int readLF1file()
 
     delete pktReader;
 
-    return 0;
+    return EXIT_SUCCESS;
 }
 
 
 int main(int argc, char **argv)
 {
+  int npkt = 5;
 
-    return readLF1file();
+  if (argc!=3 && argc!=4) {
+    cerr << "Usage: lf1list <project> <stream>" << endl;
+    return(EXIT_FAILURE);
+  }
+
+  if (argc==4) npkt = atoi(argv[3]);
+
+  return readLF1file(argv[1],argv[2], npkt);
 }
