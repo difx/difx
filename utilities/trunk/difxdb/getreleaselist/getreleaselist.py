@@ -44,7 +44,11 @@ def getUsage():
 
 def printLine(module):
 
-    print "%4s %8s %4s %5s %5s" % (module.slot.location, module.vsn, module.stationCode, module.datarate, module.capacity)
+    info = ""
+    if module.numScans == None:
+	info = "This module has never been scanned. Confirm contents before releasing." 
+    print "%4s %8s %4s %5s %5s %s" % (module.slot.location, module.vsn, module.stationCode, module.datarate, module.capacity, info)
+    
     
 
 if __name__ == "__main__":
