@@ -28,9 +28,11 @@ def isCheckOutAllowed(session, vsn):
     Checks whether a module can be checked out from the media library. If any
     of the experiments contained on the module have a status other than "released"
     check-out is not allowed. Also the directory for the module must have been
-    parsed at least once in order to allow check-out.
+    parsed at least once in order to allow check-out. However check-out is allowed
+    for unscanned modules if an experiment was assigned manually and the experiment
+    is released.
     '''
-    
+    expCount = 0 
     module = getModuleByVSN(session,vsn)
     
     if (module == None):
@@ -38,11 +40,13 @@ def isCheckOutAllowed(session, vsn):
     
     # all experiments contained on this module must be released
     for exp in module.experiments:
+	expCount += 1
         if exp.status.statuscode < 100:
             return(False)
         
-    # module directory must have been scanned at least once in order to allow check-out
-    if module.numScans is None:
+    # Modules that do not have an experiment associated with them must have been
+    # scanned at least once in order to allow check-out.
+    if module.numScans is None and expCount == 0:
         return(False)
 
     return(True)
@@ -74,7 +78,7 @@ def getUnscannedModules(session):
 
 def getScanCount(session, vsn):
     '''
-    Returns the number of scans recorded on the module
+    Returns the number of scans recorded on the module. None if the module has not been scanned yet.
     '''
     
     try:
