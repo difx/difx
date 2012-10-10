@@ -42,7 +42,10 @@ import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
 
 import java.util.ArrayDeque;
+import java.util.Vector;
 import java.util.Iterator;
+import java.util.Collections;
+import java.util.Comparator;
 
 import javax.swing.event.EventListenerList;
 
@@ -59,7 +62,8 @@ public class BrowserNode extends JPanel implements MouseListener, MouseMotionLis
         _ySize = 20;
         _resizeTopBarSize = 20;
         _xSize = 500;
-        _children = new ArrayDeque<BrowserNode>();
+        //_children = new ArrayDeque<BrowserNode>();
+        _children = new Vector<BrowserNode>();
         setBounds( 0, 0, _xSize, _ySize );
         setLayout( null );
         addMouseListener( this );
@@ -337,13 +341,36 @@ public class BrowserNode extends JPanel implements MouseListener, MouseMotionLis
     }
     public Color arrowColor() { return _arrowColor; }
     
-    public ArrayDeque<BrowserNode> children() {
+    //public ArrayDeque<BrowserNode> children() {
+    public Vector<BrowserNode> children() {
         return _children;
     }
     
     public Iterator<BrowserNode> childrenIterator() {
         return _children.iterator();
     }
+    
+    /*
+     * Sort the items in the vector based on their name.
+     */
+    public void sortByName() {
+        if ( _nameSort == null )
+            _nameSort = new NameSort();
+        Collections.sort( _children, _nameSort );
+    }
+    
+    /*
+     * The "comparator" used to do the above sorting.
+     */
+    class NameSort implements Comparator {
+        
+        public int compare( Object o1, Object o2 ) {
+            return ( (BrowserNode)o1 ).name().compareTo( ( (BrowserNode)o2 ).name() );
+        }
+        
+    }
+    
+    public NameSort _nameSort;
 
     @Override
     public void paintComponent( Graphics g ) {
@@ -511,7 +538,8 @@ public class BrowserNode extends JPanel implements MouseListener, MouseMotionLis
     protected int _ySize;
     protected int _xSize;
     protected int _level;
-    protected ArrayDeque<BrowserNode> _children;
+//    protected ArrayDeque<BrowserNode> _children;
+    protected Vector<BrowserNode> _children;
     protected boolean _mouseIn;
     protected Color _backgroundColor;
     protected Color _highlightColor;

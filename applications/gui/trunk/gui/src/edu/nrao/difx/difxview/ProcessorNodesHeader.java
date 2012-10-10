@@ -36,6 +36,9 @@ public class ProcessorNodesHeader extends BrowserNode {
         setChildColumnWidths();
         _popupButton.setVisible( true );
         _columnChangeListeners = new EventListenerList();
+        //  The header is not drawn until a child is added (i.e. the header has
+        //  something under it).  This is done in the addChild() function.
+        this.showThis( false );
     }
     
     @Override
@@ -555,6 +558,8 @@ public class ProcessorNodesHeader extends BrowserNode {
     @Override
     public void addChild( BrowserNode newNode ) {
         super.addChild( newNode );
+        sortByName();
+        this.showThis( true );
         setChildColumnWidths();
         columnChangeActivity();
     }
@@ -605,6 +610,17 @@ public class ProcessorNodesHeader extends BrowserNode {
             BrowserNode thisNode = iter.next();
             if ( thisNode.selected() )
                 ((ProcessorNode)(thisNode)).sendDiFXCommandMessage( "Power Off" );
+        }
+    }
+    
+    /*
+     * Change the intervals before network activity lights turn yellow (warning)
+     * or red (error).  Intervals are in tenths of seconds.
+     */
+    public void inactivitySettings( int warning, int alert ) {
+        for ( Iterator<BrowserNode> iter = _children.iterator(); iter.hasNext(); ) {
+            BrowserNode thisNode = iter.next();
+            ((ProcessorNode)(thisNode)).inactivitySettings( warning, alert );
         }
     }
     

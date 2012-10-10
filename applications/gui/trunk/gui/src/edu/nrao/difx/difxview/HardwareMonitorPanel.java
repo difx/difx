@@ -39,7 +39,7 @@ public class HardwareMonitorPanel extends TearOffPanel {
      */
     @Override
     public void setBounds(int x, int y, int width, int height) {
-        _browserPane.setBounds( 0, 60, width, height - 60 );
+        _browserPane.setBounds( 0, 30, width, height - 30 );
         super.setBounds( x, y, width, height );
     }
 
@@ -73,6 +73,17 @@ public class HardwareMonitorPanel extends TearOffPanel {
         } );
         _mk5Modules.backgroundColor( new Color( 255, 204, 153 ) );
         _browserPane.addNode( _mk5Modules );
+        //  Callback when the user changes the length of network inactivity intervals.
+        //  These are measured in seconds in the Settings window, but are set in tenths
+        //  of seconds.
+        _settings.inactivityChangeListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                _clusterNodes.inactivitySettings( _settings.inactivityWarning() * 10,
+                        _settings.inactivityError() * 10 );
+                _mk5Modules.inactivitySettings( _settings.inactivityWarning() * 10,
+                        _settings.inactivityError() * 10 );
+            }
+        } );
     }
          
     /*

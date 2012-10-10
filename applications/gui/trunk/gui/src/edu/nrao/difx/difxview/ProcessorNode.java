@@ -38,6 +38,8 @@ public class ProcessorNode extends BrowserNode {
         _columnColor = new Color( 204, 204, 255 );
         _dec = new DecimalFormat();
         _popupButton.setVisible( true );
+        _networkActivity.warningTime( _settings.inactivityWarning() * 10 );
+        _networkActivity.alertTime( _settings.inactivityError() * 10 );
     }
     
     @Override
@@ -329,6 +331,15 @@ public class ProcessorNode extends BrowserNode {
             _alertWindow.setBounds( 200, 200, 500, 400 );
         }
         _alertWindow.setVisible( true );
+    }
+    
+    /*
+     * Change the intervals before the network activity light turn yellow (warning)
+     * or red (error).  Intervals are in tenths of seconds.
+     */
+    public void inactivitySettings( int warning, int alert ) {
+        _networkActivity.warningTime( warning );
+        _networkActivity.alertTime( alert );
     }
     
     /*

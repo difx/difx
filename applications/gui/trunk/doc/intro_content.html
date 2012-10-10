@@ -9,7 +9,7 @@
   <body>
     <br>
     <h1>Overview of the DiFX GUI</h1>
-    The DiFX GUI was developed at the United State Naval Observatory as
+    The DiFX GUI was developed at the United States Naval Observatory as
     a front end to the DiFX software correlator.&nbsp; It was designed
     to minimize the effort required to conduct "normal" correlation
     tasks while maintaining the flexibility sophisticated operators
@@ -32,15 +32,17 @@
     Some of these are not ideal locations and will likely change in the
     near future.&nbsp;
     <h3><a name="RUNNING_THE_GUI"></a>Running the GUI</h3>
-    There are two components to the DiFX GUI.&nbsp; A single instance of
-    the application <span style="font-style: italic;">guiServer</span>
-    runs on one of the processing nodes in the DiFX cluster.&nbsp; The
+    There are two components to the DiFX GUI, the user interface itself
+    and a <i>guiServer</i> application that runs on one of the
+    processing nodes in the DiFX cluster, serving as the primary
+    communications conduit between the GUI and DiFX proper.&nbsp; The
     processor running <span style="font-style: italic;">guiServer</span>
-    is often referred to in the documentation as the "DiFX Host" or
-    the&nbsp; "DiFX head node".&nbsp; <i>GuiServer </i>must by run by
-    a user (not root for security reasons) that has read and write
-    permissions over all data directories used by DiFX.&nbsp; This user
-    must also be able to start processes on all other nodes using <span
+    is often referred to in this documentation as the "DiFX Host" or
+    (occasionally and somewhat incorrectly) as the&nbsp; "DiFX head
+    node" (see below).&nbsp; <i>GuiServer </i>must by run by a user
+    (not root for security reasons) that has read and write permissions
+    over all data directories used by DiFX.&nbsp; This user must also be
+    able to start processes on all other nodes using <span
       style="font-style: italic;">mpirun</span>.<br>
     <br>
     <i>GuiServer</i> is run from the command line on the DiFX Host:<br>
@@ -65,6 +67,7 @@
     port number (what <span style="font-style: italic;">guiServer</span>
     told you above) can be entered to connect the two.&nbsp; See <a
 href="file:///Users/johnspitzak/NetBeansProjects/doi/USNO/doc/settings_content.html#DiFX_Control_Connection">DiFX
+
 
       Control Connection</a> in the Settings documentation for
     details.&nbsp; The GUI and <span style="font-style: italic;">guiServer</span>
@@ -99,8 +102,33 @@ href="file:///Users/johnspitzak/NetBeansProjects/doi/USNO/doc/settings_content.h
       products in detail.<br>
       <br>
     </p>
-    Structure and Communication<br>
-    <h3> <br>
-    </h3>
+    <h3> Structure and Communication</h3>
+    <h4> What is the Difference Between the DiFX "Host" and the DiFX
+      "Head Node"?</h4>
+    <p>This documentation, as well as the GUI itself, can use one or
+      another of two terms: "DiFX Host"; and "DiFX Head Node" that
+      appear, on first examination, to refer to the same thing.&nbsp; It
+      is mostly, but not strictly true that they are the same.&nbsp; The
+      DiFX "Host" is, by rigid definition, the DiFX cluster processor
+      that is running <i>guiServer</i>.&nbsp; This meaning originated
+      in the DiFX GUI software and documentation, and these are the only
+      places it applies (any use of "DiFX Host" elsewhere in the DiFX
+      documentation, none of which I am aware of, may well indicate
+      something different).&nbsp; The DiFX "Head Node", on the other
+      hand, is the DiFX cluster processor that initiates multi-core
+      processing and collects and collates&nbsp; the results
+      therefrom.&nbsp; The "Head Node" moniker is used throughout the
+      DiFX documentation.<br>
+    </p>
+    <p>Usually these two names indicate the same processor - <i>guiServer</i>
+      runs on the same machine that initiates multi-core
+      processing.&nbsp; This arrangement makes a lot of sense from an
+      administrative and CPU load-balancing point of view.&nbsp; However
+      it is not a requirement, and the GUI has provisions for specifying
+      a "Head Node" that is not the same as the DiFX "Host".<br>
+    </p>
+    <p><br>
+      <br>
+    </p>
   </body>
 </html>

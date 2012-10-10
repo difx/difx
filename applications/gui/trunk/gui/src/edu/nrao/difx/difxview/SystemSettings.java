@@ -296,7 +296,7 @@ public class SystemSettings extends JFrame {
             }
         } );
         difxControlPanel.add( _difxControlAddress );
-        JLabel ipAddressLabel = new JLabel( "Host:" );
+        JLabel ipAddressLabel = new JLabel( "DiFX Host:" );
         ipAddressLabel.setBounds( 10, 55, 150, 25 );
         ipAddressLabel.setHorizontalAlignment( JLabel.RIGHT );
         difxControlPanel.add( ipAddressLabel );
@@ -452,7 +452,7 @@ public class SystemSettings extends JFrame {
         difxControlPanel.add( difxSetupPathLabel );
         
         IndexedPanel networkPanel = new IndexedPanel( "DiFX Multicast Messages" );
-        networkPanel.openHeight( 240 );
+        networkPanel.openHeight( 270 );
         networkPanel.closedHeight( 20 );
         _scrollPane.addNode( networkPanel );
         _useTCPRelayCheck = new JCheckBox( "Relay Using guiServer Connection" );
@@ -543,6 +543,34 @@ public class SystemSettings extends JFrame {
             }
         } );
         networkPanel.add( _mark5Pattern );
+        _inactivityWarning = new NumberBox();
+        _inactivityWarning.setHorizontalAlignment( NumberBox.LEFT );
+        _inactivityWarning.setToolTipText( "Seconds of cluster node network inactivity (i.e. no messages received from) before a warning (yellow light) appears." );
+        _inactivityWarning.minimum( 1 );
+        _inactivityWarning.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                changeInactivitySettings();
+            }
+        } );
+        networkPanel.add( _inactivityWarning );
+        JLabel inactivityWarningLabel = new JLabel( "Inactivity Warning (sec):" );
+        inactivityWarningLabel.setBounds( 10, 235, 150, 25 );
+        inactivityWarningLabel.setHorizontalAlignment( JLabel.RIGHT );
+        networkPanel.add( inactivityWarningLabel );
+        _inactivityError = new NumberBox();
+        _inactivityError.setToolTipText( "Seconds of cluster node network inactivity (i.e. no messages received from) before an error (red light) appears." );
+        _inactivityError.setHorizontalAlignment( NumberBox.LEFT );
+        _inactivityError.minimum( 1 );
+        _inactivityError.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                changeInactivitySettings();
+            }
+        } );
+        networkPanel.add( _inactivityError );
+        JLabel inactivityErrorLabel = new JLabel( "Error (sec):" );
+        inactivityErrorLabel.setBounds( 210, 235, 150, 25 );
+        inactivityErrorLabel.setHorizontalAlignment( JLabel.RIGHT );
+        networkPanel.add( inactivityErrorLabel );
         
         IndexedPanel databasePanel = new IndexedPanel( "Database Configuration" );
         databasePanel.openHeight( 305 );
@@ -939,6 +967,8 @@ public class SystemSettings extends JFrame {
             _timeout.setBounds( 165, 145, 300, 25 );
             _plotWindow.setBounds( 470, 33, w - 495, 140 );
             _mark5Pattern.setBounds( 480, 205, w - 510, 25 );
+            _inactivityWarning.setBounds( 165, 235, 100, 25 );
+            _inactivityError.setBounds( 365, 235, 100, 25 );
             //  Database Configuration
             _dbHost.setBounds( 165, 55, 300, 25 );
             _dbPort.setBounds( 165, 85, 300, 25 );
@@ -1136,6 +1166,33 @@ public class SystemSettings extends JFrame {
     }
     public MessageDisplayPanel messageCenter() { return _messageCenter; }
     
+    /*
+     * Called when a change is made to the length of inactivity warning or error
+     * settings.  These cause the network activity lights next to cluster nodes in
+     * the hardware display to turn yellow and red after specific time intervals
+     * during which no network messages are received.
+     */
+    protected void changeInactivitySettings() {
+        if ( _inactivityChangeListeners == null )
+            return;
+        Object[] listeners = _inactivityChangeListeners.getListenerList();
+        // loop through each listener and pass on the event if needed
+        int numListeners = listeners.length;
+        for ( int i = 0; i < numListeners; i+=2 ) {
+            if ( listeners[i] == ActionListener.class )
+                ((ActionListener)listeners[i+1]).actionPerformed( null );
+        }
+    }
+    
+    /*
+     * Add a new listener for changes to the inactivity settings.
+     */
+    public void inactivityChangeListener( ActionListener a ) {
+        if ( _inactivityChangeListeners == null )
+            _inactivityChangeListeners = new EventListenerList();
+        _inactivityChangeListeners.add( ActionListener.class, a );
+    }
+
     /*
      * Called when one of the checks associated with leap seconds is picked.
      */
@@ -1407,6 +1464,8 @@ public class SystemSettings extends JFrame {
         _useTCPRelayCheck.setSelected( false );
         _identifyMark5sCheck.setSelected( true );
         _mark5Pattern.setText( "mark5.*" );
+        _inactivityWarning.intValue( 20 );
+        _inactivityError.intValue( 60 );
         generateMark5PatternList();
         _ipAddress.setText( "224.2.2.1" );
         _port.intValue( 52525 );
@@ -1488,6 +1547,7 @@ public class SystemSettings extends JFrame {
         _defaultNames.scanBasedJobNames = true;
         _defaultNames.dirListLocation = "";
         _defaultNames.jobCreationSanityCheck = true;
+        _defaultNames.restrictHeadnodeProcessing = true;
         _defaultNames.eliminateNonrespondingProcessors = true;
         _defaultNames.eliminateBusyProcessors = true;
         _defaultNames.chooseBasedOnModule = true;
@@ -2123,6 +2183,10 @@ public class SystemSettings extends JFrame {
                 this.dbName( doiConfig.getDbName() );
             if ( doiConfig.getDbMS() != null )
                 this.dbMS( doiConfig.getDbMS() );
+            if ( doiConfig.getInactivityWarning() != 0 )
+                this.inactivityWarning( doiConfig.getInactivityWarning() );
+            if ( doiConfig.getInactivityError() != 0 )
+                this.inactivityError( doiConfig.getInactivityError() );
             if ( doiConfig.getReportLoc() != null )
                 _reportLoc = doiConfig.getReportLoc();
             if ( doiConfig.getGuiDocPath() != null )
@@ -2219,6 +2283,7 @@ public class SystemSettings extends JFrame {
             if ( doiConfig.getDefaultNamesDirListLocation() != null )
                 _defaultNames.dirListLocation = doiConfig.getDefaultNamesDirListLocation();
             _defaultNames.jobCreationSanityCheck = doiConfig.isDefaultJobCreationSanityCheck();
+            _defaultNames.restrictHeadnodeProcessing = doiConfig.isDefaultNamesRestrictHeadnodeProcessing();
             _defaultNames.eliminateNonrespondingProcessors = doiConfig.isDefaultNamesEliminateNonrespondingProcessors();
             _defaultNames.eliminateBusyProcessors = doiConfig.isDefaultNamesElimnateBusyProcessors();
             _defaultNames.chooseBasedOnModule = doiConfig.isDefaultNamesChooseBasedOnModule();
@@ -2527,6 +2592,8 @@ public class SystemSettings extends JFrame {
         doiConfig.setDbVersion( this.dbVersion() );
         doiConfig.setDbName( this.dbName() );
         doiConfig.setDbMS( this.dbMS() );
+        doiConfig.setInactivityWarning( this.inactivityWarning() );
+        doiConfig.setInactivityError( this.inactivityError() );
         doiConfig.setReportLoc( _reportLoc );
         doiConfig.setGuiDocPath( _guiDocPath.getText() );
         doiConfig.setDifxUsersGroupURL( _difxUsersGroupURL.getText() );
@@ -2583,6 +2650,7 @@ public class SystemSettings extends JFrame {
         doiConfig.setDefaultNamesScanBasedJobNames( _defaultNames.scanBasedJobNames );
         doiConfig.setDefaultNamesDirListLocation( _defaultNames.dirListLocation );
         doiConfig.setDefaultJobCreationSanityCheck( _defaultNames.jobCreationSanityCheck );
+        doiConfig.setDefaultNamesRestrictHeadnodeProcessing( _defaultNames.restrictHeadnodeProcessing );
         doiConfig.setDefaultNamesEliminateNonrespondingProcessors( _defaultNames.eliminateNonrespondingProcessors );
         doiConfig.setDefaultNamesElimnateBusyProcessors( _defaultNames.eliminateBusyProcessors );
         doiConfig.setDefaultNamesChooseBasedOnModule( _defaultNames.chooseBasedOnModule );
@@ -2885,6 +2953,11 @@ public class SystemSettings extends JFrame {
         _databaseMessages.addMessage( node );
         _databaseMessages.scrollToEnd();
     }
+    
+    public int inactivityWarning() { return _inactivityWarning.intValue(); }
+    public void inactivityWarning( int newVal ) { _inactivityWarning.intValue( newVal ); }
+    public int inactivityError() { return _inactivityError.intValue(); }
+    public void inactivityError( int newVal ) { _inactivityError.intValue( newVal ); }
     
     public void hardwareMonitor( HardwareMonitorPanel newMonitor ) {
         _hardwareMonitor = newMonitor;
@@ -3415,6 +3488,8 @@ public class SystemSettings extends JFrame {
     protected JCheckBox _suppressWarningsCheck;
     protected JCheckBox _identifyMark5sCheck;
     protected SaneTextField _mark5Pattern;
+    protected NumberBox _inactivityWarning;
+    protected NumberBox _inactivityError;
     //  Database configuration
     protected JCheckBox _dbUseDataBase;
     protected JFormattedTextField _dbVersion;
@@ -3527,6 +3602,7 @@ public class SystemSettings extends JFrame {
         boolean scanBasedJobNames;
         boolean jobCreationSanityCheck;
         String dirListLocation;
+        boolean restrictHeadnodeProcessing;
         boolean eliminateNonrespondingProcessors;
         boolean eliminateBusyProcessors;
         double busyPercentage;
@@ -3616,6 +3692,7 @@ public class SystemSettings extends JFrame {
     EventListenerList _databaseChangeListeners;
     EventListenerList _broadcastChangeListeners;
     EventListenerList _eopChangeListeners;
+    EventListenerList _inactivityChangeListeners;
     
     //  All settings use the same file chooser.
     JFileChooser _fileChooser;

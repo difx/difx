@@ -119,6 +119,8 @@
                 <xsd:element ref="difxControlAddress"/>
                 <xsd:element ref="difxControlPort"/>
                 <xsd:element ref="difxTransferPort"/>
+                <xsd:element ref="difxMonitorHost"/>
+                <xsd:element ref="difxMonitorPort"/>
                 <xsd:element ref="difxControlUser"/>
                 <xsd:element ref="difxControlPWD"/>
                 <xsd:element ref="difxVersion"/>
@@ -138,6 +140,8 @@
                 <xsd:element ref="queueShowIncomplete"/>
                 <xsd:element ref="queueShowSelected"/>
                 <xsd:element ref="queueShowUnselected"/>
+                <xsd:element ref="inactivityWarning"/>
+                <xsd:element ref="inactivityError"/>
                 
                 <xsd:element ref="workingDirectory"/>
                 <xsd:element ref="stagingArea"/>
@@ -172,6 +176,8 @@
                 <xsd:element ref="windowConfigEnvironmentVariableDisplayH"/>
                 <xsd:element ref="windowConfigDirectoryDisplayW"/>
                 <xsd:element ref="windowConfigDirectoryDisplayH"/>
+                <xsd:element ref="windowConfigMonitorDisplayW"/>
+                <xsd:element ref="windowConfigMonitorDisplayH"/>
 
                 <xsd:element ref="defaultNamesVexFileSource"/>
                 <xsd:element ref="defaultNamesViaHttpLocation"/>
@@ -181,6 +187,7 @@
                 <xsd:element ref="defaultNamesScanBasedJobNames"/>
                 <xsd:element ref="defaultNamesDirListLocation"/>
                 <xsd:element ref="defaultJobCreationSanityCheck"/>
+                <xsd:element ref="defaultNamesRestrictHeadnodeProcessing"/>
                 <xsd:element ref="defaultNamesEliminateNonrespondingProcessors"/>
                 <xsd:element ref="defaultNamesElimnateBusyProcessors"/>
                 <xsd:element ref="defaultNamesBusyPercentage"/>
@@ -291,6 +298,8 @@
     <xsd:element name="difxControlAddress" type="xsd:string"></xsd:element>
     <xsd:element name="difxControlPort" type="xsd:int"></xsd:element>
     <xsd:element name="difxTransferPort" type="xsd:int"></xsd:element>
+    <xsd:element name="difxMonitorHost" type="xsd:string"></xsd:element>
+    <xsd:element name="difxMonitorPort" type="xsd:int"></xsd:element>
     <xsd:element name="difxControlUser" type="xsd:string"></xsd:element>
     <xsd:element name="difxControlPWD" type="xsd:string"></xsd:element>
     <xsd:element name="difxVersion" type="xsd:string"></xsd:element>
@@ -310,6 +319,8 @@
     <xsd:element name="queueShowIncomplete" type="xsd:boolean"></xsd:element>
     <xsd:element name="queueShowSelected" type="xsd:boolean"></xsd:element>
     <xsd:element name="queueShowUnselected" type="xsd:boolean"></xsd:element>
+    <xsd:element name="inactivityWarning" type="xsd:int"></xsd:element>
+    <xsd:element name="inactivityError" type="xsd:int"></xsd:element>
                 
     <xsd:element name="workingDirectory" type="xsd:string"></xsd:element>
     <xsd:element name="stagingArea" type="xsd:string"></xsd:element>
@@ -344,6 +355,8 @@
     <xsd:element name="windowConfigEnvironmentVariableDisplayH" type="xsd:int"></xsd:element>
     <xsd:element name="windowConfigDirectoryDisplayW" type="xsd:int"></xsd:element>
     <xsd:element name="windowConfigDirectoryDisplayH" type="xsd:int"></xsd:element>
+    <xsd:element name="windowConfigMonitorDisplayW" type="xsd:int"></xsd:element>
+    <xsd:element name="windowConfigMonitorDisplayH" type="xsd:int"></xsd:element>
                 
     <xsd:element name="defaultNamesVexFileSource" type="xsd:string"></xsd:element>
     <xsd:element name="defaultNamesViaHttpLocation" type="xsd:string"></xsd:element>
@@ -353,6 +366,7 @@
     <xsd:element name="defaultNamesScanBasedJobNames" type="xsd:boolean"></xsd:element>
     <xsd:element name="defaultNamesDirListLocation" type="xsd:string"></xsd:element>
     <xsd:element name="defaultJobCreationSanityCheck" type="xsd:boolean"></xsd:element>
+    <xsd:element name="defaultNamesRestrictHeadnodeProcessing" type="xsd:boolean"></xsd:element>
     <xsd:element name="defaultNamesEliminateNonrespondingProcessors" type="xsd:boolean"></xsd:element>
     <xsd:element name="defaultNamesElimnateBusyProcessors" type="xsd:boolean"></xsd:element>
     <xsd:element name="defaultNamesBusyPercentage" type="xsd:double"></xsd:element>

@@ -225,6 +225,15 @@ public class JobEditorMonitor extends JFrame {
             }
         } );
         machinesListPanel.add( _applyMachinesButton );
+        _restrictHeadnodeProcessing = new JCheckBox( "Restrict Headnode Processing" );
+        _restrictHeadnodeProcessing.setToolTipText( "Do not do any multicore DiFX processing on the headnode." );
+        _restrictHeadnodeProcessing.setSelected( _settings.defaultNames().restrictHeadnodeProcessing );
+        _restrictHeadnodeProcessing.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                _settings.defaultNames().restrictHeadnodeProcessing = _restrictHeadnodeProcessing.isSelected();
+            }
+        } );
+        machinesListPanel.add( _restrictHeadnodeProcessing );
         _eliminateNonrespondingProcessors = new JCheckBox( "Eliminate Non-Responding Processors" );
         _eliminateNonrespondingProcessors.setSelected( _settings.defaultNames().eliminateNonrespondingProcessors );
         _eliminateNonrespondingProcessors.addActionListener( new ActionListener() {
@@ -505,6 +514,7 @@ public class JobEditorMonitor extends JFrame {
             _headNodeLabel.setBounds( 30 + 2 * thirdSize, 205, thirdSize, 25 );
             _headNode.setBounds( 30 + 2 * thirdSize, 230, thirdSize, 25 );
             _applyMachinesButton.setBounds( 30 + 2 * thirdSize, 355, thirdSize/2 - 5, 25 );
+            _restrictHeadnodeProcessing.setBounds( 30 + 2 * thirdSize, 265, thirdSize, 25 );
             _eliminateNonrespondingProcessors.setBounds( 30 + 2 * thirdSize, 295, thirdSize, 25 );
             _eliminateBusyProcessors.setBounds( 30 + 2 * thirdSize, 325, thirdSize - 110, 25 );
             _busyPercentage.setBounds( w - 135, 325, 30, 25 );
@@ -1398,8 +1408,10 @@ public class JobEditorMonitor extends JFrame {
     }
 
     /*
-     * This class is used to contain the name of a single node for the data source
-     * and processor lists.
+     * This class is used to contain the name of a single data source node.  The data
+     * source can be a Mark5, file, or network connection.  The controls necessary
+     * for each of these options differ quite a bit, so they will be in inheriting
+     * classes.
      */
     protected class DataNode extends BrowserNode {
         
@@ -1424,6 +1436,8 @@ public class JobEditorMonitor extends JFrame {
             this.add( _dataObjectA );
             _dataObjectB = new JLabel( "" );
             this.add( _dataObjectB );
+            _antenna = new JLabel( "" );
+            this.add( _antenna );
         }
         
         @Override
@@ -1433,12 +1447,15 @@ public class JobEditorMonitor extends JFrame {
             _label.setBounds( 30, 0, 215, _ySize );
             _dataObjectA.setBounds( 250, 0, 500, 25 );
             _dataObjectB.setBounds( 400, 0, 500, 25 );
+            _antenna.setBounds( 550, 0, 500, 25 );
         }
         
         public void dataObjectA( String newVal ) { _dataObjectA.setText( newVal ); }
         public String dataObjectA() { return _dataObjectA.getText(); }
         public void dataObjectB( String newVal ) { _dataObjectB.setText( newVal ); }
         public String dataObjectB() { return _dataObjectB.getText(); }
+        public void antenna( String newVal ) { _antenna.setText( newVal ); }
+        public String antenna() { return _antenna.getText(); }
         
         public void foundA( boolean newVal ) {
             _foundA = newVal;
@@ -1491,6 +1508,7 @@ public class JobEditorMonitor extends JFrame {
         protected boolean _foundA;
         protected boolean _foundB;
         protected boolean _missing;
+        protected JLabel _antenna;
     }
     
     /*
@@ -1648,7 +1666,14 @@ public class JobEditorMonitor extends JFrame {
                 if ( foundNode == null ) {
                     PaneProcessorNode newNode = new PaneProcessorNode( thisModule.name() );
                     newNode.cores( ((ProcessorNode)(thisModule)).numCores() );
-                    newNode.threads( ((ProcessorNode)(thisModule)).numCores() );
+                    if ( _restrictHeadnodeProcessing.isSelected() && thisModule.name().equalsIgnoreCase( _headNode.getText() ) )
+                        newNode.threads( 0 );
+                    else {
+                        if ( ((ProcessorNode)(thisModule)).numCores() > 1 )
+                            newNode.threads( ((ProcessorNode)(thisModule)).numCores() - 1 );
+                        else
+                            newNode.threads( 1 );
+                    }
                     newNode.cpu( ((ProcessorNode)(thisModule)).cpuUsage() );
                     newNode.cpuTest( (float)_busyPercentage.value(),
                             _eliminateBusyProcessors.isSelected() );
@@ -1708,6 +1733,7 @@ public class JobEditorMonitor extends JFrame {
         _dataSourcesPane.clear();
         if ( _dataObjects != null ) {
             //  Look at each data object we need.
+            int antennaCount = 0;
             for ( Iterator<String> jter = _dataObjects.iterator(); jter.hasNext(); ) {
                 String dataObject = jter.next().trim();
                 //  Check the entire list of data sources to see which one (if any) provides this
@@ -1731,6 +1757,7 @@ public class JobEditorMonitor extends JFrame {
                             else if ( thisModule.bankBVSN().trim().contentEquals( dataObject ) ) {
                                 newNode.foundB( true );
                             }
+                            newNode.antenna( _jobNode.antennaName( antennaCount ) );
                             _dataSourcesPane.addNode( newNode );
                         }
                     }
@@ -1742,8 +1769,10 @@ public class JobEditorMonitor extends JFrame {
                     newNode.dataObjectA( dataObject );
                     newNode.missingA();
                     newNode.hideSelection();
+                    newNode.antenna( _jobNode.antennaName( antennaCount ) );
                     _dataSourcesPane.addNode( newNode );
                 }
+                ++antennaCount;
             }
         }
         
@@ -2058,6 +2087,7 @@ public class JobEditorMonitor extends JFrame {
     protected JButton _uploadThreadsButton;
     protected JLabel _threadsFileName;
     protected ExperimentEditor _editor;
+    protected JCheckBox _restrictHeadnodeProcessing;
     protected JCheckBox _eliminateNonrespondingProcessors;
     protected JCheckBox _eliminateBusyProcessors;
     protected NumberBox _busyPercentage;

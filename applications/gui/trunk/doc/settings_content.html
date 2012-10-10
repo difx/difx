@@ -12,8 +12,8 @@
     parameters that control the configuration and appearance of the GUI,
     as well as its communication with the core DiFX software.&nbsp; The
     System Settings are organized in a browse-able hierarchy of
-    "sub-topics" that can be opened and closed as needed.&nbsp;
-    Sub-topics include:<br>
+    "sub-topic" panels that can be opened and closed as needed.&nbsp;
+    Sub-topic panels include:<br>
     <ul>
       <li>Settings File</li>
       <li><a href="#DiFX_Control_Connection">DiFX Control Connection</a><br>
@@ -26,34 +26,49 @@
     <p>The DiFX Control Connection settings determine how the GUI
       communicates with and controls DiFX.&nbsp; In normal operation the
       GUI makes a TCP connection with the <span style="font-style:
-        italic;">guiServer</span> process running on the DiFX "head
-      node" (sometimes called the "DiFX host" in this
-      documentation).&nbsp; To complicate matters however, there are
-      actually three ways the GUI and DiFX can interact:<br>
+        italic;">guiServer</span> process running on the DiFX "Host"
+      node.&nbsp; To complicate matters however, there are actually
+      three ways the GUI and DiFX can interact:<br>
     </p>
     <ol>
-      <li>The connection between the GUI and <span style="font-style:
-          italic;">guiServer</span> is used for all controls and data
-        exchanges.&nbsp; DiFX multicast message traffic is collected by
-        <span style="font-style: italic;">guiServer</span> and relayed
-        over the TCP socket to the GUI (for more information about
-        message traffic, see the <a href="#Broadcast_Network">DiFX
+      <li>The TCP connection between the GUI and <span
+          style="font-style: italic;">guiServer</span> is used for all
+        controls and data exchanges.&nbsp; DiFX multicast message
+        traffic is collected by <span style="font-style: italic;">guiServer</span>
+        and relayed over the TCP socket to the GUI (for more information
+        about message traffic, see the <a href="#Broadcast_Network">DiFX
+
+
+
+
           Multicast Messages</a> section below).&nbsp; This
-        configuration is used when the GUI is running outside the LAN on
-        which the multicast messages can be received directly.</li>
-      <li>The connection between the GUI and <span style="font-style:
-          italic;">guiServer</span> is used for controls and all data
-        from <span style="font-style: italic;">guiServer</span> itself,
-        however DiFX multicast messages are received directly using a
-        UDP socket.&nbsp; For multicast messaging to work, the GUI must
-        be running on the multicast LAN.</li>
-      <li>No connection is made to guiServer.&nbsp; DiFX multicast
-        messages are received directly using a UDP socket.&nbsp; The GUI
-        can also issue commands directly to DiFX using its own multicast
-        messages, however the command set available is limited and in
-        the long run this capability will not be supported.<br>
+        configuration is used when the GUI is running outside the DiFX
+        LAN, such that the multicast messages cannot be received
+        directly.<br clear="all">
+        <br>
+      </li>
+      <li>The TCP connection between the GUI and <span
+          style="font-style: italic;">guiServer</span> is used for
+        controls and all data from <span style="font-style: italic;">guiServer</span>
+        itself, however DiFX multicast messages are received directly
+        using a UDP socket.&nbsp; This is the preferred arrangement when
+        the GUI is running on the DiFX LAN where multicast messages are
+        received.<br>
+        <br>
+      </li>
+      <li>No connection is made to <i>guiServer</i>.&nbsp; The GUI
+        receives DiFX multicast messages directly using a UDP socket,
+        essentially acting as a monitor of DiFX activity.&nbsp; The GUI
+        can also issue some commands directly to DiFX using its own
+        multicast messages, but the command set available is limited and
+        in the long run this capability will not be supported.<br>
       </li>
     </ol>
+    The DiFX Control Connection panel includes settings that will
+    determine in which of the above modes your GUI will interact with
+    DiFX, as well as port and version specifications.&nbsp; Details
+    about each control/display item are outlined below.<br>
+    <br>
     <div style="text-align: center;"><img style=" width: 902px; height:
         243px;" alt="" src="images/settings/DifxControlConnection.png"><br>
     </div>
@@ -67,7 +82,13 @@
     manipulate jobs are sent to the <span style="font-style: italic;">mk5daemon</span>
     running on one particular node (usually this is the "head node", but
     this is not a requirement).<br>
-    <h4>Host</h4>
+    <br>
+    <h5>Multicast/guiServer Checkboxes</h5>
+    <p><br>
+    </p>
+    <h5>guiServer Connection Light<br>
+    </h5>
+    <h5>DiFX Host</h5>
     This is the hostname of the node which is to receive DiFX control
     commands (job start, stop, etc).&nbsp; This node must be running <span
       style="font-style: italic;">mk5daemon</span>, obviously, for this
@@ -107,24 +128,74 @@
     <br>
     These changes should survive reboots, as well as RSA key stuff ever
     does.<br>
-    <h4>Port</h4>
+    <h5>Control Port</h5>
     This is the broadcast port for control communications.&nbsp;
     Normally it is the same as the Port setting under Broadcast Network
     (default is currently 50200).<br>
-    <h4>User<br>
-    </h4>
+    <h5>Transfer Port</h5>
+    <p>The Transfer Port determines the port numbers that will be used
+      to transmit data from <i>guiServer</i> to the GUI.&nbsp; The GUI
+      often has cause to request sets of data from the <i>guiServer</i>
+      - the contents of files, directory listings, etc. - that are then
+      transmitted using quick TCP connections that are opened as
+      necessary and closed when no longer needed.&nbsp; Whenever such a
+      request is made it is accompanied by a unique port number that is
+      then used by <i>guiServer</i> for the data transfer.&nbsp; The
+      Transfer Port number specified here is a "base" number that is
+      used to form the unique port numbers (for the most part they
+      simply increment as needed).&nbsp; The user probably doesn't need
+      to worry about this number much, except to make sure there are no
+      port restrictions near it.<br>
+    </p>
+    <h5>Monitor Host and Port</h5>
+    <p>The Monitor Host and Port are used to specify the connection to
+      the <i>difx_monitor</i> server.&nbsp; This is a process that
+      provides real-time data feedback that can be used to monitor a
+      running job.&nbsp; The documentation on the Job Monitor has more
+      detail about this.<br>
+    </p>
+    <p> </p>
+    <h5>User<br>
+    </h5>
     This is the DiFX user - the owner of all DiFX-related data files and
-    directories.&nbsp; Normally this user is "difx" but this is not a
+    directories and the user that is running <i>guiServer</i> on the
+    DiFX Host.&nbsp; By default this user is "difx" but this is not a
     requirement.<br>
-    <h4>Password</h4>
-    The password for the DiFX user.<br>
-    <h4>DiFX Version</h4>
-    The DiFX Version is passed to <span style="font-style: italic;">mk5daemon</span>
-    when running a correlator job.&nbsp; It should match the version of
-    DiFX being run on the head node.&nbsp; <span style="font-style:
-      italic;">Don't worry too much about this field - currently it does
-      nothing!</span><br>
-    <h4>DiFX Path</h4>
+    <h5><i>guiServer</i> Version and Build History</h5>
+    <p>When a connection is made with guiServer it transmits its own
+      version and the version of DiFX under which it was compiled.&nbsp;
+      The two read-only fields labeled "guiServer Version" and "build
+      w/DiFX" display this information.&nbsp; For the most part these
+      items won't make any difference, however they can be used to
+      trouble-shoot problems that may occur due to version mismatches.<br>
+    </p>
+    <p>These fields are filled only when using <i>guiServer</i>.<br>
+    </p>
+    <h5>Environment Variables Display</h5>
+    <p>The "Environment Vars" button creates a display of DiFX Host
+      environment variables as seen by <i>guiServer</i>:<br>
+    </p>
+    <p align="center"><img alt=""
+        src="images/settings/EnvironmentVars.png" height="387"
+        width="687"><br>
+    </p>
+    <div align="left">All environment variables regardless of their
+      applicability can be displayed, or only those that apply to DiFX
+      may be selected (at the moment this distinction is determined
+      rather simplistically - by whether or not "DIFX" is the first four
+      characters in the variable name, but this capability maybe made
+      more sophisticated in the future).&nbsp; The settings of
+      environment variables can be used to determine how several GUI
+      options should be set.<br>
+    </div>
+    <h5>DiFX Version</h5>
+    <br>
+    &nbsp;The DiFX Version is passed to <span style="font-style:
+      italic;">mk5daemon</span> when running a correlator job.&nbsp; It
+    should match the version of DiFX being run on the head node.&nbsp; <span
+      style="font-style: italic;">Don't worry too much about this field
+      - currently it does nothing!</span><br>
+    <h5>DiFX Path</h5>
     <p>The DiFX Path field allows you to set the path <span
         style="font-style: italic;">mk5daemon</span> will follow when
       running DiFX executables (specifically <span style="font-style:
@@ -141,13 +212,16 @@
     </p>
     <h2><a name="Broadcast_Network"></a>DiFX Multicast Messages<br>
     </h2>
-    DiFX processes use UDP multicast messages to communicate with one
-    another and periodically broadcast their status and the state of
-    running jobs - information the user interface displays.&nbsp; This
-    same system can be used by the user interface <span
-      style="font-style: italic;"></span>to communicate with <span
-      style="font-style: italic;">mk5daemon</span> and control the
-    software correlator.&nbsp; <br>
+    DiFX uses UDP multicast messages to periodically broadcast the
+    status of individual nodes and the state of running jobs -
+    information the user interface displays.&nbsp; The messages
+    originate (with some exceptions) from the <i>mk5daemon</i> process
+    that should be running on each node in the DiFX cluster.&nbsp; This
+    same multicast system is used by the user interface (either through
+    <i>guiServer</i> or directly) <span style="font-style: italic;"></span>to
+
+    communicate with <span style="font-style: italic;">mk5daemon</span>
+    and control the components of the software correlator.&nbsp; <br>
     <h4>Relay Using guiServer Connection<br>
     </h4>
     Being based on UDP, the multicasts will only work within a local
@@ -174,9 +248,9 @@
     <h4>Port</h4>
     The port is used for UDP multicasts.&nbsp; This should match the
     value of the DIFX_MESSAGE_PORT environment variable in place when <span
-      style="font-style: italic;">mk5daemon</span> was started.&nbsp; At
-    the moment the default value for the environment variable, and thus
-    this field, is 50200.<br>
+      style="font-style: italic;">mk5daemon</span> was started on each
+    node.&nbsp; At the moment the default value for the environment
+    variable, and thus this field, is 50200.<br>
     <h4>Buffer Size</h4>
     This is the maximum size of a broadcast message, in bytes.&nbsp;
     Probably this shouldn't be fiddled with too much - making it too
@@ -386,6 +460,10 @@
 
 
 
+
+
+
+
       the Database Configuration</h2>
     A number of things can go wrong when trying to access the DiFX
     database remotely.&nbsp; The Database Configuration panel contains a
@@ -482,6 +560,10 @@
 
 
 
+
+
+
+
     Then remote log into that host and see if the mySQL server is
     runing:<br>
     <ul style="margin-left: 40px;">
@@ -540,6 +622,10 @@
     <br>
     <br>
     <h6> <span style="font-weight: bold; font-family: monospace;">&nbsp;&nbsp;&nbsp;
+
+
+
+
 
 
 
