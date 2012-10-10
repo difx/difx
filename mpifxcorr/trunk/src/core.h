@@ -116,6 +116,7 @@ private:
     cf32 * channelsums;
     f32 * argument;
     f32 ** dsweights;
+    int shifterrorcount;
     DifxMessageSTARecord * starecordbuffer;
     bool dumpsta;
     bool dumpkurtosis;

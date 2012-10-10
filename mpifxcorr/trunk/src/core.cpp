@@ -394,6 +394,7 @@ void Core::loopprocess(int threadid)
   Polyco * currentpolyco=0;
   Mode ** modes;
   threadscratchspace * scratchspace = new threadscratchspace;
+  scratchspace->shifterrorcount = 0;
   scratchspace->threadcrosscorrs = vectorAlloc_cf32(maxthreadresultlength);
   scratchspace->baselineweight = new f32***[config->getFreqTableLength()];
   scratchspace->baselineshiftdecorr = new f32**[config->getFreqTableLength()];
@@ -1832,8 +1833,11 @@ void Core::uvshiftAndAverageBaselineFreq(int index, int threadid, double nsoffse
         maxphasechange  = TWO_PI*differentialdelay[s][0]*(nswidth/1000.0)*config->getFreqTableFreq(freqindex);
         timesmeardecorr = sin(maxphasechange/2.0) / (maxphasechange/2.0);
         if(timesmeardecorr < 0.0) {
-          cerror << startl << "UV shift integration time far too long for baseline " << baseline << ", source " << s << "; no correlation!" << endl;
+          // use Brian Kernighan's bit counting trick to see if shifterrorcount is a power of two, print only the first few and then increasingly less
+          if(scratchspace->shifterrorcount < 10 || (scratchspace->shifterrorcount & (scratchspace->shifterrorcount-1)) == 0)
+            cerror << startl << "UV shift integration time far too long for baseline " << baseline << ", source " << s << "; no correlation! (errorcount now " << scratchspace->shifterrorcount << ")" << endl;
           timesmeardecorr = 0;
+          scratchspace->shifterrorcount++;
         }
       }
       if(fabs(differentialdelay[s][1]) > 1e-18)
@@ -1843,8 +1847,11 @@ void Core::uvshiftAndAverageBaselineFreq(int index, int threadid, double nsoffse
         //bwsmeardecorr   = sin(maxphasechange/2.0) / (maxphasechange/2.0);
         delaydecorr     = 1.0 - fabs(differentialdelay[s][1] / delaywindow);
         if(delaydecorr < 0.0) {
-          cerror << startl << "FFT window is not wide enough for baseline " << baseline << ", source " << s << "; no correlation!" << endl;
+          // use Brian Kernighan's bit counting trick to see if shifterrorcount is a power of two, print only the first few and then increasingly less
+          if(scratchspace->shifterrorcount < 10 || (scratchspace->shifterrorcount & (scratchspace->shifterrorcount-1)) == 0)
+            cerror << startl << "FFT window is not wide enough for baseline " << baseline << ", source " << s << "; no correlation! (errorcount now " << scratchspace->shifterrorcount << ")" << endl;
           delaydecorr = 0;
+          scratchspace->shifterrorcount++;
         }
         //cout << "1.0 - Time smear decorr is " << 1.0-timesmeardecorr << ", 1.0 - bw smear decorr is " << 1.0-bwsmeardecorr << ", 1.0 - delaydecorr is " << 1.0-delaydecorr << "(diff. delay is " << differentialdelay[s][1] << ", delay window is " << delaywindow << ")" << endl;
       }
