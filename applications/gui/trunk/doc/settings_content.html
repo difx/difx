@@ -15,13 +15,64 @@
     "sub-topic" panels that can be opened and closed as needed.&nbsp;
     Sub-topic panels include:<br>
     <ul>
-      <li>Settings File</li>
+      <li><a href="#SETTINGS_FILE">Settings File</a></li>
       <li><a href="#DiFX_Control_Connection">DiFX Control Connection</a><br>
       </li>
       <li><a href="#Broadcast_Network">DiFX Mulitcast Messages</a></li>
       <li><a href="#Database_Configuration">Database Configuration</a></li>
       <li>Documentation Locations</li>
     </ul>
+    <h2><a name="SETTINGS_FILE"></a>Settings File</h2>
+    <p>When the GUI is started it attempts to read an XML file
+      containing settings for all GUI parameters, window configurations,
+      etc.&nbsp; This file can either be specified as the first command
+      line argument when starting the GUI or a default file will be used
+      (the default file is "conf/guiSettings.xml" under the directory
+      specified by the environment variable "DIFXROOT", or, failing
+      that, the user's directory).&nbsp; Failing to read either a
+      specified file or the default file will cause internal default
+      settings to be used which may or may not be attractive.&nbsp; When
+      the GUI is exited the same XML file is written to reflect the
+      GUI's current state such that it can be started again in the
+      future essentially unchanged from where it was left.&nbsp;
+      Failures to read or write files will generate pop-up warnings, but
+      won't terminate the GUI's operation.<br>
+    </p>
+    <p>The Settings File section of the Settings Window can be used to
+      pick a new XML file name for reading or writing.&nbsp; This can be
+      useful if you want to save a specific GUI state for later use or
+      load a previously saved state:<br>
+    </p>
+    <p align="center"><img alt=""
+        src="images/settings/settings_file.png" height="101" width="910"><br>
+    </p>
+    <div align="left">
+      <h5>Current</h5>
+      <p>This field shows the full path to the XML file that was most
+        recently read, and that will be written to upon exit.&nbsp; If
+        this field is in red it indicates that the last read attempt
+        failed for some reason and that whatever settings that existed
+        previously are still in place.&nbsp; <br>
+      </p>
+      <h5>Open</h5>
+      <p>Open can be used to open an existing XML file that contains GUI
+        settings.&nbsp; A file browser will allow the file to be picked.<br>
+      </p>
+      <h5>Save</h5>
+      <p>Save causes the current GUI settings to be written to the XML
+        path in the "Current" field.<br>
+      </p>
+      <h5>Save As...</h5>
+      <p>This button produces a file browser from which a path for the
+        XML file can be picked.&nbsp; The XML file is written to
+        immediately.<br>
+      </p>
+      <h5>Defaults</h5>
+      <p>The Defaults button will restore the GUI to internal
+        defaults.&nbsp; <br>
+        <br>
+      </p>
+    </div>
     <h2><a name="DiFX_Control_Connection"></a>DiFX Control Connection</h2>
     <p>The DiFX Control Connection settings determine how the GUI
       communicates with and controls DiFX.&nbsp; In normal operation the
@@ -37,6 +88,7 @@
         traffic is collected by <span style="font-style: italic;">guiServer</span>
         and relayed over the TCP socket to the GUI (for more information
         about message traffic, see the <a href="#Broadcast_Network">DiFX
+
 
 
 
@@ -219,6 +271,7 @@
     that should be running on each node in the DiFX cluster.&nbsp; This
     same multicast system is used by the user interface (either through
     <i>guiServer</i> or directly) <span style="font-style: italic;"></span>to
+
 
     communicate with <span style="font-style: italic;">mk5daemon</span>
     and control the components of the software correlator.&nbsp; <br>
@@ -464,6 +517,7 @@
 
 
 
+
       the Database Configuration</h2>
     A number of things can go wrong when trying to access the DiFX
     database remotely.&nbsp; The Database Configuration panel contains a
@@ -564,6 +618,7 @@
 
 
 
+
     Then remote log into that host and see if the mySQL server is
     runing:<br>
     <ul style="margin-left: 40px;">
@@ -622,6 +677,7 @@
     <br>
     <br>
     <h6> <span style="font-weight: bold; font-family: monospace;">&nbsp;&nbsp;&nbsp;
+
 
 
 

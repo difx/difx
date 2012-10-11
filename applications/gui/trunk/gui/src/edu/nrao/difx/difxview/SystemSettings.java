@@ -119,13 +119,12 @@ public class SystemSettings extends JFrame {
         //  Set the default settings for all values (these are hard-coded).
         setDefaults();
 
-        //  Try loading settings from the given file.  If this fails, try to load
-        //  the default settings file.
-        settingsFileName( settingsFile );
-        if ( !_settingsFileRead )
-            settingsFileName( this.getDefaultSettingsFileName() );
-        //  Buttons for dealing with the settings file.
-        //this.newSize();
+        //  Try loading settings from the file specified in the call.  If this was
+        //  null, use the "default" settings filename.
+        if ( settingsFile == null )
+            settingsFile( defaultSettingsFile() );
+        else
+            settingsFile( settingsFile );
             
         //  This stuff is used to trap resize events.
 		this.addComponentListener(new java.awt.event.ComponentAdapter() {
@@ -210,9 +209,11 @@ public class SystemSettings extends JFrame {
         settingsFilePanel.openHeight( 100 );
         settingsFilePanel.closedHeight( 20 );
         _scrollPane.addNode( settingsFilePanel );
-        _settingsFileName = new JFormattedTextField();
-        _settingsFileName.setFocusLostBehavior( JFormattedTextField.COMMIT );
-        settingsFilePanel.add( _settingsFileName );
+        _settingsFile = new JFormattedTextField();
+        _settingsFile.setFocusLostBehavior( JFormattedTextField.COMMIT );
+        _settingsFile.setToolTipText( "XML file containing system settings (rewritten when GUI is exited)."
+                + "  Red text indicates last attept to read this file failed." );
+        settingsFilePanel.add( _settingsFile );
         JLabel settingsFileLabel = new JLabel( "Current:" );
         settingsFileLabel.setBounds( 10, 25, 100, 25 );
         settingsFileLabel.setHorizontalAlignment( JLabel.RIGHT );
@@ -347,20 +348,6 @@ public class SystemSettings extends JFrame {
         userAddressLabel.setBounds( 10, 115, 150, 25 );
         userAddressLabel.setHorizontalAlignment( JLabel.RIGHT );
         difxControlPanel.add( userAddressLabel );
-        //  Password is not currently useful...probably delete it soon.
-        _difxControlPWD = new JPasswordField();
-        _difxControlPWD.setHorizontalAlignment( NumberBox.LEFT );
-        _difxControlPWD.addActionListener( new ActionListener() {
-            public void actionPerformed( ActionEvent e ) {
-                //generateControlChangeEvent();
-            }
-        } );
-        //difxControlPanel.add( _difxControlPWD );
-        JLabel pwdLabel = new JLabel( "Password:" );
-        pwdLabel.setBounds( 10, 145, 150, 25 );
-        pwdLabel.setHorizontalAlignment( JLabel.RIGHT );
-        //difxControlPanel.add( pwdLabel );
-        //
         _guiServerVersion = new JTextField( "N/A" );
         _guiServerVersion.setEditable( false );
         _guiServerVersion.setBackground( this.getBackground() );
@@ -948,7 +935,7 @@ public class SystemSettings extends JFrame {
             int h = this.getContentPane().getSize().height;
             _menuBar.setBounds( 0, 0, w, 25 );
             _scrollPane.setBounds( 0, 25, w, h - 25 );
-            _settingsFileName.setBounds( 115, 25, w - 135, 25 );
+            _settingsFile.setBounds( 115, 25, w - 135, 25 );
             //  DiFX Controll Connection settings
             _difxControlAddress.setBounds( 165, 55, 300, 25 );
             _difxControlPort.setBounds( 165, 85, 100, 25 );
@@ -956,7 +943,6 @@ public class SystemSettings extends JFrame {
             _difxMonitorHost.setBounds( 575, 55, 300, 25 );
             _difxMonitorPort.setBounds( 575, 85, 100, 25 );
             _difxControlUser.setBounds( 165, 115, 300, 25 );
-            _difxControlPWD.setBounds( 165, 145, 300, 25 );
             _difxVersion.setBounds( 165, 205, 300, 25 );
             _difxSetupPath.setBounds( 165, 235, w - 195, 25 );
             _difxBase.setBounds( 165, 175, w - 195, 25 );
@@ -1404,10 +1390,10 @@ public class SystemSettings extends JFrame {
         _fileChooser.setDialogTitle( "Open System Settings File..." );
         _fileChooser.setFileSelectionMode( JFileChooser.FILES_AND_DIRECTORIES );
         _fileChooser.setApproveButtonText( "Open" );
-        _fileChooser.setCurrentDirectory( new File( this.settingsFileName() ) );
+        _fileChooser.setCurrentDirectory( new File( settingsFile() ) );
         int ret = _fileChooser.showOpenDialog( this );
         if ( ret == JFileChooser.APPROVE_OPTION )
-            this.settingsFileName( _fileChooser.getSelectedFile().getAbsolutePath() );
+            settingsFile( _fileChooser.getSelectedFile().getAbsolutePath() );
     }
     
     /*
@@ -1426,21 +1412,10 @@ public class SystemSettings extends JFrame {
      * Save setting to the current settings file.  If this is null, go to "saveSettingsAs()".
      */
     public void saveSettings() {
-        if ( _settingsFileName.getText().equals( this.getDefaultSettingsFileName() ) ) {
-            Object[] options = { "Continue", "Cancel", "Save to..." };
-            int ans = JOptionPane.showOptionDialog( this, 
-                    "This will overwrite the default settings file!\nAre you sure you want to do this?",
-                    "Overwrite Defaults Warning",
-                    JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE, null, options, options[2] );
-            if ( ans == 0 )
-                saveSettingsToFile( _settingsFileName.getName() );
-            else if ( ans == 1 )
-                return;
-            else
-                saveSettingsAs();
-        }
+        if ( _settingsFile.getText() == null )
+            saveSettingsAs();
         else
-            saveSettingsToFile( _settingsFileName.getName() );
+            saveSettingsToFile( _settingsFile.getName() );
     }
     
     /*
@@ -1479,7 +1454,6 @@ public class SystemSettings extends JFrame {
         _difxMonitorPort.intValue( 52300 );
         _difxMonitorHost.setText( "swc01.usno.navy.mil" );
         _difxControlUser.setText( "difx" );
-        _difxControlPWD.setText( "difx2010" );
         //_difxVersion.setText( "trunk" );
         _difxBase.setText( "/usr/local/swc/difx" );
         _dbUseDataBase.setSelected( true );
@@ -1493,7 +1467,7 @@ public class SystemSettings extends JFrame {
         _dbPort.setText( "3306" );
         this.setDbURL();
         _reportLoc = "/users/difx/Desktop";
-        _guiDocPath.setText( "file://" + System.getProperty( "user.dir" ) + "/doc" );
+        _guiDocPath.setText( "file://" + System.getProperty( "user.dir" ) + "/../doc" );
         _difxUsersGroupURL.setText( "http://groups.google.com/group/difx-users/topics" );
         _difxWikiURL.setText( "http://cira.ivec.org/dokuwiki/doku.php/difx/start" );
         _difxSVN.setText( "https://svn.atnf.csiro.au/trac/difx" );
@@ -1749,12 +1723,31 @@ public class SystemSettings extends JFrame {
         this.setVisible( false );
     }
 
-    public void settingsFileName( String newVal ) {
-        _settingsFileName.setText( newVal );
-        //  Attempt to read the new settings.
-        _settingsFileRead = getSettingsFromFile( settingsFileName() );
+    public String settingsFile() { 
+        if ( _settingsFile.getText() == null )
+            return defaultSettingsFile();
+        return _settingsFile.getText();
     }
-    public String settingsFileName() { return _settingsFileName.getText(); }
+    
+    /*
+     * Attempt to read the given settings file.  The filename is put in the settings
+     * file path selection area, but a failure to read the file will cause this text
+     * to be red (and generate a popup window).
+     */
+    public void settingsFile( String newFile ) {
+        _settingsFile.setText( newFile );
+        if ( getSettingsFromFile( newFile ) )
+            _settingsFile.setForeground( Color.BLACK );
+        else {
+            _settingsFile.setForeground( Color.RED );
+            JOptionPane.showMessageDialog( this, "Settings file \"" + newFile
+                    + "\"\ncould not be read.", 
+                    "Settings File Read Error", JOptionPane.WARNING_MESSAGE );
+            java.util.logging.Logger.getLogger( "global" ).log( java.util.logging.Level.SEVERE,
+                    "Settings file \"" + newFile
+                    + "\" could not be read." );
+        }
+    }
     
     public void jaxbPackage( String newVal ) { _jaxbPackage = newVal; }
     public String jaxbPackage() { return _jaxbPackage; }
@@ -1798,9 +1791,6 @@ public class SystemSettings extends JFrame {
 
     public void difxControlUser( String newVal ) { _difxControlUser.setText( newVal ); }
     public String difxControlUser() { return _difxControlUser.getText(); }
-    
-    public void difxControlPassword( String newVal ) { _difxControlPWD.setText( newVal ); }
-    public String difxControlPassword() { return new String( _difxControlPWD.getPassword() ); }
     
     /*
      * Set the difxVersion to match a particular string.  If there is no version
@@ -2170,8 +2160,6 @@ public class SystemSettings extends JFrame {
                 this.difxMonitorPort( doiConfig.getDifxMonitorPort() );
             if ( doiConfig.getDifxControlUser() != null )
                 this.difxControlUser( doiConfig.getDifxControlUser() );
-            if ( doiConfig.getDifxControlPWD() != null )
-                this.difxControlPassword( doiConfig.getDifxControlPWD() );
             if ( doiConfig.getDifxVersion() != null )
                 this.difxVersion( doiConfig.getDifxVersion(), false );
             if ( doiConfig.getDifxBase() != null )
@@ -2543,18 +2531,20 @@ public class SystemSettings extends JFrame {
             updateEOPNow();
             changeDifxControlConnection();
             generateDatabaseChangeEvent();
-            
+            return true;
         } catch (javax.xml.bind.JAXBException ex) {
             // XXXTODO Handle exception
             java.util.logging.Logger.getLogger("global").log( java.util.logging.Level.SEVERE, null, ex );
+            return false;
+        } catch ( Exception e ) {
+            return false;
         }
-        return false;
     }
 
     /*
      * Save all current settings to the given filename.
      */
-    public void saveSettingsToFile( String filename ) {
+    public boolean saveSettingsToFile( String filename ) {
         System.out.println( "write to " + filename );
         ObjectFactory factory = new ObjectFactory();
         DoiSystemConfig doiConfig = factory.createDoiSystemConfig();
@@ -2585,7 +2575,6 @@ public class SystemSettings extends JFrame {
         doiConfig.setDifxMonitorHost( this.difxMonitorHost() );
         doiConfig.setDifxMonitorPort( this.difxMonitorPort() );
         doiConfig.setDifxControlUser( this.difxControlUser() );
-        doiConfig.setDifxControlPWD( new String( this.difxControlPassword() ) );
         doiConfig.setDifxVersion( this.difxVersion() );
         doiConfig.setDifxBase( this.difxBase() );
         doiConfig.setDbUseDataBase( this.useDatabase() );
@@ -2845,22 +2834,27 @@ public class SystemSettings extends JFrame {
             File theFile = new File( filename );
             theFile.createNewFile();
             marshaller.marshal( doiConfig, theFile );
+            return true;
         } catch ( java.io.IOException e ) {
-                System.out.println( "SystemSettings: can't write file \"" + filename + "\" - some appropriate complaint here." );
+            System.out.println( "SystemSettings: can't write file \"" + filename + "\" - some appropriate complaint here." );
+            return false;   
         } catch (javax.xml.bind.JAXBException ex) {
             // XXXTODO Handle exception
             java.util.logging.Logger.getLogger("global").log( java.util.logging.Level.SEVERE, null, ex );
+            return false;
+        } catch ( Exception e ) {
+            return false;
         }
-   }
+    }
     
-    public String getDefaultSettingsFileName() {
+    public String defaultSettingsFile() {
         //  See if a DIFXROOT environment variable has been defined.  If not,
         //  guess that the current working directory is the DIFXROOT.
         String difxRoot = System.getenv( "DIFXROOT" );
         if (difxRoot == null) {
             difxRoot = System.getProperty( "user.dir" );
         }
-        return difxRoot + "/conf/DOISystemConfig.xml";
+        return difxRoot + "/conf/guiSettings.xml";
     }
     
     /*
@@ -3454,8 +3448,7 @@ public class SystemSettings extends JFrame {
     protected boolean _allObjectsBuilt;
 
     protected JMenuBar _menuBar;
-    protected JFormattedTextField _settingsFileName;
-    protected boolean _settingsFileRead;
+    protected JFormattedTextField _settingsFile;
     
     protected String _jaxbPackage;
     protected String _home;
@@ -3471,7 +3464,6 @@ public class SystemSettings extends JFrame {
     protected SaneTextField _difxMonitorHost;
     protected NumberBox _difxMonitorPort;
     protected JFormattedTextField _difxControlUser;
-    protected JPasswordField _difxControlPWD;
     protected JComboBox _difxVersion;
     protected SaneTextField _difxBase;
     protected GuiServerConnection _guiServerConnection;

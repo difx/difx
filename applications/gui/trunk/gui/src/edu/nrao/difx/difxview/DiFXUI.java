@@ -30,6 +30,7 @@ import java.awt.Point;
 import javax.swing.plaf.FontUIResource;
 
 import java.awt.Font;
+import javax.swing.*;
 
 /**
  *
@@ -355,8 +356,17 @@ public class DiFXUI extends JFrame implements WindowListener {
         _systemSettings.windowConfiguration().queueBrowserH = _queueBrowser.getSize().height;
         _systemSettings.windowConfiguration().mainDividerLocation = _mainSplitPane.getDividerLocation();
         _systemSettings.windowConfiguration().topDividerLocation = _topSplitPane.getDividerLocation();
-        _systemSettings.saveSettingsToFile( _systemSettings.getDefaultSettingsFileName() );
-        System.exit(0);
+        if ( _systemSettings.saveSettingsToFile( _systemSettings.settingsFile() ) )
+            System.exit( 0 );
+        else {
+            Object[] options = { "Exit", "Cancel" };
+            int ans = JOptionPane.showOptionDialog( this, 
+                    "Unable to write settings file \"" + _systemSettings.settingsFile() + "\"\nExit Anyway?",
+                    "Settings File Write Error",
+                    JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null, options, options[0] );
+            if ( ans == 0 )
+                System.exit( 0 );
+        }
     }
     
     /*
