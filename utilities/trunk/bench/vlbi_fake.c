@@ -48,7 +48,8 @@ typedef struct udp {
   int size;
   int extra;
   u_int64_t sequence;
-  u_int64_t usleep;
+  double usleep;
+  double lastsleep;
   struct sockaddr_in dest;
 } udp;
 
@@ -63,7 +64,7 @@ int cal2dayno(int day, int month, int year);
 void dayno2cal(int dayno, int year, int *day, int *month);
 double cal2mjd(int day, int month, int year);
 int netsend(int sock, char *buf, size_t len, udp *udp);
-void my_usleep(u_int64_t usec);
+void my_usleep(udp *udp);
 
 typedef enum {LBADR, MARK5B, VDIF} datamode;
 
@@ -77,7 +78,7 @@ int main(int argc, char * const argv[]) {
   long *lbuf;
   uint64_t mjdsec;
   double thismjd, finishmjd, ut, t0, t1, t2, dtmp;
-  float ftmp, speed;
+  float speed, ftmp;
   unsigned long long filesize, networksize, nwritten, totalsize;
   vhead *header=0;    // File header object
   mk5bheader mk5_header;
@@ -99,7 +100,7 @@ int main(int argc, char * const argv[]) {
   int bandwidth=16;
   int framesize=10000;
   int complex=0;  /* Use complex sampling, if VDIF */
-  //float rate = 0; /* Limit read/write to this data rate */
+  float rate = 0; /* Limit read/write to this data rate - UDP only*/
   float updatetime = 1; /* 1 second update by default */
   float filetime = 1; /* 1 second "files" */
   double duration = 60; /* 1min by default */
@@ -111,6 +112,7 @@ int main(int argc, char * const argv[]) {
   udp.size = 0;
   udp.enabled = 0;  
   udp.usleep = 0;  
+  udp.lastsleep = 0;
   udp.extra = 0;
 
   struct option options[] = {
@@ -131,6 +133,7 @@ int main(int argc, char * const argv[]) {
     {"framesize", 1, 0, 'F'},
     {"filetime", 1, 0, 'f'},
     {"udp", 1, 0, 'U'},
+    {"rate", 1, 0, 'r'},
     {"sleep", 1, 0, 's'},
     {"usleep", 1, 0, 's'},
     {"nchan", 1, 0, 'n'},
@@ -297,11 +300,19 @@ int main(int argc, char * const argv[]) {
       break;
       
     case 's':
-      status = sscanf(optarg, "%d", &tmp);
+      status = sscanf(optarg, "%lf", &dtmp);
       if (status!=1)
 	fprintf(stderr, "Bad usleep option %s\n", optarg);
       else 
-	udp.usleep = tmp;
+	udp.usleep = dtmp;
+      break;
+
+    case 'r':
+      status = sscanf(optarg, "%f", &ftmp);
+      if (status!=1)
+	fprintf(stderr, "Bad rate option %s\n", optarg);
+      else 
+	rate = ftmp;
       break;
       
     case 'H':
@@ -499,6 +510,21 @@ int main(int argc, char * const argv[]) {
   if (updatetime<0.25) updatetime = 0.25;
 
   duration /= 60*60*24;
+
+  if (rate>0 && udp.enabled) {
+    int packetsize = udp.size;
+    if (mode==VDIF) {
+      packetsize -= VDIF_HEADER_BYTES;
+    } else { // Mark5B
+      packetsize -= packetsize*((float)MK5BHEADSIZE/(float)(MK5BHEADSIZE+MK5BFRAMESIZE));
+    }
+
+    int packetspersec = rate*1e6/8/packetsize;
+    udp.usleep = 1/(double)packetspersec;
+
+    printf("Setting sleep between packets to %1.f usec\n", udp.usleep*1e6);
+
+  }
 
 
   // Initialise buffers and syncronisation variables
@@ -791,7 +817,7 @@ int netsend(int sock, char *buf, size_t len, udp *udp) {
       ptr+=udp->size;
 
       if (udp->usleep>0) {
-	my_usleep(udp->usleep);
+	my_usleep(udp);
       }
     }
 
@@ -1135,14 +1161,16 @@ char* mjd2str(double mjd, int dps) {
   return mjdstr;
 }
 
-void my_usleep(u_int64_t usec) {
+void my_usleep(udp *udp) {
   double now, till;
   int n;
+
+  /* The time we are sleeping till */
+  till = udp->lastsleep+udp->usleep;
+
   /* The current time */
   now = tim();
 
-  /* The time we are sleeping till */
-  till = now+usec/1.0e6;
 
   /* and spin for the rest of the time */
   n = 0;
@@ -1150,4 +1178,5 @@ void my_usleep(u_int64_t usec) {
     now = tim();
     n++;
   }
+  udp->lastsleep = now;
 }
