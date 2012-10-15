@@ -571,7 +571,7 @@ int Mark5Module::load(const char *filename)
 	in = fopen(filename, "r");
 	if(!in)
 	{
-		error << "Cannot load file: " << filename << "\n";
+		error << "Cannot load file " << filename << "\n";
 
 		return -1;
 	}
@@ -579,7 +579,7 @@ int Mark5Module::load(const char *filename)
 	v = fgets(line, MaxLineLength, in);
 	if(!v)
 	{
-		error << "Directory file: " << filename << " is corrupt.\n";
+		error << "Directory file " << filename << " is corrupt.\n";
 		fclose(in);
 
 		return -1;
@@ -589,7 +589,7 @@ int Mark5Module::load(const char *filename)
 		dirLabel, &nscans, &bankName, &signature, extra[0], extra[1], extra[2]);
 	if(n < 3)
 	{
-		error << "Directory file: " << filename << " is corrupt.\n";
+		error << "Directory file " << filename << " is corrupt.\n";
 		fclose(in);
 
 		return -1;
@@ -621,7 +621,7 @@ int Mark5Module::load(const char *filename)
 
 	if(nscans < 0)
 	{
-		error << "Directory file: " << filename << " is corrupt (nscans < 0).\n";
+		error << "Directory file " << filename << " is corrupt (nscans < 0).\n";
 		fclose(in);
 
 		return -1;
@@ -633,16 +633,25 @@ int Mark5Module::load(const char *filename)
 
 	for(vector<Mark5Scan>::iterator s = scans.begin(); s != scans.end(); ++s)
 	{
+		line[0] = 0;
 		v = fgets(line, MaxLineLength, in);
 		if(!v)
 		{
-			error << "Directory file: " << filename << " is corrupt (file too short).\n";
+			error << "Directory file " << filename << " is corrupt (file too short).\n";
 			fclose(in);
 
 			return -1;
 		}
 		
 		s->parseDirEntry(line);
+
+		if(s->framespersecond <= 0 || s->length <= 0)
+		{
+			error << "Directory file " << filename << " has a corrupt scan (posibly at the end?).\n";
+			fclose(in);
+
+			return -1;
+		}
 	}
 
 	fclose(in);
