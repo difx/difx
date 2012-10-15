@@ -166,6 +166,7 @@ public:
 	void selectTones(int toneIntervalMHz, enum ToneSelection selection, double guardBandMHz);
 	char bandCode() const;
 	friend bool operator ==(const VexChannel &c1, const VexChannel &c2);
+	friend bool operator <(const VexChannel &c1, const VexChannel &c2);
 
 	int recordChan;		// channel number on recorded media	(< 0 indicates non-recording)
 	int subbandId;		// 0-based index; -1 means unset
@@ -175,6 +176,7 @@ public:
 	char bbcSideBand;	// sideband of the BBC
 	string bbcName;		// name given in VEX of this channel in the BBC table
 	vector<int> tones;	// pulse cal tones to extract, directly from PHASE_CAL_DETECT
+	int threadId;		// thread Id for this channel (assigned based on channel names)
 };
 
 class VexIF

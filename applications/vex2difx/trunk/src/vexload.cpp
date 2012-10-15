@@ -1383,7 +1383,7 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 				++nRecordChan;
 			}
 
-			if (setup.nRecordChan == -7777)     // then use the number of that we just counted out
+			if(setup.nRecordChan == -7777)     // then use the number of that we just counted out
 			{
 				setup.nRecordChan = nRecordChan;
 				cout << "FYI: Antenna=" << antName << " will use the full number of recorded channels, " << setup.nRecordChan << endl;
@@ -1392,6 +1392,13 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 			if(nRecordChan != setup.nRecordChan)
 			{
 				cerr << "FYI: Antenna=" << antName << " nchan=" << nRecordChan << " != setup.nRecordChan=" << setup.nRecordChan << endl;
+			}
+
+			// Sort channels by name and then assign sequential thread Id
+			std::sort(setup.channels.begin(), setup.channels.end());
+			for(int threadId = 0; threadId < setup.channels.size(); ++threadId)
+			{
+				setup.channels[threadId].threadId = threadId;
 			}
 		} // End of antenna loop
 

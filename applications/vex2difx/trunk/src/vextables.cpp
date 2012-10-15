@@ -1429,6 +1429,11 @@ bool operator ==(const VexChannel &c1, const VexChannel &c2)
 	return true;
 }
 
+bool operator <(const VexChannel &c1, const VexChannel &c2)
+{
+	return c1.bbcName < c2.bbcName;
+}
+
 VexMode *VexData::newMode()
 {
 	modes.push_back(VexMode());
@@ -1748,7 +1753,7 @@ ostream& operator << (ostream &os, const VexSubband &x)
 
 ostream& operator << (ostream &os, const VexChannel &x)
 {
-	os << "[name=" << x.bbcName << " IF=" << x.ifName << " s=" << x.subbandId << " -> r=" << x.recordChan << " tones=";
+	os << "[name=" << x.bbcName << " IF=" << x.ifName << " s=" << x.subbandId << " -> r=" << x.recordChan << " t=" << x.threadId << " tones=";
 	for(vector<int>::const_iterator v = x.tones.begin(); v != x.tones.end(); ++v)
 	{
 		if(v != x.tones.begin())
