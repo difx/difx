@@ -6,17 +6,22 @@
  */
 #include <stdio.h>
 #include <stdlib.h>
-
 #include <string.h>
+#include <strings.h>
+#include <stdint.h>
+#include <arpa/inet.h>
+#include <getopt.h>
+
 #include <string>
 #include <vector>
+#include <iostream>
 
 #include "packetReader/CPacketReader.h"
 #include "X3cPacket.h"
 #include "CTimeFilter.h"
 #include "projectManagement/Projects.h"
 
-#define DEVELOPMENT_MACHINE 1
+//#define DEVELOPMENT_MACHINE 1
 
 
 /**
@@ -39,9 +44,9 @@
 #define READ_BUFFER_CHUNK 16
 #endif
 
+typedef enum {NONE=0, IPv4, IPv6} Ethertype;
 
-
-int readLF1file()
+int readLF1file(string project, string stream, Ethertype EthFilt, int sizeFilt)
 {
 	char *fileNames[16];
 	int nFile = 0;
@@ -66,7 +71,7 @@ int readLF1file()
 
 	Projects projects(mnt, base, 16);
 	vector <PROJECT> prjs = projects.pmGetProjects();
-	projects.pmActivateProject("proj_LGR1011_2012_09_20_215011");
+	projects.pmActivateProject(project);
 
 	vector<STREAM> strms;
     if (projects.pmGetStreams(strms) != 0)
@@ -79,8 +84,8 @@ int readLF1file()
     for (it1 = strms.begin(); it1 < strms.end(); it1++)
     {
         STREAM st = *it1;
-        if(st.strmName.compare("T51_E0_R0_2012_09_20_215022.lf1") != 0)
-            continue;
+        if(st.strmName.compare(stream) != 0)
+	  continue;
 
         vector<string> streamFiles;
         projects.pmGetStreamFiles(&st, streamFiles);
@@ -99,6 +104,7 @@ int readLF1file()
 
     int nRetVal;
 
+    uint16_t ethVal = htons(0x0800);
 
     // Create the packet reader
     CPacketReader *pktReader = new CPacketReader();
@@ -115,6 +121,8 @@ int readLF1file()
     startFlt.setEndTime(0x99999999, 0x1200000);
 
     pktReader->setTimeFilter(startFlt);
+
+
 
     /**
      * initialize the readers.
@@ -135,7 +143,6 @@ int readLF1file()
             // skip to the correct frame
             int currentPacket = 0;
             bool isDone = false;
-//            while (currentPacket < 30)  // way to limit number of packets
             while (false == isDone)
             {
                 X3cPacket *pkt = pktReader->getPacket();
@@ -160,10 +167,14 @@ int readLF1file()
 
 		    const unsigned char *p = (unsigned char *)(pkt->getData());
 
-		    if(pkt->getLen() != 8274) 
-			printf("l = %d\n", pkt->getLen());
+		    uint16_t ethertype = *((uint16_t*)&p[12]); // Network byte order
+
+		    if (EthFilt!=NONE && ethertype!=ethVal) {
+		      printf("Skipping Ethtype 0x%03X, l = %d\n", ethertype, pkt->getLen());
+		    } else if(pkt->getLen() <sizeFilt) 
+		      printf("Skipping IPv4 packet, l = %d\n", pkt->getLen());
 		    else
-		    	fwrite(p+50, pkt->getLen()-50, 1, out); 
+		      fwrite(p+50, pkt->getLen()-50, 1, out); 
 
                     /**
                      * MAKE SURE TO DELETE the packet when finished!!!
@@ -189,9 +200,57 @@ int readLF1file()
     return 0;
 }
 
+void usage () {
+  cerr << "Usage: lf1extract <project> <stream>" << endl;
+}
 
 int main(int argc, char **argv)
 {
+  int opt, sizeFilt=1000;
+  Ethertype EthFilt = IPv4;
 
-    return readLF1file();
+  struct option options[] = {
+    {"ether", 1, 0, 'e'},
+    {"size", 0, 0, 's'},
+    {"help", 0, 0, 'h'},
+    {0, 0, 0, 0}
+  };
+
+  while ((opt = getopt_long_only(argc, argv, "hs:E:e:", options, NULL)) != EOF)
+    switch (opt) {
+    case 'e': // Filter on Ethertype. Default IPv4
+    case 'E': 
+      if (strcasecmp(optarg,"NONE")==0)
+	EthFilt = NONE;
+      if (strcasecmp(optarg,"IPv4")==0)
+	EthFilt = IPv4;
+      else {
+	cerr << "Cannot filter Ethertype on " << optarg << ". Terminating" << endl;
+	return(EXIT_FAILURE);
+      }
+      break;
+      
+    case 's': // Don't compute cross pols
+      sizeFilt = atoi(optarg);
+      if (sizeFilt<=0) {
+	cerr << "Cannot filter size on " << optarg << ". Terminating" << endl;
+	return(EXIT_FAILURE);
+      }
+      break;
+      
+    case 'h': // help
+      usage();
+      return EXIT_SUCCESS;
+      break;
+    }
+
+
+
+  if (argc!=3) {
+    usage();
+    return(EXIT_FAILURE);
+  }
+
+  return readLF1file(argv[1],argv[2], EthFilt, sizeFilt);
+
 }
