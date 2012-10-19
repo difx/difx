@@ -162,11 +162,11 @@ public:
   inline datasampling getDSampling(int configindex, int configdatastreamindex)const
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].sampling; }
   inline int getDRecordedFreqIndex(int configindex, int configdatastreamindex, int datastreamrecordedbandindex) const
-    { datastreamdata ds = datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]]; return ds.recordedfreqtableindices[ds.recordedbandlocalfreqindices[datastreamrecordedbandindex]]; }
+    { const datastreamdata &ds = datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]]; return ds.recordedfreqtableindices[ds.recordedbandlocalfreqindices[datastreamrecordedbandindex]]; }
   inline int getDZoomFreqIndex(int configindex, int configdatastreamindex, int datastreamzoombandindex) const
-    { datastreamdata ds = datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]];   return ds.zoomfreqtableindices[ds.zoombandlocalfreqindices[datastreamzoombandindex]]; }
+    { const datastreamdata &ds = datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]]; return ds.zoomfreqtableindices[ds.zoombandlocalfreqindices[datastreamzoombandindex]]; }
   inline int getDTotalFreqIndex(int configindex, int configdatastreamindex, int datastreamtotalbandindex) const
-    { datastreamdata ds = datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]];
+    { const datastreamdata &ds = datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]];
     if (datastreamtotalbandindex < ds.numrecordedbands)
       return ds.recordedfreqtableindices[ds.recordedbandlocalfreqindices[datastreamtotalbandindex]];
     else
@@ -195,7 +195,7 @@ public:
   inline int getDNumZoomBands(int configindex, int configdatastreamindex) const
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].numzoombands; }
   inline int getDNumTotalBands(int configindex, int configdatastreamindex) const
-    {  return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].numzoombands + datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].numrecordedbands; }
+    { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].numzoombands + datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].numrecordedbands; }
   inline string * getDDataFileNames(int configindex, int configdatastreamindex) const
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].datafilenames; }
   inline int getDRecordedFreqNumPCalTones(int configindex, int configdatastreamindex, int recordedfreqindex) const
@@ -219,7 +219,7 @@ public:
   inline int getDZoomFreqChannelOffset(int configindex, int configdatastreamindex, int datastreamzoomfreqindex) const
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].zoomfreqchanneloffset[datastreamzoomfreqindex]; }
   inline int getDZoomFreqParentFreqIndex(int configindex, int configdatastreamindex, int datastreamzoomfreqindex) const
-    {  return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].zoomfreqparentdfreqindices[datastreamzoomfreqindex]; }
+    { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].zoomfreqparentdfreqindices[datastreamzoomfreqindex]; }
   inline int getBDataStream1Index(int configindex, int configbaselineindex) const
     { return baselinetable[(configs[configindex].baselineindices[configbaselineindex])].datastream1index; }
   inline int getBDataStream2Index(int configindex, int configbaselineindex) const
@@ -231,7 +231,7 @@ public:
   inline int getBNumFreqs(int configindex, int configbaselineindex) const
     { return baselinetable[(configs[configindex].baselineindices[configbaselineindex])].numfreqs; }
   inline int getBFreqIndex(int configindex, int configbaselineindex, int baselinefreqindex) const
-  {  return baselinetable[configs[configindex].baselineindices[configbaselineindex]].freqtableindices[baselinefreqindex];
+    { return baselinetable[configs[configindex].baselineindices[configbaselineindex]].freqtableindices[baselinefreqindex];
     }
   inline int getBLocalFreqIndex(int configindex, int configbaselineindex, int freqtableindex) const { return baselinetable[configs[configindex].baselineindices[configbaselineindex]].localfreqindices[freqtableindex]; }
   inline int getBFreqOddLSB(int configindex, int configbaselineindex, int freqtableindex) const { return baselinetable[configs[configindex].baselineindices[configbaselineindex]].oddlsbfreqs[freqtableindex]; }
