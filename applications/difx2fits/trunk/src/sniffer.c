@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2011 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2008-2012 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -77,9 +77,9 @@ void resetAccumulator(Accumulator *A)
 {
 	int i, t;
 
-	for(i = 0; i < A->nBBC; i++)
+	for(i = 0; i < A->nBBC; ++i)
 	{
-		for(t = 0; t < A->nTime; t++)
+		for(t = 0; t < A->nTime; ++t)
 		{
 			memset(A->spectrum[i][t], 0, A->nChan*sizeof(fftw_complex));
 		}
@@ -94,22 +94,26 @@ void resetAccumulator(Accumulator *A)
 Accumulator *newAccumulatorArray(Sniffer *S, int n)
 {
 	Accumulator *A;
-	int i, t, a;
+	int a;
 	int nBBC;
 
 	nBBC = S->nIF*S->nPol;
 
 	A = (Accumulator *)calloc(n, sizeof(Accumulator));
-	for(a = 0; a < n; a++)
+	for(a = 0; a < n; ++a)
 	{
+		int i;
+
 		A[a].nBBC = nBBC;
 		A[a].nChan = S->nChan;
 		A[a].nTime = S->nTime;
 		A[a].spectrum = (fftw_complex ***)malloc(nBBC*sizeof(fftw_complex **));
-		for(i = 0; i < nBBC; i++)
+		for(i = 0; i < nBBC; ++i)
 		{
+			int t;
+			
 			A[a].spectrum[i] = (fftw_complex **)malloc(S->nTime*sizeof(fftw_complex *));
-			for(t = 0; t < A[a].nTime; t++)
+			for(t = 0; t < A[a].nTime; ++t)
 			{
 				A[a].spectrum[i][t] = (fftw_complex *)calloc(S->nChan, sizeof(fftw_complex));
 			}
@@ -128,20 +132,24 @@ Accumulator *newAccumulatorArray(Sniffer *S, int n)
 
 void deleteAccumulatorArray(Accumulator *A, int n)
 {
-	int a, i, t;
+	int a;
 
 	if(!A)
 	{
 		return;
 	}
 
-	for(a = 0; a < n; a++)
+	for(a = 0; a < n; ++a)
 	{
 		if(A[a].spectrum)
 		{
-			for(i = 0; i < A[a].nBBC; i++)
+			int i;
+
+			for(i = 0; i < A[a].nBBC; ++i)
 			{
-				for(t = 0; t < A[a].nTime; t++)
+				int t;
+
+				for(t = 0; t < A[a].nTime; ++t)
 				{
 					free(A[a].spectrum[i][t]);
 				}
@@ -160,15 +168,14 @@ void deleteAccumulatorArray(Accumulator *A, int n)
 	free(A);
 }
 
-Sniffer *newSniffer(const DifxInput *D, int nComplex, 
-	const char *filebase, double solInt)
+Sniffer *newSniffer(const DifxInput *D, int nComplex, const char *filebase, double solInt)
 {
 	Sniffer *S;
 	char filename[DIFXIO_FILENAME_LENGTH];
-	int a1, a2, c;
+	int a1, c;
 	double tMax = 0.0;
 	FILE *log;
-	int i, j, m, v;
+	int i, m, v;
 
 	/* write summary to log file */
 	v = snprintf(filename, DIFXIO_FILENAME_LENGTH, "%s.log", filebase);
@@ -182,7 +189,7 @@ Sniffer *newSniffer(const DifxInput *D, int nComplex,
 	fprintDifxInputSummary(log, D);
 	fclose(log);
 
-	for(c = 0; c < D->nConfig; c++)
+	for(c = 0; c < D->nConfig; ++c)
 	{
 		if(D->config[c].tInt > tMax)
 		{
@@ -193,9 +200,11 @@ Sniffer *newSniffer(const DifxInput *D, int nComplex,
 	S = (Sniffer *)calloc(1, sizeof(Sniffer));
 
 	m = 1;
-	for(i = 0; i < D->nSource; i++)
+	for(i = 0; i < D->nSource; ++i)
 	{
-		for(j = 0; j<D->nConfig; j++)
+		int j;
+
+		for(j = 0; j<D->nConfig; ++j)
 		{
 			if(D->source[i].fitsSourceIds[j] > m)
 			{
@@ -204,13 +213,15 @@ Sniffer *newSniffer(const DifxInput *D, int nComplex,
 		}
 	}
 	S->fitsSourceId2SourceId = (int *)malloc((m+1)*sizeof(int));
-	for(i = 0; i <= m; i++)
+	for(i = 0; i <= m; ++i)
 	{
 		S->fitsSourceId2SourceId[i] = -1;
 	}
-	for(i = 0; i < D->nSource; i++)
+	for(i = 0; i < D->nSource; ++i)
 	{
-		for(j = 0; j<D->nConfig; j++)
+		int j;
+
+		for(j = 0; j<D->nConfig; ++j)
 		{
 			if(D->source[i].fitsSourceIds[j] >= 0)
 			{
@@ -346,10 +357,12 @@ Sniffer *newSniffer(const DifxInput *D, int nComplex,
 	
 #warning "FIXME: I think almost twice as much memory is being allocated as is needed -WFB"
 	S->accum = (Accumulator **)malloc(S->nAntenna*sizeof(Accumulator *));
-	for(a1 = 0; a1 < S->nAntenna; a1++)
+	for(a1 = 0; a1 < S->nAntenna; ++a1)
 	{
+		int a2;
+
 		S->accum[a1] = newAccumulatorArray(S, S->nAntenna);
-		for(a2 = 0; a2 < S->nAntenna; a2++)
+		for(a2 = 0; a2 < S->nAntenna; ++a2)
 		{
 			S->accum[a1][a2].a1 = a1;
 			S->accum[a1][a2].a2 = a2;
@@ -426,7 +439,8 @@ void deleteSniffer(Sniffer *S)
 		if(S->accum)
 		{
 			int a;
-			for(a = 0; a < S->nAntenna; a++)
+
+			for(a = 0; a < S->nAntenna; ++a)
 			{
 				deleteAccumulatorArray(S->accum[a], S->nAntenna);
 			}
@@ -472,9 +486,8 @@ double peakup(double peak[3], int i, int n, double w)
 
 static int dump(Sniffer *S, Accumulator *A, double mjd)
 {
-	int bbc, i, j, p, a1, a2, besti, bestj;
+	int b, j, p, a1, a2, besti, bestj;
 	fftw_complex **array;
-	fftw_complex z;
 	double amp2, max2, x, y;
 	double amp, phase, delay, rate;
 	double specAmp, specPhase, specRate;
@@ -487,7 +500,7 @@ static int dump(Sniffer *S, Accumulator *A, double mjd)
 	const DifxIF *IF;
 	char pol, side;
 	double freq;
-	int chan=1, b, f, t;
+	int chan=1;
 	int maxNRec = 0;
 
 	if(A->sourceId < 0 || S->configId < 0)
@@ -500,7 +513,7 @@ static int dump(Sniffer *S, Accumulator *A, double mjd)
 	a1 = A->a1;
 	a2 = A->a2;
 
-	for(b = 0; b < A->nBBC; b++)
+	for(b = 0; b < A->nBBC; ++b)
 	{
 		if(A->nRec[b] > maxNRec)
 		{
@@ -512,6 +525,8 @@ static int dump(Sniffer *S, Accumulator *A, double mjd)
 	   and only if at least 1 IF has >= 75% valid records */
 	if(A->mjdStart > A->lastDump[A->sourceId] + 15.0/1440.0 && maxNRec >= A->nTime*3/4)
 	{
+		int i;
+
 		A->lastDump[A->sourceId] = A->mjdStart;
 
 		srvMjd2str(A->mjdStart, startStr);
@@ -529,12 +544,12 @@ static int dump(Sniffer *S, Accumulator *A, double mjd)
 		fprintf(fp, "timerange: %s %s obscode: %s chans: %d x %d\n",
 			startStr, stopStr, S->D->job->obsCode, S->D->nOutChan, A->nBBC);
 		fprintf(fp, "source: %s bandw: %6.3f MHz\n", S->D->source[A->sourceId].name, S->bw);
-		for(i = 0; i < S->nIF; i++)
+		for(i = 0; i < S->nIF; ++i)
 		{
 			IF = config->IF + i;
 			freq = IF->freq/1000.0;	/* freq in GHz */
 			side = IF->sideband;
-			for(p = 0; p < S->nPol; p++)
+			for(p = 0; p < S->nPol; ++p)
 			{
 				pol = IF->pol[p];
 				fprintf(fp, "bandfreq: %9.6f GHz polar: %c%c side: %c bbchan: 0\n",
@@ -544,30 +559,39 @@ static int dump(Sniffer *S, Accumulator *A, double mjd)
 		
 		if(a1 == a2)	/* Autocorrelation? */
 		{
-			for(b = 0; b < A->nBBC; b++)
+			for(b = 0; b < A->nBBC; ++b)
 			{
-				for(f = 0; f < A->nChan; f++)
+				int f;
+
+				for(f = 0; f < A->nChan; ++f)
 				{
+					fftw_complex z;
+					int t;
+
 					z = 0.0;
-					for(t = 0; t < A->nTime; t++)
+					for(t = 0; t < A->nTime; ++t)
 					{
 						z += A->spectrum[b][t][f];
 					}
 					z /= A->weightSum[b];
-					fprintf(fp, "%2d %-3s %5d %7.5f\n",
-						a1+1, S->D->antenna[a1].name, chan, creal(z));
-					chan++;
+					fprintf(fp, "%2d %-3s %5d %7.5f\n", a1+1, S->D->antenna[a1].name, chan, creal(z));
+					++chan;
 				}
 			}
 		}
 		else		/* Cross corr? */
 		{
-			for(b = 0; b < A->nBBC; b++)
+			for(b = 0; b < A->nBBC; ++b)
 			{
-				for(f = 0; f < A->nChan; f++)
+				int f;
+
+				for(f = 0; f < A->nChan; ++f)
 				{
+					fftw_complex z;
+					int t;
+
 					z = 0.0;
-					for(t = 0; t < A->nTime; t++)
+					for(t = 0; t < A->nTime; ++t)
 					{
 						z += A->spectrum[b][t][f];
 					}
@@ -580,7 +604,7 @@ static int dump(Sniffer *S, Accumulator *A, double mjd)
 						S->D->antenna[a2].name,
 						chan, sqrt(x*x+y*y), 
 						atan2(y, x)*180.0/M_PI);
-					chan++;
+					++chan;
 				}
 			}
 		}
@@ -588,12 +612,14 @@ static int dump(Sniffer *S, Accumulator *A, double mjd)
 
 	if(a1 == a2) /* Autocorrelation? */
 	{
+		int bbc;
+
 		/* weights file */
 		fprintf(S->wts, "%5d %8.5f %2d %-3s %2d",
 			(int)mjd, 24.0*(mjd-(int)mjd), A->a1+1,
 			S->D->antenna[A->a1].name, A->nBBC);
 
-		for(bbc = 0; bbc < A->nBBC; bbc++)
+		for(bbc = 0; bbc < A->nBBC; ++bbc)
 		{
 			if(A->nRec[bbc] == 0)
 			{
@@ -605,7 +631,7 @@ static int dump(Sniffer *S, Accumulator *A, double mjd)
 			}
 			fprintf(S->wts, " %5.3f", w);
 		}
-		for(bbc = 0; bbc < A->nBBC; bbc++)
+		for(bbc = 0; bbc < A->nBBC; ++bbc)
 		{
 			if(A->nRec[bbc] == 0)
 			{
@@ -617,7 +643,7 @@ static int dump(Sniffer *S, Accumulator *A, double mjd)
 			}
 			fprintf(S->wts, " %5.3f", w);
 		}
-		for(bbc = 0; bbc < A->nBBC; bbc++)
+		for(bbc = 0; bbc < A->nBBC; ++bbc)
 		{
 			if(A->nRec[bbc] == 0)
 			{
@@ -634,6 +660,8 @@ static int dump(Sniffer *S, Accumulator *A, double mjd)
 
 	else
 	{
+		int bbc;
+
 		/* fringe fit */
 
 		fprintf(S->apd, "%5d %10.7f %2d %-10s %2d %2d %-3s %-3s %2d",
@@ -650,21 +678,23 @@ static int dump(Sniffer *S, Accumulator *A, double mjd)
 			S->D->antenna[a2].name,
 			A->nBBC);
 
-		for(bbc = 0; bbc < A->nBBC; bbc++)
+		for(bbc = 0; bbc < A->nBBC; ++bbc)
 		{
-			if(A->nRec[bbc] < S->nTime/2 || 
-			   A->weightSum[bbc] == 0.0)
+			fftw_complex z;
+
+			if(A->nRec[bbc] < S->nTime/2 || A->weightSum[bbc] == 0.0)
 			{
 				fprintf(S->apd, " 0 0 0 0");
 				fprintf(S->apc, " 0 0 0 0");
 				continue;
 			}
 			array = A->spectrum[bbc];
-			memset(S->fftbuffer, 0, 
-				S->fft_nx*S->fft_ny*sizeof(fftw_complex));
-			for(j = 0; j < A->nTime; j++)
+			memset(S->fftbuffer, 0, S->fft_nx*S->fft_ny*sizeof(fftw_complex));
+			for(j = 0; j < A->nTime; ++j)
 			{
-				for(i = 0; i < A->nChan; i++)
+				int i;
+
+				for(i = 0; i < A->nChan; ++i)
 				{
 					S->fftbuffer[j*S->fft_nx + i] = array[j][i];
 				}
@@ -676,9 +706,11 @@ static int dump(Sniffer *S, Accumulator *A, double mjd)
                         fftw_execute(S->plan1);
                         max2 = 0.0;
                         besti = bestj = 0;
-                        for(j = 0; j < S->fft_ny; j++)
+                        for(j = 0; j < S->fft_ny; ++j)
                         {
-                                for(i = 0; i < S->fft_nx; i++)
+				int i;
+
+                                for(i = 0; i < S->fft_nx; ++i)
                                 {
                                         z = S->fftbuffer[j*S->fft_nx + i];
                                         amp2 = z*~z;
@@ -714,17 +746,18 @@ static int dump(Sniffer *S, Accumulator *A, double mjd)
                                 z = S->fftbuffer[(bestj+1)*S->fft_nx + besti];
                         }
                         peak[2] = sqrt(z*~z);
-                        specRate = peakup(peak, bestj,
-                                S->fft_ny, S->solInt*S->fftOversample);
+                        specRate = peakup(peak, bestj, S->fft_ny, S->solInt*S->fftOversample);
 
                         /* Now do second axis of FFT (frequency) to look for a peak in rate/delay space */
 			fftw_execute(S->plan2);
 
 			max2 = 0.0;
 			besti = bestj = 0;
-			for(j = 0; j < S->fft_ny; j++)
+			for(j = 0; j < S->fft_ny; ++j)
 			{
-				for(i = 0; i < S->fft_nx; i++)
+				int i;
+
+				for(i = 0; i < S->fft_nx; ++i)
 				{
 					z = S->fftbuffer[j*S->fft_nx + i];
 					amp2 = creal(z*~z);
@@ -808,21 +841,21 @@ static int dump(Sniffer *S, Accumulator *A, double mjd)
 	return 0;
 }
 
-static int add(Accumulator *A, int bbc, int index, float weight, 
-	const float *data, int stride, int isLSB)
+static int add(Accumulator *A, int bbc, int index, float weight, const float *data, int stride, int isLSB)
 {
 	fftw_complex *array;
-	complex float *z;
 	int c;
 
 	array = A->spectrum[bbc][index];
-	for(c = 0; c < A->nChan; c++)
+	for(c = 0; c < A->nChan; ++c)
 	{
+		const complex float *z;
+		
 		z = (complex float *)(data + c*stride);
 		array[c] += (*z)*weight;
 	}
 
-	A->nRec[bbc]++;
+	++A->nRec[bbc];
 	A->isLSB[bbc] = isLSB;
 	A->weightSum[bbc] += weight;
 	if(weight > A->weightMax[bbc])
@@ -842,11 +875,9 @@ int feedSnifferFITS(Sniffer *S, const struct UVrow *data)
 	double mjd;
 	Accumulator *A;
 	int a1, a2;
-	int i, p;
+	int i;
 	int configId, sourceId, scanId, scanId2;
-	float weight;
-	int isLSB;
-	int stride, offset, bbc, index;
+	int stride, index;
 
 	if(!S)
 	{
@@ -918,12 +949,18 @@ int feedSnifferFITS(Sniffer *S, const struct UVrow *data)
 
 	stride = S->nComplex*S->nStokes;
 
-	for(i = 0; i < S->nIF; i++)
+	for(i = 0; i < S->nIF; ++i)
 	{
+		int isLSB;
+		int p;
+		
 		isLSB = (S->D->config[configId].IF[i].sideband == 'L');
 
-		for(p = 0; p < S->nPol; p++)
+		for(p = 0; p < S->nPol; ++p)
 		{
+			int bbc, offset;
+			float weight;
+
 			bbc = i*S->nPol + p;
 			weight = data->data[p + S->nStokes*i];
 			offset = S->nStokes*S->nIF + stride*S->nChan*i + p*S->nComplex;
@@ -931,7 +968,7 @@ int feedSnifferFITS(Sniffer *S, const struct UVrow *data)
 		}
 	}
 
-	S->nRec++;
+	++S->nRec;
 
 	return S->nRec;
 }
