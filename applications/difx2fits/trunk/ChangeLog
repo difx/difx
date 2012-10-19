@@ -3,6 +3,7 @@ Version 3.2.0
 * Fix for correlation of mismatched sidebands.  Requires contemporaneous
 upgrade of difxio.
 * Add DIFX_LABEL env var to FITS files
+* Make sniffer plots more consistent with AIPS.  They will always show USB now and should have the same phase sense.
 
 Version 3.1.0
 * Version renumber from 3.0.2 prior to DiFX-2.1 release

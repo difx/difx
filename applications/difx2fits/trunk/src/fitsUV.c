@@ -1070,7 +1070,12 @@ static int storevis(DifxVis *dv)
 	
 	D = dv->D;
 
+//printf("%c", dv->sideband);fflush(stdout);
+
 	isLSB = dv->sideband == 'L';
+
+isLSB = 0;
+
 	startChan = D->startChan;
 	stopChan = startChan + D->nOutChan*D->specAvg;
 
@@ -1430,7 +1435,7 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fi
 #ifdef HAVE_FFTW
 			if(S)
 			{
-				feedSnifferFITS(S, dv->record);
+				feedSnifferFITS(S, dv);
 			}
 #endif
 			if(dv->record->baseline % 257 == 0)

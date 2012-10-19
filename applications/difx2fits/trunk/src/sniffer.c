@@ -488,7 +488,7 @@ static int dump(Sniffer *S, Accumulator *A, double mjd)
 {
 	int b, j, p, a1, a2, besti, bestj;
 	fftw_complex **array;
-	double amp2, max2, x, y;
+	double amp2, max2;
 	double amp, phase, delay, rate;
 	double specAmp, specPhase, specRate;
 	int specChan;
@@ -536,13 +536,12 @@ static int dump(Sniffer *S, Accumulator *A, double mjd)
 		{
 			fp = S->acb;
 		}
-		else			/* Cross corr? */
+		else		/* Cross corr? */
 		{
 			fp = S->xcb;
 		}
 
-		fprintf(fp, "timerange: %s %s obscode: %s chans: %d x %d\n",
-			startStr, stopStr, S->D->job->obsCode, S->D->nOutChan, A->nBBC);
+		fprintf(fp, "timerange: %s %s obscode: %s chans: %d x %d\n", startStr, stopStr, S->D->job->obsCode, S->D->nOutChan, A->nBBC);
 		fprintf(fp, "source: %s bandw: %6.3f MHz\n", S->D->source[A->sourceId].name, S->bw);
 		for(i = 0; i < S->nIF; ++i)
 		{
@@ -552,8 +551,7 @@ static int dump(Sniffer *S, Accumulator *A, double mjd)
 			for(p = 0; p < S->nPol; ++p)
 			{
 				pol = IF->pol[p];
-				fprintf(fp, "bandfreq: %9.6f GHz polar: %c%c side: %c bbchan: 0\n",
-					freq, pol, pol, side);
+				fprintf(fp, "bandfreq: %9.6f GHz polar: %c%c side: %c bbchan: 0\n", freq, pol, pol, side);
 			}
 		}
 		
@@ -566,14 +564,18 @@ static int dump(Sniffer *S, Accumulator *A, double mjd)
 				for(f = 0; f < A->nChan; ++f)
 				{
 					fftw_complex z;
-					int t;
 
 					z = 0.0;
-					for(t = 0; t < A->nTime; ++t)
+					if(A->weightSum[b] > 0.0)
 					{
-						z += A->spectrum[b][t][f];
+						int t;
+						
+						for(t = 0; t < A->nTime; ++t)
+						{
+							z += A->spectrum[b][t][f];
+						}
+						z /= A->weightSum[b];
 					}
-					z /= A->weightSum[b];
 					fprintf(fp, "%2d %-3s %5d %7.5f\n", a1+1, S->D->antenna[a1].name, chan, creal(z));
 					++chan;
 				}
@@ -587,17 +589,25 @@ static int dump(Sniffer *S, Accumulator *A, double mjd)
 
 				for(f = 0; f < A->nChan; ++f)
 				{
-					fftw_complex z;
-					int t;
+					float x, y;
 
-					z = 0.0;
-					for(t = 0; t < A->nTime; ++t)
+					if(A->weightSum[b] > 0.0)
 					{
-						z += A->spectrum[b][t][f];
+						int t;
+						
+						fftw_complex z = 0.0;
+						for(t = 0; t < A->nTime; ++t)
+						{
+							z += A->spectrum[b][t][f];
+						}
+						z /= A->weightSum[b];
+						x = creal(z);
+						y = -cimag(z);	/* to match an equivalent in AIPS */
 					}
-					z /= A->weightSum[b];
-					x = creal(z);
-					y = cimag(z);
+					else
+					{
+						x = y = 0.0;
+					}
 					fprintf(fp, "%2d %2d %-3s %-3s %5d %7.5f %8.3f\n",
 						a1+1, a2+1, 
 						S->D->antenna[a1].name,
@@ -870,8 +880,9 @@ static int add(Accumulator *A, int bbc, int index, float weight, const float *da
 	return A->nRec[bbc];
 }
 
-int feedSnifferFITS(Sniffer *S, const struct UVrow *data)
+int feedSnifferFITS(Sniffer *S, const DifxVis *dv)
 {
+	const struct UVrow *data;
 	double mjd;
 	Accumulator *A;
 	int a1, a2;
@@ -883,6 +894,8 @@ int feedSnifferFITS(Sniffer *S, const struct UVrow *data)
 	{
 		return 0;
 	}
+
+	data = dv->record;
 
 	if(data->sourceId1 < 1)
 	{
@@ -954,7 +967,8 @@ int feedSnifferFITS(Sniffer *S, const struct UVrow *data)
 		int isLSB;
 		int p;
 		
-		isLSB = (S->D->config[configId].IF[i].sideband == 'L');
+		//isLSB = (S->D->config[configId].IF[i].sideband == 'L');
+		isLSB = dv->sideband == 'L';
 
 		for(p = 0; p < S->nPol; ++p)
 		{

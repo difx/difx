@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2011 by Walter Brisken                             *
+ *   Copyright (C) 2008-2012 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -44,7 +44,7 @@ Sniffer *newSniffer(const DifxInput *D, int nComplex, const char *filebase, doub
 
 void deleteSniffer(Sniffer *S);
 
-int feedSnifferFITS(Sniffer *S, const struct UVrow *data);
+int feedSnifferFITS(Sniffer *S, const DifxVis *dv);
 
 long long getSnifferMemoryUsage(const Sniffer *S);
 

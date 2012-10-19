@@ -176,12 +176,12 @@ int DifxInputGetIFsByRecFreq(int *IFs, const DifxInput *D, int dsId, int configI
 
 	polName = dc->pol[polId];
 
-	if(recFreq >= dd->nRecFreq)
+	if(recFreq >= D->nFreq)
 	{
 		return -3;
 	}
 
-	df = D->freq + dd->recFreqId[recFreq];
+	df = D->freq + recFreq;
 
 	for(i = 0; i < dc->nIF; ++i)
 	{
@@ -557,7 +557,6 @@ static int parseDifxPulseCal(const char *line,
 	int tone;
 	int toneIndex;
 	int band, pol, bandpol, recFreq;
-	int freqId;
 	int nonTiny = 0;
 	int A;
 	float B, C;
@@ -604,8 +603,7 @@ static int parseDifxPulseCal(const char *line,
 		}
 	}
 
-	n = sscanf(line, "%31s%lf%f%lf%d%d%d%d%d%n", antName, time, &timeInt, 
-		&cableCal, &np, &nb, &nt, &ns, &nRecBand, &p);
+	n = sscanf(line, "%31s%lf%f%lf%d%d%d%d%d%n", antName, time, &timeInt, &cableCal, &np, &nb, &nt, &ns, &nRecBand, &p);
 	if(n != 9)
 	{
 		fprintf(stderr, "Error: parseDifxPulseCal: header information not parsable (n=%d)\n", n);
@@ -653,6 +651,7 @@ static int parseDifxPulseCal(const char *line,
 		return -7;
 	}
 	/* Read in pulse cal information */
+
 	for(pol = 0; pol < D->nPol; ++pol)
 	{
 		for(band = 0; band < dd->nRecBand; ++band)
@@ -668,19 +667,16 @@ static int parseDifxPulseCal(const char *line,
 				//band doesn't match
 				continue;
 			}
-			//printf("recFreq=%d pol=%d\n", recFreq, pol);
 
-			freqId = dd->recFreqId[recFreq];
-			df = D->freq + freqId;
-
+			df = D->freq + recFreq;
 			
 			/* set up pcal information for this recFreq (only up to nRecTones)*/
 			nRecTone = DifxDatastreamGetPhasecalTones(toneFreq, dd, df, nt);
 
 			if(nRecTone > 0)
 			{
-				k = 0; /* tone index within freqs, pulseCalRe and pulseCalIm */
-				for(tone = 0; tone < nt; ++tone)/*nt is taken from line header and is max number of tones*/
+				k = 0; 					/* tone index within freqs, pulseCalRe and pulseCalIm */
+				for(tone = 0; tone < nt; ++tone)	/* nt is taken from line header and is max number of tones */
 				{
 					n = sscanf(line, "%d%d%f%f%n", &difxPol, &A, &B, &C, &p);
 					if(n < 4)
@@ -705,11 +701,11 @@ static int parseDifxPulseCal(const char *line,
 
 					if(k >= nTone)
 					{
-						if(tooMany[pol][recFreq] == 0)
+						if(tooMany[pol][band] == 0)
 						{
-							printf("\nWarning: parseDifxPulseCal: trying to extract too many (%d >= %d) tones in pol %d recFreq %d\n", k, nTone, pol, recFreq);
+							printf("\nWarning: parseDifxPulseCal: trying to extract too many (%d >= %d) tones in pol %d band %d recFreq %d\n", k, nTone, pol, band, recFreq);
 						}
-						++tooMany[pol][recFreq];
+						++tooMany[pol][band];
 						
 						break;
 					}
@@ -741,11 +737,11 @@ static int parseDifxPulseCal(const char *line,
 				}
 				if(k < nTone)
 				{
-					if(tooFew[pol][recFreq] == 0)
+					if(tooFew[pol][band] == 0)
 					{
 						printf("\nWarning: parseDifxPulseCal: Not enough (%d < %d) extracted tones for pol %d recFreq %d\n", k, nTone, pol, recFreq);
 					}
-					++tooFew[pol][recFreq];
+					++tooFew[pol][band];
 					
 					continue;
 				}
@@ -1415,7 +1411,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	}
 	if(in2)	/* this should never be true the way things work */
 	{
-		fprintf(stderr, "Developer error: Somehow in2 != 0 at end of DifxInput2FitsPH.\nPlease file a bug report\n");
+		fprintf(stderr, "\n\nDeveloper error: Somehow in2 != 0 at end of DifxInput2FitsPH.\nPlease file a bug report\n");
 		fclose(in2);
 	}
 
