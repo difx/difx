@@ -678,7 +678,7 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
   double offsetmins, blockns;
   f32 bweight;
   f64 * binweights;
-  Mode * m1, * m2;
+  const Mode * m1, * m2;
   const cf32 * vis1;
   const cf32 * vis2;
   uint64_t offsetsamples;
@@ -897,20 +897,28 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
               //check for the annoying case of correlating USB with LSB
               if(config->anyUsbXLsb(procslots[index].configindex))
               {
-                if(config->getBFreqOddLSB(procslots[index].configindex, j, localfreqindex) > 0)
+                const int &bFreqOddLSB = config->getBFreqOddLSB(procslots[index].configindex, j, localfreqindex);
+                if(bFreqOddLSB > 0)
                 {
                   //uh-oh.  Need to move any LSB datastreams' FFT results appropriately
-                  if(config->getBFreqOddLSB(procslots[index].configindex, j, localfreqindex) > 0)
+
+                  if(bFreqOddLSB == 1)
                   {
-                    outputoffset = 1;
-                    if(x == xmacpasses-1)
-                      xmacmullength = xmacstridelength-1;
-                    if(config->getBFreqOddLSB(procslots[index].configindex, j, localfreqindex) == 1)
-                      //just the first is LSB
-                      input2offset = 1;
-                    else if(config->getBFreqOddLSB(procslots[index].configindex, j, localfreqindex) == 2)
-                      //just the second is LSB
-                      input1offset = 1;
+                    //just the first is LSB
+                    input1offset = -1;
+                  }
+                  else if(bFreqOddLSB == 2)
+                  {
+                    //just the second is LSB
+                    input2offset = -1;
+                  }
+                  if(x == 0)
+                  {
+                    // for first loop through, shorten the xmac loop by one (ignoring the _first_ sample)
+                    xmacmullength--;
+                    outputoffset++;
+                    input1offset++;
+                    input2offset++;
                   }
                 }
               }
