@@ -900,7 +900,8 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
                 const int &bFreqOddLSB = config->getBFreqOddLSB(procslots[index].configindex, j, localfreqindex);
                 if(bFreqOddLSB > 0)
                 {
-                  //uh-oh.  Need to move any LSB datastreams' FFT results appropriately
+                  // uh-oh.  Need to move any LSB datastreams' FFT results appropriately
+                  // basically start counting one index earlier on those...
 
                   if(bFreqOddLSB == 1)
                   {
@@ -912,9 +913,16 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
                     //just the second is LSB
                     input2offset = -1;
                   }
+                  else
+                  {
+                    //both are LSB
+                    input1offset = -1;
+                    input2offset = -1;
+                  }
                   if(x == 0)
                   {
                     // for first loop through, shorten the xmac loop by one (ignoring the _first_ sample)
+                    // otherwise we fall off the DC edge of the LSB samples
                     xmacmullength--;
                     outputoffset++;
                     input1offset++;
