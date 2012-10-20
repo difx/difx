@@ -121,7 +121,7 @@ static void usage(const char *pgm)
 	printf("  --quiet\n");
 	printf("  -q         Be less verbose in execution\n\n");
 	printf("  --packetsize <s>\n");
-	printf("  -s <s>     Set packet size to <s> [default %d]\n\n", defaultPacketSize);
+	printf("  -s <s>     Set packet size to <s> [default %u]\n\n", defaultPacketSize);
 	printf("  --dataframeoffset <o>\n");
 	printf("  -d <o>     Set data frame offset to <o> [default %d]\n\n", defaultDataFrameOffset);
 	printf("  --psnmode <m>\n");
@@ -918,7 +918,7 @@ int main(int argc, char **argv)
 	int a, v, i;
 	int bank = -1;
 	int verbose = 0;
-	unsigned packetSize = defaultPacketSize;
+	unsigned int packetSize = defaultPacketSize;
 	int dataFrameOffset = defaultDataFrameOffset;
 	int payloadOffset = defaultPayloadOffset;
 	int psnOffset = defaultPSNOffset;

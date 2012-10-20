@@ -358,7 +358,7 @@ int Mk5Daemon_startVSIS(Mk5Daemon *D)
 
 	Mk5Daemon_stopVSIS(D);
 
-	snprintf(portstr, 6, "%d", VSIS_PORT);
+	snprintf(portstr, 6, "%u", VSIS_PORT);
 
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = AF_UNSPEC;  // use IPv4 or IPv6, whichever
