@@ -1070,10 +1070,10 @@ static int storevis(DifxVis *dv)
 	
 	D = dv->D;
 
-//printf("%c", dv->sideband);fflush(stdout);
-
 	isLSB = dv->sideband == 'L';
 
+/* Apparently this is no longer needed! */
+/* FIXME: remove the isLSB=true portions below */
 isLSB = 0;
 
 	startChan = D->startChan;
