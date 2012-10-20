@@ -666,7 +666,7 @@ int runCommand(const char *command, int verbose)
 	}
 	else
 	{
-		int v = system(command);
+		system(command);
 		
 		exit(EXIT_SUCCESS);
 	}

@@ -10,9 +10,8 @@ const bool RecorrJob::operator <(const RecorrJob& rj) const
 	return priority < rj.priority;
 }
 
-RecorrQueue::RecorrQueue(const std::string &file)
+RecorrQueue::RecorrQueue(const std::string &file) : queueFile(file)
 {
-	queueFile = file;
 	pthread_mutex_init(&lock, NULL);
 	die = -1;
 }
