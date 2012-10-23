@@ -238,6 +238,7 @@ public class PassNode extends QueueBrowserNode {
                 return;
         }
         deleteThisPass();
+        deleteThisPassFromParent();
     }
     
     /*
@@ -265,6 +266,9 @@ public class PassNode extends QueueBrowserNode {
                 }
             }
         }
+    }
+    
+    public void deleteThisPassFromParent() {
         //  Remove this pass from its parent experiment.
         ((BrowserNode)(this.getParent())).removeChild( this );
     }

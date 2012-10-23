@@ -3,13 +3,9 @@
  */
 package edu.nrao.difx.difxview;
 
-import java.awt.Color;
+import java.awt.*;
 import javax.swing.JPanel;
 
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.Dimension;
-import java.awt.Container;
 
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;

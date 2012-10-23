@@ -177,6 +177,7 @@ public class ExperimentNode extends QueueBrowserNode {
         for ( Iterator<BrowserNode> iter = childrenIterator(); iter.hasNext(); ) {
             PassNode thisPass = (PassNode)(iter.next());
             thisPass.deleteThisPass();
+            iter.remove();
         }
         clearChildren();
         //  Remove this experiment from the DiFX host.  This is simply a matter of

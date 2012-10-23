@@ -395,6 +395,7 @@ public class Mark5Node extends ProcessorNode {
     
     public String bankAVSN() { return _bankAVSN.getText(); }
     public String bankBVSN() { return _bankBVSN.getText(); }
+    public String activeBank() { return _activeBank.getText(); }
     
     protected ActivityMonitorLight _stateChanged;
     protected boolean _showStateChanged;

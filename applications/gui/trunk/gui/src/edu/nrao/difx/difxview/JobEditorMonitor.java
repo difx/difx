@@ -5,10 +5,14 @@
 package edu.nrao.difx.difxview;
 
 import javax.swing.Timer;
-import javax.swing.Action;
-import javax.swing.AbstractAction;
+import javax.swing.JComboBox;
+import javax.swing.JComponent;
+import javax.swing.plaf.basic.ComboPopup;
+import javax.swing.plaf.basic.BasicComboBoxUI;
+import javax.swing.plaf.basic.BasicComboPopup;
 
 import edu.nrao.difx.difxutilities.DiFXCommand;
+import edu.nrao.difx.difxutilities.InputFileParser;
 import edu.nrao.difx.xmllib.difxmessage.DifxMessage;
 import edu.nrao.difx.xmllib.difxmessage.DifxMachinesDefinition;
 import edu.nrao.difx.xmllib.difxmessage.DifxStart;
@@ -27,9 +31,14 @@ import javax.swing.JCheckBox;
 import javax.swing.JPopupMenu;
 import javax.swing.JButton;
 import javax.swing.JProgressBar;
+import javax.swing.BorderFactory;
+import javax.swing.border.Border;
+import javax.swing.event.PopupMenuEvent;
+import javax.swing.event.PopupMenuListener;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseEvent;
 import java.io.DataInputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -37,6 +46,7 @@ import java.net.SocketTimeoutException;
 
 import java.util.*;
 import java.util.List;
+import java.util.Vector;
 
 import javax.swing.event.EventListenerList;
 
@@ -185,7 +195,7 @@ public class JobEditorMonitor extends JFrame {
         _dataSourcesPane = new NodeBrowserScrollPane();
         _dataSourcesPane.setBackground( Color.WHITE );
         machinesListPanel.add( _dataSourcesPane );
-        _dataSourcesLabel = new JLabel( "Data Nodes:" );
+        _dataSourcesLabel = new JLabel( "Data Sources:" );
         _dataSourcesLabel.setHorizontalAlignment( JLabel.LEFT );
         machinesListPanel.add( _dataSourcesLabel );
         _processorsPane = new NodeBrowserScrollPane();
@@ -266,9 +276,11 @@ public class JobEditorMonitor extends JFrame {
         machinesListPanel.add( _busyPercentageLabel );
         _chooseBasedOnModule = new JCheckBox( "Choose Data Source Based on Module" );
         _chooseBasedOnModule.setSelected( _settings.defaultNames().chooseBasedOnModule );
+        _chooseBasedOnModule.setToolTipText( "Pick Mark5 data sources that contain required modules." );
         _chooseBasedOnModule.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
-                buildDataSourceList();
+                if ( _chooseBasedOnModule.isSelected() )
+                    buildDataSourceList();
                 _settings.defaultNames().chooseBasedOnModule = _chooseBasedOnModule.isSelected();
             }
         } );
@@ -655,9 +667,8 @@ public class JobEditorMonitor extends JFrame {
         String dataNodeNames = "";
         for ( Iterator<BrowserNode> iter = _dataSourcesPane.browserTopNode().children().iterator();
                 iter.hasNext(); ) {
-            DataNode thisNode = (DataNode)(iter.next());
-            if ( thisNode.selected() )
-                dataNodeNames += thisNode.name() + " ";
+            DataSource thisSource = (DataSource)(iter.next());
+            dataNodeNames += thisSource.sourceNode() + " ";
         }
         dataStream.setNodes( dataNodeNames );
         cmd.setDatastream(dataStream);
@@ -1641,6 +1652,7 @@ public class JobEditorMonitor extends JFrame {
      * list from our collected information.
      */
     public void loadHardwareLists() {
+        
         //  We need to "relocate" everything in the existing processor list, so unset a
         //  "found" flag for each.
         for ( Iterator<BrowserNode> iter = _processorsPane.browserTopNode().children().iterator();
@@ -1702,147 +1714,420 @@ public class JobEditorMonitor extends JFrame {
             }
         }
         
-        buildDataSourceList();
+        //  Sort the remaining items.
+        _processorsPane.browserTopNode().sortByName();
+        
+        updateDataSourceList();
     }
     
     /*
-     * The data source list is built using the known data requirements (which
-     * we get by parsing the .input file).  These are to appear in the order in
-     * which they occur in the .input file.  Missing data requirements are listed
-     * in the data source list as warnings.
+     * This class is used to contain the name of a single data source.  The data
+     * source can be a module, file or list of files, or network connection.  The 
+     * controls necessary for each of these options differ quite a bit, so they 
+     * will be in inheriting classes.
      */
-    public void buildDataSourceList() {
-
-        //  Before anything, we need to build lists of the existing data source items
-        //  that have been checked and unchecked "by hand" (i.e. the user has clicked 
-        //  the check box on or off).
-        ArrayList<String> handSelected = new ArrayList<String>();
-        ArrayList<String> handUnselected = new ArrayList<String>();
-        for ( Iterator<BrowserNode> iter = _dataSourcesPane.browserTopNode().children().iterator();
-                iter.hasNext(); ) {
-            DataNode newNode = (DataNode)iter.next();
-            if ( newNode.handSelected() ) {  //  this means the check box was clicked on (either on or off)
-                if ( newNode.selected() )  //  this means the checkbox is checked
-                    handSelected.add( newNode.name() );
-                else
-                    handUnselected.add( newNode.name() );
+    protected class DataSource extends IndexedPanel {
+        
+        public DataSource( int index ) {
+            super( "" );
+            closedHeight( 20 );
+            openHeight( 20 );
+            drawFrame( false );
+            noArrow( true );
+            darkTitleBar( false );
+            alwaysOpen( true );
+            setBackground( Color.WHITE );
+            _index = index;
+            _antenna.setText( _inputFile.telescopeTable().idx[_index].name );
+            _sourceFormat.setText( _inputFile.datastreamTable().idx[_index].dataFormat );
+            _sourceType.setText( _inputFile.datastreamTable().idx[_index].dataSource );
+            buildSourceNodeList();
+            pickAppropriateSourceNode();
+        }
+        
+        @Override
+        public void createAdditionalItems() {
+            _sourceNode = new StyledComboBox();
+            _sourceNode.addPopupMenuListener( new PopupMenuListener() {
+                public void popupMenuCanceled( PopupMenuEvent e) {
+                }
+                public void popupMenuWillBecomeInvisible( PopupMenuEvent e) {
+                    setSelectedSourceNode();
+                }
+                public void popupMenuWillBecomeVisible( PopupMenuEvent e) {
+                    buildSourceNodeList();
+                }
+            });
+            _sourceNode.addActionListener( new ActionListener() {
+                public void actionPerformed( ActionEvent e ) {
+                }
+            });
+            this.add( _sourceNode );
+            _antenna = new JLabel( "" );
+            _antenna.setHorizontalAlignment( JLabel.CENTER );
+            this.add( _antenna );
+            _sourceFormat = new JLabel( "" );
+            _sourceFormat.setHorizontalAlignment( JLabel.LEFT );
+            this.add( _sourceFormat );
+            _sourceType = new JLabel( "" );
+            _sourceType.setHorizontalAlignment( JLabel.LEFT );
+            this.add( _sourceType );
+        }
+        
+        @Override
+        public void positionItems() {
+            super.positionItems();
+            _sourceNode.setBounds( 0, 1, 210, 18 );
+            _antenna.setBounds( 210, 1, 40, 18 );
+            _sourceFormat.setBounds( 250, 1, 70, 18 );
+            _sourceType.setBounds( 330, 1, 70, 18 );
+        }
+        
+        /*
+         * Using all existing machines that can be used for the current data type,
+         * build a list of nodes the user can pick from.  This generic form of the
+         * function includes everything - Mark5s and processors.
+         */
+        public void buildSourceNodeList() {
+            _sourceNode.removeAllItems();
+            for ( Iterator<BrowserNode> iter = _settings.hardwareMonitor().processorNodes().children().iterator();
+                    iter.hasNext(); ) {
+                ProcessorNode thisModule = (ProcessorNode)(iter.next());
+                _sourceNode.addItem( thisModule.name() );
+            }
+            for ( Iterator<BrowserNode> iter = _settings.hardwareMonitor().mk5Modules().children().iterator();
+                    iter.hasNext(); ) {
+                Mark5Node thisModule = (Mark5Node)(iter.next());
+                _sourceNode.addItem( thisModule.name() );
             }
         }
         
-        //  Clear out the current data sources list and build it again.
-        _dataSourcesPane.clear();
-        if ( _dataObjects != null ) {
-            //  Look at each data object we need.
-            int antennaCount = 0;
-            for ( Iterator<String> jter = _dataObjects.iterator(); jter.hasNext(); ) {
-                String dataObject = jter.next().trim();
-                //  Check the entire list of data sources to see which one (if any) provides this
-                //  object and put it on the browser.
-                boolean dataObjectLocated = false;
-                //  These are all of the known Mark 5's...
-                for ( Iterator<BrowserNode> iter = _settings.hardwareMonitor().mk5Modules().children().iterator();
-                        iter.hasNext() && !dataObjectLocated; ) {
-                    Mark5Node thisModule = (Mark5Node)(iter.next());
-                    if ( !thisModule.ignore() ) {
-                        if ( thisModule.bankAVSN().trim().contentEquals( dataObject ) ||
-                             thisModule.bankBVSN().trim().contentEquals( dataObject ) ) {
-                            //  Found it!  Add this mark5 to the list in the data source browser.
-                            dataObjectLocated = true;
-                            DataNode newNode = new DataNode( thisModule.name() );
-                            newNode.dataObjectA( thisModule.bankAVSN().trim() );
-                            newNode.dataObjectB( thisModule.bankBVSN().trim() );
-                            if ( thisModule.bankAVSN().trim().contentEquals( dataObject ) ) {
-                                newNode.foundA( true );
-                            }
-                            else if ( thisModule.bankBVSN().trim().contentEquals( dataObject ) ) {
-                                newNode.foundB( true );
-                            }
-                            newNode.antenna( _jobNode.antennaName( antennaCount ) );
-                            _dataSourcesPane.addNode( newNode );
-                        }
+        /*
+         * This function is called when an item in the source node list is selected.
+         * Some of the inheriting classes might do something special with this.
+         */
+        public void setSelectedSourceNode() {
+        }
+        
+        /*
+         * Of the current list of source nodes, pick the most appropriate one.  Which
+         * one this is depends on the data source type so this is another inherited
+         * class.
+         */
+        public void pickAppropriateSourceNode() {
+        }
+        
+        public String sourceNode() { return (String)_sourceNode.getSelectedItem(); }
+        public String sourceType() { return _sourceType.getText(); }
+        
+        protected int _index;
+        protected StyledComboBox _sourceNode;
+        protected JLabel _antenna;
+        protected JLabel _sourceType;
+        protected JLabel _sourceFormat;
+ 
+        //  This class and the next make the popup list for the combo box as big as
+        //  the items in it (as opposed to the same size as the combo box itself).
+        class StyledComboBoxUI extends BasicComboBoxUI {
+            protected ComboPopup createPopup() {
+                BasicComboPopup popup = new BasicComboPopup( comboBox ) {
+                    @Override
+                    protected Rectangle computePopupBounds(int px,int py,int pw,int ph) {
+                        return super.computePopupBounds(
+                            px,py,Math.max(comboBox.getPreferredSize().width,pw),ph
+                        );
                     }
-                }
-                //  If the data object was not among those found in current data sources,
-                //  include a line in the data sources warning the user of this. 
-                if ( !dataObjectLocated ) {
-                    DataNode newNode = new DataNode( "missing module" );
-                    newNode.dataObjectA( dataObject );
-                    newNode.missingA();
-                    newNode.hideSelection();
-                    newNode.antenna( _jobNode.antennaName( antennaCount ) );
-                    _dataSourcesPane.addNode( newNode );
-                }
-                ++antennaCount;
-            }
-        }
-        
-        //  Now that we've built a list of data sources based on the data requirements,
-        //  add all of the other possible data sources we observe so the user knows what's
-        //  out there.
-        for ( Iterator<BrowserNode> iter = _settings.hardwareMonitor().mk5Modules().children().iterator();
-                iter.hasNext(); ) {
-            Mark5Node thisModule = (Mark5Node)(iter.next());
-            boolean moduleFound = false;
-            for ( Iterator<BrowserNode> iter2 = _dataSourcesPane.browserTopNode().children().iterator();
-                    iter2.hasNext() && !moduleFound; ) {
-                DataNode testNode = (DataNode)(iter2.next());
-                if ( testNode.name() == thisModule.name() )
-                    moduleFound = true;
-            }
-            if ( !moduleFound && !thisModule.ignore() ) {
-                DataNode newNode = new DataNode( thisModule.name() );
-                newNode.dataObjectA( thisModule.bankAVSN() );
-                newNode.dataObjectB( thisModule.bankBVSN() );
-                _dataSourcesPane.addNode( newNode );
+                };
+                popup.getAccessibleContext().setAccessibleParent(comboBox);
+                return popup;
             }
         }
 
-        //  One more step - go through the list of data source we created and select
-        //  or unselect them based on whether they have been chosen before or whether
-        //  they have modules.
-        for ( Iterator<BrowserNode> iter = _dataSourcesPane.browserTopNode().children().iterator();
-                iter.hasNext(); ) {
-            DataNode newNode = (DataNode)iter.next();
-            String searchName = newNode.name().trim();
-            boolean foundIt = false;
-            //  See if this node matches anything in the list of nodes that were previously
-            //  selected by hand.  If so, cause it to be selected.
-            for ( Iterator<String> iter2 = handSelected.iterator(); iter2.hasNext() && !foundIt; ) {
-                if ( iter2.next().trim().contentEquals( searchName ) ) {
-                    foundIt = true;
-                    newNode.selected( true );
-                    newNode.handSelected( true );
-                }
-            }
-            //  Then check the unselected list.
-            for ( Iterator<String> iter2 = handUnselected.iterator(); iter2.hasNext() && !foundIt; ) {
-                if ( iter2.next().trim().contentEquals( searchName ) ) {
-                    foundIt = true;
-                    newNode.selected( false );
-                    newNode.handSelected( true );
-                }
-            }
-            //  If it was not found that way, see if should be selected or unselected
-            //  based on user preferences.
-            if ( !foundIt ) {
-                //  The user can cause only those data sources that have modules we need
-                //  to be selected.
-                if ( _chooseBasedOnModule.isSelected() ) {
-                    if ( newNode.foundA() || newNode.foundB() )
-                        newNode.selected( true );
-                    else
-                        newNode.selected( false );
-                }
-                //  In the absense of any other information, select any modules that
-                //  have selection capability.
-                else {
-                    if ( !newNode.hideSelected() )
-                        newNode.selected( true );
-                }
+        class StyledComboBox extends JComboBox {
+            public StyledComboBox() {
+                setUI( new StyledComboBoxUI() );
+                setBackground( Color.WHITE );
+                this.setFont( new Font( this.getFont().getName(), Font.BOLD, this.getFont().getSize() ) );
             }
         }
-        _dataSourcesPane.updateUI();
+    }
+    
+    /*
+     * Data source from a module.
+     */
+    public class ModuleSource extends DataSource {
         
+        public ModuleSource( int index ) {
+            super( index );
+            moduleName( _inputFile.dataTable().idx[index].file[0] );
+            if ( _chooseBasedOnModule.isSelected() )
+                pickAppropriateSourceNode();
+        }
+        
+        public void createAdditionalItems() {
+            super.createAdditionalItems();
+            _moduleName = new JLabel( "" );
+            _moduleName.setHorizontalAlignment( JLabel.LEFT );
+            this.add( _moduleName );
+        }
+        
+        public void positionItems() {
+            super.positionItems();
+            _moduleName.setBounds( 430, 1, 70, 18 );
+        }
+
+        /*
+         * Search through the list of known source nodes and pick the best of them
+         * for this module (the one that contains this module!).
+         */
+        public void pickAppropriateSourceNode() {
+            for ( int i = 0; i < _sourceNode.getItemCount(); ++i ) {
+                NodePanel selection = (NodePanel)_sourceNode.getItemAt( i );
+                if ( selection.moduleA().contentEquals( _moduleName.getText() ) ||
+                    selection.moduleB().contentEquals( _moduleName.getText() ) )
+                    _sourceNode.setSelectedIndex( i );
+            }
+            checkSelectedSourceNode();  
+        }
+        
+        /*
+         * Check the modules contained in the selected source against the one we want.
+         * Change the color of the label for the module we want to red if it doesn't
+         * match one of those in the source.
+         */
+        public void checkSelectedSourceNode() {
+            NodePanel selection = (NodePanel)_sourceNode.getSelectedItem();
+             if ( selection == null ) return;
+            if ( selection.moduleA().contentEquals( _moduleName.getText() ) ||
+                 selection.moduleB().contentEquals( _moduleName.getText() ) ) {
+                _moduleName.setForeground( Color.BLUE );
+                _moduleName.setToolTipText( "" );
+            }
+            else {
+                _moduleName.setForeground( Color.RED );
+                _moduleName.setToolTipText( "Required module is not owned by this Mark5." );
+            }
+        }
+        
+        /*
+         * Set the modules contained in the selected source.  The modules can change
+         * over time (people can remove them or put new ones in) - calling this
+         * function can respond to these changes.
+         */
+        public void updateSelectedSourceNode() {
+            NodePanel selection = (NodePanel)_sourceNode.getSelectedItem();
+            if ( selection == null ) return;
+            for ( Iterator<BrowserNode> iter = _settings.hardwareMonitor().mk5Modules().children().iterator();
+                    iter.hasNext(); ) {
+                Mark5Node thisModule = (Mark5Node)(iter.next());
+                if ( thisModule.name().contentEquals( selection.name() ) ) {
+                    selection.moduleA( thisModule.bankAVSN() );
+                    selection.moduleB( thisModule.bankBVSN() );
+                }
+            }
+            checkSelectedSourceNode();
+        }
+        
+        /*
+         * Modules only exist on Mark5 machines - so only include them in the list
+         * of possible machines.
+         */
+        public void buildSourceNodeList() {
+            _sourceNode.removeAllItems();
+            for ( Iterator<BrowserNode> iter = _settings.hardwareMonitor().mk5Modules().children().iterator();
+                    iter.hasNext(); ) {
+                Mark5Node thisModule = (Mark5Node)(iter.next());
+                _sourceNode.addItem( new NodePanel( thisModule.name(), thisModule.bankAVSN(), thisModule.bankBVSN(),
+                        thisModule.activeBank() ) );
+            }
+        }
+        
+        /*
+         * We have to override this because we have complex objects instead of simple
+         * strings in our source node list.
+         */
+        public String sourceNode() { 
+            NodePanel selection = (NodePanel)_sourceNode.getSelectedItem();
+            return selection.name();
+        }
+        
+        public void moduleName( String newVal ) { _moduleName.setText( newVal ); }
+        public String moduleName() { return _moduleName.getText(); }
+        
+        protected JLabel _moduleName;
+        
+        public class NodePanel extends JComponent {
+            public NodePanel( String name, String moduleA, String moduleB, String activeBank ) {
+                _name = name;
+                _moduleA = moduleA;
+                _moduleB = moduleB;
+            }
+            //  Override the "toString()" method to create a string out of the
+            //  name and any modules contained.
+            public String toString() {
+                //  Try to get things to align properly...
+                String rtn = _name + "                     ";
+                if ( _moduleA.length() > 0 && !_moduleA.equalsIgnoreCase( "none" ) )
+                    rtn += "          " + _moduleA;
+                if ( _moduleB.length() > 0 && !_moduleB.equalsIgnoreCase( "none" ) )
+                    rtn += "          " + _moduleB;
+                return rtn;
+            }
+            public String name() { return _name; }
+            public String moduleA() { return _moduleA; }
+            public String moduleB() { return _moduleB; }
+            public void moduleA( String newVal ) { _moduleA = newVal; }
+            public void moduleB( String newVal ) { _moduleB = newVal; }
+            public String activeBank() { return _activeBank; }
+            protected String _name;
+            protected String _moduleA;
+            protected String _moduleB;
+            protected String _activeBank;
+            
+        }
+        
+    }
+    
+    /*
+     * Data source from a file.
+     */
+    public class FileSource extends DataSource {
+        
+        public FileSource( int index ) {
+            super( index );
+            //  File data can include a list of files, each of which we display.
+            //  Find out how many files we have and create a label for each one.
+            int n = _inputFile.dataTable().idx[index].numFiles;
+            _file = new JLabel[n];
+            for ( int i = 0; i < n; ++i ) {
+                //  This first file in the list needs to indicate that the list is expandable.
+                if ( i == 0 && n > 1 ) {
+                    _shortLabel = _inputFile.dataTable().idx[index].file[i];
+                    _longLabel = _shortLabel + "...";
+                    _file[i] = new JLabel( _longLabel );
+                    alwaysOpen( false );
+                    _open = false;
+                    _sillyFrame = new JLabel( "" );
+                    _sillyFrame.setBounds( 410, 3, 14, 14 );
+                    Border border = BorderFactory.createLineBorder( Color.BLACK );
+                    _sillyFrame.setBorder(border);
+                    this.add( _sillyFrame );
+                    _openClose = new JLabel( "+" );
+                    _openClose.setBounds( 411, 3, 12, 12 );
+                    _openClose.setHorizontalAlignment( JLabel.CENTER );
+                    _openClose.setVerticalAlignment( JLabel.CENTER );
+                    this.add( _openClose );
+                }
+                else {
+                    _file[i] = new JLabel( _inputFile.dataTable().idx[index].file[i] );
+                    if ( n > 1 )
+                        openHeight( openHeight() + 20 );
+                }
+                _file[i].setHorizontalAlignment( JLabel.LEFT );
+                this.add( _file[i] );
+            }
+        }
+        
+        public void openCloseButton() {
+            _open = ! _open;
+            if ( _open ) {
+                _openClose.setText( "-" );
+                _file[0].setText( _shortLabel );
+            }
+            else {
+                _openClose.setText( "+" );
+                _file[0].setText( _longLabel );
+            }
+            this.updateUI();
+        }
+        
+        public void positionItems() {
+            super.positionItems();
+            if ( _file != null ) {
+                for ( int i = 0; i < _file.length; ++i )
+                    _file[i].setBounds( 430, i * 20 + 1, 1000, 18 );
+            }
+        }
+
+        /*
+         * Override the mouseClicked event to make it work only when the "open/close"
+         * button area is pushed.
+         */
+        @Override
+        public void mouseClicked( MouseEvent e ) {
+            if ( _openClose != null && e.getX() > 410 && e.getX() < 425 && e.getY() < 20 )
+                openCloseButton();
+        }
+
+        protected JLabel[] _file;
+        protected JLabel _openClose;
+        protected JLabel _sillyFrame;
+        protected String _shortLabel;
+        protected String _longLabel;
+    }
+    
+    /*
+     * Data source from a network.
+     */
+    public class NetworkSource extends DataSource {
+        
+        public NetworkSource( int index ) {
+            super( index );
+        }
+        
+    }
+    
+    /*
+     * Examine the current list of data sources for existence, sanity, and whatever
+     * else.
+     */
+    synchronized public void buildDataSourceList() {
+        //  Don't do anything if reading the input file failed.
+        if ( _inputFile == null )
+            return;
+        //  Clear the existing data source list.
+        _dataSourcesPane.clear();
+        //  Add a new node for each data stream.  This is done based on source type.
+        for ( int i = 0; i < _inputFile.commonSettings().activeDataStreams; ++i ) {
+            if ( _inputFile.datastreamTable().idx[i].dataSource.contentEquals( "MODULE" ) )
+                _dataSourcesPane.addNode( new ModuleSource( i ) );
+            else if ( _inputFile.datastreamTable().idx[i].dataSource.contentEquals( "FILE" ) )
+                _dataSourcesPane.addNode( new FileSource( i ) );
+            else if ( _inputFile.datastreamTable().idx[i].dataSource.contentEquals( "NETWORK" ) )
+                _dataSourcesPane.addNode( new NetworkSource( i ) );
+            else //  Generic data source...not sure what good this is!
+                _dataSourcesPane.addNode( new DataSource( i ) );
+        }
+    }
+    
+    /*
+     * The data source list is built using the known data requirements (from
+     * the .input file) in the "fillDataSourceList()" function.  Here was reflect any
+     * changes in the state of data source machines or whatever associated with the
+     * items on this list.
+     */
+    public void updateDataSourceList() {
+        
+        //  Look at each item in the data source list and check whether the node
+        //  specified is appropriate to the data source itself - e.g. whether a chosen
+        //  Mark5 has a needed module.
+        for ( Iterator<BrowserNode> iter = _dataSourcesPane.browserTopNode().children().iterator();
+            iter.hasNext(); ) {
+            DataSource thisSource = (DataSource)iter.next();
+            //  If this is a module source we check the modules "owned" by the source
+            //  against those required.
+            if ( thisSource.sourceType().contentEquals( "MODULE" ) ) {
+                ModuleSource thisModuleSource = (ModuleSource)thisSource;
+                thisModuleSource.updateSelectedSourceNode();
+            }
+            else if ( thisSource.sourceType().contentEquals( "FILE" ) ) {
+            }
+            else if ( thisSource.sourceType().contentEquals( "NETWORK" ) ) {
+            }
+            else {
+            }
+        }
+
     }
                 
     /*
@@ -1867,7 +2152,10 @@ public class JobEditorMonitor extends JFrame {
      * Parse the string data as if it came from an .input file (which, presumably,
      * it did).
      */
-    public void parseInputFile( String str ) {
+    synchronized public void parseInputFile( String str ) {
+        
+        System.out.println( "parse input file" );
+        _inputFile = new InputFileParser( str );
         
         //  This is a list that holds our data the files/modules/whatever that are
         //  our data requirements.
@@ -1882,15 +2170,7 @@ public class JobEditorMonitor extends JFrame {
         while ( strScan.hasNext() ) {
             String sInput = strScan.next();
 
-            if (sInput.contains("DELAY FILENAME:")) {
-                sInput = sInput.substring(sInput.indexOf(":") + 1);
-//                setDelayFile(sInput.trim());
-            } else if (sInput.contains("UVW FILENAME:")) {
-                sInput = sInput.substring(sInput.indexOf(":") + 1);
-//                setUvwFile(sInput.trim());
-            } else if (sInput.contains("CORE CONF FILENAME:")) {
-                sInput = sInput.substring(sInput.indexOf(":") + 1);
-            } else if (sInput.contains("CALC FILENAME:")) {
+            if (sInput.contains("CALC FILENAME:")) {
                 _jobNode.calcFile( sInput.substring(sInput.indexOf(":") + 1).trim() );
 //                setCoreConfigFile(sInput.trim());
             } else if ( sInput.contains( "EXECUTE TIME (SEC):" ) ) {
@@ -1906,22 +2186,9 @@ public class JobEditorMonitor extends JFrame {
                     sInput = sInput.substring(0, sInput.indexOf("."));
                 }
                 startSeconds( Integer.parseInt( sInput.trim() ) );
-            } else if (sInput.contains("ACTIVE DATASTREAMS:")) {
-                sInput = sInput.substring(sInput.indexOf(":") + 1);
-//                setActiveDatastreams(Integer.parseInt(sInput.trim()));
-            } else if (sInput.contains("ACTIVE BASELINES:")) {
-                sInput = sInput.substring(sInput.indexOf(":") + 1);
-//                setActiveBaselines(Integer.parseInt(sInput.trim()));
-            } else if ( sInput.contains( "VIS BUFFER LENGTH:" ) ) {
-                sInput = sInput.substring(sInput.indexOf(":") + 1);
-            } else if ( sInput.contains( "OUTPUT FORMAT:" ) ) {
-                sInput = sInput.substring(sInput.indexOf(":") + 1);
             } else if ( sInput.contains( "OUTPUT FILENAME:" )) {
                 sInput = sInput.substring(sInput.indexOf(":") + 1);
                 _jobNode.outputFile( sInput.trim() );
-            } else if (sInput.contains("NUM CHANNELS:")) {
-                sInput = sInput.substring(sInput.indexOf(":") + 1);
-//                setNumChannels(Integer.parseInt(sInput.trim()));
             } else if (sInput.contains("TELESCOPE ENTRIES:")) {
                 sInput = sInput.substring(sInput.indexOf(":") + 1);
                 _jobNode.numAntennas( Integer.parseInt( sInput.trim() ) );
@@ -1931,6 +2198,19 @@ public class JobEditorMonitor extends JFrame {
                 String sInputObjName = sInput.substring(sInput.indexOf(":") + 1);
                 // Note: the .input file is zero based
                 _jobNode.antennaName( Integer.parseInt( sInputObjID.trim() ), sInputObjName.trim() );
+            }
+            //  This is stuff from the data stream table.  At the moment we are expecting
+            //  one data stream per telescope.
+            else if (sInput.contains("DATASTREAM ENTRIES:")) {
+                //  This is assumed to be the first line in the data stream table.
+                _numDataStreams = Integer.parseInt( sInput.substring(sInput.indexOf(":") + 1).trim() );
+                //  Allocate and/or clear the vector we are using to store data sources.
+                if ( _dataSources == null )
+                    _dataSources = new Vector<String>();
+                else
+                    _dataSources.clear();
+            } else if (sInput.contains("DATA SOURCE:")) {
+                _dataSources.add( sInput.substring( sInput.indexOf(":") + 1 ).trim() );
             } else if (sInput.contains("FILE ")) {
                 //  The "FILE" line has lists the data sources used in a job.  We need
                 //  to use these to make a list of data sources for eventual transmission
@@ -2116,5 +2396,9 @@ public class JobEditorMonitor extends JFrame {
     
     protected boolean _doneWithErrors;
     public boolean doneWithErrors() { return _doneWithErrors; }
+    protected int _numDataStreams;
+    protected Vector<String> _dataSources;
+    
+    protected InputFileParser _inputFile;
     
 }
