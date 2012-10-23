@@ -795,6 +795,8 @@ int pystream::writeLoifTable(const VexData *V)
 	stringstream ss;
 	unsigned int nMode = V->nMode();
 
+	loifSetupFirstUse.resize(nMode);
+
 	p = precision();
 	precision(15);
 
@@ -802,6 +804,9 @@ int pystream::writeLoifTable(const VexData *V)
 	{
 		const VexMode *mode = V->getMode(modeNum);
 		const VexSetup *setup = mode->getSetup(ant);
+
+		// initialize this here, will use this during writeScans
+		loifSetupFirstUse[modeNum] = true;
 
 		if(!setup)
 		{
@@ -1069,6 +1074,7 @@ int pystream::writeScans(const VexData *V)
 	int nScan;
 	const char *switchOutput[] = {"1A", "1B", "2A", "2B"};
 	double recordSeconds = 0.0;
+	double endLastScan = 0.0;
 
 	nScan = V->nScan();
 
@@ -1161,11 +1167,30 @@ int pystream::writeScans(const VexData *V)
 
 			if(s != -1)
 			{
+				// check for minimum time between scans as required by legacy system
+				if( loifSetupFirstUse[modeId] ) {
+					if( (arange->mjdStart - endLastScan)*86400.0 < 15.0) {
+						// move start time
+						deltat1 = floor((endLastScan-mjd0)*86400.0 + 15.0 + 0.5);
+						cerr << "Scan " << scan->defName << " does not have minimum gap to previous scan ("
+							<< (arange->mjdStart - endLastScan)*86400.0 <<  " vs 15). Start time moved!" << endl;
+					}
+					loifSetupFirstUse[modeId] = false;
+				} else {
+					if( (arange->mjdStart - endLastScan)*86400.0 < 5.0) {
+						// move start time
+						deltat1 = floor((endLastScan-mjd0)*86400.0 + 5.0 + 0.5);
+						cerr << "Scan " << scan->defName << " does not have minimum gap to previous scan ("
+							<< (arange->mjdStart - endLastScan)*86400.0 <<  " vs 5). Start time moved!" << endl;
+					}
+				}
+
 				// recognize scans that do not record to Mark5C, but still set switches (need to pass scan start time)
 				if(scan->nRecordChan(V, ant) == 0 || recorderType == RECORDER_NONE)
 				{
 					*this << "print 'Not a recording scan but still set switches for " << scan->defName << ".'" << endl;
-					*this << "subarray.setSwitches(mjdStart + " << deltat1 << "*second, mjdStart+" << deltat2 << "*second, obsCode+'_'+stnCode+'_'+'" << scan->defName << "')" << endl;
+					*this << "subarray.setSwitches(mjdStart + " << deltat1 << "*second, mjdStart+" << deltat2
+						<< "*second, obsCode+'_'+stnCode+'_'+'" << scan->defName << "')" << endl;
 				}
 				else if(setup->formatName == "MARK5B")
 				{
@@ -1175,7 +1200,8 @@ int pystream::writeScans(const VexData *V)
 				}
 				else
 				{
-					cerr << "Error: pystream::writeScans: Can't figure out how to record!  formatName=" << setup->formatName << "  nRecChan=" << scan->nRecordChan(V, ant) << "  recType=" << recorderType << endl;
+					cerr << "Error: pystream::writeScans: Can't figure out how to record!  formatName=" << setup->formatName
+						<< "  nRecChan=" << scan->nRecordChan(V, ant) << "  recType=" << recorderType << endl;
 
 					exit(EXIT_FAILURE);
 				}
@@ -1188,6 +1214,7 @@ int pystream::writeScans(const VexData *V)
 				*this << "else:" << endl;
 				*this << "  print 'Skipping scan which ended at time ' + str(mjdStart+" << deltat2 << "*second) + ' since array.time is ' + str(array.time())" << endl;
 				lastValid = arange->mjdStop;
+				endLastScan = arange->mjdStop;
 			}
 			else
 			{
