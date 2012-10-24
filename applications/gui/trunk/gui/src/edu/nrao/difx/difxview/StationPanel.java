@@ -175,7 +175,7 @@ public class StationPanel extends IndexedPanel {
             public void actionPerformed( ActionEvent e ) {
                 _dataSourcePanel.name( "Data Source: " + (String)_vsnList.getSelectedItem() );
                 getDirectory();
-                //dispatchChangeCallback();
+                dispatchChangeCallback();
             }
         });
         _dataSourcePanel.add( _vsnList );
