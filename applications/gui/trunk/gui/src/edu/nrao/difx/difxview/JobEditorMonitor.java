@@ -92,6 +92,7 @@ public class JobEditorMonitor extends JFrame {
         this.add( _menuBar );
 
         _scrollPane = new NodeBrowserScrollPane();
+        _scrollPane.respondToResizeEvents( true );
         _scrollPane.addTimeoutEventListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
                 newSize();

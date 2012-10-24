@@ -198,6 +198,7 @@ public class SystemSettings extends JFrame {
         helpMenu.add( helpIndexItem );
         this.add( _menuBar );
         _scrollPane = new NodeBrowserScrollPane();
+        _scrollPane.respondToResizeEvents( true );
         _scrollPane.addTimeoutEventListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
                 _this.newSize();

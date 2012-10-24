@@ -115,6 +115,28 @@ public class NodeBrowserScrollPane extends JPanel implements MouseMotionListener
         browserPane.updateUI();
     }
     
+    /*
+     * This is a similar function that responds to changes in the size of the list -
+     * i.e. things already in the list alter their size.  It does not mess with the
+     * scroll bar position.
+     */
+    public void sizeChange() {
+        //boolean scrolledToEnd = scrolledToEnd();
+        Dimension d = getSize();
+        browserPane.measureDataBounds();
+        _scrollBar.setValues( -_yOffset, d.height, 0, browserPane.dataHeight() );
+        if ( -_yOffset > browserPane.dataHeight() - d.height ) {
+            _yOffset = - ( browserPane.dataHeight() - d.height );
+            _scrollBar.setValues( -_yOffset, d.height, 0, browserPane.dataHeight() );
+        }
+        testScrollBar( d.height );
+        //if ( scrolledToEnd )
+        //    scrollToEnd();   // commented out 10/24/2012 - how's it working?
+        //_scrollBar.updateUI();
+        browserPane.yOffset( _yOffset );
+        //browserPane.updateUI();
+    }
+    
     public void setYOffset( int newOffset ) {
         Dimension d = getSize();
         int offset;
@@ -450,6 +472,7 @@ public class NodeBrowserScrollPane extends JPanel implements MouseMotionListener
         if ( newVal ) {
             browserPane.addResizeEventListener(new ActionListener() {
                 public void actionPerformed( ActionEvent e ) {
+                    sizeChange();
                     dispatchResizeEvent();
                 }
             });
