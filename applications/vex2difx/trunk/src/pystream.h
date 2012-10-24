@@ -83,6 +83,7 @@ private:
 	bool isMark5A;
 	vector<map<string,unsigned int> > ifIndex;	// for each scan, map from IF name to number
 	vector<string> phasingSources;
+	vector<bool> loifSetupFirstUse;
 
 	void calcIfIndex(const VexData *V);
 	void writeVCI(const VexData *V, int modeIndex, const string &filename);
