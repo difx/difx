@@ -907,9 +907,13 @@ float Mode::process(int index, int subloopindex)  //frac sample error, fringedel
               if(status != vecNoErr)
                 csevere << startl << "Error doing the DFT!!!" << endl;
             }
-            if(!usecomplex && config->getDRecordedLowerSideband(configindex, datastreamindex, i)) {
-              status = vectorCopy_cf32(&(fftd[recordedbandchannels + 1]), fftoutputs[j][subloopindex], recordedbandchannels - 1);
-              fftoutputs[j][subloopindex][recordedbandchannels - 1] = fftd[0];
+            if(config->getDRecordedLowerSideband(configindex, datastreamindex, i)) {
+	      if (usecomplex) {
+		status = vectorFlip_cf32(fftd, fftoutputs[j][subloopindex], recordedbandchannels);
+	      } else {
+		status = vectorCopy_cf32(&(fftd[recordedbandchannels + 1]), fftoutputs[j][subloopindex], recordedbandchannels - 1);
+		fftoutputs[j][subloopindex][recordedbandchannels - 1] = fftd[0];
+	      }
             }
             else {
               status = vectorCopy_cf32(fftd, fftoutputs[j][subloopindex], recordedbandchannels);

@@ -158,6 +158,7 @@
 #define vectorDotProduct_f64(src1, src2, length, output)                    ippsDotProd_64f(src1, src2, length, output)
 
 #define vectorFlip_f64_I(srcdest, length)                                   ippsFlip_64f_I(srcdest, length)
+#define vectorFlip_cf32(src, dest, length)                                  ippsFlip_32fc(src, dest, length)
 
 #define vectorMagnitude_cf32(src, dest, length)                             ippsMagnitude_32fc(src, dest, length)
 
