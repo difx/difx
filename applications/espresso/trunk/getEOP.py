@@ -38,7 +38,7 @@ except:
 
 #print targetMJD
 
-targetJD  = targetMJD + 2400000.5;
+targetJD  = round(targetMJD) + 2400000.5;
 
 # dates before June 1979 not valid (earliest EOPs)
 if (targetJD < 2444055.5):
