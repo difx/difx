@@ -947,6 +947,7 @@ void Visibility::multicastweights()
 
 void Visibility::writeDiFXHeader(ofstream * output, int baselinenum, int dumpmjd, double dumpseconds, int configindex, int sourceindex, int freqindex, const char polproduct[3], int pulsarbin, int flag, float weight, double buvw[3], int filecount)
 {
+  double dweight = weight;
   /* *output << setprecision(15);
   *output << "BASELINE NUM:       " << baselinenum << endl;
   *output << "MJD:                " << dumpmjd << endl;
@@ -1007,7 +1008,8 @@ void Visibility::writeDiFXHeader(ofstream * output, int baselinenum, int dumpmjd
   todiskmemptrs[filecount] += 4;
   *((int*)(&(todiskbuffer[todiskmemptrs[filecount]]))) = dumpmjd;
   todiskmemptrs[filecount] += 4;
-  *((double*)(&(todiskbuffer[todiskmemptrs[filecount]]))) = dumpseconds;
+  //*((double*)(&(todiskbuffer[todiskmemptrs[filecount]]))) = dumpseconds;
+  memcpy(&(todiskbuffer[todiskmemptrs[filecount]]), &dumpseconds, 8);
   todiskmemptrs[filecount] += 8;
   *((int*)(&(todiskbuffer[todiskmemptrs[filecount]]))) = configindex;
   todiskmemptrs[filecount] += 4;
@@ -1019,7 +1021,8 @@ void Visibility::writeDiFXHeader(ofstream * output, int baselinenum, int dumpmjd
   todiskbuffer[todiskmemptrs[filecount]++] = polproduct[1];
   *((int*)(&(todiskbuffer[todiskmemptrs[filecount]]))) = pulsarbin;
   todiskmemptrs[filecount] += 4;
-  *((double*)(&(todiskbuffer[todiskmemptrs[filecount]]))) = weight;
+  //*((double*)(&(todiskbuffer[todiskmemptrs[filecount]]))) = weight;
+  memcpy(&(todiskbuffer[todiskmemptrs[filecount]]), &dweight, 8);
   todiskmemptrs[filecount] += 8;
   memcpy(&(todiskbuffer[todiskmemptrs[filecount]]), buvw, 3*8);
   todiskmemptrs[filecount] += 3*8;
