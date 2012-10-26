@@ -1589,6 +1589,78 @@ static int vdif_complex_decode_8channel_2bit_decimation1(struct mark5_stream *ms
 
 	return nsamp - nblank;
 }
+//             new vdif mode added by rjc  2012.10.25
+static int vdif_complex_decode_16channel_2bit_decimation1(struct mark5_stream *ms, int nsamp, float complex **data)
+{
+	const unsigned char *buf;
+	const float complex *fcp0, *fcp1, *fcp2, *fcp3, *fcp4, *fcp5, *fcp6, *fcp7;
+	int o, i;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		if(i >= ms->blankzoneendvalid[0])
+		{
+			fcp0 = fcp1 = fcp2 = fcp3 = fcp4 = fcp5 = fcp6 = fcp7 = complex_zeros;
+			nblank++;
+			i+=8;
+		}
+		else
+		{
+			fcp0 = complex_lut2bit[buf[i]];
+			i++;
+			fcp1 = complex_lut2bit[buf[i]];
+			i++;
+			fcp2 = complex_lut2bit[buf[i]];
+			i++;
+			fcp3 = complex_lut2bit[buf[i]];
+			i++;
+			fcp4 = complex_lut2bit[buf[i]];
+			i++;
+			fcp5 = complex_lut2bit[buf[i]];
+			i++;
+			fcp6 = complex_lut2bit[buf[i]];
+			i++;
+			fcp7 = complex_lut2bit[buf[i]];
+			i++;
+		}
+
+
+		data[0][o] = fcp0[0];
+		data[1][o] = fcp0[1];
+		data[2][o] = fcp1[0];
+		data[3][o] = fcp1[1];
+		data[4][o] = fcp2[0];
+		data[5][o] = fcp2[1];
+		data[6][o] = fcp3[0];
+		data[7][o] = fcp3[1];
+		data[8][o] = fcp4[0];
+		data[9][o] = fcp4[1];
+		data[10][o] = fcp5[0];
+		data[11][o] = fcp5[1];
+		data[12][o] = fcp6[0];
+		data[13][o] = fcp6[1];
+		data[14][o] = fcp7[0];
+		data[15][o] = fcp7[1];
+
+		if(i >= ms->databytes)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - nblank;
+}
 
 static int vdif_complex_decode_1channel_4bit_decimation1(struct mark5_stream *ms, int nsamp, float complex **data)
 {
@@ -2789,6 +2861,9 @@ struct mark5_format_generic *new_mark5_format_vdif(int Mbps,
 			break;
 		case 35:
 			f->complex_decode = vdif_complex_decode_8channel_2bit_decimation1;
+			break;
+		case 36:
+			f->complex_decode = vdif_complex_decode_16channel_2bit_decimation1;
 			break;
 
 		case 64:
