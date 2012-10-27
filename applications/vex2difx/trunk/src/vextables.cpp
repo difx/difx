@@ -505,7 +505,7 @@ char VexChannel::bandCode() const
 	{
 		return 'S';
 	}
-	else if(bbcFreq < 6.0e9)
+	else if(bbcFreq < 7.9e9)
 	{
 		return 'C';
 	}
@@ -563,7 +563,7 @@ string VexIF::VLBABandName() const
 	{
 		return "13cm";
 	}
-	else if(bandCenter < 6.0e9)
+	else if(bandCenter < 7.9e9)
 	{
 		return "6cm";
 	}
