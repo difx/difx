@@ -329,9 +329,12 @@ try:
         finally:
             # we're finished with the log...
             os.kill(errormon2.pid, 9)
-            logfile = outdir + jobname + '.log'
-            print "renaming the log file to", logfile
-            shutil.copy2('log', logfile)
+            logfile = open(outdir + jobname + '.log', 'w')
+            print "filtering the log file and copying to", logfile.name
+            #shutil.copy2('log', logfile)
+            for line in open("log"):
+                if jobname in line:
+                    print>>logfile, line,
 finally:
     # and enter an operator comment
     raw_input('\nHit return, then enter an operator comment, minimally: PROD/CLOCK/TEST/FAIL')
