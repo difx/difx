@@ -11,8 +11,8 @@ from time import time
 import datetime
 
 program = 'queueVex'
-version = 1.10
-verdate = '20120220'
+version = 1.11
+verdate = '20121029'
 author  = 'Walter Brisken'
 
 verbose = 1
@@ -131,7 +131,7 @@ def sortmetric(x):
         y = split(x)
 	return vlba2mjd(y[1], y[2])
 
-def addObservation(orig, expt, startMJD, stopMJD, station):
+def addObservation(orig, expt, startMJD, stopMJD, station, overlaps):
 	startDate = mjd2datetime(startMJD)
 	stopDate = mjd2datetime(stopMJD)
 	todayMJD = time()/86400.0 + 40587
@@ -158,6 +158,10 @@ def addObservation(orig, expt, startMJD, stopMJD, station):
 
 		# check for overlap with another observation
 		if startMJD < stopMJD0 and stopMJD > startMJD0:	# some overlap condition exists!
+
+			overlapLength = min(stopMJD0, stopMJD) - max(startMJD0, startMJD)
+
+			overlaps.append('%s overlaps with %s by %4.2f hours at station %s' % (expt, expt0, (overlapLength*24), station))
 			if startMJD0 < startMJD:	# original project starts first
 				newobs = '%s %s %s > %s\n' % (expt0, mjd2datetime(startMJD0), mjd2datetime(startMJD - epsilon), station0)
 				observations.append(newobs)
@@ -263,6 +267,8 @@ execute('mkdir -p %s' % tmpDir)
 
 chdir(tmpDir)
 
+overlaps = []
+
 for vexFile in vexFiles:
 	if vexFile[0] != '/':
 		vexFile = '%s/%s' % (cwd, vexFile)
@@ -330,7 +336,7 @@ for vexFile in vexFiles:
 			execute('touch %s' % observTxFile)
 
 		observations = open(observTxFile).readlines()
-		observations = addObservation(observations, expt, timeRange[0], timeRange[1], station)
+		observations = addObservation(observations, expt, timeRange[0], timeRange[1], station, overlaps)
 		f = open(observTxFile, 'w')
 		for o in observations:
 			f.write(o)
@@ -349,3 +355,10 @@ chdir(cwd)
 
 execute('cp %s/*.py .' % tmpDir)
 execute('rm -rf %s' % tmpDir)
+
+if len(overlaps) > 0:
+	print '\n*** WARNING ***\n'
+	print 'There were scan overlaps at %d stations:' % len(overlaps)
+	for o in overlaps:
+		print '  %s' % o
+	print ''
