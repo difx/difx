@@ -19,7 +19,7 @@ parser.add_option( "--time", "-t",
         action="store_true", dest="plottime", default=False,
         help='Plot elapsed time instead of speedup factor' )
 parser.add_option( "--averaging_time", "-a",
-        type=int, dest="avg", default=300,
+        type=float, dest="avg", default=300,
         help='Average the data for AVG seconds (300)' )
 parser.add_option( "--speedup_poly", "-p",
         type=int, dest="poly_order", default=False,
@@ -27,6 +27,9 @@ parser.add_option( "--speedup_poly", "-p",
 parser.add_option( "--removegap", "-r",
         action="store_true", dest="removegap", default=False,
         help='Remove gaps in the observation time' )
+parser.add_option( "--verbose", "-v",
+        action="store_true", dest="verbose", default=False,
+        help='Increase verbosity' )
 
 (options, args) = parser.parse_args()
 if len(args) < 1:
@@ -67,17 +70,17 @@ for filename in args:
         line = line.strip()
 
         # match the correlator time and observation in the log file
-        obstime_match = re.search(r'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}),(\d{3}).*The approximate mjd/seconds is (.*)', line)
-        #obstime_match = re.search(r'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}),(\d{3}).*to write out time (.*)', line)
+        #obstime_match = re.search(r'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}),(\d{3}).*The approximate mjd/seconds is (.*)', line)
+        obstime_match = re.search(r'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}),(\d{3}).*to write out time (.*)', line)
         if not obstime_match:
             continue
 
         # convert correlator and observation time strings to seconds
         corrtime = obstime_match.groups()[0]
         corr_fracsec = int(obstime_match.groups()[1]) * 1e-3
-        obstime_day, obstime_secs = obstime_match.groups()[2].split('/')
-        #obs_secs = float(obstime_match.groups()[2])
-        obs_secs = int(obstime_day)*(24*60*60.) + int(obstime_secs)
+        #obstime_day, obstime_secs = obstime_match.groups()[2].split('/')
+        #obs_secs = int(obstime_day)*(24*60*60.) + int(obstime_secs)
+        obs_secs = float(obstime_match.groups()[2])
         corrdatetime = datetime.datetime.strptime(corrtime, '%Y-%m-%d %H:%M:%S')
         corr_secs = time.mktime(corrdatetime.timetuple()) + corr_fracsec
 
@@ -89,9 +92,15 @@ for filename in args:
     this_ydata = numpy.array(this_ydata)
 
     # find the integration time - typical spacing between mjds in the log
-    int_time = int(numpy.median(numpy.diff(this_ydata)))
+    int_time = numpy.median(numpy.diff(this_ydata))
+    if options.verbose:
+        print filename, 't_int:', int_time, 'n_int:', len(this_ydata)
     # nskip is fraction of the data points we will keep
-    nskip = options.avg//int_time
+    if int_time < options.avg:
+        nskip = int(options.avg//int_time)
+    else:
+        nskip = 1
+        sys.stderr.write("Warning: averaging time less than correlator integration time, resetting AVG to: " + str(int_time) + '\n')
 
     # remove gaps in the observation if requested
     if options.removegap:
@@ -113,7 +122,7 @@ for filename in args:
     xdata = numpy.concatenate((xdata, this_xdata))
 
 
-print filename, 'speedup factor:', ydata[-1]/xdata[-1]
+print 'speedup factor:', ydata[-1]/xdata[-1]
 
 xmax = xdata[-1]
 ymax = ydata[-1]
