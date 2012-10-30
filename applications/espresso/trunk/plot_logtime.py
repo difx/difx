@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# program to plot elapsed time versus correlator time from DiFX logs.
+# program to plot observation time versus correlator time from DiFX logs.
 import sys, os, re, optparse, pprint, urllib, datetime, time
 import scipy
 from scipy import interpolate
@@ -44,18 +44,19 @@ if options.removegap:
     title += ' (no gaps)'
 pyplot.title(title)
 
-pyplot.xlabel('Correlation time/sec')
 if options.plottime:
+    pyplot.xlabel('Correlation time/sec')
     pyplot.ylabel('Observation time/sec')
 else:
+    pyplot.xlabel('Observation time/sec')
     pyplot.ylabel('Speedup factor')
 
 no_offset = matplotlib.ticker.ScalarFormatter(useOffset=False)
 pyplot.gca().xaxis.set_major_formatter(no_offset)
 pyplot.gca().yaxis.set_major_formatter(no_offset)
 
-xdata = numpy.array([0])
-ydata = numpy.array([0])
+correlation = numpy.array([0])
+observation = numpy.array([0])
 for filename in args:
     thisdatafile = open(filename).readlines()
 
@@ -110,45 +111,36 @@ for filename in args:
 
     # move array to origin (start time=t_int,t_int for first file and continues
     # to next file without a gap)
-    this_ydata = this_ydata - this_ydata[0] + ydata[-1] + int_time
-    this_xdata = this_xdata - this_xdata[0] + xdata[-1] + int_time
+    this_ydata = this_ydata - this_ydata[0] + observation[-1] + int_time
+    this_xdata = this_xdata - this_xdata[0] + correlation[-1] + int_time
 
     # only need a fraction of the points (this also effectively smooths)
     this_ydata = [this_ydata[i] for i in range(0, len(this_ydata), nskip)]
     this_xdata = [this_xdata[i] for i in range(0, len(this_xdata), nskip)]
 
     # concatenate this file's data to the master arrays
-    ydata = numpy.concatenate((ydata, this_ydata))
-    xdata = numpy.concatenate((xdata, this_xdata))
+    observation = numpy.concatenate((observation, this_ydata))
+    correlation = numpy.concatenate((correlation, this_xdata))
 
 
-print 'speedup factor:', ydata[-1]/xdata[-1]
+print 'speedup factor:', observation[-1]/correlation[-1]
 
-xmax = xdata[-1]
-ymax = ydata[-1]
+xmax = correlation[-1]
+ymax = observation[-1]
 
 if options.plottime:
-    pyplot.plot(xdata, ydata, '.')
+    pyplot.plot(correlation, observation, '.')
 else:
-    ydata_speedup = ydata/xdata
-    pyplot.plot(xdata, ydata_speedup, label='Integrated speedup')
-    #time_smooth = interpolate.interp1d(xdata, ydata, kind='cubic')
-    #pyplot.plot(xdata, ydata, label=line_label + 'orig')
-    #time_smooth = interpolate.splrep(xdata,ydata, s=len(xdata))
-    #time_smooth = interpolate.splrep(xdata,ydata)
-    #xdata = range(0, int(xdata[-1]), 1)
-    #ydata = interpolate.splev(xdata, time_smooth, der=1)
-    ydata_diff = numpy.diff(ydata)/numpy.diff(xdata)
-    xdata_diff = xdata[0:-1]
-    pyplot.plot(xdata_diff, ydata_diff, label='Instantaneous speedup')
-    #pyplot.plot(xdata, ydata, label=line_label + 'orig')
+    speedup = observation/correlation
+    pyplot.plot(observation, speedup, label='Integrated speedup')
+    speedup = numpy.diff(observation)/numpy.diff(correlation)
+    xdata_diff = observation[0:-1]
+    pyplot.plot(xdata_diff, speedup, label='Instantaneous speedup')
     if options.poly_order:
-        poly_fit = numpy.polyfit(xdata, ydata, options.poly_order)
-        xdata_poly = numpy.linspace(xdata[0], xdata[-1])
-        ydata_poly = numpy.polyval(poly_fit, xdata_poly)
-        ydata_poly = numpy.diff(ydata_poly)/numpy.diff(xdata_poly)
-        xdata_poly = xdata_poly[0:-1]
-        pyplot.plot(xdata_poly, ydata_poly, label='Smoothed Instantaneous speedup')
+        poly_fit = numpy.polyfit(correlation, observation, options.poly_order)
+        ydata_poly = numpy.polyval(poly_fit, correlation)
+        ydata_poly = numpy.diff(ydata_poly)/numpy.diff(correlation)
+        pyplot.plot(xdata_diff, ydata_poly, label='Smoothed Instantaneous speedup')
 
 if options.plottime:
     pyplot.plot([0, ymax], [0, ymax], label='Real time')
