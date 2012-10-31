@@ -17,7 +17,7 @@ parser.add_option( "--output", "-o",
         help='print to file' )
 parser.add_option( "--time", "-t",
         action="store_true", dest="plottime", default=False,
-        help='Plot elapsed time instead of speedup factor' )
+        help='Plot elapsed correlation time instead of speedup factor' )
 parser.add_option( "--averaging_time", "-a",
         type=float, dest="avg", default=300,
         help='Average the data for AVG seconds (300)' )
@@ -51,6 +51,7 @@ else:
     pyplot.xlabel('Observation time/sec')
     pyplot.ylabel('Speedup factor')
 
+# remove overalling scaling from axis values
 no_offset = matplotlib.ticker.ScalarFormatter(useOffset=False)
 pyplot.gca().xaxis.set_major_formatter(no_offset)
 pyplot.gca().yaxis.set_major_formatter(no_offset)
@@ -63,14 +64,12 @@ for filename in args:
     this_xdata = []
     this_ydata = []
 
-    #line_label = filename
-
     nlines = 0
     for line in thisdatafile:
         nlines += 1
         line = line.strip()
 
-        # match the correlator time and observation in the log file
+        # match the correlator time and observation time in the log file
         #obstime_match = re.search(r'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}),(\d{3}).*The approximate mjd/seconds is (.*)', line)
         obstime_match = re.search(r'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}),(\d{3}).*to write out time (.*)', line)
         if not obstime_match:
@@ -92,10 +91,9 @@ for filename in args:
     this_xdata = numpy.array(this_xdata)
     this_ydata = numpy.array(this_ydata)
 
-    # find the integration time - typical spacing between mjds in the log
+
+    # find the integration time - typical spacing between observation times in the log
     int_time = numpy.median(numpy.diff(this_ydata))
-    if options.verbose:
-        print filename, 't_int:', int_time, 'n_int:', len(this_ydata)
     # nskip is fraction of the data points we will keep
     if int_time < options.avg:
         nskip = int(options.avg//int_time)
@@ -109,14 +107,20 @@ for filename in args:
         this_ydata = numpy.arange(0, len(this_ydata)*int_time, int_time)
         print 'removed', orig_length - this_ydata[-1], 'secs'
 
-    # move array to origin (start time=t_int,t_int for first file and continues
-    # to next file without a gap)
-    this_ydata = this_ydata - this_ydata[0] + observation[-1] + int_time
-    this_xdata = this_xdata - this_xdata[0] + correlation[-1] + int_time
+    # move array to origin (start time=int_time for first file and
+    # continues to next file without a gap)
+    offset_y = observation[-1] + int_time
+    offset_x = correlation[-1] + int_time
+    this_ydata = this_ydata - this_ydata[0] + offset_y
+    this_xdata = this_xdata - this_xdata[0] + offset_x
+
+    if options.verbose:
+        print filename, 't_int:', int_time, 'n_int:', len(this_ydata), 'start:', this_ydata[0]
 
     # only need a fraction of the points (this also effectively smooths)
-    this_ydata = [this_ydata[i] for i in range(0, len(this_ydata), nskip)]
-    this_xdata = [this_xdata[i] for i in range(0, len(this_xdata), nskip)]
+    this_ydata = [this_ydata[i] for i in range(nskip, len(this_ydata), nskip)]
+    this_xdata = [this_xdata[i] for i in range(nskip, len(this_xdata), nskip)]
+
 
     # concatenate this file's data to the master arrays
     observation = numpy.concatenate((observation, this_ydata))
@@ -125,27 +129,33 @@ for filename in args:
 
 print 'speedup factor:', observation[-1]/correlation[-1]
 
-xmax = correlation[-1]
-ymax = observation[-1]
-
 if options.plottime:
+    # simply plot correlation time against observation time
     pyplot.plot(correlation, observation, '.')
 else:
+    # plot the cumulative speedup and instantaneous speedup against
+    # observation time
     speedup = observation/correlation
     pyplot.plot(observation, speedup, label='Integrated speedup')
     speedup = numpy.diff(observation)/numpy.diff(correlation)
-    xdata_diff = observation[0:-1]
+    xdata_diff = observation[1:]
     pyplot.plot(xdata_diff, speedup, label='Instantaneous speedup')
     if options.poly_order:
+        # slightly silly option to fit the data with a polynomial before
+        # calculating speedup
         poly_fit = numpy.polyfit(correlation, observation, options.poly_order)
         ydata_poly = numpy.polyval(poly_fit, correlation)
         ydata_poly = numpy.diff(ydata_poly)/numpy.diff(correlation)
         pyplot.plot(xdata_diff, ydata_poly, label='Smoothed Instantaneous speedup')
 
+corrmax = correlation[-1]
+obsmax = observation[-1]
+
+# Plot a line indicating where real-time correlation would be.
 if options.plottime:
-    pyplot.plot([0, ymax], [0, ymax], label='Real time')
+    pyplot.plot([0, obsmax], [0, obsmax], label='Real time')
 else:
-    pyplot.plot([0, xmax], [1, 1], label='Real time')
+    pyplot.plot([0, obsmax], [1, 1], label='Real time')
 
 
 pyplot.legend(loc='best', prop={'size':8})
