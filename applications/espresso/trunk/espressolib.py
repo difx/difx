@@ -1,7 +1,8 @@
 #!/usr/bin/python
 # Some functions used by the Espresso scripts
 # Cormac Reynolds, original version: 2011 November 22
-import re, os, fcntl, mx.DateTime
+import re, os, fcntl, mx.DateTime, smtplib, sys
+from email.mime.text import MIMEText
 
 def get_corrhosts(hostsfilename):
     '''Parse the host list file. Return a dict where the key is the hostname.
@@ -55,17 +56,59 @@ def openlock(filename):
 def mjd2vex(indate):
     '''converts indate from mjd to vex or vice versa'''
 
+    vexformat = '%Yy%jd%Hh%Mm%Ss'
     try:
-        outdate = mx.DateTime.strptime(indate, '%Yy%jd%Hh%Mm%Ss').mjd
+        outdate = mx.DateTime.strptime(indate, vexformat).mjd
     except:
         try:
             gregdate = mx.DateTime.DateTimeFromMJD(float(indate))
-            outdate = "%04dy%03dd%02dh%02dm%02ds" % (gregdate.year, gregdate.day_of_year, gregdate.hour, gregdate.minute, gregdate.second)
+            outdate = gregdate.strftime(vexformat)
         except:
             raise Exception("Accepts dates only in VEX format, e.g. 2010y154d12h45m52s, or MJD")
 
     return outdate
     
     
+#def email(user, passwd, message):
+#    '''Simple gmail notification message'''
+#
+#    msg = MIMEText(message)
+#
+#    msg['Subject'] = 'Correlator notification'
+#    msg['From'] = user
+#    msg['To'] = user
+#
+#    server = smtplib.SMTP('smtp.gmail.com:587')  
+#    server.starttls()  
+#    server.login(user,passwd)  
+#    server.sendmail(user, user, msg.as_string())  
+#    server.quit()  
+
+class Email:
+    '''Simple gmail notification message. Logs in to gmail server of the given account and sends an email to that same account'''
+
+    def __init__(self, user, passwd):
+        self.user = user
+        self.passwd = passwd
+
+    def connect(self):
+        self.server = smtplib.SMTP('smtp.gmail.com:587')  
+        self.server.starttls()  
+        try:
+            self.server.login(self.user, self.passwd)  
+        except Exception as connectionError:
+            print connectionError
+            raise 
+
+
+    def sendmail(self, message):
+        self.msg = MIMEText(message)
+        self.msg['Subject'] = 'Correlator notification'
+        self.msg['From'] = self.user
+        self.msg['To'] = self.user
+        self.server.sendmail(self.user, self.user, self.msg.as_string())  
+
+    def disconnect(self):
+        self.server.quit()  
 
 

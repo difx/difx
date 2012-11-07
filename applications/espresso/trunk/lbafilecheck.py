@@ -90,7 +90,7 @@ def check_machines(machines):
             machine_error += ' ' + machine 
 
 
-    if machine_error:
+    if machine_error and options.no_rmaps_seq:
        print '\n' * 2, '!' * 20
        print "Warning:", machine_error, "appear(s) multiple times in the machines.list file, but not in consecutive order. This machine file will not work unless you have openmpi v1.4 or greater!"
 
@@ -155,7 +155,7 @@ parser.add_option( "--computehead", "-H",
         help="Allow head and data nodes to be used as compute nodes" )
 parser.add_option( "--no_rmaps_seq", "-M",
         action='store_true', dest="no_rmaps_seq", default=False,
-        help="Do not pass the '--mca rmaps seq' instruction to mpirun" )
+        help="Do not pass the '--mca rmaps seq' instruction to mpirun (requires openmpi v1.4 or greater)" )
 
 (options, args) = parser.parse_args()
 

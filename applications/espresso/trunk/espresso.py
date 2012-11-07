@@ -3,6 +3,7 @@
 # Cormac Reynolds: June 2010
 
 import subprocess, optparse, re, shutil, os, sys, time, fileinput, pprint
+import espressolib, getpass
 
 def run_vex2difx(v2dfilename, vex2difx_options):
     # run vex2difx, and wait for completion
@@ -119,7 +120,7 @@ def run_lbafilecheck(datafilename, stations, computehead, no_rmaps_seq):
         options += ' -H '
     if no_rmaps_seq:
         options += ' -M '
-    command = "lbafilecheck.py -F " + options + " -s " + stations + " " + datafilename
+    command = "/nfs/apps/corr/DiFX-trunk/applications/espresso/trunk/lbafilecheck.py -F " + options + " -s " + stations + " " + datafilename
     print command
     subprocess.check_call( command, stdout=sys.stdout, shell=True)
 
@@ -175,11 +176,34 @@ parser.add_option( "--computehead", "-H",
 parser.add_option( "--no_rmaps_seq", "-M",
         dest="no_rmaps_seq", action="store_true", default=False,
         help="Don't Pass the '--mca rmaps seq' instruction to mpirun"  )
+parser.add_option( "--no_email", "-E",
+        dest="noemail", action="store_true", default=False,
+        help="Don't prompt for notification email"  )
 
 (options, args) = parser.parse_args()
 
 if options.testjob and options.clockjob:
     raise Exception ("Don't use both -t and -c together!")
+
+# get email and password so we can notify
+get_email = False
+if not options.noemail and not options.clockjob and not options.testjob:
+    get_email = True
+user = str()
+emailserver = ()
+while get_email:
+    try:
+        user = raw_input("Enter *gmail* address and password for notifications (or return to ignore):\n")
+        if user:
+            emailserver = espressolib.Email(user, getpass.getpass())
+            emailserver.connect()
+            emailserver.disconnect()
+            break
+        else:
+            get_email = False
+    except:
+        print "Connection failed - try again"
+
 
 if len(args) < 1 and not options.expt_all:
     parser.print_help()
@@ -329,6 +353,7 @@ try:
         finally:
             # we're finished with the log...
             os.kill(errormon2.pid, 9)
+            time.sleep(1)
             logfile = open(outdir + jobname + '.log', 'w')
             print "filtering the log file and copying to", logfile.name
             #shutil.copy2('log', logfile)
@@ -336,6 +361,17 @@ try:
                 if jobname in line:
                     print>>logfile, line,
 finally:
+    # let someone know we've finished
+    if get_email:
+        try:
+            print "\nEmailing", emailserver.user
+            message = str(corrjoblist.keys()) + " finished"
+            emailserver.connect()
+            emailserver.sendmail(message)
+            emailserver.disconnect()
+        except:
+            print "No notification email sent"
+
     # and enter an operator comment
     raw_input('\nHit return, then enter an operator comment, minimally: PROD/CLOCK/TEST/FAIL')
     operator_log = 'comment.txt'

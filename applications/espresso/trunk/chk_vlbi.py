@@ -84,7 +84,7 @@ if __name__ == '__main__':
         filelist = [line.rstrip() for line in filelist]
     
     # check each file, then print it. Corrupt/missing files get a comment
-    # character prepended.
+    # character prepended. File durations get appended for LBA files.
     for infile in filelist:
         outfile = check_file(infile)
         #outfilelist.append(outfile)
