@@ -1019,7 +1019,9 @@ def bootstrap(comps, params, args, verbose, pretend):
 		out.close()
 
 		execute('chmod +x %s' % setupFile, verbose, pretend)
-		execute('cp %s %s/bin/%s.%s' % (setupFile, config['difxbase'], setupFileName, label), verbose, pretend)
+		execute('rm -f %s/bin/%s.%s' % (config['difxbase'], setupFileName, label), verbose, pretend)
+		execute('ln -s %s %s/bin/%s.%s' % (setupFile, config['difxbase'], setupFileName, label), verbose, pretend)
+
 
 		# copy bootstrap file for future reference
 		execute('cp %s %s/bootstrap/"%s.%s.%s"' % (params['ConfigFile'], config['difxbase'], split(params['ConfigFile'], '/')[-1], asctime(), version), verbose, pretend)
