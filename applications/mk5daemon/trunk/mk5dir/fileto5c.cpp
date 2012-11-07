@@ -514,7 +514,7 @@ static int filetoCore(const char *filename, int bank, const char *label, unsigne
 	WATCHDOGTEST( XLRGetUserDir(xlrDevice, len, 0, *dirData) );
 	for(int i = 0; i < 256; ++i)
 	{
-		*dirData[len+i] = 0;
+		(*dirData)[len+i] = 0;
 	}
 	dirHeader = (struct Mark5DirectoryHeaderVer1 *)(*dirData);
 	printf("Directory %d %d\n", dirHeader->version, len/128-1);
