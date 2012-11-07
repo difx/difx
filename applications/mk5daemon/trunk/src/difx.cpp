@@ -165,7 +165,6 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G, int noS
 	char message[DIFX_MESSAGE_LENGTH];
   	char restartOption[RestartOptionLength];
 	char command[MAX_COMMAND_SIZE];
-	char difxlogCommand[MAX_COMMAND_SIZE];
 	char chmodCommand[MAX_COMMAND_SIZE];
 	FILE *out;
 	Uses *uses;
@@ -778,42 +777,41 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G, int noS
 	/* now spawn the difxlog process. */
 	if(fork() == 0)
 	{
-		
-		// obtain full path to difxlog. Assumes that it resides under $DIFXROOT/bin
-		strncpy(difxlogCommand, getenv("DIFXROOT"), MAX_COMMAND_SIZE);
-		strncat(difxlogCommand, "/bin/difxlog", MAX_COMMAND_SIZE);
-		
-		if ( S->function == DIFX_START_FUNCTION_USNO ) 
-			snprintf( command, MAX_COMMAND_SIZE, 
-			    "ssh -x %s@%s 'difxlog %s %s.difxlog 4 %d &> /dev/null'",
-			     user, S->headNode, jobName, filebase, childPid );
+		if(S->function == DIFX_START_FUNCTION_USNO) 
+		{
+			snprintf(command, MAX_COMMAND_SIZE, "ssh -x %s@%s 'difxlog %s %s.difxlog 4 %d &> /dev/null'",
+			     user, S->headNode, jobName, filebase, childPid);
+		}
 		else
 		{
-			if (noSu)
-			    snprintf(command, MAX_COMMAND_SIZE,
-				    "ssh -x %s@%s \"%s %s %s.difxlog 4 %d &> /dev/null\"",
-				    user, S->headNode, difxlogCommand, jobName, filebase, childPid);
+			if(noSu)
+			{
+				snprintf(command, MAX_COMMAND_SIZE, "ssh -x %s@%s \"difxlog %s %s.difxlog 4 %d &> /dev/null\"",
+					user, S->headNode, jobName, filebase, childPid);
+			}
 			else
-			    snprintf(command, MAX_COMMAND_SIZE,
-				    "su - %s -c 'ssh -x %s \"%s %s %s.difxlog 4 %d &> /dev/null\"'",
-				    user, S->headNode, difxlogCommand, jobName, filebase, childPid);
+			{
+				snprintf(command, MAX_COMMAND_SIZE, "su - %s -c 'ssh -x %s \"difxlog %s %s.difxlog 4 %d &> /dev/null\"'",
+					user, S->headNode, jobName, filebase, childPid);
+			}
 		}
-		Mk5Daemon_system(D, command, 1);
+		Mk5Daemon_system(D, command, 1);	/* this will return when difxlog terminates. */
 
 		/* change ownership to match input file */
-		if ( S->function != DIFX_START_FUNCTION_USNO ) {
-			snprintf(command, MAX_COMMAND_SIZE,
-				"chown --reference=%s %s.difxlog", 
-				S->inputFilename, filebase);
+		if(S->function != DIFX_START_FUNCTION_USNO)
+		{
+			snprintf(command, MAX_COMMAND_SIZE, "chown --reference=%s %s.difxlog", S->inputFilename, filebase);
 			Mk5Daemon_system(D, command, 1);
-			}
+		}
 
-		if ( S->function == DIFX_START_FUNCTION_USNO )
-			snprintf( command, MAX_COMMAND_SIZE, "ssh -x %s@%s 'chmod --reference=%s %s.difxlog'", user, S->headNode, S->inputFilename, filebase );
+		if(S->function == DIFX_START_FUNCTION_USNO)
+		{
+			snprintf(command, MAX_COMMAND_SIZE, "ssh -x %s@%s 'chmod --reference=%s %s.difxlog'", user, S->headNode, S->inputFilename, filebase);
+		}
 		else
-			snprintf(command, MAX_COMMAND_SIZE, 
-				"chmod --reference=%s %s.difxlog", 
-				S->inputFilename, filebase);
+		{
+			snprintf(command, MAX_COMMAND_SIZE, "chmod --reference=%s %s.difxlog", S->inputFilename, filebase);
+		}
 		Mk5Daemon_system(D, command, 1);
 
 		exit(EXIT_SUCCESS);
