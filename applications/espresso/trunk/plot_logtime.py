@@ -1,6 +1,6 @@
 #!/usr/bin/python
 # program to plot observation time versus correlator time from DiFX logs.
-import sys, os, re, optparse, pprint, urllib, datetime, time
+import sys, os, re, optparse, datetime, time
 import scipy
 from scipy import interpolate
 from math import *
@@ -30,6 +30,9 @@ parser.add_option( "--removegap", "-r",
 parser.add_option( "--verbose", "-v",
         action="store_true", dest="verbose", default=False,
         help='Increase verbosity' )
+parser.add_option( "--labelfile", "-l",
+        action="store_true", dest="labelfile", default=False,
+        help='Label plot with file start positions' )
 
 (options, args) = parser.parse_args()
 if len(args) < 1:
@@ -39,10 +42,11 @@ if len(args) < 1:
 filenames = args
 
 
-title = 'Correlator Speedup ' + str(filenames)
+title = 'Correlator Speedup ' #+ str(filenames)
 if options.removegap:
     title += ' (no gaps)'
 pyplot.title(title)
+pyplot.suptitle(str(filenames), fontsize='x-small')
 
 if options.plottime:
     pyplot.xlabel('Correlation time/sec')
@@ -58,6 +62,7 @@ pyplot.gca().yaxis.set_major_formatter(no_offset)
 
 correlation = numpy.array([0])
 observation = numpy.array([0])
+new_files = []
 for filename in args:
     thisdatafile = open(filename).readlines()
 
@@ -91,7 +96,6 @@ for filename in args:
     this_xdata = numpy.array(this_xdata)
     this_ydata = numpy.array(this_ydata)
 
-
     # find the integration time - typical spacing between observation times in the log
     int_time = numpy.median(numpy.diff(this_ydata))
     # nskip is fraction of the data points we will keep
@@ -99,13 +103,20 @@ for filename in args:
         nskip = int(options.avg//int_time)
     else:
         nskip = 1
-        sys.stderr.write("Warning: averaging time less than correlator integration time, resetting AVG to: " + str(int_time) + '\n')
+        sys.stderr.write(filename + "Warning: averaging time less than correlator integration time, resetting AVG to: " + str(int_time) + '\n')
+
+    # make sure averaging time is not too long
+    #nskip = int(min(nskip, len(this_ydata//2) ))
+    minpoints = 3
+    if nskip > len(this_ydata)//minpoints:
+        nskip = max(len(this_ydata)//minpoints, 1)
+        print filename, ": averaging time too long, reducing to", int_time*nskip
 
     # remove gaps in the observation if requested
     if options.removegap:
         orig_length = this_ydata[-1] - this_ydata[0]
         this_ydata = numpy.arange(0, len(this_ydata)*int_time, int_time)
-        print 'removed', orig_length - this_ydata[-1], 'secs'
+        print filename, ': removed', orig_length - this_ydata[-1], 'secs'
 
     # move array to origin (start time=int_time for first file and
     # continues to next file without a gap)
@@ -121,14 +132,17 @@ for filename in args:
     this_ydata = [this_ydata[i] for i in range(nskip, len(this_ydata), nskip)]
     this_xdata = [this_xdata[i] for i in range(nskip, len(this_xdata), nskip)]
 
-
     # concatenate this file's data to the master arrays
     observation = numpy.concatenate((observation, this_ydata))
     correlation = numpy.concatenate((correlation, this_xdata))
 
+    if options.labelfile:
+        new_files.append((this_xdata[0], this_ydata[0]))
+
 
 print 'speedup factor:', observation[-1]/correlation[-1]
 
+speedup = []
 if options.plottime:
     # simply plot correlation time against observation time
     pyplot.plot(correlation, observation, '.')
@@ -148,18 +162,56 @@ else:
         ydata_poly = numpy.diff(ydata_poly)/numpy.diff(correlation)
         pyplot.plot(xdata_diff, ydata_poly, label='Smoothed Instantaneous speedup')
 
-corrmax = correlation[-1]
-obsmax = observation[-1]
+#corrmax = correlation[-1]
+#obsmax = observation[-1]
 
 # Plot a line indicating where real-time correlation would be.
+xmin = False
+xmax = False
+ymin = False
+ymax = False
 if options.plottime:
-    pyplot.plot([0, obsmax], [0, obsmax], label='Real time')
+    xmin = correlation[0]
+    xmax = correlation[-1]
+    ymin = observation[0]
+    ymax = observation[-1]
+    pyplot.plot([0, ymax], [0, ymax], label='Real time')
 else:
-    pyplot.plot([0, obsmax], [1, 1], label='Real time')
+    xmin = observation[0]
+    xmax = observation[-1]
+    ymin = min(min(speedup), 1)
+    ymax = max(max(speedup), 1)
+    pyplot.plot([0, xmax], [1, 1], label='Real time')
+
+deltax = xmax - xmin
+deltay = ymax - ymin
 
 
-pyplot.legend(loc='best', prop={'size':8})
+# annotate plot with the start times of the different files if requested
+if options.labelfile:
+    textside = -1
+    ifile = -1
+    for new_file in new_files:
+        textside *= -1
+        ifile += 1
+        pointpos = []
+        if options.plottime:
+            pointpos = new_file
+        else:
+            speedup = new_file[1]/new_file[0]
+            pointpos = (new_file[1], speedup)
+        ytextoffset = (len(filenames)-ifile)*0.45*deltay*textside/(len(filenames))
+        ytextpos = 0.5*(ymin+ymax) + ytextoffset
+        if abs(ytextpos - pointpos[1]) < deltay*0.1:
+            ytextpos = 0.5*(ymin+ymax) + ytextoffset*-1
+        textpos = (pointpos[0], ytextpos)
+        #textpos = (pointpos[0], 0.5*(ymin+ymax) + 0.45*deltay*textside)
+        pyplot.annotate(filenames[ifile], pointpos, textpos,
+                arrowprops=dict(arrowstyle="->"), fontsize='x-small')
 
+pyplot.legend(loc='best', prop={'size':'small'})
+
+#pyplot.figtext(0,0, str(filenames), transform=pyplot.gca().transAxes)
 
 if options.outfile:
     pyplot.savefig(options.outfile)
