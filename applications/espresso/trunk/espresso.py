@@ -120,7 +120,7 @@ def run_lbafilecheck(datafilename, stations, computehead, no_rmaps_seq):
         options += ' -H '
     if no_rmaps_seq:
         options += ' -M '
-    command = "/nfs/apps/corr/DiFX-trunk/applications/espresso/trunk/lbafilecheck.py -F " + options + " -s " + stations + " " + datafilename
+    command = "lbafilecheck.py -F " + options + " -s " + stations + " " + datafilename
     print command
     subprocess.check_call( command, stdout=sys.stdout, shell=True)
 
