@@ -92,6 +92,7 @@ class Email:
         self.passwd = passwd
 
     def connect(self):
+        '''Set up the connection to the SMTP server'''
         self.server = smtplib.SMTP('smtp.gmail.com:587')  
         self.server.starttls()  
         try:
@@ -102,13 +103,15 @@ class Email:
 
 
     def sendmail(self, message):
-        self.msg = MIMEText(message)
-        self.msg['Subject'] = 'Correlator notification'
-        self.msg['From'] = self.user
-        self.msg['To'] = self.user
-        self.server.sendmail(self.user, self.user, self.msg.as_string())  
+        '''Send the given message via the already prepared SMTP connection'''
+        msg = MIMEText(message)
+        msg['Subject'] = 'Correlator notification'
+        msg['From'] = self.user
+        msg['To'] = self.user
+        self.server.sendmail(self.user, self.user, msg.as_string())  
 
     def disconnect(self):
+        '''Quit the SMTP connection'''
         self.server.quit()  
 
 
