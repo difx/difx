@@ -177,6 +177,8 @@
                 <xsd:element ref="windowConfigDirectoryDisplayH"/>
                 <xsd:element ref="windowConfigMonitorDisplayW"/>
                 <xsd:element ref="windowConfigMonitorDisplayH"/>
+                <xsd:element ref="windowConfigDiskSearchRulesDisplayW"/>
+                <xsd:element ref="windowConfigDiskSearchRulesDisplayH"/>
 
                 <xsd:element ref="defaultNamesVexFileSource"/>
                 <xsd:element ref="defaultNamesViaHttpLocation"/>
@@ -270,6 +272,15 @@
                 <xsd:element ref="hardwareDataMJD" />
                 <xsd:element ref="hardwareCurrentJob" />
                 
+                <xsd:element ref="jobLocationDefaultsFileFilter" />
+                <xsd:element ref="jobLocationDefaultsExperimentBasedOnPathFalse" />
+                <xsd:element ref="jobLocationDefaultsExperimentNamed" />
+                <xsd:element ref="jobLocationDefaultsExperimentName" />
+                <xsd:element ref="jobLocationDefaultsPassBasedOnPathFalse" />
+                <xsd:element ref="jobLocationDefaultsPassNamed" />
+                <xsd:element ref="jobLocationDefaultsNoPass" />
+                <xsd:element ref="jobLocationDefaultsPassName" />
+                <xsd:element ref="jobLocationDefaultsAutoUpdate" />                
                 
             </xsd:sequence>
         </xsd:complexType>
@@ -355,6 +366,8 @@
     <xsd:element name="windowConfigDirectoryDisplayH" type="xsd:int"></xsd:element>
     <xsd:element name="windowConfigMonitorDisplayW" type="xsd:int"></xsd:element>
     <xsd:element name="windowConfigMonitorDisplayH" type="xsd:int"></xsd:element>
+    <xsd:element name="windowConfigDiskSearchRulesDisplayW" type="xsd:int"></xsd:element>
+    <xsd:element name="windowConfigDiskSearchRulesDisplayH" type="xsd:int"></xsd:element>
                 
     <xsd:element name="defaultNamesVexFileSource" type="xsd:string"></xsd:element>
     <xsd:element name="defaultNamesViaHttpLocation" type="xsd:string"></xsd:element>
@@ -447,6 +460,16 @@
     <xsd:element name="hardwarePlayRate" type="columnSpec"></xsd:element>
     <xsd:element name="hardwareDataMJD" type="columnSpec"></xsd:element>
     <xsd:element name="hardwareCurrentJob" type="columnSpec"></xsd:element>
+                
+    <xsd:element name="jobLocationDefaultsFileFilter" type="xsd:string"></xsd:element>
+    <xsd:element name="jobLocationDefaultsExperimentBasedOnPathFalse" type="xsd:boolean"></xsd:element>
+    <xsd:element name="jobLocationDefaultsExperimentNamed" type="xsd:boolean"></xsd:element>
+    <xsd:element name="jobLocationDefaultsExperimentName" type="xsd:string"></xsd:element>
+    <xsd:element name="jobLocationDefaultsPassBasedOnPathFalse" type="xsd:boolean"></xsd:element>
+    <xsd:element name="jobLocationDefaultsPassNamed" type="xsd:boolean"></xsd:element>
+    <xsd:element name="jobLocationDefaultsNoPass" type="xsd:boolean"></xsd:element>
+    <xsd:element name="jobLocationDefaultsPassName" type="xsd:string"></xsd:element>
+    <xsd:element name="jobLocationDefaultsAutoUpdate" type="xsd:boolean"></xsd:element>               
                 
     <xsd:complexType name="mark5Status">
         <xsd:sequence>
