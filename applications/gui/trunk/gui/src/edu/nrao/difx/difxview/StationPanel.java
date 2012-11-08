@@ -887,6 +887,7 @@ public class StationPanel extends IndexedPanel {
             } catch ( java.io.IOException e ) {
                 e.printStackTrace();
             }
+            _settings.releaseTransferPort( _port );
         }
         
         protected int _port;

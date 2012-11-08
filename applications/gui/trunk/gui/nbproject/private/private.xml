@@ -18,7 +18,8 @@
         </file>
         <file>
             <url>src/edu/nrao/difx/difxview/QueueBrowserPanel.java</url>
-            <line>593</line>
+            <line>1068</line>
+            <line>1105</line>
         </file>
         <file>
             <url>src/edu/nrao/vlba/difxcontroller/ProcessMessageThread.java</url>
@@ -77,8 +78,7 @@
         </file>
         <file>
             <url>src/edu/nrao/difx/difxview/SystemSettings.java</url>
-            <line>883</line>
-            <line>1668</line>
+            <line>2035</line>
         </file>
         <file>
             <url>src/edu/nrao/vlba/difxdatamodel/DiFXDataModel.java</url>

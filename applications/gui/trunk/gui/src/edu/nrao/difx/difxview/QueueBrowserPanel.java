@@ -9,6 +9,8 @@ import mil.navy.usno.widgetlib.NodeBrowserScrollPane;
 import mil.navy.usno.widgetlib.BrowserNode;
 import mil.navy.usno.widgetlib.TearOffPanel;
 import mil.navy.usno.widgetlib.ActivityMonitorLight;
+import mil.navy.usno.widgetlib.Spinner;
+import mil.navy.usno.widgetlib.SaneTextField;
 
 import javax.swing.JLabel;
 import javax.swing.JButton;
@@ -36,17 +38,21 @@ import edu.nrao.difx.difxcontroller.DiFXMessageProcessor;
 import edu.nrao.difx.xmllib.difxmessage.DifxMessage;
 
 import edu.nrao.difx.difxdatabase.QueueDBConnection;
+import edu.nrao.difx.difxutilities.DiFXCommand_ls;
+import java.awt.*;
 
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyAdapter;
+import java.awt.event.*;
 
 import java.sql.ResultSet;
+import java.util.ArrayList;
+import javax.swing.*;
+import mil.navy.usno.widgetlib.*;
 
 public class QueueBrowserPanel extends TearOffPanel {
 
     public QueueBrowserPanel( SystemSettings systemSettings ) {
-        _systemSettings = systemSettings;
-        _systemSettings.queueBrowser( this );
+        _settings = systemSettings;
+        _settings.queueBrowser( this );
         setLayout( null );
         _browserPane = new NodeBrowserScrollPane( 20 );
         this.add( _browserPane );
@@ -59,14 +65,46 @@ public class QueueBrowserPanel extends TearOffPanel {
         _mainLabel.setBounds( 5, 0, 150, 20 );
         _mainLabel.setFont( new Font( "Dialog", Font.BOLD, 14 ) );
         add( _mainLabel );
-        _newButton = new JButton( "New" );
-        _newButton.setToolTipText( "Create a new experiment." );
-        _newButton.addActionListener(new ActionListener() {
+        _experimentButton = new JButton( "Experiments" );
+        _experimentButton.addActionListener(new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                _experimentMenu.show( _experimentButton, 0, 25 );
+            }
+        });
+        this.add( _experimentButton );
+        _experimentMenu = new JPopupMenu( "Experiments:" );
+        _newExperimentItem = new JMenuItem( "Create New..." );
+        _newExperimentItem.setToolTipText( "Create a new experiment." );
+        _newExperimentItem.addActionListener(new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
                 newExperiment();
             }
         });
-        this.add( _newButton );
+        _experimentMenu.add( _newExperimentItem );
+        _existingExperimentItem = new JMenuItem( "Locate on Disk..." );
+        _existingExperimentItem.setToolTipText( "Locate previously created experiments from disk on the DiFX cluster." );
+        _existingExperimentItem.addActionListener(new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                setDiskSearchRules();
+            }
+        });
+        _experimentMenu.add( _existingExperimentItem );
+        _fromDatabaseItem = new JMenuItem( "Located in Database..." );
+        _fromDatabaseItem.setToolTipText( "Locate experiments in the database." );
+        _fromDatabaseItem.addActionListener(new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                //newExperiment();
+            }
+        });
+        _experimentMenu.add( _fromDatabaseItem );
+        _updateDatabaseItem = new JMenuItem( "Update Now" );
+        _updateDatabaseItem.setToolTipText( "Update the experiment list to reflect any changes in the database or disk." );
+        _updateDatabaseItem.addActionListener(new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                _triggerDatabaseUpdate = true;
+            }
+        });
+        _experimentMenu.add( _updateDatabaseItem );
         //  The menu for the "select" button.
         _selectMenu = new JPopupMenu();
         JMenuItem selectAllItem = new JMenuItem( "Select All" );
@@ -114,7 +152,7 @@ public class QueueBrowserPanel extends TearOffPanel {
                 showItemChange();
             }
         });
-        _showSelectedItem.setSelected( _systemSettings.queueBrowserSettings().showSelected );
+        _showSelectedItem.setSelected( _settings.queueBrowserSettings().showSelected );
         _showMenu.add( _showSelectedItem );
         _showUnselectedItem = new JCheckBoxMenuItem( "Unselected" );
         _showUnselectedItem.addActionListener( new ActionListener() {
@@ -122,7 +160,7 @@ public class QueueBrowserPanel extends TearOffPanel {
                 showItemChange();
             }
         });
-        _showUnselectedItem.setSelected( _systemSettings.queueBrowserSettings().showUnselected );
+        _showUnselectedItem.setSelected( _settings.queueBrowserSettings().showUnselected );
         _showMenu.add( _showUnselectedItem );
         _showCompletedItem = new JCheckBoxMenuItem( "Completed" );
         _showCompletedItem.addActionListener( new ActionListener() {
@@ -130,7 +168,7 @@ public class QueueBrowserPanel extends TearOffPanel {
                 showItemChange();
             }
         });
-        _showCompletedItem.setSelected( _systemSettings.queueBrowserSettings().showCompleted );
+        _showCompletedItem.setSelected( _settings.queueBrowserSettings().showCompleted );
         _showMenu.add( _showCompletedItem );
         _showIncompleteItem = new JCheckBoxMenuItem( "Incomplete" );
         _showIncompleteItem.addActionListener( new ActionListener() {
@@ -138,7 +176,7 @@ public class QueueBrowserPanel extends TearOffPanel {
                 showItemChange();
             }
         });
-        _showIncompleteItem.setSelected( _systemSettings.queueBrowserSettings().showIncomplete );
+        _showIncompleteItem.setSelected( _settings.queueBrowserSettings().showIncomplete );
         _showMenu.add( _showIncompleteItem );
         _showMenu.add( new JSeparator() );
         JMenuItem expandAllItem = new JMenuItem( "Expand All" );
@@ -162,6 +200,12 @@ public class QueueBrowserPanel extends TearOffPanel {
             }
         });
         this.add( _showButton );
+        _numExperiments = new NumLabel( "Experiments", this );
+        _numExperiments.setBounds( 360, 30, 120, 25 );
+        _numPasses = new NumLabel( "Passes", this );
+        _numPasses.setBounds( 490, 30, 120, 25 );
+        _numJobs = new NumLabel( "Jobs", this );
+        _numJobs.setBounds( 620, 30, 120, 25 );
         _guiServerConnectionLight = new ActivityMonitorLight();
         _guiServerConnectionLight.setBounds( 360, 32, 12, 12 );
         _guiServerConnectionLight.alertTime( 0 );
@@ -170,40 +214,56 @@ public class QueueBrowserPanel extends TearOffPanel {
         _guiServerConnectionLabel = new JLabel( "guiServer Connection" );
         _guiServerConnectionLabel.setBounds( 380, 25, 200, 25 );
         this.add( _guiServerConnectionLabel );
-        _updateButton = new JButton( "DB Update" );
-        _updateButton.setToolTipText( "Update queue data from the DiFX database." );
-        _updateButton.addActionListener( new ActionListener() {
-            public void actionPerformed( ActionEvent e ) {
-                _systemSettings.updateDatabaseNow( true );
-            }
-        });
-        this.add( _updateButton );
-        _autoButton = new JButton( "" );
-        _autoButton.setToolTipText( "Auto update DiFX queue." );
-        _autoButton.setMargin( new Insets( 2, 4, 2, 4 ) );
-        this.add( _autoButton );
-        _autoActiveLight = new ActivityMonitorLight();
-        _autoActiveLight.setBounds( 4, 4, 16, 21 );
-        _autoActiveLight.onColor( Color.GREEN );
-        _autoButton.add( _autoActiveLight );
-        _autoButton.addActionListener( new ActionListener() {
-            public void actionPerformed( ActionEvent e ) {
-                autoButtonAction();
-            }
-        });
+        _workingSpinner = new Spinner();
+        _workingSpinner.setVisible( false );
+        this.add( _workingSpinner );
+        _workingLabel = new JLabel( "" );
+        _workingLabel.setVisible( false );
+        _workingLabel.setHorizontalAlignment( JLabel.RIGHT );
+        this.add( _workingLabel );
         
         //  Create a header line of all jobs.
-        _header = new JobNodesHeader( _systemSettings );
+        _header = new JobNodesHeader( _settings );
         _headerPane.addNode( _header );
+        
+        //  Start a thread that will respond to database update requests.
+        _databaseUpdateThread = new DatabaseUpdateThread();
+        _databaseUpdateThread.start();
 
         //  Add a listener for automatic database updates.  When these occur,
         //  we want to update the data for this browser.
-        _systemSettings.addDatabaseUpdateListener( new ActionListener() {
+        _settings.addDatabaseUpdateListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
-                updateQueueFromDatabase();
+                _triggerDatabaseUpdate = true;
             }
         });
-        
+
+    }
+    
+    /*
+     * Simple class to display numbers of things on the title bar.
+     */
+    public class NumLabel extends Object {
+        public NumLabel( String name, QueueBrowserPanel panel ) {
+            _num = new JLabel( "0" );
+            _num.setHorizontalAlignment( JLabel.RIGHT );
+            panel.add( _num );
+            _label = new JLabel( name );
+            _label.setHorizontalAlignment( JLabel.LEFT );
+            panel.add( _label );
+        }
+        public void setBounds( int x, int y, int w, int h ) {
+            _num.setBounds( x, y, 40, h );
+            _label.setBounds( x + 45, y, w - 45, h );
+        }
+        public void value( Integer newVal ) {
+            _num.setText( newVal.toString() );
+        }
+        public int value() {
+            return Integer.parseInt( _num.getText() );
+        }
+        protected JLabel _num;
+        protected JLabel _label;
     }
     
     /*
@@ -215,13 +275,13 @@ public class QueueBrowserPanel extends TearOffPanel {
         _browserPane.setBounds( 0, 79, width, height - 79 );
         _headerPane.setBounds( 0, 60, width, 20 );
         super.setBounds( x, y, width, height );
-        _newButton.setBounds( 5, 30, 100, 25 );
-        _selectButton.setBounds( 110, 30, 100, 25 );
-        _showButton.setBounds( 220, 30, 100, 25 );
-        _guiServerConnectionLight.setBounds( width - 300, 37, 12, 12 );
-        _guiServerConnectionLabel.setBounds( width - 280, 30, 130, 25 );
-        _updateButton.setBounds( width - 120, 30, 110, 25 );
-        _autoButton.setBounds( width - 145, 30, 25, 25 );
+        _experimentButton.setBounds( 5, 30, 110, 25 );
+        _selectButton.setBounds( 120, 30, 110, 25 );
+        _showButton.setBounds( 235, 30, 110, 25 );
+        _guiServerConnectionLight.setBounds( width - 160, 37, 12, 12 );
+        _guiServerConnectionLabel.setBounds( width - 140, 30, 130, 25 );
+        _workingSpinner.setBounds( width - 210, 32, 21, 21 );
+        _workingLabel.setBounds( width - 420, 30, 200, 25 );
     }
     
     public ActivityMonitorLight guiServerConnectionLight() {
@@ -255,6 +315,29 @@ public class QueueBrowserPanel extends TearOffPanel {
             System.out.println( "release " + e.getKeyCode() );
         }
     }
+    
+    /*
+     * Count the number of experiments, passes and jobs in the current list.  The
+     * counts are put in labels on the title bar.
+     */
+    public void countListed() {
+        int experimentCount = 0;
+        int passCount = 0;
+        int jobCount = 0;
+        for ( Iterator<BrowserNode> iter = _browserPane.browserTopNode().childrenIterator(); iter.hasNext(); ) {
+            ExperimentNode thisExperiment = (ExperimentNode)(iter.next());
+            ++experimentCount;
+            for ( Iterator<BrowserNode> pIter = thisExperiment.childrenIterator(); pIter.hasNext(); ) {
+                PassNode thisPass = (PassNode)(pIter.next());
+                ++passCount;
+                for ( Iterator<BrowserNode> jIter = thisPass.childrenIterator(); jIter.hasNext(); )
+                    ++jobCount;
+            }
+        }
+        _numExperiments.value( experimentCount );
+        _numPasses.value( passCount );
+        _numJobs.value( jobCount );
+    }
 
     /*
      * Add a new experiment to the browser.
@@ -280,8 +363,8 @@ public class QueueBrowserPanel extends TearOffPanel {
         //  Failure, or no attept to connect, will leave "db" as null, indicating
         //  we should try creating an experiment without using the data base.
         QueueDBConnection db = null;
-        if ( _systemSettings.useDatabase() ) {
-            db = new QueueDBConnection( _systemSettings );
+        if ( _settings.useDatabase() ) {
+            db = new QueueDBConnection( _settings );
             if ( !db.connected() )
                 db = null;
         }
@@ -318,9 +401,9 @@ public class QueueBrowserPanel extends TearOffPanel {
         }
         
         //  Open a window where the user can specify details of the new experiment.
-        Point pt = _newButton.getLocationOnScreen();
+        Point pt = _experimentButton.getLocationOnScreen();
         ExperimentEditor win =
-                new ExperimentEditor( pt.x + 25, pt.y + 25, _systemSettings );
+                new ExperimentEditor( pt.x + 25, pt.y + 25, _settings );
         win.setTitle( "Create New Experiment" );
         win.number( 0 );
         win.name( "Experiment_" + newExperimentId.toString() );
@@ -332,14 +415,14 @@ public class QueueBrowserPanel extends TearOffPanel {
         String creationDate = (new SimpleDateFormat( "yyyy-mm-dd HH:mm:ss" )).format( new Date() );
         win.created( creationDate );
         win.status( "unknown" );
-        win.directory( _systemSettings.workingDirectory() + "/" + win.name() );
+        win.directory( _settings.workingDirectory() + "/" + win.name() );
         win.vexFileName( win.name() + ".vex" );
         win.addVexFileName( "one" );
         win.addVexFileName( "two" );
         win.addVexFileName( "three" );
         win.keepDirectory( false );
         win.passName( "Production Pass" );
-        win.createPass( _systemSettings.defaultNames().createPassOnExperimentCreation );
+        win.createPass( _settings.defaultNames().createPassOnExperimentCreation );
         win.newExperimentMode( true );
         win.setVisible( true );
     }
@@ -353,16 +436,33 @@ public class QueueBrowserPanel extends TearOffPanel {
     protected void collapseAll() {};
                 
     /*
-     * The user has hit the "auto" button.  This activates the "auto" light and
-     * causes auto updates to occur.  Or it turns them off.
+     * This thread is used to update the queue from the data base.  It runs continuously
+     * waiting for a request to update.  It will then trigger the update and wait for
+     * the next request.  This needs to be in a thread because database updates are
+     * slow.
      */
-    public void autoButtonAction() {
-        if ( _systemSettings.dbAutoUpdate() ) {
-            _systemSettings.dbAutoUpdate( false );
+    public class DatabaseUpdateThread extends Thread {
+        
+        public void run() {
+            //  Endless loop with a .1 second interval.  This is enough to make responses
+            //  to user requests look "instantaneous".
+            boolean keepGoing = true;
+            while ( keepGoing ) {
+                if ( _triggerDatabaseUpdate ) {
+                    _workingLabel.setText( "updating from database" );
+                    _workingLabel.setVisible( true );
+                    _workingSpinner.setVisible( true );
+                    _workingSpinner.ok();
+                    //try { Thread.sleep( 10000 ); } catch ( Exception e ) { keepGoing = false; }
+                    updateQueueFromDatabase();
+                    _triggerDatabaseUpdate = false;
+                    _workingLabel.setVisible( false );
+                    _workingSpinner.setVisible( false );
+                }                
+                try { Thread.sleep( 100 ); } catch ( Exception e ) { keepGoing = false; }
+            }
         }
-        else {
-            _systemSettings.dbAutoUpdate( true );
-        }
+        
     }
     
     /*
@@ -373,11 +473,11 @@ public class QueueBrowserPanel extends TearOffPanel {
     void updateQueueFromDatabase() {
         
         //  Don't do this if the user isn't using the database.
-        if ( !_systemSettings.useDatabase() )
+        if ( !_settings.useDatabase() )
             return;
         
         //  Get a new connection to the database.  Bail out if this doesn't work.
-        QueueDBConnection db = new QueueDBConnection( _systemSettings );
+        QueueDBConnection db = new QueueDBConnection( _settings );
         if ( !db.connected() )
             return;
         
@@ -392,10 +492,6 @@ public class QueueBrowserPanel extends TearOffPanel {
         ResultSet dbExperimentAndModule = db.experimentAndModuleList();
         ResultSet dbExperimentStatus = db.experimentStatusList();
         
-        //  Getting this far indicates a successful update from the queue.  
-        //  Flash the indicator light!
-        _autoActiveLight.on( true );
-
         //  We need to track the addition and deletion of items in the data base.
         //  To make this possible, we set a "found" flag to false in each item we
         //  already know about - if we don't "find" any one item again, we'll
@@ -441,7 +537,7 @@ public class QueueBrowserPanel extends TearOffPanel {
                 }
                 //  Create a new experiment if we didn't find the named one.
                 if ( thisExperiment == null ) {
-                    thisExperiment = new ExperimentNode( name, _systemSettings );
+                    thisExperiment = new ExperimentNode( name, _settings );
                     thisExperiment.id( id );
                     thisExperiment.inDatabase( true );
                     thisExperiment.creationDate( dateCreated );
@@ -489,7 +585,7 @@ public class QueueBrowserPanel extends TearOffPanel {
                     //  Was the experiment for this pass identified at least?
                     if ( thisExperiment != null ) {
                         //  Okay, it must be a new pass in the experiment - add it.
-                        thisPass = new PassNode( name, _systemSettings );
+                        thisPass = new PassNode( name, _settings );
                         thisPass.type( passType );
                         thisPass.id( id );
                         thisPass.inDatabase( true );
@@ -550,7 +646,7 @@ public class QueueBrowserPanel extends TearOffPanel {
                         }
                         if ( jobName == null )
                             jobName = thisPass.name() + "_" + jobNumber.toString();
-                        thisJob = new JobNode( jobName, _systemSettings );
+                        thisJob = new JobNode( jobName, _settings );
                         thisJob.id( id );
                         thisJob.inDatabase( true );
                         thisJob.experiment( thisExperiment.name() );
@@ -572,7 +668,7 @@ public class QueueBrowserPanel extends TearOffPanel {
                     //  the items we set below.  Hopefully these settings are the same...but if
                     //  not, should the stuff in the database dominate (as here), or should the
                     //  stuff in the input file be used?  Not sure.
-                    thisJob.inputFile( dbJobList.getString( "inputFile" ) );
+                    thisJob.inputFile( dbJobList.getString( "inputFile" ), false );
                     thisJob.priority( dbJobList.getInt("priority") );
                     thisJob.queueTime( dbJobList.getString( "queueTime" ) );
                     thisJob.correlationStart( dbJobList.getString( "correlationStart" ) );
@@ -628,6 +724,408 @@ public class QueueBrowserPanel extends TearOffPanel {
             }
         }
        
+    }
+    
+    /*
+     * Show a window that allows the user to define what experiments/jobs/whatever
+     * are scanned for on disk.
+     */
+    public void setDiskSearchRules() {
+        if ( _diskSearchRules == null ) {
+            _diskSearchRules = new DiskSearchRules( MouseInfo.getPointerInfo().getLocation().x, 
+                        MouseInfo.getPointerInfo().getLocation().y );
+        }
+        _diskSearchRules.setVisible( true );
+    }
+    
+    /*
+     * This class contains a window that allows the user to set a series of rules
+     * for searching for experiments/jobs/etc on disk.
+     */
+    public class DiskSearchRules extends JFrame {
+
+        public DiskSearchRules( int x, int y ) {
+            _this = this;
+            _settings.setLookAndFeel();
+            this.setLayout( null );
+            this.setBounds( x, y, _settings.windowConfiguration().diskSearchRulesDisplayW,
+                _settings.windowConfiguration().diskSearchRulesDisplayH );
+            this.getContentPane().setLayout( null );
+            this.setTitle( "Locate Experiments on Disk" );
+            this.addComponentListener( new java.awt.event.ComponentAdapter() {
+                public void componentResized( ComponentEvent e ) {
+                    _settings.windowConfiguration().diskSearchRulesDisplayW = _this.getWidth();
+                    _settings.windowConfiguration().diskSearchRulesDisplayH = _this.getHeight();
+                    newSize();
+                }
+            });
+            this.addComponentListener( new java.awt.event.ComponentAdapter() {
+                public void componentShown( ComponentEvent e ) {
+                    newSize();
+                }
+            });
+            _menuBar = new JMenuBar();
+            _this.add( _menuBar );
+            JMenu helpMenu = new JMenu( "  Help  " );
+            _menuBar.add( helpMenu );
+            JMenuItem settingsHelpItem = new JMenuItem( "Disk Search Help" );
+            settingsHelpItem.addActionListener( new ActionListener() {
+                public void actionPerformed( ActionEvent e ) {
+                    _settings.launchGUIHelp( "Queue_Browser_content.html#LOCATE_ON_DISK" );
+                }
+            } );
+            helpMenu.add( settingsHelpItem );
+            JMenuItem helpIndexItem = new JMenuItem( "GUI Documentation" );
+            helpIndexItem.addActionListener( new ActionListener() {
+                public void actionPerformed( ActionEvent e ) {
+                    _settings.launchGUIHelp( "intro.html" );
+                }
+            } );
+            helpMenu.add( helpIndexItem );
+
+            _fileFilter = new SaneTextField();
+            _fileFilter.addActionListener( new ActionListener() {
+                public void actionPerformed( ActionEvent evt ) {
+                    updateList();
+                    _settings.jobLocationDefaults().fileFilter = _fileFilter.getText();
+                }
+            } );
+            _this.add( _fileFilter );
+            JLabel fileFilterLabel = new JLabel( "Locate .input File(s) Matching:" );
+            fileFilterLabel.setBounds( 10, 30, 400, 25 );
+            _this.add( fileFilterLabel );
+            JLabel experimentNameLabel = new JLabel( "Experiment Name(s):" );
+            experimentNameLabel.setBounds( 10, 80, 400, 25 );
+            _this.add( experimentNameLabel );
+            _experimentBasedOnPath = new JCheckBox( "Based on Path" );
+            _experimentBasedOnPath.setToolTipText( "Use the subdirectory that contains the \"pass\" subdirectories (or jobs if no passes are used) as the experiment name." );
+            _experimentBasedOnPath.setBounds( 10, 105, 200, 25 );
+            _experimentBasedOnPath.addActionListener( new ActionListener() {
+                public void actionPerformed( ActionEvent evt ) {
+                    checkExperimentBase( _experimentBasedOnPath );
+                    synchronizedTranslateList();
+                }
+            } );
+            _this.add( _experimentBasedOnPath );
+            _experimentNamed = new JCheckBox( "" );
+            _experimentNamed.setToolTipText( "Assign a specific name to the experiment (which will contain all jobs)." );
+            _experimentNamed.setBounds( 220, 105, 25, 25 );
+            _experimentNamed.addActionListener( new ActionListener() {
+                public void actionPerformed( ActionEvent evt ) {
+                    checkExperimentBase( _experimentNamed );
+                    synchronizedTranslateList();
+                }
+            } );
+            _this.add( _experimentNamed );
+            _experimentName = new SaneTextField();
+            _experimentName.addActionListener( new ActionListener() {
+                public void actionPerformed( ActionEvent evt ) {
+                    _settings.jobLocationDefaults().experimentName = _experimentName.getText();
+                    synchronizedTranslateList();
+                }
+            } );
+            _this.add( _experimentName );
+            JLabel passNameLabel = new JLabel( "Pass Name(s):" );
+            passNameLabel.setBounds( 10, 140, 400, 25 );
+            _this.add( passNameLabel );
+            _passBasedOnPath = new JCheckBox( "Based On Path" );
+            _passBasedOnPath.setToolTipText( "Use the subdirectory name that contains any .input files as the pass name." );
+            _passBasedOnPath.addActionListener( new ActionListener() {
+                public void actionPerformed( ActionEvent evt ) {
+                    checkPassBase( _passBasedOnPath );
+                    synchronizedTranslateList();
+                }
+            } );
+            _passBasedOnPath.setBounds( 10, 165, 120, 25 );
+            _this.add( _passBasedOnPath );
+            _noPass = new JCheckBox( "None" );
+            _noPass.setToolTipText( "Do not include a pass." );
+            _noPass.setBounds( 130, 165, 70, 25 );
+            _noPass.addActionListener( new ActionListener() {
+                public void actionPerformed( ActionEvent evt ) {
+                    checkPassBase( _noPass );
+                    synchronizedTranslateList();
+                }
+            } );
+            _this.add( _noPass );
+            _passNamed = new JCheckBox( "" );
+            _passNamed.setToolTipText( "Assign a specific name to the pass (which will contain all jobs)." );
+            _passNamed.setBounds( 220, 165, 25, 25 );
+            _passNamed.addActionListener( new ActionListener() {
+                public void actionPerformed( ActionEvent evt ) {
+                    checkPassBase( _passNamed );
+                    synchronizedTranslateList();
+                }
+            } );
+            _this.add( _passNamed );
+            _passName = new SaneTextField();
+            _passName.addActionListener( new ActionListener() {
+                public void actionPerformed( ActionEvent evt ) {
+                    _settings.jobLocationDefaults().passName = _passName.getText();
+                    synchronizedTranslateList();
+                }
+            } );
+            _this.add( _passName );
+            JLabel previewLabel = new JLabel( "Preview" );
+            previewLabel.setBounds( 10, 200, 200, 25 );
+            _this.add( previewLabel );
+            _previewSpinner = new Spinner();
+            _previewSpinner.setVisible( false );
+            _this.add( _previewSpinner );
+            _spinnerLabel = new JLabel( "updating" );
+            _spinnerLabel.setHorizontalTextPosition( JLabel.RIGHT );
+            _spinnerLabel.setVisible( false );
+            _this.add( _spinnerLabel );
+            _updateButton = new JButton( "Update Now" );
+            _updateButton.addActionListener( new ActionListener() {
+                public void actionPerformed( ActionEvent evt ) {
+                    updateList();
+                }
+            } );
+            _this.add( _updateButton );
+            _preview = new NodeBrowserScrollPane();
+            _preview.setBackground( Color.WHITE );
+            _this.add( _preview );
+            _autoUpdate = new JCheckBox( "Auto Update" );
+            _autoUpdate.setToolTipText( "Periodically re-run this search to find new experiments that are created in real time." );
+            _autoUpdate.addActionListener( new ActionListener() {
+                public void actionPerformed( ActionEvent evt ) {
+                    _settings.jobLocationDefaults().autoUpdate = _autoUpdate.isSelected();
+                }
+            } );
+            _this.add( _autoUpdate );
+            _applyButton = new JButton( "Apply" );
+            _applyButton.setToolTipText( "Download the listed experiments and jobs to the Queue Browser." );
+            _this.add( _applyButton );
+            
+            //  Set defaults for everything....
+            _fileFilter.setText( _settings.jobLocationDefaults().fileFilter );
+            _experimentBasedOnPath.setSelected( _settings.jobLocationDefaults().experimentBasedOnPath );
+            _experimentNamed.setSelected( _settings.jobLocationDefaults().experimentNamed );
+            _experimentName.setText( _settings.jobLocationDefaults().experimentName );
+            _passBasedOnPath.setSelected( _settings.jobLocationDefaults().passBasedOnPath );
+            _passNamed.setSelected( _settings.jobLocationDefaults().passNamed );
+            _noPass.setSelected( _settings.jobLocationDefaults().noPass );
+            _passName.setText( _settings.jobLocationDefaults().passName );
+            _autoUpdate.setSelected( _settings.jobLocationDefaults().autoUpdate );
+            
+            //  De-highlight some stuff if necessary...
+            if ( _experimentNamed.isSelected() )
+                _experimentName.setEnabled( true );
+            else
+                _experimentName.setEnabled( false );
+            if ( _passNamed.isSelected() )
+                _passName.setEnabled( true );
+            else
+                _passName.setEnabled( false );
+
+            _allObjectsBuilt = true;
+            
+            //  Update using current settings.
+            updateList();
+            
+            _this.newSize();
+            
+        }
+        
+        /*
+         * Change checkboxes for the experiment naming (and other things) based on
+         * which one was pushed.
+         */
+        public void checkExperimentBase( JCheckBox pushed ) {
+            if ( pushed == _experimentBasedOnPath ) {
+                _experimentBasedOnPath.setSelected( true );
+                _experimentNamed.setSelected( false );
+                _experimentName.setEnabled( false );
+            }
+            else {
+                _experimentBasedOnPath.setSelected( false );
+                _experimentNamed.setSelected( true );
+                _experimentName.setEnabled( true );
+            }
+            _settings.jobLocationDefaults().experimentBasedOnPath = _experimentBasedOnPath.isSelected();
+            _settings.jobLocationDefaults().experimentNamed = _experimentNamed.isSelected();
+        }
+        
+        /*
+         * Change things based on the pass naming choice.
+         */
+        public void checkPassBase( JCheckBox pushed ) {
+            if ( pushed == _passBasedOnPath ) {
+                _passBasedOnPath.setSelected( true );
+                _noPass.setSelected( false );
+                _passNamed.setSelected( false );
+                _passName.setEnabled( false );
+            }
+            else if ( pushed == _noPass ) {
+                _passBasedOnPath.setSelected( false );
+                _noPass.setSelected( true );
+                _passNamed.setSelected( false );
+                _passName.setEnabled( false );
+            }
+            else {
+                _passBasedOnPath.setSelected( false );
+                _noPass.setSelected( false );
+                _passNamed.setSelected( true );
+                _passName.setEnabled( true );
+            }
+            _settings.jobLocationDefaults().passBasedOnPath = _passBasedOnPath.isSelected();
+            _settings.jobLocationDefaults().noPass = _noPass.isSelected();
+            _settings.jobLocationDefaults().passNamed = _passNamed.isSelected();
+        }
+        
+        @Override
+        public void setBounds( int x, int y, int w, int h ) {
+            super.setBounds( x, y, w, h );
+            newSize();
+            if ( _this != null )
+                _this.newSize();
+        }
+    
+        public void newSize() {
+            if ( _allObjectsBuilt ) {
+                int w = _this.getContentPane().getSize().width;
+                int h = _this.getContentPane().getSize().height;
+                _menuBar.setBounds( 0, 0, w, 25 );
+                _fileFilter.setBounds( 10, 50, w - 25, 25 );
+                _experimentName.setBounds( 250, 105, w - 265, 25 );
+                _passName.setBounds( 250, 165, w - 265, 25 );
+                _previewSpinner.setBounds( w - 45, 200, 20, 20 );
+                _spinnerLabel.setBounds( w - 150, 195, 100, 25 );
+                _updateButton.setBounds( w - 135, 195, 120, 25 );
+                _preview.setBounds( 10, 225, w - 25, h - 265 );
+                _autoUpdate.setBounds( w - 300, h - 30, 160, 25 );
+                _applyButton.setBounds( w - 130, h - 30, 115, 25 );
+            }
+        }
+        
+        synchronized public void updateList() {
+            //  Erase the "update now" button and give us a "busy" spinnner.  This
+            //  will be undone when all is completed.
+            _updateButton.setVisible( false );
+            _previewSpinner.ok();
+            _previewSpinner.setVisible( true );
+            //  Give us a "wait" cursor.
+            final Cursor cursor = this.getCursor();
+            this.setCursor( Cursor.getPredefinedCursor( Cursor.WAIT_CURSOR ) );
+            if ( _newList == null )
+                _newList = new ArrayList<String>();
+            _newList.clear();
+            DiFXCommand_ls ls = null;
+            //  Slap *.input on the end of the file filter string if it hasn't been done by the user.
+            if ( _fileFilter.getText().endsWith( "*.input" ) )
+                ls = new DiFXCommand_ls( _fileFilter.getText().trim(), _settings );
+            else
+                ls = new DiFXCommand_ls( _fileFilter.getText().trim() + "*.input", _settings );
+            System.out.println( _fileFilter.getText().trim() );
+            //  Set the callback for when the list is complete.  
+            ls.addEndListener( new ActionListener() {
+                public void actionPerformed( ActionEvent e ) {
+                    //  Found anything at all?
+                    if ( _newList.size() > 0 ) {
+                        //  We've got a list of files - turn them into experiments/passes/jobs
+                        //  based on user rules.
+                        translateList();
+                    }
+                    _this.setCursor( cursor );
+                    _previewSpinner.setVisible( false );
+                    _updateButton.setVisible( true );
+
+                }
+            });
+            //  Set the callback for when a new item is added to the list.
+            ls.addIncrementalListener( new ActionListener() {
+                public void actionPerformed( ActionEvent e ) {
+                    _newList.add( e.getActionCommand().trim() );
+                }
+            });
+            try {
+                ls.send();
+            } catch ( java.net.UnknownHostException e ) {
+                //  BLAT handle this
+            }
+        }
+        
+        /*
+         * Call the translateList() function with a synchronized wrapper - also change
+         * the cursor, spinner, update button, etc.
+         */
+        synchronized public void synchronizedTranslateList() {
+            _updateButton.setVisible( false );
+            _previewSpinner.ok();
+            _previewSpinner.setVisible( true );
+            final Cursor cursor = this.getCursor();
+            this.setCursor( Cursor.getPredefinedCursor( Cursor.WAIT_CURSOR ) );
+            translateList();
+            _this.setCursor( cursor );
+            _previewSpinner.setVisible( false );
+            _updateButton.setVisible( true );
+        }
+        
+        /*
+         * Do user-specified translation of path names (or whatever) to obtain
+         * experiment and pass names for each found input file.
+         */
+        public void translateList() {
+            Iterator<String> iter = _newList.iterator();
+            while ( iter.hasNext() ) {
+                String nextFile = iter.next();
+                if ( _experimentNamed.isSelected() )
+                    System.out.print( _experimentName );
+                else {
+                    //  Extract the experiment name from the path.  Might need to do some
+                    //  checks here to avoid running out of path (if input files are stored
+                    //  too high in the directory tree).
+                    String shortName = nextFile.substring( 0, nextFile.lastIndexOf( "/" ) );
+                    if ( _noPass.isSelected() ) {
+                        System.out.print( shortName.substring( shortName.lastIndexOf( "/" ) + 1 ) );
+                    }
+                    else {
+                        shortName = shortName.substring( 0, shortName.lastIndexOf( "/" ) );
+                        System.out.print( shortName.substring( shortName.lastIndexOf( "/" ) + 1 ) );
+                    }
+                    //  Then the pass name (if there is one).
+                    if ( _passNamed.isSelected() )
+                        System.out.print( "     " + _passName.getText() );
+                    else if ( _passBasedOnPath.isSelected() ) {
+                        shortName = nextFile.substring( 0, nextFile.lastIndexOf( "/" ) );
+                        System.out.print( "      " + shortName.substring( shortName.lastIndexOf( "/" ) + 1 ) );
+                    }
+                    //  Get the name of the job from the .input file name.  I'm assuming
+                    //  this is accurate...
+                    shortName = nextFile.substring( nextFile.lastIndexOf( "/" ) + 1 );
+                    System.out.print( "    " + shortName.substring( 0, shortName.lastIndexOf( "." ) ) );
+                    System.out.println( "     " + nextFile );
+                }
+            }
+        }
+        
+        protected JMenuBar _menuBar;
+        protected DiskSearchRules _this;
+        protected boolean _allObjectsBuilt;
+        protected SaneTextField _fileFilter;
+        protected JCheckBox _experimentBasedOnPath;
+        protected JCheckBox _experimentNamed;
+        protected SaneTextField _experimentName;
+        protected JCheckBox _passBasedOnPath;
+        protected JCheckBox _passNamed;
+        protected JCheckBox _noPass;
+        protected SaneTextField _passName;
+        protected Spinner _previewSpinner;
+        protected NodeBrowserScrollPane _preview;
+        protected JCheckBox _autoUpdate;
+        protected JButton _applyButton;
+        protected JLabel _spinnerLabel;
+        protected JButton _updateButton;
+        ArrayList<String> _newList;
+        
+    }
+    
+    /*
+     * Perform a search for experiments/jobs/etc on disk following the rules defined
+     * in the DiskSearchRules class.
+     */
+    public void updateQueueFromDisk() {
     }
     
     public Iterator<BrowserNode> experimentsIterator() {
@@ -729,14 +1227,14 @@ public class QueueBrowserPanel extends TearOffPanel {
             //  project (which we might have to create if it doesn't exist!).
             if ( thisJob == null ) {
                 if ( _unaffiliated == null ) {
-                    _unaffiliated = new ExperimentNode( "Jobs Outside Queue", _systemSettings );
+                    _unaffiliated = new ExperimentNode( "Jobs Outside Queue", _settings );
                     _browserPane.addNode( _unaffiliated );
-                    _unknown = new PassNode( "", _systemSettings );
+                    _unknown = new PassNode( "", _settings );
                     _unknown.experimentNode( _unaffiliated );
                     _unknown.setHeight( 0 );
                     _unaffiliated.addChild( _unknown );
                 }
-                thisJob = new JobNode( difxMsg.getHeader().getIdentifier(), _systemSettings );
+                thisJob = new JobNode( difxMsg.getHeader().getIdentifier(), _settings );
                 _unknown.addChild( thisJob );
                 thisJob.passNode( _unknown );
                 _header.addJob( thisJob );
@@ -752,16 +1250,17 @@ public class QueueBrowserPanel extends TearOffPanel {
     protected NodeBrowserScrollPane _browserPane;
     protected NodeBrowserScrollPane _headerPane;
     protected JLabel _mainLabel;
-    protected JButton _updateButton;
     protected ExperimentNode _unaffiliated;
     protected PassNode _unknown;
-    protected SystemSettings _systemSettings;
-    protected int _timeoutCounter;
-    protected JButton _autoButton;
-    protected ActivityMonitorLight _autoActiveLight;
+    protected SystemSettings _settings;
     protected JobNodesHeader _header;
-    protected boolean _updateNow;
-    protected JButton _newButton;
+    protected JButton _experimentButton;
+    protected JPopupMenu _experimentMenu;
+    protected JMenuItem _newExperimentItem;
+    protected JMenuItem _existingExperimentItem;
+    protected JMenuItem _fromDatabaseItem;
+    protected JMenuItem _updateDatabaseItem;
+    protected JButton _existingButton;
     protected JButton _selectButton;
     protected JPopupMenu _selectMenu;
     protected JButton _showButton;
@@ -772,5 +1271,13 @@ public class QueueBrowserPanel extends TearOffPanel {
     protected JCheckBoxMenuItem _showIncompleteItem;
     protected ActivityMonitorLight _guiServerConnectionLight;
     protected JLabel _guiServerConnectionLabel;
+    protected NumLabel _numExperiments;
+    protected NumLabel _numPasses;
+    protected NumLabel _numJobs;
+    protected boolean _triggerDatabaseUpdate;
+    protected Spinner _workingSpinner;
+    protected JLabel _workingLabel;
+    protected DatabaseUpdateThread _databaseUpdateThread;
+    protected DiskSearchRules _diskSearchRules;
     
 }

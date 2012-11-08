@@ -49,7 +49,7 @@ public class JobNode extends QueueBrowserNode {
         this.setHeight( 20 );
         _columnColor = Color.LIGHT_GRAY;
         _settings = settings;
-        _editorMonitor = new JobEditorMonitor( this, _settings );
+        //_editorMonitor = new JobEditorMonitor( this, _settings );
     }
     
     @Override
@@ -421,8 +421,11 @@ public class JobNode extends QueueBrowserNode {
      * does not exists and update it with current settings, as far as we know them.
      */
     protected void updateEditorMonitor() {
-        if ( _editorMonitor == null )
+        if ( _editorMonitor == null ) {
             _editorMonitor = new JobEditorMonitor( this, _settings );
+            requestInputFile();
+            requestCalcFile();
+        }
     }
     
     /*
@@ -431,7 +434,8 @@ public class JobNode extends QueueBrowserNode {
      * with the actual data.  
      */
     protected void requestInputFile() {
-        requestFile( _inputFile.getText().trim() );
+        if ( _inputFile != null && _inputFile.getText().trim().length() > 0 )
+            requestFile( _inputFile.getText().trim() );
     }
     
     /*
@@ -447,73 +451,73 @@ public class JobNode extends QueueBrowserNode {
      * extension - .input and .calc files are recognized.
      */
     protected void requestFile( String filename ) {
-            final DiFXCommand_getFile fileGet = new DiFXCommand_getFile( filename, _settings );
-            final String fileStr = filename;
-            fileGet.addEndListener( new ActionListener() {
-                public void actionPerformed( ActionEvent e ) {
-                    //  Check the file size....this will tell us if anything went
-                    //  wrong, and to some degree what.
-                    int fileSize = fileGet.fileSize();
-                    if ( fileSize > 0 ) {
-                        //  Was it only partially read?
-                        if ( fileSize > fileGet.inString().length() )
-                            java.util.logging.Logger.getLogger("global").log(java.util.logging.Level.SEVERE, 
-                                    "Warning - connection terminated with "
-                                    + fileGet.inString().length() + " of "
-                                    + fileSize + " bytes read." );
-                        //  Parse the file content based on the extension.
-                        String ext = fileStr.substring( fileStr.lastIndexOf( '.' ) + 1 ).trim();
-                        if ( ext.contentEquals( "input" ) ) {
-                            _editorMonitor.inputFileName( fileStr );
-                            _editorMonitor.parseInputFile( fileGet.inString() );
-                            _startJobItem.setEnabled( true );
-                            _stopJobItem.setEnabled( true );
-                            _monitorMenuItem.setEnabled( true );
-                            _liveMonitorMenuItem.setEnabled( true );
-                        }
-                        else if ( ext.contentEquals( "calc" ) ) {
-                            _editorMonitor.calcFileName( fileStr );
-                            _editorMonitor.parseCalcFile( fileGet.inString() );
-                        }
+        final DiFXCommand_getFile fileGet = new DiFXCommand_getFile( filename, _settings );
+        final String fileStr = filename;
+        fileGet.addEndListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                //  Check the file size....this will tell us if anything went
+                //  wrong, and to some degree what.
+                int fileSize = fileGet.fileSize();
+                if ( fileSize > 0 ) {
+                    //  Was it only partially read?
+                    if ( fileSize > fileGet.inString().length() )
+                        java.util.logging.Logger.getLogger("global").log(java.util.logging.Level.SEVERE, 
+                                "Warning - connection terminated with "
+                                + fileGet.inString().length() + " of "
+                                + fileSize + " bytes read." );
+                    //  Parse the file content based on the extension.
+                    String ext = fileStr.substring( fileStr.lastIndexOf( '.' ) + 1 ).trim();
+                    if ( ext.contentEquals( "input" ) ) {
+                        _editorMonitor.inputFileName( fileStr, fileGet.inString() );
+                        _editorMonitor.parseInputFile();
+                        //_startJobItem.setEnabled( true );
+                        //_stopJobItem.setEnabled( true );
+                        //_monitorMenuItem.setEnabled( true );
+                        //_liveMonitorMenuItem.setEnabled( true );
                     }
-                    else if ( fileSize == 0 ) {
-                        java.util.logging.Logger.getLogger("global").log(java.util.logging.Level.SEVERE, 
-                            "File \"" + _inputFile.getText() + "\" has zero length." );
-                    }
-                    else if ( fileSize == -10 ) {
-                        java.util.logging.Logger.getLogger("global").log(java.util.logging.Level.SEVERE, 
-                            "Socket connection timed out before DiFX host connected." );                                        }
-                    else if ( fileSize == -11 ) {
-                        java.util.logging.Logger.getLogger("global").log(java.util.logging.Level.SEVERE, 
-                            "File transfer failed - " + fileGet.error() );
-                    }
-                    else if ( fileSize == -1 ) {
-                        java.util.logging.Logger.getLogger("global").log(java.util.logging.Level.SEVERE, 
-                            "Bad file name (probably the path was not complete." );
-                    }
-                    else if ( fileSize == -2 ) {
-                        java.util.logging.Logger.getLogger("global").log(java.util.logging.Level.SEVERE, 
-                            "Requested file \"" + _inputFile.getText() + "\" does not exist." );
-                    }
-                    else if ( fileSize == -3 ) {
-                        java.util.logging.Logger.getLogger("global").log(java.util.logging.Level.SEVERE, 
-                            "Error - DiFX user " + _settings.difxControlUser()
-                            + " does not have read permission for named file." );
-                    }
-                    else if ( fileSize == -4 ) {
-                        java.util.logging.Logger.getLogger("global").log(java.util.logging.Level.SEVERE, 
-                            "DiFX user name " + _settings.difxControlUser() +
-                            " not valid on DiFX host." );   
-                    }
-                    else {
-                        java.util.logging.Logger.getLogger("global").log(java.util.logging.Level.SEVERE, 
-                            "Unknown error encountered during file transfer of " + _inputFile.getText() + "." );
+                    else if ( ext.contentEquals( "calc" ) ) {
+                        _editorMonitor.calcFileName( fileStr );
+                        _editorMonitor.parseCalcFile( fileGet.inString() );
                     }
                 }
-            });  
-            try {
-                fileGet.readString();
-            } catch ( Exception e ) {} //  BLAT we should be using the GetFileMonitor class here instead...
+                else if ( fileSize == 0 ) {
+                    java.util.logging.Logger.getLogger("global").log(java.util.logging.Level.SEVERE, 
+                        "File \"" + _inputFile.getText() + "\" has zero length." );
+                }
+                else if ( fileSize == -10 ) {
+                    java.util.logging.Logger.getLogger("global").log(java.util.logging.Level.SEVERE, 
+                        "Socket connection timed out before DiFX host connected." );                                        }
+                else if ( fileSize == -11 ) {
+                    java.util.logging.Logger.getLogger("global").log(java.util.logging.Level.SEVERE, 
+                        "File transfer failed - " + fileGet.error() );
+                }
+                else if ( fileSize == -1 ) {
+                    java.util.logging.Logger.getLogger("global").log(java.util.logging.Level.SEVERE, 
+                        "JobNode: Bad file name (probably the path was not complete." );
+                }
+                else if ( fileSize == -2 ) {
+                    java.util.logging.Logger.getLogger("global").log(java.util.logging.Level.SEVERE, 
+                        "Requested file \"" + _inputFile.getText() + "\" does not exist." );
+                }
+                else if ( fileSize == -3 ) {
+                    java.util.logging.Logger.getLogger("global").log(java.util.logging.Level.SEVERE, 
+                        "Error - DiFX user " + _settings.difxControlUser()
+                        + " does not have read permission for named file." );
+                }
+                else if ( fileSize == -4 ) {
+                    java.util.logging.Logger.getLogger("global").log(java.util.logging.Level.SEVERE, 
+                        "DiFX user name " + _settings.difxControlUser() +
+                        " not valid on DiFX host." );   
+                }
+                else {
+                    java.util.logging.Logger.getLogger("global").log(java.util.logging.Level.SEVERE, 
+                        "Unknown error encountered during file transfer of " + _inputFile.getText() + "." );
+                }
+            }
+        });  
+        try {
+            fileGet.readString();
+        } catch ( Exception e ) {} //  BLAT we should be using the GetFileMonitor class here instead...
     }
     
     /*
@@ -538,6 +542,7 @@ public class JobNode extends QueueBrowserNode {
         
         //  If this job is "running" (it was started by the job editor/monitor) 
         //  then send the message to the monitor.
+        updateEditorMonitor();
         _editorMonitor.consumeMessage( difxMsg );
         
         //  Got something...
@@ -671,19 +676,28 @@ public class JobNode extends QueueBrowserNode {
         _jobDuration = newVal;
     }
     public Double jobDuration() { return _jobDuration; }
-    public void inputFile( String newVal ) { 
+    public void inputFile( String newVal, boolean loadNow ) { 
         _inputFile.setText( newVal );
         //  Convert to a file to extract the directory path...
         File tryFile = new File( newVal );
         _directoryPath = tryFile.getParent();
-        //  Request the contents of this input file from mk5daemon.
-        requestInputFile();
+        //  Now that we have an input file, enable controls associated with it.
+        _startJobItem.setEnabled( true );
+        _stopJobItem.setEnabled( true );
+        _monitorMenuItem.setEnabled( true );
+        _liveMonitorMenuItem.setEnabled( true );
+        //  Request the contents of this input file immediately if "loadNow" is
+        //  true.  This will tend to be done for jobs that are newly created, but
+        //  not for those that are loaded from databases or elsewhere.
+        if ( loadNow )
+            requestInputFile();
         updateUI();
     }
     public String inputFile() { return _inputFile.getText(); }
-    public void calcFile( String newVal ) {
+    public void calcFile( String newVal, boolean loadNow ) {
         _calcFile = newVal;
-        requestCalcFile();
+        if ( loadNow )
+            requestCalcFile();
     }
     public String calcFile() { return _calcFile; }
     public void fullName( String newVal ) { _fullName = newVal; }
@@ -811,7 +825,10 @@ public class JobNode extends QueueBrowserNode {
         _passNode = newNode;
     }
     
-    public JobEditorMonitor editorMonitor() { return _editorMonitor; }
+    public JobEditorMonitor editorMonitor() { 
+        updateEditorMonitor();
+        return _editorMonitor;
+    }
     
     public boolean running() {
         return _running;

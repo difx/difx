@@ -124,7 +124,7 @@ public class JobEditorMonitor extends JFrame {
                         _inputFileName.getText(), _settings );
                 if ( getFile.inString() != null && getFile.inString().length() > 0 ) {
                     _inputFileEditor.text( getFile.inString() );
-                    parseInputFile( _inputFileEditor.text() );
+                    parseInputFile();
                 }
             }
         } );
@@ -133,9 +133,7 @@ public class JobEditorMonitor extends JFrame {
         _uploadInputButton.setToolTipText( "Parse all settings from the editor text and upload to the Input File location on the DiFX host (not necessary unless you have changed the text)." );
         _uploadInputButton.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
-                System.out.println( "save the input file 1");
-                parseInputFile( _inputFileEditor.text() );
-                System.out.println( "save the input file 2");
+                parseInputFile();
                 Component comp = _uploadInputButton;
                 while ( comp.getParent() != null )
                     comp = comp.getParent();
@@ -169,7 +167,7 @@ public class JobEditorMonitor extends JFrame {
                         _calcFileName.getText(), _settings );
                 if ( getFile.inString() != null && getFile.inString().length() > 0 ) {
                     _calcFileEditor.text( getFile.inString() );
-                    parseInputFile( _calcFileEditor.text() );
+                    parseCalcFile( _calcFileEditor.text() );
                 }
             }
         } );
@@ -582,7 +580,10 @@ public class JobEditorMonitor extends JFrame {
         _statusPanel.setBackground( newColor );
     }
     
-    public void inputFileName( String newName ) { _inputFileName.setText( newName ); }
+    public void inputFileName( String newName, String content ) { 
+        _inputFileName.setText( newName );
+        _inputFileEditor.text( content );
+    }
     
     public void calcFileName( String newName ) { _calcFileName.setText( newName ); }
     
@@ -929,6 +930,7 @@ public class JobEditorMonitor extends JFrame {
             } catch ( java.io.IOException e ) {
                 e.printStackTrace();
             }
+            _settings.releaseTransferPort( _port );
         }
         
         protected int _port;
@@ -1280,6 +1282,7 @@ public class JobEditorMonitor extends JFrame {
             //  process any late messages.
             try { Thread.sleep( 1000 ); } catch ( Exception e ) {}
             _jobNode.running( false );
+            _settings.releaseTransferPort( _port );
         }
         
         protected int _port;
@@ -2049,6 +2052,8 @@ public class JobEditorMonitor extends JFrame {
                     _file[i].setBounds( 430, i * 20 + 1, 1000, 18 );
             }
         }
+        
+        
 
         /*
          * Override the mouseClicked event to make it work only when the "open/close"
@@ -2150,88 +2155,23 @@ public class JobEditorMonitor extends JFrame {
     }
     
     /*
-     * Parse the string data as if it came from an .input file (which, presumably,
-     * it did).
+     * Parse the string data in the .input file editor.
      */
-    synchronized public void parseInputFile( String str ) {
+    synchronized public void parseInputFile() {
         
-        System.out.println( "parse input file" );
+        String str = _inputFileEditor.text();
         _inputFile = new InputFileParser( str );
         
-        //  This is a list that holds our data the files/modules/whatever that are
-        //  our data requirements.
-        if ( _dataObjects == null )
-            _dataObjects = new ArrayList<String>();
-        _dataObjects.clear();
-
-        _inputFileEditor.text( str );
-        Scanner strScan = new Scanner( str );
-        strScan.useDelimiter( System.getProperty( "line.separator" ) );
-
-        while ( strScan.hasNext() ) {
-            String sInput = strScan.next();
-
-            if (sInput.contains("CALC FILENAME:")) {
-                _jobNode.calcFile( sInput.substring(sInput.indexOf(":") + 1).trim() );
-//                setCoreConfigFile(sInput.trim());
-            } else if ( sInput.contains( "EXECUTE TIME (SEC):" ) ) {
-                sInput = sInput.substring( sInput.indexOf(":") + 1 );
-                executeTime( Integer.parseInt( sInput.trim() ) );
-            } else if ( sInput.contains( "START MJD:" ) ) {
-                sInput = sInput.substring(sInput.indexOf(":") + 1);
-                startMJD( Integer.parseInt( sInput.trim() ) );
-            } else if (sInput.contains("START SECONDS:")) {
-                //  Throws away any fractional seconds...
-                sInput = sInput.substring(sInput.indexOf(":") + 1);
-                if (sInput.contains(".")) {
-                    sInput = sInput.substring(0, sInput.indexOf("."));
-                }
-                startSeconds( Integer.parseInt( sInput.trim() ) );
-            } else if ( sInput.contains( "OUTPUT FILENAME:" )) {
-                sInput = sInput.substring(sInput.indexOf(":") + 1);
-                _jobNode.outputFile( sInput.trim() );
-            } else if (sInput.contains("TELESCOPE ENTRIES:")) {
-                sInput = sInput.substring(sInput.indexOf(":") + 1);
-                _jobNode.numAntennas( Integer.parseInt( sInput.trim() ) );
-            } else if (sInput.contains("TELESCOPE NAME ")) {
-                //  Get the names of the antennas used in this job
-                String sInputObjID = sInput.substring(sInput.indexOf(":") - 2, sInput.indexOf(":"));
-                String sInputObjName = sInput.substring(sInput.indexOf(":") + 1);
-                // Note: the .input file is zero based
-                _jobNode.antennaName( Integer.parseInt( sInputObjID.trim() ), sInputObjName.trim() );
-            }
-            //  This is stuff from the data stream table.  At the moment we are expecting
-            //  one data stream per telescope.
-            else if (sInput.contains("DATASTREAM ENTRIES:")) {
-                //  This is assumed to be the first line in the data stream table.
-                _numDataStreams = Integer.parseInt( sInput.substring(sInput.indexOf(":") + 1).trim() );
-                //  Allocate and/or clear the vector we are using to store data sources.
-                if ( _dataSources == null )
-                    _dataSources = new Vector<String>();
-                else
-                    _dataSources.clear();
-            } else if (sInput.contains("DATA SOURCE:")) {
-                _dataSources.add( sInput.substring( sInput.indexOf(":") + 1 ).trim() );
-            } else if (sInput.contains("FILE ")) {
-                //  The "FILE" line has lists the data sources used in a job.  We need
-                //  to use these to make a list of data sources for eventual transmission
-                //  to mk5daemon when starting a job.
-                String inputSourceID = sInput.substring(sInput.indexOf("/") - 2, sInput.indexOf("/"));
-                String inputObject = sInput.substring(sInput.indexOf(":") + 1).trim();
-                
-                //  Keep a list of uniquely-named input objects (if the same input object
-                //  appears several times, it will only be added to the list once).
-                boolean foundIt = false;
-                for ( Iterator<String> iter = _dataObjects.iterator(); iter.hasNext(); ) {
-                    String testObject = iter.next();
-                    if ( inputObject.contentEquals( testObject ) )
-                        foundIt = true;
-                }
-                if ( !foundIt ) {
-                    _dataObjects.add( inputObject );
-                }
-            }
-        }
+        //  Extract some items from the .input file data.  
+        _jobNode.calcFile( _inputFile.commonSettings().calcFile, true );
+        _jobNode.outputFile( _inputFile.commonSettings().outputFile );
+        executeTime( _inputFile.commonSettings().executeTime );
+        startMJD( _inputFile.commonSettings().startMJD );
+        startSeconds( _inputFile.commonSettings().startSeconds );
+        _jobNode.numAntennas( _inputFile.telescopeTable().num );
+        for ( int i = 0; i < _inputFile.telescopeTable().num; ++i )
+            _jobNode.antennaName( i, _inputFile.telescopeTable().idx[i].name );
+        
         
         _jobNode.jobStart( (double)startMJD() + (double)startSeconds() / 24.0 / 3600.0 );
         _jobNode.jobDuration( (double)executeTime() / 24.0 / 3600.0 );
@@ -2397,8 +2337,8 @@ public class JobEditorMonitor extends JFrame {
     
     protected boolean _doneWithErrors;
     public boolean doneWithErrors() { return _doneWithErrors; }
-    protected int _numDataStreams;
-    protected Vector<String> _dataSources;
+    //protected int _numDataStreams;
+    //protected Vector<String> _dataSources;
     
     protected InputFileParser _inputFile;
     

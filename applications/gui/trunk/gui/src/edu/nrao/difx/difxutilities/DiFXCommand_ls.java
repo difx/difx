@@ -131,6 +131,7 @@ public class DiFXCommand_ls extends DiFXCommand {
                 
             }
             endCallback();
+            _settings.releaseTransferPort( _port );
         }
         
     }

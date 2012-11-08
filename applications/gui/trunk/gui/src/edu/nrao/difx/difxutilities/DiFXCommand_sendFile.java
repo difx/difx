@@ -135,6 +135,7 @@ public class DiFXCommand_sendFile extends DiFXCommand {
                 _fileSize = -11;
             }
             endCallback();
+            _settings.releaseTransferPort( _port );
         }
         
     }

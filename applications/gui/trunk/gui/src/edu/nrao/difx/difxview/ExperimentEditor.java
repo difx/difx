@@ -108,30 +108,10 @@ public class ExperimentEditor extends JFrame {
         
         //  The "namePanel" holds all of the stuff that ALWAYS is shown.
         IndexedPanel namePanel = new IndexedPanel( "" );
-        namePanel.openHeight( 240 );
+        namePanel.openHeight( 210 );
         namePanel.alwaysOpen( true );
         namePanel.noArrow( true );
         _scrollPane.addNode( namePanel );
-        
-        _inDataBase = new JCheckBox( "" );
-        _inDataBase.setBounds( 100, 110, 25, 25 );
-        _inDataBase.addActionListener( new ActionListener() {
-            public void actionPerformed( ActionEvent e ) {
-                inDataBaseAction();
-            }
-        });
-        namePanel.add( _inDataBase );
-        JLabel inDataBaseLabel = new JLabel( "In Database:" );
-        inDataBaseLabel.setBounds( 10, 110, 85, 25 );
-        inDataBaseLabel.setHorizontalAlignment( JLabel.RIGHT );
-        namePanel.add( inDataBaseLabel );
-        JLabel idLabel = new JLabel( "Database ID:" );
-        idLabel.setBounds( 140, 110, 85, 25 );
-        idLabel.setHorizontalAlignment( JLabel.RIGHT );
-        namePanel.add( idLabel );
-        _id = new JLabel( "" );
-        _id.setBounds( 230, 110, 70, 25 );
-        namePanel.add( _id );
         _name = new SaneTextField();
         _name.setBounds( 100, 20, 210, 25 );
         _name.textWidthLimit( 20 );
@@ -151,32 +131,34 @@ public class ExperimentEditor extends JFrame {
         nameLabel.setBounds( 10, 20, 85, 25 );
         nameLabel.setHorizontalAlignment( JLabel.RIGHT );
         namePanel.add( nameLabel );
+        //  We aren't using the number right now - it was originally put here because it
+        //  is in the database, but it isn't clear what, if anything, anyone needs it for.
         _number = new NumberBox();
         _number.setBounds( 100, 50, 80, 25 );
         _number.limits( 0.0, 9999.0 );
         _number.setToolTipText( "Number (up to four digits) used to associate experiments with the same name." );
-        namePanel.add( _number );
+//        namePanel.add( _number );
         _number.setVisible( false );
         _numberAsLabel = new JLabel( "" );
         _numberAsLabel.setBounds( 100, 50, 80, 25 );
         _numberAsLabel.setToolTipText( "Number used to associate experiments with the same name." );
-        namePanel.add( _numberAsLabel );
-        _numberAsLabel.setVisible( true );
-        JLabel numberLabel = new JLabel( "Number:" );
-        numberLabel.setBounds( 10, 50, 85, 25 );
-        numberLabel.setHorizontalAlignment( JLabel.RIGHT );
-        namePanel.add( numberLabel );
+//        namePanel.add( _numberAsLabel );
+        _numberAsLabel.setVisible( false );
+//        JLabel numberLabel = new JLabel( "Number:" );
+//        numberLabel.setBounds( 10, 50, 85, 25 );
+//        numberLabel.setHorizontalAlignment( JLabel.RIGHT );
+//        namePanel.add( numberLabel );
         _status = new JLabel( "unknown" );
-        _status.setBounds( 100, 80, 210, 25 );
+        _status.setBounds( 100, 50, 210, 25 );
         _status.setToolTipText( "Current status of this experiment." );
         namePanel.add( _status );
         _status.setVisible( false );
         JLabel statusLabel = new JLabel( "Status:" );
-        statusLabel.setBounds( 10, 80, 85, 25 );
+        statusLabel.setBounds( 10, 50, 85, 25 );
         statusLabel.setHorizontalAlignment( JLabel.RIGHT );
         namePanel.add( statusLabel );
         _statusList = new JComboBox();
-        _statusList.setBounds( 100, 80, 210, 25 );
+        _statusList.setBounds( 100, 50, 210, 25 );
         _statusList.setToolTipText( "List of possible status settings for this experiment." );
         _statusList.setBackground( Color.WHITE );
         _statusList.addActionListener( new ActionListener() {
@@ -185,16 +167,35 @@ public class ExperimentEditor extends JFrame {
             }
         });
         namePanel.add( _statusList );
+        _inDataBase = new JCheckBox( "" );
+        _inDataBase.setBounds( 100, 80, 25, 25 );
+        _inDataBase.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                inDataBaseAction();
+            }
+        });
+        namePanel.add( _inDataBase );
+        JLabel inDataBaseLabel = new JLabel( "In Database:" );
+        inDataBaseLabel.setBounds( 10, 80, 85, 25 );
+        inDataBaseLabel.setHorizontalAlignment( JLabel.RIGHT );
+        namePanel.add( inDataBaseLabel );
+        JLabel idLabel = new JLabel( "Database ID:" );
+        idLabel.setBounds( 140, 80, 85, 25 );
+        idLabel.setHorizontalAlignment( JLabel.RIGHT );
+        namePanel.add( idLabel );
+        _id = new JLabel( "" );
+        _id.setBounds( 230, 80, 70, 25 );
+        namePanel.add( _id );
         _created = new JLabel( "" );
-        _created.setBounds( 100, 140, 210, 25 );
+        _created.setBounds( 100, 110, 210, 25 );
         _created.setToolTipText( "Date this experiment was created (assigned by database if available)." );
         namePanel.add( _created );
         JLabel createdLabel = new JLabel( "Created:" );
-        createdLabel.setBounds( 10, 140, 85, 25 );
+        createdLabel.setBounds( 10, 110, 85, 25 );
         createdLabel.setHorizontalAlignment( JLabel.RIGHT );
         namePanel.add( createdLabel );
         _directory = new SaneTextField();
-        _directory.setBounds( 100, 170, 310, 25 );
+        _directory.setBounds( 100, 140, 310, 25 );
         _directory.setToolTipText( "\"Working\" directory that will contain all files for this experiment." );
         _directory.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
@@ -204,23 +205,23 @@ public class ExperimentEditor extends JFrame {
         namePanel.add( _directory );
         _directory.setVisible( false );
         _directoryAsLabel = new JLabel( "" );
-        _directoryAsLabel.setBounds( 100, 170, 310, 25 );
+        _directoryAsLabel.setBounds( 100, 140, 310, 25 );
         _directoryAsLabel.setToolTipText( "\"Working\" directory that will contain all files for this experiment." );
         namePanel.add( _directoryAsLabel );
         JLabel directoryLabel = new JLabel( "Working Dir:" );
-        directoryLabel.setBounds( 10, 170, 85, 25 );
+        directoryLabel.setBounds( 10, 140, 85, 25 );
         directoryLabel.setHorizontalAlignment( JLabel.RIGHT );
         namePanel.add( directoryLabel );
         _vexFileName = new SaneTextField();
-        _vexFileName.setBounds( 100, 200, 205, 25 );
+        _vexFileName.setBounds( 100, 170, 205, 25 );
         _vexFileName.setToolTipText( "Name of the .vex file associated with this experiment." );
         namePanel.add( _vexFileName );
         _vexFileNameAsLabel = new JLabel( "" );
-        _vexFileNameAsLabel.setBounds( 100, 200, 200, 25 );
+        _vexFileNameAsLabel.setBounds( 100, 170, 200, 25 );
         _vexFileNameAsLabel.setToolTipText( "Name of the .vex file associated with this experiment." );
         namePanel.add( _vexFileNameAsLabel );
         JLabel vexFileLabel = new JLabel( ".vex File:" );
-        vexFileLabel.setBounds( 10, 200, 85, 25 );
+        vexFileLabel.setBounds( 10, 170, 85, 25 );
         vexFileLabel.setHorizontalAlignment( JLabel.RIGHT );
         namePanel.add( vexFileLabel );
         _previousVexFileMenu = new JPopupMenu( "" );
@@ -819,11 +820,11 @@ public class ExperimentEditor extends JFrame {
             _createPass.setBounds( 100, 20, 25, 25 );
             _passName.setBounds( 285, 20, w - 310, 25 );
             _okButton.setBounds( w - 125, 140, 100, 25 );
-            _directory.setBounds( 100, 170, w - 125, 25 );
-            _vexFileName.setBounds( 100, 200, w - 255, 25 );
-            _previousVexFileButton.setBounds( w - 150, 200, 125, 25 );
-            _directoryAsLabel.setBounds( 100, 170, w - 125, 25 );
-            _vexFileNameAsLabel.setBounds( 100, 200, w - 125, 25 );
+            _directory.setBounds( 100, 140, w - 125, 25 );
+            _vexFileName.setBounds( 100, 170, w - 255, 25 );
+            _previousVexFileButton.setBounds( w - 150, 170, 125, 25 );
+            _directoryAsLabel.setBounds( 100, 140, w - 125, 25 );
+            _vexFileNameAsLabel.setBounds( 100, 170, w - 125, 25 );
             _editor.setBounds( 10, 60, w - 35, 430 );
             _fromHost.setBounds( 20, 30, 150, 25 );
             _fromHostLocation.setBounds( 175, 30, w - 200, 25 );
@@ -1518,16 +1519,16 @@ public class ExperimentEditor extends JFrame {
         if ( _newExperimentMode ) {
             _name.setVisible( true );
             _nameAsLabel.setVisible( false );
-            _number.setVisible( true );
-            _numberAsLabel.setVisible( false );
+//            _number.setVisible( true );
+//            _numberAsLabel.setVisible( false );
             _directory.setVisible( true );
             _directoryAsLabel.setVisible( false );
         }
         else {
             _name.setVisible( false );
             _nameAsLabel.setVisible( true );
-            _number.setVisible( false );
-            _numberAsLabel.setVisible( true );
+//            _number.setVisible( false );
+//            _numberAsLabel.setVisible( true );
             _directory.setVisible( false );
             _directoryAsLabel.setVisible( true );
         }
@@ -1599,6 +1600,7 @@ public class ExperimentEditor extends JFrame {
      * it using the "keepDirectory" function).
      */
     protected void nameChangeAction() {
+        _nameAsLabel.setText( _name.getText() );
         if ( !_keepDirectory ) {
             directory( _settings.workingDirectory() + "/" + _name.getText() );
             vexFileName( _name.getText() + ".vex" );
@@ -2266,7 +2268,7 @@ public class ExperimentEditor extends JFrame {
                     }
                     
                     //  Apply the input file data to the job.
-                    newJob.inputFile( newFile.trim() );
+                    newJob.inputFile( newFile.trim(), true );
                     //  Add the input file path to the database if we are using it.
                     if ( db != null ) {
                         db.updateJob( databaseJobId, "inputFile", newFile.trim() );

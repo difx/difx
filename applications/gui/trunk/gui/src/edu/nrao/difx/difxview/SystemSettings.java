@@ -18,8 +18,6 @@
  */
 package edu.nrao.difx.difxview;
 
-import edu.nrao.difx.difxutilities.BareBonesBrowserLaunch;
-
 import edu.nrao.difx.xmllib.difxmessage.*;
 import java.io.File;
 import javax.swing.event.EventListenerList;
@@ -112,6 +110,7 @@ public class SystemSettings extends JFrame {
         _defaultNames = new DefaultNames();
         _jobColumnSpecs = new JobColumnSpecs();
         _hardwareColumnSpecs = new HardwareColumnSpecs();
+        _jobLocationDefaults = new JobLocationDefaults();
         
         //  Create all of the components of the user interface (long, messy function).
         createGUIComponents();
@@ -323,6 +322,16 @@ public class SystemSettings extends JFrame {
         transferPortLabel.setBounds( 210, 85, 150, 25 );
         transferPortLabel.setHorizontalAlignment( JLabel.RIGHT );
         difxControlPanel.add( transferPortLabel );
+        //  Right now this is invisible.....
+        _maxTransferPorts = new NumberBox();
+        _maxTransferPorts.minimum( 1 );
+        _maxTransferPorts.setHorizontalAlignment( NumberBox.LEFT );
+        _maxTransferPorts.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                maxTransferPorts();
+            }
+        } );
+              
         _difxMonitorHost = new SaneTextField();
         difxControlPanel.add( _difxMonitorHost );
         JLabel difxMonitorHostLabel = new JLabel( "Monitor Host:" );
@@ -1452,6 +1461,8 @@ public class SystemSettings extends JFrame {
         _difxControlAddress.setText( "swc01.usno.navy.mil" );
         _difxControlPort.intValue( 50200 );
         _difxTransferPort.intValue( 50300 );
+        _maxTransferPorts.intValue( 10 );
+        maxTransferPorts();
         _difxMonitorPort.intValue( 52300 );
         _difxMonitorHost.setText( "swc01.usno.navy.mil" );
         _difxControlUser.setText( "difx" );
@@ -1473,7 +1484,7 @@ public class SystemSettings extends JFrame {
         _difxWikiURL.setText( "http://cira.ivec.org/dokuwiki/doku.php/difx/start" );
         _difxSVN.setText( "https://svn.atnf.csiro.au/trac/difx" );
         _dbAutoUpdate.setSelected( false );
-        _dbAutoUpdateInterval.intValue( 10 );
+        _dbAutoUpdateInterval.intValue( 100 );
         _workingDirectory.setText( "/" );
         _stagingArea.setText( "/queue" );
         _useStagingArea.setSelected( false );
@@ -1513,6 +1524,8 @@ public class SystemSettings extends JFrame {
         _windowConfiguration.directoryDisplayH = 500;
         _windowConfiguration.monitorDisplayW = 600;
         _windowConfiguration.monitorDisplayH = 500;
+        _windowConfiguration.diskSearchRulesDisplayW = 600;
+        _windowConfiguration.diskSearchRulesDisplayH = 500;
         _defaultNames.vexFileSource = "";
         _defaultNames.viaHttpLocation = "";
         _defaultNames.viaFtpLocation = "";
@@ -1704,6 +1717,16 @@ public class SystemSettings extends JFrame {
         addSMARTAttribute( 199, "UltraDMA CRC Error Count", false, null, null );
         addSMARTAttribute( 200, "Multi-Zone Error Rate", false, null, null );
         
+        _jobLocationDefaults.fileFilter = "";
+        _jobLocationDefaults.experimentBasedOnPath = true;
+        _jobLocationDefaults.experimentNamed = false;
+        _jobLocationDefaults.experimentName = "";
+        _jobLocationDefaults.passBasedOnPath = true;
+        _jobLocationDefaults.passNamed = false;
+        _jobLocationDefaults.noPass = false;
+        _jobLocationDefaults.passName = "";
+        _jobLocationDefaults.autoUpdate = false;
+
         //  Set up the communications based on current settings.
         changeDifxControlConnection();
     }
@@ -1770,18 +1793,34 @@ public class SystemSettings extends JFrame {
     public void difxControlPort( String newVal ) { difxControlPort( Integer.parseInt( newVal ) ); }
 
     /*
-     * Set the TCP "transfer" port.  The actual port used will increment up to 100 more than
+     * Set the TCP "transfer" port.  The actual port used will increment up _maxTrasferPorts more than
      * this setting, at which point it will cycle back and use the original.  The
      * idea is that we want to be able to have multiple TCP sessions open at once.
      */
     public void difxTransferPort( int newVal ) { _difxTransferPort.intValue( newVal ); }
     public int difxTransferPort() { return _difxTransferPort.intValue(); }
     public void difxTransferPort( String newVal ) { difxTransferPort( Integer.parseInt( newVal ) ); }
-    public int newDifxTransferPort() {
+    synchronized public int newDifxTransferPort() {
+        int tryPort = _newDifxTransferPort;
         ++_newDifxTransferPort;
-        if ( _newDifxTransferPort > 100 )
+        if ( _newDifxTransferPort >= _maxTransferPorts.intValue() )
             _newDifxTransferPort = 0;
-        return _newDifxTransferPort + _difxTransferPort.intValue();
+        //  See if the port we want is "free".  If not, wait until it is free.  
+        //  It is the duty of the calling program not to get hung up waiting
+        //  for this!
+        while ( _transferPortUsed[tryPort] ) {
+            try { Thread.sleep( 100 ); } catch ( Exception e ) {}
+        }
+        _transferPortUsed[tryPort] = true;
+        return tryPort + _difxTransferPort.intValue();
+    }
+    public void releaseTransferPort( int port ) {
+        _transferPortUsed[port - _difxTransferPort.intValue()] = false;
+    }
+    //  This function is called when the number of transfer ports is changed.  It
+    //  allocates an array of booleans to let us know when ports are "free".
+    protected void maxTransferPorts() {
+        _transferPortUsed = new boolean[_maxTransferPorts.intValue()];
     }
 
     public void difxMonitorPort( int newVal ) { _difxMonitorPort.intValue( newVal ); }
@@ -1952,9 +1991,14 @@ public class SystemSettings extends JFrame {
     }
     
     public void launchGUIHelp( String topicAddress ) {
-        File file = new File( _guiDocPath.getText().substring( 7 ) + "/" + topicAddress );
+        //  See if there is a "#" extension to this address - which we need to strip
+        //  off before we check if this file exists.
+        String filename = _guiDocPath.getText().substring( 7 ) + "/" + topicAddress;
+        if ( filename.contains( "#" ) )
+            filename = filename.substring( 0, filename.indexOf( "#" ) );
+        File file = new File( filename );
         if ( file.exists() )
-            BareBonesBrowserLaunch.openURL( _guiDocPath.getText() + "/" + topicAddress );
+            browseURL( _guiDocPath.getText() + "/" + topicAddress );
         else {
             //  The named file couldn't be found.  Since this file is formed by
             //  the GUI, the name is probably not wrong, so the path probably is.
@@ -1967,7 +2011,7 @@ public class SystemSettings extends JFrame {
                 out.write( "<p>The document you requested:\n" );
                 out.write( "<br>\n" );
                 out.write( "<pre>\n" );
-                out.write( _guiDocPath.getText() + "/" + topicAddress + "\n" );
+                out.write( filename + "\n" );
                 out.write( "</pre>\n" );
                 out.write( "was not found.\n" );
                 out.write( "\n" );
@@ -1979,22 +2023,37 @@ public class SystemSettings extends JFrame {
                 out.write( "<p>Note that the path should start with \"<code>file:///</code>\" followed by a complete\n" );
                 out.write( "pathname, as in \"<code>file:///tmp/foo.html</code>\".\n" );
                 out.close();
-                BareBonesBrowserLaunch.openURL( "file:///tmp/tmpIndex.html" );
+                browseURL( "file:///tmp/tmpIndex.html" );
             } catch ( IOException e ) {
             }
         }
     }
     
+    public void browseURL( String url ) {
+        java.awt.Desktop desktop = java.awt.Desktop.getDesktop();
+        if ( !desktop.isSupported( java.awt.Desktop.Action.BROWSE ) ) {
+            java.util.logging.Logger.getLogger( "global" ).log( java.util.logging.Level.SEVERE,
+                "Unable to open \"" + url + "\" - browsing not supported??" );
+            return;
+        }
+        try {
+            desktop.browse( new java.net.URI( url ) );
+        } catch ( Exception e ) {
+            java.util.logging.Logger.getLogger( "global" ).log( java.util.logging.Level.SEVERE,
+                "Unable to open \"" + url + "\" - " + e.getMessage() );
+        }
+    }
+    
     public void launchDiFXUsersGroup() {
-        BareBonesBrowserLaunch.openURL( _difxUsersGroupURL.getText() );
+        browseURL( _difxUsersGroupURL.getText() );
     }
     
     public void launchDiFXWiki() {
-        BareBonesBrowserLaunch.openURL( _difxWikiURL.getText() );
+        browseURL( _difxWikiURL.getText() );
     }
     
     public void launchDiFXSVN() {
-        BareBonesBrowserLaunch.openURL( _difxSVN.getText() );
+        browseURL( _difxSVN.getText() );
     }
     
     /*
@@ -2259,6 +2318,10 @@ public class SystemSettings extends JFrame {
                 _windowConfiguration.monitorDisplayW = doiConfig.getWindowConfigMonitorDisplayW();
             if ( doiConfig.getWindowConfigMonitorDisplayH() != 0 )
                 _windowConfiguration.monitorDisplayH = doiConfig.getWindowConfigMonitorDisplayH();
+            if ( doiConfig.getWindowConfigDiskSearchRulesDisplayW() != 0 )
+                _windowConfiguration.diskSearchRulesDisplayW = doiConfig.getWindowConfigDiskSearchRulesDisplayW();
+            if ( doiConfig.getWindowConfigDiskSearchRulesDisplayH() != 0 )
+                _windowConfiguration.diskSearchRulesDisplayH = doiConfig.getWindowConfigDiskSearchRulesDisplayH();
             if ( doiConfig.getDefaultNamesVexFileSource() != null )
                 _defaultNames.vexFileSource = doiConfig.getDefaultNamesVexFileSource();
             if ( doiConfig.getDefaultNamesViaHttpLocation() != null )
@@ -2529,6 +2592,20 @@ public class SystemSettings extends JFrame {
                 _hardwareColumnSpecs.CurrentJob.show = doiConfig.getHardwareCurrentJob().isShow();
                 _hardwareColumnSpecs.CurrentJob.width = doiConfig.getHardwareCurrentJob().getWidth();
             }
+
+            if ( doiConfig.getJobLocationDefaultsFileFilter() != null )
+                _jobLocationDefaults.fileFilter = doiConfig.getJobLocationDefaultsFileFilter();
+            _jobLocationDefaults.experimentBasedOnPath = !doiConfig.isJobLocationDefaultsExperimentBasedOnPathFalse();
+            _jobLocationDefaults.experimentNamed = doiConfig.isJobLocationDefaultsExperimentNamed();
+            if ( doiConfig.getJobLocationDefaultsExperimentName() != null )
+                _jobLocationDefaults.experimentName = doiConfig.getJobLocationDefaultsExperimentName();
+            _jobLocationDefaults.passBasedOnPath = !doiConfig.isJobLocationDefaultsPassBasedOnPathFalse();
+            _jobLocationDefaults.passNamed = doiConfig.isJobLocationDefaultsExperimentNamed();
+            _jobLocationDefaults.noPass = doiConfig.isJobLocationDefaultsNoPass();
+            if ( doiConfig.getJobLocationDefaultsPassName() != null )
+                _jobLocationDefaults.passName = doiConfig.getJobLocationDefaultsPassName();
+            _jobLocationDefaults.autoUpdate = doiConfig.isJobLocationDefaultsAutoUpdate();
+            
             updateEOPNow();
             changeDifxControlConnection();
             generateDatabaseChangeEvent();
@@ -2631,6 +2708,8 @@ public class SystemSettings extends JFrame {
         doiConfig.setWindowConfigDirectoryDisplayH( _windowConfiguration.directoryDisplayH );
         doiConfig.setWindowConfigMonitorDisplayW( _windowConfiguration.monitorDisplayW );
         doiConfig.setWindowConfigMonitorDisplayH( _windowConfiguration.monitorDisplayH );
+        doiConfig.setWindowConfigDiskSearchRulesDisplayW( _windowConfiguration.diskSearchRulesDisplayW );
+        doiConfig.setWindowConfigDiskSearchRulesDisplayH( _windowConfiguration.diskSearchRulesDisplayH );
         
         doiConfig.setDefaultNamesVexFileSource( _defaultNames.vexFileSource );
         doiConfig.setDefaultNamesViaHttpLocation( _defaultNames.viaHttpLocation );
@@ -2829,7 +2908,17 @@ public class SystemSettings extends JFrame {
         doiConfig.getHardwareCurrentJob().setShow( _hardwareColumnSpecs.CurrentJob.show );
         doiConfig.getHardwareCurrentJob().setWidth( _hardwareColumnSpecs.CurrentJob.width );
                 
-        try {
+        doiConfig.setJobLocationDefaultsFileFilter( _jobLocationDefaults.fileFilter );
+        doiConfig.setJobLocationDefaultsExperimentBasedOnPathFalse( !_jobLocationDefaults.experimentBasedOnPath );
+        doiConfig.setJobLocationDefaultsExperimentNamed( _jobLocationDefaults.experimentNamed );
+        doiConfig.setJobLocationDefaultsExperimentName( _jobLocationDefaults.experimentName );
+        doiConfig.setJobLocationDefaultsPassBasedOnPathFalse( !_jobLocationDefaults.passBasedOnPath );
+        doiConfig.setJobLocationDefaultsExperimentNamed( _jobLocationDefaults.passNamed );
+        doiConfig.setJobLocationDefaultsNoPass( _jobLocationDefaults.noPass );
+        doiConfig.setJobLocationDefaultsPassName( _jobLocationDefaults.passName );
+        doiConfig.setJobLocationDefaultsAutoUpdate( _jobLocationDefaults.autoUpdate );
+
+            try {
             javax.xml.bind.JAXBContext jaxbCtx = javax.xml.bind.JAXBContext.newInstance( doiConfig.getClass().getPackage().getName() );
             javax.xml.bind.Marshaller marshaller = jaxbCtx.createMarshaller();
             File theFile = new File( filename );
@@ -3235,16 +3324,17 @@ public class SystemSettings extends JFrame {
                     Thread.sleep( 100 );
                     if ( _updateDatabaseNow ) {
                         //  Empty the experiment, job, and pass type lists.  This will
-                        //  force them to update the next time they are consulted.
+                        //  force them to update the next time they are consulted....
                         if ( _jobStatusList != null )
                             _jobStatusList.clear();
                         if ( _experimentStatusList != null )
                             _experimentStatusList.clear();
                         if ( _passTypeList != null )
                             _passTypeList.clear();
+                        //  ...and that consulting is done here.
                         updateFromDatabase();
                         //  Trigger callbacks to other classes that want to watch this periodic
-                        //  update.
+                        //  update.  The queue browser uses this.
                         dispatchDatabaseUpdateEvent();
                         updateDatabaseNow( false );
                     }
@@ -3461,6 +3551,8 @@ public class SystemSettings extends JFrame {
     protected JFormattedTextField _difxControlAddress;
     protected NumberBox _difxControlPort;
     protected NumberBox _difxTransferPort;
+    protected NumberBox _maxTransferPorts;
+    protected boolean[] _transferPortUsed;
     protected int _newDifxTransferPort;
     protected SaneTextField _difxMonitorHost;
     protected NumberBox _difxMonitorPort;
@@ -3579,6 +3671,8 @@ public class SystemSettings extends JFrame {
         int directoryDisplayH;
         int monitorDisplayW;
         int monitorDisplayH;
+        int diskSearchRulesDisplayW;
+        int diskSearchRulesDisplayH;
     }
     protected WindowConfiguration _windowConfiguration;
     
@@ -3612,6 +3706,25 @@ public class SystemSettings extends JFrame {
         String dataFormat;
     }
     protected DefaultNames _defaultNames;
+    
+    /*
+     * Default values for items in the "job location" windows (see the QueueBrowser).
+     */
+    public class JobLocationDefaults {
+        String fileFilter;
+        boolean experimentBasedOnPath;
+        boolean experimentNamed;
+        String experimentName;
+        boolean passBasedOnPath;
+        boolean passNamed;
+        boolean noPass;
+        String passName;
+        boolean autoUpdate;
+    }
+    protected JobLocationDefaults _jobLocationDefaults;
+    public JobLocationDefaults jobLocationDefaults() {
+        return _jobLocationDefaults;
+    }
     
     public class ColumnSpec {
         boolean show;

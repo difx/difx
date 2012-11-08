@@ -497,6 +497,7 @@ public class DirectoryDisplay extends JFrame {
             } catch ( java.io.IOException e ) {
                 e.printStackTrace();
             }
+            _settings.releaseTransferPort( _port );
         }
         
         protected int _port;

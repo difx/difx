@@ -135,6 +135,7 @@ public class DiFXCommand_vex2difx extends DiFXCommand {
                 
             }
             endCallback();
+            _settings.releaseTransferPort( _port );
         }
         
     }
