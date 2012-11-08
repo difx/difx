@@ -260,7 +260,6 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
-#include <fftw3.h>
 
 //start with the types
 typedef struct {
@@ -282,28 +281,24 @@ typedef struct {
 
 // These fill in for the IppsFFTSpec_R_32f structures. 
 typedef struct { 
-  fftwf_plan p;
   f32 * in; 
   cf32 * out; // Perhaps should be fftwf_complex
   int len; int len2; int len3;
 } GenFFTPtrRf32;
 
 typedef struct { 
-  fftwf_plan p;
   f32 * out; 
   cf32 * in; // Perhaps should be fftwf_complex
   int len; int len2; int len3;
 } GenFFTPtrCRf32;
 
 typedef struct { 
-  fftwf_plan p;
   cf32 * in; // Perhaps should be fftwf_complex
   cf32 * out; // Perhaps should be fftwf_complex
   int len; int len2; int len3;
 } GenFFTPtrCfc32;
 
 typedef struct { 
-  fftwf_plan p;
   f32 * in_re; 
   f32 * in_im; 
   f32 * out_re; 
@@ -312,7 +307,6 @@ typedef struct {
 } GenFFTPtrCf32;
 
 typedef struct { 
-  fftw_plan p;
   cf64 * in; 
   cf64 * out; 
   int len; int len2; int len3;
@@ -566,46 +560,6 @@ inline vecStatus genericSum_32fc(const cf32 *src, int length, cf32 *sum)
 //http://software.intel.com/sites/products/documentation/hpc/compilerpro/en-us/cpp/lin/ipp/ipps/ipps_ch6/functn_FIRGenLowpass.html
 // I believe it is NEVER USED? 
 // inline vecStatus genericNULLFIRGen(f64 freq, f64 *taps, int length, vecStatus window, vecStatus normalise) {return vecNoErr;} 
-
-// FFTs
-inline vecStatus genericInitFFTR_f32(GenFFTPtrRf32 **fftspec, int order, int flag, vecHintAlg hint) 
-{ fftspec[0] = (GenFFTPtrRf32 *) malloc(sizeof(GenFFTPtrRf32)); 
-  fftspec[0]->len = 2<<order;
-  fftspec[0]->in = (f32 *) fftwf_malloc(fftspec[0]->len*sizeof(f32)); 
-  fftspec[0]->out = (cf32 *) fftwf_malloc((fftspec[0]->len/2+1)*sizeof(cf32)); 
-  fftspec[0]->p = fftwf_plan_dft_r2c_1d(fftspec[0]->len,fftspec[0]->in, (fftwf_complex *) fftspec[0]->out, FFTW_ESTIMATE); 
-  return vecNoErr;} // Always FORWARD
-
-inline vecStatus genericInitFFTC_cf32(GenFFTPtrCfc32 **fftspec, int order, int flag, vecHintAlg hint)
-{ fftspec[0] = (GenFFTPtrCfc32 *) malloc(sizeof(GenFFTPtrCfc32)); 
-  fftspec[0]->len = 2<<order;
-  fftspec[0]->in = (cf32 *) fftwf_malloc(fftspec[0]->len*sizeof(cf32));
-  fftspec[0]->out = (cf32 *) fftwf_malloc(fftspec[0]->len*sizeof(cf32));
-  fftspec[0]->p = fftwf_plan_dft_1d(fftspec[0]->len,(fftwf_complex *) fftspec[0]->in,(fftwf_complex *) fftspec[0]->out, FFTW_FORWARD, FFTW_ESTIMATE); 
-  return vecNoErr;} // Always FORWARD
-
-inline vecStatus genGetFFTBufSizeR_f32(GenFFTPtrRf32* fftspec, int *buffersize)  { buffersize[0] = fftspec->len; return vecNoErr; }
-inline vecStatus genGetFFTBufSizeC_cf32(GenFFTPtrCfc32* fftspec, int *buffersize)  { buffersize[0] = fftspec->len; return vecNoErr; }
-
-inline vecStatus genFreeFFTR_f32(GenFFTPtrRf32* fftspec) { fftwf_free(fftspec->in);fftwf_free(fftspec->out);fftwf_destroy_plan(fftspec->p);free(fftspec);return vecNoErr; }
-inline vecStatus genFreeFFTC_cf32(GenFFTPtrCfc32* fftspec) { fftwf_free(fftspec->in);fftwf_free(fftspec->out);fftwf_destroy_plan(fftspec->p);free(fftspec);return vecNoErr; }
-
-// Should use memmove? Is the (len/2+1) copy working as expected? 
-inline vecStatus genFFT_RtoC_f32(const f32* src, f32* dest, GenFFTPtrRf32*fftspec,u8 * fftbuffer)
-   { memcpy(fftspec->in, src, fftspec->len*sizeof(f32)); 
-     fftwf_execute(fftspec->p); 
-     memcpy(dest, fftspec->out, (fftspec->len/2+1)*sizeof(cf32)); 
-     return vecNoErr; }
-inline vecStatus genFFT_CtoC_cf32(const cf32 *src, cf32 *dest, GenFFTPtrCfc32* fftspec, u8 *fftbuffer)  
-   { memcpy(fftspec->in, src, fftspec->len*sizeof(cf32)); 
-     fftwf_execute(fftspec->p);
-     memcpy(dest, fftspec->out, fftspec->len*sizeof(cf32));
-     return vecNoErr; }
-inline vecStatus genFFT_CtoR_f32(const f32* src, f32* dest, GenFFTPtrRf32*fftspec,u8 * fftbuffer)
-   { memcpy(fftspec->in, src, (fftspec->len/2+1)*sizeof(cf32)); 
-     fftwf_execute(fftspec->p); 
-     memcpy(dest, fftspec->out, fftspec->len*sizeof(f32)); 
-     return vecNoErr; }
 
 
 #endif /*Architecture == Intel */
