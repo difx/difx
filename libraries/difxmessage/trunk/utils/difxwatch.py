@@ -6,7 +6,7 @@
 # $Id$
 # $HeadURL$
 # $LastChangedRevision$
-# $Author: $
+# $Author$
 # $LastChangedDate$
 #
 #============================================================================
@@ -32,7 +32,7 @@ __author__="Helge Rottmann <rottmann@mpifr-bonn.mpg.de>"
 __prog__ = os.path.basename(__file__)
 __build__= "$Revision$"
 __date__ ="$Date$"
-__lastAuthor__="$Author:$"
+__lastAuthor__="$Author$"
 
 ##############################################################################
 # Parameters
