@@ -41,6 +41,9 @@
 #include <difxmessage.h>
 #include <fcntl.h>
 #include <arpa/inet.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
 #include "mk5daemon.h"
 #include "../config.h"
 #include "logger.h"
@@ -206,6 +209,76 @@ int MAC::toString(char *str) const
 		(address >>  0) & 0xFF);
 	
 	return n;
+}
+
+int checkRunning(const char *hostname)
+{
+	const int MaxMessageLength = 256;
+	int status;
+	int sock;
+	struct addrinfo hints;
+	struct addrinfo *servinfo;
+	const char drsQuery[] = "DTS_id?;";
+	int txBytes, rxBytes;
+	char message[MaxMessageLength];
+	struct timeval tv;
+
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_family = AF_UNSPEC;		/* don't care IPv4 or IPv6 */
+	hints.ai_socktype = SOCK_STREAM;
+	hints.ai_flags = AI_PASSIVE;
+
+	status = getaddrinfo(hostname, "2620", &hints, &servinfo);
+	if(status != 0)
+	{
+		return -1;
+	}
+
+	sock = socket(servinfo->ai_family, servinfo->ai_socktype, servinfo->ai_protocol);
+	if(sock <= 0)
+	{
+		freeaddrinfo(servinfo);
+
+		return -2;
+	}
+
+	tv.tv_sec = 0;
+	tv.tv_usec = 100000;
+
+	setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+	setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
+
+	status = connect(sock, servinfo->ai_addr, servinfo->ai_addrlen); 
+	if(status < 0)
+	{
+		close(sock);
+		freeaddrinfo(servinfo);
+
+		return -3;
+	}
+
+	txBytes = send(sock, drsQuery, strlen(drsQuery) , 0);
+	if(txBytes != strlen(drsQuery))
+	{
+		close(sock);
+		freeaddrinfo(servinfo);
+
+		return -4;
+	}
+
+	rxBytes = recv(sock, message, MaxMessageLength-1, 0);
+	if(rxBytes <= 0)
+	{
+		close(sock);
+		freeaddrinfo(servinfo);
+
+		return -5;
+	}
+
+	close(sock);
+	freeaddrinfo(servinfo);
+
+	return 0;
 }
 
 Mk5Daemon *newMk5Daemon(const char *logPath, const char *userID, int isMk5)
@@ -797,6 +870,7 @@ int main(int argc, char **argv)
 	struct timeval timeout;
 	int readSocks;
 	int highSock;
+	int v;
 #ifdef HAVE_XLRAPI_H
 	time_t firstTime;
 	int halfInterval;
@@ -807,6 +881,26 @@ int main(int argc, char **argv)
 #else
 	int isMk5 = 0;
 #endif
+
+	v = checkRunning("localhost");
+	if(v == 0)
+	{
+		fprintf(stderr, "Error: another instance of %s is already running\n", program);
+
+		exit(EXIT_FAILURE);
+	}
+	else if(v > -3)
+	{
+		fprintf(stderr, "Error: some network problem in resolving localhost: %d\n", v);
+
+		exit(EXIT_FAILURE);
+	}
+	else if(v < -3)
+	{
+		fprintf(stderr, "Error: some other instance of %s may be running; if so, it is unhappy: %d\n", program, v);
+
+		exit(EXIT_FAILURE);
+	}
 
 	// Prevent any zombies
 	signal(SIGCHLD, SIG_IGN);
@@ -821,7 +915,7 @@ int main(int argc, char **argv)
 		strcpy(logPath, DefaultLogPath);
 	}
 
-	u = getenv ("DIFX_USER_ID");
+	u = getenv("DIFX_USER_ID");
 	if (u)
 	{
 		strcpy(userID, u);

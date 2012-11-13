@@ -10,6 +10,7 @@ Version 2.2.0
 * Respect -u option when calling system commands
 * -n option allows enables running external commands without su
 * obtain full path to difxlog by reading $DIFXROOT environment
+* check for mk5daemon already running
 
 Version 2.1.0
 ~~~~~~~~~~~~~
