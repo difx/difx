@@ -3,7 +3,7 @@
 # TODO - change USNO processing to check if schedule only contains MK and PT antennas
 
 from sys import argv, exit, stdin
-from os import system, chdir, getcwd, environ, popen
+from os import system, chdir, getcwd, environ, popen, stat, path, remove, listdir
 from os.path import isfile, isdir
 from string import replace, strip, split, lower, upper, find
 from glob import glob
@@ -11,8 +11,8 @@ from time import time
 import datetime
 
 program = 'queueVex'
-version = 1.11
-verdate = '20121029'
+version = 1.12
+verdate = '20121113'
 author  = 'Walter Brisken'
 
 verbose = 1
@@ -22,6 +22,8 @@ ccScriptDir = '/export/home/cc/vlba/scripts'
 prestartTime = 300	# seconds
 poststopTime = 30	# seconds
 difxPath = '/home/swc/DiFX-trunk/bin'
+observTxHistoryDir = '/home/vlba/metadata/observtxhistory'
+observTxHistoryDays = 7
 linesToShow = 10
 keepDays = 45
 
@@ -50,6 +52,28 @@ def usage():
 
 
 mjd0 = datetime.datetime(1858, 11, 17, 0, 0)
+
+
+def deleteOld(dir, days):
+	n = 0
+	now = time()
+	for f in os.listdir(dir):
+		if os.stat(f).st_mtime < now - days*86400:
+			if os.path.isfile(f) and f[0:6] == 'observ':
+				os.remove(os.path.join(dir, f))
+				n += 1
+	print '%d old observ.tx files from %s were deleted\n' % n
+
+def saveObservTxFile(srcfile, station):
+	todayMJD = time()/86400.0 + 40587
+	d = '%12.6f' % todayMJD
+
+	destfile = os.path.join(observTxHistoryDir, 'observ.tx_', station, '_', d)
+
+	cmd = 'cp %s %s' % (srcfile, destfile)
+	if verbose > 0:
+		print 'Executing command: %s' % cmd
+	system(cmd)
 
 def execute(cmd, nostdout=0):
 	if verbose > 0:
@@ -269,6 +293,9 @@ chdir(tmpDir)
 
 overlaps = []
 
+# remove saved obser.tx files older than observTxHistoryDays
+deleteOld(observTxHistoryDir, observTxHistoryDays)
+
 for vexFile in vexFiles:
 	if vexFile[0] != '/':
 		vexFile = '%s/%s' % (cwd, vexFile)
@@ -334,6 +361,8 @@ for vexFile in vexFiles:
 		execute('scp vlbamon@%s:%s/%s . 2>&1' % (cc, ccScriptDir, observTxFile), 1)
 		if not isfile(observTxFile):
 			execute('touch %s' % observTxFile)
+
+		saveObservTxFile(observTxFile, station)
 
 		observations = open(observTxFile).readlines()
 		observations = addObservation(observations, expt, timeRange[0], timeRange[1], station, overlaps)
