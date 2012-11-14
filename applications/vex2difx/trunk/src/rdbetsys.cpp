@@ -336,7 +336,7 @@ static void sanityCheckChannels(const VexSetup &vexSetup)
 	{
 		cerr << "Developer Error: TsysAccumulator::sanityCheckChannels: vexSetup.nRecordChan=" << vexSetup.nRecordChan << " does not equal nRecChan=" << nRecChan << " as it should!" << endl;
 
-		exit(EXIT_FAILURE);
+		//exit(EXIT_FAILURE);
 	}
 }
 

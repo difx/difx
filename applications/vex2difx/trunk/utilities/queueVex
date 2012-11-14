@@ -11,8 +11,8 @@ from time import time
 import datetime
 
 program = 'queueVex'
-version = 1.12
-verdate = '20121113'
+version = 1.13
+verdate = '20121114'
 author  = 'Walter Brisken'
 
 verbose = 1
@@ -57,18 +57,21 @@ mjd0 = datetime.datetime(1858, 11, 17, 0, 0)
 def deleteOld(dir, days):
 	n = 0
 	now = time()
-	for f in os.listdir(dir):
-		if os.stat(f).st_mtime < now - days*86400:
-			if os.path.isfile(f) and f[0:6] == 'observ':
-				os.remove(os.path.join(dir, f))
+	print ''
+	for f in listdir(dir):
+		fn = path.join(dir, f)
+		age = (now - stat(fn).st_mtime)/86400.0	# in days
+		if age > days:
+			if path.isfile(fn) and f[0:6] == 'observ':
+				print 'Removing %s because it is %3.1f days old' % (fn, age)
+				remove(fn)
 				n += 1
-	print '%d old observ.tx files from %s were deleted\n' % n
+	print '%d old observ.tx files from %s were deleted because they were older than %d days\n' % (n, dir, days)
 
 def saveObservTxFile(srcfile, station):
 	todayMJD = time()/86400.0 + 40587
-	d = '%12.6f' % todayMJD
 
-	destfile = os.path.join(observTxHistoryDir, 'observ.tx_', station, '_', d)
+	destfile = path.join(observTxHistoryDir, 'observ.tx_%s_%12.6f' % (station, todayMJD))
 
 	cmd = 'cp %s %s' % (srcfile, destfile)
 	if verbose > 0:
