@@ -11,6 +11,8 @@ After a period of deprecation finally removed difxMessageSendCondition().  Use
   difxMessageSendDriveStats() instead.
 Prefer to use new function DifxMessageSend2 over DifxMessageSend.  It is more
   efficient.
+Allow spoofed hostname via the difxMessageInitFull() function.  Perhaps useful in
+  cases where multiple interfaces exist on the same machine?
 
 Version 2.1.0
 ~~~~~~~~~~~~

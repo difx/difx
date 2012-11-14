@@ -536,6 +536,7 @@ typedef struct
 const char *difxMessageGetVersion();
 
 int difxMessageInit(int mpiId, const char *identifier);
+int difxMessageInitFull(int mpiId, const char *identifier, const char *publishedHostname);
 int difxMessageInitBinary();	/* looks @ env vars DIFX_BINARY_GROUP & _PORT */
 void difxMessagePrint();
 void difxMessageGetMulticastGroupPort(char *group, int *port);

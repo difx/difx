@@ -55,7 +55,7 @@ const char *getDifxMessageIdentifier()
 	return difxMessageIdentifier;
 }
 
-int difxMessageInit(int mpiId, const char *identifier)
+int difxMessageInitFull(int mpiId, const char *identifier, const char *publishedHostname)
 {
 	const char *envstr;
 	int size;
@@ -67,8 +67,15 @@ int difxMessageInit(int mpiId, const char *identifier)
 
 	difxMessageMpiProcessId = mpiId;
 
-	gethostname(difxMessageHostname, DIFX_MESSAGE_PARAM_LENGTH);
-	difxMessageHostname[DIFX_MESSAGE_PARAM_LENGTH-1] = 0;
+	if(publishedHostname)
+	{
+		snprintf(difxMessageHostname, DIFX_MESSAGE_PARAM_LENGTH, "%s", publishedHostname);
+	}
+	else
+	{
+		gethostname(difxMessageHostname, DIFX_MESSAGE_PARAM_LENGTH);
+		difxMessageHostname[DIFX_MESSAGE_PARAM_LENGTH-1] = 0;
+	}
 
 	envstr = getenv("DIFX_MESSAGE_GROUP");
 	if(envstr != 0)
@@ -152,6 +159,11 @@ int difxMessageInit(int mpiId, const char *identifier)
 	}
 	
 	return 0;
+}
+
+int difxMessageInit(int mpiId, const char *identifier)
+{
+	return difxMessageInitFull(mpiId, identifier, 0);
 }
 
 int difxMessageInitBinary()
