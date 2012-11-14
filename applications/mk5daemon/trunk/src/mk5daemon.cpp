@@ -130,16 +130,19 @@ static void usage(const char *pgm)
 	fprintf(stderr, "  -l <path>      Put log files in <path>\n"); 
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --user <user>\n");
-	fprintf(stderr, "  -u <user>      use <user> when executing remote commands (default is 'difx')\n"); 
+	fprintf(stderr, "  -u <user>      Use <user> when executing remote commands (default is 'difx')\n"); 
+	fprintf(stderr, "\n");
+	fprintf(stderr, "  --hostname <name>\n");
+	fprintf(stderr, "  -N <name>      Set hostname to <name> in messages (default is canonical hostname)\n"); 
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --nosu \n");
 	fprintf(stderr, "  -n             Don't use su when executing su commands\n"); 
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --isMk5 \n");
-	fprintf(stderr, "  -m             force mk5daemon on this host to act as Mark5 regardless of hostname\n"); 
+	fprintf(stderr, "  -m             Force mk5daemon on this host to act as Mark5 regardless of hostname\n"); 
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --embedded\n");
-	fprintf(stderr, "  -e             configure for running within a pipe and with messages to stdout\n");
+	fprintf(stderr, "  -e             Configure for running within a pipe and with messages to stdout\n");
 	fprintf(stderr, "\n");
 	fprintf(stderr, "Note: This program responds to the following "
 			"environment variables:\n");
@@ -372,16 +375,17 @@ int Mk5Daemon_system(const Mk5Daemon *D, const char *command, int verbose)
 	return v;
 }
 
-FILE* Mk5Daemon_popen( const Mk5Daemon *D, const char *command, int verbose ) {
+FILE* Mk5Daemon_popen(const Mk5Daemon *D, const char *command, int verbose)
+{
 	char message[DIFX_MESSAGE_LENGTH];
 
-	if(verbose) {
-		snprintf( message, DIFX_MESSAGE_LENGTH, "Executing: %s\n", command );
-		Logger_logData( D->log, message );
+	if(verbose)
+	{
+		snprintf(message, DIFX_MESSAGE_LENGTH, "Executing: %s\n", command);
+		Logger_logData(D->log, message);
 	}
 
-    //snprintf( message, DIFX_MESSAGE_LENGTH, "/bin/sh -c %s", command );
-	return popen( command, "r" );
+	return popen(command, "r");
 }
 
 void deleteMk5Daemon(Mk5Daemon *D)
@@ -415,6 +419,7 @@ int running(const char *name)
 	if(!pin)
 	{
 		printf("ERROR Cannot run ps\n");
+
 		return 1;
 	}
 
@@ -854,6 +859,7 @@ int Mk5Daemon_stopRecord(Mk5Daemon *D)
 
 int main(int argc, char **argv)
 {
+	// FIXME: fixed length string arrays should be revisited
 	Mk5Daemon *D;
 	time_t t, lastTime;
 	char message[DIFX_MESSAGE_LENGTH];
@@ -865,6 +871,7 @@ int main(int argc, char **argv)
 	char logPath[256];
 	const char *p, *u;
 	char userID[256];
+	const char *providedHostname = 0;
 	double mjd;
 	fd_set socks;
 	struct timeval timeout;
@@ -881,26 +888,6 @@ int main(int argc, char **argv)
 #else
 	int isMk5 = 0;
 #endif
-
-	v = checkRunning("localhost");
-	if(v == 0)
-	{
-		fprintf(stderr, "Error: another instance of %s is already running\n", program);
-
-		exit(EXIT_FAILURE);
-	}
-	else if(v > -3)
-	{
-		fprintf(stderr, "Error: some network problem in resolving localhost: %d\n", v);
-
-		exit(EXIT_FAILURE);
-	}
-	else if(v < -3)
-	{
-		fprintf(stderr, "Error: some other instance of %s may be running; if so, it is unhappy: %d\n", program, v);
-
-		exit(EXIT_FAILURE);
-	}
 
 	// Prevent any zombies
 	signal(SIGCHLD, SIG_IGN);
@@ -933,49 +920,49 @@ int main(int argc, char **argv)
 
 	if(argc > 1) for(i = 1; i < argc; ++i)
 	{
-		if(strcmp(argv[i], "-H") == 0 ||
-		   strcmp(argv[i], "--headnode") == 0)
+		if(strcmp(argv[i], "-H") == 0 || strcmp(argv[i], "--headnode") == 0)
 		{
 			isHeadNode = 1;
 		}
-		else if(strcmp(argv[i], "-e") == 0 ||
-		   strcmp(argv[i], "--embedded") == 0)
+		else if(strcmp(argv[i], "-e") == 0 || strcmp(argv[i], "--embedded") == 0)
 		{
 			isEmbedded = 1;
 			logPath[0] = 0;
 		}
-		else if(strcmp(argv[i], "-h") == 0 ||
-		   strcmp(argv[i], "--help") == 0)
+		else if(strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0)
 		{
 			usage(argv[0]);
 
 			return EXIT_SUCCESS;
 		}
-		else if(strcmp(argv[i], "-q") == 0 ||
-		   strcmp(argv[i], "--quiet") == 0)
+		else if(strcmp(argv[i], "-q") == 0 || strcmp(argv[i], "--quiet") == 0)
 		{
 			setenv("DIFX_MESSAGE_PORT", "-1", 1);
 		}
-		else if( strcmp(argv[i], "-u") == 0 || strcmp(argv[i], "--user") == 0)
-		{
-			++i;
-			strcpy(userID, argv[i]);
-		}
-		else if ( strcmp(argv[i], "-n") == 0 ||  strcmp(argv[i], "--nosu") == 0)
+		else if(strcmp(argv[i], "-n") == 0 || strcmp(argv[i], "--nosu") == 0)
 		{
 			noSu = 1;
                 }
-		else if ( strcmp(argv[i], "-m") == 0 ||  strcmp(argv[i], "--isMk5") == 0)
+		else if(strcmp(argv[i], "-m") == 0 || strcmp(argv[i], "--isMk5") == 0)
 		{
 			isMk5 = 1;
                 }
 		else if(i < argc-1)
 		{
-			if(strcmp(argv[i], "-l") == 0 ||
-			   strcmp(argv[i], "--log-path") == 0)
+			if(strcmp(argv[i], "-l") == 0 || strcmp(argv[i], "--log-path") == 0)
 			{
 				++i;
 				strcpy(logPath, argv[i]);
+			}
+			else if(strcmp(argv[i], "-u") == 0 || strcmp(argv[i], "--user") == 0)
+			{
+				++i;
+				strcpy(userID, argv[i]);
+			}
+			else if(strcmp(argv[i], "-N") == 0 || strcmp(argv[i], "--hostname") == 0)
+			{
+				++i;
+				providedHostname = argv[i];
 			}
 			else
 			{
@@ -992,13 +979,25 @@ int main(int argc, char **argv)
 		}
 	}
 
-/*	if(isHeadNode && setuid(0) != 0)
+	v = checkRunning("localhost");
+	if(v == 0)
 	{
-		fprintf(stderr, "Head node status requires running as root.  Bailing.\n");
+		fprintf(stderr, "Error: another instance of %s is already running\n", program);
 
-		return EXIT_FAILURE;
+		exit(EXIT_FAILURE);
 	}
-*/
+	else if(v > -3)
+	{
+		fprintf(stderr, "Error: some network problem in resolving localhost: %d\n", v);
+
+		exit(EXIT_FAILURE);
+	}
+	else if(v < -3)
+	{
+		fprintf(stderr, "Error: some other instance of %s may be running; if so, it is unhappy: %d\n", program, v);
+
+		exit(EXIT_FAILURE);
+	}
 
 	if(!isEmbedded)
 	{
@@ -1021,7 +1020,7 @@ int main(int argc, char **argv)
 
 	umask(02);
 
-	difxMessageInit(-1, program);
+	difxMessageInitFull(-1, program, providedHostname);
 	difxMessageSendDifxAlert("mk5daemon starting", DIFX_ALERT_LEVEL_INFO);
 
 	difxMessagePrint();

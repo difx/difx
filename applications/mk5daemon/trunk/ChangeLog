@@ -11,6 +11,8 @@ Version 2.2.0
 * -n option allows enables running external commands without su
 * obtain full path to difxlog by reading $DIFXROOT environment
 * check for mk5daemon already running
+* fileto5c: fix order of ops bug
+* fileto5c: copying of directory supported
 
 Version 2.1.0
 ~~~~~~~~~~~~~

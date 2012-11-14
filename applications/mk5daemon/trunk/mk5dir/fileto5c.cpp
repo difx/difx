@@ -36,8 +36,9 @@
 #include <cstring>
 #include <ctype.h>
 #include <sys/time.h>
-#include <difxmessage.h>
+#include <glob.h>
 #include <signal.h>
+#include <difxmessage.h>
 #include <mark5ipc.h>
 #include <xlrtypes.h>
 #include <xlrapi.h>
@@ -48,8 +49,8 @@
 
 const char program[] = "fileto5c";
 const char author[]  = "Walter Brisken";
-const char version[] = "0.3";
-const char verdate[] = "20120102";
+const char version[] = "0.4";
+const char verdate[] = "20121113";
 
 const int defaultStatsRange[] = { 75000, 150000, 300000, 600000, 1200000, 2400000, 4800000, -1 };
 const unsigned int defaultChunkSizeMB = 20;
@@ -70,7 +71,7 @@ static void usage(const char *pgm)
 {
 	printf("\n%s ver. %s   %s %s\n\n", program, version, author, verdate);
 	printf("A program that copies a file to a Mark5C module\n\n");
-	printf("Usage: %s [<options>] <filename> <bank> [<scanname>]\n\n", pgm);
+	printf("Usage: %s [<options>] <filename/dirname> <bank> [<scanname>]\n\n", pgm);
 	printf("<options> can include:\n\n");
 	printf("  --help\n");
 	printf("  -h         Print help info and quit\n\n");
@@ -97,6 +98,28 @@ void siginthand(int j)
 {
 	die = 2;
 	signal(SIGINT, oldsiginthand);
+}
+
+static void filename2label(char *label, const char *filename)
+{
+	const char *p;
+	int nUnderscore = 0;
+
+	/* If the filename has more than 2 underscores, take only the portion after the third-to-last */
+	for(p = filename + strlen(filename) - 1; p > filename; --p)
+	{
+		if(*p == '_')
+		{
+			++nUnderscore;
+			if(nUnderscore >= 3)
+			{
+				++p;
+				break;
+			}
+		}
+	}
+
+	snprintf(label, MaxLabelLength, "%s", p);
 }
 
 /* decode5B was taken straight from the DRS source code.  This code is originally (C) 2010 Walter Brisken */
@@ -174,7 +197,8 @@ static int decode5B(SSHANDLE xlrDevice, long long pointer, int framesToRead, uns
 	else
 	{
 		const int searchRange=(bufferSize-Mark5BFrameSize)/4 - 32;
-		for(i = searchRange - 1; i >= 0; i--)
+
+		for(i = searchRange - 1; i >= 0; --i)
 		{
 			if(buffer[i] == Mark5BSyncWord)
 			{
@@ -799,14 +823,67 @@ static int fileto(const char *filename, int bank, const char *label, unsigned in
 
 	rv = filetoCore(filename, bank, label, chunkSize, maxBytes, maxSeconds, statsRange, mk5status, verbose, buffer, &dirData);
 
-	free(buffer);
 	if(dirData)
 	{
 		free(dirData);
 	}
 
+	free(buffer);
+
 	return rv;
 }
+
+static int dirto(const char *pathname, int bank, unsigned int chunkSizeMB, long long maxBytes, double maxSeconds, const int *statsRange, DifxMessageMk5Status *mk5status, int verbose)
+{
+	int rv;
+	unsigned int chunkSize = chunkSizeMB * 1024*1024;
+	char *dirData = 0;
+	char *buffer;
+	char label[MaxLabelLength];
+	char match[1024];
+	glob_t globbuf;
+	int i, n;
+	
+	snprintf(match, 1023, "%s/*", pathname);
+	glob(match, 0, 0, &globbuf);
+	n = globbuf.gl_pathc;
+
+	if(n <= 0)
+	{
+		globfree(&globbuf);
+
+		return 0;
+	}
+
+	buffer = (char *)malloc(chunkSize);
+	if(buffer == 0)
+	{
+		printf("Error 9 error allocating %u byte buffer", chunkSize);
+		fflush(stdout);
+		
+		return -1;
+	}
+
+	for(i = 0; i < n; ++i)
+	{
+		const char *filename;
+		
+		filename = globbuf.gl_pathv[i];
+
+		filename2label(label, filename);
+		rv = filetoCore(filename, bank, label, chunkSize, maxBytes, maxSeconds, statsRange, mk5status, verbose, buffer, &dirData);
+
+		if(dirData)
+		{
+			free(dirData);
+		}
+	}
+
+	free(buffer);
+
+	return rv;
+}
+
 
 int main(int argc, char **argv)
 {
@@ -979,24 +1056,7 @@ int main(int argc, char **argv)
 		}
 		else
 		{
-			const char *p;
-			int nUnderscore = 0;
-
-			/* If the filename has more than 2 underscores, take only the portion after the third-to-last */
-			for(p = filename + strlen(filename) - 1; p > filename; --p)
-			{
-				if(*p == '_')
-				{
-					++nUnderscore;
-					if(nUnderscore >= 3)
-					{
-						++p;
-						break;
-					}
-				}
-			}
-
-			snprintf(label, MaxLabelLength, "%s", p);
+			filename2label(label, filename);
 		}
 	}
 
@@ -1018,7 +1078,32 @@ int main(int argc, char **argv)
 	}
 	else
 	{
-		v = fileto(filename, bank, label, chunkSizeMB, maxBytes, maxSeconds, statsRange, &mk5status, verbose);
+		struct stat s;
+		if(stat(filename, &s) == 0)
+		{
+			if(s.st_mode & S_IFDIR)
+			{
+				//it's a directory
+				v = dirto(filename, bank, chunkSizeMB, maxBytes, maxSeconds, statsRange, &mk5status, verbose);
+			}
+			else if(s.st_mode & S_IFREG)
+			{
+				//it's a file
+				v = fileto(filename, bank, label, chunkSizeMB, maxBytes, maxSeconds, statsRange, &mk5status, verbose);
+			}
+			else
+			{
+				fprintf(stderr, "Error: cannot figure out what %s is\n", filename);
+
+				exit(EXIT_FAILURE);
+			}
+		}
+		else
+		{
+			fprintf(stderr, "Error opening %s\n", filename);
+
+			exit(EXIT_FAILURE);
+		}
 		if(v < 0)
 		{
 			if(watchdogXLRError[0] != 0)
@@ -1056,7 +1141,7 @@ int main(int argc, char **argv)
 }
 
 #else
-/* Just print nocando */
+/* Just print no can do */
 
 int main()
 {
