@@ -1414,12 +1414,12 @@ def openmpi(origComps, params, args, verbose, pretend):
 	if not isdir(cpuSrcDir):
 		execute('mkdir -p %s' % cpuSrcDir, verbose, pretend)
 
-	if params.has_key('altSrcFile'):
-		if not isfile(params['altSrcFile']):
-			print 'Error: %s is not a file!' % params['altSrcFile']
+	if len(args) > 0:
+		if not isfile(args[0]):
+			print 'Error: %s is not a file!' % args[0]
 			exit(2)
-		execute('cp -n %s %s' % (params['altSrcFile'], tarDir), verbose, pretend)
-		openmpiTarFile = split(params['altSrcFile'], '/')[-1]
+		execute('cp -n %s %s' % (args[0], tarDir), verbose, pretend)
+		openmpiTarFile = split(args[0], '/')[-1]
 	else:
 		openmpiWeb = 'http://www.open-mpi.org/software/ompi/v%s/downloads' % openmpiVersion
 		openmpiFiles = popen('wget %s/md5sums.txt -O -' % openmpiWeb, 'r').readlines()
