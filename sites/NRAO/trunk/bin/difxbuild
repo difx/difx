@@ -10,8 +10,8 @@ import platform
 from time import asctime
 
 program = 'difxbuild'
-version = '0.16'
-verdate = '20121106'
+version = '0.17'
+verdate = '20121108'
 author = 'Walter Brisken <wbrisken@nrao.edu>'
 
 openmpiVersion = '1.6'
@@ -19,11 +19,13 @@ pgplotVersion = '5.2'
 numMakeCpus = 4
 
 # TODO
-# install from .tar.gz
+# install from .tar.gz 
 # generic arch install (e.g., fftw)
 # option to update self
 # wget option to clobber
-# add difx_monitor, ...
+# add gui, difx_monitor, ...
+# add package dependencies and make use of them
+# option to test all possible dependencies
 # plplot
 # python path
 # svnstatus
@@ -32,7 +34,7 @@ documentation = """
 
              In-line documentation for difxbuild
 
-                Sep 29, 2012  Walter Brisken
+                Nov 8, 2012  Walter Brisken
 
 Some assumptions:
 
@@ -140,6 +142,11 @@ Bootstrap parameter options include:
 * mca: parameters to add to the .openmpi/mca-params.conf file.  If not
   provided, no such file will be created.  This can be useful to include
   or exclude certain network interfaces.
+
+* primaryarch: Normally bootstrapping needs to be done on a machine running
+  on the primary architecture.  If primaryarch is set, the bootstrapping
+  step can be run on any machine.  This should be set to i686, x86_64, or
+  whatever "uname -m" returns on the primary architecture.
 
 * altplatformX: Here X is a number from 1 to 9.  This parameter gives a
   sub-label to each non-primary platform.  Examples might be SDK8 and SDK9
@@ -858,7 +865,6 @@ def bootstrap(comps, params, args, verbose, pretend):
 		for e in env:
 			print '  %s = %s' % (e[0], e[1])
 
-#	try:
 	if 1:
 		setupFile = config['root'] + '/' + setupFileName
 		if verbose > 0:
@@ -876,7 +882,15 @@ def bootstrap(comps, params, args, verbose, pretend):
 
 		platforms = {}	# indexed by arch
 		platformhostsStr = ''
-		platforms[platform.machine()] = []
+		
+		# make entry for primary architecture, which is assumed to be the one where bootstrapping is done
+		# unless overridden by primaryarch parameter
+		if config.has_key('primaryarch'):
+			primaryarch = config['primaryarch']
+		else:
+			primaryarch = platform.machine()
+		platforms[primaryarch] = []
+		
 		for i in range(1, 10):
 			if not config.has_key('altplatform%d' % i):
 				break
@@ -960,7 +974,7 @@ def bootstrap(comps, params, args, verbose, pretend):
 				out.write(' %s; then\n' % plat[1])
 				out.write('    export DIFXROOT=%s-%s\n' % (config['root'], plat[0]))
 				out.write('    DIFX_PROMPT_EXTRA="${DIFX_PROMPT_EXTRA} %s"\n' % plat[0])
-			if arch == platform.machine():
+			if arch == primaryarch:
 				if n > 0:
 					out.write('  else\n')
 					out.write('    export DIFXROOT=%s\n' % config['root'])
@@ -1033,9 +1047,6 @@ def bootstrap(comps, params, args, verbose, pretend):
 			print '*** the directory $HOME/.openmpi/ of each account from which DiFX will be run\n'
 
 		print '\nBootstrap complete.  Now source %s and continue with svn.\n' % setupFile
-
-##	except KeyError as e:
-##		print 'Parse error: ', e.errno, e.strerror
 
 
 def svnupdate(origComps, params, args, verbose, pretend):
@@ -1394,6 +1405,7 @@ def newestOMPI(data, version):
 
 def openmpi(origComps, params, args, verbose, pretend):
 	difxBase = environ['DIFX_BASE'] + '/'
+	bldLog = environ['DIFXROOT'] + '/buildlog'
 	tarDir = difxBase + 'tar/'
 	cpuDir = difxBase + platform.machine() + '/'
 	cpuSrcDir = cpuDir + 'src/'
@@ -1453,6 +1465,7 @@ def openmpi(origComps, params, args, verbose, pretend):
 	v = execute('make -j %d' % numMakeCpus, verbose, pretend)
 	if v == 0:
 		v = execute('make install', verbose, pretend)
+		execute('echo `date`  $DIFX_VERSION  $DIFX_LABEL  %s  OpenMPI %s >> %s' % (comp[0], openmpiTarFile, bldLog), verbose, pretend)
 	if v != 0:
 		print '\n*** Error building openmpi***\n'
 		return 
