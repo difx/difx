@@ -56,13 +56,13 @@ import javax.swing.event.EventListenerList;
 public class BrowserNode extends JPanel implements MouseListener, MouseMotionListener {
     
     public BrowserNode( String name ) {
+        _name = name;
         _open = true;
         _inBounds = true;
         _showThis = true;
         _ySize = 20;
         _resizeTopBarSize = 20;
         _xSize = 500;
-        //_children = new ArrayDeque<BrowserNode>();
         _children = new Vector<BrowserNode>();
         setBounds( 0, 0, _xSize, _ySize );
         setLayout( null );
@@ -71,7 +71,6 @@ public class BrowserNode extends JPanel implements MouseListener, MouseMotionLis
         _mouseIn = false;
         _label = new JLabel( name );
         _label.setFont( new Font( _label.getFont().getFamily(), Font.BOLD, _label.getFont().getSize() ) );
-        //_label.setFont( new Font( "Dialog", Font.BOLD, 12 ) );
         _labelWidth = 150;
         this.add( _label );
         _popupButton = new JButton( "\u25be" );  //  this is a little down arrow
@@ -250,7 +249,7 @@ public class BrowserNode extends JPanel implements MouseListener, MouseMotionLis
      * method should be overridden by any inheriting classes that add new items.
      */
     public void positionItems() {
-        _label.setBounds( _level * _levelOffset, 0, _labelWidth, _ySize );
+        _label.setBounds( _level * _levelOffset + _xOffset, 0, _labelWidth, _ySize );
     }
     
     /*
@@ -387,8 +386,8 @@ public class BrowserNode extends JPanel implements MouseListener, MouseMotionLis
         if ( _children.size() > 0 ) {
             int xpts[] = new int[3];
             int ypts[] = new int[3];
-            int levelOffset = ( _level - 1 ) * _levelOffset;
-            int levelOffsetY = levelOffset;
+            int levelOffset = ( _level - 1 ) * _levelOffset + _xOffset;
+            int levelOffsetY = 0;
             if ( _yLevelOffset != null ) {
                 levelOffsetY = _yLevelOffset;
             }
@@ -415,10 +414,11 @@ public class BrowserNode extends JPanel implements MouseListener, MouseMotionLis
     
     @Override
     public void mouseClicked( MouseEvent e ) {
-        int levelOffset = ( _level - 1 ) * _levelOffset;
+        int levelOffset = ( _level - 1 ) * _levelOffset + _xOffset;
         if ( ( e.getX() > levelOffset + 5 && e.getX() < levelOffset + 25 ) || 
                 ( _resizeOnTopBar && e.getY() < _resizeTopBarSize ) ) {
             _open = !_open;
+            labelCheck();
             this.updateUI();
             dispatchResizeEvent();
         }
@@ -471,11 +471,11 @@ public class BrowserNode extends JPanel implements MouseListener, MouseMotionLis
     }
     
     public String name() {
-        return _label.getText();
+        return _name;
     }
     
     public void name( String newName ) {
-        _label.setText( newName );
+        _name = newName;
     }
     
     /*
@@ -515,7 +515,10 @@ public class BrowserNode extends JPanel implements MouseListener, MouseMotionLis
     public boolean showThis() { return _showThis; }
     public void showThis( boolean newVal ) { _showThis = newVal; }
     
-    public void open( boolean newVal ) { _open = newVal; }
+    public void open( boolean newVal ) { 
+        _open = newVal;
+        labelCheck();
+    }
     public boolean open() { return _open; }
     
     public void yLevelOffset( int newVal ) { _yLevelOffset = new Integer( newVal ); }
@@ -531,6 +534,39 @@ public class BrowserNode extends JPanel implements MouseListener, MouseMotionLis
     public void resizeTopBarSize( int newSize ) {
         _resizeTopBarSize = newSize;
     }
+    
+    public int xOffset() { return _xOffset; }
+    public void xOffset( int newVal ) { _xOffset = newVal; }
+    
+    /*
+     * Add the number of child objects in parenthesis to the name when this object
+     * is closed.
+     */
+    public void addCountWhenClosed( boolean newVal ) { _addCountWhenClosed = newVal; }
+    
+    /*
+     * Always show the count of child objects.
+     */
+    public void addCountAlways( boolean newVal ) { _addCountAlways = newVal; }
+    
+    /*
+     * Change the label to reflect the name and other things.
+     */
+    public void labelCheck() {
+        if ( _open ) {
+                if ( _addCountAlways )
+                _label.setText( _name + " (" + _children.size() + ")" );
+            else
+                _label.setText( _name );
+        }
+        else {
+            if ( _addCountWhenClosed || _addCountAlways )
+                _label.setText( _name + " (" + _children.size() + ")" );
+            else
+                _label.setText( _name );
+        }
+    }
+
     
     protected boolean _open;
     protected boolean _showThis;
@@ -553,6 +589,10 @@ public class BrowserNode extends JPanel implements MouseListener, MouseMotionLis
     protected Integer _yLevelOffset;
     protected boolean _resizeOnTopBar;
     protected int _resizeTopBarSize;
+    protected int _xOffset;
+    protected String _name;
+    protected boolean _addCountWhenClosed;
+    protected boolean _addCountAlways;
     
     protected boolean _selected;
     protected JButton _selectedButton;

@@ -41,6 +41,7 @@ import edu.nrao.difx.xmllib.difxmessage.DifxStatus;
 import java.awt.Font;
 
 import edu.nrao.difx.difxdatabase.QueueDBConnection;
+import javax.swing.JOptionPane;
 
 public class JobNode extends QueueBrowserNode {
     
@@ -49,6 +50,7 @@ public class JobNode extends QueueBrowserNode {
         this.setHeight( 20 );
         _columnColor = Color.LIGHT_GRAY;
         _settings = settings;
+        _this = this;
         //_editorMonitor = new JobEditorMonitor( this, _settings );
     }
     
@@ -168,8 +170,11 @@ public class JobNode extends QueueBrowserNode {
         _monitorMenuItem = new JMenuItem( "Control/Monitor for " + name() );
         _monitorMenuItem.addActionListener(new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
-                updateEditorMonitor();
-                _editorMonitor.setVisible( true );
+                if ( updateEditorMonitor( 1000 ) )
+                    _editorMonitor.setVisible( true );
+                else
+                    JOptionPane.showMessageDialog( _this, "Timeout reading .input file data",
+                            "Failed", JOptionPane.WARNING_MESSAGE );
             }
         });
         _monitorMenuItem.setEnabled( false );
@@ -177,8 +182,8 @@ public class JobNode extends QueueBrowserNode {
         _liveMonitorMenuItem = new JMenuItem( "Real-time Fringe Monitor" );
         _liveMonitorMenuItem.addActionListener(new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
-                updateEditorMonitor();
-                _editorMonitor.showLiveMonitor();
+                if ( updateEditorMonitor( 1000) )
+                    _editorMonitor.showLiveMonitor();
             }
         });
         _liveMonitorMenuItem.setEnabled( false );
@@ -206,8 +211,8 @@ public class JobNode extends QueueBrowserNode {
         _startJobItem = new JMenuItem( "Start" );
         _startJobItem.addActionListener(new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
-                updateEditorMonitor();
-                _editorMonitor.startJob();
+                if ( updateEditorMonitor( 1000 ) )
+                    _editorMonitor.startJob();
             }
         });
         _startJobItem.setEnabled( false );
@@ -223,8 +228,8 @@ public class JobNode extends QueueBrowserNode {
         _stopJobItem = new JMenuItem( "Stop" );
         _stopJobItem.addActionListener(new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
-                updateEditorMonitor();
-                _editorMonitor.stopJob();
+                if ( updateEditorMonitor( 1000 ) )
+                    _editorMonitor.stopJob();
             }
         });
         _stopJobItem.setEnabled( false );
@@ -419,13 +424,32 @@ public class JobNode extends QueueBrowserNode {
     /*
      * Internal function used to generate an editor/monitor for this job if one
      * does not exists and update it with current settings, as far as we know them.
+     * If called with a "delay" value (in milliseconds) the function will wait around
+     * for the "delay" amount until the requestInputFile() call has completed.
      */
-    protected void updateEditorMonitor() {
+    protected boolean updateEditorMonitor( Integer delay ) {
         if ( _editorMonitor == null ) {
             _editorMonitor = new JobEditorMonitor( this, _settings );
+            if ( delay != null )
+                _inputFileRequestComplete = false;
             requestInputFile();
-            requestCalcFile();
+            //requestCalcFile();  Not needed - this is done when the input file is parsed!
+            if ( delay != null ) {
+                //  Wait for the request (above) to be completed.
+                int waitSoFar = 0;
+                while ( waitSoFar < delay ) {
+                    try { Thread.sleep( 100 ); } catch ( Exception e ) {}
+                    waitSoFar += 100;
+                    if ( _inputFileRequestComplete )
+                        return true;
+                }
+                return false;  // failed!
+            }
+            else
+                return true;
         }
+        else
+            return true;
     }
     
     /*
@@ -434,9 +458,12 @@ public class JobNode extends QueueBrowserNode {
      * with the actual data.  
      */
     protected void requestInputFile() {
-        if ( _inputFile != null && _inputFile.getText().trim().length() > 0 )
+        if ( _inputFile != null && _inputFile.getText().trim().length() > 0 ) {
             requestFile( _inputFile.getText().trim() );
+        }
     }
+    
+    protected boolean _inputFileRequestComplete;
     
     /*
      * Same function, but applied to the .calc file.
@@ -470,6 +497,7 @@ public class JobNode extends QueueBrowserNode {
                     if ( ext.contentEquals( "input" ) ) {
                         _editorMonitor.inputFileName( fileStr, fileGet.inString() );
                         _editorMonitor.parseInputFile();
+                        _inputFileRequestComplete = true;
                         //_startJobItem.setEnabled( true );
                         //_stopJobItem.setEnabled( true );
                         //_monitorMenuItem.setEnabled( true );
@@ -542,7 +570,7 @@ public class JobNode extends QueueBrowserNode {
         
         //  If this job is "running" (it was started by the job editor/monitor) 
         //  then send the message to the monitor.
-        updateEditorMonitor();
+        updateEditorMonitor( 1000 );
         _editorMonitor.consumeMessage( difxMsg );
         
         //  Got something...
@@ -826,7 +854,7 @@ public class JobNode extends QueueBrowserNode {
     }
     
     public JobEditorMonitor editorMonitor() { 
-        updateEditorMonitor();
+        updateEditorMonitor( null );
         return _editorMonitor;
     }
     
@@ -932,5 +960,7 @@ public class JobNode extends QueueBrowserNode {
     protected JMenuItem _stopJobItem;
     
     protected boolean _weightsBuilt;
+    
+    protected JobNode _this;
 
 }

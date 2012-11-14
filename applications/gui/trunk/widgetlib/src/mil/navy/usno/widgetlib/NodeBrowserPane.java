@@ -30,6 +30,12 @@ public class NodeBrowserPane extends BrowserNode {
     }
     
     @Override
+    public void dispatchResizeEvent() {
+        super.dispatchResizeEvent();
+        measureDataBounds();
+    }
+    
+    @Override
     public void setBounds( int x, int y, int w, int h ) {
         super.setBounds( x, y, w, h );
         //  Propogate the new width to all children.  Watch for the modification exception
@@ -47,7 +53,6 @@ public class NodeBrowserPane extends BrowserNode {
         //  Offset the top of the browser data by an amount determined above this
         //  class.
         int yOffset = _yOffset;
-        //long startTime = System.nanoTime();
         for ( Iterator<BrowserNode> iter = _children.iterator(); iter.hasNext(); ) {
             //  Don't bother setting the draw conditions for items that fall off the
             //  bottom of the browser window.
@@ -57,9 +62,6 @@ public class NodeBrowserPane extends BrowserNode {
                 //  Ignore these - a redraw will occur soon enough BLAT
             }
         }
-        //long endTime = System.nanoTime();
-//        if ( _children.size() > 100 )
-//            System.out.println( "NodeBrowserPane: " + _children.size() + " in " + ( (double)( endTime - startTime ) / 1000000.0 ) );
         //  Measure the total height of the data currently displayed in the
         //  browser.
         _dataHeight = yOffset - _yOffset;
@@ -72,17 +74,14 @@ public class NodeBrowserPane extends BrowserNode {
     @Override
     public void paintComponent( Graphics g ) {
         super.paintComponent( g );
-        long startTime = System.nanoTime();
         Dimension d = getSize();
         g.setColor( this.getBackground() );
         g.fillRect( 0, 0, d.width, d.height );
-        long endTime = System.nanoTime();
-//        if ( _children.size() > 100 )
-//            System.out.println( "NodeBrowserPane: " + "drawn in " + ( (double)( endTime - startTime ) / 1000000.0 ) );
     }
     
     public void yOffset( int newOffset ) {
         _yOffset = newOffset;
+        measureDataBounds();
     }
     
     int _dataHeight;

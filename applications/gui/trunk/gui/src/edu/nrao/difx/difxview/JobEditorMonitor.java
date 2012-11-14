@@ -2164,7 +2164,7 @@ public class JobEditorMonitor extends JFrame {
         
         //  Extract some items from the .input file data.  
         _jobNode.calcFile( _inputFile.commonSettings().calcFile, true );
-        _jobNode.outputFile( _inputFile.commonSettings().outputFile );
+         _jobNode.outputFile( _inputFile.commonSettings().outputFile );
         executeTime( _inputFile.commonSettings().executeTime );
         startMJD( _inputFile.commonSettings().startMJD );
         startSeconds( _inputFile.commonSettings().startSeconds );
