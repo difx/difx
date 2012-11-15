@@ -1046,8 +1046,8 @@ public class JobEditorMonitor extends JFrame {
         String dataNodeNames = "";
         for ( Iterator<BrowserNode> iter = _dataSourcesPane.browserTopNode().children().iterator();
                 iter.hasNext(); ) {
-            DataNode thisNode = (DataNode)(iter.next());
-            dataNodeNames += thisNode.name() + " ";
+            DataSource thisNode = (DataSource)(iter.next());
+            dataNodeNames += thisNode.sourceNode() + " ";
         }
         dataStream.setNodes( dataNodeNames );
         jobStart.setDatastream(dataStream);
