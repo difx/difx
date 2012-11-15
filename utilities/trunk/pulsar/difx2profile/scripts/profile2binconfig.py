@@ -85,8 +85,11 @@ lineskip    = int(options.lineskip)
 zeronoise   = not options.dontzeronoise
 
 #Check everything necessary was supplied
-if profilefile == "" or len(options.polyco) == "" or binconffile == "":
-    print "You must supply a profile file, polyco file(s) and binconfig filename! Aborting!"
+if (profilefile == "" and doscrunch) or options.polyco == "" or binconffile == "":
+    print "You must always supply a binconfig filename, polyco filenames(s), and (if scrunching) and profile file!"
+    print "doscrunch was " + str(doscrunch) + " and profilefile was " + profilefile
+    print "the polyco parameter contained " + options.polyco
+    print "binconffile was " + binconffile
     sys.exit(1)
 if hannwidth > 0 and hannwidth % 2 == 0:
     print "Hanning width, if on, must be odd! Aborting"
