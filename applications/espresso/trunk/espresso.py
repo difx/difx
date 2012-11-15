@@ -185,6 +185,10 @@ parser.add_option( "--no_email", "-E",
 if options.testjob and options.clockjob:
     raise Exception ("Don't use both -t and -c together!")
 
+if len(args) < 1 and not options.expt_all:
+    parser.print_help()
+    parser.error("Give job name(s)")
+
 # get email and password so we can notify
 get_email = False
 if not options.noemail and not options.clockjob and not options.testjob:
@@ -204,10 +208,6 @@ while get_email:
     except:
         print "Connection failed - try again"
 
-
-if len(args) < 1 and not options.expt_all:
-    parser.print_help()
-    parser.error("Give job name(s)")
 
 # preliminaries: clear old input files out of the way
 if not options.novex:
