@@ -188,7 +188,7 @@ public class JobEditorMonitor extends JFrame {
         calcFilePanel.add( _uploadCalcButton );
 
         IndexedPanel machinesListPanel = new IndexedPanel( "Machines List" );
-        machinesListPanel.openHeight( 395 );
+        machinesListPanel.openHeight( 425 );
         machinesListPanel.closedHeight( 20 );
         _scrollPane.addNode( machinesListPanel );
         _dataSourcesPane = new NodeBrowserScrollPane();
@@ -283,6 +283,20 @@ public class JobEditorMonitor extends JFrame {
                 _settings.defaultNames().chooseBasedOnModule = _chooseBasedOnModule.isSelected();
             }
         } );
+        _selectAllProcessorsButton = new JButton( "Select All" );
+        _selectAllProcessorsButton.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                selectAllProcessors();
+            }
+        } );
+        machinesListPanel.add( _selectAllProcessorsButton );
+        _deselectAllProcessorsButton = new JButton( "Deselect All" );
+        _deselectAllProcessorsButton.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                deselectAllProcessors();
+            }
+        } );
+        machinesListPanel.add( _deselectAllProcessorsButton );
         machinesListPanel.add( _chooseBasedOnModule );
 
         //  This panel shows us the machines file, which can be edited and sent to
@@ -528,6 +542,8 @@ public class JobEditorMonitor extends JFrame {
             _restrictHeadnodeProcessing.setBounds( 30 + 2 * thirdSize, 265, thirdSize, 25 );
             _eliminateNonrespondingProcessors.setBounds( 30 + 2 * thirdSize, 295, thirdSize, 25 );
             _eliminateBusyProcessors.setBounds( 30 + 2 * thirdSize, 325, thirdSize - 110, 25 );
+            _selectAllProcessorsButton.setBounds( 30, 390, 115, 25 );
+            _deselectAllProcessorsButton.setBounds( 150, 390, 115, 25 );
             _busyPercentage.setBounds( w - 135, 325, 30, 25 );
             _busyPercentageLabel.setBounds( w - 100, 325, 100, 25 );
             _inputFileEditor.setBounds( 10, 60, w - 35, 330 );
@@ -622,6 +638,22 @@ public class JobEditorMonitor extends JFrame {
         }
         return null;
     }
+    
+    public void selectAllProcessors() {
+        for ( Iterator<BrowserNode> iter = _processorsPane.browserTopNode().children().iterator();
+                iter.hasNext(); ) {
+            PaneProcessorNode thisNode = (PaneProcessorNode)(iter.next());
+            thisNode.selected( true );
+        }
+    }
+
+    public void deselectAllProcessors() {
+        for ( Iterator<BrowserNode> iter = _processorsPane.browserTopNode().children().iterator();
+                iter.hasNext(); ) {
+            PaneProcessorNode thisNode = (PaneProcessorNode)(iter.next());
+            thisNode.selected( false );
+        }
+    }
 
     /*
      * Send the current machines and thread settings to guiServer to produce .machines
@@ -676,16 +708,22 @@ public class JobEditorMonitor extends JFrame {
         cmd.setDatastream(dataStream);
 
         // Add enabled processors and threads.  Don't include processors that have no
-        // threads!
+        // threads!  Also avoid the headnode if the user has indicated it should be
+        // avoided (recommended if there are other processors).
         String processNodeNames = "";
         for ( Iterator<BrowserNode> iter = _processorsPane.browserTopNode().children().iterator();
                 iter.hasNext(); ) {
             PaneProcessorNode thisNode = (PaneProcessorNode)(iter.next());
             if ( thisNode.selected() ) {
-                DifxMachinesDefinition.Process process = command.factory().createDifxMachinesDefinitionProcess();
-                process.setNodes( thisNode.name() );
-                process.setThreads( thisNode.threadsText() );
-                cmd.getProcess().add( process );
+                //  Avoid the headnode - if there are other nodes
+                if ( _restrictHeadnodeProcessing.isSelected() && thisNode.name().contentEquals( _headNode.getText() ) &&
+                        _processorsPane.browserTopNode().children().size() > 1 ) {}
+                else {
+                    DifxMachinesDefinition.Process process = command.factory().createDifxMachinesDefinitionProcess();
+                    process.setNodes( thisNode.name() );
+                    process.setThreads( thisNode.threadsText() );
+                    cmd.getProcess().add( process );
+                }
             }
         }
         
@@ -2280,6 +2318,9 @@ public class JobEditorMonitor extends JFrame {
     protected boolean _machinesAppliedByHand;
     protected JCheckBox _machinesLock;
     protected JCheckBox _forceOverwrite;
+    protected JButton _selectAllProcessorsButton;
+    protected JButton _deselectAllProcessorsButton;
+
     
     protected JButton _startButton;
     protected JButton _stopButton;
