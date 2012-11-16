@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2010 by Walter Brisken                             *
+ *   Copyright (C) 2007-2012 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -29,13 +29,14 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <signal.h>
 #include "../mark5access/mark5_stream.h"
 
 const char program[] = "m5test";
 const char author[]  = "Walter Brisken";
-const char version[] = "1.1";
-const char verdate[] = "2010 Aug 08";
+const char version[] = "1.2";
+const char verdate[] = "2012 Nov 16";
 
 const int ChunkSize = 10000;
 
@@ -70,7 +71,7 @@ int usage(const char *pgm)
 	printf("    VDIF_1000-64-1-2 (here 1000 is payload size in bytes)\n\n");
 	printf("  <offset> is number of bytes into file to start decoding\n\n");
 
-	return 0;
+	return EXIT_SUCCESS;
 }
 
 int verify(const char *filename, const char *formatname, long long offset)
@@ -96,14 +97,14 @@ int verify(const char *filename, const char *formatname, long long offset)
 	}
 
 	data = (float **)malloc(ms->nchan*sizeof(float *));
-	for(i = 0; i < ms->nchan; i++)
+	for(i = 0; i < ms->nchan; ++i)
 	{
 		data[i] = (float *)malloc(ChunkSize*sizeof(float));
 	}
 
 	mark5_stream_print(ms);
 
-	for(i = 0;; i++)
+	for(i = 0;; ++i)
 	{
 		if(die)
 		{
@@ -139,7 +140,7 @@ int verify(const char *filename, const char *formatname, long long offset)
 
 	fprintf(stderr, "%Ld / %Ld samples unpacked\n", unpacked, total);
 
-	for(i = 0; i < ms->nchan; i++)
+	for(i = 0; i < ms->nchan; ++i)
 	{
 		free(data[i]);
 	}
@@ -157,6 +158,11 @@ int main(int argc, char **argv)
 
 	oldsiginthand = signal(SIGINT, siginthand);
 
+	if(argc > 1 && (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0))
+	{
+		return usage(argv[0]);
+	}
+
 	if(argc == 2)
 	{
 		struct mark5_format *mf;
@@ -165,8 +171,14 @@ int main(int argc, char **argv)
 		FILE *in;
 
 		buffer = malloc(bufferlen);
-		
+
 		in = fopen(argv[1], "r");
+		if(!in)
+		{
+			fprintf(stderr, "Error: cannot open %s for read\n", argv[1]);
+
+			exit(EXIT_FAILURE);
+		}
 		r = fread(buffer, bufferlen, 1, in);
 		if(r < 1)
 		{
@@ -190,7 +202,7 @@ int main(int argc, char **argv)
 		fclose(in);
 		free(buffer);
 
-		return 0;
+		return EXIT_SUCCESS;
 	}
 
 	else if(argc < 3)
@@ -205,6 +217,6 @@ int main(int argc, char **argv)
 
 	verify(argv[1], argv[2], offset);
 
-	return 0;
+	return EXIT_SUCCESS;
 }
 
