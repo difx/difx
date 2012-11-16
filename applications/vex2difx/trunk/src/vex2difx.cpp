@@ -2716,9 +2716,28 @@ static int sanityCheckConsistency(const VexData *V, const CorrParams *P)
 
 	for(s = P->sourceSetups.begin(); s != P->sourceSetups.end(); ++s)
 	{
+		int n = 0;
+
 		if(V->getSourceBySourceName(s->vexName) == 0)
 		{
 			cerr << "Warning: source " << s->vexName << " referenced in .v2d file but is not in vex file" << endl;
+			++nWarn;
+		}
+		if(!s->pointingCentre.ephemFile.empty())
+		{
+			n += 1;
+		}
+		if(!s->pointingCentre.ephemObject.empty())
+		{
+			n += 2;
+		}
+		if(!s->pointingCentre.naifFile.empty())
+		{
+			n += 4;
+		}
+		if(n != 0 && n != 7)
+		{
+			cerr << "Warning: source " << s->vexName << " seems to have an incomplete set of ephemeris parameters.  All or none of ephemObject, ephemFile, naifFile must be given.  Error code = " << n << endl;
 			++nWarn;
 		}
 	}

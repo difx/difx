@@ -7,6 +7,7 @@ Version 2.2.0
 * Verify input files do not have DOS end of line characters
 * Populate difxLabel in difxio->.calc and in .joblist
 * Generate systematic threadId
+* Verify all or none of the ephemeris parameters are provided
 
 Version 2.1.0
 ~~~~~~~~~~~~~
