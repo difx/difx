@@ -542,8 +542,8 @@ public class JobEditorMonitor extends JFrame {
             _restrictHeadnodeProcessing.setBounds( 30 + 2 * thirdSize, 265, thirdSize, 25 );
             _eliminateNonrespondingProcessors.setBounds( 30 + 2 * thirdSize, 295, thirdSize, 25 );
             _eliminateBusyProcessors.setBounds( 30 + 2 * thirdSize, 325, thirdSize - 110, 25 );
-            _selectAllProcessorsButton.setBounds( 30, 390, 115, 25 );
-            _deselectAllProcessorsButton.setBounds( 150, 390, 115, 25 );
+            _selectAllProcessorsButton.setBounds( 10, 390, 115, 25 );
+            _deselectAllProcessorsButton.setBounds( 135, 390, 115, 25 );
             _busyPercentage.setBounds( w - 135, 325, 30, 25 );
             _busyPercentageLabel.setBounds( w - 100, 325, 100, 25 );
             _inputFileEditor.setBounds( 10, 60, w - 35, 330 );
