@@ -8,6 +8,62 @@
   </head>
   <body>
     <h1>Queue Browser</h1>
+    The Queue Browser displays information about DiFX jobs - jobs that
+    are processed by DiFX and jobs that the GUI user has specific
+    interest in.&nbsp; Controls can be launched from job listed in the
+    Queue Browser to start and stop DiFX processing of them, edit their
+    properties, monitor their progress, or simply learn detailed
+    information about them.&nbsp; In addition new jobs can be created
+    using the Queue Browser.<br>
+    <h4>Adding a Job to the Queue Browser</h4>
+    There are a number of ways to add a job to the Queue Browser.&nbsp;
+    At a very basic level, the only thing required to add a job is the
+    location of a DiFX <tt>.input</tt> file.&nbsp; The GUI uses the
+    full path of the <tt>.input</tt> file to uniquely identify a job
+    (since it is, unlike the job "name", guaranteed to be unique), and
+    the contents of the <tt>.input</tt> file to fully describe the
+    job.&nbsp; The Queue Browser provides the following ways to obtain
+    and <tt>.input</tt> file, and thus create a job:<br>
+    <h5>&nbsp;&nbsp;&nbsp; Create A Job From Scratch</h5>
+    A completely new job or list of jobs can be added to the queue based
+    on a .vex file and a few user settings.&nbsp; This process is
+    described in BLAT.<br>
+    <h5>&nbsp;&nbsp;&nbsp; Obtain a Job From the Database</h5>
+    <p>If you are using the DiFX data base structure (see <a
+        href="database.html">DiFX GUI and the Database</a>), previously
+      stored jobs can be downloaded based on their names, properties, or
+      completion state.<br>
+    </p>
+    <h5>&nbsp;&nbsp;&nbsp; Locate an .input File on a Remote or Local
+      Host</h5>
+    <p>This facility allows any previously created job to be brought
+      into the GUI as long as its original working directory and
+      associated files are intact.&nbsp; The <tt>.input</tt> file (if
+      properly formatted) will fully describe the job and where it and
+      all necessary components to run and monitor it are located.&nbsp;
+      <br>
+    </p>
+    <h5>&nbsp;&nbsp;&nbsp; Monitor a Job Running Elsewhere<br>
+    </h5>
+    All jobs that are running (i.e. being processed by DiFX) while the
+    GUI is active produce multicast diagnostic messages detailing their
+    progress.&nbsp; The GUI (assuming it is set correctly to monitor
+    multicast traffic) will collect, interpret, and display the content
+    of these messages in the Queue Browser.&nbsp; If the job generating
+    the messages is known (already listed in the Queue Browser), their
+    content will adjust the appropriate job entry in the Queue Browser
+    display.&nbsp; If the job is <i>not</i> known a new entry will be
+    created.&nbsp; New entries of this sort will lack complete detail
+    because their associated <tt>.input</tt> file will not be known
+    (its identity is not contained in the multicast messages).&nbsp;
+    Also the GUI will only be able to monitor these jobs, not stop or
+    start them (this makes some sense - any job listed this way was
+    started elsewhere, so presumably belongs to someone else).&nbsp;
+    Jobs of this type appear under the heading "Jobs Not In Queue"
+    (maybe that will be changed...).<br>
+    <br>
+    <br>
+    <br>
     The DiFX GUI Queue Browser organizes DiFX activities in a hierarchy
     of "experiments", "passes", and "jobs", a structure that is mirrored
     in the DiFX database.&nbsp; At the highest level the Queue Browser
@@ -235,9 +291,68 @@
 
 
 
+
     <br>
     <h4>Creating Jobs</h4>
-    <h4>Running Jobs<br>
-    </h4>
+    <h4><a name="LOCATE_ON_DISK"></a>Locating Experiments on Disk</h4>
+    <p>The Queue Browser has the ability to locate previously-created
+      experiments on disk (via the head node) and adding them to the
+      queue.&nbsp; It does this by locating <tt>.input</tt> files, one
+      of which should exist for each existing job on disk.&nbsp;
+      Assuming an <tt>.input</tt> file is intact and properly formatted
+      the GUI can extract all information about its associated job, edit
+      that information, and run the job.&nbsp; <br>
+    </p>
+    <p>The Queue Browser panel provides a tool for locating <tt>.input</tt>
+      files on disk using the "Locate on Disk..." option under the
+      "Experiments" menu:<br>
+    </p>
+    <p align="center">IMAGE OF MENU HERE<br>
+    </p>
+    <p>The "Experiment Location" tool provides a field for defining the
+      directory path of .input files (the field accepts standard "ls"
+      wildcard rules).&nbsp; Each .input file is assumed to represent a
+      job.&nbsp; Options are provided for defining the names of
+      experiments and passes associated with the found jobs.&nbsp; A
+      preview of all jobs that meet the defined criteria is given -
+      hitting "Apply" will put these jobs in the Queue Browser
+      experiment queue.&nbsp; A detailed description of each
+      field/option/button is below:<br>
+    </p>
+    <blockquote>
+      <h6>Locate .input Files Matching...</h6>
+      <h6>Experiment Name(s)</h6>
+      <blockquote>
+        <h6>Based on Path</h6>
+        <h6>Specified Name</h6>
+      </blockquote>
+      <h6>Pass Name(s):</h6>
+      <blockquote>
+        <h6>Based on Path</h6>
+        <h6>None</h6>
+        <h6>Specified Name</h6>
+      </blockquote>
+    </blockquote>
+    <blockquote>
+      <h6>Preview<br>
+      </h6>
+    </blockquote>
+    <blockquote>
+      <h6>Auto Update</h6>
+      <p>This option will trigger a periodic search of the disk for new
+        jobs using the rules specified in the window.&nbsp; Any changes
+        to the list of experiments and jobs that meet the search
+        criteria will be reflected in the Queue Browser - jobs that are
+        deleted will be removed, new jobs that are created will appear,
+        etc.&nbsp; <i>This is only necessary if you want to see changes
+          made by other people (i.e. other instances of the GUI) in real
+          time </i>- the Queue Browser will show any changes you make
+        without this option being chosen.&nbsp; Unless you expect remote
+        changes to be made and wish to see them you should probably not
+        pick this option as the searches are resource-consuming.</p>
+      <h6>Apply<br>
+      </h6>
+    </blockquote>
+    <p></p>
   </body>
 </html>
