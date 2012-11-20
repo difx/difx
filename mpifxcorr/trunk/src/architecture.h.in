@@ -261,307 +261,6 @@
 #include <math.h>
 #include <string.h>
 
-//start with the types
-typedef struct {
-  short re;
-  short im;
-} sc16;
-
-// Danger here: fftw_complex value[1] is equivilent to float value[0]=real part and value[1]=imag part. 
-// These structures are implicitly the same, but is it guaranteed? 
-typedef struct {
-  float re;
-  float im;
-} fc32;  // = fftwf_complex
-
-typedef struct {
-  double re;
-  double im;
-} fc64;  // = fftw_complex
-
-// These fill in for the IppsFFTSpec_R_32f structures. 
-typedef struct { 
-  f32 * in; 
-  cf32 * out; // Perhaps should be fftwf_complex
-  int len; int len2; int len3;
-} GenFFTPtrRf32;
-
-typedef struct { 
-  f32 * out; 
-  cf32 * in; // Perhaps should be fftwf_complex
-  int len; int len2; int len3;
-} GenFFTPtrCRf32;
-
-typedef struct { 
-  cf32 * in; // Perhaps should be fftwf_complex
-  cf32 * out; // Perhaps should be fftwf_complex
-  int len; int len2; int len3;
-} GenFFTPtrCfc32;
-
-typedef struct { 
-  f32 * in_re; 
-  f32 * in_im; 
-  f32 * out_re; 
-  f32 * out_im; 
-  int len; int len2; int len3;
-} GenFFTPtrCf32;
-
-typedef struct { 
-  cf64 * in; 
-  cf64 * out; 
-  int len; int len2; int len3;
-} GenFFTPtrC64;
-
-//then the generic functions
-// Copy // Replace with memmove(d,s,l*size(d[0]))
-inline vecStatus genericCopy_u8(const u8 * src, u8 * dest, int length)
-{ for(int i=0;i<length;i++) dest[i] = src[i]; return vecNoErr; }
-inline vecStatus genericCopy_s16(const s16 * src, s16 * dest, int length)
-{ for(int i=0;i<length;i++) dest[i] = src[i]; return vecNoErr; }
-inline vecStatus genericCopy_s32(const s32 * src, s32 * dest, int length)
-{ for(int i=0;i<length;i++) dest[i] = src[i]; return vecNoErr; }
-inline vecStatus genericCopy_f32(const f32 * src, f32 * dest, int length)
-{ for(int i=0;i<length;i++) dest[i] = src[i]; return vecNoErr; }
-inline vecStatus genericCopy_cf32(const cf32 * src, cf32 * dest, int length)
-{ for(int i=0;i<length;i++) {dest[i].re = src[i].re;dest[i].im = src[i].im;} return vecNoErr; }
-inline vecStatus genericCopy_f64(const f64 * src, f64 * dest, int length)
-{ for(int i=0;i<length;i++) {dest[i] = src[i];} return vecNoErr; }
-
-// Zero // Replace with memset(d,0,l*size(d[0]))
-inline vecStatus genericZero_32s(s32 * dest, int length)
-{ for(int i=0;i<length;i++) dest[i] = 0; return vecNoErr; } // memset(dest,0,length*sizeof(dest[0]))
-inline vecStatus genericZero_32f(f32 * dest, int length)
-{ for(int i=0;i<length;i++) dest[i] = 0; return vecNoErr; }
-inline vecStatus genericZero_32fc(cf32 * dest, int length)
-{ memset((void *) dest, 0, length*sizeof(dest[0])); return vecNoErr; } 
-//{ for(int i=0;i<length;i++) { dest[i].re = 0; dest[i].im = 0; } return vecNoErr; }
-
-inline vecStatus genericZero_64fc(cf64 * dest, int length)
-{for(int i=0;i<length;i++) { dest[i].re = 0; dest[i].im = 0; } return vecNoErr;}
-inline vecStatus genericZero_16s(s16 * dest, int length)
-{ for(int i=0;i<length;i++) dest[i] = 0; return vecNoErr; }
-
-//Add
-/* #define vectorAdd_f32_I(src, srcdest, length)                               ippsAdd_32f_I(src, srcdest, length) */
-inline vecStatus genericAdd_32f_I(const f32 *src, f32 *srcdest, int length)
-{ for(int i=0;i<length;i++) srcdest[i] += src[i]; return vecNoErr; }
-/* #define vectorAdd_f64_I(src, srcdest, length)                               ippsAdd_64f_I(src, srcdest, length) */
-inline vecStatus genericAdd_64f_I(const f64 *src, f64 *srcdest, int length)
-{ for(int i=0;i<length;i++) srcdest[i] += src[i]; return vecNoErr; }
-/* #define vectorAdd_s16_I(src, srcdest, length)                               ippsAdd_16s_I(src, srcdest, length) */
-inline vecStatus genericAdd_16s_I(const s16 *src, s16 *srcdest, int length)
-{ for(int i=0;i<length;i++) srcdest[i] += src[i]; return vecNoErr; }
-/* #define vectorAdd_s32_I(src, srcdest, length)                               ippsAdd_32s_ISfs(src, srcdest, length, 0) */
-inline vecStatus genericAdd_32s_I(const s32 *src, s32 *srcdest, int length)
-{ for(int i=0;i<length;i++) srcdest[i] += src[i]; return vecNoErr; }
-/* #define vectorAdd_cf32_I(src, srcdest, length)                              ippsAdd_32fc_I(src, srcdest, length) */
-inline vecStatus genericAdd_32fc_I(const cf32 *src, cf32 *srcdest, int length)
-{ for(int i=0;i<length;i++) {srcdest[i].re += src[i].re;srcdest[i].im += src[i].im;} return vecNoErr; }
-/* #define vectorAdd_cf64_I(src, srcdest, length)                              ippsAdd_64fc_I(src, srcdest, length) */
-inline vecStatus genericAdd_64fc_I(cf64 *src, cf64 *srcdest, int length)
-{ for(int i=0;i<length;i++) {srcdest[i].re += src[i].re;srcdest[i].im += src[i].im;} return vecNoErr; }
-/* #define vectorAddC_f64(src, val, dest, length)                              ippsAddC_64f(src, val, dest, length) */
-inline vecStatus genericAddC_64f(const f64 *src,const f64 val, f64 *dest, int length)
-{ for(int i=0;i<length;i++) dest[i] = src[i]+val; return vecNoErr; }
-/* #define vectorAddC_f32(src, val, dest, length)                              ippsAddC_32f(src, val, dest, length) */
-inline vecStatus genericAddC_32f(const f32 *src,const f32 val, f32 *dest, int length)
-{ for(int i=0;i<length;i++) dest[i] = src[i]+val; return vecNoErr; }
-/* #define vectorAddC_f32_I(val, srcdest, length)                              ippsAddC_32f_I(val, srcdest, length) */
-inline vecStatus genericAddC_32f_I(const f32 val, f32 *srcdest, int length)
-{ for(int i=0;i<length;i++) srcdest[i] += val; return vecNoErr; }
-/* #define vectorAddC_s16_I(val, srcdest, length)                              ippsAddC_16s_I(val, srcdest, length) */
-inline vecStatus genericAddC_16s_I(const s16 val, s16 *srcdest, int length)
-{ for(int i=0;i<length;i++) srcdest[i] += val; return vecNoErr; }
-/* #define vectorAddC_f64_I(val, srcdest, length)                              ippsAddC_64f_I(val, srcdest, length) */
-inline vecStatus genericAddC_64f_I(const f64 val, f64 *srcdest, int length)
-{ for(int i=0;i<length;i++) srcdest[i] += val; return vecNoErr; }
-
-/* #define vectorAddProduct_cf32(src1, src2, accumulator, length)              ippsAddProduct_32fc(src1, src2, accumulator, length) */
-inline vecStatus genericAddProduct_32fc(const cf32 *src1,const cf32 *src2, cf32 *accumulator, int length)
-{ // accumulator[0].re=accumulator[0].im=0; 
-  for(int i=0;i<length;i++) 
-    { accumulator[i].re += src1[i].re*src2[i].re-src1[i].im*src2[i].im; 
-      accumulator[i].im += src1[i].re*src2[i].im+src1[i].im*src2[i].re; }
-     return vecNoErr; }
-
-/* #define vectorConj_cf32(src, dest, length)                                  ippsConj_32fc(src, dest, length) */
-inline vecStatus genericConj_32fc(const cf32 *src, cf32 *dest, int length)
-{ for(int i=0;i<length;i++) {dest[i].re = src[i].re;dest[i].im = -src[i].im;} return vecNoErr; }
-
-/* #define vectorConjFlip_cf32(src, dest, length)                              ippsConjFlip_32fc(src, dest, length) */
-inline vecStatus genericConjFlip_32fc(const cf32 *src, cf32 *dest, int length)
-{ for(int i=0;i<length;i++) {dest[i].re = src[length-1-i].re;dest[i].im = -src[length-1-i].im;} return vecNoErr; }
-
-/* #define vectorCos_f32(src, dest, length)                                    ippsCos_32f_A11(src, dest, length) */
-inline vecStatus genericCos_32f(const f32 *src, f32 *dest, int length)
-{ for(int i=0;i<length;i++) {dest[i] = cosf(src[i]);} return vecNoErr; }
-
-/* #define vectorConvertScaled_s16f32(src, dest, length, scalefactor)          ippsConvert_16s32f_Sfs(src, dest, length, scalefactor) */
-inline vecStatus genericConvert_16s32f(const s16 *src, f32 *dest, int length, int scalefactor) 
-{f32 tmp;tmp=powf(2,-scalefactor); for(int i=0;i<length;i++) dest[i] = src[i]*tmp; return vecNoErr; }
-
-/* #define vectorConvertScaled_f32s16(src, dest, length, rndmode, scalefactor) ippsConvert_32f16s_Sfs(src, dest, length, rndmode, scalefactor) */
-inline vecStatus genericConvert_32f16s(const f32 *src, s16 *dest, int length, int rndmode, int scalefactor) 
-{f32 tmp;tmp=powf(2,-scalefactor); for(int i=0;i<length;i++) dest[i] = static_cast<s16>(src[i]*tmp); return vecNoErr; }
-/* #define vectorConvertScaled_f32u8(src, dest, length, rndmode, scalefactor)  ippsConvert_32f8u_Sfs(src, dest, length, rndmode, scalefactor) */
-inline vecStatus genericConvert_32f8u(const f32 *src, u8 *dest, int length, int rndmode, int scalefactor) 
-{f32 tmp;tmp=powf(2,-scalefactor); for(int i=0;i<length;i++) dest[i] = static_cast<u8>(src[i]*tmp); return vecNoErr; }
-/* #define vectorConvert_f32s32(src, dest, length, rndmode)                    ippsConvert_32f32s_Sfs(src, dest, length, rndmode, 0) */
-inline vecStatus genericConvert_32f32s(const f32 * src, s32 * dest, int length, int rndmode) // Have not included rounding mode!!!
-{ for(int i=0;i<length;i++) dest[i] = static_cast<s32>(src[i]); return vecNoErr; }
-inline vecStatus genericConvert_16s32f(const s16 * src, f32 * dest, int length)
-{ for(int i=0;i<length;i++) dest[i] = src[i]; return vecNoErr; }
-inline vecStatus genericConvert_32s32f(const s32 * src, f32 * dest, int length)
-{ for(int i=0;i<length;i++) dest[i] = src[i]; return vecNoErr; }
-inline vecStatus genericConvert_64f32f(const f64 * src, f32 * dest, int length)
-{ for(int i=0;i<length;i++) dest[i] = src[i]; return vecNoErr; }
-inline vecStatus genericConvert_32f64f(const f32 * src, f64 * dest, int length)
-{ for(int i=0;i<length;i++) dest[i] = src[i]; return vecNoErr; }
-
-
-/* #define vectorDivide_f32(src1, src2, dest, length)                          ippsDiv_32f(src1, src2, dest, length) */
-inline vecStatus genericDivide_32f(const f32* src1,const f32 *src2, f32 *dest, int length)
-{ for(int i=0;i<length;i++) dest[i] = src1[i]/src2[i]; return vecNoErr; }
-
-/* #define vectorDotProduct_f64(src1, src2, length, output)                    ippsDotProd_64f(src1, src2, length, output) */
-inline vecStatus genericDotProduct_64f(const f64 *src1, const f64 *src2, int length, f64* output)
-{ output[0]=0; 
-  for(int i=0;i<length;i++) { output[0] += src1[i]*src2[i];} return vecNoErr; }
-
-/* #define vectorFlip_f64_I(srcdest, length)                                   ippsFlip_64f_I(srcdest, length) */
-inline vecStatus genericFlip_64f_I(f64 *srcdest, int length)
-{ f64 tmp; for(int i=0;i<length;i++) {tmp = srcdest[i];  srcdest[i] = srcdest[length-1-i];  srcdest[length-1-i] =tmp;} return vecNoErr; }
-
-//#define vectorMagnitude_cf32(src, dest, length)                             ippsMagnitude_32fc(src, dest, length)
-// Check type of SRC
-inline vecStatus genericMagnitude_32fc(const cf32 *src, f32 * dest, int length)
-{ for(int i=0;i<length;i++) dest[i] = sqrt(src[i].re*src[i].re+src[i].im*src[i].im); return vecNoErr; }
-
-/* #define vectorMean_cf32(src, length, mean, hint)                            ippsMean_32fc(src, length, mean, hint) */
-inline vecStatus genericMean_32fc(cf32 *src, int length ,cf32* mean, int hint) // Alg options not used
-{ mean[0].re=mean[0].im=0; 
-  for(int i=0;i<length;i++) {mean[0].re += (src[i].re); mean[0].im += (src[i].im);}
-  if (length>0) {mean[0].re /= length; mean[0].im /= length;} return vecNoErr; }
-
-/* #define vectorMul_f32(src1, src2, dest, length)                             ippsMul_32f(src1, src2, dest, length) */
-inline vecStatus genericMul_32f(const f32 *src1, const f32 *src2, f32 *dest, int length)
-{ for(int i=0;i<length;i++) dest[i] = src1[i]*src2[i]; return vecNoErr; }
-/* #define vectorMul_f32_I(src, srcdest, length)                               ippsMul_32f_I(src, srcdest, length) */
-inline vecStatus genericMul_32f_I(const f32 *src, f32 *srcdest, int length)
-{ for(int i=0;i<length;i++) srcdest[i] *= src[i]; return vecNoErr; }
-/* #define vectorMul_cf32_I(src, srcdest, length)                              ippsMul_32fc_I(src, srcdest, length) */
-inline vecStatus genericMul_32fc_I(const cf32 *src, cf32 *srcdest, int length)
-{f32 tmp; for(int i=0;i<length;i++) 
-	    {tmp=srcdest[i].re*src[i].re-srcdest[i].im*src[i].im;
-	      srcdest[i].im = srcdest[i].re*src[i].im+srcdest[i].im*src[i].re;
-	      srcdest[i].re = tmp;} 
-  return vecNoErr; }
-/* #define vectorMul_cf32(src1, src2, dest, length)                            ippsMul_32fc(src1, src2, dest, length) */
-inline vecStatus genericMul_32fc(const cf32 *src1, const cf32 *src2, cf32 *dest, int length)
-{ for(int i=0;i<length;i++) 
-    {dest[i].re = src1[i].re*src2[i].re-src1[i].im*src2[i].im; 
-     dest[i].im = src1[i].re*src2[i].im+src1[i].im*src2[i].re;} 
-      return vecNoErr; }
-/* #define vectorMul_f32cf32(src1, src2, dest, length)                         ippsMul_32f32fc(src1, src2, dest, length) */
-inline vecStatus genericMul_32f32fc(const f32 *src1,const cf32 *src2, cf32 *dest, int length)
-{ for(int i=0;i<length;i++) {dest[i].re = src1[i]*src2[i].re; dest[i].im = src1[i]*src2[i].im;} return vecNoErr; }
-
-/* #define vectorMulC_f32(src, val, dest, length)                              ippsMulC_32f(src, val, dest, length) */
-inline vecStatus genericMulC_32f(const f32 *src, const f32 val, f32 *dest, int length)
-{ for(int i=0;i<length;i++) dest[i] = src[i]*val; return vecNoErr; }
-/* #define vectorMulC_cs16_I(val, srcdest, length)                             ippsMulC_16sc_ISfs(val, srcdest, length, 0) */
-/* inline vecStatus genericMulC_16sc_I(sc16 val, sc16 *srcdest, int length) */
-/* {s16 tmp;  for(int i=0;i<length;i++)  */
-/* 	     { tmp = srcdest[i].re*val.re-srcdest[i].im*val.im;  */
-/* 	       srcdest[i].im = srcdest[i].re*val.im+srcdest[i].im*val.re; */
-/* 	       srcdest[i].re = tmp;}  */
-/*   return vecNoErr; } */
-
-/* #define vectorMulC_f32_I(val, srcdest, length)                              ippsMulC_32f_I(val, srcdest, length) */
-inline vecStatus genericMulC_32f_I(const f32 val, f32 *srcdest, int length)
-{ for(int i=0;i<length;i++) srcdest[i] *= val; return vecNoErr; }
-/* #define vectorMulC_cf32_I(val, srcdest, length)                             ippsMulC_32fc_I(val, srcdest, length) */
-inline vecStatus genericMulC_32fc_I(const cf32 val, cf32 *srcdest, int length)
-{f32 tmp; for(int i=0;i<length;i++) 
-	    {tmp=srcdest[i].re*val.re-srcdest[i].im*val.im;
-	      srcdest[i].im = srcdest[i].re*val.im+srcdest[i].im*val.re;
-	      srcdest[i].re=tmp;} 
-  return vecNoErr; }
-/* #define vectorMulC_cf32(src, val, dest, length)                             ippsMulC_32fc(src, val, dest, length) */
-inline vecStatus genericMulC_32fc(const cf32 *src,const cf32 val, cf32 *dest, int length)
-{ for(int i=0;i<length;i++) 
-    {dest[i].re = src[i].re*val.re-src[i].im*val.im;
-     dest[i].im = src[i].re*val.im+src[i].im*val.re;} 
-  return vecNoErr; }
-/* #define vectorMulC_f64_I(val, srcdest, length)                              ippsMulC_64f_I(val, srcdest, length) */
-inline vecStatus genericMulC_64f_I(const f64 val, f64 *srcdest, int length)
-{ for(int i=0;i<length;i++) {srcdest[i] *= val;} return vecNoErr; }
-/* #define vectorMulC_f64(src, val, dest, length)                              ippsMulC_64f(src, val, dest, length) */
-inline vecStatus genericMulC_64f(const f64 *src,const f64 val, f64 *dest, int length)
-{ for(int i=0;i<length;i++) {dest[i] = src[i]*val;} return vecNoErr; }
-
-/* #define vectorPhase_cf32(src, dest, length)                                 ippsPhase_32fc(src, dest, length) */
-inline vecStatus genericPhase_32fc(const cf32 *src, f32 *dest, int length)
-{ for(int i=0;i<length;i++) {dest[i] = atan2(src[i].im,src[i].re);} return vecNoErr; }
-
-/* #define vectorRealToComplex_f32(real, imag, complex, length)                ippsRealToCplx_32f(real, imag, complex, length) */
-inline vecStatus genericRealToCplx_32f(const f32 *real, const f32 *imag, cf32 *complx, int length)
-{ for(int i=0;i<length;i++) {if (real) complx[i].re = real[i]; else complx[i].re=0; if (imag) complx[i].im=imag[i]; else complx[i].im=0;} return vecNoErr; }
-
-/* #define vectorReal_cf32(complex, real, length)                              ippsReal_32fc(complex, real, length) */
-inline vecStatus genericReal_32fc(const cf32 *c, f32 *re, int l)
-{ for(int i=0;i<l;i++) {re[i] = c[i].re;} return vecNoErr; }
-
-inline vecStatus genericSet_32f(const f32 val, f32 * dest, int length)
-{ for(int i=0;i<length;i++) dest[i] = val; return vecNoErr; } // memset?
-
-/* #define vectorSin_f32(src, dest, length)                                    ippsSin_32f_A11(src, dest, length) */
-inline vecStatus genericSin_32f(const f32 *src, f32 *dest, int length)
-{ for(int i=0;i<length;i++) {dest[i] = sinf(src[i]);} return vecNoErr; }
-
-/* #define vectorSinCos_f32(src, sin, cos, length)                             ippsSinCos_32f_A11(src, sin, cos, length) */
-inline vecStatus genericSinCos_32f(const f32 *src, f32 *sin, f32 *cos, int length)
-{ for(int i=0;i<length;i++) {sincosf(src[i],sin+i,cos+i);} return vecNoErr; }
-
-/* #define vectorSplitScaled_s16f32(src, dest, numchannels, chanlen)           ippsSplitScaled_16s32f_D2L(src, dest, numchannels, chanlen) */
-inline vecStatus genericSplitScaled_16s32f(const s16 *src, f32 **dest, int numchannels, int chanlen)
-{ s16 max=-MAX_S16; s16 min=MAX_S16; for(int n=0;n<numchannels*chanlen;n++) {max = (max>src[n])? max:src[n]; min = (min<src[n])? min:src[n];}
-  f32 scale; scale = 2.0/(max-min); // printf("RGD: Scale %f Max %d Min %d\n",scale,max,min);
-  for(int n=0;n<chanlen;n++) for(int m=0;m<numchannels;m++) {
-      if (max==min) dest[m][n]=0; 
-      else dest[m][n] = -1.0+scale*(src[n*numchannels+m]-min);
-      //printf("RGD: Scale %f Max %d Min %d: %d %f %d %d\n",scale,max,min,src[n*chanlen+m],dest[n][m],n,m);
-    } return vecNoErr; }
-
-/* #define vectorSquare_f32_I(srcdest, length)                                 ippsSqr_32f_I(srcdest, length) */
-inline vecStatus genericSqr_32f_I(f32 *srcdest, int length)
-{ for(int i=0;i<length;i++) {srcdest[i] *= srcdest[i];} return vecNoErr; }
-/* #define vectorSquare_f64_I(srcdest, length)                                 ippsSqr_64f_I(srcdest, length) */
-inline vecStatus genericSqr_64f_I(f64 *srcdest, int length)
-{ for(int i=0;i<length;i++) {srcdest[i] *= srcdest[i];} return vecNoErr; }
-
-/* #define vectorSub_f32_I(src, srcdest, length)                               ippsSub_32f_I(src, srcdest, length) */
-inline vecStatus genericSub_32f_I(const f32 *src, f32 *srcdest, int length)
-{ for(int i=0;i<length;i++) {srcdest[i] -= src[i];} return vecNoErr; }
-
-/* #define vectorSub_s32(src1, src2, dest, length)                             ippsSub_32s_Sfs(src1, src2, dest, length, 0) */
-inline vecStatus genericSub_32s(const s32 *src1,const s32 *src2, s32 *dest, int length)
-{ for(int i=0;i<length;i++) {dest[i] = src1[i]-src2[i];} return vecNoErr; }
-/* #define vectorSub_cf32_I(src, srcdest, length)                              ippsSub_32fc_I(src, srcdest, length) */
-inline vecStatus genericSub_32fc_I(const cf32 *src, cf32 *srcdest, int length)
-{ for(int i=0;i<length;i++) {srcdest[i].re -= src[i].re;srcdest[i].im -= src[i].im;} return vecNoErr; }
-
-/* #define vectorSum_cf32(src, length, sum, hint)                              ippsSum_32fc(src, length, sum, hint) */
-inline vecStatus genericSum_32fc(const cf32 *src, int length, cf32 *sum)
-{ sum[0].re=0;sum[0].im=0; for(int i=0;i<length;i++) {sum[0].re += src[i].re;sum[0].im += src[i].im;} return vecNoErr; }
-
-// Bpass
-/* #define vectorGenerateFIRLowpass_f64(freq, taps, length, window, normalise) ippsFIRGenLowpass_64f(freq, taps, length, window, normalise) */
-//http://software.intel.com/sites/products/documentation/hpc/compilerpro/en-us/cpp/lin/ipp/ipps/ipps_ch6/functn_FIRGenLowpass.html
-// I believe it is NEVER USED? 
-// inline vecStatus genericNULLFIRGen(f64 freq, f64 *taps, int length, vecStatus window, vecStatus normalise) {return vecNoErr;} 
-
-
 #endif /*Architecture == Intel */
 
 #if(ARCH == AMD) // Use FRAMEWAVE?
@@ -570,17 +269,19 @@ inline vecStatus genericSum_32fc(const cf32 *src, int length, cf32 *sum)
 
 #if (ARCH == GENERIC) // Using FFTW 
 
-#define u8                       unsigned char
-#define u16                      unsigned short
-#define s16                      short
-#define cs16                     sc16
-#define s32                      int
+#include <stdint.h>
+
+#define u8                       uint8_t
+#define u16                      uint16_t
+#define s16                      int16_t
+#define cs16                     complex short
+#define s32                      int32_t
 #define f32                      float
 #define f64                      double
 #define cf32                     fc32  // fftwf_complex
 #define cf64                     fc64  // fftw_complex
-#define s64                      long long
-#define u64                      unsigned long long
+#define s64                      int64_t
+#define u64                      uint64_t
 #define vecStatus                int
 
 //and the constant values
@@ -802,6 +503,10 @@ inline vecStatus genericDotProduct_64f(const f64 *src1, const f64 *src2, int len
 /* #define vectorFlip_f64_I(srcdest, length)                                   ippsFlip_64f_I(srcdest, length) */
 inline vecStatus genericFlip_64f_I(f64 *srcdest, int length)
 { f64 tmp; for(int i=0;i<length;i++) {tmp = srcdest[i];  srcdest[i] = srcdest[length-1-i];  srcdest[length-1-i] =tmp;} return vecNoErr; }
+
+/* #define vectorFlip_cf32(src, dest, length)                                  ippsFlip_32fc(src, dest, length) */
+inline vecStatus genericFlip_32fc(const cf32 *src, cf32 *dest, const int length)
+{ for(int i=0;i<length;i++) dest[length-1-i] =  src[i]; return vecNoErr; }
 
 //#define vectorMagnitude_cf32(src, dest, length)                             ippsMagnitude_32fc(src, dest, length)
 // Check type of SRC
@@ -1049,6 +754,7 @@ inline vecStatus genericMaxIndx_32f(f32 *src, int len, f32 *max, int *imax)
 #define vectorDotProduct_f64(src1, src2, length, output)                    genericDotProduct_64f(src1, src2, length, output)
 
 #define vectorFlip_f64_I(srcdest, length)                                   genericFlip_64f_I(srcdest, length)
+#define vectorFlip_cf32(src, dest, length)                                  genericFlip_32fc(src, dest, length)
 
 #define vectorMagnitude_cf32(src, dest, length)                             genericMagnitude_32fc(src, dest, length)
 #define vectorMax_f32(src, dest, length)                                    genericMax_32f(src, dest, length)
