@@ -31,6 +31,7 @@
 #include <math.h>
 #include <time.h>
 #include <unistd.h>
+#include <sys/time.h>
 #include "config.h"
 #include "alert.h"
 
@@ -572,7 +573,16 @@ void DataStream::sendDiagnostics()
 void set_abstime(struct timespec *abstime, double timeout) {
   int status;
 
+#ifdef __MACH__ // OS X does not have clock_gettime, use gettimeofday
+  struct timeval now;
+  status = gettimeofday(&now, NULL);
+  abstime->tv_sec = now.tv_sec;
+  abstime->tv_nsec = now.tv_usec*1000;
+
+#else
+  clock_gettime(CLOCK_REALTIME, &ts);
   status = clock_gettime(CLOCK_REALTIME, abstime);
+#endif
 
   if (status) {
     cerror << startl << "Error setting abstime for wait" << endl;
