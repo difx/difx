@@ -580,7 +580,6 @@ void set_abstime(struct timespec *abstime, double timeout) {
   abstime->tv_nsec = now.tv_usec*1000;
 
 #else
-  clock_gettime(CLOCK_REALTIME, &ts);
   status = clock_gettime(CLOCK_REALTIME, abstime);
 #endif
 
