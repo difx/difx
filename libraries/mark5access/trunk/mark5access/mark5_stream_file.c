@@ -212,7 +212,7 @@ static int mark5_stream_file_next(struct mark5_stream *ms)
 static int mark5_stream_file_seek(struct mark5_stream *ms, long long framenum)
 {
 	struct mark5_stream_file *F;
-	long long pos;
+	off_t pos, sook;
 	int nframes, status;
 
 	F = (struct mark5_stream_file *)(ms->inputdata);
@@ -231,7 +231,7 @@ static int mark5_stream_file_seek(struct mark5_stream *ms, long long framenum)
 	F->last = F->end;
 	ms->frame = F->buffer;
 
-	lseek(F->in, pos, SEEK_SET);
+	sook = lseek(F->in, pos, SEEK_SET);
 
 	status = mark5_stream_file_fill(ms);
 	if(status < 0)
