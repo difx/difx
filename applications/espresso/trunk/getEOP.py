@@ -5,7 +5,7 @@
 # EOP data from http://gemini.gsfc.nasa.gov/solve_save/usno_finals.erp
 # Leap second data come from: http://gemini.gsfc.nasa.gov/500/oper/solve_apriori_files/ut1ls.dat
 
-import optparse, re, urllib, espressolib, sys
+import optparse, re, urllib, espressolib, sys, datetime
 
 def get_leapsec(leapsec_page, targetJD):
     # parse the leap seconds page
@@ -57,6 +57,7 @@ leapsec_page = urllib.FancyURLopener().open(leapsec_url).readlines()
 print >>sys.stderr, "...got it.\n";
 
 
+print "#EOPs downloaded at", datetime.datetime.now()
 
 # parse the eop page
 nlines = 0
