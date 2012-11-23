@@ -445,6 +445,8 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
 	  new_mark5_stream_unpacker(0),
 	  new_mark5_format_generic_from_string(formatname) );
 
+	framegranularity = mark5stream->framegranularity;
+
 	mk5dirpath = getenv("MARK5_DIR_PATH");
 	if(mk5dirpath == 0)
 	{

@@ -104,6 +104,7 @@ protected:
   vector<bool> packets_arrived;
   char formatname[64];
   struct mark5_stream * syncteststream;
+  int framegranularity;
 };
 
 #endif

@@ -57,6 +57,7 @@ Mk5DataStream::Mk5DataStream(const Configuration * conf, int snum, int id, int n
     switchedpower = new SwitchedPower(conf, id);
     switchedpower->frequency = spf_Hz;
   }
+  framegranularity = 1;
 }
 
 Mk5DataStream::~Mk5DataStream()
@@ -208,6 +209,12 @@ int Mk5DataStream::calculateControlParams(int scan, int offsetsec, int offsetns)
   // bufferindex was previously computed assuming no framing overhead
   framesin = vlbaoffset/payloadbytes;
 
+  // here we enforce frame granularity.  We simply back up to the previous frame that is a multiple of the frame granularity.
+  if(framesin % framegranularity != 0)
+  {
+    framesin -= (framesin % framegranularity);
+  }
+
   // Note here a time is needed, so we only count payloadbytes
   long long segoffns = bufferinfo[atsegment].scanns + (long long)((1000000000.0*framesin)/framespersecond);
   bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][1] = bufferinfo[atsegment].scanseconds + ((int)(segoffns/1000000000));
@@ -336,6 +343,7 @@ void Mk5DataStream::initialiseFile(int configindex, int fileindex)
   mark5_stream_print(syncteststream);
 
   offset = syncteststream->frameoffset;
+  framegranularity = syncteststream->framegranularity;
 
   bytespersecond = syncteststream->framebytes/syncteststream->framens * 1e9;
 
