@@ -10,8 +10,8 @@ import platform
 from time import asctime
 
 program = 'difxbuild'
-version = '0.17'
-verdate = '20121108'
+version = '0.18'
+verdate = '20121124'
 author = 'Walter Brisken <wbrisken@nrao.edu>'
 
 openmpiVersion = '1.6'
@@ -1057,16 +1057,23 @@ def svnupdate(origComps, params, args, verbose, pretend):
 	srcDir = environ['DIFX_SRC'] + '/'
 	if not isdir(srcDir):
 		execute('mkdir -p %s' % srcDir, verbose, pretend);
-		
+
+	updatePaths = ''
+
 	for comp in comps:
 		path = srcDir + comp[0] + '/'
 		if isdir(path):
-			chdir(path)
-			cmd = 'svn update'
+			updatePaths = updatePaths + ' ' + comp[0]
 		else:
 			chdir(srcDir)
 			cmd = 'svn co %s %s' % (comp[1], comp[0])
+			execute(cmd, verbose, pretend)
+	
+	if updatePaths != '':
+		chdir(srcDir)
+		cmd = 'svn update ' + updatePaths
 		execute(cmd, verbose, pretend)
+
 
 def svnstatus(origComps, params, args, verbose, pretend):
 	comps = filterComponents(origComps, args)
@@ -1465,7 +1472,7 @@ def openmpi(origComps, params, args, verbose, pretend):
 	v = execute('make -j %d' % numMakeCpus, verbose, pretend)
 	if v == 0:
 		v = execute('make install', verbose, pretend)
-		execute('echo `date`  $DIFX_VERSION  $DIFX_LABEL  %s  OpenMPI %s >> %s' % (comp[0], openmpiTarFile, bldLog), verbose, pretend)
+		execute('echo `date`  $DIFX_VERSION  $DIFX_LABEL  OpenMPI %s >> %s' % (openmpiTarFile, bldLog), verbose, pretend)
 	if v != 0:
 		print '\n*** Error building openmpi***\n'
 		return 
