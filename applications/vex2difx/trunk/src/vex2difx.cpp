@@ -2383,16 +2383,20 @@ static int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int 
 						nZoomBands = 0;
 						for(int i = 0; i < nZoomFreqs; ++i)
 						{
+							int k = 0;
+
 							polcount = 0;
 							for(int j = 0; j < dd->nZoomPol[i]; ++j)
 							{
 								dd->zoomBandFreqId[nZoomBands] = i;
-								for(int k = 0; k < dd->nRecBand; ++k)
+								for(; k < dd->nRecBand; ++k)
 								{
 									if(dd->recBandFreqId[k] == parentFreqIndices[i])
 									{
 										dd->zoomBandPolName[nZoomBands] = dd->recBandPolName[k];
+
 										++polcount;
+										++k;
 
 										break;
 									}
