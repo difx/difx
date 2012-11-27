@@ -1,0 +1,30 @@
+# Jungo Confidential. Copyright (c) 2011 Jungo Ltd.  http://www.jungo.com
+# Template file for configure script
+
+MODULE_NAME=@MODULE_NAME@
+LINUX_USB_SUPPORT=@LINUX_USB_SUPPORT@
+USE_KBUILD=@USE_KBUILD@
+SUFFIX=
+
+ifeq ($(USE_KBUILD), yes)
+	SUFFIX=.kbuild
+endif
+
+MAKE_WD = make -f makefile.wd$(SUFFIX)
+
+ifeq ($(LINUX_USB_SUPPORT), yes)
+    MAKE_USB = make -f makefile.usb$(SUFFIX)
+    MAKE_USB_CLEAN = $(MAKE_USB) clean
+endif
+
+all:
+	$(MAKE_USB)
+	$(MAKE_WD)
+
+install: all
+	$(MAKE_WD) install
+
+clean:
+	$(MAKE_USB_CLEAN)
+	$(MAKE_WD) clean
+

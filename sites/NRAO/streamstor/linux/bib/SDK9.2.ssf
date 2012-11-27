@@ -1,0 +1,54 @@
+#================================================================
+# 0            1      2        3       4      5        6
+#================================================================
+# FILENAME :  GEN : MAJOR :  MINOR : SECT : DBTYPE : DBPROTO
+
+#--------------- GEN 4 FILES ---------------
+# Amazon FW, no daughterboard
+ssamazon_16031.xfb:4:16:31:13:0:0
+
+# Amazon FW, FPDP2 daughterboard.
+ssamazon_16031.xfb:4:16:31:13:1:0
+
+# Amazon FW, 101GigE
+ssamazon_10gige_16031.xfb:4:16:31:13:6:0
+
+# Amazon FW, SFPDP
+ssamazon_sfpdp_16031.xfb:4:16:31:13:3:0
+
+# Amazon FW, LVDS16 4x4
+ssamazon_lvds16_16031.xfb:4:16:31:13:2:0
+
+# Amazon FW, LVDS32
+ssamazon_lvds16_16031.xfb:4:16:31:13:5:0
+
+# Amazon FW, LVDS2
+ssamazon_lvds16_16031.xfb:4:16:31:13:7:0
+
+#--------------- End GEN 4 FILES -------------
+
+#---------------   GEN 5  FILES  -------------
+# Amazon Express, all versions.
+ssamex_16065.xfb:5:16:65:22:0:0
+ssamex_16065.xfb:5:16:65:22:1:0
+ssamex_16065.xfb:5:16:65:22:2:0
+ssamex_16065.xfb:5:16:65:22:3:0
+ssamex_16065.xfb:5:16:65:22:5:0
+ssamex_16065.xfb:5:16:65:22:6:0
+ssamex_16065.xfb:5:16:65:22:7:0
+
+#Amazon Express Standard SFPDP, Optical HSS, 2.5 Gbps, "Serial FPDP"
+G5F2_SFPDP2500_22004.xfb:5:22:4:23:3:10
+
+#Amazon Express SFPDP Bonded, "SFPDP SB"
+G5F2_SFPDPB2500_20001.xfb:5:20:1:23:3:16
+
+#Amazon Express SerialLite2 packet/bonded ROE, "SerialLt Opt"
+G5F2_SLTPB3125_32004.xfb:5:32:4:23:3:15
+
+#Amazon Express SerialLite2 Copper HSS, "SerialLite2"
+G5CS_SLTS1600_99073.xfb:5:99:73:23:3:11
+
+# Amazon Express, Virtex.  Virtex must be flashed last.
+G5V5_00_04197.xfb:5:4:197:18:0:0
+

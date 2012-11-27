@@ -1,0 +1,88 @@
+      LINUX INSTALLATION INSTRUCTIONS FOR STREAMSTOR SDK Version 8.x
+
+This is a BETA version of SDK Version 8.1.  It includes the following
+API and firmware:
+
+	API Version: 7.06
+	API Datecode: Jan 25 2008
+	XF2/VXF2 Firmware Version: 12.03
+	XF2/VXF2 Firmware Datecode: Jan 14 2008
+	Amazon Firmware Version:  14.03
+	Amazon Firmware Datecode: Jan 10 2008
+	WinDriver 9.10
+
+NOTE: The installation must be performed as "root" since hardware device
+drivers must be installed.  
+
+Programs linked with a StreamStor SDK API (libssapi.a) from SDK releases 
+prior to SDK 8.x are not compatible with SDK 8.x.  To use SDK 8.x, you must 
+recompile your programs with the new API.  You must also execute flash_upgrade 
+so that the new SDK 8.x firmware gets flashed on your StreamStor (see below). 
+
+1. Create a directory to hold the StreamStor files and sub-directories, for
+   example, /usr/local/streamstor.
+
+2. Change directory to the installation directory (cd /usr/local/streamstor).
+
+3. Extract the StreamStor files:
+     tar xvzf /mnt/cdrom/linux/XXX.tgz (or other path if not CDROM)
+   where XXX is the name of the filename of the .tgz file (e.g., sslinux80.tgz).
+
+4. The driver, windrvr6.o, is a kernel module. It must be recompiled for
+   every kernel version on which it is loaded.  IMPORTANT:  In order to 
+   recompile windrvr6, you must have the Linux kernel source installed 
+   on your system.
+
+   After you have ensured that the kernel source is installed, recompile 
+   windrvr6.o, cd to the driver/redist directory then enter:
+                ./configure
+                chmod 755 setup_inst_dir
+                chmod 755 wdreg
+                make install
+
+   The shared library, libwdapi801.so will be installed /usr/lib.  
+   Your application code must link to this library.
+
+   Note that the "configure" program will generate the driver makefile.
+   You must run "configure" to create a new makefile and then rebuild the 
+   driver whenever you upgrade your Linux operating system.
+
+5. Follow instructions that are output by the install script to load the 
+   driver module on startup and to set permissions on /dev/windrvr6. 
+   Note that instructions for installing the WinDriver kernel module
+   may change from release to release, so please be sure to read them.
+
+6. Set the environment variable "STREAMSTOR_BIB_PATH" to the location of
+   the StreamStor local bib directory.  For example, if you have 
+   installed the StreamStor files in /usr/local/streamstor:
+
+            STREAMSTOR_BIB_PATH=/usr/local/streamstor/bib
+            export STREAMSTOR_BIB_PATH
+
+7. Run linux/util/sstest to verify operation of StreamStor.
+
+8. The directory linux/example contains the source code for several 
+   examples.  Examine the example.mk file in that directory and change the 
+   STREAMSTOR path variable (if necessary) to point to the path where you 
+   have installed the StreamStor API.  Then, "make" the example and run 
+   it to verify that the StreamStor library and headers have been 
+   installed correctly. 
+
+IMPORTANT:  As described in the readme.html file for this SDK, beginning with 
+SDK Release 7.1, firmware and/or monitor code may need to be flashed (rather 
+than downloaded) onto boards. The new utility program, flash_upgrade can be 
+executed to flash the boards.  flash_upgrade will examine the current monitor 
+version on all installed StreamStor boards on a system and then perform any
+necessary upgrades. If no upgrade is needed (e.g., your StreamStor boards do 
+not support the flash_upgrade utility or your boards are already flashed 
+appropriately), flash_upgrade will report that no upgrade is required.
+
+Anytime you install a new SDK, you should evaluate whether or not you want 
+to upgrade the firmware or monitor code on your StreamStor boards with the 
+versions provided in the new SDK.  If you want to upgrade, then you must run 
+flash_upgrade.
+
+If you run flash_upgrade on your StreamStor boards, you cannot return to 
+older versions of flashed code unless you return your board to Conduant for 
+re-flashing. Therefore, please make sure that you want to permanently 
+upgrade your StreamStor boards prior to executing flash_upgrade.  

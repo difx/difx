@@ -1,0 +1,166 @@
+Summary: Conduant Streamstor driver
+Name: streamstor
+Version: @VERSION@
+Release: 3
+License: ImNotSure
+Group: VLBI
+BuildRoot: /var/tmp/%{name}-%{version}-buildroot
+Requires: gcc >= 4.1.0
+Prefix: /usr
+Source: streamstor-%{version}.tar.gz
+
+%description
+Kernel module for streamstor card
+
+%prep
+%setup -q
+
+%build
+autoconf
+./configure --prefix=/usr
+make
+
+%install
+make DESTDIR=$RPM_BUILD_ROOT RPMinstall
+
+%post
+mknod /dev/windrvr6 c 254 0
+chmod a+rw /dev/ttyS0 /dev/windrvr6
+	
+
+%files
+%defattr(-,root,root)
+/lib/modules/misc/windrvr6.ko
+/usr/share/streamstor/bib/G4CS_10GRX_01003.xfb
+/usr/share/streamstor/bib/G4CS_SLTS1062_01047.xfb
+/usr/share/streamstor/bib/G4F2_SFPDO25002125_02002.xfb
+/usr/share/streamstor/bib/G4F2_SFPDP2125_01001.xfb
+/usr/share/streamstor/bib/G4F2_SFPDP2500_03002.xfb
+/usr/share/streamstor/bib/G4F2_SFPDPB2500_01004.xfb
+/usr/share/streamstor/bib/G4F2_SLTPB3125_07011.xfb
+/usr/share/streamstor/bib/G4FP_PAR2X16_0101.xfb
+/usr/share/streamstor/bib/G4FP_PAR32_01008.xfb
+/usr/share/streamstor/bib/G4FS_SFPDP2125_01013.xfb
+/usr/share/streamstor/bib/G4FS_SFPDP2500_01017.xfb
+/usr/share/streamstor/bib/G4FS_SLTPB3125_03024.xfb
+/usr/share/streamstor/bib/G4LT_TEK_63016.xfb
+/usr/share/streamstor/bib/G4LV_LV4X_01002.xfb
+/usr/share/streamstor/bib/G5CS_SLTS1600_99073.xfb
+/usr/share/streamstor/bib/G5F2_SFPDPB2500_20001.xfb
+/usr/share/streamstor/bib/G5F2_SLTPB3125_32004.xfb
+/usr/share/streamstor/bib/G5FP_PAR32_01008.xfb
+/usr/share/streamstor/bib/G5LT_TEK_99022.xfb
+/usr/share/streamstor/bib/gen3monf.xfb
+/usr/share/streamstor/bib/gen4monf.xfb
+/usr/share/streamstor/bib/gen4_xbar_0238.xfb
+/usr/share/streamstor/bib/ssatap3.bib
+/usr/share/streamstor/bib/ssatap3.xfb
+/usr/share/streamstor/bib/sspxf.bib
+/usr/share/streamstor/bib/sspxf.xfb
+/usr/share/streamstor/bib/xf2xbar.bib
+/usr/share/streamstor/bib/xf2xbar.xfb
+/usr/share/streamstor/bib/SDK9.2.ssf
+/usr/share/streamstor/bib/xlrdiag.bis
+/usr/share/streamstor/bib/G5V5_00_04184.xfb 
+/usr/share/streamstor/bib/G5F2_SFPDP2500_22004.xfb
+/usr/share/streamstor/bib/G4F2_SLTPB3125_06002.xfb
+/usr/share/streamstor/bib/G4L2_PAR16_02002.xfb
+/usr/share/streamstor/bib/G4LV_PAR16_02001.xfb
+/usr/share/streamstor/bib/G5F2_SFPDP2500_22004.xfb
+/usr/share/streamstor/bib/G5L2_PAR16_02002.xfb
+/usr/share/streamstor/bib/G5V5_00_04184.xfb
+/usr/share/streamstor/bib/gen5monf_12020.xfb
+/usr/share/streamstor/bib/ssamazon_10gige_16031.xfb
+/usr/share/streamstor/bib/ssamazon_16031.xfb
+/usr/share/streamstor/bib/ssamazon_cl_16031.xfb
+/usr/share/streamstor/bib/ssamazon_lvds16_16031.xfb
+/usr/share/streamstor/bib/ssamazon_sfpdp_16031.xfb
+/usr/share/streamstor/bib/ssamex_16057.xfb
+/usr/share/streamstor/bib/ssatap3.bin
+/usr/share/streamstor/bib/sspxf_13004.bib
+/usr/share/streamstor/bib/sspxf_13004.xfb
+/usr/share/streamstor/bib/xf2xbar.bin
+/usr/share/streamstor/bib/G5V5_00_04197.xfb
+/usr/share/streamstor/bib/ssamex_16065.xfb
+/usr/bin/dumpram
+/usr/bin/sslog
+/usr/bin/ssopen
+/usr/bin/sstest
+/usr/bin/ssflash
+/usr/bin/ssprintVersions
+/usr/bin/wddebug
+/usr/bin/wddebug_gui
+/usr/lib/libssapi.a
+/usr/lib/libwdapi1031.so
+/usr/lib/pkgconfig/streamstor.pc
+/etc/profile.d/mark5.csh
+/etc/profile.d/mark5.sh
+/usr/include/xlrapi.h
+/usr/include/xlrtypes.h
+/usr/include/xlrdbcommon.h
+/etc/udev/permissions.d/60-mark5.permissions
+
+
+%changelog
+* Mon Jun 11 2012 Walter Brisken <wbrisken@nrao.edu>
+- Patch new 10G firmware
+- Updated to 9.2a
+
+* Thu Nov 24 2011 Walter Brisken <wbrisken@nrao.edu>
+- Updated to 9.2
+
+* Wed Nov 23 2011 Walter Brisken <wbrisken@nrao.edu>
+- Updated to 9.2 beta
+
+* Fri Jul 15 2011 Walter Brisken <wbrisken@nrao.edu>
+- Updated 9.1
+
+* Thu Sep 16 2010 Walter Brisken <wbrisken@nrao.edu>
+- Updated 9.0
+
+* Sun Nov 16 2008 Walter Brisken <wbrisken@nrao.edu>
+- updated to SDK 8.2 beta (hopefully fix the 300 open/close bug)
+- version 8.1.99
+
+* Wed Sep 24 2008 Walter Brisken <wbrisken@nrao.edu>
+- updated to XF2 firmware 12.06 to fix SATA issue
+- version 8.1.2
+
+* Wed Jun 25 2008 Walter Brisken <wbrisken@nrao.edu>
+- updated 14.29 firmware ssamazon.xfb -- need to flash to use
+- version 8.1.1
+
+* Wed Apr 30 2008 Walter Brisken <wbrisken@nrao.edu>
+- SDK 8.1
+- version 8.1
+
+* Thu Oct 25 2007 Walter Brisken <wbrisken@nrao.edu>
+- Cleaning up build environment a bit
+
+* Thu Oct 11 2007 Walter Brisken <wbrisken@nrao.edu>
+- Update sspxf.bib to allow SATA modules.  -> 7.6.1
+
+* Fri Dec 29 2006 Walter Brisken <wbrisken@nrao.edu>
+- Update 7.5 to 7.5b -- no change except for kernel to use
+
+* Thu Sep 14 2006 Walter Brisken <wbrisken@nrao.edu>
+- Update to 7.4 from conduant  -> version 7.4a
+
+* Mon Mar 20 2006 Walter Brisken <wbrisken@nrao.edu>
+- New sspfx.bib
+
+* Wed Feb 08 2006 Walter Brisken <wbrisken@nrao.edu>
+- version 7.3 from conduant
+
+* Mon Aug 01 2005 Walter Brisken <wbrisken@nrao.edu>
+- version 6.3Ca
+- just a rename to handle new kernel.
+
+* Tue Apr 19 2005 Walter Brisken <wbrisken@nrao.edu>
+- updated conduant API
+
+* Thu Jul 22 2004 Walter Brisken <wbrisken@nrao.edu>
+- move /etc/init.d/mark5 to Mark5.
+
+* Sun Jun 20 2004 Walter Brisken <wbrisken@nrao.edu>
+- first RPM package of this driver

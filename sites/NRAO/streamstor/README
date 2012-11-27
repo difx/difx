@@ -1,0 +1,38 @@
+
+This is an unauthorized (but unlikely problematic) redistribution of the
+streamstor SDK.  For an official distribution, please visit 
+www.conduant.com or contact a Conduant representative for access to an
+official version.  This package includes slight modification to the build
+and installation processes with a slant on making a .rpm file easy.
+
+To compile:
+
+autoconf
+./configure
+make
+
+And to install:
+
+make install
+
+But this is probably not what you came here for.  To build an .rpm file:
+
+autoconf
+./configure
+make dist
+rpm -rb streamstor-9.2a.tar.gz	# change version # as appropriate
+
+The last step will either require root access or an environment conducive
+to ordinary user, which can be accomodated by, for example:
+
+echo "%_topdir /tmp/rpmbuild" > ~/.rpmmacros
+
+Root permission will be required for installation.  Note that the .rpm that 
+is produced will be, in general, compatible for only one kernel version.
+RedHat Enterprise Linux tends to be conservative enough that minor
+increments in kernels don't cause trouble, but this is not always true.
+
+Note that this build process will fail, somehow, if it is not performed on 
+a 32-bit Intel architecture Linux machine.  Also, there are Linux kernel
+version requirements that change from version to version.  This particular
+build on Nov 26, 2012 works fine on Redhat's kernel 2.6.18-274.12.1.el5.

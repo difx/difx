@@ -1,0 +1,46 @@
+# Jungo Confidential. Copyright (c) 2011 Jungo Ltd.  http://www.jungo.com
+# Template file for configure script
+
+CSRCS = @CSRCS@ 
+OD = @OD@
+MODDIR = @MODDIR@
+LINK_OBJ = @LINK_OBJ@
+MODULE_NAME = @MODULE_NAME@
+TARGET = @TARGET@
+CFLAGS = @CFLAGS@
+EXTRA_CFLAGS = @EXTRA_CFLAGS@
+LDFLAGS = @LDFLAGS@
+ROOT_DIR = @ROOT_DIR@
+SHARED_OBJECT = @SHARED_OBJECT@
+
+ifeq ($(DEBUG),1)
+	CFLAGS += -g -DDEBUG
+endif
+
+COBJS = $(patsubst %.c,$(OD)/%.o,$(CSRCS))
+
+all: @ALL_DEPS@
+
+$(OD):
+	@OD_RULE@ 
+
+$(COBJS): $(OD)/%.o : %.c 
+	@COBJS_RULE@
+
+$(TARGET): @TARGET_DEPS@
+	@TARGET_RULE@
+
+__temp_link:
+	@TEMP_RULE@
+
+modpost:
+	@MODPOST_RULE@
+	@MODPOST_CC_RULE@
+	
+clean:
+	@CLEAN_RULE@
+
+install: all
+	@LINK_LIB@
+	./setup_inst_dir $(ROOT_DIR) $(MODDIR) $(TARGET) @USE_UDEV@ "@DEV_CHANGE_PERMISSION_MSG@"
+

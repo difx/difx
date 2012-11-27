@@ -1,0 +1,24 @@
+heading(Basic Confidence Test)
+record(0)
+bufsize(0x100000)
+seed
+status(Writing random pattern)
+loop(0x20)
+  wfillrand
+  write
+endloop
+status(Write Completed)
+stop
+heading(Check Directory)
+checklen(0x2000000)
+status(Read/Compare Recorded Data)
+seed
+setread(0,0)
+loop(0x20)
+  rfillbuf( 0x55667788 )
+  wfillrand
+  read(1)
+  compare
+endloop
+status(Read/Compare Completed)
+heading(Basic Confidence Test Completed)

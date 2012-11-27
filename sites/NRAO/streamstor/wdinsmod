@@ -1,0 +1,4 @@
+
+echo "Loading module windrvr6 for StreamStor "
+/sbin/insmod windrvr6
+chmod a+rw /dev/windrvr6

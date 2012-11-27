@@ -1,0 +1,4 @@
+m5drive         2620/tcp                        # Mark-5 Drives
+m5drive         2620/udp                        # Mark-5 Drives
+m5data          2630/tcp                        # Mark-5 Data
+m5data          2630/udp                        # Mark-5 Data
