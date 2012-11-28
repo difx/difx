@@ -82,60 +82,20 @@ void ServerSideConnection::difxFileOperation( DifxMessageGeneric* G ) {
   		pclose( fp );	    
   		snprintf( message, DIFX_MESSAGE_LENGTH, "%s performed!", command );
 	}
-	//  The "ls" operation actually returns data, so it must be provided with a TCP port and address.
+	//  The "ls" operation actually returns data, so it must be provided with a TCP port and address.  It
+	//  can take an undetermined amount of time so it is done in a thread.
 	else if ( !strcmp( S->operation, "ls" ) ) {
-	    //  Fork a process to do this.
-    	childPid = fork();
-    	if(childPid == 0)
-    	{
-        	//  Open a TCP socket connection to the server that should be running for us on the
-            //  remote host.  This is used to transfer the list of files.
-            int sockfd;
-            struct sockaddr_in servaddr;
-            sockfd = socket( AF_INET, SOCK_STREAM, 0 );
-            bzero( &servaddr, sizeof( servaddr ) );
-            servaddr.sin_family = AF_INET;
-            servaddr.sin_port = htons( S->port );
-            inet_pton( AF_INET, S->address, &servaddr.sin_addr );
-            int ret = connect( sockfd, (const sockaddr*)&servaddr, sizeof( servaddr ) );
-        
-            //  Make sure the connection worked....
-            if ( ret == 0 ) {
-                //snprintf( message, DIFX_MESSAGE_LENGTH, "Client address: %s   port: %d - connection looks good", S->address, S->port );
-                //difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_WARNING );
-
-        		snprintf( command, MAX_COMMAND_SIZE, "ls %s %s", S->arg, S->path );
-        		//snprintf(message, DIFX_MESSAGE_LENGTH, "Executing: %s", command);
-        		//difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
-
-          		FILE* fp = popen( command, "r" );
-          		char fullPath[DIFX_MESSAGE_FILENAME_LENGTH];
-          		//  Each line of response from the ls should be a filename...
-          		while ( fgets( fullPath, DIFX_MESSAGE_FILENAME_LENGTH, fp ) != NULL ) {
-          		    //  Send the full path.
-                	//  Each separate file is preceded by its string length.
-                	int sz = htonl( strlen( fullPath ) );
-                	write( sockfd, &sz, sizeof( int ) );
-                	write( sockfd, fullPath, strlen( fullPath ) );
-          		    //difxMessageSendDifxAlert( fullPath, DIFX_ALERT_LEVEL_INFO );
-          	    }
-                pclose( fp );	    
-          		//  Sending a zero length tells the GUI that the list is finished.
-                int zero = 0;
-                write( sockfd, &zero, sizeof( int ) );
-
-    		} 
-		
-    		//  Error with the socket...
-    		else {
-                snprintf( message, DIFX_MESSAGE_LENGTH, "Client address: %s   port: %d - connection FAILED", S->address, S->port );
-              	difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_ERROR );
-            }
-            close( sockfd );
-        
-        	exit(EXIT_SUCCESS);		
-    	}
-    	
+	    //  Make a copy of information about the current file operation, including thread information
+	    //  (so the thread variables are still viable after this function call returns).
+	    DifxFileOperation* fileOperation = new DifxFileOperation;
+	    snprintf( fileOperation->operation.path, DIFX_MESSAGE_FILENAME_LENGTH, "%s", S->path );
+	    snprintf( fileOperation->operation.operation, DIFX_MESSAGE_PARAM_LENGTH, "%s", S->operation );
+	    snprintf( fileOperation->operation.dataNode, DIFX_MESSAGE_PARAM_LENGTH, "%s", S->dataNode );
+	    snprintf( fileOperation->operation.arg, DIFX_MESSAGE_FILENAME_LENGTH, "%s", S->arg );
+	    snprintf( fileOperation->operation.address, DIFX_MESSAGE_PARAM_LENGTH, "%s", S->address );
+	    fileOperation->operation.port = S->port;
+        pthread_attr_init( &(fileOperation->threadAttr) );
+        pthread_create( &(fileOperation->threadId), &(fileOperation->threadAttr), staticRunFileOperation, (void*)fileOperation );      	
 	}
 	else {
 		snprintf( message, DIFX_MESSAGE_LENGTH, "Illegal DifxFileOperation request received - operation \"%s\" is not permitted", S->operation );
@@ -145,4 +105,61 @@ void ServerSideConnection::difxFileOperation( DifxMessageGeneric* G ) {
 	//difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_WARNING );
 		
 }
+
+//-----------------------------------------------------------------------------
+//!  Thread function for actually running file operations.
+//-----------------------------------------------------------------------------
+void ServerSideConnection::runFileOperation( DifxFileOperation* fileOperation ) {
+
+	char message[DIFX_MESSAGE_LENGTH];
+	char pCommand[MAX_COMMAND_SIZE];
+	const DifxMessageFileOperation *S = &(fileOperation->operation);
+	
+	//  Open a TCP socket connection to the server that should be running for us on the
+    //  remote host.  This is used to transfer the list of files.
+    int sockfd;
+    struct sockaddr_in servaddr;
+    sockfd = socket( AF_INET, SOCK_STREAM, 0 );
+    bzero( &servaddr, sizeof( servaddr ) );
+    servaddr.sin_family = AF_INET;
+    servaddr.sin_port = htons( S->port );
+    inet_pton( AF_INET, S->address, &servaddr.sin_addr );
+    int ret = connect( sockfd, (const sockaddr*)&servaddr, sizeof( servaddr ) );
+
+    //  Make sure the connection worked....
+    if ( ret == 0 ) {
+        //snprintf( message, DIFX_MESSAGE_LENGTH, "Client address: %s   port: %d - connection looks good", S->address, S->port );
+        //difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_WARNING );
+
+		snprintf( pCommand, MAX_COMMAND_SIZE, "ls %s %s", S->arg, S->path );
+		//snprintf(message, DIFX_MESSAGE_LENGTH, "Executing: %s", pCommand);
+		//difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
+
+  		FILE* fp = popen( pCommand, "r" );
+  		char fullPath[DIFX_MESSAGE_FILENAME_LENGTH];
+  		//  Each line of response from the ls should be a filename...
+  		while ( fgets( fullPath, DIFX_MESSAGE_FILENAME_LENGTH, fp ) != NULL ) {
+  		    //  Send the full path.
+        	//  Each separate file is preceded by its string length.
+        	int sz = htonl( strlen( fullPath ) );
+        	write( sockfd, &sz, sizeof( int ) );
+        	write( sockfd, fullPath, strlen( fullPath ) );
+  		    //difxMessageSendDifxAlert( fullPath, DIFX_ALERT_LEVEL_INFO );
+  	    }
+        pclose( fp );	    
+  		//  Sending a zero length tells the GUI that the list is finished.
+        int zero = 0;
+        write( sockfd, &zero, sizeof( int ) );
+	} 
+
+	//  Error with the socket...
+	else {
+        snprintf( message, DIFX_MESSAGE_LENGTH, "Client address: %s   port: %d - connection FAILED", S->address, S->port );
+      	difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_ERROR );
+    }
+ 
+    close( sockfd );
+
+}
+
 

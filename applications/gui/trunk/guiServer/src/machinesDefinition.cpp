@@ -57,7 +57,9 @@ void ServerSideConnection::machinesDefinition( DifxMessageGeneric* G ) {
     }
     else {
         diagnostic( ERROR, "client socket connection from guiServer to GUI failed - unable to create machines/threads files" );
-        return;
+        delete guiSocket;
+	        exit( EXIT_SUCCESS );
+        //return;
     }
     
     //=========================================================================
@@ -73,7 +75,8 @@ void ServerSideConnection::machinesDefinition( DifxMessageGeneric* G ) {
         monitor->sendPacket( MachinesMonitorConnection::TASK_TERMINATED, NULL, 0 );
         delete monitor;
         delete guiSocket;
-		return;
+	        exit( EXIT_SUCCESS );
+		//return;
 	}
 	if ( S->nDatastream <= 0 ) {
     	diagnostic( ERROR, "Machines specification failed - no data sources specified." );
@@ -81,7 +84,8 @@ void ServerSideConnection::machinesDefinition( DifxMessageGeneric* G ) {
         monitor->sendPacket( MachinesMonitorConnection::TASK_TERMINATED, NULL, 0 );
         delete monitor;
         delete guiSocket;
-		return;
+	        exit( EXIT_SUCCESS );
+		//return;
 	}
 	if ( S->nProcess <= 0 ) {
     	diagnostic( ERROR, "Machines specification failed - no processing nodes  specified." );
@@ -89,7 +93,8 @@ void ServerSideConnection::machinesDefinition( DifxMessageGeneric* G ) {
         monitor->sendPacket( MachinesMonitorConnection::TASK_TERMINATED, NULL, 0 );
         delete monitor;
         delete guiSocket;
-		return;
+	        exit( EXIT_SUCCESS );
+		//return;
 	}
 
 	//  We need names for the threads and machines files.  If these are not provided, we
@@ -106,7 +111,8 @@ void ServerSideConnection::machinesDefinition( DifxMessageGeneric* G ) {
             monitor->sendPacket( MachinesMonitorConnection::TASK_TERMINATED, NULL, 0 );
             delete monitor;
             delete guiSocket;
-		    return;
+	        exit( EXIT_SUCCESS );
+		    //return;
 	    }
 	    //  Create a .machines file name using the input file name.
 	    strncpy( machinesFilename, S->inputFilename, DIFX_MESSAGE_FILENAME_LENGTH );
@@ -134,7 +140,8 @@ void ServerSideConnection::machinesDefinition( DifxMessageGeneric* G ) {
             monitor->sendPacket( MachinesMonitorConnection::TASK_TERMINATED, NULL, 0 );
             delete monitor;
             delete guiSocket;
-		    return;
+	        exit( EXIT_SUCCESS );
+		    //return;
 	    }
 	    //  Create a .machines file name using the input file name.
 	    strncpy( threadsFilename, S->inputFilename, DIFX_MESSAGE_FILENAME_LENGTH );

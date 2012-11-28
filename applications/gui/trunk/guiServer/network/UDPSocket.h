@@ -169,21 +169,38 @@ namespace network {
         virtual int reader( char *message, int messagelength )  {
             int fromaddrlength = sizeof( fromaddr );
             int charcount;
+            fd_set rfds;
+            struct timeval tv;
 
             do  {
-                //  Wait until we get some data as long as the socket is good.
+                //  Wait until we get some data as long as the socket is good.  The timeout
+                //  on the select is half the length of the pause in "closeFd()" (which makes
+                //  _fd = -1) so we should escape a call here without a problem.
                 while ( _fd > -1 ) {
-                    charcount = recvfrom( _fd, message, messagelength, 0,
-                                          (sockaddr *)&fromaddr, (socklen_t *)&fromaddrlength );
-                    if ( charcount < 0 )  {
-                        //  Bail out on errors that are not timeouts.
-                        if ( errno != EWOULDBLOCK ) {
-                            perror( "recvbroadcast" );
-                            return( -1 );
+            	    FD_ZERO( &rfds );
+                    FD_SET( _fd, &rfds );
+                    tv.tv_sec = 0;
+                    tv.tv_usec = 100000;
+                    int rtn = select( _fd + 1, &rfds, NULL, NULL, &tv );
+                    if ( rtn > 0 ) {
+                        //  Socket has some data to read.
+                        charcount = recvfrom( _fd, message, messagelength, 0,
+                                              (sockaddr *)&fromaddr, (socklen_t *)&fromaddrlength );
+                        if ( charcount < 0 )  {
+                            //  Bail out on errors that are not timeouts.  Presumably with the select
+                            //  we should not worry about timeouts but this code shouldn't hurt us.
+                            if ( errno != EWOULDBLOCK ) {
+                                perror( "multicast recvfrom()" );
+                                return( -1 );
+                            }
                         }
-                    }
-                    else
-                        break;
+                        else
+                            break;
+            	    }
+            	    else if ( rtn < 0 ) {
+            	        perror( "multicast select()" );
+            	        return( -1 );
+            	    }
                 }
 
             } while ( _ignoreOwn && (fromaddr.sin_addr.s_addr == hostaddr.sin_addr.s_addr) );
@@ -215,8 +232,8 @@ namespace network {
         int fd() { return _fd; }
         void closeFd() {
             _fd = -1;
-            close( _fd );
             usleep( 200000 );
+            close( _fd );
         }
 
     protected :

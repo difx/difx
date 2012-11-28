@@ -110,14 +110,15 @@ namespace guiServer {
         //!  an error.
         //---------------------------------------------------------------------
         void difxMonitor() {
-            while ( _monitorSocket != NULL ) {
+            while ( _monitorSocket != NULL && _monitorSocket->fd() != -1 ) {
                 char message[MAX_MESSAGE_LENGTH + 1];
                 int ret = _monitorSocket->reader( message, MAX_MESSAGE_LENGTH );
                 if ( ret == -1 ) {
+                    fprintf( stderr, "closing monitor socket due to receive error\n" );
                     delete _monitorSocket;
                     _monitorSocket = NULL;
                 }
-                else {
+                else if ( ret > 0 && ret <= sizeof( DifxMessageGeneric ) ) {
                     //  Decide what to do with this message.
                     DifxMessageGeneric G;
                     if ( !difxMessageParse( &G, message ) ) {
@@ -274,7 +275,12 @@ namespace guiServer {
         virtual void command( char* data, const int nBytes ) {
             //  Use the DiFX message parser on the XML this message presumably
             //  contains.
-            char message[DIFX_MESSAGE_LENGTH];
+            if ( nBytes > sizeof( DifxMessageGeneric ) ) {
+                diagnostic( ERROR, "Message length (%d) is longer than allowed DiFX maximum (%d) - ignored!\n", nBytes,
+                    sizeof( DifxMessageGeneric ) );
+                return;
+            }
+            char message[sizeof( DifxMessageGeneric ) + 1];
             strncpy( message, data, nBytes );
             message[ nBytes ] = 0;
             DifxMessageGeneric G;
@@ -415,8 +421,27 @@ namespace guiServer {
         static void* staticRunDifxMonitor( void* a ) {
             DifxStartInfo* startInfo = (DifxStartInfo*)a;
             startInfo->ssc->runDifxMonitor( startInfo );
-            printf( "thread is done - delete the startInfo structure\n" );
             delete startInfo;
+            return NULL;
+        }
+        
+        //-----------------------------------------------------------------------------
+        //!  Structure used to start file operations.
+        //-----------------------------------------------------------------------------
+        struct DifxFileOperation {
+            pthread_t threadId;
+            pthread_attr_t threadAttr;
+            ServerSideConnection* ssc;
+            DifxMessageFileOperation operation;
+        };
+        
+        //-----------------------------------------------------------------------------
+        //!  Static function to start a file operation thread.
+        //-----------------------------------------------------------------------------
+        static void* staticRunFileOperation( void* a ) {
+            DifxFileOperation* fileOperation = (DifxFileOperation*)a;
+            fileOperation->ssc->runFileOperation( fileOperation );
+            delete fileOperation;
             return NULL;
         }
         
@@ -469,6 +494,7 @@ namespace guiServer {
         void runDifxThread( DifxStartInfo* startInfo );  //  in startDifx.cpp
         void difxFileTransfer( DifxMessageGeneric* G );
         void difxFileOperation( DifxMessageGeneric* G );
+        void runFileOperation( DifxFileOperation* fileOperation );
         void getDirectory( DifxMessageGeneric* G );
         void vex2difxRun( DifxMessageGeneric* G );
         void machinesDefinition( DifxMessageGeneric* G );

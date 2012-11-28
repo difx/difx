@@ -8,11 +8,11 @@
 //!  diagnostics and to respond to some instructions.
 //
 //=============================================================================
-#include <network/ActivePacketExchange.h>
+#include <network/PacketExchange.h>
 
 namespace guiServer {
 
-    class JobMonitorConnection : public network::ActivePacketExchange {
+    class JobMonitorConnection : public network::PacketExchange {
     
     public:
 
@@ -43,7 +43,7 @@ namespace guiServer {
         static const int JOB_FAILED                         = 119;
         static const int JOB_ENDED_WITH_ERRORS              = 120;
     
-        JobMonitorConnection( network::GenericSocket* sock ) : network::ActivePacketExchange( sock ) {
+        JobMonitorConnection( network::GenericSocket* sock ) : network::PacketExchange( sock ) {
         }
         
         ~JobMonitorConnection() {
