@@ -1110,23 +1110,28 @@ public class QueueBrowserPanel extends TearOffPanel {
             Iterator<String> iter = _newList.iterator();
             while ( iter.hasNext() ) {
                 String nextFile = iter.next();
-                String experimentName;
-                String passName;
-                String jobName;
+                String experimentName = null;
+                String passName = null;
+                String jobName = null;
+                String experimentPath = null;
+                String passPath = null;
+                String vexFile = null;
+                String v2dFile = null;
                 if ( _experimentNamed.isSelected() )
                     experimentName = _experimentName.getText();
+                //  Extract the experiment name from the path if we don't have a defined
+                //  experiment name.  Also extract the experiment path.  Might need to do some
+                //  checks here to avoid running out of path (if input files are stored
+                //  too high in the directory tree).
+                experimentPath = nextFile.substring( 0, nextFile.lastIndexOf( "/" ) );
+                if ( _noPass.isSelected() ) {
+                    if ( !_experimentNamed.isSelected() )
+                        experimentName = experimentPath.substring( experimentPath.lastIndexOf( "/" ) + 1 );
+                }
                 else {
-                    //  Extract the experiment name from the path.  Might need to do some
-                    //  checks here to avoid running out of path (if input files are stored
-                    //  too high in the directory tree).
-                    String shortName = nextFile.substring( 0, nextFile.lastIndexOf( "/" ) );
-                    if ( _noPass.isSelected() ) {
-                        experimentName = shortName.substring( shortName.lastIndexOf( "/" ) + 1 );
-                    }
-                    else {
-                        shortName = shortName.substring( 0, shortName.lastIndexOf( "/" ) );
-                        experimentName = shortName.substring( shortName.lastIndexOf( "/" ) + 1 );
-                    }
+                    experimentPath = experimentPath.substring( 0, experimentPath.lastIndexOf( "/" ) );
+                    if ( !_experimentNamed.isSelected() )
+                        experimentName = experimentPath.substring( experimentPath.lastIndexOf( "/" ) + 1 );
                 }
                 //  Then the pass name (if there is one).
                 if ( _passNamed.isSelected() )
@@ -1162,11 +1167,12 @@ public class QueueBrowserPanel extends TearOffPanel {
                 }
                 //  Create a new experiment if we didn't find out current one...
                 if ( !experimentFound ) {
-                    thisExperiment = new BrowserNode( experimentName );
+                    thisExperiment = new LocalBrowserNode( experimentName );
                     thisExperiment.addSelectionButton( null, null );
                     thisExperiment.selected( true );
                     thisExperiment.xOffset( 20 );
                     thisExperiment.addCountWhenClosed( true );
+                    ((LocalBrowserNode)thisExperiment).path( experimentPath );
                     _preview.addNode( thisExperiment );
                 }
                 //  Then find the pass...if there is one.
@@ -1180,7 +1186,7 @@ public class QueueBrowserPanel extends TearOffPanel {
                             passFound = true;
                     }
                     if ( !passFound ) {
-                        thisPass = new BrowserNode( passName );
+                        thisPass = new LocalBrowserNode( passName );
                         thisPass.addSelectionButton( null, null );
                         thisPass.selected( true );
                         thisPass.xOffset( 20 );
@@ -1194,6 +1200,15 @@ public class QueueBrowserPanel extends TearOffPanel {
                 }
             }
             _this.newSize();
+        }
+        
+        public class LocalBrowserNode extends BrowserNode {
+            LocalBrowserNode( String name ) {
+                super( name );
+            }
+            public String path() { return _path; }
+            public void path( String newVal ) { _path = newVal; }
+            protected String _path;
         }
         
         public class LocalJobNode extends BrowserNode {
@@ -1213,6 +1228,12 @@ public class QueueBrowserPanel extends TearOffPanel {
             }
             public String inputFile() { return _inputFile.getText(); }
             protected JLabel _inputFile;
+            public String vexFile() { return _vexFile; }
+            public void vexFile( String newVal ) { _vexFile = newVal; }
+            protected String _vexFile;
+            public String v2dFile() { return _v2dFile; }
+            public void v2dFile( String newVal ) { _v2dFile = newVal; }
+            protected String _v2dFile;
         }
         
         /*
@@ -1229,7 +1250,8 @@ public class QueueBrowserPanel extends TearOffPanel {
                             for ( Iterator<BrowserNode> iter3 = thisPass.childrenIterator(); iter3.hasNext(); ) {
                                 BrowserNode thisJob = iter3.next();
                                 if ( thisJob.selected() ) {
-                                    addDefinedJob( thisExperiment.name(), thisPass.name(), thisJob.name(), ((LocalJobNode)thisJob).inputFile() );
+                                    addDefinedJob( thisExperiment.name(), thisPass.name(), thisJob.name(), 
+                                            ((LocalJobNode)thisJob).inputFile(), ((LocalBrowserNode)thisExperiment).path() );
                                 }
                             }
                         }
@@ -1449,7 +1471,8 @@ public class QueueBrowserPanel extends TearOffPanel {
      * job has an experiment and pass name along with the full path to an input file.
      * The input file can be parsed for complete job information.
      */
-    public void addDefinedJob( String experiment, String pass, String job, String inputFile ) {
+    public void addDefinedJob( String experiment, String pass, String job, String inputFile,
+            String experimentPath ) {
 
         //  Locate the experiment in the current list...if it is there.
         ExperimentNode thisExperiment = null;
@@ -1463,10 +1486,14 @@ public class QueueBrowserPanel extends TearOffPanel {
         if ( thisExperiment == null ) {
             thisExperiment = new ExperimentNode( experiment, _settings );
             //  Some of this information we should probably be able to figure out.
-//            thisExperiment.id( id );
-//            thisExperiment.inDatabase( true );
-//            thisExperiment.creationDate( dateCreated );
-//            thisExperiment.directory( directory );
+            thisExperiment.number( 0 );
+            thisExperiment.name( experiment );
+            thisExperiment.id( 0 );                  //  dunno
+            thisExperiment.inDatabase( false );      //  dunno
+            //thisExperiment.creationDate( );        //  date the input file was created??
+            thisExperiment.status( "unknown" );
+            thisExperiment.directory( experimentPath );
+            thisExperiment.vexFile( "" );
             _browserPane.addNode( thisExperiment );
         }
         

@@ -364,20 +364,22 @@ public class TimeLimitPanel extends JPanel implements MouseMotionListener,
         //  This scale is used for everything...
         _viewMul = (double)d.width / (double)_viewSize;
         //  Draw the buttons.  Green for "on", gray for "off".
-        for ( Iterator<ButtonInfo> iter = _buttonList.iterator(); iter.hasNext(); ) {
-            ButtonInfo button = iter.next();
-            if ( button.button.on() )
-                g2.setColor( Color.GREEN );
-            else
-                g2.setColor( Color.GRAY );
-            int x = (int)( (double)( button.start - _minView.getTimeInMillis() ) * _viewMul );
-            int y = d.height - 10;
-            int w = (int)( (double)( button.end - button.start) * _viewMul );
-            int h = 10;
-            for ( int i = 0; i < 2; ++i ) {
-                w -= 1;
-                h -= 1;
-                g2.fill3DRect( x++, y++, w, h, true );
+        if ( _buttonList != null ) {
+            for ( Iterator<ButtonInfo> iter = _buttonList.iterator(); iter.hasNext(); ) {
+                ButtonInfo button = iter.next();
+                if ( button.button.on() )
+                    g2.setColor( Color.GREEN );
+                else
+                    g2.setColor( Color.GRAY );
+                int x = (int)( (double)( button.start - _minView.getTimeInMillis() ) * _viewMul );
+                int y = d.height - 10;
+                int w = (int)( (double)( button.end - button.start) * _viewMul );
+                int h = 10;
+                for ( int i = 0; i < 2; ++i ) {
+                    w -= 1;
+                    h -= 1;
+                    g2.fill3DRect( x++, y++, w, h, true );
+                }
             }
         }
         //  Draw the small tic marks from the view start to the end.

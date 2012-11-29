@@ -533,8 +533,8 @@ public class InputFileParser {
         else if ( str.contains( "NUM RECORDED FREQS" ) ) {
             _datastreamTable.idx[_dsIndex].numRecordedFreqs = Integer.parseInt( str.substring( str.indexOf(":") + 1 ).trim() );
             //  Allocate structures to hold the recorded frequency information.
-            _datastreamTable.idx[_dsIndex].recFrequency = new RecordedFrequency[_datastreamTable.idx[_dsIndex].numRecordedFreqs];
-            for ( int i = 0; i < _datastreamTable.idx[_dsIndex].numRecordedFreqs; ++i )
+            _datastreamTable.idx[_dsIndex].recFrequency = new RecordedFrequency[2*_datastreamTable.idx[_dsIndex].numRecordedFreqs];
+            for ( int i = 0; i < 2*_datastreamTable.idx[_dsIndex].numRecordedFreqs; ++i )
                 _datastreamTable.idx[_dsIndex].recFrequency[i] = new RecordedFrequency();
         }
         else if ( str.contains( "REC FREQ INDEX" ) ) {
@@ -574,8 +574,8 @@ public class InputFileParser {
     //--------------------------------------------------------------------------
     public class BaselineFrequency {
         public int polarizationProducts;
-        public int datastreamABand;
-        public int datastreamBBand;
+        public int[] datastreamABand;
+        public int[] datastreamBBand;
     }
     public class Baseline {
         public int datastreamAIndex;
@@ -590,6 +590,7 @@ public class InputFileParser {
     protected BaselineTable _baselineTable;
     
     int _freq;
+    int _baselineIndex;
     protected void parseBaselineTable( String str ) {
         if ( str.contains( "BASELINE ENTRIES" ) ) {
             _baselineTable.num = Integer.parseInt( str.substring( str.indexOf(":") + 1 ).trim() );
@@ -613,24 +614,20 @@ public class InputFileParser {
                 _baselineTable.idx[index].frequency[i] = new BaselineFrequency();
         }
         else if ( str.contains( "POL PRODUCTS" ) ) {
-            int index = Integer.parseInt( str.substring( 12, str.indexOf("/") ).trim() );
-            int freq = Integer.parseInt( str.substring( str.indexOf("/") + 1, str.indexOf(":") ).trim() );
-            _baselineTable.idx[index].frequency[freq].polarizationProducts = 
-                    Integer.parseInt( str.substring( str.indexOf(":") + 1 ).trim() );
-        }
-        else if ( str.contains( "POL PRODUCTS" ) ) {
-            int index = Integer.parseInt( str.substring( 12, str.indexOf("/") ).trim() );
+            _baselineIndex = Integer.parseInt( str.substring( 12, str.indexOf("/") ).trim() );
             _freq = Integer.parseInt( str.substring( str.indexOf("/") + 1, str.indexOf(":") ).trim() );
-            _baselineTable.idx[index].frequency[_freq].polarizationProducts = 
+            _baselineTable.idx[_baselineIndex].frequency[_freq].polarizationProducts = 
                     Integer.parseInt( str.substring( str.indexOf(":") + 1 ).trim() );
+            _baselineTable.idx[_baselineIndex].frequency[_freq].datastreamABand = new int[_baselineTable.idx[_baselineIndex].frequency[_freq].polarizationProducts];
+            _baselineTable.idx[_baselineIndex].frequency[_freq].datastreamBBand = new int[_baselineTable.idx[_baselineIndex].frequency[_freq].polarizationProducts];
         }
         else if ( str.contains( "D/STREAM A BAND" ) ) {
             int index = Integer.parseInt( str.substring( 15, str.indexOf(":") ).trim() );
-            _baselineTable.idx[index].frequency[_freq].datastreamABand = Integer.parseInt( str.substring( str.indexOf(":") + 1 ).trim() );
+            _baselineTable.idx[_baselineIndex].frequency[_freq].datastreamABand[index] = Integer.parseInt( str.substring( str.indexOf(":") + 1 ).trim() );
         }
         else if ( str.contains( "D/STREAM B BAND" ) ) {
             int index = Integer.parseInt( str.substring( 15, str.indexOf(":") ).trim() );
-            _baselineTable.idx[index].frequency[_freq].datastreamBBand = Integer.parseInt( str.substring( str.indexOf(":") + 1 ).trim() );
+            _baselineTable.idx[_baselineIndex].frequency[_freq].datastreamBBand[index] = Integer.parseInt( str.substring( str.indexOf(":") + 1 ).trim() );
         }
     }
     
