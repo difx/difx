@@ -30,7 +30,7 @@
 #============================================================================
 
 PROGRAM = 'startdifx'
-VERSION = '0.9'
+VERSION = '1.0'
 VERDATE = '20120929'
 AUTHOR  = 'Walter Brisken and Helge Rottmann'
 
@@ -52,6 +52,7 @@ from time import time, asctime
 from glob import glob
 from copy import deepcopy
 from xml.parsers import expat
+from optparse import OptionParser
 import socket
 import struct
 import signal
@@ -60,46 +61,20 @@ import subprocess
 
 verbose = 0
 
-def usage():
-	print '\n%s ver. %s  %s  %s\n' % (PROGRAM, VERSION, VERDATE, AUTHOR)
-	print 'A program to simplify the launching of mpifxcorr, specialy tuned'
-	print 'for NRAO-DiFX usage.  It can also cause model and FITS to be made.\n'
-	print 'Usage: startdifx [options] [<start delay>] <input1> [<input2> [ ... ] ]\n'
-	print 'or:    startdifx [options] [<start delay>] <joblist> \n'
-	print 'options can include:\n'
-	print '  -h or --help'
-	print '          print this usage info and exit\n'
-	print '  -v or --verbose'
-	print '          be more verbose\n'
-	print '  -q or --quiet'
-	print '          be quieter\n'
-	print '  -f or --force'
-	print '          force running even if output file exists\n'
-	print '  -a or --automachines'
-	print '          will run genmachines if needed\n'
-	print '  -g or --genmachines'
-	print '          will run genmachines even if not needed [default]\n'
-	print '  -n or --nomachines'
-	print '          will not run genmachines, even if needed\n'
-	print '  -d or --dont-calc'
-	print '          will not run calcif, even if needed\n'
-	print '  -D or --difxdb'
-	print '          make use of difxdb\n'
-	print '  -m or --message'
-	print '          start difx via DifxStartMessage\n'
-	print '  -F or --fits'
-	print '          generate 1 fits file per job at end of each\n'
-	print '  -l or --localhead'
-	print '          use the current host as the head node. Overrides DIFX_HEAD_NODE.\n'
-	print '  --override-version'
-	print '          ignore difx version differences\n'
-	print '<start delay> is an optional delay (seconds) to add to the job start time\n'
-	print '<inputN> is the file prefix for a DiFX input file (possibly including .input)\n'
-	print 'Environment variables DIFX_MESSAGE_GROUP and DIFX_MESSAGE_PORT'
-	print 'can be used to override the default group/port of %s/%d\n' % (defaultgroup, defaultport)
-	print 'If using -m option DIFX_HEAD_NODE environment must name the correlation head node.\n'
-	exit(0)
+def getUsage():
+	usage = '\n%s ver. %s  %s  %s\n' % (PROGRAM, VERSION, VERDATE, AUTHOR)
+	usage +='A program to simplify the launching of mpifxcorr'
+	usage += 'It can also cause model and FITS to be made.\n\n'
+	usage += 'Usage: startdifx [options] [<start delay>] <input1> [<input2> [ ... ] ]\n'
+	usage += 'or:    startdifx [options] [<start delay>] <joblist> \n\n'
+	usage +=  '<start delay> is an optional delay (seconds) to add to the job start time\n'
+	usage +=  '<inputN> is the file prefix for a DiFX input file (possibly including .input)\n'
+	usage +=  '<joblist> is a joblist file as created by vex2difx (must have .joblist extension)\n'
+	usage +=  'Environment variables DIFX_MESSAGE_GROUP and DIFX_MESSAGE_PORT '
+	usage +=  'can be used to override the default group/port of %s/%d\n' % (defaultgroup, defaultport)
+	usage +=  'If using the -m option the DIFX_HEAD_NODE environment must name the correlation head node.\n'
 
+	return(usage)
 
 class Parser:
 
@@ -426,6 +401,7 @@ def sendStartMessage(fileBase, difxVersion, localHeadNode, restartSeconds):
 
 # verify presence of .machines file
 def doMachines(fileBase, machinesPolicy, cache):
+
 	machinesFile = fileBase + '.machines'
 
 	cmd = 'grep "FILE " %s.input' % fileBase
@@ -631,89 +607,88 @@ def run(fileBase, machinesPolicy, deletePolicy, makeModel, override, useStartMes
 
 	return rv
 
+#------------------
+# main starts here
+#------------------
 
-if len(argv) < 2:
-	usage()
-
-machinesPolicy = 2
-deletePolicy = 0
-makeModel = True
-makeFits = False
-difxdb = False
-useLocalHead = False
 restartSeconds = 0.0
 fileBaseList = []
 cwd = getcwd()
-override = False
-useStartMessage = False
 machinesCache = ['','',['Nothing to see here']]
 
 signal.signal(signal.SIGINT, handler)
 
+usage = getUsage()
+optParser = OptionParser(version="%prog " + VERSION , usage=usage)
 
-for a in argv[1:]:
-	fb = None
-	if a[0] == '-':
-		if a == '-h' or a == '--help':
-			usage()
-		elif a == '-g' or a == '--genmachines':
-			machinesPolicy = 2
-		elif a == '-a' or a == '--automachines':
-			machinesPolicy = 1
-		elif a == '-n' or a == '--nomachines':
-			machinesPolicy = 0
-		elif a == '-m' or a == '--message':
-			useStartMessage = True
-		elif a == '-f' or a == '--force':
-			deletePolicy = 1
-		elif a == '-d' or a == '--dont-calc':
-			makeModel = False
-		elif a == '-D' or a == '--difxdb':
-			difxdb = True
-		elif a == '-F' or a == '--fits':
-			makeFits = True
-		elif a == '-v' or a == '--verbose':
-			verbose += 1
-		elif a == '-q' or a == '--quiet':
-			verbose -= 1
-		elif a == '-l' or a == '--localhead':
-			useLocalHead = True
-		elif a == '--override-version':
-			override = True
-	else:
-		try:
-			restartSeconds = float(a)
-		except:
-			if a[-6:] == '.input':
-				fb = a[:-6]
-			elif a[-8:] == '.joblist':
-				d = open(a).readlines()
-				for l in d:
-					parts = l.split()
-					if len(parts) == 0:
-						job = strip(l)
-					else:
-						job = strip(parts[0])
+optParser.set_defaults(machinesPolicy=2, useStartMessage=False, deletePolicy=0, makeModel=True, difxdb=False, makeFits=False, verbose=0, quiet=0, useLocalHead=False, override=False)
 
-					if job.startswith("#") or job.startswith("exper"):
-						continue
-					if parts[0] == '/':
-						fileBaseList.append(parts[0])
-					else:
-						fileBaseList.append(cwd + '/' + parts[0])
-			else:
-				fb = a
-			if fb != None:
-				if fb[0] == '/':
-					fileBaseList.append(a)
-				else:
-					fileBaseList.append(cwd + '/' + fb)
+optParser.add_option("-g", "--genmachines", dest="machinesPolicy", action="store_const", const=2, help="will run genmachines even if not needed [default]")
+optParser.add_option("-a", "--automachines", dest="machinesPolicy", action="store_const", const=1, help="will run genmachines if needed")
+optParser.add_option("-n", "--nomachines", dest="machinesPolicy", action="store_const", const=0, help="will not run genmachines, even if needed")
+optParser.add_option("-m", "--message", dest="useStartMessage", action="store_true", help="start difx via DifxStartMessage")
+optParser.add_option("-f", "--force", dest="deletePolicy", action="store_const", const=1, help="force running even if output file exists")
+optParser.add_option("-d", "--dont-calc", dest="makeModel", action="store_false", help="will not run calcif, even if needed")
+optParser.add_option("-D", "--difxdb", dest="difxdb", action="store_true", help="make use of difxdb to obtain module location")
+optParser.add_option("-F", "--fits", dest="makeFits", action="store_true", help="generate 1 fits file per job at end of each job")
+optParser.add_option("-v", "--verbose", dest="verbose", action="count", help="send more output to the screen  (use -v -v for extra info)")
+optParser.add_option("-q", "--quiet", dest="quiet", action="count", help="be quieter")
+optParser.add_option("-l", "--localhead", dest="useLocalHead", action="store_true", help="use the current host as the head node. Overrides DIFX_HEAD_NODE.")
+optParser.add_option("--override-version", dest="override", action="store_true", help="ignore difx version differences")
 
+# parse the command line. Options will be stored in the options list. Leftover arguments will be stored in the args list
+(options, args) = optParser.parse_args()
+
+verbose = options.verbose - options.quiet
+difxdb = options.difxdb
+
+if len(args) < 1:
+	optParser.error("at least one .input or .joblist file must be given.")
+
+# parse arguments
+try:
+	# check if start delay parameter was given
+	restartSeconds = float(args[0])
+	start = 1
+except:
+	start = 0
+
+	
+# loop over all arguments
+fb = None
+for a in args[start:]:
+	# check for extension
+	if a[-6:] == '.input':
+                fb = a[:-6]
+	elif a[-8:] == '.joblist':
+                d = open(a).readlines()
+                for l in d:
+                        parts = l.split()
+                        if len(parts) == 0:
+                                job = strip(l)
+                        else:
+                                job = strip(parts[0])
+
+                        if job.startswith("#") or job.startswith("exper"):
+                                continue
+                        if parts[0] == '/':
+                                fileBaseList.append(parts[0])
+                        else:
+                                fileBaseList.append(cwd + '/' + parts[0])
+        else:
+                fb = a
+
+	if fb != None:
+        	if fb[0] == '/':
+                        fileBaseList.append(a)
+                else:
+                        fileBaseList.append(cwd + '/' + fb)
+	
 if len(fileBaseList) < 1:
-	usage()
+	optParser.error("at least one .input or .joblist file must be given.")
 
 headNode = getenv('DIFX_HEAD_NODE')
-if useStartMessage and useLocalHead == False and headNode == None:
+if options.useStartMessage and options.useLocalHead == False and headNode == None:
 	print "Environment variable DIFX_HEAD_NODE must be defined."
 	print "Alternatively  you can use the -l option in case mk5daemon -H is running locally on this host."
 	exit(1)
@@ -727,12 +702,12 @@ for fileBase in fileBaseList:
 		print "Job name %s is too long and will be skipped!" % fileBase
 		exit(1)
 
-	v = run(fileBase, machinesPolicy, deletePolicy, makeModel, override, useStartMessage, 
-		useLocalHead, machinesCache, restartSeconds)
+	v = run(fileBase, options.machinesPolicy, options.deletePolicy, options.makeModel, options.override, options.useStartMessage, 
+		options.useLocalHead, machinesCache, restartSeconds)
 
 	if v != None:
 		sendMessage(fileBase, 'ABORTED', v)
 		print v
 		exit(1)
-	elif makeFits == True:
+	elif options.makeFits == True:
 		system('%s %s %s.FITS' % (difx2fits, fileBase, fileBase))
