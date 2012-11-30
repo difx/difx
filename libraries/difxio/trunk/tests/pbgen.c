@@ -102,10 +102,18 @@ double azbearing(double az1, double el1, double az2, double el2)
 	 *  The angle returned is the Parallactic Angle
 	 */
 	double se1, ce1, se2, ce2, sa21, ca21;
+#ifdef USESINCOS
 	sincos(el1, &se1, &ce1);
 	sincos(el2, &se2, &ce2);
 	sincos(az2-az1, &sa21, &ca21);
-
+#else 
+	se1 = sin(el1);
+	ce1 = cos(el1);
+	se2 = sin(el2);
+	ce2 = cos(el2);
+	sa21 = sin(az2-az1);
+	ca21 = cos(az2-az1);
+#endif
 	return -atan2(sa21*ce1, (ce2*se1) - (se2*ce1*ca21));
 }
 
