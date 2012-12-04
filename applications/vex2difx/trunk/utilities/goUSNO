@@ -2,7 +2,7 @@
 
 # update the version when significant changes are made
 program = 'goUSNO'
-version = '0.16'
+version = '0.17'
 
 
 from sys import exit, argv, stdin
@@ -13,11 +13,12 @@ from datetime import datetime
 
 
 # some tunable parameters
-email        = 'ut1@nrao.edu'
-baseDir      = '/home/vlbiobs/astronomy'
-templateFile = '/users/vlbaops/STDFILES/usno_template.key'
-sched_base   = '/usr/local/sched'
-sched        = '/usr/local/sched/bin/sched'
+email          = 'ut1@nrao.edu'
+baseDir        = '/home/vlbiobs/astronomy'
+templateFileSX = '/users/vlbaops/STDFILES/usno_template.key'
+templateFileCC = '/users/vlbaops/STDFILES/usno_template_c.key'
+sched_base     = '/usr/local/sched'
+sched          = '/usr/local/sched/bin/sched'
 
 # temporary hack to get around bug in released sched version
 # sched_base   = '/users/cwalker/files/sched_beta'
@@ -74,6 +75,7 @@ force = False
 testmode = False
 edit = False
 nrao = False
+templateFile = templateFileSX
 
 if strip(popen('uname -s').readline()) != 'Linux':
 	print 'Must be run on a Linux machine'
@@ -93,6 +95,8 @@ for a in argv[1:]:
 		edit = True
 	elif a in ['--nrao']:
 		nrao = True
+	elif a in ['-c', '--cband']:
+		templateFile = templateFileCC
 	else:
 		args.append(a)
 
