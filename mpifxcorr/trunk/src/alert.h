@@ -67,6 +67,16 @@ public:
 		return f(*this);
 	}
 
+        void precision(int p)
+        {
+                alertString.precision(p);
+        }
+
+        int precision()
+        {
+                return alertString.precision();
+        }
+
 	// the function endl calls
 	Alert& sendAlert();
 
