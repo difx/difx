@@ -33,21 +33,21 @@ public class DiFXCommand_sendFile extends DiFXCommand {
         DifxFileTransfer xfer = this.factory().createDifxFileTransfer();
         try {
             xfer.setAddress( java.net.InetAddress.getLocalHost().getHostAddress() );
+            _port = _settings.newDifxTransferPort();
+            xfer.setPort( _port );
+            xfer.setDirection( "to DiFX" );
+            xfer.setDestination( filename );
+            //  The "data" node is assumed to be the same as the DiFX "control" node
+            //  (at least for now).
+            xfer.setDataNode( settings.difxControlAddress() );
+            this.body().setDifxFileTransfer( xfer );
+            //  These lists contain "listeners" for callbacks when things occur...incremental
+            //  read progress and the end of reading.
+            _incrementalListeners = new EventListenerList();
+            _endListeners = new EventListenerList();
+            _acceptListeners = new EventListenerList();
         } catch ( java.net.UnknownHostException e ) {
         }
-        _port = _settings.newDifxTransferPort();
-        xfer.setPort( _port );
-        xfer.setDirection( "to DiFX" );
-        xfer.setDestination( filename );
-        //  The "data" node is assumed to be the same as the DiFX "control" node
-        //  (at least for now).
-        xfer.setDataNode( settings.difxControlAddress() );
-        this.body().setDifxFileTransfer( xfer );
-        //  These lists contain "listeners" for callbacks when things occur...incremental
-        //  read progress and the end of reading.
-        _incrementalListeners = new EventListenerList();
-        _endListeners = new EventListenerList();
-        _acceptListeners = new EventListenerList();
     }
     
     /*

@@ -193,12 +193,14 @@ public class JobEditorMonitor extends JFrame {
         _scrollPane.addNode( machinesListPanel );
         _dataSourcesPane = new NodeBrowserScrollPane();
         _dataSourcesPane.setBackground( Color.WHITE );
+        _dataSourcesPane.decayCount( 5 );
         machinesListPanel.add( _dataSourcesPane );
         _dataSourcesLabel = new JLabel( "Data Sources:" );
         _dataSourcesLabel.setHorizontalAlignment( JLabel.LEFT );
         machinesListPanel.add( _dataSourcesLabel );
         _processorsPane = new NodeBrowserScrollPane();
         _processorsPane.setBackground( Color.WHITE );
+        _processorsPane.decayCount( 5 );
         machinesListPanel.add( _processorsPane );
         _processorsLabel = new JLabel( "Processor Nodes:" );
         _processorsLabel.setHorizontalAlignment( JLabel.LEFT );
@@ -643,7 +645,7 @@ public class JobEditorMonitor extends JFrame {
         for ( Iterator<BrowserNode> iter = _processorsPane.browserTopNode().children().iterator();
                 iter.hasNext(); ) {
             PaneProcessorNode thisNode = (PaneProcessorNode)(iter.next());
-            thisNode.selected( true );
+            thisNode.handSelected( true );
         }
     }
 
@@ -651,7 +653,7 @@ public class JobEditorMonitor extends JFrame {
         for ( Iterator<BrowserNode> iter = _processorsPane.browserTopNode().children().iterator();
                 iter.hasNext(); ) {
             PaneProcessorNode thisNode = (PaneProcessorNode)(iter.next());
-            thisNode.selected( false );
+            thisNode.handSelected( false );
         }
     }
 
@@ -1238,6 +1240,7 @@ public class JobEditorMonitor extends JFrame {
                         }
                         else if ( packetType == JOB_ENDED_WITH_ERRORS ) {
                             _doneWithErrors = true;
+                            connected = false;
                         }
                         else if ( packetType == PARAMETER_CHECK_IN_PROGRESS ) {
                             _messageDisplayPanel.message( 0, "job monitor", "Checking parameters." );
@@ -1677,7 +1680,10 @@ public class JobEditorMonitor extends JFrame {
         
         public boolean selected() { return _selected.isSelected(); }
         public void selected( boolean newVal ) { _selected.setSelected( newVal ); }
-        
+        public void handSelected( boolean newVal ) { 
+            _selected.setSelected( newVal );
+            _handSelected = true;
+        }        
         protected int _cores;
         protected NumberBox _threads;
         public boolean foundIt;

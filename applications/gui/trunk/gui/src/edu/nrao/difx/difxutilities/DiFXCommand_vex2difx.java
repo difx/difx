@@ -46,10 +46,10 @@ public class DiFXCommand_vex2difx extends DiFXCommand {
             v2d.setCalcifOnly( 1 );
         else
             v2d.setCalcifOnly( 0 );
-        _port = _settings.newDifxTransferPort();
-        v2d.setPort( _port );
         try {
             v2d.setAddress( java.net.InetAddress.getLocalHost().getHostAddress() );
+            _port = _settings.newDifxTransferPort();
+            v2d.setPort( _port );
         } catch ( java.net.UnknownHostException e ) {
         }
         this.body().setDifxVex2DifxRun( v2d );

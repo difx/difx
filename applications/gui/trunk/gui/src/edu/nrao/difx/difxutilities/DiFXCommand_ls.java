@@ -41,10 +41,10 @@ public class DiFXCommand_ls extends DiFXCommand {
         //  The "data" node is assumed to be the same as the DiFX "control" node
         //  (at least for now).
         ls.setDataNode( settings.difxControlAddress() );
-        _port = _settings.newDifxTransferPort();
-        ls.setPort( _port );
         try {
             ls.setAddress( java.net.InetAddress.getLocalHost().getHostAddress() );
+            _port = _settings.newDifxTransferPort();
+            ls.setPort( _port );
         } catch ( java.net.UnknownHostException e ) {
         }
         this.body().setDifxFileOperation( ls );

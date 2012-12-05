@@ -510,7 +510,11 @@ public class TimeLimitPanel extends JPanel implements MouseMotionListener,
             _decayCount = 10;
             _decayStartCount = 10;
             _lastX = e.getX();
-            _timerThread.start();
+            //  This try/catch is a bit lame...but I believe it catches complaints
+            //  triggered when the thread is already started so the exception can be
+            //  safely ignored.  Hopefully there aren't other good reasons to pay 
+            //  attention to it.
+            try { _timerThread.start(); } catch ( java.lang.IllegalThreadStateException ex ) {}
         }
         //  Otherwise, see if we are dragging the user limit buttons.
         else {

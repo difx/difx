@@ -53,6 +53,7 @@ public class NodeBrowserScrollPane extends JPanel implements MouseMotionListener
         this.add( _scrollBar );
         _scrollBar.addAdjustmentListener( this );
         _scrollBar.setUnitIncrement( 10 );
+        _initDecayCount = 10;
         
         //  Capture mouse motion and wheel events.  We don't really care about
         //  clicks.
@@ -405,8 +406,8 @@ public class NodeBrowserScrollPane extends JPanel implements MouseMotionListener
         _scrolling = true;
         if ( _scrollable && !_noScrollbar ) {
             _offsetMotion = e.getY() - _lastY;
-            _decayCount = 10;
-            _decayStartCount = 10;
+            _decayCount = _initDecayCount;
+            _decayStartCount = _initDecayCount;
             //_lastY = e.getY();
             testScrollBar();
         }
@@ -416,8 +417,8 @@ public class NodeBrowserScrollPane extends JPanel implements MouseMotionListener
     public void mouseWheelMoved( MouseWheelEvent e ) {
         if ( _scrollable && !_noScrollbar ) {
             _offsetMotion = _scrollSense * 2 * e.getScrollAmount() * e.getWheelRotation();
-            _decayCount = 10;
-            _decayStartCount = 10;
+            _decayCount = _initDecayCount;
+            _decayStartCount = _initDecayCount;
             testScrollBar();
         }
     }
@@ -461,7 +462,7 @@ public class NodeBrowserScrollPane extends JPanel implements MouseMotionListener
         }
     }
     
-    void momentumOn( boolean newVal ) {
+    public void momentumOn( boolean newVal ) {
         _momentumOn = newVal;
     }
     
@@ -526,6 +527,9 @@ public class NodeBrowserScrollPane extends JPanel implements MouseMotionListener
             _scrollBar.setVisible( true );
         }
     }
+    
+    public void decayCount( int newVal ) { _initDecayCount = newVal; }    
+    protected int _initDecayCount;
     
     protected NodeBrowserPane browserPane;
     protected JScrollBar _scrollBar;
