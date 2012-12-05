@@ -728,6 +728,15 @@ int NativeMk5DataStream::readonedemux(bool resetreference, int buffersegment)
   bool ok;
   int nfix = 0;
 
+  //check that the thread buffer is not getting too full
+  if(datamuxer->getMinThreadBufferFree() < 3.0/(2.0*DataMuxer::DEMUX_BUFFER_FACTOR))
+  {
+    cwarn << startl << "Data muxer thread buffer getting full - skipping one read/deinterlace!" << endl;
+    if(datamuxer->getMaxThreadBufferFree() > 0.5)
+      cerror << startl << "Thread buffers are getting well out of sync - are one or more threads lagging? Min/max free space is " << datamuxer->getMinThreadBufferFree() << "/" << datamuxer->getMaxThreadBufferFree() << endl;
+    return 0; // Note exit here, skipping the read this time!
+  }
+
   //cinfo << startl << "At the beginning of readonedemux, readpointer is " << readpointer << endl;
   rbytes = moduleRead((unsigned long*)datamuxer->getCurrentDemuxBuffer(), datamuxer->getSegmentBytes(), readpointer, buffersegment);
   //the main readpointer will be updated outside of this routine, use localreadpointer for here
@@ -867,6 +876,8 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 	int mjd, sec, sec2, fbytes;
 	double ns;
 	bool hasFilledData;
+	double f;
+	int n = 0;
 
 	/* All reads of a module must be 64 bit aligned */
 	data = buf = reinterpret_cast<unsigned long *>(&databuffer[buffersegment*(bufferbytes/numdatasegments)]);
@@ -888,14 +899,34 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 	}
 
 	//if there was no valid data read, return
-	if(rbytes == 0)
+	if(obytes == 0)
 	{
 		return;
 	}
 
 	// Check for validity
-	mark5stream->frame = (unsigned char *)data;
+	mark5stream->frame = reinterpret_cast<unsigned char *>(data);
 	mark5_stream_get_frame_time(mark5stream, &mjd, &sec, &ns);
+	
+	f = ns + 0.001;
+	f -= (int)f;
+	while(f > 0.002 && bufferinfo[buffersegment].validbytes > 2*mark5stream->framebytes)	// If we got a frame starting at fractional ns, this will wreak havok...
+	{
+		++n;
+		cwarn << startl << "Nudging read because ns=" << ns << " is not integral " << n << endl;
+
+		rbytes -= mark5stream->framebytes;
+		bufferinfo[buffersegment].validbytes -= mark5stream->framebytes;
+		memmove(reinterpret_cast<char *>(data), reinterpret_cast<char *>(data)+mark5stream->framebytes, rbytes);
+		readpointer -= 2*mark5stream->framebytes;	// One to account for reduced value of rbytes, one to get the frame lopped by the memmove
+
+		mark5stream->frame = reinterpret_cast<unsigned char *>(data);
+		mark5_stream_get_frame_time(mark5stream, &mjd, &sec, &ns);
+		
+		f = ns + 0.001;
+		f -= (int)f;
+	}
+
 	sec += intclockseconds;
 	mark5stream->frame = 0;
 	sec2 = (model->getScanStartSec(readscan, corrstartday, corrstartseconds) + readseconds + corrstartseconds) % 86400;
@@ -1106,7 +1137,14 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 	// Update various counters
 	if(rbytes < readbytes)
 	{
-		 dataremaining = false;
+		if(rbytes == 0 && obytes > 0) // can only happen for VDIF muxing, means that data has not run out
+		{
+			cinfo << startl << "Noting a skipped read while muxing" << endl;
+		}
+		else
+		{
+			dataremaining = false;
+		}
 	}
 	else
 	{
