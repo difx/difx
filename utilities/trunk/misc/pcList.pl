@@ -36,7 +36,8 @@ my  @SplitAnzahl 	=   ();
 my  $st_text  		=   "";
 my  @MatrixStationen	=   ();
 my  @joblist	=   ();  
-my  $baseName = "";
+#my  $baseName = "";
+my  @baseNames = ();
 my  %vexStationSum = ();
 my  %stationSum = ();
 my  $maxScanName = 0;
@@ -88,8 +89,14 @@ sub main
 
 	@excludeStations = split (/,/, uc($exclude));
 
-	$baseName = &getBaseName();
-	$calcSummary = `grep IDENTIFIER: $baseName*.calc`;
+	@baseNames = &getBaseName();
+
+	my $base = "";
+	
+	foreach  $base (@baseNames)
+	{
+		$calcSummary .= `grep IDENTIFIER: $base*.calc`;
+	}
 
 	&getStationsFromVex();
 	&parseVex();
@@ -184,9 +191,9 @@ sub parseVex
 			{	
 				$maxScanName = length($scanName)
 			}
-			if (length($1) > $maxDifxName)
+			if (length($vexScans[$scanCount]{"DIFXFILE"}) > $maxDifxName)
                         {
-                                $maxDifxName = length($1)
+                                $maxDifxName = length($vexScans[$scanCount]{"DIFXFILE"});
                         }
 
 
@@ -459,16 +466,22 @@ sub jobmatrixTime2Seconds
 sub getBaseName
 {
 	my $line = "";
+	my @temp = ();
 
     	foreach $line (@joblist)                       
         {
         	chomp($line);                                
 		if  ($line  =~  /\d{1,2}h\d{1,2}m\d{1,2}\.\d{2}s\s+[A-Z]\s+=\s+(.+)_.+/)
                 {
-                        return($1);
+			push ( @temp,  $1);
                 }
 
 	}
+
+	my %hash = map { $_ => 1 } @temp;
+	my @unique = keys %hash;
+	return(@unique);
+
 }
 
 ######################
