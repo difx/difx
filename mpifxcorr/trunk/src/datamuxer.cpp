@@ -32,8 +32,10 @@ DataMuxer::DataMuxer(const Configuration * conf, int dsindex, int id, int nthrea
   demuxbuffer = vectorAlloc_u8(segmentbytes*DEMUX_BUFFER_FACTOR);
   estimatedbytes += segmentbytes*DEMUX_BUFFER_FACTOR;
   threadbuffers = new u8*[numthreads];
+  threadbufferfree = new double[numthreads];
   for(int i=0;i<numthreads;i++)
   {
+    threadbufferfree[i] = 1.0;
     threadbuffers[i] = vectorAlloc_u8(segmentbytes*DEMUX_BUFFER_FACTOR/numthreads);
     estimatedbytes += segmentbytes*DEMUX_BUFFER_FACTOR/numthreads;
   }
@@ -60,10 +62,32 @@ void DataMuxer::resetcounters()
   lastskipframes = 0;
 }
 
+double DataMuxer::getMinThreadBufferFree()
+{
+  double minfree = 1.0;
+  for(int i=0;i<numthreads;i++)
+  {
+    if(threadbufferfree[i] < minfree)
+      minfree = threadbufferfree[i];
+  }
+  return minfree;
+}
+
+double DataMuxer::getMaxThreadBufferFree()
+{
+  double maxfree = 0.0;
+  for(int i=0;i<numthreads;i++)
+  {
+    if(threadbufferfree[i] > maxfree)
+      maxfree = threadbufferfree[i];
+  }
+  return maxfree;
+}
+
 VDIFMuxer::VDIFMuxer(const Configuration * conf, int dsindex, int id, int nthreads, int iframebytes, int rframes, int fpersec, int bitspersamp, int * tmap)
   : DataMuxer(conf, dsindex, id, nthreads, iframebytes*rframes), inputframebytes(iframebytes), readframes(rframes), framespersecond(fpersec), bitspersample(bitspersamp)
 {
-  cverbose << startl << "VDIFMuxer: framespersecond is " << framespersecond << ", iframebytes is " << inputframebytes << endl;
+  cinfo << startl << "VDIFMuxer: framespersecond is " << framespersecond << ", iframebytes is " << inputframebytes << endl;
   cinfo << startl << "VDIFMuxer: readframes is " << readframes << endl;
   outputframebytes = (inputframebytes-VDIF_HEADER_BYTES)*numthreads + VDIF_HEADER_BYTES;
   processframenumber = 0;
@@ -470,12 +494,14 @@ int VDIFMuxer::multiplex(u8 * outputbuffer)
       }
     }
 
-    //clear the data we just used
-    for(int i=0;i<numthreads;i++)
+    //clear the data we just used and adjust the threadbufferfree values
+    for(int i=0;i<numthreads;i++) {
       bufferframefull[i][processindex] = false;
+      threadbufferfree[i] += (1.0/((double)numthreadbufframes));
+    }
     processframenumber++;
   }
-
+  
   return outputframecount*outputframebytes;
 }
 
@@ -485,21 +511,27 @@ bool VDIFMuxer::deinterlace(int validbytes)
   int frameoffset, frameindex, threadindex;
   long long currentframenumber;
   bool found;
+  double bufferratio;
   vdif_header * inputptr;
 
   //cout << "Deinterlacing: deinterlacecount is " << deinterlacecount << endl;
   //cout << "Will start from " << (deinterlacecount%DEMUX_BUFFER_FACTOR)*readframes << " frames in" << endl;
   for(int i=0;i<validbytes/inputframebytes;i++) {
     inputptr = (vdif_header*)(demuxbuffer + i*inputframebytes + (deinterlacecount%DEMUX_BUFFER_FACTOR)*readframes*inputframebytes);
+
     framethread = getVDIFThreadID(inputptr);
     framebytes = getVDIFFrameBytes(inputptr);
     framemjd = getVDIFFrameMJD(inputptr);
     framesecond = getVDIFFrameSecond(inputptr);
     framenumber = getVDIFFrameNumber(inputptr);
+
     if(framebytes != inputframebytes) {
       cfatal << startl << "Framebytes has changed, from " << inputframebytes << " to " << framebytes << " - aborting!" << endl;
       return false;
     }
+
+//EFFICIENCY: make map from threadId [0 to 1023] to local threadindex [0 to nChan-1]
+
     //check that this thread is wanted
     found = false;
     for(int j=0;j<numthreads;j++) {
@@ -524,25 +556,29 @@ bool VDIFMuxer::deinterlace(int validbytes)
       continue;
     }
     frameoffset  = (int) (currentframenumber - (processframenumber+skipframes));
-    if(i == 0) {
-      cinfo << startl << "Current first frame to deinterlace is from " <<  framethread << " which is timestamped " << frameoffset << " frames after the current frame being processed" << endl;
-      cinfo << startl << "Currentframenumber is " << currentframenumber << ", processframenumber is " << processframenumber << ", framesecond is " << framesecond << ", refframesecond is " << refframesecond << ", framenumber is " << framenumber << ", refframenumber is " << refframenumber << ", framespersecond is " << framespersecond << ", lastskipframes is " << lastskipframes << endl;
-      cinfo << startl << "Frames to process is " << (validbytes/inputframebytes) << " because validbytes = " << validbytes << " and inputframebytes = " << inputframebytes << endl;
-    }
     if(frameoffset < 0) {
       cwarn << startl << "Discarding a frame from thread " << framethread << " which is timestamped " << -frameoffset << " frames earlier than the current frame being processed" << endl;
       cwarn << startl << "Currentframenumber is " << currentframenumber << ", processframenumber is " << processframenumber << ", framesecond is " << framesecond << ", refframesecond is " << refframesecond << ", framenumber is " << framenumber << ", refframenumber is " << refframenumber << ", framespersecond is " << framespersecond << endl;
       continue;
     }
-    if(frameoffset > readframes*DEMUX_BUFFER_FACTOR/numthreads) {
+    if(frameoffset >= readframes*DEMUX_BUFFER_FACTOR/numthreads) {
       cfatal << startl << "Discarding a frame from thread " << framethread << " which is timestamped " << frameoffset << " frames after the current frame being processed - must be a large offset in the file, which is not supported" << endl;
       cfatal << startl << "Currentframenumber is " << currentframenumber << ", processframenumber is " << processframenumber << ", framesecond is " << framesecond << ", refframesecond is " << refframesecond << ", framenumber is " << framenumber << ", refframenumber is " << refframenumber << ", framespersecond is " << framespersecond << ", i=" << i << ", skipframes is " << skipframes << ", lastskipframes is " << lastskipframes << endl;
+      cfatal << startl << "inputptr-demuxbuffer = " << ((char *)inputptr - (char *)demuxbuffer) << " bytes; allocated space = " << (segmentbytes*DEMUX_BUFFER_FACTOR) << " bytes; validbytes = " << validbytes << " bytes" << endl; 
+      cfatal << startl << "This is loop " << i+1 << "/" << validbytes/inputframebytes << endl;
+      cfatal << startl << "The preceding frame had frame number = " << getVDIFFrameNumber(inputptr-inputframebytes) << ", framesecond = " << getVDIFFrameSecond(inputptr+inputframebytes) << endl;
       cfatal << startl << "The following frame would have had information: frame number = " << getVDIFFrameNumber(inputptr+inputframebytes) << ", framesecond = " << getVDIFFrameSecond(inputptr+inputframebytes) << endl;
+      cfatal << startl << "The following+1 frame would have had information: frame number = " << getVDIFFrameNumber(inputptr+2*inputframebytes) << ", framesecond = " << getVDIFFrameSecond(inputptr+2*inputframebytes) << endl;
+      cfatal << startl << "The following+2 frame would have had information: frame number = " << getVDIFFrameNumber(inputptr+3*inputframebytes) << ", framesecond = " << getVDIFFrameSecond(inputptr+3*inputframebytes) << endl;
+      cfatal << startl << "The following+3 frame would have had information: frame number = " << getVDIFFrameNumber(inputptr+4*inputframebytes) << ", framesecond = " << getVDIFFrameSecond(inputptr+4*inputframebytes) << endl;
+      cfatal << startl << "The following+4 frame would have had information: frame number = " << getVDIFFrameNumber(inputptr+5*inputframebytes) << ", framesecond = " << getVDIFFrameSecond(inputptr+5*inputframebytes) << endl;
       return false;
     }
+    bufferratio = ((double)frameoffset)/((double)numthreadbufframes);
+    threadbufferfree[threadindex] = 1.0 - bufferratio;
     frameindex = (int)(currentframenumber % numthreadbufframes);
     if (bufferframefull[threadindex][frameindex]) {
-      cwarn << startl << "Frame at index " << frameindex << " (which was count " << currentframenumber << ") was already full for thread " << threadindex << " - probably a major time gap in the file, which is not supported" << endl;
+      cwarn << startl << "Frame at index " << frameindex << " (which was count " << currentframenumber << ") was already full for thread " << threadindex << " - probably a major time gap in the file, which is not supported.  Numthreadbufframes is " << numthreadbufframes << endl;
     }
     memcpy(threadbuffers[threadindex] + frameindex*framebytes, inputptr, framebytes);
     bufferframefull[threadindex][frameindex] = true;

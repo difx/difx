@@ -115,6 +115,18 @@ public:
   */
   virtual int multiplex(u8 * outputbuffer) = 0;
 
+ /**
+  * Gives you how full the threadbuffers are at the moment
+  * @return The fractional free space of the most full threadbuffer
+  */
+  double getMinThreadBufferFree();
+
+ /**
+  * Gives you how full the threadbuffers are at the moment
+  * @return The fractional free space of the emptiest threadbuffer
+  */
+  double getMaxThreadBufferFree();
+
   ///constants
   static const int DEMUX_BUFFER_FACTOR = 4;
 
@@ -122,6 +134,7 @@ protected:
   ///additional buffers
   u8 * demuxbuffer;
   u8** threadbuffers;
+  double * threadbufferfree;
 
   ///other variables
   const Configuration * config;
