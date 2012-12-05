@@ -46,7 +46,7 @@ mpiOptions  = '--mca mpi_yield_when_idle 1 --mca rmaps seq'
 
 from sys import argv, exit, stdout
 from os import popen, getcwd, system, getenv, getpid, environ
-from os.path import isfile, isdir
+from os.path import isfile, isdir, isfile
 from string import split, strip, find, rfind, upper, lower
 from time import time, asctime
 from glob import glob
@@ -434,11 +434,13 @@ def doMachines(fileBase, machinesPolicy, cache):
 			if machinesPolicy > 0:
 				localHeadString = ""
 
-				options = ""
-				if difxdb:
-					options += " -d "
+				extraOpts = ""
+				if options.difxdb:
+					extraOpts += " -d "
+				if options.machinesFile != "":
+					extraOpts += " -m %s " % (options.machinesFile)
 
-				cmd = '%s %s %s.input' % (genmachines, options, fileBase)
+				cmd = '%s %s %s.input' % (genmachines, extraOpts, fileBase)
 				if verbose > 1:
 					print 'Executing: %s' % cmd
 				v = -1
@@ -621,11 +623,12 @@ signal.signal(signal.SIGINT, handler)
 usage = getUsage()
 optParser = OptionParser(version="%prog " + VERSION , usage=usage)
 
-optParser.set_defaults(machinesPolicy=2, useStartMessage=False, deletePolicy=0, makeModel=True, difxdb=False, makeFits=False, verbose=0, quiet=0, useLocalHead=False, override=False)
+optParser.set_defaults(machinesPolicy=2, useStartMessage=False, deletePolicy=0, makeModel=True, difxdb=False, makeFits=False, verbose=0, quiet=0, useLocalHead=False, override=False, machinesFile="")
 
 optParser.add_option("-g", "--genmachines", dest="machinesPolicy", action="store_const", const=2, help="will run genmachines even if not needed [default]")
 optParser.add_option("-a", "--automachines", dest="machinesPolicy", action="store_const", const=1, help="will run genmachines if needed")
 optParser.add_option("-n", "--nomachines", dest="machinesPolicy", action="store_const", const=0, help="will not run genmachines, even if needed")
+optParser.add_option("-M", "--machines-file", dest="machinesFile", action="store", type="string", help="start difx via DifxStartMessage")
 optParser.add_option("-m", "--message", dest="useStartMessage", action="store_true", help="start difx via DifxStartMessage")
 optParser.add_option("-f", "--force", dest="deletePolicy", action="store_const", const=1, help="force running even if output file exists")
 optParser.add_option("-d", "--dont-calc", dest="makeModel", action="store_false", help="will not run calcif, even if needed")
@@ -640,7 +643,6 @@ optParser.add_option("--override-version", dest="override", action="store_true",
 (options, args) = optParser.parse_args()
 
 verbose = options.verbose - options.quiet
-difxdb = options.difxdb
 
 if len(args) < 1:
 	optParser.error("at least one .input or .joblist file must be given.")
@@ -652,7 +654,6 @@ try:
 	start = 1
 except:
 	start = 0
-
 	
 # loop over all arguments
 fb = None
@@ -684,12 +685,18 @@ for a in args[start:]:
                 else:
                         fileBaseList.append(cwd + '/' + fb)
 	
+# verify that joblist is not empty
 if len(fileBaseList) < 1:
-	optParser.error("at least one .input or .joblist file must be given.")
+	optParser.error("ERROR: At least one .input or .joblist file must be given.")
+
+# verify that machinesfile exists
+if options.machinesFile != "" and  isfile(options.machinesFile) == False:
+	print "ERROR: The machines file (%s) does not exist" % (options.machinesFile)
+	exit(1)
 
 headNode = getenv('DIFX_HEAD_NODE')
 if options.useStartMessage and options.useLocalHead == False and headNode == None:
-	print "Environment variable DIFX_HEAD_NODE must be defined."
+	print "ERROR: Environment variable DIFX_HEAD_NODE must be defined."
 	print "Alternatively  you can use the -l option in case mk5daemon -H is running locally on this host."
 	exit(1)
 	
