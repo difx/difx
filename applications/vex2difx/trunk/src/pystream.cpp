@@ -794,11 +794,17 @@ int pystream::writeLoifTable(const VexData *V)
 	int p;
 	stringstream ss;
 	unsigned int nMode = V->nMode();
+	bool isRDV = false;
 
 	loifSetupFirstUse.resize(nMode);
 
 	p = precision();
 	precision(15);
+
+	if(V->getExper()->name.find("RDV") != string::npos)
+	{
+		isRDV = true;
+	}
 
 	for(unsigned int modeNum = 0; modeNum < nMode; ++modeNum)
 	{
@@ -834,6 +840,21 @@ int pystream::writeLoifTable(const VexData *V)
 
 
 				strncpy(comment, i.comment.c_str(), MaxCommentLength-1);
+				if(comment[0] == 0 && isRDV)
+				{
+					if(i.ifSSLO == 2.9e9)
+					{
+						strcpy(comment, "* 13cm 0 NA");
+					}
+					else if(i.ifSSLO == 7.9e9)
+					{
+						strcpy(comment, "* 4cm 0 NA");
+					}
+					else
+					{
+						cout << "Error: RDV experiment using unexpected LO frequency " << (i.ifSSLO / 1.0e6) << " MHz.  Please file a bug report." << endl;
+					}
+				}
 				if(comment[0] != '\0')
 				{
 					int len = strlen(comment);
