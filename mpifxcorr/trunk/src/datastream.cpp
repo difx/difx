@@ -724,12 +724,21 @@ int DataStream::readonedemux(bool isfirst)
   int fixbytes, rbytes;
   bool ok;
 
+  //check that the thread buffer is not getting too full
+  if(datamuxer->getMinThreadBufferFree() < 3.0/(2.0*DataMuxer::DEMUX_BUFFER_FACTOR))
+  {
+    cwarn << startl << "Data muxer thread buffer getting full - skipping one read/deinterlace!" << endl;
+    if(datamuxer->getMaxThreadBufferFree() > 0.5)
+      cerror << startl << "Thread buffers are getting well out of sync - are one or more threads lagging? Min/max free space is " << datamuxer->getMinThreadBufferFree() << "/" << datamuxer->getMaxThreadBufferFree() << endl;
+    return 0; // Note exit here, skipping the read this time!
+  }
+
   input.read((char*)datamuxer->getCurrentDemuxBuffer(), datamuxer->getSegmentBytes());
   if(isfirst)
     datamuxer->initialise();
   rbytes = input.gcount();
   if(rbytes != datamuxer->getSegmentBytes()) {
-    cerror << startl << "Data muxer did not fill demux buffer properly" << endl;
+    cerror << startl << "Data muxer did not fill demux buffer properly! Read " << rbytes << " bytes, wanted " << datamuxer->getSegmentBytes() << " bytes" << endl;
   }
   fixbytes = datamuxer->datacheck(datamuxer->getCurrentDemuxBuffer(), rbytes, 0);
   while(fixbytes > 0) {
