@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2011 by Walter Brisken                             *
+ *   Copyright (C) 2008-2012 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -54,6 +54,7 @@ typedef struct
 	float poly[MAXTAB];
 	float DPFU[2];
 	float time[8];
+	float sxFlag;	/* 1 if it is an sx mode, otherwise 0 */
 } GainRow;
 	
 static const float bandEdges[N_VLBA_BANDS+1] = 
@@ -74,8 +75,8 @@ static const float bandEdges[N_VLBA_BANDS+1] =
 };
 
 /* freq in MHz, t in days since ref day */
-static int getGainRow(GainRow *G, int nRow, const char *antName,
-	double freq, double mjd)
+/* if sxFlag is set, only look for 4cmsx or 13cmsx */
+static int getGainRow(GainRow *G, int nRow, const char *antName, double freq, double mjd, int sxFlag)
 {
 	int i, r;
 	int bestr = -1;
@@ -101,6 +102,10 @@ static int getGainRow(GainRow *G, int nRow, const char *antName,
 	for(r = 0; r < nRow; ++r)
 	{
 		if(strcmp(antName, G[r].antName) != 0)
+		{
+			continue;
+		}
+		if(fabs(sxFlag - G[r].sxFlag) > 0.01)
 		{
 			continue;
 		}
@@ -278,6 +283,12 @@ static int parseGN(const char *filename, int row, GainRow *G)
 				ctr = &G[row].nTime;
 				max = 8;
 			}
+			else if(strcasecmp(token, "BAND") == 0)
+			{
+				val = &(G[row].sxFlag);
+				ctr = 0;
+				max = 1;
+			}
 			else
 			{
 				val = 0;
@@ -358,6 +369,17 @@ static int parseGN(const char *filename, int row, GainRow *G)
 						val[(*ctr)-1] = atof(token);
 					}
 				}
+				else if(val)	/* must be sxFlag variable */
+				{
+					if(strcasestr(token, "sx") != 0)
+					{
+						val[0] = 1.0;
+					}
+					else
+					{
+						val[0] = 0.0;
+					}
+				}
 				action = 0;
 			}
 			else
@@ -367,8 +389,7 @@ static int parseGN(const char *filename, int row, GainRow *G)
 					v = snprintf(G[row].antName, ANTENNA_NAME_LENGTH, "%s", token);
 					if(v >= ANTENNA_NAME_LENGTH)
 					{
-						fprintf(stderr, "Developer error: antenna name wanted %d characters while only %d are allowed\n",
-							v, ANTENNA_NAME_LENGTH-1);
+						fprintf(stderr, "Developer error: antenna name wanted %d characters while only %d are allowed\n", v, ANTENNA_NAME_LENGTH-1);
 					}
 				}
 
@@ -467,8 +488,31 @@ int loadGainCurves(GainRow *G)
 	return nRow;
 }
 
-const DifxInput *DifxInput2FitsGN(const DifxInput *D,
-	struct fits_keywords *p_fits_keys, struct fitsPrivate *out)
+static int isSX(const DifxConfig *config, int nBand)
+{
+	int i;
+	int hasS = 0;
+	int hasX = 0;
+
+	for(i = 0; i < nBand; ++i)
+	{
+		double freq;
+
+		freq = config->IF[i].freq;	/* MHz */
+		if(freq > 2.0 && freq < 3.8)
+		{
+			hasS = 1;
+		}
+		if(freq > 7.5 && freq < 10.5)
+		{
+			hasX = 1;
+		}
+	}
+
+	return (hasS & hasX);
+}
+
+const DifxInput *DifxInput2FitsGN(const DifxInput *D, struct fits_keywords *p_fits_keys, struct fitsPrivate *out)
 {
 	GainRow *G;
 	int nRow;
@@ -538,8 +582,7 @@ const DifxInput *DifxInput2FitsGN(const DifxInput *D,
 	G = calloc(MAXENTRIES, sizeof(GainRow));
 	if(!G)
 	{
-		fprintf(stderr, "Error: DifxInput2FitsGN: could not allocate G (%lu bytes)\n", 
-			MAXENTRIES*sizeof(GainRow));
+		fprintf(stderr, "Error: DifxInput2FitsGN: could not allocate G (%lu bytes)\n", MAXENTRIES*sizeof(GainRow));
 
 		exit(EXIT_FAILURE);
 	}
@@ -609,6 +652,8 @@ const DifxInput *DifxInput2FitsGN(const DifxInput *D,
 
 		for(c = 0; c < D->nConfig; ++c)
 		{
+			int sxFlag;
+
 			config = D->config + c;
 
 			if(config->fitsFreqId < freqId1)
@@ -616,10 +661,13 @@ const DifxInput *DifxInput2FitsGN(const DifxInput *D,
 				continue;	/* this freqId1 done already */
 			}
 			freqId1 = config->fitsFreqId + 1;
+			
+			sxFlag = isSX(config, nBand);
+			
 			for(i = 0; i < nBand; ++i)
 			{
 				freq = config->IF[i].freq;	/* MHz */
-				r = getGainRow(G, nRow, antName, freq, mjd);
+				r = getGainRow(G, nRow, antName, freq, mjd, sxFlag);
 				if(r < 0)
 				{
 					if(messages == 0)
