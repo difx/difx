@@ -1,6 +1,0 @@
-AC_INIT()
-
-VERSION=9.2a
-AC_SUBST(VERSION)
-
-AC_OUTPUT(Makefile streamstor.pc streamstor.spec)
