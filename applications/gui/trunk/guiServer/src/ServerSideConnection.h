@@ -110,6 +110,8 @@ namespace guiServer {
         //!  an error.
         //---------------------------------------------------------------------
         void difxMonitor() {
+            char hostName[512];
+            //char hostIP[512];
             while ( _monitorSocket != NULL && _monitorSocket->fd() != -1 ) {
                 char message[MAX_MESSAGE_LENGTH + 1];
                 int ret = _monitorSocket->reader( message, MAX_MESSAGE_LENGTH );
@@ -122,6 +124,10 @@ namespace guiServer {
                     //  Decide what to do with this message.
                     DifxMessageGeneric G;
                     if ( !difxMessageParse( &G, message ) ) {
+                        //_monitorSocket->fromIPAddress( hostIP );
+                        if ( !_monitorSocket->fromHostName( hostName, 512 ) )
+                            snprintf( G.from, DIFX_MESSAGE_MAX_INET_ADDRESS_LENGTH, "%s", hostName );
+                        //printf( "this message is from %s, which is %s\n", hostIP, hostName );
 //                        switch( G.type ) {
 //                        case DIFX_MESSAGE_STATUS:
 //                            break;
@@ -132,8 +138,8 @@ namespace guiServer {
 //                        default:
 //                            break;
 //                        }
-                    if ( _relayDifxMulticasts )
-                        sendPacket( RELAY_PACKET, message, ret );
+                        if ( _relayDifxMulticasts )
+                            sendPacket( RELAY_PACKET, message, ret );
                     }
                 }
                 sched_yield();

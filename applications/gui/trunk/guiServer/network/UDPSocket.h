@@ -161,6 +161,19 @@ namespace network {
         }
         
         //----------------------------------------------------------------------------
+        //!  This returns the host name of the message most recently
+        //!  received using "reader".  The character string is allocated by the
+        //!  caller and should have sizes of nameLen.  Return
+        //!  values match those of the system call "getnameinfo()".
+        //----------------------------------------------------------------------------
+        int fromHostName( char *hostName, int nameLen ) {
+            int fromaddrlength = sizeof( fromaddr );
+            char serv[512];
+            return getnameinfo( (sockaddr *)&fromaddr, (socklen_t)fromaddrlength,
+                hostName, nameLen, serv, 512, NI_DGRAM );
+        }
+        
+        //----------------------------------------------------------------------------
         //!  Receive a broadcast of the specified length and store it in the
         //!  character string.  The number of characters received is returned
         //!  (-1 is something goes wrong).  This function will ignore broadcasts of
