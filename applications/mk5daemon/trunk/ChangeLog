@@ -13,6 +13,7 @@ Version 2.2.0
 * check for mk5daemon already running
 * fileto5c: fix order of ops bug
 * fileto5c: copying of directory supported
+* now *mark5* identifies a Mark5 unit, not just mark5*
 
 Version 2.1.0
 ~~~~~~~~~~~~~

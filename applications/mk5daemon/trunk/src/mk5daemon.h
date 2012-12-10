@@ -52,11 +52,12 @@
 extern const char difxUser[];
 const int MaxConnections = 8;
 
-#define MAX_COMMAND_SIZE	768
-#define MAX_FILENAME_SIZE	256
-#define N_BANK			2
-#define N_DRIVE			8
-#define MAX_MACLIST_LENGTH	16
+#define MAX_COMMAND_SIZE		768
+#define MAX_FILENAME_SIZE		256
+#define N_BANK				2
+#define N_DRIVE				8
+#define MAX_MACLIST_LENGTH		16
+#define MK5DAEMON_HOSTNAME_LENGTH	32
 
 enum RecordState
 {
@@ -143,7 +144,7 @@ typedef struct
 	int dieNow;
 	int activeBank;
 	char vsns[N_BANK][10];
-	char hostName[32];
+	char hostName[MK5DAEMON_HOSTNAME_LENGTH];
 	time_t lastMpifxcorrUpdate;
 	time_t lastMark5AUpdate;
 	time_t noDriver;		/* time when driver disappeared */
