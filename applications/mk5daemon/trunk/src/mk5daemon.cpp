@@ -298,7 +298,7 @@ Mk5Daemon *newMk5Daemon(const char *logPath, const char *userID, int isMk5)
 	procGetCoresFromCpuInfo(&D->load.nCore);
 	gethostname(D->hostName, MK5DAEMON_HOSTNAME_LENGTH);
 	D->hostName[MK5DAEMON_HOSTNAME_LENGTH-1] = 0;
-	D->isMk5 = strcasestr(D->hostName, "mark5", 5) == 0 ? 0 : 1;
+	D->isMk5 = strcasestr(D->hostName, "mark5") == 0 ? 0 : 1;
 	if(isMk5)
 	{
 		D->isMk5 = 1;
