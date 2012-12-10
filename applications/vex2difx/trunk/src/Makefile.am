@@ -51,6 +51,8 @@ vex2opt_SOURCES = \
 	optscans.cpp \
 	optsources.cpp \
 	optsources.h \
+	optresources.cpp \
+	optresources.h \
 	vex2opt.cpp 
 
 vexpeek_SOURCES = \
