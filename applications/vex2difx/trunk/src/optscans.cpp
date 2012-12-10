@@ -98,6 +98,7 @@ int optscans::writeScans(const VexData *V)
 	double recordSeconds = 0.0;
     double day = floor(mjd0);
     double allsec = floor((mjd0-floor(mjd0))*86400.0 + 0.5);
+	double lastTime = 0.0;
 
 
 	nScan = V->nScan();
@@ -140,17 +141,26 @@ int optscans::writeScans(const VexData *V)
 			double deltat2 = floor((arange->mjdStop-mjd0)*86400.0 + 0.5);
 			if(s != -1)
 			{
+				// don't respect data_good time, just use scan length
+				int    hour = (int)floor( (deltat2-lastTime) / 3600);
+				int    min  = (int)floor(((deltat2-lastTime)-(hour*3600)) / 60);
+				int    sec  = (int)floor( (deltat2-lastTime)-(hour*3600)-(min*60));
+				bool   applyPhase = false;
 
-				int    hour = (int)floor( (deltat2-deltat1) / 3600);
-				int    min  = (int)floor(((deltat2-deltat1)-(hour*3600)) / 60);
-				int    sec  = (int)floor( (deltat2-deltat1)-(hour*3600)-(min*60));
-				// recognize scans that do not record to Mark5C, but still set switches (need to pass scan start time)
 				// STD; ; J2345+0123; X Continuum; Stop Time (LST); 12:34:56; CW; y; n; CalFlux, CalGain; ;
-
 				*this << "STD; " << optscans::obsCode << " " << scan->defName << "; "
-					<< scan->sourceDefName << "; " << "<resource>; " 
-					<< " DUR; " << hour << "h" << min << "m" << sec << "s "
-					<< " ; <refPtg>; ; " << scan->intent <<"; ;" << endl;
+					<< scan->sourceDefName << "; " << "loif" << modeId << "; " 
+					<< " UTD; " << hour << "h" << min << "m" << sec << "s"
+					<< "; ; N; ";
+				if ( scan->intent.find("APPLY_AUTOPHASE") != string::npos )
+					 *this << "Y";
+				else
+					 *this << "N";
+				 *this << "; ; Y; ObsTgt";
+				if( scan->intent.find("DETERMINE_AUTOPHASE") != string::npos )
+					 *this << ",CALIBRATE_PHASE," << scan->intent;
+				*this <<"; ;" << endl;
+				lastTime = deltat2;
 			}
 		}
 		*this << endl;
