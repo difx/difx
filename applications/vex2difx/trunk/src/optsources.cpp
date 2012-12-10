@@ -31,6 +31,7 @@
 #include <cmath>
 #include <sstream>
 #include <time.h>
+#include <math.h>
 #include <string.h>
 #include "evladefaults.h"
 #include "optsources.h"
@@ -100,13 +101,13 @@ int optsources::writeSourceTable(const VexData *V)
 	p = precision();
 	precision(15);
 
-	*this << "# Secret Source; Favorite Recipes, Private; equatorial; J2000; 12:34:56.789; 87.654321; LSRK; Optical; -987.6,0.0,123.45,;" << endl;
 	*this << "# <source name>; <group name>; <coord sys>; <epoch>; <long>; <lat>; <refFrame>; <convention>; <velocity>;" << endl;
 	for(int s = 0; s < nSource; ++s)
 	{
 		const VexSource *S = V->getSource(s);
-		*this << S->defName << "; " << " <group>" << "; " << "; "
-			<< " J2000" << "; " << S->ra << "; " << S->dec << "; "
+		*this << S->defName << "; " << string(obsCode) << "; equatorial; "
+			<< "J2000" << "; ";
+		*this << (S->ra*180)/M_PI << "; " << (S->dec*180)/M_PI << "; "
 			<< "; " << "; " << "; ";
 		*this << endl;
 	}
