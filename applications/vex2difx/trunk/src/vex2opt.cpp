@@ -31,6 +31,7 @@
 #include <cstring>
 #include <cstdlib>
 #include "optsources.h"
+#include "optresources.h"
 #include "optscans.h"
 #include "corrparams.h"
 #include "vexload.h"
@@ -97,6 +98,7 @@ int main(int argc, char **argv)
 	int nAntenna, nScan, atchar, lastchar;
 	optsources pySources;
 	optscans pyScans;
+	optresources pyResources;
 	int nWarn = 0;
 
 	if(argc < 2 || strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0)
@@ -129,16 +131,25 @@ int main(int argc, char **argv)
 	{
 		A = V->getAntenna(a);
 
-		pyScans.open(A->name, V);
-		pyScans.writeComment(string("File written by ") + program + string(" version ") + version + string(" vintage ") + verdate);
-		pyScans.writeScans(V);
-		pyScans.close();
+		if( isEVLA(A->name) ) {
+			pyScans.open(A->name, V);
+			pyScans.writeComment(string("File written by ") + program + string(" version ") + version + string(" vintage ") + verdate);
+			pyScans.writeScans(V);
+			pyScans.close();
 
+			pySources.open(A->name, V);
+			pySources.writeComment(string("File written by ") + program + string(" version ") + version + string(" vintage ") + verdate);
+			pySources.writeSourceTable(V);
+			pySources.close();
 
-		pySources.open(A->name, V);
-		pySources.writeComment(string("File written by ") + program + string(" version ") + version + string(" vintage ") + verdate);
-		pySources.writeSourceTable(V);
-		pySources.close();
+			pyResources.open(A->name, V);
+			pyResources.writeComment(string("File written by ") + program + string(" version ") + version + string(" vintage ") + verdate);
+			pyResources.writeHeader(V);
+			pyResources.writeLoifTable(V);
+			pyResources.close();
+		} else {
+			cerr << "Not EVLA antenna - skip!" << endl;
+		}
 	}
 	
 	return EXIT_SUCCESS;
