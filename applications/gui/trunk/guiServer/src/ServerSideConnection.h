@@ -125,8 +125,20 @@ namespace guiServer {
                     DifxMessageGeneric G;
                     if ( !difxMessageParse( &G, message ) ) {
                         //_monitorSocket->fromIPAddress( hostIP );
-                        if ( !_monitorSocket->fromHostName( hostName, 512 ) )
+                        //  Replace the "from" field in the message header with the full address
+                        //  of the source of this message (as guiServer sees it).  We are assuming
+                        //  that the first instances of "<from>" and "</from>" are the proper
+                        //  location for this.
+                        char newMessage[MAX_MESSAGE_LENGTH + 1];
+                        strncpy( newMessage, message, MAX_MESSAGE_LENGTH + 1 );
+                        if ( !_monitorSocket->fromHostName( hostName, 512 ) ) {
                             snprintf( G.from, DIFX_MESSAGE_MAX_INET_ADDRESS_LENGTH, "%s", hostName );
+                            message[MAX_MESSAGE_LENGTH] = 0;
+                            char* start = strcasestr( newMessage, "<from>" );
+                            char* end = strcasestr( message, "</from>" );
+                            if ( start != NULL && end != NULL )
+                                snprintf( start, MAX_MESSAGE_LENGTH, "<from>%s%s", hostName, end );
+                        }
                         //printf( "this message is from %s, which is %s\n", hostIP, hostName );
 //                        switch( G.type ) {
 //                        case DIFX_MESSAGE_STATUS:
@@ -139,7 +151,7 @@ namespace guiServer {
 //                            break;
 //                        }
                         if ( _relayDifxMulticasts )
-                            sendPacket( RELAY_PACKET, message, ret );
+                            sendPacket( RELAY_PACKET, newMessage, ret );
                     }
                 }
                 sched_yield();
