@@ -34,7 +34,7 @@ void ServerSideConnection::difxFileTransfer( DifxMessageGeneric* G ) {
 	
 	//  Cast the message to a File Transfer message.
 	S = &G->body.fileTransfer;
-	
+
 	user = getlogin();
 	if ( !user ) {
     	user = getenv( "DIFX_USER_ID" );

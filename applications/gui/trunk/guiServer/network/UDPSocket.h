@@ -215,6 +215,9 @@ namespace network {
             	        return( -1 );
             	    }
                 }
+                //  If a file close operation was detected don't try to return a message.
+                if ( _fd < 0 )
+                    charcount = 0;
 
             } while ( _ignoreOwn && (fromaddr.sin_addr.s_addr == hostaddr.sin_addr.s_addr) );
 

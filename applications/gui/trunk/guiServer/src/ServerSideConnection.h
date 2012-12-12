@@ -151,7 +151,7 @@ namespace guiServer {
 //                            break;
 //                        }
                         if ( _relayDifxMulticasts )
-                            sendPacket( RELAY_PACKET, newMessage, ret );
+                            sendPacket( RELAY_PACKET, newMessage, strlen( newMessage ) );
                     }
                 }
                 sched_yield();
