@@ -426,10 +426,10 @@ int optresources::writeChannelSet(const VexSetup *setup, int modeNum)
 		bool foundPair = false;
 		for( unsigned j=0; i!=0 && j<=(i-1) && !foundPair; j++ ) {
 //			cerr << "f[" << i << "]: " << setup->channels[i].bbcFreq << ": f[" << j << "]: " << setup->channels[j].bbcFreq << endl;
-			if(setup->channels[i].ifName == "A" && setup->channels[j].ifName == "C"
-				|| setup->channels[i].ifName == "C" && setup->channels[j].ifName == "A"
-				|| setup->channels[i].ifName == "B" && setup->channels[j].ifName == "D"
-				|| setup->channels[i].ifName == "D" && setup->channels[j].ifName == "B") {
+			if( (setup->channels[i].ifName == "A" && setup->channels[j].ifName == "C")
+				|| (setup->channels[i].ifName == "C" && setup->channels[j].ifName == "A")
+				|| (setup->channels[i].ifName == "B" && setup->channels[j].ifName == "D")
+				|| (setup->channels[i].ifName == "D" && setup->channels[j].ifName == "B") ) {
 				foundPair = true;
 				cerr << "found pair at i=" << i << endl;
 			}
@@ -511,7 +511,7 @@ int optresources::writeLoifTable(const VexData *V)
 			{
 				const int MaxCommentLength = 256;
 				const VexIF &i = it->second;
-				const VexIF  *vif;
+				const VexIF  *vif = 0;
 				char comment[MaxCommentLength] = {0};
 				double firstTune = fabs(setup->firstTuningForIF(i.name) - i.ifSSLO);
 
@@ -614,10 +614,10 @@ int optresources::writeLoifTable(const VexData *V)
 						bool foundPair = false;
 						for( unsigned j=0; k!=0 && j<=(k-1) && !foundPair; j++ ) {
 							cerr << "f[" << k << "]: " << setup->channels[k].bbcFreq << ": f[" << j << "]: " << setup->channels[j].bbcFreq << endl;
-							if(setup->channels[k].ifName == "A" && setup->channels[j].ifName == "C"
-								|| setup->channels[k].ifName == "C" && setup->channels[j].ifName == "A"
-								|| setup->channels[k].ifName == "B" && setup->channels[j].ifName == "D"
-								|| setup->channels[k].ifName == "D" && setup->channels[j].ifName == "B") {
+							if((setup->channels[k].ifName == "A" && setup->channels[j].ifName == "C")
+								|| (setup->channels[k].ifName == "C" && setup->channels[j].ifName == "A")
+								|| (setup->channels[k].ifName == "B" && setup->channels[j].ifName == "D")
+								|| (setup->channels[k].ifName == "D" && setup->channels[j].ifName == "B")) {
 								foundPair = true;
 								if(setup->channels[k].bbcFreq != setup->channels[j].bbcFreq) {
 									cerr << "Invalid frequency assignment between " << setup->channels[k].ifName
@@ -636,10 +636,10 @@ int optresources::writeLoifTable(const VexData *V)
 						// run through channels we still need to process from k+1 up to setup->channels.size() to figure out polarization
 						for( unsigned j=k+1; j< setup->channels.size(); j++ ) {
 							cerr << "f[" << k << "]: " << setup->channels[k].bbcFreq << ": f[" << j << "]: " << setup->channels[j].bbcFreq << endl;
-							if(setup->channels[k].ifName == "A" && setup->channels[j].ifName == "C"
-								|| setup->channels[k].ifName == "C" && setup->channels[j].ifName == "A"
-								|| setup->channels[k].ifName == "B" && setup->channels[j].ifName == "D"
-								|| setup->channels[k].ifName == "D" && setup->channels[j].ifName == "B") {
+							if((setup->channels[k].ifName == "A" && setup->channels[j].ifName == "C")
+								|| (setup->channels[k].ifName == "C" && setup->channels[j].ifName == "A")
+								|| (setup->channels[k].ifName == "B" && setup->channels[j].ifName == "D")
+								|| (setup->channels[k].ifName == "D" && setup->channels[j].ifName == "B")) {
 								foundPair = true;
 								cerr << "processing k=" << k << ", found 2nd half of pair at j=" << j << endl;
 								vif = setup->getIF(setup->channels[j].ifName);
@@ -648,6 +648,11 @@ int optresources::writeLoifTable(const VexData *V)
 						}
 						string pol;
 						if( foundPair ) {
+							if(!vif) {
+								cerr << "developer error: somehow vif=0 and foundPair=true" << endl;
+								exit(0);
+							}
+
 							if( i.pol == vif->pol ) // vif will be set if found is true
 								pol = i.pol;
 							else
