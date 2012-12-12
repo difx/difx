@@ -33,7 +33,7 @@
 #include "../difxmessage.h"
 
 /* allow space or comma separated list of nodes */
-int addNodes(char nodes[][DIFX_MESSAGE_PARAM_LENGTH], int maxNodes, int *n, const char *nodeList)
+int addNodes(char nodes[][DIFX_MESSAGE_HOSTNAME_LENGTH], int maxNodes, int *n, const char *nodeList)
 {
 	int i;
 	int s=-1;
@@ -56,10 +56,10 @@ int addNodes(char nodes[][DIFX_MESSAGE_PARAM_LENGTH], int maxNodes, int *n, cons
 			if(s >= 0)
 			{
 				int l = i-s;
-				if(l >= DIFX_MESSAGE_PARAM_LENGTH)
+				if(l >= DIFX_MESSAGE_HOSTNAME_LENGTH)
 				{
-					fprintf(stderr, "Developer error: addNodes: DIFX_MESSAGE_PARAM_LENGTH=%d is too small.  Wants to be %d\n", DIFX_MESSAGE_PARAM_LENGTH, l+1);
-					l = DIFX_MESSAGE_PARAM_LENGTH-1;
+					fprintf(stderr, "Developer error: addNodes: DIFX_MESSAGE_HOSTNAME_LENGTH=%d is too small.  Wants to be %d\n", DIFX_MESSAGE_HOSTNAME_LENGTH, l+1);
+					l = DIFX_MESSAGE_HOSTNAME_LENGTH-1;
 				}
 				memcpy(nodes[*n], nodeList+s, l);
 				nodes[*n][l] = 0;
@@ -111,8 +111,8 @@ static void XMLCALL startElement(void *userData, const char *name,
 			{
 				if(strcmp(atts[i], "node") == 0)
 				{
-					strncpy(S->headNode, atts[i+1], DIFX_MESSAGE_PARAM_LENGTH-1);
-					S->headNode[DIFX_MESSAGE_PARAM_LENGTH-1] = 0;
+					strncpy(S->headNode, atts[i+1], DIFX_MESSAGE_HOSTNAME_LENGTH-1);
+					S->headNode[DIFX_MESSAGE_HOSTNAME_LENGTH-1] = 0;
 				}
 			}
 		}
@@ -160,8 +160,8 @@ static void XMLCALL startElement(void *userData, const char *name,
 			{
 				if(strcmp(atts[i], "node") == 0)
 				{
-					strncpy(S->headNode, atts[i+1], DIFX_MESSAGE_PARAM_LENGTH-1);
-					S->headNode[DIFX_MESSAGE_PARAM_LENGTH-1] = 0;
+					strncpy(S->headNode, atts[i+1], DIFX_MESSAGE_HOSTNAME_LENGTH-1);
+					S->headNode[DIFX_MESSAGE_HOSTNAME_LENGTH-1] = 0;
 				}
 			}
 		}
@@ -841,7 +841,7 @@ static void XMLCALL endElement(void *userData, const char *name)
 					}
 					else if(strcmp(elem, "dataNode") == 0 )
 					{
-						strncpy(G->body.fileTransfer.dataNode, s, DIFX_MESSAGE_PARAM_LENGTH-1);
+						strncpy(G->body.fileTransfer.dataNode, s, DIFX_MESSAGE_HOSTNAME_LENGTH-1);
 					}
 					else if(strcmp(elem, "direction") == 0 )
 					{
@@ -871,7 +871,7 @@ static void XMLCALL endElement(void *userData, const char *name)
 					}
 					else if(strcmp(elem, "dataNode") == 0 )
 					{
-						strncpy(G->body.fileOperation.dataNode, s, DIFX_MESSAGE_PARAM_LENGTH-1);
+						strncpy(G->body.fileOperation.dataNode, s, DIFX_MESSAGE_HOSTNAME_LENGTH-1);
 					}
 					else if(strcmp(elem, "address") == 0 )
 					{
@@ -921,7 +921,7 @@ static void XMLCALL endElement(void *userData, const char *name)
 					}
 					else if(strcmp(elem, "node") == 0 )
 					{
-						strncpy(G->body.vex2DifxRun.headNode, s, DIFX_MESSAGE_PARAM_LENGTH-1);
+						strncpy(G->body.vex2DifxRun.headNode, s, DIFX_MESSAGE_HOSTNAME_LENGTH-1);
 					}
 					else if(strcmp(elem, "difxVersion") == 0 )
 					{
