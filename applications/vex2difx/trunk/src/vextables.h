@@ -174,6 +174,7 @@ public:
 	double bbcFreq;		// sky frequency tuning of the BBC (Hz)
 	double bbcBandwidth;	// bandwidth (Hz)
 	char bbcSideBand;	// sideband of the BBC
+	string name;
 	string bbcName;		// name given in VEX of this channel in the BBC table
 	vector<int> tones;	// pulse cal tones to extract, directly from PHASE_CAL_DETECT
 	int threadId;		// thread Id for this channel (assigned based on channel names)

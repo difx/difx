@@ -141,7 +141,7 @@ static int getRecordChannel(const string &antName, const string &chanName, const
 
 		return (track-2)/delta;
 	}
-	else if( setup.formatName == "LBAVSOP" || setup.formatName == "LBASTD" ) 
+	else if(setup.formatName == "LBAVSOP" || setup.formatName == "LBASTD") 
 	{
 		/* int delta, track;
 		map<string,Tracks>::const_iterator it = ch2tracks.find(chanName);
@@ -1343,7 +1343,9 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 				string phaseCalName(value);
 
 				vex_field(T_CHAN_DEF, p, 5, &link, &name, &value, &units);
-				recChanId = getRecordChannel(antName, value, ch2tracks, setup, nRecordChan);
+				string chanName(value);
+
+				recChanId = getRecordChannel(antName, chanName, ch2tracks, setup, nRecordChan);
 				setup.channels.push_back(VexChannel());
 				setup.channels.back().subbandId = subbandId;
 				setup.channels.back().ifName = bbc2ifName[bbcName];
@@ -1351,6 +1353,7 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 				setup.channels.back().bbcBandwidth = bandwidth;
 				setup.channels.back().bbcSideBand = sideBand;
 				setup.channels.back().bbcName = bbcName;
+				setup.channels.back().name = chanName;
 				if(recChanId >= 0)
 				{
 					setup.channels.back().recordChan = recChanId;
