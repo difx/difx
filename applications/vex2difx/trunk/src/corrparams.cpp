@@ -1812,6 +1812,12 @@ int CorrParams::load(const string &fileName)
 			++i;
 			string antName(*i);
 			Upper(antName);
+			if(getAntennaSetup(antName) != 0)
+			{
+				cerr << "Error: two ANTENNA blocks set for antenna " << antName << endl;
+
+				exit(EXIT_FAILURE);
+			}
 			antennaSetups.push_back(AntennaSetup(antName));
 			antennaSetup = &antennaSetups.back();
 			++i;
