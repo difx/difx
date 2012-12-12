@@ -643,7 +643,12 @@ int optresources::writeLoifTable(const VexData *V)
 								foundPair = true;
 								cerr << "processing k=" << k << ", found 2nd half of pair at j=" << j << endl;
 								vif = setup->getIF(setup->channels[j].ifName);
-								cerr << "pol: k=" << i.pol << " and j=" << vif->pol << endl;
+								if(vif)
+									cerr << "pol: k=" << i.pol << " and j=" << vif->pol << endl;
+								else {
+									cerr << "developer error: somehow vif=0 after foundPair=true - pol: k=" << i.pol << endl;
+									exit(0);
+								}
 							}
 						}
 						string pol;
