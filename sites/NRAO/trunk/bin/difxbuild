@@ -10,8 +10,8 @@ import platform
 from time import asctime
 
 program = 'difxbuild'
-version = '0.19'
-verdate = '20121212'
+version = '0.20'
+verdate = '20121213'
 author = 'Walter Brisken <wbrisken@nrao.edu>'
 
 difxbuildUrl = 'http://www.aoc.nrao.edu/~wbrisken/difxbuild'
@@ -86,6 +86,12 @@ Some useful tips for users of difxbuild:
   text is added to a file called buildlog in each platform's base
   directory.  This can be used to trace back the subversion history
   of any binary at any time.
+
+* It is not recommended to move a difxbuild-based installation either 
+  to a different machine or across machines.  Rather the new system should
+  be rebootstrapped and the entire build process repeated.  If this must 
+  be done, it is highly recommended to wipe out all bin/ lib/ etc/ include/
+  and share/ directories under $DIFXROOT and run 'difxbuild build all'.
 
 Bootstrap parameter options include:
 
@@ -1062,16 +1068,27 @@ def svnupdate(origComps, params, args, verbose, pretend):
 
 	updatePaths = ''
 
+	badRepositories = []
+
 	for comp in comps:
 		path = srcDir + comp[0] + '/'
 		if isdir(path):
 			updatePaths = updatePaths + ' ' + comp[0]
+			url = split(strip(popen('svn info %s | grep URL' % path, 'r').readlines()[0]))[-1]
+
+			if url != comp[1]:
+				badRepositories.append('%s %s' % (comp[0], path))
 		else:
 			chdir(srcDir)
 			cmd = 'svn co %s %s' % (comp[1], comp[0])
 			execute(cmd, verbose, pretend)
 	
-	if updatePaths != '':
+	if len(badRepositories) > 0:
+		print 'Error: the following components\' svn URLS don\'t match:'
+		for b in badRepositories:
+			print '  %s' % b
+		print 'Please remove these directories and try again taking care to preserve any local changes you may have made'
+	elif updatePaths != '':
 		chdir(srcDir)
 		cmd = 'svn update ' + updatePaths
 		execute(cmd, verbose, pretend)
