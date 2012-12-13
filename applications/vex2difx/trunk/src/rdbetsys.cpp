@@ -40,9 +40,9 @@
 #include "util.h"
 
 const char program[] = "rdbetsys";
-const char version[] = "1.0";
+const char version[] = "1.1";
 const char author[]  = "Walter Brisken";
-const char verdate[] = "20120109";
+const char verdate[] = "20121213";
 
 const char defaultSwitchedPowerPath[] = "/home/vlba/metadata/switchedpower";
 const double defaultTsysInterval = 15.0;	// Seconds
@@ -846,6 +846,13 @@ int main(int argc, char **argv)
 			cout << it->first << endl;
 			cout << "  MJD time range: " << it->second.mjdStart << " to " << it->second.mjdStop << endl;
 			cout.precision(p);
+		}
+
+		if(stn == "y")
+		{
+			cout << "  *** skipping this antenna.  Tsys from VLA comes from a different source ***" << endl;
+
+			continue;
 		}
 
 		fileList = genFileList(defaultSwitchedPowerPath, stn.c_str(), it->second);
