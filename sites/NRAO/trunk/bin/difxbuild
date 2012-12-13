@@ -10,9 +10,11 @@ import platform
 from time import asctime
 
 program = 'difxbuild'
-version = '0.18'
-verdate = '20121124'
+version = '0.19'
+verdate = '20121212'
 author = 'Walter Brisken <wbrisken@nrao.edu>'
+
+difxbuildUrl = 'http://www.aoc.nrao.edu/~wbrisken/difxbuild'
 
 openmpiVersion = '1.6'
 pgplotVersion = '5.2'
@@ -1477,6 +1479,26 @@ def openmpi(origComps, params, args, verbose, pretend):
 		print '\n*** Error building openmpi***\n'
 		return 
 
+def update_difxbuild(origComps, params, args, verbose, pretend):
+	dir = getcwd()
+	chdir('/tmp')
+	execute('rm -f difxbuild', verbose, pretend)
+	execute('wget %s' % difxbuildUrl, verbose, pretend)
+	print 'Current version = %s' % version
+	newVersion = strip(popen('python /tmp/difxbuild --version', 'r').readlines()[0])
+	print 'New version = %s' % newVersion
+	print 
+	if newVersion <= version:
+		print 'difxbuild up to date; not need to update'
+	else:
+		execute('chmod +x /tmp/difxbuild', verbose, pretend)
+		chdir(dir)
+		if find(argv[0], '/') >= 0:
+			execute('cp /tmp/difxbuild %s' % argv[0], verbose, pretend)
+		else:
+			execute('cp /tmp/difxbuild `which difxbuild`', verbose, pretend)
+
+		print 'difxbuild updated.  Please confirm with --version'
 
 
 command_list = \
@@ -1632,6 +1654,15 @@ command_openmpi = \
 	openmpi \
 ]
 
+command_update = \
+[ \
+	'update', \
+	'Update difxbuild by downloading a new version', \
+	[], \
+	[], \
+	update_difxbuild \
+]
+
 commands = \
 [ \
 	command_list, \
@@ -1650,6 +1681,7 @@ commands = \
 	command_clean, \
 	command_pclean, \
 	command_uninstall, \
+	command_update, \
 #	command_remove, \
 ]
 
@@ -1706,6 +1738,8 @@ def usage(prog):
 	print '       print the in-line documentation\n'
 	print '  -v or --verbose'
 	print '       be more verbose\n'
+	print '  -V or --version'
+	print '       print version and exit\n'
 	print '  -q or --quiet'
 	print '       be less verbose\n'
 	print '  -p or --pretend'
@@ -1728,7 +1762,7 @@ def usage(prog):
 
 def main():
 	try:
-		opts, args = getopt.getopt(argv[1:], "hdqvp", ["help", "documentation", "quiet", "verbose", "pretend"])
+		opts, args = getopt.getopt(argv[1:], "hdqvpV", ["help", "documentation", "quiet", "verbose", "pretend", "version"])
 	except getopt.GetoptError, err:
 		print '%s\n' % str(err)
 		usage(argv[0])
@@ -1738,6 +1772,9 @@ def main():
 	for o, a in opts:
 		if o == '-v':
 			verbose += 1
+		elif o == '--version':
+			print version
+			exit(0)
 		elif o == '-q':
 			verbose -= 1
 		elif o == '-h':
