@@ -1184,6 +1184,7 @@ public class ExperimentEditor extends JFrame {
                         //  of scans and turns on/off all those that meet station restrictions
                         //  (as well as other restrictions - sources, etc.).
                         _scanGrid.allOn();
+                        checkScansAgainstAntennas();
                         produceV2dFile();
                     }
                 } );
@@ -1678,18 +1679,18 @@ public class ExperimentEditor extends JFrame {
     }
     
     /*
-     * Use the current settings to produce a .v2d "file".  This is stored in the
-     * v2d editor.
+     * Check the scan selections against antennas that have been selected.  If all
+     * antennas required for the scan have NOT been selected, the scan is switched
+     * off.  This should probably only be called after changes to the antenna
+     * selections.
      */
-    public void produceV2dFile() {
-        //  Before creating this file, check the scan selections, as changes to
-        //  settings may have changed the restrictions on them.
+    public void checkScansAgainstAntennas() {
         for ( Iterator<ButtonGrid.GridButton> iter = _scanGrid.buttonList().iterator(); iter.hasNext(); ) {
             ButtonGrid.GridButton button = iter.next();
             //  Check any scan button that is already on against chosen antennas.
             if ( button.on() ) {
                 VexFileParser.Scan scan = (VexFileParser.Scan)button.data();
-                //  The list of stations/antennas that is on...both of the scans antennas must
+                //  The list of stations/antennas that is on...all of the scans antennas must
                 //  be included or it will be turned off.
                 boolean _stationsMatch = true;
                 for ( Iterator jter = scan.station.iterator(); jter.hasNext(); ) {
@@ -1711,7 +1712,16 @@ public class ExperimentEditor extends JFrame {
                 if ( !_stationsMatch )
                     button.on( false );
             }
-            //  Next check against the sources that have been chosen.
+        }
+    }
+    
+    /*
+     * Check each scan agains the sources that have been selected.  If the scan does
+     * not include the source, it will be removed.
+     */
+    public void checkScansAgainstSources() {
+        for ( Iterator<ButtonGrid.GridButton> iter = _scanGrid.buttonList().iterator(); iter.hasNext(); ) {
+            ButtonGrid.GridButton button = iter.next();
             if ( button.on() ) {
                 VexFileParser.Scan scan = (VexFileParser.Scan)button.data();
                 boolean _sourceFound = false;
@@ -1724,6 +1734,14 @@ public class ExperimentEditor extends JFrame {
                     button.on( false );
             }
         }
+    }
+    
+    /*
+     * Use the current settings to produce a .v2d "file".  This is stored in the
+     * v2d editor.
+     */
+    public void produceV2dFile() {
+        checkScansAgainstSources();
         //  Create a v2d file name, if one hasn't been used already....we use the
         //  .vex file name (if it exists).
         if ( _v2dFileName.getText().length() == 0 ) {

@@ -35,6 +35,7 @@ import java.lang.String;
 
 import javax.swing.text.Keymap;
 import javax.swing.KeyStroke;
+import javax.swing.JToolTip;
 import java.awt.event.KeyEvent;
 import javax.swing.text.TextAction;
 
@@ -82,6 +83,13 @@ public class NumberBox extends JFormattedTextField implements MouseListener,
         } );
         this.setKeymap( km );
     }
+
+    public JToolTip createToolTip() {
+        ComplexToolTip tip = new ComplexToolTip();
+        tip.setComponent( this );
+        return tip;
+    }
+
     /*
      * Set the value.  This will change the display.
      */

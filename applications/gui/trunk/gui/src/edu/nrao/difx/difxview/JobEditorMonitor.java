@@ -219,7 +219,12 @@ public class JobEditorMonitor extends JFrame {
         machinesListPanel.add( _mpiTestLabel );
         _headNode = new JFormattedTextField();
         _headNode.setFocusLostBehavior( JFormattedTextField.COMMIT );
-        _headNode.setText( _settings.difxControlAddress() );
+        _headNode.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                _settings.headNode( _headNode.getText() );
+            }
+        } );
+        _headNode.setText( _settings.headNode() );
         machinesListPanel.add( _headNode );
         _headNodeLabel = new JLabel( "HeadNode:" );
         _headNodeLabel.setHorizontalAlignment( JLabel.LEFT );
@@ -683,10 +688,7 @@ public class JobEditorMonitor extends JFrame {
         // If we are using the TCP connection, set the address and port for diagnostic
         // reporting.
         if ( _settings.sendCommandsViaTCP() ) {
-            try {
-                cmd.setAddress( java.net.InetAddress.getLocalHost().getHostAddress() );
-            } catch ( java.net.UnknownHostException e ) {
-            }
+            cmd.setAddress( _settings.guiServerConnection().myIPAddress() );
             monitorPort = _settings.newDifxTransferPort();
             cmd.setPort( monitorPort );
         }
@@ -1056,10 +1058,7 @@ public class JobEditorMonitor extends JFrame {
         // If we are using the TCP connection, set the address and port for diagnostic
         // reporting.
         if ( _settings.sendCommandsViaTCP() ) {
-            try {
-                jobStart.setAddress( java.net.InetAddress.getLocalHost().getHostAddress() );
-            } catch ( java.net.UnknownHostException e ) {
-            }
+            jobStart.setAddress( _settings.guiServerConnection().myIPAddress() );
             monitorPort = _settings.newDifxTransferPort();
             jobStart.setPort( monitorPort );
         }

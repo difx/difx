@@ -87,6 +87,10 @@ public class GuiServerConnection {
         }
     }
     
+    public String myIPAddress() {
+        return _socket.getLocalAddress().getHostAddress();
+    }
+    
     public void close() {
         if ( connected() ) {
             try {
@@ -157,7 +161,7 @@ public class GuiServerConnection {
                 try {
                     int packetId = _in.readInt();
                     int nBytes = _in.readInt();
-                    if ( nBytes > WARNING_SIZE ) {
+                    if ( nBytes > WARNING_SIZE || nBytes < 0 ) {
                         java.util.logging.Logger.getLogger("global").log(java.util.logging.Level.WARNING, 
                                 "trying to read (" + nBytes + " of data) - packetID is " + packetId );
                         java.util.logging.Logger.getLogger("global").log(java.util.logging.Level.WARNING, 

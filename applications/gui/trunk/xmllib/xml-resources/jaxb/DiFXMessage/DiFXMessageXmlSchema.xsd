@@ -119,11 +119,13 @@
                 <xsd:element ref="difxControlAddress"/>
                 <xsd:element ref="difxControlPort"/>
                 <xsd:element ref="difxTransferPort"/>
+                <xsd:element ref="difxTransferPortLimit"/>
                 <xsd:element ref="difxMonitorHost"/>
                 <xsd:element ref="difxMonitorPort"/>
                 <xsd:element ref="difxControlUser"/>
                 <xsd:element ref="difxVersion"/>
                 <xsd:element ref="difxBase"/>
+                <xsd:element ref="difxHeadNode"/>
                 <xsd:element ref="dbUseDataBase"/>
                 <xsd:element ref="dbVersion"/>
                 <xsd:element ref="dbName"/>
@@ -308,11 +310,13 @@
     <xsd:element name="difxControlAddress" type="xsd:string"></xsd:element>
     <xsd:element name="difxControlPort" type="xsd:int"></xsd:element>
     <xsd:element name="difxTransferPort" type="xsd:int"></xsd:element>
+    <xsd:element name="difxTransferPortLimit" type="xsd:int"></xsd:element>
     <xsd:element name="difxMonitorHost" type="xsd:string"></xsd:element>
     <xsd:element name="difxMonitorPort" type="xsd:int"></xsd:element>
     <xsd:element name="difxControlUser" type="xsd:string"></xsd:element>
     <xsd:element name="difxVersion" type="xsd:string"></xsd:element>
     <xsd:element name="difxBase" type="xsd:string"></xsd:element>
+    <xsd:element name="difxHeadNode" type="xsd:string"></xsd:element>
     <xsd:element name="dbUseDataBase" type="xsd:boolean"></xsd:element>
     <xsd:element name="dbVersion" type="xsd:string"></xsd:element>
     <xsd:element name="dbName" type="xsd:string"></xsd:element>

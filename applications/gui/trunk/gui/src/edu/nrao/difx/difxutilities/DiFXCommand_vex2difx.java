@@ -46,12 +46,9 @@ public class DiFXCommand_vex2difx extends DiFXCommand {
             v2d.setCalcifOnly( 1 );
         else
             v2d.setCalcifOnly( 0 );
-        try {
-            v2d.setAddress( java.net.InetAddress.getLocalHost().getHostAddress() );
-            _port = _settings.newDifxTransferPort();
-            v2d.setPort( _port );
-        } catch ( java.net.UnknownHostException e ) {
-        }
+        v2d.setAddress( _settings.guiServerConnection().myIPAddress() );
+        _port = _settings.newDifxTransferPort();
+        v2d.setPort( _port );
         this.body().setDifxVex2DifxRun( v2d );
         //  These lists contain "listeners" for callbacks when things occur...incremental
         //  read progress and the end of reading.

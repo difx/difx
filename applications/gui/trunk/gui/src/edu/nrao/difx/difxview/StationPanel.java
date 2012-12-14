@@ -768,10 +768,7 @@ public class StationPanel extends IndexedPanel {
         // If we are using the TCP connection, set the address and port for diagnostic
         // reporting.
         if ( _settings.sendCommandsViaTCP() ) {
-            try {
-                cmd.setAddress( java.net.InetAddress.getLocalHost().getHostAddress() );
-            } catch ( java.net.UnknownHostException e ) {
-            }
+            cmd.setAddress( _settings.guiServerConnection().myIPAddress() );
             monitorPort = _settings.newDifxTransferPort();
             cmd.setPort( monitorPort );
         }

@@ -147,7 +147,7 @@ public class ButtonGrid  extends JScrollPane {
     public GridButton addButton( String label, String tooltip, boolean on ) {
         final GridButton button = new GridButton( label ) {
             public JToolTip createToolTip() {
-                MultiLineToolTip tip = new MultiLineToolTip();
+                ComplexToolTip tip = new ComplexToolTip();
                 tip.setComponent(this);
                 return tip;
             }

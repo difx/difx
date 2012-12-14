@@ -56,6 +56,7 @@ import javax.swing.JTextField;
 import javax.swing.JComboBox;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
+import javax.swing.JToolTip;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.DefaultTableCellRenderer;
 
@@ -72,6 +73,7 @@ import mil.navy.usno.widgetlib.SaneTextField;
 import mil.navy.usno.widgetlib.SimpleTextEditor;
 import mil.navy.usno.widgetlib.ActivityMonitorLight;
 import mil.navy.usno.widgetlib.MessageDisplayPanel;
+import mil.navy.usno.widgetlib.ComplexToolTip;
 
 import javax.swing.JFrame;
 
@@ -322,17 +324,25 @@ public class SystemSettings extends JFrame {
         transferPortLabel.setBounds( 210, 85, 150, 25 );
         transferPortLabel.setHorizontalAlignment( JLabel.RIGHT );
         difxControlPanel.add( transferPortLabel );
-        //  Right now this is invisible.....
         _maxTransferPorts = new NumberBox();
         _maxTransferPorts.minimum( 1 );
         _maxTransferPorts.setHorizontalAlignment( NumberBox.LEFT );
+        _maxTransferPorts.setToolTipText( "Maximum number of ports that may be opened simultaneously\n"
+                + "for transfer operations.  Transfer port numbers start at the \n"
+                + "\"Transfer Port\" value and increment this many times.\n"
+                + "Don't change this value while transfers are in progress!!" );
         _maxTransferPorts.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
                 maxTransferPorts();
             }
         } );
-              
+        difxControlPanel.add( _maxTransferPorts );
+        JLabel maxTransferPortsLabel = new JLabel( "Max Open Ports:" );
+        maxTransferPortsLabel.setBounds( 420, 85, 150, 25 );
+        maxTransferPortsLabel.setHorizontalAlignment( JLabel.RIGHT );
+        difxControlPanel.add( maxTransferPortsLabel );
         _difxMonitorHost = new SaneTextField();
+        _difxMonitorHost.setToolTipText( "The host running the monitor\n(better info in the future!)" );
         difxControlPanel.add( _difxMonitorHost );
         JLabel difxMonitorHostLabel = new JLabel( "Monitor Host:" );
         difxMonitorHostLabel.setBounds( 420, 55, 150, 25 );
@@ -343,7 +353,7 @@ public class SystemSettings extends JFrame {
         _difxMonitorPort.minimum( 0 );
         difxControlPanel.add( _difxMonitorPort );
         JLabel monitorPortLabel = new JLabel( "Monitor Port:" );
-        monitorPortLabel.setBounds( 420, 85, 150, 25 );
+        monitorPortLabel.setBounds( 620, 85, 150, 25 );
         monitorPortLabel.setHorizontalAlignment( JLabel.RIGHT );
         difxControlPanel.add( monitorPortLabel );
         _difxControlUser = new JFormattedTextField();
@@ -533,7 +543,8 @@ public class SystemSettings extends JFrame {
         _identifyMark5sCheck.setBounds( 165, 205, 305, 25 );
         networkPanel.add( _identifyMark5sCheck );
         _mark5Pattern = new SaneTextField();
-        _mark5Pattern.setToolTipText( "Comma separated list of patterns that match all names of Mark5 units.");
+        _mark5Pattern.setToolTipText( "Comma separated list of patterns used to match names of Mark5 units.\n"
+                + "Patterns are REGULAR EXPRESSIONS!" );
         _mark5Pattern.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
                 generateMark5PatternList();
@@ -705,59 +716,8 @@ public class SystemSettings extends JFrame {
         _databaseMessages = new MessageScrollPane();
         databasePanel.add( _databaseMessages );
          
-        _addressesPanel = new IndexedPanel( "Documentation Locations" );
-        _addressesPanel.openHeight( 155 );
-        _addressesPanel.closedHeight( 20 );
-        _addressesPanel.labelWidth( 250 );
-        JLabel guiDocPathLabel = new JLabel( "GUI Docs:" );
-        guiDocPathLabel.setBounds( 10, 25, 100, 25 );
-        guiDocPathLabel.setHorizontalAlignment( JLabel.RIGHT );
-        guiDocPathLabel.setToolTipText( "Directory (or web address) containing all GUI documentation." );
-        _guiDocPath = new JFormattedTextField();
-        _guiDocPath.setFocusLostBehavior( JFormattedTextField.COMMIT );
-        _guiDocPath.setToolTipText( "Directory (or web address) containing all GUI documentation." );
-        _addressesPanel.add( guiDocPathLabel );
-        _addressesPanel.add( _guiDocPath );
-        _guiDocPathBrowseButton = new JButton( "Browse..." );
-        _guiDocPathBrowseButton.setToolTipText( "Browse the local directory structure for the location of documentation." );
-        _guiDocPathBrowseButton.addActionListener( new ActionListener() {
-            public void actionPerformed( ActionEvent e ) {
-                guiDocPathBrowse();
-            }
-        } );
-        _addressesPanel.add( _guiDocPathBrowseButton );
-        JLabel difxUsersGroupURLLabel = new JLabel( "Users Group:" );
-        difxUsersGroupURLLabel.setBounds( 10, 55, 100, 25 );
-        difxUsersGroupURLLabel.setHorizontalAlignment( JLabel.RIGHT );
-        difxUsersGroupURLLabel.setToolTipText( "URL of the DiFX Users Group." );
-        _difxUsersGroupURL = new JFormattedTextField();
-        _difxUsersGroupURL.setFocusLostBehavior( JFormattedTextField.COMMIT );
-        _difxUsersGroupURL.setToolTipText( "URL of the DiFX Users Group." );
-        _addressesPanel.add( difxUsersGroupURLLabel );
-        _addressesPanel.add( _difxUsersGroupURL );
-        JLabel difxWikiURLLabel = new JLabel( "DiFX Wiki:" );
-        difxWikiURLLabel.setBounds( 10, 85, 100, 25 );
-        difxWikiURLLabel.setHorizontalAlignment( JLabel.RIGHT );
-        difxWikiURLLabel.setToolTipText( "URL of the DiFX Wiki." );
-        _difxWikiURL = new JFormattedTextField();
-        _difxWikiURL.setFocusLostBehavior( JFormattedTextField.COMMIT );
-        _difxWikiURL.setToolTipText( "URL of the DiFX Wiki." );
-        _addressesPanel.add( difxWikiURLLabel );
-        _addressesPanel.add( _difxWikiURL );
-        JLabel difxSVNLabel = new JLabel( "DiFX SVN:" );
-        difxSVNLabel.setBounds( 10, 115, 100, 25 );
-        difxSVNLabel.setHorizontalAlignment( JLabel.RIGHT );
-        difxSVNLabel.setToolTipText( "URL of the DiFX Subversion repository." );
-        _difxSVN = new JFormattedTextField();
-        _difxSVN.setFocusLostBehavior( JFormattedTextField.COMMIT );
-        _difxSVN.setToolTipText( "URL of the DiFX Subversion repository." );
-        _addressesPanel.add( difxSVNLabel );
-        _addressesPanel.add( _difxSVN );
-
-        _scrollPane.addNode( _addressesPanel );
-        
         IndexedPanel jobSettingsPanel = new IndexedPanel( "Job Settings" );
-        jobSettingsPanel.openHeight( 85 );
+        jobSettingsPanel.openHeight( 115 );
         jobSettingsPanel.closedHeight( 20 );
         jobSettingsPanel.labelWidth( 300 );
         _scrollPane.addNode( jobSettingsPanel );
@@ -783,6 +743,12 @@ public class SystemSettings extends JFrame {
         _useStagingArea.setToolTipText( "Use the staging area to run jobs (or don't)." );
         jobSettingsPanel.add( useStagingAreaLabel );
         jobSettingsPanel.add( _useStagingArea );
+        _headNode = new SaneTextField();
+        jobSettingsPanel.add( _headNode );
+        JLabel headNodeLabel = new JLabel( "Head Node:" );
+        headNodeLabel.setBounds( 10, 85, 150, 25 );
+        headNodeLabel.setHorizontalAlignment( JLabel.RIGHT );
+        jobSettingsPanel.add( headNodeLabel );
         
         IndexedPanel eopSettingsPanel = new IndexedPanel( "EOP Settings" );
         //  These editors may or may not be displayed, but they are used to hold
@@ -919,6 +885,56 @@ public class SystemSettings extends JFrame {
         } );
         eopSettingsPanel.add( _updateEOPNow );
         
+        _addressesPanel = new IndexedPanel( "Documentation Locations" );
+        _addressesPanel.openHeight( 155 );
+        _addressesPanel.closedHeight( 20 );
+        _addressesPanel.labelWidth( 250 );
+        JLabel guiDocPathLabel = new JLabel( "GUI Docs:" );
+        guiDocPathLabel.setBounds( 10, 25, 100, 25 );
+        guiDocPathLabel.setHorizontalAlignment( JLabel.RIGHT );
+        guiDocPathLabel.setToolTipText( "Directory (or web address) containing all GUI documentation." );
+        _guiDocPath = new JFormattedTextField();
+        _guiDocPath.setFocusLostBehavior( JFormattedTextField.COMMIT );
+        _guiDocPath.setToolTipText( "Directory (or web address) containing all GUI documentation." );
+        _addressesPanel.add( guiDocPathLabel );
+        _addressesPanel.add( _guiDocPath );
+        _guiDocPathBrowseButton = new JButton( "Browse..." );
+        _guiDocPathBrowseButton.setToolTipText( "Browse the local directory structure for the location of documentation." );
+        _guiDocPathBrowseButton.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                guiDocPathBrowse();
+            }
+        } );
+        _addressesPanel.add( _guiDocPathBrowseButton );
+        JLabel difxUsersGroupURLLabel = new JLabel( "Users Group:" );
+        difxUsersGroupURLLabel.setBounds( 10, 55, 100, 25 );
+        difxUsersGroupURLLabel.setHorizontalAlignment( JLabel.RIGHT );
+        difxUsersGroupURLLabel.setToolTipText( "URL of the DiFX Users Group." );
+        _difxUsersGroupURL = new JFormattedTextField();
+        _difxUsersGroupURL.setFocusLostBehavior( JFormattedTextField.COMMIT );
+        _difxUsersGroupURL.setToolTipText( "URL of the DiFX Users Group." );
+        _addressesPanel.add( difxUsersGroupURLLabel );
+        _addressesPanel.add( _difxUsersGroupURL );
+        JLabel difxWikiURLLabel = new JLabel( "DiFX Wiki:" );
+        difxWikiURLLabel.setBounds( 10, 85, 100, 25 );
+        difxWikiURLLabel.setHorizontalAlignment( JLabel.RIGHT );
+        difxWikiURLLabel.setToolTipText( "URL of the DiFX Wiki." );
+        _difxWikiURL = new JFormattedTextField();
+        _difxWikiURL.setFocusLostBehavior( JFormattedTextField.COMMIT );
+        _difxWikiURL.setToolTipText( "URL of the DiFX Wiki." );
+        _addressesPanel.add( difxWikiURLLabel );
+        _addressesPanel.add( _difxWikiURL );
+        JLabel difxSVNLabel = new JLabel( "DiFX SVN:" );
+        difxSVNLabel.setBounds( 10, 115, 100, 25 );
+        difxSVNLabel.setHorizontalAlignment( JLabel.RIGHT );
+        difxSVNLabel.setToolTipText( "URL of the DiFX Subversion repository." );
+        _difxSVN = new JFormattedTextField();
+        _difxSVN.setFocusLostBehavior( JFormattedTextField.COMMIT );
+        _difxSVN.setToolTipText( "URL of the DiFX Subversion repository." );
+        _addressesPanel.add( difxSVNLabel );
+        _addressesPanel.add( _difxSVN );
+        _scrollPane.addNode( _addressesPanel );
+        
         //  Start the EOP monitoring thread.  This is either set to automatically
         //  update the EOP data periodically, or can be triggered to do so
         //  immediately.
@@ -951,7 +967,8 @@ public class SystemSettings extends JFrame {
             _difxControlPort.setBounds( 165, 85, 100, 25 );
             _difxTransferPort.setBounds( 365, 85, 100, 25 );
             _difxMonitorHost.setBounds( 575, 55, 300, 25 );
-            _difxMonitorPort.setBounds( 575, 85, 100, 25 );
+            _maxTransferPorts.setBounds( 575, 85, 100, 25 );
+            _difxMonitorPort.setBounds( 775, 85, 100, 25 );
             _difxControlUser.setBounds( 165, 115, 300, 25 );
             _difxVersion.setBounds( 165, 205, 300, 25 );
             _difxSetupPath.setBounds( 165, 235, w - 195, 25 );
@@ -985,6 +1002,7 @@ public class SystemSettings extends JFrame {
             //  Job settings
             _workingDirectory.setBounds( 165, 25, w - 185, 25 );
             _stagingArea.setBounds( 165, 55, w - 185, 25 );
+            _headNode.setBounds( 165, 85, 300, 25 );
             _eopURL.setBounds( 165, 25, w - 295, 25 );
             _viewEOPFile.setBounds( w - 125, 25, 100, 25 );
             _leapSecondsURL.setBounds( 165, 55, w - 295, 25 );
@@ -1472,7 +1490,7 @@ public class SystemSettings extends JFrame {
         _dbVersion.setText( "unknown" );
         _dbHost.setText( "swc02.usno.navy.mil" );
         _dbUser.setText( "difx" );
-        _dbPwd.setText( "difx2010" );
+        _dbPwd.setText( "password" );
         _dbName.setText( "difxdb" );
         _dbMS.setText( "mysql" );
         _dbDriver.setText( "com.mysql.jdbc.Driver" );
@@ -1488,6 +1506,7 @@ public class SystemSettings extends JFrame {
         _workingDirectory.setText( "/" );
         _stagingArea.setText( "/queue" );
         _useStagingArea.setSelected( false );
+        _headNode.setText( _difxControlAddress.getText() );
         _queueBrowserSettings.showCompleted = true;
         _queueBrowserSettings.showIncomplete = true;
         _queueBrowserSettings.showSelected = true;
@@ -1729,6 +1748,7 @@ public class SystemSettings extends JFrame {
 
         //  Set up the communications based on current settings.
         changeDifxControlConnection();
+        
     }
     
     /*
@@ -1981,6 +2001,9 @@ public class SystemSettings extends JFrame {
     public boolean useStagingArea() { return _useStagingArea.isSelected(); }
     public void useStagingArea( boolean newVal ) { _useStagingArea.setSelected( newVal ); }
     
+    public String headNode() { return _headNode.getText(); }
+    public void headNode( String newVal ) { _headNode.setText( newVal ); }
+    
     public String guiDocPath() { return _guiDocPath.getText().substring( 7 ); }
     
     public int phaseCalInt() { return _defaultNames.phaseCalInt; }
@@ -2213,8 +2236,10 @@ public class SystemSettings extends JFrame {
             _suppressWarningsCheck.setSelected( doiConfig.isSuppressUnknownMessageWarnings() );
             //  Double negative to make checked a default.
             _identifyMark5sCheck.setSelected( !doiConfig.isDontIdentifyMark5SByPattern() );
-            if ( doiConfig.getMark5Pattern() != null )
+            if ( doiConfig.getMark5Pattern() != null ) {
                 _mark5Pattern.setText( doiConfig.getMark5Pattern() );
+                generateMark5PatternList();
+            }
             this.loggingEnabled( doiConfig.isLoggingEnabled() );
             if ( doiConfig.getStatusValidDuration() != 0 )
                 this.statusValidDuration( doiConfig.getStatusValidDuration() );
@@ -2232,6 +2257,10 @@ public class SystemSettings extends JFrame {
                 this.difxControlPort( doiConfig.getDifxControlPort() );
             if ( doiConfig.getDifxTransferPort() != 0 )
                 this.difxTransferPort( doiConfig.getDifxTransferPort() );
+            if ( doiConfig.getDifxTransferPortLimit() != 0 ) {
+                this._maxTransferPorts.intValue( doiConfig.getDifxTransferPortLimit() );
+                maxTransferPorts();
+            }
             if ( doiConfig.getDifxMonitorHost() != null )
                 this.difxMonitorHost( doiConfig.getDifxMonitorHost() );
             if ( doiConfig.getDifxMonitorPort() != 0 )
@@ -2271,6 +2300,8 @@ public class SystemSettings extends JFrame {
             if ( doiConfig.getStagingArea() != null )
                 _stagingArea.setText( doiConfig.getStagingArea() );
             _useStagingArea.setSelected( doiConfig.isUseStagingArea() );
+            if ( doiConfig.getDifxHeadNode() != null )
+                this.headNode( doiConfig.getDifxHeadNode() );
 
             _queueBrowserSettings.showCompleted = doiConfig.isQueueShowCompleted();
             _queueBrowserSettings.showIncomplete = doiConfig.isQueueShowIncomplete();
@@ -2668,6 +2699,7 @@ public class SystemSettings extends JFrame {
         doiConfig.setDifxControlAddress( this.difxControlAddress() );
         doiConfig.setDifxControlPort( this.difxControlPort() );
         doiConfig.setDifxTransferPort( this.difxTransferPort() );
+        doiConfig.setDifxTransferPortLimit( _maxTransferPorts.intValue() );
         doiConfig.setDifxMonitorHost( this.difxMonitorHost() );
         doiConfig.setDifxMonitorPort( this.difxMonitorPort() );
         doiConfig.setDifxControlUser( this.difxControlUser() );
@@ -2694,6 +2726,7 @@ public class SystemSettings extends JFrame {
         doiConfig.setWorkingDirectory( _workingDirectory.getText() );
         doiConfig.setStagingArea( _stagingArea.getText() );
         doiConfig.setUseStagingArea( _useStagingArea.isSelected() );
+        doiConfig.setDifxHeadNode( this.headNode() );
         
         doiConfig.setWindowConfigMainX( _windowConfiguration.mainX );
         doiConfig.setWindowConfigMainY( _windowConfiguration.mainY );
@@ -3263,7 +3296,7 @@ public class SystemSettings extends JFrame {
      * Determine whether the given data source name and type exist in the list.
      */
     public boolean dataSourceInList( String name, String type ) {
-        if ( _dataSourceList != null ) {
+        if ( _dataSourceList != null && name != null && type != null ) {
             for ( Iterator<DataSource> iter = _dataSourceList.iterator(); iter.hasNext(); ) {
                 DataSource src = iter.next();
                 if ( src.name.contentEquals( name ) && src.type.contentEquals( type ) )
@@ -3545,8 +3578,12 @@ public class SystemSettings extends JFrame {
     public boolean isMark5Name( String newName ) {
         if ( _identifyMark5sCheck.isSelected() && _mark5PatternList != null ) {
             for ( int i = 0; i < _mark5PatternList.length; ++i ) {
-                if ( newName.matches( _mark5PatternList[i] ) )
-                    return true;
+                try {
+                    if ( newName.matches( _mark5PatternList[i] ) )
+                        return true;
+                } catch ( java.util.regex.PatternSyntaxException e ) {
+                    _messageCenter.error ( 0, "SystemSettings", "unparseable pattern in Mark5 pattern list - \"" + _mark5PatternList[i] + "\"" );
+                }
             }
         }
         return false;
@@ -3623,6 +3660,7 @@ public class SystemSettings extends JFrame {
     protected JFormattedTextField _workingDirectory;
     protected JFormattedTextField _stagingArea;
     protected JCheckBox _useStagingArea;
+    protected SaneTextField _headNode;
     
     //  EOP Settings items.
     protected SaneTextField _eopURL;
