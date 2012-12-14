@@ -62,14 +62,7 @@ void pystream::open(const string& antennaName, const VexData *V, ScriptType sTyp
 	}
 	mjd0 = V->obsStart();
 	
-	if(sType == SCRIPT_GBT)
-	{
-		extension = ".turtle";
-	}
-	else
-	{
-		extension = ".py";
-	}
+	extension = ".py";
 
 	fileName = string(obsCode) + string(".") + antennaName + extension;
 	ofstream::open(fileName.c_str());
@@ -178,7 +171,7 @@ void pystream::close()
 
 	if(lastValid != 0.0)
 	{
-		if(scriptType == SCRIPT_VLBA)
+		if(scriptType == SCRIPT_VLBA || scriptType == SCRIPT_GBT)
 		{
 			double deltat = floor((lastValid-mjd0 + 1.0/86400.0)*86400.0 + 0.5);
 			*this << "array.wait(mjdStart + " << deltat << "*second)" << endl;
@@ -212,25 +205,39 @@ int pystream::writeHeader(const VexData *V)
 	double day = floor(mjd0);
 	double sec = floor((mjd0-day)*86400.0 + 0.5);
         lastValid  = mjd0-(5.0/86400.0);
+        string tab = "";
 
-	*this << "from edu.nrao.evla.observe import Mark5C" << endl;
+    if(scriptType == SCRIPT_GBT)
+	{
+        // os.getenv() gets exception in executor
+        // (for running same script by the executor and by astrid)
+		*this << "import os" << endl << endl;
+		*this << "isAstrid = 0" << endl;
+                *this << "if 1:" << endl;
+                *this << "    try:" << endl;
+		*this << "        if os.getenv('ASTRIDVLBA') == '1':" << endl;
+                *this << "            isAstrid = 1" << endl;
+                *this << "    except:" << endl;
+                *this << "        pass" << endl << endl;
+                *this << "if not isAstrid:" << endl;
+        tab = "    ";
+        }
+
+	*this << tab << "from edu.nrao.evla.observe import Mark5C" << endl;
 	switch(scriptType)
 	{
 	case SCRIPT_VLBA:
-		*this << "from edu.nrao.evla.observe import MatrixSwitch" << endl;
-		*this << "from edu.nrao.evla.observe import RDBE" << endl;
-		*this << "from edu.nrao.evla.observe import VLBALoIfSetup" << endl;
-		*this << "from edu.nrao.evla.observe import Parameters" << endl;
-		*this << "from edu.nrao.evla.observe import bbc" << endl;
+	case SCRIPT_GBT:
+		*this << tab << "from edu.nrao.evla.observe import MatrixSwitch" << endl;
+		*this << tab << "from edu.nrao.evla.observe import RDBE" << endl;
+		*this << tab << "from edu.nrao.evla.observe import VLBALoIfSetup" << endl;
+		*this << tab << "from edu.nrao.evla.observe import Parameters" << endl;
+		*this << tab << "from edu.nrao.evla.observe import bbc" << endl;
 		break;
 	case SCRIPT_EVLA:
 		*this << "includePath = \"/home/mchost/evla/include/\"" << endl;
 		*this << "execfile(includePath+\"printers.py\")" << endl;
 		*this << "execfile(includePath+\"tmjd.py\")" << endl;
-		break;
-	case SCRIPT_GBT:
-		*this << "execfile(\"/users/gbvlbi/obs/newvlbadefs.py\")" << endl;
-		*this << "execfile(\"/users/gbvlbi/obs/" << obsCode << "_setup.py\")" << endl; 
 		break;
 	}
 	*this << endl;
@@ -239,7 +246,7 @@ int pystream::writeHeader(const VexData *V)
 	*this << "deltat2 = 1" << endl;
 	*this << endl;
 	*this << "obsCode = '" << obsCode << "'" << endl;
-	if(scriptType == SCRIPT_VLBA)
+	if(scriptType == SCRIPT_VLBA || scriptType == SCRIPT_GBT)
 	{
 		*this << "stnCode = '" << ant << "'" << endl;
 	}
@@ -819,7 +826,7 @@ int pystream::writeLoifTable(const VexData *V)
 			continue;
 		}
 
-		if(scriptType == SCRIPT_VLBA)
+		if(scriptType == SCRIPT_VLBA || scriptType == SCRIPT_GBT)
 		{
 			if(setup->ifs.size() > 2)
 			{
@@ -1097,6 +1104,7 @@ int pystream::writeScans(const VexData *V)
 	int nScan;
 	const char *switchOutput[] = {"1A", "1B", "2A", "2B"};
 	double recordSeconds = 0.0;
+    string tab;
 	double endLastScan = 0.0;
 
 	nScan = V->nScan();
@@ -1121,6 +1129,12 @@ int pystream::writeScans(const VexData *V)
 		}
 		else
 		{
+            bool record = scan->recordEnable.find(ant)->second;
+            if (ant == "GB")
+            {
+                if (!record)
+                    *this << "# pointing scan for the GBT" << endl;
+            }
 			const VexInterval *arange = &scan->stations.find(ant)->second;
 
 			int modeId = V->getModeIdByDefName(scan->modeDefName);
@@ -1143,7 +1157,7 @@ int pystream::writeScans(const VexData *V)
 			{
 
 				*this << "# changing to mode " << mode->defName << endl;
-				if(scriptType == SCRIPT_VLBA)
+				if(scriptType == SCRIPT_VLBA || scriptType == SCRIPT_GBT)
 				{
 					*this << "subarray.setVLBALoIfSetup(loif" << modeId << ")" << endl;
 
@@ -1211,7 +1225,9 @@ int pystream::writeScans(const VexData *V)
 				// recognize scans that do not record to Mark5C, but still set switches (need to pass scan start time)
 				if(scan->nRecordChan(V, ant) == 0 || recorderType == RECORDER_NONE)
 				{
-					*this << "print 'Not a recording scan but still set switches for " << scan->defName << ".'" << endl;
+					if( scriptType != SCRIPT_GBT ) {
+                        *this << "#print 'Not a recording scan but still set switches for " << scan->defName << ".'" << endl;
+                    }
 					*this << "subarray.setSwitches(mjdStart + " << deltat1 << "*second, mjdStart+" << deltat2
 						<< "*second, obsCode+'_'+stnCode+'_'+'" << scan->defName << "')" << endl;
 				}
@@ -1228,14 +1244,28 @@ int pystream::writeScans(const VexData *V)
 
 					exit(EXIT_FAILURE);
 				}
+                                tab = "";
+			        if (ant == "GB" && !record)
+			        {
+				    // code for GBT pointing scan - set source as a 'peak' type
+				    *this << "if isAstrid:" << endl;
+				    tab = "    ";
+				    *this << tab << "source" << sourceId << ".setPeak(True)" << endl;
+				}
 
 				// only start scan if we are at least 10sec away from scan end
 				// NOTE - if this changes to a value less than 5sec may need to revisit Executor RDBE code
 				// in case of scan starting later than start time
-				*this << "if array.time() < mjdStart + (" << deltat2 << "-10)*second:" << endl;
-				*this << "  subarray.execute(mjdStart + " << deltat3 << "*second)" << endl;
-				*this << "else:" << endl;
-				*this << "  print 'Skipping scan which ended at time ' + str(mjdStart+" << deltat2 << "*second) + ' since array.time is ' + str(array.time())" << endl;
+				*this << tab << "if array.time() < mjdStart + (" << deltat2 << "-10)*second:" << endl;
+				*this << tab << "  subarray.execute(mjdStart + " << deltat3 << "*second)" << endl;
+				*this << tab << "else:" << endl;
+				*this << tab << "  print 'Skipping scan which ended at time ' + str(mjdStart+" << deltat2 << "*second) + ' since array.time is ' + str(array.time())" << endl;
+				if (ant == "GB" && !record)
+				{
+					// code for GBT pointing scan - reset source as a 'track' type
+					*this << tab << "source" << sourceId << ".setPeak(False)" << endl;
+				    tab = "";
+				}
 				lastValid = arange->mjdStop;
 				endLastScan = arange->mjdStop;
 			}
