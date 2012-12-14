@@ -468,20 +468,16 @@ Usage vex2sched.pl [options] <vexfile> [working directory]
 Options:
   -nchannel <i>       Number of spectral points/IF (default 256)
   -integration <f>    Integration time in seconds (default 1)
-  -atca <ATCAPAD>     ATCA reference antenna (e.g. W104)
-  -crosspol           Compute cross polarisations (default no)
   -evlbi              Evlbi mode (default no)
-  -noauto             Don't save auto correlations (default yes)
-  -noquad             Don't do quadratic fringe rotation (default yes)
-  -postf              Do post-f fringe rotation (default no, disables quad)
   -ant <ANT>          Speficy antennas to use, must be given multipe times
                        E.g. -ant At -ant Pa -ant Mp. Default all
   -start hh:mm:ss     Specift start time after nominal experiment start
   -duration <DUR>     Duration (in seconds) to correlate from start
-  -input <s>          Specify input file to write (default experiment.input)
-  -new                DiFX Trunk (DiFX 2.0 development)
-  -monitor            Create html code for monitor display
-  -files <FILES>      List of files to correlate
+  -v2d <s>            Specify v2d file to write (default experiment.v2d)
+  -cluster <s>        String format of names for machine file. Must include 
+                      printf style integer. E.g. cave%02d-ext (cave00-ext)
+  -nodes <i>          Number of nodes to write in machine file
+  -scan <s>          Set start and stop times for a specific scan
 
 EOF
   exit(1);
