@@ -3058,7 +3058,7 @@ int main(int argc, char **argv)
 	}
 
 	// set min and max bandwidths for each setup
-	for(int s = 0; s < V->nScan(); ++s)
+	for(unsigned int s = 0; s < V->nScan(); ++s)
 	{
 		const VexScan *scan = V->getScan(s);
 		CorrSetup *corrSetup = P->getNonConstCorrSetup(scan->corrSetupName);

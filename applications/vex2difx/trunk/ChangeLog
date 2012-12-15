@@ -8,6 +8,7 @@ Version 2.2.0
 * Populate difxLabel in difxio->.calc and in .joblist
 * Generate systematic threadId
 * Verify all or none of the ephemeris parameters are provided
+* c++11 compliance
 
 Version 2.1.0
 ~~~~~~~~~~~~~

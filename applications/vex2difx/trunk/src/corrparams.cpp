@@ -47,6 +47,9 @@ const double MJD_UNIX0 = 40587.0;	// MJD at beginning of unix time
 const double SEC_DAY = 86400.0;
 const double MUSEC_DAY = 86400000000.0;
 
+const double PhaseCentre::DEFAULT_RA  = -999.9;
+const double PhaseCentre::DEFAULT_DEC = -999.9;
+
 /* round to nearest second */
 static double roundSeconds(double mjd)
 {

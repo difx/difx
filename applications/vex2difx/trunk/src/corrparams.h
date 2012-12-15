@@ -58,8 +58,8 @@ class PhaseCentre
 public:
 	//constants
 	static const string DEFAULT_NAME;
-	static const double DEFAULT_RA  = -999.9;
-	static const double DEFAULT_DEC = -999.9;
+	static const double DEFAULT_RA;
+	static const double DEFAULT_DEC;
 
 	//constructors
 	PhaseCentre(double ra, double dec, string name);

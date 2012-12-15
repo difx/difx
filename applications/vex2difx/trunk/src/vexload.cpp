@@ -1212,9 +1212,9 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 				setup.formatName = setup.formatName.substr(0, setup.formatName.find_last_of('/'));
 				setup.nRecordChan = 1;
 				size_t lpos = setup.formatName.find_first_of(':');
-				if (lpos == string::npos)
+				if(lpos == string::npos)
 				{
-					setup.nRecordChan = -7777;  // use all channels of vex file, see below
+					setup.nRecordChan = 7777;  // use all channels of vex file, see below
 				}
 				while(lpos != string::npos)         // else
 				{
@@ -1386,7 +1386,7 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 				++nRecordChan;
 			}
 
-			if(setup.nRecordChan == -7777)     // then use the number of that we just counted out
+			if(setup.nRecordChan == 7777)     // then use the number of that we just counted out
 			{
 				setup.nRecordChan = nRecordChan;
 				cout << "FYI: Antenna=" << antName << " will use the full number of recorded channels, " << setup.nRecordChan << endl;

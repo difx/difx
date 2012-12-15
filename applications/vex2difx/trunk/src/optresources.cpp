@@ -257,7 +257,7 @@ void optresources::figurePersonality(const VexData *V)
 		exit(EXIT_FAILURE);
 	}
 
-	for(int m = 0; m < V->nMode(); ++m)
+	for(unsigned int m = 0; m < V->nMode(); ++m)
 	{
 		const VexMode *mode = V->getMode(m);
 		const VexSetup *setup = mode->getSetup(ant);
