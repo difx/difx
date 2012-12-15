@@ -5,6 +5,7 @@ Version 1.4.4
 Ettl
 * Add genheaders() for Mark4 and Mark5B formats
 * m5test: minor improvements
+* c++11 compliance
 
 Version 1.4.3
 * Post 2.0.1 tagging

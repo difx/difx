@@ -38,13 +38,14 @@
 # define __GNUC_PREREQ(maj, min) 0
 #endif
 
-#if !defined(__cplusplus) || !defined(__GNUC_PREREQ) || __GNUC_PREREQ(4,3)
+#ifdef __cplusplus
+#include <complex>
+typedef std::complex<double> mark5_double_complex;
+typedef std::complex<float>  mark5_float_complex;
+#else
 #include <complex.h>
 typedef double complex mark5_double_complex;
-typedef float  complex mark5_float_complex;
-#else
-typedef struct { double re, im; } mark5_double_complex;
-typedef struct { float  re, im; } mark5_float_complex;
+typedef float complex  mark5_float_complex;
 #endif
 
 #include <stdio.h>
