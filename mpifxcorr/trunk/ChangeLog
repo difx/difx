@@ -6,6 +6,7 @@ Version 2.2
 * Allow building without IPP (needs fftw) [Thanks Richard Dodson!]
 * .pc files now include full compile-in info for ipp or fftw as appropriate
 * Check for a common .dir file anomoly caused by hand editing
+* c++11 compliance
 
 Version 2.1
 ~~~~~~~~~~~

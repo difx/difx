@@ -63,10 +63,10 @@ public:
   long long getEstimatedBytes();
 
   /// The number of elements in the send/receive circular buffer
-  static const int RECEIVE_RING_LENGTH = 4;
+  static const int RECEIVE_RING_LENGTH;
 
   /// The minimum weight for filterbank STA data to be sent
-  static const double MINIMUM_FILTERBANK_WEIGHT = 0.333;
+  static const double MINIMUM_FILTERBANK_WEIGHT;
 
 protected:
  /** 

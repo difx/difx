@@ -158,6 +158,8 @@ Core::Core(int id, Configuration * conf, int * dids, MPI_Comm rcomm)
   difxMessageInitBinary();
 }
 
+const int Core::RECEIVE_RING_LENGTH = 4;
+const double Core::MINIMUM_FILTERBANK_WEIGHT = 0.333;
 
 Core::~Core()
 {
