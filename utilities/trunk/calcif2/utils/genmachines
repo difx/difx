@@ -44,8 +44,8 @@ from copy import deepcopy
 
 program = 'genmachines'
 author  = 'Walter Brisken'
-version = '0.15'
-verdate = '20120927'
+version = '0.16'
+verdate = '20121216'
 
 defaultDifxMessagePort = 50200
 defaultDifxMessageGroup = '224.2.2.1'
@@ -85,11 +85,13 @@ class Parser:
 	self.vsnB = 'none'
 	self.state = 'Unknown'
 	self.unit = 'unknown'
+	self.sender = 'unknown'
 	self.tmp = ''
 	self.ok = False
 
-    def feed(self, data):
+    def feed(self, sender, data):
         self._parser.Parse(data, 0)
+	self.sender = sender
 
     def close(self):
         self._parser.Parse("", 1) # end of data
@@ -120,9 +122,9 @@ class Parser:
 
     def getinfo(self):
 	if self.ok:
-        	return [self.unit, self.vsnA, self.vsnB, self.state]
+        	return [self.unit, self.vsnA, self.vsnB, self.state, self.sender]
 	else:
-		return ['unknown', 'none', 'none', 'Unknown']
+		return ['unknown', 'none', 'none', 'Unknown', 'unknown']
 
 def vsn_request():
 	src = socket.gethostname()
@@ -184,11 +186,12 @@ def getVsnsByMulticast(maxtime, modlist, verbose):
 	notidle = []
 	while t < maxtime and len(missing) > 0:
 		try:
-			message = s.recv(1024)
+			message, address = s.recvfrom(2048)
+			sender = split(socket.gethostbyaddr(address[0])[0], '.')[0]
 			if verbose > 1:
 				print message
 			p = Parser()
-			p.feed(message)
+			p.feed(sender, message)
 			info = p.getinfo()
 			p.close()
 			if info[0] == 'unknown':
@@ -315,8 +318,11 @@ def writemachines(basename, hostname, machines, cores, results, vsns, dssources,
 				headCount += 1
 		elif ds == "MODULE":
 			for r in results:
-				if  r[1] == vsns[moduleCount] or r[2] == vsns[moduleCount]:
-                                	dsnodes.append(r[0])
+				if r[1] == vsns[moduleCount] or r[2] == vsns[moduleCount]:
+					if r[0] in machines:
+                                		dsnodes.append(r[0])
+					else:
+						dsnodes.append(r[4])
 			moduleCount += 1
 
 	for d in dsnodes:
