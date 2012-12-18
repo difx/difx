@@ -27,6 +27,9 @@
 //
 //============================================================================
 
+#define _LARGEFILE64_SOURCE 1
+#define _FILE_OFFSET_BITS 64
+
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -83,7 +86,7 @@ int is_reasonable_timediff(double startmjd, double stopmjd)
 {
 	int startday = (int)startmjd;
 	int stopday = (int)stopmjd;
-	return ( (startmjd <= stopmjd) && ((stopday == startday) || (stopday == (startday+1))) );
+	return ( (startmjd <= stopmjd) && ((stopday-startday) <= 1) );
 }
 
 struct mark5_stream *openmk5(const char *filename, const char *formatname, long *offset)
@@ -173,12 +176,13 @@ int verify(const char *filename, const char *formatname, int refMJD)
 			stopmjd = mjd + (sec + ns/1e9) / 86400.0;
 
 		}
-		status = mark5_stream_next_frame(ms); 
 
-		if(ms->nvalidatefail > 20)
-		{
-			break;
-		}
+		status = mark5_stream_next_frame(ms); // FIXME
+
+		// FIMXE: mark5access does not check Mark4, Mark5B syncwords
+		// If sync is lost there is no public function to recover sync like findfirstframe()
+		// Could set stopmjd = last MJD before ms->nvalidatefail!=0 but this can loose a large part of scan
+
 	}
 
 	delete_mark5_stream(ms);
@@ -201,42 +205,26 @@ int verify(const char *filename, const char *formatname, int refMJD)
 
 	delete_mark5_stream(ms);
 
-	// check that start and stop time are quite valid
-	if (!is_reasonable_timediff(startmjd, stopmjd))
+	// fprintf (stderr, "%s %lf %lf %lf\n", filename, startmjd, stopmjd, eofmjd);
+
+	// choose most plausible ending time in presence of frame decode errors
+	if (!is_reasonable_timediff(stopmjd, eofmjd) && !is_reasonable_timediff(eofmjd, stopmjd))
 	{
-		fprintf (stderr, "Error: timestamps suspicious (either stop(%lf)<=start(%lf) or stop>>start) in file %s\n", stopmjd, startmjd, filename);
-	}
-	if ((int)eofmjd != (int)stopmjd)
-	{
-		fprintf (stderr, "Error: eof day (%d) != stop day (%d) in file %s\n", (int)eofmjd, (int)stopmjd, filename);
+		if (is_reasonable_timediff(startmjd, eofmjd))
+		{
+			fprintf(stderr, "Stop vs. EOF MJD mismatch! Using best looking EOF MJD for %s\n", filename);
+			stopmjd = eofmjd;
+		}
 	}
 
-	// output for debug/verbose
-	//fprintf (stderr, "%s %lf %lf %lf\n", filename, startmjd, stopmjd, eofmjd);
-
-	// choose most plausible ending time
 	if (is_reasonable_timediff(startmjd, stopmjd))
 	{
 		fprintf (stdout, "%s %lf %lf\n", filename, startmjd, stopmjd);
 	}
-	else if (is_reasonable_timediff(startmjd, eofmjd))
-	{
-		fprintf (stdout, "%s %lf %lf\n", filename, startmjd, eofmjd);
-	}
 	else
 	{
-		if (eofmjd>startmjd)
-		{
-			fprintf (stdout, "%s %lf %lf\n", filename, startmjd, eofmjd);
-		}
-		else if(stopmjd>startmjd)
-		{
-			fprintf (stdout, "%s %lf %lf\n", filename, startmjd, stopmjd);
-		}
-		else
-		{
-			fprintf (stdout, "%s\n", filename);
-		}
+		// start MJD or both stop MJD cancidates are corrupt, output _something_
+		fprintf (stdout, "%s %lf %lf\n", filename, startmjd, startmjd);
 	}
 
 	return 0;
