@@ -61,7 +61,7 @@ int usage(const char *pgm)
 	printf("%s ver. %s   %s  %s\n\n", program, version, author, verdate);
 	printf("A Mark5 tester.  Can verify VLBA, Mark3/4, and Mark5B "
 		"formats using the\nmark5access library.\n\n");
-	printf("Usage : %s <file> <dataformat> [<offset>]\n\n", pgm);
+	printf("Usage : %s <file> <dataformat> [<offset>] [<report>]\n\n", pgm);
 	printf("  <file> is the name of the input file\n\n");
 	printf("  <dataformat> should be of the form: "
 		"<FORMAT>-<Mbps>-<nchan>-<nbit>, e.g.:\n");
@@ -70,16 +70,16 @@ int usage(const char *pgm)
 	printf("    Mark5B-512-16-2\n");
 	printf("    VDIF_1000-64-1-2 (here 1000 is payload size in bytes)\n\n");
 	printf("  <offset> is number of bytes into file to start decoding\n\n");
-
+	printf("  <report> use 0 to report all timestamps, 1 to report once a second\n\n");
 	return EXIT_SUCCESS;
 }
 
-int verify(const char *filename, const char *formatname, long long offset)
+int verify(const char *filename, const char *formatname, long long offset, int report_interval)
 {
 	struct mark5_stream *ms;
 	float **data;
-	int i, status;
-	long long total, unpacked;
+	int i, status, osec = 0;
+	long long total, unpacked, nvalidatepass = 0, nvalidatefail = 0;
 
 	total = unpacked = 0;
 
@@ -127,14 +127,28 @@ int verify(const char *filename, const char *formatname, long long offset)
 			int mjd, sec;
 			double ns;
 			mark5_stream_get_frame_time(ms, &mjd, &sec, &ns);
-			printf("frame_num=%lld mjd=%d sec=%d ns=%011.1f n_valid=%d n_invalid=%d\n", 
-				ms->framenum, mjd, sec, ns,
-				ms->nvalidatepass, ms->nvalidatefail);
+                        if (report_interval == 0) {
+				printf("frame_num=%lld mjd=%d sec=%d ns=%011.1f n_valid=%d n_invalid=%d\n",
+					ms->framenum, mjd, sec, ns,
+					ms->nvalidatepass, ms->nvalidatefail);
+                        } else {
+				if (sec != osec) {
+					printf("frame_num=%lld mjd=%d sec=%d ns=%011.1f n_valid=%d n_invalid=%d total=%Lu unp=%Lu\n",
+						ms->framenum, mjd, sec, ns,
+						nvalidatepass, nvalidatefail, total, unpacked);
+					nvalidatepass = 0;
+					nvalidatefail = 0;
+					osec = sec;
+				} else {
+					nvalidatepass += ms->nvalidatepass;
+					nvalidatefail += ms->nvalidatefail;
+				}
+			}
 		}
 
 		if(ms->nvalidatefail > 20)
 		{
-			break;
+			// break;
 		}
 	}
 
@@ -154,6 +168,7 @@ int verify(const char *filename, const char *formatname, long long offset)
 int main(int argc, char **argv)
 {
 	long long offset = 0;
+	int report_interval = 0;
 	int r;
 
 	oldsiginthand = signal(SIGINT, siginthand);
@@ -215,7 +230,12 @@ int main(int argc, char **argv)
 		offset=atoll(argv[3]);
 	}
 
-	verify(argv[1], argv[2], offset);
+	if(argc > 4)
+	{
+		report_interval=atoi(argv[4]);
+	}
+
+	verify(argv[1], argv[2], offset, report_interval);
 
 	return EXIT_SUCCESS;
 }
