@@ -15,7 +15,7 @@ def remote_command(inputq, outputq):
             if disk_query == 'du':
                 command = "ssh MACHINE 'du -c -B 1G DATA_AREA/*'"
             elif disk_query == 'df':
-                command = "ssh MACHINE 'df -B 1G DATA_AREA'"
+                command = "ssh MACHINE 'df -P -B 1G DATA_AREA'"
 
             command = command.replace('MACHINE', machine)
             command = command.replace('DATA_AREA', data_area)
