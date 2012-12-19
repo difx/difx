@@ -2,7 +2,7 @@
 
 # update the version when significant changes are made
 program = 'goUSNO'
-version = '0.17'
+version = '0.18'
 
 
 from sys import exit, argv, stdin
@@ -76,6 +76,7 @@ testmode = False
 edit = False
 nrao = False
 templateFile = templateFileSX
+band = 'S/X'
 
 if strip(popen('uname -s').readline()) != 'Linux':
 	print 'Must be run on a Linux machine'
@@ -97,6 +98,7 @@ for a in argv[1:]:
 		nrao = True
 	elif a in ['-c', '--cband']:
 		templateFile = templateFileCC
+		band = 'C'
 	else:
 		args.append(a)
 
@@ -183,6 +185,7 @@ if email != None:
 	out = popen(cmd, "w")
 	out.write('Start time = %s UTC\n' % strftime(dateFormat, start))
 	out.write('Project directory = %s\n' % outDir)
+	out.write('\nThis observation will be done at %s-band.\n\n' % band)
 	if testmode:
 		out.write('\n*** This is a test observation and may not provide real data ***\n\n')
 	out.write('\nemail sent by %s version %s\n' % (program, version))

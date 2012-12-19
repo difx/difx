@@ -9,6 +9,7 @@ Version 2.2.0
 * Generate systematic threadId
 * Verify all or none of the ephemeris parameters are provided
 * c++11 compliance
+* Don't allow subintNS greater than about 1 second (to ward off MODE errors)
 
 Version 2.1.0
 ~~~~~~~~~~~~~

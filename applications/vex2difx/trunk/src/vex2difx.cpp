@@ -1702,7 +1702,7 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 				msgSize = (testsubintNS*1.0e-9)*dataRate/8.0;
 				readSize = msgSize*D->dataBufferFactor/D->nDataSegments;
 				if(readSize > P->minReadSize && readSize < P->maxReadSize && 
-                                   testsubintNS <= 2140000000 && testsubintNS > config->subintNS && 
+                                   testsubintNS <= 1020000000 && testsubintNS > config->subintNS && 
 				   fabs(testsubintNS/floatFFTDurNS - static_cast<int>(testsubintNS/floatFFTDurNS + 0.5)) < 1e-9)
 				{
 					config->subintNS = testsubintNS;
@@ -1716,7 +1716,7 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 		{
 			if(P->tweakIntTime)
 			{
-				while(((config->subintNS*1.0e-9)*dataRate/8.0)*(D->dataBufferFactor/D->nDataSegments) < P->minReadSize)
+				while(((config->subintNS*1.0e-9)*dataRate/8.0)*(D->dataBufferFactor/D->nDataSegments) < P->minReadSize && config->subintNS <= 510000000)
 				{
 					config->subintNS *= 2;
 				}
@@ -1751,7 +1751,7 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 		readSize = msgSize*D->dataBufferFactor/D->nDataSegments;
 		if(readSize < P->minReadSize)
 		{
-			cout << "This has lead to a read size smaller than the provided guideline: correlation may run more slowly" << endl;
+			cout << "This has lead to a read size " << readSize << " smaller than the provided guideline " << P->minReadSize << ": correlation may run more slowly" << endl;
 			cout << "But probably this is a low data rate experiment, so it won't matter" << endl;
 		}
 	}
