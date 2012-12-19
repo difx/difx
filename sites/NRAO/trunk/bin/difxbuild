@@ -10,8 +10,8 @@ import platform
 from time import asctime
 
 program = 'difxbuild'
-version = '0.20'
-verdate = '20121213'
+version = '0.21'
+verdate = '20121216'
 author = 'Walter Brisken <wbrisken@nrao.edu>'
 
 difxbuildUrl = 'http://www.aoc.nrao.edu/~wbrisken/difxbuild'
@@ -20,23 +20,26 @@ openmpiVersion = '1.6'
 pgplotVersion = '5.2'
 numMakeCpus = 4
 
-# TODO
-# install from .tar.gz 
-# generic arch install (e.g., fftw)
-# option to update self
-# wget option to clobber
-# add gui, difx_monitor, ...
-# add package dependencies and make use of them
-# option to test all possible dependencies
-# plplot
-# python path
-# svnstatus
+todo_list = """
+TODO:
+
+* install from .tar.gz 
+* generic arch install (e.g., fftw)
+* wget option to clobber
+* add gui, difx_monitor, ...
+* add package dependencies and make use of them
+* option to test all possible dependencies
+* plplot
+* python path
+* svnstatus
+
+"""
 
 documentation = """
 
              In-line documentation for difxbuild
 
-                Nov 8, 2012  Walter Brisken
+                Dec 19, 2012  Walter Brisken
 
 Some assumptions:
 
@@ -147,9 +150,10 @@ Bootstrap parameter options include:
   wrapper program if memory leek checking is desired.  Use this parameter
   with caution.
 
-* mca: parameters to add to the .openmpi/mca-params.conf file.  If not
+* mca: parameters to add to the /etc/openmpi-mca-params.conf file.  If not
   provided, no such file will be created.  This can be useful to include
-  or exclude certain network interfaces.
+  or exclude certain network interfaces.  You can set this on a per 
+  platform basis.  To do this, for example, set mcai686 and mcax86_64.
 
 * primaryarch: Normally bootstrapping needs to be done on a machine running
   on the primary architecture.  If primaryarch is set, the bootstrapping
@@ -915,14 +919,25 @@ def bootstrap(comps, params, args, verbose, pretend):
 					platformhostsStr += ','
 				platformhostsStr += config['altplatform%dhost' % i]
 
-		if config.has_key('mca'):
-			print 'Making .openmpi/mca-params.conf'
-			execute('mkdir -p %s/.openmpi' % environ['HOME'], verbose, pretend)
-			out = open('%s/.openmpi/mca-params.conf' % environ['HOME'], 'w')
-			mca = split(config['mca'], ';')
-			for m in mca:
-				out.write('%s\n' % m)
-			out.close()
+		# populate openmpi mca information, if provided
+		for p in platforms.keys():
+			mcaPath = '%s/%s/etc/' % (config['difxbase'], p)
+			mcaFile = '%s/openmpi-mca-params.conf' % mcaPath
+			mca = ''
+			if config.has_key('mca%s' % p):
+				mca = split(config['mca%s' % p], ';')
+			elif config.has_key('mca'):
+				mca = split(config['mca'], ';')
+			if mca != '':
+				print 'Making %s' % mcaFile
+				execute('mkdir -p %s' % mcaPath, verbose, pretend)
+				out = open(mcaFile, 'w')
+				for m in mca:
+					out.write('%s\n' % m)
+				out.close()
+			elif isfile(mcaFile):
+				print '*** Removing obsolete file %s (actually moving to /tmp/%s.mca) ***' % (mcaFile, p)
+				execute('mv %s /tmp/%s.mca' % (mcaFile, p), verbose, pretend)
 
 		ipproot = {}	# indexed by arch
 		for a in platforms.keys():
@@ -1050,9 +1065,9 @@ def bootstrap(comps, params, args, verbose, pretend):
 		# copy setup file for future reference
 		execute('cp %s %s/bootstrap/"%s.%s.%s"' % (setupFile, config['difxbase'], split(setupFile, '/')[-1], asctime(), version), verbose, pretend)
 
-		if config.has_key('mca'):
-			print '*** IMPORTANT NOTE: $HOME/.openmpi/mca-params.conf should be copied into'
-			print '*** the directory $HOME/.openmpi/ of each account from which DiFX will be run\n'
+		if isfile('%s/.openmpi/mca-params.conf' % environ['HOME']):
+			print '*** Warning: you have a .openmpi/mca-params.conf file in your home directory.'
+			print '*** This may interfere with platform-wide mca file(s) installed with difxbuild.'
 
 		print '\nBootstrap complete.  Now source %s and continue with svn.\n' % setupFile
 
@@ -1505,7 +1520,7 @@ def update_difxbuild(origComps, params, args, verbose, pretend):
 	newVersion = strip(popen('python /tmp/difxbuild --version', 'r').readlines()[0])
 	print 'New version = %s' % newVersion
 	print 
-	if newVersion <= version:
+	if newVersion <= version and not '--force' in args:
 		print 'difxbuild up to date; not need to update'
 	else:
 		execute('chmod +x /tmp/difxbuild', verbose, pretend)
@@ -1753,6 +1768,8 @@ def usage(prog):
 	print '       print this help and exit\n'
 	print '  -d or --documentation'
 	print '       print the in-line documentation\n'
+	print '  -t or --todo'
+	print '       print developer\'s to-do list\n'
 	print '  -v or --verbose'
 	print '       be more verbose\n'
 	print '  -V or --version'
@@ -1779,7 +1796,7 @@ def usage(prog):
 
 def main():
 	try:
-		opts, args = getopt.getopt(argv[1:], "hdqvpV", ["help", "documentation", "quiet", "verbose", "pretend", "version"])
+		opts, args = getopt.getopt(argv[1:], "hdqvpVt", ["help", "documentation", "quiet", "verbose", "pretend", "version", "todo"])
 	except getopt.GetoptError, err:
 		print '%s\n' % str(err)
 		usage(argv[0])
@@ -1787,20 +1804,23 @@ def main():
 	verbose = 1
 	pretend = False
 	for o, a in opts:
-		if o == '-v':
+		if o in ['-v', '--verbose']:
 			verbose += 1
-		elif o == '--version':
+		elif o in ['-V', '--version']:
 			print version
 			exit(0)
-		elif o == '-q':
+		elif o in ['-q', '--quiet']:
 			verbose -= 1
-		elif o == '-h':
+		elif o in ['-h', '--help']:
 			usage(argv[0])
 			exit(0)
-		elif o == '-d':
+		elif o == ['-d', '--documentation']:
 			print documentation
 			exit(0)
-		elif o == '-p':
+		elif o == ['-t', '--todo']:
+			print todo_list
+			exit(0)
+		elif o == ['-p', '--pretend']:
 			pretend = True
 
 	if len(args) <= 0:
