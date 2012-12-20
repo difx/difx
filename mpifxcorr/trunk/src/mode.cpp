@@ -576,9 +576,9 @@ float Mode::process(int index, int subloopindex)  //frac sample error, fringedel
   fftcentre = index+0.5;
   averagedelay = interpolator[0]*fftcentre*fftcentre + interpolator[1]*fftcentre + interpolator[2];
   fftstartmicrosec = index*fftchannels*sampletime; //CHRIS CHECK
-  starttime = (offsetseconds-datasec)*1000000.0 + double(offsetns - datans)/1000.0 + fftstartmicrosec - averagedelay;
+  starttime = (offsetseconds-datasec)*1000000.0 + (static_cast<long long>(offsetns) - static_cast<long long>(datans))/1000.0 + fftstartmicrosec - averagedelay;
   nearestsample = int(starttime/sampletime + 0.5);
- walltimesecs  =model->getScanStartSec(currentscan, config->getStartMJD(), config->getStartSeconds()) + offsetseconds + ((double)offsetns)/1000000000.0 + fftstartmicrosec/1000000.0;
+  walltimesecs= model->getScanStartSec(currentscan, config->getStartMJD(), config->getStartSeconds()) + offsetseconds + offsetns/1.0e9 + fftstartmicrosec/1.0e6;
 
   //if we need to, unpack some more data - first check to make sure the pos is valid at all
   //cout << "Datalengthbytes for " << datastreamindex << " is " << datalengthbytes << endl;

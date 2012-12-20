@@ -403,7 +403,8 @@ void FxManager::sendData(int data[], int coreindex)
   coretimes[numsent[coreindex]%Core::RECEIVE_RING_LENGTH][coreindex][1] = data[2];
   coretimes[numsent[coreindex]%Core::RECEIVE_RING_LENGTH][coreindex][2] = data[3];
   numsent[coreindex]++;
-  data[3] += nsincrement;
+  data[3] += (nsincrement%1000000000);
+  data[2] += (nsincrement/1000000000);
   if(data[3] >= 1000000000)
   {
     data[3] -= 1000000000;

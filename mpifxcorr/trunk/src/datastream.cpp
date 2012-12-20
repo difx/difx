@@ -312,8 +312,8 @@ void DataStream::execute()
 //the returned value MUST be between 0 and bufferlength
 int DataStream::calculateControlParams(int scan, int offsetsec, int offsetns)
 {
-  int bufferindex, perr, blockbytes, segoffbytes, segoffns, srcindex;
-  long long nsdifference, validns, firstoffsetns, lastoffsetns;
+  int bufferindex, perr, blockbytes, segoffbytes, srcindex;
+  long long nsdifference, validns, firstoffsetns, lastoffsetns, segoffns;
   double delayus1, delayus2;
   bool foundok;
 
@@ -323,41 +323,41 @@ int DataStream::calculateControlParams(int scan, int offsetsec, int offsetns)
   //cinfo << startl << "Working on scan " << scan << " offsetsec " << offsetsec << ", offsetns " << offsetns << endl;
   //work out the first delay and the last delay and place in control buffer
   bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][0] = scan;
-  foundok = model->calculateDelayInterpolator(scan, (double)offsetsec + ((double)offsetns)/1000000000.0, 0.0, 0, config->getDModelFileIndex(bufferinfo[atsegment].configindex, streamnum), srcindex, 0, &delayus1);
+  foundok = model->calculateDelayInterpolator(scan, (double)offsetsec + ((double)offsetns)/1.0e9, 0.0, 0, config->getDModelFileIndex(bufferinfo[atsegment].configindex, streamnum), srcindex, 0, &delayus1);
   delayus1 -= intclockseconds*1000000;
   firstoffsetns = ((long long)offsetns) - static_cast<long long>(delayus1*1000);
   int64_t dataspanns = static_cast<int64_t>(bufferinfo[atsegment].numchannels*bufferinfo[atsegment].blockspersend*2*bufferinfo[atsegment].sampletimens + 0.5);
   if (bufferinfo[atsegment].sampling== Configuration::COMPLEX) dataspanns /=2;
   
-  foundok = foundok && model->calculateDelayInterpolator(scan, (double)offsetsec + ((double)offsetns + dataspanns)/1000000000.0, 0.0, 0, config->getDModelFileIndex(bufferinfo[atsegment].configindex, streamnum), srcindex, 0, &delayus2);
+  foundok = foundok && model->calculateDelayInterpolator(scan, (double)offsetsec + ((double)offsetns + dataspanns)/1.0e9, 0.0, 0, config->getDModelFileIndex(bufferinfo[atsegment].configindex, streamnum), srcindex, 0, &delayus2);
   delayus2 -= intclockseconds*1000000;
   if(!foundok) {
     cerror << startl << "Could not find a Model interpolator for scan " << scan << " offsetseconds " << offsetsec << " offsetns " << offsetns << " - will torch this subint!" << endl;
     bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][1] = Mode::INVALID_SUBINT;
     return 0; //note exit here!!!!
   }
-  lastoffsetns = ((long long)offsetns) + dataspanns + static_cast<long long>(-1000*delayus2 + 0.5);
+  lastoffsetns = (long long)offsetns + (long long)dataspanns + static_cast<long long>(-1000*delayus2 + 0.5);
   //cout << mpiid << ": delayus1 is " << delayus1 << ", delayus2 is " << delayus2 << endl;
   if(lastoffsetns < 0)
   {
     offsetsec -= 1;
-    offsetns += 1000000000;
-    firstoffsetns += 1000000000;
-    lastoffsetns += 1000000000;
+    firstoffsetns += 1000000000LL;
+    lastoffsetns += 1000000000LL;
+cinfo << startl << "QQQ1" << endl;
   }
   if(lastoffsetns < 0)
   {
     offsetsec -= 1;
-    offsetns += 1000000000;
-    firstoffsetns += 1000000000;
-    lastoffsetns += 1000000000;
+    firstoffsetns += 1000000000LL;
+    lastoffsetns += 1000000000LL;
+cinfo << startl << "QQQ2" << endl;
   }
   if(lastoffsetns < 0)
   {
     cerror << startl << "lastoffsetns less than 0 still! =" << lastoffsetns << endl;
   }
 
-  //cout << "DATASTREAM main thread: looking for scan " << scan << ", sec " << offsetsec << ", ns " << offsetns << "; atsegment is " << atsegment << ", our first locked buffer has scan " << bufferinfo[atsegment].scan << ", sec " << bufferinfo[atsegment].scanseconds << ", ns " << bufferinfo[atsegment].scanns << endl;
+  //cout << "DATASTREAM main thread: looking for scan " << scan << ", sec " << offsetsec << ", ns " << firstoffsetns << "; atsegment is " << atsegment << ", our first locked buffer has scan " << bufferinfo[atsegment].scan << ", sec " << bufferinfo[atsegment].scanseconds << ", ns " << bufferinfo[atsegment].scanns << endl;
 
   if(scan < bufferinfo[atsegment].scan)
   {
@@ -380,8 +380,8 @@ int DataStream::calculateControlParams(int scan, int offsetsec, int offsetns)
     return 0; //note exit here!!!!
   }
 
-  nsdifference = ((long long)(offsetsec - bufferinfo[atsegment].scanseconds))*1000000000 + firstoffsetns - bufferinfo[atsegment].scanns;
-  validns = (((long long)(bufferinfo[atsegment].validbytes))*bufferinfo[atsegment].nsinc)/readbytes;
+  nsdifference = (offsetsec - bufferinfo[atsegment].scanseconds)*1000000000LL + firstoffsetns - static_cast<long long>(bufferinfo[atsegment].scanns);
+  validns = (static_cast<long long>(bufferinfo[atsegment].validbytes)*static_cast<long long>(bufferinfo[atsegment].nsinc))/readbytes;
   while((scan > bufferinfo[atsegment].scan || (scan == bufferinfo[atsegment].scan && nsdifference >= validns)) && (keepreading || (atsegment != lastvalidsegment)))
   //while((scan > bufferinfo[(atsegment+1)%numdatasegments].scan || (scan == bufferinfo[(atsegment+1)%numdatasegments].scan && (offsetsec > bufferinfo[(atsegment+1)%numdatasegments].scanseconds + 1 || ((offsetsec - bufferinfo[(atsegment+1)%numdatasegments].scanseconds)*1000000000 + (firstoffsetns - bufferinfo[(atsegment+1)%numdatasegments].scanns) >= 0)))) && (keepreading || (atsegment != lastvalidsegment)))
   {
@@ -399,8 +399,8 @@ int DataStream::calculateControlParams(int scan, int offsetsec, int offsetns)
     if(perr != 0)
       csevere << startl << "Error in telescope mainthread unlock of buffer section!!!" << atsegment << endl;
     atsegment = (atsegment+1)%numdatasegments;
-    nsdifference = ((long long)(offsetsec - bufferinfo[atsegment].scanseconds))*1000000000 + firstoffsetns - bufferinfo[atsegment].scanns;
-    validns = (((long long)(bufferinfo[atsegment].validbytes))*bufferinfo[atsegment].nsinc)/readbytes;
+    nsdifference = (offsetsec - bufferinfo[atsegment].scanseconds)*1000000000LL + firstoffsetns - static_cast<long long>(bufferinfo[atsegment].scanns);
+    validns = (static_cast<long long>(bufferinfo[atsegment].validbytes)*static_cast<long long>(bufferinfo[atsegment].nsinc))/readbytes;
   }
 
   //in case the atsegment has changed...
@@ -417,25 +417,16 @@ int DataStream::calculateControlParams(int scan, int offsetsec, int offsetns)
     return 0; //note exit here!!!!
   }
 
-  /*// FIXME -- talk to Adam about this next check.  -WFB
-  if(offsetsec > bufferinfo[atsegment].scanseconds + bufferinfo[atsegment].nsinc/1000000000 + 1)
-  {
-    //if(mpiid == 1)
-    //  cout << "Bailing out2: was asked for scan " << scan << ", offset " << offsetsec << "/" << lastoffsetns << " and the segment I'm at is scan " << bufferinfo[atsegment].scan << ", offset " << bufferinfo[atsegment].scanseconds << "/" << bufferinfo[atsegment].scanns << endl;
-    bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][1] = Mode::INVALID_SUBINT;
-    return 0; //note exit here!!!!
-  }*/
-
   //now that we obviously have a lock on all the data we need, fill the control buffer
   blockbytes = (bufferinfo[atsegment].numchannels*2*bufferinfo[atsegment].bytespersamplenum)/bufferinfo[atsegment].bytespersampledenom;
 
   //if the next segment has not been filled and we are beyond the current segment, bail out
-  double currentsegmenttime = bufferinfo[atsegment].scanseconds + ((double)bufferinfo[atsegment].scanns)/1e9;
-  double nextsegmenttime = bufferinfo[(atsegment+1)%numdatasegments].scanseconds + ((double)bufferinfo[(atsegment+1)%numdatasegments].scanns)/1e9;
+  double currentsegmenttime = bufferinfo[atsegment].scanseconds + bufferinfo[atsegment].scanns/1.0e9;
+  double nextsegmenttime = bufferinfo[(atsegment+1)%numdatasegments].scanseconds + bufferinfo[(atsegment+1)%numdatasegments].scanns/1.0e9;
 
   if(bufferinfo[atsegment].validbytes < readbytes || bufferinfo[(atsegment+1)%numdatasegments].scanseconds - bufferinfo[atsegment].scanseconds > 2 || nextsegmenttime < currentsegmenttime) //need to be careful - could be a big gap between this segment and the next that would cause int overflows
   {
-    double dbufferindex = atsegment*readbytes + (((double(offsetsec - bufferinfo[atsegment].scanseconds)*1000000000.0 + (firstoffsetns - bufferinfo[atsegment].scanns))/bufferinfo[atsegment].sampletimens)*bufferinfo[atsegment].bytespersamplenum)/bufferinfo[atsegment].bytespersampledenom;
+    double dbufferindex = atsegment*readbytes + ((((offsetsec - bufferinfo[atsegment].scanseconds)*1.0e9 + (firstoffsetns - static_cast<long long>(bufferinfo[atsegment].scanns)))/bufferinfo[atsegment].sampletimens)*bufferinfo[atsegment].bytespersamplenum)/bufferinfo[atsegment].bytespersampledenom;
     segoffbytes = int(dbufferindex - atsegment*readbytes);
     // if there is no data from the current atsegment and the next segment is also not valid, bail out immediately
     if (nextsegmenttime < currentsegmenttime && segoffbytes > bufferinfo[atsegment].validbytes)
@@ -443,7 +434,7 @@ int DataStream::calculateControlParams(int scan, int offsetsec, int offsetns)
       bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][1] = Mode::INVALID_SUBINT;
       return 0; //note exit here!!!!
     }
-    if(dbufferindex < double(-blockbytes*bufferinfo[atsegment].blockspersend) || dbufferindex > double(bufferbytes)) //its way off, bail out
+    if(dbufferindex < -blockbytes*bufferinfo[atsegment].blockspersend || dbufferindex > bufferbytes) //its way off, bail out
     {
       //if(mpiid == 1)
       //  cout << "Bailing out3: was asked for scan " << scan << ", offset " << offsetsec << "/" << lastoffsetns << " and the segment I'm at is scan " << bufferinfo[atsegment].scan << ", offset " << bufferinfo[atsegment].scanseconds << "/" << bufferinfo[atsegment].scanns << endl;
@@ -456,9 +447,9 @@ int DataStream::calculateControlParams(int scan, int offsetsec, int offsetns)
     bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][3+i/FLAGS_PER_INT] = 0;
 
   //if we make it here, its safe to make the int calculations below
-  //cout << "Datastream " << mpiid << " has a firstoffsetns of " << firstoffsetns << " and an offsetsec of " << offsetsec << endl;
+  cinfo << startl << "Datastream " << mpiid << " has a firstoffsetns of " << firstoffsetns << " and an offsetsec of " << offsetsec << " and a lastoffsetns of " << lastoffsetns << endl;
   bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][1] = bufferinfo[atsegment].scanseconds;
-  bufferindex = atsegment*readbytes + (int(((offsetsec - bufferinfo[atsegment].scanseconds)*1000000000 + (firstoffsetns - bufferinfo[atsegment].scanns))/bufferinfo[atsegment].sampletimens + 0.5)*bufferinfo[atsegment].bytespersamplenum)/bufferinfo[atsegment].bytespersampledenom;
+  bufferindex = atsegment*readbytes + (int(((offsetsec - bufferinfo[atsegment].scanseconds)*1000000000LL + (firstoffsetns - static_cast<long long>(bufferinfo[atsegment].scanns)))/bufferinfo[atsegment].sampletimens + 0.5)*bufferinfo[atsegment].bytespersamplenum)/bufferinfo[atsegment].bytespersampledenom;
 
   //align the index to nearest previous 16 bit boundary
   if(bufferindex % 2 != 0)
@@ -468,8 +459,8 @@ int DataStream::calculateControlParams(int scan, int offsetsec, int offsetns)
   if(bufferindex == bufferbytes)
   {
     if(bufferinfo[atsegment].scan != bufferinfo[(atsegment+1)%numdatasegments].scan ||
-       ((bufferinfo[(atsegment+1)%numdatasegments].scanseconds - bufferinfo[atsegment].scanseconds)*1000000000 + 
-        bufferinfo[(atsegment+1)%numdatasegments].scanns - bufferinfo[atsegment].scanns - bufferinfo[atsegment].nsinc != 0))
+       ((bufferinfo[(atsegment+1)%numdatasegments].scanseconds - bufferinfo[atsegment].scanseconds)*1000000000LL + 
+        static_cast<long long>(bufferinfo[(atsegment+1)%numdatasegments].scanns) - static_cast<long long>(bufferinfo[atsegment].scanns) - static_cast<long long>(bufferinfo[atsegment].nsinc) != 0))
     {
       bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][1] = Mode::INVALID_SUBINT;
       return 0; //note exit here!!!!
@@ -511,13 +502,17 @@ int DataStream::calculateControlParams(int scan, int offsetsec, int offsetns)
   segoffbytes = bufferindex - atsegment*readbytes;
   bufferindex -= segoffbytes % bufferinfo[atsegment].bytesbetweenintegerns;
   segoffbytes -= segoffbytes % bufferinfo[atsegment].bytesbetweenintegerns;
-  segoffns = int(double(segoffbytes*bufferinfo[atsegment].bytespersampledenom/bufferinfo[atsegment].bytespersamplenum)* bufferinfo[atsegment].sampletimens + 0.5);
-  bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][1] += segoffns/1000000000;
-  bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][2] = bufferinfo[atsegment].scanns + segoffns%1000000000;
-  bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][1] += bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][2]/1000000000;
-  bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][2] %= 1000000000;
+  segoffns = static_cast<long long>(double(segoffbytes*bufferinfo[atsegment].bytespersampledenom/bufferinfo[atsegment].bytespersamplenum)* bufferinfo[atsegment].sampletimens + 0.5);
 
-  if((bufferinfo[atsegment].validbytes - segoffbytes >= bufferinfo[atsegment].sendbytes) || (bufferinfo[atsegment].validbytes == readbytes && ((bufferinfo[(atsegment+1)%numdatasegments].scanseconds - bufferinfo[atsegment].scanseconds)*1000000000 + bufferinfo[(atsegment+1)%numdatasegments].scanns - bufferinfo[atsegment].scanns) == bufferinfo[atsegment].nsinc && (bufferinfo[atsegment].validbytes-segoffbytes+bufferinfo[(atsegment+1)%numdatasegments].validbytes) > bufferinfo[atsegment].sendbytes)) //they're all ok
+  long long a, b;
+  a = static_cast<long long>(bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][1]) + (long long)segoffns/1000000000LL;
+  b = static_cast<long long>(bufferinfo[atsegment].scanns) + (long long)segoffns%1000000000LL;
+  a += b/1000000000LL;
+  b %= 1000000000LL;
+  bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][1] = a;
+  bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][2] = b;
+
+  if((bufferinfo[atsegment].validbytes - segoffbytes >= bufferinfo[atsegment].sendbytes) || (bufferinfo[atsegment].validbytes == readbytes && ((bufferinfo[(atsegment+1)%numdatasegments].scanseconds - bufferinfo[atsegment].scanseconds)*1000000000LL + static_cast<long long>(bufferinfo[(atsegment+1)%numdatasegments].scanns) - static_cast<long long>(bufferinfo[atsegment].scanns) ) == bufferinfo[atsegment].nsinc && (bufferinfo[atsegment].validbytes-segoffbytes+bufferinfo[(atsegment+1)%numdatasegments].validbytes) > bufferinfo[atsegment].sendbytes)) //they're all ok
   {
     for(int i=count;i<bufferinfo[atsegment].blockspersend;i++)
     {
@@ -527,8 +522,8 @@ int DataStream::calculateControlParams(int scan, int offsetsec, int offsetns)
   }
   else
   {
-    double dbufferindex = atsegment*readbytes + (((double(offsetsec - bufferinfo[atsegment].scanseconds)*1000000000.0 + (firstoffsetns - bufferinfo[atsegment].scanns))/bufferinfo[atsegment].sampletimens)*bufferinfo[atsegment].bytespersamplenum)/bufferinfo[atsegment].bytespersampledenom;
-    if(dbufferindex < double(-blockbytes*bufferinfo[atsegment].blockspersend) || dbufferindex > double(bufferbytes)) //its way off, bail out
+    double dbufferindex = atsegment*readbytes + ((((offsetsec - bufferinfo[atsegment].scanseconds)*1.0e9 + (firstoffsetns - static_cast<long long>(bufferinfo[atsegment].scanns)))/bufferinfo[atsegment].sampletimens)*bufferinfo[atsegment].bytespersamplenum)/bufferinfo[atsegment].bytespersampledenom;
+    if(dbufferindex < -blockbytes*bufferinfo[atsegment].blockspersend || dbufferindex > bufferbytes) //its way off, bail out
     {
       bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][1] = Mode::INVALID_SUBINT;
       return 0; //note exit here!!!!
@@ -537,7 +532,7 @@ int DataStream::calculateControlParams(int scan, int offsetsec, int offsetns)
     {
       if(bufferindex + i*blockbytes - atsegment*readbytes < bufferinfo[atsegment].validbytes)
         bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][3+i/FLAGS_PER_INT] |= 1<<(i%FLAGS_PER_INT);
-      else if(bufferinfo[atsegment].validbytes == readbytes && ((bufferinfo[(atsegment+1)%numdatasegments].scanseconds - bufferinfo[atsegment].scanseconds)*1000000000 + bufferinfo[(atsegment+1)%numdatasegments].scanns - bufferinfo[atsegment].scanns) == bufferinfo[atsegment].nsinc && (bufferinfo[atsegment].validbytes-segoffbytes+bufferinfo[(atsegment+1)%numdatasegments].validbytes) > i*blockbytes)
+      else if(bufferinfo[atsegment].validbytes == readbytes && ((bufferinfo[(atsegment+1)%numdatasegments].scanseconds - bufferinfo[atsegment].scanseconds)*1000000000LL + static_cast<long long>(bufferinfo[(atsegment+1)%numdatasegments].scanns) - static_cast<long long>(bufferinfo[atsegment].scanns)) == bufferinfo[atsegment].nsinc && (bufferinfo[atsegment].validbytes-segoffbytes+bufferinfo[(atsegment+1)%numdatasegments].validbytes) > i*blockbytes)
         bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][3+i/FLAGS_PER_INT] |= 1<<(i%FLAGS_PER_INT);
     }
     bool somegooddata = false;
@@ -1382,7 +1377,9 @@ void DataStream::networkToMemory(int buffersegment, uint64_t & framebytesremaini
 {
   char *ptr;
   unsigned int bytestoread;
-  int nread, status, synccatchbytes, previoussegment, validns, nextns, bytestocopy;
+  int nread, status, synccatchbytes, previoussegment;
+  long long validns, nextns;
+  int bytestocopy;
 
   //do the buffer housekeeping
   waitForBuffer(buffersegment);
@@ -1445,9 +1442,9 @@ void DataStream::networkToMemory(int buffersegment, uint64_t & framebytesremaini
   previoussegment  = (buffersegment + numdatasegments - 1 )% numdatasegments;
   if(bufferinfo[previoussegment].readto && bufferinfo[previoussegment].validbytes < bufferinfo[previoussegment].sendbytes && bufferinfo[previoussegment].configindex == bufferinfo[buffersegment].configindex)
   {
-    validns =((long long)bufferinfo[previoussegment].validbytes)*((long long)bufferinfo[previoussegment].nsinc)/readbytes;
-    nextns = bufferinfo[previoussegment].scanns + validns;
-    if(bufferinfo[buffersegment].scan == bufferinfo[previoussegment].scan && bufferinfo[buffersegment].scanns == (nextns%1000000000) && bufferinfo[buffersegment].scanseconds == (bufferinfo[previoussegment].scanseconds + nextns/1000000000))
+    validns = static_cast<long long>(bufferinfo[previoussegment].validbytes)*static_cast<long long>(bufferinfo[previoussegment].nsinc)/readbytes;
+    nextns = static_cast<long long>(bufferinfo[previoussegment].scanns) + validns;
+    if(bufferinfo[buffersegment].scan == bufferinfo[previoussegment].scan && bufferinfo[buffersegment].scanns == (nextns%1000000000LL) && bufferinfo[buffersegment].scanseconds == (bufferinfo[previoussegment].scanseconds + nextns/1000000000LL))
     {
       //copy some data into the previous segment to make sure it stays contiguous
       bytestocopy = readbytes - bufferinfo[previoussegment].validbytes;
@@ -1653,7 +1650,9 @@ void DataStream::initialiseFile(int configindex, int fileindex)
 
 void DataStream::diskToMemory(int buffersegment)
 {
-  int synccatchbytes, previoussegment, validns, nextns, status, bytestocopy, nbytes, caughtbytes, rbytes;
+  int synccatchbytes, previoussegment;
+  long long validns, nextns;
+  int status, bytestocopy, nbytes, caughtbytes, rbytes;
   char * readto;
 
   //do the buffer housekeeping
@@ -1711,9 +1710,9 @@ void DataStream::diskToMemory(int buffersegment)
   previoussegment  = (buffersegment + numdatasegments - 1 )% numdatasegments;
   if(bufferinfo[previoussegment].readto && bufferinfo[previoussegment].validbytes < bufferinfo[previoussegment].sendbytes && bufferinfo[previoussegment].configindex == bufferinfo[buffersegment].configindex)
   {
-    validns =((long long)bufferinfo[previoussegment].validbytes)*((long long)bufferinfo[previoussegment].nsinc)/readbytes;
-    nextns = bufferinfo[previoussegment].scanns + validns;
-    if(bufferinfo[buffersegment].scan == bufferinfo[previoussegment].scan && bufferinfo[buffersegment].scanns == (nextns%1000000000) && bufferinfo[buffersegment].scanseconds == (bufferinfo[previoussegment].scanseconds + nextns/1000000000))
+    validns = static_cast<long long>(bufferinfo[previoussegment].validbytes)*static_cast<long long>(bufferinfo[previoussegment].nsinc)/readbytes;
+    nextns = static_cast<long long>(bufferinfo[previoussegment].scanns) + validns;
+    if(bufferinfo[buffersegment].scan == bufferinfo[previoussegment].scan && bufferinfo[buffersegment].scanns == (nextns%1000000000LL) && bufferinfo[buffersegment].scanseconds == (bufferinfo[previoussegment].scanseconds + nextns/1000000000LL))
     {
       //copy some data into the previous segment to make sure it stays contiguous
       bytestocopy = readbytes - bufferinfo[previoussegment].validbytes;
@@ -1740,7 +1739,9 @@ void DataStream::diskToMemory(int buffersegment)
 
 void DataStream::fakeToMemory(int buffersegment)
 {
-  int previoussegment, validns, nextns, status, bytestocopy, nbytes, rbytes;
+  int previoussegment;
+  long long validns, nextns;
+  int status, bytestocopy, nbytes, rbytes;
   char * readto;
 
   //do the buffer housekeeping
@@ -1783,9 +1784,9 @@ void DataStream::fakeToMemory(int buffersegment)
   previoussegment  = (buffersegment + numdatasegments - 1 )% numdatasegments;
   if(bufferinfo[previoussegment].readto && bufferinfo[previoussegment].validbytes < bufferinfo[previoussegment].sendbytes && bufferinfo[previoussegment].configindex == bufferinfo[buffersegment].configindex)
   {
-    validns =((long long)bufferinfo[previoussegment].validbytes)*((long long)bufferinfo[previoussegment].nsinc)/readbytes;
-    nextns = bufferinfo[previoussegment].scanns + validns;
-    if(bufferinfo[buffersegment].scan == bufferinfo[previoussegment].scan && bufferinfo[buffersegment].scanns == (nextns%1000000000) && bufferinfo[buffersegment].scanseconds == (bufferinfo[previoussegment].scanseconds + nextns/1000000000))
+    validns =static_cast<long long>(bufferinfo[previoussegment].validbytes)*static_cast<long long>(bufferinfo[previoussegment].nsinc)/readbytes;
+    nextns = static_cast<long long>(bufferinfo[previoussegment].scanns) + validns;
+    if(bufferinfo[buffersegment].scan == bufferinfo[previoussegment].scan && bufferinfo[buffersegment].scanns == (nextns%1000000000LL) && bufferinfo[buffersegment].scanseconds == (bufferinfo[previoussegment].scanseconds + nextns/1000000000LL))
     {
       //copy some data into the previous segment to make sure it stays contiguous
       bytestocopy = readbytes - bufferinfo[previoussegment].validbytes;
