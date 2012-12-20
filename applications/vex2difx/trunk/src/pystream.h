@@ -72,6 +72,7 @@ private:
 	std::string evlaVCIDir;
 	std::string ant;
 	std::string sw[4];	// 4x4 switch state
+	int swInUse;
 	std::string obsCode;
 	std::string fileName;
 	std::string dbeFilename;
