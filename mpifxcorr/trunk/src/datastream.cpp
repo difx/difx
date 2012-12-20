@@ -312,8 +312,8 @@ void DataStream::execute()
 //the returned value MUST be between 0 and bufferlength
 int DataStream::calculateControlParams(int scan, int offsetsec, int offsetns)
 {
-  int firstoffsetns, lastoffsetns, bufferindex, perr, blockbytes, segoffbytes, segoffns, srcindex;
-  long long nsdifference, validns;
+  int bufferindex, perr, blockbytes, segoffbytes, segoffns, srcindex;
+  long long nsdifference, validns, firstoffsetns, lastoffsetns;
   double delayus1, delayus2;
   bool foundok;
 
@@ -325,7 +325,7 @@ int DataStream::calculateControlParams(int scan, int offsetsec, int offsetns)
   bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][0] = scan;
   foundok = model->calculateDelayInterpolator(scan, (double)offsetsec + ((double)offsetns)/1000000000.0, 0.0, 0, config->getDModelFileIndex(bufferinfo[atsegment].configindex, streamnum), srcindex, 0, &delayus1);
   delayus1 -= intclockseconds*1000000;
-  firstoffsetns = offsetns - static_cast<int>(delayus1*1000);
+  firstoffsetns = ((long long)offsetns) - static_cast<long long>(delayus1*1000);
   int64_t dataspanns = static_cast<int64_t>(bufferinfo[atsegment].numchannels*bufferinfo[atsegment].blockspersend*2*bufferinfo[atsegment].sampletimens + 0.5);
   if (bufferinfo[atsegment].sampling== Configuration::COMPLEX) dataspanns /=2;
   
@@ -336,7 +336,7 @@ int DataStream::calculateControlParams(int scan, int offsetsec, int offsetns)
     bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][1] = Mode::INVALID_SUBINT;
     return 0; //note exit here!!!!
   }
-  lastoffsetns = offsetns + int(dataspanns - 1000*delayus2 + 0.5);
+  lastoffsetns = ((long long)offsetns) + dataspanns + static_cast<long long>(-1000*delayus2 + 0.5);
   //cout << mpiid << ": delayus1 is " << delayus1 << ", delayus2 is " << delayus2 << endl;
   if(lastoffsetns < 0)
   {
