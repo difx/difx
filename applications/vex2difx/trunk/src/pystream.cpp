@@ -62,6 +62,7 @@ void pystream::open(const std::string& antennaName, const VexData *V, ScriptType
 	{
 		sw[i] = "";
 	}
+	swInUse = 0;
 	mjd0 = V->obsStart();
 	
 	extension = ".py";
@@ -1165,12 +1166,26 @@ int pystream::writeScans(const VexData *V)
 				{
 					*this << "subarray.setVLBALoIfSetup(loif" << modeId << ")" << endl;
 
+					// 4x4 switch setting - check first if any switch setting has changed; if not skip,
+					// else set all switches as executor will set unused switches to grounded
 					std::map<std::string,unsigned int>::const_iterator ifit;
-					for(ifit = ifIndex[modeId].begin(); ifit != ifIndex[modeId].end(); ++ifit)
+					bool settingChanged = false;
+					if( swInUse != ifIndex[modeId].size() ) {
+						settingChanged = true;
+					}
+					for(ifit = ifIndex[modeId].begin(); ifit != ifIndex[modeId].end() && !settingChanged; ++ifit)
 					{
 						if(ifit->first != sw[ifit->second])
 						{
+							settingChanged = true;
+						}
+					}
+					if( settingChanged == true ) {
+						swInUse = 0;
+						for(ifit = ifIndex[modeId].begin(); ifit != ifIndex[modeId].end(); ++ifit)
+						{
 							sw[ifit->second] = ifit->first;
+							swInUse++;
 							*this << "subarray.set4x4Switch('" << switchOutput[ifit->second] << "', "
 							<< switchPosition(ifit->first.c_str()) << ")" << endl;
 						}
