@@ -74,11 +74,11 @@ static int mark5_stream_file_fill(struct mark5_stream *ms)
 	
 	while(n < F->fetchsize)
 	{
-		if(F->in != 0)
+		if(F->in >= 0)
 		{
 			close(F->in);
 		}
-		F->in = 0;
+		F->in = -1;
 		F->curfile++;
 		
 		snprintf(ms->streamname, MARK5_STREAM_ID_LENGTH,
@@ -248,7 +248,7 @@ static int mark5_stream_file_final(struct mark5_stream *ms)
 
 	F = (struct mark5_stream_file *)(ms->inputdata);
 
-	if(F->in)
+	if(F->in >= 0)
 	{
 		close(F->in);
 	}
