@@ -133,6 +133,7 @@ struct mark5_stream
 	int (*count)(struct mark5_stream *ms, int nsamp, unsigned int *highstates);
         int (*complex_decode)(struct mark5_stream *ms, int nsamp, mark5_float_complex **data);
 	int (*validate)(const struct mark5_stream *ms);
+	int (*resync)(struct mark5_stream *ms);
 	int (*gettime)(const struct mark5_stream *ms, int *mjd, 
 		int *sec, double *ns);
 	int (*fixmjd)(struct mark5_stream *ms, int refmjd);
@@ -166,6 +167,7 @@ struct mark5_format_generic
 	int (*complex_decode)(struct mark5_stream *ms,
 		int nsamp, mark5_float_complex **data); 
 	int (*validate)(const struct mark5_stream *ms);
+	int (*resync)(struct mark5_stream *ms);
 	int (*gettime)(const struct mark5_stream *ms, 	/* required */
 		int *mjd, int *sec, double *ns);
 	int (*fixmjd)(struct mark5_stream *ms, int refmjd);
@@ -190,6 +192,8 @@ struct mark5_stream *new_mark5_stream(const struct mark5_stream_generic *s, cons
 struct mark5_stream *new_mark5_stream_absorb(struct mark5_stream_generic *s, struct mark5_format_generic *f);
 
 void delete_mark5_stream(struct mark5_stream *ms);
+
+int mark5_stream_resync(struct mark5_stream *ms);
 
 int mark5_stream_print(const struct mark5_stream *ms);
 

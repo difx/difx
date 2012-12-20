@@ -350,6 +350,62 @@ static int mark5_format_mark4_validate(const struct mark5_stream *ms)
 	return 1;
 }
 
+static int mark5_format_mark4_resync(struct mark5_stream *ms)
+{
+	struct mark5_format_mark4 *f;
+	double dns;
+	int offset, v, status, lostframes = 0;
+
+	/* FIXME: not implemented yet */
+
+	f = (struct mark5_format_mark4 *)(ms->formatdata);
+
+	v = mark5_format_mark4_validate(ms);
+	while (!v)
+	{
+		int length = 2 * ms->framebytes;
+		if (ms->frame + length > ms->datawindow + ms->datawindowsize)
+		{
+			length = ms->datawindowsize - (ms->frame - ms->datawindow);
+		}
+
+		offset = findfirstframe(ms->frame, length, f->ntrack);
+
+		if (offset < 0 || offset > ms->framebytes || length == 0)
+		{
+			status = ms->next(ms);
+			if (status < 0)
+			{
+				// fprintf(m5stderr, "mark5_format_mark4_resync: sync could not be regained before EOF\n");
+				break;
+			}
+
+			lostframes++;
+			if (lostframes > 128)
+			{
+				// fprintf(m5stderr, "mark5_format_mark4_resync: no sync word in 128 searched frames, giving up\n");
+				break;
+			}
+			continue;
+		}
+
+		ms->frame += offset;
+		ms->payload += offset;
+		ms->gettime(ms, &ms->mjd, &ms->sec, &dns);
+		ms->framenum = (ms->framenum + 1) % ms->framegranularity;
+		ms->ns = (int)(dns + 0.5);
+
+		v = mark5_format_mark4_validate(ms);
+
+		if (offset == 0)
+		{
+			break;
+		}
+	}
+
+	return v ? 0 : -1;
+}
+
 static void mark5_format_mark4_genheaders(const struct mark5_stream *ms, int n, unsigned char *where)
 {
 	int i;
@@ -6963,6 +7019,7 @@ struct mark5_format_generic *new_mark5_format_mark4(int Mbps, int nchan,
 	f->final_format = mark5_format_mark4_final;
 	f->genheaders = mark5_format_mark4_genheaders;
 	f->validate = mark5_format_mark4_validate;
+	f->resync = mark5_format_mark4_resync;
 	f->decimation = decimation;
 	f->decode = 0;
 	f->complex_decode = 0;

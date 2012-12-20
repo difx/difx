@@ -227,6 +227,7 @@ static int set_format(struct mark5_stream *ms, const struct mark5_format_generic
 		ms->count = f->count;
 		ms->complex_decode = f->complex_decode;
 		ms->validate = f->validate;
+		ms->resync = f->resync;
 		ms->genheaders = f->genheaders;
 		ms->gettime = f->gettime;
 		ms->fixmjd = f->fixmjd;
@@ -1044,6 +1045,16 @@ void delete_mark5_stream(struct mark5_stream *ms)
 		}
 		free(ms);
 	}
+}
+
+int mark5_stream_resync(struct mark5_stream *ms)
+{
+	if(!ms)
+	{
+		return -1;
+	}
+
+	return ms->resync(ms);
 }
 
 int mark5_stream_get_frame_time(struct mark5_stream *ms, 

@@ -358,6 +358,12 @@ static int mark5_format_vlba_nomod_validate(const struct mark5_stream *ms)
 	return 1;
 }
 
+static int mark5_format_vlba_nomod_resync(struct mark5_stream *ms)
+{
+	/* FIXME: not implemented yet */
+	return mark5_format_vlba_nomod_validate(ms);
+}
+
 static void mark5_format_vlba_nomod_genheaders(const struct mark5_stream *ms, int n, unsigned char *where)
 {
 	int i;
@@ -6979,6 +6985,7 @@ struct mark5_format_generic *new_mark5_format_vlba_nomod(int Mbps, int nchan, in
 	f->init_format = mark5_format_vlba_nomod_init;
 	f->final_format = mark5_format_vlba_nomod_final;
 	f->validate = mark5_format_vlba_nomod_validate;
+	f->resync = mark5_format_vlba_nomod_resync;
 	f->genheaders = mark5_format_vlba_nomod_genheaders;
 	f->decimation = decimation;
 	f->complex_decode = 0;

@@ -2941,6 +2941,11 @@ static int one(const struct mark5_stream *ms)
 	return 1;
 }
 
+static int onenc(struct mark5_stream *ms)
+{
+	return 1;
+}
+
 struct mark5_format_generic *new_mark5_format_mark5b(int Mbps, int nchan, int nbit, int decimation)
 {
 	static int first = 1;
@@ -3041,6 +3046,7 @@ struct mark5_format_generic *new_mark5_format_mark5b(int Mbps, int nchan, int nb
 	f->final_format = mark5_format_mark5b_final;
 	f->fixmjd = mark5_format_mark5b_fixmjd;
 	f->validate = one;
+	f->resync = onenc;
 	f->genheaders = mark5_format_mark5b_genheaders;
 	f->decimation = decimation;
 	f->decode = 0;

@@ -424,6 +424,7 @@ struct mark5_format_generic *new_mark5_format_k5(int Mbps, int nchan, int nbit,
 	f->final_format = format_k5_final;
 	f->fixmjd = format_k5_fixmjd;
 	f->validate = one;
+	f->resync = one;
 	f->decode = k5_decode_1bitstream_1bit;
 
 	return f;

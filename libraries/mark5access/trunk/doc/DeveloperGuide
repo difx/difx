@@ -150,6 +150,7 @@ struct mark5_format_generic
                 int *mjd, int *sec, int *ns);
         int (*fixmjd)(struct mark5_stream *ms, int refmjd);
         int (*validate)(const struct mark5_stream *ms); /* not yet used */
+        int (*resync)(struct mark5_stream *ms);         /* not yet used for other than MarkIV */
         void *formatdata;
 	int Mbps, nchan, nbit;	/* The triplet */
 };
@@ -260,3 +261,10 @@ The intention of this function is to provide a mechanism to verify that
 the a valid frame begins at the ms->frame pointer.  This mechanism is
 yet to be implemented.
 
+
+2.1.8 int (*resync)struct mark5_stream *ms)
+
+The intention of this function is to locate the next valid frame in
+a data stream. It can be called by the user when a suspicios
+timestamp is encountered or the validate() function indicates an
+invalid frame. Currently supports MarkIV data only.

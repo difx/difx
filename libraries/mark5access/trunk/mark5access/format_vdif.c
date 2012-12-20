@@ -2634,6 +2634,12 @@ static int mark5_format_vdif_validate(const struct mark5_stream *ms)
 	return 1;
 }
 
+static int mark5_format_vdif_resync(struct mark5_stream *ms)
+{
+	/* FIXME: not implemented yet */
+	return mark5_format_vdif_validate(ms);
+}
+
 void mark5_format_vdif_set_leapsecs(struct mark5_stream *ms, int leapsecs)
 {
 	struct mark5_format_vdif *f;
@@ -2748,6 +2754,7 @@ struct mark5_format_generic *new_mark5_format_vdif(int Mbps,
 	f->init_format = mark5_format_vdif_init;
 	f->final_format = mark5_format_vdif_final;
 	f->validate = mark5_format_vdif_validate;
+	f->resync = mark5_format_vdif_resync;
 	f->decimation = decimation;
 	f->decode = 0;
 	f->complex_decode = 0;
