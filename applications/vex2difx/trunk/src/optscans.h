@@ -32,32 +32,34 @@
 
 #include <fstream>
 #include <string>
+#include <vector>
+#include <map>
 #include "vextables.h"
 
-class optscans : public ofstream
+class optscans : public std::ofstream
 {
 public:
 	enum PersonalityType {RDBE_UNKNOWN, RDBE_NONE, RDBE_PFB, RDBE_DDC};
 	enum RecorderType {RECORDER_NONE, RECORDER_MARK5C};
 
 	optscans(): personalityType(RDBE_UNKNOWN), recorderType(RECORDER_MARK5C), lastValid(0.0), lastSourceId(-1), lastModeId(-1), lastChannelSet(-1), evlaIntSec(0), evlasbChan(0), evlasbBits(0), evlaVCIVersion(0.0), mjd0(0.0), isMark5A(false) {};
-	void open(const string& antennaName, const VexData *V);
+	void open(const std::string& antennaName, const VexData *V);
 	void close();
-	void addPhasingSource(const string &sourceName);
+	void addPhasingSource(const std::string &sourceName);
 	void figurePersonality(const VexData *V);
 	int maxIFs(const VexData *V) const;
 	int writeHeader(const VexData *V);
-	int writeComment(const string &commentString);
+	int writeComment(const std::string &commentString);
 	int writeRecorderInit(const VexData *V);
 	int writeDbeInit(const VexData *V);
-	void writeImplicitConversionComment(const vector<unsigned int> &implicitConversions);
+	void writeImplicitConversionComment(const std::vector<unsigned int> &implicitConversions);
 	int writeChannelSet(const VexSetup *setup, int modeNum);
 	int writeChannelSet5A(const VexSetup *setup, int modeNum);
 	int writeLoifTable(const VexData *V);
 	int writeSourceTable(const VexData *V);
 	int writeScans(const VexData *V);
 	int writeScansGBT(const VexData *V);
-        void setDBEPersonality(const string &filename);
+        void setDBEPersonality(const std::string &filename);
 	void setDBEPersonalityType(PersonalityType pt) { personalityType = pt; }
 	void setRecorderType(RecorderType rt) { recorderType = rt; }
 	void setMark5A(bool x) { isMark5A = x; }
@@ -65,12 +67,12 @@ public:
 private:
 	PersonalityType personalityType;
 	RecorderType recorderType;
-	string evlaVCIDir;
-	string ant;
-	string sw[4];	// 4x4 switch state
-	string obsCode;
-	string fileName;
-	string dbeFilename;
+	std::string evlaVCIDir;
+	std::string ant;
+	std::string sw[4];	// 4x4 switch state
+	std::string obsCode;
+	std::string fileName;
+	std::string dbeFilename;
 	double lastValid;
 	int lastSourceId;
 	int lastModeId;
@@ -79,11 +81,11 @@ private:
 	double evlaVCIVersion;
 	double mjd0;
 	bool isMark5A;
-	vector<map<string,unsigned int> > ifIndex;	// for each scan, map from IF name to number
-	vector<string> phasingSources;
+	std::vector<std::map<std::string,unsigned int> > ifIndex;	// for each scan, map from IF name to number
+	std::vector<std::string> phasingSources;
 
 	void calcIfIndex(const VexData *V);
-	void writeVCI(const VexData *V, int modeIndex, const string &filename);
+	void writeVCI(const VexData *V, int modeIndex, const std::string &filename);
 };
 
 #endif

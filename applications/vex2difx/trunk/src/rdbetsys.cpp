@@ -39,6 +39,8 @@
 #include "vexload.h"
 #include "util.h"
 
+using namespace std;
+
 const char program[] = "rdbetsys";
 const char version[] = "1.1";
 const char author[]  = "Walter Brisken";

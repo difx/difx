@@ -36,6 +36,8 @@
 #include "corrparams.h"
 #include "vexload.h"
 
+using namespace std;
+
 const string program("vex2opt");
 const string version("0.1");
 const string verdate("20120602");

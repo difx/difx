@@ -35,6 +35,8 @@
 #include "evladefaults.h"
 #include "optresources.h"
 
+using namespace std;
+
 void optresources::open(const string& antennaName, const VexData *V)
 {
 	string extension;

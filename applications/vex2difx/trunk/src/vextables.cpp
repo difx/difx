@@ -34,9 +34,9 @@
 #include <cmath>
 #include "vextables.h"
 
-const double RAD2ASEC=180.0*3600.0/M_PI;
-
 using namespace std;
+
+const double RAD2ASEC=180.0*3600.0/M_PI;
 
 // Note: the ordering here is crucial!
 const char VexEvent::eventName[][20] =
@@ -618,25 +618,25 @@ bool VexSource::hasSourceName(const string &name) const
 
 int VexData::sanityCheck()
 {
-        int nWarn = 0;
+	int nWarn = 0;
 
-        if(eops.size() < 5)
-        {
-                cerr << "Warning: Fewer than 5 EOPs specified" << endl;
-                ++nWarn;
-        }
+	if(eops.size() < 5)
+	{
+		cerr << "Warning: Fewer than 5 EOPs specified" << endl;
+		++nWarn;
+	}
 
-        for(vector<VexAntenna>::const_iterator it = antennas.begin(); it != antennas.end(); ++it)
-        {
-                if(it->clocks.empty())
-                {
-                        cerr << "Warning: no clock values for antenna " << it->name << " ." << endl;
-                        ++nWarn;
-                }
-        }
+	for(vector<VexAntenna>::const_iterator it = antennas.begin(); it != antennas.end(); ++it)
+	{
+		if(it->clocks.empty())
+		{
+			cerr << "Warning: no clock values for antenna " << it->name << " ." << endl;
+			++nWarn;
+		}
+	}
 
-        for(vector<VexAntenna>::const_iterator it = antennas.begin(); it != antennas.end(); ++it)
-        {
+	for(vector<VexAntenna>::const_iterator it = antennas.begin(); it != antennas.end(); ++it)
+	{
 		if(it->dataSource == DataSourceFile && it->basebandFiles.empty())
 		{
 			cerr << "Warning: file based correlation desired but no files provided for antenna " << it->name << " ." << endl;
@@ -652,9 +652,9 @@ int VexData::sanityCheck()
 			cerr << "Warning: data source is NONE for antenna " << it->name << " ." << endl;
 			++nWarn;
 		}
-        }
+	}
 
-        return nWarn;
+	return nWarn;
 }
 
 VexSource *VexData::newSource()
@@ -1635,32 +1635,32 @@ void VexData::sortEvents()
 
 void VexData::findLeapSeconds()
 {
-        int n = eops.size();
+	int n = eops.size();
 
-        if(n < 2)
-        {
-                return;
-        }
+	if(n < 2)
+	{
+		return;
+	}
 
-        for(int i = 1; i < n; ++i)
-        {
-                if(eops[i-1].tai_utc != eops[i].tai_utc)
-                {
-                        addEvent(eops[i].mjd, VexEvent::LEAP_SECOND, "Leap second");
-                        cout << "Leap second detected at day " << eops[i].mjd << endl;
-                }
-        }
+	for(int i = 1; i < n; ++i)
+	{
+		if(eops[i-1].tai_utc != eops[i].tai_utc)
+		{
+			addEvent(eops[i].mjd, VexEvent::LEAP_SECOND, "Leap second");
+			cout << "Leap second detected at day " << eops[i].mjd << endl;
+		}
+	}
 }
 
 void VexData::addBreaks(const vector<double> &breaks)
 {
 	for(vector<double>::const_iterator t = breaks.begin(); t != breaks.end(); ++t)
-        {
-                if(exper.contains(*t))
-                {
-                        addEvent(*t, VexEvent::MANUAL_BREAK, "");
-                }
-        }
+	{
+		if(exper.contains(*t))
+		{
+			addEvent(*t, VexEvent::MANUAL_BREAK, "");
+		}
+	}
 }
 
 ostream& operator << (ostream &os, const VexInterval &x)

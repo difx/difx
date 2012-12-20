@@ -61,7 +61,7 @@ static double roundSeconds(double mjd)
 	return intmjd + intsec/86400.0;
 }
 
-bool isTrue(const string &str)
+bool isTrue(const std::string &str)
 {
 	if(str[0] == '0' || str[0] == 'f' || str[0] == 'F' || str[0] == '-')
 	{
@@ -80,16 +80,17 @@ bool isPower2(int n)
 	{
 		return true;
 	}
+
 	return false; // also true for zero but this shouldn't concern us
 }
 
 // Turns a string into MJD 
 // The following formats are allowd:
-// 1. decimal mjd:                 
+// 1. decimal mjd:  55345.113521
 // 2. ISO 8601 dateTtime strings:  2009-03-08T12:34:56.121
-// 3. VLBA-like time               2009MAR08-12:34:56.121
-// 4. vex time
-double parseTime(const string &timeStr)
+// 3. VLBA-like time:   2009MAR08-12:34:56.121
+// 4. vex time: 2009y245d08h12m24s"
+double parseTime(const std::string &timeStr)
 {
 	const int TimeLength=54;
 	double mjd;
@@ -126,15 +127,15 @@ double parseTime(const string &timeStr)
 	}
 
 	// No match
-	cerr << endl;
-	cerr << "Error: date not parsable: " << timeStr << endl;
-	cerr << endl;
-	cerr << "Allowable formats are:" << endl;
-	cerr << "1. Straight MJD        54345.341944" << endl;
-	cerr << "2. Vex formatted date  2009y245d08h12m24s" << endl;
-	cerr << "3. VLBA-like format    2009SEP02-08:12:24" << endl;
-	cerr << "4. ISO 8601 format     2009-09-02T08:12:24" << endl;
-	cerr << endl;
+	std::cerr << std::endl;
+	std::cerr << "Error: date not parsable: " << timeStr << std::endl;
+	std::cerr << std::endl;
+	std::cerr << "Allowable formats are:" << std::endl;
+	std::cerr << "1. Straight MJD        54345.341944" << std::endl;
+	std::cerr << "2. Vex formatted date  2009y245d08h12m24s" << std::endl;
+	std::cerr << "3. VLBA-like format    2009SEP02-08:12:24" << std::endl;
+	std::cerr << "4. ISO 8601 format     2009-09-02T08:12:24" << std::endl;
+	std::cerr << std::endl;
 
 	exit(EXIT_FAILURE);
 }
@@ -147,7 +148,7 @@ double parseCoord(const char *str, char type)
 
 	if(type != ' ' && type != 'R' && type != 'D')
 	{
-		cerr << "Programmer error: parseCoord: parameter 'type' has illegal value = " << type << endl;
+		std::cerr << "Programmer error: parseCoord: parameter 'type' has illegal value = " << type << std::endl;
 		
 		exit(EXIT_FAILURE);
 	}
@@ -202,7 +203,7 @@ double parseCoord(const char *str, char type)
 		}
 		else
 		{
-			cerr << "Error parsing coordinate value " << str << endl;
+			std::cerr << "Error parsing coordinate value " << str << std::endl;
 
 			exit(EXIT_FAILURE);
 		}
@@ -213,14 +214,14 @@ double parseCoord(const char *str, char type)
 }
 
 // From http://oopweb.com/CPP/Documents/CPPHOWTO/Volume/C++Programming-HOWTO-7.html
-void split(const string &str, vector<string> &tokens, const string &delimiters = " ")
+void split(const std::string &str, std::vector<std::string> &tokens, const std::string &delimiters = " ")
 {
 	// Skip delimiters at beginning.
-	string::size_type lastPos = str.find_first_not_of(delimiters, 0);
+	std::string::size_type lastPos = str.find_first_not_of(delimiters, 0);
 	// Find first "non-delimiter".
-	string::size_type pos     = str.find_first_of(delimiters, lastPos);
+	std::string::size_type pos     = str.find_first_of(delimiters, lastPos);
 
-	while (string::npos != pos || string::npos != lastPos)
+	while(std::string::npos != pos || std::string::npos != lastPos)
 	{
 		// Found a token, add it to the vector.
 		tokens.push_back(str.substr(lastPos, pos - lastPos));
@@ -236,19 +237,19 @@ static bool sortStartMjdDescendingFunc(VexBasebandFile a, VexBasebandFile b)
 	return (a.mjdStart<b.mjdStart);
 }
 
-int loadBasebandFilelist(const string &fileName, vector<VexBasebandFile> &basebandFiles)
+int loadBasebandFilelist(const std::string &fileName, std::vector<VexBasebandFile> &basebandFiles)
 {
 	const int MaxLineLength=1024;
-	ifstream is;
+	std::ifstream is;
 	int n=0;
 	char s[MaxLineLength];
-	vector<string> tokens;
+	std::vector<std::string> tokens;
 
 	is.open(fileName.c_str());
 
 	if(is.fail())
 	{
-		cerr << "Error: cannot open " << fileName << endl;
+		std::cerr << "Error: cannot open " << fileName << std::endl;
 
 		exit(EXIT_FAILURE);
 	}
@@ -271,7 +272,7 @@ int loadBasebandFilelist(const string &fileName, vector<VexBasebandFile> &baseba
 
 		tokens.clear();
 
-		split(string(s), tokens);
+		split(std::string(s), tokens);
 
 		int l = tokens.size();
 
@@ -293,7 +294,7 @@ int loadBasebandFilelist(const string &fileName, vector<VexBasebandFile> &baseba
 		}
 		else
 		{
-			cerr << "Error: line " << line << " of file " << fileName << " is badly formatted" << endl;
+			std::cerr << "Error: line " << line << " of file " << fileName << " is badly formatted" << std::endl;
 
 			exit(EXIT_FAILURE);
 		}
@@ -304,7 +305,7 @@ int loadBasebandFilelist(const string &fileName, vector<VexBasebandFile> &baseba
 	return n;
 }
 
-CorrSetup::CorrSetup(const string &name) : corrSetupName(name)
+CorrSetup::CorrSetup(const std::string &name) : corrSetupName(name)
 {
 	tInt = 2.0;
 	suppliedSpecAvg = 0;
@@ -329,7 +330,7 @@ CorrSetup::CorrSetup(const string &name) : corrSetupName(name)
 	maxNSBetweenACAvg = 0;		// zero means set to default in vex2difx.cpp
 	minRecordedBandwidth = 0.0;
 	maxRecordedBandwidth = 0.0;
-        onlyPol = ' ';
+	onlyPol = ' ';
 }
 
 void CorrSetup::addRecordedBandwidth(double bw)
@@ -345,9 +346,9 @@ void CorrSetup::addRecordedBandwidth(double bw)
 	}
 }
 
-int CorrSetup::setkv(const string &key, const string &value)
+int CorrSetup::setkv(const std::string &key, const std::string &value)
 {
-	stringstream ss;
+	std::stringstream ss;
 	int nWarn = 0;
 	char *ptr;
 
@@ -355,8 +356,8 @@ int CorrSetup::setkv(const string &key, const string &value)
 
 	if(key == "VEX_rev")
 	{
-		cerr << "Error: You are running vex2difx on a vex file." << endl;
-		cerr << "Please run on a vex2difx input file (.v2d) instead." << endl;
+		std::cerr << "Error: You are running vex2difx on a vex file." << std::endl;
+		std::cerr << "Please run on a vex2difx input file (.v2d) instead." << std::endl;
 
 		exit(EXIT_FAILURE);
 	}
@@ -438,17 +439,17 @@ int CorrSetup::setkv(const string &key, const string &value)
 		if(binConfigFile[0] != '/')
 		{
 			char cwd[DIFXIO_FILENAME_LENGTH];
-			string inFile;
+			std::string inFile;
 
 			ptr = getcwd(cwd, DIFXIO_FILENAME_LENGTH-1);
 			if(ptr == 0)
 			{
-				cerr << "Cannot getcwd()" << endl;
+				std::cerr << "Cannot getcwd()" << std::endl;
 
 				exit(EXIT_FAILURE);
 			}
-			inFile = string(cwd);
-			inFile += string("/");
+			inFile = std::string(cwd);
+			inFile += std::string("/");
 			inFile += binConfigFile;
 			binConfigFile = inFile;
 		}
@@ -460,17 +461,17 @@ int CorrSetup::setkv(const string &key, const string &value)
 		if(phasedArrayConfigFile[0] != '/')
 		{
 			char cwd[DIFXIO_FILENAME_LENGTH];
-			string inFile;
+			std::string inFile;
 
 			ptr = getcwd(cwd, DIFXIO_FILENAME_LENGTH-1);
 			if(ptr == 0)
 			{
-				cerr << "Cannot getcwd()" << endl;
+				std::cerr << "Cannot getcwd()" << std::endl;
 
 				exit(EXIT_FAILURE);
 			}
-			inFile = string(cwd);
-			inFile += string("/");
+			inFile = std::string(cwd);
+			inFile += std::string("/");
 			inFile += binConfigFile;
 			binConfigFile = inFile;
 		}
@@ -481,13 +482,13 @@ int CorrSetup::setkv(const string &key, const string &value)
 		ss >> freqId;
 		addFreqId(freqId);
 	}
-        else if(key == "onlyPol")
-        {
-                ss >> onlyPol;
-        }
+	else if(key == "onlyPol")
+	{
+		ss >> onlyPol;
+	}
 	else
 	{
-		cerr << "Warning: SETUP: Unknown parameter '" << key << "'." << endl; 
+		std::cerr << "Warning: SETUP: Unknown parameter '" << key << "'." << std::endl; 
 		++nWarn;
 	}
 
@@ -529,12 +530,12 @@ int CorrSetup::testSpectralResolution() const
 {
 	int nError = 0;
 
-	for(set<double>::const_iterator it = recordedBandwidths.begin(); it != recordedBandwidths.end(); ++it)
+	for(std::set<double>::const_iterator it = recordedBandwidths.begin(); it != recordedBandwidths.end(); ++it)
 	{
 		double x = *it/FFTSpecRes;
 		if(fabs(x - static_cast<int>(x + 0.5)) > 0.0001)
 		{
-			cerr << "Error: FFT spectral resolution (" << (FFTSpecRes*1.0e-6) << " MHz) does not divide nicely into sub-band bandwidth (" << (*it*1.0e-6) << " MHz)" << endl;
+			std::cerr << "Error: FFT spectral resolution (" << (FFTSpecRes*1.0e-6) << " MHz) does not divide nicely into sub-band bandwidth (" << (*it*1.0e-6) << " MHz)" << std::endl;
 			
 			++nError;
 		}
@@ -549,12 +550,12 @@ int CorrSetup::testXMACLength() const
 
 	if(xmacLength > 0)
 	{
-		for(set<double>::const_iterator it = recordedBandwidths.begin(); it != recordedBandwidths.end(); ++it)
+		for(std::set<double>::const_iterator it = recordedBandwidths.begin(); it != recordedBandwidths.end(); ++it)
 		{
 			if(nInputChans(*it) % xmacLength != 0)
 			{
-				cerr << "Warning: xmacLength=" << xmacLength << " does not divide evenly into " << minInputChans() << " which are requested for sub-bands with bandwidth " << (*it * 1.0e-6) << " MHz" << endl;
-				cerr << "Probably you need to reduce the xmacLength parameter" << endl;
+				std::cerr << "Warning: xmacLength=" << xmacLength << " does not divide evenly into " << minInputChans() << " which are requested for sub-bands with bandwidth " << (*it * 1.0e-6) << " MHz" << std::endl;
+				std::cerr << "Probably you need to reduce the xmacLength parameter" << std::endl;
 
 				++nWarn;
 			}
@@ -570,12 +571,12 @@ int CorrSetup::testStrideLength() const
 
 	if(xmacLength > 0)
 	{
-		for(set<double>::const_iterator it = recordedBandwidths.begin(); it != recordedBandwidths.end(); ++it)
+		for(std::set<double>::const_iterator it = recordedBandwidths.begin(); it != recordedBandwidths.end(); ++it)
 		{
 			if(nInputChans(*it) % strideLength != 0)
 			{
-				cerr << "Warning: strideLength=" << strideLength << " does not divide evenly into " << minInputChans() << " which are requested for sub-bands with bandwidth " << (*it * 1.0e-6) << " MHz" << endl;
-				cerr << "Probably you need to reduce the strideLength parameter" << endl;
+				std::cerr << "Warning: strideLength=" << strideLength << " does not divide evenly into " << minInputChans() << " which are requested for sub-bands with bandwidth " << (*it * 1.0e-6) << " MHz" << std::endl;
+				std::cerr << "Probably you need to reduce the strideLength parameter" << std::endl;
 				++nWarn;
 			}
 		}
@@ -590,7 +591,7 @@ int CorrSetup::checkValidity() const
 
 	if(specAvg() < 0)
 	{
-		cerr << "Error: The FFT Spectral Resolution ( " << FFTSpecRes << " Hz) must be an integral multiple of the Output Spectral Resolution (" << outputSpecRes << " Hz)" << endl;
+		std::cerr << "Error: The FFT Spectral Resolution ( " << FFTSpecRes << " Hz) must be an integral multiple of the Output Spectral Resolution (" << outputSpecRes << " Hz)" << std::endl;
 
 		exit(EXIT_FAILURE);
 	}
@@ -617,11 +618,11 @@ double CorrSetup::bytesPerSecPerBLPerBand() const
 	return 8*maxOutputChans()*pols/tInt;
 }
 
-CorrRule::CorrRule(const string &name) : ruleName(name)
+CorrRule::CorrRule(const std::string &name) : ruleName(name)
 {
 }
 
-bool CorrRule::match(const string &scan, const string &source, const string &mode, char cal, int qual) const
+bool CorrRule::match(const std::string &scan, const std::string &source, const std::string &mode, char cal, int qual) const
 {
 	if(!scanName.empty() && find(scanName.begin(), scanName.end(), scan) == scanName.end())
 	{
@@ -643,30 +644,30 @@ bool CorrRule::match(const string &scan, const string &source, const string &mod
 	return true;
 }
 
-int CorrRule::setkv(const string &key, const string &value)
+int CorrRule::setkv(const std::string &key, const std::string &value)
 {
-	stringstream ss;
+	std::stringstream ss;
 	int nWarn = 0;
 
 	ss << value;
 
 	if(key == "scanName" || key == "scan")
 	{
-		string s;
+		std::string s;
 
 		ss >> s;
 		scanName.push_back(s);
 	}
 	else if(key == "sourceName" || key == "source")
 	{
-		string s;
+		std::string s;
 		
 		ss >> s;
 		sourceName.push_back(s);
 	}
 	else if(key == "modeName" || key == "mode")
 	{
-		string s;
+		std::string s;
 		
 		ss >> s;
 		modeName.push_back(s);
@@ -691,26 +692,26 @@ int CorrRule::setkv(const string &key, const string &value)
 	}
 	else
 	{
-		cerr << "Warning: RULE: Unknown parameter '" << key << "'." << endl; 
+		std::cerr << "Warning: RULE: Unknown parameter '" << key << "'." << std::endl; 
 		++nWarn;
 	}
 
 	return nWarn;
 }
 
-const string PhaseCentre::DEFAULT_NAME = "";
+const std::string PhaseCentre::DEFAULT_NAME = "";
 
 PhaseCentre::PhaseCentre()
 {
 	initialise(DEFAULT_RA, DEFAULT_DEC, DEFAULT_NAME);
 }
 
-PhaseCentre::PhaseCentre(double r, double d, string name)
+PhaseCentre::PhaseCentre(double r, double d, std::string name)
 {
 	initialise(r, d, name);
 }
 
-void PhaseCentre::initialise(double r, double d, string name)
+void PhaseCentre::initialise(double r, double d, std::string name)
 {
 	ra = r;
 	dec = d;
@@ -723,22 +724,22 @@ void PhaseCentre::initialise(double r, double d, string name)
 	naifFile = "";  
 }
 
-SourceSetup::SourceSetup(const string &name) : vexName(name)
+SourceSetup::SourceSetup(const std::string &name) : vexName(name)
 {
 	doPointingCentre = true;
 	pointingCentre.difxName = name;
 }
 
-int SourceSetup::setkv(const string &key, const string &value)
+int SourceSetup::setkv(const std::string &key, const std::string &value)
 {
 	return setkv(key, value, &pointingCentre);
 }
 
-int SourceSetup::setkv(const string &key, const string &value, PhaseCentre * pc)
+int SourceSetup::setkv(const std::string &key, const std::string &value, PhaseCentre * pc)
 {
-	string::size_type at, last, splitat;
-	string nestedkeyval;
-	stringstream ss;
+	std::string::size_type at, last, splitat;
+	std::string nestedkeyval;
+	std::stringstream ss;
 	int nWarn = 0;
 
 	ss << value;
@@ -747,7 +748,7 @@ int SourceSetup::setkv(const string &key, const string &value, PhaseCentre * pc)
 	{
 		if(pc->ra > PhaseCentre::DEFAULT_RA)
 		{
-			cerr << "Warning: Source " << vexName << " has multiple RA assignments" << endl;
+			std::cerr << "Warning: Source " << vexName << " has multiple RA assignments" << std::endl;
 			++nWarn;
 		}
 		pc->ra = parseCoord(value.c_str(), 'R');
@@ -756,7 +757,7 @@ int SourceSetup::setkv(const string &key, const string &value, PhaseCentre * pc)
 	{
 		if(pc->dec > PhaseCentre::DEFAULT_DEC)
 		{
-			cerr << "Warning: Source " << vexName << " has multiple Dec assignments" << endl;
+			std::cerr << "Warning: Source " << vexName << " has multiple Dec assignments" << std::endl;
 			++nWarn;
 		}
 		pc->dec = parseCoord(value.c_str(), 'D');
@@ -784,14 +785,14 @@ int SourceSetup::setkv(const string &key, const string &value, PhaseCentre * pc)
 		{
 			if(time(0) > 1341100800)	// July 1, 2012
 			{
-				cout << "Error: naif0010.tls or newer is needed for correct ephemeris evaluation.  An old or unrecognized file, " << pc->naifFile << " was supplied." << endl;
+				std::cout << "Error: naif0010.tls or newer is needed for correct ephemeris evaluation.  An old or unrecognized file, " << pc->naifFile << " was supplied." << std::endl;
 
 				exit(EXIT_FAILURE);
 			}
 			else
 			{
-				cout << "Warning: Using old NAIF file: " << pc->naifFile << ".  Please upgrade to naif0010.tls or newer." << endl;
-				cout << "After July 1, 2012, this will be an error and vex2difx will not run." << endl;
+				std::cout << "Warning: Using old NAIF file: " << pc->naifFile << ".  Please upgrade to naif0010.tls or newer." << std::endl;
+				std::cout << "After July 1, 2012, this will be an error and vex2difx will not run." << std::endl;
 				nWarn++;
 			}
 		}
@@ -815,7 +816,7 @@ int SourceSetup::setkv(const string &key, const string &value, PhaseCentre * pc)
 		PhaseCentre * newpc = &(phaseCentres.back());
 		last = 0;
 		at = 0;
-		while(at !=string::npos)
+		while(at !=std::string::npos)
 		{
 			at = value.find_first_of('/', last);
 			nestedkeyval = value.substr(last, at-last);
@@ -826,7 +827,7 @@ int SourceSetup::setkv(const string &key, const string &value, PhaseCentre * pc)
 	}
 	else
 	{
-		cerr << "Warning: SOURCE: Unknown parameter '" << key << "'." << endl; 
+		std::cerr << "Warning: SOURCE: Unknown parameter '" << key << "'." << std::endl; 
 		++nWarn;
 	}
 
@@ -835,18 +836,18 @@ int SourceSetup::setkv(const string &key, const string &value, PhaseCentre * pc)
 
 ZoomFreq::ZoomFreq()
 {
-        initialise(-999, -999, false, -1);
+	initialise(-999, -999, false, -1);
 }
 
 void ZoomFreq::initialise(double freq, double bw, bool corrparent, int specavg)
 {
-        frequency = freq*1000000; //convert to Hz
+	frequency = freq*1000000; //convert to Hz
 	bandwidth = bw*1000000; //convert to Hz
 	correlateparent = corrparent;
 	spectralaverage = specavg;
 }
 
-AntennaSetup::AntennaSetup(const string &name) : vexName(name)
+AntennaSetup::AntennaSetup(const std::string &name) : vexName(name)
 {
 	polSwap = false;
 	X = 0.0;
@@ -870,47 +871,47 @@ AntennaSetup::AntennaSetup(const string &name) : vexName(name)
 	dataSampling = NumSamplingTypes;	// flag that no sampling is is identified here
 }
 
-int AntennaSetup::setkv(const string &key, const string &value, ZoomFreq *zoomFreq)
+int AntennaSetup::setkv(const std::string &key, const std::string &value, ZoomFreq *zoomFreq)
 {
 	int nWarn = 0;
 
 	if(key == "freq" || key == "FREQ")
-        {
-                zoomFreq->frequency = atof(value.c_str())*1000000; //convert to Hz
-        }
+	{
+		zoomFreq->frequency = atof(value.c_str())*1000000; //convert to Hz
+	}
 	else if(key == "bw" || key == "BW")
-        {
-                zoomFreq->bandwidth = atof(value.c_str())*1000000; //convert to Hz
-        }
+	{
+		zoomFreq->bandwidth = atof(value.c_str())*1000000; //convert to Hz
+	}
 	else if(key == "noparent" || key == "NOPARENT")
-        {
+	{
 		if(value == "TRUE" || value == "True" || value == "true")
 		{
-	                zoomFreq->correlateparent = false;
+			zoomFreq->correlateparent = false;
 		}
 		else
 		{
 			zoomFreq->correlateparent = true;
 		}
-        }
+	}
 	else if(key == "specAvg" || key == "SPECAVG" || key == "specavg")
-        {
-                zoomFreq->spectralaverage = atoi(value.c_str());
-        }
+	{
+		zoomFreq->spectralaverage = atoi(value.c_str());
+	}
 	else
 	{
-		cerr << "Warning: ANTENNA: Unknown parameter '" << key << "'." << endl; 
+		std::cerr << "Warning: ANTENNA: Unknown parameter '" << key << "'." << std::endl; 
 		++nWarn;
 	}
 
 	return nWarn;
 }
 
-int AntennaSetup::setkv(const string &key, const string &value)
+int AntennaSetup::setkv(const std::string &key, const std::string &value)
 {
-	string::size_type at, last, splitat;
-        string nestedkeyval;
-	stringstream ss;
+	std::string::size_type at, last, splitat;
+	std::string nestedkeyval;
+	std::stringstream ss;
 	int nWarn = 0;
 
 	ss << value;
@@ -919,7 +920,7 @@ int AntennaSetup::setkv(const string &key, const string &value)
 	{
 		if(vexName == "DEFAULT")
 		{
-			cerr << "Error: renaming the DEFAULT antenna setup is not allowed" << endl;
+			std::cerr << "Error: renaming the DEFAULT antenna setup is not allowed" << std::endl;
 			
 			exit(EXIT_FAILURE);
 		}
@@ -933,7 +934,7 @@ int AntennaSetup::setkv(const string &key, const string &value)
 	{
 		if(clock.offset != 0.0)
 		{
-			cerr << "Warning: antenna " << vexName << " has multiple clockOffset definitions" << endl;
+			std::cerr << "Warning: antenna " << vexName << " has multiple clockOffset definitions" << std::endl;
 			++nWarn;
 		}
 		ss >> clock.offset;
@@ -945,7 +946,7 @@ int AntennaSetup::setkv(const string &key, const string &value)
 		dataSampling = stringToSamplingType(value.c_str());
 		if(dataSampling >= NumSamplingTypes)
 		{
-			cerr << "Error: antenna " << vexName << " has illegal samping type set: " << value << endl;
+			std::cerr << "Error: antenna " << vexName << " has illegal samping type set: " << value << std::endl;
 
 			exit(EXIT_FAILURE);
 		}
@@ -954,7 +955,7 @@ int AntennaSetup::setkv(const string &key, const string &value)
 	{
 		if(clock.rate != 0.0)
 		{
-			cerr << "Warning: antenna " << vexName << " has multiple clockRate definitions" << endl;
+			std::cerr << "Warning: antenna " << vexName << " has multiple clockRate definitions" << std::endl;
 			++nWarn;
 		}
 		ss >> clock.rate;
@@ -966,7 +967,7 @@ int AntennaSetup::setkv(const string &key, const string &value)
 	{
 		if(clock2 != 0.0)
 		{
-			cerr << "Warning: antenna " << vexName << " has multiple clock2 definitions" << endl;
+			std::cerr << "Warning: antenna " << vexName << " has multiple clock2 definitions" << std::endl;
 			++nWarn;
 		}
 
@@ -981,7 +982,7 @@ int AntennaSetup::setkv(const string &key, const string &value)
 	{
 		if(clock3 != 0.0)
 		{
-			cerr << "Warning: antenna " << vexName << " has multiple clock3 definitions" << endl;
+			std::cerr << "Warning: antenna " << vexName << " has multiple clock3 definitions" << std::endl;
 			++nWarn;
 		}
 
@@ -996,7 +997,7 @@ int AntennaSetup::setkv(const string &key, const string &value)
 	{
 		if(clock4 != 0.0)
 		{
-			cerr << "Warning: antenna " << vexName << " has multiple clock4 definitions" << endl;
+			std::cerr << "Warning: antenna " << vexName << " has multiple clock4 definitions" << std::endl;
 			++nWarn;
 		}
 
@@ -1011,7 +1012,7 @@ int AntennaSetup::setkv(const string &key, const string &value)
 	{
 		if(clock5 != 0.0)
 		{
-			cerr << "Warning: antenna " << vexName << " has multiple clock5 definitions" << endl;
+			std::cerr << "Warning: antenna " << vexName << " has multiple clock5 definitions" << std::endl;
 			++nWarn;
 		}
 
@@ -1026,7 +1027,7 @@ int AntennaSetup::setkv(const string &key, const string &value)
 	{
 		if(clock.offset_epoch > 50001.0)
 		{
-			cerr << "Warning: antenna " << vexName << " has multiple clockEpoch definitions" << endl;
+			std::cerr << "Warning: antenna " << vexName << " has multiple clockEpoch definitions" << std::endl;
 			++nWarn;
 		}
 		clock.offset_epoch = parseTime(value);
@@ -1036,7 +1037,7 @@ int AntennaSetup::setkv(const string &key, const string &value)
 	{
 		if(deltaClock != 0.0)
 		{
-			cerr << "Warning: antenna " << vexName << " has multiple deltaClock definitions" << endl;
+			std::cerr << "Warning: antenna " << vexName << " has multiple deltaClock definitions" << std::endl;
 			++nWarn;
 		}
 		ss >> deltaClock;
@@ -1046,7 +1047,7 @@ int AntennaSetup::setkv(const string &key, const string &value)
 	{
 		if(deltaClockRate != 0.0)
 		{
-			cerr << "Warning: antenna " << vexName << " has multiple deltaClockRate definitions" << endl;
+			std::cerr << "Warning: antenna " << vexName << " has multiple deltaClockRate definitions" << std::endl;
 			++nWarn;
 		}
 		ss >> deltaClockRate;
@@ -1056,7 +1057,7 @@ int AntennaSetup::setkv(const string &key, const string &value)
 	{
 		if(X != 0.0)
 		{
-			cerr << "Warning: antenna " << vexName << " has multiple X definitions" << endl;
+			std::cerr << "Warning: antenna " << vexName << " has multiple X definitions" << std::endl;
 			++nWarn;
 		}
 		ss >> X;
@@ -1065,7 +1066,7 @@ int AntennaSetup::setkv(const string &key, const string &value)
 	{
 		if(Y != 0.0)
 		{
-			cerr << "Warning: antenna " << vexName << " has multiple Y definitions" << endl;
+			std::cerr << "Warning: antenna " << vexName << " has multiple Y definitions" << std::endl;
 			++nWarn;
 		}
 		ss >> Y;
@@ -1074,14 +1075,14 @@ int AntennaSetup::setkv(const string &key, const string &value)
 	{
 		if(Z != 0.0)
 		{
-			cerr << "Warning: antenna " << vexName << " has multiple Z definitions" << endl;
+			std::cerr << "Warning: antenna " << vexName << " has multiple Z definitions" << std::endl;
 			++nWarn;
 		}
 		ss >> Z;
 	}
 	else if(key == "format")
 	{
-		string s;
+		std::string s;
 		ss >> s;
 		Upper(s);
 
@@ -1096,7 +1097,7 @@ int AntennaSetup::setkv(const string &key, const string &value)
 	{
 		if(dataSource != DataSourceFile && dataSource != DataSourceNone)
 		{
-			cerr << "Warning: antenna " << vexName << " had at least two kinds of data sources!: " << dataSourceNames[dataSource] << " and " << dataSourceNames[DataSourceFile] << endl;
+			std::cerr << "Warning: antenna " << vexName << " had at least two kinds of data sources!: " << dataSourceNames[dataSource] << " and " << dataSourceNames[DataSourceFile] << std::endl;
 			++nWarn;
 		}
 		dataSource = DataSourceFile;
@@ -1106,7 +1107,7 @@ int AntennaSetup::setkv(const string &key, const string &value)
 	{
 		if(dataSource != DataSourceFile && dataSource != DataSourceNone)
 		{
-			cerr << "Warning: antenna " << vexName << " had at least two kinds of data sources!: " << dataSourceNames[dataSource] << " and " << dataSourceNames[DataSourceFile] << endl;
+			std::cerr << "Warning: antenna " << vexName << " had at least two kinds of data sources!: " << dataSourceNames[dataSource] << " and " << dataSourceNames[DataSourceFile] << std::endl;
 			++nWarn;
 		}
 		dataSource = DataSourceFile;
@@ -1116,7 +1117,7 @@ int AntennaSetup::setkv(const string &key, const string &value)
 	{
 		if(dataSource != DataSourceNetwork && dataSource != DataSourceNone)
 		{
-			cerr << "Warning: antenna " << vexName << " had at least two kinds of data sources!: " << dataSourceNames[dataSource] << " and " << dataSourceNames[DataSourceNetwork] << endl;
+			std::cerr << "Warning: antenna " << vexName << " had at least two kinds of data sources!: " << dataSourceNames[dataSource] << " and " << dataSourceNames[DataSourceNetwork] << std::endl;
 			++nWarn;
 		}
 		dataSource = DataSourceNetwork;
@@ -1126,7 +1127,7 @@ int AntennaSetup::setkv(const string &key, const string &value)
 	{
 		if(dataSource != DataSourceNetwork && dataSource != DataSourceNone)
 		{
-			cerr << "Warning: antenna " << vexName << " had at least two kinds of data sources!: " << dataSourceNames[dataSource] << " and " << dataSourceNames[DataSourceNetwork] << endl;
+			std::cerr << "Warning: antenna " << vexName << " had at least two kinds of data sources!: " << dataSourceNames[dataSource] << " and " << dataSourceNames[DataSourceNetwork] << std::endl;
 			++nWarn;
 		}
 		dataSource = DataSourceNetwork;
@@ -1136,7 +1137,7 @@ int AntennaSetup::setkv(const string &key, const string &value)
 	{
 		if(dataSource != DataSourceNetwork && dataSource != DataSourceNone)
 		{
-			cerr << "Warning: antenna " << vexName << " had at least two kinds of data sources!: " << dataSourceNames[dataSource] << " and " << dataSourceNames[DataSourceNetwork] << endl;
+			std::cerr << "Warning: antenna " << vexName << " had at least two kinds of data sources!: " << dataSourceNames[dataSource] << " and " << dataSourceNames[DataSourceNetwork] << std::endl;
 			++nWarn;
 		}
 		dataSource = DataSourceNetwork;
@@ -1147,11 +1148,11 @@ int AntennaSetup::setkv(const string &key, const string &value)
 	{
 		if(dataSource == DataSourceModule)
 		{
-			cerr << "Warning: antenna " << vexName << " has multiple vsns assigned to it.  Only using the last one = " << value << " and discarding " << basebandFiles[0].filename << endl;
+			std::cerr << "Warning: antenna " << vexName << " has multiple vsns assigned to it.  Only using the last one = " << value << " and discarding " << basebandFiles[0].filename << std::endl;
 		}
 		else if(dataSource != DataSourceNone)
 		{
-			cerr << "Warning: antenna " << vexName << " had at least two kinds of data sources!: " << dataSourceNames[dataSource] << " and " << dataSourceNames[DataSourceFile] << endl;
+			std::cerr << "Warning: antenna " << vexName << " had at least two kinds of data sources!: " << dataSourceNames[dataSource] << " and " << dataSourceNames[DataSourceFile] << std::endl;
 			++nWarn;
 		}
 		dataSource = DataSourceModule;
@@ -1174,12 +1175,12 @@ int AntennaSetup::setkv(const string &key, const string &value)
 	}
 	else if(key == "toneSelection")
 	{
-		string ts;
+		std::string ts;
 		ss >> ts;
 		toneSelection = stringToToneSelection(ts.c_str());
 		if(toneSelection == ToneSelectionUnknown)
 		{
-			cerr << "Error: antenna " << vexName << " unsupported value of toneSelection (" << ts << ") provided." << endl;
+			std::cerr << "Error: antenna " << vexName << " unsupported value of toneSelection (" << ts << ") provided." << std::endl;
 			++nWarn;
 			toneSelection = ToneSelectionVex;
 		}
@@ -1206,7 +1207,7 @@ int AntennaSetup::setkv(const string &key, const string &value)
 	{
 		if(!zoomFreqs.empty())
 		{
-			cerr << "Error: cannot specify both ANTENNA-based and ZOOM-based zoom freqs for an antenna" << endl;
+			std::cerr << "Error: cannot specify both ANTENNA-based and ZOOM-based zoom freqs for an antenna" << std::endl;
 
 			exit(EXIT_FAILURE);
 		}
@@ -1216,30 +1217,30 @@ int AntennaSetup::setkv(const string &key, const string &value)
 	{
 		if(!globalZoom.empty())
 		{
-			cerr << "Error: cannot specify both ANTENNA-based and ZOOM-based zoom freqs for an antenna" << endl;
+			std::cerr << "Error: cannot specify both ANTENNA-based and ZOOM-based zoom freqs for an antenna" << std::endl;
 
 			exit(EXIT_FAILURE);
 		}
 
 		// This is a bit tricky.  All parameters must be together, with @ replacing =, and separated by /
-                // e.g., addZoomFreq = freq@1649.99/bw@1.0/correlateparent@TRUE/specAvg@8
+		// e.g., addZoomFreq = freq@1649.99/bw@1.0/correlateparent@TRUE/specAvg@8
 		// only freq and bw are compulsory; default is parent values and don't correlate parent
-                zoomFreqs.push_back(ZoomFreq());
-                ZoomFreq * newfreq = &(zoomFreqs.back());
-                last = 0;
-                at = 0;
-                while(at != string::npos)
-                {
-                        at = value.find_first_of('/', last);
-                        nestedkeyval = value.substr(last, at-last);
-                        splitat = nestedkeyval.find_first_of('@');
-                        nWarn += setkv(nestedkeyval.substr(0,splitat), nestedkeyval.substr(splitat+1), newfreq);
-                        last = at+1;
-                }
+		zoomFreqs.push_back(ZoomFreq());
+		ZoomFreq * newfreq = &(zoomFreqs.back());
+		last = 0;
+		at = 0;
+		while(at != std::string::npos)
+		{
+			at = value.find_first_of('/', last);
+			nestedkeyval = value.substr(last, at-last);
+			splitat = nestedkeyval.find_first_of('@');
+			nWarn += setkv(nestedkeyval.substr(0,splitat), nestedkeyval.substr(splitat+1), newfreq);
+			last = at+1;
+		}
 	}
 	else
 	{
-		cerr << "Warning: ANTENNA: Unknown parameter '" << key << "'." << endl; 
+		std::cerr << "Warning: ANTENNA: Unknown parameter '" << key << "'." << std::endl; 
 		++nWarn;
 	}
 
@@ -1248,45 +1249,45 @@ int AntennaSetup::setkv(const string &key, const string &value)
 
 void AntennaSetup::copyGlobalZoom(const GlobalZoom &globalZoom)
 {
-	for(vector<ZoomFreq>::const_iterator it = globalZoom.zoomFreqs.begin(); it != globalZoom.zoomFreqs.end(); ++it)
+	for(std::vector<ZoomFreq>::const_iterator it = globalZoom.zoomFreqs.begin(); it != globalZoom.zoomFreqs.end(); ++it)
 	{
 		zoomFreqs.push_back(*it);
 	}
 }
 
-int GlobalZoom::setkv(const string &key, const string &value, ZoomFreq *zoomFreq)
+int GlobalZoom::setkv(const std::string &key, const std::string &value, ZoomFreq *zoomFreq)
 {
 	int nWarn = 0;
 
 	if(key == "freq" || key == "FREQ")
-        {
-                zoomFreq->frequency = atof(value.c_str())*1000000; //convert to Hz
-        }
+	{
+		zoomFreq->frequency = atof(value.c_str())*1000000; //convert to Hz
+	}
 	else if(key == "bw" || key == "BW")
-        {
-                zoomFreq->bandwidth = atof(value.c_str())*1000000; //convert to Hz
-        }
+	{
+		zoomFreq->bandwidth = atof(value.c_str())*1000000; //convert to Hz
+	}
 	else if(key == "noparent" || key == "NOPARENT")
-        {
+	{
 		if(value == "TRUE" || value == "True" || value == "true")
 		{
-	                zoomFreq->correlateparent = false;
+			zoomFreq->correlateparent = false;
 		}
 		else
 		{
-			cerr << "Warning: Currently correlation of rec bands that are parents to globally defined zoom bands is not supported.  Results will be unpredictable." << endl;
+			std::cerr << "Warning: Currently correlation of rec bands that are parents to globally defined zoom bands is not supported.  Results will be unpredictable." << std::endl;
 			++nWarn;
 
 			zoomFreq->correlateparent = true;
 		}
-        }
+	}
 	else if(key == "specAvg" || key == "SPECAVG" || key == "specavg")
-        {
-                zoomFreq->spectralaverage = atoi(value.c_str());
-        }
+	{
+		zoomFreq->spectralaverage = atoi(value.c_str());
+	}
 	else
 	{
-		cerr << "Warning: ZOOM: Unknown parameter '" << key << "'." << endl; 
+		std::cerr << "Warning: ZOOM: Unknown parameter '" << key << "'." << std::endl; 
 		++nWarn;
 	}
 
@@ -1294,33 +1295,33 @@ int GlobalZoom::setkv(const string &key, const string &value, ZoomFreq *zoomFreq
 	
 }
 
-int GlobalZoom::setkv(const string &key, const string &value)
+int GlobalZoom::setkv(const std::string &key, const std::string &value)
 {
 	int nWarn = 0;
 
 	if(key == "addZoomFreq" || key == "zoom" || key == "zoomFreq")
 	{
 		// This is a bit tricky.  All parameters must be together, with @ replacing =, and separated by /
-                // e.g., addZoomFreq = freq@1649.99/bw@1.0/correlateparent@TRUE/specAvg@8
+		// e.g., addZoomFreq = freq@1649.99/bw@1.0/correlateparent@TRUE/specAvg@8
 		// only freq and bw are compulsory; default is parent values and don't correlate parent
-                zoomFreqs.push_back(ZoomFreq());
-                ZoomFreq * newfreq = &(zoomFreqs.back());
-                string::size_type last = 0;
-                string::size_type at = 0;
-		string::size_type splitat = 0;
-        	string nestedkeyval;
-                while(at != string::npos)
-                {
-                        at = value.find_first_of('/', last);
-                        nestedkeyval = value.substr(last, at-last);
-                        splitat = nestedkeyval.find_first_of('@');
-                        nWarn += setkv(nestedkeyval.substr(0,splitat), nestedkeyval.substr(splitat+1), newfreq);
-                        last = at+1;
-                }
+		zoomFreqs.push_back(ZoomFreq());
+		ZoomFreq * newfreq = &(zoomFreqs.back());
+		std::string::size_type last = 0;
+		std::string::size_type at = 0;
+		std::string::size_type splitat = 0;
+		std::string nestedkeyval;
+		while(at != std::string::npos)
+		{
+			at = value.find_first_of('/', last);
+			nestedkeyval = value.substr(last, at-last);
+			splitat = nestedkeyval.find_first_of('@');
+			nWarn += setkv(nestedkeyval.substr(0,splitat), nestedkeyval.substr(splitat+1), newfreq);
+			last = at+1;
+		}
 	}
 	else
 	{
-		cerr << "Warning: ZOOM: Unknown parameter '" << key << "'." << endl; 
+		std::cerr << "Warning: ZOOM: Unknown parameter '" << key << "'." << std::endl; 
 		++nWarn;
 	}
 
@@ -1334,7 +1335,7 @@ CorrParams::CorrParams()
 	parseWarnings = 0;
 }
 
-CorrParams::CorrParams(const string &fileName)
+CorrParams::CorrParams(const std::string &fileName)
 {
 	size_t pos;
 
@@ -1347,7 +1348,7 @@ CorrParams::CorrParams(const string &fileName)
 
 #ifdef DONT_USE_EXPER_AS_PASS
 	pos = vexFile.find(".");
-	string vexBase = jobSeries.substr(0, pos);
+	std::string vexBase = jobSeries.substr(0, pos);
 	if(vexBase == jobSeries)
 	{
 		jobSeries = "main";
@@ -1388,7 +1389,7 @@ void CorrParams::defaults()
 	tweakIntTime = false;
 }
 
-void pathify(string &filename)
+void pathify(std::string &filename)
 {
 	if(filename[0] == '/')
 	{
@@ -1396,22 +1397,22 @@ void pathify(string &filename)
 	}
 
 	char cwd[DIFXIO_FILENAME_LENGTH];
-	string fn;
+	std::string fn;
 
 	if(getcwd(cwd, DIFXIO_FILENAME_LENGTH-1) == 0)
 	{
-		cerr << "Cannot getcwd()" << endl;
+		std::cerr << "Cannot getcwd()" << std::endl;
 
 		exit(EXIT_FAILURE);
 	}
-	fn = string(cwd) + string("/") + filename;
+	fn = std::string(cwd) + std::string("/") + filename;
 
 	filename = fn;
 }
 
-int CorrParams::setkv(const string &key, const string &value)
+int CorrParams::setkv(const std::string &key, const std::string &value)
 {
-	stringstream ss;
+	std::stringstream ss;
 	int nWarn = 0;
 
 	ss << value;
@@ -1502,7 +1503,7 @@ int CorrParams::setkv(const string &key, const string &value)
 		for(unsigned int i = 0; i < l; ++i)
 		if(!isalnum(value[i]))
 		{
-			cerr << "Error: jobSeries must be purely alphanumeric" << endl;
+			std::cerr << "Error: jobSeries must be purely alphanumeric" << std::endl;
 
 			exit(EXIT_FAILURE);	
 		}
@@ -1513,7 +1514,7 @@ int CorrParams::setkv(const string &key, const string &value)
 		ss >> startSeries;
 		if(startSeries < 0)
 		{
-			cerr << "Error: startSeries cannot be < 0" << endl;
+			std::cerr << "Error: startSeries cannot be < 0" << std::endl;
 			
 			exit(EXIT_FAILURE);
 		}
@@ -1540,9 +1541,9 @@ int CorrParams::setkv(const string &key, const string &value)
 	}
 	else if(key == "invalidMask")
 	{
-	  stringstream sss;
+		std::stringstream sss;
 	  
-	        sss << setbase(16) << value;
+		sss << std::setbase(16) << value;
 		sss >> invalidMask;
 	}
 	else if(key == "visBufferLength")
@@ -1559,21 +1560,21 @@ int CorrParams::setkv(const string &key, const string &value)
 	}
 	else if(key == "antennas")
 	{
-		string s;
+		std::string s;
 		ss >> s;
 		Upper(s);
 		addAntenna(s);
 	}
 	else if(key == "baselines")
 	{
-		string s;
+		std::string s;
 		ss >> s;
 		Upper(s);
 		addBaseline(s);
 	}
 	else if(key == "mode")
 	{
-		string s;
+		std::string s;
 		ss >> s;
 		Upper(s);
 		if(s == "NORMAL")
@@ -1586,14 +1587,14 @@ int CorrParams::setkv(const string &key, const string &value)
 		}
 		else
 		{
-			cerr << "Warning: Illegal value " << value << " for mode" << endl;
+			std::cerr << "Warning: Illegal value " << value << " for mode" << std::endl;
 			++nWarn;
 		}
 	}
 	else if(key == "outputFormat")
 	{
-	        string s;
-	        ss >> s;
+		std::string s;
+		ss >> s;
 		Upper(s);
 		if (s == "ASCII")
 		{
@@ -1606,21 +1607,21 @@ int CorrParams::setkv(const string &key, const string &value)
 	}
 	else if(key == "machines")
 	{
-	        string s;
-	        ss >> s;
+		std::string s;
+		ss >> s;
 		Lower(s);
 		machines.push_back(s);
 	}
 	else
 	{
-		cerr << "Warning: Unknown keyword " << key << " with value " << value << endl;
+		std::cerr << "Warning: Unknown keyword " << key << " with value " << value << std::endl;
 		++nWarn;
 	}
 
 	return nWarn;
 }
 
-void CorrParams::addAntenna(const string &antName)
+void CorrParams::addAntenna(const std::string &antName)
 {
 	if(find(antennaList.begin(), antennaList.end(), antName) == antennaList.end())
 	{
@@ -1628,32 +1629,32 @@ void CorrParams::addAntenna(const string &antName)
 	}
 }
 
-void CorrParams::addBaseline(const string &baselineName)
+void CorrParams::addBaseline(const std::string &baselineName)
 {
 	size_t pos;
 
 	pos = baselineName.find("-");
 
-	if(pos == string::npos)
+	if(pos == std::string::npos)
 	{
-		cerr << "Error in baseline designation: " << baselineName << " : a hyphen is required." << endl;
+		std::cerr << "Error in baseline designation: " << baselineName << " : a hyphen is required." << std::endl;
 
 		exit(EXIT_FAILURE);
 	}
 
 	if(pos == 0 || pos == baselineName.length()-1)
 	{
-		cerr << "Error in baseline designation: " << baselineName << " : need characters before and after the hyphen." << endl;
+		std::cerr << "Error in baseline designation: " << baselineName << " : need characters before and after the hyphen." << std::endl;
 		
 		exit(EXIT_FAILURE);
 	}
 
-	baselineList.push_back(pair<string,string>(
+	baselineList.push_back(std::pair<std::string,std::string>(
 		baselineName.substr(0, pos),
 		baselineName.substr(pos+1) ));
 }
 
-int CorrParams::load(const string &fileName)
+int CorrParams::load(const std::string &fileName)
 {
 	enum Parse_Mode
 	{
@@ -1668,8 +1669,8 @@ int CorrParams::load(const string &fileName)
 
 	const int MaxLineLength = 1024;
 
-	ifstream is;
-	vector<string> tokens;
+	std::ifstream is;
+	std::vector<std::string> tokens;
 	char s[MaxLineLength];
 	CorrSetup   *corrSetup=0;
 	CorrRule    *rule=0;
@@ -1684,7 +1685,7 @@ int CorrParams::load(const string &fileName)
 
 	if(is.fail())
 	{
-		cerr << "Error: cannot open " << fileName << endl;
+		std::cerr << "Error: cannot open " << fileName << std::endl;
 
 		exit(EXIT_FAILURE);
 	}
@@ -1696,7 +1697,7 @@ int CorrParams::load(const string &fileName)
 		{
 			break;
 		}
-		string ss = s;
+		std::string ss = s;
 
 		int l = ss.size();
 		int t = 0;
@@ -1708,8 +1709,7 @@ int CorrParams::load(const string &fileName)
 			{	
 				break;
 			}
-			else if(s[i] == '{' || s[i] == '}' || 
-			        s[i] == '=' || s[i] == ',')
+			else if(s[i] == '{' || s[i] == '}' || s[i] == '=' || s[i] == ',')
 			{
 				if(t < i)
 				{
@@ -1731,15 +1731,15 @@ int CorrParams::load(const string &fileName)
 	}
 
 	bool keyWaiting=false, keyWaitingTemp;
-	string key(""), value, last("");
-	for(vector<string>::const_iterator i = tokens.begin(); i != tokens.end(); ++i)
+	std::string key(""), value, last("");
+	for(std::vector<std::string>::const_iterator i = tokens.begin(); i != tokens.end(); ++i)
 	{
 		keyWaitingTemp = false;
 		if(*i == "SETUP")
 		{
 			if(parseMode != PARSE_MODE_GLOBAL)
 			{
-				cerr << "Error: SETUP out of place." << endl;
+				std::cerr << "Error: SETUP out of place." << std::endl;
 				
 				exit(EXIT_FAILURE);
 			}
@@ -1749,7 +1749,7 @@ int CorrParams::load(const string &fileName)
 			++i;
 			if(*i != "{")
 			{
-				cerr << "Error: '{' expected." << endl;
+				std::cerr << "Error: '{' expected." << std::endl;
 				
 				exit(EXIT_FAILURE);
 			}
@@ -1760,7 +1760,7 @@ int CorrParams::load(const string &fileName)
 		{
 			if(parseMode != PARSE_MODE_GLOBAL)
 			{
-				cerr << "Error: RULE out of place." << endl;
+				std::cerr << "Error: RULE out of place." << std::endl;
 				
 				exit(EXIT_FAILURE);
 			}
@@ -1770,7 +1770,7 @@ int CorrParams::load(const string &fileName)
 			++i;
 			if(*i != "{")
 			{
-				cerr << "Error: '{' expected." << endl;
+				std::cerr << "Error: '{' expected." << std::endl;
 				
 				exit(EXIT_FAILURE);
 			}
@@ -1781,14 +1781,14 @@ int CorrParams::load(const string &fileName)
 		{
 			if(parseMode != PARSE_MODE_GLOBAL)
 			{
-				cerr << "Error: SOURCE out of place." << endl;
+				std::cerr << "Error: SOURCE out of place." << std::endl;
 				
 				exit(EXIT_FAILURE);
 			}
 			++i;
 			if(getSourceSetup(*i) != 0)
 			{
-				cerr << "Error: Trying to add a setup for source " << *i << " which already has one!" << endl;
+				std::cerr << "Error: Trying to add a setup for source " << *i << " which already has one!" << std::endl;
 
 				exit(EXIT_FAILURE);
 			}
@@ -1797,7 +1797,7 @@ int CorrParams::load(const string &fileName)
 			++i;
 			if(*i != "{")
 			{
-				cerr << "Error: '{' expected." << endl;
+				std::cerr << "Error: '{' expected." << std::endl;
 
 				exit(EXIT_FAILURE);
 			}
@@ -1808,16 +1808,16 @@ int CorrParams::load(const string &fileName)
 		{
 			if(parseMode != PARSE_MODE_GLOBAL)
 			{
-				cerr << "Error: ANTENNA out of place." << endl;
+				std::cerr << "Error: ANTENNA out of place." << std::endl;
 				
 				exit(EXIT_FAILURE);
 			}
 			++i;
-			string antName(*i);
+			std::string antName(*i);
 			Upper(antName);
 			if(getAntennaSetup(antName) != 0)
 			{
-				cerr << "Error: two ANTENNA blocks set for antenna " << antName << endl;
+				std::cerr << "Error: two ANTENNA blocks set for antenna " << antName << std::endl;
 
 				exit(EXIT_FAILURE);
 			}
@@ -1826,7 +1826,7 @@ int CorrParams::load(const string &fileName)
 			++i;
 			if(*i != "{")
 			{
-				cerr << "Error: '{' expected." << endl;
+				std::cerr << "Error: '{' expected." << std::endl;
 
 				exit(EXIT_FAILURE);
 			}
@@ -1837,18 +1837,18 @@ int CorrParams::load(const string &fileName)
 		{
 			if(parseMode != PARSE_MODE_GLOBAL)
 			{
-				cerr << "Error: ZOOM out of place." << endl;
+				std::cerr << "Error: ZOOM out of place." << std::endl;
 				
 				exit(EXIT_FAILURE);
 			}
 			++i;
-			string zoomName(*i);
+			std::string zoomName(*i);
 			globalZooms.push_back(GlobalZoom(zoomName));
 			globalZoom = &globalZooms.back();
 			++i;
 			if(*i != "{")
 			{
-				cerr << "Error: '{' expected." << endl;
+				std::cerr << "Error: '{' expected." << std::endl;
 
 				exit(EXIT_FAILURE);
 			}
@@ -1858,25 +1858,25 @@ int CorrParams::load(const string &fileName)
 		else if(*i == "EOP")
 		{
 			if(parseMode != PARSE_MODE_GLOBAL)
-                        {
-                                cerr << "Error: ANTENNA out of place." << endl;
+			{
+				std::cerr << "Error: ANTENNA out of place." << std::endl;
 
-                                exit(EXIT_FAILURE);
-                        }
-                        ++i;
-                        string eopDate(*i);
-                        eops.push_back(VexEOP());
-                        eop = &eops.back();
-                        eop->mjd = parseTime(eopDate);
-                        ++i;
-                        if(*i != "{")
-                        {
-                                cerr << "Error: '{' expected." << endl;
+				exit(EXIT_FAILURE);
+			}
+			++i;
+			std::string eopDate(*i);
+			eops.push_back(VexEOP());
+			eop = &eops.back();
+			eop->mjd = parseTime(eopDate);
+			++i;
+			if(*i != "{")
+			{
+				std::cerr << "Error: '{' expected." << std::endl;
 
-                                exit(EXIT_FAILURE);
-                        }
-                        key = "";
-                        parseMode = PARSE_MODE_EOP;
+				exit(EXIT_FAILURE);
+			}
+			key = "";
+			parseMode = PARSE_MODE_EOP;
 		}
 		else if(*i == "}" && parseMode != PARSE_MODE_GLOBAL)
 		{
@@ -1889,48 +1889,48 @@ int CorrParams::load(const string &fileName)
 		}
 		else if(*i == "{" || *i == "}")
 		{
-			cerr << "Warning: unexpected character '" << *i << "'." << endl;
+			std::cerr << "Warning: unexpected character '" << *i << "'." << std::endl;
 			++nWarn;
 		}
 		else if(last == "=" || last == ",")
 		{
 			if(key == "")
 			{
-				cerr << "Error: legal parameter name expected before " << *i << endl;
+				std::cerr << "Error: legal parameter name expected before " << *i << std::endl;
 
 				exit(EXIT_FAILURE);
 			}
 			value = *i;
 			switch(parseMode)
-                        {
-                        case PARSE_MODE_GLOBAL:
-                                nWarn += setkv(key, value);
-                                break;
-                        case PARSE_MODE_SETUP:
-                                nWarn += corrSetup->setkv(key, value);
-                                break;
-                        case PARSE_MODE_RULE:
-                                nWarn += rule->setkv(key, value);
-                                break;
-                        case PARSE_MODE_SOURCE:
-                                nWarn += sourceSetup->setkv(key, value);
-                                break;
-                        case PARSE_MODE_ANTENNA:
-                                nWarn += antennaSetup->setkv(key, value);
-                                break;
-                        case PARSE_MODE_EOP:
-                                nWarn += eop->setkv(key, value);
-                                break;
+			{
+			case PARSE_MODE_GLOBAL:
+				nWarn += setkv(key, value);
+				break;
+			case PARSE_MODE_SETUP:
+				nWarn += corrSetup->setkv(key, value);
+				break;
+			case PARSE_MODE_RULE:
+				nWarn += rule->setkv(key, value);
+				break;
+			case PARSE_MODE_SOURCE:
+				nWarn += sourceSetup->setkv(key, value);
+				break;
+			case PARSE_MODE_ANTENNA:
+				nWarn += antennaSetup->setkv(key, value);
+				break;
+			case PARSE_MODE_EOP:
+				nWarn += eop->setkv(key, value);
+				break;
 			case PARSE_MODE_GLOBAL_ZOOM:
 				nWarn += globalZoom->setkv(key, value);
 				break;
-                        }
+			}
 		}
 		else
 		{
 			if(keyWaiting == true)
 			{
-				cerr << "Parse error in file " << fileName << " : Unused token: " << last << " before token: " << *i << endl;
+				std::cerr << "Parse error in file " << fileName << " : Unused token: " << last << " before token: " << *i << std::endl;
 
 				exit(EXIT_FAILURE);
 			}
@@ -1967,7 +1967,7 @@ int CorrParams::load(const string &fileName)
 	}
 
 	// populate global zoom bands into antennas that want them
-	for(vector<AntennaSetup>::iterator it = antennaSetups.begin(); it != antennaSetups.end(); ++it)
+	for(std::vector<AntennaSetup>::iterator it = antennaSetups.begin(); it != antennaSetups.end(); ++it)
 	{
 		if(!it->globalZoom.empty())
 		{
@@ -1975,7 +1975,7 @@ int CorrParams::load(const string &fileName)
 
 			if(!z)
 			{
-				cerr << "Error: referenced ZOOM " << it->globalZoom << " is not defined!" << endl;
+				std::cerr << "Error: referenced ZOOM " << it->globalZoom << " is not defined!" << std::endl;
 
 				exit(EXIT_FAILURE);
 			}
@@ -1992,7 +1992,7 @@ int CorrParams::checkSetupValidity()
 	int nWarn = 0;
 
 	// if specAvg was used
-	for(vector<CorrSetup>::iterator c = corrSetups.begin(); c != corrSetups.end(); ++c)
+	for(std::vector<CorrSetup>::iterator c = corrSetups.begin(); c != corrSetups.end(); ++c)
 	{
 		bool nChanSpecAvgOK = false;
 		bool specAvgUsed = false;
@@ -2001,7 +2001,7 @@ int CorrParams::checkSetupValidity()
 
 		if(!c->nFFTChan && !c->nOutputChan && !c->explicitFFTSpecRes && !c->explicitOutputSpecRes)
 		{
-			cerr << "WARNING: No information was provided regarding spectral resolution.  Basic defaults WILL be used.  Please check that this suits your needs." << endl;
+			std::cerr << "WARNING: No information was provided regarding spectral resolution.  Basic defaults WILL be used.  Please check that this suits your needs." << std::endl;
 			++nWarn;
 		}
 
@@ -2038,7 +2038,7 @@ int CorrParams::checkSetupValidity()
 			{
 				if(c->nFFTChan && c->nOutputChan)
 				{
-					cerr << "Error: number of channels is overspecified.  Please don't use all three of: nFFTChan, nOutputChan and specAvg" << endl;
+					std::cerr << "Error: number of channels is overspecified.  Please don't use all three of: nFFTChan, nOutputChan and specAvg" << std::endl;
 
 					exit(EXIT_FAILURE);
 				}
@@ -2058,12 +2058,12 @@ int CorrParams::checkSetupValidity()
 
 			if(c->explicitFFTSpecRes)
 			{
-				cerr << "Warning: number of channels and spectral resolutions provided!  Ignoring number of channels\n";
+				std::cerr << "Warning: number of channels and spectral resolutions provided!  Ignoring number of channels\n";
 				++nWarn;
 			}
 			else if(minBW != maxBW)
 			{
-				cerr << "Warning: cannot specify number of channels when different sub-band bandwidths exist within one setup\n";
+				std::cerr << "Warning: cannot specify number of channels when different sub-band bandwidths exist within one setup\n";
 				++nWarn;
 			}
 			else
@@ -2075,7 +2075,7 @@ int CorrParams::checkSetupValidity()
 					{
 						if(c->nFFTChan % c->nOutputChan != 0)
 						{
-							cerr << "Error: supplied number of FFT channels " << c->nFFTChan << " is not a multiple of number of supplied output channels " << c->nOutputChan << endl;
+							std::cerr << "Error: supplied number of FFT channels " << c->nFFTChan << " is not a multiple of number of supplied output channels " << c->nOutputChan << std::endl;
 
 							exit(EXIT_FAILURE);
 						}
@@ -2096,20 +2096,20 @@ int CorrParams::checkSetupValidity()
 		}
 		if(c->suppliedSpecAvg && !specAvgUsed)
 		{
-			cerr << "Warning: the value 'specAvg' supplied in the .v2d file was not used because the averaging was already over specified.  Please verify the spectral resolutions being used are appropriate for this project!" << endl;
+			std::cerr << "Warning: the value 'specAvg' supplied in the .v2d file was not used because the averaging was already over specified.  Please verify the spectral resolutions being used are appropriate for this project!" << std::endl;
 			++nWarn;
 		}
 	}
 
 	// update spectral resolution and channels if needed
-	for(vector<CorrSetup>::iterator c = corrSetups.begin(); c != corrSetups.end(); ++c)
+	for(std::vector<CorrSetup>::iterator c = corrSetups.begin(); c != corrSetups.end(); ++c)
 	{
 #warning "FIXME: This logic should consider number of antennas and possibly number of sub-bands"
 		if(c->FFTSpecRes > c->outputSpecRes)
 		{
 			if(c->explicitFFTSpecRes)
 			{
-				cerr << "You have explicitly requested an FFT resolution of " << c->FFTSpecRes << " Hz, but the output spectral resolution is set to " << c->outputSpecRes << " Hz.  This cannot be accommodated! If --force used, FFTSpecRes will be set to " << c->outputSpecRes << endl;
+				std::cerr << "You have explicitly requested an FFT resolution of " << c->FFTSpecRes << " Hz, but the output spectral resolution is set to " << c->outputSpecRes << " Hz.  This cannot be accommodated! If --force used, FFTSpecRes will be set to " << c->outputSpecRes << std::endl;
 				++nWarn;
 			}
 			c->FFTSpecRes = c->outputSpecRes;
@@ -2160,7 +2160,7 @@ int CorrParams::checkSetupValidity()
 	}
 
 	// check that all setups are sensible
-	for(vector<CorrSetup>::const_iterator c = corrSetups.begin(); c != corrSetups.end(); ++c)
+	for(std::vector<CorrSetup>::const_iterator c = corrSetups.begin(); c != corrSetups.end(); ++c)
 	{
 		nWarn += c->checkValidity();
 	}
@@ -2190,14 +2190,14 @@ void CorrParams::example()
 	corrSetups.back().outputSpecRes = 500000.0;
 	corrSetups.push_back(CorrSetup("default"));
 	rules.push_back(CorrRule("1413+15"));
-	rules.back().sourceName.push_back(string("1413+15"));
-	rules.back().corrSetupName = string("1413+15");
+	rules.back().sourceName.push_back(std::string("1413+15"));
+	rules.back().corrSetupName = std::string("1413+15");
 	rules.push_back(CorrRule("1713+07"));
-	rules.back().sourceName.push_back(string("1713+07"));
-	rules.back().corrSetupName = string("default");
+	rules.back().sourceName.push_back(std::string("1713+07"));
+	rules.back().corrSetupName = std::string("default");
 	rules.push_back(CorrRule("X"));
-	rules.back().scanName.push_back(string("No0006"));
-	rules.back().corrSetupName = string("bogus");
+	rules.back().scanName.push_back(std::string("No0006"));
+	rules.back().corrSetupName = std::string("bogus");
 }
 
 int CorrParams::sanityCheck()
@@ -2208,7 +2208,7 @@ int CorrParams::sanityCheck()
 
 	if(minSubarraySize > antennaList.size() && !antennaList.empty())
 	{
-		cerr << "Warning: the antenna list has fewer than minSubarray antennas.  No jobs will be made." << endl;
+		std::cerr << "Warning: the antenna list has fewer than minSubarray antennas.  No jobs will be made." << std::endl;
 		++nWarn;
 	}
 
@@ -2217,12 +2217,12 @@ int CorrParams::sanityCheck()
 	{
 		if(a->X != 0.0 || a->Y != 0 || a->Z != 0)
 		{
-			cerr << "Warning: the default antenna's coordinates are set!" << endl;
+			std::cerr << "Warning: the default antenna's coordinates are set!" << std::endl;
 			++nWarn;
 		}
 		if(a->clock.offset != 0 || a->clock.rate != 0 || a->clock2 != 0 || a->clock3 != 0 || a->clock4 != 0 || a->clock5 != 0 || a->clock.offset_epoch != 0 || a->deltaClock != 0 || a->deltaClockRate != 0)
 		{
-			cerr << "Warning: the default antenna's clock parameters are set!" << endl;
+			std::cerr << "Warning: the default antenna's clock parameters are set!" << std::endl;
 			++nWarn;
 		}
 	}
@@ -2231,7 +2231,7 @@ int CorrParams::sanityCheck()
 	{
 		if(nThread <= 0 || nCore <= 0)
 		{
-			cerr << "Warning: nThread and nCore must either both or neither be set." << endl;
+			std::cerr << "Warning: nThread and nCore must either both or neither be set." << std::endl;
 			++nWarn;
 		}
 	}
@@ -2239,7 +2239,7 @@ int CorrParams::sanityCheck()
 	return nWarn;
 }
 
-bool antennaMatch(const string &a1, const string &a2)
+bool antennaMatch(const std::string &a1, const std::string &a2)
 {
 	if(a1 == "*" || a2 == "*")
 	{
@@ -2249,7 +2249,7 @@ bool antennaMatch(const string &a1, const string &a2)
 	{
 		return true;
 	}
-	if(a1.find(a2) != string::npos)
+	if(a1.find(a2) != std::string::npos)
 	{
 		return true;
 	}
@@ -2257,7 +2257,7 @@ bool antennaMatch(const string &a1, const string &a2)
 	return false;
 }
 
-bool baselineMatch(const pair<string,string> &bl, const string &ant1, const string &ant2)
+bool baselineMatch(const std::pair<std::string,std::string> &bl, const std::string &ant1, const std::string &ant2)
 {
 	if(antennaMatch(bl.first, ant1) &&
 	   antennaMatch(bl.second, ant2) )
@@ -2268,9 +2268,9 @@ bool baselineMatch(const pair<string,string> &bl, const string &ant1, const stri
 	return false;
 }
 
-bool CorrParams::useAntenna(const string &antName) const
+bool CorrParams::useAntenna(const std::string &antName) const
 {
-	list<string>::const_iterator it;
+	std::list<std::string>::const_iterator it;
 
 	if(antennaList.empty())
 	{
@@ -2288,9 +2288,9 @@ bool CorrParams::useAntenna(const string &antName) const
 	return false;
 }
 
-bool CorrParams::useBaseline(const string &ant1, const string &ant2) const
+bool CorrParams::useBaseline(const std::string &ant1, const std::string &ant2) const
 {
-	list<pair<string,string> >::const_iterator it;
+	std::list<std::pair<std::string,std::string> >::const_iterator it;
 
 	if(baselineList.empty())
 	{
@@ -2309,9 +2309,9 @@ bool CorrParams::useBaseline(const string &ant1, const string &ant2) const
 	return false;
 }
 
-bool CorrParams::swapPol(const string &antName) const
+bool CorrParams::swapPol(const std::string &antName) const
 {
-	vector<AntennaSetup>::const_iterator a;
+	std::vector<AntennaSetup>::const_iterator a;
 
 	for(a = antennaSetups.begin(); a != antennaSetups.end(); ++a)
 	{
@@ -2324,9 +2324,9 @@ bool CorrParams::swapPol(const string &antName) const
 	return false;
 }
 
-const VexClock *CorrParams::getAntennaClock(const string &antName) const
+const VexClock *CorrParams::getAntennaClock(const std::string &antName) const
 {
-	vector<AntennaSetup>::const_iterator a;
+	std::vector<AntennaSetup>::const_iterator a;
 
 	for(a = antennaSetups.begin(); a != antennaSetups.end(); ++a)
 	{
@@ -2346,11 +2346,11 @@ const VexClock *CorrParams::getAntennaClock(const string &antName) const
 	return 0;
 }
 
-const AntennaSetup *CorrParams::getAntennaSetup(const string &name) const
+const AntennaSetup *CorrParams::getAntennaSetup(const std::string &name) const
 {
 	const AntennaSetup *a = 0;
 
-	for(vector<AntennaSetup>::const_iterator it = antennaSetups.begin(); it != antennaSetups.end(); ++it)
+	for(std::vector<AntennaSetup>::const_iterator it = antennaSetups.begin(); it != antennaSetups.end(); ++it)
 	{
 		if(it->vexName == "DEFAULT")
 		{
@@ -2367,11 +2367,11 @@ const AntennaSetup *CorrParams::getAntennaSetup(const string &name) const
 	return a;
 }
 
-const GlobalZoom *CorrParams::getGlobalZoom(const string &name) const
+const GlobalZoom *CorrParams::getGlobalZoom(const std::string &name) const
 {
 	const GlobalZoom *z = 0;
 
-	for(vector<GlobalZoom>::const_iterator it = globalZooms.begin(); it != globalZooms.end(); ++it)
+	for(std::vector<GlobalZoom>::const_iterator it = globalZooms.begin(); it != globalZooms.end(); ++it)
 	{
 		if(it->difxName == name)
 		{
@@ -2385,11 +2385,11 @@ const GlobalZoom *CorrParams::getGlobalZoom(const string &name) const
 
 void CorrParams::addSourceSetup(const SourceSetup &toAdd)
 {
-	for(vector<SourceSetup>::const_iterator it = sourceSetups.begin(); it != sourceSetups.end(); ++it)
+	for(std::vector<SourceSetup>::const_iterator it = sourceSetups.begin(); it != sourceSetups.end(); ++it)
 	{
 		if(it->vexName == toAdd.vexName)
 		{
-			cerr << "Error: Trying to add a setup for source " << toAdd.vexName << " which already has one!" << endl;
+			std::cerr << "Error: Trying to add a setup for source " << toAdd.vexName << " which already has one!" << std::endl;
 
 			exit(EXIT_FAILURE);
 		}
@@ -2397,9 +2397,9 @@ void CorrParams::addSourceSetup(const SourceSetup &toAdd)
 	sourceSetups.push_back(toAdd);
 }
 
-const CorrSetup *CorrParams::getCorrSetup(const string &name) const
+const CorrSetup *CorrParams::getCorrSetup(const std::string &name) const
 {
-	for(vector<CorrSetup>::const_iterator it = corrSetups.begin(); it != corrSetups.end(); ++it)
+	for(std::vector<CorrSetup>::const_iterator it = corrSetups.begin(); it != corrSetups.end(); ++it)
 	{
 		if(it->corrSetupName == name)
 		{
@@ -2410,9 +2410,9 @@ const CorrSetup *CorrParams::getCorrSetup(const string &name) const
 	return 0;
 }
 
-CorrSetup *CorrParams::getNonConstCorrSetup(const string &name)
+CorrSetup *CorrParams::getNonConstCorrSetup(const std::string &name)
 {
-	for(vector<CorrSetup>::iterator it = corrSetups.begin(); it != corrSetups.end(); ++it)
+	for(std::vector<CorrSetup>::iterator it = corrSetups.begin(); it != corrSetups.end(); ++it)
 	{
 		if(it->corrSetupName == name)
 		{
@@ -2423,9 +2423,9 @@ CorrSetup *CorrParams::getNonConstCorrSetup(const string &name)
 	return 0;
 }
 
-const SourceSetup *CorrParams::getSourceSetup(const string &name) const
+const SourceSetup *CorrParams::getSourceSetup(const std::string &name) const
 {
-	for(vector<SourceSetup>::const_iterator it = sourceSetups.begin(); it != sourceSetups.end(); ++it)
+	for(std::vector<SourceSetup>::const_iterator it = sourceSetups.begin(); it != sourceSetups.end(); ++it)
 	{
 		if(it->vexName == name)
 		{
@@ -2436,9 +2436,9 @@ const SourceSetup *CorrParams::getSourceSetup(const string &name) const
 	return 0;
 }
 
-const SourceSetup *CorrParams::getSourceSetup(const vector<string> &names) const
+const SourceSetup *CorrParams::getSourceSetup(const std::vector<std::string> &names) const
 {
-	for(vector<SourceSetup>::const_iterator it = sourceSetups.begin(); it != sourceSetups.end(); ++it)
+	for(std::vector<SourceSetup>::const_iterator it = sourceSetups.begin(); it != sourceSetups.end(); ++it)
 	{
 		if(find(names.begin(), names.end(), it->vexName) != names.end())
 		{
@@ -2449,15 +2449,15 @@ const SourceSetup *CorrParams::getSourceSetup(const vector<string> &names) const
 	return 0;
 }
 
-const PhaseCentre *CorrParams::getPhaseCentre(const string &difxName) const
+const PhaseCentre *CorrParams::getPhaseCentre(const std::string &difxName) const
 {
-	for(vector<SourceSetup>::const_iterator ss = sourceSetups.begin(); ss != sourceSetups.end(); ++ss)
+	for(std::vector<SourceSetup>::const_iterator ss = sourceSetups.begin(); ss != sourceSetups.end(); ++ss)
 	{
 		if(ss->pointingCentre.difxName == difxName)
 		{
 			return &(ss->pointingCentre);
 		}
-		for(vector<PhaseCentre>::const_iterator pc = ss->phaseCentres.begin(); pc != ss->phaseCentres.end(); ++pc)
+		for(std::vector<PhaseCentre>::const_iterator pc = ss->phaseCentres.begin(); pc != ss->phaseCentres.end(); ++pc)
 		{
 			if(pc->difxName == difxName)
 			{
@@ -2469,11 +2469,11 @@ const PhaseCentre *CorrParams::getPhaseCentre(const string &difxName) const
 	return 0;
 }
 
-const string &CorrParams::findSetup(const string &scan, const string &source, const string &mode, char cal, int qual) const
+const std::string &CorrParams::findSetup(const std::string &scan, const std::string &source, const std::string &mode, char cal, int qual) const
 {
-	vector<CorrRule>::const_iterator it;
-	static const string def("default");
-	static const string none("");
+	std::vector<CorrRule>::const_iterator it;
+	static const std::string def("default");
+	static const std::string none("");
 
 	for(it = rules.begin(); it != rules.end(); ++it)
 	{
@@ -2492,217 +2492,217 @@ const string &CorrParams::findSetup(const string &scan, const string &source, co
 	return none;
 }
 
-ostream& operator << (ostream &os, const CorrSetup &x)
+std::ostream& operator << (std::ostream &os, const CorrSetup &x)
 {
 	int p;
 
 	p = os.precision();
 	os.precision(6);
 
-	os << "SETUP " << x.corrSetupName << endl;
-	os << "{" << endl;
-	os << "  tInt=" << x.tInt << endl;
-	os << "  FFTSpecRes=" << (x.FFTSpecRes*1e-6) << endl;
-	os << "  outputSpecRes=" << (x.outputSpecRes*1e-6) << endl;
-	os << "  doPolar=" << x.doPolar << endl;
-	os << "  doAuto=" << x.doAuto << endl;
-	os << "  subintNS=" << x.subintNS << endl;
-	os << "  fringeRotOrder=" << x.fringeRotOrder << endl;
+	os << "SETUP " << x.corrSetupName << std::endl;
+	os << "{" << std::endl;
+	os << "  tInt=" << x.tInt << std::endl;
+	os << "  FFTSpecRes=" << (x.FFTSpecRes*1e-6) << std::endl;
+	os << "  outputSpecRes=" << (x.outputSpecRes*1e-6) << std::endl;
+	os << "  doPolar=" << x.doPolar << std::endl;
+	os << "  doAuto=" << x.doAuto << std::endl;
+	os << "  subintNS=" << x.subintNS << std::endl;
+	os << "  fringeRotOrder=" << x.fringeRotOrder << std::endl;
 	if(!x.binConfigFile.empty())
 	{
-		os << "  binConfig=" << x.binConfigFile << endl;
+		os << "  binConfig=" << x.binConfigFile << std::endl;
 	}
-	os << "}" << endl;
+	os << "}" << std::endl;
 
 	os.precision(p);
 
 	return os;
 }
 
-ostream& operator << (ostream &os, const CorrRule &x)
+std::ostream& operator << (std::ostream &os, const CorrRule &x)
 {
 	bool space = false;
-	os << "RULE " << x.ruleName << endl;
-	os << "{" << endl;
+	os << "RULE " << x.ruleName << std::endl;
+	os << "{" << std::endl;
 	if(!x.scanName.empty())
 	{
-		list<string>::const_iterator it;
+		std::list<std::string>::const_iterator it;
 
 		os << "  scan=";
 		for(it = x.scanName.begin(); it != x.scanName.end(); ++it)
 		{
 			os << " " << *it;
 		}
-		os << endl;
+		os << std::endl;
 		space = true;
 	}
 	if(!x.sourceName.empty())
 	{
-		list<string>::const_iterator it;
+		std::list<std::string>::const_iterator it;
 
 		os << "  source=";
 		for(it = x.sourceName.begin(); it != x.sourceName.end(); ++it)
 		{
 			os << " " << *it;
 		}
-		os << endl;
+		os << std::endl;
 		space = true;
 	}
 	if(!x.modeName.empty())
 	{
-		list<string>::const_iterator it;
+		std::list<std::string>::const_iterator it;
 
 		os << "  mode=";
 		for(it = x.modeName.begin(); it != x.modeName.end(); ++it)
 		{
 			os << " " << *it;
 		}
-		os << endl;
+		os << std::endl;
 		space = true;
 	}
 	
 	if(space)
 	{
-		os << endl;
+		os << std::endl;
 	}
-	os << "  correlator setup=" << x.corrSetupName << endl;
+	os << "  correlator setup=" << x.corrSetupName << std::endl;
 	
-	os << "}" << endl;
+	os << "}" << std::endl;
 
 	return os;
 }
 
-ostream& operator << (ostream &os, const SourceSetup &x)
+std::ostream& operator << (std::ostream &os, const SourceSetup &x)
 {
-	os << "SOURCE " << x.vexName << endl;
-	os << "{" << endl;
+	os << "SOURCE " << x.vexName << std::endl;
+	os << "{" << std::endl;
 	if(!x.pointingCentre.difxName.empty())
 	{
-		os << "  pointing centre name=" << x.pointingCentre.difxName << endl;
+		os << "  pointing centre name=" << x.pointingCentre.difxName << std::endl;
 	}
 	if(x.doPointingCentre)
 	{
-		os << "  pointing centre is correlated" << endl;
+		os << "  pointing centre is correlated" << std::endl;
 	}
 	else
 	{
-		os << "  pointing centre is not correlated" << endl;
+		os << "  pointing centre is not correlated" << std::endl;
 	}
 	if(x.pointingCentre.ra > PhaseCentre::DEFAULT_RA)
 	{
-		os << "  pointing centre ra=" << x.pointingCentre.ra << " # J2000" << endl;
+		os << "  pointing centre ra=" << x.pointingCentre.ra << " # J2000" << std::endl;
 	}
 	if(x.pointingCentre.dec > PhaseCentre::DEFAULT_DEC)
 	{
-		os << "  pointing centre dec=" << x.pointingCentre.dec << " # J2000" << endl;
+		os << "  pointing centre dec=" << x.pointingCentre.dec << " # J2000" << std::endl;
 	}
 	if(x.pointingCentre.calCode != ' ')
 	{
-		os << "  pointing centre calCode=" << x.pointingCentre.calCode << endl;
+		os << "  pointing centre calCode=" << x.pointingCentre.calCode << std::endl;
 	}
-	os << "  Number of additional phase centres is " << x.phaseCentres.size() << endl;
-	os << "}" << endl;
+	os << "  Number of additional phase centres is " << x.phaseCentres.size() << std::endl;
+	os << "}" << std::endl;
 
 	return os;
 }
 
-ostream& operator << (ostream &os, const AntennaSetup &x)
+std::ostream& operator << (std::ostream &os, const AntennaSetup &x)
 {
-        os << "ANTENNA " << x.vexName << endl;
-        os << "{" << endl;
-        if(!x.difxName.empty())
-        {
-                os << "  name=" << x.difxName << endl;
-        }
-        if(fabs(x.X) > 0.1 || fabs(x.Y) > 0.1 || fabs(x.Z) > 0.1)
-        {
-                os << "  X=" << x.X <<" Y=" << x.Y << " Z=" << x.Z << endl;
-        }
-        if(x.clock.mjdStart > 0.0)
-        {
-                os << "  clockOffset=" << x.clock.offset*1.0e6 << endl;
-                os << "  clockRate=" << x.clock.rate*1.0e6 << endl;
-                os << "  clockEpoch=" << x.clock.offset_epoch << endl;
-        }
-        os << "  polSwap=" << x.polSwap << endl;
-        if(!x.format.empty())
-        {
-                os << "  format=" << x.format << endl;
-        }
-	os << "  # dataSource=" << dataSourceNames[x.dataSource] << endl;
+	os << "ANTENNA " << x.vexName << std::endl;
+	os << "{" << std::endl;
+	if(!x.difxName.empty())
+	{
+		os << "  name=" << x.difxName << std::endl;
+	}
+	if(fabs(x.X) > 0.1 || fabs(x.Y) > 0.1 || fabs(x.Z) > 0.1)
+	{
+		os << "  X=" << x.X <<" Y=" << x.Y << " Z=" << x.Z << std::endl;
+	}
+	if(x.clock.mjdStart > 0.0)
+	{
+		os << "  clockOffset=" << x.clock.offset*1.0e6 << std::endl;
+		os << "  clockRate=" << x.clock.rate*1.0e6 << std::endl;
+		os << "  clockEpoch=" << x.clock.offset_epoch << std::endl;
+	}
+	os << "  polSwap=" << x.polSwap << std::endl;
+	if(!x.format.empty())
+	{
+		os << "  format=" << x.format << std::endl;
+	}
+	os << "  # dataSource=" << dataSourceNames[x.dataSource] << std::endl;
 	if(x.dataSource == DataSourceNetwork)
 	{
-		os << "  networkPort=" << x.networkPort << endl;
-		os << "  windowSize=" << x.windowSize << endl;
+		os << "  networkPort=" << x.networkPort << std::endl;
+		os << "  windowSize=" << x.windowSize << std::endl;
 	}
-	os << "  phaseCalInt=" << x.phaseCalIntervalMHz << endl;
-	os << "  tcalFreq=" << x.tcalFrequency << endl;
+	os << "  phaseCalInt=" << x.phaseCalIntervalMHz << std::endl;
+	os << "  tcalFreq=" << x.tcalFrequency << std::endl;
 
-        os << "}" << endl;
+	os << "}" << std::endl;
 
-        return os;
+	return os;
 }
 
-ostream& operator << (ostream &os, const CorrParams &x)
+std::ostream& operator << (std::ostream &os, const CorrParams &x)
 {
 	int p;
 
 	p = os.precision();
 	os.precision(13);
 
-	os << "# correlation parameters" << endl;
+	os << "# correlation parameters" << std::endl;
 
-	os << "vex=" << x.vexFile << endl;
+	os << "vex=" << x.vexFile << std::endl;
 	switch(x.v2dMode)
 	{
 	case V2D_MODE_NORMAL:
-		os << "mode=normal" << endl;
+		os << "mode=normal" << std::endl;
 		break;
 	case V2D_MODE_PROFILE:
-		os << "mode=profile" << endl;
+		os << "mode=profile" << std::endl;
 		break;
 	}
-	os << "mjdStart=" << x.mjdStart << endl;
-	os << "mjdStop=" << x.mjdStop << endl;
-	for(vector<double>::const_iterator mb = x.manualBreaks.begin(); mb != x.manualBreaks.end(); ++mb)
+	os << "mjdStart=" << x.mjdStart << std::endl;
+	os << "mjdStop=" << x.mjdStop << std::endl;
+	for(std::vector<double>::const_iterator mb = x.manualBreaks.begin(); mb != x.manualBreaks.end(); ++mb)
 	{
-		os << "break=" << *mb << endl;
+		os << "break=" << *mb << std::endl;
 	}
-	os << "minSubarray=" << x.minSubarraySize << endl;
-	os << "visBufferLength=" << x.visBufferLength << endl;
+	os << "minSubarray=" << x.minSubarraySize << std::endl;
+	os << "visBufferLength=" << x.visBufferLength << std::endl;
 
 	os.precision(6);
-	os << "maxGap=" << x.maxGap*86400.0 << " # seconds" << endl;
-	os << "maxLength=" << x.maxLength*86400.0 << " # seconds" << endl;
-	os << "minLength=" << x.minLength*86400.0 << " # seconds" << endl;
-	os << "maxSize=" << x.maxSize/1000000.0 << " # MB" << endl;
+	os << "maxGap=" << x.maxGap*86400.0 << " # seconds" << std::endl;
+	os << "maxLength=" << x.maxLength*86400.0 << " # seconds" << std::endl;
+	os << "minLength=" << x.minLength*86400.0 << " # seconds" << std::endl;
+	os << "maxSize=" << x.maxSize/1000000.0 << " # MB" << std::endl;
 	os.precision(13);
 
 	if(x.threadsFile != "")
 	{
-		os << "threadsFile=" << x.threadsFile << endl;
+		os << "threadsFile=" << x.threadsFile << std::endl;
 	}
-	os << "singleScan=" << x.singleScan << endl;
-	os << "singleSetup=" << x.singleSetup << endl;
+	os << "singleScan=" << x.singleScan << std::endl;
+	os << "singleSetup=" << x.singleSetup << std::endl;
 	if(x.nCore > 0 && x.nThread > 0)
 	{
-		os << "nCore=" << x.nCore << endl;
-		os << "nThread=" << x.nCore << endl;
+		os << "nCore=" << x.nCore << std::endl;
+		os << "nThread=" << x.nCore << std::endl;
 	}
-	os << "mediaSplit=" << x.mediaSplit << endl;
-	os << "jobSeries=" << x.jobSeries << endl;
-	os << "startSeries=" << x.startSeries << endl;
-	os << "dataBufferFactor=" << x.dataBufferFactor << endl;
-	os << "nDataSegments=" << x.nDataSegments << endl;
-	os << "maxReadSize=" << x.maxReadSize << " # Bytes" << endl;
-	os << "minReadSize=" << x.minReadSize << " # Bytes" << endl;
-	os << "overSamp=" << x.overSamp << endl;
-	os << "outputFormat=" << x.outputFormat << endl;
+	os << "mediaSplit=" << x.mediaSplit << std::endl;
+	os << "jobSeries=" << x.jobSeries << std::endl;
+	os << "startSeries=" << x.startSeries << std::endl;
+	os << "dataBufferFactor=" << x.dataBufferFactor << std::endl;
+	os << "nDataSegments=" << x.nDataSegments << std::endl;
+	os << "maxReadSize=" << x.maxReadSize << " # Bytes" << std::endl;
+	os << "minReadSize=" << x.minReadSize << " # Bytes" << std::endl;
+	os << "overSamp=" << x.overSamp << std::endl;
+	os << "outputFormat=" << x.outputFormat << std::endl;
 	
 	if(!x.antennaList.empty())
 	{
 		os << "antennas=";
-		for(list<string>::const_iterator a = x.antennaList.begin(); a != x.antennaList.end(); ++a)
+		for(std::list<std::string>::const_iterator a = x.antennaList.begin(); a != x.antennaList.end(); ++a)
 		{
 			if(a != x.antennaList.begin())
 			{
@@ -2710,13 +2710,13 @@ ostream& operator << (ostream &os, const CorrParams &x)
 			}
 			os << *a;
 		}
-		os << endl;
+		os << std::endl;
 	}
 	
 	if(!x.baselineList.empty())
 	{
 		os << "baselines=";
-		for(list<pair<string,string> >::const_iterator bl = x.baselineList.begin(); bl != x.baselineList.end(); ++bl)
+		for(std::list<std::pair<std::string,std::string> >::const_iterator bl = x.baselineList.begin(); bl != x.baselineList.end(); ++bl)
 		{
 			if(bl != x.baselineList.begin())
 			{
@@ -2724,55 +2724,55 @@ ostream& operator << (ostream &os, const CorrParams &x)
 			}
 			os << bl->first << '-' << bl->second;
 		}
-		os << endl;
+		os << std::endl;
 	}
 
 	if(!x.antennaSetups.empty())
-        {
-                for(vector<AntennaSetup>::const_iterator as = x.antennaSetups.begin(); as != x.antennaSetups.end(); ++as)
-                {
-                        os << endl;
-                        os << *as;
-                }
-        }
+	{
+		for(std::vector<AntennaSetup>::const_iterator as = x.antennaSetups.begin(); as != x.antennaSetups.end(); ++as)
+		{
+			os << std::endl;
+			os << *as;
+		}
+	}
 
-        if(!x.eops.empty())
-        {
-                os << endl;
+	if(!x.eops.empty())
+	{
+		os << std::endl;
 
-                for(vector<VexEOP>::const_iterator ve = x.eops.begin(); ve != x.eops.end(); ++ve)
-                {
-                        os << "EOP " << ve->mjd << " { ";
-                        os << "tai_utc=" << ve->tai_utc << " ";
-                        os << "ut1_utc=" << ve->ut1_utc << " ";
-                        os << "xPole=" << ve->xPole*RAD2ASEC << " ";
-                        os << "yPole=" << ve->yPole*RAD2ASEC << " }" << endl;
-                }
-        }
+		for(std::vector<VexEOP>::const_iterator ve = x.eops.begin(); ve != x.eops.end(); ++ve)
+		{
+			os << "EOP " << ve->mjd << " { ";
+			os << "tai_utc=" << ve->tai_utc << " ";
+			os << "ut1_utc=" << ve->ut1_utc << " ";
+			os << "xPole=" << ve->xPole*RAD2ASEC << " ";
+			os << "yPole=" << ve->yPole*RAD2ASEC << " }" << std::endl;
+		}
+	}
 
 	if(!x.sourceSetups.empty())
 	{
-		for(vector<SourceSetup>::const_iterator ss = x.sourceSetups.begin(); ss != x.sourceSetups.end(); ++ss)
+		for(std::vector<SourceSetup>::const_iterator ss = x.sourceSetups.begin(); ss != x.sourceSetups.end(); ++ss)
 		{
-			os << endl;
+			os << std::endl;
 			os << *ss;
 		}
 	}
 
 	if(!x.corrSetups.empty())
 	{
-		for(vector<CorrSetup>::const_iterator cs = x.corrSetups.begin(); cs != x.corrSetups.end(); ++cs)
+		for(std::vector<CorrSetup>::const_iterator cs = x.corrSetups.begin(); cs != x.corrSetups.end(); ++cs)
 		{
-			os << endl;
+			os << std::endl;
 			os << *cs;
 		}
 	}
 
 	if(!x.rules.empty())
 	{
-		for(vector<CorrRule>::const_iterator cr = x.rules.begin(); cr != x.rules.end(); ++cr)
+		for(std::vector<CorrRule>::const_iterator cr = x.rules.begin(); cr != x.rules.end(); ++cr)
 		{
-			os << endl;
+			os << std::endl;
 			os << *cr;
 		}
 	}
@@ -2808,14 +2808,14 @@ bool areCorrSetupsCompatible(const CorrSetup *A, const CorrSetup *B, const CorrP
 	return true;
 }
 
-int CorrParams::loadShelves(const string &fileName)
+int CorrParams::loadShelves(const std::string &fileName)
 {
 	int nWarn = 0;
-	ifstream is;
+	std::ifstream is;
 	bool doAntennas;
 	char s[1024], a[32], v[32], ms[32];
-	string vsn, shelf;
-	vector<string> noShelf;
+	std::string vsn, shelf;
+	std::vector<std::string> noShelf;
 
 	is.open(fileName.c_str());
 
@@ -2850,12 +2850,12 @@ int CorrParams::loadShelves(const string &fileName)
 
 		if(sscanf(s, "%31s%31s%31s", a, v, ms) != 3)
 		{
-			cerr << "Error: line " << lineNum << " of " << fileName << " not parsable." << endl;
+			std::cerr << "Error: line " << lineNum << " of " << fileName << " not parsable." << std::endl;
 
 			exit(EXIT_FAILURE);
 		}
 
-		string antName(a);
+		std::string antName(a);
 		Upper(antName);
 
 		if(doAntennas)
@@ -2867,13 +2867,13 @@ int CorrParams::loadShelves(const string &fileName)
 			continue;
 		}
 
-		vsn = string(v);
-		shelf = string(ms);
+		vsn = std::string(v);
+		shelf = std::string(ms);
 
 		Upper(vsn);
 		Upper(shelf);
 
-		if(shelf == string("NONE"))
+		if(shelf == std::string("NONE"))
 		{
 			noShelf.push_back(vsn);
 		}
@@ -2887,20 +2887,20 @@ int CorrParams::loadShelves(const string &fileName)
 
 	if(!noShelf.empty())
 	{
-		cerr << "Warning: " << noShelf.size() << " modules have no shelf location:";
-		for(vector<string>::const_iterator s = noShelf.begin(); s != noShelf.end(); ++s)
+		std::cerr << "Warning: " << noShelf.size() << " modules have no shelf location:";
+		for(std::vector<std::string>::const_iterator s = noShelf.begin(); s != noShelf.end(); ++s)
 		{
-			cerr << " " << *s;
+			std::cerr << " " << *s;
 		}
-		cerr << endl;
+		std::cerr << std::endl;
 	}
 
 	return nWarn;
 }
 
-const char *CorrParams::getShelf(const string &vsn) const
+const char *CorrParams::getShelf(const std::string &vsn) const
 {
-	map<string,string>::const_iterator it;
+	std::map<std::string,std::string>::const_iterator it;
 
 	it = shelves.find(vsn);
 	if(it == shelves.end())
@@ -2913,9 +2913,9 @@ const char *CorrParams::getShelf(const string &vsn) const
 	}
 }
 
-const string &CorrParams::getNewSourceName(const string &origName) const
+const std::string &CorrParams::getNewSourceName(const std::string &origName) const
 {
-	vector<SourceSetup>::const_iterator it;
+	std::vector<SourceSetup>::const_iterator it;
 
 	for(it = sourceSetups.begin(); it != sourceSetups.end(); ++it)
 	{

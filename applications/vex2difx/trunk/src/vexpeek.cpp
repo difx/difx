@@ -29,6 +29,7 @@
 
 #include <vector>
 #include <set>
+#include <map>
 #include <sstream>
 #include <difxio/difx_input.h>
 #include <cmath>
@@ -38,35 +39,35 @@
 #include "vextables.h"
 #include "vexload.h"
 
-const string program("vexpeek");
-const string version("0.3");
-const string verdate("20120523");
-const string author("Walter Brisken");
+const std::string program("vexpeek");
+const std::string version("0.4");
+const std::string verdate("20121219");
+const std::string author("Walter Brisken");
 
 void usage(const char *pgm)
 {
-	cout << endl;
-	cout << program << " ver. " << version << "  " << author << " " << verdate << endl;
-	cout << endl;
-	cout << "A program to print essential information from a vex file." << endl;
-	cout << endl;
-	cout << "Usage: " << pgm << " <vex filename> [-v]" << endl;
-	cout << endl;
-	cout << "Options:" << endl;
-	cout << "  -v or --verbose : print entire vextables structure of vexfile" << endl;
-	cout << "  -b or --bands : print list of band codes" << endl;
-	cout << endl;
+	std::cout << std::endl;
+	std::cout << program << " ver. " << version << "  " << author << " " << verdate << std::endl;
+	std::cout << std::endl;
+	std::cout << "A program to print essential information from a vex file." << std::endl;
+	std::cout << std::endl;
+	std::cout << "Usage: " << pgm << " <vex filename> [-v]" << std::endl;
+	std::cout << std::endl;
+	std::cout << "Options:" << std::endl;
+	std::cout << "  -v or --verbose : print entire vextables structure of vexfile" << std::endl;
+	std::cout << "  -b or --bands : print list of band codes" << std::endl;
+	std::cout << std::endl;
 }
 
 void antennaSummary(const VexData *V)
 {
-	map<string,VexInterval> as;
+	std::map<std::string,VexInterval> as;
 
 	for(unsigned int s = 0; s < V->nScan(); ++s)
 	{
 		const VexScan *scan = V->getScan(s);
 
-		for(map<string,VexInterval>::const_iterator it = scan->stations.begin(); it != scan->stations.end(); ++it)
+		for(std::map<std::string,VexInterval>::const_iterator it = scan->stations.begin(); it != scan->stations.end(); ++it)
 		{
 			const VexInterval &vi = it->second;
 
@@ -88,52 +89,52 @@ void antennaSummary(const VexData *V)
 		}
 	}
 
-	int p = cout.precision();
+	int p = std::cout.precision();
 
-	cout.precision(13);
+	std::cout.precision(13);
 
-	for(map<string,VexInterval>::const_iterator it = as.begin(); it != as.end(); ++it)
+	for(std::map<std::string,VexInterval>::const_iterator it = as.begin(); it != as.end(); ++it)
 	{
-		cout << it->first << " " << it->second.mjdStart << " " << it->second.mjdStop << endl;
+		std::cout << it->first << " " << it->second.mjdStart << " " << it->second.mjdStop << std::endl;
 	}
 
-	cout.precision(p);
+	std::cout.precision(p);
 }
 
 void bandList(const VexData *V)
 {
 	int nMode = V->nMode();
-	set<char> bands;
+	std::set<char> bands;
 
 	for(int m = 0; m < nMode; ++m)
 	{
 		const VexMode *M = V->getMode(m);
-		for(map<string,VexSetup>::const_iterator s = M->setups.begin(); s != M->setups.end(); ++s)
+		for(std::map<std::string,VexSetup>::const_iterator s = M->setups.begin(); s != M->setups.end(); ++s)
 		{
-			for(vector<VexChannel>::const_iterator v = s->second.channels.begin(); v != s->second.channels.end(); ++v)
+			for(std::vector<VexChannel>::const_iterator v = s->second.channels.begin(); v != s->second.channels.end(); ++v)
 			{
 				bands.insert(v->bandCode());
 			}
 		}
 	}
 
-	for(set<char>::const_iterator b=bands.begin(); b != bands.end(); ++b)
+	for(std::set<char>::const_iterator b=bands.begin(); b != bands.end(); ++b)
 	{
-		cout << *b << " ";
+		std::cout << *b << " ";
 	}
-	cout << endl;
+	std::cout << std::endl;
 }
 
-int testVex(const string &vexFile)
+int testVex(const std::string &vexFile)
 {
 	const int MaxLineLength=128;
-	ifstream is;
+	std::ifstream is;
 	char s[MaxLineLength];
 
 	is.open(vexFile.c_str());
 	if(is.fail())
 	{
-		cerr << "Error: vex2difx cannot open " << vexFile << endl;
+		std::cerr << "Error: vex2difx cannot open " << vexFile << std::endl;
 
 		return -1;
 	}
@@ -141,21 +142,21 @@ int testVex(const string &vexFile)
 	is.getline(s, MaxLineLength);
 	if(is.eof())
 	{
-		cerr << "Error: unexpected end of file: " << vexFile << endl;
+		std::cerr << "Error: unexpected end of file: " << vexFile << std::endl;
 
 		return -2;
 	}
 
 	if(strncmp(s, "$EXPER ", 7) == 0)
 	{
-		cerr << "Error: " << vexFile << " looks like a sked input file and is not vex formatted." << endl;
+		std::cerr << "Error: " << vexFile << " looks like a sked input file and is not vex formatted." << std::endl;
 
 		return -3;
 	}
 
 	if(strncmp(s, "VEX", 3) != 0)
 	{
-		cerr << "Error: " << vexFile << " is not a vex file." << endl;
+		std::cerr << "Error: " << vexFile << " is not a vex file." << std::endl;
 
 		return -4;
 	}
@@ -180,7 +181,7 @@ int main(int argc, char **argv)
 	v = testVex(argv[1]);
 	if(v != 0)
 	{
-		cout << "Error code " << v << endl;
+		std::cout << "Error code " << v << std::endl;
 
 		return 1;
 	}
@@ -194,8 +195,8 @@ int main(int argc, char **argv)
 
 	if(argc > 2 && (strcmp(argv[2], "-v") == 0 || strcmp(argv[2], "--verbose") == 0) )
 	{
-		cout << *V << endl;
-		cout << endl;
+		std::cout << *V << std::endl;
+		std::cout << std::endl;
 	}
 	else if(argc > 2 && (strcmp(argv[2], "-b") == 0 || strcmp(argv[2], "--bands") == 0) )
 	{
@@ -203,7 +204,7 @@ int main(int argc, char **argv)
 	}
 	else
 	{
-		cout << V->getExper()->name << endl;
+		std::cout << V->getExper()->name << std::endl;
 
 		antennaSummary(V);
 	}

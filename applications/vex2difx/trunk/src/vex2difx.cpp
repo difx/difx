@@ -45,6 +45,8 @@
 #include "util.h"
 #include "../config.h"
 
+using namespace std;
+
 const string version(VERSION);
 const string program("vex2difx");
 const string verdate("20120222");
@@ -1174,19 +1176,18 @@ static void populateBaselineTable(DifxInput *D, const CorrParams *P, const CorrS
 					n1 = DifxDatastreamGetRecBands(D->datastream+a1, freqId, a1p, a1c);
 
 					nPol = 0;
-                                        for(int u = 0; u < n1; ++u)
-                                        {
-                                                for(int v = 0; v < n1; ++v)
-                                                {
-                                                        if(corrSetup->doPolar || (a1p[u] == a1p[v] && (corrSetup->onlyPol == ' ' || corrSetup->onlyPol == a1p[u])))
-                                                        {
-                                                                
-                                                                bl->bandA[nFreq][nPol] = a1c[u];
-                                                                bl->bandB[nFreq][nPol] = a1c[v];
-                                                                ++nPol;
-                                                        }
-                                                }
-                                        }
+					for(int u = 0; u < n1; ++u)
+					{
+						for(int v = 0; v < n1; ++v)
+						{
+							if(corrSetup->doPolar || (a1p[u] == a1p[v] && (corrSetup->onlyPol == ' ' || corrSetup->onlyPol == a1p[u])))
+							{
+								bl->bandA[nFreq][nPol] = a1c[u];
+								bl->bandB[nFreq][nPol] = a1c[v];
+								++nPol;
+							}
+						}
+					}
 					bl->nPolProd[nFreq] = nPol;
 
 					if(nPol == 0)
@@ -1702,8 +1703,8 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 				msgSize = (testsubintNS*1.0e-9)*dataRate/8.0;
 				readSize = msgSize*D->dataBufferFactor/D->nDataSegments;
 				if(readSize > P->minReadSize && readSize < P->maxReadSize && 
-                                   testsubintNS <= 1020000000 && testsubintNS > config->subintNS && 
-				   fabs(testsubintNS/floatFFTDurNS - static_cast<int>(testsubintNS/floatFFTDurNS + 0.5)) < 1e-9)
+					testsubintNS <= 1020000000 && testsubintNS > config->subintNS && 
+					fabs(testsubintNS/floatFFTDurNS - static_cast<int>(testsubintNS/floatFFTDurNS + 0.5)) < 1e-9)
 				{
 					config->subintNS = testsubintNS;
 				}
@@ -1757,8 +1758,8 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 	}
 
 	//now check that the int time is an integer number of subints, and tweak if necessary
-        floatSubintDurNS = (double)config->subintNS;
-        nSubintsPerIntegration = static_cast<int>(1e9*corrSetup->tInt/floatSubintDurNS + 0.5);
+	floatSubintDurNS = (double)config->subintNS;
+	nSubintsPerIntegration = static_cast<int>(1e9*corrSetup->tInt/floatSubintDurNS + 0.5);
 	if(fabs(1e9*corrSetup->tInt/floatSubintDurNS - nSubintsPerIntegration) > 1e-9)
 	{
 		if(P->tweakIntTime)
@@ -2940,12 +2941,12 @@ int main(int argc, char **argv)
 				return EXIT_SUCCESS;
 			}
 			else if(strcmp(argv[a], "-v") == 0 ||
-			        strcmp(argv[a], "--verbose") == 0)
+				strcmp(argv[a], "--verbose") == 0)
 			{
 				++verbose;
 			}
 			else if(strcmp(argv[a], "-o") == 0 ||
-			        strcmp(argv[a], "--output") == 0)
+				strcmp(argv[a], "--output") == 0)
 			{
 				writeParams = 1;
 			}

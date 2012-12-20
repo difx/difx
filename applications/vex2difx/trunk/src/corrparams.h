@@ -35,11 +35,10 @@
 #include <vector>
 #include <map>
 #include <list>
+#include <iostream>
 #include <difxio.h>
 
 #include "vextables.h"
-
-using namespace std;
 
 extern const double MJD_UNIX0;	// MJD at beginning of unix time
 extern const double SEC_DAY;
@@ -57,41 +56,41 @@ class PhaseCentre
 {
 public:
 	//constants
-	static const string DEFAULT_NAME;
+	static const std::string DEFAULT_NAME;
 	static const double DEFAULT_RA;
 	static const double DEFAULT_DEC;
 
 	//constructors
-	PhaseCentre(double ra, double dec, string name);
+	PhaseCentre(double ra, double dec, std::string name);
 	PhaseCentre();
 
 	//methods
-	void initialise(double ra, double dec, string name);
+	void initialise(double ra, double dec, std::string name);
 
 	//variables
-	double ra;	  //radians
-	double dec;	  //radians
-	string difxName;
-        char calCode;
+	double ra;	//radians
+	double dec;	//radians
+	std::string difxName;
+	char calCode;
 	int qualifier;
 	// ephemeris
-	string ephemObject;     // name of the object in the ephemeris
-	string ephemFile;       // file containing a JPL ephemeris
-	string naifFile;        // file containing naif time data
-	double ephemDeltaT;     // tabulated ephem. interval (seconds, default 60)
+	std::string ephemObject;	// name of the object in the ephemeris
+	std::string ephemFile;	// file containing a JPL ephemeris
+	std::string naifFile;	// file containing naif time data
+	double ephemDeltaT;	// tabulated ephem. interval (seconds, default 60)
 };
 
 class SourceSetup
 {
 public:
-	SourceSetup(const string &name);
-	int setkv(const string &key, const string &value);
-	int setkv(const string &key, const string &value, PhaseCentre * pc);
+	SourceSetup(const std::string &name);
+	int setkv(const std::string &key, const std::string &value);
+	int setkv(const std::string &key, const std::string &value, PhaseCentre * pc);
 
-	bool doPointingCentre;       	  // Whether or not to correlate the pointing centre
-	string vexName;		     	  // Source name as appears in vex file
-	PhaseCentre pointingCentre;  	  // The source which is at the pointing centre
-	vector<PhaseCentre> phaseCentres; // Additional phase centres to be correlated
+	bool doPointingCentre;		// Whether or not to correlate the pointing centre
+	std::string vexName;		// Source name as appears in vex file
+	PhaseCentre pointingCentre;	// The source which is at the pointing centre
+	std::vector<PhaseCentre> phaseCentres; // Additional phase centres to be correlated
 };
 
 class ZoomFreq
@@ -112,41 +111,41 @@ public:
 class GlobalZoom
 {
 public:
-	GlobalZoom(const string &name) : difxName(name) {};
-	int setkv(const string &key, const string &value, ZoomFreq * zoomFreq);
-	int setkv(const string &key, const string &value);
+	GlobalZoom(const std::string &name) : difxName(name) {};
+	int setkv(const std::string &key, const std::string &value, ZoomFreq * zoomFreq);
+	int setkv(const std::string &key, const std::string &value);
 
-	string difxName;	// Name in .v2d file of this global zoom band set
-	vector<ZoomFreq> zoomFreqs;
+	std::string difxName;	// Name in .v2d file of this global zoom band set
+	std::vector<ZoomFreq> zoomFreqs;
 };
 
 class AntennaSetup
 {
 public:
-	AntennaSetup(const string &name);
-	int setkv(const string &key, const string &value);
-	int setkv(const string &key, const string &value, ZoomFreq * zoomFreq);
+	AntennaSetup(const std::string &name);
+	int setkv(const std::string &key, const std::string &value);
+	int setkv(const std::string &key, const std::string &value, ZoomFreq * zoomFreq);
 	void copyGlobalZoom(const GlobalZoom &globalZoom);
 
-	string vexName;		// Antenna name as it appears in vex file
-	string difxName;	// Antenna name (if different) to appear in difx
+	std::string vexName;		// Antenna name as it appears in vex file
+	std::string difxName;	// Antenna name (if different) to appear in difx
 	double X, Y, Z;		// Station coordinates to override vex
 	int clockorder;		// Order of clock poly (if overriding)
 	double clock2, clock3, clock4, clock5;	// Clock coefficients (if overriding)
-        vector<double> freqClockOffs; // clock offsets for the individual frequencies
-	vector<double> loOffsets; //LO offsets for each individual frequency
+	std::vector<double> freqClockOffs; // clock offsets for the individual frequencies
+	std::vector<double> loOffsets; //LO offsets for each individual frequency
 	VexClock clock;
 	double deltaClock;	// sec
 	double deltaClockRate;	// sec/sec
 	// flag
 	// media
 	bool polSwap;		// If true, swap polarizations
-	string format;		// Override format from .v2d file.  
+	std::string format;		// Override format from .v2d file.
 				// This is sometimes needed because format not known always at scheduling time
 				// Possible values: S2 VLBA MkIV/Mark4 Mark5B . Is converted to all caps on load
 	enum DataSource dataSource;
 	enum SamplingType dataSampling;
-	vector<VexBasebandFile> basebandFiles;	// files to correlate
+	std::vector<VexBasebandFile> basebandFiles;	// files to correlate
 	int networkPort;	// For eVLBI : port for this antenna
 	int windowSize;		// For eVLBI : TCP window size
 	int phaseCalIntervalMHz;// 0 if no phase cal extraction, positive gives interval between tones to extract
@@ -155,15 +154,15 @@ public:
 	int tcalFrequency;	// Hz (= 80 for VLBA)
 
 	// No more than one of the following can be used at a time:
-	vector<ZoomFreq> zoomFreqs;//List of zoom freqs to add for this antenna
-	string globalZoom;	// A reference to a global zoom table
+	std::vector<ZoomFreq> zoomFreqs;//List of zoom freqs to add for this antenna
+	std::string globalZoom;	// A reference to a global zoom table
 };
 
 class CorrSetup
 {
 public:
-	CorrSetup(const string &name = "setup_default");
-	int setkv(const string &key, const string &value);
+	CorrSetup(const std::string &name = "setup_default");
+	int setkv(const std::string &key, const std::string &value);
 	bool correlateFreqId(int freqId) const;
 	double bytesPerSecPerBLPerBand() const;
 	int checkValidity() const;
@@ -183,7 +182,7 @@ public:
 	int specAvg() const;
 
 
-	string corrSetupName;
+	std::string corrSetupName;
 
 	bool explicitXmacLength;// Whether the xmacLength parameter was explicitly set
 	bool explicitStrideLength;// Whether the strideLength parameter was explicitly set
@@ -207,50 +206,50 @@ public:
 				// when fringeRotOrder > 0
 	int xmacLength;		// Number of channels to do at a time when xmac'ing
 	int numBufferedFFTs;	// Number of FFTs to do in Mode before XMAC'ing
-	set<int> freqIds;       // which bands to correlate
-	string binConfigFile;
-	string phasedArrayConfigFile;
-        char onlyPol;		// which polarization to correlate
+	std::set<int> freqIds;	// which bands to correlate
+	std::string binConfigFile;
+	std::string phasedArrayConfigFile;
+	char onlyPol;		// which polarization to correlate
 private:
 	void addFreqId(int freqId);
 
-	set<double> recordedBandwidths;	// Hz; list of all unique recorded bandwidths using this setup
-	double minRecordedBandwidth;	// Hz; cached by addRecordedBandwidth
-	double maxRecordedBandwidth;	// Hz; ""
+	std::set<double> recordedBandwidths;	// Hz; list of all unique recorded bandwidths using this setup
+	double minRecordedBandwidth;		// Hz; cached by addRecordedBandwidth
+	double maxRecordedBandwidth;		// Hz; ""
 };
 
 
 class CorrRule
 {
 public:
-	CorrRule(const string &name = "rule_default");
+	CorrRule(const std::string &name = "rule_default");
 
-	int setkv(const string &key, const string &value);
-	bool match(const string &scan, const string &source, const string &mode, char cal, int qual) const;
+	int setkv(const std::string &key, const std::string &value);
+	bool match(const std::string &scan, const std::string &source, const std::string &mode, char cal, int qual) const;
 
-	string ruleName;
+	std::string ruleName;
 
-	list<string> scanName;
-	list<string> sourceName;
-	list<string> modeName;
-	list<char> calCode;
-	list<int> qualifier;
+	std::list<std::string> scanName;
+	std::list<std::string> sourceName;
+	std::list<std::string> modeName;
+	std::list<char> calCode;
+	std::list<int> qualifier;
 
-	string corrSetupName;	/* pointer to CorrSetup */
+	std::string corrSetupName;	/* pointer to CorrSetup */
 };
 
 class CorrParams : public VexInterval
 {
 public:
 	CorrParams();
-	CorrParams(const string &fileName);
+	CorrParams(const std::string &fileName);
 	int checkSetupValidity();
 
-	int loadShelves(const string &fileName);
-	const char *getShelf(const string &vsn) const;
+	int loadShelves(const std::string &fileName);
+	const char *getShelf(const std::string &vsn) const;
 
-	int setkv(const string &key, const string &value);
-	int load(const string &fileName);
+	int setkv(const std::string &key, const std::string &value);
+	int load(const std::string &fileName);
 	void defaults();
 	void defaultSetup();
 	void defaultRule();
@@ -258,25 +257,25 @@ public:
 	int sanityCheck();
 	void addSourceSetup(const SourceSetup &toAdd);
 
-	bool useAntenna(const string &antName) const;
-	bool useBaseline(const string &ant1, const string &ant2) const;
-	bool swapPol(const string &antName) const;
-	const CorrSetup *getCorrSetup(const string &name) const;
-	CorrSetup *getNonConstCorrSetup(const string &name);
-	const SourceSetup *getSourceSetup(const string &name) const;
-	const SourceSetup *getSourceSetup(const vector<string> &names) const;
-	const PhaseCentre *getPhaseCentre(const string &difxname) const;
-	const AntennaSetup *getAntennaSetup(const string &name) const;
-	const GlobalZoom *getGlobalZoom(const string &name) const;
-	const VexClock *getAntennaClock(const string &antName) const;
+	bool useAntenna(const std::string &antName) const;
+	bool useBaseline(const std::string &ant1, const std::string &ant2) const;
+	bool swapPol(const std::string &antName) const;
+	const CorrSetup *getCorrSetup(const std::string &name) const;
+	CorrSetup *getNonConstCorrSetup(const std::string &name);
+	const SourceSetup *getSourceSetup(const std::string &name) const;
+	const SourceSetup *getSourceSetup(const std::vector<std::string> &names) const;
+	const PhaseCentre *getPhaseCentre(const std::string &difxname) const;
+	const AntennaSetup *getAntennaSetup(const std::string &name) const;
+	const GlobalZoom *getGlobalZoom(const std::string &name) const;
+	const VexClock *getAntennaClock(const std::string &antName) const;
 
-	const string &findSetup(const string &scan, const string &source, const string &mode, char cal, int qual) const;
-	const string &getNewSourceName(const string &origName) const;
+	const std::string &findSetup(const std::string &scan, const std::string &source, const std::string &mode, char cal, int qual) const;
+	const std::string &getNewSourceName(const std::string &origName) const;
 	
 	/* global parameters */
 	int parseWarnings;
-	string vexFile;
-	string threadsFile;
+	std::string vexFile;
+	std::string threadsFile;
 	unsigned int minSubarraySize;
 	double maxGap;		// days
 	bool singleScan;
@@ -286,60 +285,60 @@ public:
 	bool mediaSplit;	// split jobs on media change
 	bool padScans;
 	bool simFXCORR;		// set integration and start times to match VLBA HW correlator
-	bool tweakIntTime;      // nadger the integration time to make values nice
+	bool tweakIntTime;	// nadger the integration time to make values nice
 	int nCore;
 	int nThread;
 	double maxLength;	// [days]
 	double minLength;	// [days]
 	double maxSize;		// [bytes] -- break jobs for output filesize
-	string jobSeries;	// prefix name to job files
+	std::string jobSeries;	// prefix name to job files
 	int startSeries;	// start job series at this number
 	int dataBufferFactor;
 	int nDataSegments;
-	int maxReadSize;        // Max (Bytes) amount of data to read into datastream at a time 
-	int minReadSize;        // Min (Bytes) amount of data to read into datastream at a time
+	int maxReadSize;	// Max (Bytes) amount of data to read into datastream at a time 
+	int minReadSize;	// Min (Bytes) amount of data to read into datastream at a time
 	unsigned int invalidMask;
 	int visBufferLength;
 	int overSamp;		// A user supplied override to oversample factor
 	enum OutputFormatType outputFormat; // DIFX or ASCII
 
-	list<string> antennaList;
-	list<pair<string,string> > baselineList;
+	std::list<std::string> antennaList;
+	std::list<std::pair<std::string,std::string> > baselineList;
 
 	/* manual forced job breaks */
-	vector<double> manualBreaks;
+	std::vector<double> manualBreaks;
 
 	/* setups to apply */
-	vector<CorrSetup> corrSetups;
+	std::vector<CorrSetup> corrSetups;
 
 	/* source setups to apply */
-	vector<SourceSetup> sourceSetups;
+	std::vector<SourceSetup> sourceSetups;
 
 	/* manually provided EOPs */
-	vector<VexEOP> eops;
+	std::vector<VexEOP> eops;
 
 	/* antenna setups to apply */
-	vector<AntennaSetup> antennaSetups;
+	std::vector<AntennaSetup> antennaSetups;
 
 	/* rules to determine which setups to apply */
-	vector<CorrRule> rules;
+	std::vector<CorrRule> rules;
 
 	/* global zoom bands (referenced from a setup; applies to all antennas) */
-	vector<GlobalZoom> globalZooms;
+	std::vector<GlobalZoom> globalZooms;
 
 	enum V2D_Mode v2dMode;
 
-	list<string> machines;	// List of computers for generation of .machines file
+	std::list<std::string> machines;	// List of computers for generation of .machines file
 
 private:
-	void addAntenna(const string &antName);
-	void addBaseline(const string &baselineName);
-	map<string,string> shelves;
+	void addAntenna(const std::string &antName);
+	void addBaseline(const std::string &baselineName);
+	std::map<std::string,std::string> shelves;
 };
 
-ostream& operator << (ostream &os, const CorrSetup &x);
-ostream& operator << (ostream &os, const CorrRule &x);
-ostream& operator << (ostream &os, const CorrParams &x);
+std::ostream& operator << (std::ostream &os, const CorrSetup &x);
+std::ostream& operator << (std::ostream &os, const CorrRule &x);
+std::ostream& operator << (std::ostream &os, const CorrParams &x);
 
 bool areCorrSetupsCompatible(const CorrSetup *A, const CorrSetup *B, const CorrParams *C);
 

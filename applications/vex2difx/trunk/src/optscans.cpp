@@ -35,6 +35,8 @@
 #include "evladefaults.h"
 #include "optscans.h"
 
+using namespace std;
+
 void optscans::open(const string& antennaName, const VexData *V)
 {
 	string extension;

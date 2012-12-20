@@ -44,8 +44,8 @@
 class Tracks
 {
 public:
-	vector<int> sign;
-	vector<int> mag;
+	std::vector<int> sign;
+	std::vector<int> mag;
 };
 
 static char swapPolarization(char pol)
@@ -61,13 +61,13 @@ static char swapPolarization(char pol)
 	case 'Y':
 		return 'X';
 	default:
-		cerr << "Error: unknown polarization: " << pol << endl;
+		std::cerr << "Error: unknown polarization: " << pol << std::endl;
 
 		exit(EXIT_FAILURE);
 	}
 }
 
-static void fixOhs(string &str)
+static void fixOhs(std::string &str)
 {
 	unsigned int i;
 
@@ -84,14 +84,14 @@ static void fixOhs(string &str)
 	}
 }
 
-static int getRecordChannel(const string &antName, const string &chanName, const map<string,Tracks> &ch2tracks, const VexSetup &setup, unsigned int n)
+static int getRecordChannel(const std::string &antName, const std::string &chanName, const std::map<std::string,Tracks> &ch2tracks, const VexSetup &setup, unsigned int n)
 {
 	if(setup.formatName == "VLBA1_1" || setup.formatName == "VLBN1_1" || setup.formatName == "MKIV1_1" ||
 	   setup.formatName == "VLBA1_2" || setup.formatName == "VLBN1_2" || setup.formatName == "MKIV1_2" ||
 	   setup.formatName == "VLBA1_4" || setup.formatName == "VLBN1_4" || setup.formatName == "MKIV1_4")
 	{
 		int delta, track;
-		map<string,Tracks>::const_iterator it = ch2tracks.find(chanName);
+		std::map<std::string,Tracks>::const_iterator it = ch2tracks.find(chanName);
 
 		if(it == ch2tracks.end())
 		{
@@ -128,7 +128,7 @@ static int getRecordChannel(const string &antName, const string &chanName, const
 	else if(setup.formatName == "MARK5B") 
 	{
 		int delta, track;
-		map<string,Tracks>::const_iterator it = ch2tracks.find(chanName);
+		std::map<std::string,Tracks>::const_iterator it = ch2tracks.find(chanName);
 
 		if(it == ch2tracks.end())
 		{
@@ -144,7 +144,7 @@ static int getRecordChannel(const string &antName, const string &chanName, const
 	else if(setup.formatName == "LBAVSOP" || setup.formatName == "LBASTD") 
 	{
 		/* int delta, track;
-		map<string,Tracks>::const_iterator it = ch2tracks.find(chanName);
+		std::map<std::string,Tracks>::const_iterator it = ch2tracks.find(chanName);
 
 		if(it == ch2tracks.end())
 		{
@@ -154,7 +154,7 @@ static int getRecordChannel(const string &antName, const string &chanName, const
 		const Tracks &T = it->second;
 		delta = T.sign.size() + T.mag.size();
 		track = T.sign[0];
-                */
+		*/
 		return n;
 	}
 	else if(setup.formatName == "S2" )
@@ -171,8 +171,8 @@ static int getRecordChannel(const string &antName, const string &chanName, const
 	}
 	else
 	{
-		cerr << "Error: Antenna=" << antName << " format \"" << setup.formatName << "\" is not yet supported" << endl;
-		cerr << "Contact developer." << endl;
+		std::cerr << "Error: Antenna=" << antName << " format \"" << setup.formatName << "\" is not yet supported" << std::endl;
+		std::cerr << "Contact developer." << std::endl;
 
 		exit(EXIT_FAILURE);
 	}
@@ -204,7 +204,7 @@ double vexDate(char *value)
 		mjd = atof(value);
 		if(sscanf(value, "%lf", &mjd) != 1)
 		{
-			cerr << "Error: vex date is not in usable format: " << value << endl;
+			std::cerr << "Error: vex date is not in usable format: " << value << std::endl;
 
 			exit(EXIT_FAILURE);
 		}
@@ -226,7 +226,7 @@ double vexDate(char *value)
 			{
 				if(sscanf(value+start, "%lf", &x) != 1)
 				{
-					cerr << "Error: vex date is not in usable format: " << value << endl;
+					std::cerr << "Error: vex date is not in usable format: " << value << std::endl;
 
 					exit(EXIT_FAILURE);
 				}
@@ -248,7 +248,7 @@ double vexDate(char *value)
 					seconds = x;
 					break;
 				default:
-					cerr << "Error: vex date is not in usable format: " << value << endl;
+					std::cerr << "Error: vex date is not in usable format: " << value << std::endl;
 
 					exit(EXIT_FAILURE);
 				}
@@ -259,7 +259,7 @@ double vexDate(char *value)
 
 		if(start != i)
 		{
-			cerr << "Error: trailing characters in vex date: " << value << endl;
+			std::cerr << "Error: trailing characters in vex date: " << value << std::endl;
 
 			exit(EXIT_FAILURE);
 		}
@@ -284,7 +284,7 @@ static int getAntennas(VexData *V, Vex *v, const CorrParams &params)
 		struct axis_type *q;
 		VexAntenna *A;
 
-		string antName(stn);
+		std::string antName(stn);
 		Upper(antName);
 
 		if(!params.useAntenna(antName))
@@ -299,7 +299,7 @@ static int getAntennas(VexData *V, Vex *v, const CorrParams &params)
 		p = (struct site_position *)get_station_lowl(stn, T_SITE_POSITION, B_SITE, v);
 		if(p == 0)
 		{
-			cerr << "Error: cannot find site position for antenna " << antName << " in the vex file." << endl;
+			std::cerr << "Error: cannot find site position for antenna " << antName << " in the vex file." << std::endl;
 
 			exit(EXIT_FAILURE);
 		}
@@ -322,11 +322,11 @@ static int getAntennas(VexData *V, Vex *v, const CorrParams &params)
 		q = (struct axis_type *)get_station_lowl(stn, T_AXIS_TYPE, B_ANTENNA, v);
 		if(q == 0)
 		{
-			cerr << "Error: cannot find axis type for antenna " << antName << " in the vex file." << endl;
+			std::cerr << "Error: cannot find axis type for antenna " << antName << " in the vex file." << std::endl;
 
 			exit(EXIT_FAILURE);
 		}
-		A->axisType = string(q->axis1) + string(q->axis2);
+		A->axisType = std::string(q->axis1) + std::string(q->axis2);
 		if(A->axisType.compare("hadec") == 0)
 		{
 			A->axisType = "equa";
@@ -351,7 +351,7 @@ static int getAntennas(VexData *V, Vex *v, const CorrParams &params)
 		r = (struct dvalue *)get_station_lowl(stn, T_AXIS_OFFSET, B_ANTENNA, v);
 		if(r == 0)
 		{
-			cerr << "Error: cannot find axis offset for antenna " << antName << " in the vex file." << endl;
+			std::cerr << "Error: cannot find axis offset for antenna " << antName << " in the vex file." << std::endl;
 
 			exit(EXIT_FAILURE);
 		}
@@ -505,10 +505,10 @@ static int getAntennas(VexData *V, Vex *v, const CorrParams &params)
 					vex_field(T_VSN, c, 2, &link, &name, &value, &units);
 					if(!value)
 					{
-						cerr << "VSN absent for antenna " << stn << endl;
+						std::cerr << "VSN absent for antenna " << stn << std::endl;
 						break;
 					}
-					string vsn(value);
+					std::string vsn(value);
 					fixOhs(vsn);
 
 					vex_field(T_VSN, c, 3, &link, &name, &value, &units);
@@ -524,7 +524,7 @@ static int getAntennas(VexData *V, Vex *v, const CorrParams &params)
 
 					if(t1 == 0.0 || t2 == 0.0)
 					{
-						cerr << "VSN " << vsn << "doesn't have proper time range" << endl;
+						std::cerr << "VSN " << vsn << "doesn't have proper time range" << std::endl;
 						break;
 					}
 
@@ -532,7 +532,7 @@ static int getAntennas(VexData *V, Vex *v, const CorrParams &params)
 
 					if(!vsnTimeRange.isCausal())
 					{
-						cerr << "Error: Record stop (" << t2 << ") precedes record start (" << t1 << ") for antenna " << stn << ", module " << vsn << " ." << endl;
+						std::cerr << "Error: Record stop (" << t2 << ") precedes record start (" << t1 << ") for antenna " << stn << ", module " << vsn << " ." << std::endl;
 					}
 					else
 					{
@@ -561,8 +561,8 @@ static int getSources(VexData *V, Vex *v, const CorrParams &params)
 		S->defName = src;
 		if(strlen(src) > VexSource::MAX_SRCNAME_LENGTH)
 		{
-			cerr << "Source name " << src << " is longer than " << 
-			VexSource::MAX_SRCNAME_LENGTH << "  characters!" << endl;
+			std::cerr << "Source name " << src << " is longer than " << 
+			VexSource::MAX_SRCNAME_LENGTH << "  characters!" << std::endl;
 			++nWarn;
 		}
 
@@ -570,11 +570,11 @@ static int getSources(VexData *V, Vex *v, const CorrParams &params)
 		    p != 0;
 		    p = (char *)get_source_lowl_next())
 		{
-			S->sourceNames.push_back(string(p));
+			S->sourceNames.push_back(std::string(p));
 			if(strlen(p) > VexSource::MAX_SRCNAME_LENGTH)
 			{
-				cerr << "Source name " << src << " is longer than " <<
-				VexSource::MAX_SRCNAME_LENGTH << "  characters!" << endl;
+				std::cerr << "Source name " << src << " is longer than " <<
+				VexSource::MAX_SRCNAME_LENGTH << "  characters!" << std::endl;
 				++nWarn;
 			}
 		}
@@ -582,7 +582,7 @@ static int getSources(VexData *V, Vex *v, const CorrParams &params)
 		p = (char *)get_source_lowl(src, T_RA, v);
 		if(!p)
 		{
-			cerr << "Error: Cannot find right ascension for source " << src << endl;
+			std::cerr << "Error: Cannot find right ascension for source " << src << std::endl;
 
 			exit(EXIT_FAILURE);
 		}
@@ -591,7 +591,7 @@ static int getSources(VexData *V, Vex *v, const CorrParams &params)
 		p = (char *)get_source_lowl(src, T_DEC, v);
 		if(!p)
 		{
-			cerr << "Error: Cannot find declination for source " << src << endl;
+			std::cerr << "Error: Cannot find declination for source " << src << std::endl;
 
 			exit(EXIT_FAILURE);
 		}
@@ -600,13 +600,13 @@ static int getSources(VexData *V, Vex *v, const CorrParams &params)
 		p = (char *)get_source_lowl(src, T_REF_COORD_FRAME, v);
 		if(!p)
 		{
-			cerr << "Error: Cannot find ref coord frame for source " << src << endl;
+			std::cerr << "Error: Cannot find ref coord frame for source " << src << std::endl;
 
 			exit(EXIT_FAILURE);
 		}
 		if(strcmp(p, "J2000") != 0)
 		{
-			cerr << "Error: only J2000 ref frame is supported." << endl;
+			std::cerr << "Error: only J2000 ref frame is supported." << std::endl;
 
 			exit(EXIT_FAILURE);
 		}
@@ -624,22 +624,22 @@ static int getSources(VexData *V, Vex *v, const CorrParams &params)
 	return nWarn;
 }
 
-static VexInterval adjustTimeRange(map<string, double> &antStart, map<string, double> &antStop, unsigned int minSubarraySize)
+static VexInterval adjustTimeRange(std::map<std::string, double> &antStart, std::map<std::string, double> &antStop, unsigned int minSubarraySize)
 {
-	list<double> start;
-	list<double> stop;
+	std::list<double> start;
+	std::list<double> stop;
 	double mjdStart, mjdStop;
 
 	if(minSubarraySize < 1)
 	{
-		cerr << "Developer error: adjustTimeRange: minSubarraySize = " << minSubarraySize << " is < 1" << endl;
+		std::cerr << "Developer error: adjustTimeRange: minSubarraySize = " << minSubarraySize << " is < 1" << std::endl;
 
 		exit(EXIT_FAILURE);
 	}
 
 	if(antStart.size() != antStop.size())
 	{
-		cerr << "Developer error: adjustTimeRange: size mismatch" << endl;
+		std::cerr << "Developer error: adjustTimeRange: size mismatch" << std::endl;
 
 		exit(EXIT_FAILURE);
 	}
@@ -650,14 +650,14 @@ static VexInterval adjustTimeRange(map<string, double> &antStart, map<string, do
 		return VexInterval(1, 0);
 	}
 
-	for(map<string, double>::iterator it = antStart.begin(); it != antStart.end(); ++it)
+	for(std::map<std::string, double>::iterator it = antStart.begin(); it != antStart.end(); ++it)
 	{
 		start.push_back(it->second);
 	}
 	start.sort();
 	// Now the start times are sorted chronologically
 
-	for(map<string, double>::iterator it = antStop.begin(); it != antStop.end(); ++it)
+	for(std::map<std::string, double>::iterator it = antStop.begin(); it != antStop.end(); ++it)
 	{
 		stop.push_back(it->second);
 	}
@@ -677,7 +677,7 @@ static VexInterval adjustTimeRange(map<string, double> &antStart, map<string, do
 	mjdStop = stop.back();
 
 	// Adjust start times where needed
-	for(map<string, double>::iterator it = antStart.begin(); it != antStart.end(); ++it)
+	for(std::map<std::string, double>::iterator it = antStart.begin(); it != antStart.end(); ++it)
 	{
 		if(it->second < mjdStart)
 		{
@@ -685,7 +685,7 @@ static VexInterval adjustTimeRange(map<string, double> &antStart, map<string, do
 		}
 	}
 
-	for(map<string, double>::iterator it = antStop.begin(); it != antStop.end(); ++it)
+	for(std::map<std::string, double>::iterator it = antStop.begin(); it != antStop.end(); ++it)
 	{
 		if(it->second > mjdStop)
 		{
@@ -705,15 +705,15 @@ static int getScans(VexData *V, Vex *v, const CorrParams &params)
 	for(Llist *L = (Llist *)get_scan(&scanId, v); L != 0; L = (Llist *)get_scan_next(&scanId))
 	{
 		VexScan *S;
-		map<string,double> antStart, antStop;
-		map<string,bool> recordEnable;
-		map<string,VexInterval> stations;
+		std::map<std::string,double> antStart, antStop;
+		std::map<std::string,bool> recordEnable;
+		std::map<std::string,VexInterval> stations;
 		double startScan, stopScan;
 		double mjd;
 		int link, name;
 		char *value, *units;
 		void *p;
-		string intent;
+		std::string intent;
 
 		stations.clear();
 		recordEnable.clear();
@@ -740,12 +740,12 @@ static int getScans(VexData *V, Vex *v, const CorrParams &params)
 		stopScan = 0.0;
 		for(p = get_station_scan(L); p; p = get_station_scan_next())
 		{
-			string stationName;
+			std::string stationName;
 			double startAnt, stopAnt;
 			char *stn;
 			
 			vex_field(T_STATION, p, 1, &link, &name, &stn, &units);
-			stationName = string(stn);
+			stationName = std::string(stn);
 			Upper(stationName);
 			if(!params.useAntenna(stationName))
 			{
@@ -792,19 +792,19 @@ static int getScans(VexData *V, Vex *v, const CorrParams &params)
 			continue;
 		}
 
-		string scanDefName(scanId);
-		string sourceDefName((char *)get_scan_source(L));
-		string modeDefName((char *)get_scan_mode(L));
+		std::string scanDefName(scanId);
+		std::string sourceDefName((char *)get_scan_source(L));
+		std::string modeDefName((char *)get_scan_mode(L));
 
 		const VexSource *src = V->getSourceByDefName(sourceDefName);
 		if(src == 0)
 		{
-			cerr << "Vex error! Scan " << scanDefName << " references source " << sourceDefName << " which is not in the source table." << endl;
+			std::cerr << "Vex error! Scan " << scanDefName << " references source " << sourceDefName << " which is not in the source table." << std::endl;
 
 			exit(EXIT_FAILURE);
 		}
 
-		string corrSetupName = params.findSetup(scanDefName, sourceDefName, modeDefName, src->calCode, 0);
+		std::string corrSetupName = params.findSetup(scanDefName, sourceDefName, modeDefName, src->calCode, 0);
 
 		if(corrSetupName == "" || corrSetupName == "SKIP")
 		{
@@ -813,7 +813,7 @@ static int getScans(VexData *V, Vex *v, const CorrParams &params)
 
 		if(params.getCorrSetup(corrSetupName) == 0)
 		{
-			cerr << "Error: Scan=" << scanDefName << " correlator setup " << corrSetupName << " not defined!" << endl;
+			std::cerr << "Error: Scan=" << scanDefName << " correlator setup " << corrSetupName << " not defined!" << std::endl;
 
 			exit(EXIT_FAILURE);
 		}
@@ -848,19 +848,19 @@ static int getScans(VexData *V, Vex *v, const CorrParams &params)
 		// Add to event list
 		V->addEvent(S->mjdStart, VexEvent::SCAN_START, scanId, scanId);
 		V->addEvent(S->mjdStop,  VexEvent::SCAN_STOP,  scanId, scanId);
-		for(map<string, double>::const_iterator it = antStart.begin(); it != antStart.end(); ++it)
+		for(std::map<std::string, double>::const_iterator it = antStart.begin(); it != antStart.end(); ++it)
 		{
-			V->addEvent(max(it->second, startScan), VexEvent::ANT_SCAN_START, it->first, scanId);
+			V->addEvent(std::max(it->second, startScan), VexEvent::ANT_SCAN_START, it->first, scanId);
 		}
-		for(map<string, double>::const_iterator it = antStop.begin(); it != antStop.end(); ++it)
+		for(std::map<std::string, double>::const_iterator it = antStop.begin(); it != antStop.end(); ++it)
 		{
-			V->addEvent(min(it->second, stopScan), VexEvent::ANT_SCAN_STOP, it->first, scanId);
+			V->addEvent(std::min(it->second, stopScan), VexEvent::ANT_SCAN_STOP, it->first, scanId);
 		}
 	}
 
 	if(nScanSkip > 0)
 	{
-		cout << "FYI: " << nScanSkip << " scans skipped because of time range selection." << endl;
+		std::cout << "FYI: " << nScanSkip << " scans skipped because of time range selection." << std::endl;
 	}
 	
 	return nWarn;
@@ -889,13 +889,13 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 			int link, name;
 			char *value, *units;
 			void *p, *p2;
-			const string &antName = V->getAntenna(a)->defName;
-			string antName2 = V->getAntenna(a)->defName;
+			const std::string &antName = V->getAntenna(a)->defName;
+			std::string antName2 = V->getAntenna(a)->defName;
 			const AntennaSetup *antennaSetup;
-			map<string,vector<int> > pcalMap;
-			map<string,char> bbc2pol;
-			map<string,string> bbc2ifName;
-			map<string,Tracks> ch2tracks;
+			std::map<std::string,std::vector<int> > pcalMap;
+			std::map<std::string,char> bbc2pol;
+			std::map<std::string,std::string> bbc2ifName;
+			std::map<std::string,Tracks> ch2tracks;
 
 			// p2 will hold pointers to the special comments attached to if_def; max of 4
 			void *p2array[MAX_IF];
@@ -917,7 +917,7 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 			{
 				if(!antennaSetup->format.empty())
 				{
-					cout << "Setting antenna format to " << antennaSetup->format << " for antenna " << antName << endl;
+					std::cout << "Setting antenna format to " << antennaSetup->format << " for antenna " << antName << std::endl;
 				}
 				setup.formatName = antennaSetup->format;
 			}
@@ -956,7 +956,7 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 				double phaseCal;
 				
 				vex_field(T_IF_DEF, p, 1, &link, &name, &value, &units);
-				VexIF &vif = setup.ifs[string(value)];
+				VexIF &vif = setup.ifs[std::string(value)];
 
 				vex_field(T_IF_DEF, p, 2, &link, &name, &value, &units);
 				vif.name = value;
@@ -997,7 +997,7 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 				}
 				else
 				{
-					cerr << "Warning: Unsupported pulse cal interval of " << (phaseCal/1000000.0) << " MHz requested for antenna " << antName << "." << endl;
+					std::cerr << "Warning: Unsupported pulse cal interval of " << (phaseCal/1000000.0) << " MHz requested for antenna " << antName << "." << std::endl;
 					++nWarn;
 					vif.phaseCalIntervalMHz = static_cast<int>((phaseCal + 0.5)/1000000.0);
 				}
@@ -1021,7 +1021,7 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 						static bool first = true;
 						if(first)
 						{
-							cerr << "Warning: VLBA antenna detected, but no comment for if_def; can't do switching" << endl;
+							std::cerr << "Warning: VLBA antenna detected, but no comment for if_def; can't do switching" << std::endl;
 							first = false;
 						}
 					}
@@ -1042,7 +1042,7 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 			for(p = get_all_lowl(antName.c_str(), modeDefName, T_BBC_ASSIGN, B_BBC, v); p; p = get_all_lowl_next())
 			{
 				vex_field(T_BBC_ASSIGN, p, 3, &link, &name, &value, &units);
-				VexIF &vif = setup.ifs[string(value)];
+				VexIF &vif = setup.ifs[std::string(value)];
 
 				vex_field(T_BBC_ASSIGN, p, 1, &link, &name, &value, &units);
 				bbc2pol[value] = vif.pol;
@@ -1058,7 +1058,7 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 				if(p)
 				{
 					vex_field(T_TRACK_FRAME_FORMAT, p, 1, &link, &name, &value, &units);
-					setup.formatName = string(value);
+					setup.formatName = std::string(value);
 					if(setup.formatName == "Mark4")
 					{
 						setup.formatName = "MKIV";
@@ -1074,7 +1074,7 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 				}
 				else
 				{
-					cerr << "Unable to determine data format for antenna " << antName << endl;
+					std::cerr << "Unable to determine data format for antenna " << antName << std::endl;
 
 					//exit(EXIT_FAILURE);
 					setup.formatName = "NONE";
@@ -1087,7 +1087,7 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 
 				if(totalDataRate > 0.0 && totalDataRate < 1.7e7)
 				{
-					cout << "*** Warning: a " << setup.formatName << " mode was found with sample rate " << (totalDataRate*10e-6) << " Mbps, which is less than the minimum 16 Mbps that can make use of this record format.  It is likely this mode will produce unusual results.  The suggested fix is to add additional channels in the vex file to bring the total bit rate up to 16 Mbps, which is very likely what the formatter did at the time of recording." << endl;
+					std::cout << "*** Warning: a " << setup.formatName << " mode was found with sample rate " << (totalDataRate*10e-6) << " Mbps, which is less than the minimum 16 Mbps that can make use of this record format.  It is likely this mode will produce unusual results.  The suggested fix is to add additional channels in the vex file to bring the total bit rate up to 16 Mbps, which is very likely what the formatter did at the time of recording." << std::endl;
 				}
 			}
 
@@ -1095,7 +1095,7 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 			{
 				for(p = get_all_lowl(antName.c_str(), modeDefName, T_FANOUT_DEF, B_TRACKS, v); p; p = get_all_lowl_next())
 				{
-					string chanName;
+					std::string chanName;
 					bool sign;
 					int dasNum;
 					
@@ -1153,7 +1153,7 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 								setup.formatName += "1_4"; 
 								break;
 							default: 
-								cerr << "Error: Antenna=" << antName << " fanout=" << fanout << " not legal for format " << setup.formatName << ".  This could be a subtle problem in the vex file." << endl;
+								std::cerr << "Error: Antenna=" << antName << " fanout=" << fanout << " not legal for format " << setup.formatName << ".  This could be a subtle problem in the vex file." << std::endl;
 
 								exit(EXIT_FAILURE);
 						}
@@ -1166,7 +1166,7 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 			{
 				for(p = get_all_lowl(antName.c_str(), modeDefName, T_FANOUT_DEF, B_TRACKS, v); p; p = get_all_lowl_next())
 				{
-				    string chanName;
+				    std::string chanName;
 				    bool sign;
 				    int dasNum;
 				    
@@ -1195,28 +1195,28 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 				    	ch2tracks[chanName].mag.push_back(chanNum);
 				    }
 
-                                }
+				}
 				setup.nRecordChan = ch2tracks.size();
 				setup.nBit = nBit;
 			}
 			else if(setup.formatName == "VDIF")
 			{
-				cerr << "Warning: Antenna " << antName << " format treated as (one channel) VDIF/1032/2." << endl;
+				std::cerr << "Warning: Antenna " << antName << " format treated as (one channel) VDIF/1032/2." << std::endl;
 				setup.nBit = 2;
 				setup.nRecordChan = 1;
 			}
-			else if(setup.formatName.find("VDIF") != string::npos)  // VDIF... or // INTERLACEDVDIF...
+			else if(setup.formatName.find("VDIF") != std::string::npos)  // VDIF... or // INTERLACEDVDIF...
 			{
 #warning "handling of VDIF or INTERLACEDVDIF nRecordChan may not be correct in all cases"
 				setup.nBit = atoi(setup.formatName.substr(setup.formatName.find_last_of('/') + 1).c_str());
 				setup.formatName = setup.formatName.substr(0, setup.formatName.find_last_of('/'));
 				setup.nRecordChan = 1;
 				size_t lpos = setup.formatName.find_first_of(':');
-				if(lpos == string::npos)
+				if(lpos == std::string::npos)
 				{
-					setup.nRecordChan = 7777;  // use all channels of vex file, see below
+					setup.nRecordChan = 7777;	// use all channels of vex file, see below
 				}
-				while(lpos != string::npos)         // else
+				while(lpos != std::string::npos)	// else
 				{
 					// and an additional channel for every ':' in INTERLACEDVDIF/.../size/bits
 					++setup.nRecordChan;
@@ -1229,39 +1229,40 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 			if(p)
 			{
 				vex_field(T_S2_RECORDING_MODE, p, 1, &link, &name, &value, &units);
-				string s2mode(value);
+				std::string s2mode(value);
 				if(s2mode != "none")
 				{
-				        if(setup.formatName == "")
-				        {
-				        	setup.formatName = "S2";
-				        }
+					if(setup.formatName == "")
+					{
+						setup.formatName = "S2";
+					}
 
 					size_t f = s2mode.find_last_of("x");
 					size_t g = s2mode.find_last_of("-");
 
-					if(f == string::npos || g == string::npos || f > g)
+					if(f == std::string::npos || g == std::string::npos || f > g)
 					{
-						cerr << "Error: Antenna=" << antName << " malformed S2 mode : " << string(value) << endl;
+						std::cerr << "Error: Antenna=" << antName << " malformed S2 mode : " << std::string(value) << std::endl;
 					
 						exit(EXIT_FAILURE);
 					}
 
-					string tracks = s2mode.substr(f+1, g-f-1);
-					string bits = s2mode.substr(g+1);
+					std::string tracks = s2mode.substr(f+1, g-f-1);
+					std::string bits = s2mode.substr(g+1);
 
 					setup.nBit = atoi(bits.c_str());
 					setup.nRecordChan = atoi(tracks.c_str())/setup.nBit; // should equal bbc2pol.size();
-				    if(ch2tracks.empty())
-				    {
-				    	setup.formatName = "NONE";
-				    	setup.nRecordChan = 0;
-				    	setup.nBit = 0;
-				    }
-                                    else {
-				        setup.nRecordChan = ch2tracks.size();
-                                        setup.nBit = nBit;
-                                    }
+					if(ch2tracks.empty())
+					{
+						setup.formatName = "NONE";
+						setup.nRecordChan = 0;
+						setup.nBit = 0;
+					}
+					else
+					{
+						setup.nRecordChan = ch2tracks.size();
+						setup.nBit = nBit;
+					}
 				} 
 			}
 
@@ -1269,7 +1270,7 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 			for(p = get_all_lowl(antName.c_str(), modeDefName, T_PHASE_CAL_DETECT, B_PHASE_CAL_DETECT, v); p; p = get_all_lowl_next())
 			{
 				vex_field(T_PHASE_CAL_DETECT, p, 1, &link, &name, &value, &units);
-				vector<int> &Q = pcalMap[string(value)];
+				std::vector<int> &Q = pcalMap[std::string(value)];
 				
 				for(int q = 2; ; ++q)
 				{
@@ -1316,8 +1317,8 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 
 				if(bandwidth > setup.sampRate/2)
 				{
-					cerr << "Error: sample rate = " << setup.sampRate << " bandwidth = " << bandwidth << endl;
-					cerr << "Sample rate must be no less than twice the bandwidth in all cases." << endl;
+					std::cerr << "Error: sample rate = " << setup.sampRate << " bandwidth = " << bandwidth << std::endl;
+					std::cerr << "Sample rate must be no less than twice the bandwidth in all cases." << std::endl;
 
 					exit(EXIT_FAILURE);
 				}
@@ -1328,9 +1329,9 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 
 					if(first)
 					{
-						cerr << "Warning: Sample rate = " << setup.sampRate << " bandwidth = " << bandwidth << endl;
-						cerr << "Changing bandwidth to match sample rate.  Expect oversampled bandpasses" << endl;
-						cerr << "unless zoom bands are used" << endl;
+						std::cerr << "Warning: Sample rate = " << setup.sampRate << " bandwidth = " << bandwidth << std::endl;
+						std::cerr << "Changing bandwidth to match sample rate.  Expect oversampled bandpasses" << std::endl;
+						std::cerr << "unless zoom bands are used" << std::endl;
 						first = false;
 					}
 					bandwidth = setup.sampRate/2;
@@ -1340,10 +1341,10 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 				subbandId = M->addSubband(freq, bandwidth, sideBand, bbc2pol[bbcName]);
 
 				vex_field(T_CHAN_DEF, p, 7, &link, &name, &value, &units);
-				string phaseCalName(value);
+				std::string phaseCalName(value);
 
 				vex_field(T_CHAN_DEF, p, 5, &link, &name, &value, &units);
-				string chanName(value);
+				std::string chanName(value);
 
 				recChanId = getRecordChannel(antName, chanName, ch2tracks, setup, nRecordChan);
 				setup.channels.push_back(VexChannel());
@@ -1389,12 +1390,12 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 			if(setup.nRecordChan == 7777)     // then use the number of that we just counted out
 			{
 				setup.nRecordChan = nRecordChan;
-				cout << "FYI: Antenna=" << antName << " will use the full number of recorded channels, " << setup.nRecordChan << endl;
+				std::cout << "FYI: Antenna=" << antName << " will use the full number of recorded channels, " << setup.nRecordChan << std::endl;
 			}
 
 			if(nRecordChan != setup.nRecordChan)
 			{
-				cerr << "FYI: Antenna=" << antName << " nchan=" << nRecordChan << " != setup.nRecordChan=" << setup.nRecordChan << endl;
+				std::cerr << "FYI: Antenna=" << antName << " nchan=" << nRecordChan << " != setup.nRecordChan=" << setup.nRecordChan << std::endl;
 			}
 
 			// Sort channels by name and then assign sequential thread Id
@@ -1406,7 +1407,7 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 		} // End of antenna loop
 
 #if 0
-		for(vector<VexSubband>::iterator it = M->subbands.begin(); it != M->subbands.end(); ++it)
+		for(std::vector<VexSubband>::iterator it = M->subbands.begin(); it != M->subbands.end(); ++it)
 		{
 			int overSamp = static_cast<int>(setup.sampRate/(2.0*it->bandwidth) + 0.001);
 
@@ -1414,11 +1415,11 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 			{
 				if(params.overSamp > overSamp)
 				{
-					cerr << "Warning: Mode=" << M->defName << " subband=" << M->overSamp.size() << 
+					std::cerr << "Warning: Mode=" << M->defName << " subband=" << M->overSamp.size() << 
 						": requested oversample factor " << params.overSamp << 
-						" is greater than the observed oversample factor " << overSamp << endl;
-					cerr << "This was triggered because the sample rate was " << setup.sampRate <<
-						" and the bandwidth was " << it->bandwidth << endl;
+						" is greater than the observed oversample factor " << overSamp << std::endl;
+					std::cerr << "This was triggered because the sample rate was " << setup.sampRate <<
+						" and the bandwidth was " << it->bandwidth << std::endl;
 					++nWarn;
 				}
 				overSamp = params.overSamp;
@@ -1446,7 +1447,7 @@ static int getVSN(VexData *V, Vex *v, const char *station)
 	Llist *defs;
 	bool quit = false;
 
-	string antName(station);
+	std::string antName(station);
 
 	Upper(antName);
 
@@ -1484,14 +1485,14 @@ static int getVSN(VexData *V, Vex *v, const char *station)
 			return -4;
 		}
 
-		string vsn(p->label);
+		std::string vsn(p->label);
 		fixOhs(vsn);
 
 		VexInterval vsnTimeRange(vexDate(p->start)+0.001/86400.0, vexDate(p->stop));
 
 		if(!vsnTimeRange.isCausal())
 		{
-			cerr << "Error: Record stop (" << p->stop << ") precedes record start (" << p->start << ") for antenna " << antName << ", module " << vsn << " ." << endl;
+			std::cerr << "Error: Record stop (" << p->stop << ") precedes record start (" << p->start << ") for antenna " << antName << ", module " << vsn << " ." << std::endl;
 			quit = true;
 		}
 		else
@@ -1516,7 +1517,7 @@ static int getVSNs(VexData *V, Vex *v, const CorrParams &params)
 
 	for(char *stn = get_station_def(v); stn; stn=get_station_def_next())
 	{
-		string ant(stn);
+		std::string ant(stn);
 		Upper(ant);
 
 		if(V->nVSN(ant) > 0)
@@ -1627,10 +1628,10 @@ static int getEOPs(VexData *V, Vex *v, const CorrParams &params)
 	{
 		if(N > 0)
 		{
-			cerr << "Warning: Mixing EOP values from vex and v2d files.  Your mileage may vary!" << endl;
+			std::cerr << "Warning: Mixing EOP values from vex and v2d files.  Your mileage may vary!" << std::endl;
 			++nWarn;
 		}
-		for(vector<VexEOP>::const_iterator e = params.eops.begin(); e != params.eops.end(); ++e)
+		for(std::vector<VexEOP>::const_iterator e = params.eops.begin(); e != params.eops.end(); ++e)
 		{
 			VexEOP *E;
 			
@@ -1648,7 +1649,7 @@ static int getExper(VexData *V, Vex *v, const CorrParams &params)
 	llist *block;
 	double start=0.0, stop=0.0;
 	int nWarn = 0;
-	string experimentName;
+	std::string experimentName;
 
 	block = find_block(B_EXPER, v);
 

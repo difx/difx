@@ -35,9 +35,11 @@
 #include "evladefaults.h"
 #include "pystream.h"
 
-void pystream::open(const string& antennaName, const VexData *V, ScriptType sType)
+using namespace std;
+
+void pystream::open(const std::string& antennaName, const VexData *V, ScriptType sType)
 {
-	string extension;
+	std::string extension;
 
 	evlaIntSec     = DEFAULT_EVLA_INT_SEC;
 	evlasbBits     = DEFAULT_EVLA_SB_BITS;
@@ -64,11 +66,11 @@ void pystream::open(const string& antennaName, const VexData *V, ScriptType sTyp
 	
 	extension = ".py";
 
-	fileName = string(obsCode) + string(".") + antennaName + extension;
+	fileName = std::string(obsCode) + std::string(".") + antennaName + extension;
 	ofstream::open(fileName.c_str());
 }
 
-void pystream::addPhasingSource(const string &sourceName)
+void pystream::addPhasingSource(const std::string &sourceName)
 {
 	phasingSources.push_back(sourceName);
 }
@@ -89,11 +91,11 @@ int switchPosition(const char *val)
 	}
 	else if(c == 'B')
 	{
-			return 2;
+		return 2;
 	}
 	else if(c == 'C')
 	{
-			return 3;
+		return 3;
 	}
 	else if(c == 'D')
 	{
@@ -115,7 +117,7 @@ int switchPosition(const char *val)
 
 void pystream::calcIfIndex(const VexData *V)
 {
-	map<string,VexIF>::const_iterator it;
+	std::map<std::string,VexIF>::const_iterator it;
 	unsigned int nMode = V->nMode();
 
 	ifIndex.clear();
@@ -204,24 +206,24 @@ int pystream::writeHeader(const VexData *V)
 {
 	double day = floor(mjd0);
 	double sec = floor((mjd0-day)*86400.0 + 0.5);
-        lastValid  = mjd0-(5.0/86400.0);
-        string tab = "";
+	lastValid  = mjd0-(5.0/86400.0);
+	std::string tab = "";
 
-    if(scriptType == SCRIPT_GBT)
+	if(scriptType == SCRIPT_GBT)
 	{
-        // os.getenv() gets exception in executor
-        // (for running same script by the executor and by astrid)
+	// os.getenv() gets exception in executor
+	// (for running same script by the executor and by astrid)
 		*this << "import os" << endl << endl;
 		*this << "isAstrid = 0" << endl;
-                *this << "if 1:" << endl;
-                *this << "    try:" << endl;
+		*this << "if 1:" << endl;
+		*this << "    try:" << endl;
 		*this << "        if os.getenv('ASTRIDVLBA') == '1':" << endl;
-                *this << "            isAstrid = 1" << endl;
-                *this << "    except:" << endl;
-                *this << "        pass" << endl << endl;
-                *this << "if not isAstrid:" << endl;
-        tab = "    ";
-        }
+		*this << "            isAstrid = 1" << endl;
+		*this << "    except:" << endl;
+		*this << "        pass" << endl << endl;
+		*this << "if not isAstrid:" << endl;
+		tab = "    ";
+	}
 
 	*this << tab << "from edu.nrao.evla.observe import Mark5C" << endl;
 	switch(scriptType)
@@ -260,7 +262,7 @@ int pystream::writeHeader(const VexData *V)
 	return 0;
 }
 
-int pystream::writeComment(const string &commentString)
+int pystream::writeComment(const std::string &commentString)
 {
 	*this << "# " << commentString << endl;
 	*this << endl;
@@ -489,12 +491,12 @@ int pystream::writeDbeInit(const VexData *V)
 	return 1;
 }
 
-void pystream::writeImplicitConversionComment(const vector<unsigned int> &implicitConversions)
+void pystream::writeImplicitConversionComment(const std::vector<unsigned int> &implicitConversions)
 {
 	if(!implicitConversions.empty())
 	{
 		*this << "# implicit conversion performed on basebands:";
-		for(vector<unsigned int>::const_iterator uit = implicitConversions.begin(); uit != implicitConversions.end(); ++uit)
+		for(std::vector<unsigned int>::const_iterator uit = implicitConversions.begin(); uit != implicitConversions.end(); ++uit)
 		{
 			*this << " " << *uit;
 		}
@@ -506,7 +508,7 @@ int pystream::writeChannelSet(const VexSetup *setup, int modeNum)
 {
 	*this << "channelSet" << modeNum << " = [ \\" << endl;
 
-	vector<unsigned int> implicitConversions;
+	std::vector<unsigned int> implicitConversions;
 	for(unsigned int i = 0; i < setup->channels.size(); ++i)
 	{
 		unsigned int inputNum = ifIndex[modeNum][setup->channels[i].ifName];
@@ -579,7 +581,7 @@ int pystream::writeChannelSet5A(const VexSetup *setup, int modeNum)
 	bool channelMask[2][MaxChannels];	// first index: IF, second index: freq chan
 	int channelCount[2];			// index: IF
 						// 0 = 1040-1008 MHz, 1 = 1008-976 MHz, ..., 15 = 560-528 MHz
-	vector<unsigned int> implicitConversions;
+	std::vector<unsigned int> implicitConversions;
 
 	for(int i = 0; i < 2; ++i)
 	{
@@ -797,7 +799,7 @@ int pystream::writeChannelSet5A(const VexSetup *setup, int modeNum)
 
 int pystream::writeLoifTable(const VexData *V)
 {
-	map<string,VexIF>::const_iterator it;
+	std::map<std::string,VexIF>::const_iterator it;
 	int p;
 	stringstream ss;
 	unsigned int nMode = V->nMode();
@@ -970,7 +972,7 @@ int pystream::writeLoifTable(const VexData *V)
 
 			//work out how many different LOs there are - complain if more than two (frequencies, not freq/pols)
 			if(setup->ifs.size() > 4)
-                        {
+			{
 				cerr << "Error: mode " << mode->defName << " wants " << setup->ifs.size() << " IFs, and we can currently only use 4" << endl;
 
 				exit(EXIT_FAILURE);
@@ -1022,7 +1024,7 @@ int pystream::writeLoifTable(const VexData *V)
 			*this << "loif" << modeNum << " = LoIfSetup('" << i1.VLBABandName() << "', " << freq1/1.0e6 << ", 0.0, " << freq2/1.0e6 << ", 0.0)" << endl;
 			//write an appropriate VCI document, and set it up to be used
 			ss << modeNum;
-			string vcifilename = evlaVCIDir + "/" + obsCode + ss.str() + ".vci";
+			std::string vcifilename = evlaVCIDir + "/" + obsCode + ss.str() + ".vci";
 			writeVCI(V, modeNum, vcifilename);
 			*this << "setup" << modeNum << " = '" << vcifilename << "'" << endl;
 			*this << endl;
@@ -1049,7 +1051,7 @@ int pystream::writeSourceTable(const VexData *V)
 {
 	int nSource;
 	int p;
-	string intentstring;
+	std::string intentstring;
 
 	nSource = V->nSource();
 
@@ -1104,7 +1106,7 @@ int pystream::writeScans(const VexData *V)
 	int nScan;
 	const char *switchOutput[] = {"1A", "1B", "2A", "2B"};
 	double recordSeconds = 0.0;
-    string tab;
+	std::string tab;
 	double endLastScan = 0.0;
 
 	nScan = V->nScan();
@@ -1115,11 +1117,11 @@ int pystream::writeScans(const VexData *V)
 	for(int s = -1; s < nScan; ++s)
 	{
 		const VexScan *scan = (s==-1) ? V->getScan(0) : V->getScan(s);
-		if(s ==  -1)
+		if(s == -1)
 		{
 			*this << "# Setup Scan " << endl;
 		}
-                else
+		else
 		{
 			*this << "# Scan " << s << " = " << scan->defName << endl;
 		}
@@ -1129,12 +1131,14 @@ int pystream::writeScans(const VexData *V)
 		}
 		else
 		{
-            bool record = scan->recordEnable.find(ant)->second;
-            if (ant == "GB")
-            {
-                if (!record)
-                    *this << "# pointing scan for the GBT" << endl;
-            }
+			bool record = scan->recordEnable.find(ant)->second;
+			if(ant == "GB")
+			{
+				if(!record)
+				{
+					*this << "# pointing scan for the GBT" << endl;
+				}
+			}
 			const VexInterval *arange = &scan->stations.find(ant)->second;
 
 			int modeId = V->getModeIdByDefName(scan->modeDefName);
@@ -1161,14 +1165,14 @@ int pystream::writeScans(const VexData *V)
 				{
 					*this << "subarray.setVLBALoIfSetup(loif" << modeId << ")" << endl;
 
-					map<string,unsigned int>::const_iterator ifit;
+					std::map<std::string,unsigned int>::const_iterator ifit;
 					for(ifit = ifIndex[modeId].begin(); ifit != ifIndex[modeId].end(); ++ifit)
 					{
 						if(ifit->first != sw[ifit->second])
 						{
 							sw[ifit->second] = ifit->first;
-                            *this << "subarray.set4x4Switch('" << switchOutput[ifit->second] << "', "
-                                         << switchPosition(ifit->first.c_str()) << ")" << endl;
+							*this << "subarray.set4x4Switch('" << switchOutput[ifit->second] << "', "
+							<< switchPosition(ifit->first.c_str()) << ")" << endl;
 						}
 					}
 					*this << "subarray.setChannels(dbe0, channelSet" << modeId << ")" << endl;
@@ -1205,29 +1209,35 @@ int pystream::writeScans(const VexData *V)
 			if(s != -1)
 			{
 				// check for minimum time between scans as required by legacy system
-				if( loifSetupFirstUse[modeId] ) {
-					if( (arange->mjdStart - endLastScan)*86400.0 < 15.0) {
+				if(loifSetupFirstUse[modeId])
+				{
+					if( (arange->mjdStart - endLastScan)*86400.0 < 15.0)
+					{
 						// move start time
 						deltat1 = floor((endLastScan-mjd0)*86400.0 + 15.0 + 0.5);
 						cerr << "Scan " << scan->defName << " does not have minimum gap to previous scan ("
-							<< (arange->mjdStart - endLastScan)*86400.0 <<  " vs 15). Start time moved!" << endl;
+							<< (arange->mjdStart - endLastScan)*86400.0 << " vs 15). Start time moved!" << endl;
 					}
 					loifSetupFirstUse[modeId] = false;
-				} else {
-					if( (arange->mjdStart - endLastScan)*86400.0 < 5.0) {
+				}
+				else
+				{
+					if( (arange->mjdStart - endLastScan)*86400.0 < 5.0)
+					{
 						// move start time
 						deltat1 = floor((endLastScan-mjd0)*86400.0 + 5.0 + 0.5);
 						cerr << "Scan " << scan->defName << " does not have minimum gap to previous scan ("
-							<< (arange->mjdStart - endLastScan)*86400.0 <<  " vs 5). Start time moved!" << endl;
+							<< (arange->mjdStart - endLastScan)*86400.0 << " vs 5). Start time moved!" << endl;
 					}
 				}
 
 				// recognize scans that do not record to Mark5C, but still set switches (need to pass scan start time)
 				if(scan->nRecordChan(V, ant) == 0 || recorderType == RECORDER_NONE)
 				{
-					if( scriptType != SCRIPT_GBT ) {
-                        *this << "#print 'Not a recording scan but still set switches for " << scan->defName << ".'" << endl;
-                    }
+					if(scriptType != SCRIPT_GBT)
+					{
+						*this << "#print 'Not a recording scan but still set switches for " << scan->defName << ".'" << endl;
+					}
 					*this << "subarray.setSwitches(mjdStart + " << deltat1 << "*second, mjdStart+" << deltat2
 						<< "*second, obsCode+'_'+stnCode+'_'+'" << scan->defName << "')" << endl;
 				}
@@ -1244,13 +1254,13 @@ int pystream::writeScans(const VexData *V)
 
 					exit(EXIT_FAILURE);
 				}
-                                tab = "";
-			        if (ant == "GB" && !record)
-			        {
-				    // code for GBT pointing scan - set source as a 'peak' type
-				    *this << "if isAstrid:" << endl;
-				    tab = "    ";
-				    *this << tab << "source" << sourceId << ".setPeak(True)" << endl;
+				tab = "";
+				if(ant == "GB" && !record)
+				{
+					// code for GBT pointing scan - set source as a 'peak' type
+					*this << "if isAstrid:" << endl;
+					tab = "    ";
+					*this << tab << "source" << sourceId << ".setPeak(True)" << endl;
 				}
 
 				// only start scan if we are at least 10sec away from scan end
@@ -1264,7 +1274,7 @@ int pystream::writeScans(const VexData *V)
 				{
 					// code for GBT pointing scan - reset source as a 'track' type
 					*this << tab << "source" << sourceId << ".setPeak(False)" << endl;
-				    tab = "";
+					tab = "";
 				}
 				lastValid = arange->mjdStop;
 				endLastScan = arange->mjdStop;
@@ -1285,15 +1295,15 @@ int pystream::writeScans(const VexData *V)
 	return n;
 }
 
-void pystream::writeVCI(const VexData *V, int modeIndex, const string &filename)
+void pystream::writeVCI(const VexData *V, int modeIndex, const std::string &filename)
 {
-	string bbNames[2] = {"A0/C0", "B0/D0"};
-	string swbbNames[2] = {"AC8BIT", "BD8BIT"};
+	std::string bbNames[2] = {"A0/C0", "B0/D0"};
+	std::string swbbNames[2] = {"AC8BIT", "BD8BIT"};
 	char timeString[64];
 	int msgId, subarrayId, numIndFreqs;
 	double centreFreq;
 	bool found;
-	string descString, indent, activateString;
+	std::string descString, indent, activateString;
 	ofstream output(filename.c_str(), ios::trunc);
 	struct tm tim;
 	time_t now;
@@ -1323,14 +1333,14 @@ void pystream::writeVCI(const VexData *V, int modeIndex, const string &filename)
 	indent += "    ";
 	output << indent << "<widar:stationInputOutput sid=\"all\">" << endl;
 	indent += "    ";
-        output << indent << "<widar:bbParams sourceType=\"FORM\" sourceId=\"0\" sideband=\"lower\" polarization=\"R\" bbid=\"0\"/>" << endl;
+	output << indent << "<widar:bbParams sourceType=\"FORM\" sourceId=\"0\" sideband=\"lower\" polarization=\"R\" bbid=\"0\"/>" << endl;
 	output << indent << "<widar:bbParams sourceType=\"FORM\" sourceId=\"0\" sideband=\"lower\" polarization=\"L\" bbid=\"2\"/>" << endl;
 	output << indent << "<widar:bbParams sourceType=\"FORM\" sourceId=\"0\" sideband=\"lower\" polarization=\"R\" bbid=\"4\"/>" << endl;
 	output << indent << "<widar:bbParams sourceType=\"FORM\" sourceId=\"0\" sideband=\"lower\" polarization=\"L\" bbid=\"6\"/>" << endl;
 
 	numIndFreqs = 0;
 	double *ifFreqs = new double[setup->ifs.size()];
-	map<string,VexIF>::const_iterator it = setup->ifs.begin();
+	std::map<std::string,VexIF>::const_iterator it = setup->ifs.begin();
 	
 	for(unsigned int i = 0; i < setup->ifs.size(); ++i, ++it)
 	{
@@ -1395,7 +1405,7 @@ void pystream::writeVCI(const VexData *V, int modeIndex, const string &filename)
 	delete [] ifFreqs;
 }
 
-void pystream::setDBEPersonality(const string &filename)
+void pystream::setDBEPersonality(const std::string &filename)
 {
 	dbeFilename = filename;
 

@@ -39,8 +39,6 @@
 
 extern const double RAD2ASEC;
 
-using namespace std;
-
 class VexData;
 
 class VexEvent
@@ -68,12 +66,12 @@ public:
 
 	double mjd;
 	enum EventType eventType;
-	string name;
-	string scan;
+	std::string name;
+	std::string scan;
 
 	VexEvent() : mjd(0.0), eventType(NO_EVENT), name("") {}
-	VexEvent(double m, enum EventType e, const string &a) : mjd(m), eventType(e), name(a), scan("") {}
-	VexEvent(double m, enum EventType e, const string &a, const string &b) : mjd(m), eventType(e), name(a), scan(b) {}
+	VexEvent(double m, enum EventType e, const std::string &a) : mjd(m), eventType(e), name(a), scan("") {}
+	VexEvent(double m, enum EventType e, const std::string &a, const std::string &b) : mjd(m), eventType(e), name(a), scan(b) {}
 };
 
 class VexInterval
@@ -106,40 +104,40 @@ public:
 class VexBasebandFile : public VexInterval
 {
 	public:
-	string filename;
+	std::string filename;
 
-	VexBasebandFile(const string &name, const VexInterval &timeRange) : VexInterval(timeRange), filename(name) {} 
-	VexBasebandFile(const string &name, double start=-1.0e9, double stop=1.0e9) : VexInterval(start, stop), filename(name) {}
+	VexBasebandFile(const std::string &name, const VexInterval &timeRange) : VexInterval(timeRange), filename(name) {} 
+	VexBasebandFile(const std::string &name, double start=-1.0e9, double stop=1.0e9) : VexInterval(start, stop), filename(name) {}
 };
 
 class VexScan : public VexInterval
 {
 public:
-	string defName;			// name of this scan
-	string intent;			// intent of this scan
+	std::string defName;				// name of this scan
+	std::string intent;				// intent of this scan
 
-	string modeDefName;
-	string sourceDefName;	
-	map<string,VexInterval> stations;
-	map<string,bool> recordEnable;	// This is true of the drive number is non-zero
-	string corrSetupName;		// points to CorrSetup entry
-	double size;			// [bytes] approx. correlated size
-	double mjdVex;			// The start time listed in the vex file
+	std::string modeDefName;
+	std::string sourceDefName;	
+	std::map<std::string,VexInterval> stations;
+	std::map<std::string,bool> recordEnable;	// This is true of the drive number is non-zero
+	std::string corrSetupName;			// points to CorrSetup entry
+	double size;					// [bytes] approx. correlated size
+	double mjdVex;					// The start time listed in the vex file
 
 	VexScan(): size(0), mjdVex(0.0) {};
 	unsigned int nAntennasWithRecordedData(const VexData *V) const;
-	unsigned int nRecordChan(const VexData *V, const string &antName) const;
+	unsigned int nRecordChan(const VexData *V, const std::string &antName) const;
 };
 
 class VexSource
 {
 public:
 	VexSource() : calCode(' '), qualifier(0), ra(0.0), dec(0.0) {}
-	bool hasSourceName(const string &name) const;
+	bool hasSourceName(const std::string &name) const;
 
-	string defName;		// in the "def ... ;" line in Vex
+	std::string defName;			// in the "def ... ;" line in Vex
 	
-	vector<string> sourceNames;	// from source_name statements
+	std::vector<std::string> sourceNames;	// from source_name statements
 	char calCode;
 	int qualifier;
 	double ra;		// (rad)
@@ -151,7 +149,7 @@ public:
 class VexSubband		// Mode-specific frequency details for all antennas
 {
 public:
-	VexSubband(double f=0.0, double b=0.0, char s=' ', char p=' ', string name="") : freq(f), bandwidth(b), sideBand(s), pol(p) {}
+	VexSubband(double f=0.0, double b=0.0, char s=' ', char p=' ', std::string name="") : freq(f), bandwidth(b), sideBand(s), pol(p) {}
 
 	double freq;		// (Hz)
 	double bandwidth;	// (Hz)
@@ -170,13 +168,13 @@ public:
 
 	int recordChan;		// channel number on recorded media	(< 0 indicates non-recording)
 	int subbandId;		// 0-based index; -1 means unset
-	string ifName;		// name of the IF this channel came from
+	std::string ifName;	// name of the IF this channel came from
 	double bbcFreq;		// sky frequency tuning of the BBC (Hz)
 	double bbcBandwidth;	// bandwidth (Hz)
 	char bbcSideBand;	// sideband of the BBC
-	string name;
-	string bbcName;		// name given in VEX of this channel in the BBC table
-	vector<int> tones;	// pulse cal tones to extract, directly from PHASE_CAL_DETECT
+	std::string name;
+	std::string bbcName;	// name given in VEX of this channel in the BBC table
+	std::vector<int> tones;	// pulse cal tones to extract, directly from PHASE_CAL_DETECT
 	int threadId;		// thread Id for this channel (assigned based on channel names)
 };
 
@@ -184,17 +182,17 @@ class VexIF
 {
 public:
 	VexIF() : ifSSLO(0.0), ifSideBand(' '), pol(' '), phaseCalIntervalMHz(0) {}
-	string VLBABandName() const;
+	std::string VLBABandName() const;
 	double getLowerEdgeFreq() const;
 
-	string name;
+	std::string name;
 	double ifSSLO;		// SSLO of the IF
 	char ifSideBand;	// U or L
 	char pol;		// R or L
-	int phaseCalIntervalMHz; // MHz, typically 1 or 5 (or 0 if none)
+	int phaseCalIntervalMHz;// MHz, typically 1 or 5 (or 0 if none)
 
-        // special values needed for VLBA, extracted from comment line
-        string comment;
+	// special values needed for VLBA, extracted from comment line
+	std::string comment;
 };
 
 class VexSetup	// Container for all antenna-specific settings
@@ -202,16 +200,16 @@ class VexSetup	// Container for all antenna-specific settings
 public:
 	VexSetup() : sampRate(0.0), nBit(0), nRecordChan(0) {}
 	int phaseCalIntervalMHz() const;
-	const VexIF *getIF(const string &ifName) const;
-	double firstTuningForIF(const string &ifName) const;	// returns Hz
+	const VexIF *getIF(const std::string &ifName) const;
+	double firstTuningForIF(const std::string &ifName) const;	// returns Hz
 
-	map<string,VexIF> ifs;		// Indexed by name in the vex file, such as IF_A
-	vector<VexChannel> channels;
+	std::map<std::string,VexIF> ifs;		// Indexed by name in the vex file, such as IF_A
+	std::vector<VexChannel> channels;
 
 	double sampRate;		// (Hz)
 	unsigned int nBit;
 	unsigned int nRecordChan;	// number of recorded channels
-	string formatName;		// e.g. VLBA, MKIV, Mk5B, VDIF, LBA, K5, ...
+	std::string formatName;		// e.g. VLBA, MKIV, Mk5B, VDIF, LBA, K5, ...
 };
 
 class VexMode
@@ -222,7 +220,7 @@ public:
 	int addSubband(double freq, double bandwidth, char sideband, char pol);
 	int getPols(char *pols) const;
 	int getBits() const;
-	const VexSetup* getSetup(const string &antName) const;
+	const VexSetup* getSetup(const std::string &antName) const;
 	double getLowestSampleRate() const;
 	double getHighestSampleRate() const;
 	double getAverageSampleRate() const;
@@ -230,11 +228,11 @@ public:
 	int getOversampleFactor() const;
 #endif
 
-	string defName;
+	std::string defName;
 
-	vector<VexSubband> subbands;
-	map<string,VexSetup> setups;	// indexed by antenna name
-	list<int> overSamp;		// list of the oversample factors used by this mode
+	std::vector<VexSubband> subbands;
+	std::map<std::string,VexSetup> setups;	// indexed by antenna name
+	std::list<int> overSamp;		// list of the oversample factors used by this mode
 };
 
 class VexClock
@@ -260,16 +258,16 @@ public:
 
 	double getVexClocks(double mjd, double * coeffs) const;
 
-	string name;
-	string defName;		// Sometimes names get changed
+	std::string name;
+	std::string defName;	// Sometimes names get changed
 
 	double x, y, z;		// (m) antenna position
 	double dx, dy, dz;	// (m/sec) antenna velocity
 	double posEpoch;	// mjd
-	string axisType;
+	std::string axisType;
 	double axisOffset;	// (m)
-	vector<VexClock> clocks;
-	vector<VexBasebandFile> basebandFiles;
+	std::vector<VexClock> clocks;
+	std::vector<VexBasebandFile> basebandFiles;
 	enum DataSource	dataSource;
 };
 
@@ -283,7 +281,7 @@ public:
 	double ut1_utc;		// seconds
 	double xPole, yPole;	// radian
 
-	int setkv(const string &key, const string &value);
+	int setkv(const std::string &key, const std::string &value);
 };
 
 class VexExper : public VexInterval
@@ -291,7 +289,7 @@ class VexExper : public VexInterval
 public:
 	VexExper() : VexInterval(0.0, 1000000.0) {}
 
-	string name;
+	std::string name;
 };
 
 class VexJob : public VexInterval
@@ -300,18 +298,18 @@ public:
 	VexJob() : VexInterval(0.0, 1000000.0), jobSeries("Bogus"), jobId(-1), dutyCycle(1.0), dataSize(0.0) {}
 
 	void assignVSNs(const VexData &V);
-	string getVSN(const string &antName) const;
-	bool hasScan(const string &scanName) const;
+	std::string getVSN(const std::string &antName) const;
+	bool hasScan(const std::string &scanName) const;
 	int generateFlagFile(const VexData &V, const char *fileName, unsigned int invalidMask=0xFFFFFFFF) const;
 
 	// return the approximate number of Operations required to compute this scan
 	double calcOps(const VexData *V, int fftSize, bool doPolar) const;
 	double calcSize(const VexData *V) const;
 
-	string jobSeries;
+	std::string jobSeries;
 	int jobId;
-	vector<string> scans;
-	map<string,string> vsns;	// vsn, indexed by antenna name
+	std::vector<std::string> scans;
+	std::map<std::string,std::string> vsns;	// vsn, indexed by antenna name
 	double dutyCycle;		// fraction of job spent in scans
 	double dataSize;		// [bytes] estimate of data output size
 };
@@ -332,26 +330,26 @@ public:
 class VexJobGroup : public VexInterval
 {
 public:
-	vector<string> scans;
-	list<VexEvent> events;
+	std::vector<std::string> scans;
+	std::list<VexEvent> events;
 
-	bool hasScan(const string &scanName) const;
-	void genEvents(const list<VexEvent> &eventList);
-	void createJobs(vector<VexJob> &jobs, VexInterval &jobTimeRange, const VexData *V, double maxLength, double maxSize) const;
+	bool hasScan(const std::string &scanName) const;
+	void genEvents(const std::list<VexEvent> &eventList);
+	void createJobs(std::vector<VexJob> &jobs, VexInterval &jobTimeRange, const VexData *V, double maxLength, double maxSize) const;
 };
 
 class VexData
 {
 private:
 	VexExper exper;
-	vector<VexSource> sources;
-	vector<VexScan> scans;
-	vector<VexMode> modes;
-	vector<VexAntenna> antennas;
-	vector<VexEOP> eops;
+	std::vector<VexSource> sources;
+	std::vector<VexScan> scans;
+	std::vector<VexMode> modes;
+	std::vector<VexAntenna> antennas;
+	std::vector<VexEOP> eops;
 
-	list<VexEvent> events;
-	string directory;
+	std::list<VexEvent> events;
+	std::string directory;
 
 public:
 	int sanityCheck();
@@ -362,7 +360,7 @@ public:
 	VexAntenna *newAntenna();
 	VexEOP *newEOP();
 	void findLeapSeconds();
-	void addBreaks(const vector<double> &breaks);
+	void addBreaks(const std::vector<double> &breaks);
 
 	double obsStart() const
 	{
@@ -374,69 +372,69 @@ public:
 		return events.back().mjd;
 	}
 
-	const string &getDirectory() const { return directory; }
-	void setDirectory(const string &dir) { directory = dir; }
+	const std::string &getDirectory() const { return directory; }
+	void setDirectory(const std::string &dir) { directory = dir; }
 
 	unsigned int nSource() const { return sources.size(); }
-	int getSourceIdByDefName(const string &defName) const;
+	int getSourceIdByDefName(const std::string &defName) const;
 	const VexSource *getSource(unsigned int num) const;
-	const VexSource *getSourceByDefName(const string &defName) const;
-	const VexSource *getSourceBySourceName(const string &name) const;
+	const VexSource *getSourceByDefName(const std::string &defName) const;
+	const VexSource *getSourceBySourceName(const std::string &name) const;
 
 	unsigned int nScan() const { return scans.size(); }
 	const VexScan *getScan(unsigned int num) const;
-	const VexScan *getScanByDefName(const string &defName) const;
+	const VexScan *getScanByDefName(const std::string &defName) const;
 	void setScanSize(unsigned int num, double size);
-	void getScanList(list<string> &scans) const;
+	void getScanList(std::list<std::string> &scans) const;
 
 	unsigned int nAntenna() const { return antennas.size(); }
 	const VexAntenna *getAntenna(unsigned int num) const;
-	const VexAntenna *getAntenna(const string &name) const;
+	const VexAntenna *getAntenna(const std::string &name) const;
 
 	unsigned int nMode() const { return modes.size(); }
-	int getModeIdByDefName(const string &defName) const;
+	int getModeIdByDefName(const std::string &defName) const;
 	const VexMode *getMode(unsigned int num) const;
-	const VexMode *getModeByDefName(const string &defName) const;
+	const VexMode *getModeByDefName(const std::string &defName) const;
 
 	unsigned int nEOP() const { return eops.size(); }
 	const VexEOP *getEOP(unsigned int num) const;
-	const vector<VexEOP> &getEOPs() const { return eops; }
+	const std::vector<VexEOP> &getEOPs() const { return eops; }
 
-	bool usesAntenna(const string &antennaName) const;
-	bool usesMode(const string &modeDefName) const;
+	bool usesAntenna(const std::string &antennaName) const;
+	bool usesMode(const std::string &modeDefName) const;
 
-	unsigned int nVSN(const string &antName) const;
-	void addVSN(const string &antName, const string &vsn, const VexInterval &timeRange);
-	string getVSN(const string &antName, const VexInterval &timeRange) const;
+	unsigned int nVSN(const std::string &antName) const;
+	void addVSN(const std::string &antName, const std::string &vsn, const VexInterval &timeRange);
+	std::string getVSN(const std::string &antName, const VexInterval &timeRange) const;
 
 	unsigned int nEvent() const { return events.size(); }
-	const list<VexEvent> *getEvents() const;
-	void addEvent(double mjd, VexEvent::EventType eventType, const string &name);
-	void addEvent(double mjd, VexEvent::EventType eventType, const string &name, const string &scanName);
+	const std::list<VexEvent> *getEvents() const;
+	void addEvent(double mjd, VexEvent::EventType eventType, const std::string &name);
+	void addEvent(double mjd, VexEvent::EventType eventType, const std::string &name, const std::string &scanName);
 	void sortEvents();
 
 	const VexExper *getExper() const { return &exper; }
-	void setExper(const string &name, const VexInterval &experTimeRange);
+	void setExper(const std::string &name, const VexInterval &experTimeRange);
 };
 
 bool operator < (const VexEvent &a, const VexEvent &b);
-ostream& operator << (ostream &os, const VexInterval &x);
-ostream& operator << (ostream &os, const VexSource &x);
-ostream& operator << (ostream &os, const VexScan &x);
-ostream& operator << (ostream &os, const VexAntenna &x);
-ostream& operator << (ostream &os, const VexSubband &x);
-ostream& operator << (ostream &os, const VexChannel &x);
-ostream& operator << (ostream &os, const VexIF &x);
-ostream& operator << (ostream &os, const VexSetup &x);
-ostream& operator << (ostream &os, const VexMode &x);
-ostream& operator << (ostream &os, const VexEOP &x);
-ostream& operator << (ostream &os, const VexBasebandFile &x);
-ostream& operator << (ostream &os, const VexClock &x);
-ostream& operator << (ostream &os, const VexJob &x);
-ostream& operator << (ostream &os, const VexJobGroup &x);
-ostream& operator << (ostream &os, const VexEvent &x);
-ostream& operator << (ostream &os, const VexJobFlag &x);
-ostream& operator << (ostream &os, const VexData &x);
+std::ostream& operator << (std::ostream &os, const VexInterval &x);
+std::ostream& operator << (std::ostream &os, const VexSource &x);
+std::ostream& operator << (std::ostream &os, const VexScan &x);
+std::ostream& operator << (std::ostream &os, const VexAntenna &x);
+std::ostream& operator << (std::ostream &os, const VexSubband &x);
+std::ostream& operator << (std::ostream &os, const VexChannel &x);
+std::ostream& operator << (std::ostream &os, const VexIF &x);
+std::ostream& operator << (std::ostream &os, const VexSetup &x);
+std::ostream& operator << (std::ostream &os, const VexMode &x);
+std::ostream& operator << (std::ostream &os, const VexEOP &x);
+std::ostream& operator << (std::ostream &os, const VexBasebandFile &x);
+std::ostream& operator << (std::ostream &os, const VexClock &x);
+std::ostream& operator << (std::ostream &os, const VexJob &x);
+std::ostream& operator << (std::ostream &os, const VexJobGroup &x);
+std::ostream& operator << (std::ostream &os, const VexEvent &x);
+std::ostream& operator << (std::ostream &os, const VexJobFlag &x);
+std::ostream& operator << (std::ostream &os, const VexData &x);
 bool operator == (const VexSubband &s1, const VexSubband &s2);
 
 #endif

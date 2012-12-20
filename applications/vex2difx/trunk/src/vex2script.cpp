@@ -34,6 +34,8 @@
 #include "corrparams.h"
 #include "vexload.h"
 
+using namespace std;
+
 const string program("vex2script");
 const string version("0.6");
 const string verdate("20120517");
@@ -49,8 +51,8 @@ static void usage(int argc, char **argv)
 	cout << "The first argument must be the name of a valid vex file." << endl;
 	cout << endl;
 	cout << "The optional arguments can be:" << endl;
-        cout << "  --phasingsources=source1,source2... (for EVLA)" << endl;
-        cout << "  --dbepersonality=[path/]filename (for VLBA)" << endl;
+	cout << "  --phasingsources=source1,source2... (for EVLA)" << endl;
+	cout << "  --dbepersonality=[path/]filename (for VLBA)" << endl;
 	cout << "  --mark5a  Set up DBE as PFB, but don't record" << endl;
 	cout << endl;
 }
@@ -133,7 +135,7 @@ int main(int argc, char **argv)
 			}
 			py.addPhasingSource(string(argv[count]+lastchar));
 		}
-                else if(strncmp(argv[count], "--dbepersonality=", 17) == 0)
+		else if(strncmp(argv[count], "--dbepersonality=", 17) == 0)
 		{
 			atchar = 17;
 			lastchar = 17;
@@ -142,14 +144,14 @@ int main(int argc, char **argv)
 				++atchar;
 			}
 			py.setDBEPersonality(string(argv[count]+lastchar));
-                }
+		}
 		else if(strcasecmp(argv[count], "--mark5A") == 0)
 		{
 			py.setMark5A(true);
 			py.setDBEPersonalityType(pystream::RDBE_PFB);
 			py.setRecorderType(pystream::RECORDER_NONE);
 		}
-                else
+		else
 		{
 			cout << "Ignoring argument " << argv[count] << endl;
 		}

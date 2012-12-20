@@ -10,6 +10,7 @@ Version 2.2.0
 * Verify all or none of the ephemeris parameters are provided
 * c++11 compliance
 * Don't allow subintNS greater than about 1 second (to ward off MODE errors)
+* Remove "using namespace std" from .h files; goal is to remove them from .cpp files in time
 
 Version 2.1.0
 ~~~~~~~~~~~~~
