@@ -102,7 +102,7 @@ struct mark5_stream *openmk5(const char *filename, const char *formatname, long 
                         fprintf(stderr, "problem opening %s\n", filename);
                         break;
                 }
-                if (0 == (ms->samprate % 1000) && ms->samprate>0)
+                if(0 == (ms->samprate % 1000) && ms->samprate>0)
                 {
                         break;
                 }
@@ -117,9 +117,9 @@ int verify(const char *filename, const char *formatname, int refMJD)
 {
 	struct mark5_stream *ms;
 	int i;
-	int  status = 0;
+	int status = 0, corrupt = 0;
 	int mjd, sec;
-        double ns, startmjd, stopmjd=0.0, eofmjd=0.0;
+        double ns, startmjd, stopmjd = 0.0, eofmjd = 0.0;
 	long validoffset = 0;
 
 	// open with seeking to first valid-looking frame pair
@@ -137,6 +137,7 @@ int verify(const char *filename, const char *formatname, int refMJD)
 
 	mark5_stream_get_frame_time(ms, &mjd, &sec, &ns);
 	startmjd = mjd + (sec + ns/1e9) / 86400.0;
+	stopmjd = startmjd;
 	DEFAULT_EOF_READLEN = ms->datawindowsize;
 
 	FILE *fp = fopen(filename, "rb");
@@ -168,20 +169,44 @@ int verify(const char *filename, const char *formatname, int refMJD)
 		{
 			break;
 		}
+
+		if(ms->nvalidatefail > 1024)
+		{
+			fprintf(stderr, "Warning: too many frame validation failures sequentially scanning file %s\n", filename);
+			corrupt = 1;
+			break;
+		}
+
 		if(i%1 == 0)
 		{
 			int mjd, sec;
 			double ns;
-			mark5_stream_get_frame_time(ms, &mjd, &sec, &ns);
-			stopmjd = mjd + (sec + ns/1e9) / 86400.0;
 
+			mark5_stream_get_frame_time(ms, &mjd, &sec, &ns);
+
+			if((mjd - (int)stopmjd) >= 2 || (mjd < (int)stopmjd))
+			{
+#ifdef DEBUG
+				int gday = (int)stopmjd;
+				double gsec = (stopmjd - (double)gday) * 24.0*3600.0;
+
+				fprintf(stderr, "Jump in MJD day (%d/%.4fs (mjd=%.6f) -> %d/%.4fs), "
+						"trying to resync\n", 
+						gday, gsec, stopmjd, mjd, sec+ns*1e-9);
+#endif
+
+				status = mark5_stream_resync(ms);
+				corrupt = 1;
+
+				continue;
+			}
+			else
+			{
+				stopmjd = mjd + (sec + ns/1e9) / 86400.0;
+			}
 		}
 
-		status = mark5_stream_next_frame(ms); // FIXME
-
-		// FIMXE: mark5access does not check Mark4, Mark5B syncwords
-		// If sync is lost there is no public function to recover sync like findfirstframe()
-		// Could set stopmjd = last MJD before ms->nvalidatefail!=0 but this can loose a large part of scan
+		status = mark5_stream_next_frame(ms);
 
 	}
 
@@ -205,27 +230,39 @@ int verify(const char *filename, const char *formatname, int refMJD)
 
 	delete_mark5_stream(ms);
 
-	// fprintf (stderr, "%s %lf %lf %lf\n", filename, startmjd, stopmjd, eofmjd);
+#ifdef DEBUG
+	fprintf(stderr, "Timing: MJD start=%lf stop=%lf eof=%lf in %s\n", startmjd, stopmjd, eofmjd, filename);
+#endif
 
-	// choose most plausible ending time in presence of frame decode errors
-	if (!is_reasonable_timediff(stopmjd, eofmjd) && !is_reasonable_timediff(eofmjd, stopmjd))
-	{
-		if (is_reasonable_timediff(startmjd, eofmjd))
-		{
-			fprintf(stderr, "Stop vs. EOF MJD mismatch! Using best looking EOF MJD for %s\n", filename);
-			stopmjd = eofmjd;
-		}
-	}
+	// choose most plausible scan data stop time in presence of frame or sync errors
 
-	if (is_reasonable_timediff(startmjd, stopmjd))
+	// both Stop and EOF MJD corrupt?
+	if(!is_reasonable_timediff(startmjd, stopmjd) && !is_reasonable_timediff(startmjd, eofmjd))
 	{
-		fprintf (stdout, "%s %lf %lf\n", filename, startmjd, stopmjd);
+		stopmjd = startmjd;
+		corrupt = 1;
 	}
+	// both Stop and EOF MJD look good?
+	else if(is_reasonable_timediff(startmjd, stopmjd) && is_reasonable_timediff(startmjd, eofmjd))
+	{
+		stopmjd = fmax(stopmjd, eofmjd);
+	}
+	// either Stop or EOF MJD is corrupt
 	else
 	{
-		// start MJD or both stop MJD cancidates are corrupt, output _something_
-		fprintf (stdout, "%s %lf %lf\n", filename, startmjd, startmjd);
+		if(is_reasonable_timediff(startmjd,eofmjd))
+		{
+			stopmjd = eofmjd;
+		}
+		corrupt = 1;
 	}
+
+	if(corrupt)
+	{
+		fprintf(stderr, "Warning: found corrupt data frames in file %s\n", filename);
+	}
+
+	fprintf(stdout, "%s %lf %lf\n", filename, startmjd, stopmjd);
 
 	return 0;
 }

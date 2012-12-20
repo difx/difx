@@ -78,8 +78,10 @@ int verify(const char *filename, const char *formatname, long long offset, int r
 {
 	struct mark5_stream *ms;
 	float **data;
-	int i, status, osec = 0;
+	int i, status;
 	long long total, unpacked, nvalidatepass = 0, nvalidatefail = 0;
+	int osec = 0, omjd = 0;
+	double ons = 0.0;
 
 	total = unpacked = 0;
 
@@ -126,20 +128,44 @@ int verify(const char *filename, const char *formatname, long long offset, int r
 		{
 			int mjd, sec;
 			double ns;
+
 			mark5_stream_get_frame_time(ms, &mjd, &sec, &ns);
-                        if (report_interval == 0) {
-				printf("frame_num=%lld mjd=%d sec=%d ns=%011.1f n_valid=%d n_invalid=%d\n",
+
+			if (omjd <= 0) 
+			{
+				omjd = mjd;
+				osec = sec;
+				ons = ns;
+			}
+
+			if ((mjd - omjd) >= 2 || (mjd < omjd))
+			{
+				printf("Jump in MJD day (%d/%d.xxxxs -> %d/%.4fs), trying to resync\n", omjd, osec, mjd, sec+ns*1e-9);
+
+				mark5_stream_resync(ms);
+
+				continue;
+			}
+
+                        if (report_interval == 0)
+			{
+				printf("frame_num=%lld mjd=%d sec=%d ns=%011.1f n_valid=%d n_invalid=%d %Lu\n",
 					ms->framenum, mjd, sec, ns,
-					ms->nvalidatepass, ms->nvalidatefail);
-                        } else {
-				if (sec != osec) {
+					ms->nvalidatepass, ms->nvalidatefail, offset);
+                        } 
+			else 
+			{
+				if (sec != osec) 
+				{
 					printf("frame_num=%lld mjd=%d sec=%d ns=%011.1f n_valid=%d n_invalid=%d total=%Lu unp=%Lu\n",
 						ms->framenum, mjd, sec, ns,
 						nvalidatepass, nvalidatefail, total, unpacked);
 					nvalidatepass = 0;
 					nvalidatefail = 0;
 					osec = sec;
-				} else {
+				} 
+				else 
+				{
 					nvalidatepass += ms->nvalidatepass;
 					nvalidatefail += ms->nvalidatefail;
 				}
