@@ -32,9 +32,9 @@
 
 
 program = 'checkdir'
-version = '0.6'
+version = '0.7'
 author  = 'Walter Brisken'
-verdate = '20110812'
+verdate = '20121220'
 
 from sys import exit, argv
 from os.path import isfile, isdir
@@ -209,7 +209,8 @@ class Scan:
 				return "VLBA format with illegal bytes per frame (%d)" % self.bytesPerFrame
 			if not self.framesPerSec in [25, 50, 100,200,400,800,1600,3200,6400,12800,25600]:
 				return "MKIV format with illegal frames per second (%d)" % self.framesPerSec
-
+		elif self.format == 3:
+			pass
 		else:
 			return "Unknown format (%d)" % self.format
 
