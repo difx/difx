@@ -7,10 +7,6 @@ package edu.nrao.difx.difxview;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 
-/**
- *
- * @author jspitzak
- */
 public class VersionWindow extends JFrame {
     
     public VersionWindow() {
@@ -24,6 +20,6 @@ public class VersionWindow extends JFrame {
     
     public static String version() { return _version; }
     
-    protected static String _version = "0.8";
+    protected static String _version = "1.01";
     
 }

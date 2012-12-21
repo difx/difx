@@ -174,6 +174,9 @@ public class SystemSettings extends JFrame {
         //  specified.
         _fileChooser = new JFileChooser();
         
+        //  Lots of components need this created first!
+         _guiDocPath = new JFormattedTextField();
+         
         //  Build a user interface for all settings items and load with default
         //  values.
         _this = this;
@@ -327,10 +330,11 @@ public class SystemSettings extends JFrame {
         _maxTransferPorts = new NumberBox();
         _maxTransferPorts.minimum( 1 );
         _maxTransferPorts.setHorizontalAlignment( NumberBox.LEFT );
-        _maxTransferPorts.setToolTipText( "Maximum number of ports that may be opened simultaneously\n"
+        _maxTransferPorts.toolTip( "Maximum number of ports that may be opened simultaneously\n"
                 + "for transfer operations.  Transfer port numbers start at the \n"
                 + "\"Transfer Port\" value and increment this many times.\n"
-                + "Don't change this value while transfers are in progress!!" );
+                + "<<bold>><<italic>>Don't change this value while transfers are in progress!!<</italic>><</bold>>\n\n"
+                + "See <<link=/settings_content.html#TRANSFER_PORTS>><<blue>><<underline>>Transfer Port and Max Open Ports<</underline>><</color>><</link>> for details.", _guiDocPath );
         _maxTransferPorts.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
                 maxTransferPorts();
@@ -893,7 +897,7 @@ public class SystemSettings extends JFrame {
         guiDocPathLabel.setBounds( 10, 25, 100, 25 );
         guiDocPathLabel.setHorizontalAlignment( JLabel.RIGHT );
         guiDocPathLabel.setToolTipText( "Directory (or web address) containing all GUI documentation." );
-        _guiDocPath = new JFormattedTextField();
+//        _guiDocPath = new JFormattedTextField();
         _guiDocPath.setFocusLostBehavior( JFormattedTextField.COMMIT );
         _guiDocPath.setToolTipText( "Directory (or web address) containing all GUI documentation." );
         _addressesPanel.add( guiDocPathLabel );
@@ -2005,6 +2009,7 @@ public class SystemSettings extends JFrame {
     public void headNode( String newVal ) { _headNode.setText( newVal ); }
     
     public String guiDocPath() { return _guiDocPath.getText().substring( 7 ); }
+    public String guiBrowsePath() { return _guiDocPath.getText(); }
     
     public int phaseCalInt() { return _defaultNames.phaseCalInt; }
     public void phaseCalInt( int newVal ) { _defaultNames.phaseCalInt = newVal; }

@@ -30,14 +30,38 @@ h4 { color: #006699;
      margin-top 0; }   
 h5 { color: #006699; 
      font-size: 110%;
-     margin-bottom: 1em;
+     margin-bottom: .5em;
      margin-top 0; }   
 h6 { color: #006699; 
      font-size: 100%;
      margin-bottom: .5em; 
      margin-top: 0; }
+h7 { color: #006699; 
+     font-size: 120%;
+     margin-bottom: .5em; 
+     margin-top: 0; }
+h8 { color: #006699; 
+     font-size: 110%;
+     margin-bottom: .5em; 
+     margin-top: 0; }
 pre { color: #993333; 
      font-family: monospace; }
+b3 { color: #006699; 
+     font-size: 130%;
+	 font-family: Verdana-bold, sans-serif;
+}   
+b4 { color: #006699; 
+     font-size: 120%;
+     font-family: Verdana-bold, sans-serif;
+}   
+b5 { color: #006699; 
+     font-size: 110%;
+     font-family: Verdana-bold, sans-serif;
+}   
+b6 { color: #006699; 
+     font-size: 100%;
+     font-family: Verdana-bold, sans-serif;
+}   
      
 .collapsibleList li{
   list-style-image:url('button.png');
@@ -53,4 +77,8 @@ li.collapsibleListClosed{
   list-style-image:url('triangleright_10x10_large.png');
   cursor:pointer;
 }
+
+.hide { display:inline; }
+.show { display:none; background-color: #f5f5f5; }
+.showWhite { display:none; }
 

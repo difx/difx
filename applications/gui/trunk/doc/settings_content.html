@@ -93,6 +93,7 @@
 
 
 
+
           Multicast Messages</a> section below).&nbsp; This
         configuration is used when the GUI is running outside the DiFX
         LAN, such that the multicast messages cannot be received
@@ -124,6 +125,7 @@
     <div style="text-align: center;"><img style=" width: 902px; height:
         243px;" alt="" src="images/settings/DifxControlConnection.png"><br>
     </div>
+    <br>
     The DiFX Control Connection setting determine how commands are sent
     to DiFX.&nbsp; Processing and data nodes should all be running <span
       style="font-style: italic;">mk5daemon</span> to send and receive
@@ -184,20 +186,30 @@
     This is the broadcast port for control communications.&nbsp;
     Normally it is the same as the Port setting under Broadcast Network
     (default is currently 50200).<br>
-    <h5>Transfer Port</h5>
-    <p>The Transfer Port determines the port numbers that will be used
-      to transmit data from <i>guiServer</i> to the GUI.&nbsp; The GUI
-      often has cause to request sets of data from the <i>guiServer</i>
-      - the contents of files, directory listings, etc. - that are then
-      transmitted using quick TCP connections that are opened as
-      necessary and closed when no longer needed.&nbsp; Whenever such a
-      request is made it is accompanied by a unique port number that is
-      then used by <i>guiServer</i> for the data transfer.&nbsp; The
-      Transfer Port number specified here is a "base" number that is
-      used to form the unique port numbers (for the most part they
-      simply increment as needed).&nbsp; The user probably doesn't need
-      to worry about this number much, except to make sure there are no
-      port restrictions near it.<br>
+    <h5><a name="TRANSFER_PORTS"></a>Transfer Port and Max Open Ports<br>
+    </h5>
+    <p>The <b>Transfer Port</b>&nbsp; and <b>Max Open Ports</b>
+      determine the port numbers that will be used to transmit data from
+      <i>guiServer</i> to the GUI.&nbsp; The GUI often has cause to
+      request sets of data from the <i>guiServer</i> - the contents of
+      files, directory listings, etc. - that are then transmitted using
+      quick TCP connections that are opened as necessary and closed when
+      no longer needed.&nbsp; Whenever such a request is made it is
+      accompanied by a unique port number that is then used by <i>guiServer</i>
+      for the data transfer.&nbsp; The Transfer Port number specified
+      here is a "base" number that is used to form the unique port
+      numbers - port numbers increment from this base up to Max Open
+      Ports, and then recycle at the Transfer Port number.&nbsp; Locking
+      mechanisms assure that port numbers aren't reused until they have
+      been closed.&nbsp; <br>
+    </p>
+    <p>The user probably doesn't need to worry about these numbers much,
+      except to make sure there are no port restrictions that apply to
+      the range defined.&nbsp; If file transfers appear to be slow
+      (pop-up monitors of file transfers will let you know this) it is
+      possible that increasing Max Open Ports will help you, although it
+      is critical that Max Open Ports <i>not be changed when any ports
+        are in use</i>.<br>
     </p>
     <h5>Monitor Host and Port</h5>
     <p>The Monitor Host and Port are used to specify the connection to
@@ -271,6 +283,7 @@
     that should be running on each node in the DiFX cluster.&nbsp; This
     same multicast system is used by the user interface (either through
     <i>guiServer</i> or directly) <span style="font-style: italic;"></span>to
+
 
 
     communicate with <span style="font-style: italic;">mk5daemon</span>
@@ -518,6 +531,7 @@
 
 
 
+
       the Database Configuration</h2>
     A number of things can go wrong when trying to access the DiFX
     database remotely.&nbsp; The Database Configuration panel contains a
@@ -619,6 +633,7 @@
 
 
 
+
     Then remote log into that host and see if the mySQL server is
     runing:<br>
     <ul style="margin-left: 40px;">
@@ -677,6 +692,7 @@
     <br>
     <br>
     <h6> <span style="font-weight: bold; font-family: monospace;">&nbsp;&nbsp;&nbsp;
+
 
 
 

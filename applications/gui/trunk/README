@@ -1,4 +1,4 @@
-For the GUI to work properly, but it and the guiServer should be running.
+For the GUI to work properly it and the guiServer should be running.
 The guiServer executable should be running on your "head node".  It does
 NOT need to run as root (in fact, for security reasons, it SHOULD NOT).  It
 is started with an (optional) TCP communications port number as an argument:

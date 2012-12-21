@@ -30,6 +30,7 @@ import javax.swing.event.CaretEvent;
 import java.awt.Graphics;
 import java.awt.Container;
 import java.awt.Dimension;
+import java.awt.Point;
 
 import java.lang.String;
 
@@ -41,7 +42,7 @@ import javax.swing.text.TextAction;
 
 import javax.swing.event.EventListenerList;
 
-public class NumberBox extends JFormattedTextField implements MouseListener, 
+public class NumberBox extends FormattedTextField implements MouseListener, 
         MouseMotionListener, MouseWheelListener {
     
     public NumberBox() {
@@ -84,11 +85,17 @@ public class NumberBox extends JFormattedTextField implements MouseListener,
         this.setKeymap( km );
     }
 
-    public JToolTip createToolTip() {
-        ComplexToolTip tip = new ComplexToolTip();
-        tip.setComponent( this );
-        return tip;
-    }
+//    ComplexToolTip _tip;
+//    public ComplexToolTip toolTip() { return _tip; }
+//    public JToolTip createToolTip() {
+//        _tip = new ComplexToolTip();
+//        _tip.setComponent( this );
+//        return _tip;
+//    }
+//    public Point getToolTipLocation( MouseEvent e) {
+//        return new Point( 10, getHeight() );
+//    }
+//    
 
     /*
      * Set the value.  This will change the display.

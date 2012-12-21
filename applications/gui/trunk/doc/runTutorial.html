@@ -1,0 +1,201 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+  <head>
+    <meta content="text/html; charset=ISO-8859-1"
+      http-equiv="Content-Type">
+    <title>How To Run DiFX Using the DiFX GUI</title>
+    <link type="text/css" rel="stylesheet" href="style.css">
+<script language="JavaScript">
+<!--
+var isNav4, isNav6, isIE4;
+function setBrowser()
+{
+    if (navigator.appVersion.charAt(0) == "4")
+    {
+        if (navigator.appName.indexOf("Explorer") >= 0)
+        {
+            isIE4 = true;
+        }
+        else
+        {
+            isNav4 = true;
+        }
+    }
+    else if (navigator.appVersion.charAt(0) > "4")
+    {
+        isNav6 = true;
+    }
+}
+function setIdProperty( id, property, value )
+{
+    if (isNav6)
+    {
+        var styleObject = document.getElementById( id );
+        if (styleObject != null)
+        {
+            styleObject = styleObject.style;
+            styleObject[ property ] = value;
+        }
+    }
+    else if (isNav4)
+    {
+        document[id][property] = value;
+    }
+    else if (isIE4)
+    {
+         document.all[id].style[property] = value;
+    }
+}
+function swap( divNum, expanding )
+{
+    if (expanding)
+    {
+        setIdProperty("h" + divNum, "display", "none");
+        setIdProperty("s" + divNum, "display", "inline");
+    }
+    else
+    {
+        setIdProperty("s" + divNum, "display", "none");
+        setIdProperty("h" + divNum, "display", "inline");
+    }
+}
+setBrowser();
+// -->
+</script>
+</head>
+<body>
+
+<h1>How To Run DiFX Using the DiFX GUI</h1>
+    
+This document contains an end-to-end description of how the DiFX user interface can be used
+to run DiFX jobs.  All steps in the process are outlined sequentially.  Because the GUI has
+many options that can cause branching paths in step-by-step instructions, this document is
+organized with expanding/collapsing sections that can be viewed by the user, or not, based
+on whether they apply to their particular situation.  The hope is that the document, while
+rather unwieldy in its entirety, will be readably concise when altered for the specific
+interests of the user.
+
+<p>This document is <i>not</i> a comprehensive tutorial on all of the functionality of DiFX
+itself, as that functionality is documented elsewhere by others far more qualified to do so.
+
+<h5>Starting the GUI and Connecting to DiFX</h5>
+<span id="h1" class="hide"><a href="javascript:swap(1, true)"><img src="triangleright_10x10_large.png" alt="+"></a>
+</span>
+<span id="s1" class="showWhite"><a href="javascript:swap(1,false)"><img src="triangledown_10x10_large.png" alt="-"></a>
+Starting the GUI and setting up a connection such that it can control DiFX is a multi-stage process.
+Some components of DiFX should be running for the GUI to properly communicate with it.
+
+<ul type="none">
+
+<li>
+<span id="h1.1" class="hide"><a href="javascript:swap(1.1, true)"><img src="triangleright_10x10_large.png" alt="+"></a>
+<b6>Assure Necessary DiFX Components Are Running</b6><br><br>
+</span>
+<span id="s1.1" class="showWhite"><a href="javascript:swap(1.1,false)"><img src="triangledown_10x10_large.png" alt="-"></a>
+<b6>Assure Necessary DiFX Components Are Running</b6><br>
+The actual processing components of DiFX are started on the fly as they are needed, however
+a properly configured DiFX installation will have some light-impact processes that are running
+constantly.  Specifically important for the GUI, the <i>mk5daemon</i> process should be running on
+all DiFX hardware components (processors, MK5 units, etc.).
+
+<p>It is possible to run DiFX using the GUI with <i>mk5daemon</i> absent on some or all
+components, but this is not a subject covered here.
+
+<p><center><img src="images/database/configmenu.png"></center>
+
+<br><br>
+</span>
+
+<li>
+<span id="h1.2" class="hide"><a href="javascript:swap(1.2, true)"><img src="triangleright_10x10_large.png" alt="+"></a>
+<b6>Starting the guiServer Process</b6><br><br>
+</span>
+<span id="s1.2" class="showWhite"><a href="javascript:swap(1.2,false)"><img src="triangledown_10x10_large.png" alt="-"></a>
+<b6>Starting the guiServer Process</b6><br>
+The actual processing components of DiFX are started on the fly as they are needed, however
+a properly configured DiFX installation will have some light-impact processes that are running
+constantly.  Specifically important for the GUI, the <i>mk5daemon</i> process should be running on
+all DiFX hardware components (processors, MK5 units, etc.).
+
+<p>It is possible to run DiFX using the GUI with <i>mk5daemon</i> absent on some or all
+components, but this is not a subject covered here.<br><br>
+</span>
+
+<li>
+<b6>Starting the DiFX GUI</b6><br>
+
+<li>
+<b6>Resolving Connection and Security Issues</b6><br>
+
+</ul>
+</span></span>
+
+<h5>The Components of the DiFX GUI</h5>
+<span id="h2" class="hide"><a href="javascript:swap(2, true)"><img src="triangleright_10x10_large.png" alt="+"></a>
+</span>
+<span id="s2" class="showWhite"><a href="javascript:swap(2,false)"><img src="triangledown_10x10_large.png" alt="-"></a>
+This is a whole bunch of text that would be hidden, normally.
+</span>
+
+<h5>Adding an Experiment to the Queue Browser</h5>
+DiFX jobs are run using entries in the Queue Browser window.  If you don't have the job you
+want to run in the window there are a variety of ways of putting them there.
+<span id="h3" class="hide"><a href="javascript:swap(3, true)"><br><img src="triangleright_10x10_large.png" alt="+"></a>
+</span>
+<span id="s3" class="showWhite"><a href="javascript:swap(3,false)"><img src="triangledown_10x10_large.png" alt="-"></a>
+<ul type="none">
+
+<li>
+<span id="h3.4" class="hide"><a href="javascript:swap(3.4, true)"><img src="triangleright_10x10_large.png" alt="+"></a>
+<b6>Understanding the Contents of the Queue Browser</b6><br><br>
+</span>
+<span id="s3.4" class="showWhite"><a href="javascript:swap(3.4,false)"><img src="triangledown_10x10_large.png" alt="-"></a>
+<b6>Understanding the Contents of the Queue Browser</b6><br>
+<p>The Queue Browser organizes DiFX jobs under a three-level hierarchy with "Experiments" at the top
+level.
+<ul>
+<li>An <b>Experiment</b> is usually bound to a single data set (one or more scans) collected over 
+a specific time span - the results of a single observing session for instance.  
+It can contain any number of
+"Passes" (including zero)
+<li>A <b>Pass</b> is used to contain the analysis of a subset of the data.  Often
+Experiments contain a "Clock Pass" run on a few scans to generate the time delays for each
+involved antenna, and a "Production Pass" run on all scans with those time delays in place.
+<li>Within each Pass is a series of <b>"Jobs"</b>, each controlling the processing of at least one
+scan.  DiFX is run on one Job at a time.
+</ul>
+<br><br>
+
+</span>
+
+<li>
+<span id="h3.1" class="hide"><a href="javascript:swap(3.1, true)"><img src="triangleright_10x10_large.png" alt="+"></a>
+<b6>Creating a New Experiment</b6><br><br>
+</span>
+<span id="s3.1" class="showWhite"><a href="javascript:swap(3.1,false)"><img src="triangledown_10x10_large.png" alt="-"></a>
+<b6>Creating a New Experiment</b6><br>
+</span>
+
+<li>
+<span id="h3.2" class="hide"><a href="javascript:swap(3.2, true)"><img src="triangleright_10x10_large.png" alt="+"></a>
+<b6>Reading Existing Experiments From Disk</b6><br><br>
+</span>
+<span id="s3.2" class="showWhite"><a href="javascript:swap(3.2,false)"><img src="triangledown_10x10_large.png" alt="-"></a>
+<b6>Reading Existing Experiments From Disk</b6><br>
+</span>
+
+<li>
+<span id="h3.3" class="hide"><a href="javascript:swap(3.3, true)"><img src="triangleright_10x10_large.png" alt="+"></a>
+<b6>Obtaining Experiments From a Database</b6><br><br>
+</span>
+<span id="s3.3" class="showWhite"><a href="javascript:swap(3.3,false)"><img src="triangledown_10x10_large.png" alt="-"></a>
+<b6>Obtaining Experiments From a Database</b6><br>
+</span>
+
+</ul>
+
+</span>
+
+
+</body>
+</html>

@@ -16,20 +16,28 @@ import javax.swing.event.CaretListener;
 import javax.swing.event.CaretEvent;
 
 import java.awt.event.ActionEvent;
+import java.awt.event.MouseEvent;
+import java.awt.Point;
 import javax.swing.JToolTip;
 
-public class SaneTextField extends JFormattedTextField {
+public class SaneTextField extends FormattedTextField {
     
     public SaneTextField() {
         super();
         this.setFocusLostBehavior( JFormattedTextField.COMMIT );
     }
     
-    public JToolTip createToolTip() {
-        ComplexToolTip tip = new ComplexToolTip();
-        tip.setComponent( this );
-        return tip;
-    }
+//    ComplexToolTip _tip;
+//    public ComplexToolTip toolTip() { return _tip; }
+//    public JToolTip createToolTip() {
+//        _tip = new ComplexToolTip();
+//        _tip.setComponent( this );
+//        return _tip;
+//    }
+//    public Point getToolTipLocation( MouseEvent e) {
+//        return new Point( 10, getHeight() );
+//    }
+    
 
     /*
      * Set the allowed text width to a given number of characters.
