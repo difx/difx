@@ -34,8 +34,6 @@
 #include <cmath>
 #include "vextables.h"
 
-using namespace std;
-
 const double RAD2ASEC=180.0*3600.0/M_PI;
 
 // Note: the ordering here is crucial!
@@ -83,7 +81,7 @@ bool operator<(const VexEvent &a, const VexEvent &b)
 // returns a negative number if no overlap
 double VexInterval::overlap(const VexInterval &v) const
 {
-	return min(mjdStop, v.mjdStop) - max(mjdStart, v.mjdStart);
+	return std::min(mjdStop, v.mjdStop) - std::max(mjdStart, v.mjdStart);
 }
 
 void VexInterval::logicalAnd(double start, double stop)
@@ -163,7 +161,7 @@ void VexChannel::selectTones(int toneIntervalMHz, enum ToneSelection selection, 
 
 	if(selection == ToneSelectionVex)
 	{
-		vector<int>::iterator it;
+		std::vector<int>::iterator it;
 
 		// Here what we do is turn negative tone indices (i.e., counting from end of band) to positive ones
 		for(it = tones.begin(); it != tones.end(); ++it)
@@ -265,7 +263,7 @@ void VexChannel::selectTones(int toneIntervalMHz, enum ToneSelection selection, 
 		}
 		break;
 	default:
-		cerr << "Error: selectTones: unexpected value of selection: " << selection << endl;
+		std::cerr << "Error: selectTones: unexpected value of selection: " << selection << std::endl;
 		
 		exit(EXIT_FAILURE);
 	}
@@ -275,7 +273,7 @@ int VexMode::addSubband(double freq, double bandwidth, char sideband, char pol)
 {
 	VexSubband S(freq, bandwidth, sideband, pol);
 
-	for(vector<VexSubband>::const_iterator it = subbands.begin(); it != subbands.end(); ++it)
+	for(std::vector<VexSubband>::const_iterator it = subbands.begin(); it != subbands.end(); ++it)
 	{
 		if(S == *it)
 		{
@@ -299,7 +297,7 @@ int VexMode::getPols(char *pols) const
 {
 	int n=0;
 	bool L=false, R=false, X=false, Y=false;
-	vector<VexSubband>::const_iterator it;
+	std::vector<VexSubband>::const_iterator it;
 
 	for(it = subbands.begin(); it != subbands.end(); ++it)
 	{
@@ -321,7 +319,7 @@ int VexMode::getPols(char *pols) const
 		}
 		else
 		{
-			cerr << "Error: VexMode::getPols: subband with illegal polarization (" << it->pol << ") encountered." << endl;
+			std::cerr << "Error: VexMode::getPols: subband with illegal polarization (" << it->pol << ") encountered." << std::endl;
 			
 			exit(EXIT_FAILURE);
 		}
@@ -363,7 +361,7 @@ int VexMode::getBits() const
 {
 	static int firstTime = 1;
 	unsigned int nBit = setups.begin()->second.nBit;
-	map<string,VexSetup>::const_iterator it;
+	std::map<std::string,VexSetup>::const_iterator it;
 
 
 	for(it = setups.begin(); it != setups.end(); ++it)
@@ -372,8 +370,8 @@ int VexMode::getBits() const
 		{
 			if(nBit != 0 && it->second.nBit != 0 && firstTime)
 			{
-				cerr << "Warning: getBits: differing number of bits: " << nBit << "," << it->second.nBit << endl;
-				cerr << "  Will proceed, but note that some metadata may be incorrect." << endl;
+				std::cerr << "Warning: getBits: differing number of bits: " << nBit << "," << it->second.nBit << std::endl;
+				std::cerr << "  Will proceed, but note that some metadata may be incorrect." << std::endl;
 
 				firstTime = 0;
 			}
@@ -389,14 +387,14 @@ int VexMode::getBits() const
 	return nBit;
 }
 
-const VexSetup* VexMode::getSetup(const string &antName) const
+const VexSetup* VexMode::getSetup(const std::string &antName) const
 {
-	map<string,VexSetup>::const_iterator it;
+	std::map<std::string,VexSetup>::const_iterator it;
 
 	it = setups.find(antName);
 	if(it == setups.end())
 	{
-		cerr << "Error: VexMode::getSetup: antName=" << antName << " not found." << endl;
+		std::cerr << "Error: VexMode::getSetup: antName=" << antName << " not found." << std::endl;
 		
 		exit(EXIT_FAILURE);
 	}
@@ -414,7 +412,7 @@ double VexMode::getLowestSampleRate() const
 	{
 		double sr = 1.0e30;	// A very large number
 		
-		for(map<string,VexSetup>::const_iterator it = setups.begin(); it != setups.end(); ++it)
+		for(std::map<std::string,VexSetup>::const_iterator it = setups.begin(); it != setups.end(); ++it)
 		{
 			if(it->second.sampRate < sr && it->second.sampRate > 0.0)
 			{
@@ -441,7 +439,7 @@ double VexMode::getHighestSampleRate() const
 	{
 		double sr = 0.0;
 		
-		for(map<string,VexSetup>::const_iterator it = setups.begin(); it != setups.end(); ++it)
+		for(std::map<std::string,VexSetup>::const_iterator it = setups.begin(); it != setups.end(); ++it)
 		{
 			if(it->second.sampRate > sr)
 			{
@@ -463,7 +461,7 @@ double VexMode::getAverageSampleRate() const
 	{
 		double sr = 0.0;
 		
-		for(map<string,VexSetup>::const_iterator it = setups.begin(); it != setups.end(); ++it)
+		for(std::map<std::string,VexSetup>::const_iterator it = setups.begin(); it != setups.end(); ++it)
 		{
 			sr += it->second.sampRate;
 		}
@@ -537,7 +535,7 @@ char VexChannel::bandCode() const
 	return '?';
 }
 
-string VexIF::VLBABandName() const
+std::string VexIF::VLBABandName() const
 {
 	double bandCenter = ifSSLO;
 
@@ -610,7 +608,7 @@ bool operator == (const VexSubband &s1, const VexSubband &s2)
 	}
 }
 
-bool VexSource::hasSourceName(const string &name) const
+bool VexSource::hasSourceName(const std::string &name) const
 {
 	// if result of find is .end(), then it is not in the list
 	return find(sourceNames.begin(), sourceNames.end(), name) != sourceNames.end();
@@ -622,34 +620,34 @@ int VexData::sanityCheck()
 
 	if(eops.size() < 5)
 	{
-		cerr << "Warning: Fewer than 5 EOPs specified" << endl;
+		std::cerr << "Warning: Fewer than 5 EOPs specified" << std::endl;
 		++nWarn;
 	}
 
-	for(vector<VexAntenna>::const_iterator it = antennas.begin(); it != antennas.end(); ++it)
+	for(std::vector<VexAntenna>::const_iterator it = antennas.begin(); it != antennas.end(); ++it)
 	{
 		if(it->clocks.empty())
 		{
-			cerr << "Warning: no clock values for antenna " << it->name << " ." << endl;
+			std::cerr << "Warning: no clock values for antenna " << it->name << " ." << std::endl;
 			++nWarn;
 		}
 	}
 
-	for(vector<VexAntenna>::const_iterator it = antennas.begin(); it != antennas.end(); ++it)
+	for(std::vector<VexAntenna>::const_iterator it = antennas.begin(); it != antennas.end(); ++it)
 	{
 		if(it->dataSource == DataSourceFile && it->basebandFiles.empty())
 		{
-			cerr << "Warning: file based correlation desired but no files provided for antenna " << it->name << " ." << endl;
+			std::cerr << "Warning: file based correlation desired but no files provided for antenna " << it->name << " ." << std::endl;
 			++nWarn;
 		}
 		if(it->dataSource == DataSourceModule && it->basebandFiles.empty())
 		{
-			cerr << "Warning: module based correlation desired but no media specified for antenna " << it->name << " ." << endl;
+			std::cerr << "Warning: module based correlation desired but no media specified for antenna " << it->name << " ." << std::endl;
 			++nWarn;
 		}
 		if(it->dataSource == DataSourceNone)
 		{
-			cerr << "Warning: data source is NONE for antenna " << it->name << " ." << endl;
+			std::cerr << "Warning: data source is NONE for antenna " << it->name << " ." << std::endl;
 			++nWarn;
 		}
 	}
@@ -670,7 +668,7 @@ double VexAntenna::getVexClocks(double mjd, double *coeffs) const
 {
 	double epoch = -1.0;
 
-	for(vector<VexClock>::const_iterator it = clocks.begin(); it != clocks.end(); ++it)
+	for(std::vector<VexClock>::const_iterator it = clocks.begin(); it != clocks.end(); ++it)
 	{
 		if(it->mjdStart <= mjd)
 		{
@@ -693,9 +691,9 @@ const VexSource *VexData::getSource(unsigned int num) const
 	return &sources[num];
 }
 
-int VexData::getSourceIdByDefName(const string &defName) const
+int VexData::getSourceIdByDefName(const std::string &defName) const
 {
-	for(vector<VexSource>::const_iterator it = sources.begin(); it != sources.end(); ++it)
+	for(std::vector<VexSource>::const_iterator it = sources.begin(); it != sources.end(); ++it)
 	{
 		if(it->defName == defName)
 		{
@@ -706,9 +704,9 @@ int VexData::getSourceIdByDefName(const string &defName) const
 	return -1;
 }
 
-const VexSource *VexData::getSourceByDefName(const string &defName) const
+const VexSource *VexData::getSourceByDefName(const std::string &defName) const
 {
-	for(vector<VexSource>::const_iterator it = sources.begin(); it != sources.end(); ++it)
+	for(std::vector<VexSource>::const_iterator it = sources.begin(); it != sources.end(); ++it)
 	{
 		if(it->defName == defName)
 		{
@@ -719,9 +717,9 @@ const VexSource *VexData::getSourceByDefName(const string &defName) const
 	return 0;
 }
 
-const VexSource *VexData::getSourceBySourceName(const string &name) const
+const VexSource *VexData::getSourceBySourceName(const std::string &name) const
 {
-	for(vector<VexSource>::const_iterator it = sources.begin(); it != sources.end(); ++it)
+	for(std::vector<VexSource>::const_iterator it = sources.begin(); it != sources.end(); ++it)
 	{
 		if(find(it->sourceNames.begin(), it->sourceNames.end(), name) != it->sourceNames.end())
 		{
@@ -741,12 +739,12 @@ VexScan *VexData::newScan()
 
 void VexJob::assignVSNs(const VexData &V)
 {
-	list<string> antennas;
+	std::list<std::string> antennas;
 
-	for(vector<string>::const_iterator s = scans.begin(); s != scans.end(); ++s)
+	for(std::vector<std::string>::const_iterator s = scans.begin(); s != scans.end(); ++s)
 	{
 		const VexScan* S = V.getScanByDefName(*s);
-		for(map<string,VexInterval>::const_iterator a = S->stations.begin(); a != S->stations.end(); ++a)
+		for(std::map<std::string,VexInterval>::const_iterator a = S->stations.begin(); a != S->stations.end(); ++a)
 		{
 			if(find(antennas.begin(), antennas.end(), a->first) == antennas.end())
 			{
@@ -755,7 +753,7 @@ void VexJob::assignVSNs(const VexData &V)
 		}
 	}
 	
-	for(list<string>::const_iterator a = antennas.begin(); a != antennas.end(); ++a)
+	for(std::list<std::string>::const_iterator a = antennas.begin(); a != antennas.end(); ++a)
 	{
 		if(V.getAntenna(*a)->dataSource != DataSourceModule)
 		{
@@ -763,7 +761,7 @@ void VexJob::assignVSNs(const VexData &V)
 		}
 		else
 		{
-			const string &vsn = V.getVSN(*a, *this);
+			const std::string &vsn = V.getVSN(*a, *this);
 			if(vsn != "None")
 			{
 				vsns[*a] = vsn;
@@ -772,9 +770,9 @@ void VexJob::assignVSNs(const VexData &V)
 	}
 }
 
-string VexJob::getVSN(const string &antName) const
+std::string VexJob::getVSN(const std::string &antName) const
 {
-	for(map<string,string>::const_iterator a = vsns.begin(); a != vsns.end(); ++a)
+	for(std::map<std::string,std::string>::const_iterator a = vsns.begin(); a != vsns.end(); ++a)
 	{
 		if(a->first == antName)
 		{
@@ -782,7 +780,7 @@ string VexJob::getVSN(const string &antName) const
 		}
 	}
 
-	return string("None");
+	return std::string("None");
 }
 
 /* Modified from http://www-graphics.stanford.edu/~seander/bithacks.html */
@@ -813,7 +811,7 @@ double VexJob::calcOps(const VexData *V, int fftSize, bool doPolar) const
 	char pols[8];
 	double opsPerSample;
 
-	for(vector<string>::const_iterator si = scans.begin(); si != scans.end(); ++si)
+	for(std::vector<std::string>::const_iterator si = scans.begin(); si != scans.end(); ++si)
 	{
 		const VexScan *S = V->getScanByDefName(*si);
 		M = V->getModeByDefName(S->modeDefName);
@@ -851,7 +849,7 @@ double VexJob::calcSize(const VexData *V) const
 {
 	double size = 0.0;
 
-	for(vector<string>::const_iterator it = scans.begin(); it != scans.end(); ++it)
+	for(std::vector<std::string>::const_iterator it = scans.begin(); it != scans.end(); ++it)
 	{
 		size += V->getScanByDefName(*it)->size;
 	}
@@ -859,14 +857,14 @@ double VexJob::calcSize(const VexData *V) const
 	return size;
 }
 
-bool VexJobGroup::hasScan(const string &scanName) const
+bool VexJobGroup::hasScan(const std::string &scanName) const
 {
 	return find(scans.begin(), scans.end(), scanName) != scans.end();
 }
 
-void VexJobGroup::genEvents(const list<VexEvent> &eventList)
+void VexJobGroup::genEvents(const std::list<VexEvent> &eventList)
 {
-	for(list<VexEvent>::const_iterator it = eventList.begin(); it != eventList.end(); ++it)
+	for(std::list<VexEvent>::const_iterator it = eventList.begin(); it != eventList.end(); ++it)
 	{
 		if(it->eventType == VexEvent::SCAN_START ||
 		   it->eventType == VexEvent::SCAN_STOP ||
@@ -886,12 +884,12 @@ void VexJobGroup::genEvents(const list<VexEvent> &eventList)
 
 	// Now remove any module changes that don't occur within scans
 
-	map<string,bool> inScan;
-	map<string,bool> inScanNow;
+	std::map<std::string,bool> inScan;
+	std::map<std::string,bool> inScanNow;
 
 	// initialize inScan
 
-	for(list<VexEvent>::const_iterator it = events.begin(); it != events.end(); ++it)
+	for(std::list<VexEvent>::const_iterator it = events.begin(); it != events.end(); ++it)
 	{
 		if(it->eventType == VexEvent::RECORD_START)
 		{
@@ -900,7 +898,7 @@ void VexJobGroup::genEvents(const list<VexEvent> &eventList)
 		}
 	}
 
-	list<VexEvent>::iterator rstart, rstop;
+	std::list<VexEvent>::iterator rstart, rstop;
 	for(rstart = events.begin(); rstart != events.end();)
 	{
 		if(rstart->eventType == VexEvent::ANT_SCAN_START)
@@ -951,7 +949,7 @@ void VexJobGroup::genEvents(const list<VexEvent> &eventList)
 	}
 }
 
-bool VexJob::hasScan(const string &scanName) const
+bool VexJob::hasScan(const std::string &scanName) const
 {
 	// if find returns .end(), then it was not found
 	return find(scans.begin(), scans.end(), scanName) != scans.end();
@@ -959,34 +957,34 @@ bool VexJob::hasScan(const string &scanName) const
 
 int VexJob::generateFlagFile(const VexData &V, const char *fileName, unsigned int invalidMask) const
 {
-	vector<VexJobFlag> flags;
-	map<string,int> antIds;
+	std::vector<VexJobFlag> flags;
+	std::map<std::string,int> antIds;
 	unsigned int nAnt = 0;
-	ofstream of;
-	const list<VexEvent> &eventList = *V.getEvents();
+	std::ofstream of;
+	const std::list<VexEvent> &eventList = *V.getEvents();
 
-	for(map<string,string>::const_iterator a = vsns.begin(); a != vsns.end(); ++a)
+	for(std::map<std::string,std::string>::const_iterator a = vsns.begin(); a != vsns.end(); ++a)
 	{
 		antIds[a->first] = nAnt;
 		++nAnt;
 	}
 
 	// Assume all flags from the start.  
-	vector<unsigned int> flagMask(nAnt, 
+	std::vector<unsigned int> flagMask(nAnt, 
 		VexJobFlag::JOB_FLAG_RECORD | 
 		VexJobFlag::JOB_FLAG_POINT | 
 		VexJobFlag::JOB_FLAG_TIME | 
 		VexJobFlag::JOB_FLAG_SCAN);
-	vector<double> flagStart(nAnt, mjdStart);
+	std::vector<double> flagStart(nAnt, mjdStart);
 
 	// Except if not a Mark5 Module case, don't assume RECORD flag is on
-	for(map<string,string>::const_iterator a = vsns.begin(); a != vsns.end(); ++a)
+	for(std::map<std::string,std::string>::const_iterator a = vsns.begin(); a != vsns.end(); ++a)
 	{
 		const VexAntenna *ant = V.getAntenna(a->first);
 
 		if(!ant)
 		{
-			cerr << "Developer error: generateFlagFile: antenna " << a->first << " not found in antenna table." << endl;
+			std::cerr << "Developer error: generateFlagFile: antenna " << a->first << " not found in antenna table." << std::endl;
 
 			exit(EXIT_FAILURE);
 		}
@@ -999,7 +997,7 @@ int VexJob::generateFlagFile(const VexData &V, const char *fileName, unsigned in
 	}
 
 	// Then go through each event, adjusting current flag state.  
-	for(list<VexEvent>::const_iterator e = eventList.begin(); e != eventList.end(); ++e)
+	for(std::list<VexEvent>::const_iterator e = eventList.begin(); e != eventList.end(); ++e)
 	{
 		if(e->eventType == VexEvent::RECORD_START)
 		{
@@ -1023,11 +1021,11 @@ int VexJob::generateFlagFile(const VexData &V, const char *fileName, unsigned in
 
 				if(!scan)
 				{
-					cerr << "Developer error: generateFlagFile: SCAN_START, scan=0" << endl;
+					std::cerr << "Developer error: generateFlagFile: SCAN_START, scan=0" << std::endl;
 
 					exit(EXIT_FAILURE);
 				}
-				for(map<string,VexInterval>::const_iterator sa = scan->stations.begin(); sa != scan->stations.end(); ++sa)
+				for(std::map<std::string,VexInterval>::const_iterator sa = scan->stations.begin(); sa != scan->stations.end(); ++sa)
 				{
 					if(antIds.count(sa->first) == 0)
 					{
@@ -1045,11 +1043,11 @@ int VexJob::generateFlagFile(const VexData &V, const char *fileName, unsigned in
 
 				if(!scan)
 				{
-					cerr << "Developer error! generateFlagFile: SCAN_STOP, scan=0" << endl;
+					std::cerr << "Developer error! generateFlagFile: SCAN_STOP, scan=0" << std::endl;
 
 					exit(EXIT_FAILURE);
 				}
-				for(map<string,VexInterval>::const_iterator sa = scan->stations.begin(); sa != scan->stations.end(); ++sa)
+				for(std::map<std::string,VexInterval>::const_iterator sa = scan->stations.begin(); sa != scan->stations.end(); ++sa)
 				{
 					if(antIds.count(sa->first) == 0)
 					{
@@ -1077,7 +1075,7 @@ int VexJob::generateFlagFile(const VexData &V, const char *fileName, unsigned in
 		{
 			if(fabs(e->mjd - mjdStart) < 0.5/86400.0)
 			{
-				for(map<string,string>::const_iterator a = vsns.begin(); a != vsns.end(); ++a)
+				for(std::map<std::string,std::string>::const_iterator a = vsns.begin(); a != vsns.end(); ++a)
 				{
 					flagMask[antIds[a->first]] &= ~VexJobFlag::JOB_FLAG_TIME;
 				}
@@ -1087,7 +1085,7 @@ int VexJob::generateFlagFile(const VexData &V, const char *fileName, unsigned in
 		{
 			if(fabs(e->mjd - mjdStart) < 0.5/86400.0)
 			{
-				for(map<string,string>::const_iterator a = vsns.begin(); a != vsns.end(); ++a)
+				for(std::map<std::string,std::string>::const_iterator a = vsns.begin(); a != vsns.end(); ++a)
 				{
 					flagMask[antIds[a->first]] |= VexJobFlag::JOB_FLAG_TIME;
 				}
@@ -1141,24 +1139,24 @@ int VexJob::generateFlagFile(const VexData &V, const char *fileName, unsigned in
 
 	// write data to file
 	of.open(fileName);
-	of << flags.size() << endl;
-	for(vector<VexJobFlag>::const_iterator it = flags.begin(); it != flags.end(); ++it)
+	of << flags.size() << std::endl;
+	for(std::vector<VexJobFlag>::const_iterator it = flags.begin(); it != flags.end(); ++it)
 	{
-		of << "  " << *it << endl;
+		of << "  " << *it << std::endl;
 	}
 	of.close();
 
 	return flags.size();
 }
 
-void VexJobGroup::createJobs(vector<VexJob> &jobs, VexInterval &jobTimeRange, const VexData *V, double maxLength, double maxSize) const
+void VexJobGroup::createJobs(std::vector<VexJob> &jobs, VexInterval &jobTimeRange, const VexData *V, double maxLength, double maxSize) const
 {
-	list<VexEvent>::const_iterator s, e;
+	std::list<VexEvent>::const_iterator s, e;
 	jobs.push_back(VexJob());
 	VexJob *J = &jobs.back();
 	double totalTime, scanTime = 0.0;
 	double size = 0.0;
-	string id("");
+	std::string id("");
 
 	// note these are backwards now; will set these to minimum range covering scans
 	J->setTimeRange(jobTimeRange.mjdStop, jobTimeRange.mjdStart);
@@ -1174,8 +1172,8 @@ void VexJobGroup::createJobs(vector<VexJob> &jobs, VexInterval &jobTimeRange, co
 		{
 			if(id != e->name)
 			{
-				cerr << "Programming error: createJobs: id != e->name  (" << id << " != " << e->name << ")" << endl;
-				cerr << "Contact developer" << endl;
+				std::cerr << "Programming error: createJobs: id != e->name  (" << id << " != " << e->name << ")" << std::endl;
+				std::cerr << "Contact developer" << std::endl;
 
 				exit(EXIT_FAILURE);
 			}
@@ -1229,9 +1227,9 @@ const VexScan *VexData::getScan(unsigned int num) const
 	return &scans[num];
 }
 
-const VexScan *VexData::getScanByDefName(const string &defName) const
+const VexScan *VexData::getScanByDefName(const std::string &defName) const
 {
-	for(vector<VexScan>::const_iterator it = scans.begin(); it != scans.end(); ++it)
+	for(std::vector<VexScan>::const_iterator it = scans.begin(); it != scans.end(); ++it)
 	{
 		if(it->defName == defName)
 		{
@@ -1252,9 +1250,9 @@ unsigned int VexScan::nAntennasWithRecordedData(const VexData *V) const
 		return 0;
 	}
 
-	for(map<string,VexInterval>::const_iterator it = stations.begin(); it != stations.end(); ++it)
+	for(std::map<std::string,VexInterval>::const_iterator it = stations.begin(); it != stations.end(); ++it)
 	{
-		map<string,VexSetup>::const_iterator S = M->setups.find(it->first);
+		std::map<std::string,VexSetup>::const_iterator S = M->setups.find(it->first);
 		if(S != M->setups.end() && S->second.nRecordChan > 0 && S->second.formatName != "NONE")
 		{
 			++nAnt;
@@ -1264,21 +1262,21 @@ unsigned int VexScan::nAntennasWithRecordedData(const VexData *V) const
 	return nAnt;
 }
 
-unsigned int VexScan::nRecordChan(const VexData *V, const string &antName) const
+unsigned int VexScan::nRecordChan(const VexData *V, const std::string &antName) const
 {
 	unsigned int nRecChan = 0;
 	const VexMode *M = V->getModeByDefName(modeDefName);
 
 	if(M)
 	{
-		map<string,VexSetup>::const_iterator it = M->setups.find(antName);
+		std::map<std::string,VexSetup>::const_iterator it = M->setups.find(antName);
 		if(it != M->setups.end())
 		{
 			nRecChan = it->second.nRecordChan;
 		}
 		else
 		{
-			cerr << "Warning: Ant " << antName << " not found in mode " << M->defName << endl;
+			std::cerr << "Warning: Ant " << antName << " not found in mode " << M->defName << std::endl;
 		}
 	}
 
@@ -1295,17 +1293,17 @@ void VexData::setScanSize(unsigned int num, double size)
 	scans[num].size = size;
 }
 
-void VexData::getScanList(list<string> &scanList) const
+void VexData::getScanList(std::list<std::string> &scanList) const
 {
-	for(vector<VexScan>::const_iterator it = scans.begin(); it != scans.end(); ++it)
+	for(std::vector<VexScan>::const_iterator it = scans.begin(); it != scans.end(); ++it)
 	{
 		scanList.push_back(it->defName);
 	}
 }
 
-int VexEOP::setkv(const string &key, const string &value)
+int VexEOP::setkv(const std::string &key, const std::string &value)
 {
-	stringstream ss;
+	std::stringstream ss;
 	int nWarn = 0;
 
 	ss << value;
@@ -1330,7 +1328,7 @@ int VexEOP::setkv(const string &key, const string &value)
 	}
 	else
 	{
-		cerr << "Warning: EOP: Unknown parameter '" << key << "'." << endl;
+		std::cerr << "Warning: EOP: Unknown parameter '" << key << "'." << std::endl;
 		++nWarn;
 	}
 
@@ -1354,9 +1352,9 @@ const VexAntenna *VexData::getAntenna(unsigned int num) const
 	return &antennas[num];
 }
 
-const VexAntenna *VexData::getAntenna(const string &name) const
+const VexAntenna *VexData::getAntenna(const std::string &name) const
 {
-	for(vector<VexAntenna>::const_iterator it = antennas.begin(); it != antennas.end(); ++it)
+	for(std::vector<VexAntenna>::const_iterator it = antennas.begin(); it != antennas.end(); ++it)
 	{
 		if(it->name == name)
 		{
@@ -1372,7 +1370,7 @@ int VexSetup::phaseCalIntervalMHz() const
 	int p;
 	int pc = 0;
 
-	for(map<string,VexIF>::const_iterator it = ifs.begin(); it != ifs.end(); ++it)
+	for(std::map<std::string,VexIF>::const_iterator it = ifs.begin(); it != ifs.end(); ++it)
 	{
 		p = it->second.phaseCalIntervalMHz;
 		if(p > 0 && (p < pc || pc == 0))
@@ -1384,9 +1382,9 @@ int VexSetup::phaseCalIntervalMHz() const
 	return pc;
 }
 
-const VexIF *VexSetup::getIF(const string &ifName) const
+const VexIF *VexSetup::getIF(const std::string &ifName) const
 {
-	for(map<string,VexIF>::const_iterator it = ifs.begin(); it != ifs.end(); ++it)
+	for(std::map<std::string,VexIF>::const_iterator it = ifs.begin(); it != ifs.end(); ++it)
 	{
 		if(it->second.name == ifName)
 		{
@@ -1397,12 +1395,12 @@ const VexIF *VexSetup::getIF(const string &ifName) const
 	return 0;
 }
 
-double VexSetup::firstTuningForIF(const string &ifName) const	// return Hz
+double VexSetup::firstTuningForIF(const std::string &ifName) const	// return Hz
 {
 	double tune = 0.0;
-	string cn;
+	std::string cn;
 
-	for(vector<VexChannel>::const_iterator ch=channels.begin(); ch != channels.end(); ++ch)
+	for(std::vector<VexChannel>::const_iterator ch=channels.begin(); ch != channels.end(); ++ch)
 	{
 		if(ch->ifName == ifName && (cn == "" || ch->name < cn))
 		{
@@ -1451,9 +1449,9 @@ const VexMode *VexData::getMode(unsigned int num) const
 	return &modes[num];
 }
 
-const VexMode *VexData::getModeByDefName(const string &defName) const
+const VexMode *VexData::getModeByDefName(const std::string &defName) const
 {
-	for(vector<VexMode>::const_iterator it = modes.begin(); it != modes.end(); ++it)
+	for(std::vector<VexMode>::const_iterator it = modes.begin(); it != modes.end(); ++it)
 	{
 		if(it->defName == defName)
 		{
@@ -1464,9 +1462,9 @@ const VexMode *VexData::getModeByDefName(const string &defName) const
 	return 0;
 }
 
-int VexData::getModeIdByDefName(const string &defName) const
+int VexData::getModeIdByDefName(const std::string &defName) const
 {
-	for(vector<VexMode>::const_iterator it = modes.begin(); it != modes.end(); ++it)
+	for(std::vector<VexMode>::const_iterator it = modes.begin(); it != modes.end(); ++it)
 	{
 		if(it->defName == defName)
 		{
@@ -1495,7 +1493,7 @@ const VexEOP *VexData::getEOP(unsigned int num) const
 	return &eops[num];
 }
 
-bool VexData::usesAntenna(const string &antennaName) const
+bool VexData::usesAntenna(const std::string &antennaName) const
 {
 	unsigned int n = nAntenna();
 
@@ -1510,7 +1508,7 @@ bool VexData::usesAntenna(const string &antennaName) const
 	return false;
 }
 
-bool VexData::usesMode(const string &modeDefName) const
+bool VexData::usesMode(const std::string &modeDefName) const
 {
 	unsigned int n = nScan();
 
@@ -1525,7 +1523,7 @@ bool VexData::usesMode(const string &modeDefName) const
 	return false;
 }
 
-unsigned int VexData::nVSN(const string &antName) const
+unsigned int VexData::nVSN(const std::string &antName) const
 {
 	const VexAntenna *A;
 
@@ -1540,9 +1538,9 @@ unsigned int VexData::nVSN(const string &antName) const
 	}
 }
 
-void VexData::addVSN(const string &antName, const string &vsn, const VexInterval &timeRange)
+void VexData::addVSN(const std::string &antName, const std::string &vsn, const VexInterval &timeRange)
 {
-	for(vector<VexAntenna>::iterator it = antennas.begin(); it != antennas.end(); ++it)
+	for(std::vector<VexAntenna>::iterator it = antennas.begin(); it != antennas.end(); ++it)
 	{
 		if(it->name == antName)
 		{
@@ -1552,11 +1550,11 @@ void VexData::addVSN(const string &antName, const string &vsn, const VexInterval
 	}
 }
 
-string VexData::getVSN(const string &antName, const VexInterval &timeRange) const
+std::string VexData::getVSN(const std::string &antName, const VexInterval &timeRange) const
 {
 	const VexAntenna *A;
 	double best = 0.0;
-	string bestVSN("None");
+	std::string bestVSN("None");
 
 	A = getAntenna(antName);
 	if(!A)
@@ -1569,7 +1567,7 @@ string VexData::getVSN(const string &antName, const VexInterval &timeRange) cons
 		return bestVSN;
 	}
 
-	for(vector<VexBasebandFile>::const_iterator v = A->basebandFiles.begin(); v != A->basebandFiles.end(); ++v)
+	for(std::vector<VexBasebandFile>::const_iterator v = A->basebandFiles.begin(); v != A->basebandFiles.end(); ++v)
 	{
 		double timeOverlap = timeRange.overlap(*v);
 		if(timeOverlap > best)
@@ -1582,11 +1580,11 @@ string VexData::getVSN(const string &antName, const VexInterval &timeRange) cons
 	return bestVSN;
 }
 
-void VexData::setExper(const string &name, const VexInterval &experTimeRange)
+void VexData::setExper(const std::string &name, const VexInterval &experTimeRange)
 {
 	double a=1.0e7, b=0.0;
 
-	for(list<VexEvent>::const_iterator it = events.begin(); it != events.end(); ++it)
+	for(std::list<VexEvent>::const_iterator it = events.begin(); it != events.end(); ++it)
 	{
 		if(it->mjd < a && it->eventType != VexEvent::CLOCK_BREAK)
 		{
@@ -1613,17 +1611,17 @@ void VexData::setExper(const string &name, const VexInterval &experTimeRange)
 	addEvent(exper.mjdStop, VexEvent::OBSERVE_STOP, name); 
 }
 
-const list<VexEvent> *VexData::getEvents() const
+const std::list<VexEvent> *VexData::getEvents() const
 {
 	return &events;
 }
 
-void VexData::addEvent(double mjd, VexEvent::EventType eventType, const string &name)
+void VexData::addEvent(double mjd, VexEvent::EventType eventType, const std::string &name)
 {
 	events.push_back(VexEvent(mjd, eventType, name));
 }
 
-void VexData::addEvent(double mjd, VexEvent::EventType eventType, const string &name, const string &scan)
+void VexData::addEvent(double mjd, VexEvent::EventType eventType, const std::string &name, const std::string &scan)
 {
 	events.push_back(VexEvent(mjd, eventType, name, scan));
 }
@@ -1647,14 +1645,14 @@ void VexData::findLeapSeconds()
 		if(eops[i-1].tai_utc != eops[i].tai_utc)
 		{
 			addEvent(eops[i].mjd, VexEvent::LEAP_SECOND, "Leap second");
-			cout << "Leap second detected at day " << eops[i].mjd << endl;
+			std::cout << "Leap second detected at day " << eops[i].mjd << std::endl;
 		}
 	}
 }
 
-void VexData::addBreaks(const vector<double> &breaks)
+void VexData::addBreaks(const std::vector<double> &breaks)
 {
-	for(vector<double>::const_iterator t = breaks.begin(); t != breaks.end(); ++t)
+	for(std::vector<double>::const_iterator t = breaks.begin(); t != breaks.end(); ++t)
 	{
 		if(exper.contains(*t))
 		{
@@ -1663,7 +1661,7 @@ void VexData::addBreaks(const vector<double> &breaks)
 	}
 }
 
-ostream& operator << (ostream &os, const VexInterval &x)
+std::ostream& operator << (std::ostream &os, const VexInterval &x)
 {
 	int p = os.precision();
 
@@ -1674,22 +1672,22 @@ ostream& operator << (ostream &os, const VexInterval &x)
 	return os;
 }
 
-ostream& operator << (ostream &os, const VexSource &x)
+std::ostream& operator << (std::ostream &os, const VexSource &x)
 {
-	os << "Source " << x.defName << endl;
-	for(vector<string>::const_iterator it = x.sourceNames.begin(); it != x.sourceNames.end(); ++it)
+	os << "Source " << x.defName << std::endl;
+	for(std::vector<std::string>::const_iterator it = x.sourceNames.begin(); it != x.sourceNames.end(); ++it)
 	{
-		os << "  name=" << *it << endl;
+		os << "  name=" << *it << std::endl;
 	}
 	os << "  ra=" << x.ra <<
 		"\n  dec=" << x.dec <<
 		"\n  calCode=" << x.calCode <<
-		"\n  qual=" << x.qualifier << endl;
+		"\n  qual=" << x.qualifier << std::endl;
 
 	return os;
 }
 
-ostream& operator << (ostream &os, const VexScan &x)
+std::ostream& operator << (std::ostream &os, const VexScan &x)
 {
 	os << "Scan " << x.defName << 
 		"\n  timeRange=" << (const VexInterval&)x <<
@@ -1697,29 +1695,29 @@ ostream& operator << (ostream &os, const VexScan &x)
 		"\n  source=" << x.sourceDefName << 
 		"\n  size=" << x.size << " bytes \n";
 
-	for(map<string,VexInterval>::const_iterator iter = x.stations.begin(); iter != x.stations.end(); ++iter)
+	for(std::map<std::string,VexInterval>::const_iterator iter = x.stations.begin(); iter != x.stations.end(); ++iter)
 	{
-		os << "  " << iter->first << " range=" << iter->second << endl;
+		os << "  " << iter->first << " range=" << iter->second << std::endl;
 	}
 
-	for(map<string,bool>::const_iterator iter = x.recordEnable.begin(); iter != x.recordEnable.end(); ++iter)
+	for(std::map<std::string,bool>::const_iterator iter = x.recordEnable.begin(); iter != x.recordEnable.end(); ++iter)
 	{
-		os << "  " << iter->first << " enable=" << iter->second << endl;
+		os << "  " << iter->first << " enable=" << iter->second << std::endl;
 	}
 
-	os << "  setup=" << x.corrSetupName << endl;
+	os << "  setup=" << x.corrSetupName << std::endl;
 
 	return os;
 }
 
-ostream& operator << (ostream &os, const VexClock &x)
+std::ostream& operator << (std::ostream &os, const VexClock &x)
 {
 	os << "Clock(" << x.mjdStart << ": " << x.offset << ", " << x.rate << ", " << x.offset_epoch << ")";
 
 	return os;
 }
 
-ostream& operator << (ostream &os, const VexAntenna &x)
+std::ostream& operator << (std::ostream &os, const VexAntenna &x)
 {
 	os << "Antenna " << x.name <<
 		"\n  x=" << x.x << "  dx/dt=" << x.dx <<
@@ -1727,34 +1725,34 @@ ostream& operator << (ostream &os, const VexAntenna &x)
 		"\n  z=" << x.z << "  dz/dt=" << x.dz <<
 		"\n  posEpoch=" << x.posEpoch <<
 		"\n  axisType=" << x.axisType <<
-		"\n  axisOffset=" << x.axisOffset << endl;
+		"\n  axisOffset=" << x.axisOffset << std::endl;
 
-	os << "  dataSource=" << dataSourceNames[x.dataSource] << endl;
+	os << "  dataSource=" << dataSourceNames[x.dataSource] << std::endl;
 
-	for(vector<VexBasebandFile>::const_iterator it = x.basebandFiles.begin(); it != x.basebandFiles.end(); ++it)
+	for(std::vector<VexBasebandFile>::const_iterator it = x.basebandFiles.begin(); it != x.basebandFiles.end(); ++it)
 	{
-		os << "  " << *it << endl;
+		os << "  " << *it << std::endl;
 	}
 
-	for(vector<VexClock>::const_iterator it = x.clocks.begin(); it != x.clocks.end(); ++it)
+	for(std::vector<VexClock>::const_iterator it = x.clocks.begin(); it != x.clocks.end(); ++it)
 	{
-		os << "  " << *it << endl;
+		os << "  " << *it << std::endl;
 	}
 
 	return os;
 }
 
-ostream& operator << (ostream &os, const VexSubband &x)
+std::ostream& operator << (std::ostream &os, const VexSubband &x)
 {
 	os << "[" << x.freq << " Hz, " << x.bandwidth << " Hz, sb=" << x.sideBand << ", pol=" << x.pol << "]";
 	
 	return os;
 }
 
-ostream& operator << (ostream &os, const VexChannel &x)
+std::ostream& operator << (std::ostream &os, const VexChannel &x)
 {
 	os << "[name=" << x.name << " BBC=" << x.bbcName << " IF=" << x.ifName << " s=" << x.subbandId << " -> r=" << x.recordChan << " t=" << x.threadId << " tones=";
-	for(vector<int>::const_iterator v = x.tones.begin(); v != x.tones.end(); ++v)
+	for(std::vector<int>::const_iterator v = x.tones.begin(); v != x.tones.end(); ++v)
 	{
 		if(v != x.tones.begin())
 		{
@@ -1767,48 +1765,48 @@ ostream& operator << (ostream &os, const VexChannel &x)
 	return os;
 }
 
-ostream& operator << (ostream &os, const VexIF &x)
+std::ostream& operator << (std::ostream &os, const VexIF &x)
 {
 	os << "[name=" << x.name << ", SSLO=" << x.ifSSLO << ", sb=" << x.ifSideBand << ", pol=" << x.pol << ", phaseCalInterval=" << x.phaseCalIntervalMHz << " MHz]";
 
 	return os;
 }
 
-ostream& operator << (ostream &os, const VexSetup &x)
+std::ostream& operator << (std::ostream &os, const VexSetup &x)
 {
 	os << "    Format = [format=" << x.formatName << ", nBit=" << x.nBit << ", nRecordChan=" << x.nRecordChan;
-	for(vector<VexChannel>::const_iterator it = x.channels.begin(); it != x.channels.end(); ++it)
+	for(std::vector<VexChannel>::const_iterator it = x.channels.begin(); it != x.channels.end(); ++it)
 	{
 		os << ", " << *it;
 	}
-	os << "]" << endl;
-	for(map<string,VexIF>::const_iterator it = x.ifs.begin(); it != x.ifs.end(); ++it)
+	os << "]" << std::endl;
+	for(std::map<std::string,VexIF>::const_iterator it = x.ifs.begin(); it != x.ifs.end(); ++it)
 	{
-		os << "    IF: " << it->first << " " << it->second << endl;
+		os << "    IF: " << it->first << " " << it->second << std::endl;
 	}
 
 	return os;
 }
 
-ostream& operator << (ostream &os, const VexMode &x)
+std::ostream& operator << (std::ostream &os, const VexMode &x)
 {
 	unsigned int nSubband = x.subbands.size();
 
-	os << "Mode " << x.defName << endl;
+	os << "Mode " << x.defName << std::endl;
 	for(unsigned int i = 0; i < nSubband; ++i)
 	{
-		os << "  Subband[" << i << "]=" << x.subbands[i] << endl;
+		os << "  Subband[" << i << "]=" << x.subbands[i] << std::endl;
 	}
-	for(map<string,VexSetup>::const_iterator it = x.setups.begin(); it != x.setups.end(); ++it)
+	for(std::map<std::string,VexSetup>::const_iterator it = x.setups.begin(); it != x.setups.end(); ++it)
 	{
-		os << "  Setup[" << it->first << "]" << endl;
+		os << "  Setup[" << it->first << "]" << std::endl;
 		os << it->second;
 	}
 	
 	return os;
 }
 
-ostream& operator << (ostream &os, const VexEOP &x)
+std::ostream& operator << (std::ostream &os, const VexEOP &x)
 {
 	os << "EOP(" << x.mjd << ", " << x.tai_utc << ", " << x.ut1_utc << ", " << (x.xPole*RAD2ASEC) << ", " << (x.yPole*RAD2ASEC) << ")";
 
@@ -1816,50 +1814,50 @@ ostream& operator << (ostream &os, const VexEOP &x)
 }
 
 
-ostream& operator << (ostream &os, const VexBasebandFile &x)
+std::ostream& operator << (std::ostream &os, const VexBasebandFile &x)
 {
 	os << "Baseband(" << x.filename << ", " << (const VexInterval&)x << ")";
 
 	return os;
 }
 
-ostream& operator << (ostream &os, const VexJob &x)
+std::ostream& operator << (std::ostream &os, const VexJob &x)
 {
 	int p = os.precision();
 	
 	os.precision(12);
-	os << "Job " << x.jobSeries << "_" << x.jobId << endl;
-	os << "  " << (const VexInterval&)x << endl;
-	os << "  duty cycle = " << x.dutyCycle << endl;
+	os << "Job " << x.jobSeries << "_" << x.jobId << std::endl;
+	os << "  " << (const VexInterval&)x << std::endl;
+	os << "  duty cycle = " << x.dutyCycle << std::endl;
 	os << "  scans =";
-	for(vector<string>::const_iterator s = x.scans.begin(); s != x.scans.end(); ++s)
+	for(std::vector<std::string>::const_iterator s = x.scans.begin(); s != x.scans.end(); ++s)
 	{
 		os << " " << *s;
 	}
-	os << endl;
-	for(map<string,string>::const_iterator v = x.vsns.begin(); v != x.vsns.end(); ++v)
+	os << std::endl;
+	for(std::map<std::string,std::string>::const_iterator v = x.vsns.begin(); v != x.vsns.end(); ++v)
 	{
-		os << "  " << "VSN[" << v->first << "] = " << v->second << endl;
+		os << "  " << "VSN[" << v->first << "] = " << v->second << std::endl;
 	}
-	os << "  size = " << x.dataSize << " bytes" << endl;
+	os << "  size = " << x.dataSize << " bytes" << std::endl;
 
 	os.precision(p);
 
 	return os;
 }
 
-ostream& operator << (ostream &os, const VexJobGroup &x)
+std::ostream& operator << (std::ostream &os, const VexJobGroup &x)
 {
 	int p = os.precision();
 	
 	os.precision(12);
-	os << "Group: scans " << x.scans.front() << " - " << x.scans.back() << " = " << (const VexInterval &)x << endl;
+	os << "Group: scans " << x.scans.front() << " - " << x.scans.back() << " = " << (const VexInterval &)x << std::endl;
 	os.precision(p);
 	
 	return os;
 }
 
-ostream& operator << (ostream &os, const VexEvent &x)
+std::ostream& operator << (std::ostream &os, const VexEvent &x)
 {
 	int d, s;
 
@@ -1871,7 +1869,7 @@ ostream& operator << (ostream &os, const VexEvent &x)
 	return os;
 }
 
-ostream& operator << (ostream &os, const VexJobFlag &x)
+std::ostream& operator << (std::ostream &os, const VexJobFlag &x)
 {
 	int p = os.precision();
 
@@ -1884,50 +1882,50 @@ ostream& operator << (ostream &os, const VexJobFlag &x)
 	return os;
 }
 
-ostream& operator << (ostream &os, const VexData &x)
+std::ostream& operator << (std::ostream &os, const VexData &x)
 {
 	int n = x.nSource();
 
-	os << "Vex:" << endl;
-	os << n << " sources:" << endl;
+	os << "Vex:" << std::endl;
+	os << n << " sources:" << std::endl;
 	for(int i = 0; i < n; ++i)
 	{
 		os << *x.getSource(i);
 	}
 
 	n = x.nScan();
-	os << n << " scans:" << endl;
+	os << n << " scans:" << std::endl;
 	for(int i = 0; i < n; ++i)
 	{
 		os << *x.getScan(i);
 	}
 
 	n = x.nAntenna();
-	os << n << " antennas:" << endl;
+	os << n << " antennas:" << std::endl;
 	for(int i = 0; i < n; ++i)
 	{
 		os << *x.getAntenna(i);
 	}
 
 	n = x.nMode();
-	os << n << " modes:" << endl;
+	os << n << " modes:" << std::endl;
 	for(int i = 0; i < n; ++i)
 	{
 		os << *x.getMode(i);
 	}
 
 	n = x.nEOP();
-	os << n << " eops:" << endl;
+	os << n << " eops:" << std::endl;
 	for(int i = 0; i < n; ++i)
 	{
-		os << "   " << *x.getEOP(i) << endl;
+		os << "   " << *x.getEOP(i) << std::endl;
 	}
 
-	const list<VexEvent> *events = x.getEvents();
-	os << "Events:" << endl;
-	for(list<VexEvent>::const_iterator iter = events->begin(); iter != events->end(); ++iter)
+	const std::list<VexEvent> *events = x.getEvents();
+	os << "Events:" << std::endl;
+	for(std::list<VexEvent>::const_iterator iter = events->begin(); iter != events->end(); ++iter)
 	{
-		os << "   " << *iter << endl;
+		os << "   " << *iter << std::endl;
 	}
 
 	return os;

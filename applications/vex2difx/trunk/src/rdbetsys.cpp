@@ -39,8 +39,6 @@
 #include "vexload.h"
 #include "util.h"
 
-using namespace std;
-
 const char program[] = "rdbetsys";
 const char version[] = "1.1";
 const char author[]  = "Walter Brisken";
@@ -228,7 +226,7 @@ public:
 	~TsysAccumulator();
 	void setOutput(FILE *outFile);
 	void setStation(const std::string &stnName);
-	void setup(const VexSetup &vexSetup, DifxTcal *T, double mjd, const string &str);
+	void setup(const VexSetup &vexSetup, DifxTcal *T, double mjd, const std::string &str);
 	void flush();
 	void feed(const VexInterval &lineTimeRange, const char *data);
 	long long getnGood() { return nGood; };
@@ -334,15 +332,15 @@ static void sanityCheckChannels(const VexSetup &vexSetup)
 			++nRecChan;
 		}
 	}
-	if(nRecChan != vexSetup.nRecordChan)
+	if(nRecChan != vexSetup.nRecordChan && nRecChan > 0 && vexSetup.nRecordChan > 0)
 	{
-		cerr << "Developer Error: TsysAccumulator::sanityCheckChannels: vexSetup.nRecordChan=" << vexSetup.nRecordChan << " does not equal nRecChan=" << nRecChan << " as it should!" << endl;
+		std::cerr << "Developer Error: TsysAccumulator::sanityCheckChannels: vexSetup.nRecordChan=" << vexSetup.nRecordChan << " does not equal nRecChan=" << nRecChan << " as it should!" << std::endl;
 
-		//exit(EXIT_FAILURE);
+		exit(EXIT_FAILURE);
 	}
 }
 
-void TsysAccumulator::setup(const VexSetup &vexSetup, DifxTcal *T, double mjd, const string &stn)
+void TsysAccumulator::setup(const VexSetup &vexSetup, DifxTcal *T, double mjd, const std::string &stn)
 {
 	std::vector<TsysAverager>::iterator ta;
 	std::vector<VexChannel>::const_iterator vc;
@@ -456,12 +454,12 @@ void TsysAccumulator::feed(const VexInterval &lineTimeRange, const char *data)
 	}
 }
 
-int processStation(FILE *out, const VexData &V, const string &stn, const string &fileList, const VexInterval &stnTimeRange, double nominalTsysInterval, DifxTcal *T, int verbose, long long *nGood, long long *nBad)
+int processStation(FILE *out, const VexData &V, const std::string &stn, const std::string &fileList, const VexInterval &stnTimeRange, double nominalTsysInterval, DifxTcal *T, int verbose, long long *nGood, long long *nBad)
 {
 	const int MaxLineLength = 32768;	// make sure it is large enough!
 	char line[MaxLineLength];
 	FILE *p;
-	string command;
+	std::string command;
 	int nRecord = 0;
 	int nSkip = 0;
 	int pos, n;
@@ -560,7 +558,7 @@ int processStation(FILE *out, const VexData &V, const string &stn, const string 
 
 					continue;
 				}
-				for(map<string,VexInterval>::const_iterator it = scan->stations.begin(); it != scan->stations.end(); ++it)
+				for(std::map<std::string,VexInterval>::const_iterator it = scan->stations.begin(); it != scan->stations.end(); ++it)
 				{
 					if(it->first == stn)
 					{
@@ -604,8 +602,8 @@ int processStation(FILE *out, const VexData &V, const string &stn, const string 
 
 					if(n > nSlot)
 					{
-						cout << "Developer error handling line: " << line << endl;
-						cout << "nSlot = " << nSlot << "  line=" << lineTimeRange << "  center=" << t << "  scan=" << scanTimeRange << "  origslot=" << origSlot << endl;
+						std::cout << "Developer error handling line: " << line << std::endl;
+						std::cout << "nSlot = " << nSlot << "  line=" << lineTimeRange << "  center=" << t << "  scan=" << scanTimeRange << "  origslot=" << origSlot << std::endl;
 						break;
 					}
 				}
@@ -618,7 +616,7 @@ int processStation(FILE *out, const VexData &V, const string &stn, const string 
 				}
 				else
 				{
-					cout << "Warning: lineTimeRange = " << lineTimeRange << " did not fit with scan " << scanTimeRange << endl;
+					std::cout << "Warning: lineTimeRange = " << lineTimeRange << " did not fit with scan " << scanTimeRange << std::endl;
 				}
 			}
 		}
@@ -639,13 +637,13 @@ int processStation(FILE *out, const VexData &V, const string &stn, const string 
 	return nRecord;
 }
 
-void antennaSummary(const VexData &V, map<std::string,VexInterval> &as)
+void antennaSummary(const VexData &V, std::map<std::string,VexInterval> &as)
 {
 	for(unsigned int s = 0; s < V.nScan(); ++s)
 	{
 		const VexScan *scan = V.getScan(s);
 
-		for(map<string,VexInterval>::const_iterator it = scan->stations.begin(); it != scan->stations.end(); ++it)
+		for(std::map<std::string,VexInterval>::const_iterator it = scan->stations.begin(); it != scan->stations.end(); ++it)
 		{
 			const VexInterval &vi = it->second;
 
@@ -675,7 +673,7 @@ int main(int argc, char **argv)
 	DifxTcal *T;
 	int nWarn = 0;
 	std::string fileList;
-	map<string,VexInterval> as;
+	std::map<std::string,VexInterval> as;
 	const char *vexFilename = 0;
 	const char *tsysFilename = 0;
 	FILE *out;
@@ -684,7 +682,7 @@ int main(int argc, char **argv)
 	int verbose = 1;
 	const char *tcalPath;
 	int nZero = 0;
-	string zeroStations;
+	std::string zeroStations;
 	long long nGood, nBad;
 
 	for(int a = 1; a < argc; ++a)
@@ -803,8 +801,8 @@ int main(int argc, char **argv)
 
 	if(verbose > 2)
 	{
-		cout << "Vex Data:" << endl;
-		cout << *V << endl;
+		std::cout << "Vex Data:" << std::endl;
+		std::cout << *V << std::endl;
 	}
 
 	if(nWarn > 0)
@@ -828,10 +826,10 @@ int main(int argc, char **argv)
 
 	antennaSummary(*V, as);
 
-	cout.precision(13);
+	std::cout.precision(13);
 
 	// Loop over antennas first
-	map<string,VexInterval>::const_iterator it;
+	std::map<std::string,VexInterval>::const_iterator it;
 	for(it = as.begin(); it != as.end(); ++it)
 	{
 		int nRecord;
@@ -844,15 +842,15 @@ int main(int argc, char **argv)
 
 		if(verbose > 0)
 		{
-			p = cout.precision();
-			cout << it->first << endl;
-			cout << "  MJD time range: " << it->second.mjdStart << " to " << it->second.mjdStop << endl;
-			cout.precision(p);
+			p = std::cout.precision();
+			std::cout << it->first << std::endl;
+			std::cout << "  MJD time range: " << it->second.mjdStart << " to " << it->second.mjdStop << std::endl;
+			std::cout.precision(p);
 		}
 
 		if(stn == "y")
 		{
-			cout << "  *** skipping this antenna.  Tsys from VLA comes from a different source ***" << endl;
+			std::cout << "  *** skipping this antenna.  Tsys from VLA comes from a different source ***" << std::endl;
 
 			continue;
 		}
