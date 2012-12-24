@@ -1333,7 +1333,7 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 				}
 
 				vex_field(T_CHAN_DEF, p, 6, &link, &name, &bbcName, &units);
-				subbandId = M->addSubband(freq, bandwidth, sideBand, bbc2pol[bbcName], static_cast<int>(origBandwidth/bandwidth+0.5));
+				subbandId = M->addSubband(freq, bandwidth, sideBand, bbc2pol[bbcName], static_cast<int>(bandwidth/origBandwidth+0.5));
 
 				vex_field(T_CHAN_DEF, p, 7, &link, &name, &value, &units);
 				std::string phaseCalName(value);
@@ -1350,7 +1350,7 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 				setup.channels.back().bbcSideBand = sideBand;
 				setup.channels.back().bbcName = bbcName;
 				setup.channels.back().name = chanName;
-				setup.channels.back().oversamp = static_cast<int>(origBandwidth/bandwidth+0.5);
+				setup.channels.back().oversamp = static_cast<int>(bandwidth/origBandwidth+0.5);
 				if(recChanId >= 0)
 				{
 					setup.channels.back().recordChan = recChanId;

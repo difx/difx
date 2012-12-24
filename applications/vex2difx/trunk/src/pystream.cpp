@@ -315,6 +315,8 @@ static int tuneValidPFB(int tuneHz)
 
 void pystream::figurePersonality(const VexData *V)
 {
+	int maxChans = 0;
+
 	if(personalityType != RDBE_UNKNOWN)
 	{
 		cerr << "Developer error: pystream::figurePersonality called with personalityType != RDBE_UNKNOWN (" << RDBE_UNKNOWN << ").  It was " << personalityType << "." << endl;
@@ -331,22 +333,41 @@ void pystream::figurePersonality(const VexData *V)
 		bool pfbOK = true;
 		bool ddcOK = true;
 
+		if(nChan > maxChans)
+		{
+			maxChans = nChan;
+		}
+
 		// don't let trivialities determine mode
 		if(setup->formatName == "" || setup->formatName == "NONE" || nChan == 0)
 		{
 			continue;
 		}
 
-		if(nRecChan != 1 && nRecChan != 2 && nRecChan != 4 && nRecChan != 8)	// Currently this is true, may change with VDIF
+		if(nRecChan == 0)
 		{
-			ddcOK = false;
+			if(nChan != 1 && nChan != 2 && nChan != 4 && nChan != 8)	// Currently this is true, may change with VDIF
+			{
+				ddcOK = false;
+			}
+			if(nChan != 16)
+			{
+				pfbOK = false;
+			}
 		}
-		if(nRecChan != 16)
+		else
 		{
-			pfbOK = false;
+			if(nRecChan != 1 && nRecChan != 2 && nRecChan != 4 && nRecChan != 8)	// Currently this is true, may change with VDIF
+			{
+				ddcOK = false;
+			}
+			if(nRecChan != 16)
+			{
+				pfbOK = false;
+			}
 		}
 
-		for(unsigned int i = 0; i < setup->channels.size(); ++i)
+		for(unsigned int i = 0; i < nChan; ++i)
 		{
 			double bw = setup->channels[i].bbcBandwidth;
 			int bwHz = static_cast<int>(bw + 0.5);
@@ -424,7 +445,14 @@ void pystream::figurePersonality(const VexData *V)
 
 	if(personalityType == RDBE_UNKNOWN)
 	{
-		personalityType = RDBE_PFB;	// most sensible default for now
+		if(maxChans <= 4)
+		{
+			personalityType = RDBE_DDC;	// most sensible default for now
+		}
+		else
+		{
+			personalityType = RDBE_PFB;
+		}
 	}
 }
 
@@ -513,7 +541,7 @@ int pystream::writeChannelSet(const VexSetup *setup, int modeNum)
 	for(unsigned int i = 0; i < setup->channels.size(); ++i)
 	{
 		unsigned int inputNum = ifIndex[modeNum][setup->channels[i].ifName];
-		double bw = setup->channels[i].bbcBandwidth;
+		double bw = setup->channels[i].bbcBandwidth;	// Hz
 		char sb = setup->channels[i].bbcSideBand;
 		unsigned int nBit = setup->nBit;
 		unsigned int threadId = 0;
@@ -524,8 +552,9 @@ int pystream::writeChannelSet(const VexSetup *setup, int modeNum)
 
 			exit(EXIT_FAILURE);
 		}
-		double freq = setup->channels[i].bbcFreq;
-		double tune = freq - vif->ifSSLO;
+		double freq = setup->channels[i].bbcFreq;	// Hz
+		double tune = freq - vif->ifSSLO;		// Hz
+		double tune0, bw0;				// Hz
 
 		if(tune < 0.0)
 		{
@@ -533,18 +562,92 @@ int pystream::writeChannelSet(const VexSetup *setup, int modeNum)
 			sb = (sb == 'U') ? 'L' : 'U';
 		}
 
+		// Handle the weird case of VLBA at 610 MHz
 		if(freq > 550e6 && freq < 650e6 && tune > 1000e6)
 		{
 			tune -= 500e6;
 			implicitConversions.push_back(i);
 		}
 
+		tune0 = tune;
+		bw0 = bw;
+
+		if(setup->nRecordChan == 0 && setup->channels.size() < 16)
+		{
+			double ny, d640, d896;
+			const double minBW = 1.0e6;	//Hz
+			// If non-recording and DDC, do a few different things, such as making use of oversample factor and nudging tuning to be legal.
+			// Mostly this will be for pointing projects.
+
+			bw = bw / setup->channels[i].oversamp;
+			if(bw < minBW)
+			{
+				// adjust tuning to deep same center freq
+				if(sb == 'L')
+				{
+					tune += (bw - minBW)/2;
+				}
+				else
+				{
+					tune -= (bw - minBW)/2;
+				}
+
+				bw = minBW;
+			}
+			tune0 = tune;
+			
+			if(sb == 'L')
+			{
+				ny = tune-bw;
+			}
+			else
+			{
+				ny = tune+bw;
+			}
+			// ensure no channels cross the 640 and 896 zone boundaries
+			d640 = (tune+ny/2) - 640;
+			d896 = (tune+ny/2) - 896;
+
+			if(fabs(d640) < bw/2)
+			{
+				if(d640 < 0)	// decrease tuning
+				{
+					tune -= bw/2 + d640;
+				}
+				else
+				{
+					tune += bw/2 - d640;
+				}
+			}
+			else if(fabs(d896) < bw/2)
+			{
+				if(d640 < 0)	// decrease tuning
+				{
+					tune -= bw/2 + d896;
+				}
+				else
+				{
+					tune += bw/2 - d896;
+				}
+			}
+
+			tune = static_cast<int>(tune/250000.0 + 0.5)*250000;	// latch onto nearest 250 kHz set point
+		}
+
 		*this << "  bbc(" << inputNum << ", " << (tune*1.0e-6) << ", " << (bw*1.0e-6) << ", '" << sb << "', " << nBit << ", " << threadId << ")";
 		if(i < setup->channels.size()-1)
 		{
-			*this << ",";
+			*this << ", \\";
 		}
-		*this << " \\" << endl;
+		else
+		{
+			*this << "  \\";
+		}
+		if(bw != bw0 || tune != tune0)
+		{
+			*this << "  # orig: tune=" << (tune0*1.0e-6) << " bw=" << (bw0*1.0e6);
+		}
+		*this << endl;
 	}
 	*this << "  ]" << endl;
 
@@ -833,8 +936,8 @@ int pystream::writeLoifTable(const VexData *V)
 		{
 			if(setup->ifs.size() > 2)
 			{
-				cout << "Warning: mode " << mode->defName << " wants " << setup->ifs.size() << " IFs, and we can currently only use 2" << endl;
-				cout << "Might be ok for S/X setup or wideband Cband receiver" << endl;
+				cout << "  Warning: mode " << mode->defName << " wants " << setup->ifs.size() << " IFs, and we can currently only use 2" << endl;
+				cout << "  Might be ok for S/X setup or wideband Cband receiver" << endl;
 			}
 
 			*this << "loif" << modeNum << " = VLBALoIfSetup()" << endl;
@@ -1135,6 +1238,7 @@ int pystream::writeScans(const VexData *V)
 			bool record = scan->recordEnable.find(ant)->second;
 			if(ant == "GB")
 			{
+				// FIXME: move to use of intents in VEX to drive this decision
 				if(!record)
 				{
 					*this << "# pointing scan for the GBT" << endl;
@@ -1303,7 +1407,7 @@ int pystream::writeScans(const VexData *V)
 		*this << endl;
 	}
 
-	cout << "There are " << static_cast<int>(recordSeconds) << " seconds of recording at " << ant << endl;
+	cout << "  There are " << static_cast<int>(recordSeconds) << " seconds of recording at " << ant << endl;
 
 	precision(p);
 
