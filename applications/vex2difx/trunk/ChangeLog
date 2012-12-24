@@ -11,6 +11,8 @@ Version 2.2.0
 * c++11 compliance
 * Don't allow subintNS greater than about 1 second (to ward off MODE errors)
 * Remove "using namespace std" from .h files; goal is to remove them from .cpp files in time
+* Track oversample value in channel structure; move checking downstream to
+  more relevant code.
 
 Version 2.1.0
 ~~~~~~~~~~~~~
@@ -48,8 +50,7 @@ Version 2.0.1
 * Add sampling parameter to ANTENNA confuration
 * When cross-pol enabled, allow correlation of R-L even if one antenna doesn't have both polarizations
 * Try different subintNS until the readsize becomes reasonable (probably some tuning to be done still)
-* Propagate .vex file phase cal extraction into .input file
-* Pass tcalFreq from .v2d to .input
+* Propagate .vex file phase cal extraction into .input file* Pass tcalFreq from .v2d to .input
 * Support several different modes of pulse cal tone selection
 * Allow different numbers of bits on different antennas within same Mode (Thanks Jasper Horrell for the bug report)
 * Catch a few vex problems before segfaulting (thanks Chris Phillips for the bug report)

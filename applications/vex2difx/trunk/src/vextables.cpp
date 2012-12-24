@@ -269,9 +269,9 @@ void VexChannel::selectTones(int toneIntervalMHz, enum ToneSelection selection, 
 	}
 }
 
-int VexMode::addSubband(double freq, double bandwidth, char sideband, char pol)
+int VexMode::addSubband(double freq, double bandwidth, char sideband, char pol, int oversamp)
 {
-	VexSubband S(freq, bandwidth, sideband, pol);
+	VexSubband S(freq, bandwidth, sideband, pol, "", oversamp);
 
 	for(std::vector<VexSubband>::const_iterator it = subbands.begin(); it != subbands.end(); ++it)
 	{
@@ -595,10 +595,11 @@ std::string VexIF::VLBABandName() const
 
 bool operator == (const VexSubband &s1, const VexSubband &s2)
 {
-	if(s1.pol       != s2.pol      ||
-	   s1.freq      != s2.freq     ||
-	   s1.sideBand  != s2.sideBand ||
-	   s1.bandwidth != s2.bandwidth)
+	if(s1.pol       != s2.pol       ||
+	   s1.freq      != s2.freq      ||
+	   s1.sideBand  != s2.sideBand  ||
+	   s1.bandwidth != s2.bandwidth ||
+	   s1.oversamp  != s2.oversamp)
 	{
 		return false;
 	}
@@ -649,6 +650,21 @@ int VexData::sanityCheck()
 		{
 			std::cerr << "Warning: data source is NONE for antenna " << it->name << " ." << std::endl;
 			++nWarn;
+		}
+	}
+
+	for(std::vector<VexMode>::const_iterator it = modes.begin(); it != modes.end(); ++it)
+	{
+		bool first = true;
+
+		for(std::vector<VexSubband>::const_iterator sb = it->subbands.begin(); sb != it->subbands.end(); ++sb)
+		{
+			if(sb->oversamp != 1 && first)
+			{
+				std::cerr << "Warning: some or all subbands are oversampled.  Oversampled bands will be fully correlated unless zoom bands are used." << std::endl;
+				first = false;
+				++nWarn;
+			}
 		}
 	}
 
@@ -1744,14 +1760,14 @@ std::ostream& operator << (std::ostream &os, const VexAntenna &x)
 
 std::ostream& operator << (std::ostream &os, const VexSubband &x)
 {
-	os << "[" << x.freq << " Hz, " << x.bandwidth << " Hz, sb=" << x.sideBand << ", pol=" << x.pol << "]";
+	os << "[" << x.freq << " Hz, " << x.bandwidth << " Hz, sb=" << x.sideBand << ", pol=" << x.pol << ", oversamp=" << x.oversamp << "]";
 	
 	return os;
 }
 
 std::ostream& operator << (std::ostream &os, const VexChannel &x)
 {
-	os << "[name=" << x.name << " BBC=" << x.bbcName << " IF=" << x.ifName << " s=" << x.subbandId << " -> r=" << x.recordChan << " t=" << x.threadId << " tones=";
+	os << "[name=" << x.name << " BBC=" << x.bbcName << " IF=" << x.ifName << " s=" << x.subbandId << " -> r=" << x.recordChan << " t=" << x.threadId << " o=" << x.oversamp << " tones=";
 	for(std::vector<int>::const_iterator v = x.tones.begin(); v != x.tones.end(); ++v)
 	{
 		if(v != x.tones.begin())

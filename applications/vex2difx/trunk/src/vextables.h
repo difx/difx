@@ -149,12 +149,13 @@ public:
 class VexSubband		// Mode-specific frequency details for all antennas
 {
 public:
-	VexSubband(double f=0.0, double b=0.0, char s=' ', char p=' ', std::string name="") : freq(f), bandwidth(b), sideBand(s), pol(p) {}
+	VexSubband(double f=0.0, double b=0.0, char s=' ', char p=' ', std::string name="", int os=1) : freq(f), bandwidth(b), sideBand(s), pol(p), oversamp(os) {}
 
 	double freq;		// (Hz)
 	double bandwidth;	// (Hz)
 	char sideBand;		// net side band of channel (U or L)
 	char pol;		// R or L
+	int oversamp;		// samplerate/(2*bandwidth)
 };
 
 class VexChannel		// Antenna-specific baseband channel details
@@ -176,6 +177,7 @@ public:
 	std::string bbcName;	// name given in VEX of this channel in the BBC table
 	std::vector<int> tones;	// pulse cal tones to extract, directly from PHASE_CAL_DETECT
 	int threadId;		// thread Id for this channel (assigned based on channel names)
+	int oversamp;		// oversample factor = samplerate / (2*bandwidth)
 };
 
 class VexIF
@@ -217,7 +219,7 @@ class VexMode
 public:
 	VexMode() {}
 
-	int addSubband(double freq, double bandwidth, char sideband, char pol);
+	int addSubband(double freq, double bandwidth, char sideband, char pol, int oversamp);
 	int getPols(char *pols) const;
 	int getBits() const;
 	const VexSetup* getSetup(const std::string &antName) const;

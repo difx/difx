@@ -1305,6 +1305,7 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 				char *bbcName;
 				double freq;
 				double bandwidth;
+				double origBandwidth;
 
 				vex_field(T_CHAN_DEF, p, 2, &link, &name, &value, &units);
 				fvex_double(&value, &units, &freq);
@@ -1314,6 +1315,8 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 				
 				vex_field(T_CHAN_DEF, p, 4, &link, &name, &value, &units);
 				fvex_double(&value, &units, &bandwidth);
+
+				origBandwidth = bandwidth;
 
 				if(bandwidth > setup.sampRate/2)
 				{
@@ -1325,20 +1328,12 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 
 				if(bandwidth < setup.sampRate/2)
 				{
-					static bool first = true;
-
-					if(first)
-					{
-						std::cerr << "Warning: Sample rate = " << setup.sampRate << " bandwidth = " << bandwidth << std::endl;
-						std::cerr << "Changing bandwidth to match sample rate.  Expect oversampled bandpasses" << std::endl;
-						std::cerr << "unless zoom bands are used" << std::endl;
-						first = false;
-					}
+					// Note: this is tested in a sanity check later.  This behavior is not always desirable.
 					bandwidth = setup.sampRate/2;
 				}
 
 				vex_field(T_CHAN_DEF, p, 6, &link, &name, &bbcName, &units);
-				subbandId = M->addSubband(freq, bandwidth, sideBand, bbc2pol[bbcName]);
+				subbandId = M->addSubband(freq, bandwidth, sideBand, bbc2pol[bbcName], static_cast<int>(origBandwidth/bandwidth+0.5));
 
 				vex_field(T_CHAN_DEF, p, 7, &link, &name, &value, &units);
 				std::string phaseCalName(value);
@@ -1355,6 +1350,7 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 				setup.channels.back().bbcSideBand = sideBand;
 				setup.channels.back().bbcName = bbcName;
 				setup.channels.back().name = chanName;
+				setup.channels.back().oversamp = static_cast<int>(origBandwidth/bandwidth+0.5);
 				if(recChanId >= 0)
 				{
 					setup.channels.back().recordChan = recChanId;
@@ -1393,9 +1389,9 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 				std::cout << "FYI: Antenna=" << antName << " will use the full number of recorded channels, " << setup.nRecordChan << std::endl;
 			}
 
-			if(nRecordChan != setup.nRecordChan)
+			if(nRecordChan != setup.nRecordChan && setup.nRecordChan != 0)
 			{
-				std::cerr << "FYI: Antenna=" << antName << " nchan=" << nRecordChan << " != setup.nRecordChan=" << setup.nRecordChan << std::endl;
+				std::cerr << "Warning: Antenna=" << antName << " nchan=" << nRecordChan << " != setup.nRecordChan=" << setup.nRecordChan << std::endl;
 			}
 
 			// Sort channels by name and then assign sequential thread Id
