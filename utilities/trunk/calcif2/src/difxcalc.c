@@ -228,37 +228,36 @@ static int callCalc(struct getCALC_arg *request, struct CalcResults *results, co
 	return 0;
 }
 
-static int unwindAzimuth(DifxPolyModel *im)
+static int unwindAzimuth(double *az, int order)
 {
 	int i;
 	double azmax, azmin;
 
-	azmax = im->az[0];
-	azmin = im->az[0];
+	azmax = azmin = az[0];
 
-	for(i = 1; i < im->order; i++)
+	for(i = 1; i < order; ++i)
 	{
-		if(im->az[i] > azmax)
+		if(az[i] > azmax)
 		{
-			azmax = im->az[i];
+			azmax = az[i];
 		}
-		if(im->az[i] < azmin)
+		if(az[i] < azmin)
 		{
-			azmin = im->az[i];
+			azmin = az[i];
 		}
 	}
 
-	if (fabs(azmax-azmin) > 180.0)
+	if(fabs(azmax-azmin) > 180.0)
 	{
-
-		for(i = 0; i < im->order; i++)
+		for(i = 0; i < order; ++i)
 		{
-			if(im->az[i] < 180.0)
+			if(az[i] < 180.0)
 			{
-				im->az[i] += 360.0;
+				az[i] += 360.0;
 			}
 		}
 	}
+
 	return 0;
 }
 
@@ -446,7 +445,7 @@ static int antennaCalc(int scanId, int antId, const DifxInput *D, CalcParams *p,
 				request->date += 1;
 			}
 		}
-		unwindAzimuth(&im[phasecentre][i]);
+		unwindAzimuth(im[phasecentre][i].az, p->order);
 		computePolyModel(&im[phasecentre][i], subInc);
 	}
 
