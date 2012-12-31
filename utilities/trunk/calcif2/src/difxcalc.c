@@ -39,6 +39,21 @@
 
 static struct timeval TIMEOUT = {10, 0};
 
+/* see DifxPolyModel in difxio:difx_input.h */
+struct modelTemp
+{
+	double delay[MAX_MODEL_ORDER*MAX_MODEL_OVERSAMP+1];
+	double dry[MAX_MODEL_ORDER*MAX_MODEL_OVERSAMP+1];
+	double wet[MAX_MODEL_ORDER*MAX_MODEL_OVERSAMP+1];
+	double az[MAX_MODEL_ORDER*MAX_MODEL_OVERSAMP+1];
+	double elcorr[MAX_MODEL_ORDER*MAX_MODEL_OVERSAMP+1];
+	double elgeom[MAX_MODEL_ORDER*MAX_MODEL_OVERSAMP+1];
+	double parangle[MAX_MODEL_ORDER*MAX_MODEL_OVERSAMP+1];
+	double u[MAX_MODEL_ORDER*MAX_MODEL_OVERSAMP+1];
+	double v[MAX_MODEL_ORDER*MAX_MODEL_OVERSAMP+1];
+	double w[MAX_MODEL_ORDER*MAX_MODEL_OVERSAMP+1];
+};
+
 struct CalcResults
 {
 	enum AberCorr aberCorr;
@@ -261,7 +276,7 @@ static int unwindAzimuth(double *az, int order)
 	return 0;
 }
 
-static int extractCalcResults(DifxPolyModel *im, int index, struct CalcResults *results)
+static int extractCalcResults(struct modelTemp *mod, int index, struct CalcResults *results)
 {
 	struct getCALC_res *res0, *res1, *res2;
 	double d, dx, dy;
@@ -271,11 +286,11 @@ static int extractCalcResults(DifxPolyModel *im, int index, struct CalcResults *
 	res1 = &results->res[1];
 	res2 = &results->res[2];
 
-	im->delay[index] = -res0->getCALC_res_u.record.delay[0]*1.0e6;
-	im->dry[index] = res0->getCALC_res_u.record.dry_atmos[0]*1.0e6;
-	im->wet[index] = res0->getCALC_res_u.record.wet_atmos[0]*1.0e6;
-	im->az[index] = res0->getCALC_res_u.record.az[1]*180.0/M_PI;
-	im->elgeom[index] = res0->getCALC_res_u.record.el[1]*180.0/M_PI;
+	mod->delay[index] = -res0->getCALC_res_u.record.delay[0]*1.0e6;
+	mod->dry[index] = res0->getCALC_res_u.record.dry_atmos[0]*1.0e6;
+	mod->wet[index] = res0->getCALC_res_u.record.wet_atmos[0]*1.0e6;
+	mod->az[index] = res0->getCALC_res_u.record.az[1]*180.0/M_PI;
+	mod->elgeom[index] = res0->getCALC_res_u.record.el[1]*180.0/M_PI;
 
 /* FIXME: add elcorr, elgeom and parangle */
 
@@ -309,24 +324,22 @@ static int extractCalcResults(DifxPolyModel *im, int index, struct CalcResults *
 			rv = 1;
 		}
 
-		im->u[index] = (C_LIGHT/results->delta)*(d-dx);
-		im->v[index] = (C_LIGHT/results->delta)*(dy-d);
-		im->w[index] = C_LIGHT*d;
+		mod->u[index] = (C_LIGHT/results->delta)*(d-dx);
+		mod->v[index] = (C_LIGHT/results->delta)*(dy-d);
+		mod->w[index] = C_LIGHT*d;
 	
-		if( isnan(d)  || isinf(d)  ||
-		    isnan(dx) || isinf(dx) ||
-		    isnan(dy) || isinf(dy) )
+		if(isnan(d) || isinf(d) || isnan(dx) || isinf(dx) || isnan(dy) || isinf(dy))
 		{
 			rv = 1;
 		}
 	}
 	else
 	{
-		im->u[index] = res0->getCALC_res_u.record.UV[0];
-		im->v[index] = res0->getCALC_res_u.record.UV[1];
-		im->w[index] = res0->getCALC_res_u.record.UV[2];
+		mod->u[index] = res0->getCALC_res_u.record.UV[0];
+		mod->v[index] = res0->getCALC_res_u.record.UV[1];
+		mod->w[index] = res0->getCALC_res_u.record.UV[2];
 		
-		if(isnan(im->delay[index]) || isinf(im->delay[index]))
+		if(isnan(mod->delay[index]) || isinf(mod->delay[index]))
 		{
 			rv = 1;
 		}
@@ -335,25 +348,31 @@ static int extractCalcResults(DifxPolyModel *im, int index, struct CalcResults *
 	return rv;
 }
 
-static void computePolyModel(DifxPolyModel *im, double deltaT)
+static double computePolyModel(DifxPolyModel *im, const struct modelTemp *mod, double deltaT, int oversamp, int interpolationType)
 {
-	computePoly(im->delay,    im->order+1, deltaT);
-	computePoly(im->dry,      im->order+1, deltaT);
-	computePoly(im->wet,      im->order+1, deltaT);
-	computePoly(im->az,       im->order+1, deltaT);
-	computePoly(im->elcorr,   im->order+1, deltaT);
-	computePoly(im->elgeom,   im->order+1, deltaT);
-	computePoly(im->parangle, im->order+1, deltaT);
-	computePoly(im->u,        im->order+1, deltaT);
-	computePoly(im->v,        im->order+1, deltaT);
-	computePoly(im->w,        im->order+1, deltaT);
+	double r;
+
+	/* FIXME: add interpolation mode */
+	r = computePoly2(im->delay,mod->delay,		im->order+1, oversamp, deltaT, interpolationType);
+	computePoly2(im->dry,      mod->dry,		im->order+1, oversamp, deltaT, interpolationType);
+	computePoly2(im->wet,      mod->wet,		im->order+1, oversamp, deltaT, interpolationType);
+	computePoly2(im->az,       mod->az,		im->order+1, oversamp, deltaT, interpolationType);
+	computePoly2(im->elcorr,   mod->elcorr,		im->order+1, oversamp, deltaT, interpolationType);
+	computePoly2(im->elgeom,   mod->elgeom,		im->order+1, oversamp, deltaT, interpolationType);
+	computePoly2(im->parangle, mod->parangle,	im->order+1, oversamp, deltaT, interpolationType);
+	computePoly2(im->u,        mod->u,		im->order+1, oversamp, deltaT, interpolationType);
+	computePoly2(im->v,        mod->v,		im->order+1, oversamp, deltaT, interpolationType);
+	computePoly2(im->w,        mod->w,		im->order+1, oversamp, deltaT, interpolationType);
+
+	return r;	// The RMS interpolation error
 }
 
 /* antenna here is a pointer to a particular antenna object */
-static int antennaCalc(int scanId, int antId, const DifxInput *D, CalcParams *p, int phasecentre)
+static int antennaCalc(int scanId, int antId, const DifxInput *D, CalcParams *p, int phasecentre, int verbose)
 {
 	struct getCALC_arg *request;
 	struct CalcResults results;
+	struct modelTemp mod;
 	int i, j, v;
 	double sec, subInc;
 	double lastsec = -1000;
@@ -380,7 +399,7 @@ static int antennaCalc(int scanId, int antId, const DifxInput *D, CalcParams *p,
 		sourceId = scan->phsCentreSrcs[phasecentre-1];
 	}
 	source = D->source + sourceId;
-	subInc = p->increment/(double)(p->order);
+	subInc = p->increment/(double)(p->order*p->oversamp);
 	request = &(p->request);
 	spacecraftId = source->spacecraftId;
 
@@ -407,9 +426,11 @@ static int antennaCalc(int scanId, int antId, const DifxInput *D, CalcParams *p,
 	}
 	for(i = 0; i < nInt; ++i)
 	{
+		double e;
+
 		request->date = im[phasecentre][i].mjd;
 		sec = im[phasecentre][i].sec;
-		for(j = 0; j <= p->order; ++j)
+		for(j = 0; j <= p->order*p->oversamp; ++j)
 		{
 			request->time = sec/86400.0;
 
@@ -434,9 +455,9 @@ static int antennaCalc(int scanId, int antId, const DifxInput *D, CalcParams *p,
 					return -1;
 				}
 			}
-			/* use result to populate tabulated values */
 
-			nError += extractCalcResults(&im[phasecentre][i], j, &results);
+			/* use result to populate tabulated values */
+			nError += extractCalcResults(&mod, j, &results);
 			lastsec = sec;
 			sec += subInc;
 			if(sec >= 86400.0)
@@ -445,8 +466,12 @@ static int antennaCalc(int scanId, int antId, const DifxInput *D, CalcParams *p,
 				request->date += 1;
 			}
 		}
-		unwindAzimuth(im[phasecentre][i].az, p->order);
-		computePolyModel(&im[phasecentre][i], subInc);
+		unwindAzimuth(mod.az, p->order*p->oversamp);
+		e = computePolyModel(&im[phasecentre][i], &mod, subInc, p->oversamp, 1);
+		if(verbose > 0 && p->oversamp > 1)
+		{
+			printf("Scan %d antId %d poly %d : max delay interpolation error = %e us\n", scanId, antId, i, e);
+		}
 	}
 
 	if(nError > 0)
@@ -457,7 +482,7 @@ static int antennaCalc(int scanId, int antId, const DifxInput *D, CalcParams *p,
 	return nError;
 }
 
-static int scanCalc(int scanId, const DifxInput *D, CalcParams *p, int isLast)
+static int scanCalc(int scanId, const DifxInput *D, CalcParams *p, int isLast, int verbose)
 {
 	DifxPolyModel *im;
 	int antId;
@@ -518,7 +543,7 @@ static int scanCalc(int scanId, const DifxInput *D, CalcParams *p, int isLast)
 			}
 
 			/* call calc to derive delay, etc... polys */
-			v = antennaCalc(scanId, antId, D, p, k);
+			v = antennaCalc(scanId, antId, D, p, k, verbose);
 			if(v < 0)
 			{
 				return -1;
@@ -529,7 +554,7 @@ static int scanCalc(int scanId, const DifxInput *D, CalcParams *p, int isLast)
 	return 0;
 }
 
-int difxCalc(DifxInput *D, CalcParams *p)
+int difxCalc(DifxInput *D, CalcParams *p, int verbose)
 {
 	int scanId;
 	int v;
@@ -564,7 +589,7 @@ int difxCalc(DifxInput *D, CalcParams *p)
 		{
 			isLast = 0;
 		}
-		v = scanCalc(scanId, D, p, isLast);
+		v = scanCalc(scanId, D, p, isLast, verbose);
 		if(v < 0)
 		{
 			return -1;

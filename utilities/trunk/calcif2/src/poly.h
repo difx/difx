@@ -36,6 +36,8 @@
  */
 void computePoly(double *p, int n, double d);
 
+double computePoly2(double *p, const double *q, int n, int oversamp, double d, int interpolationType);
+
 /* Use Cramer's rule to evaluate polynomial */
 double evaluatePoly(const double *p, int n, double x);
 

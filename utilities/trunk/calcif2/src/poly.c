@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2011 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2008-2012 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -29,9 +29,13 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
+#include <difxio.h>	/* only needed for MAX_MODEL_ORDER */
 #include "poly.h"
 
+#ifndef MAX_MODEL_ORDER
 #define MAX_MODEL_ORDER 10
+#endif
 
 /* Implement a specific variant of Neville's algorithm for equally spaced
  * data.  The expansion is about x=0 and the input data points are 
@@ -64,6 +68,43 @@ void computePoly(double *p, int n, double d)
 	{
 		p[i] = C[0][i];
 	}
+}
+
+double computePoly2(double *p, const double *q, int n, int oversamp, double d, int interpolationType)
+{
+	double r = 0.0;
+	int i;
+
+	switch(interpolationType)
+	{
+	case 0:	
+	case 1:
+		for(i = 0; i < n; ++i)
+		{
+			p[i] = q[i*oversamp];
+		}
+		/* use the computePoly function above */
+		computePoly(p, n, d*oversamp);
+		break;
+	case 2:
+		/* Look at http://www.gnu.org/software/gsl/manual/html_node/Fitting-Examples.html */
+	default:
+		fprintf(stderr, "Error: computePoly2: interpolationType=%d doesn't exist\n", interpolationType);
+		r = -1.0;
+	}
+
+	/* determine greatest interpolation error */
+	for(i = 0; i <= (n-1)*oversamp; ++i)
+	{
+		double v = evaluatePoly(p, n, d*i);
+		double e = fabs(v-q[i]);
+		if(e > r)
+		{
+			r = e;
+		}
+	}
+
+	return r;
 }
 
 /* Use Cramer's rule to evaluate polynomial */

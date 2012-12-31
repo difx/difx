@@ -47,7 +47,7 @@
 const char program[] = "calcif2";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
 const char version[] = VERSION;
-const char verdate[] = "20120531";
+const char verdate[] = "20121231";
 
 typedef struct
 {
@@ -61,6 +61,7 @@ typedef struct
 	int nFile;
 	int polyOrder;
 	int polyInterval;	/* (sec) */
+	int polyOversamp;
 	int allowNegDelay;
 	char *files[MAX_FILES];
 	int overrideVersion;
@@ -100,6 +101,9 @@ static void usage()
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --order <n>\n");
 	fprintf(stderr, "  -o      <n>             Use <n>th order polynomial [5]\n");
+	fprintf(stderr, "\n");
+	fprintf(stderr, "  --oversamp <m>\n");
+	fprintf(stderr, "  -O         <m>          Oversample polynomial by factor <m> [1]\n");
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --interval <int>\n");
 	fprintf(stderr, "  -i         <int>        New delay poly every <int> sec. [120]\n");
@@ -142,6 +146,7 @@ static CommandLineOptions *newCommandLineOptions(int argc, char **argv)
 	opts = (CommandLineOptions *)calloc(1, sizeof(CommandLineOptions));
 	opts->delta = 0.0001;
 	opts->polyOrder = 5;
+	opts->polyOversamp = 1;
 	opts->polyInterval = 120;
 	opts->aberCorr = AberCorrExact;
 
@@ -217,6 +222,12 @@ static CommandLineOptions *newCommandLineOptions(int argc, char **argv)
 					++i;
 					opts->polyOrder = atoi(argv[i]);
 				}
+				else if(strcmp(argv[i], "--oversamp") == 0 ||
+					strcmp(argv[i], "-O") == 0)
+				{
+					++i;
+					opts->polyOversamp = atoi(argv[i]);
+				}
 				else if(strcmp(argv[i], "--interval") == 0 ||
 					strcmp(argv[i], "-i") == 0)
 				{
@@ -253,9 +264,15 @@ static CommandLineOptions *newCommandLineOptions(int argc, char **argv)
 		++die;
 	}
 
-	if(opts->polyOrder < 2 || opts->polyOrder > 5)
+	if(opts->polyOrder < 2 || opts->polyOrder > MAX_MODEL_ORDER)
 	{
-		fprintf(stderr, "Error: calcif2 Polynomial order must be in range [2, 5]\n");
+		fprintf(stderr, "Error: calcif2 Polynomial order must be in range [2, %d]\n", MAX_MODEL_ORDER);
+		++die;
+	}
+
+	if(opts->polyOversamp < 1 || opts->polyOversamp > MAX_MODEL_OVERSAMP)
+	{
+		fprintf(stderr, "Error: calcif2 Polynomial oversample factor must be in range [1, %d]\n", MAX_MODEL_OVERSAMP);
 		++die;
 	}
 
@@ -537,7 +554,7 @@ static int runfile(const char *prefix, const CommandLineOptions *opts, CalcParam
 
 			return -1;
 		}
-		v = difxCalc(D, p);
+		v = difxCalc(D, p, opts->verbose);
 		if(v < 0)
 		{
 			deleteDifxInput(D);
@@ -582,6 +599,7 @@ CalcParams *newCalcParams(const CommandLineOptions *opts)
 
 	p->increment = opts->polyInterval;
 	p->order = opts->polyOrder;
+	p->oversamp = opts->polyOversamp;
 	p->delta = opts->delta;
 	p->aberCorr = opts->aberCorr;
 

@@ -33,9 +33,12 @@
 #include <difxio.h>
 #include "CALCServer.h"
 
+#define MAX_MODEL_OVERSAMP 5
+
 typedef struct
 {
 	int order;
+	int oversamp;
 	int increment;	/* seconds */
 	double delta;	/* (rad) step size for dtau/dl and dtau/dm */
 	char calcServer[64];
@@ -48,6 +51,6 @@ typedef struct
 } CalcParams;
 
 int difxCalcInit(const DifxInput *D, CalcParams *p);
-int difxCalc(DifxInput *D, CalcParams *p);
+int difxCalc(DifxInput *D, CalcParams *p, int verbose);
 
 #endif
