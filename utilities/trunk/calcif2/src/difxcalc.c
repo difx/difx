@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2011 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2008-2012 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -57,7 +57,7 @@ int difxCalcInit(const DifxInput *D, CalcParams *p)
 	memset(request, 0, sizeof(struct getCALC_arg));
 
 	request->request_id = 150;
-	for(i = 0; i < 64; i++)
+	for(i = 0; i < 64; ++i)
 	{
 		request->kflags[i] = -1;
 	}
@@ -75,7 +75,7 @@ int difxCalcInit(const DifxInput *D, CalcParams *p)
 
 	if(D->nEOP >= MAX_EOPS)
 	{
-		for(i = 0; i < MAX_EOPS; i++)
+		for(i = 0; i < MAX_EOPS; ++i)
 		{
 			request->EOP_time[i] = D->eop[i].mjd;
 			request->tai_utc[i]  = D->eop[i].tai_utc;
@@ -149,7 +149,7 @@ static int callCalc(struct getCALC_arg *request, struct CalcResults *results, co
 		results->delta = 0;
 	}
 
-	for(i = 0; i < results->nRes; i++)
+	for(i = 0; i < results->nRes; ++i)
 	{
 		memset(results->res+i, 0, sizeof(struct getCALC_res));
 	}
@@ -161,13 +161,13 @@ static int callCalc(struct getCALC_arg *request, struct CalcResults *results, co
 		TIMEOUT);
 	if(clnt_stat != RPC_SUCCESS)
 	{
-		fprintf(stderr, "clnt_call failed!\n");
+		fprintf(stderr, "Error: callCalc: clnt_call failed!\n");
 
 		return -1;
 	}
 	if(results->res[0].error)
 	{
-		fprintf(stderr,"Error: callCalc: %s\n", results->res[0].getCALC_res_u.errmsg);
+		fprintf(stderr, "Error: callCalc: %s\n", results->res[0].getCALC_res_u.errmsg);
 
 		return -2;
 	}
@@ -188,7 +188,7 @@ static int callCalc(struct getCALC_arg *request, struct CalcResults *results, co
 			TIMEOUT);
 		if(clnt_stat != RPC_SUCCESS)
 		{
-			fprintf(stderr, "clnt_call failed!\n");
+			fprintf(stderr, "Error: callCalc (2): clnt_call failed!\n");
 
 			return -1;
 		}
@@ -210,7 +210,7 @@ static int callCalc(struct getCALC_arg *request, struct CalcResults *results, co
 			TIMEOUT);
 		if(clnt_stat != RPC_SUCCESS)
 		{
-			fprintf(stderr, "clnt_call failed!\n");
+			fprintf(stderr, "Error: callCalc (3): clnt_call failed!\n");
 
 			return -1;
 		}
@@ -272,10 +272,9 @@ static int extractCalcResults(DifxPolyModel *im, int index, struct CalcResults *
 	res1 = &results->res[1];
 	res2 = &results->res[2];
 
-	
-	im->delay[index] = -res0->getCALC_res_u.record.delay[0]*1e6;
-	im->dry[index] = res0->getCALC_res_u.record.dry_atmos[0]*1e6;
-	im->wet[index] = res0->getCALC_res_u.record.wet_atmos[0]*1e6;
+	im->delay[index] = -res0->getCALC_res_u.record.delay[0]*1.0e6;
+	im->dry[index] = res0->getCALC_res_u.record.dry_atmos[0]*1.0e6;
+	im->wet[index] = res0->getCALC_res_u.record.wet_atmos[0]*1.0e6;
 	im->az[index] = res0->getCALC_res_u.record.az[1]*180.0/M_PI;
 	im->elgeom[index] = res0->getCALC_res_u.record.el[1]*180.0/M_PI;
 
@@ -407,11 +406,11 @@ static int antennaCalc(int scanId, int antId, const DifxInput *D, CalcParams *p,
 	        request->parallax = source->parallax;
 	        request->depoch   = source->pmEpoch;
 	}
-	for(i = 0; i < nInt; i++)
+	for(i = 0; i < nInt; ++i)
 	{
 		request->date = im[phasecentre][i].mjd;
 		sec = im[phasecentre][i].sec;
-		for(j = 0; j <= p->order; j++)
+		for(j = 0; j <= p->order; ++j)
 		{
 			request->time = sec/86400.0;
 
@@ -489,11 +488,11 @@ static int scanCalc(int scanId, const DifxInput *D, CalcParams *p, int isLast)
 	nInt = int2 - int1;
 	if(isLast || sec2 % p->increment == 0)
 	{
-		nInt++;
+		++nInt;
 	}
 	scan->nPoly = nInt;
 
-	for(antId = 0; antId < scan->nAntenna; antId++)
+	for(antId = 0; antId < scan->nAntenna; ++antId)
 	{
 		scan->im[antId] = (DifxPolyModel **)calloc(scan->nPhaseCentres+1, sizeof(DifxPolyModel*));
 		for(k = 0; k < scan->nPhaseCentres + 1; ++k)
@@ -503,12 +502,12 @@ static int scanCalc(int scanId, const DifxInput *D, CalcParams *p, int isLast)
 			sec = int1*p->increment;
 			mjd = (int)(job->mjdStart);
 		
-			for(i = 0; i < nInt; i++)
+			for(i = 0; i < nInt; ++i)
 			{
 				if(sec >= 86400)
 				{
 					sec -= 86400;
-					mjd++;
+					++mjd;
 				}
 	
 				/* set up the intervals to calc polys over */
@@ -544,7 +543,7 @@ int difxCalc(DifxInput *D, CalcParams *p)
 		return -1;
 	}
 
-	for(scanId = 0; scanId < D->nScan; scanId++)
+	for(scanId = 0; scanId < D->nScan; ++scanId)
 	{
 		scan = D->scan + scanId;
 		job = D->job;
