@@ -62,6 +62,7 @@ typedef struct
 	int polyOrder;
 	int polyInterval;	/* (sec) */
 	int polyOversamp;
+	int interpol;
 	int allowNegDelay;
 	char *files[MAX_FILES];
 	int overrideVersion;
@@ -108,6 +109,9 @@ static void usage()
 	fprintf(stderr, "  --interval <int>\n");
 	fprintf(stderr, "  -i         <int>        New delay poly every <int> sec. [120]\n");
 	fprintf(stderr, "\n");
+	fprintf(stderr, "  --fit\n");
+	fprintf(stderr, "  -F                      Fit oversampled polynomials\n");
+	fprintf(stderr, "\n");
 	fprintf(stderr, "  --override-version      Ignore difx versions\n");
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --server <servername>\n");
@@ -148,6 +152,7 @@ static CommandLineOptions *newCommandLineOptions(int argc, char **argv)
 	opts->polyOrder = 5;
 	opts->polyOversamp = 1;
 	opts->polyInterval = 120;
+	opts->interpol = 0;	/* usual solve */
 	opts->aberCorr = AberCorrExact;
 
 	for(i = 1; i < argc; ++i)
@@ -189,6 +194,11 @@ static CommandLineOptions *newCommandLineOptions(int argc, char **argv)
 				strcmp(argv[i], "--noatmos") == 0)
 			{
 				opts->aberCorr = AberCorrNoAtmos;
+			}
+			else if(strcmp(argv[i], "-F") == 0 ||
+				strcmp(argv[i], "--fit") == 0)
+			{
+				opts->interpol = 1;
 			}
 			else if(strcmp(argv[i], "-h") == 0 ||
 				strcmp(argv[i], "--help") == 0)
@@ -274,6 +284,12 @@ static CommandLineOptions *newCommandLineOptions(int argc, char **argv)
 	{
 		fprintf(stderr, "Error: calcif2 Polynomial oversample factor must be in range [1, %d]\n", MAX_MODEL_OVERSAMP);
 		++die;
+	}
+
+	if(opts->interpol == 1 && opts->polyOversamp == 1)
+	{
+		opts->polyOversamp = 2;
+		fprintf(stderr, "Note: oversampling increased to 2 because polynomial fitting is being used.\n");
 	}
 
 	if(opts->polyInterval < 10 || opts->polyInterval > 600)
@@ -601,6 +617,7 @@ CalcParams *newCalcParams(const CommandLineOptions *opts)
 	p->order = opts->polyOrder;
 	p->oversamp = opts->polyOversamp;
 	p->delta = opts->delta;
+	p->interpol = opts->interpol;
 	p->aberCorr = opts->aberCorr;
 
 	/* We know that opts->calcServer is no more than DIFXIO_NAME_LENGTH-1 chars long */

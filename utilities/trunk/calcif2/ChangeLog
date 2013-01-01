@@ -4,7 +4,9 @@ Version 2.2.0
 * Post DiFX-2.1
 * Fix azimuth polynomial interpolation in case of wrap (John Morgan)
 * Option to evaluate quality of delay interpolation (use -O 2 (or higher) and -v)
-  - Ultimaltely use new infrastructure to allow oversampled least squares fit
+* Add polynomial fitting option (-F) .  This will take more CALC samplings than needed and fit
+  a constrained polynomial (endpoints fixed) to that data.  This seems to produce marginally
+  better values.  This new mode requires GSL.
 
 Version 2.1.0
 * Name change from DiFX-2.0.2

@@ -293,6 +293,8 @@ static int extractCalcResults(struct modelTemp *mod, int index, struct CalcResul
 	mod->elgeom[index] = res0->getCALC_res_u.record.el[1]*180.0/M_PI;
 
 /* FIXME: add elcorr, elgeom and parangle */
+	mod->elcorr[index] = 0.0;
+	mod->parangle[index] = 0.0;
 
 	if(results->nRes == 3)
 	{
@@ -467,7 +469,7 @@ static int antennaCalc(int scanId, int antId, const DifxInput *D, CalcParams *p,
 			}
 		}
 		unwindAzimuth(mod.az, p->order*p->oversamp);
-		e = computePolyModel(&im[phasecentre][i], &mod, subInc, p->oversamp, 1);
+		e = computePolyModel(&im[phasecentre][i], &mod, subInc, p->oversamp, p->interpol);
 		if(verbose > 0 && p->oversamp > 1)
 		{
 			printf("Scan %d antId %d poly %d : max delay interpolation error = %e us\n", scanId, antId, i, e);

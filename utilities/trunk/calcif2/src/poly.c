@@ -30,6 +30,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include "../config.h"
+#if HAVE_GSL
+#include <gsl/gsl_multifit.h>
+#endif
 #include <difxio.h>	/* only needed for MAX_MODEL_ORDER */
 #include "poly.h"
 
@@ -70,6 +74,146 @@ void computePoly(double *p, int n, double d)
 	}
 }
 
+#if HAVE_GSL
+
+/* This routine takes generally more data points than there are parameters to fit (i.e., oversamp > 1)
+   and does a least squares fit to that data.  The two end points are constrained; that is, the
+   polynomial is forced to go through these points.
+
+   The fitting process is done in the Berenstein polynomial basis where the first and last terms
+   (corresponding to (1-t)^(n-1) and t^(n-1) ) are uniquely defined by the first and last data points.
+   Once the Berenstein coefficients are known a binomial transform turns them into coefficients for
+   t^k .
+
+   Note that to improve numerical precision a constant value corresponding to the initial value is
+   subtracted during the firring process and added back at the very end.
+*/
+void fitPoly(double *p, const double *q, int n, int oversamp, double d)
+{
+	static int binomial[MAX_MODEL_ORDER+1][MAX_MODEL_ORDER+1];
+	static int first = 1;
+	gsl_multifit_linear_workspace * work;
+	gsl_matrix *X, *cov;
+	gsl_vector *y, *w, *c;
+	int nData = (n-1)*oversamp-1;
+	int nParam = n-2;
+	double C, qn;
+	double delta;
+	double chisq;
+	double dfac;
+	int i, j, k;
+
+	if(first)
+	{
+		first = 0;
+		for(j = 0; j <= MAX_MODEL_ORDER; ++j)
+		{
+			for(i = 0; i <= MAX_MODEL_ORDER; ++i)
+			{
+				if(i == 0)
+				{
+					binomial[j][i] = 1;
+				}
+				else
+				{
+					binomial[j][i] = 0;
+				}
+			}
+		}
+		for(j = 1; j <= MAX_MODEL_ORDER; ++j)
+		{
+			for(i = 1; i <= j; ++i)
+			{
+				binomial[j][i] = binomial[j-1][i-1] + binomial[j-1][i];
+			}
+		}
+	}
+
+	delta = d*(nData+1);
+
+	X = gsl_matrix_alloc(nData, nParam);
+	y = gsl_vector_alloc(nData);
+	w = gsl_vector_alloc(nData);
+
+	cov = gsl_matrix_alloc(nParam, nParam);
+	c = gsl_vector_alloc(nParam);
+
+	C = q[0];
+	qn = q[nData+1] - C;
+	
+	for(i = 1; i <= nData; ++i)
+	{
+		double tau = i/(nData+1.0);
+		double taun = 1.0;
+
+		/* In here the Berenstein polynomial coefficients are implicitly set */
+		for(j = 1; j < n-1; ++j)
+		{
+			double b = 1.0;
+			for(k = 0; k < j; ++k)
+			{
+				b *= tau;
+			}
+			for(k = j; k < n - 1; ++k)
+			{
+				b *= (1.0 - tau);
+			}
+			gsl_matrix_set(X, i-1, j-1, b*binomial[n-1][j]);
+		}
+
+		for(k = 1; k < n; ++k)
+		{
+			taun *= tau;
+		}
+
+		gsl_vector_set(y, i-1, q[i] - C - qn*taun);
+		gsl_vector_set(w, i-1, 1.0);
+	}
+
+	work = gsl_multifit_linear_alloc(nData, nParam);
+	gsl_multifit_wlinear(X, w, y, c, cov, &chisq, work);
+	gsl_multifit_linear_free(work);
+
+	/* Collect coefficients of (1-t)^(n-k)*t^k */
+	p[0] = 0.0;
+	for(i = 1; i < n-1; ++i)
+	{
+		p[i] = gsl_vector_get(c, i-1);
+	}
+	p[n-1] = qn;
+
+	/* apply binomial transform */
+	for(j = 1; j < n; ++j)
+	{
+		for(i = n-1; i >= j; --i)
+		{
+			p[i] -= p[i-1];
+		}
+	}
+	for(i = 0; i < n; ++i)
+	{
+		p[i] *= binomial[n-1][i];
+	}
+
+	/* put back the DC bias removed early in the process */
+	p[0] += C;
+
+	/* scale into correct domain coordinates */
+	dfac = 1.0;
+	for(i = 1; i < n; ++i)
+	{
+		dfac /= delta;
+		p[i] *= dfac;
+	}
+
+	gsl_matrix_free(X);
+	gsl_vector_free(y);
+	gsl_vector_free(w);
+	gsl_matrix_free(cov);
+	gsl_vector_free(c);
+}
+#endif
+
 double computePoly2(double *p, const double *q, int n, int oversamp, double d, int interpolationType)
 {
 	double r = 0.0;
@@ -78,7 +222,6 @@ double computePoly2(double *p, const double *q, int n, int oversamp, double d, i
 	switch(interpolationType)
 	{
 	case 0:	
-	case 1:
 		for(i = 0; i < n; ++i)
 		{
 			p[i] = q[i*oversamp];
@@ -86,8 +229,15 @@ double computePoly2(double *p, const double *q, int n, int oversamp, double d, i
 		/* use the computePoly function above */
 		computePoly(p, n, d*oversamp);
 		break;
-	case 2:
+	case 1:
 		/* Look at http://www.gnu.org/software/gsl/manual/html_node/Fitting-Examples.html */
+#if HAVE_GSL
+		fitPoly(p, q, n, oversamp, d);
+#else
+		fprintf(stderr, "polynomial fitting requested but this program is not compiled with GSL so this is not possible\n");
+		exit(EXIT_FAILURE);
+#endif
+		break;
 	default:
 		fprintf(stderr, "Error: computePoly2: interpolationType=%d doesn't exist\n", interpolationType);
 		r = -1.0;

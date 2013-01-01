@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2011 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2008-2012 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -39,6 +39,7 @@ typedef struct
 {
 	int order;
 	int oversamp;
+	int interpol;
 	int increment;	/* seconds */
 	double delta;	/* (rad) step size for dtau/dl and dtau/dm */
 	char calcServer[64];
