@@ -37,8 +37,8 @@
 using namespace std;
 
 const string program("vex2script");
-const string version("0.6");
-const string verdate("20120517");
+const string version("0.7");
+const string verdate("20130103");
 const string author("Walter Brisken, Adam Deller, Matthias Bark");
 
 static void usage(int argc, char **argv)
@@ -54,6 +54,7 @@ static void usage(int argc, char **argv)
 	cout << "  --phasingsources=source1,source2... (for EVLA)" << endl;
 	cout << "  --dbepersonality=[path/]filename (for VLBA)" << endl;
 	cout << "  --mark5a  Set up DBE as PFB, but don't record" << endl;
+    cout << "  -gb, for GB script only" << endl;
 	cout << endl;
 }
 
@@ -102,6 +103,7 @@ int main(int argc, char **argv)
 	pystream py;
 	pystream::ScriptType sType;
 	int nWarn = 0;
+    bool gb_only = false;
 
 	if(argc < 2 || strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0)
 	{
@@ -151,6 +153,10 @@ int main(int argc, char **argv)
 			py.setDBEPersonalityType(pystream::RDBE_PFB);
 			py.setRecorderType(pystream::RECORDER_NONE);
 		}
+        else if(strncmp(argv[count], "-gb", 3) == 0) 
+        {
+            gb_only = true;
+        }
 		else
 		{
 			cout << "Ignoring argument " << argv[count] << endl;
@@ -176,11 +182,14 @@ int main(int argc, char **argv)
 		A = V->getAntenna(a);
 		if(isEVLA(A->name))
 		{
+                    if (!gb_only)
+                    {
 			cout << "Skipping VLA antenna" << endl;
 			continue;
 
 			cout << "VLA antenna " << a << " = " << A->name << endl;
 			sType = pystream::SCRIPT_EVLA;
+		}
 		}
 		else if(isGBT(A->name))
 		{
@@ -189,6 +198,7 @@ int main(int argc, char **argv)
 		}
 		else if(isVLBA(A->name))
 		{
+            if (!gb_only)
 			cout << "VLBA antenna " << a << " = " << A->name << endl;
 			sType = pystream::SCRIPT_VLBA;
 		}
@@ -198,22 +208,18 @@ int main(int argc, char **argv)
 			continue;
 		}
 
+        if (gb_only && (sType != pystream::SCRIPT_GBT))
+                    continue;
+
 		py.open(A->name, V, sType);
 
 		py.writeHeader(V);
 		py.writeComment(string("File written by ") + program + string(" version ") + version + string(" vintage ") + verdate);
 		py.writeDbeInit(V);
 		py.writeRecorderInit(V);
-		if(sType == pystream::SCRIPT_GBT)
-		{
-			py.writeScansGBT(V);
-		}
-		else
-		{
-			py.writeLoifTable(V);
-			py.writeSourceTable(V);
-			py.writeScans(V);
-		}
+		py.writeLoifTable(V);
+		py.writeSourceTable(V);
+		py.writeScans(V);
 
 		py.close();
 	}
