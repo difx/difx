@@ -37,8 +37,13 @@
 using namespace std;
 
 const string program("vex2script");
+<<<<<<< .mine
+const string version("0.7");
+const string verdate("20121230");
+=======
 const string version("0.7");
 const string verdate("20130103");
+>>>>>>> .r5093
 const string author("Walter Brisken, Adam Deller, Matthias Bark");
 
 static void usage(int argc, char **argv)
@@ -103,7 +108,7 @@ int main(int argc, char **argv)
 	pystream py;
 	pystream::ScriptType sType;
 	int nWarn = 0;
-    bool gb_only = false;
+	bool gb_only = false;
 
 	if(argc < 2 || strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0)
 	{
@@ -150,13 +155,13 @@ int main(int argc, char **argv)
 		else if(strcasecmp(argv[count], "--mark5A") == 0)
 		{
 			py.setMark5A(true);
-			py.setDBEPersonalityType(pystream::RDBE_PFB);
+			//py.setDBEPersonalityType(pystream::RDBE_PFB);
 			py.setRecorderType(pystream::RECORDER_NONE);
 		}
-        else if(strncmp(argv[count], "-gb", 3) == 0) 
-        {
-            gb_only = true;
-        }
+		else if(strncmp(argv[count], "-gb", 3) == 0) 
+		{
+			gb_only = true;
+		}
 		else
 		{
 			cout << "Ignoring argument " << argv[count] << endl;
@@ -189,7 +194,7 @@ int main(int argc, char **argv)
 
 			cout << "VLA antenna " << a << " = " << A->name << endl;
 			sType = pystream::SCRIPT_EVLA;
-		}
+		    }
 		}
 		else if(isGBT(A->name))
 		{
@@ -198,9 +203,9 @@ int main(int argc, char **argv)
 		}
 		else if(isVLBA(A->name))
 		{
-            if (!gb_only)
+	            if (!gb_only)
 			cout << "VLBA antenna " << a << " = " << A->name << endl;
-			sType = pystream::SCRIPT_VLBA;
+		    sType = pystream::SCRIPT_VLBA;
 		}
 		else 
 		{
