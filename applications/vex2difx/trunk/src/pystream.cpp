@@ -391,7 +391,7 @@ void pystream::figurePersonality(const VexData *V)
 			}
 			tuneHz = static_cast<int>(tune + 0.5);
 			
-			if(nBit != 2 && setup->channels[i].recordChan >= 0)
+			if(nBit != 2 && setup->channels[i].recordChan >= 0 && !isMark5A)
 			{
 				cerr << "Error: " << nBit << " bits Quantization requested for mode " << mode->defName << ".  Only 2 bits are allowed now." << endl;
 
@@ -415,31 +415,34 @@ void pystream::figurePersonality(const VexData *V)
 			}
 		}
 
-		if(!pfbOK && !ddcOK)
+		if(setup->nRecordChan > 0 && !isMark5A)
 		{
-			cerr << "Error: mode " << mode->defName << " is not suitable for either PFB or DDC on antenna " << ant << endl;
-
-			exit(EXIT_FAILURE);
-		}
-		else if(!ddcOK)
-		{
-			if(personalityType == RDBE_DDC)
+			if(!pfbOK && !ddcOK)
 			{
-				cerr << "Error: conflicting modes.  PFB needed for mode " << mode->defName << " whereas at least one prior mode required DDC." << endl;
+				cerr << "Error: mode " << mode->defName << " is not suitable for either PFB or DDC on antenna " << ant << endl;
 
 				exit(EXIT_FAILURE);
 			}
-			personalityType = RDBE_PFB;
-		}
-		else if(!pfbOK)
-		{
-			if(personalityType == RDBE_PFB)
+			else if(!ddcOK)
 			{
-				cerr << "Error: conflicting modes.  DDC needed for mode " << mode->defName << " whereas at least one prior mode required PFB." << endl;
+				if(personalityType == RDBE_DDC)
+				{
+					cerr << "Error: conflicting modes.  PFB needed for mode " << mode->defName << " whereas at least one prior mode required DDC." << endl;
 
-				exit(EXIT_FAILURE);
+					exit(EXIT_FAILURE);
+				}
+				personalityType = RDBE_PFB;
 			}
-			personalityType = RDBE_DDC;
+			else if(!pfbOK)
+			{
+				if(personalityType == RDBE_PFB)
+				{
+					cerr << "Error: conflicting modes.  DDC needed for mode " << mode->defName << " whereas at least one prior mode required PFB." << endl;
+
+					exit(EXIT_FAILURE);
+				}
+				personalityType = RDBE_DDC;
+			}
 		}
 	}
 
@@ -645,7 +648,7 @@ int pystream::writeChannelSet(const VexSetup *setup, int modeNum)
 		}
 		if(bw != bw0 || tune != tune0)
 		{
-			*this << "  # orig: tune=" << (tune0*1.0e-6) << " bw=" << (bw0*1.0e6);
+			*this << "  # orig: tune=" << (tune0*1.0e-6) << " bw=" << (bw0*1.0e-6);
 		}
 		*this << endl;
 	}
@@ -1057,7 +1060,7 @@ int pystream::writeLoifTable(const VexData *V)
 			if(setup->ifs.size() == 2)
 				*this << "loif" << modeNum << ".setDBERemember(1, 1)" << endl;
 
-			if(isMark5A)
+			if(isMark5A && personalityType == RDBE_PFB)
 			{
 				writeChannelSet5A(setup, modeNum); 
 			}
