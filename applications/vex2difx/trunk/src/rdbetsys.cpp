@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2011-2012 by Walter Brisken                             *
+ *   Copyright (C) 2011-2013 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -40,9 +40,9 @@
 #include "util.h"
 
 const char program[] = "rdbetsys";
-const char version[] = "1.1";
+const char version[] = "1.2";
 const char author[]  = "Walter Brisken";
-const char verdate[] = "20121213";
+const char verdate[] = "20130104";
 
 const char defaultSwitchedPowerPath[] = "/home/vlba/metadata/switchedpower";
 const double defaultTsysInterval = 15.0;	// Seconds
@@ -285,11 +285,11 @@ void setRxNames(std::vector<TsysAverager> &averagers)
 	}
 	if(has4cm && has6cm)
 	{
-		fprintf(stderr, "Warning: both 4cm and 6cm used at the same time!\n");
+		std::cerr << "Warning: both 4cm and 6cm used at the same time!" << std::endl;
 	}
 	if(has13cm && has20cm)
 	{
-		fprintf(stderr, "Warning: both 13cm and 20cm used at the same time!\n");
+		std::cerr << "Warning: both 13cm and 20cm used at the same time!" << std::endl;
 	}
 	for(std::vector<TsysAverager>::iterator ta = averagers.begin(); ta != averagers.end(); ++ta)
 	{
@@ -454,7 +454,7 @@ void TsysAccumulator::feed(const VexInterval &lineTimeRange, const char *data)
 	}
 }
 
-int processStation(FILE *out, const VexData &V, const std::string &stn, const std::string &fileList, const VexInterval &stnTimeRange, double nominalTsysInterval, DifxTcal *T, int verbose, long long *nGood, long long *nBad)
+static int processStation(FILE *out, const VexData &V, const std::string &stn, const std::string &fileList, const VexInterval &stnTimeRange, double nominalTsysInterval, DifxTcal *T, int verbose, long long *nGood, long long *nBad, long long *nLine, long long *nTimeError)
 {
 	const int MaxLineLength = 32768;	// make sure it is large enough!
 	char line[MaxLineLength];
@@ -478,12 +478,12 @@ int processStation(FILE *out, const VexData &V, const std::string &stn, const st
 	command = "xzcat " + fileList + " 2> /dev/null";
 	if(verbose > 2)
 	{
-		printf("opening pipe: %s\n", command.c_str());
+		std::cout << "opening pipe: " << command << std::endl;
 	}
 	p = popen(command.c_str(), "r");
 	if(!p)
 	{
-		printf("Error: cannot open pipe: %s\n", command.c_str());
+		std::cerr << "cannot open pipe: " << command << std::endl;
 
 		return -1;
 	}
@@ -495,6 +495,8 @@ int processStation(FILE *out, const VexData &V, const std::string &stn, const st
 
 	TA.setOutput(out);
 	TA.setStation(stn);
+	*nLine = 0;
+	*nTimeError = 0;
 
 	for(;;)
 	{
@@ -504,6 +506,7 @@ int processStation(FILE *out, const VexData &V, const std::string &stn, const st
 			// End of pipe.  Really this shouldn't happen unless obsv'n ends at midnight
 			break;
 		}
+		++(*nLine);
 		if(line[0] == '#')
 		{
 			continue;
@@ -512,9 +515,15 @@ int processStation(FILE *out, const VexData &V, const std::string &stn, const st
 		n = sscanf(line, "%*s%lf%lf%n", &lineTimeRange.mjdStart, &lineTimeRange.mjdStop, &pos);
 		if(n < 2)
 		{
-			printf("Error: malformed line: %s\n", line);
+			std::cout << "Error: malformed line: " << line << std::endl;
 
 			break;
+		}
+		if(lineTimeRange.mjdStart < V.obsStart() - 2.0 || lineTimeRange.mjdStop > V.obsStop() + 2.0)
+		{
+			++(*nTimeError);
+
+			continue;
 		}
 
 		if(lineTimeRange.mjdStart < scanTimeRange.mjdStart)
@@ -526,7 +535,6 @@ int processStation(FILE *out, const VexData &V, const std::string &stn, const st
 		else if(lineTimeRange.mjdStop > scanTimeRange.mjdStop)
 		{
 			TA.flush();
-			
 			do
 			{
 				if(scan)
@@ -540,21 +548,21 @@ int processStation(FILE *out, const VexData &V, const std::string &stn, const st
 				scan = V.getScan(scanNum);
 				if(!scan)
 				{
-					printf("Error: scan %u does not exist\n", scanNum);
+					std::cerr << "Error: scan " << scanNum << "does not exist" << std::endl;
 
 					return -1;
 				}
 				mode = V.getModeByDefName(scan->modeDefName);
 				if(!mode)
 				{
-					printf("Error: mode %s does not exist\n", scan->modeDefName.c_str());
+					std::cerr << "Error: mode " << scan->modeDefName << "does not exist" << std::endl;
 
 					continue;
 				}
 				setup = mode->getSetup(stn);
 				if(!setup)
 				{
-					printf("Error: mode %s not implemented for station %s\n", scan->modeDefName.c_str(), stn.c_str());
+					std::cerr << "Error: mode " << scan->modeDefName << " not implemented for station " << stn << std::endl;
 
 					continue;
 				}
@@ -575,7 +583,6 @@ int processStation(FILE *out, const VexData &V, const std::string &stn, const st
 			TA.setup(*setup, T, scanTimeRange.mjdStop, stn);  // also flushes
 			
 			fprintf(out, "# Scan %s\n", scan->defName.c_str());
-
 			// set up averaging slots
 			nSlot = static_cast<int>(scanTimeRange.duration_seconds() / nominalTsysInterval);
 			if(nSlot == 0)
@@ -683,7 +690,7 @@ int main(int argc, char **argv)
 	const char *tcalPath;
 	int nZero = 0;
 	std::string zeroStations;
-	long long nGood, nBad;
+	long long nGood, nBad, nLine, nTimeError;
 
 	for(int a = 1; a < argc; ++a)
 	{
@@ -715,7 +722,7 @@ int main(int argc, char **argv)
 				}
 				else
 				{
-					fprintf(stderr, "Interval parameter requires a numeric value\n");
+					std::cerr << "Interval parameter requires a numeric value" << std::endl;
 
 					return EXIT_FAILURE;
 				}
@@ -727,7 +734,7 @@ int main(int argc, char **argv)
 			}
 			else
 			{
-				fprintf(stderr, "Unknown command line option %s\n", argv[a]);
+				std::cerr << "Unknown command line option: " << argv[a] << std::endl;
 
 				return EXIT_FAILURE;
 			}
@@ -742,7 +749,7 @@ int main(int argc, char **argv)
 		}
 		else
 		{
-			fprintf(stderr, "Extra command line parameter : %s\n", argv[a]);
+			std::cerr << "Extra command line parameter: " << argv[a] << std::endl;
 
 			return EXIT_FAILURE;
 		}
@@ -750,7 +757,7 @@ int main(int argc, char **argv)
 
 	if(tsysFilename == 0)
 	{
-		fprintf(stderr, "Incomplete command line.  Run with -h for help.\n\n");
+		std::cerr << "Incomplete command line.  Run with -h for help." << std::endl;
 
 		return EXIT_FAILURE;
 	}
@@ -759,7 +766,7 @@ int main(int argc, char **argv)
 
 	if(tcalPath == 0)
 	{
-		fprintf(stderr, "Environment variable TCAL_PATH must exist\n");
+		std::cerr << "Environment variable TCAL_PATH must exist" << std::endl;
 
 		return EXIT_FAILURE;
 	}
@@ -768,7 +775,7 @@ int main(int argc, char **argv)
 	T = newDifxTcal();
 	if(!T)
 	{
-		fprintf(stderr, "Error initializing Tcal system\n");
+		std::cerr << "Error initializing Tcal system" << std::endl;
 
 		return EXIT_FAILURE;
 	}
@@ -776,7 +783,7 @@ int main(int argc, char **argv)
 
 	if(v != 0)
 	{
-		fprintf(stderr, "Error %d setting up Tcal system\n", v);
+		std::cerr << "Error " << v << " setting up Tcal system" << std::endl;
 
 		deleteDifxTcal(T);
 
@@ -790,7 +797,7 @@ int main(int argc, char **argv)
 	V = loadVexFile(*P, &nWarn);
 	if(!V)
 	{
-		fprintf(stderr, "Error opening vex file %s\n", vexFilename);
+		std::cerr << "Error opening vex file: " << vexFilename << std::endl;
 		
 		delete V;
 		delete P;
@@ -807,13 +814,13 @@ int main(int argc, char **argv)
 
 	if(nWarn > 0)
 	{
-		fprintf(stderr, "Warning %d warnings in reading the vex file: %s\n", nWarn, vexFilename);
+		std::cerr << "Warning " << nWarn << " warnings in reading the vex file: " << vexFilename << std::endl;
 	}
 
 	out = fopen(tsysFilename, "w");
 	if(!out)
 	{
-		fprintf(stderr, "Cannot open %s for write\n", tsysFilename);
+		std::cerr << "Error: cannot open " << tsysFilename << "for write." << std::endl;
 
 		delete V;
 		delete P;
@@ -858,17 +865,19 @@ int main(int argc, char **argv)
 		fileList = genFileList(defaultSwitchedPowerPath, stn.c_str(), it->second);
 		if(verbose > 1)
 		{
-			printf("  File list: %s\n", fileList.c_str());
+			std::cout << "  File list: " << fileList << std::endl;
 		}
 		if(fileList.empty())
 		{
+			nLine = 0;
 			nRecord = 0;
 			nGood = 0;
 			nBad = 0;
+			nTimeError = 0;
 		}
 		else
 		{
-			nRecord = processStation(out, *V, it->first, fileList, it->second, nominalTsysInterval, T, verbose, &nGood, &nBad);
+			nRecord = processStation(out, *V, it->first, fileList, it->second, nominalTsysInterval, T, verbose, &nGood, &nBad, &nLine, &nTimeError);
 		}
 		if(nRecord <= 0)
 		{
@@ -881,21 +890,27 @@ int main(int argc, char **argv)
 		}
 		if(verbose > 0)
 		{
-			printf("  %d switched power records read\n", nRecord);
-			printf("  %Ld good Tsys values created\n", nGood);
-			printf("  %Ld bad (999) Tsys values created\n", nBad);
+			std::cout << nLine << " lines read" << std::endl;
+			std::cout << nRecord << " switched power records read" << std::endl;
+			std::cout << nGood << " good Tsys values created" << std::endl;
+			std::cout << nBad << " bad (999) Tsys values created" << std::endl;
+			std::cout << nTimeError << " time errors encountered" << std::endl;
 		}
 	}
 
 	Upper(zeroStations);
 
-	if(nZero == 1)
+	if(nZero > 0)
 	{
-		printf("\n1 station (%s) had zero records written.  No Tsys information will be available for that antenna.\n", zeroStations.c_str());
-	}
-	else if(nZero > 1)
-	{
-		printf("\n%d stations (%s) had zero records written.  No Tsys information will be available for those antennas.\n", nZero, zeroStations.c_str());
+		if(nZero == 1)
+		{
+			std::cout << "1 station";
+		}
+		else if(nZero > 1)
+		{
+			std::cout << nZero << "stations";
+		}
+		std::cout << " (" << zeroStations << ") had zero records written.  No Tsys information will be available for those antennas." << std::endl;
 	}
 
 	fclose(out);
