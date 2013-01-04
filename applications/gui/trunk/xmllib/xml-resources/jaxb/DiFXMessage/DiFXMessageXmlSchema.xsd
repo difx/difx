@@ -186,6 +186,12 @@
                 <xsd:element ref="defaultNamesViaHttpLocation"/>
                 <xsd:element ref="defaultNamesViaFtpLocation"/>
                 <xsd:element ref="defaultNamesLocalFileLocation"/>
+                <xsd:element ref="defaultNamesVexSourceChoice"/>
+                <xsd:element ref="defaultNamesV2dFileSource"/>
+                <xsd:element ref="defaultNamesV2dViaHttpLocation"/>
+                <xsd:element ref="defaultNamesV2dViaFtpLocation"/>
+                <xsd:element ref="defaultNamesLocalV2dFileLocation"/>
+                <xsd:element ref="defaultNamesV2dSourceChoice"/>
                 <xsd:element ref="defaultSingleInputFile"/>
                 <xsd:element ref="defaultNamesScanBasedJobNames"/>
                 <xsd:element ref="defaultNamesDirListLocation"/>
@@ -377,6 +383,12 @@
     <xsd:element name="defaultNamesViaHttpLocation" type="xsd:string"></xsd:element>
     <xsd:element name="defaultNamesViaFtpLocation" type="xsd:string"></xsd:element>
     <xsd:element name="defaultNamesLocalFileLocation" type="xsd:string"></xsd:element>
+    <xsd:element name="defaultNamesVexSourceChoice" type="xsd:string"></xsd:element>
+    <xsd:element name="defaultNamesV2dFileSource" type="xsd:string"></xsd:element>
+    <xsd:element name="defaultNamesV2dViaHttpLocation" type="xsd:string"></xsd:element>
+    <xsd:element name="defaultNamesV2dViaFtpLocation" type="xsd:string"></xsd:element>
+    <xsd:element name="defaultNamesLocalV2dFileLocation" type="xsd:string"></xsd:element>
+    <xsd:element name="defaultNamesV2dSourceChoice" type="xsd:string"></xsd:element>
     <xsd:element name="defaultSingleInputFile" type="xsd:boolean"></xsd:element>
     <xsd:element name="defaultNamesScanBasedJobNames" type="xsd:boolean"></xsd:element>
     <xsd:element name="defaultNamesDirListLocation" type="xsd:string"></xsd:element>

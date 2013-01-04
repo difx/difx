@@ -28,6 +28,10 @@ public class GetFileMonitor extends PopupMonitor {
         _filePath = filePath;
         //  Open a "get file" operation and set the various callbacks.
         _fileGet = new DiFXCommand_getFile( _filePath, _settings );
+        if ( _fileGet.error() != null ) {
+            _error = _fileGet.error();
+            return;
+        }
         _fileGet.addEndListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
                 if ( !dismissActive() ) {
@@ -122,10 +126,12 @@ public class GetFileMonitor extends PopupMonitor {
      * Get the file contents.
      */
     public String inString() { return _fileGet.inString(); }
+    public String error() { return _error; }
     
     protected SystemSettings _settings;
     private DiFXCommand_getFile _fileGet;
     protected String _filePath;
+    protected String _error;
     
 }
 

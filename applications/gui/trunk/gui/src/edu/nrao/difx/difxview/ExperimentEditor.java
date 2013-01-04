@@ -236,6 +236,82 @@ public class ExperimentEditor extends JFrame {
         });
         namePanel.add( _previousVexFileButton );
         
+        //  This panel is used to grab the content of an existing .v2d file to use as
+        //  a "template" for any setting changes in subsequent menus.  The choices
+        //  for sources of these files mirror those used for the .vex file.
+        IndexedPanel startingV2dPanel = new IndexedPanel( "Starting .v2d File" );
+        startingV2dPanel.openHeight( 185 );
+        startingV2dPanel.closedHeight( 20 );
+        startingV2dPanel.open( false );
+        _scrollPane.addNode( startingV2dPanel );
+        _v2dFromHost = new JCheckBox( "from DiFX Host" );
+        _v2dFromHost.setSelected( _settings.defaultNames().v2dFromHost );
+        _v2dFromHost.setToolTipText( "Copy the .v2d file data from a named file on the DiFX Host." );
+        _v2dFromHost.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                v2dSourceChoice( _v2dFromHost );
+            }
+        });
+        startingV2dPanel.add( _v2dFromHost );
+        _v2dFromHostLocation = new SaneTextField();
+        _v2dFromHostLocation.setToolTipText( "Full path to the file on the DiFX Host." );
+        if ( !_v2dFromHost.isSelected() )
+            _v2dFromHostLocation.setEnabled( false );
+        _v2dFromHostLocation.setText( _settings.defaultNames().v2dFileSource );
+        startingV2dPanel.add( _v2dFromHostLocation );
+        _v2dViaHttp = new JCheckBox( "via HTTP" );
+        _v2dViaHttp.setSelected( _settings.defaultNames().v2dViaHttp );
+        _v2dViaHttp.setToolTipText( "Copy the .v2d file data from a given location using HTTP." );
+        _v2dViaHttp.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                v2dSourceChoice( _v2dViaHttp );
+            }
+        });
+        startingV2dPanel.add( _v2dViaHttp );
+        _v2dViaHttpLocation = new SaneTextField();
+        _v2dViaHttpLocation.setToolTipText( "HTTP location of .v2d file." );
+        if ( !_v2dViaHttp.isSelected() )
+            _v2dViaHttpLocation.setEnabled( false );
+        _v2dViaHttpLocation.setText( _settings.defaultNames().v2dViaHttpLocation );
+        startingV2dPanel.add( _v2dViaHttpLocation );
+        _v2dViaFtp = new JCheckBox( "via FTP" );
+        _v2dViaFtp.setSelected( _settings.defaultNames().v2dViaFtp );
+        _v2dViaFtp.setToolTipText( "Copy the .v2d file data from a given address via FTP." );
+        _v2dViaFtp.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                v2dSourceChoice( _v2dViaFtp );
+            }
+        });
+        startingV2dPanel.add( _v2dViaFtp );
+        _v2dViaFtpLocation = new SaneTextField();
+        _v2dViaFtpLocation.setToolTipText( "FTP address of .v2d file." );
+        if ( !_v2dViaFtp.isSelected() )
+            _v2dViaFtpLocation.setEnabled( false );
+        _v2dViaFtpLocation.setText( _settings.defaultNames().v2dViaFtpLocation );
+        startingV2dPanel.add( _v2dViaFtpLocation );
+        _localV2dFile = new JCheckBox( "from Local File" );
+        _localV2dFile.setSelected( _settings.defaultNames().v2dFromLocal );
+        _localV2dFile.setToolTipText( "Copy the .v2d file data from a file on the local host." );
+        _localV2dFile.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                v2dSourceChoice( _localV2dFile );
+            }
+        });
+        startingV2dPanel.add( _localV2dFile );
+        _localV2dFileLocation = new SaneTextField();
+        _localV2dFileLocation.setToolTipText( "Location of the .v2d file on the local machine." );
+        if ( !_localV2dFile.isSelected() )
+            _localV2dFileLocation.setEnabled( false );
+        _localV2dFileLocation.setText( _settings.defaultNames().localV2dFileLocation );
+        startingV2dPanel.add( _localV2dFileLocation );
+        _goV2dButton = new JButton( "GO!" );
+        _goV2dButton.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                getV2dFromSource();
+            }
+        });
+        startingV2dPanel.add( _goV2dButton );
+        
         //  This panel is used to find a new vex file.
         IndexedPanel findVexPanel = new IndexedPanel( "Get .vex File Content" );
         findVexPanel.openHeight( 210 );
@@ -243,6 +319,7 @@ public class ExperimentEditor extends JFrame {
         findVexPanel.open( false );
         _scrollPane.addNode( findVexPanel );
         _fromHost = new JCheckBox( "from DiFX Host" );
+        _fromHost.setSelected( _settings.defaultNames().vexFromHost );
         _fromHost.setToolTipText( "Copy the .vex file data from a named file on the DiFX Host." );
         _fromHost.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
@@ -252,10 +329,12 @@ public class ExperimentEditor extends JFrame {
         findVexPanel.add( _fromHost );
         _fromHostLocation = new SaneTextField();
         _fromHostLocation.setToolTipText( "Full path to the file on the DiFX Host." );
-        _fromHostLocation.setEnabled( false );
+        if ( !_fromHost.isSelected() )
+            _fromHostLocation.setEnabled( false );
         _fromHostLocation.setText( _settings.defaultNames().vexFileSource );
         findVexPanel.add( _fromHostLocation );
         _viaHttp = new JCheckBox( "via HTTP" );
+        _viaHttp.setSelected( _settings.defaultNames().vexViaHttp );
         _viaHttp.setToolTipText( "Copy the .vex file data from a given location using HTTP." );
         _viaHttp.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
@@ -265,10 +344,12 @@ public class ExperimentEditor extends JFrame {
         findVexPanel.add( _viaHttp );
         _viaHttpLocation = new SaneTextField();
         _viaHttpLocation.setToolTipText( "HTTP location of .vex file." );
-        _viaHttpLocation.setEnabled( false );
+        if ( !_viaHttp.isSelected() )
+            _viaHttpLocation.setEnabled( false );
         _viaHttpLocation.setText( _settings.defaultNames().viaHttpLocation );
         findVexPanel.add( _viaHttpLocation );
         _viaFtp = new JCheckBox( "via FTP" );
+        _viaFtp.setSelected( _settings.defaultNames().vexViaFtp );
         _viaFtp.setToolTipText( "Copy the .vex file data from a given address via FTP." );
         _viaFtp.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
@@ -278,10 +359,12 @@ public class ExperimentEditor extends JFrame {
         findVexPanel.add( _viaFtp );
         _viaFtpLocation = new SaneTextField();
         _viaFtpLocation.setToolTipText( "FTP address of .vex file." );
-        _viaFtpLocation.setEnabled( false );
+        if ( !_viaFtp.isSelected() )
+            _viaFtpLocation.setEnabled( false );
         _viaFtpLocation.setText( _settings.defaultNames().viaFtpLocation );
         findVexPanel.add( _viaFtpLocation );
         _localFile = new JCheckBox( "from Local File" );
+        _localFile.setSelected( _settings.defaultNames().vexFromLocal );
         _localFile.setToolTipText( "Copy the .vex file data from a file on the local host." );
         _localFile.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
@@ -291,10 +374,12 @@ public class ExperimentEditor extends JFrame {
         findVexPanel.add( _localFile );
         _localFileLocation = new SaneTextField();
         _localFileLocation.setToolTipText( "Location of the .vex file on the local machine." );
-        _localFileLocation.setEnabled( false );
+        if ( !_localFile.isSelected() )
+            _localFileLocation.setEnabled( false );
         _localFileLocation.setText( _settings.defaultNames().localFileLocation );
         findVexPanel.add( _localFileLocation );
         _fromExperiment = new JCheckBox( "from Experiment" );
+        _fromExperiment.setSelected( _settings.defaultNames().vexFromExperiment );
         _fromExperiment.setToolTipText( "Copy the .vex file from another experiment." );
         _fromExperiment.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
@@ -601,7 +686,7 @@ public class ExperimentEditor extends JFrame {
         
         //  The v2d editor allows the .v2d file to be edited by hand.  At the
         //  moment it is visible, but I plan to make it not so!
-        IndexedPanel v2dEditorPanel = new IndexedPanel( ".v2d File" );
+        IndexedPanel v2dEditorPanel = new IndexedPanel( "Final .v2d File" );
         v2dEditorPanel.openHeight( 500 );
         v2dEditorPanel.closedHeight( 20 );
         v2dEditorPanel.open( false );
@@ -838,6 +923,15 @@ public class ExperimentEditor extends JFrame {
             _fromExperiment.setBounds( 20, 150, 150, 25 );
             _vexBrowseButton.setBounds( 175, 150, 100, 25 );
             _goButton.setBounds( w - 125, 175, 100, 25 );
+            _v2dFromHost.setBounds( 20, 30, 150, 25 );
+            _v2dFromHostLocation.setBounds( 175, 30, w - 200, 25 );
+            _v2dViaHttp.setBounds( 20, 60, 150, 25 );
+            _v2dViaHttpLocation.setBounds( 175, 60, w - 200, 25 );
+            _v2dViaFtp.setBounds( 20, 90, 150, 25 );
+            _v2dViaFtpLocation.setBounds( 175, 90, w - 200, 25 );
+            _localV2dFile.setBounds( 20, 120, 150, 25 );
+            _localV2dFileLocation.setBounds( 175, 120, w - 200, 25 );
+            _goV2dButton.setBounds( w - 125, 150, 100, 25 );    
             _doSanityCheck.setBounds( w - 50, 110, 25, 25 );
             _doSanityLabel.setBounds( w - 250, 110, 195, 25 );
             _scanGrid.setBounds( 10, 70, w - 35, 320 );
@@ -903,6 +997,45 @@ public class ExperimentEditor extends JFrame {
             _fromExperiment.setSelected( true );
             _vexBrowseButton.setEnabled( true );
         }
+        _settings.defaultNames().vexFromHost = _fromHost.isSelected();
+        _settings.defaultNames().vexViaHttp = _viaHttp.isSelected();
+        _settings.defaultNames().vexViaFtp = _viaFtp.isSelected();
+        _settings.defaultNames().vexFromLocal = _localFile.isSelected();
+        _settings.defaultNames().vexFromExperiment = _fromExperiment.isSelected();
+    }
+    
+    /*
+     * One of the checkboxes for .v2d file sources was checked.
+     */
+    public void v2dSourceChoice( JCheckBox selection ) {
+        _v2dFromHost.setSelected( false );
+        _v2dFromHostLocation.setEnabled( false );
+        _v2dViaHttp.setSelected( false );
+        _v2dViaHttpLocation.setEnabled( false );
+        _v2dViaFtp.setSelected( false );
+        _v2dViaFtpLocation.setEnabled( false );
+        _localV2dFile.setSelected( false );
+        _localV2dFileLocation.setEnabled( false );
+        if ( _v2dFromHost == selection ) {
+            _v2dFromHost.setSelected( true );
+            _v2dFromHostLocation.setEnabled( true );
+        }
+        else if ( _v2dViaHttp == selection ) {
+            _v2dViaHttp.setSelected( true );
+            _v2dViaHttpLocation.setEnabled( true );
+        }
+        else if ( _v2dViaFtp == selection ) {
+            _v2dViaFtp.setSelected( true );
+            _v2dViaFtpLocation.setEnabled( true );
+        }
+        else if ( _localV2dFile == selection ) {
+            _localV2dFile.setSelected( true );
+            _localV2dFileLocation.setEnabled( true );
+        }
+        _settings.defaultNames().v2dFromHost = _v2dFromHost.isSelected();
+        _settings.defaultNames().v2dViaHttp = _v2dViaHttp.isSelected();
+        _settings.defaultNames().v2dViaFtp = _v2dViaFtp.isSelected();
+        _settings.defaultNames().v2dFromLocal = _localV2dFile.isSelected();
     }
     
     /*
@@ -918,7 +1051,6 @@ public class ExperimentEditor extends JFrame {
         }
     }
     
-    private DiFXCommand_getFile _fileGet;
     /*
      * Obtain .vex file from the user-specified source.
      */
@@ -936,6 +1068,9 @@ public class ExperimentEditor extends JFrame {
                 _editor.text( fileGet.inString() );
                 _editor.top();
                 parseNewVexFile();
+            }
+            else {
+                JOptionPane.showMessageDialog( (Frame)comp, fileGet.error(), ".vex File Read Error", JOptionPane.WARNING_MESSAGE );
             }
         }
         else if ( _viaHttp.isSelected() ) {
@@ -1008,6 +1143,168 @@ public class ExperimentEditor extends JFrame {
         else {
             new AePlayWave( _settings.guiDocPath() + "/cantdo.wav" ).start();
             JOptionPane.showMessageDialog( this, "That feature has not been implemented." );
+        }
+    }
+    
+    /*
+     * Obtain .v2d file from the user-specified source.
+     */
+    public void getV2dFromSource() {
+        if ( _v2dFromHost.isSelected() ) {
+            Component comp = this;
+            while ( comp.getParent() != null )
+                comp = comp.getParent();
+            Point pt = _v2dFromHost.getLocationOnScreen();
+            GetFileMonitor fileGet = new GetFileMonitor( (Frame)comp, pt.x + 25, pt.y + 25, _v2dFromHostLocation.getText(), _settings );
+            //  We only use the content of the file if it was read successfully.
+            if ( fileGet.success() ) {
+                _settings.defaultNames().v2dFileSource = _v2dFromHostLocation.getText();
+                _startingV2dFileContent = fileGet.inString();
+                parseStartingV2dFile();
+            }
+        }
+        else if ( _v2dViaHttp.isSelected() ) {
+            _settings.defaultNames().v2dViaHttpLocation = _v2dViaHttpLocation.getText();
+            try {
+                URL url = new URL( "http://" + _v2dViaHttpLocation.getText() );
+                url.openConnection();
+                InputStream reader = url.openStream();
+                byte[] buffer = new byte[153600];
+                int bytesRead = 0;
+                _startingV2dFileContent = "";
+                while ( ( bytesRead = reader.read( buffer, 0, 153600 ) ) > 0 ) {
+                    _startingV2dFileContent += new String( buffer ).substring( 0, bytesRead );
+                }
+                parseStartingV2dFile();
+            } catch ( MalformedURLException e ) {
+                JOptionPane.showMessageDialog( _this, "Malformed URL: \"http://" + _v2dViaHttpLocation.getText() + "\"",
+                        "Bad URL",
+                        JOptionPane.ERROR_MESSAGE );
+            } catch ( IOException e ) {
+                JOptionPane.showMessageDialog( _this, e.toString(),
+                        "IO Error",
+                        JOptionPane.ERROR_MESSAGE );
+            }
+        }
+        else if ( _v2dViaFtp.isSelected() ) {
+            _settings.defaultNames().v2dViaFtpLocation = _v2dViaFtpLocation.getText();
+            try {
+                URL url = new URL( "ftp://" + _v2dViaFtpLocation.getText() );
+                url.openConnection();
+                InputStream reader = url.openStream();
+                byte[] buffer = new byte[153600];
+                int bytesRead = 0;
+                _startingV2dFileContent = "";
+                while ( ( bytesRead = reader.read( buffer, 0, 153600 ) ) > 0 ) {
+                    _startingV2dFileContent += new String( buffer ).substring( 0, bytesRead );
+                }
+                parseStartingV2dFile();
+            } catch ( MalformedURLException e ) {
+                JOptionPane.showMessageDialog( _this, "Malformed URL: \"ftp://" + _v2dViaFtpLocation.getText() + "\"",
+                        "Bad URL",
+                        JOptionPane.ERROR_MESSAGE );
+            } catch ( IOException e ) {
+                JOptionPane.showMessageDialog( _this, e.toString(),
+                        "IO Error",
+                        JOptionPane.ERROR_MESSAGE );
+            }
+        }
+        else if ( _localV2dFile.isSelected() ) {
+            _settings.defaultNames().localV2dFileLocation = _localV2dFileLocation.getText();
+            try {
+                FileInputStream reader = new FileInputStream( _localV2dFileLocation.getText() );
+                byte[] buffer = new byte[153600];
+                int bytesRead = 0;
+                _startingV2dFileContent = "";
+                while ( ( bytesRead = reader.read( buffer, 0, 153600 ) ) > 0 ) {
+                    _startingV2dFileContent += new String( buffer ).substring( 0, bytesRead );
+                }
+                parseStartingV2dFile();
+            } catch ( FileNotFoundException e ) {
+                JOptionPane.showMessageDialog( _this, "Local File \"" + _localV2dFileLocation.getText() + "\" was not found.",
+                        "File Not Found",
+                        JOptionPane.ERROR_MESSAGE );
+            } catch ( IOException e ) {
+                JOptionPane.showMessageDialog( _this, e.toString(),
+                        "IO Error",
+                        JOptionPane.ERROR_MESSAGE );
+            }
+        }
+    }
+    
+    /*
+     * Parse the content of the "starting" .v2d file and change all settings to
+     * match it.  The .v2d file content has already been stored as the String
+     * "_startingV2dFileContent".
+     */
+    public void parseStartingV2dFile() {
+        //  The parser eats the content and stores it in structures.
+        V2dFileParser v2dFileParser = new V2dFileParser( _startingV2dFileContent );
+        //  The content of the indicated .vex file should be dumped in the .vex file
+        //  editor, assuming it exists.
+        if ( v2dFileParser.vexFile() != null ) {
+            System.out.println( "vex file name is " + v2dFileParser.vexFile() );
+            this.vexFileName( v2dFileParser.vexFile() );
+        }
+        else
+            System.out.println( _startingV2dFileContent );
+    }
+    
+    /*
+     * This function is used when an experiment has already been created and contains
+     * a .v2d file.  This file is parsed, and all settings are changed to reflect its
+     * contents.  This is NOT the same as a "starting" .v2d file, which is used as
+     * a template.
+     * 
+     * This function is given a file "base" - the directory containing .v2d file(s)
+     * if they exist.  A remote "ls" command is used to generate their actual names.
+     * We can only handle one .v2d file, so the LAST of these files that appears in
+     * response to the "ls" is used (if all is well, there should be only one anyway).
+     */
+    protected String _lastV2dPath;
+    synchronized public void findOldV2dFile( String fileBase ) {
+        _lastV2dPath = null;
+        DiFXCommand_ls ls = new DiFXCommand_ls( fileBase + "*.v2d", _settings );
+        //  Set the callback for when the list is complete.  
+        ls.addEndListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                //  Found anything at all?
+                if ( _lastV2dPath != null ) {
+                    System.out.println( "hey, we have " + _lastV2dPath );
+                    readV2dFile( _lastV2dPath );
+                }
+            }
+        });
+        //  Set the callback for when a new item is added to the list.
+        ls.addIncrementalListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                _lastV2dPath = e.getActionCommand().trim();
+                System.out.println( "got \"" + _lastV2dPath + "\"" );
+            }
+        });
+        try {
+            ls.send();
+        } catch ( java.net.UnknownHostException e ) {
+            //  BLAT handle this
+        }
+    }
+    
+    /*
+     * Load a given .v2d file by name.  This function is called by the "findOldV2dFile()"
+     * function but it may have other uses.
+     */
+    public void readV2dFile( String fileName ) {
+        Component comp = _this;
+        while ( comp.getParent() != null )
+            comp = comp.getParent();
+        Point pt = new Point( 100, 100 );
+        if ( _thisExperiment != null )
+            pt = _thisExperiment.getLocationOnScreen();
+        GetFileMonitor getFile = new GetFileMonitor(  (Frame)comp, pt.x + 25, pt.y + 25,
+                fileName, _settings );
+        if ( getFile.inString() != null && getFile.inString().length() > 0 ) {
+            _startingV2dFileContent = getFile.inString();
+            parseStartingV2dFile();
         }
     }
     
@@ -1755,7 +2052,7 @@ public class ExperimentEditor extends JFrame {
             str = str.replace( "_", "" );
             _v2dFileName.setText( str );
         }
-        V2dFileParser v2dFileParser = new V2dFileParser( null );
+        V2dFileParser v2dFileParser = new V2dFileParser( _startingV2dFileContent );
         v2dFileParser.headerComment( "#   -- Configuration file for vex2difx --\n"
                 + "#   This file was automatically generated by the DiFX GUI\n"
                 + "#   Created: " + new SimpleDateFormat( "MMMMM dd, yyyy hh:mm:ss z" ).format( new Date() ) + "\n"
@@ -1766,7 +2063,7 @@ public class ExperimentEditor extends JFrame {
         v2dFileParser.vexFile( _vexFileName.getText() ); 
         
         //  This keeps vex2difx from splitting up jobs in an unexpected way
-       v2dFileParser.maxGap( 180000.0 );
+        v2dFileParser.maxGap( 180000.0 );
         
         //  Whether or not we should split into one scan per job
         v2dFileParser.singleScan( !_singleInputFileCheck.isSelected() );
@@ -2312,6 +2609,16 @@ public class ExperimentEditor extends JFrame {
     protected JCheckBox _fromExperiment;
     protected JButton _vexBrowseButton;
     protected JButton _goButton;
+    protected JCheckBox _v2dFromHost;
+    protected SaneTextField _v2dFromHostLocation;
+    protected JCheckBox _v2dViaHttp;
+    protected SaneTextField _v2dViaHttpLocation;
+    protected JCheckBox _v2dViaFtp;
+    protected SaneTextField _v2dViaFtpLocation;
+    protected JCheckBox _localV2dFile;
+    protected SaneTextField _localV2dFileLocation;
+    protected JButton _goV2dButton;
+    protected String _startingV2dFileContent;
     protected JButton _previousVexFileButton;
     protected JPopupMenu _previousVexFileMenu;
     protected JComboBox _passTypeList;

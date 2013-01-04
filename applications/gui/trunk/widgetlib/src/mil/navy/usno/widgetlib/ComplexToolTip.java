@@ -76,7 +76,7 @@ package mil.navy.usno.widgetlib;
  *                   return new Point( 10, getHeight() );
  *                }
  *            };
- *            button.setToolTipText( "This button says:\n<<bold>>Hello, world<</bold>");
+ *            button.setToolTipText( "This button says:\n<<bold>>Hello, world<</bold>>");
  * 
  * One rather important thing to note...there is limited error checking done here,
  * so if you put strange text-formatting commands in your text you will get strange,
@@ -245,7 +245,7 @@ class ComplexToolTipUI extends MetalToolTipUI {
                     g2.setColor( Color.WHITE );
                 else if ( nextItem.format.equalsIgnoreCase( "YELLOW" ) ) 
                     g2.setColor( Color.YELLOW );
-                else if ( nextItem.format.length() > 5 && nextItem.format.substring( 0, 5 ).equalsIgnoreCase( "COLOR" ) ) {
+                else if ( nextItem.format.length() > 4 && nextItem.format.substring( 0, 5 ).equalsIgnoreCase( "COLOR" ) ) {
                     //  We need three numbers...
                     String colorString = nextItem.format.substring( nextItem.format.indexOf( '=' ) + 1 ).trim();
                     String str = colorString.substring( 0, colorString.indexOf( ',' ) ).trim();
@@ -278,30 +278,30 @@ class ComplexToolTipUI extends MetalToolTipUI {
                 else if ( nextItem.format.equalsIgnoreCase( "BOLD" ) ) {
                     Font f = g2.getFont();
                     if ( f.isPlain() )
-                        g2.setFont( new Font( f.getFontName(), Font.BOLD, f.getSize() ) );
+                        g2.setFont( new Font( f.getFamily(), Font.BOLD, f.getSize() ) );
                     else if ( f.isItalic() )
-                        g2.setFont( new Font( f.getFontName(), Font.ITALIC | Font.BOLD, f.getSize() ) );
+                        g2.setFont( new Font( f.getFamily(), Font.ITALIC | Font.BOLD, f.getSize() ) );
                 }
                 else if ( nextItem.format.equalsIgnoreCase( "/BOLD" ) ) {
                     Font f = g2.getFont();
                     if ( f.isItalic() )
-                        g2.setFont( new Font( f.getFontName(), Font.ITALIC, f.getSize() ) );
+                        g2.setFont( new Font( f.getFamily(), Font.ITALIC, f.getSize() ) );
                     else
-                        g2.setFont( new Font( f.getFontName(), Font.PLAIN, f.getSize() ) );
+                        g2.setFont( new Font( f.getFamily(), Font.PLAIN, f.getSize() ) );
                 }
                 else if ( nextItem.format.equalsIgnoreCase( "ITALIC" ) ) {
                     Font f = g2.getFont();
                     if ( f.isPlain() )
-                        g2.setFont( new Font( f.getFontName(), Font.ITALIC, f.getSize() ) );
+                        g2.setFont( new Font( f.getFamily(), Font.ITALIC, f.getSize() ) );
                     else if ( f.isBold() )
-                        g2.setFont( new Font( f.getFontName(), Font.ITALIC | Font.BOLD, f.getSize() ) );
+                        g2.setFont( new Font( f.getFamily(), Font.ITALIC | Font.BOLD, f.getSize() ) );
                 }
                 else if ( nextItem.format.equalsIgnoreCase( "/ITALIC" ) ) {
                     Font f = g2.getFont();
                     if ( f.isBold() )
-                        g2.setFont( new Font( f.getFontName(), Font.BOLD, f.getSize() ) );
+                        g2.setFont( new Font( f.getFamily(), Font.BOLD, f.getSize() ) );
                     else
-                        g2.setFont( new Font( f.getFontName(), Font.PLAIN, f.getSize() ) );
+                        g2.setFont( new Font( f.getFamily(), Font.PLAIN, f.getSize() ) );
                 }
                 else if ( nextItem.format.equalsIgnoreCase( "UNDER" ) || nextItem.format.equalsIgnoreCase( "UNDERLINE" ) ) 
                     underline = true;
@@ -340,7 +340,7 @@ class ComplexToolTipUI extends MetalToolTipUI {
                     else
                         g2.setFont( new Font( "Serif", Font.PLAIN, f.getSize() ) );
                 }
-                else if ( nextItem.format.substring( 0, 4 ).equalsIgnoreCase( "SIZE" ) ) {
+                else if ( nextItem.format.length() > 3 && nextItem.format.substring( 0, 4 ).equalsIgnoreCase( "SIZE" ) ) {
                     //  Parse out the size value...
                     String sizeString = nextItem.format.substring( nextItem.format.indexOf( '=' ) + 1 ).trim();
                     Font f = g2.getFont();
@@ -350,13 +350,13 @@ class ComplexToolTipUI extends MetalToolTipUI {
                     else
                         newSize = Integer.parseInt( sizeString );
                     if ( f.isBold() && f.isItalic() )
-                        g2.setFont( new Font( f.getFontName(), Font.ITALIC | Font.BOLD, newSize ) );
+                        g2.setFont( new Font( f.getFamily(), Font.ITALIC | Font.BOLD, newSize ) );
                     else if ( f.isBold() )
-                        g2.setFont( new Font( f.getFontName(), Font.BOLD, newSize ) );
+                        g2.setFont( new Font( f.getFamily(), Font.BOLD, newSize ) );
                     else if ( f.isItalic() )
-                        g2.setFont( new Font( f.getFontName(), Font.ITALIC, newSize ) );
+                        g2.setFont( new Font( f.getFamily(), Font.ITALIC, newSize ) );
                     else
-                        g2.setFont( new Font( f.getFontName(), Font.PLAIN, newSize ) );
+                        g2.setFont( new Font( f.getFamily(), Font.PLAIN, newSize ) );
                 }
             }
         }
@@ -485,30 +485,30 @@ class ComplexToolTipUI extends MetalToolTipUI {
                         //  here in a temporary way to change the metrics.
                         if ( newItem.format.equalsIgnoreCase( "BOLD" ) ) {
                             if ( f.isPlain() )
-                                f = new Font( f.getFontName(), Font.BOLD, f.getSize() );
+                                f = new Font( f.getFamily(), Font.BOLD, f.getSize() );
                             else if ( f.isItalic() )
-                                f = new Font( f.getFontName(), Font.ITALIC | Font.BOLD, f.getSize() );
+                                f = new Font( f.getFamily(), Font.ITALIC | Font.BOLD, f.getSize() );
                             metrics = c.getFontMetrics( f );
                         }
                         else if ( newItem.format.equalsIgnoreCase( "/BOLD" ) ) {
                             if ( f.isItalic() )
-                                f = new Font( f.getFontName(), Font.ITALIC, f.getSize() );
+                                f = new Font( f.getFamily(), Font.ITALIC, f.getSize() );
                             else
-                                f = new Font( f.getFontName(), Font.PLAIN, f.getSize() );
+                                f = new Font( f.getFamily(), Font.PLAIN, f.getSize() );
                             metrics = c.getFontMetrics( f );
                         }
                         else if ( newItem.format.equalsIgnoreCase( "ITALIC" ) ) {
                             if ( f.isPlain() )
-                                f = new Font( f.getFontName(), Font.ITALIC, f.getSize() );
+                                f = new Font( f.getFamily(), Font.ITALIC, f.getSize() );
                             else if ( f.isBold() )
-                                f = new Font( f.getFontName(), Font.ITALIC | Font.BOLD, f.getSize() );
+                                f = new Font( f.getFamily(), Font.ITALIC | Font.BOLD, f.getSize() );
                             metrics = c.getFontMetrics( f );
                         }
                         else if ( newItem.format.equalsIgnoreCase( "/ITALIC" ) ) {
                             if ( f.isBold() )
-                                f = new Font( f.getFontName(), Font.BOLD, f.getSize() );
+                                f = new Font( f.getFamily(), Font.BOLD, f.getSize() );
                             else
-                                f = new Font( f.getFontName(), Font.PLAIN, f.getSize() );
+                                f = new Font( f.getFamily(), Font.PLAIN, f.getSize() );
                             metrics = c.getFontMetrics( f );
                         }
                         else if ( newItem.format.equalsIgnoreCase( "FIXED" ) ) {
@@ -544,7 +544,7 @@ class ComplexToolTipUI extends MetalToolTipUI {
                                 f = new Font( "Serif", Font.PLAIN, f.getSize() );
                             metrics = c.getFontMetrics( f );
                         }
-                        else if ( newItem.format.substring( 0, 4 ).equalsIgnoreCase( "SIZE" ) ) {
+                        else if ( newItem.format.length() > 3 && newItem.format.substring( 0, 4 ).equalsIgnoreCase( "SIZE" ) ) {
                             //  Parse out the size value...
                             String sizeString = newItem.format.substring( newItem.format.indexOf( '=' ) + 1 ).trim();
                             int newSize = f.getSize();
@@ -553,16 +553,16 @@ class ComplexToolTipUI extends MetalToolTipUI {
                             else
                                 newSize = Integer.parseInt( sizeString );
                             if ( f.isBold() && f.isItalic() )
-                                f = new Font( f.getFontName(), Font.ITALIC | Font.BOLD, newSize );
+                                f = new Font( f.getFamily(), Font.ITALIC | Font.BOLD, newSize );
                             else if ( f.isBold() )
-                                f = new Font( f.getFontName(), Font.BOLD, newSize );
+                                f = new Font( f.getFamily(), Font.BOLD, newSize );
                             else if ( f.isItalic() )
-                                f = new Font( f.getFontName(), Font.ITALIC, newSize );
+                                f = new Font( f.getFamily(), Font.ITALIC, newSize );
                             else
-                                f = new Font( f.getFontName(), Font.PLAIN, newSize );
+                                f = new Font( f.getFamily(), Font.PLAIN, newSize );
                             metrics = c.getFontMetrics( f );
                         }
-                        else if ( newItem.format.substring( 0, 4 ).equalsIgnoreCase( "LINE" ) ) {
+                        else if ( newItem.format.length() > 3 && newItem.format.substring( 0, 4 ).equalsIgnoreCase( "LINE" ) ) {
                             String sizeString = newItem.format.substring( newItem.format.indexOf( '=' ) + 1 ).trim();
                             if ( sizeString.contains( "." ) ) {
                                 iLine = null;
@@ -573,7 +573,7 @@ class ComplexToolTipUI extends MetalToolTipUI {
                                 iLine = Integer.parseInt( sizeString );
                             }
                         }
-                        else if ( newItem.format.substring( 0, 1 ).equalsIgnoreCase( "X" ) ) {
+                        else if ( newItem.format.length() > 0 && newItem.format.substring( 0, 1 ).equalsIgnoreCase( "X" ) ) {
                             String sizeString = newItem.format.substring( newItem.format.indexOf( '=' ) + 1 ).trim();
                             int offSet = 0;
                             if ( sizeString.contains( "." ) )
@@ -582,7 +582,7 @@ class ComplexToolTipUI extends MetalToolTipUI {
                                 offSet = Integer.parseInt( sizeString );
                             x += offSet;
                         }
-                        else if ( newItem.format.substring( 0, 1 ).equalsIgnoreCase( "Y" ) ) {
+                        else if ( newItem.format.length() > 0 && newItem.format.substring( 0, 1 ).equalsIgnoreCase( "Y" ) ) {
                             String sizeString = newItem.format.substring( newItem.format.indexOf( '=' ) + 1 ).trim();
                             int offSet = 0;
                             if ( sizeString.contains( "." ) )
@@ -593,7 +593,7 @@ class ComplexToolTipUI extends MetalToolTipUI {
                                 y = metrics.getHeight();
                             y += offSet;
                         }
-                        else if ( newItem.format.substring( 0, 2 ).equalsIgnoreCase( "BG" ) ) {
+                        else if ( newItem.format.length() > 1 && newItem.format.substring( 0, 2 ).equalsIgnoreCase( "BG" ) ) {
                             //  We need three numbers...
                             String colorString = newItem.format.substring( newItem.format.indexOf( '=' ) + 1 ).trim();
                             String str = colorString.substring( 0, colorString.indexOf( ',' ) ).trim();
@@ -617,7 +617,7 @@ class ComplexToolTipUI extends MetalToolTipUI {
                                 B = (float)(Integer.parseInt( str ))/(float)256.0;
                             backgroundColor = new Color( R, G, B );
                         }
-                        else if ( newItem.format.substring( 0, 2 ).equalsIgnoreCase( "FG" ) ) {
+                        else if ( newItem.format.length() > 1 && newItem.format.substring( 0, 2 ).equalsIgnoreCase( "FG" ) ) {
                             //  We need three numbers...
                             String colorString = newItem.format.substring( newItem.format.indexOf( '=' ) + 1 ).trim();
                             String str = colorString.substring( 0, colorString.indexOf( ',' ) ).trim();
@@ -641,8 +641,9 @@ class ComplexToolTipUI extends MetalToolTipUI {
                                 B = (float)(Integer.parseInt( str ))/(float)256.0;
                             foregroundColor = new Color( R, G, B );
                         }
-                        else if ( newItem.format.substring( 0, 4 ).equalsIgnoreCase( "LINK" ) )
+                        else if ( newItem.format.length() > 3 && newItem.format.substring( 0, 4 ).equalsIgnoreCase( "LINK" ) ) {
                             link = newItem.format.substring( newItem.format.indexOf( '=' ) + 1 ).trim();
+                        }
                         else if ( newItem.format.equalsIgnoreCase( "/LINK" ) )
                             link = null;
                     }
@@ -687,7 +688,6 @@ class ComplexToolTipUI extends MetalToolTipUI {
         if ( _linkItems != null ) {
             for ( Iterator<LinkItem> iter = _linkItems.descendingIterator(); iter.hasNext(); ) {
                 LinkItem link = iter.next();
-                System.out.println( link.x + "   " + link.y + "   " + link.x2 + "   " + link.y2 );
                 if ( x > link.x && y > link.y && x < link.x2 && y < link.y2 ) {
                     if ( _dynamicLinkPath != null )
                         browseURL( _dynamicLinkPath.getText() + link.link );

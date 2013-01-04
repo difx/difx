@@ -106,9 +106,23 @@ public class V2dFileParser {
                 //  such that they can be made part of the output.
                 if ( _currentSection == null || _sectionType == NO_SECTION ) {
                     //  We are not currently in a section...so this is a "global" parameter.
-                    if ( _globalParameters == null )
-                        _globalParameters = new Vector<GenericParameter>();
-                    _globalParameters.add( newParam );
+                    if ( newParam.name.contentEquals( "vex" ) )
+                        vexFile( newParam.value.trim() ) ;
+                    else if ( newParam.name.contentEquals( "maxGap" ) )
+                        _maxGap = Double.parseDouble( newParam.value );
+                    else if ( newParam.name.contentEquals( "singleScan" ) )
+                        _singleScan = Boolean.parseBoolean( newParam.value );
+                    else if ( newParam.name.contentEquals( "jobSeries" ) )
+                        _jobSeries = newParam.value;
+                    else if ( newParam.name.contentEquals( "startSeries" ) )
+                        _startSeries = Integer.parseInt( newParam.value );
+                    else if ( newParam.name.contentEquals( "antennas" ) )
+                        _antennas = newParam.value;
+                    else {
+                        if ( _globalParameters == null )
+                            _globalParameters = new Vector<GenericParameter>();
+                        _globalParameters.add( newParam );
+                    }
                 }
                 else if ( _sectionType == EOP_SECTION ) {
                     EOPSection section = (EOPSection)_currentSection;

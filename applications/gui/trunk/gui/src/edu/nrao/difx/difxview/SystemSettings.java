@@ -1068,8 +1068,10 @@ public class SystemSettings extends JFrame {
                 if ( _difxTCPCheck.isSelected() ) {
                     //  Change the connection status to "connecting".
                     _guiServerConnectionLight.warning();
-                    if ( _queueBrowser != null )
+                    if ( _queueBrowser != null ) {
                         _queueBrowser.guiServerConnectionLight().warning();
+                        _queueBrowser.guiServerConnectionStatus( "connecting", "yellow" );
+                    }
                     //  Make a new guiServer connection.
                     _guiServerConnection = new GuiServerConnection( _this, difxControlAddress(), 
                             difxControlPort(), timeout() );
@@ -1078,15 +1080,19 @@ public class SystemSettings extends JFrame {
                         public void actionPerformed( ActionEvent e ) {
                             if ( e.getActionCommand().contentEquals( "connected" ) ) {
                                 _guiServerConnectionLight.on( true );
-                                if ( _queueBrowser != null )
+                                if ( _queueBrowser != null ) {
                                     _queueBrowser.guiServerConnectionLight().on( true );
+                                    _queueBrowser.guiServerConnectionStatus( "connected", "green" );
+                                }
                             }
                             else {
                                 _guiServerConnectionLight.alert();
                                 guiServerVersion( "N/A" );
                                 guiServerDifxVersion( "N/A" );
-                                if ( _queueBrowser != null )
+                                if ( _queueBrowser != null ) {
                                     _queueBrowser.guiServerConnectionLight().alert();
+                                    _queueBrowser.guiServerConnectionStatus( "connection failed", "red" );
+                                }
                             }
                         }
                     } );
@@ -1114,8 +1120,10 @@ public class SystemSettings extends JFrame {
                         }
                         //  Connection lost
                         _guiServerConnectionLight.warning();
-                        if ( _queueBrowser != null )
+                        if ( _queueBrowser != null ) {
                             _queueBrowser.guiServerConnectionLight().warning();
+                            _queueBrowser.guiServerConnectionStatus( "connection lost", "yellow" );
+                        }
                     }
                     else {
                         if ( _counter <= 0 ) {
@@ -1133,16 +1141,20 @@ public class SystemSettings extends JFrame {
                         _guiServerConnectionLight.alert();
                         guiServerVersion( "N/A" );
                         guiServerDifxVersion( "N/A" );
-                        if ( _queueBrowser != null )
+                        if ( _queueBrowser != null ) {
                             _queueBrowser.guiServerConnectionLight().alert();
+                            _queueBrowser.guiServerConnectionStatus( "connection broken", "red" );
+                        }
                     }
                 }
                 else {
                     _guiServerConnectionLight.on( false );
                     guiServerVersion( "N/A" );
                     guiServerDifxVersion( "N/A" );
-                    if ( _queueBrowser != null )
+                    if ( _queueBrowser != null ) {
                         _queueBrowser.guiServerConnectionLight().on( false );
+                        _queueBrowser.guiServerConnectionStatus( "not connected", null );
+                    }
                 }
                 //  One second sleep between attempts to connect.
                 try {
@@ -1553,6 +1565,19 @@ public class SystemSettings extends JFrame {
         _defaultNames.viaHttpLocation = "";
         _defaultNames.viaFtpLocation = "";
         _defaultNames.localFileLocation = "";
+        _defaultNames.vexFromHost = false;
+        _defaultNames.vexViaHttp = false;
+        _defaultNames.vexViaFtp = false;
+        _defaultNames.vexFromLocal = false;
+        _defaultNames.vexFromExperiment = false;
+        _defaultNames.v2dFileSource = "";
+        _defaultNames.v2dViaHttpLocation = "";
+        _defaultNames.v2dViaFtpLocation = "";
+        _defaultNames.localV2dFileLocation = "";
+        _defaultNames.v2dFromHost = false;
+        _defaultNames.v2dViaHttp = false;
+        _defaultNames.v2dViaFtp = false;
+        _defaultNames.v2dFromLocal = false;
         _defaultNames.createPassOnExperimentCreation = true;
         _defaultNames.singleInputFile = false;
         _defaultNames.scanBasedJobNames = true;
@@ -2384,6 +2409,36 @@ public class SystemSettings extends JFrame {
                 _defaultNames.viaFtpLocation = doiConfig.getDefaultNamesViaFtpLocation();
             if ( doiConfig.getDefaultNamesLocalFileLocation() != null )
                 _defaultNames.localFileLocation = doiConfig.getDefaultNamesLocalFileLocation();
+            if ( doiConfig.getDefaultNamesVexSourceChoice() != null ) {
+                if ( doiConfig.getDefaultNamesVexSourceChoice().contentEquals( "host" ) )
+                    _defaultNames.vexFromHost = true;
+                else if ( doiConfig.getDefaultNamesVexSourceChoice().contentEquals( "http" ) )
+                    _defaultNames.vexViaHttp = true;
+                else if ( doiConfig.getDefaultNamesVexSourceChoice().contentEquals( "ftp" ) )
+                    _defaultNames.vexViaFtp = true;
+                else if ( doiConfig.getDefaultNamesVexSourceChoice().contentEquals( "local" ) )
+                    _defaultNames.vexFromLocal = true;
+                else if ( doiConfig.getDefaultNamesVexSourceChoice().contentEquals( "experiment" ) )
+                    _defaultNames.vexFromExperiment = true;
+            }
+            if ( doiConfig.getDefaultNamesV2DFileSource() != null )
+                _defaultNames.v2dFileSource = doiConfig.getDefaultNamesV2DFileSource();
+            if ( doiConfig.getDefaultNamesV2DViaHttpLocation() != null )
+                _defaultNames.v2dViaHttpLocation = doiConfig.getDefaultNamesV2DViaHttpLocation();
+            if ( doiConfig.getDefaultNamesV2DViaFtpLocation() != null )
+                _defaultNames.v2dViaFtpLocation = doiConfig.getDefaultNamesV2DViaFtpLocation();
+            if ( doiConfig.getDefaultNamesLocalV2DFileLocation() != null )
+                _defaultNames.localV2dFileLocation = doiConfig.getDefaultNamesLocalV2DFileLocation();
+            if ( doiConfig.getDefaultNamesV2DSourceChoice() != null ) {
+                if ( doiConfig.getDefaultNamesV2DSourceChoice().contentEquals( "host" ) )
+                    _defaultNames.v2dFromHost = true;
+                else if ( doiConfig.getDefaultNamesV2DSourceChoice().contentEquals( "http" ) )
+                    _defaultNames.v2dViaHttp = true;
+                else if ( doiConfig.getDefaultNamesV2DSourceChoice().contentEquals( "ftp" ) )
+                    _defaultNames.v2dViaFtp = true;
+                else if ( doiConfig.getDefaultNamesV2DSourceChoice().contentEquals( "local" ) )
+                    _defaultNames.v2dFromLocal = true;
+            }
             _defaultNames.singleInputFile = doiConfig.isDefaultSingleInputFile();
             _defaultNames.scanBasedJobNames = doiConfig.isDefaultNamesScanBasedJobNames();
             if ( doiConfig.getDefaultNamesDirListLocation() != null )
@@ -2771,6 +2826,28 @@ public class SystemSettings extends JFrame {
         doiConfig.setDefaultNamesViaHttpLocation( _defaultNames.viaHttpLocation );
         doiConfig.setDefaultNamesViaFtpLocation( _defaultNames.viaFtpLocation );
         doiConfig.setDefaultNamesLocalFileLocation( _defaultNames.localFileLocation );
+        if ( _defaultNames.vexFromHost == true )
+            doiConfig.setDefaultNamesVexSourceChoice( "host" );
+        else if ( _defaultNames.vexViaHttp == true )
+            doiConfig.setDefaultNamesVexSourceChoice( "http" );
+        else if ( _defaultNames.vexViaFtp == true )
+            doiConfig.setDefaultNamesVexSourceChoice( "ftp" );
+        else if ( _defaultNames.vexFromLocal == true )
+            doiConfig.setDefaultNamesVexSourceChoice( "local" );
+        else if ( _defaultNames.vexFromExperiment == true )
+            doiConfig.setDefaultNamesVexSourceChoice( "experiment" );
+        doiConfig.setDefaultNamesV2DFileSource( _defaultNames.v2dFileSource );
+        doiConfig.setDefaultNamesV2DViaHttpLocation( _defaultNames.v2dViaHttpLocation );
+        doiConfig.setDefaultNamesV2DViaFtpLocation( _defaultNames.v2dViaFtpLocation );
+        doiConfig.setDefaultNamesLocalV2DFileLocation( _defaultNames.localV2dFileLocation );
+        if ( _defaultNames.v2dFromHost == true )
+            doiConfig.setDefaultNamesV2DSourceChoice( "host" );
+        else if ( _defaultNames.v2dViaHttp == true )
+            doiConfig.setDefaultNamesV2DSourceChoice( "http" );
+        else if ( _defaultNames.v2dViaFtp == true )
+            doiConfig.setDefaultNamesV2DSourceChoice( "ftp" );
+        else if ( _defaultNames.v2dFromLocal == true )
+            doiConfig.setDefaultNamesV2DSourceChoice( "local" );
         doiConfig.setDefaultSingleInputFile( _defaultNames.singleInputFile );
         doiConfig.setDefaultNamesScanBasedJobNames( _defaultNames.scanBasedJobNames );
         doiConfig.setDefaultNamesDirListLocation( _defaultNames.dirListLocation );
@@ -3745,6 +3822,19 @@ public class SystemSettings extends JFrame {
         String viaHttpLocation;
         String viaFtpLocation;
         String localFileLocation;
+        boolean vexFromHost;
+        boolean vexViaHttp;
+        boolean vexViaFtp;
+        boolean vexFromLocal;
+        boolean vexFromExperiment;
+        String v2dFileSource;
+        String v2dViaHttpLocation;
+        String v2dViaFtpLocation;
+        String localV2dFileLocation;
+        boolean v2dFromHost;
+        boolean v2dViaHttp;
+        boolean v2dViaFtp;
+        boolean v2dFromLocal;
         boolean createPassOnExperimentCreation;
         boolean singleInputFile;
         boolean scanBasedJobNames;

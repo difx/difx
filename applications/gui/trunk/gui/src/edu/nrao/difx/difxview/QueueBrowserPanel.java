@@ -206,12 +206,30 @@ public class QueueBrowserPanel extends TearOffPanel {
         _numPasses.setBounds( 490, 30, 120, 25 );
         _numJobs = new NumLabel( "Jobs", this );
         _numJobs.setBounds( 620, 30, 120, 25 );
-        _guiServerConnectionLight = new ActivityMonitorLight();
+        _guiServerConnectionLight = new ActivityMonitorLight() {
+             public JToolTip createToolTip() {
+                 ComplexToolTip tip = new ComplexToolTip();
+                 tip.setComponent(this);
+                 return tip;
+             }
+             public Point getToolTipLocation( MouseEvent e) {
+                return new Point( 10, getHeight() );
+             }
+        };
         _guiServerConnectionLight.setBounds( 360, 32, 12, 12 );
         _guiServerConnectionLight.alertTime( 0 );
         _guiServerConnectionLight.warningTime( 0 );
         this.add( _guiServerConnectionLight );
-        _guiServerConnectionLabel = new JLabel( "guiServer Connection" );
+        _guiServerConnectionLabel = new JLabel( "guiServer Connection" ) {
+             public JToolTip createToolTip() {
+                 ComplexToolTip tip = new ComplexToolTip();
+                 tip.setComponent(this);
+                 return tip;
+             }
+             public Point getToolTipLocation( MouseEvent e) {
+                return new Point( 10, getHeight() );
+             }
+        };
         _guiServerConnectionLabel.setBounds( 380, 25, 200, 25 );
         this.add( _guiServerConnectionLabel );
         _workingSpinner = new Spinner();
@@ -286,6 +304,36 @@ public class QueueBrowserPanel extends TearOffPanel {
     
     public ActivityMonitorLight guiServerConnectionLight() {
         return _guiServerConnectionLight;
+    }
+    
+    /*
+     * Control the "status" of the guiServer connection light.  The status is
+     * used in the tooltip - the text of the status is given one of a few choices
+     * of color.
+     */
+    public void guiServerConnectionStatus( String status, String color ) {
+        String newTooltip = 
+                  "Indicates the status of the connection to <<italic>>guiServer<</italic>>\n"
+                + "on the difx host.\n"
+                + "<<fixed>>"
+                + "<<bold>>  host:<</bold>>" + _settings.difxControlAddress() + "\n"
+                + "<<bold>>  port:<</bold>>" + _settings.difxControlPort() + "\n"
+                + "<<bold>>status:<</bold>> ";
+        if ( color == null )
+            newTooltip += status;
+        else if ( color.equalsIgnoreCase( "green" ) )
+            newTooltip += "<<green>>" + status + "<</color>>";
+        else if ( color.equalsIgnoreCase( "red" ) )
+            newTooltip += "<<red>>" + status + "<</color>>";
+        else if ( color.equalsIgnoreCase( "yellow" ) )
+            newTooltip += "<<yellow>>" + status + "<</color>>";
+        else
+            newTooltip += status;
+        newTooltip += "\n<</sans>>See <<blue>><<underline>><<link=" + _settings.guiBrowsePath() + "/settings_content.html#DiFX_Control_Connection>>"
+                + "DiFX Control Connection<</link>><</underline>><</color>> for more on how\n"
+                + "to connect to <<italic>>guiServer<</italic>>";
+        _guiServerConnectionLight.setToolTipText( newTooltip );
+        _guiServerConnectionLabel.setToolTipText( newTooltip );
     }
 
     /*
@@ -1035,6 +1083,14 @@ public class QueueBrowserPanel extends TearOffPanel {
         }
         
         synchronized public void updateList() {
+            //  If the connection to the guiServer doesn't exist, this can't work.
+            if ( !_settings.guiServerConnection().connected() ) {
+                Component comp = this;
+                while ( comp.getParent() != null )
+                    comp = comp.getParent();
+                JOptionPane.showMessageDialog( (Frame)comp, "GuiServer is not connected.", "ls Error", JOptionPane.WARNING_MESSAGE );
+                return;
+            }
             //  Erase the "update now" button and give us a "busy" spinnner.  This
             //  will be undone when all is completed.
             _updateButton.setVisible( false );
@@ -1535,6 +1591,12 @@ public class QueueBrowserPanel extends TearOffPanel {
             thisPass.addChild( thisJob );
             _header.addJob( thisJob );
         }
+        //  Adjust the setting of the experiment editor to match the most recently
+        //  added job settings (based on that job's .v2d file).  This won't always
+        //  be useful, but will at least sometimes be what the user wants.
+        ExperimentEditor editor = thisExperiment.generateEditor();
+        String v2dFileBase = inputFile.substring( 0, inputFile.lastIndexOf( '/' ) + 1 );
+        editor.findOldV2dFile( v2dFileBase );
     }   
     
     protected NodeBrowserScrollPane _browserPane;

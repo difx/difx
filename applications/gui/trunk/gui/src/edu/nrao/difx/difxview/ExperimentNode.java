@@ -226,6 +226,25 @@ public class ExperimentNode extends QueueBrowserNode {
     }
     
     /*
+     * Generate an experiment editor for this experiment.
+     */
+    public ExperimentEditor generateEditor() {
+        if ( _editor == null ) {
+            Point pt = this.getLocationOnScreen();
+            _editor = new ExperimentEditor( pt.x + 25, pt.y + 25, _settings );
+            _editor.number( this.number() );
+            _editor.name( this.name() );
+            _editor.id( this.id() );
+            _editor.inDataBase( this.inDatabase() );
+            _editor.created( creationDate() );
+            _editor.status( this.status() );
+            _editor.directory( this.directory() );
+            _editor.vexFileName( this.vexFile() );
+        }
+        return _editor;
+    }
+    
+    /*
      * Bring up a display/editor for the properties of this experiment.  The
      * editor may or may not already exist - if it does not, create it.
      */

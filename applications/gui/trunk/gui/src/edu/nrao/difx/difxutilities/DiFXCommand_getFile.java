@@ -52,6 +52,11 @@ public class DiFXCommand_getFile extends DiFXCommand {
     public DiFXCommand_getFile( String filename, SystemSettings settings ) {
         super( settings );
         this.header().setType( "DifxFileTransfer" );
+        //  Make sure the guiServer connection is working...bail out if not.
+        if ( !_settings.guiServerConnection().connected() ) {
+            _error = "No connection to guiServer";
+            return;
+        }
         DifxFileTransfer xfer = this.factory().createDifxFileTransfer();
         try {
             InetAddress[] foo = java.net.InetAddress.getAllByName( java.net.InetAddress.getLocalHost().getHostName() );
@@ -71,6 +76,7 @@ public class DiFXCommand_getFile extends DiFXCommand {
             _endListeners = new EventListenerList();
             _acceptListeners = new EventListenerList();
         } catch ( java.net.UnknownHostException e ) {
+            _error = e.getMessage();
         }
     }
     
