@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2012 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2007-2013 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -744,7 +744,7 @@ void deleteDifxSpacecraftInternals(DifxSpacecraft *ds);
 void deleteDifxSpacecraftArray(DifxSpacecraft *ds, int nSpacecraft);
 void printDifxSpacecraft(const DifxSpacecraft *ds);
 void fprintDifxSpacecraft(FILE *fp, const DifxSpacecraft *ds);
-int computeDifxSpacecraftEphemeris(DifxSpacecraft *ds, double mjd0, double deltat, int nPoint, const char *name, const char *naifFile, const char *ephemFile, double ephemStellarAber);
+int computeDifxSpacecraftEphemeris(DifxSpacecraft *ds, double mjd0, double deltat, int nPoint, const char *name, const char *naifFile, const char *ephemFile, double ephemStellarAber, double ephemClockError);
 DifxSpacecraft *mergeDifxSpacecraft(const DifxSpacecraft *ds1, int nds1, const DifxSpacecraft *ds2, int nds2, int *spacecraftIdRemap, int *nds);
 int evaluateDifxSpacecraft(const DifxSpacecraft *sc, int mjd, double fracMjd, sixVector *interpolatedPosition);
 int writeDifxSpacecraftArray(FILE *out, int nSpacecraft, DifxSpacecraft *ds);

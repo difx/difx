@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2012 by Walter Brisken                             *
+ *   Copyright (C) 2008-2013 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -115,7 +115,7 @@ void printDifxSpacecraft(const DifxSpacecraft *ds)
 	fprintDifxSpacecraft(stdout, ds);
 }
 
-int computeDifxSpacecraftEphemeris(DifxSpacecraft *ds, double mjd0, double deltat, int nPoint, const char *objectName, const char *naifFile, const char *ephemFile, double ephemStellarAber)
+int computeDifxSpacecraftEphemeris(DifxSpacecraft *ds, double mjd0, double deltat, int nPoint, const char *objectName, const char *naifFile, const char *ephemFile, double ephemStellarAber, double ephemClockError)
 {
 #if HAVE_SPICE
 	int spiceHandle;
@@ -139,7 +139,7 @@ int computeDifxSpacecraftEphemeris(DifxSpacecraft *ds, double mjd0, double delta
 	for(p = 0; p < nPoint; p++)
 	{
 		mjd = mjd0 + p*deltat;
-		jd = mjd + 2400000.5;
+		jd = mjd + 2400000.5 + ephemClockError/86400.0;
 		sprintf(jdstr, "JD %18.12Lf", jd);
 		str2et_c(jdstr, &et);
 		if(ephemStellarAber == 0.0)
