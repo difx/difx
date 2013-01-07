@@ -115,7 +115,7 @@ void printDifxSpacecraft(const DifxSpacecraft *ds)
 	fprintDifxSpacecraft(stdout, ds);
 }
 
-int computeDifxSpacecraftEphemeris(DifxSpacecraft *ds, double mjd0, double deltat, int nPoint, const char *objectName, const char *naifFile, const char *ephemFile)
+int computeDifxSpacecraftEphemeris(DifxSpacecraft *ds, double mjd0, double deltat, int nPoint, const char *objectName, const char *naifFile, const char *ephemFile, double ephemStellarAber)
 {
 #if HAVE_SPICE
 	int spiceHandle;
@@ -142,7 +142,27 @@ int computeDifxSpacecraftEphemeris(DifxSpacecraft *ds, double mjd0, double delta
 		jd = mjd + 2400000.5;
 		sprintf(jdstr, "JD %18.12Lf", jd);
 		str2et_c(jdstr, &et);
-		spkezr_c(objectName, et, "J2000", "LT", "399", state, &range);	/* 399 is the earth geocenter */
+		if(ephemStellarAber == 0.0)
+		{
+			spkezr_c(objectName, et, "J2000", "LT", "399", state, &range);	/* 399 is the earth geocenter */
+		}
+		else if(ephemStellarAber == 1.0)
+		{
+			spkezr_c(objectName, et, "J2000", "LT+S", "399", state, &range);
+		}
+		else
+		{
+			double state2[6];
+			int q;
+
+			spkezr_c(objectName, et, "J2000", "LT+S", "399", state2, &range);
+			spkezr_c(objectName, et, "J2000", "LT", "399", state, &range);
+
+			for(q = 0; q < 6; ++q)
+			{
+				state[q] += ephemStellarAber*(state2[q] - state[q]);
+			}
+		}
 
 		ds->pos[p].mjd = mjd;
 		ds->pos[p].fracDay = mjd - ds->pos[p].mjd;
