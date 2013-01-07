@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2012 by Walter Brisken                             *
+ *   Copyright (C) 2009-2013 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -720,6 +720,7 @@ void PhaseCentre::initialise(double r, double d, std::string name)
 	ephemDeltaT = 24.0; //seconds; 24 seconds is perfectly matched to the default behavior of calcif2
 	ephemStellarAber = 0.0;	// 0 = don't correct; 1 = correct.  Other values interpolate/extrapolate correction by factor provided
 	qualifier = 0;
+	ephemClockError = 0.0;	// sec
 	ephemObject = "";
 	ephemFile = "";
 	naifFile = "";  
@@ -786,6 +787,10 @@ int SourceSetup::setkv(const std::string &key, const std::string &value, PhaseCe
 	else if(key == "ephemStellarAber")
 	{
 		ss >> pc->ephemStellarAber;
+	}
+	else if(key == "ephemClockError")
+	{
+		ss >> pc->ephemClockError;
 	}
 	else if(key == "naifFile")
 	{

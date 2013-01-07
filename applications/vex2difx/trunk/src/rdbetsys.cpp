@@ -42,7 +42,7 @@
 const char program[] = "rdbetsys";
 const char version[] = "1.2";
 const char author[]  = "Walter Brisken";
-const char verdate[] = "20130104";
+const char verdate[] = "20130107";
 
 const char defaultSwitchedPowerPath[] = "/home/vlba/metadata/switchedpower";
 const double defaultTsysInterval = 15.0;	// Seconds
@@ -220,7 +220,7 @@ private:
 	FILE *out;
 	std::string stn;
 	std::vector<TsysAverager> chans;
-	long long nGood, nBad;
+	long long nGood, nBad, nSkip;
 public:
 	TsysAccumulator();
 	~TsysAccumulator();
@@ -231,9 +231,10 @@ public:
 	void feed(const VexInterval &lineTimeRange, const char *data);
 	long long getnGood() { return nGood; };
 	long long getnBad() { return nBad; };
+	long long getnSkip() { return nSkip; };
 };
 
-TsysAccumulator::TsysAccumulator() : nAccum(0), out(0), nGood(0), nBad(0)
+TsysAccumulator::TsysAccumulator() : nAccum(0), out(0), nGood(0), nBad(0), nSkip(0)
 {
 }
 
@@ -358,7 +359,7 @@ void TsysAccumulator::setup(const VexSetup &vexSetup, DifxTcal *T, double mjd, c
 	// Sanity check the number of record channels
 	sanityCheckChannels(vexSetup);
 
-	chans.resize(vexSetup.nRecordChan);
+	chans.resize(vexSetup.channels.size());
 	ta = chans.begin();
 	for(vc = vexSetup.channels.begin(); vc != vexSetup.channels.end(); ++vc)
 	{
@@ -389,6 +390,7 @@ void TsysAccumulator::flush()
 	{
 		double day;
 		int doy, mjd;
+		bool doSkip = true;
 		
 		mjd = static_cast<int>(accumTimeRange.center());
 		mjd2yearday(mjd, 0, &doy);
@@ -397,9 +399,23 @@ void TsysAccumulator::flush()
 		fprintf(out, "%s %12.8f %10.8f %d", stn.c_str(), day, accumTimeRange.duration(), static_cast<int>(chans.size()));
 		for(std::vector<TsysAverager>::iterator ta = chans.begin(); ta != chans.end(); ++ta)
 		{
-			fprintf(out, " %5.2f %s", ta->Tsys(), ta->rxName);
-			nGood += ta->nGood;
-			nBad += ta->nBad;
+			if(ta->tCal > 0.0)
+			{
+				doSkip = false;
+			}
+		}
+		for(std::vector<TsysAverager>::iterator ta = chans.begin(); ta != chans.end(); ++ta)
+		{
+			if(doSkip)
+			{
+				++nSkip;
+			}
+			else
+			{
+				fprintf(out, " %5.2f %s", ta->Tsys(), ta->rxName);
+				nGood += ta->nGood;
+				nBad += ta->nBad;
+			}
 			ta->reset();
 		}
 		fprintf(out, "\n");
@@ -454,14 +470,13 @@ void TsysAccumulator::feed(const VexInterval &lineTimeRange, const char *data)
 	}
 }
 
-static int processStation(FILE *out, const VexData &V, const std::string &stn, const std::string &fileList, const VexInterval &stnTimeRange, double nominalTsysInterval, DifxTcal *T, int verbose, long long *nGood, long long *nBad, long long *nLine, long long *nTimeError)
+static int processStation(FILE *out, const VexData &V, const std::string &stn, const std::string &fileList, const VexInterval &stnTimeRange, double nominalTsysInterval, DifxTcal *T, int verbose, long long *nGood, long long *nBad, long long *nLine, long long *nTimeError, long long *nSkip)
 {
 	const int MaxLineLength = 32768;	// make sure it is large enough!
 	char line[MaxLineLength];
 	FILE *p;
 	std::string command;
 	int nRecord = 0;
-	int nSkip = 0;
 	int pos, n;
 	char *v;
 	VexInterval lineTimeRange;
@@ -529,7 +544,6 @@ static int processStation(FILE *out, const VexData &V, const std::string &stn, c
 		if(lineTimeRange.mjdStart < scanTimeRange.mjdStart)
 		{
 			// We're not yet at the time of scan start
-			++nSkip;
 			continue;
 		}
 		else if(lineTimeRange.mjdStop > scanTimeRange.mjdStop)
@@ -641,6 +655,11 @@ static int processStation(FILE *out, const VexData &V, const std::string &stn, c
 		*nBad = TA.getnBad();
 	}
 
+	if(nSkip)
+	{
+		*nSkip = TA.getnSkip();
+	}
+
 	return nRecord;
 }
 
@@ -690,7 +709,7 @@ int main(int argc, char **argv)
 	const char *tcalPath;
 	int nZero = 0;
 	std::string zeroStations;
-	long long nGood, nBad, nLine, nTimeError;
+	long long nGood, nBad, nLine, nTimeError, nSkip;
 
 	for(int a = 1; a < argc; ++a)
 	{
@@ -873,11 +892,12 @@ int main(int argc, char **argv)
 			nRecord = 0;
 			nGood = 0;
 			nBad = 0;
+			nSkip = 0;
 			nTimeError = 0;
 		}
 		else
 		{
-			nRecord = processStation(out, *V, it->first, fileList, it->second, nominalTsysInterval, T, verbose, &nGood, &nBad, &nLine, &nTimeError);
+			nRecord = processStation(out, *V, it->first, fileList, it->second, nominalTsysInterval, T, verbose, &nGood, &nBad, &nLine, &nTimeError, &nSkip);
 		}
 		if(nRecord <= 0)
 		{
@@ -894,6 +914,7 @@ int main(int argc, char **argv)
 			std::cout << nRecord << " switched power records read" << std::endl;
 			std::cout << nGood << " good Tsys values created" << std::endl;
 			std::cout << nBad << " bad (999) Tsys values created" << std::endl;
+			std::cout << nSkip << " Tsys records skipped (probably because no Tcal)" << std::endl;
 			std::cout << nTimeError << " time errors encountered" << std::endl;
 		}
 	}

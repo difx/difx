@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2012 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2009-2013 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -2529,12 +2529,15 @@ static int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int 
 				cout << "  startPoint = " << n0 << "  nPoint = " << nPoint << endl;
 				cout << "  ephemFile = " << phaseCentre->ephemFile << endl;
 				cout << "  naifFile = " << phaseCentre->naifFile << endl;
+				cout << "  ephemStellarAber = " << phaseCentre->ephemStellarAber << endl;
+				cout << "  ephemClockError = " << phaseCentre->ephemClockError << endl;
 			}
 			v = computeDifxSpacecraftEphemeris(ds, mjd0, deltat, nPoint, 
 			phaseCentre->ephemObject.c_str(),
 			phaseCentre->naifFile.c_str(),
 			phaseCentre->ephemFile.c_str(), 
-			phaseCentre->ephemStellarAber);
+			phaseCentre->ephemStellarAber,
+			phaseCentre->ephemClockError);
 			if(v != 0)
 			{
 				cerr << "Error: ephemeris calculation failed.  Must stop." << endl;

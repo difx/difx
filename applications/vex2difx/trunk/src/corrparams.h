@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2011 by Walter Brisken                             *
+ *   Copyright (C) 2009-2013 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -77,8 +77,9 @@ public:
 	std::string ephemObject;	// name of the object in the ephemeris
 	std::string ephemFile;	// file containing a JPL ephemeris
 	std::string naifFile;	// file containing naif time data
-	double ephemDeltaT;	// tabulated ephem. interval (seconds, default 60)
+	double ephemDeltaT;	// tabulated ephem. nterval (seconds, default 60)
 	double ephemStellarAber;	// 0 = don't apply (default), 1 = apply, other: scale correction accordingly
+	double ephemClockError;		// (sec) 0.0 is no error
 };
 
 class SourceSetup

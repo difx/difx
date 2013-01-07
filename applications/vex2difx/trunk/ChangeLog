@@ -13,6 +13,8 @@ Version 2.2.0
 * Remove "using namespace std" from .h files; goal is to remove them from .cpp files in time
 * Track oversample value in channel structure; move checking downstream to
   more relevant code.
+* Add a few features (ephemDeltaT, ephemStellarAber, ephemClockError) useful in
+  exploring spacecraft ephemeris but probably not useful for operations
 
 Version 2.1.0
 ~~~~~~~~~~~~~
