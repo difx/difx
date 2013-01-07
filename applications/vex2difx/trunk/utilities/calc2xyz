@@ -1,0 +1,30 @@
+#!/bin/env python
+
+# args: <calc file> <spacecraft ID (usually 0)>
+
+from sys import argv, exit
+from string import split, strip
+import datetime
+
+mjd0 = datetime.datetime(1858, 11, 17, 0, 0)
+
+if len(argv) != 3:
+	print 'Usage: %s <calc file> <spacecraft ID (usually 0)>' % argv[0]
+	print '\nThis program is used to make an xyz file for use in the Sekido near-field model.'
+	exit(0)
+
+match = 'SPACECRAFT %s ROW' % argv[2]
+
+data = open(argv[1]).readlines()
+
+for d in data:
+	if match in d:
+		v = split(strip(split(d, ':')[1]))
+		if len(v) == 7:
+			mjd = float(v[0])
+			dt = datetime.timedelta(int(mjd), int((mjd - int(mjd))*86400.0 + 0.5))
+			t = mjd0 + dt
+			timestr = '%04d/%02d/%02d %02d:%02d:%02d' % (t.year, t.month, t.day, t.hour, t.minute, t.second)
+
+			print '%-20s  %19.10f %19.10f %19.10f %19.10f %19.10f %19.10f' % (timestr, float(v[1])/1000.0, float(v[2])/1000.0, float(v[3])/1000.0, float(v[4])/1000.0, float(v[5])/1000.0, float(v[6])/1000.0)
+

@@ -2533,7 +2533,8 @@ static int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int 
 			v = computeDifxSpacecraftEphemeris(ds, mjd0, deltat, nPoint, 
 			phaseCentre->ephemObject.c_str(),
 			phaseCentre->naifFile.c_str(),
-			phaseCentre->ephemFile.c_str());
+			phaseCentre->ephemFile.c_str(), 
+			phaseCentre->ephemStellarAber);
 			if(v != 0)
 			{
 				cerr << "Error: ephemeris calculation failed.  Must stop." << endl;

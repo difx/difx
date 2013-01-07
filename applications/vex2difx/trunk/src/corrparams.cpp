@@ -718,6 +718,7 @@ void PhaseCentre::initialise(double r, double d, std::string name)
 	difxName = name;
 	calCode = ' ';
 	ephemDeltaT = 24.0; //seconds; 24 seconds is perfectly matched to the default behavior of calcif2
+	ephemStellarAber = 0.0;	// 0 = don't correct; 1 = correct.  Other values interpolate/extrapolate correction by factor provided
 	qualifier = 0;
 	ephemObject = "";
 	ephemFile = "";
@@ -777,6 +778,14 @@ int SourceSetup::setkv(const std::string &key, const std::string &value, PhaseCe
 	else if(key == "ephemFile")
 	{
 		ss >> pc->ephemFile;
+	}
+	else if(key == "ephemDeltaT")
+	{
+		ss >> pc->ephemDeltaT;
+	}
+	else if(key == "ephemStellarAber")
+	{
+		ss >> pc->ephemStellarAber;
 	}
 	else if(key == "naifFile")
 	{

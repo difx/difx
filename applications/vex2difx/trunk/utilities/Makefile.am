@@ -16,4 +16,6 @@ dist_bin_SCRIPTS = \
 	plottsys \
 	queueVex \
 	unqueueVex \
+	calc2xyz \
+	calc2sked \
 	goUSNO

@@ -78,6 +78,7 @@ public:
 	std::string ephemFile;	// file containing a JPL ephemeris
 	std::string naifFile;	// file containing naif time data
 	double ephemDeltaT;	// tabulated ephem. interval (seconds, default 60)
+	double ephemStellarAber;	// 0 = don't apply (default), 1 = apply, other: scale correction accordingly
 };
 
 class SourceSetup

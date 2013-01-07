@@ -1,0 +1,29 @@
+#!/bin/env python
+
+# args: <calc file> <spacecraft ID (usually 0)> <spacecraft name>
+
+from sys import argv, exit
+from string import split, strip
+import datetime
+
+mjd0 = datetime.datetime(1858, 11, 17, 0, 0)
+
+if len(argv) != 4:
+	print 'Usage: %s <calc file> <spacecraft ID (usually 0)> <spacecraft name>' % argv[0]
+	print '\nThis program is used to make an sked file section for use in the Sekido near-field model.'
+	exit(0)
+
+match = 'SPACECRAFT %s ROW' % argv[2]
+
+data = open(argv[1]).readlines()
+
+for d in data:
+	if match in d:
+		v = split(strip(split(d, ':')[1]))
+		if len(v) == 7:
+			mjd = float(v[0])
+			dt = datetime.timedelta(int(mjd), int((mjd - int(mjd))*86400.0 + 0.5))
+			t = mjd0 + dt
+
+			print '%-9s 10 SX PREOB  %02d%03d%02d%02d%02d      30 MIDOB      0 POSTOB G-B-D-H-K-L-M-N-O-P-C- 1F000000 1F000000 YYYN   120   120' % (argv[3], t.year % 100, t.timetuple().tm_yday, t.hour, t.minute, t.second)
+
