@@ -237,7 +237,7 @@ def testDifxVersion(fileBase, override):
 		print 'Warning: %s.calc does not contain version info' %fileBase
 	if version != None and jobversion != None and version != jobversion:
 		print 'Warning: $DIFX_VERSION and job version (in .calc file) mismatch'
-		print '    <%s> != <%s>' % (ver, jobver)
+		print '    <%s> != <%s>' % (version, jobversion)
 		if override:
 			print 'Continuing anyway due to --override-version'
 		else:

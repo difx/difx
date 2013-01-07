@@ -33,6 +33,7 @@
 #include <math.h>
 #include "MATHCNST.H"
 #include "difxcalc.h"
+#include "externaldelay.h"
 #include "poly.h"
 
 #define MAX_EOPS 5
@@ -387,6 +388,8 @@ static int antennaCalc(int scanId, int antId, const DifxInput *D, CalcParams *p,
 	int sourceId;
 	int nError = 0;
 	char mount[MAX_ANTENNA_MOUNT_NAME_LENGTH];
+	char externalDelayFilename[DIFXIO_FILENAME_LENGTH];
+	ExternalDelay *ed;
 
 	antenna = D->antenna + antId;
 	scan = D->scan + scanId;
@@ -426,6 +429,10 @@ static int antennaCalc(int scanId, int antId, const DifxInput *D, CalcParams *p,
 	        request->parallax = source->parallax;
 	        request->depoch   = source->pmEpoch;
 	}
+
+	snprintf(externalDelayFilename, DIFXIO_FILENAME_LENGTH, "%s_%s.delay", antenna->name, source->name);
+	ed = newExternalDelay(externalDelayFilename);
+
 	for(i = 0; i < nInt; ++i)
 	{
 		double e;
@@ -446,6 +453,11 @@ static int antennaCalc(int scanId, int antId, const DifxInput *D, CalcParams *p,
 					{
 						printf("Error: antennaCalc: Spacecraft %d table out of time range\n", spacecraftId);
 
+						if(ed)
+						{
+							deleteExternalDelay(ed);
+						}
+
 						return -1;
 					}
 				}
@@ -453,6 +465,11 @@ static int antennaCalc(int scanId, int antId, const DifxInput *D, CalcParams *p,
 				if(v < 0)
 				{
 					printf("Error: antennaCalc: callCalc = %d\n", v);
+
+					if(ed)
+					{
+						deleteExternalDelay(ed);
+					}
 					
 					return -1;
 				}
@@ -460,6 +477,26 @@ static int antennaCalc(int scanId, int antId, const DifxInput *D, CalcParams *p,
 
 			/* use result to populate tabulated values */
 			nError += extractCalcResults(&mod, j, &results);
+
+			/* override delay and atmosphere values */
+			if(ed)
+			{
+				int v;
+				double exDelay, exDry, exWet;
+
+				v = getExternalDelay(ed, request->date+request->time, &exDelay, &exDry, &exWet);
+				if(v < 0)
+				{
+					fprintf(stderr, "Error: request for external delay from stn %s source %s at time %14.8f failed with error code %d\n", antenna->name, source->name, request->date+request->time, v);
+
+					exit(0);
+				}
+
+				mod.delay[j] = -(exDelay+exDry+exWet)*1.0e6;
+				mod.dry[j] = exDry*1.0e6;
+				mod.wet[j] = exWet*1.0e6;
+			}
+
 			lastsec = sec;
 			sec += subInc;
 			if(sec >= 86400.0)
@@ -474,6 +511,11 @@ static int antennaCalc(int scanId, int antId, const DifxInput *D, CalcParams *p,
 		{
 			printf("Scan %d antId %d poly %d : max delay interpolation error = %e us\n", scanId, antId, i, e);
 		}
+	}
+
+	if(ed)
+	{
+		deleteExternalDelay(ed);
 	}
 
 	if(nError > 0)

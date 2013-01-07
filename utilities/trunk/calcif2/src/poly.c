@@ -30,7 +30,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include "../config.h"
+#include "config.h"
 #if HAVE_GSL
 #include <gsl/gsl_multifit.h>
 #endif

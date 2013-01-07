@@ -13,6 +13,8 @@ calcif2_SOURCES = \
 	calcif2.c \
 	difxcalc.c \
 	difxcalc.h \
+	externaldelay.c \
+	externaldelay.h \
 	CALC_xdr.c \
 	CALCServer.h \
 	poly.c \
