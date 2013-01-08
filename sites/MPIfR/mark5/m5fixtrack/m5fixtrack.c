@@ -94,6 +94,8 @@ int main(int argc, char *argv[])
 	badPattern = ~((0x80000000 >> (31 - badTrack)) & syncPattern);
 
 	// read through file until defective sync word has been found
+	
+	fprintf (stderr, "Looking for first sync pattern \n");
 	while(gotit == 0)
 	{
 		ccc = (char)fgetc(file1);
