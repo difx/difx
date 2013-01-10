@@ -86,6 +86,7 @@ private:
 
 	void calcIfIndex(const VexData *V);
 	void writeVCI(const VexData *V, int modeIndex, const std::string &filename);
+	std::string VLArcvr(std::string);
 };
 
 #endif
