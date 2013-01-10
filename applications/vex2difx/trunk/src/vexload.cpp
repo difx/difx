@@ -27,6 +27,10 @@
  *
  *==========================================================================*/
 
+#include <fstream>
+#include <cstring>
+#include <cstdlib>
+
 #include <cstring>
 #include <cctype>
 #include <cstdio>
@@ -40,6 +44,8 @@
 
 // maximum number of defined IFs
 #define MAX_IF 4
+
+using namespace std;
 
 class Tracks
 {
@@ -1681,7 +1687,14 @@ static int getExper(VexData *V, Vex *v, const CorrParams &params)
 			void *p;
 			
 			p = (((Lowl *)lowls->ptr)->item);
+			cerr << "start date: " << ((char *)p) << endl;
 			start = vexDate((char *)p);
+			strncpy(V->vexStartTime, ((char *)p), 50);
+			V->vexStartTime[4] = '\0';
+			V->vexStartTime[8] = '\0';
+			V->vexStartTime[11] = '\0';
+			V->vexStartTime[14] = '\0';
+			V->vexStartTime[17] = '\0';
 		}
 
 		lowls = find_lowl(refs, T_EXPER_NOMINAL_STOP);
@@ -1690,7 +1703,14 @@ static int getExper(VexData *V, Vex *v, const CorrParams &params)
 			void *p;
 
 			p = (((Lowl *)lowls->ptr)->item);
+			cerr << "stop date: " << ((char *)p) << endl;
 			stop = vexDate((char *)p);
+			strncpy(V->vexStopTime, ((char *)p), 50);
+			V->vexStopTime[4] = '\0';
+			V->vexStopTime[8] = '\0';
+			V->vexStopTime[11] = '\0';
+			V->vexStopTime[14] = '\0';
+			V->vexStopTime[17] = '\0';
 		}
 	}
 
