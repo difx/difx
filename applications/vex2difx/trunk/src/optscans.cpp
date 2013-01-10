@@ -100,8 +100,39 @@ int optscans::writeScans(const VexData *V)
 	double recordSeconds = 0.0;
     double day = floor(mjd0);
     double allsec = floor((mjd0-floor(mjd0))*86400.0 + 0.5);
-	double lastTime = 0.0;
+	double lastStop = 0.0;
 
+	int daysinmonths[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+	int doy = atoi((char*)(&V->vexStartTime[5]));
+	int year = atoi((char*)(&V->vexStartTime[0]));
+	int month=1;
+	if( year%400 == 0 || (year%100 != 0 && year%4 == 0) ) {
+		daysinmonths[1]++; // leap year
+	}
+	while( doy > daysinmonths[month] ) {
+		doy	-= daysinmonths[month-1];
+		month++;
+		cerr << "doy: " << doy << " month: " << month << endl;
+	}
+
+/*
+SRC-CAT; TY019;
+HDWR-CAT; Personal Catalog;
+SCHED-BLOCK;TY019;Fixed;1;2013-09-27;12:00:00; ; ; ; ; ; ; ; ;
+*/
+	*this << "SRC_CAT; " << obsCode << ".sources;" << endl;
+	*this << "HDWR_CAT; " << obsCode << ".resources;" << endl;
+	*this << "SCHED-BLOCK; " << obsCode << ";Fixed;1;" 
+		<< (char*)(&V->vexStartTime[0]) << "-"
+		<< month << "-" << doy << ";"
+		<< (char*)(&V->vexStartTime[9]) << ":"
+		<< (char*)(&V->vexStartTime[12]) << ":"
+		<< (char*)(&V->vexStartTime[15])
+		<< "; ; ; ; ; ; ; ; ;" << endl << endl;
+
+	*this << "# STD; <scan name>; <source>; <resource>; <time type>; <time>; <wrap>; "
+		<< "<applyRefPtg>; <applyPhase>; <record>; <overTop>; <intents>; <comments>;"
+		<< endl << endl;
 
 	nScan = V->nScan();
 
@@ -144,12 +175,25 @@ int optscans::writeScans(const VexData *V)
 			if(s != -1)
 			{
 				// don't respect data_good time, just use scan length
-				int    hour = (int)floor( (deltat2-lastTime) / 3600);
-				int    min  = (int)floor(((deltat2-lastTime)-(hour*3600)) / 60);
-				int    sec  = (int)floor( (deltat2-lastTime)-(hour*3600)-(min*60));
 				bool   applyPhase = false;
+				int    hour;
+				int    min;
+				int    sec;
 
-				// STD; ; J2345+0123; X Continuum; Stop Time (LST); 12:34:56; CW; y; n; CalFlux, CalGain; ;
+				// insert non-recording scan between recording scans, to force OPT to stop the Mark5C between scans
+				if( lastStop != 0.0 ) {
+					hour = (int)floor( (deltat1-lastStop) / 3600);
+					min  = (int)floor(((deltat1-lastStop)-(hour*3600)) / 60);
+					sec  = (int)floor( (deltat1-lastStop)-(hour*3600)-(min*60));
+					*this << "STD; " << optscans::obsCode << " " << scan->defName << "NR; "
+                    << scan->sourceDefName << "; " << "loif" << modeId << "; "
+                    << " UTD; " << hour << "h" << min << "m" << sec << "s"
+                    << "; ; N; N; N; ; ObsTgt; ;" << endl << endl;
+				}
+
+				hour = (int)floor( (deltat2-deltat1) / 3600);
+				min  = (int)floor(((deltat2-deltat1)-(hour*3600)) / 60);
+				sec  = (int)floor( (deltat2-deltat1)-(hour*3600)-(min*60));
 				*this << "STD; " << optscans::obsCode << " " << scan->defName << "; "
 					<< scan->sourceDefName << "; " << "loif" << modeId << "; " 
 					<< " UTD; " << hour << "h" << min << "m" << sec << "s"
@@ -158,11 +202,12 @@ int optscans::writeScans(const VexData *V)
 					 *this << "Y";
 				else
 					 *this << "N";
-				 *this << "; ; Y; ObsTgt";
+				 *this << "; Y; ; ObsTgt";
 				if( scan->intent.find("DETERMINE_AUTOPHASE") != string::npos )
 					 *this << ",CALIBRATE_PHASE," << scan->intent;
 				*this <<"; ;" << endl;
-				lastTime = deltat2;
+				lastStop = deltat2;
+				recordSeconds += (deltat2-deltat1);
 			}
 		}
 		*this << endl;
