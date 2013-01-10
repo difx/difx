@@ -373,6 +373,8 @@ public:
 	{
 		return events.back().mjd;
 	}
+	char vexStartTime[50];
+	char vexStopTime[50];
 
 	const std::string &getDirectory() const { return directory; }
 	void setDirectory(const std::string &dir) { directory = dir; }
