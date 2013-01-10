@@ -112,7 +112,6 @@ int optscans::writeScans(const VexData *V)
 	while( doy > daysinmonths[month] ) {
 		doy	-= daysinmonths[month-1];
 		month++;
-		cerr << "doy: " << doy << " month: " << month << endl;
 	}
 
 /*
