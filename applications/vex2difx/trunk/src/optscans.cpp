@@ -119,11 +119,12 @@ SRC-CAT; TY019;
 HDWR-CAT; Personal Catalog;
 SCHED-BLOCK;TY019;Fixed;1;2013-09-27;12:00:00; ; ; ; ; ; ; ; ;
 */
-	*this << "SRC_CAT; " << obsCode << ".sources;" << endl;
-	*this << "HDWR_CAT; " << obsCode << ".resources;" << endl;
+	*this << "SRC-CAT; " << obsCode << "." << ant << ".sources;" << endl;
+	*this << "HDWR-CAT; " << obsCode << "." << ant << ".resources;" << endl;
 	*this << "SCHED-BLOCK; " << obsCode << ";Fixed;1;" 
 		<< (char*)(&V->vexStartTime[0]) << "-"
-		<< month << "-" << doy << ";"
+		<< ((month<10)?"0":"") << month << "-"
+		<< ((doy<10)?"0":"") << doy << ";"
 		<< (char*)(&V->vexStartTime[9]) << ":"
 		<< (char*)(&V->vexStartTime[12]) << ":"
 		<< (char*)(&V->vexStartTime[15])
