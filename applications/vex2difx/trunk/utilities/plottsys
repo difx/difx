@@ -2,14 +2,15 @@
 
 from sys import argv, exit
 from string import split, upper, strip
-from os import system, popen
+from os import system, popen, stat
 from os.path import isfile
+from pwd import getpwuid
 import datetime
 from pyx import *
 
 program = 'plottsys'
-version = '0.1'
-verdate = '20120127'
+version = '0.2'
+verdate = '20130111'
 author = 'Walter Brisken <wbrisken@nrao.edu>'
 
 mjd0 = datetime.datetime(1858, 11, 17, 0, 0)
@@ -254,6 +255,7 @@ tsysFile = ''
 plotFile = ''
 vexFile = ''
 obsCode = ''
+generateTsys = False
 stationTimes = {}
 
 for a in argv[1:]:
@@ -292,14 +294,26 @@ if vexFile != '':
 		exit(0)
 	if tsysFile == '':
 		tsysFile = '/tmp/' + split(vexFile[0:-4], '/')[-1] + '.tsys.avg'
-		cmd = 'rdbetsys --interval 300 %s %s' % (vexFile, tsysFile)
-		if verbose > 0:
-			print 'Executing: %s' % cmd
-		system(cmd)
+		generateTsys = True
 	obsCode, obsSeg, stationTimes = vexPeek(vexFile)
 	obsCode = obsCode + obsSeg
 	if plotFile == '':
 		plotFile = obsCode + '.tsys.pdf'
+
+if plotFile == '':
+	plotFile = tsysFile + '.pdf'
+
+try:
+	open(plotFile, 'w')
+except IOError:
+	print '\nError:  You are unable to write to output file %s.  This likely means you don\'t have write permission in this directory.  Try running as %s or change to a directory where you have write permission.\n\nHint: At NRAO, vlbaops should probably be running this.\n' % (plotFile, getpwuid(stat('.').st_uid).pw_name)
+	exit(0)
+
+if generateTsys:
+	cmd = 'rdbetsys --interval 300 %s %s' % (vexFile, tsysFile)
+	if verbose > 0:
+		print 'Executing: %s' % cmd
+	system(cmd)
 
 if tsysFile == '':
 	print 'Error: Tsys filename or vex filename required.'
@@ -308,9 +322,6 @@ else:
 	if not isfile(tsysFile):
 		print 'Error: file %s not found\n' % tsysFile
 		exit(0)
-
-if plotFile == '':
-	plotFile = tsysFile + '.pdf'
 
 if verbose > 1:
 	print 'vexFile = %s' % vexFile
