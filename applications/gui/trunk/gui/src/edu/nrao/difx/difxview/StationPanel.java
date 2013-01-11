@@ -677,6 +677,18 @@ public class StationPanel extends IndexedPanel {
         return newList;
     }
 
+    public void useFile( String newFile ) {
+        for ( Iterator<BrowserNode> iter = _fileList.browserTopNode().childrenIterator(); iter.hasNext(); ) {
+            FileListItem newItem = (FileListItem)iter.next();
+            if ( newItem.name().contentEquals( newFile ) ) {
+                newItem.use( true );
+                return;
+            }
+        }
+        _fileList.addNode( new FileListItem( newFile, null, true ) );
+
+    }
+
     /*
      * Return the machine name associated with the given file item.
      */
@@ -688,17 +700,50 @@ public class StationPanel extends IndexedPanel {
         }
         return null;
     }
+    
+    public void vsnSource( String name ) {
+        for ( int i = 0; i < _vsnList.getItemCount(); ++i ) {
+            if ( name.contentEquals( (String)_vsnList.getItemAt( i ) ) ) {
+                _vsnList.setSelectedIndex( i );
+                return;
+            }
+        }
+        _vsnList.addItem( name );
+        _vsnList.setSelectedIndex( _vsnList.getItemCount() - 1 );
+    }
 
     public boolean use() { return _useCheck.isSelected(); }
+    public void use( boolean newVal ) { _useCheck.setSelected( newVal ); }
     public boolean useVsn() { return _vsnCheck.isSelected(); }
+    public void useVsn( boolean newVal ) { setEnabledItems( _vsnCheck ); }
     public boolean useFile() { return _fileCheck.isSelected(); }
+    public void useFile( boolean newVal ) { setEnabledItems( _fileCheck ); }
     public boolean useEVLBI() { return _eVLBICheck.isSelected(); }
+    public void useEVLBI( boolean newVal ) { setEnabledItems( _eVLBICheck ); }
     public String vsnSource() { return (String)_vsnList.getSelectedItem(); }
     public String dataFormat() { return (String)_dataFormat.getSelectedItem(); }
+    public void dataFormat( String newVal ) {
+        for ( int i = 0; i < _dataFormat.getItemCount(); ++i ) {
+            if ( newVal.contentEquals( (String)_dataFormat.getItemAt( i ) ) ) {
+                _dataFormat.setSelectedIndex( i );
+                return;
+            }
+        }
+    }
     public String toneSelection() { return (String)_toneSelection.getSelectedItem(); }
+    public void toneSelection( String newVal ) {
+        for ( int i = 0; i < _toneSelection.getItemCount(); ++i ) {
+            if ( newVal.contentEquals( (String)_toneSelection.getItemAt( i ) ) ) {
+                _toneSelection.setSelectedIndex( i );
+                return;
+            }
+        }
+    }
     public String dirListLocation() { return _dirListLocation.getText(); }
     public int phaseCalInt() { return _phaseCalInt.intValue(); }
+    public void phaseCalInt( int newVal ) { _phaseCalInt.intValue( newVal ); }
     public int networkPort() { return _eVLBIPort.intValue(); }
+    public void networkPort( int newVal ) { _eVLBIPort.intValue( newVal ); }
     
     public boolean positionChange() {
         if ( _positionX.value() != _xpos ||
@@ -718,13 +763,17 @@ public class StationPanel extends IndexedPanel {
         return ( _positionZ.value() != _zpos );
     }
     public Double positionX() { return _positionX.value(); }
+    public void positionX( double newVal ) { _positionX.value( newVal ); }
     public Double positionY() { return _positionY.value(); }
+    public void positionY( double newVal ) { _positionY.value( newVal ); }
     public Double positionZ() { return _positionZ.value(); }
+    public void positionZ( double newVal ) { _positionZ.value( newVal ); }
     
     public boolean deltaClockChange() {
         return ( _deltaClock.value() != 0.0 );
     }
     public Double deltaClock() { return _deltaClock.value(); }
+    public void deltaClock( double newVal ) { _deltaClock.value( newVal ); }
 
     /*
      * Add a "listener" to callbacks when any changes to button states occur.

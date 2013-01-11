@@ -457,9 +457,9 @@ public class V2dFileParser {
     }
     
     /*
-     * Internal function used to locate an antenna section by name.
+     * Locate an antenna section by name.
      */
-    protected AntennaSection antennaSection( String name ) {
+    public AntennaSection antennaSection( String name ) {
         if ( _sections == null )
             return null;
         for ( Iterator<GenericSection> iter = _sections.iterator(); iter.hasNext(); ) {
@@ -495,17 +495,47 @@ public class V2dFileParser {
     public void antennaPhaseCalInt( String name, Integer newVal ) {
         findAntenna( name ).phaseCalInt = newVal;
     }
+    public Integer antennaPhaseCalInt( String name ) {
+        if ( antennaSection( name ) == null )
+            return null;
+        else
+            return antennaSection( name ).phaseCalInt;
+    }
     public void antennaToneGuard( String name, Double newVal ) {
         findAntenna( name ).toneGuard = newVal;
+    }
+    public Double antennaToneGuard( String name ) {
+        if ( antennaSection( name ) == null )
+            return null;
+        else
+            return antennaSection( name ).toneGuard;
     }
     public void antennaToneSelection( String name, String newVal ) {
         findAntenna( name ).toneSelection = newVal;
     }
+    public String antennaToneSelection( String name ) {
+        if ( antennaSection( name ) == null )
+            return null;
+        else
+            return antennaSection( name ).toneSelection;
+    }
     public void antennaFormat( String name, String newVal ) {
         findAntenna( name ).format = newVal;
     }
+    public String antennaFormat( String name ) {
+        if ( antennaSection( name ) == null )
+            return null;
+        else
+            return antennaSection( name ).format;
+    }
     public void antennaVsn( String name, String newVal ) {
         findAntenna( name ).vsn = newVal;
+    }
+    public String antennaVsn( String name ) {
+        if ( antennaSection( name ) == null )
+            return null;
+        else
+            return antennaSection( name ).vsn;
     }
     public void antennaFile( String name, String newVal ) {
         //  Files are slightly messier because we keep a list of them.
@@ -514,20 +544,56 @@ public class V2dFileParser {
             section.file = new Vector<String>();
         section.file.add( newVal );
     }
+    public Vector<String> antennaFile( String name ) {
+        if ( antennaSection( name ) == null )
+            return null;
+        else
+            return antennaSection( name ).file;
+    }
     public void antennaNetworkPort( String name, Integer newVal ) {
         findAntenna( name ).networkPort = newVal;
+    }
+    public Integer antennaNetworkPort( String name ) {
+        if ( antennaSection( name ) == null )
+            return null;
+        else
+            return antennaSection( name ).networkPort;
     }
     public void antennaX( String name, Double newVal ) {
         findAntenna( name ).X = newVal;
     }
+    public Double antennaX( String name ) {
+        if ( antennaSection( name ) == null )
+            return null;
+        else
+            return antennaSection( name ).X;
+    }
     public void antennaY( String name, Double newVal ) {
         findAntenna( name ).Y = newVal;
+    }
+    public Double antennaY( String name ) {
+        if ( antennaSection( name ) == null )
+            return null;
+        else
+            return antennaSection( name ).Y;
     }
     public void antennaZ( String name, Double newVal ) {
         findAntenna( name ).Z = newVal;
     }
+    public Double antennaZ( String name ) {
+        if ( antennaSection( name ) == null )
+            return null;
+        else
+            return antennaSection( name ).Z;
+    }
     public void antennaDeltaClock( String name, Double newVal ) {
         findAntenna( name ).deltaClock = newVal;
+    }
+    public Double antennaDeltaClock( String name ) {
+        if ( antennaSection( name ) == null )
+            return null;
+        else
+            return antennaSection( name ).deltaClock;
     }
     public void antennaParameter( String name, String param, String value ) {
         //  Add a generic parameter.
@@ -557,9 +623,9 @@ public class V2dFileParser {
     }
     
     /*
-     * Internal function used to locate a setup section by name.
+     * Locate a setup section by name.
      */
-    protected SetupSection setupSection( String name ) {
+    public SetupSection setupSection( String name ) {
         if ( _sections == null )
             return null;
         for ( Iterator<GenericSection> iter = _sections.iterator(); iter.hasNext(); ) {
@@ -595,17 +661,47 @@ public class V2dFileParser {
     public void setupTInt( String name, Double newVal ) {
         findSetup( name ).tInt = newVal;
     }
+    public Double setupTInt( String name ) {
+        if ( setupSection( name ) == null )
+            return null;
+        else
+            return setupSection( name ).tInt;
+    }
     public void setupFFTSpecRes( String name, Double newVal ) {
         findSetup( name ).FFTSpecRes = newVal;
+    }
+    public Double setupFFTSpecRes( String name ) {
+        if ( setupSection( name ) == null )
+            return null;
+        else
+            return setupSection( name ).FFTSpecRes;
     }
     public void setupSpecRes( String name, Double newVal ) {
         findSetup( name ).specRes = newVal;
     }
+    public Double setupSpecRes( String name ) {
+        if ( setupSection( name ) == null )
+            return null;
+        else
+            return setupSection( name ).specRes;
+    }
     public void setupSubintNS( String name, Integer newVal ) {
         findSetup( name ).subintNS = newVal;
     }
+    public Integer setupSubintNS( String name ) {
+        if ( setupSection( name ) == null )
+            return null;
+        else
+            return setupSection( name ).subintNS;
+    }
     public void setupDoPolar( String name, Boolean newVal ) {
         findSetup( name ).doPolar = newVal;
+    }
+    public Boolean setupDoPolar( String name ) {
+        if ( setupSection( name ) == null )
+            return null;
+        else
+            return setupSection( name ).doPolar;
     }
     public void setupParameter( String name, String param, String value ) {
         //  Add a generic parameter.
@@ -635,9 +731,9 @@ public class V2dFileParser {
     }
     
     /*
-     * Internal function used to locate a rule section by name.
+     * Locate a rule section by name.
      */
-    protected RuleSection ruleSection( String name ) {
+    public RuleSection ruleSection( String name ) {
         if ( _sections == null )
             return null;
         for ( Iterator<GenericSection> iter = _sections.iterator(); iter.hasNext(); ) {
@@ -673,8 +769,20 @@ public class V2dFileParser {
     public void ruleScan( String name, String newVal ) {
         findRule( name ).scan = newVal;
     }
+    public String ruleScan( String name ) {
+        if ( ruleSection( name ) == null )
+            return null;
+        else
+            return ruleSection( name ).scan;
+    }
     public void ruleSetup( String name, String newVal ) {
         findRule( name ).setup = newVal;
+    }
+    public String ruleSetup( String name ) {
+        if ( ruleSection( name ) == null )
+            return null;
+        else
+            return ruleSection( name ).setup;
     }
     public void ruleParameter( String name, String param, String value ) {
         //  Add a generic parameter.

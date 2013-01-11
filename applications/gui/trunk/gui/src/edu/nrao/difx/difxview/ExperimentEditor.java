@@ -43,6 +43,7 @@ import java.util.Map;
 import java.util.Iterator;
 import java.util.Calendar;
 import java.util.ArrayList;
+import java.util.Vector;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.GregorianCalendar;
@@ -1160,7 +1161,7 @@ public class ExperimentEditor extends JFrame {
             if ( fileGet.success() ) {
                 _settings.defaultNames().v2dFileSource = _v2dFromHostLocation.getText();
                 _startingV2dFileContent = fileGet.inString();
-                parseStartingV2dFile();
+                parseStartingV2dFile( null );
             }
         }
         else if ( _v2dViaHttp.isSelected() ) {
@@ -1175,7 +1176,7 @@ public class ExperimentEditor extends JFrame {
                 while ( ( bytesRead = reader.read( buffer, 0, 153600 ) ) > 0 ) {
                     _startingV2dFileContent += new String( buffer ).substring( 0, bytesRead );
                 }
-                parseStartingV2dFile();
+                parseStartingV2dFile( null );
             } catch ( MalformedURLException e ) {
                 JOptionPane.showMessageDialog( _this, "Malformed URL: \"http://" + _v2dViaHttpLocation.getText() + "\"",
                         "Bad URL",
@@ -1198,7 +1199,7 @@ public class ExperimentEditor extends JFrame {
                 while ( ( bytesRead = reader.read( buffer, 0, 153600 ) ) > 0 ) {
                     _startingV2dFileContent += new String( buffer ).substring( 0, bytesRead );
                 }
-                parseStartingV2dFile();
+                parseStartingV2dFile( null );
             } catch ( MalformedURLException e ) {
                 JOptionPane.showMessageDialog( _this, "Malformed URL: \"ftp://" + _v2dViaFtpLocation.getText() + "\"",
                         "Bad URL",
@@ -1219,7 +1220,7 @@ public class ExperimentEditor extends JFrame {
                 while ( ( bytesRead = reader.read( buffer, 0, 153600 ) ) > 0 ) {
                     _startingV2dFileContent += new String( buffer ).substring( 0, bytesRead );
                 }
-                parseStartingV2dFile();
+                parseStartingV2dFile( null );
             } catch ( FileNotFoundException e ) {
                 JOptionPane.showMessageDialog( _this, "Local File \"" + _localV2dFileLocation.getText() + "\" was not found.",
                         "File Not Found",
@@ -1237,17 +1238,109 @@ public class ExperimentEditor extends JFrame {
      * match it.  The .v2d file content has already been stored as the String
      * "_startingV2dFileContent".
      */
-    public void parseStartingV2dFile() {
+    public void parseStartingV2dFile( String basePath ) {
         //  The parser eats the content and stores it in structures.
         V2dFileParser v2dFileParser = new V2dFileParser( _startingV2dFileContent );
-        //  The content of the indicated .vex file should be dumped in the .vex file
-        //  editor, assuming it exists.
+        
+        //  Grab the .vex file name, if it exists.
         if ( v2dFileParser.vexFile() != null ) {
-            System.out.println( "vex file name is " + v2dFileParser.vexFile() );
             this.vexFileName( v2dFileParser.vexFile() );
+            //  Try to put the content of this file into the .vex file editor.  This
+            //  requires a complete path, which needs to be constructed.  We don't do
+            //  this if we don't have a "basePath".
+            if ( basePath != null ) {
+                Component comp = _this;
+                while ( comp.getParent() != null )
+                    comp = comp.getParent();
+                Point pt = new Point( 100, 100 );
+                if ( _thisExperiment != null )
+                    pt = _thisExperiment.getLocationOnScreen();
+                GetFileMonitor getFile = new GetFileMonitor(  (Frame)comp, pt.x + 25, pt.y + 25,
+                        basePath + v2dFileParser.vexFile(), _settings );
+                if ( getFile.inString() != null && getFile.inString().length() > 0 ) {
+                    _editor.text( getFile.inString() );
+                    //  This should initialize all of the settings properly...we hope.
+                    //  Specific .v2d file settings will then change them.
+                    parseNewVexFile();
+                }                
+            }
         }
-        else
-            System.out.println( _startingV2dFileContent );
+        
+        //  Global parameters...
+        if ( v2dFileParser.singleScan() != null )
+            _singleInputFileCheck.setSelected( v2dFileParser.singleScan() );
+        if ( v2dFileParser.jobSeries() != null )
+            _inputFileBaseName.setText( v2dFileParser.jobSeries() );
+        if (  v2dFileParser.startSeries() != null )
+            _inputFileSequenceStart.intValue( v2dFileParser.startSeries() );
+        
+        //  the "Normal" Setup section contains things from the "correlation parameters" settings.
+        if ( v2dFileParser.setupTInt( "normalSetup" ) != null )
+            _tInt.value( v2dFileParser.setupTInt( "normalSetup" ) );
+        if ( v2dFileParser.setupFFTSpecRes( "normalSetup" ) != null )
+            _fftSpecRes.value( v2dFileParser.setupFFTSpecRes( "normalSetup" ) );
+        if ( v2dFileParser.setupSpecRes( "normalSetup" ) != null )
+            _specRes.value( v2dFileParser.setupSpecRes( "normalSetup" ) );
+        if ( v2dFileParser.setupSubintNS( "normalSetup" ) != null )
+            _subintNS.intValue( v2dFileParser.setupSubintNS( "normalSetup" ) );
+        if ( v2dFileParser.setupDoPolar( "normalSetup" ) != null )
+            _doPolar.setSelected( v2dFileParser.setupDoPolar( "normalSetup" ) );
+        
+        //  Which scans are on/off.
+        if ( v2dFileParser.ruleScan( "scansubset" ) != null ) {
+            //  Turn them all off.
+            _scanGrid.allOff();
+            //  Then turn individual ones back on.
+            String[] scan = v2dFileParser.ruleScan( "scansubset" ).split( "," );
+            for ( int i = 0; i < scan.length; ++i ) {
+                _scanGrid.setButton( scan[i], true );
+            }
+        }
+            
+        //  Which antennas to use, including parameters associated with them.  Check
+        //  all of the antennas we know about (they should have been listed in the .vex
+        //  file).
+        if ( _antennaList != null && !_antennaList.useList().isEmpty() ) {
+            for ( Iterator<StationPanel> iter = _antennaList.iterator(); iter.hasNext(); ) {
+                StationPanel antenna = iter.next();
+                //  If the antenna is not in the .v2d file, it is not being used.
+                if ( v2dFileParser.antennaSection( antenna.name() ) == null )
+                    antenna.use( false );
+                else {
+                    if ( v2dFileParser.antennaPhaseCalInt( antenna.name() ) != null )
+                        antenna.phaseCalInt( v2dFileParser.antennaPhaseCalInt( antenna.name() ) );
+                    if ( v2dFileParser.antennaToneSelection( antenna.name() ) != null )
+                        antenna.toneSelection( v2dFileParser.antennaToneSelection( antenna.name() ) );
+                    if ( v2dFileParser.antennaFormat( antenna.name() ) != null )
+                        antenna.dataFormat( v2dFileParser.antennaFormat( antenna.name() ) );
+                    if ( v2dFileParser.antennaVsn( antenna.name() ) != null ) {
+                        antenna.useVsn( true );
+                        antenna.vsnSource( v2dFileParser.antennaVsn( antenna.name() ) );
+                    }
+                    else if ( v2dFileParser.antennaFile( antenna.name() ) != null ) {
+                        antenna.useFile( true );
+                        Vector<String> fileList = v2dFileParser.antennaFile( antenna.name() );
+                        for ( Iterator<String> iter1 = fileList.iterator(); iter1.hasNext(); )
+                            antenna.useFile( iter1.next() );
+                    }
+                    else if ( v2dFileParser.antennaNetworkPort( antenna.name() ) != null ) {
+                        antenna.useEVLBI( true );
+                        antenna.networkPort( v2dFileParser.antennaNetworkPort( antenna.name() ) );
+                    }
+                    //  Position changes.
+                    if ( v2dFileParser.antennaX( antenna.name() ) != null )
+                        antenna.positionX( v2dFileParser.antennaX( antenna.name() ) );
+                    if ( v2dFileParser.antennaY( antenna.name() ) != null )
+                        antenna.positionY( v2dFileParser.antennaY( antenna.name() ) );
+                    if ( v2dFileParser.antennaZ( antenna.name() ) != null )
+                        antenna.positionZ( v2dFileParser.antennaZ( antenna.name() ) );
+                    //  Clock settings.
+                    if ( v2dFileParser.antennaDeltaClock( antenna.name() ) != null )
+                        antenna.deltaClock( v2dFileParser.antennaDeltaClock( antenna.name() ) );
+                }
+            }
+        }
+        
     }
     
     /*
@@ -1262,8 +1355,10 @@ public class ExperimentEditor extends JFrame {
      * response to the "ls" is used (if all is well, there should be only one anyway).
      */
     protected String _lastV2dPath;
+    protected String _lastV2dBase;
     synchronized public void findOldV2dFile( String fileBase ) {
         _lastV2dPath = null;
+        _lastV2dBase = fileBase;
         DiFXCommand_ls ls = new DiFXCommand_ls( fileBase + "*.v2d", _settings );
         //  Set the callback for when the list is complete.  
         ls.addEndListener( new ActionListener() {
@@ -1271,7 +1366,7 @@ public class ExperimentEditor extends JFrame {
                 //  Found anything at all?
                 if ( _lastV2dPath != null ) {
                     System.out.println( "hey, we have " + _lastV2dPath );
-                    readV2dFile( _lastV2dPath );
+                    readV2dFile( _lastV2dPath, _lastV2dBase );
                 }
             }
         });
@@ -1293,7 +1388,8 @@ public class ExperimentEditor extends JFrame {
      * Load a given .v2d file by name.  This function is called by the "findOldV2dFile()"
      * function but it may have other uses.
      */
-    public void readV2dFile( String fileName ) {
+    public void readV2dFile( String fileName, String basePath ) {
+        //  Find thi d
         Component comp = _this;
         while ( comp.getParent() != null )
             comp = comp.getParent();
@@ -1304,7 +1400,7 @@ public class ExperimentEditor extends JFrame {
                 fileName, _settings );
         if ( getFile.inString() != null && getFile.inString().length() > 0 ) {
             _startingV2dFileContent = getFile.inString();
-            parseStartingV2dFile();
+            parseStartingV2dFile( basePath );
         }
     }
     

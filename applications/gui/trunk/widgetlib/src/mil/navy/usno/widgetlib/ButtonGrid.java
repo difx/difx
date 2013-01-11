@@ -191,6 +191,18 @@ public class ButtonGrid  extends JScrollPane {
     }
     
     /*
+     * Turn on or off a button based on its name.
+     */
+    public void setButton( String label, boolean on  ) {
+        ArrayList<String> newList = new ArrayList<String>();
+        for ( Iterator iter = _buttonList.iterator(); iter.hasNext(); ) {
+            GridButton button = (GridButton)iter.next();
+            if ( button.getText().contentEquals( label ) )
+                button.on( on );
+        }
+    }
+    
+    /*
      * Return a list of all buttons.
      */
     public ArrayList<GridButton> buttonList() {

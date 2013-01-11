@@ -7,9 +7,8 @@
         </file>
         <file>
             <url>src/edu/nrao/difx/difxview/ExperimentEditor.java</url>
-            <line>1239</line>
-            <line>1301</line>
-            <line>2300</line>
+            <line>1343</line>
+            <line>2206</line>
         </file>
         <file>
             <url>src/edu/nrao/vlba/difxdatamodel/Job.java</url>
@@ -90,18 +89,18 @@
             <line>1010</line>
         </file>
         <file>
-            <url>src/edu/nrao/vlba/difxview/JobManagerUI.java</url>
-            <line>173</line>
-            <line>234</line>
-            <line>324</line>
-            <line>1234</line>
-        </file>
-        <file>
             <url>src/edu/nrao/vlba/difxview/ResourceManagerUI_withUpdateableInitSection.java</url>
             <line>21</line>
             <line>125</line>
             <line>452</line>
             <line>512</line>
+        </file>
+        <file>
+            <url>src/edu/nrao/vlba/difxview/JobManagerUI.java</url>
+            <line>173</line>
+            <line>234</line>
+            <line>324</line>
+            <line>1234</line>
         </file>
     </editor-bookmarks>
 </project-private>
