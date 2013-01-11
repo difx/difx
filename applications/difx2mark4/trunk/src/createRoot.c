@@ -28,12 +28,15 @@ int createRoot (DifxInput *D,       // difx input structure pointer
         nsite = 0,
         nant = 0,
         scan_found = FALSE,
+        itime,
+        latest_start,
+        earliest_stop,
         tarco = FALSE,              // true iff target_correlator = has been done
         sourceId,
         configId,
         delete_mode = FALSE,
-        delete_freq = FALSE;
-
+        delete_freq = FALSE,
+        yy, dd, hh, mm, ss;
 
     char s[256],
          *pst[50],
@@ -50,7 +53,8 @@ int createRoot (DifxInput *D,       // difx input structure pointer
          line[30000],
          def_block[30000];
 
-    double freak;
+    double freak,
+           fract;
 
     struct date caltime,
                 valtime;
@@ -105,6 +109,7 @@ int createRoot (DifxInput *D,       // difx input structure pointer
                                     // function prototypes
     void fake_bocf_period(char [256], DifxConfig *);
     int isValidAntenna(const DifxInput *, char *, int);
+    double frt (double, double, int);
 
                                     // initialize memory as necessary
     current_def[0] = 0;
@@ -175,6 +180,7 @@ int createRoot (DifxInput *D,       // difx input structure pointer
                                     // get all fields of this line
         strcpy (s, line);           // make a copy for (destructive) parsing
         //fprintf(stderr, "%s\n", line);
+                                    // space-delimit any = sign
         if ((pchar = strchr (s, '=')) != NULL)
             {
             n = pchar - s;
@@ -403,16 +409,10 @@ int createRoot (DifxInput *D,       // difx input structure pointer
                                     // correct scan, insert one copy of ff ref time
                 else if (strncmp (pst[0], "scan", 4) == 0)
                     {
-                    //FIXME calculate this properly taking into account different scan lengths
-                    //      for different antennas. See also stcodes/compute_reftime.c
                     scan_found = TRUE;
-                    conv2date (D->scan[scanId].mjdStart + D->scan[scanId].durSeconds / 172800.0, 
-                               &caltime);
-                    sprintf (buff, 
-                             "    fourfit_reftime = %04hdy%03hdd%02hdh%02hdm%02ds;\n",
-                             caltime.year, caltime.day, 
-                             caltime.hour, caltime.minute, (int) caltime.second);
-                    strcat (line, buff);
+                                    // initialize earliest/latest to extrema
+                    latest_start = 0;
+                    earliest_stop = 9999;
                     }
                                     // Check that station is in this scan
                 else if (strncmp (pst[0], "station", 7) == 0)
@@ -425,6 +425,17 @@ int createRoot (DifxInput *D,       // difx input structure pointer
                         {
                         nant++;
                         stns[i].inscan = TRUE;
+                                    // parse station line to find scan intersection
+                        pchar = strchr (line, ':');
+                        itime = atoi (pchar+1);
+                        if (itime < earliest_stop)
+                            earliest_stop = itime;
+                        pchar = strchr (pchar+1, ':');
+                        itime = atoi (pchar+1);
+                        if (itime > latest_start)
+                            latest_start = itime;
+                                   
+                                    // FIXME - is this override really necessary or optimal?
                         sprintf (buff, " 00 sec : %d sec : : : : 0 ; * overridden times\n", 
                                  D->scan[scanId].durSeconds);
                         pchar = strchr (line, ':');
@@ -450,8 +461,10 @@ int createRoot (DifxInput *D,       // difx input structure pointer
                         }
                     }
                                     // process start
-                else if (strncmp (pst[0], "start", 6) == 0)
+                else if (strncmp (pst[0], "start", 5) == 0)
                     {
+                    sscanf (pst[2], "%dy%dd%dh%dm%ds", &yy, &dd, &hh, &mm, &ss);
+                    fract = ((ss / 60.0 + mm) / 60.0 + hh ) / 24.0;
                                     // generate fresh scan start, in case it was overridden
                     conv2date (D->scan[scanId].mjdStart, &caltime);
                     sprintf (buff, "  start = %04hdy%03hdd%02hdh%02hdm%02ds;",
@@ -469,6 +482,21 @@ int createRoot (DifxInput *D,       // difx input structure pointer
                         }
                     }
 
+                else if (strncmp (pst[0], "endscan", 7) == 0)
+                    {
+                                    // end of the scan
+                                    // generate and insert a fourfit ref time stmt
+                                    // at the middle of the intersected scans
+                    itime = (latest_start + earliest_stop) / 2;
+                    conv2date (frt (D->scan[scanId].mjdStart, fract, itime), &caltime);
+
+                    sprintf (buff, 
+                             "    fourfit_reftime = %04hdy%03hdd%02hdh%02hdm%02ds;\n",
+                             caltime.year, caltime.day, 
+                             caltime.hour, caltime.minute, (int) caltime.second);
+                                    // insert frt prior to line containing endscan
+                    fputs (buff, fout); 
+                    }
                                     // FIXME difxio scan start time is time when first
                                     // antenna comes on source. It may also be different
                                     // if mjdStart is set to the middle of a scan in
@@ -717,4 +745,21 @@ int isValidAntenna(const DifxInput *D, char *antName, int scanId)
     return(antId);
     }
 
+// calculates frt using difx start mjd, vex scheduled start as
+// fraction of a day, and the offset off the scan intersection
+// midpoint from the scheduled vex start
+double frt (double mjd, double fract, int midpt_offset)
+    {
+    double start_delay,
+           epoch;
+
+    start_delay = fmod (mjd, 1.0) - fract;
+    epoch = mjd - start_delay + midpt_offset / 86400.0;
+                                    // if the difx start mjd is after the epoch of the
+                                    // vex-calculated frt, adjust the frt
+                                    // to be at the difx start time
+    if (mjd - epoch > 0.0)
+        epoch = mjd;
+    return epoch;
+    }
 // vim: shiftwidth=4:softtabstop=4:expandtab:cindent:cinoptions={1sf1s^-1s
