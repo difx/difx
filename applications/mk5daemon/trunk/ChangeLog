@@ -14,6 +14,7 @@ Version 2.2.0
 * fileto5c: fix order of ops bug
 * fileto5c: copying of directory supported
 * now *mark5* identifies a Mark5 unit, not just mark5*
+* For VDIF format, save the threads to the .dir file
 
 Version 2.1.0
 ~~~~~~~~~~~~~

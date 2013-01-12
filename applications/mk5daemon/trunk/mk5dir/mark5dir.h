@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2011 by Walter Brisken                             *
+ *   Copyright (C) 2008-2013 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -32,6 +32,7 @@
 
 #include <vector>
 #include <string>
+#include <set>
 #include <sstream>
 #include <xlrapi.h>
 #include "mark5directorystructs.h"
@@ -77,6 +78,8 @@ public:
 	int frameoffset;	/* bytes to start of first frame */
 	int tracks;
 	int format;
+	std::set<int> startThreads;	// set of threads present at beginning of the stream
+	std::set<int> endThreads;	// set of threads present at end of the stream
 
 	Mark5Scan();
 	~Mark5Scan();

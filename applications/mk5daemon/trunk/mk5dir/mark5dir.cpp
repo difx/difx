@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2012 by Walter Brisken                             *
+ *   Copyright (C) 2008-2013 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -28,7 +28,6 @@
  *==========================================================================*/
 
 #include <iostream>
-#include <vector>
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>
@@ -66,7 +65,6 @@ const char *moduleStatusName(int status)
  * module directories!
  */
 
-using namespace std;
 
 char Mark5ReadModeName[][10] =
 {
@@ -335,7 +333,7 @@ static void convertBCDTime(int mjd, int sec, unsigned char *timeBCD)
 	}
 }
 
-static void expandScanName1(string &dest, const struct Mark5DirectoryScanHeaderVer1 *scanHeader)
+static void expandScanName1(std::string &dest, const struct Mark5DirectoryScanHeaderVer1 *scanHeader)
 {
 	char str1[MODULE_SCAN_NAME_LENGTH+1];
 	char str2[3];
@@ -425,9 +423,26 @@ Mark5Scan::~Mark5Scan()
 
 void Mark5Scan::print() const
 {
-	printf("%1d %-32s %13Ld %13Ld %5d %2d %5d %5d+%d/%d %6.4f\n",
+	printf("%1d %-32s %13Ld %13Ld %5d %2d %5d %5d+%d/%d %6.4f",
 		format, name.c_str(), start, start+length, frameoffset, tracks,
 		mjd, sec, framenuminsecond, framespersecond, duration);
+
+	if(format == MK5_FORMAT_VDIF)
+	{
+		std::set<int>::const_iterator it;
+		printf(" :");
+		for(it = startThreads.begin(); it != startThreads.end(); ++it)
+		{
+			printf(" %d", *it);
+		}
+		printf(" :");
+		for(it = endThreads.begin(); it != endThreads.end(); ++it)
+		{
+			printf(" %d", *it);
+		}
+	}
+
+	printf("\n");
 }
 
 // Parse a line from a .dir file into an existing Mark5Scan class
@@ -454,7 +469,7 @@ int Mark5Scan::writeDirEntry(FILE *out) const
 		v = snprintf(errorStr, ErrorStrLen, " Error='%s'", ScanFormatErrorName[-format]);
 		if(v >= ErrorStrLen)
 		{
-			cerr << "Developer error: Mark5Scan::writeDirEntry: ErrorStrLen too small (" << ErrorStrLen << " < " << (v+1) << ") for error number " << -format << ";truncating." << endl;
+			std::cerr << "Developer error: Mark5Scan::writeDirEntry: ErrorStrLen too small (" << ErrorStrLen << " < " << (v+1) << ") for error number " << -format << ";truncating." << std::endl;
 		}
 	}
 	else
@@ -471,9 +486,20 @@ int Mark5Scan::writeDirEntry(FILE *out) const
 		scanLabel = "Unknown";
 	}
 
-	v = fprintf(out, "%14Ld %14Ld %5d %d %d %d %12.6f %6d %6d %2d %1d %s%s\n",
+	v = fprintf(out, "%14Ld %14Ld %5d %d %d %d %12.6f %6d %6d %2d %1d %s%s",
 		start, length, mjd, sec, framenuminsecond, framespersecond, duration,
 		framebytes, frameoffset, tracks, format, scanLabel, errorStr);
+
+	if(format == MK5_FORMAT_VDIF)
+	{
+		std::set<int>::const_iterator it;
+		for(it = startThreads.begin(); it != startThreads.end(); ++it)
+		{
+			v += fprintf(out, "%s%d", it == startThreads.begin() ? " Threads=" : ",", *it);
+		}
+	}
+
+	v += fprintf(out, "\n");
 
 	return v;
 }
@@ -590,7 +616,7 @@ void Mark5Module::print() const
 		printf("Error condition: %s\n", error.str().c_str());
 	}
 
-	for(vector<Mark5Scan>::const_iterator s = scans.begin(); s != scans.end(); ++s)
+	for(std::vector<Mark5Scan>::const_iterator s = scans.begin(); s != scans.end(); ++s)
 	{
 		printf("%3d ", ++i);
 		s->print();
@@ -673,7 +699,7 @@ int Mark5Module::load(const char *filename)
 	bank = bankName-'A';
 	scans.resize(nscans);
 
-	for(vector<Mark5Scan>::iterator s = scans.begin(); s != scans.end(); ++s)
+	for(std::vector<Mark5Scan>::iterator s = scans.begin(); s != scans.end(); ++s)
 	{
 		v = fgets(line, MaxLineLength, in);
 		if(!v)
@@ -711,7 +737,7 @@ int Mark5Module::save(const char *filename)
 		fast ? " Fast" : "",
 		synthetic ? " Synth" : "");
 
-	for(vector<Mark5Scan>::const_iterator s = scans.begin(); s != scans.end(); ++s)
+	for(std::vector<Mark5Scan>::const_iterator s = scans.begin(); s != scans.end(); ++s)
 	{
 		s->writeDirEntry(out);
 	}
@@ -730,7 +756,7 @@ int Mark5Module::sanityCheck()
 {
 	int nError = 0;
 
-	for(vector<Mark5Scan>::const_iterator s = scans.begin(); s != scans.end(); ++s)
+	for(std::vector<Mark5Scan>::const_iterator s = scans.begin(); s != scans.end(); ++s)
 	{
 		nError += s->sanityCheck();
 	}
@@ -741,9 +767,9 @@ int Mark5Module::sanityCheck()
 int Mark5Module::uniquifyScanNames()
 {
 	const int MaxExtensionLength = 8;
-	vector<string> scanNames;
-	vector<int> nameCount;
-	vector<int> origIndex;
+	std::vector<std::string> scanNames;
+	std::vector<int> nameCount;
+	std::vector<int> origIndex;
 	char extension[MaxExtensionLength];
 	int i, j, n=0;
 
@@ -796,6 +822,50 @@ int Mark5Module::uniquifyScanNames()
 }
 
 //------------------------------------------------------------------
+
+int getVdifThreads(std::set<int> &threadSet, const char *data, int bytes, int framebytes)
+{
+	threadSet.clear();
+	int lastSecond = -1;
+	int index = 0;
+	int nError = 0;
+
+	for(;;)
+	{
+		int second;
+		unsigned int thread;
+		unsigned int word0, word3;
+		while(index+4 < bytes)
+		{
+			unsigned int *headerwords = (unsigned int *)(data + index);
+
+			word0 = headerwords[0];
+			word3 = headerwords[3];
+
+			second = word0 & 0x3FFFFFFF;
+			if(lastSecond != -1 && second != lastSecond && second != lastSecond+1)
+			{
+				index += 4;
+			}
+			else
+			{
+				break;
+			}
+
+			++nError;
+		}
+		if(index+4 >= bytes)
+		{
+			break;
+		}
+		thread = (word3 >> 16) & 0x03FF;
+		threadSet.insert(thread);
+
+		index += framebytes;
+	}
+
+	return nError;
+}
 
 // returns active bank, or -1 if none, or -2 or -3 if error retrieving status
 int Mark5BankGet(SSHANDLE xlrDevice)
@@ -985,7 +1055,7 @@ char *scans2newdir(const std::vector<Mark5Scan> &scans, const char *vsn)
 	v = snprintf(header->vsn, MODULE_EXTENDED_VSN_LENGTH, "%s", vsn);
 	if(v >= MODULE_EXTENDED_VSN_LENGTH)
 	{
-		cerr << "Developer warning: scans2newdir: vsn length too long (" << v << " > " << (MODULE_EXTENDED_VSN_LENGTH - 1) << endl;
+		std::cerr << "Developer warning: scans2newdir: vsn length too long (" << v << " > " << (MODULE_EXTENDED_VSN_LENGTH - 1) << std::endl;
 	}
 
 	for(int i = 0; i < totalScans; ++i)
@@ -1028,7 +1098,7 @@ char *scans2newdir(const std::vector<Mark5Scan> &scans, const char *vsn)
 	return dirData;
 }
 
-/* Take the Mark5 User Directory as a binary record pointed to by dirData and decode into a vector of scan structures */
+/* Take the Mark5 User Directory as a binary record pointed to by dirData and decode into a std::vector of scan structures */
 int newdir2scans(std::vector<Mark5Scan> &scans, const unsigned char *dirData, int dirLength, int startScan, int stopScan)
 {
 	int totalScans = dirLength/128-1;
@@ -1110,9 +1180,7 @@ int newdir2scans(std::vector<Mark5Scan> &scans, const unsigned char *dirData, in
 	return 0;
 }
 
-int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref, 
-	int (*callback)(int, int, int, void *), void *data,
-	float *replacedFrac, int cacheOnly, int startScan, int stopScan)
+int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref, int (*callback)(int, int, int, void *), void *data, float *replacedFrac, int cacheOnly, int startScan, int stopScan)
 {
 	XLR_RETURN_CODE xlrRC;
 	struct Mark5LegacyDirectory *m5dir;
@@ -1241,8 +1309,7 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref,
 		bank = newBank;
 		if(dirVersion != newDirVersion)
 		{
-			fprintf(stderr, "Warning: disagreement in directory version! %d != %d\n",
-				dirVersion, newDirVersion);
+			fprintf(stderr, "Warning: disagreement in directory version! %d != %d\n", dirVersion, newDirVersion);
 			dirVersion = newDirVersion;
 		}
 		free(dirData);
@@ -1441,7 +1508,7 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref,
 				scan.framenuminsecond = int(mf->ns/mf->framens + 0.5);
 				scan.framebytes  = mf->framebytes;
 				scan.duration    = (int)((scan.length - scan.frameoffset) / scan.framebytes)/(double)(scan.framespersecond);
-				
+
 				delete_mark5_format(mf);
 
 				// Look at end of scan to verify things look OK
@@ -1515,6 +1582,12 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref,
 
 					scan.duration += static_cast<double>(deltaFrames)/scan.framespersecond;
 
+					if(mf->format == MK5_FORMAT_VDIF)
+					{
+						getVdifThreads(scan.startThreads, reinterpret_cast<char *>(bufferStart) + scan.frameoffset, bufferLength - scan.frameoffset, scan.framebytes);
+						getVdifThreads(scan.endThreads, reinterpret_cast<char *>(bufferStop) + mf->frameoffset, bufferLength - mf->frameoffset, scan.framebytes);
+					}
+					
 					delete_mark5_format(mf);
 				}
 			}
@@ -1822,7 +1895,7 @@ int setModuleLabel(SSHANDLE xlrDevice, const char *vsn,  int newStatus, int dirV
 	
 	if(v > XLR_LABEL_LENGTH)
 	{
-		cerr << "Developer error: setModuleLabel: label too long (" << v << " > " << (XLR_LABEL_LENGTH-1) << "); truncating!" << endl;
+		std::cerr << "Developer error: setModuleLabel: label too long (" << v << " > " << (XLR_LABEL_LENGTH-1) << "); truncating!" << std::endl;
 	}
 
 	WATCHDOGTEST( XLRSetLabel(xlrDevice, label, strlen(label)) );
@@ -2103,7 +2176,7 @@ int setDiscModuleStateLegacy(SSHANDLE xlrDevice, int newState)
 	}
 	if(labelLength >= XLR_LABEL_LENGTH)
 	{
-		cerr << "Module label is not terminated!" << endl;
+		std::cerr << "Module label is not terminated!" << std::endl;
 
 		return -1;
 	}
@@ -2117,7 +2190,7 @@ int setDiscModuleStateLegacy(SSHANDLE xlrDevice, int newState)
 	}
 	if(rs >= labelLength)
 	{
-		cerr << "Warning: module label record separator not found!" << endl;
+		std::cerr << "Warning: module label record separator not found!" << std::endl;
 		label[rs] = RecordSeparator;
 		label[rs+1] = 0;
 	}
@@ -2128,12 +2201,12 @@ int setDiscModuleStateLegacy(SSHANDLE xlrDevice, int newState)
 	{
 		int v;
 
-		cout << "Directory version 0: setting module DMS to " << moduleStatusName(newState) << endl;
+		std::cout << "Directory version 0: setting module DMS to " << moduleStatusName(newState) << std::endl;
 		label[rs] = RecordSeparator;	// ASCII "RS" == "Record separator"
 		v = snprintf(label+rs+1, XLR_LABEL_LENGTH-rs-1, "%s", moduleStatusName(newState));
 		if(v >= XLR_LABEL_LENGTH-rs-1)
 		{
-			cerr << "Developer error: setDiscModuleStateLegacy: label length overflow" << endl;
+			std::cerr << "Developer error: setDiscModuleStateLegacy: label length overflow" << std::endl;
 		}
 		if(wp == 1)
 		{
@@ -2173,7 +2246,7 @@ int setDiscModuleStateNew(SSHANDLE xlrDevice, int newState)
 
 	if(dirHead->status != newState)
 	{
-		cout << "Directory version " << dirHead->version << ": setting module DMS to " << moduleStatusName(newState) << endl;
+		std::cout << "Directory version " << dirHead->version << ": setting module DMS to " << moduleStatusName(newState) << std::endl;
 		dirHead->status = newState;
 
 		if(wp == 1)
