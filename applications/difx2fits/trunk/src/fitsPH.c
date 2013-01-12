@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2012 by Walter Brisken & John Morgan               *
+ *   Copyright (C) 2008-2013 by Walter Brisken & John Morgan               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -264,7 +264,7 @@ static int getNTone(const char *filename, double t1, double t2, int verbose)
 
 inline int isUndefinedVLBA(double v)
 {
-	/* A VLBA specialty! */
+	/* 999 is a VLBA magic number meaning "not available" */
 	return (v > 999.89 && v < 999.91);
 }
 
@@ -281,7 +281,7 @@ static int parsePulseCal(const char *line,
 	float stateCount[2][array_MAX_STATES*array_MAX_BANDS],
 	float pulseCalRate[2][array_MAX_TONES],
 	int refDay, const DifxInput *D, int *configId, 
-	int phaseCentre, int doAll)
+	int phaseCentre, int doAll, int year)
 {
 	int IFs[array_MAX_BANDS];
 	int states[array_MAX_STATES];
@@ -321,8 +321,7 @@ static int parsePulseCal(const char *line,
 		}
 	}
 
-	n = sscanf(line, "%31s%lf%f%lf%d%d%d%d%d%n", antName, time, timeInt, 
-		cableCal, &np, &nb, &nt, &ns, &nRecBand, &p);
+	n = sscanf(line, "%31s%lf%f%lf%d%d%d%d%d%n", antName, time, timeInt, cableCal, &np, &nb, &nt, &ns, &nRecBand, &p);
 	if(n != 9)
 	{
 		return -1;
@@ -331,8 +330,7 @@ static int parsePulseCal(const char *line,
 
 	if(ns > array_MAX_STATES)
 	{
-		fprintf(stderr, "Developer error: parsePulseCal: array_MAX_STATES=%d is to small (needs to be %d)\n",
-			array_MAX_STATES, ns);
+		fprintf(stderr, "Developer error: parsePulseCal: array_MAX_STATES=%d is to small (needs to be %d)\n", array_MAX_STATES, ns);
 
 		exit(EXIT_FAILURE);
 	}
@@ -343,8 +341,24 @@ static int parsePulseCal(const char *line,
 		*cableCal = nan.f;
 	}
 
-	*time -= refDay;
-	mjd = *time + (int)(D->mjdStart);
+	if(*time > 50000)	/* must be an MJD */
+	{
+		mjd = *time;
+		*time -= (int)(D->mjdStart);
+	}
+	else	/* must be day of year */
+	{
+		*time -= refDay;
+		if(*time < -300)	/* must be new years crossing */
+		{
+			*time += DaysThisYear(year);
+		}
+		else if(*time > 300) /* must be partial project after new year */
+		{
+			*time -= DaysLastYear(year);
+		}
+		mjd = *time + (int)(D->mjdStart);
+	}
 
 	if((mjd < D->mjdStart || mjd > D->mjdStop) && (doAll == 0))
 	{
@@ -466,12 +480,9 @@ static int parsePulseCal(const char *line,
  * station-extracted `pcal' file and extracting only the cable cal
  * value. Any values with their time centroid outside of a scan
  * will be discarded */
-static int parsePulseCalCableCal(const char *line, 
-	int antId,
-	int *sourceId, int *scanId,
-	double *time, float *timeInt, double *cableCal,
-	int refDay, const DifxInput *D, int *configId, 
-	int phaseCentre)
+static int parsePulseCalCableCal(const char *line, int antId, int *sourceId, int *scanId,
+	double *time, float *timeInt, double *cableCal, int refDay, const DifxInput *D, int *configId, 
+	int phaseCentre, int year)
 {
 	int n, p;
 	double mjd;
@@ -492,8 +503,24 @@ static int parsePulseCalCableCal(const char *line,
 		return -1;
 	}
 
-	*time -= refDay;
-	mjd = *time + (int)(D->mjdStart);
+	if(*time > 50000)	/* must be an MJD */
+	{
+		mjd = *time;
+		*time -= (int)(D->mjdStart);
+	}
+	else	/* must be day of year */
+	{
+		*time -= refDay;
+		if(*time < -300)	/* must be new years crossing */
+		{
+			*time += DaysThisYear(year);
+		}
+		else if(*time > 300) /* must be partial project after new year */
+		{
+			*time -= DaysLastYear(year);
+		}
+		mjd = *time + (int)(D->mjdStart);
+	}
 
 	if(mjd < D->mjdStart || mjd > D->mjdStop)
 	{
@@ -542,7 +569,7 @@ static int parseDifxPulseCal(const char *line,
 	float stateCount[2][array_MAX_STATES*array_MAX_BANDS],
 	float pulseCalRate[2][array_MAX_TONES],
 	int refDay, const DifxInput *D, int *configId, 
-	int phaseCentre)
+	int phaseCentre, int year)
 {
 	static int tooMany[2][array_MAX_BANDS] = { {0} };	/* zeros the values */
 	static int tooFew[2][array_MAX_BANDS] = { {0} };	/* zeros the values */
@@ -613,8 +640,24 @@ static int parseDifxPulseCal(const char *line,
 	}
 	line += p;
 
-	*time -= refDay;
-	mjd = *time + (int)(D->mjdStart);
+	if(*time > 50000)	/* must be an MJD */
+	{
+		mjd = *time;
+		*time -= (int)(D->mjdStart);
+	}
+	else	/* must be day of year */
+	{
+		*time -= refDay;
+		if(*time < -300)	/* must be new years crossing */
+		{
+			*time += DaysThisYear(year);
+		}
+		else if(*time > 300) /* must be partial project after new year */
+		{
+			*time -= DaysLastYear(year);
+		}
+		mjd = *time + (int)(D->mjdStart);
+	}
 
 	if(mjd < D->mjdStart || mjd > D->mjdStop)
 	{
@@ -840,6 +883,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	FILE *in=0;	/* file pointer for TSM-derived (VLBA classic) pulse cal data */
 	FILE *in2=0;	/* file pointer for DiFX-derived pulse cal data */
 	char *rv;
+	int year, month, day;
 	/* The following are 1-based indices for FITS format */
 	int32_t antId1, arrayId1, sourceId1, freqId1;
 
@@ -866,6 +910,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	scanId = -1;
 
 	mjd2dayno((int)(D->mjdStart), &refDay);
+	mjd2date((int)(D->mjdStart), &year, &month, &day);
 
 	start = D->mjdStart - (int)(D->mjdStart);
 	stop  = D->mjdStop  - (int)(D->mjdStart);
@@ -1093,9 +1138,8 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 							{
 								continue;/*to next line in file*/	
 							}
-							v = parsePulseCal(line, a, &sourceId, &time, &timeInt, 
-								&cableCal, freqs, pulseCalReAcc, pulseCalImAcc,
-								stateCount, pulseCalRate, refDay, D, &configId, phaseCentre, doAll);
+							v = parsePulseCal(line, a, &sourceId, &time, &timeInt, &cableCal, freqs, pulseCalReAcc, pulseCalImAcc,
+								stateCount, pulseCalRate, refDay, D, &configId, phaseCentre, doAll, year);
 							if(v < 0)
 							{
 								continue;/*to next line in file*/
@@ -1145,7 +1189,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 							
 							v = parseDifxPulseCal(line, dsId, nBand, nTone, &newSourceId, &newScanId, &time, j,
 										freqs, pulseCalRe, pulseCalIm, stateCount, pulseCalRate,
-										refDay, D, &newConfigId, phaseCentre);
+										refDay, D, &newConfigId, phaseCentre, year);
 							if(v < 0)
 							{
 								continue;	/*to next line in file*/
@@ -1253,7 +1297,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 										continue;/*to next line in file*/	
 									}
 									v = parsePulseCalCableCal(line, a, &lineCableSourceId, &lineCableScanId, &lineCableTime, &lineCablePeriod, 
-										&lineCableCal, refDay, D, &lineCableConfigId, phaseCentre);
+										&lineCableCal, refDay, D, &lineCableConfigId, phaseCentre, year);
 									if(v < 0)
 									{
 										continue;/*to next line in file*/

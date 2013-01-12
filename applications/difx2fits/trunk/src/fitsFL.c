@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2012 by Walter Brisken                             *
+ *   Copyright (C) 2008-2013 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -52,7 +52,7 @@ typedef struct
 } FlagDatum;
 
 
-static int parseFlag(char *line, int refDay, char *antName, float timeRange[2], char *reason, int *recBand)
+static int parseFlag(char *line, char *antName, float timeRange[2], char *reason, int *recBand)
 {
 	int l;
 	int n;
@@ -63,9 +63,6 @@ static int parseFlag(char *line, int refDay, char *antName, float timeRange[2], 
 	{
 		return 0;
 	}
-
-	timeRange[0] -= refDay;
-	timeRange[1] -= refDay;
 	
 	copyQuotedString(reason, line+l, 40);
 	
@@ -145,6 +142,7 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D, struct fits_keywords *p_fi
 	double start, stop;
 	int refDay;
 	int i;
+	int year, month, day;
 	FILE *in;
 	FlagDatum FL;
 
@@ -187,6 +185,7 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D, struct fits_keywords *p_fi
 	stop  = D->mjdStop  - (int)D->mjdStart;
 
 	mjd2dayno((int)(D->mjdStart), &refDay);
+	mjd2date((int)(D->mjdStart), &year, &month, &day);
 	
 	/* some constant values */
 	FL.sourceId1 = 0;
@@ -219,10 +218,37 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D, struct fits_keywords *p_fi
 		{
 			continue;
 		}
-		else if(parseFlag(line, refDay, antName, FL.timeRange, FL.reason, &recBand))
+		else if(parseFlag(line, antName, FL.timeRange, FL.reason, &recBand))
 		{
 			int antennaId;
 			int freqId;
+
+			if(FL.timeRange[0] > 50000.0)	/* must be MJD */
+			{
+				FL.timeRange[0] -= (int)(D->mjdStart);
+				FL.timeRange[1] -= (int)(D->mjdStart);
+			}
+			else	/* must be day of year */
+			{
+				FL.timeRange[0] -= refDay;
+				FL.timeRange[1] -= refDay;
+				if(FL.timeRange[0] < -300.0)	/* must be new years crossing */
+				{
+					FL.timeRange[0] += DaysThisYear(year);
+				}
+				else if(FL.timeRange[0] > 300.0)/* must be partial project after new year */
+				{
+					FL.timeRange[0] -= DaysLastYear(year);
+				}
+				if(FL.timeRange[1] < -300.0)	/* must be new years crossing */
+				{
+					FL.timeRange[1] += DaysThisYear(year);
+				}
+				else if(FL.timeRange[1] > 300.0)/* must be partial project after new year */
+				{
+					FL.timeRange[1] -= DaysLastYear(year);
+				}
+			}
 			
 			if(strncmp(FL.reason, "recorder", 8) == 0)
 			{

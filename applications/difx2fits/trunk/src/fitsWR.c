@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2012 by Walter Brisken                             *
+ *   Copyright (C) 2008-2013 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -91,6 +91,7 @@ const DifxInput *DifxInput2FitsWR(const DifxInput *D, struct fits_keywords *p_fi
 	int antId;
 	char *rv;
 	double *mjdLast;
+	int year, month, day;
 	/* 1-based index for FITS below */
 	int32_t antId1;
 
@@ -117,6 +118,7 @@ const DifxInput *DifxInput2FitsWR(const DifxInput *D, struct fits_keywords *p_fi
 	mjdLast = (double *)calloc(D->nAntenna, sizeof(double));
 
 	mjd2dayno((int)(D->mjdStart), &refDay);
+	mjd2date((int)(D->mjdStart), &year, &month, &day);
 
 	fitsWriteBinTable(out, nColumn, columns, nRowBytes, "WEATHER");
 	arrayWriteKeys(p_fits_keys, out);
@@ -153,7 +155,23 @@ const DifxInput *DifxInput2FitsWR(const DifxInput *D, struct fits_keywords *p_fi
 			continue;
 		}
 		
-		time = wr.time - refDay;
+		if(wr.time > 50000.0)	/* an MJD */
+		{
+			time = wr.time - (int)(D->mjdStart);
+		}
+		else	/* day of year */
+		{
+			time = wr.time - refDay;
+			if(time < -300)	/* must be new years crossing */
+			{
+				time += DaysThisYear(year);
+			}
+			else if(time > 300) /* must be partial project after new year */
+			{
+				time -= DaysLastYear(year);
+			}
+		}
+
 		timeInt = 0.0;
 		
 		antId = DifxInputGetAntennaId(D, antName);

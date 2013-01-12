@@ -6,6 +6,9 @@
               (sizeof (array) / sizeof ((array) [0]))
 #endif
 
+#define DaysThisYear(yr)  ( ( (yr) % 4 == 0) ? 366 : 365)
+#define DaysLastYear(yr)  ( ( ((yr)-1) % 4 == 0) ? 366 : 365)
+
 char *mjd2str(long, char *);
 int mjd2dayno(long, int *);
 int mjd2date(long, int*, int*, int*);

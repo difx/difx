@@ -5,6 +5,9 @@ upgrade of difxio.
 * Add DIFX_LABEL env var to FITS files
 * Make sniffer plots more consistent with AIPS.  They will always show USB now and should have the same phase sense.
 * Use the SX gain table rows when SX observing is used.  Thanks to James Miller-Jones for reporting the problem.
+* pcal, weather, tsys, and flag files could be compromized by observations spanning the new year.
+  - Now handle day of year jumps
+  - Also handle possible use of mjds rather than days of year in future
 
 Version 3.1.0
 * Version renumber from 3.0.2 prior to DiFX-2.1 release
