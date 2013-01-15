@@ -24,12 +24,13 @@ namespace x3c {
          */
         const UINT32 INDEX_MAGIC_COOKIE     = 0xa5b4c3d2;
         const UINT32 TRAILER_MAGIC_COOKIE   = 0xcafebabe;
-        const std::string INDEX_FILE_EXT    = "ix1";
+        const std::string INDEX_FILE_EXT    = "idx";
 
         typedef struct _IndexRecord
         {
             UINT64 timestamp;       /* time stamp  (seconds << 32 + nanoseconds) */
             UINT64 offset;          /* file offset to the x3c header, not the pay load */
+            UINT64 packet_number;   /* */
         } IndexRecord;
 
         typedef struct _IndexHeader
@@ -46,6 +47,7 @@ namespace x3c {
             UINT16 num_files;          /* the number of files that make up the stream */
             UCHAR  reserved[0x1fc2];   /* pad to 8KB - must adjust when adding fields */
             UINT32 trailer_magic;      /* for sanity checking the trailer */
+
         } IndexHeader;
 
         typedef struct _IndexTrailer
@@ -54,8 +56,9 @@ namespace x3c {
             UINT64 timestamp;          /* trailer timestamp (time witten) */
             UINT64 file_record_count;  /* number of index records in the file */ 
             UINT64 file_offset;        /* Offset */ 
-            UCHAR  reserved[0x1fdc];   /* pad to 8KB - must adjust when adding fields */
-            UINT32 magic_number;       /* trailer magic */
+            UINT64 total_packets;      /* */
+            UCHAR  reserved[0x1fd4];   /* pad to 8KB - must adjust when adding fields */
+            UINT32 magic_number;       /* trailer magic. Should always be the last field */
         } IndexTrailer;
 
     }   /* namespace indexer */

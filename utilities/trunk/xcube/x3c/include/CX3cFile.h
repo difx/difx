@@ -32,8 +32,6 @@
  #define LOGDATA_FILE_SUFFIX_STR "x3c"
 #endif
 
-#define INDEX_FILE_SUFFIX_STR "ix1"
-
 #define X3C_MAGIC     0x58334321
 #define X3C_VERSION_MINOR 0x0001
 #define X3C_VERSION_MAJOR 0x0000

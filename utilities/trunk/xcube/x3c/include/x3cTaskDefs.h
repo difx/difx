@@ -49,6 +49,7 @@ typedef enum _TASK_TYPE_
     TASK_TYPE_AVI_PLAYER,
     TASK_TYPE_CAM_PLAYER,
     TASK_TYPE_BAN_PLAYER,
+    TASK_TYPE_GEN5PGM_PLAYER,
 
     TASK_TYPE_INTERFACES=50,    // Not really a task - it separates IFs from others
     TASK_TYPE_IF_ETHERNET,

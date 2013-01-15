@@ -19,13 +19,21 @@ namespace x3c {
         class CIndexReader
         {
         public:
+
+            //==================================================================
+            // typedefs
+            //
+            typedef std::vector<IndexRecord> IndexRecordContainer;
+            typedef std::vector<IndexRecord>::iterator IndexRecordIter;
+            typedef std::vector<IndexRecord>::const_iterator ConstIndexRecordIter;
+
             /**
              * Destructor
              */
             ~CIndexReader();
 
             /**
-             * Closes the index file that was opened for either reading or writing.
+             * Closes the index file that was opened for either reading.
              */
             void   close() const;
 
@@ -40,7 +48,28 @@ namespace x3c {
             int getFilePosByTime(UINT64 time, UINT64 & pos) const;
 
             /**
-             * Returns the number of records written
+             * Return the IndexHeader for this index file 
+             */
+            IndexHeader const& header() const;
+
+            /**
+             * Return the IndexTrailer for this index file 
+             */
+            IndexTrailer const& trailer() const;
+
+            /**
+             * Return the IndexRecord iterator for this index file 
+             */
+            ConstIndexRecordIter indexRecordsBegin() const;
+
+            /**
+             *
+             */
+            ConstIndexRecordIter indexRecordsEnd() const;
+
+
+            /**
+             * Returns the number of records read
              */
             UINT32 numRecords() const;
 
@@ -102,7 +131,7 @@ namespace x3c {
             IndexHeader         mHeader;
 
             /** Container of index records */
-            std::vector<IndexRecord>  mIndexRecords;
+            IndexRecordContainer  mIndexRecords;
             
             /** The index file trailer */
             IndexTrailer        mTrailer;
@@ -127,6 +156,26 @@ namespace x3c {
         inline UINT32 CIndexReader::numRecords() const
         {
             return (UINT32)mIndexRecords.size();
+        }
+
+        inline IndexHeader const& CIndexReader::header() const
+        {
+            return mHeader;
+        }
+
+        inline IndexTrailer const& CIndexReader::trailer() const
+        {
+            return mTrailer;
+        }
+
+        inline CIndexReader::ConstIndexRecordIter CIndexReader::indexRecordsBegin() const
+        {
+            return mIndexRecords.begin();
+        }
+
+        inline CIndexReader::ConstIndexRecordIter CIndexReader::indexRecordsEnd() const
+        {
+            return mIndexRecords.end();
         }
 
     }   /* namespace indexer */

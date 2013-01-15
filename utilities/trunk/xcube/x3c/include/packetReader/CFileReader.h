@@ -18,6 +18,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <errno.h>
+#include <string>
 
 // Project Headers
 #include "X3cPacket.h"
@@ -59,9 +60,9 @@ public:
 	 * 	Can only be called once
 	 * 	@param offset		-	the offset to start reading
 	 */
-	void init(UINT64 offset) throw (IoException*);
+	void init(UINT64 offset) throw (IoException);
 
-    void initWithTimeFilter(UINT64 timeVal) throw (IoException*);
+    void initWithTimeFilter(UINT64 timeVal) throw (IoException);
 
 
 	//! Start the reader thread and open the files.
@@ -107,7 +108,7 @@ private:
 
 	//! Name of date file
 	/*! Name of file to read data from.                                      */
-	char *mFileName;
+    std::string mFileName;
 
 	//! Data file pointer
 	/*! File pointer for the input file, used for reading                    */

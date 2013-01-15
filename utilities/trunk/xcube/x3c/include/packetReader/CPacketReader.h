@@ -88,12 +88,13 @@ public:
     /*!
      * Sets a time based filter for the reader.  Access to the start
      * packet will use an index file if it exists.
-     * @param tFilter - time filter to use
+     * 
+     * @param tFilter - a reference to the time filter to set
      */
-    void setTimeFilter(CTimeFilter &tFilter);
+    void setTimeFilter(CTimeFilter const& tFilter);
 
 
-    UINT64 getPacketCount(){return packetCounter;};
+    UINT64 getPacketCount() const;
 
 	// int seekTime(struct timespec ts);
 	// int seek(size_t position);
@@ -146,6 +147,33 @@ public:
 	void freePacketHandle(packet_handle_t *hdl);
 
 private:
+	//! Get a packet
+	/*! Internal helper function to really get pkt                           */
+	X3cPacket *persistent_get_packet(int streamNo);
+
+	//! Sort packets in mPktPtrs
+	/*! sorts the packets so that we got the oldest first */
+	void sortPackets();
+
+	//! Free the packet handle
+	void freePktHandleIdx(int index);
+
+	//! get a free handle from list
+	int  getFreePktHandleIdx();
+
+	//! initialize the list of packet handles
+	void initPktHandles();
+
+
+	//! based on the time filters, should this packet
+	/*! be filtered out?
+	 * @returns 1 - the packet should be filtered out
+	 *          0 - keep the packet
+	 *          -1 - past last value
+	 */
+	CStreamFilter::FilterReturn getShouldBeTimeFiltered(X3cPacket *pkt);
+
+
 	//! Flag to indicating whether packet reader is stared
 	/*! if started, this value is set as true, otherwise, it is set as false */
 	bool mIsStarted;
@@ -199,6 +227,15 @@ private:
 	/*! more than max outstanding packets */
 	static const int mFHListSz = 512;
 
+	//A filter on the packet count;
+	CFrameFilter mPacketFilter;
+
+    //! A filter on the packet time
+    CTimeFilter mTimeFilter;
+
+	UINT64 mPacketCounter;
+
+#ifdef INTERNAL_PACKET_HANDLING
 	//! vector of packet handles
 	packet_handle_t *mPacketHandles;
 
@@ -210,39 +247,22 @@ private:
 
 	//! Free handle tail index
 	int mFHTl;
-
-	//A filter on the packet count;
-	CFrameFilter packetFilter;
-    CTimeFilter  timeFilter;
-
-	UINT64 packetCounter;
-
-private:
-	//! Get a packet
-	/*! Internal helper function to really get pkt                           */
-	X3cPacket *persistent_get_packet(int streamNo);
-
-	//! Sort packets in mPktPtrs
-	/*! sorts the packets so that we got the oldest first */
-	void sortPackets();
-
-	//! Free the packet handle
-	void freePktHandleIdx(int index);
-
-	//! get a free handle from list
-	int  getFreePktHandleIdx();
-
-	//! initialize the list of packet handles
-	void initPktHandles();
-
-
-	//! based on the time filters, should this packet
-	/*! be filtered out?
-	 * @returns 1 - the packet should be filtered out
-	 *          0 - keep the packet
-	 *          -1 - past last value
-	 */
-	CStreamFilter::FilterReturn getShouldBeTimeFiltered(X3cPacket *pkt);
+#endif
 };
+
+inline void CPacketReader::setPacketFilter(UINT64 start, UINT64 end)
+{
+    mPacketFilter.setFilter(start, end);
+}
+
+inline void CPacketReader::setTimeFilter(CTimeFilter const& tFilter)
+{
+    mTimeFilter = tFilter;
+}
+
+inline UINT64 CPacketReader::getPacketCount() const
+{
+    return mPacketCounter;
+}
 
 #endif /* CPACKETREADER_H_ */

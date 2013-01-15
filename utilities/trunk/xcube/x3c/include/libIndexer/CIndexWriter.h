@@ -52,10 +52,16 @@ namespace x3c {
              */
             UINT32 numRecords() const;
 
-            /** Write the index file to persistent storage. */
-            void  flushToDisk();
+            /**
+             * Write the index file to persistent storage.
+             *
+             * @returns <c>true</c> if successful, false otherwize.
+             */
+            bool  flushToDisk();
 
-            /** Returns the filename the writer is managing */
+            /**
+             * Returns the filename the writer is managing
+             */
             std::string const& filename() const;
 
        private:
@@ -134,7 +140,8 @@ namespace x3c {
         inline void CIndexWriter::addIndexRecord(UINT64 timestamp,
                                                  UINT64 offset)
         {
-            IndexRecord idx = { timestamp, offset };
+            // TODO: support the IndexRecord::packet_number field
+            IndexRecord idx = { timestamp, offset, 0 };
             addIndexRecord(idx);
         }
 

@@ -11,11 +11,11 @@
 #include "xcTypes.h"
 #include "X3cPacket.h"
 
-class CStreamFilter {
+class CStreamFilter
+{
 public:
-
-//	CStreamFilter();
-//	virtual ~CStreamFilter();
+    virtual ~CStreamFilter()
+    {}
 
     enum FilterReturn
     {
@@ -24,19 +24,7 @@ public:
         PktEOF
     };
 
-    /**
-	 * Print the filter data to stdout.
-	 */
-    virtual void printFilter() = 0;
-	virtual void setFilter() = 0;
-//	virtual bool shouldBeFiltered(UINT64 frameNumber);
 	virtual CStreamFilter::FilterReturn shouldBeFiltered(X3cPacket &pkt) = 0;
-
-
-
-private:
-protected:
-
 };
 
 #endif /* CSTREAMFILTER_H_ */
