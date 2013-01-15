@@ -106,7 +106,7 @@ int readLF1file(string project, string stream, int npkt)
 	  continue;
 
         vector<string> streamFiles;
-        projects.pmGetStreamFiles(&st, streamFiles);
+        projects.pmGetStreamFiles(st, streamFiles);
 
         vector<string>::iterator it2;
         for (it2 = streamFiles.begin(); it2 < streamFiles.end(); it2++)
