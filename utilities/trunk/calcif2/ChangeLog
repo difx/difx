@@ -157,6 +157,8 @@ Version 1.1
 * Select net sideband based on sky freq
 Version 1.2
 * better decipher geometry of tone/state values
+Version 1.4
+* support observation spanning new years
 
 
 genmachines

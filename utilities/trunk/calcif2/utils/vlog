@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #**************************************************************************
-#   Copyright (C) 2008-2011 by Walter Brisken                             *
+#   Copyright (C) 2008-2013 by Walter Brisken                             *
 #                                                                         *
 #   This program is free software; you can redistribute it and/or modify  *
 #   it under the terms of the GNU General Public License as published by  *
@@ -33,8 +33,8 @@ from sys import argv, stdout, exit
 from string import split, strip, find
 
 program = 'vlog'
-version = 1.3
-verdate = '20100202'
+version = 1.4
+verdate = '20130115'
 author  = 'Walter Brisken'
 
 def usage():
@@ -391,6 +391,8 @@ def makeTS(sections, antenna):
 			if s[1] == '1':	# reset on channel 1
 				recvName = []
 				nRecChan = 0
+				if t1 < t0-350 and t0 >= 365:
+					t1 += int(t0)	# handle leap day
 				BBCrow[1] = t0
 				BBCrow = [t0, t1]
 				BBCmap.append(BBCrow)
@@ -403,6 +405,8 @@ def makeTS(sections, antenna):
 				t0 = parsetime(tr[0])
 				t1 = parsetime(tr[1])
 				BBCrow[1] = t1
+				if BBCrow[1] < BBCrow[0]-350 and BBCrow[0] >= 365:
+					BBCrow[1] += int(BBCrow[0])
 		elif row[0] == 'TSYS':
 			pass
 		elif row[0] != '!' and len(s) == 4+nRecChan:
