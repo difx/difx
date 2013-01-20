@@ -2,23 +2,22 @@
 
 # update the version when significant changes are made
 program = 'goUSNO'
-version = '0.18'
+version = '0.19'
 
 
 from sys import exit, argv, stdin
 from time import gmtime, strftime
-from string import strip, split, lower, find
+from string import strip, split, lower, upper, find
 from os import system, chdir, environ, popen
 from datetime import datetime
 
 
 # some tunable parameters
-email          = 'ut1@nrao.edu'
-baseDir        = '/home/vlbiobs/astronomy'
-templateFileSX = '/users/vlbaops/STDFILES/usno_template.key'
-templateFileCC = '/users/vlbaops/STDFILES/usno_template_c.key'
-sched_base     = '/usr/local/sched'
-sched          = '/usr/local/sched/bin/sched'
+email        = 'ut1@nrao.edu'
+baseDir      = '/home/vlbiobs/astronomy'
+templateFile = '/users/vlbaops/STDFILES/usno_template.key'
+sched_base   = '/usr/local/sched'
+sched        = '/usr/local/sched/bin/sched'
 
 # temporary hack to get around bug in released sched version
 # sched_base   = '/users/cwalker/files/sched_beta'
@@ -68,6 +67,32 @@ def execute(cmd):
 		print 'Executing: %s' % cmd
 	system(cmd)
 
+def genStationList(argList):
+	ants = []
+	legalAnts = ['BR', 'FD', 'HN', 'KP', 'LA', 'MK', 'NL', 'OV', 'PT', 'SC', 'VLBA']
+	for a in argList:
+		if upper(a) not in legalAnts:
+			print 'Error: %s is not a legal antenna name.' % upper(a)
+			exit(0)
+		ants.append(a)
+	if len(ants) > 1 and 'VLBA' in ants:
+		print 'Error: cannot include VLBA and other antennas in list'
+		exit(0)
+	if len(ants) == 0:
+		return 'VLBA_MK, VLBA_PT'
+	if len(ants) == 1:
+		if upper(argList[0] != 'VLBA'):
+			print 'Error: only one antenna listed.  Stopping.'
+			exit(0)
+		else:
+			return 'VLBA_BR, VLBA_FD, VLBA_HN, VLBA_KP, VLBA_LA, VLBA_MK, VLBA_NL, VLBA_OV, VLBA_PT, VLBA_SC'
+	response = 'VLBA_%s' % ants[0]
+	for a in ants[1:]:
+		response += ', VLBA_%s' % a
+
+	return response
+
+
 # FIXME: clean up by using datetime
 now = gmtime()	# format: (2011, 9, 12, 15, 47, 47, 0, 255, 0)
 
@@ -75,8 +100,9 @@ force = False
 testmode = False
 edit = False
 nrao = False
-templateFile = templateFileSX
+noSend = False
 band = 'S/X'
+mode = 'sx'
 
 if strip(popen('uname -s').readline()) != 'Linux':
 	print 'Must be run on a Linux machine'
@@ -96,28 +122,40 @@ for a in argv[1:]:
 		edit = True
 	elif a in ['--nrao']:
 		nrao = True
+	elif a in ['-n', '--nosend']:
+		noSend = True
 	elif a in ['-c', '--cband']:
-		templateFile = templateFileCC
 		band = 'C'
+		mode = 'cc'
 	else:
 		args.append(a)
 
-if len(args) != 4:
+if len(args) < 4:
 	print '\n%s version %s\n' % (program, version)
-	print 'Usage: %s [options] <prjCode> <month> <day> <utc>\n' % argv[0]
+	print 'Usage: %s [options] <prjCode> <month> <day> <utc> [<station list>]\n' % argv[0]
 	print 'options can include:'
 	print '  -f or --force    : proceed even if this project has already been queued'
 	print '  -v or --verbose  : print more output'
 	print '  -q or --quiet    : print less output'
 	print '  -t or --test     : schedule project as test'
-	print '  -e or --edit     : allow .py files to be edited\n'
+	print '  -e or --edit     : allow .py files to be edited'
+	print '  -n or --nosend   : generate files but don\'t run queueVex\n'
 	print '  --nrao           : use NRAO Mark5C/DBE, not USNO\n'
 	print '  <prjCode> is the project code to be used (e.g., N2059)\n'
 	print '  <month> is the numeric month of year to run the project (e.g., 2)\n'
 	print '  <day> is the numeric day of the month (e.g., 29)\n'
 	print '  <utc> is the UTC time to start obsserving (HH or HH:MM or HH:MM:SS)'
 	print '        (e.g., 18 or 18:30 or 18:30:00)\n'
+	print '  <station list> is an optional list of stations to run on.  If provided\n'
+	print '  then it is assumed that the NRAO Mark5C units will be used.  Stations\n'
+	print '  can be listed separately by name (e.g., BR HN), or be VLBA for the\n'
+	print '  whole array.\n\n'
 	exit(0)
+
+stations = genStationList(args[4:])
+if len(args) > 4:
+	nrao = True
+	print 'Station list: %s' % stations
 
 start = args2time(args[1:], now)
 defaultProjectCode = 'n%d%03d' % (start[0]%10, start[7])
@@ -138,10 +176,11 @@ print '\nThis program will:'
 print '1. generate a schedule (.key) file'
 print '2. run sched to generate .vex and crd files'
 print '3. run db2vex to add predicted EOPs and clocks to a .vex.preobs file'
-print '4. run vex2script to generate executor control files'
-print '5. copy executor Mark5C control files to VLBA stations'
-print '6. update the Mark5C observ.tx file on the new systems at VLBA stations'
-print '7. email %s with a confirmation' % email
+if not noSend:
+	print '4. run vex2script to generate executor control files'
+	print '5. copy executor Mark5C control files to VLBA stations'
+	print '6. update the Mark5C observ.tx file on the new systems at VLBA stations'
+	print '7. email %s with a confirmation' % email
 
 if find(projectCode, defaultProjectCode) < 0:
 	print '\nWARNING: project expected to contain %s but does not!' % defaultProjectCode
@@ -164,7 +203,7 @@ chdir(outDir)
 execute('mkdir -p %s/sniffer' % outDir)
 execute('chmod a+w %s/sniffer' % outDir)
 
-execute("sed -e 's/%%year%%/%d/' -e 's/%%month%%/%d/' -e 's/%%day%%/%d/' -e 's/%%utc%%/%d:%02d:%02d/' -e 's/%%expcode%%/%s/' <%s >%s" % (start[0], start[1], start[2], start[3], start[4], start[5], projectCode, templateFile, newFile) )
+execute("sed -e 's/%%year%%/%d/' -e 's/%%month%%/%d/' -e 's/%%day%%/%d/' -e 's/%%utc%%/%d:%02d:%02d/' -e 's/%%expcode%%/%s/' -e 's/%%stations%%/%s/' -e 's/%%mode%%/%s/' <%s >%s" % (start[0], start[1], start[2], start[3], start[4], start[5], projectCode, stations, mode, templateFile, newFile) )
 
 execute("%s < %s" % (sched, newFile) )
 
@@ -178,18 +217,21 @@ else:
 if edit:
 	options += " --edit"
 
-execute("%s %s %s.vex" % (queueVex, options, projectCode) )
+if noSend:
+	print 'NOT running %s %s %s.vex' % (queueVex, options, projectCode)
+else:
+	execute("%s %s %s.vex" % (queueVex, options, projectCode) )
 
-if email != None:
-	cmd = "mail -s '%s scheduled' %s" % (projectCode, email)
-	out = popen(cmd, "w")
-	out.write('Start time = %s UTC\n' % strftime(dateFormat, start))
-	out.write('Project directory = %s\n' % outDir)
-	out.write('\nThis observation will be done at %s-band.\n\n' % band)
-	if testmode:
-		out.write('\n*** This is a test observation and may not provide real data ***\n\n')
-	out.write('\nemail sent by %s version %s\n' % (program, version))
-	out.close()
+	if email != None:
+		cmd = "mail -s '%s scheduled' %s" % (projectCode, email)
+		out = popen(cmd, "w")
+		out.write('Start time = %s UTC\n' % strftime(dateFormat, start))
+		out.write('Project directory = %s\n' % outDir)
+		out.write('\nThis observation will be done at %s-band.\n\n' % band)
+		if testmode:
+			out.write('\n*** This is a test observation and may not provide real data ***\n\n')
+		out.write('\nemail sent by %s version %s\n' % (program, version))
+		out.close()
 
 print '\nFinished.\n'
 print "*** Don't forget to: ***"
