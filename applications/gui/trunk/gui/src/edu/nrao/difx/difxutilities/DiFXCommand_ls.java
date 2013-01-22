@@ -51,6 +51,28 @@ public class DiFXCommand_ls extends DiFXCommand {
         _endListeners = new EventListenerList();
     }
     
+    /*
+     * Optional creation function with user-specified command line arguments.
+     */
+    public DiFXCommand_ls( String filter, String args, SystemSettings settings ) {
+        super( settings );
+        this.header().setType( "DifxFileOperation" );
+        DifxFileOperation ls = this.factory().createDifxFileOperation();
+        ls.setPath( filter );
+        ls.setOperation( "ls" );
+        ls.setArg( args );
+        //  The "data" node is assumed to be the same as the DiFX "control" node
+        //  (at least for now).
+        ls.setDataNode( settings.difxControlAddress() );
+        ls.setAddress( _settings.guiServerConnection().myIPAddress() );
+        _port = _settings.newDifxTransferPort();
+        ls.setPort( _port );
+        this.body().setDifxFileOperation( ls );
+        //  These lists contain "listeners" for callbacks when things occur...incremental
+        //  read progress and the end of reading.
+        _incrementalListeners = new EventListenerList();
+        _endListeners = new EventListenerList();
+    }
     
     public void addIncrementalListener( ActionListener a ) {
         _incrementalListeners.add( ActionListener.class, a );

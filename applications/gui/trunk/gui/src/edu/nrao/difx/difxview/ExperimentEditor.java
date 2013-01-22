@@ -943,11 +943,11 @@ public class ExperimentEditor extends JFrame {
             _stagingArea.setBounds( 285, 80, w - 310, 25 );
             //  These things set the panel sizes based on their content.
             _antennaPane.setBounds( 0, 20, w, _antennaPane.dataHeight() );
-            for ( Iterator<BrowserNode> iter = _antennaPane.browserTopNode().childrenIterator(); iter.hasNext(); ) {
-                StationPanel thisPanel = (StationPanel)iter.next();
-                thisPanel.newWidth( w );//- 25 );
-            }
             try {
+                for ( Iterator<BrowserNode> iter = _antennaPane.browserTopNode().childrenIterator(); iter.hasNext(); ) {
+                    StationPanel thisPanel = (StationPanel)iter.next();
+                    thisPanel.newWidth( w );//- 25 );
+                }
                 _sourcePane.setBounds( 0, 20, w, _sourcePane.dataHeight() );
                 for ( Iterator<BrowserNode> iter = _sourcePane.browserTopNode().childrenIterator(); iter.hasNext(); ) {
                     SourcePanel thisPanel = (SourcePanel)iter.next();
@@ -1262,7 +1262,7 @@ public class ExperimentEditor extends JFrame {
                     //  This should initialize all of the settings properly...we hope.
                     //  Specific .v2d file settings will then change them.
                     parseNewVexFile();
-                }                
+                }  
             }
         }
         
@@ -1365,7 +1365,6 @@ public class ExperimentEditor extends JFrame {
             public void actionPerformed( ActionEvent e ) {
                 //  Found anything at all?
                 if ( _lastV2dPath != null ) {
-                    System.out.println( "hey, we have " + _lastV2dPath );
                     readV2dFile( _lastV2dPath, _lastV2dBase );
                 }
             }
@@ -1374,7 +1373,6 @@ public class ExperimentEditor extends JFrame {
         ls.addIncrementalListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
                 _lastV2dPath = e.getActionCommand().trim();
-                System.out.println( "got \"" + _lastV2dPath + "\"" );
             }
         });
         try {

@@ -20,6 +20,8 @@ import java.util.Iterator;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
+import edu.nrao.difx.difxutilities.DiFXCommand_ls;
+
 import edu.nrao.difx.difxdatabase.QueueDBConnection;
 
 import edu.nrao.difx.difxutilities.DiFXCommand_mv;
@@ -207,6 +209,27 @@ public class ExperimentNode extends QueueBrowserNode {
         for ( Iterator<BrowserNode> iter = childrenIterator(); iter.hasNext(); ) {
             PassNode thisPass = (PassNode)(iter.next());
             thisPass.deleteSelectedAction();
+        }
+    }
+    
+    /*
+     * Use the creation time of the given path on the host as the creation time of
+     * this experiment.  
+     */
+    public void useCreationDate( String filePath ) {
+        if ( filePath != null ) {
+            DiFXCommand_ls ls = new DiFXCommand_ls( filePath, "-l -d --time-style=+\"%Y-%m-%d %H:%M:%S\"", _settings );
+            //  Set the callback for when a new item is added to the list.
+            ls.addIncrementalListener( new ActionListener() {
+                public void actionPerformed( ActionEvent e ) {
+                    creationDate( e.getActionCommand().trim().substring( 28, 47 ) );
+                }
+            });
+            try {
+                ls.send();
+            } catch ( java.net.UnknownHostException e ) {
+                //  BLAT handle this
+            }     
         }
     }
     

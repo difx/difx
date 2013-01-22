@@ -1546,9 +1546,11 @@ public class QueueBrowserPanel extends TearOffPanel {
             thisExperiment.name( experiment );
             thisExperiment.id( 0 );                  //  dunno
             thisExperiment.inDatabase( false );      //  dunno
-            //thisExperiment.creationDate( );        //  date the input file was created??
             thisExperiment.status( "unknown" );
             thisExperiment.directory( experimentPath );
+            //  Use the creation date of the experiment path as the experiment's
+            //  creation date.  This should be pretty accurate.
+            thisExperiment.useCreationDate( experimentPath );
             thisExperiment.vexFile( "" );
             _browserPane.addNode( thisExperiment );
         }
