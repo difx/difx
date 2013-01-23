@@ -29,7 +29,7 @@ dist_bin_SCRIPTS = \
 	restartdifx \
 	difxdiagnosticmon \
 	mk5display \
-	difxwatch.py
+	difxwatch
 
 probemachine_SOURCES = \
 	probemachine.c \
@@ -65,7 +65,4 @@ testm5lock_SOURCES = \
 
 testdifxmessagedrivestats_SOURCES = \
 	testdifxmessagedrivestats.c
-
-install-exec-hook:
-	mv $(DESTDIR)$(bindir)/difxwatch.py $(DESTDIR)$(bindir)/difxwatch
 

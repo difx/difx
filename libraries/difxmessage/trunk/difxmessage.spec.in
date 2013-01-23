@@ -50,6 +50,7 @@ make
 %{_bindir}/difxlog
 %{_bindir}/mk5mon
 %{_bindir}/cpumon
+%{_bindir}/difxwatch
 %{_bindir}/errormon
 %{_bindir}/errormon2
 %{_bindir}/statemon
