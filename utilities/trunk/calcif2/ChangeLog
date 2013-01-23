@@ -159,6 +159,10 @@ Version 1.2
 * better decipher geometry of tone/state values
 Version 1.4
 * support observation spanning new years
+Version 1.5
+* support gzipped files natively
+* support input and output dates in mjd (but not the combination of mjd in and doy out)
+* support concattenation of multiple tsm files as long as they are in time order
 
 
 genmachines
