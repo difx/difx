@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2011-2012 by Walter Brisken                             *
+ *   Copyright (C) 2011-2013 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the Lesser GNU General Public License as published by  *
@@ -690,7 +690,7 @@ int bank_info_Query(Mk5Daemon *D, int nField, char **fields, char *response, int
 
 	for(int b = 0; b < N_BANK; ++b)
 	{
-		const Mk5Smart *smart = D->smartData + b;
+		const Mk5Smart *smart = D->smartData + bank;
 
 		if(D->vsns[bank][0])
 		{

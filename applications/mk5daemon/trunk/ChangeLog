@@ -15,6 +15,7 @@ Version 2.2.0
 * fileto5c: copying of directory supported
 * now *mark5* identifies a Mark5 unit, not just mark5*
 * For VDIF format, save the threads to the .dir file
+* Fix for bank_info query with only bank B populated
 
 Version 2.1.0
 ~~~~~~~~~~~~~
