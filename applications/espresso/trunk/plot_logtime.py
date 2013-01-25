@@ -33,6 +33,9 @@ parser.add_option( "--verbose", "-v",
 parser.add_option( "--labelfile", "-l",
         action="store_true", dest="labelfile", default=False,
         help='Label plot with file start positions' )
+parser.add_option( "--grep", "-g",
+        type=str, dest="grep", default=False,
+        help='Extract only lines containing GREP pattern' )
 
 (options, args) = parser.parse_args()
 if len(args) < 1:
@@ -49,13 +52,13 @@ pyplot.title(title)
 pyplot.suptitle(str(filenames), fontsize='x-small')
 
 if options.plottime:
-    pyplot.xlabel('Correlation time/sec')
-    pyplot.ylabel('Observation time/sec')
+    pyplot.xlabel('Correlation time/hours')
+    pyplot.ylabel('Observation time/hours')
 else:
-    pyplot.xlabel('Observation time/sec')
+    pyplot.xlabel('Observation time/hours')
     pyplot.ylabel('Speedup factor')
 
-# remove overalling scaling from axis values
+# remove overall scaling from axis values
 no_offset = matplotlib.ticker.ScalarFormatter(useOffset=False)
 pyplot.gca().xaxis.set_major_formatter(no_offset)
 pyplot.gca().yaxis.set_major_formatter(no_offset)
@@ -78,6 +81,8 @@ for filename in args:
         #obstime_match = re.search(r'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}),(\d{3}).*The approximate mjd/seconds is (.*)', line)
         obstime_match = re.search(r'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}),(\d{3}).*to write out time (.*)', line)
         if not obstime_match:
+            continue
+        if (options.grep != False) and not re.search(options.grep, line):
             continue
 
         # convert correlator and observation time strings to seconds
@@ -128,7 +133,7 @@ for filename in args:
     if options.verbose:
         print filename, 't_int:', int_time, 'n_int:', len(this_ydata), 'start:', this_ydata[0]
 
-    # only need a fraction of the points (this also effectively smooths)
+    # only keep a fraction of the points (this also effectively smooths)
     this_ydata = [this_ydata[i] for i in range(nskip, len(this_ydata), nskip)]
     this_xdata = [this_xdata[i] for i in range(nskip, len(this_xdata), nskip)]
 
@@ -137,10 +142,16 @@ for filename in args:
     correlation = numpy.concatenate((correlation, this_xdata))
 
     if options.labelfile:
-        new_files.append((this_xdata[0], this_ydata[0]))
+        new_files.append((this_xdata[0]/3600., this_ydata[0]/3600.))
 
 
-print 'speedup factor:', observation[-1]/correlation[-1]
+# convert elapsed times from seconds to hours
+observation /= 3600.
+correlation /= 3600.
+
+print 'Observation time:', (observation[-1] - observation[0]), 'hours'
+print 'Correlation time:', (correlation[-1] - correlation[0]), 'hours'
+print 'Speedup factor  :', observation[-1]/correlation[-1]
 
 speedup = []
 if options.plottime:
