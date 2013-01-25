@@ -130,6 +130,13 @@ def fill_operator_log(logfile):
     command = editor + ' ' + logfile
     subprocess.check_call( command, stdout=sys.stdout, shell=True)
 
+def plot_speedup(logfiles, outdir, expname):
+    # plot the speedup factor from the difx log file
+    speedup_png = outdir + expname + '_speedup.png'
+    speedup_files = ' '.join(logfiles)
+    command = 'cd ' + outdir + '; plot_logtime.py -l -o ' + speedup_png + ' ' + speedup_files
+    speedup = subprocess.Popen( command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+    return speedup
 
 # Main program start.
 #parse the options
@@ -339,6 +346,7 @@ for jobname in sorted(corrjoblist.keys()):
 if not options.nopause:
     raw_input('Press return to initiate the correlator job or ^C to quit ')
 
+logfiles = []
 try:
     for jobname in sorted(corrjoblist.keys()):
         # start the correlator log
@@ -354,13 +362,22 @@ try:
             # we're finished with the log...
             os.kill(errormon2.pid, 9)
             time.sleep(1)
-            logfile = open(outdir + jobname + '.log', 'w')
-            print "filtering the log file and copying to", logfile.name
+            logfilename = outdir + jobname + '.log'
+            logfiles.append(jobname + '.log')
+            logfile = open(logfilename, 'w')
+            print "\nfiltering the log file and copying to", logfile.name
             #shutil.copy2('log', logfile)
             for line in open("log"):
                 if jobname in line:
                     print>>logfile, line,
 finally:
+
+    # plot the speedup factor (this forks a process - must clean up later)
+    try:
+        speedup = plot_speedup(logfiles, outdir, passname)
+    except:
+        print "Could not plot speedup factor!"
+
     # let someone know we've finished
     if get_email:
         try:
@@ -371,7 +388,7 @@ finally:
             emailserver.disconnect()
         except:
             print "No notification email sent"
-
+    
     # and enter an operator comment
     raw_input('\nHit return, then enter an operator comment, minimally: PROD/CLOCK/TEST/FAIL')
     operator_log = 'comment.txt'
@@ -379,3 +396,8 @@ finally:
     for jobname in corrjoblist.keys():
         operator_joblog = outdir + jobname + '.comment.txt'
         shutil.copy2(operator_log, operator_joblog)
+
+    # clean up the forked plot process
+    print "\n\nWaiting for plotting process", speedup.pid, "to finish"
+    plotmsg, ploterr = speedup.communicate()
+    print plotmsg, ploterr
