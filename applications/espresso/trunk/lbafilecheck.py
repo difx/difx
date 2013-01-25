@@ -200,7 +200,8 @@ except:
 pids = []
 datamachines = []
 
-print "Wait for process to finish. Do not press ^C."
+if not options.nofilelist:
+    print "Wait for process to finish. Do not press ^C."
 # first create the filelists
 for line in sorted(telescopedirs):
     try:
@@ -280,4 +281,5 @@ if not options.no_rmaps_seq:
 write_run(expname, len(computemachines + datamachines) +1, mpirun_options)
 
 
-print "All done!"
+if not options.nofilelist:
+    print "All done!"
