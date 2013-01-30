@@ -227,6 +227,9 @@ else:
 		out = popen(cmd, "w")
 		out.write('Start time = %s UTC\n' % strftime(dateFormat, start))
 		out.write('Project directory = %s\n' % outDir)
+		out.write('Antenna list = %s\n' % stations)
+		if nrao:
+			out.write('\nThis data will be recorded on NRAO Mark5 units and correlated in Socorro\n')
 		out.write('\nThis observation will be done at %s-band.\n\n' % band)
 		if testmode:
 			out.write('\n*** This is a test observation and may not provide real data ***\n\n')

@@ -1369,6 +1369,12 @@ int pystream::writeScans(const VexData *V)
 					*this << "subarray.setRecord(mjdStart + " << deltat1 << "*second, mjdStart+" << deltat2 << "*second, '" << scan->defName << "', obsCode, stnCode )" << endl;
 					recordSeconds += (deltat2-deltat1);
 				}
+				else if(setup->formatName.substr(0, 4) == "VDIF")
+				{
+					*this << "recorder0.setPacket(0, 0, 28, 5032)" << endl;
+					*this << "subarray.setRecord(mjdStart + " << deltat1 << "*second, mjdStart+" << deltat2 << "*second, '" << scan->defName << "', obsCode, stnCode )" << endl;
+					recordSeconds += (deltat2-deltat1);
+				}
 				else
 				{
 					cerr << "Error: pystream::writeScans: Can't figure out how to record!  formatName=" << setup->formatName

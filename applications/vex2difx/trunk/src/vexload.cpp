@@ -1097,7 +1097,7 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 				}
 			}
 
-			if(setup.formatName == "VLBA" || setup.formatName == "VLBN" || setup.formatName == "MKIV" || setup.formatName == "MARK5B")
+			if(setup.formatName == "VLBA" || setup.formatName == "VLBN" || setup.formatName == "MKIV" || setup.formatName == "MARK5B" || setup.formatName.substr(0, 4) == "VDIF")
 			{
 				for(p = get_all_lowl(antName.c_str(), modeDefName, T_FANOUT_DEF, B_TRACKS, v); p; p = get_all_lowl_next())
 				{
@@ -1145,7 +1145,7 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 					int fanout;
 
 					fanout = nTrack/ch2tracks.size()/nBit;
-					if(setup.formatName != "MARK5B")
+					if(setup.formatName != "MARK5B" && setup.formatName.substr(0, 4) != "VDIF")
 					{
 						switch(fanout)
 						{
@@ -1205,12 +1205,12 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 				setup.nRecordChan = ch2tracks.size();
 				setup.nBit = nBit;
 			}
-			else if(setup.formatName == "VDIF")
-			{
-				std::cerr << "Warning: Antenna " << antName << " format treated as (one channel) VDIF/1032/2." << std::endl;
-				setup.nBit = 2;
-				setup.nRecordChan = 1;
-			}
+//			else if(setup.formatName == "VDIF")
+//			{
+//				std::cerr << "Warning: Antenna " << antName << " format treated as (one channel) VDIF/5032/2." << std::endl;
+//				setup.nBit = 2;
+//				setup.nRecordChan = 1;
+//			}
 			else if(setup.formatName.find("VDIF") != std::string::npos)  // VDIF... or // INTERLACEDVDIF...
 			{
 #warning "handling of VDIF or INTERLACEDVDIF nRecordChan may not be correct in all cases"
