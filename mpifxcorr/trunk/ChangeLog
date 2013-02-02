@@ -10,6 +10,7 @@ Version 2.2
 * Finally, kill off the MODE errors and Stale data errors for cases where
   subintegration time is between 1 and 2 seconds long.  This enables 1 Hz
   resolution.
+* use openmp to parallelize 2 common corner turners for VDIF
 
 Version 2.1
 ~~~~~~~~~~~

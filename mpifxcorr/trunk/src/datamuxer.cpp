@@ -21,6 +21,7 @@
 //============================================================================
 #include <cstdio>
 #include <cstring>
+#include <omp.h>
 #include "datamuxer.h"
 #include "vdifio.h"
 #include "alert.h"
@@ -213,6 +214,7 @@ int VDIFMuxer::datacheck(u8 * checkbuffer, int bytestocheck, int startfrom)
     consumedbytes += inputframebytes;
     currentptr += inputframebytes;
   }
+
   return bytestoread; 
 } 
 
@@ -285,19 +287,22 @@ void VDIFMuxer::cornerturn_2thread_2bit(u8 * outputbuffer, int processindex, int
   const u8 *t0 = threadbuffers[0] + processindex*inputframebytes + VDIF_HEADER_BYTES;
   const u8 *t1 = threadbuffers[1] + processindex*inputframebytes + VDIF_HEADER_BYTES;
   unsigned int *outputwordptr = (unsigned int *)&(outputbuffer[outputframecount*outputframebytes + VDIF_HEADER_BYTES]);
- 
-  for(int i = 0; i < wordsperoutputframe; ++i)
+
+  unsigned int x, chunk = 128;
+  unsigned int i, n;
+  n = wordsperoutputframe;
+
+#pragma omp parallel private(i,x) shared(chunk,outputwordptr,t0,t1,n)
   {
-    // assemble
-    unsigned int x = (t1[1] << 24) | (t0[1] << 16) | (t1[0] << 8) | t0[0];
+#pragma omp for schedule(dynamic,chunk) nowait
+    for(i = 0; i < n; ++i)
+    {
+      // assemble
+      x = (t1[2*i+1] << 24) | (t0[2*i+1] << 16) | (t1[2*i] << 8) | t0[2*i];
 
-    // mask and shift
-    *outputwordptr = (x & M0) | ((x & M1) >> 2) | ((x & M2) << 2) | ((x & M3) >> 4) | ((x & M4) << 4) | ((x & M5) >> 6) | ((x & M6) << 6);
-
-    // advance pointers
-    t0 += 2;
-    t1 += 2;
-    ++outputwordptr;
+      // mask and shift
+      outputwordptr[i] = (x & M0) | ((x & M1) >> 2) | ((x & M2) << 2) | ((x & M3) >> 4) | ((x & M4) << 4) | ((x & M5) >> 6) | ((x & M6) << 6);
+    }
   }
 }
 
@@ -341,20 +346,21 @@ void VDIFMuxer::cornerturn_4thread_2bit(u8 * outputbuffer, int processindex, int
   const u8 *t3 = threadbuffers[3] + processindex*inputframebytes + VDIF_HEADER_BYTES;
   unsigned int *outputwordptr = (unsigned int *)&(outputbuffer[outputframecount*outputframebytes + VDIF_HEADER_BYTES]);
 
-  for(int i = 0; i < wordsperoutputframe; ++i)
-  {
-    // assemble
-    unsigned int x = (*t3 << 24) | (*t2 << 16) | (*t1 << 8) | *t0;
+  unsigned int x, chunk = 128;
+  unsigned int i, n;
+  n = wordsperoutputframe;
 
-    // mask and shift
-    *outputwordptr = (x & M0) | ((x & M1) >> 6) | ((x & M2) << 6) | ((x & M3) >> 12) | ((x & M4) << 12) | ((x & M5) >> 18) | ((x & M6) << 18);
-  
-    // advance pointers
-    ++t0;
-    ++t1;
-    ++t2;
-    ++t3;
-    ++outputwordptr;
+#pragma omp parallel private(i,x) shared(chunk,outputwordptr,t0,t1,t2,t3,n)
+  {
+#pragma omp for schedule(dynamic,chunk) nowait
+    for(i = 0; i < n; ++i)
+    {
+      // assemble
+      x = (t3[i] << 24) | (t2[i] << 16) | (t1[i] << 8) | t0[i];
+
+      // mask and shift
+      outputwordptr[i] = (x & M0) | ((x & M1) >> 6) | ((x & M2) << 6) | ((x & M3) >> 12) | ((x & M4) << 12) | ((x & M5) >> 18) | ((x & M6) << 18);
+    }
   }
 }
 
@@ -452,7 +458,7 @@ int VDIFMuxer::multiplex(u8 * outputbuffer)
 
       // call the corner turning function.  gotta love this syntax!
       (this->*cornerturn)(outputbuffer, processindex, outputframecount);
-      
+
       outputframecount++;
     }
     else {
@@ -584,6 +590,7 @@ bool VDIFMuxer::deinterlace(int validbytes)
     bufferframefull[threadindex][frameindex] = true;
   }
   deinterlacecount++;
+
   return true;
 }
 
