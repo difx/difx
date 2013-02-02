@@ -233,6 +233,7 @@ private:
   void cornerturn_2thread_2bit(u8 * outputbuffer, int processindex, int outputframecount);
   void cornerturn_4thread_2bit(u8 * outputbuffer, int processindex, int outputframecount);
   void cornerturn_8thread_2bit(u8 * outputbuffer, int processindex, int outputframecount);
+  void cornerturn_16thread_2bit(u8 * outputbuffer, int processindex, int outputframecount);
 };
 
 

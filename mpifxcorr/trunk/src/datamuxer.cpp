@@ -166,8 +166,12 @@ bool VDIFMuxer::initialise()
     cornerturn = &VDIFMuxer::cornerturn_4thread_2bit;
   }
   else if (numthreads == 8 && bitspersample == 2) {
-    cinfo << startl << "Using optimized VDIF corner turner: cornerturn_4thread_2bit" << endl;
-    cornerturn = &VDIFMuxer::cornerturn_4thread_2bit;
+    cinfo << startl << "Using optimized VDIF corner turner: cornerturn_8thread_2bit" << endl;
+    cornerturn = &VDIFMuxer::cornerturn_8thread_2bit;
+  }
+  else if (numthreads == 16 && bitspersample == 2) {
+    cinfo << startl << "Using optimized VDIF corner turner: cornerturn_16thread_2bit" << endl;
+    cornerturn = &VDIFMuxer::cornerturn_16thread_2bit;
   }
   else {
     cwarn << startl << "Using generic VDIF corner turner; performance may suffer" << endl;
@@ -289,7 +293,7 @@ void VDIFMuxer::cornerturn_2thread_2bit(u8 * outputbuffer, int processindex, int
   unsigned int *outputwordptr = (unsigned int *)&(outputbuffer[outputframecount*outputframebytes + VDIF_HEADER_BYTES]);
 
   unsigned int x, chunk = 128;
-  unsigned int i, n;
+  int i, n;
   n = wordsperoutputframe;
 
 #pragma omp parallel private(i,x) shared(chunk,outputwordptr,t0,t1,n)
@@ -347,7 +351,7 @@ void VDIFMuxer::cornerturn_4thread_2bit(u8 * outputbuffer, int processindex, int
   unsigned int *outputwordptr = (unsigned int *)&(outputbuffer[outputframecount*outputframebytes + VDIF_HEADER_BYTES]);
 
   unsigned int x, chunk = 128;
-  unsigned int i, n;
+  int i, n;
   n = wordsperoutputframe;
 
 #pragma omp parallel private(i,x) shared(chunk,outputwordptr,t0,t1,t2,t3,n)
@@ -363,7 +367,6 @@ void VDIFMuxer::cornerturn_4thread_2bit(u8 * outputbuffer, int processindex, int
     }
   }
 }
-
 
 void VDIFMuxer::cornerturn_8thread_2bit(u8 * outputbuffer, int processindex, int outputframecount)
 {
@@ -400,35 +403,106 @@ void VDIFMuxer::cornerturn_8thread_2bit(u8 * outputbuffer, int processindex, int
   const u8 *t6 = threadbuffers[6] + processindex*inputframebytes + VDIF_HEADER_BYTES;
   const u8 *t7 = threadbuffers[7] + processindex*inputframebytes + VDIF_HEADER_BYTES;
   unsigned int *outputwordptr = (unsigned int *)&(outputbuffer[outputframecount*outputframebytes + VDIF_HEADER_BYTES]);
+  unsigned int x1, x2, chunk=128;
+  int i, n;
+  n = wordsperoutputframe/2;
+  union { unsigned int y1; u8 b1[4]; };
+  union { unsigned int y2; u8 b2[4]; };
 
-  for(int i = 0; i < wordsperoutputframe; i += 2)
+#pragma omp parallel private(i,x1,x2,y1,y2,b1,b2) shared(chunk,outputwordptr,t0,t1,t2,t3,t4,t5,t6,t7,n)
   {
-    unsigned int x1;
-    unsigned int x2;
-    union { unsigned int y1; u8 b1[4]; };
-    union { unsigned int y2; u8 b2[4]; };
-    
-    // assemble 32-bit chunks
-    x1 = (*t3 << 24) | (*t2 << 16) | (*t1 << 8) | *t0;
-    x2 = (*t7 << 24) | (*t6 << 16) | (*t5 << 8) | *t4;
+#pragma omp for schedule(dynamic,chunk) nowait
+    for(i = 0; i < n; ++i)
+    {
+      // assemble 32-bit chunks
+      x1 = (t3[i] << 24) | (t2[i] << 16) | (t1[i] << 8) | t0[i];
+      x2 = (t7[i] << 24) | (t6[i] << 16) | (t5[i] << 8) | t4[i];
 
-    // mask and shift 32-bit chunks
-    y1 = (x1 & M0) | ((x1 & M1) >> 6) | ((x1 & M2) << 6) | ((x1 & M3) >> 12) | ((x1 & M4) << 12) | ((x1 & M5) >> 18) | ((x1 & M6) << 18);
-    y2 = (x2 & M0) | ((x2 & M1) >> 6) | ((x2 & M2) << 6) | ((x2 & M3) >> 12) | ((x2 & M4) << 12) | ((x2 & M5) >> 18) | ((x2 & M6) << 18);
+      // mask and shift 32-bit chunks
+      y1 = (x1 & M0) | ((x1 & M1) >> 6) | ((x1 & M2) << 6) | ((x1 & M3) >> 12) | ((x1 & M4) << 12) | ((x1 & M5) >> 18) | ((x1 & M6) << 18);
+      y2 = (x2 & M0) | ((x2 & M1) >> 6) | ((x2 & M2) << 6) | ((x2 & M3) >> 12) | ((x2 & M4) << 12) | ((x2 & M5) >> 18) | ((x2 & M6) << 18);
 
-    // shuffle 8-bit chunks
-    outputwordptr[0] = (b2[1] << 24) | (b1[1] << 16) | (b2[0] << 8) | b1[0];
-    outputwordptr[1] = (b2[3] << 24) | (b1[3] << 16) | (b2[2] << 8) | b1[2];
+      // shuffle 8-bit chunks
+      outputwordptr[2*i]   = (b2[1] << 24) | (b1[1] << 16) | (b2[0] << 8) | b1[0];
+      outputwordptr[2*i+1] = (b2[3] << 24) | (b1[3] << 16) | (b2[2] << 8) | b1[2];
+    }
+  }
+}
 
-    ++t0;
-    ++t1;
-    ++t2;
-    ++t3;
-    ++t4;
-    ++t5;
-    ++t6;
-    ++t7;
-    outputwordptr += 2;
+void VDIFMuxer::cornerturn_16thread_2bit(u8 * outputbuffer, int processindex, int outputframecount)
+{
+  // Efficiently handle the special case of 8 threads of 2-bit data.
+  //
+  // Thread: ------15------   ------14------   ------13------   ------12------   ------11------   ------10------   ------9-------   ------8-------   ------7-------   ------6-------   ------5-------   ------4-------   ------3-------   ------2-------   ------1-------   ------0-------
+  // Byte:   ------0-------   ------0-------   ------0-------   ------0-------   ------0-------   ------0-------   ------0-------   ------0-------   ------0-------   ------0-------   ------0-------   ------0-------   ------0-------   ------0-------   ------0-------   ------0-------
+  // Input:  p3  p2  p1  p0   o3  o2  o1  o0   n3  n2  n1  n0   m3  m2  m1  m0   l3  l2  l1  l0   k3  k2  k1  k0   j3  j2  j1  j0   i3  i2  i1  i0   h3  h2  h1  h0   g3  g2  g1  g0   f3  f2  f1  f0   e3  e2  e1  e0   d3  d2  d1  d0   c3  c2  c1  c0   b3  b2  b1  b0   a3  a2  a1  a0
+  //                                                                                                                                                
+  // Shift:  0  -15 -30 -45  +3  -12 -27 -42  +6  -9  -24 -39  +9  -6  -21 -36  +12 -3  -18 -33  +15  0  -15 -30  +18 +3  -12 -27  +21 +6  -9  -24  +24 +9  -6  -21  +27 +12 -3  -18  +30 +15  0  -15  +33 +18 +3  -12  +36 +21 +6  -9   +39 +24 +9  -6   +42 +27 +12 -3   +45 +30 +15  0
+  //                                                                                                                                                
+  // Output: p3  o3  n3  m3   l3  k3  j3  i3   h3  g3  f3  e3   d3  c3  b3  a3   p2  o2  n2  m2   l2  k2  j2  i2   h2  g2  f2  e2   d2  c2  b2  a2   p1  o1  n1  m1   l1  k1  j1  i1   h1  g1  f1  e1   d1  c1  b1  a1   p0  o0  n0  m0   l0  k0  j0  i0   h0  g0  f0  e0   d0  c0  b0  a0
+  // Byte:   ------15------   ------14------   ------13------   ------12------   ------11------   ------10------   ------9-------   ------8-------   ------7-------   ------6-------   ------5-------   ------4-------   ------3-------   ------2-------   ------1-------   ------0-------
+  //
+  // This one is a bit complicated.  A resonable way to proceed seems to be to perform four separate 4-thread corner turns and then 
+  // do a final suffle of byte sized chunks.  There may be a better way...
+  //
+  // FIXME: This is thought to work but has yet to be fully verified.
+
+  const unsigned int M0 = 0xC0300C03;
+  const unsigned int M1 = 0x300C0300;
+  const unsigned int M2 = 0x00C0300C;
+  const unsigned int M3 = 0x0C030000;
+  const unsigned int M4 = 0x0000C030;
+  const unsigned int M5 = 0x03000000;
+  const unsigned int M6 = 0x000000C0;
+
+  const u8 *t0  = threadbuffers[0]  + processindex*inputframebytes + VDIF_HEADER_BYTES;
+  const u8 *t1  = threadbuffers[1]  + processindex*inputframebytes + VDIF_HEADER_BYTES;
+  const u8 *t2  = threadbuffers[2]  + processindex*inputframebytes + VDIF_HEADER_BYTES;
+  const u8 *t3  = threadbuffers[3]  + processindex*inputframebytes + VDIF_HEADER_BYTES;
+  const u8 *t4  = threadbuffers[4]  + processindex*inputframebytes + VDIF_HEADER_BYTES;
+  const u8 *t5  = threadbuffers[5]  + processindex*inputframebytes + VDIF_HEADER_BYTES;
+  const u8 *t6  = threadbuffers[6]  + processindex*inputframebytes + VDIF_HEADER_BYTES;
+  const u8 *t7  = threadbuffers[7]  + processindex*inputframebytes + VDIF_HEADER_BYTES;
+  const u8 *t8  = threadbuffers[8]  + processindex*inputframebytes + VDIF_HEADER_BYTES;
+  const u8 *t9  = threadbuffers[9]  + processindex*inputframebytes + VDIF_HEADER_BYTES;
+  const u8 *t10 = threadbuffers[10] + processindex*inputframebytes + VDIF_HEADER_BYTES;
+  const u8 *t11 = threadbuffers[11] + processindex*inputframebytes + VDIF_HEADER_BYTES;
+  const u8 *t12 = threadbuffers[12] + processindex*inputframebytes + VDIF_HEADER_BYTES;
+  const u8 *t13 = threadbuffers[13] + processindex*inputframebytes + VDIF_HEADER_BYTES;
+  const u8 *t14 = threadbuffers[14] + processindex*inputframebytes + VDIF_HEADER_BYTES;
+  const u8 *t15 = threadbuffers[15] + processindex*inputframebytes + VDIF_HEADER_BYTES;
+  unsigned int *outputwordptr = (unsigned int *)&(outputbuffer[outputframecount*outputframebytes + VDIF_HEADER_BYTES]);
+  unsigned int x1, x2, x3, x4, chunk=128;
+  int i, n;
+  n = wordsperoutputframe/4;
+  union { unsigned int y1; u8 b1[4]; };
+  union { unsigned int y2; u8 b2[4]; };
+  union { unsigned int y3; u8 b3[4]; };
+  union { unsigned int y4; u8 b4[4]; };
+
+#pragma omp parallel private(i,x1,x2,x3,x4,y1,y2,y3,y4,b1,b2,b3,b4) shared(chunk,outputwordptr,t0,t1,t2,t3,t4,t5,t6,t7,t8,t9,t10,t11,t12,t13,t14,t15,n)
+  {
+#pragma omp for schedule(dynamic,chunk) nowait
+    for(i = 0; i < n; ++i)
+    {
+      // assemble 32-bit chunks
+      x1 = (t3[i]  << 24) | (t2[i]  << 16) | (t1[i]  << 8) | t0[i];
+      x2 = (t7[i]  << 24) | (t6[i]  << 16) | (t5[i]  << 8) | t4[i];
+      x3 = (t11[i] << 24) | (t10[i] << 16) | (t9[i]  << 8) | t8[i];
+      x4 = (t15[i] << 24) | (t14[i] << 16) | (t13[i] << 8) | t12[i];
+
+      // mask and shift 32-bit chunks
+      y1 = (x1 & M0) | ((x1 & M1) >> 6) | ((x1 & M2) << 6) | ((x1 & M3) >> 12) | ((x1 & M4) << 12) | ((x1 & M5) >> 18) | ((x1 & M6) << 18);
+      y2 = (x2 & M0) | ((x2 & M1) >> 6) | ((x2 & M2) << 6) | ((x2 & M3) >> 12) | ((x2 & M4) << 12) | ((x2 & M5) >> 18) | ((x2 & M6) << 18);
+      y3 = (x3 & M0) | ((x3 & M1) >> 6) | ((x3 & M2) << 6) | ((x3 & M3) >> 12) | ((x3 & M4) << 12) | ((x3 & M5) >> 18) | ((x3 & M6) << 18);
+      y4 = (x4 & M0) | ((x4 & M1) >> 6) | ((x4 & M2) << 6) | ((x4 & M3) >> 12) | ((x4 & M4) << 12) | ((x4 & M5) >> 18) | ((x4 & M6) << 18);
+
+      // shuffle 8-bit chunks
+      outputwordptr[4*i]   = (b4[0] << 24) | (b3[0] << 16) | (b2[0] << 8) | b1[0];
+      outputwordptr[4*i+1] = (b4[1] << 24) | (b3[1] << 16) | (b2[1] << 8) | b1[1];
+      outputwordptr[4*i+2] = (b4[2] << 24) | (b3[2] << 16) | (b2[2] << 8) | b1[2];
+      outputwordptr[4*i+3] = (b4[3] << 24) | (b3[3] << 16) | (b2[3] << 8) | b1[3];
+    }
   }
 }
 
