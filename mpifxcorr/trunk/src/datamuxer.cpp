@@ -493,8 +493,15 @@ int VDIFMuxer::multiplex(u8 * outputbuffer)
           outputframecount++;
         }
         else {
+          static unsigned int nNoValidFrames = 0;
+          ++nNoValidFrames;
           //if NONE of the input thread frames are valid, *and* this is the first output frame, we have to make sure this is ignored
-          cwarn << startl << "No valid input frames for frame " << processframenumber << "; the rest of this data segment will be lost" << endl;
+          
+          // use Brian Kernighan's bit counting trick to see if nNoValidFrames is a power of 2 
+          if(nNoValidFrames < 16 || (nNoValidFrames & (nNoValidFrames-1)) == 0)
+          {
+            cwarn << startl << "No valid input frames for frame " << processframenumber << "; the rest of this data segment will be lost (n=" << nNoValidFrames << ")" << endl;
+          }
           //don't increment outputframecount
         }
       }
