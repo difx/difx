@@ -2137,7 +2137,7 @@ void Core::updateconfig(int oldconfigindex, int configindex, int threadid, int &
     }
   }
 
-  cdebug << startl << "About to create some new modes..." << endl;
+  //cdebug << startl << "About to create some new modes..." << endl;
   //get the config to create the appropriate Modes for us
   for(int i=0;i<numdatastreams;i++) {
     modes[i] = config->getMode(configindex, i);
@@ -2148,7 +2148,7 @@ void Core::updateconfig(int oldconfigindex, int configindex, int threadid, int &
     threadbytes[threadid] += modes[i]->getEstimatedBytes();
   }
 
-  cdebug << startl << "New modes created, now for pulsar stuff if applicable" << endl;
+  //cdebug << startl << "New modes created, now for pulsar stuff if applicable" << endl;
   pulsarbin = config->pulsarBinOn(configindex);
   if(pulsarbin)
   {
@@ -2163,6 +2163,6 @@ void Core::updateconfig(int oldconfigindex, int configindex, int threadid, int &
     }
     //cinfo << startl << "Core " << mpiid << " thread " << threadid << ": polycos created/copied successfully!"  << endl;
   }
-  cdebug << startl << "Pulsar stuff dealt with" << endl;
+  //cdebug << startl << "Pulsar stuff dealt with" << endl;
 }
 // vim: shiftwidth=2:softtabstop=2:expandtab

@@ -234,6 +234,12 @@ private:
   void cornerturn_4thread_2bit(u8 * outputbuffer, int processindex, int outputframecount);
   void cornerturn_8thread_2bit(u8 * outputbuffer, int processindex, int outputframecount);
   void cornerturn_16thread_2bit(u8 * outputbuffer, int processindex, int outputframecount);
+
+  /* below are "half corner turners".  They only splice byte streams together.  They don't intermingle samples within bytes.  Thus these work for 1,2,4 or 8 bits/sample */
+  void cornerturn_2thread_merge(u8 * outputbuffer, int processindex, int outputframecount);
+  void cornerturn_4thread_merge(u8 * outputbuffer, int processindex, int outputframecount);
+  void cornerturn_8thread_merge(u8 * outputbuffer, int processindex, int outputframecount);
+  void cornerturn_16thread_merge(u8 * outputbuffer, int processindex, int outputframecount);
 };
 
 

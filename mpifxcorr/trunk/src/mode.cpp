@@ -45,15 +45,11 @@ Mode::Mode(Configuration * conf, int confindex, int dsindex, int recordedbandcha
   if(!(fftchannels & (fftchannels - 1)))
   {
     isfft = true;
-    cdebug << startl << "fftchannels ="<< fftchannels << " is a power of 2 so isfft is set to true." << endl;
   }
   else
   {
     isfft = false;
-    cdebug << startl << "fftchannels ="<< fftchannels << " isn't a power of 2 so isfft is set to false." << endl;
   }
-
-  cdebug << startl << "fftchannels ="<< fftchannels << " isfft ="<< isfft << endl;
 
   model = config->getModel();
   initok = true;

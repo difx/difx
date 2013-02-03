@@ -255,6 +255,7 @@ void VDIFMuxer::cornerturn_generic(u8 * outputbuffer, int processindex, int outp
   }
 }
 
+  
 
 void VDIFMuxer::cornerturn_1thread(u8 * outputbuffer, int processindex, int outputframecount)
 {
@@ -292,7 +293,7 @@ void VDIFMuxer::cornerturn_2thread_2bit(u8 * outputbuffer, int processindex, int
   const u8 *t1 = threadbuffers[1] + processindex*inputframebytes + VDIF_HEADER_BYTES;
   unsigned int *outputwordptr = (unsigned int *)&(outputbuffer[outputframecount*outputframebytes + VDIF_HEADER_BYTES]);
 
-  unsigned int x, chunk = 128;
+  unsigned int x, chunk = 125;
   int i, n;
   n = wordsperoutputframe;
 
@@ -350,7 +351,7 @@ void VDIFMuxer::cornerturn_4thread_2bit(u8 * outputbuffer, int processindex, int
   const u8 *t3 = threadbuffers[3] + processindex*inputframebytes + VDIF_HEADER_BYTES;
   unsigned int *outputwordptr = (unsigned int *)&(outputbuffer[outputframecount*outputframebytes + VDIF_HEADER_BYTES]);
 
-  unsigned int x, chunk = 128;
+  unsigned int x, chunk = 125;
   int i, n;
   n = wordsperoutputframe;
 
@@ -403,7 +404,7 @@ void VDIFMuxer::cornerturn_8thread_2bit(u8 * outputbuffer, int processindex, int
   const u8 *t6 = threadbuffers[6] + processindex*inputframebytes + VDIF_HEADER_BYTES;
   const u8 *t7 = threadbuffers[7] + processindex*inputframebytes + VDIF_HEADER_BYTES;
   unsigned int *outputwordptr = (unsigned int *)&(outputbuffer[outputframecount*outputframebytes + VDIF_HEADER_BYTES]);
-  unsigned int x1, x2, chunk=128;
+  unsigned int x1, x2, chunk=125;
   int i, n;
   n = wordsperoutputframe/2;
   union { unsigned int y1; u8 b1[4]; };
@@ -472,7 +473,7 @@ void VDIFMuxer::cornerturn_16thread_2bit(u8 * outputbuffer, int processindex, in
   const u8 *t14 = threadbuffers[14] + processindex*inputframebytes + VDIF_HEADER_BYTES;
   const u8 *t15 = threadbuffers[15] + processindex*inputframebytes + VDIF_HEADER_BYTES;
   unsigned int *outputwordptr = (unsigned int *)&(outputbuffer[outputframecount*outputframebytes + VDIF_HEADER_BYTES]);
-  unsigned int x1, x2, x3, x4, chunk=128;
+  unsigned int x1, x2, x3, x4, chunk=125;
   int i, n;
   n = wordsperoutputframe/4;
   union { unsigned int y1; u8 b1[4]; };
@@ -506,6 +507,137 @@ void VDIFMuxer::cornerturn_16thread_2bit(u8 * outputbuffer, int processindex, in
   }
 }
 
+/* These experimental merge "cornerturners" will just merge the threads into a single new stream without 
+ * intra-byte shuffling.  This is much faster and simpler but yields a non-standard data format.
+ * A special decoder downstream will be needed to make use of this.
+ */
+void VDIFMuxer::cornerturn_2thread_merge(u8 * outputbuffer, int processindex, int outputframecount)
+{
+  const u8 *t0 = threadbuffers[0] + processindex*inputframebytes + VDIF_HEADER_BYTES;
+  const u8 *t1 = threadbuffers[1] + processindex*inputframebytes + VDIF_HEADER_BYTES;
+  u8 *outputbyteptr = (u8 *)&(outputbuffer[outputframecount*outputframebytes + VDIF_HEADER_BYTES]);
+
+  unsigned int chunk = 250;
+  int i, n;
+  n = wordsperoutputframe*2;
+
+#pragma omp parallel private(i) shared(chunk,outputbyteptr,t0,t1,n)
+  {
+#pragma omp for schedule(dynamic,chunk) nowait
+    for(i = 0; i < n; ++i)
+    {
+      outputbyteptr[2*i]   = t0[i];
+      outputbyteptr[2*i+1] = t1[i];
+    }
+  }
+}
+
+void VDIFMuxer::cornerturn_4thread_merge(u8 * outputbuffer, int processindex, int outputframecount)
+{
+  const u8 *t0 = threadbuffers[0] + processindex*inputframebytes + VDIF_HEADER_BYTES;
+  const u8 *t1 = threadbuffers[1] + processindex*inputframebytes + VDIF_HEADER_BYTES;
+  const u8 *t2 = threadbuffers[2] + processindex*inputframebytes + VDIF_HEADER_BYTES;
+  const u8 *t3 = threadbuffers[3] + processindex*inputframebytes + VDIF_HEADER_BYTES;
+  u8 *outputbyteptr = (u8 *)&(outputbuffer[outputframecount*outputframebytes + VDIF_HEADER_BYTES]);
+
+  unsigned int chunk = 250;
+  int i, n;
+  n = wordsperoutputframe;
+
+#pragma omp parallel private(i) shared(chunk,outputbyteptr,t0,t1,t2,t3,n)
+  {
+#pragma omp for schedule(dynamic,chunk) nowait
+    for(i = 0; i < n; ++i)
+    {
+      outputbyteptr[4*i]   = t0[i];
+      outputbyteptr[4*i+1] = t1[i];
+      outputbyteptr[4*i+2] = t2[i];
+      outputbyteptr[4*i+3] = t3[i];
+    }
+  }
+}
+
+void VDIFMuxer::cornerturn_8thread_merge(u8 * outputbuffer, int processindex, int outputframecount)
+{
+  const u8 *t0 = threadbuffers[0] + processindex*inputframebytes + VDIF_HEADER_BYTES;
+  const u8 *t1 = threadbuffers[1] + processindex*inputframebytes + VDIF_HEADER_BYTES;
+  const u8 *t2 = threadbuffers[2] + processindex*inputframebytes + VDIF_HEADER_BYTES;
+  const u8 *t3 = threadbuffers[3] + processindex*inputframebytes + VDIF_HEADER_BYTES;
+  const u8 *t4 = threadbuffers[4] + processindex*inputframebytes + VDIF_HEADER_BYTES;
+  const u8 *t5 = threadbuffers[5] + processindex*inputframebytes + VDIF_HEADER_BYTES;
+  const u8 *t6 = threadbuffers[6] + processindex*inputframebytes + VDIF_HEADER_BYTES;
+  const u8 *t7 = threadbuffers[7] + processindex*inputframebytes + VDIF_HEADER_BYTES;
+  u8 *outputbyteptr = (u8 *)&(outputbuffer[outputframecount*outputframebytes + VDIF_HEADER_BYTES]);
+
+  unsigned int chunk = 250;
+  int i, n;
+  n = wordsperoutputframe/2;
+
+#pragma omp parallel private(i) shared(chunk,outputbyteptr,t0,t1,t2,t3,t4,t5,t6,t7,n)
+  {
+#pragma omp for schedule(dynamic,chunk) nowait
+    for(i = 0; i < n; ++i)
+    {
+      outputbyteptr[8*i]   = t0[i];
+      outputbyteptr[8*i+1] = t1[i];
+      outputbyteptr[8*i+2] = t2[i];
+      outputbyteptr[8*i+3] = t3[i];
+      outputbyteptr[8*i+4] = t4[i];
+      outputbyteptr[8*i+5] = t5[i];
+      outputbyteptr[8*i+6] = t6[i];
+      outputbyteptr[8*i+7] = t7[i];
+    }
+  }
+}
+
+void VDIFMuxer::cornerturn_16thread_merge(u8 * outputbuffer, int processindex, int outputframecount)
+{
+  const u8 *t0  = threadbuffers[0]  + processindex*inputframebytes + VDIF_HEADER_BYTES;
+  const u8 *t1  = threadbuffers[1]  + processindex*inputframebytes + VDIF_HEADER_BYTES;
+  const u8 *t2  = threadbuffers[2]  + processindex*inputframebytes + VDIF_HEADER_BYTES;
+  const u8 *t3  = threadbuffers[3]  + processindex*inputframebytes + VDIF_HEADER_BYTES;
+  const u8 *t4  = threadbuffers[4]  + processindex*inputframebytes + VDIF_HEADER_BYTES;
+  const u8 *t5  = threadbuffers[5]  + processindex*inputframebytes + VDIF_HEADER_BYTES;
+  const u8 *t6  = threadbuffers[6]  + processindex*inputframebytes + VDIF_HEADER_BYTES;
+  const u8 *t7  = threadbuffers[7]  + processindex*inputframebytes + VDIF_HEADER_BYTES;
+  const u8 *t8  = threadbuffers[8]  + processindex*inputframebytes + VDIF_HEADER_BYTES;
+  const u8 *t9  = threadbuffers[9]  + processindex*inputframebytes + VDIF_HEADER_BYTES;
+  const u8 *t10 = threadbuffers[10] + processindex*inputframebytes + VDIF_HEADER_BYTES;
+  const u8 *t11 = threadbuffers[11] + processindex*inputframebytes + VDIF_HEADER_BYTES;
+  const u8 *t12 = threadbuffers[12] + processindex*inputframebytes + VDIF_HEADER_BYTES;
+  const u8 *t13 = threadbuffers[13] + processindex*inputframebytes + VDIF_HEADER_BYTES;
+  const u8 *t14 = threadbuffers[14] + processindex*inputframebytes + VDIF_HEADER_BYTES;
+  const u8 *t15 = threadbuffers[15] + processindex*inputframebytes + VDIF_HEADER_BYTES;
+  u8 *outputbyteptr = (u8 *)&(outputbuffer[outputframecount*outputframebytes + VDIF_HEADER_BYTES]);
+
+  unsigned int chunk = 250;
+  int i, n;
+  n = wordsperoutputframe/4;
+
+#pragma omp parallel private(i) shared(chunk,outputbyteptr,t0,t1,t2,t3,t4,t5,t6,t7,n)
+  {
+#pragma omp for schedule(dynamic,chunk) nowait
+    for(i = 0; i < n; ++i)
+    {
+      outputbyteptr[16*i]   = t0[i];
+      outputbyteptr[16*i+1] = t1[i];
+      outputbyteptr[16*i+2] = t2[i];
+      outputbyteptr[16*i+3] = t3[i];
+      outputbyteptr[16*i+4] = t4[i];
+      outputbyteptr[16*i+5] = t5[i];
+      outputbyteptr[16*i+6] = t6[i];
+      outputbyteptr[16*i+7] = t7[i];
+      outputbyteptr[16*i+8] = t8[i];
+      outputbyteptr[16*i+9]  = t9[i];
+      outputbyteptr[16*i+10] = t10[i];
+      outputbyteptr[16*i+11] = t11[i];
+      outputbyteptr[16*i+12] = t12[i];
+      outputbyteptr[16*i+13] = t13[i];
+      outputbyteptr[16*i+14] = t14[i];
+      outputbyteptr[16*i+15] = t15[i];
+    }
+  }
+}
 
 int VDIFMuxer::multiplex(u8 * outputbuffer)
 {
