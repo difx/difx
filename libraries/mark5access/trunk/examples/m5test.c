@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2012 by Walter Brisken                             *
+ *   Copyright (C) 2007-2013 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -81,7 +81,6 @@ int verify(const char *filename, const char *formatname, long long offset, int r
 	int i, status;
 	long long total, unpacked, nvalidatepass = 0, nvalidatefail = 0;
 	int osec = 0, omjd = 0;
-	double ons = 0.0;
 
 	total = unpacked = 0;
 
@@ -135,7 +134,6 @@ int verify(const char *filename, const char *formatname, long long offset, int r
 			{
 				omjd = mjd;
 				osec = sec;
-				ons = ns;
 			}
 
 			if ((mjd - omjd) >= 2 || (mjd < omjd))
@@ -149,7 +147,7 @@ int verify(const char *filename, const char *formatname, long long offset, int r
 
                         if (report_interval == 0)
 			{
-				printf("frame_num=%lld mjd=%d sec=%d ns=%011.1f n_valid=%d n_invalid=%d %Lu\n",
+				printf("frame_num=%Ld mjd=%d sec=%d ns=%011.1f n_valid=%d n_invalid=%d %Lu\n",
 					ms->framenum, mjd, sec, ns,
 					ms->nvalidatepass, ms->nvalidatefail, offset);
                         } 
@@ -157,7 +155,7 @@ int verify(const char *filename, const char *formatname, long long offset, int r
 			{
 				if (sec != osec) 
 				{
-					printf("frame_num=%lld mjd=%d sec=%d ns=%011.1f n_valid=%d n_invalid=%d total=%Lu unp=%Lu\n",
+					printf("frame_num=%Ld mjd=%d sec=%d ns=%011.1f n_valid=%Ld n_invalid=%Ld total=%Lu unp=%Lu\n",
 						ms->framenum, mjd, sec, ns,
 						nvalidatepass, nvalidatefail, total, unpacked);
 					nvalidatepass = 0;

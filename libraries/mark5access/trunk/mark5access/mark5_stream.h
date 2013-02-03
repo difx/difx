@@ -63,7 +63,8 @@ enum Mark5Format
 	MK5_FORMAT_VDIF    =  3,
 	MK5_FORMAT_VDIFL   =  4,		/* Legacy headers on VDIF */
 	MK5_FORMAT_K5      =  5,		/* Not Yet Implemented */
-	MK5_FORMAT_VLBN    =  6
+	MK5_FORMAT_VLBN    =  6,
+	MK5_FORMAT_VDIFB   =  7			/* Not to be propagated as an external format */
 };
 
 #define MAXBLANKZONES		32
@@ -277,6 +278,22 @@ int get_vdif_quantization_bits(const unsigned char *data);
 int get_vdif_complex(const unsigned char *data);
 
 int get_vdif_threads(const unsigned char *data, size_t length, int dataframesize);
+
+/*   VDIFB pseudo-format */
+
+struct mark5_format_generic *new_mark5_format_vdifb(int Mbps, int nchan, int nbit, int decimation, int databytesperpacket, int frameheadersize, int usecomplex);
+
+void mark5_format_vdifb_set_leapsecs(struct mark5_stream *ms, int leapsecs);
+
+int find_vdifb_frame(const unsigned char *data, size_t length, size_t *offset, int *framesize);
+
+int get_vdifb_chans_per_thread(const unsigned char *data);
+
+int get_vdifb_quantization_bits(const unsigned char *data);
+
+int get_vdifb_complex(const unsigned char *data);
+
+int get_vdifb_threads(const unsigned char *data, size_t length, int dataframesize);
 
 /*   K5 format: not yet complete */
 

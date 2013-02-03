@@ -467,6 +467,20 @@ struct mark5_format_generic *new_mark5_format_generic_from_string( const char *f
 
 		return new_mark5_format_vdif(a, b, c, d, e, 32, 0);
 	}
+	else if(strncasecmp(formatname, "VDIFB_", 6) == 0)
+	{
+		r = sscanf(formatname+6, "%d-%d-%d-%d/%d", &e, &a, &b, &c, &d);
+		if(r < 4)
+		{
+			return 0;
+		}
+		if(r < 5)
+		{
+			d = 1;
+		}
+
+		return new_mark5_format_vdifb(a, b, c, d, e, 32, 0);
+	}
 	else if(strncasecmp(formatname, "VDIFC_", 6) == 0)
 	{
 		r = sscanf(formatname+6, "%d-%d-%d-%d/%d", &e, &a, &b, &c, &d);
@@ -506,9 +520,10 @@ struct mark5_format_generic *new_mark5_format_generic_from_string( const char *f
 /* a string containg a list of supported formats */
 const char *mark5_stream_list_formats()
 {
-	return "VLBA1_*-*-*-*[/*], MKIV1_*-*-*-*[/*], MARK5B-*-*-*[/*], VDIF_*-*-*-*[/*], VLBN1_*-*-*-*[/*], VDIF_*-*-*-*[/*]";
+	return "VLBA1_*-*-*-*[/*], MKIV1_*-*-*-*[/*], MARK5B-*-*-*[/*], VDIF_*-*-*-*[/*], VLBN1_*-*-*-*[/*], VDIFB_*-*-*-*, VDIFL_*-*-*-*[/*]";
 }
-                                                                                /* given a format string, populate a structure with info about format */
+
+/* given a format string, populate a structure with info about format */
 struct mark5_format *new_mark5_format_from_name(const char *formatname)
 {
 	int a=1, b=0, c=0, d=0, e=0, ntrack=0;
@@ -625,6 +640,25 @@ struct mark5_format *new_mark5_format_from_name(const char *formatname)
 			decimation = e;
 		}
 	}
+	/* for VDIFB, the datasize per packet must be supplied as first numeric element:
+	 * e.g., VDIFB_4000-2048-4-2
+	 */
+	else if(strncasecmp(formatname, "VDIFB_", 6) == 0)
+	{
+		r = sscanf(formatname+6, "%d-%d-%d-%d/%d", &a, &b, &c, &d, &e);
+		if(r < 4)
+		{
+			return 0;
+		}
+		F = MK5_FORMAT_VDIFB;
+		databytes = a;
+		framebytes = databytes + 32;
+		framens = 1000.0*(8.0*databytes/(double)b);
+		if(r > 4)
+		{
+			decimation = e;
+		}
+	}
 	/* for VDIF with legacy (16 byte) headers, a different name is used: */
 	else if(strncasecmp(formatname, "VDIFL_", 6) == 0)
 	{
@@ -650,6 +684,22 @@ struct mark5_format *new_mark5_format_from_name(const char *formatname)
 			return 0;
 		}
 		F = MK5_FORMAT_VDIF;
+		databytes = 0;
+		framebytes = databytes + 32;
+		framens = 1000.0*(8.0*databytes/(double)b);
+		if(r > 4)
+		{
+			decimation = e;
+		}
+	}
+	else if(strncasecmp(formatname, "VDIFB-", 6) == 0)
+	{
+		r = sscanf(formatname+6, "%d-%d-%d/%d", &b, &c, &d, &e);
+		if(r < 4)
+		{
+			return 0;
+		}
+		F = MK5_FORMAT_VDIFB;
 		databytes = 0;
 		framebytes = databytes + 32;
 		framens = 1000.0*(8.0*databytes/(double)b);
@@ -910,7 +960,7 @@ void print_mark5_format(const struct mark5_format *mf)
 	fprintf(m5stdout, "  framebytes = %d\n", mf->framebytes);
 	fprintf(m5stdout, "  framens = %f\n", mf->framens);
 	fprintf(m5stdout, "  mjd = %d sec = %d ns = %d\n", mf->mjd, mf->sec, mf->ns);
-	if(mf->format == MK5_FORMAT_VDIF || mf->format == MK5_FORMAT_VDIFL)
+	if(mf->format == MK5_FORMAT_VDIF || mf->format == MK5_FORMAT_VDIFL || mf->format == MK5_FORMAT_VDIFB)
 	{
 		fprintf(m5stdout, "  nthread = %d\n", mf->ntrack);
 	}
