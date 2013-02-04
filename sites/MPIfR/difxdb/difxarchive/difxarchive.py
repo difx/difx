@@ -172,7 +172,7 @@ def syncDir(path, user, config, fileCount, dryRun):
 
 def buildReferenceOptions():
     
-    includePattern = ["*.vex", "*.skd", "*.v2d", "*.input", "*.difxlog", "*.log"]
+    includePattern = ["*.vex", "*.skd", "*.v2d", "*.input", "*.difxlog", "*.log", "cf_*", "rf_*"]
     
     cmd = " --include '*/' "
     for pattern in includePattern:
