@@ -74,7 +74,7 @@ public class StationPanel extends IndexedPanel {
         
         //  The data source panel lets the user specify where data for this station
         //  come from.
-        _dataSourcePanel = new IndexedPanel( "Data Source: unknown" );
+        _dataSourcePanel = new IndexedPanel( "Data Source: not set" );
         _dataSourcePanel.closedHeight( 20 );
         _dataSourcePanel.open( false );
         _dataSourcePanel.drawFrame( false );
@@ -262,7 +262,7 @@ public class StationPanel extends IndexedPanel {
         _eVLBIPort.intValue( 5000 );
         _eVLBIPort.minimum( 0 );
         _dataSourcePanel.add( _eVLBIPort );
-        setEnabledItems( _vsnCheck );
+        setEnabledItems( null );
         
         //  The antenna panel contains information about the antenna - mount, offsets,
         //  size, etc.  This is filled in by a function call.
@@ -412,14 +412,22 @@ public class StationPanel extends IndexedPanel {
         }
         else if ( selector == _fileCheck ) {
             _fileCheck.setSelected( true );
-            _dataSourcePanel.name( "Data Source: " + "files " + _fileFilter.getText().trim() + "*" );
+            //  Show the selection of the file list if there are any items in it.
+            Iterator<BrowserNode> iter = _fileList.browserTopNode().childrenIterator();
+            if ( iter.hasNext() )
+                _dataSourcePanel.name( "Data Source: files " + _fileFilter.getText().trim() + "*" );
+            else
+                _dataSourcePanel.name( "Data Source: unspecified files" );
             _fileFilter.setEnabled( true );
             _fileList.setVisible( true );
             _dataSourcePanel.staticHeight( 265 );
         }
         else if ( selector == _eVLBICheck ) {
             _eVLBICheck.setSelected( true );
-            _dataSourcePanel.name( "Data Source: " + "network (port " + networkPort() + ")" );
+            _dataSourcePanel.name( "Data Source: network (port " + networkPort() + ")" );
+        }
+        else {
+            _dataSourcePanel.name( "Data Source: not set" );
         }
         this.updateUI();
     }
@@ -590,10 +598,10 @@ public class StationPanel extends IndexedPanel {
                     _fileFilter.setText( commonString );
                     _fileFilter.setCaretPosition( commonString.length() );
                     if ( newList.size() > 1 ) {
-                        _dataSourcePanel.name( "files " + _fileFilter.getText().trim() + "*" );
+                        _dataSourcePanel.name( "Data Source: files " + _fileFilter.getText().trim() + "*" );
                     }
                     else
-                        _dataSourcePanel.name( "files " + _fileFilter.getText().trim() );
+                        _dataSourcePanel.name( "Data Source: files " + _fileFilter.getText().trim() );
                 }
                 dispatchChangeCallback();
             }

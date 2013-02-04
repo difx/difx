@@ -476,6 +476,8 @@ public class BrowserNode extends JPanel implements MouseListener, MouseMotionLis
     
     public void name( String newName ) {
         _name = newName;
+        labelCheck();
+        this.updateUI();
     }
     
     /*

@@ -7,8 +7,7 @@
         </file>
         <file>
             <url>src/edu/nrao/difx/difxview/ExperimentEditor.java</url>
-            <line>1343</line>
-            <line>2206</line>
+            <line>1265</line>
         </file>
         <file>
             <url>src/edu/nrao/vlba/difxdatamodel/Job.java</url>
@@ -65,7 +64,7 @@
         </file>
         <file>
             <url>src/edu/nrao/difx/difxview/ExperimentNode.java</url>
-            <line>186</line>
+            <line>188</line>
         </file>
         <file>
             <url>src/edu/nrao/vlba/difxdatamodel/Mark5Unit.java</url>

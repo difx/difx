@@ -421,7 +421,7 @@ public class SystemSettings extends JFrame {
                     _difxVersion.setSelectedIndex( _difxVersion.getItemCount() - 1 );
                 }
                 //  Set the DiFX setup path to match this version.
-                _difxSetupPath.setText( _difxBase.getText() + "/setup_difx." + (String)_difxVersion.getSelectedItem() );
+                _difxSetupPath.setText( _difxBase.getText() + "/" + (String)_difxVersion.getSelectedItem() + "/setup_difx" );
                 guiServerConnection().sendPacket( guiServerConnection().DIFX_SETUP_PATH, 
                         _difxSetupPath.getText().length(), _difxSetupPath.getText().getBytes() );
             }
@@ -429,7 +429,7 @@ public class SystemSettings extends JFrame {
         _difxVersion.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
                 //  Set the DiFX setup path to match this version.
-                _difxSetupPath.setText( _difxBase.getText() + "/bin/setup_difx." + (String)_difxVersion.getSelectedItem() );
+                _difxSetupPath.setText( _difxBase.getText() + "/" + (String)_difxVersion.getSelectedItem() + "/setup_difx" );
                 guiServerConnection().sendPacket( guiServerConnection().DIFX_SETUP_PATH, 
                         _difxSetupPath.getText().length(), _difxSetupPath.getText().getBytes() );
             }
@@ -1578,6 +1578,7 @@ public class SystemSettings extends JFrame {
         _defaultNames.v2dViaHttp = false;
         _defaultNames.v2dViaFtp = false;
         _defaultNames.v2dFromLocal = false;
+        _defaultNames.noV2dFile = false;
         _defaultNames.createPassOnExperimentCreation = true;
         _defaultNames.singleInputFile = false;
         _defaultNames.scanBasedJobNames = true;
@@ -2438,6 +2439,8 @@ public class SystemSettings extends JFrame {
                     _defaultNames.v2dViaFtp = true;
                 else if ( doiConfig.getDefaultNamesV2DSourceChoice().contentEquals( "local" ) )
                     _defaultNames.v2dFromLocal = true;
+                else
+                    _defaultNames.noV2dFile = true;
             }
             _defaultNames.singleInputFile = doiConfig.isDefaultSingleInputFile();
             _defaultNames.scanBasedJobNames = doiConfig.isDefaultNamesScanBasedJobNames();
@@ -2848,6 +2851,8 @@ public class SystemSettings extends JFrame {
             doiConfig.setDefaultNamesV2DSourceChoice( "ftp" );
         else if ( _defaultNames.v2dFromLocal == true )
             doiConfig.setDefaultNamesV2DSourceChoice( "local" );
+        else
+            doiConfig.setDefaultNamesV2DSourceChoice( "none" );
         doiConfig.setDefaultSingleInputFile( _defaultNames.singleInputFile );
         doiConfig.setDefaultNamesScanBasedJobNames( _defaultNames.scanBasedJobNames );
         doiConfig.setDefaultNamesDirListLocation( _defaultNames.dirListLocation );
@@ -3835,6 +3840,7 @@ public class SystemSettings extends JFrame {
         boolean v2dViaHttp;
         boolean v2dViaFtp;
         boolean v2dFromLocal;
+        boolean noV2dFile;
         boolean createPassOnExperimentCreation;
         boolean singleInputFile;
         boolean scanBasedJobNames;

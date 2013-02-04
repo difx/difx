@@ -10,6 +10,7 @@ import mil.navy.usno.widgetlib.SimpleTextEditor;
 import mil.navy.usno.widgetlib.AePlayWave;
 import mil.navy.usno.widgetlib.BrowserNode;
 import mil.navy.usno.widgetlib.JulianCalendar;
+import mil.navy.usno.widgetlib.ComplexToolTip;
 
 import edu.nrao.difx.difxutilities.DiFXCommand_getFile;
 import edu.nrao.difx.difxutilities.DiFXCommand_sendFile;
@@ -32,6 +33,9 @@ import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
 import javax.swing.JFrame;
+import javax.swing.BorderFactory;
+import javax.swing.JPanel;
+import javax.swing.JToolTip;
 
 import java.awt.Frame;
 import java.awt.Color;
@@ -305,6 +309,15 @@ public class ExperimentEditor extends JFrame {
             _localV2dFileLocation.setEnabled( false );
         _localV2dFileLocation.setText( _settings.defaultNames().localV2dFileLocation );
         startingV2dPanel.add( _localV2dFileLocation );
+        _noV2dFile = new JCheckBox( "None" );
+        _noV2dFile.setSelected( _settings.defaultNames().noV2dFile );
+        _noV2dFile.setToolTipText( "Copy the .v2d file data from a file on the local host." );
+        _noV2dFile.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                v2dSourceChoice( _noV2dFile );
+            }
+        });
+        startingV2dPanel.add( _noV2dFile );
         _goV2dButton = new JButton( "GO!" );
         _goV2dButton.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
@@ -932,6 +945,7 @@ public class ExperimentEditor extends JFrame {
             _v2dViaFtpLocation.setBounds( 175, 90, w - 200, 25 );
             _localV2dFile.setBounds( 20, 120, 150, 25 );
             _localV2dFileLocation.setBounds( 175, 120, w - 200, 25 );
+            _noV2dFile.setBounds( 20, 150, 150, 25 );
             _goV2dButton.setBounds( w - 125, 150, 100, 25 );    
             _doSanityCheck.setBounds( w - 50, 110, 25, 25 );
             _doSanityLabel.setBounds( w - 250, 110, 195, 25 );
@@ -950,8 +964,13 @@ public class ExperimentEditor extends JFrame {
                 }
                 _sourcePane.setBounds( 0, 20, w, _sourcePane.dataHeight() );
                 for ( Iterator<BrowserNode> iter = _sourcePane.browserTopNode().childrenIterator(); iter.hasNext(); ) {
-                    SourcePanel thisPanel = (SourcePanel)iter.next();
-                    thisPanel.newWidth( w - 25 );
+                    //  Use the "ClassCastException" to eliminate the button panel, which leads the
+                    //  list of sources.
+                    try {
+                        SourcePanel thisPanel = (SourcePanel)iter.next();
+                        thisPanel.newWidth( w - 25 );
+                    } catch ( java.lang.ClassCastException e ) {
+                    }
                 }
             } catch ( java.util.ConcurrentModificationException e ) {
             }
@@ -1017,6 +1036,7 @@ public class ExperimentEditor extends JFrame {
         _v2dViaFtpLocation.setEnabled( false );
         _localV2dFile.setSelected( false );
         _localV2dFileLocation.setEnabled( false );
+        _noV2dFile.setSelected( false );
         if ( _v2dFromHost == selection ) {
             _v2dFromHost.setSelected( true );
             _v2dFromHostLocation.setEnabled( true );
@@ -1033,10 +1053,14 @@ public class ExperimentEditor extends JFrame {
             _localV2dFile.setSelected( true );
             _localV2dFileLocation.setEnabled( true );
         }
+        else if ( _noV2dFile == selection ) {
+            _noV2dFile.setSelected( true );
+        }
         _settings.defaultNames().v2dFromHost = _v2dFromHost.isSelected();
         _settings.defaultNames().v2dViaHttp = _v2dViaHttp.isSelected();
         _settings.defaultNames().v2dViaFtp = _v2dViaFtp.isSelected();
         _settings.defaultNames().v2dFromLocal = _localV2dFile.isSelected();
+        _settings.defaultNames().noV2dFile = _noV2dFile.isSelected();
     }
     
     /*
@@ -1231,6 +1255,9 @@ public class ExperimentEditor extends JFrame {
                         JOptionPane.ERROR_MESSAGE );
             }
         }
+        else if ( _noV2dFile.isSelected() ) {
+            _startingV2dFileContent = null;
+        }
     }
     
     /*
@@ -1420,6 +1447,10 @@ public class ExperimentEditor extends JFrame {
             this.darkTitleBar( false );
             this.drawFrame( false );
             this.resizeOnTopBar( true );
+            //  These two things may be temporary - we might ultimately make these
+            //  items expandable.
+            this.alwaysOpen( true );
+            this.noArrow( true );
             _useCheck = new JCheckBox( "" );
             _useCheck.setBounds( 200, 2, 18, 16 );
             _useCheck.setSelected( true );
@@ -1449,6 +1480,7 @@ public class ExperimentEditor extends JFrame {
         }
         
         public boolean use() { return _useCheck.isSelected(); }
+        void use( boolean newVal ) { _useCheck.setSelected( newVal ); }
 
         protected SourcePanel _this;
         protected JCheckBox _useCheck;
@@ -1598,15 +1630,59 @@ public class ExperimentEditor extends JFrame {
         //  Add panels of information about each source.
         _sourcePane.clear();
         if ( vexData.sourceList() != null ) {
+            //  First add a kind of "header" panel that includes select and deselect
+            //  buttons.
+            IndexedPanel sourceButtonPanel = new IndexedPanel( "" );
+            sourceButtonPanel.closedHeight( 35 );
+            sourceButtonPanel.openHeight( 35 );
+            sourceButtonPanel.open( true );
+            sourceButtonPanel.darkTitleBar( false );
+            sourceButtonPanel.drawFrame( false );
+            sourceButtonPanel.resizeOnTopBar( false );
+            sourceButtonPanel.alwaysOpen( true );
+            sourceButtonPanel.noArrow( true );
+            JButton selectAllSources = new JButton( "Select All" );
+            selectAllSources.setBounds( 10, 5, 115, 25 );
+            selectAllSources.addActionListener( new ActionListener() {
+                public void actionPerformed( ActionEvent e ) {
+                  selectAllSources( true );
+                }
+            });
+            sourceButtonPanel.add( selectAllSources );
+            JButton deselectAllSources = new JButton( "Deselect All" );
+            deselectAllSources.setBounds( 130, 5, 115, 25 );
+            deselectAllSources.addActionListener( new ActionListener() {
+                public void actionPerformed( ActionEvent e ) {
+                  selectAllSources( false );
+                }
+            });
+            sourceButtonPanel.add( deselectAllSources );
+            //  For each antenna ("station") add a header to this panel.  These will define
+            //  the grid showing which source were observed with which stations.  These
+            //  are NOT user-changeable items.
+            int xOffset = 300;
+            for ( Iterator<VexFileParser.Station> iter = vexData.stationList().iterator(); iter.hasNext(); ) {
+                VexFileParser.Station station = iter.next();
+                JLabel thisLabel = new JLabel( station.name );
+                thisLabel.setHorizontalAlignment( JLabel.CENTER );
+                thisLabel.setBounds( xOffset, 5, 75, 25 );
+                xOffset += 80;
+                sourceButtonPanel.add( thisLabel );
+            }
+            _sourcePane.addNode( sourceButtonPanel );
+            //  Now add the individual sources.
             for ( Iterator<VexFileParser.Source> iter = vexData.sourceList().iterator(); iter.hasNext(); ) {
                 VexFileParser.Source source = iter.next();
                 //  Make sure this source is used in one of the scans!  If not, we
                 //  ignore it, as the user should have no interest in it.
                 boolean keepSource = false;
+                ArrayList<VexFileParser.ScanStation> stationsUsed = null;
                 for ( Iterator<VexFileParser.Scan> jter = vexData.scanList().iterator(); jter.hasNext() && !keepSource; ) {
                     VexFileParser.Scan scan = jter.next();
-                    if ( scan.source.equalsIgnoreCase( source.name ) )
+                    if ( scan.source.equalsIgnoreCase( source.name ) ) {
                         keepSource = true;
+                        stationsUsed = scan.station;
+                    }
                 }
                 if ( keepSource ) {
                     SourcePanel panel = new SourcePanel( source, _settings );
@@ -1619,6 +1695,30 @@ public class ExperimentEditor extends JFrame {
                             produceV2dFile();
                         }
                     } );
+                    //  Add a grid box for each station involved in this experiment.  Make the
+                    //  grid box green if it is used to observe this source, white if not.
+                    xOffset = 300;
+                    for ( Iterator<VexFileParser.Station> iter2 = vexData.stationList().iterator(); iter2.hasNext(); ) {
+                        VexFileParser.Station station = iter2.next();
+                        JPanel thisLabel = new JPanel();
+                        thisLabel.setBounds( xOffset, 1, 75, 18 );
+                        xOffset += 80;
+                        thisLabel.setBorder( BorderFactory.createLineBorder( Color.BLACK ) ); 
+                        thisLabel.setBackground( Color.WHITE );
+                        //  This is where we deterimine if it has been used.
+                        if ( stationsUsed != null ) {
+                            boolean gotIt = false;
+                            for ( Iterator<VexFileParser.ScanStation> iter3 = stationsUsed.iterator(); iter3.hasNext() && !gotIt; ) {
+                                VexFileParser.ScanStation usedStation = iter3.next();
+                                if ( usedStation.name.equalsIgnoreCase( station.name ) ) {
+                                    thisLabel.setBackground( Color.ORANGE );
+                                    panel.add( thisLabel );
+                                    gotIt = true;
+                                }
+                            }
+                        }
+                    }
+                    
                     _sourcePane.addNode( panel );
                 }
             }
@@ -1780,6 +1880,23 @@ public class ExperimentEditor extends JFrame {
                 produceV2dFile();
             }
         } );
+    }
+    
+    /*
+     * Turn on or off the selection of all sources in the source list.
+     */
+    void selectAllSources( boolean on ) {
+        for ( Iterator<BrowserNode> jter = _sourcePane.browserTopNode().childrenIterator(); jter.hasNext(); ) {
+            //  Eliminate the button panel using the class cast exception.
+            try {
+                SourcePanel source = (SourcePanel)jter.next();
+                source.use( on );
+            } catch ( java.lang.ClassCastException e ) {
+            }
+        }
+        //  Make the scan selections respond to the new source selections.
+        _scanGrid.allOn();
+        produceV2dFile();
     }
     
     /*
@@ -2107,7 +2224,7 @@ public class ExperimentEditor extends JFrame {
     }
     
     /*
-     * Check each scan agains the sources that have been selected.  If the scan does
+     * Check each scan against the sources that have been selected.  If the scan does
      * not include the source, it will be removed.
      */
     public void checkScansAgainstSources() {
@@ -2117,9 +2234,13 @@ public class ExperimentEditor extends JFrame {
                 VexFileParser.Scan scan = (VexFileParser.Scan)button.data();
                 boolean _sourceFound = false;
                 for ( Iterator<BrowserNode> jter = _sourcePane.browserTopNode().childrenIterator(); jter.hasNext() && !_sourceFound; ) {
-                    SourcePanel source = (SourcePanel)jter.next();
-                    if ( scan.source.equalsIgnoreCase( source.name() ) && source.use() )
-                        _sourceFound = true;
+                    //  Eliminate the button panel using the class cast exception.
+                    try {
+                        SourcePanel source = (SourcePanel)jter.next();
+                        if ( scan.source.equalsIgnoreCase( source.name() ) && source.use() )
+                            _sourceFound = true;
+                    } catch ( java.lang.ClassCastException e ) {
+                    }
                 }
                 if ( !_sourceFound )
                     button.on( false );
@@ -2711,6 +2832,7 @@ public class ExperimentEditor extends JFrame {
     protected SaneTextField _v2dViaFtpLocation;
     protected JCheckBox _localV2dFile;
     protected SaneTextField _localV2dFileLocation;
+    protected JCheckBox _noV2dFile;
     protected JButton _goV2dButton;
     protected String _startingV2dFileContent;
     protected JButton _previousVexFileButton;

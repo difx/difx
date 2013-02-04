@@ -1749,15 +1749,17 @@ public class JobEditorMonitor extends JFrame {
         //  Now purge the list of any items that were not "found"....
         for ( Iterator<BrowserNode> iter = _processorsPane.browserTopNode().children().iterator();
                 iter.hasNext(); ) {
-            PaneProcessorNode testNode = (PaneProcessorNode)(iter.next());
-            if ( !testNode.foundIt )
-                _processorsPane.browserTopNode().removeChild( testNode );
-            else {
-                //  This lets us know if anyone is editing the list.  If so, we
-                //  don't add new items "selected" by default.
-                if ( !testNode.selected() )
-                    _processorsEdited = true;
-            }
+            try {
+                PaneProcessorNode testNode = (PaneProcessorNode)(iter.next());
+                if ( !testNode.foundIt )
+                    _processorsPane.browserTopNode().removeChild( testNode );
+                else {
+                    //  This lets us know if anyone is editing the list.  If so, we
+                    //  don't add new items "selected" by default.
+                    if ( !testNode.selected() )
+                        _processorsEdited = true;
+                }
+            } catch ( java.util.ConcurrentModificationException e ) {}
         }
         
         //  Sort the remaining items.
