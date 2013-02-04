@@ -5,6 +5,63 @@
       http-equiv="Content-Type">
     <title>DiFX GUI Release Information</title>
     <link type="text/css" rel="stylesheet" href="style.css">
+<script language="JavaScript">
+<!--
+var isNav4, isNav6, isIE4;
+function setBrowser()
+{
+    if (navigator.appVersion.charAt(0) == "4")
+    {
+        if (navigator.appName.indexOf("Explorer") >= 0)
+        {
+            isIE4 = true;
+        }
+        else
+        {
+            isNav4 = true;
+        }
+    }
+    else if (navigator.appVersion.charAt(0) > "4")
+    {
+        isNav6 = true;
+    }
+}
+function setIdProperty( id, property, value )
+{
+    if (isNav6)
+    {
+        var styleObject = document.getElementById( id );
+        if (styleObject != null)
+        {
+            styleObject = styleObject.style;
+            styleObject[ property ] = value;
+        }
+    }
+    else if (isNav4)
+    {
+        document[id][property] = value;
+    }
+    else if (isIE4)
+    {
+         document.all[id].style[property] = value;
+    }
+}
+function swap( divNum, expanding )
+{
+    if (expanding)
+    {
+        setIdProperty("h" + divNum, "display", "none");
+        setIdProperty("s" + divNum, "display", "inline");
+    }
+    else
+    {
+        setIdProperty("s" + divNum, "display", "none");
+        setIdProperty("h" + divNum, "display", "inline");
+    }
+}
+setBrowser();
+// -->
+</script>
   </head>
   <body>
     <h1>DiFX GUI Release Information</h1>
@@ -28,7 +85,38 @@
     constitutes a major release is yet to be determined, but presumably
     they happen at least as often as every hundred "minor" releases or
     this system collapses.<br>
-    <h4><a name="WHATS_NEW"></a>Latest Release: 1.0 (Oct 30, 2012)</h4>
+    <h4><a name="WHATS_NEW"></a>Latest Release: 1.01 (Feb 1, 2013)</h4>
+    <blockquote>
+      <h6>New Features</h6>
+      <ul>
+        <li>Allow use of a "template" .v2d file when creating new experiments.</li>
+        <li>Pretty good .v2d file parser.</li>
+        <li>Include "Locate on Disk" option for adding experiments to the Queue Browser
+        (obtains previously-created experiments and gives user full control over them).</li>
+        <li>Enhanced "Machine List" controls in Job Control/Monitor to accommodate files
+        and (hopefully) other data sources.</li>
+        <li>Include "none" option in .v2d template choice (Experiment Editor).</li>
+        <li>"Select/Deselect All" sources in Experiment Editor.</li>
+        <li>Grid of "stations used" for each source observed is included in the Experiment Editor.</li>
+        <li>New "How to Run DiFX With the GUI" tutorial (skeletal work in progress at
+        the moment).<br>
+        </li>
+      </ul>
+      <h6>Bug Fixes</h6>
+      <ul>
+        <li>Fix to timing of .input file creation in vex2difxRun.cpp - was causing jobs to (sometimes)
+        not be included in Queue Browser.</li>
+        <li>Cleanup of guiServer code to eliminate compiler warnings (where they are important).</li>
+        <li>Fix behavior of "Data Source" labels in the Experiment Editor.<br></li>
+      </ul>
+    </blockquote>
+    <h4><a name="RELEASE_HISTORY"></a>Release History</h4>
+
+<span id="h3.3" class="hide"><a href="javascript:swap(3.3, true)"><img src="triangleright_10x10_large.png" alt="+"></a>
+<b6>1.0 (Oct 30, 2012)</b6><br>
+</span>
+<span id="s3.3" class="showWhite"><a href="javascript:swap(3.3,false)"><img src="triangledown_10x10_large.png" alt="-"></a>
+<b6>1.0 (Oct 30, 2012)</b6><br>
     <blockquote>
       <h6>New Features</h6>
       <ul>
@@ -56,8 +144,7 @@
         </li>
       </ul>
     </blockquote>
-    <h4><a name="RELEASE_HISTORY"></a>Release History</h4>
-    <p>Nothing here yet.<br>
-    </p>
+</span>
+
   </body>
 </html>
