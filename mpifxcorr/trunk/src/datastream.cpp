@@ -343,14 +343,12 @@ int DataStream::calculateControlParams(int scan, int offsetsec, int offsetns)
     offsetsec -= 1;
     firstoffsetns += 1000000000LL;
     lastoffsetns += 1000000000LL;
-cinfo << startl << "QQQ1" << endl;
   }
   if(lastoffsetns < 0)
   {
     offsetsec -= 1;
     firstoffsetns += 1000000000LL;
     lastoffsetns += 1000000000LL;
-cinfo << startl << "QQQ2" << endl;
   }
   if(lastoffsetns < 0)
   {
@@ -447,7 +445,7 @@ cinfo << startl << "QQQ2" << endl;
     bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][3+i/FLAGS_PER_INT] = 0;
 
   //if we make it here, its safe to make the int calculations below
-  cinfo << startl << "Datastream " << mpiid << " has a firstoffsetns of " << firstoffsetns << " and an offsetsec of " << offsetsec << " and a lastoffsetns of " << lastoffsetns << endl;
+  //cdebug << startl << "Datastream " << mpiid << " has a firstoffsetns of " << firstoffsetns << " and an offsetsec of " << offsetsec << " and a lastoffsetns of " << lastoffsetns << endl;
   bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][1] = bufferinfo[atsegment].scanseconds;
   bufferindex = atsegment*readbytes + (int(((offsetsec - bufferinfo[atsegment].scanseconds)*1000000000LL + (firstoffsetns - static_cast<long long>(bufferinfo[atsegment].scanns)))/bufferinfo[atsegment].sampletimens + 0.5)*bufferinfo[atsegment].bytespersamplenum)/bufferinfo[atsegment].bytespersampledenom;
 

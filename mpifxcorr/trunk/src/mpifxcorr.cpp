@@ -97,42 +97,33 @@ bool actOnCommand(Configuration * config, DifxMessageGeneric * difxmessage) {
 //setup message receive thread
 void * launchCommandMonitorThread(void * c) {
   Configuration * config = (Configuration*) c;
-  int socket, bytesreceived = 1;
+  int socket, bytesreceived;
   char message[DIFX_MESSAGE_LENGTH+1];
-  char sendername[DIFX_MESSAGE_PARAM_LENGTH];
+  char sendername[DIFX_MESSAGE_HOSTNAME_LENGTH+1];
   bool keepacting = true;
-  DifxMessageGeneric * genericmessage = (DifxMessageGeneric *)malloc(sizeof(DifxMessageGeneric));
+  DifxMessageGeneric genericmessage;
 
-  cinfo << startl << "About to open receive socket" << endl;
   socket = difxMessageReceiveOpen();
-  //struct timeval tv;
-  //tv.tv_sec = 9;
-  //tv.tv_usec = 0;
-  //setsockopt(socket, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
-  cinfo << startl << "Receive socket opened - socket is " << socket << endl;
+  cinfo << startl << "Receive socket opened; socket is " << socket << endl;
   if (socket < 0) {
     cwarn << startl << "Could not open command monitoring socket! Aborting message receive thread." << endl;
-    keepacting = false;
   }
-  config->setCommandThreadInitialised();
-  cinfo << startl << "Command thread initialised has been set" << endl;
-  while (keepacting) {
-    bytesreceived = difxMessageReceive(socket, message, DIFX_MESSAGE_LENGTH, sendername);
-    if(bytesreceived > 0) {
-      message[bytesreceived] = 0;
-      //cinfo << startl << "Received a " << bytesreceived << " byte message : " << message << endl;
-      difxMessageParse(genericmessage, message);
-      keepacting = actOnCommand(config, genericmessage);
+  else {
+    config->setCommandThreadInitialised();
+    //cinfo << startl << "Command thread initialised has been set" << endl;
+    while (keepacting) {
+      bytesreceived = difxMessageReceive(socket, message, DIFX_MESSAGE_LENGTH, sendername);
+      if(bytesreceived > 0) {
+        message[bytesreceived] = 0;
+        difxMessageParse(&genericmessage, message);
+        keepacting = actOnCommand(config, &genericmessage);
+      }
     }
-    //else {
-    //  csevere << startl << "Problem receiving message! Bytesreceived was " << bytesreceived << ". Sendername was " << sendername << ". Aborting message receive thread." << endl;
-    //  keepacting = false;
-    //}
+    if(socket >= 0) {
+      difxMessageReceiveClose(socket);
+    }
+    //cinfo << startl << "Command monitor thread shutting down" << endl;
   }
-  free(genericmessage);
-  if(socket >= 0)
-    difxMessageReceiveClose(socket);
-  //cinfo << startl << "Command monitor thread shutting down" << endl;
   return 0;
 }
 
@@ -146,7 +137,6 @@ int setup_net(const char *monhostname, int port, int window_size, int *sock) {
 
   hostptr = gethostbyname(monhostname);
   if (hostptr==NULL) {
-
     cerror << startl << "Failed to look up monhostname " << monhostname << endl;
     return 1;
   }
@@ -341,8 +331,9 @@ int main(int argc, char *argv[])
     csevere << startl << "Error creating command monitoring thread!" << endl;
   else {
     //wait for commandmonthread to be initialised
-    while(!config->commandThreadInitialised())
-      usleep(10);
+    while(!config->commandThreadInitialised()) {
+      usleep(1);
+    }
   }
   numdatastreams = config->getNumDataStreams();
   numcores = numprocs - (fxcorr::FIRSTTELESCOPEID + numdatastreams);
@@ -408,14 +399,14 @@ int main(int argc, char *argv[])
     return EXIT_FAILURE;
   }
   MPI_Finalize();
+  if(myID == 0) difxMessageSendDifxParameter("keepacting", "false", DIFX_MESSAGE_ALLMPIFXCORR);
+  perr = pthread_join(commandthread, NULL);
   delete [] coreids;
   delete [] datastreamids;
 
   if(manager) delete manager;
   if(stream) delete stream;
   if(core) delete core;
-  if(myID == 0) difxMessageSendDifxParameter("keepacting", "false", DIFX_MESSAGE_ALLMPIFXCORR);
-  perr = pthread_join(commandthread, NULL);
   if(perr != 0) csevere << startl << "Error in closing commandthread!!!" << endl;
 
   //delete config;  	// FIXME!!! Revisit this commented out destructor sometime.
