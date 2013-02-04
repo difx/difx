@@ -222,7 +222,8 @@ namespace guiServer {
             //  Find all available versions of DiFX software under the base.  Any of these
             //  can be used when running DiFX programs (vex2difx, runmpifxcorr, etc.).
             char searchStr[DIFX_MESSAGE_LENGTH];
-            snprintf( searchStr, DIFX_MESSAGE_LENGTH, "%s/bin/setup_difx.*", _difxBase );
+//            snprintf( searchStr, DIFX_MESSAGE_LENGTH, "%s/bin/setup_difx.*", _difxBase );
+            snprintf( searchStr, DIFX_MESSAGE_LENGTH, "%s/*/setup_difx.*", _difxBase );
             glob_t globbuf;
             if ( glob( searchStr, 0, NULL, &globbuf ) ) {
                 diagnostic( ERROR, "On DiFX Host \"%s\" returns empty or path does not exist\n", searchStr );
@@ -230,7 +231,13 @@ namespace guiServer {
                 //  Parse the "version" out of the name of each setup file we find.  This
                 //  version is then transmitted back to the GUI so it knows it is an option.
                 for ( int i = 0; i < globbuf.gl_pathc; ++i ) {
-                    strncpy( newVersion, globbuf.gl_pathv[i] + strlen( searchStr ) - 1, DIFX_MESSAGE_LENGTH );
+                    std::string nextPath( globbuf.gl_pathv[i] );
+                    int nPos = nextPath.rfind( "setup_difx." );
+                    if ( nPos < nextPath.length() - strlen( "setup_difx." ) )
+                        strncpy( newVersion, globbuf.gl_pathv[i] + nPos + strlen( "setup_difx." ), DIFX_MESSAGE_LENGTH );
+                    else
+                        newVersion[0] = 0;
+//                    strncpy( newVersion, globbuf.gl_pathv[i] + strlen( searchStr ) - 1, DIFX_MESSAGE_LENGTH );
                     if ( strlen( newVersion ) > 0 )
                         sendPacket( AVAILABLE_DIFX_VERSION, newVersion, strlen( newVersion ) );
                 }

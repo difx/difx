@@ -43,6 +43,7 @@ void ServerSideConnection::startDifx( DifxMessageGeneric* G ) {
 	char workingDir[DIFX_MESSAGE_FILENAME_LENGTH];
 	char machinesFilename[DIFX_MESSAGE_FILENAME_LENGTH];
 	char restartOption[RestartOptionLength];
+	char monitorOption[DIFX_MESSAGE_FILENAME_LENGTH];
 	char inLine[MAX_COMMAND_SIZE];
 	const char *jobName;
 	const DifxMessageStart *S;
@@ -253,10 +254,16 @@ void ServerSideConnection::startDifx( DifxMessageGeneric* G ) {
 	    snprintf( restartOption, RestartOptionLength, "-r %f", S->restartSeconds );
 	else
 	    restartOption[0] = 0;
+
+	//  Build the "monitor" instruction.  This becomes part of the start command.  The
+	//  monitor is run on a "host" (which can be "localhost", i.e. the headnonde) with
+	//  a port number.
+	snprintf( monitorOption, DIFX_MESSAGE_FILENAME_LENGTH, "-Mlocalhost:9999" );
 	    
 	//  Build the actual start command.
 	snprintf( startInfo->startCommand, MAX_COMMAND_SIZE, 
 	          "source %s; %s -np %d --bynode --hostfile %s.machines %s %s %s %s", 
+//	          "source %s; %s -np %d --bynode --hostfile %s.machines %s %s %s %s %s", 
               _difxSetupPath,
               mpiWrapper,
               procCount,
@@ -264,6 +271,7 @@ void ServerSideConnection::startDifx( DifxMessageGeneric* G ) {
               mpiOptions,
               startInfo->difxProgram,
               restartOption,
+//              S->inputFilename, monitorOption );
               S->inputFilename );
 	
 	//  Start a thread to run difx and report back stdout/stderr feedback.
@@ -415,7 +423,7 @@ void ServerSideConnection::runDifxMonitor( DifxStartInfo* startInfo ) {
                     struct stat buf;
                     snprintf( longName, MAX_COMMAND_SIZE, "%s/%s", dataDir, namelist[n]->d_name );
                     stat( longName, &buf );
-                    snprintf( sendData, MAX_COMMAND_SIZE, "%s\n%d\n", namelist[n]->d_name, buf.st_size );
+                    snprintf( sendData, MAX_COMMAND_SIZE, "%s\n%ld\n", namelist[n]->d_name, buf.st_size );
                     printf( "%s\n", sendData );
                     //startInfo->jobMonitor->sendPacket( JobMonitorConnection::DATA_FILE_SIZE, sendData, strlen( sendData ) );
                     //  See if we've not seen this file before...

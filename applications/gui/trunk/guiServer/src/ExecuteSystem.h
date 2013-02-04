@@ -76,7 +76,7 @@ namespace guiServer {
                         //  slow.  Also, make sure we are able to read SOMETHING - if
                         //  not, this indicates an end of file.
                         bool somethingRead = false;
-                        while ( int ret = read( _pipe[1], _outBuffer + _outN, 1 ) > 0 ) {
+                        while ( read( _pipe[1], _outBuffer + _outN, 1 ) > 0 ) {
                             somethingRead = true;
                             if ( _outBuffer[_outN] == '\n' ) {
                                 //  Reached the end of a line of output - copy to the user's
@@ -96,7 +96,7 @@ namespace guiServer {
                         //  select returned stderr...
                         //  See above for stdout - logic is identical.
                         bool somethingRead = false;
-                        while ( int ret = read( _pipe[2], _errBuffer + _errN, 1 ) > 0 ) {
+                        while ( read( _pipe[2], _errBuffer + _errN, 1 ) > 0 ) {
                             somethingRead = true;
                             if ( _errBuffer[_errN] == '\n' ) {
                                 //  Reached the end of a line of output - copy to the user's
