@@ -153,12 +153,23 @@ int optresources::writeComment(const string &commentString)
 
 string optresources::VLArcvr(string receiver)
 {
+	// VLA notation
+	if( receiver == "P" || receiver == "p"
+		|| receiver == "L" || receiver == "l"
+		|| receiver == "S" || receiver == "s"
+		|| receiver == "C" || receiver == "c"
+		|| receiver == "X" || receiver == "x"
+		|| receiver == "Ku" || receiver == "ku"
+		|| receiver == "K" || receiver == "k"
+		|| receiver == "Q" || receiver == "q" )
+		return receiver;
+	// VLBA notation
 	if( receiver == "90cm" || receiver == "50cm" )
 		return "P";
 	if( receiver == "20cm" )
 		return "L";
 	if( receiver == "13cm" )
-		return "s";
+		return "S";
 	if( receiver == "6cm" )
 		return "C";
 	if( receiver == "4cm" )
@@ -169,6 +180,7 @@ string optresources::VLArcvr(string receiver)
 		return "K";
 	if( receiver == "7mm" )
 		return "Q";
+	// receiver not recognized
 	return "<unknown receiver>";
 }
 
@@ -199,7 +211,11 @@ int optresources::writeLoifTable(const VexData *V)
 		}
 
 			// resourceName
-			ss << "loif" << modeNum << "; ";
+			if( setup->ifs.size() > 0 ) {
+				ss << "loif" << modeNum << "; ";
+			} else {
+				cerr << mode->defName << " (loif" << modeNum << ") doesn't have any setup defined - skipping!" << endl;
+			}
 			for(it = setup->ifs.begin(); it != setup->ifs.end(); ++it)
 			{
 				const int MaxCommentLength = 256;
@@ -211,7 +227,6 @@ int optresources::writeLoifTable(const VexData *V)
 // 				*this << "loif" << modeNum << "; ";
 // 				ss << "loif" << modeNum << "; ";
 				// ".setIf('" << i.name << "', '" << i.VLBABandName() << "', '" << i.pol << "', " << (i.ifSSLO / 1.0e6) << ", '" << i.ifSideBand << "'";
-
 
 				strncpy(comment, i.comment.c_str(), MaxCommentLength-1);
 				if(comment[0] != '\0')
@@ -233,11 +248,11 @@ int optresources::writeLoifTable(const VexData *V)
 						// terminate string and advance offset past WS
 						comment[len - (off - 1)] = '\0';
 						++off;
-						// printf("parsing field %i\n", field_count);
+						//printf("parsing field %i\n", field_count);
 						while(comment[len - off] != ' ' && comment[len - off] != '\t' && off < len)
 						{
-							// printf( "char >%c<\n", startOfComment[len-off] );
-							// printf("len: %i -- off: %i -- str: <%s>\n", len, off, (&comment[len - off]));
+							//printf( "char >%c< >%i<\n", comment[len-off], comment[len-off] );
+							//printf("len: %i -- off: %i -- str: <%s>\n", len, off, (&comment[len - off]));
 							++off;
 						}
 						if(field_count == 0)
@@ -274,14 +289,13 @@ int optresources::writeLoifTable(const VexData *V)
 						// terminate partial string
 						comment[len - off] = '\0';
 						++off;
-						// printf("remaining comment: >%s<\n", comment);
 					}
 					if( receiver.empty() ) {
 						cerr << "Error: vex file contains if_def without needed receiver information" << endl;
 						exit(EXIT_FAILURE);
 					}
 					if( once )  {
-						ss << VLArcvr(receiver) << "; 1; ; ";
+						ss << VLArcvr(receiver) << "; 1; Y; ";
 						once = false;
 					}
 					lastBaseband = string(i.name);
@@ -359,12 +373,13 @@ int optresources::writeLoifTable(const VexData *V)
 							if( i.pol == vif->pol ) // vif will be set if found is true
 								pol = i.pol;
 							else
-								pol = "DUAL";
+								pol = "FULL";  // force to use full for now
+								//pol = "DUAL";
 						}
 						double bw = setup->channels[k].bbcBandwidth;
 						char sb = setup->channels[k].bbcSideBand;
 						double freq = setup->channels[k].bbcFreq;
-						*this << ss.str() << (freq + ((sb == 'L') ? -1 : 1)*bw/2)/1000 << "kHz, , , , " << pol << "; ";
+						*this << ss.str() << (freq + ((sb == 'L') ? -1 : 1)*bw/2)/1000 << "kHz, ," << bw/1000 << "kHz, ," << pol << "; ";
 						ss.str(string());
 					}
 				}
