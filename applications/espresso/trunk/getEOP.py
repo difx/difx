@@ -55,7 +55,7 @@ print >>sys.stderr, "...got it.\n";
 
 
 #print "#EOPs downloaded at", datetime.datetime.now()
-print "#EOPs downloaded at", time.strftime('%Y-%m-%d %H:%M:%S (%Z)')
+print "#EOPs downloaded at", time.strftime('%Y-%m-%d %H:%M:%S (%z)')
 
 # parse the eop page
 nlines = 0

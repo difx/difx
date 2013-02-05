@@ -5,11 +5,11 @@
 import optparse, espressolib
 
 #parse the options
-usage = '''%prog <date>
-converts <date> from mjd to vex or vice versa
+usage = '''%prog [options] <date>
+converts <date> between DiFX date formats (mjd, vex, iso, vlba).
 Multiple dates can be given (separated by spaces)'''
 
-parser = optparse.OptionParser(usage=usage, version='%prog ' + '1.0')
+parser = optparse.OptionParser(usage=usage, version='%prog ' + '2.0')
 parser.add_option( "--format", "-f",
         type='str', dest="outformat", default=None,
         help='Output format (vex, vlba, iso, mjd). Default is mjd unless first input format is mjd, then vex is default')

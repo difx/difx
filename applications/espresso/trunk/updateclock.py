@@ -163,7 +163,7 @@ for line in v2dfile:
                 clockrate, newclockepoch, offset_adjust, rate_adjust,
                 frequency)
 
-        cachecomment = '# clocks updated on ' + time.asctime()
+        cachecomment = '# clocks updated on ' + time.strftime('%Y-%m-%d %H:%M:%S (%z)')
         offsetline = '  clockOffset = ' + newclockoffset
         rateline   = '  clockRate = ' + newclockrate
         epochline  = '  clockEpoch = ' + str(newclockepoch)
