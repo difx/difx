@@ -719,7 +719,8 @@ static int getScans(VexData *V, Vex *v, const CorrParams &params)
 		int link, name;
 		char *value, *units;
 		void *p;
-		std::string intent;
+		std::string intent = "";
+		std::string tmpIntent;
 
 		stations.clear();
 		recordEnable.clear();
@@ -728,14 +729,25 @@ static int getScans(VexData *V, Vex *v, const CorrParams &params)
 
 		Llist *lowls = L;
 		lowls=find_lowl(lowls,T_COMMENT);
-		if(lowls!=NULL) {
+		while(lowls != NULL) {
 			int pos;
+			// assume our comments are clustered together at beginning of scan definition
+	        if(((Lowl *)lowls->ptr)->statement != T_COMMENT) {
+            	break;
+        	}
+			// get comment content
 			vex_field(T_COMMENT, (void *)((Lowl *)lowls->ptr)->item, 1, &link, &name, &value, &units);
-			intent = (!value)?"":value;
-			// +10 to skip the search string
-			pos = intent.find("intent = \"", 0) + 10;
-			// trim everything except the actual intent string
-			intent = intent.substr(pos, intent.size()-pos-1);
+
+			tmpIntent = (!value)?"":value;
+			pos = tmpIntent.find("intent = \"", 0);
+			if( pos != string::npos ) {
+				// +10 to skip the search string
+				pos += 10;
+				// trim everything except the actual tmpIntent string
+				tmpIntent = tmpIntent.substr(pos, tmpIntent.size()-pos-1);
+				intent += tmpIntent + ",";
+			}
+			lowls = lowls->next;
 		}
 
 		p = get_scan_start(L);
@@ -776,6 +788,7 @@ static int getScans(VexData *V, Vex *v, const CorrParams &params)
 
 			vex_field(T_STATION, p, 7, &link, &name, &value, &units);
 			recordEnable[stationName] = (atoi(value) != 0);
+//printf("***** record: %i for %s for scan %s\n", (recordEnable[stationName]?1:0), stationName.c_str(), scanId);
 
 			stations[stationName] = VexInterval(startAnt, stopAnt);
 
