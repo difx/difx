@@ -1295,8 +1295,8 @@ public class JobEditorMonitor extends JFrame {
                                 _messageDisplayPanel.error( 0, "job monitor", new String( data ) );
                             else
                                 _messageDisplayPanel.error( 0, "job monitor", "" );
-                            statusPanelColor( Color.RED );
-                            setState( "DiFX Error", Color.RED );
+                            statusPanelColor( Color.ORANGE );
+                            setState( "DiFX running with errors", Color.ORANGE );
                         }
                         else if ( packetType == DIFX_COMPLETE ) {
                             statusInfo( "DiFX compete!" );

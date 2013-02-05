@@ -200,12 +200,12 @@ public class QueueBrowserPanel extends TearOffPanel {
             }
         });
         this.add( _showButton );
-        _numExperiments = new NumLabel( "Experiments", this );
-        _numExperiments.setBounds( 360, 30, 120, 25 );
-        _numPasses = new NumLabel( "Passes", this );
-        _numPasses.setBounds( 490, 30, 120, 25 );
-        _numJobs = new NumLabel( "Jobs", this );
-        _numJobs.setBounds( 620, 30, 120, 25 );
+        //_numExperiments = new NumLabel( "Experiments", this );
+        //_numExperiments.setBounds( 360, 30, 120, 25 );
+        //_numPasses = new NumLabel( "Passes", this );
+        //_numPasses.setBounds( 490, 30, 120, 25 );
+        //_numJobs = new NumLabel( "Jobs", this );
+        //_numJobs.setBounds( 620, 30, 120, 25 );
         _guiServerConnectionLight = new ActivityMonitorLight() {
              public JToolTip createToolTip() {
                  ComplexToolTip tip = new ComplexToolTip();
