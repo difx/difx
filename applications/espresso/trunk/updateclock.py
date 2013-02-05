@@ -3,7 +3,7 @@
 # The parser is a bit shoddy but will work for our usual v2d files.
 # Cormac Reynolds. Original program: May 2010
 
-import sys, re, optparse, time, os, mx.DateTime
+import sys, re, optparse, time, os, espressolib
 
 
 def parseparam(param, line):
@@ -57,15 +57,8 @@ if len(args) != 1:
 newclockepoch = options.newclockepoch
 
 if newclockepoch:
-    try:
-        newclockepoch = mx.DateTime.strptime(newclockepoch, '%Yy%jd%Hh%Mm%Ss').mjd
-    except:
-        try:
-            newclockepoch = float(newclockepoch)
-        except:
-            print "New epoch must either be MJD or VEX format"
-            raise
-
+    # convert to MJD
+    newclockepoch = espressolib.convertdate(newclockepoch, 'mjd')
 
 station_list = []
 offset_list = []
@@ -161,6 +154,8 @@ for line in v2dfile:
                 cache[i] = '#' + cache[i]
             if 'clockEpoch' in cache[i]:
                 clockepoch = parseparam('clockEpoch', cache[i])
+                # convert to MJD if necessary
+                clockepoch = espressolib.convertdate(clockepoch, 'mjd')
                 cache[i] = '#' + cache[i]
         if not newclockepoch:
             newclockepoch = float(clockepoch)

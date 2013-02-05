@@ -30,11 +30,8 @@ if len(args) != 1:
 
 # get target MJD
 targetMJD = args[0];
-try:
-    targetMJD = float(targetMJD)
-except:
-    # convert from VEX to MJD if necessary
-    targetMJD = espressolib.mjd2vex(targetMJD)
+# convert to MJD if necessary
+targetMJD = espressolib.convertdate(targetMJD, 'mjd')
 
 #print targetMJD
 

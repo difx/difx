@@ -54,7 +54,7 @@ def openlock(filename):
     return lockedfile
 
 def mjd2vex(indate):
-    '''converts indate from mjd to vex or vice versa'''
+    '''converts indate from mjd to vex or vice versa. Deprecated: use convertdate instead'''
 
     vexformat = '%Yy%jd%Hh%Mm%Ss'
     try:
@@ -67,7 +67,47 @@ def mjd2vex(indate):
             raise Exception("Accepts dates only in VEX format, e.g. 2010y154d12h45m52s, or MJD")
 
     return outdate
+
+def convertdate(indate, outformat='mjd'):
+    '''converts between DiFX date formats (mjd, vex, iso, vlba)'''
     
+    # MJD is a float for input, and built in to the module for output.
+    # ISO8601 is built in to the module, but the output format lacks the 'T', so use our own format
+    vexformat = '%Yy%jd%Hh%Mm%Ss'
+    vlbaformat = '%Y%b%d-%H:%M:%S'
+    isoformat = '%Y-%m-%dT%H:%M:%S'
+    timeformats = [vexformat, vlbaformat, isoformat]
+
+    # convert the input time to a datetime
+
+    date = False
+    try:
+        # MJD?
+        date = mx.DateTime.DateTimeFromMJD(float(indate))
+    except ValueError:
+        # other formats
+        for timeformat in timeformats:
+            try:
+                date = mx.DateTime.strptime(indate, timeformat)
+                break
+            except ValueError:
+                pass
+
+    if not date:
+        raise Exception("Accepts dates only in MJD, Vex, VLBA or ISO8601 formats")
+
+    if outformat == 'mjd':
+        outdate = date.mjd
+    elif outformat == 'iso':
+        outdate = date.strftime(isoformat)
+    elif outformat == 'vlba':
+        outdate = date.strftime(vlbaformat).upper()
+    elif outformat == 'vex':
+        outdate = date.strftime(vexformat)
+    else:
+        raise Exception("Output format not recognised, choose from: mjd, vex, iso or vlba")
+
+    return outdate
     
 #def email(user, passwd, message):
 #    '''Simple gmail notification message'''
