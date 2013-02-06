@@ -106,6 +106,11 @@ pystream::DataFormat getDataFormat(const VexData *V, const string &antName)
 		{
 			pystream::DataFormat g;
 
+			if(setup->formatName.empty())
+			{
+				continue;
+			}
+
 			if(setup->formatName == "MARK5B")
 			{
 				g = pystream::FORMAT_MARK5B;
