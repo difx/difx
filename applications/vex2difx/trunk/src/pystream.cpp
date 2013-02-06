@@ -278,11 +278,23 @@ int pystream::writeRecorderInit(const VexData *V)
 	{
 		*this << "recorder0 = Mark5C('-1')" << endl;
 
-#warning "FIXME For now, set up single recorder in Mark5B mode"
-		// Need to check requested format/mode first
-		*this << "recorder0.setMode('Mark5B')" << endl;
-		*this << "recorder0.setPSNMode(0)" << endl;
-		*this << "recorder0.setPacket(0, 0, 36, 5008)" << endl;
+		switch(dataFormat)
+		{
+		case FORMAT_MARK5B:
+			*this << "recorder0.setMode('Mark5B')" << endl;
+			*this << "recorder0.setPSNMode(0)" << endl;
+			*this << "recorder0.setPacket(0, 0, 36, 5008)" << endl;
+			break;
+		case FORMAT_VDIF:
+			*this << "recorder0.setMode('VDIF')" << endl;
+			*this << "recorder0.setPSNMode(0)" << endl;
+#warning "replace 5032 below with value supplied in vex"
+			*this << "recorder0.setPacket(0, 0, 28, 5032)" << endl;	
+			break;
+		default:
+			cerr << "Error: should not be in pystream::writeRecorderInit with format=" << dataFormat << endl;
+			exit(0);
+		}
 
 		*this << "subarray.setRecorder(recorder0)" << endl;
 		*this << endl;
@@ -501,9 +513,23 @@ int pystream::writeDbeInit(const VexData *V)
 		if(personalityType == RDBE_PFB || personalityType == RDBE_DDC)
 		{
 			*this << "dbe0.setALC(1)" << endl;
-			*this << "dbe0.setFormat('Mark5B')" << endl;
-			*this << "dbe0.setPSNMode(0)" << endl;
-			*this << "dbe0.setPacket(0, 0, 40, 5008)" << endl;
+			switch(dataFormat)
+			{
+			case FORMAT_MARK5B:
+				*this << "dbe0.setFormat('Mark5B')" << endl;
+				*this << "dbe0.setPSNMode(0)" << endl;
+				*this << "dbe0.setPacket(0, 0, 40, 5008)" << endl;
+				break;
+			case FORMAT_VDIF:
+				*this << "dbe0.setFormat('VDIF')" << endl;
+				*this << "dbe0.setPSNMode(0)" << endl;
+#warning "FIXME: replace 5032 below with value from vex file"
+				*this << "dbe0.setPacket(0, 0, 32, 5032)" << endl;
+				break;
+			default:
+				cerr << "Error: should not end up in pystream::writeDbeInit with format=" << dataFormat << endl;
+				exit(0);
+			}
 			if(maxIFs(V) <= 2)
 			{
 				*this << "subarray.setDBE(dbe0)" << endl;

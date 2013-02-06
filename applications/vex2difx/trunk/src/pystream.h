@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2012 by Walter Brisken, Adam Deller                *
+ *   Copyright (C) 2009-2013 by Walter Brisken, Adam Deller                *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -42,8 +42,9 @@ public:
 	enum ScriptType {SCRIPT_VLBA, SCRIPT_EVLA, SCRIPT_GBT};
 	enum PersonalityType {RDBE_UNKNOWN, RDBE_NONE, RDBE_PFB, RDBE_DDC};
 	enum RecorderType {RECORDER_NONE, RECORDER_MARK5C};
+	enum DataFormat {FORMAT_NONE, FORMAT_UNKNOWN, FORMAT_MIXED, FORMAT_MARK5B, FORMAT_VDIF};
 
-	pystream(): scriptType(SCRIPT_VLBA), personalityType(RDBE_UNKNOWN), recorderType(RECORDER_MARK5C), lastValid(0.0), lastSourceId(-1), lastModeId(-1), lastChannelSet(-1), evlaIntSec(0), evlasbChan(0), evlasbBits(0), evlaVCIVersion(0.0), mjd0(0.0), isMark5A(false) {};
+	pystream(): scriptType(SCRIPT_VLBA), personalityType(RDBE_UNKNOWN), recorderType(RECORDER_MARK5C), dataFormat(FORMAT_NONE), lastValid(0.0), lastSourceId(-1), lastModeId(-1), lastChannelSet(-1), evlaIntSec(0), evlasbChan(0), evlasbBits(0), evlaVCIVersion(0.0), mjd0(0.0), isMark5A(false) {};
 	void open(const std::string& antennaName, const VexData *V, ScriptType sType);
 	void close();
 	void addPhasingSource(const std::string &sourceName);
@@ -63,12 +64,15 @@ public:
 	void setDBEPersonality(const std::string &filename);
 	void setDBEPersonalityType(PersonalityType pt) { personalityType = pt; }
 	void setRecorderType(RecorderType rt) { recorderType = rt; }
+	void setDataFormat(DataFormat df) { dataFormat = df; }
+	DataFormat getDataFormat() { return dataFormat; }
 	void setMark5A(bool x) { isMark5A = x; }
 
 private:
 	ScriptType scriptType;
 	PersonalityType personalityType;
 	RecorderType recorderType;
+	DataFormat dataFormat;
 	std::string evlaVCIDir;
 	std::string ant;
 	std::string sw[4];	// 4x4 switch state

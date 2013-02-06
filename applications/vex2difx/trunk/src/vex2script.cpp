@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2012 by Walter Brisken, Adam Deller, Matthias Bark *
+ *   Copyright (C) 2009-2013 by Walter Brisken, Adam Deller, Matthias Bark *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -94,6 +94,45 @@ bool isGBT(const string& ant)
 	return false;
 }
 
+pystream::DataFormat getDataFormat(const VexData *V, const string &antName)
+{
+	int nMode = V->nMode();
+	pystream::DataFormat f = pystream::FORMAT_NONE;
+
+	for(int m = 0; m < nMode; ++m)
+	{
+		const VexSetup *setup = V->getMode(m)->getSetup(antName);
+		if(setup)
+		{
+			pystream::DataFormat g;
+
+			if(setup->formatName == "MARK5B")
+			{
+				g = pystream::FORMAT_MARK5B;
+			}
+			else if(setup->formatName.substr(0, 4) == "VDIF")
+			{
+				g = pystream::FORMAT_VDIF;
+			}
+			else
+			{
+				g = pystream::FORMAT_UNKNOWN;
+			}
+
+			if(f == pystream::FORMAT_NONE)
+			{
+				f = g;
+			}
+			else if(f != g)
+			{
+				return pystream::FORMAT_MIXED;
+			}
+		}
+	}
+
+	return f;
+}
+
 int main(int argc, char **argv)
 {
 	VexData *V;
@@ -180,6 +219,7 @@ int main(int argc, char **argv)
 	for(int a = 0; a < nAntenna; ++a)
 	{
 		A = V->getAntenna(a);
+
 		if(isEVLA(A->name))
 		{
                     if (!gb_only)
@@ -187,8 +227,8 @@ int main(int argc, char **argv)
 			cout << "Skipping VLA antenna" << endl;
 			continue;
 
-			cout << "VLA antenna " << a << " = " << A->name << endl;
-			sType = pystream::SCRIPT_EVLA;
+			//cout << "VLA antenna " << a << " = " << A->name << endl;
+			//sType = pystream::SCRIPT_EVLA;
 		    }
 		}
 		else if(isGBT(A->name))
@@ -208,11 +248,38 @@ int main(int argc, char **argv)
 			continue;
 		}
 
-        if (gb_only && (sType != pystream::SCRIPT_GBT))
-                    continue;
+		if (gb_only && (sType != pystream::SCRIPT_GBT))
+		{
+			continue;
+		}
+
+		pystream::DataFormat df = getDataFormat(V, A->name);
+		if(df == pystream::FORMAT_NONE)
+		{
+			cout << "Antenna " << A->name << " has no data format specified.  Skipping." << endl;
+
+			continue;
+		}
+		else if(df == pystream::FORMAT_UNKNOWN)
+		{
+			cout << "Antenna " << A->name << " has an unsupported data format.  Skipping." << endl;
+
+			continue;
+		}
+		else if(df == pystream::FORMAT_MIXED)
+		{
+			cout << "Antenna " << A->name << " has multiple data formats specified.  Skipping." << endl;
+
+			continue;
+		}
+		else if(df == pystream::FORMAT_VDIF)
+		{
+			cout << "  Note: This is VDIF formatted and is still supported only experimentally" << endl;
+		}
 
 		py.open(A->name, V, sType);
 
+		py.setDataFormat(df);
 		py.writeHeader(V);
 		py.writeComment(string("File written by ") + program + string(" version ") + version + string(" vintage ") + verdate);
 		py.writeDbeInit(V);
