@@ -2,7 +2,7 @@ Example installation guide.  Assumes mpi c++ compiler is
 <openmpiprefix>/bin/mpicxx 
 
 svn co []
-aclocal
+aclocal -I m4
 autoconf
 autoheader
 automake -a
