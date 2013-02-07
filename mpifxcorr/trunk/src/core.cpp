@@ -1289,7 +1289,7 @@ void Core::averageAndSendAutocorrs(int index, int threadid, double nsoffset, dou
     for(int k=0;k<config->getDNumTotalBands(procslots[index].configindex, j);k++)
     {
       freqindex = config->getDTotalFreqIndex(procslots[index].configindex, j, k);
-      if(config->isFrequencyUsed(procslots[index].configindex, freqindex)) {
+      if(config->isFrequencyUsed(procslots[index].configindex, freqindex) || config->isEquivalentFrequencyUsed(procslots[index].configindex, freqindex)) {
         freqchannels = config->getFNumChannels(freqindex)/config->getFChannelsToAverage(freqindex);
         //put autocorrs in resultsbuffer
         status = vectorAdd_cf32_I(modes[j]->getAutocorrelation(false, k), &procslots[index].results[resultindex], freqchannels);
@@ -1303,7 +1303,7 @@ void Core::averageAndSendAutocorrs(int index, int threadid, double nsoffset, dou
       for(int k=0;k<config->getDNumTotalBands(procslots[index].configindex, j);k++)
       {
         freqindex = config->getDTotalFreqIndex(procslots[index].configindex, j, k);
-        if(config->isFrequencyUsed(procslots[index].configindex, freqindex)) {
+        if(config->isFrequencyUsed(procslots[index].configindex, freqindex) || config->isEquivalentFrequencyUsed(procslots[index].configindex, freqindex)) {
           freqchannels = config->getFNumChannels(freqindex)/config->getFChannelsToAverage(freqindex);
           status = vectorAdd_cf32_I(modes[j]->getAutocorrelation(true, k), &procslots[index].results[resultindex], freqchannels);
           if(status != vecNoErr)
@@ -1332,7 +1332,7 @@ void Core::averageAndSendAutocorrs(int index, int threadid, double nsoffset, dou
     {
       freqindex = config->getDTotalFreqIndex(procslots[index].configindex, j, k);
       numrecordedbands = config->getDNumRecordedBands(procslots[index].configindex, j);
-      if(config->isFrequencyUsed(procslots[index].configindex, freqindex))
+      if(config->isFrequencyUsed(procslots[index].configindex, freqindex) || config->isEquivalentFrequencyUsed(procslots[index].configindex, freqindex))
       {
         if(k>=numrecordedbands)
         {
@@ -1358,7 +1358,7 @@ void Core::averageAndSendAutocorrs(int index, int threadid, double nsoffset, dou
       {
         freqindex = config->getDTotalFreqIndex(procslots[index].configindex, j, k);
         numrecordedbands = config->getDNumRecordedBands(procslots[index].configindex, j);
-        if(config->isFrequencyUsed(procslots[index].configindex, freqindex)) {
+        if(config->isFrequencyUsed(procslots[index].configindex, freqindex) || config->isEquivalentFrequencyUsed(procslots[index].configindex, freqindex)) {
           if(k>=numrecordedbands)
           {
             //need to get the weight from the parent band

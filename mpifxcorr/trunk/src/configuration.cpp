@@ -166,8 +166,11 @@ Configuration::Configuration(const char * configfile, int id, double restartsec)
     freq = freqtable[getBFreqIndex(i,0,0)];
     configs[i].minpostavfreqchannels = freq.numchannels/freq.channelstoaverage;
     configs[i].frequsedbybaseline = new bool[freqtablelength];
-    for(int j=0;j<freqtablelength;j++)
+    configs[i].equivfrequsedbybaseline = new bool[freqtablelength];
+    for(int j=0;j<freqtablelength;j++) {
       configs[i].frequsedbybaseline[j] = false;
+      configs[i].equivfrequsedbybaseline[j] = false;
+    }
     for(int j=0;j<numbaselines;j++)
     {
       for(int k=0;k<baselinetable[configs[i].baselineindices[j]].numfreqs;k++)
@@ -180,16 +183,41 @@ Configuration::Configuration(const char * configfile, int id, double restartsec)
       }
     }
   }
-  //set any opposite sideband freqs to be "used", to ensure their autocorrelations are not lost
+  //for each freq, check if an equivalent frequency is used, to ensure autocorrelations also get sent where required
+  double bwdiff, freqdiff;
   for(int i=0;i<numconfigs;i++) {
     for(int j=0;j<freqtablelength;j++) {
-      if(configs[i].frequsedbybaseline[j]) {
-        oppositefreqindex = getOppositeSidebandFreqIndex(j);
-        if(oppositefreqindex >= 0)
-          configs[i].frequsedbybaseline[oppositefreqindex] = true;
+      if(!configs[i].frequsedbybaseline[j]) {
+        for(int k=0;k<freqtablelength;k++) {
+          bwdiff = freqtable[j].bandwidth - freqtable[k].bandwidth;
+          freqdiff = freqtable[j].bandedgefreq - freqtable[k].bandedgefreq;
+          if(freqtable[j].lowersideband)
+            freqdiff -= freqtable[j].bandwidth;
+          if(freqtable[k].lowersideband)
+            freqdiff += freqtable[k].bandwidth;
+          if(bwdiff < Mode::TINY && freqdiff < Mode::TINY && freqtable[j].numchannels == freqtable[k].numchannels && 
+             freqtable[j].channelstoaverage == freqtable[k].channelstoaverage && 
+             freqtable[j].oversamplefactor == freqtable[k].oversamplefactor &&
+             freqtable[j].decimationfactor == freqtable[k].decimationfactor) {
+            if(configs[i].frequsedbybaseline[k])
+              configs[i].equivfrequsedbybaseline[j] == true;
+          }
+        }
       }
     }
   }
+
+  //set any opposite sideband freqs to be "used", to ensure their autocorrelations are not lost
+  //for(int i=0;i<numconfigs;i++) {
+  //  for(int j=0;j<freqtablelength;j++) {
+  //    if(configs[i].frequsedbybaseline[j]) {
+  //      oppositefreqindex = getOppositeSidebandFreqIndex(j);
+  //      if(oppositefreqindex >= 0)
+  //        configs[i].frequsedbybaseline[oppositefreqindex] = true;
+  //    }
+  //  }
+  //}
+
   //process the pulsar configuration files
   for(int i=0;i<numconfigs;i++)
   {
@@ -252,6 +280,7 @@ Configuration::~Configuration()
       delete [] configs[i].baselineindices;
       delete [] configs[i].ordereddatastreamindices;
       delete [] configs[i].frequsedbybaseline;
+      delete [] configs[i].equivfrequsedbybaseline;
     }
     delete [] configs;
   }
@@ -1892,7 +1921,7 @@ bool Configuration::populateResultLengths()
         dsdata = datastreamtable[configs[c].datastreamindices[i]];
         configs[c].coreresultautocorroffset[i] = coreresultindex;
         for(int j=0;j<getDNumRecordedBands(c, i);j++) {
-          if(isFrequencyUsed(c, getDRecordedFreqIndex(c, i, j))) {
+          if(isFrequencyUsed(c, getDRecordedFreqIndex(c, i, j)) || isEquivalentFrequencyUsed(c, getDRecordedFreqIndex(c, i, j))) {
             freqindex = getDRecordedFreqIndex(c, i, j);
             freqchans = getFNumChannels(freqindex);
             chanstoaverage = getFChannelsToAverage(freqindex);
@@ -1900,7 +1929,7 @@ bool Configuration::populateResultLengths()
           }
         }
         for(int j=0;j<getDNumZoomBands(c, i);j++) {
-          if(isFrequencyUsed(c, getDZoomFreqIndex(c, i, j))) {
+          if(isFrequencyUsed(c, getDZoomFreqIndex(c, i, j)) || isEquivalentFrequencyUsed(c, getDZoomFreqIndex(c, i, j))) {
             freqindex = getDZoomFreqIndex(c, i, j);
             freqchans = getFNumChannels(freqindex);
             chanstoaverage = getFChannelsToAverage(freqindex);
@@ -1914,12 +1943,12 @@ bool Configuration::populateResultLengths()
         configs[c].coreresultacweightoffset[i] = coreresultindex;
         toadd = 0;
         for(int j=0;j<getDNumRecordedBands(c, i);j++) {
-          if(isFrequencyUsed(c, getDRecordedFreqIndex(c, i, j))) {
+          if(isFrequencyUsed(c, getDRecordedFreqIndex(c, i, j)) || isEquivalentFrequencyUsed(c, getDRecordedFreqIndex(c, i, j))) {
             toadd += bandsperautocorr;
           }
         }
         for(int j=0;j<getDNumZoomBands(c, i);j++) {
-          if(isFrequencyUsed(c, getDZoomFreqIndex(c, i, j))) {
+          if(isFrequencyUsed(c, getDZoomFreqIndex(c, i, j)) || isEquivalentFrequencyUsed(c, getDZoomFreqIndex(c, i, j))) {
             toadd += bandsperautocorr;
           }
         }

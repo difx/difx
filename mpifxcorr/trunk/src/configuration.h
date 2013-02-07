@@ -276,6 +276,8 @@ public:
   inline int getFMatchingWiderBandOffset(int index) const { return freqtable[index].matchingwiderbandoffset; }
   inline bool isFrequencyUsed(int configindex, int freqindex) const
     { return configs[configindex].frequsedbybaseline[freqindex]; }
+  inline bool isEquivalentFrequencyUsed(int configindex, int freqindex) const
+    { return configs[configindex].equivfrequsedbybaseline[freqindex]; }
   inline bool circularPolarisations() const
     { return datastreamtable[0].recordedbandpols[0] == 'R' || datastreamtable[0].recordedbandpols[0] == 'L'; }
   inline bool isReadFromFile(int configindex, int configdatastreamindex) const
@@ -604,6 +606,7 @@ private:
     int  * ordereddatastreamindices;
     int  * baselineindices;
     bool * frequsedbybaseline;
+    bool * equivfrequsedbybaseline;
     //bookkeeping info for thread results
     int  * numxmacstrides;              //[freq]
     int  * completestridelength;        //[freq]

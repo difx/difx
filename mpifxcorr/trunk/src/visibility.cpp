@@ -367,7 +367,7 @@ void Visibility::writedata()
       for(int k=0;k<config->getDNumTotalBands(currentconfigindex, i); k++)
       {
         freqindex = config->getDTotalFreqIndex(currentconfigindex, i, k);
-        if(config->isFrequencyUsed(currentconfigindex, freqindex)) {
+        if(config->isFrequencyUsed(currentconfigindex, freqindex) || config->isEquivalentFrequencyUsed(currentconfigindex, freqindex)) {
           autocorrweights[i][j][k] = floatresults[resultindex]/fftsperintegration;
           resultindex++;
         }
@@ -386,7 +386,7 @@ void Visibility::writedata()
       for(int k=0;k<config->getDNumTotalBands(currentconfigindex, i); k++)
       {
         freqindex = config->getDTotalFreqIndex(currentconfigindex, i, k);
-        if(config->isFrequencyUsed(currentconfigindex, freqindex)) {
+        if(config->isFrequencyUsed(currentconfigindex, freqindex) || config->isEquivalentFrequencyUsed(currentconfigindex, freqindex)) {
           freqchannels = config->getFNumChannels(freqindex)/config->getFChannelsToAverage(freqindex);
           status = vectorMean_cf32(&(results[resultindex]), freqchannels, &autocorrcalibs[i][k], vecAlgHintFast);
           if(status != vecNoErr)
@@ -483,7 +483,7 @@ void Visibility::writedata()
         for(int k=0;k<config->getDNumTotalBands(currentconfigindex, i); k++)
         {
           freqindex = config->getDTotalFreqIndex(currentconfigindex, i, k);
-          if(config->isFrequencyUsed(currentconfigindex, freqindex)) {
+          if(config->isFrequencyUsed(currentconfigindex, freqindex) || config->isEquivalentFrequencyUsed(currentconfigindex, freqindex)) {
             freqchannels = config->getFNumChannels(freqindex)/config->getFChannelsToAverage(freqindex);
             scale = 0.0;
             //calibrate the data
@@ -631,7 +631,7 @@ void Visibility::writeascii(int dumpmjd, double dumpseconds)
         for(int k=0;k<config->getDNumTotalBands(currentconfigindex, i); k++)
         {
           freqindex = config->getDTotalFreqIndex(currentconfigindex, i, k);
-          if(config->isFrequencyUsed(currentconfigindex, freqindex)) {
+          if(config->isFrequencyUsed(currentconfigindex, freqindex) || config->isEquivalentFrequencyUsed(currentconfigindex, freqindex)) {
 	    stringstream fname;
             freqchannels = config->getFNumChannels(freqindex)/config->getFChannelsToAverage(freqindex);
             //write out to naive filename
@@ -789,7 +789,7 @@ void Visibility::writedifx(int dumpmjd, double dumpseconds)
               freqindex = config->getDTotalFreqIndex(currentconfigindex, i, k);
             }
           }
-          if(config->isFrequencyUsed(currentconfigindex, freqindex)) {
+          if(config->isFrequencyUsed(currentconfigindex, freqindex) || config->isEquivalentFrequencyUsed(currentconfigindex, freqindex)) {
             freqchannels = config->getFNumChannels(freqindex)/config->getFChannelsToAverage(freqindex);
             if(autocorrweights[i][j][k] > 0.0)
             {
