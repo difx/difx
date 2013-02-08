@@ -200,7 +200,7 @@ Configuration::Configuration(const char * configfile, int id, double restartsec)
              freqtable[j].oversamplefactor == freqtable[k].oversamplefactor &&
              freqtable[j].decimationfactor == freqtable[k].decimationfactor) {
             if(configs[i].frequsedbybaseline[k])
-              configs[i].equivfrequsedbybaseline[j] == true;
+              configs[i].equivfrequsedbybaseline[j] = true;
           }
         }
       }
