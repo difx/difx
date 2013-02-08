@@ -228,9 +228,29 @@ EOF
   }
 }
 
-
 close(VEXOUT);
 close(VEX);
+
+# Now need to over write the original. First move it to a backup
+
+if ($vexname =~ /^(.*)\.([^\.]+)$/) {
+    print "** $1  ** $2\n";
+  my $index = 1;
+  while (-f "$1.$index.$2") {
+    $index++;
+  }
+  my $newvex = "$1.$index.$2";
+  print "$vexname -> $outvex -> $newvex\n";
+  rename $vexname, $newvex;
+  rename $outvex, $vexname
+
+
+} else {
+  warn "Could not rename $vexname. Output left as $outvex\n";
+}
+
+# mv $outvex -> $newvex
+
 
 
 sub parseline ($) {
