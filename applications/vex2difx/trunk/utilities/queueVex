@@ -33,14 +33,15 @@ def usage():
 	print '\n%s ver. %s  %s  %s\n' % (program, version, verdate, author)
 	print 'Usage: %s [options] <vexfile1> [vexfile2] ... [ant1] [ant2] ...\n' % argv[0]
 	print 'options can be:\n'
-	print '  -h or --help       print help info and quit.'
-	print '  -v or --verbose    make more verbose.'
-	print '  -q or --quiet      make less verbose.'
-	print '  -f or --force      proceed without question in some cases.'
-	print '  -p or --priority   interrupt a conflicting obs.'
-	print '  -u or --usno       convert scripts to use USNO devices'
-	print '  -e or --edit       allow time to edit the files'
-	print '  -n or --nocopy     don\'t copy files to stations\n'
+	print '  -h or --help                print help info and quit.'
+	print '  -v or --verbose             make more verbose.'
+	print '  -q or --quiet               make less verbose.'
+	print '  -f or --force               proceed without question in some cases.'
+	print '  -p or --priority            interrupt a conflicting obs.'
+	print '  -u or --usno                convert scripts to use USNO devices'
+	print '  -e or --edit                allow time to edit the files'
+	print '  -n or --nocopy              don\'t copy files to stations'
+	print '  -d or --dbefile <filename>  use provided personality file for DBE\n'
 	print ''
 	print 'One or more vex files can be supplied.  All supplied vex files will'
 	print 'be handled separately in the order listed.'
@@ -214,10 +215,15 @@ usnoConvert = False
 edit = False
 force = False
 nocopy = False
+haveFile = False
+file = ''
 options = ''
 
 for a in argv[1:]:
-	if a[0] == '-':
+	if haveFile:
+		file = a
+		haveFile = False
+	elif a[0] == '-':
 		if a in ['-h', '--help']:
 			usage()
 			exit(1)
@@ -235,6 +241,8 @@ for a in argv[1:]:
 			edit = True
 		elif a in ['-n', '--nocopy']:
 			nocopy = True
+		elif a in ['-d', '--dbefile']:
+			haveFile = True
 		else:
 			print 'Unknown option "%s"\n' % a
 			exit(1)
@@ -320,6 +328,13 @@ for vexFile in vexFiles:
 
 	scripts = glob('*.??.py')
 	scripts.sort()
+
+	if file != '':
+		for script in scripts:
+			execute("mv %s %s.tmp" % (script, script))
+			execute("""sed -e "s/dbe0[ ]*=[ ]*RDBE(0,[ ]*'pfb')/dbe0 = RDBE(0, 'pfb', '%s')/" <%s.tmp >%s""" % (file, script, script))
+			execute("""sed -e "s/dbe0[ ]*=[ ]*RDBE(0,[ ]*'ddc')/dbe0 = RDBE(0, 'ddc', '%s')/" <%s.tmp >%s""" % (file, script, script))
+			execute("rm %s.tmp" % script)
 
 	if edit:
 		print '\nNow you can edit the .py files in %s before they are sent to the stations.' % tmpDir
