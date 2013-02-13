@@ -332,8 +332,7 @@ for vexFile in vexFiles:
 	if file != '':
 		for script in scripts:
 			execute("mv %s %s.tmp" % (script, script))
-			execute("""sed -e "s/dbe0[ ]*=[ ]*RDBE(0,[ ]*'pfb')/dbe0 = RDBE(0, 'pfb', '%s')/" <%s.tmp >%s""" % (file, script, script))
-			execute("""sed -e "s/dbe0[ ]*=[ ]*RDBE(0,[ ]*'ddc')/dbe0 = RDBE(0, 'ddc', '%s')/" <%s.tmp >%s""" % (file, script, script))
+			execute("""sed -e "s/dbe0[ ]*=[ ]*RDBE(0,[ ]*'pfb')/dbe0 = RDBE(0, 'pfb', '%s')/" -e "s/dbe0[ ]*=[ ]*RDBE(0,[ ]*'ddc')/dbe0 = RDBE(0, 'ddc', '%s')/" <%s.tmp >%s""" % (file, script, script))
 			execute("rm %s.tmp" % script)
 
 	if edit:
