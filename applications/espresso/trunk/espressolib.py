@@ -80,7 +80,7 @@ def convertdate(indate, outformat='mjd'):
 
     # convert the input time to a datetime
 
-    date = False
+    date = None
     try:
         # MJD?
         date = mx.DateTime.DateTimeFromMJD(float(indate))

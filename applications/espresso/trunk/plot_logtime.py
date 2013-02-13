@@ -1,10 +1,15 @@
 #!/usr/bin/python
 # program to plot observation time versus correlator time from DiFX logs.
+
 import sys, os, re, optparse, datetime, time
 import scipy
 from scipy import interpolate
 from math import *
 import matplotlib
+# Force matplotlib to not use any Xwindows backend.
+if not 'DISPLAY' in os.environ.keys():
+    sys.stderr.write('Warning: no display available\n')
+    matplotlib.use('Agg')
 from matplotlib import pyplot
 import numpy
 
@@ -43,7 +48,6 @@ if len(args) < 1:
     parser.error("give a DiFX log file")
 
 filenames = args
-
 
 title = 'Correlator Speedup ' #+ str(filenames)
 if options.removegap:
