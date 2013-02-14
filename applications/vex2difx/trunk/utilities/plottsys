@@ -77,7 +77,7 @@ def readTsysFile(tsysFile, verbose):
 			tsys = float(s[4 + 2*c])
 			if tsys == 999:
 				nMask += 1
-			elif tsys < 999.0 and tsys > 0.0:
+			elif tsys < 999.0 and tsys >= 0.0:
 				antArray[c][0].append(doy)
 				antArray[c][1].append(tsys)
 				nTsys += 1
