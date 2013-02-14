@@ -90,7 +90,10 @@ typedef struct
 
 	DifxTcalValue *value;
 	int nValue;
-	int _nValueAlloc;	/* internal use only */
+	
+	/* internal use only */
+	int _nValueAlloc;
+	int _freqRangeExceeded;
 } DifxTcalGroup;
 
 typedef struct

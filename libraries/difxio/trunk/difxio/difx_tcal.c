@@ -94,6 +94,10 @@ void deleteDifxTcal(DifxTcal *dt)
 			{
 				if(dt->group[g].value)
 				{
+					if(dt->group[g]._freqRangeExceeded)
+					{
+						printf("Warning: Tcals for antena %s receiver %s did not span entire range.\n", dt->group[g].antenna, dt->group[g].receiver);
+					}
 					free(dt->group[g].value);
 					dt->group[g].value = 0;
 					dt->group[g].nValue = 0;
@@ -195,6 +199,7 @@ int addDifxTcalGroup(DifxTcal *dt)
 		dt->group[n].interpolation = DifxTcalInterpolationLinear;	/* a good default, probably */
 		dt->group[n].nValue = 0;
 		dt->group[n]._nValueAlloc = 16;
+		dt->group[n]._freqRangeExceeded = 0;
 		dt->group[n].value = (DifxTcalValue *)malloc(dt->group[n]._nValueAlloc*sizeof(DifxTcalValue));
 		if(!dt->group[n].value)
 		{
@@ -244,7 +249,7 @@ static float getDifxTcalNearest(const DifxTcalGroup *group, char pol, float freq
 	return tcal;
 }
 
-static float getDifxTcalLinear(const DifxTcalGroup *group, char pol, float freq)
+static float getDifxTcalLinear(DifxTcalGroup *group, char pol, float freq)
 {
 	float tcalLow = 0.0;
 	float tcalHigh = 0.0;
@@ -304,6 +309,18 @@ static float getDifxTcalLinear(const DifxTcalGroup *group, char pol, float freq)
 		}
 
 		return f*tcalHigh + (1.0-f)*tcalLow;
+	}
+	else if(tcalLow > 0.0)
+	{
+		++group->_freqRangeExceeded;
+
+		return tcalLow;
+	}
+	else if(tcalHigh > 0.0)
+	{
+		++group->_freqRangeExceeded;
+
+		return tcalHigh;
 	}
 	else
 	{

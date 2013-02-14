@@ -3,6 +3,7 @@
 * Now the DifxIF structures are _always_ set to be USB.  This will break
 compatibility with earlier versions of difx2fits and maybe difx2mark4.
 * Add DIFX LABEL to .calc file
+* Tcal requests will now return values outside sampled range, but will cause warning at end of processing.
 
 3.1.0
 * Rename from 3.0.2 prior to DiFX-2.1
