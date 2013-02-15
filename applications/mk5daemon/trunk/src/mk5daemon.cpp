@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2012 by Walter Brisken                             *
+ *   Copyright (C) 2008-2013 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -499,15 +499,12 @@ int checkStreamstor(Mk5Daemon *D, time_t t)
 		pthread_mutex_unlock(&D->processLock);
 	}
 
-	if(t - D->lastMpifxcorrUpdate > 20 &&
-		D->process == PROCESS_DATASTREAM)
+	if(t - D->lastMpifxcorrUpdate > 20 && D->process == PROCESS_DATASTREAM)
 	{
 		pthread_mutex_lock(&D->processLock);
 		if(!running("mpifxcorr"))
 		{
-			snprintf(message, DIFX_MESSAGE_LENGTH,
-				"Detected premature end of mpifxcorr at %s\n",
-				ctime(&t));
+			snprintf(message, DIFX_MESSAGE_LENGTH, "Detected premature end of mpifxcorr at %s\n", ctime(&t));
 			Logger_logData(D->log, message);
 
 			D->process = PROCESS_NONE;
@@ -635,6 +632,12 @@ void handleRecordMessage(Mk5Daemon *D, time_t t)
 			{
 				D->bytesUsed[D->activeBank] = atoll(A[1]);
 				D->recordRate = atof(A[2]);
+			}
+			else if(strcmp(A[0], "Dir") == 0 && n > 6)
+			{
+				char logMessage[DIFX_MESSAGE_LENGTH];
+				snprintf(logMessage, DIFX_MESSAGE_LENGTH, "Directory entry: %s\n", message+4);
+				Logger_logData(D->log, logMessage);
 			}
 			else if(strcmp(A[0], "Filter") == 0 && n > 5)
 			{

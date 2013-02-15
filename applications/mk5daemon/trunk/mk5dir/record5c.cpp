@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2012 by Walter Brisken                                  *
+ *   Copyright (C) 2012-2013 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -894,6 +894,8 @@ static int record(int bank, const char *label, unsigned int packetSize, int payl
 				totalChunks += driveStats[b].count + nReplaced;
 			}
 		}
+
+		printf("Dir %s %d %d %d %2s %32s %8s %Ld %Ld\n", vsn, p->typeNumber & 0xFF, p->typeNumber/256, packetSize, p->station, p->scanName, p->expName, startByte, ptr);
 	}
 	printf("Sum %Ld %Ld %Ld\n", totalChunks, startByte, ptr);
 	if(ptr > startByte && totalChunks == 0)
