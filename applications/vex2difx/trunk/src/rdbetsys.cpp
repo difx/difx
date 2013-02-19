@@ -40,9 +40,9 @@
 #include "util.h"
 
 const char program[] = "rdbetsys";
-const char version[] = "1.2";
+const char version[] = "1.3";
 const char author[]  = "Walter Brisken";
-const char verdate[] = "20130107";
+const char verdate[] = "20130218";
 
 const char defaultSwitchedPowerPath[] = "/home/vlba/metadata/switchedpower";
 const double defaultTsysInterval = 15.0;	// Seconds
@@ -396,13 +396,16 @@ void TsysAccumulator::flush()
 		mjd2yearday(mjd, 0, &doy);
 		day = accumTimeRange.center() - mjd + doy;
 
-		fprintf(out, "%s %12.8f %10.8f %d", stn.c_str(), day, accumTimeRange.duration(), static_cast<int>(chans.size()));
 		for(std::vector<TsysAverager>::iterator ta = chans.begin(); ta != chans.end(); ++ta)
 		{
 			if(ta->tCal > 0.0)
 			{
 				doSkip = false;
 			}
+		}
+		if(!doSkip)
+		{
+			fprintf(out, "%s %12.8f %10.8f %d", stn.c_str(), day, accumTimeRange.duration(), static_cast<int>(chans.size()));
 		}
 		for(std::vector<TsysAverager>::iterator ta = chans.begin(); ta != chans.end(); ++ta)
 		{
@@ -418,7 +421,10 @@ void TsysAccumulator::flush()
 			}
 			ta->reset();
 		}
-		fprintf(out, "\n");
+		if(!doSkip)
+		{
+			fprintf(out, "\n");
+		}
 
 		nAccum = 0;
 	}
@@ -929,7 +935,7 @@ int main(int argc, char **argv)
 		}
 		else if(nZero > 1)
 		{
-			std::cout << nZero << "stations";
+			std::cout << nZero << " stations";
 		}
 		std::cout << " (" << zeroStations << ") had zero records written.  No Tsys information will be available for those antennas." << std::endl;
 	}
