@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import platform as pf
 from sys import argv, exit, platform
 from string import split, lower
 from os import getenv, readlink
@@ -65,11 +66,18 @@ def getippversion(path):
 # fixme: possibly should use uname to get this information
 def getarch():
 	bs = getenv('DIFXBITS') 
-	if bs != None:
+	if bs != None and bs != "32" and bs != "64" and bs != "128":
+		print "Invalid DIFXBITS: " + bs
+		bs = None
+        pybits = pf.architecture()[0][0:2]
+	if bs == None:
+		print "Note: DIFXITS was not set - used platform.architecture to determine that bits is " + pybits
+		return int(pybits)
+	if int(bs) != int(pybits):
+		print "WARNING! DIFXBITS is " + bs + " but platform.architecture says number of bits is " + pybits
+		print "Assuming DIFXBITS was set correctly..."
 		return int(bs)
-	else:
-		print 'Warning: defaulting to 32 bit assumption'
-		return 32
+	return int(bs)
 
 def genipppc(path, ippversion):
 	# if no path supplied, take it from $IPPROOT
@@ -114,7 +122,7 @@ def genipppc(path, ippversion):
 			libdir = 'ia32'
 		else:
 			libdir = 'intel64'
-		out.write('Libs: -Wl,-rpath,${base}/lib/%s -Wl,-rpath,${base}/ipp/lib/%s -L${base}/lib/%s -L${base}/ipp/lib/%s -lipps -lippvm -lippcore -liomp5\n' % (libdir,libdir,libdir,libdir))
+		out.write('Libs: -Wl,-rpath,${base}/lib/%s -Wl,-rpath,${base}/ipp/lib/%s -L${base}/lib/%s -L${base}/ipp/lib/%s -L${base}/compiler/lib/%s -lipps -lippvm -lippcore -liomp5\n' % (libdir,libdir,libdir,libdir,libdir))
 		out.write('Cflags: -I${base}/ipp/include\n')
 
 	else:
