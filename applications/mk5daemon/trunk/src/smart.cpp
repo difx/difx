@@ -33,6 +33,7 @@
 #include <time.h>
 #include "mk5daemon.h"
 #include "smart.h"
+#include "watchdog.h"
 #include "../mk5dir/mark5directorystructs.h"
 
 const SmartDescription smartDescriptions[] =
@@ -195,9 +196,9 @@ int getDirectoryInfo(SSHANDLE xlrDevice, Mk5Daemon *D, int bank)
 	XLR_RETURN_CODE xlrRC;
 	int len;
 
-	XLRGetDirectory(xlrDevice, &(D->dir_info[bank]));
+	WATCHDOG( XLRGetDirectory(xlrDevice, &(D->dir_info[bank])) );
 	
-	len = XLRGetUserDirLength(xlrDevice);
+	WATCHDOG( len = XLRGetUserDirLength(xlrDevice) );
 
 	if(len % 128 == 0 && len >= 128)
 	{
@@ -208,7 +209,7 @@ int getDirectoryInfo(SSHANDLE xlrDevice, Mk5Daemon *D, int bank)
 				free(D->dirData[bank]);
 			}
 			D->dirData[bank] = (char *)malloc(len);
-			xlrRC = XLRGetUserDir(xlrDevice, len, 0, D->dirData[bank]);
+			WATCHDOG( xlrRC = XLRGetUserDir(xlrDevice, len, 0, D->dirData[bank]) );
 			if(xlrRC != XLR_SUCCESS)
 			{
 				return -3;
@@ -277,7 +278,7 @@ int getMk5Smart(SSHANDLE xlrDevice, Mk5Daemon *D, int bank)
 	strncpy(D->smartData[bank].vsn, D->vsns[bank], 8);
 	D->smartData[bank].vsn[8] = 0;
 
-	xlrRC = XLRSelectBank(xlrDevice, bank);
+	WATCHDOG( xlrRC = XLRSelectBank(xlrDevice, bank) );
 	if(xlrRC != XLR_SUCCESS)
 	{
 		clearModuleInfo(D, bank);
@@ -305,7 +306,7 @@ int getMk5Smart(SSHANDLE xlrDevice, Mk5Daemon *D, int bank)
 
 		drive = smart->drive + d;
 
-		xlrRC = XLRGetDriveInfo(xlrDevice, d/2, d%2, &driveInfo);
+		( xlrRC = XLRGetDriveInfo(xlrDevice, d/2, d%2, &driveInfo) );
 		if(xlrRC != XLR_SUCCESS)
 		{
 			continue;
@@ -325,7 +326,7 @@ int getMk5Smart(SSHANDLE xlrDevice, Mk5Daemon *D, int bank)
 		}
 
 #ifdef HAS_SMART
-		xlrRC = XLRReadSmartValues(xlrDevice, &smartVersion, smart->smartXLR[d], d/2, d%2);
+		WATCHDOG( xlrRC = XLRReadSmartValues(xlrDevice, &smartVersion, smart->smartXLR[d], d/2, d%2) );
 		if(xlrRC != XLR_SUCCESS)
 		{
 			continue;

@@ -4,6 +4,8 @@ streamstor_sources = \
 	mark5a.cpp \
 	smart.cpp \
 	smart.h \
+	watchdog.cpp \
+	watchdog.h \
 	ssversions.cpp
 else
 streamstor_sources = 

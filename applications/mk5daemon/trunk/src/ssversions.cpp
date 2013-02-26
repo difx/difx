@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2011 by Walter Brisken                             *
+ *   Copyright (C) 2008-2013 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -36,6 +36,7 @@
 #include <difxmessage.h>
 #include <mark5ipc.h>
 #include "mk5daemon.h"
+#include "watchdog.h"
 
 int Mk5Daemon_getStreamstorVersions(Mk5Daemon *D)
 {
@@ -56,11 +57,11 @@ int Mk5Daemon_getStreamstorVersions(Mk5Daemon *D)
 		return 0;
 	}
 	
-	xlrRC = XLROpen(1, &xlrDevice);
+	WATCHDOG( xlrRC = XLROpen(1, &xlrDevice) );
 	++D->nXLROpen;
 	if(xlrRC != XLR_SUCCESS)
 	{
-		xlrError = XLRGetLastError();
+		WATCHDOG( xlrError = XLRGetLastError() );
 		XLRGetErrorMessage(xlrErrorStr, xlrError);
 		snprintf(message, DIFX_MESSAGE_LENGTH,
 			"ERROR: Mk5Daemon_getStreamstorVersions: "
@@ -70,18 +71,18 @@ int Mk5Daemon_getStreamstorVersions(Mk5Daemon *D)
 			xlrError,
 			xlrErrorStr);
 		Logger_logData(D->log, message);
-		XLRClose(xlrDevice);
+		WATCHDOG( XLRClose(xlrDevice) );
 
 		unlockStreamstor(D, id);
 
 		return 1;
 	}
 
-	xlrRC = XLRGetVersion(xlrDevice, &swVersion);
+	WATCHDOG( xlrRC = XLRGetVersion(xlrDevice, &swVersion) );
 	if(xlrRC != XLR_SUCCESS)
 	{
-		xlrError = XLRGetLastError();
-		XLRGetErrorMessage(xlrErrorStr, xlrError);
+		WATCHDOG( xlrError = XLRGetLastError() );
+		WATCHDOG( XLRGetErrorMessage(xlrErrorStr, xlrError) );
 		snprintf(message, DIFX_MESSAGE_LENGTH,
 			"ERROR: Mk5Daemon_getStreamstorVersions: "
 			"Cannot get StreamStor versions. "
@@ -89,7 +90,7 @@ int Mk5Daemon_getStreamstorVersions(Mk5Daemon *D)
 			xlrError,
 			xlrErrorStr);
 		Logger_logData(D->log, message);
-		XLRClose(xlrDevice);
+		WATCHDOG( XLRClose(xlrDevice) );
 
 		unlockStreamstor(D, id);
 
@@ -106,10 +107,10 @@ int Mk5Daemon_getStreamstorVersions(Mk5Daemon *D)
 	strcpy(D->mk5ver.UAtaVersion, swVersion.UAtaVersion);
 	strcpy(D->mk5ver.DriverVersion, swVersion.DriverVersion);
 
-	xlrRC = XLRGetDeviceInfo(xlrDevice, &devInfo);
+	WATCHDOG( xlrRC = XLRGetDeviceInfo(xlrDevice, &devInfo) );
 	if(xlrRC != XLR_SUCCESS)
 	{
-		xlrError = XLRGetLastError();
+		WATCHDOG( xlrError = XLRGetLastError() );
 		XLRGetErrorMessage(xlrErrorStr, xlrError);
 		snprintf(message, DIFX_MESSAGE_LENGTH,
 			"ERROR: Mk5Daemon_getStreamstorVersions: "
@@ -118,7 +119,7 @@ int Mk5Daemon_getStreamstorVersions(Mk5Daemon *D)
 			xlrError,
 			xlrErrorStr);
 		Logger_logData(D->log, message);
-		XLRClose(xlrDevice);
+		WATCHDOG( XLRClose(xlrDevice) );
 
 		unlockStreamstor(D, id);
 
@@ -130,11 +131,11 @@ int Mk5Daemon_getStreamstorVersions(Mk5Daemon *D)
 
 	if(strncasecmp(D->mk5ver.BoardType, "Amazon", 6) == 0)
 	{
-		xlrRC = XLRGetDBInfo(xlrDevice, &dbInfo);
+		WATCHDOG( xlrRC = XLRGetDBInfo(xlrDevice, &dbInfo) );
 		if(xlrRC != XLR_SUCCESS)
 		{
-			xlrError = XLRGetLastError();
-			XLRGetErrorMessage(xlrErrorStr, xlrError);
+			WATCHDOG( xlrError = XLRGetLastError() );
+			WATCHDOG( XLRGetErrorMessage(xlrErrorStr, xlrError) );
 			snprintf(message, DIFX_MESSAGE_LENGTH,
 				"ERROR: Mk5Daemon_getStreamstorVersions: "
 				"Cannot get Daughter Board information. "
@@ -142,7 +143,7 @@ int Mk5Daemon_getStreamstorVersions(Mk5Daemon *D)
 				xlrError,
 				xlrErrorStr);
 			Logger_logData(D->log, message);
-			XLRClose(xlrDevice);
+			WATCHDOG( XLRClose(xlrDevice) );
 
 			unlockStreamstor(D, id);
 
@@ -157,7 +158,7 @@ int Mk5Daemon_getStreamstorVersions(Mk5Daemon *D)
 		D->mk5ver.DB_NumChannels = dbInfo.NumChannels;
 	}
 
-	XLRClose(xlrDevice);
+	WATCHDOG( XLRClose(xlrDevice) );
 
 	unlockStreamstor(D, id);
 

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2012 by Walter Brisken                             *
+ *   Copyright (C) 2008-2013 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -37,6 +37,7 @@
 #include <mark5ipc.h>
 #include "mk5daemon.h"
 #include "smart.h"
+#include "watchdog.h"
 
 void getModuleInfo(SSHANDLE xlrDevice, Mk5Daemon *D, int bank)
 {
@@ -119,11 +120,11 @@ static int XLR_get_modules(Mk5Daemon *D)
 		return 0;
 	}
 
-	xlrRC = XLROpen(1, &xlrDevice);
+	WATCHDOG( xlrRC = XLROpen(1, &xlrDevice) );
 	++D->nXLROpen;
 	if(xlrRC != XLR_SUCCESS)
 	{
-		xlrError = XLRGetLastError();
+		WATCHDOG( xlrError = XLRGetLastError() );
 		XLRGetErrorMessage(xlrErrorStr, xlrError);
 		snprintf(message, DIFX_MESSAGE_LENGTH, 
 			"ERROR: XLR_get_modules: Cannot open streamstor card.  N=%d Error=%u (%s)\n",
@@ -137,17 +138,17 @@ static int XLR_get_modules(Mk5Daemon *D)
 		return 1;
 	}
 
-	xlrRC = XLRSetOption(xlrDevice, SS_OPT_SKIPCHECKDIR);
+	WATCHDOG( xlrRC = XLRSetOption(xlrDevice, SS_OPT_SKIPCHECKDIR) );
 	if(xlrRC != XLR_SUCCESS)
 	{
-		xlrError = XLRGetLastError();
+		WATCHDOG( xlrError = XLRGetLastError() );
 		if(xlrError != 148) /* XLR_ERR_DRIVEMODULE_NOTREADY */
 		{
 			XLRGetErrorMessage(xlrErrorStr, xlrError);
 			snprintf(message, DIFX_MESSAGE_LENGTH,
 				"ERROR: XLR_get_modules: Cannot set SkipCheckDir.  N=%d Error=%u (%s)\n",
 				D->nXLROpen, xlrError, xlrErrorStr);
-			XLRClose(xlrDevice);
+			WATCHDOG( XLRClose(xlrDevice) );
 
 			unlockStreamstor(D, id);
 
@@ -165,12 +166,12 @@ static int XLR_get_modules(Mk5Daemon *D)
 		bool updateModule = false;
 		bool newModule = false;
 
-		xlrRC = XLRGetBankStatus(xlrDevice, bank, &(D->bank_stat[bank]));
+		WATCHDOG( xlrRC = XLRGetBankStatus(xlrDevice, bank, &(D->bank_stat[bank])) );
 		if(xlrRC != XLR_SUCCESS)
 		{
 			D->vsns[bank][0] = 0;
 
-			xlrError = XLRGetLastError();
+			WATCHDOG( xlrError = XLRGetLastError() );
 			XLRGetErrorMessage(xlrErrorStr, xlrError);
 			snprintf(message, DIFX_MESSAGE_LENGTH,
 				"ERROR: XLR_get_modules: BANK_%c XLRGetBankStatus failed.  N=%d Error=%u (%s)\n",
@@ -218,7 +219,7 @@ static int XLR_get_modules(Mk5Daemon *D)
 		{
 			long long bu;
 			
-			bu = XLRGetLength(xlrDevice);
+			WATCHDOG( bu = XLRGetLength(xlrDevice) );
 			if(bu != D->bytesUsed[bank])	/* something changed unexpectedly!  Update it! */
 			{
 				D->bytesUsed[bank] = bu;
@@ -240,7 +241,7 @@ static int XLR_get_modules(Mk5Daemon *D)
 		}
 	}
 
-	XLRClose(xlrDevice);
+	WATCHDOG( XLRClose(xlrDevice) );
 
 	unlockStreamstor(D, id);
 
@@ -251,8 +252,7 @@ static int XLR_get_modules(Mk5Daemon *D)
 #warning "FIXME: compare inventory of disks to expected number"
 	}
 
-	snprintf(message, DIFX_MESSAGE_LENGTH, "XLR VSNs: <%s> %s  <%s> %s  N=%d\n",
-		D->vsns[0], temp[0], D->vsns[1], temp[1], D->nXLROpen);
+	snprintf(message, DIFX_MESSAGE_LENGTH, "XLR VSNs: <%s> %s  <%s> %s  N=%d\n", D->vsns[0], temp[0], D->vsns[1], temp[1], D->nXLROpen);
 	Logger_logData(D->log, message);
 
 	D->openStreamstorError = false;
@@ -379,11 +379,11 @@ static int XLR_disc_power(Mk5Daemon *D, const char *banks, int on)
 		return 0;
 	}
 	
-	xlrRC = XLROpen(1, &xlrDevice);
+	WATCHDOG( xlrRC = XLROpen(1, &xlrDevice) );
 	++D->nXLROpen;
 	if(xlrRC != XLR_SUCCESS)
 	{
-		xlrError = XLRGetLastError();
+		WATCHDOG( xlrError = XLRGetLastError() );
 		XLRGetErrorMessage(xlrErrorStr, xlrError);
 		snprintf(message, DIFX_MESSAGE_LENGTH, 
 			"ERROR: XLR_disc_power: Cannot open streamstor card.  N=%d Error=%u (%s)\n",
@@ -416,15 +416,15 @@ static int XLR_disc_power(Mk5Daemon *D, const char *banks, int on)
 		}
 		if(on)
 		{
-			xlrRC = XLRMountBank(xlrDevice, bank);
+			WATCHDOG( xlrRC = XLRMountBank(xlrDevice, bank) );
 		}
 		else
 		{
-			xlrRC = XLRDismountBank(xlrDevice, bank);
+			WATCHDOG( xlrRC = XLRDismountBank(xlrDevice, bank) );
 		}
 		if(xlrRC != XLR_SUCCESS)
 		{
-			xlrError = XLRGetLastError();
+			WATCHDOG( xlrError = XLRGetLastError() );
 			XLRGetErrorMessage(xlrErrorStr, xlrError);
 			snprintf(message, DIFX_MESSAGE_LENGTH, 
 				"XLR_disc_power: error for bank=%c on=%d Error=%u (%s)\n",
@@ -436,7 +436,7 @@ static int XLR_disc_power(Mk5Daemon *D, const char *banks, int on)
 		}
 	}
 
-	XLRClose(xlrDevice);
+	WATCHDOG( XLRClose(xlrDevice) );
 
 	unlockStreamstor(D, id);
 
@@ -487,17 +487,17 @@ static int XLR_error(Mk5Daemon *D, unsigned int *xlrError , char *msg)
 		return 5;	/* too busy */
 	}
 
-	xlrRC = XLROpen(1, &xlrDevice);
+	WATCHDOG( xlrRC = XLROpen(1, &xlrDevice) );
 	++D->nXLROpen;
 	if(xlrRC != XLR_SUCCESS)
 	{
-		*xlrError = XLRGetLastError();
+		WATCHDOG( *xlrError = XLRGetLastError() );
 		XLRGetErrorMessage(msg, *xlrError);
 		D->openStreamstorError = true;
 	}
 	else
 	{
-		XLRClose(xlrDevice);
+		WATCHDOG( XLRClose(xlrDevice) );
 		D->openStreamstorError = false;
 	}
 
@@ -523,11 +523,11 @@ static int XLR_setProtect(Mk5Daemon *D, enum WriteProtectState state, char *msg)
 		return 5;	/* too busy */
 	}
 
-	xlrRC = XLROpen(1, &xlrDevice);
+	WATCHDOG( xlrRC = XLROpen(1, &xlrDevice) );
 	++D->nXLROpen;
 	if(xlrRC != XLR_SUCCESS)
 	{
-		xlrError = XLRGetLastError();
+		WATCHDOG( xlrError = XLRGetLastError() );
 		XLRGetErrorMessage(msg, xlrError);
 		snprintf(message, DIFX_MESSAGE_LENGTH,
 			"ERROR: XLR_setProtect: Cannot open streamstor card.  N=%d Error=%u (%s)\n",
@@ -540,45 +540,45 @@ static int XLR_setProtect(Mk5Daemon *D, enum WriteProtectState state, char *msg)
 		return 4;	/* error */
 	}
 
-	xlrRC = XLRSelectBank(xlrDevice, D->activeBank);
+	WATCHDOG( xlrRC = XLRSelectBank(xlrDevice, D->activeBank) );
 	if(xlrRC != XLR_SUCCESS)
 	{
-		xlrError = XLRGetLastError();
+		WATCHDOG( xlrError = XLRGetLastError() );
 		XLRGetErrorMessage(msg, xlrError);
 		snprintf(message, DIFX_MESSAGE_LENGTH,
 			"ERROR: XLR_setProtect: cannot select bank %d Error=%u (%s)\n",
 			D->activeBank, xlrError, msg);
 		Logger_logData(D->log, message);
 
-		XLRClose(xlrDevice);
+		WATCHDOG( XLRClose(xlrDevice) );
 		unlockStreamstor(D, id);
 
 		return 4;	/* error */
 	}
 
-	XLRGetDirectory(xlrDevice, &(D->dir_info[D->activeBank]));
+	WATCHDOG( XLRGetDirectory(xlrDevice, &(D->dir_info[D->activeBank])) );
 
 	switch(state)
 	{
 	case PROTECT_ON:
-		xlrRC = XLRSetWriteProtect(xlrDevice);
+		WATCHDOG( xlrRC = XLRSetWriteProtect(xlrDevice) );
 		break;
 	case PROTECT_OFF:
-		xlrRC = XLRClearWriteProtect(xlrDevice);
+		WATCHDOG( xlrRC = XLRClearWriteProtect(xlrDevice) );
 		break;
 	}
 
-	xlrRC = XLRSelectBank(xlrDevice, D->activeBank);
+	WATCHDOG( xlrRC = XLRSelectBank(xlrDevice, D->activeBank) );
 	if(xlrRC != XLR_SUCCESS)
 	{
-		xlrError = XLRGetLastError();
+		WATCHDOG( xlrError = XLRGetLastError() );
 		XLRGetErrorMessage(msg, xlrError);
 		snprintf(message, DIFX_MESSAGE_LENGTH,
 			"ERROR: XLR_setProtect: cannot set protect to %d Error=%u (%s)\n",
 			state, xlrError, msg);
 		Logger_logData(D->log, message);
 
-		XLRClose(xlrDevice);
+		WATCHDOG( XLRClose(xlrDevice) );
 		unlockStreamstor(D, id);
 
 		snprintf(message, DIFX_MESSAGE_LENGTH, "%s failed for bank %c", (state == PROTECT_ON ? "XLRSetWriteProtect" : "XLRClearWriteProtect"), 'A' + D->activeBank);
@@ -587,7 +587,7 @@ static int XLR_setProtect(Mk5Daemon *D, enum WriteProtectState state, char *msg)
 		return 4;	/* error */
 	}
 
-	XLRClose(xlrDevice);
+	WATCHDOG( XLRClose(xlrDevice) );
 	unlockStreamstor(D, id);
 
 	return 0;

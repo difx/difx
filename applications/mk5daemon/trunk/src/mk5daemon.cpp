@@ -48,6 +48,9 @@
 #include "../config.h"
 #include "logger.h"
 #include "proc.h"
+#ifdef HAVE_XLRAPI_H
+#include "watchdog.h"
+#endif
 
 const char program[] = PACKAGE_NAME;
 const char author[]  = PACKAGE_BUGREPORT;
@@ -1046,6 +1049,16 @@ int main(int argc, char **argv)
 #ifdef HAVE_XLRAPI_H
 	firstTime = lastTime;
 	halfInterval = D->loadMonInterval/2;
+
+	v = initWatchdog();
+	if(v < 0)
+	{
+		Logger_logData(D->log, "Error starting Streamstor Watchdog");
+	}
+	else
+	{
+		setWatchdogTimeout(60);
+	}
 #endif
 
 	while(!D->dieNow)
@@ -1246,6 +1259,8 @@ int main(int argc, char **argv)
 		D->recordPipe = 0;
 		D->recordState = RECORD_OFF;
 	}
+
+	stopWatchdog();
 #endif
 
 	Mk5Daemon_stopMonitor(D);

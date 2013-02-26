@@ -16,6 +16,7 @@ Version 2.2.0
 * now *mark5* identifies a Mark5 unit, not just mark5*
 * For VDIF format, save the threads to the .dir file
 * Fix for bank_info query with only bank B populated
+* Mark5 Watchdog added to mk5daemon proper
 
 Version 2.1.0
 ~~~~~~~~~~~~~
