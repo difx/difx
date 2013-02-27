@@ -30,6 +30,7 @@
 #ifndef __WATCHDOG_H__
 #define __WATCHDOG_H__
 
+#include <stdio.h>
 #include <pthread.h>
 #include <time.h>
 #include <xlrapi.h>
@@ -101,6 +102,8 @@ extern int watchdogXLRErrorCode;
 void setWatchdogVerbosity(int v);
 
 void setWatchdogTimeout(int timeout);
+
+void setWatchdogStream(FILE *stream);
 
 int initWatchdog();
 

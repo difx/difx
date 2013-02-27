@@ -680,6 +680,10 @@ void handleRecordMessage(Mk5Daemon *D, time_t t)
 			{
 				Logger_logData(D->log, message);
 			}
+			else if(n > 2 && strcmp(A[0], "Watchdog") == 0 && strcmp(A[1], "caught") == 0)
+			{
+				Logger_logData(D->log, message);
+			}
 			else if(strcmp(A[0], "Halted") == 0)
 			{
 				D->recordState = RECORD_HALTED;
@@ -1058,6 +1062,10 @@ int main(int argc, char **argv)
 	else
 	{
 		setWatchdogTimeout(60);
+		if(isEmbedded)
+		{
+			setWatchdogStream(stdout);
+		}
 	}
 #endif
 

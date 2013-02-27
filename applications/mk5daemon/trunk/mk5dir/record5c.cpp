@@ -1121,6 +1121,7 @@ int main(int argc, char **argv)
 	/* 60 seconds should be enough to complete any XLR command */
 	setWatchdogTimeout(60);
 	setWatchdogVerbosity(verbose);
+	setWatchdogStream(stdout);
 
 	difxMessageInit(-1, program);
 

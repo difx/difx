@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2010-2012 by Walter Brisken                             *
+ *   Copyright (C) 2010-2013 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -27,9 +27,7 @@
 //
 //============================================================================
 
-#include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
 #include <string.h>
 #include "watchdog.h"
 
@@ -41,6 +39,7 @@ int watchdogTimeout = 20;
 pthread_t watchdogThread;
 char watchdogXLRError[XLR_ERROR_LENGTH+1];
 int watchdogXLRErrorCode;
+FILE *watchdogStream = stderr;
 
 void setWatchdogVerbosity(int v)
 {
@@ -50,6 +49,11 @@ void setWatchdogVerbosity(int v)
 void setWatchdogTimeout(int t)
 {
 	watchdogTimeout = t;
+}
+
+void setWatchdogStream(FILE *stream)
+{
+	watchdogStream = stream;
 }
 
 void *watchdogFunction(void *data)
@@ -76,14 +80,14 @@ void *watchdogFunction(void *data)
 			deltat = time(0) - watchdogTime;
 			if(deltat > watchdogTimeout)
 			{
-				fprintf(stderr, "Watchdog caught a hang-up executing: %s\n", watchdogStatement);
+				fprintf(watchdogStream, "Watchdog caught a hang-up executing: %s\n", watchdogStatement);
 				exit(EXIT_FAILURE);
 			}
 			else if(deltat != lastdeltat)
 			{
 				if(deltat > (watchdogTimeout/2) && deltat%2 == 0)
 				{
-					fprintf(stderr, "Waiting %d seconds executing: %s\n", deltat, watchdogStatement);
+					fprintf(watchdogStream, "Waiting %d seconds executing: %s\n", deltat, watchdogStatement);
 				}
 				lastdeltat = deltat;
 			}
@@ -110,7 +114,7 @@ int initWatchdog()
 
 	if(perr != 0)
 	{
-		fprintf(stderr, "Error: could not launch watchdog thread!\n");
+		fprintf(watchdogStream, "Error: could not launch watchdog thread!\n");
 		return -1;
 	}
 
