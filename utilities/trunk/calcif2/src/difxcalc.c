@@ -371,7 +371,7 @@ static double computePolyModel(DifxPolyModel *im, const struct modelTemp *mod, d
 }
 
 /* antenna here is a pointer to a particular antenna object */
-static int antennaCalc(int scanId, int antId, const DifxInput *D, CalcParams *p, int phasecentre, int verbose)
+static int antennaCalc(int scanId, int antId, const DifxInput *D, const char *prefix, CalcParams *p, int phasecentre, int verbose)
 {
 	struct getCALC_arg *request;
 	struct CalcResults results;
@@ -430,8 +430,17 @@ static int antennaCalc(int scanId, int antId, const DifxInput *D, CalcParams *p,
 	        request->depoch   = source->pmEpoch;
 	}
 
-	snprintf(externalDelayFilename, DIFXIO_FILENAME_LENGTH, "%s_%s.delay", antenna->name, source->name);
+	snprintf(externalDelayFilename, DIFXIO_FILENAME_LENGTH, "%s.%s.%s.delay", prefix, antenna->name, source->name);
 	ed = newExternalDelay(externalDelayFilename);
+	if(!ed)
+	{
+		snprintf(externalDelayFilename, DIFXIO_FILENAME_LENGTH, "%s_%s.delay", antenna->name, source->name);
+		ed = newExternalDelay(externalDelayFilename);
+		if(ed)
+		{
+			fprintf(stderr, "Warning: using %s to drive delays.  This filename designator is obsolete.\n", externalDelayFilename);
+		}
+	}
 
 	for(i = 0; i < nInt; ++i)
 	{
@@ -526,7 +535,7 @@ static int antennaCalc(int scanId, int antId, const DifxInput *D, CalcParams *p,
 	return nError;
 }
 
-static int scanCalc(int scanId, const DifxInput *D, CalcParams *p, int isLast, int verbose)
+static int scanCalc(int scanId, const DifxInput *D, const char *prefix, CalcParams *p, int isLast, int verbose)
 {
 	DifxPolyModel *im;
 	int antId;
@@ -587,7 +596,7 @@ static int scanCalc(int scanId, const DifxInput *D, CalcParams *p, int isLast, i
 			}
 
 			/* call calc to derive delay, etc... polys */
-			v = antennaCalc(scanId, antId, D, p, k, verbose);
+			v = antennaCalc(scanId, antId, D, prefix, p, k, verbose);
 			if(v < 0)
 			{
 				return -1;
@@ -598,7 +607,7 @@ static int scanCalc(int scanId, const DifxInput *D, CalcParams *p, int isLast, i
 	return 0;
 }
 
-int difxCalc(DifxInput *D, CalcParams *p, int verbose)
+int difxCalc(DifxInput *D, CalcParams *p, const char *prefix, int verbose)
 {
 	int scanId;
 	int v;
@@ -633,7 +642,7 @@ int difxCalc(DifxInput *D, CalcParams *p, int verbose)
 		{
 			isLast = 0;
 		}
-		v = scanCalc(scanId, D, p, isLast, verbose);
+		v = scanCalc(scanId, D, prefix, p, isLast, verbose);
 		if(v < 0)
 		{
 			return -1;

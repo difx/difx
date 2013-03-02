@@ -473,7 +473,7 @@ static void mjd2slashes(char *dateStr, int mjd)
 	sprintf(dateStr, "%04d/%02d/%02d", tt.tm_year+1900, tt.tm_mon+1, tt.tm_mday);
 }
 
-static void difx2skd(const DifxInput *D, const BlokqAntenna *B, const char *skdFile)
+static void difx2skd(const DifxInput *D, const BlokqAntenna *B, int sourceId, const char *skdFile)
 {
 	FILE *out;
 	int a, s;
@@ -561,6 +561,11 @@ static void difx2skd(const DifxInput *D, const BlokqAntenna *B, const char *skdF
 		int day, seconds, nTime;
 		int i;
 
+		if(D->scan[s].pointingCentreSrc != sourceId)
+		{
+			continue;
+		}
+
 		day = (int)(D->scan[s].mjdStart);
 		seconds = dt*(int)((D->scan[s].mjdStart - day)*(86400.0/dt));
 		nTime = ((int)((D->scan[s].mjdEnd - day)*(86400.0/dt)+1) - (int)((D->scan[s].mjdStart - day)*(86400.0/dt)))*dt/dt2 + 1;
@@ -628,11 +633,8 @@ static int calc2skd(const char *prefix, const BlokqAntenna *B, const CommandLine
 	if(v >= DIFXIO_FILENAME_LENGTH)
 	{
 		fprintf(stderr, "Error: filename %s.calc is too long (max %d chars)\n", prefix, DIFXIO_FILENAME_LENGTH-1);
-	}
-	v = snprintf(skdFile, DIFXIO_FILENAME_LENGTH, "%s.skd", prefix);
-	if(v >= DIFXIO_FILENAME_LENGTH)
-	{
-		fprintf(stderr, "Error: filename %s.skd is too long (max %d chars)\n", prefix, DIFXIO_FILENAME_LENGTH-1);
+
+		exit(EXIT_FAILURE);
 	}
 	in = fopen(fn, "r");
 	if(!in)
@@ -667,7 +669,8 @@ static int calc2skd(const char *prefix, const BlokqAntenna *B, const CommandLine
 	
 	if(D)
 	{
-		int s;
+		int sourceId;
+		int spacecraftId;
 
 		if(difxVersion && D->job->difxVersion[0])
 		{
@@ -692,19 +695,29 @@ static int calc2skd(const char *prefix, const BlokqAntenna *B, const CommandLine
 			printf("Warning: calc2skd: working on unversioned job\n");
 		}
 
-		difx2skd(D, B, skdFile);
+		for(sourceId = 0; sourceId < D->nSource; ++sourceId)
+		{
+			v = snprintf(skdFile, DIFXIO_FILENAME_LENGTH, "%s.%s.skd", prefix, D->source[sourceId].name);
+			if(v >= DIFXIO_FILENAME_LENGTH)
+			{
+				fprintf(stderr, "Error: filename %s.%s.skd is too long (max %d chars)\n", prefix, D->source[sourceId].name, DIFXIO_FILENAME_LENGTH-1);
 
-		for(s = 0; s < D->nSpacecraft; ++s)
+				exit(EXIT_FAILURE);
+			}
+			difx2skd(D, B, sourceId, skdFile);
+		}
+
+		for(spacecraftId = 0; spacecraftId < D->nSpacecraft; ++spacecraftId)
 		{
 			char xyzFile[DIFXIO_FILENAME_LENGTH];
 
-			v = snprintf(xyzFile, DIFXIO_FILENAME_LENGTH, "%s.%s.xyz", prefix, D->spacecraft[s].name);
+			v = snprintf(xyzFile, DIFXIO_FILENAME_LENGTH, "%s.%s.xyz", prefix, D->spacecraft[spacecraftId].name);
 			if(v >= DIFXIO_FILENAME_LENGTH)
 			{
-				fprintf(stderr, "Error: filename %s.%s.xyz is too long (max %d chars)\n", prefix, D->spacecraft[s].name, DIFXIO_FILENAME_LENGTH-1);
+				fprintf(stderr, "Error: filename %s.%s.xyz is too long (max %d chars)\n", prefix, D->spacecraft[spacecraftId].name, DIFXIO_FILENAME_LENGTH-1);
 			}
 
-			difx2xyz(D->spacecraft + s, xyzFile);
+			difx2xyz(D->spacecraft + spacecraftId, xyzFile);
 		}
 
 		deleteDifxInput(D);
