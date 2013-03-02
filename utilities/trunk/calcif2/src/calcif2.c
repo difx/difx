@@ -488,6 +488,13 @@ static void tweakDelays(DifxInput *D, const char *tweakFile, int verbose)
 	fclose(in);
 }
 
+static int isdir(const char *path)
+{
+	struct stat st;
+
+	return stat(path, &st) == 0 && (st.st_mode & S_IFMT) == S_IFDIR;
+}
+
 static int runfile(const char *prefix, const CommandLineOptions *opts, CalcParams *p)
 {
 	DifxInput *D;
@@ -535,17 +542,81 @@ static int runfile(const char *prefix, const CommandLineOptions *opts, CalcParam
 	if(opts->useSekido)
 	{
 		const int MaxCommandLength = 1024;
+		const int MaxPathLength = 256;
 		char command[MaxCommandLength];
-		const char *paramsFile;
+		char tmpDir[MaxPathLength];
+		const char *paramsPath;
 		int a, s, v;
 
-		paramsFile = getenv("CALCPARAMS");
-		if(paramsFile == 0)
+		paramsPath = getenv("CALCPARAMS");
+		if(paramsPath == 0)
 		{
 			fprintf(stderr, "Error: CALCPARAMS env var must be set\n");
 
 			exit(EXIT_FAILURE);
 		}
+
+		v = snprintf(command, MaxCommandLength, "%s/blokq.dat", paramsPath);
+		if(v >= MaxCommandLength)
+		{
+			fprintf(stderr, "Error: command string too short (%d < %d) generating BLOKQ envvar\n", MaxCommandLength, v);
+
+			exit(EXIT_FAILURE);
+		}
+		if(opts->verbose > 0)
+		{
+			printf("Setting environment variable BLOKQ = %s\n", command);
+		}
+		setenv("BLOKQ", command, 1);
+
+		/* 0. make temp directories */
+		v = snprintf(tmpDir, MaxPathLength, "%s.tmp/sekido", prefix);
+		if(v >= MaxPathLength)
+		{
+			fprintf(stderr, "Error: tmpDir string too short (%d < %d)\n", MaxPathLength, v);
+
+			exit(EXIT_FAILURE);
+		}
+		if(isdir(tmpDir))
+		{
+			fprintf(stderr, "Error: directory %s exists already\n", tmpDir);
+			fprintf(stderr, "Maybe the process died or was interrupted in a previous attempt.  If so, remove the directory and try again.\n");
+
+			exit(EXIT_FAILURE);
+		}
+		
+		v = snprintf(command, MaxCommandLength, "mkdir -p %s", tmpDir);
+		if(v >= MaxCommandLength)
+		{
+			fprintf(stderr, "Error: command string too short (%d < %d) generating mkdir command\n", MaxCommandLength, v);
+
+			exit(EXIT_FAILURE);
+		}
+		if(opts->verbose > 0)
+		{
+			printf("Executing: %s\n", command);
+		}
+		system(command);
+
+		if(!isdir(tmpDir))
+		{
+			fprintf(stderr, "Error: creation of directory %s failed.\n", tmpDir);
+
+			exit(EXIT_FAILURE);
+		}
+		
+		v = snprintf(command, MaxCommandLength, "ln -s %s %s.tmp/", paramsPath, prefix);
+		if(v >= MaxCommandLength)
+		{
+			fprintf(stderr, "Error: command string too short (%d < %d) generating ln -s command\n", MaxCommandLength, v);
+
+			exit(EXIT_FAILURE);
+		}
+		if(opts->verbose > 0)
+		{
+			printf("Executing: %s\n", command);
+		}
+		system(command);
 
 		/* 1. generate .skd file and .xyz files as needed */
 		v = snprintf(command, MaxCommandLength, "calc2skd %s %s", (opts->force ? "--force" : ""), prefix);
@@ -561,6 +632,27 @@ static int runfile(const char *prefix, const CommandLineOptions *opts, CalcParam
 		}
 		system(command);
 
+		v = snprintf(command, MaxCommandLength, "mv %s.*.skd %s.*.xyz %s", prefix, prefix, tmpDir);
+		if(v >= MaxCommandLength)
+		{
+			fprintf(stderr, "Error: command string too short (%d < %d) generating mv command\n", MaxCommandLength, v);
+
+			exit(EXIT_FAILURE);
+		}
+		if(opts->verbose > 0)
+		{
+			printf("Executing: %s\n", command);
+		}
+		system(command);
+
+		/* 2. enter temp directory */
+		v = snprintf(command, MaxCommandLength, "%s", tmpDir);
+		if(opts->verbose > 0)
+		{
+			printf("Entering: %s\n", command);
+		}
+		chdir(command);
+
 		/* 2. run calc_skd for each antenna / source */
 		for(s = 0; s < D->nSource; ++s)
 		{
@@ -570,11 +662,11 @@ static int runfile(const char *prefix, const CommandLineOptions *opts, CalcParam
 
 				if(D->source[s].spacecraftId >= 0)
 				{
-					v = snprintf(command, MaxCommandLength, "calc_skd %s.%s.skd %s.%s.%s.delay -baseid G%c -finit %s.%s.xyz %s -calcon %s -prtb -atmout", prefix, D->source[s].name, prefix, D->antenna[a].name, D->source[s].name, letter, prefix, D->source[s].name, D->source[s].name, paramsFile);
+					v = snprintf(command, MaxCommandLength, "calc_skd %s.%s.skd %s.%s.%s.delay -baseid G%c -finit %s.%s.xyz %s -calcon ../params/decont2.input -extf ../params/extfile.eop -prtb -atmout", prefix, D->source[s].name, prefix, D->antenna[a].name, D->source[s].name, letter, prefix, D->source[s].name, D->source[s].name);
 				}
 				else
 				{
-					v = snprintf(command, MaxCommandLength, "calc_skd %s.%s.skd %s.%s.%s.delay -baseid G%c -skd_src %s --calcon %s -prtb -atmout", prefix, D->source[s].name, prefix, D->antenna[a].name, D->source[s].name, letter, D->source[s].name, paramsFile);
+					v = snprintf(command, MaxCommandLength, "calc_skd %s.%s.skd %s.%s.%s.delay -baseid G%c -skd_src %s --calcon ../params/decont2.input -extf ../params/extfile.eop -prtb -atmout", prefix, D->source[s].name, prefix, D->antenna[a].name, D->source[s].name, letter, D->source[s].name);
 				}
 
 				if(v >= MaxCommandLength)
@@ -596,6 +688,38 @@ static int runfile(const char *prefix, const CommandLineOptions *opts, CalcParam
 				}
 			}
 		}
+
+		/* 3. move files back, revert to original directory, and remove temp */
+		v = snprintf(command, MaxCommandLength, "mv * ../..");
+		if(v >= MaxCommandLength)
+		{
+			fprintf(stderr, "Error: command string too short (%d < %d) generating mv command\n", MaxCommandLength, v);
+
+			exit(EXIT_FAILURE);
+		}
+		if(opts->verbose > 0)
+		{
+			printf("Executing: %s\n", command);
+		}
+		system(command);
+
+		if(opts->verbose > 0)
+		{
+			printf("Going back to ../..\n");
+		}
+		chdir("../..");
+		v = snprintf(command, MaxCommandLength, "/bin/rm -rf %s.tmp", prefix);
+		if(v >= MaxCommandLength)
+		{
+			fprintf(stderr, "Error: command string too short (%d < %d) generating rm command\n", MaxCommandLength, v);
+
+			exit(EXIT_FAILURE);
+		}
+		if(opts->verbose > 0)
+		{
+			printf("Executing: %s\n", command);
+		}
+		system(command);
 	}
 
 	if(opts->force == 0 && skipFile(D->job->calcFile, D->job->imFile))
