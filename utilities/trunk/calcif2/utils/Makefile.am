@@ -1,3 +1,5 @@
+bin_PROGRAMS = calc2skd
+
 dist_bin_SCRIPTS = \
 	genmachines \
 	jobdisks \
@@ -8,3 +10,6 @@ dist_bin_SCRIPTS = \
 	listcpus \
 	startdifx \
 	vlog
+
+calc2skd_SOURCES = \
+	calc2skd.c
