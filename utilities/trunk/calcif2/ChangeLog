@@ -7,6 +7,7 @@ Version 2.2.0
 * Add polynomial fitting option (-F) .  This will take more CALC samplings than needed and fit
   a constrained polynomial (endpoints fixed) to that data.  This seems to produce marginally
   better values.  This new mode requires GSL.
+* loose integration with an informal version of CALC with Sekido model
 
 Version 2.1.0
 * Name change from DiFX-2.0.2

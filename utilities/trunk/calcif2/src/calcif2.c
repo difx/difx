@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2012 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2008-2013 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -570,7 +570,7 @@ static int runfile(const char *prefix, const CommandLineOptions *opts, CalcParam
 		setenv("BLOKQ", command, 1);
 
 		/* 0. make temp directories */
-		v = snprintf(tmpDir, MaxPathLength, "%s.tmp/sekido", prefix);
+		v = snprintf(tmpDir, MaxPathLength, "%s.tmp", prefix);
 		if(v >= MaxPathLength)
 		{
 			fprintf(stderr, "Error: tmpDir string too short (%d < %d)\n", MaxPathLength, v);
@@ -581,6 +581,13 @@ static int runfile(const char *prefix, const CommandLineOptions *opts, CalcParam
 		{
 			fprintf(stderr, "Error: directory %s exists already\n", tmpDir);
 			fprintf(stderr, "Maybe the process died or was interrupted in a previous attempt.  If so, remove the directory and try again.\n");
+
+			exit(EXIT_FAILURE);
+		}
+		v = snprintf(tmpDir, MaxPathLength, "%s.tmp/sekido", prefix);
+		if(v >= MaxPathLength)
+		{
+			fprintf(stderr, "Error: tmpDir string too short (%d < %d)\n", MaxPathLength, v);
 
 			exit(EXIT_FAILURE);
 		}
@@ -646,12 +653,7 @@ static int runfile(const char *prefix, const CommandLineOptions *opts, CalcParam
 		system(command);
 
 		/* 2. enter temp directory */
-		v = snprintf(command, MaxCommandLength, "%s", tmpDir);
-		if(opts->verbose > 0)
-		{
-			printf("Entering: %s\n", command);
-		}
-		chdir(command);
+		chdir(tmpDir);
 
 		/* 2. run calc_skd for each antenna / source */
 		for(s = 0; s < D->nSource; ++s)
@@ -677,7 +679,7 @@ static int runfile(const char *prefix, const CommandLineOptions *opts, CalcParam
 
 					exit(EXIT_FAILURE);
 				}
-				if(opts->verbose < 2 && v < MaxCommandLength - 15)
+				if(opts->verbose < 2 && v < MaxCommandLength - 20)
 				{
 					strcat(command, " > /dev/null 2>&1");
 				}

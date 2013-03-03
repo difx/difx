@@ -168,6 +168,7 @@ ExternalDelay *newExternalDelay(const char *filename)
 			}
 			ed->rows[lineNum-1].dry = dry;
 			ed->rows[lineNum-1].wet = wet;
+			ed->rows[lineNum-1].delay -= (dry + wet);
 		}
 	}
 
