@@ -656,17 +656,19 @@ static int runfile(const char *prefix, const CommandLineOptions *opts, CalcParam
 		/* 2. run calc_skd for each antenna / source */
 		for(s = 0; s < D->nSource; ++s)
 		{
+			char letter = 'A';
+			char srcName[10];
+
+			sprintf(srcName, "SRC%05d", s);
 			for(a = 0; a < D->nAntenna; ++a)
 			{
-				char letter = 'A';
-
 				if(D->source[s].spacecraftId >= 0)
 				{
-					v = snprintf(command, MaxCommandLength, "calc_skd %s.%s.skd %s.%s.%s.delay -baseid G%c -finit %s.%s.xyz %s -calcon ../params/decont2.input -extf ../params/extfile.eop -prtb -atmout", prefix, D->source[s].name, prefix, D->antenna[a].name, D->source[s].name, letter, prefix, D->source[s].name, D->source[s].name);
+					v = snprintf(command, MaxCommandLength, "calc_skd %s.%s.skd %s.%s.%s.delay -baseid G%c -finit %s.%s.xyz %s -calcon ../params/decont2.input -extf ../params/extfile.eop -prtb -atmout", prefix, D->source[s].name, prefix, D->antenna[a].name, D->source[s].name, letter, prefix, D->source[s].name, srcName);
 				}
 				else
 				{
-					v = snprintf(command, MaxCommandLength, "calc_skd %s.%s.skd %s.%s.%s.delay -baseid G%c -skd_src %s --calcon ../params/decont2.input -extf ../params/extfile.eop -prtb -atmout", prefix, D->source[s].name, prefix, D->antenna[a].name, D->source[s].name, letter, D->source[s].name);
+					v = snprintf(command, MaxCommandLength, "calc_skd %s.%s.skd %s.%s.%s.delay -baseid G%c -skd_src %s --calcon ../params/decont2.input -extf ../params/extfile.eop -prtb -atmout", prefix, D->source[s].name, prefix, D->antenna[a].name, D->source[s].name, letter, srcName);
 				}
 
 				if(v >= MaxCommandLength)
@@ -675,6 +677,11 @@ static int runfile(const char *prefix, const CommandLineOptions *opts, CalcParam
 
 					exit(EXIT_FAILURE);
 				}
+				if(opts->verbose < 2 && v < MaxCommandLength - 15)
+				{
+					strcat(command, " > /dev/null 2>&1");
+				}
+
 				if(opts->verbose > 0)
 				{
 					printf("Executing: %s\n", command);
@@ -878,7 +885,7 @@ int run(const CommandLineOptions *opts)
 		}
 		if(opts->verbose >= 0)
 		{
-			printf("Processing file %d/%d = %s\n", i+1, opts->nFile, opts->files[i]);
+			printf("%s processing file %d/%d = %s\n", program, i+1, opts->nFile, opts->files[i]);
 		}
 		runfile(opts->files[i], opts, p);
 	}

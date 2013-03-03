@@ -518,15 +518,17 @@ static void difx2skd(const DifxInput *D, const BlokqAntenna *B, int sourceId, co
 	}
 
 	fprintf(out, "$SOURCES\n");
+	/* skd cannot support source names longer than 8 chars, so use a systematic name instead */
 	for(s = 0; s < D->nSource; ++s)
 	{
-		stringify60(D->source->ra*12.0/M_PI, raStr);
-		stringify60(D->source->dec*180.0/M_PI, decStr);
-		fprintf(out, " %-8s $        %18s %18s 2000.0 0.0\n", D->source[s].name, raStr, decStr);
+		stringify60(D->source[s].ra*12.0/M_PI, raStr);
+		stringify60(D->source[s].dec*180.0/M_PI, decStr);
+		fprintf(out, " SRC%05d $        %18s %18s 2000.0 0.0\n", s, raStr, decStr);
 	}
 
 	fprintf(out, "$STATIONS\n");
 	fprintf(out, "A  G  GEOCENTR AZEL 0.00000 180.0  0   95.0  625.0 180.0  0    6.0   88.0  11.0\n");
+	fprintf(out, "P  GC GEOCENTR        +0.00000       +0.00000       +0.00000   00000000   0.0     0.0\n");
 	for(a = 0; a < D->nAntenna; ++a)
 	{
 		const char *blokqName;
@@ -534,13 +536,6 @@ static void difx2skd(const DifxInput *D, const BlokqAntenna *B, int sourceId, co
 		blokqName = findBlokqAntenna(B, D->antenna[a].X, D->antenna[a].Y, D->antenna[a].Z);
 
 		fprintf(out, "A  %c %-8s %s %7.5f  90.0  0  270.0  810.0  30.0  0    2.3   88.0  25.0 %2s %2s\n", antennaCodes[a], blokqName, antennaMountTypeNames[D->antenna[a].mount], D->antenna[a].offset[0], D->antenna[a].name, D->antenna[a].name);
-	}
-	fprintf(out, "P  GC GEOCENTR        +0.00000       +0.00000       +0.00000   00000000   0.0     0.0\n");
-	for(a = 0; a < D->nAntenna; ++a)
-	{
-		const char *blokqName;
-
-		blokqName = findBlokqAntenna(B, D->antenna[a].X, D->antenna[a].Y, D->antenna[a].Z);
 		fprintf(out, "P  %2s %-8s  %15.5f %15.5f %15.5f\n", D->antenna[a].name, blokqName, D->antenna[a].X, D->antenna[a].Y, D->antenna[a].Z);
 	}
 	
@@ -572,7 +567,7 @@ static void difx2skd(const DifxInput *D, const BlokqAntenna *B, int sourceId, co
 
 		for(i = 0; i < nTime; ++i)
 		{
-			fprintf(out, "%-8s 0 TT PREOB %05d%06d 0 MIDOB 0 POSTOB G-", D->source[D->scan[s].pointingCentreSrc].name, mjd2yyddd(day), sec2hhmmss(seconds));
+			fprintf(out, "SRC%05d 0 TT PREOB %05d%06d 0 MIDOB 0 POSTOB G-", D->scan[s].pointingCentreSrc, mjd2yyddd(day), sec2hhmmss(seconds));
 			seconds += dt2;
 			if(seconds >= 86400.0)
 			{
@@ -771,7 +766,7 @@ int run(CommandLineOptions *opts)
 		}
 		if(opts->verbose >= 0)
 		{
-			printf("Processing file %d/%d = %s\n", i+1, opts->nFile, opts->files[i]);
+			printf("%s processing file %d/%d = %s\n", program, i+1, opts->nFile, opts->files[i]);
 		}
 		calc2skd(opts->files[i], B, opts);
 	}
