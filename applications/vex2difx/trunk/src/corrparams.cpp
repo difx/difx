@@ -1681,7 +1681,7 @@ int CorrParams::load(const std::string &fileName)
 		PARSE_MODE_EOP
 	};
 
-	const int MaxLineLength = 1024;
+	const int MaxLineLength = 4*1024;
 
 	std::ifstream is;
 	std::vector<std::string> tokens;
