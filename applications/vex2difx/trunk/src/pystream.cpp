@@ -1416,19 +1416,20 @@ int pystream::writeScans(const VexData *V)
 				{
 					// code for GBT pointing scan - set source as a 'peak' type
 					*this << "if isAstrid:" << endl;
-					tab = "    ";
+					tab = "  ";
 					*this << tab << "source" << sourceId << ".setPeak(True)" << endl;
 				}
 
 				// only start scan if we are at least 10sec away from scan end
 				// NOTE - if this changes to a value less than 5sec may need to revisit Executor RDBE code
 				// in case of scan starting later than start time
-				*this << tab << "if array.time() < mjdStart + (" << deltat2 << "-10)*second:" << endl;
-				*this << tab << "  subarray.execute(mjdStart + " << deltat3 << "*second)" << endl;
-				*this << tab << "else:" << endl;
-				*this << tab << "  print 'Skipping scan which ended at time ' + str(mjdStart+" << deltat2 << "*second) + ' since array.time is ' + str(array.time())" << endl;
+				*this << "if array.time() < mjdStart + (" << deltat2 << "-10)*second:" << endl;
+				*this << "  subarray.execute(mjdStart + " << deltat3 << "*second)" << endl;
+				*this << "else:" << endl;
+				*this << "  print 'Skipping scan which ended at time ' + str(mjdStart+" << deltat2 << "*second) + ' since array.time is ' + str(array.time())" << endl;
 				if (ant == "GB" && !record)
 				{
+					*this << "if isAstrid:" << endl;
 					// code for GBT pointing scan - reset source as a 'track' type
 					*this << tab << "source" << sourceId << ".setPeak(False)" << endl;
 					tab = "";
