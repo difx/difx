@@ -12,11 +12,11 @@
 //===========================================================================
 // SVN properties (DO NOT CHANGE)
 //
-// $Id: datamuxer.h 2241 2010-06-22 04:32:51Z ChrisPhillips $
+// $Id$
 // $HeadURL: https://svn.atnf.csiro.au/difx/mpifxcorr/trunk/src/datamuxer.h $
-// $LastChangedRevision: 2241 $
-// $Author: ChrisPhillips $
-// $LastChangedDate: 2010-06-21 22:32:51 -0600 (Mon, 21 Jun 2010) $
+// $LastChangedRevision$
+// $Author$
+// $LastChangedDate$
 //
 //============================================================================
 #ifndef DATAMUXER_H

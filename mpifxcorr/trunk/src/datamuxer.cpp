@@ -12,11 +12,11 @@
 //===========================================================================
 // SVN properties (DO NOT CHANGE)
 //
-// $Id: datamuxer.cpp 2273 2010-07-01 00:22:30Z AdamDeller $
+// $Id$
 // $HeadURL: https://svn.atnf.csiro.au/difx/mpifxcorr/trunk/src/datamuxer.cpp $
-// $LastChangedRevision: 2273 $
-// $Author: AdamDeller $
-// $LastChangedDate: 2010-06-30 18:22:30 -0600 (Wed, 30 Jun 2010) $
+// $LastChangedRevision$
+// $Author$
+// $LastChangedDate$
 //
 //============================================================================
 #include <cstdio>
