@@ -85,7 +85,7 @@ int readLF1file(string project, string stream, string outname, Ethertype EthFilt
       continue;
     
     vector<string> streamFiles;
-    projects.pmGetStreamFiles(&st, streamFiles);
+    projects.pmGetStreamFiles(st, streamFiles);
     
     vector<string>::iterator it2;
     for (it2 = streamFiles.begin(); it2 < streamFiles.end(); it2++) {
@@ -118,7 +118,7 @@ int readLF1file(string project, string stream, string outname, Ethertype EthFilt
 	    ++nFile;
         }
     }
-
+  }
   int nRetVal;
 
   uint16_t ethVal = htons(0x0800);
@@ -207,7 +207,7 @@ int readLF1file(string project, string stream, string outname, Ethertype EthFilt
   delete pktReader;
   
   return 0;
-}
+  }
 
 void usage () {
   cerr << "Usage: lf1extract <project> <stream>" << endl;
