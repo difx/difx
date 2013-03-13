@@ -9,8 +9,9 @@
 #include <time.h>
 #include <stdint.h>
 #include <arpa/inet.h>
- #include <sys/socket.h>
+#include <sys/socket.h>
 #include <netinet/in.h>
+#include <getopt.h>
 
 #include <iostream>
 #include <string.h>
@@ -60,7 +61,7 @@ void chomp (char* s) {
     s[end] = '\0';
 }
 
-int readLF1file(string project, string stream, int npkt) {
+int readLF1file(string project, string stream, int npkt, bool hrft) {
   char *fileNames[16], stationid[3];
   int nFile = 0;
   char datestr[100];
@@ -141,9 +142,6 @@ int readLF1file(string project, string stream, int npkt) {
     stream = strms[istream].strmName;
   }
 
-  //        vector<string> streamFiles;
-  //      projects.pmGetStreamFiles(st, streamFiles);
-
   for (it1 = strms.begin(); it1 < strms.end(); it1++) {
     STREAM st = *it1;
     if(st.strmName.compare(stream) != 0)
@@ -208,73 +206,86 @@ int readLF1file(string project, string stream, int npkt) {
 	  strftime(datestr, 99, "%F %H:%M:%S", date);
 	  
 	  const unsigned char *p = (unsigned char *)(pkt->getData());
-	  
+
 	  printf("Packet: %3d  %s.%06d  %4d ", currentPacket, datestr, usec, pkt->getLen());
-	  // MAC destination
-	  for(int i = 0; i < 6; ++i) printf("%s%02x", (i==0?"":":"), p[i]);
-	  printf("  ");
-	  // MAC source
-	  for(int i = 6; i < 12; ++i) printf("%s%02x", (i==6?"":":"), p[i]);
-	  
-	  // Ethertype
-	  uint16_t ethertype = *((uint16_t*)&p[12]); // Note network byte order
-	  
-	  bool IPv4 = false;
-	  if (ethertype==IPv4val) {
-	    printf("  IPv4 ");
-	    IPv4 = true;
-	  } else if (ethertype==ARPval) {
-	    printf("   ARP ");
-	  } else if (ethertype==LOOPval) {
-	    printf("  Loop ");
-	  } else {
-	    printf(" 0x%04X", ntohs(ethertype));
-	  }
-	  
 	  currentPacket++;
-	  if (!IPv4) {
+
+	  if (hrft) {
+	    uint32_t *q, *r;
+	    for (int i=0; i<8; i++) {
+	      if (i!=0) printf("%49s", " ");
+	      q = (uint32_t*)&p[i*8192];
+	      r = q+1;
+	      printf("%02x %02x %04x %u\n", (*q)&0XFF,  ((*q)>>8)&0XFF, ((*q)>>16)&0XFFFF, *r);
+	    }
+
+	  } else {
+
+	    // MAC destination
+	    for(int i = 0; i < 6; ++i) printf("%s%02x", (i==0?"":":"), p[i]);
+	    printf("  ");
+	    // MAC source
+	    for(int i = 6; i < 12; ++i) printf("%s%02x", (i==6?"":":"), p[i]);
+	    
+	    // Ethertype
+	    uint16_t ethertype = *((uint16_t*)&p[12]); // Note network byte order
+	    
+	    bool IPv4 = false;
+	    if (ethertype==IPv4val) {
+	      printf("  IPv4 ");
+	      IPv4 = true;
+	    } else if (ethertype==ARPval) {
+	      printf("   ARP ");
+	    } else if (ethertype==LOOPval) {
+	      printf("  Loop ");
+	    } else {
+	      printf(" 0x%04X", ntohs(ethertype));
+	    }
+	  
+	    if (!IPv4) {
+	      printf("\n");
+	      continue;
+	    }
+	    
+	    for(int i = 14; i < 26; ++i) printf("%s%02x", ((i-14)%4==0?" ":""), p[i]);
+	  
+	    // Source IP
+	    addr.s_addr = *((in_addr_t*)&p[26]);
+	    printf(" %s", inet_ntoa(addr));
+	    // Destination IP
+	    addr.s_addr = *((in_addr_t*)&p[30]);
+	    printf(" %s", inet_ntoa(addr));
+	    
+	    // UDP headers 
+	    uint16_t source = ntohs(*((uint16_t*)&p[34]));
+	    uint16_t dest = ntohs(*((uint16_t*)&p[36]));
+	    uint16_t len = ntohs(*((uint16_t*)&p[38]));
+	    uint16_t checksum = ntohs(*((uint16_t*)&p[40]));
+	    printf(" %d %d %d %5d ", source, dest, len, checksum);
+	    
+	    //printf("  VH =");
+	    //for(int i = 0; i < 12; ++i) printf("%s%02x", (i%8==0?" ":""), p[i+42]);
+	  
+	    // VTP Sequence 
+	    uint64_t sequence = *((uint64_t*)&p[42]);
+	    printf(" 0x%llx", (unsigned long long)sequence);
+	    
+	    // VDIF Header
+	    header = (vdif_header*)(&p[50]);
+	    getVDIFStationIDStr(header, stationid);
+	    printf(" %2s", stationid);
+	    
+	    printf(" %d",  getVDIFFrameBytes(header));
+	    printf(" 0x%X",  getVDIFFullSecond(header));
+	    printf(" %4d",  getVDIFFrameNumber(header));
+	    printf(" %d",  getVDIFNumChannels(header));
+	    printf(" %d  ",  getVDIFBitsPerSample(header));
+	    
+	    // Data ");
+	    for(int i = 0; i < 16; ++i) printf("%s%02x", (i%8==0?" ":""), p[i+82]);
 	    printf("\n");
-	    continue;
 	  }
-	  
-	  for(int i = 14; i < 26; ++i) printf("%s%02x", ((i-14)%4==0?" ":""), p[i]);
-	  
-	  // Source IP
-	  addr.s_addr = *((in_addr_t*)&p[26]);
-	  printf(" %s", inet_ntoa(addr));
-	  // Destination IP
-	  addr.s_addr = *((in_addr_t*)&p[30]);
-	  printf(" %s", inet_ntoa(addr));
-	  
-	  // UDP headers 
-	  uint16_t source = ntohs(*((uint16_t*)&p[34]));
-	  uint16_t dest = ntohs(*((uint16_t*)&p[36]));
-	  uint16_t len = ntohs(*((uint16_t*)&p[38]));
-	  uint16_t checksum = ntohs(*((uint16_t*)&p[40]));
-	  printf(" %d %d %d %5d ", source, dest, len, checksum);
-	  
-	  //printf("  VH =");
-	  //for(int i = 0; i < 12; ++i) printf("%s%02x", (i%8==0?" ":""), p[i+42]);
-	  
-	  // VTP Sequence 
-	  uint64_t sequence = *((uint64_t*)&p[42]);
-	  printf(" 0x%llx", (unsigned long long)sequence);
-	  
-	  // VDIF Header
-	  header = (vdif_header*)(&p[50]);
-	  getVDIFStationIDStr(header, stationid);
-	  printf(" %2s", stationid);
-	  
-	  printf(" %d",  getVDIFFrameBytes(header));
-	  printf(" 0x%X",  getVDIFFullSecond(header));
-	  printf(" %4d",  getVDIFFrameNumber(header));
-	  printf(" %d",  getVDIFNumChannels(header));
-	  printf(" %d  ",  getVDIFBitsPerSample(header));
-	  
-	  // Data ");
-	  for(int i = 0; i < 16; ++i) printf("%s%02x", (i%8==0?" ":""), p[i+82]);
-	  printf("\n");
-	  
+
 	  /**
 	   * MAKE SURE TO DELETE the packet when finished!!!
 	   */
@@ -299,18 +310,47 @@ int readLF1file(string project, string stream, int npkt) {
 
 int main(int argc, char **argv) {
   char *streamname;
+  int opt;
   int npkt = 5;
+  bool hrft = false;
   
-  if (argc<2 || argc>4) {
+  struct option options[] = {
+    {"hrft", 0, 0, 'H'},
+    {"npkt", 1, 0, 'n'},
+    {"help", 0, 0, 'h'},
+    {0, 0, 0, 0}
+  };
+
+  while ((opt = getopt_long_only(argc, argv, "hHn:", options, NULL)) != EOF)
+    switch (opt) {
+      
+    case 'H': 
+      hrft = true;
+      break;
+
+    case 'n': 
+      npkt = atoi(optarg);
+      break;
+
+    case 'h': // help
+      printf("No help here\n");
+      return EXIT_SUCCESS;
+    
+    }
+
+  int narg = argc-optind;
+
+  if (narg<1 || narg>3) {
     cerr << "Usage: lf1list <project> <stream>" << endl;
     return(EXIT_FAILURE);
   }
 
-  if (argc==4) npkt = atoi(argv[3]);
-  if (argc>2) 
-    streamname=argv[2];
+
+  if (narg==3) npkt = atoi(argv[optind+2]);
+  if (narg>1) 
+    streamname=argv[optind+1];
   else
     streamname=strdup("");
 
-  return readLF1file(argv[1],streamname, npkt);
+  return readLF1file(argv[optind],streamname, npkt, hrft);
 }
