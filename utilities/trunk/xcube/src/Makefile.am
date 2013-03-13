@@ -4,7 +4,6 @@ bin_PROGRAMS = \
 	lf1extract \
 	lf1list \
 	x3projects \
-	lf1list \
 	lf1vdifcheck
 
 lf1extract_LDADD = \
