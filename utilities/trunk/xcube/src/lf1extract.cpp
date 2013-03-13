@@ -220,7 +220,7 @@ int main(int argc, char **argv) {
 
   struct option options[] = {
     {"ether", 1, 0, 'e'},
-    {"size", 0, 0, 's'},
+    {"size", 1, 0, 's'},
     {"help", 0, 0, 'h'},
     {0, 0, 0, 0}
   };
