@@ -565,6 +565,8 @@ static void difx2skd(const DifxInput *D, const BlokqAntenna *B, int sourceId, co
 		seconds = dt*(int)((D->scan[s].mjdStart - day)*(86400.0/dt));
 		nTime = ((int)((D->scan[s].mjdEnd - day)*(86400.0/dt)+1) - (int)((D->scan[s].mjdStart - day)*(86400.0/dt)))*dt/dt2 + 1;
 
+		nTime += dt/dt2;	/* for good measure */
+
 		for(i = 0; i < nTime; ++i)
 		{
 			fprintf(out, "SRC%05d 0 TT PREOB %05d%06d 0 MIDOB 0 POSTOB G-", D->scan[s].pointingCentreSrc, mjd2yyddd(day), sec2hhmmss(seconds));
