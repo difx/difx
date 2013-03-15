@@ -4,7 +4,8 @@ bin_PROGRAMS = \
 	lf1extract \
 	lf1list \
 	x3projects \
-	lf1vdifcheck
+	lf1vdifcheck \
+	hrft2vdif
 
 lf1extract_LDADD = \
 	../x3c/lib/libpacketReader.a \
@@ -52,4 +53,14 @@ lf1vdifcheck_LDADD = \
 
 lf1vdifcheck_SOURCES = \
 	lf1vdifcheck.cpp
+
+hrft2vdif_LDADD = \
+	../x3c/lib/libpacketReader.a \
+	../x3c/lib/libprojectManagement.a \
+	../x3c/lib/libIndexer.a \
+	../x3c/lib/libx3cCommon.a \
+	$(VDIFIO_LIBS)
+
+hrft2vdif_SOURCES = \
+	hrft2vdif.cpp
 
