@@ -108,6 +108,7 @@ enum SamplingType
 {
 	SamplingReal = 0,
 	SamplingComplex,	/* "standard" complex sampling: separate quanization of real and imag */
+	SamplingComplexDSB,	/* Complex double sideband sampling */
 	NumSamplingTypes	/* must remain as last entry */
 };
 

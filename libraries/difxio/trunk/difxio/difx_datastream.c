@@ -49,6 +49,7 @@ const char samplingTypeNames[][MAX_SAMPLING_NAME_LENGTH] =
 {
 	"REAL",
 	"COMPLEX",
+	"COMPLEX_DSB",
 	"ERROR"		/* takes place of NumSamplingTypes */
 };
 
