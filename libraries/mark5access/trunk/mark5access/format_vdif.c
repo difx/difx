@@ -1589,7 +1589,7 @@ static int vdif_complex_decode_8channel_2bit_decimation1(struct mark5_stream *ms
 
 	return nsamp - nblank;
 }
-//             new vdif mode added by rjc  2012.10.25
+
 static int vdif_complex_decode_16channel_2bit_decimation1(struct mark5_stream *ms, int nsamp, float complex **data)
 {
 	const unsigned char *buf;
@@ -1661,6 +1661,109 @@ static int vdif_complex_decode_16channel_2bit_decimation1(struct mark5_stream *m
 
 	return nsamp - nblank;
 }
+
+static int vdif_complex_decode_32channel_2bit_decimation1(struct mark5_stream *ms, int nsamp, float complex **data)
+{
+	const unsigned char *buf;
+	const float complex *fcp[16];
+	int o, i, j;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		if(i >= ms->blankzoneendvalid[0])
+		{
+  		        for (j=0; j<16; j++) fcp[j] = complex_zeros;
+		        nblank++;
+		        i+=16;
+		}
+		else
+		{
+		  for (j=0; j<16; j++) 
+		  {
+		        fcp[j] = complex_lut2bit[buf[i]]; 
+			i++;
+		  }
+		}
+
+		int k=0;
+		for (j=0; j<16; j++) 
+		{
+		        data[k++][o] = fcp[j][0];
+			data[k++][o] = fcp[j][1];
+		}
+
+
+		if(i >= ms->databytes)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - nblank;
+}
+
+static int vdif_complex_decode_64channel_2bit_decimation1(struct mark5_stream *ms, int nsamp, float complex **data)
+{
+	const unsigned char *buf;
+	const float complex *fcp[32];
+	int o, i, j;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		if(i >= ms->blankzoneendvalid[0])
+		{
+  		        for (j=0; j<32; j++) fcp[j] = complex_zeros;
+		        nblank++;
+		        i+=16;
+		}
+		else
+		{
+		  for (j=0; j<32; j++) 
+		  {
+		        fcp[j] = complex_lut2bit[buf[i]]; 
+			i++;
+		  }
+		}
+
+		int k=0;
+		for (j=0; j<32; j++) 
+		{
+		        data[k++][o] = fcp[j][0];
+			data[k++][o] = fcp[j][1];
+		}
+
+
+		if(i >= ms->databytes)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - nblank;
+}
+
 
 static int vdif_complex_decode_1channel_4bit_decimation1(struct mark5_stream *ms, int nsamp, float complex **data)
 {
@@ -2830,7 +2933,7 @@ struct mark5_format_generic *new_mark5_format_vdif(int Mbps,
 
 	    if(f->decode == 0)
 	    {
-		fprintf(m5stderr, "VDIF: Illegal combination of decimation, channels and bits\n");
+		fprintf(m5stderr, "VDIF: Unsupported combination of decimation, channels and bits\n");
 		free(v);
 		free(f);
 		
@@ -2872,6 +2975,12 @@ struct mark5_format_generic *new_mark5_format_vdif(int Mbps,
 		case 36:
 			f->complex_decode = vdif_complex_decode_16channel_2bit_decimation1;
 			break;
+		case 37:
+			f->complex_decode = vdif_complex_decode_32channel_2bit_decimation1;
+			break;
+		case 38:
+			f->complex_decode = vdif_complex_decode_64channel_2bit_decimation1;
+			break;
 
 		case 64:
 			f->complex_decode = vdif_complex_decode_1channel_4bit_decimation1;
@@ -2912,7 +3021,7 @@ struct mark5_format_generic *new_mark5_format_vdif(int Mbps,
 
 	    if(f->complex_decode == 0)
 	    {
-		fprintf(m5stderr, "VDIF: Illegal combination of decimation, channels and bits\n");
+		fprintf(m5stderr, "VDIF: Unsupported combination of decimation, channels and bits\n");
 		free(v);
 		free(f);
 
