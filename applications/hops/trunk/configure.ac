@@ -325,6 +325,8 @@ if [$have_png] ; then
 else
     AC_GBC_NOTICE([Looking harder for png12])
     if [test -z "$PNG12_LIB" ]; then
+	PNG12_LIB=${DIFX_ARCH_ROOT}/lib/libpng12.so.0
+    elif [test -z "$PNG12_LIB" ]; then
 	PNG12_LIB=/usr/lib/libpng12.so.0
     fi
     if [test -f "$PNG12_LIB" ] ; then
