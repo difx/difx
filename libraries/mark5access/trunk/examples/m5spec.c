@@ -90,7 +90,7 @@ static void usage(const char *pgm)
 	printf("The folllowing options are supported\n\n");
 }
 
-int harvestComplexData(struct mark5_stream *ms, double **spec, fftw_complex **zdata, fftw_complex **zx, int nchan, int nint, int chunk, long long *total, long long *unpacked)
+int harvestComplexData(struct mark5_stream *ms, double **spec, fftw_complex **zdata, fftw_complex **zx, int nchan, int nint, int chunk, long long *total, long long *unpacked, int doublesideband)
 {
 	fftw_plan *plan;
 	double complex **cdata;
@@ -168,6 +168,36 @@ int harvestComplexData(struct mark5_stream *ms, double **spec, fftw_complex **zd
 	}
 	free(plan);
 	free(cdata);
+
+	// If Double sideband need to move stuff around
+
+	if (doublesideband) 
+	  {
+	    int i;
+	    double dtmp;
+	    fftw_complex ctmp;
+	    for(i = 0; i < ms->nchan; ++i)
+	      {
+		int c;
+		
+		for(c = 0; c < nchan/2; ++c)
+		  {
+		    dtmp = spec[i][c];
+		    spec[i][c] = spec[i][c+nchan/2];
+		    spec[i][c+nchan/2] = dtmp;
+		  }
+	      }
+	    for(i = 0; i < ms->nchan/2; ++i)
+	      {
+		int c;
+		for(c = 0; c < nchan/2; ++c)
+		  {
+		    ctmp = zx[i][c];
+		    zx[i][c] =  zx[i][c+nchan/2];
+		    zx[i][c+nchan/2] = ctmp;
+		  }
+	      }
+	  }
 
 	return 0;
 }
@@ -268,7 +298,7 @@ int harvestRealData(struct mark5_stream *ms, double **spec, fftw_complex **zdata
 }
 
 
-int spec(const char *filename, const char *formatname, int nchan, int nint, const char *outfile, long long offset, polmodetype polmode)
+int spec(const char *filename, const char *formatname, int nchan, int nint, const char *outfile, long long offset, polmodetype polmode, int doublesideband)
 {
 	struct mark5_stream *ms;
 	double **spec;
@@ -305,6 +335,10 @@ int spec(const char *filename, const char *formatname, int nchan, int nint, cons
 	else
 	{
 		docomplex = 0;
+		if (doublesideband) {
+		  printf("Warning Double sideband supported only for complex sampled data\n");
+		  doublesideband = 0;
+		}
 		chunk = 2*nchan;
 	}
 
@@ -332,7 +366,7 @@ int spec(const char *filename, const char *formatname, int nchan, int nint, cons
 
 	if(docomplex)
 	{
-		harvestComplexData(ms, spec, zdata, zx, nchan, nint, chunk, &total, &unpacked);
+	  harvestComplexData(ms, spec, zdata, zx, nchan, nint, chunk, &total, &unpacked, doublesideband);
 	} 
 	else
 	{
@@ -360,11 +394,14 @@ int spec(const char *filename, const char *formatname, int nchan, int nint, cons
 		{
 			fprintf(out, " %f", f*spec[i][c]);
 		}
-		for(i = 0; i < ms->nchan/2; ++i)
+		if (polmode!=NOPOL)
 		{
-			x = creal(zx[i][c])*f;
-			y = cimag(zx[i][c])*f;
-			fprintf(out, "  %f %f", sqrt(x*x+y*y), atan2(y, x));
+		        for(i = 0; i < ms->nchan/2; ++i)
+			{
+			        x = creal(zx[i][c])*f;
+				y = cimag(zx[i][c])*f;
+				fprintf(out, "  %f %f", sqrt(x*x+y*y), atan2(y, x));
+			}
 		}
 		fprintf(out, "\n");
 	}
@@ -394,16 +431,18 @@ int main(int argc, char **argv)
 	int nchan, nint;
 	int retval;
 	polmodetype polmode = VLBA;
+	int doublesideband = 0;
 #if USEGETOPT
 	int opt;
 	struct option options[] = {
-	  {"dbbc", 0, 0, 'B'},
-	  {"nopol", 0, 0, 'P'},
+	  {"double", 0, 0, 'd'}, // Double sideband complex
+	  {"dbbc", 0, 0, 'B'},  // dBBC channel ordering
+	  {"nopol", 0, 0, 'P'}, // Don't compute the crosspol terms
 	  {"help", 0, 0, 'h'},
 	  {0, 0, 0, 0}
 	};
 
-	while ((opt = getopt_long_only(argc, argv, "h", options, NULL)) != EOF)
+	while ((opt = getopt_long_only(argc, argv, "hd", options, NULL)) != EOF)
 	  switch (opt) {
 	  case 'B': // DBBC Pol mode (all Rcp then all LCP)
 	    polmode = DBBC;
@@ -413,6 +452,11 @@ int main(int argc, char **argv)
 	  case 'P': // Don't compute cross pols
 	    polmode = NOPOL;
 	    printf("Not computing cross pol terms\n");
+	    break;
+
+	  case 'd': // Double sideband
+	    doublesideband = 1;
+	    printf("Assuming double sideband data\n");
 	    break;
 	    
 	  case 'h': // help
@@ -502,7 +546,8 @@ int main(int argc, char **argv)
 		offset=atoll(argv[optind+5]);
 	}
 
-	retval = spec(argv[optind], argv[optind+1], nchan, nint, argv[optind+4], offset, polmode);
+	retval = spec(argv[optind], argv[optind+1], nchan, nint, argv[optind+4], offset, 
+		      polmode, doublesideband);
 
 	return retval;
 }
