@@ -8,22 +8,27 @@ import getopt
 from string import split, strip, find, lower
 import platform
 from time import asctime
+from glob import glob
 
 program = 'difxbuild'
-version = '0.21'
-verdate = '20121216'
+version = '0.23'
+verdate = '20130317'
 author = 'Walter Brisken <wbrisken@nrao.edu>'
 
 difxbuildUrl = 'http://www.aoc.nrao.edu/~wbrisken/difxbuild'
 
 openmpiVersion = '1.6'
 pgplotVersion = '5.2'
+gpstkVersion = '2.0'
+jamVersion = '2.5.2'
+pngVersion = '1.2.50'
+schedVersion = '11.0'
 numMakeCpus = 4
 
 todo_list = """
 TODO:
 
-* install from .tar.gz 
+* X install from .tar.gz 
 * generic arch install (e.g., fftw)
 * wget option to clobber
 * add gui, difx_monitor, ...
@@ -31,7 +36,15 @@ TODO:
 * option to test all possible dependencies
 * plplot
 * python path
+* integrate streamstor build
 * svnstatus
+* integrate sked: ftp://gemini.gsfc.nasa.gov/pub/sked/
+* integrate AIPS?
+* Set FLIB for hops?
+
+MAYBE:
+* http://naif.jpl.nasa.gov/naif/toolkit_FORTRAN_PC_Linux_g77_32bit.html
+*  http://naif.jpl.nasa.gov/pub/naif/toolkit//FORTRAN/PC_Linux_g77_32bit/packages/toolkit.tar.Z
 
 """
 
@@ -436,7 +449,7 @@ component_mpifxcorr_trunk = \
 [ \
 	'mpifxcorr', \
 	'https://svn.atnf.csiro.au/difx/mpifxcorr/trunk', \
-	['aclocal', 'autoconf', 'autoheader', 'automake', 'mpicxx', 'ipp', 'slave', 'core'] \
+	['aclocalm4', 'autoconf', 'autoheader', 'automake', 'mpicxx', 'ipp', 'slave', 'core'] \
 ]
 
 component_difx2fits_trunk = \
@@ -485,7 +498,7 @@ component_guiserver_trunk = \
 [ \
 	'guiServer', \
 	'https://svn.atnf.csiro.au/difx/applications/gui/trunk/guiServer', \
-	['aclocal', 'autoconf', 'automake'], \
+	['aclocal', 'autoconf', 'automake', 'mpicxx'], \
 ]
 
 component_rcwlib_trunk = \
@@ -506,7 +519,7 @@ component_hops_trunk = \
 [ \
 	'hops', \
 	'https://svn.atnf.csiro.au/difx/applications/hops/trunk', \
-	['aclocalm4', 'autoconf', 'autoheader', 'automake', 'pgplot'] \
+	['aclocalm4', 'autoconf', 'autoheader', 'automake', 'pgplot', 'nodist'] \
 ]
 
 component_python_trunk = \
@@ -1050,6 +1063,11 @@ def bootstrap(comps, params, args, verbose, pretend):
 
 		out.write("alias src='cd ${DIFX_SRC}'\n")
 		out.write("alias bld='cd ${DIFXROOT}/build'\n")
+
+		if config.has_key('sched'):
+			if config['sched'][0] in ['1', 'Y', 'y', 't', 'T']:
+				out.write('export SCHED=${DIFX_ARCH_ROOT}/sched\n')
+
 		out.write('export PS1="\\u@\\h %s$DIFX_PROMPT_EXTRA \\W> "\n' % label)
 
 		out.write("\nif [[ ${1: -9} == difxbuild ]]; then $@; fi  # this must be the last statement in the file\n")
@@ -1107,6 +1125,35 @@ def svnupdate(origComps, params, args, verbose, pretend):
 		chdir(srcDir)
 		cmd = 'svn update ' + updatePaths
 		execute(cmd, verbose, pretend)
+
+def fromtar(origComps, params, args, verbose, pretend):
+	comps = filterComponents(origComps, args)
+	if len(comps) == 0:
+		print 'No components selected.  Did you mean to append "all" to the command line?\n'
+		return
+	srcDir = environ['DIFX_SRC'] + '/'
+	if not isdir(srcDir):
+		execute('mkdir -p %s' % srcDir, verbose, pretend);
+	chdir(srcDir)
+
+	distDir = environ['DIFXROOT'] + '/dist/'
+	if not isdir(distDir):
+		print 'Error: %s does not exist so no dist files can be found.' % distDir
+		exit(0)
+
+	for comp in comps:
+		tars = glob('%s/%s*.tar.gz' % (distDir, comp[0]))
+		if len(tars) > 0:
+			tars.sort()
+			tarFile = tars[-1]
+			print 'Found %d matches for %s.  Installing %s' % (len(tars), comp[0], tarFile)
+			cmd = 'tar zxf %s' % tarFile
+			execute('rm -rf %s' % comp[0], verbose, pretend)
+			execute(cmd, verbose, pretend)
+			newDir = split(tarFile[:-7], '/')[-1]
+			execute('ln -s %s %s' % (newDir, comp[0]), verbose, pretend)
+		else:
+			print 'No matching .tar.gz files found in %s for %s' % (distDir, comp[0])
 
 
 def svnstatus(origComps, params, args, verbose, pretend):
@@ -1221,7 +1268,85 @@ def build(origComps, params, args, verbose, pretend):
 				print '\n*** Error building %s ***\n' % comp[0]
 				return 
 			chdir(srcDir+comp[0])
-			execute('echo `date`  $DIFX_VERSION  $DIFX_LABEL  %s  BUILD  `svn info | grep "Changed Rev"` >> %s' % (comp[0], bldLog), verbose, pretend)
+			if(getcwd() == srcDir+comp[0]):
+				# likely an svn dir
+				execute('echo `date`  $DIFX_VERSION  $DIFX_LABEL  %s  BUILD  `svn info | grep "Changed Rev"` >> %s' % (comp[0], bldLog), verbose, pretend)
+			else:
+				# maybe a versioned component
+				execute('echo `date`  $DIFX_VERSION  $DIFX_LABEL  %s  BUILD  %s >> %s' % (comp[0], getcwd(), bldLog), verbose, pretend)
+
+def makedist(origComps, params, args, verbose, pretend):
+	if 'none' in args:
+		comps = []
+	else:
+		comps = filterComponents(origComps, args)
+		if len(comps) == 0:
+			print 'No components selected.  Did you mean to append "all" to the command line?\n'
+			return
+	buildDir = environ['DIFXROOT'] + '/build/'
+	pkgDir = environ['DIFXROOT'] + '/lib/pkgconfig/'
+	bldLog = environ['DIFXROOT'] + '/buildlog'
+	srcDir = environ['DIFX_SRC'] + '/'
+	distDir = environ['DIFXROOT'] + '/dist/'
+	okComps = checkFiles(comps, srcDir, 'configure', args)
+	archRoot = environ['DIFX_BASE'] + '/' + platform.machine() + '/'
+	haspgplot = isfile(archRoot + 'pgplot/libpgplot.a')	# not the most robust test...
+	if len(okComps) > 0 or 'none' in args:
+		if not isdir(distDir):
+			execute('mkdir -p %s' % distDir, verbose, pretend)
+		if not isdir(pkgDir):
+			execute('mkdir -p %s' % pkgDir, verbose, pretend)
+		if not isfile(pkgDir+'/ipp.pc') and len(environ['IPPROOT']) > 0:
+			if not 'noipp' in args:
+				if verbose > 1:
+					print 'Generating ipp.pc'
+				chdir(pkgDir)
+				genipppc(environ['IPPROOT'])
+		if verbose > 1:
+			print 'Packaging: %s' % componentList(okComps)
+		if not isdir(buildDir):
+			execute('mkdir -p %s' % buildDir, verbose, pretend)
+		for comp in okComps:
+			srcPath = srcDir + comp[0] + '/'
+			buildPath = buildDir + comp[0] + '/'
+			buildFlags = comp[2]
+			if 'nodist' in buildFlags:
+				print 'Not packaging %s because of the nodist flag'
+				continue
+			if 'pgplot' in buildFlags and not haspgplot:
+				print 'Not packaging %s because pgplot was not successfully built' % comp[0]
+				continue
+			if not isdir(buildPath):
+				execute('mkdir -p %s' % buildPath, verbose, pretend)
+			chdir(buildPath)
+			cmd = 'rm -f %s*.tar.gz' % comp[0]
+			execute(cmd, verbose, pretend)
+			if not 'noconf' in args:
+				configureExtras = ''
+				if 'mpicxx' in buildFlags:
+					configureExtras += ' CXX=${MPICXX}'
+				if 'spice' in buildFlags:
+					spiceRoot = archRoot + 'cspice/'
+					if isfile(spiceRoot+'lib/cspice.a'):
+						print 'Spice library found!'
+						configureExtras += ' --with-spice-root=' + spiceRoot
+					else:
+						print 'Spice library %slib/cspice.a not found' % spiceRoot
+						if 'strict' in args:
+							print 'Bailing'
+							exit(2)
+						else:
+							print 'Continuing anyway'	
+				cmd = '%s/configure --prefix=${DIFXROOT}%s' % (srcPath, configureExtras)
+				execute(cmd, verbose, pretend)
+			
+			v = execute('make dist', verbose, pretend)
+			if v != 0:
+				print '\n*** Error packaging %s ***\n' % comp[0]
+				return 
+			execute('rm -f %s/%s*.tar.gz' % (distDir, comp[0]), verbose, pretend)
+			execute('mv -f *.tar.gz %s' % distDir, verbose, pretend)
+			chdir(srcDir+comp[0])
 			
 def rebuild(origComps, params, args, verbose, pretend):
 	comps = filterComponents(origComps, args)
@@ -1252,7 +1377,12 @@ def rebuild(origComps, params, args, verbose, pretend):
 				print '\n*** Error rebuilding %s ***\n' % comp[0]
 				return
 			chdir(srcDir+comp[0])
-			execute('echo `date`  $DIFX_VERSION  $DIFX_LABEL  %s  REBUILD  `svn info | grep "Changed Rev"` >> %s' % (comp[0], bldLog), verbose, pretend)
+			if(getcwd() == srcDir+comp[0]):
+				# likely an svn dir
+				execute('echo `date`  $DIFX_VERSION  $DIFX_LABEL  %s  BUILD  `svn info | grep "Changed Rev"` >> %s' % (comp[0], bldLog), verbose, pretend)
+			else:
+				# maybe a versioned component
+				execute('echo `date`  $DIFX_VERSION  $DIFX_LABEL  %s  BUILD  %s >> %s' % (comp[0], getcwd(), bldLog), verbose, pretend)
 			
 def dist(origComps, params, args, verbose, pretend):
 	comps = filterComponents(origComps, args)
@@ -1338,6 +1468,9 @@ def remove(origComps, params, args, verbose, pretend):
 	print 'Feature not yet implemented'
 
 def ftpFile(url, tarDir, srcFile, args, verbose, pretend):
+	if isfile(tarDir + srcFile):
+		print '%s file already downloaded.  Will not download again' % srcFile
+		return
 	wgetOptions = ''
 	if 'nopassive' in args:
 		wgetOptions = wgetOptions + ' --no-passive-ftp'
@@ -1345,11 +1478,8 @@ def ftpFile(url, tarDir, srcFile, args, verbose, pretend):
 		print '* NOTE: if FTP hangs, try again with the nopassive argument added to the difxbuild command line'
 	if not isdir(tarDir):
 		execute('mkdir -p %s' % tarDir, verbose, pretend)
-	if not isfile(tarDir + srcFile):
-		chdir(tarDir)
-		execute('wget %s %s' % (wgetOptions, url), verbose, pretend)
-	else:
-		print '%s file already downloaded.' % srcFile
+	chdir(tarDir)
+	execute('wget %s %s' % (wgetOptions, url), verbose, pretend)
 
 def spice(origComps, params, args, verbose, pretend):
 	arch = platform.machine()
@@ -1369,29 +1499,170 @@ def spice(origComps, params, args, verbose, pretend):
 	chdir(archDir)
 	execute('tar zxvf %s/%s' % (tarDir, srcFile), verbose, pretend)
 
+def gpstk(origComps, params, args, verbose, pretend):
+	arch = platform.machine()
+	gpstkSrcFile = 'gpstk-%s.src.tar.gz' % gpstkVersion
+	gpstkUrl = 'http://sourceforge.net/projects/gpstk/files/gpstk/%s/%s' % (gpstkVersion, gpstkSrcFile)
+	difxBase = environ['DIFX_BASE'] + '/'
+	archSrcDir = difxBase + arch + '/src/'
+	tarDir = difxBase + 'tar/'
+	# get file
+	ftpFile(gpstkUrl, tarDir, gpstkSrcFile, args, verbose, pretend)
+	if not isdir(archSrcDir):
+		execute('mkdir -p %s' % archSrcDir, verbose, pretend)
+
+	# check that jam is installed
+	if system('which jam') != 0:
+		# need to install it
+		jamSrcFile = 'ftjam-%s.tar.bz2' % jamVersion
+		jamUrl = 'http://sourceforge.net/projects/freetype/files/ftjam/%s/%s/download' % (jamVersion, jamSrcFile)
+		# get file
+		ftpFile(jamUrl, tarDir, jamSrcFile, args, verbose, pretend)
+		chdir(archSrcDir)
+		execute('tar jxvf %s/%s' % (tarDir, jamSrcFile), verbose, pretend)
+		chdir('ftjam-%s' % jamVersion)
+		execute('./configure --prefix=%s' % (difxBase + arch), verbose, pretend)
+		execute('make', verbose, pretend)
+		execute('make install', verbose, pretend)
+
+	print '\nNow building gpstk.  THIS CAN TAKE A LONG TIME!\n'
+
+	chdir(archSrcDir)
+	execute('tar zxvf %s/%s' % (tarDir, gpstkSrcFile), verbose, pretend)
+	execute('mv gpstk gpstk-%s' % gpstkVersion, verbose, pretend)
+	chdir('gpstk-%s' % gpstkVersion)
+	execute('jam -q -j%d -sPREFIX=%s' % (numMakeCpus, difxBase + arch), verbose, pretend)
+	execute('jam -sPREFIX=%s install' % (difxBase + arch), verbose, pretend)
+
+	# make a .pc file for later convenience
+	out = open('%s/lib/pkgconfig/gpstk.pc' % (difxBase + arch), 'w')
+	out.write('prefix=%s\n' % (difxBase + arch))
+	out.write('exec_prefix=${prefix}\n')
+	out.write('libdir=${exec_prefix}/lib\n')
+	out.write('includedir=${prefix}/include\n\n')
+	out.write('Name: gpstk\n')
+	out.write('Description: GPS Toolkit\n')
+	out.write('Requires:\n')
+	out.write('Version: %s\n' % gpstkVersion)
+	out.write('Libs: -L${libdir} -lgpstk\n')
+	out.write('Cflags: -I${includedir}/gpstk\n')
+
+def sched(origComps, params, args, verbose, pretend):
+
+	if not len(popen('which gfortran').readlines()) > 0:
+		print 'sched compilation currently (and maybe ultimately) only works on gfortran systems'
+		exit(0)
+		
+	arch = platform.machine()
+	schedSrcFile = 'sched_%s.tar.gz' % schedVersion
+	schedUrl = 'ftp://ftp.aoc.nrao.edu/pub/sched/sched_%s/%s' % (schedVersion, schedSrcFile)
+	difxBase = environ['DIFX_BASE'] + '/'
+	archDir = difxBase + arch
+	tarDir = difxBase + 'tar/'
+	if environ['SCHED'] != '%s/sched' % archDir:
+		print 'Error: make sure env var SCHED is set to %s/sched first!' % archDir
+
+	spiceDownloadFile = 'toolkit.tar.Z'
+	if arch == 'x86_64':
+		bits = '64'
+	else:
+		bits = '32'
+	spiceUrl = 'http://naif.jpl.nasa.gov/pub/naif/toolkit//FORTRAN/PC_Linux_gfortran_%sbit/packages/%s' % (bits, spiceDownloadFile)
+	spiceSrcFile = 'toolkit%s.tar.Z' % bits
+		
+	# get files
+	ftpFile(schedUrl, tarDir, schedSrcFile, args, verbose, pretend)
+	ftpFile(spiceUrl, tarDir, spiceSrcFile, args, verbose, pretend)
+	if not isfile(tarDir + spiceSrcFile):
+		execute('mv %s/%s %s/%s' % (tarDir, spiceDownloadFile, tarDir, spiceSrcFile), verbose, pretend)
+	for lib in ['spicelib', 'support']:
+		execute('tar zxvfO %s/%s toolkit/lib/%s.a > %s/lib/%s_gfortran.a' % (tarDir, spiceSrcFile, lib, archDir, lib), verbose, pretend)
+
+	schedDir = '%s/sched-%s' % (archDir, schedVersion)
+	if isdir(schedDir):
+		print 'Stopping because %s exists' % schedDir
+		return
+	execute('mkdir -p %s' % schedDir, verbose, pretend)
+	if islink('%s/sched' % archDir) and isdir('%s/sched' % archDir):
+		execute('rm %s/sched' % archDir, verbose, pretend)
+	if not isfile('%s/sched' % archDir):
+		execute('ln -s %s %s/sched' % (schedDir, archDir), verbose, pretend)
+	
+	chdir(schedDir)
+	execute('tar zxvf %s/%s' % (tarDir, schedSrcFile), verbose, pretend)
+	chdir(schedDir + '/src')
+
+	# make sed expression that converts Makefile.master into Makefile
+	sedCommands = \
+		"-e 's/#ARCHSED/ARCH = LINUX/' " + \
+		"-e 's/#FCSED/FC = gfortran -Wall -fimplicit-none -fno-backslash/' " + \
+		"-e 's/#XLDSED/XLD = -L\\${DIFX_ARCH_ROOT}\\/lib -L\\/usr\\/lib -lX11/' " + \
+		"-e 's/#LDPGPLOTSED/LDPGPLOT = -L\\${DIFX_ARCH_ROOT}\\/lib -L\\/usr\\/lib -lpgplot -lpng12/' " + \
+		"-e 's/#JPL_SRCS_SED/JPL_SRCS = \\$(wildcard Jpl\\/*.f)/' " + \
+		"-e 's/#SAT_SRCS_SED/SAT_SRCS = \\$(wildcard Sat\\/*.f)/' " + \
+		"-e 's/#SATLDSED/SATLD = \\${DIFX_ARCH_ROOT}\\/lib\\/spicelib_gfortran.a \\${DIFX_ARCH_ROOT}\\/lib\\/support_gfortran.a -lm/'"
+	execute('sed %s <Makefile.master >Makefile' % sedCommands, verbose, pretend)
+	execute('make', verbose, pretend)
+	execute('cp %s/bin/sched %s/bin' % (schedDir, archDir), verbose, pretend)
+	
+
+def png(origComps, params, args, verbose, pretend):
+	arch = platform.machine()
+	pngSrcFile = 'libpng-%s.tar.gz' % pngVersion
+	pngUrl = 'http://download.sourceforge.net/libpng/%s' % pngSrcFile
+	difxBase = environ['DIFX_BASE'] + '/'
+	archDir = difxBase + arch
+	archSrcDir = difxBase + arch + '/src/'
+	tarDir = difxBase + 'tar/'
+	# get file
+	ftpFile(pngUrl, tarDir, pngSrcFile, args, verbose, pretend)
+	if not isdir(archSrcDir):
+		execute('mkdir -p %s' % archSrcDir, verbose, pretend)
+	
+	pngSrcDir = '%s/libpng-%s' % (archSrcDir, pngVersion)
+	if isdir(pngSrcDir):
+		print 'Stopping because %s exists' % pngSrcDir
+		return
+	
+	execute('tar zxvf %s/%s' % (tarDir, pngSrcFile), verbose, pretend)
+	chdir(pngSrcDir)
+	execute('./configure --prefix=%s' % archDir, verbose, pretend)
+	execute('make -j %d' % numMakeCpus, verbose, pretend)
+	execute('make install', verbose, pretend)
+
+
 def pgplot(origComps, params, args, verbose, pretend):
 	arch = platform.machine()
+	difxBase = environ['DIFX_BASE'] + '/'
+	archDir = difxBase + arch
+	archSrcDir = difxBase + arch + '/src/'
+	
+	haslibpng12 = ('-lpng12' in popen('pkg-config --libs libpng').readline())
+	if not haslibpng12:
+		print 'libpng12 not found.  Installing...'
+		png(origComps, params, [], verbose, pretend)
+
 	opsys = lower(platform.system())
 	srcFile = 'pgplot%s.tar.gz' % pgplotVersion
 	pgplotUrl = 'ftp://ftp.astro.caltech.edu/pub/pgplot/%s' % srcFile
-	difxBase = environ['DIFX_BASE'] + '/'
 	tarDir = difxBase + 'tar/'
 	# get file
 	ftpFile(pgplotUrl, tarDir, srcFile, args, verbose, pretend)
 	# untar source
-	srcDir = environ['DIFX_SRC'] + '/'
-	if not isdir(srcDir):
-		execute('mkdir -p %s' % srcDir, verbose, pretend)
-	chdir(srcDir)
+	if not isdir(archSrcDir):
+		execute('mkdir -p %s' % archSrcDir, verbose, pretend)
+	chdir(archSrcDir)
 	execute('tar zxvf %s/%s' % (tarDir, srcFile), verbose, pretend)
 	# make dest dir
 	pgplotDir = difxBase + arch + '/pgplot'
-	if not isdir(pgplotDir):
-		execute('mkdir -p %s' % pgplotDir, verbose, pretend)
+	if isdir(pgplotDir):
+		execute('rm -rf %s' % pgplotDir, verbose, pretend)
+	execute('mkdir -p %s' % pgplotDir, verbose, pretend)
 	chdir(pgplotDir)
 	# make drivers file
 	o = open('drivers.list', 'w')
 	o.write('  NUDRIV 0 /NULL      Null device (no output)                           Std F77\n')
+	o.write('  PNDRIV 1 /PNG       Portable Network Graphics file                    C\n')
 	o.write('  PNDRIV 2 /TPNG      Portable Network Graphics file - transparent background C\n')
 	o.write('  PSDRIV 1 /PS        PostScript printers, monochrome, landscape        Std F77\n')
 	o.write('  PSDRIV 2 /VPS       Postscript printers, monochrome, portrait         Std F77\n')
@@ -1401,10 +1672,10 @@ def pgplot(origComps, params, args, verbose, pretend):
 	o.write('  XWDRIV 2 /XSERVE    Persistent window on X Window System              C\n')
 	o.close()
 	# generate makefile
-	execute('%s/pgplot/makemake %s/pgplot %s g77_gcc' % (srcDir, srcDir, opsys), verbose, pretend)
+	execute('%s/pgplot/makemake %s/pgplot %s g77_gcc' % (archSrcDir, archSrcDir, opsys), verbose, pretend)
 	# modify makefile : remove bogus png.h req, optionally change g77 to gfortran, ...
 	execute('mv makefile makefile.orig', verbose, pretend)
-	fixpng = "-e 's/pndriv.o : .\\/png.h .\\/pngconf.h .\\/zlib.h .\\/zconf.h/pndriv.o :/'"
+	fixpng = "-e 's/pndriv.o : .\\/png.h .\\/pngconf.h .\\/zlib.h .\\/zconf.h/pndriv.o :/' -e 's/^XINCL=/XINCL=-I..\\/include /' -e 's/^LIBS=/LIBS=-L..\\/lib /'"
 	if len(popen('which gfortran').readlines()) > 0:
 		fixg77 = "-e 's/=g77/=gfortran/' -e 's/-u -Wall -fPIC -O/-ffixed-form -ffixed-line-length-none -u -Wall -fPIC -O/'"
 	else:
@@ -1423,6 +1694,33 @@ def pgplot(origComps, params, args, verbose, pretend):
 	for f in ['libpgplot.a', 'libcpgplot.a', 'libpgplot.so']:
 		execute('rm -f %s/%s' % (linkDir, f), verbose, pretend)
 		execute('cp %s/%s %s/%s' % (pgplotDir, f, linkDir, f), verbose, pretend)
+
+
+def extra(origComps, params, args, verbose, pretend):
+	packages = ['pgplot', 'gpstk', 'png', 'sched']
+	if len(args) < 1:
+		print 'Usage: difxbuild [options] extra [package(s)]\n'
+		return
+
+	bad = False
+	for pkg in args:
+		if not pkg in packages:
+			print 'Error: %s is not a known package' % pkg
+			bad = True
+	if bad:
+		print '\nExiting\n'
+		return
+
+	if 'pgplot' in args:
+		pgplot(origComps, params, [], verbose, pretend)
+	if 'gpstk' in args:
+		gpstk(origComps, params, [], verbose, pretend)
+	if 'png' in args:
+		png(origComps, params, [], verbose, pretend)
+	if 'sched' in args:
+		sched(origComps, params, [], verbose, pretend)
+
+
 
 def newestOMPI(data, version):
 	filename = 'openmpi-%s.tar.bz2' % version
@@ -1502,7 +1800,7 @@ def openmpi(origComps, params, args, verbose, pretend):
 		chdir(cpuSrcDir)
 		execute('tar %sxvf %s%s' % (td, tarDir, openmpiTarFile), verbose, pretend)
 	chdir(openmpiSrcDir)
-	execute('./configure --prefix=%s --enable-heterogeneous' % cpuDir, verbose, pretend)
+	execute('./configure --prefix=%s --enable-mpi-f77=no --enable-mpi-f90=no --enable-heterogeneous' % cpuDir, verbose, pretend)
 	v = execute('make -j %d' % numMakeCpus, verbose, pretend)
 	if v == 0:
 		v = execute('make install', verbose, pretend)
@@ -1521,7 +1819,7 @@ def update_difxbuild(origComps, params, args, verbose, pretend):
 	print 'New version = %s' % newVersion
 	print 
 	if newVersion <= version and not '--force' in args:
-		print 'difxbuild up to date; not need to update'
+		print 'difxbuild up to date; no need to update'
 	else:
 		execute('chmod +x /tmp/difxbuild', verbose, pretend)
 		chdir(dir)
@@ -1596,6 +1894,15 @@ command_build = \
 	build \
 ]
 
+command_dist = \
+[ \
+	'package', \
+	'Build .tar.gz package files for each component', \
+	['DIFX_SRC', 'DIFXROOT', 'MPICXX', 'PKG_CONFIG_PATH', 'DIFXBITS', 'IPPROOT', 'PGPLOT_DIR'], \
+	[], \
+	makedist \
+]
+
 command_rebuild = \
 [ \
 	'rebuild', \
@@ -1623,7 +1930,8 @@ command_clean = \
 	clean, \
 ]
 
-command_dist = \
+# This is deprecated by makedist above
+command_dist_old = \
 [ \
 	'dist', \
 	'Generate tar.gz for each component', \
@@ -1677,6 +1985,15 @@ command_pgplot = \
 	pgplot \
 ]
 
+command_extra = \
+[ \
+	'extra', \
+	'Download (if needed), configure, compile and install selected non-difx programs (experimental)', \
+	['DIFX_BASE'], \
+	[], \
+	extra \
+]
+
 command_openmpi = \
 [ \
 	'openmpi', \
@@ -1695,6 +2012,15 @@ command_update = \
 	update_difxbuild \
 ]
 
+command_fromtar = \
+[ \
+	'fromtar', \
+	'Install DiFX from tar files living in $DIFXROOT/dist', \
+	[], \
+	[], \
+	fromtar \
+]
+
 commands = \
 [ \
 	command_list, \
@@ -1706,14 +2032,16 @@ commands = \
 	command_openmpi, \
 	command_spice, \
 	command_pgplot, \
+	command_extra, \
 	command_build, \
 	command_rebuild, \
 	command_pbuild, \
-	command_dist, \
 	command_clean, \
 	command_pclean, \
 	command_uninstall, \
 	command_update, \
+	command_dist, \
+	command_fromtar, \
 #	command_remove, \
 ]
 
