@@ -1359,27 +1359,12 @@ int pystream::writeScans(const VexData *V)
 
 			if(s != -1)
 			{
-				// check for minimum time between scans as required by legacy system
-				if(loifSetupFirstUse[modeId])
+				if( (arange->mjdStart - endLastScan)*86400.0 < 5.0)
 				{
-					if( (arange->mjdStart - endLastScan)*86400.0 < 15.0)
-					{
-						// move start time
-						deltat1 = floor((endLastScan-mjd0)*86400.0 + 15.0 + 0.5);
-						cerr << "Scan " << scan->defName << " does not have minimum gap to previous scan ("
-							<< (arange->mjdStart - endLastScan)*86400.0 << " vs 15). Start time moved!" << endl;
-					}
-					loifSetupFirstUse[modeId] = false;
-				}
-				else
-				{
-					if( (arange->mjdStart - endLastScan)*86400.0 < 5.0)
-					{
-						// move start time
-						deltat1 = floor((endLastScan-mjd0)*86400.0 + 5.0 + 0.5);
-						cerr << "Scan " << scan->defName << " does not have minimum gap to previous scan ("
-							<< (arange->mjdStart - endLastScan)*86400.0 << " vs 5). Start time moved!" << endl;
-					}
+					// move start time
+					deltat1 = floor((endLastScan-mjd0)*86400.0 + 5.0 + 0.5);
+					cerr << "Scan " << scan->defName << " does not have minimum gap to previous scan ("
+						<< (arange->mjdStart - endLastScan)*86400.0 << " vs 5). Start time moved!" << endl;
 				}
 
 				// recognize scans that do not record to Mark5C, but still set switches (need to pass scan start time)
