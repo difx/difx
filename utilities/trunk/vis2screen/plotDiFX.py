@@ -237,7 +237,9 @@ while not len(nextheader[0]) == 0 and keeplooping:
         pylab.ylabel("Lag")
         pylab.xlabel("Channel")
 	if not singleplot:
+	    pylab.subplot(311)
             pylab.title(titlestr)
+	    pylab.subplot(313)
             pylab.figtext(0.0,0.0,"Fringe S/N %0.2f @ offset %0.2f us (%s)" % \
                           (snr, delayoffsetus, "raw S/N is overestimated - corrected value ~%0.2f" % ((snr-3)/2)))
             if toscreen:
