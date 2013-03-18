@@ -1624,6 +1624,7 @@ def png(origComps, params, args, verbose, pretend):
 		print 'Stopping because %s exists' % pngSrcDir
 		return
 	
+	chdir(archSrcDir)
 	execute('tar zxvf %s/%s' % (tarDir, pngSrcFile), verbose, pretend)
 	chdir(pngSrcDir)
 	execute('./configure --prefix=%s' % archDir, verbose, pretend)
