@@ -28,8 +28,8 @@ parser.add_option("-f", "--freq", dest="freq", metavar="targetfreq", default="-1
                   help="Only display visibilities from this frequency index")
 parser.add_option("-b", "--baseline", dest="baseline", metavar="targetbaseline", default="-1",
                   help="Only display visibilities from this baseline num")
-parser.add_option("-p", "--polpair", dest="polpair", default="RR",
-                  help="Plot this polarisations only e.g. RR, LL, RL, LR def RR")
+parser.add_option("-p", "--polpair", dest="polpair", default="[RR,LL,RL,LR]",
+                  help="Plot this polarisations only e.g. RR, LL, RL, LR, default [RR,LL,RL,LR]")
 parser.add_option("-c", "--maxchannels", dest="maxchannels", metavar="MAXCHANNELS",
                   default="33000",
                   help="The length of the array that will be allocated to hold vis results")
@@ -45,8 +45,12 @@ parser.add_option("--maxtimestep", dest="maxtimestep", default="-1",
                   help="Max timestep number, if you want to limit the range")
 parser.add_option("--chanrange", dest="chanrange", default="-1,-1",
                   help="Channel range to plot, in form min,max (-1,-1 for all)")
+parser.add_option("--secondswindow", dest="secondswindow", default="-1,-1",
+                  help="Time range to plot, in form min,max (-1,-1 for all)")
 parser.add_option("--scrunchbaselines", dest="scrunchbaselines", action="store_true",
                   help="Scalar add all baseline amplitudes")
+parser.add_option("--scrunchautocorrs", dest="scrunchautocorrs", action="store_true",
+                  help="Scalar add all autocorrelation amplitudes")
 parser.add_option("--showlegend", dest="showlegend", default=False, action="store_true",
                   help="Show a legend on the plot")
 (options, args) = parser.parse_args()
@@ -65,12 +69,17 @@ toscreen       = options.toscreen
 logamp         = options.logamp
 showlegend     = options.showlegend
 scrunchbaselines= options.scrunchbaselines
+scrunchautocorrs= options.scrunchautocorrs
 chanrange      = options.chanrange.split(',')
+secondswindow  = options.secondswindow.split(',')
+print "Target baseline: %d\nTarget freq: %d\nTarget pol: %s" % (targetbaseline,targetfreq,targetpolpair)
 
 if len(chanrange) != 2:
     parser.error("Channel range must be in form min,max")
 chanrange[0] = int(chanrange[0])
 chanrange[1] = int(chanrange[1])
+secondswindow[0] = int(secondswindow[0])
+secondswindow[1] = int(secondswindow[1])
 
 if inputfile == "":
     parser.error("You must supply an input file!")
@@ -116,16 +125,20 @@ savednchan = -1
 vislen = 0
 lastseconds = -1
 while not len(nextheader) == 0:
-    baseline  = nextheader[0]
+    baseline  = int(nextheader[0])
     mjd       = nextheader[1]
-    seconds   = nextheader[2]
-    freqindex = nextheader[5]
+    seconds   = int(nextheader[2])
+    freqindex = int(nextheader[5])
     polpair   = nextheader[6]
     nchan     = freqs[freqindex].numchan/freqs[freqindex].specavg
     if nchan >= maxchannels:
         print "How embarrassing - you have tried to diff files with more than " + \
             str(maxchannels) + " channels.  Please rerun with --maxchannels=<bigger number>!"
         sys.exit()
+    else:
+	pass
+        #print "Got visibility for baseline %d freq %d pol %s with %d channels, time %d" \
+        #      % (baseline, freqindex, polpair, nchan, seconds)
     if seconds != lastseconds:
         for i in range(numfreqs):
 	    for j in range(nchan):
@@ -142,15 +155,19 @@ while not len(nextheader) == 0:
        (targetfreq < 0 or targetfreq == freqindex):
         if (seconds < secondswindow[0] and secondswindow[0] >= 0) or \
            (seconds > secondswindow[1] and secondswindow[1] >= 0):
+	    print "Skipping data not in specified time range"
             nextheader = parseDiFX.parse_output_header(difxinput)
             continue
         if scrunchautocorrs and baseline%257 != 0:
+	    print "Skipping non-autocorrelation data"
             nextheader = parseDiFX.parse_output_header(difxinput)
             continue
 	if scrunchbaselines and baseline%257 == 0:
+	    print "Skipping autocorrelation data"
 	    nextheader = parseDiFX.parse_output_header(difxinput)
 	    continue
-	if polpair != targetpolpair:
+	if not(polpair in targetpolpair):
+	    print "Skipping polpair %s not in specified target pairs %s" % (polpair,str(targetpolpair))
 	    nextheader = parseDiFX.parse_output_header(difxinput)
 	    continue
         savednchan = nchan
@@ -164,6 +181,9 @@ if chanrange[0] < 0:
     chanrange[0] = 0
 if chanrange[1] < 0:
     chanrange[1] = savednchan
+
+if savednchan <= 0:
+    print "Found no data for plotting"
 
 if savednchan > 0:
     if targetfreq >= 0: # We want amplitude and phase from just one freq
@@ -202,9 +222,15 @@ if savednchan > 0:
         if showlegend:
             matplotlib.pyplot.colorbar(ax=ax)
 	if targetbaseline < 0:
-            pylab.savefig("dynamicspectra.bscrunch.f%d.%s.png" % (targetfreq,targetpolpair), format="png")
+	    if toscreen:
+	       pylab.show()
+	    else:
+               pylab.savefig("dynamicspectra.bscrunch.f%d.%s.png" % (targetfreq,targetpolpair), format="png")
 	else:
-	    pylab.savefig("dynamicspectra.b%d.f%d.%s.png" % (targetbaseline, targetfreq, targetpolpair), format="png")
+	    if toscreen:
+	       pylab.show()
+	    else:
+	       pylab.savefig("dynamicspectra.b%d.f%d.%s.png" % (targetbaseline, targetfreq, targetpolpair), format="png")
     else: # Want to display all freqs, one after another
         pylab.figure(figsize=(15,9))
         pylab.suptitle('All frequencies for %s' % inputfile)
@@ -241,8 +267,14 @@ if savednchan > 0:
             if showlegend:
                 matplotlib.pyplot.colorbar(ax=ax)
 	if targetbaseline < 0:
-	    pylab.savefig("dynamicspectra.bscrunch.png", format="png")
+	    if toscreen:
+	       pylab.show()
+	    else:
+	       pylab.savefig("dynamicspectra.bscrunch.png", format="png")
 	else:
-	    pylab.savefig("dynamicspectra.b%d.png" % (targetbaseline), format="png")
+	    if toscreen:
+	       pylab.show()
+	    else:
+	       pylab.savefig("dynamicspectra.b%d.png" % (targetbaseline), format="png")
 else:
     print "Didn't find any matching visibilities!"
