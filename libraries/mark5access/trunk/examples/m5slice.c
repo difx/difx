@@ -84,7 +84,8 @@ static void usage(const char *pgm)
 
 int main(int argc, char **argv) {
   int infile, outfile, bufsize;
-  size_t readbytes, offsetbytes, thisread, nread, nwrote;
+  size_t readbytes, thisread, nread, nwrote;
+  off_t offsetbytes;
   off_t sook;
   double offset, length, framens;
   char msg[512], *buf, *bptr, *outname, *inname, *dotptr;
@@ -114,7 +115,8 @@ int main(int argc, char **argv) {
 
   framens = ms->framens;
 
-  offsetbytes = ms->frameoffset + offset/framens*1e9*ms->framebytes;
+  offsetbytes = (off_t)ms->frameoffset + (off_t)offset/framens*1e9*(off_t)ms->framebytes;
+
   readbytes = length/framens*1e9*ms->framebytes;
 
   delete_mark5_stream(ms);
