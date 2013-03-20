@@ -72,7 +72,7 @@ static void usage(const char *pgm)
 	printf("%s ver. %s   %s  %s\n\n", program, version, author, verdate);
 	printf("A Mark5 slicer.  Can slice VLBA, Mark3/4, Mark5B and VDIF"
 		"formats using the mark5access library.\n\n");
-	printf("Usage : %s <file> <dataformat>\n\n", pgm);
+	printf("Usage : %s <file> <dataformat> <offset> <length>\n\n", pgm);
 	printf("  <file> is the name of the input file\n\n");
 	printf("  <dataformat> should be of the form: "
 		"<FORMAT>-<Mbps>-<nchan>-<nbit>, e.g.:\n");
@@ -80,6 +80,8 @@ static void usage(const char *pgm)
 	printf("    MKIV1_4-128-2-1\n");
 	printf("    Mark5B-512-16-2\n");
 	printf("    VDIF_1000-64-1-2 (here 1000 is payload size in bytes)\n\n");
+	printf("  <offset> is the offset into the file in seconds\n\n");
+	printf("  <length> size (in seconds) of the slice to make\n\n");
 }
 
 int main(int argc, char **argv) {
