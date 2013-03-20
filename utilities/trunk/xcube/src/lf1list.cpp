@@ -184,19 +184,13 @@ int readLF1file(string project, string stream, int npkt, bool hrft) {
     if(0 == nRetVal) {
       // skip to the correct frame
       int currentPacket = 0;
-      bool isDone = false;
       while (currentPacket < npkt)  { // way to limit number of packets
 	X3cPacket *pkt = pktReader->getPacket();
 	if (NULL == pkt) {
 	  fprintf(stdout, "Finished reading. packet <%d>\n", currentPacket);
-	  isDone = true;
+	  break;
 	} else {
 
-	  /**
-	   * at this point, we have a packet.  now we need to
-	   * do something with it.  In the sample code, we are just
-	   * writing out the timestamp for the LF1 header.
-	   */
 	  UINT32 usec;
 	  time_t sec;
 	  sec = pkt->getHeader()->ts.tv_sec;
@@ -212,7 +206,7 @@ int readLF1file(string project, string stream, int npkt, bool hrft) {
 
 	  if (hrft) {
 	    uint32_t *q, *r;
-	    for (int i=0; i<8; i++) {
+	    for (int i=0; i<512; i++) {
 	      if (i!=0) printf("%49s", " ");
 	      q = (uint32_t*)&p[i*8192];
 	      r = q+1;
