@@ -71,10 +71,13 @@ void chomp (char* s) {
 #define SEQUENCE(x) ((x[0]>>32)&0xFFFFFFFF)
 #define IFid(x) (x[0]&0xFF)
 
-int convert2VDIF(string project, string stream, string outname) {
+typedef enum {NONE=0, A, B, C, D} modeType;
+
+int convert2VDIF(string project, string stream, string outname, 
+		 modeType mode) {
   char *fileNames[16], msg[256];
-  UINT64 *frame, *if1, *if2, *if3, *if4;
-  int nFile = 0, istream;
+  UINT64 *if1, *if2, *if3, *if4;
+  int nFile = 0, istream, shift = 0;;
   UINT32 usec, sequence;
   char datestr[100];
   struct tm *date;
@@ -168,14 +171,36 @@ int convert2VDIF(string project, string stream, string outname) {
     }
   }
 
-  frame = new UINT64[VDIF_PACKETSIZE/8];
-  if (frame==NULL) {
+  UINT8* framebytes = new UINT8[VDIF_PACKETSIZE];
+  UINT64* frame64 = (UINT64*)framebytes;
+  if (framebytes==NULL) {
     printf("Error: Could not allocate memory\n");
     return(EXIT_FAILURE);
   }
+  frame64[0] = 1;
+  frame64[1] = 1;
+  frame64[2] = 1;
+  frame64[3] = 1;
+  frame64[4] = 1;
 
-  int vdifwords = 0;
-  int samplesperframe = (VDIF_PACKETSIZE*2/4/16);
+  int nchan;
+  if (mode==NONE) 
+    nchan = 64;
+  else { 
+    nchan = 8;
+    if (mode==A) 
+      shift = 0;
+    else if (mode==B) 
+      shift = 8;
+    else if (mode==C) 
+      shift = 16;
+    else if (mode==D) 
+      shift = 24;
+  }
+
+
+  int vdifwords = 0, vdifbytes = 0;
+  int samplesperframe = (VDIF_PACKETSIZE*2/nchan);
   int samplespersec = 32e6; // Nquist
   int framespersec = samplespersec/samplesperframe;
   printf("Frame/sec = %d\n", framespersec);
@@ -220,29 +245,26 @@ int convert2VDIF(string project, string stream, string outname) {
       // skip to the correct frame
       int currentPacket = 0;
       bool isDone = false;
-      while (currentPacket<10) {
-	printf("CurrentPacket = %d\n", currentPacket);
-
+      while (currentPacket<500) {
 	X3cPacket *pkt = pktReader->getPacket();
 	if (NULL == pkt) {
 	  fprintf(stdout, "Finished reading. packet <%d>\n", currentPacket);
 	  break;
 	} else {
 	  
-	  UINT32 nsec;
-	  time_t sec, rsec;
-	  sec = pkt->getHeader()->ts.tv_sec;
-	  nsec = pkt->getHeader()->ts.tv_nsec;
 	  UINT64 nbytes = pkt->getLen();
 
-	  rsec = sec; 
-	  if (nsec>=500e6) rsec++;
-
-	  date = gmtime(&rsec);
-	  strftime(datestr, 99, "%F %H:%M:%S", date);
+	  //date = gmtime(&rsec);
+	  //strftime(datestr, 99, "%F %H:%M:%S", date);
 
 	  if (first) {
-	    createVDIFHeader(&header, VDIF_PACKETSIZE+VDIF_HEADER_BYTES, 0,  2, 16*4, 1, "Tt");
+	    UINT32 nsec;
+	    time_t sec, rsec;
+	    sec = pkt->getHeader()->ts.tv_sec;
+	    nsec = pkt->getHeader()->ts.tv_nsec;
+	    rsec = sec; 
+	    if (nsec>=500e6) rsec++;
+	    createVDIFHeader(&header, VDIF_PACKETSIZE+VDIF_HEADER_BYTES, 0,  2, nchan, 1, "Tt");
 	    setVDIFTime(&header, rsec);
 	  }
 
@@ -259,7 +281,6 @@ int convert2VDIF(string project, string stream, string outname) {
 	    if (first) {
 	      sequence = SEQUENCE(if1);
 	      first = 0;
-	      printf("First sequence = %d\n", sequence);
 	    } else {
 	      sequence++;
 	      if (SEQUENCE(if1)!=sequence) {
@@ -283,7 +304,6 @@ int convert2VDIF(string project, string stream, string outname) {
 	      pktReader->freePacket(pkt);
 	      return(EXIT_FAILURE);
 	    }
-	    printf("Sequence = %d\n", sequence);
 
 	    if (IFid(if1)!=0xF0) {
 	      printf("Error: Unexpected IF1 id (0x%X/0xF0)\n", (unsigned int)IFid(if1));
@@ -305,19 +325,27 @@ int convert2VDIF(string project, string stream, string outname) {
 	      pktReader->freePacket(pkt);
 	      return(EXIT_FAILURE);
 	    }
-
+	    
 	    for (int j=1; j<1024; j++) {
-	      // Merge the 4 streams
-	      frame[vdifwords] = if1[j];
-	      vdifwords++;
-	      frame[vdifwords] = if2[j];
-	      vdifwords++;
-	      frame[vdifwords] = if3[j];
-	      vdifwords++;
-	      frame[vdifwords] = if4[j];
-	      vdifwords++;
-
-	      if (vdifwords>= VDIF_PACKETSIZE/4) {
+	      if (mode==NONE) {
+		// Merge the 4 streams
+		frame64[vdifwords] = if1[j];
+		vdifwords++;
+		frame64[vdifwords] = if2[j];
+		vdifwords++;
+		frame64[vdifwords] = if3[j];
+		vdifwords++;
+		frame64[vdifwords] = if4[j];
+		vdifwords++;
+	      } else {
+		// Take one byte from 2 IF only
+		framebytes[vdifbytes] = (if1[j]>>shift)&0xFF;
+		vdifbytes++;
+		framebytes[vdifbytes] = (if2[j]>>shift)&0xFF;
+		vdifbytes++;
+	      }
+	  
+	      if (vdifwords>= VDIF_PACKETSIZE/8 || vdifbytes>=VDIF_PACKETSIZE) {
 		// Write a VDIF packet
 		ssize_t nwrote = write(out, &header, VDIF_HEADER_BYTES);
 		if (nwrote==-1) {
@@ -330,8 +358,7 @@ int convert2VDIF(string project, string stream, string outname) {
 		  close(out);
 		  return(EXIT_FAILURE);
 		}
-
-		nwrote = write(out, frame, VDIF_PACKETSIZE);
+		nwrote = write(out, framebytes, VDIF_PACKETSIZE);
 		if (nwrote==-1) {
 		  perror("Error writing outfile");
 		  close(out);
@@ -342,14 +369,13 @@ int convert2VDIF(string project, string stream, string outname) {
 		  close(out);
 		  return(EXIT_FAILURE);
 		}
-		
+	      
 		vdifwords = 0;
+		vdifbytes = 0;
 		nextVDIFHeader(&header, framespersec);
 	      }
-
 	    }
 	  }
-	  printf("Free packet %d\n", currentPacket);
 	  pktReader->freePacket(pkt);
 	  currentPacket++;
 	}
@@ -378,10 +404,11 @@ void usage () {
 int main(int argc, char **argv) {
   char *outname = NULL, *streamname = NULL;
   int opt;
+  modeType mode = NONE;
 
   struct option options[] = {
-    {"ether", 1, 0, 'e'},
-    {"size", 1, 0, 's'},
+    {"outname", 1, 0, 'o'},
+    {"mode", 1, 0, 'm'},
     {"help", 0, 0, 'h'},
     {0, 0, 0, 0}
   };
@@ -389,6 +416,22 @@ int main(int argc, char **argv) {
   while ((opt = getopt_long_only(argc, argv, "o:", options, NULL)) != EOF)
     switch (opt) {
       
+    case 'm': // Channel selection mode
+      if (optarg=="A") 
+	mode = A;
+      else if (optarg=="B") 
+	mode = B;
+      else if (optarg=="C") 
+	mode = C;
+      else if (strcmp(optarg,"D")==0)
+	mode = D;
+      else {
+	printf("Unknown mode %s. Aborting\n", optarg);
+	exit(1);
+      }
+      
+      break;
+
     case 'o': // file to record
       outname=strdup(optarg);
       break;
@@ -413,6 +456,6 @@ int main(int argc, char **argv) {
   else
     streamname=strdup("");
 
-  return convert2VDIF(argv[optind],streamname, outname);
+  return convert2VDIF(argv[optind],streamname, outname, mode);
 
 }
