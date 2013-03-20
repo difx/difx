@@ -19,9 +19,14 @@ AC_CHECK_LIB(m, erf,,[AC_MSG_ERROR("need libm")])
 
 PKG_CHECK_MODULES(DIFXIO, difxio >= 3.2.0)
 PKG_CHECK_MODULES(DIFXMESSAGE, [difxmessage >= 2.2.0 difxmessage < 7])
+PKG_CHECK_MODULES(GPSTK, gpstk, [hasgpstk=true], [hasgpstk=false])
+if test "$hasgpstk" == "true"; then
+	AC_DEFINE([HAVE_GPSTK], 1, [1=has GPSTK])
+fi
+AM_CONDITIONAL(WITH_GPSTK, $hasfftw)
 
-LIBS="${LIBS} ${DIFXIO_LIBS}"
-CFLAGS="${CFLAGS} ${DIFXIO_CFLAGS} ${DIFXMESSAGE_CFLAGS}"
+LIBS="${LIBS} ${DIFXIO_LIBS} ${GPSTK_LIBS}"
+CFLAGS="${CFLAGS} ${DIFXIO_CFLAGS} ${DIFXMESSAGE_CFLAGS} ${GPSTK_CFLAGS}"
 CXXFLAGS="${CFLAGS}"
 
 AC_OUTPUT([ \

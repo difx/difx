@@ -45,7 +45,23 @@
 #include "util.h"
 #include "../config.h"
 
+#if HAVE_GPSTK
+#include <FileFilterFrame.hpp>
+#include <BasicFramework.hpp>
+#include <StringUtils.hpp>
+#include <GPSEphemerisStore.hpp>
+#include <Epoch.hpp>
+#include <TimeString.hpp>
+#include <GPSWeekSecond.hpp>
+#include <ASConstant.hpp>
+#include <SP3EphemerisStore.hpp>
+#include <PvtStore.hpp>
+#include <SatID.hpp>
+using namespace gpstk;
+#endif
+
 using namespace std;
+
 
 const string version(VERSION);
 const string program("vex2difx");
@@ -2206,13 +2222,13 @@ static int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int 
 		snprintf(scan->identifier, DIFXIO_NAME_LENGTH, "%s", S->defName.c_str());
 		snprintf(scan->obsModeName, DIFXIO_NAME_LENGTH, "%s", S->modeDefName.c_str());
 
-		if(!sourceSetup->pointingCentre.ephemFile.empty())
+		if(!sourceSetup->pointingCentre.ephemFile.empty() || sourceSetup->pointingCentre.gpsId > 0)
 		{
 			spacecraftSet.insert(sourceSetup->pointingCentre.difxName);
 		}
 		for(vector<PhaseCentre>::const_iterator p=sourceSetup->phaseCentres.begin(); p != sourceSetup->phaseCentres.end(); ++p)
 		{
-			if(!p->ephemFile.empty())
+			if(!p->ephemFile.empty() || p->gpsId > 0)
 			{
 				spacecraftSet.insert(p->difxName);
 			}
@@ -2492,6 +2508,9 @@ static int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int 
 		exit(EXIT_FAILURE);
 	}
 
+	// Make EOP table
+	populateEOPTable(D, V->getEOPs());
+
 	// Populate spacecraft table
 	if(!spacecraftSet.empty())
 	{
@@ -2499,6 +2518,71 @@ static int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int 
 		double fracday0, deltat;
 		int mjdint, n0, nPoint, v;
 		double mjd0;
+		bool hasGPS = false;
+#if HAVE_GPSTK
+		SP3EphemerisStore store;
+#endif
+
+		for(set<string>::const_iterator s = spacecraftSet.begin(); s != spacecraftSet.end(); ++s)
+		{
+			if(P->getPhaseCentre(*s)->gpsId > 0)
+			{
+				hasGPS = true;
+			}
+			
+		}
+#if HAVE_GPSTK
+		if(hasGPS)
+		{
+			string sp3Path;
+			int mjdStart, mjdStop;
+			char *e;
+			
+			e = getenv("SP3PATH");
+			if(e == 0)
+			{
+				sp3Path = ".";
+			}
+			else
+			{
+				sp3Path = e;
+			}
+
+			mjdStart = static_cast<int>(D->mjdStart - 4.5/24.0);
+			mjdStop = static_cast<int>(D->mjdStop + 4.5/24.0);
+
+			for(int m = mjdStart; m <= mjdStop; ++m)
+			{
+				CommonTime T;
+				char sp3Filename[256];
+
+				T.set(m + 2400001, 43200, 0.0, TimeSystem(TimeSystem::UTC));
+				GPSWeekSecond gpstime(T);
+				sprintf(sp3Filename, "%s/igs%04d%d.sp3", sp3Path.c_str(), gpstime.week, gpstime.getDayOfWeek());
+				FILE *f = fopen(sp3Filename, "r");
+				if(!f)
+				{
+					// Download file
+					char url[512];
+					char cmd[600];
+
+					sprintf(url, "http://igscb.jpl.nasa.gov/igscb/product/%04d/igs%04d%d.sp3.Z", gpstime.week, gpstime.week, gpstime.getDayOfWeek());
+					sprintf(cmd, "wget %s -O %s.Z", url, sp3Filename);
+					cout << "Executing: " << cmd << endl;
+					system(cmd);
+					sprintf(cmd, "gunzip %s.Z", sp3Filename);
+					cout << "Executing: " << cmd << endl;
+					system(cmd);
+				}
+				else
+				{
+					fclose(f);
+				}
+
+				store.loadSP3File(sp3Filename);	
+			}
+		}
+#endif
 
 		D->spacecraft = newDifxSpacecraftArray(spacecraftSet.size());
 		D->nSpacecraft = spacecraftSet.size();
@@ -2520,28 +2604,101 @@ static int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int 
 			n0 = static_cast<int>(fracday0/deltat - 12);	// start ephmemeris at least 2 points early
 			mjd0 = mjdint + n0*deltat;			// always start an integer number of increments into day
 			nPoint = static_cast<int>(J.duration()/deltat) + 28; // make sure to extend beyond the end of the job
-			if(verbose > 0)
+			if(!phaseCentre->ephemObject.empty())		// process a .bsp file through spice
 			{
-				cout << "Computing ephemeris:" << endl;
-				cout << "  source name = " << phaseCentre->difxName << endl;
-				cout << "  ephem object name = " << phaseCentre->ephemObject << endl;
-				cout << "  mjd = " << mjdint << "  deltat = " << deltat << endl;
-				cout << "  startPoint = " << n0 << "  nPoint = " << nPoint << endl;
-				cout << "  ephemFile = " << phaseCentre->ephemFile << endl;
-				cout << "  naifFile = " << phaseCentre->naifFile << endl;
-				cout << "  ephemStellarAber = " << phaseCentre->ephemStellarAber << endl;
-				cout << "  ephemClockError = " << phaseCentre->ephemClockError << endl;
+				if(verbose > 0)
+				{
+					cout << "Computing ephemeris:" << endl;
+					cout << "  source name = " << phaseCentre->difxName << endl;
+					cout << "  ephem object name = " << phaseCentre->ephemObject << endl;
+					cout << "  mjd = " << mjdint << "  deltat = " << deltat << endl;
+					cout << "  startPoint = " << n0 << "  nPoint = " << nPoint << endl;
+					cout << "  ephemFile = " << phaseCentre->ephemFile << endl;
+					cout << "  naifFile = " << phaseCentre->naifFile << endl;
+					cout << "  ephemStellarAber = " << phaseCentre->ephemStellarAber << endl;
+					cout << "  ephemClockError = " << phaseCentre->ephemClockError << endl;
+				}
+				v = computeDifxSpacecraftEphemeris(ds, mjd0, deltat, nPoint, 
+				phaseCentre->ephemObject.c_str(),
+				phaseCentre->naifFile.c_str(),
+				phaseCentre->ephemFile.c_str(), 
+				phaseCentre->ephemStellarAber,
+				phaseCentre->ephemClockError);
+				if(v != 0)
+				{
+					cerr << "Error: ephemeris calculation failed.  Must stop." << endl;
+					
+					exit(EXIT_FAILURE);
+				}
 			}
-			v = computeDifxSpacecraftEphemeris(ds, mjd0, deltat, nPoint, 
-			phaseCentre->ephemObject.c_str(),
-			phaseCentre->naifFile.c_str(),
-			phaseCentre->ephemFile.c_str(), 
-			phaseCentre->ephemStellarAber,
-			phaseCentre->ephemClockError);
-			if(v != 0)
+			else if(phaseCentre->gpsId > 0)
 			{
-				cerr << "Error: ephemeris calculation failed.  Must stop." << endl;
-				
+#if HAVE_GPSTK
+				int mjd = static_cast<int>(D->mjdStart);
+				// start time in seconds rounded down to nearest 2 minute boundary
+				int sec = static_cast<int>((D->mjdStart - mjd)*720.0)*120;
+				long int gps_utc = D->eop[2].tai_utc - 19;
+				long int deltaT = 24;	// seconds
+
+				int nPoint;
+				SatID sat(phaseCentre->gpsId, SatID::systemGPS);
+				Xvt xvt;
+
+				CommonTime T;
+				T.set(mjd + 2400001, sec, 0.0, TimeSystem(TimeSystem::GPS));
+				T.addSeconds(gps_utc);
+
+				nPoint = (D->mjdStop - D->mjdStart) * (86400/deltaT) + 15;
+
+				ds->nPoint = nPoint;
+				ds->pos = (sixVector *)calloc(nPoint, sizeof(sixVector));
+
+				for(int p = 0; p < nPoint; ++p)
+				{
+					double M = mjd + (sec + p*deltaT)/86400.0;
+					
+					try
+					{
+						xvt = store.getXvt(sat, T);
+						if(1)	// do light travel time correction
+						{
+							double x, y, z, r;
+							x = xvt.x.theArray[0];
+							y = xvt.x.theArray[1];
+							z = xvt.x.theArray[2];
+							r = sqrt(x*x+y*y+z*z);
+							xvt = store.getXvt(sat, T - r/ASConstant::SPEED_OF_LIGHT);
+						}
+					}
+					catch(gpstk::Exception& e)
+					{
+						cerr << "Error: GPSTK failure: " << e << endl;
+
+						exit(EXIT_FAILURE);
+					}
+					
+					ds->pos[p].mjd = static_cast<int>(M);
+					ds->pos[p].fracDay = M - ds->pos[p].mjd;
+					ds->pos[p].X = xvt.x.theArray[0];
+					ds->pos[p].Y = xvt.x.theArray[1];
+					ds->pos[p].Z = xvt.x.theArray[2];
+					ds->pos[p].dX = xvt.v.theArray[0];
+					ds->pos[p].dY = xvt.v.theArray[1];
+					ds->pos[p].dZ = xvt.v.theArray[2];
+
+					T.addSeconds(deltaT);
+				}
+
+#else
+				cerr << "Error: gpsId set but gpstk support not compiled in." << endl;
+
+				exit(EXIT_FAILURE);
+#endif
+			}
+			else
+			{
+				cerr << "Developer error: not bsp or gps spacecraft type." << endl;
+
 				exit(EXIT_FAILURE);
 			}
 
@@ -2569,9 +2726,6 @@ static int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int 
 
 	// Make baseline table
 	populateBaselineTable(D, P, corrSetup, blockedfreqids);
-
-	// Make EOP table
-	populateEOPTable(D, V->getEOPs());
 
 	// Merge identical table entries
 	simplifyDifxFreqs(D);
@@ -2748,6 +2902,10 @@ static int sanityCheckConsistency(const VexData *V, const CorrParams *P)
 		{
 			cerr << "Warning: source " << s->vexName << " seems to have an incomplete set of ephemeris parameters.  All or none of ephemObject, ephemFile, naifFile must be given.  Error code = " << n << endl;
 			++nWarn;
+		}
+		if(n != 0 && s->pointingCentre.gpsId > 0)
+		{
+			cerr << "Warning: source " << s->vexName << " has both gpsId and regular ephemeris information." << endl;
 		}
 	}
 

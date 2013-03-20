@@ -80,6 +80,7 @@ public:
 	double ephemDeltaT;	// tabulated ephem. nterval (seconds, default 60)
 	double ephemStellarAber;	// 0 = don't apply (default), 1 = apply, other: scale correction accordingly
 	double ephemClockError;		// (sec) 0.0 is no error
+	int gpsId;		// GPS satellite number [0 means not a GPS satellite]
 };
 
 class SourceSetup

@@ -717,13 +717,14 @@ void PhaseCentre::initialise(double r, double d, std::string name)
 	dec = d;
 	difxName = name;
 	calCode = ' ';
-	ephemDeltaT = 24.0; //seconds; 24 seconds is perfectly matched to the default behavior of calcif2
+	ephemDeltaT = 24.0;	// seconds; 24 seconds is perfectly matched to the default behavior of calcif2
 	ephemStellarAber = 0.0;	// 0 = don't correct; 1 = correct.  Other values interpolate/extrapolate correction by factor provided
 	qualifier = 0;
 	ephemClockError = 0.0;	// sec
 	ephemObject = "";
 	ephemFile = "";
 	naifFile = "";  
+	gpsId = 0;		// not a GPS satellite
 }
 
 SourceSetup::SourceSetup(const std::string &name) : vexName(name)
@@ -791,6 +792,10 @@ int SourceSetup::setkv(const std::string &key, const std::string &value, PhaseCe
 	else if(key == "ephemClockError")
 	{
 		ss >> pc->ephemClockError;
+	}
+	else if(key == "gpsId")
+	{
+		ss >> pc->gpsId;
 	}
 	else if(key == "naifFile")
 	{
