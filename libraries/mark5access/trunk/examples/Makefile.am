@@ -22,6 +22,7 @@ bin_PROGRAMS = \
 	m5bstate \
 	m5d \
 	m5fold \
+	m5timeseries \
 	m5tsys \
 	m5test \
 	m5time \
