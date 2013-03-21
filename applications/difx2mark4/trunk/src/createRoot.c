@@ -428,12 +428,12 @@ int createRoot (DifxInput *D,       // difx input structure pointer
                                     // parse station line to find scan intersection
                         pchar = strchr (line, ':');
                         itime = atoi (pchar+1);
-                        if (itime < earliest_stop)
-                            earliest_stop = itime;
-                        pchar = strchr (pchar+1, ':');
-                        itime = atoi (pchar+1);
                         if (itime > latest_start)
                             latest_start = itime;
+                        pchar = strchr (pchar+1, ':');
+                        itime = atoi (pchar+1);
+                        if (itime < earliest_stop)
+                            earliest_stop = itime;
                                    
                                     // FIXME - is this override really necessary or optimal?
                         sprintf (buff, " 00 sec : %d sec : : : : 0 ; * overridden times\n", 
