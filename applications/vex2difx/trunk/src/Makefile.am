@@ -6,8 +6,7 @@ bin_PROGRAMS = \
 	vexpeek
 
 LDADD = \
-	$(top_builddir)/vex/libvex.la \
-	-lfl
+	$(top_builddir)/vex/libvex.la
 
 vex2difx_SOURCES = \
 	vextables.h \
