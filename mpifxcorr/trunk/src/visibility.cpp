@@ -175,10 +175,22 @@ void Visibility::increment()
   for(int i=0;i<numvisibilities;i++) //adjust the start time and offset
     updateTime();
 
+  //zero the result vector
   status = vectorZero_cf32(results, resultlength);
   if(status != vecNoErr)
     csevere << startl << "Error trying to zero when incrementing visibility " << visID << endl;
 
+  //zero the autocorrelation weights, just to be safe
+  for(int i=0;i<numdatastreams;i++)
+  {
+    for(int j=0;j<autocorrwidth;j++)
+    {
+      for(int k=0;k<config->getDNumTotalBands(currentconfigindex, i); k++)
+        autocorrweights[i][j][k] = 0;
+    }
+  }
+
+  //zero pulsar binning data if necessary
   if(pulsarbinon) {
     for(int i=0;i<config->getFreqTableLength();i++) {
       for(int j=0;j<config->getFNumChannels(i)+1;j++) {
@@ -903,7 +915,7 @@ void Visibility::multicastweights()
 {
   float *weight;
   double mjd;
-  int dumpmjd, intsec;
+  int dumpmjd, intsec, freqindex, weightcount;
   double dumpseconds;
 
   if(currentscan >= model->getNumScans() || (model->getScanStartSec(currentscan, expermjd, experseconds) + currentstartseconds) >= executeseconds || currentsubints == 0)
@@ -926,14 +938,21 @@ void Visibility::multicastweights()
   //calculate the weights that will be multicast out.  These are averages over recorded bands
   for(int i=0;i<numdatastreams;i++)
   {
-    int n = config->getDNumRecordedBands(currentconfigindex, i);
+    int n = config->getDNumTotalBands(currentconfigindex, i);
 
     weight[i] = 0.0;
+    weightcount = 0;
     if(n > 0)
     {
-      for(int j=0;j<n;j++)
-        weight[i] += autocorrweights[i][0][j];
-      weight[i] /= n;
+      for(int j=0;j<n;j++) {
+        freqindex = config->getDTotalFreqIndex(currentconfigindex, i, j);
+        if(config->isFrequencyUsed(currentconfigindex, freqindex)) {
+          weight[i] += autocorrweights[i][0][j];
+          weightcount++;
+        }
+      }
+      if(weightcount > 0)
+        weight[i] /= weightcount;
     }
   }
 

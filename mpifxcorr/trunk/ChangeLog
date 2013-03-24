@@ -15,6 +15,7 @@ Version 2.2
 * Fix weights (and maybe more) for setups differing only by pcal setup (Adam)
 * Defeat data "echoes" that that would occur on each scan start after files
   ran out of data
+* Properly scale multicast weights when selecting bands or performing zooms
 
 Version 2.1
 ~~~~~~~~~~~
