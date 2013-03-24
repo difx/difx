@@ -415,6 +415,14 @@ int DataStream::calculateControlParams(int scan, int offsetsec, int offsetns)
     return 0; //note exit here!!!!
   }
 
+  if(scan > bufferinfo[atsegment].scan)
+  {
+    //if(mpiid == 1)
+    //  cout << "Bailing out: was asked for scan " << scan << ", offset " << offsetsec << "/" << lastoffsetns << " and the segment I'm at is scan " << bufferinfo[atsegment].scan << ", offset " << bufferinfo[atsegment].scanseconds << "/" << bufferinfo[atsegment].scanns << endl;
+    bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][1] = Mode::INVALID_SUBINT;
+    return 0; //note exit here!!!!
+  }
+
   //now that we obviously have a lock on all the data we need, fill the control buffer
   blockbytes = (bufferinfo[atsegment].numchannels*2*bufferinfo[atsegment].bytespersamplenum)/bufferinfo[atsegment].bytespersampledenom;
 

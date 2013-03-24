@@ -6,11 +6,15 @@ Version 2.2
 * Allow building without IPP (needs fftw) [Thanks Richard Dodson!]
 * .pc files now include full compile-in info for ipp or fftw as appropriate
 * Check for a common .dir file anomoly caused by hand editing
+* Stop 0.5 ns delay wobble in 2 Gbps Mark5B format
 * c++11 compliance
 * Finally, kill off the MODE errors and Stale data errors for cases where
   subintegration time is between 1 and 2 seconds long.  This enables 1 Hz
   resolution.
-* use openmp to parallelize 2 common corner turners for VDIF
+* Use openmp to parallelize common corner turners for VDIF
+* Fix weights (and maybe more) for setups differing only by pcal setup (Adam)
+* Defeat data "echoes" that that would occur on each scan start after files
+  ran out of data
 
 Version 2.1
 ~~~~~~~~~~~
