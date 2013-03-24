@@ -12,7 +12,7 @@
 #============================================================================
 
 from string import split, strip, find, upper, lower
-from sys import argv, exit
+from sys import argv, exit, stdout
 from os import popen, getenv
 from glob import glob
 import socket
@@ -143,6 +143,7 @@ def run(maxlevel):
 				p.close()
 				if p.ok:
 					print asctime(), info
+					stdout.flush()
 			except socket.timeout:
 				pass
 			except expat.ExpatError:
