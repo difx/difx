@@ -490,7 +490,7 @@ int pystream::writeDbeInit(const VexData *V)
 				{
 					cerr << "Warning: Personality " << dbeFilename << " looks to be for DDC, but this project is using PFB." << endl;
 				}
-				*this << "dbe0 = RDBE(0, 'pfb', " << dbeFilename << ")" << endl;
+				*this << "dbe0 = RDBE(0, 'pfb', '" << dbeFilename << "')" << endl;
 			}
 			else
 			{
@@ -505,7 +505,7 @@ int pystream::writeDbeInit(const VexData *V)
 				{
 					cerr << "Warning: Personality " << dbeFilename << " looks to be for PFB, but this project is using DDC." << endl;
 				}
-				*this << "dbe0 = RDBE(0, 'ddc', " << dbeFilename << ")" << endl;
+				*this << "dbe0 = RDBE(0, 'ddc', '" << dbeFilename << "')" << endl;
 			}
 			else
 			{
