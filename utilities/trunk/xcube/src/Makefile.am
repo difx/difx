@@ -17,14 +17,14 @@ lf1extract_LDADD = \
 lf1extract_SOURCES = \
 	lf1extract.cpp 
 
-x3stream_LDADD = \
-	../x3c/lib/libpacketReader.a \
-	../x3c/lib/libprojectManagement.a \
-	../x3c/lib/libIndexer.a \
-	../x3c/lib/libx3cCommon.a
-
-x3stream_SOURCES = \
-	x3stream.cpp 
+#x3stream_LDADD = \
+#	../x3c/lib/libpacketReader.a \
+#	../x3c/lib/libprojectManagement.a \
+#	../x3c/lib/libIndexer.a \
+#	../x3c/lib/libx3cCommon.a
+#
+#x3stream_SOURCES = \
+#	x3stream.cpp 
 
 lf1list_LDADD = \
 	../x3c/lib/libpacketReader.a \
