@@ -3,7 +3,7 @@
  *
  * Chris Phillips
  * 
- * Convert raw data from te HRFT VLBI sampler card into VDIF format
+ * Convert raw data from the HRFT VLBI sampler card into VDIF format
  *
  */
 
@@ -71,7 +71,7 @@ void chomp (char* s) {
 #define SEQUENCE(x) ((x[0]>>32)&0xFFFFFFFF)
 #define IFid(x) (x[0]&0xFF)
 
-typedef enum {NONE=0, A, B, C, D} modeType;
+typedef enum {NONE=0, A, B, C, D, E, F, G, H} modeType;
 
 int convert2VDIF(string project, string stream, string outname, 
 		 modeType mode) {
@@ -187,7 +187,7 @@ int convert2VDIF(string project, string stream, string outname,
   if (mode==NONE) 
     nchan = 64;
   else { 
-    nchan = 8;
+    nchan = 4;
     if (mode==A) 
       shift = 0;
     else if (mode==B) 
@@ -196,8 +196,15 @@ int convert2VDIF(string project, string stream, string outname,
       shift = 16;
     else if (mode==D) 
       shift = 24;
+    else if (mode==E) 
+      shift = 32;
+    else if (mode==F) 
+      shift = 40;
+    else if (mode==G) 
+      shift = 48;
+    else if (mode==H) 
+      shift = 56;
   }
-
 
   int vdifwords = 0, vdifbytes = 0;
   int samplesperframe = (VDIF_PACKETSIZE*2/nchan);
@@ -417,19 +424,26 @@ int main(int argc, char **argv) {
     switch (opt) {
       
     case 'm': // Channel selection mode
-      if (optarg=="A") 
+      if (strcmp(optarg,"A")==0)
 	mode = A;
-      else if (optarg=="B") 
+      else if (strcmp(optarg,"B")==0)
 	mode = B;
-      else if (optarg=="C") 
+      else if (strcmp(optarg,"C")==0)
 	mode = C;
       else if (strcmp(optarg,"D")==0)
 	mode = D;
+      else if (strcmp(optarg,"E")==0)
+	mode = E;
+      else if (strcmp(optarg,"F")==0)
+	mode = F;
+      else if (strcmp(optarg,"G")==0)
+	mode = G;
+      else if (strcmp(optarg,"H")==0)
+	mode = H;
       else {
 	printf("Unknown mode %s. Aborting\n", optarg);
 	exit(1);
-      }
-      
+      }   
       break;
 
     case 'o': // file to record
