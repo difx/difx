@@ -92,7 +92,6 @@ int createVDIFHeader(vdif_header *header, int framelength, int threadid,  int bi
   if (bits>32 || bits<1) return(VDIF_ERROR);
   if (framelength%8!=0 || framelength<0) return(VDIF_ERROR);
   if (threadid>1023 || threadid<0) return(VDIF_ERROR);
-  //if (framepersec<0) return(VDIF_ERROR);
 
   // Number of channels encoded as power of 2
   if (nchan<1) return(VDIF_ERROR);
