@@ -1536,7 +1536,7 @@ void Configuration::processDataTable(ifstream * input)
 
 bool Configuration::processFreqTable(ifstream * input)
 {
-  string line;
+  string line, key;
 
   getinputline(input, &line, "FREQ ENTRIES");
   freqtablelength = atoi(line.c_str());
@@ -1551,7 +1551,18 @@ bool Configuration::processFreqTable(ifstream * input)
     getinputline(input, &line, "SIDEBAND ", i);
     freqtable[i].lowersideband = ((line == "L") || (line == "l") || (line == "LOWER") || (line == "lower"))?true:false;
     freqtable[i].correlatedagainstupper = false;
-    getinputline(input, &line, "NUM CHANNELS ");
+    getinputkeyval(input, &key, &line);
+    if(key.find("RX NAME ") != string::npos) //look for optional Receiver Name
+    {
+      freqtable[i].rxName = line;
+      getinputkeyval(input, &key, &line);
+    }
+    // Verify next line is NUM CHANNELS
+    if(key.find("NUM CHANNELS ") == string::npos)
+    {
+      cfatal << startl << "Looking for NUM CHANNELS for FREQ table entry " << i << "failed" << endl;
+      return false;
+    }
     freqtable[i].numchannels = atoi(line.c_str());
     if(freqtable[i].numchannels > maxnumchannels)
       maxnumchannels = freqtable[i].numchannels;
