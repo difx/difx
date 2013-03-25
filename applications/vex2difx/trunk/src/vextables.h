@@ -184,6 +184,7 @@ class VexIF
 {
 public:
 	VexIF() : ifSSLO(0.0), ifSideBand(' '), pol(' '), phaseCalIntervalMHz(0) {}
+	std::string bandName() const;
 	std::string VLBABandName() const;
 	double getLowerEdgeFreq() const;
 

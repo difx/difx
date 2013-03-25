@@ -187,7 +187,7 @@ public:
 	double pOff;
 	int n;
 	char pol;
-	const char *rxName;
+	std::string rxName;
 	long long nGood, nBad;
 };
 
@@ -261,24 +261,30 @@ void setRxNames(std::vector<TsysAverager> &averagers)
 	bool has13cm = false;
 	bool has20cm = false;
 
+	// Here we only change receiver names that are not yet set
+
 	for(std::vector<TsysAverager>::iterator ta = averagers.begin(); ta != averagers.end(); ++ta)
 	{
 		double freq = fabs(ta->freq + ta->bw/2.0);
 
-		ta->rxName = defaultVLBAReceiverStrict(freq);
-		if(strcmp(ta->rxName, "4cm") == 0)
+
+		if(ta->rxName.empty())
+		{
+			ta->rxName = defaultVLBAReceiverStrict(freq);
+		}
+		if(ta->rxName == "4cm")
 		{
 			has4cm = true;
 		}
-		else if(strcmp(ta->rxName, "6cm") == 0)
+		else if(ta->rxName == "6cm")
 		{
 			has6cm = true;
 		}
-		else if(strcmp(ta->rxName, "13cm") == 0)
+		else if(ta->rxName == "13cm")
 		{
 			has13cm = true;
 		}
-		else if(strcmp(ta->rxName, "20cm") == 0)
+		else if(ta->rxName == "20cm")
 		{
 			has20cm = true;
 		}
@@ -296,7 +302,7 @@ void setRxNames(std::vector<TsysAverager> &averagers)
 	{
 		double freq = fabs(ta->freq + ta->bw/2.0);
 
-		if(strcmp(ta->rxName, "?") == 0)
+		if(ta->rxName == "?")
 		{
 			if(has4cm && freq > 7500.0 && freq < 10000.0)
 			{
@@ -373,6 +379,7 @@ void TsysAccumulator::setup(const VexSetup &vexSetup, DifxTcal *T, double mjd, c
 				ta->freq = -ta->freq;
 			}
 			ta->pol = vexSetup.getIF(vc->ifName)->pol;
+			ta->rxName = vexSetup.getIF(vc->ifName)->bandName().c_str();
 
 			++ta;
 		}
@@ -380,7 +387,7 @@ void TsysAccumulator::setup(const VexSetup &vexSetup, DifxTcal *T, double mjd, c
 	setRxNames(chans);
 	for(ta = chans.begin(); ta != chans.end(); ++ta)
 	{
-		ta->tCal = getDifxTcal(T, mjd, stn.c_str(), ta->rxName, ta->pol, fabs(ta->freq + ta->bw/2.0));
+		ta->tCal = getDifxTcal(T, mjd, stn.c_str(), ta->rxName.c_str(), ta->pol, fabs(ta->freq + ta->bw/2.0));
 	}
 }
 
@@ -415,7 +422,7 @@ void TsysAccumulator::flush()
 			}
 			else
 			{
-				fprintf(out, " %5.2f %s", ta->Tsys(), ta->rxName);
+				fprintf(out, " %5.2f %s", ta->Tsys(), ta->rxName.c_str());
 				nGood += ta->nGood;
 				nBad += ta->nBad;
 			}

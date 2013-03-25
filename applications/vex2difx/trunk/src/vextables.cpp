@@ -32,6 +32,7 @@
 #include <iostream>
 #include <algorithm>
 #include <cmath>
+#include <regex.h>
 #include "vextables.h"
 
 const double RAD2ASEC=180.0*3600.0/M_PI;
@@ -535,9 +536,46 @@ char VexChannel::bandCode() const
 	return '?';
 }
 
+std::string VexIF::bandName() const
+{
+	regex_t rxMatch;
+	regmatch_t matchPtr[2];
+	// Look for a name based on a comment in the Vex file
+
+	if(comment.empty())
+	{
+		return "";
+	}
+
+	regcomp(&rxMatch, " ([0-9]+[cm]m) ", REG_EXTENDED);
+
+	if(regexec(&rxMatch, comment.c_str(), 2, matchPtr, 0) == 0)
+	{
+		char buffer[8];
+		int len = matchPtr[1].rm_eo-matchPtr[1].rm_so;
+
+		comment.copy(buffer, len, matchPtr[1].rm_so);
+		buffer[len] = 0;
+		
+		regfree(&rxMatch);
+
+		return buffer;
+	}
+
+	regfree(&rxMatch);
+
+	return "";
+}
+
 std::string VexIF::VLBABandName() const
 {
 	double bandCenter = ifSSLO;
+	
+	std::string bn = bandName();
+	if(!bn.empty())
+	{
+		return bn;
+	}
 
 	// Calculate the center of the 500-1000 MHz IF range;
 	if(ifSideBand == 'L')
