@@ -42,9 +42,7 @@ int new_type1 (DifxInput *D,                    // ptr to a filled-out difx inpu
         gindex,
         indA,
         indB,
-        indA_orig,
-        indB_orig,
-        overrideA,
+        autocorr_is_A,
         done[4];
 
     struct type_000 t000;
@@ -139,22 +137,24 @@ int new_type1 (DifxInput *D,                    // ptr to a filled-out difx inpu
                                     // point to reference/A and remote/B datastreams
     pdsA = &D->datastream[D->baseline[blind].dsA];
     pdsB = &D->datastream[D->baseline[blind].dsB];
-                                    // for auto-correlations find correction datastreams
-                                    // (since baseline table only contains cross-corrs)
+                                    // for auto-correlations need to tweak datastreams
+                                    // since baseline table only contains cross-corrs
+                                    // do so by overwriting index from baseline table,
+                                    // and also doubling the used datastream
     if (a1 == a2)
         {
         if (pdsA->antennaId == a1)
-            {
-            overrideA = TRUE;
+            {                       // ds A and its index will be used for both ref & rem
+            autocorr_is_A = TRUE;
             pdsB = pdsA;
             }
         else if (pdsB->antennaId == a1)
-            {
-            overrideA = FALSE;
+            {                       // ds B and its index will be used for both ref & rem
+            autocorr_is_A = FALSE;
             pdsA = pdsB;
             }
         else
-            printf ("Internal consistency error!\n");
+            printf ("Internal consistency error for autocorrelation! \n");
         }
 
                                     // construct and write type 101 records for each chan
@@ -171,12 +171,10 @@ int new_type1 (DifxInput *D,                    // ptr to a filled-out difx inpu
                                     // or possibly of a zoomed-in band
             indA = D->baseline[blind].bandA[i][pol];
             indB = D->baseline[blind].bandB[i][pol];
-            indA_orig = indA;
-            indB_orig = indB;
-                                    // override A or B for autocorrelation
+                                    // override A or B for autocorrelations
             if (a1 == a2)
                 {
-                if (overrideA)
+                if (autocorr_is_A)
                     indB = indA;
                 else 
                     indA = indB;
@@ -194,7 +192,7 @@ int new_type1 (DifxInput *D,                    // ptr to a filled-out difx inpu
                 {
                 j = pdsA->recBandFreqId[indA];
                 findex = pdsA->recFreqId[j];
-                refpol = pdsA->recBandPolName[indA_orig];
+                refpol = pdsA->recBandPolName[indA];
                 }
             else                    // zoom mode
                 {
@@ -215,7 +213,7 @@ int new_type1 (DifxInput *D,                    // ptr to a filled-out difx inpu
                 {
                 j = pdsB->recBandFreqId[indB];
                 gindex = pdsB->recFreqId[j];
-                rempol = pdsB->recBandPolName[indB_orig];
+                rempol = pdsB->recBandPolName[indB];
                 }
             else                    // zoom mode
                 {

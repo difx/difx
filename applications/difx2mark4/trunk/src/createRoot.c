@@ -9,6 +9,7 @@
 #include <ctype.h>
 #include "difx2mark4.h"
 #include "other.h"
+#define MAX_FS 10
 
 int createRoot (DifxInput *D,       // difx input structure pointer
                 int jobId,
@@ -36,14 +37,16 @@ int createRoot (DifxInput *D,       // difx input structure pointer
         configId,
         delete_mode = FALSE,
         delete_freq = FALSE,
-        yy, dd, hh, mm, ss;
+        yy, dd, hh, mm, ss,
+        nfs,
+        bps;
 
     char s[256],
          *pst[50],
          source[DIFXIO_NAME_LENGTH], // for filename only, otherwise get from D
          current_def[32],
          current_scan[DIFXIO_NAME_LENGTH],
-         current_freq[80],
+         fseq_list[MAX_FS][80],
          buff[256],
          hms[18],
          dms[18],
@@ -110,11 +113,14 @@ int createRoot (DifxInput *D,       // difx input structure pointer
     void fake_bocf_period(char [256], DifxConfig *);
     int isValidAntenna(const DifxInput *, char *, int);
     double frt (double, double, int);
+    void insert_zoom_sequence (DifxInput *, char *, FILE *);
 
                                     // initialize memory as necessary
     current_def[0] = 0;
     current_scan[0] = 0;
-    current_freq[0] = 0;
+    for (i=0; i<MAX_FS; i++)        // null out sequence names
+        fseq_list[i][0] = 0;
+    nfs = 0;
 
                                     // create scan identifier
 
@@ -310,10 +316,19 @@ int createRoot (DifxInput *D,       // difx input structure pointer
                 break;
 
             case FREQ:          
-                if (strncmp (pst[0], "def", 3) == 0
-                 && strncmp (pst[1], current_freq, 80) != 0)
+                if (strncmp (pst[0], "def", 3) == 0)
+                    {
+                    if (fseq_unused (pst[1], fseq_list, nfs))
                                     // enter deletion mode if this freq seq not active
-                    delete_freq = TRUE;
+                        delete_freq = TRUE;
+                                    // if zoom mode, insert new sequence & ignore input vex
+                                    // code assumes zooming done on all baselines
+                    else if (D->datastream[0].nZoomBand > 0)
+                        {
+                        insert_zoom_sequence (D, line, fout);
+                        delete_freq = TRUE;
+                        }
+                    }
                                     // delete all lines for unused freq def's
                 if (delete_freq)
                     {
@@ -384,7 +399,13 @@ int createRoot (DifxInput *D,       // difx input structure pointer
                     {
                     if (strncmp (pst[0], "ref", 3) == 0 
                      && strncmp (pst[1], "$FREQ", 5) == 0)
-                        strncpy (current_freq, pst[3], 80);
+                        {
+                        if (nfs < MAX_FS)
+                            strncpy (fseq_list[nfs], pst[3], 80);
+                        else
+                            printf ("Error - too many frequency sequences\n");
+                        nfs++;
+                        }
                     if (strncmp (pst[0], "ref", 3) == 0 
                       && strncmp (pst[1], "$PASS_ORDER", 11) == 0)
                         line[0] = '*';  // comment out to avoid pass# problems
@@ -585,7 +606,14 @@ int createRoot (DifxInput *D,       // difx input structure pointer
                                     // insert one copy of # bits/sample in each def
                 if (strncmp (pst[0], "def", 3) == 0)
                     {
-                    sprintf (buff, "  bits/sample = %d;\n", D->quantBits);
+                    if (D->quantBits == 0)
+                        {
+                        printf ("Warning -- bits/sample differed, setting = 2\n");
+                        bps = 2;
+                        }
+                    else
+                        bps = D->quantBits;
+                    sprintf (buff, "  bits/sample = %d;\n", bps);
                     strcat (line, buff);
                     }
                 else if (strncmp (pst[0], "S2_recording_mode", 17) == 0
@@ -762,4 +790,48 @@ double frt (double mjd, double fract, int midpt_offset)
         epoch = mjd;
     return epoch;
     }
-// vim: shiftwidth=4:softtabstop=4:expandtab:cindent:cinoptions={1sf1s^-1s
+
+// inserts a frequency sequence for all zoom bands based upon
+// information in the .input file
+void insert_zoom_sequence (DifxInput *D, char *line, FILE *fout)
+    {
+    int n,
+        ifr;
+    char buff[80];
+
+    fputs (line, fout);             // write this def statement out
+                                    // loop over zoom channels, creating a chan_def for each
+    for (n=0; n<D->datastream[0].nZoomFreq; n++)
+        {
+        ifr = *(D->datastream[0].zoomFreqId);
+        sprintf (buff, "    chan_def = X%02d%c : &X : %8.2lf MHz : %c : %6.3lf MHz : "
+                       "&Ch%02d : &BBC%02d : &L_cal;\n",
+                 n, D->freq[ifr].sideband, D->freq[ifr].freq, D->freq[ifr].sideband, 
+                 D->freq[ifr].bw, n+1, n+1);
+                                    // write the line out
+        fputs (buff, fout); 
+        }
+                                    // also insert the sample rate line
+    sprintf (buff, "    sample_rate = %4.1lf Ms/sec;\n", 2.0 * D->freq[ifr].bw);
+    fputs (buff, fout); 
+    sprintf (buff, "  enddef;\n");
+    fputs (buff, fout); 
+    }
+
+// check to see if this frequency sequence is used within the current mode
+
+int fseq_unused (char *pseq, char fseq_list[MAX_FS][80], int nfs)
+    {
+    int i,
+        unused = 1;                 // unused unless we find a match
+
+    for (i=0; i<nfs; i++)
+        {
+        if (strcmp (pseq, fseq_list[i]) == 0)
+            {
+            unused = 0;             // found a match - mark as not unused
+            break;
+            }
+        }
+    return unused;
+    }
