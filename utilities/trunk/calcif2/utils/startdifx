@@ -700,6 +700,15 @@ if options.useStartMessage and options.useLocalHead == False and headNode == Non
 	print "Alternatively  you can use the -l option in case mk5daemon -H is running locally on this host."
 	exit(1)
 	
+nBad = 0
+for fileBase in fileBaseList:
+	if not isfile(fileBase + '.input'):
+		print 'Error: %s.input not found (or not a regular file)' % fileBase
+		nBad += 1
+
+if nBad > 0:
+	exit(1)
+
 for fileBase in fileBaseList:
 	a = rfind(fileBase, "/")
 	jobname = fileBase[a+1:]
