@@ -106,7 +106,7 @@ pystream::DataFormat getDataFormat(const VexData *V, const string &antName)
 		{
 			pystream::DataFormat g;
 
-			if(setup->formatName.empty())
+			if(setup->formatName.empty() || setup->formatName == "NONE")
 			{
 				continue;
 			}
@@ -119,8 +119,13 @@ pystream::DataFormat getDataFormat(const VexData *V, const string &antName)
 			{
 				g = pystream::FORMAT_VDIF;
 			}
+			else if(setup->formatName.substr(0, 4) == "VLBA")
+			{
+				g = pystream::FORMAT_VLBA;
+			}
 			else
 			{
+		cout << "Format unknown: <" << setup->formatName << ">" << endl;
 				g = pystream::FORMAT_UNKNOWN;
 			}
 
@@ -259,15 +264,9 @@ int main(int argc, char **argv)
 		}
 
 		pystream::DataFormat df = getDataFormat(V, A->name);
-		if(df == pystream::FORMAT_NONE)
+		if(df == pystream::FORMAT_UNKNOWN)
 		{
-			cout << "Antenna " << A->name << " has no data format specified.  Skipping." << endl;
-
-			continue;
-		}
-		else if(df == pystream::FORMAT_UNKNOWN)
-		{
-			cout << "Antenna " << A->name << " has an unsupported data format.  Skipping." << endl;
+			cout << "Antenna " << A->name << " has an unsupported data format(" << df << ").  Skipping." << endl;
 
 			continue;
 		}

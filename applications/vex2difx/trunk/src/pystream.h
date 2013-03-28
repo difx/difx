@@ -42,7 +42,7 @@ public:
 	enum ScriptType {SCRIPT_VLBA, SCRIPT_EVLA, SCRIPT_GBT};
 	enum PersonalityType {RDBE_UNKNOWN, RDBE_NONE, RDBE_PFB, RDBE_DDC};
 	enum RecorderType {RECORDER_NONE, RECORDER_MARK5C};
-	enum DataFormat {FORMAT_NONE, FORMAT_UNKNOWN, FORMAT_MIXED, FORMAT_MARK5B, FORMAT_VDIF};
+	enum DataFormat {FORMAT_NONE, FORMAT_UNKNOWN, FORMAT_MIXED, FORMAT_VLBA, FORMAT_MARK5B, FORMAT_VDIF};
 
 	pystream(): scriptType(SCRIPT_VLBA), personalityType(RDBE_UNKNOWN), recorderType(RECORDER_MARK5C), dataFormat(FORMAT_NONE), lastValid(0.0), lastSourceId(-1), lastModeId(-1), lastChannelSet(-1), evlaIntSec(0), evlasbChan(0), evlasbBits(0), evlaVCIVersion(0.0), mjd0(0.0), isMark5A(false) {};
 	void open(const std::string& antennaName, const VexData *V, ScriptType sType);

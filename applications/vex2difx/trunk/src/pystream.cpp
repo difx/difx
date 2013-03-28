@@ -282,6 +282,7 @@ int pystream::writeRecorderInit(const VexData *V)
 		{
 		case FORMAT_MARK5B:
 		case FORMAT_NONE:
+		case FORMAT_VLBA:
 			*this << "recorder0.setMode('Mark5B')" << endl;
 			*this << "recorder0.setPSNMode(0)" << endl;
 			*this << "recorder0.setPacket(0, 0, 36, 5008)" << endl;
@@ -519,6 +520,7 @@ int pystream::writeDbeInit(const VexData *V)
 			{
 			case FORMAT_MARK5B:
 			case FORMAT_NONE:
+			case FORMAT_VLBA:
 				*this << "dbe0.setFormat('Mark5B')" << endl;
 				*this << "dbe0.setPSNMode(0)" << endl;
 				*this << "dbe0.setPacket(0, 0, 40, 5008)" << endl;
