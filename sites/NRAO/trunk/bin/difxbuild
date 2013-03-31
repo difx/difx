@@ -23,6 +23,10 @@ gpstkVersion = '2.0'
 jamVersion = '2.5.2'
 pngVersion = '1.2.50'
 schedVersion = '11.0'
+m4Version = '1.4.16'
+autoconfVersion = '2.69'
+automakeVersion = '1.11.6'
+libtoolVersion = '2.4'
 numMakeCpus = 4
 
 todo_list = """
@@ -1038,7 +1042,7 @@ def bootstrap(comps, params, args, verbose, pretend):
 		out.write('export CFLAGS="%s"\n' % cflags)
 		out.write('export CXXFLAGS="%s"\n' % cflags)
 		out.write('export MPICXX=${DIFX_ARCH_ROOT}/bin/mpicxx\n')
-		out.write('export PKG_CONFIG_PATH=${DIFXROOT}/lib/pkgconfig:${DIFX_ARCH_ROOT}/lib/pkgconfig\n')
+		out.write('export PKG_CONFIG_PATH=${DIFXROOT}/lib/pkgconfig:${DIFX_ARCH_ROOT}/lib/pkgconfig:/usr/lib/pkgconfig\n')
 		out.write('export MARK5_DIR_PATH=${DIFX_BASE}/directories\n')
 		out.write('export PGPLOT_DIR=${DIFX_ARCH_ROOT}/pgplot\n')
 		out.write('export DIFX_MESSAGE_GROUP=224.2.2.1\n')
@@ -1481,6 +1485,59 @@ def ftpFile(url, tarDir, srcFile, args, verbose, pretend):
 	chdir(tarDir)
 	execute('wget %s %s' % (wgetOptions, url), verbose, pretend)
 
+def autotools(origComps, params, args, verbose, pretend):
+	arch = platform.machine()
+	difxBase = environ['DIFX_BASE'] + '/'
+	tarDir = difxBase + 'tar/'
+	archDir = difxBase + arch
+	archSrcDir = archDir + '/src'
+	if not isdir(archSrcDir):
+		execute('mkdir -p %s' % archSrcDir, verbose, pretend)
+
+	# m4
+	srcFile = 'm4-%s.tar.xz' % m4Version
+	url = 'http://ftp.gnu.org/gnu/m4/%s' % srcFile
+	ftpFile(url, tarDir, srcFile, args, verbose, pretend)
+	chdir(archSrcDir)
+	execute('xz -d -c %s/%s | tar x' % (tarDir, srcFile), verbose, pretend)
+	chdir('%s/m4-%s' % (archSrcDir, m4Version))
+	execute('configure --prefix=%s' % archDir, verbose, pretend)
+	execute('make -j%d' % numMakeCpus, verbose, pretend)
+	execute('make install', verbose, pretend)
+
+	# autoconf
+	srcFile = 'autoconf-%s.tar.xz' % autoconfVersion
+	url = 'http://ftp.gnu.org/gnu/autoconf/%s' % srcFile
+	ftpFile(url, tarDir, srcFile, args, verbose, pretend)
+	chdir(archSrcDir)
+	execute('xz -d -c %s/%s | tar x' % (tarDir, srcFile), verbose, pretend)
+	chdir('%s/autoconf-%s' % (archSrcDir, autoconfVersion))
+	execute('configure --prefix=%s' % archDir, verbose, pretend)
+	execute('make -j%d' % numMakeCpus, verbose, pretend)
+	execute('make install', verbose, pretend)
+
+	# automake
+	srcFile = 'automake-%s.tar.xz' % automakeVersion
+	url = 'http://ftp.gnu.org/gnu/automake/%s' % srcFile
+	ftpFile(url, tarDir, srcFile, args, verbose, pretend)
+	chdir(archSrcDir)
+	execute('xz -d -c %s/%s | tar x' % (tarDir, srcFile), verbose, pretend)
+	chdir('%s/automake-%s' % (archSrcDir, automakeVersion))
+	execute('configure --prefix=%s' % archDir, verbose, pretend)
+	execute('make -j%d' % numMakeCpus, verbose, pretend)
+	execute('make install', verbose, pretend)
+
+	# libtool
+	srcFile = 'libtool-%s.tar.xz' % libtoolVersion
+	url = 'http://ftp.gnu.org/gnu/libtool/%s' % srcFile
+	ftpFile(url, tarDir, srcFile, args, verbose, pretend)
+	chdir(archSrcDir)
+	execute('xz -d -c %s/%s | tar x' % (tarDir, srcFile), verbose, pretend)
+	chdir('%s/libtool-%s' % (archSrcDir, libtoolVersion))
+	execute('configure --prefix=%s' % archDir, verbose, pretend)
+	execute('make -j%d' % numMakeCpus, verbose, pretend)
+	execute('make install', verbose, pretend)
+
 def spice(origComps, params, args, verbose, pretend):
 	arch = platform.machine()
 	srcFile = 'cspice.tar.Z'
@@ -1515,7 +1572,7 @@ def gpstk(origComps, params, args, verbose, pretend):
 	if system('which jam') != 0:
 		# need to install it
 		jamSrcFile = 'ftjam-%s.tar.bz2' % jamVersion
-		jamUrl = 'http://sourceforge.net/projects/freetype/files/ftjam/%s/%s/download' % (jamVersion, jamSrcFile)
+		jamUrl = 'http://sourceforge.net/projects/freetype/files/ftjam/%s/%s' % (jamVersion, jamSrcFile)
 		# get file
 		ftpFile(jamUrl, tarDir, jamSrcFile, args, verbose, pretend)
 		chdir(archSrcDir)
@@ -1533,6 +1590,9 @@ def gpstk(origComps, params, args, verbose, pretend):
 	chdir('gpstk-%s' % gpstkVersion)
 	execute('jam -q -j%d -sPREFIX=%s' % (numMakeCpus, difxBase + arch), verbose, pretend)
 	execute('jam -sPREFIX=%s install' % (difxBase + arch), verbose, pretend)
+
+	# gpstk seems to not install GNSSconstants.hpp automatically.  Do that forcefully here
+	execute('cp src/GNSSconstants.hpp %s/include/gpstk' % (difxBase + arch), verbose, pretend)
 
 	# make a .pc file for later convenience
 	out = open('%s/lib/pkgconfig/gpstk.pc' % (difxBase + arch), 'w')
@@ -1698,7 +1758,7 @@ def pgplot(origComps, params, args, verbose, pretend):
 
 
 def extra(origComps, params, args, verbose, pretend):
-	packages = ['pgplot', 'gpstk', 'png', 'sched']
+	packages = ['pgplot', 'gpstk', 'png', 'sched', 'autotools']
 	if len(args) < 1:
 		print 'Usage: difxbuild [options] extra [package(s)]\n'
 		return
@@ -1712,6 +1772,8 @@ def extra(origComps, params, args, verbose, pretend):
 		print '\nExiting\n'
 		return
 
+	if 'autotools' in args:
+		autotools(origComps, params, [], verbose, pretend)
 	if 'pgplot' in args:
 		pgplot(origComps, params, [], verbose, pretend)
 	if 'gpstk' in args:
