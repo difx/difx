@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2012 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2008-2013 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -550,6 +550,10 @@ int writeDifxFreqArray(FILE *out, int nFreq, const DifxFreq *df)
 		writeDifxLineDouble1(out, "BW (MHZ) %d", i, "%13.11f", df[i].bw);
 		sb[0] = df[i].sideband;
 		writeDifxLine1(out, "SIDEBAND %d", i, sb);
+		if(strlen(df[i].rxName) > 0)
+		{
+			writeDifxLine1(out, "RX NAME %d", i, df[i].rxName);
+		}
                 writeDifxLineInt1(out, "NUM CHANNELS %d", i, df[i].nChan);
 		writeDifxLineInt1(out, "CHANS TO AVG %d", i, df[i].specAvg);
 		writeDifxLineInt1(out, "OVERSAMPLE FAC. %d", i, df[i].overSamp);

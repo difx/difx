@@ -50,6 +50,7 @@
 #define DIFXIO_SESSION_LENGTH		8
 #define DIFXIO_TAPER_LENGTH		8
 #define DIFXIO_SHELF_LENGTH		8
+#define DIFXIO_RX_NAME_LENGTH		8
 
 #define DIFXIO_POL_R			0x01
 #define DIFXIO_POL_L			0x02
@@ -168,6 +169,7 @@ typedef struct
 	int decimation;
 	int nTone;		/* Number of pulse cal tones */
 	int *tone;		/* Array of tone indices */
+	char rxName[DIFXIO_RX_NAME_LENGTH];
 } DifxFreq;
 
 /* To become a FITS IF */

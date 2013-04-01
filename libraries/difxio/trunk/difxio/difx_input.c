@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2012 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2007-2013 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -1144,9 +1144,23 @@ static DifxInput *parseDifxInputFreqTable(DifxInput *D, const DifxParameters *ip
 		D->freq[b].specAvg  = atoi(DifxParametersvalue(ip, rows[4]));
 		D->freq[b].overSamp = atoi(DifxParametersvalue(ip, rows[5]));
 		D->freq[b].decimation = atoi(DifxParametersvalue(ip, rows[6]));
+
+		r = DifxParametersfind1(ip, rows[2]+1, "RX NAME %d", b);
+		if(r > 0 && r < rows[2]+5)
+		{
+			int v;
+
+			v = snprintf(D->freq[b].rxName, DIFXIO_RX_NAME_LENGTH, "%s", DifxParametersvalue(ip, r));
+			if(v > DIFXIO_RX_NAME_LENGTH-1)
+			{
+				fprintf(stderr, "populateInput: DIFXIO_RX_NAME_LENGTH=%d is too short for rx Name '%s'\n", DIFXIO_RX_NAME_LENGTH, DifxParametersvalue(ip, r));
+
+				return 0;
+			}
+		}
 		
 		r = DifxParametersfind1(ip, rows[6]+1, "PHASE CALS %d OUT", b);
-		if(r > 0)
+		if(r > 0 && r < rows[6]+5)
 		{
 			int t;
 
@@ -2455,8 +2469,6 @@ static DifxInput *populateIM(DifxInput *D, DifxParameters *mp)
 
 	for(s = 0; s < nScan; ++s)
 	{
-#warning "FIXME: validate source name, ..."
-
 		DifxScan *scan;
 		int p;
 

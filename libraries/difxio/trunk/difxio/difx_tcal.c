@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2011 by Walter Brisken                                  *
+ *   Copyright (C) 2011-2013 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -96,7 +96,7 @@ void deleteDifxTcal(DifxTcal *dt)
 				{
 					if(dt->group[g]._freqRangeExceeded)
 					{
-						printf("Warning: Tcals for antena %s receiver %s did not span entire range.\n", dt->group[g].antenna, dt->group[g].receiver);
+						printf("Warning: Tcals for antena %s receiver %s did not span entire freq range.\n", dt->group[g].antenna, dt->group[g].receiver);
 					}
 					free(dt->group[g].value);
 					dt->group[g].value = 0;
