@@ -94,6 +94,10 @@ void fprintDifxFreq(FILE *fp, const DifxFreq *df)
 	fprintf(fp, "    Sideband = %c\n", df->sideband);
 	fprintf(fp, "    Num Chan = %d\n", df->nChan);
 	fprintf(fp, "    Spec Avg = %d\n", df->specAvg);
+	if(df->rxName[0])
+	{
+		fprintf(fp, "    Rx name = %s\n", df->rxName);
+	}
 #if 0
 	fprintf(fp, "    Oversamp = %d\n", df->overSamp);
 	fprintf(fp, "    Decimation = %d\n", df->decimation);

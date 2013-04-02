@@ -652,6 +652,8 @@ static int generateAipsIFs(DifxInput *D, int configId)
 			dc->IF[i].nPol      = dc->nPol;
 			dc->IF[i].pol[0]    = dc->pol[0];
 			dc->IF[i].pol[1]    = dc->pol[1];
+			strncpy(dc->IF[i].rxName, D->freq[fqId].rxName, DIFXIO_RX_NAME_LENGTH);
+			dc->IF[i].rxName[DIFXIO_RX_NAME_LENGTH-1] = 0;
 
 			++dc->nIF;
 		}

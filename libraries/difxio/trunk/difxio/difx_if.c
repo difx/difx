@@ -91,6 +91,10 @@ void fprintDifxIF(FILE *fp, const DifxIF *di)
 	fprintf(fp, "      Freq = %f MHz\n", di->freq);
 	fprintf(fp, "      Bandwidth = %f MHz\n", di->bw);
 	fprintf(fp, "      Sideband = %c\n", di->sideband);
+	if(di->rxName[0])
+	{
+		fprintf(fp, "      Rx name = %s\n", di->rxName);
+	}
 	if(di->nPol == 1)
 	{
 		fprintf(fp, "      Pol = %c\n", di->pol[0]);

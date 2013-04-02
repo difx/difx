@@ -180,6 +180,7 @@ typedef struct
 	char sideband;		/* U or L -- net sideband */
 	int nPol;		/* 1 or 2 */
 	char pol[2];		/* polarization codes (one per nPol) : L R X or Y. */
+	char rxName[DIFXIO_RX_NAME_LENGTH];
 } DifxIF;
 
 typedef struct
