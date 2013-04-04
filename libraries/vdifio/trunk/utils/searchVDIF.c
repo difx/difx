@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2010-2012 by Adam Deller                                *
+ *   Copyright (C) 2010-2013 by Adam Deller                                *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -79,11 +79,11 @@ int main(int argc, char **argv)
   lastbytecount = 0;
   while(!feof(input)) {
     readbytes = fread(buffer, 1, VDIF_HEADER_BYTES, input); //read the VDIF header
-    framebytes = getVDIFFrameBytes(buffer);
-    framemjd = getVDIFFrameMJD(buffer);
-    framesecond = getVDIFFrameSecond(buffer);
-    framenumber = getVDIFFrameNumber(buffer);
-    frameinvalid = getVDIFFrameInvalid(buffer);
+    framebytes = getVDIFFrameBytes((vdif_header *)buffer);
+    framemjd = getVDIFFrameMJD((vdif_header *)buffer);
+    framesecond = getVDIFFrameSecond((vdif_header *)buffer);
+    framenumber = getVDIFFrameNumber((vdif_header *)buffer);
+    frameinvalid = getVDIFFrameInvalid((vdif_header *)buffer);
     if(expectedframebytes < 0 || framebytes == expectedframebytes)
     {
       printf("MJD is %d, second is %d, framenumber is %d, frameinvalid is %d\n", framemjd, framesecond, framenumber, frameinvalid);

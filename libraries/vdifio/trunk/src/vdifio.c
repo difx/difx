@@ -82,7 +82,7 @@ int ymd2mjd(int yr, int mo, int day)
 //  return ymd2mjd(2000 + epoch/2, (epoch%2)*6+1, 1); // Year and Jan/July
 //}
 
-int createVDIFHeader(vdif_header *header, int framelength, int threadid,  int bits, int nchan,
+int createVDIFHeader(vdif_header *header, int framelength, int threadid, int bits, int nchan,
 		      int iscomplex, char stationid[3]) {
   int lognchan;
 
@@ -135,7 +135,7 @@ void setVDIFFrameBytes(vdif_header *header, int bytes)
   header->framelength8 = bytes/8;
 }
 
-int getVDIFEpochMJD(vdif_header *header)
+int getVDIFEpochMJD(const vdif_header *header)
 {
   int epoch = (int)header->epoch;
   return ymd2mjd(2000 + epoch/2, (epoch%2)*6+1, 1);
@@ -152,14 +152,14 @@ void setVDIFNumChannels(vdif_header *header, int numchannels)
   header->nchan = logchans;
 }
 
-int getVDIFFrameMJD(vdif_header *header)
+int getVDIFFrameMJD(const vdif_header *header)
 {
   int mjd = getVDIFEpochMJD(header);
 
   return mjd + header->seconds/86400; // Seconds may be greater than one day
 }
 
-double getVDIFDMJD(vdif_header *header, int framepersec) 
+double getVDIFDMJD(const vdif_header *header, int framepersec) 
 {
   int mjd = getVDIFFrameMJD(header);
   int sec = getVDIFFrameSecond(header);

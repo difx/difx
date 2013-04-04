@@ -8,7 +8,7 @@ int main(int argc, char **argv)
 {
 	unsigned char *src;
 	unsigned char *dest;
-	FILE *in;
+	FILE *in, *out;
 	int n;
 	int threads[] = { 0, 640, 256, 896 };
 	int nThread = sizeof(threads)/sizeof(int);
@@ -42,6 +42,10 @@ int main(int argc, char **argv)
 	fclose(in);
 
 	n = vdifmux(dest, n/(nThread*inputframesize), src, n, inputframesize, 12800, 2, nThread, threads, nSort, nGap);
+
+	out = fopen("vdif.out", "w");
+	fwrite(dest, 1, NSRC, out);
+	fclose(out);
 
 	return 0;
 }
