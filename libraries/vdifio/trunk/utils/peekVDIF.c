@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 #include <stdlib.h>
 
 #define MAX 100000000
@@ -7,12 +8,21 @@ int main(int argc, char **argv)
 {
 	FILE *in;
 	unsigned char *data, *d;
-	int n;
+	unsigned char *lastdata, *lastd;
+	int n, f;
 	int l, l0;
 	int t, t0 = 0;
 	int i, j;
 	int nv = 0;
 	int nb = 0;
+	int lastf = -1;
+	int lastt = -1;
+	int nf = 0;
+	long long B = 0;
+
+	int T[4] = {-1,-1,-1,-1}; 
+
+	
 
 	if(argc < 2)
 	{
@@ -20,31 +30,90 @@ int main(int argc, char **argv)
 	}
 	in = fopen(argv[1], "r");
 
-	data = (unsigned char *)malloc(MAX);
+	lastdata = data = (unsigned char *)malloc(MAX+1000);
 
 	n = fread(data, 1, MAX, in);
 
-	fclose(in);
 
 	printf("%d bytes read\n", n);
 
-	t = t0 = data[0] + (data[1]<<8) + (data[2]<<16) + (data[3]<<24);
+	lastt = t = t0 = data[0] + (data[1]<<8) + (data[2]<<16) + (data[3]<<24);
 
 	l = l0 = (data[8] + (data[9]<<8) + (data[10]<<16)) << 3;
 
-
-	for(i = 0; i < n;)
+	for(i = 0; ;)
 	{
+		if(i > MAX-10000 || i > n)
+		{
+			memmove(data, data + i, MAX-i);
+			fprintf(stderr, "B=%Ld Read %d\n", B, i);
+			B += i;
+			n = fread(data + MAX - i, 1, i, in);
+			if(n < 1)
+			{
+				break;
+			}
+			n += i;
+			i = 0;
+		}
+
 		d = data + i;
 
 		t = d[0] + (d[1]<<8) + (d[2]<<16) + (d[3]<<24);
 		l = (d[8] + (d[9]<<8) + (d[10]<<16)) << 3;
+		
+		f = d[4] + (d[5]<<8) + (d[6]<<16);
+
+		if(f == lastf)
+		{
+			++nf;
+		}
+		else
+		{
+			if(t != lastt)
+			{
+				if(t != lastt + 1)
+				{
+					printf("Error: seconds change %d to %d  B = %Ld f = %d\n", lastt, t, B + i, f);
+				}
+				if(f != 0)
+				{
+					printf("Error: frame number not reset on second change  B = %Ld t = %d f = %d\n", B + i, t, f);
+				}
+
+				lastt = t;
+			}
+			if(f >= 0 && f != lastf + 1 && (f != 0 || lastf != 12799))
+			{
+				printf("Error: frame number change %d to %d  B = %Ld t = %d\n", lastf, f, B + i, t);
+			}
+			if(nf != 4 && lastf >= 0)
+			{
+				printf("Warning: t = %d f = %d B = %Ld nf = %d T = [%d %d %d %d]\n", t, f, B + i, nf, T[0], T[1], T[2], T[3]);
+			}
+			nf = 1;
+			lastf = f;
+			T[0] = T[1] = T[2] = T[3] = -1;
+		}
+
+		if(nf > 0 && nf <= 4)
+		{
+			T[nf-1] = d[14] | ((d[15] & 0x03) << 8);
+		}
+		else
+		{
+			printf("Weird: nf=%d   ", nf);
+			printf("t = %d f = %d B = %Ld nf = %d T = [%d %d %d %d]\n", t, f, B + i, nf, T[0], T[1], T[2], T[3]);
+			exit(0);
+		}
+
+		
 
 		if(l == l0 && (t == t0 || t == t0+1))
 		{
 			++nv;
 
-			printf("[%d %d] Timecode = %d l = %d t = %d\n", nv, nb, t, l,  d[14] | ((d[15] & 0x03) << 8));
+			printf("[%Ld %d %d] Timecode = %d f = %d l = %d t = %d\n", B+i, nv, nb, t, f, l,  d[14] | ((d[15] & 0x03) << 8));
 			t0 = t;
 
 			i += l;
@@ -64,14 +133,18 @@ int main(int argc, char **argv)
 					i += j;
 					t0 = t;
 		
-					printf("[%d %d]  Len = %d\n", nv, nb, j);
+					printf("Warning: [%Ld %d %d] %d %d  Len = %d\n", B+i, nv, nb, t, f, j);
 
 					j = 1000000;
 				}
 
 			}
 		}
+
+		lastd = d;
 	}
+
+	fclose(in);
 
 	return 0;
 }

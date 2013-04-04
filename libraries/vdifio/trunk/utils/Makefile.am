@@ -15,7 +15,8 @@ bin_PROGRAMS = \
 	countVDIFPackets \
 	printVDIF \
 	peekVDIF \
-	searchVDIF
+	searchVDIF \
+	vmux
 
 stripVDIF_SOURCES = \
 	stripVDIF.c
@@ -52,3 +53,6 @@ printVDIF_SOURCES = \
 
 searchVDIF_SOURCES = \
 	searchVDIF.c
+
+vmux_SOURCES = \
+	vmux.c

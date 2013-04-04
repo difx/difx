@@ -2,7 +2,8 @@ h_sources = \
 	vdifio.h
 
 c_sources = \
-	vdifio.c
+	vdifio.c \
+	vdifmux.c
 
 library_includedir = $(includedir)
 library_include_HEADERS = \

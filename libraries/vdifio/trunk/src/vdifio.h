@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2010 by Adam Deller / Walter Brisken               *
+ *   Copyright (C) 2009-2013 by Adam Deller / Walter Brisken               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -99,6 +99,8 @@ void setVDIFThreadID(vdif_header *header, int threadid);
 int setVDIFTime(vdif_header *header, time_t time);
 void setVDIFEpoch(vdif_header *header, int mjd);
 int nextVDIFHeader(vdif_header *header, int framepersec);
+
+int vdifmux(unsigned char *dest, int nFrame, const unsigned char *src, int length, int inputFrameSize, int inputFramesPerSecond, int nBit, int nThread, const int *threadIds, int nSort, int nGap);
 
 #ifdef __cplusplus
 }
