@@ -240,9 +240,9 @@ int vdifmux(unsigned char *dest, int nFrame, const unsigned char *src, int lengt
 			continue;
 		}
 
-		frameNumber = getVDIFFrameFullSecond(vh) * inputFramesPerSecond + getVDIFFrameNumber(vh);
+		frameNumber = getVDIFFullSecond(vh) * inputFramesPerSecond + getVDIFFrameNumber(vh);
 		
-		if(verbose > 2) { printf("frame with frame number %Ld (%d %d) and threadId %3d (chan %d) found at position %d\n", frameNumber, getVDIFFrameFullSecond(vh), getVDIFFrameNumber(vh), threadId, chanId, i); }
+		if(verbose > 2) { printf("frame with frame number %Ld (%d %d) and threadId %3d (chan %d) found at position %d\n", frameNumber, getVDIFFullSecond(vh), getVDIFFrameNumber(vh), threadId, chanId, i); }
 
 		if(startFrameNumber < 0)	/* we haven't seen data yet */
 		{
