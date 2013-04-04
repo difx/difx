@@ -123,20 +123,10 @@ int createVDIFHeader(vdif_header *header, int framelength, int threadid,  int bi
 }
 
 
-int getVDIFThreadID(vdif_header *header)
-{
-  return (int)header->threadid;
-}
-
 void setVDIFThreadID(vdif_header *header, int threadid)
 {
   // Should check bounds
   header->threadid = threadid;
-}
-
-int getVDIFFrameBytes(vdif_header *header)
-{
-  return (int)(header->framelength8)*8;
 }
 
 void setVDIFFrameBytes(vdif_header *header, int bytes)
@@ -145,36 +135,10 @@ void setVDIFFrameBytes(vdif_header *header, int bytes)
   header->framelength8 = bytes/8;
 }
 
-int getVDIFStationID(vdif_header *header)
-{
-  return (int)header->stationid;
-}
-
-int getVDIFEpoch(vdif_header *header)
-{
-  return (int)header->epoch;
-}
-
 int getVDIFEpochMJD(vdif_header *header)
 {
   int epoch = (int)header->epoch;
   return ymd2mjd(2000 + epoch/2, (epoch%2)*6+1, 1);
-}
-
-int getVDIFBitsPerSample(vdif_header *header)
-{
-  return ((int)header->nbits+1);
-}
-
-int getVDIFNumChannels(vdif_header *header)
-{
-  int numchans, i;
-  numchans = 1;
-  for(i=0;i<header->nchan;i++)
-    {
-      numchans *= 2;
-    }
-  return numchans;
 }
 
 void setVDIFNumChannels(vdif_header *header, int numchannels)
@@ -195,31 +159,11 @@ int getVDIFFrameMJD(vdif_header *header)
   return mjd + header->seconds/86400; // Seconds may be greater than one day
 }
 
-int getVDIFFrameSecond(vdif_header *header)
-{
-  return ((int)header->seconds)%86400;
-}
-
 double getVDIFDMJD(vdif_header *header, int framepersec) 
 {
   int mjd = getVDIFFrameMJD(header);
   int sec = getVDIFFrameSecond(header);
   return (double)mjd+(sec+(double)header->frame/(double)framepersec)/(24*60*60);
-}
-
-int getVDIFFullSecond(vdif_header *header)
-{
-  return (int)header->seconds;
-}
-
-int getVDIFFrameNumber(vdif_header *header)
-{
-  return (int)header->frame;
-}
-
-int getVDIFFrameInvalid(vdif_header *header)
-{
-  return (int)header->invalid;
 }
 
 // Note assumes the Epoch is already set
@@ -244,21 +188,6 @@ void setVDIFEpoch(vdif_header *header, int mjd) {
   mjd2ymd(mjd, &year, &month, &day);
   header->epoch = (year-2000)*2;
   if (month>6) header->epoch++;
-}
-
-void setVDIFFrameSecond(vdif_header *header, int framesecond)
-{
-  header->seconds = framesecond;
-}
-
-void setVDIFFrameNumber(vdif_header *header, int framenumber)
-{
-  header->frame = framenumber;
-}
-
-void setVDIFFrameInvalid(vdif_header *header, unsigned int invalid)
-{
-  header->invalid = invalid;
 }
 
 int nextVDIFHeader(vdif_header *header, int framepersec) {
