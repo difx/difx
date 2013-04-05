@@ -15,6 +15,7 @@ int main(int argc, char **argv)
 	int inputframesize = 5032;
 	int nGap = 100;
 	int nSort = 5;
+	struct vdif_mux_statistics vms;
 
 	if(argc < 2)
 	{
@@ -41,7 +42,11 @@ int main(int argc, char **argv)
 
 	fclose(in);
 
-	n = vdifmux(dest, n/(nThread*inputframesize), src, n, inputframesize, 12800, 2, nThread, threads, nSort, nGap);
+	resetvdifmuxstatistics(&vms);
+
+	n = vdifmux(dest, n/(nThread*inputframesize), src, n, inputframesize, 12800, 2, nThread, threads, nSort, nGap, &vms);
+
+	printvdifmuxstatistics(&vms);
 
 	out = fopen("vdif.out", "w");
 	fwrite(dest, 1, NSRC, out);
