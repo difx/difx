@@ -7,6 +7,7 @@ Ettl
 * m5test: minor improvements
 * c++11 compliance
 * Much improved capabilities for reading from stdin
+* m5bstate: recognize filled data and don't count
 
 Version 1.4.3
 * Post 2.0.1 tagging

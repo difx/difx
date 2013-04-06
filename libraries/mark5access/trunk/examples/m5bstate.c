@@ -173,13 +173,13 @@ int bstate(const char *filename, const char *formatname, int nframes,
                                if (ms->nbit == 1)
                                {
                                       if (data[i][k] > 0) bstate[i][1]++;
-                                      if (data[i][k] <= 0) bstate[i][0]++;
+                                      if (data[i][k] < 0) bstate[i][0]++;
                                }
                                else if (ms->nbit == 2)
                                {
                                       if (data[i][k] > 0 && data[i][k] < 2.) bstate[i][2]++;
                                       if (data[i][k] > 2.) bstate[i][3]++;
-                                      if (data[i][k] <= 0 && data[i][k] > -2.) bstate[i][1]++;
+                                      if (data[i][k] < 0 && data[i][k] > -2.) bstate[i][1]++;
                                       if (data[i][k] < -2.) bstate[i][0]++;
                                }
  
