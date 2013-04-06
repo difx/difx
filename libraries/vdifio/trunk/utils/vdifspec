@@ -1,0 +1,50 @@
+#!/bin/env python
+
+program = 'vdifspec'
+author  = 'Walter Brisken'
+version = '0.1'
+verdate = '20130406'
+
+from os import system
+from string import split
+from sys import exit, argv
+
+
+def usage():
+	print '\n%s ver. %s  %s  %s\n' % (program, version, author, verdate)
+	print 'A VDIF spectrometer for multi-thread VDIF data.  Uses vmux'
+	print 'and m5spec to do the heavy lifting.\n'
+	print 'Usage : %s <infile> <frame size> <data rate> <threadlist> <nchan> <nint> <outfile>\n'
+	print '  <infile> is the name of the VDIF file\n'
+	print '  <frame size> is the size of each input VDIF frame, inc. header (e.g., 5032)\n'
+	print '  <data rate> is the stream data rate (Mbps)\n'
+	print '  <nchan> is the number of spectral channels to make per baseband channel\n'
+	print '  <nint> is the number of FFT frames to spectrometize\n'
+	print '  <outfile> is the name of the output file\n'
+	print 'Note: Only works on 2-bit real data for now...\n'
+
+if len(argv) != 8:
+	usage()
+	exit()
+
+infile = argv[1]
+framesize = int(argv[2])
+datarate = int(argv[3])
+threadlist = argv[4]
+nt = len(split(threadlist, ','))
+nchan = int(argv[5])
+nint = int(argv[6])
+outfile = argv[7]
+
+nc = 1
+while(nc < nt):
+	nc *= 2
+
+outputpayload = nc*(framesize-32)
+framespersecond = (datarate*1000000)/(nt*(framesize-32)*8)
+outputdatarate = outputpayload*framespersecond*8/1000000
+
+cmd = 'vmux %s %d %d %s - | m5spec - VDIF_%d-%d-%d-2 %d %d %s' % (infile, framesize, framespersecond, threadlist, outputpayload, outputdatarate, nc, nchan, nint, outfile) 
+
+print 'Executing: %s' % cmd
+system(cmd)

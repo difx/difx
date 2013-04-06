@@ -18,6 +18,11 @@ bin_PROGRAMS = \
 	searchVDIF \
 	vmux
 
+dist_bin_SCRIPTS = \
+	vdifbstate \
+	vdifd \
+	vdifspec
+
 stripVDIF_SOURCES = \
 	stripVDIF.c
 

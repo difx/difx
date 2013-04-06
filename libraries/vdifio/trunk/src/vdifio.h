@@ -102,28 +102,38 @@ int nextVDIFHeader(vdif_header *header, int framepersec);
 
 
 struct vdif_mux_statistics {
-  /* The first 7 can accumulate over many calls to vdifmux */
+  /* The first 8 accumulate over multiple calls to vdifmux */
   long long nValidFrame;		/* number of valid VDIF input frames encountered */
   long long nInvalidFrame;		/* number of real VDIF frames discarded because of invalid bit being set */
   long long nDiscardedFrame;		/* number of valid input frames discarded because of out-of-order issues */
+  long long nWrongThread;		/* number of otherwise good frames with incorrect thread */
   long long nSkippedByte;		/* number of bytes skipped (interloper frames) */
   long long nFillByte;			/* counts number of bytes skipped that were identified as fill pattern */
   long long bytesProcessed;		/* total bytes consumed from */
-  long long nGoodFrames;		/* number of fully usable output frames */
+  long long nGoodFrame;			/* number of fully usable output frames */
+  int nCall;				/* how many calls to vdifmux since last reset */
 
   /* These remaining fields are set each time */
-  int outputFrameSize;		/* length in bytes of one output data frame */
-  int nOutputFrames;		/* length of usable output data measured in frames */
+  int srcSize;			/* length of input array (bytes) */
+  int srcUsed;			/* amount of input array consumed (bytes) */
+  int destSize;			/* length of output array (bytes) */
+  int destUsed;			/* amount of output array populated */
+  int inputFrameSize;		/* length in bytes of one input data frame (provided to call) */
+  int outputFrameSize;		/* length in bytes of one output data frame (calculated) */
+  int outputFrameGranularity;	/* number of output frames required to make an integer number of nanoseconds */
+  int outputFramesPerSecond;	/* from call */
+  int nOutputFrame;		/* length of usable output data measured in frames */
+  long long startFrameNumber;
 
   /* start time of output data */
   /* duration of output data */
 };
 
-int vdifmux(unsigned char *dest, int nFrame, const unsigned char *src, int length, int inputFrameSize, int inputFramesPerSecond, int nBit, int nThread, const int *threadIds, int nSort, int nGap, struct vdif_mux_statistics *vms);
+int vdifmux(unsigned char *dest, int nFrame, const unsigned char *src, int length, int inputFrameSize, int inputFramesPerSecond, int nBit, int nThread, const int *threadIds, int nSort, int nGap, long long startOutputFrameNumber, struct vdif_mux_statistics *stats);
 
-void printvdifmuxstatistics(const struct vdif_mux_statistics *vms);
+void printvdifmuxstatistics(const struct vdif_mux_statistics *stats);
 
-void resetvdifmuxstatistics(struct vdif_mux_statistics *vms);
+void resetvdifmuxstatistics(struct vdif_mux_statistics *stats);
 
 #ifdef __cplusplus
 }

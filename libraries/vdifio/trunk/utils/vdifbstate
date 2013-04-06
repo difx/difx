@@ -1,0 +1,46 @@
+#!/bin/env python
+
+program = 'vdifbstate'
+author  = 'Walter Brisken'
+version = '0.1'
+verdate = '20130406'
+
+from os import system
+from string import split
+from sys import exit, argv
+
+
+def usage():
+	print '\n%s ver. %s  %s  %s\n' % (program, version, author, verdate)
+	print 'A VDIF state counter for multi-thread VDIF data.  Uses vmux'
+	print 'and m5bstate to do the heavy lifting.\n'
+	print 'Usage : %s <infile> <frame size> <data rate> <threadlist> <nframes>\n'
+	print '  <infile> is the name of the VDIF file\n'
+	print '  <frame size> is the size of each input VDIF frame, inc. header (e.g., 5032)\n'
+	print '  <data rate> is the stream data rate (Mbps)\n'
+	print '  <nframes> is the number of frames to bstate-erize\n'
+	print 'Note: Only works on 2-bit real data for now...\n'
+
+if len(argv) != 6:
+	usage()
+	exit()
+
+infile = argv[1]
+framesize = int(argv[2])
+datarate = int(argv[3])
+threadlist = argv[4]
+nt = len(split(threadlist, ','))
+nframes = int(argv[5])
+
+nc = 1
+while(nc < nt):
+	nc *= 2
+
+outputpayload = nc*(framesize-32)
+framespersecond = (datarate*1000000)/(nt*(framesize-32)*8)
+outputdatarate = outputpayload*framespersecond*8/1000000
+
+cmd = 'vmux %s %d %d %s - | m5bstate - VDIF_%d-%d-%d-2 %d' % (infile, framesize, framespersecond, threadlist, outputpayload, outputdatarate, nc, nframes) 
+
+print 'Executing: %s' % cmd
+system(cmd)
