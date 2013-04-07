@@ -241,7 +241,7 @@ int main(int argc, char **argv)
   samplesperinputword = samplesperframe/wordsperinputframe;
   samplesperoutputword = samplesperinputword/numthreads;
   printf("Frames per second is %d\n", framespersecond);
-  fseek(input, 0, SEEK_SET); //go back to the start
+  rewind(input); //go back to the start
   if(samplesperoutputword == 0) {
     fprintf(stderr, "Too many threads/too high bit resolution - can't fit one complete timestep in a 32 bit word! Aborting\n");
     fclose(input);

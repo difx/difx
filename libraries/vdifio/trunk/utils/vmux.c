@@ -58,7 +58,7 @@ int main(int argc, char **argv)
 	int nWrite;
 	const char *inFile;
 	const char *outFile;
-	long offset = 0;
+	off_t offset = 0;
 
 	if(argc < 6)
 	{
@@ -110,7 +110,7 @@ int main(int argc, char **argv)
 
 	if(argc > 6)
 	{
-		offset = atol(argv[6]);
+		offset = atoll(argv[6]);
 	}
 	if(argc > 7)
 	{
@@ -146,7 +146,7 @@ int main(int argc, char **argv)
 		{
 			int r;
 			
-			r = fseek(in, offset, SEEK_SET);
+			r = fseeko(in, offset, SEEK_SET);
 
 			if(r != 0)
 			{

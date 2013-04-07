@@ -1,4 +1,4 @@
-AC_INIT([VDIFIO], [0.5], [difxusers at googlegroups.com])
+AC_INIT([VDIFIO], [0.4], [difxusers at googlegroups.com])
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
@@ -9,6 +9,7 @@ AC_SUBST([LIBRARY_VERSION])
 AM_INIT_AUTOMAKE([foreign])
 AC_CONFIG_SRCDIR([src/vdifio.h])
 AM_CONFIG_HEADER([config.h])
+AC_SYS_LARGEFILE
 
 AC_C_BIGENDIAN
 

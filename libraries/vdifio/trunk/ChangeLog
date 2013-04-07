@@ -10,6 +10,7 @@ Version 0.4
   - vdiffold   (m5fold)
   - vdifspec   (m5spec)
 * Inlinification and constification of many VDIF header access functions
+* Large file clean (I think) now...
 
 Version 0.3
 ~~~~~~~~~~~

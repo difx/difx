@@ -51,7 +51,8 @@ int main(int argc, char **argv)
   char buffer[MAX_VDIF_FRAME_BYTES];
   FILE * input;
   int readbytes, framebytes, framemjd, framesecond, framenumber, frameinvalid, datambps, framespersecond;
-  int packetdropped, expectedframebytes, byteshift;
+  int packetdropped, expectedframebytes;
+  off_t byteshift;
   long long bytecount, lastbytecount;
 
   if(argc != 3 && argc != 4)
@@ -75,6 +76,11 @@ int main(int argc, char **argv)
   }
 
   byteshift = atoi(argv[2]);
+  if(byteshift < 32)
+  {
+    fprintf(stderr, "Error: byteshift must be larger than 32\n");
+    exit(EXIT_FAILURE);
+  }
   bytecount = 0;
   lastbytecount = 0;
   while(!feof(input)) {
@@ -94,7 +100,7 @@ int main(int argc, char **argv)
       lastbytecount = bytecount;
     }
     bytecount += byteshift;
-    fseek(input, byteshift-32, SEEK_CUR); //go back to the start
+    fseeko(input, byteshift-32, SEEK_CUR); //go back to the start
   }
   printf("Read %ll bytes\n", bytecount);
   fclose(input);

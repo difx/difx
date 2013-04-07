@@ -98,7 +98,7 @@ int main(int argc, char **argv)
   printf("Frames per second is %d\n", framespersecond);
   printf("datambps=%d framebytes=%d\n", datambps, framebytes);
 
-  fseek(input, 0, SEEK_SET); //go back to the start
+  rewind(input); //go back to the start
 
   framesread = 0;
   while(!feof(input)) {

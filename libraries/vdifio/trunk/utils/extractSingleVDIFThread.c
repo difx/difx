@@ -103,7 +103,7 @@ int main(int argc, char **argv)
   framespersecond = (int)((((long long)datambps)*1000000)/(8*(framebytes-VDIF_HEADER_BYTES)));
   printf("Frames per second is %d\n", framespersecond);
  
-  fseek(input, 0, SEEK_SET); //go back to the start
+  rewind(input); //go back to the start
 
   framesread = 0;
   frameswrote = 0;
