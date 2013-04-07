@@ -1,6 +1,15 @@
 Version 0.4
 ~~~~~~~~~~~
 * Post DiFX-2.1
+* Add new vdifmux function which takes a multi-threaded VDIF buffer, looks
+  for frames with certain threadIds, and multiplexes them into a single-
+  threaded output buffer.
+* New utilities (mirroring functionality of mark5access utilities):
+  - vdifd      (m5d)
+  - vdifbstate (m5bstate)
+  - vdiffold   (m5fold)
+  - vdifspec   (m5spec)
+* Inlinification and constification of many VDIF header access functions
 
 Version 0.3
 ~~~~~~~~~~~

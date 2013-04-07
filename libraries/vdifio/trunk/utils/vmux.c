@@ -1,9 +1,43 @@
+/***************************************************************************
+ *   Copyright (C) 2013 by Walter Brisken                                  *
+ *                                                                         *
+ *   This program is free software; you can redistribute it and/or modify  *
+ *   it under the terms of the GNU General Public License as published by  *
+ *   the Free Software Foundation; either version 3 of the License, or     *
+ *   (at your option) any later version.                                   *
+ *                                                                         *
+ *   This program is distributed in the hope that it will be useful,       *
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+ *   GNU General Public License for more details.                          *
+ *                                                                         *
+ *   You should have received a copy of the GNU General Public License     *
+ *   along with this program; if not, write to the                         *
+ *   Free Software Foundation, Inc.,                                       *
+ *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ ***************************************************************************/
+//===========================================================================
+// SVN properties (DO NOT CHANGE)
+//
+// $Id$
+// $HeadURL: $
+// $LastChangedRevision$
+// $Author$
+// $LastChangedDate$
+//
+//============================================================================
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <vdifio.h>
 
-#define DEF_CHUNK	2000000
+const char program[] = "vmux";
+const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
+const char version[] = "0.1";
+const char verdate[] = "20130406";
+
+const int defaultChunkSize = 2000000;
 
 int main(int argc, char **argv)
 {
@@ -12,33 +46,40 @@ int main(int argc, char **argv)
 	FILE *in, *out;
 	int n;
 	int threads[32];
-	int nThread = 0;
+	int nThread;
 	int inputframesize;
 	int nGap = 8;
 	int nSort = 4;
 	struct vdif_mux_statistics stats;
 	int leftover;
-	int chunk = DEF_CHUNK;
+	int chunkSize = defaultChunkSize;
 	int framesPerSecond;
 	long long nextFrame = -1;
 	int nWrite;
+	const char *inFile;
+	const char *outFile;
+	long offset = 0;
 
 	if(argc < 6)
 	{
-		fprintf(stderr, "Usage: %s <input filename> <input frame size> <frames per second> <thread list> <output file> [<chunk size>]\n", argv[0]);
+		fprintf(stderr, "\n%s ver. %s  %s  %s\n\n", program, version, author, verdate);
+		fprintf(stderr, "Usage: %s <input file> <input frame size> <frames per second> <thread list> <output file> [<offset> [<chunkSize size>] ]\n", argv[0]);
 		fprintf(stderr, "\nA program to take a multi-thread VDIF file and multiplex into\n"
 				"a multi-channel, single thread file.  <thread list> should be\n"
-				"comma-separated without space.  Setting outout file to - will\n"
-				"send output to stdout.\n\n");
+				"comma-separated without space.  Setting <input file> to - will take\n"
+				"take input from stdin.  Likewise setting output file to - will\n"
+				"send output to stdout.  <offset> can be set to seek into the file.\n\n");
 
 		return 0;
 	}
 
+	inFile = argv[1];
 	inputframesize = atoi(argv[2]);
-
 	framesPerSecond = atoi(argv[3]);
+	outFile = argv[5];
 
-	for(n = 0; nThread < 32; ++nThread)
+
+	for(n = nThread = 0; nThread < 32; ++nThread)
 	{
 		int c, p;
 		if(argv[4][n] == ',')
@@ -53,32 +94,86 @@ int main(int argc, char **argv)
 			break;
 		}
 
+		if(threads[nThread] < 0 || threads[nThread] > 1023)
+		{
+			fprintf(stderr, "ThreadId with value %d found.  Must be in range 0..1023.\n", threads[nThread]);
+
+			return EXIT_FAILURE;
+		}
+	}
+	if(nThread == 0)
+	{
+		fprintf(stderr, "No threads parsable from list: %s\n", argv[4]);
+
+		return EXIT_FAILURE;
 	}
 
 	if(argc > 6)
 	{
-		chunk = atoi(argv[6]);
+		offset = atol(argv[6]);
+	}
+	if(argc > 7)
+	{
+		chunkSize = atoi(argv[7]);
 	}
 
-	in = fopen(argv[1], "r");
 
-	if(!in)
+
+
+	if(strcmp(inFile, "-") == 0)
 	{
-		fprintf(stderr, "Can't open %s\n", argv[1]);
+		if(offset != 0)
+		{
+			fprintf(stderr, "Error: cannot set offset when reading from stdin.\n");
 
-		return 0;
+			return EXIT_FAILURE;
+		}
+
+		in = stdin;
+	}
+	else
+	{
+		in = fopen(inFile, "r");
+
+		if(!in)
+		{
+			fprintf(stderr, "Can't open %s for read.\n", inFile);
+
+			return EXIT_FAILURE;
+		}
+
+		if(offset > 0)
+		{
+			int r;
+			
+			r = fseek(in, offset, SEEK_SET);
+
+			if(r != 0)
+			{
+				fprintf(stderr, "Error encountered in seek\n");
+
+				return EXIT_FAILURE;
+			}
+		}
 	}
 
-	src = malloc(chunk);
-	dest = malloc(chunk);
-	if(strcmp(argv[5], "-") != 0)
+	if(strcmp(outFile, "-") != 0)
 	{
-		out = fopen(argv[5], "w");
+		out = fopen(outFile, "w");
+		if(!out)
+		{
+			fprintf(stderr, "Can't open %s for write.\n", outFile);
+
+			return EXIT_FAILURE;
+		}
 	}
 	else
 	{
 		out = stdout;
 	}
+
+	src = malloc(chunkSize);
+	dest = malloc(chunkSize);
 
 	leftover = 0;
 	
@@ -88,15 +183,33 @@ int main(int argc, char **argv)
 
 	for(;;)
 	{
-		n = fread(src+leftover, 1, chunk-leftover, in);
+		n = fread(src+leftover, 1, chunkSize-leftover, in);
 		if(n < 1)
 		{
 			break;
 		}
 
-		vdifmux(dest, chunk, src, n+leftover, inputframesize, framesPerSecond, 2, nThread, threads, nSort, nGap, -1, &stats);
+		vdifmux(dest, chunkSize, src, n+leftover, inputframesize, framesPerSecond, 2, nThread, threads, nSort, nGap, -1, &stats);
 
-		/* if we encountered fill pattern at the seam between two chunks we will need to write some dummy frames */
+		if(stats.startFrameNumber < 0)
+		{
+			if(stats.srcUsed > 0)
+			{
+				/* bytes were consumed, but no useful output was generated */
+
+				continue;
+			}
+			else
+			{
+				/* here no bytes were consumed.  This is probably not a good thing */
+
+				fprintf(stderr, "Weird: %d/%d bytes were consumed.  Stopping.\n", stats.srcUsed, stats.srcSize);
+
+				break;
+			}
+		}
+
+		/* if we encountered fill pattern at the seam between two chunkSizes we will need to write some dummy frames */
 		if(nextFrame >= 0 && nextFrame != stats.startFrameNumber)
 		{
 			int nJump = (int)(stats.startFrameNumber - nextFrame);
@@ -127,9 +240,12 @@ int main(int argc, char **argv)
 		nextFrame = stats.startFrameNumber + stats.nOutputFrame;
 	}
 
-	fclose(in);
+	if(in != stdin)
+	{
+		fclose(in);
+	}
 	
-	if(strcmp(argv[4], "-") != 0)
+	if(out != stdout)
 	{
 		printvdifmuxstatistics(&stats);
 		fclose(out);

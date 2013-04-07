@@ -20,6 +20,7 @@ bin_PROGRAMS = \
 
 dist_bin_SCRIPTS = \
 	vdifbstate \
+	vdiffold \
 	vdifd \
 	vdifspec
 

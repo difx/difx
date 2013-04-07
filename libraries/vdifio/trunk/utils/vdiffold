@@ -1,6 +1,6 @@
 #!/bin/env python
 
-program = 'vdifd'
+program = 'vdiffold'
 author  = 'Walter Brisken'
 version = '0.1'
 verdate = '20130406'
@@ -14,15 +14,19 @@ def usage():
 	print '\n%s ver. %s  %s  %s\n' % (program, version, author, verdate)
 	print 'A VDIF decoder for multi-thread VDIF data.  Uses vmux'
 	print 'and m5d to do the heavy lifting.\n'
-	print 'Usage : %s <infile> <frame size> <data rate> <threadlist> <n> [<offset>]\n'
+	print 'Usage : %s <infile> <frame size> <data rate> <threadlist> <nbin> <nint> <freq> <outfile> [<offset>]\n'
 	print '  <infile> is the name of the VDIF file\n'
 	print '  <frame size> is the size of each input VDIF frame, inc. header (e.g., 5032)\n'
 	print '  <data rate> is the stream data rate (Mbps)\n'
-	print '  <n> is the number of samples per channel to decode\n'
+	print '  <nbin> is the number of bins per if across 1 period'
+	print '       if negative, the conversion to true power is not performed\n'
+	print '  <nint> is the number of 10000 sample chunks to work on\n'
+	print '  <freq> [Hz] -- the inverse of the period to be folded\n'
+	print '  <outfile> is the name of the output file\n'
 	print '  <offset> optionally jump into input file by this many bytes\n'
 	print 'Note: Only works on 2-bit real data for now...\n'
 
-if len(argv) < 6:
+if len(argv) < 9:
 	usage()
 	exit()
 
@@ -31,9 +35,12 @@ framesize = int(argv[2])
 datarate = int(argv[3])
 threadlist = argv[4]
 nt = len(split(threadlist, ','))
-n = int(argv[5])
-if len(argv) > 6:
-	offset = int(argv[6])
+nbin = int(argv[5])
+nint = int(argv[6])
+freq = argv[7]
+outfile = argv[8]
+if len(argv) > 9:
+	offset = int(argv[9])
 else:
 	offset = 0
 
@@ -45,7 +52,7 @@ outputpayload = nc*(framesize-32)
 framespersecond = (datarate*1000000)/(nt*(framesize-32)*8)
 outputdatarate = outputpayload*framespersecond*8/1000000
 
-cmd = 'vmux %s %d %d %s - %d | m5d - VDIF_%d-%d-%d-2 %d' % (infile, framesize, framespersecond, threadlist, offset, outputpayload, outputdatarate, nc, n) 
+cmd = 'vmux %s %d %d %s - %d | m5fold - VDIF_%d-%d-%d-2 %d %d %s %s' % (infile, framesize, framespersecond, threadlist, offset, outputpayload, outputdatarate, nc, nbin, nint, freq, outfile) 
 
 print 'Executing: %s' % cmd
 system(cmd)

@@ -14,16 +14,17 @@ def usage():
 	print '\n%s ver. %s  %s  %s\n' % (program, version, author, verdate)
 	print 'A VDIF spectrometer for multi-thread VDIF data.  Uses vmux'
 	print 'and m5spec to do the heavy lifting.\n'
-	print 'Usage : %s <infile> <frame size> <data rate> <threadlist> <nchan> <nint> <outfile>\n'
+	print 'Usage : %s <infile> <frame size> <data rate> <threadlist> <nchan> <nint> <outfile> [<offset>]\n'
 	print '  <infile> is the name of the VDIF file\n'
 	print '  <frame size> is the size of each input VDIF frame, inc. header (e.g., 5032)\n'
 	print '  <data rate> is the stream data rate (Mbps)\n'
 	print '  <nchan> is the number of spectral channels to make per baseband channel\n'
 	print '  <nint> is the number of FFT frames to spectrometize\n'
 	print '  <outfile> is the name of the output file\n'
+	print '  <offset> optionally jump into input file by this many bytes\n'
 	print 'Note: Only works on 2-bit real data for now...\n'
 
-if len(argv) != 8:
+if len(argv) < 8:
 	usage()
 	exit()
 
@@ -35,6 +36,10 @@ nt = len(split(threadlist, ','))
 nchan = int(argv[5])
 nint = int(argv[6])
 outfile = argv[7]
+if len(argv) > 8:
+	offset = int(argv[8])
+else:
+	offset = 0
 
 nc = 1
 while(nc < nt):
@@ -44,7 +49,7 @@ outputpayload = nc*(framesize-32)
 framespersecond = (datarate*1000000)/(nt*(framesize-32)*8)
 outputdatarate = outputpayload*framespersecond*8/1000000
 
-cmd = 'vmux %s %d %d %s - | m5spec - VDIF_%d-%d-%d-2 %d %d %s' % (infile, framesize, framespersecond, threadlist, outputpayload, outputdatarate, nc, nchan, nint, outfile) 
+cmd = 'vmux %s %d %d %s %d - | m5spec - VDIF_%d-%d-%d-2 %d %d %s' % (infile, framesize, framespersecond, threadlist, offset, outputpayload, outputdatarate, nc, nchan, nint, outfile) 
 
 print 'Executing: %s' % cmd
 system(cmd)

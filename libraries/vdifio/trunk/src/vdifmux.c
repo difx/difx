@@ -19,20 +19,19 @@
 //===========================================================================
 // SVN properties (DO NOT CHANGE)
 //
-// $Id: vdifio.h 4140 2011-12-13 04:23:35Z ChrisPhillips $
+// $Id$
 // $HeadURL: https://svn.atnf.csiro.au/difx/libraries/vdifio/trunk/src/vdifio.h $
-// $LastChangedRevision: 4140 $
-// $Author: ChrisPhillips $
-// $LastChangedDate: 2011-12-12 21:23:35 -0700 (Mon, 12 Dec 2011) $
+// $LastChangedRevision$
+// $Author$
+// $LastChangedDate$
 //
 //============================================================================
 
 
 /* TODO list
 
-2. Constrain output lengths to frame granularity
-3. Avoid first memory copy by using a matrix of threadbuffer pointers
-4. Implement m5xxx tools for vdif
+ * Constrain output lengths to frame granularity
+ * Avoid first memory copy by using a matrix of threadbuffer pointers
 
 */
 
@@ -373,6 +372,8 @@ static void cornerturn_16thread_2bit(unsigned char *outputBuffer, const unsigned
  *
  * The output data is to be stored in dest.  Statistics and some details of the produced data are stored in the stats.
  * Output data is uniform in time.  All initially missing data is replaced with valid VDIF packets with the invalid bit set.
+ *
+ * see ../utils/vmux.c for example usage of this function
  */
 
 int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int srcSize, int inputFrameSize, int inputFramesPerSecond, int nBit, int nThread, const int *threadIds, int nSort, int nGap, long long startOutputFrameNumber, struct vdif_mux_statistics *stats)
@@ -392,6 +393,7 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 	int N = srcSize - inputFrameSize;	/* max value to allow i to be */
 	int highestDestIndex = 0;
 	int maxDestIndex;
+	int maxSrcIndex;
 	int inputDataSize;
 	int outputFrameSize;
 	int outputDataSize;
@@ -474,6 +476,11 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 	outputFrameSize = outputDataSize + VDIF_HEADER_BYTES;
 	frameGranularity = inputFramesPerSecond/gcd(inputFramesPerSecond, 1000000000);
 	maxDestIndex = destSize/outputFrameSize - 1;
+	maxSrcIndex = srcSize - nSort*inputFrameSize;
+	if(maxSrcIndex < outputFrameSize)
+	{
+		return -5;
+	}
 	goodMask = (1 << nThread) - 1;	/* nThread 1s as LSBs and 0s above that */
 
 	startFrameNumber = startOutputFrameNumber;
@@ -566,6 +573,21 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 			nSkip += inputFrameSize;
 
 			continue;
+		}
+		if(i > maxSrcIndex)
+		{
+			/* start the shut-down procedure */
+			if(bytesProcessed == 0)
+			{
+				bytesProcessed = i;
+			}
+			if(destIndex > highestDestIndex)
+			{
+				/* don't bother to save this data.  We'll get it on next call */
+				i += inputFrameSize;
+
+				continue;
+			}
 		}
 		if(destIndex > maxDestIndex)
 		{
@@ -667,7 +689,7 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 		uint32_t *p = (uint32_t *)cur;
 		const unsigned char *threadBuffers[32];
 
-		if(firstValid < 0 && p[7] == goodMask)
+		if(firstValid < 0 && p[7] == goodMask && (frameNum % frameGranularity) == 0)
 		{
 			firstValid = f;
 			startFrameNumber = (long long)seconds*inputFramesPerSecond + frameNum;	/* report the actual first frame written */
