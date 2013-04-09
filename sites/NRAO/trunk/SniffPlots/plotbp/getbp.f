@@ -2,9 +2,15 @@
 C
 C     Routine to read and plot the data from John Benson's bandpass files.
 C
+C     Change NCHAN to be for the current spectrum rather than using the 
+C     biggest spectrum seen so far as it was up to March 26, 2013.  The
+C     previous style resulted in some spectra all compressed against the
+C     side of the plot.
+C
       INCLUDE 'plotbp.inc'
 C
       INTEGER    ICH, IER, INCHAN, LINCHAN, NAVG
+      REAL       ALIM(MCHAN)
       DOUBLE PRECISION  GETNUM
       LOGICAL    GOTDAT, FIRST, WARNLONG
 C -------------------------------------------------------------------
@@ -12,7 +18,7 @@ C -------------------------------------------------------------------
       FIRST  = .TRUE.
       WARNLONG = .TRUE.
 C
-C     Read the data.  
+C     Read the data.  Jump back here after reading a header
 C
  100  CONTINUE
          NWORDS = MWORDS
@@ -24,7 +30,9 @@ C        by detecting that the channel number decreased or the
 C        last record was not a data record (will give INCHAN=0).
 C
          INCHAN = 0
-         IF( WORD(1) .EQ. 'timerange:' ) THEN
+         IF( WORD(1) .EQ. 'timerange:' .OR.
+     1       WORD(1) .EQ. 'source:' .OR.
+     2       WORD(1) .EQ. 'bandfreq:' ) THEN
 C
 C           Header record.  Deal with later after plotting.
 C
@@ -50,7 +58,7 @@ C
          END IF
 C
 C        Detect that the previous spectrum is finished and needs
-C        to be plotted.
+C        to be plotted.  INCHAN is likely to be 0 if hit a header.
 C
          IF( GOTDAT .AND. INCHAN .LT. LINCHAN ) THEN
 C ------------------------------------------------------------------
@@ -64,14 +72,15 @@ C
             IF( DOSTA .EQ. ' ' .OR. ( DOSTA .EQ. NAME1 .OR.
      1          DOSTA .EQ. NAME2 ))  THEN
 C
-C           Get the average and the plot limit for a possible expanded plot.
+C              Get the average and the plot limit for a possible 
+C              expanded plot.
 C    
                AMPAVG = AMPAVG / NAVG
                ALMAX = MIN( AMAX, AMPAVG * 3.0 )
                DO ICH = 1, NCHAN
                   ALIM(ICH) = MIN( AMP(ICH), ALMAX )
                END DO
-               CALL PLTBP
+               CALL PLTBP( ALIM )
             END IF
 C
 C           Accumulate the summary information.
@@ -106,6 +115,7 @@ C
             END DO
             AMPAVG = 0.0
             NAVG = 0
+            NCHAN = 0
 C
 C           Initialize plot limits
 C

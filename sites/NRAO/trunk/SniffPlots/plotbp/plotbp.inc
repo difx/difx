@@ -3,9 +3,9 @@ C
       INTEGER    MCHAN, INUNIT, MAXIF
       PARAMETER  (INUNIT=8)
       PARAMETER  (MAXIF=32)
-      PARAMETER  (MCHAN=2048*8)
+      PARAMETER  (MCHAN=32768)
 C
-      REAL       AMP(MCHAN), PHASE(MCHAN), ALIM(MCHAN)
+      REAL       AMP(MCHAN), PHASE(MCHAN)
       REAL       AMAX, AMPAVG, ALMAX, PMIN, PMAX, FREQ(MAXIF), BW
       INTEGER    NCHAN, NCHIF, NIF, JDAY1
       LOGICAL    XWIN, NEWFMT
@@ -16,12 +16,23 @@ C
 C     BPDAT split in efforts to understand some size issues - July 2009
 C     Putting the COMMON for BPDAT after the other 2 seems to have 
 C     fixed the problem.  g77 bug?
+C     Running into problems with "relocation truncated to fit" errors
+C     when I tried to increase the number of channels in Mar. 2013.  
+C     The problem can crop up even with the tiny (one integer) common
+C     in VLBOPE.  I sense that all the commons are getting lumped 
+C     together.  Some GOOGLE work indicates that this is simply because 
+C     of wanting too much memory (>2GB?) and it is a linker issue.  
+C     They suggest compiling with -mcmodel=medium  (gcc option).  
+C     That looks like it might work, but libcit will also need it. 
+C     that risks having other programs compiled without it break.
+C     I have to back off the space in the commons.
 C
+      COMMON / BPDAT / AMP, PHASE
       COMMON / BPDAT2 / NCHAN, NCHIF, NIF, JDAY1, XWIN,
-     1                 NEWFMT, AMAX, AMPAVG, ALMAX, PMIN, PMAX, FREQ, BW
+     1                 AMAX, AMPAVG, ALMAX, PMIN, PMAX, 
+     2                 NEWFMT, FREQ, BW
       COMMON / BPCHR / NAME1, NAME2, TYPE, EXPNAM, DOSTA, CTIME, 
      1                 SOURCE, STOKES, SBD, PLTFILE, TF
-      COMMON / BPDAT / AMP, ALIM, PHASE
 C
 C     Variables for reading lines of data.  Put in common to
 C     avoid compiler complaints about unused variables.
@@ -41,11 +52,13 @@ C     of baselines total.  A typical global situation is that two
 C     antennas are used for reference - one European and one US.  For
 C     20 station observations, there would then be 2*19 pairs.  Try
 C     that for a while.  Note the 3D arrays.  They can get big fast
-C     if not careful.
+C     if not careful.  With MCHAN=32768, MSTA=40, MFR=80 are near
+C     the limit.  Small increases in either overflow the memory the
+C     compiler can handle.
 C
       INTEGER    MSTA, MFR, NSTA, NFR
       PARAMETER  (MSTA=40)
-      PARAMETER  (MFR=100)
+      PARAMETER  (MFR=80)
       INTEGER    NORMAC(MFR,MSTA)
       REAL       LOWDP(MFR,MSTA)
       REAL       HIAMP(MCHAN,MFR,MSTA), HIPH(MCHAN,MFR,MSTA)
