@@ -384,6 +384,7 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 	int nValidFrame = 0;			/* counts number of valid input frames found so far */
 	int nSkip = 0;				/* counts number of bytes skipped (not what we are looking for) */
 	int nFill = 0;				/* counts number of bytes skipped that were fill pattern */
+	int nDup = 0;				/* number of duplicate frames found */
 	int nInvalidFrame = 0;			/* counts number of VDIF frames skipped because of invalid bits */
 	long long startFrameNumber;		/* = seconds*inputFramesPerSecond + frameNumber */
 	int frameGranularity;			/* number of frames required to make an integer number of nanoseconds */
@@ -404,9 +405,10 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 	int nGoodOutput = 0;
 	int nBadOutput = 0;
 	int nWrongThread = 0;
-	vdif_header outputHeader;
 	int seconds, frameNum;
 	int firstValid;
+	vdif_header outputHeader;
+	int epoch = -1;
 
 	void (*cornerTurner)(unsigned char *, const unsigned char **, int);
 
@@ -486,7 +488,7 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 	startFrameNumber = startOutputFrameNumber;
 
 	/* clear mask of presense */
-	for(i = 0; i < maxDestIndex; ++i)
+	for(i = 0; i <= maxDestIndex; ++i)
 	{
 		uint32_t *p = (uint32_t *)(dest + outputFrameSize*i);
 		p[7] = 0;
@@ -555,12 +557,6 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 		{
 			startFrameNumber = frameNumber - nSort;
 			startFrameNumber -= (startFrameNumber % frameGranularity);	/* to ensure first frame starts on integer ns */
-		
-			/* also use this first good frame to generate the prototype VDIF header for the output */
-			memcpy((char *)&outputHeader, cur, VDIF_HEADER_BYTES);
-			setVDIFNumChannels(&outputHeader, nOutputChan);
-			setVDIFThreadID(&outputHeader, 0);
-			setVDIFFrameBytes(&outputHeader, outputFrameSize);
 		}
 	
 		/* add 1 to reserve the first slot for later semi-in-place corner turning */
@@ -648,18 +644,18 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 
 			/* Finally, here we are at a point where we can copy data */
 			
-#if 0
-			if(p[7] == 0)
-			{
-				/* frame header not yet copied.  Copy only first 16 bytes */
-				memcpy(dest + outputFrameSize*i, src + i, 16);
-			}
-#endif
 
 			/* set mask indicating valid data in place */
-			p[7] |= (1 << chanId);
-			memcpy(dest + outputFrameSize*destIndex + inputDataSize*chanId + VDIF_HEADER_BYTES, cur + VDIF_HEADER_BYTES, inputDataSize);
-			++nValidFrame;
+			if(p[7] & (1 << chanId))
+			{
+				++nDup;
+			}
+			else
+			{
+				p[7] |= (1 << chanId);
+				memcpy(dest + outputFrameSize*destIndex + inputDataSize*chanId + VDIF_HEADER_BYTES, cur + VDIF_HEADER_BYTES, inputDataSize);
+				++nValidFrame;
+			}
 			i += inputFrameSize;
 
 			if(destIndex > highestDestIndex)
@@ -685,18 +681,24 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 	for(f = 1; f <= highestDestIndex; ++f)
 	{
 		const unsigned char *cur = dest + outputFrameSize*f;	/* points to block of data needing rearrangement */
-		unsigned char *frame;					/* points to new single-thread-VDIF frame */
 		uint32_t *p = (uint32_t *)cur;
-		const unsigned char *threadBuffers[32];
 
 		if(firstValid < 0 && p[7] == goodMask && (frameNum % frameGranularity) == 0)
 		{
 			firstValid = f;
 			startFrameNumber = (long long)seconds*inputFramesPerSecond + frameNum;	/* report the actual first frame written */
+
+			/* use this first good frame to generate the prototype VDIF header for the output */
+			memcpy((char *)&outputHeader, cur, VDIF_HEADER_BYTES);
+			setVDIFNumChannels(&outputHeader, nOutputChan);
+			setVDIFThreadID(&outputHeader, 0);
+			setVDIFFrameBytes(&outputHeader, outputFrameSize);
+			epoch = getVDIFEpoch(&outputHeader);
 		}
 
 		if(firstValid >= 0)
 		{
+			unsigned char *frame;				/* points to new single-thread-VDIF frame */
 			frame = dest + outputFrameSize*(f-firstValid);
 
 			/* generate header for output frame */
@@ -706,6 +708,7 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 
 			if(p[7] == goodMask)
 			{
+				const unsigned char *threadBuffers[32];
 				int j;
 
 				for(j = 0; j < nOutputChan; ++j)
@@ -737,8 +740,9 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 	{
 		stats->nValidFrame += nValidFrame;
 		stats->nInvalidFrame += nInvalidFrame;
-		stats->nDiscardedFrame += (nValidFrame - nThread*nGoodOutput);
+		stats->nDiscardedFrame += (nValidFrame + nDup - nThread*nGoodOutput);
 		stats->nWrongThread += nWrongThread;
+		stats->nDuplicateFrame += nDup;
 		stats->nSkippedByte += nSkip;
 		stats->nFillByte += nFill;
 		stats->bytesProcessed += bytesProcessed;
@@ -753,6 +757,7 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 		stats->outputFrameGranularity = frameGranularity;
 		stats->outputFramesPerSecond = inputFramesPerSecond;
 		stats->nOutputFrame = nGoodOutput + nBadOutput;
+		stats->epoch = epoch;
 		stats->startFrameNumber = startFrameNumber;
 		
 		++stats->nCall;
@@ -770,6 +775,7 @@ void printvdifmuxstatistics(const struct vdif_mux_statistics *stats)
 		printf("  Number of calls to vdifmux         = %d\n", stats->nCall);
 		printf("  Number of valid input frames       = %Ld\n", stats->nValidFrame);
 		printf("  Number of invalid input frames     = %Ld\n", stats->nInvalidFrame);
+		printf("  Number of duplicate frames         = %Ld\n", stats->nDuplicateFrame);
 		printf("  Number of discarded frames         = %Ld\n", stats->nDiscardedFrame);
 		printf("  Number of wrong-thread frames      = %Ld\n", stats->nWrongThread);
 		printf("  Number of skipped interloper bytes = %Ld\n", stats->nSkippedByte);
@@ -780,6 +786,7 @@ void printvdifmuxstatistics(const struct vdif_mux_statistics *stats)
 		printf("  Input frame size                   = %d\n", stats->inputFrameSize);
 		printf("  Output frame size                  = %d\n", stats->outputFrameSize);
 		printf("  Number of output frames            = %d\n", stats->nOutputFrame);
+		printf("  Epoch                              = %d\n", stats->epoch);
 		printf("  Start output frame number          = %Ld\n", stats->startFrameNumber);
 		printf("  Output frame granularity           = %d\n", stats->outputFrameGranularity);
 		printf("  Output frames per second           = %d\n", stats->outputFramesPerSecond);

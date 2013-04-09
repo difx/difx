@@ -109,6 +109,7 @@ struct vdif_mux_statistics {
   long long nWrongThread;		/* number of otherwise good frames with incorrect thread */
   long long nSkippedByte;		/* number of bytes skipped (interloper frames) */
   long long nFillByte;			/* counts number of bytes skipped that were identified as fill pattern */
+  long long nDuplicateFrame;		/* number of frames found with the same time & thread */
   long long bytesProcessed;		/* total bytes consumed from */
   long long nGoodFrame;			/* number of fully usable output frames */
   int nCall;				/* how many calls to vdifmux since last reset */
@@ -123,6 +124,7 @@ struct vdif_mux_statistics {
   int outputFrameGranularity;	/* number of output frames required to make an integer number of nanoseconds */
   int outputFramesPerSecond;	/* from call */
   int nOutputFrame;		/* length of usable output data measured in frames */
+  int epoch;			/* from first header */
   long long startFrameNumber;
 
   /* start time of output data */
