@@ -49,7 +49,7 @@ outputpayload = nc*(framesize-32)
 framespersecond = (datarate*1000000)/(nt*(framesize-32)*8)
 outputdatarate = outputpayload*framespersecond*8/1000000
 
-cmd = 'vmux %s %d %d %s %d - | m5spec - VDIF_%d-%d-%d-2 %d %d %s' % (infile, framesize, framespersecond, threadlist, offset, outputpayload, outputdatarate, nc, nchan, nint, outfile) 
+cmd = 'vmux %s %d %d %s - %d | m5spec - VDIF_%d-%d-%d-2 %d %d %s' % (infile, framesize, framespersecond, threadlist, offset, outputpayload, outputdatarate, nc, nchan, nint, outfile) 
 
 print 'Executing: %s' % cmd
 system(cmd)
