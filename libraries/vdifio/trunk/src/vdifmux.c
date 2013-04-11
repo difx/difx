@@ -30,8 +30,7 @@
 
 /* TODO list
 
- * Constrain output lengths to frame granularity
- * Avoid first memory copy by using a matrix of threadbuffer pointers
+ * Constrain output lengths to frame granularity ???
 
 */
 
@@ -530,7 +529,7 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 			continue;
 		}
 		if(getVDIFFrameBytes(vh) != inputFrameSize ||
-		   getVDIFNumChannels(vh) != 1 ||
+//		   getVDIFNumChannels(vh) != 1 ||
 		   getVDIFBitsPerSample(vh) != nBit)
 		{
 			i += 4;
@@ -557,6 +556,14 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 		{
 			startFrameNumber = frameNumber - nSort;
 			startFrameNumber -= (startFrameNumber % frameGranularity);	/* to ensure first frame starts on integer ns */
+
+			memcpy(&outputHeader, vh, VDIF_HEADER_BYTES);
+
+			/* use this first good frame to generate the prototype VDIF header for the output */
+			setVDIFNumChannels(&outputHeader, nOutputChan);
+			setVDIFThreadID(&outputHeader, 0);
+			setVDIFFrameBytes(&outputHeader, outputFrameSize);
+			epoch = getVDIFEpoch(&outputHeader);
 		}
 	
 		/* add 1 to reserve the first slot for later semi-in-place corner turning */
@@ -652,8 +659,12 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 			}
 			else
 			{
+				/* NOTE!  We're using just a bit of the dest buffer to store pointers to the original data payloads */
+				const unsigned char **threadBuffers = (const unsigned char **)(dest + outputFrameSize*destIndex + VDIF_HEADER_BYTES);
+				
 				p[7] |= (1 << chanId);
-				memcpy(dest + outputFrameSize*destIndex + inputDataSize*chanId + VDIF_HEADER_BYTES, cur + VDIF_HEADER_BYTES, inputDataSize);
+				threadBuffers[chanId] = cur + VDIF_HEADER_BYTES;	/* store pointer to data for later corner turning */
+				
 				++nValidFrame;
 			}
 			i += inputFrameSize;
@@ -687,13 +698,6 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 		{
 			firstValid = f;
 			startFrameNumber = (long long)seconds*inputFramesPerSecond + frameNum;	/* report the actual first frame written */
-
-			/* use this first good frame to generate the prototype VDIF header for the output */
-			memcpy((char *)&outputHeader, cur, VDIF_HEADER_BYTES);
-			setVDIFNumChannels(&outputHeader, nOutputChan);
-			setVDIFThreadID(&outputHeader, 0);
-			setVDIFFrameBytes(&outputHeader, outputFrameSize);
-			epoch = getVDIFEpoch(&outputHeader);
 		}
 
 		if(firstValid >= 0)
@@ -708,13 +712,9 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 
 			if(p[7] == goodMask)
 			{
-				const unsigned char *threadBuffers[32];
+				const unsigned char **threadBuffers = (const unsigned char **)(cur + VDIF_HEADER_BYTES);
 				int j;
 
-				for(j = 0; j < nOutputChan; ++j)
-				{
-					threadBuffers[j] = cur + VDIF_HEADER_BYTES + inputDataSize*j;
-				}
 				cornerTurner(frame + VDIF_HEADER_BYTES, threadBuffers, outputDataSize);
 
 				++nGoodOutput;

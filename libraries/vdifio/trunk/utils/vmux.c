@@ -55,7 +55,6 @@ int main(int argc, char **argv)
 	int chunkSize = defaultChunkSize;
 	int framesPerSecond;
 	long long nextFrame = -1;
-	int nWrite;
 	const char *inFile;
 	const char *outFile;
 	off_t offset = 0;
@@ -115,6 +114,12 @@ int main(int argc, char **argv)
 	if(argc > 7)
 	{
 		chunkSize = atoi(argv[7]);
+		if(chunkSize % 4 != 0)
+		{
+			fprintf(stderr, "Error: provided chunk size must be a multiple of 4 bytes\n");
+
+			return EXIT_FAILURE;
+		}
 	}
 
 
@@ -172,15 +177,13 @@ int main(int argc, char **argv)
 		out = stdout;
 	}
 
-	src = malloc(chunkSize);
-	dest = malloc(chunkSize);
+	src = (unsigned char *)malloc(chunkSize);
+	dest = (unsigned char *)malloc(chunkSize);
 
 	leftover = 0;
 	
 	resetvdifmuxstatistics(&stats);
 	
-	nWrite = 0;
-
 	for(;;)
 	{
 		n = fread(src+leftover, 1, chunkSize-leftover, in);
@@ -223,12 +226,10 @@ int main(int argc, char **argv)
 				setVDIFFrameNumber((vdif_header *)src, (nextFrame+j)%framesPerSecond);
 				setVDIFFrameInvalid((vdif_header *)src, 1);
 				fwrite(src, 1, stats.outputFrameSize, out);
-				nWrite += stats.outputFrameSize;
 			}
 		}
 
 		fwrite(dest, 1, stats.destUsed, out);
-		nWrite += stats.destUsed;
 
 		leftover = stats.srcSize - stats.srcUsed;
 
