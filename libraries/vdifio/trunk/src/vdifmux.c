@@ -476,7 +476,7 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 	outputDataSize = inputDataSize*nOutputChan;
 	outputFrameSize = outputDataSize + VDIF_HEADER_BYTES;
 	frameGranularity = inputFramesPerSecond/gcd(inputFramesPerSecond, 1000000000);
-	maxDestIndex = destSize/outputFrameSize - 1;
+	maxDestIndex = destSize/outputFrameSize - 2;
 	maxSrcIndex = srcSize - nSort*inputFrameSize;
 	if(maxSrcIndex < outputFrameSize)
 	{
@@ -557,12 +557,14 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 			startFrameNumber = frameNumber - nSort;
 			startFrameNumber -= (startFrameNumber % frameGranularity);	/* to ensure first frame starts on integer ns */
 
-			memcpy(&outputHeader, vh, VDIF_HEADER_BYTES);
+			memcpy(&outputHeader, vh, 16);
+			memset(((char *)&outputHeader) + 16, 0, 16);
 
 			/* use this first good frame to generate the prototype VDIF header for the output */
 			setVDIFNumChannels(&outputHeader, nOutputChan);
 			setVDIFThreadID(&outputHeader, 0);
 			setVDIFFrameBytes(&outputHeader, outputFrameSize);
+			setVDIFFrameInvalid(&outputHeader, 0);
 			epoch = getVDIFEpoch(&outputHeader);
 		}
 	
@@ -651,7 +653,6 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 
 			/* Finally, here we are at a point where we can copy data */
 			
-
 			/* set mask indicating valid data in place */
 			if(p[7] & (1 << chanId))
 			{
@@ -713,7 +714,6 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 			if(p[7] == goodMask)
 			{
 				const unsigned char **threadBuffers = (const unsigned char **)(cur + VDIF_HEADER_BYTES);
-				int j;
 
 				cornerTurner(frame + VDIF_HEADER_BYTES, threadBuffers, outputDataSize);
 
@@ -740,7 +740,7 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 	{
 		stats->nValidFrame += nValidFrame;
 		stats->nInvalidFrame += nInvalidFrame;
-		stats->nDiscardedFrame += (nValidFrame + nDup - nThread*nGoodOutput);
+		stats->nDiscardedFrame += (nValidFrame - nThread*nGoodOutput);
 		stats->nWrongThread += nWrongThread;
 		stats->nDuplicateFrame += nDup;
 		stats->nSkippedByte += nSkip;

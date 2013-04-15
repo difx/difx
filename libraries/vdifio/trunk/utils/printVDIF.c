@@ -48,7 +48,8 @@ static void usage()
 
 int main(int argc, char **argv)
 {
-  char buffer[MAX_VDIF_FRAME_BYTES];
+  const int MaxFrameSize = 16*MAX_VDIF_FRAME_BYTES;
+  char buffer[MaxFrameSize];
   FILE * input;
   int readbytes, framebytes, framemjd, framesecond, framenumber, frameinvalid, datambps, framespersecond;
   long long framesread;
@@ -69,11 +70,11 @@ int main(int argc, char **argv)
   }
 
   datambps = atoi(argv[2]);
-  readbytes = fread(buffer, 1, VDIF_HEADER_BYTES, input); //read the VDIF header
+  readbytes = fread(buffer, 1, MaxFrameSize, input); //read the VDIF header
   header = (vdif_header*)buffer;
   framebytes = getVDIFFrameBytes(header);
-  if(framebytes > MAX_VDIF_FRAME_BYTES) {
-    fprintf(stderr, "Cannot read frame with %d bytes > max (%d)\n", framebytes, MAX_VDIF_FRAME_BYTES);
+  if(framebytes > MaxFrameSize) {
+    fprintf(stderr, "Cannot read frame with %d bytes > max (%d)\n", framebytes, MaxFrameSize);
     exit(EXIT_FAILURE);
   }
   framemjd = getVDIFFrameMJD(header);

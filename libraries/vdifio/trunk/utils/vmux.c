@@ -48,8 +48,8 @@ int main(int argc, char **argv)
 	int threads[32];
 	int nThread;
 	int inputframesize;
-	int nGap = 8;
-	int nSort = 4;
+	int nGap = 100;
+	int nSort = 20;
 	struct vdif_mux_statistics stats;
 	int leftover;
 	int chunkSize = defaultChunkSize;
@@ -80,7 +80,7 @@ int main(int argc, char **argv)
 
 	for(n = nThread = 0; nThread < 32; ++nThread)
 	{
-		int c, p;
+		int c, p, i;
 		if(argv[4][n] == ',')
 		{
 			++n;
@@ -98,6 +98,19 @@ int main(int argc, char **argv)
 			fprintf(stderr, "ThreadId with value %d found.  Must be in range 0..1023.\n", threads[nThread]);
 
 			return EXIT_FAILURE;
+		}
+
+		if(nThread > 0)
+		{
+			for(i = 0; i < nThread; ++i)
+			{
+				if(threads[i] == threads[nThread])
+				{
+					printf("Error! threadId %d listed more than once!\n", threads[nThread]);
+
+					return EXIT_FAILURE;
+				}
+			}
 		}
 	}
 	if(nThread == 0)
@@ -186,13 +199,27 @@ int main(int argc, char **argv)
 	
 	for(;;)
 	{
+		int V;
+
 		n = fread(src+leftover, 1, chunkSize-leftover, in);
 		if(n < 1)
 		{
-			break;
+			if(leftover < inputframesize)
+			{
+				break;
+			}
+			else
+			{
+				n = 0;
+			}
 		}
 
-		vdifmux(dest, chunkSize, src, n+leftover, inputframesize, framesPerSecond, 2, nThread, threads, nSort, nGap, -1, &stats);
+		V = vdifmux(dest, chunkSize, src, n+leftover, inputframesize, framesPerSecond, 2, nThread, threads, nSort, nGap, -1, &stats);
+
+		if(V < 0)
+		{
+			break;
+		}
 
 		if(stats.startFrameNumber < 0)
 		{
@@ -217,6 +244,8 @@ int main(int argc, char **argv)
 		{
 			int nJump = (int)(stats.startFrameNumber - nextFrame);
 			int j;
+
+			printf("JUMP %d\n", nJump);
 
 			/* borrow one output frame of src memory... */
 			memcpy(src, dest, VDIF_HEADER_BYTES);
