@@ -38,6 +38,7 @@
 #if HAVE_SPICE
 #include "SpiceCK.h"
 #include "SpiceZpr.h"
+#include "SpiceZfc.h"
 #endif
 
 
@@ -115,7 +116,7 @@ void printDifxSpacecraft(const DifxSpacecraft *ds)
 	fprintDifxSpacecraft(stdout, ds);
 }
 
-int computeDifxSpacecraftEphemeris(DifxSpacecraft *ds, double mjd0, double deltat, int nPoint, const char *objectName, const char *naifFile, const char *ephemFile, double ephemStellarAber, double ephemClockError)
+static int computeDifxSpacecraftEphemeris_bsp(DifxSpacecraft *ds, double mjd0, double deltat, int nPoint, const char *objectName, const char *naifFile, const char *ephemFile, double ephemStellarAber, double ephemClockError)
 {
 #if HAVE_SPICE
 	int spiceHandle;
@@ -131,7 +132,7 @@ int computeDifxSpacecraftEphemeris(DifxSpacecraft *ds, double mjd0, double delta
 	p = snprintf(ds->name, DIFXIO_NAME_LENGTH, "%s", objectName);
 	if(p >= DIFXIO_NAME_LENGTH)
 	{
-		fprintf(stderr, "Warning: computeDifxSpacecraftEphemeris: spacecraft name %s is too long %d > %d\n",
+		fprintf(stderr, "Warning: computeDifxSpacecraftEphemeris_bsp: spacecraft name %s is too long %d > %d\n",
 			objectName, p, DIFXIO_NAME_LENGTH-1);
 	}
 	ds->nPoint = nPoint;
@@ -179,10 +180,183 @@ int computeDifxSpacecraftEphemeris(DifxSpacecraft *ds, double mjd0, double delta
 
 	return 0;
 #else
-	fprintf(stderr, "Error: computeDifxSpacecraftEphemeris: spice not compiled into difxio.\n");
+	fprintf(stderr, "Error: computeDifxSpacecraftEphemeris_bsp: spice not compiled into difxio.\n");
 	
 	return -1;
 #endif
+}
+
+static int findBestSet(double e, double *epochs, int nEpoch)
+{
+	double best = 9e99;
+	double besti = 0;
+	int i;
+
+	for(i = 0; i < nEpoch; ++i)
+	{
+		double d;
+
+		d = fabs(e - epochs[i]);
+		if(d < best)
+		{
+			best = d;
+			besti = i;
+		}
+	}
+
+	return besti;
+}
+
+static int computeDifxSpacecraftEphemeris_tle(DifxSpacecraft *ds, double mjd0, double deltat, int nPoint, const char *objectName, const char *naifFile, const char *ephemFile, double ephemStellarAber, double ephemClockError)
+{
+#if HAVE_SPICE
+	const int MaxEphemElementSets = 30;
+	const int MaxLineLength = 512;
+	int firstYear = 2000;
+	int p;
+	long double mjd, jd;
+	char jdstr[24];
+	double et;
+	double state[6];
+	double elems[MaxEphemElementSets][10];
+	double epochs[MaxEphemElementSets];
+	int nSet = 0;
+	FILE *in;
+	char inLine[MaxLineLength];
+	SpiceChar lines[2][MaxLineLength];
+	double geophysConsts[] = 	/* values from http://naif.jpl.nasa.gov/pub/naif/toolkit_docs/FORTRAN/spicelib/ev2lin.html */
+	{
+		1.082616e-3,		/* J2 gravitational harmonic for earth */
+		-2.53881e-6,		/* J3 gravitational harmonic for earth */
+		-1.65597e-6,		/* J4 gravitational harmonic for earth */
+		7.43669161e-2,		/* KE: Square root of the GM for earth where GM is expressed in earth radii cubed per minutes squared. */
+		120.0,			/* QO: Low altitude bound for atmospheric model in km. */
+		78.0,			/* SO: High altitude bound for atmospheric model in km. */
+		6378.135,		/* RE: Equatorial radius of the earth in km. */
+		1.0			/* AE: Distance units/earth radius (normally 1) */
+	};
+
+	in = fopen(ephemFile, "r");
+	if(!in)
+	{
+		fprintf(stderr, "Error opening file %s\n", ephemFile);
+
+		return -1;
+	}
+
+	ldpool_c(naifFile);
+
+	for(;;)
+	{
+		char *rv;
+		int l, i;
+
+		l = strlen(objectName);
+
+		rv = fgets(inLine, MaxLineLength-1, in);
+		if(!rv)
+		{
+			break;
+		}
+		inLine[MaxLineLength-1] = 0;
+		for(i = 0; inLine[i]; ++i)
+		{
+			if(inLine[i] < ' ')
+			{
+				inLine[i] = 0;
+				break;
+			}
+		}
+
+		if(inLine[0] == '1')
+		{
+			strcpy(lines[0], inLine);
+		}
+		else if(inLine[0] == '2')
+		{
+			strcpy(lines[1], inLine);
+
+			if(strncmp(lines[0]+2, objectName, l) == 0 && strncmp(lines[1]+2, objectName, l) == 0)
+			{
+				getelm_c(firstYear, MaxLineLength, lines, epochs + nSet, elems[nSet]);
+
+				++nSet;
+			}
+		}
+	}
+
+	fclose(in);
+
+	if(nSet == 0)
+	{
+		fprintf(stderr, "Error: no TLEs were properly parsed from file %s\n", ephemFile);
+
+		return -1;
+	}
+
+	p = snprintf(ds->name, DIFXIO_NAME_LENGTH, "%s", objectName);
+	if(p >= DIFXIO_NAME_LENGTH)
+	{
+		fprintf(stderr, "Warning: computeDifxSpacecraftEphemeris_tle: spacecraft name %s is too long %d > %d\n",
+			objectName, p, DIFXIO_NAME_LENGTH-1);
+	}
+	ds->nPoint = nPoint;
+	ds->pos = (sixVector *)calloc(nPoint, sizeof(sixVector));
+
+	for(p = 0; p < nPoint; p++)
+	{
+		int set;
+
+		mjd = mjd0 + p*deltat;
+		jd = mjd + 2400000.5 + ephemClockError/86400.0;
+		sprintf(jdstr, "JD %18.12Lf", jd);
+		str2et_c(jdstr, &et);
+
+		set = findBestSet(et, epochs, nSet);
+
+		ev2lin_(&et, geophysConsts, elems[set], state);
+
+		ds->pos[p].mjd = mjd;
+		ds->pos[p].fracDay = mjd - ds->pos[p].mjd;
+		ds->pos[p].X = state[0]*1000.0;	/* Convert to m and m/s from km and km/s */
+		ds->pos[p].Y = state[1]*1000.0;
+		ds->pos[p].Z = state[2]*1000.0;
+		ds->pos[p].dX = state[3]*1000.0;
+		ds->pos[p].dY = state[4]*1000.0;
+		ds->pos[p].dZ = state[5]*1000.0;
+	}
+
+	clpool_c();
+
+	return 0;
+#else
+	fprintf(stderr, "Error: computeDifxSpacecraftEphemeris_tle: spice not compiled into difxio.\n");
+	
+	return -1;
+#endif
+}
+
+int computeDifxSpacecraftEphemeris(DifxSpacecraft *ds, double mjd0, double deltat, int nPoint, const char *objectName, const char *naifFile, const char *ephemFile, double ephemStellarAber, double ephemClockError)
+{
+	int l;
+
+	/* TODO: add mechanism to just load in state vectors */
+
+	l = strlen(ephemFile);
+	if(l > 4 && strcmp(ephemFile+l-4, ".bsp") == 0)
+	{
+		return computeDifxSpacecraftEphemeris_bsp(ds, mjd0, deltat, nPoint, objectName, naifFile, ephemFile, ephemStellarAber, ephemClockError);
+	}
+	else if(l > 4 && strcmp(ephemFile+l-4, ".tle") == 0)
+	{
+		return computeDifxSpacecraftEphemeris_tle(ds, mjd0, deltat, nPoint, objectName, naifFile, ephemFile, ephemStellarAber, ephemClockError);
+	}
+	else
+	{
+		fprintf(stderr, "Error: ephemFile (%s) is not of a recognized ephemeris type.  The file should end in .tle or .bsp .\n", ephemFile);
+		
+		return -1;
+	}
 }
 
 static void copySpacecraft(DifxSpacecraft *dest, const DifxSpacecraft *src)
