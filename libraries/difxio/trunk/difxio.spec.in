@@ -43,6 +43,7 @@ make
 %{_bindir}/testparsedifx
 %{_bindir}/testparsevis
 %{_bindir}/teststringarray
+%{_bindir}/testephem
 
 %changelog
 * Fri Mar 11 2011 Walter Brisken <wbrisken@nrao.edu>

@@ -186,7 +186,7 @@ static int computeDifxSpacecraftEphemeris_bsp(DifxSpacecraft *ds, double mjd0, d
 #endif
 }
 
-static int findBestSet(double e, double *epochs, int nEpoch, double *f)
+static int findBestSet(double e, SpiceDouble *epochs, int nEpoch, double *f)
 {
 	int i;
 
@@ -216,23 +216,10 @@ static int findBestSet(double e, double *epochs, int nEpoch, double *f)
 	return -1;
 }
 
-static int computeDifxSpacecraftEphemeris_tle(DifxSpacecraft *ds, double mjd0, double deltat, int nPoint, const char *objectName, const char *naifFile, const char *ephemFile, double ephemStellarAber, double ephemClockError)
+void evaluateTLE(doublereal et, doublereal *elems, doublereal *state)
 {
-#if HAVE_SPICE
-	const int MaxEphemElementSets = 30;
-	const int MaxLineLength = 512;
-	int firstYear = 2000;
-	int p;
-	long double mjd, jd;
-	char jdstr[24];
-	double et;
-	double elems[MaxEphemElementSets][10];
-	double epochs[MaxEphemElementSets];
-	int nSet = 0;
-	FILE *in;
-	char inLine[MaxLineLength];
-	SpiceChar lines[2][MaxLineLength];
-	double geophysConsts[] = 	/* values from http://naif.jpl.nasa.gov/pub/naif/toolkit_docs/FORTRAN/spicelib/ev2lin.html */
+	double R;
+	doublereal geophysConsts[] = 	/* values from http://naif.jpl.nasa.gov/pub/naif/toolkit_docs/FORTRAN/spicelib/ev2lin.html */
 	{
 		1.082616e-3,		/* J2 gravitational harmonic for earth */
 		-2.53881e-6,		/* J3 gravitational harmonic for earth */
@@ -243,6 +230,32 @@ static int computeDifxSpacecraftEphemeris_tle(DifxSpacecraft *ds, double mjd0, d
 		6378.135,		/* RE: Equatorial radius of the earth in km. */
 		1.0			/* AE: Distance units/earth radius (normally 1) */
 	};
+
+	ev2lin_(&et, geophysConsts, elems, state);
+
+	R = sqrt(state[0]*state[0] + state[1]*state[1] + state[2]*state[2]);
+
+	/* Adjust for light travel time from Earth Center to object */
+	/* R comes out in km, et is in seconds */
+	et -= R/299792.458;
+
+	ev2lin_(&et, geophysConsts, elems, state);
+}
+
+static int computeDifxSpacecraftEphemeris_tle(DifxSpacecraft *ds, double mjd0, double deltat, int nPoint, const char *objectName, const char *naifFile, const char *ephemFile, double ephemStellarAber, double ephemClockError)
+{
+#if HAVE_SPICE
+	const int NElement = 10;
+	const int MaxEphemElementSets = 30;
+	const SpiceInt MaxLineLength = 512;
+	const SpiceInt firstYear = 2000;
+	int p;
+	doublereal elems[MaxEphemElementSets][NElement];
+	SpiceDouble epochs[MaxEphemElementSets];
+	int nSet = 0;
+	FILE *in;
+	char inLine[MaxLineLength];
+	SpiceChar lines[2][MaxLineLength];	/* To store the Two Line Element (TLE) */
 
 	in = fopen(ephemFile, "r");
 	if(!in)
@@ -286,7 +299,14 @@ static int computeDifxSpacecraftEphemeris_tle(DifxSpacecraft *ds, double mjd0, d
 
 			if(strncmp(lines[0]+2, objectName, l) == 0 && strncmp(lines[1]+2, objectName, l) == 0)
 			{
-				getelm_c(firstYear, MaxLineLength, lines, epochs + nSet, elems[nSet]);
+				SpiceDouble elemsTemp[NElement];	/* ensure proper type safety */
+				int k;
+
+				getelm_c(firstYear, MaxLineLength, lines, epochs + nSet, elemsTemp);
+				for(k = 0; k < NElement; ++k)
+				{
+					elems[nSet][k] = elemsTemp[k];
+				}
 
 				++nSet;
 			}
@@ -312,8 +332,11 @@ static int computeDifxSpacecraftEphemeris_tle(DifxSpacecraft *ds, double mjd0, d
 
 	for(p = 0; p < nPoint; ++p)
 	{
+		long double mjd, jd;
+		char jdstr[24];
+		doublereal et;
 		int set;
-		double state[6];
+		doublereal state[6];
 		double f = -1.0;
 
 		mjd = mjd0 + p*deltat;
@@ -330,15 +353,16 @@ static int computeDifxSpacecraftEphemeris_tle(DifxSpacecraft *ds, double mjd0, d
 			exit(EXIT_FAILURE);
 		}
 
-		ev2lin_(&et, geophysConsts, elems[set], state);
+		evaluateTLE(et, elems[set], state);
+
 		if(f < 1.0)
 		{
 			/* linear interpolation between two TLE values */
 
-			double state2[6];
+			doublereal state2[6];
 			int j;
 
-			ev2lin_(&et, geophysConsts, elems[set+1], state2);
+			evaluateTLE(et, elems[set+1], state2);
 			for(j = 0; j < 6; ++j)
 			{
 				state[j] = f*state[j] + (1.0-f)*state2[j];
