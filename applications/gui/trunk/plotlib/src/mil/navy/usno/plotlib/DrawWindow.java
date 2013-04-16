@@ -20,6 +20,7 @@ public class DrawWindow extends JPanel {
     
     @Override
     public void paintComponent( Graphics g ) {
+        super.paintComponent( g );
         Graphics2D g2 = (Graphics2D)g;  // Graphics2 for antialiasing.
         g2.setRenderingHint( RenderingHints.KEY_ANTIALIASING,
                      RenderingHints.VALUE_ANTIALIAS_ON );
@@ -27,7 +28,6 @@ public class DrawWindow extends JPanel {
         if ( drawObject != null ) {
             drawObject.draw( g2, null, null, false );
         }
-        
     }
     
     DrawObject drawObject;

@@ -204,6 +204,7 @@
                 <xsd:element ref="defaultNamesPhaseCalInt"/>
                 <xsd:element ref="defaultNamesToneSelection"/>
                 <xsd:element ref="defaultNamesDataFormat"/>
+                <xsd:element ref="defaultNamesRunMonitorOff"/>
                 
                 <xsd:element ref="suppressUnknownMessageWarnings"/>
                 <xsd:element ref="dontIdentifyMark5sByPattern"/>
@@ -401,6 +402,7 @@
     <xsd:element name="defaultNamesPhaseCalInt" type="xsd:int"></xsd:element>
     <xsd:element name="defaultNamesToneSelection" type="xsd:string"></xsd:element>
     <xsd:element name="defaultNamesDataFormat" type="xsd:string"></xsd:element>
+    <xsd:element name="defaultNamesRunMonitorOff" type="xsd:boolean"></xsd:element>
 
     <xsd:element name="suppressUnknownMessageWarnings" type="xsd:boolean"></xsd:element>
     <xsd:element name="dontIdentifyMark5sByPattern" type="xsd:boolean"></xsd:element>

@@ -59,11 +59,16 @@ public class Plot2DObject extends DrawObject {
         this.add( _frame );
         //  This is the x-axis title
         _xTitle = new DrawObject();
+        this.add( _xTitle );
         //  The y-axis title
         _yTitle = new DrawObject();
+        this.add( _yTitle );
         //  The title of the plot
         _title = new DrawObject();
         this.add( _title );
+        //  This object can hold extra items.
+        _extraItems = new DrawObject();
+        this.add( _extraItems );
         //  Default plot limits.
         limits( 0.0, 1.0, 0.0, 1.0 );
         //  Default title position.
@@ -101,6 +106,8 @@ public class Plot2DObject extends DrawObject {
         relabel();
         //  Change where we put titles and labels
         repositionTitle();
+        //  Also do the same for "extra" items.
+        repositionExtraItems();
     }
     
     /*
@@ -293,7 +300,27 @@ public class Plot2DObject extends DrawObject {
                         low = high;
                         high = tmp;
                     }
-                    for ( double val = label.step * (double)((int)(low/label.step)); val <= high; val += label.step ) {
+                    //  This is the "default" start value for labels.  It depends
+                    //  on the label step, if available.
+                    double startVal = low;
+                    if ( label.step != null )
+                        startVal = label.step * (double)((int)(low/label.step));
+                    //  Set what the user wants if specified.
+                    if ( label.start != null )
+                        startVal = label.start;
+                    //  This is the "default" end value for labels.
+                    double stopVal = high;
+                    if ( label.stop != null )
+                        stopVal = label.stop;
+                    //  Try to set the (default) step value based on the start and stop value.  This will get
+                    //  all messed up if all three (start, stop, step) are null.  FIX THIS!!!
+                    double stepVal = stepSize( stopVal - startVal, 3.0, 10.0 );
+                    if ( label.step != null )
+                        stepVal = label.step;
+                    //  Prevent endless loop - shouldn't happen unless the user does something odd
+                    if ( stepVal == 0.0 )
+                        stepVal = 2 * ( stopVal - startVal );
+                    for ( double val = startVal; val <= stopVal; val += stepVal ) {
                         //  This draws the tic mark, assuming there is one.
                         if ( label.ticSize != null ) {
                             Track2D newObject = new Track2D();
@@ -362,7 +389,29 @@ public class Plot2DObject extends DrawObject {
                         low = high;
                         high = tmp;
                     }
-                    for ( double val = label.step * (double)((int)(low/label.step)); val <= high; val += label.step ) {
+                    //  This is the "default" start value for labels.  It depends
+                    //  on the label step, if available.
+                    double startVal = low;
+                    if ( label.step != null )
+                        startVal = label.step * (double)((int)(low/label.step));
+                    //  Set what the user wants if specified.
+                    if ( label.start != null )
+                        startVal = label.start;
+                    //  This is the "default" end value for labels.
+                    double stopVal = high;
+                    if ( label.stop != null )
+                        stopVal = label.stop;
+                    //  Try to set the (default) step value based on the start and stop value.  This will get
+                    //  all messed up if all three (start, stop, step) are null.  FIX THIS!!!
+                    double stepVal = stepSize( stopVal - startVal, 3.0, 10.0 );
+                    ////  The default value for steps is to have none (this occurs when step size is null).
+                    //double stepVal = 2 * ( stopVal - startVal );
+                    if ( label.step != null )
+                        stepVal = label.step;
+                    //  Prevent endless loop - shouldn't happen unless the user does something odd
+                    if ( stepVal == 0.0 )
+                        stepVal = 2 * ( stopVal - startVal );
+                    for ( double val = startVal; val <= stopVal; val += stepVal ) {
                         //  This draws the tic mark, assuming there is one.
                         if ( label.ticSize != null ) {
                             Track2D newObject = new Track2D();
@@ -576,6 +625,14 @@ public class Plot2DObject extends DrawObject {
     }
     
     /*
+     * Return the current limits.
+     */
+    public double xLow() { return _xLow; }
+    public double xHigh() { return _xHigh; }
+    public double yLow() { return _yLow; }
+    public double yHigh() { return _yHigh; }
+    
+    /*
      * Add a data curve to the plot.
      */
     public void addCurve( double x[], double y[] ) {
@@ -584,23 +641,58 @@ public class Plot2DObject extends DrawObject {
     }
     
     /*
+     * Add an existing curve to the plot.
+     */
+    public void addCurve( Curve2D newCurve ) {
+        _dataHolder.add( newCurve );
+    }
+    
+    /*
      * Add a track to this plot.
      */
     public void addTrack( Track2D newTrack ) {
         _dataHolder.add( newTrack );
+    }
+    
+    /*
+     * Compute a reasonable step size, given a delta, a minimum number of steps
+     * and a maximum number of steps.
+     */
+    static public double stepSize( double delta, double minSteps, double maxSteps ) {
+        //  Bail out if the user has done something stupid.
+        if ( delta == 0.0 )
+            return 0.0;
+        if ( minSteps >= maxSteps )
+            return 0.0;
+        //  Find the order of the delta.
+        double delt = Math.abs( delta );
+        double logDelt = Math.log10( delt );
+        int order = (int)logDelt;
+        if ( logDelt < 0.0 )
+            order -= 1;
+        double modelStep = Math.pow( 10.0, (double)order );
+        //  Mess around with the modelStep until it is within range.
+        while ( delt / modelStep < minSteps )
+            modelStep /= 10.0;
+        while ( delt / modelStep > maxSteps )
+            modelStep *= 2.0;
+        if ( delta < 0.0 )
+            return -modelStep;
+        else
+            return modelStep;
     }
 
     /*
      * This class holds information we need to track about user-requested grids.
      */
     protected class GridStructure {
-        public GridStructure( int newAxis, double newStep, Color newColor ) {
+        public GridStructure( int newAxis, Double newStep, Color newColor ) {
             axis = newAxis;
-            step = newStep;
             color = newColor;
+            step = newStep;
         }
         public int axis;
-        public double step;
+        public Double step;
         public Color color;
     };
     public static final int X_AXIS = 0;
@@ -619,7 +711,7 @@ public class Plot2DObject extends DrawObject {
      * to (i.e. which axis it steps along), the size of the spacing of grid
      * lines, and their color.  The axis is defined as 0 for X, 1 for Y.
      */
-    public void addGrid( int axis, double step, Color color ) {
+    public void addGrid( int axis, Double step, Color color ) {
         _gridInformation.add( new GridStructure( axis, step, color ) );
         regrid();
     }
@@ -631,7 +723,7 @@ public class Plot2DObject extends DrawObject {
         _topGridInformation.clear();
         topRegrid();
     }
-    public void addTopGrid( int axis, double step, Color color ) {
+    public void addTopGrid( int axis, Double step, Color color ) {
         _topGridInformation.add( new GridStructure( axis, step, color ) );
         topRegrid();
     }
@@ -642,7 +734,7 @@ public class Plot2DObject extends DrawObject {
      */
     protected class LabelStructure extends GridStructure {
         public LabelStructure( int newAxis, Double newStart, Double newStop, 
-                double newStep, Color newColor, String newFormat,
+                Double newStep, Color newColor, String newFormat,
                 Double newTicSize, double newGapSize, int newJustification,
                 Double newCrossValue, boolean newDrawScale, boolean newPlotAlways ) {
             super( newAxis, newStep, newColor );
@@ -714,7 +806,7 @@ public class Plot2DObject extends DrawObject {
      *    drawScale     - Draw a line along the axis of the labels.  This will be
      *                    done using the label color.
      */
-    public void addLabels( int axis, Double start, Double stop, double step, 
+    public void addLabels( int axis, Double start, Double stop, Double step, 
             Color color, String format, double ticSize, double gapSize, 
             int justification, Double crossValue, boolean drawScale, 
             boolean plotAlways ) {
@@ -728,7 +820,7 @@ public class Plot2DObject extends DrawObject {
      * These are some simplified versions of the above function using common
      * defaults.
      */
-    public void addLabels( int axis, double step, String format, double ticSize,
+    public void addLabels( int axis, Double step, String format, double ticSize,
             double gapSize, Color color ) {
         int justification = DrawObject.RIGHT_JUSTIFY;
         if ( axis == X_AXIS )
@@ -736,7 +828,7 @@ public class Plot2DObject extends DrawObject {
         this.addLabels( axis, null, null, step, color, format, ticSize, gapSize,
                 justification, null, false, false );
     }
-    public void addLabels( int axis, double step, String format, Color color ) {
+    public void addLabels( int axis, Double step, String format, Color color ) {
         double gapSize = -10.0;
         double ticSize = -5.0;
         if ( axis == X_AXIS ) {
@@ -745,13 +837,13 @@ public class Plot2DObject extends DrawObject {
         }
         this.addLabels( axis, step, format, ticSize, gapSize, color );
     }
-    public void addLabels( int axis, double step, String format ) {
+    public void addLabels( int axis, Double step, String format ) {
         this.addLabels( axis, step, format, null );
     }
-    public void addLabels( int axis, double step, Color color ) {
+    public void addLabels( int axis, Double step, Color color ) {
         this.addLabels( axis, step, null, color );
     }
-    public void addLabels( int axis, double step ) {
+    public void addLabels( int axis, Double step ) {
         this.addLabels( axis, step, null, null );
     }
     
@@ -784,6 +876,20 @@ public class Plot2DObject extends DrawObject {
     }
     
     /*
+     * Give the plot an X title.
+     */
+    public void xTitle( String newTitle ) {
+        this.xTitle( newTitle, DrawObject.CENTER_JUSTIFY );
+    }
+    
+    /*
+     * Give the plot an Y title.
+     */
+    public void yTitle( String newTitle ) {
+        this.yTitle( newTitle, DrawObject.CENTER_JUSTIFY );
+    }
+    
+    /*
      * This is the more generic version of the title function, allowing different
      * justification settings.  The position can be set using titlePos().
      */
@@ -797,7 +903,33 @@ public class Plot2DObject extends DrawObject {
     }
     
     /*
-     * Change the title font.
+     * This is the more generic version of the xTitle function, allowing different
+     * justification settings.  The position can be set using xTitlePos().
+     */
+    public void xTitle( String newTitle, int justification ) {
+        _xTitle.clear();
+        DrawObject newObject = new DrawObject();
+        newObject.complexText( justification, 0.0, 0.0, newTitle );
+        _xTitleString = new String( newTitle );
+        _xTitleJustification = justification;
+        _xTitle.add( newObject );
+    }
+    
+    /*
+     * This is the more generic version of the yTitle function, allowing different
+     * justification settings.  The position can be set using yTitlePos().
+     */
+    public void yTitle( String newTitle, int justification ) {
+        _yTitle.clear();
+        DrawObject newObject = new DrawObject();
+        newObject.complexText( justification, 0.0, 0.0, newTitle );
+        _yTitleString = new String( newTitle );
+        _yTitleJustification = justification;
+        _yTitle.add( newObject );
+    }
+    
+    /*
+     * Change the title fonts.
      */
     public void titleFont( Font newFont ) {
         if ( newFont == null )
@@ -806,9 +938,23 @@ public class Plot2DObject extends DrawObject {
             _title.font( newFont );
     }
     public Font titleFont() { return _title.font(); }
+    public void xTitleFont( Font newFont ) {
+        if ( newFont == null )
+            _xTitle.fontOff();
+        else
+            _xTitle.font( newFont );
+    }
+    public Font xTitleFont() { return _xTitle.font(); }
+    public void yTitleFont( Font newFont ) {
+        if ( newFont == null )
+            _yTitle.fontOff();
+        else
+            _yTitle.font( newFont );
+    }
+    public Font yTitleFont() { return _yTitle.font(); }
     
     /*
-     * Set or get the color assigned to the title.
+     * Set or get the color assigned to the titles.
      */
     public void titleColor( Color newColor, boolean apply ) {
         if ( apply )
@@ -818,6 +964,22 @@ public class Plot2DObject extends DrawObject {
     }
     public Color titleColor() { return _title.color(); }
     public boolean titleColorSet() { return _title.colorSet(); }
+    public void xTitleColor( Color newColor, boolean apply ) {
+        if ( apply )
+            _xTitle.color( newColor );
+        else
+            _xTitle.colorOff();
+    }
+    public Color xTitleColor() { return _xTitle.color(); }
+    public boolean xTitleColorSet() { return _xTitle.colorSet(); }
+    public void yTitleColor( Color newColor, boolean apply ) {
+        if ( apply )
+            _yTitle.color( newColor );
+        else
+            _yTitle.colorOff();
+    }
+    public Color yTitleColor() { return _yTitle.color(); }
+    public boolean yTitleColorSet() { return _yTitle.colorSet(); }
     
     /*
      * Set the position of the plot title relative to the top left corner of 
@@ -840,20 +1002,84 @@ public class Plot2DObject extends DrawObject {
     }
     
     /*
+     * Set the position of the X title relative to the bottom left corner of 
+     * the plot (given that putting the X title below the plot is conventional).  
+     * Fractional numbers are fractions of the frame sizes, numbers larger than
+     * 1.0 are in pixels.
+     */
+    public void xTitlePosition( double x, double y ) {
+        if ( x <= 1.0 && x >= -1.0 )
+            _xTitleXUseFraction = true;
+        else
+            _xTitleXUseFraction = false;
+        _xTitleXPos = x;
+        if ( y <= 1.0 && y >= -1.0 )
+            _xTitleYUseFraction = true;
+        else
+            _xTitleYUseFraction = false;
+        _xTitleYPos = y;
+        repositionTitle();
+    }
+    
+    /*
+     * Set the position of the Y title relative to the lower left corner of 
+     * the plot (given that putting the title on the left of a plot is conventional).  
+     * Fractional numbers are fractions of the frame sizes, numbers larger than
+     * 1.0 are in pixels.
+     */
+    public void yTitlePosition( double x, double y ) {
+        if ( x <= 1.0 && x >= -1.0 )
+            _yTitleXUseFraction = true;
+        else
+            _yTitleXUseFraction = false;
+        _yTitleXPos = x;
+        if ( y <= 1.0 && y >= -1.0 )
+            _yTitleYUseFraction = true;
+        else
+            _yTitleYUseFraction = false;
+        _yTitleYPos = y;
+        repositionTitle();
+    }
+    
+    /*
      * Set the title positions and whether numbers are meant to be fractions of
      * the plot size.  This allows "fractions" greater than 1.0, among other things.
+     * There are three sets of functions for the three title types.
      */
     public void titleXPos( double x, boolean useFraction ) {
         _titleXUseFraction = useFraction;
         _titleXPos = x;
+        repositionTitle();
     }
     public void titleYPos( double y, boolean useFraction ) {
         _titleYUseFraction = useFraction;
         _titleYPos = y;
+        repositionTitle();
+    }
+    public void xTitleXPos( double x, boolean useFraction ) {
+        _xTitleXUseFraction = useFraction;
+        _xTitleXPos = x;
+        repositionTitle();
+    }
+    public void xTitleYPos( double y, boolean useFraction ) {
+        _xTitleYUseFraction = useFraction;
+        _xTitleYPos = y;
+        repositionTitle();
+    }
+    public void yTitleXPos( double x, boolean useFraction ) {
+        _yTitleXUseFraction = useFraction;
+        _yTitleXPos = x;
+        repositionTitle();
+    }
+    public void yTitleYPos( double y, boolean useFraction ) {
+        _yTitleYUseFraction = useFraction;
+        _yTitleYPos = y;
+        repositionTitle();
     }
     
     /*
-     * Return the current title positions.
+     * Return the current title positions.  Three sets of functions for the three
+     * title types.
      */
     public double titleXPos() {
         return _titleXPos;
@@ -861,31 +1087,83 @@ public class Plot2DObject extends DrawObject {
     public double titleYPos() {
         return _titleYPos;
     }
+    public double xTitleXPos() {
+        return _xTitleXPos;
+    }
+    public double xTitleYPos() {
+        return _xTitleYPos;
+    }
+    public double yTitleXPos() {
+        return _yTitleXPos;
+    }
+    public double yTitleYPos() {
+        return _yTitleYPos;
+    }
+    
+    /*
+     * Rotate titles.  Shut off rotations by passing null.
+     */
+    public void titleRotate( Double newVal ) {
+        if ( newVal == null )
+            _title.rotateOff();
+        else
+            _title.rotate( newVal );
+    }
+    public void xTitleRotate( Double newVal ) {
+        if ( newVal == null )
+            _xTitle.rotateOff();
+        else
+            _xTitle.rotate( newVal );
+    }
+    public void yTitleRotate( Double newVal ) {
+        if ( newVal == null )
+            _yTitle.rotateOff();
+        else
+            _yTitle.rotate( newVal );
+    }
     
     /*
      * Return whether the title positions are considered fractions of the plot
-     * size or pixel values.
+     * size or pixel values.  Three sets of functions for the three title types.
      */
     public boolean titleXUseFraction() { return _titleXUseFraction; }
     public boolean titleYUseFraction() { return _titleYUseFraction; }
+    public boolean xTitleXUseFraction() { return _xTitleXUseFraction; }
+    public boolean xTitleYUseFraction() { return _xTitleYUseFraction; }
+    public boolean yTitleXUseFraction() { return _yTitleXUseFraction; }
+    public boolean yTitleYUseFraction() { return _yTitleYUseFraction; }
     
     /*
-     * Return the string associated with the title.
+     * Return the string associated with the title.  There are three functions for each
+     * of the title types.
      */
     public String titleString() {
         return _titleString;
     }
+    public String xTitleString() {
+        return _xTitleString;
+    }
+    public String yTitleString() {
+        return _yTitleString;
+    }
     
     /*
-     * Return the justification of the title.
+     * Return the justification of the titles.  There are three functions for each
+     * of the title types.
      */
     public int titleJustification() {
         return _titleJustification;
     }
+    public int xTitleJustification() {
+        return _xTitleJustification;
+    }
+    public int yTitleJustification() {
+        return _yTitleJustification;
+    }
     
     /*
      * This function is called to reposition titles when the frame of the plot is
-     * changed.
+     * changed.  It is applied to the title of the plot and the X and Y axis titles.
      */
     public void repositionTitle() {
         double x = _titleXPos;
@@ -893,8 +1171,84 @@ public class Plot2DObject extends DrawObject {
             x *= _w;
         double y = _titleYPos;
         if ( _titleYUseFraction )
-            y *= _titleYPos;
+            y *= _h;
         _title.translate( _x + x, _y - y );
+        x = _xTitleXPos;
+        if ( _xTitleXUseFraction )
+            x *= _w;
+        y = _xTitleYPos;
+        if ( _xTitleYUseFraction )
+            y *= _h;
+        _xTitle.translate( _x + x, _y + _h - y );
+        x = _yTitleXPos;
+        if ( _yTitleXUseFraction )
+            x *= _w;
+        y = _yTitleYPos;
+        if ( _yTitleYUseFraction )
+            y *= _h;
+        _yTitle.translate( _x + x, _y + _h + y );
+    }
+    
+    /*
+     * Get rid of all extra items.
+     */
+    public void clearExtraItems() {
+        _extraItems.clear();
+    }
+    
+    /*
+     * Create a new "extra" item object with position specifications.  The DrawObject
+     * created is returned.
+     */
+    public DrawObject newExtraItem( double xPos, int xPosType, double yPos, int yPosType ) {
+        ExtraItem newItem = new ExtraItem( xPos, xPosType, yPos, yPosType );
+        addExtraItem( newItem );
+        return newItem;
+    }
+    
+    /*
+     * Add an extra item.  This must be a DrawObject of the ExtraItem class.
+     */
+    public void addExtraItem( ExtraItem newItem ) {
+        _extraItems.add( newItem );
+        repositionExtraItems();
+    }
+    
+    /*
+     * This resets all of the positions of the extra items based on current criteria.
+     */
+    public void repositionExtraItems() {
+        for ( Iterator<DrawObject> iter = _extraItems.iterator(); iter.hasNext(); ) {
+            ExtraItem thisItem = (ExtraItem)iter.next();
+            //  Translate based on the item description.
+            double xt = thisItem.xPos;
+            double yt = thisItem.yPos;
+            switch ( thisItem.xPosType ) {
+                case ExtraItem.BY_PIXEL:
+                    //  No change required.
+                    break;
+                case ExtraItem.BY_FRAME:
+                    //  Scale the x to the frame size.
+                    xt *= _w;
+                    break;
+                case ExtraItem.BY_XY:
+                    xt = ( xt - _xLow ) * _w / ( _xHigh - _xLow ); // UNTESTED
+                    break;
+            }
+            switch ( thisItem.yPosType ) {
+                case ExtraItem.BY_PIXEL:
+                    //  No change required.
+                    break;
+                case ExtraItem.BY_FRAME:
+                    //  Scale the y to the frame size.
+                    yt *= _h;
+                    break;
+                case ExtraItem.BY_XY:
+                    yt = ( yt - _yLow ) * _w / ( _xLow - _xHigh ); // UNTESTED
+                    break;
+            }
+            thisItem.translate( _x + xt, _y - yt );
+        }
     }
     
     //  These objects contain various components of the plot.
@@ -944,11 +1298,27 @@ public class Plot2DObject extends DrawObject {
     protected boolean _titleXUseFraction;
     protected boolean _titleYUseFraction;
     
+    //  These are items identical to those above, used for the x and y titles.
+    protected double _xTitleXPos;
+    protected double _xTitleYPos;
+    protected boolean _xTitleXUseFraction;
+    protected boolean _xTitleYUseFraction;
+    protected double _yTitleXPos;
+    protected double _yTitleYPos;
+    protected boolean _yTitleXUseFraction;
+    protected boolean _yTitleYUseFraction;
+    
     //  These variables are used to store information about the title settings,
     //  but are not actually used in drawing.  They were created so an editor
     //  could see what these values were.
     protected String _titleString;
     protected int _titleJustification;
+    
+    //  X and Y title items identical to those above.
+    protected String _xTitleString;
+    protected int _xTitleJustification;
+    protected String _yTitleString;
+    protected int _yTitleJustification;
     
     //  This ArrayDeque holds information about grid lines that should be drawn.
     //  It is required so that we can track this information and regrid with it
@@ -959,4 +1329,32 @@ public class Plot2DObject extends DrawObject {
     //  This is a similar structure for plot axis labels.
     protected ArrayDeque<LabelStructure> _labelInformation;
 
+    //  "Extra" items are positioned automatically based on the plot size, or limits,
+    //  relative to the upper left corner of the plot.  Positions can be specified
+    //  independently for x and y.  These positions govern the translations of the
+    //  objects - overriding any other translations!  If you need to translate relative
+    //  to the specified position, make a child object and translate that.
+    protected DrawObject _extraItems;
+    public class ExtraItem extends DrawObject {
+        public static final int BY_PIXEL = 1;  //  position in pixels from the upper left of the plot
+        public static final int BY_FRAME = 2;  //  position as a fraction of the frame size from the upper left of the plot
+        public static final int BY_XY    = 3;  //  position based on the plot limits.
+        public double xPos;
+        public int xPosType;
+        public double yPos;
+        public int yPosType;
+        public ExtraItem( double newXPos, int newXPosType, double newYPos, int newYPosType ) {
+            super();
+            xPos = newXPos;
+            xPosType = newXPosType;
+            yPos = newYPos;
+            yPosType = newYPosType;
+        }
+        public void position( double newXPos, int newXPosType, double newYPos, int newYPosType ) {
+            xPos = newXPos;
+            xPosType = newXPosType;
+            yPos = newYPos;
+            yPosType = newYPosType;
+        }
+    }
 }

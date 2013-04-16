@@ -1492,19 +1492,19 @@ public class SystemSettings extends JFrame {
         _timeout.intValue( 100 );
         _difxUDPCheck.setSelected( false );
         _difxTCPCheck.setSelected( true );
-        _difxControlAddress.setText( "swc01.usno.navy.mil" );
+        _difxControlAddress.setText( "guiServer.hostname" );
         _difxControlPort.intValue( 50200 );
         _difxTransferPort.intValue( 50300 );
         _maxTransferPorts.intValue( 10 );
         maxTransferPorts();
         _difxMonitorPort.intValue( 52300 );
-        _difxMonitorHost.setText( "swc01.usno.navy.mil" );
+        _difxMonitorHost.setText( "guiServer.hostname" );
         _difxControlUser.setText( "difx" );
         //_difxVersion.setText( "trunk" );
         _difxBase.setText( "/usr/local/swc/difx" );
         _dbUseDataBase.setSelected( true );
         _dbVersion.setText( "unknown" );
-        _dbHost.setText( "swc02.usno.navy.mil" );
+        _dbHost.setText( "database.hostname" );
         _dbUser.setText( "difx" );
         _dbPwd.setText( "password" );
         _dbName.setText( "difxdb" );
@@ -1596,9 +1596,10 @@ public class SystemSettings extends JFrame {
         _defaultNames.correlationNChan = 16;
         _defaultNames.correlationNFFTChan = 128;
         _defaultNames.phaseCalInt = 1;
-        _defaultNames.correlationSubintNS = 160000000;
+        _defaultNames.correlationSubintNS = 100000000;
         _defaultNames.toneSelection = "smart";
         _defaultNames.dataFormat = "Mark5B";
+        _defaultNames.runMonitor = true;
         _jobColumnSpecs.networkActivity.show = true;
         _jobColumnSpecs.name.show = true;
         _jobColumnSpecs.progressBar.show = true;
@@ -2467,6 +2468,7 @@ public class SystemSettings extends JFrame {
                 _defaultNames.correlationNFFTChan = doiConfig.getCorrelationNFFTChan();
             if ( _defaultNames.correlationSubintNS != 0 )
                 _defaultNames.correlationSubintNS = doiConfig.getCorrelationSubintNS();
+            _defaultNames.runMonitor = !doiConfig.isDefaultNamesRunMonitorOff();
             
             _defaultNames.phaseCalInt = doiConfig.getDefaultNamesPhaseCalInt();
             if ( doiConfig.getDefaultNamesToneSelection() != null )
@@ -2874,6 +2876,8 @@ public class SystemSettings extends JFrame {
         doiConfig.setDefaultNamesPhaseCalInt( _defaultNames.phaseCalInt );
         doiConfig.setDefaultNamesToneSelection( _defaultNames.toneSelection );
         doiConfig.setDefaultNamesDataFormat( _defaultNames.dataFormat );
+        
+        doiConfig.setDefaultNamesRunMonitorOff( !_defaultNames.runMonitor );
             
         doiConfig.setEopURL( _eopURL.getText() );
         doiConfig.setLeapSecondsURL( _leapSecondsURL.getText() );
@@ -3861,6 +3865,7 @@ public class SystemSettings extends JFrame {
         int correlationSubintNS;
         String toneSelection;
         String dataFormat;
+        boolean runMonitor;
     }
     protected DefaultNames _defaultNames;
     

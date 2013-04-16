@@ -37,7 +37,11 @@ public class Track2D extends DrawObject {
         //  The stroke object will be executed after the vertexes.
         _stroke = new DrawObject();
         _stroke.stroke();
-        this.add( _stroke );      
+        this.add( _stroke );
+        //  The draw at vertex will be executed last to draw points at each vertex.
+        _drawAtVertices = new DrawObject();
+        this.add( _drawAtVertices );
+        _vertexObject = new DrawObject();
         _saveXScale = 1.0;
         _saveYScale = 1.0;
         _types = new ArrayDeque<Integer>();
@@ -53,7 +57,7 @@ public class Track2D extends DrawObject {
     /*
      * Add a new data item.  This has to be added to both the vertexes and data
      * lists.  In the vertex list it is adjusted to the current scale.  There are
-     * two types of points that can be added - normal and relative Normal points 
+     * two types of points that can be added - normal and relative.  Normal points 
      * have scaled positions.  Relative positions are a number of pixels offset
      * from the previous position.
      */
@@ -77,6 +81,12 @@ public class Track2D extends DrawObject {
         else
             newData.vertex( _saveXScale * x, _saveYScale * y );
         _vertexes.add( newData );
+        //  Yet another list we keep track of...DrawObject types that are drawn at each
+        //  point.
+        DrawObject vertexDraw = new DrawObject();
+        vertexDraw.translate( newData._x1, newData._x2 );
+        vertexDraw.add( _vertexObject );
+        _drawAtVertices.add( vertexDraw );
         _types.add( new Integer( type ) );
         //  Pop off the first value if we have exceded the size limit.
         if ( _sizeLimit > 0 ) {
@@ -84,6 +94,8 @@ public class Track2D extends DrawObject {
                 _data.removeFirst();
             if ( _vertexes.size() > _sizeLimit )
                 _vertexes.removeFirst();
+            if ( _drawAtVertices.size() > _sizeLimit )
+                _drawAtVertices.removeFirst();
         }
         _fillPoints.clear();
         //  Add the points required to fill the curve below, if that is requested.
@@ -141,6 +153,13 @@ public class Track2D extends DrawObject {
     }
     
     /*
+     * Draw a specific object at each vertex.  Use null to shut this off.
+     */
+    public void drawObject( DrawObject newObj ) {
+        _vertexObject.add( newObj );
+    }
+    
+    /*
      * Set a limit on the number of data points that will be saved in the track.
      */
     public void sizeLimit( int newVal ) {
@@ -158,15 +177,27 @@ public class Track2D extends DrawObject {
                     Iterator<DrawObject> dataIter = _data.iterator();
                     Iterator<Integer> typeIter = _types.iterator();
                     DrawObject lastVertex = null;
+                    Iterator<DrawObject> vertexObjectIter = _drawAtVertices.iterator();
                     for ( Iterator<DrawObject> iter = _vertexes.iterator(); iter.hasNext(); ) {
                         //try {
                             DrawObject data = dataIter.next();
                             DrawObject thisVertex = iter.next();
                             Integer type = typeIter.next();
-                            if ( type == this.RELATIVE_POINT && lastVertex != null )
+                            //  We also need to rescale the objects that are drawn at vertices.
+                            DrawObject vertexObject = null;
+                            if ( vertexObjectIter.hasNext() )
+                                vertexObject = vertexObjectIter.next();
+                            //  Rescale based on the type of point.
+                            if ( type == this.RELATIVE_POINT && lastVertex != null ) {
                                 thisVertex.vertex( lastVertex._x1 + data._x1, lastVertex._y1 + data._y1 );
-                            else
+                                if ( vertexObject != null )
+                                    vertexObject.translate( lastVertex._x1 + data._x1, lastVertex._y1 + data._y1 );
+                            }
+                            else {
                                 thisVertex.vertex( _saveXScale * data._x1, _saveYScale * data._y1 );
+                                if ( vertexObject != null )
+                                    vertexObject.translate( _saveXScale * data._x1, _saveYScale * data._y1 );
+                            }
                             lastVertex = thisVertex;
                         //}
                         //catch ( java.util.NoSuchElementException e ) {
@@ -185,6 +216,9 @@ public class Track2D extends DrawObject {
     protected DrawObject _data;
     protected DrawObject _fillPoints;
     protected DrawObject _stroke;
+    protected DrawObject _vertexObject;
+    protected DrawObject _drawAtVertices;
+    protected DrawObject _drawAtVerticesPointer;
     protected ArrayDeque<Integer> _types;
     protected double _saveXScale;
     protected double _saveYScale;

@@ -14,10 +14,12 @@ package mil.navy.usno.widgetlib;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Color;
+import java.awt.Cursor;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 
+import java.awt.event.MouseEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
 
@@ -33,6 +35,8 @@ public class IndexedPanel extends BrowserNode {
         _highlightColor = Color.WHITE;
         _darkTitleBar = true;
         this.resizeOnTopBar( true );
+        _resizeCursor = new Cursor( Cursor.N_RESIZE_CURSOR );
+        _normalCursor = this.getCursor();
     }
     
     /*
@@ -190,6 +194,44 @@ public class IndexedPanel extends BrowserNode {
         respondToResizeEvent();
     }
     
+    @Override
+    public void mousePressEvent( MouseEvent e ) {
+        if ( e.getButton() == MouseEvent.BUTTON1 ) {
+            _mousePressX = e.getX();
+            _mousePressY = e.getY();
+            if ( _openHeight - _mousePressY < 3 ) {
+                _startingOpenHeight = _openHeight;
+                _dragOpenHeight = true;
+            }
+            else
+                _dragOpenHeight = false;
+        }
+        else
+            _dragOpenHeight = false;
+    }
+    
+    @Override
+    public boolean mouseDragEvent( MouseEvent e ) {
+        if ( _dragOpenHeight ) {
+            openHeight( _startingOpenHeight + ( e.getY() - _mousePressY ) );
+            return true;
+        }
+        return false;
+    }
+    
+    @Override
+    public boolean mouseMoveEvent( MouseEvent e ) {
+        if ( _openHeight - e.getY() < 3 )
+            this.setCursor( _resizeCursor );
+        else
+            this.setCursor( _normalCursor );
+        return false;
+    }
+    
+    protected boolean _dragOpenHeight;
+    protected int _mousePressX;
+    protected int _mousePressY;
+    protected int _startingOpenHeight;
     protected int _openHeight;
     protected int _closedHeight;
     protected int _staticHeight;
@@ -198,5 +240,7 @@ public class IndexedPanel extends BrowserNode {
     protected boolean _noArrow;
     protected boolean _darkTitleBar;
     protected ArrayList<NodeBrowserScrollPane> _scrollPanes;
+    protected Cursor _normalCursor;
+    protected Cursor _resizeCursor;
     
 }

@@ -167,7 +167,7 @@ public class JobNode extends QueueBrowserNode {
         showActive( true );
         this.add( _active );
         _popup = new JPopupMenu();
-        _monitorMenuItem = new JMenuItem( "Control/Monitor for " + name() );
+        _monitorMenuItem = new JMenuItem( "Run Controls for " + name() );
         _monitorMenuItem.addActionListener(new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
                 if ( updateEditorMonitor( 1000 ) )
@@ -179,7 +179,7 @@ public class JobNode extends QueueBrowserNode {
         });
         _monitorMenuItem.setEnabled( false );
         _popup.add( _monitorMenuItem );
-        _liveMonitorMenuItem = new JMenuItem( "Real-time Fringe Monitor" );
+        _liveMonitorMenuItem = new JMenuItem( "Real-time Job Monitor" );
         _liveMonitorMenuItem.addActionListener(new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
                 if ( updateEditorMonitor( 1000) )

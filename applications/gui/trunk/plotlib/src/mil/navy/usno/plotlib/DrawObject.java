@@ -26,6 +26,7 @@ import java.util.Iterator;
 import java.awt.Graphics2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.geom.Line2D;
+import java.awt.geom.Ellipse2D;
 import java.awt.geom.GeneralPath;
 import java.awt.BasicStroke;
 import java.awt.Shape;
@@ -347,6 +348,12 @@ public class DrawObject extends ArrayDeque<DrawObject> {
                         currentPath.closePath();
                     break;
 
+                //  Force the start of a new path at the given point.
+                case STARTPATH:
+                    currentPath = new GeneralPath();
+                    currentPath.moveTo( _x1, _y1 );
+                    break;
+                    
                 //  Add a vertex to the current path.  If there is no current path,
                 //  start one.
                 case VERTEX:
@@ -375,7 +382,7 @@ public class DrawObject extends ArrayDeque<DrawObject> {
                 //  Add a curve to the current path.  This will only work if there
                 //  is a current path.
                 case CURVE:
-                    if ( currentPath != null && currentPath.getCurrentPoint() == null )
+                    if ( currentPath != null && currentPath.getCurrentPoint() != null )
                         currentPath.curveTo( _x1, _y1, _x2, _y2, _x3, _y3 );
                     break;
 
@@ -775,6 +782,17 @@ public class DrawObject extends ArrayDeque<DrawObject> {
     }
     
     //--------------------------------------------------------------------------
+    //!  This is starts a new compound path at the given point.
+    //--------------------------------------------------------------------------
+    public void startPath( double x, double y ) {
+        synchronized( this ) {
+            type = STARTPATH;
+            _x1 = x;
+            _y1 = y;
+        }
+    }
+    
+    //--------------------------------------------------------------------------
     //!  Draw a line through the current path.
     //--------------------------------------------------------------------------
     public void stroke() {
@@ -821,6 +839,39 @@ public class DrawObject extends ArrayDeque<DrawObject> {
             type = RELATIVE_VERTEX;
             _x1 = x;
             _y1 = y;
+        }
+    }
+    
+    //--------------------------------------------------------------------------
+    //!  Create a circle object (either filled or unfilled) of given radius at
+    //!  the given position.  This is a complex object composed of four Bezier
+    //!  curves.
+    //--------------------------------------------------------------------------
+    public void circle( double x, double y, double r, boolean filled ) {
+        double bezp = r * 0.55228475;
+        synchronized( this ) {
+            this.startPath( x, y + r );
+            DrawObject curve1 = new DrawObject();
+            curve1.curve( x + bezp, y + r, x + r, y + bezp, x + r, y );
+            this.add( curve1 );
+            DrawObject curve2 = new DrawObject();
+            curve2.curve( x + r, y - bezp, x + bezp, y - r, x, y - r );
+            this.add( curve2 );
+            DrawObject curve3 = new DrawObject();
+            curve3.curve( x - bezp, y - r, x - r, y - bezp, x - r, y );
+            this.add( curve3 );
+            DrawObject curve4 = new DrawObject();
+            curve4.curve( x - r, y + bezp, x - bezp, y + r, x, y + r );
+            this.add( curve4 );
+            DrawObject closePath = new DrawObject();
+            closePath.close();
+            this.add( closePath );
+            DrawObject endPath = new DrawObject();
+            if ( filled )
+                endPath.fill();
+            else
+                endPath.stroke();
+            this.add( endPath );
         }
     }
     
@@ -1127,6 +1178,7 @@ public class DrawObject extends ArrayDeque<DrawObject> {
     static final int COMPLEX_TEXT    = 14;
     static final int FLOATING_TEXT   = 15;
     static final int RELATIVE_VERTEX = 16;
+    static final int STARTPATH       = 17;
     
     //  These are the different line caps, joints, and styles.
     static final int CAP_FLAT   = 0;

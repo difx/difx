@@ -449,8 +449,14 @@ public class BrowserNode extends JPanel implements MouseListener, MouseMotionLis
         else {
             Container foo = this.getParent();
             foo.dispatchEvent( e );
+            mousePressEvent( e );
         }
     }
+    
+    /*
+     * Allow overriding functions to use this event.
+     */
+    public void mousePressEvent( MouseEvent e ) {}
     
     @Override
     public void mouseReleased( MouseEvent e ) {
@@ -460,14 +466,32 @@ public class BrowserNode extends JPanel implements MouseListener, MouseMotionLis
     
     @Override
     public void mouseMoved( MouseEvent e ) {
-        Container foo = this.getParent();
-        foo.dispatchEvent( e );
+        if ( !mouseMoveEvent( e ) ) {
+            Container foo = this.getParent();
+            foo.dispatchEvent( e );
+        }
+    }
+    
+    /*
+     * Allow overriding functions to use this event.
+     */
+    public boolean mouseMoveEvent( MouseEvent e ) {
+        return false;
     }
     
     @Override
     public void mouseDragged( MouseEvent e ) {
-        Container foo = this.getParent();
-        foo.dispatchEvent( e );
+        if ( !mouseDragEvent( e ) ) {
+            Container foo = this.getParent();
+            foo.dispatchEvent( e );
+        }
+    }
+    
+    /*
+     * Allow overriding functions to use this event.
+     */
+    public boolean mouseDragEvent( MouseEvent e ) {
+        return false;
     }
     
     public String name() {

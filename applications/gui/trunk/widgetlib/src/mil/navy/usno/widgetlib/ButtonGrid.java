@@ -119,6 +119,10 @@ public class ButtonGrid  extends JScrollPane {
         
     }
     
+    public void setVerticalScrollBar( boolean newVal ) {
+        this.verticalScrollBar.setVisible( newVal );
+    }
+    
     /*
      * Add a "listener" to callbacks when any changes to button states occur.
      */

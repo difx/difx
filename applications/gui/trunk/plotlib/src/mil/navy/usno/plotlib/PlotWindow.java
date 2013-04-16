@@ -82,29 +82,17 @@ public class PlotWindow extends DrawWindow {
     @Override
     public void setBounds( int x, int y, int w, int h ) {
         //  Recompute the bounds of each individual subplot, if necessary.
-        for ( Iterator<DrawObject> iter = _topLevel.iterator(); iter.hasNext(); ) {
-            Plot2DObject thisPlot = (Plot2DObject)( iter.next() );
-            thisPlot.resizeBasedOnWindow( w, h );
-        }
+        try {
+            for ( Iterator<DrawObject> iter = _topLevel.iterator(); iter.hasNext(); ) {
+                Plot2DObject thisPlot = (Plot2DObject)( iter.next() );
+                thisPlot.resizeBasedOnWindow( w, h );
+            }
+        } catch ( java.util.ConcurrentModificationException e ) {}
         if ( _plotEditors != null ) {
             for ( Iterator<PlotEditor> iter = _plotEditors.iterator(); iter.hasNext(); )
                 iter.next().dataChange();
         }
         super.setBounds( x, y, w, h );
-    }
-    
-    /*
-     * All drawing is done by the DrawWindow paintComponent function, called at
-     * the end of this function.  Here we adjust to any changes in the state of
-     * the panel, such as size.
-     */
-    @Override
-    public void paintComponent( Graphics g ) {
-        //  Color the background.
-        g.setColor( this.getBackground() );
-        Dimension d = getSize();
-        g.fillRect( 0, 0, d.width, d.height );
-        super.paintComponent( g );
     }
     
     /*

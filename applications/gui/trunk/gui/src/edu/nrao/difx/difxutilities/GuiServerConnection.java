@@ -55,6 +55,7 @@ public class GuiServerConnection {
     public final int DIFX_BASE                      = 11;
     public final int GUISERVER_ENVIRONMENT          = 12;
     public final int DIFX_SETUP_PATH                = 13;
+    public final int START_DIFX_MONITOR             = 14;
 
     
     public GuiServerConnection( SystemSettings settings, String IP, int port, int timeout ) {
@@ -103,6 +104,16 @@ public class GuiServerConnection {
             _connected = false;
             connectEvent( "connection closed" );
         }
+    }
+    
+    /*
+     * Send a string with the associated packet ID.  This converts the string to
+     * data.
+     */
+    public void sendPacketWithString( int packetId, String str ) {
+        byte [] data = str.getBytes();
+        sendPacket( packetId, data.length, data );
+        data = null;
     }
     
     /*

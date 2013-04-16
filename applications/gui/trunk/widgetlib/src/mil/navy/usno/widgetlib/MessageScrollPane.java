@@ -27,6 +27,7 @@ import java.awt.Toolkit;
 
 import java.util.ArrayDeque;
 import java.util.Iterator;
+import java.util.Calendar;
 
 import javax.swing.JScrollBar;
 
@@ -47,6 +48,7 @@ public class MessageScrollPane extends JPanel implements MouseMotionListener,
         this.add( _scrollBar );
         _scrollBar.addAdjustmentListener( this );
         _scrollBar.setUnitIncrement( 10 );
+        _maxMessages = new Integer( 1000 );
         
         //  Capture mouse motion and wheel events.  We don't really care about
         //  clicks.
@@ -96,7 +98,8 @@ public class MessageScrollPane extends JPanel implements MouseMotionListener,
             }
         }
         Dimension d = getSize();
-        height += d.height - ( d.height / messageHeight() ) * messageHeight();
+//        height += d.height - ( d.height / messageHeight() ) * messageHeight();
+        height += messageHeight();
         return height;
     }
     
@@ -151,10 +154,22 @@ public class MessageScrollPane extends JPanel implements MouseMotionListener,
         testScrollBar( d.height );
     }
     
+    public void maxMessages( int newVal ) {
+        _maxMessages = new Integer( newVal );
+    }
+    
+    public void maxMessagesOff() {
+        _maxMessages = null;
+    }
+    
     public void addMessage( MessageNode newNode ) {
         boolean atEnd = scrolledToEnd();
         synchronized( _messageList ) {
             _messageList.add( newNode );
+            if ( _maxMessages != null ) {
+                while ( _messageList.size() > _maxMessages )
+                    _messageList.remove();
+            }
         }
         Dimension d = getSize();
         int dataHeight = measureDataHeight();
@@ -162,8 +177,34 @@ public class MessageScrollPane extends JPanel implements MouseMotionListener,
         if ( atEnd )
             scrollToEnd();
         listChange();
+        //  Eliminate messages older than a given time, measured in milliseconds.
+        if ( _diffTime != null ) {
+            long refTime = Calendar.getInstance().getTimeInMillis() - _diffTime;
+            while ( _messageList.peek() != null && _messageList.peek().isOlderThan( refTime ) ) {
+                _messageList.remove();
+            }
+        }
+        if ( _maxMessages != null ) {
+            while ( _messageList.size() > _maxMessages )
+                _messageList.remove();
+        }
         //testScrollBar( d.height );
         //this.updateUI();
+    }
+    
+    /*
+     * Get rid of messages that are a set number of days, hours, minutes, and
+     * seconds old.
+     */
+    public void clearOlderThan( int days, int hours, int minutes, int seconds ) {
+        _diffTime = new Long( 1000 * ( seconds + 60 * ( minutes + 60 * ( hours + 24 * days ) ) ) );
+    }
+    
+    /*
+     * Turn off the above behavior.
+     */
+    public void clearOlderThanOff() {
+        _diffTime = null;
     }
     
     public void removeMessage( MessageNode newNode ) {
@@ -492,6 +533,8 @@ public class MessageScrollPane extends JPanel implements MouseMotionListener,
     protected boolean _scrolledToEnd;
     protected Font _messageFont;
     protected Color _highlightColor;
+    protected Integer _maxMessages;
+    protected Long _diffTime;
     
     protected ScrollThread _scrollThread;
     

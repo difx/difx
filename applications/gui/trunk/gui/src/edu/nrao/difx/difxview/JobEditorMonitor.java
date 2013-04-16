@@ -451,6 +451,23 @@ public class JobEditorMonitor extends JFrame {
             }
         } );
         runControlPanel.add( _showMonitorButton );
+        _runMonitor = new JCheckBox( "Run With Monitor" );
+        _runMonitor.setToolTipText( "Run the background monitoring software required for fringe monitoring." );
+        _runMonitor.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                if ( _runMonitor.isSelected() )
+                    _showMonitorButton.setEnabled( true );
+                else
+                    _showMonitorButton.setEnabled( false );
+                _settings.defaultNames().runMonitor = _runMonitor.isSelected();
+            }
+        } );
+        runControlPanel.add( _runMonitor );
+        _runMonitor.setSelected( _settings.defaultNames().runMonitor ); 
+        if ( _runMonitor.isSelected() )
+            _showMonitorButton.setEnabled( true );
+        else
+            _showMonitorButton.setEnabled( false );
         
         //  The Status Panel shows the current state of the job.
         _statusPanel = new IndexedPanel( "" );
@@ -568,6 +585,7 @@ public class JobEditorMonitor extends JFrame {
             _threadsFileName.setBounds( 10, 30, w - 350, 25 );
             _refreshThreadsButton.setBounds( w - 125, 30, 100, 25 );
             _uploadThreadsButton.setBounds( w - 230, 30, 100, 25 );
+            _runMonitor.setBounds( w - 150, 30, 125, 25 );
             _showMonitorButton.setBounds( w - 150, 60, 125, 25 );
             _messageDisplayPanel.setBounds( 2, 25, w - 23, 173 );
             _state.setBounds( 10, 30, 200, 25 );
@@ -1062,7 +1080,10 @@ public class JobEditorMonitor extends JFrame {
             jobStart.setPort( monitorPort );
         }
         
-        jobStart.setFunction( "USNO" );
+        if ( _runMonitor.isSelected() )
+            jobStart.setFunction( "RUN_MONITOR" );
+        else
+            jobStart.setFunction( "USNO" ); 
 
         // -- manager, enabled only
         DifxStart.Manager manager = command.factory().createDifxStartManager();
@@ -1166,6 +1187,10 @@ public class JobEditorMonitor extends JFrame {
         protected final int DATA_FILE_SIZE                   = 118;
         protected final int JOB_FAILED                       = 119;
         protected final int JOB_ENDED_WITH_ERRORS            = 120;
+        protected final int DIFX_MONITOR_CONNECTION_ACTIVE   = 121;
+        protected final int DIFX_MONITOR_CONNECTION_BROKEN   = 122;
+        protected final int DIFX_MONITOR_CONNECTION_FAILED   = 123;
+
                 
         @Override
         public void run() {
@@ -1302,6 +1327,24 @@ public class JobEditorMonitor extends JFrame {
                             statusInfo( "DiFX compete!" );
                             _messageDisplayPanel.warning( 0, "job monitor", "DiFX complete!" );
                             statusPanelColor( _statusPanelBackground.darker() );
+                        }
+                        else if ( packetType == DIFX_MONITOR_CONNECTION_ACTIVE ) {
+                            if ( _liveMonitorWindow == null )
+                                _liveMonitorWindow = new LiveMonitorWindow( MouseInfo.getPointerInfo().getLocation().x, 
+                                    MouseInfo.getPointerInfo().getLocation().y, _settings, _inputFileName.getText() );
+                            _liveMonitorWindow.connectionInfo( "CONNECTED", "connected" );
+                        }
+                        else if ( packetType == DIFX_MONITOR_CONNECTION_BROKEN ) {
+                            if ( _liveMonitorWindow == null )
+                                _liveMonitorWindow = new LiveMonitorWindow( MouseInfo.getPointerInfo().getLocation().x, 
+                                    MouseInfo.getPointerInfo().getLocation().y, _settings, _inputFileName.getText() );
+                            _liveMonitorWindow.connectionInfo( "NOT CONNECTED", "connection broken" );
+                        }
+                        else if ( packetType == DIFX_MONITOR_CONNECTION_FAILED ) {
+                            if ( _liveMonitorWindow == null )
+                                _liveMonitorWindow = new LiveMonitorWindow( MouseInfo.getPointerInfo().getLocation().x, 
+                                    MouseInfo.getPointerInfo().getLocation().y, _settings, _inputFileName.getText() );
+                            _liveMonitorWindow.connectionInfo( "NOT CONNECTED", "connection failed" );
                         }
                         else {
                             _messageDisplayPanel.warning( 0, "GUI", "Ignoring unrecongized job monitor packet type (" + packetType + ")." );
@@ -2362,6 +2405,7 @@ public class JobEditorMonitor extends JFrame {
     protected JLabel _busyPercentageLabel;
     protected JCheckBox _chooseBasedOnModule;
     protected JLabel _statusLabel;
+    protected JCheckBox _runMonitor;
     protected JButton _showMonitorButton;
     
     protected ArrayList<String> _dataObjects;

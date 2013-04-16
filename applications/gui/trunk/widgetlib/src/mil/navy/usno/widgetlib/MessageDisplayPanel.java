@@ -22,6 +22,8 @@ import javax.swing.JMenuBar;
 import javax.swing.Box;
 import javax.swing.JSeparator;
 import javax.swing.JOptionPane;
+import javax.swing.JCheckBox;
+import javax.swing.JLabel;
 
 /**
  *
@@ -182,18 +184,102 @@ public class MessageDisplayPanel extends JPanel {
             }
         });
         _clearMenu.add( _clearMessages );
+        _maxMessagesItem = new JPanel();
+        _maxMessagesItem.setLayout( new java.awt.GridLayout() );
+        _clearMenu.add( _maxMessagesItem );
+        _maxMessagesCheck = new JCheckBox( "Keep Last " );
+        _maxMessagesCheck.setToolTipText( "Keep only a set number of messages in the message buffer." );
+        _maxMessagesItem.add( _maxMessagesCheck );
+        _maxMessagesCheck.addActionListener( new java.awt.event.ActionListener() {
+            public void actionPerformed( java.awt.event.ActionEvent e ) {
+                if ( _maxMessagesCheck.isSelected() )
+                    _messageBrowser.maxMessages( _maxMessagesNum.intValue() );
+                else
+                    _messageBrowser.maxMessagesOff();
+            }
+        });
+        _maxMessagesNum = new NumberBox();
+        _maxMessagesNum.minimum( 0 );
+        _maxMessagesNum.addActionListener( new java.awt.event.ActionListener() {
+            public void actionPerformed( java.awt.event.ActionEvent e ) {
+                if ( _maxMessagesCheck.isSelected() )
+                    _messageBrowser.maxMessages( _maxMessagesNum.intValue() );
+            }
+        });
+        _maxMessagesItem.add( _maxMessagesNum );
+        _maxMessagesCheck.setSelected( true );
+        _maxMessagesNum.intValue( 1000 );
+        _messageBrowser.maxMessages( 1000 );
+        _oldMessagesItem = new JPanel();
+        _oldMessagesItem.setLayout( new java.awt.GridLayout() );
+        _clearMenu.add( _oldMessagesItem );
+        _oldMessagesCheck = new JCheckBox( "Expire (min) " );
+        _oldMessagesCheck.setToolTipText( "Throw away messages older than a set number of minutes." );
+        _oldMessagesItem.add( _oldMessagesCheck );
+        _oldMessagesCheck.addActionListener( new java.awt.event.ActionListener() {
+            public void actionPerformed( java.awt.event.ActionEvent e ) {
+                if ( _oldMessagesCheck.isSelected() )
+                    _messageBrowser.clearOlderThan( 0, 0, _oldMessagesMin.intValue(), 0 );
+                else
+                    _messageBrowser.clearOlderThanOff();
+            }
+        });
+        _oldMessagesHour = new NumberBox();
+        _oldMessagesHour.intValue( 0 );
+        _oldMessagesHour.addActionListener( new java.awt.event.ActionListener() {
+            public void actionPerformed( java.awt.event.ActionEvent e ) {
+                if ( _oldMessagesCheck.isSelected() )
+                    _messageBrowser.clearOlderThan( 0, _oldMessagesHour.intValue(),_oldMessagesMin.intValue(), 0 );
+            }
+        });
+        //_oldMessagesItem.add( _oldMessagesHour );
+        JLabel hourLabel = new JLabel( "hrs" );
+        hourLabel.setHorizontalAlignment( JLabel.LEFT );
+        //_oldMessagesItem.add( hourLabel );
+        _oldMessagesMin = new NumberBox();
+        _oldMessagesMin.addActionListener( new java.awt.event.ActionListener() {
+            public void actionPerformed( java.awt.event.ActionEvent e ) {
+                if ( _oldMessagesCheck.isSelected() )
+                    _messageBrowser.clearOlderThan( 0, 0, _oldMessagesMin.intValue(), 0 );
+            }
+        });
+        _oldMessagesItem.add( _oldMessagesMin );
+        JLabel minLabel = new JLabel( "min" );
+        minLabel.setHorizontalAlignment( JLabel.LEFT );
+        //_oldMessagesItem.add( minLabel );
+        _oldMessagesCheck.setSelected( false );
+        _oldMessagesHour.minimum( 0 );
+        _oldMessagesHour.intValue( 24 );
+        _oldMessagesMin.intValue( 0 );
+        _oldMessagesMin.minimum( 0 );
+        _messageBrowser.maxMessages( 1000 );
+    
         _messageBrowser.setBackground( Color.BLACK );
+
     }
     
     @Override
     public void setBounds( int x, int y, int w, int h ) {
-        _messageBrowser.setBounds( 0, 20, w, h - 20 );
-        _menuBar.setBounds( 0, 0, w, 20 );
+        if ( _hideMenuBar ) {
+            _messageBrowser.setBounds( 0, 0, w, h );
+        }
+        else {
+            _messageBrowser.setBounds( 0, 20, w, h - 20 );
+            _menuBar.setBounds( 0, 0, w, 20 );
+        }
         super.setBounds( x, y, w, h );
     }
     
     protected void clearAllAction() {
         _messageBrowser.clear();
+        this.updateUI();
+    }
+    
+    /*
+     * This can be used as soon as the display is formed to cause 
+     */
+    public void showSource( boolean newVal ) {
+        _showSource.setSelected( newVal );
     }
     
     /*
@@ -207,6 +293,7 @@ public class MessageDisplayPanel extends JPanel {
                 _messageBrowser.removeMessage( thisMessage );
         }
         _messageBrowser.listChange();
+        this.updateUI();
     }
     
     protected void clearMessagesAction( java.awt.event.ActionEvent e ) {
@@ -216,6 +303,7 @@ public class MessageDisplayPanel extends JPanel {
                 _messageBrowser.removeMessage( thisMessage );
         }
         _messageBrowser.listChange();
+        this.updateUI();
     }
     
     protected void showDateAction( java.awt.event.ActionEvent e ) {
@@ -587,6 +675,11 @@ public class MessageDisplayPanel extends JPanel {
         private MessageDisplayPanel output;
     }
     
+    public void hideMenuBar( boolean newVal ) { 
+        _hideMenuBar = newVal;
+        _menuBar.setVisible( !_hideMenuBar );
+    }
+    
     protected MessageScrollPane _messageBrowser;
     protected JButton _clearButton;
     protected JMenuBar _menuBar;
@@ -620,7 +713,15 @@ public class MessageDisplayPanel extends JPanel {
     protected JMenuItem _nextWarning;
     protected JMenuItem _previousChecked;
     protected JMenuItem _nextChecked;
+    protected JPanel _maxMessagesItem;
+    protected JCheckBox _maxMessagesCheck;
+    protected NumberBox _maxMessagesNum;
+    protected JPanel _oldMessagesItem;
+    protected JCheckBox _oldMessagesCheck;
+    protected NumberBox _oldMessagesHour;
+    protected NumberBox _oldMessagesMin;
     protected ArrayDeque<String> _filters;
     protected String _currentFilter;
+    protected boolean _hideMenuBar;
 
 }

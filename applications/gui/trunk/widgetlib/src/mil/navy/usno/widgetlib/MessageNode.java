@@ -70,6 +70,30 @@ public class MessageNode {
         _text = ( text + _message ).toCharArray();
     }
     
+    /*
+     * Return whether this message is older than the given reference time by an
+     * interval measured in days, hours, minutes, and seconds, all integers).
+     * The time associated with each message is in milliseconds.  The time used
+     * for "now" is passed as an argument (so it can be anything you want).
+     */
+    public boolean isOlderThan( long nowTime, int days, int hours, int minutes, int seconds ) {
+        long diffTime = 1000 * ( seconds + 60 * ( minutes + 60 * ( hours + 24 * days ) ) );
+        if ( _time + diffTime < nowTime )
+            return true;
+        else
+            return false;
+    }
+    
+    /*
+     * Return whether this message is older than a specific time (basically the above
+     * function but with all of the math done elsewhere).
+     */
+    public boolean isOlderThan( long refTime ) {
+        if ( _time < refTime ) 
+            return true;
+        else
+            return false;
+    }
     
     public int severity() {
         return _severity;
