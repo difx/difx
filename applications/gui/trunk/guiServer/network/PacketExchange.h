@@ -12,6 +12,7 @@
 //==============================================================================
 #include <arpa/inet.h>
 #include <string.h>
+#include <stdarg.h>
 #include <pthread.h>
 #include <network/GenericSocket.h>
 
@@ -66,6 +67,63 @@ namespace network {
             
             return ret;
 
+        }
+        
+        //----------------------------------------------------------------------------
+        //!  Send a "formatted" packet as a string using printf formatting commands.
+        //!  There is a (hopefully quite reasonable) limit to the length of these
+        //!  packets.
+        //----------------------------------------------------------------------------
+        void formatPacket( const int packetId, const char *fmt, ... ) {
+            static int MAX_PACKET_MESSAGE_LENGTH = 2048;
+            //  Produce a new packet message using the formatting commands.  The message will
+            //  be trimmed at the maximum message length.
+            char message[MAX_PACKET_MESSAGE_LENGTH];
+            va_list ap;
+            va_start( ap, fmt );
+            vsnprintf( message, MAX_PACKET_MESSAGE_LENGTH, fmt, ap );
+            va_end( ap );
+            sendPacket( packetId, message, strlen( message ) );
+        }
+        
+        //----------------------------------------------------------------------------
+        //!  Send integer data along with a packet type.  The integer is either a
+        //!  single number (by default) or an array.  Numbers are converted to network
+        //!  byte order for transmission.
+        //----------------------------------------------------------------------------
+        void intPacket( const int packetId, const int* data, int n = 1 ) {
+            int* swapped = new int[n];
+            for ( int i = 0; i < n; ++i )
+                swapped[i] = htonl( data[i] );
+            sendPacket( packetId, (char*)swapped, n * sizeof( int ) );
+            delete [] swapped;
+        }
+        
+        //----------------------------------------------------------------------------
+        //!  Send double data along with a packet type.  The double is either a
+        //!  single number (by default) or an array.  Numbers are converted to network
+        //!  byte order for transmission.
+        //----------------------------------------------------------------------------
+        void doublePacket( const int packetId, const double* data, int n = 1 ) {
+            double* swapped = new double[n];
+            for ( int i = 0; i < n; ++i )
+                swapped[i] = htond( data[i] );
+            sendPacket( packetId, (char*)swapped, n * sizeof( double ) );
+            delete [] swapped;
+        }
+        
+        //----------------------------------------------------------------------------
+        //!  Double precision byte swapper.
+        //----------------------------------------------------------------------------
+        double htond( double in ) {
+            if ( 123 == htonl( 123 ) )
+                return in;
+            double out;
+            int* ptrIn = (int*)&in;
+            int* ptrOut = (int*)&out;
+            ptrOut[0] = htonl( ptrIn[1] );
+            ptrOut[1] = htonl( ptrIn[0] );
+            return out;
         }
         
         //----------------------------------------------------------------------------
@@ -129,6 +187,9 @@ namespace network {
             return 1;
 
         }
+        
+        void writeLock() { _sock->writeLock(); }
+        void writeUnlock() { _sock->writeUnlock(); }
 
 
     protected:

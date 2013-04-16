@@ -69,18 +69,32 @@ namespace network {
         int getFd() { return _fd; }
         
         //----------------------------------------------------------------------------
-        //  Set the timeout for read and write operations.  If the timeout is set
-        //  to 0, there will be no timeout.
+        //  Set the timeout for read and write operations.  There are three functions
+        //  to do this...one specifying seconds and useconds, one only seconds, and
+        //  one empty - indicating no timeout.
+        //
+        //  The "_timeoutReset" is used by the read monitor to assure that a timeout
+        //  is actually applied to a read operation (this is done in the monitorThread)
+        //  before the monitorReader returns believing the timeout occurred.
         //----------------------------------------------------------------------------
-        void setTimeout( int seconds = 0, int useconds = 0 ) {
-            if ( !seconds && !useconds )
-                _timeout = NULL;
-            else {
-                _timeout = &timeoutStruct;
-                _timeout->tv_sec = seconds;
-                _timeout->tv_usec = useconds;
-            }
+        void setTimeout( int seconds, int useconds ) {
+            _timeout = &timeoutStruct;
+            _timeout->tv_sec = seconds;
+            _timeout->tv_usec = useconds;
+            _timeoutReset = true;
         }
+        void setTimeout( int seconds ) {
+            _timeout = &timeoutStruct;
+            _timeout->tv_sec = seconds;
+            _timeout->tv_usec = 0;
+            _timeoutReset = true;
+        }
+
+        void setTimeout() {
+            _timeout = NULL;
+            _timeoutReset = true;
+        }
+
 
         //----------------------------------------------------------------------------
         //  Read a specified number of bytes into the given buffer.  The buffer
@@ -98,10 +112,21 @@ namespace network {
             fd_set rfds;
             int soFar = 0;
             int ret;
+            struct timeval* localTimeout;
+            struct timeval localTimeoutStruct;
 
             //  Continue to read until we've got our nBytes (or we get an error).
             while ( soFar < nBytes ) {
 
+                //  Set the timeout to whatever has been specified.  We have to copy it because
+                //  linux select() mangles the timeout values.
+                if ( _timeout == NULL )
+                    localTimeout = NULL;
+                else {
+                    localTimeout = &localTimeoutStruct;
+                    localTimeout->tv_sec = _timeout->tv_sec;
+                    localTimeout->tv_usec = _timeout->tv_usec;
+                }
                 //  Select
                 FD_ZERO( &rfds );
                 FD_SET( _fd, &rfds );
@@ -144,13 +169,15 @@ namespace network {
         
         //----------------------------------------------------------------------------
         //  Read the specified number of bytes out of the buffer (which is filled by
-        //  the "monitored" thread).  The timeout applies to each attempt to read.
+        //  the "monitored" thread).  The timeout applies to each attempt to read - a
+        //  returned 0 indicates that we hit it.
         //----------------------------------------------------------------------------
         int monitorReader( char* buff, int nBytes ) {
             if ( !_connected )
                 return -1;
             int soFar = 0;
-            while ( soFar < nBytes && _connected ) {
+            _readerHitTimeout = false;
+            while ( soFar < nBytes && _connected && ( !_readerHitTimeout || _timeoutReset ) ) {
                 //  The number of bytes we wish to read...
                 int readN = nBytes - soFar;
                 //  Are we limited by the write pointer?
@@ -179,6 +206,8 @@ namespace network {
             }
             if ( !_connected )
                 return -1;
+            else if ( _readerHitTimeout )
+                return 0;
             else
                 return soFar;
         }
@@ -222,17 +251,37 @@ namespace network {
         //----------------------------------------------------------------------------
         void monitorThread() {
             fd_set rfds;
+            struct timeval* localTimeout;
+            struct timeval localTimeoutStruct;
+            long int timeoutTotal = 0;
             while ( _connected ) {
+                localTimeout = &localTimeoutStruct;
+                localTimeout->tv_sec = 0;
+                localTimeout->tv_usec = 10000;
                 //  Select
                 FD_ZERO( &rfds );
                 FD_SET( _fd, &rfds );
-                int ret = select( _fd + 1, &rfds, NULL, NULL, _timeout );
+                int ret = select( _fd + 1, &rfds, NULL, NULL, localTimeout );
                 if ( ret == -1 ) {  //  broken socket
                     _connected = false;
                     staticCallback( this );
                 }
                 else if ( ret == 0 ) {
-                    //  timeout...do nothing
+                    //  Reset count if a new timeout has just been set.
+                    if ( _timeoutReset ) {
+                        timeoutTotal = 0;
+                        _timeoutReset = false;
+                    }
+                    //  Timeout on the select.  Unless the user has specifically set a timeout,
+                    //  we do nothing here.
+                    if ( _timeout != NULL ) {
+                        timeoutTotal += 10000;
+                        if ( timeoutTotal >= _timeout->tv_sec * 1000000 + _timeout->tv_usec ) {
+                            _readerHitTimeout = true;
+                        }
+                    }
+                    else
+                        timeoutTotal = 0;
                 }
                 else {  
                     //  Grab the read lock...
@@ -241,6 +290,7 @@ namespace network {
                     //  be reading.  The maximum read is the READ_BLOCK_SIZE, however
                     //  we don't want to write beyond the end of our buffer, nor overtake
                     //  the read pointer.
+                    timeoutTotal = 0;
                     int readN = READ_BLOCK_SIZE;
                     //  See of the read pointer is limiting us....
                     if ( _readPtrWrap < _writePtrWrap ) {
@@ -313,6 +363,8 @@ namespace network {
         unsigned int _writePtrWrap;
         bool _monitored;
         pthread_mutex_t _writeMutex;
+        bool _readerHitTimeout;
+        bool _timeoutReset;
 
     };
 

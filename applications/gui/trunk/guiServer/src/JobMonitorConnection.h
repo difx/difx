@@ -42,6 +42,9 @@ namespace guiServer {
         static const int DATA_FILE_SIZE                     = 118;
         static const int JOB_FAILED                         = 119;
         static const int JOB_ENDED_WITH_ERRORS              = 120;
+        static const int DIFX_MONITOR_CONNECTION_ACTIVE     = 121;
+        static const int DIFX_MONITOR_CONNECTION_BROKEN     = 122;
+        static const int DIFX_MONITOR_CONNECTION_FAILED     = 123;
     
         JobMonitorConnection( network::GenericSocket* sock ) : network::PacketExchange( sock ) {
         }

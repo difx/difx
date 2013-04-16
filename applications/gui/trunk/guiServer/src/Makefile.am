@@ -14,6 +14,8 @@ guiServer_SOURCES = \
 	vex2difxRun.cpp \
 	machinesDefinition.cpp \
 	getDirectory.cpp \
+	runDifxMonitor.cpp \
+	DifxMonitorExchange.h \
 	ExecuteSystem.h \
 	MachinesMonitorConnection.h \
 	JobMonitorConnection.h

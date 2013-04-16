@@ -45,6 +45,7 @@ namespace guiServer {
         static const int DIFX_BASE                      = 11;
         static const int GUISERVER_ENVIRONMENT          = 12;
         static const int DIFX_SETUP_PATH                = 13;
+        static const int START_DIFX_MONITOR             = 14;
 
     public:
 
@@ -187,6 +188,9 @@ namespace guiServer {
                     break;
                 case DIFX_SETUP_PATH:
                     difxSetupPath( data, nBytes );
+                    break;
+                case START_DIFX_MONITOR:
+                    startDifxMonitor( data, nBytes );
                     break;
                 default:
                     break;
@@ -388,6 +392,20 @@ namespace guiServer {
         }
         
         //---------------------------------------------------------------------
+        //!  This is a request from the GUI to start a new DiFX job monitor
+        //!  thread.  It comes with a port number.
+        //---------------------------------------------------------------------
+        void startDifxMonitor( char* data, const int nBytes ) {
+            DifxMonitorInfo* monitorInfo = new DifxMonitorInfo;
+            monitorInfo->connectionPort = ntohl( *(int*)data );
+            monitorInfo->ssc = this;
+            pthread_attr_t threadAttr;
+            pthread_t threadId;
+            pthread_attr_init( &threadAttr );
+            pthread_create( &threadId, &threadAttr, staticRunDifxMonitor, (void*)(monitorInfo) );
+        }
+        
+        //---------------------------------------------------------------------
         //!  Types of messages - used as the "severity" in calls to the diagnostic()
         //!  function.
         //---------------------------------------------------------------------
@@ -415,7 +433,9 @@ namespace guiServer {
         
         //---------------------------------------------------------------------
         //!  Structure used to pass information to the thread that monitors
-        //!  a running DiFX job.
+        //!  the messages received from running DiFX job.  This has nothing to
+        //!  do with real-time monitoring of DiFX output!  That is done by the
+        //!  DifxMonitorInfo struct.  Apologies for the confusing names.
         //---------------------------------------------------------------------
         struct DifxStartInfo {
             ServerSideConnection* ssc;
@@ -429,6 +449,15 @@ namespace guiServer {
             char inputFile[DIFX_MESSAGE_FILENAME_LENGTH];
             char difxProgram[DIFX_MESSAGE_FILENAME_LENGTH];
             int runMonitor;
+        };
+        
+        //-----------------------------------------------------------------------------
+        //!  This is the structure used to pass information used to monitor the data
+        //!  products of a DiFX job in real time.
+        //-----------------------------------------------------------------------------
+        struct DifxMonitorInfo {
+            ServerSideConnection* ssc;
+            int connectionPort;
         };
 
         //-----------------------------------------------------------------------------
@@ -444,9 +473,9 @@ namespace guiServer {
         //!  Static function called to start the DiFX monitor thread.
         //-----------------------------------------------------------------------------	
         static void* staticRunDifxMonitor( void* a ) {
-            DifxStartInfo* startInfo = (DifxStartInfo*)a;
-            startInfo->ssc->runDifxMonitor( startInfo );
-            delete startInfo;
+            DifxMonitorInfo* monitorInfo = (DifxMonitorInfo*)a;
+            monitorInfo->ssc->runDifxMonitor( monitorInfo );
+            delete monitorInfo;
             return NULL;
         }
         
@@ -514,9 +543,9 @@ namespace guiServer {
         //!  unless otherwise noted.
         //---------------------------------------------------------------------
         void startDifx( DifxMessageGeneric* G );
-        void stopDifx( DifxMessageGeneric* G );
-        void runDifxMonitor( DifxStartInfo* startInfo );  //  in startDifx.cpp
         void runDifxThread( DifxStartInfo* startInfo );  //  in startDifx.cpp
+        void stopDifx( DifxMessageGeneric* G );
+        void runDifxMonitor( DifxMonitorInfo* monitorInfo );
         void difxFileTransfer( DifxMessageGeneric* G );
         void difxFileOperation( DifxMessageGeneric* G );
         void runFileOperation( DifxFileOperation* fileOperation );
@@ -526,6 +555,8 @@ namespace guiServer {
         void diagnostic( const int severity, const char *fmt, ... );
         int popenRWE( int *rwepipe, const char *exe, const char *const argv[] );
         int pcloseRWE( int pid, int *rwepipe );
+        
+        const char* difxSetupPath() { return _difxSetupPath; }
 
     protected:
     

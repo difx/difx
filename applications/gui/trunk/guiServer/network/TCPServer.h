@@ -36,6 +36,14 @@ namespace network {
                 return;
             }
 
+            int on = 1;
+        	if ( setsockopt( _listenFd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof( on ) ) < 0 ) {
+                perror( "TCPServer: trouble with setsockopt" );
+                close( _listenFd );
+                _listenFd = -1;
+                return;
+            }
+
             //  Initialize the server settings.
             bzero( &_serverAddr, sizeof( struct sockaddr ) );
             _serverAddr.sin_family = AF_INET;
