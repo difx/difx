@@ -147,7 +147,8 @@ const char DifxStartFunctionString[][24] =
 	"unknown",
 	"default",
 	"NRAO",
-	"USNO"
+	"USNO",
+	"RUN_MONITOR"
 };
 
 int isDifxMessageInUse()
