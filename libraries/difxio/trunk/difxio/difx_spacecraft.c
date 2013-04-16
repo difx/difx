@@ -63,7 +63,7 @@ DifxSpacecraft *dupDifxSpacecraftArray(const DifxSpacecraft *src, int n)
 
 	dest = newDifxSpacecraftArray(n);
 
-	for(s = 0; s < n; s++)
+	for(s = 0; s < n; ++s)
 	{
 		snprintf(dest[s].name, DIFXIO_NAME_LENGTH, "%s", src[s].name);
 		dest[s].nPoint = src[s].nPoint;
@@ -92,7 +92,7 @@ void deleteDifxSpacecraftArray(DifxSpacecraft *ds, int nSpacecraft)
 
 	if(ds)
 	{
-		for(s = 0; s < nSpacecraft; s++)
+		for(s = 0; s < nSpacecraft; ++s)
 		{
 			deleteDifxSpacecraftInternals(ds + s);
 		}
@@ -121,10 +121,6 @@ static int computeDifxSpacecraftEphemeris_bsp(DifxSpacecraft *ds, double mjd0, d
 #if HAVE_SPICE
 	int spiceHandle;
 	int p;
-	long double mjd, jd;
-	char jdstr[24];
-	double et;
-	double state[6], range;
 
 	ldpool_c(naifFile);
 	spklef_c(ephemFile, &spiceHandle);
@@ -132,13 +128,17 @@ static int computeDifxSpacecraftEphemeris_bsp(DifxSpacecraft *ds, double mjd0, d
 	p = snprintf(ds->name, DIFXIO_NAME_LENGTH, "%s", objectName);
 	if(p >= DIFXIO_NAME_LENGTH)
 	{
-		fprintf(stderr, "Warning: computeDifxSpacecraftEphemeris_bsp: spacecraft name %s is too long %d > %d\n",
-			objectName, p, DIFXIO_NAME_LENGTH-1);
+		fprintf(stderr, "Warning: computeDifxSpacecraftEphemeris_bsp: spacecraft name %s is too long %d > %d\n", objectName, p, DIFXIO_NAME_LENGTH-1);
 	}
 	ds->nPoint = nPoint;
 	ds->pos = (sixVector *)calloc(nPoint, sizeof(sixVector));
-	for(p = 0; p < nPoint; p++)
+	for(p = 0; p < nPoint; ++p)
 	{
+		double state[6], range;
+		long double mjd, jd;
+		char jdstr[24];
+		double et;
+		
 		mjd = mjd0 + p*deltat;
 		jd = mjd + 2400000.5 + ephemClockError/86400.0;
 		sprintf(jdstr, "JD %18.12Lf", jd);
@@ -186,25 +186,34 @@ static int computeDifxSpacecraftEphemeris_bsp(DifxSpacecraft *ds, double mjd0, d
 #endif
 }
 
-static int findBestSet(double e, double *epochs, int nEpoch)
+static int findBestSet(double e, double *epochs, int nEpoch, double *f)
 {
-	double best = 9e99;
-	double besti = 0;
 	int i;
 
-	for(i = 0; i < nEpoch; ++i)
+	if(e <= epochs[0])
 	{
-		double d;
+		*f = 1.0;
 
-		d = fabs(e - epochs[i]);
-		if(d < best)
+		return 0;
+	}
+	if(e >= epochs[nEpoch - 1])
+	{
+		*f = 1.0;
+
+		return nEpoch - 1;
+	}
+
+	for(i = 1; i < nEpoch; ++i)
+	{
+		if(epochs[i] >= e)
 		{
-			best = d;
-			besti = i;
+			*f = (epochs[i]-e)/(epochs[i]-epochs[i-1]);
+
+			return i - 1;
 		}
 	}
 
-	return besti;
+	return -1;
 }
 
 static int computeDifxSpacecraftEphemeris_tle(DifxSpacecraft *ds, double mjd0, double deltat, int nPoint, const char *objectName, const char *naifFile, const char *ephemFile, double ephemStellarAber, double ephemClockError)
@@ -217,7 +226,6 @@ static int computeDifxSpacecraftEphemeris_tle(DifxSpacecraft *ds, double mjd0, d
 	long double mjd, jd;
 	char jdstr[24];
 	double et;
-	double state[6];
 	double elems[MaxEphemElementSets][10];
 	double epochs[MaxEphemElementSets];
 	int nSet = 0;
@@ -297,24 +305,45 @@ static int computeDifxSpacecraftEphemeris_tle(DifxSpacecraft *ds, double mjd0, d
 	p = snprintf(ds->name, DIFXIO_NAME_LENGTH, "%s", objectName);
 	if(p >= DIFXIO_NAME_LENGTH)
 	{
-		fprintf(stderr, "Warning: computeDifxSpacecraftEphemeris_tle: spacecraft name %s is too long %d > %d\n",
-			objectName, p, DIFXIO_NAME_LENGTH-1);
+		fprintf(stderr, "Warning: computeDifxSpacecraftEphemeris_tle: spacecraft name %s is too long %d > %d\n", objectName, p, DIFXIO_NAME_LENGTH-1);
 	}
 	ds->nPoint = nPoint;
 	ds->pos = (sixVector *)calloc(nPoint, sizeof(sixVector));
 
-	for(p = 0; p < nPoint; p++)
+	for(p = 0; p < nPoint; ++p)
 	{
 		int set;
+		double state[6];
+		double f = -1.0;
 
 		mjd = mjd0 + p*deltat;
 		jd = mjd + 2400000.5 + ephemClockError/86400.0;
 		sprintf(jdstr, "JD %18.12Lf", jd);
 		str2et_c(jdstr, &et);
 
-		set = findBestSet(et, epochs, nSet);
+		set = findBestSet(et, epochs, nSet, &f);
+
+		if(f < 0.0)
+		{
+			fprintf(stderr, "Developer error: computeDifxSpacecraftEphemeris_tle: f < 0 (= %f)\n", f);
+
+			exit(EXIT_FAILURE);
+		}
 
 		ev2lin_(&et, geophysConsts, elems[set], state);
+		if(f < 1.0)
+		{
+			/* linear interpolation between two TLE values */
+
+			double state2[6];
+			int j;
+
+			ev2lin_(&et, geophysConsts, elems[set+1], state2);
+			for(j = 0; j < 6; ++j)
+			{
+				state[j] = f*state[j] + (1.0-f)*state2[j];
+			}
+		}
 
 		ds->pos[p].mjd = mjd;
 		ds->pos[p].fracDay = mjd - ds->pos[p].mjd;
@@ -367,8 +396,7 @@ static void copySpacecraft(DifxSpacecraft *dest, const DifxSpacecraft *src)
 	memcpy(dest->pos, src->pos, dest->nPoint*sizeof(sixVector));
 }
 
-static void mergeSpacecraft(DifxSpacecraft *dest, const DifxSpacecraft *src1,
-	const DifxSpacecraft *src2)
+static void mergeSpacecraft(DifxSpacecraft *dest, const DifxSpacecraft *src1, const DifxSpacecraft *src2)
 {
 	snprintf(dest->name, DIFXIO_NAME_LENGTH, "%s", src1->name);
 	
@@ -377,8 +405,7 @@ static void mergeSpacecraft(DifxSpacecraft *dest, const DifxSpacecraft *src1,
 }
 
 /* note: returns number of spacecraft on call stack */
-DifxSpacecraft *mergeDifxSpacecraft(const DifxSpacecraft *ds1, int nds1,
-	const DifxSpacecraft *ds2, int nds2, int *spacecraftIdRemap, int *nds)
+DifxSpacecraft *mergeDifxSpacecraft(const DifxSpacecraft *ds1, int nds1, const DifxSpacecraft *ds2, int nds2, int *spacecraftIdRemap, int *nds)
 {
 	DifxSpacecraft *ds;
 	int i, j;
@@ -400,7 +427,7 @@ DifxSpacecraft *mergeDifxSpacecraft(const DifxSpacecraft *ds1, int nds1,
 	if(nds1 <= 0)
 	{
 		*nds = nds2;
-		for(i = 0; i < nds2; i++)
+		for(i = 0; i < nds2; ++i)
 		{
 			spacecraftIdRemap[i] = i;
 		}
@@ -412,9 +439,9 @@ DifxSpacecraft *mergeDifxSpacecraft(const DifxSpacecraft *ds1, int nds1,
 	*nds = nds1;
 
 	/* first identify entries that differ and assign new spacecraftIds */
-	for(j = 0; j < nds2; j++)
+	for(j = 0; j < nds2; ++j)
 	{
-		for(i = 0; i < nds1; i++)
+		for(i = 0; i < nds1; ++i)
 		{
 			if(strcmp(ds1[i].name, ds2[j].name) == 0)
 			{
@@ -425,16 +452,16 @@ DifxSpacecraft *mergeDifxSpacecraft(const DifxSpacecraft *ds1, int nds1,
 		if(i == nds1)
 		{
 			spacecraftIdRemap[j] = *nds;
-			(*nds)++;
+			++(*nds);
 		}
 	}
 
 	ds = newDifxSpacecraftArray(*nds);
 
-	for(i = 0; i < nds1; i++)
+	for(i = 0; i < nds1; ++i)
 	{
 		/* see if the spacecraft is common to both input tables */
-		for(j = 0; j < nds2; j++)
+		for(j = 0; j < nds2; ++j)
 		{
 			if(spacecraftIdRemap[j] == i)
 			{
@@ -452,7 +479,7 @@ DifxSpacecraft *mergeDifxSpacecraft(const DifxSpacecraft *ds1, int nds1,
 	}
 
 	/* finally go through input table 2 and copy unique ones */
-	for(j = 0; j < nds2; j++)
+	for(j = 0; j < nds2; ++j)
 	{
 		i = spacecraftIdRemap[j];
 		if(i >= nds1) /* it is unique to second input */
@@ -470,8 +497,7 @@ static void evalPoly(long double poly[4], long double t, long double *V)
 	*V = poly[0] + t*(poly[1] + t*(poly[2] + t*poly[3]));
 }
 
-int evaluateDifxSpacecraft(const DifxSpacecraft *sc, int mjd, double fracMjd,
-	sixVector *interpolatedPosition)
+int evaluateDifxSpacecraft(const DifxSpacecraft *sc, int mjd, double fracMjd, sixVector *interpolatedPosition)
 {
 	int nRow;
 	const sixVector *pos;
@@ -488,7 +514,7 @@ int evaluateDifxSpacecraft(const DifxSpacecraft *sc, int mjd, double fracMjd,
 	/* first find interpolation points */
 	t0 = 0.0;
 	t1 = pos[0].mjd + pos[0].fracDay;
-	for(r = 1; r < nRow; r++)
+	for(r = 1; r < nRow; ++r)
 	{
 		t0 = t1;
 		t1 = pos[r].mjd + pos[r].fracDay;
@@ -570,11 +596,11 @@ int writeDifxSpacecraftArray(FILE *out, int nSpacecraft, DifxSpacecraft *ds)
 
 	writeDifxLineInt(out, "NUM SPACECRAFT", nSpacecraft);
 	n = 1;
-	for(i = 0; i < nSpacecraft; i++)
+	for(i = 0; i < nSpacecraft; ++i)
 	{
 		writeDifxLine1(out, "SPACECRAFT %d NAME", i, ds[i].name);
 		writeDifxLineInt1(out, "SPACECRAFT %d ROWS", i, ds[i].nPoint);
-		for(j = 0; j < ds[i].nPoint; j++)
+		for(j = 0; j < ds[i].nPoint; ++j)
 		{
 			V = ds[i].pos + j;
 			mjd = V->mjd + V->fracDay;
