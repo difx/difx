@@ -186,6 +186,7 @@ static int computeDifxSpacecraftEphemeris_bsp(DifxSpacecraft *ds, double mjd0, d
 #endif
 }
 
+#if HAVE_SPICE
 static int findBestSet(double e, SpiceDouble *epochs, int nEpoch, double *f)
 {
 	int i;
@@ -241,6 +242,7 @@ void evaluateTLE(doublereal et, doublereal *elems, doublereal *state)
 
 	ev2lin_(&et, geophysConsts, elems, state);
 }
+#endif
 
 static int computeDifxSpacecraftEphemeris_tle(DifxSpacecraft *ds, double mjd0, double deltat, int nPoint, const char *objectName, const char *naifFile, const char *ephemFile, double ephemStellarAber, double ephemClockError)
 {
