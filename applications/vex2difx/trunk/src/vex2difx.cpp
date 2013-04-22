@@ -46,17 +46,23 @@
 #include "../config.h"
 
 #if HAVE_GPSTK
+#include <IERSConventions.hpp>
+#include <IERS.hpp>
+#include <UTCTime.hpp>
 #include <FileFilterFrame.hpp>
 #include <BasicFramework.hpp>
 #include <StringUtils.hpp>
 #include <GPSEphemerisStore.hpp>
 #include <Epoch.hpp>
 #include <TimeString.hpp>
+#include <UTCTime.hpp>
 #include <GPSWeekSecond.hpp>
+#include <ReferenceFrames.hpp>
 #include <ASConstant.hpp>
 #include <SP3EphemerisStore.hpp>
 #include <PvtStore.hpp>
 #include <SatID.hpp>
+#include <EOPDataStore.hpp>
 using namespace gpstk;
 #endif
 
@@ -2619,11 +2625,11 @@ static int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int 
 					cout << "  ephemClockError = " << phaseCentre->ephemClockError << endl;
 				}
 				v = computeDifxSpacecraftEphemeris(ds, mjd0, deltat, nPoint, 
-				phaseCentre->ephemObject.c_str(),
-				phaseCentre->naifFile.c_str(),
-				phaseCentre->ephemFile.c_str(), 
-				phaseCentre->ephemStellarAber,
-				phaseCentre->ephemClockError);
+					phaseCentre->ephemObject.c_str(),
+					phaseCentre->naifFile.c_str(),
+					phaseCentre->ephemFile.c_str(), 
+					phaseCentre->ephemStellarAber,
+					phaseCentre->ephemClockError);
 				if(v != 0)
 				{
 					cerr << "Error: ephemeris calculation failed.  Must stop." << endl;
@@ -2634,19 +2640,36 @@ static int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int 
 			else if(phaseCentre->gpsId > 0)
 			{
 #if HAVE_GPSTK
+				EOPDataStore eopDataTable;
+				Matrix<double> S(3,3,0.0);
 				int mjd = static_cast<int>(D->mjdStart);
 				// start time in seconds rounded down to nearest 2 minute boundary
 				int sec = static_cast<int>((D->mjdStart - mjd)*720.0)*120;
-				long int gps_utc = D->eop[2].tai_utc - 19;
+				long int gps_utc = D->eop[2].tai_utc - TAImGPST();
 				long int deltaT = 24;	// seconds
 
 				int nPoint;
 				SatID sat(phaseCentre->gpsId, SatID::systemGPS);
 				Xvt xvt;
 
-				CommonTime T;
-				T.set(mjd + 2400001, sec, 0.0, TimeSystem(TimeSystem::GPS));
-				T.addSeconds(gps_utc);
+				S(0,1) = 1.0;
+				S(1,0) = -1.0;
+
+				for(int e = 0; e < D->nEOP; ++e)
+				{
+					CommonTime T_UTC;
+					T_UTC.set(D->eop[e].mjd + 2400001, 0, 0.0, TimeSystem(TimeSystem::UTC));
+
+					/* Note that gpstk wants ut1-utc in arcsec, not seconds, hence the 15. */
+					eopDataTable.addEOPData(T_UTC, EOPDataStore::EOPData(D->eop[e].xPole, D->eop[e].yPole, D->eop[e].ut1_utc*15.0));
+				}
+
+				CommonTime T_UTC;
+				T_UTC.set(mjd + 2400001, sec, 0.0, TimeSystem(TimeSystem::UTC));
+
+				CommonTime T_GPS;
+				T_GPS.set(mjd + 2400001, sec, 0.0, TimeSystem(TimeSystem::GPS));
+				T_GPS.addSeconds(gps_utc);
 
 				nPoint = (D->mjdStop - D->mjdStart) * (86400/deltaT) + 15;
 
@@ -2656,10 +2679,11 @@ static int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int 
 				for(int p = 0; p < nPoint; ++p)
 				{
 					double M = mjd + (sec + p*deltaT)/86400.0;
+					double dera;
 					
 					try
 					{
-						xvt = store.getXvt(sat, T);
+						xvt = store.getXvt(sat, T_GPS);
 						if(1)	// do light travel time correction
 						{
 							double x, y, z, r;
@@ -2667,7 +2691,7 @@ static int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int 
 							y = xvt.x.theArray[1];
 							z = xvt.x.theArray[2];
 							r = sqrt(x*x+y*y+z*z);
-							xvt = store.getXvt(sat, T - r/ASConstant::SPEED_OF_LIGHT);
+							xvt = store.getXvt(sat, T_GPS - r/ASConstant::SPEED_OF_LIGHT);
 						}
 					}
 					catch(gpstk::Exception& e)
@@ -2676,17 +2700,43 @@ static int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int 
 
 						exit(EXIT_FAILURE);
 					}
+
 					
+					Vector<double> x_ECEF(3);
+					Vector<double> v_ECEF(3);
+					x_ECEF[0] = xvt.x.theArray[0];
+					x_ECEF[1] = xvt.x.theArray[1];
+					x_ECEF[2] = xvt.x.theArray[2];
+					v_ECEF[0] = xvt.v.theArray[0];
+					v_ECEF[1] = xvt.v.theArray[1];
+					v_ECEF[2] = xvt.v.theArray[2];
+					
+					EOPDataStore::EOPData ERP = eopDataTable.getEOPData(T_UTC);
+					Matrix<double> POM, Theta, NP;
+					J2kToECEFMatrix(T_UTC, ERP, POM, Theta, NP);
+					
+					double TT = (M-51544.0 + (TTmTAI() + D->eop[2].tai_utc)/86400.0)/36525.0;
+					dera = (1.002737909350795 + 5.9006e-11 * TT - 5.9e-15 * TT * TT ) * 2.0*M_PI/ 86400.0;
+
+					// Derivative of Earth rotation 
+					Matrix<double> dTheta = dera * S * Theta;
+					Matrix<double> c2t = POM * Theta * NP;
+					Matrix<double> dc2t = POM * dTheta * NP;
+
+					Vector<double> x_J2000 = transpose(c2t)*x_ECEF;
+					Vector<double> v_J2000 = transpose(c2t)*v_ECEF + transpose(dc2t)*x_ECEF;
+
 					ds->pos[p].mjd = static_cast<int>(M);
 					ds->pos[p].fracDay = M - ds->pos[p].mjd;
-					ds->pos[p].X = xvt.x.theArray[0];
-					ds->pos[p].Y = xvt.x.theArray[1];
-					ds->pos[p].Z = xvt.x.theArray[2];
-					ds->pos[p].dX = xvt.v.theArray[0];
-					ds->pos[p].dY = xvt.v.theArray[1];
-					ds->pos[p].dZ = xvt.v.theArray[2];
+					ds->pos[p].X  = x_J2000[0];
+					ds->pos[p].Y  = x_J2000[1];
+					ds->pos[p].Z  = x_J2000[2];
+					ds->pos[p].dX = v_J2000[0];
+					ds->pos[p].dY = v_J2000[1];
+					ds->pos[p].dZ = v_J2000[2];
 
-					T.addSeconds(deltaT);
+					T_GPS.addSeconds(deltaT);
+					T_UTC.addSeconds(deltaT);
 				}
 
 #else
