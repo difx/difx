@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2011-2012 by Adam Deller & Walter Brisken               *
+ *   Copyright (C) 2011-2013 by Adam Deller & Walter Brisken               *
  *                                                                         *
  *   This program is free for non-commercial use: see the license file     *
  *   at http://astronomy.swin.edu.au/~adeller/software/difx/ for more      *
@@ -21,11 +21,19 @@
 //============================================================================
 #include <cstdio>
 #include <cstring>
+#ifdef HAVE_OPENMP
 #include <omp.h>
+#endif
 #include "datamuxer.h"
 #include "vdifio.h"
 #include "alert.h"
 #include "config.h"
+
+#ifdef _OPENMP                                                                             
+#define PRAGMA_OMP(args) __pragma(omp args)                                              
+#else                                                                                      
+#define PRAGMA_OMP(args) /**/                                                            
+#endif                      
 
 DataMuxer::DataMuxer(const Configuration * conf, int dsindex, int id, int nthreads, int sbytes)
   : config(conf), datastreamindex(dsindex), mpiid(id), numthreads(nthreads), segmentbytes(sbytes)
@@ -293,13 +301,16 @@ void VDIFMuxer::cornerturn_2thread_2bit(u8 * outputbuffer, int processindex, int
   const u8 *t1 = threadbuffers[1] + processindex*inputframebytes + VDIF_HEADER_BYTES;
   unsigned int *outputwordptr = (unsigned int *)&(outputbuffer[outputframecount*outputframebytes + VDIF_HEADER_BYTES]);
 
-  unsigned int x, chunk = 125;
+  unsigned int x;
+#ifdef HAVE_OPENMP
+  unsigned int chunk = 125;
+#endif
   int i, n;
   n = wordsperoutputframe;
 
-#pragma omp parallel private(i,x) shared(chunk,outputwordptr,t0,t1,n)
+PRAGMA_OMP(parallel private(i,x) shared(chunk,outputwordptr,t0,t1,n))
   {
-#pragma omp for schedule(dynamic,chunk) nowait
+PRAGMA_OMP(for schedule(dynamic,chunk) nowait)
     for(i = 0; i < n; ++i)
     {
       // assemble
@@ -351,13 +362,16 @@ void VDIFMuxer::cornerturn_4thread_2bit(u8 * outputbuffer, int processindex, int
   const u8 *t3 = threadbuffers[3] + processindex*inputframebytes + VDIF_HEADER_BYTES;
   unsigned int *outputwordptr = (unsigned int *)&(outputbuffer[outputframecount*outputframebytes + VDIF_HEADER_BYTES]);
 
-  unsigned int x, chunk = 125;
+  unsigned int x;
+#ifdef HAVE_OPENMP
+  unsigned int chunk = 125;
+#endif
   int i, n;
   n = wordsperoutputframe;
 
-#pragma omp parallel private(i,x) shared(chunk,outputwordptr,t0,t1,t2,t3,n)
+PRAGMA_OMP(parallel private(i,x) shared(chunk,outputwordptr,t0,t1,t2,t3,n))
   {
-#pragma omp for schedule(dynamic,chunk) nowait
+PRAGMA_OMP(for schedule(dynamic,chunk) nowait)
     for(i = 0; i < n; ++i)
     {
       // assemble
@@ -404,15 +418,18 @@ void VDIFMuxer::cornerturn_8thread_2bit(u8 * outputbuffer, int processindex, int
   const u8 *t6 = threadbuffers[6] + processindex*inputframebytes + VDIF_HEADER_BYTES;
   const u8 *t7 = threadbuffers[7] + processindex*inputframebytes + VDIF_HEADER_BYTES;
   unsigned int *outputwordptr = (unsigned int *)&(outputbuffer[outputframecount*outputframebytes + VDIF_HEADER_BYTES]);
-  unsigned int x1, x2, chunk=125;
+  unsigned int x1, x2;
+#ifdef HAVE_OPENMP
+  unsigned int chunk = 125;
+#endif
   int i, n;
   n = wordsperoutputframe/2;
   union { unsigned int y1; u8 b1[4]; };
   union { unsigned int y2; u8 b2[4]; };
 
-#pragma omp parallel private(i,x1,x2,y1,y2,b1,b2) shared(chunk,outputwordptr,t0,t1,t2,t3,t4,t5,t6,t7,n)
+PRAGMA_OMP(parallel private(i,x1,x2,y1,y2,b1,b2) shared(chunk,outputwordptr,t0,t1,t2,t3,t4,t5,t6,t7,n))
   {
-#pragma omp for schedule(dynamic,chunk) nowait
+PRAGMA_OMP(for schedule(dynamic,chunk) nowait)
     for(i = 0; i < n; ++i)
     {
       // assemble 32-bit chunks
@@ -473,7 +490,10 @@ void VDIFMuxer::cornerturn_16thread_2bit(u8 * outputbuffer, int processindex, in
   const u8 *t14 = threadbuffers[14] + processindex*inputframebytes + VDIF_HEADER_BYTES;
   const u8 *t15 = threadbuffers[15] + processindex*inputframebytes + VDIF_HEADER_BYTES;
   unsigned int *outputwordptr = (unsigned int *)&(outputbuffer[outputframecount*outputframebytes + VDIF_HEADER_BYTES]);
-  unsigned int x1, x2, x3, x4, chunk=125;
+  unsigned int x1, x2, x3, x4;
+#ifdef HAVE_OPENMP
+  unsigned int chunk = 125;
+#endif
   int i, n;
   n = wordsperoutputframe/4;
   union { unsigned int y1; u8 b1[4]; };
@@ -481,9 +501,9 @@ void VDIFMuxer::cornerturn_16thread_2bit(u8 * outputbuffer, int processindex, in
   union { unsigned int y3; u8 b3[4]; };
   union { unsigned int y4; u8 b4[4]; };
 
-#pragma omp parallel private(i,x1,x2,x3,x4,y1,y2,y3,y4,b1,b2,b3,b4) shared(chunk,outputwordptr,t0,t1,t2,t3,t4,t5,t6,t7,t8,t9,t10,t11,t12,t13,t14,t15,n)
+PRAGMA_OMP(parallel private(i,x1,x2,x3,x4,y1,y2,y3,y4,b1,b2,b3,b4) shared(chunk,outputwordptr,t0,t1,t2,t3,t4,t5,t6,t7,t8,t9,t10,t11,t12,t13,t14,t15,n))
   {
-#pragma omp for schedule(dynamic,chunk) nowait
+PRAGMA_OMP(for schedule(dynamic,chunk) nowait)
     for(i = 0; i < n; ++i)
     {
       // assemble 32-bit chunks
@@ -517,13 +537,15 @@ void VDIFMuxer::cornerturn_2thread_merge(u8 * outputbuffer, int processindex, in
   const u8 *t1 = threadbuffers[1] + processindex*inputframebytes + VDIF_HEADER_BYTES;
   u8 *outputbyteptr = (u8 *)&(outputbuffer[outputframecount*outputframebytes + VDIF_HEADER_BYTES]);
 
+#ifdef HAVE_OPENMP
   unsigned int chunk = 250;
+#endif
   int i, n;
   n = wordsperoutputframe*2;
 
-#pragma omp parallel private(i) shared(chunk,outputbyteptr,t0,t1,n)
+PRAGMA_OMP(parallel private(i) shared(chunk,outputbyteptr,t0,t1,n))
   {
-#pragma omp for schedule(dynamic,chunk) nowait
+PRAGMA_OMP(for schedule(dynamic,chunk) nowait)
     for(i = 0; i < n; ++i)
     {
       outputbyteptr[2*i]   = t0[i];
@@ -540,13 +562,15 @@ void VDIFMuxer::cornerturn_4thread_merge(u8 * outputbuffer, int processindex, in
   const u8 *t3 = threadbuffers[3] + processindex*inputframebytes + VDIF_HEADER_BYTES;
   u8 *outputbyteptr = (u8 *)&(outputbuffer[outputframecount*outputframebytes + VDIF_HEADER_BYTES]);
 
+#ifdef HAVE_OPENMP
   unsigned int chunk = 250;
+#endif
   int i, n;
   n = wordsperoutputframe;
 
-#pragma omp parallel private(i) shared(chunk,outputbyteptr,t0,t1,t2,t3,n)
+PRAGMA_OMP(parallel private(i) shared(chunk,outputbyteptr,t0,t1,t2,t3,n))
   {
-#pragma omp for schedule(dynamic,chunk) nowait
+PRAGMA_OMP(for schedule(dynamic,chunk) nowait)
     for(i = 0; i < n; ++i)
     {
       outputbyteptr[4*i]   = t0[i];
@@ -569,13 +593,15 @@ void VDIFMuxer::cornerturn_8thread_merge(u8 * outputbuffer, int processindex, in
   const u8 *t7 = threadbuffers[7] + processindex*inputframebytes + VDIF_HEADER_BYTES;
   u8 *outputbyteptr = (u8 *)&(outputbuffer[outputframecount*outputframebytes + VDIF_HEADER_BYTES]);
 
+#ifdef HAVE_OPENMP
   unsigned int chunk = 250;
+#endif
   int i, n;
   n = wordsperoutputframe/2;
 
-#pragma omp parallel private(i) shared(chunk,outputbyteptr,t0,t1,t2,t3,t4,t5,t6,t7,n)
+PRAGMA_OMP(parallel private(i) shared(chunk,outputbyteptr,t0,t1,t2,t3,t4,t5,t6,t7,n))
   {
-#pragma omp for schedule(dynamic,chunk) nowait
+PRAGMA_OMP(for schedule(dynamic,chunk) nowait)
     for(i = 0; i < n; ++i)
     {
       outputbyteptr[8*i]   = t0[i];
@@ -610,13 +636,15 @@ void VDIFMuxer::cornerturn_16thread_merge(u8 * outputbuffer, int processindex, i
   const u8 *t15 = threadbuffers[15] + processindex*inputframebytes + VDIF_HEADER_BYTES;
   u8 *outputbyteptr = (u8 *)&(outputbuffer[outputframecount*outputframebytes + VDIF_HEADER_BYTES]);
 
+#ifdef HAVE_OPENMP
   unsigned int chunk = 250;
+#endif
   int i, n;
   n = wordsperoutputframe/4;
 
-#pragma omp parallel private(i) shared(chunk,outputbyteptr,t0,t1,t2,t3,t4,t5,t6,t7,n)
+PRAGMA_OMP(parallel private(i) shared(chunk,outputbyteptr,t0,t1,t2,t3,t4,t5,t6,t7,n))
   {
-#pragma omp for schedule(dynamic,chunk) nowait
+PRAGMA_OMP(for schedule(dynamic,chunk) nowait)
     for(i = 0; i < n; ++i)
     {
       outputbyteptr[16*i]   = t0[i];
