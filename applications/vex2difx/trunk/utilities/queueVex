@@ -11,8 +11,8 @@ from time import time
 import datetime
 
 program = 'queueVex'
-version = 1.13
-verdate = '20121114'
+version = 1.14
+verdate = '20130424'
 author  = 'Walter Brisken'
 
 verbose = 1
@@ -159,6 +159,7 @@ def sortmetric(x):
         y = split(x)
 	return vlba2mjd(y[1], y[2])
 
+# modify observ.tx contents
 def addObservation(orig, expt, startMJD, stopMJD, station, overlaps):
 	startDate = mjd2datetime(startMJD)
 	stopDate = mjd2datetime(stopMJD)
@@ -190,10 +191,10 @@ def addObservation(orig, expt, startMJD, stopMJD, station, overlaps):
 			overlapLength = min(stopMJD0, stopMJD) - max(startMJD0, startMJD)
 
 			overlaps.append('%s overlaps with %s by %4.2f hours at station %s' % (expt, expt0, (overlapLength*24), station))
-			if startMJD0 < startMJD:	# original project starts first
+			if startMJD0 < startMJD - epsilon:	# original project starts first
 				newobs = '%s %s %s > %s\n' % (expt0, mjd2datetime(startMJD0), mjd2datetime(startMJD - epsilon), station0)
 				observations.append(newobs)
-			if stopMJD0 > stopMJD:		# original projects ends last
+			if stopMJD0 > stopMJD + epsilon:		# original projects ends last
 				newobs = '%s %s %s > %s\n' % (expt0, mjd2datetime(stopMJD + epsilon), mjd2datetime(stopMJD0), station0)
 				observations.append(newobs)
 		else:	# no overlap, so this is easy!
