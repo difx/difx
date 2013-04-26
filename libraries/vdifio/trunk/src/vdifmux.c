@@ -42,6 +42,17 @@
 #include <vdifio.h>
 #include "config.h"
 
+#ifdef HAVE_OPENMP
+#include <omp.h>
+#endif
+
+#ifdef _OPENMP                                                                             
+#define PRAGMA_OMP(args) __pragma(omp args)                                              
+#else
+#define PRAGMA_OMP(args) /**/                                                            
+#endif
+
+
 #ifdef WORDS_BIGENDIAN
 #define FILL_PATTERN 0x44332211UL
 #else
@@ -119,13 +130,13 @@ static void cornerturn_2thread_2bit(unsigned char *outputBuffer, const unsigned 
   const unsigned char *t1 = threadBuffers[1];
   unsigned int *outputwordptr = (unsigned int *)outputBuffer;
 
-  unsigned int x, chunk = 125;
+  unsigned int x;
   int i, n;
   n = outputDataSize/4;
 
-#pragma omp parallel private(i,x) shared(chunk,outputwordptr,t0,t1,n)
+PRAGMA_OMP(parallel private(i,x) shared(outputwordptr,t0,t1,n))
   {
-#pragma omp for schedule(dynamic,chunk) nowait
+PRAGMA_OMP(for schedule(dynamic,125) nowait)
     for(i = 0; i < n; ++i)
     {
       // assemble
@@ -177,13 +188,13 @@ static void cornerturn_4thread_2bit(unsigned char *outputBuffer, const unsigned 
   const unsigned char *t3 = threadBuffers[3];
   unsigned int *outputwordptr = (unsigned int *)outputBuffer;
 
-  unsigned int x, chunk = 125;
+  unsigned int x;
   int i, n;
   n = outputDataSize/4;
 
-#pragma omp parallel private(i,x) shared(chunk,outputwordptr,t0,t1,t2,t3,n)
+PRAGMA_OMP(parallel private(i,x) shared(outputwordptr,t0,t1,t2,t3,n))
   {
-#pragma omp for schedule(dynamic,chunk) nowait
+PRAGMA_OMP(for schedule(dynamic,125) nowait)
     for(i = 0; i < n; ++i)
     {
       // assemble
@@ -230,14 +241,14 @@ static void cornerturn_8thread_2bit(unsigned char *outputBuffer, const unsigned 
   const unsigned char *t6 = threadBuffers[6];
   const unsigned char *t7 = threadBuffers[7];
   unsigned int *outputwordptr = (unsigned int *)outputBuffer;
-  unsigned int x1, x2, chunk=125;
+  unsigned int x1, x2;
   int i, n;
   n = outputDataSize/8;
   union { unsigned int y; unsigned char b[4]; } u1, u2;
 
-#pragma omp parallel private(i,x1,x2,u1,u2) shared(chunk,outputwordptr,t0,t1,t2,t3,t4,t5,t6,t7,n)
+PRAGMA_OMP(parallel private(i,x1,x2,u1,u2) shared(outputwordptr,t0,t1,t2,t3,t4,t5,t6,t7,n))
   {
-#pragma omp for schedule(dynamic,chunk) nowait
+PRAGMA_OMP(for schedule(dynamic,125) nowait)
     for(i = 0; i < n; ++i)
     {
       // assemble 32-bit chunks
@@ -298,14 +309,14 @@ static void cornerturn_16thread_2bit(unsigned char *outputBuffer, const unsigned
   const unsigned char *t14 = threadBuffers[14];
   const unsigned char *t15 = threadBuffers[15];
   unsigned int *outputwordptr = (unsigned int *)outputBuffer;
-  unsigned int x1, x2, x3, x4, chunk=125;
+  unsigned int x1, x2, x3, x4;
   int i, n;
   n = outputDataSize/16;
   union { unsigned int y; unsigned char b[4]; } u1, u2, u3, u4;
 
-#pragma omp parallel private(i,x1,x2,x3,x4,u1,u2,u3,u4) shared(chunk,outputwordptr,t0,t1,t2,t3,t4,t5,t6,t7,t8,t9,t10,t11,t12,t13,t14,t15,n)
+PRAGMA_OMP(parallel private(i,x1,x2,x3,x4,u1,u2,u3,u4) shared(outputwordptr,t0,t1,t2,t3,t4,t5,t6,t7,t8,t9,t10,t11,t12,t13,t14,t15,n))
   {
-#pragma omp for schedule(dynamic,chunk) nowait
+PRAGMA_OMP(for schedule(dynamic,125) nowait)
     for(i = 0; i < n; ++i)
     {
       // assemble 32-bit chunks

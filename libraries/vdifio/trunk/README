@@ -1,10 +1,13 @@
 svn co []
-aclocal
+
+aclocal -I m4
 libtoolize --copy --force
 autoconf
 autoheader
 automake -a
+
 ./configure --prefix=${DIFXROOT}
+
 make
 # (su root?)
 make install
