@@ -16,7 +16,8 @@ bin_PROGRAMS = \
 	printVDIF \
 	peekVDIF \
 	searchVDIF \
-	vmux
+	vmux \
+	vsum
 
 dist_bin_SCRIPTS = \
 	vdifbstate \
@@ -62,3 +63,6 @@ searchVDIF_SOURCES = \
 
 vmux_SOURCES = \
 	vmux.c
+
+vsum_SOURCES = \
+	vsum.c

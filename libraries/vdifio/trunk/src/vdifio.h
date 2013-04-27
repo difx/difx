@@ -40,9 +40,15 @@ extern "C" {
 #define VDIF_HEADER_BYTES		32
 #define VDIF_LEGACY_HEADER_BYTES	16
 #define MAX_VDIF_FRAME_BYTES		9032
+#define VDIF_MAX_THREAD_ID		1023
+
+#define VDIF_SUMMARY_MAX_THREADS	64
+#define VDIF_SUMMARY_FILE_LENGTH	256
 
 #define VDIF_NOERROR 0
 #define VDIF_ERROR 1
+
+/* *** implemented in vdifio.c *** */
 
 typedef struct vdif_header {
    uint32_t seconds : 30;
@@ -101,6 +107,15 @@ void setVDIFEpoch(vdif_header *header, int mjd);
 int nextVDIFHeader(vdif_header *header, int framepersec);
 
 
+/* *** implemented in vdifbuffer.c *** */
+
+int determinevdifframesize(const unsigned char *buffer, int bufferSize);
+
+int determinevdifframeoffset(const unsigned char *buffer, int bufferSize, int frameSize);
+
+
+/* *** implemented in vdifmux.c *** */
+
 struct vdif_mux_statistics {
   /* The first 8 accumulate over multiple calls to vdifmux */
   long long nValidFrame;		/* number of valid VDIF input frames encountered */
@@ -136,6 +151,31 @@ int vdifmux(unsigned char *dest, int nFrame, const unsigned char *src, int lengt
 void printvdifmuxstatistics(const struct vdif_mux_statistics *stats);
 
 void resetvdifmuxstatistics(struct vdif_mux_statistics *stats);
+
+
+/* *** implemented in vdiffile.c *** */
+
+struct vdif_file_summary {
+  char fileName[VDIF_SUMMARY_FILE_LENGTH];  
+  long long fileSize;	/* [bytes] */
+  int nBit;
+  int nThread;
+  int threadIds[VDIF_SUMMARY_MAX_THREADS];
+  int frameSize;	/* [bytes], including header */
+  int framesPerSecond;	/* set to 0 if not known */
+  int epoch;		/* from VDIF header */
+  int startSecond;	/* from earliest VDIF header */
+  int startFrame;	/* since startSecond, from VDIF header */
+  int endSecond;	/* from latest VDIF header */
+  int endFrame;		/* since endSecond, from VDIF header */
+  int firstFrameOffset;	/* bytes to skip to get to first valid frame */
+};
+
+void resetvdiffilesummary(struct vdif_file_summary *sum);
+
+void printvdiffilesummary(const struct vdif_file_summary *sum);
+
+int summarizevdiffile(struct vdif_file_summary *sum, char *fileName, int frameSize);
 
 #ifdef __cplusplus
 }

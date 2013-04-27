@@ -2,6 +2,8 @@ h_sources = \
 	vdifio.h
 
 c_sources = \
+	vdifbuffer.c \
+	vdiffile.c \
 	vdifio.c \
 	vdifmux.c
 
