@@ -11,8 +11,8 @@ from time import asctime
 from glob import glob
 
 program = 'difxbuild'
-version = '0.23'
-verdate = '20130317'
+version = '0.25'
+verdate = '20130427'
 author = 'Walter Brisken <wbrisken@nrao.edu>'
 
 difxbuildUrl = 'http://www.aoc.nrao.edu/~wbrisken/difxbuild'
@@ -23,10 +23,12 @@ gpstkVersion = '2.0'
 jamVersion = '2.5.2'
 pngVersion = '1.2.50'
 schedVersion = '11.0'
+skedVersion = '2013jan23'
 m4Version = '1.4.16'
 autoconfVersion = '2.69'
 automakeVersion = '1.11.6'
 libtoolVersion = '2.4'
+pkgconfigVersion = '0.28'
 numMakeCpus = 4
 
 todo_list = """
@@ -446,7 +448,7 @@ component_vdifio_trunk = \
 [ \
 	'vdifio', \
 	'https://svn.atnf.csiro.au/difx/libraries/vdifio/trunk', \
-	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'slave', 'core'] \
+	['aclocalm4', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'slave', 'core'] \
 ]
 
 component_mpifxcorr_trunk = \
@@ -1493,7 +1495,7 @@ def autotools(origComps, params, args, verbose, pretend):
 	archSrcDir = archDir + '/src'
 	if not isdir(archSrcDir):
 		execute('mkdir -p %s' % archSrcDir, verbose, pretend)
-
+	
 	# m4
 	srcFile = 'm4-%s.tar.xz' % m4Version
 	url = 'http://ftp.gnu.org/gnu/m4/%s' % srcFile
@@ -1537,6 +1539,18 @@ def autotools(origComps, params, args, verbose, pretend):
 	execute('configure --prefix=%s' % archDir, verbose, pretend)
 	execute('make -j%d' % numMakeCpus, verbose, pretend)
 	execute('make install', verbose, pretend)
+	
+	# pkg-config
+	srcFile = 'pkg-config-%s.tar.gz' % pkgconfigVersion
+	url = 'http://pkgconfig.freedesktop.org/releases/%s' % srcFile
+	ftpFile(url, tarDir, srcFile, args, verbose, pretend)
+	chdir(archSrcDir)
+	execute('tar zxf %s/%s' % (tarDir, srcFile), verbose, pretend)
+	chdir('%s/pkg-config-%s' % (archSrcDir, pkgconfigVersion))
+	execute('configure --prefix=%s --with-internal-glib' % archDir, verbose, pretend)
+	execute('make -j%d' % numMakeCpus, verbose, pretend)
+	execute('make install', verbose, pretend)
+
 
 def spice(origComps, params, args, verbose, pretend):
 	arch = platform.machine()
@@ -1604,8 +1618,39 @@ def gpstk(origComps, params, args, verbose, pretend):
 	out.write('Description: GPS Toolkit\n')
 	out.write('Requires:\n')
 	out.write('Version: %s\n' % gpstkVersion)
-	out.write('Libs: -L${libdir} -lgpstk\n')
+	out.write('Libs: -L${libdir} -lgeodyn -lgpstk\n')
 	out.write('Cflags: -I${includedir}/gpstk\n')
+
+def sked(origComps, params, args, verbose, pretend):
+
+	if not len(popen('which gfortran').readlines()) > 0:
+		print 'sked compilation currently (and maybe ultimately) only works on gfortran systems'
+		exit(0)
+
+	arch = platform.machine()
+	skedSrcFile = 'sked-%s.tar.gz' % skedVersion
+	skedUrl = 'http://www.aoc.nrao.edu/~wbrisken/%s' % skedSrcFile
+	difxBase = environ['DIFX_BASE'] + '/'
+	archDir = difxBase + arch
+	archSrcDir = difxBase + arch + '/src/'
+	tarDir = difxBase + 'tar/'
+	# get file
+	ftpFile(skedUrl, tarDir, skedSrcFile, args, verbose, pretend)
+	if not isdir(archSrcDir):
+		execute('mkdir -p %s' % archSrcDir, verbose, pretend)
+	
+	skedSrcDir = '%s/sked-%s' % (archSrcDir, skedVersion)
+	if isdir(skedSrcDir):
+		print 'Stopping because %s exists' % skedSrcDir
+		return
+	
+	chdir(archSrcDir)
+	execute('tar zxvf %s/%s' % (tarDir, skedSrcFile), verbose, pretend)
+	chdir(skedSrcDir)
+	execute('./configure --prefix=%s F77=gfortran' % archDir, verbose, pretend)
+	execute('make -j %d' % numMakeCpus, verbose, pretend)
+	execute('make install', verbose, pretend)
+
 
 def sched(origComps, params, args, verbose, pretend):
 
@@ -1758,9 +1803,18 @@ def pgplot(origComps, params, args, verbose, pretend):
 
 
 def extra(origComps, params, args, verbose, pretend):
-	packages = ['pgplot', 'gpstk', 'png', 'sched', 'autotools']
+	packages = ['pgplot', 'png', 'sched', 'sked', 'spice', 'autotools']
 	if len(args) < 1:
-		print 'Usage: difxbuild [options] extra [package(s)]\n'
+		print 'The "extra" option allows installation of optional software.\n'
+		print 'Usage 1: difxbuild [options] extra [package(s)]\n'
+		print 'Usage 2: difxbuild extra list\n'
+		return
+
+	if args == ['list']:
+		print 'Extra packages to be installed can include the following:'
+		for pkg in packages:
+			print '  %s' % pkg
+		print ''
 		return
 
 	bad = False
@@ -1774,6 +1828,8 @@ def extra(origComps, params, args, verbose, pretend):
 
 	if 'autotools' in args:
 		autotools(origComps, params, [], verbose, pretend)
+	if 'spice' in args:
+		spice(origComps, params, [], verbose, pretend)
 	if 'pgplot' in args:
 		pgplot(origComps, params, [], verbose, pretend)
 	if 'gpstk' in args:
@@ -1782,6 +1838,8 @@ def extra(origComps, params, args, verbose, pretend):
 		png(origComps, params, [], verbose, pretend)
 	if 'sched' in args:
 		sched(origComps, params, [], verbose, pretend)
+	if 'sked' in args:
+		sked(origComps, params, [], verbose, pretend)
 
 
 
@@ -2030,24 +2088,6 @@ command_remove = \
 	remove \
 ]
 
-command_spice = \
-[ \
-	'spice', \
-	'Download (if needed) and install spice', \
-	['DIFX_BASE'], \
-	[], \
-	spice \
-]
-
-command_pgplot = \
-[ \
-	'pgplot', \
-	'Download (if needed), configure, compile and install pgplot version %s' % pgplotVersion, \
-	['DIFX_BASE'], \
-	[], \
-	pgplot \
-]
-
 command_extra = \
 [ \
 	'extra', \
@@ -2093,8 +2133,6 @@ commands = \
 	command_svnstatus, \
 	command_autotool, \
 	command_openmpi, \
-	command_spice, \
-	command_pgplot, \
 	command_extra, \
 	command_build, \
 	command_rebuild, \
