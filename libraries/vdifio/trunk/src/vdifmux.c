@@ -497,7 +497,7 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 
 	startFrameNumber = startOutputFrameNumber;
 
-	/* clear mask of presense */
+	/* clear mask of presence */
 	for(i = 0; i <= maxDestIndex; ++i)
 	{
 		uint32_t *p = (uint32_t *)(dest + outputFrameSize*i);
@@ -645,7 +645,7 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 					startFrameNumber = frameNumber - nSort;
 					startFrameNumber -= (startFrameNumber % frameGranularity);	/* to ensure first frame starts on integer ns */
 
-					/* clear mask of presense */
+					/* clear mask of presence */
 					for(destIndex = 0; destIndex < highestDestIndex; ++destIndex)
 					{
 						p = (uint32_t *)(dest + outputFrameSize*destIndex);

@@ -36,7 +36,7 @@
 int determinevdifframesize(const unsigned char *buffer, int bufferSize)
 {
 	int frameSize;
-	int likelyFrameSizes[] = {5032, 8032, 1032, 2032, 4032};	/* add more here as you like ... */
+	int likelyFrameSizes[] = {5032, 10032, 20032, 40032, 8032, 16032, 32032, 1032, 2032, 4032};	/* add more here as you like ... */
 	const int nLikelyFrameSizes = sizeof(likelyFrameSizes)/sizeof(likelyFrameSizes[0]);
 	int f;
 
@@ -68,8 +68,8 @@ int determinevdifframesize(const unsigned char *buffer, int bufferSize)
 			   getVDIFFrameBytes(vh3) == frameSize &&
 			   getVDIFEpoch(vh1) == getVDIFEpoch(vh2) &&
 			   getVDIFEpoch(vh1) == getVDIFEpoch(vh3) &&
-			   getVDIFFrameSecond(vh2) - getVDIFFrameSecond(vh1) < 2 &&
-			   getVDIFFrameSecond(vh3) - getVDIFFrameSecond(vh2) < 2 &&
+			   getVDIFFullSecond(vh2) - getVDIFFullSecond(vh1) < 2 &&
+			   getVDIFFullSecond(vh3) - getVDIFFullSecond(vh2) < 2 &&
 			   getVDIFFrameNumber(vh2) - getVDIFFrameNumber(vh1) < 5 &&
 			   getVDIFFrameNumber(vh3) - getVDIFFrameNumber(vh1) < 5)
 			{
@@ -82,8 +82,6 @@ int determinevdifframesize(const unsigned char *buffer, int bufferSize)
 	for(frameSize = VDIF_HEADER_BYTES + 8; frameSize < bufferSize/4; frameSize += 8)	/* step over legal frame sizes */
 	{
 		int i, N;
-
-printf("Trying framesize=%d\n", frameSize);
 
 		N = bufferSize - 2*frameSize - VDIF_HEADER_BYTES;
 		for(i = 0; i < N ; ++i)
@@ -99,8 +97,8 @@ printf("Trying framesize=%d\n", frameSize);
 			   getVDIFFrameBytes(vh3) == frameSize &&
 			   getVDIFEpoch(vh1) == getVDIFEpoch(vh2) &&
 			   getVDIFEpoch(vh1) == getVDIFEpoch(vh3) &&
-			   getVDIFFrameSecond(vh2) - getVDIFFrameSecond(vh1) < 2 &&
-			   getVDIFFrameSecond(vh3) - getVDIFFrameSecond(vh2) < 2 &&
+			   getVDIFFullSecond(vh2) - getVDIFFullSecond(vh1) < 2 &&
+			   getVDIFFullSecond(vh3) - getVDIFFullSecond(vh2) < 2 &&
 			   getVDIFFrameNumber(vh2) - getVDIFFrameNumber(vh1) < 5 &&
 			   getVDIFFrameNumber(vh3) - getVDIFFrameNumber(vh1) < 5)
 			{
@@ -135,7 +133,7 @@ int determinevdifframeoffset(const unsigned char *buffer, int bufferSize, int fr
 		if(getVDIFFrameBytes(vh1) == frameSize &&
 		   getVDIFFrameBytes(vh2) == frameSize &&
 		   getVDIFEpoch(vh1) == getVDIFEpoch(vh2) &&
-		   getVDIFFrameSecond(vh2) - getVDIFFrameSecond(vh1) < 2)
+		   getVDIFFullSecond(vh2) - getVDIFFullSecond(vh1) < 2)
 		{
 			return i;
 		}

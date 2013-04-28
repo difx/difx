@@ -34,6 +34,8 @@
 #include <sys/stat.h>
 #include "config.h"
 
+int ymd2mjd(int yr, int mo, int day);
+
 void resetvdiffilesummary(struct vdif_file_summary *sum)
 {
 	memset(sum, 0, sizeof(struct vdif_file_summary));
@@ -46,7 +48,7 @@ void printvdiffilesummary(const struct vdif_file_summary *sum)
 	printf("VDIF File: %s\n", sum->fileName);
 	printf("  size = %Ld bytes\n", sum->fileSize);
 	printf("  nThread = %d\n", sum->nThread);
-	printf("  Threads =");
+	printf("  Thread Ids =");
 	for(i = 0; i < sum->nThread; ++i)
 	{
 		if(i < VDIF_SUMMARY_MAX_THREADS)
@@ -62,6 +64,7 @@ void printvdiffilesummary(const struct vdif_file_summary *sum)
 	printf("  frame size = %d bytes\n", sum->frameSize);
 	printf("  frame rate = %d per second\n", sum->framesPerSecond);
 	printf("  VDIF epoch = %d\n", sum->epoch);
+	printf("  start MJD = %d\n", vdiffilesummarygetstartmjd(sum));
 	printf("  start second = %d\n", sum->startSecond);
 	printf("  start frame = %d\n", sum->startFrame);
 	printf("  end second = %d\n", sum->endSecond);
@@ -69,7 +72,12 @@ void printvdiffilesummary(const struct vdif_file_summary *sum)
 	printf("  first frame offset = %d bytes\n", sum->firstFrameOffset);
 }
 
-int summarizevdiffile(struct vdif_file_summary *sum, char *fileName, int frameSize)
+int vdiffilesummarygetstartmjd(const struct vdif_file_summary *sum)
+{
+	return ymd2mjd(2000 + sum->epoch/2, (sum->epoch%2)*6+1, 1) + sum->startSecond/86400;
+}
+
+int summarizevdiffile(struct vdif_file_summary *sum, const char *fileName, int frameSize)
 {
 	int bufferSize = 2000000;	/* 2 MB should encounter all threads of a usual VDIF file */
 	unsigned char *buffer;
@@ -162,12 +170,12 @@ int summarizevdiffile(struct vdif_file_summary *sum, char *fileName, int frameSi
 		int f, s;
 
 		vh = (struct vdif_header *)(buffer + i);
-		s = getVDIFFrameSecond(vh);
+		s = getVDIFFullSecond(vh);
 		
 		if(getVDIFFrameBytes(vh) == frameSize &&
 		   getVDIFEpoch(vh) == sum->epoch &&
 		   getVDIFBitsPerSample(vh) == sum->nBit &&
-		   abs(s - getVDIFFrameSecond(vh0)) < 2)
+		   abs(s - getVDIFFullSecond(vh0)) < 2)
 		{
 			hasThread[getVDIFThreadID(vh)] = 1;
 			f = getVDIFFrameNumber(vh);
@@ -241,12 +249,12 @@ int summarizevdiffile(struct vdif_file_summary *sum, char *fileName, int frameSi
 			int f, s;
 
 			vh = (struct vdif_header *)(buffer + i);
-			s = getVDIFFrameSecond(vh);
+			s = getVDIFFullSecond(vh);
 			
 			if(getVDIFFrameBytes(vh) == frameSize &&
 			   getVDIFEpoch(vh) == sum->epoch &&
 			   getVDIFBitsPerSample(vh) == sum->nBit &&
-			   abs(s - getVDIFFrameSecond(vh0)) < 2)
+			   abs(s - getVDIFFullSecond(vh0)) < 2)
 			{
 				hasThread[getVDIFThreadID(vh)] = 1;
 				f = getVDIFFrameNumber(vh);

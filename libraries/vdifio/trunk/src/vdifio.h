@@ -175,7 +175,26 @@ void resetvdiffilesummary(struct vdif_file_summary *sum);
 
 void printvdiffilesummary(const struct vdif_file_summary *sum);
 
-int summarizevdiffile(struct vdif_file_summary *sum, char *fileName, int frameSize);
+static inline void vdiffilesummarysetsamplerate(struct vdif_file_summary *sum, int sampRateHz) { sum->framesPerSecond = sampRateHz*sum->nBit/(8*(sum->frameSize-VDIF_HEADER_BYTES)); }
+
+/* does same as above, but with different input */
+static inline void vdiffilesummarysetbitrate(struct vdif_file_summary *sum, int bitRateMbps) { sum->framesPerSecond = bitRateMbps*125000/(sum->nThread*(sum->frameSize-VDIF_HEADER_BYTES)); }
+
+/* returns samples per second */
+static inline int vdiffilesummarygetsamplerate(const struct vdif_file_summary *sum) { return sum->framesPerSecond*(sum->frameSize-VDIF_HEADER_BYTES)*8/sum->nBit; }
+
+/* returns Mbps */
+static inline int vdiffilesummarygetbitrate(const struct vdif_file_summary *sum) { return sum->framesPerSecond*(sum->frameSize-VDIF_HEADER_BYTES)*sum->nThread/125000; }
+
+static inline int vdiffilesummarygetstartns(const struct vdif_file_summary *sum) { return (int)((long long)(sum->startFrame)*1000000000LL/sum->framesPerSecond); }
+
+static inline int vdiffilesummarygetstartsecond(const struct vdif_file_summary *sum) { return sum->startSecond % 86400; }
+
+int vdiffilesummarygetstartmjd(const struct vdif_file_summary *sum);
+
+static inline int vdiffilesummarygetbytespersecond(const struct vdif_file_summary *sum) { return sum->frameSize*sum->framesPerSecond; }
+
+int summarizevdiffile(struct vdif_file_summary *sum, const char *fileName, int frameSize);
 
 #ifdef __cplusplus
 }
