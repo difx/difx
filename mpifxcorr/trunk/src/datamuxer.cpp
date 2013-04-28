@@ -21,13 +21,14 @@
 //============================================================================
 #include <cstdio>
 #include <cstring>
-#ifdef HAVE_OPENMP
-#include <omp.h>
-#endif
 #include "datamuxer.h"
 #include "vdifio.h"
 #include "alert.h"
 #include "config.h"
+
+#ifdef HAVE_OPENMP
+#include <omp.h>
+#endif
 
 #ifdef _OPENMP                                                                             
 #define PRAGMA_OMP(args) __pragma(omp args)                                              

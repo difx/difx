@@ -286,11 +286,10 @@ void Mk5DataStream::deriveFormatName(int configindex)
     framebytes = config->getFrameBytes(configindex, streamnum);
     if(config->isDMuxed(configindex, streamnum)) {
       framebytes = (framebytes-VDIF_HEADER_BYTES)*config->getDNumMuxThreads(configindex, streamnum) + VDIF_HEADER_BYTES;
-      nrecordedbands = 1;
     }
     fanout = config->genMk5FormatName(format, nrecordedbands, bw, nbits, sampling, framebytes, config->getDDecimationFactor(configindex, streamnum), config->getDNumMuxThreads(configindex, streamnum), formatname);
     if (fanout < 0) {
-      cfatal << startl << "Fanount is " << fanout << ", which is impossible - no choice but to abort!" << endl;
+      cfatal << startl << "Fanout is " << fanout << ", which is impossible - no choice but to abort!" << endl;
       MPI_Abort(MPI_COMM_WORLD, 1);
     }
 }
@@ -317,7 +316,7 @@ void Mk5DataStream::initialiseFile(int configindex, int fileindex)
   }
   fanout = config->genMk5FormatName(format, nrecordedbands, bw, nbits, sampling, framebytes, config->getDDecimationFactor(configindex, streamnum), config->getDNumMuxThreads(configindex, streamnum), formatname);
   if (fanout < 0) {
-    cfatal << startl << "Fanount is " << fanout << ", which is impossible - no choice but to abort!" << endl;
+    cfatal << startl << "Fanout is " << fanout << ", which is impossible - no choice but to abort!" << endl;
     MPI_Abort(MPI_COMM_WORLD, 1);
   }
 
@@ -525,7 +524,7 @@ int Mk5DataStream::testForSync(int configindex, int buffersegment)
   return offset;
 }
 
-double tim(void) {
+static double tim(void) {
   struct timeval tv;
   double t;
 
@@ -572,7 +571,7 @@ void Mk5DataStream::fakeToMemory(int buffersegment)
 
 void Mk5DataStream::networkToMemory(int buffersegment, uint64_t & framebytesremaining)
 {
-  if (!tcp && udp_offset>readbytes) { // What does this do to networkToMempory - does packet head need updating
+  if (!tcp && udp_offset>readbytes) { // What does this do to networkToMemory - does packet head need updating
     int skip = udp_offset-(udp_offset%readbytes);
     cinfo << startl << "DataStream " << mpiid << ": Skipping over " << skip/1024/1024 << " Mbytes" << endl;
     if (skip > readbytes) 

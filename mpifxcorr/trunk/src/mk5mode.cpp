@@ -50,7 +50,7 @@ Mk5Mode::Mk5Mode(Configuration * conf, int confindex, int dsindex, int recordedb
     new_mark5_format_generic_from_string(formatname) );
     if(mark5stream == 0)
     {
-      cfatal << startl << "Mk5Mode::Mk5Mode : mark5stream is null " << endl;
+      cfatal << startl << "Mk5Mode::Mk5Mode : mark5stream is null" << endl;
       initok = false;
     }
     else

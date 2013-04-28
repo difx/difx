@@ -386,20 +386,20 @@ int Configuration::genMk5FormatName(dataformat format, int nchan, double bw, int
         sprintf(formatname, "Mark5B-%d-%d-%d", mbps, nchan, nbits);
       break;
     case INTERLACEDVDIF:
-      //framebytes = (framebytes-32)*numthreads + 32;
+      //framebytes = (framebytes-VDIF_HEADER_BYTES)*numthreads + VDIF_HEADER_BYTES;
       //mbps /= nchan;
       //nchan = 1;
     case VDIF:
       if (sampling==COMPLEX) 
 	if(decimationfactor > 1)
-	  sprintf(formatname, "VDIFC_%d-%d-%d-%d/%d", framebytes-32, mbps, nchan, nbits, decimationfactor);
+	  sprintf(formatname, "VDIFC_%d-%d-%d-%d/%d", framebytes-VDIF_HEADER_BYTES, mbps, nchan, nbits, decimationfactor);
 	else
-	  sprintf(formatname, "VDIFC_%d-%d-%d-%d", framebytes-32, mbps, nchan, nbits);
+	  sprintf(formatname, "VDIFC_%d-%d-%d-%d", framebytes-VDIF_HEADER_BYTES, mbps, nchan, nbits);
       else
 	if(decimationfactor > 1)
-	  sprintf(formatname, "VDIF_%d-%d-%d-%d/%d", framebytes-32, mbps, nchan, nbits, decimationfactor);
+	  sprintf(formatname, "VDIF_%d-%d-%d-%d/%d", framebytes-VDIF_HEADER_BYTES, mbps, nchan, nbits, decimationfactor);
 	else
-	  sprintf(formatname, "VDIF_%d-%d-%d-%d", framebytes-32, mbps, nchan, nbits);
+	  sprintf(formatname, "VDIF_%d-%d-%d-%d", framebytes-VDIF_HEADER_BYTES, mbps, nchan, nbits);
       break;
     default:
       cfatal << startl << "genMk5FormatName : unsupported format encountered" << endl;
