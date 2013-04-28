@@ -89,8 +89,8 @@ static int fold(const char *filename, const char *formatname, int nbin, int nint
 	double freq, const char *outfile, long long offset)
 {
 	struct mark5_stream *ms;
-	double **data, **bins;
-	double complex **cdata;
+	double **data=0, **bins=0;
+	double complex **cdata=0;
 	int **weight;
 	int c, i, j, k, status;
 	int nif, bin;

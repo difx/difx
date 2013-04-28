@@ -1,7 +1,7 @@
 Summary: Library for decoding VLBI baseband formats: Mark4, VLBA and Mark5B
 Name: mark5access
 Version: @version@
-Release: 1
+Release: 2
 License: GPL3
 Group: VLBI
 BuildRoot: /var/tmp/mark5access-@version@-buildroot
@@ -44,6 +44,7 @@ make
 %{_bindir}/m5time
 %{_bindir}/m5tsys
 %{_bindir}/m5slice
+%{_bindir}/m5timeseries
 %{_bindir}/test5b
 %{_bindir}/test_mark5_stream
 %{_bindir}/test_unpacker

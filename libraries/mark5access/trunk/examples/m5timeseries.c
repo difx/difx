@@ -69,7 +69,7 @@ static void usage(const char *pgm) {
   printf("    MKIV1_4-128-2-1\n");
   printf("    Mark5B-512-16-2\n");
   printf("    VDIF_1000-64-1-2 (here 1000 is payload size in bytes)\n\n");
-  printf("  <tint> is the intergration time, in millisec. Fractions allowed\n");
+  printf("  <tint> is the integration time, in millisec. Fractions allowed\n");
   printf("  <time> The number of samples, in seconds to process\n\n");
   printf("  <outfile> is the name of the output file\n\n");
   printf("  <offset> is number of bytes into file to start decoding\n\n");
@@ -150,7 +150,7 @@ static int timeaverage(const char *filename, const char *formatname, double tint
   struct mark5_stream *ms;
   double **data=0, *avif;
   double complex **cdata=0;
-  int i, status, nused;
+  int i, status=0, nused;
   int nif;
   uint64_t totalsamples, nint, samplesDone, navg;
   FILE *out;
@@ -186,8 +186,8 @@ static int timeaverage(const char *filename, const char *formatname, double tint
   totalsamples = (ms->samprate * time);  // Total number of samples to process
   nint  = (ms->samprate * tint/1000.0);  // Samples per itergration
 
-  printf("DEBUG: %d samples per integration\n", nint);
-  printf("DEBUG: %d total number of samples\n", totalsamples);
+  printf("DEBUG: %Ld samples per integration\n", (long long)nint);
+  printf("DEBUG: %Ld total number of samples\n", (long long)totalsamples);
 
   if (docomplex)  {
     cdata = (complex double **)malloc(nif*sizeof(double complex*));
@@ -219,7 +219,9 @@ static int timeaverage(const char *filename, const char *formatname, double tint
     } else {
       status = average_real(ms, &nused, nint, &navg, avif, data);
     }
-    if (status<0) return(status);
+    if (status<0) {
+      break;
+    }
 
     if (navg>=nint) {
       fprintf(out, "%4d %10.6f", iInt, iInt*nint/(double)ms->samprate);
@@ -249,8 +251,10 @@ static int timeaverage(const char *filename, const char *formatname, double tint
     free(data);
   free(avif);
   delete_mark5_stream(ms);
-	
-  return EXIT_SUCCESS;
+
+  if(status >= 0)
+    status = EXIT_SUCCESS;
+  return status;
 }
 
 int main(int argc, char **argv) {
