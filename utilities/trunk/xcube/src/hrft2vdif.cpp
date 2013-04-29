@@ -66,19 +66,27 @@ void chomp (char* s) {
     s[end] = '\0';
 }
 
-#define VDIF_PACKETSIZE 8192
+#define MAX_PACKETSIZE 8192
 
 #define SEQUENCE(x) ((x[0]>>32)&0xFFFFFFFF)
-#define IFid(x) (x[0]&0xFF)
+#define IFID(x) (x[0]&0xFF)
+#define TYPE(x) ((x[0]>>8)&0xFF)
 
 typedef enum {NONE=0, A, B, C, D, E, F, G, H} modeType;
+
+UINT8 *lookup;
+void initialize_lookup();
 
 int convert2VDIF(string project, string stream, string outname, 
 		 modeType mode) {
   char *fileNames[16], msg[256];
   UINT64 *if1, *if2, *if3, *if4;
-  int nFile = 0, istream, shift = 0;;
+  int nFile = 0, istream, shift = 0;
+  int vdif_packetsize;
+  int framespersec;
+  UINT8 type, ifid, *framebytes;
   UINT32 usec, sequence;
+  UINT64* frame64;
   char datestr[100];
   struct tm *date;
   int out;
@@ -171,18 +179,6 @@ int convert2VDIF(string project, string stream, string outname,
     }
   }
 
-  UINT8* framebytes = new UINT8[VDIF_PACKETSIZE];
-  UINT64* frame64 = (UINT64*)framebytes;
-  if (framebytes==NULL) {
-    printf("Error: Could not allocate memory\n");
-    return(EXIT_FAILURE);
-  }
-  frame64[0] = 1;
-  frame64[1] = 1;
-  frame64[2] = 1;
-  frame64[3] = 1;
-  frame64[4] = 1;
-
   int nchan;
   if (mode==NONE) 
     nchan = 64;
@@ -207,10 +203,6 @@ int convert2VDIF(string project, string stream, string outname,
   }
 
   int vdifwords = 0, vdifbytes = 0;
-  int samplesperframe = (VDIF_PACKETSIZE*2/nchan);
-  int samplespersec = 32e6; // Nquist
-  int framespersec = samplespersec/samplesperframe;
-  printf("Frame/sec = %d\n", framespersec);
 
   int nRetVal;
   // Create the packet reader
@@ -252,7 +244,7 @@ int convert2VDIF(string project, string stream, string outname,
       // skip to the correct frame
       int currentPacket = 0;
       bool isDone = false;
-      while (currentPacket<500) {
+      while (currentPacket<1000) {
 	X3cPacket *pkt = pktReader->getPacket();
 	if (NULL == pkt) {
 	  fprintf(stdout, "Finished reading. packet <%d>\n", currentPacket);
@@ -260,128 +252,268 @@ int convert2VDIF(string project, string stream, string outname,
 	} else {
 	  
 	  UINT64 nbytes = pkt->getLen();
+	  UINT64 *p = (UINT64*)(pkt->getData());
 
 	  //date = gmtime(&rsec);
 	  //strftime(datestr, 99, "%F %H:%M:%S", date);
 
 	  if (first) {
+	    // Determine the type of data
+	    // type = TYPE(p); this does not work bug in Xcube? Always 0
+	    type = IFID(p);
+	    if (type>=0xF0) 
+	      type = 1;
+	    else 
+	      type = 0;
+
+	    // Figure out time
 	    UINT32 nsec;
 	    time_t sec, rsec;
 	    sec = pkt->getHeader()->ts.tv_sec;
 	    nsec = pkt->getHeader()->ts.tv_nsec;
 	    rsec = sec; 
 	    if (nsec>=500e6) rsec++;
-	    createVDIFHeader(&header, VDIF_PACKETSIZE+VDIF_HEADER_BYTES, 0,  2, nchan, 1, "Tt");
+
+	    // VDIF header values
+	    int bits, samplespersec, bfactor;
+	    if (type==0) {
+	      bits = 8;
+	      nchan = 1;
+	      samplespersec = 1024e6; // 512 MHz real Nyquist
+	      ifid = IFID(p);
+	      bfactor = 1;
+	    } else {
+	      samplespersec = 32e6; // 32 MHz complex Nyquist
+	      bits = 2; 
+	      bfactor = 2;
+	      // nchan previously set
+	      initialize_lookup();
+	    }
+	    UINT64 rate = nchan*samplespersec*bits*bfactor/8; // Bytes/sec
+
+	    vdif_packetsize = MAX_PACKETSIZE;
+	    vdif_packetsize = (vdif_packetsize/8)*8; // Round down to multiple of 8 bytes
+
+	    while (vdif_packetsize>0) {
+	      if ((rate % vdif_packetsize) == 0) {
+		printf("Choosing VDIf framesize of = %d\n", vdif_packetsize);
+		break;
+	      }
+	      vdif_packetsize-=8;
+	    }
+	    if (vdif_packetsize<=0) {
+	      printf("Could not find appropriate VDIF header size for data rate %.2f Mbytes/sec\n", rate/1e6);
+	    }
+
+	    
+	    int samplesperframe = (vdif_packetsize*8)/(nchan*bits*bfactor);
+	    framespersec = samplespersec/samplesperframe;
+	    printf("Frame/sec = %d\n", framespersec);
+
+
+	    framebytes = new UINT8[vdif_packetsize];
+	    frame64 = (UINT64*)framebytes;
+	    if (framebytes==NULL) {
+	      printf("Error: Could not allocate memory\n");
+	      return(EXIT_FAILURE);
+	    }
+
+	    createVDIFHeader(&header, vdif_packetsize+VDIF_HEADER_BYTES, 0,  bits, 
+			     nchan, bfactor==2, "Tt");
 	    setVDIFTime(&header, rsec);
 	  }
 
-	  const unsigned char *p = (unsigned char*)(pkt->getData());
+	  if (type==1) {
+	    for (int i=0; i<nbytes/(8192*4); i++) {
 
-	  for (int i=0; i<nbytes/(8192*4); i++) {
+	      if1 = &p[i*1024*4];
+	      if2 = if1+1024;
+	      if3 = if2+1024;
+	      if4 = if3+1024;
 
-	    if1 = (UINT64*)&p[i*8192*4];
-	    if2 = if1+1024;
-	    if3 = if2+1024;
-	    if4 = if3+1024;
-
-	    // Check sensible sequence number
-	    if (first) {
-	      sequence = SEQUENCE(if1);
-	      first = 0;
-	    } else {
-	      sequence++;
-	      if (SEQUENCE(if1)!=sequence) {
-		printf("Error: Sequence number did not match expected (%u/%u)\n", (unsigned int)sequence, (unsigned int)SEQUENCE(if1));
+	      // Check sensible sequence number
+	      if (first) {
+		sequence = SEQUENCE(if1);
+		first = 0;
+	      } else {
+		sequence++;
+		if (SEQUENCE(if1)!=sequence) {
+		  printf("Error: Sequence number did not match expected (%u/%u)\n", (unsigned int)sequence, (unsigned int)SEQUENCE(if1));
+		  pktReader->freePacket(pkt);
+		  return(EXIT_FAILURE);
+		}
+	      }
+#if 0
+	      // Only check the first IF for correct type
+	      if (TYPE(if1)!=type) {
+		printf("Error: Header type does not match that expected (%d/%d)\n", (int)type, (int)TYPE(if1));
+		pktReader->freePacket(pkt);
+		return(EXIT_FAILURE);
+		
+	      }
+#endif
+	      if (SEQUENCE(if2) != sequence) {
+		printf("Error: IF2 Sequence does not match expected (%u/%u)\n", (unsigned int)sequence, (unsigned int)SEQUENCE(if2));
 		pktReader->freePacket(pkt);
 		return(EXIT_FAILURE);
 	      }
-	    }
-	    if (SEQUENCE(if2) != sequence) {
-	      printf("Error: IF2 Sequence does not match number did not match expected (%u/%u)\n", (unsigned int)sequence, (unsigned int)SEQUENCE(if2));
-	      pktReader->freePacket(pkt);
-	      return(EXIT_FAILURE);
-	    }
-	    if (SEQUENCE(if3) != sequence) {
-	      printf("Error: IF3 Sequence does not match number did not match expected (%u/%u)\n", (unsigned int)sequence, (unsigned int)SEQUENCE(if3));
-	      pktReader->freePacket(pkt);
-	      return(EXIT_FAILURE);
-	    }
-	    if (SEQUENCE(if4) != sequence) {
-	      printf("Error: IF4 Sequence does not match number did not match expected (%u/%u)\n", (unsigned int)sequence, (unsigned int)SEQUENCE(if3));
-	      pktReader->freePacket(pkt);
-	      return(EXIT_FAILURE);
+	      if (SEQUENCE(if3) != sequence) {
+		printf("Error: IF3 Sequence does not match number did not match expected (%u/%u)\n", (unsigned int)sequence, (unsigned int)SEQUENCE(if3));
+		pktReader->freePacket(pkt);
+		return(EXIT_FAILURE);
+	      }
+	      if (SEQUENCE(if4) != sequence) {
+		printf("Error: IF4 Sequence does not match number did not match expected (%u/%u)\n", (unsigned int)sequence, (unsigned int)SEQUENCE(if3));
+		pktReader->freePacket(pkt);
+		return(EXIT_FAILURE);
+	      }
+	      
+	      if (IFID(if1)!=0xF0) {
+		printf("Error: Unexpected IF1 id (0x%X/0xF0)\n", (unsigned int)IFID(if1));
+		pktReader->freePacket(pkt);
+		return(EXIT_FAILURE);
+	      }
+	      if (IFID(if2)!=0xF1) {
+		printf("Error: Unexpected IF2 id (0x%X/0xF1)\n", (unsigned int)IFID(if2));
+		pktReader->freePacket(pkt);
+		return(EXIT_FAILURE);
+	      }
+	      if (IFID(if3)!=0xF2) {
+		printf("Error: Unexpected IF3 id (0x%X/0xF2)\n", (unsigned int)IFID(if3));
+		pktReader->freePacket(pkt);
+		return(EXIT_FAILURE);
+	      }
+	      if (IFID(if4)!=0xF3) {
+		printf("Error: Unexpected IF4 id (0x%X/0xF3)\n", (unsigned int)IFID(if4));
+		pktReader->freePacket(pkt);
+		return(EXIT_FAILURE);
+	      }
+	      
+	      for (int j=1; j<1024; j++) {
+		if (mode==NONE) {
+		  // Merge the 4 streams
+		  frame64[vdifwords] = if1[j];
+		  vdifwords++;
+		  frame64[vdifwords] = if2[j];
+		  vdifwords++;
+		  frame64[vdifwords] = if3[j];
+		  vdifwords++;
+		  frame64[vdifwords] = if4[j];
+		  vdifwords++;
+		} else {
+		  // Take one byte from 2 IF only
+		  framebytes[vdifbytes] = (if1[j]>>shift)&0xFF;
+		  vdifbytes++;
+		  framebytes[vdifbytes] = (if2[j]>>shift)&0xFF;
+		  vdifbytes++;
+		}
+		
+		if (vdifwords>= vdif_packetsize/8 || vdifbytes>=vdif_packetsize) {
+		  // Write a VDIF packet
+		  ssize_t nwrote = write(out, &header, VDIF_HEADER_BYTES);
+		  if (nwrote==-1) {
+		    perror("Error writing outfile");
+		    close(out);
+		    return(EXIT_FAILURE);
+		  } else if (nwrote!=VDIF_HEADER_BYTES) {
+		    fprintf(stderr, "Warning: Did not write all bytes! (%d/%d)\n",
+			    (int)nwrote, VDIF_HEADER_BYTES);
+		    close(out);
+		    return(EXIT_FAILURE);
+		  }
+		  // Convert bit format
+		  for (int n=0; n<vdif_packetsize; n++) {
+		    framebytes[n] = lookup[framebytes[n]];
+		  }
+
+		  nwrote = write(out, framebytes, vdif_packetsize);
+		  if (nwrote==-1) {
+		    perror("Error writing outfile");
+		    close(out);
+		    return(EXIT_FAILURE);
+		  } else if (nwrote!=vdif_packetsize) {
+		    fprintf(stderr, "Warning: Did not write all bytes! (%d/%d)\n",
+			    (int)nwrote, vdif_packetsize);
+		    close(out);
+		    return(EXIT_FAILURE);
+		  }
+		  
+		  vdifwords = 0;
+		  vdifbytes = 0;
+		  nextVDIFHeader(&header, framespersec);
+		}
+	      }
 	    }
 
-	    if (IFid(if1)!=0xF0) {
-	      printf("Error: Unexpected IF1 id (0x%X/0xF0)\n", (unsigned int)IFid(if1));
-	      pktReader->freePacket(pkt);
-	      return(EXIT_FAILURE);
-	    }
-	    if (IFid(if2)!=0xF1) {
-	      printf("Error: Unexpected IF2 id (0x%X/0xF1)\n", (unsigned int)IFid(if2));
-	      pktReader->freePacket(pkt);
-	      return(EXIT_FAILURE);
-	    }
-	    if (IFid(if3)!=0xF2) {
-	      printf("Error: Unexpected IF3 id (0x%X/0xF2)\n", (unsigned int)IFid(if3));
-	      pktReader->freePacket(pkt);
-	      return(EXIT_FAILURE);
-	    }
-	    if (IFid(if4)!=0xF3) {
-	      printf("Error: Unexpected IF4 id (0x%X/0xF3)\n", (unsigned int)IFid(if4));
-	      pktReader->freePacket(pkt);
-	      return(EXIT_FAILURE);
-	    }
-	    
-	    for (int j=1; j<1024; j++) {
-	      if (mode==NONE) {
-		// Merge the 4 streams
-		frame64[vdifwords] = if1[j];
-		vdifwords++;
-		frame64[vdifwords] = if2[j];
-		vdifwords++;
-		frame64[vdifwords] = if3[j];
-		vdifwords++;
-		frame64[vdifwords] = if4[j];
-		vdifwords++;
+	  } else if (type==0) {
+	    for (int i=0; i<nbytes/8192; i++) {
+	      if1 = &p[i*1024];
+
+	      // Check sensible sequence number
+	      if (first) {
+		printf("FIRST\n");
+		sequence = SEQUENCE(if1);
+		first = 0;
 	      } else {
-		// Take one byte from 2 IF only
-		framebytes[vdifbytes] = (if1[j]>>shift)&0xFF;
-		vdifbytes++;
-		framebytes[vdifbytes] = (if2[j]>>shift)&0xFF;
-		vdifbytes++;
+		sequence++;
+		if (SEQUENCE(if1)!=sequence) {
+		  printf("Error: Sequence number did not match expected (%u/%u)\n", 
+			 (unsigned int)sequence, (unsigned int)SEQUENCE(if1));
+		  pktReader->freePacket(pkt);
+		  return(EXIT_FAILURE);
+		}
 	      }
-	  
-	      if (vdifwords>= VDIF_PACKETSIZE/8 || vdifbytes>=VDIF_PACKETSIZE) {
-		// Write a VDIF packet
-		ssize_t nwrote = write(out, &header, VDIF_HEADER_BYTES);
-		if (nwrote==-1) {
-		  perror("Error writing outfile");
-		  close(out);
-		  return(EXIT_FAILURE);
-		} else if (nwrote!=VDIF_HEADER_BYTES) {
-		  fprintf(stderr, "Warning: Did not write all bytes! (%d/%d)\n",
-			  (int)nwrote, VDIF_HEADER_BYTES);
-		  close(out);
-		  return(EXIT_FAILURE);
-		}
-		nwrote = write(out, framebytes, VDIF_PACKETSIZE);
-		if (nwrote==-1) {
-		  perror("Error writing outfile");
-		  close(out);
-		  return(EXIT_FAILURE);
-		} else if (nwrote!=VDIF_PACKETSIZE) {
-		  fprintf(stderr, "Warning: Did not write all bytes! (%d/%d)\n",
-			  (int)nwrote, VDIF_PACKETSIZE);
-		  close(out);
-		  return(EXIT_FAILURE);
-		}
+#if 0
+	      if (TYPE(if1)!=type) {
+		printf("Error: Header type does not match that expected (%d/%d)\n", 
+		       (int)type, (int)TYPE(if1));
+		pktReader->freePacket(pkt);
+		return(EXIT_FAILURE);
+	      }
+#endif
+	      if (IFID(if1)!=ifid) {
+		printf("Error: Unexpected IF1 id (0x%X/0x%X)\n", 
+		       (unsigned int)IFID(if1), ifid);
+		pktReader->freePacket(pkt);
+		return(EXIT_FAILURE);
+	      }
 	      
-		vdifwords = 0;
-		vdifbytes = 0;
-		nextVDIFHeader(&header, framespersec);
+	      for (int j=1; j<1024; j++) {
+		frame64[vdifwords] = if1[j] ^ 0x8080808080808080;
+		vdifwords++;
+		
+		if (vdifwords>= vdif_packetsize/8) {
+		  // Write a VDIF packet
+		  ssize_t nwrote = write(out, &header, VDIF_HEADER_BYTES);
+		  if (nwrote==-1) {
+		    perror("Error writing outfile");
+		    close(out);
+		    return(EXIT_FAILURE);
+		  } else if (nwrote!=VDIF_HEADER_BYTES) {
+		    fprintf(stderr, "Warning: Did not write all bytes! (%d/%d)\n",
+			    (int)nwrote, VDIF_HEADER_BYTES);
+		    close(out);
+		    return(EXIT_FAILURE);
+		  }
+		  nwrote = write(out, framebytes, vdif_packetsize);
+		  if (nwrote==-1) {
+		    perror("Error writing outfile");
+		    close(out);
+		    return(EXIT_FAILURE);
+		  } else if (nwrote!=vdif_packetsize) {
+		    fprintf(stderr, "Warning: Did not write all bytes! (%d/%d)\n",
+			    (int)nwrote, vdif_packetsize);
+		    close(out);
+		    return(EXIT_FAILURE);
+		  }
+		  
+		  vdifwords = 0;
+		  vdifbytes = 0;
+		  nextVDIFHeader(&header, framespersec);
+		}
 	      }
 	    }
+
 	  }
 	  pktReader->freePacket(pkt);
 	  currentPacket++;
@@ -472,4 +604,12 @@ int main(int argc, char **argv) {
 
   return convert2VDIF(argv[optind],streamname, outname, mode);
 
+}
+
+void initialize_lookup() {
+  int i;
+  lookup = new UINT8[256];
+  for (i=0; i<256; i++) {
+    lookup[i] = ((i>>1)&0x55) | ((i<<1)&0xAA);
+  }
 }
