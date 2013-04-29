@@ -1,9 +1,9 @@
 /*
- * hrft2vdif
+ * hrftStats
  *
  * Chris Phillips
  * 
- * Calculate hrtf sampler stats
+ * Calculate hrtf sampler stats directly from disk
  *
  */
 
@@ -59,7 +59,7 @@ int calcStats(string project, string stream, float time) {
   string base ("/xcube");
 
   for (i=0; i< 256; i++) {
-    for (j=0; j<4; j++) {
+    for (j=0; j<8; j++) {
       if1Stats[j][i] = 0;
       if2Stats[j][i] = 0;
       if3Stats[j][i] = 0;
@@ -263,7 +263,7 @@ int calcStats(string project, string stream, float time) {
 		if4Stats[k][(if4[j]>>(k*8))&0xFF]++;
 	      }
 	    }
-	    nsample += 1024;
+	    nsample += 1023;
 	  }
 	  pktReader->freePacket(pkt);
 	  currentPacket++;
@@ -314,19 +314,38 @@ int calcStats(string project, string stream, float time) {
   printf("IF1 Stats:\n");
   for (i=0; i<16; i++) {
     printf("Chan %2d  Re:", i);
-    for (j=0; j<4; j++)  printf(" %.2f%%", if1Results[i*2][j]/(double)nsample*100);
+    for (j=0; j<4; j++)  printf(" %5.2f%%", if1Results[i*2][j]/(double)nsample*100);
     printf("  Im:");
-    for (j=0; j<4; j++)  printf(" %.2f%%", if1Results[i*2+1][j]/(double)nsample*100);
-    printf("\n\n");
+    for (j=0; j<4; j++)  printf(" %5.2f%%", if1Results[i*2+1][j]/(double)nsample*100);
+    printf("\n");
   }
 
   printf("IF2 Stats:\n");
   for (i=0; i<16; i++) {
     printf("Chan %2d  Re:", i);
-    for (j=0; j<4; j++)  printf(" %.2f%%", if2Results[i*2][j]/(double)nsample*100);
+    for (j=0; j<4; j++)  printf(" %5.2f%%", if2Results[i*2][j]/(double)nsample*100);
     printf("  Im:");
-    for (j=0; j<4; j++)  printf(" %.2f%%", if2Results[i*2+1][j]/(double)nsample*100);
-    printf("\n\n");
+    for (j=0; j<4; j++)  printf(" %5.2f%%", if2Results[i*2+1][j]/(double)nsample*100);
+    printf("\n");
+  }
+
+
+  printf("IF3 Stats:\n");
+  for (i=0; i<16; i++) {
+    printf("Chan %2d  Re:", i);
+    for (j=0; j<4; j++)  printf(" %5.2f%%", if3Results[i*2][j]/(double)nsample*100);
+    printf("  Im:");
+    for (j=0; j<4; j++)  printf(" %5.2f%%", if3Results[i*2+1][j]/(double)nsample*100);
+    printf("\n");
+  }
+
+  printf("\nIF4 Stats:\n");
+  for (i=0; i<16; i++) {
+    printf("Chan %2d  Re:", i);
+    for (j=0; j<4; j++)  printf(" %5.2f%%", if4Results[i*2][j]/(double)nsample*100);
+    printf("  Im:");
+    for (j=0; j<4; j++)  printf(" %5.2f%%", if4Results[i*2+1][j]/(double)nsample*100);
+    printf("\n");
   }
 
   
