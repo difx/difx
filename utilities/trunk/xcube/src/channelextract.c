@@ -43,6 +43,7 @@ void extractGeneric(uint64_t chans, int nloop, int nblock, int bufsize, uint64_t
 void extract2chanPair(int nloop, int nblock, int bufsize, uint64_t **data);
 void extract4chanPair(int nloop, int nblock, int bufsize, uint64_t **data);
 void extract4chan(int nloop, int nblock, int bufsize, uint64_t **data);
+void extract8chan(int nloop, int nblock, int bufsize, uint64_t **data);
 
 // Some global variables to avoid passing lots of parameters
 int main (int argc, char * const argv[]) {
@@ -135,6 +136,9 @@ int main (int argc, char * const argv[]) {
 
   // 4 per IF, not paired
   extract4chan(nloop, nblock, bufsize, data);
+
+  // 8 per IF, not paired
+  extract8chan(nloop, nblock, bufsize, data);
 
   for (i=0;i<nblock;i++) {
     free(data[i]);
@@ -523,7 +527,6 @@ void extract4chanPair(int nloop, int nblock, int bufsize, uint64_t **data) {
   free(vdifdata);
 }
 
-
 void extract4chan(int nloop, int nblock, int bufsize, uint64_t **data) {
   /* This function extracts 4 arbitary channels per IF */
 
@@ -625,6 +628,122 @@ void extract4chan(int nloop, int nblock, int bufsize, uint64_t **data) {
   t1 = tim();
 
   printtime("Extracting 4 arbitary channels per IF", t1-t0, nchan, (uint64_t)nloop*nblock*bufsize);
+
+  free(vdifdata);
+}
+
+void extract8chan(int nloop, int nblock, int bufsize, uint64_t **data) {
+  /* This function extracts 4 arbitary channels per IF */
+
+  int i, j, k, l, m, vdifbytes;
+  uint64_t *if1, *if2, *if3, *if4;
+  uint8_t *vdifdata;
+  double t0, t1;
+  vdif_header header;
+  int vdif_packetsize;
+  int framespersec;
+
+  int nchan = 4*8;
+  int shift1[8] = {1,2,5,7,9,10,13,15}; // Actually channel numbers, 1 based
+  int shift2[8] = {2,5,6,7,8,11,13,15};
+  int shift3[8] = {1,2,5,7,9,10,13,15};
+  int shift4[8] = {2,5,6,7,8,11,13,15};
+
+  // Convert to bit shifts
+  for (j=0; j<8; j++) {
+    shift1[j]--; // Convert to zero based
+    shift2[j]--; // Convert to zero based
+    shift3[j]--; // Convert to zero based
+    shift4[j]--; // Convert to zero based
+    if (j%2) { // Will end up as high nyble
+      shift1[j]--; // Shift is one less. This assume channel 1 is not the second selected channel
+      shift2[j]--; // Shift is one less. This assume channel 1 is not the second selected channel
+      shift3[j]--; // Shift is one less. This assume channel 1 is not the second selected channel
+      shift4[j]--; // Shift is one less. This assume channel 1 is not the second selected channel
+    }
+    shift1[j] *= 4;
+    shift2[j] *= 4;
+    shift3[j] *= 4;
+    shift4[j] *= 4;
+  }
+
+  uint64_t rate = nchan*SAMPLEPERSEC*4/8; // Bytes/sec excluding header (4 bit/sample as complex)
+  vdif_packetsize = MAX_PACKETSIZE;
+  vdif_packetsize = (vdif_packetsize/8)*8; // Round down to multiple of 8 bytes
+  while (vdif_packetsize>0) {
+    if ((rate % vdif_packetsize) == 0) {
+      printf("Choosing VDIf framesize of = %d\n", vdif_packetsize);
+      break;
+    }
+    vdif_packetsize-=8;
+  }
+  if (vdif_packetsize<=0) {
+    printf("Could not find appropriate VDIF header size for data rate %.2f Mbytes/sec\n", rate/1e6);
+    exit(EXIT_FAILURE);
+  }
+
+  vdifdata = malloc(vdif_packetsize);
+  if (vdifdata==NULL) {
+    perror("Allocating memory");
+    exit(EXIT_FAILURE);
+  }
+  
+  int samplesperframe = (vdif_packetsize*8)/(nchan*4);  // 4 bits/sample
+  framespersec = SAMPLEPERSEC/samplesperframe;
+  printf("Frame/sec = %d\n", framespersec);
+
+  createVDIFHeader(&header, vdif_packetsize+VDIF_HEADER_BYTES, 0,  2, nchan, 1, "Tt");
+  setVDIFTime(&header, time(NULL));
+  
+  t0 = tim();
+  vdifbytes = 0;
+  for (i=0; i<nloop; i++) {
+    for (j=0; j<nblock; j++) {
+      if1 = (&data[j][0]) - 4096;
+      if2 = if1+1024;
+      if3 = if2+1024;
+      if4 = if3+1024;
+
+      for (k=0; k<bufsize/(8192*4); k++) {
+	if1 += 4096;
+	if2 += 4096;
+	if3 += 4096;
+	if4 += 4096;
+
+	for (l=1; l<1024; l++) {
+	  for (m=0; m<4; m++) {
+	    vdifdata[vdifbytes] = (if1[l]>>shift1[m*2])&0xFF;
+	    vdifdata[vdifbytes] |= (if1[l]>>shift1[m*2+1])&0xFF00;
+	    vdifbytes++;
+	  }
+	  for (m=0; m<4; m++) {
+	    vdifdata[vdifbytes] = (if2[l]>>shift1[m*2])&0xFF;
+	    vdifdata[vdifbytes] |= (if2[l]>>shift1[m*2+1])&0xFF00;
+	    vdifbytes++;
+	  }
+	  for (m=0; m<4; m++) {
+	    vdifdata[vdifbytes] = (if3[l]>>shift1[m*2])&0xFF;
+	    vdifdata[vdifbytes] |= (if3[l]>>shift1[m*2+1])&0xFF00;
+	    vdifbytes++;
+	  }
+	  for (m=0; m<4; m++) {
+	    vdifdata[vdifbytes] = (if4[l]>>shift1[m*2])&0xFF;
+	    vdifdata[vdifbytes] |= (if4[l]>>shift1[m*2+1])&0xFF00;
+	    vdifbytes++;
+	  }
+
+	  if (vdifbytes>= vdif_packetsize) {
+	    // Would write VDIF packet here
+	    vdifbytes = 0;
+	    nextVDIFHeader(&header, framespersec);
+	  }
+	}
+      }
+    }
+  }
+  t1 = tim();
+
+  printtime("Extracting 8 arbitary channels per IF", t1-t0, nchan, (uint64_t)nloop*nblock*bufsize);
 
   free(vdifdata);
 }
