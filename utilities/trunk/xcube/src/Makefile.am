@@ -1,4 +1,5 @@
 AM_CPPFLAGS = -I$(top_srcdir)/x3c/include $(VDIFIO_CFLAGS)
+AM_CFLAGS = $(VDIFIO_CFLAGS)
 
 bin_PROGRAMS = \
 	lf1extract \
@@ -6,7 +7,8 @@ bin_PROGRAMS = \
 	x3projects \
 	lf1vdifcheck \
 	hrft2vdif \
-	hrftStats
+	hrftStats \
+	channelextract
 
 lf1extract_LDADD = \
 	../x3c/lib/libpacketReader.a \
@@ -64,6 +66,12 @@ hrft2vdif_LDADD = \
 
 hrft2vdif_SOURCES = \
 	hrft2vdif.cpp
+
+channelextract_LDADD = \
+	$(VDIFIO_LIBS)
+
+channelextract_SOURCES = \
+	channelextract.c
 
 hrftStats_LDADD = \
 	../x3c/lib/libpacketReader.a \
