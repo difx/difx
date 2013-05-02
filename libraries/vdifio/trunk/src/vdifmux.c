@@ -487,7 +487,7 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 	outputDataSize = inputDataSize*nOutputChan;
 	outputFrameSize = outputDataSize + VDIF_HEADER_BYTES;
 	frameGranularity = inputFramesPerSecond/gcd(inputFramesPerSecond, 1000000000);
-	maxDestIndex = destSize/outputFrameSize - 2;
+	maxDestIndex = destSize/outputFrameSize - 1;
 	maxSrcIndex = srcSize - nSort*inputFrameSize;
 	if(maxSrcIndex < outputFrameSize)
 	{
@@ -540,6 +540,7 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 			continue;
 		}
 		if(getVDIFFrameBytes(vh) != inputFrameSize ||
+/* FIXME: Uncomment next line after finishing with TD056 */
 //		   getVDIFNumChannels(vh) != 1 ||
 		   getVDIFBitsPerSample(vh) != nBit)
 		{
@@ -579,8 +580,7 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 			epoch = getVDIFEpoch(&outputHeader);
 		}
 	
-		/* add 1 to reserve the first slot for later semi-in-place corner turning */
-		destIndex = frameNumber - startFrameNumber + 1;
+		destIndex = frameNumber - startFrameNumber;
 
 		if(destIndex < 1)
 		{
@@ -619,7 +619,7 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 				break;
 			}
 		}
-		else 
+		else /* here we have a usable packet */
 		{
 			uint32_t *p = (uint32_t *)(dest + outputFrameSize*destIndex);
 			
@@ -657,13 +657,11 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 					nSkip += nValidFrame*inputFrameSize;
 					nValidFrame = 0;	
 
-					destIndex = frameNumber - startFrameNumber + 1;
+					destIndex = frameNumber - startFrameNumber;
 					p = (uint32_t *)(dest + outputFrameSize*destIndex);
 				}
 			}
 
-			/* Finally, here we are at a point where we can copy data */
-			
 			/* set mask indicating valid data in place */
 			if(p[7] & (1 << chanId))
 			{
@@ -673,18 +671,79 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 			{
 				/* NOTE!  We're using just a bit of the dest buffer to store pointers to the original data payloads */
 				const unsigned char **threadBuffers = (const unsigned char **)(dest + outputFrameSize*destIndex + VDIF_HEADER_BYTES);
-				
+
 				p[7] |= (1 << chanId);
 				threadBuffers[chanId] = cur + VDIF_HEADER_BYTES;	/* store pointer to data for later corner turning */
 				
 				++nValidFrame;
+
+				if(destIndex > highestDestIndex)
+				{
+					highestDestIndex = destIndex;
+				}
+				
+				/* Once we have nSort good frames, we know the earliest frame acceptable, so now scrunch forward... */
+				if(nValidFrame == nSort)
+				{
+					int firstUsed;
+
+					for(firstUsed = 0; firstUsed <= highestDestIndex; ++firstUsed)
+					{
+						p = (uint32_t *)(dest + outputFrameSize*firstUsed);
+
+						if(p[7] == goodMask)
+						{
+							break;
+						}
+					}
+					if(firstUsed > 0 && firstUsed <= highestDestIndex)
+					{
+						int maxf;
+						
+						/* Ensure frame granularity conditions remain met */
+						firstUsed -= (firstUsed % frameGranularity);
+
+						maxf = 2*firstUsed;
+						if(maxf < highestDestIndex)
+						{
+							maxf = highestDestIndex;
+						}
+						if(maxf > maxDestIndex)
+						{
+							maxf = maxDestIndex;
+						}
+
+						/* slide data forward */
+						for(f = firstUsed; f <= maxf; ++f)
+						{
+							uint32_t *q;
+
+							p = (uint32_t *)(dest + outputFrameSize*(f-firstUsed));
+							q = (uint32_t *)(dest + outputFrameSize*f);
+							p[7] = q[7];
+							q[7] = 0;
+
+							if(p[7] != 0)
+							{
+								const unsigned char **threadBuffers2;
+								int t;
+
+								threadBuffers = (const unsigned char **)(dest + outputFrameSize*(f-firstUsed) + VDIF_HEADER_BYTES);
+								threadBuffers2 = (const unsigned char **)(dest + outputFrameSize*f + VDIF_HEADER_BYTES);
+								for(t = 0; t < nThread; ++t)
+								{
+									threadBuffers[t] = threadBuffers2[t];
+								}
+							}
+						}
+
+						/* change a few other indexes */
+						highestDestIndex -= firstUsed;
+						startFrameNumber += firstUsed;
+					}
+				}
 			}
 			i += inputFrameSize;
-
-			if(destIndex > highestDestIndex)
-			{
-				highestDestIndex = destIndex;
-			}
 		}
 	}
 
@@ -699,44 +758,35 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 	seconds = startFrameNumber/inputFramesPerSecond;
 	frameNum = startFrameNumber%inputFramesPerSecond;
 
-	firstValid = -1;
-
-	for(f = 1; f <= highestDestIndex; ++f)
+	for(f = 0; f <= highestDestIndex; ++f)
 	{
-		const unsigned char *cur = dest + outputFrameSize*f;	/* points to block of data needing rearrangement */
-		uint32_t *p = (uint32_t *)cur;
+		unsigned char *frame = dest + outputFrameSize*f;	/* points to rearrangement destination */
+		const uint32_t *p = (const uint32_t *)frame;
+		uint32_t mask;
 
-		if(firstValid < 0 && p[7] == goodMask && (frameNum % frameGranularity) == 0)
+		mask = p[7];
+
+		/* generate header for output frame */
+		memcpy(frame, (const char *)&outputHeader, VDIF_HEADER_BYTES);
+		setVDIFFrameSecond((vdif_header *)frame, seconds);
+		setVDIFFrameNumber((vdif_header *)frame, frameNum);
+
+		if(mask == goodMask)
 		{
-			firstValid = f;
-			startFrameNumber = (long long)seconds*inputFramesPerSecond + frameNum;	/* report the actual first frame written */
+			const unsigned char **threadBuffers = (const unsigned char **)(frame + VDIF_HEADER_BYTES);
+
+			/* Note: The following function only works because all of the corner turners make a copy of the
+			 * thread pointers before beginning */
+			cornerTurner(frame + VDIF_HEADER_BYTES, threadBuffers, outputDataSize);
+
+			++nGoodOutput;
 		}
-
-		if(firstValid >= 0)
+		else
 		{
-			unsigned char *frame;				/* points to new single-thread-VDIF frame */
-			frame = dest + outputFrameSize*(f-firstValid);
+			/* Set invalid bit */
+			setVDIFFrameInvalid((vdif_header *)frame, 1);
 
-			/* generate header for output frame */
-			memcpy(frame, (const char *)&outputHeader, VDIF_HEADER_BYTES);
-			setVDIFFrameSecond((vdif_header *)frame, seconds);
-			setVDIFFrameNumber((vdif_header *)frame, frameNum);
-
-			if(p[7] == goodMask)
-			{
-				const unsigned char **threadBuffers = (const unsigned char **)(cur + VDIF_HEADER_BYTES);
-
-				cornerTurner(frame + VDIF_HEADER_BYTES, threadBuffers, outputDataSize);
-
-				++nGoodOutput;
-			}
-			else
-			{
-				/* Set invalid bit */
-				setVDIFFrameInvalid((vdif_header *)frame, 1);
-
-				++nBadOutput;
-			}
+			++nBadOutput;
 		}
 
 		++frameNum;
