@@ -52,7 +52,8 @@ int main(int argc, char **argv)
 	int nSort = 20;
 	struct vdif_mux_statistics stats;
 	int leftover;
-	int chunkSize = defaultChunkSize;
+	int srcChunkSize = defaultChunkSize*5/4;
+	int destChunkSize = defaultChunkSize;
 	int framesPerSecond;
 	long long nextFrame = -1;
 	const char *inFile;
@@ -126,13 +127,10 @@ int main(int argc, char **argv)
 	}
 	if(argc > 7)
 	{
-		chunkSize = atoi(argv[7]);
-		if(chunkSize % 4 != 0)
-		{
-			fprintf(stderr, "Error: provided chunk size must be a multiple of 4 bytes\n");
-
-			return EXIT_FAILURE;
-		}
+		destChunkSize = atoi(argv[7]);
+		srcChunkSize = destChunkSize*5/4;
+		destChunkSize -= destChunkSize % 4;
+		srcChunkSize -= srcChunkSize % 4;
 	}
 
 
@@ -190,8 +188,8 @@ int main(int argc, char **argv)
 		out = stdout;
 	}
 
-	src = (unsigned char *)malloc(chunkSize);
-	dest = (unsigned char *)malloc(chunkSize);
+	src = (unsigned char *)malloc(srcChunkSize);
+	dest = (unsigned char *)malloc(destChunkSize);
 
 	leftover = 0;
 	
@@ -201,7 +199,7 @@ int main(int argc, char **argv)
 	{
 		int V;
 
-		n = fread(src+leftover, 1, chunkSize-leftover, in);
+		n = fread(src+leftover, 1, srcChunkSize-leftover, in);
 		if(n < 1)
 		{
 			if(leftover < inputframesize)
@@ -214,7 +212,11 @@ int main(int argc, char **argv)
 			}
 		}
 
-		V = vdifmux(dest, chunkSize, src, n+leftover, inputframesize, framesPerSecond, 2, nThread, threads, nSort, nGap, -1, &stats);
+		if(n < srcChunkSize-leftover)
+		{
+			nSort = -nSort;
+		}
+		V = vdifmux(dest, destChunkSize, src, n+leftover, inputframesize, framesPerSecond, 2, nThread, threads, nSort, nGap, -1, &stats);
 
 		if(V < 0)
 		{
@@ -268,6 +270,11 @@ int main(int argc, char **argv)
 		}
 
 		nextFrame = stats.startFrameNumber + stats.nOutputFrame;
+
+		if(nSort < 0)
+		{
+			break;
+		}
 	}
 
 	if(in != stdin)

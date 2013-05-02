@@ -419,6 +419,7 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 	int firstValid;
 	vdif_header outputHeader;
 	int epoch = -1;
+	int highestSortedDestIndex = -1;
 
 	void (*cornerTurner)(unsigned char *, const unsigned char **, int);
 
@@ -431,6 +432,17 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 	{
 		return -2;
 	}
+
+	if(nSort <= 0)
+	{
+		maxSrcIndex = srcSize - inputFrameSize;
+		nSort = -nSort;
+	}
+	else
+	{
+		maxSrcIndex = srcSize - nSort*inputFrameSize;
+	}
+
 	if(nGap < nSort)
 	{
 		nGap = nSort;
@@ -488,11 +500,6 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 	outputFrameSize = outputDataSize + VDIF_HEADER_BYTES;
 	frameGranularity = inputFramesPerSecond/gcd(inputFramesPerSecond, 1000000000);
 	maxDestIndex = destSize/outputFrameSize - 1;
-	maxSrcIndex = srcSize - nSort*inputFrameSize;
-	if(maxSrcIndex < outputFrameSize)
-	{
-		return -5;
-	}
 	goodMask = (1 << nThread) - 1;	/* nThread 1s as LSBs and 0s above that */
 
 	startFrameNumber = startOutputFrameNumber;
@@ -592,17 +599,9 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 		}
 		if(i > maxSrcIndex)
 		{
-			/* start the shut-down procedure */
-			if(bytesProcessed == 0)
+			if(highestSortedDestIndex < 0)
 			{
-				bytesProcessed = i;
-			}
-			if(destIndex > highestDestIndex)
-			{
-				/* don't bother to save this data.  We'll get it on next call */
-				i += inputFrameSize;
-
-				continue;
+				highestSortedDestIndex = highestDestIndex;
 			}
 		}
 		if(destIndex > maxDestIndex)
@@ -683,7 +682,7 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 				}
 				
 				/* Once we have nSort good frames, we know the earliest frame acceptable, so now scrunch forward... */
-				if(nValidFrame == nSort)
+				if(nValidFrame == nSort && startOutputFrameNumber < 0)
 				{
 					int firstUsed;
 
@@ -691,7 +690,7 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 					{
 						p = (uint32_t *)(dest + outputFrameSize*firstUsed);
 
-						if(p[7] == goodMask)
+						if(p[7] > 0)
 						{
 							break;
 						}
@@ -739,6 +738,7 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 
 						/* change a few other indexes */
 						highestDestIndex -= firstUsed;
+						highestSortedDestIndex -= firstUsed;
 						startFrameNumber += firstUsed;
 					}
 				}
@@ -752,6 +752,100 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 		bytesProcessed = i;
 	}
 
+	/* If there were fewer than nSort frames read and start output frame number not specified, scrunch output to front */
+	if(nValidFrame < nSort && startOutputFrameNumber < 0)
+	{
+		int firstUsed;
+		uint32_t *p;
+
+		for(firstUsed = 0; firstUsed <= highestDestIndex; ++firstUsed)
+		{
+			p = (uint32_t *)(dest + outputFrameSize*firstUsed);
+
+			if(p[7] == goodMask)
+			{
+				break;
+			}
+		}
+		if(firstUsed > 0 && firstUsed <= highestDestIndex)
+		{
+			int maxf;
+			
+			/* Ensure frame granularity conditions remain met */
+			firstUsed -= (firstUsed % frameGranularity);
+
+			maxf = 2*firstUsed;
+			if(maxf < highestDestIndex)
+			{
+				maxf = highestDestIndex;
+			}
+			if(maxf > maxDestIndex)
+			{
+				maxf = maxDestIndex;
+			}
+
+			/* slide data forward */
+			for(f = firstUsed; f <= maxf; ++f)
+			{
+				uint32_t *q;
+
+				p = (uint32_t *)(dest + outputFrameSize*(f-firstUsed));
+				q = (uint32_t *)(dest + outputFrameSize*f);
+				p[7] = q[7];
+				q[7] = 0;
+
+				if(p[7] != 0)
+				{
+					const unsigned char **threadBuffers;
+					const unsigned char **threadBuffers2;
+					int t;
+
+					threadBuffers = (const unsigned char **)(dest + outputFrameSize*(f-firstUsed) + VDIF_HEADER_BYTES);
+					threadBuffers2 = (const unsigned char **)(dest + outputFrameSize*f + VDIF_HEADER_BYTES);
+					for(t = 0; t < nThread; ++t)
+					{
+						threadBuffers[t] = threadBuffers2[t];
+					}
+				}
+			}
+
+			/* change a few other indexes */
+			highestDestIndex -= firstUsed;
+			highestSortedDestIndex -= firstUsed;
+			startFrameNumber += firstUsed;
+		}
+	}
+
+	/* Here the source dried up, but we want to be able to reconstruct a complete stream later, so back up, a bit to look for most recent incomplete frame consistent with nSort */
+	if(highestSortedDestIndex >= 0)
+	{
+		for(f = highestDestIndex; f > highestSortedDestIndex; --f)
+		{
+			const uint32_t *p = (const uint32_t *)(dest + outputFrameSize*f);
+			uint32_t mask = p[7];
+
+			if(mask != goodMask)
+			{
+				const unsigned char **threadBuffers = (const unsigned char **)(dest + outputFrameSize*f + VDIF_HEADER_BYTES);
+				int t;
+				
+				highestDestIndex = f-1;
+				for(t = 0; t < nThread; ++t)
+				{
+					if(mask & (1<<t))
+					{
+						int d;
+
+						d = threadBuffers[t] - src - VDIF_HEADER_BYTES;	/* this is number of bytes into input stream */
+						if(d < bytesProcessed)
+						{
+							bytesProcessed = d;
+						}
+					}
+				}
+			}
+		}
+	}
 
 	/* Stage 2: do the corner turning and header population */
 
@@ -823,7 +917,6 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 		
 		++stats->nCall;
 	}
-
 
 	return bytesProcessed;
 }
