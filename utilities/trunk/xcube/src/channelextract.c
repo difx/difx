@@ -47,12 +47,9 @@ void extract4chan(int nloop, int nblock, int bufsize, uint64_t **data);
 // Some global variables to avoid passing lots of parameters
 int main (int argc, char * const argv[]) {
   uint64_t **data;
-  int i, j, k, opt, status, tmp, packetsperblock;
+  int i, j, opt, status, tmp, packetsperblock;
   long int *lint;
-  float ftmp;
-  double t0, t1;
   int nblock = NBLOCK;
-
 
   struct option options[] = {
     {"nblock", 1, 0, 'N'},
@@ -309,7 +306,7 @@ void extractGeneric(uint64_t chans, int nloop, int nblock, int bufsize, uint64_t
   bzero(vdifdata, vdif_packetsize);
   for (i=0; i<nloop; i++) {
     for (j=0; j<nblock; j++) {
-      IF[0] = (&data[j][0]) - 8192*4;
+      IF[0] = (&data[j][0]) - 4096;
       IF[1] = IF[0]+1024;
       IF[2] = IF[1]+1024;
       IF[3] = IF[2]+1024;
