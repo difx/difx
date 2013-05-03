@@ -179,6 +179,7 @@ int main(int argc, char **argv)
 		if(!out)
 		{
 			fprintf(stderr, "Can't open %s for write.\n", outFile);
+			fclose(in);
 
 			return EXIT_FAILURE;
 		}

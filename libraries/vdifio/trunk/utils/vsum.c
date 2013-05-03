@@ -57,7 +57,7 @@ int main(int argc, char **argv)
 
 			if(r < 0)
 			{
-				printf("File %s VDIF summary failed with return value %d\n\n", r);
+				printf("File %s VDIF summary failed with return value %d\n\n", argv[a], r);
 			}
 			else
 			{
