@@ -420,6 +420,7 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 	vdif_header outputHeader;
 	int epoch = -1;
 	int highestSortedDestIndex = -1;
+	int vhUnset = 1;
 
 	void (*cornerTurner)(unsigned char *, const unsigned char **, int);
 
@@ -575,7 +576,10 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 		{
 			startFrameNumber = frameNumber - nSort;
 			startFrameNumber -= (startFrameNumber % frameGranularity);	/* to ensure first frame starts on integer ns */
+		}
 
+		if(vhUnset)
+		{
 			memcpy(&outputHeader, vh, 16);
 			memset(((char *)&outputHeader) + 16, 0, 16);
 
@@ -585,8 +589,10 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 			setVDIFFrameBytes(&outputHeader, outputFrameSize);
 			setVDIFFrameInvalid(&outputHeader, 0);
 			epoch = getVDIFEpoch(&outputHeader);
+
+			vhUnset = 0;
 		}
-	
+
 		destIndex = frameNumber - startFrameNumber;
 
 		if(destIndex < 1)
