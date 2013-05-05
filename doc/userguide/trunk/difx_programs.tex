@@ -1,14 +1,14 @@
 \section{Reference guide to programs and utilities} \label{sec:programs}
 
 This section has usage information for the numerous programs and scripts used in the DiFX system.
-Basic help information for most or all of these programs can be gotten by typing the program name with either no command line arguments or with a {\tt -h} option.
+Basic help information for most or all of these programs can be gotten by typing the program name with either no command line arguments or with a {\tt -h} option, depending on the program.
 In the usage descriptions below, arguments in square brackets $[$\ $]$ are optional and can often include multiple different parameters.
 Cases where 1 or more arguments of a certain type (such as files) can be passed to the program, the usage instructions will look like {\em arg}1 $[\ \cdots$ {\em arg}N$]$, with the implication that N arguments of this type were passed.
 In cases where 0 arguments of that type is also allowed, that first argument will also be in square brackets.
 If it is not obvious from the program name, the software package containing the program follows the section header.
 The package that includes each program is included in its section heading.
 
-Note that several VLBA specific programs are discussed in this manual that are not documented here, such as {\tt cjobgen}, {\tt tsm}, and {\tt plotbp}.
+Note that several VLBA specific programs are discussed in this manual that are not documented here, such as {\tt tsm}.
 These are preexisting programs that may be documented elsewhere and are less likely to be useful outside VLBA operations.
 Also note that programs from the {\tt difx\_db} package are internal to NRAO and in general are not applicable outside VLBA operations.
 The code for these programs can be made available upon request.
@@ -16,6 +16,11 @@ The code for these programs can be made available upon request.
 
 
 
+% TODO
+% Add SniffPlots 
+% Add vdifio utilities
+% m5access: m5timeseries, m5findformats, m5bstate, findvdif
+% add more hyperlinks (e.g., to vdifd, etc)
 
 
 
@@ -25,13 +30,13 @@ The code for these programs can be made available upon request.
 
 \subsection{calcif2} \label{sec:calcif2}
 
-\vspace{-20pt}\hspace{160pt}
-\difxoneone
-
-\vspace{7pt}
-
-\noindent
 Program {\tt calcif2} is intended to completely replace {\tt calcif}.
+This program produces a delay model file (ending with {\tt .im}) from a file containing the source, antenna and scan timing information (ending with {\tt .calc}).
+The detailed calculations are performed by the Goddard CALC program.
+Prior to this writing (May 4, 2013), the only option for the calculation back-end was CALC version 9 with NRAO additions which add ocean loading and near-field corrections (accurate as close as a few $\times 10^5$~km). 
+Now new options are being introduced, including CALC 9 with the Sekido-Fukushima near-field model (using the {\tt --sekido} option).
+Note that this option requires an installation of a special version of CALC that is not covered in this document.
+
 Instead of calling CALC for every tabulated model row, {\tt calcif2} computes a 5th degree polynomial every 120 seconds (typically),
 very closely resembling the delay model generation used at the VLBA hardware correlator.
 These polynomials are then evaluated at each model point.
@@ -45,8 +50,10 @@ where $l, m$ are angular coordinates (in radians) relative to the delay center o
 
 Normally {\tt calcif2} will be called by {\tt difxqueue}, {\tt startdifx}, or another higher-level program if needed.
 
-It connects via Remote Procedure Call (RPC) to a running copy of {\tt CalcServer} which must be running on a computer called {\tt \$CALC\_SERVER}, or on the specified computer if the {\tt -s} option is used.
+{\tt calcif2} connects via Remote Procedure Call (RPC) to an instance of {\tt CalcServer} which must be running on a computer identified by environment variable {\tt \$CALC\_SERVER}, or by the specified computer if the {\tt -s} option is used.
 If the output files (specified in the {\tt .calc} file) exist and are current (have newer modification times than the {\tt .calc} file, then the files will not be recreated unless the force option is used.
+
+In addition to calculating the delay model, this program computes the baseline vectors, $u,v,w$ (relative to Earth center on a per-antenna basis) and source elevation vs.\ time.
 
 \begin{itemize}
 \item[] Usage: {\tt calcif2} $[$ {\em options} $]$ $\{$ {\tt -a} $\mid$ {\em calcFile1} $[$ {\em calcFile2} $[\cdots]$ $]$ $\}$
@@ -57,12 +64,15 @@ If the output files (specified in the {\tt .calc} file) exist and are current (h
 \item[] {\tt -v} or {\tt --verbose} : print more verbose logging/debug info
 \item[] {\tt -q} or {\tt --quiet} : print less verbose logging/debug info
 \item[] {\tt -f} or {\tt --force} : rerun even if output files exist and are current
-\item[] {\tt -n} or {\tt --noaber} : don't perform aberration corrections
-\item[] {\tt -z} or {\tt --allow-neg-delay} : don't zero delays that are negative (i.e., shadowed)
+\item[] {\tt -n} or {\tt --noaber} : don't perform aberration $u,v,w$ corrections
+\item[] {\tt -F} or {\tt --fit} : Instead of producing an $n$ term polynomial from $n$ samples, calculate more samples and perform a fit.  This is not of general use as tests have shown that the improvement is negligable.
+\item[] {\tt -z} or {\tt --allow-neg-delay} : don't zero delays that are negative (i.e., shadowed by Earth)
+\item[] {\tt -A} or {\tt --noatmos} : don't include atmosphere in calculation of $u,v,w$
 \item[] {\tt -s} {\em server} or {\tt --server} {\em server} : connect to {\em server}, not {\tt \$CALC\_SERVER}
 \item[] {\tt -o} {\em order} or {\tt --order} {\em order} : make polynomials with {\em order}+1 terms (default 5)  
 \item[] {\tt -i} {\em int} or {\tt --interval} {\em int} : make a polynomial every {\em int} seconds (default 120)
 \item[] {\tt --override-version} ignore difx version clashes
+\item[] {\tt --sekido} use a version of CALC with the Sekido-Fukushima near-field delay model (use of this is not documented here)
 \end{itemize}
 \item[] {\em calcFile} is a {\tt .calc} file (\S\ref{sec:input}), such as one generated by {\tt vex2difx} (\S\ref{sec:vex2difx})
 \item[] Example 1: {\tt calcif2 job1420.000.calc job1421.000.calc} 
@@ -70,16 +80,7 @@ If the output files (specified in the {\tt .calc} file) exist and are current (h
 \item[] Example 3: {\tt calcif2 -a -i 60} 
 \end{itemize}
 
-Four files are produced by {\tt calcif2}:
-\begin{enumerate}
-\item {\tt .uvw} Projected baseline vectors (\S\ref{sec:uvw})
-\item {\tt .delay} Geometric delays (\S\ref{sec:delay})
-\item {\tt .rate} Time derivatives of geometric delays and atmospheric delays (\S\ref{sec:rate})
-\item {\tt .im} Polynomial interferometer model file, to be used by {\tt difx2fits} (\S\ref{sec:im})
-\end{enumerate}
-The first two of these are required for correlation and construction of {\tt FITS} files (\S\ref{sec:FITS}).
-The third is required (unless the fourth is present) in addition if full model accountability is desired.
-If the fourth file is present, its contents will override those of the first three when making {\tt FITS} files.
+% FIXME: add more info on the Sekido option
 
 
 
@@ -120,12 +121,6 @@ At this time it seems {\tt CalcServer} cannot be compiled for 64-bit machines.
 
 \subsection{checkmpifxcorr {\small $\mathrm{(package: mpifxcorr)}$}}
 
-\vspace{-20pt}\hspace{185pt}
-\difxtwozero
-
-\vspace{7pt}
-
-\noindent
 Program {\tt checkmpifxcorr} reads the {\tt .input} and other associated files for a DiFX job and parses them with the same logic used by {\tt mpifxcorr} in order to determine their validity.
 
 \begin{itemize}
@@ -143,14 +138,8 @@ This check has proven especially useful for pulsar processing.
 
 \subsection{checkdir {\small $\mathrm{(package: mk5daemon)}$}}
 
-\vspace{-20pt}\hspace{185pt}
-\difxonefive
-
-\vspace{7pt}
-
-\noindent
 Program {\tt checkdir} can be used to check the integrity of one or more {\tt .dir} files that are stored at a location pointed by environment variable {\tt MARK5\_DIR\_PATH} .
-Even after 5 years of use, the Mark5 units tend to be a weak point in the reliability of correlation.
+Even after many years of use, the Mark5 units tend to be a weak point in the reliability of correlation.
 Since reading the module directory and examining a bit of data from each scan are the first actions done to a module, many of the possible problems show up at this time.
 This utility looks for a number of possible problems, including scans that could not be decoded, overlapping or out-of-order scans, scans with illegal format parameters and others.
 This program makes no attempt to fix problems.
@@ -188,12 +177,8 @@ Except in the lowest verbosity mode (the default for {\tt -a}), module directori
 
 \subsection{condition {\small $\mathrm{(package: difx\_db)}$}}
 
-\vspace{-20pt}\hspace{170pt}
-\difxonefive
+This is an NRAO-only program owing to its ties to the VLBA database.
 
-\vspace{7pt}
-
-\noindent
 Program {\tt condition} is mainly used to extract Mark5 module conditioning reports from the database but also has the means to manually import data into the database.
 When querying (with the {\tt find} action), one or more ``identifiers'' can be supplied which can be either the names of the Mark5 modules or serial number of individual disks (or a mix of the two!).
 Environment variable {\tt VLBA\_DB} must be set to point to the correct database.
@@ -228,12 +213,8 @@ Environment variable {\tt VLBA\_DB} must be set to point to the correct database
 
 \subsection{condition\_watch {\small $\mathrm{(package: difx\_db)}$}}
 
-\vspace{-20pt}\hspace{210pt}
-\difxonefive
+This is an NRAO-only program owing to its ties to the VLBA database.
 
-\vspace{7pt}
-
-\noindent
 Program {\tt condition\_watch} is meant to run as a background process on the correlator head node.
 Its function is to receive {\tt Mark5ConditionMessage}s emitted by a special version of {\tt SSErase} (the module conditioning program) and stuff this data into the database.
 This program is automatically started by {\tt mk5daemon} when it is supplied with the {\tt -w} or {\tt --condition-watch} arguments.
@@ -260,12 +241,6 @@ Environment variable {\tt VLBA\_DB} must be set to point to the correct database
 
 \subsection{cpumon {\small $\mathrm{(package: difxmessage)}$}} \label{sec:cpumon} 
 
-\vspace{-20pt}\hspace{180pt}
-\difxoneone
-
-\vspace{7pt}
-
-\noindent
 Program {\tt cpumon} is a program that listens for {\tt difxLoad} messages multicast from the Mark5 units and displays the information; updating the display as new messages are received.
 
 \begin{itemize}
@@ -282,6 +257,7 @@ The columns displayed are:
 \item Memory usage / Total memory
 \item Network receive rate (Mbps)
 \item Network transmit rate (Mbps)
+\item Number of CPU cores
 \end{enumerate}
 
 Bug: {\tt cpumon} does not respond nicely to {\tt -h} on the command line.
@@ -297,15 +273,14 @@ Bug: {\tt cpumon} does not respond nicely to {\tt -h} on the command line.
 
 \subsection{db2vex {\small $\mathrm{(package: difx\_db)}$}}
 
-\vspace{-20pt}\hspace{155pt}
-\difxonefive
+This is an NRAO-only program owing to its ties to the VLBA database.
 
-\vspace{7pt}
+Python program {\tt db2vex} adds three tables to a vex file based on data found within the VLBA database and VLA databases.
+For legacy VLBA/HSA projects, the Oracle database is accessed using the {\tt cx\_Oracle} library to retrieve information from the {\tt TAPELOG\_OBS}, {\tt CLOCK}, and {\tt EOP} tables.
+For RDBE VLBA/GBT projects, a new Postgres VLBA database (vlbampts) using the EVLA monitor data format is accessed.
+For projects containing the (modern) phased-VLA, the EVLA database (evlampts) is accessed for similar information.
 
-\noindent
-Python program {\tt db2vex} adds three tables to a vex file based on data found within the VLBA database: {\tt TAPELOG\_OBS}, {\tt CLOCK}, and {\tt EOP}.
-It accesses the Oracle database using a library called {\tt cx\_Oracle}.
-This program should be run after the Earth Orientation Parameters (EOPs) for a project have reached a suitable maturity and after the clocks for the antennas have been inserted into the database.
+This program should be run after the Earth Orientation Parameters (EOPs) for a project have reached a suitable maturity and after the clocks for the antennas have been inserted into the (legacy) database.
 If a preliminary run of this program is made for the purposes of doing a clock search correlation pass it is recommended that the output file (a vex format file with the new tables attached) get renamed to indicate that this is not to be used to derive jobs for production correlator passes.
 
 \begin{itemize}
@@ -328,8 +303,12 @@ The output of {\tt db2vex} will be another vex format file called {\em vexFile}{
 This output file is to be used by {\tt vex2difx} for conversion into jobs to run by {\tt mpifxcorr} .
 The {\tt --vsnProjectCode} was intended for a pathological situation where a project code had to be renamed.
 
+\noindent
+Note that environment variable {\tt VLBA\_DB} must be set to point to the Oracle database in question.
 
+%FIXME: check if new parameters have been added
 
+%FIXME: note other database env vars...
 
 
 
@@ -338,12 +317,6 @@ The {\tt --vsnProjectCode} was intended for a pathological situation where a pro
 
 \subsection{diffDiFX.py {\small $\mathrm{(package: vis2screen)}$}} \label{sec:diffDiFX} 
 
-\vspace{-20pt}\hspace{200pt}
-\difxtwozero
-
-\vspace{7pt}
-
-\noindent
 Program {\tt diffDiFX.py} generates a context-sensitive difference of two DiFX output files for detailed version testing.  Corresponding visibility records are differenced and statistics on the differences are accumulated and printed at the end of the processing.
 
 \begin{itemize}
@@ -354,12 +327,14 @@ Program {\tt diffDiFX.py} generates a context-sensitive difference of two DiFX o
 \item[] {\tt -f FREQ} or {\tt --freq=FREQ} : Only look at visibilities from this FREQ index
 \item[] {\tt -b BASELINE} or {\tt --baseline=BASELINE} : Only look at visibilities from this BASELINE num
 \item[] {\tt -t THRESHOLD} or {\tt --threshold=THRESHOLD} : Display any difference that exceeds THRESHOLD
+\item[] {\tt -e EPSILON} or {\tt --epsilon=EPSILON} : Display any differences that exceeds allowed numerical error EPSILON
 \item[] {\tt -s SKIPRECORDS} or {\tt --skiprecords=SKIPRECORDS} : Skip SKIPRECORDS records before starting comparison
 \item[] {\tt -m MAXRECORDS} or {\tt --maxrecords=MAXRECORDS} : Stop after comparing MAXRECORDS (if >0) records
 \item[] {\tt -p PRINTINTERVAL} or {\tt --printinterval=PRINTINTERVAL} : Print a summary every PRINTINTERVAL records
 \item[] {\tt -c MAXCHANNELS} or {\tt --maxchannels=MAXCHANNELS} : The length of the array that will be allocated to hold vis results
 \item[] {\tt -v} or {\tt --verbose} : Turn verbose printing on
 \item[] {\tt -i INPUTFILE} or {\tt --inputfile=INPUTFILE} : Parse INPUTFILE for the correlation setup
+\item[] {\tt --matchheaders} : On seeing a header mismatch, skip through file 2 looking for next match
 \end{itemize}
 \item[] {\em difxfile1} is the first difx file to compare
 \item[] {\em difxfile2} is the second difx file to compare 
@@ -367,7 +342,10 @@ Program {\tt diffDiFX.py} generates a context-sensitive difference of two DiFX o
 \end{itemize}
 
 
-\noindent if the error for any record exceeds the specified threshold a verbose error message is printed.  Summary statistics are printed at the end of the file.  Warnings are printed if the headers do not match between the two files.
+\noindent 
+If the error for any record exceeds the specified threshold a verbose error message is printed.
+Summary statistics are printed at the end of the file.
+Warnings are printed if the headers do not match between the two files.
 
 
 
@@ -376,20 +354,18 @@ Program {\tt diffDiFX.py} generates a context-sensitive difference of two DiFX o
 
 \subsection{difx2fits} \label{sec:difx2fits}
 
-Program {\tt difx2fits} creates a FITS output file from the SWIN format visibilities created by {\tt mpifxcorr} and several other files carrying information about the observation.
-When run, {\tt difx2fits} requires the following files to be present:
+Program {\tt difx2fits} creates a FITS output file from the native output format created by {\tt mpifxcorr} and several other files carrying information about the observation.
+Multiple input file sets can be specified.
+A separate output FITS file is created for each unique frequency setup encountered.
+When run, {\tt difx2fits} requires the following files to be present for each DiFX file set being converted:
 \begin{enumerate}
 \item {\em baseFilename}{\tt .difx/}
 \item {\em baseFilename}{\tt .input}
-\item {\em baseFilename}{\tt .uvw}
-\item {\em baseFilename}{\tt .delay}
+\item {\em baseFilename}{\tt .calc}
+\item {\em baseFilename}{\tt .im}
 \end{enumerate}
-This minimal requirement means that {\tt difx2fits} can be used even outside the NRAO DiFX environment, though it is possible that certain combinations of different configurations within the {\tt .input} file will not be properly supported at this time.
 Several other files are optional and are typically used to populate calibration and ancillary tables:
 \begin{enumerate}
-\item {\em baseFilename}{\tt .calc}
-\item {\em baseFilename}{\tt .rates}
-\item {\em baseFilename}{\tt .im}
 \item {\em baseFilename}{\tt .flag} 
 \item {\tt flags}
 \item {\tt pcal}
@@ -397,10 +373,8 @@ Several other files are optional and are typically used to populate calibration 
 \item {\tt weather}
 \item {\tt \$GAIN\_CURVE\_PATH/}
 \end{enumerate}
-With the exception of the gain curve files, all the input files to {\tt difx2fits} are expected to be in the current working directory.
+With the exception of the gain curve files, all the input files to {\tt difx2fits} are expected to be in the current working directory or in the place indicated by the {\tt .input} file.
 As the visibility file ({\tt .difx}) is read, any records that are all zero are omitted.
-The number count of these dropped records is reported as ``invalid records'' when {\tt difx2fits} finishes writing the {\bf UV} table.
-With {\tt difx2fits} versions since 2.0 (which is included as part of NRAO-DiFX 1.1) multiple correlator output files can be combined into a single destination {\tt FITS} file; this feature is still new, so please check the results carefully!
 
 \begin{itemize}
 \item[] Usage: {\tt difx2fits} $[$ {\em options} $]$ $\{$ {\tt -d} $\mid$ {\em baseFilename1} $[\cdots${\em baseFilenameN}$]$ $[${\em outFile}$]$ $\}$
@@ -434,6 +408,17 @@ This file contains an ASCII art diagram of which jobs contributed to each {\tt .
 
 If submitting a bug report for {\tt difx2fits}, please include in it the full output of {\tt difx2fits -v -v} and the {\tt .input} and {\tt .calc} files.
 
+{\tt difx2fits} displays several diagnostics during the conversion process, separately for each output FITS file.
+The size of each FITS table is printed; a zero size indicates that table is not produced.
+For the visibility table, input files contributing to the output are printed.
+Scan information is printed at increased verbosity levels.
+Not all DiFX output visibilities are written to the FITS file.
+Accounting of the disposition of the visibilities is provided.
+Invalid records are those containing infinite or NaN values and indicate a likely bug in the software.
+Flagged records are those identified by vex2script (or other DiFX file set generation programs) in the {\tt .flag} file as being illogical, such as cases where a particular baseline during a job belongs to a different subarray.
+When using integration times longer than 1 second it is possible for one visibility to span two scans.  
+Such records are dropped.
+Finally any visibilities, produced outside a normal scan start/stop time are dropped; this should not occur unless the {\tt .calc} file is modified between correlation and FITS creation.
 
 
 
@@ -445,25 +430,16 @@ If submitting a bug report for {\tt difx2fits}, please include in it the full ou
 
 \subsection{difx2mark4} \label{sec:difx2mark4}
 
-\vspace{-20pt}\hspace{120pt}
-\difxtwozero
-
-\vspace{7pt}
-
-\noindent
 Program {\tt difx2mark4} ...
+
+
+
 
 
 % difxarch --------------------------------------------------------------------
 
 \subsection{difxarch {\small $\mathrm{(package: difx\_db)}$}} \label{sec:difxarch}
 
-\vspace{-20pt}\hspace{165pt}
-\difxonefive
-
-\vspace{7pt}
-
-\noindent
 Program {\tt difxarch} is a simple script that moves {\tt FITS} files produced by {\tt makefits} from the correlation queue staging area (defined by the {\tt DIFX\_QUEUE\_BASE} environment variable) to the archive staging area (defined by environment variable {\tt DIFX\_ARCHIVE\_ROOT}).
 A process running on the archive computer will periodically monitor new files in this staging area and will then copy them to the actual archive.
 In order to prevent premature pick-up of these files, they are first moved into a directory with a name beginning with a period ({\tt .}).
@@ -494,12 +470,6 @@ This directory is renamed without the period once all files to be archived are c
 
 \subsection{difxcalculator {\small $\mathrm{(package: difxio)}$}} \label{sec:difxcalculator}
 
-\vspace{-20pt}\hspace{195pt}
-\difxonefive
-
-\vspace{7pt}
-
-\noindent
 Program difxcalculator looks at a set of DiFX input files ({\tt .input}, {\tt .calc}, etc.) and reports/calculates key operating parameters.
 This program is inspired by the {\tt difx\_calculator.xls} spread sheet available at \url{http://cira.ivec.org/dokuwiki/doku.php/difx/calculator}.
 
@@ -524,12 +494,6 @@ Bug: does not take into consideration multiple phase centers or zoom bands.
 
 \subsection{difxclean {\small $\mathrm{(package: difx\_db)}$}} \label{sec:difxclean}
 
-\vspace{-20pt}\hspace{175pt}
-\difxonefive
-
-\vspace{7pt}
-
-\noindent
 Program {\tt difxclean} simply deletes all data from {\tt \$DIFX\_QUEUE/} for a particular project.
 It also removes all jobs with status not equal to {\tt COMPLETE} for this project from the {\tt DIFXQUEUE} table of the database.
 It is intended that is be run at the same time the project is released, meaning data has been correlated and archived.
@@ -557,16 +521,11 @@ The user does not have to be in any particular directory when running this progr
 
 \subsection{difxcopy {\small $\mathrm{(package: difx\_db)}$}} \label{sec:difxcopy}
 
-\vspace{-20pt}\hspace{180pt}
-\difxonefive
-
-\vspace{7pt}
-
-\noindent
 Python program {\tt difxcopy} is used to copy DiFX input (and other) files to a different directory.
 In the process, explicit references to other files that are being copied are changed to reflect their
 new file system path.
 For a given file prefix, {\em prefix}, the following files are copied if they exist: {\em prefix}{\tt .input}, {\em prefix}{\tt .calc}, {\em prefix}{\tt .flag}, {\em prefix}{\tt .delay}, {\em prefix}{\tt .uvw}, {\em prefix}{\tt .rate}, and {\em prefix}{\tt .im}.
+The {\tt .vex} file referenced within the {\tt .calc} file is also copied.
 
 \begin{itemize}
 \item[] Usage: {\tt difxcopy} $[$ {\em options} $]$ {\em jobPrefix1} $[\cdots${\em jobPrefixN}$]$ {\em destDir}
@@ -593,17 +552,10 @@ For a given file prefix, {\em prefix}, the following files are copied if they ex
 
 \subsection{difxlog {\small $\mathrm{(package: difxmessage)}$}} \label{sec:difxlogprogram} 
 
-\vspace{-20pt}\hspace{180pt}
-\difxonefive
-
-\vspace{7pt}
-
-\noindent
 Program {\tt difxlog} can be used to collect DiFX multicast messages for a particular correlator job and write them to a file.
 A new instance of {\tt difxlog} must be started for each job being run.
 Normally this will be done automatically if implemented in the particular deployment of DiFX.
-In the case of VLBA DiFX, {\tt startdifx} starts it.
-Currently jobs started by {\tt mk5daemon} are not logged. % FIXME
+Both {\tt startdifx} and {\tt mk5daemon} can start DiFX and will instantiate a {\tt difxlog} process as needed.
 Only messages of type {\tt DifxAlertMessage} and {\tt DifxStatusMessage} are collected and written to the output file.
 
 \begin{itemize}
@@ -617,6 +569,19 @@ Only messages of type {\tt DifxAlertMessage} and {\tt DifxStatusMessage} are col
 
 Unless a {\em pidWatch} value is specified, {\tt difxlog} will run until killed.
 If a {\em pidWatch} value is provided, {\tt difxlog} will quit as soon as that process stops running.
+The {\em loglevel} parameter can be used to select the maximum severity level to write to the log.
+The possible values and their meanings are:
+\begin{center}
+\begin{tabular}{lll}
+0 & Fatal & {\tt mpifxcorr} cannot continue because of the noted problem \\
+1 & Severe & an internal error that should never happen happened (likely bug) \\
+2 & Error & a problem was encountered in the data processing \\
+3 & Warning & something suboptimal was noted \\
+4 & Informative & a note containing progress information \\
+5 & Verbose & more detailed progress information \\
+6 & Debug & values probably of use only to software developers \\
+\end{tabular}
+\end{center}
 
 
 
@@ -628,12 +593,9 @@ If a {\em pidWatch} value is provided, {\tt difxlog} will quit as soon as that p
 
 \subsection{difxqueue {\small $\mathrm{(package: difx\_db)}$}} \label{sec:difxqueue}
 
-\vspace{-20pt}\hspace{175pt}
-\difxonefive
 
-\vspace{7pt}
+This is an NRAO-only program owing to its ties to the VLBA database.
 
-\noindent
 Python program {\tt difxqueue} is a program used to maintain the DiFX correlator queue.
 There are two main responsibilities in doing so: copying or deleting files in the correlator queue directory (which is project specific: {\tt \$DIFX\_QUEUE\_BASE/}{\em projectName}) and maintaining the database entries for each queued job.
 In the VLBA context, this program is the main interface between the analysts and the correlator operators.
@@ -710,7 +672,7 @@ Note that exept for the {\tt listall} and {\tt prod} actions, the current workin
 
 \subsection{difxsniff {\small $\mathrm{(package: calcif2)}$}} \label{sec:difxsniff}
 
-Program {\tt difxsniff} is a reimplementation of the analyst's program {\tt sniff.pd} to be more appropriate for software correlation where the sniffer data is generated at the same time as the FITS files.
+Program {\tt difxsniff} is a reimplementation of the VLBA analysts' program {\tt sniff.pd} to be more appropriate for software correlation where the sniffer data is generated at the same time as the FITS files.
 It uses the same underlying set of plotting programs ({\tt plotwt}, {\tt plotbp}, and {\tt plotapd}) as {\tt sniff.pd} did.
 It should be run in a project directory as it will create a subdirectory (if not existing already) which by default is called {\tt sniffer/}{\em refant} within the current directory.
 All files created by {\tt difxsniff} will be placed in this directory, overwriting existing files with the same filenames.
@@ -739,6 +701,8 @@ Note that although {\tt .FITS} files are provided to {\tt difxsniff}, it is the 
 
 \subsection{difxusage {\small $\mathrm{(package: difx\_db)}$}} \label{sec:difxusage}
 
+This is an NRAO-only program owing to its ties to the VLBA database.
+
 Program {\tt difxusage} mines the VLBA database for correlator usage statistics.
 Usage is as follows:
 
@@ -758,6 +722,7 @@ Usage is as follows:
 \item[] {\em mjdStop} is the stop time (in Modified Julian Days) to look for jobs
 \end{itemize}
 
+\noindent
 Note that environment variable {\tt VLBA\_DB} must be set to point to the Oracle database in question.
 
 
@@ -769,11 +734,6 @@ Note that environment variable {\tt VLBA\_DB} must be set to point to the Oracle
 
 \subsection{DiFX Operator Interface} \label{sec:doi}
 
-\vspace{-20pt}\hspace{190pt}
-\difxonefive
-
-\vspace{7pt}
-\noindent
 The DiFX Operator Interface (DOI) is a java-based application to monitor and control the correlation of DiFX jobs.
 Jobs to be correlated can be selected with a file browser or retrieved with a database request.
 A separate manual \cite{doi} will be made available with instructions for its use.
@@ -803,16 +763,11 @@ The only specific detail that will be mentioned here is the contorted path the s
 
 \subsection{e2ecopy {\small $\mathrm{(package: difx\_db)}$}} \label{sec:e2ecopy}
 
-\vspace{-20pt}\hspace{165pt}
-\difxonefive
-
-\vspace{7pt}
-\noindent
 Program {\tt e2ecopy} copies files one directory to another, changing the ownership to 
 {\tt \$DIFX\_ARCH\_USERNAME} in the process.
-This program must be setuid root.
+This program must be setuid root; the person installing the program must run {\tt chmod +s e2ecopy} after installation if {\tt make install} is not run by root.
 Normally this program is run by {\tt difxarch} (see \S\ref{sec:difxarch}).
-This is a VLBA-centric program.
+This is a VLBA-centric program, but could be used by others.
 
 \begin{itemize}
 \item[] Usage: {\tt e2ecopy} $[$ {\em options} $]$ {\em fromDir} {\em toDir} {\em file1} $[\ \cdots$ {\em file}N $]$
@@ -826,7 +781,9 @@ This is a VLBA-centric program.
 \item[] {\em file} : a file to copy (multiple files may be provided)
 \end{itemize}
 
-
+\noindent
+Note: ``e2e'' is NRAO terminology for ``End to End'', a philosophy of providing user software covering the full project lifecycle from proposal handling to archive access.
+In this particular case the name arose due to the location of the archive staging area at NRAO.
 
 
 
@@ -836,13 +793,8 @@ This is a VLBA-centric program.
 
 \subsection{errormon {\small $\mathrm{(package: difxmessage)}$}} \label{sec:errormon} 
 
-\vspace{-20pt}\hspace{190pt}
-\difxoneone
-
-\vspace{7pt}
-
-\noindent
 Program {\tt errormon} listens for multicast messages of the {\tt difxError} variety and simply prints their contents to the terminal.
+It is effectively the same as {\tt difxlog} except that log data is sent to {\em stdout} rather than a systematically named file.
 
 \begin{itemize}
 \item[] Usage: {\tt errormon} $[${\em maxSeverity}$]$
@@ -852,7 +804,8 @@ Program {\tt errormon} listens for multicast messages of the {\tt difxError} var
 See \S~\ref{sec:difxalertmessage} for a list of severity codes.
 If no {\em maxSeverity} is provided, the default level of 8 will cause no selection to occur; all messages will be printed.
 
-A similar program, {\tt errormon2}, does nearly the same thing, but defaults to a less verbose output, and sends output to stderr rather than stdout.
+A similar program, {\tt errormon2}, does nearly the same thing, but defaults to a less verbose output, and sends output to {\em stderr} rather than {\em stdout} (so use with {\tt grep} or other *nix tools is more cumbersome.
+It also writes its output to a log file.
 
 Bug: {\tt errormon} and {\tt errormon2} do not respond nicely to {\tt -h} on the command line.
 
@@ -884,12 +837,13 @@ It is suggested to run this program immediately before starting the software cor
 \item[] {\tt -o} or {\tt --overheadcores} {\em ohc} : leave at least {\em ohc} on each compute node unscheduled \difxoneone
 \item[] {\tt -m} {\em file} or {\tt --machinesfile} {\em file} : use {\em file} instead of {\tt \$DIFX\_MACHINES}
 \item[] {\tt -n} or {\tt --no-threads} : don't write a {\tt .threads} file.
+\item[] {\tt -d} or {\tt --difxdb} : lookup module locations in a database.
 \end{itemize}
 \item[] {\em input} is a {\tt .input} file; multiple files can be specified, each producing its own {\tt .machinesfile}
 \end{itemize}
 
 
-
+% FIXME: info on which database and associated env. vars.
 
 
 
@@ -900,13 +854,9 @@ It is suggested to run this program immediately before starting the software cor
 
 \subsection{getshelf {\small $\mathrm{(package: difx\_db)}$}} \label{sec:getshelf}
 
-\vspace{-20pt}\hspace{170pt}
-\difxonefive
+This is an NRAO-only program owing to its ties to the VLBA database.
 
-\vspace{7pt}
-
-\noindent
-Python program {\tt getshelf} retrieves the shelf location of specified modules from the VLBA database and prints them to the screen.
+Program {\tt getshelf} retrieves the shelf location of specified modules from the legacy VLBA database and prints them to the screen.
 While possibly useful, this program is not required for the software correlation process.
 
 \begin{itemize}
@@ -935,12 +885,8 @@ Default is the current working directory if none is provided.
 
 \subsection{getvex {\small $\mathrm{(package: difx\_db)}$}} \label{sec:getvex}
 
-\vspace{-20pt}\hspace{165pt}
-\difxonefive
+This is an NRAO-only program owing to its assumption of file locations.
 
-\vspace{7pt}
-
-\noindent
 Python program {\tt getvex} can be used to create a new software correlation project directory and copy {\tt .skd} files (vex files), {\tt .oms} files (from output of sched) and a {\tt cal.vlba} file from {\tt /home/vlbiobs} into the new project directory.
 If the {\tt cal.vlba} file is found, it is {\tt gunzip}ed if needed and run through {\tt vlog} (\S\ref{sec:vlog}).
 The sched {\tt .oms} file is parsed to create a base {\tt .v2d} file with program {oms2v2d} that simplifies difx job creation.
@@ -959,13 +905,8 @@ Default is the current working directory if none is provided.
 \item[] Example 2: {\tt getjobs bg160 \$JOB\_ROOT}
 \end{itemize}
 
-Note: this program is highly specialized for VLBA operations at NRAO.
-A variant could be made for other particlar configurations.
 
-
-
-
-
+% FIXME: does this know about MARK5C/ directories?
 
 
 
@@ -983,7 +924,7 @@ A variant could be made for other particlar configurations.
 \subsection{jobdisks {\small $\mathrm{(package: calcif2)}$}} \label{sec:jobdisks}
 
 Program {\tt jobdisks} looks through job files to see which modules (disks) are needed for correlation.
-It can read through {\tt .fx} files, as created by {\tt cjobgen}, or through {\tt .input} files, as used by {\tt mpifxcorr}, though a mixture of the two is not allowed.
+It reads through {\tt .input} files, as used by {\tt mpifxcorr}, to get the needed information.
 There are two modes of operation.
 By default, a matrix of all modules for all stations is displayed, with a {\tt --} symbol indicating that a particular station is not used in a particular job.
 An asterisk ({\tt *}) indicates a module change.
@@ -1007,7 +948,7 @@ Multiple input files may be supplied.
 \end{itemize}
 
 
-
+% FIXME: program should make sure datastream type is MODULE
 
 
 
@@ -1030,7 +971,7 @@ Six columns of output are produced:
 \item[{\tt u}] {\tt .uvw} file (\S\ref{sec:uvw})
 \item[{\tt d}] {\tt .delay} file (\S\ref{sec:delay})
 \item[{\tt r}] {\tt .rate} file (\S\ref{sec:rate})
-\item[{\tt i}] {\tt .im} file (\S\ref{sec:im}) \difxoneone
+\item[{\tt i}] {\tt .im} file (\S\ref{sec:im})
 \item[{\tt v}] {\tt .difx} file (\S\ref{sec:difx})
 \end{itemize}
 \item Band code of first scan in file
@@ -1053,6 +994,8 @@ Multiple directories can be specified.
 \end{itemize}
 
 
+% FIXME: program, and then documentation: remove uvw, rate, delay files
+% FIXME: does this work properly for VDIF?
 
 
 
@@ -1102,6 +1045,7 @@ Multiple directories can be specified.
 \end{itemize}
 
 
+% FIXME: code needs updating
 
 
 
@@ -1113,7 +1057,6 @@ Multiple directories can be specified.
 
 \subsection{listcpus {\small $\mathrm{(package: calcif2)}$}} \label{sec:listcpus}
 
-\noindent
 Python program {\tt listcpus} uses ssh to connect to each machine listed in a file (usually {\tt \$DIFX\_MACHINES}) and peaks at the list of CPUs on that machine and prints to stdout.
 Only the first column of this file is used and any content after a {\tt \#} is ignored.
 For each CPU on the machine, the model name, which usually also contains the CPU speed, is listed.
@@ -1143,12 +1086,6 @@ Multiple directories can be specified.
 
 \subsection{makefits {\small $\mathrm{(package: difx2fits)}$}} \label{sec:makefits}
 
-\vspace{-20pt}\hspace{175pt}
-\difxonefive
-
-\vspace{7pt}
-
-\noindent
 Program {\tt makefits} is basically a wrapper for {\tt difx2fits} (\S\ref{sec:difx2fits}) that does some sanity checking and ensures that files end up in the proper places with the proper names.
 This program is intrinsically {\em pass-based} and it bases its functionality on the {\tt .joblist} (\S\ref{sec:joblistfile}) file that is written by {\tt vex2difx} (\S\ref{sec:vex2difx}).
 One must run this program on the software correlator head node ({\tt swc000} in the current VLBA DiFX implementation).
@@ -1174,6 +1111,7 @@ Multiple directories can be specified.
 \end{itemize}
 
 
+% FIXME: code: exception if run without parameters
 
 
 
@@ -1189,8 +1127,7 @@ This program takes as command line input the name of a file containing (or thoug
 Optionally a starting file offset can be supplied.
 If the data can be decoded correctly, information about the data will be printed to the screen along with a table of decoded data.
 The output values, -3, -1, 1, or 3 for valid data, are printed in {\em nchan} columns.
-Data that cannot be decoded (either due to data replacement headers or due to data fill code replacing the actual
-data after unloading from a Mark5 module) will show as 0.
+Data that cannot be decoded (either due to data replacement headers, data fill pattern replacing the actual data after unloading from a Mark5 module, or identified via the VDIF invalid bit) will show as 0.
 It should be invoked with the following parameters:
 
 \begin{itemize}
@@ -1206,7 +1143,7 @@ It should be invoked with the following parameters:
 
 The format parameter is constructed from four parts as {\em type}-{\em rate}-{\em nchan}-{\em nbit} where:
 \begin{itemize}
-\item[] {\em type} is the type of format and should be one of {\tt VLBA1\_1}, {\tt VLBA1\_2}, {\tt VLBA1\_4}, {\tt MKIV1\_1}, {\tt MKIV1\_2}, {\tt MKIV1\_4}, or {\tt Mark5B}
+\item[] {\em type} is the type of format and should be one of {\tt VLBA1\_1}, {\tt VLBA1\_2}, {\tt VLBA1\_4}, {\tt MKIV1\_1}, {\tt MKIV1\_2}, {\tt MKIV1\_4}, {\tt Mark5B}, or {\tt VDIF}
 \item[] {\em rate} is the data rate in Mbps
 \item[] {\em nchan} is the number of baseband channels
 \item[] {\em nbit} is the number of bits per recorded sample
@@ -1214,7 +1151,8 @@ The format parameter is constructed from four parts as {\em type}-{\em rate}-{\e
 See the usage examples above for some explicit values.
 Note for the {\tt VLBA} and {\tt MKIV} format types the fanout is appended as this affects the decodability of the files.
 
-
+In the case of VDIF data, only single thread data with $2^n$ channels is supported.
+For equivalent functionality in the multi-thread VDIF case see {\tt vdifd}.
 
 
 
@@ -1232,6 +1170,7 @@ Note for the {\tt VLBA} and {\tt MKIV} format types the fanout is appended as th
 Program {\tt m5fold} takes a baseband data stream and integrates the power (formed by squaring the voltage) in a number of time bins that equally divide a given period.
 This is a simplifed version of ``folding'' such as is used in pulsar processing.
 A typical use of such functionality would be to investigate the waveform of the switched power injected into the receiver for calibration.
+This program has found considerable utility in determining time offsets between the sample clock and formatter time (modulo the period of the calibration cycle).
 In the case of 2-bit sampling a non-linear correction is applied before results are written to a file.
 This correction takes the form
 \begin{equation}
@@ -1263,6 +1202,10 @@ If {\em nbin} is positive and the data is 2-bit quantized, the scaling is such t
 Optimal signal to noise ratio occurs for a value of about 1.03.
 For non 2-bit quantization, the power will be in units of reconstituted ${\rm counts}^2$.
 
+In the case of VDIF data, only single thread data with $2^n$ channels is supported.
+For equivalent functionality in the multi-thread VDIF case see {\tt vdiffold}.
+
+
 
 
 
@@ -1273,11 +1216,7 @@ For non 2-bit quantization, the power will be in units of reconstituted ${\rm co
 
 \subsection{m5pcal {\small $\mathrm{(package: mark5access)}$}} \label{sec:m5pcal}
 
-\vspace{-20pt}\hspace{180pt}
-\difxtwozero
-
-\vspace{7pt}
-
+%FIXME: documentme
 
 
 
@@ -1304,6 +1243,8 @@ It should be invoked with the following parameters:
 
 See the documentation for {\tt m5d} for information on specifying the data format.
 
+In the case of VDIF data, only single thread data with $2^n$ channels is supported.
+For equivalent functionality in the multi-thread VDIF case see {\tt vdifspec}.
 
 
 
