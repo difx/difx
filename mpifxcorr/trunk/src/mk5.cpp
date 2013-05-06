@@ -524,6 +524,74 @@ int Mk5DataStream::testForSync(int configindex, int buffersegment)
   return offset;
 }
 
+int Mk5DataStream::checkData(int buffersegment) 
+{ 
+  int mjd, sec, corrday, status;
+  double ns, nsperbyte; // Nanosec since 00:00 UTC 1 Jan 2000 - check enough precision
+  uint64_t ns2000, endns2000;
+  BUFOFFSET_T goodbytes;
+
+  corrday = config->getStartMJD();
+  //corrsec = config->getStartSeconds();
+  if(syncteststream != 0)
+    delete_mark5_stream(syncteststream);
+
+  syncteststream = new_mark5_stream(new_mark5_stream_memory(&(databuffer[buffersegment*(bufferbytes/numdatasegments)]),     bufferinfo[buffersegment].validbytes), new_mark5_format_generic_from_string(formatname) );
+  if(syncteststream == 0)
+  {
+    cerror << startl << "Could not create a mark5stream to test for sync!" << endl;
+    return -1; //note exit here
+  }
+
+  // resolve any day ambiguities
+  mark5_stream_fix_mjd(syncteststream, corrday);
+
+  // Get time of first frame
+  mark5_stream_get_frame_time(syncteststream, &mjd, &sec, &ns);
+
+  nsperbyte = syncteststream->framens/(double)syncteststream->framebytes;
+  endns2000 = (((mjd-51544)*24*60*60+sec)*1e9 + ns)+nsperbyte*bufferinfo[buffersegment].validbytes;
+
+  // Loops over frames looking times past the end of the expected segment end
+  while (mark5_stream_next_frame(syncteststream)==0) {
+    
+    mark5_stream_get_frame_time(syncteststream, &mjd, &sec, &ns);
+    ns2000 = ((mjd-51544)*24*60*60+sec)*1e9 + ns;
+
+    if (ns2000 > endns2000) {
+      // Copy the rest of the bytes to a temporary buffer for next read and
+      // Mark buffer as smaller than expected
+      goodbytes = syncteststream->frame - &databuffer[buffersegment*(bufferbytes/numdatasegments)];
+      if (tempbuf==0) {
+	tempbuf = vectorAlloc_u8(bufferbytes/numdatasegments);
+	if (tempbuf==NULL) {
+	  cerror << startl << "Datastream " << mpiid << " could not allocate temporary buffer. Skipping bytes after data jump" << endl;
+	} else {
+	  tempbytes = bufferinfo[buffersegment].validbytes - goodbytes;
+	  status = vectorCopy_u8(&databuffer[buffersegment*(bufferbytes/numdatasegments)+goodbytes], tempbuf, tempbytes);
+	  if(status != vecNoErr) {
+	    cerror << startl << "Error copying in the DataStream data buffer!!!" << endl;
+	    tempbytes = 0;
+	  }
+	}
+	bufferinfo[buffersegment].validbytes = goodbytes;
+      }
+    }
+
+    // CJP Musing
+    // Could also detect missed frames here easily but then need to deal with
+    // by inserting missing frames which will be messy. Probably best approach
+    // would be if missing frame is detected, copy rest of buffer to temp
+    // storage then fill in blanks and copy good data as needed. Left over bytes
+    // Could then be dealt with the same as the current situation
+  }
+
+  delete_mark5_stream(syncteststream);
+  syncteststream = 0;
+
+  return 0;
+}
+
 static double tim(void) {
   struct timeval tv;
   double t;

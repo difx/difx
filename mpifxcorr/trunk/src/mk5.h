@@ -90,6 +90,8 @@ protected:
 
   virtual int testForSync(int configindex, int buffersegment);
 
+  virtual int checkData(int buffersegment);
+
   virtual uint64_t openframe();
 
   int lastconfig;

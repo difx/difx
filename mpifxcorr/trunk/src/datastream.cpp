@@ -105,6 +105,8 @@ void DataStream::initialise()
     cfatal << startl << "Datastream " << mpiid << " could not allocate databuffer (length " << bufferbytes + overflowbytes << ") - aborting!!!" << endl;
     MPI_Abort(MPI_COMM_WORLD, 1);
   }
+  tempbuf = 0;
+  tempbytes = 0;
   int mindatabytes = config->getDataBytes(0, streamnum);
   for(int i=1;i<config->getNumConfigs();i++)
   {
@@ -234,7 +236,7 @@ void DataStream::execute()
 
     if(action == DS_PROCESS) //send the appropriate data to the core specified
     {
-      //work out the index from which to send data - if this overlsps with an existing send, call readdata
+      //work out the index from which to send data - if this overlaps with an existing send, call readdata
       //(waits until all sends in the zone have been received, then reads, and calculates the control array values)
       startpos = calculateControlParams(activescan, activesec, activens);
 
@@ -1674,6 +1676,16 @@ void DataStream::diskToMemory(int buffersegment)
     nbytes = readbytes;
   }
 
+#if 0
+  // Currently disabled but please do not remove
+  // Copy any saved bytes from the last segment, if a jump in time was detected
+  if (tempbytes>0) {
+    nbytes -= tempbytes;
+    // Don't increment consumbed bytes as these were already counted from the last segment
+    tempbytes=0;
+  } 
+#endif
+
   //deinterlace and mux if needed
   if(datamuxer) {
     rbytes = readonedemux(false);
@@ -1713,6 +1725,13 @@ void DataStream::diskToMemory(int buffersegment)
       keepreading = false;
   }
 
+#if 0
+  // Currently disabled. Please do not remove - needs more testing
+  // Go through buffer checking for large data jumps past the end of the buffer.
+  // This does *not* correct for invalid data or dropped Mark5/VDIF frames. Does nothing for LBADR
+  checkData(buffersegment);
+#endif
+
   previoussegment  = (buffersegment + numdatasegments - 1 )% numdatasegments;
   if(bufferinfo[previoussegment].readto && bufferinfo[previoussegment].validbytes < bufferinfo[previoussegment].sendbytes && bufferinfo[previoussegment].configindex == bufferinfo[buffersegment].configindex)
   {
@@ -1742,7 +1761,6 @@ void DataStream::diskToMemory(int buffersegment)
     dataremaining = false;
   }
 }
-
 void DataStream::fakeToMemory(int buffersegment)
 {
   int previoussegment;
@@ -1815,6 +1833,12 @@ void DataStream::fakeToMemory(int buffersegment)
 int DataStream::testForSync(int configindex, int buffersegment)
 {
   //can't test for sync with LBA files
+  return 0;
+}
+
+int DataStream::checkData(int buffersegment)
+{
+  //No need to test 
   return 0;
 }
 
