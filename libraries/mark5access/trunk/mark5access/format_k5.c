@@ -26,7 +26,6 @@
 // $LastChangedDate$
 //
 //============================================================================
-
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
 #endif
@@ -39,6 +38,13 @@
 
 #define NSUBMODE	2
 #define MAXHEADERSIZE	32
+
+/* the high mag value for 2-bit reconstruction */
+static const float HiMag = OPTIMAL_2BIT_HIGH;
+
+static float lut1bit[256][8];
+static float lut2bit[256][4];
+static float zeros[8];
 
 const int k5headersize[NSUBMODE] = {8, 32};		/* bytes */
 const int k5headersync[NSUBMODE] = {0x8B, 0x8C};
@@ -55,7 +61,11 @@ const int k5samprate[16] = {
 	16000000,
 	32000000,
 	64000000,
-	0,0,0,0,0
+	128000000,
+	256000000,
+	512000000,
+	1024000000,
+	2048000000
 };
 
 struct format_k5
@@ -64,6 +74,37 @@ struct format_k5
 	int submode;
 	int days;
 };
+
+static void initluts()
+{
+	int b, i, s, m, l;
+	const float lut2level[2] = {-1.0, 1.0};
+	const float lut4level[4] = {-HiMag, 1.0, -1.0, HiMag};
+
+	for(i = 0; i < 8; i++)
+	{
+		zeros[i] = 0.0;
+	}
+
+	for(b = 0; b < 256; b++)
+	{
+		/* lut1bit */
+		for(i = 0; i < 8; i++)
+		{
+			l = (b>>i)&1;
+			lut1bit[b][i] =  lut2level[l];
+		}
+
+		/* lut2bit */
+		for(i = 0; i < 4; i++)
+		{
+			s = i*2;	/* 0, 2, 4, 6 */
+			m = s+1;	/* 1, 3, 5, 7 */
+			l = ((b>>s)&1) + (((b>>m)&1)<<1);
+			lut2bit[b][i] =  lut4level[l];
+		}
+	}
+}
 
 static int findfirstframe(const unsigned char *data, int *submode)
 {
@@ -172,8 +213,52 @@ static int k5_decode_1bitstream_8bit(struct mark5_stream *ms, int nsamp,
 static int k5_decode_4bitstream_1bit(struct mark5_stream *ms, int nsamp,
 	float **data)
 {
+        unsigned char *buf;
+        float *fp;
+        int o, i;
+        int nblank = 0;
 
-	return 0;
+        buf = ms->payload;
+        i = ms->readposition;
+
+        for(o = 0; o < nsamp; o++)
+        {
+                if(i <  ms->blankzonestartvalid[0] ||
+                   i >= ms->blankzoneendvalid[0])
+                {
+                        fp = zeros;
+                        nblank++;
+                }
+                else
+                {
+                        fp = lut1bit[buf[i]];
+                }
+                i++;
+
+                data[0][o] = fp[0];
+                data[1][o] = fp[1];
+                data[2][o] = fp[2];
+                data[3][o] = fp[3];
+                o++;
+                data[0][o] = fp[4];
+                data[1][o] = fp[5];
+                data[2][o] = fp[6];
+                data[3][o] = fp[7];
+
+                if(i >= ms->Mbps*(1000000/8))
+                {
+                        if(mark5_stream_next_frame(ms) < 0)
+                        {
+                                return -1;
+                        }
+                        buf = ms->payload;
+                        i = 0;
+                }
+        }
+
+        ms->readposition = i;
+
+        return nsamp - 2*nblank;
 }
 
 static int k5_decode_4bitstream_2bit(struct mark5_stream *ms, int nsamp,
@@ -355,7 +440,7 @@ static int format_k5_init(struct mark5_stream *ms)
 	}
 	else
 	{
-		fprintf(m5stderr, "new_mark5_format_k5 : "
+	  fprintf(m5stderr, "format_k5_init : "
 			"nchan needs to be 1 or 4\n");
 		return 0;
 	}
@@ -404,11 +489,18 @@ static int one(const struct mark5_stream *ms)
 struct mark5_format_generic *new_mark5_format_k5(int Mbps, int nchan, int nbit,
 	int submode)
 {
+        static int first = 1;
 	struct format_k5 *k;
 	struct mark5_format_generic *f;
 	k = (struct format_k5 *)calloc(1, sizeof(struct format_k5));
 	f = (struct mark5_format_generic *)calloc(1, 
 	        sizeof(struct mark5_format_generic));
+
+	if(first)
+	{
+		initluts();
+		first = 0;
+	}
 
 	k->days = 0;
 	k->submode = submode;

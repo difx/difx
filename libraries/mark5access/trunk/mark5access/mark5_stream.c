@@ -31,6 +31,8 @@
 #define _GNU_SOURCE
 #endif
 
+#define NOK5WORKS
+
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -423,7 +425,7 @@ struct mark5_format_generic *new_mark5_format_generic_from_string( const char *f
 
 		return new_mark5_format_mark5b(a, b, c, e);
 	}
-#if K5WORKS
+#ifdef K5WORKS
 	else if(strncasecmp(formatname, "K5_32-", 6) == 0)
 	{
 		r = sscanf(formatname+6, "%d-%d-%d/%d", &a, &b, &c, &e);
@@ -914,7 +916,7 @@ struct mark5_format *new_mark5_format_from_stream(struct mark5_stream_generic *s
 		}
 	}
 
-#if K5WORKS
+#ifdef K5WORKS
 	/* k5 */
 	f = new_mark5_format_k5(0, 0, 0, -1);
 	set_format(ms, f);
