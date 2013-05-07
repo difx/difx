@@ -18,10 +18,9 @@ The code for these programs can be made available upon request.
 
 % TODO
 % Add SniffPlots 
-% Add vdifio utilities
-% m5access: m5timeseries, m5findformats, m5bstate, findvdif
+% m5access: m5timeseries, m5findformats, m5bstate
 % add more hyperlinks (e.g., to vdifd, etc)
-
+% document VDIF in vex2difx and other new features
 
 
 
@@ -260,6 +259,7 @@ The columns displayed are:
 \item Number of CPU cores
 \end{enumerate}
 
+%FIXME
 Bug: {\tt cpumon} does not respond nicely to {\tt -h} on the command line.
 
 
@@ -387,12 +387,12 @@ As the visibility file ({\tt .difx}) is read, any records that are all zero are 
 \item[] {\tt -S} or {\tt --sniff-all} : sniff all bins and phase centers, not just the first
 \item[] {\tt -T} {\em interval} or {\tt --sniff-time} {\em interval} : use {\em interval} as the sniffer time resolution
 \item[] {\tt -v} or {\tt --verbose} : increase verbosity of output; use twice or thrice to get even more
-\item[] {\tt -d} or {\tt --difx} : run on all {\tt .difx} files found in the directory \difxoneone
-\item[] {\tt -k} or {\tt --keep-order} : don't sort the antennas by name \difxoneone
-\item[] {\tt -1} or {\tt --dont-combine} : make a separate FITS file for each input job \difxoneone
-\item[] {\tt -x} or {\tt --dont-sniff} : don't generate sniffer output files \difxoneone
-\item[] {\tt --phasecentre} {\em p} : (U.S.\ spelling OK too) Create a FITS file for all the {\em p}$^{\rm th}$ phase centers (default 0) \difxtwozero
-\item[] {\tt --override-version} ignore difx version clashes \difxoneone
+\item[] {\tt -d} or {\tt --difx} : run on all {\tt .difx} files found in the directory
+\item[] {\tt -k} or {\tt --keep-order} : don't sort the antennas by name
+\item[] {\tt -1} or {\tt --dont-combine} : make a separate FITS file for each input job
+\item[] {\tt -x} or {\tt --dont-sniff} : don't generate sniffer output files
+\item[] {\tt --phasecentre} {\em p} : (U.S.\ spelling OK too) Create a FITS file for all the {\em p}$^{\rm th}$ phase centers (default 0)
+\item[] {\tt --override-version} ignore difx version clashes
 \end{itemize}
 \item[] {\em baseFilename} is the prefix of the jobfile to convert; it is OK to use the .difx filename instead
 \item[] {\em outFile} is the name of the {\tt FITS} file to produce; if not provided one will be made based on the project code
@@ -480,8 +480,10 @@ This program is inspired by the {\tt difx\_calculator.xls} spread sheet availabl
 \item[] Example: {\tt difxcalculator mt933\_01}
 \end{itemize}
 
+%FIXME
 Bug: does not respond nicely to {\tt -h} on command line.
 
+%FIXME
 Bug: does not take into consideration multiple phase centers or zoom bands.
 
 
@@ -807,6 +809,7 @@ If no {\em maxSeverity} is provided, the default level of 8 will cause no select
 A similar program, {\tt errormon2}, does nearly the same thing, but defaults to a less verbose output, and sends output to {\em stderr} rather than {\em stdout} (so use with {\tt grep} or other *nix tools is more cumbersome.
 It also writes its output to a log file.
 
+%FIXME
 Bug: {\tt errormon} and {\tt errormon2} do not respond nicely to {\tt -h} on the command line.
 
 
@@ -834,7 +837,7 @@ It is suggested to run this program immediately before starting the software cor
 \begin{itemize}
 \item[] {\tt -h} or {\tt --help} : print usage information and exit
 \item[] {\tt -v} or {\tt --verbose} : be more verbose
-\item[] {\tt -o} or {\tt --overheadcores} {\em ohc} : leave at least {\em ohc} on each compute node unscheduled \difxoneone
+\item[] {\tt -o} or {\tt --overheadcores} {\em ohc} : leave at least {\em ohc} on each compute node unscheduled
 \item[] {\tt -m} {\em file} or {\tt --machinesfile} {\em file} : use {\em file} instead of {\tt \$DIFX\_MACHINES}
 \item[] {\tt -n} or {\tt --no-threads} : don't write a {\tt .threads} file.
 \item[] {\tt -d} or {\tt --difxdb} : lookup module locations in a database.
@@ -1117,6 +1120,13 @@ Multiple directories can be specified.
 
 
 
+% m5bstate ------------------------------------------------ INCOMPLETE --------
+
+
+
+
+
+
 % m5d -------------------------------------------------------------------------
 
 \subsection{m5d {\small $\mathrm{(package: mark5access)}$}} \label{sec:m5d}
@@ -1158,14 +1168,16 @@ For equivalent functionality in the multi-thread VDIF case see {\tt vdifd}.
 
 
 
+% m5findformat -------------------------------------------- INCOMPLETE --------
+
+
+
+
+
 
 % m5fold ----------------------------------------------------------------------
 
 \subsection{m5fold {\small $\mathrm{(package: mark5access)}$}} \label{sec:m5fold}
-\vspace{-20pt}\hspace{180pt}
-\difxtwozero
-
-\vspace{7pt}
 
 Program {\tt m5fold} takes a baseband data stream and integrates the power (formed by squaring the voltage) in a number of time bins that equally divide a given period.
 This is a simplifed version of ``folding'' such as is used in pulsar processing.
@@ -1216,7 +1228,13 @@ For equivalent functionality in the multi-thread VDIF case see {\tt vdiffold}.
 
 \subsection{m5pcal {\small $\mathrm{(package: mark5access)}$}} \label{sec:m5pcal}
 
-%FIXME: documentme
+Program {\tt m5pcal} can be used to extract pulse cal tones from baseband data in Mark4, VLBA, Mark5B and single-thread VDIF formats.
+
+% FIXME: writeme
+
+
+% FIXME: add to program doc or <freqX>
+
 
 
 
@@ -1257,7 +1275,7 @@ For equivalent functionality in the multi-thread VDIF case see {\tt vdifspec}.
 Program {\tt m5test} is an example program using the mark5access decoding library that works its way through a VLBI baseband data stream attempting to decode data and header information to look for problems.
 Every million samples (per baseband channel) a summary line containing frame number, decoded date and time, and counts of valid and invalid frames are shown.
 After 20 invalid frames are encountered the program will stop.  
-Otherwise the program will run until end of file or interruption by user.
+Otherwise the program will run until end of file or until interruptied by the user.
 Usage is as follows:
 
 \begin{itemize}
@@ -1274,14 +1292,16 @@ See the documentation for {\tt m5d} for information on specifying the data forma
 
 
 
+% m5timeseries -------------------------------------------- INCOMPLETE --------
+
+
+
+
+
 % m5tsys -------------------------------------------------- INCOMPLETE --------
 
 \subsection{m5tsys {\small $\mathrm{(package: mark5access)}$}} \label{sec:tsysal}
 
-\vspace{-20pt}\hspace{180pt}
-\difxtwozero
-
-\vspace{7pt}
 
 
 
@@ -1292,25 +1312,28 @@ See the documentation for {\tt m5d} for information on specifying the data forma
 
 \subsection{mk5cat {\small $\mathrm{(package: mk5daemon)}$}} \label{sec:mk5cat}
 
-\vspace{-20pt}\hspace{180pt}
-\difxonefive
-
-\vspace{7pt}
 This program sends data on a module to standard out.
-See additional documentation under {\tt mk5cp}.
+See additional documentation under {\tt mk5cp} which operates on similar principles (mk5cat is mk5cp writing to {\em stdout}
+Note that the executable for mk5cat is identical to that for mk5cp and only the name of the program actually differs.
 
 \begin{itemize}
 \item[] Usage: {\tt mk5cat} $[$ {\em options} $]$ \{ {\em bank} $\mid$ {\em VSN} \} {\em scans}
 \item[] {\em options} can be:
 \begin{itemize}
 \item[] {\tt -h} or {\tt --help} : print usage information and exit
-\item[] {\tt -v} or {\tt --verbose} : increase verbosity: print directory to screen
+\item[] {\tt -v} or {\tt --verbose} : increase verbosity, e.g., print directory to screen
 \end{itemize}
 \item[] {\em bank} is either {\tt A} or {\tt B}
 \item[] {\em VSN} is a valid 8-character VSN of a loaded module
 \item[] {\em scans} is one or more scan numbers (starting at 1) with scan numbers separated by commas.
 \end{itemize}
 
+Many of the other utilties documented here such as {\tt m5d}, {\tt m5spec} and {\tt vmux} can take input from {\tt stdin} and thus can be mated with mk5cat.
+Usually a single hyphen ({\tt -}) as the name of the input file indicates this to these programs.
+
+\begin{itemize}
+\item[] Example: {\tt mk5cat B PT\_BB241\_No0111 | m5spec - Mark5B-2048-16-2 128 10000 methanol.spec}
+\end{itemize}
 
 
 
@@ -1320,12 +1343,6 @@ See additional documentation under {\tt mk5cp}.
 
 \subsection{mk5control {\small $\mathrm{(package: mk5daemon)}$}} \label{sec:mk5control} 
 
-\vspace{-20pt}\hspace{210pt}
-\difxoneone
-
-\vspace{7pt}
-
-\noindent
 {\tt mk5control} is a program that sends XML messages of type {\tt DifxCommand} to the {\tt mk5daemon} programs that run on the software correlator cluster members.
 This program is a superset of {\tt mk5take} and {\tt mk5return}, allowing any allowed command to be sent.
 
@@ -1378,13 +1395,7 @@ Because of the way mk5control parses the command line, the word {\tt copy} and t
 
 \subsection{mk5cp {\small $\mathrm{(package: mk5daemon)}$}} \label{sec:mk5cp}
 
-\vspace{-20pt}\hspace{180pt}
-\difxonefive
-
-\vspace{7pt}
-
-\noindent
-Program {\tt mk5cp} copies baseband VLBI data from a module to a file somewhere on the unix filesystem, perhaps an external USB disk.
+Program {\tt mk5cp} copies baseband VLBI data from a module to a file somewhere on the operating system filesystem, perhaps an external USB disk.
 This program is often started using {\tt mk5control} to tell the instance of {\tt mk5daemon} running on the desired Mark5 unit to start the copy.
 Status information is multicast via a {\tt Mark5StatusMessage} document.
 
@@ -1427,12 +1438,6 @@ Another utility called {\tt mk5cat} is derived from this behavior.
 
 \subsection{mk5daemon {\small $\mathrm{(package: mk5daemon)}$}} \label{sec:mk5daemon} 
 
-\vspace{-20pt}\hspace{215pt}
-\difxoneone
-
-\vspace{7pt}
-
-\noindent
 {\tt mk5daemon} is a program that started automatically at boot time on all of the software correlator cluster nodes (not only the Mark5 units!) that performs a number of operations in support of the software correlator.
 
 The functions that mk5daemon performs are:
@@ -1443,7 +1448,7 @@ All received multicast messages, significant internal functions, and interaction
 These log files are restarted at the beginning of each day.  
 By default these log files are saved in {\tt /tmp}.
 
-\item {\bf Control of Mark5A}
+\item {\bf High level control of Mark5 units}
 
 The {\tt Mark5A} program (written by Haystack) is the principle program used to access the Mark5 systems at the VLBA stations and the hardware correlator.
 DiFX directly accesses the Streamstor card via a library level programming interface.
@@ -1454,9 +1459,16 @@ The starting and stopping of the {\tt Mark5A} program can be requested by two me
 When these commands are received by {\tt mk5daemon}, the requested action is taken unless Streamstor conflict is likely.
 This type of command and others can be sent to {\tt mk5daemon} with the {\tt mk5control} program (\S\ref{sec:mk5control}).
 
+\item {\bf Low level control of Mark5C units}
+
+This program exposes a VLBI Standard Interface (VSI) over TCP port 2620 that very closely emulates equivalent functionality of the Mark5C Data Recording System (DRS) program provided by Haystack observatory.
+The implementation of the DRS command set is not complete but is sufficient for monitor and control at
+record time.
+At the time of writing this program is used in lieu of DRS at the two Mark5C units provided by USNO.
+
 \item {\bf CPU, memory, and network monitoring}
 
-Every 10 seconds, {\tt mk5daemon} looks in the {\tt /proc} directory to get information about the CPU load, memory usage, and network traffic.
+Every 10 seconds, {\tt mk5daemon} extracts data from the {\tt /proc} directory to get information about the CPU load, memory usage, and network traffic.
 These numbers are multicast in a {\tt DifxLoad} message and logged.
 
 \item {\bf Module VSN and state determination}
@@ -1505,12 +1517,6 @@ Please be sure not to have multiple instances of {\tt mk5daemon} running at any 
 
 \subsection{mk5dir {\small $\mathrm{(package: mark5daemon)}$}} \label{sec:mk5dir}
 
-\vspace{-20pt}\hspace{195pt}
-\difxoneone
-
-\vspace{7pt}
-
-\noindent
 Program {\tt mk5dir} extracts the directory from a module.
 Normally one would not call this program directly but would use the {\tt getdir} option of {\tt mk5control}.
 By default this program will change the disk module state to {\tt played}.
@@ -1523,7 +1529,7 @@ There is a danger that if this is done with an SDK~9 unit and the disk is later 
 \item[] {\tt -h} or {\tt --help} : print usage information and exit
 \item[] {\tt -v} or {\tt --verbose} : increase verbosity: print directory to screen
 \item[] {\tt -f} or {\tt --force} : force directory read even if current
-\item[] {\tt -F} or {\tt --fast} : get format details from new-style directory
+\item[] {\tt -F} or {\tt --fast} : get format details from new-style directory (Mark5B format only)
 \item[] {\tt -n} or {\tt --nodms} : get directory but don't change disk module state
 \item[] {\tt -s} or {\tt --safedms} : only change disk module state if SDK~8 unit or new dir type
 \item[] {\tt -d} or {\tt --dmsforce} : proceed with change of module state even if this makes module unreadable in SDK~8 units
@@ -1543,9 +1549,7 @@ This variable should be an integer representing the state of three bits.
 {\tt mk5dir} only responds to the setting of bit 1 (value 2); if this bit is set, the disk module state will not be updated on directory reading.
 It is recommended to set this environment variable at recording stations so auto-erasure of modules does not occur.
 
-A new option to write a {\tt .dir} file to the module has been introduced in DiFX 2.0.2. 
-To use, the VSN has to be written explicitly on the command line (i.e., bank letter cannot be used).
-
+In the mode where a specified {\tt .dir} file is to be written to a Mark5 module directory the VSN must be provided explicitly (i.e., selecting by bank is not allowed)
 
 
 
@@ -1556,12 +1560,6 @@ To use, the VSN has to be written explicitly on the command line (i.e., bank let
 
 \subsection{mk5erase {\small $\mathrm{(package: mark5daemon)}$}} \label{sec:mk5erase}
 
-\vspace{-20pt}\hspace{195pt}
-\difxonefive
-
-\vspace{7pt}
-
-\noindent
 Program {\tt mk5erase} replaces the functionality of {\tt SSErase}.
 It is used to either erase or condition a Mark5 module.  It supports SDK9 and
 earlier revisions of the Conduant API and either legacy or new (see Mark5 memop 81) module directories.
@@ -1596,7 +1594,7 @@ If you wish to erase a module that has no VSN set, use the {\tt vsn} program fir
 
 \noindent
 Control-C can be used to safely abort conditioning early.
-The directory will be left in an indeterminate state, so use caution when doing this.
+The directory will be left in an indeterminate state, so use caution when doing this; if conditioning is stopped before completion use the {\tt vsn} program to assess and possibly modify the current module state.
 
 
 
@@ -1608,12 +1606,6 @@ The directory will be left in an indeterminate state, so use caution when doing 
 
 \subsection{mk5mon {\small $\mathrm{(package: difxmessage)}$}} \label{sec:mk5mon} 
 
-\vspace{-20pt}\hspace{195pt}
-\difxoneone
-
-\vspace{7pt}
-
-\noindent
 Program {\tt mk5mon} is a program that listens for {\tt mark5Status} messages multicast from the Mark5 units and displays the information; updating the display as new messages are received.
 
 \begin{itemize}
@@ -1634,6 +1626,7 @@ The columns being displayed are:
 \item Scan name of data being played, if playing
 \end{enumerate}
 
+%FIXME
 Bug: {\tt mk5mon} does not respond nicely to {\tt -h} on the command line.
 
 
@@ -1646,7 +1639,7 @@ Bug: {\tt mk5mon} does not respond nicely to {\tt -h} on the command line.
 \subsection{mpifxcorr} \label{sec:mpifxcorr}
 
 The core of the DiFX software correlator is the program called {\tt mpifxcorr}.
-This program is uses parallel computing to make correlation practical on a cluster of ordinary computers.
+This program uses Message Passing Interface (MPI) to exploit parallel computing to make correlation practical on a cluster of ordinary computers.
 This program runs on all the machines listed in the {\tt .machines} file that is passed to {\tt mpirun} --- the program that starts {\tt mpifxcorr}.
 It should be initiated from the cluster head node from within the project directory.
 The usage line below is appropriate for use with OpenMPI (\S\ref{sec:mpi}) and within the DiFX context; other incantations may provide better results depending on the setup.
@@ -1660,7 +1653,7 @@ See the OpenMPI documentation for more details.
 \item[] {\em otherOptions} can be any additional option to {\tt mpirun}; {\tt startdifx} uses the {\tt --mca btl $\hat{\ }$udapl,openib --mca mpi\_yield\_when\_idle 1} to suppress some warning messages and be less aggressive on networking
 \end{itemize}
 
-Within the DiFX framework, the user should never have to directly start {\tt mpifxcorr} as this is done more simply with {\tt startdifx} or via the DiFX Operator Interface.
+Within the DiFX framework, the user should never have to directly start {\tt mpifxcorr} as this is done more simply with {\tt startdifx} or via the DiFX Operator Interface in conjunction with {\tt mk5daemon}.
 
 
 
@@ -1673,12 +1666,6 @@ Within the DiFX framework, the user should never have to directly start {\tt mpi
 
 \subsection{oms2v2d {\small $\mathrm{(package: vex2difx)}$} \label{sec:oms2v2d}}
 
-\vspace{-20pt}\hspace{180pt}
-\difxonefive
-
-\vspace{7pt}
-
-\noindent
 The VLBI scheduling program {\tt sched} generates a file with extension {\tt .oms} which is used to populate some fields in the VLBA database.
 These fields are usually used to feed the dynamic scheduler but can also be used to reduce the tedium of transferring information from the {\tt sched} input file ({\tt .key}) to the {\tt vex2difx} input file {\tt .v2d}.
 For simple experiments this resulting {\tt .v2d} file can be used unedited, but for more typical experiments editing will be required.
@@ -1696,6 +1683,10 @@ The resulting file will have the same file prefix as the input file and will end
 \item[] Example: {\tt oms2v2d bx123.oms}
 \end{itemize}
 
+\noindent
+Note: {\tt sched} now produces a {\tt .tv2d} file (template vex2difx) that can contain useful information for some projects (especially multi-phase-center projects), however, this file is not tied to any particular version of DiFX (or more importantly, version of {\tt vex2difx}) and thus cannot be guaranteed to be legal.
+It is thus suggested to use {\tt oms2v2d} and transfer over needed information by hand after the fact.
+
 
 
 
@@ -1706,28 +1697,19 @@ The resulting file will have the same file prefix as the input file and will end
 
 \subsection{padVDIF {\small $\mathrm{(package: vdifio)}$} \label{sec:padVDIF}}
 
-\vspace{-20pt}\hspace{160pt}
-\difxtwozeroone
-
-\vspace{7pt}
-
-\noindent
 Program {\tt padVDIF} ...
 
 
 
+% plotapd ------------------------------------------------- INCOMPLETE --------
+% plotbp -------------------------------------------------- INCOMPLETE --------
+% plotwt -------------------------------------------------- INCOMPLETE --------
 
 
 % printDiFX --------------------------------------------------------------------
 
 \subsection{printDiFX.py {\small $\mathrm{(package: vis2screen)}$} \label{sec:printDiFX}}
 
-\vspace{-20pt}\hspace{180pt}
-\difxoneone
-
-\vspace{7pt}
-
-\noindent
 Program {\tt printDiFX} prints a summary of the visibility information in a DiFX output file.  It loops through all the records printing some basic info about frequencies, baselines, polarisations, times etc, plus a couple of selected visibility values from the start and middle of the record, to the screen.
 
 \begin{itemize}
@@ -1747,12 +1729,6 @@ Program {\tt printDiFX} prints a summary of the visibility information in a DiFX
 
 \subsection{printVDIF {\small $\mathrm{(package: vdifio)}$} \label{sec:printVDIF}}
 
-\vspace{-20pt}\hspace{180pt}
-\difxtwozeroone
-
-\vspace{7pt}
-
-\noindent
 Program {\tt printVDIF} loops through a VDIF file inspecting each packet header and printing some basic summary info (time etc) to the screen.
 
 \begin{itemize}
@@ -1770,12 +1746,6 @@ Program {\tt printVDIF} loops through a VDIF file inspecting each packet header 
 
 \subsection{recover {\small $\mathrm{(package: mk5daemon)}$}} \label{sec:recover}
 
-\vspace{-20pt}\hspace{185pt}
-\difxonefive
-
-\vspace{7pt}
-
-\noindent
 {\tt recover} is a program that wraps the XLRRecover call for convenient use.
 This replaces the functionality of the {\tt recover=} command of the {\tt Mark5A} program.
 
@@ -1810,12 +1780,6 @@ These recovery attempts will not always be successful.
 
 \subsection{startdifx {\small $\mathrm{(package: calcif2)}$}} \label{sec:startdifx} 
 
-\vspace{-20pt}\hspace{180pt}
-\difxoneone
-
-\vspace{7pt}
-
-\noindent
 Starting {\tt mpifxcorr} generally requires a lengthy command, inspiring the creation of {startdifx} which vastly simplifies use of the DiFX correlator.
 In addition to spawning the {\tt mpifxcorr} processes, {\tt startdifx} can orchestrate some of the preparatory work (for example running {\tt calcif2} and {\tt genmachines}) and optionally run {\tt difx2fits} to create a {\tt .FITS} file for each job.
 This program is meant to work within the DiFX environment and would probably require modification to be useful in other situations.
@@ -1854,12 +1818,6 @@ These can be overriden with environment variables {\tt DIFX\_MESSAGE\_GROUP} and
 
 \subsection{statemon {\small $\mathrm{(package: difxmessage)}$}} \label{sec:statemon} 
 
-\vspace{-20pt}\hspace{190pt}
-\difxtwozeroone
-
-\vspace{7pt}
-
-\noindent
 Program {\tt statemon} listens for multicast messages of the {\tt difxStatus} variety and simply prints their contents to the terminal.
 This is mainly useful for debugging {\tt mpifxcorr} and any programs responsible for launching it.
 
@@ -1867,6 +1825,7 @@ This is mainly useful for debugging {\tt mpifxcorr} and any programs responsible
 \item[] Usage: {\tt statemon} 
 \end{itemize}
 
+%FIXME
 Bugs: does not respond kindly to a {\tt -h} option.
 
 
@@ -1909,12 +1868,6 @@ If multiple {\tt mpifxcorr} processes are found running on a machine, {\tt stopm
 
 \subsection{stripVDIF {\small $\mathrm{(package: vdifio)}$} \label{sec:stripVDIF}}
 
-\vspace{-20pt}\hspace{180pt}
-\difxtwozeroone
-
-\vspace{7pt}
-
-\noindent
 Program {\tt stripVDIF} ...
 
 
@@ -1942,6 +1895,7 @@ These files should closely resemble the input files if the parsing was done prop
 \item[] {\em inputFilePrefix}$n$ is the base name of an input file
 \end{itemize}
 
+%FIXME
 Bugs: does not respond nicely to {\tt -h} on the command line.
 
 
@@ -1953,12 +1907,6 @@ Bugs: does not respond nicely to {\tt -h} on the command line.
 
 \subsection{testdifxmessagereceive{\small $\mathrm{(package: difxmessage)}$}} \label{sec:difxmessage}
 
-\vspace{-20pt}\hspace{180pt}
-\difxoneone
-
-\vspace{7pt}
-
-\noindent
 Test program {\tt testdifxmessagereceive} captures multicast DiFX messages and prints them to the screen.
 Both the raw XML is shown and the decoded values.
 It is mostly useful as a tool for examining the correctness of the multicast messages that are broadcast and is not intended to be part of an operational system.
@@ -1998,12 +1946,6 @@ If {\em type} is not provided, all message types will be captured.
 
 \subsection{testmod {\small $\mathrm{(package: mk5daemon)}$}} \label{sec:testmod}
 
-\vspace{-20pt}\hspace{185pt}
-\difxonefive
-
-\vspace{7pt}
-
-\noindent
 {\tt testmod} is a program that is used to perform read and write tests on Mark5 modules.  
 It is meant as a replacement of the {\tt ResetModule} program that relies on the {\tt Mark5A} program which is being phased out of VLBA operations.
 Read-only tests can be performed without risk of erasing astronomical data recorded on the disks.
@@ -2045,12 +1987,7 @@ Is is generally safe to use these options, but the diagnostic power of this prog
 
 \subsection{vex2difx} \label{sec:vex2difx}
 
-\vspace{-20pt}\hspace{90pt}
-\difxonefive
-
-\vspace{7pt}
-
-\noindent
+noindent
 {\tt vex2difx} is a program that takes a {\tt .vex} files (such as one produced by {\tt sched} with various tables based on observe-time data appended, probably by {\tt db2vex} in the case of VLBA operations) and a {\tt .v2d} configuration file (see \S\ref{sec:v2d}) and generates one or more {\tt .input} and {\tt .calc} file pairs for use with the DiFX correlator. 
 Note specifically that {\tt .ovex} files, as used at many/most Mark4 correlators, are not supported.
 {\tt vex2difx}, along with {\tt calcif2}, supercedes the functionality of {\tt vex2config} and {\tt vex2model}, two programs that were widely used but never fully integrated into the VLBA's software chain. 
@@ -2082,6 +2019,10 @@ Most new features will be easy to implement so send a message to the difx-users 
 \item[] {\em v2dFile} is a {\tt .v2d} file (see \S\ref{sec:v2d}) that controls the operation of this program; the filename cannot contain underscore characters
 \item[] Example: {\tt vex2difx bx123.v2d}
 \end{itemize}
+
+\subsubsection{VDIF issues}
+
+%FIXME
 
 \subsubsection{Mark5B issues}
 
@@ -2203,12 +2144,6 @@ You may find additional information at \url{http://cira.ivec.org/dokuwiki/doku.p
 
 \subsection{vexpeek {\small $\mathrm{(package: vex2difx)}$}} \label{sec:vexpeek}
 
-\vspace{-20pt}\hspace{180pt}
-\difxonefive
-
-\vspace{7pt}
-
-\noindent
 Program {\tt vexpeek} takes a vex file as input and sends to {\tt stdout} the experiment name, segment, and a list of antennas and the MJD times that they were included in the observation.
 This program is mainly intended to be called from python program {\tt db2vex} which needs to know a little about the file before appending the CLOCK and TAPELOG\_OBS tables.  
 The VLBA operations system relies on such functionality but there is no reason other operations couldn't use this.
@@ -2221,6 +2156,7 @@ Thus, when {\tt db2vex} is run some of these error messages may be seen.
 \end{itemize}
 Running with no command line arguments will print usage information to the terminal and exit.
 
+%FIXME
 Bug: {\tt vexpeek} does not respond nicely to {\tt -h} on the command line.
 
 
@@ -2252,17 +2188,33 @@ Normally {\tt vlog} will be run automatically when {\tt getjobs} (\S\ref{sec:get
 
 
 
+% vmux ------------------------------------------------------------------------
+
+\subsection{vmux {\small $\mathrm{(package: vdifio)}$}} \label{sec:vmux}
+
+Program {\tt vmux} takes a VDIF file with multiple threads of one channel each and multiplexes the data into a new VDIF file consisting of a single thread containing all the channels.
+In the case that a non-power-of-two number of channels are contained in the input file (or equivalently, a non-power-of-two number of threads are specified on the command line), the next power of two will be selected as the number of channels in the output thread and any unused channel slots will contain random data.
+
+\begin{itemize}
+\item[] Usage: {\tt vmux} {\em inputFile} {\em inputFrameSize} {\em framesPerSecond} {\em threadList} {\em outputFile} $[${\em offset $[${\em chunkSize}$] ]$
+\item[] {\em inputFile} is the input multi-thread VDIF file, or {\tt -} for {\em stdin}
+\item[] {\em inputFrameSize} is the size of one thread's data frame, including header (for RDBE VDIF data this is 5032)
+\item[] {\em framesPerSecond} is the number of frames per second in the input file for each thread (and is thus the number of output frames per second as well)
+\item[] {\em threadList} is a comma-separated list of integers in range 0 to 1023; the order of the numbers is significant and dictates the order of channels in the output data
+\item[] {\em outputFile} is the name of the output, single-thread VDIF file, or {\tt -} for {\em stdout}
+\item[] {\em offset} is an optional offset into the input file (in bytes)
+\item[] {\em chunkSize} is (roughly) how many bytes to operate on at a time (default is 2000000)
+\end{itemize}
+
+
+
+
+
+
 % vsn --------------------------------------------------------------------------
 
 \subsection{vsn {\small $\mathrm{(package: mk5daemon)}$}} \label{sec:vsntool}
 
-\vspace{-20pt}\hspace{160pt}
-\difxonefive
-
-
-\vspace{7pt}
-
-\noindent
 Program {\tt vsn} is used to check or set the Volume Serial Number (VSN), the write protect state, and the Disk Module State (DMS) of a module.
 This program can not be used when the Mark5 unit is being used for something else.
 You must be logged into the Mark5 unit that contains the module to inspect/change.
@@ -2310,17 +2262,40 @@ The module should be reinserted (perhaps in a different bank or unit) and the un
 
 
 
+% vsum ------------------------------------------------------------------------
+
+\subsection{vsum {\small $\mathrm{(package: vdifio)}$}} \label{sec:vsum}
+
+Program {\tt vsum} prints a summary of one or more VDIF files, printing such information as list of threads found, collectively, in the first and last few MB of the file, the VDIF epoch and other time information, and packet size.
+If the data is not recognized as VDIF, an error code will be printed; see below for the list of codes and their meanings.
+Legacy format VDIF data is not supported.
+
+\begin{itemize}
+\item[] Usage: {\tt vsum} {\em file1} $[$ {\em file2} $[ \ldots ] ]$
+\end{itemize}
+
+If the summary operation failed for a file, one of the following error codes will be returned:
+\begin{center}
+\begin{tabular}{ll}
+-1 & The file size could not be determined \\
+-2 & The file could not be opened \\
+-3 & Memory allocation failure \\
+-4 & File read failed \\
+-5 & Frame size could not be determined \\
+-6 & First frame could not be found \\
+-7 & Seek to near-end-of-file failed \\
+-8 & Read at end of file failed \\
+-9 & A valid frame at the end of the file could not be found \\
+\end{center}
+
+
+
+
+
 % zerocorr ---------------------------------------------------------------------
 
 \subsection{zerocorr {\small $\mathrm{(package: mark5access)}$}} \label{sec:zerocorr}
 
-\vspace{-20pt}\hspace{190pt}
-\difxtwozero
-
-
-\vspace{7pt}
-
-\noindent
 Program {\tt zerocorr} is intended to cross correlate data with zero time delay (and a window determined by the spectral resolution) between two recordings made at the same station.
 It is possible to correlate data observed in different formats and even mis-matched bandpasses, through the construction of a file describing the details of the single sub-band that is to be correlated.
 
