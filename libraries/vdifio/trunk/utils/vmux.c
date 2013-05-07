@@ -34,8 +34,8 @@
 
 const char program[] = "vmux";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
-const char version[] = "0.1";
-const char verdate[] = "20130406";
+const char version[] = "0.2";
+const char verdate[] = "20130506";
 
 const int defaultChunkSize = 2000000;
 
@@ -63,12 +63,19 @@ int main(int argc, char **argv)
 	if(argc < 6)
 	{
 		fprintf(stderr, "\n%s ver. %s  %s  %s\n\n", program, version, author, verdate);
-		fprintf(stderr, "Usage: %s <input file> <input frame size> <frames per second> <thread list> <output file> [<offset> [<chunkSize size>] ]\n", argv[0]);
+		fprintf(stderr, "Usage: %s <inputFile> <inputFrameSize> <framesPerSecond> <threadList> <outputFile> [<offset> [<chunkSize>] ]\n", argv[0]);
 		fprintf(stderr, "\nA program to take a multi-thread VDIF file and multiplex into\n"
 				"a multi-channel, single thread file.  <thread list> should be\n"
 				"comma-separated without space.  Setting <input file> to - will take\n"
 				"take input from stdin.  Likewise setting output file to - will\n"
 				"send output to stdout.  <offset> can be set to seek into the file.\n\n");
+		fprintf(stderr, "<inputFile> is the input multi-thread VDIF file, or - for  stdin\n\n");
+		fprintf(stderr, "<inputFrameSize> is the size of one thread's data frame, including header (for RDBE VDIF data this is 5032\n\n");
+		fprintf(stderr, "<framesPerSecond> is the number of frames per second in the input file for each thread (and is thus the number of output frames per second as well)\n\n");
+		fprintf(stderr, "<threadList> is a comma-separated list of integers in range 0 to 1023; the order of the numbers is significant and dictates the order of channels in the output data\n\n");
+		fprintf(stderr, "<outputFile> is the name of the output, single-thread VDIF file, or - for stdout\n\n");
+		fprintf(stderr, "<offset> is an optional offset into the input file (in bytes)\n\n");
+		fprintf(stderr, "<chunkSize> is (roughly) how many bytes to operate on at a time [default=%d]\n\n", defaultChunkSize);
 
 		return 0;
 	}
