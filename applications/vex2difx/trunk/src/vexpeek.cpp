@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2012 by Walter Brisken                             *
+ *   Copyright (C) 2009-2013 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -40,8 +40,8 @@
 #include "vexload.h"
 
 const std::string program("vexpeek");
-const std::string version("0.4");
-const std::string verdate("20121219");
+const std::string version("0.5");
+const std::string verdate("20130508");
 const std::string author("Walter Brisken");
 
 void usage(const char *pgm)
@@ -51,9 +51,10 @@ void usage(const char *pgm)
 	std::cout << std::endl;
 	std::cout << "A program to print essential information from a vex file." << std::endl;
 	std::cout << std::endl;
-	std::cout << "Usage: " << pgm << " <vex filename> [-v]" << std::endl;
+	std::cout << "Usage: " << pgm << " <vex filename> [options]" << std::endl;
 	std::cout << std::endl;
-	std::cout << "Options:" << std::endl;
+	std::cout << "options can include:" << std::endl;
+	std::cout << "  -h or --help : print help info and quit" << std::endl;
 	std::cout << "  -v or --verbose : print entire vextables structure of vexfile" << std::endl;
 	std::cout << "  -b or --bands : print list of band codes" << std::endl;
 	std::cout << std::endl;
@@ -170,15 +171,56 @@ int main(int argc, char **argv)
 	CorrParams *P;
 	int v;
 	int nWarn = 0;
+	int verbose = 0;
+	int doBandList = 0;
+	int a;
+	const char *fileName = 0;
 
-	if(argc < 2)
+	for(a = 1; a < argc; ++a)
 	{
-		usage(argv[0]);
+		if(strcmp(argv[a], "-v") == 0 ||
+		   strcmp(argv[a], "--verbose") == 0)
+		{
+			++verbose;
+		}
+		else if(strcmp(argv[a], "-b") == 0 ||
+		        strcmp(argv[a], "--bands") == 0)
+		{
+			++doBandList;
+		}
+		else if(strcmp(argv[a], "-h") == 0 ||
+		        strcmp(argv[a], "--help") == 0)
+		{
+			usage(argv[0]);
 
-		return 1;
+			return EXIT_SUCCESS;
+		}
+		else if(argv[a][0] == '-')
+		{
+			printf("Unknown option %s .  Run with -h for help.\n\n", argv[a]);
+
+			return EXIT_FAILURE;
+		}
+		else if(fileName != 0)
+		{
+			printf("Error: only one file name can be provided.\n\n");
+
+			return EXIT_FAILURE;
+		}
+		else
+		{
+			fileName = argv[a];
+		}
 	}
 
-	v = testVex(argv[1]);
+	if(fileName == 0)
+	{
+		printf("No file name provided.  Run with -h for help.\n\n");
+
+		return EXIT_FAILURE;
+	}
+
+	v = testVex(fileName);
 	if(v != 0)
 	{
 		std::cout << "Error code " << v << std::endl;
@@ -189,18 +231,18 @@ int main(int argc, char **argv)
 	P = new CorrParams();
 	P->defaultSetup();
 	P->minSubarraySize = 1;
-	P->vexFile = argv[1];
+	P->vexFile = fileName;
 
 	V = loadVexFile(*P, &nWarn);
 
-	if(argc > 2 && (strcmp(argv[2], "-v") == 0 || strcmp(argv[2], "--verbose") == 0) )
+	if(doBandList)
+	{
+		bandList(V);
+	}
+	else if(verbose)
 	{
 		std::cout << *V << std::endl;
 		std::cout << std::endl;
-	}
-	else if(argc > 2 && (strcmp(argv[2], "-b") == 0 || strcmp(argv[2], "--bands") == 0) )
-	{
-		bandList(V);
 	}
 	else
 	{
