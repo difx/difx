@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2011 by Walter Brisken                             *
+ *   Copyright (C) 2009-2013 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -34,8 +34,8 @@
 
 const char program[] = "difxcalculator";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
-const char version[] = "0.2";
-const char verdate[] = "20110730";
+const char version[] = "0.3";
+const char verdate[] = "20130508";
 
 const int nNode = 10;
 const int nCore = 7;
@@ -45,11 +45,14 @@ static void usage()
 	fprintf(stderr, "\n%s ver. %s  %s  %s\n\n", program, version, author, verdate);
 	fprintf(stderr, "A program to calculate software correlator resource usage.\n");
 	fprintf(stderr, "This is based on Adam Deller's difx_calculator.xls .\n");
-	fprintf(stderr, "\nUsage: %s <input file base name> [<speedUp factor>]\n", program);
+	fprintf(stderr, "\nUsage: %s [options] <input file base name> [<speedUp factor>]\n", program);
 	fprintf(stderr, "\n<input file base name> is the prefix of the difx .input file\n");
 	fprintf(stderr, "        to study.  Files ending in .input and .calc are needed.\n");
 	fprintf(stderr, "\n<speedUp factor> is a floating point number which is the ratio\n");
 	fprintf(stderr, "        of correlation speed to observation speed.\n\n");
+	fprintf(stderr, "options can include:\n");
+	fprintf(stderr, "  --help\n");
+	fprintf(stderr, "  -h        print help info and quit.\n\n");
 }
 
 int main(int argc, char **argv)
@@ -57,11 +60,19 @@ int main(int argc, char **argv)
 	DifxInput *D;
 	DifxCalculator *C;
 
-	if(argc < 2)
+	if(argc < 2 || argc > 3)
 	{
 		usage();
 
 		return EXIT_FAILURE;
+	}
+
+	if(strcmp(argv[1], "-h") == 0 ||
+	   strcmp(argv[1], "--help") == 0)
+	{
+		usage();
+
+		return EXIT_SUCCESS;
 	}
 	
 	D = loadDifxCalc(argv[1]);
