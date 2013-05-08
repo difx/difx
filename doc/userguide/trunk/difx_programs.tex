@@ -21,7 +21,7 @@ The code for these programs can be made available upon request.
 % m5access: m5timeseries, m5findformats, m5bstate
 % add more hyperlinks (e.g., to vdifd, etc)
 % document VDIF in vex2difx and other new features
-
+% doc testseqnumbers
 
 
 
@@ -259,8 +259,6 @@ The columns displayed are:
 \item Number of CPU cores
 \end{enumerate}
 
-%FIXME
-Bug: {\tt cpumon} does not respond nicely to {\tt -h} on the command line.
 
 
 
@@ -290,6 +288,10 @@ If a preliminary run of this program is made for the purposes of doing a clock s
 \item[] {\tt -h} or {\tt --help} : print usage information and exit
 \item[] {\tt -v} or {\tt --verbose} : be verbose in execution
 \item[] {\tt -f} or {\tt --force} : force program to overwrite existing db2vex output files
+\item[] {\tt -p} or {\tt --preobs} : don't look for VSNs, but get clock and EOP values (used for USNO observations by goUSNO)
+\item[] {\tt -a} or {\tt --mark5a} : force to run in Mark5A mode
+\item[] {\tt -c} or {\tt --mark5c} : force to run in Mark5C mode
+\item[] {\tt -u} or {\tt --usno} : force to run in USNO Mark5C mode
 \item[] {\tt --vsnProjectCode} {\em projectCode} : use {\em projectCode} when getting VSNs from the database
 \end{itemize}
 \item[] {\em vexFile} is the name of the vex file produced by {\tt sched}
@@ -304,11 +306,12 @@ This output file is to be used by {\tt vex2difx} for conversion into jobs to run
 The {\tt --vsnProjectCode} was intended for a pathological situation where a project code had to be renamed.
 
 \noindent
-Note that environment variable {\tt VLBA\_DB} must be set to point to the Oracle database in question.
-
-%FIXME: check if new parameters have been added
-
-%FIXME: note other database env vars...
+Notes: 
+\begin{enumerate}
+\item Environment variable {\tt VLBA\_DB} must be set to point to the Oracle database in question.
+\item Mark5C observations require environment variable {\tt VLBAMPTS\_DB} to point to the new EVLA-style VLBA database
+\item Observations using the phased VLA require envrionment variable {\tt EVLAMPTS\_DB} to point to the EVLA monitor database
+\end{enumerate}
 
 
 
@@ -474,18 +477,22 @@ Program difxcalculator looks at a set of DiFX input files ({\tt .input}, {\tt .c
 This program is inspired by the {\tt difx\_calculator.xls} spread sheet available at \url{http://cira.ivec.org/dokuwiki/doku.php/difx/calculator}.
 
 \begin{itemize}
-\item[] Usage: {\tt difxcalculator} {\em baseName} $[${\em speedUp}$]$
+\item[] Usage: {\tt difxcalculator} $[$ {\em options} $]$ {\em baseName} $[${\em speedUp}$]$
+\item[] {\em options} can be:
+\begin{itemize}
+\item[] {\tt -h} or {\tt --help} : print usage information and exit
+\end{itemize}
 \item[] {\em baseName} is the base name of a correlator job
 \item[] {\em speedUp} is the expected processing rate relative to real-time
 \item[] Example: {\tt difxcalculator mt933\_01}
 \end{itemize}
 
 %FIXME
-Bug: does not respond nicely to {\tt -h} on command line.
-
-%FIXME
-Bug: does not take into consideration multiple phase centers or zoom bands.
-
+\noindent
+Known bugs:
+\begin{enumerate}
+\item Does not take into consideration multiple phase centers or zoom bands.
+\end{enumerate}
 
 
 
@@ -799,7 +806,11 @@ Program {\tt errormon} listens for multicast messages of the {\tt difxError} var
 It is effectively the same as {\tt difxlog} except that log data is sent to {\em stdout} rather than a systematically named file.
 
 \begin{itemize}
-\item[] Usage: {\tt errormon} $[${\em maxSeverity}$]$
+\item[] Usage: {\tt errormon} $[$ options $]$ $[${\em maxSeverity}$]$
+\item[] {\em options} can be:
+\begin{itemize}
+\item[] {\tt -h} or {\tt --help} : print usage information and exit
+\end{itemize}
 \item[] {\em maxSeverity} : maximum severity level to display (default = 8)
 \end{itemize}
 
@@ -809,8 +820,8 @@ If no {\em maxSeverity} is provided, the default level of 8 will cause no select
 A similar program, {\tt errormon2}, does nearly the same thing, but defaults to a less verbose output, and sends output to {\em stderr} rather than {\em stdout} (so use with {\tt grep} or other *nix tools is more cumbersome.
 It also writes its output to a log file.
 
-%FIXME
-Bug: {\tt errormon} and {\tt errormon2} do not respond nicely to {\tt -h} on the command line.
+See documentation for {\tt difxlog} to see the list of alert levels.
+
 
 
 
@@ -884,32 +895,35 @@ Default is the current working directory if none is provided.
 
 
 
-% getvex ----------------------------------------------------------------------
-
-\subsection{getvex {\small $\mathrm{(package: difx\_db)}$}} \label{sec:getvex}
-
-This is an NRAO-only program owing to its assumption of file locations.
-
-Python program {\tt getvex} can be used to create a new software correlation project directory and copy {\tt .skd} files (vex files), {\tt .oms} files (from output of sched) and a {\tt cal.vlba} file from {\tt /home/vlbiobs} into the new project directory.
-If the {\tt cal.vlba} file is found, it is {\tt gunzip}ed if needed and run through {\tt vlog} (\S\ref{sec:vlog}).
-The sched {\tt .oms} file is parsed to create a base {\tt .v2d} file with program {oms2v2d} that simplifies difx job creation.
-
-\begin{itemize}
-\item[] Usage: {\tt getjobs} $[$ {\em options} $]$ {\em project} $[$ {\em rootDir} $]$
-\item[] {\em options} can be:
-\begin{itemize}
-\item[] {\tt -h} or {\tt --help} : print usage information and exit
-\item[] {\tt -f} or {\tt --force} : allow overwrite of files
-\end{itemize}
-\item[] {\em project} is the full name of a project, in lower case, including segment
-\item[] {\em rootDir} is an optional parameter specifying the directory into which the new project directory will be created.
-Default is the current working directory if none is provided.
-\item[] Example 1: {\tt getjobs bw088r}
-\item[] Example 2: {\tt getjobs bg160 \$JOB\_ROOT}
-\end{itemize}
-
-
-% FIXME: does this know about MARK5C/ directories?
+% getvex ------  ------------------------------------------ OBSOLETE ----------
+%
+%\subsection{getvex {\small $\mathrm{(package: difx\_db)}$}} \label{sec:getvex}
+%
+%This is an NRAO-only program owing to its assumption of file locations.
+%
+%Python program {\tt getvex} can be used to create a new software correlation project directory and copy {\tt .skd} files (vex files), {\tt .oms} files (from output of sched) and a {\tt cal.vlba} file from {\tt /home/vlbiobs} into the new project directory.
+%If the {\tt cal.vlba} file is found, it is {\tt gunzip}ed if needed and run through {\tt vlog} (\S\ref{sec:vlog}).
+%The sched {\tt .oms} file is parsed to create a base {\tt .v2d} file with program {oms2v2d} that simplifies difx job creation.
+%
+%\begin{itemize}
+%\item[] Usage: {\tt getjobs} $[$ {\em options} $]$ {\em project} $[$ {\em rootDir} $]$
+%\item[] {\em options} can be:
+%\begin{itemize}
+%\item[] {\tt -h} or {\tt --help} : print usage information and exit
+%\item[] {\tt -f} or {\tt --force} : allow overwrite of files
+%\end{itemize}
+%\item[] {\em project} is the full name of a project, in lower case, including segment
+%\item[] {\em rootDir} is an optional parameter specifying the directory into which the new project directory will be created.
+%Default is the current working directory if none is provided.
+%\item[] Example 1: {\tt getjobs bw088r}
+%\item[] Example 2: {\tt getjobs bg160 \$JOB\_ROOT}
+%\end{itemize}
+%
+%
+%\noindent
+%Note: This program currently will not work with Mark5C-based projects.
+%
+%% FIXME: option in code for Mark5C
 
 
 
@@ -951,7 +965,12 @@ Multiple input files may be supplied.
 \end{itemize}
 
 
-% FIXME: program should make sure datastream type is MODULE
+% FIXME
+\noindent
+Known bugs:
+\begin{enumerate}
+\item Program should make sure datastream type is MODULE.
+\end{enumerate}
 
 
 
@@ -1328,7 +1347,7 @@ Note that the executable for mk5cat is identical to that for mk5cp and only the 
 \item[] {\em scans} is one or more scan numbers (starting at 1) with scan numbers separated by commas.
 \end{itemize}
 
-Many of the other utilties documented here such as {\tt m5d}, {\tt m5spec} and {\tt vmux} can take input from {\tt stdin} and thus can be mated with mk5cat.
+Many of the other utilties documented here such as {\tt m5d}, {\tt m5spec} and {\tt vmux} can take input from {\tt stdin} and thus can be mated with {\tt mk5cat}.
 Usually a single hyphen ({\tt -}) as the name of the input file indicates this to these programs.
 
 \begin{itemize}
@@ -1626,8 +1645,6 @@ The columns being displayed are:
 \item Scan name of data being played, if playing
 \end{enumerate}
 
-%FIXME
-Bug: {\tt mk5mon} does not respond nicely to {\tt -h} on the command line.
 
 
 
@@ -1702,8 +1719,22 @@ Program {\tt padVDIF} ...
 
 
 % plotapd ------------------------------------------------- INCOMPLETE --------
+
+\subsection{plotapd {\small $\mathrm{(package: SniffPlots)}$} \label{sec:plotapd}}
+
+Program {\tt plotapd} ...
+
 % plotbp -------------------------------------------------- INCOMPLETE --------
+
+\subsection{plotbp {\small $\mathrm{(package: SniffPlots)}$} \label{sec:plotbp}}
+
+Program {\tt plotbp} ...
+
 % plotwt -------------------------------------------------- INCOMPLETE --------
+
+\subsection{plotwt {\small $\mathrm{(package: SniffPlots)}$} \label{sec:plotwt}}
+
+Program {\tt plotwt} ...
 
 
 % printDiFX --------------------------------------------------------------------
@@ -1822,11 +1853,13 @@ Program {\tt statemon} listens for multicast messages of the {\tt difxStatus} va
 This is mainly useful for debugging {\tt mpifxcorr} and any programs responsible for launching it.
 
 \begin{itemize}
-\item[] Usage: {\tt statemon} 
+\item[] Usage: {\tt statemon} $[$ {\em options} $]$ 
+\item[] {\em options} can be:
+\begin{itemize}
+\item[] {\tt -h} or {\tt --help} : print usage information and exit
+\end{itemize}
 \end{itemize}
 
-%FIXME
-Bugs: does not respond kindly to a {\tt -h} option.
 
 
 
@@ -1896,8 +1929,11 @@ These files should closely resemble the input files if the parsing was done prop
 \end{itemize}
 
 %FIXME
-Bugs: does not respond nicely to {\tt -h} on the command line.
-
+\noindent
+Known bugs: 
+\begin{enumerate}
+\item Does not respond nicely to {\tt -h} on the command line.
+\end{enumerate}
 
 
 
@@ -1980,14 +2016,20 @@ Is is generally safe to use these options, but the diagnostic power of this prog
 
 
 
+% testseqnumbers ------------------------------------------ INCOMPLETE --------
 
+\subsection{testseqnumbers {\small $\mathrm{(package: difxmessage)}$}} \label{sec:testsequnumbers} 
 
+\noindent
+Known bugs:
+\begin{enumerate}
+\item Program has no help info.
+\end{enumerate}
 
 % vex2difx --------------------------------------------------------------------
 
 \subsection{vex2difx} \label{sec:vex2difx}
 
-noindent
 {\tt vex2difx} is a program that takes a {\tt .vex} files (such as one produced by {\tt sched} with various tables based on observe-time data appended, probably by {\tt db2vex} in the case of VLBA operations) and a {\tt .v2d} configuration file (see \S\ref{sec:v2d}) and generates one or more {\tt .input} and {\tt .calc} file pairs for use with the DiFX correlator. 
 Note specifically that {\tt .ovex} files, as used at many/most Mark4 correlators, are not supported.
 {\tt vex2difx}, along with {\tt calcif2}, supercedes the functionality of {\tt vex2config} and {\tt vex2model}, two programs that were widely used but never fully integrated into the VLBA's software chain. 
@@ -2144,20 +2186,22 @@ You may find additional information at \url{http://cira.ivec.org/dokuwiki/doku.p
 
 \subsection{vexpeek {\small $\mathrm{(package: vex2difx)}$}} \label{sec:vexpeek}
 
-Program {\tt vexpeek} takes a vex file as input and sends to {\tt stdout} the experiment name, segment, and a list of antennas and the MJD times that they were included in the observation.
+Program {\tt vexpeek} takes a vex file as input and sends to {\em stdout} the experiment name, segment, and a list of antennas and the MJD times that they were included in the observation.
 This program is mainly intended to be called from python program {\tt db2vex} which needs to know a little about the file before appending the CLOCK and TAPELOG\_OBS tables.  
 The VLBA operations system relies on such functionality but there is no reason other operations couldn't use this.
 This program uses the same parsing infrastructure as {\tt vex2difx} so the warnings that may be produced and sent to {\tt stderr} in running {\tt vex2difx} will also do so with {\tt vexpeek}.
 Thus, when {\tt db2vex} is run some of these error messages may be seen.
 
 \begin{itemize}
-\item[] Usage: {\tt vexpeek} {\em vexFile} 
+\item[] Usage: {\tt vexpeek} $[${\em options}$]$ {\em vexFile} 
+\item[] {\em options} can be:
+\begin{itemize}
+\item[] {\tt -h} or {\tt --help} : print usage information and exit
+\item[] {\tt -b} or {\tt --bands} : print list of bands used by {\em vexFile}
+\item[] {\tt -v} or {\tt --verbose} : print decoded version of {\em vexFile} to screen
+\end{itemize}
 \item[] {\em vexFile} is the vex format file to be inspected.
 \end{itemize}
-Running with no command line arguments will print usage information to the terminal and exit.
-
-%FIXME
-Bug: {\tt vexpeek} does not respond nicely to {\tt -h} on the command line.
 
 
 
@@ -2196,7 +2240,7 @@ Program {\tt vmux} takes a VDIF file with multiple threads of one channel each a
 In the case that a non-power-of-two number of channels are contained in the input file (or equivalently, a non-power-of-two number of threads are specified on the command line), the next power of two will be selected as the number of channels in the output thread and any unused channel slots will contain random data.
 
 \begin{itemize}
-\item[] Usage: {\tt vmux} {\em inputFile} {\em inputFrameSize} {\em framesPerSecond} {\em threadList} {\em outputFile} $[${\em offset $[${\em chunkSize}$] ]$
+\item[] Usage: {\tt vmux} {\em inputFile} {\em inputFrameSize} {\em framesPerSecond} {\em threadList} {\em outputFile} $[${\em offset} $[${\em chunkSize}$] ]$
 \item[] {\em inputFile} is the input multi-thread VDIF file, or {\tt -} for {\em stdin}
 \item[] {\em inputFrameSize} is the size of one thread's data frame, including header (for RDBE VDIF data this is 5032)
 \item[] {\em framesPerSecond} is the number of frames per second in the input file for each thread (and is thus the number of output frames per second as well)
@@ -2286,6 +2330,7 @@ If the summary operation failed for a file, one of the following error codes wil
 -7 & Seek to near-end-of-file failed \\
 -8 & Read at end of file failed \\
 -9 & A valid frame at the end of the file could not be found \\
+\end{tabular}
 \end{center}
 
 
