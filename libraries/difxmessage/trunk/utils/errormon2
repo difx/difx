@@ -26,8 +26,17 @@ from time import asctime
 
 program = 'errormon2'
 author  = 'Walter Brisken + ?'
-version = '0.5'
-verdate = '20120516'
+version = '0.6'
+verdate = '20130508'
+
+
+def usage(prog):
+	print '%s ver. %s  %s  %s\n' % (program, version, author, verdate)
+	print 'Usage: %s [options] [<maxlevel>]\n' % prog
+	print 'options can include:'
+	print '  --help'
+	print '  -h        print help information and quit\n'
+	print '<maxlevel>  is the max alert error level to print\n'
 
 ##############################################################################
 # Parameters
@@ -205,5 +214,10 @@ def run():
 		    exit(0)
     except KeyboardInterrupt:
 	    pass
+
+if len(argv) > 1:
+	if argv[1] in ['-h', '--help']:
+		usage(argv[0])
+		exit(0)
 
 run()
