@@ -31,7 +31,12 @@
 #endif
 
 #ifdef _OPENMP                                                                             
+#if defined(__GNUC__)
+#define STRINGIFY(a) #a
+#define PRAGMA_OMP(args) _Pragma(STRINGIFY(omp args))
+#else
 #define PRAGMA_OMP(args) __pragma(omp args)                                              
+#endif
 #else                                                                                      
 #define PRAGMA_OMP(args) /**/                                                            
 #endif                      
