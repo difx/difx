@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2011 by Walter Brisken                             *
+ *   Copyright (C) 2008-2013 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -34,13 +34,19 @@
 
 const char program[] = "testdifxinput";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
-const char version[] = "1.0";
-const char verdate[] = "20111210";
+const char version[] = "1.1";
+const char verdate[] = "20130508";
 
 void usage()
 {
 	printf("%s  ver. %s  %s  %s\n\n", program, version, author, verdate);
-	printf("Usage : %s <inputfilebase> ...\n\n", program);
+	printf("Usage : %s [options] <inputfilebase1> [ <inputfilebase2> [...] ]\n\n", program);
+	printf("options can include:\n");
+	printf("--verbose\n");
+	printf("-v         be a bit more verbose\n\n");
+	printf("--help\n");
+	printf("-h         print help information and quit\n\n");
+	printf("<inputfilebaseN> is the base name of a difx fileset.\n\n");
 }
 
 int main(int argc, char **argv)
@@ -123,7 +129,7 @@ int main(int argc, char **argv)
 
 	if(nJob == 0)
 	{
-		printf("Nothing to do!  Quitting.\n");
+		printf("Nothing to do!  Quitting.  Run with -h for help information\n");
 
 		return EXIT_SUCCESS;
 	}
