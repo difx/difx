@@ -43,6 +43,7 @@ make
 %{_bindir}/searchVDIF
 %{_bindir}/peekVDIF
 %{_bindir}/vmux
+%{_bindir}/vsum
 %{_bindir}/vdifd
 %{_bindir}/vdifspec
 %{_bindir}/vdiffold

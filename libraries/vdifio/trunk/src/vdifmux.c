@@ -46,10 +46,15 @@
 #include <omp.h>
 #endif
 
-#ifdef _OPENMP                                                                             
-#define PRAGMA_OMP(args) __pragma(omp args)                                              
+#ifdef _OPENMP
+#if defined(__GNUC__)
+#define STRINGIFY(a) #a
+#define PRAGMA_OMP(args) _Pragma(STRINGIFY(omp args))
 #else
-#define PRAGMA_OMP(args) /**/                                                            
+#define PRAGMA_OMP(args) __pragma(omp args)
+#endif
+#else
+#define PRAGMA_OMP(args) /**/
 #endif
 
 
@@ -851,6 +856,12 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 				}
 			}
 		}
+	}
+
+	/* If source did not dry up and dest got within nGap of filling, set highestDestIndex to produce (invalid) data through the end of the dest buffer for continuity */
+	if(i < N && highestDestIndex < maxDestIndex && highestDestIndex > maxDestIndex - nGap)
+	{
+		highestDestIndex = maxDestIndex;
 	}
 
 	/* Stage 2: do the corner turning and header population */

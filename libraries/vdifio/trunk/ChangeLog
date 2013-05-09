@@ -4,6 +4,9 @@ Version 0.4
 * Add new vdifmux function which takes a multi-threaded VDIF buffer, looks
   for frames with certain threadIds, and multiplexes them into a single-
   threaded output buffer.
+* New programs exercising new library routines:
+  - vsum       summarize contents of 1 or more VDIF files
+  - vmux       multiplex a multi-thread VDIF file into a single-thread file
 * New utilities (mirroring functionality of mark5access utilities):
   - vdifd      (m5d)
   - vdifbstate (m5bstate)

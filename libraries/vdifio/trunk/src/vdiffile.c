@@ -62,7 +62,14 @@ void printvdiffilesummary(const struct vdif_file_summary *sum)
 	}
 	printf("\n");
 	printf("  frame size = %d bytes\n", sum->frameSize);
-	printf("  frame rate = %d per second\n", sum->framesPerSecond);
+	if(sum->framesPerSecond > 0)
+	{
+		printf("  frame rate = %d per second\n", sum->framesPerSecond);
+	}
+	else
+	{
+		printf("  frame rate is unknown\n");
+	}
 	printf("  VDIF epoch = %d\n", sum->epoch);
 	printf("  start MJD = %d\n", vdiffilesummarygetstartmjd(sum));
 	printf("  start second = %d\n", sum->startSecond);
