@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2012 by Walter Brisken                             *
+ *   Copyright (C) 2009-2013 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -34,6 +34,11 @@
 #include <time.h>
 #include "difxmessage.h"
 
+const char program[] = "testseqnumbers";
+const char version[] = "1.1";
+const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
+const char verdate[] = "20130509";
+
 const int MAX_SENDER=1024;
 
 struct sender
@@ -43,7 +48,26 @@ struct sender
 	int lastseq;
 };
 
-void checkseq(const char *name, const char *identifier, int seq, struct sender *senders)
+void usage(const char *prog)
+{
+	printf("\n%s ver. %s  %s  %s\n\n", program, version, author, verdate);
+	printf("A utility to listen for DiFX multicast messages and identify any that\n");
+	printf("come with a sequence number that is not sequential.  This is a good\n");
+	printf("way to identify possible packet loss or duplication on a DiFX cluster\n");
+	printf("network.\n\n");
+	printf("Usage: %s [options]\n\n", prog);
+	printf("options can include:\n");
+	printf("--verbose\n");
+	printf("-v          increase output verbosity\n\n");
+	printf("--help\n");
+	printf("-h          print help information and quite\n\n");
+	printf("If run without the '-v' option, only unexpected packets will be noted.\n");
+	printf("If run with one '-v' flag, each received packet will be identified with a\n");
+	printf("period being written to the screen.  If run with 2 '-v' flags, each\n");
+	printf("packet received will have its source and sequence number printed.\n\n");
+}
+
+void checkseq(const char *name, const char *identifier, int seq, struct sender *senders, int verbose)
 {
 	int i;
 	time_t t;
@@ -68,7 +92,17 @@ void checkseq(const char *name, const char *identifier, int seq, struct sender *
 				time(&t);
 				strcpy(timestr, ctime(&t));
 				timestr[strlen(timestr)-1] = 0;
-				printf("[%s]  %s.%s  %d -> %d\n", timestr, name, identifier, senders[i].lastseq, seq);
+				printf("\n[%s]  %s.%s  %d -> %d", timestr, name, identifier, senders[i].lastseq, seq);
+				fflush(stdout);
+			}
+			else if(verbose > 1)
+			{
+				printf("\n[%s] %d", name, seq);
+				fflush(stdout);
+			}
+			else if(verbose > 0)
+			{
+				printf(".");
 				fflush(stdout);
 			}
 			senders[i].lastseq = seq;
@@ -92,15 +126,43 @@ int main(int argc, char **argv)
 {
 	int sock;
 	int l;
+	int verbose = 0;
 	char message[DIFX_MESSAGE_LENGTH];
 	char from[DIFX_MESSAGE_MAX_INET_ADDRESS_LENGTH];
 	DifxMessageGeneric G;
 	struct sender senders[MAX_SENDER];
+	int a;
+
+	for(a = 1; a < argc; ++a)
+	{
+		if(strcmp(argv[a], "-h") == 0 ||
+		   strcmp(argv[a], "--help") == 0)
+		{
+			usage(argv[0]);
+
+			exit(EXIT_SUCCESS);
+		}
+		else if(strcmp(argv[a], "-v") == 0 ||
+		        strcmp(argv[a], "--verbose") == 0)
+		{
+			++verbose;
+		}
+		else
+		{
+			fprintf(stderr, "Error: unexpected command line argument '%s'\n\n", argv[a]);
+
+			exit(EXIT_FAILURE);
+		}
+
+	}
 
 	senders[0].lastseq = -1;
 
 	difxMessageInit(-1, argv[0]);
-	difxMessagePrint();
+	if(verbose > 0)
+	{
+		difxMessagePrint();
+	}
 
 	sock = difxMessageReceiveOpen();
 
@@ -121,7 +183,7 @@ int main(int argc, char **argv)
 		message[l] = 0;
 		difxMessageParse(&G, message);
 	
-		checkseq(G.from, G.identifier, G.seqNumber, senders);
+		checkseq(G.from, G.identifier, G.seqNumber, senders, verbose);
 	}
 
 	difxMessageReceiveClose(sock);
