@@ -358,7 +358,105 @@ There are a number of new features as well.
 \item Migrate {\tt difxcalculator} to DiFX 2; was not complete for DiFX 2.0.0
 \end{enumerate}
 
-DiFX 2.0.1 is expected to be released in April 2011.
+DiFX 2.0.1 was released on June 24, 2011.
+
+\subsection{DiFX 2.1}
+
+\subsubsection{New features}
+
+\begin{enumerate}
+\item Mark5-based correlation: easy access to S.M.A.R.T.\ data (can be viewed with getsmart)
+\item Mark5-based correlation: emit multicast message containing drive statistics after each scan
+\item VSIS interface added to mk5daemon
+\item Support for non power-of-2 FFT lengths
+\item New utilities: {\tt mk5map} (limited functionality), {\tt fileto5c}, {\tt record5c}
+\item Remote running of {\tt vex2difx} from {\tt mk5daemon}
+\item Multithread VDIF support enabled for the data sources FILE and MODULE, including stripping of non-VDIF packets
+\item New features added to existing utilities:
+\begin{itemize}
+\item {\tt mk5cp}: copy without reference to a module directory
+\item {\tt mk5cp}: ability to send data over ssh connection
+\item vsn: get SMART data from disk drives
+\end{itemize}
+\item e-Control source code analysis (Martin Ettl, Wettzell)
+\item Restart of correlation is now possible
+\item {\tt difx2fits}: -0 option to write minimal number of visibilities to FITS
+\item {\tt difx2fits}: write new RAOBS, DECOBS columns in source table
+\item tweakIntTime option to {\tt vex2difx} has been re-enabled
+\item {\tt diffDiFX.py} can now cope with two files that don't have exactly the same visibilities (i.e., some visibilities are missing from one file)
+\item {\tt plotDiFX.py} and {\tt plotDynamicSpectrum.py} now have better plotting and more options
+\item New FAKE datastream type for performance testing
+\item Espresso, a lightweight system for managing disk-based correlation, has been added to the DiFX repository. 
+\item Option to correlate only one polarization has been added.
+\item {\tt mk5dir} can now produce {\tt .dir} file information for VDIF formatted data.
+\item Add NRAO's sniffer plotters to the repository.
+\end{enumerate}
+
+\subsubsection{Bug fixes}
+
+\begin{enumerate}
+\item LBA format data now scaled roughly correctly (removing the need for large ACCOR corrections).
+\item There was a bug when xmaclength was $>$ nfftchan for pulsar processing. This has been corrected.
+\item guardns was incorrectly (overzealously) calculated in mpifxcorr.
+\item {\tt Mk5DataStream::calculateControlParams: bufferindex>=bufferbytes} bug fixed.
+\item Low weight reads could result in uninitialized memory; fixed.
+\item Streamstor {\tt XLRRead()} bug work-around installed several places (read at position 0 before reading at position $> 0$). This is thought not to be needed with Conduant SDK 9.2 but the work-around has no performance impact.
+\item Fix to pulse calibration data ordering for LSB or reordered channels.
+\item Pulse cal amplitude now divided by pulse cal averaging time in seconds.
+\item Pulse cal system would cause crash if no tones in narrow channel. Fixed.
+\item Zoom band support across mixed bandwidths (see caveat below).
+\item Fix for spurious weights at end of jobs (untested\ldots)
+\item Mixed 1 and 2 bit data are handled more cleanly
+\item mpifxcorr terminates correctly for all short jobs.  Previously it hung for jobs with a number of subints between nCores and $4 \times$ nCores
+\item Correctly scale cross-correlation amplitudes for pulsar binning when using {\tt TSYS} $>0$ (accounts for varying number of samples per bin c.f.\ nominal)
+\item Lower side-band pulse cal tones had sign error.  Fixed.
+\end{enumerate}
+
+
+DiFX 2.1 was released on May 25, 2012.
+
+
+\subsection{DiFX 2.1.1}
+
+DiFX 2.1.1 was a minor patch release to fix a scaling issue with autocorrelations of LBA-format data in mpifxcorr.
+
+DiFX 2.1.1 was committed as a patch to DiFX 2.1 on June 7, 2012.
+
+
+\subsection{DiFX 2.2}
+
+\subsubsection{New features}
+
+\begin{enumerate}
+\item calcif2: ability to estimate delay polynomial interpolarion errors
+\item Support for a "label" identifier for a local version of DiFX that will help discriminate exact version used.
+\item Faster Mark5 directory reading
+\item Faster VDIF corner turning through customized bit shifting functions
+\item mpifxcorr can now be built without Intel Integrated Performance Primitives, though resulting in a slower correlator.
+\end{enumerate}
+
+\subsubsection{Bug fixes}
+
+\begin{enumerate}
+
+
+\item {\tt calcif2}: fix azimuth polynomial generation in case of wrap
+\item Fix for FITS file generation for mixed sideband correlation
+\item {\tt difx2fits} now uses appropriate gain tables for S and X band in S/X experiments (Thanks to James Miller-Jones for reporting)
+\item {\tt difx2fits}: correct pcal, weather, tsys and flag data for observations crossing new year
+\item Fixed scaling of autocorrelations for LBA format data
+\item 0.5 ns wobble in delays for 2 Gbps Mark5B data fixed
+\item Fix bug preventing subintegrations longer than 1 second. Now 2 seconds is allows (this limit comes from signed integer number of nanoseconds).
+\item Weights corrected in cases where two setups differening only by pcal setup were correlated against each other
+\item Quashed data and weight echos that would occur for about 1 integration at the beginning of each scan for datstreams that ran out of data before end of job.
+\item The multicast (diagnostic) weights were low or zero in case of frequency selection (zoom band or freqId selection). Fixed.
+
+
+\end{enumerate}
+
+
+DiFX 2.2 was released on FIXME 2013.
+
 
 \subsection{Features left to implement}
 
@@ -368,13 +466,9 @@ Here is a list of other features to add to DiFX that are not directly tied to an
 \item Support for K5 format
 \item Pulsar bins with proper output format
 \item Fast-forwarding over unneeded data in the native Mark5 module datastream
-\item Phase cal extraction
 \item Space VLBI support
-\item Switched power extraction
 \item Playback of two independent modules in one Mark5 unit
 \item Non-bank-mode Mark5 support
-\item Spectral selection between FFT and cross-correlation to allow for greater spectral resolution
-\item Conversion of DiFX output to Mark4 correlator format
 \item Support for antenna local oscillator offsets
 \end{enumerate}
 

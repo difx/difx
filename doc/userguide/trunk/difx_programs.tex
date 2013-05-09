@@ -18,7 +18,7 @@ The code for these programs can be made available upon request.
 
 % TODO
 % Add SniffPlots 
-% m5access: m5timeseries, m5findformats, m5bstate
+% m5access: m5timeseries, m5findformats
 % add more hyperlinks (e.g., to vdifd, etc)
 % document VDIF in vex2difx and other new features
 % doc testseqnumbers
@@ -64,7 +64,7 @@ In addition to calculating the delay model, this program computes the baseline v
 \item[] {\tt -q} or {\tt --quiet} : print less verbose logging/debug info
 \item[] {\tt -f} or {\tt --force} : rerun even if output files exist and are current
 \item[] {\tt -n} or {\tt --noaber} : don't perform aberration $u,v,w$ corrections
-\item[] {\tt -F} or {\tt --fit} : Instead of producing an $n$ term polynomial from $n$ samples, calculate more samples and perform a fit.  This is not of general use as tests have shown that the improvement is negligable.
+\item[] {\tt -F} or {\tt --fit} : Instead of producing an $n$ term polynomial from $n$ samples, calculate more samples and perform a fit.  This is not of general use as tests have shown that the improvement is negligible.
 \item[] {\tt -z} or {\tt --allow-neg-delay} : don't zero delays that are negative (i.e., shadowed by Earth)
 \item[] {\tt -A} or {\tt --noatmos} : don't include atmosphere in calculation of $u,v,w$
 \item[] {\tt -s} {\em server} or {\tt --server} {\em server} : connect to {\em server}, not {\tt \$CALC\_SERVER}
@@ -79,7 +79,8 @@ In addition to calculating the delay model, this program computes the baseline v
 \item[] Example 3: {\tt calcif2 -a -i 60} 
 \end{itemize}
 
-% FIXME: add more info on the Sekido option
+The {\tt --sekido} option is intended as a short term stop gap to provide near-field functionality before calc11 (with native near-field support) is fully implemented.
+To this end, documentation of this rather complicated option will likely not get written.
 
 
 
@@ -310,7 +311,7 @@ Notes:
 \begin{enumerate}
 \item Environment variable {\tt VLBA\_DB} must be set to point to the Oracle database in question.
 \item Mark5C observations require environment variable {\tt VLBAMPTS\_DB} to point to the new EVLA-style VLBA database
-\item Observations using the phased VLA require envrionment variable {\tt EVLAMPTS\_DB} to point to the EVLA monitor database
+\item Observations using the phased VLA require environment variable {\tt EVLAMPTS\_DB} to point to the EVLA monitor database
 \end{enumerate}
 
 
@@ -608,7 +609,7 @@ This is an NRAO-only program owing to its ties to the VLBA database.
 Python program {\tt difxqueue} is a program used to maintain the DiFX correlator queue.
 There are two main responsibilities in doing so: copying or deleting files in the correlator queue directory (which is project specific: {\tt \$DIFX\_QUEUE\_BASE/}{\em projectName}) and maintaining the database entries for each queued job.
 In the VLBA context, this program is the main interface between the analysts and the correlator operators.
-This program is mainly indended to work on one {\em job pass} at a time rather than single jobs or whole projects.
+This program is mainly intended to work on one {\em job pass} at a time rather than single jobs or whole projects.
 In some cases one job pass could be one job, or it could be a whole project (or both), but in many cases there will be multiple passes per project with possibly multiple jobs per pass.
 It is possible for {\tt difxqueue} to operate on individual jobs when a list of job numbers is provided.
 The first command line argument describes the action to perform.
@@ -895,7 +896,7 @@ Default is the current working directory if none is provided.
 
 
 
-% getvex ------  ------------------------------------------ OBSOLETE ----------
+% getvex -------------------------------------------------- OBSOLETE ----------
 %
 %\subsection{getvex {\small $\mathrm{(package: difx\_db)}$}} \label{sec:getvex}
 %
@@ -990,9 +991,6 @@ Six columns of output are produced:
 \item[{\tt c}] {\tt .calc} file (\S\ref{sec:calc})
 \item[{\tt m}] {\tt .machines} file (\S\ref{sec:machines})
 \item[{\tt t}] {\tt .threads} file (\S\ref{sec:threads})
-\item[{\tt u}] {\tt .uvw} file (\S\ref{sec:uvw})
-\item[{\tt d}] {\tt .delay} file (\S\ref{sec:delay})
-\item[{\tt r}] {\tt .rate} file (\S\ref{sec:rate})
 \item[{\tt i}] {\tt .im} file (\S\ref{sec:im})
 \item[{\tt v}] {\tt .difx} file (\S\ref{sec:difx})
 \end{itemize}
@@ -1016,8 +1014,6 @@ Multiple directories can be specified.
 \end{itemize}
 
 
-% FIXME: program, and then documentation: remove uvw, rate, delay files
-% FIXME: does this work properly for VDIF?
 
 
 
@@ -1068,7 +1064,11 @@ Multiple directories can be specified.
 
 
 % FIXME: code needs updating
-
+\noindent
+Known bugs:
+\begin{enumerate}
+\item This program has not been updated to work with DiFX 2.0 output
+\end{enumerate}
 
 
 
@@ -1133,13 +1133,34 @@ Multiple directories can be specified.
 \end{itemize}
 
 
-% FIXME: code: exception if run without parameters
 
 
 
 
 
-% m5bstate ------------------------------------------------ INCOMPLETE --------
+% m5bstate --------------------------------------------------------------------
+
+\subsection{m5bstate {\small $\mathrm{(package: mark5access)}$}} \label{sec:m5bstate}
+
+Program {\tt m5bstate} will perform state counts on a baseband data file.
+
+\begin{itemize}
+\item[] Usage: {\tt m5bstate} {\em file} {\em format} {\em nFrames} $[$ {\em offset} $]$ 
+\item[] {\em file} is the file to decode
+\item[] {\em format} is the format of the data
+\item[] {\em nFrames} is the number of data frames (typically a few kB in size) to decode
+\item[] {\em offset} is the number of bytes into the file to start decoding
+\item[] Example: {\tt m5bstate sample.vlba VLBA1\_2-256-8-2 100}
+\end{itemize}
+
+\noindent
+Notes:
+\begin{enumerate}
+\item See documentation for {\tt m5b} for details on specifying the data format.
+\item Only real-sampled data with 1 or 2 bits per sample is supported at this time.
+\item In the case of VDIF data, only single thread data with $2^n$ channels is supported.
+For equivalent functionality in the multi-thread VDIF case see {\tt vdifd}.
+\end{enumerate}
 
 
 
@@ -1180,15 +1201,19 @@ The format parameter is constructed from four parts as {\em type}-{\em rate}-{\e
 See the usage examples above for some explicit values.
 Note for the {\tt VLBA} and {\tt MKIV} format types the fanout is appended as this affects the decodability of the files.
 
-In the case of VDIF data, only single thread data with $2^n$ channels is supported.
+\noindent
+Notes:
+\begin{enumerate}
+\item In the case of VDIF data, only single thread data with $2^n$ channels is supported.
 For equivalent functionality in the multi-thread VDIF case see {\tt vdifd}.
-
+\end{enumerate}
 
 
 
 
 % m5findformat -------------------------------------------- INCOMPLETE --------
 
+\subsection{m5findformat {\small $\mathrm{(package: mark5access)}$}} \label{sec:m5findformat}
 
 
 
@@ -1221,7 +1246,7 @@ The program should be used as follows:
 \item[] {\em freq} is the reciprocal of the period to be observed (Hz)
 \item[] {\em outfile} is the name of the output file
 \item[] {\em offset} (optional) is the number of bytes into the file to start decoding
-\item[] Example: {\tt m5fold sample.vlba VLBA1\_2-256-8-2 128 10000 80 switchedpower.vlba}
+\item[] Example: {\tt m5fold sample.vlba VLBA1\_2-256-8-2 128 10000 80 sample.fold}
 \end{itemize}
 
 See the documentation for {\tt m5d} for information on specifying the data format.
@@ -1248,6 +1273,16 @@ For equivalent functionality in the multi-thread VDIF case see {\tt vdiffold}.
 \subsection{m5pcal {\small $\mathrm{(package: mark5access)}$}} \label{sec:m5pcal}
 
 Program {\tt m5pcal} can be used to extract pulse cal tones from baseband data in Mark4, VLBA, Mark5B and single-thread VDIF formats.
+
+\begin{itemize}
+\item[] Usage: {\tt m5pcal} $[$ {\em options} $]$ {\em infile} {\em format} 
+\item[] {\em options} can be:
+\begin{itemize}
+\item[] {\tt -h} or {\tt --help} : print usage information and exit
+\item[] {\tt -v} or {\tt --verbose} : increase output verbosity
+\item[] {\tt -q} or {\tt --quiet} : decrease output verbosity
+\end{itemize}
+\end{itemize}
 
 % FIXME: writeme
 
@@ -1294,7 +1329,7 @@ For equivalent functionality in the multi-thread VDIF case see {\tt vdifspec}.
 Program {\tt m5test} is an example program using the mark5access decoding library that works its way through a VLBI baseband data stream attempting to decode data and header information to look for problems.
 Every million samples (per baseband channel) a summary line containing frame number, decoded date and time, and counts of valid and invalid frames are shown.
 After 20 invalid frames are encountered the program will stop.  
-Otherwise the program will run until end of file or until interruptied by the user.
+Otherwise the program will run until end of file or until interrupted by the user.
 Usage is as follows:
 
 \begin{itemize}
@@ -1313,6 +1348,7 @@ See the documentation for {\tt m5d} for information on specifying the data forma
 
 % m5timeseries -------------------------------------------- INCOMPLETE --------
 
+\subsection{m5timeseries {\small $\mathrm{(package: mark5access)}$}} \label{sec:m5timeseries}
 
 
 
@@ -1347,7 +1383,7 @@ Note that the executable for mk5cat is identical to that for mk5cp and only the 
 \item[] {\em scans} is one or more scan numbers (starting at 1) with scan numbers separated by commas.
 \end{itemize}
 
-Many of the other utilties documented here such as {\tt m5d}, {\tt m5spec} and {\tt vmux} can take input from {\tt stdin} and thus can be mated with {\tt mk5cat}.
+Many of the other baseband data utilities documented here such as {\tt m5d}, {\tt m5spec} and {\tt vmux} can take input from {\em stdin} and thus can be mated with {\tt mk5cat}.
 Usually a single hyphen ({\tt -}) as the name of the input file indicates this to these programs.
 
 \begin{itemize}
@@ -1718,35 +1754,71 @@ Program {\tt padVDIF} ...
 
 
 
-% plotapd ------------------------------------------------- INCOMPLETE --------
+% plotapd ---------------------------------------------------------------------
 
 \subsection{plotapd {\small $\mathrm{(package: SniffPlots)}$} \label{sec:plotapd}}
 
-Program {\tt plotapd} ...
+Program {\tt plotapd} takes a text file containing {\em sniffer} fringe fit results and makes plot files.
+Separate plots for Amplitude, Phase and Delay (hence the name suffix ``apd''are made for each baseline in the resultant file.
+A plot of delay rate is also produced.
 
-% plotbp -------------------------------------------------- INCOMPLETE --------
+This is an interactive command line program; running {\tt plotapd} will prompt the user for inputs.
+The program {\tt difxsniff} will run {\tt plotapd} and its sister programs automatically, so usually it won't be necessary to run by hand.
+
+The {\tt PGPLOT\_FONT} environment variable must be set, otherwise all plot text will be missing.
+
+
+
+
+
+% plotbp ----------------------------------------------------------------------
 
 \subsection{plotbp {\small $\mathrm{(package: SniffPlots)}$} \label{sec:plotbp}}
 
-Program {\tt plotbp} ...
+Program {\tt plotbp} takes a text file containing {\em sniffer} bandpass output files and creates plots.
+This program can produce both auto- and cross-correlation data plots.
 
-% plotwt -------------------------------------------------- INCOMPLETE --------
+This is an interactive command line program; running {\tt plotbp} will prompt the user for inputs.
+The program {\tt difxsniff} will run {\tt plotbp} and its sister programs automatically, so usually it won't be necessary to run by hand.
+
+The {\tt PGPLOT\_FONT} environment variable must be set, otherwise all plot text will be missing.
+
+
+
+
+
+% plotwt ----------------------------------------------------------------------
 
 \subsection{plotwt {\small $\mathrm{(package: SniffPlots)}$} \label{sec:plotwt}}
 
-Program {\tt plotwt} ...
+Program {\tt plotwt} takes a text file containing {\em sniffer} data weights.
+In this context, a data weight of 0 indicates complete loss of data and a weight of 1 indicates complete data.
+Each plotted data point will usually span many correlator integration periods.
+A solid dot will be plotted for the mean of these points, and ``error bars'' will indicate the range of weights over the averaging period.
+Note that in some cases where awkward integration times are used it may be possible for the weight to occasionally exceed 1, as long as the long running average never does.
+
+This is an interactive command line program; running {\tt plotwt} will prompt the user for inputs.
+The program {\tt difxsniff} will run {\tt plotwt} and its sister programs automatically, so usually it won't be necessary to run by hand.
+
+The {\tt PGPLOT\_FONT} environment variable must be set, otherwise all plot text will be missing.
+
+
+
+
+
 
 
 % printDiFX --------------------------------------------------------------------
 
 \subsection{printDiFX.py {\small $\mathrm{(package: vis2screen)}$} \label{sec:printDiFX}}
 
-Program {\tt printDiFX} prints a summary of the visibility information in a DiFX output file.  It loops through all the records printing some basic info about frequencies, baselines, polarisations, times etc, plus a couple of selected visibility values from the start and middle of the record, to the screen.
+Program {\tt printDiFX} prints a summary of the visibility information in a DiFX output file.
+It loops through all the records printing some basic info about frequencies, baselines, polarizations, times etc., plus a couple of selected visibility values from the start and middle of the record, to the screen.
 
 \begin{itemize}
 \item[] Usage: {\tt printDiFX} {\em difxfile} {\em inputfile}
 
-\item[] {\em difxfile} is the full name of the visibility file in the .difx directory
+\item[] {\em difxfile} is the full name of the visibility file in the {\tt .difx} directory
 \item[] {\em inputfile} is the path to the input file used to generate this difx output
 \end{itemize}
 \begin{itemize}
@@ -1760,7 +1832,7 @@ Program {\tt printDiFX} prints a summary of the visibility information in a DiFX
 
 \subsection{printVDIF {\small $\mathrm{(package: vdifio)}$} \label{sec:printVDIF}}
 
-Program {\tt printVDIF} loops through a VDIF file inspecting each packet header and printing some basic summary info (time etc) to the screen.
+Program {\tt printVDIF} loops through a VDIF file inspecting each packet header and printing some basic summary info (time etc.) to the screen.
 
 \begin{itemize}
 \item[] Usage: {\tt printVDIF} {\em vdiffile} {\em Mbps}
@@ -1811,7 +1883,8 @@ These recovery attempts will not always be successful.
 
 \subsection{startdifx {\small $\mathrm{(package: calcif2)}$}} \label{sec:startdifx} 
 
-Starting {\tt mpifxcorr} generally requires a lengthy command, inspiring the creation of {startdifx} which vastly simplifies use of the DiFX correlator.
+Starting {\tt mpifxcorr} generally requires a lengthy command.
+This inspired the creation of {\tt startdifx} which vastly simplifies use of the DiFX correlator.
 In addition to spawning the {\tt mpifxcorr} processes, {\tt startdifx} can orchestrate some of the preparatory work (for example running {\tt calcif2} and {\tt genmachines}) and optionally run {\tt difx2fits} to create a {\tt .FITS} file for each job.
 This program is meant to work within the DiFX environment and would probably require modification to be useful in other situations.
 
@@ -1924,16 +1997,11 @@ These files should closely resemble the input files if the parsing was done prop
 \item[] {\em options} can be:
 \begin{itemize}
 \item[] {\tt -v} or {\tt --verbose} : be a bit more verbose
+\item[] {\tt -h} or {\tt --help} : print help information and quit
 \end{itemize}
 \item[] {\em inputFilePrefix}$n$ is the base name of an input file
 \end{itemize}
 
-%FIXME
-\noindent
-Known bugs: 
-\begin{enumerate}
-\item Does not respond nicely to {\tt -h} on the command line.
-\end{enumerate}
 
 
 
@@ -1978,6 +2046,8 @@ If {\em type} is not provided, all message types will be captured.
 
 
 
+
+
 % testmod ---------------------------------------------------------------------
 
 \subsection{testmod {\small $\mathrm{(package: mk5daemon)}$}} \label{sec:testmod}
@@ -2016,15 +2086,188 @@ Is is generally safe to use these options, but the diagnostic power of this prog
 
 
 
-% testseqnumbers ------------------------------------------ INCOMPLETE --------
+% testseqnumbers --------------------------------------------------------------
 
 \subsection{testseqnumbers {\small $\mathrm{(package: difxmessage)}$}} \label{sec:testsequnumbers} 
 
+Program {\tt testseqnumbers} is a utility to listen for DiFX multicast messages and identify any that come with a sequence number that is not sequential.
+This is a good way to identify possible packet loss or duplication on a DiFX cluster network.
+
+\begin{itemize}
+\item[] Usage: {\tt testseqnumbers} $[$ {\em options} $]$
+\item[] {\em options} can be:
+\begin{itemize}
+\item[] {\tt -h} or {\tt --help} : print usage information and exit
+\item[] {\tt -v} or {\tt --verbose} : produce more output; {\tt -v -v} for even more
+\end{itemize}
+\end{itemize}
+
+If run without the {\tt -v} option, only unexpected packets will be noted.
+If run with one {\tt -v} flag, each received packet will be identified with a period being written to the screen.
+If run with 2 {\tt -v} flags, each packet received will have its source and sequence number printed.
+
+
+
+
+
+
+% vdifbstate ------------------------------------------------------------------
+
+\subsection{vdifbstate {\small $\mathrm{(package: vdifio)}$}} \label{sec:vbstate}
+
+Program {\tt vdifbstate} will perform state counts on a multi-thread VDIF baseband data file.
+
+\begin{itemize}
+\item[] Usage: {\tt vdifbstate} {\em file} {\em frameSize} {\em dataRate} {\em threadlist} {\em nFrames} $[$ {\em offset} $]$ 
+\item[] {\em file} is the file to decode
+\item[] {\em frameSize} is the size of the VDIF frames including frame headers (5032 for VLBA or VLA VDIF data)
+\item[] {\em dataRate} is the file data rate, measured in Mbps, not including frame headers
+\item[] {\em threadList} is a comma-separated list of thread ids to decode
+\item[] {\em nFrames} is the number of data frames (typically a few kB in size) to decode
+\item[] {\em offset} is the number of bytes into the file to start decoding
+\item[] Example: {\tt vdifbstate sample.vdif 5032 1024 1,2,3,4 100}
+\end{itemize}
+
 \noindent
-Known bugs:
+Notes:
 \begin{enumerate}
-\item Program has no help info.
+\item See documentation for {\tt m5b} for details on specifying the data format.
+\item Only real-sampled data with 1 or 2 bits per sample is supported at this time.
+\item If a non-power-of-two number of threads is requested, extra channels will be invented to pad out the next power of two.
+Data in these extra channels has undefined qualities.
 \end{enumerate}
+
+
+
+% vdifd -----------------------------------------------------------------------
+
+\subsection{vdifd {\small $\mathrm{(package: vdifio)}$}} \label{sec:vdifd}
+
+Program {\tt vdifd} takes a multi-thread VDIF file and decodes some samples.
+It is implemented as a python script that makes use of {\tt vmux} and {\tt m5d} to do most of the work.
+It is thus a good program to study to understand how vmux can be used.
+This program takes as command line input the name of a file containing (or thought to be containing) multi-thread VDIF baseband data, information about the VDIF stream, and the number of samples per baseband to decode.
+Optionally a starting file offset can be supplied.
+If the data can be decoded correctly, information about the data will be printed to the screen along with a table of decoded data.
+The output values, -3, -1, 1, or 3 for valid data, are printed in {\em nchan} columns.
+Data that cannot be decoded (either due to data replacement headers, data fill pattern replacing the actual data after unloading from a Mark5 module, or identified via the VDIF invalid bit) will show as 0.
+It should be invoked with the following parameters:
+
+\begin{itemize}
+\item[] Usage: {\tt vdifd} {\em file} {\em frameSize} {\em dataRate} {\em threadlist} {\em n} $[$ {\em offset} $]$ 
+\item[] {\em file} is the file to decode
+\item[] {\em frameSize} is the size of the VDIF frames including frame headers (5032 for VLBA or VLA VDIF data)
+\item[] {\em dataRate} is the file data rate, measured in Mbps, not including frame headers
+\item[] {\em threadList} is a comma-separated list of thread ids to decode
+\item[] {\em n} is the number of samples to decode
+\item[] {\em offset} is the number of bytes into the file to start decoding (default is 0)
+\item[] Example: {\tt vdifd sample.vdif 5032 1024 1,2,3,4 24}
+\end{itemize}
+
+In the above example, a stream consisting of 4 channels, each with 64~MHz bandwidth and 2 bits per sample and with thread ids 1, 2, 3 and 4 are to be decoded.
+If the thread ids were to be permuted, the decoded output data would be permuted in the same manner.
+
+\noindent
+Notes:
+\begin{enumerate}
+\item At this time only 2-bit real-valued data can be properly decoded.
+\item If a non-power-of-two number of threads is requested, extra channels will be invented to pad out the next power of two.
+Data in these extra channels has undefined qualities.
+\end{enumerate}
+
+
+
+
+% vdiffold --------------------------------------------------------------------
+
+\subsection{vdiffold {\small $\mathrm{(package: vdifio)}$}} \label{sec:vdiffold}
+
+Program {\tt vdiffold} takes a baseband data stream and integrates the power (formed by squaring the voltage) in a number of time bins that equally divide a given period.
+This is a simplifed version of ``folding'' such as is used in pulsar processing.
+A typical use of such functionality would be to investigate the waveform of the switched power injected into the receiver for calibration.
+This program has found considerable utility in determining time offsets between the sample clock and formatter time (modulo the period of the calibration cycle).
+
+In the case of 2-bit sampling a non-linear correction is applied before results are written to a file.
+This correction takes the form
+\begin{equation}
+P = \frac{1}{\left({\rm erf}^{-1}\left(\frac{\hat{P} - v_{\rm high}^2}{1 - v_{\rm high}^2} \right)\right)^2},
+\end{equation}
+where $P$ is a value proportional to true power and $\hat{P}$ is the value obtained by calculating $\left<\hat{v}^2\right>$ when the bitstream is reproduced with values $\hat{v} \in ( -v_{\rm high}, -1, 1, v_{\rm high} )$. 
+This non-linear correction can be turned off by setting {\em nbin} to a negative value.
+Note that this program is not useful for 1-bit quantized data.
+
+The program should be used as follows:
+
+\begin{itemize}
+\item[] Usage: {\tt vdiffold} {\em infile} {\em frameSize} {\em dataRate} {\em threadlist} {\em nbin} {\em nchunk} {\em freq} {\em outfile} $[$ {\em offset} $]$ 
+\item[] {\em infile} is the file to decode
+\item[] {\em frameSize} is the size of the VDIF frames including frame headers (5032 for VLBA or VLA VDIF data)
+\item[] {\em dataRate} is the file data rate, measured in Mbps, not including frame headers
+\item[] {\em threadList} is a comma-separated list of thread ids to decode
+\item[] {\em nbin} is the number of bins to calculate per period; if negative, power correction is not performed and the absolute value of {\em nbin} is used
+\item[] {\em nchunk} is the number of 10000 sample chunks to operate on
+\item[] {\em freq} is the reciprocal of the period to be observed (Hz)
+\item[] {\em outfile} is the name of the output file
+\item[] {\em offset} (optional) is the number of bytes into the file to start decoding
+\item[] Example: {\tt vdiffold sample.vdif 5032 1024 1,2,3,4 128 10000 80 sample.fold}
+\end{itemize}
+
+The output file will contain {\em nchan}+1 columns where {\em nchan} is the number of baseband channels in the data stream.
+The first column contains the time (seconds) within the period.
+Each remaining column is folded power for one baseband channel.
+If {\em nbin} is positive and the data is 2-bit quantized, the scaling is such that $\left<v^2\right> = \sigma^2$ yields a power reading of 1.0, for sampler threshold $\sigma$.
+Optimal signal to noise ratio occurs for a value of about 1.03.
+For non 2-bit quantization, the power will be in units of reconstituted ${\rm counts}^2$.
+
+\noindent
+Notes:
+\begin{enumerate}
+\item At this time only 2-bit real-valued data can be properly decoded.
+\item If a non-power-of-two number of threads is requested, extra channels will be invented to pad out the next power of two.
+Data in these extra channels has undefined qualities.
+\item The output columns are in the same order as the thread id list.
+Thus, you can rearrange the output order by changing the order of the thread list.
+This enables reordering of data so that polarization pairs occur consecutively, allowing more sensible cross-correlation columns.
+\end{enumerate}
+
+
+
+
+
+% vdifspec --------------------------------------------------------------------
+
+\subsection{vdifspec {\small $\mathrm{(package: vdifio)}$}} \label{sec:vdifspec}
+
+Program {\tt vdifspec} forms total power spectra for each baseband channel in the data, including cross spectra for polarization pairs, assuming data is in alternating polarization pairs (if not, the cross spectra should make no sense, but they are formed anyway).
+The results are written to a text file with the following columns: Column 1 is the frequency offset from baseband for each channel; Columns 2 to {\em nchan}+1 are the total power spectra for each baseband channel; Columns {\em nchan}+2 to $4 \times${\em nchan}+1 contain, in pairs, the amplitude and phase of the cross spectra for each pair of channels.
+It should be invoked with the following parameters:
+
+\begin{itemize}
+\item[] Usage: {\tt vdifspec} {\em infile} {\em frameSize} {\em dataRate} {\em threadlist} {\em npoint} {\em n} {\em outfile} $[$ {\em offset} $]$ 
+\item[] {\em infile} is the file to decode
+\item[] {\em frameSize} is the size of the VDIF frames including frame headers (5032 for VLBA or VLA VDIF data)
+\item[] {\em dataRate} is the file data rate, measured in Mbps, not including frame headers
+\item[] {\em threadList} is a comma-separated list of thread ids to decode
+\item[] {\em npoint} is the number of points to calculate for each spectrum
+\item[] {\em n} is the number of FFT frames to include in the calculation
+\item[] {\em outfile} is the name of the output file
+\item[] {\em offset} (optional) is the number of bytes into the file to start decoding
+\item[] Example: {\tt vdifspec sample.vdif 5032 1024 1,2,3,4 256 1000 vlba.spec}
+\end{itemize}
+
+\noindent
+Notes:
+\begin{enumerate}
+\item At this time only 2-bit real-valued data can be properly decoded.
+\item If a non-power-of-two number of threads is requested, extra channels will be invented to pad out the next power of two.
+Data in these extra channels has undefined qualities.
+\item The output columns are in the same order as the thread id list.
+Thus, you can rearrange the output order by changing the order of the thread list.
+This enables reordering of data so that polarization pairs occur consecutively, allowing more sensible cross-correlation columns.
+\end{enumerate}
+
+
+
 
 % vex2difx --------------------------------------------------------------------
 
@@ -2148,7 +2391,7 @@ An example file as supplied to {\tt filelist} is below:
 \end{verbatim}
 
 If times for a file are supplied, the file will be included in the {\tt .input} file DATA TABLE only if the file time range overlaps with the {\tt .input} file time range.
-If not supplied, the file will be included regardless of the {\tt .input} file timerange, which could incur a large performance problem.
+If not supplied, the file will be included regardless of the {\tt .input} file time range, which could incur a large performance problem.
 
 A few sample ANTENNA blocks are shown below:
 
@@ -2172,7 +2415,7 @@ ANTENNA PT { file=/data/pt/bx123.003.m5a } # recording started late here
 
 \subsubsection{Pulsars}
 
-{\em FIXME}
+Some information, including example {\tt .v2d} sections, on setting up pulsar correlation can be found in \S\ref{sec:pulsars}.
 
 
 You may find additional information at \url{http://cira.ivec.org/dokuwiki/doku.php/difx/vex2difx} .
@@ -2290,13 +2533,14 @@ Thus the serial number is contained within parentheses to make this clear.
 \item[] {\tt -w} or {\tt --writeprotect} : set write protection
 \item[] {\tt -u} or {\tt --unwriteprotect} : clear write protection
 \end{itemize}
+\item[] {\tt -s} or {\tt --smart} : Get S.M.A.R.T.\ data from disks and write to file {\em VSN}{\tt .smart})
 \item[] {\em bank} is the Mark5 unit bank to look at (must be {\tt A} or {\tt B})
 \item[] {\em newVSN} is the new name to assign to the module and must be a legal VSN
 \item[] Example 1: show VSN: {\tt vsn A}
 \item[] Example 2: set VSN: {\tt vsn A NRAO+456}
 \end{itemize}
 
-If you get a message such as ``Watchdog caught a hang-up executing ...'' that means access to the module failed.
+If you get a message such as ``Watchdog caught a hang-up executing \ldots''\ that means access to the module failed.
 This could indicate a bad module.
 The module should be reinserted (perhaps in a different bank or unit) and the unit rebooted before coming to a firm conclusion.
 
