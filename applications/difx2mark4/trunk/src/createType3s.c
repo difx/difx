@@ -14,7 +14,6 @@
 #include "other.h"
 
 
-#define NUMFILS 50                  // maximum number of station files
 #define NPC_TONES 64                // max number of pcal tones in t309 record
 #define NPC_FREQS 64                // max number of channels in t309 record
 #define LBUFF_SIZE 40 * NPC_TONES * NPC_FREQS + 256
@@ -22,6 +21,7 @@
 char lbuff[LBUFF_SIZE];             // buffer for a single line of an input pcal file
 
 int createType3s (DifxInput *D,     // difx input structure, already filled
+                  struct fblock_tag *pfb,   // ptr to filled-in fblock table
                   int startJob,
                   int endJob,
                   int scanId,
@@ -33,6 +33,7 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
     {
     int i,
         j,
+        k,
         b,
         l,
         n,
@@ -43,6 +44,7 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
         np,
         nc,
         nt,
+        nf,
         nstates,
         nrc,
         nchars,
@@ -178,10 +180,25 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                                     // loop over channels
         for (i=0; i<D->nFreq; i++)
             {
-            sprintf (t301.chan_id, "%c%02d?", getband (D->freq[i].freq), i);
-            t301.chan_id[3] = (D->freq+i)->sideband;
-            strcpy (t302.chan_id, t301.chan_id); 
-            strcpy (t303.chan_id, t301.chan_id); 
+                                    // find matching freq channel
+                                    // loop through whole fblock table
+            nf = -1;
+            while (pfb[++nf].stn[0].ant >= 0) // check for end-of-table marker
+                {
+                for (k=0; k<2; k++)
+                    if (pfb[nf].stn[k].freq     == D->freq[i].freq
+                     && pfb[nf].stn[k].bw       == D->freq[i].bw  
+                     && pfb[nf].stn[k].sideband == D->freq[i].sideband)
+                        {
+                        strcpy (t301.chan_id, pfb[nf].stn[k].chan_id);
+                        strcpy (t302.chan_id, pfb[nf].stn[k].chan_id);
+                        strcpy (t303.chan_id, pfb[nf].stn[k].chan_id);
+                        break;
+                        }
+                if (k < 2)          // exit while on early for exit
+                    break;
+                }
+
                                     // loop over polynomial intervals
             for (j=0; j<D->scan[scanId].nPoly; j++)
                 {
@@ -364,9 +381,22 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                                     if (f_rel > 0.0 && f_rel < (D->freq+jf)->bw)
                                         // yes, insert phasor info into correct slot
                                         {
-                                        sprintf (buff, "%c%02dU", getband (D->freq[jf].freq), b);
-                                        buff[3] = (D->freq+jf)->sideband;
-                                        strcpy (t309.chan[b].chan_name, buff);
+                                        // find matching freq channel
+                                        // loop through whole fblock table
+                                        nf = -1;
+                                        while (pfb[++nf].stn[0].ant >= 0) // check for end-of-table marker
+                                            {
+                                            for (k=0; k<2; k++)
+                                                if (pfb[nf].stn[k].freq     == D->freq[jf].freq
+                                                 && pfb[nf].stn[k].bw       == D->freq[jf].bw  
+                                                 && pfb[nf].stn[k].sideband == D->freq[jf].sideband)
+                                                    {
+                                                    strcpy (t309.chan[b].chan_name, pfb[nf].stn[k].chan_id);
+                                                    break;
+                                                    }
+                                            if (k < 2) // exit while on early for exit
+                                                break;
+                                            }
 
                                         // find out which tone slot this goes in
                                         for (i=0; i<NPC_TONES; i++)
@@ -422,4 +452,3 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
         }
     return 0;
     }
-// vim: shiftwidth=4:softtabstop=4:expandtab:cindent:cinoptions={1sf1s^-1s

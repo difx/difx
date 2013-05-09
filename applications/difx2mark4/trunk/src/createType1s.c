@@ -23,6 +23,7 @@
 
 
 int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
+          struct fblock_tag *pfb,   // ptr to filled-in fblock table
           int *jobId,               // ptr to curr job. May change here, if scan bridges jobs
           int scanId,               // id of this single scan
           char *node,               // directory for output fileset
@@ -90,9 +91,9 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
     int recordIsFlagged (double, int, int, const DifxJob *);
     int getBaselineIndex (DifxInput *, int, int);
     int openReadVisFile (FILE *, vis_record *, int);
-    int new_type1 (DifxInput *, int, int, int, int, int *, struct stations *,
-                   char *, struct CommandLineOptions *, FILE **, int, char *, 
-                   char *, char *, char *, int, int);
+    int new_type1 (DifxInput *, struct fblock_tag *, int, int, int, int, int *, 
+                   struct stations *, char *, struct CommandLineOptions *, FILE **, 
+                   int, char *, char *, char *, char *, int, int);
 
                                     // initialize memory as necessary
                                     // quantization correction factor is pi/2 for
@@ -113,6 +114,8 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
         }
                                     // number of (spectral) visibility points per array
     nvis = D->nOutChan;
+    if (opts->verbose > 1)
+        printf ("      # of spectral points: %d\n", nvis);
                                     // make sure we don't overrun our arrays
     if (nvis > MAX_VIS)
         {
@@ -284,7 +287,7 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
                                 rec->baseline);
                         blind = 0;      // use first one in list and muster on
                         }
-                    rc = new_type1 (D, n, a1, a2, blind, base_index, stns, blines, opts, 
+                    rc = new_type1 (D, pfb, n, a1, a2, blind, base_index, stns, blines, opts, 
                                fout, nvis, rootname, node, rcode, corrdate, 
                                rec->baseline, scanId);
                     if (rc < 0)

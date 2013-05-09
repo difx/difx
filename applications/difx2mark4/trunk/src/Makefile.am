@@ -26,6 +26,7 @@ difx2mark4_SOURCES = \
 	write_t309.c \
 	other.c \
     normalize.c \
+    fill_fblock.c \
 	mk4_typedefs.h \
 	type_000.h \
 	type_100.h \

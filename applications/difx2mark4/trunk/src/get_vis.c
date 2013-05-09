@@ -89,12 +89,12 @@ int get_vis (char *vf_name,                   // name of input file
                 }
             }
 
-        if(pv->sync == VISRECORD_SYNC_WORD_DIFX1) //old style ascii header
+        if (pv->sync == VISRECORD_SYNC_WORD_DIFX1) //old style ascii header
             {
             fprintf(stderr, "Error: difx2mark4 will not work with DiFX 1.x data\n");
             return -3;
             }
-        else if(pv->sync == VISRECORD_SYNC_WORD_DIFX2) //new style binary header
+        else if (pv->sync == VISRECORD_SYNC_WORD_DIFX2) //new style binary header
             {
             fread (&pv->version, sizeof (int), 1, vfile);
             if(pv->version == 1) //new style binary header
@@ -125,7 +125,7 @@ int get_vis (char *vf_name,                   // name of input file
             }
         else
             {
-            fprintf (stderr, "Error parsing header: got an unrecognized sync of %xd\n", 
+            fprintf (stderr, "Error parsing header: got an unrecognized sync of %x\n", 
                      pv->sync);
             return -5;
             }

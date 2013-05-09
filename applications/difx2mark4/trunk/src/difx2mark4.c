@@ -367,6 +367,7 @@ int newScan(DifxInput *D, struct CommandLineOptions *opts, char *node, int scanI
          path[DIFXIO_NAME_LENGTH+5];
 
     struct stations stns[D->nAntenna];
+    struct fblock_tag fblock[MAX_FPPAIRS];
 
     if (first)                  // on first time through get and save time
         {
@@ -387,8 +388,6 @@ int newScan(DifxInput *D, struct CommandLineOptions *opts, char *node, int scanI
                  
                                 // make scan directory
     snprintf(path, DIFXIO_NAME_LENGTH, "%s/%s", node, D->scan[scanId].identifier);
-    //strncat(node, "/", DIFXIO_NAME_LENGTH);
-    //strncat(node, D->scan[scanId].identifier, DIFXIO_NAME_LENGTH);
     err = stat(path, &stat_s);
     if(!err)
         {
@@ -422,14 +421,14 @@ int newScan(DifxInput *D, struct CommandLineOptions *opts, char *node, int scanI
                                 // create root from vex file
     startJobId = *jobId;
     printf ("    Generating root file\n");
-    if (createRoot (D, startJobId, scanId, path, rcode, stns, opts, rootname) < 0)
+    if (createRoot (D, fblock, startJobId, scanId, path, rcode, stns, opts, rootname) < 0)
         {
         fprintf (stderr, "Could not create root file\n");
         return -1;
         }
                                 // create type1 files for each baseline
     printf ("    Generating Type 1s\n");
-    nextScanId = createType1s (D, jobId, scanId, path, rcode, stns, opts, rootname);
+    nextScanId = createType1s (D, fblock, jobId, scanId, path, rcode, stns, opts, rootname);
     if (nextScanId < 0)
         {
         fprintf (stderr, "Could not create type 1 files\n");
@@ -439,7 +438,7 @@ int newScan(DifxInput *D, struct CommandLineOptions *opts, char *node, int scanI
                                 // create type3 files for each station
     printf ("    Generating Type 3s\n");
     endJobId = (*jobId >= D->nJob) ? D->nJob - 1 : *jobId;
-    if (createType3s (D, startJobId, endJobId, scanId, path, rcode, stns, opts) < 0)
+    if (createType3s (D, fblock, startJobId, endJobId, scanId, path, rcode, stns, opts) < 0)
         {
         fprintf (stderr, "Could not create type 3 files\n");
         return -1;

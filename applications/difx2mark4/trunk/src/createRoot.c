@@ -11,17 +11,19 @@
 #include "other.h"
 #define MAX_FS 10
 
-int createRoot (DifxInput *D,       // difx input structure pointer
+int createRoot (DifxInput *D,           // difx input structure pointer
+                struct fblock_tag *pfb, // ptr to filled-in fblock table
                 int jobId,
                 int scanId,
-                char *node,         // directory for output fileset
-                char *rcode,        // 6 letter root suffix
-                struct stations *stns, // station-relevant information
+                char *node,             // directory for output fileset
+                char *rcode,            // 6 letter root suffix
+                struct stations *stns,  // station-relevant information
                 struct CommandLineOptions *opts, // options pointer
-                char *rootname)     // address to write root filename into
+                char *rootname)         // address to write root filename into
     {
     int i,
         j,
+        k,
         n,
         match,
         current_block,
@@ -39,7 +41,8 @@ int createRoot (DifxInput *D,       // difx input structure pointer
         delete_freq = FALSE,
         yy, dd, hh, mm, ss,
         nfs,
-        bps;
+        bps,
+        ik;
 
     char s[256],
          *pst[50],
@@ -114,6 +117,7 @@ int createRoot (DifxInput *D,       // difx input structure pointer
     int isValidAntenna(const DifxInput *, char *, int);
     double frt (double, double, int);
     void insert_zoom_sequence (DifxInput *, char *, FILE *);
+    int fill_fblock (DifxInput *, struct fblock_tag *);
 
                                     // initialize memory as necessary
     current_def[0] = 0;
@@ -252,126 +256,19 @@ int createRoot (DifxInput *D,       // difx input structure pointer
                                     // as it causes problems with vex parser
                 break;
 
-            case CLOCK:             //the clock section will be replaced with new clock table
-                    line[0] = 0;
-                    break;
-
-            case DAS:
-                if (strncmp (pst[0], "electronics_rack_type", 21) == 0)
-                    {               // patch up invalid rack types
-                    if (strncmp (pst[2], "K4-2/M4", 7) == 0)
-                         {
-                         pchar = strstr (line, "K4-2/M4");
-                         strcpy (pchar, "K4;\n");
-                         }
-                    else if (strncmp (pst[2], "K4-2", 4) == 0)
-                         {
-                         pchar = strstr (line, "K4-2");
-                         strcpy (pchar, "K4;\n");
-                         }
-                    else if (strncmp (pst[2], "none", 4) == 0)
-                         {
-                         pchar = strstr (line, "none");
-                         strcpy (pchar, "Mark4;\n");
-                         }
-                    }               
-                else if (strncmp (pst[0], "recording_system_ID", 19) == 0)
-                    {               // patch up invalid (K2) ID's
-                    if (isalpha (*pst[2]))
-                         {          // ID must be numeric, set to 0
-                         pchar = strstr (line, pst[2]);
-                         strncpy (pchar, "0000000", strlen (pst[2]));
-                         }
-                    }
-                else if (strncmp (pst[0], "record_transport_type", 21) == 0)
-                    {               // comment out invalid (K5) type
-                    if (strncmp (pst[2], "K5", 2) == 0)
-                         line[0] = '*';
-                    }
-                else if (strncmp (pst[0], "tape_motion", 11) == 0 
-                      || strncmp (pst[0], "tape_length", 11) == 0)
-                    line[0] = '*';  // comment out tape motion and tape
-                                    // length commands, as S2 syntax
-                                    // causes problems with vex parser
-                else if (strncmp (pst[0], "headstack", 9) == 0 &&
-                         strlen(pst[0]) == 9) 
-                    line[0] = '*';  // NRAO SCHED produces invalid
-                                    // headstack
-                break;
-            case EOP:            //the EOP section will be replaced from difx input
-                    line[0] = 0;
-                    break;
-
             case EXPER:             // modify target_correlator
                 if (strcmp (pst[0], "target_correlator") == 0)
                     {
-                    strcpy (line, "target_correlator = difx;\n");
+                    strcpy (line, "    target_correlator = difx;\n");
                     tarco = TRUE;
                     }
                 else if (strncmp (pst[0], "enddef", 6) == 0 && tarco == FALSE)
                     {
-                    strcpy (line, "  target_correlator = difx;\n  enddef;\n");
+                    strcpy (line, "    target_correlator = difx;\n  enddef;\n");
                     tarco = TRUE;
                     }
                 break;
 
-            case FREQ:          
-                if (strncmp (pst[0], "def", 3) == 0)
-                    {
-                    if (fseq_unused (pst[1], fseq_list, nfs))
-                                    // enter deletion mode if this freq seq not active
-                        delete_freq = TRUE;
-                                    // if zoom mode, insert new sequence & ignore input vex
-                                    // code assumes zooming done on all baselines
-                    else if (D->datastream[0].nZoomBand > 0)
-                        {
-                        insert_zoom_sequence (D, line, fout);
-                        delete_freq = TRUE;
-                        }
-                    }
-                                    // delete all lines for unused freq def's
-                if (delete_freq)
-                    {
-                    line[0] = 0;
-                    if (strncmp (pst[0], "enddef", 6) == 0)
-                        delete_freq = FALSE;
-                    break;
-                    }
-                                    // start renumbering ch's for each freq seq
-                if (strncmp (pst[0], "def", 3) == 0)
-                    numchan = 0;
-                                    // insert channel names in chan_def stmts
-                else if (strncmp (pst[0], "chan_def", 8) == 0)
-                    {
-                    if(pst[2][0] == '&')
-                        {
-                        freak = atof (pst[3]);
-                        c = *pst[5]; // sideband: 'U' or 'L'
-                        }
-                    else            // band_id field not present, indices different
-                        {
-                        freak = atof (pst[2]);
-                        c = *pst[4];
-                        }
-                    sprintf (buff, "%c%02d%c :", getband (freak), numchan++, c);
-
-                    strcat (buff, strchr (line, '=') + 1);
-                                    // chop off line just after = sign
-                    *(strchr (line, '=')+2) = 0;
-                    strcat (line, buff); 
-                                    // comment out freq channels that weren't correlated
-                                    // look for matching frequency and sideband
-                    for (i=0; i<D->nFreq; i++)
-                        if (fabs (D->freq[i].freq - freak) < 1e-6
-                         && D->freq[i].sideband == buff[3])
-                            break;
-                                    // if freq/sb not there, or is unused, comment it out
-                    if (i == D->nFreq ||
-                            D->config[D->scan[scanId].configId].freqIdUsed[i] <= 0)
-                        line[0] = '*';
-                    }
-                break;
-                                    
             case GLOBAL:
                                     // insert a dummy EOP ref (which is fine for fourfit)
                 if (strncmp (pst[0], "$GLOBAL", 7) == 0)
@@ -397,18 +294,32 @@ int createRoot (DifxInput *D,       // difx input structure pointer
                     }
                 else                // mode is currently active
                     {
-                    if (strncmp (pst[0], "ref", 3) == 0 
-                     && strncmp (pst[1], "$FREQ", 5) == 0)
+                    if (strncmp (pst[0], "ref", 3) == 0)
                         {
-                        if (nfs < MAX_FS)
-                            strncpy (fseq_list[nfs], pst[3], 80);
-                        else
-                            printf ("Error - too many frequency sequences\n");
-                        nfs++;
+                        if (strncmp (pst[1], "$BBC", 4) == 0
+                         || strncmp (pst[1], "$FREQ", 5) == 0
+                         || strncmp (pst[1], "$IF", 3) == 0
+                         || strncmp (pst[1], "$TRACKS", 7) == 0
+                         || strncmp (pst[1], "$PHASE_CAL_DETECT", 17) == 0
+                         || strncmp (pst[1], "$ROLL", 5) == 0
+                         || strncmp (pst[1], "$HEAD_POS", 9) == 0
+                         || strncmp (pst[1], "$PASS_ORDER", 11) == 0)
+                            line[0] = 0; // delete original mode lines
                         }
-                    if (strncmp (pst[0], "ref", 3) == 0 
-                      && strncmp (pst[1], "$PASS_ORDER", 11) == 0)
-                        line[0] = '*';  // comment out to avoid pass# problems
+                                    // synthesize new ref's at end of MODE
+                    else if (strncmp (pst[0], "enddef", 6) == 0)
+                        {
+                                    // insert one freq line per used antenna
+                        for (n = 0; n < D->nAntenna; n++)
+                            if (D->scan[scanId].im != NULL 
+                             && D->scan[scanId].im[n] != 0)
+                                    // FIXME - generate antenna name from station
+                                fprintf (fout, "    ref $FREQ = ant%02d:%c%c;\n",
+                                      n, D->antenna[n].name[0], tolower (D->antenna[n].name[1]));
+                        fprintf (fout, "    ref $BBC = bbcs;\n");
+                        fprintf (fout, "    ref $IF = ifs;\n");
+                        fprintf (fout, "    ref $TRACKS = trax;\n");
+                        }
                     }
                 break;
                 
@@ -583,14 +494,11 @@ int createRoot (DifxInput *D,       // difx input structure pointer
                     }
                 break;
 
-            case SOURCE:           // source block will be generated from the difx_input
-                    line[0] = 0;
-                    break;
-
             case STATION:           // need to add ref to clock section
-                                    // comment out vex's clock
-                if (strncmp (pst[1], "$CLOCK", 6) == 0)
-                    line[0] = '*';
+                                    // delete vex's clock and das
+                if (strncmp (pst[1], "$CLOCK", 6) == 0
+                 || strncmp (pst[1], "$DAS", 4) == 0)
+                    line[0] = 0;
 
                 else if (strncmp (pst[0], "enddef", 6) == 0)
                     {
@@ -602,28 +510,19 @@ int createRoot (DifxInput *D,       // difx input structure pointer
                     }
                 break;
 
-            case TRACKS:
-                                    // insert one copy of # bits/sample in each def
-                if (strncmp (pst[0], "def", 3) == 0)
-                    {
-                    if (D->quantBits == 0)
-                        {
-                        printf ("Warning -- bits/sample differed, setting = 2\n");
-                        bps = 2;
-                        }
-                    else
-                        bps = D->quantBits;
-                    sprintf (buff, "  bits/sample = %d;\n", bps);
-                    strcat (line, buff);
-                    }
-                else if (strncmp (pst[0], "S2_recording_mode", 17) == 0
-                      || strncmp (pst[0], "S2_data_source", 14) == 0)
-                    line[0] = '*';  // filter out unparseable lines
-                break;
-
-                                    // nothing special needs to be done for these blocks
+                                    // edit out these sections that will be re-generated
             case BBC:
+            case CLOCK:
+            case EOP:
+            case FREQ:
             case IF:
+            case SOURCE:
+            case TRACKS:
+                line[0] = 0;
+                break;
+                                    // nothing special needs to be done for these blocks
+                                    // but delete for clarity's sake
+            case DAS:
             case HEAD_POS:
             case PASS_ORDER:
             case PHASE_CAL_DETECT:
@@ -631,6 +530,8 @@ int createRoot (DifxInput *D,       // difx input structure pointer
             case ROLL:
             case SEFD:
             case TAPELOG_OBS:
+                line[0] = 0;
+                break;
             default:
                 break;
             }
@@ -652,9 +553,69 @@ int createRoot (DifxInput *D,       // difx input structure pointer
         printf ("      number of stations: %d\n", nsite);
                                     // append extra statements to the end of the file
 
-                                    // generate source section from difx header
-        rad2hms(D->source[sourceId].ra, hms);
-        rad2dms(D->source[sourceId].dec, dms);
+                                    // generate $FREQ block
+        if (fill_fblock (D, pfb) < 0)
+            {
+            printf ("error generating $FREQ block\n");
+            return -1;
+            }
+        fprintf (fout, "$FREQ;\n");
+        fprintf (fout, "* Generated from DiFX input by difx2mark4\n*\n");
+        for (n = 0; n < D->nAntenna; n++)
+            {
+            fprintf (fout, "  def ant%02d;\n", n);
+            i = -1;
+            j = 0;
+                                    // search through fblock for all ref to this antenna
+            while (pfb[++i].stn[0].ant >= 0)
+                if (pfb[i].stn[0].ant == n || pfb[i].stn[1].ant == n)
+                    {
+                    if (pfb[i].stn[0].ant == n && pfb[i].stn[0].first_time)
+                        k = 0;
+                    else if (pfb[i].stn[1].ant == n && pfb[i].stn[1].first_time)
+                        k = 1;
+                    else            // neither antenna is first use, skip to next product
+                        continue;
+                                    // print out a chan_def line
+                    fprintf (fout, "   chan_def = %s : : %9.2f MHz : %c : %8.3f MHz"
+                                   " : &Ch%02d : &BBC%c;\n", 
+                             pfb[i].stn[k].chan_id,
+                             fabs (pfb[i].stn[k].freq),
+                             pfb[i].stn[k].sideband,
+                             pfb[i].stn[k].bw,
+                             j, 
+                             pfb[i].stn[k].pol);
+                    ik = i;         // save i for which k applied
+                    j++;
+                    }
+                
+            fprintf (fout, "    sample_rate = %5.1f Ms/sec;\n", 2.0 * pfb[ik].stn[k].bw);
+            fprintf (fout, "  enddef;\n");
+            }
+        fprintf (fout, "$BBC;\n");
+        fprintf (fout, "  def bbcs;\n");
+        fprintf (fout, "    BBC_assign = &BBCL : 01 : &IFL;\n");
+        fprintf (fout, "    BBC_assign = &BBCR : 02 : &IFR;\n");
+        fprintf (fout, "  enddef;\n");
+        
+        fprintf (fout, "$IF;\n");
+        fprintf (fout, "  def ifs;\n");
+                                    // FIXME - need pcal per dereferenced datastream
+        fprintf (fout, "    if_def = &IFL : 1N : L : 10000.0 MHz : U : %d MHz : 0 Hz;\n",
+                 D->datastream[0].phaseCalIntervalMHz);
+        fprintf (fout, "    if_def = &IFR : 2N : R : 10000.0 MHz : U : %d MHz : 0 Hz;\n",
+                 D->datastream[0].phaseCalIntervalMHz);
+        fprintf (fout, "  enddef;\n");
+        
+        fprintf (fout, "$TRACKS;\n");
+        fprintf (fout, "  def trax;\n");
+                                    // FIXME - assumes global bits/sample
+        fprintf (fout, "    bits/sample = %d;\n", pfb[0].stn[0].bs);
+        fprintf (fout, "  enddef;\n");
+                                   // generate $SOURCE section from difx header
+        rad2hms (D->source[sourceId].ra,  hms);
+        rad2dms (D->source[sourceId].dec, dms);
+
         fprintf (fout, "$SOURCE;\n");
         fprintf (fout, "* Generated from DiFX input by difx2mark4\n");
         fprintf (fout, "def %s;\n", D->source[sourceId].name);
@@ -678,14 +639,13 @@ int createRoot (DifxInput *D,       // difx input structure pointer
             conv2date (D->mjdStart, &valtime);
                                     // note that the difx clock convention is
                                     // opposite that of vex, thus the minus signs
-            sprintf (line, " def %c%c; clock_early = %04hdy%03hdd%02hdh%02hdm%02ds :"
+            fprintf (fout, " def %c%c; clock_early = %04hdy%03hdd%02hdh%02hdm%02ds :"
                "%6.3lf usec : %04hdy%03hdd%02hdh%02hdm%02ds : %le ; enddef;\n", 
                 (stns + n)->intl_name[0], (stns + n)->intl_name[1], 
                 valtime.year, valtime.day, valtime.hour,
                 valtime.minute, (int)valtime.second, -(D->antenna+n)->clockcoeff[0],
                 caltime.year, caltime.day, caltime.hour,
                 caltime.minute, (int)caltime.second, -1e-6 * (D->antenna+n)->clockcoeff[1]);
-            fputs (line, fout); 
             }
 
         //FIXME output difxio EOPs

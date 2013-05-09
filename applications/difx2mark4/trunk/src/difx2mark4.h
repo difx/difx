@@ -28,6 +28,7 @@
 #define EXP_CODE_LEN 4
 #define NUMFILS 500                 // max number of type 1 output files
 #define MAGLIM 10000.0              // threshold magnitude for vis. rejection
+#define MAX_FPPAIRS 1000
 
 enum booleans {FALSE, TRUE};
 
@@ -94,6 +95,22 @@ struct fbands
     double fhi;
     };
 
+struct fblock_tag
+    {
+    struct
+        {
+        char chan_id[8];            // channel id for identifying channels
+        char sideband;              // U or L
+        char pol;                   // R or L
+        int ant;                    // antenna table index
+        int find;                   // frequency table index
+        int bs;                     // quantization bits/sample
+        int first_time;             // true iff first entry in table of chan_id for ant 
+        double freq;                // LO frequency (MHz); negative for LSB
+        double bw;                  // bandwidth (MHz)
+        } stn[2];                   // reference | remote
+    };
+
 #include "type_000.h"
 #include "type_100.h"
 #include "type_101.h"
@@ -108,15 +125,15 @@ struct fbands
                                     // conv2date.c
 void conv2date (double, struct date *);
                                     // createRoot.c
-int createRoot (DifxInput *, int, int, char *, char *, struct stations *,
-                struct CommandLineOptions *, char *);
+int createRoot (DifxInput *, struct fblock_tag *, int, int, char *, char *, 
+                struct stations *, struct CommandLineOptions *, char *);
 char getband (double);
                                     // createType1s.c
-int createType1s (DifxInput *, int *, int, char *, char *, struct stations *,
-                  struct CommandLineOptions *, char *);
+int createType1s (DifxInput *, struct fblock_tag *, int *, int, char *, char *, 
+                  struct stations *, struct CommandLineOptions *, char *);
                                     // createType3s.c
-int createType3s (DifxInput *, int, int, int, char *, char *, struct stations *,
-                  struct CommandLineOptions *);
+int createType3s (DifxInput *, struct fblock_tag *, int, int, int, char *, char *, 
+                  struct stations *, struct CommandLineOptions *);
                                     // get_vis.c
 int get_vis (char *, struct CommandLineOptions *, int, int, vis_record **, int *, char *);
                                     // normalize.c

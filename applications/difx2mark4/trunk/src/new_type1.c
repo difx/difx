@@ -18,6 +18,7 @@
 #define XS_CONVENTION
 
 int new_type1 (DifxInput *D,                    // ptr to a filled-out difx input structure
+               struct fblock_tag *pfb,          // ptr to filled-in fblock table
                int nb,                          // (next open) index to base_index array
                int a1, 
                int a2, 
@@ -35,31 +36,16 @@ int new_type1 (DifxInput *D,                    // ptr to a filled-out difx inpu
                int baseline,                    // numerical baseline index in difx-style
                int scanId)
     {
-    int i,
-        j,
-        pol,
-        findex,
-        gindex,
-        indA,
-        indB,
-        autocorr_is_A,
-        done[4];
+    int n,
+        k,
+        ref,
+        rem;
 
     struct type_000 t000;
     struct type_100 t100;
     struct type_101 t101;
 
-    char outname[DIFXIO_FILENAME_LENGTH],
-         c,
-         lchan_id[5],
-         rchan_id[5],
-         refpol,
-         rempol;
-
-    DifxDatastream *pdsA,
-                   *pdsB;
-
-    enum polars {LL, RR, LR, RL};
+    char outname[DIFXIO_FILENAME_LENGTH];
 
                                     // clear record areas
     memset (&t000, 0, sizeof (t000));
@@ -131,158 +117,40 @@ int new_type1 (DifxInput *D,                    // ptr to a filled-out difx inpu
     t100.nindex = D->baseline[blind].nFreq * D->baseline[blind].nPolProd[0];
     write_t100 (&t100, fout[nb]);
 
-                                    // determine index into frequency table which
-                                    // depends on the recorded subbands that are correlated
-
-                                    // point to reference/A and remote/B datastreams
-    pdsA = &D->datastream[D->baseline[blind].dsA];
-    pdsB = &D->datastream[D->baseline[blind].dsB];
-                                    // for auto-correlations need to tweak datastreams
-                                    // since baseline table only contains cross-corrs
-                                    // do so by overwriting index from baseline table,
-                                    // and also doubling the used datastream
-    if (a1 == a2)
+                                    // loop through whole fblock table
+    n = -1;
+    while (pfb[++n].stn[0].ant >= 0)// check for end-of-table marker
         {
-        if (pdsA->antennaId == a1)
-            {                       // ds A and its index will be used for both ref & rem
-            autocorr_is_A = TRUE;
-            pdsB = pdsA;
-            }
-        else if (pdsB->antennaId == a1)
-            {                       // ds B and its index will be used for both ref & rem
-            autocorr_is_A = FALSE;
-            pdsA = pdsB;
-            }
-        else
-            printf ("Internal consistency error for autocorrelation! \n");
-        }
-
-                                    // construct and write type 101 records for each chan
-    i = 0;
-    for (i=0; i<D->baseline[blind].nFreq; i++)
-        {
-        for (pol=0; pol<4; pol++)
-            done[pol] = FALSE;      // keep from having dups on 1x2 case
-
-                                    // loop over 1, 2, or 4 pol'n. products
-        for (pol=0; pol<D->baseline[blind].nPolProd[i]; pol++)
+                                    // make sure baseline matches
+                                    // and determine reference and remote antennas
+        ref = -1;
+        rem = -1;
+        for (k=0; k<2; k++)
             {
-                                    // find actual freq index of this recorded band
-                                    // or possibly of a zoomed-in band
-            indA = D->baseline[blind].bandA[i][pol];
-            indB = D->baseline[blind].bandB[i][pol];
-                                    // override A or B for autocorrelations
-            if (a1 == a2)
-                {
-                if (autocorr_is_A)
-                    indB = indA;
-                else 
-                    indA = indB;
-                }
-                                    // reference antenna
-            if (indA < 0 || indA >= pdsA->nRecBand + pdsA->nZoomBand)
-                {
-                printf ("Error! bandA[%d][%d] = %d out of range\n",
-                        i, pol, indA);
-                printf ("nRecBand %d nZoomBand %d\n",
-                        pdsA->nRecBand, pdsA->nZoomBand);
-                return (-1);
-                }
-            if (indA < pdsA->nRecBand)
-                {
-                j = pdsA->recBandFreqId[indA];
-                findex = pdsA->recFreqId[j];
-                refpol = pdsA->recBandPolName[indA];
-                }
-            else                    // zoom mode
-                {
-                j = indA - pdsA->nRecBand;
-                findex = pdsA->zoomFreqId[pdsA->zoomBandFreqId[j]];
-                refpol = pdsA->zoomBandPolName[j];
-                }
-                                    // remote antenna
-            if (indB < 0 || indB >= pdsB->nRecBand + pdsB->nZoomBand)
-                {
-                printf ("Error! bandB[%d][%d] = %d out of range\n",
-                        i, pol, indB);
-                printf ("nRecBand %d nZoomBand %d\n",
-                        pdsB->nRecBand, pdsB->nZoomBand);
-                return (-1);
-                }
-            if (indB < pdsB->nRecBand)
-                {
-                j = pdsB->recBandFreqId[indB];
-                gindex = pdsB->recFreqId[j];
-                rempol = pdsB->recBandPolName[indB];
-                }
-            else                    // zoom mode
-                {
-                j = indB - pdsB->nRecBand;
-                gindex = pdsB->zoomFreqId[pdsB->zoomBandFreqId[j]];
-                rempol = pdsB->zoomBandPolName[j];
-                }
-
-                                    // sanity check that both stations refer to same freq
-            if (findex != gindex)
-              printf ("Warning, mismatching frequency indices! (%d vs %d)\n",
-                                        findex, gindex);
-                                    // generate index that is 10 * freq_index + pol + 1
-            t101.index = 10 * findex;
-            c = getband (D->freq[findex].freq);
-
-                                    // prepare ID strings for both pols, if there
-            if (D->baseline[blind].nPolProd[i] > 1)
-                {
-                sprintf (lchan_id, "%c%02d?", c, 2 * i);
-                lchan_id[3] = (D->freq+findex)->sideband;
-                sprintf (rchan_id, "%c%02d?", c, 2 * i + 1);
-                rchan_id[3] = (D->freq+findex)->sideband;
-                }
-            else                    // both the same (only one used)
-                {
-                sprintf (lchan_id, "%c%02d?", c, i);
-                lchan_id[3] = (D->freq+findex)->sideband;
-                strcpy (rchan_id, lchan_id);
-                }
-                                    // insert ID strings for reference & remote
-            if (refpol == 'L' && rempol == 'L')
-                {
-                if (done[LL])       // eliminate 1x2 dups
-                    continue;
-                strcpy (t101.ref_chan_id, lchan_id);
-                strcpy (t101.rem_chan_id, lchan_id);
-                t101.index += 1;
-                done[LL] = TRUE;
-                }
-            else if (refpol == 'R' && rempol == 'R')
-                {
-                if (done[RR])
-                    continue;
-                strcpy (t101.ref_chan_id, rchan_id);
-                strcpy (t101.rem_chan_id, rchan_id);
-                t101.index += 2;
-                done[RR] = TRUE;
-                }
-            else if (refpol == 'L' && rempol == 'R')
-                {
-                if (done[LR])
-                    continue;
-                strcpy (t101.ref_chan_id, lchan_id);
-                strcpy (t101.rem_chan_id, rchan_id);
-                t101.index += 3;
-                done[LR] = TRUE;
-                }
-            else if (refpol == 'R' && rempol == 'L')
-                {
-                if (done[RL])
-                    continue;
-                strcpy (t101.ref_chan_id, rchan_id);
-                strcpy (t101.rem_chan_id, lchan_id);
-                t101.index += 4;
-                done[RL] = TRUE;
-                }
-            write_t101 (&t101, fout[nb]);
+            if (a1 == pfb[n].stn[k].ant)
+                ref = k;
+            if (a2 == pfb[n].stn[k].ant)
+                rem = k;
             }
+                                    // skip out if this baseline doesn't match
+        if (ref < 0 || rem < 0)
+            continue;
+
+                                    // mk4 index is based on difx freq index & pol pair
+        t101.index = 10 * pfb[n].stn[ref].find;
+        if      (pfb[n].stn[ref].chan_id[4] == 'L' && pfb[n].stn[rem].chan_id[4] == 'L')
+            t101.index += 1;
+        else if (pfb[n].stn[ref].chan_id[4] == 'R' && pfb[n].stn[rem].chan_id[4] == 'R')
+            t101.index += 2;
+        else if (pfb[n].stn[ref].chan_id[4] == 'L' && pfb[n].stn[rem].chan_id[4] == 'R')
+            t101.index += 3;
+        else if (pfb[n].stn[ref].chan_id[4] == 'R' && pfb[n].stn[rem].chan_id[4] == 'L')
+            t101.index += 4;
+                                    // insert channel ids into the type 101 record
+        strcpy (t101.ref_chan_id, pfb[n].stn[ref].chan_id);
+        strcpy (t101.rem_chan_id, pfb[n].stn[rem].chan_id);
+                                    // and write this type 101
+        write_t101 (&t101, fout[nb]);
         }
     return (0);
     }
