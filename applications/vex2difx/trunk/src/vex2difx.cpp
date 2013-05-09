@@ -1127,7 +1127,6 @@ static void populateBaselineTable(DifxInput *D, const CorrParams *P, const CorrS
 	int freqId, altFreqId, blId, configId;
 	double lowedgefreq, altlowedgefreq;
 
-
 	// Calculate maximum number of possible baselines based on list of configs
 	D->nBaseline = 0;
 
@@ -1442,7 +1441,8 @@ static void populateBaselineTable(DifxInput *D, const CorrParams *P, const CorrS
 						{
 							altFreqId = D->datastream[a2].recFreqId[f2];
 							if(D->freq[freqId].freq == D->freq[altFreqId].freq &&
-							   D->freq[freqId].bw   == D->freq[altFreqId].bw)
+							   D->freq[freqId].bw   == D->freq[altFreqId].bw &&
+                               D->freq[altFreqId].sideband == 'U')
 							{
 								n2 = DifxDatastreamGetRecBands(D->datastream+a2, altFreqId, a2p, a2c);
 							}
@@ -1891,54 +1891,44 @@ static bool matchingFreq(const ZoomFreq &zoomfreq, const DifxDatastream *dd, int
 {
 	const double epsilon = 0.000001;
 	double channeloffset;
+    double parent_bottom,
+           parent_top;
 	const freq &f = freqs[dd->recFreqId[dfreqIndex]];
 
-	if(f.sideBand == 'L')
+	if(f.sideBand == 'L')           // is parent LSB?
 	{
-		if(zoomfreq.frequency > f.fq + epsilon)
-		{
-			return false;
-		}
-		if(zoomfreq.frequency - zoomfreq.bandwidth < f.fq - f.bw - epsilon)
-		{
-			return false;
-		}
-		if(zoomfreq.spectralaverage > 0 && zoomfreq.spectralaverage != f.specAvg()) //0 means default to parent
-		{
-			return false;
-		}
-		channeloffset = (f.fq - zoomfreq.frequency)/f.inputSpecRes;
-		if(fabs(channeloffset - static_cast<int>(channeloffset+0.5)) > epsilon)
-		{
-			return false;
-		}
-
-		return true;
-	}
-	else
-	{
-		if(zoomfreq.frequency < f.fq - epsilon)
-		{
-			return false;
-		}
-		if(zoomfreq.frequency + zoomfreq.bandwidth > f.fq + f.bw + epsilon)
-		{
-			return false;
-		}
-		if(zoomfreq.spectralaverage > 0 && zoomfreq.spectralaverage != f.specAvg()) //0 means default to parent
-		{
-			return false;
-		}
+		channeloffset = (f.fq - zoomfreq.frequency - zoomfreq.bandwidth)/f.inputSpecRes;
+        parent_bottom = f.fq - f.bw;
+        parent_top = f.fq;
+    }
+    else                            // parent is USB
+    {
 		channeloffset = (zoomfreq.frequency - f.fq)/f.inputSpecRes;
-		if(fabs(channeloffset - static_cast<int>(channeloffset+0.5)) > epsilon)
-		{
-			return false;
-		}
+        parent_bottom = f.fq;
+        parent_top = f.fq + f.bw;
+    }
 
-		return true;
-	}
+    if(zoomfreq.frequency < parent_bottom - epsilon)
+    {
+        return false;
+    }
 
-	return false;
+    if(zoomfreq.frequency + zoomfreq.bandwidth > parent_top + epsilon)
+    {
+        return false;
+    }
+
+    if(zoomfreq.spectralaverage > 0 && zoomfreq.spectralaverage != f.specAvg()) //0 means default to parent
+    {
+        return false;
+    }
+
+    if(fabs(channeloffset - static_cast<int>(channeloffset+0.5)) > epsilon)
+    {
+        return false;
+    }
+
+    return true;
 }
 
 static int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int os, int verbose, ofstream *of, int nDigit, char ext, int strict)
@@ -2387,7 +2377,8 @@ static int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int 
 							}
 							zoomChans = static_cast<int>(zf.bandwidth/corrSetup->FFTSpecRes);
 							fqId = getFreqId(freqs, zf.frequency, zf.bandwidth,
-									freqs[dd->recFreqId[parentFreqIndices[i]]].sideBand,
+//							freqs[dd->recFreqId[parentFreqIndices[i]]].sideBand,
+  							        'U',
 									corrSetup->FFTSpecRes, corrSetup->outputSpecRes, overSamp, decimation, 1, 0);	// final zero points to the noTone pulse cal setup.
 							if(zoomChans < minChans)
 							{
