@@ -70,6 +70,108 @@ namespace network {
         }
         
         //----------------------------------------------------------------------------
+        //!  "Compose" a packet.  This allows the calling program to build a packet
+        //!  on the fly, but it assumes the calling program knows what it is doing.
+        //!  This function grabs the socket write lock, then sends a packet ID and
+        //!  byte size, but no data.  The calling program is expected to send data using 
+        //!  functions below - failure to send the correct number of bytes will screw
+        //!  up the packet protocol - rather dangerous.  This function also DOES NOT 
+        //!  release the write lock, which is also quite dangerous.  This needs to be
+        //!  done using the "composeEnd()" function below.
+        //----------------------------------------------------------------------------
+        int composePacket( const int packetId, const int nBytes ) {
+            int swapped;
+
+            //  Lock writing on the socket.
+            _sock->writeLock();
+
+            //  packet ID
+            swapped = htonl( packetId );
+            int ret = _sock->writer( (char*)&swapped, sizeof( int ) );
+
+            //  ...then the size of the packet...
+            if ( ret != -1 ) {
+                swapped = htonl( nBytes );
+                ret = _sock->writer( (char*)&swapped, sizeof( int ) );
+            }
+
+            return ret;
+        }
+        
+        //----------------------------------------------------------------------------
+        //!  Send integer data as part of a composed packet.  The integer is either a
+        //!  single number (by default) or an array.  Numbers are converted to network
+        //!  byte order for transmission.
+        //----------------------------------------------------------------------------
+        int composeInt( const int* data, int n = 1 ) {
+            int* swapped = new int[n];
+            for ( int i = 0; i < n; ++i )
+                swapped[i] = htonl( data[i] );
+            int ret = _sock->writer( (char*)swapped, n * sizeof( int ) );
+            delete [] swapped;
+            return ret;
+        }
+        
+        //----------------------------------------------------------------------------
+        //!  Send float data as part of a composed packet.  The data are either a
+        //!  single number (by default) or an array.  Numbers are converted to network
+        //!  byte order for transmission.
+        //----------------------------------------------------------------------------
+        int composeFloat( const float* data, int n = 1 ) {
+            int* swapped = new int[n];
+            for ( int i = 0; i < n; ++i )
+                swapped[i] = htonl( data[i] );
+            int ret = _sock->writer( (char*)swapped, n * sizeof( float ) );
+            delete [] swapped;
+            return ret;
+        }
+        
+        //----------------------------------------------------------------------------
+        //!  Send double data as part of a composed packet.  The double is either a
+        //!  single number (by default) or an array.  Numbers are converted to network
+        //!  byte order for transmission.
+        //----------------------------------------------------------------------------
+        int composeDouble( const double* data, int n = 1 ) {
+            double* swapped = new double[n];
+            for ( int i = 0; i < n; ++i ) {
+                swapped[i] = htond( data[i] );
+            }
+            int ret = _sock->writer( (char*)swapped, n * sizeof( double ) );
+            delete [] swapped;
+            return ret;
+        }
+        
+        //----------------------------------------------------------------------------
+        //!  Send character data as part of a composed packet.  No byte swapping here.
+        //----------------------------------------------------------------------------
+        int composeChar( char* data, int n = 1 ) {
+            int ret = _sock->writer( data, n );
+            return ret;
+        }
+        
+        //----------------------------------------------------------------------------
+        //!  Send double precision values using a character string conversion.  This
+        //!  avoids some messy problems sending data to Java, but is, of course, rather
+        //!  inefficient.  And loses precision.  Probably could make this function
+        //!  more flexible and useful by expanding the precision option.
+        //----------------------------------------------------------------------------
+        int composeStringDouble( const double* data, int n = 1 ) {
+            char buffer[15];
+            for ( int i = 0; i < n; ++i ) {
+                snprintf( buffer, 15, "%14.6e", data[i] );
+                composeChar( buffer, 14 );
+            }
+        }
+        
+        //----------------------------------------------------------------------------
+        //!  This function is called to terminate a "composed" packet.  It releases
+        //!  the write lock.
+        //----------------------------------------------------------------------------
+        void composeEnd() {
+            _sock->writeUnlock();
+        }
+        
+        //----------------------------------------------------------------------------
         //!  Send a "formatted" packet as a string using printf formatting commands.
         //!  There is a (hopefully quite reasonable) limit to the length of these
         //!  packets.
@@ -127,7 +229,7 @@ namespace network {
         }
         
         //----------------------------------------------------------------------------
-        //!  This function reads packets send by the sendPacket function, following
+        //!  This function reads packets sent by the sendPacket function, following
         //!  the same protocol.  The number of bytes read is returned if all goes
         //!  well, a -1 is returned if something goes wrong.  The storage space for
         //!  the incoming data is allocated - it is the responsibility of the

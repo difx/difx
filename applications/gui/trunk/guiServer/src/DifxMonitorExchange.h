@@ -187,6 +187,10 @@ namespace guiServer {
                     //  the input file.  I grabbed this code (mostly) from the monserver_productconfig()
                     //  function in difx_monitor/monserver.cpp.  Without knowing entirely what I was doing.
                     
+                    //  We save a detailed list of product information, indexed by the "product number",
+                    //  which will be defined and incremented below.
+                    _productInfo.clear();
+                    
                     //  Indicate we are starting a new block of correlation products
                     sendPacket( CORRELATION_PRODUCTS, NULL, 0 );
                     
@@ -251,6 +255,20 @@ namespace guiServer {
                                         productData[1] = resultIndex;
                                         productData[2] = freqchannels;
                                         intPacket( NEW_PRODUCT, productData, 3 );
+                                        
+                                        //  Add everything we know about this product to the product information list.
+                                        _productInfo.push_back( ProductInfo( ds1index,
+                                                                             ds2index,
+                                                                             _config->getTelescopeName( ds1index ), 
+					                                                         _config->getTelescopeName( ds2index ),
+					                                                         _config->getFreqTableFreq( freqindex ),
+					                                                         _config->getFreqTableBandwidth( freqindex ),
+					                                                         polpair,
+					                                                         s,
+					                                                         b,
+					                                                         resultIndex,
+					                                                         freqchannels,
+					                                                         _config->getFreqTableLowerSideband( freqindex ) ) );
                                         ++productN;
                                     }
                                 }
@@ -285,6 +303,18 @@ namespace guiServer {
                                 productData[1] = offset;
                                 productData[2] = freqchannels;
                                 intPacket( NEW_PRODUCT, productData, 3 );
+                                _productInfo.push_back( ProductInfo( i,
+                                     i,
+                                     _config->getDStationName( configindex, i ), 
+                                     "",
+                                     _config->getFreqTableFreq( freqindex ),
+                                     _config->getFreqTableBandwidth( freqindex ),
+                                     polpair,
+                                     0,
+                                     0,
+                                     offset,
+                                     freqchannels,
+                                     _config->getFreqTableLowerSideband( freqindex ) ) );
                                 ++productN;
                                 offset += freqchannels;
 
@@ -382,6 +412,7 @@ namespace guiServer {
         //---------------------------------------------------------------------
         static void* staticVisibilityMonitor( void* a ) {
             ( (DifxMonitorExchange*)a )->visibilityMonitor();
+            return NULL;
         }
         
         //---------------------------------------------------------------------
@@ -398,12 +429,14 @@ namespace guiServer {
             int iVis = 0;
             int nProducts = _productList.size();
             int procChannels = 0;
+            double delay = 0.0;
+            double snr = 0.0;
             Ipp64f* amp = NULL;
             Ipp64f* phase = NULL;
             Ipp64f* lags = NULL;
+            Ipp64f* delayLags = NULL;
             Ipp64fc* vis64 = NULL;
             IppsFFTSpec_R_64f* fftspec = NULL;
-            char* messageData = NULL;
             int threadTimeoutCount = 0;
             bool threadTimeoutActive = false;
             int threadTimeoutModelCount = 0;
@@ -442,11 +475,8 @@ namespace guiServer {
                     }
                     else
                         threadTimeoutActive = true;
-                    printf( "time stamp:  %d\n", timeStamp );
                     _monitorServerClient->reader( (char*)&nReturn, sizeof( int ) );
-                    printf( "returned:    %d\n", nReturn );
                     _monitorServerClient->reader( (char*)&newBuffSize, sizeof( int ) );
-                    printf( "buffer size: %d\n", newBuffSize );
                     if ( buffSize < newBuffSize ) {
                         buffSize = newBuffSize;
                         if ( buff != NULL )
@@ -460,7 +490,7 @@ namespace guiServer {
                     }
                     else {
                         //  These are raw complex data - no effort to change byte order, etc.
-                        sendPacket( VISIBILITY_DATA, buff, buffSize );
+                        //sendPacket( VISIBILITY_DATA, buff, buffSize );
                         //  Extract the number of channels, the product numbers, and the actual visibility data
                         //  from the just-received data buffer.  This is done for each product contained in the
                         //  data.
@@ -481,7 +511,6 @@ namespace guiServer {
                             //  the size of our arrays (determined by nChannels) changes.
                             if ( procChannels != nChannels ) {
                                 procChannels = nChannels;
-                                printf( "allocating vectors for %d channels of data...\n", nChannels );
                                 if ( vis64 != NULL )
                                     ippsFree( vis64 );
                                 if ( amp != NULL )
@@ -490,6 +519,8 @@ namespace guiServer {
                                     ippsFree( phase );
                                 if ( lags != NULL )
                                     ippsFree( lags );
+                                if ( delayLags != NULL )
+                                    ippsFree( delayLags );
                                 if ( fftspec != NULL )
                                     ippsFFTFree_R_64f( fftspec );
                                 vis64 = ippsMalloc_64fc( nChannels );
@@ -497,6 +528,7 @@ namespace guiServer {
                                 amp = ippsMalloc_64f( nChannels );
                                 phase = ippsMalloc_64f( nChannels );
                                 lags = ippsMalloc_64f( nChannels * 2 );
+                                delayLags = ippsMalloc_64f( nChannels * 2 );
                                 if ( amp == NULL || phase == NULL || lags == NULL ) {
                                     formatPacket( ERROR, "Failure to allocate memory for visibility processing arrays." );
                                     _visConnectionOperating = false;
@@ -506,81 +538,84 @@ namespace guiServer {
                                 while( ( ( nChannels * 2 ) >> order ) > 1 )
                                     order++;
                                 ippsFFTInitAlloc_R_64f( &fftspec, order, IPP_FFT_NODIV_BY_ANY, ippAlgHintFast );
-                                //  This is for messages back to the GUI
-                                if ( messageData != NULL )
-                                    delete [] messageData;
-                                messageData = new char[ 2 * nChannels * sizeof( double ) + 3 * sizeof( int ) ];
-                                printf( "allocation complete!\n" );
                             }
                             //  Put the visibility data into double-precision complex arrays.
 	                        for ( int i = 0; i < nChannels; i++ ) {
 	                          vis64[i].re = vis32[i].re;
 	                          vis64[i].im = vis32[i].im;
 	                        }
-	                        printf( "compute amplitude, phase, etc...\n" );
+	                        //  Compute amplitude, phase, lags...
                             ippsMagnitude_64fc( vis64, amp, nChannels );
                             ippsPhase_64fc( vis64, phase, nChannels );
                             ippsMulC_64f_I( 180.0/M_PI, phase, nChannels );
                             ippsFFTInv_CCSToR_64f( (Ipp64f*)vis64, lags, fftspec, 0 );
-                            printf( "ALL DONE!\n" );
-                            //  Send output data to the client.  Amplitudes are first.
-                            char* messPtr = messageData ;
-                            *((int*)messPtr) = htonl( iProduct );
-                            messPtr += sizeof( int );
-                            *((int*)messPtr) = htonl( nChannels );
-                            messPtr += sizeof( int );
-                            *((int*)messPtr) = htonl( timeStamp );
-                            messPtr += sizeof( int );
-                            for ( int i = 0; i < nChannels; ++i ) {
-                                if ( i < nChannels ) {
-                                    *((double*)messPtr) = htond( amp[i] );
-                                    messPtr += sizeof( double );
-                                }
+                            //  Generate a delay calculation...(swiped from vcal.cpp)
+                            Ipp64f max = 0.0;
+                            Ipp64f stddev = 0.0;
+                            int imax = 0;
+                            int i1 = 0;
+                            int i2 = 0;
+                            ippsAbs_64f( lags, delayLags, nChannels * 2 );
+                            ippsMaxIndx_64f( delayLags, nChannels * 2, &max, &imax );
+                            i1 = ( imax - 10 + nChannels * 2 ) % ( nChannels * 2 );
+                            i2 = ( imax + 10 ) % ( nChannels * 2 );
+                            if ( i1 < i2 ) {
+                                ippsMove_64f( &delayLags[i2], &delayLags[i1], nChannels * 2 - i2 );
+                            } else {
+                                ippsMove_64f( &delayLags[i2], delayLags, nChannels * 2 - 20 );    
                             }
-                            //printf( "send amplitude data\n" );
-                            sendPacket( AMPLITUDE_DATA, messageData, nChannels * sizeof( double ) + 3 * sizeof( int ) );
+                            ippsStdDev_64f( delayLags, nChannels * 2 - 20, &stddev );
+                            int maxChannel = imax;
+                            if ( imax > nChannels ) 
+                                imax -= nChannels * 2;
+                            //  Convert a difference in FFT index to a time difference.  vcal.cpp says "really
+                            //  should use sampling rate".  Probably true.
+                            delay = (double)imax / ( 2.0 * _productInfo[iProduct].Bandwidth );
+                            snr = (float)( max / stddev );
+                            //  Send amplitude data to the client.  For sending these plot data we are using
+                            //  "composed" packets, explained in the PacketExchange.  Double precision numbers
+                            //  are sent as strings because Java and C++ don't appear to play nicely together.
+                            composePacket( AMPLITUDE_DATA, nChannels * sizeof( double ) + 3 * sizeof( int ) );
+                            composeInt( &iProduct );
+                            composeInt( &nChannels );
+                            composeInt( &timeStamp );
+                            composeStringDouble( amp, nChannels );
+                            composeEnd();
                             //  Phase data.
-                            messPtr = messageData ;
-                            *((int*)messPtr) = htonl( iProduct );
-                            messPtr += sizeof( int );
-                            *((int*)messPtr) = htonl( nChannels );
-                            messPtr += sizeof( int );
-                            *((int*)messPtr) = htonl( timeStamp );
-                            messPtr += sizeof( int );
-                            for ( int i = 0; i < nChannels; ++i ) {
-                                if ( i < nChannels ) {
-                                    *((double*)messPtr) = htond( phase[i] );
-                                    messPtr += sizeof( double );
-                                }
-                            }
-                            sendPacket( PHASE_DATA, messageData, nChannels * sizeof( double ) + 3 * sizeof( int ) );
-                            //  Lag data require some rearrange.  First three numbers are the same as amplitude,
-                            //  making this code redundant.  Repeated to make each operation self-contained.
-                            messPtr = messageData;
-                            *((int*)messPtr) = htonl( iProduct );
-                            messPtr += sizeof( int );
-                            *((int*)messPtr) = htonl( nChannels );
-                            messPtr += sizeof( int );
-                            *((int*)messPtr) = htonl( timeStamp );
-                            messPtr += sizeof( int );
-                            for ( int i = 0; i < nChannels; ++i ) {
-                                if ( i < nChannels ) {
-                                *((double*)messPtr) = htond( lags[i + nChannels] );
-                                messPtr += sizeof( double );
-                                }
-                            }
-                            for ( int i = 0; i < nChannels; ++i ) {
-                                if ( i < nChannels ) {
-                                    *((double*)messPtr) = htond( lags[i] );
-                                    messPtr += sizeof( double );
-                                }
-                            }
-                            sendPacket( LAG_DATA, messageData, 2 * nChannels * sizeof( double ) + 3 * sizeof( int ) );
+                            composePacket( PHASE_DATA, nChannels * sizeof( double ) + 3 * sizeof( int ) );
+                            composeInt( &iProduct );
+                            composeInt( &nChannels );
+                            composeInt( &timeStamp );
+                            composeStringDouble( phase, nChannels );
+                            composeEnd();
+                            //  Lag data require some rearrange.
+                            composePacket( LAG_DATA, 2 * ( nChannels + 1) * sizeof( double ) + 4 * sizeof( int ) );
+                            composeInt( &iProduct );
+                            composeInt( &nChannels );
+                            composeInt( &timeStamp );
+                            composeInt( &maxChannel );
+                            composeStringDouble( &delay );
+                            composeStringDouble( &snr );
+                            composeStringDouble( lags + nChannels, nChannels );
+                            composeStringDouble( lags, nChannels );
+                            composeEnd();
                         }
                     }
                 }
             }
             printf( "stopping visibility monitor\n" );
+            if ( vis64 != NULL )
+                ippsFree( vis64 );
+            if ( amp != NULL )
+                ippsFree( amp );
+            if ( phase != NULL )
+                ippsFree( phase );
+            if ( lags != NULL )
+                ippsFree( lags );
+            if ( delayLags != NULL )
+                ippsFree( delayLags );
+            if ( fftspec != NULL )
+                ippsFFTFree_R_64f( fftspec );
             if ( _monitorServerClient != NULL )
                 delete _monitorServerClient;
             _monitorServerClient = NULL;
@@ -609,6 +644,41 @@ namespace guiServer {
         };
         network::TCPClient* _monitorServerClient;
         std::vector<Product> _productList;
+        class ProductInfo {
+        public:
+            ProductInfo( int TelIndex1, int TelIndex2, std::string TelName1, 
+				         std::string TelName2, double freq, double bandwidth, 
+				         char polpair[3], int nbin, int nphasecentre, int offset,
+				         int nchan, bool lsbval) {
+                TelescopeIndex1 = TelIndex1;
+                TelescopeIndex2 = TelIndex2;
+                TelescopeName1 = TelName1;
+                TelescopeName2 = TelName2;
+                Bandwidth = bandwidth;
+                Freq = freq;
+                PolPair[0] = polpair[0];
+                PolPair[1] = polpair[1];
+                PolPair[2] = 0;
+                Nbin = nbin;
+                Nphasecentre = nphasecentre;
+                Offset = offset;
+                Nchan = nchan;
+                lsb = lsbval;
+            }
+            int TelescopeIndex1;
+            int TelescopeIndex2;
+            std::string TelescopeName1;
+            std::string TelescopeName2;
+            double Bandwidth;
+            double Freq;
+            char PolPair[3];
+            int Nbin;
+            int Nphasecentre;
+            int Offset;
+            int Nchan;
+            bool lsb;
+        };
+        std::vector<ProductInfo> _productInfo;
             
     };
 
