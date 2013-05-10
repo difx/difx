@@ -395,10 +395,10 @@ As the visibility file ({\tt .difx}) is read, any records that are all zero are 
 \item[] {\tt -k} or {\tt --keep-order} : don't sort the antennas by name
 \item[] {\tt -1} or {\tt --dont-combine} : make a separate FITS file for each input job
 \item[] {\tt -x} or {\tt --dont-sniff} : don't generate sniffer output files
-\item[] {\tt --phasecentre} {\em p} : (U.S.\ spelling OK too) Create a FITS file for all the {\em p}$^{\rm th}$ phase centers (default 0)
-\item[] {\tt --override-version} ignore difx version clashes
+\item[] {\tt --phasecentre} {\em p} : (U.S.\ spelling okay too) Create a FITS file for all the {\em p}$^{\rm th}$ phase centers (default 0)
+\item[] {\tt --override-version} : ignore difx version clashes
 \end{itemize}
-\item[] {\em baseFilename} is the prefix of the jobfile to convert; it is OK to use the .difx filename instead
+\item[] {\em baseFilename} is the prefix of the jobfile to convert; it is okay to use the {\tt .difx} filename instead
 \item[] {\em outFile} is the name of the {\tt FITS} file to produce; if not provided one will be made based on the project code
 \item[] Example 1: {\tt difx2fits dq109\_1 DQ109.FITS}
 \item[] Example 2: {\tt difx2fits -v -v -d}
@@ -430,11 +430,37 @@ Finally any visibilities, produced outside a normal scan start/stop time are dro
 
 
 
-% difx2mark4 ---------------------------------------------- INCOMPLETE --------
+% difx2mark4 ------------------------------------------------------------------
 
 \subsection{difx2mark4} \label{sec:difx2mark4}
 
-Program {\tt difx2mark4} ...
+Program {\tt difx2mark4} creates a Mark4 output file set from {\tt mpifxcorr} input and output files.
+When run, {\tt difx2mark4} requires the following files to be present for each file set being converted:
+\begin{enumerate}
+\item {\em baseFilename}{\tt .difx/}
+\item {\em baseFilename}{\tt .input}
+\item {\em baseFilename}{\tt .im}
+\end{enumerate}
+as well as the {\tt .vex} file referenced in the {\tt .input} file, which may be common to many DiFX file sets.
+
+\begin{itemize}
+\item[] Usage: {\tt difx2mark4} $[$ {\em options} $]$ {\em baseFilename1} $[\cdots${\em baseFilenameN}$]$
+\item[] {\em options} can be:
+\begin{itemize}
+\item[] {\tt -h} or {\tt --help} : print usage information and exit
+\item[] {\tt -v} or {\tt --verbose} : increase verbosity of output; use twice or thrice to get even more
+\item[] {\tt -d} or {\tt --difx} : run on all {\tt .difx} files found in the directory
+\item[] {\tt -k} or {\tt --keep-order} : don't sort the antennas by name
+\item[] {\tt --override-version} : ignore difx version clashes
+\item[] {\tt -r} or {\tt --raw} : suppresses normalization of amplitudes
+\item[] {\tt -p} or {\tt --pretend} : do a dry run
+\item[] {\tt -e} or {\tt --experiment-number} {\em n} : set the experiment number to {\em n} which must be a 4 digit number (default is 1234)
+\item[] {\tt -b} {\em code} {\em flo} {\em fhi} : Override freq band codes.  Frequencies are in MHz.  Multiple parameters of this kind can be specified.
+\end{itemize}
+\item[] {\em baseFilename} is the prefix of the jobfile to convert {\em without} the underscore and job number
+\item[] Example {\tt difx2mark4 dq109}
+\end{itemize}
+
 
 
 
@@ -1108,14 +1134,16 @@ Multiple directories can be specified.
 
 \subsection{makefits {\small $\mathrm{(package: difx2fits)}$}} \label{sec:makefits}
 
+This program is tuned for NRAO use; some modifications may be required for use at other sites.
+
 Program {\tt makefits} is basically a wrapper for {\tt difx2fits} (\S\ref{sec:difx2fits}) that does some sanity checking and ensures that files end up in the proper places with the proper names.
 This program is intrinsically {\em pass-based} and it bases its functionality on the {\tt .joblist} (\S\ref{sec:joblistfile}) file that is written by {\tt vex2difx} (\S\ref{sec:vex2difx}).
 One must run this program on the software correlator head node ({\tt swc000} in the current VLBA DiFX implementation).
 Upon successful completion, FITS-IDI files are created in the same directory in the correlator job staging area ({\tt \$DIFX\_QUEUE\_BASE/}{\em projectName}) and the sniffer output files are left in a subdirectory of the current working directory.
 An additional output file is left in the current working directory called {\em passName}{\tt .fitslist} .
-This file has a list of the fits files that are to be archived once the data for this pass are deemed valid.
+This file has a list of the FITS files that are to be archived once the data for this pass are deemed valid.
 
-The checks that {\tt makefits} performs will by default not allow an incomplete set of {\tt FITS} files to be produced.
+The checks that {\tt makefits} performs will by default not allow an incomplete set of FITS files to be produced.
 This can be overridden with a special command line argument (below).
 This is part of an accountability chain that aims to ensure that nothing gets omitted.
 
@@ -1130,6 +1158,36 @@ This is part of an accountability chain that aims to ensure that nothing gets om
 \end{itemize}
 Multiple directories can be specified.
 \item[] Example: {\tt makefits clock}
+\end{itemize}
+
+
+
+
+
+
+
+% makemark4 -------------------------------------------------------------------
+
+\subsection{makemark4 {\small $\mathrm{(package: difxdb)}$}} \label{sec:makemark4}
+
+This program is tuned for NRAO use; some modifications may be required for use at other sites.
+
+Program {\tt makemark4} is essentially a wrapper for {\tt difx2mark4} (\S\ref{sec:difx2mark4}) that does some sanity checking and ensures that files end up in the proper places with the proper names.
+This program is intrinsically {\em pass-based} and it bases its functionality on the {\tt .joblist} (\S\ref{sec:joblistfile}) file that is written by {\tt vex2difx} (\S\ref{sec:vex2difx}).
+One must run this program on the software correlator head node ({\tt swc000} in the current VLBA DiFX implementation).
+Upon successful completion, Mark4 file sets are created in the same directory in the correlator job staging area ({\tt \$DIFX\_QUEUE\_BASE/}{\em projectName}).
+An additional output file is left in the current working directory called {\em passName}{\tt .mark4list} .
+This file has a list of the Mark4 file sets that are to be archived once the data for this pass are deemed valid.
+
+\begin{itemize}
+\item[] Usage: {\tt makemark4} $[$ {\em options} $]$ {\em passName}
+\item[] {\em options} can be:
+\begin{itemize}
+\item[] {\tt -h} or {\tt --help} : print usage information and exit
+\item[] {\tt -v} or {\tt --verbose} : increase output verbosity
+%\item[] {\tt --override-version} : ignore potential difx version conflicts
+\end{itemize}
+\item[] Example: {\tt makemark4 rdv95}
 \end{itemize}
 
 
@@ -1240,7 +1298,7 @@ The program should be used as follows:
 \begin{itemize}
 \item[] Usage: {\tt m5fold} {\em infile} {\em format} {\em nbin} {\em nchunk} {\em freq} {\em outfile} $[$ {\em offset} $]$ 
 \item[] {\em infile} is the file to decode
-\item[] {\em format} is the format of the data
+\item[] {\em format} is the format of the data`
 \item[] {\em nbin} is the number of bins to calculate per period; if negative, power correction is not performed and the absolute value of {\em nbin} is used
 \item[] {\em nchunk} is the number of 10000 sample chunks to operate on
 \item[] {\em freq} is the reciprocal of the period to be observed (Hz)
@@ -1268,26 +1326,34 @@ For equivalent functionality in the multi-thread VDIF case see {\tt vdiffold}.
 
 
 
-% m5pcal -------------------------------------------------- INCOMPLETE --------
+% m5pcal ----------------------------------------------------------------------
 
 \subsection{m5pcal {\small $\mathrm{(package: mark5access)}$}} \label{sec:m5pcal}
 
 Program {\tt m5pcal} can be used to extract pulse cal tones from baseband data in Mark4, VLBA, Mark5B and single-thread VDIF formats.
 
 \begin{itemize}
-\item[] Usage: {\tt m5pcal} $[$ {\em options} $]$ {\em infile} {\em format} 
+\item[] Usage: {\tt m5pcal} $[$ {\em options} $]$ {\em infile} {\em format} {\em freq1} $[$ {\em freq2} $[ \ldots ] ]$ {\em outfile}
 \item[] {\em options} can be:
 \begin{itemize}
 \item[] {\tt -h} or {\tt --help} : print usage information and exit
 \item[] {\tt -v} or {\tt --verbose} : increase output verbosity
 \item[] {\tt -q} or {\tt --quiet} : decrease output verbosity
+\item[] {\tt -n} {\em n} : loop over {\em n} chunks of data (default is 1000)
+\item[] {\tt -N} {\em N} : perform {\em N} outer loops, each yielding a result set
+\item[] {\tt -o} {\em o} or {\tt --offset} {\em o} : jump {\em o} bytes into file
+\item[] {\tt -i} {\em i} or {\tt --interval} {\em i} : use pulse cal comb interval of {\em i} MHz (default is 1)
+\item[] {\tt -e} {\em e} or {\tt --edge} {\em e} : don't use channels closer than {\em e} MHz from band edges when computing delay (default is 1/8 of bandwidth)
 \end{itemize}
+\item[] {\em infile} is the file to decode
+\item[] {\em format} is the format of the data`
+\item[] {\em freq1} \ldots is/are the frequencies (MHz) relative to baseband of the first tone to detect; there should be one {\em freq} specified per baseband channel
+\item[] {\em outfile} is the name of the output file
 \end{itemize}
 
-% FIXME: writeme
+See the documentation for {\tt m5d} for information on specifying the data format.
 
 
-% FIXME: add to program doc or <freqX>
 
 
 
@@ -1751,11 +1817,25 @@ It is thus suggested to use {\tt oms2v2d} and transfer over needed information b
 
 
 
-% padVDIF ------------------------------------------------- INCOMPLETE --------
+% padVDIF ---------------------------------------------------------------------
 
 \subsection{padVDIF {\small $\mathrm{(package: vdifio)}$} \label{sec:padVDIF}}
 
-Program {\tt padVDIF} ...
+Program {\tt padVDIF} takes an input VDIF file and inserts additional packets as needed to create a contiguous without gaps.
+Newly inserted frames will have the invalid bit set.
+
+\begin{itemize}
+\item[] Usage: {\tt padVDIF} {\em infile} {\em outfile} {\em Mbps} $[$ {\em newStartMJD} $]$
+
+\item[] {\em infile} is the input VDIF file
+\item[] {\em outfile} is the output VDIF file
+\item[] {\em Mbps} is the data rate in megabits/second
+\item[] {\em newStartMJD} is the MJD (with fractional component) to overwrite the times with
+
+\item[] Example: {\tt padVDIF raw.vdif smooth.vdif 2048}
+\end{itemize}
+
+
 
 
 
@@ -1977,12 +2057,23 @@ If multiple {\tt mpifxcorr} processes are found running on a machine, {\tt stopm
 
 
 
-% stripVDIF ----------------------------------------------- INCOMPLETE --------
+% stripVDIF -------------------------------------------------------------------
 
 \subsection{stripVDIF {\small $\mathrm{(package: vdifio)}$} \label{sec:stripVDIF}}
 
-Program {\tt stripVDIF} ...
+Program {\tt stripVDIF} strips network headers from a VDIF format basebad data file (e.g., captured from wireshark) and dumps a pure VDIF stream.
 
+\begin{itemize}
+\item[] Usage: {\tt stripVDIF} {\em infile} {\em outfile} $[$ {\em skipbytesfront} $[$ {\em skipbytesback} $[$ {\em skipbytesinitial} $] ] ]$
+
+\item[] {\em infile} is the input VDIF file
+\item[] {\em outfile} is the output VDIF file
+\item[] {\em skipbytesfront} is the number of bytes to skip over before each frame (default is 54)
+\item[] {\em skipbytesback} is the number of bytes to skip over after each frame (default is 4)
+\item[] {\em skipbytesinitial} is the number of bytes to skip over only once after opening the file (default is 28)
+
+\item[] Example: {\tt stripVDIF vdif.wireshark vdif.pure 54 4 28}
+\end{itemize}
 
 
 

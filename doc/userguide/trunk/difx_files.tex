@@ -1135,6 +1135,37 @@ If both a datastream process and a core process are to be run on the same comput
 
 
 
+% .mark4list ------------------------------------------------------------------
+
+\subsection{.mark4list} \label{sec:mark4list}
+
+A {\tt .mark4list} file is written by {\tt makemark4} and contains the entire list of {\tt gzip} compressed file sets (ending in {\tt .mark4.tar.gz}) for the correlator pass.
+Due to the different constraints of the correlation process and the Mark4 format, the number of resultant compressed file sets may be greater or less than the number of jobs.
+This file type is used by {\tt difxarch} to ensure that all of the correlated output ends up in the archive.
+The file is composed of two parts: a header line and one line for each compressed file set.
+The header line consists of a series of {\em key=value} pairs.  
+Each {\em key} and {\em value} must have no whitespace and no whitespace should separate these words from their connecting {\tt =} sign.
+While any number of key-value pairs may be specified, the following ones (which are case sensitive) are expected to be present:
+\begin{enumerate}
+\item {\tt exper} : the name of the experiment, including the segment code
+\item {\tt pass} : the name of the correlator pass
+\item {\tt jobs} : the name of the {\tt .joblist} file used by {\tt makemark4}
+\item {\tt mjd} : the modified Julian day when {\tt makemark4} created this file
+\item {\tt DiFX} : the version name for the DiFX deployment (the value of {\tt \$DIFX\_VERSION} when {\tt vex2difx} was run)
+\item {\tt difx2mark4} : the version of {\tt difx2mark4} that was run
+\end{enumerate}
+Each additional line contains information for one compressed file set of the correlation pass.
+These lines contain three fields:
+\begin{enumerate}
+\item {\em archiveName} : the name of the file that will get injected into the archive (see \S\ref{sec:archive})
+\item {\em fileSize} : the size of the file in MB
+\item {\em origName} : the name of the file as produced by {\tt difx2mark4} (via {\tt makemark4})
+\end{enumerate}
+
+
+
+
+
 % .oms ------------------------------------------------------------------------
 
 \subsection{.oms} \label{sec:oms}
@@ -1593,8 +1624,6 @@ strideLength	& int		& 	& 16		& number of channels to ``stride'' for fringe rotat
 xmacLength	& int		&	& 128		& number of channels to ``stride'' for cross-multiply accumulations \\
 numBufferedFFTs & int		&	& 1		& number of FFTs to do in a row for each datastream, before XMAC \\
 doPolar		& bool		&	& True		& correlate cross hands when possible \\
-startChan	& int		&	& 0		& first (unaveraged) channel to include in output \\
-nOutChan	& int		&	& {\em nChan}	& truncate after this many output channels \\
 postFFringe	& bool		&	& False		& do fringe rotation after FFT? \\
 binConfig	& string	&	& none		& if specified, apply this pulsar bin config file to this setup \\
 freqId		& $[$int$]$	&	& $[ ]$ = all	& frequency bands to correlate \\

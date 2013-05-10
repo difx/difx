@@ -429,27 +429,30 @@ DiFX 2.1.1 was committed as a patch to DiFX 2.1 on June 7, 2012.
 
 \begin{enumerate}
 \item calcif2: ability to estimate delay polynomial interpolarion errors
-\item Support for a "label" identifier for a local version of DiFX that will help discriminate exact version used.
+\item Support for a ``label'' identifier for a local version of DiFX that will help discriminate exact version used.
 \item Faster Mark5 directory reading
 \item Faster VDIF corner turning through customized bit shifting functions
 \item mpifxcorr can now be built without Intel Integrated Performance Primitives, though resulting in a slower correlator.
+\item {\tt vdifio}: several new VDIF manipulation and processing utilities added: {\tt vmux}, {\tt vsum}, {\tt vdifd}, {\tt vdifspec}, {\tt vdiffold}, {\tt vdifbstate}
 \end{enumerate}
 
 \subsubsection{Bug fixes}
 
 \begin{enumerate}
 
-
+\item Mutex locking bugfix for very short jobs
+\item Prevent MODE errors when a datastream runs out of data well before the end of a job
 \item {\tt calcif2}: fix azimuth polynomial generation in case of wrap
 \item Fix for FITS file generation for mixed sideband correlation
 \item {\tt difx2fits} now uses appropriate gain tables for S and X band in S/X experiments (Thanks to James Miller-Jones for reporting)
 \item {\tt difx2fits}: correct pcal, weather, tsys and flag data for observations crossing new year
 \item Fixed scaling of autocorrelations for LBA format data
 \item 0.5 ns wobble in delays for 2 Gbps Mark5B data fixed
-\item Fix bug preventing subintegrations longer than 1 second. Now 2 seconds is allows (this limit comes from signed integer number of nanoseconds).
+\item Fix bug preventing subintegrations longer than 1 second. Now 2 seconds is allowed (this limit comes from signed integer number of nanoseconds).
 \item Weights corrected in cases where two setups differening only by pcal setup were correlated against each other
 \item Quashed data and weight echos that would occur for about 1 integration at the beginning of each scan for datstreams that ran out of data before end of job.
 \item The multicast (diagnostic) weights were low or zero in case of frequency selection (zoom band or freqId selection). Fixed.
+\item {\tt mark5access}: fix (non)blocking issue when receiving data from {\em stdin}
 
 
 \end{enumerate}
