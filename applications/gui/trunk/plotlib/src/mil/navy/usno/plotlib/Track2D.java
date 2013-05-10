@@ -117,6 +117,26 @@ public class Track2D extends DrawObject {
     }
     
     /*
+     * This is a scaled (and unscaled) version of the translate function.  It moves
+     * either to the (scaled) x,y position, or to a position offset from the existing
+     * translate position using the same conventions as the "add" function above.
+     */
+    public void translate( double x, double y, int type ) {
+        //  If this is a "relative" point, give it the value of the previous
+        //  translation point, offset by x and y.
+        if ( type == RELATIVE_POINT ) {
+            //  There must actually BE a previous translation point of course...
+            if ( _translateSet )
+                translate( _xOff + x, _yOff + y );
+            //  If there isn't....well, this is as good as anything else we might do.
+            else
+                translate( x, y );
+        }
+        else
+            translate( _saveXScale * x, _saveYScale * y );
+    }
+    
+    /*
      * Override the clear function so that it zorches only the data.
      */
     @Override

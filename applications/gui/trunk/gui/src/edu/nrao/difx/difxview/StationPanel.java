@@ -701,11 +701,14 @@ public class StationPanel extends IndexedPanel {
      * Return the machine name associated with the given file item.
      */
     public String machineForFile( String filename ) {
-        for ( Iterator<BrowserNode> iter = _fileList.browserTopNode().childrenIterator(); iter.hasNext(); ) {
-            FileListItem newItem = (FileListItem)iter.next();
-            if ( newItem.name().contentEquals( filename ) )
-                return newItem.sourceNode();
+        try {
+            for ( Iterator<BrowserNode> iter = _fileList.browserTopNode().childrenIterator(); iter.hasNext(); ) {
+                FileListItem newItem = (FileListItem)iter.next();
+                if ( newItem.name().contentEquals( filename ) )
+                    return newItem.sourceNode();
+            }
         }
+        catch ( java.util.ConcurrentModificationException e ) {}
         return null;
     }
     
@@ -762,12 +765,18 @@ public class StationPanel extends IndexedPanel {
             return false;
     }
     public boolean positionXChange() {
+        if ( _positionX == null)
+            return false;
         return ( _positionX.value() != _xpos );
     }
     public boolean positionYChange() {
+        if ( _positionY == null)
+            return false;
         return ( _positionY.value() != _ypos );
     }
     public boolean positionZChange() {
+        if ( _positionZ == null)
+            return false;
         return ( _positionZ.value() != _zpos );
     }
     public Double positionX() { return _positionX.value(); }

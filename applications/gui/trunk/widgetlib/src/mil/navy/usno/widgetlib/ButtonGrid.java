@@ -173,10 +173,12 @@ public class ButtonGrid  extends JScrollPane {
      * Get rid of all buttons.
      */
     public void clearButtons() {
-        for ( Iterator iter = _buttonList.iterator(); iter.hasNext(); ) {
-            GridButton button = (GridButton)iter.next();
-            _panel.remove( button );
-        }
+        try {
+            for ( Iterator iter = _buttonList.iterator(); iter.hasNext(); ) {
+                GridButton button = (GridButton)iter.next();
+                _panel.remove( button );
+            }
+        } catch ( java.util.ConcurrentModificationException e ) {}
         _buttonList.clear();
     }
         

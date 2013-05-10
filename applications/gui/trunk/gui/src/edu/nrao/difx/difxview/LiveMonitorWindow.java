@@ -33,6 +33,8 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.ArrayDeque;
 
+import javax.swing.JFileChooser;
+
 import java.awt.event.WindowListener;
 import java.awt.event.WindowEvent;
 
@@ -41,8 +43,11 @@ import java.text.SimpleDateFormat;
 import edu.nrao.difx.difxutilities.SMARTMonitor;
 import edu.nrao.difx.difxutilities.InputFileParser;
 import java.awt.Font;
+import java.io.BufferedWriter;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.InputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.net.Socket;
 import javax.swing.*;
@@ -287,6 +292,25 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
         _plotWindow = new PlotWindow();
         _plotPanel.add( _plotWindow );
         _scrollPane.addNode( _plotPanel );
+        JButton _saveAsButton = new JButton( "Save As... \u25bc" );
+        _saveAsButton.setBounds( 270, 2, 100, 18 ); 
+        _saveAsButton.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                if ( _fileChooser == null )
+                    _fileChooser = new JFileChooser();
+                _fileChooser.setDialogTitle( "Save as Encapsulated PostScript File..." );
+                int ret = _fileChooser.showSaveDialog( _this );
+                if ( ret == JFileChooser.APPROVE_OPTION ) {
+                    String foo = _plotWindow.postScriptDraw();
+                    try {
+                        BufferedWriter out = new BufferedWriter( new FileWriter( _fileChooser.getSelectedFile().getAbsolutePath() ) );
+                        out.write( foo );
+                        out.close();
+                    } catch ( Exception ex ) {}
+                }
+            }
+        } );
+        _plotPanel.add( _saveAsButton );
         //  Some control buttons for the plot window.
         _showButton = new JButton( "Show \u25bc" );
         _showButton.setBounds( 150, 2, 100, 18 );
@@ -297,26 +321,49 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
         } );
         _plotPanel.add( _showButton );
         _showMenu = new JPopupMenu();
-        _showLatest = new JCheckBoxMenuItem( "Latest" );
-        _showLatest.addActionListener( new ActionListener() {
-            public void actionPerformed( ActionEvent e ) {
-                _showLatest.setSelected( true );
-                _showAll.setSelected( false );
-                updatePlotLocations();
-            }
-        } );
-        _showMenu.add( _showLatest );
-        _showAll = new JCheckBoxMenuItem( "All" );
+        _showAll = new JCheckBoxMenuItem( "All Accumulation Periods" );
         _showAll.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
                 _showLatest.setSelected( false );
                 _showAll.setSelected( true );
+                _showHistory.setSelected( false );
                 updatePlotLocations();
             }
         } );
         _showAll.setSelected( true );
-        _showLatest.setSelected( false );
         _showMenu.add( _showAll );
+        _showLatest = new JCheckBoxMenuItem( "Latest Only" );
+        _showLatest.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                _showLatest.setSelected( true );
+                _showAll.setSelected( false );
+                _showHistory.setSelected( false );
+                updatePlotLocations();
+            }
+        } );
+        _showLatest.setSelected( false );
+        _showMenu.add( _showLatest );
+        _showHistory = new JCheckBoxMenuItem( "History" );
+        _showHistory.setToolTipText( "The mousewheel will step through the time sequence of collected data.  Applies to the summary as well." );
+        _showHistory.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                _showLatest.setSelected( false );
+                _showAll.setSelected( false );
+                _showHistory.setSelected( true );
+                updatePlotLocations();
+            }
+        } );
+        _showHistory.setSelected( false );
+        _showMenu.add( _showHistory );
+        _showSummary = new JCheckBoxMenuItem( "Summary" );
+        _showSummary.setToolTipText( "Show plots displaying averages across channels and time." );
+        _showSummary.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                updatePlotLocations();
+            }
+        } );
+        _showSummary.setSelected( false );
+        _showMenu.add( _showSummary );
         _showMenu.add( new JSeparator() );
         _showPhase = new JCheckBoxMenuItem( "Phase" );
         _showPhase.setSelected( true );
@@ -334,14 +381,26 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
             }
         } );
         _showMenu.add( _showAmp );
-        _showLag = new JCheckBoxMenuItem( "Delay" );
+        _showLag = new JCheckBoxMenuItem( "Lag (Visibilities FFT)" );
         _showLag.setSelected( true );
         _showLag.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
+                if ( _showLag.isSelected() )
+                    _showDelay.setEnabled( true );
+                else
+                    _showDelay.setEnabled( false );
                 updatePlotLocations();
             }
         } );
         _showMenu.add( _showLag );
+        _showDelay = new JCheckBoxMenuItem( "Delay Value" );
+        _showDelay.setSelected( true );
+        _showDelay.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                updatePlotLocations();
+            }
+        } );
+        _showMenu.add( _showDelay );
         
         _allObjectsBuilt = true;
         newSize();
@@ -412,7 +471,10 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
             _inputFileLabel.setBounds( 10, 30, 100, 25 );
             _automaticallyResize = true;
             setControlObjectSizes();
-            _messages.setBounds( 0, 20, w, _messagePanel.getHeight() - 23 );
+            if ( _scrollPane.scrollBarVisible() )
+                _messages.setBounds( 0, 20, w - 20, _messagePanel.getHeight() - 23 );
+            else
+                _messages.setBounds( 0, 20, w, _messagePanel.getHeight() - 23 );
             if ( h - _connectionPanel.getHeight() - _dataPanel.getHeight() < 0 )
                 _plotPanel.openHeight( 0 );
             else
@@ -478,7 +540,7 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
             _socket = new Socket( _settings.difxMonitorHost(), _usingPort );
             _socket.setSoTimeout( _settings.timeout() );
             if ( _socket.isConnected() ) {
-                _in = new DataInputStream( _socket.getInputStream() );
+                _in = new ExtendedDataInputStream( _socket.getInputStream() );
                 _out = new DataOutputStream( _socket.getOutputStream() );
                 //  Read the connection status message from the server.  This should match
                 //  the "no error" message.
@@ -749,7 +811,7 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
                             double xVals[] = new double[nChannels];
                             double yVals[] = new double[nChannels];
                             for ( int i = 0; i < nChannels; ++i ) {
-                                double amp = _in.readDouble();                           
+                                double amp = _in.readStringDouble();                           
                                 xVals[i] = x;
                                 yVals[i] = amp;
                                 x += 1.0;
@@ -771,7 +833,7 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
                             double xVals[] = new double[nChannels];
                             double yVals[] = new double[nChannels];
                             for ( int i = 0; i < nChannels; ++i ) {
-                                double phase = _in.readDouble();                           
+                                double phase = _in.readStringDouble();                           
                                 xVals[i] = x;
                                 yVals[i] = phase;
                                 x += 1.0;
@@ -817,20 +879,23 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
                             int timeStamp = _in.readInt();
                             //  Create a new plot to hold these data.
                             IncPlot newPlot = new IncPlot( iProduct, nChannels, timeStamp );
+                            newPlot.maxChannel = _in.readInt();
+                            newPlot.delay = _in.readStringDouble();
+                            newPlot.snr = _in.readStringDouble();
                             double x = (double)(-nChannels);
                             Double maxVal = null;
                             Double minVal = null;
                             double xVals[] = new double[2 * nChannels];
                             double yVals[] = new double[2 * nChannels];
                             for ( int i = 0; i < 2 * nChannels; ++i ) {
-                                double lag = _in.readDouble();                           
+                                double lag = _in.readStringDouble();                           
                                 if ( maxVal == null || lag > maxVal )
                                     maxVal = lag;
                                 if ( minVal == null || lag < minVal )
                                     minVal = lag;
                                 xVals[i] = x;
                                 yVals[i] = lag;
-                                x += 1.0;
+                                x += 1.0;     
                             }
                             newPlot.curve( xVals, yVals );
                             newPlot.min = minVal;
@@ -975,11 +1040,19 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
                         thisPlot.addLabels( Plot2DObject.Y_AXIS, null, lagMax, stepSize,
                                 Color.BLUE, null, -5.0, -10.0,
                                 Plot2DObject.RIGHT_JUSTIFY, null, false, false );
-                        thisPlot.yTitle( "Delay", Plot2DObject.CENTER_JUSTIFY );
+                        thisPlot.yTitle( "Lag", Plot2DObject.CENTER_JUSTIFY );
                         thisPlot.yTitleXPos( -60, false );
                         thisPlot.yTitleYPos( -0.5 * ( lagMax - useMin ) / ( useMax - useMin ), true );
                         thisPlot.yTitleRotate( -Math.PI / 2.0 );
                         thisPlot.yTitleColor( Color.BLUE, true );
+                        if ( _showDelay.isSelected() ) {
+                            thisPlot.addLabels( Plot2DObject.X_AXIS, (double)(incPlot.maxChannel),
+                                    (double)(incPlot.maxChannel) + .1, 1.0, Color.MAGENTA, 
+                                    new String( "  delay = " + incPlot.delay ),
+                                    ySize, 0.0, Plot2DObject.LEFT_JUSTIFY,
+                                    useMax, false, 
+                                    false );
+                        }
                     }
                 }
                 //  Amplitude plots...
@@ -1097,6 +1170,7 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
                         IncPlot incPlot = pIter.next();
                         Plot2DObject thisPlot = incPlot.plot;
                         thisPlot.deleteLabels();
+                        thisPlot.deleteTitles();
                         thisPlot.clearExtraItems();
                         double useMin = incPlot.min;
                         double useMax = incPlot.max;
@@ -1147,7 +1221,7 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
                             xStart += xStep;
                             thisPlot.resizeBasedOnWindow( _plotWindow.getWidth(), _plotWindow.getHeight() );
                             thisPlot.deleteLabels();
-                            thisPlot.yTitle( "" );
+                            thisPlot.deleteTitles();
                             _plotWindow.add2DPlot( thisPlot );
                             incPlot.curve.color( Color.RED );
                             thisPlot.drawBackground( false );
@@ -1191,6 +1265,7 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
                             thisPlot.frame( xStart, yStart, xSize, ySize );
                             thisPlot.resizeBasedOnWindow( _plotWindow.getWidth(), _plotWindow.getHeight() );
                             thisPlot.deleteLabels();
+                            thisPlot.deleteTitles();
                             _plotWindow.add2DPlot( thisPlot );
                             incPlot.track.color( Color.BLACK );
                             thisPlot.drawBackground( false );
@@ -1263,11 +1338,11 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
             DrawObject newObject = thisPlot.newExtraItem( xPos, Plot2DObject.ExtraItem.BY_FRAME, 
                     0.0, Plot2DObject.ExtraItem.BY_FRAME );
             newObject.complexText( DrawObject.LEFT_JUSTIFY,
-                    "<y=1>" + product.baseline.telescope1 + "-" + product.baseline.telescope2 );
+                    " <y=1>" + product.baseline.telescope1 + "-" + product.baseline.telescope2 );
             newObject = thisPlot.newExtraItem( xPos, Plot2DObject.ExtraItem.BY_FRAME, 
                     0.0, Plot2DObject.ExtraItem.BY_FRAME );
             newObject.complexText( DrawObject.LEFT_JUSTIFY,
-                    "<y=2>" + product.frequency + " MHz\n" );
+                    " <y=2>" + product.frequency + " MHz\n" );
         }
     }
     
@@ -1755,7 +1830,7 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
     protected DataTransferMonitorThread _dataTransferMonitorThread;
     protected Socket _socket;
     protected boolean _connected;
-    protected DataInputStream _in;
+    protected ExtendedDataInputStream _in;
     protected DataOutputStream _out;
     protected ConnectionThread _connectionThread;
     protected JComboBox _inputFileComboBox;
@@ -1844,6 +1919,9 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
         public int iProduct;
         public double min;
         public double max;
+        public double delay;
+        public double snr;
+        public int maxChannel;
     }
     protected class ProductPlots {
         public ProductPlots( int newIndex ) {
@@ -1881,8 +1959,29 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
     JPopupMenu _showMenu;
     JCheckBoxMenuItem _showLatest;
     JCheckBoxMenuItem _showAll;
+    JCheckBoxMenuItem _showSummary;
+    JCheckBoxMenuItem _showHistory;
     JCheckBoxMenuItem _showAmp;
     JCheckBoxMenuItem _showPhase;
     JCheckBoxMenuItem _showLag;
+    JCheckBoxMenuItem _showDelay;
+    
+    JFileChooser _fileChooser;
+    
+    public class ExtendedDataInputStream extends DataInputStream {
+        public ExtendedDataInputStream( InputStream in ) {
+            super( in );
+        }
+        public double readStringDouble() {
+            byte [] data = new byte[14];
+            try {
+                readFully( data );
+                return Double.parseDouble( new String( data ) );
+            } 
+            catch ( java.io.IOException e ) {
+                return 0.0;
+            }
+        }
+    }
     
 }

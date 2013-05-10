@@ -55,6 +55,7 @@ import mil.navy.usno.widgetlib.NumberBox;
 import mil.navy.usno.widgetlib.BrowserNode;
 import mil.navy.usno.widgetlib.SimpleTextEditor;
 import mil.navy.usno.widgetlib.MessageDisplayPanel;
+import mil.navy.usno.widgetlib.JulianCalendar;
 
 public class JobEditorMonitor extends JFrame {
     
@@ -69,7 +70,7 @@ public class JobEditorMonitor extends JFrame {
         this.setLayout( null );
         this.setBounds( 500, 100, _settings.windowConfiguration().jobEditorMonitorWindowW,
                 _settings.windowConfiguration().jobEditorMonitorWindowH );
-        this.setTitle( "Control/Monitor for " + _jobNode.name() );
+        this.setTitle( "Controls for " + _jobNode.name() );
         _menuBar = new JMenuBar();
         _menuBar.setVisible( true );
         JMenu helpMenu = new JMenu( "  Help  " );
@@ -77,7 +78,7 @@ public class JobEditorMonitor extends JFrame {
         JMenuItem controlHelpItem = new JMenuItem( "Control/Monitor Help" );
         controlHelpItem.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
-                _settings.launchGUIHelp( "Control_Monitor_Window.html" );
+                _settings.launchGUIHelp( "Job_Control_Window.html" );
             }
         } );
         helpMenu.add( controlHelpItem );
@@ -444,7 +445,7 @@ public class JobEditorMonitor extends JFrame {
         restartSecondsLabel.setHorizontalAlignment( JLabel.LEFT );
         runControlPanel.add( restartSecondsLabel );
         _showMonitorButton = new JButton( "Show Monitor" );
-        _showMonitorButton.setToolTipText( "Launch real-time fringe monitoring for this job." );
+        _showMonitorButton.setToolTipText( "Launch real-time monitoring for this job." );
         _showMonitorButton.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
                 showLiveMonitor();
@@ -452,7 +453,7 @@ public class JobEditorMonitor extends JFrame {
         } );
         runControlPanel.add( _showMonitorButton );
         _runMonitor = new JCheckBox( "Run With Monitor" );
-        _runMonitor.setToolTipText( "Run the background monitoring software required for fringe monitoring." );
+        _runMonitor.setToolTipText( "Run the background software required for real-time monitoring." );
         _runMonitor.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
                 if ( _runMonitor.isSelected() )
@@ -1047,6 +1048,9 @@ public class JobEditorMonitor extends JFrame {
      * instruction is more of a "set and forget" kind of operation.
      */
     public void startJob() {
+        _startTime = new JulianCalendar();
+        _startTime.setTime( new Date() );
+        _jobNode.correlationStart( _startTime.mjd() );
         _jobNode.running( true );
         setState( "Initializing", Color.YELLOW );
         setProgress( 0 );
@@ -1365,6 +1369,10 @@ public class JobEditorMonitor extends JFrame {
             try { Thread.sleep( 1000 ); } catch ( Exception e ) {}
             _jobNode.running( false );
             _settings.releaseTransferPort( _port );
+            JulianCalendar endTime = new JulianCalendar();
+            endTime.setTime( new Date() );
+            _jobNode.correlationEnd( endTime.mjd() );
+            _jobNode.correlationTime( 24.0 * 3600.0 * ( endTime.mjd() - _startTime.mjd() ) );
         }
         
         protected int _port;
@@ -1396,6 +1404,13 @@ public class JobEditorMonitor extends JFrame {
     //  processes on different nodes.
     public void consumeMessage( DifxMessage difxMsg ) {
         
+        //  Update the correlation time, since its obviously still running.
+        if ( !_jobNode.lockState() ) {
+            JulianCalendar thisTime = new JulianCalendar();
+            thisTime.setTime( new Date() );
+            _jobNode.correlationTime( 24.0 * 3600.0 * ( thisTime.mjd() - _startTime.mjd() ) );
+        }
+
         //  See what kind of message this is...try status first.
         if ( difxMsg.getBody().getDifxStatus() != null ) {
             if ( difxMsg.getBody().getDifxStatus().getVisibilityMJD() != null &&
@@ -2432,5 +2447,6 @@ public class JobEditorMonitor extends JFrame {
     //protected Vector<String> _dataSources;
     
     protected InputFileParser _inputFile;
+    protected JulianCalendar _startTime;
     
 }

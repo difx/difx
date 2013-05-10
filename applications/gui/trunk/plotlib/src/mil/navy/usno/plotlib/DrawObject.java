@@ -35,6 +35,7 @@ import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.awt.geom.Point2D;
 import java.awt.geom.AffineTransform;
+import java.awt.geom.PathIterator;
 import java.io.IOException;
 
 /*
@@ -136,7 +137,7 @@ public class DrawObject extends ArrayDeque<DrawObject> {
         synchronized( this ) {
                 
             //  Zero the offsets, if there are any.
-            if ( offsets!= null ) {
+            if ( offsets != null ) {
                 offsets[0] = 0.0;
                 offsets[1] = 0.0;
             }
@@ -158,10 +159,10 @@ public class DrawObject extends ArrayDeque<DrawObject> {
             if ( _scaleSet )
                 _drawGraphics.scale( _xScale, _yScale );
             if ( _unscaled ) {
-                System.out.println( "before: " + _drawGraphics.getTransform() );
+                //System.out.println( "before: " + _drawGraphics.getTransform() );
                 _drawGraphics.scale( 1.0 / _drawGraphics.getTransform().getScaleX(),
                         1.0 / _drawGraphics.getTransform().getScaleY() );
-                System.out.println( "after:  " + _drawGraphics.getTransform() );
+                //System.out.println( "after:  " + _drawGraphics.getTransform() );
             }
             if ( _translateSet )
                 _drawGraphics.translate( _xOff, _yOff );
@@ -406,6 +407,399 @@ public class DrawObject extends ArrayDeque<DrawObject> {
 
     }
     
+    //--------------------------------------------------------------------------
+    //! Draw this object and associated children using PostScript commands.
+    //! These commands are added to the given String.
+    //--------------------------------------------------------------------------
+    public String postScriptDraw( PrintParameters printParameters,
+            GeneralPath currentPath, boolean useOffset, boolean measureOnly ) {
+        
+        String str = new String( "" );
+        
+        synchronized( this ) {
+            
+            //  Empty objects that don't have children are a waste of time.
+            if ( type == EMPTY && this.size() == 0 )
+                return str;
+                
+            //  Zero the offset if we are using it.  
+            if ( useOffset ) {
+                str += "0\n";
+            }
+
+            //  Bail out immediately if this is not a visible object.
+            if ( !_visible )
+                return str;;
+
+            //  If we are going to change any settings, push the current graphics state.
+            if ( _scaleSet | _translateSet | _rotateSet | _fontSet | _clipSet | 
+                    _colorSet | type == COMPLEX_TEXT | _fontBold | _fontItalic | _unscaled )
+                str += "s\n";
+
+            //  Apply characteristics changes to the new graphics context.
+            if ( _scaleSet )
+                str += _xScale + " " + _yScale + " y scale\n";
+            if ( _unscaled ) {
+                //  This is going to be icky...find the current scale and scale by the inverse of it.
+                //System.out.println( "before: " + _drawGraphics.getTransform() );
+                //_drawGraphics.scale( 1.0 / _drawGraphics.getTransform().getScaleX(),
+                //        1.0 / _drawGraphics.getTransform().getScaleY() );
+                //System.out.println( "after:  " + _drawGraphics.getTransform() );
+            }
+            if ( _translateSet )
+                str += _xOff + " " + _yOff + " t\n";
+            if ( _rotateSet )
+                str += -180.0 * _rotate / Math.PI + " rotate\n";
+            if ( _colorSet ) {
+                //if ( _color != null ) {
+                    double r = (double)_color.getRed() / 255.0;
+                    double g = (double)_color.getGreen() / 255.0;
+                    double b = (double)_color.getBlue() / 255.0;
+                    str += r + " " + g + " " + b + " setrgbcolor\n";
+                //}
+            }
+            if ( _clipSet ) {
+                Rectangle2D r = _clipShape.getBounds2D();
+                str += "newpath\n";
+                str += r.getX() + " " + r.getY() + " m\n";
+                str += r.getX() + r.getWidth() + " " + r.getY() + " l\n";
+                str += r.getX() + r.getWidth() + " " + ( r.getY() + r.getHeight() ) + " l\n";
+                str += r.getX() + " " + ( r.getY() + r.getHeight() ) + " l\n";
+                str += "closepath clip\n";
+            }
+            if ( _fontSet ) {
+                //  Interpret the font name...
+                
+                int fontStyle = 0;
+                if ( _fontBold )
+                    fontStyle |= Font.BOLD;
+                if ( _fontItalic )
+                    fontStyle |= Font.ITALIC;
+            }
+            else if ( _fontBold || _fontItalic || _fontScale != null || _fontName != null | _fontY != null ) {
+                //  If the entire font wasn't set, check for settings of individual
+                //  font characteristics
+                //  This is a tricky one...
+//                Font oldFont = _drawGraphics.getFont();
+//                String font = oldFont.getName();
+//                if ( _fontName != null )
+//                    font = _fontName;
+//                double fontSize = (double)oldFont.getSize();
+//                if ( _fontScale != null )
+//                    fontSize *= _fontScale.doubleValue();
+//                int fontStyle = 0;
+//                if ( oldFont.isBold() || _fontBold )
+//                    fontStyle |= Font.BOLD;
+//                if ( oldFont.isItalic() || _fontItalic )
+//                    fontStyle |= Font.ITALIC;
+//                _drawGraphics.setFont( new Font( font, fontStyle, (int)fontSize ) );
+                if ( _fontY != null ) {
+                    if ( currentPath == null || currentPath.getCurrentPoint() == null )
+                        str += "newpath 0 0 m\n";
+                    //else
+                        str += "0 " + printParameters.fontSize * _fontY.doubleValue() + " rm\n";
+                }
+            }
+            if ( _lineWidthSet ) {
+                str += _lineWidth + " setlinewidth\n";
+            }
+            if ( _lineCapSet ) {
+                switch ( _lineCap ) {
+                case CAP_FLAT:
+                    str += "0 setlinecap\n";
+                    break;
+                case CAP_ROUND:
+                    str += "1 setlinecap\n";
+                    break;
+                case CAP_SQUARE:
+                    str += "2 setlinecap\n";
+                    break;
+                }
+            }
+            if ( _lineJoinSet ) {
+                switch ( _lineJoin ) {
+                case JOIN_FLAT:
+                    str += "0 setlinejoin\n";
+                    break;
+                case JOIN_ROUND:
+                    str += "1 setlinejoin\n";
+                    break;
+                case JOIN_BEVEL:
+                    str += "2 setlinejoin\n";
+                    break;
+                }
+            }
+            if ( _lineStyleSet ) {
+                if ( _lineStyle == null )
+                    str += "[] 0 setdash\n";
+                else {
+                    double lineWidth = 1.0;
+                    if ( _lineWidthSet )
+                        lineWidth = _lineWidth;
+                    str += "[";
+                    for ( int i = 0; i < _lineStyle.length; ++i )
+                        str += lineWidth * _lineStyle[i] + " ";
+                    str += "] 0 setdash\n";
+                }
+            }
+
+            //  This is where we actually do the drawing for this object.  What we
+            //  draw depends on the object type.
+            switch ( type ) {
+
+                //  An EMPTY object draws nothing.  It can be used as a parent object
+                //  for holding a tree of descendents, and may optionally change
+                //  settings for those descendents.
+                case EMPTY:
+                default:
+                    break;
+
+                //  A TEXT object draws a string at a particular position (the
+                //  position is the lower left corner).  It can be centered,
+                //  left justified or right justified (left by default).
+                case TEXT:
+                    //  Draw if we are drawing...
+                    if ( !measureOnly )
+                        str += _x1 + " " + _y1 + " m (" + textString + ") show\n";
+                    //  Measure if we are measuring.  Pop off the existing offset and put this new offset
+                    //  in its place.
+                    if ( useOffset )
+                        str += "pop (" + textString + ") stringwidth pop\n";
+                    break;
+                    
+                //  This text function draws text at the "current point", which may
+                //  be set by "vertex".  If there is no current point, the text is put
+                //  at 0, 0.
+                case FLOATING_TEXT:
+                    //  Draw using the current point if it exists, 0,0 if not.
+                    if ( !measureOnly ) {
+                        str += "(" + textString + ") show\n";
+                    }
+                    //  Measure the width like a normal string
+                    if ( useOffset )
+                        str += "pop (" + textString + ") stringwidth pop\n";
+                    break;
+
+                //  A COMPLEX_TEXT object simply measures and justifies child objects
+                //  (which are often text, but don't need to be).  It then manipulates
+                //  the offsets of those objects to ensure they are drawn according
+                //  to the justification instructions.
+                case COMPLEX_TEXT:
+                    //  Translate our position if this is "floating" text.
+                    if ( _floatingText && currentPath != null ) {
+                        str += currentPath.getCurrentPoint().getX() + " " + currentPath.getCurrentPoint().getY() + " t\n";
+                    }
+                    //  Put zero values for "total" and "new" width on the stack.
+                    str += "0 0\n";
+                    for ( Iterator<DrawObject> iter = this.iterator(); iter.hasNext(); ) {
+                        DrawObject thisObject = iter.next();
+                        //  Translate this object based on the size of the previous object
+                        //  (the "new" width, which might be zero).
+                        str += "0 t\n";
+                        //  This does the measuring...(note the use of "true" for measureOnly).
+                        //  It will put the width of the child object on the stack.
+                        str += thisObject.postScriptDraw( printParameters, currentPath, true, true );
+                        //  We want the total width and the new width on the stack.
+                        //  The total must include the new width.  Currently we have the old
+                        //  total (T), then the new width (N)..i.e. T, N.  We want T+N, N.  First,
+                        //  duplicate N, giving us T,N,N.
+                        str += "dup\n";
+                        //  "Roll" the stack by 3 to give use N, N, T.
+                        str += "3 1 roll\n";
+                        //  Perform and add to get N, N+T and then an exchange to get T+N, N.
+                        str += "add exch\n";
+                    }
+                    //  Pop the last "new" width off the stack as we don't need it anymore.
+                    str += "pop\n";
+                    //  Change our current translation to match the justification using the total
+                    //  offset.
+                    if ( _justify == this.RIGHT_JUSTIFY )
+                        str += "-1 mul 0 t\n";
+                    else if ( _justify == this.CENTER_JUSTIFY )
+                        str += "-0.5 mul 0 t\n";
+                    //  Create a new current path.  We use the current path to locate text.
+                    currentPath = new GeneralPath();
+                    currentPath.moveTo( 0.0, 0.0 );
+                    str += "newpath\n";
+                    str += "0 0 m\n";
+                    break;
+
+                //  Many of the "draw" objects simply draw a pre-specified shape.
+                case DRAWRECT:
+                    if ( _shape != null ) {
+                        str += "newpath\n";
+                        int count = 0;
+                        for ( PathIterator iter = _shape.getPathIterator( null ); !iter.isDone(); iter.next() ) {
+                            double[] doubles = new double[2];
+                            switch ( iter.currentSegment( doubles ) ) {
+                                case PathIterator.SEG_MOVETO:
+                                    str += doubles[0] + " " + doubles[1] + " m\n";
+                                    break;
+                                case PathIterator.SEG_LINETO:
+                                    if ( count == 0 )
+                                        str += doubles[0] + " " + doubles[1] + " m\n";
+                                    else
+                                        str += doubles[0] + " " + doubles[1] + " l\n";
+                                    break;
+                                case PathIterator.SEG_CLOSE:
+                                    str += "closepath\n";
+                                    break;
+                            }
+                            ++count;
+                        }
+                        str += "stroke\n";
+                    }
+                    break;
+                case DRAWLINE:
+                case DRAWPOLY:
+                    if ( _shape != null ) {
+                        str += "newpath\n";
+                        int count = 0;
+                        for ( PathIterator iter = _shape.getPathIterator( null ); !iter.isDone(); iter.next() ) {
+                            double[] doubles = new double[2];
+                            switch ( iter.currentSegment( doubles ) ) {
+                                case PathIterator.SEG_MOVETO:
+                                    str += doubles[0] + " " + doubles[1] + " m\n";
+                                    break;
+                                case PathIterator.SEG_LINETO:
+                                    if ( count == 0 )
+                                        str += doubles[0] + " " + doubles[1] + " m\n";
+                                    else
+                                        str += doubles[0] + " " + doubles[1] + " l\n";
+                                    break;
+                                case PathIterator.SEG_CLOSE:
+                                    str += doubles[0] + " " + doubles[1] + " l closepath\n";
+                                    break;
+                            }
+                            ++count;
+                        }
+                        str += "stroke\n";
+                    }
+                    break;
+
+                //  Fill the pre-specified shape.
+                case FILLRECT:
+                case FILLPOLY:
+                    if ( _shape != null ) {
+                        str += "newpath\n";
+                        int count = 0;
+                        for ( PathIterator iter = _shape.getPathIterator( null ); !iter.isDone(); iter.next() ) {
+                            double[] doubles = new double[2];
+                            switch ( iter.currentSegment( doubles ) ) {
+                                case PathIterator.SEG_MOVETO:
+                                    str += doubles[0] + " " + doubles[1] + " m\n";
+                                    break;
+                                case PathIterator.SEG_LINETO:
+                                    if ( count == 0 )
+                                        str += doubles[0] + " " + doubles[1] + " m\n";
+                                    else
+                                        str += doubles[0] + " " + doubles[1] + " l\n";
+                                    break;
+                                case PathIterator.SEG_CLOSE:
+                                    str += doubles[0] + " " + doubles[1] + " l closepath\n";
+                                    break;
+                            }
+                            ++count;
+                        }
+                        str += "fill\n";
+                    }
+                    break;
+
+                //  Start a completely new path.
+                case NEWPATH:
+                    currentPath = new GeneralPath();
+                    str += "newpath\n";
+                    break;
+
+                //  Draw a line through the current path.
+                case STROKEPATH:
+                    if ( currentPath != null )
+                        str += "stroke\n";
+                    break;
+
+                //  Fill the current path.
+                case FILLPATH:
+                    if ( currentPath != null )
+                        str += "fill\n";
+                    break;
+
+                //  Close the current path.
+                case CLOSEPATH:
+                    if ( currentPath != null )
+                        str += "closepath\n";
+                    break;
+
+                //  Force the start of a new path at the given point.
+                case STARTPATH:
+                    currentPath = new GeneralPath();
+                    currentPath.moveTo( _x1, _y1 );
+                    str += "newpath\n";
+                    str += _x1 + " " + _y1 + " m\n";
+                    break;
+                    
+                //  Add a vertex to the current path.  If there is no current path,
+                //  start one.
+                case VERTEX:
+                    if ( currentPath == null ) {
+                        str += "newpath\n";
+                        currentPath = new GeneralPath();
+                    }
+                    if ( currentPath.getCurrentPoint() == null ) {
+                        currentPath.moveTo( _x1, _y1 );
+                        str += _x1 + " " + _y1 + " m\n";
+                    }
+                    else {
+                        currentPath.lineTo( _x1, _y1 );
+                        str += _x1 + " " + _y1 + " l\n";
+                    }
+                    break;
+                    
+                //  Add a vertex to the current path that has a position relative
+                //  to the existing path (if there is one).
+                case RELATIVE_VERTEX:
+                    if ( currentPath == null )
+                        currentPath = new GeneralPath();
+                    if ( currentPath.getCurrentPoint() == null )
+                        currentPath.moveTo( _x1, _y1 );
+                    else
+                        currentPath.lineTo( currentPath.getCurrentPoint().getX() + _x1,
+                                currentPath.getCurrentPoint().getY() + _y1 );
+                    break;
+
+                //  Add a curve to the current path.  This will only work if there
+                //  is a current path.
+                case CURVE:
+                    if ( currentPath != null && currentPath.getCurrentPoint() != null )
+                        currentPath.curveTo( _x1, _y1, _x2, _y2, _x3, _y3 );
+                    break;
+
+                case DRAWIMAGE:
+                    _drawGraphics.drawRenderedImage( _image, _drawGraphics.getTransform().getTranslateInstance( _x1, _y1 ) );
+            }
+
+            //  Draw all children of this object.
+            for ( Iterator<DrawObject> iter = this.iterator(); iter.hasNext(); ) {
+                if ( useOffset ) {
+                    double newOffsets[] = new double[2];
+                    str += iter.next().postScriptDraw( printParameters, currentPath, useOffset, measureOnly );
+                    str += "add\n";
+                }
+                else
+                    str += iter.next().postScriptDraw( printParameters, currentPath, false, measureOnly );
+            }
+            
+            //  If we created a new graphics state to make changes, restore the old.
+            if ( _scaleSet | _translateSet | _rotateSet | _fontSet | _clipSet | 
+                    _colorSet | type == COMPLEX_TEXT | _fontBold | _fontItalic | _unscaled )
+                str += "r\n";
+            
+
+        }
+        
+        return str;
+
+    }
+    
     public void scale( double newXScale, double newYScale ) {
         synchronized( this ) {
             _xScale = newXScale;
@@ -523,8 +917,10 @@ public class DrawObject extends ArrayDeque<DrawObject> {
     }
     public void color( Color newColor ) {
         synchronized( this ) {
-            _color = newColor;
-            _colorSet = true;
+            if ( newColor != null ) {
+                _color = newColor;
+                _colorSet = true;
+            }
         }
     }
     public Color color() {
@@ -1047,17 +1443,26 @@ public class DrawObject extends ArrayDeque<DrawObject> {
                 thisObject.color( new Color( Integer.decode( text.substring( equalPos + 1, commandLen - 1 ).trim() ).intValue() ) );
             }
             //  Add the text as a child object
+//            System.out.println( commandLen + "  " + endIdx + ": " + text.substring( commandLen, endIdx ) );
             thisObject.add( stringToTextObject( text.substring( commandLen, endIdx ) ) );
             return thisObject;
         }
-        //  If the above is not true, we want to break our text into two parts...
+        //  If the above is not true, we want to break our text into two parts.
+        //  First, make sure we don't have an un-terminated command (one without a </>).
+        int stopIdx = endIdx + terminalLen;
+        if ( endIdx == -1 ) {
+            stopIdx = parseIdx + commandLen;
+        }
         //  the text before the command (which should be plain text):
+//        System.out.println( text.substring( 0, parseIdx ) );
+//        System.out.println( text.substring( parseIdx, stopIdx ) );
+//        System.out.println( text.substring( stopIdx, text.length() ) );
         if ( parseIdx != 0 )
             thisObject.add( stringToTextObject( text.substring( 0, parseIdx ) ) );
         //  The stuff inside the command:
-        thisObject.add( stringToTextObject( text.substring( parseIdx, endIdx + terminalLen ) ) );
+        thisObject.add( stringToTextObject( text.substring( parseIdx, stopIdx ) ) );
         //  And the stuff after the command:
-        thisObject.add( stringToTextObject( text.substring( endIdx + terminalLen, text.length() ) ) );
+        thisObject.add( stringToTextObject( text.substring( stopIdx, text.length() ) ) );
         //System.out.println( "don't know what to do: \"" + text + "\"" );
         return thisObject;
     }
@@ -1199,5 +1604,9 @@ public class DrawObject extends ArrayDeque<DrawObject> {
     
     double drawfontSize;
     Graphics2D _drawGraphics;
+    
+    static public class PrintParameters {
+        public double fontSize;
+    }
     
 }

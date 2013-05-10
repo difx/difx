@@ -10,6 +10,8 @@ import java.awt.Color;
 import java.util.Iterator;
 import java.util.ArrayDeque;
 import java.awt.Font;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 
 /**
  *
@@ -22,6 +24,7 @@ public class Plot2DObject extends DrawObject {
      * components.
      */
     public Plot2DObject() {
+        labelHint( 9 );
         //  The background is a solid color field behind the plot.  By default
         //  it is white.
         _background = new DrawObject();
@@ -266,191 +269,262 @@ public class Plot2DObject extends DrawObject {
      */
     public void relabel() {
         _labelHolder.clear();
-        for ( Iterator<LabelStructure> iter = _labelInformation.iterator(); iter.hasNext(); ) {
-            LabelStructure label = iter.next();
-            //  Create new objects representing tic marks and labels along the proper
-            //  axis accounting for all specifications.
-            if ( label.axis == X_AXIS ) {
-                //  Where on the Y-axis do we draw these tic marks and labels?
-                double crossValue = _yLow;
-                if ( label.crossValue != null )
-                    crossValue = label.crossValue.doubleValue();
-                //  Only draw labels if the "crossValue" is on the plot or if we are supposed to
-                //  "always draw".
-                if ( label.plotAlways || ( crossValue >= _yLow && crossValue <= _yHigh ) ) {
-                    //  Draw a line parallel to the X-axis at the "crossValue" if this
-                    //  has been requested.
-                    if ( label.drawScale ) {
-                        double x[] = new double[2];
-                        double y[] = new double[2];
-                        x[0] = _xLow;
-                        x[1] = _xHigh;
-                        y[0] = crossValue;
-                        y[1] = crossValue;
-                        Curve2D newObject = new Curve2D( x, y );
-                        newObject.color( label.color );
-                        _labelHolder.add( newObject );
-                    }
-                    //  Find the low and high limits on where these labels will be drawn.
-                    //  If the user has not specified, use defaults.
-                    double low = _xLow;
-                    double high = _xHigh;
-                    if ( low > high ) {
-                        double tmp = low;
-                        low = high;
-                        high = tmp;
-                    }
-                    //  This is the "default" start value for labels.  It depends
-                    //  on the label step, if available.
-                    double startVal = low;
-                    if ( label.step != null )
-                        startVal = label.step * (double)((int)(low/label.step));
-                    //  Set what the user wants if specified.
-                    if ( label.start != null )
-                        startVal = label.start;
-                    //  This is the "default" end value for labels.
-                    double stopVal = high;
-                    if ( label.stop != null )
-                        stopVal = label.stop;
-                    //  Try to set the (default) step value based on the start and stop value.  This will get
-                    //  all messed up if all three (start, stop, step) are null.  FIX THIS!!!
-                    double stepVal = stepSize( stopVal - startVal, 3.0, 10.0 );
-                    if ( label.step != null )
-                        stepVal = label.step;
-                    //  Prevent endless loop - shouldn't happen unless the user does something odd
-                    if ( stepVal == 0.0 )
-                        stepVal = 2 * ( stopVal - startVal );
-                    for ( double val = startVal; val <= stopVal; val += stepVal ) {
-                        //  This draws the tic mark, assuming there is one.
-                        if ( label.ticSize != null ) {
+        try {
+            for ( Iterator<LabelStructure> iter = _labelInformation.iterator(); iter.hasNext(); ) {
+                LabelStructure label = iter.next();
+                //  Create new objects representing tic marks and labels along the proper
+                //  axis accounting for all specifications.
+                if ( label.axis == X_AXIS ) {
+                    //  Where on the Y-axis do we draw these tic marks and labels?
+                    double crossValue = _yLow;
+                    if ( label.crossValue != null )
+                        crossValue = label.crossValue.doubleValue();
+                    //  Only draw labels if the "crossValue" is on the plot or if we are supposed to
+                    //  "always draw".
+                    if ( label.plotAlways || ( crossValue >= _yLow && crossValue <= _yHigh ) ) {
+                        //  Draw a line parallel to the X-axis at the "crossValue" if this
+                        //  has been requested.
+                        if ( label.drawScale ) {
+                            double x[] = new double[2];
+                            double y[] = new double[2];
+                            x[0] = _xLow;
+                            x[1] = _xHigh;
+                            y[0] = crossValue;
+                            y[1] = crossValue;
+                            Curve2D newObject = new Curve2D( x, y );
+                            newObject.color( label.color );
+                            _labelHolder.add( newObject );
+                        }
+                        //  Find the low and high limits on where these labels will be drawn.
+                        //  If the user has not specified, use defaults.
+                        double low = _xLow;
+                        double high = _xHigh;
+                        if ( low > high ) {
+                            double tmp = low;
+                            low = high;
+                            high = tmp;
+                        }
+                        //  This is the "default" start value for labels.  It depends
+                        //  on the label step, if available.
+                        double startVal = low;
+                        if ( label.step != null )
+                            startVal = label.step * (double)((int)(low/label.step));
+                        //  Set what the user wants if specified.
+                        if ( label.start != null )
+                            startVal = label.start;
+                        //  This is the "default" end value for labels.
+                        double stopVal = high;
+                        if ( label.stop != null )
+                            stopVal = label.stop;
+                        //  Try to set the (default) step value based on the start and stop value.  This will get
+                        //  all messed up if all three (start, stop, step) are null.  FIX THIS!!!
+                        double stepVal = stepSize( stopVal - startVal, 3.0, 10.0 );
+                        BigDecimal bStep = bStepSize( stopVal - startVal, 3.0, 10.0 );
+                        ////  The default value for steps is to have none (this occurs when step size is null).
+                        //double stepVal = 2 * ( stopVal - startVal );
+                        if ( label.step != null ) {
+                            stepVal = label.step;
+                            bStep = new BigDecimal( "" + label.step );
+                        }
+                        //  Prevent endless loop - shouldn't happen unless the user does something odd
+                        if ( stepVal == 0.0 ) {
+                            stepVal = 2 * ( stopVal - startVal );
+                            bStep = new BigDecimal( stepVal );
+                        }
+                        BigDecimal bVal = new BigDecimal( startVal );
+                        for ( double val = startVal; val <= stopVal; val += stepVal ) {
+                            //  This draws the tic mark, assuming there is one.
+                            if ( label.ticSize != null ) {
+                                Track2D newObject = new Track2D();
+                                newObject.add( val, crossValue );
+                                if ( label.ticSize < 1.0 && label.ticSize > -1.0 )
+                                    newObject.add( 0.0, label.ticSize * _h, Track2D.RELATIVE_POINT );
+                                else
+                                    newObject.add( 0.0, label.ticSize, Track2D.RELATIVE_POINT );
+                                newObject.color( label.color );
+                                _labelHolder.add( newObject );
+                            }
+                            //  This draws the label, assuming there is one.  Note that a "null"
+                            //  label actually means use default formatting, not that the label
+                            //  doesn't exist (unlike the tic specification above).
                             Track2D newObject = new Track2D();
                             newObject.add( val, crossValue );
-                            if ( label.ticSize < 1.0 && label.ticSize > -1.0 )
-                                newObject.add( 0.0, label.ticSize * _h, Track2D.RELATIVE_POINT );
+                            if ( label.gapSize < 1.0 && label.gapSize > -1.0 )
+                                newObject.add( 0.0, label.gapSize * _h, Track2D.RELATIVE_POINT );
                             else
-                                newObject.add( 0.0, label.ticSize, Track2D.RELATIVE_POINT );
+                                newObject.add( 0.0, label.gapSize, Track2D.RELATIVE_POINT );
+                            newObject.color( label.color );
+                            newObject.draw( false );
+                            DrawObject textObject = new DrawObject();
+                            //  Form the label based on the format.
+                            String theText = null;
+                            //  Try to fix the label if it seems ridiculous....
+                            String labelStr = "" + bVal;
+                            if ( labelStr.length() > 20 )
+                                labelStr = "" + new BigDecimal( bVal.multiply( new BigDecimal( "10000000000.0" ) ).toBigInteger().toString() ).divide( new BigDecimal( "1000000000.0" ) );
+                            if ( label.format == null ) {
+                                theText = "" + val;
+                                //  Try to fix the label if it seems ridiculous....
+                                theText = fixLabel( theText );
+                            }
+                            else {
+                                theText = String.format( label.format, val );
+                            }
+                            bVal = bVal.add( bStep );
+                            textObject.complexText( label.justification, "<y=1.0>" + theText );
+                            textObject.unscaled();
+                            newObject.add( textObject );
+                            _labelHolder.add( newObject );
+                        }
+                    }
+                }
+                //  Do the same stuff on the Y_AXIS
+                else if ( label.axis == Y_AXIS ) {
+                    //  Where on the X-axis do we draw these tic marks and labels?
+                    double crossValue = _xLow;
+                    if ( label.crossValue != null )
+                        crossValue = label.crossValue.doubleValue();
+                    //  Only draw labels if the "crossValue" is on the plot or if we are supposed to
+                    //  "always draw".
+                    if ( label.plotAlways || ( crossValue >= _xLow && crossValue <= _xHigh ) ) {
+                        //  Draw a line parallel to the X-axis at the "crossValue" if this
+                        //  has been requested.
+                        if ( label.drawScale ) {
+                            double x[] = new double[2];
+                            double y[] = new double[2];
+                            x[0] = crossValue;
+                            x[1] = crossValue;
+                            y[0] = _yLow;
+                            y[1] = _yHigh;
+                            Curve2D newObject = new Curve2D( x, y );
                             newObject.color( label.color );
                             _labelHolder.add( newObject );
                         }
-                        //  This draws the label, assuming there is one.  Note that a "null"
-                        //  label actually means use default formatting, not that the label
-                        //  doesn't exist (unlike the tic specification above).
-                        Track2D newObject = new Track2D();
-                        newObject.add( val, crossValue );
-                        if ( label.gapSize < 1.0 && label.gapSize > -1.0 )
-                            newObject.add( 0.0, label.gapSize * _h, Track2D.RELATIVE_POINT );
-                        else
-                            newObject.add( 0.0, label.gapSize, Track2D.RELATIVE_POINT );
-                        newObject.color( label.color );
-                        newObject.draw( false );
-                        DrawObject textObject = new DrawObject();
-                        //  Form the label based on the format.
-                        String theText = null;
-                        if ( label.format == null )
-                            theText = Double.toString( val );
-                        else {
-                            theText = String.format( label.format, val );
+                        //  Find the low and high limits on where these labels will be drawn.
+                        //  If the user has not specified, use defaults.
+                        double low = _yLow;
+                        double high = _yHigh;
+                        if ( low > high ) {
+                            double tmp = low;
+                            low = high;
+                            high = tmp;
                         }
-                        textObject.complexText( label.justification, "<y=1.0>" + theText );
-                        textObject.unscaled();
-                        newObject.add( textObject );
-                        _labelHolder.add( newObject );
-                    }
-                }
-            }
-            //  Do the same stuff on the Y_AXIS
-            else if ( label.axis == Y_AXIS ) {
-                //  Where on the X-axis do we draw these tic marks and labels?
-                double crossValue = _xLow;
-                if ( label.crossValue != null )
-                    crossValue = label.crossValue.doubleValue();
-                //  Only draw labels if the "crossValue" is on the plot or if we are supposed to
-                //  "always draw".
-                if ( label.plotAlways || ( crossValue >= _xLow && crossValue <= _xHigh ) ) {
-                    //  Draw a line parallel to the X-axis at the "crossValue" if this
-                    //  has been requested.
-                    if ( label.drawScale ) {
-                        double x[] = new double[2];
-                        double y[] = new double[2];
-                        x[0] = crossValue;
-                        x[1] = crossValue;
-                        y[0] = _yLow;
-                        y[1] = _yHigh;
-                        Curve2D newObject = new Curve2D( x, y );
-                        newObject.color( label.color );
-                        _labelHolder.add( newObject );
-                    }
-                    //  Find the low and high limits on where these labels will be drawn.
-                    //  If the user has not specified, use defaults.
-                    double low = _yLow;
-                    double high = _yHigh;
-                    if ( low > high ) {
-                        double tmp = low;
-                        low = high;
-                        high = tmp;
-                    }
-                    //  This is the "default" start value for labels.  It depends
-                    //  on the label step, if available.
-                    double startVal = low;
-                    if ( label.step != null )
-                        startVal = label.step * (double)((int)(low/label.step));
-                    //  Set what the user wants if specified.
-                    if ( label.start != null )
-                        startVal = label.start;
-                    //  This is the "default" end value for labels.
-                    double stopVal = high;
-                    if ( label.stop != null )
-                        stopVal = label.stop;
-                    //  Try to set the (default) step value based on the start and stop value.  This will get
-                    //  all messed up if all three (start, stop, step) are null.  FIX THIS!!!
-                    double stepVal = stepSize( stopVal - startVal, 3.0, 10.0 );
-                    ////  The default value for steps is to have none (this occurs when step size is null).
-                    //double stepVal = 2 * ( stopVal - startVal );
-                    if ( label.step != null )
-                        stepVal = label.step;
-                    //  Prevent endless loop - shouldn't happen unless the user does something odd
-                    if ( stepVal == 0.0 )
-                        stepVal = 2 * ( stopVal - startVal );
-                    for ( double val = startVal; val <= stopVal; val += stepVal ) {
-                        //  This draws the tic mark, assuming there is one.
-                        if ( label.ticSize != null ) {
+                        //  This is the "default" start value for labels.  It depends
+                        //  on the label step, if available.
+                        double startVal = low;
+                        if ( label.step != null )
+                            startVal = label.step * (double)((int)(low/label.step));
+                        //  Set what the user wants if specified.
+                        if ( label.start != null )
+                            startVal = label.start;
+                        //  This is the "default" end value for labels.
+                        double stopVal = high;
+                        if ( label.stop != null )
+                            stopVal = label.stop;
+                        //  Try to set the (default) step value based on the start and stop value.  This will get
+                        //  all messed up if all three (start, stop, step) are null.  FIX THIS!!!
+                        double stepVal = stepSize( stopVal - startVal, 3.0, 10.0 );
+                        ////  The default value for steps is to have none (this occurs when step size is null).
+                        //double stepVal = 2 * ( stopVal - startVal );
+                        if ( label.step != null ) {
+                            stepVal = label.step;
+                        }
+                        //  Prevent endless loop - shouldn't happen unless the user does something odd
+                        if ( stepVal == 0.0 ) {
+                            stepVal = 2 * ( stopVal - startVal );
+                        }
+                        for ( double val = startVal; val <= stopVal; val += stepVal ) {
+                            //  This draws the tic mark, assuming there is one.
+                            if ( label.ticSize != null ) {
+                                Track2D newObject = new Track2D();
+                                newObject.add( crossValue, val );
+                                if ( label.ticSize < 1.0 && label.ticSize > -1.0 )
+                                    newObject.add( label.ticSize * _w, 0.0, Track2D.RELATIVE_POINT );
+                                else
+                                    newObject.add( label.ticSize, 0.0, Track2D.RELATIVE_POINT );
+                                newObject.color( label.color );
+                                _labelHolder.add( newObject );
+                            }
+                            //  This draws the label, assuming there is one.  Note that a "null"
+                            //  label actually means use default formatting, not that the label
+                            //  doesn't exist (unlike the tic specification above).
                             Track2D newObject = new Track2D();
                             newObject.add( crossValue, val );
-                            if ( label.ticSize < 1.0 && label.ticSize > -1.0 )
-                                newObject.add( label.ticSize * _w, 0.0, Track2D.RELATIVE_POINT );
+                            if ( label.gapSize < 1.0 && label.gapSize > -1.0 )
+                                newObject.add( label.gapSize * _h, 0.0, Track2D.RELATIVE_POINT );
                             else
-                                newObject.add( label.ticSize, 0.0, Track2D.RELATIVE_POINT );
+                                newObject.add( label.gapSize, 0.0, Track2D.RELATIVE_POINT );
                             newObject.color( label.color );
+                            newObject.draw( false );
+                            DrawObject textObject = new DrawObject();
+                            //  Form the label based on the format.
+                            String theText = null;
+                            if ( label.format == null ) {
+                                theText = "" + val;
+                                //  Try to fix the label if it seems ridiculous....
+                                theText = fixLabel( theText );
+                            }
+                            else {
+                                theText = String.format( label.format, val );
+                            }
+                            textObject.complexText( label.justification, "<y=0.35>" + theText );
+                            textObject.unscaled();
+                            newObject.add( textObject );
                             _labelHolder.add( newObject );
                         }
-                        //  This draws the label, assuming there is one.  Note that a "null"
-                        //  label actually means use default formatting, not that the label
-                        //  doesn't exist (unlike the tic specification above).
-                        Track2D newObject = new Track2D();
-                        newObject.add( crossValue, val );
-                        if ( label.gapSize < 1.0 && label.gapSize > -1.0 )
-                            newObject.add( label.gapSize * _h, 0.0, Track2D.RELATIVE_POINT );
-                        else
-                            newObject.add( label.gapSize, 0.0, Track2D.RELATIVE_POINT );
-                        newObject.color( label.color );
-                        newObject.draw( false );
-                        DrawObject textObject = new DrawObject();
-                        //  Form the label based on the format.
-                        String theText = null;
-                        if ( label.format == null )
-                            theText = Double.toString( val );
-                        else {
-                            theText = String.format( label.format, val );
-                        }
-                        textObject.complexText( label.justification, "<y=0.35>" + theText );
-                        textObject.unscaled();
-                        newObject.add( textObject );
-                        _labelHolder.add( newObject );
                     }
                 }
-            }
-        }
+            } 
+        } catch ( java.util.ConcurrentModificationException e ) {}
         rescale();
+    }
+    
+    /*
+     * Try to trap and repair labels with ridiculous precision.  Just another necessity
+     * brought to you by Java.
+     */
+    String fixLabel( String txt ) {
+        if ( txt.length() < 10 )
+            return txt;
+        //  Locate the decimal point in the label.  Return if there is no decimal
+        //  point.
+        int dIdx = txt.indexOf( '.' );
+        if ( dIdx == -1 )
+            return txt;
+        //  See if beyond the decimal point there are a bunch of 0s, indicating a
+        //  slightly too-large value for the number used to create this string.
+        int zIdx = txt.substring( dIdx ).indexOf( "000000000" );
+        if ( zIdx != -1 ) {
+            return String.format( "%." + ( zIdx - 1 ) + "f", Double.valueOf( txt ) );
+        }
+        //  Now look for a bunch of 9s.  This is trickier - the value needs to be
+        //  adjusted.
+        int nIdx = txt.substring( dIdx ).indexOf( "999999999" );
+        if ( nIdx != -1 ) {
+            return String.format( "%." + ( nIdx - 1 ) + "f", Double.valueOf( txt ) );
+        }
+        //  Final thing - make sure we aren't really, really close to zero.
+        double tVal = Double.valueOf( txt );
+        if ( tVal < 0.0000000000000001 && tVal > -0.000000000000001 ) {
+            return "0.0";
+        }
+        //  Original string looks okay.
+        return txt;
+    }   
+    
+    /*
+     * Set the size of the label "hint".  This tells us how many digits beyond the
+     * decimal point one must go before numeric differences should be ignored.  It
+     * builds some strings and values that are used in the fixLabel() function.
+     */
+    public void labelHint( int newHint ) {
+        almostZero = 1.0 / Math.pow( 10.0, newHint );
+        labelNines = "";
+        labelZeros = "";
+        for ( int i = 0; i < newHint; ++i ) {
+            labelNines += "9";
+            labelZeros += "0";
+        }
     }
     
     /*
@@ -683,6 +757,39 @@ public class Plot2DObject extends DrawObject {
     }
 
     /*
+     * This is a "BigDecimal" version of the above function, which needs to be used if
+     * we don't want the labels to occasionally look like crap.
+     */
+    static public BigDecimal bStepSize( double delta, double minSteps, double maxSteps ) {
+        //  Bail out if the user has done something stupid.
+        if ( delta == 0.0 )
+            return new BigDecimal( "0.0" );
+        if ( minSteps >= maxSteps )
+            return new BigDecimal( "0.0" );
+        //  Find the order of the delta.
+        double delt = Math.abs( delta );
+        double logDelt = Math.log10( delt );
+        int order = (int)logDelt;
+        if ( logDelt < 0.0 )
+            order -= 1;
+        double modelStep = Math.pow( 10.0, (double)order );
+        BigDecimal bModelStep = new BigDecimal( "1.0" ).scaleByPowerOfTen( order );
+        //  Mess around with the modelStep until it is within range.
+        while ( delt / modelStep < minSteps ) {
+            modelStep /= 10.0;
+            bModelStep = bModelStep.divide( new BigDecimal( "10.0" ) );
+        }
+        while ( delt / modelStep > maxSteps ) {
+            modelStep *= 2.0;
+            bModelStep = bModelStep.multiply( new BigDecimal( "2.0" ) );
+        }
+        if ( delta < 0.0 )
+            return bModelStep.multiply( new BigDecimal( "-1.0" ) );
+        else
+            return bModelStep;
+    }
+
+    /*
      * This class holds information we need to track about user-requested grids.
      */
     protected class GridStructure {
@@ -765,6 +872,24 @@ public class Plot2DObject extends DrawObject {
     public void deleteLabels() {
         _labelInformation.clear();
         relabel();
+    }
+    
+    /*
+     * Delete different titles.
+     */
+    public void deleteTitle() {
+        _title.clear();
+    }
+    public void deleteXTitle() {
+        _xTitle.clear();
+    }
+    public void deleteYTitle() {
+        _yTitle.clear();
+    }
+    public void deleteTitles() {
+        _title.clear();
+        _xTitle.clear();
+        _yTitle.clear();
     }
     
     /*
@@ -1357,4 +1482,7 @@ public class Plot2DObject extends DrawObject {
             yPosType = newYPosType;
         }
     }
+    protected String labelZeros;
+    protected String labelNines;
+    protected double almostZero;
 }

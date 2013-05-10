@@ -182,7 +182,9 @@ public class NumberBox extends FormattedTextField implements MouseListener,
         int newCaret = saveCaret + this.getText().length() - saveLength;
         if ( newCaret < 0 )
             newCaret = 0;
-        this.setCaretPosition( newCaret );
+        try {
+            this.setCaretPosition( newCaret );
+        } catch ( java.lang.IllegalArgumentException e ) {}
         _clickPos += newCaret - saveCaret;
     }
     

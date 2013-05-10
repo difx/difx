@@ -1328,44 +1328,46 @@ public class ExperimentEditor extends JFrame {
         //  all of the antennas we know about (they should have been listed in the .vex
         //  file).
         if ( _antennaList != null && !_antennaList.useList().isEmpty() ) {
-            for ( Iterator<StationPanel> iter = _antennaList.iterator(); iter.hasNext(); ) {
-                StationPanel antenna = iter.next();
-                //  If the antenna is not in the .v2d file, it is not being used.
-                if ( v2dFileParser.antennaSection( antenna.name() ) == null )
-                    antenna.use( false );
-                else {
-                    if ( v2dFileParser.antennaPhaseCalInt( antenna.name() ) != null )
-                        antenna.phaseCalInt( v2dFileParser.antennaPhaseCalInt( antenna.name() ) );
-                    if ( v2dFileParser.antennaToneSelection( antenna.name() ) != null )
-                        antenna.toneSelection( v2dFileParser.antennaToneSelection( antenna.name() ) );
-                    if ( v2dFileParser.antennaFormat( antenna.name() ) != null )
-                        antenna.dataFormat( v2dFileParser.antennaFormat( antenna.name() ) );
-                    if ( v2dFileParser.antennaVsn( antenna.name() ) != null ) {
-                        antenna.useVsn( true );
-                        antenna.vsnSource( v2dFileParser.antennaVsn( antenna.name() ) );
+            try {
+                for ( Iterator<StationPanel> iter = _antennaList.iterator(); iter.hasNext(); ) {
+                    StationPanel antenna = iter.next();
+                    //  If the antenna is not in the .v2d file, it is not being used.
+                    if ( v2dFileParser.antennaSection( antenna.name() ) == null )
+                        antenna.use( false );
+                    else {
+                        if ( v2dFileParser.antennaPhaseCalInt( antenna.name() ) != null )
+                            antenna.phaseCalInt( v2dFileParser.antennaPhaseCalInt( antenna.name() ) );
+                        if ( v2dFileParser.antennaToneSelection( antenna.name() ) != null )
+                            antenna.toneSelection( v2dFileParser.antennaToneSelection( antenna.name() ) );
+                        if ( v2dFileParser.antennaFormat( antenna.name() ) != null )
+                            antenna.dataFormat( v2dFileParser.antennaFormat( antenna.name() ) );
+                        if ( v2dFileParser.antennaVsn( antenna.name() ) != null ) {
+                            antenna.useVsn( true );
+                            antenna.vsnSource( v2dFileParser.antennaVsn( antenna.name() ) );
+                        }
+                        else if ( v2dFileParser.antennaFile( antenna.name() ) != null ) {
+                            antenna.useFile( true );
+                            Vector<String> fileList = v2dFileParser.antennaFile( antenna.name() );
+                            for ( Iterator<String> iter1 = fileList.iterator(); iter1.hasNext(); )
+                                antenna.useFile( iter1.next() );
+                        }
+                        else if ( v2dFileParser.antennaNetworkPort( antenna.name() ) != null ) {
+                            antenna.useEVLBI( true );
+                            antenna.networkPort( v2dFileParser.antennaNetworkPort( antenna.name() ) );
+                        }
+                        //  Position changes.
+                        if ( v2dFileParser.antennaX( antenna.name() ) != null )
+                            antenna.positionX( v2dFileParser.antennaX( antenna.name() ) );
+                        if ( v2dFileParser.antennaY( antenna.name() ) != null )
+                            antenna.positionY( v2dFileParser.antennaY( antenna.name() ) );
+                        if ( v2dFileParser.antennaZ( antenna.name() ) != null )
+                            antenna.positionZ( v2dFileParser.antennaZ( antenna.name() ) );
+                        //  Clock settings.
+                        if ( v2dFileParser.antennaDeltaClock( antenna.name() ) != null )
+                            antenna.deltaClock( v2dFileParser.antennaDeltaClock( antenna.name() ) );
                     }
-                    else if ( v2dFileParser.antennaFile( antenna.name() ) != null ) {
-                        antenna.useFile( true );
-                        Vector<String> fileList = v2dFileParser.antennaFile( antenna.name() );
-                        for ( Iterator<String> iter1 = fileList.iterator(); iter1.hasNext(); )
-                            antenna.useFile( iter1.next() );
-                    }
-                    else if ( v2dFileParser.antennaNetworkPort( antenna.name() ) != null ) {
-                        antenna.useEVLBI( true );
-                        antenna.networkPort( v2dFileParser.antennaNetworkPort( antenna.name() ) );
-                    }
-                    //  Position changes.
-                    if ( v2dFileParser.antennaX( antenna.name() ) != null )
-                        antenna.positionX( v2dFileParser.antennaX( antenna.name() ) );
-                    if ( v2dFileParser.antennaY( antenna.name() ) != null )
-                        antenna.positionY( v2dFileParser.antennaY( antenna.name() ) );
-                    if ( v2dFileParser.antennaZ( antenna.name() ) != null )
-                        antenna.positionZ( v2dFileParser.antennaZ( antenna.name() ) );
-                    //  Clock settings.
-                    if ( v2dFileParser.antennaDeltaClock( antenna.name() ) != null )
-                        antenna.deltaClock( v2dFileParser.antennaDeltaClock( antenna.name() ) );
                 }
-            }
+            } catch ( java.util.ConcurrentModificationException e ) {}
         }
         
     }
@@ -2240,7 +2242,7 @@ public class ExperimentEditor extends JFrame {
                         if ( scan.source.equalsIgnoreCase( source.name() ) && source.use() )
                             _sourceFound = true;
                     } catch ( java.lang.ClassCastException e ) {
-                    }
+                    } catch ( java.util.ConcurrentModificationException e ) {}
                 }
                 if ( !_sourceFound )
                     button.on( false );

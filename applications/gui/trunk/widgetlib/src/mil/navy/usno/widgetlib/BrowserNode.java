@@ -307,12 +307,14 @@ public class BrowserNode extends JPanel implements MouseListener, MouseMotionLis
     public void clearChildren() {
         if ( _children.size() > 0 ) {
             //  Clear the children of the children first...
-            for ( Iterator<BrowserNode> iter = _children.iterator(); iter.hasNext(); ) {
-                BrowserNode shoot = iter.next();
-                shoot.clearChildren();
-                this.remove( shoot );
-                iter.remove();
-            }
+            try {
+                for ( Iterator<BrowserNode> iter = _children.iterator(); iter.hasNext(); ) {
+                    BrowserNode shoot = iter.next();
+                    shoot.clearChildren();
+                    this.remove( shoot );
+                    iter.remove();
+                }
+            } catch ( java.util.ConcurrentModificationException e ) {}
         }
     }
     

@@ -235,6 +235,7 @@
                 <xsd:element ref="jobQueueTime" />
                 <xsd:element ref="jobCorrelationStart" />
                 <xsd:element ref="jobCorrelationEnd" />
+                <xsd:element ref="jobCorrelationTime" />
                 <xsd:element ref="jobJobStart" />
                 <xsd:element ref="jobJobDuration" />
                 <xsd:element ref="jobInputFile" />
@@ -433,6 +434,7 @@
     <xsd:element name="jobQueueTime" type="columnSpec"></xsd:element>
     <xsd:element name="jobCorrelationStart" type="columnSpec"></xsd:element>
     <xsd:element name="jobCorrelationEnd" type="columnSpec"></xsd:element>
+    <xsd:element name="jobCorrelationTime" type="columnSpec"></xsd:element>
     <xsd:element name="jobJobStart" type="columnSpec"></xsd:element>
     <xsd:element name="jobJobDuration" type="columnSpec"></xsd:element>
     <xsd:element name="jobInputFile" type="columnSpec"></xsd:element>

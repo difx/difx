@@ -102,6 +102,11 @@ public class JobNode extends QueueBrowserNode {
         _correlationEnd.setText( "" );
         showCorrelationEnd( false );
         this.add( _correlationEnd );
+        _correlationTime = new ColumnTextArea();
+        _correlationTime.justify( ColumnTextArea.RIGHT );
+        _correlationTime.setText( "" );
+        showCorrelationTime( false );
+        this.add( _correlationTime );
         _jobStartText = new ColumnTextArea();
         _jobStartText.justify( ColumnTextArea.RIGHT );
         _jobStartText.setText( "" );
@@ -167,7 +172,7 @@ public class JobNode extends QueueBrowserNode {
         showActive( true );
         this.add( _active );
         _popup = new JPopupMenu();
-        _monitorMenuItem = new JMenuItem( "Run Controls for " + name() );
+        _monitorMenuItem = new JMenuItem( "Controls for " + name() );
         _monitorMenuItem.addActionListener(new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
                 if ( updateEditorMonitor( 1000 ) )
@@ -315,6 +320,8 @@ public class JobNode extends QueueBrowserNode {
             setTextArea( _correlationStart, _widthCorrelationStart );
         if ( _correlationEnd.isVisible() )
             setTextArea( _correlationEnd, _widthCorrelationEnd );
+        if ( _correlationTime.isVisible() )
+            setTextArea( _correlationTime, _widthCorrelationTime );
         if ( _jobStartText.isVisible() )
             setTextArea( _jobStartText, _widthJobStart );
         if ( _jobDurationText.isVisible() )
@@ -690,8 +697,22 @@ public class JobNode extends QueueBrowserNode {
     public String queueTime() { return _queueTime.getText(); }
     public void correlationStart( String newVal ) { _correlationStart.setText( newVal ); }
     public String correlationStart() { return _correlationStart.getText(); }
+    public void correlationStart( double newVal ) { 
+        _correlationStart.setText( String.format( "%10.3f", newVal ) );
+        _correlationStart.updateUI();
+    }
     public void correlationEnd( String newVal ) { _correlationEnd.setText( newVal ); }
+    public void correlationEnd( double newVal ) { 
+        _correlationEnd.setText( String.format( "%10.3f", newVal ) );
+        _correlationEnd.updateUI();
+    }
     public String correlationEnd() { return _correlationEnd.getText(); }
+    public void correlationTime( String newVal ) { _correlationTime.setText( newVal ); }
+    public void correlationTime( double newVal ) { 
+        _correlationTime.setText( String.format( "%10.3f", newVal ) );
+        _correlationTime.updateUI();
+    }
+    public String correlationTime() { return _correlationTime.getText(); }
     public void jobStart( double newVal ) { 
         _jobStartText.setText( String.format( "%10.3f", newVal ) );
         _jobStart = newVal;
@@ -800,6 +821,7 @@ public class JobNode extends QueueBrowserNode {
     public void showQueueTime( boolean newVal ) { _queueTime.setVisible( newVal ); }
     public void showCorrelationStart( boolean newVal ) { _correlationStart.setVisible( newVal ); }
     public void showCorrelationEnd( boolean newVal ) { _correlationEnd.setVisible( newVal ); }
+    public void showCorrelationTime( boolean newVal ) { _correlationTime.setVisible( newVal ); }
     public void showJobStart( boolean newVal ) { _jobStartText.setVisible( newVal ); }
     public void showJobDuration( boolean newVal ) { _jobDurationText.setVisible( newVal ); }
     public void showInputFile( boolean newVal ) { _inputFile.setVisible( newVal ); }
@@ -831,6 +853,7 @@ public class JobNode extends QueueBrowserNode {
     public void widthQueueTime( int newVal ) { _widthQueueTime = newVal; }
     public void widthCorrelationStart( int newVal ) { _widthCorrelationStart = newVal; }
     public void widthCorrelationEnd( int newVal ) { _widthCorrelationEnd = newVal; }
+    public void widthCorrelationTime( int newVal ) { _widthCorrelationTime = newVal; }
     public void widthJobStart( int newVal ) { _widthJobStart = newVal; }
     public void widthJobDuration( int newVal ) { _widthJobDuration = newVal; }
     public void widthInputFile( int newVal ) { _widthInputFile = newVal; }
@@ -899,6 +922,8 @@ public class JobNode extends QueueBrowserNode {
     protected int _widthCorrelationStart;
     protected ColumnTextArea _correlationEnd;
     protected int _widthCorrelationEnd;
+    protected ColumnTextArea _correlationTime;
+    protected int _widthCorrelationTime;
     protected ColumnTextArea _jobStartText;
     protected int _widthJobStart;
     protected Double _jobStart;

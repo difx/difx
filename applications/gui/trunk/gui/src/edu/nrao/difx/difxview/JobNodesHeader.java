@@ -149,6 +149,13 @@ public class JobNodesHeader extends BrowserNode {
             }
         });
         _popup.add( _showCorrelationEnd );
+        _showCorrelationTime = new JCheckBoxMenuItem( "Correlation Time" );
+        _showCorrelationTime.addActionListener(new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                updateDisplayedData();
+            }
+        });
+        _popup.add( _showCorrelationTime );
         _showJobStart = new JCheckBoxMenuItem( "Job Start" );
         _showJobStart.addActionListener(new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
@@ -315,6 +322,14 @@ public class JobNodesHeader extends BrowserNode {
             }
         });
         this.add( _correlationEnd );
+        _correlationTime = new ColumnTextArea( "Correlation Time" );
+        _correlationTime.addKillButton(new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                _showCorrelationTime.setState( false );
+                updateDisplayedData();
+            }
+        });
+        this.add( _correlationTime );
         _jobStart = new ColumnTextArea( "Job Start" );
         _jobStart.addKillButton(new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
@@ -448,6 +463,7 @@ public class JobNodesHeader extends BrowserNode {
         _showQueueTime.setState( true );
         _showCorrelationStart.setState( true );
         _showCorrelationEnd.setState( true );
+        _showCorrelationTime.setState( true );
         _showJobStart.setState( true );
         _showJobDuration.setState( true );
         _showInputFile.setState( true );
@@ -532,6 +548,12 @@ public class JobNodesHeader extends BrowserNode {
         }
         else
             _positionCorrelationEnd = -100;
+        if ( _showCorrelationTime.getState() ) {
+            setTextArea( _correlationTime, _settings.jobColumnSpecs().correlationTime.width );
+            _positionCorrelationTime = _xOff;
+        }
+        else
+            _positionCorrelationTime = -100;
         if ( _showJobStart.getState() ) {
             setTextArea( _jobStart, _settings.jobColumnSpecs().jobStart.width );
             _positionJobStart = _xOff;
@@ -638,6 +660,7 @@ public class JobNodesHeader extends BrowserNode {
         _showQueueTime.setState( _settings.jobColumnSpecs().queueTime.show );
         _showCorrelationStart.setState( _settings.jobColumnSpecs().correlationStart.show );
         _showCorrelationEnd.setState( _settings.jobColumnSpecs().correlationEnd.show );
+        _showCorrelationTime.setState( _settings.jobColumnSpecs().correlationTime.show );
         _showJobStart.setState( _settings.jobColumnSpecs().jobStart.show );
         _showJobDuration.setState( _settings.jobColumnSpecs().jobDuration.show );
         _showInputFile.setState( _settings.jobColumnSpecs().inputFile.show );
@@ -672,6 +695,7 @@ public class JobNodesHeader extends BrowserNode {
             thisJob.widthQueueTime( _settings.jobColumnSpecs().queueTime.width );
             thisJob.widthCorrelationStart( _settings.jobColumnSpecs().correlationStart.width );
             thisJob.widthCorrelationEnd( _settings.jobColumnSpecs().correlationEnd.width );
+            thisJob.widthCorrelationTime( _settings.jobColumnSpecs().correlationTime.width );
             thisJob.widthJobStart( _settings.jobColumnSpecs().jobStart.width );
             thisJob.widthJobDuration( _settings.jobColumnSpecs().jobDuration.width );
             thisJob.widthInputFile( _settings.jobColumnSpecs().inputFile.width );
@@ -713,6 +737,7 @@ public class JobNodesHeader extends BrowserNode {
         _adjustQueueTime = false;
         _adjustCorrelationStart = false;
         _adjustCorrelationEnd = false;
+        _adjustCorrelationTime = false;
         _adjustJobStart = false;
         _adjustJobDuration = false;
         _adjustInputFile = false;
@@ -762,6 +787,10 @@ public class JobNodesHeader extends BrowserNode {
         else if ( e.getX() > _positionCorrelationEnd - 3 && e.getX() < _positionCorrelationEnd + 2 ) {
             setCursor( _columnAdjustCursor );
             _adjustCorrelationEnd = true;
+        }
+        else if ( e.getX() > _positionCorrelationTime - 3 && e.getX() < _positionCorrelationTime + 2 ) {
+            setCursor( _columnAdjustCursor );
+            _adjustCorrelationTime = true;
         }
         else if ( e.getX() > _positionJobStart - 3 && e.getX() < _positionJobStart + 2 ) {
             setCursor( _columnAdjustCursor );
@@ -866,6 +895,10 @@ public class JobNodesHeader extends BrowserNode {
             _startWidth = _settings.jobColumnSpecs().correlationEnd.width;
             _startX = e.getX();
         }
+        else if ( _adjustCorrelationTime ) {
+            _startWidth = _settings.jobColumnSpecs().correlationTime.width;
+            _startX = e.getX();
+        }
         else if ( _adjustJobStart ) {
             _startWidth = _settings.jobColumnSpecs().jobStart.width;
             _startX = e.getX();
@@ -967,6 +1000,10 @@ public class JobNodesHeader extends BrowserNode {
             if ( e.getX() - _startX + _startWidth > 5 )
                 _settings.jobColumnSpecs().correlationEnd.width = _startWidth + e.getX() - _startX;
         }
+        else if ( _adjustCorrelationTime ) {
+            if ( e.getX() - _startX + _startWidth > 5 )
+                _settings.jobColumnSpecs().correlationTime.width = _startWidth + e.getX() - _startX;
+        }
         else if ( _adjustJobStart ) {
             if ( e.getX() - _startX + _startWidth > 5 )
                 _settings.jobColumnSpecs().jobStart.width = _startWidth + e.getX() - _startX;
@@ -1042,6 +1079,7 @@ public class JobNodesHeader extends BrowserNode {
             thisJob.showQueueTime( _showQueueTime.getState() );
             thisJob.showCorrelationStart( _showCorrelationStart.getState() );
             thisJob.showCorrelationEnd( _showCorrelationEnd.getState() );
+            thisJob.showCorrelationTime( _showCorrelationTime.getState() );
             thisJob.showJobStart( _showJobStart.getState() );
             thisJob.showJobDuration( _showJobDuration.getState() );
             thisJob.showInputFile( _showInputFile.getState() );
@@ -1069,6 +1107,7 @@ public class JobNodesHeader extends BrowserNode {
         _queueTime.setVisible( _showQueueTime.getState() );
         _correlationStart.setVisible( _showCorrelationStart.getState() );
         _correlationEnd.setVisible( _showCorrelationEnd.getState() );
+        _correlationTime.setVisible( _showCorrelationTime.getState() );
         _jobStart.setVisible( _showJobStart.getState() );
         _jobDuration.setVisible( _showJobDuration.getState() );
         _inputFile.setVisible( _showInputFile.getState() );
@@ -1093,6 +1132,7 @@ public class JobNodesHeader extends BrowserNode {
         _settings.jobColumnSpecs().queueTime.show = _showQueueTime.getState();
         _settings.jobColumnSpecs().correlationStart.show = _showCorrelationStart.getState();
         _settings.jobColumnSpecs().correlationEnd.show = _showCorrelationEnd.getState();
+        _settings.jobColumnSpecs().correlationTime.show = _showCorrelationTime.getState();
         _settings.jobColumnSpecs().jobStart.show = _showJobStart.getState();
         _settings.jobColumnSpecs().jobDuration.show = _showJobDuration.getState();
         _settings.jobColumnSpecs().inputFile.show = _showInputFile.getState();
@@ -1157,6 +1197,11 @@ public class JobNodesHeader extends BrowserNode {
     protected JCheckBoxMenuItem _showCorrelationEnd;
     protected int _positionCorrelationEnd;
     protected boolean _adjustCorrelationEnd;
+    
+    protected ColumnTextArea _correlationTime;
+    protected JCheckBoxMenuItem _showCorrelationTime;
+    protected int _positionCorrelationTime;
+    protected boolean _adjustCorrelationTime;
     
     protected ColumnTextArea _jobStart;
     protected JCheckBoxMenuItem _showJobStart;

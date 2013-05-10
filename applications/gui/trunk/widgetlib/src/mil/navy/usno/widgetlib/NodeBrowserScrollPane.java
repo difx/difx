@@ -239,6 +239,8 @@ public class NodeBrowserScrollPane extends JPanel implements MouseMotionListener
         }
     }
     
+    public boolean scrollBarVisible() { return _scrollBar.isVisible(); }
+    
     public int dataHeight() {
         return browserPane.dataHeight();
     }

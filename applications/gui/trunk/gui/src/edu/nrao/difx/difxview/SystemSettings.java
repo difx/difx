@@ -1610,6 +1610,7 @@ public class SystemSettings extends JFrame {
         _jobColumnSpecs.queueTime.show = false;
         _jobColumnSpecs.correlationStart.show = false;
         _jobColumnSpecs.correlationEnd.show = false;
+        _jobColumnSpecs.correlationTime.show = false;
         _jobColumnSpecs.jobStart.show = false;
         _jobColumnSpecs.jobDuration.show = false;
         _jobColumnSpecs.inputFile.show = true;
@@ -1637,6 +1638,7 @@ public class SystemSettings extends JFrame {
         _jobColumnSpecs.queueTime.width = 170;
         _jobColumnSpecs.correlationStart.width = 100;
         _jobColumnSpecs.correlationEnd.width = 100;
+        _jobColumnSpecs.correlationTime.width = 100;
         _jobColumnSpecs.jobStart.width = 100;
         _jobColumnSpecs.jobDuration.width = 100;
         _jobColumnSpecs.inputFile.width = 400;
@@ -2530,6 +2532,10 @@ public class SystemSettings extends JFrame {
                 _jobColumnSpecs.correlationEnd.show = doiConfig.getJobCorrelationEnd().isShow();
                 _jobColumnSpecs.correlationEnd.width = doiConfig.getJobCorrelationEnd().getWidth();                
             }
+            if ( doiConfig.getJobCorrelationTime() != null ) {
+                _jobColumnSpecs.correlationTime.show = doiConfig.getJobCorrelationTime().isShow();
+                _jobColumnSpecs.correlationTime.width = doiConfig.getJobCorrelationTime().getWidth();                
+            }
             if ( doiConfig.getJobJobStart() != null ) {
                 _jobColumnSpecs.jobStart.show = doiConfig.getJobJobStart().isShow();
                 _jobColumnSpecs.jobStart.width = doiConfig.getJobJobStart().getWidth();                
@@ -2916,6 +2922,9 @@ public class SystemSettings extends JFrame {
         doiConfig.setJobCorrelationEnd( factory.createColumnSpec() );
         doiConfig.getJobCorrelationEnd().setShow( _jobColumnSpecs.correlationEnd.show );
         doiConfig.getJobCorrelationEnd().setWidth( _jobColumnSpecs.correlationEnd.width );                
+        doiConfig.setJobCorrelationTime( factory.createColumnSpec() );
+        doiConfig.getJobCorrelationTime().setShow( _jobColumnSpecs.correlationTime.show );
+        doiConfig.getJobCorrelationTime().setWidth( _jobColumnSpecs.correlationTime.width );                
         doiConfig.setJobJobStart( factory.createColumnSpec() );
         doiConfig.getJobJobStart().setShow( _jobColumnSpecs.jobStart.show );
         doiConfig.getJobJobStart().setWidth( _jobColumnSpecs.jobStart.width );                
@@ -3904,6 +3913,7 @@ public class SystemSettings extends JFrame {
         ColumnSpec queueTime = new ColumnSpec();
         ColumnSpec correlationStart = new ColumnSpec();
         ColumnSpec correlationEnd = new ColumnSpec();
+        ColumnSpec correlationTime = new ColumnSpec();
         ColumnSpec jobStart = new ColumnSpec();
         ColumnSpec jobDuration = new ColumnSpec();
         ColumnSpec inputFile = new ColumnSpec();
