@@ -394,41 +394,53 @@ FLAG FILENAME      & string         & dir/filename of {\tt .flag} file to create
 
 
 
-% .difx/ -------------------------------------------------- INCOMPLETE --------
-
-FIXME: update to 2.0 format, add PCAL and TSYS
+% .difx/ ----------------------------------------------------------------------
 
 \subsection{.difx/} \label{sec:difx}
 
-The SWIN format visibilities written by {\tt mpifxcorr} are written to a directory with extension {\tt .difx}.
-Typically there will be a single file in this directory, but it is possible that the output data will be split into
-multiple smaller files if the first output file gets too large or if correlation is continued from a point midway through correlation (feature yet to be implemented).
+The SWIN format visibilities produced by {\tt mpifxcorr} are written to a directory with extension {\tt .difx}.
+Three kinds of files can be placed in this directory as described below.
+
+Note that the formats and naming conventions of these files is not guaranteed to stay unchanged from version to version of DiFX, and hence it is not recommended to rely on these files for archival purposes.
+
+\subsubsection{Visibility files} \label{sec:difxvisibilities}
+
+The bulk of the output from {\tt mpifxcorr} is usually in the form of a binary visibility file.
+Usually there will be a single visibility file in this directory, but there are three ways in which multiple files may be produced: 1.\ a restart of the correlation, 2.\ if there are multiple phase centers, and 3.\ if there are multiple pulsar bins.
+
+The visibility files are systematically named in the form: {\tt DIFX\_}{\em day}{\tt \_}{\em sec}{\tt .s}{\em src}{\tt .b}{\em bin}, where {\em day} is the 5 digit integer MJD of the start of visibilities, {\em sec} is a zero-padded 6 digit number of seconds since the MJD midnight, {\em src} is a 4 digit zero-padded integer specifying the phase center number (starting at 0), and {\em bin} is a 4 digit zero-padded integer specifying the pulsar bin number (starting at 0).
 
 These files contain visibility data records.
 Each record contains the visibility spectrum for one polarization of one baseband channel of one baseline for one integration time.  
-Each starts with a text header and is followed by binary data.
-The text header uses the typical DiFX parameters format with the ``Key'' starting at the beginning of a text line and ending with a colon, and the value starting in the 21st column of text.
-The header rows occur in the following order:
+Each starts with a binary header and is followed by binary data.
+
+The format of the header is shown in the table below.
 
 \begin{center}
-\begin{tabular}{l l l}
+\begin{tabular}{llll}
 \hline
-Key & Units/allowed values & Comments \\
+Key & data type & units & comments \\
 \hline
-BASELINE NUM       & integer & $= (a_1+1)*256 + (a_2+1)$ for $a_1, a_2 \ge 1$ \\
-MJD                & integer & date of visibility centroid \\
-SECONDS            & float   & seconds since beginning of MJD \\
-CONFIG INDEX       & $\ge 0$ & index to {\tt .input} file configuration table \\
-SOURCE INDEX       & $\ge 0$ & index to {\tt .delay} file scan number \\
-FREQ INDEX         & $\ge 0$ & index to {\tt .input} frequency table \\
-POLARISATION PAIR  & 2 of ({\tt R}, {\tt L}, {\tt X}, {\tt Y}) & e.g., {\tt RR} or {\tt RL} \\
-DATA WEIGHT        & $\ge 0.0$ & data weight for spectrum; typically $\sim 1$ \\
-U (METRES)         & meters & $u$ component of baseline vector \\ 
-V (METRES)         & meters & $v$ component of baseline vector \\
-W (METRES)         & meters & $w$ component of baseline vector \\
+baseline number		& int	&	& $= (a_1+1)*256 + (a_2+1)$ for $a_1, a_2 \ge 1$ \\
+day number		& int	& MJD	& date of visibility centroid \\
+seconds			& double& sec	& vis.\ centroid seconds since beginning of MJD \\
+config index		& int	&$\ge 0$& index to {\tt .input} file configuration table \\
+source index		& int	&$\ge 0$& index to {\tt .calc} file scan number \\
+freq index		& int	&$\ge 0$& index to {\tt .input} frequency table \\
+antenna 1 polarization	& char  & {\tt R}, {\tt L}, {\tt X}, {\tt Y} & \\
+antenna 2 polarization	& char  & {\tt R}, {\tt L}, {\tt X}, {\tt Y} & \\
+pulsar bin number	& int	&$\ge 0$& \\
+visibility weight	& double& $\ge 0.0$ & data weight for spectrum; typically $\sim 1$ \\
+$u$			& double& meter & $u$ component of baseline vector \\
+$v$			& double& meter & $v$ component of baseline vector \\
+$w$			& double& meter & $w$ component of baseline vector \\
+\hline
 \hline
 \end{tabular}
 \end{center}
+
+
+Note that for both the header and the data, the endianness is native to the machine running {\tt mpifxcorr}, and there are currently no provisions for processing such files on a machine of different endianness.
 
 Following the end-of-line mark for the last header row begins binary data in the form of (real, imaginary) pairs of 32-bit floating point numbers.
 The {\tt .input} file parameter {\tt NUM CHANNELS} indicates the number of
@@ -439,6 +451,42 @@ For lower sideband data, the last channel is the ``zero frequency'' channel.
 That is, in all cases, the spectrum is in order of increasing frequency and the Nyquist channel is excised.
 
 
+\subsubsection{Pulse cal data files} \label{sec:difxpulsecal}
+
+Pulse calibration data can be extracted by {\tt mpifxcorr}.
+Extraction is configured on a per-antenna basis.
+Data for each antenna is written to a separate file; if correlation is restarted, an additional pulse cal data file will be written.
+
+The pulse cal data files are systematically named in the form: {\tt PCAL\_}{\em day}{\tt \_}{\em sec}{\tt \_}{\em ant}, where {\em day} is the 5 digit integer MJD of the start of visibilities, {\em sec} is a zero-padded 6 digit number of seconds since the MJD midnight, and {\em ant} is the 1 or 2 letter antenna name in capital letters.
+There is potential for these text files to have very long lines (more than 10,000 bytes) when many pulse cal tones are extracted.
+
+The data format is exactly the same as documented in \S\ref{sec:pcal} so this will not be repeated here.
+
+\subsubsection{Switched power files} \label{sec:difxswitchedpower}
+
+{\tt mpifxcorr} can be used to extract switched power from individual antennas.
+Extraction is configured on a per-datastream (usually the same as per-antenna) basis.
+Data for each data stream is written to a separate file; if correlation is restarted, an additional set of switched power files will be started.
+
+The switched power files are systematically named in the form: {\tt SWITCHEDPOWER\_}{\em day}{\tt \_}{\em sec}{\tt \_}{\em ds}, where {\em day} is the 5 digit integer MJD of the start of visibilities, {\em sec} is a zero-padded 6 digit number of seconds since the MJD midnight, and {\em ds} is the datastream index as set in the {\tt .input} file.
+The test lines in these files can be long (more than 1000 bytes).
+
+The format of these files is as follows.
+Each line of the file represents all measurements made on one datastream at over one integration period.
+The lines contain the following columns:
+\begin{enumerate}
+\item {\em mjdstart} : The start of the integration period in mjd+fraction
+\item {\em mjdstop} : The end of the integration period in mjd+fraction
+\end{enumerate}
+These are then followed by 4 numbers for each recorded channel:
+\begin{enumerate}
+\item $P_\mathrm{on}$ : power in the ``on'' state
+\item $\sigma_{P_\mathrm{on}}$ : uncertainty of the power in the ``on'' state
+\item $P_\mathrm{off}$ : power in the ``off'' state
+\item $\sigma_{P_\mathrm{off}}$ : uncertainty of the power in the ``off'' state
+\end{enumerate}
+The magnitudes of the numbers are meaningless but their ratios have meaning.
+Text after a comment character (\#) are ignored.
 
 
 
@@ -726,7 +774,7 @@ ANT {\em a} W (m)      & {\em order}+1 numbers & terms of baseline $w$ \\
 
 
 
-% .input -------------------------------------------------- INCOMPLETE --------
+% .input ----------------------------------------------------------------------
 
 \subsection{.input} \label{sec:input}
 
@@ -753,8 +801,7 @@ This is always the first table in a {\tt .input} file.
 \hline
 Key & Units/allowed values & Comments \\
 \hline
-DELAY FILENAME     & string & name and full path to {\tt .delay} file \\
-UVW FILENAME       & string & name and full path to {\tt .uvw} file \\
+CALC FILENAME      & string & name and full path to {\tt .calc} file \\
 CORE CONF FILENAME & string & name and full path to {\tt .threads} file \\
 EXECUTE TIME (SEC) & integer seconds & observe time covered by this {\tt .input} file \\
 START MJD          & integer MJD & start date \\
@@ -787,21 +834,49 @@ Key & Units/allowed values & Comments \\
 \hline
 NUM CONFIGURATIONS & integer $\ge 1$ & number of modes in file ({\em nConfig}) \\
 \hline
-CONFIG SOURCE      & string & name of configuration \\
+CONFIG NAME        & string & name of configuration \\
 INT TIME (SEC)     & seconds & integration time \\
-NUM CHANNELS       & integer $\ge 1$ & number of channels (FFT size, {\em nFFT}, is twice this) \\
-CHANNELS TO AVERAGE& integer $\ge 1$ & not yet supported (set to 1) \\
-OVERSAMPLE FACTOR  & integer $\ge 1$ & total oversampling factor of baseband data  \difxoneone \\
-DECIMATION FACTOR  & integer $\ge 1$ & portion of oversampling to handle by decimation \difxoneone \\
-BLOCKS PER SEND    & integer $\ge 1$ & number of FFT sizes to send at a time to a core \\
-GUARD BLOCKS       & integer $\ge 0$ & number of extra blocks to send for overlap \\
-POST-F FRINGE ROT  & boolean & fringe rotate after FFT?  Always {\em FALSE} here \\
-QUAD DELAY INTERP  & boolean & use quadratic, not linear, delay interpolation \\
+SUBINT NANOSECONDS & nanosec & amount of time to process as one subintegration \\
+GUARD NANOSECONDS  & nanosec $\ge 0$ & amount of extra data to send for overlap \\
+FRINGE ROTN ORDER  & int & 0 is post-FFT, 1 is delay/rate, \ldots \\
+ARRAY STRIDE LENGTH & int & used for optimized fringe rotation calculations \\
+XMAC STRIDE LENGTH  & int & number of channels to cross multiply in one batch (must evenly divide into number of channels) \\
+NUM BUFFERED FFTS   & int & number of FFTs to cross-multiply in one batch \\
 WRITE AUTOCORRS    & boolean & enable auto-correlations; {\em TRUE} here \\
-PULSAR BINNING     & boolean & enable pulsar mode; {\em FALSE} for now \\
+PULSAR BINNING     & boolean & enable pulsar mode \\
 PULSAR CONFIG FILE & string & ({\em only if BINNING is True}) see \S~\ref{sec:psrconfigfile} \\
+PHASED ARRAY       & boolean & set to FALSE (placeholder for now) \\
 DATASTREAM {\em d} INDEX & integer $\ge 0$ & DATASTREAM table index, starting at 0 \\
 BASELINE {\em b} INDEX   & integer $\ge 0$ & BASELINE table index, starting at 0 \\
+\hline
+\end{tabular}
+\end{center}
+
+\subsubsection{Rule table} \label{table:rule}
+
+The rule tables describes which configuration will be applied at any given time.
+Usually this filters on scan attributes such as source, but can also be done in a time-based manner (start and stop times).
+An time for which no configuration matches will not be correlated.
+If more than one rule matches a given time, they must all refer to the same configuration.
+
+This table begins with header
+\begin{itemize}
+\item[] {\tt \verb+# RULES ############!+}
+\end{itemize}
+The table below uses {\em r} to represent the rule index, which ranges from 0 to {\em nRule} - 1.
+\begin{center}
+\begin{tabular}{l l l}
+\hline
+Key & Units/allowed values & Comments \\
+\hline
+RULE {\em r} CONFIG NAME & string & name to associate with this rule \\
+\Oa{SOURCE} & string & source to match \\
+\Oa{SCAN ID} & string & scan name to match \\
+\Oa{CALCODE} & string & cal code to match \\
+\Oa{QUAL} & string & source qualifier to match \\
+\Oa{MJD START} & string & earliest time to match \\
+\Oa{MJD STOP} & string & latest time to match \\
+\hline
 \hline
 \end{tabular}
 \end{center}
@@ -815,7 +890,7 @@ This table begins with header
 \begin{itemize}
 \item[] {\tt \verb+# FREQ TABLE #######!+}
 \end{itemize}
-The table below uses {\em f} to represent the frequency index, which ranges from 0 to {\em nFreq} - 1.
+The table below uses {\em f} to represent the frequency index, which ranges from 0 to {\em nFreq} - 1 and {\em t} to represent pulse cal tone index, which ranges from 0 to {\em nTone}$_f$.
 
 \begin{center}
 \begin{tabular}{l l l}
@@ -827,6 +902,13 @@ FREQ ENTRIES & integer $\ge 1$ & number of frequency setups ({\em nFreq}) \\
 FREQ (MHZ) {\em f} & MHz & sky frequency at band edge \\
 BW (MHZ) {\em f} & MHz & bandwidth of sub-band \\
 SIDEBAND {\em f} & {\tt U} or  {\tt L} & net sideband of sub-band \\
+NUM CHANNELS {\em f} & integer $\ge 1$ & initial number of channels (FFT size, {\em nFFT}, is twice this) \\
+CHANS TO AVG {\em f} & integer $\ge 1$ & average this many channels before generating output spectra) \\
+OVERSAMPLE FAC. {\em f}  & integer $\ge 1$ & total oversampling factor of baseband data \\
+DECIMATION FAC. {\em f}  & integer $\ge 1$ & portion of oversampling to handle by decimation \\
+PHASE CALS {\em f} OUT & integer $\ge 0$ & number of phase cals to produce ({\em nTone}$_f$)\\
+&& The row below is duplicated {\em nTone}$_f$ times. \\
+PHASE CAL {\em f}/{\em t} INDEX & integer & tone number of band \\
 \hline
 \end{tabular}
 \end{center}
@@ -841,7 +923,7 @@ This table begins with header
 \begin{itemize}
 \item[] {\tt \verb+# TELESCOPE TABLE ##!+}
 \end{itemize}
-The table below uses {\em a} to represent the antenna index, which ranges from 0 to {\em nAntenna} - 1.
+The table below uses {\em a} to represent the antenna index, which ranges from 0 to {\em nAntenna} - 1 and {\em c} to represent clock coefficient, ranging from 0 to {\em nCoeff}$_a$.
 
 \begin{center}
 \begin{tabular}{l l l}
@@ -851,14 +933,13 @@ Key & Units/allowed values & Comments \\
 TELESCOPE ENTRIES & integer $\ge 1$ & number of antennas ({\em nAntenna}) \\
 \hline
 TELESCOPE NAME {\em a} & string & abbreviation of antenna name \\
-CLOCK DELAY (us) {\em a} & $\mu$sec & clock error at start of associated {\tt .delay} file \\
-CLOCK RATE(us/s) {\em a} & $\mu$sec/sec & rate at which antenna clock is drifting \\
+CLOCK REF MJD {\em a} & double & date around which the following polynomial is expanded \\
+CLOCK POLY ORDER {\em a} & int $\ge 0$ & polynomial order of telescope clock model ({\em nCoeff}$_a$\\
+CLOCK COEFF {\em a}/{\em c} & $\mu$sec/sec$^c$ & clock model polynomial coefficient \\
 \hline
 \end{tabular}
 \end{center}
 
-Note that the reference time for the clock offset is the start of the {\tt .calc} file, not the start of the {\tt .input} file!
-This start time is always in integer number of seconds since beginning of day.
 
 \subsubsection{Datastream table} \label{table:datastream}
 
@@ -866,9 +947,11 @@ The datastream table begins with header
 \begin{itemize}
 \item[] {\tt \verb+# DATASTREAM TABLE #!+}
 \end{itemize}
-The table below uses {\em f} to represent the frequency index, which ranges from 0 to {\em nFreq} - 1.
-A second index, {\em i}, is used to cover the range 0 to $\mathit{nBB}$ - 1, where the total number of basebands is given by $\mathit{nBB} \equiv \sum_f \mathit{nPol}_f$.
+The table below uses {\em f} to represent recorded frequencies, which ranges from 0 to {\em nFreq} - 1.
+A second index, {\em z}, is used to iterate over zoom bands, ranging from 0 to {\em nFreq} - 1.
+A third index, {\em i}, is used to cover the range 0 to $\mathit{nBB}$ - 1, where the total number of basebands is given by $\mathit{nBB} \equiv \sum_f \mathit{nPol}_f$.
 In the DiFX system, all sub-bands must have the same polarization structure, so $\mathit{nBB} = \mathit{nFreq} \cdot \mathit{nPol}$.
+This index is reused for the zoom bands in an analogous manner.
 
 \begin{center}
 \begin{tabular}{l l l}
@@ -883,18 +966,28 @@ TELESCOPE INDEX & integer $\ge 0$ & telescope table index of datastream \\
 TSYS & Kelvin & if zero (normal in NRAO usage), don't scale data by {\em tsys} \\
 DATA FORMAT & string & data format \\
 QUANTISATION BITS & integer $\ge 1$ & bits per sample \\
-DATA FRAME SIZE & integer $\ge 1$ & bytes in one frame(or file) of data \difxoneone \\
-DATA SOURCE & string & {\tt FILE} (see \S\ref{sec:datafiles}) or {\tt MODULE} for Mark5 playback \difxoneone \\
+DATA FRAME SIZE & integer $\ge 1$ & bytes in one frame(or file) of data \\
+DATA SAMPLING & string & {\tt REAL} or {\tt COMPLEX} \\
+DATA SOURCE & string & {\tt FILE} (see \S\ref{sec:datafiles}), {\tt MODULE} for Mark5 playback, or {\tt FAKE} for benchmarking mode \\
 FILTERBANK USED & boolean & currently only {\tt FALSE} \\
-NUM FREQS & integer $\ge 0$ & number of different frequencies for this datastream \\
+PHASE CAL INT (MHZ) & int & pulse cal comb frequency spacing, or 0 if no pulse cal tones \\
+NUM RECORDED FREQS & integer $\ge 0$ & number of different frequencies recorded for this datastream \\
 \hline
-FREQ TABLE INDEX {\em f} & integer $\ge 0$ & \\
-CLK OFFSET {\em f} (us) & $\mu$sec & \\
-NUM POLS {\em f} & 1 or 2 & for NRAO usage, all such parameters must be the same \\
+REC FREQ INDEX {\em f} & integer $\ge 0$ & index to frequency table \\
+CLK OFFSET {\em f} (us) & $\mu$sec & frequency-dependent clock offset \\
+FREQ OFFSET {\em f} (us) & $\mu$sec & frequency-dependent LO offset \\
+NUM REC POLS {\em f} & 1 or 2 & for this recorded frequency, the number of polarizations \\
 \hline
-INPUT BAND {\em i} POL & {\em R} or {\em L} & polarization identity \\
-INPUT BAND {\em i} INDEX & integer $\ge 1$ & index to frequency setting array above; {\em nBB} per entry \\
+REC BAND {\em i} POL & {\em R} or {\em L} & polarization identity \\
+REC BAND {\em i} INDEX & integer $\ge 1$ & index to frequency setting array above; {\em nBB} per entry \\
 \hline
+NUM ZOOM FREQS & integer $\ge 0$ & number of different zoom bands set for this datastream \\
+\hline
+ZOOM FREQ INDEX {\em z} & integer $\ge 0$ & index to frequency table \\
+NUM ZOOM POLS {\em z} & 1 or 2 & for this recorded frequency, the number of polarizations \\
+\hline
+ZOOM BAND {\em i} POL & {\em R} or {\em L} & polarization identity \\
+ZOOM BAND {\em i} INDEX & integer $\ge 1$ & index to frequency setting array above; {\em nBB} per entry \\
 \end{tabular}
 \end{center}
 
@@ -1188,7 +1281,7 @@ Data lines always contain 4 fixed-size fields:
 Following these 4 fields are {\em nRecChan} pairs of values, one for each baseband channel.
 The first element of each pair is the system temperature (in K) and the second is the receiver name (e.g., {\tt 4cm}, or {\tt 7mm}).
 
-This format should not be confused with switched power files produced by {\tt mpifxcorr}.
+This format should not be confused with switched power files produced by {\tt mpifxcorr} (see \S\ref{sec:difxswitchedpower}).
 
 
 
@@ -1263,7 +1356,7 @@ This file can be used directly with plotting program {\tt plotwt} or used more a
 
 
 
-% .v2d ---------------------------------------------------- INCOMPLETE --------
+% .v2d ------------------------------------------------------------------------
 
 \subsection{.v2d} \label{sec:v2d}
 
@@ -1321,6 +1414,7 @@ break            & date   &       &              & list of MJD date/times where 
 minSubarray      & int    &       & 2            & don't make jobs for subarrays with fewer antennas than this \\
 maxGap           & float  & sec   & 180          & split an observation into multiple jobs if there are \\
                  &        &       &              & correlation gaps longer than this number \\
+tweakIntTime	 & bool   &       & False	 & adjust (up to 40\%) int.\ time to ensure int.\ blocks per send \\
 singleScan       & bool   &       & False        & if True, split each scan into its own job \\
 singleSetup      & bool   &       & True         & if True, allow only one setup per job; True is required \\
                  &        &       &              & for FITS-IDI conversion \\
@@ -1342,9 +1436,15 @@ invalidMask      & int    &       & 0xFFFF       & this bit-field selects which 
                  &        &       &              & when writing flag file: 1=Recording, 2=On source, 4=Job \\
 		 &        &       &              & time range, 8=Antenna in job \\
 visBufferLength  & int    &       & 32           & number of visibility buffers to allocate in mpifxcorr \\
-simFXCORR        & bool   &       & False        & simulate the VLBA HW correlator $t_{\mathrm{int}}$ and start times \\
 overSamp         & int    &       &              & force all basebands to use the given oversample factor \\
 mode             & string &       & normal       & mode of operation; see below \\
+threadsFile      & string &       &              & overrides the name of the threads file to use \\
+nCore            & int    &       &              & with nThread and machines, cause a {\tt .threads} file to be made \\
+nThreads         & int    &       &              & number of threads per core in {\tt .threads file} \\
+machines         & $[$string$]$ & &              & comma separated list of machines to use as processors \\
+                 &        &       &              & first is head node, then datastreams, then cores \\
+maxReadSize      & int    & bytes & 25000000     & maximum number of bytes to read at a time \\
+minReadSize      & int    & bytes & 10000000     & minimum number of bytes to read at a time \\
 \hline
 \hline
 \end{tabular}
@@ -1383,17 +1483,28 @@ or equivalently
 \begin{center}
 \begin{tabular}{l l l l l}
 \hline
-Name & Type & Units & Defaults & Comments \\
+Name			& Type		& Units & Defaults	& Comments \\
 \hline
-ra             &        & J2000 &         & right ascension, e.g., {\tt 12h34m12.6s} or {\tt 12:34:12.6} \\
-dec            &        & J2000 &         & declination, e.g., {\tt 34d12'23.1}" or {\tt 34:12:23.1} \\
-name           & string &       &         & new name for source \\
-calCode        & char   &       & ' '     & calibration code, typically {\tt A}, {\tt B}, {\tt C} for calibrators, {\tt G} for a gated \\
-               &        &       &         & pulsar, or blank for normal target \\
+ra			&		& J2000 &		& right ascension, e.g., {\tt 12h34m12.6s} or {\tt 12:34:12.6} \\
+dec			&		& J2000 &		& declination, e.g., {\tt 34d12'23.1}" or {\tt 34:12:23.1} \\
+name			& string	&       &		& new name for source \\
+calCode			& char		&       & ' '		& calibration code, typically {\tt A}, {\tt B}, {\tt C} for calibrators, \\
+			&		&	&		& {\tt G} for a gated pulsar, or blank for normal target \\
+naifFile		& string	&       &		& name of leap seconds file (e.g., {\tt naif0010.tls} for ephemeris \\
+ephemObject		& string	&       &		& name or number of object in ephemeris file \\
+ephemFile		& string	&       &		& path of ephemeris file (either {\tt .bsp} or {\tt .tle} format \\
+doPointingCentre	& bool		&	& true		& Whether the pointing centre should be correlated \\
+			&		&	&		& (only ever turned off for multi-phase center) \\
+addPhaseCentre		& string	&       &		& contains info on a source to add; see below \\
 \hline
 \hline
 \end{tabular}
 \end{center}
+
+To add additional phase centers, add one or more ``addPhaseCentre'' parameters to the source setup.
+In the parameter, the RA and dec must be provided.
+A name and/or calibrator code can be added as well.
+For example: {\tt addPhaseCentre=name\@1010-1212/RA\@10:10:21.1/Dec\@-12:12:00.34} .
 
 
 An antenna section allows properties of an individual antenna, such as position, name, or clock/LO offsets, to be adjusted. 
@@ -1402,24 +1513,62 @@ Note that the ``late'' convention is used in {\em clockOffset} and {\em clockRat
 \begin{center}
 \begin{tabular}{l l l l l}
 \hline
-Name & Type & Units & Defaults & Comments \\
+Name		& Type		& Units 	& Defaults	& Comments \\
 \hline
-name           & string &       &           & new name to assign to this antenna \\
-polSwap        & bool   &       & False     & swap the polarizations (i.e., {\tt L} $\Leftrightarrow$ {\tt R}) for this antenna \\
-clockOffset    & float  & us    & vex value & overrides the clock offset value from the vex file \\
-clockRate      & float  & us/s  & vex value & overrides the clock offset rate value from the vex file \\
-clockEpoch     & date   &       & vex value & overrides the epoch of the clock rate value; must be present if \\
-               &        &       &           & clockRate or clockOffset parameter is set \\
-deltaClock     & float  & us    & 0.0       & adds to the clock offset (either the vex value or the clockOffset above  \\
-deltaClockRate & float  & us/s  & 0.0       & adds to the clock rate (either the vex value or the clockRate above \\
-X              & float  & m     & vex value & change the X coordinate of the antenna location \\
-Y              & float  & m     & vex value & change the Y coordinate of the antenna location \\
-Z              & float  & m     & vex value & change the Z coordinate of the antenna location \\
-format         & string &       &           & force format to be one of VLBA, MKIV, Mark5B or S2 \\
-file           & strings &      & (none)    & a comma separated list of data files to correlate \\
-filelist       & string  &      &           & a filename listing files for the DATA TABLE \\
+name		& string	&       	&		& new name to assign to this antenna \\
+polSwap		& bool		&       	& False		& swap the polarizations (i.e., {\tt L} $\Leftrightarrow$ {\tt R}) for this antenna \\
+clockOffset	& float		& us		& vex value	& overrides the clock offset value from the vex file \\
+clockRate	& float		& us/s		& vex value	& overrides the clock offset rate value from the vex file \\
+clockEpoch	& date		&		& vex value	& overrides the epoch of the clock rate value; must be present \\
+		&		&		&		& present if clockRate or clockOffset parameter is set \\
+deltaClock	& float		& us		& 0.0		& adds to the clock offset (either the vex value or the \\
+		&		&		&		& clockOffset above  \\
+deltaClockRate	& float		& us/s		& 0.0		& adds to the clock rate (either the vex value or the \\
+		&		&		&		& clockRate above \\
+X		& float		& m		& vex value	& change the X coordinate of the antenna location \\
+Y		& float		& m		& vex value	& change the Y coordinate of the antenna location \\
+Z		& float		& m		& vex value	& change the Z coordinate of the antenna location \\
+format		& string	&		&		& force format to be one of VLBA, MKIV, Mark5B, S2, or \\
+		&		&		&		& one of the VDIF types \\
+file		& $[$string$]$	&		& (none)	& a comma separated list of data files to correlate \\
+filelist	& string	&		&		& a filename listing files for the DATA TABLE \\
+networkPort	& int		&		&		& the eVLBI network port to use. This forces NETWORK media \\
+		&		&		&		& type in {\tt .input} file \\
+windowSize	& int		&		&		& TCP window size for eVLBI. Set to $<0$ for UDP \\
+UDP\_MTU	& int		&		&		& same as setting windowSize to negative of value \\
+vsn		& string	&		&		& override the Mark5 Module to be used \\
+zoom 		& string	&		&		& uses the global zoom configuration with matching name for \\
+		&		&		&		& this antenna; {\tt zoom=Zoom1} will match ZOOM block called {\tt Zoom1} \\
+addZoomFreq	& string	&		&		& adds a zoom band with specified freq/bw as shown: \\
+		&		&		&		& freq\@1810.0/bw\@4.0$[$/specAvg\@4$][$/noparent\@false$]$ \\
+freqClockOffs	& $[$float$]$	& microsec	&		& adds clock offsets to each recorded frequency using the format: \\
+		&		&		&		& {\tt freqClockOffs=}{\em f1,f2,f3,f4}; must be same length as \\
+		&		&		&		& number of recorded freqs, first value must be zero \\
+loOffsets 	& $[$float$]$	& Hz 		&		& adds LO offsets to each recorded frequency using the format: \\
+		&		&		&		& {\tt loOffsets=}{\em f1,f2,f3,f4}; must be same length as \\
+		&		&		&		& number of recorded freqs. \\
+tcalFreq	& int		& Hz		& 0 		& enables switched power detection at specified frequency \\
+phaseCalInt	& int		& MHz 		& 1		& zero turns off phase cal extraction, positive value is \\
+		&		&		&		& the interval between tones to be extracted \\
+toneGuard	& float		& MHz 		& 0.125 of bw	& when using toneSelectionsmartormostdon't select tones \\
+		&		&		&		& within this range of band edge, if possible \\
+toneSelection	& string			& {\tt smart}	& tone selection algorithm; see below \\
+sampling	& string			& {\tt REAL}	& set to {\tt COMPLEX} for complex sampled data \\
+fake		& bool		&		& False		& enable a fake data source \\
 \hline
 \hline
+\end{tabular}
+\end{center}
+
+Possible values of ``tone Selection'' are:
+\begin{center}
+\begin{tabular}{ll}
+smart	& write the 2 most extreme tones at least toneGuard from band edge (default) \\
+vex 	& write the tones listed in the vex file to FITS \\
+none 	& don't write any tones to FITS \\
+all 	& write all extracted tones to FITS \\
+ends 	& write the 2 most extreme tones to FITS \\
+most 	& write all tones not closer than toneGuard to band edge \\
 \end{tabular}
 \end{center}
 
@@ -1432,23 +1581,32 @@ The order of setup sections is immaterial.
 \begin{center}
 \begin{tabular}{l l l l l}
 \hline
-Name & Type & Units & Defaults & Comments \\
+Name		& Type		& Units	& Defaults	& Comments \\
 \hline
-tInt           & float  & sec   & 2       & integration time \\
-nChan          & int    &       & 16      & number of channels per spectral window; must be $2^n$ \\
-doPolar        & bool   &       & True    & correlate cross hands when possible \\
-blocksPerSend  & int    &       &         & the {\tt mpifxcorr} BLOCKSPERSEND parameter; defaults to a \\
-               &        &       &         & value that depends on other parameters \\
-specAvg        & int    &       & 1       & how many channels to average together after correlation \\
-startChan      & int    &       & 0       & first (unaveraged) channel to include in output \\
-nOutChan       & int    &       & {\em nChan} & truncate after this many output channels \\
-postFFringe    & bool   &       & False   & do fringe rotation after FFT? \\
-binConfig      & string &       & none    & if specified, apply this pulsar bin config file to this setup \\
-freqId         & $[$int$]$ &    & $[ ]$ = all& frequency bands to correlate \\
+tInt		& float		& sec	& 2		& integration time \\
+FFTSpecRes	& float		& MHz	& 0.125		& frequency resolution of FFT \\
+specRes		& float		& MHz	& 0.5		& output freq res (must be mult.\ of FFTSpecRes \\
+nChan		& int		&	& 16		& number of channels per spectral window; must be $5^m \cdot 2^n$ \\
+specAvg		& int		&	& 1		& how many channels to average together after correlation \\
+fringeRotOrder	& int		&	& 1		& fhe fringe rotation order: 0=post-F, 1=linear, 2=quadratic \\
+strideLength	& int		& 	& 16		& number of channels to ``stride'' for fringe rotation, etc. \\
+xmacLength	& int		&	& 128		& number of channels to ``stride'' for cross-multiply accumulations \\
+numBufferedFFTs & int		&	& 1		& number of FFTs to do in a row for each datastream, before XMAC \\
+doPolar		& bool		&	& True		& correlate cross hands when possible \\
+startChan	& int		&	& 0		& first (unaveraged) channel to include in output \\
+nOutChan	& int		&	& {\em nChan}	& truncate after this many output channels \\
+postFFringe	& bool		&	& False		& do fringe rotation after FFT? \\
+binConfig	& string	&	& none		& if specified, apply this pulsar bin config file to this setup \\
+freqId		& $[$int$]$	&	& $[ ]$ = all	& frequency bands to correlate \\
 \hline
 \hline
 \end{tabular}
 \end{center}
+
+Note that either ``FFTSpecRes'' and ``specRes'' can be used, or ``nChan'' and ``specAvg'' can be used, but the two sets cannot be mixed.
+
+Zoom channels can be configured in a special section and referenced from ANTENNA sections to minimize complexity of the {\tt .v2d} file.
+Each ZOOM section has a name and one or more ``addZoomFreq'' parameters, with the same format as they would have in the ANTENNA block.
 
 Earth Orientation Parameter (EOP) data can be provided via one or more EOP sections.
 EOP data should be provided either in the {\tt .v2d} file or in the vex file, but not both.
@@ -1461,12 +1619,12 @@ There are four parameters that should all be set within an EOP section:
 \begin{center}
 \begin{tabular}{l l l l l}
 \hline
-Name & Type & Units & Defaults & Comments \\
+Name		& Type	& Units		& Defaults	& Comments \\
 \hline
-tai\_utc & float & sec    & & TAI minus UTC; the leap-second count  \\
-ut1\_utc & float & sec    & & UT1 minus UTC; Earth rotation phase \\
-xPole    & float & arcsec & & X component of spin axis offset \\
-yPole    & float & arcsec & & Y component of spin axis offset \\
+tai\_utc	& float	& sec		&		& TAI minus UTC; the leap-second count  \\
+ut1\_utc	& float	& sec		&		& UT1 minus UTC; Earth rotation phase \\
+xPole		& float	& arcsec	&		& X component of spin axis offset \\
+yPole		& float	& arcsec	&		& Y component of spin axis offset \\
 \hline
 \hline
 \end{tabular}
@@ -1484,7 +1642,7 @@ This is accomplished by comma separation of the values in a single assignment or
 Thus
 
 \begin{verbatim}
-  RUlE rule1
+  RULE rule1
   {
     source = 3C84,3C273
     setup = BrightSourceSetup
@@ -1519,14 +1677,14 @@ The names given to rules (e.g., rule1, rule2 and rule3 above) are not used anywh
 \begin{center}
 \begin{tabular}{l l l l l}
 \hline
-Name & Type & Units & Comments \\
+Name	& Type		& Units	& Comments \\
 \hline
-scan           & $[$string$]$ &   & one or more scan name, as specified in the vex file, to select with this rule \\
-source         & $[$string$]$ &   & one or more source name, as specified in the vex file, to select with this rule \\
-calCode        & $[$char$]$   &   & one or more calibration code to select with this rule \\
-mode           & $[$string$]$ &   & one or more modes as defined in the vex file to select with this rule \\
-setup          & string       &   & The name of the SETUP section to use, or SKIP if this rule describes scans \\
-               &              &   & not to correlate \\
+scan	& $[$string$]$	&	& one or more scan name, as specified in the vex file, to select with this rule \\
+source	& $[$string$]$	&	& one or more source name, as specified in the vex file, to select with this rule \\
+calCode	& $[$char$]$	&	& one or more calibration code to select with this rule \\
+mode	& $[$string$]$	&	& one or more modes as defined in the vex file to select with this rule \\
+setup	& string	&	& The name of the SETUP section to use, or SKIP if this rule describes scans \\
+	&		&	& not to correlate \\
 \hline
 \hline
 \end{tabular}

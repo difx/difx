@@ -1693,17 +1693,22 @@ The columns being displayed are:
 
 The core of the DiFX software correlator is the program called {\tt mpifxcorr}.
 This program uses Message Passing Interface (MPI) to exploit parallel computing to make correlation practical on a cluster of ordinary computers.
-This program runs on all the machines listed in the {\tt .machines} file that is passed to {\tt mpirun} --- the program that starts {\tt mpifxcorr}.
+This program runs on all the machines listed in the {\tt .machines} file that is passed to {\tt mpirun}, the program that starts {\tt mpifxcorr}.
 It should be initiated from the cluster head node from within the project directory.
 The usage line below is appropriate for use with OpenMPI (\S\ref{sec:mpi}) and within the DiFX context; other incantations may provide better results depending on the setup.
 See the OpenMPI documentation for more details.
 
 \begin{itemize}
-\item[] Usage: {\tt mpirun -np} {\em nProcess} {\tt --bynode --hostfile} $[$ {\em otherOptions} $]$ {\em machinesFile} {\tt mpfixcorr} {\em inputFile}
+\item[] Usage: {\tt mpirun -np} {\em nProcess} {\tt --bynode --hostfile} $[$ {\em otherOptions} $]$ {\em machinesFile} {\tt mpfixcorr} {\em inputFile} $[$ {\em options} $]$
 \item[] {\em nProcess} is the number of processes to start; found with {\tt wc -l} {\em machineFile}
 \item[] {\em machinesFile} the {\tt .machineFile}
 \item[] {\em inputFile} the {\tt .input} to run; the full path to this file needs to be given, so prepending the file with {\tt `pwd`/} is typical
 \item[] {\em otherOptions} can be any additional option to {\tt mpirun}; {\tt startdifx} uses the {\tt --mca btl $\hat{\ }$udapl,openib --mca mpi\_yield\_when\_idle 1} to suppress some warning messages and be less aggressive on networking
+\item[] {\em options} are additional options that {\tt mpifxcorr} can take which include:
+\begin{itemize}
+\item[] {\tt -M}{\em monHostname}{\tt :}$[${\em monSkip}$]$ : hostname of a machine serving as a monitor data server, with optional value indicating how many records to skip between sends.
+\item[] {\tt -r}{\em startSec} : start {\em startSec} seconds into the job, writing a new set of files into the visibility directory ({\tt .difx/})
+\end{itemize}
 \end{itemize}
 
 Within the DiFX framework, the user should never have to directly start {\tt mpifxcorr} as this is done more simply with {\tt startdifx} or via the DiFX Operator Interface in conjunction with {\tt mk5daemon}.
@@ -1889,7 +1894,7 @@ In addition to spawning the {\tt mpifxcorr} processes, {\tt startdifx} can orche
 This program is meant to work within the DiFX environment and would probably require modification to be useful in other situations.
 
 \begin{itemize}
-\item[] Usage: {\tt startdifx} $[$ {\em options} $]$ {\em input1} $[$ {\em input2} $\cdots$ $]$
+\item[] Usage: {\tt startdifx} $[$ {\em options} $] [$ {\em startDelay} $]$ {\em input1} $[$ {\em input2} $\cdots$ $]$
 \item[] {\em options} can be:
 \begin{itemize}
 \item[] {\tt -h} or {\tt --help} : print usage information and exit
@@ -1902,8 +1907,10 @@ This program is meant to work within the DiFX environment and would probably req
 \item[] {\tt -d} or {\tt --dont-calc} : don't run {\tt calcif} even if needed -- will skip file
 \item[] {\tt -m} or {\tt --message} : start {\tt mpifxcorr} by sending {difxStart} message to {\tt mk5daemon}
 \item[] {\tt -F} or {\tt --fits} : run {\tt difx2fits} on output of each job separately
+\item[] {\tt -l} or {\tt --localhead} : use the current host as the headnode, not {\tt \$DIFX\_JEAD\_NODE}
 \item[] {\tt --override-version} : ignore potential difx version conflicts
 \end{itemize} 
+\item[] {\em startDelay} is an optional number of seconds to jump into the job upon start
 \item[] {\em input}N is a {\tt .input} file, or its prefix
 \item[] Example 1: {\tt startdifx job1420.000.input}
 \item[] Example 2: {\tt startdifx -f -n job1420.000 job1421.000}
