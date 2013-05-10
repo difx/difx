@@ -8,6 +8,8 @@ Ettl
 * c++11 compliance
 * Much improved capabilities for reading from stdin
 * m5bstate: recognize filled data and don't count
+* Remove findvdif program.  new program vsum in the vdifio package is much
+better.
 
 Version 1.4.3
 * Post 2.0.1 tagging

@@ -33,7 +33,6 @@ make
 %{_libdir}/pkgconfig/mark5access.pc
 %{_bindir}/bbsum
 %{_bindir}/directory2filelist
-%{_bindir}/findvdif
 %{_bindir}/m5bstate
 %{_bindir}/m5d
 %{_bindir}/m5findformats

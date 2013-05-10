@@ -18,7 +18,6 @@ endif
 
 bin_PROGRAMS = \
 	directory2filelist \
-	findvdif \
 	m5bstate \
 	m5d \
 	m5fold \
@@ -35,9 +34,6 @@ bin_PROGRAMS = \
 
 directory2filelist_SOURCES = \
 	directory2filelist.c
-
-findvdif_SOURCES = \
-	findvdif.c
 
 m5bstate_SOURCES = \
 	m5bstate.c

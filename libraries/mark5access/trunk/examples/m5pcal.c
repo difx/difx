@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2010-2012 by Walter Brisken                             *
+ *   Copyright (C) 2010-2013 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -39,8 +39,8 @@
 
 const char program[] = "m5pcal";
 const char author[]  = "Walter Brisken";
-const char version[] = "0.4";
-const char verdate[] = "20120418";
+const char version[] = "0.5";
+const char verdate[] = "20130510";
 
 const int ChunkSize = 6400;
 const int MaxTones = 64;
@@ -73,6 +73,8 @@ static void usage(const char *pgm)
 	printf("    MKIV1_4-128-2-1\n");
 	printf("    Mark5B-512-16-2\n");
 	printf("    VDIF_1000-64-1-2 (here 1000 is payload size in bytes)\n\n");
+	printf("  <freq1> ... is/are the frequencies (MHz) relative to baseband of the first\n");
+	printf("      tone to detect; there should be one specified per baseband channel\n\n");
 	printf("  <outfile> is the name of the output file\n\n");
 	printf("Options can include:\n\n");
 	printf("  --verbose\n");
