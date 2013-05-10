@@ -8,8 +8,9 @@
 #include <math.h>
 #include "difx2mark4.h"
 
-int fill_fblock (DifxInput *D,           // difx input structure pointer
-                 struct fblock_tag *pfb) // pointer to table to be filled in
+int fill_fblock (DifxInput *D,                    // difx input structure pointer
+                 struct CommandLineOptions *opts, // ptr to input options
+                 struct fblock_tag *pfb)          // pointer to table to be filled in
     {
     int i,
         j,
@@ -27,7 +28,8 @@ int fill_fblock (DifxInput *D,           // difx input structure pointer
         present,
         first,
         nant,
-        nfreq;
+        nfreq,
+        zoom;
 
     char pol,
          buff[5];
@@ -56,6 +58,7 @@ int fill_fblock (DifxInput *D,           // difx input structure pointer
                                     // bandA  (reference station)
                 if (ibandA < pdsA->nRecBand)
                     {               // not zoom mode
+                    zoom = FALSE;
                     irbAfid = pdsA->recBandFreqId[ibandA];
                     pol = pdsA->recBandPolName[ibandA];
                     irfAfid = pdsA->recFreqId[irbAfid];
@@ -63,25 +66,26 @@ int fill_fblock (DifxInput *D,           // difx input structure pointer
                     }
                 else                // zoom mode
                     {
+                    zoom = TRUE;
                     irbAfid = pdsA->zoomBandFreqId[ibandA-pdsA->nRecBand];
                     pol = pdsA->zoomBandPolName[ibandA-pdsA->nRecBand];
                     irfAfid = pdsA->zoomFreqId[irbAfid];
                     pfr = D->freq + irfAfid;
                     }
                                     // stuff ref station fblock structure
-                pfb[nprod].stn[0].sideband = pfr->sideband;
                 pfb[nprod].stn[0].pol      = pol;
                 pfb[nprod].stn[0].ant      = pdsA->antennaId;
                 pfb[nprod].stn[0].find     = irfAfid;
-                pfb[nprod].stn[0].freq     = (pfr->sideband == 'U') ?
-                                              pfr->freq :
-                                             -pfr->freq; // negate for LSB
+                pfb[nprod].stn[0].freq     = pfr->freq;
+                pfb[nprod].stn[0].sideband = pfr->sideband;
                 pfb[nprod].stn[0].bw       = pfr->bw;
                 pfb[nprod].stn[0].bs       = pdsA->quantBits;
+                pfb[nprod].stn[0].zoom     = zoom;
 
                                     // bandB  (remote station)
                 if (ibandB < pdsB->nRecBand)
                     {               // not zoom mode
+                    zoom = FALSE;
                     irbBfid = pdsB->recBandFreqId[ibandB];
                     pol = pdsB->recBandPolName[ibandB];
                     irfBfid = pdsB->recFreqId[irbBfid];
@@ -89,21 +93,30 @@ int fill_fblock (DifxInput *D,           // difx input structure pointer
                     }
                 else                // zoom mode
                     {
+                    zoom = TRUE;
                     irbBfid = pdsB->zoomBandFreqId[ibandB-pdsB->nRecBand];
                     pol = pdsB->zoomBandPolName[ibandB-pdsB->nRecBand];
                     irfBfid = pdsB->zoomFreqId[irbBfid];
                     pfr = D->freq + irfBfid;
                     }
                                     // stuff rem station fblock structure
-                pfb[nprod].stn[1].sideband = pfr->sideband;
                 pfb[nprod].stn[1].pol      = pol;
                 pfb[nprod].stn[1].ant      = pdsB->antennaId;
                 pfb[nprod].stn[1].find     = irfBfid;
-                pfb[nprod].stn[1].freq     = (pfr->sideband == 'U') ?
-                                              pfr->freq :
-                                             -pfr->freq; // negate for LSB
+                pfb[nprod].stn[1].freq     = pfr->freq;
+                pfb[nprod].stn[1].sideband = pfr->sideband;
                 pfb[nprod].stn[1].bw       = pfr->bw;
                 pfb[nprod].stn[1].bs       = pdsB->quantBits;
+                pfb[nprod].stn[1].zoom     = zoom;
+
+                                    // if either antenna zoom, make both proper USB
+                if (pfb[nprod].stn[0].zoom || pfb[nprod].stn[1].zoom)
+                    for (k=0; k<2; k++)
+                        if (pfb[nprod].stn[k].sideband == 'L')
+                            {
+                            pfb[nprod].stn[k].freq -= pfb[nprod].stn[k].bw;
+                            pfb[nprod].stn[k].sideband = 'U';
+                            }
 
                                     // bump and check product index
                 if (++nprod > MAX_FPPAIRS)
@@ -207,14 +220,16 @@ int fill_fblock (DifxInput *D,           // difx input structure pointer
                         }
             }
         }
-    //for (n=0; n<nprod; n++)       // print out fblock table
-    //  printf ("fblock[%d] %c %c %d %d %d %f %f %s  %c %c %d %d %d %f %f %s\n", n,
-    //          pfb[n].stn[0].sideband, pfb[n].stn[0].pol, pfb[n].stn[0].first_time,
-    //          pfb[n].stn[0].ant, pfb[n].stn[0].find, pfb[n].stn[0].freq,
-    //          pfb[n].stn[0].bw, pfb[n].stn[0].chan_id,
-    //          pfb[n].stn[1].sideband, pfb[n].stn[1].pol, pfb[n].stn[1].first_time,
-    //          pfb[n].stn[1].ant, pfb[n].stn[1].find, pfb[n].stn[1].freq,
-    //          pfb[n].stn[1].bw, pfb[n].stn[1].chan_id);
+    if (opts->verbose > 1)
+        for (n=0; n<nprod; n++)     // debug - print out fblock table
+            printf ("    fblock[%d] %c %c %d %d %d %d %.3f %.3f %s "
+                    " %c %c %d %d %d %d %.3f %.3f %s\n",
+                  n, pfb[n].stn[0].sideband, pfb[n].stn[0].pol, pfb[n].stn[0].first_time,
+                  pfb[n].stn[0].ant, pfb[n].stn[0].find, pfb[n].stn[0].zoom, pfb[n].stn[0].freq,
+                  pfb[n].stn[0].bw, pfb[n].stn[0].chan_id,
+                  pfb[n].stn[1].sideband, pfb[n].stn[1].pol, pfb[n].stn[1].first_time,
+                  pfb[n].stn[1].ant, pfb[n].stn[1].find, pfb[n].stn[1].zoom, pfb[n].stn[1].freq,
+                  pfb[n].stn[1].bw, pfb[n].stn[1].chan_id);
 
     pfb[nprod].stn[0].ant = -1;     // mark end of table
     }

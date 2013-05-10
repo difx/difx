@@ -106,6 +106,7 @@ struct fblock_tag
         int find;                   // frequency table index
         int bs;                     // quantization bits/sample
         int first_time;             // true iff first entry in table of chan_id for ant 
+        int zoom;                   // true iff this channel is zoom mode
         double freq;                // LO frequency (MHz); negative for LSB
         double bw;                  // bandwidth (MHz)
         } stn[2];                   // reference | remote

@@ -117,7 +117,7 @@ int createRoot (DifxInput *D,           // difx input structure pointer
     int isValidAntenna(const DifxInput *, char *, int);
     double frt (double, double, int);
     void insert_zoom_sequence (DifxInput *, char *, FILE *);
-    int fill_fblock (DifxInput *, struct fblock_tag *);
+    int fill_fblock (DifxInput *, struct CommandLineOptions *, struct fblock_tag *);
 
                                     // initialize memory as necessary
     current_def[0] = 0;
@@ -554,7 +554,7 @@ int createRoot (DifxInput *D,           // difx input structure pointer
                                     // append extra statements to the end of the file
 
                                     // generate $FREQ block
-        if (fill_fblock (D, pfb) < 0)
+        if (fill_fblock (D, opts, pfb) < 0)
             {
             printf ("error generating $FREQ block\n");
             return -1;

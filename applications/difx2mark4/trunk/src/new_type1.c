@@ -137,7 +137,7 @@ int new_type1 (DifxInput *D,                    // ptr to a filled-out difx inpu
             continue;
 
                                     // mk4 index is based on difx freq index & pol pair
-        t101.index = 10 * pfb[n].stn[ref].find;
+        t101.index = 10 * pfb[n].stn[0].find;
         if      (pfb[n].stn[ref].chan_id[4] == 'L' && pfb[n].stn[rem].chan_id[4] == 'L')
             t101.index += 1;
         else if (pfb[n].stn[ref].chan_id[4] == 'R' && pfb[n].stn[rem].chan_id[4] == 'R')
