@@ -15,6 +15,7 @@ Version 2.2.0
   more relevant code.
 * Add a few features (ephemDeltaT, ephemStellarAber, ephemClockError) useful in
   exploring spacecraft ephemeris but probably not useful for operations
+* change zoom band definition to always be USB (specify lower edge freq)
 
 Version 2.1.0
 ~~~~~~~~~~~~~
