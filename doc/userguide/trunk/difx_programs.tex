@@ -17,11 +17,10 @@ The code for these programs can be made available upon request.
 
 
 % TODO
-% Add SniffPlots 
-% m5access: m5timeseries, m5findformats
+% m5access: m5timeseries
 % add more hyperlinks (e.g., to vdifd, etc)
 % document VDIF in vex2difx and other new features
-% doc testseqnumbers
+% difxbuild difxspeed
 
 
 
@@ -29,8 +28,7 @@ The code for these programs can be made available upon request.
 
 \subsection{calcif2} \label{sec:calcif2}
 
-Program {\tt calcif2} is intended to completely replace {\tt calcif}.
-This program produces a delay model file (ending with {\tt .im}) from a file containing the source, antenna and scan timing information (ending with {\tt .calc}).
+Program {\tt calcif2} evaluates the delay model, producing a delay model file (ending with {\tt .im}) from a file containing the source, antenna and scan timing information (ending with {\tt .calc}).
 The detailed calculations are performed by the Goddard CALC program.
 Prior to this writing (May 4, 2013), the only option for the calculation back-end was CALC version 9 with NRAO additions which add ocean loading and near-field corrections (accurate as close as a few $\times 10^5$~km). 
 Now new options are being introduced, including CALC 9 with the Sekido-Fukushima near-field model (using the {\tt --sekido} option).
@@ -1269,9 +1267,20 @@ For equivalent functionality in the multi-thread VDIF case see {\tt vdifd}.
 
 
 
-% m5findformat -------------------------------------------- INCOMPLETE --------
+% m5findformats ---------------------------------------------------------------
 
-\subsection{m5findformat {\small $\mathrm{(package: mark5access)}$}} \label{sec:m5findformat}
+\subsection{m5findformats {\small $\mathrm{(package: mark5access)}$}} \label{sec:m5findformat}
+
+Program {\tt m5findformats} attempts to determine which format a baseband data file may be.
+Currrently it searches over 16 to 2048 Mbps data rates in factors of 2 and checks only for MKIV, VLBA and Mark5B types.
+
+\begin{itemize}
+\item[] Usage: {\tt m5findformats} {\em filename}
+\item {\em filename} is the name of the baseband data file.
+\end{itemize}
+
+Run with no command line arguments to get help information.
+
 
 
 
@@ -1412,9 +1421,42 @@ See the documentation for {\tt m5d} for information on specifying the data forma
 
 
 
-% m5timeseries -------------------------------------------- INCOMPLETE --------
+% m5time ----------------------------------------------------------------------
+
+\subsection{m5time{\small $\mathrm{(package: mark5access)}$}} \label{sec:m5time}
+
+Program {\tt m5time} decodes the time of the beginning of a Mark4, VLBA, or Mark5B datastream and prints the result in integer MJD and UT hours, minutes, seconds to the screen.
+
+\begin{itemize}
+\item[] Usage: {\tt m5time} {\em infile} {\em format}
+\item[] {\em infile} is the file to decode
+\item[] {\em format} is the format of the data`
+\end{itemize}
+
+
+
+
+% m5timeseries ----------------------------------------------------------------
 
 \subsection{m5timeseries {\small $\mathrm{(package: mark5access)}$}} \label{sec:m5timeseries}
+
+Program {\tt m5timeseries} produces a power measurments for each of channel of a baseband data file, averaging over a specified time interval.
+
+\begin{itemize}
+\item[] Usage: {\tt m5timeseries} {\em infile} {\em format} {\em tint} {\em ntime} {\em outfile} $[$ {\em offset} $]$
+\item[] {\em infile} is the file to decode
+\item[] {\em format} is the format of the data`
+\item[] {\em tint} is the integration time per sample in milliseconds
+\item[] {\em ntime} is the number of samples to generate
+\item[] {\em outfile} is the name of the output file
+\item[] {\em offset} (optional) is the number of bytes into the file to start decoding
+\item[] Example: {\tt m5timeseries sample.vlba VLBA1\_2-256-8-2 6.25 8000 sample.series}
+\end{itemize}
+
+The output file contains {\em nchan}+2 columns of data where {\em nchan} is the number of channels in the data file.
+The first column is sample number.
+The second column is time since beginning of series, in seconds.
+The remaining columns are power measurements for the channels.
 
 
 
