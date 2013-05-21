@@ -43,11 +43,12 @@ static void usage()
           author, verdate);
   fprintf(stderr, "A program to translate multiple thread VDIF format to single thread\n");
   fprintf(stderr, "Must be one datastream in and one datastream out\n");
-  fprintf(stderr, "\nUsage: %s <VDIF input file> <VDIF output file> <Num input threads> ", program);
+  fprintf(stderr, "\nUsage: %s <VDIF input file> <VDIF output file> <Num input threads> <Num output threads>", program);
   fprintf(stderr, "<input Mbps/thread> <threadId0> <threadId1> ... <threadIdN> [-v]\n");
   fprintf(stderr, "\n<VDIF input file> is the name of the multiple thread VDIF file to read\n");
   fprintf(stderr, "\n<VDIF output file> is the name of the single thread VDIF file to write\n");
   fprintf(stderr, "\n<Num input threads> is the number of threads to start with (must be a power of 2)\n");
+  fprintf(stderr, "\n<Number output threads> Number of threads in the output multichannel VDIF file (must be power of 2)\n"); 
   fprintf(stderr, "\n<input Mbps/thread> is the data rate in Mbps expected per input thread\n");
   fprintf(stderr, "\n<threadIdN> is the threadId to put in the Nth output channel\n");
   fprintf(stderr, "\n[-v] verbose mode on\n");
@@ -68,71 +69,88 @@ int validData(int ** bufferframefull, int bufferframe, int numthreads, int verbo
   return 1;
 }
 
-void readdata(int inputframebytes, char * inputbuffer, FILE * input, int numbufferframes, int numthreadbufframes, int framespersecond, int * threadindexmap, char ** threadbuffers, int ** bufferframefull, int processframenumber, int numthreads, int refframemjd, int refframesecond, int refframenumber, int verbose)
+int numMissingFrames(int ** bufferframefull, int bufferframe, int numthreads, int verbose) {
+  int i, toreturn = 0;
+  
+  for(i = 0;i < numthreads; ++i) {
+    if(!bufferframefull[i][bufferframe])
+      ++toreturn;
+  }
+  return toreturn;
+}
+
+int readdata(int inputframebytes, char * inputbuffer, FILE * input, int numbufferframes, int numthreadbufframes, int framespersecond, int * threadindexmap, char ** threadbuffers, int ** bufferframefull, int processframenumber, int numthreads, int refframemjd, int refframesecond, int refframenumber, int verbose)
 {
-  int i, j;
+  int i, j, framestoread, storedframes;
   int inputframecount, readbytes, frameoffset, frameindex;
   int framebytes, framemjd, framesecond, framenumber, framethread, threadindex;
   long long currentframenumber;
   vdif_header *header;
 
   //read from the file
-  inputframecount = numbufferframes;
-  readbytes = fread(inputbuffer, 1, inputframebytes*numbufferframes, input);
-  if (readbytes < numbufferframes*inputframebytes) {
-    fprintf(stderr, "Read failed with only %d/%d bytes - probably at end of file.\n", readbytes, numbufferframes*inputframebytes);
-    inputframecount = readbytes/inputframebytes;
-  }
+  framestoread = numbufferframes;
+  storedframes = 0;
+  while(framestoread > 0 && !feof(input)) {
+    inputframecount = framestoread;
+    readbytes = fread(inputbuffer, 1, inputframebytes*framestoread, input);
+    if (readbytes < framestoread*inputframebytes) {
+      fprintf(stderr, "Read failed with only %d/%d bytes - probably at end of file.\n", readbytes, framestoread*inputframebytes);
+      inputframecount = readbytes/inputframebytes;
+    }
+    framestoread -= inputframecount;
 
-  //distribute packets
-  for(i=0;i<inputframecount;++i) {
-    header = (vdif_header*)inputbuffer+i*inputframebytes;
-    framethread = getVDIFThreadID(header);
-    framebytes = getVDIFFrameBytes(header);
-    framemjd = getVDIFFrameMJD(header);
-    framesecond = getVDIFFrameSecond(header);
-    framenumber = getVDIFFrameNumber(header);
-    if(framebytes != inputframebytes) {
-      fprintf(stderr, "Framebytes has changed, from %d to %d - aborting!\n", inputframebytes, framebytes);
-      exit(EXIT_FAILURE);
-    }
-    //check that this thread is wanted
-    threadindex = -1;
-    for(j=0;j<numthreads;++j) {
-      if(threadindexmap[j] == framethread) {
-        threadindex = j;
-        break;
+    //distribute packets
+    for(i=0;i<inputframecount;++i) {
+      header = (vdif_header*)(inputbuffer+i*inputframebytes);
+      framethread = getVDIFThreadID(header);
+      framebytes = getVDIFFrameBytes(header);
+      framemjd = getVDIFFrameMJD(header);
+      framesecond = getVDIFFrameSecond(header);
+      framenumber = getVDIFFrameNumber(header);
+      if(framebytes != inputframebytes) {
+        fprintf(stderr, "Framebytes has changed, from %d to %d - aborting!\n", inputframebytes, framebytes);
+        exit(EXIT_FAILURE);
       }
-    }
-    if(threadindex < 0) {
-      if(verbose) {
-        fprintf(stderr, "Skipping packet from threadId %d\n", framethread);
+      //check that this thread is wanted
+      threadindex = -1;
+      for(j=0;j<numthreads;++j) {
+        if(threadindexmap[j] == framethread) {
+          threadindex = j;
+          break;
+        }
+      }
+      if(threadindex < 0) {
+        if(verbose) {
+          fprintf(stderr, "Skipping packet from threadId %d\n", framethread);
+        }
         continue;
       }
+      storedframes++;
+  
+      //put this frame where it belongs
+      currentframenumber = ((long long)((framemjd-refframemjd)*86400 + framesecond - refframesecond))*framespersecond + framenumber - refframenumber;
+      if (currentframenumber < 0) {
+        fprintf(stderr, "Discarding a frame from thread %d which is timestamped %lld frames earlier than the first frame in the file\n", framethread, currentframenumber);
+        continue;
+      }
+      frameoffset  = (int) (currentframenumber - processframenumber);
+      if(frameoffset < 0) {
+        fprintf(stderr, "Discarding a frame from thread %d which is timestamped %d frames earlier than the current frame being processed\n", framethread, -frameoffset);
+        continue;
+      }
+      frameindex = (int)(currentframenumber % numthreadbufframes);
+      if (bufferframefull[threadindex][frameindex]) {
+        fprintf(stderr, "Frame at index %d, which was count %lld was already full - aborting!\n", frameindex, currentframenumber);
+        exit(EXIT_FAILURE);
+      }
+      if(verbose) {
+        fprintf(stdout, "Putting a frame from thread %d into slot %d, the frame count is %d\n", threadindex, frameindex, i);
+      }
+      memcpy(threadbuffers[threadindex] + frameindex*framebytes, inputbuffer + i*framebytes, framebytes);
+      bufferframefull[threadindex][frameindex] = 1;
     }
-
-    //put this frame where it belongs
-    currentframenumber = ((long long)((framemjd-refframemjd)*86400 + framesecond - refframesecond))*framespersecond + framenumber - refframenumber;
-    if (currentframenumber < 0) {
-      fprintf(stderr, "Discarding a frame from thread %d which is timestamped %lld frames earlier than the first frame in the file\n", framethread, currentframenumber);
-      continue;
-    }
-    frameoffset  = (int) (currentframenumber - processframenumber);
-    if(frameoffset < 0) {
-      fprintf(stderr, "Discarding a frame from thread %d which is timestamped %d frames earlier than the current frame being processed\n", framethread, -frameoffset);
-      continue;
-    }
-    frameindex = (int)(currentframenumber % numthreadbufframes);
-    if (bufferframefull[threadindex][frameindex]) {
-      fprintf(stderr, "Frame at index %d, which was count %lld was already full - aborting!\n", frameindex, currentframenumber);
-      exit(EXIT_FAILURE);
-    }
-    if(verbose) {
-      fprintf(stdout, "Putting a frame from thread %d into slot %d, the frame count is %d\n", threadindex, frameindex, i);
-    }
-    memcpy(threadbuffers[threadindex] + frameindex*framebytes, inputbuffer + i*framebytes, framebytes);
-    bufferframefull[threadindex][frameindex] = 1;
   }
+  return storedframes;
 }
 
 // main method
@@ -159,19 +177,20 @@ int main(int argc, char **argv)
   int * threadindexmap; // [numthreads]
   int f, i, j, k, l, verbose, processindex;
   unsigned int copyword, activemask;
-  int wordsperinputframe, samplesperinputword, samplesperoutputword;
+  int wordsperinputframe, samplesperinputword, samplesperoutputword, numinputthreads, framesinbuffer, nmissing, totalmissing;
   long long processframenumber;
   vdif_header *header;
 
   //check the command line arguments, store thread mapping etc
-  if(argc < 7)
+  if(argc < 8)
   {
     usage();
 
     return EXIT_FAILURE;
   }
-  numthreads = atoi(argv[3]);
-  if(argc != 5+numthreads && argc != 6+numthreads)
+  numinputthreads = atoi(argv[3]);
+  numthreads = atoi(argv[4]);
+  if(argc != 6+numthreads && argc != 7+numthreads)
   {
     usage();
 
@@ -182,15 +201,15 @@ int main(int argc, char **argv)
     return EXIT_FAILURE;
   }
 
-  if(argc == 6+numthreads)
+  if(argc == 7+numthreads)
     verbose = 1;
   else
     verbose = 0;
 
-  inputthreadmbps = atoi(argv[4]);
+  inputthreadmbps = atoi(argv[5]);
   threadindexmap = (int *) malloc(numthreads * sizeof(int));
   for(i=0;i<numthreads;++i)
-    threadindexmap[i] = atoi(argv[5+i]);
+    threadindexmap[i] = atoi(argv[6+i]);
 
   input = fopen(argv[1], "r");
   if(input == NULL)
@@ -206,6 +225,7 @@ int main(int argc, char **argv)
     exit(EXIT_FAILURE);
   }
 
+  printf("About to peek in file\n");
   //peek at the start of the file, work out framebytes and reference time
   readbytes = fread(tempbuffer, 1, VDIF_HEADER_BYTES, input); //read the VDIF header
   if (readbytes<VDIF_HEADER_BYTES) {
@@ -273,27 +293,36 @@ int main(int argc, char **argv)
   }
 
   //initialise the read buffer, do some checking
+  int storedframes;
   outputframecount = 0;
   processframenumber = 0;
+  framesinbuffer = 0;
   for(i=0;i<threadbufmultiplier*numthreads/2;++i) {
-    if(!feof(input))
-      readdata(inputframebytes, inputbuffer, input, numbufferframes, numthreadbufframes, framespersecond, threadindexmap, threadbuffers, bufferframefull, processframenumber, numthreads, refframemjd, refframesecond, refframenumber, verbose);
+    if(!feof(input)) {
+      storedframes = readdata(inputframebytes, inputbuffer, input, numbufferframes, numthreadbufframes, framespersecond, threadindexmap, threadbuffers, bufferframefull, processframenumber, numthreads, refframemjd, refframesecond, refframenumber, verbose);
+      framesinbuffer += storedframes;
+    }
   }
 
   //loop through until no more data
-  while(!feof(input) || validData(bufferframefull, processframenumber % numthreadbufframes, numthreads, verbose)) {
+  while(!feof(input) || ((totalmissing < (numthreads*numbufferframes)/numinputthreads) && validData(bufferframefull, processframenumber % numthreadbufframes, numthreads, verbose))) {
     if(verbose) {
       printf("Looping through %d frames...\n", numbufferframes);
     }
     //read data, if we still can
-    if(!feof(input)) {
-      readdata(inputframebytes, inputbuffer, input, numbufferframes, numthreadbufframes, framespersecond, threadindexmap, threadbuffers, bufferframefull, processframenumber, numthreads, refframemjd, refframesecond, refframenumber, verbose);
+    if(!feof(input) && ((totalmissing == (numthreads*numbufferframes)/numinputthreads) || (framesinbuffer < 2.5*(numthreads*numbufferframes)/numinputthreads))) {
+      storedframes = readdata(inputframebytes, inputbuffer, input, numbufferframes, numthreadbufframes, framespersecond, threadindexmap, threadbuffers, bufferframefull, processframenumber, numthreads, refframemjd, refframesecond, refframenumber, verbose);
+      framesinbuffer += storedframes;
     }
 
     //loop over the equivalent amount of data we just read in
-    for(f=0;f<numbufferframes/numthreads;++f) {
+    //for(f=0;f<numbufferframes/numthreads;++f) {
+    totalmissing = 0;
+    for(f=0;f<numbufferframes/numinputthreads;++f) {
       //rearrange one frame
       processindex = processframenumber % numthreadbufframes;
+      nmissing = numMissingFrames(bufferframefull, processindex, numthreads, verbose);
+      totalmissing += nmissing;
       if(validData(bufferframefull, processindex, numthreads, verbose)) {
         //copy in and tweak up the VDIF header
         memcpy(outputbuffer + outputframecount*outputframebytes, threadbuffers[0] + processindex*inputframebytes, VDIF_HEADER_BYTES);
@@ -326,8 +355,29 @@ int main(int argc, char **argv)
         ++outputframecount;
       }
       else{
-        fprintf(stderr, "Not all threads had valid data for frame %lld\n", processframenumber);
+        if(verbose) {
+          fprintf(stderr, "Not all threads had valid data for frame %lld\n", processframenumber);
+  	  if(feof(input))
+ 	    fprintf(stderr, "EOF has been reached\n");
+	  else
+	    fprintf(stderr, "EOF has been *not* reached\n");
+	}
+	header = (vdif_header*)(outputbuffer + outputframecount*outputframebytes);
+	setVDIFFrameInvalid(header, 1);
+	setVDIFNumChannels(header, numthreads);
+	setVDIFFrameNumber(header, (processframenumber+refframenumber)%framespersecond);
+	setVDIFFrameSecond(header, refframesecond + (processframenumber+refframenumber)/framespersecond);
+	setVDIFFrameBytes(header, outputframebytes);
+	setVDIFBitsPerSample(header, bitspersample);
+	setVDIFThreadID(header, 0);
+        //clear the data we just used
+	for(i=0;i<numthreads;++i)
+	  bufferframefull[i][processframenumber % numthreadbufframes] = 0;
+	++outputframecount;
       }  
+      framesinbuffer -= (numthreads - nmissing);
+      if(f==0 && verbose)
+        printf("Framesinbuffer is now %d, numMissingFrames is %d\n", framesinbuffer, nmissing);
       ++processframenumber;
 
       //if output buffer is full, dump it to output file

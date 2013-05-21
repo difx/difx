@@ -152,6 +152,18 @@ void setVDIFNumChannels(vdif_header *header, int numchannels)
   header->nchan = logchans;
 }
 
+int getVDIFNumChannels(const vdif_header *header)
+{
+  int logchans = header->nchan;
+  int numchannels = 1;
+  while(logchans > 0)
+  {
+    numchannels *= 2;
+    logchans--;
+  }
+  return numchannels;
+}
+
 int getVDIFFrameMJD(const vdif_header *header)
 {
   int mjd = getVDIFEpochMJD(header);

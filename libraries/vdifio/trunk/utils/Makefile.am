@@ -12,6 +12,7 @@ bin_PROGRAMS = \
 	cleanVDIF \
 	fakemultiVDIF \
 	extractSingleVDIFThread \
+	extractVDIFThreads \
 	countVDIFPackets \
 	printVDIF \
 	peekVDIF \

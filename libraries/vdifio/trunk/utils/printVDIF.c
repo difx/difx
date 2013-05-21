@@ -74,7 +74,7 @@ int main(int argc, char **argv)
   header = (vdif_header*)buffer;
   framebytes = getVDIFFrameBytes(header);
   if(framebytes > MaxFrameSize) {
-    fprintf(stderr, "Cannot read frame with %d bytes > max (%d)\n", framebytes, MaxFrameSize);
+    fprintf(stderr, "Cannot read frame with %d bytes > max (%d), formal max %d\n", framebytes, MaxFrameSize, MAX_VDIF_FRAME_BYTES);
     exit(EXIT_FAILURE);
   }
   framemjd = getVDIFFrameMJD(header);
@@ -99,7 +99,7 @@ int main(int argc, char **argv)
     framenumber = getVDIFFrameNumber(header);
     frameinvalid = getVDIFFrameInvalid(header);
     printf("MJD is %d, second is %d, framenumber is %d, frameinvalid is %d\n", framemjd, framesecond, framenumber, frameinvalid);
-    printf("Threadid is %d, stationid is %d\n", getVDIFThreadID(header), getVDIFStationID(header));
+    printf("Threadid is %d, stationid is %d, numbits is %d\n", getVDIFThreadID(header), getVDIFStationID(header), getVDIFBitsPerSample(header));
     if(getVDIFFrameBytes(header) != framebytes) { 
       fprintf(stderr, "Framebytes has changed! Can't deal with this, aborting\n");
       break;
