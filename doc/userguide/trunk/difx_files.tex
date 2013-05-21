@@ -1,5 +1,4 @@
 
-% bootstrap files
 % difxspeed input files
 
 \section{Description of various files} \label{sec:files}
@@ -7,7 +6,6 @@
 In the descriptions that follow, the locations of some files is given as {\tt /home/vlbiobs}, meaning the directory {\tt /home/vlbiobs/astronomy/}{\em mmmyy}{\tt /}{\em project} or one of its subdirectories (this is VLBA-centric).
 Here {\em mmmyy} is the month and year of the project's observation (i.e., {\tt jan08}) and project is the full project name, with segment, in lower case, such as {\tt bw088n}.
 In what follows, the ``software correlator project directory'' (sometimes ``project directory'') refers to the directory from which software correlation is to proceed.
-This directory can be created by {\tt getjobs} (\S\ref{sec:getjobs}).
 File names beginning with a period (e.g., {\tt .acb}) represent file name extensions, typically (but not always) to job file bases, such as {\tt job121.000} .
 %Examples of many of the following file types for a particular VLBA correlator job are stashed at \url{http://www.aoc.nrao.edu/~wbrisken/NRAO-DiFX-1.1/} .
 
@@ -195,6 +193,94 @@ See Sec.~\ref{sec:pulsars} for example usage of {\tt .binconfig} files.
 
 
 
+% .bootstrap -------------------------------------------- INCOMPLETE ----------
+
+\subsection{.bootstrap} \label{sec:bootstrapfile}
+
+The {\tt difxbuild} installer program begins its process by building an environment based on the contents of a {\tt .bootstrap} file.
+In the simplest case only three parameters are required ({\tt version}, {\tt headnode}, and {\tt difxbase}), however installations can be customized through the use of several other parameters.
+The {\tt .bootstrap} file is a text file containing zero or one {\em key = value} statements on each line.
+Comments begin with a \#.
+
+The parameters specified can include:
+
+\begin{itemize}
+\item {\tt version}: which version of difx to install.
+Currently supported values are DIFX-DEVEL, DIFX-2.1, and DIFX-2.2.
+The {\tt DIFX\_VERSION} environment varialbe will reflect this value.
+This parameter is required.
+
+\item {\tt headnode}: the computer that will be singled out as the head node.
+The {\tt DIFX\_HEAD\_NODE} environment variable will reflect this value.
+This parameter is required.
+
+\item {\tt difxbase}: the top level directory for DiFX software.
+DiFX-version-independent files will be placed directly beneath this directory.
+By default DiFX version specific files will be installed in a subdirectory of this (see information about the root parameter below).
+It is okay (and encouraged) to use the same difxbase for all installed versions as this allows common third-party software to be used.
+This parameter is required.
+
+\item {\tt root}: the base directory for DiFX version/label specific files for the primary platform.
+Secondary platforms will use the same but with a provided extension (see altplatformX below).
+If not provided, this parameter will default to {\em difxbase} (or {\em label} if specified).
+
+\item {\tt ipproot}: path to the base of the Intel Performance Primitives library.
+This is IPP version dependent and may require a bit of trial and error to get right.
+If this is set to  none  then an IPP-free DiFX will be installed.
+This requires FFTW to be installed.
+Each architecture can have its own ipproot value.
+{\tt ipproot} specifies the the default; architecture-dependent overrides are specified with a parameter such as {\tt ipprooti686} or {\tt ipprootx86\_64}.
+
+\item {\tt label}: a label used to identify an installation of DiFX.
+By default it is set equal to the specified version.
+Setting it to an alternate value allows multiple installations of the same DiFX version to be later identifiable.
+The {\tt DIFX\_LABEL} environment variable will reflect this value.
+
+\item {\tt calcserver}: the computer to send RPC model requests to.
+If not specified, this will default to the value of the headnode parameter.
+The {\tt CALC\_SERVER} environment variable will reflect this value.
+
+\item {\tt cflags}: default c and c++ compiler flags to use.
+If not specified, the default of {\tt -O2 -Wall -march=core2} will be used.
+
+\item {\tt pathextra}: extra binary search paths to add the the {\tt PATH} environment variable that is set in the {\tt setup\_difx} script.
+
+\item {\tt ldextra}: extra paths to be added to the {\tt LD\_LIBRARY\_PATH} environment variable that is set in the {\tt setup\_difx} script.
+
+\item {\tt wrapper}: an optional wrapper program that can be used to spawn {\tt mpifxcorr}.
+This value gets coded into the {\tt runmpifxcorr.}{\em label} launcher script.
+For example, {\tt valgrind} could be used as the wrapper program if memory leek checking is desired.
+Use this parameter with caution.
+
+\item {\tt mca}: parameters to add to the {\tt /etc/openmpi-mca-params.conf} file.
+If not provided, no such file will be created.
+This can be useful to include or exclude certain network interfaces.
+You can set this on a per platform basis.
+To do this, for example, set {\tt mcai686} and {\tt mcax86\_64} separately.
+
+\item {\tt primaryarch}: Normally bootstrapping needs to be done on a machine running on the primary architecture.
+If {\tt primaryarch} is set, the bootstrapping step can be run on any machine.
+This should be set to {\tt i686}, {\tt x86\_64}, or whatever {\tt "uname -m"} returns on the primary architecture.
+
+\item {\tt altplatform}{\em X}: Here {\em X} is a number from 1 to 9.
+This parameter gives a sub-label to each non-primary platform.
+Examples might be {\tt SDK8} and {\tt SDK9} for Mark5 units using two different Conduant library versions.
+For each specified alternate platform the following three additional parameters are needed \ldots
+
+\begin{itemize}
+\item {\tt altplatform}{\em X}{\tt arch}: The CPU architecture, as determined by {\tt "uname -m"}, that this platform is based upon.
+
+\item {\tt altplatform}{\em X}{\tt host}: A representative computer making use of this platform.
+This is used when spawning a parallel build process.
+
+\item {\tt altplatform}{\em X}{\tt test}: A bash conditional expression used to determine if the computer running the {\tt setup\_bash} script belongs to this platform.
+An example is: {\tt x`pkg-config --modversion streamstor` < "x9.0"}
+
+\end{itemize}
+\end{itemize}
+
+
+
 % cal.vlba --------------------------------------------------------------------
 
 \subsection{cal.vlba} \label{sec:cal}
@@ -202,7 +288,6 @@ See Sec.~\ref{sec:pulsars} for example usage of {\tt .binconfig} files.
 Monitor data that gets attached to FITS files is extracted by {\tt tsm} into a file called {\em project}{\tt cal.vlba} where {\em project} is the name of the project, i.e., {\tt bg167} or {\tt bc120a}.
 A single file contains the monitor data for all VLBA antennas, maybe also including GBT, Effelsberg and Arecibo, for the duration of the project.
 The file is left in {\tt /home/vlbiobs} and is compressed with {\tt gzip} after some time to save disk space, resulting in additional file extension {\tt .gz}.
-The program {\tt getjobs} (\S\ref{sec:getjobs}) can be used to copy this file from its original location in {\tt /home/vlbiobs} and uncompress the file if needed.
 A program called {\tt vlog} (sec \S\ref{sec:vlog}) reads this file and produces files called {\tt flag}, {\tt pcal}, {\tt tsys}, and {\tt weather} in the software correlator project directory.
 
 
@@ -216,7 +301,7 @@ A program called {\tt vlog} (sec \S\ref{sec:vlog}) reads this file and produces 
 \subsection{.calc} \label{sec:calc}
 
 The main use of the {\tt .calc} file is to drive the geometric model calculations but this file also serves as a convenient place to store information that is contained in the {\tt .fx} file but not in the {\tt .input file} and is needed for {\tt .FITS} file creation.
-In the DiFX system, one {\tt .calc} file is created by {\tt job2difx} (\S\ref{sec:job2difx}) for each {\tt .input} file.
+In the DiFX system, one {\tt .calc} file is created by {\tt vex2difx} (\S\ref{sec:vex2difx}) for each {\tt .input} file.
 This file is read by {\tt calcif2}) (\S\ref{sec:calcif2}) to produce a tabulated delay model, $u, v, w$ values, and estimates of atmospheric delay contributions.
 
 In brief, the parameters in this file that are relevant for correlation include time, locations and geometries of antennas, pointing of antennas (and hence delay centers) as a function of time and the Earth orientation parameters relevant for the correlator job in question.
@@ -248,8 +333,8 @@ OBSCODE            & string         & observation code assigned to project \\
 \Oa{SESSION}            & short string   & session suffix to OBSCODE, e.g., {\tt A} or {\tt BE} \\
 \Oa{DIFX VERSION}       & string         & version of correlator, e.g. {\tt DIFX-1.5} \\
 \Oa{DIFX LABEL}         & string         & name of correlator install, e.g. {\tt DIFX-WALTER} \\
-\Da{SUBJOB ID}          & integer $\ge 0$& subjob id assigned by {\tt job2difx} (\S\ref{sec:job2difx}) \\
-\Da{SUBARRAY ID}        & integer $\ge 0$& subarray id assigned by {\tt job2difx} \\
+%\Da{SUBJOB ID}          & integer $\ge 0$& subjob id assigned by {\tt job2difx} (\S\ref{sec:job2difx}) \\
+%\Da{SUBARRAY ID}        & integer $\ge 0$& subarray id assigned by {\tt job2difx} \\
 VEX FILE	   & string         & dir/filename of vex file used to create the job \\
 START MJD          & MJD + fraction & start time of this subjob \\
 START YEAR         & integer        & calendar year of START MJD \\
@@ -514,6 +599,13 @@ The sixth column contains a word describing the contents of the remainder of the
 
 
 
+% .difxlog -------------------------------------------- INCOMPLETE ------------
+
+\subsection{.speed} \label{sec:speed}
+
+
+
+
 
 % $DIFX_MACHINES --------------------------------------------------------------
 
@@ -658,7 +750,7 @@ These lines contain three fields:
 
 \subsection{.flag} \label{sec:dotflag}
 
-The program {\tt job2difx} may write a {\tt .flag} file for each {\tt .input} file it creates.
+The program {\tt vex2difx} may write a {\tt .flag} file for each {\tt .input} file it creates.
 This file is used by {\tt difx2fits} to exclude nonsense baselines that might have been correlated.
 This can occur when multiple subarrays are coming and going.
 The format of this text file is as follows.
@@ -848,7 +940,7 @@ XMAC STRIDE LENGTH  & int & number of channels to cross multiply in one batch (m
 NUM BUFFERED FFTS   & int & number of FFTs to cross-multiply in one batch \\
 WRITE AUTOCORRS    & boolean & enable auto-correlations; {\em TRUE} here \\
 PULSAR BINNING     & boolean & enable pulsar mode \\
-PULSAR CONFIG FILE & string & ({\em only if BINNING is True}) see \S~\ref{sec:psrconfigfile} \\
+PULSAR CONFIG FILE & string & ({\em only if BINNING is True}) see \S~\ref{sec:binconfig} \\
 PHASED ARRAY       & boolean & set to FALSE (placeholder for now) \\
 DATASTREAM {\em d} INDEX & integer $\ge 0$ & DATASTREAM table index, starting at 0 \\
 BASELINE {\em b} INDEX   & integer $\ge 0$ & BASELINE table index, starting at 0 \\
@@ -1094,6 +1186,31 @@ This file is meant as a summary for human use and as such does not have a format
 The file contains a 2-dimensional map (antenna number vs.\ time) of which jobs contributed to the {\tt .FITS} file.
 
 
+
+
+
+% .lag ------------------------------------------------------------------------
+
+\subsection{.lag} \label{sec:lag}
+
+Program {\tt zerocorr} (\S\ref{sec:zerocorr} produces lag output in a format documented here.
+There is one line of output per lag.
+Each line has 7 columns as per the following table:
+\begin{center}
+\begin{tabular}{ll}
+\hline
+Line & Contents \\
+\hline
+1 & Channel (spectral point) number (counts from zero) \\
+2 & Time lag (sec) \\
+3 & Real value of the lag function \\
+4 & Imaginary value of the lag function \\
+5 & Amplitude \\
+6 & Phase \\
+7 & Window function (weight at this lag) \\
+\hline
+\end{tabular}
+\end{center}
 
 
 
@@ -1822,3 +1939,72 @@ In the former case (the case used by most astronomical VLBI), the vex file has t
 These two vex formatted files contain only observation-scheduling based information.
 A small amount of information based on the actualities of the observation are added by {\tt db2vex}, producing a new vex file with an additional file extension {\tt .obs} .
 Please see vex documentation external to this manual for more information.
+
+
+
+% .vis ------------------------------------------------------------------------
+
+\subsection{.vis} \label{sec:vis}
+
+Program {\tt zerocorr} (\S\ref{sec:zerocorr} produces visibility output in a format documented here.
+There is one line of output per generated spectral point.
+Each line has 8 columns as per the following table:
+\begin{center}
+\begin{tabular}{ll}
+\hline
+Line & Contents \\
+\hline
+1 & Channel (spectral point) number (counts from zero) \\
+2 & Frequency relative to first spectral channel (Hz) \\
+3 & Real value of the visibility \\
+4 & Imaginary value of the visibility \\
+5 & Amplitude \\
+6 & Phase \\
+7 & Autocorrelation of the first datastream (real only) \\
+8 & Autocorrelation of the second datastream (real only) \\
+\hline
+\end{tabular}
+\end{center}
+
+
+
+
+% .zerocorr -------------------------------------------------------------------
+
+\subsection{.zerocorr} \label{sec:zc}
+
+Program {\tt zerocorr} (\S\ref{sec:zerocorr} is a simple cross correlator.
+It is limited to correlating one visibility spectrum from one baseband channel and can only make use of a constant offset delay model.
+The section documents the file that drives this program.
+This file consists of 17 lines of text.
+The first 7 lines describe properties of the data from the first antenna and the following (7) lines describe properties of the second antenna as follows:
+\begin{center}
+\begin{tabular}{ll}
+\hline
+Line & Contents \\
+\hline
+1 (8) & Input baseband data file name \\
+2 (9) & Data format (e.g., Mark5B-2048-16-2) \\
+3 (10) & Input sub-band to process (0-based index) \\
+4 (11) & Offset into the file (bytes) \\
+5 (12) & Size of FFT to perform over input bandwidth ($2\times n_{\rm chan}$) \\
+6 (13) & First channel (spectral point) to correlate \\
+7 (14) & Number of channels to correlate (negative indicates LSB) \\
+\hline
+\end{tabular}
+\end{center}
+
+The last three lines dictate the output data files and the number of FFTs to process:
+
+\begin{center}
+\begin{tabular}{ll}
+\hline
+Line & Contents \\
+\hline
+15 & Name of output visibility ({\tt .vis}; \S\ref{sec:vis}) file \\
+16 & Name of output {\tt .lag} (\S\ref{sec:lag}) file \\
+17 & Number of FFTs to process (if -1, run on entire input files) \\
+\hline
+\end{tabular}
+\end{center}
+

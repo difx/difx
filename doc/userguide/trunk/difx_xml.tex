@@ -1,10 +1,5 @@
 \section{XML message types} \label{sec:xml}
 
-\vspace{-20pt}\hspace{180pt}
-\difxoneone
-
-\vspace{7pt}
-
 The {\tt difxmessage} library (\S\ref{sec:difxmessage}) implements a system for sending and receiving messages using XML format.
 This section documents the ``difxMessage'' XML document type that is used for interprocess communication during correlation within DiFX.
 These messages are sent via UDP multicast and are thus restricted to fit within one standard-sized Ethernet packet ($\sim$1500 bytes).
@@ -61,17 +56,28 @@ value    & description of message type \\
 \hline
 {\tt DifxAlertMessage} & an error message. \\
 {\tt DifxCommand} & a command message. \\
+{\tt DifxDatastreamMessage} & {\em Not yet implemented} \\
+{\tt DifxDiagnosticMessage} & used by {\tt mpifxcorr} to pass out diagnostic-type info such as buffer states \\
+{\tt DifxFileTransfer} & used by the new (USNO) GUI to cause a file to be sent to or from a specified host \\
+{\tt DifxFileOperation} & used by the new (USNO) GUI to cause some operation to a file (such as {\tt mkdir}, {\tt mv}, {\tt rm} \dots) to be performed \\
+{\tt DifxGetDirectory} & used by the new (USNO) GUI to request a Mark5 {\tt .dir} file \\
+{\tt DifxInfoMessage} & {\em not used?} \\
 {\tt DifxLoadMessage} & CPU and memory usage (usually sent by {\tt mk5daemon}). \\
-{\tt DifxParameterMessage} & specify new parameter value to an {\tt mpifxcorr} process. \\
-{\tt DifxStartMessage} & tell head node to start a difx job. \\
-{\tt DifxStopMessage} & tell {\tt mk5daemon} to stop a particular instance of {\tt mpifxcorr}. \\
+{\tt DifxMachinesDefinition} & used by the new (USNO) GUI to remotely write a {\tt .machines} file \\
+{\tt DifxParameter} & specify new parameter value to an {\tt mpifxcorr} process. \\
+{\tt DifxSmartMessage} & contains smart data for one drive of a module; usually sent by {\tt mk5daemon} \\
+{\tt DifxStart} & tell head node to start a difx job. \\
+{\tt DifxStop} & tell {\tt mk5daemon} to stop a particular instance of {\tt mpifxcorr}. \\
 {\tt DifxStatusMessage} & status of the {\tt mpifxcorr} program. \\
-{\tt Mark5ConditionMessage} & Mark5 module conditioning statistics for one disc. \\
+{\tt DifxTransientMessage} & used by the VFASTR project to indicate an event of interest \\
+{\tt DifxVex2DifxRun} & used by the new (USNO) GUI to remotely run {\tt vex2difx} \\
+{\tt Mark5DriveStatsMessage} & Mark5 module conditioning statistics for one disc. \\
 {\tt Mark5StatusMessage} & status of the mark5 unit and modules. \\
 {\tt Mark5VersionMessage} & versions, board types and serial numbers of a Streamstor card. 
 \end{tabular}
 
-\noindent Each of these message types is described in sections that follow.
+\noindent Many of these message types are described in sections that follow.
+For those without documentation, the source file {\tt difxmessage.h} in the difxmessage package contains the full set of parameters.
 
 \item[\bfit{seqNum}] the sequence number (starting at 0) of messages coming from the particular program running on the particular host.
 The number advances by 1 for each sent message and can be used to detect lost packets.
@@ -175,6 +181,17 @@ command & action\\
 
 
 
+% DifxDatastreamMessage ----------------------------------- INCOMPLETE --------
+% DifxDiagnosticMessage ----------------------------------- INCOMPLETE --------
+% DifxFileTransfer ---------------------------------------- INCOMPLETE --------
+% DifxFileOperation --------------------------------------- INCOMPLETE --------
+% DifxGetDirectory ---------------------------------------- INCOMPLETE --------
+
+
+
+
+
+
 % DifxLoadMessage -------------------------------------------------------------
 
 \subsection{DifxLoadMessage}
@@ -207,6 +224,7 @@ It is a floating point value containing the average number of processes schedule
 
 
 
+% DifxMachinesDefinition ---------------------------------- INCOMPLETE --------
 
 % DifxParameter ---------------------------------------------------------------
 
@@ -256,7 +274,18 @@ For array types, the following \bfit{index} values specify the element to set.
 
 
 
-% DifxTransientMessage -------------------------------------------------------------
+% DifxSmartMessage ---------------------------------------- INCOMPLETE --------
+
+
+
+
+
+% DifxStatusMessage --------------------------------------- INCOMPLETE --------
+
+
+
+
+% DifxTransientMessage --------------------------------------------------------
 
 \subsection{DifxTransientMessage}
 
@@ -435,7 +464,7 @@ Note that in each XML document of this type there will in general be one \bfit{w
 
 
 
-% DifxStop ------------------------------------------------ INCOMPLETE? -------
+% DifxStop --------------------------------------------------------------------
 
 \subsection{DifxStop}
 
@@ -452,11 +481,12 @@ The \bfit{body} of the message contains:
 
 
 
+% DifxVex2DifxRun ----------------------------------------- INCOMPLETE --------
 
 
-% Mark5ConditionMessage -------------------------------------------------------
+% Mark5DriveStatsMessage ------------------------------------------------------
 
-\subsection{Mark5ConditionMessage}
+\subsection{Mark5DriveStatsMessage}
 
 Mark5 module conditioning is done periodically to ensure top performance of Mark5 modules.
 Each disk in the module gets written across its whole surface to identify bad areas and to {\em calibrate} the electronics.
@@ -466,7 +496,7 @@ The \bfit{body} of the message contains:
 
 \begin{quotation}
 \begin{Verbatim}[commandchars=\|\[\]]
-    <difxCondition>
+    <difxDriveStats>
       <serialNumber>|bfit[serial]</serialNumber>
       <modelNumber>|bfit[model]</modelNumber>
       <size>|bfit[size]</size>
@@ -475,7 +505,9 @@ The \bfit{body} of the message contains:
       <startMJD>|bfit[startMJD]</startMJD>
       <stopMJD>|bfit[stopMJD]</stopMJD>
       <bin|bfit[N]>|bfit[statsN]</bin|bfit[N]>
-    </difxCondition>
+      <type>|bfit[statsType]</type>
+      <startByte>|bfit[startByte]</startByte>
+    </difxDriveStats>
 \end{Verbatim}
 \end{quotation}
 
@@ -490,6 +522,8 @@ The \bfit{body} of the message contains:
 \item{\bfit{startMJD}} the time when conditioning began.
 \item{\bfit{stopMJD}} the time when condtioning ended.
 \item{\bfit{statsN}} the histogram count for bin \bfit{N} for \bfit{N} in the range 0 to 7.
+\item{\bfit{statsType}} type of operation which is one of {\tt condition}, {\tt condition\_read}, {\tt condition\_write}, {\tt read}, {\tt write}, {\tt unknown}, {\tt test}.
+\item{\bfit{startByte}} if not present, assumed to be zero; only relevant for some types of operations.
 \end{description}
 
 

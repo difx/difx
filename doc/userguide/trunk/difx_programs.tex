@@ -1527,8 +1527,8 @@ All commands are not case sensitive.
 \begin{itemize}
 \item {\tt GetVSN} Request a {\tt Mark5Status} XML document to be multicast from the {\em unit}
 \item {\tt ResetMark5} Execute {\tt SSReset} and {\tt ssopen}; this cures many/most mark5 hangs
-\item {\tt StartMark5A} Start the {\tt Mark5A} program (see \S\ref{sec:mk5returnprogram})
-\item {\tt StopMark5A} Stop the {\tt Mark5A} program (see \S\ref{sec:mk5takeprogram})
+%\item {\tt StartMark5A} Start the {\tt Mark5A} program (see \S\ref{sec:mk5returnprogram})
+%\item {\tt StopMark5A} Stop the {\tt Mark5A} program (see \S\ref{sec:mk5takeprogram})
 \item {\tt Clear} Clear the stat of the Mark5 unit and get the VSNs, can be dangerous if other programs are currently using the Streamstor card
 \item {\tt Reboot} Reboot the machine
 \item {\tt Poweroff} Shut down the machine
@@ -1935,7 +1935,7 @@ The {\tt PGPLOT\_FONT} environment variable must be set, otherwise all plot text
 
 
 
-% printDiFX --------------------------------------------------------------------
+% printDiFX -------------------------------------------------------------------
 
 \subsection{printDiFX.py {\small $\mathrm{(package: vis2screen)}$} \label{sec:printDiFX}}
 
@@ -2149,7 +2149,7 @@ These files should closely resemble the input files if the parsing was done prop
 
 % testdifxmessagereceive ------------------------------------------------------
 
-\subsection{testdifxmessagereceive{\small $\mathrm{(package: difxmessage)}$}} \label{sec:difxmessage}
+\subsection{testdifxmessagereceive{\small $\mathrm{(package: difxmessage)}$}} \label{sec:testdifxmessagereceive}
 
 Test program {\tt testdifxmessagereceive} captures multicast DiFX messages and prints them to the screen.
 Both the raw XML is shown and the decoded values.
@@ -2606,7 +2606,6 @@ This program is named after AIPS task {\tt vlog} that does nearly the same thing
 If omitted, all antennas with calibration data will be processed.
 \end{itemize}
 Running with no command line arguments will print usage information to the terminal and exit.
-Normally {\tt vlog} will be run automatically when {\tt getjobs} (\S\ref{sec:getjobs}) is used to copy jobs.
 
 
 
@@ -2638,7 +2637,7 @@ In the case that a non-power-of-two number of channels are contained in the inpu
 
 
 
-% vsn --------------------------------------------------------------------------
+% vsn -------------------------------------------------------------------------
 
 \subsection{vsn {\small $\mathrm{(package: mk5daemon)}$}} \label{sec:vsntool}
 
@@ -2721,7 +2720,7 @@ If the summary operation failed for a file, one of the following error codes wil
 
 
 
-% zerocorr ---------------------------------------------------------------------
+% zerocorr --------------------------------------------------------------------
 
 \subsection{zerocorr {\small $\mathrm{(package: mark5access)}$}} \label{sec:zerocorr}
 
