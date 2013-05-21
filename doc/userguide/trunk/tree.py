@@ -94,7 +94,7 @@ def drawtree(ctx, x, y, data):
 
 # Setup Cairo
 #surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, WIDTH, HEIGHT)
-surface = cairo.PDFSurface('tree.pdf', WIDTH, HEIGHT)
+surface = cairo.PDFSurface(argv[2], WIDTH, HEIGHT)
 ctx = cairo.Context(surface)
 ctx.scale(scale, scale)
 ctx.set_font_size(fontSize)

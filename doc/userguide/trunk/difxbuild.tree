@@ -1,0 +1,35 @@
+$DIFX_BASE the DiFX root dir, containing all versions
+  bin/ setup and wrapper scripts for all versions
+    runmpifxcorr.DIFX-DEVEL wrapper for mpifxcorr
+    setup_difx.DIFX-DEVEL symlink to DIFX-DEVEL/setup_difx
+  bootstrap/ stores history of bootstrapping
+  DIFX-2.1/ top level dir for version 2.1
+    bin/
+    build/
+    buildlog
+    include/
+    lib/
+    setup_difx
+    share/
+    src/
+  DiFX-2.1-SDK9/ top level dir for ver 2.1 SDK9
+    bin/
+    build/
+    buildlog
+    include/
+    lib/
+    share/
+  DIFX-DEVEL/ top level dir for development version
+  DIFX-DEVEL-SDK9/ top level dir for dev ver SDK9
+  difx21.bootstrap bootstrap file for DIFX-2.1
+  directories/ cached Mark5 module directories; environment variable \ "MARK5_DIR_PATH" points here
+  i686/ version agnostic i686 installs
+    bin/
+    etc/
+    include/
+    lib/
+    share/
+    src/
+  tar/ various source code tar balls
+  trunk.bootstrap bootstrap file for DIFX-DEVEL
+  x86_64 version agnostic x86_64 installs

@@ -20,7 +20,7 @@ The code for these programs can be made available upon request.
 % m5access: m5timeseries
 % add more hyperlinks (e.g., to vdifd, etc)
 % document VDIF in vex2difx and other new features
-% difxbuild difxspeed
+% difxspeed
 
 
 
@@ -479,7 +479,7 @@ This directory is renamed without the period once all files to be archived are c
 \begin{itemize}
 \item[] {\tt -h} or {\tt --help} : print usage information and exit
 \item[] {\tt -v} or {\tt --verbose} : increase verbosity of output
-\item[] {\tt -p} or {\tt --pretend} : generate SQL and bash commands but don't execute them.
+\item[] {\tt -p} or {\tt --pretend} : generate SQL and bash commands but don't execute them
 \item[] {\tt --override-version} ignore DiFX version clashes 
 \end{itemize}
 \item[] {\em passName} is the name of a correlator pass; a file called {\em passName}{\tt .fitslist} is expected to be present
@@ -489,6 +489,32 @@ This directory is renamed without the period once all files to be archived are c
 
 
 
+
+
+
+% difxbuild -------------------------------------------------------------------
+
+\subsection{difxbuild} \label{sec:difxbuild}
+
+Program {\tt difxbuild} aids in the installation of DiFX onto a cluster.
+Full documentation on the install process can be found in \S\ref{sec:installdifxbuild}, so details will not be shown here.
+Command syntax is as follows:
+
+\begin{itemize}
+\item[] Usage: {\tt difxbuild} $[$ {\em options} $]$ {\em command} $[$ {\em command arguments} $]$ 
+\item[] {\em options} can be:
+\begin{itemize}
+\item[] {\tt -h} or {\tt --help} : print usage information and exit
+\item[] {\tt -d} or {\tt --documentation} : print full in-line documentation to screen
+\item[] {\tt -t} ot {\tt --todo} : print developer's to-do list
+\item[] {\tt -v} or {\tt --verbose} : increase verbosity of output
+\item[] {\tt -q} or {\tt --quiet} : decrease output verbosity
+\item[] {\tt -p} or {\tt --pretend} : generate SQL and bash commands but don't execute them
+\item[] {\tt -V} or {\tt --version} : print version and quit
+\end{itemize}
+\item[] {\em command} is one of the {\tt difxbuild} commands, such as {\tt build} or {\tt svn}; the program help information will list all options
+\item[] {\em command arguments} are options for some commands
+\end{itemize}
 
 
 
@@ -724,6 +750,37 @@ Note that although {\tt .FITS} files are provided to {\tt difxsniff}, it is the 
 \item[] Example 1: {\tt difxsniff LA *.FITS}
 \item[] Example 2: {\tt difxsniff NL FD *.FITS}
 \end{itemize}
+
+
+
+
+
+
+% difxspeed -------------------------------------------------------------------
+
+\subsection{difxspeed {\small $\mathrm{(package: vex2difx)}$}} \label{sec:difxspeed}
+
+Program {\tt difxspeed} does processing benchmarking, possibly over a range of parameters, of DiFX.
+To ensure that data playback (reading from files, Mark5 modules or network) are not limiting performance, the FAKE mode of DiFX (see \S\ref{sec:fake}) is used; thus the output data are meaningless.
+{\tt difxspeed} takes a {\tt .speed } (\S\ref{sec:speed}) file as input.
+This file contains various parameters, many of which are identical to those in the {\tt .v2d} (\S\ref{sec:v2d}) files.
+An important difference with the parameters specified in {\tt .speed} files is that multiple values can be provided for many of the parameters.
+In the benchmarking process, a separate run of DiFX for each combination of the supplied parameters is performed.
+The first combination is run twice, with the first being labeled a {\em dummy} run.
+This is because the timing of the first execution can vary depending on recent usage of the correlator.
+
+\begin{itemize}
+\item[] Usage: {\tt difxspeed} $[$ {\em options} $]$ {\em inputFile} $[$ {\em numIterations} $]$
+\item[] {\em options} can be:
+\begin{itemize}
+\item[] {\tt -h} or {\tt --help} : print usage information and exit
+\end{itemize}
+\item[] {\em inputFile} is the {\tt .speed} file describing the series of benchmarks to run
+\item[] {\em numIterations} is the number of times to execute all test combinations
+\end{itemize}
+
+Each run of {\tt difxspeed} will append a new column of data to a file called {\em inputFile}{\tt .out} ; if the file does not exist, a new file will be created.
+Documentation of this output file format can be found in \S\ref{sec:speed.out}.
 
 
 

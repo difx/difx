@@ -599,9 +599,61 @@ The sixth column contains a word describing the contents of the remainder of the
 
 
 
-% .difxlog -------------------------------------------- INCOMPLETE ------------
+% .difxspeed ------------------------------------------------------------------
 
 \subsection{.speed} \label{sec:speed}
+
+The program {\tt difxspeed} (\S\ref{sec:difxspeed}) runs a set of performance benchmarks described by a {\tt .speed} file as documented here.
+This file is a text file containing various parameters.
+There are 5 required parameters:
+\begin{center}
+\begin{tabular}{ll}
+\hline
+Parameter & Comments \\
+\hline
+{\tt datastreams} & comma separated list of nodes on which to run datastream processes  \\
+{\tt cores} & comma separated list of nodes on which to run core processes \\
+{\tt antennas} & list of 1 or 2 letter antenna names to process \\
+{\tt nThread} & one or more values listing number of threads to use (see below) \\
+{\tt vex} & vex file to use as descriptor of observation \\
+\hline
+\end{tabular}
+\end{center}
+
+The value of {\tt nThread} applies to all core processes; if multiple comma-separated values are specified, these will result in additional runs of benchmarking.
+
+Other parameters that can be specified, either as single values or as arrays to be used in full combination with all other value arrays, include:
+
+\begin{center}
+\begin{tabular}{ll}
+\hline
+Parameter & Comments \\
+\hline
+{\tt nAnt} & number of antennas (in order of listed antennas, starting with first listed) \\
+{\tt nCore} & number of core processes to start, using in order {\tt cores} \\
+{\tt tInt} & integration time (seconds) \\
+{\tt specRes} & spectral resolution (MHz) \\
+{\tt fftSpecRes} & resolution of transform \\
+{\tt xmacLength} & cross-multiply stride size \\
+{\tt strideLength} & fringe rotation stride size \\
+{\tt numBufferedFFTs} & number of FFTs to process in one go \\
+{\tt toneSelection} & pulse cal tone selection \\
+\hline
+\end{tabular}
+\end{center}
+
+\noindent
+Notes: 
+\begin{enumerate}
+\item {\tt datastreams} and {\tt cores} lists can repeat hostnames.
+\item Some combinations of parameters is illegal; at the moment it is up to the user to ensure all combinations of values are allowed.
+\item Additional parameters can be easily added to the program on demand.
+\end{enumerate}
+
+
+% .difxspeed.out -------------------------------------- INCOMPLETE ------------
+
+\subsection{.speed.out} \label{sec:speed.out}
 
 
 
@@ -668,6 +720,20 @@ The only use of this as of this writing is to indicate the thread ids for VDIF d
 This will always be formatted as {\tt Threads=} followed by a comma separated list of thread ids without any spaces.  For example: {\tt Threads=0,640,256,896} .
 
 
+
+
+
+
+
+% .filelist -------------------------------------------------------------------
+
+\subsection{.filelist} \label{sec:filelist}
+
+When using the {\tt filelist} parameter in an {\tt ANTENNA} section of a {\tt .v2d} (\S\ref{sec:v2d}), the list of data files to correlate are stored in a text file.
+This is a text file containing data lines and optionally comments.
+Any text after the comment character (\#) is ignored.
+A data line consists of a filename (must have complete path as can be used to find the file on the datastream node for this antenna) and optionally a start time and stop time.
+Start and stop times can be expressed in any of the formats supported by {\tt vex2difx}.
 
 
 
@@ -1683,7 +1749,7 @@ Z		& float		& m		& vex value	& change the Z coordinate of the antenna location \
 format		& string	&		&		& force format to be one of VLBA, MKIV, Mark5B, S2, or \\
 		&		&		&		& one of the VDIF types \\
 file		& $[$string$]$	&		& (none)	& a comma separated list of data files to correlate \\
-filelist	& string	&		&		& a filename listing files for the DATA TABLE \\
+filelist	& string	&		&		& a filename listing files for the DATA TABLE (see \S\ref{sec:filelist}) \\
 networkPort	& int		&		&		& the eVLBI network port to use. This forces NETWORK media \\
 		&		&		&		& type in {\tt .input} file \\
 windowSize	& int		&		&		& TCP window size for eVLBI. Set to $<0$ for UDP \\
