@@ -888,6 +888,10 @@ AntennaSetup::AntennaSetup(const std::string &name) : vexName(name)
 	tcalFrequency = -1;
 	dataSource = DataSourceNone;
 	dataSampling = NumSamplingTypes;	// flag that no sampling is is identified here
+
+	// antenna is by default not constrained in start time
+	mjdStart = -1.0;
+	mjdStop = -1.0;
 }
 
 int AntennaSetup::setkv(const std::string &key, const std::string &value, ZoomFreq *zoomFreq)
@@ -1473,6 +1477,14 @@ int AntennaSetup::setkv(const std::string &key, const std::string &value)
 			nWarn += setkv(nestedkeyval.substr(0,splitat), nestedkeyval.substr(splitat+1), newfreq);
 			last = at+1;
 		}
+	}
+	else if(key == "mjdStart")
+	{
+		ss >> mjdStart;
+	}
+	else if(key == "mjdStop")
+	{
+		ss >> mjdStop;
 	}
 	else
 	{

@@ -47,6 +47,7 @@ public:
 	enum EventType	// NOTE! keep VexEvent::eventName up to date
 	{
 		NO_EVENT,
+		ANTENNA_STOP,
 		ANT_SCAN_STOP,
 		SCAN_STOP,
 		JOB_STOP,
@@ -59,7 +60,8 @@ public:
 		OBSERVE_START,
 		JOB_START,
 		SCAN_START,
-		ANT_SCAN_START
+		ANT_SCAN_START,
+		ANTENNA_START
 	};
 
 	static const char eventName[][20];
@@ -395,6 +397,8 @@ public:
 	unsigned int nAntenna() const { return antennas.size(); }
 	const VexAntenna *getAntenna(unsigned int num) const;
 	const VexAntenna *getAntenna(const std::string &name) const;
+	double getAntennaStartMJD(const std::string &name) const;
+	double getAntennaStopMJD(const std::string &name) const;
 
 	unsigned int nMode() const { return modes.size(); }
 	int getModeIdByDefName(const std::string &defName) const;

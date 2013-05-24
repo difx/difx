@@ -41,6 +41,7 @@ const double RAD2ASEC=180.0*3600.0/M_PI;
 const char VexEvent::eventName[][20] =
 {
 	"None",
+	"Ant Stop",
 	"Ant Off-source",
 	"Scan Stop",
 	"Job Stop",
@@ -53,7 +54,8 @@ const char VexEvent::eventName[][20] =
 	"Observe Start",
 	"Job Start",
 	"Scan Start",
-	"Ant On-source"
+	"Ant On-source",
+	"Ant Start"
 };
 
 
@@ -802,7 +804,10 @@ void VexJob::assignVSNs(const VexData &V)
 		{
 			if(find(antennas.begin(), antennas.end(), a->first) == antennas.end())
 			{
-				antennas.push_back(a->first);
+				if(V.getAntennaStartMJD(a->first) <= mjdStart && V.getAntennaStopMJD(a->first) >= mjdStop)
+				{
+					antennas.push_back(a->first);
+				}
 			}
 		}
 	}
@@ -1417,6 +1422,32 @@ const VexAntenna *VexData::getAntenna(const std::string &name) const
 	}
 
 	return 0;
+}
+
+double VexData::getAntennaStartMJD(const std::string &name) const
+{
+	for(std::list<VexEvent>::const_iterator e = events.begin(); e != events.end(); ++e)
+	{
+		if(e->eventType == VexEvent::ANTENNA_START && e->name == name)
+		{
+			return e->mjd;
+		}
+	}
+
+	return exper.mjdStart;
+}
+
+double VexData::getAntennaStopMJD(const std::string &name) const
+{
+	for(std::list<VexEvent>::const_iterator e = events.begin(); e != events.end(); ++e)
+	{
+		if(e->eventType == VexEvent::ANTENNA_STOP && e->name == name)
+		{
+			return e->mjd;
+		}
+	}
+
+	return exper.mjdStop;
 }
 
 int VexSetup::phaseCalIntervalMHz() const

@@ -338,6 +338,8 @@ static void genJobs(vector<VexJob> &Js, const VexJobGroup &JG, VexData *V, const
 		}
 		else if(e->eventType == VexEvent::CLOCK_BREAK ||
 			e->eventType == VexEvent::LEAP_SECOND ||
+			e->eventType == VexEvent::ANTENNA_START ||
+			e->eventType == VexEvent::ANTENNA_STOP ||
 			e->eventType == VexEvent::MANUAL_BREAK)
 		{
 			if(JG.containsAbsolutely(e->mjd))
@@ -433,6 +435,22 @@ static void genJobs(vector<VexJob> &Js, const VexJobGroup &JG, VexData *V, const
 static void makeJobs(vector<VexJob>& J, VexData *V, const CorrParams *P, int verbose)
 {
 	vector<VexJobGroup> JG;
+
+	// Add antenna start/stops
+
+	std::vector<AntennaSetup>::const_iterator as;
+	for(as = P->antennaSetups.begin(); as != P->antennaSetups.end(); ++as)
+	{
+		if(as->mjdStart > 0.0)
+		{
+			V->addEvent(as->mjdStart, VexEvent::ANTENNA_START, as->vexName);
+		}
+		if(as->mjdStop > 0.0)
+		{
+			V->addEvent(as->mjdStop, VexEvent::ANTENNA_STOP, as->vexName);
+		}
+	}
+	V->sortEvents();
 
 	// Do splitting of jobs
 	genJobGroups(JG, V, P, verbose);
@@ -2873,9 +2891,10 @@ static int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int 
 		generateDifxJobFileBase(D->job, fileBase);
 
 		cerr << "Warning: job " << fileBase << " not written since it correlates no data" << endl;
-		cerr << "This is often due to media not being specified or all frequency Ids being unselected." << endl;
-		cerr << "It is also possible that the vex file is faulty and missing e.g. a $IF section, leading " << endl;
-		cerr << "to missing polarisation information." << endl;
+		cerr << "This is often due to media not being specified, all frequency Ids being" << endl;
+		cerr << "unselected, or too many antennas being explicitly unselected by time." << endl;
+		cerr << "It is also possible that the vex file is faulty and missing, e.g., an $IF" << endl;
+		cerr << "section, leading to missing polarisation information." << endl;
 
 		cerr << "nBaseline=" << D->nBaseline << "  minSubarraySize=" << P->minSubarraySize << endl;
 	}

@@ -143,7 +143,7 @@ public:
 	// flag
 	// media
 	bool polSwap;		// If true, swap polarizations
-	std::string format;		// Override format from .v2d file.
+	std::string format;	// Override format from .vex file.
 				// This is sometimes needed because format not known always at scheduling time
 				// Possible values: S2 VLBA MkIV/Mark4 Mark5B . Is converted to all caps on load
 	enum DataSource dataSource;
@@ -159,6 +159,10 @@ public:
 	// No more than one of the following can be used at a time:
 	std::vector<ZoomFreq> zoomFreqs;//List of zoom freqs to add for this antenna
 	std::string globalZoom;	// A reference to a global zoom table
+
+	// antenna-specific start and stop times
+	double mjdStart;
+	double mjdStop;
 };
 
 class CorrSetup

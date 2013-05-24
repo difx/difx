@@ -18,6 +18,7 @@ Version 2.2.0
 * change zoom band definition to always be USB (specify lower edge freq)
 * Reorder Mark5B tracks to accomodate bitstream masks
 * Consider two sourcs within 1 mas of each other to be the same
+* Added separate mjdStart and mjdStop parameters for each antenna
 
 Version 2.1.0
 ~~~~~~~~~~~~~
