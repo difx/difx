@@ -1951,7 +1951,8 @@ static int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int 
 	vector<vector<int> > toneSets;
 	int nPulsar=0;
 	int nTotalPhaseCentres, nbin, maxPulsarBins, maxScanPhaseCentres, fftDurNS;
-	double srcra, srcdec;
+	double srcra, srcdec, radiff, decdiff;
+	const double MAX_POS_DIFF = 5e-9; //radians, approximately equal to 1 mas
 	int pointingSrcIndex, foundSrcIndex, atSource;
 	int nZoomBands, fqId, polcount, zoomChans = 0, minChans;
 	int overSamp, decimation, worstcaseguardns;
@@ -2091,7 +2092,9 @@ static int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int 
 		}
 		for(int i = 0; i < D->nSource; ++i)
 		{
-			if(D->source[i].ra == srcra && D->source[i].dec == srcdec &&
+			radiff  = fabs(D->source[i].ra - srcra);
+			decdiff = fabs(D->source[i].dec - srcdec);
+			if(radiff < MAX_POS_DIFF && decdiff < MAX_POS_DIFF &&
 			   D->source[i].calCode[0] == src->calCode &&
 			   D->source[i].qual == src->qualifier)
 			 {

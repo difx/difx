@@ -969,6 +969,7 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 
 			// the collected comments and ifdef fields will always line up, so just run a count
 			p2count = 0;
+			
 			// Derive IF map
 			for(p = get_all_lowl(antName.c_str(), modeDefName, T_IF_DEF, B_IF, v); p; p = get_all_lowl_next())
 			{
@@ -1283,6 +1284,84 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 						setup.nBit = nBit;
 					}
 				} 
+			}
+
+			if(setup.formatName == "MARK5B")
+			{
+				// Because Mark5B formatters can apply a bitmask, the track numbers may not be contiguous.  Here we go through and reorder track numbers in sequence, starting with 2
+
+				const int MaxTrackNumber = 66;
+				int order[MaxTrackNumber+1];
+
+				for(int i = 0; i <= MaxTrackNumber; ++i)
+				{
+					order[i] = 0;
+				}
+
+				std::map<std::string,Tracks>::iterator it;
+				for(it = ch2tracks.begin(); it != ch2tracks.end(); ++it)
+				{
+					const Tracks &T = it->second;
+
+					for(std::vector<int>::const_iterator b = T.sign.begin(); b != T.sign.end(); ++b)
+					{
+						if(*b < 0 || *b > MaxTrackNumber)
+						{
+							cerr << "Error: track number " << *b << " is out of range (0.." << MaxTrackNumber << ").  Must quit." << endl;
+
+							exit(EXIT_FAILURE);
+						}
+						if(order[*b] != 0)
+						{
+							cerr << "Error: track number " << *b << " is repeated.  Must quit." << endl;
+
+							exit(EXIT_FAILURE);
+						}
+						order[*b] = 1;
+					}
+
+					for(std::vector<int>::const_iterator b = T.mag.begin(); b != T.mag.end(); ++b)
+					{
+						if(*b < 0 || *b > MaxTrackNumber)
+						{
+							cerr << "Error: track number " << *b << " is out of range (0.." << MaxTrackNumber << ").  Must quit." << endl;
+
+							exit(EXIT_FAILURE);
+						}
+						if(order[*b] != 0)
+						{
+							cerr << "Error: track number " << *b << " is repeated.  Must quit." << endl;
+
+							exit(EXIT_FAILURE);
+						}
+						order[*b] = 1;
+					}
+				}
+
+				int newTrackNumber = 2;
+				for(int i = 0; i < 67; ++i)
+				{
+					if(order[i] == 1)
+					{
+						order[i] = newTrackNumber;
+						++newTrackNumber;
+					}
+				}
+
+				for(it = ch2tracks.begin(); it != ch2tracks.end(); ++it)
+				{
+					Tracks &T = it->second;
+
+					for(std::vector<int>::iterator b = T.sign.begin(); b != T.sign.end(); ++b)
+					{
+						*b = order[*b];
+					}
+
+					for(std::vector<int>::iterator b = T.mag.begin(); b != T.mag.end(); ++b)
+					{
+						*b = order[*b];
+					}
+				}
 			}
 
 			// Get pulse cal extraction information
