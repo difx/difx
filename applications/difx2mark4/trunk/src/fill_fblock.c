@@ -26,7 +26,8 @@ int fill_fblock (DifxInput *D,                    // difx input structure pointe
         ants[64],
         swapped,
         present,
-        first,
+        first[2],                   // indexed by 0|1 for R|L polarization
+        polind,
         nant,
         nfreq,
         zoom;
@@ -201,7 +202,8 @@ int fill_fblock (DifxInput *D,                    // difx input structure pointe
             buff[3] = freqs[j] > 0 ? 'U' : 'L';
             buff[4] = 0;
             buff[5] = 0;
-            first = TRUE;
+            first[0] = TRUE;
+            first[1] = TRUE;
                                     // insert channel id's back into fblock
                                     // everywhere that ant & freq match
             for (n=0; n<nprod; n++)
@@ -210,10 +212,12 @@ int fill_fblock (DifxInput *D,                    // difx input structure pointe
                         {
                         buff[4] = pfb[n].stn[k].pol;
                         strcpy (pfb[n].stn[k].chan_id, buff);
-                        if (first)
+                        polind = (pfb[n].stn[k].pol == 'R') ? 0 : 1;
+                                    // see if first mention for ant, freq, & pol
+                        if (first[polind])
                             {
                             pfb[n].stn[k].first_time = TRUE;
-                            first = FALSE;
+                            first[polind] = FALSE;
                             }
                         else
                             pfb[n].stn[k].first_time = FALSE;

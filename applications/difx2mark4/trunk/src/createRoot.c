@@ -529,9 +529,10 @@ int createRoot (DifxInput *D,           // difx input structure pointer
             case PROCEDURES:
             case ROLL:
             case SEFD:
-            case TAPELOG_OBS:
                 line[0] = 0;
                 break;
+                                    // just copy any other sections to the output
+            case TAPELOG_OBS:
             default:
                 break;
             }
