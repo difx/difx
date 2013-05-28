@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2012 by Walter Brisken                             *
+ *   Copyright (C) 2008-2013 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -78,8 +78,7 @@ int writeDifxIM(const DifxInput *D)
 	
 	writeDifxLineInt(out, "POLYNOMIAL ORDER", D->job->polyOrder);
 	writeDifxLineInt(out, "INTERVAL (SECS)", D->job->polyInterval);
-	writeDifxLine(out, "ABERRATION CORR", 
-		aberCorrStrings[D->job->aberCorr]);
+	writeDifxLine(out, "ABERRATION CORR", aberCorrStrings[D->job->aberCorr]);
 
 	writeDifxAntennaArray(out, D->nAntenna, D->antenna, 0, 0, 0, 0, 0);
 
@@ -95,10 +94,17 @@ int writeDifxIM(const DifxInput *D)
 		{
 			writeDifxLine2(out, "SCAN %d PHS CTR %d SRC", s, i, D->source[scan->phsCentreSrcs[i]].name);
 		}
+
+		if(!scan->im)
+		{
+			writeDifxLineInt1(out, "SCAN %d NUM POLY", s, 0);
+			fprintf("Warning: Scan %d being written with no delay model information\n", s);
+			continue;
+		}
 		
 		for(refAnt = 0; refAnt < scan->nAntenna; refAnt++)
 		{
-			if(scan->im && scan->im[refAnt])
+			if(scan->im[refAnt])
 			{
 				break;
 			}
