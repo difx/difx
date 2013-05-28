@@ -294,7 +294,7 @@ static int populateDifxTSys(float tSys[][array_MAX_BANDS], const DifxInput *D, i
 					freq += dc->IF[i].bw*0.5;
 				}
 				/* Note: could do better by considering full band Tsys variations */
-				tCal = getDifxTcal(T, D->mjdStart, D->antenna[antId].name, "", D->config[configId].pol[polId], freq);
+				tCal = getDifxTcal(T, D->mjdStart, D->antenna[antId].name, dc->IF[i].rxName, D->config[configId].pol[polId], freq);
 				if(tCal > 0.0)
 				{
 					tSys[p][i] = tCal*unscaledTsys(average + r);

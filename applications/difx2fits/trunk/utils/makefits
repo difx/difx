@@ -509,11 +509,11 @@ for a in argv[1:]:
 if opts == '':
 	opts = '-v'
 
-print 'options: %s' % opts
-
 if len(args) < 1:
 	print 'No pass names on command line.  Run with -h for help.'
-	euxt(0)
+	exit(0)
+
+print 'options: %s' % opts
 
 gcFilesMissing = testgainfiles()
 

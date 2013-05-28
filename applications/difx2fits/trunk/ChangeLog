@@ -8,6 +8,7 @@ upgrade of difxio.
 * pcal, weather, tsys, and flag files could be compromized by observations spanning the new year.
   - Now handle day of year jumps
   - Also handle possible use of mjds rather than days of year in future
+* increase number of phase cal tones allowed
 
 Version 3.1.0
 * Version renumber from 3.0.2 prior to DiFX-2.1 release

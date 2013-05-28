@@ -150,7 +150,6 @@ int DifxInputGetIFsByRecBand(int *IFs, int *polId, const DifxInput *D, int antId
 int DifxInputGetIFsByRecFreq(int *IFs, const DifxInput *D, int dsId, int configId, int recFreq, int polId, int maxCount)
 {
 	DifxConfig *dc;
-	DifxDatastream *dd = 0;
 	DifxFreq *df;
 	int n = 0;
 	int i, p;
@@ -171,8 +170,6 @@ int DifxInputGetIFsByRecFreq(int *IFs, const DifxInput *D, int dsId, int configI
 	{
 		return -1;
 	}
-
-	dd = D->datastream + dsId;
 
 	polName = dc->pol[polId];
 
@@ -631,6 +628,14 @@ static int parseDifxPulseCal(const char *line,
 	}
 
 	n = sscanf(line, "%31s%lf%f%lf%d%d%d%d%d%n", antName, time, &timeInt, &cableCal, &np, &nb, &nt, &ns, &nRecBand, &p);
+
+	if(nt > array_MAX_TONES)
+	{
+		fprintf(stderr, "Error: too many tones!  %d > array_MAX_TONES = %d\n", nt, array_MAX_TONES);
+
+		return -1;
+	}
+
 	if(n != 9)
 	{
 		fprintf(stderr, "Error: parseDifxPulseCal: header information not parsable (n=%d)\n", n);
@@ -663,7 +668,6 @@ static int parseDifxPulseCal(const char *line,
 	{
 		return -2;
 	}
-
 	dd = D->datastream + dsId;
 
 	*scanId = DifxInputGetScanIdByAntennaId(D, mjd, dd->antennaId);
@@ -694,7 +698,6 @@ static int parseDifxPulseCal(const char *line,
 		return -7;
 	}
 	/* Read in pulse cal information */
-
 	for(pol = 0; pol < D->nPol; ++pol)
 	{
 		for(band = 0; band < dd->nRecBand; ++band)
@@ -712,7 +715,7 @@ static int parseDifxPulseCal(const char *line,
 			}
 
 			df = D->freq + recFreq;
-			
+
 			/* set up pcal information for this recFreq (only up to nRecTones)*/
 			nRecTone = DifxDatastreamGetPhasecalTones(toneFreq, dd, df, nt);
 
