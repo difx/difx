@@ -98,7 +98,7 @@ int writeDifxIM(const DifxInput *D)
 		
 		for(refAnt = 0; refAnt < scan->nAntenna; refAnt++)
 		{
-			if(scan->im[refAnt])
+			if(scan->im && scan->im[refAnt])
 			{
 				break;
 			}
