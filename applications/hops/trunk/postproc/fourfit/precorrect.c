@@ -78,6 +78,9 @@ struct type_pass *pass;
     status.lsb_phoff[1] = pass->control.lsb_offset.rem * conrad;
 
     param->dc_block = pass->control.dc_block;
+    param->weak_channel = pass->control.weak_channel;
+    param->pc_amp_hcode = pass->control.pc_amp_hcode;
+    param->fmatch_bw_pct = pass->control.fmatch_bw_pct;
                                     // Copy phase cal offsets; identify desired pcal tone freqs
     for (stn=0; stn<2; stn++)
         {

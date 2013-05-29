@@ -19,6 +19,7 @@
  * revise to support both big and little Endian architectures
  *                                       tac  2009.1.7   */
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>     /* For strrchr(), etc. */
 #include <math.h>       /* For atan2() and hypot() */
 #include <ctype.h>      /* for isprint() */
@@ -1549,9 +1550,26 @@ int main (int argc, char *argv[])
                     printf ("chan_name[%d] = %.8s\n", i, t309->chan[i].chan_name);
                     for (j = 0; j < nt; j++)
                         {
+                        if (!getenv("CORASC2_PCAL"))
+                        { // previous print format
                         printf ("%8x %8x  ",
                             flip_int(t309->chan[i].acc[j][0]),
                             flip_int(t309->chan[i].acc[j][1]));
+                        }
+                        else
+                        { // replicate pcal_interp.c code
+                        double u,v,re,im;
+                        u = flip_int(t309->chan[i].acc[j][0]);
+                        v = flip_int(t309->chan[i].acc[j][1]);
+#define TWO31 2147483648.0
+#define TWO32 4294967296.0
+                        u = (u < TWO31) ? u : u - TWO32;
+                        v = (v < TWO31) ? v : v - TWO32;
+                        re = u * 1e-6 / (-128 * flip_double(t309->acc_period));
+                        im = v * 1e-6 / (-128 * flip_double(t309->acc_period));
+                        printf ("%7.4f %+9.4f  ",
+                            sqrt(re*re+im*im), atan2(im, re)*180/M_PI);
+                        }
                         if (j % 4 == 3)
                             printf ("\n");
                         }

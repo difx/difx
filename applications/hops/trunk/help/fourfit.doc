@@ -312,6 +312,7 @@ ACTION KEYWORDS         VALUES
    dec_offset         float
    delay_offs         n char string, followed by n floats
    dr_win             2 floats
+   fmatch_bw_pct      float
    freqs              n chars
    gates              n char string, followed by 2n floats
    index              n ints
@@ -325,6 +326,7 @@ ACTION KEYWORDS         VALUES
    optimize_closure   'true' or 'false' (default: false)
    passband           2 floats
    period             int
+   pc_amp_hcode       float
    pc_delay_l         float
    pc_delay_r         float
    pc_phases          n char string, followed by n floats
@@ -345,6 +347,7 @@ ACTION KEYWORDS         VALUES
    switched           `scan_start' or `each_minute'
    t_cohere           float
    use_samples        `true' or `false'
+   weak_channel       float
    x_crc              `keep' or `discard'
    x_slip_sync        `keep', `discard', or an integer
    y_crc              `keep' or `discard'
@@ -398,7 +401,6 @@ KEYWORD SEMANTICS
                  excluded.
    dc_block      if set to true, zero out lowest cross-power spectral
                  channel; useful for suppressing DC bias
-
 
 **search**       control the fringe-searching process
 
@@ -487,6 +489,11 @@ KEYWORD SEMANTICS
    station_delay a priori guess at the delay from the pcal injection point
              down to the digitizers (ns).
 
+** miscellaneous functions
+   fmatch_bw_pct associate freqs < this percentage of bw together (25% default)
+   pc_amp_hcode  generate an H code iff any pcal amps less than this (0.005 default)
+   weak_channel  the ratio of single_channel_amp to coherent_sum_amp 
+                 below which a G code is assigned to the scan (0.5 default)
 
 SPECIAL KEYWORD VALUES
    ?         wild card character

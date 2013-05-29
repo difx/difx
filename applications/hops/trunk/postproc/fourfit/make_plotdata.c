@@ -284,7 +284,7 @@ struct type_pass *pass;
                     plot.weights[fr][ap] /= 2.0;
 
                 Z = c_mult (datum->sbdelay[status.max_delchan],
-                      vrot(ap, status.dr_max_global, status.mbd_max_global, fr, 0, pass));
+                      vrot(ap, status.dr_max_global, status.mbd_max_global, fr, datum->sband, pass));
                 plot.phasor[fr][ap] = Z;
                 }
             else

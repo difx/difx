@@ -12,9 +12,10 @@
 /*      Output:         corel           pcal numbers filled in          */
 /*                                                                      */
 /* Created 13 April 1998 by CJL                                         */
-/* Added support for type 309 records          rjc  2006.8.2            */
-/* extended SU pcal by 30s at both ends        rjc  2010.5.24           */
-/* modified for v.1 type 309's (64 ch & tones) rjc  2010.10.1           */
+/* Added support for type 309 records               rjc  2006.8.2       */
+/* extended SU pcal by 30s at both ends             rjc  2010.5.24      */
+/* modified for v.1 type 309's (64 ch & tones)      rjc  2010.10.1      */
+/* flip pcal sign for LSB for corr date > 2012y124d rjc  2012.6.13      */
 /************************************************************************/
 #include <stdio.h>
 #include <math.h>
@@ -35,14 +36,16 @@ int pcal_interp (struct mk4_sdata *sd1,
                  struct type_param *param,
                  struct freq_corel *corel)
     {
-    int stn, j, pc, ap, ch, f, ipc, ipcmin, ipcmax, i, n;
+    int stn, j, pc, ap, ch, f, ipc, ipcmin, ipcmax, i, n,
+        pc_index[MAX_CHAN_PP],
+        numchans, new_chan, npts, nstart,
+        ret, do309, numrecs, pc_max, jmax, tshift,
+        iyr, idoy, idate, after_2012_124;
+
     double start, stop, time[MAXSTATPER], pc_real[MAXSTATPER], pc_imag[MAXSTATPER];
     double realval, imagval, freq, u, v;
     char chan[9];
     char chan_buffer[MAX_CHAN_PP][9];
-    int pc_index[MAX_CHAN_PP];
-    int numchans, new_chan, npts, nstart;
-    int ret, do309, numrecs, pc_max, jmax, tshift;
     complex c_zero();
     struct freq_corel *fc;
     struct mk4_sdata *sd;
@@ -50,6 +53,7 @@ int pcal_interp (struct mk4_sdata *sd1,
     struct type_309 *t309;
     struct interp_sdata *isd;
     extern int do_accounting;
+    extern struct mk4_corel cdata;
     
     for (i=0; i<MAX_CHAN_PP; i++)
         pc_index[i] = -1;
@@ -85,6 +89,10 @@ int pcal_interp (struct mk4_sdata *sd1,
             }
         }
 
+                                        // test for correlation date after pcal sign flip
+    sscanf (cdata.id->date, "%4d%3d", &iyr, &idoy);
+    idate = 1000 * iyr + idoy;
+    after_2012_124 = idate > 2012124;
                                         /* Do it one station at a time */
     for (stn=0; stn<2; stn++)
         {
@@ -297,6 +305,11 @@ int pcal_interp (struct mk4_sdata *sd1,
                         msg ("Interpolation error in pcal_interp()", 2);
                         return (-1);
                         }
+                                        // correct for LSB pcal sign flip after 2012y124d
+                    if (after_2012_124
+                     && param->corr_type == DIFX
+                     && (ch == LSB_LCP || ch == LSB_RCP))
+                        imagval = -imagval;
                                         /* Apply these values to corel array */
                     if (stn == 0)
                         isd = &(fc->data[ap].ref_sdata);

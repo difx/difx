@@ -67,10 +67,12 @@ struct type_param *param;
     param->maxap = 0;
     for (ind=0; ind<cdata->index_space; ind++)
         {
-        if (cdata->index[ind].t101 == NULL) continue;
+        if (cdata->index[ind].t101 == NULL) 
+            continue;
         for (ap=0; ap<cdata->index[ind].ap_space; ap++)
             {
-            if (cdata->index[ind].t120[ap] == NULL) continue;
+            if (cdata->index[ind].t120[ap] == NULL)
+                continue;
             apno = cdata->index[ind].t120[ap]->ap;
             if (apno > param->maxap) param->maxap = apno;
             if (apno < param->minap) param->minap = apno;
@@ -91,7 +93,7 @@ struct type_param *param;
     param->start = start_ref + param->minap * param->acc_period;
                                         /* adjust start to be no earlier than the start
                                          * of the AP containing the scheduled start time */
-    if (param->start +param->acc_period <= param->start_nom) 
+    if (param->start + param->acc_period <= param->start_nom) 
         {
                                         /* Adjust to new "first ap" */
         startoff = param->start_nom - param->start;
@@ -136,7 +138,8 @@ struct type_param *param;
         }
     if (param->num_ap < 0)
         {
-        msg ("Error figuring out time range of data", 3);
+        msg ("Too few accumulation periods in this scan, range %d..%d", 
+             3, param->minap, param->maxap);
         return (-1);
         }
 

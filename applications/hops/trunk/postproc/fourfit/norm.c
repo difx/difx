@@ -61,7 +61,7 @@ norm (struct type_pass *pass,
     extern struct type_param param;
     extern struct type_status status;
 
-    if (param.pol == POL_ALL)
+    if (pass->npols == 1)
         {
         pol = pass->pol;                // single pol being done per pass
         ips = pol;

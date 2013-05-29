@@ -110,6 +110,9 @@ struct token_struct
 #define STATION_DELAY_   80
 #define PC_DELAY_L_      81
 #define PC_DELAY_R_      82
+#define WEAK_CHANNEL_    83
+#define PC_AMP_HCODE_    84
+#define FMATCH_BW_PCT_   85
 
 
         /* Definitions of token categories */

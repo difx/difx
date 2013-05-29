@@ -104,5 +104,8 @@ init_tokens ()
     tokenize (STATION_DELAY_,"station_delay", FLOAT_PARAM)
     tokenize (PC_DELAY_L_,  "pc_delay_l", FLOAT_PARAM)
     tokenize (PC_DELAY_R_,  "pc_delay_r", FLOAT_PARAM)
+    tokenize (WEAK_CHANNEL_,"weak_channel", FLOAT_PARAM)
+    tokenize (PC_AMP_HCODE_,"pc_amp_hcode", FLOAT_PARAM)
+    tokenize (FMATCH_BW_PCT_,"fmatch_bw_pct", FLOAT_PARAM)
     }
 

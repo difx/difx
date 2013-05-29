@@ -50,15 +50,17 @@ char *tape_qcode)
                                            cause a D-code */
         if ((status->ap_num[0][i] == 0) && (status->ap_num[1][i] == 0))
             missing_track = TRUE;
-        if (c_mag (status->fringe[i]) < (0.5 * status->inc_avg_amp_freq))
+        if (c_mag (status->fringe[i]) < (param->weak_channel * status->inc_avg_amp_freq))
             low_chan = TRUE;
                                         /* re-enable the following test;
                                          * change threshold units  rjc 2001.10.25 
                                          * also mark high amp bad  rjc 2005.10.26 */
-        if (status->pc_amp[i][0][stnpol[0][pass->pol]] < 0.005
-         || status->pc_amp[i][0][stnpol[0][pass->pol]] > 0.500) low_pcal[0] = TRUE;
-        if (status->pc_amp[i][1][stnpol[1][pass->pol]] < 0.005
-         || status->pc_amp[i][1][stnpol[1][pass->pol]] > 0.500) low_pcal[1] = TRUE;
+        if (status->pc_amp[i][0][stnpol[0][pass->pol]] < param->pc_amp_hcode
+         || status->pc_amp[i][0][stnpol[0][pass->pol]] > 0.500) 
+            low_pcal[0] = TRUE;
+        if (status->pc_amp[i][1][stnpol[1][pass->pol]] < param->pc_amp_hcode
+         || status->pc_amp[i][1][stnpol[1][pass->pol]] > 0.500) 
+            low_pcal[1] = TRUE;
         }
                                         /* Zero-width windows nullify B/E-codes */
     if (param->win_sb[0] == param->win_sb[1]) 

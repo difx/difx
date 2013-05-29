@@ -2,7 +2,7 @@
 #
 # (Ba)sh startup
 #
-# $Id: hops.bash.in 365 2011-06-22 15:47:37Z gbc $
+# $Id: hops.bash.in 728 2012-05-30 16:12:39Z gbc $
 #
 # Version @VERSION@
 #
@@ -62,8 +62,10 @@ nada*)          echo "$Help"    ; exit 1 ;;
 esac
 
 # using variables as defined by config.status where possible
+# datarootdir is required for autoconf 2.6 and later
 [ -z "$prefix" ] && prefix=@prefix@
 [ -z "$exec_prefix" ] && exec_prefix=@exec_prefix@
+[ -z "$datarootdir" ] && datarootdir=@datarootdir@
 
 #
 # remove old version from PATH

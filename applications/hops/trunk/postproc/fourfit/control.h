@@ -88,6 +88,9 @@ struct c_block                     /* Elemental control block structure */
    struct dstats station_delay;    // station delay pc inject->digitizer (s)
    struct dstats pc_delay_l;       // delay diff (feed->inject)-(pulsegen->inject) (s)
    struct dstats pc_delay_r;       // same, but for RCP (or Y or V)
+   double weak_channel;            // G code if single_chan_amp/coherent_amp < weak_channel
+   double pc_amp_hcode;            // H code iff any pc amplitude less than this
+   double fmatch_bw_pct;           // fractional bw % used for frequency matching
    };
 
           /* Defined values for various structure variables */

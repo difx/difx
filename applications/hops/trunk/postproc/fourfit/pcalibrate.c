@@ -36,6 +36,8 @@ void pcalibrate (struct type_pass *pass,
         ap_subint_start,
         kap,
         ipol,                       // 0:1 = L:R or X:Y
+        lowpol,
+        hipol,
         ndelpts;
 
     double minf,
@@ -80,6 +82,23 @@ void pcalibrate (struct type_pass *pass,
             c_exp (double);
     int parabola (double *, double, double, double *, double *, double *);
  
+    lowpol = 0;                     // default is to do both pols
+    hipol = 1;
+                                    // only loop over 1 pol if that's all there is
+    if (pass->npols == 1)
+        {
+        if (pass->pol == POL_LL)
+            {
+            lowpol = 0;
+            hipol = 0;
+            }
+        else if (pass->pol == POL_RR)
+            {
+            lowpol = 1;
+            hipol = 1;
+            }
+        }
+        
     fdata = pass->pass_data + fr;
                                     // loop over reference and remote stations
     for (stn = 0; stn < 2; stn++) 
@@ -112,7 +131,7 @@ void pcalibrate (struct type_pass *pass,
         msg ("a priori ionospheric phase for stn %d %lf rad at %g Hz", -1, 
              stn,theta_ion, 1e6 * fdata->frequency + fcenter);
                                     // loop over each of 2 polarizations
-        for (ipol=0; ipol<2; ipol++)
+        for (ipol=lowpol; ipol<hipol+1; ipol++)
           {
           ip = 0;
           nsubs = 0;
@@ -298,7 +317,7 @@ void pcalibrate (struct type_pass *pass,
               status.pc_phase[fr][stn][ipol] += delta_phase[stn];
 
           status.pc_amp[fr][stn][ipol] = c_mag (pc_adj[stn]);
-          msg ("chan %d stn %d ipol %d pc_amp %6.2f pc_phase %7.2f", 0,
+          msg ("chan %d stn %d ipol %d pc_amp %6.2f pc_phase %7.2f\n", 0,
                fr, stn, ipol, 1e3 * status.pc_amp[fr][stn][ipol], 
                180.0 / M_PI * status.pc_phase[fr][stn][ipol]);
 

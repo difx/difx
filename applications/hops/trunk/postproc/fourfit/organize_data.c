@@ -60,8 +60,8 @@ struct freq_corel *corel;
                                         /* Results go into param structure */
     if (time_range (ovex, stn1, stn2, cdata, &param) != 0)
         {
-        msg ("Error in time_range(), file %s, baseline %2s", 2,
-                                ovex->filename, cdata->t100->baseline);
+        msg ("Error in time_range(), file %s, baseline %c%c", 2,
+                                ovex->filename, st1, st2);
         return (-1);
         }
                                         /* Set up the frequency axis of main */

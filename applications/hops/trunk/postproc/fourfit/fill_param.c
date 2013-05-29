@@ -22,6 +22,7 @@
 #include "mk4_data.h"
 #include "vex.h"
 #include "param_struct.h"
+#include "control.h"
 
 int
 fill_param (struct scan_struct *ovex,
@@ -33,6 +34,8 @@ fill_param (struct scan_struct *ovex,
     {
     double fact1, fact2, fact3;
     unsigned long ap_in_sysclks;
+    extern struct c_block *cb_head;
+    struct c_block *cb_ptr;
                                         /* Record the baseline */
     strncpy (param->baseline, cdata->t100->baseline, 2);
 
@@ -101,5 +104,11 @@ fill_param (struct scan_struct *ovex,
 
                                         /* Skip pulsar parameters for now */
 
+                                        // bit of a kludge to get non-null fmatch_bw_pct
+                                        // if one exists (regardless of baseline)
+    param->fmatch_bw_pct = 25.0;        // default value
+    for (cb_ptr=cb_head; cb_ptr!=NULL; cb_ptr=cb_ptr->cb_chain)
+        if (cb_ptr->fmatch_bw_pct != NULLFLOAT)
+            param->fmatch_bw_pct = cb_ptr->fmatch_bw_pct;
     return(0);
     }

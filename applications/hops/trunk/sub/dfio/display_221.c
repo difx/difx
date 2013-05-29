@@ -35,6 +35,9 @@
 
 #ifndef GS_EXEC
 # define GS_EXEC "/usr/bin/gs"
+# warning "GS_EXEC default of /usr/bin/gs used"
+#else /* GS_EXEC */
+# warning "GS_EXEC provided by preprocessor"
 #endif /* GS_EXEC */
 #ifdef P_tmpdir
 # define P_tmpdir "/tmp"

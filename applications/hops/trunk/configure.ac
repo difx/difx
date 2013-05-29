@@ -6,11 +6,11 @@
 # to detect endianism in bytflp.h for some of the tools.
 #
 AC_PREREQ(2.59)
-AC_INIT(hops, 3.7, gbc@haystack.mit.edu)
+AC_INIT(hops, 3.8, gbc@haystack.mit.edu)
 #AM_INIT_AUTOMAKE([foreign std-options])
 AM_INIT_AUTOMAKE([foreign])
 AC_CONFIG_SRCDIR([hops.bash.in])
-AC_CONFIG_HEADER([hops_config.h])
+AC_CONFIG_HEADERS([hops_config.h])
 
 # ignore this line
 AC_GBC_INIT([This file captures critical configuration details])
@@ -121,9 +121,19 @@ else
     am__fastdepCXX_TRUE='#'
     am__fastdepCXX_FALSE='#'
 fi
-# HOPS is expecting /usr/bin/gs to exist
-AC_CHECK_PROG(HAVE_GS, [gs], [true], [false], [/usr/bin])
-AC_GBC_NOTICE([%%% have_gs is $HAVE_GS (required)])
+# HOPS prints and displays with ghostscript (gs)
+AC_PATH_PROG(GS_EXEC, [gs], [/bin/false])
+AC_SUBST(GS_EXEC)
+if [test "x$GS_EXEC" = "x/bin/false" ] ; then
+    AC_GBC_NOTICE([%%% have_gs is false (required)])
+    AC_GBC_NOTICE([PATH does not include ghostscript (gs)])
+else
+    AC_GBC_NOTICE([%%% have_gs is true (required)])
+    AC_GBC_NOTICE([GS_EXEC is $GS_EXEC])
+fi
+# it formerly insisted on having it at /usr/bin/gs
+#AC_CHECK_PROG(HAVE_GS, [gs], [true], [false], [/usr/bin])
+#AC_GBC_NOTICE([%%% have_gs is $HAVE_GS (required)])
 
 # PERL/Python might be in nonstandard locations
 AC_PATH_PROGS(PERL, perl, /bin/false)
@@ -253,11 +263,21 @@ AC_SUBST(X11_LIB,
 # is a convenient way to search among multiple directories.
 # It is hard to get the search order right...in all cases.
 #
+# Further complicated by the DiFX use of the PGPLOTDIR variable.
+# If that is defined and PGPLOT_DIR isn't, we'll take that as a hint.
+# otherwise we'll fall back on /usr/local/pgplot as Tim intended.
+#
+if [test -z "$PGPLOT_DIR" -a -n "$PGPLOTDIR" ] ; then
+    pgplotdefault="$PGPLOTDIR"
+else
+    pgplotdefault='/usr/local/pgplot'
+fi
+#
 AC_ARG_VAR(PGPLOT_DIR, [PGPLOT installation directory])
 if [test x${enable_pgplot-yes} = xyes ] ; then
     AC_GBC_NOTICE([searching for pgxwin_server])
     AC_PATH_PROG(PGXWIN_SERVER, pgxwin_server, false,
-	[${PGPLOT_DIR-'/usr/local/pgplot'} /usr/lib/pgplot5 dnl
+	[${PGPLOT_DIR-"$pgplotdefault"} /usr/lib/pgplot5 dnl
 	 /usr/lib/pgplot64 /usr/local/pgplot-png dnl
 	 /usr/bin /opt/local/bin /sw/lib/pgplot])
     pgpdir=`AS_DIRNAME(["${PGXWIN_SERVER-/no-such-dir}"])`
@@ -278,7 +298,7 @@ if [test x${enable_pgplot-yes} = xyes ] ; then
     else
 	# well, no pgxwin_server, but PGPLOT may yet be functional
 	if [test "$pgpdir" = '/no-such-dir'] ; then
-	    pgpdir=${PGPLOT_DIR='/usr/local/pgplot'}
+	    pgpdir=${PGPLOT_DIR="$pgplotdefault"}
 	fi
 	pgplib=$pgpdir/libpgplot.a
 	cpglib=$pgpdir/libcpgplot.a
@@ -317,6 +337,7 @@ AC_SUBST(PGPLOT_DIR)
 
 # Check for PNG (primitive) which MAY be required by pgplot
 # One could provide the linkage stubs if PNG is required, but missing.
+# If built within the DiFX environment, it might be available.
 AC_ARG_VAR(PNG12_LIB, [Path to libpng12 shared object])
 AC_CHECK_LIB(png12, png_access_version_number, have_png=true, have_png=false)
 if [$have_png] ; then

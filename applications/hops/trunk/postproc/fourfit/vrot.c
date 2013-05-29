@@ -42,20 +42,18 @@ struct type_pass *pass;
     theta = pass->pass_data[fr].frequency * dr 
                 * (param.acc_period * (ap + 0.5) + status.epoch_err[fr]);
 
-                                        /* Residual mbd effect at this freq */
+                                        // Residual mbd effect at this freq
+    theta += mbd * (pass->pass_data[fr].frequency - param.ref_freq);
+                                        // Effect due to offset of lag where max lies
+    theta += (param.nlags - status.max_delchan) * 0.125 * sb;
+   
     if (pass->control.optimize_closure) // sacrifice mbd fit for less-noisy closure?
-        {
-        theta += mbd * (pass->pass_data[fr].frequency - param.ref_freq 
-                        + 0.125 * sb / status.sbd_sep);
-        theta += (param.nlags - status.max_delchan) * 0.125 * sb;
-        }
-    else
-        {
-        theta += mbd * (pass->pass_data[fr].frequency - param.ref_freq);
-                                        /* effect of non-integral sbd iff SSB
+        theta += 0.125 * mbd * sb / status.sbd_sep;
+       
+    else                                /* effect of non-integral sbd iff SSB
                                          * correct phase to dc edge, based on sb delay */
-        theta += (param.nlags - status.max_delchan + status.sbd_max / status.sbd_sep) * 0.125 * sb;
-        }
+        theta += 0.125 * status.sbd_max * sb / status.sbd_sep;
+        
     theta *= (-2.0 * M_PI);             // convert to radians
 
     return (c_exp(theta));              // return unit phasor

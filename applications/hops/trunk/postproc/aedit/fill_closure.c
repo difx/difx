@@ -143,7 +143,10 @@ fringearray *fdata;
     tptr->data.duration = datum->duration;
                                         /* Check for screwed up triangle for mbd */
     if ((ambig[0] != ambig[1]) || (ambig[1] != ambig[2]))
+        {
         tptr->data.ambiguity = 0.0;
+        cmbd *= 1e3;                    // convert to ns
+        }
     else if (ambig[0] != 0.0)
         {
                                         /* Remove multiple mbd ambiguities */

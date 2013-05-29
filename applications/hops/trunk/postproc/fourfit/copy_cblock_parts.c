@@ -122,6 +122,15 @@ struct c_block *f,*t;               // f (from) is source pointer
     if (f->pc_delay_r.rem != NULLFLOAT)
         t->pc_delay_r.rem = f->pc_delay_r.rem;
 
+    if (f->weak_channel != NULLFLOAT)
+        t->weak_channel = f->weak_channel;
+
+    if (f->pc_amp_hcode != NULLFLOAT)
+        t->pc_amp_hcode = f->pc_amp_hcode;
+
+    if (f->fmatch_bw_pct != NULLFLOAT)
+        t->fmatch_bw_pct = f->fmatch_bw_pct;
+
     if (f->nsamplers != NULLINT)
         {
         t->nsamplers = f->nsamplers;

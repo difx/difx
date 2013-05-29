@@ -61,6 +61,9 @@ struct type_param
     double      ion_diff;               // differential ionosphere (rem-ref in TEC units)
     int         ion_pts;                // number of pts in ionosphere coarse search
     double      par_angle[2];           // parallactic angle (rad) for ref & rem
+    double      weak_channel;           // G code threshhold for single-chan-amp / coherent-sum-amp
+    double      pc_amp_hcode;           // H code iff any pc amplitude less than this
+    double      fmatch_bw_pct;          // fractional bw % used for frequency matching
     };
 
 #define WIN_EDGE_SBD   0x01             /* masks for status.interp_err */

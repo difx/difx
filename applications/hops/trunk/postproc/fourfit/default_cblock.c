@@ -68,6 +68,9 @@ struct c_block *cb_ptr;
     cb_ptr -> pc_delay_l.rem = 0.0;
     cb_ptr -> pc_delay_r.ref = 0.0;
     cb_ptr -> pc_delay_r.rem = 0.0;
+    cb_ptr -> weak_channel    = 0.5;
+    cb_ptr -> pc_amp_hcode    = 0.005;
+    cb_ptr -> fmatch_bw_pct   = 25.0;
 
                                                                       // vectors
     for (i=0; i<6; i++)

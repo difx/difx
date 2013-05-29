@@ -17,6 +17,7 @@
 /* Created April 5 1998 by CJL                                          */
 /*                                                                      */
 /* changed BW_PCT to 50% to line up large offset f's      rjc 2004.10.5 */
+/* parameterized BW_PCT to be param.fmatch_bw_pct         rjc 2013.3.7  */
 /************************************************************************/
 #include <stdio.h>
 #include <math.h>
@@ -24,11 +25,10 @@
 #include "vex.h"
 #include "freqlist.h"
 #include "mk4_sizes.h"
+#include "param_struct.h"
 
 #define FALSE 0
 #define TRUE 1
-
-#define BW_PCT 25.0
 
 int
 make_flist (/*stn1, stn2, fl)*/
@@ -39,6 +39,7 @@ struct freqlist *fl)
     int i, j, nf, ch1, ch2, ch, minindex, index, mismatch, lsb, usb;
     double freqs[MAX_CHAN_PP], minfreq, freq, bw, fdiff;
     struct chan_struct *chnl, *st1ch, *st2ch;
+    extern struct type_param param;
 
                                         /* Initialize fl array */
     for (i=0; i<MAX_CHAN_PP; i++)
@@ -58,7 +59,8 @@ struct freqlist *fl)
         bw = st1ch->bandwidth;
         if (freq <= 0.0) continue;
         for (i=0; i<nf; i++)
-            if (fabs (freq - freqs[i]) / bw < BW_PCT/100.0) break;
+            if (fabs (freq - freqs[i]) / bw < param.fmatch_bw_pct/100.0)
+                break;
         if (i == nf)
             {
             for (ch2=0; ch2<MAX_CHAN_PP; ch2++)
@@ -66,7 +68,8 @@ struct freqlist *fl)
                 st2ch = stn2->channels + ch2;
                                         /* Criterion is freq diff as fraction of bandwidth */
                 fdiff = fabs (freq - st2ch->sky_frequency);
-                if (fdiff/bw < BW_PCT/100.0) break;
+                if (fdiff/bw < param.fmatch_bw_pct/100.0)
+                    break;
                 }
             if (ch2 < MAX_CHAN_PP)
                 {
@@ -106,7 +109,8 @@ struct freqlist *fl)
             chnl = stn1->channels + ch;
             freq = chnl->sky_frequency / 1e6;
             bw = chnl->bandwidth / 1e6;
-            if (fabs ((freq - fl[i].sky_frequency) / bw) > BW_PCT/100.0) continue;
+            if (fabs ((freq - fl[i].sky_frequency) / bw) > param.fmatch_bw_pct/100.0)
+                continue;
                                         /* Which combo is it? */
                                         /* LL=0,UL=1,LR=2,UR=3 */
             index = 0;
@@ -129,7 +133,8 @@ struct freqlist *fl)
             freq = chnl->sky_frequency / 1e6;
             bw = chnl->bandwidth / 1e6;
                                         /* Remote station can be different freq, within limits */
-            if (fabs ((freq - fl[i].sky_frequency) / bw) > BW_PCT/100.0) continue;
+            if (fabs ((freq - fl[i].sky_frequency) / bw) > param.fmatch_bw_pct/100.0)
+                continue;
                                         /* Which combo is it? */
                                         /* LL=0,UL=1,LR=2,UR=3 */
             index = 0;

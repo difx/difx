@@ -1,5 +1,5 @@
 /*
- * $Id: gen_new_chan_id.c 259 2011-05-19 18:36:09Z gbc $
+ * $Id: gen_new_chan_id.c 782 2012-11-13 19:45:21Z rjc $
  *
  * support for fourmer--relabelling of channel ids
  */
@@ -36,11 +36,14 @@ char *gen_new_chan_id(char *old, int isA, int isroot)
     static char mine[9];
     /* if (!isroot && (end = get_cache(old, isA))) return(end); */
     memset(mine, 0, sizeof(mine));
-    freq_group_override(old);
-    mine[0] = *old++;
-    mine[1] = isA ? 'A' : 'B';
-    strncpy(mine + 2, old, 6);
-    /* if (isroot) cache_old(old, isA); */
+    if (strlen (old))
+        {
+        freq_group_override(old);
+        mine[0] = *old++;
+        mine[1] = isA ? 'A' : 'B';
+        strncpy(mine + 2, old, 6);
+        /* if (isroot) cache_old(old, isA); */
+        }
     return(mine);
 }
 

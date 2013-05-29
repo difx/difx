@@ -136,5 +136,6 @@ char *argv[];
         }
     else msg ("No lines written!  '%s' contains only a header", 2, outfile);
 
+    return(0);
     }
 

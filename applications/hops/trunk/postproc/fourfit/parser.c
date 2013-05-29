@@ -252,6 +252,12 @@ int parser ()
                        cb_ptr -> ion_npts = tval;
                    else if (toknum == INTERPOLATOR_)
                        cb_ptr -> interpolator = tval;
+                   else if (toknum == WEAK_CHANNEL_)
+                       cb_ptr -> weak_channel = float_values[tval];
+                   else if (toknum == PC_AMP_HCODE_)
+                       cb_ptr -> pc_amp_hcode = float_values[tval];
+                   else if (toknum == FMATCH_BW_PCT_)
+                       cb_ptr -> fmatch_bw_pct = float_values[tval];
                break;
 
 

@@ -6,6 +6,7 @@
 *  added code for ad hoc phase corrections          rjc 94.9.6   *
 *  inverted sign for ap_by_ap pcal for remote stn rjc 2008.10.31 *
 *  save pcal phasor, rather than applying it      rjc 2011.12.21 *
+*  fixed multitone phase sign bug                 rjc 2013.5.9   *
 *****************************************************************/
 #include <stdio.h>
 #include <math.h>
@@ -83,19 +84,20 @@ struct type_pass *pass;
                         case NORMAL:
                         case MANUAL:
                                         // apply constant pcal to whole scan
-                            rrpcal[i] = c_exp (-status.pc_phase[fr][i][stnpol[i][ip]]);
+                            rrpcal[i] = c_exp (status.pc_phase[fr][i][stnpol[i][ip]]);
                             break;
                         case AP_BY_AP:
                                         // form difference with correct pol
                             rrpcal[i] = (stnpol[i][ip]) ?
                                 rrisd[i]->phasecal_rcp[pass->pci[i][fr]]:
                                 rrisd[i]->phasecal_lcp[pass->pci[i][fr]];
+                            rrpcal[i].im *= -1;
                             break;
                         case MULTITONE:
                             rrpcal[i] = rrisd[i]->mt_pcal[stnpol[i][ip]];
                             break;
                         }
-                    theta -= (2*i-1) * c_phase (rrpcal[i]);
+                    theta += (2*i-1) * c_phase (rrpcal[i]);
                     }
                                         // Zero pcal ampl => missing pcal data   
                                         // so don't rotate

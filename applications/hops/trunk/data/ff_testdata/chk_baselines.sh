@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# $Id: chk_baselines.sh 471 2011-10-12 17:54:13Z gbc $
+# $Id: chk_baselines.sh 787 2012-12-14 14:31:11Z gbc $
 #
 # canonical test suite for fourfit
 #
@@ -38,6 +38,7 @@ cat > pplot_print <<-EOF
 EOF
 chmod +x pplot_print
 
+rm -f ??.?.?.$time.ps
 for bsx in ??.?.?.$time
 do
     PATH=`pwd`:$PATH fplot -h $bsx 2>/dev/null 1>&2
