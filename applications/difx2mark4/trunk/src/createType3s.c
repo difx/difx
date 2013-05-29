@@ -86,7 +86,8 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
          pcal_filnam[256],
          ant[16],
          buff[5],
-         *line;
+         *line,
+         this_pol;
 
     FILE *fin;
     FILE *fout;
@@ -375,10 +376,11 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                                         // skip over non-matching polarizations
                                     if (np != b % npol)
                                         continue;  
-                                    isb = ((D->freq+jf)->sideband == 'U') ? 1 : -1;
-                                    f_rel = isb * (freq - (D->freq+jf)->freq);
+                                    this_pol = D->config[configId].IF[ D->config[configId].freqId2IF[jf]].pol[np];
+                                    isb = (D->freq[jf].sideband == 'U') ? 1 : -1;
+                                    f_rel = isb * (freq - D->freq[jf].freq);
                                         // is it within the jfth frequency band?
-                                    if (f_rel > 0.0 && f_rel < (D->freq+jf)->bw)
+                                    if (f_rel > 0.0 && f_rel < D->freq[jf].bw)
                                         // yes, insert phasor info into correct slot
                                         {
                                         // find matching freq channel
@@ -389,7 +391,8 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                                             for (k=0; k<2; k++)
                                                 if (pfb[nf].stn[k].freq     == D->freq[jf].freq
                                                  && pfb[nf].stn[k].bw       == D->freq[jf].bw  
-                                                 && pfb[nf].stn[k].sideband == D->freq[jf].sideband)
+                                                 && pfb[nf].stn[k].sideband == D->freq[jf].sideband
+                                                 && pfb[nf].stn[k].pol      == this_pol)
                                                     {
                                                     strcpy (t309.chan[b].chan_name, pfb[nf].stn[k].chan_id);
                                                     break;
