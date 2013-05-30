@@ -827,6 +827,7 @@ DifxDatastream *mergeDifxDatastreamArrays(const DifxDatastream *dd1, int ndd1,
 
 int writeDifxDatastream(FILE *out, const DifxDatastream *dd)
 {
+	const int MaxLineLength = 256;
 	int i;
 	char pol[2];
 
@@ -850,16 +851,32 @@ int writeDifxDatastream(FILE *out, const DifxDatastream *dd)
 	{
 		writeDifxLineInt1(out, "REC FREQ INDEX %d", i, dd->recFreqId[i]);
 
-		if (dd->clockOffsetDelta[i]==0.0 && dd->phaseOffset[i]==0.0) {
-		  writeDifxLineDouble1(out, "CLK OFFSET %d (us)", i, "%8.6f", dd->clockOffset[i]);
-		} else {
-		  char v[256];
-		  if (dd->phaseOffset[i]==0.0) 
-		    snprintf(v, 256, "%.6f:%.6f", dd->clockOffset[i], dd->clockOffsetDelta[i]);
-		  else
-		    snprintf(v, 256, "%.6f:%.6f:%.2f", dd->clockOffset[i], dd->clockOffsetDelta[i], dd->phaseOffset[i]);
+		if(dd->clockOffsetDelta[i]==0.0 && dd->phaseOffset[i]==0.0)
+		{
+			writeDifxLineDouble1(out, "CLK OFFSET %d (us)", i, "%8.6f", dd->clockOffset[i]);
+		}
+		else
+		{
+			char v[MaxLineLength];
+			int r;
+		
+			if (dd->phaseOffset[i]==0.0) 
+			{
+				r = snprintf(v, MaxLineLength, "%.6f:%.6f", dd->clockOffset[i], dd->clockOffsetDelta[i]);
+			}
+		  	else
+			{
+		    		r = snprintf(v, MaxLineLength, "%.6f:%.6f:%.2f", dd->clockOffset[i], dd->clockOffsetDelta[i], dd->phaseOffset[i]);
+			}
 
-		  writeDifxLine1(out, "CLK OFFSET %d (us)", i, v);
+			if(r >= MaxLineLength)
+			{
+				fprintf(stderr, "Developer error: writeDifxDatastream: MaxLineLength = %d is too small, wants to be > %d\n", MaxLineLength, r);
+
+				exit(0);
+			}
+
+			writeDifxLine1(out, "CLK OFFSET %d (us)", i, v);
 		}
 
 		writeDifxLineDouble1(out, "FREQ OFFSET %d (Hz)", i, "%8.6f", dd->freqOffset[i]);

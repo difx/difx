@@ -1374,31 +1374,41 @@ static DifxInput *parseDifxInputDatastreamTable(DifxInput *D, const DifxParamete
 		nRecBand = 0;
 		for(i = 0; i < D->datastream[e].nRecFreq; ++i)
 		{
+			char *clockOffStr, *str, *tok;
+
 			r = DifxParametersfind1(ip, r+1, "REC FREQ INDEX %d", i);
 			D->datastream[e].recFreqId[i] = atoi(DifxParametersvalue(ip, r));
 			r = DifxParametersfind1(ip, r+1, "CLK OFFSET %d (us)", i);
-			char *clockOffStr = strdup(DifxParametersvalue(ip, r));
-			if (clockOffStr==NULL) {
-			  perror("Could not allocate temporary memory");
-			  return 0;
+
+			/* look for value of form   ClockOffset[:ClockOffsetDelta[:PhaseOffset]] */
+
+			clockOffStr = strdup(DifxParametersvalue(ip, r));
+			if(!clockOffStr)
+			{
+				perror("Could not allocate temporary memory");
+				
+				return 0;
 			}
-			char *str = clockOffStr;
-			char *tok = strsep(&str, ":");
-			if (tok==NULL) {
-			  fprintf(stderr, "Failed to parse CLK OFFSET %d: %s\n", i, DifxParametersvalue(ip, r));
-			  return  0;
+			str = clockOffStr;
+			tok = strsep(&str, ":");
+			if(tok == 0)
+			{
+				fprintf(stderr, "Failed to parse CLK OFFSET %d: %s\n", i, DifxParametersvalue(ip, r));
+
+				return  0;
 			}
 			D->datastream[e].clockOffset[i] = atof(tok);
 			tok = strsep(&str, ":");
-			if (tok !=NULL) {
-			  D->datastream[e].clockOffsetDelta[i] = atof(tok);
-			  tok = strsep(&str, ":");
-			  if (tok !=NULL) {
-			    D->datastream[e].phaseOffset[i] = atof(tok);
-			  }
+			if(tok != 0)
+			{
+				D->datastream[e].clockOffsetDelta[i] = atof(tok);
+				tok = strsep(&str, ":");
+				if(tok != 0)
+				{
+					D->datastream[e].phaseOffset[i] = atof(tok);
+				}
 			}
 			free(clockOffStr);
-			//D->datastream[e].clockOffset[i] = atof(DifxParametersvalue(ip, r));
 			r = DifxParametersfind1(ip, r+1, "FREQ OFFSET %d (Hz)", i);
 			D->datastream[e].freqOffset[i] = atof(DifxParametersvalue(ip, r));
 			r = DifxParametersfind1(ip, r+1, "NUM REC POLS %d", i);
