@@ -1141,7 +1141,7 @@ int disk_state_Query(Mk5Daemon *D, int nField, char **fields, char *response, in
 
 	for(int b = 0; b < N_BANK; ++b)
 	{
-		const Mk5Smart *smart = D->smartData + b;
+		const Mk5Smart *smart = D->smartData + bank;
 
 		if(D->vsns[bank][0])
 		{
@@ -1156,13 +1156,13 @@ int disk_state_Query(Mk5Daemon *D, int nField, char **fields, char *response, in
 		}
 		else
 		{
-			sprintf(bankStr[b], "- : 0");
+			sprintf(bankStr[b], "- : unknown");
 		}
 	
 		bank = (bank + 1) % N_BANK;
 	}
 
-	v = snprintf(response, maxResponseLength, "!%s? 0 : %s : %s;", fields[0], bankStr[0], bankStr[1]);
+	v = snprintf(response, maxResponseLength, "!%s? 0 : %s : %s ;", fields[0], bankStr[0], bankStr[1]);
 #else
 	v = snprintf(response, maxResponseLength, "!%s? 2 : Not implemented on this DTS;", fields[0]);
 #endif
