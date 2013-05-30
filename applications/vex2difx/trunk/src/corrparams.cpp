@@ -1431,15 +1431,51 @@ int AntennaSetup::setkv(const std::string &key, const std::string &value)
 	}
 	else if(key == "freqClockOffs")
 	{
-		double d;
+	        double d;
+	        size_t found;
+		found = value.find_first_of(':');
+		if (found==std::string::npos) { // No match
+		  // Just Delay offset
+		  ss >> d;
+		  freqClockOffs.push_back(d);
+		  freqClockOffsDelta.push_back(0);
+		  freqPhaseDelta.push_back(0);
 
-		ss >> d;
-		freqClockOffs.push_back(d);
+		} else {
+		  // Offset:LcpOffset[:Phaseoffset] (usec:usec:degrees)
+		  ss << value.substr(0,found);
+		  ss >> d;
+		  freqClockOffs.push_back(d);
+
+		  size_t found2;
+		  found2 = value.substr(found+1).find_first_of(':');
+		  if (found2==std::string::npos) {
+		    // Offset:LcpOffset
+
+		    std::stringstream ss2;
+		    ss2 << value.substr(found+1);
+		    ss2 >> d;
+		    freqClockOffsDelta.push_back(d);
+		    freqPhaseDelta.push_back(0);
+		  } else {
+		    // Offset:LcpOffset:PhaseOffset
+		    
+		    std::stringstream ss2;
+		    ss2 << value.substr(found+1).substr(0,found2);
+		    ss2 >> d;
+		    freqClockOffsDelta.push_back(d);
+
+		    std::stringstream ss3;
+		    ss3 << value.substr(found+1).substr(found2+1);
+		    ss3 >> d;
+		    freqPhaseDelta.push_back(d);
+		  }
+		}
 	}
 	else if(key =="loOffsets")
 	{
 		double d;
-		
+
 		ss >> d;
 		loOffsets.push_back(d);
 	}

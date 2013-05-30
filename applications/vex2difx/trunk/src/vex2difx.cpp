@@ -2449,9 +2449,13 @@ static int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int 
 					}
 
 					int nFreqClockOffsets = antennaSetup->freqClockOffs.size();
+					int nFreqClockOffsetsDelta = antennaSetup->freqClockOffsDelta.size();
+					int nFreqPhaseDelta = antennaSetup->freqPhaseDelta.size();
 					if(nFreqClockOffsets > 0)
 					{
-						if(D->datastream[D->nDatastream].nRecFreq != nFreqClockOffsets)
+						if(D->datastream[D->nDatastream].nRecFreq != nFreqClockOffsets ||
+						   D->datastream[D->nDatastream].nRecFreq != nFreqClockOffsetsDelta ||
+						   D->datastream[D->nDatastream].nRecFreq != nFreqPhaseDelta)
 						{
 							cerr << "Error: AntennaSetup for " << antName << " has only " << nFreqClockOffsets << " freqClockOffsets specified but " << dd->nRecFreq << " recorded frequencies" << endl;
 
@@ -2466,6 +2470,8 @@ static int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int 
 						for(int i = 0; i < nFreqClockOffsets; ++i)
 						{
 							D->datastream[D->nDatastream].clockOffset[i] = antennaSetup->freqClockOffs.at(i);
+							D->datastream[D->nDatastream].clockOffsetDelta[i] = antennaSetup->freqClockOffsDelta.at(i);
+							D->datastream[D->nDatastream].phaseOffset[i] = antennaSetup->freqPhaseDelta.at(i);
 						}
 					}
 

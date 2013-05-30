@@ -136,6 +136,8 @@ public:
 	int clockorder;		// Order of clock poly (if overriding)
 	double clock2, clock3, clock4, clock5;	// Clock coefficients (if overriding)
 	std::vector<double> freqClockOffs; // clock offsets for the individual frequencies
+	std::vector<double> freqClockOffsDelta; // clock offsets between pols for the individual frequencies
+	std::vector<double> freqPhaseDelta; // Phase difference between pols for each frequency
 	std::vector<double> loOffsets; //LO offsets for each individual frequency
 	VexClock clock;
 	double deltaClock;	// sec
