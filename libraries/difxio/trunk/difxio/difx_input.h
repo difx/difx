@@ -294,6 +294,8 @@ typedef struct
 	int *recToneOut;  /* bool Recorded pcal written out?*/
 
 	double *clockOffset;	/* (us) [freq] */
+	double *clockOffsetDelta; /* (us) [freq] */
+	double *phaseOffset;	/* (degrees) [freq] */
 	double *freqOffset;	/* Freq offsets for each frequency in Hz */
 	
 	int nRecFreq;		/* number of freqs recorded in this datastream */

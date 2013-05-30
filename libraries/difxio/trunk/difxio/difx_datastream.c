@@ -134,6 +134,16 @@ void DifxDatastreamAllocFreqs(DifxDatastream *dd, int nRecFreq)
 		free(dd->clockOffset);
 		dd->clockOffset = 0;
 	}
+	if(dd->clockOffsetDelta)
+	{
+		free(dd->clockOffsetDelta);
+		dd->clockOffsetDelta = 0;
+	}
+	if(dd->phaseOffset)
+	{
+		free(dd->phaseOffset);
+		dd->phaseOffset = 0;
+	}
 	if(dd->freqOffset)
 	{
 		free(dd->freqOffset);
@@ -146,6 +156,8 @@ void DifxDatastreamAllocFreqs(DifxDatastream *dd, int nRecFreq)
 		dd->recFreqId = (int *)calloc(nRecFreq, sizeof(int));
 		dd->nRecPol = (int *)calloc(nRecFreq, sizeof(int));
 		dd->clockOffset = (double *)calloc(nRecFreq, sizeof(double));
+		dd->clockOffsetDelta = (double *)calloc(nRecFreq, sizeof(double));
+		dd->phaseOffset = (double *)calloc(nRecFreq, sizeof(double));
 		dd->freqOffset = (double *)calloc(nRecFreq, sizeof(double));
 	}
 }
@@ -497,6 +509,8 @@ int isSameDifxDatastream(const DifxDatastream *dd1, const DifxDatastream *dd2, c
 		if(dd1->nRecPol[f] != dd2->nRecPol[f] ||
 		   dd1->recFreqId[f] != freqId2 ||
 		   dd1->clockOffset[f] != dd2->clockOffset[f] ||
+		   dd1->clockOffsetDelta[f] != dd2->clockOffsetDelta[f] ||
+		   dd1->phaseOffset[f] != dd2->phaseOffset[f] ||
 		   dd1->freqOffset[f] != dd2->freqOffset[f])
 		{
 			return 0;
@@ -575,6 +589,8 @@ void copyDifxDatastream(DifxDatastream *dest, const DifxDatastream *src, const i
 			dest->recFreqId[f] = src->recFreqId[f];
 		}
 		dest->clockOffset[f] = src->clockOffset[f];
+		dest->clockOffsetDelta[f] = src->clockOffsetDelta[f];
+		dest->phaseOffset[f] = src->phaseOffset[f];
 		dest->freqOffset[f]  = src->freqOffset[f];
 	}
 	for(c = 0; c < dest->nRecBand; ++c)
@@ -638,6 +654,8 @@ void moveDifxDatastream(DifxDatastream *dest, DifxDatastream *src)
 	dest->recFreqId = src->recFreqId;
 	dest->nRecPol = src->nRecPol;
 	dest->clockOffset = src->clockOffset;
+	dest->clockOffsetDelta = src->clockOffsetDelta;
+	dest->phaseOffset = src->phaseOffset;
 	dest->freqOffset = src->freqOffset;
 	dest->recBandFreqId = src->recBandFreqId;
 	dest->recBandPolName = src->recBandPolName;
@@ -654,6 +672,8 @@ void moveDifxDatastream(DifxDatastream *dest, DifxDatastream *src)
 	src->recFreqId = 0;
 	src->nRecPol = 0;
 	src->clockOffset = 0;
+	src->clockOffsetDelta = 0;
+	src->phaseOffset = 0;
 	src->freqOffset = 0;
 	src->recBandFreqId = 0;
 	src->recBandPolName = 0;
@@ -829,7 +849,19 @@ int writeDifxDatastream(FILE *out, const DifxDatastream *dd)
 	for(i = 0; i < dd->nRecFreq; ++i)
 	{
 		writeDifxLineInt1(out, "REC FREQ INDEX %d", i, dd->recFreqId[i]);
-		writeDifxLineDouble1(out, "CLK OFFSET %d (us)", i, "%8.6f", dd->clockOffset[i]);
+
+		if (dd->clockOffsetDelta[i]==0.0 && dd->phaseOffset[i]==0.0) {
+		  writeDifxLineDouble1(out, "CLK OFFSET %d (us)", i, "%8.6f", dd->clockOffset[i]);
+		} else {
+		  char v[256];
+		  if (dd->phaseOffset[i]==0.0) 
+		    snprintf(v, 256, "%.6f:%.6f", dd->clockOffset[i], dd->clockOffsetDelta[i]);
+		  else
+		    snprintf(v, 256, "%.6f:%.6f:%.2f", dd->clockOffset[i], dd->clockOffsetDelta[i], dd->phaseOffset[i]);
+
+		  writeDifxLine1(out, "CLK OFFSET %d (us)", i, v);
+		}
+
 		writeDifxLineDouble1(out, "FREQ OFFSET %d (Hz)", i, "%8.6f", dd->freqOffset[i]);
 		writeDifxLineInt1(out, "NUM REC POLS %d", i, dd->nRecPol[i]);
 	}
