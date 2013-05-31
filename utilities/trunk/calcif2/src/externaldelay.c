@@ -89,7 +89,7 @@ ExternalDelay *newExternalDelay(const char *filename)
 
 	if(nLines == 0 || nLines > 1000000)
 	{
-		fprintf(stderr, "Number of delay lines in %s is %d.  That is rediculous.\n", filename, nLines);
+		fprintf(stderr, "Number of delay lines in %s is %d.  That is ridiculous.\n", filename, nLines);
 
 		fclose(in);
 		fclose(in2);

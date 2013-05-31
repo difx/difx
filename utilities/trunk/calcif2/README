@@ -38,7 +38,7 @@ the name of the computer running calcserver.
 
 
 As of 20130302 there is partial support for a bootleg version of the Sekido near-field model
-as integrated into an unversioned calc_skd varient.  To make use of this:
+as integrated into an unversioned calc_skd variant.  To make use of this:
 
 1. make sure calc_skd is in your path
 
