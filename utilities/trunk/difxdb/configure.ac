@@ -1,4 +1,4 @@
-AC_INIT([difxdb], [1.0] )
+AC_INIT([difxdb], [1.1] )
 
 
 AM_INIT_AUTOMAKE
