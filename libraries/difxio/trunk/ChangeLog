@@ -7,6 +7,7 @@ compatibility with earlier versions of difx2fits and maybe difx2mark4.
 * Support RX NAME parameter in FREQ table
 * Experimental support for TLE spacecraft ephemerides
 * Some segfault protecting in model writing (CJP+WFB)
+* Experimental support for polarization dependent delay and phase offsets (CJP)
 
 3.1.0
 * Rename from 3.0.2 prior to DiFX-2.1
