@@ -12,8 +12,11 @@ Version 0.4
   - vdifbstate (m5bstate)
   - vdiffold   (m5fold)
   - vdifspec   (m5spec)
+* Other new utilities
+  - extractVDIFThreads: gets only packets corresponding to given thread IDs
 * Inlinification and constification of many VDIF header access functions
 * Large file clean (I think) now...
+* Fix bugs in multi2singlethreadVDIF which caused crashes if many packets missing
 
 Version 0.3
 ~~~~~~~~~~~
