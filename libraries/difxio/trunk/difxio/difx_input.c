@@ -1293,7 +1293,7 @@ static DifxInput *parseDifxInputDatastreamTable(DifxInput *D, const DifxParamete
 			
 			return 0;
 		}
-		snprintf(D->datastream[e].dataFormat, DIFXIO_NAME_LENGTH, "%s", DifxParametersvalue(ip, r));
+		snprintf(D->datastream[e].dataFormat, DIFXIO_FORMAT_LENGTH, "%s", DifxParametersvalue(ip, r));
 	
 		r = DifxParametersfind(ip, r+1, "QUANTISATION BITS");
 		if(r < 0)

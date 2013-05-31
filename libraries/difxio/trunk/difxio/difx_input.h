@@ -43,6 +43,7 @@
 
 #define DIFXIO_FILENAME_LENGTH		256
 #define DIFXIO_NAME_LENGTH		32
+#define DIFXIO_FORMAT_LENGTH		128
 #define DIFXIO_CALCODE_LENGTH		4
 #define DIFXIO_VERSION_LENGTH		64
 #define DIFXIO_HOSTNAME_LENGTH		32
@@ -276,7 +277,7 @@ typedef struct
 {
 	int antennaId;		/* index to D->antenna */
 	float tSys;		/* 0.0 for VLBA DiFX */
-	char dataFormat[DIFXIO_NAME_LENGTH];   /* e.g., VLBA, MKIV, ... */
+	char dataFormat[DIFXIO_FORMAT_LENGTH];   /* e.g., VLBA, MKIV, ... */
 
 	enum SamplingType dataSampling; /* REAL or COMPLEX */
 	int nFile;              /* number of files */

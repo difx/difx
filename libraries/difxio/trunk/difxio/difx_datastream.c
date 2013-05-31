@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2012 by Walter Brisken                             *
+ *   Copyright (C) 2008-2013 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -564,7 +564,7 @@ void copyDifxDatastream(DifxDatastream *dest, const DifxDatastream *src, const i
 	{
 		dest->antennaId = src->antennaId;
 	}
-	snprintf(dest->dataFormat, DIFXIO_NAME_LENGTH, "%s", src->dataFormat);
+	snprintf(dest->dataFormat, DIFXIO_FORMAT_LENGTH, "%s", src->dataFormat);
 	dest->dataSampling = src->dataSampling;
 	dest->dataSource = src->dataSource;
 	dest->quantBits = src->quantBits;
@@ -637,7 +637,7 @@ void moveDifxDatastream(DifxDatastream *dest, DifxDatastream *src)
 {
 	dest->antennaId = src->antennaId;
 	dest->tSys = src->tSys;
-	snprintf(dest->dataFormat, DIFXIO_NAME_LENGTH, "%s", src->dataFormat);
+	snprintf(dest->dataFormat, DIFXIO_FORMAT_LENGTH, "%s", src->dataFormat);
 	dest->dataSampling = src->dataSampling;
 	dest->networkPort = src->networkPort;
 	dest->windowSize = src->windowSize;
