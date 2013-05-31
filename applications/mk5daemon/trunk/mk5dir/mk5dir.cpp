@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2012 by Walter Brisken                             *
+ *   Copyright (C) 2008-2013 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -87,12 +87,14 @@ static void usage(const char *pgm)
 	printf("  -f             Reread directory even if not needed\n\n");
 	printf("  --fast\n");
 	printf("  -F             Use fast mode (user dir version >=1 only)\n\n");
+	printf("  --realtime\n");
+	printf("  -r             Use Real-Time (RT) mode\n\n");
 	printf("  --nodms\n");
 	printf("  -n             Get directory but don't change disk module state\n\n");
 	printf("  --safedms\n");
 	printf("  -s             Only change disk module state if SDK8 unit or new dir type\n\n");
 	printf("  --dmsforce\n");
-	printf("  -d             Proceed with change of DMS even if ths makes module unreadable in SDK8\n\n");
+	printf("  -d             Proceed with change of DMS even if this makes module unreadable in SDK8\n\n");
 	printf("  --begin <b>\n");
 	printf("  -b <b>         Begin with scan number <b> (a 1-based number)\n\n");  
 	printf("  --end <e>\n");
@@ -556,6 +558,7 @@ int main(int argc, char **argv)
 	int startScan = -1;
 	int stopScan = -1;
 	int retval = EXIT_SUCCESS;
+	int realTime = 0;
 	const char *writeFile = 0;
 
 	dmsMaskStr = getenv("DEFAULT_DMS_MASK");
@@ -605,6 +608,11 @@ int main(int argc, char **argv)
 			strcmp(argv[a], "--fast") == 0)
 		{
 			fast = 1;
+		}
+		else if(strcmp(argv[a], "-r") == 0 ||
+			strcmp(argv[a], "--realtime") == 0)
+		{
+			realTime = 1;
 		}
 		else if(strcmp(argv[a], "-n") == 0 ||
 			strcmp(argv[a], "--nodms") == 0)
@@ -695,9 +703,7 @@ int main(int argc, char **argv)
 			if(watchdogXLRError[0] != 0)
 			{
 				char message[DIFX_MESSAGE_LENGTH];
-				snprintf(message, DIFX_MESSAGE_LENGTH, 
-					"Streamstor error executing: %s : %s",
-					watchdogStatement, watchdogXLRError);
+				snprintf(message, DIFX_MESSAGE_LENGTH, "Streamstor error executing: %s : %s", watchdogStatement, watchdogXLRError);
 				difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
 			}
 

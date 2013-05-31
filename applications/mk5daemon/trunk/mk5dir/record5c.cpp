@@ -634,6 +634,11 @@ static int record(int bank, const char *label, unsigned int packetSize, int payl
 			fflush(stdout);
 			WATCHDOG( XLRClose(xlrDevice) );
 
+			if(dirData)
+			{
+				free(dirData);
+			}
+
 			return -1;
 		}
 	}
@@ -839,6 +844,21 @@ static int record(int bank, const char *label, unsigned int packetSize, int payl
 			++nPart;
 		}
 	}
+	switch(nPart)
+	{
+		case 1:
+			strncpy(p->scanName, parts[0], MODULE_SCAN_NAME_LENGTH);
+			break;
+		case 2:
+			strncpy(p->expName, parts[0], 8);
+			strncpy(p->scanName, parts[1], MODULE_SCAN_NAME_LENGTH);
+			break;
+		case 3:
+			strncpy(p->expName, parts[0], 8);
+			strncpy(p->station, parts[1], 2);
+			strncpy(p->scanName, parts[2], MODULE_SCAN_NAME_LENGTH);
+			break;
+	}
 
 	/* Update directory */
 	WATCHDOGTEST( XLRGetDirectory(xlrDevice, &dir) );
@@ -847,21 +867,6 @@ static int record(int bank, const char *label, unsigned int packetSize, int payl
 	{
 		p->typeNumber = 9 + (len/128)*256;	/* format and scan number */
 		p->frameLength = 10016;	/* FIXME */
-		switch(nPart)
-		{
-			case 1:
-				strncpy(p->scanName, parts[0], MODULE_SCAN_NAME_LENGTH);
-				break;
-			case 2:
-				strncpy(p->expName, parts[0], 8);
-				strncpy(p->scanName, parts[1], MODULE_SCAN_NAME_LENGTH);
-				break;
-			case 3:
-				strncpy(p->expName, parts[0], 8);
-				strncpy(p->station, parts[1], 2);
-				strncpy(p->scanName, parts[2], MODULE_SCAN_NAME_LENGTH);
-				break;
-		}
 
 		decodeScan(xlrDevice, startByte, dir.Length, p, q);
 
@@ -895,8 +900,28 @@ static int record(int bank, const char *label, unsigned int packetSize, int payl
 			}
 		}
 
-		printf("Dir %s %d %d %d %2s %32s %8s %Ld %Ld\n", vsn, p->typeNumber & 0xFF, p->typeNumber/256, packetSize, p->station, p->scanName, p->expName, startByte, ptr);
 	}
+	else
+	{
+		p->typeNumber = 1;
+	}
+
+	if(p->expName[0] == 0)
+	{
+		strcpy(p->expName, ".");
+	}
+	if(p->station[0] == 0)
+	{
+		strcpy(p->station, ".");
+	}
+	if(p->scanName[0] == 0)
+	{
+		strcpy(p->scanName, ".");
+	}
+	
+	// Print out a Dir entry even for a zero length so mk5daemon (or other calling program) can get the bad news
+	printf("Dir %s %d %d %d %s %s %s %Ld %Ld\n", vsn, p->typeNumber & 0xFF, p->typeNumber/256, packetSize, p->station, p->scanName, p->expName, startByte, ptr);
+
 	printf("Sum %Ld %Ld %Ld\n", totalChunks, startByte, ptr);
 	if(ptr > startByte && totalChunks == 0)
 	{
