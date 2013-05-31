@@ -48,7 +48,7 @@ char Horizons_srcname[24];
 char Horizons_filename[256];
 
 int  ifirst, ilogdate = 1;
-FILE  *flog;
+FILE  *flog = 0;
 char spawn_time[64];
 char Version[48];
 getCALC_arg  *p_request;
@@ -307,6 +307,10 @@ SVCXPRT *pTransport;
              timeptr->tm_mon+1, timeptr->tm_mday, timeptr->tm_hour,
              timeptr->tm_min, timeptr->tm_sec);
           ilogdate = itoday;
+	 if (flog != 0)
+	 {
+	   fclose(flog);
+	 }
          if ((flog = fopen (filename, "w")) == NULL)
          {
             printf ("ERROR: cannot open log file %s\n", filename);
@@ -346,7 +350,7 @@ SVCXPRT *pTransport;
 	return;
 	}
 
-    /*
+#ifdef VERBOSE_DEBUG    
     printf ("request arg: date = %d\n", argument.date);
     printf ("request arg: time = %e\n", argument.time);
     printf ("request arg: src  = %s\n", argument.source);
@@ -378,7 +382,7 @@ SVCXPRT *pTransport;
                  mjd_str, argument.tai_utc[i], argument.ut1_utc[i],
                           argument.xpole[i], argument.ypole[i]);
     }
-    */
+#endif
 
     /* sketch out interface to Calc here */
 
@@ -415,12 +419,13 @@ SVCXPRT *pTransport;
 
     delay *= 1.0e-6;
 
-    /*
+#ifdef VERBOSE_DEBUG
     printf ("CALCServer: delay = %20.14e\n", delay);
     printf ("CALCServer: rate  = %e\n", rate);
     printf ("CALCServer: dry, wet = %e %e\n", 
             atmos[0], atmos[1]);
-    */
+#endif
+
     time (tp);
 
     sock_in = svc_getcaller (pTransport);
@@ -518,6 +523,10 @@ int main (int argc, char *argv[])
     if (argc > 1)
     {
        filename = argv[1];
+       if (flog != 0)
+       {
+	  fclose(flog);
+       }
        if ((flog = fopen (filename, "w")) == NULL)
        {
           printf ("ERROR: cannot open log file %s\n", filename);
