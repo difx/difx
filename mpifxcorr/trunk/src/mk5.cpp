@@ -550,13 +550,13 @@ int Mk5DataStream::checkData(int buffersegment)
   mark5_stream_get_frame_time(syncteststream, &mjd, &sec, &ns);
 
   nsperbyte = syncteststream->framens/(double)syncteststream->framebytes;
-  endns2000 = (((mjd-51544)*24*60*60+sec)*1e9 + ns)+nsperbyte*bufferinfo[buffersegment].validbytes;
+  endns2000 = static_cast<uint64_t>((((mjd-51544)*24*60*60+sec)*1e9 + ns)+nsperbyte*bufferinfo[buffersegment].validbytes);
 
   // Loops over frames looking times past the end of the expected segment end
   while (mark5_stream_next_frame(syncteststream)==0) {
     
     mark5_stream_get_frame_time(syncteststream, &mjd, &sec, &ns);
-    ns2000 = ((mjd-51544)*24*60*60+sec)*1e9 + ns;
+    ns2000 = static_cast<uint64_t>(((mjd-51544)*24*60*60+sec)*1e9 + ns);
 
     if (ns2000 > endns2000) {
       // Copy the rest of the bytes to a temporary buffer for next read and
