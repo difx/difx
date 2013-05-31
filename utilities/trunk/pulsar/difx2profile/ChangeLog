@@ -1,3 +1,5 @@
+0.5: post DiFX-2.2
+
 0.4: post DiFX-2.1
 * Eliminated IPP from configure.ac as it was unnecessary
 * Added some extra options to profile2binconfig.py
