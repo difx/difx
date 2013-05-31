@@ -31,6 +31,7 @@
 #include "nativemk5.h"
 #include "watchdog.h"
 #include "alert.h"
+#include "vdifio.h"
 
 #if HAVE_MARK5IPC
 #include <mark5ipc.h>
@@ -425,7 +426,7 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
 	/* mark5stream is only ever used for checking after the data comes into memory (scanPointer is used here in initialiseFile
            accordingly, adjust framebytes for multiplexed data, if multiplexing is being performed (nBands does not change). */
         if(config->isDMuxed(configindex, streamnum)) {
-          framebytes = (framebytes-32)*config->getDNumMuxThreads(configindex, streamnum) + 32;
+          framebytes = (framebytes-VDIF_HEADER_BYTES)*config->getDNumMuxThreads(configindex, streamnum) + VDIF_HEADER_BYTES;
         }
 	fanout = config->genMk5FormatName(format, nrecordedbands, bw, nbits, config->getDSampling(configindex, streamnum), framebytes, config->getDDecimationFactor(configindex, streamnum), config->getDNumMuxThreads(configindex, streamnum), formatname);
         if(fanout < 0)
@@ -570,12 +571,18 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
 	else	/* first time this project */
 	{
 		n = 0;
+		double scanstart, scanend, scanstartsecs, scanendsecs;
+		scanstart = 0;
+		scanend = 0;
+		scanstartsecs = 0;
+		scanendsecs = 0;
 		for(scanNum = 0; scanNum < module.nScans(); ++scanNum)
 		{
-			double scanstart, scanend;
 			scanPointer = &module.scans[scanNum];
 			scanstart = scanPointer->mjdStart();
 			scanend = scanPointer->mjdEnd();
+			scanstartsecs = (scanstart - (int)scanstart)*86400.0;
+			scanendsecs = (scanend - (int)scanend)*86400.0;
 
  			if(startmjd < scanstart)  /* obs starts before data */
 			{
@@ -594,7 +601,7 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
 				readseconds = readseconds - model->getScanStartSec(readscan, corrstartday, corrstartseconds);
 				break;
 			}
-			else if(startmjd < scanend) /* obs starts within data */
+			else if(startmjd < (scanend - 0.5/86400)) /* obs starts within data, take off 0.5s to account for rounding error */
 			{
 				cinfo << startl << "NM5 : scan found(2) : " << (scanNum+1) << endl;
 				readpointer = scanPointer->start + scanPointer->frameoffset;
@@ -622,7 +629,7 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
 				break;
 			}
 		}
-		cinfo << startl << "NativeMk5DataStream " << mpiid << " positioned at byte " << readpointer << " scan = " << readscan << " seconds = " << readseconds << " ns = " << readnanoseconds << " n = " << n << endl;
+		cinfo << startl << "NativeMk5DataStream " << mpiid << " positioned at byte " << readpointer << " scan = " << readscan << " seconds = " << readseconds << " ns = " << readnanoseconds << " n = " << n << " scanPointer->tracks is " << scanPointer->tracks << " scanPointer->mjd is " << scanPointer->mjd << " scanstart is " << (int)scanstart << "/" << scanstartsecs << " scanend is " << (int)scanend << "/" << scanendsecs << " framespersecond is " << scanPointer->framespersecond << endl;
 
 		if(scanNum >= module.nScans() || scanPointer == 0)
 		{
@@ -986,7 +993,7 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 			fbytes = scanPointer->framebytes;
 			if(datamuxer)
 			{
-				fbytes *= datamuxer->getNumThreads();
+				fbytes *= scanPointer->tracks;
 			}
 			readpointer -= (sec-sec2)*fbytes*scanPointer->framespersecond;
 			readpointer -= (readpointer % 4);
@@ -1175,7 +1182,7 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 				fbytes = scanPointer->framebytes;
 				if(datamuxer)
 				{
-					fbytes *= datamuxer->getNumThreads();
+					fbytes *= scanPointer->tracks;
 					datamuxer->addSkipFrames(skipseconds*scanPointer->framespersecond);
 					windbacksec = (int)((2.0*bufferinfo[buffersegment].nsinc)/1000000000.0);
 					if((2.0*bufferinfo[buffersegment].nsinc)/1000000000.0 - windbacksec > 0)
@@ -1208,7 +1215,7 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 				fbytes = scanPointer->framebytes;
 				if(datamuxer)
 				{
-					fbytes *= datamuxer->getNumThreads();
+					fbytes *= scanPointer->tracks;
 					datamuxer->addSkipFrames(skipseconds*scanPointer->framespersecond);
 				}
 				readpointer += static_cast<long long>(skipseconds)*static_cast<long long>(fbytes)*static_cast<long long>(scanPointer->framespersecond);
