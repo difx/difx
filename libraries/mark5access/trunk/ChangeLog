@@ -10,6 +10,8 @@ Ettl
 * m5bstate: recognize filled data and don't count
 * Remove findvdif program.  new program vsum in the vdifio package is much
 better.
+* m5timeseries utility added
+* 32 channel 2 bit VDIF support (Nicolas Pradel)
 
 Version 1.4.3
 * Post 2.0.1 tagging
