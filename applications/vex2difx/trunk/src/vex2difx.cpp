@@ -98,6 +98,30 @@ static int calcDecimation(int overSamp)
 	}
 }
 
+static bool usesCannonicalVDIFThreadIds(const char *antName)
+{
+	// Add here any known antennas that use VDIF thread ids that start at 0 for the first record channel and increment by 1 for each additional record channel
+	if(strcasecmp(antName, "BR") == 0 ||
+	   strcasecmp(antName, "FD") == 0 ||
+	   strcasecmp(antName, "HN") == 0 ||
+	   strcasecmp(antName, "KP") == 0 ||
+	   strcasecmp(antName, "LA") == 0 ||
+	   strcasecmp(antName, "MK") == 0 ||
+	   strcasecmp(antName, "NL") == 0 ||
+	   strcasecmp(antName, "OV") == 0 ||
+	   strcasecmp(antName, "PT") == 0 ||
+	   strcasecmp(antName, "SC") == 0 ||
+	   strcasecmp(antName, "GB") == 0 ||
+	   strcasecmp(antName, "Y") == 0)
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+
 static int calculateWorstcaseGuardNS(double sampleRate, int subintNS)
 {
 	double sampleTimeNS = 1.0e9/sampleRate;
@@ -941,7 +965,22 @@ static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, vector<vector<
 	}
 	else if(setup->formatName.substr(0,4) == string("VDIF"))
 	{
-		strcpy(D->datastream[dsId].dataFormat, "VDIF");
+		if(usesCannonicalVDIFThreadIds(antName.c_str()))
+		{
+			char sep = '/';
+			std::stringstream threadSS;
+			for(int threadId = 0; threadId < setup->channels.size(); ++threadId)
+			{
+				threadSS << sep;
+				threadSS << setup->channels[threadId].threadId;
+				sep = ':';
+			}
+			snprintf(D->datastream[dsId].dataFormat, DIFXIO_FORMAT_LENGTH, "INTERLACEDVDIF%s", threadSS.str().c_str());
+		}
+		else
+		{
+			strcpy(D->datastream[dsId].dataFormat, "VDIF");
+		}
 		D->datastream[dsId].dataFrameSize = atoi(setup->formatName.substr(4).c_str());
 	}
 	else if(setup->formatName.substr(0,14) == string("INTERLACEDVDIF"))
