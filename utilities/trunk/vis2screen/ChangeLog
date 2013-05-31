@@ -1,13 +1,16 @@
+Version 0.4
+* post DiFX-2.2
+
 Version 0.3
 * post DiFX 2.1
 * Bugfixes from Jan Wagner for plotDynamicSpectrum
 * Tagged as DiFX-2.2 on May 31, 2013
 
 Version 0.2
- * post-DiFX-2.0.1
- * diffDiFX.py is now more robust against slight differences in datasets
- * extra functionality, better plotting for plotDiFX.py and plotDynamicSpectrum.py
- * Version for DiFX-2.1, May 4, 2012
+* post-DiFX-2.0.1
+* diffDiFX.py is now more robust against slight differences in datasets
+* extra functionality, better plotting for plotDiFX.py and plotDynamicSpectrum.py
+* Version for DiFX-2.1, May 4, 2012
 
 Version for DiFX-2.0.1, June 10, 2011
 * New utilities snipDiFX.py, plotDynamicSpectrum.py, fringeFindDiFX.py
