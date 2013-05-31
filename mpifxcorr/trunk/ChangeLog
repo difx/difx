@@ -16,6 +16,7 @@ Version 2.2
 * Defeat data "echoes" that that would occur on each scan start after files
   ran out of data
 * Properly scale multicast weights when selecting bands or performing zooms
+* Fix a big where nativemk5 datastream got wrong VDIF scan due to rounding
 
 Version 2.1
 ~~~~~~~~~~~
