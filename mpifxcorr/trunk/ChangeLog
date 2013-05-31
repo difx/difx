@@ -18,6 +18,7 @@ Version 2.2
 * Properly scale multicast weights when selecting bands or performing zooms
 * Avoid a rounding error which can lead to wrong scan choice when playing back
   nativemk5 VDIF data
+* Tagged as DiFX 2.2, May 31, 2013
 
 Version 2.1
 ~~~~~~~~~~~
