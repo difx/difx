@@ -1,4 +1,4 @@
-AC_INIT([mk5daemon], [2.2.0], [Walter Brisken <wbrisken@nrao.edu>])
+AC_INIT([mk5daemon], [2.3.0], [Walter Brisken <wbrisken@nrao.edu>])
 AM_CONFIG_HEADER([config.h])
 
 AC_C_BIGENDIAN
@@ -16,9 +16,9 @@ AC_CHECK_LIB(m, erf,,[AC_MSG_ERROR("need libm")])
 AC_CHECK_LIB(pthread, pthread_create,,[AC_MSG_ERROR("need libpthread")])
 AC_CHECK_LIB(expat, XML_Parse,,[AC_MSG_ERROR("need expat")])
 
-PKG_CHECK_MODULES(DIFXMESSAGE, [difxmessage >= 2.2.0 difxmessage < 7])
-PKG_CHECK_MODULES(MARK5IPC, [mark5ipc >= 2.2.0 mark5ipc < 7])
-PKG_CHECK_MODULES(M5ACCESS, [mark5access >= 1.4.4])
+PKG_CHECK_MODULES(DIFXMESSAGE, [difxmessage >= 2.3.0 difxmessage < 7])
+PKG_CHECK_MODULES(MARK5IPC, [mark5ipc >= 2.3.0 mark5ipc < 7])
+PKG_CHECK_MODULES(M5ACCESS, [mark5access >= 1.5.0])
 
 streamstor_enabled=true
 PKG_CHECK_EXISTS([streamstor >= 8.0],
