@@ -1,5 +1,4 @@
 Version 3.2.0
-* Post DiFX-2.1
 * Fix for correlation of mismatched sidebands.  Requires contemporaneous
 upgrade of difxio.
 * Add DIFX_LABEL env var to FITS files
@@ -9,6 +8,7 @@ upgrade of difxio.
   - Now handle day of year jumps
   - Also handle possible use of mjds rather than days of year in future
 * increase number of phase cal tones allowed
+* Version for DiFX-2.2, 31 May 2013
 
 Version 3.1.0
 * Version renumber from 3.0.2 prior to DiFX-2.1 release
