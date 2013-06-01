@@ -1,5 +1,8 @@
 calcif2
 ~~~~~~~
+Version 2.3.0
+* Post DiFX-2.2
+
 Version 2.2.0
 * Fix azimuth polynomial interpolation in case of wrap (John Morgan)
 * Option to evaluate quality of delay interpolation (use -O 2 (or higher) and -v)
