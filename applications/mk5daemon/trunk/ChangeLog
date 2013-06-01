@@ -1,6 +1,5 @@
 Version 2.2.0
 ~~~~~~~~~~~~~
-* Post DiFX-2.1
 * Speed up directory reading
 * Better .rpm infrastructure
 * IPv6 support added to VSI interface; the whole package at this point is likely IPv6 compliant.
@@ -17,6 +16,7 @@ Version 2.2.0
 * For VDIF format, save the threads to the .dir file
 * Fix for bank_info query with only bank B populated
 * Mark5 Watchdog added to mk5daemon proper
+* Version for DiFX-2.2, May 31, 2013
 
 Version 2.1.0
 ~~~~~~~~~~~~~
