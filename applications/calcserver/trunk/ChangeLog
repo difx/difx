@@ -1,3 +1,7 @@
+Version 1.5
+* Clean up some loose pointers
+* Version for DiFX-2.2
+
 Version 1.4
 * Fix error in handling of mount types
 * Version for DiFX-2.0.0, unchanged for DiFX-2.0.1 (10 June 2011)
