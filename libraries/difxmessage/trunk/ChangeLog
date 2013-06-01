@@ -1,6 +1,5 @@
 Version 2.2.0
 ~~~~~~~~~~~~~
-Post DiFX-2.1
 Support for IPv6 within C code.  Likely overall performance improvement at the same time
   - python code, such as errormon, statemon, ..., are not yet converted.
   - warning: all code linking to difxmessage that might use IPv6 should change
@@ -13,6 +12,7 @@ Prefer to use new function DifxMessageSend2 over DifxMessageSend.  It is more
   efficient.
 Allow spoofed hostname via the difxMessageInitFull() function.  Perhaps useful in
   cases where multiple interfaces exist on the same machine?
+Version for DiFX-2.2, May 31, 2013
 
 Version 2.1.0
 ~~~~~~~~~~~~
