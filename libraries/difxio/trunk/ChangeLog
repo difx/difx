@@ -1,13 +1,12 @@
 3.2.0
-* Post DiFX-2.1
-* Now the DifxIF structures are _always_ set to be USB.  This will break
-compatibility with earlier versions of difx2fits and maybe difx2mark4.
+* Now the DifxIF structures are _always_ set to be USB.  This will break compatibility with earlier versions of difx2fits and maybe difx2mark4.
 * Add DIFX LABEL to .calc file
 * Tcal requests will now return values outside sampled range, but will cause warning at end of processing.
 * Support RX NAME parameter in FREQ table
 * Experimental support for TLE spacecraft ephemerides
 * Some segfault protecting in model writing (CJP+WFB)
 * Experimental support for polarization dependent delay and phase offsets (CJP)
+* Version for DiFX-2.2, May 31, 2013
 
 3.1.0
 * Rename from 3.0.2 prior to DiFX-2.1
@@ -33,7 +32,7 @@ compatibility with earlier versions of difx2fits and maybe difx2mark4.
 * Add Remap[] arrays inside DifxJob to account for pre-merged array indices
 * Add some accessor functions to return a list of datastreams associated with an antenna.  This will be used to allow multiple datastreams per antenna.
 * Add infrastructure to make redhat .rpm file
-* Three fixes for ephemeris driven objects: EARTH -> EARTH BARYCENTER to match changed spice nomenclature, move to linear interpolation, and actually    link to spacecraft table from source table
+* Three fixes for ephemeris driven objects: EARTH -> EARTH BARYCENTER to match changed spice nomenclature, move to linear interpolation, and actually link to spacecraft table from source table
 * Version for DiFX-2.0.1, Jun 10, 2011 / updated June 16
 
 3.0
