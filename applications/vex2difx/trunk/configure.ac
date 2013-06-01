@@ -1,4 +1,4 @@
-AC_INIT([vex2difx], [2.2.0], [Walter Brisken <wbrisken@nrao.edu>])
+AC_INIT([vex2difx], [2.3.0], [Walter Brisken <wbrisken@nrao.edu>])
 AM_CONFIG_HEADER([config.h])
 
 AC_C_BIGENDIAN
@@ -17,8 +17,8 @@ AM_SANITY_CHECK
 
 AC_CHECK_LIB(m, erf,,[AC_MSG_ERROR("need libm")])
 
-PKG_CHECK_MODULES(DIFXIO, difxio >= 3.2.0)
-PKG_CHECK_MODULES(DIFXMESSAGE, [difxmessage >= 2.2.0 difxmessage < 7])
+PKG_CHECK_MODULES(DIFXIO, difxio >= 3.3.0)
+PKG_CHECK_MODULES(DIFXMESSAGE, [difxmessage >= 2.3.0 difxmessage < 7])
 PKG_CHECK_MODULES(GPSTK, gpstk, [hasgpstk=true], [hasgpstk=false])
 if test "$hasgpstk" == "true"; then
 	AC_DEFINE([HAVE_GPSTK], 1, [1=has GPSTK])
