@@ -1,3 +1,7 @@
+Version 0.5
+~~~~~~~~~~~
+* Post DiFX-2.2
+
 Version 0.4
 ~~~~~~~~~~~
 * Add new vdifmux function which takes a multi-threaded VDIF buffer, looks
