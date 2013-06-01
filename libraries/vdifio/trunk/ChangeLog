@@ -1,6 +1,5 @@
 Version 0.4
 ~~~~~~~~~~~
-* Post DiFX-2.1
 * Add new vdifmux function which takes a multi-threaded VDIF buffer, looks
   for frames with certain threadIds, and multiplexes them into a single-
   threaded output buffer.
@@ -17,6 +16,7 @@ Version 0.4
 * Inlinification and constification of many VDIF header access functions
 * Large file clean (I think) now...
 * Fix bugs in multi2singlethreadVDIF which caused crashes if many packets missing
+* Version for DiFX-2.2, May 31, 2013
 
 Version 0.3
 ~~~~~~~~~~~
