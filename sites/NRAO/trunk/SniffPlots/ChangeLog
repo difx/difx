@@ -1,1 +1,4 @@
-20120912: Craig updated plotbp to make a second zoomed-in plot if the dynamic range caused by RFI or other strong lines was too high.
+Version 0.991
+-------------
+* 20120912: Craig updated plotbp to make a second zoomed-in plot if the dynamic range caused by RFI or other strong lines was too high.
+* Version for DiFX-2.2
