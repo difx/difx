@@ -18,7 +18,7 @@ dnl **********************************************************
 
 # Checks for libraries.
 PKG_CHECK_MODULES(DIFXIO, difxio >= 3.3.0)
-PKG_CHECK_MODULES(FXCORR, fxcorr >= 2.3.0)
+PKG_CHECK_MODULES(FXCORR, fxcorr >= 2.3)
 PKG_CHECK_MODULES(DIFXMESSAGE, difxmessage >= 2.3.0)
 
 # Checks for header files.
