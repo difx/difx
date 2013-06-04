@@ -9,7 +9,7 @@
 //   class, from which we get virtual reader and writer functions.
 //
 //==============================================================================
-#include <strings.h>
+#include <string.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <network/TCPSocket.h>
@@ -34,7 +34,7 @@ namespace network {
 
             //  Initialize server info.  There shouldn't be any trouble with this
             //  stuff.
-            bzero( &_connAddr, sizeof( struct sockaddr_in ) );
+            memset( &_connAddr, 0, sizeof( struct sockaddr_in ) );
             _connAddr.sin_family = AF_INET;
             _connAddr.sin_port = htons( port );
 

@@ -9,7 +9,7 @@
 //   TCPSocket class instances when those connections are made.
 //
 //==============================================================================
-#include <strings.h>
+#include <string.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <network/TCPSocket.h>
@@ -45,7 +45,7 @@ namespace network {
             }
 
             //  Initialize the server settings.
-            bzero( &_serverAddr, sizeof( struct sockaddr ) );
+            memset( &_serverAddr, 0, sizeof( struct sockaddr ) );
             _serverAddr.sin_family = AF_INET;
             _serverAddr.sin_addr.s_addr = htonl( INADDR_ANY );
             _serverAddr.sin_port = htons( port );

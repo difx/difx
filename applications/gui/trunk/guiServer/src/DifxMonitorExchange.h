@@ -56,6 +56,15 @@ namespace guiServer {
         static const int AMPLITUDE_DATA                     = 126;
         static const int PHASE_DATA                         = 127;
         static const int LAG_DATA                           = 128;
+        static const int END_VISIBILITY_BLOCK               = 129;
+        static const int JOB_NAME                           = 130;
+        static const int OBS_CODE                           = 131;
+        static const int SCAN_IDENTIFIER                    = 132;
+        static const int SCAN_START_TIME                    = 133;
+        static const int SCAN_END_TIME                      = 134;
+        static const int SOURCE                             = 135;
+        static const int SOURCE_RA                          = 136;
+        static const int SOURCE_DEC                         = 137;
     
         DifxMonitorExchange( network::GenericSocket* sock, ServerSideConnection::DifxMonitorInfo* monitorInfo ) : 
             network::ActivePacketExchange( sock ) {
@@ -194,10 +203,18 @@ namespace guiServer {
                     //  Indicate we are starting a new block of correlation products
                     sendPacket( CORRELATION_PRODUCTS, NULL, 0 );
                     
-                    int nScans = 1;  //  Is there ever more than one??
+                    int nScans = _config->getModel()->getNumScans();
                     intPacket( NUM_SCANS, &nScans );
+                    formatPacket( JOB_NAME, "%s", _config->getJobName().c_str() );
+                    formatPacket( OBS_CODE, "%s", _config->getObsCode().c_str() );
                     int currentScan = 0;
                     intPacket( SCAN, &currentScan );
+                    formatPacket( SCAN_IDENTIFIER, "%s", _config->getModel()->getScanIdentifier( currentScan ).c_str() );
+                    formatPacket( SCAN_START_TIME, "%.7f", _config->getModel()->getScanStartMJD( currentScan ) );
+                    formatPacket( SCAN_END_TIME, "%.7f", _config->getModel()->getScanEndMJD( currentScan ) );
+                    formatPacket( SOURCE, "%s", _config->getModel()->getScanPointingCentreSource( currentScan )->name.c_str() );
+                    formatPacket( SOURCE_RA, "%.15f", _config->getModel()->getScanPointingCentreSource( currentScan )->ra );
+                    formatPacket( SOURCE_DEC, "%.15f", _config->getModel()->getScanPointingCentreSource( currentScan )->dec );
                     int configindex = _config->getScanConfigIndex( currentScan );
                     char polpair[3];
                     polpair[2] = 0;
@@ -599,6 +616,9 @@ namespace guiServer {
                             composeStringDouble( lags + nChannels, nChannels );
                             composeStringDouble( lags, nChannels );
                             composeEnd();
+                            //  Indicate that we have sent all the data associated with this most
+                            //  recent set of visibilities.
+                            semaphorePacket( END_VISIBILITY_BLOCK );
                         }
                     }
                 }

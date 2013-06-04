@@ -85,7 +85,7 @@ namespace network {
                 }
             }
 
-            bzero( (char *) &addr, sizeof (addr) );
+            memset( (char *) &addr, 0, sizeof (addr) );
             addr.sin_family = AF_INET;
             addr.sin_port = htons( port );
 
@@ -154,7 +154,7 @@ namespace network {
             char blotch[4];
             if ( !_ipValid )  return( -1 );
 
-            bcopy( (char *)&(fromaddr.sin_addr.s_addr), blotch, 4 );
+            memcpy( blotch, (char *)&(fromaddr.sin_addr.s_addr), 4 );
             sprintf( address, "%d.%d.%d.%d", (unsigned char)(blotch[0]), (unsigned char)(blotch[1]), 
             (unsigned char)(blotch[2]), (unsigned char)(blotch[3]) );
             return (0);
@@ -272,7 +272,7 @@ namespace network {
                 return( -1 );
             hostaddr.sin_family = AF_INET;
             hostaddr.sin_port = 0;
-            bcopy( hp->h_addr, (char *)&(hostaddr.sin_addr), sizeof(hostaddr.sin_addr) );
+            memcpy( (char *)&(hostaddr.sin_addr), hp->h_addr, sizeof(hostaddr.sin_addr) );
             return( 0 );
         }
 

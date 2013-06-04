@@ -12,6 +12,7 @@
 #include <sys/time.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <string.h>
 #include <pwd.h>
 #include <fcntl.h>
 #include <dirent.h>
@@ -143,7 +144,7 @@ void ServerSideConnection::vex2difxRun( DifxMessageGeneric* G ) {
         int sockfd;
         struct sockaddr_in servaddr;
         sockfd = socket( AF_INET, SOCK_STREAM, 0 );
-        bzero( &servaddr, sizeof( servaddr ) );
+        memset( &servaddr, 0, sizeof( servaddr ) );
         servaddr.sin_family = AF_INET;
         servaddr.sin_port = htons( S->port );
         inet_pton( AF_INET, S->address, &servaddr.sin_addr );

@@ -70,6 +70,14 @@ namespace network {
         }
         
         //----------------------------------------------------------------------------
+        //!  The "semaphore" packet is a data-free packet type - basically the packet
+        //!  data is the packet ID itself.
+        //----------------------------------------------------------------------------
+        int semaphorePacket( const int packetId ) {
+            return sendPacket( packetId, NULL, 0 );
+        }
+        
+        //----------------------------------------------------------------------------
         //!  "Compose" a packet.  This allows the calling program to build a packet
         //!  on the fly, but it assumes the calling program knows what it is doing.
         //!  This function grabs the socket write lock, then sends a packet ID and

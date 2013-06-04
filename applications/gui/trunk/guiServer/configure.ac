@@ -1,4 +1,4 @@
-AC_INIT([guiServer], [0.99], [John Spitzak])
+AC_INIT([guiServer], [1.02], [John Spitzak])
 
 AM_INIT_AUTOMAKE([foreign])
 
