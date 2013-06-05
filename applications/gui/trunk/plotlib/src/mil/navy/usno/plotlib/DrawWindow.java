@@ -80,6 +80,16 @@ public class DrawWindow extends JPanel {
         str += "/t {y translate} def\n";
         str += "/s {gsave} def\n";
         str += "/r {grestore} def\n";
+        str += "/+ {add} def\n";
+        str += "/x {mul} def\n";
+        str += "/k {stroke} def\n";
+        str += "/c {closepath} def\n";
+        str += "/n {newpath} def\n";
+        str += "/p {pop} def\n";
+        str += "/w {show} def\n";
+        str += "/sw {stringwidth} def\n";
+        str += "/rgb {setrgbcolor} def\n";
+        str += "/sc {scale} def\n";
         str += "0 792 translate\n";
         if ( fitToPage )
             str += 1.0 / xScale + " " + 1.0 / yScale + " scale\n";

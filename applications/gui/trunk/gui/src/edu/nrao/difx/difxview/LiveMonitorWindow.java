@@ -18,6 +18,11 @@ import javax.swing.JSeparator;
 
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
+import java.awt.event.MouseWheelListener;
+import java.awt.event.MouseWheelEvent;
+import java.awt.event.MouseListener;
+import javax.swing.event.TableModelEvent;
+import javax.swing.event.TableModelListener;
 
 import java.awt.Component;
 import java.awt.Color;
@@ -32,6 +37,7 @@ import java.awt.event.ComponentEvent;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.ArrayDeque;
+import java.util.HashMap;
 
 import javax.swing.JFileChooser;
 
@@ -60,6 +66,7 @@ import mil.navy.usno.widgetlib.*;
 public class LiveMonitorWindow extends JFrame implements WindowListener {
     
     public LiveMonitorWindow( int x, int y, SystemSettings settings, String inputFile ) {
+        _plotDataLock = new Object();
         _settings = settings;
         _inputFile = inputFile;
         if ( _inputFile == null )
@@ -278,13 +285,37 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
                 }
             }
         } );
+        //  This mess changes the label that tells the user how many products have been
+        //  selected whenever a change is made to the little check boxes associated with
+        //  each product in the table.
+        _productTable.addTableModelListener( new TableModelListener() {
+            public void tableChanged( TableModelEvent e ) {
+                if ( e.getColumn() == 0 ) {
+                    int productCount = 0;
+                    for ( Iterator<Product> iter = _products.iterator(); iter.hasNext(); ) {
+                        Product thisProduct = iter.next();
+                        if ( thisProduct.tableRow != null ) {
+                            if ( (Boolean)_productTable.getValueAt( thisProduct.tableRow, 0 ) )
+                                ++productCount;
+                        }
+                    }
+                    if ( productCount == 0 )
+                        _productsLabel.setText( "No Products Selected" );
+                    else if ( productCount == 1 )
+                        _productsLabel.setText( "1 Product Selected" );
+                    else
+                        _productsLabel.setText( productCount + " Products Selected" );
+                    _applyButton.setVisible( productCount > 0 );
+                }
+            }
+        });
         this.add( _tableScrollPane );
         _tableScrollPane.setVisible( false );
         _dataPanel.add( _tableScrollPane );
                 
         
         //  Plots
-        _plotPanel = new IndexedPanel( "Plots, etc." );
+        _plotPanel = new PlotPanel( "Plots, etc." );
         _plotPanel.openHeight( 100 );
         _plotPanel.closedHeight( 20 );
         _plotPanel.alwaysOpen( true );
@@ -324,46 +355,46 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
         _showAll = new JCheckBoxMenuItem( "All Accumulation Periods" );
         _showAll.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
-                _showLatest.setSelected( false );
-                _showAll.setSelected( true );
-                _showHistory.setSelected( false );
+                //  There is no point to showing "all" and "latest" at the same time (since
+                //  the last of "all" IS latest).  So it this has been selected, turn
+                //  off "latest".  On the other hand, deselecting this will not cause
+                //  latest to go on.
+                if ( _showAll.isSelected() )
+                    _showLatest.setSelected( false );
                 updatePlotLocations();
             }
         } );
-        _showAll.setSelected( true );
+        _showAll.setSelected( false );
         _showMenu.add( _showAll );
         _showLatest = new JCheckBoxMenuItem( "Latest Only" );
         _showLatest.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
-                _showLatest.setSelected( true );
-                _showAll.setSelected( false );
-                _showHistory.setSelected( false );
+                //  See above comments about latest/all...
+                if ( _showLatest.isSelected() )
+                    _showAll.setSelected( false );
                 updatePlotLocations();
             }
         } );
-        _showLatest.setSelected( false );
+        _showLatest.setSelected( true );
         _showMenu.add( _showLatest );
-        _showHistory = new JCheckBoxMenuItem( "History" );
-        _showHistory.setToolTipText( "The mousewheel will step through the time sequence of collected data.  Applies to the summary as well." );
-        _showHistory.addActionListener( new ActionListener() {
-            public void actionPerformed( ActionEvent e ) {
-                _showLatest.setSelected( false );
-                _showAll.setSelected( false );
-                _showHistory.setSelected( true );
-                updatePlotLocations();
-            }
-        } );
-        _showHistory.setSelected( false );
-        _showMenu.add( _showHistory );
-        _showSummary = new JCheckBoxMenuItem( "Summary" );
-        _showSummary.setToolTipText( "Show plots displaying averages across channels and time." );
-        _showSummary.addActionListener( new ActionListener() {
+        _showTimeSummary = new JCheckBoxMenuItem( "Time Summary" );
+        _showTimeSummary.setToolTipText( "Show plots displaying averages across time." );
+        _showTimeSummary.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
                 updatePlotLocations();
             }
         } );
-        _showSummary.setSelected( false );
-        _showMenu.add( _showSummary );
+        _showTimeSummary.setSelected( true );
+        _showMenu.add( _showTimeSummary );
+        _showChannelSummary = new JCheckBoxMenuItem( "Channel Summary" );
+        _showChannelSummary.setToolTipText( "Show plots displaying averages across channels." );
+        _showChannelSummary.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                updatePlotLocations();
+            }
+        } );
+        _showChannelSummary.setSelected( true );
+        _showMenu.add( _showChannelSummary );
         _showMenu.add( new JSeparator() );
         _showPhase = new JCheckBoxMenuItem( "Phase" );
         _showPhase.setSelected( true );
@@ -410,6 +441,57 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
         
         newConnection();
         
+    }
+    
+    /*
+     * This is a class used for the plot panel.  It is an indexed panel that traps
+     * mouse wheel events.
+     */
+    public class PlotPanel extends IndexedPanel implements MouseWheelListener {
+        public PlotPanel( String title ) {
+            super( title );
+            addMouseWheelListener( this );
+        }
+        /*
+         * Moving the mouse wheel lets the user change which plots in the time history
+         * are being drawn.
+         */
+        @Override
+        public void mouseWheelMoved( MouseWheelEvent e ) {
+            boolean redrawStuff = false;
+            synchronized ( _plotDataLock ) {
+                //  Make sure there are lists of plots to consult.
+                if ( _productPlots != null && _timeSummaryPlots != null ) {
+                    //  Make sure they have a (complete) time history, i.e. there are more than
+                    //  one of them AND there are the same number of each.  For this we are looking
+                    //  at the channel summary plot list (even if we aren't actually drawing it)
+                    //  because it is the last created.
+                    if ( _channelSummaryPlots.lagPlots.size() > 0 ) {
+                        //  If we are "locked" to the most recent (i.e. we haven't been fiddling with the
+                        //  mouse wheel yet, or last time we did we went to the latest), set the "current"
+                        //  plot index to be the most recent plot.
+                        if ( _lockToLatest )
+                            _currentPlotIndex = _channelSummaryPlots.lagPlots.size() - 1;
+                        //  Now change the value of the current plot based on the mouse wheel movement
+                        //  (rolling the wheel away from you INCREMENTS in my book, which of course doesn't
+                        //  agree with Java).
+                        _currentPlotIndex -= e.getWheelRotation();
+                        //  Make sure this is not smaller than zero or larger than the highest plot index.
+                        if ( _currentPlotIndex < 0 )
+                            _currentPlotIndex = 0;
+                        if ( _currentPlotIndex > _channelSummaryPlots.lagPlots.size() - 1 )
+                            _currentPlotIndex = _channelSummaryPlots.lagPlots.size() - 1;
+                        if ( _currentPlotIndex == _channelSummaryPlots.lagPlots.size() - 1 )
+                            _lockToLatest = true;
+                        else
+                            _lockToLatest = false;
+                        redrawStuff = true;
+                    }
+                }
+            }
+            if ( redrawStuff )
+                updatePlotLocations();
+        }    
     }
     
     /*
@@ -592,6 +674,15 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
     protected final int AMPLITUDE_DATA                     = 126;
     protected final int PHASE_DATA                         = 127;
     protected final int LAG_DATA                           = 128;
+    protected final int END_VISIBILITY_BLOCK               = 129;
+    protected final int JOB_NAME                           = 130;
+    protected final int OBS_CODE                           = 131;
+    protected final int SCAN_IDENTIFIER                    = 132;
+    protected final int SCAN_START_TIME                    = 133;
+    protected final int SCAN_END_TIME                      = 134;
+    protected final int SOURCE                             = 135;
+    protected final int SOURCE_RA                          = 136;
+    protected final int SOURCE_DEC                         = 137;
         
     /*
      * Send a packet with ID, number of bytes, and data.
@@ -709,10 +800,27 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
                             }
                             _readingProducts = !_readingProducts;
                         }
+                        else if ( packetType == JOB_NAME ) {
+                            //  This probably matches the name in the GUI menu.
+                            byte [] data = new byte[packetSize];
+                            _in.readFully( data );
+                            _jobName = new String( data );
+                        }
+                        else if ( packetType == OBS_CODE ) {
+                            //  Hopefully this is the name of the scan.
+                            byte [] data = new byte[packetSize];
+                            _in.readFully( data );
+                            _obsCode = new String( data );
+                        }
                         else if ( packetType == NUM_SCANS ) {
                             //  Number of scans available.  This is probably always 1, ignore it
-                            //  for now.
+                            //  for now.  However, I'm using it as a trigger for the "start" of
+                            //  scans for a particular job.
                             _nScans = _in.readInt();
+                            //  This forces us to plot the "latest" plots when we have a time
+                            //  series of them.  Using the mousewheel to scroll through the time
+                            //  series shuts this off.
+                            _lockToLatest = true;
                         }
                         else if ( packetType == SCAN ) {
                             //  Usually 0.  Ignore for now.
@@ -748,6 +856,36 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
                             _in.readFully( data );
                             _currentBaseline.telescope1 = new String( data );
                             _currentBaseline.telescope2 = new String( data );
+                        }
+                        else if ( packetType == SCAN_IDENTIFIER ) {
+                            byte [] data = new byte[packetSize];
+                            _in.readFully( data );
+                            _scanIdentifier = new String( data );
+                        }
+                        else if ( packetType == SCAN_START_TIME ) {
+                            byte [] data = new byte[packetSize];
+                            _in.readFully( data );
+                            _scanStartTime = new String( data );
+                        }
+                        else if ( packetType == SCAN_END_TIME ) {
+                            byte [] data = new byte[packetSize];
+                            _in.readFully( data );
+                            _scanEndTime = new String( data );
+                        }
+                        else if ( packetType == SOURCE ) {
+                            byte [] data = new byte[packetSize];
+                            _in.readFully( data );
+                            _source = new String( data );
+                        }
+                        else if ( packetType == SOURCE_RA ) {
+                            byte [] data = new byte[packetSize];
+                            _in.readFully( data );
+                            _sourceRA = new String( data );
+                        }
+                        else if ( packetType == SOURCE_DEC ) {
+                            byte [] data = new byte[packetSize];
+                            _in.readFully( data );
+                            _sourceDEC = new String( data );
                         }
                         else if ( packetType == NUM_FREQUENCIES ) {
                             //  Number of frequencies available for the current
@@ -822,7 +960,25 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
                             newPlot.min = 0.0;
                             newPlot.max = maxVal;
                             newPlot.curve( xVals, yVals );
-                            _productPlots.productPlot( iProduct ).ampPlots.add( newPlot );
+                            synchronized ( _plotDataLock ) {
+                                _productPlots.productPlot( iProduct ).ampPlots.add( newPlot );
+                                _timeSummaryPlots.productPlot( iProduct ).ampPlots.meanAdd( 
+                                        iProduct, nChannels, timeStamp, xVals, yVals, null, null, null );
+                                //  This is for the "cross channel" summary...
+                                if ( _summaryAmpPlot == null ) {
+                                    //  If new, just dump in the data.
+                                    _summaryAmpPlot = new IncPlot( iProduct, nChannels, timeStamp );
+                                    double newYVals[] = new double[yVals.length];
+                                    for ( int i = 0; i < yVals.length; ++i )
+                                        newYVals[i] = yVals[i];
+                                    _summaryAmpPlot.curve( xVals, newYVals );                                
+                                }
+                                else {
+                                    //  If existing, add new data to the old
+                                    for ( int i = 0; i < _summaryAmpPlot.nData; ++i )
+                                        _summaryAmpPlot.yData[i] = _summaryAmpPlot.yData[i] + yVals[i];
+                                }
+                            }
                         }
                         else if ( packetType == PHASE_DATA ) {
                             int iProduct = _in.readInt();
@@ -871,7 +1027,27 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
                             newPlot.track( xVals, yVals, trackCircle );
                             newPlot.min = -180.0;
                             newPlot.max = 180.0;
-                            _productPlots.productPlot( iProduct ).phasePlots.add( newPlot );
+                            synchronized ( _plotDataLock ) {
+                                _productPlots.productPlot( iProduct ).phasePlots.add( newPlot );
+                                _timeSummaryPlots.productPlot( iProduct ).phasePlots.meanAdd( 
+                                        iProduct, nChannels, timeStamp, xVals, yVals, trackCircle, null, null );
+                                //  This is for the "cross channel" summary...
+                                if ( _summaryPhasePlot == null ) {
+                                    //  If new, just dump in the data.
+                                    _summaryPhasePlot = new IncPlot( iProduct, nChannels, timeStamp );
+                                    double newYVals[] = new double[yVals.length];
+                                    for ( int i = 0; i < yVals.length; ++i )
+                                        newYVals[i] = yVals[i];
+                                    _summaryPhasePlot.track( xVals, newYVals, trackCircle );     
+                                }
+                                else {
+                                    //  If existing, add new data to the old
+                                    for ( int i = 0; i < _summaryPhasePlot.nData; ++i )
+                                        _summaryPhasePlot.yData[i] = _summaryPhasePlot.yData[i] + yVals[i];
+                                    _summaryPhasePlot.plot.clearData();
+                                    _summaryPhasePlot.track( xVals, _summaryPhasePlot.yData, _summaryPhasePlot.trackObject );
+                                }
+                            }
                         }
                         else if ( packetType == LAG_DATA ) {
                             int iProduct = _in.readInt();
@@ -879,7 +1055,7 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
                             int timeStamp = _in.readInt();
                             //  Create a new plot to hold these data.
                             IncPlot newPlot = new IncPlot( iProduct, nChannels, timeStamp );
-                            newPlot.maxChannel = _in.readInt();
+                            newPlot.maxChannel = (double)_in.readInt();
                             newPlot.delay = _in.readStringDouble();
                             newPlot.snr = _in.readStringDouble();
                             double x = (double)(-nChannels);
@@ -901,8 +1077,99 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
                             newPlot.min = minVal;
                             newPlot.max = maxVal;
                             //  Add the plot to the product plot list for this index.
-                            _productPlots.productPlot( iProduct ).lagPlots.add( newPlot );
-                            updatePlotLocations();
+                            synchronized ( _plotDataLock ) {
+                                _productPlots.productPlot( iProduct ).lagPlots.add( newPlot );
+                                //  This is for the "time" summary.
+                                _timeSummaryPlots.productPlot( iProduct ).lagPlots.meanAdd( 
+                                        iProduct, nChannels, timeStamp, xVals, yVals, null, newPlot.maxChannel, newPlot.delay );
+                                //  This is for the "cross channel" summary...
+                                if ( _summaryLagPlot == null ) {
+                                    //  If new, just dump in the data.
+                                    _summaryLagPlot = new IncPlot( iProduct, nChannels, timeStamp );
+                                    double newYVals[] = new double[yVals.length];
+                                    for ( int i = 0; i < yVals.length; ++i )
+                                        newYVals[i] = yVals[i];
+                                    _summaryLagPlot.curve( xVals, newYVals );      
+                                    _summaryLagPlot.maxChannel = newPlot.maxChannel;
+                                    _summaryLagPlot.delay = newPlot.delay;
+                                }
+                                else {
+                                    //  If existing, add new data to the old
+                                    for ( int i = 0; i < _summaryLagPlot.nData; ++i )
+                                        _summaryLagPlot.yData[i] = _summaryLagPlot.yData[i] + yVals[i];
+                                    _summaryLagPlot.maxChannel += newPlot.maxChannel;
+                                    _summaryLagPlot.delay += newPlot.delay;
+                                }
+                            }
+                        }
+                        else if ( packetType == END_VISIBILITY_BLOCK ) {
+                            //  We have just received the data associated with visibilities for ONE
+                            //  of our data products.  Here we compare the numbers of plots (each from
+                            //  a set of visibilities) for ALL data products.  If the data from the
+                            //  most recent accumulation period are complete, these should all be equal,
+                            //  and we should replot.  If not, we don't bother replotting because more
+                            //  data are on the way.
+                            if ( _numPlots == null ) {
+                                _numPlots = new Integer( 1 );
+                            }
+                            else {
+                                _numPlots = new Integer( _numPlots.intValue() + 1 );
+                                if ( _numPlots.intValue() == _productRequests ) {
+                                    synchronized ( _plotDataLock ) {
+                                        _numPlots = null;
+                                        //  Create the "cross" summary plots - the summaries of the summaries
+                                        //  Amp "cross" summary
+                                        double xData[] = new double[ _summaryAmpPlot.xData.length ];
+                                        double yData[] = new double[ _summaryAmpPlot.xData.length ];
+                                        for ( int i = 0; i < _summaryAmpPlot.xData.length; ++i ) {
+                                            xData[i] = _summaryAmpPlot.xData[i];
+                                            yData[i] = _summaryAmpPlot.yData[i] / ( (double)(_productPlots.size()) );
+                                        }
+                                        _crossSummaryPlots.ampPlots.meanAdd( 0, _summaryAmpPlot.nChannels, _summaryAmpPlot.timeStamp,
+                                                xData, yData, null, null, null );
+                                        //  Lag "cross" summary
+                                        xData = new double[ _summaryLagPlot.xData.length ];
+                                        yData = new double[ _summaryLagPlot.xData.length ];
+                                        for ( int i = 0; i < _summaryLagPlot.xData.length; ++i ) {
+                                            xData[i] = _summaryLagPlot.xData[i];
+                                            yData[i] = _summaryLagPlot.yData[i] / ( (double)(_productPlots.size()) );
+                                        }
+                                        _crossSummaryPlots.lagPlots.meanAdd( 0, _summaryLagPlot.nChannels, _summaryLagPlot.timeStamp,
+                                                xData, yData, null, 
+                                                _summaryLagPlot.maxChannel / ( (double)(_productPlots.size()) ),
+                                                _summaryLagPlot.delay / ( (double)(_productPlots.size()) ) );
+                                        //  Phase "cross" summary
+                                        xData = new double[ _summaryPhasePlot.xData.length ];
+                                        yData = new double[ _summaryPhasePlot.xData.length ];
+                                        for ( int i = 0; i < _summaryPhasePlot.xData.length; ++i ) {
+                                            xData[i] = _summaryPhasePlot.xData[i];
+                                            yData[i] = _summaryPhasePlot.yData[i] / ( (double)(_productPlots.size()) );
+                                        }
+                                        _crossSummaryPlots.phasePlots.meanAdd( 0, _summaryPhasePlot.nChannels, _summaryPhasePlot.timeStamp,
+                                                xData, yData, _summaryPhasePlot.trackObject, null, null );
+                                        //  The summary plots are summations right now, divide by the
+                                        //  number of products to get means for the "channel" summaries
+                                        //  Amp
+                                        for ( int i = 0; i < _summaryAmpPlot.nData; ++i )
+                                            _summaryAmpPlot.yData[i] = _summaryAmpPlot.yData[i] / ( (double)(_productPlots.size()) );
+                                        _channelSummaryPlots.ampPlots.add( _summaryAmpPlot );
+                                        _summaryAmpPlot = null;
+                                        //  Lag
+                                        for ( int i = 0; i < _summaryLagPlot.nData; ++i )
+                                            _summaryLagPlot.yData[i] = _summaryLagPlot.yData[i] / ( (double)(_productPlots.size()) );
+                                        _summaryLagPlot.delay = _summaryLagPlot.delay / ( (double)(_productPlots.size()) );
+                                        _summaryLagPlot.maxChannel = _summaryLagPlot.maxChannel / ( (double)(_productPlots.size()) );
+                                        _channelSummaryPlots.lagPlots.add( _summaryLagPlot );
+                                        _summaryLagPlot = null;
+                                        //  Phase
+                                        for ( int i = 0; i < _summaryPhasePlot.nData; ++i )
+                                            _summaryPhasePlot.yData[i] = _summaryPhasePlot.yData[i] / ( (double)(_productPlots.size()) );
+                                        _channelSummaryPlots.phasePlots.add( _summaryPhasePlot );
+                                        _summaryPhasePlot = null;
+                                    }
+                                    updatePlotLocations();
+                                }
+                            }
                         }
                     } catch ( java.io.IOException e ) {
                         //  This should just be a timeout.
@@ -921,402 +1188,831 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
     }
     
     /*
-     * Relocate all existing plots to fit in the current plot window.
+     * Relocate and redraw all existing plots to fit in the current plot window.
      */
     public void updatePlotLocations() {
-        //  Clear all plots - we are going to redraw them.
-        _plotWindow.plotList().clear();
-        
-        //  Count the number of data products we are plotting (exit if there aren't
-        //  any).
-        if ( _productPlots == null || _productPlots.size() == 0 )
-            return;
-        double dataProducts = (double)_productPlots.size();
-        //  Count the number of plots for each data product.  We find a maximum number
-        //  so all of the plots will line up, although the number *should* be the same
-        //  for all data products.
-        int maxPlots = 0;
-        for ( Iterator<ProductPlots> iter = _productPlots.iterator(); iter.hasNext(); ) {
-            ProductPlots thisPP = iter.next();
-            if ( thisPP.lagPlots.size() > maxPlots )
-                maxPlots = thisPP.lagPlots.size();
-        }        
-        
-        double yStart = 0.05;
-        double yStep = 0.85 / dataProducts;
-        double ySize = yStep * 0.97;
-        for ( Iterator<ProductPlots> iter = _productPlots.iterator(); iter.hasNext(); ) {
-            ProductPlots thisPP = iter.next();
-            //  Find the "global" maximum and minimum values for lag and amplitude plots.
+        synchronized ( _plotDataLock ) {
+            //  Clear all plots - we are going to redraw them.
+            _plotWindow.plotList().clear();
+
+            //  Count the number of data products (channels) we are plotting (exit if there aren't
+            //  any).  Each of these will form a column of plots.
+            if ( _productPlots == null || _productPlots.size() == 0 )
+                return;
+            int columns = _productPlots.size();
+            //  If we are computing a mean across channels, add another column for those.
+            if ( _showChannelSummary.isSelected() )
+                columns += 1;
+
+            //  Count the number of plots for each data product, each of which forms a row.
+            //  How many there are depend on what exactly is being displayed.  First, count
+            //  the number of accumulation periods if "all" of these are selected, which we
+            //  get by counting the maximum number of plots that appear for any one product
+            //  (because some products may not have transimitted their latest accumulation
+            //  data when we do this, these numbers may not be the same for all products).
+            int rows = 0;
+            if ( _showAll.isSelected() ) {
+                int maxPlots = 0;
+                for ( Iterator<ProductPlots> iter = _productPlots.iterator(); iter.hasNext(); ) {
+                    ProductPlots thisPP = iter.next();
+                    if ( thisPP.lagPlots.size() > maxPlots )
+                        maxPlots = thisPP.lagPlots.size();
+                }        
+                rows += maxPlots;
+            }
+            //  Add a "latest" plot.
+            if ( _showLatest.isSelected() )
+                rows += 1;
+            //  And a row for averages across all accumulation periods.
+            if ( _showTimeSummary.isSelected() )
+                rows += 1;
+
+            //  Set the sizes of individual plots.
+            double xStart = 0.16;
+            double xStep = 0.75 / (double)columns;
+            double xSize = xStep * 0.98;
+            double yStart = 0.08;
+            double yStep = 0.75 / (double)rows;
+            double ySize = yStep * 0.97;
+
+            //  Compute the maximum and minimum values for all plotted items.  All products
+            //  and times use the same values for limits so they can be easily compared.
+            //  The limits on phase plots never change (-180 to 180).
             double lagMin = 0.0;
             double lagMax = 0.0;
             boolean lagLimitsSet = false;
-            for ( Iterator<IncPlot> pIter = thisPP.lagPlots.iterator(); pIter.hasNext(); ) {
-                IncPlot incPlot = pIter.next();
-                if ( lagLimitsSet ) {
-                    if ( incPlot.min < lagMin )
-                        lagMin = incPlot.min;
-                    if ( incPlot.max > lagMax )
-                        lagMax = incPlot.max;
-                }
-                else {
-                    lagMin = incPlot.min;
-                    lagMax = incPlot.max;
-                    lagLimitsSet = true;
-                }
-            }
             double ampMin = 0.0;
             double ampMax = 0.0;
             boolean ampLimitsSet = false;
-            for ( Iterator<IncPlot> pIter = thisPP.ampPlots.iterator(); pIter.hasNext(); ) {
-                IncPlot incPlot = pIter.next();
-                if ( ampLimitsSet ) {
-                    if ( incPlot.min < ampMin )
-                        ampMin = incPlot.min;
-                    if ( incPlot.max > ampMax )
-                        ampMax = incPlot.max;
+            double phaseMin = -180.0;
+            double phaseMax = 180.0;
+            for ( Iterator<ProductPlots> iter = _productPlots.iterator(); iter.hasNext(); ) {
+                ProductPlots thisPP = iter.next();
+                //  Find the "global" maximum and minimum values for lag and amplitude plots.
+                for ( Iterator<IncPlot> pIter = thisPP.lagPlots.iterator(); pIter.hasNext(); ) {
+                    IncPlot incPlot = pIter.next();
+                    if ( lagLimitsSet ) {
+                        if ( incPlot.min < lagMin )
+                            lagMin = incPlot.min;
+                        if ( incPlot.max > lagMax )
+                            lagMax = incPlot.max;
+                    }
+                    else {
+                        lagMin = incPlot.min;
+                        lagMax = incPlot.max;
+                        lagLimitsSet = true;
+                    }
                 }
-                else {
-                    ampMin = incPlot.min;
-                    ampMax = incPlot.max;
-                    ampLimitsSet = true;
+                for ( Iterator<IncPlot> pIter = thisPP.ampPlots.iterator(); pIter.hasNext(); ) {
+                    IncPlot incPlot = pIter.next();
+                    if ( ampLimitsSet ) {
+                        if ( incPlot.min < ampMin )
+                            ampMin = incPlot.min;
+                        if ( incPlot.max > ampMax )
+                            ampMax = incPlot.max;
+                    }
+                    else {
+                        ampMin = incPlot.min;
+                        ampMax = incPlot.max;
+                        ampLimitsSet = true;
+                    }
                 }
             }
-            //  This is done only if the LATEST plots are to be drawn.  They are scaled to fill
-            //  the existing screen.
-            if ( _showLatest.isSelected() ) {
-                double xSize = 0.75;
-                double xStart = 0.16;
-                //  Draw a "background" plot.  This has any items we want below the data.
-                Plot2DObject backgroundPlot = new Plot2DObject();
-                backgroundPlot.backgroundColor( Color.WHITE );
-                backgroundPlot.frame( xStart, yStart, xSize, ySize );
-                backgroundPlot.resizeBasedOnWindow( _plotWindow.getWidth(), _plotWindow.getHeight() );
-                backgroundPlot.drawBackground( true );
-                backgroundPlot.drawFrame( false );
-                _plotWindow.add2DPlot( backgroundPlot );
-                //  Clear "extra" items from each plot.  These will be redrawn as necessary.
+
+            //  Add a "big frame" plot.  This is used for labels and other information below the
+            //  actual plots.
+            Plot2DObject bigFramePlot = new Plot2DObject();
+            bigFramePlot.frame( xStart, yStart, 0.75, 0.75 );
+            bigFramePlot.resizeBasedOnWindow( _plotWindow.getWidth(), _plotWindow.getHeight() );
+            bigFramePlot.drawBackground( false );
+            bigFramePlot.drawFrame( false );
+            DrawObject obj = bigFramePlot.newExtraItem( 0.0, Plot2DObject.ExtraItem.BY_FRAME, 
+                    -1.03, Plot2DObject.ExtraItem.BY_FRAME );
+            obj.complexText( DrawObject.RIGHT_JUSTIFY, "<y=1>Observation: " );
+            obj = bigFramePlot.newExtraItem( 0.0, Plot2DObject.ExtraItem.BY_FRAME, 
+                    -1.03, Plot2DObject.ExtraItem.BY_FRAME );
+            obj.complexText( DrawObject.RIGHT_JUSTIFY, "<y=2>Scan: " );
+            obj = bigFramePlot.newExtraItem( 0.0, Plot2DObject.ExtraItem.BY_FRAME, 
+                    -1.03, Plot2DObject.ExtraItem.BY_FRAME );
+            obj.complexText( DrawObject.RIGHT_JUSTIFY, "<y=3>Start Time: " );
+            obj = bigFramePlot.newExtraItem( 0.0, Plot2DObject.ExtraItem.BY_FRAME, 
+                    -1.03, Plot2DObject.ExtraItem.BY_FRAME );
+            obj.complexText( DrawObject.RIGHT_JUSTIFY, "<y=4>End Time: " );
+            obj = bigFramePlot.newExtraItem( 0.0, Plot2DObject.ExtraItem.BY_FRAME, 
+                    -1.03, Plot2DObject.ExtraItem.BY_FRAME );
+            obj.complexText( DrawObject.RIGHT_JUSTIFY, "<y=5>Source: " );
+            obj = bigFramePlot.newExtraItem( 0.0, Plot2DObject.ExtraItem.BY_FRAME, 
+                    -1.03, Plot2DObject.ExtraItem.BY_FRAME );
+            obj.complexText( DrawObject.RIGHT_JUSTIFY, "<y=6>RA: " );
+            obj = bigFramePlot.newExtraItem( 0.0, Plot2DObject.ExtraItem.BY_FRAME, 
+                    -1.03, Plot2DObject.ExtraItem.BY_FRAME );
+            obj.complexText( DrawObject.RIGHT_JUSTIFY, "<y=7>DEC: " );
+            obj = bigFramePlot.newExtraItem( 0.0, Plot2DObject.ExtraItem.BY_FRAME, 
+                    -1.03, Plot2DObject.ExtraItem.BY_FRAME );
+            if ( _obsCode != null )
+                obj.complexText( DrawObject.LEFT_JUSTIFY, "<y=1>" + _obsCode );
+            obj = bigFramePlot.newExtraItem( 0.0, Plot2DObject.ExtraItem.BY_FRAME, 
+                    -1.03, Plot2DObject.ExtraItem.BY_FRAME );
+            if ( _scanIdentifier != null )
+                obj.complexText( DrawObject.LEFT_JUSTIFY, "<y=2>" + _scanIdentifier );
+            obj = bigFramePlot.newExtraItem( 0.0, Plot2DObject.ExtraItem.BY_FRAME, 
+                    -1.03, Plot2DObject.ExtraItem.BY_FRAME );
+            if ( _scanStartTime != null )
+                obj.complexText( DrawObject.LEFT_JUSTIFY, "<y=3>" + _scanStartTime );
+            obj = bigFramePlot.newExtraItem( 0.0, Plot2DObject.ExtraItem.BY_FRAME, 
+                    -1.03, Plot2DObject.ExtraItem.BY_FRAME );
+            if ( _scanEndTime != null )
+                obj.complexText( DrawObject.LEFT_JUSTIFY, "<y=4>" + _scanEndTime );
+            obj = bigFramePlot.newExtraItem( 0.0, Plot2DObject.ExtraItem.BY_FRAME, 
+                    -1.03, Plot2DObject.ExtraItem.BY_FRAME );
+            if ( _source != null )
+                obj.complexText( DrawObject.LEFT_JUSTIFY, "<y=5>" + _source );
+            obj = bigFramePlot.newExtraItem( 0.0, Plot2DObject.ExtraItem.BY_FRAME, 
+                    -1.03, Plot2DObject.ExtraItem.BY_FRAME );
+            if ( _sourceRA != null )
+                obj.complexText( DrawObject.LEFT_JUSTIFY, "<y=6>" + _sourceRA );
+            obj = bigFramePlot.newExtraItem( 0.0, Plot2DObject.ExtraItem.BY_FRAME, 
+                    -1.03, Plot2DObject.ExtraItem.BY_FRAME );
+            if ( _sourceDEC != null )
+                obj.complexText( DrawObject.LEFT_JUSTIFY, "<y=7>" + _sourceDEC );
+            _plotWindow.add2DPlot( bigFramePlot );
+
+            //  These variables are used as the actual drawing positions of each plot - they will
+            //  change as we step through all of the plots.
+            double x = xStart;
+            double y = yStart;
+
+            //  Now draw the plots, as chosen by the user.  Loop through each of the "products" (channels)
+            //  selected.
+            int productIndex = 0;
+            for ( Iterator<ProductPlots> iter = _productPlots.iterator(); iter.hasNext(); ) {
+                ProductPlots thisPP = iter.next();
+                y = yStart;
+
+                //  Clear "extra" items from each plot.  This is to prevent litter from previous drawings
+                //  from appearing on the one we are creating now.  "Extra" items are labels, titles,
+                //  etc. which will be reattached to the plots as necessary below.
                 for ( Iterator<IncPlot> pIter = thisPP.lagPlots.iterator(); pIter.hasNext(); )
                     pIter.next().plot.clearExtraItems();
                 for ( Iterator<IncPlot> pIter = thisPP.ampPlots.iterator(); pIter.hasNext(); )
                     pIter.next().plot.clearExtraItems();
                 for ( Iterator<IncPlot> pIter = thisPP.phasePlots.iterator(); pIter.hasNext(); )
                     pIter.next().plot.clearExtraItems();
-                //  The lag (delay) plots.....
-                if ( _showLag.isSelected() && thisPP.lagPlots.peekLast() != null ) {
-                    IncPlot incPlot = thisPP.lagPlots.peekLast();
-                    Plot2DObject thisPlot = thisPP.lagPlots.peekLast().plot;
-                    if ( thisPlot != null ) {
-                        thisPlot.frame( xStart, yStart, xSize, ySize );
-                        thisPlot.resizeBasedOnWindow( _plotWindow.getWidth(), _plotWindow.getHeight() );
-                        thisPlot.deleteLabels();
-                        _plotWindow.add2DPlot( thisPlot );
-                        incPlot.curve.color( Color.BLUE );
-                        double useMin = incPlot.min;
-                        double useMax = incPlot.max;
-                        if ( lagLimitsSet ) {
-                            useMin = lagMin;
-                            useMax = lagMax;
+
+                //  Plot the individual accumulation periods, if requested.
+                if ( _showAll.isSelected() ) {
+                    //  This is the loop through each accumulation time period.
+                    Iterator<IncPlot> ampIter = thisPP.ampPlots.iterator();
+                    Iterator<IncPlot> phaseIter = thisPP.phasePlots.iterator();
+                    for ( Iterator<IncPlot> lagIter = thisPP.lagPlots.iterator(); lagIter.hasNext(); ) {
+                        IncPlot lagPlot = lagIter.next();
+                        IncPlot ampPlot = ampIter.next();
+                        IncPlot phasePlot = phaseIter.next();
+                        boolean drawXLabels = false;
+                        boolean drawYLabels = false;
+                        //  Draw a "background" plot below each plot.  This has any items we want below the data.
+                        _plotWindow.add2DPlot( newBackgroundPlot( x, y, xSize, ySize ) );
+                        //  Add the data plots.
+                        if ( _showLag.isSelected() ) {
+                            //  X labels are drawn on the last plot (in time) ONLY if there are no summary
+                            //  or other plots following.
+                            if ( lagPlot == thisPP.lagPlots.peekLast() && !_showTimeSummary.isSelected() && !_showLatest.isSelected() )
+                                drawXLabels = true;
+                            else
+                                drawXLabels = false;
+                            //  Y labels are drawn on the first channel plot.
+                            if ( x == xStart )
+                                drawYLabels = true;
+                            else
+                                drawXLabels = false;
+                            _plotWindow.add2DPlot( newLagPlot( lagPlot, x, y, xSize, ySize,
+                                    lagMin, lagMax, lagLimitsSet, drawXLabels, drawYLabels ) );
                         }
-                        thisPlot.limits( (double)(-incPlot.nChannels), (double)(incPlot.nChannels - 1), useMin, useMax );
-                        thisPlot.drawBackground( false );
-                        thisPlot.drawFrame( false );
-                        //  Add X labels (to the last plot).
-                        if ( !iter.hasNext() )
-                            thisPlot.addLabels( Plot2DObject.X_AXIS, 10.0 );
-                        //  Add product information to this plot.
-                        plotProductInformation( incPlot, -0.14 / xSize );
-                        //  If both the phase and amplitude are included, shrink this plot to 2/3 height.
-                        if ( _showPhase.isSelected() && _showAmp.isSelected() ) {
-                            useMax = useMin + 3.0 * ( useMax - useMin ) / 2.0;
-                            thisPlot.limits( (double)(-incPlot.nChannels), (double)(incPlot.nChannels - 1), useMin, useMax );
+                        if ( _showAmp.isSelected() ) {
+                            //  X labels need to be drawn if this is the last plot (in time) AND they
+                            //  have not already been drawn by the lag plot.
+                            drawXLabels = false;
+                            //  Y labels appear only on the last plot if there are not channel
+                            //  summary plots following.
+                            if ( thisPP == _productPlots.peekLast() && !_showChannelSummary.isSelected() )
+                                drawYLabels = true;
+                            else
+                                drawYLabels = false;
+                            _plotWindow.add2DPlot( newAmpPlot( ampPlot, x, y, xSize, ySize,
+                                    ampMin, ampMax, ampLimitsSet, drawXLabels, drawYLabels ) );
                         }
-                        //  If phase is shown, shrink to half height.
-                        else if ( _showPhase.isSelected() ) {
-                            useMax = useMin + 2.0 * ( useMax - useMin );
-                            thisPlot.limits( (double)(-incPlot.nChannels), (double)(incPlot.nChannels - 1), useMin, useMax );
+                        if ( _showPhase.isSelected() ) {
+                            //  X labels need to be drawn if this is the last plot (in time) AND they
+                            //  have not already been drawn by the lag plot.
+                            drawXLabels = false;
+                            //  Y labels appear only if this is the first (channel) plot.
+                            if ( thisPP == _productPlots.peekFirst() )
+                                drawYLabels = true;
+                            else
+                                drawYLabels = false;
+                            _plotWindow.add2DPlot( newPhasePlot( phasePlot, x, y, xSize, ySize,
+                                    -180.0, 180.0, true, drawXLabels, drawYLabels ) );
                         }
-                        double stepSize = Plot2DObject.stepSize( lagMax - useMin, 2, 5 );
-                        thisPlot.addLabels( Plot2DObject.Y_AXIS, null, lagMax, stepSize,
-                                Color.BLUE, null, -5.0, -10.0,
-                                Plot2DObject.RIGHT_JUSTIFY, null, false, false );
-                        thisPlot.yTitle( "Lag", Plot2DObject.CENTER_JUSTIFY );
-                        thisPlot.yTitleXPos( -60, false );
-                        thisPlot.yTitleYPos( -0.5 * ( lagMax - useMin ) / ( useMax - useMin ), true );
-                        thisPlot.yTitleRotate( -Math.PI / 2.0 );
-                        thisPlot.yTitleColor( Color.BLUE, true );
-                        if ( _showDelay.isSelected() ) {
-                            thisPlot.addLabels( Plot2DObject.X_AXIS, (double)(incPlot.maxChannel),
-                                    (double)(incPlot.maxChannel) + .1, 1.0, Color.MAGENTA, 
-                                    new String( "  delay = " + incPlot.delay ),
-                                    ySize, 0.0, Plot2DObject.LEFT_JUSTIFY,
-                                    useMax, false, 
-                                    false );
+                        //  Add a frame to the plot.
+                        Plot2DObject framePlot = newFramePlot( x, y, xSize, ySize );
+                        //  Identify the product if this is the first plot in the (time) series.
+                        if ( lagPlot == thisPP.lagPlots.peekFirst() )
+                            plotChannelInformation( framePlot, thisPP.index );
+                        //  Add a time stamp if this is the left-most plot.
+                        if ( x == xStart ) {
+                            DrawObject newObject = framePlot.newExtraItem( -0.75 * xStart / xSize, Plot2DObject.ExtraItem.BY_FRAME, 
+                                    0.0, Plot2DObject.ExtraItem.BY_FRAME );
+                            newObject.complexText( DrawObject.LEFT_JUSTIFY, "<y=1>" + lagPlot.timeStamp );
+                            //  If this is the first plot in the time series, add a title to identify
+                            //  what the time stamp is.
+                            if ( y == yStart ) {
+                                newObject = framePlot.newExtraItem( -0.75 * xStart / xSize, Plot2DObject.ExtraItem.BY_FRAME, 
+                                        30.0, Plot2DObject.ExtraItem.BY_PIXEL );
+                                newObject.complexText( DrawObject.LEFT_JUSTIFY,
+                                        "<y=1>Accumulation" );
+                                newObject = framePlot.newExtraItem( -0.75 * xStart / xSize, Plot2DObject.ExtraItem.BY_FRAME, 
+                                        30.0, Plot2DObject.ExtraItem.BY_PIXEL );
+                                newObject.complexText( DrawObject.LEFT_JUSTIFY,
+                                        "<y=2>Period Start" );
+                            }
                         }
+                        _plotWindow.add2DPlot( framePlot );                    
+                        y += yStep;
                     }
                 }
-                //  Amplitude plots...
-                if ( _showAmp.isSelected() && thisPP.ampPlots.peekLast() != null ) {
-                    IncPlot incPlot = thisPP.ampPlots.peekLast();
-                    Plot2DObject thisPlot = thisPP.ampPlots.peekLast().plot;
-                    if ( thisPlot != null ) {
-                        thisPlot.frame( xStart, yStart, xSize, ySize );
-                        thisPlot.resizeBasedOnWindow( _plotWindow.getWidth(), _plotWindow.getHeight() );
-                        thisPlot.deleteLabels();
-                        _plotWindow.add2DPlot( thisPlot );
-                        incPlot.curve.color( Color.RED );
-                        thisPlot.drawBackground( false );
-                        thisPlot.drawFrame( false );
-                        //  Set limits to match the data.  These might be changed below.
-                        double plotYMin = incPlot.min;
-                        double plotYMax = incPlot.max;
-                        if ( ampLimitsSet ) {
-                            plotYMin = ampMin;
-                            plotYMax = ampMax;
+
+                //  Plot the "latest".
+                if ( _showLatest.isSelected() ) {
+                    //  Background.
+                    _plotWindow.add2DPlot( newBackgroundPlot( x, y, xSize, ySize ) );
+                    //  Latest plots are the last in the array...
+                    IncPlot lagPlot = thisPP.lagPlots.peekLast();
+                    IncPlot ampPlot = thisPP.ampPlots.peekLast();
+                    IncPlot phasePlot = thisPP.phasePlots.peekLast();
+                    //  ...unless the user has used the mouse wheel to change that.
+                    if ( !_lockToLatest ) {
+                        int index = 0;
+                        Iterator<IncPlot> ampIter = thisPP.ampPlots.iterator();
+                        Iterator<IncPlot> phaseIter = thisPP.phasePlots.iterator();
+                        for ( Iterator<IncPlot> lagIter = thisPP.lagPlots.iterator(); lagIter.hasNext() && index <= _currentPlotIndex; ) {
+                            lagPlot = lagIter.next();
+                            ampPlot = ampIter.next();
+                            phasePlot = phaseIter.next();
+                            ++index;
                         }
-                        thisPlot.limits( 0.0, (double)(incPlot.nChannels - 1), plotYMin, plotYMax );
-                        //  If there are other things being plotted, set the amp limits such that the
-                        //  curve covers only the lower half of the plot.
-                        if ( _showLag.isSelected() || _showPhase.isSelected() ) {
-                            plotYMax = 2.0 * plotYMax;
-                            thisPlot.limits( 0.0, (double)(incPlot.nChannels - 1), plotYMin, plotYMax );
-                        }
-                        //  If the lags weren't plotted, do these things...
-                        if ( !_showLag.isSelected() ) {
-                            //  Draw X labels (on the last plot).
-                            if ( !iter.hasNext() )
-                                thisPlot.addLabels( Plot2DObject.X_AXIS, 10.0 ); 
-                            //  Add product information to this plot.
-                            plotProductInformation( incPlot, -0.14 / xSize );
-                        }
-                        //  Find a reasonable step size for the amplitude.
-                        double stepSize = Plot2DObject.stepSize( plotYMax - plotYMin, 2, 5 );
-                        thisPlot.addLabels( Plot2DObject.Y_AXIS, plotYMin, plotYMax, stepSize,
-                                Color.RED, null, 5.0, 10.0,
-                                Plot2DObject.LEFT_JUSTIFY, (double)(incPlot.nChannels - 1), false, false );
-                        thisPlot.yTitle( "Amplitude", Plot2DObject.CENTER_JUSTIFY );
-                        thisPlot.yTitleXPos( 1.08, true );
-                        thisPlot.yTitleYPos( -0.5, true );
-                        thisPlot.yTitleRotate( -Math.PI / 2.0 );
-                        thisPlot.yTitleColor( Color.RED, true );
                     }
-                }
-                //  Phase plots...
-                if ( _showPhase.isSelected() && thisPP.phasePlots.peekLast() != null ) {
-                    IncPlot incPlot = thisPP.phasePlots.peekLast();
-                    Plot2DObject thisPlot = thisPP.phasePlots.peekLast().plot;
-                    if ( thisPlot != null ) {
-                        thisPlot.frame( xStart, yStart, xSize, ySize );
-                        thisPlot.resizeBasedOnWindow( _plotWindow.getWidth(), _plotWindow.getHeight() );
-                        thisPlot.deleteLabels();
-                        _plotWindow.add2DPlot( thisPlot );
-                        incPlot.track.color( Color.BLACK );
-                        thisPlot.drawBackground( false );
-                        thisPlot.drawFrame( false );
-                        //  Set limits for phase...-180 to 180.
-                        thisPlot.limits( 0.0, (double)(incPlot.nChannels - 1), -180.0, 180.0 );
-                        //  If the lag or amplitude has already been drawn, shut off the background and
-                        //  squish this plot into the top half of the plotting area.
-                        if ( _showLag.isSelected() || _showAmp.isSelected() ) {
-                            thisPlot.frame( xStart, yStart, xSize, ySize / 2.0 );
-                            thisPlot.resizeBasedOnWindow( _plotWindow.getWidth(), _plotWindow.getHeight() );
-                        }
-                        //  These are some things we do if this is the ONLY plot.
-                        if ( !_showLag.isSelected() && !_showAmp.isSelected() ) {
-                            //  Draw X labels (on the last plot).
-                            if ( !iter.hasNext() )
-                                thisPlot.addLabels( Plot2DObject.X_AXIS, 10.0 ); 
-                            //  Add product information to this plot.
-                            plotProductInformation( incPlot, -0.14 / xSize );
-                        }
-                        thisPlot.addLabels( Plot2DObject.Y_AXIS, 180.0 );
-                        thisPlot.yTitle( "Phase", Plot2DObject.CENTER_JUSTIFY );
-                        thisPlot.yTitleXPos( -40, false );
-                        thisPlot.yTitleYPos( -0.5, true );
-                        thisPlot.yTitleRotate( -Math.PI / 2.0 );
+                    boolean drawXLabels = false;
+                    boolean drawYLabels = false;
+                    //  Add the data plots.
+                    if ( _showLag.isSelected() ) {
+                        //  X labels are drawn on the last plot (in time) ONLY if there are no summary
+                        //  or other plots following.
+                        if ( !_showTimeSummary.isSelected() )
+                            drawXLabels = true;
+                        else
+                            drawXLabels = false;
+                        //  Y labels are drawn on the first channel plot.
+                        if ( x == xStart )
+                            drawYLabels = true;
+                        else
+                            drawYLabels = false;
+                        _plotWindow.add2DPlot( newLagPlot( lagPlot, x, y, xSize, ySize,
+                                lagMin, lagMax, lagLimitsSet, drawXLabels, drawYLabels ) );
                     }
+                    if ( _showAmp.isSelected() ) {
+                        //  X labels need to be drawn if this is the last plot (in time) AND they
+                        //  have not already been drawn by the lag plot.
+                        drawXLabels = false;
+                        //  Y labels appear only on the last plot if there are not channel
+                        //  summary plots following.
+                        if ( thisPP == _productPlots.peekLast() && !_showChannelSummary.isSelected() )
+                            drawYLabels = true;
+                        else
+                            drawYLabels = false;
+                        _plotWindow.add2DPlot( newAmpPlot( ampPlot, x, y, xSize, ySize,
+                                ampMin, ampMax, ampLimitsSet, drawXLabels, drawYLabels ) );
+                    }
+                    if ( _showPhase.isSelected() ) {
+                        //  X labels need to be drawn if this is the last plot (in time) AND they
+                        //  have not already been drawn by the lag plot.
+                        drawXLabels = false;
+                        //  Y labels appear only if this is the first (channel) plot.
+                        if ( thisPP == _productPlots.peekFirst() )
+                            drawYLabels = true;
+                        else
+                            drawYLabels = false;
+                        _plotWindow.add2DPlot( newPhasePlot( phasePlot, x, y, xSize, ySize,
+                                -180.0, 180.0, true, drawXLabels, drawYLabels ) );
+                    }
+                    //  Add a frame to the plot.
+                    Plot2DObject framePlot = newFramePlot( x, y, xSize, ySize );
+                    //  Identify the product if only "latest" plots are shown (i.e. this is the
+                    //  first plot in the column).
+                    if ( !_showAll.isSelected() )
+                        plotChannelInformation( framePlot, thisPP.index );
+                    if ( x == xStart ) {
+                        DrawObject newObject = framePlot.newExtraItem( -0.75 * xStart / xSize, Plot2DObject.ExtraItem.BY_FRAME, 
+                                0.0, Plot2DObject.ExtraItem.BY_FRAME );
+                        newObject.complexText( DrawObject.LEFT_JUSTIFY, "<y=1>" + lagPlot.timeStamp );
+                        //  If this is the first plot in the time series, add a title to identify
+                        //  what the time stamp is.
+                        if ( y == yStart ) {
+                            newObject = framePlot.newExtraItem( -0.75 * xStart / xSize, Plot2DObject.ExtraItem.BY_FRAME, 
+                                    30.0, Plot2DObject.ExtraItem.BY_PIXEL );
+                            newObject.complexText( DrawObject.LEFT_JUSTIFY,
+                                    "<y=1>Accumulation" );
+                            newObject = framePlot.newExtraItem( -0.75 * xStart / xSize, Plot2DObject.ExtraItem.BY_FRAME, 
+                                    30.0, Plot2DObject.ExtraItem.BY_PIXEL );
+                            newObject.complexText( DrawObject.LEFT_JUSTIFY,
+                                    "<y=2>Period Start" );
+                        }
+                    }
+                    _plotWindow.add2DPlot( framePlot );                    
+                    y += yStep;
                 }
-                //  Draw a "frame" plot.  This has any items we want drawn on top of the data.
-                Plot2DObject framePlot = new Plot2DObject();
-                framePlot.frameColor( Color.DARK_GRAY );
-                framePlot.frame( xStart, yStart, xSize, ySize );
-                framePlot.resizeBasedOnWindow( _plotWindow.getWidth(), _plotWindow.getHeight() );
-                framePlot.drawBackground( false );
-                framePlot.drawFrame( true );
-                _plotWindow.add2DPlot( framePlot );
-                yStart += yStep;
+
+                //  Increment the product column.
+                x += xStep;
+                ++productIndex;
             }
-            //  Here we show all plots in the series.
-            else {
-                double xStart = 0.16;
-                double xStep = 0.75 / maxPlots;
-                double xSize = xStep * 0.98;
-                //  Draw a "background" plot below each plot.  This has any items we want below the data.
-                for ( Iterator<IncPlot> pIter = thisPP.lagPlots.iterator(); pIter.hasNext(); ) {
-                    IncPlot incPlot = pIter.next();
-                    Plot2DObject backgroundPlot = new Plot2DObject();
-                    backgroundPlot.backgroundColor( Color.WHITE );
-                    backgroundPlot.frame( xStart, yStart, xSize, ySize );
-                    backgroundPlot.resizeBasedOnWindow( _plotWindow.getWidth(), _plotWindow.getHeight() );
-                    backgroundPlot.drawBackground( true );
-                    backgroundPlot.drawFrame( false );
-                    _plotWindow.add2DPlot( backgroundPlot );
-                    xStart += xStep;
-                }
-                //  Delay (lag) plots.
-                if ( _showLag.isSelected() ) {
-                    xStart = 0.16;
-                    for ( Iterator<IncPlot> pIter = thisPP.lagPlots.iterator(); pIter.hasNext(); ) {
-                        IncPlot incPlot = pIter.next();
-                        Plot2DObject thisPlot = incPlot.plot;
-                        thisPlot.deleteLabels();
-                        thisPlot.deleteTitles();
-                        thisPlot.clearExtraItems();
-                        double useMin = incPlot.min;
-                        double useMax = incPlot.max;
-                        if ( lagLimitsSet ) {
-                            useMin = lagMin;
-                            useMax = lagMax;
+
+            //  This is the "channel summary" column, if the user has requested it.
+            if ( _showChannelSummary.isSelected() ) {
+                y = yStart;
+                //  Possibly we want to see all accumulation periods...
+                if ( _showAll.isSelected() ) {
+                    //  Loop through each accumulation time period.
+                    Iterator<IncPlot> ampIter = _channelSummaryPlots.ampPlots.iterator();
+                    Iterator<IncPlot> phaseIter = _channelSummaryPlots.phasePlots.iterator();
+                    for ( Iterator<IncPlot> lagIter = _channelSummaryPlots.lagPlots.iterator(); lagIter.hasNext(); ) {
+                        IncPlot lagPlot = lagIter.next();
+                        IncPlot ampPlot = ampIter.next();
+                        IncPlot phasePlot = phaseIter.next();
+                        boolean drawXLabels = false;
+                        boolean drawYLabels = false;
+                        //  Draw a "background" plot below each plot.  This has any items we want below the data.
+                        _plotWindow.add2DPlot( newBackgroundPlot( x, y, xSize, ySize ) );
+                        //  Add the data plots.
+                        if ( _showLag.isSelected() ) {
+                            drawXLabels = false;
+                            //  Y labels never appear on these plots
+                            drawYLabels = false;
+                            _plotWindow.add2DPlot( newLagPlot( lagPlot, x, y, xSize, ySize,
+                                    lagMin, lagMax, lagLimitsSet, drawXLabels, drawYLabels ) );
                         }
-                        thisPlot.limits( (double)(-incPlot.nChannels), (double)(incPlot.nChannels - 1), useMin, useMax );
-                        thisPlot.frame( xStart, yStart, xSize, ySize );
-                        xStart += xStep;
-                        thisPlot.resizeBasedOnWindow( _plotWindow.getWidth(), _plotWindow.getHeight() );
-                        _plotWindow.add2DPlot( thisPlot );
-                        incPlot.curve.color( Color.BLUE );
-                        thisPlot.drawBackground( false );
-                        thisPlot.drawFrame( false );
-                        //  If both the phase and amplitude are included, shrink this plot to 2/3 height.
-                        if ( _showPhase.isSelected() && _showAmp.isSelected() ) {
-                            useMax = useMin + 3.0 * ( useMax - useMin ) / 2.0;
-                            thisPlot.limits( (double)(-incPlot.nChannels), (double)(incPlot.nChannels - 1), useMin, useMax );
+                        if ( _showAmp.isSelected() ) {
+                            //  X labels need to be drawn if this is the last plot (in time) AND they
+                            //  have not already been drawn by the lag plot.
+                            drawXLabels = false;
+                            //  Y labels always appear on these plots.
+                            drawYLabels = true;
+                            _plotWindow.add2DPlot( newAmpPlot( ampPlot, x, y, xSize, ySize,
+                                    ampMin, ampMax, ampLimitsSet, drawXLabels, drawYLabels ) );
                         }
-                        //  If phase is shown, shrink to half height.
-                        else if ( _showPhase.isSelected() ) {
-                            useMax = useMin + 2.0 * ( useMax - useMin );
-                            thisPlot.limits( (double)(-incPlot.nChannels), (double)(incPlot.nChannels - 1), useMin, useMax );
+                        if ( _showPhase.isSelected() ) {
+                            //  X labels need to be drawn if this is the last plot (in time) AND they
+                            //  have not already been drawn by the lag plot.
+                            drawXLabels = false;
+                            //  Y labels never appear on these plots.
+                            drawYLabels = false;
+                            _plotWindow.add2DPlot( newPhasePlot( phasePlot, x, y, xSize, ySize,
+                                    -180.0, 180.0, true, drawXLabels, drawYLabels ) );
                         }
-                        //  If this is the first plot, add labels to y axis.
-                        if ( incPlot == thisPP.lagPlots.peekFirst() ) {
-                            double stepSize = Plot2DObject.stepSize( lagMax - useMin, 2, 5 );
-                            thisPlot.addLabels( Plot2DObject.Y_AXIS, null, lagMax, stepSize,
-                                    Color.BLUE, null, -5.0, -10.0,
-                                    Plot2DObject.RIGHT_JUSTIFY, null, false, false );
-                            thisPlot.yTitle( "Delay", Plot2DObject.CENTER_JUSTIFY );
-                            thisPlot.yTitleXPos( -60, false );
-                            thisPlot.yTitleYPos( -0.5 * ( lagMax - useMin ) / ( useMax - useMin ), true );
-                            thisPlot.yTitleRotate( -Math.PI / 2.0 );
-                            thisPlot.yTitleColor( Color.BLUE, true );
+                        //  Add a frame to the plot.
+                        Plot2DObject newFrame = newFramePlot( x, y, xSize, ySize );
+                        if ( lagPlot == _channelSummaryPlots.lagPlots.peekFirst() ) {
+                            DrawObject newObject = newFrame.newExtraItem( 0.0, Plot2DObject.ExtraItem.BY_FRAME, 
+                                    30.0, Plot2DObject.ExtraItem.BY_PIXEL );
+                            newObject.complexText( DrawObject.LEFT_JUSTIFY,
+                                    "<y=1>Channel" );
+                            newObject = newFrame.newExtraItem( 0.0, Plot2DObject.ExtraItem.BY_FRAME, 
+                                    30.0, Plot2DObject.ExtraItem.BY_PIXEL );
+                            newObject.complexText( DrawObject.LEFT_JUSTIFY,
+                                    "<y=2>Summary" );
                         }
+                        _plotWindow.add2DPlot( newFrame );
+                        y += yStep;
                     }
                 }
-                //  Amplitude plots...
-                if ( _showAmp.isSelected() ) {
-                    xStart = 0.16;
-                    for ( Iterator<IncPlot> pIter = thisPP.ampPlots.iterator(); pIter.hasNext(); ) {
-                        IncPlot incPlot = pIter.next();
-                        Plot2DObject thisPlot = incPlot.plot;
-                        if ( thisPlot != null ) {
-                            thisPlot.frame( xStart, yStart, xSize, ySize );
-                            xStart += xStep;
-                            thisPlot.resizeBasedOnWindow( _plotWindow.getWidth(), _plotWindow.getHeight() );
-                            thisPlot.deleteLabels();
-                            thisPlot.deleteTitles();
-                            _plotWindow.add2DPlot( thisPlot );
-                            incPlot.curve.color( Color.RED );
-                            thisPlot.drawBackground( false );
-                            thisPlot.drawFrame( false );
-                            //  Set limits to match the data.  These might be changed below.
-                            double plotYMin = incPlot.min;
-                            double plotYMax = incPlot.max;
-                            if ( ampLimitsSet ) {
-                                plotYMin = ampMin;
-                                plotYMax = ampMax;
-                            }
-                            thisPlot.limits( 0.0, (double)(incPlot.nChannels - 1), plotYMin, plotYMax );
-                            //  If there are other things being plotted, set the amp limits such that the
-                            //  curve covers only the lower half of the plot.
-                            if ( _showLag.isSelected() || _showPhase.isSelected() ) {
-                                plotYMax = 2.0 * plotYMax;
-                                thisPlot.limits( 0.0, (double)(incPlot.nChannels - 1), plotYMin, plotYMax );
-                            }
-                            //  If this is the last plot, add labels for amplitude.
-                            if ( !pIter.hasNext() ) {
-                                double stepSize = Plot2DObject.stepSize( plotYMax - plotYMin, 2, 5 );
-                                thisPlot.addLabels( Plot2DObject.Y_AXIS, plotYMin, plotYMax, stepSize,
-                                        Color.RED, null, 5.0, 10.0,
-                                        Plot2DObject.LEFT_JUSTIFY, (double)(incPlot.nChannels - 1), false, false );
-                                thisPlot.yTitle( "Amplitude", Plot2DObject.CENTER_JUSTIFY );
-                                thisPlot.yTitleXPos( 1.0 + 0.08 * (double)(thisPP.ampPlots.size()), true );
-                                thisPlot.yTitleYPos( -0.5, true );
-                                thisPlot.yTitleRotate( -Math.PI / 2.0 );
-                                thisPlot.yTitleColor( Color.RED, true );
-                            }
+                //  ...or just the latest.
+                if ( _showLatest.isSelected() ) {
+                    //  Draw a "background" plot below each plot.  This has any items we want below the data.
+                    _plotWindow.add2DPlot( newBackgroundPlot( x, y, xSize, ySize ) );
+                    //  Latest plots are the last in the array...
+                    IncPlot lagPlot = _channelSummaryPlots.lagPlots.peekLast();
+                    IncPlot ampPlot = _channelSummaryPlots.ampPlots.peekLast();
+                    IncPlot phasePlot = _channelSummaryPlots.phasePlots.peekLast();
+                    //  ...unless the user has used the mouse wheel to change that.
+                    if ( !_lockToLatest ) {
+                        int index = 0;
+                        Iterator<IncPlot> ampIter = _channelSummaryPlots.ampPlots.iterator();
+                        Iterator<IncPlot> phaseIter = _channelSummaryPlots.phasePlots.iterator();
+                        for ( Iterator<IncPlot> lagIter = _channelSummaryPlots.lagPlots.iterator(); lagIter.hasNext() && index <= _currentPlotIndex; ) {
+                            lagPlot = lagIter.next();
+                            ampPlot = ampIter.next();
+                            phasePlot = phaseIter.next();
+                            ++index;
                         }
                     }
-                }
-                //  Phase plots...
-                if ( _showPhase.isSelected() ) {
-                    xStart = 0.16;
-                    for ( Iterator<IncPlot> pIter = thisPP.phasePlots.iterator(); pIter.hasNext(); ) {
-                        IncPlot incPlot = pIter.next();
-                        Plot2DObject thisPlot = incPlot.plot;
-                        if ( thisPlot != null ) {
-                            thisPlot.frame( xStart, yStart, xSize, ySize );
-                            thisPlot.resizeBasedOnWindow( _plotWindow.getWidth(), _plotWindow.getHeight() );
-                            thisPlot.deleteLabels();
-                            thisPlot.deleteTitles();
-                            _plotWindow.add2DPlot( thisPlot );
-                            incPlot.track.color( Color.BLACK );
-                            thisPlot.drawBackground( false );
-                            thisPlot.drawFrame( false );
-                            //  Set limits for phase...-180 to 180.
-                            thisPlot.limits( 0.0, (double)(incPlot.nChannels - 1), -180.0, 180.0 );
-                            //  If the lag or amplitude has already been drawn, shut off the background and
-                            //  squish this plot into the top half of the plotting area.
-                            if ( _showLag.isSelected() || _showAmp.isSelected() ) {
-                                thisPlot.frame( xStart, yStart, xSize, ySize / 2.0 );
-                                thisPlot.resizeBasedOnWindow( _plotWindow.getWidth(), _plotWindow.getHeight() );
-                            }
-                            if ( incPlot == thisPP.phasePlots.peekFirst() ) {
-                                thisPlot.addLabels( Plot2DObject.Y_AXIS, 180.0 );
-                                thisPlot.yTitle( "Phase", Plot2DObject.CENTER_JUSTIFY );
-                                thisPlot.yTitleXPos( -40, false );
-                                thisPlot.yTitleYPos( -0.5, true );
-                                thisPlot.yTitleRotate( -Math.PI / 2.0 );
-                            }
-                            xStart += xStep;
-                        }
+                    boolean drawXLabels = false;
+                    boolean drawYLabels = false;
+                    //  Add the data plots.
+                    if ( _showLag.isSelected() ) {
+                        drawXLabels = false;
+                        //  Y labels are drawn on the first channel plot.
+                        if ( x == xStart )
+                            drawYLabels = true;
+                        else
+                            drawYLabels = false;
+                        _plotWindow.add2DPlot( newLagPlot( lagPlot, x, y, xSize, ySize,
+                                lagMin, lagMax, lagLimitsSet, drawXLabels, drawYLabels ) );
                     }
-                }
-                //  Add product information to the first plot in the series.
-                plotProductInformation( thisPP.lagPlots.peekFirst(), -0.14 / xStep );
-                //  Draw a "frame" plot on top of each plot.  This has any items we want drawn on top of the data.
-                //  We are using the lag plots as an iterator, but any data type would do.
-                xStart = 0.16;
-                for ( Iterator<IncPlot> pIter = thisPP.lagPlots.iterator(); pIter.hasNext(); ) {
-                    IncPlot incPlot = pIter.next();
-                    Plot2DObject framePlot = new Plot2DObject();
-                    framePlot.frameColor( Color.DARK_GRAY );
-                    framePlot.frame( xStart, yStart, xSize, ySize );
-                    framePlot.resizeBasedOnWindow( _plotWindow.getWidth(), _plotWindow.getHeight() );
-                    framePlot.drawBackground( false );
-                    framePlot.drawFrame( true );
-                    _plotWindow.add2DPlot( framePlot );
-                    //  Add the time stamp if this is the last plot.
-                    if ( !iter.hasNext() ) {
-                        DrawObject newObject = framePlot.newExtraItem( 0.0, Plot2DObject.ExtraItem.BY_FRAME, 
-                            -1.0, Plot2DObject.ExtraItem.BY_FRAME );
+                    if ( _showAmp.isSelected() ) {
+                        drawXLabels = false;
+                        drawYLabels = true;
+                        _plotWindow.add2DPlot( newAmpPlot( ampPlot, x, y, xSize, ySize,
+                                ampMin, ampMax, ampLimitsSet, drawXLabels, drawYLabels ) );
+                    }
+                    if ( _showPhase.isSelected() ) {
+                        drawXLabels = false;
+                        //  Y labels appear only if this is the first (channel) plot.
+                        if ( x == xStart )
+                            drawYLabels = true;
+                        else
+                            drawYLabels = false;
+                    for ( int i = 0; i < phasePlot.yData.length; ++i )
+                        phasePlot.yData[i] = 0.0;
+                        _plotWindow.add2DPlot( newPhasePlot( phasePlot, x, y, xSize, ySize,
+                                -180.0, 180.0, true, drawXLabels, drawYLabels ) );
+                    }
+                    //  Add a frame to the plot.
+                    Plot2DObject newFrame = newFramePlot( x, y, xSize, ySize );
+                    if ( y == yStart ) {
+                        DrawObject newObject = newFrame.newExtraItem( 0.0, Plot2DObject.ExtraItem.BY_FRAME, 
+                                30.0, Plot2DObject.ExtraItem.BY_PIXEL );
                         newObject.complexText( DrawObject.LEFT_JUSTIFY,
-                            ( "<y=1.5>" + incPlot.timeStamp ) );                        
+                                "<y=1>Channel" );
+                        newObject = newFrame.newExtraItem( 0.0, Plot2DObject.ExtraItem.BY_FRAME, 
+                                30.0, Plot2DObject.ExtraItem.BY_PIXEL );
+                        newObject.complexText( DrawObject.LEFT_JUSTIFY,
+                                "<y=2>Summary" );
                     }
-                    xStart += xStep;
+                    _plotWindow.add2DPlot( newFrame );
+                    y += yStep;
                 }
-                yStart += yStep;
+            }
+
+            //  These are the "time summary" plots that appear in the last row.
+            if ( _showTimeSummary.isSelected() ) {
+                x = xStart;
+                for ( Iterator<ProductPlots> iter = _timeSummaryPlots.iterator(); iter.hasNext(); ) {
+                    ProductPlots thisPP = iter.next();
+                    //  Draw a "background" plot below each plot.
+                    _plotWindow.add2DPlot( newBackgroundPlot( x, y, xSize, ySize ) );
+                    //  Latest plots are the last in the array...
+                    IncPlot lagPlot = thisPP.lagPlots.peekLast();
+                    IncPlot ampPlot = thisPP.ampPlots.peekLast();
+                    IncPlot phasePlot = thisPP.phasePlots.peekLast();
+                    //  ...unless the user has used the mouse wheel to change that.
+                    if ( !_lockToLatest ) {
+                        int index = 0;
+                        Iterator<IncPlot> ampIter = thisPP.ampPlots.iterator();
+                        Iterator<IncPlot> phaseIter = thisPP.phasePlots.iterator();
+                        for ( Iterator<IncPlot> lagIter = thisPP.lagPlots.iterator(); lagIter.hasNext() && index <= _currentPlotIndex; ) {
+                            lagPlot = lagIter.next();
+                            ampPlot = ampIter.next();
+                            phasePlot = phaseIter.next();
+                            ++index;
+                        }
+                    }
+                    boolean drawXLabels = false;
+                    boolean drawYLabels = false;
+                    //  Add the data plots.
+                    if ( _showLag.isSelected() ) {
+                        //  X labels are drawn on the last plot (in time) ONLY if there are no summary
+                        //  or other plots following.
+                        if ( !_showTimeSummary.isSelected() )
+                            drawXLabels = true;
+                        else
+                            drawXLabels = false;
+                        //  Y labels are drawn on the first channel plot.
+                        if ( x == xStart )
+                            drawYLabels = true;
+                        else
+                            drawXLabels = false;
+                        _plotWindow.add2DPlot( newLagPlot( lagPlot, x, y, xSize, ySize,
+                                lagMin, lagMax, lagLimitsSet, drawXLabels, drawYLabels ) );
+                    }
+                    if ( _showAmp.isSelected() ) {
+                        //  X labels need to be drawn if this is the last plot (in time) AND they
+                        //  have not already been drawn by the lag plot.
+                        drawXLabels = false;
+                        //  Y labels appear only on the last plot if there are not channel
+                        //  summary plots following.
+                        if ( thisPP == _timeSummaryPlots.peekLast() && !_showChannelSummary.isSelected() )
+                            drawYLabels = true;
+                        else
+                            drawYLabels = false;
+                        _plotWindow.add2DPlot( newAmpPlot( ampPlot, x, y, xSize, ySize,
+                                ampMin, ampMax, ampLimitsSet, drawXLabels, drawYLabels ) );
+                    }
+                    if ( _showPhase.isSelected() ) {
+                        //  X labels need to be drawn if this is the last plot (in time) AND they
+                        //  have not already been drawn by the lag plot.
+                        drawXLabels = false;
+                        //  Y labels appear only if this is the first (channel) plot.
+                        if ( x == xStart )
+                            drawYLabels = true;
+                        else
+                            drawYLabels = false;
+                        _plotWindow.add2DPlot( newPhasePlot( phasePlot, x, y, xSize, ySize,
+                                -180.0, 180.0, true, drawXLabels, drawYLabels ) );
+                    }
+                    //  Add a frame to the plot.
+                    Plot2DObject framePlot = newFramePlot( x, y, xSize, ySize );
+                    //  Identify the product if this is the first plot in the column (which
+                    //  means "all" and "latest" plots are not shown.
+                    if ( !_showAll.isSelected() && !_showLatest.isSelected() )
+                        plotChannelInformation( framePlot, thisPP.index );
+                    //  If this is the first plot on the left side, identify it as a time
+                    //  summary.
+                    if ( x == xStart ) {
+                        DrawObject newObject = framePlot.newExtraItem( -0.75 * xStart / xSize, Plot2DObject.ExtraItem.BY_FRAME, 
+                                0.0, Plot2DObject.ExtraItem.BY_FRAME );
+                        newObject.complexText( DrawObject.LEFT_JUSTIFY,
+                                "<y=1>Time" );
+                        newObject = framePlot.newExtraItem( -0.75 * xStart / xSize, Plot2DObject.ExtraItem.BY_FRAME, 
+                                0.0, Plot2DObject.ExtraItem.BY_FRAME );
+                        newObject.complexText( DrawObject.LEFT_JUSTIFY,
+                                "<y=2>Summary" );
+                    }
+                    _plotWindow.add2DPlot( framePlot );                    
+                    x += xStep;
+                }
+                //  The "cross" summary plot is only drawn if both time and channel summary have
+                //  been selected.
+                if ( _showChannelSummary.isSelected() ) {
+                    //  Draw a "background" plot below each plot.
+                    _plotWindow.add2DPlot( newBackgroundPlot( x, y, xSize, ySize ) );
+                    //  Use the latest...
+                    IncPlot lagPlot = _crossSummaryPlots.lagPlots.peekLast();
+                    IncPlot ampPlot = _crossSummaryPlots.ampPlots.peekLast();
+                    IncPlot phasePlot = _crossSummaryPlots.phasePlots.peekLast();
+                    //  ...unless the user has used the mouse wheel to change that.
+                    if ( !_lockToLatest ) {
+                        int index = 0;
+                        Iterator<IncPlot> ampIter = _crossSummaryPlots.ampPlots.iterator();
+                        Iterator<IncPlot> phaseIter = _crossSummaryPlots.phasePlots.iterator();
+                        for ( Iterator<IncPlot> lagIter = _crossSummaryPlots.lagPlots.iterator(); lagIter.hasNext() && index <= _currentPlotIndex; ) {
+                            lagPlot = lagIter.next();
+                            ampPlot = ampIter.next();
+                            phasePlot = phaseIter.next();
+                            ++index;
+                        }
+                    }
+                    boolean drawXLabels = false;
+                    boolean drawYLabels = false;
+                    //  Add the data plots.
+                    if ( _showLag.isSelected() ) {
+                        drawXLabels = false;
+                        drawYLabels = false;
+                        _plotWindow.add2DPlot( newLagPlot( lagPlot, x, y, xSize, ySize,
+                                lagMin, lagMax, lagLimitsSet, drawXLabels, drawYLabels ) );
+                    }
+                    if ( _showAmp.isSelected() ) {
+                        drawXLabels = false;
+                        drawYLabels = true;
+                        _plotWindow.add2DPlot( newAmpPlot( ampPlot, x, y, xSize, ySize,
+                                ampMin, ampMax, ampLimitsSet, drawXLabels, drawYLabels ) );
+                    }
+                    if ( _showPhase.isSelected() ) {
+                        drawXLabels = false;
+                        drawYLabels = false;
+                        _plotWindow.add2DPlot( newPhasePlot( phasePlot, x, y, xSize, ySize,
+                                -180.0, 180.0, true, drawXLabels, drawYLabels ) );
+                    }
+                    //  Add a frame to the plot.
+                    Plot2DObject framePlot = newFramePlot( x, y, xSize, ySize );
+                    if ( y == yStart ) {
+                        DrawObject newObject = framePlot.newExtraItem( 0.0, Plot2DObject.ExtraItem.BY_FRAME, 
+                                30.0, Plot2DObject.ExtraItem.BY_PIXEL );
+                        newObject.complexText( DrawObject.LEFT_JUSTIFY,
+                                "<y=1>Channel" );
+                        newObject = framePlot.newExtraItem( 0.0, Plot2DObject.ExtraItem.BY_FRAME, 
+                                30.0, Plot2DObject.ExtraItem.BY_PIXEL );
+                        newObject.complexText( DrawObject.LEFT_JUSTIFY,
+                                "<y=2>Summary" );
+                    }
+                    _plotWindow.add2DPlot( framePlot );                    
+                }
+            }
+
+            _plotWindow.updateUI();
+        }
+    }
+        
+    /*
+     * This function returns a "background" plot, which can is drawn behind data on all
+     * of our plots.
+     */
+    public Plot2DObject newBackgroundPlot( double xStart, double yStart, double xSize, double ySize ) {
+        Plot2DObject backgroundPlot = new Plot2DObject();
+        backgroundPlot.backgroundColor( Color.WHITE );
+        backgroundPlot.frame( xStart, yStart, xSize, ySize );
+        backgroundPlot.resizeBasedOnWindow( _plotWindow.getWidth(), _plotWindow.getHeight() );
+        backgroundPlot.drawBackground( true );
+        backgroundPlot.drawFrame( false );
+        return backgroundPlot;
+    }
+    
+    /*
+     * Return a "frame" plot.  This is drawn on top of any data.
+     */
+    public Plot2DObject newFramePlot( double xStart, double yStart, double xSize, double ySize ) {
+        Plot2DObject framePlot = new Plot2DObject();
+        framePlot.frameColor( Color.DARK_GRAY );
+        framePlot.frame( xStart, yStart, xSize, ySize );
+        framePlot.resizeBasedOnWindow( _plotWindow.getWidth(), _plotWindow.getHeight() );
+        framePlot.drawBackground( false );
+        framePlot.drawFrame( true );
+        _plotWindow.add2DPlot( framePlot );
+        return framePlot;
+    }
+    
+    /*
+     * Draw a plot showing lag data.  The plot itself already exists (it is the first
+     * argument), but adjustments are made to the size, labels and other things.
+     */
+    public Plot2DObject newLagPlot( IncPlot incPlot, double xStart, double yStart, double xSize, double ySize,
+            double lagMin, double lagMax, boolean lagLimitsSet, boolean drawXLabels, boolean drawYLabels ) {
+        Plot2DObject thisPlot = incPlot.plot;
+        if ( thisPlot != null ) {
+            thisPlot.frame( xStart, yStart, xSize, ySize );
+            thisPlot.resizeBasedOnWindow( _plotWindow.getWidth(), _plotWindow.getHeight() );
+            thisPlot.deleteLabels();
+            incPlot.curve.color( Color.BLUE );
+            double useMin = incPlot.min;
+            double useMax = incPlot.max;
+            if ( lagLimitsSet ) {
+                useMin = lagMin;
+                useMax = lagMax;
+            }
+            thisPlot.limits( (double)(-incPlot.nChannels), (double)(incPlot.nChannels - 1), useMin, useMax );
+            thisPlot.drawBackground( false );
+            thisPlot.drawFrame( false );
+//            //  Add product information to this plot.
+//            plotProductInformation( incPlot, -0.14 / xSize );
+            //  If both the phase and amplitude are included, shrink this plot to 2/3 height.
+            if ( _showPhase.isSelected() && _showAmp.isSelected() ) {
+                useMax = useMin + 3.0 * ( useMax - useMin ) / 2.0;
+                thisPlot.limits( (double)(-incPlot.nChannels), (double)(incPlot.nChannels - 1), useMin, useMax );
+            }
+            //  If phase is shown, shrink to half height.
+            else if ( _showPhase.isSelected() ) {
+                useMax = useMin + 2.0 * ( useMax - useMin );
+                thisPlot.limits( (double)(-incPlot.nChannels), (double)(incPlot.nChannels - 1), useMin, useMax );
+            }
+            //  Add X and Y labels, as desired.
+//            if ( drawXLabels )
+//                thisPlot.addLabels( Plot2DObject.X_AXIS, 10.0 );
+            //  Labels on the Y axis, if desired.
+            if ( drawYLabels ) {
+                double stepSize = Plot2DObject.stepSize( lagMax - useMin, 2, 5 );
+                thisPlot.addLabels( Plot2DObject.Y_AXIS, null, lagMax, stepSize,
+                        Color.BLUE, null, -5.0, -10.0,
+                        Plot2DObject.RIGHT_JUSTIFY, null, false, false );
+                thisPlot.yTitle( "Lag", Plot2DObject.CENTER_JUSTIFY );
+                thisPlot.yTitleXPos( -60, false );
+                thisPlot.yTitleYPos( -0.5 * ( lagMax - useMin ) / ( useMax - useMin ), true );
+                thisPlot.yTitleRotate( -Math.PI / 2.0 );
+                thisPlot.yTitleColor( Color.BLUE, true );
+            }
+            if ( _showDelay.isSelected() ) {
+                thisPlot.addLabels( Plot2DObject.X_AXIS, incPlot.maxChannel,
+                        incPlot.maxChannel + .1, 1.0, Color.MAGENTA, 
+                        String.format( "<size=0.8> delay = %.4f", incPlot.delay ),
+                        30.0, 0.0, Plot2DObject.LEFT_JUSTIFY,
+                        useMax, false, 
+                        false );
             }
         }
-                
-        _plotWindow.updateUI();
+        return thisPlot;
+    }
+    
+    /*
+     * Draw an amplitude plot.
+     */
+    public Plot2DObject newAmpPlot( IncPlot incPlot, double xStart, double yStart, double xSize, double ySize,
+            double ampMin, double ampMax, boolean ampLimitsSet, boolean drawXLabels, boolean drawYLabels ) {
+        Plot2DObject thisPlot = incPlot.plot;
+        if ( thisPlot != null ) {
+            thisPlot.frame( xStart, yStart, xSize, ySize );
+            thisPlot.resizeBasedOnWindow( _plotWindow.getWidth(), _plotWindow.getHeight() );
+            thisPlot.deleteLabels();
+            _plotWindow.add2DPlot( thisPlot );
+            incPlot.curve.color( Color.RED );
+            thisPlot.drawBackground( false );
+            thisPlot.drawFrame( false );
+            //  Set limits to match the data.  These might be changed below.
+            double plotYMin = incPlot.min;
+            double plotYMax = incPlot.max;
+            if ( ampLimitsSet ) {
+                plotYMin = ampMin;
+                plotYMax = ampMax;
+            }
+            thisPlot.limits( 0.0, (double)(incPlot.nChannels - 1), plotYMin, plotYMax );
+            //  If there are other things being plotted, set the amp limits such that the
+            //  curve covers only the lower half of the plot.
+            if ( _showLag.isSelected() || _showPhase.isSelected() ) {
+                plotYMax = 2.0 * plotYMax;
+                thisPlot.limits( 0.0, (double)(incPlot.nChannels - 1), plotYMin, plotYMax );
+            }
+            //  If the lags weren't plotted, do these things...
+            if ( !_showLag.isSelected() ) {
+                //  Draw X labels (on the last plot).
+//                if ( drawXLabels )
+//                    thisPlot.addLabels( Plot2DObject.X_AXIS, 10.0 ); 
+                //  Add product information to this plot.
+//                plotProductInformation( incPlot, -0.14 / xSize );
+            }
+            if ( drawYLabels ) {
+            //  Find a reasonable step size for the amplitude.
+                double stepSize = Plot2DObject.stepSize( plotYMax - plotYMin, 2, 5 );
+                thisPlot.addLabels( Plot2DObject.Y_AXIS, plotYMin, plotYMax, stepSize,
+                        Color.RED, null, 5.0, 10.0,
+                        Plot2DObject.LEFT_JUSTIFY, (double)(incPlot.nChannels - 1), false, false );
+                thisPlot.yTitle( "Amplitude", Plot2DObject.CENTER_JUSTIFY );
+                thisPlot.yTitleXPos( 1.35, true );
+                thisPlot.yTitleYPos( -0.5, true );
+                thisPlot.yTitleRotate( -Math.PI / 2.0 );
+                thisPlot.yTitleColor( Color.RED, true );
+            }
+        }
+        return thisPlot;
+    }
+    
+    /*
+     * Draw a plot of phase data.
+     */
+    public Plot2DObject newPhasePlot( IncPlot incPlot, double xStart, double yStart, double xSize, double ySize,
+            double phaseMin, double phaseMax, boolean phaseLimitsSet, boolean drawXLabels, boolean drawYLabels ) {
+        Plot2DObject thisPlot = incPlot.plot;
+        if ( thisPlot != null ) {
+            thisPlot.frame( xStart, yStart, xSize, ySize );
+            thisPlot.resizeBasedOnWindow( _plotWindow.getWidth(), _plotWindow.getHeight() );
+            thisPlot.deleteLabels();
+            _plotWindow.add2DPlot( thisPlot );
+            incPlot.track.color( Color.BLACK );
+            thisPlot.drawBackground( false );
+            thisPlot.drawFrame( false );
+            //  Set limits for phase...-180 to 180.
+            thisPlot.limits( 0.0, (double)(incPlot.nChannels - 1), -180.0, 180.0 );
+            //  If the lag or amplitude has already been drawn, shut off the background and
+            //  squish this plot into the top half of the plotting area.
+            if ( _showLag.isSelected() || _showAmp.isSelected() ) {
+                thisPlot.frame( xStart, yStart, xSize, ySize / 2.0 );
+                thisPlot.resizeBasedOnWindow( _plotWindow.getWidth(), _plotWindow.getHeight() );
+            }
+            //  These are some things we do if this is the ONLY plot.
+            if ( !_showLag.isSelected() && !_showAmp.isSelected() ) {
+                if ( drawXLabels )
+                    thisPlot.addLabels( Plot2DObject.X_AXIS, 10.0 ); 
+                //  Add product information to this plot.
+//                plotProductInformation( incPlot, -0.14 / xSize );
+            }
+            if ( drawYLabels ) {
+                thisPlot.addLabels( Plot2DObject.Y_AXIS, 180.0 );
+                thisPlot.yTitle( "Phase", Plot2DObject.CENTER_JUSTIFY );
+                thisPlot.yTitleXPos( -40, false );
+                thisPlot.yTitleYPos( -0.5, true );
+                thisPlot.yTitleRotate( -Math.PI / 2.0 );
+            }
+        }
+        return thisPlot;
+    }
+        
+    /*
+     * Add information about the product (channel) to this plot.  This information
+     * appears above the plot, presumably because it is the first in a column.
+     */
+    void plotChannelInformation( Plot2DObject thisPlot, int index ) {
+        //  Find the product we are interested in.
+        Product product = null;
+        for ( Iterator<Product> iter = _products.iterator(); iter.hasNext() && product == null; ) {
+            Product thisProduct = iter.next();
+            if ( thisProduct.index == index )
+                product = thisProduct;
+        }
+        if ( product != null ) {
+            DrawObject newObject = thisPlot.newExtraItem( 0.0, Plot2DObject.ExtraItem.BY_FRAME, 
+                    30.0, Plot2DObject.ExtraItem.BY_PIXEL );
+            newObject.complexText( DrawObject.LEFT_JUSTIFY,
+                    "<y=1>" + product.baseline.telescope1 + "-" + product.baseline.telescope2 );
+            newObject = thisPlot.newExtraItem( 0.0, Plot2DObject.ExtraItem.BY_FRAME, 
+                    30.0, Plot2DObject.ExtraItem.BY_PIXEL );
+            newObject.complexText( DrawObject.LEFT_JUSTIFY,
+                    "<y=2>" + product.frequency + " MHz\n" );
+        }
     }
     
     /*
@@ -1414,7 +2110,7 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
             }
             if ( match ) {
                 //  Now the frequency.  This is a double value, but stored as a string (the button label).  For
-                //  out purposes, this is fine.
+                //  our purposes, this is fine.
                 match = false;
                 for ( Iterator<JToggleButton> iter2 = _frequenciesGrid.iterator(); iter2.hasNext() && !match; ) {
                     JToggleButton thisButton = iter2.next();
@@ -1512,10 +2208,16 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
         
         //  Set up an array to hold the plots of all product data results.
         //  This *should* clean out all existing plots if the garbage collector works.
-        _productPlots = new ProductPlotsList();
+        synchronized ( _plotDataLock ) {
+            _productPlots = new ProductPlotsList();
+            _timeSummaryPlots = new ProductPlotsList();
+            _channelSummaryPlots = new ProductPlots( 0 );
+            _crossSummaryPlots = new ProductPlots( 0 );
+        }
         
         //  Initiate the start of requests.
         sendPacket( START_PRODUCT_REQUESTS, 0, null );
+        _productRequests = 0;
         
         //  Send requests for each data product.
         for ( Iterator<Product> iter = _products.iterator(); iter.hasNext(); ) {
@@ -1538,6 +2240,7 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
                             _out.writeInt( thisProduct.offset );
                             //  And the number of frequency channels.
                             _out.writeInt( thisProduct.freqChannels );
+                            ++_productRequests;
                         } catch ( java.io.IOException e ) {
                             _connected = false;
                             _connectionLight.alert();
@@ -1610,7 +2313,6 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
                     _telescope2Grid.add( newButton );
                 }
                 if ( telescopes.addUnique( newProduct.baseline.telescope2 ) ) {
-                    System.out.println( "adding " + newProduct.baseline.telescope2 + " to the reference grid" );
                     JToggleButton newButton = new JToggleButton( newProduct.baseline.telescope2 );
                     newButton.addActionListener( new ActionListener() {
                         public void actionPerformed( ActionEvent evt ) {
@@ -1742,7 +2444,6 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
      * terminate connections and stop collecting data.
      */
     protected void exitOperation() {
-        System.out.println( "window close operation" );
         _connectionThread.closeConnection();
         try { Thread.sleep( 1000 ); } catch ( Exception e ) {}
     }
@@ -1812,7 +2513,7 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
     protected boolean _allObjectsBuilt;
     protected JMenuBar _menuBar;
     protected NodeBrowserScrollPane _scrollPane;
-    protected IndexedPanel _plotPanel;
+    protected PlotPanel _plotPanel;
     protected IndexedPanel _connectionPanel;
     protected IndexedPanel _dataPanel;
     protected SaneTextField _monitorHost;
@@ -1841,6 +2542,9 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
     protected IndexedPanel _messagePanel;
     protected MessageDisplayPanel _messages;
     protected int _usingPort;
+    
+    protected String _jobName;
+    protected String _obsCode;
      
     //  These items are used to store "product" information collected from the monitor server.
     //  They describe the types of data we can download from the server.
@@ -1897,10 +2601,17 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
             nChannels = newChannels;
         }
         public void curve( double x[], double y[] ) {
+            xData = x;
+            yData = y;
+            nData = x.length;
             curve = new Curve2D( x, y );
             plot.addCurve( curve );
         }
         public void track( double x[], double y[], DrawObject obj ) {
+            xData = x;
+            yData = y;
+            nData = x.length;
+            trackObject = obj;
             track = new Track2D();
             if ( obj != null )
                 track.draw( false );
@@ -1921,18 +2632,57 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
         public double max;
         public double delay;
         public double snr;
-        public int maxChannel;
+        public double maxChannel;
+        public double xData[];
+        public double yData[];
+        public int nData;
+        public DrawObject trackObject;
+    }
+    protected class IncArray extends ArrayDeque<IncPlot> {
+        //  This function creates a new plot that is the mean of the current data
+        //  and all data in the former plots, if there are any.
+        public void meanAdd( int iProduct, int nChannels, int timeStamp, double x[], double y[],
+                DrawObject trackObject, Double maxChannel, Double delay ) {
+            IncPlot newPlot = new IncPlot( iProduct, nChannels, timeStamp );
+            if ( this.size() > 0 ) {  //  There is a former plot.
+                IncPlot lastPlot = this.peekLast();
+                double n = (double)this.size();
+                double ny[] = new double[lastPlot.nData];
+                for ( int i = 0; i < lastPlot.nData; ++i ) {
+                    ny[i] = ( n * lastPlot.yData[i] + y[i] ) / ( n + 1 );
+                }
+                if ( trackObject == null )
+                    newPlot.curve( x, ny );
+                else
+                    newPlot.track( x, ny, trackObject );
+                if ( maxChannel != null ) {
+                    newPlot.maxChannel = ( n * lastPlot.maxChannel + maxChannel ) / ( n + 1 );
+                    newPlot.delay = ( n * lastPlot.delay + delay ) / ( n + 1 );;
+                }
+            }
+            else {  // This is the first plot.
+                if ( trackObject == null )
+                    newPlot.curve( x, y ); 
+                else
+                    newPlot.track( x, y, trackObject );
+                if ( maxChannel != null ) {
+                    newPlot.maxChannel = maxChannel;
+                    newPlot.delay = delay;
+                }
+            }
+            this.add( newPlot );
+        }
     }
     protected class ProductPlots {
         public ProductPlots( int newIndex ) {
-            lagPlots = new ArrayDeque<IncPlot>();
-            ampPlots = new ArrayDeque<IncPlot>();
-            phasePlots = new ArrayDeque<IncPlot>();
+            lagPlots = new IncArray();
+            ampPlots = new IncArray();
+            phasePlots = new IncArray();
             index = newIndex;
         }
-        public ArrayDeque<IncPlot> lagPlots;
-        public ArrayDeque<IncPlot> ampPlots;
-        public ArrayDeque<IncPlot> phasePlots;
+        public IncArray lagPlots;
+        public IncArray ampPlots;
+        public IncArray phasePlots;
         public int index;
     }
     protected class ProductPlotsList extends ArrayDeque<ProductPlots> {
@@ -1955,18 +2705,36 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
         }
     }
     protected ProductPlotsList _productPlots;
+    protected ProductPlotsList _timeSummaryPlots;
+    protected ProductPlots _crossSummaryPlots;
+    protected ProductPlots _channelSummaryPlots;
+    protected IncPlot _summaryLagPlot;
+    protected IncPlot _summaryPhasePlot;
+    protected IncPlot _summaryAmpPlot;
+    protected Integer _numPlots;
+    protected int _productRequests;
+    protected boolean _lockToLatest;
+    protected int _currentPlotIndex;
+    protected Object _plotDataLock;
     JButton _showButton;
     JPopupMenu _showMenu;
     JCheckBoxMenuItem _showLatest;
     JCheckBoxMenuItem _showAll;
-    JCheckBoxMenuItem _showSummary;
-    JCheckBoxMenuItem _showHistory;
+    JCheckBoxMenuItem _showTimeSummary;
+    JCheckBoxMenuItem _showChannelSummary;
     JCheckBoxMenuItem _showAmp;
     JCheckBoxMenuItem _showPhase;
     JCheckBoxMenuItem _showLag;
     JCheckBoxMenuItem _showDelay;
     
     JFileChooser _fileChooser;
+    
+    protected String _scanIdentifier;
+    protected String _scanStartTime;
+    protected String _scanEndTime;
+    protected String _source;
+    protected String _sourceRA;
+    protected String _sourceDEC;
     
     public class ExtendedDataInputStream extends DataInputStream {
         public ExtendedDataInputStream( InputStream in ) {

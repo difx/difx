@@ -1322,6 +1322,13 @@ public class Plot2DObject extends DrawObject {
     }
     
     /*
+     * Get rid of any data items (tracks, curves, etc).
+     */
+    public void clearData() {
+        _dataHolder.clear();
+    }
+    
+    /*
      * Create a new "extra" item object with position specifications.  The DrawObject
      * created is returned.
      */

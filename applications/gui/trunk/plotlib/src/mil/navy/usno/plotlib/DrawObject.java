@@ -438,7 +438,7 @@ public class DrawObject extends ArrayDeque<DrawObject> {
 
             //  Apply characteristics changes to the new graphics context.
             if ( _scaleSet )
-                str += _xScale + " " + _yScale + " y scale\n";
+                str += psd( _xScale ) + " " + psd( _yScale ) + " y sc\n";
             if ( _unscaled ) {
                 //  This is going to be icky...find the current scale and scale by the inverse of it.
                 //System.out.println( "before: " + _drawGraphics.getTransform() );
@@ -447,25 +447,25 @@ public class DrawObject extends ArrayDeque<DrawObject> {
                 //System.out.println( "after:  " + _drawGraphics.getTransform() );
             }
             if ( _translateSet )
-                str += _xOff + " " + _yOff + " t\n";
+                str += psd( _xOff ) + " " + psd( _yOff ) + " t\n";
             if ( _rotateSet )
-                str += -180.0 * _rotate / Math.PI + " rotate\n";
+                str += psd( -180.0 * _rotate / Math.PI ) + " rotate\n";
             if ( _colorSet ) {
                 //if ( _color != null ) {
                     double r = (double)_color.getRed() / 255.0;
                     double g = (double)_color.getGreen() / 255.0;
                     double b = (double)_color.getBlue() / 255.0;
-                    str += r + " " + g + " " + b + " setrgbcolor\n";
+                    str += psd( r ) + " " + psd( g ) + " " + psd( b ) + " rgb\n";
                 //}
             }
             if ( _clipSet ) {
                 Rectangle2D r = _clipShape.getBounds2D();
-                str += "newpath\n";
+                str += "n\n";
                 str += r.getX() + " " + r.getY() + " m\n";
                 str += r.getX() + r.getWidth() + " " + r.getY() + " l\n";
                 str += r.getX() + r.getWidth() + " " + ( r.getY() + r.getHeight() ) + " l\n";
                 str += r.getX() + " " + ( r.getY() + r.getHeight() ) + " l\n";
-                str += "closepath clip\n";
+                str += "c clip\n";
             }
             if ( _fontSet ) {
                 //  Interpret the font name...
@@ -495,13 +495,13 @@ public class DrawObject extends ArrayDeque<DrawObject> {
 //                _drawGraphics.setFont( new Font( font, fontStyle, (int)fontSize ) );
                 if ( _fontY != null ) {
                     if ( currentPath == null || currentPath.getCurrentPoint() == null )
-                        str += "newpath 0 0 m\n";
+                        str += "n 0 0 m\n";
                     //else
-                        str += "0 " + printParameters.fontSize * _fontY.doubleValue() + " rm\n";
+                        str += "0 " + psd( printParameters.fontSize * _fontY.doubleValue() ) + " rm\n";
                 }
             }
             if ( _lineWidthSet ) {
-                str += _lineWidth + " setlinewidth\n";
+                str += psd( _lineWidth ) + " setlinewidth\n";
             }
             if ( _lineCapSet ) {
                 switch ( _lineCap ) {
@@ -560,11 +560,11 @@ public class DrawObject extends ArrayDeque<DrawObject> {
                 case TEXT:
                     //  Draw if we are drawing...
                     if ( !measureOnly )
-                        str += _x1 + " " + _y1 + " m (" + textString + ") show\n";
+                        str += psd( _x1 ) + " " + psd( _y1 ) + " m (" + textString + ") w\n";
                     //  Measure if we are measuring.  Pop off the existing offset and put this new offset
                     //  in its place.
                     if ( useOffset )
-                        str += "pop (" + textString + ") stringwidth pop\n";
+                        str += "p (" + textString + ") sw p\n";
                     break;
                     
                 //  This text function draws text at the "current point", which may
@@ -573,11 +573,11 @@ public class DrawObject extends ArrayDeque<DrawObject> {
                 case FLOATING_TEXT:
                     //  Draw using the current point if it exists, 0,0 if not.
                     if ( !measureOnly ) {
-                        str += "(" + textString + ") show\n";
+                        str += "(" + textString + ") w\n";
                     }
                     //  Measure the width like a normal string
                     if ( useOffset )
-                        str += "pop (" + textString + ") stringwidth pop\n";
+                        str += "p (" + textString + ") sw p\n";
                     break;
 
                 //  A COMPLEX_TEXT object simply measures and justifies child objects
@@ -607,73 +607,73 @@ public class DrawObject extends ArrayDeque<DrawObject> {
                         //  "Roll" the stack by 3 to give use N, N, T.
                         str += "3 1 roll\n";
                         //  Perform and add to get N, N+T and then an exchange to get T+N, N.
-                        str += "add exch\n";
+                        str += "+ exch\n";
                     }
                     //  Pop the last "new" width off the stack as we don't need it anymore.
-                    str += "pop\n";
+                    str += "p\n";
                     //  Change our current translation to match the justification using the total
                     //  offset.
                     if ( _justify == this.RIGHT_JUSTIFY )
-                        str += "-1 mul 0 t\n";
+                        str += "-1 x 0 t\n";
                     else if ( _justify == this.CENTER_JUSTIFY )
-                        str += "-0.5 mul 0 t\n";
+                        str += "-0.5 x 0 t\n";
                     //  Create a new current path.  We use the current path to locate text.
                     currentPath = new GeneralPath();
                     currentPath.moveTo( 0.0, 0.0 );
-                    str += "newpath\n";
+                    str += "n\n";
                     str += "0 0 m\n";
                     break;
 
                 //  Many of the "draw" objects simply draw a pre-specified shape.
                 case DRAWRECT:
                     if ( _shape != null ) {
-                        str += "newpath\n";
+                        str += "n\n";
                         int count = 0;
                         for ( PathIterator iter = _shape.getPathIterator( null ); !iter.isDone(); iter.next() ) {
                             double[] doubles = new double[2];
                             switch ( iter.currentSegment( doubles ) ) {
                                 case PathIterator.SEG_MOVETO:
-                                    str += doubles[0] + " " + doubles[1] + " m\n";
+                                    str += psd( doubles[0] ) + " " + psd( doubles[1] ) + " m\n";
                                     break;
                                 case PathIterator.SEG_LINETO:
                                     if ( count == 0 )
-                                        str += doubles[0] + " " + doubles[1] + " m\n";
+                                        str += psd( doubles[0] ) + " " + psd( doubles[1] ) + " m\n";
                                     else
-                                        str += doubles[0] + " " + doubles[1] + " l\n";
+                                        str += psd( doubles[0] ) + " " + psd( doubles[1] ) + " l\n";
                                     break;
                                 case PathIterator.SEG_CLOSE:
-                                    str += "closepath\n";
+                                    str += "c\n";
                                     break;
                             }
                             ++count;
                         }
-                        str += "stroke\n";
+                        str += "k\n";
                     }
                     break;
                 case DRAWLINE:
                 case DRAWPOLY:
                     if ( _shape != null ) {
-                        str += "newpath\n";
+                        str += "n\n";
                         int count = 0;
                         for ( PathIterator iter = _shape.getPathIterator( null ); !iter.isDone(); iter.next() ) {
                             double[] doubles = new double[2];
                             switch ( iter.currentSegment( doubles ) ) {
                                 case PathIterator.SEG_MOVETO:
-                                    str += doubles[0] + " " + doubles[1] + " m\n";
+                                    str += psd( doubles[0] ) + " " + psd( doubles[1] ) + " m\n";
                                     break;
                                 case PathIterator.SEG_LINETO:
                                     if ( count == 0 )
-                                        str += doubles[0] + " " + doubles[1] + " m\n";
+                                        str += psd( doubles[0] ) + " " + psd( doubles[1] ) + " m\n";
                                     else
-                                        str += doubles[0] + " " + doubles[1] + " l\n";
+                                        str += psd( doubles[0] ) + " " + psd( doubles[1] ) + " l\n";
                                     break;
                                 case PathIterator.SEG_CLOSE:
-                                    str += doubles[0] + " " + doubles[1] + " l closepath\n";
+                                    str += psd( doubles[0] ) + " " + psd( doubles[1] ) + " l c\n";
                                     break;
                             }
                             ++count;
                         }
-                        str += "stroke\n";
+                        str += "k\n";
                     }
                     break;
 
@@ -681,22 +681,22 @@ public class DrawObject extends ArrayDeque<DrawObject> {
                 case FILLRECT:
                 case FILLPOLY:
                     if ( _shape != null ) {
-                        str += "newpath\n";
+                        str += "n\n";
                         int count = 0;
                         for ( PathIterator iter = _shape.getPathIterator( null ); !iter.isDone(); iter.next() ) {
                             double[] doubles = new double[2];
                             switch ( iter.currentSegment( doubles ) ) {
                                 case PathIterator.SEG_MOVETO:
-                                    str += doubles[0] + " " + doubles[1] + " m\n";
+                                    str += psd( doubles[0] ) + " " + psd( doubles[1] ) + " m\n";
                                     break;
                                 case PathIterator.SEG_LINETO:
                                     if ( count == 0 )
-                                        str += doubles[0] + " " + doubles[1] + " m\n";
+                                        str += psd( doubles[0] ) + " " + psd( doubles[1] ) + " m\n";
                                     else
-                                        str += doubles[0] + " " + doubles[1] + " l\n";
+                                        str += psd( doubles[0] ) + " " + psd( doubles[1] ) + " l\n";
                                     break;
                                 case PathIterator.SEG_CLOSE:
-                                    str += doubles[0] + " " + doubles[1] + " l closepath\n";
+                                    str += psd( doubles[0] ) + " " + psd( doubles[1] ) + " l c\n";
                                     break;
                             }
                             ++count;
@@ -708,13 +708,13 @@ public class DrawObject extends ArrayDeque<DrawObject> {
                 //  Start a completely new path.
                 case NEWPATH:
                     currentPath = new GeneralPath();
-                    str += "newpath\n";
+                    str += "n\n";
                     break;
 
                 //  Draw a line through the current path.
                 case STROKEPATH:
                     if ( currentPath != null )
-                        str += "stroke\n";
+                        str += "k\n";
                     break;
 
                 //  Fill the current path.
@@ -726,31 +726,31 @@ public class DrawObject extends ArrayDeque<DrawObject> {
                 //  Close the current path.
                 case CLOSEPATH:
                     if ( currentPath != null )
-                        str += "closepath\n";
+                        str += "c\n";
                     break;
 
                 //  Force the start of a new path at the given point.
                 case STARTPATH:
                     currentPath = new GeneralPath();
                     currentPath.moveTo( _x1, _y1 );
-                    str += "newpath\n";
-                    str += _x1 + " " + _y1 + " m\n";
+                    str += "n\n";
+                    str += psd( _x1 ) + " " + psd( _y1 ) + " m\n";
                     break;
                     
                 //  Add a vertex to the current path.  If there is no current path,
                 //  start one.
                 case VERTEX:
                     if ( currentPath == null ) {
-                        str += "newpath\n";
+                        str += "n\n";
                         currentPath = new GeneralPath();
                     }
                     if ( currentPath.getCurrentPoint() == null ) {
                         currentPath.moveTo( _x1, _y1 );
-                        str += _x1 + " " + _y1 + " m\n";
+                        str += psd( _x1 ) + " " + psd( _y1 ) + " m\n";
                     }
                     else {
                         currentPath.lineTo( _x1, _y1 );
-                        str += _x1 + " " + _y1 + " l\n";
+                        str += psd( _x1 ) + " " + psd( _y1 ) + " l\n";
                     }
                     break;
                     
@@ -782,7 +782,7 @@ public class DrawObject extends ArrayDeque<DrawObject> {
                 if ( useOffset ) {
                     double newOffsets[] = new double[2];
                     str += iter.next().postScriptDraw( printParameters, currentPath, useOffset, measureOnly );
-                    str += "add\n";
+                    str += "+\n";
                 }
                 else
                     str += iter.next().postScriptDraw( printParameters, currentPath, false, measureOnly );
@@ -798,6 +798,17 @@ public class DrawObject extends ArrayDeque<DrawObject> {
         
         return str;
 
+    }
+    
+    /*
+     * Create an appropriate string out of a double precision number for use in the PostScript
+     * output.  PostScript units are 72/inch, so unscaled numbers are probably fine with a single
+     * digit of precision.  However if you start scaling, all bets are off.  At the moment this
+     * is simplified to include only 3 digits of precision, but in the future a more sophisticated
+     * solution should be implemented.
+     */
+    public String psd( double f ) {
+        return String.format( "%.3f", f );
     }
     
     public void scale( double newXScale, double newYScale ) {

@@ -1495,7 +1495,7 @@ public class SystemSettings extends JFrame {
         _difxControlAddress.setText( "guiServer.hostname" );
         _difxControlPort.intValue( 50200 );
         _difxTransferPort.intValue( 50300 );
-        _maxTransferPorts.intValue( 10 );
+        _maxTransferPorts.intValue( 100 );
         maxTransferPorts();
         _difxMonitorPort.intValue( 52300 );
         _difxMonitorHost.setText( "guiServer.hostname" );

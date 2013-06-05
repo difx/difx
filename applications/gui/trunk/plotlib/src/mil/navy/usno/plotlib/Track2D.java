@@ -41,7 +41,7 @@ public class Track2D extends DrawObject {
         //  The draw at vertex will be executed last to draw points at each vertex.
         _drawAtVertices = new DrawObject();
         this.add( _drawAtVertices );
-        _vertexObject = new DrawObject();
+        _vertexObject = null;
         _saveXScale = 1.0;
         _saveYScale = 1.0;
         _types = new ArrayDeque<Integer>();
@@ -83,10 +83,12 @@ public class Track2D extends DrawObject {
         _vertexes.add( newData );
         //  Yet another list we keep track of...DrawObject types that are drawn at each
         //  point.
-        DrawObject vertexDraw = new DrawObject();
-        vertexDraw.translate( newData._x1, newData._x2 );
-        vertexDraw.add( _vertexObject );
-        _drawAtVertices.add( vertexDraw );
+        if ( _vertexObject != null ) {
+            DrawObject vertexDraw = new DrawObject();
+            vertexDraw.translate( newData._x1, newData._x2 );
+            vertexDraw.add( _vertexObject );
+            _drawAtVertices.add( vertexDraw );
+        }
         _types.add( new Integer( type ) );
         //  Pop off the first value if we have exceded the size limit.
         if ( _sizeLimit > 0 ) {
@@ -176,7 +178,7 @@ public class Track2D extends DrawObject {
      * Draw a specific object at each vertex.  Use null to shut this off.
      */
     public void drawObject( DrawObject newObj ) {
-        _vertexObject.add( newObj );
+        _vertexObject = newObj;
     }
     
     /*
@@ -191,45 +193,31 @@ public class Track2D extends DrawObject {
      * original data.
      */
     synchronized public void dataChange() {
-        //synchronized( _data ) {
-            //synchronized( _types ) {
-                //synchronized( _vertexes ) {
-                    Iterator<DrawObject> dataIter = _data.iterator();
-                    Iterator<Integer> typeIter = _types.iterator();
-                    DrawObject lastVertex = null;
-                    Iterator<DrawObject> vertexObjectIter = _drawAtVertices.iterator();
-                    for ( Iterator<DrawObject> iter = _vertexes.iterator(); iter.hasNext(); ) {
-                        //try {
-                            DrawObject data = dataIter.next();
-                            DrawObject thisVertex = iter.next();
-                            Integer type = typeIter.next();
-                            //  We also need to rescale the objects that are drawn at vertices.
-                            DrawObject vertexObject = null;
-                            if ( vertexObjectIter.hasNext() )
-                                vertexObject = vertexObjectIter.next();
-                            //  Rescale based on the type of point.
-                            if ( type == this.RELATIVE_POINT && lastVertex != null ) {
-                                thisVertex.vertex( lastVertex._x1 + data._x1, lastVertex._y1 + data._y1 );
-                                if ( vertexObject != null )
-                                    vertexObject.translate( lastVertex._x1 + data._x1, lastVertex._y1 + data._y1 );
-                            }
-                            else {
-                                thisVertex.vertex( _saveXScale * data._x1, _saveYScale * data._y1 );
-                                if ( vertexObject != null )
-                                    vertexObject.translate( _saveXScale * data._x1, _saveYScale * data._y1 );
-                            }
-                            lastVertex = thisVertex;
-                        //}
-                        //catch ( java.util.NoSuchElementException e ) {
-                        //}
-                        //catch ( java.util.ConcurrentModificationException e ) {
-                            //  No idea why this occasionally happens...have I failed to wrap
-                            //  some operation in a "synchronized()"??
-                        //}
-                    }
-                //}
-            //}
-        //}
+        Iterator<DrawObject> dataIter = _data.iterator();
+        Iterator<Integer> typeIter = _types.iterator();
+        DrawObject lastVertex = null;
+        Iterator<DrawObject> vertexObjectIter = _drawAtVertices.iterator();
+        for ( Iterator<DrawObject> iter = _vertexes.iterator(); iter.hasNext(); ) {
+            DrawObject data = dataIter.next();
+            DrawObject thisVertex = iter.next();
+            Integer type = typeIter.next();
+            //  We also need to rescale the objects that are drawn at vertices.
+            DrawObject vertexObject = null;
+            if ( vertexObjectIter.hasNext() )
+                vertexObject = vertexObjectIter.next();
+            //  Rescale based on the type of point.
+            if ( type == this.RELATIVE_POINT && lastVertex != null ) {
+                thisVertex.vertex( lastVertex._x1 + data._x1, lastVertex._y1 + data._y1 );
+                if ( vertexObject != null )
+                    vertexObject.translate( lastVertex._x1 + data._x1, lastVertex._y1 + data._y1 );
+            }
+            else {
+                thisVertex.vertex( _saveXScale * data._x1, _saveYScale * data._y1 );
+                if ( vertexObject != null )
+                    vertexObject.translate( _saveXScale * data._x1, _saveYScale * data._y1 );
+            }
+            lastVertex = thisVertex;
+        }
     }
     
     protected DrawObject _vertexes;

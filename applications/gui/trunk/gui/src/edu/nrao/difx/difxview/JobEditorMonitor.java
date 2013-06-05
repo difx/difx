@@ -1408,7 +1408,8 @@ public class JobEditorMonitor extends JFrame {
         if ( !_jobNode.lockState() ) {
             JulianCalendar thisTime = new JulianCalendar();
             thisTime.setTime( new Date() );
-            _jobNode.correlationTime( 24.0 * 3600.0 * ( thisTime.mjd() - _startTime.mjd() ) );
+            if ( _startTime != null )
+                _jobNode.correlationTime( 24.0 * 3600.0 * ( thisTime.mjd() - _startTime.mjd() ) );
         }
 
         //  See what kind of message this is...try status first.
