@@ -1434,7 +1434,7 @@ double VexData::getAntennaStartMJD(const std::string &name) const
 		}
 	}
 
-	return exper.mjdStart;
+	return exper.mjdStart - 1.0;
 }
 
 double VexData::getAntennaStopMJD(const std::string &name) const
@@ -1447,7 +1447,7 @@ double VexData::getAntennaStopMJD(const std::string &name) const
 		}
 	}
 
-	return exper.mjdStop;
+	return exper.mjdStop + 1.0;
 }
 
 int VexSetup::phaseCalIntervalMHz() const
