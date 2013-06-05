@@ -1,15 +1,16 @@
-alias PREPEND 'setenv \!^ {$\!^}:{\!:2}'
+alias PREPEND 'setenv \!^ {\!:2}:{$\!^}'
 
 ####### DIFX VERSION ########################
 setenv DIFX_VERSION trunk
 
 ####### ROOT PATHS ##########################
-setenv DIFXROOT /usr/local/difx
+setenv DIFXROOT /home/vlbi/difx
 setenv DIFX_PREFIX $DIFXROOT
-setenv PGPLOTDIR /usr/local/pgplot
+setenv PGPLOTDIR 
 setenv IPPROOT /opt/intel/ipp/5.2/ia32
 
 ####### COMPILER ############################
+#setenv MPICXX /home/vlbi/openmpi/bin/mpicxx
 setenv MPICXX /usr/bin/mpicxx
 
 ####### USE GFORTRAN IN PREFERENCE TO G77? ##
@@ -23,14 +24,14 @@ set IPPLIB64="-lippsem64t -lippvmem64t -lippcoreem64t"
 set IPPLIB32="${IPPLIB32} -lguide"
 set IPPLIB64="${IPPLIB64} -lguide"
 #Comment out the following for older (pre version 6) IPP
-set IPPLIB32="${IPPLIB32} -liomp5"
-set IPPLIB64="${IPPLIB64} -liomp5"
+#set IPPLIB32="${IPPLIB32} -liomp5"
+#set IPPLIB64="${IPPLIB64} -liomp5"
 #Uncomment the following for very old (pre version 5) IPP
 #PREPEND LD_LIBRARY_PATH  ${IPPROOT}/sharedlib/linux
 
 ####### PERL VERSION/SUBVERSION #############
 set perlver="5"
-set perlsver="5.8.8"
+set perlsver="5.10.1"
 PREPEND PERL5LIB         ${DIFXROOT}/share/perl/$perlver
 
 ####### PORTS FOR DIFXMESSAGE ###############
@@ -74,11 +75,11 @@ PREPEND PATH             ${DIFXROOT}/bin
 if ($DIFXOS == "darwin") then
   PREPEND DYLD_LIBRARY_PATH  ${DIFXROOT}/lib
   PREPEND DYLD_LIBRARY_PATH  ${PGPLOTDIR}
-  PREPEND DYLD_LIBRARY_PATH  ${IPPROOT}/Libraries
+  #PREPEND DYLD_LIBRARY_PATH  ${IPPROOT}/Libraries
 else
   PREPEND LD_LIBRARY_PATH  ${DIFXROOT}/lib
   PREPEND LD_LIBRARY_PATH  ${PGPLOTDIR}
-  PREPEND LD_LIBRARY_PATH  ${IPPROOT}/sharedlib
+  #PREPEND LD_LIBRARY_PATH  ${IPPROOT}/sharedlib
 endif
 if ($?PKG_CONFIG_PATH) then
   PREPEND PKG_CONFIG_PATH  ${DIFXROOT}/lib/pkgconfig
