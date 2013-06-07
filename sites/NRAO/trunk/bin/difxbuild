@@ -11,8 +11,8 @@ from time import asctime
 from glob import glob
 
 program = 'difxbuild'
-version = '0.25'
-verdate = '20130427'
+version = '0.26'
+verdate = '20130607'
 author = 'Walter Brisken <wbrisken@nrao.edu>'
 
 difxbuildUrl = 'http://www.aoc.nrao.edu/~wbrisken/difxbuild'
@@ -823,6 +823,13 @@ component_hops_2_2 = \
 	['aclocalm4', 'autoconf', 'autoheader', 'automake', 'pgplot'] \
 ]
 
+component_guiserver_2_2 = \
+[ \
+	'guiServer', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.2/applications/guiServer', \
+	['aclocal', 'autoconf', 'automake', 'mpicxx'], \
+]
+
 components['DIFX-2.2'] = \
 [ \
 	component_difxio_2_2, \
@@ -839,6 +846,7 @@ components['DIFX-2.2'] = \
 	component_rcwlib_2_2, \
 	component_sniff_2_2, \
 	component_hops_2_2, \
+	component_guiserver_2_2, \
 ]
 
 # commands each have the following elements:
