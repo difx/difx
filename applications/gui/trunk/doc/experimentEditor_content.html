@@ -298,26 +298,31 @@
         likely will never be worse).&nbsp; The GUI updates these data
         when it is started and roughly every hour thereafter.</li>
     </ol>
-    Of the two sources, the updated EOP data are probably preferred (the
-    Experiment Editor will pick them when available).<br>
+    Data from either source can be selected using the check boxes next
+    to the title bar for each source.&nbsp; Of the two sources, the
+    updated EOP data are probably preferred (the Experiment Editor will
+    pick them automatically when available), however there are
+    imaginable circumstances where data from the <tt>.vex</tt> file may
+    be preferred.&nbsp; For instance, it should be noted that because
+    they are constantly updated the "Updated From Source" EOP
+    measurements will <i>not</i> produce identical DiFX results for
+    multiple runs on the same data.&nbsp; As stated before, changes will
+    be small, and probably for the better, but they will not exactly
+    match.&nbsp; If for some reason you need to eliminate changing EOP
+    data as a source of changes in calculated results, use the <tt>.vex</tt>
+    file EOP.<br>
     <h3>Names, Etc.</h3>
     <p>The Names section can be used to change the way <span
-        style="font-style: italic;">vex2difx</span> will name input
-      files (each "job" has its own input file).&nbsp; By default, the <span
-        style="font-style: italic;">vex2difx</span> naming scheme is to
-      use the "base" name of the vex file (e.g. "<span
-        style="font-family: Courier New,Courier,monospace;">foo</span>"
-      for the file "<span style="font-family: Courier
-        New,Courier,monospace;">foo.vex</span>") with an appended
-      integer followed by "<span style="font-family: Courier
-        New,Courier,monospace;">.input</span>".&nbsp; For the first
-      input file created the appended integer will be 1; the integer
-      will increment for subsequent input files.&nbsp; For instance, if
-      the "<span style="font-family: Courier New,Courier,monospace;">foo.vex</span>"
+        style="font-style: italic;">vex2difx</span> will name the input
+      files it creates (an <tt>.input</tt> file is created for each
+      "job").&nbsp; By default, the <span style="font-style: italic;">vex2difx</span>
+      naming scheme is to use the "base" name of the vex file (e.g. "<tt>foo</tt>"
+      for the file "<tt>foo.vex</tt>") with an appended integer followed
+      by "<tt>.input</tt>".&nbsp; For the first input file created the
+      appended integer will be 1; the integer will increment for
+      subsequent input files.&nbsp; For instance, if the "<tt>foo.vex</tt>"
       file is used to create three jobs, their input files will be
-      called "<span style="font-family: Courier New,Courier,monospace;">foo_1.input</span>",
-      "<span style="font-family: Courier New,Courier,monospace;">foo_2.input</span>",
-      and "<span style="font-family: Courier New,Courier,monospace;">foo_3.input</span>".<br>
+      called "<tt>foo_1.input</tt>", "<tt>foo_2.input</tt>", and "<tt>foo_3.input</tt>".<br>
     </p>
     <p>If for some reason you don't like the default scheme, the Names
       section can give you some control over the names of the files that
@@ -332,13 +337,14 @@
     </p>
     <p>The .v2d File section shows the content the .v2d file that will
       be created in your working directory (when you hit "Apply").&nbsp;
-      This content is continually updated as you make changes to other
-      controls.&nbsp; If you feel confident you know what you are doing
-      you can edit the content by hand, however any changes you make to
-      other controls (any of those <span style="font-style: italic;">above</span>
-      the .v2d file section in the GUI that is) will cause the .v2d
-      content to be recreated and will erase your changes.&nbsp; If you
-      need to change something by hand, do it last.<br>
+      This content is continually updated as you make changes using
+      other controls.&nbsp; If you feel confident you know what you are
+      doing you can edit the content by hand, however any changes you
+      make to other controls (any of those <span style="font-style:
+        italic;">above</span> the .v2d file section in the GUI that is)
+      will cause the .v2d content to be recreated and will erase your
+      changes.&nbsp; If you need to change something by hand, do it
+      last.<br>
     </p>
     <h3>Applying Your Changes</h3>
     <h5><span style="font-weight: bold;">Creating a New Pass (or not!)</span></h5>
@@ -426,12 +432,11 @@
     </h5>
     <p style="margin-left: 40px;">The database is useful for tracking
       large numbers of experiments and jobs, which is quite important
-      for installations that do &nbsp;&nbsp;&nbsp; many
-      regularly-scheduled correlations for large numbers of users.&nbsp;
-      However it does require installation and maintenance (of the
-      database itself and of the underlying MySQL software) and if you
-      use DiFX strictly for your own work you may not wish to bother
-      with it.<br>
+      for installations that do many regularly-scheduled correlations
+      for large numbers of users.&nbsp; However it does require
+      installation and maintenance (of the database itself and of the
+      underlying MySQL software) and if you use DiFX strictly for your
+      own work you may not wish to bother with it.<br>
     </p>
     <p style="margin-left: 40px;">In short, the DiFX GUI works fine
       without using the database at all - it can create and run DiFX
@@ -453,6 +458,7 @@
     <h5 style="margin-left: 40px;">Skipping the Experiment/Pass/Job
       Structure<span style="font-weight: bold;"></span></h5>
     <h5 style="margin-left: 40px;"><span style="font-weight: bold;">Using
+
         Multiple .vex Files in an Experiment</span></h5>
     <h5 style="margin-left: 40px;">Creating Passes Using Existing Data</h5>
     <p></p>

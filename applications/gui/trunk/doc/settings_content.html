@@ -42,9 +42,10 @@
       pick a new XML file name for reading or writing.&nbsp; This can be
       useful if you want to save a specific GUI state for later use or
       load a previously saved state:<br>
+      <br>
     </p>
     <p align="center"><img alt=""
-        src="images/settings/settings_file.png" height="101" width="910"><br>
+        src="images/settings/settings_file.png" height="78" width="700"><br>
     </p>
     <div align="left">
       <h5>Current</h5>
@@ -94,6 +95,7 @@
 
 
 
+
           Multicast Messages</a> section below).&nbsp; This
         configuration is used when the GUI is running outside the DiFX
         LAN, such that the multicast messages cannot be received
@@ -104,9 +106,11 @@
           style="font-style: italic;">guiServer</span> is used for
         controls and all data from <span style="font-style: italic;">guiServer</span>
         itself, however DiFX multicast messages are received directly
-        using a UDP socket.&nbsp; This is the preferred arrangement when
-        the GUI is running on the DiFX LAN where multicast messages are
-        received.<br>
+        using a UDP socket.&nbsp; This may be the preferred arrangement
+        when the GUI is running on the DiFX LAN where multicast messages
+        are received as it reduces <i>guiServer</i> network traffic and
+        allows the GUI to monitor things even if <i>guiServer</i> is
+        for some reason lost.<br>
         <br>
       </li>
       <li>No connection is made to <i>guiServer</i>.&nbsp; The GUI
@@ -123,7 +127,8 @@
     about each control/display item are outlined below.<br>
     <br>
     <div style="text-align: center;"><img style=" width: 902px; height:
-        243px;" alt="" src="images/settings/DifxControlConnection.png"><br>
+        243px;" alt="" src="images/settings/DifxControlConnection.png"
+        height="191" width="700"><br>
     </div>
     <br>
     The DiFX Control Connection setting determine how commands are sent
@@ -136,10 +141,7 @@
     manipulate jobs are sent to the <span style="font-style: italic;">mk5daemon</span>
     running on one particular node (usually this is the "head node", but
     this is not a requirement).<br>
-    <br>
-    <h5>Multicast/guiServer Checkboxes</h5>
-    <p><br>
-    </p>
+    <h5>Multicast/guiServer Checkboxes </h5>
     <h5>guiServer Connection Light<br>
     </h5>
     <h5>DiFX Host</h5>
@@ -221,27 +223,31 @@
     <p> </p>
     <h5>User<br>
     </h5>
-    This is the DiFX user - the owner of all DiFX-related data files and
-    directories and the user that is running <i>guiServer</i> on the
-    DiFX Host.&nbsp; By default this user is "difx" but this is not a
-    requirement.<br>
-    <h5><i>guiServer</i> Version and Build History</h5>
-    <p>When a connection is made with guiServer it transmits its own
-      version and the version of DiFX under which it was compiled.&nbsp;
-      The two read-only fields labeled "guiServer Version" and "build
-      w/DiFX" display this information.&nbsp; For the most part these
-      items won't make any difference, however they can be used to
-      trouble-shoot problems that may occur due to version mismatches.<br>
+    This field is historical and does nothing right now.<br>
+    <h5>guiServer Version
+    </h5>
+    <p>The "guiServer Version" is a version number in a version scheme
+      that is specific to <i>guiServer</i>.&nbsp; It should match the
+      version number of the GUI itself to assure that they are
+      compatible.&nbsp; This is not a field the user can change.<br>
     </p>
-    <p>These fields are filled only when using <i>guiServer</i>.<br>
+    <h5>built w/DiFX</h5>
+    <p>This field shows the version of the DiFX software that was used
+      to build the <i>guiServer</i>.&nbsp; <i>GuiServer</i> depends on
+      a number of DiFX header files and libraries (primarily for file
+      parsing) when it builds so in a perfect world it would match the
+      "Run w/DiFX Version" (see below).&nbsp; However this is not, in
+      general, critical, as the file parsing libraries a fairly stable
+      (and almost always backward compatible) between DiFX
+      versions.&nbsp; This field cannot be changed by the user.<br>
     </p>
-    <h5>Environment Variables Display</h5>
+    <h5>Environment Vars</h5>
     <p>The "Environment Vars" button creates a display of DiFX Host
       environment variables as seen by <i>guiServer</i>:<br>
     </p>
     <p align="center"><img alt=""
-        src="images/settings/EnvironmentVars.png" height="387"
-        width="687"><br>
+src="file:///Users/johnspitzak/difx/applications/gui/trunk/doc/images/settings/EnvironmentVars.png"
+        height="387" width="687"><br>
     </p>
     <div align="left">All environment variables regardless of their
       applicability can be displayed, or only those that apply to DiFX
@@ -252,28 +258,36 @@
       environment variables can be used to determine how several GUI
       options should be set.<br>
     </div>
-    <h5>DiFX Version</h5>
-    <br>
-    &nbsp;The DiFX Version is passed to <span style="font-style:
-      italic;">mk5daemon</span> when running a correlator job.&nbsp; It
-    should match the version of DiFX being run on the head node.&nbsp; <span
-      style="font-style: italic;">Don't worry too much about this field
-      - currently it does nothing!</span><br>
-    <h5>DiFX Path</h5>
-    <p>The DiFX Path field allows you to set the path <span
-        style="font-style: italic;">mk5daemon</span> will follow when
-      running DiFX executables (specifically <span style="font-style:
-        italic;">vex2difx </span>and <span style="font-style: italic;">mpirun</span>)
-      - it points to the top level of your DiFX software tree on your
-      DiFX host (e.g. "<span style="font-family: monospace;">/usr/local/difx</span>"
-      or something similar).&nbsp; Using this field you can easily
-      switch your processing between different versions of DiFX
-      software, if, for instance, you want to test an upgrade of the
-      software.&nbsp; For normal operation you can leave this field
-      blank, in which case <span style="font-style: italic;">mk5daemon</span>
-      will use the environment variable <span style="font-family:
-        monospace;">DIFX_PREFIX</span> to determine the path.<br>
+    <h5>DiFX Base</h5>
+    <p>The "DiFX Base" is a path on the DiFX host under which the DiFX
+      software resides.&nbsp; The DiFX Base is actually just one of the
+      environment variables (see above) found on the DiFX host.&nbsp;
+      Below this directory will be "bin" directories and source
+      directories for each installed DiFX version.<br>
     </p>
+    <h5>Run w/DiFX Version</h5>
+    <p>The GUI does a number of things, such as organizing jobs and
+      creating/administering job data directories.&nbsp; But primarily
+      its purpose is to run DiFX, which it does for the most part by
+      executing DiFX applications on the DiFX host through system level
+      commands (equivalent to command line operations).&nbsp; This
+      setting can be used to instruct to use a specific version of the
+      DiFX application.&nbsp; A pull-down menu will provide all of the
+      DiFX software versions installed on the DiFX host.<br>
+    </p>
+    <p>Note that this setting can be changed <i>at any time</i> during
+      the process of running a job, such that you can run some DiFX
+      applications using one version of DiFX, and others using
+      another.&nbsp; For instance, if you want to use the latest
+      development version of the software to run <i>mpifxcorr</i>, but
+      know that your data require <i>vex2difx</i> from version 2.1, <i>and</i>
+      you know what you are doing, you can change this setting at
+      different stages in the process accordingly.&nbsp; Which is not to
+      say this is recommended behavior.<br>
+    </p>
+    <h5>DiFX Setup Path</h5>
+    <br>
+    <br>
     <h2><a name="Broadcast_Network"></a>DiFX Multicast Messages<br>
     </h2>
     DiFX uses UDP multicast messages to periodically broadcast the
@@ -283,6 +297,7 @@
     that should be running on each node in the DiFX cluster.&nbsp; This
     same multicast system is used by the user interface (either through
     <i>guiServer</i> or directly) <span style="font-style: italic;"></span>to
+
 
 
 
@@ -532,6 +547,7 @@
 
 
 
+
       the Database Configuration</h2>
     A number of things can go wrong when trying to access the DiFX
     database remotely.&nbsp; The Database Configuration panel contains a
@@ -634,6 +650,7 @@
 
 
 
+
     Then remote log into that host and see if the mySQL server is
     runing:<br>
     <ul style="margin-left: 40px;">
@@ -692,6 +709,7 @@
     <br>
     <br>
     <h6> <span style="font-weight: bold; font-family: monospace;">&nbsp;&nbsp;&nbsp;
+
 
 
 

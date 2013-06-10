@@ -1,0 +1,128 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+  <head>
+    <meta content="text/html; charset=ISO-8859-1"
+      http-equiv="Content-Type">
+    <title>Queue Browser</title>
+    <link type="text/css" rel="stylesheet" href="style.css">
+  </head>
+  <body>
+    <h1>How to Run DiFX With the GUI<br>
+    </h1>
+    <h3> </h3>
+    <ul>
+      <li><a href="#Startup">Startup</a></li>
+      <li><a href="#Some_Important_Settings">Some Important Settings</a></li>
+      <li><a href="#Monitoring_the_DiFX_Cluster">Monitoring the DiFX
+          Cluster</a></li>
+      <li><a href="#Monitoring_DiFX_Jobs">Monitoring DiFX Jobs</a></li>
+      <li><a href="#Creating_a_New_Experiment">Creating a New Experiment</a></li>
+      <li><a href="#Running_a_DiFX_Job">Running a DiFX Job</a></li>
+      <li><a href="#Using_the_Real-Time_Monitor">Using the Real-Time
+          Monitor</a></li>
+    </ul>
+    This document contains an end-to-end description of how the DiFX
+    user interface can be used to run DiFX jobs.&nbsp; All steps in the
+    process are described in roughly the sequence they would be employed
+    in actually running a job.&nbsp; Because the GUI has many options
+    that can cause branching paths in step-by-step instructions, what
+    follows is only a description of a "sample" procedure for running a
+    job.&nbsp; The specific needs of individual users, data and
+    installations will likely require approaches that differ some, or
+    possibly a lot.&nbsp; With this in mind, links are provided to other
+    sections of the documentation that may provide additional details on
+    each subject.<br>
+    <br>
+    This document is <i>not</i> a comprehensive tutorial on all of the
+    functionality of DiFX itself.&nbsp; A good place to start looking
+    for that sort of thing is <a
+      href="http://cira.ivec.org/docuwiki/doku.php/difx/start">here</a>.<br>
+    <h3><a name="Startup"></a>Startup</h3>
+    Starting the GUI and setting up a connection such that it can
+    control DiFX is a multi-stage process.&nbsp; Some components of DiFX
+    should be running for the GUI to properly communicate with it.<br>
+    <h5>Assure Necessary DiFX Components Are Running</h5>
+    <p><i><b>guiServer</b></i><br>
+    </p>
+    <p><br>
+    </p>
+    <p><b><i>mk5daemon</i></b><br>
+      <br>
+      The actual processing components of DiFX are started on the fly as
+      they are needed, however a properly configured DiFX installation
+      will have some light-impact processes that are running
+      constantly.&nbsp; Specifically important for the GUI, the <i>mk5daemon</i>
+      process should be running on all DiFX hardware components
+      (processors, MK5 units, etc.).<br>
+      <br>
+      It is possible to run DiFX using the GUI with <i>mk5daemon</i>
+      absent on some or all components, but this is not a subject
+      covered here.<br>
+      <br>
+      <b><i>monitor_server</i></b><i><br>
+      </i><br>
+      If you wish to monitor running jobs through the GUI's real-time
+      plotting capabilities, the DiFX application <i>monitor_server</i>
+      needs to be running.&nbsp; This program provides a TCP server at
+      whichreal-time data from running DiFX processes can be
+      obtained.&nbsp; The absence of this process is not usually a
+      problem - if you request the real-time plotting it should be
+      started automatically.&nbsp; However if you find that real-time
+      plotting isn't working, this could be a cause.&nbsp; For details,
+      see the<a href="realtime_monitor_content.html"> Real-Time Monitor
+        Documentation</a>.<br>
+    </p>
+    <h5>Starting the GUI and Connecting to DiFX</h5>
+    <p><br>
+    </p>
+    <h3><a name="Some_Important_Settings"></a>Some Important Settings</h3>
+    <p>The GUI has many options the user can set to govern processing,
+      how data are stored, and where necessary components are
+      located.&nbsp; Most of these needn't be touched on a job-by-job
+      basis as long as the GUI is running smoothly and appears to be
+      doing things correctly.&nbsp; Below is a list of some of the
+      settings that are more likely to require user changes.&nbsp; A
+      comprehensive list of settings and their options is contained in
+      the <a href="settings_content.html">Settings Documentation</a>.<br>
+    </p>
+    <p>Note that settings are preserved between GUI sessions, so once
+      you have things set up and running properly you should be able to
+      restart the GUI and have it run properly right away.<br>
+    </p>
+    <h3><a name="Monitoring_the_DiFX_Cluster"></a>Monitoring the DiFX
+      Cluster</h3>
+    <h3><a name="Monitoring_DiFX_Jobs"></a>Monitoring DiFX Jobs</h3>
+    <h5>The Contents of the Queue Browser</h5>
+    <p>The Queue Browser organizes DiFX jobs under a three-level
+      hierarchy with "Experiments" at the top level.<br>
+    </p>
+    <ul>
+      <li>An <b>Experiment</b> is usually bound to a single data set
+        (one or more scans) collected over a specific time span - the
+        results of a single observing session for instance.&nbsp; It can
+        contain any number of "Passes" (including zero).</li>
+      <li>A <b>Pass</b> is used to contain a single analysis of a
+        subset of the data.&nbsp; Often Experiments contain a "Clock
+        Pass" run on a few scans to generate the time delays for each
+        involved antenna, and a "Production Pass" run on all scans with
+        those time delays in place.</li>
+      <li>Within each Pass is a series of <b>Jobs</b>, each controlling
+        the processing of at least one scan.&nbsp; DiFX is run on one
+        Job at a time.<br>
+      </li>
+    </ul>
+    <div align="center"><img alt=""
+        src="images/how_to_run_things/queueBrowser1.png" height="299"
+        width="800"></div>
+    <h5>Adding Existing Experiments to the Queue Browser</h5>
+    <p><br>
+    </p>
+    <h3><a name="Creating_a_New_Experiment"></a>Creating a New
+      Experiment</h3>
+    <h3><a name="Running_a_DiFX_Job"></a>Running a DiFX Job</h3>
+    <h3><a name="Using_the_Real-Time_Monitor"></a>Using the Real-Time
+      Monitor<br>
+    </h3>
+    <p></p>
+  </body>
+</html>

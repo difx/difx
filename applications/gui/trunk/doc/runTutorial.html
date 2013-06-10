@@ -68,85 +68,133 @@ setBrowser();
 <h1>How To Run DiFX Using the DiFX GUI</h1>
     
 This document contains an end-to-end description of how the DiFX user interface can be used
-to run DiFX jobs.  All steps in the process are outlined sequentially.  Because the GUI has
+to run DiFX jobs.  All steps in the process are described in roughly the sequence they would
+be employed in actually running a job.  Links are provided to other sections of the documentation
+that may provide additional details on each subject.  Because the GUI has
 many options that can cause branching paths in step-by-step instructions, this document is
 organized with expanding/collapsing sections that can be viewed by the user, or not, based
-on whether they apply to their particular situation.  The hope is that the document, while
+on whether they apply to their particular situation.  To expand an area, click on the
+"<img src="triangleright_10x10_large.png">" character associated with it.  To close an area
+click on the "<img src="triangledown_10x10_large.png">" character.
+
+<p>The hope is that this document, while
 rather unwieldy in its entirety, will be readably concise when altered for the specific
 interests of the user.
 
 <p>This document is <i>not</i> a comprehensive tutorial on all of the functionality of DiFX
-itself, as that functionality is documented elsewhere by others far more qualified to do so.
+itself.  A good place to start looking for that sort of thing is
+<a href="http://cira.ivec.org/docuwiki/doku.php/difx/start">here</a>.
 
-<h5>Starting the GUI and Connecting to DiFX</h5>
-<span id="h1" class="hide"><a href="javascript:swap(1, true)"><img src="triangleright_10x10_large.png" alt="+"></a>
-</span>
-<span id="s1" class="showWhite"><a href="javascript:swap(1,false)"><img src="triangledown_10x10_large.png" alt="-"></a>
+<!--=============================================================================================-->
+<!-- This is the first "collapsable" section of this document.  It DID NOT BEHAVE properly       -->
+<!-- until I put the <h5> thing infront of it (which necessitated some other odd things in the   -->
+<!-- remainder of the title stuff).  No idea why this works, but it does.  Don't replace the     -->
+<!-- <h5> stuff with <b5>.  You will be sorry.                                                   -->
+<!--=============================================================================================-->
+<h5>
+<span id="h2" class="hide"><a href="javascript:swap(2, true)"><img src="triangleright_10x10_large.png" alt="+"></a>
+<u>Starting the GUI and Connecting to DiFX</u></h5><br>
+</span id="h2">
+<span id="s2" class="showWhite"><a href="javascript:swap(2,false)"><img src="triangledown_10x10_large.png" alt="-"></a>
+<b5><u>Starting the GUI and Connecting to DiFX</u></b5><br>
+<br>
 Starting the GUI and setting up a connection such that it can control DiFX is a multi-stage process.
-Some components of DiFX should be running for the GUI to properly communicate with it.
+Some components of DiFX should be running for the GUI to properly communicate with it.  Sigh....we have
+a problem here.
+<br>
+<blockquote>
 
-<ul type="none">
-
-<li>
 <span id="h1.1" class="hide"><a href="javascript:swap(1.1, true)"><img src="triangleright_10x10_large.png" alt="+"></a>
 <b6>Assure Necessary DiFX Components Are Running</b6><br><br>
-</span>
+</span id="h1.1">
 <span id="s1.1" class="showWhite"><a href="javascript:swap(1.1,false)"><img src="triangledown_10x10_large.png" alt="-"></a>
-<b6>Assure Necessary DiFX Components Are Running</b6><br>
-<p><i><b>mk5daemon</i></b>
-<p>The actual processing components of DiFX are started on the fly as they are needed, however
+<b6>Assure Necessary DiFX Components Are Running</b6><br><br>
+
+<br><i><b>mk5daemon</i></b>
+
+<br><br>The actual processing components of DiFX are started on the fly as they are needed, however
 a properly configured DiFX installation will have some light-impact processes that are running
 constantly.  Specifically important for the GUI, the <i>mk5daemon</i> process should be running on
 all DiFX hardware components (processors, MK5 units, etc.).
 
-<p>It is possible to run DiFX using the GUI with <i>mk5daemon</i> absent on some or all
+<br><br>It is possible to run DiFX using the GUI with <i>mk5daemon</i> absent on some or all
 components, but this is not a subject covered here.
 
-<p><center><img src="images/database/configmenu.png"></center>
+<br><br><b><i>monitor_server</i></b>
+
+<br><br>If you wish to monitor running jobs through the GUI's real-time plotting capabilities, the DiFX 
+application <i>monitor_server</i> needs to be running.  This program provides a TCP server at which
+real-time data from running DiFX processes can be obtained.  The absence of this process is not usually
+a problem - if you request the real-time plotting it <i>should</i> be started automatically.  However
+if you find that real-time plotting isn't working, this could be a cause.  For details, see the
+<a href="realtime_monitor_content.html">Real-Time Monitor Documentation</a>.
 
 <br><br>
-</span>
+</span id="s1.1">
 
-<li>
 <span id="h1.2" class="hide"><a href="javascript:swap(1.2, true)"><img src="triangleright_10x10_large.png" alt="+"></a>
 <b6>Starting the <i><b>guiServer</b></i> Process</b6><br><br>
-</span>
+</span id="h1.2">
 <span id="s1.2" class="showWhite"><a href="javascript:swap(1.2,false)"><img src="triangledown_10x10_large.png" alt="-"></a>
-<b6>Starting the guiServer Process</b6><br>
+<b6>Starting the guiServer Process</b6><br><br>
 The actual processing components of DiFX are started on the fly as they are needed, however
 a properly configured DiFX installation will have some light-impact processes that are running
 constantly.  Specifically important for the GUI, the <i>mk5daemon</i> process should be running on
 all DiFX hardware components (processors, MK5 units, etc.).
 
-<p>It is possible to run DiFX using the GUI with <i>mk5daemon</i> absent on some or all
+<br><br>It is possible to run DiFX using the GUI with <i>mk5daemon</i> absent on some or all
 components, but this is not a subject covered here.<br><br>
+</span id="s1.2">
+
+<span id="h1.3" class="hide"><a href="javascript:swap(1.3, true)"><img src="triangleright_10x10_large.png" alt="+"></a>
+<b6>Starting the DiFX GUI</b6><br><br>
+</span id="h1.3">
+<span id="s1.3" class="showWhite"><a href="javascript:swap(1.3,false)"><img src="triangledown_10x10_large.png" alt="-"></a>
+<b6>Starting the DiFX GUI</b6><br><br>
+Some text about starting the thing.
+</span id="s1.3">
+
+<span id="h1.4" class="hide"><a href="javascript:swap(1.4, true)"><img src="triangleright_10x10_large.png" alt="+"></a>
+<b6>Resolving Connection and Security Issues</b6><br><br>
+</span id="h1.4">
+<span id="s1.4" class="showWhite"><a href="javascript:swap(1.4,false)"><img src="triangledown_10x10_large.png" alt="-"></a>
+<b6>Resolving Connection and Security Issues</b6>
+<p>This can be a real pain.  I'll get back to you on it.
+</span id="s1.4">
+
+</blockquote>
+
+</span id="s2">
+
+<!--=============================================================================================-->
+<!-- The spacing of this second section worked better with the <h5> instead of <b5>.  However    -->
+<!-- the next section worked better with <b5> instead of <h5>.  HTML is complete crap.           -->
+<!--=============================================================================================-->
+<h5>
+<span id="h4" class="hide"><a href="javascript:swap(4, true)"><img src="triangleright_10x10_large.png" alt="+"></a>
+<u>The Components of the DiFX GUI</u></h5>
 </span>
-
-<li>
-<b6>Starting the DiFX GUI</b6><br>
-
-<li>
-<b6>Resolving Connection and Security Issues</b6><br>
-
-</ul>
-</span></span>
-
-<h5>The Components of the DiFX GUI</h5>
-<span id="h2" class="hide"><a href="javascript:swap(2, true)"><img src="triangleright_10x10_large.png" alt="+"></a>
-</span>
-<span id="s2" class="showWhite"><a href="javascript:swap(2,false)"><img src="triangledown_10x10_large.png" alt="-"></a>
+<span id="s4" class="showWhite"><a href="javascript:swap(4,false)"><img src="triangledown_10x10_large.png" alt="-"></a>
+<b5><u>The Components of the DiFX GUI</u></b5><br>
+<br>
 This is a whole bunch of text that would be hidden, normally.
 </span>
 
-<h5>Putting Experiments in the Queue Browser</h5>
-DiFX jobs are run using entries in the Queue Browser window.  If you don't have the job you
-want to run in the window there are a variety of ways of putting them there.
+<!--=============================================================================================-->
+<!--   -->
+<!--=============================================================================================-->
+<h5>
 <span id="h3" class="hide"><a href="javascript:swap(3, true)"><br><img src="triangleright_10x10_large.png" alt="+"></a>
+<u>Putting Experiments in the Queue Browser</u></h5>
 </span>
 <span id="s3" class="showWhite"><a href="javascript:swap(3,false)"><br><img src="triangledown_10x10_large.png" alt="-"></a>
-<ul type="none">
+<b5><u>Putting Experiments in the Queue Browser</u></b5>
+<p>DiFX jobs are run using entries in the Queue Browser window.  If you don't have the job you
+want to run in the window there are a variety of ways of putting them there.
 
-<li>
+<blockquote>
+
+
 <span id="h3.4" class="hide"><a href="javascript:swap(3.4, true)"><img src="triangleright_10x10_large.png" alt="+"></a>
 <b6>Understanding the Contents of the Queue Browser</b6><br><br>
 </span>
@@ -169,15 +217,13 @@ scan.  DiFX is run on one Job at a time.
 
 </span>
 
-<li>
 <span id="h3.1" class="hide"><a href="javascript:swap(3.1, true)"><img src="triangleright_10x10_large.png" alt="+"></a>
 <b6>Creating a New Experiment</b6><br><br>
 </span>
 <span id="s3.1" class="showWhite"><a href="javascript:swap(3.1,false)"><img src="triangledown_10x10_large.png" alt="-"></a>
-<b6>Creating a New Experiment</b6><br>
+<b6>Creating a New Experiment</b6><br><br>
 </span>
 
-<li>
 <span id="h3.2" class="hide"><a href="javascript:swap(3.2, true)"><img src="triangleright_10x10_large.png" alt="+"></a>
 <b6>Reading Existing Experiments From Disk</b6><br><br>
 </span>
@@ -185,17 +231,117 @@ scan.  DiFX is run on one Job at a time.
 <b6>Reading Existing Experiments From Disk</b6><br>
 </span>
 
-<li>
 <span id="h3.3" class="hide"><a href="javascript:swap(3.3, true)"><img src="triangleright_10x10_large.png" alt="+"></a>
 <b6>Obtaining Experiments From a Database</b6><br><br>
 </span>
 <span id="s3.3" class="showWhite"><a href="javascript:swap(3.3,false)"><img src="triangledown_10x10_large.png" alt="-"></a>
-<b6>Obtaining Experiments From a Database</b6><br>
+<b6>Obtaining Experiments From a Database</b6><br><br>
 </span>
 
+</blockquote>
+
+</span>
+
+
+<!--=============================================================================================-->
+<!--    -->
+<!--=============================================================================================-->
+<h5>
+<span id="h5" class="hide"><a href="javascript:swap(5, true)"><br><img src="triangleright_10x10_large.png" alt="+"></a>
+<u>Running A Job</u></h5>
+</span id="h5">
+<span id="s5" class="showWhite"><a href="javascript:swap(5,false)"><br><img src="triangledown_10x10_large.png" alt="-"></a>
+<b5><u>Running A Job</u></b5>
+
+<p>Here is a paragraph of header text.  This explains some detail about this section and justifies
+the subsections below.
+
+<blockquote>
+
+<!--    -->
+<span id="h5.1" class="hide"><a href="javascript:swap(5.1, true)"><img src="triangleright_10x10_large.png" alt="+"></a>
+<b6>This is the First Subsection</b6><br><br>
+</span id="h5.1">
+<span id="s5.1" class="showWhite"><a href="javascript:swap(5.1,false)"><img src="triangledown_10x10_large.png" alt="-"></a>
+<b6>This is the First Subsection</b6><br>
+
+<p>Here is the text for the subsection.  We can include other stuff in here, like a list:
+<ul>
+<li>Item 1
+<li>Item 2
+<li>Item 3
 </ul>
 
-</span>
+</span id="s5.1">
+
+<!--    -->
+<span id="h5.2" class="hide"><a href="javascript:swap(5.2, true)"><img src="triangleright_10x10_large.png" alt="+"></a>
+<b6>Creating a New Experiment</b6><br><br>
+</span id="h5.2">
+<span id="s5.2" class="showWhite"><a href="javascript:swap(5.2,false)"><img src="triangledown_10x10_large.png" alt="-"></a>
+<b6>Creating a New Experiment</b6>
+
+<p>A bit of associated text.
+
+</span id="s5.2">
+
+</blockquote>
+
+</span id="s5">
+
+
+<!--=============================================================================================-->
+<!-- This is an example section showing how new documentation should be added.  Start with a     -->
+<!-- section title.  Assign a unique number to it (in this case, "99") and put it in the four    -->
+<!-- locations as done below (do a search if you can't find them).                               -->
+<!--    -->
+<!--    -->
+<!--    -->
+<!--    -->
+<!--=============================================================================================-->
+<h5>
+<span id="h99" class="hide"><a href="javascript:swap(99, true)"><br><img src="triangleright_10x10_large.png" alt="+"></a>
+<u>This is a Sample "Big Subject"</u></h5>
+</span id="h99">
+<span id="s99" class="showWhite"><a href="javascript:swap(99,false)"><br><img src="triangledown_10x10_large.png" alt="-"></a>
+<b5><u>This is a Sample "Big Subject"</u></b5>
+
+<p>Here is a paragraph of header text.  This explains some detail about this section and justifies
+the subsections below.
+
+<!--  All subsections are indented (using this blockquote thing...which seems to work on most browsers).  -->
+<blockquote>
+
+<!--  This is a subsection.  It has unique numbers assigned to it as well...in this case "99.1".  -->
+<span id="h99.1" class="hide"><a href="javascript:swap(99.1, true)"><img src="triangleright_10x10_large.png" alt="+"></a>
+<b6>This is the First Subsection</b6><br><br>
+</span id="h99.1">
+<span id="s99.1" class="showWhite"><a href="javascript:swap(99.1,false)"><img src="triangledown_10x10_large.png" alt="-"></a>
+<b6>This is the First Subsection</b6><br>
+
+<p>Here is the text for the subsection.  We can include other stuff in here, like a list:
+<ul>
+<li>Item 1
+<li>Item 2
+<li>Item 3
+</ul>
+
+</span id="s99.1">
+
+<!--  Another subsection - this one assigned "99.2".  -->
+<span id="h99.2" class="hide"><a href="javascript:swap(99.2, true)"><img src="triangleright_10x10_large.png" alt="+"></a>
+<b6>The Second Subsection</b6><br><br>
+</span id="h99.2">
+<span id="s99.2" class="showWhite"><a href="javascript:swap(99.2,false)"><img src="triangledown_10x10_large.png" alt="-"></a>
+<b6>The Second Subsection</b6>
+
+<p>A bit of associated text.
+
+</span id="s99.2">
+
+</blockquote>
+
+</span id="s99">
 
 
 </body>
