@@ -26,7 +26,8 @@ int fill_fblock (DifxInput *D,                    // difx input structure pointe
         ants[64],
         swapped,
         present,
-        first[2],                   // indexed by 0|1 for R|L polarization
+        first[2][2],                   // indexed by 0|1 for [USB/LSB][RCP/LCP]
+        sbind,
         polind,
         nant,
         nfreq,
@@ -171,14 +172,11 @@ int fill_fblock (DifxInput *D,                    // difx input structure pointe
                     }
                 }
                                     // bubble sort the frequency list
-                                    // put LSB's just after corresponding USB's
         do
             {
             swapped = FALSE;
             for (j=0; j<nfreq-1; j++)
-                if (fabs (freqs[j]) > fabs (freqs[j+1])
-                 || fabs (freqs[j]) == fabs (freqs[j+1])
-                 && freqs[j] < 0 && freqs[j+1] > 0)
+                if (freqs[j] > freqs[j+1])
                     {
                     temp = freqs[j];
                     freqs[j] = freqs[j+1];
@@ -198,26 +196,30 @@ int fill_fblock (DifxInput *D,                    // difx input structure pointe
                                     // generate channel id's for each freq
         for (j=0; j<nfreq; j++)
             {
-            sprintf (buff, "%c%02d", getband (fabs (freqs[j])), j);
-            buff[3] = freqs[j] > 0 ? 'U' : 'L';
+            sprintf (buff, "%c%02d", getband (freqs[j]), j);
+            buff[3] = 'U';          // change upon insertion if LSB
             buff[4] = 0;
             buff[5] = 0;
-            first[0] = TRUE;
-            first[1] = TRUE;
+            first[0][0] = TRUE;     // first time for [sb][pol]
+            first[0][1] = TRUE;
+            first[1][0] = TRUE;
+            first[1][1] = TRUE;
                                     // insert channel id's back into fblock
                                     // everywhere that ant & freq match
             for (n=0; n<nprod; n++)
                 for (k=0; k<2; k++)     // k = 0|1 for ref|rem antenna
                     if (pfb[n].stn[k].ant == i && pfb[n].stn[k].freq == freqs[j])
                         {
+                        buff[3] = pfb[n].stn[k].sideband;
                         buff[4] = pfb[n].stn[k].pol;
                         strcpy (pfb[n].stn[k].chan_id, buff);
-                        polind = (pfb[n].stn[k].pol == 'R') ? 0 : 1;
-                                    // see if first mention for ant, freq, & pol
-                        if (first[polind])
+                        sbind  = (pfb[n].stn[k].sideband == 'U') ? 0 : 1;
+                        polind = (pfb[n].stn[k].pol      == 'R') ? 0 : 1;
+                                    // see if first mention for ant, freq, sb, & pol
+                        if (first[sbind][polind])
                             {
                             pfb[n].stn[k].first_time = TRUE;
-                            first[polind] = FALSE;
+                            first[sbind][polind] = FALSE;
                             }
                         else
                             pfb[n].stn[k].first_time = FALSE;
