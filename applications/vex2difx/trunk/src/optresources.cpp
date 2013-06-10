@@ -138,7 +138,7 @@ void optresources::close()
 
 int optresources::writeHeader(const VexData *V)
 {
-	*this << "VERSION; 1;" << endl;
+	*this << "VERSION; 2;" << endl;
 
 	return 0;
 }
@@ -197,7 +197,7 @@ int optresources::writeLoifTable(const VexData *V)
 	precision(15);
 
 	*this << "# <name>; <receiver> ; 1; <arraySumming>; {<baseband pair>, <centerSkyFreq>, <subbandCount>,"
-		<< " <subbandBandwidth>, <blbpsPerSubband>, <polarizationProducts>;}" << endl;
+		<< " <subbandBandwidth>, <blbpsPerSubband>, <polarizationProducts>, <threadIDA>, <threadIDB>;}" << endl;
 	for(unsigned int modeNum = 0; modeNum < nMode; ++modeNum)
 	{
 		const VexMode *mode = V->getMode(modeNum);
@@ -316,6 +316,7 @@ int optresources::writeLoifTable(const VexData *V)
 				}
 
 				for(unsigned int k = 0; k < setup->channels.size(); k++) {
+					unsigned int complementChannel = 0xFFFFFFFF;	// second channel in a A/C or B/D pair
 					// look for channel that uses this IF; there should only be one
 					if( setup->channels[k].ifName == string(i.name) ) {
 //						cerr << "ifName for chan " << k << ": " << setup->channels[k].ifName << endl;
@@ -343,9 +344,9 @@ int optresources::writeLoifTable(const VexData *V)
 						if( foundPair ) {
 								ss.str(string());
 								continue;
-							}
+						}
 						// run through channels we still need to process from k+1 up to setup->channels.size() to figure out polarization
-						for( unsigned j=k+1; j< setup->channels.size(); j++ ) {
+						for( unsigned j=k+1; j < setup->channels.size() && !foundPair; j++ ) {
 //							cerr << "f[" << k << "]: " << setup->channels[k].bbcFreq << ": f[" << j
 //									<< "]: " << setup->channels[j].bbcFreq << endl;
 							if((setup->channels[k].ifName == "A" && setup->channels[j].ifName == "C")
@@ -353,6 +354,7 @@ int optresources::writeLoifTable(const VexData *V)
 									|| (setup->channels[k].ifName == "B" && setup->channels[j].ifName == "D")
 									|| (setup->channels[k].ifName == "D" && setup->channels[j].ifName == "B")) {
 								foundPair = true;
+								complementChannel = j;
 //								cerr << "processing k=" << k << ", found 2nd half of pair at j=" << j << endl;
 								vif = setup->getIF(setup->channels[j].ifName);
 								if(vif) {
@@ -379,7 +381,8 @@ int optresources::writeLoifTable(const VexData *V)
 						double bw = setup->channels[k].bbcBandwidth;
 						char sb = setup->channels[k].bbcSideBand;
 						double freq = setup->channels[k].bbcFreq;
-						*this << ss.str() << (freq + ((sb == 'L') ? -1 : 1)*bw/2)/1000 << "kHz, ," << bw/1000 << "kHz, ," << pol << "; ";
+						*this << ss.str() << (freq + ((sb == 'L') ? -1 : 1)*bw/2)/1000 << "kHz, ," << bw/1000 << "kHz, ,"
+							<< pol << ", " << k << ", " << complementChannel << "; ";
 						ss.str(string());
 					}
 				}
