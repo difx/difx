@@ -31,14 +31,14 @@ These are:
 This is accessed only by program {\tt calcif}.
 \item {\tt DIFX\_ARCHIVE\_ROOT} points to the base directory of the archive staging area.
 \item {\tt DIFX\_ARCHIVE\_USERNAME} specifies the username of the archiving process (NRAO use only).
-\item {\tt DIFX\_GROUP\_ID} the Unix group to use.  If set, umask is changed to 002 and all new files/directories become group writable. \difxoneone
+\item {\tt DIFX\_GROUP\_ID} the Unix group to use.  If set, umask is changed to 002 and all new files/directories become group writable.
 \item {\tt DIFX\_HEAD\_NODE} contains the name of the cluster head node.
 \item {\tt DIFX\_MACHINES} points to a file containing a list of cluster members and their capabilities.
 See \S\ref{sec:difxmachines}
-\item {\tt DIFX\_MESSAGE\_GROUP} (optional) specifies, with {\tt DIFX\_MESSAGE\_PORT}, the multicast group and port to be used for GUI and monitoring. \difxoneone
-\item {\tt DIFX\_MESSAGE\_PORT} (optional, {\em see above}) \difxoneone
-\item {\tt DIFX\_QUEUE\_BASE} points to the base of the correlator staging area for jobs to be run.  \difxonefive
-\item {\tt DIFX\_VERSION} (optional, but recommended) the version of difx being used, e.g., {\tt DIFX-1.5} . \difxoneone
+\item {\tt DIFX\_MESSAGE\_GROUP} (optional) specifies, with {\tt DIFX\_MESSAGE\_PORT}, the multicast group and port to be used for GUI and monitoring.
+\item {\tt DIFX\_MESSAGE\_PORT} (optional, {\em see above})
+\item {\tt DIFX\_QUEUE\_BASE} points to the base of the correlator staging area for jobs to be run.
+\item {\tt DIFX\_VERSION} (optional, but recommended) the version of difx being used, e.g., {\tt DIFX-2.2} .
 \item {\tt EVLAMPTS\_DB} contains the connection information for the Postgress E
 VLA monitor point database (NRAO only, needed only if VLA is included in array).
 \item {\tt GAIN\_CURVE\_PATH} (optional) points to a directory that contains keyin format files containing gain curves.
@@ -49,7 +49,7 @@ Every file in this directory will be read, assuming it is a keyin format gain cu
 This directory needs to be created by hand if it does not exist.
 \item {\tt JOB\_ROOT} points to the base directory that is to contain copies of job scripts of projects to correlate.
 This directory must be visible by all nodes on the cluster.
-\item {\tt DIFX\_LOG\_DIR} points to the directory where logs shall be written. \difxoneone
+\item {\tt DIFX\_LOG\_DIR} points to the directory where logs shall be written.
 \item {\tt MARK5\_DIR\_PATH} points to a directory that is used to cache the contents of Mark5 modules.
 This directory must be readable and writable by the user running mpifxcorr.
 This directory needs to be created by hand if it does not exist.  

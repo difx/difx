@@ -230,6 +230,8 @@ It is a floating point value containing the average number of processes schedule
 
 \subsection{DifxParameter}
 
+The structure of a DifxParameter message \bfit{body} is as follows:
+
 \begin{quotation} 
 \begin{Verbatim}[commandchars=\|\[\]] 
     <difxParameter>
@@ -246,6 +248,7 @@ It is a floating point value containing the average number of processes schedule
 \end{quotation}
 
 Such a message is intended to allow a parameter, possibly qualified with array indices, to be set to a particular value.
+A possible use, for example, is to change a station clock value within a running DiFX instantiation or to enable generation of fast dump spectra for transient searching.
 
 \noindent The italicized fields are as follows:
 
@@ -274,11 +277,46 @@ For array types, the following \bfit{index} values specify the element to set.
 
 
 
-% DifxSmartMessage ---------------------------------------- INCOMPLETE --------
+% DifxSmartMessage ------------------------------------------------------------
+
+\subsection{DifxSmartMessage}
+
+The Self-Monitoring, Analysis and Reporting Technology (SMART) protocol is used by hard drives for health monitoring.
+The Mark5 units support this and make the SMART values available via the Streamstor API.
+{\tt mk5daemon} accesses this information periodically and on module insertion so that operators can be made aware of obvious and potential module problems as early as possible.
+The DifxSmartMessage multicast message is used to convey such SMART information for individual drives in a module.
+It should be expected that when such messages are sent a separate message will come for each drive (typically 8) of a module.
 
 
+The \bfit{body} of this message type contains:
 
+\begin{quotation}
+\begin{Verbatim}[commandchars=\|\[\]]
+    <difxSmart>
+      <mjd>|bfit[mjd]</mjd>
+      <vsn>|bfit[vsn]</vsn>
+      <slot>|bfit[slot]</slot>
+      <smart id=|bfit[smartId] value=|bfit[value] />
+      .
+      .
+      .
+    </difxSmart>
+\end{Verbatim}
+\end{quotation}
 
+Multple {\tt smart} tags (8 to 16 are usual) will usually be present in each smart message.
+
+\noindent The italicized fields are as follows:
+
+\begin{description}
+\item{\bfit{mjd}} The time at which the SMART value was extracted.
+\item{\bfit{vsn}} The module number.
+\item{\bfit{slot}} The slot of the hard drive in the module (0 to 7).
+\item{\bfit{smartId}} The identifier for the value being represented.
+This is usually a small (< 300) positive integer.
+More information can be found at \url{http://en.wikipedia.org/wiki/S.M.A.R.T.}
+\item{\bfit{value}} The value of the monitor point corresponding to the \bfit{smartId}.
+\end{description}
 
 % DifxStatusMessage --------------------------------------- INCOMPLETE --------
 

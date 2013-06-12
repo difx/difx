@@ -1,5 +1,4 @@
 
-% difxspeed input files
 
 \section{Description of various files} \label{sec:files}
 
@@ -371,7 +370,7 @@ TELESCOPE {\em t} OFFSET (m) & meters & axis offset in meters \\
 TELESCOPE {\em t} X (m)      & meters & X geocentric coordinate of antenna at date \\
 TELESCOPE {\em t} Y (m)      & meters & Y geocentric coordinate of antenna at date \\
 TELESCOPE {\em t} Z (m)      & meters & Z geocentric coordinate of antenna at date \\
-\Oa{TELESCOPE} {\em t} SHELF & string & shelf location of module to correlate \difxoneone \\
+\Oa{TELESCOPE} {\em t} SHELF & string & shelf location of module to correlate \\
 \hline
 \end{tabular}
 \end{center}
@@ -651,11 +650,28 @@ Notes:
 \end{enumerate}
 
 
-% .difxspeed.out -------------------------------------- INCOMPLETE ------------
+% .difxspeed.out --------------------------------------------------------------
 
 \subsection{.speed.out} \label{sec:speed.out}
 
+The output of {\tt difxspeed} (\S\ref{sec:difxspeed}) is a file usually ending in {\tt .speed.out}.
+The first many lines are comments describing to a human reader the fixed parameters of the benchmark trials and a table describing the meanings of the columns of the uncommented data lines that follow.
+In summary, the columns in the lines that follow are:
 
+\begin{center}
+\begin{tabular}{ll}
+\hline
+Column(s) & value(s) \\
+\hline
+1 to $N$ & values of variable parameters as described by comments above \\
+$N+1$ & The average execution time of all trials run with the combination of parameters \\
+$N+2$ & The RMS scatter in execution time \\
+$N+3$ to $N+2+R$ & List of execution times from all trials \\
+\hline
+\end{tabular}
+\end{center}
+
+In the above table, $N$ is the number of parameters taking on multiple values and $R$ is the number of times {\tt difxspeed} was run.
 
 
 
@@ -760,14 +776,14 @@ FR & The frequency table \\
 ML & The model table \\
 CT & The correlator (eop) table \\
 MC & The model components table \\
-SO & The spacecraft orbit table \difxoneone \\
+SO & The spacecraft orbit table \\
 UV & The visibility data table \\
 FG & The flag table \\
 TS & The system temperature table \\
 PH & The phase calibration table (pulse cals and state counts) \\
 WR & The weather table \\
 GN & The gain curve table \\
-GM & The pulsar gate model table \difxoneone \\
+GM & The pulsar gate model table \\
 \hline
 \end{tabular}
 \end{center}
@@ -970,7 +986,7 @@ START MJD          & integer MJD & start date \\
 START SECONDS      & integer seconds & start time \\
 ACTIVE DATASTREAMS & integer $\ge 2$ & number of antennas ({\em nAntenna}) \\
 ACTIVE BASELINES   & integer $\ge 1$ & number of baselines to correlate ({\em nBaseline}) \\
-VIS BUFFER LENGTH  & integer $\ge 1$ & the number of concurrent integrations to allow \difxoneone \\
+VIS BUFFER LENGTH  & integer $\ge 1$ & the number of concurrent integrations to allow \\
 OUTPUT FORMAT      & boolean & always {\tt SWIN} here \\
 OUTPUT FILENAME    & string & name of output {\tt .difx} directory \\
 \hline

@@ -297,18 +297,23 @@ In the implementation of the VLBA-DiFX operations plans, with the exception of t
 This library directly talks to Oracle databases; its use in Python makes for nearly effortless database interfacing.
 To install:
 \begin{enumerate}
-\item Download the latest source distribution from \url{http://cx-oracle.sourceforge.net/} (ver.\ 5.0.2 as of this writing)
+\item Download the latest source distribution from \url{http://cx-oracle.sourceforge.net/} (ver.\ 5.1.2 as of this writing)
 \item Decompress the contents into perhaps {\em sourcedir}; enter the newly created directory
 \item Run {\tt python setup.py build}
-\item Make sure install directory exists:  {\tt mkdir -p \$DIFX\_PREFIX/lib/python2.4/site-packages}
-\item Run {\tt python setup.py install --prefix=\$DIFX\_PREFIX}
+\item Make sure install directory exists:  {\tt mkdir -p \$DIFXROOT/lib/python2.4/site-packages}
+\item Run {\tt python setup.py install --prefix=\$DIFXROOT}
 \end{enumerate}
 
 \noindent
-You should substitute {\tt python2.4} with the string appropriate for your python version.
-Proper installation can be tested by running {\tt python} and typing {\tt import cx\_Oracle} at the {\tt >>>} prompt.
+Notes:
+\begin{enumerate}
+\item You should substitute {\tt python2.4} with the string appropriate for your python version.
+\item {\tt lib} may need to be replaced with {\tt lib64} in the path above.
+\item Proper installation can be tested by running {\tt python} and typing {\tt import cx\_Oracle} at the {\tt >>>} prompt.
 If another prompt is given without any ``ImportError'' message, then it should be installed properly.
-
+\item The {\tt setup.py} file from version 5.1.2 seems to have an incompatibility with RedHat Enterprise Linux 6 (and there may be other varients of this incompatibility).
+Inserting {\tt extraCompileArgs.append("-D\_\_USE\_XOPEN2K8")} at a logical outer-level location around line 200 seems to fix this problem.
+\end{enumerate}
 
 
 
