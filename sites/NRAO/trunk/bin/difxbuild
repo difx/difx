@@ -2,7 +2,7 @@
 
 from os import environ, system, getcwd, chdir, popen, readlink
 from os.path import isdir, isfile, islink, join, dirname
-from sys import argv, exit, platform
+from sys import argv, exit, platform, version_info
 import re
 import getopt
 from string import split, strip, find, lower
@@ -12,14 +12,13 @@ from glob import glob
 
 program = 'difxbuild'
 version = '0.26'
-verdate = '20130607'
+verdate = '20130613'
 author = 'Walter Brisken <wbrisken@nrao.edu>'
 
 difxbuildUrl = 'http://www.aoc.nrao.edu/~wbrisken/difxbuild'
 
 openmpiVersion = '1.6'
 pgplotVersion = '5.2'
-gpstkVersion = '2.0'
 jamVersion = '2.5.2'
 pngVersion = '1.2.50'
 schedVersion = '11.0'
@@ -29,6 +28,12 @@ autoconfVersion = '2.69'
 automakeVersion = '1.11.6'
 libtoolVersion = '2.4'
 pkgconfigVersion = '0.28'
+cxOracleVersion = '5.1.2'
+
+if version_info[0] < 3 and version_info[1] < 5:
+	psycopgVersion = '2.4.6'
+else:
+	psycopgVersion = '2.5'
 numMakeCpus = 4
 
 todo_list = """
@@ -971,6 +976,7 @@ def bootstrap(comps, params, args, verbose, pretend):
 		
 	configData = open(params['ConfigFile'], 'r').readlines()
 	config = {}
+	pyPath = {}
 	env = []
 	for c in configData:
 		c = split(c, '#')[0]	# strip comments
@@ -1094,6 +1100,16 @@ def bootstrap(comps, params, args, verbose, pretend):
 		if len(ipproot) == 0:
 			return
 
+		for arch in platforms.keys():
+			if arch == platform.machine():
+				pyVer = '%d.%d' % (version_info[0], version_info[1])
+				if '64' in arch:
+					pyPath[arch] = '$DIFX_ARCH_ROOT/lib64/python%s/site-packages' % pyVer
+				else:
+					pyPath[arch] = '$DIFX_ARCH_ROOT/lib/python%s/site-packages' % pyVer
+			if config.has_key('pythonpath%s' % arch):
+				pyPath[arch] = config['pythonpath%s' % arch]
+
 		runscript = '%s/bin/runmpifxcorr.%s' % (config['difxbase'], label) 
 		out = open(runscript, 'w')
 		out.write('#!/bin/bash\n\n')
@@ -1123,6 +1139,8 @@ def bootstrap(comps, params, args, verbose, pretend):
 				out.write('el')
 			out.write('if [[ ${HWPLATFORM} = "%s" ]]; then\n' % arch)
 			out.write('  export IPPROOT=%s\n' % ipproot[arch])
+			if pyPath.has_key(arch):
+				out.write('  export PYTHONPATH=%s\n' % pyPath[arch])
 			if arch in ['x86_64']:
 				out.write('  export DIFXBITS=64\n')
 				out.write('  export IPPARCH=intel64\n')
@@ -1697,13 +1715,14 @@ def spice(origComps, params, args, verbose, pretend):
 
 def gpstk(origComps, params, args, verbose, pretend):
 	arch = platform.machine()
-	gpstkSrcFile = 'gpstk-%s.src.tar.gz' % gpstkVersion
-	gpstkUrl = 'http://sourceforge.net/projects/gpstk/files/gpstk/%s/%s' % (gpstkVersion, gpstkSrcFile)
+	gpstkSrcFile = 'gpstk_wfb.tar.bz2'
 	difxBase = environ['DIFX_BASE'] + '/'
 	archSrcDir = difxBase + arch + '/src/'
 	tarDir = difxBase + 'tar/'
 	# get file
-	ftpFile(gpstkUrl, tarDir, gpstkSrcFile, args, verbose, pretend)
+	if not isfile(tarDir + gpstkSrcFile):
+		print 'Cannot continue: %s does not exist.  Contact Walter Brisken for help.' % (tarDir + gpstkSrcFile)
+		exit(0)
 	if not isdir(archSrcDir):
 		execute('mkdir -p %s' % archSrcDir, verbose, pretend)
 
@@ -1724,9 +1743,8 @@ def gpstk(origComps, params, args, verbose, pretend):
 	print '\nNow building gpstk.  THIS CAN TAKE A LONG TIME!\n'
 
 	chdir(archSrcDir)
-	execute('tar zxvf %s/%s' % (tarDir, gpstkSrcFile), verbose, pretend)
-	execute('mv gpstk gpstk-%s' % gpstkVersion, verbose, pretend)
-	chdir('gpstk-%s' % gpstkVersion)
+	execute('tar jxvf %s/%s' % (tarDir, gpstkSrcFile), verbose, pretend)
+	chdir('gpstk_wfb')
 	execute('jam -q -j%d -sPREFIX=%s' % (numMakeCpus, difxBase + arch), verbose, pretend)
 	execute('jam -sPREFIX=%s install' % (difxBase + arch), verbose, pretend)
 
@@ -1742,7 +1760,7 @@ def gpstk(origComps, params, args, verbose, pretend):
 	out.write('Name: gpstk\n')
 	out.write('Description: GPS Toolkit\n')
 	out.write('Requires:\n')
-	out.write('Version: %s\n' % gpstkVersion)
+	out.write('Version: wfb\n')
 	out.write('Libs: -L${libdir} -lgeodyn -lgpstk\n')
 	out.write('Cflags: -I${includedir}/gpstk\n')
 
@@ -1836,6 +1854,68 @@ def sched(origComps, params, args, verbose, pretend):
 	execute('cp %s/bin/sched %s/bin' % (schedDir, archDir), verbose, pretend)
 	
 
+def cxOracle(origComps, params, args, verbose, pretend):
+	if not environ.has_key('PYTHONPATH'):
+		print 'Need PYTHONPATH env var set.'
+		return
+	pythonPath = split(environ['PYTHONPATH'], ':')[0]
+	if not isdir(pythonPath):
+		execute('mkdir -p %s' % pythonPath, verbose, pretend)
+	arch = platform.machine()
+	cxoSrcFile = 'cx_Oracle-%s.tar.gz' % cxOracleVersion
+	cxoUrl = 'http://prdownloads.sourceforge.net/cx-oracle/%s?download' % cxoSrcFile
+	difxBase = environ['DIFX_BASE'] + '/'
+	archDir = difxBase + arch
+	archSrcDir = difxBase + arch + '/src/'
+	tarDir = difxBase + 'tar/'
+	# get file
+	ftpFile(cxoUrl, tarDir, cxoSrcFile, args, verbose, pretend)
+	if not isdir(archSrcDir):
+		execute('mkdir -p %s' % archSrcDir, verbose, pretend)
+	
+	cxoSrcDir = '%s/cx_Oracle-%s' % (archSrcDir, cxOracleVersion)
+	if isdir(cxoSrcDir):
+		print 'Stopping because %s exists' % cxoSrcDir
+		return
+
+	chdir(archSrcDir)
+	execute('tar zxvf %s/%s' % (tarDir, cxoSrcFile), verbose, pretend)
+	chdir(cxoSrcDir)
+	execute('python setup.py build', verbose, pretend)
+	execute('python setup.py install --prefix=%s/../../..' % pythonPath, verbose, pretend)
+
+def psycopg(origComps, params, args, verbose, pretend):
+	if not environ.has_key('PYTHONPATH'):
+		print 'Need PYTHONPATH env var set.'
+		return
+	pythonPath = split(environ['PYTHONPATH'], ':')[0]
+	if not isdir(pythonPath):
+		execute('mkdir -p %s' % pythonPath, verbose, pretend)
+	arch = platform.machine()
+	verParts = split(psycopgVersion, '.')
+	psycopgSrcFile = 'psycopg2-%s.tar.gz' % psycopgVersion
+	psycopgUrl = 'http://initd.org/psycopg/tarballs/PSYCOPG-%s-%s/%s' % (verParts[0], verParts[1], psycopgSrcFile)
+	difxBase = environ['DIFX_BASE'] + '/'
+	archDir = difxBase + arch
+	archSrcDir = difxBase + arch + '/src/'
+	tarDir = difxBase + 'tar/'
+	# get file
+	ftpFile(psycopgUrl, tarDir, psycopgSrcFile, args, verbose, pretend)
+	if not isdir(archSrcDir):
+		execute('mkdir -p %s' % archSrcDir, verbose, pretend)
+	
+	psycopgSrcDir = '%s/psycopg2-%s' % (archSrcDir, psycopgVersion)
+	if isdir(psycopgSrcDir):
+		print 'Stopping because %s exists' % psycopgSrcDir
+		return
+	
+	chdir(archSrcDir)
+	execute('tar zxvf %s/%s' % (tarDir, psycopgSrcFile), verbose, pretend)
+	chdir(psycopgSrcDir)
+	execute('python setup.py build', verbose, pretend)
+	execute('python setup.py install --prefix=%s/../../..' % pythonPath, verbose, pretend)
+
+
 def png(origComps, params, args, verbose, pretend):
 	arch = platform.machine()
 	pngSrcFile = 'libpng-%s.tar.gz' % pngVersion
@@ -1928,7 +2008,7 @@ def pgplot(origComps, params, args, verbose, pretend):
 
 
 def extra(origComps, params, args, verbose, pretend):
-	packages = ['pgplot', 'png', 'sched', 'sked', 'spice', 'autotools']
+	packages = ['cxOracle', 'psycopg', 'pgplot', 'png', 'sched', 'sked', 'spice', 'autotools', 'gpstk']
 	if len(args) < 1:
 		print 'The "extra" option allows installation of optional software.\n'
 		print 'Usage 1: difxbuild [options] extra [package(s)]\n'
@@ -1965,7 +2045,10 @@ def extra(origComps, params, args, verbose, pretend):
 		sched(origComps, params, [], verbose, pretend)
 	if 'sked' in args:
 		sked(origComps, params, [], verbose, pretend)
-
+	if 'cxOracle' in args:
+		cxOracle(origComps, params, [], verbose, pretend)
+	if 'psycopg' in args:
+		psycopg(origComps, params, [], verbose, pretend)
 
 
 def newestOMPI(data, version):
@@ -2348,6 +2431,14 @@ def usage(prog):
 		else:
 			print '%s is unset' % v
 
+def checkPythonVersion():
+	if not environ.has_key('PYTHONPATH'):
+		return
+	pythonPath = split(environ['PYTHONPATH'], ':')[0]
+
+	# If the python path does not match this python version raise a warning...
+	
+
 def main():
 	try:
 		opts, args = getopt.getopt(argv[1:], "hdqvpVt", ["help", "documentation", "quiet", "verbose", "pretend", "version", "todo"])
@@ -2382,6 +2473,9 @@ def main():
 		exit(0)
 		
 	if args[0] != 'bootstrap':
+	
+		checkPythonVersion()
+
 		if not environ.has_key('DIFX_VERSION'):
 			print 'Env. Var. DIFX_VERSION needs to be set'
 			exit(2)
