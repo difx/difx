@@ -56,7 +56,6 @@ void ServerSideConnection::mk5Control( DifxMessageGeneric* G ) {
         char mk5ControlCommand[ServerSideConnection::MAX_COMMAND_SIZE];
         snprintf( mk5ControlCommand, ServerSideConnection::MAX_COMMAND_SIZE, "%s; mk5control %s %s",
                 _difxSetupPath, S->command, S->targetNode );
-        printf( "COMMAND: \"%s\"\n", mk5ControlCommand );
         ExecuteSystem* executor = new ExecuteSystem( mk5ControlCommand );
         bool found = false;
         if ( executor->pid() > -1 ) {
