@@ -318,27 +318,30 @@ namespace guiServer {
                 case DIFX_MESSAGE_START:
                     startDifx( &G );
                     break;
-    			case DIFX_MESSAGE_STOP:
-    				stopDifx( &G );
-    				break;
-    			case DIFX_MESSAGE_FILETRANSFER:
-    				difxFileTransfer( &G );
-    				break;
-    			case DIFX_MESSAGE_FILEOPERATION:
-    				difxFileOperation( &G );
-    				break;
-    			case DIFX_MESSAGE_VEX2DIFXRUN:
-    				vex2difxRun( &G );
-    				break;
-    			case DIFX_MESSAGE_MACHINESDEFINITION:
-    				machinesDefinition( &G );
-    				break;
-    			case DIFX_MESSAGE_GETDIRECTORY:
-    				getDirectory( &G );
-    				break;
-    		    case DIFX_MESSAGE_COMMAND:
-    		        relayCommand( data, nBytes );
-    		        break;
+                case DIFX_MESSAGE_STOP:
+                    stopDifx( &G );
+                    break;
+                case DIFX_MESSAGE_FILETRANSFER:
+                    difxFileTransfer( &G );
+                    break;
+                case DIFX_MESSAGE_FILEOPERATION:
+                    difxFileOperation( &G );
+                    break;
+                case DIFX_MESSAGE_VEX2DIFXRUN:
+                    vex2difxRun( &G );
+                    break;
+                case DIFX_MESSAGE_MACHINESDEFINITION:
+                    machinesDefinition( &G );
+                    break;
+                case DIFX_MESSAGE_GETDIRECTORY:
+                    getDirectory( &G );
+                    break;
+                case DIFX_MESSAGE_MK5CONTROL:
+                    mk5Control( &G );
+                    break;
+                case DIFX_MESSAGE_COMMAND:
+                    relayCommand( data, nBytes );
+                    break;
                 default:
                     diagnostic( WARNING, "Received command message type %d - don't know what this is....\n", G.type );
                 }
@@ -552,6 +555,7 @@ namespace guiServer {
         void getDirectory( DifxMessageGeneric* G );
         void vex2difxRun( DifxMessageGeneric* G );
         void machinesDefinition( DifxMessageGeneric* G );
+        void mk5Control( DifxMessageGeneric* G );
         void diagnostic( const int severity, const char *fmt, ... );
         int popenRWE( int *rwepipe, const char *exe, const char *const argv[] );
         int pcloseRWE( int pid, int *rwepipe );

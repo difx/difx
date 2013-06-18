@@ -18,5 +18,7 @@ guiServer_SOURCES = \
 	DifxMonitorExchange.h \
 	ExecuteSystem.h \
 	MachinesMonitorConnection.h \
-	JobMonitorConnection.h
+	JobMonitorConnection.h \
+	mk5Control.cpp \
+	mk5ControlConnection.h
 
