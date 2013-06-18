@@ -194,12 +194,14 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                         strcpy (t301.chan_id, pfb[nf].stn[k].chan_id);
                         strcpy (t302.chan_id, pfb[nf].stn[k].chan_id);
                         strcpy (t303.chan_id, pfb[nf].stn[k].chan_id);
-                        break;
+                        break;      // found freq, do double break
                         }
-                if (k < 2)          // exit while on early for exit
-                    break;
+                if (k < 2)
+                    break;          // 2nd part of double break
                 }
-
+                                    // this freq not in table - skip it
+            if (k == 2)
+                continue;
                                     // loop over polynomial intervals
             for (j=0; j<D->scan[scanId].nPoly; j++)
                 {

@@ -301,6 +301,7 @@ int createRoot (DifxInput *D,           // difx input structure pointer
                          || strncmp (pst[1], "$IF", 3) == 0
                          || strncmp (pst[1], "$TRACKS", 7) == 0
                          || strncmp (pst[1], "$PHASE_CAL_DETECT", 17) == 0
+                         || strncmp (pst[1], "$PROCEDURES", 11) == 0
                          || strncmp (pst[1], "$ROLL", 5) == 0
                          || strncmp (pst[1], "$HEAD_POS", 9) == 0
                          || strncmp (pst[1], "$PASS_ORDER", 11) == 0)
