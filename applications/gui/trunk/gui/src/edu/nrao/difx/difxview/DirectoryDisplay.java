@@ -537,7 +537,7 @@ public class DirectoryDisplay extends JFrame {
             String commandStr = "getdirA";
             if ( _vsn.trim().equalsIgnoreCase( _host.bankBVSN().trim() ) )
                 commandStr = "getdirB";
-            DiFXCommand_mark5Control command = new DiFXCommand_mark5Control( commandStr, hostName(), _settings );
+            DiFXCommand_mark5Control command = new DiFXCommand_mark5Control( commandStr, hostName(), _settings, false );
             try {
                 command.send();
                 //  Sleep for a bit to give this command a chance to take effect.
@@ -632,7 +632,7 @@ public class DirectoryDisplay extends JFrame {
             if ( _vsn.trim().equalsIgnoreCase( _host.bankBVSN().trim() ) )
                 commandStr = "copy B";
             commandStr += _createFileScans + " " + _createFileDestination;
-            DiFXCommand_mark5Control command = new DiFXCommand_mark5Control( commandStr, hostName(), _settings );
+            DiFXCommand_mark5Control command = new DiFXCommand_mark5Control( commandStr, hostName(), _settings, false );
             try {
                 command.send();
                 //  Sleep for a bit to give this command a chance to take effect.
@@ -683,7 +683,7 @@ public class DirectoryDisplay extends JFrame {
     public void cancelActivity() {
         _cancelActivated = true;
         if ( _runningGetDirectory ) {
-            DiFXCommand_mark5Control command = new DiFXCommand_mark5Control( "stopdir", hostName(), _settings );
+            DiFXCommand_mark5Control command = new DiFXCommand_mark5Control( "stopdir", hostName(), _settings, false );
             try {
                 command.send();
             } catch ( Exception e ) {
@@ -692,7 +692,7 @@ public class DirectoryDisplay extends JFrame {
             }
         }
         if ( _runningCreateFile ) {
-            DiFXCommand_mark5Control command = new DiFXCommand_mark5Control( "stopcopy", hostName(), _settings );
+            DiFXCommand_mark5Control command = new DiFXCommand_mark5Control( "stopcopy", hostName(), _settings, false );
             try {
                 command.send();
             } catch ( Exception e ) {

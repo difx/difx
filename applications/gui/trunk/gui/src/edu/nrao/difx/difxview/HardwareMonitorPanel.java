@@ -109,6 +109,13 @@ public class HardwareMonitorPanel extends TearOffPanel {
                 processMark5StatusMessage( difxMsg );
             }
         } );
+        //  This may not be the place to absorb DiFX Info messages
+        processor.addDifxInfoMessageListener(new AttributedMessageListener() {
+            @Override
+            public void update( DifxMessage difxMsg ) {
+                processDifxInfoMessage( difxMsg );
+            }
+        } );
         _smartMonitor = new SMARTMonitor( _settings );
         _smartMonitor.difxMessageProcessor( processor );
     }
@@ -121,6 +128,15 @@ public class HardwareMonitorPanel extends TearOffPanel {
         }
 //        else
 //            System.out.println( "Hardware Monitor Panel received DiFX Alert from " + difxMsg.getHeader().getIdentifier() + " - no idea what to do with this!" );
+    }
+    
+    /*
+     * DiFX Info messages are probably from DiFX hardware, thus I'm including them here.
+     * This may ultimately not be the correct place to respond to them.  In any case, they
+     * are assumed to be important and are forwarded as "warnings" to the message center.
+     */
+    protected void processDifxInfoMessage( DifxMessage difxMsg ) {
+        _settings.messageCenter().warning( 0, difxMsg.getHeader().getFrom(), difxMsg.getBody().getDifxInfo().getMessage() );
     }
     
     public synchronized void processMark5StatusMessage( DifxMessage difxMsg ) {

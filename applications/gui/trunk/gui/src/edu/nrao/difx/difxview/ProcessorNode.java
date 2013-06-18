@@ -348,7 +348,7 @@ public class ProcessorNode extends BrowserNode {
      */
     protected void sendDiFXCommandMessage( String cmd ) {
         System.out.println( cmd );
-        DiFXCommand_mark5Control command = new DiFXCommand_mark5Control( cmd, name(), _settings );
+        DiFXCommand_mark5Control command = new DiFXCommand_mark5Control( cmd, name(), _settings, false );
         try {
             command.send();
         } catch ( Exception e ) {

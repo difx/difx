@@ -106,7 +106,7 @@ public class DiFXCommand_ls extends DiFXCommand {
     public void send() throws java.net.UnknownHostException {
         ResultReader reader = new ResultReader();
         reader.start();
-        super.send();  //  used to send to mk5daemon instead of having guiServer do it
+        super.send();
     }
         
     //  This thread reads the results of the ls operation as reported by mk5daemon

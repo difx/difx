@@ -135,7 +135,7 @@ public class SMARTMonitor {
      * so VSN and slot number are not specified - you get them all.
      */
     public void generate( String host ) {
-        DiFXCommand_mark5Control command = new DiFXCommand_mark5Control( "getsmart", host, _settings );
+        DiFXCommand_mark5Control command = new DiFXCommand_mark5Control( "getsmart", host, _settings, false );
         try {
             command.send();
         } catch ( Exception e ) {

@@ -27,6 +27,7 @@
     <xsd:element name="difxFileOperation" type="difxFileOperation"></xsd:element>
     <xsd:element name="difxGetDirectory" type="difxGetDirectory"></xsd:element>
     <xsd:element name="difxVex2difxRun" type="difxVex2difxRun"></xsd:element>
+    <xsd:element name="difxMk5Control" type="difxMk5Control"></xsd:element>
     <xsd:element name="difxCommand" type="difxCommand"></xsd:element>
     <xsd:element name="doiResourceConfig" type="doiResourceConfig"></xsd:element>
     <xsd:element name="doiProject" type="doiProject"></xsd:element>
@@ -67,6 +68,7 @@
                 <xsd:element ref="difxFileOperation"/>
                 <xsd:element ref="difxGetDirectory"/>
                 <xsd:element ref="difxVex2difxRun"/>
+                <xsd:element ref="difxMk5Control"/>
                 <xsd:element ref="difxSmart"/>
                 <xsd:element ref="difxMachinesDefinition"/>
                 <xsd:element ref="difxCommand"/>
@@ -678,6 +680,15 @@
             <xsd:element name="address" type="xsd:string"></xsd:element>
             <xsd:element name="port" type="xsd:int"></xsd:element>
             <xsd:element name="calcifOnly" type="xsd:int"></xsd:element>
+        </xsd:sequence>
+    </xsd:complexType>
+
+    <xsd:complexType name="difxMk5Control">
+        <xsd:sequence>
+            <xsd:element name="command" type="xsd:string"></xsd:element>
+            <xsd:element name="targetNode" type="xsd:string"></xsd:element>
+            <xsd:element name="address" type="xsd:string"></xsd:element>
+            <xsd:element name="port" type="xsd:int"></xsd:element>
         </xsd:sequence>
     </xsd:complexType>
 
