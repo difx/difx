@@ -948,6 +948,23 @@ static void XMLCALL endElement(void *userData, const char *name)
 						G->body.vex2DifxRun.calcifOnly = atoi( s );
 					}
 					break;
+				case DIFX_MESSAGE_MK5CONTROL:
+					if(strcmp(elem, "command") == 0 )
+					{
+						strncpy(G->body.mk5Control.command, s, DIFX_MESSAGE_PARAM_LENGTH-1);
+					}
+                                        else if(strcmp(elem, "targetNode") == 0 )
+					{
+						strncpy(G->body.mk5Control.targetNode, s, DIFX_MESSAGE_HOSTNAME_LENGTH-1);
+					}
+					else if(strcmp(elem, "address") == 0 )
+					{
+						strncpy(G->body.mk5Control.address, s, DIFX_MESSAGE_PARAM_LENGTH-1);
+					}
+					else if(strcmp(elem, "port") == 0 )
+					{
+						G->body.mk5Control.port = atoi( s );
+					}
 				case DIFX_MESSAGE_TRANSIENT:
 					if(strcmp(elem, "jobId") == 0)
 					{

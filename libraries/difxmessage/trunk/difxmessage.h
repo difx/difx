@@ -204,6 +204,7 @@ enum DifxMessageType
 	DIFX_MESSAGE_VEX2DIFXRUN,
 	DIFX_MESSAGE_MACHINESDEFINITION,
 	DIFX_MESSAGE_GETDIRECTORY,
+        DIFX_MESSAGE_MK5CONTROL,
 	NUM_DIFX_MESSAGE_TYPES	/* this needs to be the last line of enum */
 };
 
@@ -352,6 +353,14 @@ typedef struct
 
 typedef struct
 {
+	char command[DIFX_MESSAGE_PARAM_LENGTH];
+	char targetNode[DIFX_MESSAGE_HOSTNAME_LENGTH];
+	char address[DIFX_MESSAGE_PARAM_LENGTH];
+	int port;
+} DifxMessageMk5Control;
+
+typedef struct
+{
 	char user[DIFX_MESSAGE_PARAM_LENGTH];
 	char headNode[DIFX_MESSAGE_HOSTNAME_LENGTH];
 	char difxVersion[DIFX_MESSAGE_VERSION_LENGTH];
@@ -482,6 +491,7 @@ typedef struct
 		DifxMessageVex2DifxRun    vex2DifxRun;
 		DifxMessageMachinesDefinition   machinesDefinition;
 		DifxMessageGetDirectory  getDirectory;
+		DifxMessageMk5Control  mk5Control;
 	} body;
 	int _xml_level;			/* internal use only here and below */
 	char _xml_element[5][32];
