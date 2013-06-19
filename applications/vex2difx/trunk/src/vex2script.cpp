@@ -37,8 +37,8 @@
 using namespace std;
 
 const string program("vex2script");
-const string version("0.8");
-const string verdate("20130103");
+const string version("0.9");
+const string verdate("20130618");
 const string author("Walter Brisken, Adam Deller, Matthias Bark");
 
 static void usage(int argc, char **argv)
@@ -278,7 +278,7 @@ int main(int argc, char **argv)
 		}
 		else if(df == pystream::FORMAT_VDIF)
 		{
-			cout << "  Note: This is VDIF formatted and is still supported only experimentally" << endl;
+//			cout << "  Note: This is VDIF formatted and is still supported only experimentally" << endl;
 		}
 
 		py.open(A->name, V, sType);
@@ -288,9 +288,16 @@ int main(int argc, char **argv)
 		py.writeComment(string("File written by ") + program + string(" version ") + version + string(" vintage ") + verdate);
 		py.writeDbeInit(V);
 		py.writeRecorderInit(V);
-		py.writeLoifTable(V);
-		py.writeSourceTable(V);
-		py.writeScans(V);
+		py.writeXCubeInit();
+		if(py.getDBEPersonalityType() == pystream::RDBE_DDC) {
+			py.writeDDCLoifTable(V);
+			py.writeDDCSourceTable(V);
+			py.writeDDCScans(V);
+		} else {
+			py.writeLoifTable(V);
+			py.writeSourceTable(V);
+			py.writeScans(V);
+		}
 
 		py.close();
 	}
