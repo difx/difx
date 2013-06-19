@@ -235,6 +235,7 @@ int pystream::writeHeader(const VexData *V)
 		*this << tab << "from edu.nrao.evla.observe import RDBE" << endl;
 		*this << tab << "from edu.nrao.evla.observe import VLBALoIfSetup" << endl;
 		*this << tab << "from edu.nrao.evla.observe import Parameters" << endl;
+		*this << tab << "from edu.nrao.evla.observe import ESSR" << endl;
 		*this << tab << "from edu.nrao.evla.observe import bbc" << endl;
 		break;
 	case SCRIPT_EVLA:
@@ -289,7 +290,7 @@ int pystream::writeRecorderInit(const VexData *V)
 			break;
 		case FORMAT_VDIF:
 #warning "eventually change Mark5B to VDIF below when downstream can support it"
-			*this << "recorder0.setMode('Mark5B')" << endl;
+			*this << "recorder0.setMode('VDIF')" << endl;
 			*this << "recorder0.setPSNMode(0)" << endl;
 #warning "replace 5032 below with value supplied in vex"
 			*this << "recorder0.setPacket(0, 0, 28, 5032)" << endl;	
@@ -361,7 +362,7 @@ void pystream::figurePersonality(const VexData *V)
 
 		if(nRecChan == 0)
 		{
-			if(nChan != 1 && nChan != 2 && nChan != 4 && nChan != 8)	// Currently this is true, may change with VDIF
+			if(nChan < 1 || nChan > 8)
 			{
 				ddcOK = false;
 			}
@@ -372,7 +373,7 @@ void pystream::figurePersonality(const VexData *V)
 		}
 		else
 		{
-			if(nRecChan != 1 && nRecChan != 2 && nRecChan != 4 && nRecChan != 8)	// Currently this is true, may change with VDIF
+			if(nRecChan < 1 || nRecChan > 8)
 			{
 				ddcOK = false;
 			}
@@ -447,6 +448,7 @@ void pystream::figurePersonality(const VexData *V)
 					exit(EXIT_FAILURE);
 				}
 				personalityType = RDBE_PFB;
+				numDBEChan = MAX_DBE_PFB_CHAN;
 			}
 			else if(!pfbOK)
 			{
@@ -457,25 +459,74 @@ void pystream::figurePersonality(const VexData *V)
 					exit(EXIT_FAILURE);
 				}
 				personalityType = RDBE_DDC;
+				numDBEChan = MAX_DBE_CHAN;
 			}
 		}
 	}
 
 	if(personalityType == RDBE_UNKNOWN)
 	{
-		if(maxChans <= 4)
+		if(maxChans <= 8)
 		{
 			personalityType = RDBE_DDC;	// most sensible default for now
 		}
 		else
 		{
 			personalityType = RDBE_PFB;
+			numDBEChan = MAX_DBE_PFB_CHAN;
 		}
 	}
 }
 
 int pystream::writeDbeInit(const VexData *V)
 {
+	unsigned int nMode = V->nMode();
+	need2DBEs = false;
+
+//	cerr << "======================== pystream::writeDbeInit" << endl;
+
+	// resize our data arrays
+	chanPerIF.resize(nMode);
+	for( int i=0; i<nMode; i++)
+		chanPerIF[i].resize(MAX_IF);
+	IFinUse.resize(nMode);
+	IFinUseByDBE.resize(nMode);
+	IF2DBEassign.resize(nMode);
+	orderedIFNums.resize(nMode);
+	chanByDBE.resize(nMode);
+	chanDist.resize(nMode);
+    for( int i=0; i<nMode; i++) {
+        orderedIFNums[i].resize(MAX_IF);
+		chanByDBE[i].resize(MAX_DBE);
+        IFinUseByDBE[i].resize(MAX_IF);
+		IF2DBEassign[i].resize(MAX_IF_PER_DBE);
+    	for( int j=0; j<MAX_IF_PER_DBE; j++)
+	        IF2DBEassign[i][j].resize(MAX_IF_PER_DBE);
+	}
+	need2DBEbyMode.resize(nMode);
+	IFinUseByDBE.resize(nMode);
+	IF2DBEassign.resize(nMode);
+
+	// initialize data arrays
+	for(unsigned int modeNum = 0; modeNum < nMode; ++modeNum) {
+		need2DBEbyMode[modeNum] = false;
+		IF2DBEassign[modeNum][DBE_0][IN_0] = IF2DBEassign[modeNum][DBE_0][IN_1] = -1;
+		IF2DBEassign[modeNum][DBE_1][IN_0] = IF2DBEassign[modeNum][DBE_1][IN_1] = -1;
+		IFinUseByDBE[modeNum][DBE_0] = IFinUseByDBE[modeNum][DBE_1] = -1;
+		chanPerIF[modeNum][0] = chanPerIF[modeNum][1] = chanPerIF[modeNum][2]
+			= chanPerIF[modeNum][3] = IFinUse[modeNum] = 0;
+		orderedIFNums[modeNum][0] = orderedIFNums[modeNum][1] 
+			= orderedIFNums[modeNum][2] = orderedIFNums[modeNum][3] = -1;
+		chanByDBE[modeNum][DBE_0] = chanByDBE[modeNum][DBE_0] = -1;
+		chanDist[modeNum] = CHANDIST_NONE;
+	}
+	chanAssign.resize(MAX_DBE);
+    for( int i=0; i<MAX_DBE; i++) {
+		chanAssign[i].resize(numDBEChan);
+		for( int j=0; j<numDBEChan; j++)
+			chanAssign[i][j] = -1;
+	}
+
 	if(scriptType == SCRIPT_VLBA || scriptType == SCRIPT_GBT)
 	{
 #warning "FIXME For now, set up single RDBE"
@@ -500,17 +551,210 @@ int pystream::writeDbeInit(const VexData *V)
 		}
 		else if(personalityType == RDBE_DDC)
 		{
+			int dbeNum = 0;
+			// determine how many DBEs we will need
+    		for(unsigned int modeNum = 0; modeNum < nMode; ++modeNum) {
+		        const VexMode *mode = V->getMode(modeNum);
+    		    const VexSetup *setup = mode->getSetup(ant);
+
+				if( setup->channels.size() > 2*MAX_DBE_CHAN ) {
+					cerr << "VEX error: too many channels defined: " << setup->channels.size() 
+						<< " vs max of " << 2*MAX_DBE_CHAN << " for DDC" << endl;
+					exit(EXIT_FAILURE);	
+				}
+				// find number of channel per IF	
+				for(unsigned int i = 0; i < setup->channels.size(); ++i) {
+					chanPerIF[modeNum][ifIndex[modeNum][setup->channels[i].ifName]]++;
+//					cerr << "## ifName: " << setup->channels[i].ifName << ":" << ifIndex[modeNum][setup->channels[i].ifName] << endl;
+				}
+				// find how many IFs we are using and order them by which IF has most channels
+				for(unsigned int i = 0; i < MAX_IF; ++i) {
+					if( chanPerIF[modeNum][i] != 0 ) {
+						IFinUse[modeNum]++;
+						for( unsigned int j = 0; j < MAX_IF; j++) {
+							if( orderedIFNums[modeNum][j] == -1
+								|| chanPerIF[modeNum][i] > chanPerIF[modeNum][orderedIFNums[modeNum][j]] ) {
+								for(unsigned int k = (MAX_IF-1); k>j && orderedIFNums[modeNum][j]!=-1; k--) {
+									orderedIFNums[modeNum][k] = orderedIFNums[modeNum][k-1];
+								}
+								orderedIFNums[modeNum][j] = i;
+//								cerr << " orderedIFNums[modeNum][j]: " << orderedIFNums[modeNum][j] << " i: " << i << " j: " << j << endl;
+								break;
+							}
+						}
+					}
+				} 
+				// do we need 2 DBEs for this mode?
+				if( IFinUse[modeNum] > 2
+					|| ((orderedIFNums[modeNum][0]==-1)?0:chanPerIF[modeNum][orderedIFNums[modeNum][0]])
+						+((orderedIFNums[modeNum][1]==-1)?0:chanPerIF[modeNum][orderedIFNums[modeNum][1]]) > 4 ) {
+					need2DBEs  = true;
+					// 2 DBE requires VDIF format
+					setDataFormat(FORMAT_VDIF);
+//					cerr << "!!!!! Need 2 DBEs for configuration " << modeNum << endl;
+				}
+				// figure out which IFs to assign to which DBE
+//				cerr << "$$$$ IFinUse[modeNum]: " << IFinUse[modeNum] << " - " << chanPerIF[modeNum][orderedIFNums[modeNum][0]] << endl;
+				switch(IFinUse[modeNum]) {
+					case 1:
+						if( chanPerIF[modeNum][orderedIFNums[modeNum][0]] <= MAX_DBE_CHAN ) {
+							// single DBE
+							IF2DBEassign[modeNum][DBE_0][IN_0]=orderedIFNums[modeNum][0];
+							IFinUseByDBE[modeNum][DBE_0]=1;
+							IFinUseByDBE[modeNum][DBE_1]=0;
+							chanByDBE[modeNum][DBE_0] = chanPerIF[modeNum][orderedIFNums[modeNum][0]];
+							chanByDBE[modeNum][DBE_1] = 0;
+							need2DBEbyMode[modeNum] = false;
+							numDBE = 1;
+							chanDist[modeNum] = CHANDIST_1IF_1;
+						} else {
+							// dual DBE
+							IF2DBEassign[modeNum][DBE_0][IN_0]=orderedIFNums[modeNum][0];
+							IF2DBEassign[modeNum][DBE_1][IN_0]=orderedIFNums[modeNum][0];
+							IFinUseByDBE[modeNum][DBE_0]=1;
+							IFinUseByDBE[modeNum][DBE_1]=1;
+							chanByDBE[modeNum][DBE_0] = MAX_DBE_CHAN;
+							chanByDBE[modeNum][DBE_1] = chanPerIF[modeNum][orderedIFNums[modeNum][0]] - MAX_DBE_CHAN;
+							need2DBEbyMode[modeNum] = true;
+							numDBE = 2;
+							chanDist[modeNum] = CHANDIST_1IF_2;
+						}
+						break;
+					case 2:
+						if( chanPerIF[modeNum][orderedIFNums[modeNum][0]]
+							+chanPerIF[modeNum][orderedIFNums[modeNum][1]] <= MAX_DBE_CHAN ) {
+							// single DBE
+							IF2DBEassign[modeNum][DBE_0][IN_0]=orderedIFNums[modeNum][0];
+							IF2DBEassign[modeNum][DBE_0][IN_1]=orderedIFNums[modeNum][1];
+							IFinUseByDBE[modeNum][DBE_0]=2;
+							IFinUseByDBE[modeNum][DBE_1]=0;
+							chanByDBE[modeNum][DBE_0] = chanPerIF[modeNum][orderedIFNums[modeNum][0]]
+														+ chanPerIF[modeNum][orderedIFNums[modeNum][1]];
+							chanByDBE[modeNum][DBE_1] = 0;
+							need2DBEbyMode[modeNum] = false;
+							numDBE = 1;
+							chanDist[modeNum] = CHANDIST_2IF_1;
+						} else {
+							if( chanPerIF[modeNum][orderedIFNums[modeNum][0]] <= MAX_DBE_CHAN ) {
+								// dual DBE
+								IF2DBEassign[modeNum][DBE_0][IN_0]=orderedIFNums[modeNum][0];
+								IF2DBEassign[modeNum][DBE_1][IN_0]=orderedIFNums[modeNum][1];
+								IFinUseByDBE[modeNum][DBE_0]=1;
+								IFinUseByDBE[modeNum][DBE_1]=1;
+								chanByDBE[modeNum][DBE_0] = chanPerIF[modeNum][orderedIFNums[modeNum][0]];
+								chanByDBE[modeNum][DBE_1] = chanPerIF[modeNum][orderedIFNums[modeNum][1]];
+								chanDist[modeNum] = CHANDIST_2IF_2;
+							} else { // chanPerIF[modeNum][orderedIFNums[modeNum][0]] > MAX_DBE_CHAN
+								IF2DBEassign[modeNum][DBE_0][IN_0]=orderedIFNums[modeNum][0];
+								IF2DBEassign[modeNum][DBE_1][IN_0]=orderedIFNums[modeNum][0];
+								IF2DBEassign[modeNum][DBE_1][IN_1]=orderedIFNums[modeNum][1];
+								IFinUseByDBE[modeNum][DBE_0]=1;
+								IFinUseByDBE[modeNum][DBE_1]=2;
+								chanByDBE[modeNum][DBE_0] = MAX_DBE_CHAN;
+								chanByDBE[modeNum][DBE_1] = chanPerIF[modeNum][orderedIFNums[modeNum][0]]
+															- MAX_DBE_CHAN
+															+ chanPerIF[modeNum][orderedIFNums[modeNum][1]];
+								chanDist[modeNum] = CHANDIST_2IF_3;
+							}
+							need2DBEbyMode[modeNum] = true;
+							numDBE = 2;
+						}
+						break;
+					case 3:
+						if( chanPerIF[modeNum][orderedIFNums[modeNum][0]] <= MAX_DBE_CHAN
+						    && chanPerIF[modeNum][orderedIFNums[modeNum][1]]
+								+chanPerIF[modeNum][orderedIFNums[modeNum][2]] <= MAX_DBE_CHAN ) {
+							IF2DBEassign[modeNum][DBE_0][IN_0]=orderedIFNums[modeNum][0];
+							IF2DBEassign[modeNum][DBE_1][IN_0]=orderedIFNums[modeNum][1];
+							IF2DBEassign[modeNum][DBE_1][IN_1]=orderedIFNums[modeNum][2];
+							IFinUseByDBE[modeNum][DBE_0]=1;
+							IFinUseByDBE[modeNum][DBE_1]=2;
+							chanByDBE[modeNum][DBE_0] = chanPerIF[modeNum][orderedIFNums[modeNum][0]];
+							chanByDBE[modeNum][DBE_1] = chanPerIF[modeNum][orderedIFNums[modeNum][1]]
+														+ chanPerIF[modeNum][orderedIFNums[modeNum][2]];
+							chanDist[modeNum] = CHANDIST_3IF_1;
+						} else {
+							IF2DBEassign[modeNum][DBE_0][IN_0]=orderedIFNums[modeNum][0];
+							IF2DBEassign[modeNum][DBE_0][IN_1]=orderedIFNums[modeNum][1];
+							IF2DBEassign[modeNum][DBE_1][IN_0]=orderedIFNums[modeNum][0];
+							IF2DBEassign[modeNum][DBE_1][IN_1]=orderedIFNums[modeNum][2];
+							IFinUseByDBE[modeNum][DBE_0]=2;
+							IFinUseByDBE[modeNum][DBE_1]=2;
+							chanByDBE[modeNum][DBE_0] = MAX_DBE_CHAN;
+							chanByDBE[modeNum][DBE_1] = chanPerIF[modeNum][orderedIFNums[modeNum][0]]
+														+ chanPerIF[modeNum][orderedIFNums[modeNum][1]]
+														+ chanPerIF[modeNum][orderedIFNums[modeNum][2]]
+														- MAX_DBE_CHAN;
+							chanDist[modeNum] = CHANDIST_3IF_2;
+						}
+						need2DBEbyMode[modeNum] = true;
+						numDBE = 2;
+						break;
+					case 4:
+						// always dual DBE
+						IF2DBEassign[modeNum][DBE_0][IN_0]=orderedIFNums[modeNum][0];
+						IF2DBEassign[modeNum][DBE_0][IN_1]=orderedIFNums[modeNum][3];
+						IF2DBEassign[modeNum][DBE_1][IN_0]=orderedIFNums[modeNum][1];
+						IF2DBEassign[modeNum][DBE_1][IN_1]=orderedIFNums[modeNum][2];
+						IFinUseByDBE[modeNum][DBE_0]=2;
+						IFinUseByDBE[modeNum][DBE_1]=2;
+						chanByDBE[modeNum][DBE_0] = chanPerIF[modeNum][orderedIFNums[modeNum][0]]
+													+ chanPerIF[modeNum][orderedIFNums[modeNum][3]];
+						chanByDBE[modeNum][DBE_1] = chanPerIF[modeNum][orderedIFNums[modeNum][1]]
+													+ chanPerIF[modeNum][orderedIFNums[modeNum][2]];
+						need2DBEbyMode[modeNum] = true;
+						numDBE = 2;
+						chanDist[modeNum] = CHANDIST_4IF_1;
+						break;
+					default:
+						cerr << "Invalid number of IFs in use! " << IFinUse[modeNum] << " vs 4 allowed" << endl;
+						exit(EXIT_FAILURE);	
+				}
+
+
+/*				cerr << "Mode: " << modeNum << " chanPerIF: [" << chanPerIF[modeNum][0] << ":" << chanPerIF[modeNum][1] << ":"
+					<< chanPerIF[modeNum][2] << ":" << chanPerIF[modeNum][3] << "] in use: " << IFinUse[modeNum]
+					<< " orderedIFNums: [" << orderedIFNums[modeNum][0] << ":" << orderedIFNums[modeNum][1] << ":"
+					<< orderedIFNums[modeNum][2] << ":" << orderedIFNums[modeNum][3] << "]" << endl;
+				for(unsigned int i = 0; i < MAX_IF; ++i) {
+					cerr << "IF: " << orderedIFNums[modeNum][i] << " ";
+				}
+				cerr << endl;
+				cerr << "===============================" << endl;
+
+				cerr << "$$$$$$$$ chanByDBE for mode: " << modeNum << ": ";
+				for( int i=0; i < MAX_DBE; i++ )
+					cerr << chanByDBE[modeNum][i] << ":";
+				cerr << endl;
+				cerr << "IF2DBEassign for mode: " << modeNum << ": ";
+				for( int dI = 0; dI < MAX_DBE; dI++ ) {
+					for ( int dJ = 0; dJ < MAX_IF_PER_DBE; dJ++ )
+						cerr << "[" << IF2DBEassign[modeNum][dI][dJ] << "]";
+					cerr << " ";
+				}
+				cerr << endl;
+*/
+			}
+			if( need2DBEs ) {
+				dbeNum = 1;
+			} else {
+				dbeNum = 0;
+			}
+
 			if(dbeFilename[0])
 			{
 				if(strcasestr(dbeFilename.c_str(), "PFB") != 0)
 				{
 					cerr << "Warning: Personality " << dbeFilename << " looks to be for PFB, but this project is using DDC." << endl;
 				}
-				*this << "dbe0 = RDBE(0, 'ddc', '" << dbeFilename << "')" << endl;
+				*this << "dbe0 = RDBE(" << dbeNum << ", 'ddc', '" << dbeFilename << "')" << endl;
 			}
 			else
 			{
-				*this << "dbe0 = RDBE(0, 'ddc')" << endl;
+				if( dataFormat == FORMAT_VDIF )
+					*this << "dbe0 = RDBE(" << dbeNum << ", 'ddc', 'ddc_1501183.bin')" << endl;
+				else
+					*this << "dbe0 = RDBE(" << dbeNum << ", 'ddc')" << endl;
 			}
 		}
 		if(personalityType == RDBE_PFB || personalityType == RDBE_DDC)
@@ -523,27 +767,33 @@ int pystream::writeDbeInit(const VexData *V)
 			case FORMAT_VLBA:
 				*this << "dbe0.setFormat('Mark5B')" << endl;
 				*this << "dbe0.setPSNMode(0)" << endl;
-				*this << "dbe0.setPacket(0, 0, 40, 5008)" << endl;
+				*this << "dbe0.setPacket(0, 0, 36, 5008)" << endl;
 				break;
 			case FORMAT_VDIF:
 				*this << "dbe0.setFormat('VDIF')" << endl;
 				*this << "dbe0.setPSNMode(0)" << endl;
 #warning "FIXME: replace 5032 below with value from vex file"
-				*this << "dbe0.setPacket(0, 0, 32, 5032)" << endl;
+				*this << "dbe0.setPacket(0, 0, 28, 5032)" << endl;
 				break;
 			default:
 				cerr << "Error: should not end up in pystream::writeDbeInit with format=" << dataFormat << endl;
 				exit(0);
 			}
-			if(maxIFs(V) <= 2)
-			{
-				*this << "subarray.setDBE(dbe0)" << endl;
-			}
-			else
-			{
-				*this << "# subarray.setDBE(dbe0)  # Not set because max number of IFs is " << maxIFs(V) << endl;
-			}
+			*this << "subarray.setDBE(dbe0)" << endl;
 			*this << endl;
+			// if we need a 2nd DBE, only DDC+VDIF is supported
+			if( need2DBEs ) {
+				if(dbeFilename[0])
+				*this << "dbe1 = RDBE(2, 'ddc', '" << dbeFilename << "')" << endl;
+				else
+					*this << "dbe1 = RDBE(2, 'ddc', 'ddc_1501183.bin')" << endl;
+				*this << "dbe1.setALC(1)" << endl;
+				*this << "dbe1.setFormat('VDIF')" << endl;
+				*this << "dbe1.setPSNMode(0)" << endl;
+				*this << "dbe1.setPacket(0, 0, 28, 5032)" << endl;
+				*this << "subarray.setDBE(dbe1)" << endl;
+				*this << endl;
+			}
 		}
 	}
 	else if(scriptType == SCRIPT_EVLA)
@@ -552,6 +802,36 @@ int pystream::writeDbeInit(const VexData *V)
 	}
 
 	return 1;
+}
+
+void pystream::writeXCubeInit()
+{
+	*this << "# XCUBE init" << endl;
+	*this << "essr = ESSR()          # constructor" << endl;
+
+	// modes:
+    // 1 - Duplicate one input stream to 2 output streams
+    // 2 - Operate a pair of straight thru connections
+    // 3 - Receive data on two ports and splice into one output
+    // 4 - Operate a single straight thru connection
+	if( need2DBEs ) {
+		*this << "essr.setMode(3)        # two in, one out" << endl;
+	} else {
+		*this << "essr.setMode(4)        # one in, one out" << endl;
+	}
+	// routing
+	if( need2DBEs ) {
+		*this << "essr.setRoute(2, 4)    # route incoming traffic from input 1 and 2" << endl;
+		*this << "essr.setRoute(3, 4)    # to output 1" << endl;
+	} else {
+		*this << "essr.setRoute(2, 4)    # route incoming traffic from input 1 to output 1" << endl;
+	}
+	// set pace for output
+	*this << "essr.setPace(4, 5)     # set port 4 packet pacing to 5" << endl;
+	// we are not setting our second output in vex2script; USNO setup done in queueVex
+	// *this << "essr.setPace(5, 5)        # set port 5 packet pacing to 5" << endl;
+	*this << "subarray.setESSR(essr)" << endl;
+	*this << endl;
 }
 
 void pystream::writeImplicitConversionComment(const std::vector<unsigned int> &implicitConversions)
@@ -686,6 +966,247 @@ int pystream::writeChannelSet(const VexSetup *setup, int modeNum)
 	*this << "  ]" << endl;
 
 	writeImplicitConversionComment(implicitConversions);
+
+	return 0;
+}
+
+int pystream::writeDDCChannelSet(const VexSetup *setup, int modeNum)
+{
+//	cerr << "======================== pystream::writeChannelSet" << endl;
+
+//	cerr << "chanDist[" << modeNum << "]: " << chanDist[modeNum] << endl;
+	// temp storage to figure out to which DBE channels are assigned
+	int assignedChans[MAX_DBE][MAX_DBE_CHAN] = {-1, -1, -1, -1, -1, -1 ,-1, -1};
+
+	if( personalityType == RDBE_DDC ) {
+		if( setup->channels.size() > 2*MAX_DBE_CHAN ) {
+			cerr << "VEX error: too many channels defined: " << setup->channels.size() 
+				<< " vs max of " << 2*MAX_DBE_CHAN << endl;
+
+			exit(EXIT_FAILURE);	
+		}
+	}
+
+	vector<unsigned int> implicitConversions;
+	int dbe0count = 0, dbe1count = 0; // index for which channels are assigned to which DBE IN port
+	int tmp1 = 0; // add'tl temp var to track channels in 3IF case
+	for(unsigned int i = 0; i < setup->channels.size(); ++i)
+	{
+		if( chanDist[modeNum] == CHANDIST_1IF_1
+			|| chanDist[modeNum] == CHANDIST_1IF_2 ) {
+			if( dbe0count < MAX_DBE_CHAN) {
+				assignedChans[DBE_0][dbe0count] = i;
+				dbe0count++;
+			} else {
+				assignedChans[DBE_1][dbe1count] = i;
+				dbe1count++;
+			}
+		}
+		if( chanDist[modeNum] == CHANDIST_2IF_1 ) {
+			assignedChans[DBE_0][dbe0count] = i;
+			dbe0count++;
+		}
+		if( chanDist[modeNum] == CHANDIST_2IF_2 ) {
+			if( ifIndex[modeNum][setup->channels[i].ifName] == IF2DBEassign[modeNum][DBE_0][IN_0] ) {
+				assignedChans[DBE_0][dbe0count] = i;
+				dbe0count++;
+			} else {
+				assignedChans[DBE_1][dbe1count] = i;
+				dbe1count++;
+			}
+		}
+		if( chanDist[modeNum] == CHANDIST_2IF_3 ) {
+			if( ifIndex[modeNum][setup->channels[i].ifName] == IF2DBEassign[modeNum][DBE_0][IN_0]
+				&& dbe0count < MAX_DBE_CHAN) {
+				assignedChans[DBE_0][dbe0count] = i;
+				dbe0count++;
+			} else { // only 2 IFs in use
+				assignedChans[DBE_1][dbe1count] = i;
+				dbe1count++;
+			}
+		}
+		if( chanDist[modeNum] == CHANDIST_3IF_1 ) {
+			if( ifIndex[modeNum][setup->channels[i].ifName] == IF2DBEassign[modeNum][DBE_0][IN_0] ) {
+				assignedChans[DBE_0][dbe0count] = i;
+				dbe0count++;
+			} else {
+				assignedChans[DBE_1][dbe1count] = i;
+				dbe1count++;
+			}
+		}
+		if( chanDist[modeNum] == CHANDIST_3IF_2 ) {
+			if( ifIndex[modeNum][setup->channels[i].ifName] == IF2DBEassign[modeNum][DBE_0][IN_0] ) {
+				if( tmp1 < MAX_DBE_CHAN - chanPerIF[modeNum][orderedIFNums[modeNum][1]] ) {
+					assignedChans[DBE_0][dbe0count] = i;
+					dbe0count++;
+					tmp1++; // keep track of how many [DBE_0][IN_0] channels we have assigned to DBE0
+				} else { // once we have assigned max of [DBE_0][IN_0] to DBE0, put more channels towarsd DBE1
+					assignedChans[DBE_1][dbe1count] = i;
+					dbe1count++;
+				}
+			} else if( ifIndex[modeNum][setup->channels[i].ifName] == IF2DBEassign[modeNum][DBE_0][IN_1] ) {
+				assignedChans[DBE_0][dbe0count] = i;
+				dbe0count++;
+			} else if( ifIndex[modeNum][setup->channels[i].ifName] == IF2DBEassign[modeNum][DBE_1][IN_1] ) {
+				assignedChans[DBE_1][dbe1count] = i;
+				dbe1count++;
+			}
+		}
+		if( chanDist[modeNum] == CHANDIST_4IF_1 ) {
+			if( ifIndex[modeNum][setup->channels[i].ifName] == IF2DBEassign[modeNum][DBE_0][IN_0]
+				|| ifIndex[modeNum][setup->channels[i].ifName] == IF2DBEassign[modeNum][DBE_0][IN_1] ) {
+				assignedChans[DBE_0][dbe0count] = i;
+				dbe0count++;
+			} else {
+				assignedChans[DBE_1][dbe1count] = i;
+				dbe1count++;
+			}
+		}
+	}
+/*
+	cerr << "###### assignedChans" << endl;
+	for( int i=0; i < MAX_DBE; i++ ) {
+		for( int j=0; j<MAX_DBE_CHAN; j++ ) {
+			cerr << assignedChans[i][j] << ":";
+		}
+		cerr << endl;
+	}
+	cerr << "###### chanByDBE: ";
+	for( int i=0; i < MAX_DBE; i++ ) {
+		cerr << chanByDBE[modeNum][i] << ":";
+	}
+ 	cerr << endl;
+
+	cerr << "modeNum: " << modeNum << " need2DBE: " << (need2DBEbyMode[modeNum]?"true":"false") << ":" << (need2DBEbyMode[modeNum]?2:1) << endl; 
+*/
+	for( int dbe = 0; dbe < (need2DBEbyMode[modeNum]?2:1); dbe++ ) {
+		if( need2DBEbyMode[modeNum] ) {
+			strcpy( dbeAppend, (dbe==0?"a":"b"));
+		} else {
+			strcpy( dbeAppend, "");
+		}
+
+		*this << "channelSet" << modeNum << dbeAppend << " = [ \\" << endl;
+//		cerr << "channelSet" << modeNum << dbeAppend << " = [ \\" << endl;
+
+//		cerr << " chanByDBE[" << modeNum << "][" << dbe << "]: " << chanByDBE[modeNum][dbe] << endl;
+		// now print the channels assigned
+		for(unsigned int j = 0; j < chanByDBE[modeNum][dbe]; ++j) {
+			unsigned int i = assignedChans[dbe][j];
+//			cerr << " assigned chan["<<i<<"]: " << assignedChans[dbe][j] << endl;
+			if( i == -1 )
+				continue;
+			unsigned int inputNum = ifIndex[modeNum][setup->channels[i].ifName];
+			double bw = setup->channels[i].bbcBandwidth;
+			char sb = setup->channels[i].bbcSideBand;
+			unsigned int nBit = setup->nBit;
+			unsigned int threadId = i;
+			const VexIF *vif = setup->getIF(setup->channels[i].ifName);
+			if(!vif) {
+				cerr << "Developer error: setup->getIF(" << setup->channels[i].ifName << ") returned NULL" << endl;
+				exit(EXIT_FAILURE);
+			}
+			double freq = setup->channels[i].bbcFreq;
+			double tune = freq - vif->ifSSLO;
+			double tune0, bw0;
+
+			if(tune < 0.0) {
+				tune = -tune;
+				sb = (sb == 'U') ? 'L' : 'U';
+			}
+
+			// Handle the weird case of VLBA at 610 MHz
+			if(freq > 550e6 && freq < 650e6 && tune > 1000e6) {
+				tune -= 500e6;
+				implicitConversions.push_back(i);
+			}
+
+			tune0 = tune;
+			bw0 = bw;
+
+			if(setup->nRecordChan == 0 && setup->channels.size() < 16)
+			{
+				double ny, d640, d896;
+				const double minBW = 1.0e6;	//Hz
+				// If non-recording and DDC, do a few different things, such as making use of oversample factor and nudging tuning to be legal.
+				// Mostly this will be for pointing projects.
+
+				bw = bw / setup->channels[i].oversamp;
+				if(bw < minBW)
+				{
+					// adjust tuning to deep same center freq
+					if(sb == 'L')
+					{
+						tune += (bw - minBW)/2;
+					}
+					else
+					{
+						tune -= (bw - minBW)/2;
+					}
+
+					bw = minBW;
+				}
+				tune0 = tune;
+			
+				if(sb == 'L')
+				{
+					ny = tune-bw;
+				}
+				else
+				{
+					ny = tune+bw;
+				}
+				// ensure no channels cross the 640 and 896 zone boundaries
+				d640 = (tune+ny/2) - 640;
+				d896 = (tune+ny/2) - 896;
+
+				if(fabs(d640) < bw/2)
+				{
+					if(d640 < 0)	// decrease tuning
+					{
+						tune -= bw/2 + d640;
+					}
+					else
+					{
+						tune += bw/2 - d640;
+					}
+				}
+				else if(fabs(d896) < bw/2)
+				{
+					if(d640 < 0)	// decrease tuning
+					{
+						tune -= bw/2 + d896;
+					}
+					else
+					{
+						tune += bw/2 - d896;
+					}
+				}
+
+				tune = static_cast<int>(tune/250000.0 + 0.5)*250000;	// latch onto nearest 250 kHz set point
+			}
+
+			*this << "  bbc(" << inputNum << ", " << (tune*1.0e-6) << ", " << (bw*1.0e-6) << ", '" << sb << "', " << nBit << ", " << threadId << ")";
+			if(i < setup->channels.size()-1)
+			{
+				*this << ", \\";
+			}
+			else
+			{
+				*this << "  \\";
+			}
+
+			if(bw != bw0 || tune != tune0)
+			{
+				*this << "  # orig: tune=" << (tune0*1.0e-6) << " bw=" << (bw0*1.0e-6);
+			}
+			*this << endl;
+		}
+		*this << "  ]" << endl;
+		writeImplicitConversionComment(implicitConversions);
+//		cerr << "dbe looping" << endl;
+	} // for( int dbe = 0; dbe < numDBE; dbe++ )
+//	cerr << "done dbe loop" << endl;
 
 	return 0;
 }
@@ -897,7 +1418,8 @@ int pystream::writeChannelSet5A(const VexSetup *setup, int modeNum)
 
 	if(channelCount[0] + channelCount[1] != MaxChannels)
 	{
-		cerr << "Developer error: pystream.writeChannelSet5A: Total number of channels is " << (channelCount[0] + channelCount[1]) << " but should be " << MaxChannels << endl;
+		cerr << "Developer error: pystream.writeChannelSet5A: Total number of channels is "
+			<< (channelCount[0] + channelCount[1]) << " but should be " << MaxChannels << endl;
 
 		exit(EXIT_FAILURE);
 	}
@@ -968,12 +1490,12 @@ int pystream::writeLoifTable(const VexData *V)
 
 		if(scriptType == SCRIPT_VLBA || scriptType == SCRIPT_GBT)
 		{
-			if(setup->ifs.size() > 2)
+/*			if(setup->ifs.size() > 2)
 			{
 				cout << "  Warning: mode " << mode->defName << " wants " << setup->ifs.size() << " IFs, and we can currently only use 2" << endl;
 				cout << "  Might be ok for S/X setup or wideband Cband receiver" << endl;
 			}
-
+*/
 			*this << "loif" << modeNum << " = VLBALoIfSetup()" << endl;
 			for(it = setup->ifs.begin(); it != setup->ifs.end(); ++it)
 			{
@@ -983,8 +1505,8 @@ int pystream::writeLoifTable(const VexData *V)
 				double firstTune = fabs(setup->firstTuningForIF(i.name) - i.ifSSLO);
 
 				//*this << "# first tuning = " << (firstTune * 1.0e-6) << " MHz" << endl;
- 				*this << "loif" << modeNum << ".setIf('" << i.name << "', '" << i.VLBABandName() << "', '" << i.pol << "', " << (i.ifSSLO / 1.0e6) << ", '" << i.ifSideBand << "'";
-
+ 				*this << "loif" << modeNum << ".setIf('" << i.name << "', '" << i.VLBABandName()
+					<< "', '" << i.pol << "', " << (i.ifSSLO / 1.0e6) << ", '" << i.ifSideBand << "'";
 
 				strncpy(comment, i.comment.c_str(), MaxCommentLength-1);
 				if(comment[0] == 0 && isRDV)
@@ -1159,10 +1681,314 @@ int pystream::writeLoifTable(const VexData *V)
 			{
 				freq2 = i2->getLowerEdgeFreq();
 			}
-			*this << "loif" << modeNum << " = LoIfSetup('" << i1.VLBABandName() << "', " << freq1/1.0e6 << ", 0.0, " << freq2/1.0e6 << ", 0.0)" << endl;
+			*this << "loif" << modeNum << " = LoIfSetup('" << i1.VLBABandName() << "', "
+					<< freq1/1.0e6 << ", 0.0, " << freq2/1.0e6 << ", 0.0)" << endl;
 			//write an appropriate VCI document, and set it up to be used
 			ss << modeNum;
 			std::string vcifilename = evlaVCIDir + "/" + obsCode + ss.str() + ".vci";
+			writeVCI(V, modeNum, vcifilename);
+			*this << "setup" << modeNum << " = '" << vcifilename << "'" << endl;
+			*this << endl;
+		}
+	}
+	if(scriptType == SCRIPT_EVLA)
+	{
+		*this << "autophase0 = subarray.registerPhasing('A')" << endl;
+		*this << "autophase1 = subarray.registerPhasing('B')" << endl;
+		*this << "autophase2 = subarray.registerPhasing('C')" << endl;
+		*this << "autophase3 = subarray.registerPhasing('D')" << endl;
+		*this << "subarray.usePhasing(autophase0, 'A')" << endl;
+		*this << "subarray.usePhasing(autophase1, 'B')" << endl;
+		*this << "subarray.usePhasing(autophase2, 'C')" << endl;
+		*this << "subarray.usePhasing(autophase3, 'D')" << endl;
+	}
+
+	precision(p);
+
+	return nMode;
+}
+
+int pystream::writeDDCLoifTable(const VexData *V)
+{
+	map<string,VexIF>::const_iterator it;
+	vector<map<string,unsigned int> >::const_iterator it2;
+	map<string,unsigned int> it4;
+	int p;
+	stringstream ss;
+	unsigned int nMode = V->nMode();
+
+	p = precision();
+	precision(15);
+
+//	cerr << "======================== pystream::writeLoifTable" << endl;
+
+	for(unsigned int modeNum = 0; modeNum < nMode; ++modeNum)
+	{
+		const VexMode *mode = V->getMode(modeNum);
+		const VexSetup *setup = mode->getSetup(ant);
+
+		if(!setup)
+		{
+			continue;
+		}
+		if(scriptType == SCRIPT_VLBA)
+		{
+				if( personalityType == RDBE_DDC && setup->channels.size() > 2*MAX_DBE_CHAN ) {
+					cerr << "VEX error: too many channels defined: " << setup->channels.size() 
+						<< " vs allowed max of " << 2*MAX_DBE_CHAN << " for DDC" << endl;
+					exit(EXIT_FAILURE);	
+				} else if( personalityType == RDBE_PFB && setup->channels.size() != MAX_DBE_PFB_CHAN ) {
+					cerr << "VEX error: PFB needs 16 channels, but defined are only: " << setup->channels.size() << endl;
+					exit(EXIT_FAILURE);	
+				}
+
+/*				cerr << "Mode: " << modeNum << " chanPerIF: [" << chanPerIF[modeNum][0] << ":" << chanPerIF[modeNum][1] << ":"
+					<< chanPerIF[modeNum][2] << ":" << chanPerIF[modeNum][3] << "] in use: " << IFinUse[modeNum]
+					<< " orderedIFNums: [" << orderedIFNums[modeNum][0] << ":" << orderedIFNums[modeNum][1] << ":"
+					<< orderedIFNums[modeNum][2] << ":" << orderedIFNums[modeNum][3] << "]" << endl;
+				for(unsigned int i = 0; i < MAX_IF; ++i) {
+					cerr << "IF: " << orderedIFNums[modeNum][i] << " ";
+				}
+				cerr << endl;
+				cerr << "===============================" << endl;
+*/
+/*			if(setup->ifs.size() > 2)
+			{
+				cout << "Warning: mode " << mode->defName << " wants " << setup->ifs.size() << " IFs, and we can currently only use 2" << endl;
+				cout << "Might be ok for S/X setup or wideband Cband receiver" << endl;
+			}
+*/
+/*			cerr << "IF2DBEassign for mode: " << modeNum << ": ";
+			for( int dI = 0; dI < MAX_DBE; dI++ ) {
+				for ( int dJ = 0; dJ < MAX_IF_PER_DBE; dJ++ )
+					cerr << "[" << IF2DBEassign[modeNum][dI][dJ] << "]";
+				cerr << " ";
+			}
+			cerr << endl;
+
+			cerr << "#### IF in use: " << IFinUse[modeNum] << " DBEs: " << numDBE << "("
+				<< (need2DBEbyMode[modeNum]?2:1) << ") for mode:" << modeNum << " IFinUseByDBE: "
+				<< IFinUseByDBE[modeNum][DBE_0] << ":" << IFinUseByDBE[modeNum][DBE_1] << endl;
+*/
+			string ifname;
+			bool ifFound;
+			for(int DBEloop = 0; DBEloop < (need2DBEbyMode[modeNum]?2:1); DBEloop++) {
+				if( need2DBEbyMode[modeNum] ) {
+					strcpy( dbeAppend, (DBEloop==0?"a":"b"));
+				} else {
+					strcpy( dbeAppend, "");
+				}
+				*this << "loif" << modeNum << dbeAppend << " = VLBALoIfSetup() " << endl;
+
+				for(int IFloop = 0; IFloop < IFinUseByDBE[modeNum][DBEloop]; IFloop++)
+				{
+					ifFound = false;
+					it4 = ifIndex[modeNum];
+//					cerr << " DBE: " << DBEloop << " IF: " << IFloop << " ifIndex size: "
+//						<< ifIndex.size() << " it4 size: " << it4.size() << endl;
+					for(map<string,unsigned int>::const_iterator it3 = it4.begin(); !ifFound && it3 != it4.end(); ++it3)
+					{
+//						cerr << "m.first: " << it3->first;
+//						cerr << " -- m.second: " << it3->second << endl;
+						// find the IF letter assigned to this DBE by number
+						if( it3->second == IF2DBEassign[modeNum][DBEloop][IFloop] ) {
+							ifname = "IF_"+it3->first;
+//							cerr << "found matching index: " << ifname << endl;
+							ifFound = true;
+							break;	
+						}
+					}
+//					cerr << "look up Vex IF entry for index: ";
+					map<string,VexIF>::const_iterator mIt = setup->ifs.find(ifname);
+					if( !ifFound ) {
+						cerr << "not found: " << ifname << endl;
+						exit(EXIT_FAILURE);
+					}
+					else
+					{
+//						cerr << "found: " << ifname << endl;
+						const VexIF &i = mIt->second;
+						const int MaxCommentLength = 256;
+						char comment[MaxCommentLength] = {0};
+						double firstTune;
+						firstTune = fabs(setup->firstTuningForIF(i.name) - i.ifSSLO);
+
+						//*this << "# first tuning = " << (firstTune * 1.0e-6) << " MHz" << endl;
+// 						cerr << "loif" << modeNum << dbeAppend << ".setIf('" << i.name << "', '"
+//							<< i.VLBABandName() << "', '" << i.pol << "', " << (i.ifSSLO / 1.0e6)
+//							<< ", '" << i.ifSideBand << "'";
+ 						*this << "loif" << modeNum << dbeAppend << ".setIf('" << i.name << "', '"
+							<< i.VLBABandName() << "', '" << i.pol << "', " << (i.ifSSLO / 1.0e6)
+							<< ", '" << i.ifSideBand << "'";
+
+						strncpy(comment, i.comment.c_str(), MaxCommentLength-1);
+						if(comment[0] != '\0')
+						{
+							int len = strlen(comment);
+							int off = 1;
+							int field_count = 0;
+							// parse BACKWARDS from end of string for three space-separated tokens
+							// comment format: * [other comments] [{receiver} {FirstLO} {BROAD|NARROW|NA}]
+							// trailing spaces are permitted
+							while(field_count <= 2 && off < len)
+							{
+								// remove trailing WS
+								while(comment[len - off] == ' ' || comment[len - off] == '\t')
+								{
+									// printf("len: %i -- off: %i -- str: <%s>\n", len, off, (&comment[len - off]));
+									++off;
+								}
+								// terminate string and advance offset past WS
+								comment[len - (off - 1)] = '\0';
+								++off;
+								// printf("parsing field %i\n", field_count);
+								while(comment[len - off] != ' ' && comment[len - off] != '\t' && off < len)
+								{
+									// printf( "char >%c<\n", startOfComment[len-off] );
+									// printf("len: %i -- off: %i -- str: <%s>\n", len, off, (&comment[len - off]));
+									++off;
+								}
+								if(field_count == 0)
+								{
+									//check format of comment
+									if(strcmp("BROAD", &(comment[len - off + 1])) != 0 
+										&& strcmp("NARROW", &(comment[len - off + 1])) != 0 
+										&& strcmp("NA", &(comment[len - off + 1])) != 0)
+									{
+										// comment doesn't fit our "special format", don't process
+										field_count = 3;
+										continue;
+									}
+								}
+								// assign value to proper field
+								switch(field_count)
+								{
+									// filter
+									case 0: 
+										*this << ", '" << &(comment[len - off + 1]) << "'";
+										++field_count;
+										break;
+									// firstLO
+									case 1:
+										*this << ", " << atoi(&comment[len - off + 1]);
+										++field_count;
+										break;
+									// receiver
+									case 2:
+										*this << ", '" << &(comment[len - off + 1]) << "'";
+										++field_count;
+										break;
+								}
+								// terminate partial string
+								comment[len - off] = '\0';
+								++off;
+								// printf("remaining comment: >%s<\n", comment);
+							}
+						} 
+						else 
+						{
+							// no comment to process
+							cerr << "Error: vex file contains if_def without needed receiver information" << endl;
+							cerr << "Receiver and filter information is required in if_def line comments" << endl;
+	
+							exit(EXIT_FAILURE);
+						}
+
+						// tuning of first channel attached to this IF; not needed for GBT
+						if(scriptType != SCRIPT_GBT) {
+							*this << ", " << (firstTune * 1.0e-6);
+						}
+	
+						// close statement
+						*this << ")" << endl;
+//						cerr << ")" << endl;
+					}
+//					cerr << "============================== IF loop end" << endl;
+				} // IF loop 
+				*this << "loif" << modeNum << dbeAppend << ".setPhaseCal(" << (setup->phaseCalIntervalMHz()) << ")" << endl;
+	
+				// auto gain/attenuation control
+				*this << "loif" << modeNum << dbeAppend << ".setDBEParams(0, -1, -1, 10, 0)" << endl;
+				*this << "loif" << modeNum << dbeAppend << ".setDBEParams(1, -1, -1, 10, 0)" << endl;
+
+				*this << "loif" << modeNum << dbeAppend << ".setDBERemember(0, 1)" << endl;
+				*this << "loif" << modeNum << dbeAppend << ".setDBERemember(1, 1)" << endl;
+
+//				cerr << "============================== DBE loop end" << endl;
+			} // DBE loop
+
+			if(isMark5A)
+			{
+				writeChannelSet5A(setup, modeNum); 
+			}
+			else
+			{
+				writeDDCChannelSet(setup, modeNum); 
+			}
+
+			*this << endl;
+		}
+		else if(scriptType == SCRIPT_EVLA)
+		{
+			double freq1, freq2;
+			freq1 = -1;
+			freq2 = -1;
+
+			//work out how many different LOs there are - complain if more than two (frequencies, not freq/pols)
+			if(setup->ifs.size() > 4)
+                        {
+				cerr << "Error: mode " << mode->defName << " wants " << setup->ifs.size() << " IFs, and we can currently only use 4" << endl;
+
+				exit(EXIT_FAILURE);
+			}
+			//better be two dual pol, otherwise abort
+			for(it = setup->ifs.begin(); it != setup->ifs.end(); ++it)
+			{
+				const VexIF &i = it->second;
+				if(freq1 < 0)
+				{
+					freq1 = i.getLowerEdgeFreq();
+				}
+				else
+				{
+					if(i.getLowerEdgeFreq() == freq1)
+					{
+						continue;
+					}
+					else
+					{
+						if(freq2 < 0)
+						{
+							freq2 = i.getLowerEdgeFreq();
+						}
+						else
+						{
+							if(i.getLowerEdgeFreq() != freq2)
+							{
+								cerr << "Error: More than 2 IF frequencies" << endl;
+
+								exit(EXIT_FAILURE);
+							}
+						}
+					}
+				}
+			}
+
+			//can always get away with the 2x1 GHz 8bit samplers
+			const VexIF & i1 = setup->ifs.begin()->second;
+			const VexIF *i2 = &i1;
+			if(setup->ifs.size() == 2)
+			{
+				i2 = &(setup->ifs.begin()++)->second;
+			}
+			if(freq2 < 0)
+			{
+				freq2 = i2->getLowerEdgeFreq();
+			}
+			*this << "loif" << modeNum << " = LoIfSetup('" << i1.VLBABandName() << "', " << freq1/1.0e6 << ", 0.0, " << freq2/1.0e6 << ", 0.0)" << endl;
+			//write an appropriate VCI document, and set it up to be used
+			ss << modeNum;
+			string vcifilename = evlaVCIDir + "/" + obsCode + ss.str() + ".vci";
 			writeVCI(V, modeNum, vcifilename);
 			*this << "setup" << modeNum << " = '" << vcifilename << "'" << endl;
 			*this << endl;
@@ -1225,6 +2051,46 @@ int pystream::writeSourceTable(const VexData *V)
 	return nSource;
 }
 
+int pystream::writeDDCSourceTable(const VexData *V)
+{
+	int nSource;
+	int p;
+	string intentstring;
+
+	nSource = V->nSource();
+
+	p = precision();
+	precision(15);
+
+	for(int s = 0; s < nSource; ++s)
+	{
+		const VexSource *S = V->getSource(s);
+		*this << "source" << s << " = Source(" << S->ra << ", " << S->dec << ")" << endl;
+		*this << "source" << s << ".setName('" << S->defName << "')" << endl;
+		if(scriptType == SCRIPT_EVLA)
+		{
+			*this << "intent" << s << " = Intention()" << endl;
+			//No point putting in calibrator code until its populated in the vex file
+			//*this << "intent" << s << ".addIntent('CalibratorCode=\"" << S->calCode << "\"')" << endl;
+			intentstring = "UNSPECIFIED";
+			for(unsigned int i = 0; i < phasingSources.size(); ++i)
+			{
+				if(phasingSources.at(i) == S->defName)
+				{
+					intentstring = "CALIBRATE_AUTOPHASE";
+				}
+			}
+			*this << "intent" << s << ".addIntent('ScanIntent=\"" << intentstring << "\"')" << endl;
+		}
+
+		*this << endl;
+	}
+
+	precision(p);
+
+	return nSource;
+}
+
 int pystream::writeScansGBT(const VexData *V)
 {
 	int nScan;
@@ -1237,11 +2103,13 @@ int pystream::writeScansGBT(const VexData *V)
 	return nScan;
 }
 
-int pystream::writeScans(const VexData *V)
+int pystream::writeDDCScans(const VexData *V)
 {
 	int p;
 	int n = 0;
 	int nScan;
+	map<string,VexIF>::const_iterator it;
+	map<string,unsigned int> it4;
 	const char *switchOutput[] = {"1A", "1B", "2A", "2B"};
 	double recordSeconds = 0.0;
 	std::string tab;
@@ -1302,7 +2170,7 @@ int pystream::writeScans(const VexData *V)
 				*this << "# changing to mode " << mode->defName << endl;
 				if(scriptType == SCRIPT_VLBA || scriptType == SCRIPT_GBT)
 				{
-					*this << "subarray.setVLBALoIfSetup(loif" << modeId << ")" << endl;
+//					*this << "subarray.setVLBALoIfSetup(loif" << modeId << ")" << endl;
 
 					// 4x4 switch setting - check first if any switch setting has changed; if not skip,
 					// else set all switches as executor will set unused switches to grounded
@@ -1318,17 +2186,64 @@ int pystream::writeScans(const VexData *V)
 							settingChanged = true;
 						}
 					}
+/*
 					if( settingChanged == true ) {
 						swInUse = 0;
 						for(ifit = ifIndex[modeId].begin(); ifit != ifIndex[modeId].end(); ++ifit)
 						{
+							cerr << "######## scan: " << s << " first: " << ifit->first << " second: "
+								<< ifit->second << " sw: " << sw[ifit->second]
+								<< " 4x4: [" << switchOutput[ifit->second] << ":"
+								<< switchPosition(ifit->first.c_str()) << "]" << endl;
 							sw[ifit->second] = ifit->first;
 							swInUse++;
 							*this << "subarray.set4x4Switch('" << switchOutput[ifit->second] << "', "
 							<< switchPosition(ifit->first.c_str()) << ")" << endl;
 						}
 					}
-					*this << "subarray.setChannels(dbe0, channelSet" << modeId << ")" << endl;
+*/
+		            for(int DBEloop = 0; DBEloop < (need2DBEbyMode[modeId]?2:1); DBEloop++) {
+    			        if( need2DBEbyMode[modeId] ) {
+        	    		    strcpy( dbeAppend, (DBEloop==0?"a":"b"));
+		    	        } else {
+        			        strcpy( dbeAppend, "");
+		            	}
+						*this << "subarray.setChannels(dbe" << DBEloop << ", channelSet" << modeId << dbeAppend << ")" << endl;
+						*this << "subarray.setVLBALoIfSetup(dbe" << DBEloop << ", loif" << modeId << dbeAppend << ")" << endl;
+
+						for(int IFloop = 0; IFloop < IFinUseByDBE[modeId][DBEloop]; IFloop++) {
+/*							*this << "subarray.set4x4Switch('" << (DBEloop+1)
+								<< (IFloop==0?'A':'B') << "',"
+								<< (IF2DBEassign[modeId][DBEloop][IFloop]+1) << ")" << endl;
+							// DBEloop and IF2DBEassign are zero-based, "+1" them for use here
+							cerr << "##############  " << DBEloop << ":" << IFloop << " - "
+								<< IF2DBEassign[modeId][DBEloop][IFloop] <<":"  <<endl;
+//								<< switchPosition(sprintf("%i", IF2DBEassign[modeId][DBEloop][IFloop])) << endl;
+						
+*/
+
+    	    		        it4 = ifIndex[modeId];
+							bool ifFound = false;
+//        	        		cerr << " DBE: " << DBEloop << " IF: " << IFloop << " ifIndex size: "
+//		    	                << ifIndex.size() << " it4 size: " << it4.size() << endl;
+        			        for(map<string,unsigned int>::const_iterator it3 = it4.begin(); !ifFound && it3 != it4.end(); ++it3)
+                			{
+//		                	    cerr << "m.first: " << it3->first;
+  //      		            	cerr << " -- m.second: " << it3->second << endl;
+	                		    // find the IF letter assigned to this DBE by number
+			                    if( it3->second == IF2DBEassign[modeId][DBEloop][IFloop] ) {
+									*this << "subarray.set4x4Switch('" << (DBEloop+1)
+										<< (IFloop==0?'A':'B') << "', "
+										<< switchPosition(it3->first.c_str()) << ")" << endl;
+/*            	    		        cerr << "found matching index: " << it3->first << " switch: "
+										<< " 4x4: [" << (DBEloop+1) << (IFloop==0?'A':'B') << "'," 
+										<< switchPosition(it3->first.c_str()) << "]" << endl;*/
+									ifFound = true;
+		            	            break;
+        		            	}
+                			}
+						}
+					}
 				}
 				else if(scriptType == SCRIPT_EVLA)
 				{
@@ -1440,10 +2355,160 @@ int pystream::writeScans(const VexData *V)
 	return n;
 }
 
-void pystream::writeVCI(const VexData *V, int modeIndex, const std::string &filename)
+int pystream::writeScans(const VexData *V)
 {
-	std::string bbNames[2] = {"A0/C0", "B0/D0"};
-	std::string swbbNames[2] = {"AC8BIT", "BD8BIT"};
+	int p;
+	int n = 0;
+	int nScan;
+	map<string,VexIF>::const_iterator it;
+	const char *switchOutput[] = {"1A", "1B", "2A", "2B"};
+	double recordSeconds = 0.0;
+
+	nScan = V->nScan();
+
+	p = precision();
+	precision(14);
+
+	for(int s = -1; s < nScan; ++s)
+	{
+		const VexScan *scan = (s==-1) ? V->getScan(0) : V->getScan(s);
+		if(s ==  -1)
+		{
+			*this << "# Setup Scan " << endl;
+		}
+                else
+		{
+			*this << "# Scan " << s << " = " << scan->defName << endl;
+		}
+		if(scan->stations.count(ant) == 0)
+		{
+			*this << "# Antenna " << ant << " not in scan " << scan->defName << endl;
+		}
+		else
+		{
+			const VexInterval *arange = &scan->stations.find(ant)->second;
+
+			int modeId = V->getModeIdByDefName(scan->modeDefName);
+			const VexMode* mode = V->getModeByDefName(scan->modeDefName);
+			if(mode == 0)
+			{
+				cerr << "Error: scan=" << scan->defName << " ant=" << ant << " mode=" << scan->modeDefName << " -> mode=0" << endl;
+				continue;
+			}
+			
+			const VexSetup* setup = mode->getSetup(ant);
+
+			if(setup == 0)
+			{
+				cerr << "Error: scan=" << scan->defName << " ant=" << ant << " mode=" << scan->modeDefName << " -> setup=0" << endl;
+				continue;
+			}
+
+			if(modeId != lastModeId)
+			{
+
+				*this << "# changing to mode " << mode->defName << endl;
+				if(scriptType == SCRIPT_VLBA)
+				{
+					*this << "subarray.setVLBALoIfSetup(loif" << modeId << ")" << endl;
+
+					map<string,unsigned int>::const_iterator ifit;
+					for(ifit = ifIndex[modeId].begin(); ifit != ifIndex[modeId].end(); ++ifit)
+					{
+						if(ifit->first != sw[ifit->second])
+						{
+							sw[ifit->second] = ifit->first;
+                            *this << "subarray.set4x4Switch('" << switchOutput[ifit->second] << "', "
+                                         << switchPosition(ifit->first.c_str()) << ")" << endl;
+						}
+					}
+					*this << "subarray.setChannels(dbe0, channelSet" << modeId << ")" << endl;
+				}
+				else if(scriptType == SCRIPT_EVLA)
+				{
+					*this << "subarray.setLoIfSetup(loif" << modeId << ")" << endl;
+					*this << "subarray.setWidarSetup('setup" << modeId << "')" << endl;
+				}
+
+				lastModeId = modeId;
+			}
+
+			int sourceId = V->getSourceIdByDefName(scan->sourceDefName);
+			if(scriptType == SCRIPT_EVLA)
+			{
+				*this << "intent" << sourceId << ".addIntent('ScanNumber=" << s+1 << "')" << endl;
+			}
+			if(sourceId != lastSourceId)
+			{
+				*this << "subarray.setSource(source" << sourceId << ")" << endl;
+				lastSourceId = sourceId;
+			}
+
+			// TODO Once we control antenna movements, make sure we do not include antenna movement in
+			// the setup scan if end time of first scan has already elapsed, so we do not interfere with
+			// movement of antenna for subsequent scans. We still must execute all other setups steps.
+			double deltat1 = floor((arange->mjdStart-mjd0)*86400.0 + 0.5);
+			double deltat2 = floor((arange->mjdStop-mjd0)*86400.0 + 0.5);
+			// execute() at stop time minus 5 seconds
+			// arbitrary amount picked to allow commands to get sent to MIBs before they need to get run on MIBs
+			double deltat3 = floor((arange->mjdStop-mjd0)*86400.0 + 0.5-5);
+
+			if(s != -1)
+			{
+				// recognize scans that do not record to Mark5C, but still set switches (need to pass scan start time)
+				if(scan->nRecordChan(V, ant) == 0 || recorderType == RECORDER_NONE)
+				{
+					*this << "print 'Not a recording scan but still set switches for " << scan->defName << ".'" << endl;
+					*this << "subarray.setSwitches(mjdStart + " << deltat1 << "*second, mjdStart+" << deltat2 << "*second, obsCode+'_'+stnCode+'_'+'" << scan->defName << "')" << endl;
+				}
+				else if(setup->formatName == "MARK5B")
+				{
+					*this << "recorder0.setPacket(0, 0, 36, 5008)" << endl;
+					*this << "subarray.setRecord(mjdStart + " << deltat1 << "*second, mjdStart+" << deltat2 << "*second, '" << scan->defName << "', obsCode, stnCode )" << endl;
+					recordSeconds += (deltat2-deltat1);
+				}
+				else if(setup->formatName == "VDIF5032")
+				{
+					*this << "recorder0.setPacket(0, 0, 28, 5032)" << endl;
+					*this << "subarray.setRecord(mjdStart + " << deltat1 << "*second, mjdStart+" << deltat2 << "*second, '" << scan->defName << "', obsCode, stnCode )" << endl;
+					recordSeconds += (deltat2-deltat1);
+				}
+				else
+				{
+					cerr << "Error: pystream::writeScans: Can't figure out how to record!  formatName=" << setup->formatName << "  nRecChan=" << scan->nRecordChan(V, ant) << "  recType=" << recorderType << endl;
+
+					exit(EXIT_FAILURE);
+				}
+
+				// only start scan if we are at least 10sec away from scan end
+				// NOTE - if this changes to a value less than 5sec may need to revisit Executor RDBE code
+				// in case of scan starting later than start time
+				*this << "if array.time() < mjdStart + (" << deltat2 << "-10)*second:" << endl;
+				*this << "  subarray.execute(mjdStart + " << deltat3 << "*second)" << endl;
+				*this << "else:" << endl;
+				*this << "  print 'Skipping scan which ended at time ' + str(mjdStart+" << deltat2 << "*second) + ' since array.time is ' + str(array.time())" << endl;
+				lastValid = arange->mjdStop;
+			}
+			else
+			{
+				*this << "# Setup scan - run right away, but do not start recording" << endl;
+				*this << "subarray.execute( array.time() + 2*second )" << endl;
+			}
+		}
+		*this << endl;
+	}
+
+	cout << "There are " << static_cast<int>(recordSeconds) << " seconds of recording at " << ant << endl;
+
+	precision(p);
+
+	return n;
+}
+
+void pystream::writeVCI(const VexData *V, int modeIndex, const string &filename)
+{
+	string bbNames[2] = {"A0/C0", "B0/D0"};
+	string swbbNames[2] = {"AC8BIT", "BD8BIT"};
 	char timeString[64];
 	int msgId, subarrayId, numIndFreqs;
 	double centreFreq;
