@@ -258,13 +258,6 @@ int convert2VDIF(string project, string stream, string outname,
 	  //strftime(datestr, 99, "%F %H:%M:%S", date);
 
 	  if (first) {
-	    // Determine the type of data
-	    // type = TYPE(p); this does not work bug in Xcube? Always 0
-	    type = IFID(p);
-	    if (type>=0xF0) 
-	      type = 1;
-	    else 
-	      type = 0;
 
 	    // Figure out time
 	    UINT32 nsec;
@@ -273,6 +266,13 @@ int convert2VDIF(string project, string stream, string outname,
 	    nsec = pkt->getHeader()->ts.tv_nsec;
 	    rsec = sec; 
 	    if (nsec>=500e6) rsec++;
+
+	    type = IFID(p);
+	    if (type>=240) 
+	      type = 1;
+	    else
+	      type = 0;
+	    printf("DEBUG: Type=%d\n", type);
 
 	    // VDIF header values
 	    int bits, samplespersec, bfactor;
@@ -451,7 +451,6 @@ int convert2VDIF(string project, string stream, string outname,
 
 	      // Check sensible sequence number
 	      if (first) {
-		printf("FIRST\n");
 		sequence = SEQUENCE(if1);
 		first = 0;
 	      } else {
