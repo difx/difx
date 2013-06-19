@@ -34,7 +34,9 @@
 #include <vector>
 #include <map>
 #include <string>
+#include <cstring>
 #include "vextables.h"
+#include "vlbadefaults.h"
 
 class pystream : public std::ofstream
 {
@@ -54,15 +56,21 @@ public:
 	int writeComment(const std::string &commentString);
 	int writeRecorderInit(const VexData *V);
 	int writeDbeInit(const VexData *V);
+	void writeXCubeInit();
 	void writeImplicitConversionComment(const std::vector<unsigned int> &implicitConversions);
 	int writeChannelSet(const VexSetup *setup, int modeNum);
+	int writeDDCChannelSet(const VexSetup *setup, int modeNum);
 	int writeChannelSet5A(const VexSetup *setup, int modeNum);
 	int writeLoifTable(const VexData *V);
+	int writeDDCLoifTable(const VexData *V);
 	int writeSourceTable(const VexData *V);
+	int writeDDCSourceTable(const VexData *V);
 	int writeScans(const VexData *V);
+	int writeDDCScans(const VexData *V);
 	int writeScansGBT(const VexData *V);
 	void setDBEPersonality(const std::string &filename);
 	void setDBEPersonalityType(PersonalityType pt) { personalityType = pt; }
+	PersonalityType getDBEPersonalityType() { return personalityType; }
 	void setRecorderType(RecorderType rt) { recorderType = rt; }
 	void setDataFormat(DataFormat df) { dataFormat = df; }
 	DataFormat getDataFormat() { return dataFormat; }
@@ -94,6 +102,30 @@ private:
 
 	void calcIfIndex(const VexData *V);
 	void writeVCI(const VexData *V, int modeIndex, const std::string &filename);
+
+	// determine how many DBEs we will need
+	int numDBE;
+	int numDBEChan;
+    bool need2DBEs;
+    char dbeAppend[2]; // {'a'|'b'} '\0'
+	// which modes need 2DBEs by mode
+    std::vector<bool> need2DBEbyMode;
+	// how many channels per IF by mode
+	std::vector<std::vector<int> > chanPerIF;
+	// how many IF in use by mode
+	std::vector<int> IFinUse;
+	// IF numbers ordered by how many channels are assigned to each; highest at index 0; by mode
+	std::vector<std::vector<int> > orderedIFNums;
+	// which IF is assigned to which DBE/IF by mode
+    std::vector<std::vector<std::vector<int> > > IF2DBEassign;
+	// how many IF are in use by DBE and by mode
+    std::vector<std::vector<int> > IFinUseByDBE;
+	// if IF has more than MAX_IF_PER_DBE channels assigned this tells us how to split them across DBEs
+	std::vector<std::vector<int> > chanByDBE;
+	// with which channel distribution are we going?
+	std::vector<int> chanDist;
+	// channels assigned to DBEs
+	std::vector<std::vector<int> > chanAssign;
 };
 
 #endif
