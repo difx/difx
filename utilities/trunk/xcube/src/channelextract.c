@@ -9,6 +9,7 @@
 
 #include "vdifio.h"
 
+#define DOFLIP 0
 /* Benchmark application to test, single threaded, speeds of extracting select channels from raw Xcube VLBI data.
 
 The raw data consists of data from 4 IFs with 16 channels per IF (a total of 64 channels). The individual channels are 2bit complex (2 bit real, 2 bit imaginary so 4 bits/sample) - so there are 2 samples per byte. 
@@ -36,6 +37,14 @@ channels this means taking a single 64bit word (frame) from 4 consesutive packet
 #define DEFAULT_LOOP        50
 #define MAXSTR              256
 
+#if DOFLIP
+#define FLIP8(x)  ((((x)>>1)&0x5555555555555555) | (((x)<<1)&0xAAAAAAAAAAAAAAAA))
+#define FLIPPAIR(x,y) ((x>>(y+1))&0x55) | ((x>>(y-1))&0xAA) 	  // This will fail if first channel selected
+#else
+#define FLIP8(x) x
+#define FLIPPAIR(x,y) (x>>y)&0xFF;
+#endif
+
 double tim(void);
 void printtime(char *type, double time, int nchan, uint64_t totalbytes);
 void extractAll(int nloop, int nblock, int bufsize, uint64_t **data);
@@ -43,6 +52,7 @@ void extractGeneric(uint64_t chans, int nloop, int nblock, int bufsize, uint64_t
 void extract2chanPair(int nloop, int nblock, int bufsize, uint64_t **data);
 void extract4chanPair(int nloop, int nblock, int bufsize, uint64_t **data);
 void extract4chan(int nloop, int nblock, int bufsize, uint64_t **data);
+void extract4chanAlt(int nloop, int nblock, int bufsize, uint64_t **data);
 void extract8chan(int nloop, int nblock, int bufsize, uint64_t **data);
 
 // Some global variables to avoid passing lots of parameters
@@ -137,6 +147,9 @@ int main (int argc, char * const argv[]) {
   // 4 per IF, not paired
   extract4chan(nloop, nblock, bufsize, data);
 
+  // 4 per IF, not paired
+  extract4chanAlt(nloop, nblock, bufsize, data);
+
   // 8 per IF, not paired
   extract8chan(nloop, nblock, bufsize, data);
 
@@ -214,13 +227,13 @@ void extractAll(int nloop, int nblock, int bufsize, uint64_t **data) {
 	if4 += 4096;
 
 	for (l=1; l<1024; l++) {
-	  vdifdata[vdifwords] = if1[l];
+	  vdifdata[vdifwords] = FLIP8(if1[l]);
 	  vdifwords++;
-	  vdifdata[vdifwords] = if2[l];
+	  vdifdata[vdifwords] = FLIP8(if2[l]);
 	  vdifwords++;
-	  vdifdata[vdifwords] = if3[l];
+	  vdifdata[vdifwords] = FLIP8(if3[l]);
 	  vdifwords++;
-	  vdifdata[vdifwords] = if4[l];
+	  vdifdata[vdifwords] = FLIP8(if4[l]);
 	  vdifwords++;
 
 	  if (vdifwords>= vdif_packetsize/8) {
@@ -409,13 +422,13 @@ void extract2chanPair(int nloop, int nblock, int bufsize, uint64_t **data) {
 	if4 += 4096;
 
 	for (l=1; l<1024; l++) {
-	  vdifdata[vdifbytes] = (if1[l]>>shift[0])&0xFF;
+	  vdifdata[vdifbytes] = FLIPPAIR(if1[l], shift[0]);
 	  vdifbytes++;
-	  vdifdata[vdifbytes] = (if2[l]>>shift[1])&0xFF;
+	  vdifdata[vdifbytes] = FLIPPAIR(if2[l], shift[1]);
 	  vdifbytes++;
-	  vdifdata[vdifbytes] = (if3[l]>>shift[2])&0xFF;
+	  vdifdata[vdifbytes] = FLIPPAIR(if3[l], shift[2]);
 	  vdifbytes++;
-	  vdifdata[vdifbytes] = (if4[l]>>shift[3])&0xFF;
+	  vdifdata[vdifbytes] = FLIPPAIR(if4[l], shift[3]);
 	  vdifbytes++;
 
 	  if (vdifbytes>= vdif_packetsize) {
@@ -588,32 +601,32 @@ void extract4chan(int nloop, int nblock, int bufsize, uint64_t **data) {
 	if4 += 4096;
 
 	for (l=1; l<1024; l++) {
-	  vdifdata[vdifbytes] = (if1[l]>>shift1[0])&0xFF;
-	  vdifdata[vdifbytes] |= (if1[l]>>shift1[1])&0xFF00;
+	  vdifdata[vdifbytes] = (if1[l]>>shift1[0])&0x0F;
+	  vdifdata[vdifbytes] |= (if1[l]>>shift1[1])&0xF0;
 	  vdifbytes++;
-	  vdifdata[vdifbytes] = (if1[l]>>shift1[2])&0xFF;
-	  vdifdata[vdifbytes] |= (if1[l]>>shift1[3])&0xFF00;
-	  vdifbytes++;
-
-	  vdifdata[vdifbytes] = (if2[l]>>shift2[0])&0xFF;
-	  vdifdata[vdifbytes] |= (if2[l]>>shift2[1])&0xFF00;
-	  vdifbytes++;
-	  vdifdata[vdifbytes] = (if2[l]>>shift2[2])&0xFF;
-	  vdifdata[vdifbytes] |= (if2[l]>>shift2[3])&0xFF00;
+	  vdifdata[vdifbytes] = (if1[l]>>shift1[2])&0x0F;
+	  vdifdata[vdifbytes] |= (if1[l]>>shift1[3])&0xF0;
 	  vdifbytes++;
 
-	  vdifdata[vdifbytes] = (if3[l]>>shift3[0])&0xFF;
-	  vdifdata[vdifbytes] |= (if3[l]>>shift3[1])&0xFF00;
+	  vdifdata[vdifbytes] = (if2[l]>>shift2[0])&0x0F;
+	  vdifdata[vdifbytes] |= (if2[l]>>shift2[1])&0xF0;
 	  vdifbytes++;
-	  vdifdata[vdifbytes] = (if3[l]>>shift3[2])&0xFF;
-	  vdifdata[vdifbytes] |= (if3[l]>>shift3[3])&0xFF00;
+	  vdifdata[vdifbytes] = (if2[l]>>shift2[2])&0x0F;
+	  vdifdata[vdifbytes] |= (if2[l]>>shift2[3])&0xF0;
 	  vdifbytes++;
 
-	  vdifdata[vdifbytes] = (if4[l]>>shift4[0])&0xFF;
-	  vdifdata[vdifbytes] |= (if4[l]>>shift4[1])&0xFF00;
+	  vdifdata[vdifbytes] = (if3[l]>>shift3[0])&0x0F;
+	  vdifdata[vdifbytes] |= (if3[l]>>shift3[1])&0xF0;
 	  vdifbytes++;
-	  vdifdata[vdifbytes] = (if4[l]>>shift4[2])&0xFF;
-	  vdifdata[vdifbytes] |= (if4[l]>>shift4[3])&0xFF00;
+	  vdifdata[vdifbytes] = (if3[l]>>shift3[2])&0x0F;
+	  vdifdata[vdifbytes] |= (if3[l]>>shift3[3])&0xF0;
+	  vdifbytes++;
+
+	  vdifdata[vdifbytes] = (if4[l]>>shift4[0])&0x0F;
+	  vdifdata[vdifbytes] |= (if4[l]>>shift4[1])&0xF0;
+	  vdifbytes++;
+	  vdifdata[vdifbytes] = (if4[l]>>shift4[2])&0x0F;
+	  vdifdata[vdifbytes] |= (if4[l]>>shift4[3])&0xF0;
 	  vdifbytes++;
 
 	  if (vdifbytes>= vdif_packetsize) {
@@ -631,6 +644,98 @@ void extract4chan(int nloop, int nblock, int bufsize, uint64_t **data) {
 
   free(vdifdata);
 }
+
+void extract4chanAlt(int nloop, int nblock, int bufsize, uint64_t **data) {
+  /* This function extracts 4 arbitary channels per IF */
+
+  int i, j, k, l, vdifwords;
+  uint64_t *if1, *if2, *if3, *if4;
+  uint16_t *vdifdata;
+  double t0, t1;
+  vdif_header header;
+  int vdif_packetsize;
+  int framespersec;
+
+  int nchan = 4*4;
+  int shift1[4] = {4, 16, 16, 32};
+  int shift2[4] = {8, 12,  8, 16};
+  int shift3[4] = {4, 16, 16, 32};
+  int shift4[4] = {8, 12,  8, 16};
+
+  uint64_t rate = nchan*SAMPLEPERSEC*4/8; // Bytes/sec excluding header (4 bit/sample as complex)
+  vdif_packetsize = MAX_PACKETSIZE;
+  vdif_packetsize = (vdif_packetsize/8)*8; // Round down to multiple of 8 bytes
+  while (vdif_packetsize>0) {
+    if ((rate % vdif_packetsize) == 0) {
+      printf("Choosing VDIf framesize of = %d\n", vdif_packetsize);
+      break;
+    }
+    vdif_packetsize-=8;
+  }
+  if (vdif_packetsize<=0) {
+    printf("Could not find appropriate VDIF header size for data rate %.2f Mbytes/sec\n", rate/1e6);
+    exit(EXIT_FAILURE);
+  }
+
+  vdifdata = malloc(vdif_packetsize);
+  if (vdifdata==NULL) {
+    perror("Allocating memory");
+    exit(EXIT_FAILURE);
+  }
+  
+  int samplesperframe = (vdif_packetsize*8)/(nchan*4);  // 4 bits/sample
+  framespersec = SAMPLEPERSEC/samplesperframe;
+  printf("Frame/sec = %d\n", framespersec);
+
+  createVDIFHeader(&header, vdif_packetsize+VDIF_HEADER_BYTES, 0,  2, nchan, 1, "Tt");
+  setVDIFTime(&header, time(NULL));
+  
+  t0 = tim();
+  vdifwords = 0;
+  for (i=0; i<nloop; i++) {
+    for (j=0; j<nblock; j++) {
+      if1 = (&data[j][0]) - 4096;
+      if2 = if1+1024;
+      if3 = if2+1024;
+      if4 = if3+1024;
+
+      for (k=0; k<bufsize/(8192*4); k++) {
+	if1 += 4096;
+	if2 += 4096;
+	if3 += 4096;
+	if4 += 4096;
+
+	for (l=1; l<1024; l++) {
+	  vdifdata[vdifwords] = ((if1[l]>>shift1[0])&0x000F) | ((if1[l]>>shift1[1])&0x00F0) |
+	                        ((if1[l]>>shift1[2])&0x0F00) | ((if1[l]>>shift1[3])&0xF000);
+	  vdifwords++;
+	  vdifdata[vdifwords] = ((if2[l]>>shift2[0])&0x000F) | ((if2[l]>>shift2[1])&0x00F0) |
+	                        ((if2[l]>>shift2[2])&0x0F00) | ((if2[l]>>shift2[3])&0xF000);
+	  vdifwords++;
+	  vdifdata[vdifwords] = ((if3[l]>>shift3[0])&0x000F) | ((if3[l]>>shift3[1])&0x00F0) |
+	                        ((if3[l]>>shift3[2])&0x0F00) | ((if3[l]>>shift3[3])&0xF000);
+	  vdifwords++;
+	  vdifdata[vdifwords] = ((if4[l]>>shift4[0])&0x000F) | ((if4[l]>>shift4[1])&0x00F0) |
+	                        ((if4[l]>>shift4[2])&0x0F00) | ((if4[l]>>shift4[3])&0xF000);
+	  vdifwords++;
+
+	  if (vdifwords>= vdif_packetsize/2) {
+	    // Would write VDIF packet here
+	    vdifwords = 0;
+	    nextVDIFHeader(&header, framespersec);
+	  }
+	}
+      }
+    }
+  }
+  t1 = tim();
+
+  printtime("Extracting 4 arbitary channels per IF", t1-t0, nchan, (uint64_t)nloop*nblock*bufsize);
+
+  free(vdifdata);
+}
+
+
 
 void extract8chan(int nloop, int nblock, int bufsize, uint64_t **data) {
   /* This function extracts 4 arbitary channels per IF */
