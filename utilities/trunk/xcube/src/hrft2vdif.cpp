@@ -15,7 +15,7 @@
 #include <stdint.h>
 #include <arpa/inet.h>
 #include <getopt.h>
-
+#include <netdb.h>
 #include <string>
 #include <vector>
 #include <iostream>
@@ -60,6 +60,8 @@
 #define READ_BUFFER_CHUNK 16
 #endif
 
+#define MAXSTR              200 
+
 void chomp (char* s) {
   int end = strlen(s) - 1;
   if (end >= 0 && s[end] == '\n')
@@ -76,12 +78,15 @@ typedef enum {NONE=0, A, B, C, D, E, F, G, H} modeType;
 
 UINT8 *lookup;
 void initialize_lookup();
+int diskwrite(int out, const void* buf, size_t len);
+int netwrite(int sock, const void* buf, size_t len);
+int setup_net(string hostname, int port, int window_size);
 
 int convert2VDIF(string project, string stream, string outname, 
-		 modeType mode) {
+		 int sock, modeType mode) {
   char *fileNames[16], msg[256];
   UINT64 *if1, *if2, *if3, *if4;
-  int nFile = 0, istream, shift = 0;
+  int nFile = 0, istream, shift = 0, status;
   int vdif_packetsize;
   int framespersec;
   UINT8 type, ifid, *framebytes;
@@ -100,7 +105,7 @@ int convert2VDIF(string project, string stream, string outname,
 
   vector<STREAM> strms;
   if (projects.pmGetStreams(strms) != 0) {
-    fprintf(stdout, "Error retrieving streams for current project\n");
+    cerr << "Error retrieving streams for current project" << endl;
     return -1;
   }
 
@@ -115,50 +120,49 @@ int convert2VDIF(string project, string stream, string outname,
     }
  
     if (nstream==0) {
-      printf("No streams in this project\n");
+      cout << "No streams in this project" << endl;
       return(EXIT_FAILURE);
     } else if (nstream==1) {
       istream = 0;
     } else {
 
-      printf("\n\nPlease select a stream:\n\n");
+      cout << endl << endl << "Please select a stream:" << endl << endl;
       int i=0;
       for (it1 = strms.begin(); it1 < strms.end(); it1++) {
 	STREAM st = *it1;
-	printf(" [%d] %s %d %llu\n", i, st.strmName.c_str(), st.strmType, st.strmSize);
+	cout << " [" << i << "] " << st.strmName  << st.strmType << " " 
+	     << st.strmSize << endl;
 	i++;
       }
       i--;
       char ret[10];
       while (1) {
-	printf("\nStream [0]: ");
-	fflush(stdout);
+	cout << endl << "Stream [0]:" << flush;
 	if (fgets(ret,10,stdin)==NULL) {
-	  printf("Error reading response\n");
+	  cout << "Error reading response" << endl;
 	  return -1;
 	}
 	chomp(ret);
-	printf("\n");
+	cout << endl;
 	if (strlen(ret)==0) {
 	  istream = 0;
 	  break;
 	}
 	int status = sscanf(ret, "%d", &istream);
 	if (status!=1) {
-	  printf("Did not understand \"%s\"\n", ret);
+	  cout << "Did not understand " << ret << endl;
 	  continue;
 	}
 	if (istream<0 || istream>nstream) {
-	  printf(" %d out of range\n", istream);
+	  cout << " " <<  istream << "out of range" << endl;
 	  continue;
 	}
 	break;
       }
     }
     stream = strms[istream].strmName;
-    printf("Selected %s\n\n", strms[istream].strmName.c_str());
+    cout << "Selected " << strms[istream].strmName << endl;
   }
-
 
   for (it1 = strms.begin(); it1 < strms.end(); it1++) {
     STREAM st = *it1;
@@ -172,7 +176,7 @@ int convert2VDIF(string project, string stream, string outname,
     for (it2 = streamFiles.begin(); it2 < streamFiles.end(); it2++) {
       string dirName = *it2;
       // at this point, dirName has the full path/name of the stream
-      fprintf(stdout, "Stream Names with path: %s\n", dirName.c_str());
+      cout << "Stream Names with path: " << dirName << endl;;
       
       fileNames[nFile] = strdup(dirName.c_str());
       ++nFile;
@@ -227,13 +231,14 @@ int convert2VDIF(string project, string stream, string outname,
    */
   pktReader->initialize(nFile, fileNames, (size_t) READ_BUFFER_SIZE, (size_t) READ_BUFFER_CHUNK);
 
-  out = open(outname.c_str(), OPENOPTIONS,S_IRWXU|S_IRWXG|S_IRWXO); 
+  if (sock==0) {
+    out = open(outname.c_str(), OPENOPTIONS,S_IRWXU|S_IRWXG|S_IRWXO); 
 
-
-  if (out==-1) {
-    sprintf(msg, "Failed to open output file (%s)", outname.c_str());
-    perror(msg);
+    if (out==-1) {
+      sprintf(msg, "Failed to open output file (%s)", outname.c_str());
+      perror(msg);
     return(EXIT_FAILURE);
+    }
   }
 
   bool first = true;
@@ -247,7 +252,7 @@ int convert2VDIF(string project, string stream, string outname,
       while (currentPacket<1000) {
 	X3cPacket *pkt = pktReader->getPacket();
 	if (NULL == pkt) {
-	  fprintf(stdout, "Finished reading. packet <%d>\n", currentPacket);
+	  cout << "Finished reading. packet " << currentPacket << endl;
 	  break;
 	} else {
 	  
@@ -272,7 +277,7 @@ int convert2VDIF(string project, string stream, string outname,
 	      type = 1;
 	    else
 	      type = 0;
-	    printf("DEBUG: Type=%d\n", type);
+	    cout << "DEBUG: Type=" << type << endl;
 
 	    // VDIF header values
 	    int bits, samplespersec, bfactor;
@@ -296,25 +301,24 @@ int convert2VDIF(string project, string stream, string outname,
 
 	    while (vdif_packetsize>0) {
 	      if ((rate % vdif_packetsize) == 0) {
-		printf("Choosing VDIf framesize of = %d\n", vdif_packetsize);
+		cout << "Choosing VDIf framesize of " << vdif_packetsize << endl;
 		break;
 	      }
 	      vdif_packetsize-=8;
 	    }
 	    if (vdif_packetsize<=0) {
-	      printf("Could not find appropriate VDIF header size for data rate %.2f Mbytes/sec\n", rate/1e6);
+	      cout << "Could not find appropriate VDIF header size for data rate " <<
+		rate/1e6 << " Mbytes/sec" << endl;
 	    }
-
-	    
+	   
 	    int samplesperframe = (vdif_packetsize*8)/(nchan*bits*bfactor);
 	    framespersec = samplespersec/samplesperframe;
-	    printf("Frame/sec = %d\n", framespersec);
-
+	    cout << "Frame/sec = " << framespersec << endl;
 
 	    framebytes = new UINT8[vdif_packetsize];
 	    frame64 = (UINT64*)framebytes;
 	    if (framebytes==NULL) {
-	      printf("Error: Could not allocate memory\n");
+	      cout << "Error: Could not allocate memory" << endl;
 	      return(EXIT_FAILURE);
 	    }
 
@@ -338,7 +342,8 @@ int convert2VDIF(string project, string stream, string outname,
 	      } else {
 		sequence++;
 		if (SEQUENCE(if1)!=sequence) {
-		  printf("Error: Sequence number did not match expected (%u/%u)\n", (unsigned int)sequence, (unsigned int)SEQUENCE(if1));
+		  cout << "Error: Sequence number did not match expected (" << sequence
+		       << "/" << SEQUENCE(if1) << ")" << endl;
 		  pktReader->freePacket(pkt);
 		  return(EXIT_FAILURE);
 		}
@@ -410,34 +415,27 @@ int convert2VDIF(string project, string stream, string outname,
 		
 		if (vdifwords>= vdif_packetsize/8 || vdifbytes>=vdif_packetsize) {
 		  // Write a VDIF packet
-		  ssize_t nwrote = write(out, &header, VDIF_HEADER_BYTES);
-		  if (nwrote==-1) {
-		    perror("Error writing outfile");
-		    close(out);
-		    return(EXIT_FAILURE);
-		  } else if (nwrote!=VDIF_HEADER_BYTES) {
-		    fprintf(stderr, "Warning: Did not write all bytes! (%d/%d)\n",
-			    (int)nwrote, VDIF_HEADER_BYTES);
-		    close(out);
-		    return(EXIT_FAILURE);
-		  }
+		  if (sock==0) 
+		    status = diskwrite(out, &header, VDIF_HEADER_BYTES);
+		  else 
+		    status = netwrite(sock, &header, VDIF_HEADER_BYTES);
+		  
+		  if (status!=EXIT_SUCCESS)
+		    return(status);
+		
+
 		  // Convert bit format
 		  for (int n=0; n<vdif_packetsize; n++) {
 		    framebytes[n] = lookup[framebytes[n]];
 		  }
 
-		  nwrote = write(out, framebytes, vdif_packetsize);
-		  if (nwrote==-1) {
-		    perror("Error writing outfile");
-		    close(out);
-		    return(EXIT_FAILURE);
-		  } else if (nwrote!=vdif_packetsize) {
-		    fprintf(stderr, "Warning: Did not write all bytes! (%d/%d)\n",
-			    (int)nwrote, vdif_packetsize);
-		    close(out);
-		    return(EXIT_FAILURE);
+		  if (sock==0) {
+		    status = diskwrite(out, framebytes, vdif_packetsize);
+		  } else {
+		    status = netwrite(sock, framebytes, vdif_packetsize);
 		  }
-		  
+		  if (status!=EXIT_SUCCESS) return(status);
+
 		  vdifwords = 0;
 		  vdifbytes = 0;
 		  nextVDIFHeader(&header, framespersec);
@@ -483,29 +481,20 @@ int convert2VDIF(string project, string stream, string outname,
 		
 		if (vdifwords>= vdif_packetsize/8) {
 		  // Write a VDIF packet
-		  ssize_t nwrote = write(out, &header, VDIF_HEADER_BYTES);
-		  if (nwrote==-1) {
-		    perror("Error writing outfile");
-		    close(out);
-		    return(EXIT_FAILURE);
-		  } else if (nwrote!=VDIF_HEADER_BYTES) {
-		    fprintf(stderr, "Warning: Did not write all bytes! (%d/%d)\n",
-			    (int)nwrote, VDIF_HEADER_BYTES);
-		    close(out);
-		    return(EXIT_FAILURE);
-		  }
-		  nwrote = write(out, framebytes, vdif_packetsize);
-		  if (nwrote==-1) {
-		    perror("Error writing outfile");
-		    close(out);
-		    return(EXIT_FAILURE);
-		  } else if (nwrote!=vdif_packetsize) {
-		    fprintf(stderr, "Warning: Did not write all bytes! (%d/%d)\n",
-			    (int)nwrote, vdif_packetsize);
-		    close(out);
-		    return(EXIT_FAILURE);
-		  }
-		  
+		  if (sock==0)
+		    status = diskwrite(out, &header, VDIF_HEADER_BYTES);
+		  else
+		    status = netwrite(sock, &header, VDIF_HEADER_BYTES);
+
+		  if (status!=EXIT_SUCCESS) return(status);
+
+		  if (sock==0)
+		    status = diskwrite(out, framebytes, vdif_packetsize);
+		  else 
+		    status = netwrite(sock, framebytes, vdif_packetsize);
+
+		  if (status!=EXIT_SUCCESS) return(status);
+
 		  vdifwords = 0;
 		  vdifbytes = 0;
 		  nextVDIFHeader(&header, framespersec);
@@ -540,13 +529,24 @@ void usage () {
 }
 
 int main(int argc, char **argv) {
-  char *outname = NULL, *streamname = NULL;
-  int opt;
+  string streamname ("");
+  int opt, tmp, status, sock;
+  float ftmp;
+
   modeType mode = NONE;
+  int port = 52100;     // Network port to use
+  int window_size = -1;	// TCP window size
+  string hostname (""); // Host name to send data to
+  string outname (""); // Output file name 
+  int donet = 0;       // Write to network rather than local file
 
   struct option options[] = {
     {"outname", 1, 0, 'o'},
     {"mode", 1, 0, 'm'},
+    {"port", 1, 0, 'p'},
+    {"host", 1, 0, 'H'},
+    {"hostname", 1, 0, 'H'},
+    {"window", 1, 0, 'w'},
     {"help", 0, 0, 'h'},
     {0, 0, 0, 0}
   };
@@ -578,7 +578,34 @@ int main(int argc, char **argv) {
       break;
 
     case 'o': // file to record
-      outname=strdup(optarg);
+      outname = optarg;
+      break;
+
+    case 'w':
+      status = sscanf(optarg, "%f", &ftmp);
+      if (status!=1)
+	fprintf(stderr, "Bad window option %s\n", optarg);
+      else 
+	window_size = ftmp * 1024;
+     break;
+     
+    case 'p':
+      status = sscanf(optarg, "%d", &tmp);
+      if (status!=1)
+	fprintf(stderr, "Bad port option %s\n", optarg);
+      else {
+	port = tmp;
+      }
+      donet = 1;
+      break;
+      
+    case 'H':
+      if (strlen(optarg)>MAXSTR) {
+	fprintf(stderr, "Hostname too long\n");
+	return(1);
+      }
+      hostname = optarg;
+      donet = 1;
       break;
 
     case 'h': // help
@@ -586,7 +613,7 @@ int main(int argc, char **argv) {
       return EXIT_SUCCESS;
       break;
     }
-
+  
   int narg = argc-optind;
 
   if (narg<1 || narg>2) {
@@ -594,14 +621,21 @@ int main(int argc, char **argv) {
     return(EXIT_FAILURE);
   }
   
-  if (outname==NULL) outname = strdup("vdif.out");
+  if (donet) {
+    if (hostname.length() == 0) hostname = "localhost";
+    sock = setup_net(hostname, port, window_size);
+
+  } else {
+    sock = 0;
+    if (outname.length()==0) outname = "vdif.out";
+  }
 
   if (narg>1) 
-    streamname=argv[optind+1];
-  else
-    streamname=strdup("");
+    streamname = argv[optind+1];
 
-  return convert2VDIF(argv[optind],streamname, outname, mode);
+  return convert2VDIF(argv[optind], streamname, outname, sock, mode);
+
+  if (sock!=0) close(sock);
 
 }
 
@@ -611,4 +645,112 @@ void initialize_lookup() {
   for (i=0; i<256; i++) {
     lookup[i] = ((i>>1)&0x55) | ((i<<1)&0xAA);
   }
+}
+
+int setup_net(string hostname, int port, int window_size) {
+  int sock, status;
+  unsigned long ip_addr;
+  socklen_t client_len, winlen;
+  struct hostent     *hostptr;
+  struct sockaddr_in server, client;    /* Socket address */
+
+  memset((char *) &server, 0, sizeof(server));
+  server.sin_family = AF_INET;
+  server.sin_port = htons((unsigned short)port); /* Which port number to use */
+
+  /* Create the initial socket */
+  sock = socket(AF_INET,SOCK_STREAM,0); 
+  if (sock==-1) {
+    perror("Error creating socket");
+    return(0);
+  }
+
+  if (window_size>0) {
+    status = setsockopt(sock, SOL_SOCKET, SO_SNDBUF,
+			(char *) &window_size, sizeof(window_size));
+    if (status!=0) {
+      perror("Error setting socket send buffer");
+      close(sock);
+      return(0);
+    } 
+
+    status = setsockopt(sock, SOL_SOCKET, SO_RCVBUF,
+			(char *) &window_size, sizeof(window_size));
+    
+    if (status!=0) {
+      perror("Error setting socket receive buffer");
+      close(sock);
+      return(0);
+    }
+
+    /* Check what the window size actually was set to */
+    winlen = sizeof(window_size);
+    status = getsockopt(sock, SOL_SOCKET, SO_SNDBUF,
+			(char *) &window_size, &winlen);
+    if (status!=0) {
+      close(sock);
+      perror("Getting socket options");
+      return(0);
+    }
+    printf("Sending buffersize set to %d Kbytes\n", window_size/1024);
+    
+  }
+
+  hostptr = gethostbyname(hostname.c_str());
+  if (hostptr==NULL) {
+    cerr << "Failed to look up hostname " << hostname << endl;
+    close(sock);
+    return(0);
+  }
+  
+  memcpy(&ip_addr, (char *)hostptr->h_addr, sizeof(ip_addr));
+  server.sin_addr.s_addr = ip_addr;
+  
+  printf("Connecting to %s\n",inet_ntoa(server.sin_addr));
+
+  status = connect(sock, (struct sockaddr *) &server, sizeof(server));
+  if (status!=0) {
+    perror("Failed to connect to server");
+    close(sock);
+    return(0);
+  }
+
+  return(sock);
+}
+
+int netwrite(int sock, const void* buf, size_t len) {
+  ssize_t nwrote;
+  char *poff;
+
+  poff = (char*)buf;
+  while (len>0) {
+    nwrote = send(sock, poff, len, 0);
+    if (nwrote==-1) {
+      if (errno == EINTR) continue;
+      perror("Error writing to network");
+      return(EXIT_FAILURE);
+    } else if (nwrote==0) {
+      cerr << "Warning: Did not write any bytes!" << endl;
+      return(EXIT_FAILURE);
+    } else {
+      len -= nwrote;
+      poff += nwrote;
+    }
+  }
+  return(EXIT_SUCCESS);
+}
+
+
+int diskwrite(int out, const void* buf, size_t len) {
+  ssize_t nwrote = write(out, buf, len);
+  if (nwrote==-1) {
+    perror("Error writing outfile");
+    close(out);
+    return(EXIT_FAILURE);
+  } else if (nwrote!=len) {
+    cerr << "Warning: Did not write all bytes! (" << nwrote << "/" << len << ")" << endl;
+    close(out);
+    return(EXIT_FAILURE);
+  }
+  return(EXIT_SUCCESS);
 }
