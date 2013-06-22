@@ -11,8 +11,8 @@ from time import asctime
 from glob import glob
 
 program = 'difxbuild'
-version = '0.26'
-verdate = '20130613'
+version = '0.27'
+verdate = '20130622'
 author = 'Walter Brisken <wbrisken@nrao.edu>'
 
 difxbuildUrl = 'http://www.aoc.nrao.edu/~wbrisken/difxbuild'
@@ -29,6 +29,9 @@ automakeVersion = '1.11.6'
 libtoolVersion = '2.4'
 pkgconfigVersion = '0.28'
 cxOracleVersion = '5.1.2'
+
+difxMessageGroup = 'difxmessageport'
+difxMessagePort = 50200
 
 if version_info[0] < 3 and version_info[1] < 5:
 	psycopgVersion = '2.4.6'
@@ -199,6 +202,12 @@ Bootstrap parameter options include:
 * altplatformXtest: A bash conditional expression used to determine if the
   computer running the setup_bash script belongs to this platform.  An 
   example is  FIXME
+
+* difxmessageport: a number between 1024 and 65535 specifying the multicast
+  port to be used for difx messaging
+
+* difxmessagegroup: an IP address in range 224.0.0.0 to 239.255.255.255
+  specifying the multicast group to be used for difx messaging
 
 * env: Append extra environment variables to the setup file.  Syntax is:
 
@@ -1007,7 +1016,16 @@ def bootstrap(comps, params, args, verbose, pretend):
 	if config['version'] not in components.keys():
 		print 'Error: version must be one of ', components.keys()
 		return
+
+	if config.has_key('difxmessagegroup'):
+		difxMessageGroup = config['difxmessagegroup']
 	
+	if config.has_key('difxmessageport'):
+		difxMessagePort = int(config['difxmessageport'])
+		if difxMessagePort < 1024 or difxMessagePort > 65535:
+			print 'Error: difxmessageport must be in range [1024..65535]'
+			return
+
 	if config.has_key('label'):
 		label = config['label']
 	else:
@@ -1188,8 +1206,8 @@ def bootstrap(comps, params, args, verbose, pretend):
 		out.write('export PKG_CONFIG_PATH=${DIFXROOT}/lib/pkgconfig:${DIFX_ARCH_ROOT}/lib/pkgconfig:/usr/lib/pkgconfig\n')
 		out.write('export MARK5_DIR_PATH=${DIFX_BASE}/directories\n')
 		out.write('export PGPLOT_DIR=${DIFX_ARCH_ROOT}/pgplot\n')
-		out.write('export DIFX_MESSAGE_GROUP=224.2.2.1\n')
-		out.write('export DIFX_MESSAGE_PORT=50200\n')
+		out.write('export DIFX_MESSAGE_GROUP=%s\n' % difxMessageGroup)
+		out.write('export DIFX_MESSAGE_PORT=%d\n' % difxMessagePort)
 		if len(platformhostsStr) > 0:
 			out.write('export PLATFORM_HOSTS=%s\n' % platformhostsStr)
 
@@ -1752,6 +1770,8 @@ def gpstk(origComps, params, args, verbose, pretend):
 	execute('cp src/GNSSconstants.hpp %s/include/gpstk' % (difxBase + arch), verbose, pretend)
 
 	# make a .pc file for later convenience
+	if not isdir('%s/lib/pkgconfig' % (difxBase + arch)):
+		execute('mkdir -p %s/lib/pkgconfig' % (difxBase + arch), verbose, pretend)
 	out = open('%s/lib/pkgconfig/gpstk.pc' % (difxBase + arch), 'w')
 	out.write('prefix=%s\n' % (difxBase + arch))
 	out.write('exec_prefix=${prefix}\n')
