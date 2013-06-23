@@ -11,8 +11,8 @@ from time import asctime
 from glob import glob
 
 program = 'difxbuild'
-version = '0.27'
-verdate = '20130622'
+version = '0.28'
+verdate = '20130623'
 author = 'Walter Brisken <wbrisken@nrao.edu>'
 
 difxbuildUrl = 'http://www.aoc.nrao.edu/~wbrisken/difxbuild'
@@ -30,8 +30,8 @@ libtoolVersion = '2.4'
 pkgconfigVersion = '0.28'
 cxOracleVersion = '5.1.2'
 
-difxMessageGroup = 'difxmessageport'
-difxMessagePort = 50200
+defaultDifxMessageGroup = '224.2.2.1'
+defaultDifxMessagePort = 50200
 
 if version_info[0] < 3 and version_info[1] < 5:
 	psycopgVersion = '2.4.6'
@@ -982,6 +982,9 @@ def bootstrap(comps, params, args, verbose, pretend):
 	if not isfile(params['ConfigFile']):
 		print 'Error: bootstrapping needs the specified configuration file, %s, to exist.' % params['ConfigFile']
 		return
+
+	difxMessageGroup = defaultDifxMessageGroup
+	difxMessagePort = defaultDifxMessagePort
 		
 	configData = open(params['ConfigFile'], 'r').readlines()
 	config = {}
@@ -1203,7 +1206,7 @@ def bootstrap(comps, params, args, verbose, pretend):
 		out.write('export CFLAGS="%s"\n' % cflags)
 		out.write('export CXXFLAGS="%s"\n' % cflags)
 		out.write('export MPICXX=${DIFX_ARCH_ROOT}/bin/mpicxx\n')
-		out.write('export PKG_CONFIG_PATH=${DIFXROOT}/lib/pkgconfig:${DIFX_ARCH_ROOT}/lib/pkgconfig:/usr/lib/pkgconfig\n')
+		out.write('export PKG_CONFIG_PATH=${DIFXROOT}/lib/pkgconfig:${DIFX_ARCH_ROOT}/lib/pkgconfig:/usr/lib64/pkgconfig:/usr/lib/pkgconfig\n')
 		out.write('export MARK5_DIR_PATH=${DIFX_BASE}/directories\n')
 		out.write('export PGPLOT_DIR=${DIFX_ARCH_ROOT}/pgplot\n')
 		out.write('export DIFX_MESSAGE_GROUP=%s\n' % difxMessageGroup)
