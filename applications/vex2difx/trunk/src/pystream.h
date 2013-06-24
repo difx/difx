@@ -84,7 +84,7 @@ private:
 	std::string evlaVCIDir;
 	std::string ant;
 	std::string sw[4];	// 4x4 switch state
-	int swInUse;
+	unsigned int swInUse;
 	std::string obsCode;
 	std::string fileName;
 	std::string dbeFilename;
@@ -117,7 +117,7 @@ private:
 	// IF numbers ordered by how many channels are assigned to each; highest at index 0; by mode
 	std::vector<std::vector<int> > orderedIFNums;
 	// which IF is assigned to which DBE/IF by mode
-    std::vector<std::vector<std::vector<int> > > IF2DBEassign;
+    std::vector<std::vector<std::vector<unsigned int> > > IF2DBEassign;
 	// how many IF are in use by DBE and by mode
     std::vector<std::vector<int> > IFinUseByDBE;
 	// if IF has more than MAX_IF_PER_DBE channels assigned this tells us how to split them across DBEs
