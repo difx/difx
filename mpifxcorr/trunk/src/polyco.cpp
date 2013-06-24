@@ -441,7 +441,8 @@ bool Polyco::loadPolycoFile(string filename, int subcount)
       iss >> refphase; //refphase
       refphase = refphase - floor(refphase);
       iss >> f0; //reference frequency
-      iss >> observatory; //observatory code (integer)
+      iss >> strbuffer;
+      observatory = atoi(strbuffer.c_str()); //observatory code (normally integer, but not used anyway)
       iss >> timespan; //timespan in minutes
       iss >> numcoefficients; //number of polynomial coefficients
       iss >> obsfrequency; //observing frequency (MHz)
