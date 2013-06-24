@@ -150,7 +150,7 @@ int main(int argc, char **argv)
 	const VexAntenna *A;
 	int nAntenna, nScan, atchar, lastchar;
 	pystream py;
-	pystream::ScriptType sType;
+	pystream::ScriptType sType = pystream::SCRIPT_VLBA;
 	int nWarn = 0;
 	bool gb_only = false;
 
