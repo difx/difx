@@ -383,7 +383,7 @@ void pystream::figurePersonality(const VexData *V)
 			}
 		}
 
-		for(unsigned int i = 0; i < nChan; ++i)
+		for(unsigned int i = 0; i < (unsigned int) nChan; ++i)
 		{
 			double bw = setup->channels[i].bbcBandwidth;
 			int bwHz = static_cast<int>(bw + 0.5);
@@ -487,7 +487,7 @@ int pystream::writeDbeInit(const VexData *V)
 
 	// resize our data arrays
 	chanPerIF.resize(nMode);
-	for( int i=0; i<nMode; i++)
+	for( int i=0; i<(int)nMode; i++)
 		chanPerIF[i].resize(MAX_IF);
 	IFinUse.resize(nMode);
 	IFinUseByDBE.resize(nMode);
@@ -495,7 +495,7 @@ int pystream::writeDbeInit(const VexData *V)
 	orderedIFNums.resize(nMode);
 	chanByDBE.resize(nMode);
 	chanDist.resize(nMode);
-    for( int i=0; i<nMode; i++) {
+    for( int i=0; i<(int)nMode; i++) {
         orderedIFNums[i].resize(MAX_IF);
 		chanByDBE[i].resize(MAX_DBE);
         IFinUseByDBE[i].resize(MAX_IF);
@@ -568,10 +568,10 @@ int pystream::writeDbeInit(const VexData *V)
 //					cerr << "## ifName: " << setup->channels[i].ifName << ":" << ifIndex[modeNum][setup->channels[i].ifName] << endl;
 				}
 				// find how many IFs we are using and order them by which IF has most channels
-				for(unsigned int i = 0; i < MAX_IF; ++i) {
+				for(unsigned int i = 0; i < (unsigned int)MAX_IF; ++i) {
 					if( chanPerIF[modeNum][i] != 0 ) {
 						IFinUse[modeNum]++;
-						for( unsigned int j = 0; j < MAX_IF; j++) {
+						for( unsigned int j = 0; j < (unsigned int)MAX_IF; j++) {
 							if( orderedIFNums[modeNum][j] == -1
 								|| chanPerIF[modeNum][i] > chanPerIF[modeNum][orderedIFNums[modeNum][j]] ) {
 								for(unsigned int k = (MAX_IF-1); k>j && orderedIFNums[modeNum][j]!=-1; k--) {
@@ -976,7 +976,7 @@ int pystream::writeDDCChannelSet(const VexSetup *setup, int modeNum)
 
 //	cerr << "chanDist[" << modeNum << "]: " << chanDist[modeNum] << endl;
 	// temp storage to figure out to which DBE channels are assigned
-	int assignedChans[MAX_DBE][MAX_DBE_CHAN] = {-1, -1, -1, -1, -1, -1 ,-1, -1};
+	int assignedChans[MAX_DBE][MAX_DBE_CHAN] = {{-1, -1, -1, -1}, {-1, -1 ,-1, -1}};
 
 	if( personalityType == RDBE_DDC ) {
 		if( setup->channels.size() > 2*MAX_DBE_CHAN ) {
@@ -1091,8 +1091,8 @@ int pystream::writeDDCChannelSet(const VexSetup *setup, int modeNum)
 
 //		cerr << " chanByDBE[" << modeNum << "][" << dbe << "]: " << chanByDBE[modeNum][dbe] << endl;
 		// now print the channels assigned
-		for(unsigned int j = 0; j < chanByDBE[modeNum][dbe]; ++j) {
-			unsigned int i = assignedChans[dbe][j];
+		for(unsigned int j = 0; j < (unsigned int)chanByDBE[modeNum][dbe]; ++j) {
+			int i = (int)assignedChans[dbe][j];
 //			cerr << " assigned chan["<<i<<"]: " << assignedChans[dbe][j] << endl;
 			if( i == -1 )
 				continue;
@@ -1187,7 +1187,7 @@ int pystream::writeDDCChannelSet(const VexSetup *setup, int modeNum)
 			}
 
 			*this << "  bbc(" << inputNum << ", " << (tune*1.0e-6) << ", " << (bw*1.0e-6) << ", '" << sb << "', " << nBit << ", " << threadId << ")";
-			if(i < setup->channels.size()-1)
+			if((unsigned int)i < setup->channels.size()-1)
 			{
 				*this << ", \\";
 			}
@@ -1737,7 +1737,7 @@ int pystream::writeDDCLoifTable(const VexData *V)
 					cerr << "VEX error: too many channels defined: " << setup->channels.size() 
 						<< " vs allowed max of " << 2*MAX_DBE_CHAN << " for DDC" << endl;
 					exit(EXIT_FAILURE);	
-				} else if( personalityType == RDBE_PFB && setup->channels.size() != MAX_DBE_PFB_CHAN ) {
+				} else if( personalityType == RDBE_PFB && setup->channels.size() != (unsigned int)MAX_DBE_PFB_CHAN ) {
 					cerr << "VEX error: PFB needs 16 channels, but defined are only: " << setup->channels.size() << endl;
 					exit(EXIT_FAILURE);	
 				}
@@ -2110,7 +2110,6 @@ int pystream::writeDDCScans(const VexData *V)
 	int nScan;
 	map<string,VexIF>::const_iterator it;
 	map<string,unsigned int> it4;
-	const char *switchOutput[] = {"1A", "1B", "2A", "2B"};
 	double recordSeconds = 0.0;
 	std::string tab;
 	double endLastScan = 0.0;
