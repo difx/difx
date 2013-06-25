@@ -92,6 +92,8 @@ int is_reasonable_timediff(double startmjd, double stopmjd)
 struct mark5_stream *openmk5(const char *filename, const char *formatname, long *offset)
 {
 	struct mark5_stream *ms;
+	long offset0 = *offset;
+	char did_fail = 0;
 	while (1) {
                 ms = new_mark5_stream_absorb(
                         new_mark5_stream_file(filename, *offset),
@@ -99,11 +101,25 @@ struct mark5_stream *openmk5(const char *filename, const char *formatname, long 
 
                 if(!ms)
                 {
-                        fprintf(stderr, "problem opening %s\n", filename);
-                        break;
+			if (*offset < (offset0 + 32*43500L))
+			{
+                        	fprintf(stderr, "problem at initial decode of %s at offset %ld, trying new offset\n", filename, (int64_t)(*offset));
+				*offset += 43500;
+				did_fail = 1;
+				continue;
+			}
+			else
+			{
+                        	fprintf(stderr, "problem opening %s\n", filename);
+	                        break;
+			}
                 }
                 if(0 == (ms->samprate % 1000) && ms->samprate>0)
                 {
+			if (did_fail)
+			{
+				fprintf(stderr, "decode %s at offset %ld succeeded\n\n", filename, (int64_t)(*offset));
+			}
                         break;
                 }
                 fprintf(stderr, "File offset %ld: decoded suspect sample rate %d, trying new offset\n", *offset, ms->samprate);
@@ -196,6 +212,7 @@ int verify(const char *filename, const char *formatname, int refMJD)
 #endif
 
 				status = mark5_stream_resync(ms);
+				status = mark5_stream_next_frame(ms);
 				corrupt = 1;
 
 				continue;
@@ -288,7 +305,9 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
-	dir = argv[1];
+	dir = (char*)malloc(PATH_MAX+1);
+	dir = strncpy(dir, argv[1], PATH_MAX+1);
+	dir = strcat(dir, "/");
 	fmt = argv[2];
 	refMJD = (argc==4) ? atoi(argv[3]) : DEFAULT_MJD;
 
