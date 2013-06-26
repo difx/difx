@@ -110,7 +110,7 @@ int optsources::writeSourceTable(const VexData *V)
 		*this << S->defName << "; " << string(obsCode) << "; equatorial; "
 			<< "J2000" << "; ";
 		*this << (S->ra*180)/M_PI << "; " << (S->dec*180)/M_PI << "; "
-			<< "; " << "; " << "; ";
+			<< "; " << "; " << "; " << "; ";
 		*this << endl;
 	}
 
