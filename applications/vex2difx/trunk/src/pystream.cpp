@@ -466,7 +466,7 @@ void pystream::figurePersonality(const VexData *V)
 
 	if(personalityType == RDBE_UNKNOWN)
 	{
-		if(maxChans <= 8)
+		if(maxChans <= 8 && !isMark5A)
 		{
 			personalityType = RDBE_DDC;	// most sensible default for now
 		}
