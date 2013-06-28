@@ -1013,7 +1013,7 @@ static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, vector<vector<
 	}
 
 	D->datastream[dsId].quantBits = setup->nBit;
-	DifxDatastreamAllocBands(D->datastream + dsId, n2);
+	DifxDatastreamAllocBands(D->datastream + dsId, setup->nRecordChan);
 
 	for(vector<VexChannel>::const_iterator ch = setup->channels.begin(); ch != setup->channels.end(); ++ch)
 	{
@@ -1060,7 +1060,7 @@ static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, vector<vector<
 		D->datastream[dsId].nRecPol[j]   = bandMap[j].second;
 	}
 
-	return n2;
+	return setup->nRecordChan;
 }
 
 static void populateRuleTable(DifxInput *D, const CorrParams *P)
@@ -2728,7 +2728,7 @@ static int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int 
 				T_GPS.set(mjd + 2400001, sec, 0.0, TimeSystem(TimeSystem::GPS));
 				T_GPS.addSeconds(gps_utc);
 
-				nPoint = (D->mjdStop - D->mjdStart) * (86400/deltaT) + 15;
+				nPoint = (D->mjdStop - D->mjdStart) * (86400/deltaT) + 20;
 
 				ds->nPoint = nPoint;
 				ds->pos = (sixVector *)calloc(nPoint, sizeof(sixVector));

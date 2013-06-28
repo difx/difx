@@ -129,11 +129,15 @@ std::string genFileList(const char *switchedPowerPath, const char *stn, const Ve
 	{
 		int year, doy;
 		char match[MaxFilenameLength];
+		int rv;
 
 		mjd2yearday(mjd, &year, &doy);
-		snprintf(match, MaxFilenameLength, "%s/%s_%d_%03d_*.switched_power.xz", switchedPowerPath, stn, year, doy);
 
-		if(glob(match, 0, 0, &globbuf) == 0)
+		// First try looking in the station/year file area
+		snprintf(match, MaxFilenameLength, "%s/%s/%d/%s_%d_%03d_*.switched_power.xz", switchedPowerPath, stn, year, stn, year, doy);
+
+		rv = glob(match, 0, 0, &globbuf);
+		if(rv == 0)
 		{
 			if(globbuf.gl_pathc > 0)
 			{
@@ -164,6 +168,45 @@ std::string genFileList(const char *switchedPowerPath, const char *stn, const Ve
 				}
 			}
 			globfree(&globbuf);
+		}
+
+		else if(rv == GLOB_NOMATCH)
+		{
+			// Then try looking in the central file area
+			snprintf(match, MaxFilenameLength, "%s/%s_%d_%03d_*.switched_power.xz", switchedPowerPath, stn, year, doy);
+
+			if(glob(match, 0, 0, &globbuf) == 0)
+			{
+				if(globbuf.gl_pathc > 0)
+				{
+					VexInterval fileRange;
+
+					fileRange.mjdStop = filename2fracday(globbuf.gl_pathv[0]) + mjd;
+					for(unsigned int i = 0; i < globbuf.gl_pathc; ++i)
+					{
+						fileRange.mjdStart = fileRange.mjdStop;
+						if(i+1 < globbuf.gl_pathc)
+						{
+							fileRange.mjdStop = filename2fracday(globbuf.gl_pathv[i+1]) + mjd;
+						}
+						else
+						{
+							fileRange.mjdStop = 1.0 + mjd;
+						}
+
+						if(timeRange.overlap(fileRange))
+						{
+							if(fileList.length() > 0)
+							{
+								fileList += " ";
+							}
+							fileList += globbuf.gl_pathv[i];
+						}
+
+					}
+				}
+				globfree(&globbuf);
+			}
 		}
 	}
 
@@ -722,7 +765,7 @@ int main(int argc, char **argv)
 	const char *tcalPath;
 	int nZero = 0;
 	std::string zeroStations;
-	long long nGood, nBad, nLine, nTimeError, nSkip;
+	long long nGood=0, nBad=0, nLine=0, nTimeError=0, nSkip=0;
 
 	for(int a = 1; a < argc; ++a)
 	{
