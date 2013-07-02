@@ -379,6 +379,7 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                                     if (np != b % npol)
                                         continue;  
                                     this_pol = D->config[configId].IF[ D->config[configId].freqId2IF[jf]].pol[np];
+
                                     isb = (D->freq[jf].sideband == 'U') ? 1 : -1;
                                     f_rel = isb * (freq - D->freq[jf].freq);
                                         // is it within the jfth frequency band?
@@ -397,11 +398,14 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                                                  && pfb[nf].stn[k].pol      == this_pol)
                                                     {
                                                     strcpy (t309.chan[b].chan_name, pfb[nf].stn[k].chan_id);
-                                                    break;
+                                                    break;      // found freq, do double break
                                                     }
-                                            if (k < 2) // exit while on early for exit
-                                                break;
+                                            if (k < 2)
+                                                break;          // 2nd part of double break
                                             }
+                                        // this freq not in table - skip it
+                                        if (k == 2)
+                                            continue;
 
                                         // find out which tone slot this goes in
                                         for (i=0; i<NPC_TONES; i++)

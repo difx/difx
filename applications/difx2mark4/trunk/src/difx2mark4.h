@@ -28,7 +28,7 @@
 #define EXP_CODE_LEN 4
 #define NUMFILS 500                 // max number of type 1 output files
 #define MAGLIM 10000.0              // threshold magnitude for vis. rejection
-#define MAX_FPPAIRS 1000
+#define MAX_FPPAIRS 5000            // dimensioned for b-lines x chans x pol_prods
 
 enum booleans {FALSE, TRUE};
 

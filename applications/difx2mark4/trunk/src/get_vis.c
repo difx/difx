@@ -55,7 +55,7 @@ int get_vis (char *vf_name,                   // name of input file
         mod_time = gmtime (&(attrib.st_mtime));
         snprintf (corrdate, 16, "%4d%03d-%02d%02d%02d", 
                  mod_time->tm_year+1900,
-                 mod_time->tm_yday, mod_time->tm_hour,
+                 mod_time->tm_yday+1, mod_time->tm_hour,
                  mod_time->tm_min,  mod_time->tm_sec);
         }
 
