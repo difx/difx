@@ -153,6 +153,53 @@ PRAGMA_OMP(for schedule(dynamic,125) nowait)
   }
 }
 
+static void cornerturn_3thread_2bit(unsigned char *outputBuffer, const unsigned char **threadBuffers, int outputDataSize)
+{
+  // Efficiently handle the special case of 3 threads of 2-bit data.  
+  //
+  // This is based on cornerturn_4thread_2bit and results in a 4 channel output with 1 channel of all zeros.
+  //
+  // Thread: ------3-------   ------2-------   ------1-------   ------0-------
+  // Byte:   ------0-------   ------0-------   ------0-------   ------0-------
+  // Input:                   c3  c2  c1  c0   b3  b2  b1  b0   a3  a2  a1  a0
+  //
+  // Shift:                   +3   0  -3  -6   +6  +3   0  -3   +9  +6  +3   0
+  //
+  // Output:     c3  b3  a3       c2  b2  a2       c1  b1  a1       c0  b0  a0
+  // Byte:   ------3-------   ------2-------   ------1-------   ------0-------
+  //
+  // -WFB
+
+  const unsigned int M0 = 0xC0300C03;
+  const unsigned int M1 = 0x300C0300;
+  const unsigned int M2 = 0x00C0300C;
+  const unsigned int M3 = 0x0C030000;
+  const unsigned int M4 = 0x0000C030;
+  const unsigned int M5 = 0x03000000;
+  const unsigned int M6 = 0x000000C0;
+
+  const unsigned char *t0 = threadBuffers[0];
+  const unsigned char *t1 = threadBuffers[1];
+  const unsigned char *t2 = threadBuffers[2];
+  unsigned int *outputwordptr = (unsigned int *)outputBuffer;
+
+  unsigned int x;
+  int i, n;
+  n = outputDataSize/4;
+
+PRAGMA_OMP(parallel private(i,x) shared(outputwordptr,t0,t1,t2,n))
+  {
+PRAGMA_OMP(for schedule(dynamic,125) nowait)
+    for(i = 0; i < n; ++i)
+    {
+      // assemble
+      x = (t2[i] << 16) | (t1[i] << 8) | t0[i];
+
+      // mask and shift
+      outputwordptr[i] = (x & M0) | ((x & M1) >> 6) | ((x & M2) << 6) | ((x & M3) >> 12) | ((x & M4) << 12) | ((x & M5) >> 18) | ((x & M6) << 18);
+    }
+  }
+}
 
 static void cornerturn_4thread_2bit(unsigned char *outputBuffer, const unsigned char **threadBuffers, int outputDataSize)
 {
@@ -207,6 +254,181 @@ PRAGMA_OMP(for schedule(dynamic,125) nowait)
 
       // mask and shift
       outputwordptr[i] = (x & M0) | ((x & M1) >> 6) | ((x & M2) << 6) | ((x & M3) >> 12) | ((x & M4) << 12) | ((x & M5) >> 18) | ((x & M6) << 18);
+    }
+  }
+}
+
+static void cornerturn_5thread_2bit(unsigned char *outputBuffer, const unsigned char **threadBuffers, int outputDataSize)
+{
+  // Efficiently handle the special case of 5 threads of 2-bit data.
+  // This will be packed into an 8-channel output stream where the 3 unused channels will be all zeros
+  //
+  // Thread: ------7-------   ------6-------   ------5-------   ------4-------   ------3-------   ------2-------   ------1-------   ------0-------
+  // Byte:   ------0-------   ------0-------   ------0-------   ------0-------   ------0-------   ------0-------   ------0-------   ------0-------
+  // Input:                                                     e3  e2  e1  e0   d3  d2  d1  d0   c3  c2  c1  c0   b3  b2  b1  b0   a3  a2  a1  a0
+  //
+  // Shift:                                                     +9  +2  -5 -12  +12  +5  -2  -9  +15  +8  +1  -6  +18 +11  +4  -3  +21 +14  +7   0
+  //
+  // Output:             e3   d3  c3  b3  a3               e2   d2  c2  b2  a2               e1   d1  c1  b1  a1               e0   d0  c0  b0  a0
+  // Byte:   ------7-------   ------6-------   ------5-------   ------4-------   ------3-------   ------2-------   ------1-------   ------0-------
+  //
+  // This one is a bit complicated.  A resonable way to proceed seems to be to perform two separate 4-thread corner turns and then 
+  // do a final suffle of byte sized chunks.  There may be a better way...
+  //
+  // FIXME: This is thought to work but has yet to be fully verified.
+
+  const unsigned int M0 = 0xC0300C03;
+  const unsigned int M1 = 0x300C0300;
+  const unsigned int M2 = 0x00C0300C;
+  const unsigned int M3 = 0x0C030000;
+  const unsigned int M4 = 0x0000C030;
+  const unsigned int M5 = 0x03000000;
+  const unsigned int M6 = 0x000000C0;
+
+  const unsigned char *t0 = threadBuffers[0];
+  const unsigned char *t1 = threadBuffers[1];
+  const unsigned char *t2 = threadBuffers[2];
+  const unsigned char *t3 = threadBuffers[3];
+  const unsigned char *t4 = threadBuffers[4];
+  unsigned int *outputwordptr = (unsigned int *)outputBuffer;
+  unsigned int x1, x2;
+  int i, n;
+  n = outputDataSize/8;
+  union { unsigned int y; unsigned char b[4]; } u1, u2;
+
+PRAGMA_OMP(parallel private(i,x1,x2,u1,u2) shared(outputwordptr,t0,t1,t2,t3,t4,n))
+  {
+PRAGMA_OMP(for schedule(dynamic,125) nowait)
+    for(i = 0; i < n; ++i)
+    {
+      // assemble 32-bit chunks
+      x1 = (t3[i] << 24) | (t2[i] << 16) | (t1[i] << 8) | t0[i];
+      x2 =                                                t4[i];
+
+      // mask and shift 32-bit chunks
+      u1.y = (x1 & M0) | ((x1 & M1) >> 6) | ((x1 & M2) << 6) | ((x1 & M3) >> 12) | ((x1 & M4) << 12) | ((x1 & M5) >> 18) | ((x1 & M6) << 18);
+      u2.y = (x2 & M0) | ((x2 & M1) >> 6) | ((x2 & M2) << 6) | ((x2 & M3) >> 12) | ((x2 & M4) << 12) | ((x2 & M5) >> 18) | ((x2 & M6) << 18);
+
+      // shuffle 8-bit chunks
+      outputwordptr[2*i]   = (u2.b[1] << 24) | (u1.b[1] << 16) | (u2.b[0] << 8) | u1.b[0];
+      outputwordptr[2*i+1] = (u2.b[3] << 24) | (u1.b[3] << 16) | (u2.b[2] << 8) | u1.b[2];
+    }
+  }
+}
+
+static void cornerturn_6thread_2bit(unsigned char *outputBuffer, const unsigned char **threadBuffers, int outputDataSize)
+{
+  // Efficiently handle the special case of 6 threads of 2-bit data.
+  //
+  // Thread: ------7-------   ------6-------   ------5-------   ------4-------   ------3-------   ------2-------   ------1-------   ------0-------
+  // Byte:   ------0-------   ------0-------   ------0-------   ------0-------   ------0-------   ------0-------   ------0-------   ------0-------
+  // Input:                                    f3  f2  f1  f0   e3  e2  e1  e0   d3  d2  d1  d0   c3  c2  c1  c0   b3  b2  b1  b0   a3  a2  a1  a0
+  //
+  // Shift:                                    +6  -1  -8 -15   +9  +2  -5 -12  +12  +5  -2  -9  +15  +8  +1  -6  +18 +11  +4  -3  +21 +14  +7   0
+  //
+  // Output:         f3  e3   d3  c3  b3  a3           f2  e2   d2  c2  b2  a2           f1  e1   d1  c1  b1  a1           f0  e0   d0  c0  b0  a0
+  // Byte:   ------7-------   ------6-------   ------5-------   ------4-------   ------3-------   ------2-------   ------1-------   ------0-------
+  //
+  // This one is a bit complicated.  A resonable way to proceed seems to be to perform two separate 4-thread corner turns and then 
+  // do a final suffle of byte sized chunks.  There may be a better way...
+  //
+  // FIXME: This is thought to work but has yet to be fully verified.
+
+  const unsigned int M0 = 0xC0300C03;
+  const unsigned int M1 = 0x300C0300;
+  const unsigned int M2 = 0x00C0300C;
+  const unsigned int M3 = 0x0C030000;
+  const unsigned int M4 = 0x0000C030;
+  const unsigned int M5 = 0x03000000;
+  const unsigned int M6 = 0x000000C0;
+
+  const unsigned char *t0 = threadBuffers[0];
+  const unsigned char *t1 = threadBuffers[1];
+  const unsigned char *t2 = threadBuffers[2];
+  const unsigned char *t3 = threadBuffers[3];
+  const unsigned char *t4 = threadBuffers[4];
+  const unsigned char *t5 = threadBuffers[5];
+  unsigned int *outputwordptr = (unsigned int *)outputBuffer;
+  unsigned int x1, x2;
+  int i, n;
+  n = outputDataSize/8;
+  union { unsigned int y; unsigned char b[4]; } u1, u2;
+
+PRAGMA_OMP(parallel private(i,x1,x2,u1,u2) shared(outputwordptr,t0,t1,t2,t3,t4,t5,n))
+  {
+PRAGMA_OMP(for schedule(dynamic,125) nowait)
+    for(i = 0; i < n; ++i)
+    {
+      // assemble 32-bit chunks
+      x1 = (t3[i] << 24) | (t2[i] << 16) | (t1[i] << 8) | t0[i];
+      x2 =                                 (t5[i] << 8) | t4[i];
+
+      // mask and shift 32-bit chunks
+      u1.y = (x1 & M0) | ((x1 & M1) >> 6) | ((x1 & M2) << 6) | ((x1 & M3) >> 12) | ((x1 & M4) << 12) | ((x1 & M5) >> 18) | ((x1 & M6) << 18);
+      u2.y = (x2 & M0) | ((x2 & M1) >> 6) | ((x2 & M2) << 6) | ((x2 & M3) >> 12) | ((x2 & M4) << 12) | ((x2 & M5) >> 18) | ((x2 & M6) << 18);
+
+      // shuffle 8-bit chunks
+      outputwordptr[2*i]   = (u2.b[1] << 24) | (u1.b[1] << 16) | (u2.b[0] << 8) | u1.b[0];
+      outputwordptr[2*i+1] = (u2.b[3] << 24) | (u1.b[3] << 16) | (u2.b[2] << 8) | u1.b[2];
+    }
+  }
+}
+
+static void cornerturn_7thread_2bit(unsigned char *outputBuffer, const unsigned char **threadBuffers, int outputDataSize)
+{
+  // Efficiently handle the special case of 7 threads of 2-bit data.
+  //
+  // Thread: ------7-------   ------6-------   ------5-------   ------4-------   ------3-------   ------2-------   ------1-------   ------0-------
+  // Byte:   ------0-------   ------0-------   ------0-------   ------0-------   ------0-------   ------0-------   ------0-------   ------0-------
+  // Input:                   g3  g2  g1  g0   f3  f2  f1  f0   e3  e2  e1  e0   d3  d2  d1  d0   c3  c2  c1  c0   b3  b2  b1  b0   a3  a2  a1  a0
+  //
+  // Shift:                   +3  -4 -11 -18   +6  -1  -8 -15   +9  +2  -5 -12  +12  +5  -2  -9  +15  +8  +1  -6  +18 +11  +4  -3  +21 +14  +7   0
+  //
+  // Output:     g3  f3  e3   d3  c3  b3  a3       g2  f2  e2   d2  c2  b2  a2       g1  f1  e1   d1  c1  b1  a1       g0  f0  e0   d0  c0  b0  a0
+  // Byte:   ------7-------   ------6-------   ------5-------   ------4-------   ------3-------   ------2-------   ------1-------   ------0-------
+  //
+  // This one is a bit complicated.  A resonable way to proceed seems to be to perform two separate 4-thread corner turns and then 
+  // do a final suffle of byte sized chunks.  There may be a better way...
+  //
+  // FIXME: This is thought to work but has yet to be fully verified.
+
+  const unsigned int M0 = 0xC0300C03;
+  const unsigned int M1 = 0x300C0300;
+  const unsigned int M2 = 0x00C0300C;
+  const unsigned int M3 = 0x0C030000;
+  const unsigned int M4 = 0x0000C030;
+  const unsigned int M5 = 0x03000000;
+  const unsigned int M6 = 0x000000C0;
+
+  const unsigned char *t0 = threadBuffers[0];
+  const unsigned char *t1 = threadBuffers[1];
+  const unsigned char *t2 = threadBuffers[2];
+  const unsigned char *t3 = threadBuffers[3];
+  const unsigned char *t4 = threadBuffers[4];
+  const unsigned char *t5 = threadBuffers[5];
+  const unsigned char *t6 = threadBuffers[6];
+  unsigned int *outputwordptr = (unsigned int *)outputBuffer;
+  unsigned int x1, x2;
+  int i, n;
+  n = outputDataSize/8;
+  union { unsigned int y; unsigned char b[4]; } u1, u2;
+
+PRAGMA_OMP(parallel private(i,x1,x2,u1,u2) shared(outputwordptr,t0,t1,t2,t3,t4,t5,t6,n))
+  {
+PRAGMA_OMP(for schedule(dynamic,125) nowait)
+    for(i = 0; i < n; ++i)
+    {
+      // assemble 32-bit chunks
+      x1 = (t3[i] << 24) | (t2[i] << 16) | (t1[i] << 8) | t0[i];
+      x2 =                 (t6[i] << 16) | (t5[i] << 8) | t4[i];
+
+      // mask and shift 32-bit chunks
+      u1.y = (x1 & M0) | ((x1 & M1) >> 6) | ((x1 & M2) << 6) | ((x1 & M3) >> 12) | ((x1 & M4) << 12) | ((x1 & M5) >> 18) | ((x1 & M6) << 18);
+      u2.y = (x2 & M0) | ((x2 & M1) >> 6) | ((x2 & M2) << 6) | ((x2 & M3) >> 12) | ((x2 & M4) << 12) | ((x2 & M5) >> 18) | ((x2 & M6) << 18);
+
+      // shuffle 8-bit chunks
+      outputwordptr[2*i]   = (u2.b[1] << 24) | (u1.b[1] << 16) | (u2.b[0] << 8) | u1.b[0];
+      outputwordptr[2*i+1] = (u2.b[3] << 24) | (u1.b[3] << 16) | (u2.b[2] << 8) | u1.b[2];
     }
   }
 }
@@ -271,9 +493,77 @@ PRAGMA_OMP(for schedule(dynamic,125) nowait)
   }
 }
 
+static void cornerturn_12thread_2bit(unsigned char *outputBuffer, const unsigned char **threadBuffers, int outputDataSize)
+{
+  // Efficiently handle the special case of 12 threads of 2-bit data.
+  //
+  // Thread: ------15------   ------14------   ------13------   ------12------   ------11------   ------10------   ------9-------   ------8-------   ------7-------   ------6-------   ------5-------   ------4-------   ------3-------   ------2-------   ------1-------   ------0-------
+  // Byte:   ------0-------   ------0-------   ------0-------   ------0-------   ------0-------   ------0-------   ------0-------   ------0-------   ------0-------   ------0-------   ------0-------   ------0-------   ------0-------   ------0-------   ------0-------   ------0-------
+  // Input:                                                                      l3  l2  l1  l0   k3  k2  k1  k0   j3  j2  j1  j0   i3  i2  i1  i0   h3  h2  h1  h0   g3  g2  g1  g0   f3  f2  f1  f0   e3  e2  e1  e0   d3  d2  d1  d0   c3  c2  c1  c0   b3  b2  b1  b0   a3  a2  a1  a0
+  //                                                                                                                                                
+  // Shift:                                                                     +12 -3  -18 -33  +15  0  -15 -30  +18 +3  -12 -27  +21 +6  -9  -24  +24 +9  -6  -21  +27 +12 -3  -18  +30 +15  0  -15  +33 +18 +3  -12  +36 +21 +6  -9   +39 +24 +9  -6   +42 +27 +12 -3   +45 +30 +15  0
+  //                                                                                                                                                
+  // Output:                  l3  k3  j3  i3   h3  g3  f3  e3   d3  c3  b3  a3                    l2  k2  j2  i2   h2  g2  f2  e2   d2  c2  b2  a2                    l1  k1  j1  i1   h1  g1  f1  e1   d1  c1  b1  a1                    l0  k0  j0  i0   h0  g0  f0  e0   d0  c0  b0  a0
+  // Byte:   ------15------   ------14------   ------13------   ------12------   ------11------   ------10------   ------9-------   ------8-------   ------7-------   ------6-------   ------5-------   ------4-------   ------3-------   ------2-------   ------1-------   ------0-------
+  //
+  // This one is a bit complicated.  A resonable way to proceed seems to be to perform four separate 4-thread corner turns and then 
+  // do a final suffle of byte sized chunks.  There may be a better way...
+  //
+  // FIXME: This is thought to work but has yet to be fully verified.
+
+  const unsigned int M0 = 0xC0300C03;
+  const unsigned int M1 = 0x300C0300;
+  const unsigned int M2 = 0x00C0300C;
+  const unsigned int M3 = 0x0C030000;
+  const unsigned int M4 = 0x0000C030;
+  const unsigned int M5 = 0x03000000;
+  const unsigned int M6 = 0x000000C0;
+
+  const unsigned char *t0  = threadBuffers[0];
+  const unsigned char *t1  = threadBuffers[1];
+  const unsigned char *t2  = threadBuffers[2];
+  const unsigned char *t3  = threadBuffers[3];
+  const unsigned char *t4  = threadBuffers[4];
+  const unsigned char *t5  = threadBuffers[5];
+  const unsigned char *t6  = threadBuffers[6];
+  const unsigned char *t7  = threadBuffers[7];
+  const unsigned char *t8  = threadBuffers[8];
+  const unsigned char *t9  = threadBuffers[9];
+  const unsigned char *t10 = threadBuffers[10];
+  const unsigned char *t11 = threadBuffers[11];
+  unsigned int *outputwordptr = (unsigned int *)outputBuffer;
+  unsigned int x1, x2, x3;
+  int i, n;
+  n = outputDataSize/16;
+  union { unsigned int y; unsigned char b[4]; } u1, u2, u3;
+
+PRAGMA_OMP(parallel private(i,x1,x2,x3,x4,u1,u2,u3) shared(outputwordptr,t0,t1,t2,t3,t4,t5,t6,t7,t8,t9,t10,t11,n))
+  {
+PRAGMA_OMP(for schedule(dynamic,125) nowait)
+    for(i = 0; i < n; ++i)
+    {
+      // assemble 32-bit chunks
+      x1 = (t3[i]  << 24) | (t2[i]  << 16) | (t1[i]  << 8) | t0[i];
+      x2 = (t7[i]  << 24) | (t6[i]  << 16) | (t5[i]  << 8) | t4[i];
+      x3 = (t11[i] << 24) | (t10[i] << 16) | (t9[i]  << 8) | t8[i];
+
+      // mask and shift 32-bit chunks
+      u1.y = (x1 & M0) | ((x1 & M1) >> 6) | ((x1 & M2) << 6) | ((x1 & M3) >> 12) | ((x1 & M4) << 12) | ((x1 & M5) >> 18) | ((x1 & M6) << 18);
+      u2.y = (x2 & M0) | ((x2 & M1) >> 6) | ((x2 & M2) << 6) | ((x2 & M3) >> 12) | ((x2 & M4) << 12) | ((x2 & M5) >> 18) | ((x2 & M6) << 18);
+      u3.y = (x3 & M0) | ((x3 & M1) >> 6) | ((x3 & M2) << 6) | ((x3 & M3) >> 12) | ((x3 & M4) << 12) | ((x3 & M5) >> 18) | ((x3 & M6) << 18);
+
+      // shuffle 8-bit chunks
+      outputwordptr[4*i]   =  (u3.b[0] << 16) | (u2.b[0] << 8) | u1.b[0];
+      outputwordptr[4*i+1] =  (u3.b[1] << 16) | (u2.b[1] << 8) | u1.b[1];
+      outputwordptr[4*i+2] =  (u3.b[2] << 16) | (u2.b[2] << 8) | u1.b[2];
+      outputwordptr[4*i+3] =  (u3.b[3] << 16) | (u2.b[3] << 8) | u1.b[3];
+    }
+  }
+}
+
 static void cornerturn_16thread_2bit(unsigned char *outputBuffer, const unsigned char **threadBuffers, int outputDataSize)
 {
-  // Efficiently handle the special case of 8 threads of 2-bit data.
+  // Efficiently handle the special case of 16 threads of 2-bit data.
   //
   // Thread: ------15------   ------14------   ------13------   ------12------   ------11------   ------10------   ------9-------   ------8-------   ------7-------   ------6-------   ------5-------   ------4-------   ------3-------   ------2-------   ------1-------   ------0-------
   // Byte:   ------0-------   ------0-------   ------0-------   ------0-------   ------0-------   ------0-------   ------0-------   ------0-------   ------0-------   ------0-------   ------0-------   ------0-------   ------0-------   ------0-------   ------0-------   ------0-------
@@ -332,9 +622,9 @@ PRAGMA_OMP(for schedule(dynamic,125) nowait)
 
       // mask and shift 32-bit chunks
       u1.y = (x1 & M0) | ((x1 & M1) >> 6) | ((x1 & M2) << 6) | ((x1 & M3) >> 12) | ((x1 & M4) << 12) | ((x1 & M5) >> 18) | ((x1 & M6) << 18);
-      u1.y = (x2 & M0) | ((x2 & M1) >> 6) | ((x2 & M2) << 6) | ((x2 & M3) >> 12) | ((x2 & M4) << 12) | ((x2 & M5) >> 18) | ((x2 & M6) << 18);
-      u1.y = (x3 & M0) | ((x3 & M1) >> 6) | ((x3 & M2) << 6) | ((x3 & M3) >> 12) | ((x3 & M4) << 12) | ((x3 & M5) >> 18) | ((x3 & M6) << 18);
-      u1.y = (x4 & M0) | ((x4 & M1) >> 6) | ((x4 & M2) << 6) | ((x4 & M3) >> 12) | ((x4 & M4) << 12) | ((x4 & M5) >> 18) | ((x4 & M6) << 18);
+      u2.y = (x2 & M0) | ((x2 & M1) >> 6) | ((x2 & M2) << 6) | ((x2 & M3) >> 12) | ((x2 & M4) << 12) | ((x2 & M5) >> 18) | ((x2 & M6) << 18);
+      u3.y = (x3 & M0) | ((x3 & M1) >> 6) | ((x3 & M2) << 6) | ((x3 & M3) >> 12) | ((x3 & M4) << 12) | ((x3 & M5) >> 18) | ((x3 & M6) << 18);
+      u4.y = (x4 & M0) | ((x4 & M1) >> 6) | ((x4 & M2) << 6) | ((x4 & M3) >> 12) | ((x4 & M4) << 12) | ((x4 & M5) >> 18) | ((x4 & M6) << 18);
 
       // shuffle 8-bit chunks
       outputwordptr[4*i]   = (u4.b[0] << 24) | (u3.b[0] << 16) | (u2.b[0] << 8) | u1.b[0];
@@ -421,7 +711,6 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 	int nBadOutput = 0;
 	int nWrongThread = 0;
 	int seconds, frameNum;
-	int firstValid;
 	vdif_header outputHeader;
 	int epoch = -1;
 	int highestSortedDestIndex = -1;
@@ -459,30 +748,52 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 	/* Choose a corner turning algorithm.  Currently the selection is limited to 2-bit cases or
 	 * anything with 1 thread.  Others can be implemented as needed.
 	 */
-	if(nOutputChan == 1)
+	if(nThread == 1)
 	{
 		cornerTurner = cornerturn_1thread;
 	}
 	else if(nBit == 2)
 	{
-		if(nOutputChan == 2)
+		if(nThread == 2)
 		{
 			cornerTurner = cornerturn_2thread_2bit;
 		}
-		else if(nOutputChan == 4)
+		else if(nThread == 3)
+		{
+			cornerTurner = cornerturn_3thread_2bit;
+		}
+		else if(nThread == 4)
 		{
 			cornerTurner = cornerturn_4thread_2bit;
 		}
-		else if(nOutputChan == 8)
+		else if(nThread == 5)
+		{
+			cornerTurner = cornerturn_5thread_2bit;
+		}
+		else if(nThread == 6)
+		{
+			cornerTurner = cornerturn_6thread_2bit;
+		}
+		else if(nThread == 7)
+		{
+			cornerTurner = cornerturn_7thread_2bit;
+		}
+		else if(nThread == 8)
 		{
 			cornerTurner = cornerturn_8thread_2bit;
 		}
-		else if(nOutputChan == 16)
+		else if(nThread == 12)
+		{
+			cornerTurner = cornerturn_12thread_2bit;
+		}
+		else if(nThread == 16)
 		{
 			cornerTurner = cornerturn_16thread_2bit;
 		}
 		else
 		{
+			fprintf(stderr, "No corner turner implemented for %d bits and %d threads\n", nBit, nThread);
+
 			return -3;
 		}
 	}

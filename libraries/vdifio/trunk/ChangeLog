@@ -1,6 +1,7 @@
 Version 0.5
 ~~~~~~~~~~~
 * Post DiFX-2.2
+* Explicitly support 3, 5, 6, 7 and 12 threads and fix the 16 thread case in the vdifmux function
 
 Version 0.4
 ~~~~~~~~~~~
