@@ -2,8 +2,32 @@
 <project-private xmlns="http://www.netbeans.org/ns/project-private/1">
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/1">
         <file>
-            <url>src/edu/nrao/vlba/difxdatamodel/DiFXSystemStatus.java</url>
-            <line>480</line>
+            <url>src/edu/nrao/vlba/difxcontroller/ProcessMessageThread.java</url>
+            <line>74</line>
+        </file>
+        <file>
+            <url>src/edu/nrao/difx/difxview/PassNode.java</url>
+            <line>124</line>
+        </file>
+        <file>
+            <url>src/edu/nrao/vlba/difxcontroller/JAXBPacketProcessor.java</url>
+            <line>33</line>
+            <line>51</line>
+        </file>
+        <file>
+            <url>src/edu/nrao/difx/difxview/ExperimentNode.java</url>
+            <line>188</line>
+        </file>
+        <file>
+            <url>src/edu/nrao/vlba/difxcontroller/DiFXController.java</url>
+            <line>73</line>
+        </file>
+        <file>
+            <url>src/edu/nrao/vlba/difxview/ResourceManagerUI.java</url>
+            <line>30</line>
+            <line>110</line>
+            <line>521</line>
+            <line>626</line>
         </file>
         <file>
             <url>src/edu/nrao/vlba/difxdatamodel/Job.java</url>
@@ -11,8 +35,51 @@
             <line>1348</line>
         </file>
         <file>
+            <url>src/edu/nrao/vlba/difxdatamodel/Mark5Unit.java</url>
+            <line>291</line>
+        </file>
+        <file>
+            <url>src/edu/nrao/vlba/difxview/JobManagerUI.java</url>
+            <line>173</line>
+            <line>234</line>
+            <line>324</line>
+            <line>1234</line>
+        </file>
+        <file>
+            <url>src/edu/nrao/difx/difxdatamodel/DiFXDataModel.java</url>
+            <line>1082</line>
+            <line>1234</line>
+            <line>2110</line>
+            <line>2134</line>
+            <line>2148</line>
+        </file>
+        <file>
+            <url>src/edu/nrao/vlba/difxdatamodel/DiFXSystemStatus.java</url>
+            <line>480</line>
+        </file>
+        <file>
+            <url>src/edu/nrao/difx/difxview/SystemSettings.java</url>
+            <line>585</line>
+            <line>1863</line>
+            <line>2092</line>
+        </file>
+        <file>
+            <url>src/edu/nrao/vlba/difxview/ResourceManagerUI_withUpdateableInitSection.java</url>
+            <line>21</line>
+            <line>125</line>
+            <line>452</line>
+            <line>512</line>
+        </file>
+        <file>
             <url>src/edu/nrao/difx/difxview/ExperimentEditor.java</url>
             <line>1265</line>
+        </file>
+        <file>
+            <url>src/edu/nrao/vlba/difxview/ProjectManagerUI.java</url>
+            <line>762</line>
+            <line>767</line>
+            <line>832</line>
+            <line>1010</line>
         </file>
         <file>
             <url>src/edu/nrao/vlba/difxdatamodel/Queue.java</url>
@@ -34,72 +101,6 @@
             <line>1197</line>
             <line>1308</line>
             <line>1542</line>
-        </file>
-        <file>
-            <url>src/edu/nrao/vlba/difxview/ResourceManagerUI.java</url>
-            <line>30</line>
-            <line>110</line>
-            <line>521</line>
-            <line>626</line>
-        </file>
-        <file>
-            <url>src/edu/nrao/vlba/difxcontroller/ProcessMessageThread.java</url>
-            <line>74</line>
-        </file>
-        <file>
-            <url>src/edu/nrao/difx/difxview/PassNode.java</url>
-            <line>124</line>
-        </file>
-        <file>
-            <url>src/edu/nrao/vlba/difxcontroller/DiFXController.java</url>
-            <line>73</line>
-        </file>
-        <file>
-            <url>src/edu/nrao/difx/difxdatamodel/DiFXDataModel.java</url>
-            <line>1082</line>
-            <line>1234</line>
-            <line>2110</line>
-            <line>2134</line>
-            <line>2148</line>
-        </file>
-        <file>
-            <url>src/edu/nrao/difx/difxview/ExperimentNode.java</url>
-            <line>188</line>
-        </file>
-        <file>
-            <url>src/edu/nrao/vlba/difxdatamodel/Mark5Unit.java</url>
-            <line>291</line>
-        </file>
-        <file>
-            <url>src/edu/nrao/difx/difxview/SystemSettings.java</url>
-            <line>1849</line>
-            <line>2078</line>
-        </file>
-        <file>
-            <url>src/edu/nrao/vlba/difxcontroller/JAXBPacketProcessor.java</url>
-            <line>33</line>
-            <line>51</line>
-        </file>
-        <file>
-            <url>src/edu/nrao/vlba/difxview/ProjectManagerUI.java</url>
-            <line>762</line>
-            <line>767</line>
-            <line>832</line>
-            <line>1010</line>
-        </file>
-        <file>
-            <url>src/edu/nrao/vlba/difxview/JobManagerUI.java</url>
-            <line>173</line>
-            <line>234</line>
-            <line>324</line>
-            <line>1234</line>
-        </file>
-        <file>
-            <url>src/edu/nrao/vlba/difxview/ResourceManagerUI_withUpdateableInitSection.java</url>
-            <line>21</line>
-            <line>125</line>
-            <line>452</line>
-            <line>512</line>
         </file>
     </editor-bookmarks>
 </project-private>

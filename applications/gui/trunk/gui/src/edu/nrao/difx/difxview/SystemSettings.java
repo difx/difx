@@ -541,7 +541,7 @@ public class SystemSettings extends JFrame {
         _broadcastPlot.backgroundColor( Color.BLACK );
         _plotWindow.add2DPlot( _broadcastPlot );
         _suppressWarningsCheck = new JCheckBox( "Suppress \"Unknown Message\" Warnings" );
-        _suppressWarningsCheck.setBounds( 165, 175, 450, 25 );
+        _suppressWarningsCheck.setBounds( 165, 175, 315, 25 );
         networkPanel.add( _suppressWarningsCheck );
         _identifyMark5sCheck = new JCheckBox( "Identify Mark5 Unit Names by Pattern: " );
         _identifyMark5sCheck.setBounds( 165, 205, 305, 25 );
@@ -583,6 +583,16 @@ public class SystemSettings extends JFrame {
         inactivityErrorLabel.setBounds( 210, 235, 150, 25 );
         inactivityErrorLabel.setHorizontalAlignment( JLabel.RIGHT );
         networkPanel.add( inactivityErrorLabel );
+        _viewDifxMessagesButton = new JButton( "View DiFX Messages" );
+        _viewDifxMessagesButton.setToolTipText( "View incoming DiFX message traffic in detail" );
+        _viewDifxMessagesButton.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                if ( _difxMessageProcessor != null )
+                    _difxMessageProcessor.showWindow();
+            }
+        } );
+        _viewDifxMessagesButton.setBounds( 480, 175, 175, 25 );
+        networkPanel.add( _viewDifxMessagesButton );
         
         IndexedPanel databasePanel = new IndexedPanel( "Database Configuration" );
         databasePanel.openHeight( 305 );
@@ -1561,6 +1571,11 @@ public class SystemSettings extends JFrame {
         _windowConfiguration.monitorDisplayH = 500;
         _windowConfiguration.diskSearchRulesDisplayW = 600;
         _windowConfiguration.diskSearchRulesDisplayH = 500;
+        _windowConfiguration.difxMessageWindowW = 600;
+        _windowConfiguration.difxMessageWindowH = 500;
+        _windowConfiguration.difxMessageWindowTopFraction = 0.2;
+        _windowConfiguration.difxMessageWindowBottomFraction = 0.5;
+        _windowConfiguration.difxMessageWindowMessageLimit = 1000;
         _defaultNames.vexFileSource = "";
         _defaultNames.viaHttpLocation = "";
         _defaultNames.viaFtpLocation = "";
@@ -2405,6 +2420,17 @@ public class SystemSettings extends JFrame {
                 _windowConfiguration.diskSearchRulesDisplayW = doiConfig.getWindowConfigDiskSearchRulesDisplayW();
             if ( doiConfig.getWindowConfigDiskSearchRulesDisplayH() != 0 )
                 _windowConfiguration.diskSearchRulesDisplayH = doiConfig.getWindowConfigDiskSearchRulesDisplayH();
+            if ( doiConfig.getWindowConfigDifxMessageWindowW() != 0 )
+                _windowConfiguration.difxMessageWindowW = doiConfig.getWindowConfigDifxMessageWindowW();
+            if ( doiConfig.getWindowConfigDifxMessageWindowH() != 0 )
+                _windowConfiguration.difxMessageWindowH = doiConfig.getWindowConfigDifxMessageWindowH();
+            if ( doiConfig.getWindowConfigDifxMessageWindowTopFraction() != 0.0 )
+                _windowConfiguration.difxMessageWindowTopFraction = doiConfig.getWindowConfigDifxMessageWindowTopFraction();
+            if ( doiConfig.getWindowConfigDifxMessageWindowBottomFraction() != 0.0 )
+                _windowConfiguration.difxMessageWindowBottomFraction = doiConfig.getWindowConfigDifxMessageWindowBottomFraction();
+            if ( doiConfig.getWindowConfigDifxMessageWindowMessageLimit() != 0.0 )
+                _windowConfiguration.difxMessageWindowMessageLimit = doiConfig.getWindowConfigDifxMessageWindowMessageLimit();
+
             if ( doiConfig.getDefaultNamesVexFileSource() != null )
                 _defaultNames.vexFileSource = doiConfig.getDefaultNamesVexFileSource();
             if ( doiConfig.getDefaultNamesViaHttpLocation() != null )
@@ -2832,6 +2858,11 @@ public class SystemSettings extends JFrame {
         doiConfig.setWindowConfigMonitorDisplayH( _windowConfiguration.monitorDisplayH );
         doiConfig.setWindowConfigDiskSearchRulesDisplayW( _windowConfiguration.diskSearchRulesDisplayW );
         doiConfig.setWindowConfigDiskSearchRulesDisplayH( _windowConfiguration.diskSearchRulesDisplayH );
+        doiConfig.setWindowConfigDifxMessageWindowW( _windowConfiguration.difxMessageWindowW );
+        doiConfig.setWindowConfigDifxMessageWindowH( _windowConfiguration.difxMessageWindowH );
+        doiConfig.setWindowConfigDifxMessageWindowTopFraction( _windowConfiguration.difxMessageWindowTopFraction );
+        doiConfig.setWindowConfigDifxMessageWindowBottomFraction( _windowConfiguration.difxMessageWindowBottomFraction );
+        doiConfig.setWindowConfigDifxMessageWindowMessageLimit( _windowConfiguration.difxMessageWindowMessageLimit );
         
         doiConfig.setDefaultNamesVexFileSource( _defaultNames.vexFileSource );
         doiConfig.setDefaultNamesViaHttpLocation( _defaultNames.viaHttpLocation );
@@ -3730,6 +3761,7 @@ public class SystemSettings extends JFrame {
     protected SaneTextField _mark5Pattern;
     protected NumberBox _inactivityWarning;
     protected NumberBox _inactivityError;
+    protected JButton _viewDifxMessagesButton;
     //  Database configuration
     protected JCheckBox _dbUseDataBase;
     protected JFormattedTextField _dbVersion;
@@ -3829,6 +3861,11 @@ public class SystemSettings extends JFrame {
         int monitorDisplayH;
         int diskSearchRulesDisplayW;
         int diskSearchRulesDisplayH;
+        public int difxMessageWindowW;
+        public int difxMessageWindowH;
+        public double difxMessageWindowTopFraction;
+        public double difxMessageWindowBottomFraction;
+        public int difxMessageWindowMessageLimit;
     }
     protected WindowConfiguration _windowConfiguration;
     

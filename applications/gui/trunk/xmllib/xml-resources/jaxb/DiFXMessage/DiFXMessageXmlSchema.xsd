@@ -183,6 +183,11 @@
                 <xsd:element ref="windowConfigMonitorDisplayH"/>
                 <xsd:element ref="windowConfigDiskSearchRulesDisplayW"/>
                 <xsd:element ref="windowConfigDiskSearchRulesDisplayH"/>
+                <xsd:element ref="windowConfigDifxMessageWindowW"/>
+                <xsd:element ref="windowConfigDifxMessageWindowH"/>
+                <xsd:element ref="windowConfigDifxMessageWindowTopFraction"/>
+                <xsd:element ref="windowConfigDifxMessageWindowBottomFraction"/>
+                <xsd:element ref="windowConfigDifxMessageWindowMessageLimit"/>
 
                 <xsd:element ref="defaultNamesVexFileSource"/>
                 <xsd:element ref="defaultNamesViaHttpLocation"/>
@@ -382,6 +387,11 @@
     <xsd:element name="windowConfigMonitorDisplayH" type="xsd:int"></xsd:element>
     <xsd:element name="windowConfigDiskSearchRulesDisplayW" type="xsd:int"></xsd:element>
     <xsd:element name="windowConfigDiskSearchRulesDisplayH" type="xsd:int"></xsd:element>
+    <xsd:element name="windowConfigDifxMessageWindowW" type="xsd:int"></xsd:element>
+    <xsd:element name="windowConfigDifxMessageWindowH" type="xsd:int"></xsd:element>
+    <xsd:element name="windowConfigDifxMessageWindowTopFraction" type="xsd:double"></xsd:element>
+    <xsd:element name="windowConfigDifxMessageWindowBottomFraction" type="xsd:double"></xsd:element>
+    <xsd:element name="windowConfigDifxMessageWindowMessageLimit" type="xsd:int"></xsd:element>
                 
     <xsd:element name="defaultNamesVexFileSource" type="xsd:string"></xsd:element>
     <xsd:element name="defaultNamesViaHttpLocation" type="xsd:string"></xsd:element>
