@@ -491,7 +491,7 @@ static int record(int bank, const char *label, unsigned int packetSize, int payl
 	int moduleStatus = MODULE_STATUS_UNKNOWN;
 	int v;
 	long long ptr;	/* record pointer */
-	long long startByte;
+	long long startByte, endByte = 0;
 	struct Mark5DirectoryHeaderVer1 *dirHeader;
 	struct Mark5DirectoryScanHeaderVer1 *p;
 	struct Mark5DirectoryLegacyBodyVer1 *q;
@@ -503,6 +503,9 @@ static int record(int bank, const char *label, unsigned int packetSize, int payl
 	double t0, t=0, t_ref, t_next_ref;
 	long long p_ref, p_next_ref;
 	long long totalChunks = 0LL;
+	char stationName[MODULE_STATION_NAME_LENGTH+1];
+	char scanName[MODULE_SCAN_NAME_LENGTH+1];
+	char experimentName[MODULE_EXPERIMENT_NAME_LENGTH+1];
 
 	if(bank == BANK_A)
 	{
@@ -863,12 +866,14 @@ static int record(int bank, const char *label, unsigned int packetSize, int payl
 	/* Update directory */
 	WATCHDOGTEST( XLRGetDirectory(xlrDevice, &dir) );
 
-	if(dir.Length > startByte)	/* only bother if some data were recorded */
+	endByte = dir.Length;
+
+	if(endByte > startByte)	/* only bother if some data were recorded */
 	{
 		p->typeNumber = 9 + (len/128)*256;	/* format and scan number */
 		p->frameLength = 10016;	/* FIXME */
 
-		decodeScan(xlrDevice, startByte, dir.Length, p, q);
+		decodeScan(xlrDevice, startByte, endByte, p, q);
 
 		dirHeader->status = MODULE_STATUS_RECORDED;
 
@@ -920,10 +925,19 @@ static int record(int bank, const char *label, unsigned int packetSize, int payl
 	}
 	
 	// Print out a Dir entry even for a zero length so mk5daemon (or other calling program) can get the bad news
-	printf("Dir %s %d %d %d %s %s %s %Ld %Ld\n", vsn, p->typeNumber & 0xFF, p->typeNumber/256, packetSize, p->station, p->scanName, p->expName, startByte, ptr);
+
+	strncpy(stationName, p->station, MODULE_STATION_NAME_LENGTH);
+	stationName[MODULE_STATION_NAME_LENGTH] = 0;
+	strncpy(scanName, p->scanName, MODULE_SCAN_NAME_LENGTH);
+	scanName[MODULE_SCAN_NAME_LENGTH] = 0;
+	strncpy(experimentName, p->expName, MODULE_EXPERIMENT_NAME_LENGTH);
+	experimentName[MODULE_EXPERIMENT_NAME_LENGTH] = 0;
+
+
+	printf("Dir %s %d %d %d %s %s %s %Ld %Ld\n", vsn, p->typeNumber & 0xFF, p->typeNumber/256, (packetSize & 0xFFFFFFF), stationName, scanName, experimentName, startByte, endByte);
 
 	printf("Sum %Ld %Ld %Ld\n", totalChunks, startByte, ptr);
-	if(ptr > startByte && totalChunks == 0)
+	if(endByte <= startByte && totalChunks == 0)
 	{
 		printf("Error 1011 no data recorded");
 		fflush(stdout);

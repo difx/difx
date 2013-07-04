@@ -2,8 +2,10 @@
 #define __MARK5_DIRECTORY_STRUCTS__
 
 #define MODULE_LEGACY_MAX_SCANS		1024
-#define MODULE_EXTENDED_VSN_LENGTH      32
+#define MODULE_EXTENDED_VSN_LENGTH	32
+#define MODULE_STATION_NAME_LENGTH	2
 #define MODULE_SCAN_NAME_LENGTH         32
+#define MODULE_EXPERIMENT_NAME_LENGTH	8
 #define MODULE_LEGACY_SCAN_LENGTH       64
 
 #define MODULE_STATUS_UNKNOWN           0x00
@@ -42,9 +44,9 @@ struct Mark5DirectoryScanHeaderVer1
 {
 	unsigned int typeNumber;	/* and scan number; see memo 81 */
 	unsigned short frameLength;
-	char station[2];
+	char station[MODULE_STATION_NAME_LENGTH];
 	char scanName[MODULE_SCAN_NAME_LENGTH];
-	char expName[8];
+	char expName[MODULE_EXPERIMENT_NAME_LENGTH];
 	long long startByte;
 	long long stopByte;
 };

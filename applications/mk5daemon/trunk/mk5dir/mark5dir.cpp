@@ -492,8 +492,12 @@ int Mark5Scan::writeDirEntry(FILE *out) const
 
 	if(format == MK5_FORMAT_VDIF)
 	{
-		std::set<int>::const_iterator it;
-		for(it = startThreads.begin(); it != startThreads.end(); ++it)
+		std::set<int> allThreads;	// union of startThreads and endThreads
+		allThreads.clear();
+		allThreads.insert(startThreads.begin(), startThreads.end());
+		allThreads.insert(endThreads.begin(), endThreads.end());
+
+		for(std::set<int>::const_iterator it = allThreads.begin(); it != allThreads.end(); ++it)
 		{
 			v += fprintf(out, "%s%d", it == startThreads.begin() ? " Threads=" : ",", *it);
 		}
@@ -849,6 +853,8 @@ int getVdifThreads(std::set<int> &threadSet, const char *data, int bytes, int fr
 			}
 			else
 			{
+				lastSecond = second;
+
 				break;
 			}
 

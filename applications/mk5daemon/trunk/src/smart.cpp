@@ -505,6 +505,11 @@ int extractSmartTemps(char *tempstr, const Mk5Daemon *D, int bank)
 				break;
 			}
 		}
+
+		if(t < -10 || t > 300)
+		{
+			t = -1;
+		}
 	
 		n += snprintf(tempstr+n, SMART_TEMP_STRING_LENGTH-n, "%s%d", (i == 0 ? "" : " "), t);
 	}
