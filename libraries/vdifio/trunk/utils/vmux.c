@@ -136,8 +136,8 @@ int main(int argc, char **argv)
 	{
 		destChunkSize = atoi(argv[7]);
 		srcChunkSize = destChunkSize*5/4;
-		destChunkSize -= destChunkSize % 4;
-		srcChunkSize -= srcChunkSize % 4;
+		destChunkSize -= destChunkSize % 8;
+		srcChunkSize -= srcChunkSize % 8;
 	}
 
 
@@ -224,7 +224,7 @@ int main(int argc, char **argv)
 		{
 			nSort = -nSort;
 		}
-		V = vdifmux(dest, destChunkSize, src, n+leftover, inputframesize, framesPerSecond, 2, nThread, threads, nSort, nGap, -1, &stats);
+		V = vdifmux(dest, destChunkSize, src, n+leftover, inputframesize, framesPerSecond, 2, nThread, threads, nSort, nGap, nextFrame, &stats);
 
 		if(V < 0)
 		{
@@ -278,7 +278,7 @@ int main(int argc, char **argv)
 		}
 
 		nextFrame = stats.startFrameNumber + stats.nOutputFrame;
-
+		
 		if(nSort < 0)
 		{
 			break;
