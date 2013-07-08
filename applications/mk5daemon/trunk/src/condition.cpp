@@ -100,12 +100,18 @@ void Mk5Daemon_startCondition(Mk5Daemon *D, const char *options)
 
 	if(D->process == PROCESS_NONE)
 	{
+		pthread_attr_t attr;
+
 		D->processDone = 0;
 		D->process = PROCESS_CONDITION;
 
 		P->D = D;
 		P->options = options;
-		pthread_create(&D->processThread, 0, &conditionRun, P);
+
+		pthread_attr_init(&attr);
+		pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+		pthread_create(&D->processThread, &attr, &conditionRun, P);
+		pthread_attr_destroy(&attr);
 	}
 
 	pthread_mutex_unlock(&D->processLock);

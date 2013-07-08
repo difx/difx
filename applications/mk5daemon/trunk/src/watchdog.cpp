@@ -104,13 +104,17 @@ void *watchdogFunction(void *data)
 int initWatchdog()
 {
 	int perr;
+	pthread_attr_t attr;
 
 	pthread_mutex_init(&watchdogLock, NULL);
 	watchdogStatement[0] = 0;
 	watchdogXLRError[0] = 0;
 	watchdogXLRErrorCode = 0;
 	watchdogTime = 0;
-	perr = pthread_create(&watchdogThread, NULL, watchdogFunction, 0);
+	pthread_attr_init(&attr);
+	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+	perr = pthread_create(&watchdogThread, &attr, watchdogFunction, 0);
+	pthread_attr_destroy(&attr);
 
 	if(perr != 0)
 	{

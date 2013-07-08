@@ -112,12 +112,18 @@ void Mk5Daemon_startMk5Copy(Mk5Daemon *D, const char *options)
 
 	if(D->process == PROCESS_NONE)
 	{
+		pthread_attr_t attr;
+
 		D->processDone = 0;
 		D->process = PROCESS_MK5COPY;
 
 		P->D = D;
 		snprintf(P->options, OPTIONS_LENGTH, "%s", options);
-		pthread_create(&D->processThread, 0, &mk5cpRun, P);
+		
+		pthread_attr_init(&attr);
+		pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+		pthread_create(&D->processThread, &attr, &mk5cpRun, P);
+		pthread_attr_destroy(&attr);
 	}
 
 	pthread_mutex_unlock(&D->processLock);

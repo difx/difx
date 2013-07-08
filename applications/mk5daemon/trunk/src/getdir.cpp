@@ -77,13 +77,19 @@ void Mk5Daemon_startMk5Dir(Mk5Daemon *D, const char *bank)
 
 	if(D->process == PROCESS_NONE)
 	{
+		pthread_attr_t attr;
+
 		D->processDone = 0;
 		D->process = PROCESS_MK5DIR;
 
 		P->D = D;
 		strncpy(P->bank, bank, 9);
 		P->bank[9] = 0;
-		pthread_create(&D->processThread, 0, &mk5dirRun, P);
+		
+		pthread_attr_init(&attr);
+		pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+		pthread_create(&D->processThread, &attr, &mk5dirRun, P);
+		pthread_attr_destroy(&attr);
 	}
 
 	pthread_mutex_unlock(&D->processLock);

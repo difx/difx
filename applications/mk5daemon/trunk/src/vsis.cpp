@@ -368,7 +368,7 @@ int Mk5Daemon_startVSIS(Mk5Daemon *D)
 	v = getaddrinfo(0, portstr, &hints, &res);
 	if(v != 0)
 	{
-		Logger_logData(D->log, "getaddringo(0, VSIS_PORT) failed:");
+		Logger_logData(D->log, "getaddrinfo(0, VSIS_PORT) failed:");
 		Logger_logData(D->log, gai_strerror(v));
 		Logger_logData(D->log, "\n");
 
