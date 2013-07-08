@@ -29,6 +29,7 @@ automakeVersion = '1.11.6'
 libtoolVersion = '2.4'
 pkgconfigVersion = '0.28'
 cxOracleVersion = '5.1.2'
+gpstkVersion = '2.1'
 
 defaultDifxMessageGroup = '224.2.2.1'
 defaultDifxMessagePort = 50200
@@ -1736,16 +1737,26 @@ def spice(origComps, params, args, verbose, pretend):
 
 def gpstk(origComps, params, args, verbose, pretend):
 	arch = platform.machine()
-	gpstkSrcFile = 'gpstk_wfb.tar.bz2'
+	gpstkSrcFile = 'gpstk-%s.src.tar.gz' % gpstkVersion
+	gpstkUrl = 'http://sourceforge.net/projects/gpstk/files/gpstk/%s/%s' % (gpstkVersion, gpstkSrcFile)
 	difxBase = environ['DIFX_BASE'] + '/'
+	archDir = difxBase + arch
 	archSrcDir = difxBase + arch + '/src/'
 	tarDir = difxBase + 'tar/'
 	# get file
-	if not isfile(tarDir + gpstkSrcFile):
-		print 'Cannot continue: %s does not exist.  Contact Walter Brisken for help.' % (tarDir + gpstkSrcFile)
-		exit(0)
+	ftpFile(gpstkUrl, tarDir, gpstkSrcFile, args, verbose, pretend)
 	if not isdir(archSrcDir):
 		execute('mkdir -p %s' % archSrcDir, verbose, pretend)
+	
+	origSrcDir = '%s/gpstk' % archSrcDir
+	gpstkSrcDir = '%s/gpstk-%s' % (archSrcDir, gpstkVersion)
+	if isdir(gpstkSrcDir):
+		print 'Stopping because %s exists' % gpstkSrcDir
+		return
+	
+	chdir(archSrcDir)
+	execute('tar zxvf %s/%s' % (tarDir, gpstkSrcFile), verbose, pretend)
+	execute('mv %s %s' % (origSrcDir, gpstkSrcDir), verbose, pretend)
 
 	# check that jam is installed
 	if system('which jam') != 0:
@@ -1763,14 +1774,12 @@ def gpstk(origComps, params, args, verbose, pretend):
 
 	print '\nNow building gpstk.  THIS CAN TAKE A LONG TIME!\n'
 
-	chdir(archSrcDir)
-	execute('tar jxvf %s/%s' % (tarDir, gpstkSrcFile), verbose, pretend)
-	chdir('gpstk_wfb')
+	chdir(gpstkSrcDir)
 	execute('jam -q -j%d -sPREFIX=%s' % (numMakeCpus, difxBase + arch), verbose, pretend)
 	execute('jam -sPREFIX=%s install' % (difxBase + arch), verbose, pretend)
 
 	# gpstk seems to not install GNSSconstants.hpp automatically.  Do that forcefully here
-	execute('cp src/GNSSconstants.hpp %s/include/gpstk' % (difxBase + arch), verbose, pretend)
+	# execute('cp src/GNSSconstants.hpp %s/include/gpstk' % (difxBase + arch), verbose, pretend)
 
 	# make a .pc file for later convenience
 	if not isdir('%s/lib/pkgconfig' % (difxBase + arch)):
@@ -1783,9 +1792,10 @@ def gpstk(origComps, params, args, verbose, pretend):
 	out.write('Name: gpstk\n')
 	out.write('Description: GPS Toolkit\n')
 	out.write('Requires:\n')
-	out.write('Version: wfb\n')
+	out.write('Version: %s\n' % gpstkVersion)
 	out.write('Libs: -L${libdir} -lgeodyn -lgpstk\n')
 	out.write('Cflags: -I${includedir}/gpstk\n')
+	out.close()
 
 def sked(origComps, params, args, verbose, pretend):
 
