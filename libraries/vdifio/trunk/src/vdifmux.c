@@ -109,8 +109,68 @@ static void cornerturn_1thread(unsigned char *outputBuffer, const unsigned char 
   memcpy(outputBuffer, threadBuffers[0], outputDataSize);
 }
 
+/* For 2-bit 2-thread corner turning there are two implementions here.  One optimized for 64-bit and the other for 32-bit.
+   At compile time one is named cornerturn_2thread_2bit and the other cornerturn_2thread_2bitSlow.  Which is which depends
+   on sizeof(size_t)
+ */
 
+#if SIZEOF_SIZE_T == 8
+// 64-bit optimized version
 static void cornerturn_2thread_2bit(unsigned char *outputBuffer, const unsigned char **threadBuffers, int outputDataSize)
+#else
+static void cornerturn_2thread_2bitSlow(unsigned char *outputBuffer, const unsigned char **threadBuffers, int outputDataSize)
+#endif
+{
+printf(".");
+  // Efficiently handle the special case of 2 threads of 2-bit data.
+  // This algorithm is optimized for 64-bit computers
+  //
+  // Thread: ------1-------   ------0-------   ------1-------   ------0-------   ------1-------   ------0-------   ------1-------   ------0-------
+  // Byte:   ------3-------   ------3-------   ------2-------   ------2-------   ------1-------   ------1-------   ------0-------   ------0-------
+  // Input:  b15 b14 b13 b12  a15 a14 a13 a12  b11 b10 b9  b8   a11 a10 a9  a8   b7  b6  b5  b4   a7  a6  a5  a4   b3  b2  b1  b0   a3  a2  a1  a0
+  //                                                                                                                                              
+  // Shift:   0  -1  -2  -3   +3  +2  +1   0    0  -1  -2  -3   +3  +2  +1   0    0  -1  -2  -3   +3  +2  +1   0    0  -1  -2  -3   +3  +2  +1   0
+  //                                                                                                                                            
+  // Output: b15 a15 b14 a14  b13 a13 b12 a12  b11 a11 b10 a10  b9  a9  b8  a8   b7  a7  b6  a6   b5  a5  b4  a4   b3  a3  b2  a2   b1  a1  b0  a0
+  // Byte:   ------7-------   ------6-------   ------5-------   ------4-------   ------3-------   ------2-------   ------1-------   ------0-------
+
+  const uint64_t M0 = 0xC003C003C003C003;
+  const uint64_t M1 = 0x3000300030003000;
+  const uint64_t M2 = 0x000C000C000C000C;
+  const uint64_t M3 = 0x0C000C000C000C00;
+  const uint64_t M4 = 0x0030003000300030;
+  const uint64_t M5 = 0x0300030003000300;
+  const uint64_t M6 = 0x00C000C000C000C0;
+
+  const unsigned char *t0 = threadBuffers[0];
+  const unsigned char *t1 = threadBuffers[1];
+  uint64_t *outputwordptr = (uint64_t *)outputBuffer;
+
+  uint64_t x;
+  int i, n;
+  n = outputDataSize/8;
+
+PRAGMA_OMP(parallel private(i,x) shared(outputwordptr,t0,t1,n))
+  {
+PRAGMA_OMP(for schedule(dynamic,125) nowait)
+    for(i = 0; i < n; ++i)
+    {
+      // assemble
+      x = (t1[4*i+3] * 0x100000000000000LL) | (t0[4*i+3] * 0x001000000000000LL) | 
+          (t1[4*i+2] * 0x000010000000000LL) | (t0[4*i+2] * 0x000000100000000LL) | 
+	  (t1[4*i+1] * 0x000000001000000LL) | (t0[4*i+1] * 0x000000000010000LL) | 
+	  (t1[4*i]   * 0x000000000000100LL) |  t0[4*i];
+
+      // mask and shift
+      outputwordptr[i] = (x & M0) | ((x & M1) >> 2) | ((x & M2) << 2) | ((x & M3) >> 4) | ((x & M4) << 4) | ((x & M5) >> 6) | ((x & M6) << 6);
+    }
+  }
+}
+#if SIZEOF_SIZE_T == 8
+static void cornerturn_2thread_2bitSlow(unsigned char *outputBuffer, const unsigned char **threadBuffers, int outputDataSize)
+#else
+static void cornerturn_2thread_2bit(unsigned char *outputBuffer, const unsigned char **threadBuffers, int outputDataSize)
+#endif
 {
   // Efficiently handle the special case of 2 threads of 2-bit data.
   //
@@ -855,16 +915,6 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 
 	void (*cornerTurner)(unsigned char *, const unsigned char **, int);
 
-	/* input checks and initialization */
-	if(nBit != 1 && nBit != 2 && nBit != 4 && nBit != 8)
-	{
-		return -1;
-	}
-	if(nThread < 1 || nThread*nBit > 32)
-	{
-		return -2;
-	}
-
 	if(nSort <= 0)
 	{
 		maxSrcIndex = srcSize - inputFrameSize;
@@ -880,8 +930,6 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 		nGap = nSort;
 	}
 
-	for(nOutputChan = 1; nOutputChan < nThread; nOutputChan *= 2) ;
-
 	/* Choose a corner turning algorithm.  Currently the selection is limited to 2-bit cases or
 	 * anything with 1 thread.  Others can be implemented as needed.
 	 */
@@ -891,52 +939,49 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 	}
 	else if(nBit == 2)
 	{
-		if(nThread == 2)
+		switch(nThread)
 		{
+		/* First list the most common ones: powers of two */
+		case 2:
 			cornerTurner = cornerturn_2thread_2bit;
-		}
-		else if(nThread == 3)
-		{
-			cornerTurner = cornerturn_3thread_2bit;
-		}
-		else if(nThread == 4)
-		{
+			break;
+		case 4:
 			cornerTurner = cornerturn_4thread_2bit;
-		}
-		else if(nThread == 5)
-		{
-			cornerTurner = cornerturn_5thread_2bit;
-		}
-		else if(nThread == 6)
-		{
-			cornerTurner = cornerturn_6thread_2bit;
-		}
-		else if(nThread == 7)
-		{
-			cornerTurner = cornerturn_7thread_2bit;
-		}
-		else if(nThread == 8)
-		{
+			break;
+		case 8:
 			cornerTurner = cornerturn_8thread_2bit;
-		}
-		else if(nThread == 10)
-		{
-			cornerTurner = cornerturn_10thread_2bit;
-		}
-		else if(nThread == 12)
-		{
-			cornerTurner = cornerturn_12thread_2bit;
-		}
-		else if(nThread == 14)
-		{
-			cornerTurner = cornerturn_14thread_2bit;
-		}
-		else if(nThread == 16)
-		{
+			break;
+		case 16:
 			cornerTurner = cornerturn_16thread_2bit;
-		}
-		else
-		{
+			break;
+		/* Then the non-powers-of-two */
+		case 3:
+			cornerTurner = cornerturn_3thread_2bit;
+			break;
+		case 5:
+			cornerTurner = cornerturn_5thread_2bit;
+			break;
+		case 6:
+			cornerTurner = cornerturn_6thread_2bit;
+			break;
+		case 7:
+			cornerTurner = cornerturn_7thread_2bit;
+			break;
+		case 10:
+			cornerTurner = cornerturn_10thread_2bit;
+			break;
+		case 12:
+			cornerTurner = cornerturn_12thread_2bit;
+			break;
+		case 14:
+			cornerTurner = cornerturn_14thread_2bit;
+			break;
+		/* Alternate versions of some corner turners can be specified with negative values */
+		case -2:
+			nThread = 2;
+			cornerTurner = cornerturn_2thread_2bitSlow;
+			break;
+		default:
 			fprintf(stderr, "No corner turner implemented for %d bits and %d threads\n", nBit, nThread);
 
 			return -3;
@@ -944,8 +989,12 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 	}
 	else
 	{
+		fprintf(stderr, "No corner turner implemented for %d bits\n", nBit);
+
 		return -3;
 	}
+
+	for(nOutputChan = 1; nOutputChan < nThread; nOutputChan *= 2) ;
 
 	memset(chanIndex, 255, maxThreads);
 	for(threadId = 0; threadId < nThread; ++threadId)
@@ -973,7 +1022,6 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 		p[7] = 0;
 	}
 
-	
 	/* Stage 1: find good data and put in output array. */
 	for(i = 0; i <= N;)
 	{
@@ -1055,7 +1103,7 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 
 		destIndex = frameNumber - startFrameNumber;
 
-		if(destIndex < 1)
+		if(destIndex < 0)
 		{
 			/* no choice but to discard this data */
 			i += inputFrameSize;
@@ -1162,7 +1210,7 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 						}
 					}
 
-					if(firstUsed > 0 && firstUsed <= highestDestIndex && startOutputFrameNumber < 0)
+					if(firstUsed > 0 && firstUsed <= highestDestIndex)
 					{
 						/* Ensure frame granularity conditions remain met */
 						firstUsed -= (firstUsed % frameGranularity);
