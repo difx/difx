@@ -1097,6 +1097,9 @@ int pystream::writeDDCChannelSet(const VexSetup *setup, int modeNum)
 			if( i == -1 )
 				continue;
 			unsigned int inputNum = ifIndex[modeNum][setup->channels[i].ifName];
+			// normalize inputNum
+			if( inputNum > 1 )
+				inputNum -=2;
 			double bw = setup->channels[i].bbcBandwidth;
 			char sb = setup->channels[i].bbcSideBand;
 			unsigned int nBit = setup->nBit;
@@ -1200,6 +1203,11 @@ int pystream::writeDDCChannelSet(const VexSetup *setup, int modeNum)
 			{
 				*this << "  # orig: tune=" << (tune0*1.0e-6) << " bw=" << (bw0*1.0e-6);
 			}
+			else
+			{
+				*this << "  #";
+			}
+			*this << " IF " << setup->channels[i].ifName;
 			*this << endl;
 		}
 		*this << "  ]" << endl;
