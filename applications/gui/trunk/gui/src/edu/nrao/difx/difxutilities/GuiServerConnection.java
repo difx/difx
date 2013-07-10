@@ -193,16 +193,12 @@ public class GuiServerConnection {
                             _settings.clearGuiServerEnvironment();
                         }
                         else if ( packetId == GUISERVER_DIFX_VERSION ) {
-                            //  This is the difx version for which the guiServer was compiled.  At the
-                            //  moment this only changes the message parser (difxio).
+                            //  This is the difx version for which the guiServer was compiled.
                             _settings.guiServerDifxVersion( new String( data ) );
-                            _settings.difxVersion( new String( data ), false );
                         }
                         else if ( packetId == AVAILABLE_DIFX_VERSION ) {
                             //  Add an available DiFX version to the list in settings.
                             _settings.addDifxVersion( new String( data ) );
-                            if ( _settings.guiServerDifxVersion() != null )
-                                _settings.difxVersion( _settings.guiServerDifxVersion(), false );
                         }
                         else if ( packetId == INFORMATION_PACKET ) {
                             _settings.messageCenter().message( 0, "guiServer", new String( data ) );

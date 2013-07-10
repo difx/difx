@@ -1919,10 +1919,9 @@ public class SystemSettings extends JFrame {
     public String difxControlUser() { return _difxControlUser.getText(); }
     
     /*
-     * Set the difxVersion to match a particular string.  If there is no version
-     * matching the string a new one will be added if "addNew" is true.
+     * Set the difxVersion to match a particular string.
      */
-    public void difxVersion( String newVal, boolean addNew ) { 
+    public void difxVersion( String newVal ) { 
         //  If not already in the list of difx versions, add this name.
         boolean found = false;
         for ( int i = 0; i < _difxVersion.getItemCount() && !found; ++i ) {
@@ -1930,10 +1929,6 @@ public class SystemSettings extends JFrame {
                 found = true;
                 _difxVersion.setSelectedIndex( i );
             }
-        }
-        if ( !found && addNew ) {
-            _difxVersion.addItem( newVal );
-            _difxVersion.setSelectedIndex( _difxVersion.getItemCount() - 1 );
         }
     }
     public String difxVersion() { 
@@ -1953,6 +1948,10 @@ public class SystemSettings extends JFrame {
             _difxVersion.updateUI();
         }
         _difxVersion.setEnabled( true );
+        //  Set the current setting to whatever was specified in the XML settings
+        //  file.
+        if ( _difxVersionPreferred != null )
+            this.difxVersion( _difxVersionPreferred );
     }
     public void clearDifxVersion() {
         _difxVersion.removeAllItems();
@@ -2316,8 +2315,10 @@ public class SystemSettings extends JFrame {
                 this.difxMonitorPort( doiConfig.getDifxMonitorPort() );
             if ( doiConfig.getDifxControlUser() != null )
                 this.difxControlUser( doiConfig.getDifxControlUser() );
-            if ( doiConfig.getDifxVersion() != null )
-                this.difxVersion( doiConfig.getDifxVersion(), false );
+            if ( doiConfig.getDifxVersion() != null ) {
+                this.difxVersion( doiConfig.getDifxVersion() );
+                _difxVersionPreferred = doiConfig.getDifxVersion();
+            }
             if ( doiConfig.getDifxBase() != null )
                 this.difxBase( doiConfig.getDifxBase() );
             _dbUseDataBase.setSelected( doiConfig.isDbUseDataBase() );
@@ -2801,6 +2802,8 @@ public class SystemSettings extends JFrame {
         doiConfig.setDifxMonitorPort( this.difxMonitorPort() );
         doiConfig.setDifxControlUser( this.difxControlUser() );
         doiConfig.setDifxVersion( this.difxVersion() );
+        //  BLAT
+        System.out.println( "write to xml: " + this.difxVersion() );
         doiConfig.setDifxBase( this.difxBase() );
         doiConfig.setDbUseDataBase( this.useDatabase() );
         doiConfig.setDbVersion( this.dbVersion() );
@@ -4265,5 +4268,7 @@ public class SystemSettings extends JFrame {
     }
     
     protected EnvironmentVariablesDisplay _environmentVariablesDisplay;
+    
+    protected String _difxVersionPreferred;
         
 }
