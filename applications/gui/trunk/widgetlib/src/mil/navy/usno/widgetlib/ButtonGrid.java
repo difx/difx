@@ -7,6 +7,7 @@ import java.awt.Color;
 import javax.swing.JScrollPane;
 import javax.swing.JPanel;
 import javax.swing.JButton;
+import javax.swing.JScrollBar;
 
 import javax.swing.JToolTip;
 
@@ -19,26 +20,43 @@ import java.awt.Graphics;
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
 
+import javax.swing.BorderFactory;
 import javax.swing.event.EventListenerList;
+
+import java.awt.event.AdjustmentListener;
+import java.awt.event.AdjustmentEvent;
 
 /**
  *
  * @author jspitzak
  */
-public class ButtonGrid  extends JScrollPane {
+public class ButtonGrid  extends JPanel { //JScrollPane {
     
     protected ArrayList<GridButton> _buttonList = new ArrayList<GridButton>();
     protected int _buttonsPerLine = 5;
     protected Color _onColor = Color.GREEN;
     protected Color _offColor = this.getBackground();
     protected int _buttonHeight = 25;
+    protected int _scrollbarWidth = 15;
 
     public ButtonGrid() {
         super();
+        this.setLayout( null );
         _panel = new GridPanel();
-        this.setViewportView( _panel );
-        this.horizontalScrollBar.setVisible( false );
+        this.setBorder( BorderFactory.createLineBorder( Color.BLACK ) ); 
+        //this.setViewportView( _panel );
+        this.add( _panel );
         _changeListeners = new EventListenerList();
+        _scrollbar = new JScrollBar();
+        _scrollbar.setOrientation( JScrollBar.VERTICAL );
+        _scrollbar.addAdjustmentListener( new AdjustmentListener() {
+            public void adjustmentValueChanged( AdjustmentEvent e ) {
+                resizeGrid();
+            }
+            
+        });
+        _scrollbar.setValue( 0 );
+        this.add( _scrollbar );
     }
     
     public class GridButton extends JButton {
@@ -74,7 +92,7 @@ public class ButtonGrid  extends JScrollPane {
      */
     @Override
     public void setBounds( int x, int y, int w, int h ) {
-        _panelWidth = w - 3;
+        _panelWidth = w - 2;
         super.setBounds( x, y, w, h );
         //  Find the height of all of our buttons.
         int height = _buttonHeight * ( _buttonList.size() / _buttonsPerLine );
@@ -82,31 +100,43 @@ public class ButtonGrid  extends JScrollPane {
             height += _buttonHeight;
         //  If the height indicates there will be a scrollbar, set the width to
         //  give it space.  Otherwise, use the width of the available area.
-        if ( height > h )
-            _panelWidth -= this.verticalScrollBar.getWidth();
+        if ( height > h - 2 ) {
+            _panelWidth -= _scrollbarWidth;
+            _scrollbar.setVisible( true );
+            _scrollbar.setMaximum( height - h + 12 );
+        }
         else
-            height = h;
-        _panel.setBounds( 0, 0, _panelWidth, height );
+            _scrollbar.setVisible( false );
+        _panel.setBounds( 1, 1, _panelWidth, h - 2 );
+        _scrollbar.setBounds( 1 + _panelWidth, 1, _scrollbarWidth, h - 2 );
     }
     
-    protected class GridPanel extends JPanel {
-        
+    public void resizeGrid() {
+        _panel.setBounds( 1, 1, _panelWidth, this.getHeight() - 2 );
+    }
+    
+   protected class GridPanel extends JPanel {
+       
+       public GridPanel() {
+           super();
+           this.setLayout( null );
+       }
+                
         @Override
         public void setBounds( int x, int y, int w, int h ) {
-            super.setBounds( x, y, _panelWidth, h );
-        }
-        
-        @Override
-        public void paintComponent( Graphics g ) {
+            super.setBounds( x, y, w, h ); 
             //  Find the width of buttons that will fit in the current width.
-            int buttonW = this.getWidth() / _buttonsPerLine;
+            int buttonW = _panelWidth / _buttonsPerLine;
             //  Then run through the list of buttons and set their positions.
+            int offset = 0;
+            if ( _scrollbar.isVisible() )
+                offset += _scrollbar.getValue();
             int column = 0;
             int row = 0;
             try {
                 for ( Iterator iter = _buttonList.iterator(); iter.hasNext(); ) {
                     GridButton button = (GridButton)iter.next();
-                    button.setBounds( column * buttonW, row * _buttonHeight, buttonW, _buttonHeight );
+                    button.setBounds( column * buttonW, row * _buttonHeight - offset, buttonW, _buttonHeight );
                     column += 1;
                     if ( column == _buttonsPerLine ) {
                         column = 0;
@@ -117,10 +147,6 @@ public class ButtonGrid  extends JScrollPane {
             }
         }
         
-    }
-    
-    public void setVerticalScrollBar( boolean newVal ) {
-        this.verticalScrollBar.setVisible( newVal );
     }
     
     /*
@@ -245,6 +271,7 @@ public class ButtonGrid  extends JScrollPane {
     protected int _panelWidth;
     
     protected EventListenerList _changeListeners;
-    
+    protected JScrollBar _scrollbar;
+        
 }
 
