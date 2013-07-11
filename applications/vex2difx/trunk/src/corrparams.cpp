@@ -2039,7 +2039,7 @@ int CorrParams::load(const std::string &fileName)
 			++i;
 			if(*i != "{")
 			{
-				std::cerr << "Error: '{' expected." << std::endl;
+				std::cerr << "Error: SETUP" << corrSetup->corrSetupName << ": '{' expected." << std::endl;
 				
 				exit(EXIT_FAILURE);
 			}
@@ -2060,7 +2060,7 @@ int CorrParams::load(const std::string &fileName)
 			++i;
 			if(*i != "{")
 			{
-				std::cerr << "Error: '{' expected." << std::endl;
+				std::cerr << "Error: RULE " << rule->ruleName << ": '{' expected." << std::endl;
 				
 				exit(EXIT_FAILURE);
 			}
@@ -2087,7 +2087,7 @@ int CorrParams::load(const std::string &fileName)
 			++i;
 			if(*i != "{")
 			{
-				std::cerr << "Error: '{' expected." << std::endl;
+				std::cerr << "Error: SOURCE" << sourceSetup->vexName << ": '{' expected." << std::endl;
 
 				exit(EXIT_FAILURE);
 			}
@@ -2116,7 +2116,7 @@ int CorrParams::load(const std::string &fileName)
 			++i;
 			if(*i != "{")
 			{
-				std::cerr << "Error: '{' expected." << std::endl;
+				std::cerr << "Error: ANTENNA " << antennaSetup->vexName << ": '{' expected." << std::endl;
 
 				exit(EXIT_FAILURE);
 			}
@@ -2138,7 +2138,7 @@ int CorrParams::load(const std::string &fileName)
 			++i;
 			if(*i != "{")
 			{
-				std::cerr << "Error: '{' expected." << std::endl;
+				std::cerr << "Error: ZOOM " << globalZoom->difxName << ": '{' expected." << std::endl;
 
 				exit(EXIT_FAILURE);
 			}
