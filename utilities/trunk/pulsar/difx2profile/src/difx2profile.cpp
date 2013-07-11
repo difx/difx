@@ -70,8 +70,12 @@ int main(int argc, char *argv[])
       profile = new double[nbins];
       normprofile = new double[nbins];
       scratch = new double[nbins];
+      weightsum = new float[nbins];
       for(int j=0;j<nbins;j++)
+      {
         profile[j] = 0.0;
+        weightsum[j] = 0.0;
+      }
       visibilities = new float[2*nchannels];
     }
     else {
@@ -116,12 +120,14 @@ int main(int argc, char *argv[])
         for(int j=1;j<nchannels-1;j++) {
           if(visibilities[2*j] > maxvisibility)
             maxvisibility = visibilities[2*j];
-          profile[bin] += visibilities[2*j];
+          weightsum[bin] += weight;
+          profile[bin] += visibilities[2*j]*weight;
           vissum += visibilities[2*j];
         }
         viscount++;
         input->peek();
       }
+      profile[bin] /= weightsum[bin];
       input->clear();
       input->close();
       delete input;
