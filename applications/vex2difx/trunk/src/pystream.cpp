@@ -972,12 +972,17 @@ int pystream::writeChannelSet(const VexSetup *setup, int modeNum)
 		}
 		else
 		{
-			*this << "  \\";
+			*this << " \\";
 		}
 		if(bw != bw0 || tune != tune0)
 		{
 			*this << "  # orig: tune=" << (tune0*1.0e-6) << " bw=" << (bw0*1.0e-6);
 		}
+        else
+        {
+            *this << "  #";
+        }
+        *this << " IF " << setup->channels[i].ifName;
 		*this << endl;
 	}
 	*this << "  ]" << endl;
@@ -1100,17 +1105,6 @@ int pystream::writeDDCChannelSet(const VexSetup *setup, int modeNum)
 			if( ifIndex[modeNum][setup->channels[i].ifName] == IF2DBEassign[modeNum][DBE_1][IN_1] ) {
 				assignedChans[DBE_1][IN_1][dbe1count] = i;
 				dbe1count++;
-			}
-		}
-	}
-	// if we are using MARK5B format, channel ordering must be kept
-	if( setup->formatName == "MARK5B" ) {
-		int channel = 0;
-		// only one DBE allowed
-		for( int i=0; i < MAX_IF_PER_DBE; i++ ) {
-			for( int j=0; j < MAX_DBE_CHAN; j++ ) {
-				if( assignedChans[0][i][j] != -1 )
-					assignedChans[0][i][j] = channel++;
 			}
 		}
 	}
@@ -1987,7 +1981,10 @@ int pystream::writeDDCLoifTable(const VexData *V)
 			}
 			else
 			{
-				writeDDCChannelSet(setup, modeNum); 
+				if( setup->formatName == "MARK5B" )
+					writeChannelSet(setup, modeNum); 
+				else
+					writeDDCChannelSet(setup, modeNum); 
 			}
 
 			*this << endl;
