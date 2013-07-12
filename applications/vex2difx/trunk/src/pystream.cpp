@@ -2446,6 +2446,15 @@ int pystream::writeScans(const VexData *V)
 		}
 		else
 		{
+            bool record = scan->recordEnable.find(ant)->second;
+            if(ant == "GB")
+            {
+                // FIXME: move to use of intents in VEX to drive this decision
+                if(!record)
+                {
+                    *this << "# pointing scan for the GBT" << endl;
+                }
+            }
 			const VexInterval *arange = &scan->stations.find(ant)->second;
 
 			int modeId = V->getModeIdByDefName(scan->modeDefName);
@@ -2468,7 +2477,7 @@ int pystream::writeScans(const VexData *V)
 			{
 
 				*this << "# changing to mode " << mode->defName << endl;
-				if(scriptType == SCRIPT_VLBA)
+				if(scriptType == SCRIPT_VLBA || scriptType == SCRIPT_GBT)
 				{
 					*this << "subarray.setVLBALoIfSetup(loif" << modeId << ")" << endl;
 
@@ -2540,6 +2549,13 @@ int pystream::writeScans(const VexData *V)
 					exit(EXIT_FAILURE);
 				}
 
+				if(ant == "GB" && !record)
+				{
+					// code for GBT pointing scan - set source as a 'peak' type
+					*this << "if isAstrid:" << endl;
+					*this << "  source" << sourceId << ".setPeak(True)" << endl;
+				}
+
 				// only start scan if we are at least 10sec away from scan end
 				// NOTE - if this changes to a value less than 5sec may need to revisit Executor RDBE code
 				// in case of scan starting later than start time
@@ -2547,6 +2563,12 @@ int pystream::writeScans(const VexData *V)
 				*this << "  subarray.execute(mjdStart + " << deltat3 << "*second)" << endl;
 				*this << "else:" << endl;
 				*this << "  print 'Skipping scan which ended at time ' + str(mjdStart+" << deltat2 << "*second) + ' since array.time is ' + str(array.time())" << endl;
+				if (ant == "GB" && !record)
+				{
+					*this << "if isAstrid:" << endl;
+					// code for GBT pointing scan - reset source as a 'track' type
+					*this << "  source" << sourceId << ".setPeak(False)" << endl;
+				}
 				lastValid = arange->mjdStop;
 			}
 			else
