@@ -232,12 +232,12 @@ int pystream::writeHeader(const VexData *V)
 	switch(scriptType)
 	{
 	case SCRIPT_VLBA:
+		*this << tab << "from edu.nrao.evla.observe import ESSR" << endl;
 	case SCRIPT_GBT:
 		*this << tab << "from edu.nrao.evla.observe import MatrixSwitch" << endl;
 		*this << tab << "from edu.nrao.evla.observe import RDBE" << endl;
 		*this << tab << "from edu.nrao.evla.observe import VLBALoIfSetup" << endl;
 		*this << tab << "from edu.nrao.evla.observe import Parameters" << endl;
-		*this << tab << "from edu.nrao.evla.observe import ESSR" << endl;
 		*this << tab << "from edu.nrao.evla.observe import bbc" << endl;
 		break;
 	case SCRIPT_EVLA:
