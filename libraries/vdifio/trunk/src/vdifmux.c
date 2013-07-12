@@ -1352,7 +1352,7 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 	{
 		int minDestIndex = highestDestIndex - nSort/nThread;
 
-		for(f = highestDestIndex; f >= minDestIndex; --f)
+		if(minDestIndex >= 0) for(f = highestDestIndex; f >= minDestIndex; --f)
 		{
 			const uint32_t *p = (const uint32_t *)(dest + outputFrameSize*f);
 			uint32_t mask = p[7];
