@@ -288,7 +288,8 @@ int main(int argc, char **argv)
 		py.writeComment(string("File written by ") + program + string(" version ") + version + string(" vintage ") + verdate);
 		py.writeDbeInit(V);
 		py.writeRecorderInit(V);
-		py.writeXCubeInit();
+		if( sType != pystream::SCRIPT_GBT )
+			py.writeXCubeInit();
 		if(py.getDBEPersonalityType() == pystream::RDBE_DDC) {
 			py.writeDDCLoifTable(V);
 			py.writeDDCSourceTable(V);
