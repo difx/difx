@@ -989,7 +989,7 @@ int pystream::writeChannelSet(const VexSetup *setup, int modeNum)
 
 int pystream::writeDDCChannelSet(const VexSetup *setup, int modeNum)
 {
-//	cerr << "======================== pystream::writeChannelSet" << endl;
+//	cerr << "======================== pystream::writeDDCChannelSet" << endl;
 
 //	cerr << "chanDist[" << modeNum << "]: " << chanDist[modeNum] << endl;
 	// temp storage to figure out to which DBE and IFs channels are assigned
@@ -1103,13 +1103,25 @@ int pystream::writeDDCChannelSet(const VexSetup *setup, int modeNum)
 			}
 		}
 	}
-
-/*	cerr << "###### assignedChans" << endl;
+	// if we are using MARK5B format, channel ordering must be kept
+	if( setup->formatName == "MARK5B" ) {
+		int channel = 0;
+		// only one DBE allowed
+		for( int i=0; i < MAX_IF_PER_DBE; i++ ) {
+			for( int j=0; j < MAX_DBE_CHAN; j++ ) {
+				if( assignedChans[0][i][j] != -1 )
+					assignedChans[0][i][j] = channel++;
+			}
+		}
+	}
+/*
+	cerr << "###### assignedChans" << endl;
 	for( int i=0; i < MAX_DBE; i++ ) {
 		for( int j=0; j < MAX_IF_PER_DBE; j++ ) {
 			for( int k=0; k<MAX_DBE_CHAN; k++ ) {
 				cerr << assignedChans[i][j][k] << ":";
 			}
+			cerr << endl;
 		}
 		cerr << endl;
 	}
