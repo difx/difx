@@ -1142,7 +1142,7 @@ int pystream::writeDDCChannelSet(const VexSetup *setup, int modeNum)
 
 //		cerr << " chanByDBE[" << modeNum << "][" << dbe << "]: " << chanByDBE[modeNum][dbe] << endl;
 		// now print the channels assigned
-		for(unsigned int j = 0; j < MAX_IF_PER_DBE; ++j) {
+		for(unsigned int j = 0; j < (unsigned int)MAX_IF_PER_DBE; ++j) {
 		for(unsigned int k = 0; k < (unsigned int)chanByDBE[modeNum][dbe]; ++k) {
 			int i = (int)assignedChans[dbe][j][k];
 			if( i == -1 )
