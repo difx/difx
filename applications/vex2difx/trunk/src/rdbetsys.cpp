@@ -40,9 +40,9 @@
 #include "util.h"
 
 const char program[] = "rdbetsys";
-const char version[] = "1.3";
+const char version[] = "1.4";
 const char author[]  = "Walter Brisken";
-const char verdate[] = "20130218";
+const char verdate[] = "20130713";
 
 const char defaultSwitchedPowerPath[] = "/home/vlba/metadata/switchedpower";
 const double defaultTsysInterval = 15.0;	// Seconds
@@ -64,6 +64,8 @@ static void usage(const char *pgm)
 	printf("  -i <t>      use averaging interval of <t> seconds [%f]\n\n", defaultTsysInterval);
 	printf("  --scan\n");
 	printf("  -s          average over whole scans\n\n");
+	printf("  --antab\n");
+	printf("  -a          produce output in ANTAB format\n\n");
 	printf("Note that env. var. TCAL_PATH must be set to point to TCal data\n\n");
 }
 
@@ -120,10 +122,28 @@ double filename2fracday(const char *fn)
 	return v;
 }
 
-std::string genFileList(const char *switchedPowerPath, const char *stn, const VexInterval &timeRange)
+std::string fileList2String(const std::list<std::string> &fileList)
 {
-	std::string fileList = "";
+	std::string str="";
+	std::list<std::string>::const_iterator it;
+
+	for(it = fileList.begin(); it != fileList.end(); ++it)
+	{
+		if(str.length() > 0)
+		{
+			str += " ";
+		}
+		str += *it;
+	}
+
+	return str;
+}
+
+void genFileList(std::list<std::string> &fileList, const char *switchedPowerPath, const char *stn, const VexInterval &timeRange)
+{
 	glob_t globbuf;
+
+	fileList.clear();
 
 	for(int mjd = static_cast<int>(timeRange.mjdStart); mjd < timeRange.mjdStop; ++mjd)
 	{
@@ -158,11 +178,7 @@ std::string genFileList(const char *switchedPowerPath, const char *stn, const Ve
 
 					if(timeRange.overlap(fileRange))
 					{
-						if(fileList.length() > 0)
-						{
-							fileList += " ";
-						}
-						fileList += globbuf.gl_pathv[i];
+						fileList.push_back(globbuf.gl_pathv[i]);
 					}
 
 				}
@@ -196,11 +212,7 @@ std::string genFileList(const char *switchedPowerPath, const char *stn, const Ve
 
 						if(timeRange.overlap(fileRange))
 						{
-							if(fileList.length() > 0)
-							{
-								fileList += " ";
-							}
-							fileList += globbuf.gl_pathv[i];
+							fileList.push_back(globbuf.gl_pathv[i]);
 						}
 
 					}
@@ -209,8 +221,6 @@ std::string genFileList(const char *switchedPowerPath, const char *stn, const Ve
 			}
 		}
 	}
-
-	return fileList;
 }
 
 
@@ -261,13 +271,14 @@ private:
 	VexInterval accumTimeRange;
 	int nAccum;
 	FILE *out;
+	bool doAntab;
 	std::string stn;
 	std::vector<TsysAverager> chans;
 	long long nGood, nBad, nSkip;
 public:
 	TsysAccumulator();
 	~TsysAccumulator();
-	void setOutput(FILE *outFile);
+	void setOutput(FILE *outFile, bool doAntabFlag);
 	void setStation(const std::string &stnName);
 	void setup(const VexSetup &vexSetup, DifxTcal *T, double mjd, const std::string &str);
 	void flush();
@@ -286,9 +297,10 @@ TsysAccumulator::~TsysAccumulator()
 	flush();
 }
 
-void TsysAccumulator::setOutput(FILE *outFile)
+void TsysAccumulator::setOutput(FILE *outFile, bool doAntabFlag)
 {
 	out = outFile;
+	doAntab = doAntabFlag;
 }
 
 void TsysAccumulator::setStation(const std::string &stnName)
@@ -455,7 +467,21 @@ void TsysAccumulator::flush()
 		}
 		if(!doSkip)
 		{
-			fprintf(out, "%s %12.8f %10.8f %d", stn.c_str(), day, accumTimeRange.duration(), static_cast<int>(chans.size()));
+			if(doAntab)
+			{
+				int hour;
+				double minute;
+				double hourf = 24.0*(day - doy);
+				
+				hour = static_cast<int>(hourf);
+				minute = 60.0*(hourf - hour);
+
+				fprintf(out, "%d %02d:%06.3f", doy, hour, minute);
+			}
+			else
+			{
+				fprintf(out, "%s %12.8f %10.8f %d", stn.c_str(), day, accumTimeRange.duration(), static_cast<int>(chans.size()));
+			}
 		}
 		for(std::vector<TsysAverager>::iterator ta = chans.begin(); ta != chans.end(); ++ta)
 		{
@@ -465,7 +491,14 @@ void TsysAccumulator::flush()
 			}
 			else
 			{
-				fprintf(out, " %5.2f %s", ta->Tsys(), ta->rxName.c_str());
+				if(doAntab)
+				{
+					fprintf(out, " %6.2f", ta->Tsys());
+				}
+				else
+				{
+					fprintf(out, " %5.2f %s", ta->Tsys(), ta->rxName.c_str());
+				}
 				nGood += ta->nGood;
 				nBad += ta->nBad;
 			}
@@ -526,11 +559,12 @@ void TsysAccumulator::feed(const VexInterval &lineTimeRange, const char *data)
 	}
 }
 
-static int processStation(FILE *out, const VexData &V, const std::string &stn, const std::string &fileList, const VexInterval &stnTimeRange, double nominalTsysInterval, DifxTcal *T, int verbose, long long *nGood, long long *nBad, long long *nLine, long long *nTimeError, long long *nSkip)
+static int processStation(FILE *out, const VexData &V, const std::string &stn, const std::list<std::string> &fileList, const VexInterval &stnTimeRange, double nominalTsysInterval, DifxTcal *T, int verbose, long long *nGood, long long *nBad, long long *nLine, long long *nTimeError, long long *nSkip, bool doAntab)
 {
 	const int MaxLineLength = 32768;	// make sure it is large enough!
 	char line[MaxLineLength];
 	FILE *p;
+	std::list<std::string>::const_iterator flit;
 	std::string command;
 	int nRecord = 0;
 	int pos, n;
@@ -546,7 +580,7 @@ static int processStation(FILE *out, const VexData &V, const std::string &stn, c
 	const VexMode *mode = 0;
 	const VexSetup *setup = 0;
 
-	command = "xzcat " + fileList + " 2> /dev/null";
+	command = "xzcat " + fileList2String(fileList) + " 2> /dev/null";
 	if(verbose > 2)
 	{
 		std::cout << "opening pipe: " << command << std::endl;
@@ -559,12 +593,29 @@ static int processStation(FILE *out, const VexData &V, const std::string &stn, c
 		return -1;
 	}
 
-	fprintf(out, "# %s %14.8f %14.8f\n", stn.c_str(), stnTimeRange.mjdStart, stnTimeRange.mjdStop);
-	// FIXME: it would be good to print filenames as the next line does, but with one file per line so line lengths stay confined.
-	// fprintf(out, "# Files: %s\n", fileList.c_str());
-	fprintf(out, "# ant D.O.Y. dur(days) nRecChan (tsys, bandName)[nRecChan]\n");
+	if(doAntab)
+	{
+		fprintf(out, "\n! Antenna: %s\n", stn.c_str());
+		fprintf(out, "! Time range (MJD): %14.8f %14.8f\n", stnTimeRange.mjdStart, stnTimeRange.mjdStop);
+		fprintf(out, "! Files searched for swiched power data include:\n");
+		for(flit = fileList.begin(); flit != fileList.end(); ++flit)
+		{
+			fprintf(out, "!   %s\n", flit->c_str());
+		}
+		fprintf(out, "TSYS  timeoff = 0.0  %s  FT = 1.0 /\n", stn.c_str());
+	}
+	else
+	{
+		fprintf(out, "# %s %14.8f %14.8f\n", stn.c_str(), stnTimeRange.mjdStart, stnTimeRange.mjdStop);
+		fprintf(out, "# Files searched for swiched power data include:\n");
+		for(flit = fileList.begin(); flit != fileList.end(); ++flit)
+		{
+			fprintf(out, "#   %s\n", flit->c_str());
+		}
+		fprintf(out, "# ant D.O.Y. dur(days) nRecChan (tsys, bandName)[nRecChan]\n");
+	}
 
-	TA.setOutput(out);
+	TA.setOutput(out, doAntab);
 	TA.setStation(stn);
 	*nLine = 0;
 	*nTimeError = 0;
@@ -652,7 +703,14 @@ static int processStation(FILE *out, const VexData &V, const std::string &stn, c
 
 			TA.setup(*setup, T, scanTimeRange.mjdStop, stn);  // also flushes
 			
-			fprintf(out, "# Scan %s\n", scan->defName.c_str());
+			if(doAntab)
+			{
+				fprintf(out, "! Scan %s\n", scan->defName.c_str());
+			}
+			else
+			{
+				fprintf(out, "# Scan %s\n", scan->defName.c_str());
+			}
 			// set up averaging slots
 			nSlot = static_cast<int>(scanTimeRange.duration_seconds() / nominalTsysInterval);
 			if(nSlot == 0)
@@ -754,7 +812,8 @@ int main(int argc, char **argv)
 	CorrParams *P;
 	DifxTcal *T;
 	int nWarn = 0;
-	std::string fileList;
+	bool doAntab = false;
+	std::list<std::string> fileList;
 	std::map<std::string,VexInterval> as;
 	const char *vexFilename = 0;
 	const char *tsysFilename = 0;
@@ -787,6 +846,11 @@ int main(int argc, char **argv)
 			   strcmp(argv[a], "--quiet") == 0)
 			{
 				--verbose;
+			}
+			else if(strcmp(argv[a], "-a") == 0 ||
+			   strcasecmp(argv[a], "--antab") == 0)
+			{
+				doAntab = true;
 			}
 			else if(strcmp(argv[a], "-i") == 0 ||
 			   strcmp(argv[a], "--interval") == 0)
@@ -904,7 +968,19 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
-	fprintf(out, "# TSYS file created by %s ver. %s\n", program, version);
+	if(doAntab)
+	{
+		fprintf(out, "! Produced by: %s ver. %s\n\n", program, version);
+		fprintf(out, "! The file contains Tsys values from the VLBA/GBT wideband system.\n\n");
+		fprintf(out, "! Warning to user! The Tsys values in this file are listed in\n");
+		fprintf(out, "! in the order channels are defined in the .vex file.  This means\n");
+		fprintf(out, "! that you may need to add INDEX lines to this file to make it\n");
+		fprintf(out, "! meaningful.  The INDEX value may vary with scan and by antenna!\n");
+	}
+	else
+	{
+		fprintf(out, "# TSYS file created by %s ver. %s\n", program, version);
+	}
 
 	antennaSummary(*V, as);
 
@@ -937,10 +1013,10 @@ int main(int argc, char **argv)
 			continue;
 		}
 
-		fileList = genFileList(defaultSwitchedPowerPath, stn.c_str(), it->second);
+		genFileList(fileList, defaultSwitchedPowerPath, stn.c_str(), it->second);
 		if(verbose > 1)
 		{
-			std::cout << "  File list: " << fileList << std::endl;
+			std::cout << "  File list: " << fileList2String(fileList) << std::endl;
 		}
 		if(fileList.empty())
 		{
@@ -953,7 +1029,7 @@ int main(int argc, char **argv)
 		}
 		else
 		{
-			nRecord = processStation(out, *V, it->first, fileList, it->second, nominalTsysInterval, T, verbose, &nGood, &nBad, &nLine, &nTimeError, &nSkip);
+			nRecord = processStation(out, *V, it->first, fileList, it->second, nominalTsysInterval, T, verbose, &nGood, &nBad, &nLine, &nTimeError, &nSkip, doAntab);
 		}
 		if(nRecord <= 0)
 		{
