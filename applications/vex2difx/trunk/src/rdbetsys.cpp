@@ -774,6 +774,11 @@ static int processStation(FILE *out, const VexData &V, const std::string &stn, c
 		*nSkip = TA.getnSkip();
 	}
 
+	if(doAntab)
+	{
+		fprintf(out, "/\n");
+	}
+
 	return nRecord;
 }
 
