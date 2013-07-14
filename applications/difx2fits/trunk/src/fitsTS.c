@@ -316,7 +316,6 @@ static int getDifxTsys(const DifxInput *D, int jobId, int antId, int origDsId, d
 	char line[MaxLineLength];
 	const char *fileName;
 	char globPattern[DIFXIO_FILENAME_LENGTH];
-	char *p_fitsbuf;
 	FILE *in = 0;
 	SwitchedPower measurement[array_MAX_BANDS*2];
 	SwitchedPower average[array_MAX_BANDS*2];
@@ -502,6 +501,8 @@ static int getDifxTsys(const DifxInput *D, int jobId, int antId, int origDsId, d
 
 			if(nAccum > 0 && currentScanId >= 0 && currentConfigId >= 0 && phaseCentre < scan->nPhaseCentres && scan->phsCentreSrcs[phaseCentre] >= 0)
 			{
+				char *p_fitsbuf;
+				
 				// write Tsys row to file
 				time = (accumStart + accumEnd)*0.5 - (int)(D->mjdStart);
 				timeInt = accumEnd - accumStart;
@@ -616,160 +617,35 @@ static int populateTSys(float tSys[][array_MAX_BANDS], const DifxInput *D, int c
 	return 0;
 }
 
-const DifxInput *DifxInput2FitsTS(const DifxInput *D, struct fits_keywords *p_fits_keys, struct fitsPrivate *out, int phaseCentre, double DifxTsysAvgSeconds)
+int processTsysFile(const DifxInput *D, const char *antennaName, int phaseCentre, const char *tsysFile, struct fitsPrivate *out, char *fitsbuf, int nRowBytes, int nColumn, const struct fitsBinTableColumn *columns, const int *alreadyHasTsys, int refDay, int year)
 {
 	const int MaxLineLength=1000;
-	const int MaxDatastreamsPerAntenna=8;
-
-	char bandFormFloat[8];
-	int origDsIds[MaxDatastreamsPerAntenna];
-	
-	/*  define the flag FITS table columns */
-	struct fitsBinTableColumn columns[] =
-	{
-		{"TIME", "1D", "time of center of interval", "DAYS"},
-		{"TIME_INTERVAL", "1E", "time span of datum", "DAYS"},
-		{"SOURCE_ID", "1J", "source id number from source tbl", 0},
-		{"ANTENNA_NO", "1J", "antenna id from array geom. tbl", 0},
-		{"ARRAY", "1J", "????", 0},
-		{"FREQID", "1J", "freq id from frequency tbl", 0},
-		{"TSYS_1", bandFormFloat, "system temperature", "K"},
-		{"TANT_1", bandFormFloat, "antenna temperature", "K"},
-		{"TSYS_2", bandFormFloat, "system temperature", "K"},
-		{"TANT_2", bandFormFloat, "antenna temperature", "K"}
-	};
-
-	int nColumn;
-	int nRowBytes;
-	char *fitsbuf, *p_fitsbuf;
-	int refDay;
-	char line[MaxLineLength+1];
+	FILE *in;
+	int nRec = 0;
+	int32_t freqId1, arrayId1, sourceId1, antId1;
+	int configId, sourceId, scanId;
 	char antName[DIFXIO_NAME_LENGTH];
 	float tSysRecBand[2*array_MAX_BANDS];
 	float tSys[2][array_MAX_BANDS];
 	float tAnt[2][array_MAX_BANDS];
-	int nBand;
-	int configId, sourceId, scanId;
-	int i, nPol=0;
-	int antId, jobId;
-	int nRecBand;
-	int v, n;
-	double time, mjd;
-	float timeInt;
 	const DifxScan *scan;
-	FILE *in;
+	float timeInt;
+	double time, mjd;
+	char line[MaxLineLength+1];
 	char *rv;
-	int *hasDifxTsys;	/* flag per antenna specifying whether or not tsys was supplied from difx */
-	/* The following are 1-based indices for writing to FITS */
-	int32_t sourceId1, freqId1, arrayId1, antId1;
-	DifxTcal *T;
-	const char *tcalFilename;
-	int year, month, day;
 
-	if(D == 0)
+	in = fopen(tsysFile, "r");
+	if(!in)
 	{
-		return D;
+		return 0;
 	}
-
-	T = newDifxTcal();
-
-	/* first test for VLBA case */
-	if( (tcalFilename = getenv("TCAL_PATH")) != 0)
-	{
-		v = setDifxTcalVLBA(T, tcalFilename);
-		if(v < 0)
-		{
-			fprintf(stderr, "Error initializing VLBA Tcal values\n");
-
-			exit(EXIT_FAILURE);
-		}
-	}
-	else if( (tcalFilename = getenv("TCAL_FILE")) != 0)
-	{
-		v = setDifxTcalDIFX(T, tcalFilename);
-		if(v < 0)
-		{
-			fprintf(stderr, "Error initializing VLBA Tcal values\n");
-
-			exit(EXIT_FAILURE);
-		}
-	}
-
-	nanify(tAnt);
-
-	hasDifxTsys = (int *)calloc(D->nAntenna, sizeof(int));
-	if(hasDifxTsys == 0)
-	{
-		fprintf(stderr, "Error: DifxInput2FitsTS: Cannot allocate %d integers for hasDifxTsys\n", D->nAntenna);
-
-		exit(EXIT_FAILURE);
-	}
-
-	nBand = D->nIF;
-	nPol = D->nPol;
-
-	sprintf(bandFormFloat, "%dE", nBand);
-
-	mjd2dayno((int)(D->mjdStart), &refDay);
-	mjd2date((int)(D->mjdStart), &year, &month, &day);
-
-	if(nPol == 2)
-	{
-		nColumn = NELEMENTS(columns);
-	}
-	else
-	{
-		nColumn = NELEMENTS(columns) - 2;
-	}
-	
-	nRowBytes = FitsBinTableSize(columns, nColumn);
-
-	/* calloc space for storing table in FITS format */
-	fitsbuf = (char *)calloc(nRowBytes, 1);
-	if(fitsbuf == 0)
-	{
-		fprintf(stderr, "Error: DifxInput2FitsTS: Cannot allocate %d bytes for fitsbuf\n", nRowBytes);
-
-		free(hasDifxTsys);
-
-		exit(EXIT_FAILURE);
-	}
-
-	fitsWriteBinTable(out, nColumn, columns, nRowBytes, "SYSTEM_TEMPERATURE");
-	arrayWriteKeys(p_fits_keys, out);
-	fitsWriteInteger(out, "NO_POL", nPol, "");
-	fitsWriteInteger(out, "TABREV", 1, "");
-	fitsWriteEnd(out);
 
 	freqId1 = 1;
 	arrayId1 = 1;
-	
-	in = fopen("tsys", "r");
 
-	if(DifxTsysAvgSeconds > 0.0)
-	{
-		for(antId = 0; antId < D->nAntenna; ++antId)
-		{
-			for(jobId = 0; jobId < D->nJob; ++jobId)
-			{
-				n = DifxInputGetOriginalDatastreamIdsByAntennaIdJobId(origDsIds, D, antId, jobId, MaxDatastreamsPerAntenna);
-				if(n > 1)
-				{
-					fprintf(stderr, "\nWarning: > 1 datastream for antennaId=%d.  This has not been tested.\n", antId);
-				}
-				for(i = 0; i < n; ++i)
-				{
-					v = getDifxTsys(D, jobId, antId, origDsIds[i], DifxTsysAvgSeconds, phaseCentre, nRowBytes, fitsbuf, nColumn, columns, out, T);
-					if(v >= 0)
-					{
-						++hasDifxTsys[antId];
-					}
-				}
-			}
-		}
-	}
+	nanify(tAnt);
 
-	if(in) for(;;)
+	for(;;)
 	{
 		rv = fgets(line, MaxLineLength, in);
 		if(!rv)
@@ -784,7 +660,17 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D, struct fits_keywords *p_fi
 		}
 		else 
 		{
+			char *p_fitsbuf;
+			int nRecBand;
+			int antId;
+			int i;
+
 			nRecBand = parseTsys(line, antName, &time, &timeInt, tSysRecBand);
+			if(antennaName && strcasecmp(antennaName, antName) != 0)
+			{
+				/* antenna name mismatch */
+				continue;
+			}
 			if(nRecBand == -1)
 			{
 				continue;
@@ -816,7 +702,7 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D, struct fits_keywords *p_fi
 				continue;
 			}
 
-			if(hasDifxTsys[antId])
+			if(alreadyHasTsys[antId])
 			{
 				/* tsys already provided */
 				continue;
@@ -861,11 +747,12 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D, struct fits_keywords *p_fi
 			FITS_WRITE_ITEM (arrayId1, p_fitsbuf);
 			FITS_WRITE_ITEM (freqId1, p_fitsbuf);
 
-			for(i = 0; i < nPol; ++i)
+			for(i = 0; i < D->nPol; ++i)
 			{
-				FITS_WRITE_ARRAY(tSys[i], p_fitsbuf, nBand);
-				FITS_WRITE_ARRAY(tAnt[i], p_fitsbuf, nBand);
+				FITS_WRITE_ARRAY(tSys[i], p_fitsbuf, D->nIF);
+				FITS_WRITE_ARRAY(tAnt[i], p_fitsbuf, D->nIF);
 			}
+			++nRec;
 
 			testFitsBufBytes(p_fitsbuf - fitsbuf, nRowBytes, "TS");
 
@@ -876,12 +763,172 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D, struct fits_keywords *p_fi
 		}
 	}
 
-	/* close the file, free memory, and return */
-	if(in)
+	fclose(in);
+
+	return nRec;
+}
+
+const DifxInput *DifxInput2FitsTS(const DifxInput *D, struct fits_keywords *p_fits_keys, struct fitsPrivate *out, int phaseCentre, double DifxTsysAvgSeconds)
+{
+	const int MaxDatastreamsPerAntenna=8;
+
+	char bandFormFloat[8];
+	int origDsIds[MaxDatastreamsPerAntenna];
+	
+	/*  define the flag FITS table columns */
+	struct fitsBinTableColumn columns[] =
 	{
-		fclose(in);
+		{"TIME", "1D", "time of center of interval", "DAYS"},
+		{"TIME_INTERVAL", "1E", "time span of datum", "DAYS"},
+		{"SOURCE_ID", "1J", "source id number from source tbl", 0},
+		{"ANTENNA_NO", "1J", "antenna id from array geom. tbl", 0},
+		{"ARRAY", "1J", "????", 0},
+		{"FREQID", "1J", "freq id from frequency tbl", 0},
+		{"TSYS_1", bandFormFloat, "system temperature", "K"},
+		{"TANT_1", bandFormFloat, "antenna temperature", "K"},
+		{"TSYS_2", bandFormFloat, "system temperature", "K"},
+		{"TANT_2", bandFormFloat, "antenna temperature", "K"}
+	};
+
+	int nColumn;
+	int nRowBytes;
+	char *fitsbuf;
+	int refDay;
+	int antId;
+	int v, n;
+	int *alreadyHasTsys;	/* flag per antenna specifying whether or not tsys has been found for this antenna yet */
+	DifxTcal *T;
+	const char *tcalFilename;
+	int year, month, day;
+
+	if(D == 0)
+	{
+		return D;
 	}
-	free(hasDifxTsys);
+
+	T = newDifxTcal();
+
+	/* first test for VLBA case */
+	if( (tcalFilename = getenv("TCAL_PATH")) != 0)
+	{
+		v = setDifxTcalVLBA(T, tcalFilename);
+		if(v < 0)
+		{
+			fprintf(stderr, "Error initializing VLBA Tcal values\n");
+
+			exit(EXIT_FAILURE);
+		}
+	}
+	else if( (tcalFilename = getenv("TCAL_FILE")) != 0)
+	{
+		v = setDifxTcalDIFX(T, tcalFilename);
+		if(v < 0)
+		{
+			fprintf(stderr, "Error initializing VLBA Tcal values\n");
+
+			exit(EXIT_FAILURE);
+		}
+	}
+
+	alreadyHasTsys = (int *)calloc(D->nAntenna, sizeof(int));
+	if(alreadyHasTsys == 0)
+	{
+		fprintf(stderr, "Error: DifxInput2FitsTS: Cannot allocate %d integers for alreadyHasTsys\n", D->nAntenna);
+
+		exit(EXIT_FAILURE);
+	}
+
+	sprintf(bandFormFloat, "%dE", D->nIF);
+
+	mjd2dayno((int)(D->mjdStart), &refDay);
+	mjd2date((int)(D->mjdStart), &year, &month, &day);
+
+	if(D->nPol == 2)
+	{
+		nColumn = NELEMENTS(columns);
+	}
+	else
+	{
+		nColumn = NELEMENTS(columns) - 2;
+	}
+	
+	nRowBytes = FitsBinTableSize(columns, nColumn);
+
+	/* calloc space for storing table in FITS format */
+	fitsbuf = (char *)calloc(nRowBytes, 1);
+	if(fitsbuf == 0)
+	{
+		fprintf(stderr, "Error: DifxInput2FitsTS: Cannot allocate %d bytes for fitsbuf\n", nRowBytes);
+
+		free(alreadyHasTsys);
+
+		exit(EXIT_FAILURE);
+	}
+
+	fitsWriteBinTable(out, nColumn, columns, nRowBytes, "SYSTEM_TEMPERATURE");
+	arrayWriteKeys(p_fits_keys, out);
+	fitsWriteInteger(out, "NO_POL", D->nPol, "");
+	fitsWriteInteger(out, "TABREV", 1, "");
+	fitsWriteEnd(out);
+
+	/* Priority 1: look for Tsys in DiFX output */
+	if(DifxTsysAvgSeconds > 0.0)
+	{
+		for(antId = 0; antId < D->nAntenna; ++antId)
+		{
+			int jobId;
+
+			for(jobId = 0; jobId < D->nJob; ++jobId)
+			{
+				int i;
+
+				n = DifxInputGetOriginalDatastreamIdsByAntennaIdJobId(origDsIds, D, antId, jobId, MaxDatastreamsPerAntenna);
+				if(n > 1)
+				{
+					fprintf(stderr, "\nWarning: > 1 datastream for antennaId=%d.  This has not been tested.\n", antId);
+				}
+				for(i = 0; i < n; ++i)
+				{
+					v = getDifxTsys(D, jobId, antId, origDsIds[i], DifxTsysAvgSeconds, phaseCentre, nRowBytes, fitsbuf, nColumn, columns, out, T);
+					if(v >= 0)
+					{
+						++alreadyHasTsys[antId];
+					}
+				}
+			}
+		}
+	}
+
+	/* Priority 2: look for station-specific Tsys file with name tsys.<station> */
+	for(antId = 0; antId < D->nAntenna; ++antId)
+	{
+		char tsysFile[DIFXIO_FILENAME_LENGTH];
+
+		if(alreadyHasTsys[antId] > 0)
+		{
+			continue;
+		}
+
+		v = snprintf(tsysFile, DIFXIO_FILENAME_LENGTH, "tsys.%s", D->antenna[antId].name);
+		if(v >= DIFXIO_FILENAME_LENGTH)
+		{
+			fprintf(stderr, "Developer error: DifxInput2FitsTS: DIFXIO_FILENAME_LENGTH=%d is too small.  Wants to be %d.\n", DIFXIO_FILENAME_LENGTH, v+1);
+
+			exit(0);
+		}
+
+		v = processTsysFile(D, D->antenna[antId].name, phaseCentre, tsysFile, out, fitsbuf, nRowBytes, nColumn, columns, alreadyHasTsys, refDay, year);
+		if(v > 0)
+		{
+			++alreadyHasTsys[antId];
+		}
+	}
+
+	/* Priority 3: look for multi-station Tsys file called tsys */
+	processTsysFile(D, 0, phaseCentre, "tsys", out, fitsbuf, nRowBytes, nColumn, columns, alreadyHasTsys, refDay, year);
+
+	/*  free memory, and return */
+	free(alreadyHasTsys);
 	free(fitsbuf);
 
 	deleteDifxTcal(T);
