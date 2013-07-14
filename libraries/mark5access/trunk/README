@@ -23,7 +23,7 @@ aclocal
 libtoolize --copy --force
 autoconf
 autoheader
-automake -a
+automake -a -c
 
 ./configure --prefix=${DIFXROOT}
 make

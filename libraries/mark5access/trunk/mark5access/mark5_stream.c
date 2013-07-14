@@ -425,6 +425,20 @@ struct mark5_format_generic *new_mark5_format_generic_from_string( const char *f
 
 		return new_mark5_format_mark5b(a, b, c, e);
 	}
+	else if(strncasecmp(formatname, "KVN5B-", 6) == 0)
+	{
+		r = sscanf(formatname+6, "%d-%d-%d/%d", &a, &b, &c, &e);
+		if(r < 3)
+		{
+			return 0;
+		}
+		if(r < 4)
+		{
+			e = 1;
+		}
+
+		return new_mark5_format_mark5b(a, b, c, e);
+	}
 #ifdef K5WORKS
 	else if(strncasecmp(formatname, "K5_32-", 6) == 0)
 	{
@@ -522,7 +536,7 @@ struct mark5_format_generic *new_mark5_format_generic_from_string( const char *f
 /* a string containg a list of supported formats */
 const char *mark5_stream_list_formats()
 {
-	return "VLBA1_*-*-*-*[/*], MKIV1_*-*-*-*[/*], MARK5B-*-*-*[/*], VDIF_*-*-*-*[/*], VLBN1_*-*-*-*[/*], VDIFB_*-*-*-*, VDIFL_*-*-*-*[/*]";
+	return "VLBA1_*-*-*-*[/*], MKIV1_*-*-*-*[/*], MARK5B-*-*-*[/*], VDIF_*-*-*-*[/*], VLBN1_*-*-*-*[/*], VDIFB_*-*-*-*, VDIFL_*-*-*-*[/*], KVN5B-*-*-*[/*]";
 }
 
 /* given a format string, populate a structure with info about format */
@@ -583,6 +597,22 @@ struct mark5_format *new_mark5_format_from_name(const char *formatname)
 			return 0;
 		}
 		F = MK5_FORMAT_MARK5B;
+		databytes = 10000;
+		framebytes = databytes+16;
+		framens = 1000.0*(8.0*databytes/(double)b);
+		if(r > 3)
+		{
+			decimation = e;
+		}
+	}
+	else if(strncasecmp(formatname, "KVN5B-", 6) == 0)
+	{
+		r = sscanf(formatname+6, "%d-%d-%d/%d", &b, &c, &d, &e);
+		if(r < 3)
+		{
+			return 0;
+		}
+		F = MK5_FORMAT_KVN5B;
 		databytes = 10000;
 		framebytes = databytes+16;
 		framens = 1000.0*(8.0*databytes/(double)b);
@@ -880,6 +910,7 @@ struct mark5_format *new_mark5_format_from_stream(struct mark5_stream_generic *s
 		
 		return mf;
 	}
+	/* Warning: there is no way to know if data is KVN5B vs. Mark5B format.  Don't search for KVN5B as that is less standard. */
 
 	/* VDIF */
 	framesize = 0;

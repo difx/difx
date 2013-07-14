@@ -1,5 +1,6 @@
 Version 1.5.0
 * Post 2.2 tagging
+* Add KVN5B format: like Mark5B but different data bit patterns (Richard Dodson)
 
 Version 1.4.4
 * Slightly faster and more relaxed frame finding for VLBA and Mark4 formats
