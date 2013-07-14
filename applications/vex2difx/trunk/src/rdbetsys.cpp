@@ -40,9 +40,9 @@
 #include "util.h"
 
 const char program[] = "rdbetsys";
-const char version[] = "1.4";
+const char version[] = "1.5";
 const char author[]  = "Walter Brisken";
-const char verdate[] = "20130713";
+const char verdate[] = "20130714";
 
 const char defaultSwitchedPowerPath[] = "/home/vlba/metadata/switchedpower";
 const double defaultTsysInterval = 15.0;	// Seconds
@@ -64,6 +64,10 @@ static void usage(const char *pgm)
 	printf("  -i <t>      use averaging interval of <t> seconds [%f]\n\n", defaultTsysInterval);
 	printf("  --scan\n");
 	printf("  -s          average over whole scans\n\n");
+	printf("  --mjd\n");
+	printf("  -m          datestamp in MJD, not DOY (default for non-ANTAB)\n\n");
+	printf("  --doy\n");
+	printf("  -d          datestamp in DOY, not MJD\n\n");
 	printf("  --antab\n");
 	printf("  -a          produce output in ANTAB format\n\n");
 	printf("Note that env. var. TCAL_PATH must be set to point to TCal data\n\n");
@@ -272,13 +276,14 @@ private:
 	int nAccum;
 	FILE *out;
 	bool doAntab;
+	bool doMJD;
 	std::string stn;
 	std::vector<TsysAverager> chans;
 	long long nGood, nBad, nSkip;
 public:
 	TsysAccumulator();
 	~TsysAccumulator();
-	void setOutput(FILE *outFile, bool doAntabFlag);
+	void setOutput(FILE *outFile, bool doAntabFlag, bool doMJDFlag);
 	void setStation(const std::string &stnName);
 	void setup(const VexSetup &vexSetup, DifxTcal *T, double mjd, const std::string &str);
 	void flush();
@@ -297,10 +302,11 @@ TsysAccumulator::~TsysAccumulator()
 	flush();
 }
 
-void TsysAccumulator::setOutput(FILE *outFile, bool doAntabFlag)
+void TsysAccumulator::setOutput(FILE *outFile, bool doAntabFlag, bool doMJDFlag)
 {
 	out = outFile;
 	doAntab = doAntabFlag;
+	doMJD = doMJDFlag;
 }
 
 void TsysAccumulator::setStation(const std::string &stnName)
@@ -478,6 +484,10 @@ void TsysAccumulator::flush()
 
 				fprintf(out, "%d %02d:%06.3f", doy, hour, minute);
 			}
+			else if(doMJD)
+			{
+				fprintf(out, "%s %12.8f %10.8f %d", stn.c_str(), accumTimeRange.center(), accumTimeRange.duration(), static_cast<int>(chans.size()));
+			}
 			else
 			{
 				fprintf(out, "%s %12.8f %10.8f %d", stn.c_str(), day, accumTimeRange.duration(), static_cast<int>(chans.size()));
@@ -559,7 +569,7 @@ void TsysAccumulator::feed(const VexInterval &lineTimeRange, const char *data)
 	}
 }
 
-static int processStation(FILE *out, const VexData &V, const std::string &stn, const std::list<std::string> &fileList, const VexInterval &stnTimeRange, double nominalTsysInterval, DifxTcal *T, int verbose, long long *nGood, long long *nBad, long long *nLine, long long *nTimeError, long long *nSkip, bool doAntab)
+static int processStation(FILE *out, const VexData &V, const std::string &stn, const std::list<std::string> &fileList, const VexInterval &stnTimeRange, double nominalTsysInterval, DifxTcal *T, int verbose, long long *nGood, long long *nBad, long long *nLine, long long *nTimeError, long long *nSkip, bool doAntab, bool doMJD)
 {
 	const int MaxLineLength = 32768;	// make sure it is large enough!
 	char line[MaxLineLength];
@@ -615,7 +625,7 @@ static int processStation(FILE *out, const VexData &V, const std::string &stn, c
 		fprintf(out, "# ant D.O.Y. dur(days) nRecChan (tsys, bandName)[nRecChan]\n");
 	}
 
-	TA.setOutput(out, doAntab);
+	TA.setOutput(out, doAntab, doMJD);
 	TA.setStation(stn);
 	*nLine = 0;
 	*nTimeError = 0;
@@ -818,6 +828,7 @@ int main(int argc, char **argv)
 	DifxTcal *T;
 	int nWarn = 0;
 	bool doAntab = false;
+	bool doMJD = true;
 	std::list<std::string> fileList;
 	std::map<std::string,VexInterval> as;
 	const char *vexFilename = 0;
@@ -851,6 +862,16 @@ int main(int argc, char **argv)
 			   strcmp(argv[a], "--quiet") == 0)
 			{
 				--verbose;
+			}
+			else if(strcmp(argv[a], "-m") == 0 ||
+			   strcasecmp(argv[a], "--mjd") == 0)
+			{
+				doMJD = true;
+			}
+			else if(strcmp(argv[a], "-d") == 0 ||
+			   strcasecmp(argv[a], "--doy") == 0)
+			{
+				doMJD = false;
 			}
 			else if(strcmp(argv[a], "-a") == 0 ||
 			   strcasecmp(argv[a], "--antab") == 0)
@@ -897,6 +918,11 @@ int main(int argc, char **argv)
 
 			return EXIT_FAILURE;
 		}
+	}
+
+	if(doMJD && doAntab)
+	{
+		doMJD = false;
 	}
 
 	if(tsysFilename == 0)
@@ -1034,7 +1060,7 @@ int main(int argc, char **argv)
 		}
 		else
 		{
-			nRecord = processStation(out, *V, it->first, fileList, it->second, nominalTsysInterval, T, verbose, &nGood, &nBad, &nLine, &nTimeError, &nSkip, doAntab);
+			nRecord = processStation(out, *V, it->first, fileList, it->second, nominalTsysInterval, T, verbose, &nGood, &nBad, &nLine, &nTimeError, &nSkip, doAntab, doMJD);
 		}
 		if(nRecord <= 0)
 		{

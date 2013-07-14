@@ -9,8 +9,8 @@ import datetime
 from pyx import *
 
 program = 'plottsys'
-version = '0.2'
-verdate = '20130111'
+version = '0.3'
+verdate = '20130714'
 author = 'Walter Brisken <wbrisken@nrao.edu>'
 
 mjd0 = datetime.datetime(1858, 11, 17, 0, 0)
@@ -310,7 +310,7 @@ except IOError:
 	exit(0)
 
 if generateTsys:
-	cmd = 'rdbetsys --interval 300 %s %s' % (vexFile, tsysFile)
+	cmd = 'rdbetsys --doy --interval 300 %s %s' % (vexFile, tsysFile)
 	if verbose > 0:
 		print 'Executing: %s' % cmd
 	system(cmd)
