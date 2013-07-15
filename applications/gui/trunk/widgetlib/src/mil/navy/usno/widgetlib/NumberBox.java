@@ -85,18 +85,6 @@ public class NumberBox extends FormattedTextField implements MouseListener,
         this.setKeymap( km );
     }
 
-//    ComplexToolTip _tip;
-//    public ComplexToolTip toolTip() { return _tip; }
-//    public JToolTip createToolTip() {
-//        _tip = new ComplexToolTip();
-//        _tip.setComponent( this );
-//        return _tip;
-//    }
-//    public Point getToolTipLocation( MouseEvent e) {
-//        return new Point( 10, getHeight() );
-//    }
-//    
-
     /*
      * Set the value.  This will change the display.
      */

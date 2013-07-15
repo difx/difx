@@ -18,6 +18,7 @@ import edu.nrao.difx.difxutilities.DiFXCommand_mkdir;
 import edu.nrao.difx.difxutilities.DiFXCommand_vex2difx;
 import edu.nrao.difx.difxutilities.DiFXCommand_ls;
 import edu.nrao.difx.difxutilities.V2dFileParser;
+import edu.nrao.difx.difxutilities.TabCompletedTextField;
 
 import edu.nrao.difx.difxdatabase.QueueDBConnection;
 
@@ -200,9 +201,12 @@ public class ExperimentEditor extends JFrame {
         createdLabel.setBounds( 10, 110, 85, 25 );
         createdLabel.setHorizontalAlignment( JLabel.RIGHT );
         namePanel.add( createdLabel );
-        _directory = new SaneTextField();
+        _directory = new TabCompletedTextField( _settings );
         _directory.setBounds( 100, 140, 310, 25 );
-        _directory.setToolTipText( "\"Working\" directory that will contain all files for this experiment." );
+        _directory.setToolTipText( "This is the directory that contains all files specific to this experiment.\n"
+                + "Subdirectories associated with passes reside in this directory.\n"
+                + "The <i>guiServer</i> process must be running such that it has permission to write in this\n"
+                + "directory, and/or create it if necessary." );
         _directory.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
                 directoryChangeAction();
@@ -212,7 +216,6 @@ public class ExperimentEditor extends JFrame {
         _directory.setVisible( false );
         _directoryAsLabel = new JLabel( "" );
         _directoryAsLabel.setBounds( 100, 140, 310, 25 );
-        _directoryAsLabel.setToolTipText( "\"Working\" directory that will contain all files for this experiment." );
         namePanel.add( _directoryAsLabel );
         JLabel directoryLabel = new JLabel( "Working Dir:" );
         directoryLabel.setBounds( 10, 140, 85, 25 );
@@ -258,7 +261,7 @@ public class ExperimentEditor extends JFrame {
             }
         });
         startingV2dPanel.add( _v2dFromHost );
-        _v2dFromHostLocation = new SaneTextField();
+        _v2dFromHostLocation = new TabCompletedTextField( _settings );
         _v2dFromHostLocation.setToolTipText( "Full path to the file on the DiFX Host." );
         if ( !_v2dFromHost.isSelected() )
             _v2dFromHostLocation.setEnabled( false );
@@ -341,7 +344,7 @@ public class ExperimentEditor extends JFrame {
             }
         });
         findVexPanel.add( _fromHost );
-        _fromHostLocation = new SaneTextField();
+        _fromHostLocation = new TabCompletedTextField( _settings );
         _fromHostLocation.setToolTipText( "Full path to the file on the DiFX Host." );
         if ( !_fromHost.isSelected() )
             _fromHostLocation.setEnabled( false );
@@ -756,7 +759,7 @@ public class ExperimentEditor extends JFrame {
         passDirectoryLabel.setBounds( 10, 50, 270, 25 );
         passDirectoryLabel.setHorizontalAlignment( JLabel.RIGHT );
         buttonPanel.add( passDirectoryLabel );
-        _stagingArea = new SaneTextField();
+        _stagingArea = new TabCompletedTextField( _settings );
         _stagingArea.setBounds( 285, 80, 280, 25 );
         _stagingArea.setToolTipText( "Directory into which to copy all input files for processing." );
         _stagingArea.setText( _settings.stagingArea() );
@@ -2799,7 +2802,7 @@ public class ExperimentEditor extends JFrame {
     protected JComboBox _statusList;
     protected SystemSettings _settings;
     protected JLabel _directoryAsLabel;
-    protected SaneTextField _directory;
+    protected TabCompletedTextField _directory;
     protected boolean _keepDirectory;
     protected SaneTextField _vexFileName;
     protected JLabel _vexFileNameAsLabel;
@@ -2816,7 +2819,7 @@ public class ExperimentEditor extends JFrame {
     protected SimpleTextEditor _v2dEditor;
     protected SaneTextField _v2dFileName;
     protected JCheckBox _fromHost;
-    protected SaneTextField _fromHostLocation;
+    protected TabCompletedTextField _fromHostLocation;
     protected JCheckBox _viaHttp;
     protected SaneTextField _viaHttpLocation;
     protected JCheckBox _viaFtp;
@@ -2827,7 +2830,7 @@ public class ExperimentEditor extends JFrame {
     protected JButton _vexBrowseButton;
     protected JButton _goButton;
     protected JCheckBox _v2dFromHost;
-    protected SaneTextField _v2dFromHostLocation;
+    protected TabCompletedTextField _v2dFromHostLocation;
     protected JCheckBox _v2dViaHttp;
     protected SaneTextField _v2dViaHttpLocation;
     protected JCheckBox _v2dViaFtp;
@@ -2847,7 +2850,7 @@ public class ExperimentEditor extends JFrame {
     protected ButtonGrid _scanGrid;
     protected JCheckBox _singleInputFileCheck;
     protected SaneTextField _passDirectory;
-    protected SaneTextField _stagingArea;
+    protected TabCompletedTextField _stagingArea;
     protected JCheckBox _useStagingArea;
     protected boolean _keepPassDirectory;
     protected NodeBrowserScrollPane _antennaPane;

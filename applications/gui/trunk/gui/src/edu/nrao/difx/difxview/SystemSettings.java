@@ -79,6 +79,7 @@ import javax.swing.JFrame;
 
 import edu.nrao.difx.difxdatabase.QueueDBConnection;
 import edu.nrao.difx.difxutilities.GuiServerConnection;
+import edu.nrao.difx.difxutilities.TabCompletedTextField;
 import edu.nrao.difx.difxcontroller.DiFXMessageProcessor;
 
 import java.sql.ResultSet;
@@ -739,7 +740,7 @@ public class SystemSettings extends JFrame {
         workingDirectoryLabel.setBounds( 10, 25, 150, 25 );
         workingDirectoryLabel.setHorizontalAlignment( JLabel.RIGHT );
         workingDirectoryLabel.setToolTipText( "Root directory on the DiFX host for Experiment data." );
-        _workingDirectory = new JFormattedTextField();
+        _workingDirectory = new TabCompletedTextField( this );
         _workingDirectory.setFocusLostBehavior( JFormattedTextField.COMMIT );
         _workingDirectory.setToolTipText( "Root directory on the DiFX host for Experiment data." );
         jobSettingsPanel.add( workingDirectoryLabel );

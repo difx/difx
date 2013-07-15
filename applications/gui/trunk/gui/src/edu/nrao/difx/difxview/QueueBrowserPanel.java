@@ -39,6 +39,8 @@ import edu.nrao.difx.xmllib.difxmessage.DifxMessage;
 
 import edu.nrao.difx.difxdatabase.QueueDBConnection;
 import edu.nrao.difx.difxutilities.DiFXCommand_ls;
+import edu.nrao.difx.difxutilities.TabCompletedTextField;
+
 import java.awt.*;
 
 import java.awt.event.*;
@@ -831,7 +833,8 @@ public class QueueBrowserPanel extends TearOffPanel {
             } );
             helpMenu.add( helpIndexItem );
 
-            _fileFilter = new SaneTextField();
+            //_fileFilter = new SaneTextField();
+            _fileFilter = new TabCompletedTextField( _settings );
             _fileFilter.addActionListener( new ActionListener() {
                 public void actionPerformed( ActionEvent evt ) {
                     updateList();
@@ -1105,11 +1108,8 @@ public class QueueBrowserPanel extends TearOffPanel {
             DiFXCommand_ls ls = null;
             //  Slap *.input on the end of the file filter string if it hasn't been done by the user.
             String searchStr = _fileFilter.getText().trim();
-            if ( !searchStr.endsWith( "*.input" ) ) {
-                if ( searchStr.endsWith( "/") )
-                    searchStr += "*.input";
-                else
-                    searchStr += "/*.input";
+            if ( !searchStr.endsWith( ".input" ) ) {
+                searchStr += "*.input";
             }
             ls = new DiFXCommand_ls( searchStr, _settings );
             //  Set the callback for when the list is complete.  
@@ -1374,7 +1374,8 @@ public class QueueBrowserPanel extends TearOffPanel {
         protected JMenuBar _menuBar;
         protected DiskSearchRules _this;
         protected boolean _allObjectsBuilt;
-        protected SaneTextField _fileFilter;
+        //protected SaneTextField _fileFilter;
+        TabCompletedTextField _fileFilter;
         protected JCheckBox _experimentBasedOnPath;
         protected JCheckBox _experimentNamed;
         protected SaneTextField _experimentName;

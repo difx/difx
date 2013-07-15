@@ -225,7 +225,12 @@ public class StationPanel extends IndexedPanel {
                 fileFilterCallback();
             }
         } );
-        _dataSourcePanel.add( _fileFilter );
+        _fileFilter.addTabListener( new ActionListener() {
+            public void actionPerformed( ActionEvent evt ) {
+                fileFilterCallback();
+            }
+        } );
+        _dataSourcePanel.add( _fileFilter ); 
         _fileList = new NodeBrowserScrollPane();
         _fileList.setBackground( Color.WHITE );
         _dataSourcePanel.add( _fileList );
