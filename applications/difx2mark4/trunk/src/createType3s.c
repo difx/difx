@@ -87,7 +87,7 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
          ant[16],
          buff[5],
          *line,
-         this_pol;
+         ds_pols[64];
 
     FILE *fin;
     FILE *fout;
@@ -99,6 +99,10 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
     struct type_302 t302;
     struct type_303 t303;
     struct type_309 t309;
+
+                                    // function prototypes
+    void fill_ds_pols (DifxInput *, int, char *);
+
                                     // initialize memory
     memset (&t000, 0, sizeof (t000));
     memset (&t300, 0, sizeof (t300));
@@ -136,6 +140,9 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                                     // and at every continue
         if (stns[n].invis == 0)
             continue;
+
+                                    // fill polarization vector for this ant/datastream
+        fill_ds_pols (D, n, ds_pols);
 
         strcpy (outname, node);     // form output file name
         strcat (outname, "/");
@@ -378,7 +385,6 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                                         // skip over non-matching polarizations
                                     if (np != b % npol)
                                         continue;  
-                                    this_pol = D->config[configId].IF[ D->config[configId].freqId2IF[jf]].pol[np];
 
                                     isb = (D->freq[jf].sideband == 'U') ? 1 : -1;
                                     f_rel = isb * (freq - D->freq[jf].freq);
@@ -395,7 +401,7 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                                                 if (pfb[nf].stn[k].freq     == D->freq[jf].freq
                                                  && pfb[nf].stn[k].bw       == D->freq[jf].bw  
                                                  && pfb[nf].stn[k].sideband == D->freq[jf].sideband
-                                                 && pfb[nf].stn[k].pol      == this_pol)
+                                                 && pfb[nf].stn[k].pol      == ds_pols[b])
                                                     {
                                                     strcpy (t309.chan[b].chan_name, pfb[nf].stn[k].chan_id);
                                                     break;      // found freq, do double break
@@ -460,4 +466,31 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
         fclose(fout);
         }
     return 0;
+    }
+
+// find vector of polarization labels for one antenna/datastream
+// rjc 2013.7.15
+
+void fill_ds_pols (DifxInput *D, int ant, char *ds_pols)
+    {
+    int i,
+        j;
+    DifxDatastream *pds;
+                                    // initialize vector to all RCP
+    for (j=0; j<64; j++)
+        ds_pols[j] = 'R';
+
+    for (i=0; i<D->nDatastream; i++)
+        {
+        pds = D->datastream + i;
+        if (pds->antennaId == ant)
+            {
+            for (j=0; j<pds->nRecBand; j++)
+                ds_pols[j] = pds->recBandPolName[j];
+            break;
+            }
+        }
+                                    // detect fall-through of loop, and complain
+    if (i == D->nDatastream)
+        printf ("WARNING!! antenna not found in datastreams, all pols set to R\n");
     }
