@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2011 by Walter Brisken                             *
+ *   Copyright (C) 2008-2013 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -64,4 +64,46 @@ int glob2(const char *label, const char *pattern, int flags, int errfunc(const c
 	}
 
 	return v;
+}
+
+/* look for files that match given filename modulo case.  Put result in
+ * filename that was passed to this function.
+ *
+ * If multiple matches are found, use one at random :( and squawk
+ *
+ * Return: number of files that matched.
+ */
+int globcase(const char *match, char *fileName)
+{
+	int i, v;
+	int n = 0;
+	glob_t globbuf;
+
+	v = glob(match, 0, 0, &globbuf);
+
+	if(globbuf.gl_pathc == 0)
+	{
+		globfree(&globbuf);
+
+		return 0;
+	}
+	for(i = 0; i < globbuf.gl_pathc; ++i)
+	{
+		if(strcasecmp(fileName, globbuf.gl_pathv[i]) == 0)
+		{
+			if(n == 0)
+			{
+				strcpy(fileName, globbuf.gl_pathv[i]);
+			}
+			else if(n == 1)
+			{
+				fprintf(stderr, "\nWarning: multiple filenames matching %s differing only in case were found.\n", fileName);
+			}
+			++n;
+		}
+	}
+
+	globfree(&globbuf);
+
+	return n;
 }

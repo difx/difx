@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2011 by Walter Brisken                                  *
+ *   Copyright (C) 2011-2013 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -33,5 +33,7 @@
 #include <glob.h>
 
 int glob2(const char *label, const char *pattern, int flags, int errfunc(const char *epath, int eerrno), glob_t *pglob);
+
+int globcase(const char *match, char *fileName);
 
 #endif

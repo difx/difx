@@ -909,12 +909,26 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D, struct fits_keywords *p_fi
 			continue;
 		}
 
-		v = snprintf(tsysFile, DIFXIO_FILENAME_LENGTH, "tsys.%s", D->antenna[antId].name);
+		v = snprintf(tsysFile, DIFXIO_FILENAME_LENGTH, "%s%s.%s.tsys", D->job->obsCode, D->job->obsSession, D->antenna[antId].name);
 		if(v >= DIFXIO_FILENAME_LENGTH)
 		{
 			fprintf(stderr, "Developer error: DifxInput2FitsTS: DIFXIO_FILENAME_LENGTH=%d is too small.  Wants to be %d.\n", DIFXIO_FILENAME_LENGTH, v+1);
 
 			exit(0);
+		}
+
+		v = globcase("*.*.tsys", tsysFile);
+		if(v == 0)
+		{
+			/* no matching file */
+
+			continue;
+		}
+		if(v > 1)
+		{
+			/* multiple matching files */
+
+			exit(EXIT_FAILURE);
 		}
 
 		v = processTsysFile(D, D->antenna[antId].name, phaseCentre, tsysFile, out, fitsbuf, nRowBytes, nColumn, columns, alreadyHasTsys, refDay, year);

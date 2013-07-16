@@ -32,6 +32,7 @@
 #include "config.h"
 #include "difx2fits.h"
 #include "other.h"
+#include "util.h"
 
 typedef struct 
 {
@@ -263,12 +264,26 @@ const DifxInput *DifxInput2FitsWR(const DifxInput *D, struct fits_keywords *p_fi
 			continue;
 		}
 
-		v = snprintf(weatherFile, DIFXIO_FILENAME_LENGTH, "weather.%s", D->antenna[antId].name);
+		v = snprintf(weatherFile, DIFXIO_FILENAME_LENGTH, "%s%s.%s.weather", D->job->obsCode, D->job->obsSession, D->antenna[antId].name);
 		if(v >= DIFXIO_FILENAME_LENGTH)
 		{
 			fprintf(stderr, "Developer error: DifxInput2FitsWR: DIFXIO_FILENAME_LENGTH=%d is too small.  Wants to be %d.\n", DIFXIO_FILENAME_LENGTH, v+1);
 
 			exit(0);
+		}
+
+		v = globcase("*.*.weather", weatherFile);
+		if(v == 0)
+		{
+			/* no matching files */
+
+			continue;
+		}
+		else if(v > 1)
+		{
+			/* multiple matching files found */
+
+			exit(EXIT_FAILURE);
 		}
 
 		v = processWeatherFile(D, D->antenna[antId].name, weatherFile, out, fitsbuf, nRowBytes, nColumn, columns, alreadyHasWeather, refDay, year, mjdLast);

@@ -224,15 +224,19 @@ class JobList:
 				difxVersion = 'unknown'
 			else:
 				exit(0)
-		elif difxVersion != self.kv['DiFX']:
-			if override:
-				print 'Overriding version mismatch: %s != %s' % \
-					(difxVersion, self.kv['DiFX'])
-				difxVersion = 'unknown'
-			else:
-				print 'Error: file DiFX version = %s' % self.kv['DiFX']
-				print 'and current DiFX version = %s' % difxVersion
-				exit(0)
+		else:
+			if difxVersion != self.kv['DiFX']:
+				if override:
+					print 'Overriding version mismatch: %s != %s' % \
+						(difxVersion, self.kv['DiFX'])
+					difxVersion = 'unknown'
+				else:
+					print 'Error: file DiFX version = %s' % self.kv['DiFX']
+					print 'and current DiFX version = %s' % difxVersion
+					exit(0)
+			difxLabel = getenv('DIFX_LABEL')
+			if difxLabel != None:
+				if difxLabel != self.kv['']:
 
 		self.kv['DiFX'] = difxVersion
 
