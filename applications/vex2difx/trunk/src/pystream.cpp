@@ -968,11 +968,15 @@ int pystream::writeChannelSet(const VexSetup *setup, int modeNum)
 		*this << "  bbc(" << inputNum << ", " << (tune*1.0e-6) << ", " << (bw*1.0e-6) << ", '" << sb << "', " << nBit << ", " << threadId << ")";
 		if(i < setup->channels.size()-1)
 		{
-			*this << ", \\";
+			*this << ", ";
 		}
 		else
 		{
-			*this << " \\";
+			*this << " ";
+		}
+		if( scriptType != SCRIPT_GBT )
+		{
+			*this << "\\";
 		}
 		if(bw != bw0 || tune != tune0)
 		{
