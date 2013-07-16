@@ -70,7 +70,7 @@ static int parseFlag(char *line, char *antName, float timeRange[2], char *reason
 }
 
 
-static void writeFLrow(struct fitsPrivate *out, char *fitsbuf, int nRowBytes, struct fitsBinTableColumn *columns, int nColumn, const FlagDatum *FL)
+static void writeFLrow(struct fitsPrivate *out, char *fitsbuf, int nRowBytes, const struct fitsBinTableColumn *columns, int nColumn, const FlagDatum *FL)
 {
 	char *p_fitsbuf;
 	int polMask[4];
@@ -117,6 +117,157 @@ static void writeFLrow(struct fitsPrivate *out, char *fitsbuf, int nRowBytes, st
 	fitsWriteBinRow(out, fitsbuf);
 }
 
+int processFlagFile(const DifxInput *D, const char *antennaName, const char *flagFile, struct fitsPrivate *out, char *fitsbuf, int nRowBytes, int nColumn, const struct fitsBinTableColumn *columns, const int *alreadyHasFlags, FlagDatum *FL, int refDay, int year)
+{
+	FILE *in;
+	int nRec = 0;
+	int i;
+	double start, stop;
+#warning "FIXME: only one configId supported here"
+	int configId = 0;
+
+	in = fopen("flag", "r");
+	if(!in)
+	{
+		return 0;
+	}
+
+	start = D->mjdStart - (int)D->mjdStart;
+	stop  = D->mjdStop  - (int)D->mjdStart;
+
+	/* Write flags from file "flag" */
+	for(;;)
+	{
+		const int MaxLineLength=1000;
+		const DifxConfig *dc;
+		char *rv;
+		char antName[DIFXIO_NAME_LENGTH];
+		char line[MaxLineLength+1];
+		int recBand;
+		int v;
+		
+		rv = fgets(line, MaxLineLength, in);
+		if(!rv)
+		{
+			break;
+		}
+			
+		/* ignore possible comment lines */
+		if(line[0] == '#')
+		{
+			continue;
+		}
+		else if(parseFlag(line, antName, FL->timeRange, FL->reason, &recBand))
+		{
+			int antennaId;
+			int freqId;
+
+			if(antennaName && strcasecmp(antennaName, antName) != 0)
+			{
+				/* not a matching antenna */
+
+				continue;
+			}
+			antennaId = DifxInputGetAntennaId(D, antName);
+			if(antennaId < 0)
+			{
+				continue;
+			}
+			if(alreadyHasFlags[antennaId])
+			{
+				continue;
+			}
+
+			if(FL->timeRange[0] > 50000.0)	/* must be MJD */
+			{
+				FL->timeRange[0] -= (int)(D->mjdStart);
+				FL->timeRange[1] -= (int)(D->mjdStart);
+			}
+			else	/* must be day of year */
+			{
+				FL->timeRange[0] -= refDay;
+				FL->timeRange[1] -= refDay;
+				if(FL->timeRange[0] < -300.0)	/* must be new years crossing */
+				{
+					FL->timeRange[0] += DaysThisYear(year);
+				}
+				else if(FL->timeRange[0] > 300.0)/* must be partial project after new year */
+				{
+					FL->timeRange[0] -= DaysLastYear(year);
+				}
+				if(FL->timeRange[1] < -300.0)	/* must be new years crossing */
+				{
+					FL->timeRange[1] += DaysThisYear(year);
+				}
+				else if(FL->timeRange[1] > 300.0)/* must be partial project after new year */
+				{
+					FL->timeRange[1] -= DaysLastYear(year);
+				}
+			}
+			
+			if(strncmp(FL->reason, "recorder", 8) == 0)
+			{
+				/* No need to propagate flags for recorder not recording */
+
+				continue;
+			}
+
+			/* Tune up the flag time range */
+			if(FL->timeRange[0] > stop || FL->timeRange[1] < start)
+			{
+				continue;
+			}
+			if(FL->timeRange[0] < start)
+			{
+				FL->timeRange[0] = start;
+			}
+			if(FL->timeRange[1] > stop)
+			{
+				FL->timeRange[1] = stop;
+			}
+			if(strcmp(FL->reason, "observing system idle") == 0)
+			{
+				/* Observation ended at this site.  Flag remainder of it */
+
+				FL->timeRange[1] = 1.0;
+			}
+			
+			/* Set antenna of flag.  ALL flags are associated with exactly 1 antenna. */
+			FL->baselineId1[0] = antennaId + 1;
+
+			dc = D->config + configId;
+
+			/* convert the recorder channel number into FITS
+			 * useful values: the IF index (bandId) and the
+			 * polarization index (polId).  Both are zero-based
+			 * numbers, with -1 implying "all values"
+			 */
+			v = DifxConfigRecBand2FreqPol(D, configId, antennaId, recBand, &freqId, &FL->polId);
+			if(v < 0)
+			{
+				continue;
+			}
+
+			/* Then cycle through all IFs to see if that IF is flagged or not */
+			for(i = 0; i < D->nIF; ++i)
+			{
+				if(recBand < 0 || isDifxIFInsideDifxFreq(dc->IF + i, D->freq + freqId))
+				{
+					FL->bandMask[i] = 1;
+				}
+				else
+				{
+					FL->bandMask[i] = 0;
+				}
+			}
+			writeFLrow(out, fitsbuf, nRowBytes, columns, nColumn, FL);
+		}
+	}
+	fclose(in);
+
+	return nRec;
+}
+
 const DifxInput *DifxInput2FitsFL(const DifxInput *D, struct fits_keywords *p_fits_keys, struct fitsPrivate *out)
 {
 	char bandFormInt[8];
@@ -141,10 +292,10 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D, struct fits_keywords *p_fi
 	char *fitsbuf;
 	double start, stop;
 	int refDay;
-	int i;
+	int antId, i;
 	int year, month, day;
-	FILE *in;
 	FlagDatum FL;
+	int *alreadyHasFlags;
 
 #warning "FIXME: only one configId supported here"
 	int configId = 0;
@@ -157,13 +308,6 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D, struct fits_keywords *p_fi
 	FL.nBand = p_fits_keys->no_band;	/* same as D->nIF, as set in populateFitsKeywords */
 	sprintf(bandFormInt, "%dJ", FL.nBand);
 	
-	in = fopen("flag", "r");
-	
-	if(!in)
-	{
-		return D;
-	}
-
 	nColumn = NELEMENTS(columns);
 	nRowBytes = FitsBinTableSize(columns, nColumn);
 
@@ -171,9 +315,18 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D, struct fits_keywords *p_fi
 	fitsbuf = (char *)calloc(nRowBytes, 1);
 	if(fitsbuf == 0)
 	{
-		fclose(in);
-		
+		fprintf(stderr, "Error: DifxInput2FitsFL: Cannot allocate %d bytes for fitsbuf\n", nRowBytes);
+
 		return 0;
+	}
+
+	alreadyHasFlags = (int *)calloc(D->nAntenna, sizeof(int));
+	if(alreadyHasFlags == 0)
+	{
+		free(fitsbuf);
+		fprintf(stderr, "Error: DifxInput2FitsFL: Cannot allocate %d integers for alreadyHasFlags\n", D->nAntenna);
+
+		exit(EXIT_FAILURE);
 	}
 
 	fitsWriteBinTable(out, nColumn, columns, nRowBytes, "FLAG");
@@ -195,126 +348,38 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D, struct fits_keywords *p_fi
 	FL.chanRange1[0] = 0;
 	FL.chanRange1[1] = 0;
 	FL.baselineId1[1] = 0;
-	
-	/* Write flags from file "flag" */
-	for(;;)
+
+	/* First: look for individual station flag files */
+	for(antId = 0; antId < D->nAntenna; ++antId)
 	{
-		const int MaxLineLength=1000;
-		const DifxConfig *dc;
-		char *rv;
-		char antName[DIFXIO_NAME_LENGTH];
-		char line[MaxLineLength+1];
-		int recBand;
+		char flagFile[DIFXIO_FILENAME_LENGTH];
 		int v;
-		
-		rv = fgets(line, MaxLineLength, in);
-		if(!rv)
-		{
-			break;
-		}
-			
-		/* ignore possible comment lines */
-		if(line[0] == '#')
+	
+		if(alreadyHasFlags[antId] > 0)
 		{
 			continue;
 		}
-		else if(parseFlag(line, antName, FL.timeRange, FL.reason, &recBand))
+
+		v = snprintf(flagFile, DIFXIO_FILENAME_LENGTH, "flag.%s", D->antenna[antId].name);
+		if(v >= DIFXIO_FILENAME_LENGTH)
 		{
-			int antennaId;
-			int freqId;
+			fprintf(stderr, "Developer error: DifxInput2FitsFL: DIFXIO_FILENAME_LENGTH=%d is too small.  Wants to be %d.\n", DIFXIO_FILENAME_LENGTH, v+1);
 
-			if(FL.timeRange[0] > 50000.0)	/* must be MJD */
-			{
-				FL.timeRange[0] -= (int)(D->mjdStart);
-				FL.timeRange[1] -= (int)(D->mjdStart);
-			}
-			else	/* must be day of year */
-			{
-				FL.timeRange[0] -= refDay;
-				FL.timeRange[1] -= refDay;
-				if(FL.timeRange[0] < -300.0)	/* must be new years crossing */
-				{
-					FL.timeRange[0] += DaysThisYear(year);
-				}
-				else if(FL.timeRange[0] > 300.0)/* must be partial project after new year */
-				{
-					FL.timeRange[0] -= DaysLastYear(year);
-				}
-				if(FL.timeRange[1] < -300.0)	/* must be new years crossing */
-				{
-					FL.timeRange[1] += DaysThisYear(year);
-				}
-				else if(FL.timeRange[1] > 300.0)/* must be partial project after new year */
-				{
-					FL.timeRange[1] -= DaysLastYear(year);
-				}
-			}
-			
-			if(strncmp(FL.reason, "recorder", 8) == 0)
-			{
-				/* No need to propagate flags for recorder not recording */
+			exit(0);
+		}
 
-				continue;
-			}
-
-			/* Tune up the flag time range */
-			if(FL.timeRange[0] > stop || FL.timeRange[1] < start)
-			{
-				continue;
-			}
-			if(FL.timeRange[0] < start)
-			{
-				FL.timeRange[0] = start;
-			}
-			if(FL.timeRange[1] > stop)
-			{
-				FL.timeRange[1] = stop;
-			}
-			if(strcmp(FL.reason, "observing system idle") == 0)
-			{
-				/* Observation ended at this site.  Flag remainder of it */
-
-				FL.timeRange[1] = 1.0;
-			}
-			
-			/* Set antenna of flag.  ALL flags are associated with exactly 1 antenna. */
-			antennaId = DifxInputGetAntennaId(D, antName);
-			if(antennaId < 0)
-			{
-				continue;
-			}
-			FL.baselineId1[0] = antennaId + 1;
-
-			dc = D->config + configId;
-
-			/* convert the recorder channel number into FITS
-			 * useful values: the IF index (bandId) and the
-			 * polarization index (polId).  Both are zero-based
-			 * numbers, with -1 implying "all values"
-			 */
-			v = DifxConfigRecBand2FreqPol(D, configId, antennaId, recBand, &freqId, &FL.polId);
-			if(v < 0)
-			{
-				continue;
-			}
-
-			/* Then cycle through all IFs to see if that IF is flagged or not */
-			for(i = 0; i < D->nIF; ++i)
-			{
-				if(recBand < 0 || isDifxIFInsideDifxFreq(dc->IF + i, D->freq + freqId))
-				{
-					FL.bandMask[i] = 1;
-				}
-				else
-				{
-					FL.bandMask[i] = 0;
-				}
-			}
-			writeFLrow(out, fitsbuf, nRowBytes, columns, nColumn, &FL);
+		v = processFlagFile(D, D->antenna[antId].name, flagFile, out, fitsbuf, nRowBytes, nColumn, columns, alreadyHasFlags, &FL, refDay, year);
+		
+		if(v > 0)
+		{
+			++alreadyHasFlags[antId];
 		}
 	}
 
-	/* Make flags for bandId/polIds that were not observed */
+	/* Second: look for a multi-station flag file.  Only populate data for stations not already populated. */
+	processFlagFile(D, 0, "flag", out, fitsbuf, nRowBytes, nColumn, columns, alreadyHasFlags, &FL, refDay, year);
+
+	/* Finally: make flags for bandId/polIds that were not observed */
 	FL.timeRange[0] = start;
 	FL.timeRange[1] = stop;
 	strcpy(FL.reason, "This Band/Pol not observed");
@@ -363,8 +428,7 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D, struct fits_keywords *p_fi
 		}
 	}
 
-	/* close the file, free memory, and return */
-	fclose(in);
+	/* free memory, and return */
 	free(fitsbuf);
 
 	return D;

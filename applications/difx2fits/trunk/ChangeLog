@@ -1,7 +1,7 @@
 Version 3.3.0
 * Post DiFX-2.2
-* Improved clarity in generation of Tsys and Weather tables: prioritized sources
-  - still to be done for Flag and Pcal tables
+* Improved clarity in generation of Flag, Tsys and Weather tables: prioritized sources of data
+  - still to be done for Pcal table
 
 Version 3.2.0
 * Fix for correlation of mismatched sidebands.  Requires contemporaneous
