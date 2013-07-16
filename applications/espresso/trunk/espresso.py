@@ -32,9 +32,8 @@ def run_calcif2(jobname, calcfilename):
     print command
     subprocess.check_call(command, stdout=sys.stdout, shell=True)
 
-def backup_oldrun(jobname, outdir):
-    # back up previous correlator job to subdirectory named with current time
-    backupdir = outdir + time.strftime('%Y-%m-%d-%H-%M-%S') + os.sep
+def backup_oldrun(jobname, outdir, backupdir):
+    # back up previous correlator job to subdirectory 
     if os.path.exists(outdir):
         print "\nwill move old jobs to", backupdir, '\n'
         dirlist = os.listdir(outdir)
@@ -132,9 +131,12 @@ def fill_operator_log(logfile):
 
 def plot_speedup(logfiles, outdir, expname):
     # plot the speedup factor from the difx log file
-    speedup_png = outdir + expname + '_speedup.png'
+    speedup_plot = outdir + expname + '_speedup.pdf'
     speedup_files = ' '.join(logfiles)
-    command = 'cd ' + outdir + '; plot_logtime.py -l -o ' + speedup_png + ' ' + speedup_files
+    plot_opt = ' '
+    if len(logfiles) < 10:
+        plot_opt = ' -l '
+    command = 'cd ' + outdir + '; plot_logtime.py ' + plot_opt + ' -o ' + speedup_plot + ' ' + speedup_files
     speedup = subprocess.Popen( command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
     return speedup
 
@@ -151,6 +153,7 @@ usage = '''%prog <jobname>
     start the correlator!
     quit errormon2 and copy the log file to the output directory
     accept an operator comment for storing with the output
+    send an email to the operator (if authorised)
     
 <jobname> may be a space separated list.
 <jobname> may also include a python regular expression after the '_' in the job
@@ -288,27 +291,33 @@ for jobname in sorted(corrjoblist.keys()):
     make_new_runfiles(jobname, expname)
 
 
+# get the paths of our input and output directories
+indir = os.getcwd() + os.sep
+try:
+    outdirbase = os.environ.get('CORR_DATA') + os.sep
+except:
+    raise Exception('You must set $CORR_DATA to an output data directory!')
+
+outdir = outdirbase + expname + os.sep
+if options.clockjob:
+    outdir += 'clocks/'
+if options.testjob:
+    outdir += 'test/'
+
+# get a unique name for a backup directory based on the current time.
+backupdir = outdir + time.strftime('%Y-%m-%d-%H-%M-%S') + os.sep
+
+if not os.path.exists(outdir):
+    print "making the output directory", outdir
+    os.makedirs(outdir)
+
+
+# do the prep work for each job.
 for jobname in sorted(corrjoblist.keys()):
     # figure out filenames, directories, etc. using normal difx/cuppa conventions
-    indir = os.getcwd() + os.sep
-    try:
-        outdirbase = os.environ.get('CORR_DATA') + os.sep
-    except:
-        raise Exception('You must set $CORR_DATA to an output data directory!')
-
-
-    outdir = outdirbase + expname + os.sep
-    if options.clockjob:
-        outdir += 'clocks/'
-    if options.testjob:
-        outdir += 'test/'
 
     inputfilename = jobname + '.input'
     calcfilename = jobname + '.calc' 
-
-    if not os.path.exists(outdir):
-        print "making the output directory", outdir
-        os.makedirs(outdir)
 
     # fix the output filename to point at the cuppa data disk
     if not options.novex:
@@ -320,7 +329,7 @@ for jobname in sorted(corrjoblist.keys()):
         run_calcif2(jobname, calcfilename)
 
     # copy any old jobs to a backupdir
-    backup_oldrun(jobname, outdir)
+    backup_oldrun(jobname, outdir, backupdir)
 
     # copy the model files to the output directory
     print "copying the model files", jobname + '.*', "to", outdir, "\n"
@@ -347,6 +356,7 @@ if not options.nopause:
     raw_input('Press return to initiate the correlator job or ^C to quit ')
 
 logfiles = []
+# run each job
 try:
     for jobname in sorted(corrjoblist.keys()):
         # start the correlator log
@@ -382,7 +392,7 @@ finally:
     if get_email:
         try:
             print "\nEmailing", emailserver.user
-            message = str(corrjoblist.keys()) + " finished"
+            message = str(sorted(corrjoblist.keys())) + " finished"
             emailserver.connect()
             emailserver.sendmail(message)
             emailserver.disconnect()
