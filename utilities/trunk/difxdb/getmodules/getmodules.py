@@ -72,10 +72,17 @@ if __name__ == "__main__":
 		raise Exception("Unknown experiment")
 		sys.exit
 
+	sum = 0
+	count = 0
 	if (experiment is not None):
                 sortedModules = sorted(experiment.modules, key= attrgetter('stationCode'))
 		for module in sortedModules:
-			print module.vsn, module.slot.location, module.stationCode
+			print module.vsn, module.slot.location, module.stationCode, module.capacity
+			count += 1
+			sum += module.capacity
+
+		print "--------------------------------------------"
+		print "Total capacity: ", sum, "GB", " on", count , "modules"
         
     
     except Exception as e:
