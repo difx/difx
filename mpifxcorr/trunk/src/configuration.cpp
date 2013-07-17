@@ -1964,7 +1964,7 @@ bool Configuration::populateResultLengths()
           }
         }
         //this will also be just floats, not complex, so need to divide by 2
-        toadd /= 2;
+        toadd = (toadd + 1) / 2;    // ensure odd # gets whole complex space
         if(toadd == 0)
           toadd = 1;
         coreresultindex += toadd;
