@@ -1595,10 +1595,13 @@ int pystream::writeLoifTable(const VexData *V)
 					int len = strlen(comment);
 					int off = 1;
 					int field_count = 0;
-					// parse BACKWARDS from end of string for three space-separated tokens
-					// comment format: * [other comments] [{receiver} {FirstLO} {BROAD|NARROW|NA}]
+					int MAX_FIELDS = 5;
+					int synthFreq = 0;
+					// parse BACKWARDS from end of string for space-separated tokens
+					// comment format: * [other comments] [{FirstSynth} {SecondSynth} {receiver} {FirstLO} {BROAD|NARROW|NA}]
 					// trailing spaces are permitted
-					while(field_count <= 2 && off < len)
+					// printf("process comment\n");
+					while(field_count <= (MAX_FIELDS-1) && off < len)
 					{
 						// remove trailing WS
 						while(comment[len - off] == ' ' || comment[len - off] == '\t')
@@ -1619,10 +1622,12 @@ int pystream::writeLoifTable(const VexData *V)
 						if(field_count == 0)
 						{
 							//check format of comment
-							if(strcmp("BROAD", &(comment[len - off + 1])) != 0 && strcmp("NARROW", &(comment[len - off + 1])) != 0 && strcmp("NA", &(comment[len - off + 1])) != 0)
+							if(strcmp("BROAD", &(comment[len - off + 1])) != 0 
+								&& strcmp("NARROW", &(comment[len - off + 1])) != 0 
+								&& strcmp("NA", &(comment[len - off + 1])) != 0)
 							{
 								// comment doesn't fit our "special format", don't process
-								field_count = 3;
+								field_count = MAX_FIELDS;
 								continue;
 							}
 						}
@@ -1642,6 +1647,22 @@ int pystream::writeLoifTable(const VexData *V)
 							// receiver
 							case 2:
 								*this << ", '" << &(comment[len - off + 1]) << "'";
+								++field_count;
+								break;
+							// firstSynth
+							case 3:
+								if( isdigit(comment[len - off + 1]) )
+									synthFreq = atoi(&comment[len - off + 1]);
+								else
+									synthFreq = 0;
+								++field_count;
+								break;
+							// secondSynth
+							case 4:
+								if( isdigit(comment[len - off + 1]) )
+									*this << ", " << atoi(&comment[len - off + 1]) << ", " << synthFreq;
+								else
+									*this << ", 0, " << synthFreq;
 								++field_count;
 								break;
 						}
@@ -1833,6 +1854,7 @@ int pystream::writeDDCLoifTable(const VexData *V)
 */
 			string ifname;
 			bool ifFound;
+			int MAX_FIELDS = 5;
 			for(int DBEloop = 0; DBEloop < (need2DBEbyMode[modeNum]?2:1); DBEloop++) {
 				if( need2DBEbyMode[modeNum] ) {
 					strcpy( dbeAppend, (DBEloop==0?"a":"b"));
@@ -1872,6 +1894,7 @@ int pystream::writeDDCLoifTable(const VexData *V)
 						const int MaxCommentLength = 256;
 						char comment[MaxCommentLength] = {0};
 						double firstTune;
+						int synthFreq = 0;
 						firstTune = fabs(setup->firstTuningForIF(i.name) - i.ifSSLO);
 
 						//*this << "# first tuning = " << (firstTune * 1.0e-6) << " MHz" << endl;
@@ -1892,7 +1915,7 @@ int pystream::writeDDCLoifTable(const VexData *V)
 							// parse BACKWARDS from end of string for three space-separated tokens
 							// comment format: * [other comments] [{receiver} {FirstLO} {BROAD|NARROW|NA}]
 							// trailing spaces are permitted
-							while(field_count <= 2 && off < len)
+							while(field_count <= (MAX_FIELDS-1) && off < len)
 							{
 								// remove trailing WS
 								while(comment[len - off] == ' ' || comment[len - off] == '\t')
@@ -1918,7 +1941,7 @@ int pystream::writeDDCLoifTable(const VexData *V)
 										&& strcmp("NA", &(comment[len - off + 1])) != 0)
 									{
 										// comment doesn't fit our "special format", don't process
-										field_count = 3;
+										field_count = MAX_FIELDS;
 										continue;
 									}
 								}
@@ -1938,6 +1961,22 @@ int pystream::writeDDCLoifTable(const VexData *V)
 									// receiver
 									case 2:
 										*this << ", '" << &(comment[len - off + 1]) << "'";
+										++field_count;
+										break;
+									// firstSynth
+									case 3:
+										if( isdigit(comment[len - off + 1]) )
+											synthFreq = atoi(&comment[len - off + 1]);
+										else
+											synthFreq = 0;
+										++field_count;
+										break;
+									// secondSynth
+									case 4:
+										if( isdigit(comment[len - off + 1]) )
+											*this << ", " << atoi(&comment[len - off + 1]) << ", " << synthFreq;
+										else
+											*this << ", 0, " << synthFreq;
 										++field_count;
 										break;
 								}
