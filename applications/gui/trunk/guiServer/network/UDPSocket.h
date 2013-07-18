@@ -35,6 +35,7 @@
 #include <sys/ioctl.h>
 #include <arpa/inet.h>
 #include <network/GenericSocket.h>
+#include <difxmessage.h>
 
 namespace network {
 
@@ -121,6 +122,9 @@ namespace network {
                     _fd = -1;
                     return;
                 }
+                int recBufSize = 512000;
+                setsockopt(_fd, SOL_SOCKET, SO_RCVBUF, &recBufSize, sizeof(recBufSize));
+
             }
 
             //  only for MULTICAST
@@ -185,17 +189,17 @@ namespace network {
             fd_set rfds;
             struct timeval tv;
 
-            do  {
+        //    do  {
                 //  Wait until we get some data as long as the socket is good.  The timeout
                 //  on the select is half the length of the pause in "closeFd()" (which makes
                 //  _fd = -1) so we should escape a call here without a problem.
                 while ( _fd > -1 ) {
             	    FD_ZERO( &rfds );
                     FD_SET( _fd, &rfds );
-                    tv.tv_sec = 0;
-                    tv.tv_usec = 100000;
-                    int rtn = select( _fd + 1, &rfds, NULL, NULL, &tv );
-                    if ( rtn > 0 ) {
+                    tv.tv_sec = 1;
+                    tv.tv_usec = 1000;
+                    int rtn = select( _fd + 1, &rfds, NULL, NULL, NULL );//&tv );
+                    if ( rtn > 0 && FD_ISSET(_fd, &rfds) ) {
                         //  Socket has some data to read.
                         charcount = recvfrom( _fd, message, messagelength, 0,
                                               (sockaddr *)&fromaddr, (socklen_t *)&fromaddrlength );
@@ -219,7 +223,7 @@ namespace network {
                 if ( _fd < 0 )
                     charcount = 0;
 
-            } while ( _ignoreOwn && (fromaddr.sin_addr.s_addr == hostaddr.sin_addr.s_addr) );
+      //      } while ( _ignoreOwn && (fromaddr.sin_addr.s_addr == hostaddr.sin_addr.s_addr) );
 
             _ipValid = true;
             message[charcount] = 0;

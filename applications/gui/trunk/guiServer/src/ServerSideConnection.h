@@ -112,9 +112,9 @@ namespace guiServer {
         //---------------------------------------------------------------------
         void difxMonitor() {
             char hostName[512];
+            char message[MAX_MESSAGE_LENGTH + 1];
             //char hostIP[512];
             while ( _monitorSocket != NULL && _monitorSocket->fd() != -1 ) {
-                char message[MAX_MESSAGE_LENGTH + 1];
                 int ret = _monitorSocket->reader( message, MAX_MESSAGE_LENGTH );
                 if ( ret == -1 ) {
                     fprintf( stderr, "closing monitor socket due to receive error\n" );
@@ -155,7 +155,7 @@ namespace guiServer {
                             sendPacket( RELAY_PACKET, message, strlen( message ) );
                     }
                 }
-                sched_yield();
+                //sched_yield();
             }
         }
 
