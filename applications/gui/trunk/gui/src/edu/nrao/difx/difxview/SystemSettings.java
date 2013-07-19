@@ -425,6 +425,8 @@ public class SystemSettings extends JFrame {
                 _difxSetupPath.setText( _difxBase.getText() + "/" + (String)_difxVersion.getSelectedItem() + "/setup_difx" );
                 guiServerConnection().sendPacket( guiServerConnection().DIFX_SETUP_PATH, 
                         _difxSetupPath.getText().length(), _difxSetupPath.getText().getBytes() );
+                guiServerConnection().sendPacket( guiServerConnection().DIFX_RUN_LABEL,
+                        ((String)_difxVersion.getSelectedItem()).length(), ((String)_difxVersion.getSelectedItem()).getBytes() );
             }
         });
         _difxVersion.addActionListener( new ActionListener() {
@@ -433,6 +435,8 @@ public class SystemSettings extends JFrame {
                 _difxSetupPath.setText( _difxBase.getText() + "/" + (String)_difxVersion.getSelectedItem() + "/setup_difx" );
                 guiServerConnection().sendPacket( guiServerConnection().DIFX_SETUP_PATH, 
                         _difxSetupPath.getText().length(), _difxSetupPath.getText().getBytes() );
+                guiServerConnection().sendPacket( guiServerConnection().DIFX_RUN_LABEL,
+                        ((String)_difxVersion.getSelectedItem()).length(), ((String)_difxVersion.getSelectedItem()).getBytes() );
             }
         });
         difxControlPanel.add( _difxVersion );
