@@ -11,8 +11,8 @@ from time import asctime
 from glob import glob
 
 program = 'difxbuild'
-version = '0.28'
-verdate = '20130623'
+version = '0.29'
+verdate = '20130719'
 author = 'Walter Brisken <wbrisken@nrao.edu>'
 
 difxbuildUrl = 'http://www.aoc.nrao.edu/~wbrisken/difxbuild'
@@ -1141,7 +1141,17 @@ def bootstrap(comps, params, args, verbose, pretend):
 		out.write('mpifxcorr $@\n')
 		out.close()
 		execute('chmod a+x %s' % runscript, verbose, pretend)
+
+		genericscript = '%s/bin/rungeneric.%s' % (config['difxbase'], label)
 		
+		out = open(genericscript, 'w')
+
+		out.write('#!/bin/bash\n\n')
+		out.write('. %s\n' % setupFile)
+		out.write('$@\n')
+		out.close()
+		execute('chmod a+x %s' % genericscript, verbose, pretend)
+
 		out = open(setupFile, 'w')
 		
 		out.write('#!/bin/bash\n\n')
