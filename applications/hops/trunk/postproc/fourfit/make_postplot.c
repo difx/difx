@@ -115,7 +115,7 @@ struct type_221 **t221)
     int i, line, j, maxj, k, dist, plotchans, pcref, pcrem, ref, started, end_at;
     int start_plot, limit_plot;
     char *rootname, *temp;
-    char buf[256], buf2[256], psbuf[256], device[256], output_filename[256];
+    char buf[2560], psbuf[2560], device[256], output_filename[256];
     char pol[3],input_filename[256], polstr[13];
     float tempfl,mb_width;
     double phase, ampl, drate, mbd, sbd;
