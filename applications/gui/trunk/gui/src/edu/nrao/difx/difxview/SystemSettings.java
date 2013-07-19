@@ -732,7 +732,7 @@ public class SystemSettings extends JFrame {
         databasePanel.add( _databaseMessages );
          
         IndexedPanel jobSettingsPanel = new IndexedPanel( "Job Settings" );
-        jobSettingsPanel.openHeight( 115 );
+        jobSettingsPanel.openHeight( 235 );
         jobSettingsPanel.closedHeight( 20 );
         jobSettingsPanel.labelWidth( 300 );
         _scrollPane.addNode( jobSettingsPanel );
@@ -764,6 +764,94 @@ public class SystemSettings extends JFrame {
         headNodeLabel.setBounds( 10, 85, 150, 25 );
         headNodeLabel.setHorizontalAlignment( JLabel.RIGHT );
         jobSettingsPanel.add( headNodeLabel );
+        JLabel defaultToLabel = new JLabel( "Default Run To Use:" );
+        defaultToLabel.setBounds( 10, 115, 150, 25 );
+        defaultToLabel.setHorizontalAlignment( JLabel.RIGHT );
+        jobSettingsPanel.add( defaultToLabel );
+        _nodesPer = new NumberBox();
+        _nodesPer.setBounds( 165, 115, 50, 25 );
+        _nodesPer.minimum( 0 );
+        _nodesPer.precision( 0 );
+        jobSettingsPanel.add( _nodesPer );
+        JLabel nodesLabel = new JLabel( "Nodes" );
+        nodesLabel.setBounds( 220, 115, 50, 25 );
+        jobSettingsPanel.add( nodesLabel );
+        JLabel withLabel = new JLabel( "With:" );
+        withLabel.setBounds( 270, 115, 50, 25 );
+        withLabel.setHorizontalAlignment( JLabel.RIGHT );
+        jobSettingsPanel.add( withLabel );
+        _allThreadsCheck = new JCheckBox( "All Threads" );
+        _allThreadsCheck.setBounds( 325, 115, 100, 25 );
+        _allThreadsCheck.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                _allThreadsCheck.setSelected( true );
+                _threadsPerCheck.setSelected( false );
+                _threadsPerNode.setEnabled( false );
+            }
+        } );
+        jobSettingsPanel.add( _allThreadsCheck );
+        _threadsPerNode = new NumberBox();
+        _threadsPerNode.setBounds( 350, 145, 50, 25 );
+        _threadsPerNode.minimum( 1 );
+        _threadsPerNode.precision( 0 );
+        jobSettingsPanel.add( _threadsPerNode );
+        _threadsPerCheck = new JCheckBox( "" );
+        _threadsPerCheck.setBounds( 325, 145, 25, 25 );
+        _threadsPerCheck.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                _allThreadsCheck.setSelected( false );
+                _threadsPerCheck.setSelected( true );
+                _threadsPerNode.setEnabled( true );
+            }
+        } );
+        jobSettingsPanel.add( _threadsPerCheck );
+        JLabel threadsPerNodeLabel = new JLabel( "Threads/Node" );
+        threadsPerNodeLabel.setBounds( 405, 145, 100, 25 );
+        jobSettingsPanel.add( threadsPerNodeLabel );
+        JLabel forEachLabel = new JLabel( "For Each:" );
+        forEachLabel.setHorizontalAlignment( JLabel.RIGHT );
+        forEachLabel.setBounds( 490, 115, 75, 25 );
+        jobSettingsPanel.add( forEachLabel );
+        _baselineCheck = new JCheckBox( "Baseline" );
+        _baselineCheck.setBounds( 575, 115, 125, 25 );
+        _baselineCheck.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                _jobCheck.setSelected( false );
+                _baselineCheck.setSelected( true );
+            }
+        } );
+        jobSettingsPanel.add( _baselineCheck );
+        _jobCheck = new JCheckBox( "Job" );
+        _jobCheck.setBounds( 575, 145, 125, 25 );
+        _jobCheck.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                _jobCheck.setSelected( true );
+                _baselineCheck.setSelected( false );
+            }
+        } );
+        jobSettingsPanel.add( _jobCheck );
+        JLabel runMultipleLabel = new JLabel( "Run Multiple Jobs:" );
+        runMultipleLabel.setHorizontalAlignment( JLabel.RIGHT );
+        runMultipleLabel.setBounds( 10, 175, 150, 25 );
+        jobSettingsPanel.add( runMultipleLabel );
+        _sequentialCheck = new JCheckBox( "Sequentially" );
+        _sequentialCheck.setBounds( 165, 175, 125, 25 );
+        jobSettingsPanel.add( _sequentialCheck );
+        _sequentialCheck.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                _sequentialCheck.setSelected( true );
+                _simultaneousCheck.setSelected( false );
+            }
+        } );
+        _simultaneousCheck = new JCheckBox( "Simultaneously" );
+        _simultaneousCheck.setBounds( 165, 205, 125, 25 );
+        _simultaneousCheck.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                _sequentialCheck.setSelected( false );
+                _simultaneousCheck.setSelected( true );
+            }
+        } );
+        jobSettingsPanel.add( _simultaneousCheck );
         
         IndexedPanel eopSettingsPanel = new IndexedPanel( "EOP Settings" );
         //  These editors may or may not be displayed, but they are used to hold
@@ -1534,6 +1622,14 @@ public class SystemSettings extends JFrame {
         _stagingArea.setText( "/queue" );
         _useStagingArea.setSelected( false );
         _headNode.setText( _difxControlAddress.getText() );
+        _nodesPer.value( 2 );
+        _allThreadsCheck.setSelected( false );
+        _threadsPerNode.value( 8 );
+        _threadsPerCheck.setSelected( true );
+        _baselineCheck.setSelected( true );
+        _jobCheck.setSelected( false );
+        _sequentialCheck.setSelected( false );
+        _simultaneousCheck.setSelected( true );
         _queueBrowserSettings.showCompleted = true;
         _queueBrowserSettings.showIncomplete = true;
         _queueBrowserSettings.showSelected = true;
@@ -4272,4 +4368,13 @@ public class SystemSettings extends JFrame {
     
     protected String _difxVersionPreferred;
         
+    protected NumberBox _nodesPer;
+    protected JCheckBox _allThreadsCheck;
+    protected NumberBox _threadsPerNode;
+    protected JCheckBox _threadsPerCheck;
+    protected JCheckBox _baselineCheck;
+    protected JCheckBox _jobCheck;
+    protected JCheckBox _sequentialCheck;
+    protected JCheckBox _simultaneousCheck;
+
 }

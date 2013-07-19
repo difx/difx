@@ -11,6 +11,7 @@ import mil.navy.usno.widgetlib.TearOffPanel;
 import mil.navy.usno.widgetlib.ActivityMonitorLight;
 import mil.navy.usno.widgetlib.Spinner;
 import mil.navy.usno.widgetlib.SaneTextField;
+import mil.navy.usno.widgetlib.ZMenuItem;
 
 import javax.swing.JLabel;
 import javax.swing.JButton;
@@ -124,14 +125,17 @@ public class QueueBrowserPanel extends TearOffPanel {
         });
         _selectMenu.add( unselectAllItem );
         _selectMenu.add( new JSeparator() );
-        JMenuItem runSelectedItem = new JMenuItem( "Run Selected" );
+        ZMenuItem runSelectedItem = new ZMenuItem( "Run Selected" );
         runSelectedItem.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
                 runSelected();
             }
         });
         _selectMenu.add( runSelectedItem );
-        runSelectedItem.setEnabled( false );
+        runSelectedItem.toolTip( "Run the selected jobs using either job-specific user settings\n"
+                + "or the current automated run parameters.\n"
+                + "Automated run parameters can be viewed and changed in the Settings Window.", null );
+        //runSelectedItem.setEnabled( false );
         JMenuItem deleteSelectedItem = new JMenuItem( "Delete Selected" );
         deleteSelectedItem.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {

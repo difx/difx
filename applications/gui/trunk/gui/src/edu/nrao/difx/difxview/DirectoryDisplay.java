@@ -1,6 +1,6 @@
 /*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
+ * This window shows the directory listing of a Mark 5 module in table format and allows
+ * copying of files from the module.
  */
 package edu.nrao.difx.difxview;
 
@@ -310,11 +310,12 @@ public class DirectoryDisplay extends JFrame {
         command.identifier( "gui" );
         int monitorPort = 0;
 
-        // Create machines definition command
+        // Specifics of the get directory command.
         DifxGetDirectory cmd = command.factory().createDifxGetDirectory();
         cmd.setMark5( hostName() );
         cmd.setVsn( _vsn );
         cmd.setDifxVersion( _settings.difxVersion() );
+        cmd.setGenerateNew( 0 );
 
         // If we are using the TCP connection, set the address and port for diagnostic
         // reporting.
@@ -369,6 +370,10 @@ public class DirectoryDisplay extends JFrame {
         protected final int FILE_NOT_FOUND                      = 308;
         protected final int GETDIRECTORY_FILESTART              = 309;
         protected final int GETDIRECTORY_FILEDATA               = 310;
+        protected final int GENERATE_DIRECTORY_STARTED          = 311;
+        protected final int GENERATE_DIRECTORY_INFO             = 312;
+        protected final int GENERATE_DIRECTORY_COMPLETED        = 313;
+        protected final int GENERATE_DIRECTORY_ERRORS           = 314;
         
         @Override
         public void run() {
@@ -434,6 +439,22 @@ public class DirectoryDisplay extends JFrame {
                             if ( !_lockActivityLabel )
                                 _activityLabel.setText( "No MARK5_DIR_PATH environment variable on " + hostName() );
                         }
+                        else if ( packetType == GENERATE_DIRECTORY_STARTED ) {
+                            if ( !_lockActivityLabel )
+                                _activityLabel.setText( "Generating directory...this may take a while" );
+                        }
+                        else if ( packetType == GENERATE_DIRECTORY_INFO ) {
+                            if ( !_lockActivityLabel )
+                                _activityLabel.setText( new String( data ) );
+                        }
+                        else if ( packetType == GENERATE_DIRECTORY_COMPLETED ) {
+                            if ( !_lockActivityLabel )
+                                _activityLabel.setText( "Generating directory complete!" );
+                        }
+                        else if ( packetType == GENERATE_DIRECTORY_ERRORS ) {
+                            if ( !_lockActivityLabel )
+                                _activityLabel.setText( "Generating directory complete with errors." );
+                        }
                         else if ( packetType == GETDIRECTORY_DATE ) {
                             _creationDate.setText( new String( data ) );
                         }
@@ -495,6 +516,13 @@ public class DirectoryDisplay extends JFrame {
                 e.printStackTrace();
             }
             _settings.releaseTransferPort( _port );
+            _cancelActivated = false;
+            _lockActivityLabel = false;
+            _cancelButton.setVisible( false );
+            _refreshButton.setEnabled( true );
+            _generateDirectoryButton.setEnabled( true );
+            _createFileButton.setEnabled( true );
+            _runningGetDirectory = false;
         }
         
         protected int _port;
@@ -509,8 +537,61 @@ public class DirectoryDisplay extends JFrame {
         int n = JOptionPane.showOptionDialog( this, "Generating directory for " + _vsn +".\nThis can take a long time - do you wish to continue?",
                 "Generate Directory for " + _vsn, JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE, null, null, null );
         if ( n == 0 ) {
-            GenerateDirectoryThread generateDirectoryThread = new GenerateDirectoryThread();
-            generateDirectoryThread.start();
+//            GenerateDirectoryThread generateDirectoryThread = new GenerateDirectoryThread();
+//            generateDirectoryThread.start();
+            if ( !_lockActivityLabel ) {
+                _runningGetDirectory = true;
+                _activitySpinner.setVisible( true );
+                _activitySpinner.ok();
+                _activityLabel.setText( "Generating a new directory for " + _vsn + " on " + hostName() );
+                //  Lock other buttons and make the "cancel" button visible.
+                _cancelActivated = false;
+                _lockActivityLabel = true;
+                _cancelButton.setVisible( true );
+                _refreshButton.setEnabled( false );
+                _generateDirectoryButton.setEnabled( false );
+                _createFileButton.setEnabled( false );
+            }
+
+            //  Construct a Get Directory command.
+            DiFXCommand command = new DiFXCommand( _settings );
+            command.header().setType( "DifxGetDirectory" );
+            command.mpiProcessId( "-1" );
+            command.identifier( "gui" );
+            int monitorPort = 0;
+
+            // Specifics of the get directory command.
+            DifxGetDirectory cmd = command.factory().createDifxGetDirectory();
+            cmd.setMark5( hostName() );
+            cmd.setVsn( _vsn );
+            cmd.setDifxVersion( _settings.difxVersion() );
+            cmd.setGenerateNew( 1 );
+
+            // If we are using the TCP connection, set the address and port for diagnostic
+            // reporting.
+            if ( _settings.sendCommandsViaTCP() ) {
+                cmd.setAddress( _settings.guiServerConnection().myIPAddress() );
+                monitorPort = _settings.newDifxTransferPort();
+                cmd.setPort( monitorPort );
+            }
+
+            //  Set up a monitor thread to collect and interpret diagnostic messages from
+            //  guiServer as it sets up the threads and machine files.
+            GetDirectoryMonitor monitor = null;
+            if ( _settings.sendCommandsViaTCP() ) {
+                monitor = new GetDirectoryMonitor( monitorPort );
+                monitor.start();
+            }
+
+            // -- Create the XML defined messages and process through the system
+            command.body().setDifxGetDirectory( cmd );
+            try {
+                //command.sendPacket( _settings.guiServerConnection().COMMAND_PACKET );
+                command.send();
+            } catch ( java.net.UnknownHostException e ) {
+                java.util.logging.Logger.getLogger("global").log(java.util.logging.Level.SEVERE, null,
+                        e.getMessage() );  //BLAT should be a pop-up
+            }            
         }
     }
     
