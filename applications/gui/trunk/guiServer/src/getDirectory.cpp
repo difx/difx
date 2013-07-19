@@ -57,6 +57,10 @@ void ServerSideConnection::getDirectory( DifxMessageGeneric* G ) {
     static const int FILE_NOT_FOUND                      = 308;
     static const int GETDIRECTORY_FILESTART              = 309;
     static const int GETDIRECTORY_FILEDATA               = 310;
+    static const int GENERATE_DIRECTORY_STARTED          = 311;
+    static const int GENERATE_DIRECTORY_INFO             = 312;
+    static const int GENERATE_DIRECTORY_COMPLETED        = 313;
+    static const int GENERATE_DIRECTORY_ERRORS           = 314;
 	
 	//  Cast the message to a GetDirectory message, then make a copy of all
 	//  parameters included.  We are entering a fork and we can't depend on the
@@ -116,7 +120,6 @@ void ServerSideConnection::getDirectory( DifxMessageGeneric* G ) {
                 else {            // stderr
                     packetExchange->sendPacket( MPIRUN_ERROR, message, strlen( message ) );
                     diagnostic( ERROR, "%s", message );
-                    noErrors = false;
                 }
             }
         }
@@ -133,6 +136,36 @@ void ServerSideConnection::getDirectory( DifxMessageGeneric* G ) {
                 packetExchange->sendPacket( NO_ENVIRONMENT_VARIABLE, NULL, 0 );
                 noErrors = false;
             }
+        }
+
+        //  Generate a new directory if that was requested.
+        if ( generateNew ) {
+            packetExchange->sendPacket( GENERATE_DIRECTORY_STARTED, NULL, 0 );
+            snprintf( command, MAX_COMMAND_SIZE, 
+                "source %s; %s -host %s /bin/source %s; mk5dir -n -f %s",
+                _difxSetupPath, mpiWrapper, mark5, _difxSetupPath, vsn );
+            diagnostic( WARNING, "executing: %s\n", command );
+            executor = new ExecuteSystem( command );
+            bool thereWereErrors = false;
+            if ( executor->pid() > -1 ) {
+                while ( int ret = executor->nextOutput( message, DIFX_MESSAGE_LENGTH ) ) {
+                    if ( ret == 1 ) { // stdout
+                        //  Each line represents file content.
+                        packetExchange->sendPacket( GENERATE_DIRECTORY_INFO, message, strlen( message ) );
+                        diagnostic( INFORMATION, "%s", message );
+                    }
+                    else {            // stderr
+                        packetExchange->sendPacket( MPIRUN_ERROR, message, strlen( message ) );
+                        diagnostic( ERROR, "%s", message );
+                        thereWereErrors = true;
+                    }
+                }
+            }
+            if ( thereWereErrors )
+                packetExchange->sendPacket( GENERATE_DIRECTORY_ERRORS, NULL, 0 );
+            else
+                packetExchange->sendPacket( GENERATE_DIRECTORY_COMPLETED, NULL, 0 );
+            delete executor;
         }
 
         //  Get the creation date for the file, if it exists.
@@ -154,13 +187,12 @@ void ServerSideConnection::getDirectory( DifxMessageGeneric* G ) {
                     else {            // stderr
                         packetExchange->sendPacket( MPIRUN_ERROR, message, strlen( message ) );
                         diagnostic( ERROR, "%s", message );
-                        noErrors = false;
                     }
                 }
             }
             delete executor;
         }
-
+        
         //  Send the creation date for this file if it exists.  If it doesn't exist,
         //  send that information.
         if ( noErrors ) {
