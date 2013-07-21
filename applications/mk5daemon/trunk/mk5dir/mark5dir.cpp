@@ -1548,6 +1548,20 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref, int (*callback)(i
 						scan.duration += 86400.0;
 					}
 
+					if(scan.duration < 1.0)
+					{
+						scan.format = -SCAN_FORMAT_ERROR_TOOSHORT;
+						scan.framespersecond = 0;
+						scan.duration = 0.0;
+						scan.framebytes = 0;
+						scan.mjd = 0;
+						scan.sec = 0;
+						scan.frameoffset = 0;
+						scan.framenuminsecond = 0;
+
+						continue;
+					}
+
 					for(iter = 0; iter < maxIter; ++iter)
 					{
 						int frameRate;		// [frames per second]
