@@ -11,8 +11,8 @@ from time import asctime
 from glob import glob
 
 program = 'difxbuild'
-version = '0.29'
-verdate = '20130719'
+version = '0.30'
+verdate = '20130722'
 author = 'Walter Brisken <wbrisken@nrao.edu>'
 
 difxbuildUrl = 'http://www.aoc.nrao.edu/~wbrisken/difxbuild'
@@ -349,6 +349,9 @@ def checkDirs(comps, dir, args):
 def checkFiles(comps, dir, fileName, args):
 	okComps = []
 	for comp in comps:
+		if 'nofilecheck' in comp[2]:
+			okComps.append(comp)
+			continue
 		file = dir + comp[0] + '/' + fileName
 		if not isfile(file):
 			if 'ok' in args:
@@ -518,8 +521,15 @@ component_calcserver_trunk = \
 component_guiserver_trunk = \
 [ \
 	'guiServer', \
-	'https://svn.atnf.csiro.au/difx/applications/gui/trunk/guiServer', \
-	['aclocal', 'autoconf', 'automake', 'mpicxx'], \
+	'https://svn.atnf.csiro.au/difx/applications/guiServer/trunk', \
+	['aclocal', 'autoconf', 'automake', 'mpicxx'] \
+]
+
+component_gui_trunk = \
+[ \
+	'gui', \
+	'https://svn.atnf.csiro.au/difx/applications/gui/trunk', \
+	['nofilecheck'] \
 ]
 
 component_rcwlib_trunk = \
@@ -613,6 +623,7 @@ components['DIFX-DEVEL'] = \
 	component_calcif2_trunk, \
 	component_calcserver_trunk, \
 	component_guiserver_trunk, \
+	component_gui_trunk, \
 	component_rcwlib_trunk, \
 	component_sniff_trunk, \
 	component_hops_trunk, \
@@ -1287,11 +1298,17 @@ def svnupdate(origComps, params, args, verbose, pretend):
 		if verbose > 0:
 			print 'Looking in: %s' % path
 		if isdir(path):
-			updatePaths = updatePaths + ' ' + comp[0]
 			url = split(strip(popen('svn info %s | grep URL' % path, 'r').readlines()[0]))[-1]
 
-			if url != comp[1]:
-				badRepositories.append('%s %s' % (comp[0], path))
+			if url == 'https://svn.atnf.csiro.au/difx/applications/gui/trunk/guiServer':
+				chdir(srcDir + '/' + comp[0])
+				cmd = 'svn switch %s' % comp[1]
+				execute(cmd, verbose, pretend)
+
+			else:
+				updatePaths = updatePaths + ' ' + comp[0]
+				if url != comp[1]:
+					badRepositories.append('%s %s' % (comp[0], path))
 		else:
 			chdir(srcDir)
 			cmd = 'svn co %s %s' % (comp[1], comp[0])
@@ -1409,6 +1426,17 @@ def build(origComps, params, args, verbose, pretend):
 			execute('mkdir -p %s' % buildDir, verbose, pretend)
 		for comp in okComps:
 			srcPath = srcDir + comp[0] + '/'
+			if comp[0] == 'gui':	# an oddball special case
+				jarfile = 'gui.jar'
+				cmd = 'cp %s/gui/dist/%s %s/bin' % (srcPath, jarfile, environ['DIFXROOT'])
+				execute(cmd, verbose, pretend)
+				startscript = '%s/bin/difxgui' % environ['DIFXROOT']
+				f = open(startscript, 'w')
+				f.write('#!/bin/env sh\njava -jar %s/bin/%s\n' % (environ['DIFXROOT'], jarfile))
+				f.close()
+				cmd = 'chmod +x %s' % startscript
+				execute(cmd, verbose, pretend)
+				continue
 			buildPath = buildDir + comp[0] + '/'
 			buildFlags = comp[2]
 			if 'pgplot' in buildFlags and not haspgplot:
@@ -1541,6 +1569,11 @@ def rebuild(origComps, params, args, verbose, pretend):
 	if verbose > 1:
 		print 'Rebuilding: %s' % componentList(okComps)
 	for comp in okComps:
+		if comp[0] == 'gui':	# an oddball special case
+			jarfile = 'gui.jar'
+			cmd = 'cp %s/%s/gui/dist/%s %s/bin' % (srcDir, comp[0], jarfile, environ['DIFXROOT'])
+			execute(cmd, verbose, pretend)
+			continue;
 		buildPath = buildDir + comp[0] + '/'
 		if isdir(buildPath):
 			chdir(buildPath)
