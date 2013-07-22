@@ -106,8 +106,7 @@ void ServerSideConnection::getDirectory( DifxMessageGeneric* G ) {
   		//  Find the directory path on the Mark5 where the VSN lives.
   		fullPath[0] = 0;
         snprintf( command, MAX_COMMAND_SIZE, 
-            "source %s; %s -host %s /bin/echo $MARK5_DIR_PATH",
-            _difxSetupPath, mpiWrapper, mark5 );
+            "%s -host %s /bin/echo $MARK5_DIR_PATH", mpiWrapper, mark5 );
         diagnostic( WARNING, "executing: %s\n", command );
         ExecuteSystem* executor = new ExecuteSystem( command );
         if ( executor->pid() > -1 ) {
@@ -142,8 +141,8 @@ void ServerSideConnection::getDirectory( DifxMessageGeneric* G ) {
         if ( generateNew ) {
             packetExchange->sendPacket( GENERATE_DIRECTORY_STARTED, NULL, 0 );
             snprintf( command, MAX_COMMAND_SIZE, 
-                "source %s; %s -host %s /bin/source %s; mk5dir -n -f %s",
-                _difxSetupPath, mpiWrapper, mark5, _difxSetupPath, vsn );
+                "%s -host %s rungeneric %s mk5dir -n -f %s",
+                mpiWrapper, mark5, _difxRunLabel, vsn );
             diagnostic( WARNING, "executing: %s\n", command );
             executor = new ExecuteSystem( command );
             bool thereWereErrors = false;
@@ -172,8 +171,7 @@ void ServerSideConnection::getDirectory( DifxMessageGeneric* G ) {
         if ( noErrors ) {
             creationDate[0] = 0;
             snprintf( command, MAX_COMMAND_SIZE, 
-                "source %s; %s -host %s /bin/ls -l %s",
-                _difxSetupPath, mpiWrapper, mark5, fullPath );
+                "%s -host %s /bin/ls -l %s", mpiWrapper, mark5, fullPath );
             diagnostic( WARNING, "executing: %s\n", command );
             executor = new ExecuteSystem( command );
             if ( executor->pid() > -1 ) {
@@ -209,8 +207,7 @@ void ServerSideConnection::getDirectory( DifxMessageGeneric* G ) {
         if ( noErrors ) {
             packetExchange->sendPacket( GETDIRECTORY_FILESTART, NULL, 0 );
             snprintf( command, MAX_COMMAND_SIZE, 
-                "source %s; %s -host %s /bin/cat %s",
-                _difxSetupPath, mpiWrapper, mark5, fullPath );
+                "%s -host %s /bin/cat %s", mpiWrapper, mark5, fullPath );
             diagnostic( WARNING, "executing: %s\n", command );
             executor = new ExecuteSystem( command );
             if ( executor->pid() > -1 ) {

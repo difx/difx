@@ -46,6 +46,7 @@ namespace guiServer {
         static const int GUISERVER_ENVIRONMENT          = 12;
         static const int DIFX_SETUP_PATH                = 13;
         static const int START_DIFX_MONITOR             = 14;
+        static const int DIFX_RUN_LABEL                 = 15;
 
     public:
 
@@ -188,6 +189,9 @@ namespace guiServer {
                     break;
                 case DIFX_SETUP_PATH:
                     difxSetupPath( data, nBytes );
+                    break;
+                case DIFX_RUN_LABEL:
+                    difxRunLabel( data, nBytes );
                     break;
                 case START_DIFX_MONITOR:
                     startDifxMonitor( data, nBytes );
@@ -395,6 +399,16 @@ namespace guiServer {
         }
         
         //---------------------------------------------------------------------
+        //!  Get the DiFX "label" used for running stuff from the GUI.
+        //---------------------------------------------------------------------
+        void difxRunLabel( char* data, const int nBytes ) {
+            if ( nBytes < DIFX_MESSAGE_FILENAME_LENGTH ) {
+                strncpy( _difxRunLabel, data, nBytes );
+                _difxRunLabel[nBytes] = 0;
+            }
+        }
+        
+        //---------------------------------------------------------------------
         //!  This is a request from the GUI to start a new DiFX job monitor
         //!  thread.  It comes with a port number.
         //---------------------------------------------------------------------
@@ -561,6 +575,7 @@ namespace guiServer {
         int pcloseRWE( int pid, int *rwepipe );
         
         const char* difxSetupPath() { return _difxSetupPath; }
+        const char* difxRunLabel() { return _difxRunLabel; }
 
     protected:
     
@@ -579,6 +594,7 @@ namespace guiServer {
         char _clientIP[16];
         char _difxBase[DIFX_MESSAGE_LENGTH];
         char _difxSetupPath[DIFX_MESSAGE_FILENAME_LENGTH];
+        char _difxRunLabel[DIFX_MESSAGE_FILENAME_LENGTH];
         char** _envp;
         std::list<std::string> _runningJobs;
         pthread_mutex_t _runningJobsMutex;

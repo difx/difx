@@ -217,10 +217,10 @@ void ServerSideConnection::machinesDefinition( DifxMessageGeneric* G ) {
             //  Create a test file name.
             snprintf( testPath, DIFX_MESSAGE_FILENAME_LENGTH, "%s/test_%s", workingDir, nodename );
             //  Execute an mpirun command to create a new file using each processor.
-            snprintf( command, MAX_COMMAND_SIZE, "source %s; %s -host %s touch %s &", 
-                _difxSetupPath,
+            snprintf( command, MAX_COMMAND_SIZE, "%s -host %s rungeneric.%s touch %s &", 
                 mpiWrapper,
                 nodename,
+                _difxRunLabel,
                 testPath );
             int ret = system( command );
             //  We give the remote system a generous one second to complete this task.

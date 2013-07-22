@@ -260,43 +260,6 @@ void ServerSideConnection::startDifx( DifxMessageGeneric* G ) {
 	int monitorServerPort = 9999;  //  this should eventually be variable
 	if ( S->function == DIFX_START_FUNCTION_RUN_MONITOR ) {
         startInfo->runMonitor = 1;
-/* 
-	    //  See if the "monitor_server" program is running (with the proper port).  If not,
-	    //  start it up.
-	    char monCommand[ MAX_COMMAND_SIZE ];
-	    char message[ DIFX_MESSAGE_LENGTH ];
-        snprintf( monCommand, MAX_COMMAND_SIZE, "/bin/ps -ef | /bin/grep -E \'monitor_server\\s|monitor_server$\' | /bin/grep -v grep" );
-        ExecuteSystem* executor = new ExecuteSystem( monCommand );
-        bool found = false;
-        if ( executor->pid() > -1 ) {
-            while ( int ret = executor->nextOutput( message, DIFX_MESSAGE_LENGTH ) ) {
-                if ( ret == 1 ) { // stdout
-                    //  Any instance of monitor_server should show up as a result of this
-                    //  "ps" command.  Monitor_server is started with the port number as
-                    //  the last (and only) argument.
-                    int portNum = -1;
-                    int len = strlen( message );
-                    while ( len >= 0 ) {
-                        if ( message[len] == ' ' ) {
-                            portNum = atoi( message + len + 1 );
-                            break;
-                        }
-                        --len;
-                    }
-                    if ( portNum == monitorServerPort ) {
-                        diagnostic( INFORMATION, "located monitor_server instance: %s\n", message );
-                        found = true;
-                    }
-                }
-            }
-        }
-        //  Do we need to start a new version of the monitor_server?
-        if ( !found ) {
-            snprintf( monCommand, MAX_COMMAND_SIZE, "source %s; monitor_server %d &", _difxSetupPath, monitorServerPort );
-            diagnostic( WARNING, "monitor_server needs to be started - executing: %s\n", monCommand );
-            system( monCommand );
-        }
-*/ 
         //  Build the "monitor" instruction.  This becomes part of the start command.  The
         //  monitor is run on a "host" (which can be "localhost", i.e. the headnonde) with
         //  a port number.
@@ -307,12 +270,12 @@ void ServerSideConnection::startDifx( DifxMessageGeneric* G ) {
 	    
 	//  Build the actual start command.
 	snprintf( startInfo->startCommand, MAX_COMMAND_SIZE, 
-	          "source %s; %s -np %d --bynode --hostfile %s.machines %s %s %s %s %s", 
-              _difxSetupPath,
+	          "%s -np %d --bynode --hostfile %s.machines %s rungeneric.%s %s %s %s %s", 
               mpiWrapper,
               procCount,
               filebase,
               mpiOptions,
+              _difxRunLabel,
               startInfo->difxProgram,
               restartOption,
               S->inputFilename, monitorOption );
@@ -343,16 +306,6 @@ void ServerSideConnection::runDifxThread( DifxStartInfo* startInfo ) {
         system( startInfo->removeCommand );
     }
     
-    //  Run the data monitoring thread (see "runDifxThread" below).
-    /*
-    if ( startInfo->runMonitor ) {
-        pthread_attr_t threadAttr;
-        pthread_t threadId;
-        pthread_attr_init( &threadAttr );
-        pthread_create( &threadId, &threadAttr, staticRunDifxMonitor, (void*)startInfo );
-    }
-    */
-        
     //  Run the DiFX process!
     diagnostic( WARNING, "executing: %s\n", startInfo->startCommand );
     printf( "%s\n", startInfo->startCommand );
@@ -437,209 +390,4 @@ void ServerSideConnection::runDifxThread( DifxStartInfo* startInfo ) {
 
 }
 
-/*
-//-----------------------------------------------------------------------------
-//!  Thread to monitor a running DiFX job.  A connection is made to the
-//!  "monitor_server" program and data products are requested.  These products
-//!  are then provided to the GUI client.
-//-----------------------------------------------------------------------------	
-void ServerSideConnection::runDifxMonitor( DifxStartInfo* startInfo ) {
-	char message[DIFX_MESSAGE_LENGTH];
-    char sendData[MAX_COMMAND_SIZE];
-    char buffer[1024];
-    Configuration* config;
-    bool allIsWell = true;
-
-    //  Make a new client connection to the monitor_server, which *should* be running.
-    //  At the moment the port is hard-wired to 52300 which might not be a perfect
-    //  long term solution.  The host is the local host (so I'm using the loopback
-    //  address).
-    printf( "making client connection\n" );
-    network::TCPClient* monitorServerClient = new network::TCPClient( "127.0.0.1", 52300 );
-    monitorServerClient->waitForConnect();
-    printf( "connection established!\n" );
-    if ( monitorServerClient->connected() ) {
-        int status;
-        monitorServerClient->reader( (char*)(&status), sizeof( int ) );
-        if ( status == 0 ) {
-            snprintf( message, DIFX_MESSAGE_LENGTH, "connection established with monitor_server" );
-            startInfo->jobMonitor->sendPacket( JobMonitorConnection::DIFX_MONITOR_CONNECTION_ACTIVE, NULL, 0 );
-            startInfo->jobMonitor->sendPacket( JobMonitorConnection::DIFX_WARNING, message, strlen( message ) );
-        }
-        else {
-            snprintf( message, DIFX_MESSAGE_LENGTH, "monitor_server returned initial status failure (%d) - real time monitor will not run", status );
-            startInfo->jobMonitor->sendPacket( JobMonitorConnection::DIFX_MONITOR_CONNECTION_FAILED, NULL, 0 );
-            startInfo->jobMonitor->sendPacket( JobMonitorConnection::DIFX_ERROR, message, strlen( message ) );
-        }
-    }
-    else {
-        snprintf( message, DIFX_MESSAGE_LENGTH, "connection with monitor_server failed - real time monitor will not run" );
-        startInfo->jobMonitor->sendPacket( JobMonitorConnection::DIFX_MONITOR_CONNECTION_FAILED, NULL, 0 );
-        startInfo->jobMonitor->sendPacket( JobMonitorConnection::DIFX_ERROR, message, strlen( message ) );
-        allIsWell = false;
-    }
-    
-    //  Generate a list of data products.  This code is basically swiped from Chris Phillips'
-    //  difx_config program.
-    if ( allIsWell ) {
-        config = new Configuration( startInfo->inputFile, 0 );
-        if ( !config->consistencyOK() ) {
-            snprintf( message, DIFX_MESSAGE_LENGTH, "Configuration had a problem parsing input file %s - real time monitor will not run",
-                startInfo->inputFile );
-            startInfo->jobMonitor->sendPacket( JobMonitorConnection::DIFX_MONITOR_CONNECTION_FAILED, NULL, 0 );
-            startInfo->jobMonitor->sendPacket( JobMonitorConnection::DIFX_ERROR, message, strlen( message ) );
-            allIsWell = false;
-        }
-        else {
-            //  Send the possible data products and codes.  This I grabbed (mostly) from the monserver_productconfig()
-            //  function in difx_monitor/monserver.cpp.  Without know entirely what I was doing.
-            int currentscan = 0;  //  Is there ever more than one??
-            int configindex = config->getScanConfigIndex( currentscan );
-            char polpair[3];
-            polpair[2] = 0;
-            printf( "config index is %d\n", configindex );
-
-            int binloop = 1;
-            if ( config->pulsarBinOn( configindex ) && !config->scrunchOutputOn( configindex ) )
-                binloop = config->getNumPulsarBins( configindex );
-            printf( "binloop is %d\n", binloop );
-            printf( "num baselines is %d\n", config->getNumBaselines() );
-
-            for ( int i = 0; i < config->getNumBaselines(); i++ ) {
-                int ds1index = config->getBDataStream1Index( configindex, i );
-                int ds2index = config->getBDataStream2Index( configindex, i );
-                printf( "telescopes...%s, %s\n", config->getTelescopeName( ds1index ).c_str(), config->getTelescopeName( ds2index ).c_str() );
-
-                for( int j = 0; j < config->getBNumFreqs( configindex, i ); j++ ) {
-                    int freqindex = config->getBFreqIndex( configindex, i, j );
-                    int resultIndex = config->getCoreResultBaselineOffset( configindex, freqindex, i );
-                    int freqchannels = config->getFNumChannels( freqindex ) / config->getFChannelsToAverage( freqindex );
-
-                    for( int s = 0; s < config->getMaxPhaseCentres( configindex ); s++ ) {
-	                    for( int b = 0; b < binloop; b++ ) {
-	                        for( int k = 0; k < config->getBNumPolProducts( configindex, i, j ); k++ ) {
-	                            config->getBPolPair( configindex, i, j, k, polpair );
-
-
-	    products.push_back(DIFX_ProdConfig(ds1index,
-					       ds2index,
-					       config->getTelescopeName(ds1index), 
-					       config->getTelescopeName(ds2index),
-					       config->getFreqTableFreq(freqindex),
-					       config->getFreqTableBandwidth(freqindex),
-					       polpair,
-					       s,
-					       b,
-					       resultindex,
-					       freqchannels,
-					       config->getFreqTableLowerSideband(freqindex)));
-                    printf( "frequency....%.1f\n", config->getFreqTableFreq( freqindex ) );
-                                printf( "result index is %d\n", resultIndex );
-	                            resultIndex += freqchannels;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-            
-    }
-
-    bool keepGoing = true;
-    while ( keepGoing ) {
-        //  Doing this here causes the loop to run one more time after it has been
-        //  terminated by the parent function.
-        if ( !startInfo->runMonitor )
-            keepGoing = false;
-
-        usleep( 1000000 );
-        
-    }
-    
-    delete config;
-    printf( "closing the monitor socket\n" );
-    monitorServerClient->closeConnection();
-    delete monitorServerClient;
-    printf( "exiting monitor thread\n" );
-    
-}
-*/
-
-/*  This is a previous idea for a monitor.  It was meant to report the size and content
-    of output files as DiFX ran.  Might be useful someday.
-//-----------------------------------------------------------------------------
-//!  Thread to monitor a running DiFX job.  The idea here was to monitor the
-//!  size of output files in the .difx directory for this job, and possibly
-//!  provide data from them.  At the moment this is not used.
-//!
-//!  All of the necessary setup for this thread should be
-//!  done already - the "startInfo" structure contains all information needed
-//!  to run.  
-//-----------------------------------------------------------------------------	
-void ServerSideConnection::runDifxMonitor( DifxStartInfo* startInfo ) {
-    char dataDir[MAX_COMMAND_SIZE];
-    char longName[MAX_COMMAND_SIZE];
-    char sendData[MAX_COMMAND_SIZE];
-    char buffer[1024];
-    std::set<std::string> pathSet;
-    std::vector<int> fileDescriptors;
-
-    //  Form the difx data directory name.
-    snprintf( dataDir, MAX_COMMAND_SIZE, "%s.difx", startInfo->filebase );
-
-    bool keepGoing = true;
-    while ( keepGoing ) {
-        //  Doing this here causes the loop to run one more time after it has been
-        //  terminated by the parent function.
-        if ( !startInfo->runMonitor )
-            keepGoing = false;
-
-        //  Get a list of all files in the data directory along with their sizes.
-        usleep( 1000000 );
-        struct dirent **namelist;
-        int n = scandir( dataDir, &namelist, 0, alphasort );
-        if ( n > 0) {
-            while( n-- ) { 
-                if ( strcmp( namelist[n]->d_name, "." ) && strcmp( namelist[n]->d_name, ".." ) ) {
-                    struct stat buf;
-                    snprintf( longName, MAX_COMMAND_SIZE, "%s/%s", dataDir, namelist[n]->d_name );
-                    stat( longName, &buf );
-                    snprintf( sendData, MAX_COMMAND_SIZE, "%s\n%ld\n", namelist[n]->d_name, buf.st_size );
-                    printf( "%s\n", sendData );
-                    //startInfo->jobMonitor->sendPacket( JobMonitorConnection::DATA_FILE_SIZE, sendData, strlen( sendData ) );
-                    //  See if we've not seen this file before...
-                    if ( pathSet.find( namelist[n]->d_name ) == pathSet.end() ) {
-                        pathSet.insert( namelist[n]->d_name );
-                        //  Open the file for reading and add the new file pointer to our list.
-                        int fd = open( longName, O_RDONLY );
-                        fileDescriptors.push_back( fd );
-                    }
-                    free( namelist[n] );
-                }
-            }
-            free( namelist );
-        }
-        
-        //  Do a select on each file descriptor and read any new data available.
-        for ( std::vector<int>::iterator iter = fileDescriptors.begin(); iter != fileDescriptors.end(); ++iter ) {
-            fd_set rfds;
-            int fd = *iter;
-            FD_ZERO( &rfds );
-            FD_SET( fd, &rfds );
-            if ( select( 1, &rfds, NULL, NULL, NULL ) ) {
-                while ( read( fd, buffer, 1024 ) ) {
-                    //  Send data to the gui!
-                }
-            }
-        }
-
-    }
-
-    //  Close any file descriptors...
-    for ( std::vector<int>::iterator iter = fileDescriptors.begin(); iter != fileDescriptors.end(); ++iter ) {
-        close( *iter );
-    }    
-    
-}
-*/
 
