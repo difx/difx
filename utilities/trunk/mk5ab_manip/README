@@ -1,0 +1,19 @@
+This directory contains various standalone programs that
+have proven useful in manipulating mk5a, mk5b, and vdif files.
+
+Each program is built by executing the build script, which is
+typically a one-liner invoking gcc. As they say, no warranties,
+expressed or implied.             
+                                                rjc  2013.7.22
+
+program       script       summary
+------------ -------- -----------------------------------------------
+a2b           makea2b copies mk5a to mk5b files, for a few common formats
+b2a           makeb2a copies a mk5b file to a mk5a file
+b2vdif        makeb2v copies a mk5b file to a vdif format file
+bchan_reorder makebcr allows low-level modifications of a mk5b file
+bnoise32      makebn32 creates 2 mk5b files with a specified amount of
+                       purely white correlated noise
+bpcal         makebp   extracts phase cal from a mk5b file
+btrim         makebt   trims front of mk5b file to start on a second boundary
+vdif_modify   makevdif allows bit manipulation in a copy of a vdif file

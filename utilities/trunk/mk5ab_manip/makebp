@@ -1,0 +1,2 @@
+# script to make bpcal
+gcc bpcal.c -lm -O2 -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -o bpcal

@@ -1,0 +1,2 @@
+gcc b2vdif.c
+mv a.out b2vdif

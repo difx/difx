@@ -1,0 +1,2 @@
+gcc vdif_modify.c -lm -lgsl -lgslcblas -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE
+mv a.out vdif_modify
