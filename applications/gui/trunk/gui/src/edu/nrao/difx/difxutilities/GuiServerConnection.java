@@ -151,11 +151,6 @@ public class GuiServerConnection {
     public byte[] getRelay( int timeout ) throws SocketTimeoutException {
         int counter = 0;
         while ( counter < timeout ) {
-//            if ( _difxRelayData != null ) {
-//                byte [] returnData = _difxRelayData;
-//                _difxRelayData = null;
-//                return returnData;
-//            }
             if ( _difxRelayStack != null ) {
                 synchronized( _difxRelayStack ) {
                     if ( _difxRelayStack.size() > 0 ) {
@@ -199,7 +194,6 @@ public class GuiServerConnection {
                             synchronized ( _difxRelayStack ) {
                                 _difxRelayStack.addLast( data );
                             }
-                            //_difxRelayData = data;
                         }
                         else if ( packetId == GUISERVER_VERSION ) {
                             //  This is a report of the version of guiServer that is running.
@@ -312,7 +306,6 @@ public class GuiServerConnection {
     protected EventListenerList _connectListeners;
     protected EventListenerList _sendListeners;
     protected EventListenerList _receiveListeners;
-    protected byte[] _difxRelayData;
     protected ArrayDeque<byte[]> _difxRelayStack;
     protected ReceiveThread _receiveThread;
     protected SystemSettings _settings;
