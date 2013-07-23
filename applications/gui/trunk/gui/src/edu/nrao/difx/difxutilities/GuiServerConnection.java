@@ -28,6 +28,8 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
+import java.util.ArrayDeque;
+
 import javax.swing.JOptionPane;
 
 import java.awt.Component;
@@ -149,13 +151,21 @@ public class GuiServerConnection {
     public byte[] getRelay( int timeout ) throws SocketTimeoutException {
         int counter = 0;
         while ( counter < timeout ) {
-            if ( _difxRelayData != null ) {
-                byte [] returnData = _difxRelayData;
-                _difxRelayData = null;
-                return returnData;
+//            if ( _difxRelayData != null ) {
+//                byte [] returnData = _difxRelayData;
+//                _difxRelayData = null;
+//                return returnData;
+//            }
+            if ( _difxRelayStack != null ) {
+                synchronized( _difxRelayStack ) {
+                    if ( _difxRelayStack.size() > 0 ) {
+                        byte [] returnData = _difxRelayStack.pollFirst();
+                        return returnData;
+                    }
+                }
             }
-            counter += 10;
-            try { Thread.sleep( 10 ); } catch ( Exception e ) {}
+            counter += 1;
+            try { Thread.sleep( 1 ); } catch ( Exception e ) {}
         }
         throw new SocketTimeoutException();
     }
@@ -184,7 +194,12 @@ public class GuiServerConnection {
                         _in.readFully( data );
                         //  Sort out what to do with this packet.
                         if ( packetId == RELAY_PACKET && data != null ) {
-                            _difxRelayData = data;
+                            if ( _difxRelayStack == null )
+                                _difxRelayStack = new ArrayDeque<byte[]>();
+                            synchronized ( _difxRelayStack ) {
+                                _difxRelayStack.addLast( data );
+                            }
+                            //_difxRelayData = data;
                         }
                         else if ( packetId == GUISERVER_VERSION ) {
                             //  This is a report of the version of guiServer that is running.
@@ -228,7 +243,7 @@ public class GuiServerConnection {
                     _connected = false;
                     connectEvent( e.toString() );
                 }
-            try { Thread.sleep( 20 ); } catch ( Exception e ) {}
+            try { Thread.sleep( 2 ); } catch ( Exception e ) {}
             }
         }
         
@@ -298,6 +313,7 @@ public class GuiServerConnection {
     protected EventListenerList _sendListeners;
     protected EventListenerList _receiveListeners;
     protected byte[] _difxRelayData;
+    protected ArrayDeque<byte[]> _difxRelayStack;
     protected ReceiveThread _receiveThread;
     protected SystemSettings _settings;
 }
