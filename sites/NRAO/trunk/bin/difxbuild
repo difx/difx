@@ -11,8 +11,8 @@ from time import asctime
 from glob import glob
 
 program = 'difxbuild'
-version = '0.30'
-verdate = '20130722'
+version = '0.31'
+verdate = '20130723'
 author = 'Walter Brisken <wbrisken@nrao.edu>'
 
 difxbuildUrl = 'http://www.aoc.nrao.edu/~wbrisken/difxbuild'
@@ -1427,12 +1427,18 @@ def build(origComps, params, args, verbose, pretend):
 		for comp in okComps:
 			srcPath = srcDir + comp[0] + '/'
 			if comp[0] == 'gui':	# an oddball special case
-				jarfile = 'gui.jar'
-				cmd = 'cp %s/gui/dist/%s %s/bin' % (srcPath, jarfile, environ['DIFXROOT'])
+				jarDir = '%s/jar' % environ['DIFXROOT']
+				if not isdir(jarDir):
+					cmd = 'mkdir -p %s' % jarDir
+					execute(cmd, verbose, pretend)
+				cmd = 'cp -f %s/gui/dist/*.jar %s' % (srcPath, jarDir)
 				execute(cmd, verbose, pretend)
+				cmd = 'cp -rf %s/gui/dist/lib %s' % (srcPath, jarDir)
+				execute(cmd, verbose, pretend)
+				jarFile = 'gui.jar' # the jar file to run
 				startscript = '%s/bin/difxgui' % environ['DIFXROOT']
 				f = open(startscript, 'w')
-				f.write('#!/bin/env sh\njava -jar %s/bin/%s\n' % (environ['DIFXROOT'], jarfile))
+				f.write('#!/bin/env sh\njava -jar %s/jar/%s\n' % (environ['DIFXROOT'], jarFile))
 				f.close()
 				cmd = 'chmod +x %s' % startscript
 				execute(cmd, verbose, pretend)
@@ -1570,8 +1576,13 @@ def rebuild(origComps, params, args, verbose, pretend):
 		print 'Rebuilding: %s' % componentList(okComps)
 	for comp in okComps:
 		if comp[0] == 'gui':	# an oddball special case
-			jarfile = 'gui.jar'
-			cmd = 'cp %s/%s/gui/dist/%s %s/bin' % (srcDir, comp[0], jarfile, environ['DIFXROOT'])
+			jarDir = '%s/jar' % environ['DIFXROOT']
+			if not isdir(jarDir):
+				cmd = 'mkdir -p %s' % jarDir
+				execute(cmd, verbose, pretend)
+			cmd = 'cp -f %s/%s/gui/dist/*.jar %s' % (srcDir, comp[0], jarDir)
+			execute(cmd, verbose, pretend)
+			cmd = 'cp -rf %s/gui/dist/lib %s' % (srcPath, jarDir)
 			execute(cmd, verbose, pretend)
 			continue;
 		buildPath = buildDir + comp[0] + '/'
