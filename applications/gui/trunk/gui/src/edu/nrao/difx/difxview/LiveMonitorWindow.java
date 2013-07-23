@@ -817,6 +817,7 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
                             //  for now.  However, I'm using it as a trigger for the "start" of
                             //  scans for a particular job.
                             _nScans = _in.readInt();
+                            System.out.println( "There are " + _nScans + " scans!" );
                             //  This forces us to plot the "latest" plots when we have a time
                             //  series of them.  Using the mousewheel to scroll through the time
                             //  series shuts this off.
@@ -861,6 +862,7 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
                             byte [] data = new byte[packetSize];
                             _in.readFully( data );
                             _scanIdentifier = new String( data );
+                            System.out.println( "scan identifier is " + _scanIdentifier );
                         }
                         else if ( packetType == SCAN_START_TIME ) {
                             byte [] data = new byte[packetSize];

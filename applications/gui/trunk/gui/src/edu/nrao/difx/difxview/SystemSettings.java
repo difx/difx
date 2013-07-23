@@ -1715,7 +1715,7 @@ public class SystemSettings extends JFrame {
         _defaultNames.correlationSubintNS = 100000000;
         _defaultNames.toneSelection = "smart";
         _defaultNames.dataFormat = "Mark5B";
-        _defaultNames.runMonitor = true;
+        _defaultNames.runMonitor = false;
         _jobColumnSpecs.networkActivity.show = true;
         _jobColumnSpecs.name.show = true;
         _jobColumnSpecs.progressBar.show = true;

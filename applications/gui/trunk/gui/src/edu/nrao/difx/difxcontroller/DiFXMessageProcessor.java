@@ -17,6 +17,7 @@ import java.awt.Font;
 import java.io.ByteArrayInputStream;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.awt.Graphics;
 
 import javax.swing.event.EventListenerList;
 import java.awt.EventQueue;
@@ -123,7 +124,7 @@ public class DiFXMessageProcessor extends Thread
      * based on message type.  The actions for different messages are in functions
      * below simply to avoid cluttering this function.
      */
-    public synchronized void processMessage( ByteArrayInputStream packet) {
+    public void processMessage( ByteArrayInputStream packet) {
 
         // Process the message packet into a DiFXMessage
         DifxMessage difxMsg = _packetProcessor.ConvertToJAXB( packet );
@@ -549,7 +550,9 @@ public class DiFXMessageProcessor extends Thread
             _messageJTable.setShowGrid( false );
             _messageJTable.getSelectionModel().addListSelectionListener( new ListSelectionListener() {
                 public void valueChanged( ListSelectionEvent e ) {
-                    tableSelect( _messageJTable.getSelectedRow() );
+                    if ( _messageJTable.getSelectedRow() >= 0 ) {
+                        tableSelect( _messageJTable.getSelectedRow() );
+                    }
                 }
             } );
             _tableScrollPane = new JScrollPane( _messageJTable );
@@ -641,6 +644,8 @@ public class DiFXMessageProcessor extends Thread
             
             _infoPanel = new JPanel();
             _infoPanel.setLayout( null );
+            _infoMessage = new TextField( "Message Text", 150 );
+            _infoPanel.add( _infoMessage );
             _bottomPanel.add( _infoPanel );
             
             _loadPanel = new JPanel();
@@ -826,7 +831,7 @@ public class DiFXMessageProcessor extends Thread
             _mainSplitPane.setDividerLocation( _settings.windowConfiguration().difxMessageWindowTopFraction );
 
         }
-    
+        
         public void newSize() {
             if ( _allObjectsBuilt ) {
                 int w = this.getWidth();
@@ -993,16 +998,18 @@ public class DiFXMessageProcessor extends Thread
         /*
          * Pick a message out of the table.
          */
-        synchronized public void tableSelect( int i ) {
+        public void tableSelect( int i ) {
             //  Find the message associated with this index in the table.
             boolean found = false;
             Message theMessage = null;
+            synchronized ( _messages ) {
             for ( Iterator<Message> iter = _messages.iterator(); iter.hasNext() && !found; ) {
                 Message msg = iter.next();
                 if ( msg.tableRow == i ) {
                     found = true;
                     theMessage = msg;
                 }
+            }
             }
             if ( theMessage != null ) {
                 //  Put the message text in the editor window.
@@ -1293,16 +1300,18 @@ public class DiFXMessageProcessor extends Thread
             msg.time = sdf.format( time );
             if ( _messages == null )
                 _messages = new ArrayDeque<Message>();
+            synchronized ( _messages ) {
             _messages.add( msg );
             while ( _messages.size() > _messageLimit.intValue() )
                 _messages.removeFirst();
+            }
             rebuildTable();
         }
         
         /*
          * Rebuild the items in the table based on current selections.
          */
-        synchronized void rebuildTable() {
+        void rebuildTable() {
             //  Save the selected item.
             int selectedRow = _messageJTable.getSelectedRow();
             final int scrollSetting = _tableScrollPane.getVerticalScrollBar().getValue();
@@ -1312,6 +1321,7 @@ public class DiFXMessageProcessor extends Thread
             while ( _messageTable.getRowCount() > 0 )
                 _messageTable.removeRow( 0 );
             //  Figure out which messages we want to display.
+            synchronized ( _messages ) {
             for ( Iterator<Message> iter = _messages.iterator(); iter.hasNext(); ) {
                 Message msg = iter.next();
                 msg.tableRow = _messageTable.getRowCount();
@@ -1391,19 +1401,22 @@ public class DiFXMessageProcessor extends Thread
                         } );
                 }
             }
+            }
             //  Reset the selection (if there was one).
             final JScrollBar vbar = _tableScrollPane.getVerticalScrollBar();
+            final DefaultTableModel dtable = _messageTable;
+            final int sRow = selectedRow;
             if ( selectedRow == -1 ) {
                 EventQueue.invokeLater( new Runnable () {
                     public void run () {
                         EventQueue.invokeLater( new Runnable () {
                             public void run () {
                                 vbar.setValue( vbar.getMaximum() );
+                                tableSelect( dtable.getRowCount() - 1 );
                             }
                         });
                     }
                 });
-                tableSelect( _messageTable.getRowCount() - 1 );
             }
             else {
                 EventQueue.invokeLater( new Runnable () {
@@ -1411,6 +1424,7 @@ public class DiFXMessageProcessor extends Thread
                         EventQueue.invokeLater( new Runnable () {
                             public void run () {
                                 vbar.setValue( scrollSetting );
+                                tableSelect( sRow );
                             }
                         });
                     }
