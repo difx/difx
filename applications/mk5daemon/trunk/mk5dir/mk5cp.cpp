@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2011 by Walter Brisken                             *
+ *   Copyright (C) 2007-2013 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -43,8 +43,8 @@
 
 const char program[] = "mk5cp";
 const char author[]  = "Walter Brisken";
-const char version[] = "0.10";
-const char verdate[] = "20111206";
+const char version[] = "0.11";
+const char verdate[] = "20130724";
 
 const int defaultChunkSize = 50000000;
 
@@ -520,14 +520,14 @@ int copyScan(SSHANDLE xlrDevice, const char *vsn, const char *outPath, int scanN
 
 	if(strcmp(outPath, "-") == 0)
 	{
-		snprintf(filename, DIFX_MESSAGE_FILENAME_LENGTH, "%8s_%03d_%s", vsn, scanNum+1, scan->name.c_str()); 
+		snprintf(filename, DIFX_MESSAGE_FILENAME_LENGTH, "%8s_%04d_%s", vsn, scanNum+1, scan->name.c_str()); 
 		out = stdout;
 	}
 	else if(scpLogin[0])
 	{
 		char cmd[MaxCommandLength];
 
-		snprintf(filename, DIFX_MESSAGE_FILENAME_LENGTH, "%8s_%03d_%s", vsn, scanNum+1, scan->name.c_str()); 
+		snprintf(filename, DIFX_MESSAGE_FILENAME_LENGTH, "%8s_%04d_%s", vsn, scanNum+1, scan->name.c_str()); 
 
 		if(scpDest[0])
 		{
@@ -549,7 +549,7 @@ int copyScan(SSHANDLE xlrDevice, const char *vsn, const char *outPath, int scanN
 	}
 	else
 	{
-		snprintf(filename, DIFX_MESSAGE_FILENAME_LENGTH, "%s/%8s_%03d_%s", outPath, vsn, scanNum+1, scan->name.c_str()); 
+		snprintf(filename, DIFX_MESSAGE_FILENAME_LENGTH, "%s/%8s_%04d_%s", outPath, vsn, scanNum+1, scan->name.c_str()); 
 		out = fopen(filename, "w");
 		if(!out)
 		{
