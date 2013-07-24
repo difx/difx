@@ -118,7 +118,7 @@ static void writeFLrow(struct fitsPrivate *out, char *fitsbuf, int nRowBytes, co
 	fitsWriteBinRow(out, fitsbuf);
 }
 
-int processFlagFile(const DifxInput *D, const char *antennaName, const char *flagFile, struct fitsPrivate *out, char *fitsbuf, int nRowBytes, int nColumn, const struct fitsBinTableColumn *columns, const int *alreadyHasFlags, FlagDatum *FL, int refDay, int year)
+int processFlagFile(const DifxInput *D, const char *antennaName, const char *flagFile, struct fitsPrivate *out, char *fitsbuf, int nRowBytes, int nColumn, const struct fitsBinTableColumn *columns, FlagDatum *FL, int refDay, int year)
 {
 	FILE *in;
 	int nRec = 0;
@@ -171,10 +171,6 @@ int processFlagFile(const DifxInput *D, const char *antennaName, const char *fla
 			}
 			antennaId = DifxInputGetAntennaId(D, antName);
 			if(antennaId < 0)
-			{
-				continue;
-			}
-			if(alreadyHasFlags[antennaId])
 			{
 				continue;
 			}
@@ -296,7 +292,6 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D, struct fits_keywords *p_fi
 	int antId, i;
 	int year, month, day;
 	FlagDatum FL;
-	int *alreadyHasFlags;
 
 #warning "FIXME: only one configId supported here"
 	int configId = 0;
@@ -319,15 +314,6 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D, struct fits_keywords *p_fi
 		fprintf(stderr, "Error: DifxInput2FitsFL: Cannot allocate %d bytes for fitsbuf\n", nRowBytes);
 
 		return 0;
-	}
-
-	alreadyHasFlags = (int *)calloc(D->nAntenna, sizeof(int));
-	if(alreadyHasFlags == 0)
-	{
-		free(fitsbuf);
-		fprintf(stderr, "Error: DifxInput2FitsFL: Cannot allocate %d integers for alreadyHasFlags\n", D->nAntenna);
-
-		exit(EXIT_FAILURE);
 	}
 
 	fitsWriteBinTable(out, nColumn, columns, nRowBytes, "FLAG");
@@ -356,11 +342,6 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D, struct fits_keywords *p_fi
 		char flagFile[DIFXIO_FILENAME_LENGTH];
 		int v;
 	
-		if(alreadyHasFlags[antId] > 0)
-		{
-			continue;
-		}
-
 		v = snprintf(flagFile, DIFXIO_FILENAME_LENGTH, "%s%s.%s.flag", D->job->obsCode, D->job->obsSession, D->antenna[antId].name);
 		if(v >= DIFXIO_FILENAME_LENGTH)
 		{
@@ -369,30 +350,21 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D, struct fits_keywords *p_fi
 			exit(0);
 		}
 
-		v = globcase("*.*.flag", flagFile);
+		v = globcase(__FUNCTION__, "*.*.flag", flagFile);
 		if(v == 0)
 		{
 			/* no files match */
 
 			continue;
 		}
-		if(v > 1)
-		{
-			/* more than 1 file matches */
 
-			exit(EXIT_FAILURE);
-		}
-
-		v = processFlagFile(D, D->antenna[antId].name, flagFile, out, fitsbuf, nRowBytes, nColumn, columns, alreadyHasFlags, &FL, refDay, year);
-		
-		if(v > 0)
-		{
-			++alreadyHasFlags[antId];
-		}
+		v = processFlagFile(D, D->antenna[antId].name, flagFile, out, fitsbuf, nRowBytes, nColumn, columns, &FL, refDay, year);
 	}
 
-	/* Second: look for a multi-station flag file.  Only populate data for stations not already populated. */
-	processFlagFile(D, 0, "flag", out, fitsbuf, nRowBytes, nColumn, columns, alreadyHasFlags, &FL, refDay, year);
+	/* Second: look for a multi-station flag file.  Unlike for tsys, pcal, and weather, flags will be applied from both
+	 * the antenna-specific flag file and "flag".
+	 */
+	processFlagFile(D, 0, "flag", out, fitsbuf, nRowBytes, nColumn, columns, &FL, refDay, year);
 
 	/* Finally: make flags for bandId/polIds that were not observed */
 	FL.timeRange[0] = start;

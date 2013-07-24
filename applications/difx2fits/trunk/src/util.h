@@ -32,8 +32,12 @@
 
 #include <glob.h>
 
+/* in the functions below, label is used in error messages to mention something
+ * about the context of the glob when failures occur
+ */
+
 int glob2(const char *label, const char *pattern, int flags, int errfunc(const char *epath, int eerrno), glob_t *pglob);
 
-int globcase(const char *match, char *fileName);
+int globcase(const char *label, const char *match, char *fileName);
 
 #endif

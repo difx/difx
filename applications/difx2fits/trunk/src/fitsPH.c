@@ -111,8 +111,7 @@ int DifxInputGetIFsByRecBand(int *IFs, int *polId, const DifxInput *D, int antId
 	}
 	else
 	{
-		fprintf(stderr, "Developer error: DifxInputGetIFsByRecBand: polName=%c not in configId=%d\n", 
-			polName, configId);
+		fprintf(stderr, "Developer error: DifxInputGetIFsByRecBand: polName=%c not in configId=%d\n", polName, configId);
 
 		return -4;
 	}
@@ -206,7 +205,7 @@ int DifxInputGetIFsByRecFreq(int *IFs, const DifxInput *D, int dsId, int configI
  * so the output should only be used to set an upper limit on array sizes and
  * things of that ilk.
  */
-static int getNTone(const char *filename, double t1, double t2, int verbose)
+static int getNTone(const char *filename, const char *antenna, double t1, double t2, int verbose)
 {
 	FILE *in;
 	char line[MaxLineLength+1];
@@ -235,6 +234,10 @@ static int getNTone(const char *filename, double t1, double t2, int verbose)
 			printf("DEBUG: gNTone: ant %s, nTone %d\n", antName1, nTone);
 		}
 		if(n != 3)
+		{
+			continue;
+		}
+		if(strcmp(antName1, antenna) != 0)
 		{
 			continue;
 		}
@@ -500,19 +503,19 @@ static int parsePulseCalCableCal(const char *line, int antId, int *sourceId, int
 		return -1;
 	}
 
-	if(*time > 50000)	/* must be an MJD */
+	if(*time > 50000)		/* must be an MJD */
 	{
 		mjd = *time;
 		*time -= (int)(D->mjdStart);
 	}
-	else	/* must be day of year */
+	else				/* must be day of year */
 	{
 		*time -= refDay;
 		if(*time < -300)	/* must be new years crossing */
 		{
 			*time += DaysThisYear(year);
 		}
-		else if(*time > 300) /* must be partial project after new year */
+		else if(*time > 300)	/* must be partial project after new year */
 		{
 			*time -= DaysLastYear(year);
 		}
@@ -877,7 +880,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	int sourceId = -1;
 	int scanId;
 	int refDay;
-	int i, a, dsId, j, k, t, n, v;
+	int a, dsId, j, k, t, n, v;
 	int doDump = 0;
 	int doAll = 0;
 	int nWindow;
@@ -889,6 +892,8 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	int year, month, day;
 	/* The following are 1-based indices for FITS format */
 	int32_t antId1, arrayId1, sourceId1, freqId1;
+	char **pcalSourceFile;	/* [antId] : points to non-DiFX source of pcal information */
+	int pcalExists = 0;
 
 	char antName[DIFXIO_NAME_LENGTH];
 
@@ -918,27 +923,78 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	start = D->mjdStart - (int)(D->mjdStart);
 	stop  = D->mjdStop  - (int)(D->mjdStart);
 
-	//check for existence of pcal file
+	pcalSourceFile = (char **)calloc(D->nAntenna, sizeof(char **));
+
+/* First go through and find out maximum number of tones to be encountered.
+ * This is more complicated than it might seem as tones can come from 
+ * different places.  Store the place to find tones for each antenna in
+ * pcalSourceFile[] .
+ */
 	in = fopen("pcal", "r");
 	if(in)
 	{
-		printf("    Station-extracted pcals available\n");
-		//check if it will be used and if so, how many tones it contains
-		for(i = 0; i < D->nDatastream; ++i)
+		fclose(in);
+		pcalExists = 1;
+	}
+
+	for(a = 0; a < D->nAntenna; ++a)
+	{
+		char pcalFile[DIFXIO_FILENAME_LENGTH];
+
+		v = snprintf(pcalFile, DIFXIO_FILENAME_LENGTH, "%s%s.%s.pcal", D->job->obsCode, D->job->obsSession, D->antenna[a].name);
+		if(v >= DIFXIO_FILENAME_LENGTH)
 		{
-			if(D->datastream[i].phaseCalIntervalMHz < 1)
+			fprintf(stderr, "Developer error: DifxInput2FitsPH: DIFXIO_FILENAME_LENGTH=%d is too small.  Wants to be %d.\n", DIFXIO_FILENAME_LENGTH, v+1);
+
+			exit(EXIT_FAILURE);
+		}
+
+		v = globcase(__FUNCTION__, "*.*.pcal", pcalFile);
+		if(v == 0)
+		{
+			/* try looking for a pure cable cal file */
+			v = snprintf(pcalFile, DIFXIO_FILENAME_LENGTH, "%s%s.%s.cablecal", D->job->obsCode, D->job->obsSession, D->antenna[a].name);
+			if(v >= DIFXIO_FILENAME_LENGTH)
 			{
-				nTone = getNTone("pcal", refDay + start, refDay + stop, verbose);
-				break;
+				fprintf(stderr, "Developer error: DifxInput2FitsPH: DIFXIO_FILENAME_LENGTH=%d is too small.  Wants to be %d.\n", DIFXIO_FILENAME_LENGTH, v+1);
+
+				exit(EXIT_FAILURE);
+			}
+		
+			v = globcase(__FUNCTION__, "*.*.cablecal", pcalFile);
+		}
+		if(v == 0)
+		{
+			if(pcalExists)
+			{
+				strcpy(pcalFile, "pcal");
+			}
+			else
+			{
+				continue;
+			}
+		}
+
+		v = getNTone(pcalFile, D->antenna[a].name, refDay + start, refDay + stop, verbose);
+		pcalSourceFile[a] = strdup(pcalFile);
+		if(v != 0)
+		{
+			if(abs(v) > nTone)
+			{
+				nTone = v;
 			}
 		}
 	}
-	else
-	{
-		printf("    Station pcal file not found. No station pcal or cable cal measurements available\n");
-	}
 	if(nTone < 0)
 	{
+		/* If we are here with nTone < 0, that means that no tones were found within the
+		 * time period specified by this job, but that potentially useful tones just outside
+		 * that time range do exist.
+		 *
+		 * setting doAll to 1 causes the time range restriction to be dropped when choosing
+		 * whether or not to save a tone.
+		 */
+
 		nTone = -nTone;
 		doAll = 1;
 	}
@@ -966,20 +1022,12 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	{
 		printf("Developer Error: DifxInput2FitsPH: nTone(=%d)*nBand(=%d) exceeds array_MAX_TONES(=%d).  No pulse cal data will be enFITSulated.\n", nTone, nBand, array_MAX_TONES);
 
-		if(in)
-		{
-			fclose(in);
-		}
-
 		exit(EXIT_FAILURE);
 	}
-	if(nTone < 1)
+	if(nTone == 0)
 	{
 		printf("    No PC table will be written\n");
-		if(in)
-		{
-			fclose(in);
-		}
+		free(pcalSourceFile);
 
 		return D;
 	}
@@ -1003,10 +1051,6 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	fitsbuf = (char *)calloc(nRowBytes, 1);
 	if(fitsbuf == 0)
 	{
-		if(in)
-		{
-			fclose(in);
-		}
 		fprintf(stderr, "Error: DifxInput2FitsPH: Memory allocation failure\n");
 
 		exit(EXIT_FAILURE);
@@ -1024,6 +1068,14 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	printf("  ");
 	for(a = 0; a < D->nAntenna; ++a)
 	{
+		if(pcalSourceFile[a])
+		{
+			in = fopen(pcalSourceFile[a], "r");
+		}
+		else
+		{
+			in = 0;
+		}
 		for(k = 0; k < 2; ++k)
 		{
 			for(t = 0; t < array_MAX_TONES; ++t)
@@ -1052,8 +1104,8 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 			dsId = DifxInputGetDatastreamId(D, j, a);
 			if(dsId < 0)
 			{
-				/*antenna not present in this job*/
-				continue;/*to next job*/
+				/* antenna not present in this job */
+				continue;	/* to next job */
 			}
 
 			if(D->datastream[dsId].phaseCalIntervalMHz > 0 && countTones(&(D->datastream[dsId])) > 0)
@@ -1074,7 +1126,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 				if(nDifxFile == 0)	/* no files found */
 				{
 					fprintf(stderr, "\nWarning: No PCAL files matching %s found for job %s antenna %s\n", globPattern, D->job[j].outputFile, D->antenna[a].name);
-					continue;	/*to next job*/
+					continue;	/* to next job */
 				}
 				
 				for(curDifxFile = 0; curDifxFile < nDifxFile; ++curDifxFile)
@@ -1096,7 +1148,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 			}
 			else
 			{
-				/*Don't mix DiFX and station pcals*/
+				/* Don't mix DiFX and station pcals within a given station */
 				if(nDifxTone)
 				{
 					if(countTones(&(D->datastream[dsId])) > 0)
@@ -1104,7 +1156,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 						printf("Warning: no pcals for Antenna %s in JobId %d\n", D->antenna[a].name, j);
 					}
 
-					continue;/*to next job*/
+					continue;	/* to next job */
 				}
 			}
 
@@ -1121,7 +1173,6 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 			lastnWindow = nWindow;
 
 
-			/*rewind(in) below this loop*/
 			while(1)
 			{
 				if(in && !nDifxTone)/*try reading pcal file*/
@@ -1284,26 +1335,26 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 								rv = fgets(line, MaxLineLength, in);
 								if(!rv)
 								{
-									break;/*to out of cablecal search*/
+									break;	/* to out of cablecal search */
 								}
 									
 								/* ignore possible comment lines */
 								if(line[0] == '#')
 								{
-									continue;/*to next line in file*/
+									continue;	/* to next line in file */
 								}
 								else 
 								{
 									n = sscanf(line, "%31s", antName);
 									if(n != 1 || strcmp(antName, D->antenna[a].name))
 									{
-										continue;/*to next line in file*/	
+										continue;	/* to next line in file */	
 									}
 									v = parsePulseCalCableCal(line, a, &lineCableSourceId, &lineCableScanId, &lineCableTime, &lineCablePeriod, 
 										&lineCableCal, refDay, D, &lineCableConfigId, phaseCentre, year);
 									if(v < 0)
 									{
-										continue;/*to next line in file*/
+										continue;	/* to next line in file */
 									}
 									cableScanId = nextCableScanId;
 									cableTime = nextCableTime;
@@ -1447,15 +1498,10 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 		}/*end job loop*/
 		if(in)
 		{
-			rewind(in);
+			fclose(in);
 		}
-
 	}/*end antenna loop*/
 
-	if(in)
-	{
-		fclose(in);
-	}
 	if(in2)	/* this should never be true the way things work */
 	{
 		fprintf(stderr, "\n\nDeveloper error: Somehow in2 != 0 at end of DifxInput2FitsPH.\nPlease file a bug report\n");
@@ -1463,6 +1509,15 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	}
 
 	free(fitsbuf);
+
+	for(a = 0; a < D->nAntenna; ++a)
+	{
+		if(pcalSourceFile[a])
+		{
+			free(pcalSourceFile[a]);
+		}
+	}
+	free(pcalSourceFile);
 
 	printf("\n");
 

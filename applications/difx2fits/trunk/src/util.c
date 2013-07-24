@@ -29,6 +29,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <glob.h>
 #include "util.h"
 
@@ -73,13 +74,13 @@ int glob2(const char *label, const char *pattern, int flags, int errfunc(const c
  *
  * Return: number of files that matched.
  */
-int globcase(const char *match, char *fileName)
+int globcase(const char *label, const char *match, char *fileName)
 {
-	int i, v;
+	int i;
 	int n = 0;
 	glob_t globbuf;
 
-	v = glob(match, 0, 0, &globbuf);
+	glob2(label, match, 0, 0, &globbuf);
 
 	if(globbuf.gl_pathc == 0)
 	{
@@ -97,7 +98,9 @@ int globcase(const char *match, char *fileName)
 			}
 			else if(n == 1)
 			{
-				fprintf(stderr, "\nWarning: multiple filenames matching %s differing only in case were found.\n", fileName);
+				fprintf(stderr, "\nError: multiple filenames matching %s differing only in case were found.\n", fileName);
+
+				exit(EXIT_FAILURE);
 			}
 			++n;
 		}

@@ -272,18 +272,12 @@ const DifxInput *DifxInput2FitsWR(const DifxInput *D, struct fits_keywords *p_fi
 			exit(0);
 		}
 
-		v = globcase("*.*.weather", weatherFile);
+		v = globcase(__FUNCTION__, "*.*.weather", weatherFile);
 		if(v == 0)
 		{
 			/* no matching files */
 
 			continue;
-		}
-		else if(v > 1)
-		{
-			/* multiple matching files found */
-
-			exit(EXIT_FAILURE);
 		}
 
 		v = processWeatherFile(D, D->antenna[antId].name, weatherFile, out, fitsbuf, nRowBytes, nColumn, columns, alreadyHasWeather, refDay, year, mjdLast);
