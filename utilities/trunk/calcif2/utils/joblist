@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #**************************************************************************
-#   Copyright (C) 2008-2011 by Walter Brisken                             *
+#   Copyright (C) 2008-2013 by Walter Brisken                             *
 #                                                                         *
 #   This program is free software; you can redistribute it and/or modify  *
 #   it under the terms of the GNU General Public License as published by  *
@@ -34,8 +34,8 @@ from glob import glob
 from string import split, strip, find
 
 program = 'joblist'
-version = '1.4'
-verdate = '20080718'
+version = '1.5'
+verdate = '20130508'
 author  = 'Walter Brisken'
 
 showstatus = 1
@@ -52,9 +52,6 @@ def usage():
 	print '  c  .calc       model parameters and others'
 	print '  m  .machines   MPI input file -- cluster configuration'
 	print '  t  .threads    how many processing threads per core node'
-	print '  u  .uvw        tabulation of baseline vectors'
-	print '  d  .delay      tabulation of delay model'
-	print '  r  .rate       tabulation of delay rate and atmosphere'
 	print '  i  .im         polynomials for delay, u,v,w, and atmosphere'
 	print '  v  .difx/      visibilities produced by mpifxcorr\n'
 
@@ -112,9 +109,6 @@ def getstat(input):
 	files = [['calc', 'c'], \
 		 ['machines', 'm'], \
 		 ['threads', 't'], \
-		 ['uvw', 'u'], \
-		 ['delay', 'd'], \
-		 ['rate', 'r'], \
 		 ['im', 'i'], \
 		 ['difx', 'v']]
 
@@ -124,10 +118,6 @@ def getstat(input):
 			s = s + f[1]
 		else:
 			s = s + ' '
-	#if hasfits(input):
-	#	s = s + 'F'
-	#else:
-	#	s = s + ' '
 	s = s + ']'
 	return s
 	
@@ -150,7 +140,7 @@ def summarize(input, i, n, dotree):
 	npol = 0
 	fq = []
 	nsec = 0
-	trippel = ''
+	triple = ''
 	oversamp = 1
 	for d in data:
 		if d[:19] == 'EXECUTE TIME (SEC):':
@@ -175,19 +165,19 @@ def summarize(input, i, n, dotree):
 		if d[:11] == 'DATA FORMAT':
 			p = find(d[20:], '-')
 			if p > 0:
-				trippel = strip(d[p+21:])
+				triple = strip(d[p+21:])
 			
 	if npol == 4:
 		nchan = nfreq*2
 	else:
 		nchan = nfreq*npol
 
-	if trippel == '':
-		trippel = '%d-%d-%d' % (int(oversamp*bw*nchan*nbit*2+0.5), nchan, nbit)
+	if triple == '':
+		triple = '%d-%d-%d' % (int(oversamp*bw*nchan*nbit*2+0.5), nchan, nbit)
 			
 	band = genband(fq)
 	
-	sum = '%s %s%6.1fm %8s  %s' % (stat, band, nsec/60., trippel, ants[:-1])
+	sum = '%s %s%6.1fm %8s  %s' % (stat, band, nsec/60., triple, ants[:-1])
 	if dotree:
 		tree = '%c- ' % c
 	else:

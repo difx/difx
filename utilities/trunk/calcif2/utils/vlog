@@ -30,12 +30,13 @@
 #============================================================================
 
 from sys import argv, stdout, exit
-from string import split, strip, find
+from os import getcwd
+from string import split, strip, find, rfind, lower
 import gzip
 
 program = 'vlog'
-version = 1.5
-verdate = '20130122'
+version = 1.6
+verdate = '20130723'
 author  = 'Walter Brisken'
 
 def usage():
@@ -47,6 +48,16 @@ def usage():
 	print '    -h         print this help info and quit\n'
 	print '    --mjd'
 	print '    -m         use mjd rather than doy timestamps\n'
+	print '    --mark5a'
+	print '    -a         force to run in Mark5A mode\n'
+	print '    --mark5c'
+	print '    -c         force to run in Mark5C mode\n'
+	print '    --exper <exp>'
+	print '    -e <exp>   name the output files by <exp>.<ant>.<file>\n'
+	print '    --project'
+	print '    -p         take experiment name from input file\n'
+	print '    --transition'
+	print '    -t         transition mode: write both styles of output\n'
 	print '  <TSM file> is <project>cal.vlba or <project>cal.vlba.gz\n'
 	print '  <antenna list> is a comma separated list of antennas with'
 	print '          no spaces, e.g., FD,GB,Y.  Default -- all ants.\n'
@@ -470,7 +481,9 @@ def makeTS(sections, antenna, startyear, startdoy, useMJD):
 
 	return TS, BBCmap
 
-def writetable(table, filename, ants, tablename):
+def writetable(table, filename, ants, tablename, columncount):
+	filename = lower(filename)	# to ensure some uniformity
+	print 'Writing %s' % filename
 	f = open(filename, 'w')
 	stdout.write('%s:' % tablename)
 	for a in ants:
@@ -481,7 +494,14 @@ def writetable(table, filename, ants, tablename):
 				if row[0] == '#':
 					f.write('%s\n' % row)
 				else:
-					f.write('%s %s\n' % (a, row))
+					if columncount > 0:
+						s = split(row)
+						data = a
+						for i in range(columncount-1):
+							data += ' ' + s[i]
+						f.write('%s\n' % data)
+					else:
+						f.write('%s %s\n' % (a, row))
 	f.close()
 	stdout.write('\n')
 
@@ -494,31 +514,83 @@ def findantennas(sections):
 	ants.sort()
 	return ants
 
+def getIsMark5C():
+	ldir = lower(getcwd())
+	if find(ldir, 'mark5a') >= 0:
+		return 0
+	elif find(ldir, 'mark5c') >= 0:
+		return 1
+	else:
+		return -1;
+
 # -- main() -----------------
 
 sections = {}
 ants = []
 useMJD = False
 antArg = None
+isMark5C = -1
+mode = 'classic'
+exper = ''
+getexper = False
+takeproject = False
 
 for a in argv[1:]:
 	if a[0] == '-':
-		if a in ['-h', '--help']:
+		getexper = False
+		if lower(a) in ['-h', '--help']:
 			usage()
-		elif a in ['-m', '--mjd']:
+		elif lower(a) in ['-m', '--mjd']:
 			useMJD = True
+		elif lower(a) in ['-a', '--mark5a']:
+			isMark5C = 0
+		elif lower(a) in ['-c', '--mark5c']:
+			isMark5C = 1
+		elif lower(a) in ['-t', '--transition']:
+			if exper == '':
+				takeproject = True
+			mode = 'transition'
+		elif lower(a) in ['-p', '--project']:
+			takeproject = True
+			mode = 'nouveau'
+		elif lower(a) in ['-e', '--exper']:
+			getexper = True
+			mode = 'nouveau'
 		else:
 			print 'unrecongized option %s' % a
 			exit(0)
+	elif getexper:
+		getexper = False
+		exper = a
+		mode = 'nouveau'
 	elif len(sections) == 0:
-		sections, startyear, startdoy = chop(a)
+		inputFile = a
+		sections, startyear, startdoy = chop(inputFile)
 	elif antArg == None:
 		antArg = a
 	else:
 		usage()
 
+if getexper:
+	print 'An experiment name is needed when supplied with -e / --exper'
+	exit(0)
+
+if exper != '' and takeproject:
+	print 'Cannot simultaneously specify -p / --project and -e / --exper'
+	exit(0)
+
 if len(sections) == 0:
 	usage()
+
+if takeproject:
+	# project code is between last / (if any) and "cal.vlba"
+	p = find(inputFile, 'cal.vlba')
+	q = rfind(inputFile, '/')+1
+	if p < 0:
+		print 'cannot use -p / --project option with a filename unless it contains cal.vlba'
+		exit(0)
+
+	exper = inputFile[q:p]
 
 if antArg != None:
 	ants = split(antArg, ',')
@@ -527,6 +599,13 @@ else:
 
 if len(ants) == 0:
 	usage()
+
+if isMark5C < 0:
+	isMark5C = getIsMark5C()
+
+if isMark5C < 0:
+	print 'Cannot determine if this is Mark5A or Mark5C.  Assuming Mark5A'
+	isMark5C = 0;
 
 print 'It looks like the observation started on day %d of year %d' % (startdoy, startyear)
 
@@ -556,8 +635,30 @@ for a in ants:
 		if ph != None:
 			PHs[a] = ph
 
-writetable(FGs, 'flag',    ants, 'FG')
-writetable(TSs, 'tsys',    ants, 'TS')
-writetable(WRs, 'weather', ants, 'WR')
-writetable(PHs, 'pcal',    ants, 'PH')
+# Three possible modes:
+# 1. "classic" : write 4 files (don't separate by antenna or name with exper)
+# 2. "nouveau" : write antenna-specific files and name with experiment
+# 3. "transition" : do both
+
+if mode in ['classic', 'transition']:
+	writetable(FGs, 'flag',    ants, 'FG', 0)
+	writetable(WRs, 'weather', ants, 'WR', 0)
+	writetable(TSs, 'tsys',    ants, 'TS', 0)
+	if isMark5C > 0:
+		writetable(PHs, 'pcal',    ants, 'PH', 4)
+	else:
+		writetable(PHs, 'pcal',    ants, 'PH', 0)
+
+if mode in ['nouveau', 'transition']:
+	for a in ants:
+		if mode == 'nouveau':
+			# to avoid duplicate flags, transition mode won't write station-specific flag files
+			writetable(FGs, '%s.%s.flag' % (exper, a), [a], 'FG', 0)
+		if isMark5C > 0:
+			# the tsys and pcal values here are not useful
+			writetable(PHs, '%s.%s.cablecal' % (exper, a), [a], 'PH', 4)
+		else:
+			writetable(TSs, '%s.%s.tsys' % (exper, a), [a], 'TS', 0)
+			writetable(PHs, '%s.%s.pcal' % (exper, a), [a], 'PH', 0)
+		writetable(WRs, '%s.%s.weather' % (exper, a), [a], 'WR', 0)
 

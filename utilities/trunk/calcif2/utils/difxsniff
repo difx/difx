@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #**************************************************************************
-#   Copyright (C) 2008-2011 by Walter Brisken                             *
+#   Copyright (C) 2008-2013 by Walter Brisken                             *
 #                                                                         *
 #   This program is free software; you can redistribute it and/or modify  *
 #   it under the terms of the GNU General Public License as published by  *
@@ -34,17 +34,18 @@ from os import chdir, popen, system, getcwd
 from string import strip, split, find, lower, upper
 
 program = 'difxsniff'
-version = '2.0'
-verdate = '20100902'
+version = '2.1'
+verdate = '20130508'
 author  = 'Walter Brisken'
 
 def usage():
 	print '\n%s ver. %s   %s %s' % (program, version, verdate, author)
 	print '\nA program to "sniff" FITS files made by DiFX\n'
-	print 'Usage: ./difxsniff [options] <refants> <filebase1> [<filebase2> [...] ]'
+	print 'Usage: ./difxsniff [options] <refant1> [<refant2> [...] ] <fitsfile1> [<fitsfile2> [...] ]'
 	print '\nOptions can include:'
-	print '  -h or --help : print this info and quit.'
-	print 'each "file" is a FITS file made by difx2fits\n'
+	print '  -h or --help : print this info and quit\n'
+	print 'One or more refant identified by a 1 or 2 letter code must be provided.\nAll baselines to each of these refants will be processed.\n'
+	print 'Each "fitsfile" is a FITS file made by difx2fits.  Each of these files must\nhave accompanying sniffer data files with extensions .acb , .apd, .wts\nand .xcb .\n'
 
 def reverseapd(dataline):
 	s = split(strip(dataline))
@@ -215,11 +216,11 @@ for a in argv[1:]:
 		refants.append(upper(a))
 
 if len(files) == 0:
-	print 'Error: no input files provided.'
+	print 'Error: no input files provided'
 	exit(0)
 
 if len(refants) == 0:
-	print 'Error: no refants provided.'
+	print 'Error: no refants provided'
 	exit(0)
 
 if dir[-1] != '/':
@@ -239,5 +240,5 @@ if nFITS == 0:
 elif nFITS == len(files):
 	sniff(files, refants, dir, False)
 else:
-	print 'Error -- mixed FITS files and file prefixes'
+	print 'Error: mixed FITS files and file prefixes'
 
