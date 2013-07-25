@@ -40,9 +40,9 @@
 #include "util.h"
 
 const char program[] = "rdbetsys";
-const char version[] = "1.5";
+const char version[] = "1.6";
 const char author[]  = "Walter Brisken";
-const char verdate[] = "20130714";
+const char verdate[] = "20130725";
 
 const char defaultSwitchedPowerPath[] = "/home/vlba/metadata/switchedpower";
 const double defaultTsysInterval = 15.0;	// Seconds
@@ -53,6 +53,7 @@ static void usage(const char *pgm)
 {
 	printf("\n%s ver. %s   %s  %s\n\n", program, version, author, verdate);
 	printf("Usage: %s [options] <input vex file> <output tsys file>\n\n", pgm);
+	printf("Usage: %s [options] -p <input vex file>\n\n", pgm);
 	printf("where options can include:\n\n");
 	printf("  --help\n");
 	printf("  -h          print help info and quit\n\n");
@@ -70,6 +71,8 @@ static void usage(const char *pgm)
 	printf("  -d          datestamp in DOY, not MJD\n\n");
 	printf("  --antab\n");
 	printf("  -a          produce output in ANTAB format\n\n");
+	printf("  --per-antenna\n");
+	printf("  -p          produce one output file per antenna\n\n");
 	printf("Note that env. var. TCAL_PATH must be set to point to TCal data\n\n");
 }
 
@@ -141,6 +144,23 @@ std::string fileList2String(const std::list<std::string> &fileList)
 	}
 
 	return str;
+}
+
+void writeFileHeader(FILE *out, bool doAntab)
+{
+	if(doAntab)
+	{
+		fprintf(out, "! Produced by: %s ver. %s\n\n", program, version);
+		fprintf(out, "! The file contains Tsys values from the VLBA/GBT wideband system.\n\n");
+		fprintf(out, "! Warning to user! The Tsys values in this file are listed in\n");
+		fprintf(out, "! in the order channels are defined in the .vex file.  This means\n");
+		fprintf(out, "! that you may need to add INDEX lines to this file to make it\n");
+		fprintf(out, "! meaningful.  The INDEX value may vary with scan and by antenna!\n");
+	}
+	else
+	{
+		fprintf(out, "# TSYS file created by %s ver. %s\n", program, version);
+	}
 }
 
 void genFileList(std::list<std::string> &fileList, const char *switchedPowerPath, const char *stn, const VexInterval &timeRange)
@@ -589,6 +609,9 @@ static int processStation(FILE *out, const VexData &V, const std::string &stn, c
 	TsysAccumulator TA;
 	const VexMode *mode = 0;
 	const VexSetup *setup = 0;
+	bool doSingleFile;
+
+	doSingleFile = (out != 0);	// true if out is a non-null pointer
 
 	command = "xzcat " + fileList2String(fileList) + " 2> /dev/null";
 	if(verbose > 2)
@@ -601,6 +624,22 @@ static int processStation(FILE *out, const VexData &V, const std::string &stn, c
 		std::cerr << "cannot open pipe: " << command << std::endl;
 
 		return -1;
+	}
+
+	if(!doSingleFile)
+	{
+		// Make separate file per antenna
+
+		std::string filename = V.getExper()->name + '.' + stn.c_str() + ".tsys";
+		Lower(filename);	// to keep filename in all lowercase
+
+		out = fopen(filename.c_str(), "w");
+		if(!out)
+		{
+			std::cerr << "Error: cannot open " << filename << " for write.  Stopping." << std::endl;
+		}
+
+		writeFileHeader(out, doAntab);
 	}
 
 	if(doAntab)
@@ -680,6 +719,11 @@ static int processStation(FILE *out, const VexData &V, const std::string &stn, c
 				if(!scan)
 				{
 					std::cerr << "Error: scan " << scanNum << "does not exist" << std::endl;
+
+					if(!doSingleFile)
+					{
+						fclose(out);
+					}
 
 					return -1;
 				}
@@ -769,6 +813,11 @@ static int processStation(FILE *out, const VexData &V, const std::string &stn, c
 
 	pclose(p);
 
+	if(!doSingleFile)
+	{
+		fclose(out);
+	}
+
 	if(nGood)
 	{
 		*nGood = TA.getnGood();
@@ -829,6 +878,7 @@ int main(int argc, char **argv)
 	int nWarn = 0;
 	bool doAntab = false;
 	bool doMJD = true;
+	bool doSingleFile = true;
 	std::list<std::string> fileList;
 	std::map<std::string,VexInterval> as;
 	const char *vexFilename = 0;
@@ -872,6 +922,11 @@ int main(int argc, char **argv)
 			   strcasecmp(argv[a], "--doy") == 0)
 			{
 				doMJD = false;
+			}
+			else if(strcmp(argv[a], "-p") == 0 ||
+			   strcasecmp(argv[a], "--per-antenna") == 0)
+			{
+				doSingleFile = false;
 			}
 			else if(strcmp(argv[a], "-a") == 0 ||
 			   strcasecmp(argv[a], "--antab") == 0)
@@ -920,14 +975,28 @@ int main(int argc, char **argv)
 		}
 	}
 
+	if(!doSingleFile && doAntab)
+	{
+		std::cerr << "We don't allow writing separate files per antenna in ANTAB mode" << std::endl;
+
+		return EXIT_FAILURE;
+	}
+
 	if(doMJD && doAntab)
 	{
 		doMJD = false;
 	}
 
-	if(tsysFilename == 0)
+	if(tsysFilename == 0 && doSingleFile)
 	{
 		std::cerr << "Incomplete command line.  Run with -h for help." << std::endl;
+
+		return EXIT_FAILURE;
+	}
+
+	if(tsysFilename != 0 && !doSingleFile)
+	{
+		std::cerr << "Cannot provide filename with per-antenna mode." << std::endl;
 
 		return EXIT_FAILURE;
 	}
@@ -987,30 +1056,26 @@ int main(int argc, char **argv)
 		std::cerr << "Warning " << nWarn << " warnings in reading the vex file: " << vexFilename << std::endl;
 	}
 
-	out = fopen(tsysFilename, "w");
-	if(!out)
+	if(doSingleFile)
 	{
-		std::cerr << "Error: cannot open " << tsysFilename << "for write." << std::endl;
+		out = fopen(tsysFilename, "w");
+		if(!out)
+		{
+			std::cerr << "Error: cannot open " << tsysFilename << "for write." << std::endl;
 
-		delete V;
-		delete P;
-		deleteDifxTcal(T);
+			delete V;
+			delete P;
+			deleteDifxTcal(T);
 
-		return EXIT_FAILURE;
-	}
-
-	if(doAntab)
-	{
-		fprintf(out, "! Produced by: %s ver. %s\n\n", program, version);
-		fprintf(out, "! The file contains Tsys values from the VLBA/GBT wideband system.\n\n");
-		fprintf(out, "! Warning to user! The Tsys values in this file are listed in\n");
-		fprintf(out, "! in the order channels are defined in the .vex file.  This means\n");
-		fprintf(out, "! that you may need to add INDEX lines to this file to make it\n");
-		fprintf(out, "! meaningful.  The INDEX value may vary with scan and by antenna!\n");
+			return EXIT_FAILURE;
+		}
+		
+		writeFileHeader(out, doAntab);
 	}
 	else
 	{
-		fprintf(out, "# TSYS file created by %s ver. %s\n", program, version);
+		// Signal to downstream that a per-station file is to be written
+		out = 0;
 	}
 
 	antennaSummary(*V, as);
@@ -1097,7 +1162,10 @@ int main(int argc, char **argv)
 		std::cout << " (" << zeroStations << ") had zero records written.  No Tsys information will be available for those antennas." << std::endl;
 	}
 
-	fclose(out);
+	if(out)
+	{
+		fclose(out);
+	}
 
 	delete V;
 	delete P;
