@@ -10,8 +10,8 @@ from time import time
 import datetime
 
 program = 'queueVex'
-version = '1.15'
-verdate = '20130617'
+version = '1.16'
+verdate = '20130726'
 author  = 'Walter Brisken & Matthias Bark'
 
 verbose = 1
@@ -226,7 +226,7 @@ for a in argv[1:]:
 	if haveFile:
 		file = a
 		haveFile = False
-	if haveV2S:
+	elif haveV2S:
 		vex2scriptProgram = a
 		haveV2S = False
 	elif a[0] == '-':
