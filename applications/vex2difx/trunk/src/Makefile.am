@@ -3,6 +3,7 @@ bin_PROGRAMS = \
 	vex2script \
 	vex2opt \
 	rdbetsys \
+	vlatsys \
 	vexpeek
 
 LDADD = \
@@ -18,6 +19,15 @@ vex2difx_SOURCES = \
 	util.h \
 	util.cpp \
 	vex2difx.cpp 
+
+vlatsys_SOURCES = \
+	vextables.h \
+	vextables.cpp \
+	vexload.h \
+	vexload.cpp \
+	corrparams.h \
+	corrparams.cpp \
+	vlatsys.cpp
 
 rdbetsys_SOURCES = \
 	vextables.h \
@@ -54,8 +64,20 @@ vex2opt_SOURCES = \
 	optresources.h \
 	vex2opt.cpp 
 
+#vdisks_SOURCES = \
+#	vdisks.cpp \
+#	vextables.cpp \
+#	vextables.h \
+#	vexload.cpp \
+#	vexload.h \
+#	corrparams.cpp \
+#	corrparams.h
+
 vexpeek_SOURCES = \
 	vexpeek.cpp \
 	vextables.cpp \
+	vextables.h \
 	vexload.cpp \
-	corrparams.cpp
+	vexload.h \
+	corrparams.cpp \
+	corrparams.h
