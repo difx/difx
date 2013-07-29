@@ -50,8 +50,7 @@ const char *defaultRxName = "0cm";
 static void usage(const char *pgm)
 {
 	printf("\n%s ver. %s   %s  %s\n\n", program, version, author, verdate);
-	printf("Usage: %s [options] <input vex file> <output tsys file>\n\n", pgm);
-	printf("Usage: %s [options] -p <input vex file>\n\n", pgm);
+	printf("Usage: %s [options] <input vex file> <input VLANT file>\n\n", pgm);
 	printf("where options can include:\n\n");
 	printf("  --help\n");
 	printf("  -h          print help info and quit\n\n");
@@ -319,13 +318,14 @@ void TsysAccumulator::feed(double mjd, int nChan, const double *tsys, const doub
 	fprintf(out, "\n");
 }
 
-static int processStation(FILE *out, const VexData &V, const std::string &stn, const char *antabFilename, const VexInterval &stnTimeRange, int verbose, long long *nGood, long long *nBad, long long *nLine, long long *nTimeError, long long *nSkip, bool doMJD)
+static int processStation(const std::string &filePrefix, const VexData &V, const std::string &stn, const char *antabFilename, const VexInterval &stnTimeRange, int verbose, long long *nGood, long long *nBad, long long *nLine, long long *nTimeError, long long *nSkip, bool doMJD)
 {
 	const int MaxChannels = 64;
 	const int MaxLineLength = 32768;	// make sure it is large enough!
 	const int MaxAntennaNameLength = 8;
 	char line[MaxLineLength];
 	FILE *in;				// antab file descriptor
+	FILE *out;				// first the .tsys file, then maybe the .gain file
 	std::string command;
 	int nRecord = 0;
 	char *v;
@@ -347,17 +347,28 @@ static int processStation(FILE *out, const VexData &V, const std::string &stn, c
 	double timeoffset, ft;
 	char antenna[MaxAntennaNameLength+1];
 	int year0, doy0;	// at start of experiment
+	std::string outFilename;
 
 	mjd2yearday(int(V.getExper()->mjdStart), &year0, &doy0);
 
 	in = fopen(antabFilename, "r");
-
 	if(!in)
 	{
-		std::cerr << "cannot open file: " << antabFilename << std::endl;
+		std::cerr << "cannot open for read file: " << antabFilename << std::endl;
 
 		return -1;
 	}
+
+	outFilename = filePrefix + ".tsys";
+	out = fopen(outFilename.c_str(), "w");
+	if(!out)
+	{
+		std::cerr << "cannot open for write file: " << outFilename << std::endl;
+		fclose(in);
+
+		return -1;
+	}
+	writeFileHeader(out);
 
 	fprintf(out, "# %s %14.8f %14.8f\n", stn.c_str(), stnTimeRange.mjdStart, stnTimeRange.mjdStop);
 	fprintf(out, "# ant D.O.Y. dur(days) nRecChan (tsys, bandName)[nRecChan]\n");
@@ -487,6 +498,34 @@ static int processStation(FILE *out, const VexData &V, const std::string &stn, c
 			continue;
 		}
 
+		if(line[0] == '/')
+		{
+			fclose(out);
+
+			outFilename = filePrefix + ".gain";
+			out = fopen(outFilename.c_str(), "w");
+			if(!out)
+			{
+				std::cerr << "cannot open for write file: " << outFilename << std::endl;
+				fclose(in);
+
+				return -1;
+			}
+
+			for(;;)
+			{
+				v = fgets(line, MaxLineLength-1, in);
+				if(!v)
+				{
+					break;
+				}
+				fprintf(out, line);
+				++(*nLine);
+			}
+		
+			break;
+		}
+		
 		// is it a data line?
 		rv = regexec(&dataLineMatch, line, 5, matchPtr, 0);
 		if(rv == 0)
@@ -618,7 +657,8 @@ static int processStation(FILE *out, const VexData &V, const std::string &stn, c
 	regfree(&tsysLineMatch);
 	regfree(&dataLineMatch);
 
-	pclose(in);
+	fclose(in);
+	fclose(out);
 
 	if(nGood)
 	{
@@ -676,9 +716,7 @@ int main(int argc, char **argv)
 	std::map<std::string,VexInterval> as;
 	const char *vexFilename = 0;	// input vex file
 	const char *antabFilename = 0;	// input Tsys file
-	char tsysFilename[MaxFilenameLength];	// output difx-format tsys file
-	FILE *out;
-	int p, v;
+	int p;
 	int verbose = 1;
 	long long nGood=0, nBad=0, nLine=0, nTimeError=0, nSkip=0;
 
@@ -769,30 +807,6 @@ int main(int argc, char **argv)
 		std::cerr << "Warning " << nWarn << " warnings in reading the vex file: " << vexFilename << std::endl;
 	}
 
-	v = snprintf(tsysFilename, MaxFilenameLength, "%s.y.tsys", V->getExper()->name.c_str());
-	if(v >= MaxFilenameLength)
-	{
-		std::cerr << "Developer error: MaxFilenameLength is too small (" << MaxFilenameLength << " < " << v << ")" << std::endl;
-
-		delete V;
-		delete P;
-
-		return EXIT_FAILURE;
-	}
-
-	out = fopen(tsysFilename, "w");
-	if(!out)
-	{
-		std::cerr << "Error: cannot open " << tsysFilename << "for write." << std::endl;
-
-		delete V;
-		delete P;
-
-		return EXIT_FAILURE;
-	}
-	
-	writeFileHeader(out);
-
 	antennaSummary(*V, as);
 
 	std::cout.precision(13);
@@ -801,6 +815,7 @@ int main(int argc, char **argv)
 	std::map<std::string,VexInterval>::const_iterator it;
 	for(it = as.begin(); it != as.end(); ++it)
 	{
+		std::string filePrefix;
 		int nRecord;
 
 		// it->first is the station name
@@ -822,7 +837,9 @@ int main(int argc, char **argv)
 			std::cout.precision(p);
 		}
 
-		nRecord = processStation(out, *V, it->first, antabFilename, it->second, verbose, &nGood, &nBad, &nLine, &nTimeError, &nSkip, doMJD);
+		filePrefix = V->getExper()->name + "." + stn;
+		Lower(filePrefix);
+		nRecord = processStation(filePrefix, *V, it->first, antabFilename, it->second, verbose, &nGood, &nBad, &nLine, &nTimeError, &nSkip, doMJD);
 
 		std::cout << nLine << " lines read" << std::endl;
 		std::cout << nRecord << " switched power records read" << std::endl;
@@ -831,8 +848,6 @@ int main(int argc, char **argv)
 		std::cout << nSkip << " Tsys records skipped (probably because no Tcal)" << std::endl;
 		std::cout << nTimeError << " time errors encountered" << std::endl;
 	}
-
-	fclose(out);
 
 	delete V;
 	delete P;
