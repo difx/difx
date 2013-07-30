@@ -584,6 +584,8 @@ static int processStation(const std::string &filePrefix, const VexData &V, const
 					break;
 				}
 
+				tsys[i] *= ft;
+
 				p += n;
 			}
 
