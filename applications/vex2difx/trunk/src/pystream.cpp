@@ -1681,10 +1681,7 @@ int pystream::writeLoifTable(const VexData *V)
 					exit(EXIT_FAILURE);
 				}
 
-				// tuning of first channel attached to this IF; not needed for GBT
-				if(scriptType != SCRIPT_GBT) {
-					*this << ", " << (firstTune * 1.0e-6);
-				}
+				*this << ", " << (firstTune * 1.0e-6);
 
 				// close statement
 				*this << ")" << endl;
