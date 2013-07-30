@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2012 by Walter Brisken                             *
+ *   Copyright (C) 2008-2013 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -35,10 +35,11 @@
 #include <glob.h>
 #include "config.h"
 #include "difx2fits.h"
+#include "util.h"
 #include "other.h"
 
 
-#define MAXENTRIES		5000UL
+#define MAXENTRIES		8000UL
 #define MAXTOKEN		512
 #define MAXTAB			6
 #define N_VLBA_BANDS		12
@@ -73,6 +74,20 @@ static const float bandEdges[N_VLBA_BANDS+1] =
 	70000,	/* 3mm  W  */
 	100000	/* end of list marker */
 };
+
+/* function that just renames matching antennas in the table to render them useless */
+static void nullifyGainRows(GainRow *G, int nRow, const char *antenna)
+{
+	int r;
+
+	for(r = 0; r < nRow; ++r)
+	{
+		if(strcasecmp(antenna, G[r].antName) == 0)
+		{
+			strcpy(G[r].antName, "-");
+		}
+	}
+}
 
 /* freq in MHz, t in days since ref day */
 /* if sxFlag is set, only look for 4cmsx or 13cmsx */
@@ -414,6 +429,10 @@ static void GainRowsSetTimeBand(GainRow *G, int nRow)
 
 	for(i = 0; i < nRow; ++i)
 	{
+		if(G[i].antName[0] == '-')
+		{
+			continue;
+		}
 		if(G[i].nPoly != 0 && G[i].nFreq != 0 && 
 		   G[i].nTime != 0 && G[i].nDPFU != 0)
 		{
@@ -437,53 +456,85 @@ static void GainRowsSetTimeBand(GainRow *G, int nRow)
 	}
 }
 
-int loadGainCurves(GainRow *G)
+int loadGainCurves(const DifxInput *D, GainRow *G)
 {
 	char *path;
-	char pattern[DIFXIO_FILENAME_LENGTH];
-	glob_t files;
 	int nRow = 0;
 	int v;
 	unsigned int f;
-	
+	int antId;
+
+	/* In this function we first load up all the gain files foind in $GAIN_CURVE_PATH.
+	 * Then we look for local gain files called <exper>.<ant>.gain .  If found, the
+	 * already loaded data is invalidated and the per-antenna file is loaded.
+	 */
+
 	path = getenv("GAIN_CURVE_PATH");
 	if(path == 0)
 	{
-		printf("\n    GAIN_CURVE_PATH not set; skipping GN table.\n");
+		printf("\n    GAIN_CURVE_PATH not set; only using local gain files.\n");
 		printf("                            ");
-
-		return -1;
 	}
+	else
+	{
+		char pattern[DIFXIO_FILENAME_LENGTH];
+		glob_t files;
+		
+		memset((char *)&files, 0, sizeof(glob_t));
+		v = snprintf(pattern, DIFXIO_FILENAME_LENGTH, "%s/*", path);
+		if(v >= DIFXIO_FILENAME_LENGTH)
+		{
+			fprintf(stderr, "\n    loadGainCurves: glob pattern too long.\n");
+			printf("                            ");
+
+			return -2;
+		}
+		glob(pattern, 0, 0, &files);
+		if(files.gl_pathc == 0)
+		{
+			printf("\n    No files found in $GAIN_CURVE_PATH\n");
+			printf("                            ");
+		}
+		else
+		{
+			for(f = 0; f < files.gl_pathc; ++f)
+			{
+				nRow = parseGN(files.gl_pathv[f], nRow, G);
+			}
+		}
+
+		globfree(&files);
+	}
+
+	for(antId = 0; antId < D->nAntenna; ++antId)
+	{
+		char gainFile[DIFXIO_FILENAME_LENGTH];
+
+		v = snprintf(gainFile, DIFXIO_FILENAME_LENGTH, "%s%s.%s.gain", D->job->obsCode, D->job->obsSession, D->antenna[antId].name);
+		if(v >= DIFXIO_FILENAME_LENGTH)
+		{
+			fprintf(stderr, "\n\nDeveloper error: DifxInput2FitsGN: DIFXIO_FILENAME_LENGTH=%d is too small.  Wants to be %d.\n", DIFXIO_FILENAME_LENGTH, v+1);
+
+			exit(EXIT_FAILURE);
+		}
+
+		v = globcase(__FUNCTION__, "*.*.gain", gainFile);
+		if(v == 0)
+		{
+			/* no matching file */
+
+			continue;
+		}
 	
-	memset((char *)&files, 0, sizeof(glob_t));
-	v = snprintf(pattern, DIFXIO_FILENAME_LENGTH, "%s/*", path);
-	if(v >= DIFXIO_FILENAME_LENGTH)
-	{
-		fprintf(stderr, "\n    loadGainCurves: glob pattern too long.\n");
-		printf("                            ");
+		nullifyGainRows(G, nRow, D->antenna[antId].name);
 
-		return -2;
-	}
-	glob(pattern, 0, 0, &files);
-	if(files.gl_pathc == 0)
-	{
-		printf("\n    No files found in $GAIN_CURVE_PATH\n");
-		printf("                            ");
-
-		return -3;
-	}
-	
-	for(f = 0; f < files.gl_pathc; ++f)
-	{
-		nRow = parseGN(files.gl_pathv[f], nRow, G);
+		nRow = parseGN(gainFile, nRow, G);
 	}
 
 	if(nRow > 0)
 	{
 		GainRowsSetTimeBand(G, nRow);
 	}
-
-	globfree(&files);
 
 	return nRow;
 }
@@ -603,7 +654,7 @@ const DifxInput *DifxInput2FitsGN(const DifxInput *D, struct fits_keywords *p_fi
 	}
 	nRowBytes = FitsBinTableSize(columns, nColumn);
 
-	nRow = loadGainCurves(G);
+	nRow = loadGainCurves(D, G);
 	if(nRow < 0)
 	{
 		/* gain file not found.  Not necessarily a problem. */
