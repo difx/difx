@@ -2526,12 +2526,9 @@ int pystream::writeScans(const VexData *V)
 					map<string,unsigned int>::const_iterator ifit;
 					for(ifit = ifIndex[modeId].begin(); ifit != ifIndex[modeId].end(); ++ifit)
 					{
-						if(ifit->first != sw[ifit->second])
-						{
-							sw[ifit->second] = ifit->first;
-                            *this << "subarray.set4x4Switch('" << switchOutput[ifit->second] << "', "
-                                         << switchPosition(ifit->first.c_str()) << ")" << endl;
-						}
+						sw[ifit->second] = ifit->first;
+						*this << "subarray.set4x4Switch('" << switchOutput[ifit->second] << "', "
+								<< switchPosition(ifit->first.c_str()) << ")" << endl;
 					}
 					*this << "subarray.setChannels(dbe0, channelSet" << modeId << ")" << endl;
 				}
