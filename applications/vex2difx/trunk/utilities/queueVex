@@ -10,8 +10,8 @@ from time import time
 import datetime
 
 program = 'queueVex'
-version = '1.16'
-verdate = '20130726'
+version = '1.17'
+verdate = '20130801'
 author  = 'Walter Brisken & Matthias Bark'
 
 verbose = 1
@@ -92,6 +92,17 @@ def execute(cmd, nostdout=0):
 	return v
 
 def vexPeek(vexFile):
+
+	f = open(vexFile)
+	if find(f.readline(), '\r\x0A') >= 0:
+		print '\n------------------------------------------------'
+		print '\nError: the vex file has DOS new line characters.'
+		print 'This will cause endless grief.'
+		print '\nPlease run:    dos2unix %s' % vexFile
+		print '\nand try queueVex again.'
+		exit(0);
+	
+	f.close()
 	
 	cmd = '%s/vexpeek %s' % (difxPath, vexFile)
 	if verbose > 0:
