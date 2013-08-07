@@ -1201,7 +1201,7 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref, int (*callback)(i
 	int die = 0;
 	int newDirVersion;   /* == 0 for old style (pre-mark5-memo 81) */
 	                     /* == version number for mark5-memo 81 */
-	int oldLen1, oldLen2, oldLen3;
+	int oldLen1, oldLen2, oldLen3, oldLen4;
 	int start, stop;
 	int oldFast;
 	int nscans;
@@ -1239,7 +1239,8 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref, int (*callback)(i
 	oldLen1 = (int)sizeof(struct Mark5LegacyDirectory);
 	oldLen2 = oldLen1 + 64 + 8*88;	/* 88 = sizeof(S_DRIVEINFO) */
 	oldLen3 = oldLen1 + 64 + 16*88;
-	if(len == oldLen1 || len == oldLen2 || len == oldLen3)
+	oldLen4 = 83552;	/* DIMINO w/ SDK9 */
+	if(len == oldLen1 || len == oldLen2 || len == oldLen3 || len == oldLen4)
 	{
 		newDirVersion = 0;
 	}
@@ -1249,7 +1250,18 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref, int (*callback)(i
 	}
 	else
 	{
+		FILE *out;
+
 		printf("size=%d  len=%d\n", static_cast<int>(sizeof(struct Mark5LegacyDirectory)), len);
+
+		dirData = (unsigned char *)calloc(len, sizeof(int));
+		WATCHDOG( xlrRC = XLRGetUserDir(xlrDevice, len, 0, dirData) );
+
+		out = fopen("/tmp/dir.dump", "w");
+		fwrite(dirData, 1, len, out);
+		fclose(out);
+
+		printf("The directory was dumped to /tmp/dir.dump\n");
 
 		return -3;
 	}
