@@ -946,7 +946,7 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref,
 	int nZero;
 	int newDirVersion;   /* == 0 for old style (pre-mark5-memo 81) */
 	                     /* == version number for mark5-memo 81 */
-	int oldLen1, oldLen2, oldLen3;
+	int oldLen1, oldLen2, oldLen3, oldLen4;
 	int start, stop;
 	int oldFast;
 	double overhead = 0.0;
@@ -985,7 +985,8 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref,
 	oldLen1 = (int)sizeof(struct Mark5LegacyDirectory);
 	oldLen2 = oldLen1 + 64 + 8*88;	/* 88 = sizeof(S_DRIVEINFO) */
 	oldLen3 = oldLen1 + 64 + 16*88;
-	if(len == oldLen1 || len == oldLen2 || len == oldLen3)
+	oldLen4 = 83552;	/* SDK9 with legacy */
+	if(len == oldLen1 || len == oldLen2 || len == oldLen3 || len == oldLen4)
 	{
 		newDirVersion = 0;
 	}
