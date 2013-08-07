@@ -300,6 +300,10 @@ int get_vdifb_threads(const unsigned char *data, size_t length, int dataframesiz
 
 struct mark5_format_generic *new_mark5_format_k5(int Mbps, int nchan, int nbit, int submode);
 
+/*   KVNMark5B format: under development */
+
+struct mark5_format_generic *new_mark5_format_kvn5b(int Mbps, int nchan, int nbit, int decimation);
+
 /*   Generate format from a string description */
 
 struct mark5_format_generic *new_mark5_format_generic_from_string( const char *formatname);

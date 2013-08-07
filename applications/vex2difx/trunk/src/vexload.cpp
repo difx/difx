@@ -131,7 +131,7 @@ static int getRecordChannel(const std::string &antName, const std::string &chanN
 			}
 		}
 	}
-	else if(setup.formatName == "MARK5B") 
+	else if(setup.formatName == "MARK5B"||setup.formatName == "KVN5B") 
 	{
 		int delta, track;
 		std::map<std::string,Tracks>::const_iterator it = ch2tracks.find(chanName);
@@ -1087,6 +1087,10 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 					{
 						setup.formatName = "MARK5B";
 					}
+					else if(setup.formatName == "KVN5B")
+					{
+						setup.formatName = "KVN5B";
+					}
 					else if(setup.formatName == "NONE")
 					{
 						setup.formatName = "NONE";
@@ -1111,7 +1115,7 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 				}
 			}
 
-			if(setup.formatName == "VLBA" || setup.formatName == "VLBN" || setup.formatName == "MKIV" || setup.formatName == "MARK5B" || setup.formatName.substr(0, 4) == "VDIF")
+			if(setup.formatName == "VLBA" || setup.formatName == "VLBN" || setup.formatName == "MKIV" || setup.formatName == "MARK5B" || setup.formatName == "KVN5B" || setup.formatName.substr(0, 4) == "VDIF")
 			{
 				for(p = get_all_lowl(antName.c_str(), modeDefName, T_FANOUT_DEF, B_TRACKS, v); p; p = get_all_lowl_next())
 				{
@@ -1159,7 +1163,8 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 					int fanout;
 
 					fanout = nTrack/ch2tracks.size()/nBit;
-					if(setup.formatName != "MARK5B" && setup.formatName.substr(0, 4) != "VDIF")
+					if(!(setup.formatName == "MARK5B" || setup.formatName == "KVN5B") && 
+					   setup.formatName.substr(0, 4) != "VDIF")
 					{
 						switch(fanout)
 						{
@@ -1286,7 +1291,7 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 				} 
 			}
 
-			if(setup.formatName == "MARK5B")
+			if(setup.formatName == "MARK5B"||setup.formatName == "KVN5B")
 			{
 				// Because Mark5B formatters can apply a bitmask, the track numbers may not be contiguous.  Here we go through and reorder track numbers in sequence, starting with 2
 

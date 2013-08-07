@@ -958,6 +958,11 @@ static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, vector<vector<
 		strcpy(D->datastream[dsId].dataFormat, "MARK5B");
 		D->datastream[dsId].dataFrameSize = 10016;
 	}
+	else if(setup->formatName == string("KVN5B"))
+	{
+		strcpy(D->datastream[dsId].dataFormat, "KVN5B");
+		D->datastream[dsId].dataFrameSize = 10016;
+	}
 	else if(setup->formatName == string("VDIF"))
 	{
 		strcpy(D->datastream[dsId].dataFormat, "VDIF");

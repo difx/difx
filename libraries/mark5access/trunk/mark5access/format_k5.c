@@ -26,6 +26,7 @@
 // $LastChangedDate$
 //
 //============================================================================
+
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
 #endif
@@ -36,15 +37,12 @@
 #include <string.h>
 #include "mark5access/mark5_stream.h"
 
+//#define K5_PAYLOADSIZE 10000
+
 #define NSUBMODE	2
 #define MAXHEADERSIZE	32
 
-/* the high mag value for 2-bit reconstruction */
-static const float HiMag = OPTIMAL_2BIT_HIGH;
-
-static float lut1bit[256][8];
-static float lut2bit[256][4];
-static float zeros[8];
+// See ftp://ivscc.gsfc.nasa.gov/pub/TOW/tow2005/notebook/Koyama1.Sem.pdf
 
 const int k5headersize[NSUBMODE] = {8, 32};		/* bytes */
 const int k5headersync[NSUBMODE] = {0x8B, 0x8C};
@@ -68,18 +66,32 @@ const int k5samprate[16] = {
 	2048000000
 };
 
-struct format_k5
-{
-	unsigned char header[MAXHEADERSIZE];
-	int submode;
-	int days;
-};
+const unsigned int k5Sync       = 0xFFFFFFFF;
+
+/* the high mag value for 2-bit reconstruction */
+static const float HiMag = OPTIMAL_2BIT_HIGH;
+static const float FourBit1sigma = 2.95;
+
+/* struct mark5_format_k5  // needs to be adjusted */
+/* { */
+/* 	int nbitstreams; */
+/* 	int kday;	/\* kilo-mjd: ie 51000, 52000, ... *\/ */
+/* }; */
+
+static float lut1bit[256][8];
+static float lut2bit[256][4];
+static float lut4bit[256][2];
+static float lut8bit[256];
+static float zeros[8];
 
 static void initluts()
 {
 	int b, i, s, m, l;
 	const float lut2level[2] = {-1.0, 1.0};
 	const float lut4level[4] = {-HiMag, 1.0, -1.0, HiMag};
+	const float lut16level[16] = {-8/FourBit1sigma,-7/FourBit1sigma,-6/FourBit1sigma,-5/FourBit1sigma,-4/FourBit1sigma,
+				      -3/FourBit1sigma,-2/FourBit1sigma,-1/FourBit1sigma,0,1/FourBit1sigma,2/FourBit1sigma,
+				      3/FourBit1sigma,4/FourBit1sigma,5/FourBit1sigma,6/FourBit1sigma,7/FourBit1sigma};
 
 	for(i = 0; i < 8; i++)
 	{
@@ -103,8 +115,24 @@ static void initluts()
 			l = ((b>>s)&1) + (((b>>m)&1)<<1);
 			lut2bit[b][i] =  lut4level[l];
 		}
+		/* lut4bit */
+		for(i = 0; i < 2; i++)
+		{
+			l = (b >> (4*i)) & 0x0F;
+			lut4bit[b][i] = lut16level[l];
+		}
+
+		/* lut8bit */
+		lut8bit[b] = (b*2-255)/256.0;
 	}
 }
+
+struct format_k5
+{
+	unsigned char header[MAXHEADERSIZE];
+	int submode;
+	int days;
+};
 
 static int findfirstframe(const unsigned char *data, int *submode)
 {
@@ -182,105 +210,846 @@ static int format_k5_fixmjd(struct mark5_stream *ms, int refmjd)
 
 /************************* decode routines **************************/
 
-static int k5_decode_1bitstream_1bit(struct mark5_stream *ms, int nsamp,
+static int k5_decode_1channel_1bit(struct mark5_stream *ms, int nsamp,
 	float **data)
 {
+	unsigned char *buf;
+	float *fp;
+	int o, i;
+	int nblank = 0;
 
-	return 0;
+	buf = ms->payload;
+	i = ms->readposition;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		if(i <  ms->blankzonestartvalid[0] ||
+		   i >= ms->blankzoneendvalid[0])       //  Where defined?
+		{
+			fp = zeros;
+			nblank++;
+		}
+		else
+		{
+			fp = lut1bit[buf[i]];
+		}
+		i++;
+
+		data[0][o] = fp[0];
+		o++;
+		data[0][o] = fp[1];
+		o++;
+		data[0][o] = fp[2];
+		o++;
+		data[0][o] = fp[3];
+		o++;
+		data[0][o] = fp[4];
+		o++;
+		data[0][o] = fp[5];
+		o++;
+		data[0][o] = fp[6];
+		o++;
+		data[0][o] = fp[7];
+
+		if(i >= ms->Mbps*(1000000/8))
+		{
+		  if(mark5_stream_next_frame(ms) < 0) // ??
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp-8*nblank; // nblank * nticks per byte (= 8/nbit/nIF)
 }
 
-static int k5_decode_1bitstream_2bit(struct mark5_stream *ms, int nsamp,
+static int k5_decode_1channel_2bit(struct mark5_stream *ms, int nsamp,
+	float **data)
+{ // NIF = 1 NBIT = 2
+	unsigned char *buf;
+	float *fp;
+	int o, i;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		if(i <  ms->blankzonestartvalid[0] ||
+		   i >= ms->blankzoneendvalid[0])
+		{
+			fp = zeros;
+			nblank++;
+		}
+		else
+		{
+			fp = lut2bit[buf[i]];
+		}
+		i++;
+
+		data[0][o] = fp[0];
+		o++;
+		data[0][o] = fp[1];
+		o++;
+		data[0][o] = fp[2];
+		o++;
+		data[0][o] = fp[3];
+
+		if(i >= ms->Mbps*(1000000/8))
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - 4*nblank;
+}
+
+static int k5_decode_1channel_4bit(struct mark5_stream *ms, int nsamp,
+	float **data)
+{	
+	unsigned char *buf;
+	float *fp;
+	int o, i;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		if(i <  ms->blankzonestartvalid[0] ||
+		   i >= ms->blankzoneendvalid[0])
+		{
+			fp = zeros;
+			nblank++;
+		}
+		else
+		{
+			fp = lut4bit[buf[i]];
+		}
+
+		i++;
+
+		data[0][o] = fp[0];
+		o++;
+		data[0][o] = fp[1];
+
+		if(i >= ms->Mbps*(1000000/8))
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - 2*nblank;
+}
+
+static int k5_decode_1channel_8bit(struct mark5_stream *ms, int nsamp,
+	float **data)
+{	
+	unsigned char *buf;
+	float fp;
+	int o, i;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		if(i <  ms->blankzonestartvalid[0] ||
+		   i >= ms->blankzoneendvalid[0])
+		{
+			fp = 0;
+			nblank++;
+		}
+		else
+		{
+			fp = lut8bit[buf[i]];
+		}
+
+		i++;
+
+		data[0][o] = fp;
+
+		if(i >= ms->Mbps*(1000000/8))
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - nblank;
+}
+
+static int k5_decode_2channel_1bit(struct mark5_stream *ms, int nsamp,
 	float **data)
 {
+	unsigned char *buf;
+	float *fp;
+	int o, i;
+	int nblank = 0;
 
-	return 0;
+	buf = ms->payload;
+	i = ms->readposition;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		if(i <  ms->blankzonestartvalid[0] ||
+		   i >= ms->blankzoneendvalid[0])
+		{
+			fp = zeros;
+			nblank++;
+		}
+		else
+		{
+			fp = lut1bit[buf[i]];
+		}
+		i++;
+
+		data[0][o] = fp[0];
+		data[1][o] = fp[1];
+		o++;
+		data[0][o] = fp[2];
+		data[1][o] = fp[3];
+		o++;
+		data[0][o] = fp[4];
+		data[1][o] = fp[5];
+		o++;
+		data[0][o] = fp[6];
+		data[1][o] = fp[7];
+
+		if(i >= ms->Mbps*(1000000/8))
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - 4*nblank;
 }
 
-static int k5_decode_1bitstream_4bit(struct mark5_stream *ms, int nsamp,
+static int k5_decode_2channel_2bit(struct mark5_stream *ms, int nsamp,
+	float **data)
+{ // NIF = 2 NBIT = 2
+	unsigned char *buf;
+	float *fp;
+	int o, i;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		if(i <  ms->blankzonestartvalid[0] ||
+		   i >= ms->blankzoneendvalid[0])
+		{
+			fp = zeros;
+			nblank++;
+		}
+		else
+		{
+			fp = lut2bit[buf[i]];
+		}
+		i++;
+
+		data[0][o] = fp[0];
+		data[1][o] = fp[1];
+		o++;
+		data[0][o] = fp[2];
+		data[1][o] = fp[3];
+
+		if(i >= ms->Mbps*(1000000/8))
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - 2*nblank;
+}
+
+static int k5_decode_2channel_4bit(struct mark5_stream *ms, int nsamp,
+	float **data)
+{ // NIF = 2 NBIT = 2
+	unsigned char *buf;
+	float *fp;
+	int o, i;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		if(i <  ms->blankzonestartvalid[0] ||
+		   i >= ms->blankzoneendvalid[0])
+		{
+			fp = zeros;
+			nblank++;
+		}
+		else
+		{
+			fp = lut4bit[buf[i]];
+		}
+		i++;
+
+		data[0][o] = fp[0];
+		o++;
+		data[0][o] = fp[1];
+		o++;
+		data[0][o] = fp[2];
+		o++;
+		data[0][o] = fp[3];
+
+		if(i >= ms->Mbps*(1000000/8))
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - 4*nblank;
+}
+
+static int k5_decode_2channel_8bit(struct mark5_stream *ms, int nsamp,
 	float **data)
 {
+	unsigned char *buf;
+	float fp0, fp1;
+	int o, i;
+	int nblank = 0;
 
-	return 0;
+	buf = ms->payload;
+	i = ms->readposition;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		if(i <  ms->blankzonestartvalid[0] ||
+		   i >= ms->blankzoneendvalid[0])
+		{
+		        fp0 = fp1 = 0;
+			i += 2;
+			nblank++;
+		}
+		else
+		{
+			fp0 = lut8bit[buf[i]];
+			i++;
+			fp1 = lut8bit[buf[i]];
+			i++;
+		}
+
+		data[0][o] = fp0;
+		data[1][o] = fp1;
+
+		if(i >= ms->Mbps*(1000000/8))
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - nblank;
 }
 
-static int k5_decode_1bitstream_8bit(struct mark5_stream *ms, int nsamp,
+static int k5_decode_4channel_1bit(struct mark5_stream *ms, int nsamp,
 	float **data)
 {
+	unsigned char *buf;
+	float *fp;
+	int o, i;
+	int nblank = 0;
 
-	return 0;
+	buf = ms->payload;
+	i = ms->readposition;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		if(i <  ms->blankzonestartvalid[0] ||
+		   i >= ms->blankzoneendvalid[0])
+		{
+			fp = zeros;
+			nblank++;
+		}
+		else
+		{
+			fp = lut1bit[buf[i]];
+		}
+		i++;
+
+		data[0][o] = fp[0];
+		data[1][o] = fp[1];
+		data[2][o] = fp[2];
+		data[3][o] = fp[3];
+		o++;
+		data[0][o] = fp[4];
+		data[1][o] = fp[5];
+		data[2][o] = fp[6];
+		data[3][o] = fp[7];
+
+		if(i >= ms->Mbps*(1000000/8))
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - 2*nblank;
 }
 
-static int k5_decode_4bitstream_1bit(struct mark5_stream *ms, int nsamp,
+static int k5_decode_4channel_2bit(struct mark5_stream *ms, int nsamp,
+	float **data)
+{ // NIF = 4 NBIT = 2
+	unsigned char *buf;
+	float *fp;
+	int o, i;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		if(i <  ms->blankzonestartvalid[0] ||
+		   i >= ms->blankzoneendvalid[0])
+		{
+			fp = zeros;
+			nblank++;
+		}
+		else
+		{
+			fp = lut2bit[buf[i]];
+		}
+		i++;
+
+		data[0][o] = fp[0];
+		data[1][o] = fp[1];
+		data[2][o] = fp[2];
+		data[3][o] = fp[3];
+
+		if(i >= ms->Mbps*(1000000/8))
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - nblank;
+}
+
+static int k5_decode_4channel_4bit(struct mark5_stream *ms, int nsamp,
 	float **data)
 {
-        unsigned char *buf;
-        float *fp;
-        int o, i;
-        int nblank = 0;
+	unsigned char *buf;
+	float *fp0, *fp1;
+	int o, i;
+	int nblank = 0;
 
-        buf = ms->payload;
-        i = ms->readposition;
+	buf = ms->payload;
+	i = ms->readposition;
 
-        for(o = 0; o < nsamp; o++)
-        {
-                if(i <  ms->blankzonestartvalid[0] ||
-                   i >= ms->blankzoneendvalid[0])
-                {
-                        fp = zeros;
-                        nblank++;
-                }
-                else
-                {
-                        fp = lut1bit[buf[i]];
-                }
-                i++;
+	for(o = 0; o < nsamp; o++)
+	{
+		if(i <  ms->blankzonestartvalid[0] ||
+		   i >= ms->blankzoneendvalid[0])
+		{
+			fp0 = fp1 = zeros;
+			i += 2;
+			nblank++;
+		}
+		else
+		{
+			fp0 = lut4bit[buf[i]];
+			i++;
+			fp1 = lut4bit[buf[i]];
+			i++;
+		}
 
-                data[0][o] = fp[0];
-                data[1][o] = fp[1];
-                data[2][o] = fp[2];
-                data[3][o] = fp[3];
-                o++;
-                data[0][o] = fp[4];
-                data[1][o] = fp[5];
-                data[2][o] = fp[6];
-                data[3][o] = fp[7];
+		data[0][o] = fp0[0];
+		data[1][o] = fp0[1];
+		data[2][o] = fp1[0];
+		data[3][o] = fp1[1];
 
-                if(i >= ms->Mbps*(1000000/8))
-                {
-                        if(mark5_stream_next_frame(ms) < 0)
-                        {
-                                return -1;
-                        }
-                        buf = ms->payload;
-                        i = 0;
-                }
-        }
+		if(i >= ms->Mbps*(1000000/8))
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+		}
+	}
 
-        ms->readposition = i;
+	ms->readposition = i;
 
-        return nsamp - 2*nblank;
+	return nsamp - nblank;
 }
 
-static int k5_decode_4bitstream_2bit(struct mark5_stream *ms, int nsamp,
+static int k5_decode_4channel_8bit(struct mark5_stream *ms, int nsamp,
 	float **data)
 {
+	unsigned char *buf;
+	float fp0,fp1,fp2,fp3;
+	int o, i;
+	int nblank = 0;
 
-	return 0;
+	buf = ms->payload;
+	i = ms->readposition;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		if(i <  ms->blankzonestartvalid[0] ||
+		   i >= ms->blankzoneendvalid[0])
+		{
+			fp0 = fp1 = fp2 = fp3 = 0;
+			i += 4;
+			nblank++;
+		}
+		else
+		{
+			fp0 = lut8bit[buf[i]];
+			i++;
+			fp1 = lut8bit[buf[i]];
+			i++;
+			fp2 = lut8bit[buf[i]];
+			i++;
+			fp3 = lut8bit[buf[i]];
+			i++;
+		}
+
+		i++;
+
+		data[0][o] = fp0;
+		data[1][o] = fp1;
+		data[2][o] = fp2;
+		data[3][o] = fp3;
+
+		if(i >= ms->Mbps*(1000000/8))
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - nblank;
 }
 
-static int k5_decode_4bitstream_4bit(struct mark5_stream *ms, int nsamp,
+
+static int k5_decode_8channel_1bit(struct mark5_stream *ms, int nsamp,
 	float **data)
 {
+	unsigned char *buf;
+	float *fp;
+	int o, i;
+	int nblank = 0;
 
-	return 0;
+	buf = ms->payload;
+	i = ms->readposition;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		if(i <  ms->blankzonestartvalid[0] ||
+		   i >= ms->blankzoneendvalid[0])
+		{
+			fp = zeros;
+			nblank++;
+		}
+		else
+		{
+			fp = lut1bit[buf[i]];
+		}
+		i++;
+
+		data[0][o] = fp[0];
+		data[1][o] = fp[1];
+		data[2][o] = fp[2];
+		data[3][o] = fp[3];
+		data[4][o] = fp[4];
+		data[5][o] = fp[5];
+		data[6][o] = fp[6];
+		data[7][o] = fp[7];
+
+		if(i >= ms->Mbps*(1000000/8))
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - nblank;
+
 }
 
-static int k5_decode_4bitstream_8bit(struct mark5_stream *ms, int nsamp,
+static int k5_decode_8channel_2bit(struct mark5_stream *ms, int nsamp,
+	float **data)
+{ // NIF = 8 NBIT = 2
+	unsigned char *buf;
+	float *fp0, *fp1;
+	int o, i;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		if(i <  ms->blankzonestartvalid[0] ||
+		   i >= ms->blankzoneendvalid[0])
+		{
+			fp0 = fp1 = zeros;
+			i += 2;
+			nblank++;
+		}
+		else
+		{
+			fp0 = lut2bit[buf[i]];
+			i++;
+			fp1 = lut2bit[buf[i]];
+			i++;
+		}
+
+		data[0][o] = fp0[0];
+		data[1][o] = fp0[1];
+		data[2][o] = fp0[2];
+		data[3][o] = fp0[3];
+		data[4][o] = fp1[0];
+		data[5][o] = fp1[1];
+		data[6][o] = fp1[2];
+		data[7][o] = fp1[3];
+
+		if(i >= ms->Mbps*(1000000/8))
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - nblank;
+}
+
+static int k5_decode_16channel_1bit(struct mark5_stream *ms, int nsamp,
 	float **data)
 {
+	unsigned char *buf;
+	float *fp1,*fp0;
+	int o, i;
+	int nblank = 0;
 
-	return 0;
+	buf = ms->payload;
+	i = ms->readposition;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		if(i <  ms->blankzonestartvalid[0] ||
+		   i >= ms->blankzoneendvalid[0])
+		{
+			fp0 = fp1 = zeros;
+			i += 2;
+			nblank++;
+		}
+		else
+		{
+			fp0 = lut1bit[buf[i]];
+			i++;
+			fp1 = lut1bit[buf[i]];
+			i++;
+		}
+
+		data[0][o] = fp0[0];
+		data[1][o] = fp0[1];
+		data[2][o] = fp0[2];
+		data[3][o] = fp0[3];
+		data[4][o] = fp0[4];
+		data[5][o] = fp0[5];
+		data[6][o] = fp0[6];
+		data[7][o] = fp0[7];
+		data[8][o] = fp1[0];
+		data[9][o] = fp1[1];
+		data[10][o]= fp1[2];
+		data[11][o]= fp1[3];
+		data[12][o]= fp1[4];
+		data[13][o]= fp1[5];
+		data[14][o]= fp1[6];
+		data[15][o]= fp1[7];
+
+		if(i >= ms->Mbps*(1000000/8))
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - nblank;
+
 }
+
+static int k5_decode_16channel_2bit(struct mark5_stream *ms, int nsamp,
+	float **data)
+{ // NIF = 16 NBIT = 2
+	unsigned char *buf;
+	float *fp0, *fp1, *fp2, *fp3;
+	int o, i;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		if(i <  ms->blankzonestartvalid[0] ||
+		   i >= ms->blankzoneendvalid[0])
+		{
+			fp0 = fp1 = fp2 = fp3 = zeros;
+			i += 4;
+			nblank++;
+		}
+		else
+		{
+			fp0 = lut2bit[buf[i]];
+			i++;
+			fp1 = lut2bit[buf[i]];
+			i++;
+			fp2 = lut2bit[buf[i]];
+			i++;
+			fp3 = lut2bit[buf[i]];
+			i++;
+		}
+
+		data[0][o] = fp0[0];
+		data[1][o] = fp0[1];
+		data[2][o] = fp0[2];
+		data[3][o] = fp0[3];
+		data[4][o] = fp1[0];
+		data[5][o] = fp1[1];
+		data[6][o] = fp1[2];
+		data[7][o] = fp1[3];
+		data[8][o] = fp2[0];
+		data[9][o] = fp2[1];
+		data[10][o]= fp2[2];
+		data[11][o]= fp2[3];
+		data[12][o]= fp3[0];
+		data[13][o]= fp3[1];
+		data[14][o]= fp3[2];
+		data[15][o]= fp3[3];
+
+		if(i >= ms->Mbps*(1000000/8))
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - nblank;
+}
+
+static int k5_decode_8channel_4bit(struct mark5_stream *ms, int nsamp,
+	float **data)
+{	return 0; }
+
+static int k5_decode_8channel_8bit(struct mark5_stream *ms, int nsamp,
+	float **data)
+{	return 0; }
+
+static int k5_decode_16channel_4bit(struct mark5_stream *ms, int nsamp,
+	float **data)
+{	return 0; }
+
+static int k5_decode_16channel_8bit(struct mark5_stream *ms, int nsamp,
+	float **data)
+{	return 0; }
 
 static int format_k5_make_formatname(struct mark5_stream *ms)
 {
@@ -352,9 +1121,10 @@ static int format_k5_init(struct mark5_stream *ms)
 		ms->gettime(ms, &ms->mjd, &ms->sec, &dns);
 		ms->ns = (int)(dns + 0.5);
 
-		nbit = 1 << (k->header[6] >> 6);
-		nchan = (k->header[6] & 0x02) ? 4 : 1;
-		rate = k5samprate[(k->header[6] >> 2) & 0x0F];
+		nbit = 1 << (k->header[6] >> 6);  // 1, 2, 4 or 8
+		nchan = (k->header[6] & 0x02) ? 4 : 1; // 1 or 4
+		// But 16 channels seem to exist .. does this use 4 files?
+		rate = k5samprate[(k->header[6] >> 2) & 0x0F]; // as in look up table
 		Mbps = rate*nbit*nchan/1000000;
 
 		if(ms->nbit <= 0)
@@ -395,11 +1165,18 @@ static int format_k5_init(struct mark5_stream *ms)
 		}
 	}
 
+	// Don't we need to define the payloadoffset here?
+	// And what does K5_PAYLOAD need to be?  
+	/* From mark5_format_mark5b */
+	ms->payloadoffset = k5headersize[k->submode]; // 8 B or 32B  
+	ms->blanker = blanker_mark5; // Does not exist?
+	
+
 	ms->databytes = 1000000*ms->Mbps/8;
 	ms->framebytes = ms->databytes + k5headersize[k->submode];
 	ms->framesamples = 1000000*ms->Mbps/(ms->nbit*ms->nchan);
 	ms->samprate = ms->framesamples;
-	ms->framens = 1000000000.0;
+	ms->framens = 1000000000.0; // 1 sec
 
 	ms->samplegranularity = 8/(ms->nbit*ms->nchan);
 	if(ms->samplegranularity < 1)
@@ -415,7 +1192,7 @@ static int format_k5_init(struct mark5_stream *ms)
 	{
 		decoderindex += 1;
 	}
-	else if(ms->nbit == 4)
+		else if(ms->nbit == 4)
 	{
 		decoderindex += 2;
 	}
@@ -426,7 +1203,7 @@ static int format_k5_init(struct mark5_stream *ms)
 	else
 	{
 		fprintf(m5stderr, "format_k5_init : "
-			"nbit needs to be 1, 2, 4, or 8\n");
+			"nbit needs to be 1, 2, 4 or 8\n");
 		return 0;
 	}
 
@@ -434,28 +1211,58 @@ static int format_k5_init(struct mark5_stream *ms)
 	{
 		decoderindex += 0;
 	}
-	else if(ms->nchan == 4)
+	else if(ms->nchan == 2)
 	{
 		decoderindex += 4;
 	}
+	else if(ms->nchan == 4)
+	{
+		decoderindex += 8;
+	}
+	else if(ms->nchan == 8)
+	{
+		decoderindex += 16;
+	}
+	else if(ms->nchan == 16)
+	{
+		decoderindex += 32;
+	}
 	else
 	{
-	  fprintf(m5stderr, "format_k5_init : "
-			"nchan needs to be 1 or 4\n");
+		fprintf(m5stderr, "format_k5_init : "
+			"nchan needs to be 1, 2, 4, 8 or 16\n");
 		return 0;
 	}
 
 	ms->decode = 0;
 	switch(decoderindex)
 	{
-		case 0 : ms->decode = k5_decode_1bitstream_1bit; break;
-		case 1 : ms->decode = k5_decode_1bitstream_2bit; break;
-		case 2 : ms->decode = k5_decode_1bitstream_4bit; break;
-		case 3 : ms->decode = k5_decode_1bitstream_8bit; break;
-		case 4 : ms->decode = k5_decode_4bitstream_1bit; break;
-		case 5 : ms->decode = k5_decode_4bitstream_2bit; break;
-		case 6 : ms->decode = k5_decode_4bitstream_4bit; break;
-		case 7 : ms->decode = k5_decode_4bitstream_8bit; break;
+		case 0 : ms->decode = k5_decode_1channel_1bit; break;
+		case 1 : ms->decode = k5_decode_1channel_2bit; break;
+		case 2 : ms->decode = k5_decode_1channel_4bit; break;
+		case 3 : ms->decode = k5_decode_1channel_8bit; break;
+
+		case 4 : ms->decode = k5_decode_2channel_1bit; break;
+		case 5 : ms->decode = k5_decode_2channel_2bit; break;
+		case 6 : ms->decode = k5_decode_2channel_4bit; break;
+		case 7 : ms->decode = k5_decode_2channel_8bit; break;
+
+		case 8 : ms->decode = k5_decode_4channel_1bit; break;
+		case 9 : ms->decode = k5_decode_4channel_2bit; break;
+		case 10: ms->decode = k5_decode_4channel_4bit; break;
+		case 11: ms->decode = k5_decode_4channel_8bit; break;
+		  // Space for 3 chan here
+		case 16: ms->decode = k5_decode_8channel_1bit; break;
+		case 17: ms->decode = k5_decode_8channel_2bit; break;
+		case 18: ms->decode = k5_decode_8channel_4bit; break;
+		case 19: ms->decode = k5_decode_8channel_8bit; break;
+		  // Space for other chan here
+		case 32: ms->decode = k5_decode_16channel_1bit; break;
+		case 33: ms->decode = k5_decode_16channel_2bit; break;
+		case 34: ms->decode = k5_decode_16channel_4bit; break;
+		case 35: ms->decode = k5_decode_16channel_8bit; break;
+
+	default: break;
 	}
 	ms->complex_decode = 0;
 
@@ -486,10 +1293,9 @@ static int one(const struct mark5_stream *ms)
 	return 1;
 }
 
-struct mark5_format_generic *new_mark5_format_k5(int Mbps, int nchan, int nbit,
-	int submode)
+struct mark5_format_generic *new_mark5_format_k5(int Mbps, int nchan, int nbit, int submode)
 {
-        static int first = 1;
+	static int first = 1;
 	struct format_k5 *k;
 	struct mark5_format_generic *f;
 	k = (struct format_k5 *)calloc(1, sizeof(struct format_k5));
@@ -510,14 +1316,46 @@ struct mark5_format_generic *new_mark5_format_k5(int Mbps, int nchan, int nbit,
 	f->nchan = nchan;
 	f->nbit = nbit;
 	f->formatdata = k;
-	f->formatdatasize = sizeof(struct mark5_format_k5);
+	f->formatdatasize = sizeof(struct format_k5);
 	f->gettime = stream_frame_time_k5;
 	f->init_format = format_k5_init;
 	f->final_format = format_k5_final;
-	f->fixmjd = format_k5_fixmjd;
+	f->fixmjd = format_k5_fixmjd;  
 	f->validate = one;
-	f->resync = one;
-	f->decode = k5_decode_1bitstream_1bit;
-
+	//f->resync = one;
+	f->decode = NULL;
+	if (nbit==1) {
+	  switch (nchan) {
+	  case 1: f->decode = k5_decode_1channel_1bit;
+	    break;
+	  case 2: f->decode = k5_decode_2channel_1bit;
+	    break;
+	  case 4: f->decode = k5_decode_4channel_1bit;
+	    break;
+	  case 8: f->decode = k5_decode_8channel_1bit;
+	    break;
+	  case 16: f->decode = k5_decode_16channel_1bit;
+	    break;
+	  default: 
+	    break;
+	  }} else if (nbit==2) { 
+	  switch (nchan) {
+	  case 1: f->decode = k5_decode_1channel_2bit;
+	    break;
+	  case 2: f->decode = k5_decode_2channel_2bit;
+	    break;
+	  case 4: f->decode = k5_decode_4channel_2bit;
+	    break;
+	  case 8: f->decode = k5_decode_8channel_2bit;
+	    break;
+	  case 16: f->decode = k5_decode_16channel_2bit;
+	    break;
+	  default: 
+	    break;
+	  }}
+	  if (!f->decode) {
+		fprintf(m5stderr, "Warning: new_mark5_format_k5: format not set\n");
+		return NULL;
+	  }
 	return f;
 }

@@ -436,8 +436,7 @@ struct mark5_format_generic *new_mark5_format_generic_from_string( const char *f
 		{
 			e = 1;
 		}
-
-		return new_mark5_format_mark5b(a, b, c, e);
+		return new_mark5_format_kvn5b(a, b, c, e);
 	}
 #ifdef K5WORKS
 	else if(strncasecmp(formatname, "K5_32-", 6) == 0)

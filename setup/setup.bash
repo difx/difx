@@ -2,13 +2,13 @@
 export DIFX_VERSION=trunk
 
 ####### ROOT PATHS ##########################
-export DIFXROOT=/usr/local/difx
+export DIFXROOT=$HOME/DiFX/$DIFX_VERSION
 export DIFX_PREFIX=$DIFXROOT
-export PGPLOTDIR=/usr/local/pgplot
-export IPPROOT=/opt/intel/ipp/5.2/ia32
+export PGPLOTDIR=/share/apps/pgplot
+export IPPROOT=/share/apps/intel/ipp/6.1.2.051/em64t
 
 ####### COMPILER ############################
-export MPICXX=/usr/bin/mpicxx
+export MPICXX=/share/apps/openmpi/bin/mpicxx
 
 ####### USE GFORTRAN IN PREFERENCE TO G77? ##
 ####### Comment out if not desired ##########
@@ -18,7 +18,7 @@ export USEGFORTRAN="yes"
 ## Alternate lines may be needed for old versions ####
 ## of IPP (<=4 for 32bit, <=5 for 64 bit #############
 #IPPLIB32="-lipps -lguide -lippvm -lippcore"
-#IPPLIB64="-lippsem64t -lguide -lippvmem64t -liomp5 -lippcoreem64t"
+IPPLIB64="-lippsem64t -lguide -lippvmem64t -liomp5 -lippcoreem64t"
 ## Uncomment the following for old 32 bit IPP
 #PrependPath LD_LIBRARY_PATH  ${IPPROOT}/sharedlib/linux
 ## Uncomment the following (and comment other IPPLIB64 line) 
@@ -31,10 +31,10 @@ perlsver="5.8.8"
 
 ####### PORTS FOR DIFXMESSAGE ###############
 # Uncomment these to enable DIFX_MESSAGES
-export DIFX_MESSAGE_GROUP=224.2.2.1
-export DIFX_MESSAGE_PORT=50201
-export DIFX_BINARY_GROUP=224.2.2.1
-export DIFX_BINARY_PORT=50202
+#export DIFX_MESSAGE_GROUP=224.2.2.1
+#export DIFX_MESSAGE_PORT=50201
+#export DIFX_BINARY_GROUP=224.2.2.1
+#export DIFX_BINARY_PORT=50202
 
 ####### No User configurable values below here
 

@@ -284,6 +284,7 @@ int pystream::writeRecorderInit(const VexData *V)
 		switch(dataFormat)
 		{
 		case FORMAT_MARK5B:
+		case FORMAT_KVN5B:
 		case FORMAT_NONE:
 		case FORMAT_VLBA:
 			*this << "recorder0.setMode('Mark5B')" << endl;
@@ -781,6 +782,7 @@ int pystream::writeDbeInit(const VexData *V)
 			{
 			case FORMAT_MARK5B:
 			case FORMAT_NONE:
+			case FORMAT_KVN5B:
 			case FORMAT_VLBA:
 				*this << "dbe0.setFormat('Mark5B')" << endl;
 				*this << "dbe0.setPSNMode(0)" << endl;
@@ -2020,7 +2022,7 @@ int pystream::writeDDCLoifTable(const VexData *V)
 			}
 			else
 			{
-				if( setup->formatName == "MARK5B" )
+				if( setup->formatName == "MARK5B" || setup->formatName == "KVN5B")
 					writeChannelSet(setup, modeNum); 
 				else
 					writeDDCChannelSet(setup, modeNum); 
@@ -2393,7 +2395,7 @@ int pystream::writeDDCScans(const VexData *V)
 					*this << "subarray.setSwitches(mjdStart + " << deltat1 << "*second, mjdStart+" << deltat2
 						<< "*second, obsCode+'_'+stnCode+'_'+'" << scan->defName << "')" << endl;
 				}
-				else if(setup->formatName == "MARK5B")
+				else if(setup->formatName == "MARK5B"||setup->formatName == "KVN5B")
 				{
 					*this << "recorder0.setPacket(0, 0, 36, 5008)" << endl;
 					*this << "subarray.setRecord(mjdStart + " << deltat1 << "*second, mjdStart+" << deltat2 << "*second, '" << scan->defName << "', obsCode, stnCode )" << endl;
@@ -2566,7 +2568,7 @@ int pystream::writeScans(const VexData *V)
 					*this << "print 'Not a recording scan but still set switches for " << scan->defName << ".'" << endl;
 					*this << "subarray.setSwitches(mjdStart + " << deltat1 << "*second, mjdStart+" << deltat2 << "*second, obsCode+'_'+stnCode+'_'+'" << scan->defName << "')" << endl;
 				}
-				else if(setup->formatName == "MARK5B")
+				else if(setup->formatName == "MARK5B"||setup->formatName == "KVN5B")
 				{
 					*this << "recorder0.setPacket(0, 0, 36, 5008)" << endl;
 					*this << "subarray.setRecord(mjdStart + " << deltat1 << "*second, mjdStart+" << deltat2 << "*second, '" << scan->defName << "', obsCode, stnCode )" << endl;
