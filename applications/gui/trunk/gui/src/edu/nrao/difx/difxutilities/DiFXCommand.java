@@ -108,6 +108,16 @@ public class DiFXCommand {
         }
     }
     
+    /*
+     * Return a string representation of this XML command.
+     */
+    public String convertToXML() {
+        _difxMsg.setHeader( _header );
+        _difxMsg.setBody( _body );
+        JAXBDiFXProcessor xmlProc = new JAXBDiFXProcessor( _difxMsg );
+        return xmlProc.ConvertToXML();
+    }
+    
     public ObjectFactory factory() { return _factory; }
     public Body body() { return _body; }
     public Header header() { return _header; }

@@ -370,6 +370,12 @@ public class PassNode extends QueueBrowserNode {
         _experimentNode = newNode;
     }
     
+    public void logFile( ActivityLogFile logFile ) { _logFile = logFile; }
+    public ActivityLogFile logFile() { return _logFile; }
+    
+    public void fullPath( String newPath ) { _fullPath = newPath; }
+    public String fullPath() { return _fullPath; }
+    
     protected ExperimentNode _experimentNode;
     protected String _name;
     protected String _type;
@@ -380,5 +386,7 @@ public class PassNode extends QueueBrowserNode {
     protected SystemSettings _settings;
     protected JMenu _typeMenu;
     protected ArrayList<JCheckBoxMenuItem> _checkList;
+    protected ActivityLogFile _logFile;
+    protected String _fullPath;
 
 }

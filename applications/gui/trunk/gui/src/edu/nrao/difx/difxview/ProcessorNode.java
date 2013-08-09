@@ -232,6 +232,7 @@ public class ProcessorNode extends BrowserNode {
                  _state.getText().equals( "Rebooting" ) ||
                  _state.getText().equals( "NoMoreData" ) ||
                  _state.getText().equals( "PlayInvalid" ) ||
+                 _state.getText().equals( "invisible" ) ||
                  _state.getText().equals( "Condition" ) )
                 _state.setBackground( Color.YELLOW );
             else if ( _state.getText().equals( "Opening" ) ||
@@ -542,7 +543,10 @@ public class ProcessorNode extends BrowserNode {
     public String cpuUsage() { return _cpuLoad.getText(); }
     
     public String currentState() { return _state.getText(); }
+    public void currentState( String newText ) { _state.setText( newText ); }
     
+    public void numCores( int newVal ) { _numCores.setText( "" + newVal ); }
+        
     ProcessorMonitorWindow _monitor;
     MessageWindow _alertWindow;
     ActivityMonitorLight _networkActivity;

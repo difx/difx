@@ -7,8 +7,6 @@ package mil.navy.usno.widgetlib;
 import mil.navy.usno.widgetlib.MessageScrollPane;
 import mil.navy.usno.widgetlib.MessageNode;
 import java.awt.Color;
-import java.awt.Graphics;
-import java.util.Date;
 import java.util.Calendar;
 import java.util.Iterator;
 import java.util.ArrayDeque;

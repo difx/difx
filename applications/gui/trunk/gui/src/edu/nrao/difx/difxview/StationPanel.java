@@ -135,6 +135,39 @@ public class StationPanel extends IndexedPanel {
             }
         });
         _dataSourcePanel.add( _dataFormat );
+        _useSourceNode = new JCheckBox( "" );
+        _useSourceNode.setBounds( 390, 30, 25, 25 );
+        _useSourceNode.setSelected( false );
+        _useSourceNode.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent evt ) {
+                if ( _useSourceNode.isSelected() )
+                    _sourceNodeChoice.setEnabled( true );
+                else
+                    _sourceNodeChoice.setEnabled( false );
+            }
+        } );
+        _useSourceNode.setToolTipText( "Check to use a specific node as the source for these data." );
+        _dataSourcePanel.add( _useSourceNode );
+        JLabel dataNodeLabel = new JLabel( "Node:" );
+        dataNodeLabel.setBounds( 415, 30, 60, 25 );
+        dataNodeLabel.setHorizontalAlignment( JLabel.RIGHT );
+        _dataSourcePanel.add( dataNodeLabel );
+        _sourceNodeChoice = new JComboBox();
+        _sourceNodeChoice.addPopupMenuListener( new PopupMenuListener() {
+            public void popupMenuWillBecomeVisible( PopupMenuEvent e ) {
+                String currentItem = (String)_sourceNodeChoice.getSelectedItem();
+                _sourceNodeChoice.removeAllItems();
+                for ( Iterator<BrowserNode> iter = _settings.hardwareMonitor()._clusterNodes.childrenIterator(); iter.hasNext(); )
+                    _sourceNodeChoice.addItem( iter.next().name() );
+                for ( Iterator<BrowserNode> iter = _settings.hardwareMonitor()._mk5Modules.childrenIterator(); iter.hasNext(); )
+                    _sourceNodeChoice.addItem( iter.next().name() );
+                _sourceNodeChoice.setSelectedItem( currentItem );
+            }
+            public void popupMenuCanceled( PopupMenuEvent e ) {}
+            public void popupMenuWillBecomeInvisible( PopupMenuEvent e ) {}
+        });
+        _sourceNodeChoice.setEnabled( false );
+        _dataSourcePanel.add( _sourceNodeChoice );
         JLabel dataFormatLabel = new JLabel( "Data Format: " );
         dataFormatLabel.setBounds( 100, 30, 95, 25 );
         dataFormatLabel.setHorizontalAlignment( JLabel.RIGHT );
@@ -559,6 +592,7 @@ public class StationPanel extends IndexedPanel {
      * Change things to match a new width.
      */
     public void newWidth( int w ) {
+        _sourceNodeChoice.setBounds( 480, 30, w - 505, 25 );
         _fileFilter.setBounds( 280, 120, w - 305, 25 );
         _fileList.setBounds( 230, 155, w - 255, 120 );
         _dirListLocation.setBounds( 480, 60, w - 505, 25 );
@@ -999,6 +1033,9 @@ public class StationPanel extends IndexedPanel {
     protected IndexedPanel _antennaPanel;
     protected IndexedPanel _sitePanel;
     protected IndexedPanel _settingsPanel;
+    
+    protected JCheckBox _useSourceNode;
+    protected JComboBox _sourceNodeChoice;
     
     protected NumberBox _positionX;
     protected NumberBox _positionY;

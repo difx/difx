@@ -173,8 +173,8 @@ public class DiFXCommand_getFile extends DiFXCommand {
                 _error = "IOException : " + e.toString();
                 _fileSize = -11;
             }
-            endCallback();
             _settings.releaseTransferPort( _port );
+            endCallback();
         }
         
     }

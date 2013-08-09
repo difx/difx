@@ -1575,7 +1575,11 @@ public class QueueBrowserPanel extends TearOffPanel {
 //            thisPass.id( id );
 //            thisPass.inDatabase( true );
             thisPass.experimentNode( thisExperiment );
-            thisExperiment.addChild( thisPass );                        
+            thisExperiment.addChild( thisPass );      
+            //  Try to grab the Pass log file from the DiFX host, if it exists.  This
+            //  is a bit icky - we have to figure out how to create the proper file
+            //  name.  To do this, get a list of all files in the directory of the input
+            //  file that end in "*.passLog".  There should only be one!
         }
         
         //  Then locate the job, if there.
@@ -1595,6 +1599,11 @@ public class QueueBrowserPanel extends TearOffPanel {
             thisJob.pass( thisPass.name() );
             thisJob.passNode( thisPass );
             thisJob.inputFile( inputFile, false );
+            //  Create a new log file for this job using what we expect its name to be.
+            thisJob.logFile( new ActivityLogFile( inputFile.replace( ".input", ".jobLog" ) ) );
+            //  If such a file exists already, force it to be downloaded the first time it
+            //  is used.
+            thisJob.logFile().downloadExisting( true );
             thisPass.addChild( thisJob );
             _header.addJob( thisJob );
         }

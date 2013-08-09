@@ -74,6 +74,7 @@ import mil.navy.usno.widgetlib.SimpleTextEditor;
 import mil.navy.usno.widgetlib.ActivityMonitorLight;
 import mil.navy.usno.widgetlib.MessageDisplayPanel;
 import mil.navy.usno.widgetlib.ComplexToolTip;
+import mil.navy.usno.widgetlib.BrowserNode;
 
 import javax.swing.JFrame;
 
@@ -1605,7 +1606,7 @@ public class SystemSettings extends JFrame {
         _difxControlUser.setText( "difx" );
         //_difxVersion.setText( "trunk" );
         _difxBase.setText( "/usr/local/swc/difx" );
-        _dbUseDataBase.setSelected( true );
+        _dbUseDataBase.setSelected( false );
         _dbVersion.setText( "unknown" );
         _dbHost.setText( "database.hostname" );
         _dbUser.setText( "difx" );
@@ -2000,7 +2001,7 @@ public class SystemSettings extends JFrame {
         _transferPortUsed[tryPort] = true;
         return tryPort + _difxTransferPort.intValue();
     }
-    public void releaseTransferPort( int port ) {
+    synchronized public void releaseTransferPort( int port ) {
         //System.out.println( "release port " + port + "(" + ( port - _difxTransferPort.intValue() ) + ") " );
         _transferPortUsed[port - _difxTransferPort.intValue()] = false;
     }
@@ -2854,6 +2855,13 @@ public class SystemSettings extends JFrame {
                 _jobLocationDefaults.passName = doiConfig.getJobLocationDefaultsPassName();
             _jobLocationDefaults.autoUpdate = doiConfig.isJobLocationDefaultsAutoUpdate();
             
+            _invisibleProcessors = doiConfig.getInvisibleProcessors();
+            _invisibleProcessorCores = doiConfig.getInvisibleProcessorCores();
+            _invisibleMark5s = doiConfig.getInvisibleMark5S();
+            
+            if ( _hardwareMonitor != null )
+                _hardwareMonitor.addInvisibleNodesFromSettings();
+            
             updateEOPNow();
             changeDifxControlConnection();
             generateDatabaseChangeEvent();
@@ -2866,6 +2874,10 @@ public class SystemSettings extends JFrame {
             return false;
         }
     }
+    
+    public String invisibleProcessors() { return _invisibleProcessors; }
+    public String invisibleProcessorCores() { return _invisibleProcessorCores; }
+    public String invisibleMark5s() { return _invisibleMark5s; }
 
     /*
      * Save all current settings to the given filename.
@@ -3203,8 +3215,44 @@ public class SystemSettings extends JFrame {
         doiConfig.setJobLocationDefaultsNoPass( _jobLocationDefaults.noPass );
         doiConfig.setJobLocationDefaultsPassName( _jobLocationDefaults.passName );
         doiConfig.setJobLocationDefaultsAutoUpdate( _jobLocationDefaults.autoUpdate );
+        
+        //  Build a lists of processors and Mark5s that are "invisible".  This comes
+        //  from the hardware list.
+        if ( _hardwareMonitor.processorNodes().children().size() > 0 ) {
+            String nodeList = new String();
+            String coreList = new String();
+            for ( Iterator<BrowserNode> iter = _hardwareMonitor.processorNodes().childrenIterator(); iter.hasNext(); ) {
+                ProcessorNode thisNode = (ProcessorNode)(iter.next());
+                if ( thisNode.currentState().contentEquals( "invisible" ) ) {
+                    if ( nodeList.length() > 0 )
+                        nodeList += ",";
+                    nodeList += thisNode.name();
+                    if ( coreList.length() > 0 )
+                        coreList += ",";
+                    coreList += thisNode.numCores() + "";
+                }
+            }
+            if ( nodeList.length() > 0 ) {
+                doiConfig.setInvisibleProcessors( nodeList );
+                doiConfig.setInvisibleProcessorCores( coreList );
+            }
+        }
+        if ( _hardwareMonitor.mk5Modules().children().size() > 0 ) {
+            String nodeList = new String();
+            for ( Iterator<BrowserNode> iter = _hardwareMonitor.mk5Modules().childrenIterator(); iter.hasNext(); ) {
+                ProcessorNode thisNode = (ProcessorNode)(iter.next());
+                if ( thisNode.currentState().contentEquals( "invisible" ) ) {
+                    if ( nodeList.length() > 0 )
+                        nodeList += ",";
+                    nodeList += thisNode.name();
+                }
+            }
+            if ( nodeList.length() > 0 ) {
+                doiConfig.setInvisibleMark5S( nodeList );
+            }
+        }
 
-            try {
+        try {
             javax.xml.bind.JAXBContext jaxbCtx = javax.xml.bind.JAXBContext.newInstance( doiConfig.getClass().getPackage().getName() );
             javax.xml.bind.Marshaller marshaller = jaxbCtx.createMarshaller();
             File theFile = new File( filename );
@@ -4380,5 +4428,9 @@ public class SystemSettings extends JFrame {
     protected JCheckBox _jobCheck;
     protected JCheckBox _sequentialCheck;
     protected JCheckBox _simultaneousCheck;
+    
+    protected String _invisibleProcessors;
+    protected String _invisibleProcessorCores;
+    protected String _invisibleMark5s;
 
 }

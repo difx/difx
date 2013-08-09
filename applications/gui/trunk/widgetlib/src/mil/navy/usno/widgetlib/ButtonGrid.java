@@ -255,10 +255,12 @@ public class ButtonGrid  extends JPanel { //JScrollPane {
      * Turn all of the buttons "off".
      */
     public void allOff() {
-        for ( Iterator iter = _buttonList.iterator(); iter.hasNext(); ) {
-            GridButton button = (GridButton)iter.next();
-            button.on( false );
-        }
+        try {
+            for ( Iterator iter = _buttonList.iterator(); iter.hasNext(); ) {
+                GridButton button = (GridButton)iter.next();
+                button.on( false );
+            }
+        } catch ( java.util.ConcurrentModificationException e ) {}
     }
     
     public int buttonsPerLine() { return _buttonsPerLine; }

@@ -29,10 +29,6 @@ import java.util.Iterator;
 
 import javax.swing.event.EventListenerList;
 
-/**
- *
- * @author jspitzak
- */
 public class TimeLimitPanel extends JPanel implements MouseMotionListener, 
         MouseWheelListener {
     

@@ -64,6 +64,7 @@ public class JobEditorMonitor extends JFrame {
      */
     public JobEditorMonitor( JobNode newNode, SystemSettings settings ) {
         super( "Job Editor/Monitor" );
+        _this = this;
         _jobNode = newNode;
         _settings = settings;
         _settings.setLookAndFeel();
@@ -1048,6 +1049,7 @@ public class JobEditorMonitor extends JFrame {
      * instruction is more of a "set and forget" kind of operation.
      */
     public void startJob() {
+        _jobNode.logItem( "<RUN> START JOB", _jobNode.inputFile(), false );
         _startTime = new JulianCalendar();
         _startTime.setTime( new Date() );
         _jobNode.correlationStart( _startTime.mjd() );
@@ -1146,6 +1148,7 @@ public class JobEditorMonitor extends JFrame {
         
         // -- Create the XML defined messages and process through the system
         command.body().setDifxStart(jobStart);
+        _jobNode.logItem( "<RUN> START COMMAND", command.convertToXML(), true );
         try {
             //command.sendPacket( _settings.guiServerConnection().COMMAND_PACKET );
             command.send();
@@ -1153,6 +1156,7 @@ public class JobEditorMonitor extends JFrame {
             java.util.logging.Logger.getLogger("global").log(java.util.logging.Level.SEVERE, null,
                     e.getMessage() );  //BLAT should be a pop-up
             setState( "Failed Start", Color.RED );
+            _jobNode.logItem( "<RUN> FAILED START", "", true );
         }
     }
     
@@ -1373,7 +1377,9 @@ public class JobEditorMonitor extends JFrame {
             endTime.setTime( new Date() );
             _jobNode.correlationEnd( endTime.mjd() );
             _jobNode.correlationTime( 24.0 * 3600.0 * ( endTime.mjd() - _startTime.mjd() ) );
-        }
+            _jobNode.logItem( "<RUN> CORRELATION TIME", "" + 24.0 * 3600.0 * ( endTime.mjd() - _startTime.mjd() ), false );
+            _jobNode.logItem( "<RUN> JOB STATE", _jobNode.state().getText(), true );
+       }
         
         protected int _port;
         
@@ -1699,7 +1705,7 @@ public class JobEditorMonitor extends JFrame {
          * or deselect if desired.
          */
         public boolean cpuTest( float limit, boolean selectLimit ) {
-            if ( Float.parseFloat( _cpuDisplay.getText() ) > limit ) {
+            if ( _cpuDisplay.getText().length() > 0 && Float.parseFloat( _cpuDisplay.getText() ) > limit ) {
                 _cpuDisplay.setForeground( Color.RED );
                 if ( selectLimit && !_handSelected )
                     _selected.setSelected( false );
@@ -2449,5 +2455,7 @@ public class JobEditorMonitor extends JFrame {
     
     protected InputFileParser _inputFile;
     protected JulianCalendar _startTime;
+    
+    protected JobEditorMonitor _this;
     
 }

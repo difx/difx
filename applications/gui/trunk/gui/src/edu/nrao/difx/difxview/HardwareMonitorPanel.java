@@ -84,6 +84,38 @@ public class HardwareMonitorPanel extends TearOffPanel {
                         _settings.inactivityError() * 10 );
             }
         } );
+        addInvisibleNodesFromSettings();
+    }
+    
+    /*
+     * Force the display of "header" lines for each type of hardware.  This might
+     * be useful if you aren't getting any messages from any type of hardware - by
+     * default the headers won't show up unless some hardware is out there.
+     */
+    public void forceHeaders() {
+        _clusterNodes.showThis( true );
+        _mk5Modules.showThis( true );
+    }
+    
+    /*
+     * See if the settings file has any evidence of invisible nodes.
+     */
+    public void addInvisibleNodesFromSettings() {
+        if ( _settings.invisibleProcessors() != null ) {
+            String [] procList = _settings.invisibleProcessors().split( "," );
+            String [] coreList = _settings.invisibleProcessorCores().split( "," );
+            for ( int i = 0; i < procList.length; ++i ) {
+                if ( procList[i].length() > 0 )
+                    _clusterNodes.checkAddNode( procList[i], new Integer( coreList[i] ) );
+            }
+        }
+        if ( _settings.invisibleMark5s() != null ) {
+            String [] mk5List = _settings.invisibleMark5s().split( "," );
+            for ( int i = 0; i < mk5List.length; ++i ) {
+                if ( mk5List[i].length() > 0 )
+                    _mk5Modules.checkAddNode( mk5List[i] );
+            }
+        }
     }
          
     /*

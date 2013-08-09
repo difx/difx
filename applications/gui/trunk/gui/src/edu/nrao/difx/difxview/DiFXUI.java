@@ -5,6 +5,7 @@
 package edu.nrao.difx.difxview;
 
 import mil.navy.usno.widgetlib.MessageDisplayPanel;
+import mil.navy.usno.widgetlib.ZMenuItem;
 
 import java.awt.event.WindowListener;
 import java.awt.event.WindowEvent;
@@ -284,6 +285,18 @@ public class DiFXUI extends JFrame implements WindowListener {
         arrangeMenu.add( _verticalItem );
         windowMenu.add( arrangeMenu );
         windowMenu.add( new JSeparator() );
+        ZMenuItem forceHeaders = new ZMenuItem( "Display Hardware Headers" );
+        forceHeaders.toolTip( "Force the display of header lines for both processors and\n"
+                + "Mark V machines.  Normally these headers will not appear until\n"
+                + "messages are received from <<italic>>mk5daemon<</italic>> instances.  If you\n"
+                + "are not running <<italic>>mk5daemon<</italic>> anywhere, the header will let\n"
+                + "you add machines by hand.", null );
+        forceHeaders.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                _hardwareMonitor.forceHeaders();
+            }
+        } );
+        windowMenu.add( forceHeaders );
         _menuBar.add( windowMenu );
         JMenu helpMenu = new JMenu( "Help" );
         JMenuItem aboutItem = new JMenuItem( "Version, etc." );

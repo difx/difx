@@ -51,6 +51,7 @@ import java.util.ArrayList;
 import java.util.Vector;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.ArrayDeque;
 import java.util.GregorianCalendar;
 
 import java.text.SimpleDateFormat;
@@ -1397,7 +1398,8 @@ public class ExperimentEditor extends JFrame {
             public void actionPerformed( ActionEvent e ) {
                 //  Found anything at all?
                 if ( _lastV2dPath != null ) {
-                    readV2dFile( _lastV2dPath, _lastV2dBase );
+                    //  BLAT messed up!!!!!
+//                    readV2dFile( _lastV2dPath, _lastV2dBase );
                 }
             }
         });
@@ -2107,6 +2109,7 @@ public class ExperimentEditor extends JFrame {
     
     public void v2dFileName( String newVal ) { _v2dFileName.setText( newVal ); }
     public String v2dFileName() { return _v2dFileName.getText(); }
+    public String passLogFileName() { return v2dFileName().replace( ".v2d", ".passLog" ); }
     
     /*
      * A change has occurred in the name, which *maybe* should be propogated
@@ -2233,24 +2236,26 @@ public class ExperimentEditor extends JFrame {
      * not include the source, it will be removed.
      */
     public void checkScansAgainstSources() {
-        for ( Iterator<ButtonGrid.GridButton> iter = _scanGrid.buttonList().iterator(); iter.hasNext(); ) {
-            ButtonGrid.GridButton button = iter.next();
-            if ( button.on() ) {
-                VexFileParser.Scan scan = (VexFileParser.Scan)button.data();
-                boolean _sourceFound = false;
-                for ( Iterator<BrowserNode> jter = _sourcePane.browserTopNode().childrenIterator(); jter.hasNext() && !_sourceFound; ) {
-                    //  Eliminate the button panel using the class cast exception.
-                    try {
-                        SourcePanel source = (SourcePanel)jter.next();
-                        if ( scan.source.equalsIgnoreCase( source.name() ) && source.use() )
-                            _sourceFound = true;
-                    } catch ( java.lang.ClassCastException e ) {
-                    } catch ( java.util.ConcurrentModificationException e ) {}
+        try {
+            for ( Iterator<ButtonGrid.GridButton> iter = _scanGrid.buttonList().iterator(); iter.hasNext(); ) {
+                ButtonGrid.GridButton button = iter.next();
+                if ( button.on() ) {
+                    VexFileParser.Scan scan = (VexFileParser.Scan)button.data();
+                    boolean _sourceFound = false;
+                    for ( Iterator<BrowserNode> jter = _sourcePane.browserTopNode().childrenIterator(); jter.hasNext() && !_sourceFound; ) {
+                        //  Eliminate the button panel using the class cast exception.
+                        try {
+                            SourcePanel source = (SourcePanel)jter.next();
+                            if ( scan.source.equalsIgnoreCase( source.name() ) && source.use() )
+                                _sourceFound = true;
+                        } catch ( java.lang.ClassCastException e ) {
+                        } catch ( java.util.ConcurrentModificationException e ) {}
+                    }
+                    if ( !_sourceFound )
+                        button.on( false );
                 }
-                if ( !_sourceFound )
-                    button.on( false );
             }
-        }
+        } catch ( java.util.ConcurrentModificationException e ) {}
     }
     
     /*
@@ -2625,6 +2630,9 @@ public class ExperimentEditor extends JFrame {
                     String passDir = "";
                     if ( createPass() )
                         passDir = passDirectory() + "/";
+                    //  Create a "pass log" for this set of jobs.
+                    _passLog = new ActivityLogFile( directory() + "/" + passDir + passLogFileName() );
+                    _newPass.logFile( _passLog );
                     _statusLabel.setText( "Writing file \"" + directory() + "/" + passDir + vexFileName() + "\"" );
                     //  Remove the EOP data from the .vex file before sending if necessary.
                     String vexData = "";
@@ -2640,6 +2648,7 @@ public class ExperimentEditor extends JFrame {
                     Point pt = _okButton.getLocationOnScreen();
                     SendFileMonitor sendVex = new SendFileMonitor( (Frame)comp, pt.x + 25, pt.y + 25,
                             directory() + "/" + passDir + vexFileName(), vexData, _settings );
+                    _passLog.addLabelItem( "VEX FILE", directory() + "/" + passDir + vexFileName() );
                     //  Delay for a bit to avoid having the following operation step on the end of this
                     //  one.  Mk5daemon may still be busy.
                     try { Thread.sleep( 1000 ); } catch ( Exception e ) {}
@@ -2647,6 +2656,7 @@ public class ExperimentEditor extends JFrame {
                     //  exists, or the main experiment directory if not.
                     SendFileMonitor sendV2d = new SendFileMonitor( (Frame)comp, pt.x + 25, pt.y + 25,
                             directory() + "/" + passDir + v2dFileName(), _v2dEditor.text(), _settings );
+                    _passLog.addLabelItem( "V2D FILE", directory() + "/" + passDir + v2dFileName() );
                     try { Thread.sleep( 1000 ); } catch ( Exception e ) {}
                     //  Run vex2difx on the new pass and v2d file.
                     passDir = directory();
@@ -2724,6 +2734,8 @@ public class ExperimentEditor extends JFrame {
                 }
                 //  Okay...maybe we have to create it.
                 if ( newJob == null ) {
+                    //  Add the .input file name to the pass log file.
+                    _passLog.addLabelItem( "INPUT FILE", newFile.trim() );
                     //  Produce a job "name"...for the moment, these are based on the
                     //  filenames produced by vex2difx.  Ultimately we may give the user
                     //  some more palatable choices.
@@ -2734,7 +2746,17 @@ public class ExperimentEditor extends JFrame {
                     //BLATSystem.out.println( "creating new job \"" + jobName + "\"" );
                     newJob = new JobNode( jobName, _settings );
                     newJob.fullName( fullName );
-                    //BLATSystem.out.println( "adding job name " + fullName );
+                    //  Create a new log file for this job.
+                    newJob.logFile( new ActivityLogFile( newFile.trim().replace( ".input", ".jobLog" ) ) );
+                    newJob.logFile().addLabelItem( "INPUT FILE", newFile.trim() );
+                    //  Send the log file to the DiFX host.
+                    Component comp = _this;
+                    while ( comp.getParent() != null )
+                        comp = comp.getParent();
+                    Point pt = new Point( 100, 100 );
+                    SendFileMonitor sendLog = new SendFileMonitor( (Frame)comp, pt.x + 25, pt.y + 25,
+                            newJob.logFile().filename(), newJob.logFile().content(), _settings );
+                    //  Add the job to the existing pass.
                     _newPass.addChild( newJob );
                     newJob.passNode( _newPass );
                     _settings.queueBrowser().addJob( newJob );
@@ -2774,13 +2796,31 @@ public class ExperimentEditor extends JFrame {
                     }
                 }
             }
+            else {
+                //System.out.println( "ExperimentEditor: new extension \"" + extn + "\"" );
+            }
         }
 
         /*
          * This callback occurs when the vex2difx process is complete.
          */
         synchronized public void endCallback( String newFile ) {
+            //  Send the pass log file to the DiFX host.
+            Component comp = _this;
+            while ( comp.getParent() != null )
+                comp = comp.getParent();
+            Point pt = new Point( 100, 100 );
+            SendFileMonitor sendLog = new SendFileMonitor( (Frame)comp, pt.x + 25, pt.y + 25,
+                    _passLog.filename(), _passLog.content(), _settings );
+            try { Thread.sleep( 1000 ); } catch ( Exception e ) {}
             _statusLabel.setText( "vex2difx process completed!" );
+//            ArrayDeque<ActivityLogFile.LogItem> itemList = _passLog.getItem( "FILE" );
+//            if ( itemList != null ) {
+//                for ( Iterator<ActivityLogFile.LogItem> iter = itemList.iterator(); iter.hasNext(); ) {
+//                    ActivityLogFile.LogItem logItem = iter.next();
+//                    System.out.println( "\"" + logItem.label + "\"  \"" + logItem.time + "\"  \"" + logItem.text + "\"" );
+//                }
+//            }
         }
         
         PassNode _newPass;
@@ -2888,5 +2928,6 @@ public class ExperimentEditor extends JFrame {
     protected double _bandwidth;
     protected Calendar _eopMinTime;
     protected Calendar _eopMaxTime;
+    protected ActivityLogFile _passLog;
     
 }

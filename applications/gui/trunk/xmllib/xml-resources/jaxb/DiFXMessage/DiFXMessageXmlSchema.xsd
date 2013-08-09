@@ -298,6 +298,9 @@
                 <xsd:element ref="jobLocationDefaultsNoPass" />
                 <xsd:element ref="jobLocationDefaultsPassName" />
                 <xsd:element ref="jobLocationDefaultsAutoUpdate" />                
+                <xsd:element ref="invisibleProcessors" />
+                <xsd:element ref="invisibleProcessorCores" />
+                <xsd:element ref="invisibleMark5s" />
                 
             </xsd:sequence>
         </xsd:complexType>
@@ -502,6 +505,9 @@
     <xsd:element name="jobLocationDefaultsNoPass" type="xsd:boolean"></xsd:element>
     <xsd:element name="jobLocationDefaultsPassName" type="xsd:string"></xsd:element>
     <xsd:element name="jobLocationDefaultsAutoUpdate" type="xsd:boolean"></xsd:element>               
+    <xsd:element name="invisibleProcessors" type="xsd:string"></xsd:element>
+    <xsd:element name="invisibleProcessorCores" type="xsd:string"></xsd:element>
+    <xsd:element name="invisibleMark5s" type="xsd:string"/>
                 
     <xsd:complexType name="mark5Status">
         <xsd:sequence>

@@ -6,11 +6,17 @@
 package edu.nrao.difx.difxview;
 
 import mil.navy.usno.widgetlib.BrowserNode;
+import mil.navy.usno.widgetlib.ZMenuItem;
+import mil.navy.usno.widgetlib.FormattedTextField;
+import mil.navy.usno.widgetlib.NumberBox;
 import javax.swing.JMenuItem;
 import javax.swing.JMenu;
 import javax.swing.JPopupMenu;
 import javax.swing.JSeparator;
 import javax.swing.JCheckBoxMenuItem;
+import javax.swing.JDialog;
+import javax.swing.JLabel;
+import javax.swing.JButton;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -20,8 +26,10 @@ import java.awt.Component;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
+import java.awt.MouseInfo;
 
 import java.util.Iterator;
+import javax.swing.JOptionPane;
 
 import javax.swing.event.EventListenerList;
 
@@ -227,6 +235,28 @@ public class ProcessorNodesHeader extends BrowserNode {
             }
         });
         powerOffMenu.add( powerOffAll );
+        _popup.add( new JSeparator() );
+        ZMenuItem addProcessorItem = new ZMenuItem( "Add \"Invisible\" Node" );
+        addProcessorItem.toolTip( ""
+                + "Add the name of a hardware node that is \"invisible\" to\n"
+                + "the GUI because it is not running <<italic>>mk5daemon<</italic>>.  To make\n"
+                + "use of node in DiFX processing, the name <<bold>>must<</bold>> be\n"
+                + "recognizable by the headnode.", null );
+        addProcessorItem.addActionListener(new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                addInvisibleNode();
+            }
+        });
+        _popup.add( addProcessorItem );
+        ZMenuItem removeProcessorItem = new ZMenuItem( "Remove Selected \"Invisible\" Nodes" );
+        removeProcessorItem.toolTip( ""
+                + "Remove the selected \"invisible\" nodes.", null );
+        removeProcessorItem.addActionListener(new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                removeInvisibleNodes();
+            }
+        });
+        _popup.add( removeProcessorItem );
         _popup.add( new JSeparator() );
         JMenuItem menuItem;
         menuItem = new JMenuItem( _label.getText() + " Display Options:" );
@@ -610,6 +640,145 @@ public class ProcessorNodesHeader extends BrowserNode {
             BrowserNode thisNode = iter.next();
             if ( thisNode.selected() )
                 ((ProcessorNode)(thisNode)).sendDiFXCommandMessage( "Power Off" );
+        }
+    }
+    
+    /*
+     * Popup dialog to add a new processor.
+     */
+    public class AddNode extends JDialog {
+        public AddNode( int x, int y, boolean isMark5 ) {
+            super();
+            setLayout( null );
+            if ( isMark5 )
+                setBounds( x, y, 500, 100 );
+            else
+                setBounds( x, y, 500, 140 );
+            JLabel nodeLabel = new JLabel( "Node Name:" );
+            nodeLabel.setHorizontalAlignment( JLabel.RIGHT );
+            nodeLabel.setBounds( 10, 10, 100, 25 );
+            this.add( nodeLabel );
+            nodeName = new FormattedTextField();
+            nodeName.employChangeBackground( false );
+            nodeName.setBounds( 115, 10, 375, 25 );
+            nodeName.toolTip( "This is the host name of the \"invisible\" node.\n"
+                    + "This name must be how the headnode used in DiFX processing\n"
+                    + "addresses the node for it to be useful.", null );
+            this.add( nodeName );
+            if ( !isMark5 ) {
+                JLabel threadLabel = new JLabel( "Cores:" );
+                threadLabel.setHorizontalAlignment( JLabel.RIGHT );
+                threadLabel.setBounds( 10, 40, 100, 25 );
+                this.add( threadLabel );
+                threads = new NumberBox();
+                threads.employChangeBackground( false );
+                threads.minimum( 1 );
+                threads.precision( 0 );
+                threads.setBounds( 115, 40, 100, 25 );
+                threads.intValue( 1 );
+                threads.toolTip( "The default number of cores that will be used when running\n"
+                        + "with this processor.", null );
+                this.add( threads );
+            }
+            _this = this;
+            int ypos = 40;
+            if ( isMark5 )
+                ypos = 40;
+            JButton cancelButton = new JButton( "Cancel" );
+            cancelButton.setBounds( 285, ypos, 100, 25 );
+            cancelButton.addActionListener(new ActionListener() {
+                public void actionPerformed( ActionEvent e ) {
+                    _this.setVisible( false );
+                }
+            });
+            this.add( cancelButton );
+            JButton okButton = new JButton( "OK" );
+            okButton.setBounds( 390, ypos, 100, 25 );
+            okButton.addActionListener(new ActionListener() {
+                public void actionPerformed( ActionEvent e ) {
+                    ok = true;
+                    _this.setVisible( false );
+                }
+            });
+            this.add( okButton );
+            this.setResizable( false );
+            this.setModal( true );
+            if ( isMark5 )
+                this.setTitle( "Add \"Invisible\" Mark 5 Unit" );
+            else
+                this.setTitle( "Add \"Invisible\" Processor" );
+        }
+        public FormattedTextField nodeName;
+        public NumberBox threads;
+        public boolean ok;
+        public AddNode _this;
+    }
+    
+    /*
+     * Add an "invisible" processor name to the processor list.  Invisible processors
+     * do not have mk5daemon running, and thus won't appear in the list on their own.
+     * Once added, the new node will look like a processor and
+     * be available when choosing nodes for DiFX processing, but its data will not be
+     * updated.  The user is prompted for a name and default number of threads.
+     */
+    public void addInvisibleNode() {
+        //  Create a dialog allowing the user to enter a name, threads, etc.
+        AddNode dialog = new AddNode( MouseInfo.getPointerInfo().getLocation().x,
+                MouseInfo.getPointerInfo().getLocation().y, false );
+        dialog.setVisible( true );
+        if ( dialog.ok ) {
+            if ( dialog.nodeName.getText().length() > 0 ) {
+                if ( !checkAddNode( dialog.nodeName.getText(), dialog.threads.intValue() ) )
+                    JOptionPane.showMessageDialog( this, "A node named \"" + dialog.nodeName.getText() + "\" already exists.",
+                            "Node name exists", JOptionPane.WARNING_MESSAGE );
+            }
+            else
+                JOptionPane.showMessageDialog( this, "No node name entered.",
+                        "Node name required.", JOptionPane.WARNING_MESSAGE );
+        }
+    }
+    
+    /*
+     * Check if an "invisible" node exists in the current list, then add it if it does not.
+     * Return true if the node was added, false if not.
+     */
+    public boolean checkAddNode( String name, int cores ) {
+        boolean found = false;
+        for ( Iterator<BrowserNode> iter = _children.iterator(); iter.hasNext() && !found; ) {
+            ProcessorNode thisNode = (ProcessorNode)(iter.next());
+            if ( thisNode.name().contentEquals( name ) ) {
+                found = true;
+            }
+        }
+        if ( found )
+            return false;
+        else {
+            ProcessorNode newNode = new ProcessorNode( name, _settings );
+            newNode.currentState( "invisible" );
+            newNode.numCores( cores );
+            this.addChild( newNode );
+            return true;
+        }
+    }
+    
+    /*
+     * Remove any invisible processors from the list that have been selected.
+     */
+    public void removeInvisibleNodes() {
+        boolean keepGoing = true;
+        while ( keepGoing ) {
+            keepGoing = false;
+            BrowserNode deleteNode = null;
+            for ( Iterator<BrowserNode> iter = _children.iterator(); iter.hasNext() && deleteNode == null; ) {
+                ProcessorNode thisNode = (ProcessorNode)(iter.next());
+                if ( thisNode.selected() && thisNode.currentState().contentEquals( "invisible" ) ) {
+                    deleteNode = thisNode;
+                    keepGoing = true;
+                }
+            }
+            if ( deleteNode != null ) {
+                this.removeChild( deleteNode );
+            }
         }
     }
     

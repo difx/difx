@@ -11,6 +11,8 @@ import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
 import java.awt.event.MouseEvent;
 import java.util.Iterator;
+import java.awt.MouseInfo;
+import javax.swing.JOptionPane;
 
 /**
  *
@@ -190,6 +192,45 @@ public class Mark5NodesHeader extends ProcessorNodesHeader {
             }
         });
         _popup.add( _showCurrentJob );
+    }
+    
+    @Override
+    public void addInvisibleNode() {
+        AddNode dialog = new AddNode( MouseInfo.getPointerInfo().getLocation().x,
+                MouseInfo.getPointerInfo().getLocation().y, true );
+        dialog.setVisible( true );
+        if ( dialog.ok ) {
+            if ( dialog.nodeName.getText().length() > 0 ) {
+                if ( !checkAddNode( dialog.nodeName.getText() ) )
+                    JOptionPane.showMessageDialog( this, "A node named \"" + dialog.nodeName.getText() + "\" already exists.",
+                            "Node name exists", JOptionPane.WARNING_MESSAGE );
+            }
+            else
+                JOptionPane.showMessageDialog( this, "No node name entered.",
+                        "Node name required.", JOptionPane.WARNING_MESSAGE );
+        }
+    }
+
+    /*
+     * Check if an "invisible" node exists in the current list, then add it if it does not.
+     * Return true if the node was added, false if not.
+     */
+    public boolean checkAddNode( String name ) {
+        boolean found = false;
+        for ( Iterator<BrowserNode> iter = _children.iterator(); iter.hasNext() && !found; ) {
+            Mark5Node thisNode = (Mark5Node)(iter.next());
+            if ( thisNode.name().contentEquals( name ) ) {
+                found = true;
+            }
+        }
+        if ( found )
+            return false;
+        else {
+            Mark5Node newNode = new Mark5Node( name, _settings, null );
+            newNode.currentState( "invisible" );
+            this.addChild( newNode );
+            return true;
+        }
     }
     
     public void activateAll() {
