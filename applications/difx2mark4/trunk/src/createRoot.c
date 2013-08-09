@@ -182,7 +182,7 @@ int createRoot (DifxInput *D,           // difx input structure pointer
         fclose (fin);
         return (-1);
         }
-
+    fprintf (fout, "* correlated from input file %s\n*\n", D->job[jobId].inputFile);
     current_block = NO_BLOCK;
                                     // loop over all statements in input file
     while (fgets (line, 256, fin) != NULL)
