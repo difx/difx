@@ -367,12 +367,6 @@ int createRoot (DifxInput *D,           // difx input structure pointer
                         itime = atoi (pchar+1);
                         if (itime < earliest_stop)
                             earliest_stop = itime;
-                                   
-                                    // FIXME - is this override really necessary or optimal?
-                        sprintf (buff, " 00 sec : %d sec : : : : 0 ; * overridden times\n", 
-                                 D->scan[scanId].durSeconds);
-                        pchar = strchr (line, ':');
-                        strcpy (pchar+2, buff);
                         }
                     }
                                     // source name may have been changed in .v2d

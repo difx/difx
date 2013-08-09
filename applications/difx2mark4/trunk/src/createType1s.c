@@ -72,7 +72,8 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
            scale_factor,            // scaling factor includes Van Vleck and SCALE
            sb_factor[64],           // +1 | -1 for USB | LSB by channel
            rscaled,
-           iscaled;
+           iscaled,
+           epsilon = 1e-9;          // 1 nano-day offset to ensure floating pt compares OK
 
     FILE *fout[NUMFILS];
     DIR *pdir;
@@ -211,7 +212,7 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
             rec = (vis_record *) ((char *) vrec + nvr * (long int) vrsize);  
                                     // check for new scan
             oldScan = currentScan;
-            currentScan = DifxInputGetScanIdByJobId (D, rec->mjd+rec->iat/8.64e4, *jobId);
+            currentScan = DifxInputGetScanIdByJobId (D, rec->mjd+rec->iat/8.64e4-epsilon, *jobId);
         
             if (currentScan == -1)
                 {
