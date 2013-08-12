@@ -43,12 +43,19 @@ static void *mk5dirRun(void *ptr)
 {
 	struct mk5dirParams *params;
 	char command[MAX_COMMAND_SIZE];
+        char *mk5dirOpts;
 
 	params = (struct mk5dirParams *)ptr;
 
 	Logger_logData(params->D->log, "mk5dir starting\n");
 
-	snprintf(command, MAX_COMMAND_SIZE, "su -l %s -c 'mk5dir %s'", params->D->userID, params->bank);
+	mk5dirOpts = getenv ("MK5DIR_OPTS");
+        if (mk5dirOpts!=NULL)
+                snprintf(command, MAX_COMMAND_SIZE, "su -l %s -c 'mk5dir %s %s'", params->D->userID, mk5dirOpts, params->bank);
+        else
+                snprintf(command, MAX_COMMAND_SIZE, "su -l %s -c 'mk5dir %s'", params->D->userID, params->bank);
+
+
 	Mk5Daemon_system(params->D, command, 1);
 
 	Logger_logData(params->D->log, "mk5dir done\n");
