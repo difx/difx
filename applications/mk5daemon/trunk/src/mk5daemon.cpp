@@ -298,7 +298,11 @@ Mk5Daemon *newMk5Daemon(const char *logPath, const char *userID, int isMk5)
 	D->loadMonInterval = 10;	/* seconds */
 	D->macList = new std::map<MAC,bool>;
 	D->errors = new std::list<std::string>;
-	procGetCores(&D->load.nCore);
+	if (procGetCores(&D->load.nCore) == -2)
+        {
+                procGetCoresFromCpuInfo(&D->load.nCore);
+        }
+
 	gethostname(D->hostName, MK5DAEMON_HOSTNAME_LENGTH);
 	D->hostName[MK5DAEMON_HOSTNAME_LENGTH-1] = 0;
 	D->isMk5 = strcasestr(D->hostName, "mark5") == 0 ? 0 : 1;

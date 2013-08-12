@@ -33,6 +33,8 @@
 #include <ctype.h>
 #include <regex.h>
 #include "proc.h"
+#include <iostream>
+#include <fstream>
 
 /* routines to get useful information from /proc */
 
@@ -85,6 +87,13 @@ int procGetCores(int *nCore)
 	int v;
 
 	*nCore = 0;
+        std::ifstream testExist;
+
+        // test if file exists
+        testExist.open("/sys/devices/system/cpu/cpu0/topology/core_siblings_list");
+        if (!testExist.is_open())
+      		 return -2;
+        
 	
 	pin = popen("cat /sys/devices/system/cpu/cpu*/topology/core_siblings_list | sort | uniq", "r");
 	if(!pin)
