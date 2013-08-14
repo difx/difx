@@ -59,6 +59,7 @@ public class GuiServerConnection {
     public final int DIFX_SETUP_PATH                = 13;
     public final int START_DIFX_MONITOR             = 14;
     public final int DIFX_RUN_LABEL                 = 15;
+    public final int GUISERVER_USER                 = 16;
 
     
     public GuiServerConnection( SystemSettings settings, String IP, int port, int timeout ) {
@@ -205,6 +206,10 @@ public class GuiServerConnection {
                         else if ( packetId == GUISERVER_DIFX_VERSION ) {
                             //  This is the difx version for which the guiServer was compiled.
                             _settings.guiServerDifxVersion( new String( data ) );
+                        }
+                        else if ( packetId == GUISERVER_USER ) {
+                            //  This is the difx version for which the guiServer was compiled.
+                            _settings.difxControlUser( new String( data ) );
                         }
                         else if ( packetId == AVAILABLE_DIFX_VERSION ) {
                             //  Add an available DiFX version to the list in settings.

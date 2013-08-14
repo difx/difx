@@ -75,6 +75,7 @@ import mil.navy.usno.widgetlib.ActivityMonitorLight;
 import mil.navy.usno.widgetlib.MessageDisplayPanel;
 import mil.navy.usno.widgetlib.ComplexToolTip;
 import mil.navy.usno.widgetlib.BrowserNode;
+import mil.navy.usno.widgetlib.FormattedTextField;
 
 import javax.swing.JFrame;
 
@@ -296,7 +297,9 @@ public class SystemSettings extends JFrame {
         JLabel guiServerConnectionLabel = new JLabel( "guiServer Connection" );
         guiServerConnectionLabel.setBounds( 380, 25, 200, 25 );
         difxControlPanel.add( guiServerConnectionLabel );
-        _difxControlAddress = new JFormattedTextField();
+        _difxControlAddress = new FormattedTextField();
+        _difxControlAddress.setToolTipText( "Name of the host where <<italic>>guiServer<</italic>> is running.\n"
+                + "Changing this name will trigger a new connection attempt." );
         _difxControlAddress.setFocusLostBehavior( JFormattedTextField.COMMIT );
         _difxControlAddress.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
@@ -309,6 +312,8 @@ public class SystemSettings extends JFrame {
         ipAddressLabel.setHorizontalAlignment( JLabel.RIGHT );
         difxControlPanel.add( ipAddressLabel );
         _difxControlPort = new NumberBox();
+        _difxControlPort.setToolTipText( "Port number used to make a TCP connection to <<italic>>guiServer<</italic>>.\n"
+                + "Changing this value will trigger a new connection attempt." );
         _difxControlPort.setHorizontalAlignment( NumberBox.LEFT );
         _difxControlPort.minimum( 0 );
         _difxControlPort.addActionListener( new ActionListener() {
@@ -322,6 +327,9 @@ public class SystemSettings extends JFrame {
         portLabel.setHorizontalAlignment( JLabel.RIGHT );
         difxControlPanel.add( portLabel );
         _difxTransferPort = new NumberBox();
+        _difxTransferPort.setToolTipText( "\"Starting\" port used for data transfer operations between\n"
+                + "the GUI and <<italic>>guiServer<</italic>>.  Port numbers used will start at\n"
+                + "this number and increment \"Max Open Ports\" times, then recycle." );
         _difxTransferPort.setHorizontalAlignment( NumberBox.LEFT );
         _difxTransferPort.minimum( 0 );
         difxControlPanel.add( _difxTransferPort );
@@ -362,34 +370,37 @@ public class SystemSettings extends JFrame {
         monitorPortLabel.setBounds( 620, 85, 150, 25 );
         monitorPortLabel.setHorizontalAlignment( JLabel.RIGHT );
         difxControlPanel.add( monitorPortLabel );
-        _difxControlUser = new JFormattedTextField();
-        _difxControlUser.setFocusLostBehavior( JFormattedTextField.COMMIT );
-        _difxControlUser.addActionListener( new ActionListener() {
-            public void actionPerformed( ActionEvent e ) {
-                //generateControlChangeEvent();
-            }
-        } );
+        _difxControlUser = new SaneTextField();
+        _difxControlUser.setText( "N/A" );
+        _difxControlUser.setToolTipText( "User name under which guiServer is running on the DiFX host." );
+        _difxControlUser.setEditable( false );
         difxControlPanel.add( _difxControlUser );
         JLabel userAddressLabel = new JLabel( "Username:" );
-        userAddressLabel.setBounds( 10, 115, 150, 25 );
+        userAddressLabel.setBounds( 10, 145, 150, 25 );
         userAddressLabel.setHorizontalAlignment( JLabel.RIGHT );
         difxControlPanel.add( userAddressLabel );
-        _guiServerVersion = new JTextField( "N/A" );
+        _guiServerVersion = new SaneTextField();
+        _guiServerVersion.setText( "N/A" );
+        _guiServerVersion.setToolTipText( "Compiled version of guiServer - this does not (necessarily) match the DiFX version." );
         _guiServerVersion.setEditable( false );
         _guiServerVersion.setBackground( this.getBackground() );
-        _guiServerVersion.setBounds( 165, 145, 100, 25 );
+        _guiServerVersion.setBounds( 165, 115, 100, 25 );
         difxControlPanel.add( _guiServerVersion );
         JLabel guiServerVersionLabel = new JLabel( "guiServer Version:" );
-        guiServerVersionLabel.setBounds( 10, 145, 150, 25 );
+        guiServerVersionLabel.setBounds( 10, 115, 150, 25 );
         guiServerVersionLabel.setHorizontalAlignment( JLabel.RIGHT );
         difxControlPanel.add( guiServerVersionLabel );
-        _guiServerDifxVersion = new JTextField( "N/A" );
+        _guiServerDifxVersion = new SaneTextField();
+        _guiServerDifxVersion.setText( "N/A" );
         _guiServerDifxVersion.setEditable( false );
+        _guiServerDifxVersion.setToolTipText( "Version of DiFX used to build guiServer.\n"
+                + "This does not need to match the version of DiFX you are using\n"
+                + "for processing." );
         _guiServerDifxVersion.setBackground( this.getBackground() );
-        _guiServerDifxVersion.setBounds( 365, 145, 100, 25 );
+        _guiServerDifxVersion.setBounds( 365, 115, 100, 25 );
         difxControlPanel.add( _guiServerDifxVersion );
-        JButton viewEnvironmentVars = new JButton( "Environment Vars" );
-        viewEnvironmentVars.setBounds( 475, 145, 150, 25 );
+        JButton viewEnvironmentVars = new JButton( "Host Environment Vars" );
+        viewEnvironmentVars.setBounds( 480, 115, 175, 25 );
         viewEnvironmentVars.setToolTipText( "Show the environment variables on the DiFX host (as seen by guiServer)." );
         viewEnvironmentVars.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
@@ -401,7 +412,7 @@ public class SystemSettings extends JFrame {
         } );
         difxControlPanel.add( viewEnvironmentVars );
         JLabel guiServerDifxVersionLabel = new JLabel( "built w/DiFX:" );
-        guiServerDifxVersionLabel.setBounds( 210, 145, 150, 25 );
+        guiServerDifxVersionLabel.setBounds( 210, 115, 150, 25 );
         guiServerDifxVersionLabel.setHorizontalAlignment( JLabel.RIGHT );
         difxControlPanel.add( guiServerDifxVersionLabel );
         _difxVersion = new JComboBox();
@@ -423,7 +434,7 @@ public class SystemSettings extends JFrame {
                     _difxVersion.setSelectedIndex( _difxVersion.getItemCount() - 1 );
                 }
                 //  Set the DiFX setup path to match this version.
-                _difxSetupPath.setText( _difxBase.getText() + "/" + (String)_difxVersion.getSelectedItem() + "/setup_difx" );
+                _difxSetupPath.setText( "rungeneric." + (String)_difxVersion.getSelectedItem() );
                 guiServerConnection().sendPacket( guiServerConnection().DIFX_SETUP_PATH, 
                         _difxSetupPath.getText().length(), _difxSetupPath.getText().getBytes() );
                 guiServerConnection().sendPacket( guiServerConnection().DIFX_RUN_LABEL,
@@ -433,7 +444,7 @@ public class SystemSettings extends JFrame {
         _difxVersion.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
                 //  Set the DiFX setup path to match this version.
-                _difxSetupPath.setText( _difxBase.getText() + "/" + (String)_difxVersion.getSelectedItem() + "/setup_difx" );
+                _difxSetupPath.setText( "rungeneric." + (String)_difxVersion.getSelectedItem() );
                 guiServerConnection().sendPacket( guiServerConnection().DIFX_SETUP_PATH, 
                         _difxSetupPath.getText().length(), _difxSetupPath.getText().getBytes() );
                 guiServerConnection().sendPacket( guiServerConnection().DIFX_RUN_LABEL,
@@ -447,14 +458,14 @@ public class SystemSettings extends JFrame {
         difxControlPanel.add( versionAddressLabel );
         _difxBase = new SaneTextField();
         _difxBase.setEditable( false ); // BLAT the user should be able to change this...but a change needs to trigger a VersionRequest (see guiServer code)
-        _difxBase.setToolTipText( "Path to DiFX directory tree on the DiFX host (the \"bin\" directory containing \"setup_difx\" files should be below this)." );
+        _difxBase.setToolTipText( "Path to DiFX directory tree on the DiFX host (version-specific directories should be below this)." );
         difxControlPanel.add( _difxBase );
         JLabel difxBaseLabel = new JLabel( "DiFX Base:" );
         difxBaseLabel.setBounds( 10, 175, 150, 25 );
         difxBaseLabel.setHorizontalAlignment( JLabel.RIGHT );
         difxControlPanel.add( difxBaseLabel );
         _difxSetupPath = new SaneTextField();
-        _difxSetupPath.setToolTipText( "Full path to the setup file run before all DiFX commands." );
+        _difxSetupPath.setToolTipText( "Script used to execute all DiFX commands (may be blank)." );
         _difxSetupPath.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
                 //  Send the new path to the guiServer
@@ -463,7 +474,7 @@ public class SystemSettings extends JFrame {
             }
         });
         difxControlPanel.add( _difxSetupPath );
-        JLabel difxSetupPathLabel = new JLabel( "DiFX Setup Path:" );
+        JLabel difxSetupPathLabel = new JLabel( "DiFX Execute Script:" );
         difxSetupPathLabel.setHorizontalAlignment( JLabel.RIGHT );
         difxSetupPathLabel.setBounds( 10, 235, 150, 25 );
         difxControlPanel.add( difxSetupPathLabel );
@@ -1077,7 +1088,7 @@ public class SystemSettings extends JFrame {
             _difxMonitorHost.setBounds( 575, 55, 300, 25 );
             _maxTransferPorts.setBounds( 575, 85, 100, 25 );
             _difxMonitorPort.setBounds( 775, 85, 100, 25 );
-            _difxControlUser.setBounds( 165, 115, 300, 25 );
+            _difxControlUser.setBounds( 165, 145, 300, 25 );
             _difxVersion.setBounds( 165, 205, 300, 25 );
             _difxSetupPath.setBounds( 165, 235, w - 195, 25 );
             _difxBase.setBounds( 165, 175, w - 195, 25 );
@@ -1603,8 +1614,6 @@ public class SystemSettings extends JFrame {
         maxTransferPorts();
         _difxMonitorPort.intValue( 52300 );
         _difxMonitorHost.setText( "guiServer.hostname" );
-        _difxControlUser.setText( "difx" );
-        //_difxVersion.setText( "trunk" );
         _difxBase.setText( "/usr/local/swc/difx" );
         _dbUseDataBase.setSelected( false );
         _dbVersion.setText( "unknown" );
@@ -2415,8 +2424,6 @@ public class SystemSettings extends JFrame {
                 this.difxMonitorHost( doiConfig.getDifxMonitorHost() );
             if ( doiConfig.getDifxMonitorPort() != 0 )
                 this.difxMonitorPort( doiConfig.getDifxMonitorPort() );
-            if ( doiConfig.getDifxControlUser() != null )
-                this.difxControlUser( doiConfig.getDifxControlUser() );
             if ( doiConfig.getDifxVersion() != null ) {
                 this.difxVersion( doiConfig.getDifxVersion() );
                 _difxVersionPreferred = doiConfig.getDifxVersion();
@@ -2913,10 +2920,7 @@ public class SystemSettings extends JFrame {
         doiConfig.setDifxTransferPortLimit( _maxTransferPorts.intValue() );
         doiConfig.setDifxMonitorHost( this.difxMonitorHost() );
         doiConfig.setDifxMonitorPort( this.difxMonitorPort() );
-        doiConfig.setDifxControlUser( this.difxControlUser() );
         doiConfig.setDifxVersion( this.difxVersion() );
-        //  BLAT
-        System.out.println( "write to xml: " + this.difxVersion() );
         doiConfig.setDifxBase( this.difxBase() );
         doiConfig.setDbUseDataBase( this.useDatabase() );
         doiConfig.setDbVersion( this.dbVersion() );
@@ -3886,7 +3890,7 @@ public class SystemSettings extends JFrame {
     //  DiFX Control Connection
     protected JCheckBox _difxUDPCheck;
     protected JCheckBox _difxTCPCheck;
-    protected JFormattedTextField _difxControlAddress;
+    protected FormattedTextField _difxControlAddress;
     protected NumberBox _difxControlPort;
     protected NumberBox _difxTransferPort;
     protected NumberBox _maxTransferPorts;
@@ -3894,7 +3898,7 @@ public class SystemSettings extends JFrame {
     protected int _newDifxTransferPort;
     protected SaneTextField _difxMonitorHost;
     protected NumberBox _difxMonitorPort;
-    protected JFormattedTextField _difxControlUser;
+    protected SaneTextField _difxControlUser;
     protected JComboBox _difxVersion;
     protected SaneTextField _difxBase;
     protected GuiServerConnection _guiServerConnection;
@@ -4236,8 +4240,8 @@ public class SystemSettings extends JFrame {
     
     protected DatabaseThread _databaseThread;
     
-    protected JTextField _guiServerVersion;
-    protected JTextField _guiServerDifxVersion;
+    protected SaneTextField _guiServerVersion;
+    protected SaneTextField _guiServerDifxVersion;
     protected SaneTextField _difxSetupPath;
     
     //  Used to store information about a specific SMART attribute type.
