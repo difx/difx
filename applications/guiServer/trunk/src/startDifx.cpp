@@ -270,12 +270,12 @@ void ServerSideConnection::startDifx( DifxMessageGeneric* G ) {
 	    
 	//  Build the actual start command.
 	snprintf( startInfo->startCommand, MAX_COMMAND_SIZE, 
-	          "%s -np %d --bynode --hostfile %s.machines %s rungeneric.%s %s %s %s %s", 
+	          "%s -np %d --bynode --hostfile %s.machines %s %s %s %s %s %s", 
               mpiWrapper,
               procCount,
               filebase,
               mpiOptions,
-              _difxRunLabel,
+              _difxSetupPath,
               startInfo->difxProgram,
               restartOption,
               S->inputFilename, monitorOption );

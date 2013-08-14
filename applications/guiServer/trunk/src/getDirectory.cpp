@@ -141,8 +141,8 @@ void ServerSideConnection::getDirectory( DifxMessageGeneric* G ) {
         if ( generateNew ) {
             packetExchange->sendPacket( GENERATE_DIRECTORY_STARTED, NULL, 0 );
             snprintf( command, MAX_COMMAND_SIZE, 
-                "%s -host %s rungeneric %s mk5dir -n -f %s",
-                mpiWrapper, mark5, _difxRunLabel, vsn );
+                "%s -host %s %s mk5dir -n -f %s",
+                mpiWrapper, mark5, _difxSetupPath, vsn );
             diagnostic( WARNING, "executing: %s\n", command );
             executor = new ExecuteSystem( command );
             bool thereWereErrors = false;

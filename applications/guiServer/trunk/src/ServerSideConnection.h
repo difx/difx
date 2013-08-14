@@ -47,6 +47,7 @@ namespace guiServer {
         static const int DIFX_SETUP_PATH                = 13;
         static const int START_DIFX_MONITOR             = 14;
         static const int DIFX_RUN_LABEL                 = 15;
+        static const int GUISERVER_USER                 = 16;
 
     public:
 
@@ -226,6 +227,11 @@ namespace guiServer {
             //  Send the current DiFX "base" that we are using.  This determines
             //  where the setup files for different versions exist.
             sendPacket( DIFX_BASE, _difxBase, strlen( _difxBase ) );
+            
+            //  Send the user name that started this guiServer process.
+            char* username = getlogin();
+            if ( username != NULL )
+                sendPacket( GUISERVER_USER, username, strlen( username ) );
                 
             //  Find all available versions of DiFX software under the base.  Any of these
             //  can be used when running DiFX programs (vex2difx, runmpifxcorr, etc.).

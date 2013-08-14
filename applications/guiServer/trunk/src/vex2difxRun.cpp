@@ -98,14 +98,10 @@ void ServerSideConnection::vex2difxRun( DifxMessageGeneric* G ) {
         delete executor;
 		
 		//  This is where we actually run vex2difx
-		snprintf( command, MAX_COMMAND_SIZE, "cd %s; rungeneric.%s vex2difx -f %s", 
+		snprintf( command, MAX_COMMAND_SIZE, "cd %s; %s vex2difx -f %s", 
 				  S->passPath,
-				  _difxRunLabel,
+				  _difxSetupPath,
 				  S->v2dFile );
-//		snprintf( command, MAX_COMMAND_SIZE, "source %s; cd %s; vex2difx -f %s", 
-//		          _difxSetupPath,
-//				  S->passPath,
-//				  S->v2dFile );
 		
 		diagnostic( WARNING, "Executing: %s", command );
         executor = new ExecuteSystem( command );
@@ -124,12 +120,9 @@ void ServerSideConnection::vex2difxRun( DifxMessageGeneric* G ) {
         delete executor;
 
 		//  Next thing to run - calcif2.
-		snprintf( command, MAX_COMMAND_SIZE, "cd %s; rungeneric.%s calcif2 -f -a", 
+		snprintf( command, MAX_COMMAND_SIZE, "cd %s; %s calcif2 -f -a", 
 				  S->passPath,
-				  _difxRunLabel );
-//		snprintf( command, MAX_COMMAND_SIZE, "source %s; cd %s; calcif2 -f -a", 
-//				  _difxSetupPath,
-//				  S->passPath );
+				  _difxSetupPath );
 		
 		diagnostic( WARNING, "Executing: %s", command );
         executor = new ExecuteSystem( command );

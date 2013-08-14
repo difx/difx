@@ -154,7 +154,7 @@ namespace guiServer {
             //  Start the monitor_server if we have not found it.
             if ( !found ) {
                 snprintf( monCommand, ServerSideConnection::MAX_COMMAND_SIZE,
-                     "rungeneric.%s monitor_server %d &> /dev/null &", _monitorInfo->ssc->difxRunLabel(), monitorServerPort );
+                     "%s monitor_server %d &> /dev/null &", _monitorInfo->ssc->difxSetupPath(), monitorServerPort );
                 formatPacket( WARNING, "monitor_server needs to be started - executing: %s\n", monCommand );
                 system( monCommand );
             }
