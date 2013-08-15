@@ -14,7 +14,8 @@ Build and Install DiFX
 Usage:
     install-difx [-fhv] [--force] [--help] [--verb] \\
         [--mk5daemon] [--withmonitor] [--rpfits] [--perl] [--withfb] \\
-        [--withhops] [--noinstall] [--reconf] [--noconf] [--clean] \\
+        [--withhops] [--withguiserver] [--noinstall] \\
+        [--reconf] [--noconf] [--clean] \\
         [--g77] [--noipp] [--ipp] [--nodoc] \\
         [--cache='name'] [--targ='...'] [--pristine]
 
@@ -47,6 +48,8 @@ Options:
    --withfb        Build filterbank (which requires pgplot)
 
    --withhops      Build HOPS (which requires pgplot)
+
+   --withguiserver Build guiServer
 
    --noinstall     Don't install, only build.
 
@@ -86,7 +89,8 @@ try:
     opts, args = getopt.gnu_getopt(sys.argv[1:], "fhv",
         ["force", "help", "verb",
         "mk5daemon", "withmonitor", "rpfits", "perl", "withfb",
-        "withhops", "noinstall", "reconf", "noconf", "clean",
+        "withhops", "withguiserver",
+        "noinstall", "reconf", "noconf", "clean",
         "g77", "noipp", "ipp", "cache=", "targ=", "pristine" ])
 except getopt.GetoptError, err:
     print err
@@ -116,6 +120,7 @@ noconf = False
 pristine = False
 dofb = False
 dohops = False
+doguiserver = False
 dodoc = True
 doipp = 0
 orgcwd = os.getcwd()
@@ -142,6 +147,8 @@ if len(opts) > 0:
             dofb = True
         if o == "--withhops":
             dohops = True
+        if o == "--withguiserver":
+            doguiserver = True
         if o == "--noinstall":
             noinstall = True
         if o == "--reconf":
@@ -238,6 +245,8 @@ if dofb:
     apptargets.append(["difxfilterbank", difx_version, True,False,False,True])
 if dohops:
     apptargets.append(["hops", difx_version, True,False,True,False])
+if doguiserver:
+    apptargets.append(["guiserver", difx_version, True,False,False,True])
 if mk5d:
     apptargets.append(["mk5daemon", difx_version, True,False,True,False])
 if domonitor:
