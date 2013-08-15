@@ -126,6 +126,8 @@
                 <xsd:element ref="difxMonitorPort"/>
                 <xsd:element ref="difxControlUser"/>
                 <xsd:element ref="difxVersion"/>
+                <xsd:element ref="dontUseDefaultStartScript"/>
+                <xsd:element ref="difxStartScript"/>
                 <xsd:element ref="difxBase"/>
                 <xsd:element ref="difxHeadNode"/>
                 <xsd:element ref="dbUseDataBase"/>
@@ -333,6 +335,8 @@
     <xsd:element name="difxMonitorPort" type="xsd:int"></xsd:element>
     <xsd:element name="difxControlUser" type="xsd:string"></xsd:element>
     <xsd:element name="difxVersion" type="xsd:string"></xsd:element>
+    <xsd:element name="dontUseDefaultStartScript" type="xsd:boolean"></xsd:element>
+    <xsd:element name="difxStartScript" type="xsd:string"></xsd:element>
     <xsd:element name="difxBase" type="xsd:string"></xsd:element>
     <xsd:element name="difxHeadNode" type="xsd:string"></xsd:element>
     <xsd:element name="dbUseDataBase" type="xsd:boolean"></xsd:element>

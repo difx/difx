@@ -51,7 +51,6 @@ import javax.swing.UIManager;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.JPasswordField;
-import javax.swing.JCheckBox;
 import javax.swing.JTextField;
 import javax.swing.JComboBox;
 import javax.swing.JScrollPane;
@@ -76,6 +75,7 @@ import mil.navy.usno.widgetlib.MessageDisplayPanel;
 import mil.navy.usno.widgetlib.ComplexToolTip;
 import mil.navy.usno.widgetlib.BrowserNode;
 import mil.navy.usno.widgetlib.FormattedTextField;
+import mil.navy.usno.widgetlib.ZCheckBox;
 
 import javax.swing.JFrame;
 
@@ -267,7 +267,7 @@ public class SystemSettings extends JFrame {
         difxControlPanel.openHeight( 270 );
         difxControlPanel.closedHeight( 20 );
         _scrollPane.addNode( difxControlPanel );
-        _difxUDPCheck = new JCheckBox( "Multicast" );
+        _difxUDPCheck = new ZCheckBox( "Multicast" );
         _difxUDPCheck.setBounds( 160, 25, 100, 25 );
         _difxUDPCheck.setToolTipText( "Use UDP multicast messages to control DiFX directly via mk5daemon." );
         _difxUDPCheck.addActionListener( new ActionListener() {
@@ -278,7 +278,7 @@ public class SystemSettings extends JFrame {
             }
         } );
         difxControlPanel.add( _difxUDPCheck );        
-        _difxTCPCheck = new JCheckBox( "guiServer" );
+        _difxTCPCheck = new ZCheckBox( "guiServer" );
         _difxTCPCheck.setBounds( 260, 25, 100, 25 );
         _difxTCPCheck.setToolTipText( "Use a TCP connection with guiServer to route control commands to DiFX." );
         _difxTCPCheck.addActionListener( new ActionListener() {
@@ -434,9 +434,10 @@ public class SystemSettings extends JFrame {
                     _difxVersion.setSelectedIndex( _difxVersion.getItemCount() - 1 );
                 }
                 //  Set the DiFX setup path to match this version.
-                _difxSetupPath.setText( "rungeneric." + (String)_difxVersion.getSelectedItem() );
+                if ( _useDefaultStartScript.isSelected() )
+                    _difxStartScript.setText( "rungeneric." + (String)_difxVersion.getSelectedItem() );
                 guiServerConnection().sendPacket( guiServerConnection().DIFX_SETUP_PATH, 
-                        _difxSetupPath.getText().length(), _difxSetupPath.getText().getBytes() );
+                        _difxStartScript.getText().length(), _difxStartScript.getText().getBytes() );
                 guiServerConnection().sendPacket( guiServerConnection().DIFX_RUN_LABEL,
                         ((String)_difxVersion.getSelectedItem()).length(), ((String)_difxVersion.getSelectedItem()).getBytes() );
             }
@@ -444,9 +445,10 @@ public class SystemSettings extends JFrame {
         _difxVersion.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
                 //  Set the DiFX setup path to match this version.
-                _difxSetupPath.setText( "rungeneric." + (String)_difxVersion.getSelectedItem() );
+                if ( _useDefaultStartScript.isSelected() )
+                    _difxStartScript.setText( "rungeneric." + (String)_difxVersion.getSelectedItem() );
                 guiServerConnection().sendPacket( guiServerConnection().DIFX_SETUP_PATH, 
-                        _difxSetupPath.getText().length(), _difxSetupPath.getText().getBytes() );
+                        _difxStartScript.getText().length(), _difxStartScript.getText().getBytes() );
                 guiServerConnection().sendPacket( guiServerConnection().DIFX_RUN_LABEL,
                         ((String)_difxVersion.getSelectedItem()).length(), ((String)_difxVersion.getSelectedItem()).getBytes() );
             }
@@ -464,16 +466,23 @@ public class SystemSettings extends JFrame {
         difxBaseLabel.setBounds( 10, 175, 150, 25 );
         difxBaseLabel.setHorizontalAlignment( JLabel.RIGHT );
         difxControlPanel.add( difxBaseLabel );
-        _difxSetupPath = new SaneTextField();
-        _difxSetupPath.setToolTipText( "Script used to execute all DiFX commands (may be blank)." );
-        _difxSetupPath.addActionListener( new ActionListener() {
+        _useDefaultStartScript = new ZCheckBox( "Use Default Start Script" );
+        _useDefaultStartScript.setToolTipText( "Generate a start script based on the version of DiFX used.\n"
+                + "The existing start script will be over-written when the DiFX version is changed." );
+        _useDefaultStartScript.setBounds( 480, 205, 300, 25 );
+        difxControlPanel.add( _useDefaultStartScript );
+        _difxStartScript = new SaneTextField();
+        _difxStartScript.setToolTipText( "Script used to execute all DiFX commands (may be blank)." );
+        _difxStartScript.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
                 //  Send the new path to the guiServer
                 guiServerConnection().sendPacket( guiServerConnection().DIFX_SETUP_PATH, 
-                        _difxSetupPath.getText().length(), _difxSetupPath.getText().getBytes() );
+                        _difxStartScript.getText().length(), _difxStartScript.getText().getBytes() );
+                //  If this has been changed by hand, un-set the "use default" checkbox.
+                _useDefaultStartScript.setSelected( false );
             }
         });
-        difxControlPanel.add( _difxSetupPath );
+        difxControlPanel.add( _difxStartScript );
         JLabel difxSetupPathLabel = new JLabel( "DiFX Execute Script:" );
         difxSetupPathLabel.setHorizontalAlignment( JLabel.RIGHT );
         difxSetupPathLabel.setBounds( 10, 235, 150, 25 );
@@ -483,7 +492,7 @@ public class SystemSettings extends JFrame {
         networkPanel.openHeight( 270 );
         networkPanel.closedHeight( 20 );
         _scrollPane.addNode( networkPanel );
-        _useTCPRelayCheck = new JCheckBox( "Relay Using guiServer Connection" );
+        _useTCPRelayCheck = new ZCheckBox( "Relay Using guiServer Connection" );
         _useTCPRelayCheck.setBounds( 160, 25, 300, 25 );
         _useTCPRelayCheck.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
@@ -557,10 +566,10 @@ public class SystemSettings extends JFrame {
         _broadcastPlot.frame( 10, 23, 0.95, 110 );
         _broadcastPlot.backgroundColor( Color.BLACK );
         _plotWindow.add2DPlot( _broadcastPlot );
-        _suppressWarningsCheck = new JCheckBox( "Suppress \"Unknown Message\" Warnings" );
+        _suppressWarningsCheck = new ZCheckBox( "Suppress \"Unknown Message\" Warnings" );
         _suppressWarningsCheck.setBounds( 165, 175, 315, 25 );
         networkPanel.add( _suppressWarningsCheck );
-        _identifyMark5sCheck = new JCheckBox( "Identify Mark5 Unit Names by Pattern: " );
+        _identifyMark5sCheck = new ZCheckBox( "Identify Mark5 Unit Names by Pattern: " );
         _identifyMark5sCheck.setBounds( 165, 205, 305, 25 );
         networkPanel.add( _identifyMark5sCheck );
         _mark5Pattern = new SaneTextField();
@@ -616,7 +625,7 @@ public class SystemSettings extends JFrame {
         databasePanel.closedHeight( 20 );
         databasePanel.labelWidth( 300 );
         _scrollPane.addNode( databasePanel );
-        _dbUseDataBase = new JCheckBox();
+        _dbUseDataBase = new ZCheckBox( "" );
         _dbUseDataBase.setBounds( 165, 25, 25, 25 );
         databasePanel.add( _dbUseDataBase );
         JLabel dbUseDataBaseLabel = new JLabel( "Use Data Base:" );
@@ -710,7 +719,7 @@ public class SystemSettings extends JFrame {
         dbDriverLabel.setBounds( 10, 235, 150, 25 );
         dbDriverLabel.setHorizontalAlignment( JLabel.RIGHT );
         databasePanel.add( dbDriverLabel );
-        _dbAutoUpdate = new JCheckBox();
+        _dbAutoUpdate = new ZCheckBox( "" );
         _dbAutoUpdate.setBounds( 165, 275, 25, 25 );
         databasePanel.add( _dbAutoUpdate );
         JLabel dbAutoUpdateLabel = new JLabel( "Periodic Update:" );
@@ -769,7 +778,7 @@ public class SystemSettings extends JFrame {
         useStagingAreaLabel.setBounds( 10, 55, 120, 25 );
         useStagingAreaLabel.setHorizontalAlignment( JLabel.RIGHT );
         useStagingAreaLabel.setToolTipText( "Use the staging area to run jobs (or don't)." );
-        _useStagingArea = new JCheckBox( "" );
+        _useStagingArea = new ZCheckBox( "" );
         _useStagingArea.setBounds( 133, 55, 25, 25 );
         _useStagingArea.setToolTipText( "Use the staging area to run jobs (or don't)." );
         jobSettingsPanel.add( useStagingAreaLabel );
@@ -796,7 +805,7 @@ public class SystemSettings extends JFrame {
         withLabel.setBounds( 270, 115, 50, 25 );
         withLabel.setHorizontalAlignment( JLabel.RIGHT );
         jobSettingsPanel.add( withLabel );
-        _allThreadsCheck = new JCheckBox( "All Threads" );
+        _allThreadsCheck = new ZCheckBox( "All Threads" );
         _allThreadsCheck.setBounds( 325, 115, 100, 25 );
         _allThreadsCheck.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
@@ -811,7 +820,7 @@ public class SystemSettings extends JFrame {
         _threadsPerNode.minimum( 1 );
         _threadsPerNode.precision( 0 );
         jobSettingsPanel.add( _threadsPerNode );
-        _threadsPerCheck = new JCheckBox( "" );
+        _threadsPerCheck = new ZCheckBox( "" );
         _threadsPerCheck.setBounds( 325, 145, 25, 25 );
         _threadsPerCheck.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
@@ -828,7 +837,7 @@ public class SystemSettings extends JFrame {
         forEachLabel.setHorizontalAlignment( JLabel.RIGHT );
         forEachLabel.setBounds( 490, 115, 75, 25 );
         jobSettingsPanel.add( forEachLabel );
-        _baselineCheck = new JCheckBox( "Baseline" );
+        _baselineCheck = new ZCheckBox( "Baseline" );
         _baselineCheck.setBounds( 575, 115, 125, 25 );
         _baselineCheck.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
@@ -837,7 +846,7 @@ public class SystemSettings extends JFrame {
             }
         } );
         jobSettingsPanel.add( _baselineCheck );
-        _jobCheck = new JCheckBox( "Job" );
+        _jobCheck = new ZCheckBox( "Job" );
         _jobCheck.setBounds( 575, 145, 125, 25 );
         _jobCheck.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
@@ -850,7 +859,7 @@ public class SystemSettings extends JFrame {
         runMultipleLabel.setHorizontalAlignment( JLabel.RIGHT );
         runMultipleLabel.setBounds( 10, 175, 150, 25 );
         jobSettingsPanel.add( runMultipleLabel );
-        _sequentialCheck = new JCheckBox( "Sequentially" );
+        _sequentialCheck = new ZCheckBox( "Sequentially" );
         _sequentialCheck.setBounds( 165, 175, 125, 25 );
         jobSettingsPanel.add( _sequentialCheck );
         _sequentialCheck.addActionListener( new ActionListener() {
@@ -859,7 +868,7 @@ public class SystemSettings extends JFrame {
                 _simultaneousCheck.setSelected( false );
             }
         } );
-        _simultaneousCheck = new JCheckBox( "Simultaneously" );
+        _simultaneousCheck = new ZCheckBox( "Simultaneously" );
         _simultaneousCheck.setBounds( 165, 205, 125, 25 );
         _simultaneousCheck.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
@@ -936,7 +945,7 @@ public class SystemSettings extends JFrame {
         leapSecondsURLLabel.setBounds( 10, 55, 130, 25 );
         leapSecondsURLLabel.setHorizontalAlignment( JLabel.RIGHT );
         eopSettingsPanel.add( leapSecondsURLLabel );
-        _useLeapSecondsURL = new JCheckBox( "" );
+        _useLeapSecondsURL = new ZCheckBox( "" );
         _useLeapSecondsURL.setBounds( 140, 55, 20, 25 );
         _useLeapSecondsURL.setToolTipText( "Obtain leap second data from the given URL." );
         _useLeapSecondsURL.addActionListener( new ActionListener() {
@@ -949,7 +958,7 @@ public class SystemSettings extends JFrame {
         leapSecondsValueLabel.setBounds( 10, 85, 130, 25 );
         leapSecondsValueLabel.setHorizontalAlignment( JLabel.RIGHT );
         eopSettingsPanel.add( leapSecondsValueLabel );
-        _useLeapSecondsValue = new JCheckBox( "" );
+        _useLeapSecondsValue = new ZCheckBox( "" );
         _useLeapSecondsValue.setBounds( 140, 85, 20, 25 );
         _useLeapSecondsValue.setToolTipText( "Use the given static value as the number of leap seconds." );
         _useLeapSecondsValue.addActionListener( new ActionListener() {
@@ -967,7 +976,7 @@ public class SystemSettings extends JFrame {
             }
         } );
         eopSettingsPanel.add( _leapSecondsValue );
-        _autoUpdateEOP = new JCheckBox( "" );
+        _autoUpdateEOP = new ZCheckBox( "" );
         _autoUpdateEOP.setBounds( 140, 115, 20, 25 );
         _autoUpdateEOP.setToolTipText( "Periodically update the EOP and leap second data." );
         _autoUpdateEOP.addActionListener( new ActionListener() {
@@ -1090,7 +1099,7 @@ public class SystemSettings extends JFrame {
             _difxMonitorPort.setBounds( 775, 85, 100, 25 );
             _difxControlUser.setBounds( 165, 145, 300, 25 );
             _difxVersion.setBounds( 165, 205, 300, 25 );
-            _difxSetupPath.setBounds( 165, 235, w - 195, 25 );
+            _difxStartScript.setBounds( 165, 235, w - 195, 25 );
             _difxBase.setBounds( 165, 175, w - 195, 25 );
             //  Broadcast network settings
             _ipAddress.setBounds( 165, 55, 300, 25 );
@@ -1341,7 +1350,7 @@ public class SystemSettings extends JFrame {
     /*
      * Called when one of the checks associated with leap seconds is picked.
      */
-    protected void leapSecondChoice( JCheckBox check ) {
+    protected void leapSecondChoice( ZCheckBox check ) {
         if ( check == _useLeapSecondsURL ) {
             _useLeapSecondsURL.setSelected( true );
             _useLeapSecondsValue.setSelected( false );
@@ -1615,6 +1624,7 @@ public class SystemSettings extends JFrame {
         _difxMonitorPort.intValue( 52300 );
         _difxMonitorHost.setText( "guiServer.hostname" );
         _difxBase.setText( "/usr/local/swc/difx" );
+        _useDefaultStartScript.setSelected( true );
         _dbUseDataBase.setSelected( false );
         _dbVersion.setText( "unknown" );
         _dbHost.setText( "database.hostname" );
@@ -2424,6 +2434,10 @@ public class SystemSettings extends JFrame {
                 this.difxMonitorHost( doiConfig.getDifxMonitorHost() );
             if ( doiConfig.getDifxMonitorPort() != 0 )
                 this.difxMonitorPort( doiConfig.getDifxMonitorPort() );
+            if ( doiConfig.isDontUseDefaultStartScript() )
+                _useDefaultStartScript.setSelected( false );
+            if ( doiConfig.getDifxStartScript() != null )
+                _difxStartScript.setText( doiConfig.getDifxStartScript() );
             if ( doiConfig.getDifxVersion() != null ) {
                 this.difxVersion( doiConfig.getDifxVersion() );
                 _difxVersionPreferred = doiConfig.getDifxVersion();
@@ -2921,6 +2935,8 @@ public class SystemSettings extends JFrame {
         doiConfig.setDifxMonitorHost( this.difxMonitorHost() );
         doiConfig.setDifxMonitorPort( this.difxMonitorPort() );
         doiConfig.setDifxVersion( this.difxVersion() );
+        doiConfig.setDontUseDefaultStartScript( !_useDefaultStartScript.isSelected() );
+        doiConfig.setDifxStartScript( _difxStartScript.getText() );
         doiConfig.setDifxBase( this.difxBase() );
         doiConfig.setDbUseDataBase( this.useDatabase() );
         doiConfig.setDbVersion( this.dbVersion() );
@@ -3888,8 +3904,8 @@ public class SystemSettings extends JFrame {
     protected boolean _loggingEnabled;
     protected long _statusValidDuration;
     //  DiFX Control Connection
-    protected JCheckBox _difxUDPCheck;
-    protected JCheckBox _difxTCPCheck;
+    protected ZCheckBox _difxUDPCheck;
+    protected ZCheckBox _difxTCPCheck;
     protected FormattedTextField _difxControlAddress;
     protected NumberBox _difxControlPort;
     protected NumberBox _difxTransferPort;
@@ -3900,10 +3916,11 @@ public class SystemSettings extends JFrame {
     protected NumberBox _difxMonitorPort;
     protected SaneTextField _difxControlUser;
     protected JComboBox _difxVersion;
+    protected ZCheckBox _useDefaultStartScript;
     protected SaneTextField _difxBase;
     protected GuiServerConnection _guiServerConnection;
     //  Broadcast network
-    protected JCheckBox _useTCPRelayCheck;
+    protected ZCheckBox _useTCPRelayCheck;
     protected JFormattedTextField _ipAddress;
     protected NumberBox _port;
     protected NumberBox _bufferSize;
@@ -3912,14 +3929,14 @@ public class SystemSettings extends JFrame {
     Plot2DObject _broadcastPlot;
     Track2D _broadcastTrack;
     int _broadcastTrackSize;
-    protected JCheckBox _suppressWarningsCheck;
-    protected JCheckBox _identifyMark5sCheck;
+    protected ZCheckBox _suppressWarningsCheck;
+    protected ZCheckBox _identifyMark5sCheck;
     protected SaneTextField _mark5Pattern;
     protected NumberBox _inactivityWarning;
     protected NumberBox _inactivityError;
     protected JButton _viewDifxMessagesButton;
     //  Database configuration
-    protected JCheckBox _dbUseDataBase;
+    protected ZCheckBox _dbUseDataBase;
     protected JFormattedTextField _dbVersion;
     protected JFormattedTextField _dbHost;
     protected JFormattedTextField _dbUser;
@@ -3929,7 +3946,7 @@ public class SystemSettings extends JFrame {
     protected JFormattedTextField _dbDriver;
     protected JFormattedTextField _dbPort;
     protected String _dbURL;
-    protected JCheckBox _dbAutoUpdate;
+    protected ZCheckBox _dbAutoUpdate;
     protected NumberBox _dbAutoUpdateInterval;
     protected JButton _pingHostButton;
     protected JButton _testDatabaseButton;
@@ -3947,7 +3964,7 @@ public class SystemSettings extends JFrame {
     //  Items that govern the creation and running of jobs.
     protected JFormattedTextField _workingDirectory;
     protected JFormattedTextField _stagingArea;
-    protected JCheckBox _useStagingArea;
+    protected ZCheckBox _useStagingArea;
     protected SaneTextField _headNode;
     
     //  EOP Settings items.
@@ -3955,10 +3972,10 @@ public class SystemSettings extends JFrame {
     protected SaneTextField _leapSecondsURL;
     protected JButton _viewEOPFile;
     protected JButton _viewLeapSecondsFile;
-    protected JCheckBox _useLeapSecondsURL;
-    protected JCheckBox _useLeapSecondsValue;
+    protected ZCheckBox _useLeapSecondsURL;
+    protected ZCheckBox _useLeapSecondsValue;
     protected NumberBox _leapSecondsValue;
-    protected JCheckBox _autoUpdateEOP;
+    protected ZCheckBox _autoUpdateEOP;
     protected NumberBox _autoUpdateSeconds;
     protected JButton _updateEOPNow;
     
@@ -4242,7 +4259,7 @@ public class SystemSettings extends JFrame {
     
     protected SaneTextField _guiServerVersion;
     protected SaneTextField _guiServerDifxVersion;
-    protected SaneTextField _difxSetupPath;
+    protected SaneTextField _difxStartScript;
     
     //  Used to store information about a specific SMART attribute type.
     //  This includes...
@@ -4353,7 +4370,7 @@ public class SystemSettings extends JFrame {
             this.add( _scrollPane );
             _tableModel.addColumn( "Variable" );        
             _tableModel.addColumn( "Setting" );
-            _difxOnly = new JCheckBox( "DIFX" );
+            _difxOnly = new ZCheckBox( "DIFX" );
             _difxOnly.setSelected( false );
             _difxOnly.addActionListener( new ActionListener() {
                 public void actionPerformed( ActionEvent e ) {
@@ -4364,7 +4381,7 @@ public class SystemSettings extends JFrame {
             } );
             _difxOnly.setBounds( 20, 20, 100, 25 );
             this.add( _difxOnly );
-            _all = new JCheckBox( "All" );
+            _all = new ZCheckBox( "All" );
             _all.setSelected( true );
             _all.addActionListener( new ActionListener() {
                 public void actionPerformed( ActionEvent e ) {
@@ -4415,8 +4432,8 @@ public class SystemSettings extends JFrame {
         protected JScrollPane _scrollPane;
         protected JTable _table;
         protected DefaultTableModel _tableModel;
-        protected JCheckBox _difxOnly;
-        protected JCheckBox _all;
+        protected ZCheckBox _difxOnly;
+        protected ZCheckBox _all;
 
     }
     
@@ -4425,13 +4442,13 @@ public class SystemSettings extends JFrame {
     protected String _difxVersionPreferred;
         
     protected NumberBox _nodesPer;
-    protected JCheckBox _allThreadsCheck;
+    protected ZCheckBox _allThreadsCheck;
     protected NumberBox _threadsPerNode;
-    protected JCheckBox _threadsPerCheck;
-    protected JCheckBox _baselineCheck;
-    protected JCheckBox _jobCheck;
-    protected JCheckBox _sequentialCheck;
-    protected JCheckBox _simultaneousCheck;
+    protected ZCheckBox _threadsPerCheck;
+    protected ZCheckBox _baselineCheck;
+    protected ZCheckBox _jobCheck;
+    protected ZCheckBox _sequentialCheck;
+    protected ZCheckBox _simultaneousCheck;
     
     protected String _invisibleProcessors;
     protected String _invisibleProcessorCores;
