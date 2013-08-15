@@ -1398,8 +1398,7 @@ public class ExperimentEditor extends JFrame {
             public void actionPerformed( ActionEvent e ) {
                 //  Found anything at all?
                 if ( _lastV2dPath != null ) {
-                    //  BLAT messed up!!!!!
-//                    readV2dFile( _lastV2dPath, _lastV2dBase );
+                    readV2dFile( _lastV2dPath, _lastV2dBase );
                 }
             }
         });
@@ -2630,8 +2629,20 @@ public class ExperimentEditor extends JFrame {
                     String passDir = "";
                     if ( createPass() )
                         passDir = passDirectory() + "/";
+                    //  Create a directory for log files.
+                    DiFXCommand_mkdir mkdir = new DiFXCommand_mkdir( directory() + "/" + passDir + "guiLogs", _settings );
+                    try {
+                        mkdir.send();
+                        //  Delay for a second to make sure mk5daemon has a chance to do this and recover.
+                        try { Thread.sleep( 1000 ); } catch ( Exception e ) {}
+                    } catch ( java.net.UnknownHostException e ) {
+                        JOptionPane.showMessageDialog( _this, "Error - DiFX host \"" + _settings.difxControlAddress()
+                             + "\" unknown.",
+                                "Host Unknown", JOptionPane.ERROR_MESSAGE );
+                        continueRun = false;
+                    } 
                     //  Create a "pass log" for this set of jobs.
-                    _passLog = new ActivityLogFile( directory() + "/" + passDir + passLogFileName() );
+                    _passLog = new ActivityLogFile( directory() + "/" + passDir + "guiLogs/" + passLogFileName() );
                     _newPass.logFile( _passLog );
                     _statusLabel.setText( "Writing file \"" + directory() + "/" + passDir + vexFileName() + "\"" );
                     //  Remove the EOP data from the .vex file before sending if necessary.
@@ -2747,7 +2758,7 @@ public class ExperimentEditor extends JFrame {
                     newJob = new JobNode( jobName, _settings );
                     newJob.fullName( fullName );
                     //  Create a new log file for this job.
-                    newJob.logFile( new ActivityLogFile( newFile.trim().replace( ".input", ".jobLog" ) ) );
+                    newJob.logFile( new ActivityLogFile( newFile.trim().substring( 0, newFile.lastIndexOf( "/" ) ) + "/guiLogs/" + jobName + ".jobLog" ) );
                     newJob.logFile().addLabelItem( "INPUT FILE", newFile.trim() );
                     //  Send the log file to the DiFX host.
                     Component comp = _this;
