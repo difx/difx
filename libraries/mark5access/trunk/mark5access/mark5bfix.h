@@ -41,12 +41,15 @@ struct mark5b_fix_statistics
 	long long nSkippedByte;
 	long long nFillByte;
 	long long nLostPacket;
+	long long dataProcessed;
 
 	int srcSize;
 	int srcUsed;
 	int destSize;
 	int destUsed;
 	int startFrameNumber;
+	int startFrameSeconds;
+	int startFrameNanoseconds;
 
 	int nCall;
 };

@@ -111,6 +111,10 @@ int mark5bfix(unsigned char *dest, int destSize, const unsigned char *src, int s
 	int i;
 
 	nDestFrames = destSize / MARK5B_FRAME_SIZE;
+	if(framesPerSecond == 25600 && nDestFrames % 2 == 1)
+	{
+		--nDestFrames;
+	}
 
 	if(startOutputFrameNumber >= 0)
 	{
@@ -120,6 +124,10 @@ int mark5bfix(unsigned char *dest, int destSize, const unsigned char *src, int s
 		{
 			++startOutputFrame;
 			lastGoodFrameNumber = startOutputFrame - 2;	/* make sure to fill in invalid status */
+		}
+		else
+		{
+			lastGoodFrameNumber = startOutputFrame - 1;	/* make sure to fill in invalid status */
 		}
 		lastFrameInSecond = startOutputFrame - 1;
 	}
@@ -184,6 +192,10 @@ int mark5bfix(unsigned char *dest, int destSize, const unsigned char *src, int s
 				{
 					++startOutputFrame;
 					lastGoodFrameNumber = startOutputFrame - 2;	/* make sure to fill in invalid status */
+				}
+				else
+				{
+					lastGoodFrameNumber = startOutputFrame - 1;	/* make sure to fill in invalid status */
 				}
 			}
 			else if(frameInSecond == 0)
@@ -343,12 +355,16 @@ int mark5bfix(unsigned char *dest, int destSize, const unsigned char *src, int s
 		stats->nSkippedByte += nSkip;
 		stats->nFillByte += nFill;
 		stats->nLostPacket += nLostPacket;
+		stats->dataProcessed += i;
 
 		stats->srcSize = srcSize;
 		stats->srcUsed = i;
 		stats->destSize = destSize;
 		stats->destUsed = (lastGoodFrameNumber - startOutputFrame + 1)*MARK5B_FRAME_SIZE;
 		stats->startFrameNumber = startOutputFrame;
+
+		stats->startFrameSeconds = (dest[10] & 0x0F)*10000 + (dest[9] >> 4)*1000 + (dest[9] & 0x0F)*100 + (dest[8] >> 4)*10 + (dest[8] & 0x0F);
+		stats->startFrameNanoseconds = ((long long)startOutputFrame*1000000000LL)/framesPerSecond;
 
 		++stats->nCall;
 	}
@@ -367,8 +383,11 @@ void printmark5bfixstatistics(const struct mark5b_fix_statistics *stats)
 		printf("  Number of skipped interloper bytes = %Ld\n", stats->nSkippedByte);
 		printf("  Number of fill pattern bytes       = %Ld\n", stats->nFillByte);
 		printf("  Number of lost packets             = %Ld\n", stats->nLostPacket);
+		printf("  Number of bytes processed          = %Ld\n", stats->dataProcessed);
 		printf("Properties of output data from recent call:\n");
 		printf("  Start output frame number          = %d\n", stats->startFrameNumber);
+		printf("  Start output frame seconds         = %d\n", stats->startFrameSeconds);
+		printf("  Start output frame nanoseconds     = %d\n", stats->startFrameNanoseconds);
 		printf("  %d/%d src bytes consumed\n", stats->srcUsed, stats->srcSize);
 		printf("  %d/%d dest bytes generated\n", stats->destUsed, stats->destSize);
 	}
