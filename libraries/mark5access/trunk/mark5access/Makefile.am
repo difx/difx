@@ -1,5 +1,6 @@
 h_sources = \
-	mark5_stream.h
+	mark5_stream.h \
+	mark5bfix.h
 c_sources = \
 	mark5_stream.c \
 	mark5_stream_file.c \
@@ -13,7 +14,8 @@ c_sources = \
 	format_vdif.c \
 	format_vdifb.c \
 	blanker_none.c \
-	blanker_mark5.c
+	blanker_mark5.c \
+	mark5bfix.c
 
 library_includedir = $(includedir)/mark5access
 library_include_HEADERS = $(h_sources)
