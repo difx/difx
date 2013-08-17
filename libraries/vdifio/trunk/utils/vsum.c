@@ -32,10 +32,10 @@
 #include <stdlib.h>
 #include <vdifio.h>
 
-const char program[] = "vmux";
+const char program[] = "vsum";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
 const char version[] = "0.1";
-const char verdate[] = "20130427";
+const char verdate[] = "20130817";
 
 int main(int argc, char **argv)
 {
