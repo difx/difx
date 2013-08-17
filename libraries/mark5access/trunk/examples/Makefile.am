@@ -20,6 +20,7 @@ bin_PROGRAMS = \
 	directory2filelist \
 	fixmark5b \
 	m5bstate \
+	m5bsum \
 	m5d \
 	m5fold \
 	m5timeseries \
@@ -41,6 +42,9 @@ fixmark5b_SOURCES = \
 
 m5bstate_SOURCES = \
 	m5bstate.c
+
+m5bsum_SOURCES = \
+	m5bsum.c
 
 m5d_SOURCES = \
 	m5d.c
