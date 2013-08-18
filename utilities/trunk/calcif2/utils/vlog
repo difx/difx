@@ -643,11 +643,11 @@ for a in ants:
 if mode in ['classic', 'transition']:
 	writetable(FGs, 'flag',    ants, 'FG', 0)
 	writetable(WRs, 'weather', ants, 'WR', 0)
-	writetable(TSs, 'tsys',    ants, 'TS', 0)
 	if isMark5C > 0:
 		writetable(PHs, 'pcal',    ants, 'PH', 4)
 	else:
 		writetable(PHs, 'pcal',    ants, 'PH', 0)
+		writetable(TSs, 'tsys',    ants, 'TS', 0)
 
 if mode in ['nouveau', 'transition']:
 	for a in ants:

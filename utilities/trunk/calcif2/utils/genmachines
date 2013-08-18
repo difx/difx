@@ -213,6 +213,8 @@ def getVsnsByMulticast(maxtime, modlist, verbose):
 
 		except socket.timeout:
 			t += dt
+		except socket.herror:
+			print 'Weird: cannot gethostbyaddr for %s' % address[0]
 
 	results.sort()
 	conflicts.sort()
