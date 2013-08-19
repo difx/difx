@@ -6,7 +6,9 @@ import scipy
 from scipy import interpolate
 from math import *
 import matplotlib
-# Force matplotlib to not use any Xwindows backend.
+# Force matplotlib to not use any Xwindows backend if X display not available.
+# This doesn't work if there was an X forward but ssh is no longer listening -
+# can happen under screen. Deal with that later if initiating the plot fails.
 if not 'DISPLAY' in os.environ.keys():
     sys.stderr.write('Warning: no display available\n')
     matplotlib.use('Agg')
@@ -52,8 +54,25 @@ filenames = args
 title = 'Correlator Speedup ' #+ str(filenames)
 if options.removegap:
     title += ' (no gaps)'
-pyplot.title(title)
-pyplot.suptitle(str(filenames), fontsize='x-small')
+
+try:
+    pyplot.title(title)
+except:
+    # if setting the title fails, it probably means the default backend has
+    # failed because the X session is no longer attached. So switch to a
+    # backend that doesn't care (no interactive plots allowed).
+    matplotlib.rcParams['backend'] = 'Agg'
+    pyplot.switch_backend('Agg')
+    #print matplotlib.rcParams['backend']
+    sys.stderr.write('Warning: no display available - switching to non-interactive backend\n')
+    pyplot.title(title)
+
+header = " ".join(filenames)
+maxnames = 8
+if len(filenames) > maxnames:
+    header = ", ".join(filenames[0:maxnames-1]) + ' ... ' + str(filenames[-1])
+    header += ' (' + str(len(filenames)) + ' files)'
+pyplot.suptitle(header, fontsize='x-small')
 
 if options.plottime:
     pyplot.xlabel('Correlation time/hours')
@@ -165,7 +184,8 @@ else:
     # plot the cumulative speedup and instantaneous speedup against
     # observation time
     speedup = observation/correlation
-    pyplot.plot(observation, speedup, label='Integrated speedup')
+    label1 = 'Integrated speedup {speedup:0.3f}'.format(speedup=speedup[-1])
+    pyplot.plot(observation, speedup, label=label1)
     speedup = numpy.diff(observation)/numpy.diff(correlation)
     xdata_diff = observation[1:]
     pyplot.plot(xdata_diff, speedup, label='Instantaneous speedup')
