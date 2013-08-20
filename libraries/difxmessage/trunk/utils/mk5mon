@@ -43,7 +43,7 @@ import curses
 program = 'mk5mon'
 author  = 'Walter Brisken'
 version = '0.3'
-verdate = '20130508'
+verdate = '20130820'
 
 def usage(prog):
 	print '%s ver. %s  %s  %s\n' % (program, version, author, verdate)
@@ -82,7 +82,7 @@ class Mk5state:
 				dateStr = '%10.4f s' % (self.date*86400.0)
 			else:
 				dateStr = '%12.6f' % self.date
-			str = '%10s %c%8s %c%8s %14s %7.2f %13d %3d %15s %12s' % \
+			str = '%10s %c%8s %c%8s %14s %7.2f %14d %4d %17s %13s ' % \
 				(self.mk5, b1, self.vsnA, b2, self.vsnB, self.state, \
 				 self.rate, self.pos, self.scan, self.name, dateStr)
 		else:
