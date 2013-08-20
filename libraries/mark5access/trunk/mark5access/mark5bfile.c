@@ -32,6 +32,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <sys/stat.h>
+#include <time.h>
 #include "mark5bfile.h"
 #include "config.h"
 
@@ -45,6 +46,8 @@
 #define MARK5_FILL_WORD		0x11223344UL
 #define MARK5B_SYNC_WORD	0xABADDEEDUL
 #endif
+
+#define MJD_UNIX0		40587.0
 
 void resetmark5bfilesummary(struct mark5b_file_summary *sum)
 {
@@ -230,4 +233,23 @@ int summarizemark5bfile(struct mark5b_file_summary *sum, const char *fileName)
 	fclose(in);
 
 	return 0;
+}
+
+void mark5bfilesummaryfixmjd(struct mark5b_file_summary *sum, int mjd)
+{
+	int d, kd;
+
+	d = mjd - sum->startDay;
+	kd = (d + 500)/1000;
+	sum->startDay += 1000*kd;
+	sum->endDay += 1000*kd;
+}
+
+void mark5bfilesummaryfixmjdtoday(struct mark5b_file_summary *sum)
+{
+	double mjd;
+
+	mjd = MJD_UNIX0 + time(0)/86400.0;
+
+	mark5bfilesummaryfixmjd(sum, (int)mjd);
 }

@@ -30,6 +30,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include "../mark5access/mark5bfile.h"
 
 const char program[] = "m5bsum";
@@ -37,14 +38,31 @@ const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
 const char version[] = "0.1";
 const char verdate[] = "20130817";
 
+static void usage(const char *pgm)
+{
+	printf("\n");
+
+	printf("%s ver. %s   %s  %s\n\n", program, version, author, verdate);
+	printf("A program to summarize contents of Mark5B files\n\n");
+	printf("Usage : %s [<options>] <file1> [<file2> ...]\n\n", pgm);
+	printf("  <fileX> is the name of the input file\n\n");
+	printf("  <options> can include:\n");
+	printf("    -h or --help      print this usage information and quit\n");
+	printf("    -f or --fixmjd    use today's date to resolve MJD ambiguity\n");
+	printf("    -s or --shortsum  print a short summary, also usable for input to vex2difx\n");
+	printf("\n");
+}
+
 int main(int argc, char **argv)
 {
+	int fixday = 0;
+	int shortsum = 0;
+
 	if(argc < 2)
 	{
-		printf("%s ver. %s  %s  %s\n\n", program, version, author, verdate);
-		printf("A utility to summarize the contents of Mark5B data files\n\n");
-		printf("Usage: %s <file1> [<file2> [ ... ] ]\n\n", argv[0]);
-		printf("Where each file contains Mark5B data\n\n");
+		usage(argv[0]);
+
+		exit(EXIT_FAILURE);
 	}
 	else
 	{
@@ -53,15 +71,63 @@ int main(int argc, char **argv)
 
 		for(a = 1; a < argc; ++a)
 		{
-			r = summarizemark5bfile(&sum, argv[a]);
-
-			if(r < 0)
+			if(strcmp(argv[a], "-f") == 0 ||
+			   strcmp(argv[a], "--fixmjd") == 0)
 			{
-				printf("File %s Mark5B summary failed with return value %d\n\n", argv[a], r);
+				fixday = 1;
+			}
+			else if(strcmp(argv[a], "-s") == 0 ||
+			   strcmp(argv[a], "--shortsum") == 0)
+			{
+				fixday = 1;
+				shortsum = 1;
+			}
+			else if(strcmp(argv[a], "-h") == 0 ||
+			   strcmp(argv[a], "--help") == 0)
+			{
+				usage(argv[0]);
+
+				exit(EXIT_SUCCESS);
 			}
 			else
 			{
-				printmark5bfilesummary(&sum);
+				r = summarizemark5bfile(&sum, argv[a]);
+
+				if(r < 0)
+				{
+					printf("File %s Mark5B summary failed with return value %d\n\n", argv[a], r);
+				}
+				else
+				{
+					if(fixday)
+					{
+						mark5bfilesummaryfixmjdtoday(&sum);
+					}
+					if(shortsum)
+					{
+						double mjd1, mjd2;
+						char filename[1000];
+
+						mjd1 = sum.startDay + sum.startSecond/86400.0 + sum.startFrame/(86400.0*sum.framesPerSecond);
+						mjd2 = sum.endDay + sum.endSecond/86400.0 + sum.endFrame/(86400.0*sum.framesPerSecond);
+
+						if(argv[a][0] != '/')
+						{
+							char path[1000];
+							getcwd(path, 1000);
+							snprintf(filename, 1000, "%s/%s", path, argv[a]);
+						}
+						else
+						{
+							snprintf(filename, 1000, "%s", argv[a]);
+						}
+						printf("%s %14.8f %14.8f\n", filename, mjd1, mjd2);
+					}
+					else
+					{
+						printmark5bfilesummary(&sum);
+					}
+				}
 			}
 		}
 	}

@@ -91,6 +91,10 @@ int determinemark5bframeoffset(const unsigned char *buffer, int bufferSize);
 
 int summarizemark5bfile(struct mark5b_file_summary *sum, const char *fileName);
 
+void mark5bfilesummaryfixmjd(struct mark5b_file_summary *sum, int mjd);
+
+void mark5bfilesummaryfixmjdtoday(struct mark5b_file_summary *sum);
+
 #ifdef __cplusplus
 }
 #endif
