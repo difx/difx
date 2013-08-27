@@ -30,6 +30,7 @@
 // Change this to configure detection, if possible
 #define USEGETOPT 1
 
+#include "config.h"
 #include <stdio.h>
 #include <complex.h>
 #include <stdlib.h>

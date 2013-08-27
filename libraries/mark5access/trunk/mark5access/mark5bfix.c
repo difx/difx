@@ -111,24 +111,11 @@ int mark5bfix(unsigned char *dest, int destSize, const unsigned char *src, int s
 	int i;
 
 	nDestFrames = destSize / MARK5B_FRAME_SIZE;
-	if(framesPerSecond == 25600 && nDestFrames % 2 == 1)
-	{
-		--nDestFrames;
-	}
 
 	if(startOutputFrameNumber >= 0)
 	{
 		startOutputFrame = startOutputFrameNumber % framesPerSecond;
-		
-		if(framesPerSecond == 25600 && startOutputFrame % 2 == 1)
-		{
-			++startOutputFrame;
-			lastGoodFrameNumber = startOutputFrame - 2;	/* make sure to fill in invalid status */
-		}
-		else
-		{
-			lastGoodFrameNumber = startOutputFrame - 1;	/* make sure to fill in invalid status */
-		}
+		lastGoodFrameNumber = startOutputFrame - 1;	/* make sure to fill in invalid status */
 		lastFrameInSecond = startOutputFrame - 1;
 	}
 
@@ -156,7 +143,7 @@ int mark5bfix(unsigned char *dest, int destSize, const unsigned char *src, int s
 		}
 
 		/* Verify next sync word is coming */
-		if(i <= N+4 && *((uint32_t *)(cur + MARK5B_FRAME_SIZE)) != MARK5B_SYNC_WORD)
+		if(i <= N-MARK5B_FRAME_SIZE && *((uint32_t *)(cur + MARK5B_FRAME_SIZE)) != MARK5B_SYNC_WORD)
 		{
 			i += 5008;
 			++nLostPacket;
