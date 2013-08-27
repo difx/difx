@@ -37,14 +37,15 @@
 #include <sys/time.h>
 #include <difxmessage.h>
 #include <mark5ipc.h>
+#include <mark5access/mark5bfix.h>
 #include "config.h"
 #include "mark5dir.h"
 #include "watchdog.h"
 
 const char program[] = "mk5cp";
 const char author[]  = "Walter Brisken";
-const char version[] = "0.11";
-const char verdate[] = "20130724";
+const char version[] = "0.12";
+const char verdate[] = "20130826";
 
 const int defaultChunkSize = 50000000;
 
@@ -94,6 +95,8 @@ int usage(const char *pgm)
 	fprintf(stderr, "  -v             Be more verbose\n\n");
 	fprintf(stderr, "  --quiet\n");
 	fprintf(stderr, "  -q             Be less verbose\n\n");
+	fprintf(stderr, "  --fix5b\n");
+	fprintf(stderr, "  -5             Perform packet reordering and filtering for Mark5B format\n");
 	fprintf(stderr, "  --force\n");
 	fprintf(stderr, "  -f             Continue even if dir is screwy\n\n");
 	fprintf(stderr, "  --rt           Read using Real-Time mode\n\n");
@@ -499,6 +502,246 @@ int copyByteRange(SSHANDLE xlrDevice, const char *outPath, const char *outName, 
 	}
 }
 
+int copyScanFix5B(SSHANDLE xlrDevice, const char *vsn, const char *outPath, int scanNum, const Mark5Scan *scan, DifxMessageMk5Status *mk5status, int chunkSize)
+{
+	FILE *out;
+	int destSize;
+	long long readptr;
+	long long togo;
+	int len;
+	streamstordatatype *data;
+	unsigned char *fixed;
+	int a, b, v;
+	char filename[DIFX_MESSAGE_FILENAME_LENGTH];
+	struct timeval t0, t1, t2;
+	double dt;
+	double rate;
+	char message[DIFX_MESSAGE_LENGTH];
+	char scpLogin[DIFX_MESSAGE_FILENAME_LENGTH];
+	char scpDest[DIFX_MESSAGE_FILENAME_LENGTH];
+	int startFrame = -1;
+	int leftover = 0;
+	struct mark5b_fix_statistics stats;
+
+	if(scan->format != 2)
+	{
+		fprintf(stderr, "Error: Scan %d (%s) is not in Mark5B format!\n", scanNum+1, scan->name.c_str());
+
+		return -1;
+	}
+
+	resetmark5bfixstatistics(&stats);
+	
+	parsescp(scpLogin, scpDest, outPath);
+
+	destSize = chunkSize*2;
+
+	if(strcmp(outPath, "-") == 0)
+	{
+		snprintf(filename, DIFX_MESSAGE_FILENAME_LENGTH, "%8s_%04d_%s", vsn, scanNum+1, scan->name.c_str()); 
+		out = stdout;
+	}
+	else if(scpLogin[0])
+	{
+		char cmd[MaxCommandLength];
+
+		snprintf(filename, DIFX_MESSAGE_FILENAME_LENGTH, "%8s_%04d_%s", vsn, scanNum+1, scan->name.c_str()); 
+
+		if(scpDest[0])
+		{
+			snprintf(cmd, MaxCommandLength, "ssh %s 'cat - > %s/%s'", scpLogin, scpDest, filename);
+		}
+		else
+		{
+			snprintf(cmd, MaxCommandLength, "ssh %s 'cat - > %s'", scpLogin, filename);
+		}
+		out = popen(cmd, "w");
+		if(!out)
+		{
+			snprintf(message, DIFX_MESSAGE_LENGTH, "Cannot open pipe %s for write.  Check permissions!", cmd);
+			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+			fprintf(stderr, "Error: %s\n", message);
+
+			return -1;
+		}
+	}
+	else
+	{
+		snprintf(filename, DIFX_MESSAGE_FILENAME_LENGTH, "%s/%8s_%04d_%s", outPath, vsn, scanNum+1, scan->name.c_str()); 
+		out = fopen(filename, "w");
+		if(!out)
+		{
+			snprintf(message, DIFX_MESSAGE_LENGTH, "Cannot open file %s for write.  Check permissions!", filename);
+			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+			fprintf(stderr, "Error: %s\n", message);
+
+			return -1;
+		}
+	}
+
+	fprintf(stderr, "outName = %s\n", filename);
+
+	readptr = scan->start;
+	togo = scan->length;
+	data = (streamstordatatype *)malloc(chunkSize);
+	fixed = (unsigned char *)malloc(destSize);
+	len = chunkSize;
+
+	mk5status->status = MARK5_COPY_SUCCESS;
+	mk5status->scanNumber = scanNum+1;
+
+	if(verbose)
+	{
+		fprintf(stderr, "Writing %s\n", filename);
+		fprintf(stderr, "start/length = %Ld/%Ld\n", scan->start, scan->length);
+	}
+
+	rate = 0.0;
+	gettimeofday(&t0, 0);
+	gettimeofday(&t1, 0);
+
+	snprintf(message, DIFX_MESSAGE_LENGTH, "Copying scan %d to file %s", scanNum+1, filename);
+	difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
+
+	for(int i = 0; togo > 0; ++i)
+	{
+		XLR_RETURN_CODE xlrRC;
+
+		if(die)
+		{
+			difxMessageSendDifxAlert("Data copy aborted due to die signal", DIFX_ALERT_LEVEL_WARNING);
+			
+			break;
+		}
+		if(verbose)
+		{
+			fprintf(stderr, "%Ld = %Ld/%Ld\n", readptr, readptr-scan->start, scan->length);
+		}
+		snprintf(mk5status->scanName, DIFX_MESSAGE_MAX_SCANNAME_LEN, "%s[%Ld%%]", scan->name.c_str(), 100*(readptr-scan->start)/scan->length);
+		mk5status->position = readptr;
+		mk5status->rate = rate;
+		difxMessageSendMark5Status(mk5status);
+		if(togo < chunkSize-leftover)
+		{
+			len = togo;
+		}
+		else
+		{
+			len = chunkSize-leftover;
+		}
+
+		a = readptr >> 32;
+		b = readptr % (1LL<<32);
+
+		WATCHDOG( xlrRC = XLRReadData(xlrDevice, data + leftover/sizeof(streamstordatatype), a, b, len) );
+		if(xlrRC != XLR_SUCCESS)
+		{
+			fprintf(stderr, "Read error: position=%Ld, length=%d\n", readptr, len);
+			if(out != stdout)
+			{
+				fclose(out);
+			}
+
+			return -1;
+		}
+
+		v = mark5bfix(fixed, destSize, (unsigned char *)data, len + leftover, scan->framespersecond, startFrame, &stats);
+		if(v < 0)
+		{
+			fprintf(stderr, "Error: mark5bfix returned %d\n", v);
+
+			return -1;
+		}
+
+		startFrame = stats.startFrameNumber + stats.destUsed/10016;
+
+		v = fwrite(fixed, 1, stats.destUsed, out);
+		if(v < stats.destUsed)
+		{
+			if(out == stdout)
+			{
+				fprintf(stderr, "mk5cp: Broken pipe.\n");
+			}
+			else if(scpLogin[0])
+			{
+				snprintf(message, DIFX_MESSAGE_LENGTH, "Incomplete write.  Bad password or broken scp pipe.");
+				difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+				fprintf(stderr, "Error: %s\n", message);
+			}
+			else
+			{
+				snprintf(message, DIFX_MESSAGE_LENGTH, "Incomplete write.  Disk full?  path=%s", outPath);
+				difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+				fprintf(stderr, "Error: %s\n", message);
+			}
+			
+			break;
+		}
+
+		leftover = stats.srcSize - stats.srcUsed;
+		if(leftover > 0)
+		{
+			memmove((unsigned char *)data, ((unsigned char *)data)+stats.srcSize-leftover, leftover);
+		}
+
+		gettimeofday(&t2, 0);
+		dt = (t2.tv_sec-t1.tv_sec) + 1.0e-6*(t2.tv_usec-t1.tv_usec);
+
+		if(dt > 0.0)
+		{
+			rate = 8.0e-6*chunkSize/dt; /* Mbps */
+		}
+		t1 = t2;
+
+		dt = t2.tv_sec-t0.tv_sec;
+
+		if(dt >= 10)
+		{
+			t0 = t2;
+			
+			v = getBankInfo(xlrDevice, mk5status, mk5status->activeBank == 'B' ? 'A' : 'B');
+			if(v < 0)
+			{
+				return v;
+			}
+		}
+
+		readptr += len;
+		togo -= len;
+	}
+
+	if(scpLogin[0])
+	{
+		pclose(out);
+	}
+	else if(out != stdout)
+	{
+		fclose(out);
+	}
+	free(data);
+	free(fixed);
+
+	snprintf(message, DIFX_MESSAGE_LENGTH, "Copied scan %d = %s.", scanNum+1, scan->name.c_str());
+	difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
+	fprintf(stderr, "%s\n", message);
+	fprintmark5bfixstatistics(stderr, &stats);
+	fprintf(stderr, "\n");
+
+	mk5status->scanNumber = 0;
+	mk5status->rate = 0.0;
+	mk5status->position = scan->start + scan->length;
+	difxMessageSendMark5Status(mk5status);
+
+	if(togo > 0)
+	{
+		return -1;
+	}
+	else
+	{
+		return 0;
+	}
+}
+
 int copyScan(SSHANDLE xlrDevice, const char *vsn, const char *outPath, int scanNum, const Mark5Scan *scan, DifxMessageMk5Status *mk5status, int chunkSize)
 {
 	FILE *out;
@@ -775,7 +1018,7 @@ static int parseByteRange(long long *start, long long *stop, const char *scanLis
 	}
 }
 
-static int mk5cp(char *vsn, const char *scanList, const char *outPath, int force, enum Mark5ReadMode readMode, int chunkSize)
+static int mk5cp(char *vsn, const char *scanList, const char *outPath, int force, enum Mark5ReadMode readMode, int chunkSize, int fix5b)
 {
 	int mjdNow;
 	const char *mk5dirpath;
@@ -964,6 +1207,13 @@ static int mk5cp(char *vsn, const char *scanList, const char *outPath, int force
 		/* first look for mjd range */
 		if(parseMjdRange(&mjdStart, &mjdStop, scanList))	
 		{
+			if(fix5b)
+			{
+				fprintf(stderr, "Error: fixing Mark5B while copying a time range is not supported\n\n");
+
+				return -1;
+			}
+
 			for(int scanIndex = 0; scanIndex < module.nScans(); ++scanIndex)
 			{
 				scan = &module.scans[scanIndex];
@@ -997,6 +1247,13 @@ static int mk5cp(char *vsn, const char *scanList, const char *outPath, int force
 		/* next look for byte range */
 		else if(parseByteRange(&byteStart, &byteStop, scanList))
 		{
+			if(fix5b)
+			{
+				fprintf(stderr, "Error: fixing Mark5B while copying a byte range is not supported\n\n");
+
+				return -1;
+			}
+
 			snprintf(outName, DIFX_MESSAGE_FILENAME_LENGTH, "%8s_%s", module.label.c_str(), scanList);
 			v = copyByteRange(xlrDevice, outPath, outName, -1, byteStart, byteStop, &mk5status, chunkSize);
 
@@ -1063,7 +1320,14 @@ static int mk5cp(char *vsn, const char *scanList, const char *outPath, int force
 					if(i > 0 && i <= module.nScans())
 					{
 						int scanIndex = i-1;
-						v = copyScan(xlrDevice, module.label.c_str(), outPath, scanIndex, &module.scans[scanIndex], &mk5status, chunkSize);
+						if(fix5b)
+						{
+							v = copyScanFix5B(xlrDevice, module.label.c_str(), outPath, scanIndex, &module.scans[scanIndex], &mk5status, chunkSize);
+						}
+						else
+						{
+							v = copyScan(xlrDevice, module.label.c_str(), outPath, scanIndex, &module.scans[scanIndex], &mk5status, chunkSize);
+						}
 						if(v == 0)
 						{
 							++nGood;
@@ -1110,7 +1374,14 @@ static int mk5cp(char *vsn, const char *scanList, const char *outPath, int force
 				if(strncasecmp(module.scans[i].name.c_str(), scanList, l) == 0)
 				{
 					int scanIndex = i;
-					v = copyScan(xlrDevice, module.label.c_str(), outPath, scanIndex, &module.scans[scanIndex], &mk5status, chunkSize);
+					if(fix5b)
+					{
+						v = copyScanFix5B(xlrDevice, module.label.c_str(), outPath, scanIndex, &module.scans[scanIndex], &mk5status, chunkSize);
+					}
+					else
+					{
+						v = copyScan(xlrDevice, module.label.c_str(), outPath, scanIndex, &module.scans[scanIndex], &mk5status, chunkSize);
+					}
 					if(v == 0) 
 					{
 						++nGood;
@@ -1331,6 +1602,7 @@ int main(int argc, char **argv)
 	const char *scanList=0;
 	const char *outPath=0;
 	int force = 0;
+	int fix5b = 0;
 	int v;
 	int lockWait = MARK5_LOCK_DONT_WAIT;
 	int chunkSize = defaultChunkSize;
@@ -1399,6 +1671,11 @@ int main(int argc, char **argv)
 			copyMode = COPY_MODE_NODIR;
 			chunkSize = -1;
 		}
+		else if(strcmp(argv[a], "-5") == 0 ||
+			strcmp(argv[a], "--fix5b") == 0)
+		{
+			fix5b = 1;
+		}
 		else if(strcmp(argv[a], "--no-dir") == 0)
 		{
 			copyMode = COPY_MODE_NODIR;
@@ -1432,6 +1709,13 @@ int main(int argc, char **argv)
 		}
 	}
 
+	if(fix5b && copyMode == COPY_MODE_NODIR)
+	{
+		fprintf(stderr, "Error: cannot fix Mark5B and copy without a directory\n");
+
+		return EXIT_FAILURE;
+	}
+
 	if(outPath == 0)
 	{
 		return usage(argv[0]);
@@ -1461,7 +1745,7 @@ int main(int argc, char **argv)
 		switch(copyMode)
 		{
 			case COPY_MODE_NORMAL:
-				v = mk5cp(vsn, scanList, outPath, force, readMode, chunkSize);
+				v = mk5cp(vsn, scanList, outPath, force, readMode, chunkSize, fix5b);
 				break;
 			case COPY_MODE_NODIR:
 				v = mk5cp_nodir(vsn, scanList, outPath, force, readMode, chunkSize);

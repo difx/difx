@@ -2,6 +2,7 @@ Version 2.3.0
 ~~~~~~~~~~~~~
 * Post DiFX-2.2
 * mk5dir: support SDK9 legacy directories (as per DIMINO 2.2.1 w/ SDK 9.2)
+* mk5cp: add mode to "fix" Mark5B format scans
 
 Version 2.2.0
 ~~~~~~~~~~~~~
