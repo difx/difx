@@ -1251,13 +1251,16 @@ int pystream::writeDDCChannelSet(const VexSetup *setup, int modeNum)
 			channelCount++;
 			if((unsigned int)channelCount < (unsigned int)chanByDBE[modeNum][dbe])
 			{
-				*this << ", \\";
+				*this << ", ";
 			}
 			else
 			{
-				*this << "  \\";
+				*this << "  ";
 			}
-
+			if( scriptType != SCRIPT_GBT )
+			{
+				*this << "\\";
+			}
 			if(bw != bw0 || tune != tune0)
 			{
 				*this << "  # orig: tune=" << (tune0*1.0e-6) << " bw=" << (bw0*1.0e-6);
@@ -1806,7 +1809,7 @@ int pystream::writeDDCLoifTable(const VexData *V)
 	p = precision();
 	precision(15);
 
-//	cerr << "======================== pystream::writeLoifTable" << endl;
+//	cerr << "======================== pystream::writeDDCLoifTable" << endl;
 
 	for(unsigned int modeNum = 0; modeNum < nMode; ++modeNum)
 	{
@@ -1817,7 +1820,7 @@ int pystream::writeDDCLoifTable(const VexData *V)
 		{
 			continue;
 		}
-		if(scriptType == SCRIPT_VLBA)
+		if(scriptType == SCRIPT_VLBA || scriptType == SCRIPT_GBT)
 		{
 				if( personalityType == RDBE_DDC && setup->channels.size() > 2*MAX_DBE_CHAN ) {
 					cerr << "VEX error: too many channels defined: " << setup->channels.size() 
@@ -2520,7 +2523,7 @@ int pystream::writeScans(const VexData *V)
 				*this << "# changing to mode " << mode->defName << endl;
 				if(scriptType == SCRIPT_VLBA || scriptType == SCRIPT_GBT)
 				{
-					*this << "subarray.setVLBALoIfSetup(loif" << modeId << ")" << endl;
+					*this << "subarray.setVLBALoIfSetup(dbe0, loif" << modeId << ")" << endl;
 
 					map<string,unsigned int>::const_iterator ifit;
 					for(ifit = ifIndex[modeId].begin(); ifit != ifIndex[modeId].end(); ++ifit)
