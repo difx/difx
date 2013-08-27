@@ -10,8 +10,8 @@ from time import time
 import datetime
 
 program = 'queueVex'
-version = '1.17'
-verdate = '20130801'
+version = '1.21'
+verdate = '20130824'
 author  = 'Walter Brisken & Matthias Bark'
 
 verbose = 1
@@ -26,6 +26,9 @@ observTxHistoryDays = 7
 linesToShow = 10
 keepDays = 45
 vex2scriptProgram = '%s/vex2script' % difxPath
+vlbaOpsPhone = '575-835-7250'
+gbEmailList = 'gbt-vlba-notify@nrao.edu'
+gbDestination = '/home/astro-util/vlba/gbscripts'
 
 # ------------------
 
@@ -55,6 +58,24 @@ def usage():
 
 mjd0 = datetime.datetime(1858, 11, 17, 0, 0)
 
+def legacy2new(proposal):
+	decoderRingPath = '/home/vlbiobs/astronomy/LEGACY/'
+
+	cmd = 'grep -h -i %s %s/*' % (proposal, decoderRingPath)
+	lines = popen(cmd, 'r').readlines()
+	if len(lines) == 0:
+		print 'Warning: legacy code %s not found in conversion tables' % proposal
+		return None
+	s = split(strip(lines[0]))
+	if len(s) != 2:
+		print 'Warning: malformatted line in legacy proposal code conversion file: %s' % strip(lines[0])
+		return None
+	if upper(s[0]) == upper(proposal):
+		return upper(s[1])
+	elif upper(s[1]) == upper(proposal):
+		return upper(s[0])
+	else:
+		return None
 
 def deleteOld(dir, days):
 	n = 0
@@ -336,6 +357,8 @@ for vexFile in vexFiles:
 
 	obsCode, obsSeg, stationTimes = vexPeek(vexFile)
 
+	project = obsCode + obsSeg
+
 	stns = stationTimes.keys()
 	stns.sort()
 	print stns
@@ -371,16 +394,8 @@ for vexFile in vexFiles:
 			continue
 		expt = upper(s[0])
 		print '\n==========================================================================='
-		if station == 'gb':
-			cc = 'gb-cc.gb.nrao.edu'
 
-	# GB not yet handled per the request of GB staff
-
-			#print 'Warning: files for GB are not yet handled by this script'
-			#print '\n==========================================================================='
-			continue
-		else:
-			cc = '%s-cc.vlba.nrao.edu' % station
+		cc = '%s-cc.vlba.nrao.edu' % station
 		
 		upperStation = upper(station)
 		timeRange = stationTimes[upperStation]
@@ -402,7 +417,8 @@ for vexFile in vexFiles:
 		if not isfile(observTxFile):
 			execute('touch %s' % observTxFile)
 
-		saveObservTxFile(observTxFile, station)
+		if not nocopy:
+			saveObservTxFile(observTxFile, station)
 
 		observations = open(observTxFile).readlines()
 		observations = addObservation(observations, expt, timeRange[0], timeRange[1], station, overlaps)
@@ -419,6 +435,35 @@ for vexFile in vexFiles:
 		else:
 			execute('scp %s %s vlbamon@%s:%s 2>&1' % (script, observTxFile, cc, ccScriptDir), 1)
 		execute('rm %s' % observTxFile)
+
+		if station == 'gb':
+			newProposalCode = legacy2new(obsCode)
+
+			# copy GB specific files to /home/astro-util/vlba/gbscripts
+			gbfiles = glob("%s/*.gb" % cwd)
+			if len(gbfiles) < 2:
+				print 'ERROR: GB included in this project but the expected crd and sch files are not here!'
+			elif not nocopy:
+				print 'the following GB files will be sent to GB:', gbfiles
+			if not nocopy:	
+				execute('scp %s %s %s/*.gb gbvlbi@ssh.gb.nrao.edu:%s' % (script, vexFile, cwd, gbDestination), 1)
+				cmd = "mail -s '%s files copied from VLBA Ops' %s" % (project, gbEmailList)
+			else:
+				cmd = "mail -s 'TEST %s files copied from VLBA Ops' %s" % (project, gbEmailList)
+			out = popen(cmd, "w")
+			if nocopy:
+				out.write('\n=== This is only a test.  No files are being copied. ===\n')
+			if newProposalCode != None:
+				out.write('\nFiles for project with propsal code %s have been copied to %s\n' % (newProposalCode , gbDestination))
+				if len(obsSeg) > 0:
+					out.write('The segment code for this observation is %s\n' % obsSeg)
+				out.write('The legacy proposal code for this project segment is %s\n\n' % project)
+			else:
+				out.write('\nFiles for project with legacy code %s have been copied to %s\n\n' % (project, gbDestination))
+			out.write('This project runs at GBT from %s to %s (times in UT)\n\n' % (startDate, stopDate))
+			out.write('The wideband VLBI equipment will be operated by VLBA ops.\n\n')
+			out.write('Please contact VLBA operators at %s in case of problems.\n' % vlbaOpsPhone)
+			out.close()
 
 chdir(cwd)
 

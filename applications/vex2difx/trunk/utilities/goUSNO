@@ -2,13 +2,14 @@
 
 # update the version when significant changes are made
 program = 'goUSNO'
-version = '0.19'
+version = '0.20'
 
 
 from sys import exit, argv, stdin
 from time import gmtime, strftime
 from string import strip, split, lower, upper, find
 from os import system, chdir, environ, popen
+from os.path import isfile
 from datetime import datetime
 
 
@@ -146,9 +147,9 @@ if len(args) < 4:
 	print '  <day> is the numeric day of the month (e.g., 29)\n'
 	print '  <utc> is the UTC time to start obsserving (HH or HH:MM or HH:MM:SS)'
 	print '        (e.g., 18 or 18:30 or 18:30:00)\n'
-	print '  <station list> is an optional list of stations to run on.  If provided\n'
-	print '  then it is assumed that the NRAO Mark5C units will be used.  Stations\n'
-	print '  can be listed separately by name (e.g., BR HN), or be VLBA for the\n'
+	print '  <station list> is an optional list of stations to run on.  If provided'
+	print '  then it is assumed that the NRAO Mark5C units will be used.  Stations'
+	print '  can be listed separately by name (e.g., BR HN), or be VLBA for the'
 	print '  whole array.\n\n'
 	exit(0)
 
@@ -243,3 +244,7 @@ print "2. update observ.tx on legacy systems"
 print "3. update OMS as necessary"
 print "************************"
 print '\nArchive files are in: %s\n' % outDir
+
+preobsFile = '%s.vex.preobs' % projectCode
+if not isfile(preobsFile):
+	print 'WARNING ... File %s was not made.  Contact Walter immediately.\n' % preobsFile
