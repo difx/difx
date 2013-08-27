@@ -58,6 +58,8 @@ int mark5bfix(unsigned char *dest, int destSize, const unsigned char *src, int s
 
 void printmark5bfixstatistics(const struct mark5b_fix_statistics *stats);
 
+void fprintmark5bfixstatistics(FILE *out, const struct mark5b_fix_statistics *stats);
+
 void resetmark5bfixstatistics(struct mark5b_fix_statistics *stats);
 
 #ifdef __cplusplus

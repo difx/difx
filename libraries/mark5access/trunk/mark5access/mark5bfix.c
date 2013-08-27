@@ -102,7 +102,7 @@ int mark5bfix(unsigned char *dest, int destSize, const unsigned char *src, int s
 	int nValidFrame = 0;	/* number of good frames written */
 	int nLostPacket = 0;	/* logically a subset of nMissed */
 	int frameInSecond;
-	int second = 0;
+	int second = 0;		/* second number, since beginning of call */
 	int lastFrameInSecond = 1 << 24;	/* set to flag setting of startOutputFrame */
 	int startOutputFrame = -1;
 	int nDestFrames;	
@@ -374,26 +374,31 @@ int mark5bfix(unsigned char *dest, int destSize, const unsigned char *src, int s
 
 void printmark5bfixstatistics(const struct mark5b_fix_statistics *stats)
 {
+	fprintmark5bfixstatistics(stdout, stats);
+}
+
+void fprintmark5bfixstatistics(FILE *out, const struct mark5b_fix_statistics *stats)
+{
 	if(stats)
 	{
-		printf("Mark5B fixer statistics:\n");
-		printf("  Number of calls to vdifmux         = %d\n", stats->nCall);
-		printf("  Number of valid input frames       = %Ld\n", stats->nValidFrame);
-		printf("  Number of invalid input frames     = %Ld\n", stats->nInvalidFrame);
-		printf("  Number of skipped interloper bytes = %Ld\n", stats->nSkippedByte);
-		printf("  Number of fill pattern bytes       = %Ld\n", stats->nFillByte);
-		printf("  Number of lost packets             = %Ld\n", stats->nLostPacket);
-		printf("  Number of bytes processed          = %Ld\n", stats->dataProcessed);
-		printf("Properties of output data from recent call:\n");
-		printf("  Start output frame number          = %d\n", stats->startFrameNumber);
-		printf("  Start output frame seconds         = %d\n", stats->startFrameSeconds);
-		printf("  Start output frame nanoseconds     = %d\n", stats->startFrameNanoseconds);
-		printf("  %d/%d src bytes consumed\n", stats->srcUsed, stats->srcSize);
-		printf("  %d/%d dest bytes generated\n", stats->destUsed, stats->destSize);
+		fprintf(out, "Mark5B fixer statistics:\n");
+		fprintf(out, "  Number of calls to vdifmux         = %d\n", stats->nCall);
+		fprintf(out, "  Number of valid input frames       = %Ld\n", stats->nValidFrame);
+		fprintf(out, "  Number of invalid input frames     = %Ld\n", stats->nInvalidFrame);
+		fprintf(out, "  Number of skipped interloper bytes = %Ld\n", stats->nSkippedByte);
+		fprintf(out, "  Number of fill pattern bytes       = %Ld\n", stats->nFillByte);
+		fprintf(out, "  Number of lost packets             = %Ld\n", stats->nLostPacket);
+		fprintf(out, "  Number of bytes processed          = %Ld\n", stats->dataProcessed);
+		fprintf(out, "Properties of output data from recent call:\n");
+		fprintf(out, "  Start output frame number          = %d\n", stats->startFrameNumber);
+		fprintf(out, "  Start output frame seconds         = %d\n", stats->startFrameSeconds);
+		fprintf(out, "  Start output frame nanoseconds     = %d\n", stats->startFrameNanoseconds);
+		fprintf(out, "  %d/%d src bytes consumed\n", stats->srcUsed, stats->srcSize);
+		fprintf(out, "  %d/%d dest bytes generated\n", stats->destUsed, stats->destSize);
 	}
 	else
 	{
-		fprintf(stderr, "Weird: printmark5bfixstatistics called with null pointer\n");
+		fprintf(out, "Weird: printmark5bfixstatistics called with null pointer\n");
 	}
 }
 
