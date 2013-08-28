@@ -76,7 +76,7 @@ public class QueueBrowserPanel extends TearOffPanel {
         });
         this.add( _experimentButton );
         _experimentMenu = new JPopupMenu( "Experiments:" );
-        _newExperimentItem = new JMenuItem( "Create New..." );
+        _newExperimentItem = new ZMenuItem( "Create New..." );
         _newExperimentItem.setToolTipText( "Create a new experiment." );
         _newExperimentItem.addActionListener(new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
@@ -84,7 +84,7 @@ public class QueueBrowserPanel extends TearOffPanel {
             }
         });
         _experimentMenu.add( _newExperimentItem );
-        _existingExperimentItem = new JMenuItem( "Locate on Disk..." );
+        _existingExperimentItem = new ZMenuItem( "Locate on Disk..." );
         _existingExperimentItem.setToolTipText( "Locate previously created experiments from disk on the DiFX cluster." );
         _existingExperimentItem.addActionListener(new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
@@ -92,7 +92,7 @@ public class QueueBrowserPanel extends TearOffPanel {
             }
         });
         _experimentMenu.add( _existingExperimentItem );
-        _fromDatabaseItem = new JMenuItem( "Located in Database..." );
+        _fromDatabaseItem = new ZMenuItem( "Located in Database..." );
         _fromDatabaseItem.setToolTipText( "Locate experiments in the database." );
         _fromDatabaseItem.addActionListener(new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
@@ -100,24 +100,25 @@ public class QueueBrowserPanel extends TearOffPanel {
             }
         });
         _experimentMenu.add( _fromDatabaseItem );
-        _updateDatabaseItem = new JMenuItem( "Update Now" );
+        _updateDatabaseItem = new ZMenuItem( "Update Now" );
         _updateDatabaseItem.setToolTipText( "Update the experiment list to reflect any changes in the database or disk." );
         _updateDatabaseItem.addActionListener(new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
                 _triggerDatabaseUpdate = true;
             }
         });
+        _updateDatabaseItem.setEnabled( false );
         _experimentMenu.add( _updateDatabaseItem );
         //  The menu for the "select" button.
         _selectMenu = new JPopupMenu();
-        JMenuItem selectAllItem = new JMenuItem( "Select All" );
+        ZMenuItem selectAllItem = new ZMenuItem( "Select All" );
         selectAllItem.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
                 selectAll();
             }
         });
         _selectMenu.add( selectAllItem );
-        JMenuItem unselectAllItem = new JMenuItem( "Unselect All" );
+        ZMenuItem unselectAllItem = new ZMenuItem( "Unselect All" );
         unselectAllItem.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
                 unselectAll();
@@ -131,12 +132,13 @@ public class QueueBrowserPanel extends TearOffPanel {
                 runSelected();
             }
         });
+        runSelectedItem.setEnabled( false );
         _selectMenu.add( runSelectedItem );
         runSelectedItem.toolTip( "Run the selected jobs using either job-specific user settings\n"
                 + "or the current automated run parameters.\n"
                 + "Automated run parameters can be viewed and changed in the Settings Window.", null );
         //runSelectedItem.setEnabled( false );
-        JMenuItem deleteSelectedItem = new JMenuItem( "Delete Selected" );
+        ZMenuItem deleteSelectedItem = new ZMenuItem( "Delete Selected" );
         deleteSelectedItem.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
                 deleteSelected();
@@ -158,6 +160,7 @@ public class QueueBrowserPanel extends TearOffPanel {
                 showItemChange();
             }
         });
+        _showSelectedItem.setEnabled( false );
         _showSelectedItem.setSelected( _settings.queueBrowserSettings().showSelected );
         _showMenu.add( _showSelectedItem );
         _showUnselectedItem = new JCheckBoxMenuItem( "Unselected" );
@@ -166,6 +169,7 @@ public class QueueBrowserPanel extends TearOffPanel {
                 showItemChange();
             }
         });
+        _showUnselectedItem.setEnabled( false );
         _showUnselectedItem.setSelected( _settings.queueBrowserSettings().showUnselected );
         _showMenu.add( _showUnselectedItem );
         _showCompletedItem = new JCheckBoxMenuItem( "Completed" );
@@ -174,6 +178,7 @@ public class QueueBrowserPanel extends TearOffPanel {
                 showItemChange();
             }
         });
+        _showCompletedItem.setEnabled( false );
         _showCompletedItem.setSelected( _settings.queueBrowserSettings().showCompleted );
         _showMenu.add( _showCompletedItem );
         _showIncompleteItem = new JCheckBoxMenuItem( "Incomplete" );
@@ -182,22 +187,25 @@ public class QueueBrowserPanel extends TearOffPanel {
                 showItemChange();
             }
         });
+        _showIncompleteItem.setEnabled( false );
         _showIncompleteItem.setSelected( _settings.queueBrowserSettings().showIncomplete );
         _showMenu.add( _showIncompleteItem );
         _showMenu.add( new JSeparator() );
-        JMenuItem expandAllItem = new JMenuItem( "Expand All" );
+        ZMenuItem expandAllItem = new ZMenuItem( "Expand All" );
         expandAllItem.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
                 expandAll();
             }
         });
+        expandAllItem.setEnabled( false );
         _showMenu.add( expandAllItem );
-        JMenuItem collapseAllItem = new JMenuItem( "Collapse All" );
+        ZMenuItem collapseAllItem = new ZMenuItem( "Collapse All" );
         collapseAllItem.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
                 collapseAll();
             }
         });
+        collapseAllItem.setEnabled( false );
         _showMenu.add( collapseAllItem );
         _showButton = new JButton( "Show..." );
         _showButton.addActionListener(new ActionListener() {
@@ -822,14 +830,14 @@ public class QueueBrowserPanel extends TearOffPanel {
             _this.add( _menuBar );
             JMenu helpMenu = new JMenu( "  Help  " );
             _menuBar.add( helpMenu );
-            JMenuItem settingsHelpItem = new JMenuItem( "Disk Search Help" );
+            ZMenuItem settingsHelpItem = new ZMenuItem( "Disk Search Help" );
             settingsHelpItem.addActionListener( new ActionListener() {
                 public void actionPerformed( ActionEvent e ) {
                     _settings.launchGUIHelp( "Queue_Browser_content.html#LOCATE_ON_DISK" );
                 }
             } );
             helpMenu.add( settingsHelpItem );
-            JMenuItem helpIndexItem = new JMenuItem( "GUI Documentation" );
+            ZMenuItem helpIndexItem = new ZMenuItem( "GUI Documentation" );
             helpIndexItem.addActionListener( new ActionListener() {
                 public void actionPerformed( ActionEvent e ) {
                     _settings.launchGUIHelp( "intro.html" );
@@ -1625,10 +1633,10 @@ public class QueueBrowserPanel extends TearOffPanel {
     protected JobNodesHeader _header;
     protected JButton _experimentButton;
     protected JPopupMenu _experimentMenu;
-    protected JMenuItem _newExperimentItem;
-    protected JMenuItem _existingExperimentItem;
-    protected JMenuItem _fromDatabaseItem;
-    protected JMenuItem _updateDatabaseItem;
+    protected ZMenuItem _newExperimentItem;
+    protected ZMenuItem _existingExperimentItem;
+    protected ZMenuItem _fromDatabaseItem;
+    protected ZMenuItem _updateDatabaseItem;
     protected JButton _existingButton;
     protected JButton _selectButton;
     protected JPopupMenu _selectMenu;
