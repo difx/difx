@@ -1600,12 +1600,8 @@ public class QueueBrowserPanel extends TearOffPanel {
             thisJob.passNode( thisPass );
             thisJob.inputFile( inputFile, false );
             //  Create a new log file for this job using what we expect its name to be.
-            System.out.println( "looking for " +
-                    inputFile.substring( 0, inputFile.lastIndexOf( "/" ) ) + "/guiLogs"
-                    + inputFile.substring( inputFile.lastIndexOf( "/" ) ).replace( ".input", ".jobLog" ) );
             thisJob.logFile( new ActivityLogFile( inputFile.substring( 0, inputFile.lastIndexOf( "/" ) ) + "/guiLogs"
                     + inputFile.substring( inputFile.lastIndexOf( "/" ) ).replace( ".input", ".jobLog" ) ) );
-            //thisJob.logFile( new ActivityLogFile( inputFile.replace( ".input", ".jobLog" ) ) );
             //  If such a file exists already, force it to be downloaded the first time it
             //  is used.
             thisJob.logFile().downloadExisting( true );

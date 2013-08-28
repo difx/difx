@@ -628,10 +628,12 @@ public class JobNode extends QueueBrowserNode {
             }
             List<DifxStatus.Weight> weightList = difxMsg.getBody().getDifxStatus().getWeight();
             //  Create a new list of antennas/weights if one hasn't been created yet.
+            System.out.println( "size of weight list is " + weightList.size() );
             if ( !_weightsBuilt )
                 newWeightDisplay( weightList.size() );
             for ( Iterator<DifxStatus.Weight> iter = weightList.iterator(); iter.hasNext(); ) {
                 DifxStatus.Weight thisWeight = iter.next();
+                System.out.println( thisWeight.getAnt() +  "  " + thisWeight.getWt() );
                 weight( thisWeight.getAnt(), thisWeight.getWt() );
             }
         }
@@ -768,16 +770,26 @@ public class JobNode extends QueueBrowserNode {
     public Integer numAntennas() { return Integer.parseInt( _numAntennas.getText().trim() ); }
     public void weight( String antenna, String newString ) {
         double newVal = Double.valueOf( newString );
-        for ( int i = 0; i < _weights.length; ++i ) {
-            if ( _antennas[i].contentEquals( antenna ) ) {
-                _weights[i] = newVal;
-                _weight[i].setText( newString );
-                _weightPlot[i].limits( (double)(_weightTrackSize[i] - 20), (double)(_weightTrackSize[i]), 0.0, 1.05 );
-                _weightTrack[i].add( (double)(_weightTrackSize[i]), newVal );
-                _weightTrackSize[i] += 1;
-                _weightPlotWindow[i].updateUI();
-            }
+        int i = Integer.valueOf( antenna );
+        if ( i < _weights.length ) {
+            _weights[i] = newVal;
+            _weight[i].setText( newString );
+            _weightPlot[i].limits( (double)(_weightTrackSize[i] - 20), (double)(_weightTrackSize[i]), 0.0, 1.05 );
+            _weightTrack[i].add( (double)(_weightTrackSize[i]), newVal );
+            _weightTrackSize[i] += 1;
+            _weightPlotWindow[i].updateUI();
+            this.updateUI();
         }
+//        for ( int i = 0; i < _weights.length; ++i ) {
+//            if ( _antennas[i].contentEquals( antenna ) ) {
+//                _weights[i] = newVal;
+//                _weight[i].setText( newString );
+//                _weightPlot[i].limits( (double)(_weightTrackSize[i] - 20), (double)(_weightTrackSize[i]), 0.0, 1.05 );
+//                _weightTrack[i].add( (double)(_weightTrackSize[i]), newVal );
+//                _weightTrackSize[i] += 1;
+//                _weightPlotWindow[i].updateUI();
+//            }
+//        }
     }
     public double weight( String antenna ) {
         for ( int i = 0; i < _weights.length; ++i )
@@ -906,7 +918,8 @@ public class JobNode extends QueueBrowserNode {
     void logItem( String label, String text, boolean uploadNow ) {
         //  Create a new log file if required.
         if ( logFile() == null ) {
-            logFile( new ActivityLogFile( inputFile().replace( ".input", ".jobLog" ) ) );
+            logFile( new ActivityLogFile( inputFile().substring( 0, inputFile().lastIndexOf( "/" ) ) + "/guiLogs"
+                    + inputFile().substring( inputFile().lastIndexOf( "/" ) ).replace( ".input", ".jobLog" ) ) );
         }
         //  See if this file requires us to download its existing content first.  This
         //  would occur if we have loaded the filename from an existing job on the

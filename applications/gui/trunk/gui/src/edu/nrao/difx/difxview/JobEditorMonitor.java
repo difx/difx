@@ -1461,7 +1461,7 @@ public class JobEditorMonitor extends JFrame {
                 }
                 _state.updateUI();
             }
-            List<DifxStatus.Weight> weightList = difxMsg.getBody().getDifxStatus().getWeight();
+//            List<DifxStatus.Weight> weightList = difxMsg.getBody().getDifxStatus().getWeight();
             //  Create a new list of antennas/weights if one hasn't been created yet.
 //            if ( _weights == null )
 //                newWeightDisplay( weightList.size() );
