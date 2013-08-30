@@ -1154,9 +1154,19 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 				}
 				if(ch2tracks.empty())
 				{
-					setup.formatName = "NONE";
-					setup.nRecordChan = 0;
-					setup.nBit = 0;
+					if (setup.formatName.substr(0, 4) == "VDIF")
+					{
+						// non-interlaced:  VDIF/size/bits, use all recorded channels, find 7777 below
+						setup.nRecordChan = 7777;
+						setup.nBit = atoi(setup.formatName.substr(setup.formatName.find_last_of('/') + 1).c_str());
+						setup.formatName = setup.formatName.substr(0, setup.formatName.find_last_of('/'));
+					}
+					else
+					{
+						setup.formatName = "NONE";
+						setup.nRecordChan = 0;
+						setup.nBit = 0;
+					}
 				}
 				else
 				{
@@ -1230,9 +1240,9 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 //				setup.nBit = 2;
 //				setup.nRecordChan = 1;
 //			}
-			else if(setup.formatName.find("VDIF") != std::string::npos)  // VDIF... or // INTERLACEDVDIF...
+			else if(setup.formatName.find("VDIF") != std::string::npos)  // INTERLACEDVDIF...
 			{
-#warning "handling of VDIF or INTERLACEDVDIF nRecordChan may not be correct in all cases"
+#warning "handling of INTERLACEDVDIF nRecordChan may not be correct in all cases"
 				setup.nBit = atoi(setup.formatName.substr(setup.formatName.find_last_of('/') + 1).c_str());
 				setup.formatName = setup.formatName.substr(0, setup.formatName.find_last_of('/'));
 				setup.nRecordChan = 1;
