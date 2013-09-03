@@ -770,7 +770,7 @@ int pystream::writeDbeInit(const VexData *V)
 			else
 			{
 				if( dataFormat == FORMAT_VDIF )
-					*this << "dbe0 = RDBE(" << dbeNum << ", 'ddc', 'ddc_1501183.bin')" << endl;
+					*this << "dbe0 = RDBE(" << dbeNum << ", 'ddc', 'ddc_1501283.bin')" << endl;
 				else
 					*this << "dbe0 = RDBE(" << dbeNum << ", 'ddc')" << endl;
 			}
