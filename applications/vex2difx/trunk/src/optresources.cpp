@@ -138,7 +138,9 @@ void optresources::close()
 
 int optresources::writeHeader(const VexData *V)
 {
-	*this << "VERSION; 2;" << endl;
+	*this << "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>" << endl << endl;
+
+	*this << "<sss:vex2opt version=\"3\" xmlns:sss=\"http://www.nrao.edu/namespaces/sss\">" << endl;
 
 	return 0;
 }
@@ -184,77 +186,41 @@ string optresources::VLArcvr(string receiver)
 	return "<unknown receiver>";
 }
 
-int optresources::writeLoifTable(const VexData *V)
-{
-	map<string,VexIF>::const_iterator it;
-	int p;
-	stringstream ss;
-	unsigned int nMode = V->nMode();
+void optresources::getIFComment(const VexIF *i) {
+	const int MaxCommentLength = 256;
+	char comment[MaxCommentLength] = {0};
 	string filter, firstLO, receiver;
-	string out;
+	bool once = true;
 
-	p = precision();
-	precision(15);
-
-	*this << "# <name>; <receiver> ; 1; <arraySumming>; {<baseband pair>, <centerSkyFreq>, <subbandCount>,"
-		<< " <subbandBandwidth>, <blbpsPerSubband>, <polarizationProducts>, <threadIDA>, <threadIDB>;}" << endl;
-	for(unsigned int modeNum = 0; modeNum < nMode; ++modeNum)
-	{
-		const VexMode *mode = V->getMode(modeNum);
-		const VexSetup *setup = mode->getSetup(ant);
-		string lastBaseband;
-		bool once = true;
-
-		if(!setup)
-		{
-			continue;
-		}
-
-			// resourceName
-			if( setup->ifs.size() > 0 ) {
-				ss << "loif" << modeNum << "; ";
-			} else {
-				cerr << mode->defName << " (loif" << modeNum << ") doesn't have any setup defined - skipping!" << endl;
-			}
-			for(it = setup->ifs.begin(); it != setup->ifs.end(); ++it)
-			{
-				const int MaxCommentLength = 256;
-				const VexIF &i = it->second;
-				const VexIF  *vif = 0;
-				char comment[MaxCommentLength] = {0};
-
-//				*this << "first: " << setup->firstTuningForIF(i.name) << ": SSLO " << i.ifSSLO << endl;
-// 				*this << "loif" << modeNum << "; ";
-// 				ss << "loif" << modeNum << "; ";
-				// ".setIf('" << i.name << "', '" << i.VLBABandName() << "', '" << i.pol << "', " << (i.ifSSLO / 1.0e6) << ", '" << i.ifSideBand << "'";
-
-				strncpy(comment, i.comment.c_str(), MaxCommentLength-1);
+				strncpy(comment, i->comment.c_str(), MaxCommentLength-1);
 				if(comment[0] != '\0')
 				{
 					int len = strlen(comment);
 					int off = 1;
 					int field_count = 0;
+					int MAX_FIELDS = 5;
 					// parse BACKWARDS from end of string for three space-separated tokens
-					// comment format: * [other comments] [{receiver} {FirstLO} {BROAD|NARROW|NA}]
+					// comment format: * [other comments] [{FirstSynth} {SecondSynth} {receiver} {FirstLO} {BROAD|NARROW|NA}]
 					// trailing spaces are permitted
-					while(field_count <= 2 && off < len)
+					while(field_count <= (MAX_FIELDS-1) && off < len)
 					{
 						// remove trailing WS
 						while(comment[len - off] == ' ' || comment[len - off] == '\t')
 						{
-							// printf("len: %i -- off: %i -- str: <%s>\n", len, off, (&comment[len - off]));
+//							printf("len: %i -- off: %i -- str: <%s>\n", len, off, (&comment[len - off]));
 							++off;
 						}
 						// terminate string and advance offset past WS
 						comment[len - (off - 1)] = '\0';
 						++off;
-						//printf("parsing field %i\n", field_count);
+//						printf("parsing field %i - comment: %s\n", field_count, comment);
 						while(comment[len - off] != ' ' && comment[len - off] != '\t' && off < len)
 						{
-							//printf( "char >%c< >%i<\n", comment[len-off], comment[len-off] );
-							//printf("len: %i -- off: %i -- str: <%s>\n", len, off, (&comment[len - off]));
+//							printf("char >%c< >%i<\n", comment[len-off], comment[len-off] );
+//							printf("len: %i -- off: %i -- str: <%s>\n", len, off, (&comment[len - off]));
 							++off;
 						}
+//						printf("process: %s\n", &comment[len-off+1]);
 						if(field_count == 0)
 						{
 							//check format of comment
@@ -263,7 +229,7 @@ int optresources::writeLoifTable(const VexData *V)
 								&& strcmp("NA", &(comment[len - off + 1])) != 0)
 							{
 								// comment doesn't fit our "special format", don't process
-								field_count = 3;
+								field_count = MAX_FIELDS;
 								continue;
 							}
 						}
@@ -272,7 +238,7 @@ int optresources::writeLoifTable(const VexData *V)
 						{
 							// filter
 							case 0: 
-								 filter = string(&comment[len - off + 1]);
+								filter = string(&comment[len - off + 1]);
 								++field_count;
 								break;
 							// firstLO
@@ -285,6 +251,14 @@ int optresources::writeLoifTable(const VexData *V)
 								receiver = string(&comment[len - off + 1]);
 								++field_count;
 								break;
+							// firstSynth
+							case 3:
+								++field_count;
+								break;
+							// secondSynth
+							case 4:
+								++field_count;
+								break;
 						}
 						// terminate partial string
 						comment[len - off] = '\0';
@@ -295,16 +269,9 @@ int optresources::writeLoifTable(const VexData *V)
 						exit(EXIT_FAILURE);
 					}
 					if( once )  {
-						ss << VLArcvr(receiver) << "; 1; Y; ";
+						*this << "band=\"" << VLArcvr(receiver) << "\" tInt=\"1.0\" arraySumming=\"true\">" << endl;
 						once = false;
 					}
-					lastBaseband = string(i.name);
-					if( lastBaseband == "A" || lastBaseband == "C" ) {
-						ss << "A0/C0";
-					} else if( lastBaseband == "B" || lastBaseband == "D" ) {
-						ss << "B0/D0";
-					}
-					ss << ", ";
 				} 
 				else 
 				{
@@ -315,78 +282,139 @@ int optresources::writeLoifTable(const VexData *V)
 					exit(EXIT_FAILURE);
 				}
 
-				for(unsigned int k = 0; k < setup->channels.size(); k++) {
-					unsigned int complementChannel = 0xFFFFFFFF;	// second channel in a A/C or B/D pair
-					// look for channel that uses this IF; there should only be one
-					if( setup->channels[k].ifName == string(i.name) ) {
-//						cerr << "ifName for chan " << k << ": " << setup->channels[k].ifName << endl;
-						// run through channels we already processed up to i-1 to see if this is the
-						// 2nd of a R/L pair in A/C or B/D
-						bool foundPair = false;
-						for( unsigned j=0; k!=0 && j<=(k-1) && !foundPair; j++ ) {
-//							cerr << "f[" << k << "]: " << setup->channels[k].bbcFreq << ": f[" << j
-//								<< "]: " << setup->channels[j].bbcFreq << endl;
-							if((setup->channels[k].ifName == "A" && setup->channels[j].ifName == "C")
-								|| (setup->channels[k].ifName == "C" && setup->channels[j].ifName == "A")
-								|| (setup->channels[k].ifName == "B" && setup->channels[j].ifName == "D")
-								|| (setup->channels[k].ifName == "D" && setup->channels[j].ifName == "B")) {
+}
+
+int optresources::writeLoifTable(const VexData *V)
+{
+	map<string,VexIF>::const_iterator it;
+	int p;
+	stringstream ss;
+	unsigned int nMode = V->nMode();
+	string filter, firstLO, receiver;
+	string out;
+
+	p = precision();
+	precision(15);
+
+	for(unsigned int modeNum = 0; modeNum < nMode; ++modeNum)
+	{
+		const VexMode *mode = V->getMode(modeNum);
+		const VexSetup *setup = mode->getSetup(ant);
+		string lastBaseband;
+		bool once = true;
+
+		if(!setup)
+		{
+			continue;
+		}
+
+		if( setup->ifs.size() > 0 ) {
+			*this << "  <resource name=\"loif" << modeNum << "\" ";
+		}
+		const VexIF  *vif0 = setup->getIF(setup->channels[0].ifName);
+		if( vif0 == 0 ) {
+			cerr << "Unknown IF? channel 0" << endl;
+			exit(EXIT_FAILURE);
+		}
+		getIFComment(vif0);
+
+			// resourceName
+			if( setup->ifs.size() > 0 ) {
+			} else {
+				cerr << mode->defName << " (loif" << modeNum << ") doesn't have any setup defined - skipping!" << endl;
+			}
+// extraneous braces, remove them
+			{
+				const VexIF  *vif0 = 0;
+				const VexIF  *vif1 = 0;
+
+				*this << "    <eightbit>" << endl;
+				bool used[setup->channels.size()];
+				for(unsigned int k = 0; k < setup->channels.size(); k++)
+					used[k] = false;
+				// loop twice to cover A/C and B/D pairs
+				for(unsigned int ifCnt = 0; ifCnt < 2; ifCnt++) {
+					string if0;
+					string if1;
+					if( ifCnt == 0 ) {
+						*this << "      <a0c0 centerGHz=\"" << 99999.9999;
+						*this << "\">" << endl;
+						if0 = "A";
+						if1 = "C";
+					} else {
+						*this << "      <b0d0 centerGHz=\"" << 99999.9999;
+						*this << "\">" << endl;
+						if0 = "B";
+						if1 = "D";
+					}
+//					cerr << "pair: " << if0 << "/" << if1 << endl;
+					// find channel pairs, check polarization
+					for(unsigned int k = 0; k < setup->channels.size(); k++) {
+						// check if we have already handled this channel, or it it's from the IF pair
+						// we're not looking for this time around
+						if( used[k]
+							|| (setup->channels[k].ifName != if0 && setup->channels[k].ifName != if1) ) {
+							continue;
+						}
+						vif0 = setup->getIF(setup->channels[k].ifName);
+						if( vif0 == 0 ) {
+							cerr << "Unknown IF? channel " << k << endl;
+							exit(EXIT_FAILURE);
+						}
+
+//						cerr << "k: " << k << " freq: " << setup->channels[k].bbcFreq << " IF: " << setup->channels[k].ifName << endl;
+						used[k] = true;
+						bool foundPair = false;	
+						string pol;
+						for( unsigned j=k+1; j<=setup->channels.size() && !foundPair; j++ ) {
+//							cerr << "ifName for chan " << j << ": " << setup->channels[j].ifName << endl;
+							if((setup->channels[k].ifName == if0 && setup->channels[j].ifName == if1)
+								|| (setup->channels[k].ifName == if1 && setup->channels[j].ifName == if0)) {
 								foundPair = true;
+								used[j] = true;
+//								cerr << "foundPair - f[" << k << "]: " << setup->channels[k].bbcFreq << ": f[" << j
+//									<< "]: " << setup->channels[j].bbcFreq << endl;
 								if(setup->channels[k].bbcFreq != setup->channels[j].bbcFreq) {
-/*									cerr << "Invalid frequency assignment between " << setup->channels[k].ifName
+									cerr << "Invalid frequency assignment between " << setup->channels[k].ifName
 										<< "(" << setup->channels[k].bbcFreq << ") and " << setup->channels[j].ifName
 										<< "(" << setup->channels[j].bbcFreq << ")" << endl;
-*/									exit(EXIT_FAILURE);
+									exit(EXIT_FAILURE);
 								}
-//								cerr << "processing k=" << k << ", found 1st half of pair at j=" << j << endl;
-							}
-						}
-// TODO ? need to process both IF of a pair to figure out polarizations, single or dual; handle if we have only a single IF
-						if( foundPair ) {
-								ss.str(string());
-								continue;
-						}
-						// run through channels we still need to process from k+1 up to setup->channels.size() to figure out polarization
-						for( unsigned j=k+1; j < setup->channels.size() && !foundPair; j++ ) {
-//							cerr << "f[" << k << "]: " << setup->channels[k].bbcFreq << ": f[" << j
-//									<< "]: " << setup->channels[j].bbcFreq << endl;
-							if((setup->channels[k].ifName == "A" && setup->channels[j].ifName == "C")
-									|| (setup->channels[k].ifName == "C" && setup->channels[j].ifName == "A")
-									|| (setup->channels[k].ifName == "B" && setup->channels[j].ifName == "D")
-									|| (setup->channels[k].ifName == "D" && setup->channels[j].ifName == "B")) {
-								foundPair = true;
-								complementChannel = j;
-//								cerr << "processing k=" << k << ", found 2nd half of pair at j=" << j << endl;
-								vif = setup->getIF(setup->channels[j].ifName);
-								if(vif) {
-//									cerr << "pol: k=" << i.pol << " and j=" << vif->pol << endl;
-								 } else {
-									cerr << "developer error: somehow vif=0 after foundPair=true - pol: k=" << i.pol << endl;
-									exit(0);
+								vif1 = setup->getIF(setup->channels[j].ifName);
+								if( vif1 == 0 ) {
+									cerr << "Unknown IF? channel " << j << endl;
+									exit(EXIT_FAILURE);
 								}
-							}
-						}
-						string pol;
-						if( foundPair ) {
-							if(!vif) {
-								cerr << "developer error: somehow vif=0 and foundPair=true" << endl;
-								exit(0);
-							}
+								if( vif0->pol == vif1->pol ) // vif will be set if found is true
+									pol = vif0->pol;
+								else
+									pol = "FULL";  // full = dual, only correlation cares about difference
 
-							if( i.pol == vif->pol ) // vif will be set if found is true
-								pol = i.pol;
-							else
-								pol = "FULL";  // force to use full for now
-								//pol = "DUAL";
+								double bw   = setup->channels[k].bbcBandwidth;
+		                        char   sb   = setup->channels[k].bbcSideBand;
+        		                double freq = setup->channels[k].bbcFreq;
+								*this << "        <subband centerGHz=\"" 
+										<< ((freq + (((sb == 'L') ? -1 : 1)*(bw/2))) / 1000000000)
+										<< "\" bwMHz=\"" << (bw/1000000) << "\""
+										<< " products=\"" << pol << "\""
+										<< " blbps=\"1\""
+										<< " vdifThreadA=\"" << k << "\""
+										<< " vdifThreadB=\"" << j << "\""
+										<< "/>" << endl;
+							}
 						}
-						double bw = setup->channels[k].bbcBandwidth;
-						char sb = setup->channels[k].bbcSideBand;
-						double freq = setup->channels[k].bbcFreq;
-						*this << ss.str() << (freq + ((sb == 'L') ? -1 : 1)*bw/2)/1000 << "kHz, ," << bw/1000 << "kHz, ,"
-							<< pol << ", " << k << ", " << complementChannel << "; ";
-						ss.str(string());
 					}
+					if( ifCnt == 0 ) {
+						*this << "      </a0c0>" << endl;
+					} else {
+						*this << "      </b0d0>" << endl;
+					}
+					
 				}
 			}
+			*this << "    </eightbit>" << endl;
+			*this << "  </resources>" << endl;
+			*this << "</sss:vex2opt>" << endl;
 			*this << endl;
 	}
 	precision(p);
