@@ -39,8 +39,8 @@
 using namespace std;
 
 const string program("vex2opt");
-const string version("0.3.2");
-const string verdate("20130201");
+const string version("0.4.0");
+const string verdate("20130903");
 const string author("Matthias Bark");
 
 static void usage(int argc, char **argv)
