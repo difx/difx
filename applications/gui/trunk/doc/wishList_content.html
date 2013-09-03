@@ -1,0 +1,70 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+  <head>
+    <meta content="text/html; charset=windows-1252"
+      http-equiv="Content-Type">
+    <title>Queue Browser</title>
+    <link type="text/css" rel="stylesheet" href="style.css">
+  </head>
+  <body>
+    <h1>Things To Do<br>
+    </h1>
+    The following is a partial list of things that need to be done to
+    the GUI.<br>
+    <h5>Improve Real-Time Monitoring</h5>
+    <p>The real-time monitoring system needs some refinements.&nbsp; <br>
+    </p>
+    <ul>
+      <li>Currently it has a probably-wrong way of calculating what it
+        calls "summary" plots.&nbsp; Summaries should be computed on the
+        DiFX host using the proper means for amplitude and phase
+        individually.&nbsp; <br>
+      </li>
+      <li>Should be able to compute delay rates, SNR, etc.</li>
+      <li>Plots should be broken up by "scan" - currently data are
+        combined between scans, which is completely wrong (so real-time
+        monitoring only makes sense for jobs that contain a single
+        scan).</li>
+      <li>Real-time monitoring should work for more than one job at a
+        time (probably involves changes to DiFX software).</li>
+      <li>"Quit at 80%" problem needs to be fixed (also DiFX
+        software...)<br>
+      </li>
+    </ul>
+    <h5>Automated Run Scheme</h5>
+    <ul>
+      <li>Jobs should pick data sources and processors that make sense
+        for the job, resources available, etc.</li>
+      <li>User should be able to select and run a number of jobs at once
+        (they'd run however the user set them up to run, or with
+        sensible choices for data source and processors - see bullet #1
+        - if the user didn't bother doing that).</li>
+      <li>Have GUI learn the most efficient way to use the existing DiFX
+        cluster??</li>
+    </ul>
+    <h5>Secure Communications</h5>
+    <p>TCP connections between the GUI and <i>guiServer</i> are not
+      secure, thus they (in general) can't work over anything but a
+      secure LAN.&nbsp; Not as easy as it sounds to fix - there are many
+      TCP connections made.<br>
+    </p>
+    <h5>Other</h5>
+    <ul>
+      <li>GUI does not recognize CalcServer not running (common problem)
+        gracefully.&nbsp; Should do so, allow user to start it, etc.</li>
+      <li>How well do multiple GUI's running at once work (relaying of
+        broadcast messages, etc)?&nbsp; Broadcast message collection
+        should probably be done once, and distributed to all connected
+        GUI's (currently I think it is done once for each).<br>
+      </li>
+      <li>The database stuff needs to be modernized - hasn't been
+        touched in over a year, might not work.</li>
+      <li>Mark 5 directory stuff is spotty - sometimes it works,
+        sometimes it doesn't.<br>
+      </li>
+    </ul>
+    <h5><br>
+    </h5>
+    <p></p>
+  </body>
+</html>

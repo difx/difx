@@ -1,7 +1,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html>
   <head>
-    <meta content="text/html; charset=ISO-8859-1"
+    <meta content="text/html; charset=windows-1252"
       http-equiv="Content-Type">
     <title>Queue Browser</title>
     <link type="text/css" rel="stylesheet" href="style.css">
@@ -56,24 +56,14 @@
     applying changes to an existing experiment has slightly different
     effects than those applied to a new experiment, as described below.<br>
     <h3>Some General Information</h3>
-    <p>The Experiment Editor controls are organized in a browser form,
-      with a small number of "top level" panels that can be opened or
-      closed based on whether you are interested in them or not (some of
-      these panels also contain browser structures).&nbsp; To open or
-      close a panel, click on the "title" bar at the top of the
-      panel.&nbsp; If you open many panels the Editor can easily expand
-      in size beyond the window limits, in which case the scroll bar on
-      the right may be used to navigate up and down (the mouse wheel
-      tries to do the same thing, as well as dragging the screen up and
-      down with the mouse, although sometimes the panels trap these
-      events for other purposes - the scroll bar will <span
-        style="font-style: italic;">always</span> work).&nbsp; The
-      "Identification Data" panel at the top of the Editor and the
-      "Apply/Cancel" panel at the bottom are "permanent" - they cannot
-      be closed.<br>
-    </p>
-    <p><img style=" width: 1201px; height: 458px;" alt=""
-        src="images/experimentEditor/exp.png"><br>
+    <p>The Experiment Editor controls are organized in <a
+        href="widgets_content.html#Hierarchical_Indexed_Panels">hierarchical
+
+        indexed panels</a>, with a small number of "top level" panels
+      that can be opened or closed based on whether you are interested
+      in them or not.&nbsp; The "Identification Data" panel at the top
+      of the Editor and the "Apply/Cancel" panel at the bottom are
+      "permanent" - they cannot be closed.<br>
     </p>
     <p>Many of the settings in the Experiment Editor are "remembered" if
       you run it a subsequent time (and even between sessions of running
@@ -189,7 +179,9 @@
         style="font-weight: bold;">Previous Files</span> button can be
       used to load it.<br>
     </p>
-    <h3>Getting <span style="font-family: monospace;">.vex</span> File
+    <h3>Starting <tt>.v2d</tt> File<br>
+    </h3>
+    <h3>Get <span style="font-family: monospace;">.vex</span> File
       Content</h3>
     <p>An experiment is associated with at least one <span
         style="font-family: monospace;">.vex</span> file - in most cases
@@ -415,52 +407,7 @@
           taken.</li>
       </ul>
     </ul>
-    <h3>Be Yourself</h3>
-    <p>Running DiFX correlation jobs is a complex process, and to some
-      degree it may seem that the GUI "steers" users toward a particular
-      way of doing things.&nbsp; However it is recognized that the DiFX
-      user community is diverse and experimental, and some effort has
-      been put into allowing flexibility in how the GUI is used to
-      create and run jobs.&nbsp; A few examples are given below.&nbsp;
-      If you find the GUI forcing you to do things you don't want to do,
-      or even preventing you from using it to do your DiFX work, please
-      tell us so we can accommodate you.&nbsp; It is likely that if you
-      have a complaint, others share it.<br>
-    </p>
-    <p> </p>
-    <h5 style="margin-left: 40px;">Ignoring the Database<br>
-    </h5>
-    <p style="margin-left: 40px;">The database is useful for tracking
-      large numbers of experiments and jobs, which is quite important
-      for installations that do many regularly-scheduled correlations
-      for large numbers of users.&nbsp; However it does require
-      installation and maintenance (of the database itself and of the
-      underlying MySQL software) and if you use DiFX strictly for your
-      own work you may not wish to bother with it.<br>
-    </p>
-    <p style="margin-left: 40px;">In short, the DiFX GUI works fine
-      without using the database at all - it can create and run DiFX
-      experiments.&nbsp; The database is used to track large numbers of
-      past experiments and/or allow some users to create experiments and
-      other users to see them and run them - essentially it is used to
-      communicate the details of experiments between different sessions
-      of the GUI (it has other purposes of course - we are speaking here
-      in the context of the GUI).&nbsp; If you do not use the database
-      each session of the GUI will be operating as an island, blind to
-      what other sessions are doing or have done.&nbsp; If you shut down
-      the GUI and restart it, you will lose all information about
-      experiments you have created and run (except what you remember
-      yourself - the experiment data are all still there).&nbsp; You
-      will not see experiments created by others (although you should
-      see them if they are running).&nbsp; If none of this matters to
-      you, the database may not be worth the bother.<br>
-    </p>
-    <h5 style="margin-left: 40px;">Skipping the Experiment/Pass/Job
-      Structure<span style="font-weight: bold;"></span></h5>
-    <h5 style="margin-left: 40px;"><span style="font-weight: bold;">Using
-
-        Multiple .vex Files in an Experiment</span></h5>
-    <h5 style="margin-left: 40px;">Creating Passes Using Existing Data</h5>
+    <br>
     <p></p>
   </body>
 </html>

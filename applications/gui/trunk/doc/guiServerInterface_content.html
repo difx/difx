@@ -1,0 +1,936 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+  <head>
+    <meta content="text/html; charset=windows-1252"
+      http-equiv="Content-Type">
+    <title>Queue Browser</title>
+    <link type="text/css" rel="stylesheet" href="style.css">
+  </head>
+  <body>
+    <h1><a name="guiServer_Interface_"></a><i>guiServer</i> Interface<br>
+    </h1>
+    The DiFX GUI controls DiFX using a network connection to the <i>guiServer</i>
+    application running on the DiFX host.&nbsp; Effectively the GUI is
+    only a visual front end - <i>guiServer</i> is where the actual
+    control takes place.&nbsp; This document describes the network
+    connection(s) and communication protocol that act between the DiFX
+    GUI and <i>guiServer</i> - presumably any piece of software could
+    exploit this interface and control DiFX externally.<br>
+    <h4>Connecting</h4>
+    <i>GuiServer</i> needs to be started on the DiFX "host".&nbsp; The
+    host can be any machine that has access to the DiFX applications (<i>vex2difx</i>,<i>
+      mpifxcorr</i>, etc.).&nbsp; The user that starts <i>guiServer</i>
+    must be able to run these applications.&nbsp;&nbsp; Once start, <i>guiServer</i>
+    maintains an open TCP server socket at a port specifed by...<br>
+    <ul>
+      <li>The last argument on the command line when <i>guiServer</i>
+        is started, or failing that...</li>
+      <li>The value of the DiFX environment variable
+        "DIFX_MESSAGE_PORT", or if that doesn't exist...</li>
+      <li>50200 by default.<br>
+      </li>
+    </ul>
+    Once a client connection is made on this port a thread is spawned to
+    handle the communications, and the server waits for new connections
+    - all typical TCP stuff.&nbsp; In theory any number of client
+    connections may be made to <i>guiServer</i>.<br>
+    <h4><a name="Connection_Protocol"></a>Connection Protocol</h4>
+    <p align="left">The top-level connection between <i>guiServer</i>
+      and its client is bi-directional.&nbsp; All communication, whether
+      from client to server or the reverse, follows a fairly trivial
+      "packet" protocol where each instruction, request, data block,
+      whatever, is transmitted as follows:<br>
+    </p>
+    <table align="left" border="1" cellpadding="2" cellspacing="2"
+      width="80%">
+      <tbody>
+        <tr>
+          <td align="left" valign="top"><small>Packet ID<br>
+            </small></td>
+          <td valign="top"><small>Integer (network byte order)<br>
+            </small></td>
+          <td valign="top"><small>A unique integer identifying the
+              packet<br>
+            </small></td>
+        </tr>
+        <tr>
+          <td align="left" valign="top"><small>Data bytes<br>
+            </small></td>
+          <td valign="top"><small>Integer (network byte order)<br>
+            </small></td>
+          <td valign="top"><small>Number of bytes that follow<br>
+            </small></td>
+        </tr>
+        <tr>
+          <td valign="top"><small>Data<br>
+            </small></td>
+          <td valign="top"><small>byte data (undefined order)<br>
+            </small></td>
+          <td valign="top"><small>Packet content<br>
+            </small></td>
+        </tr>
+      </tbody>
+    </table>
+    <p align="left"><br>
+    </p>
+    <h4><br>
+    </h4>
+    <p><br>
+      The Packet ID should be recognized on both sides of the connection
+      - the <i>guiServer</i> software will ignore any packet it does
+      not understand (however it will use the "data bytes" number to
+      completely read through and discard the data).&nbsp; In addition
+      to the top-level connection, <i>guiServer</i> and the GUI can
+      make a number of other connections using this same protocol.&nbsp;
+      What defines the difference between the connections is the list of
+      Packet IDs and what they mean.<br>
+    </p>
+    <p>This "packet" protocol rests on top of the TCP/IP "packet"
+      structure, and should not be confused with it.<br>
+    </p>
+    <h4>Top-Level Packets</h4>
+    <p>The following Packet IDs are recognized by client, server, or
+      both at the top-level connection.&nbsp; With each Packet ID is its
+      integer value, whether guiServer and/or the client is expected to
+      recognize and respond to it, and a brief description.&nbsp; Follow
+      the links for each to get more information.<br>
+    </p>
+    <table border="1" cellpadding="2" cellspacing="2" width="100%">
+      <tbody>
+        <tr>
+          <td valign="top"><small><b>Packet ID</b><br>
+            </small></td>
+          <td valign="top"><small><b>Int Value</b><br>
+            </small></td>
+          <td valign="top"><small><i><b>guiServer</b></i><br>
+            </small></td>
+          <td valign="top"><small><b>client</b><br>
+            </small></td>
+          <td valign="top"><small><b>Description</b><br>
+            </small></td>
+        </tr>
+        <tr>
+          <td valign="top"><small><a href="#RELAY_PACKET">RELAY_PACKET</a><br>
+            </small></td>
+          <td valign="top"><small>1<br>
+            </small></td>
+          <td valign="top"><small>X<br>
+            </small></td>
+          <td valign="top"><small>X<br>
+            </small></td>
+          <td valign="top"><small>Turn on/off multicast relay, or relay
+              multicast packet to client<br>
+            </small></td>
+        </tr>
+        <tr>
+          <td valign="top"><small><a href="#RELAY_COMMAND_PACKET">RELAY_COMMAND_PACKET</a><br>
+            </small></td>
+          <td valign="top"><small>2<br>
+            </small></td>
+          <td valign="top"><small>X<br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small>Broadcast XML to DiFX processes using
+              multicast<br>
+            </small></td>
+        </tr>
+        <tr>
+          <td valign="top"><small><a href="#COMMAND_PACKET">COMMAND_PACKET</a><br>
+            </small></td>
+          <td valign="top"><small>3<br>
+            </small></td>
+          <td valign="top"><small>X<br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small>Send a command to <i>guiServer</i>
+              (usually to run a DiFX function)<br>
+            </small></td>
+        </tr>
+        <tr>
+          <td valign="top"><small><a href="#guiServer_Interface_">INFORMATION_PACKET</a><br>
+            </small></td>
+          <td valign="top"><small>4<br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small>X<br>
+            </small></td>
+          <td valign="top"><small><i>guiServer</i> information for
+              client<br>
+            </small></td>
+        </tr>
+        <tr>
+          <td valign="top"><small><a
+                href="#INFORMATION_PACKET_WARNING_PACKET">WARNING_PACKET</a><br>
+            </small></td>
+          <td valign="top"><small>5<br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small>X<br>
+            </small></td>
+          <td valign="top"><small><i>guiServer</i> warning for client<br>
+            </small></td>
+        </tr>
+        <tr>
+          <td valign="top"><small><a
+                href="#INFORMATION_PACKET_WARNING_PACKET">ERROR_PACKET</a><br>
+            </small></td>
+          <td valign="top"><small>6<br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small>X<br>
+            </small></td>
+          <td valign="top"><small><i>guiServer</i> error for client<br>
+            </small></td>
+        </tr>
+        <tr>
+          <td valign="top"><small><a href="#MULTICAST_SETTINGS_PACKET">MULTICAST_SETTINGS_PACKET</a><br>
+            </small></td>
+          <td valign="top"><small>7<br>
+            </small></td>
+          <td valign="top"><small>X<br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small>Change the multicast settings for the
+              <i>guiServer</i> DiFX monitor<br>
+            </small></td>
+        </tr>
+        <tr>
+          <td valign="top"><small><a href="#GUISERVER_VERSION">GUISERVER_VERSION</a><br>
+            </small></td>
+          <td valign="top"><small>8<br>
+            </small></td>
+          <td valign="top"><small>X<br>
+            </small></td>
+          <td valign="top"><small>X<br>
+            </small></td>
+          <td valign="top"><small>Request version information from <i>guiServer</i>
+              or report it to the client<br>
+            </small></td>
+        </tr>
+        <tr>
+          <td valign="top"><small><a href="#GUISERVER_DIFX_VERSION">GUISERVER_DIFX_VERSION</a><br>
+            </small></td>
+          <td valign="top"><small>9<br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small>X<br>
+            </small></td>
+          <td valign="top"><small>Report version of DiFX used to build <i>guiServer</i><br>
+            </small></td>
+        </tr>
+        <tr>
+          <td valign="top"><small><a href="#AVAILABLE_DIFX_VERSION">AVAILABLE_DIFX_VERSION</a><br>
+            </small></td>
+          <td valign="top"><small>10<br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small>X<br>
+            </small></td>
+          <td valign="top"><small>Report a version of DiFX software the
+              <i>guiServer</i> can use<br>
+            </small></td>
+        </tr>
+        <tr>
+          <td valign="top"><small><a href="#DIFX_BASE">DIFX_BASE</a><br>
+            </small></td>
+          <td valign="top"><small>11<br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small>X<br>
+            </small></td>
+          <td valign="top"><small><i></i>Base of DiFX software on the
+              host running <i>guiServer</i><br>
+            </small></td>
+        </tr>
+        <tr>
+          <td valign="top"><small><a href="#GUISERVER_ENVIRONMENT">GUISERVER_ENVIRONMENT</a><br>
+            </small></td>
+          <td valign="top"><small>12<br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small>X<br>
+            </small></td>
+          <td valign="top"><small>Environment variable accessible to <i>guiServer</i><br>
+            </small></td>
+        </tr>
+        <tr>
+          <td valign="top"><small><a href="#DIFX_SETUP_PATH">DIFX_SETUP_PATH</a><br>
+            </small></td>
+          <td valign="top"><small>13<br>
+            </small></td>
+          <td valign="top"><small>X<br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small>Path to the "execute" script<br>
+            </small></td>
+        </tr>
+        <tr>
+          <td valign="top"><small><a href="#START_DIFX_MONITOR">START_DIFX_MONITOR</a><br>
+            </small></td>
+          <td valign="top"><small>14<br>
+            </small></td>
+          <td valign="top"><small>X<br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small>Start a <i>guiServer</i> thread to
+              monitor a job<br>
+            </small></td>
+        </tr>
+        <tr>
+          <td valign="top"><small><a href="#DIFX_RUN_LABEL">DIFX_RUN_LABEL</a><br>
+            </small></td>
+          <td valign="top"><small>15<br>
+            </small></td>
+          <td valign="top"><small>X<br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small>The "label" of the DiFX version that
+              should be used.<br>
+            </small></td>
+        </tr>
+        <tr>
+          <td valign="top"><small><a href="#GUISERVER_USER">GUISERVER_USER</a><br>
+            </small></td>
+          <td valign="top"><small>16<br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small>X<br>
+            </small></td>
+          <td valign="top"><small>User that started <i>guiServer</i></small></td>
+        </tr>
+      </tbody>
+    </table>
+    <h4><a name="RELAY_PACKET"></a>RELAY_PACKET</h4>
+    <p>This is a bi-directional packet type - both <i>guiServer</i> and
+      the client can use it.&nbsp; It is used in the relay of DiFX
+      multicast (UDP) traffic on the DiFX host to the client.&nbsp; If
+      sent to <i>guiServer</i>, the packet data is expected to be a
+      single integer in network byte order, either 1 to turn on, or 0 to
+      turn off multicast relay.&nbsp; If packet relay is on, every
+      multicast message that <i>guiServer</i> sees will be relayed to
+      the client with a RELAY_PACKET, the data being a string containing
+      the multicast message.&nbsp; All DiFX multicast messages are XML,
+      and will have to be parsed by the client to be useful.<br>
+    </p>
+    <h4><a name="RELAY_COMMAND_PACKET"></a>RELAY_COMMAND_PACKET</h4>
+    <p>Many DiFX processes accept XML instructions over the multicast
+      network (primarily <i>mk5daemon</i>, but I believe there are
+      others).&nbsp; For the most part <i>guiServer</i> replaces the
+      functionality of this system, but there may be commands that it
+      cannot perform.&nbsp; This packet type can be used in those
+      cases.&nbsp; If received by <i>guiServer</i>, the data (an XML
+      string) will be sent as a multicast, to be picked up or ignored by
+      DiFX processes as they see fit.<br>
+    </p>
+    <h4><a name="INFORMATION_PACKET_WARNING_PACKET"></a>INFORMATION_PACKET,
+      WARNING_PACKET, ERROR_PACKET</h4>
+    <p>These packets are generated by <i>guiServer</i>.&nbsp; They
+      contain information, a warning, or an error that <i>guiServer </i><i></i>encountered
+      in the form of a string.<br>
+    </p>
+    <h4><a name="MULTICAST_SETTINGS_PACKET"></a>MULTICAST_SETTINGS_PACKET</h4>
+    <p>This packet can be used to change the group and port settings for
+      multicast messages that <i>guiServer</i> receives from
+      DiFX.&nbsp; There are default values for these items; for the
+      group:<br>
+    </p>
+    <ul>
+      <li>Following the command line argument "-mg" when starting <i>guiServer</i>,
+        or if not included...</li>
+      <li>The value of the environment variable "DIFX_MESSAGE_GROUP",
+        but if that doesn't exist...</li>
+      <li>A default value of "224.2.2.1".</li>
+    </ul>
+    For the port:<br>
+    <ul>
+      <li>Following the command line argument "-mp" when starting <i>guiServer</i>,
+        or if not included...</li>
+      <li>The value of the environment variable "DIFX_MESSAGE_PORT", but
+        if that doesn't exist...</li>
+      <li>A default value of "50200".</li>
+    </ul>
+    The packet data is a string, with the group first and the port
+    second, separated by a newline character.&nbsp; When this packet is
+    received, <i>guiServer </i>will change the settings for its
+    multicast monitoring.<br>
+    <h4>Initial Handshaking Packets<br>
+    </h4>
+    <p>When the GUI makes a connection to <i>guiServer</i>, it requests
+      information about <i>guiServer</i> and its environment.&nbsp;
+      This triggers a series of packets with different Packat IDs from <i>guiServer</i>
+      to the client.&nbsp; It isn't critical that you do this when
+      making a connection, but it can tell you lots of information about
+      how <i>guiServer</i> will run DiFX.<br>
+    </p>
+    <blockquote>
+      <h5><a name="GUISERVER_VERSION"></a>GUISERVER_VERSION</h5>
+      <p>This packet, with zero-length data, is used by the client to
+        request version information from <i>guiServer</i>.&nbsp; It
+        triggers the following packets, so the client needs to be ready
+        to receive them.<br>
+      </p>
+      <p>Once this request is received by <i>guiServer</i>, it will
+        respond using the same Packet ID, but with string data
+        containing the version of <i>guiServer</i> (or "unknown" if it
+        can't be determined).&nbsp; This is a guiServer-specific version
+        - it doesn't match the DiFX version.<br>
+      </p>
+      <h5><a name="GUISERVER_DIFX_VERSION"></a>GUISERVER_DIFX_VERSION</h5>
+      <p>This packet contains, as a string, the version of DiFX that the
+        <i>guiServer</i> was compiled under.<br>
+      </p>
+      <h5><a name="DIFX_BASE"></a>DIFX_BASE</h5>
+      <p>This packet contains the "base" of the DiFX software on the
+        DiFX host (as a string).&nbsp; This value comes from the
+        environment variable "DIFX_BASE".&nbsp; It can also be set using
+        the "-b" argument when <i>guiServer</i> is started.<br>
+      </p>
+      <h5><a name="GUISERVER_USER"></a>GUISERVER_USER</h5>
+      <p>This packet contains the user that started <i>guiServer</i>.&nbsp;
+        The value is the result of a "getlogin()" function call.<br>
+      </p>
+      <h5><a name="AVAILABLE_DIFX_VERSION"></a>AVAILABLE_DIFX_VERSION</h5>
+      <p>This packet contains the name of a DiFX version that <i>guiServer</i>
+        has access to.&nbsp; There can be any number of these.&nbsp; The
+        values are found by listing all files matching the name
+        "[DIFX_BASE]/*/setup_difx.*".&nbsp; The names of the extensions
+        of the "setup_difx.*" files are assumed to be DiFX version
+        names.<br>
+      </p>
+      <h5><a name="GUISERVER_ENVIRONMENT"></a>GUISERVER_ENVIRONMENT</h5>
+      <p>This packet contains an environment variable, and its value,
+        separated by "=" in a string.&nbsp; One of these packets is sent
+        by <i>guiServer</i> for each environment variable it has access
+        to.<br>
+      </p>
+    </blockquote>
+    <h4><a name="DIFX_SETUP_PATH"></a>DIFX_SETUP_PATH</h4>
+    <p>This packet contains the path to an "execution script" that is
+      used by <i>guiServer</i> to run DiFX functions.&nbsp; When <i>guiServer</i>
+      runs a DiFX program (as an example, use <i>vex2difx</i>), it
+      inserts this script in a system command as follows:<br>
+    </p>
+    <pre>	[DIFX_SETUP_PATH] vex2difx [ARGS]<br></pre>
+    Note that the string used for the DIFX_SETUP_PATH can be anything
+    you want - as long as it contains some method of executing the
+    commands that follow it.<br>
+    <br>
+    The purpose of the DIFX_SETUP_PATH is to allow guiServer to execute
+    different versions of DiFX.&nbsp; The execution script is used to
+    source the proper setup file for the version (putting in place all
+    of the correct values for environment variables), then execute the
+    command.<br>
+    <h4><a name="START_DIFX_MONITOR"></a>START_DIFX_MONITOR</h4>
+    <p>This packet tells guiServer to start a new thread containing a
+      "DiFX monitor".&nbsp; The packet contains a port number (in string
+      form) for a server port opened by the application <i>sending the
+        START_DIFX_MONITOR packet</i> (e.g. the GUI).&nbsp; The DiFX
+      monitor thread will immediately attempt to make a TCP client
+      connection to the specified port (using the IP address the packet
+      came from).&nbsp; When that is successful, an interactive session
+      is started between the client (the thread) and the server that
+      follows the same "packet protocol" described <a
+        href="#Connection_Protocol">above</a>, but with a different set
+      of packet IDs and functions.<br>
+    </p>
+    <table border="1" cellpadding="2" cellspacing="2" width="100%">
+      <tbody>
+        <tr>
+          <td valign="top"><small><b>Packet ID</b></small></td>
+          <td valign="top"><small><b>Int Value</b></small></td>
+          <td valign="top"><small><small><big><b>thread</b></big><br>
+              </small></small></td>
+          <td valign="top"><small><small><big><b>server</b></big><br>
+              </small></small></td>
+          <td valign="top"><small><small><b><big>Description</big></b><br>
+              </small></small></td>
+        </tr>
+        <tr>
+          <td valign="top"><small><small><big>MESSAGE</big><br>
+              </small></small></td>
+          <td valign="top"><small>0<br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+        </tr>
+        <tr>
+          <td valign="top"><small>WARNING<br>
+            </small></td>
+          <td valign="top"><small>1<br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+        </tr>
+        <tr>
+          <td valign="top"><small>ERROR<br>
+            </small></td>
+          <td valign="top"><small>2<br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+        </tr>
+        <tr>
+          <td valign="top"><small>INPUT_FILE_PATH<br>
+            </small></td>
+          <td valign="top"><small>3<br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+        </tr>
+        <tr>
+          <td valign="top"><small>CLOSE_CONNECTION<br>
+            </small></td>
+          <td valign="top"><small>4<br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+        </tr>
+        <tr>
+          <td valign="top"><small>NUM_BASELINES<br>
+            </small></td>
+          <td valign="top"><small>5<br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+        </tr>
+        <tr>
+          <td valign="top"><small>NUM_FREQUENCIES<br>
+            </small></td>
+          <td valign="top"><small>6<br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+        </tr>
+        <tr>
+          <td valign="top"><small>BASELINE<br>
+            </small></td>
+          <td valign="top"><small>7<br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+        </tr>
+        <tr>
+          <td valign="top"><small>FREQUENCY<br>
+            </small></td>
+          <td valign="top"><small>8<br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+        </tr>
+        <tr>
+          <td valign="top"><small>NUM_SCANS<br>
+            </small></td>
+          <td valign="top"><small>9<br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+        </tr>
+        <tr>
+          <td valign="top"><small>SCAN<br>
+            </small></td>
+          <td valign="top"><small>10<br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+        </tr>
+        <tr>
+          <td valign="top"><small>TELESCOPE_1<br>
+            </small></td>
+          <td valign="top"><small>11<br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+        </tr>
+        <tr>
+          <td valign="top"><small>TELESCOPE_2<br>
+            </small></td>
+          <td valign="top"><small>12<br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+        </tr>
+        <tr>
+          <td valign="top"><small>CORRELATION_PRODUCTS<br>
+            </small></td>
+          <td valign="top"><small>13<br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+        </tr>
+        <tr>
+          <td valign="top"><small>NUM_PHASE_CENTERS<br>
+            </small></td>
+          <td valign="top"><small>14<br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+        </tr>
+        <tr>
+          <td valign="top"><small>PHASE_CENTER<br>
+            </small></td>
+          <td valign="top"><small>15<br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+        </tr>
+        <tr>
+          <td valign="top"><small>NUM_PULSAR_BINS<br>
+            </small></td>
+          <td valign="top"><small>16<br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+        </tr>
+        <tr>
+          <td valign="top"><small>PULSAR_BIN<br>
+            </small></td>
+          <td valign="top"><small>17<br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+        </tr>
+        <tr>
+          <td valign="top"><small>NUM_POL_PRODUCTS<br>
+            </small></td>
+          <td valign="top"><small>18<br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+        </tr>
+        <tr>
+          <td valign="top"><small>POL_PRODUCT<br>
+            </small></td>
+          <td valign="top"><small>19<br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+        </tr>
+        <tr>
+          <td valign="top"><small>NEW_PRODUCT<br>
+            </small></td>
+          <td valign="top"><small>20<br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+        </tr>
+        <tr>
+          <td valign="top"><small>AUTOCORRELATION<br>
+            </small></td>
+          <td valign="top"><small>21<br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+        </tr>
+        <tr>
+          <td valign="top"><small>PRODUCT_REQUEST<br>
+            </small></td>
+          <td valign="top"><small>22<br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+        </tr>
+        <tr>
+          <td valign="top"><small>START_PRODUCT_REQUEST<br>
+            </small></td>
+          <td valign="top"><small>23<br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+        </tr>
+        <tr>
+          <td valign="top"><small>END_PRODUCT_REQUEST<br>
+            </small></td>
+          <td valign="top"><small>24<br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+        </tr>
+        <tr>
+          <td valign="top"><small>VISIBILITY_DATA<br>
+            </small></td>
+          <td valign="top"><small>25<br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+        </tr>
+        <tr>
+          <td valign="top"><small>AMPLITUDE_DATA<br>
+            </small></td>
+          <td valign="top"><small>26<br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+        </tr>
+        <tr>
+          <td valign="top"><small>PHASE_DATA<br>
+            </small></td>
+          <td valign="top"><small>27<br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+        </tr>
+        <tr>
+          <td valign="top"><small>LAG_DATA<br>
+            </small></td>
+          <td valign="top"><small>28<br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+        </tr>
+        <tr>
+          <td valign="top"><small>END_VISIBILITY_BLOCK<br>
+            </small></td>
+          <td valign="top"><small>29<br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+        </tr>
+        <tr>
+          <td valign="top"><small>JOB_NAME<br>
+            </small></td>
+          <td valign="top"><small>30<br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+        </tr>
+        <tr>
+          <td valign="top"><small>OBS_CODE<br>
+            </small></td>
+          <td valign="top"><small>31<br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+        </tr>
+        <tr>
+          <td valign="top"><small>SCAN_IDENTIFIER<br>
+            </small></td>
+          <td valign="top"><small>32<br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+        </tr>
+        <tr>
+          <td valign="top"><small>SCAN_START_TIME<br>
+            </small></td>
+          <td valign="top"><small>33<br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+        </tr>
+        <tr>
+          <td valign="top"><small>SCAN_END_TIME<br>
+            </small></td>
+          <td valign="top"><small>34<br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+        </tr>
+        <tr>
+          <td valign="top"><small>SOURCE<br>
+            </small></td>
+          <td valign="top"><small>35<br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+        </tr>
+        <tr>
+          <td valign="top"><small>SOURCE_RA<br>
+            </small></td>
+          <td valign="top"><small>36<br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+        </tr>
+        <tr>
+          <td valign="top"><small>SOURCE_DEC<br>
+            </small></td>
+          <td valign="top"><small>37<br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+          <td valign="top"><small><br>
+            </small></td>
+        </tr>
+      </tbody>
+    </table>
+    <p><br>
+    </p>
+    <h4><a name="DIFX_RUN_LABEL"></a>DIFX_RUN_LABEL</h4>
+    <p>This packet contains the "label" (as a string) of the DiFX
+      version that should be used when <i>guiServer</i> runs any DiFX
+      function.&nbsp; The label was used to determine which "setup"
+      script to execute as part of any DiFX command.&nbsp; However this
+      functionality has been replaced (and made more flexible) by the <a
+        href="#DIFX_SETUP_PATH">DIFX_SETUP_PATH</a> packet, so this
+      packet probably has no effect at this time.<br>
+    </p>
+    <h4><a name="COMMAND_PACKET"></a>COMMAND_PACKET<br>
+    </h4>
+    <h4> </h4>
+    <p></p>
+  </body>
+</html>

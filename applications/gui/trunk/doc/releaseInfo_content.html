@@ -86,7 +86,32 @@ setBrowser();
     they happen at least as often as every hundred "minor" releases or
     this system collapses.<br>
     
-<h4><a name="WHATS_NEW"></a>Latest Release: 1.02 (June 1, 2013)</h4>
+<h4><a name="WHATS_NEW"></a>Latest Release: 1.03 (Sept 1, 2013)</h4>
+    <blockquote>
+      <h6>New Features</h6>
+      <ul>
+        <li>DiFX Message Traffic Monitor<br></li>
+        <li>Ability to add an "invisible" processor/mark5 unit to hardware used for DiFX processing.
+        "Invisible" hardware doesn't run <i>mk5daemon</i> but still can be used.<br></li>
+        <li>Documentation, documentation...<br></li>
+      </ul>
+      <h6>Bug Fixes</h6>
+      <ul>
+        <li>Fix <i>mk5control</i> commands to work via <i>guiServer</i>.<br></li>
+        <li>DiFX Version was not saved properly in XML settings file.<br></li>
+        <li>Fix DiFX Version Specification (was not being implemented correctly).<br></li>
+        <li>Remove sleeps that were slowing down message transfer.<br></li>
+        <li>Gray out options that don't work.<br></li>
+      </ul>
+    </blockquote>
+    
+<h4><a name="RELEASE_HISTORY"></a>Release History</h4>
+
+<span id="h3.4" class="hide"><a href="javascript:swap(3.4, true)"><img src="triangleright_10x10_large.png" alt="+"></a>
+<b6>1.02 (June 1, 2013)</b6><br><br>
+</span>
+<span id="s3.4" class="showWhite"><a href="javascript:swap(3.4,false)"><img src="triangledown_10x10_large.png" alt="-"></a>
+<b6>1.02 (June 1, 2013)</b6><br>
     <blockquote>
       <h6>New Features</h6>
       <ul>
@@ -109,9 +134,8 @@ setBrowser();
         <li>Increase number of transfer ports available (was causing hard limit to number of DiFX jobs that could be
         run simultaneously).<br></li>
       </ul>
-    </blockquote>
-    
-<h4><a name="RELEASE_HISTORY"></a>Release History</h4>
+    </blockquote><br>
+</span>
 
 <span id="h3.3" class="hide"><a href="javascript:swap(3.3, true)"><img src="triangleright_10x10_large.png" alt="+"></a>
 <b6>1.01 (Feb 1, 2013)</b6><br><br>
@@ -140,6 +164,7 @@ setBrowser();
         not be included in Queue Browser.</li>
         <li>Cleanup of guiServer code to eliminate compiler warnings (where they are important).</li>
         <li>Fix behavior of "Data Source" labels in the Experiment Editor.<br></li>
+        <li>Weights display was displaying based on antenna name - but messages used index.  Fixed.<br></li>
       </ul>
     </blockquote><br>
 </span>

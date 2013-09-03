@@ -1,0 +1,162 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+  <head>
+    <meta content="text/html; charset=windows-1252"
+      http-equiv="Content-Type">
+    <title>Queue Browser</title>
+    <link type="text/css" rel="stylesheet" href="style.css">
+  </head>
+  <body>
+    <h1>Standard Widgets and How They Behave<br>
+    </h1>
+    The DiFX GUI uses a number of purpose-built widgets to accomplish
+    things that the Java Swing toolkit (which was inadvisedly chosen as
+    the base for the GUI) did not include.&nbsp; These widgets are used
+    throughout the GUI.&nbsp; While they were developed with the idea
+    that their operation would be intuitive, this may not always be the
+    case.&nbsp; For this reason they are described in some detail here.<br>
+    <ul>
+      <li><a href="#Hierarchical_Indexed_Panels">Hierarchical "Indexed"
+          Panels</a></li>
+      <li><a href="#Smart_Text_Fields">"Smart" Text Fields</a></li>
+      <li><a href="#Number_Boxes">Number Boxes</a></li>
+      <li><a href="#Complex_Tooltips">Complex Tooltips</a></li>
+      <li><a href="#Message_Windows_">Message Windows</a><br>
+      </li>
+    </ul>
+    <h2><a name="Hierarchical_Indexed_Panels"></a>Hierarchical "Indexed"
+      Panels</h2>
+    <p>Several of the windows that make up the GUI (most notably the <a
+        href="experimentEditor.html">Experiment Editor</a> and <a
+        href="Job_Control.html">Job Control Window</a>, but there are
+      others) are organized in a browser form, with a small number of
+      "top level" panels that can be opened or closed based on whether
+      you are interested in them or not (some of these panels also
+      contain their own, similar browser structures).&nbsp; To open or
+      close a panel, click on the "title" bar at the top of the
+      panel.&nbsp; If you open many panels you can often expand in size
+      beyond the window limits, in which case the scroll bar on the
+      right may be used to navigate up and down (the mouse wheel tries
+      to do the same thing, as well as dragging the screen up and down
+      with the mouse, although sometimes the panels trap these events
+      for other purposes - the scroll bar will <span style="font-style:
+        italic;">always</span> work).&nbsp; Arrows, as well as panel
+      appearance will let you know whether they are "open" or
+      "closed".&nbsp; Mixed in with the opening/closing panels are
+      "permanent" panels that cannot be closed.&nbsp; Permanent panels
+      do not have an obvious title bar and have no arrow icon.&nbsp; The
+      example below (part of the Experiment Editor) shows open, closed,
+      and permanent panels.&nbsp; The open panel "Sources" contains a
+      series of closed panels.&nbsp; The bottom-most panel is
+      "permanent".<br>
+    </p>
+    <p align="center"><img style=" width: 1201px; height: 458px;" alt=""
+src="file:///Users/johnspitzak/difx/applications/gui/trunk/doc/images/experimentEditor/exp.png"
+        height="267" width="700"><br>
+    </p>
+    <p>Many of the settings in the Experiment Editor are "remembered" if
+      you run it a subsequent time (and even between sessions of running
+      the GUI).&nbsp; This is done to ease repetitive tasks, making the
+      assumption that any time you run the Experiment Editor, a very
+      good guess for the way you wish to run it is somewhat similar to
+      the way you last ran it.&nbsp; For the most part this should save
+      you time, however it bears watching here and there.&nbsp; If you
+      change a setting that you never touch and don't even fully
+      understand the consequences of just for fun, it may very well <span
+        style="font-style: italic;">stay</span> changed until you
+      actively undo it.</p>
+    Nothing happens to the DiFX host, the database, or your experiments
+    until you hit the "Apply" button, so don't worry about playing with
+    the controls (bearing in mind the caveat in the previous
+    paragraph).&nbsp; You can always "Cancel" and start again if you get
+    in a position you can't figure out how to back out of.
+    <h2><a name="Smart_Text_Fields"></a>"Smart" Text Fields</h2>
+    <p>The DiFX GUI has a number of "Text Field" widgets that allow the
+      user to enter text (file paths, string settings, etc.).&nbsp;
+      Except in a few cases, the settings you enter <b><i>do not </i></b>take
+
+      effect until you hit the "enter" key.&nbsp; To indicate that a
+      setting has been "changed" but not "committed" by hitting the
+      enter key, the text fields will turn yellow once the text inside
+      them is changed in any way.&nbsp; Hitting enter will both cause
+      their content to be used and the yellow color to disappear.</p>
+    <p align="center"><img alt=""
+        src="images/widgets/normalTextField.png" height="34" width="324"><br>
+      <b>Unchanged Text Field</b><br>
+    </p>
+    <div align="center"><img alt=""
+        src="images/widgets/changedTextField.png" height="31"
+        width="323"><br>
+      <b>Changed (Uncommitted) Text Field</b><br>
+    </div>
+    <h6>Tab Completion</h6>
+    <p>In locations where text fields are specifying paths on the DiFX
+      host, tab completion is implemented.&nbsp; Hitting the "tab" key
+      will cause a remote "ls" operation on the DiFX host, the results
+      of which will be used to extend the text field content as much as
+      possible.&nbsp; This should act exactly like familiar tab
+      completion except there may be a perceptible delay involved if the
+      connection to the DiFX host through <i>guiServer</i> is
+      slow.&nbsp; Tab completion does not work if you are not connected
+      to the DiFX host through <i>guiServer</i>.<br>
+    </p>
+    <h2><a name="Number_Boxes"></a>Number Boxes</h2>
+    <p>Number boxes are Text Field widgets that are restricted to
+      numbers.&nbsp; Their values can be changed either by typing (only
+      numeric values are accepted), or by spinning the mouse over
+      them.&nbsp; They can contain floating point or integer-only values
+      - single clicks will increment/decrement one of the digits (chosen
+      by the developer - hopefully appropriately).<br>
+    </p>
+    <h2><a name="Complex_Tooltips"></a>Complex Tooltips</h2>
+    <p>Tooltips are pop-up informational windows that appear when
+      hovering over GUI widgets.&nbsp; Standard Java tooltips are
+      restricted to single lines of text that have no formatting
+      capacity, limiting the information that they can convey.&nbsp; The
+      DiFX GUI has its own "Complex" tooltips that include multiple
+      lines of text, different fonts, colors, and links to GUI
+      documentation (they also have a better default background
+      color).&nbsp; While it could be argued that they occasionally try
+      to do too much, we feel they are more useful.<br>
+    </p>
+    <div align="center"><img alt=""
+        src="images/widgets/java_tooltip.png" height="89" width="425"><br>
+      <br>
+      <b>Java Tooltip<br>
+        <br>
+        <br>
+      </b></div>
+    <div align="center"><img alt=""
+        src="images/widgets/complex_tooltip.png" height="176"
+        width="434"><br>
+      <br>
+      <b>Complex Tooltip</b><br>
+    </div>
+    <p>All Java-style tooltips throughout the GUI are gradually being
+      replaced with Complex Tooltips.&nbsp; This is an on-going process.<br>
+    </p>
+    <h2><a name="Message_Windows_"></a>Message Windows<br>
+    </h2>
+    The DiFX GUI provides a number of "message" windows that contain
+    notifications from the GUI itself or from DiFX processes.&nbsp;
+    Messages come in the typical three flavors:<br>
+    <ol>
+      <li><b>Information</b> messages that draw attention to activities
+        that may help monitor the progress of processing or have other
+        value, but which require no action on the part of the
+        user.&nbsp; Information messages are rendered with white text.<br>
+      </li>
+      <li><b>Warning</b> messages indicate the detection of a possible
+        problem, but one that does not stop processing, or occasionally
+        draw attention to "major" processing steps (such as the
+        triggering of a DiFX process).&nbsp; The are shown in yellow
+        text.</li>
+      <li><b>Error</b> messages usually indicate a fatal problem that
+        has, or is likely to stop processing.&nbsp; They are colored
+        red.<br>
+      </li>
+    </ol>
+    <br>
+    <p></p>
+  </body>
+</html>

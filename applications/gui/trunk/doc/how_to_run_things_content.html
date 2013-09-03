@@ -1,7 +1,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html>
   <head>
-    <meta content="text/html; charset=ISO-8859-1"
+    <meta content="text/html; charset=windows-1252"
       http-equiv="Content-Type">
     <title>Queue Browser</title>
     <link type="text/css" rel="stylesheet" href="style.css">
@@ -11,7 +11,8 @@
     </h1>
     <h3> </h3>
     <ul>
-      <li><a href="#Startup">Startup</a></li>
+      <li><a href="#Startup">Startup and Connecting to the DiFX Host<br>
+        </a></li>
       <li><a href="#Some_Important_Settings">Some Important Settings</a></li>
       <li><a href="#Monitoring_the_DiFX_Cluster">Monitoring the DiFX
           Cluster</a></li>
@@ -20,6 +21,9 @@
       <li><a href="#Running_a_DiFX_Job">Running a DiFX Job</a></li>
       <li><a href="#Using_the_Real-Time_Monitor">Using the Real-Time
           Monitor</a></li>
+      <li><a href="#Problems_you_May_Encounter_and_What_to">Problems You
+          May Encounter (and What to Do About Them)</a><br>
+      </li>
     </ul>
     This document contains an end-to-end description of how the DiFX
     user interface can be used to run DiFX jobs.&nbsp; All steps in the
@@ -37,7 +41,8 @@
     functionality of DiFX itself.&nbsp; A good place to start looking
     for that sort of thing is <a
       href="http://cira.ivec.org/docuwiki/doku.php/difx/start">here</a>.<br>
-    <h3><a name="Startup"></a>Startup</h3>
+    <h3><a name="Startup"></a>Startup and Connecting to the DiFX Host<br>
+    </h3>
     Starting the GUI and setting up a connection such that it can
     control DiFX is a multi-stage process.&nbsp; Some components of DiFX
     should be running for the GUI to properly communicate with it.<br>
@@ -93,6 +98,9 @@
       Cluster</h3>
     <h3><a name="Monitoring_DiFX_Jobs"></a>Monitoring DiFX Jobs</h3>
     <h5>The Contents of the Queue Browser</h5>
+    <p>The Queue Browser is described in greater detail <a
+        href="mainWindow_content.html#Queue_Browser">here</a>.<br>
+    </p>
     <p>The Queue Browser organizes DiFX jobs under a three-level
       hierarchy with "Experiments" at the top level.<br>
     </p>
@@ -121,8 +129,66 @@
       Experiment</h3>
     <h3><a name="Running_a_DiFX_Job"></a>Running a DiFX Job</h3>
     <h3><a name="Using_the_Real-Time_Monitor"></a>Using the Real-Time
-      Monitor<br>
-    </h3>
+      Monitor</h3>
+    <h3><a name="Problems_you_May_Encounter_and_What_to"></a>Problems
+      you May Encounter (and What to Do About Them)</h3>
+    <ul>
+      <li><a href="#Run_Permissions_and_RSA_Problems_on_the">Run
+          Permissions and RSA Problems on the DiFX Host</a><br>
+      </li>
+    </ul>
+    <h5><a name="Run_Permissions_and_RSA_Problems_on_the"></a>Run
+      Permissions and RSA Problems on the DiFX Host</h5>
+    <p>When <i>guiServer</i> runs multi-core processes, it needs to be
+      able to execute things remotely on the other nodes in the DiFX
+      cluster.&nbsp; If remote keys are not set up correctly, remote
+      hosts will prompt for permission keys.&nbsp; <i>GuiServer</i> has
+      no way of intercepting these requests, so the runs will
+      fail.&nbsp; You need to make sure all of your keys are in place
+      beforehand.<br>
+    </p>
+    <p>To do so, log into your headnode - where you are running <i>guiServer</i>
+      - using the same user name (I'm calling this user name the "DiFX
+      user" below) and <i>network route</i> that you are using to run <i>guiServer</i>
+      itself.&nbsp; The latter is quite important - if you are running <i>guiServer</i>
+      by logging into the headnode remotely, log in again that
+      way.&nbsp; If you are running <i>guiServer </i>from the headnode
+      console, log in that way.</p>
+    <p>Next, try using <i>ssh</i> to remotely log into all of the nodes
+      on your cluster.&nbsp; If you can do so without any key or
+      password requests, you should be set.<br>
+    </p>
+    <p>Okay, let's say you can't.&nbsp; What do you do about it?.&nbsp;
+      The following may work (or you may wish to bother a system
+      administrator or somebody who knows what they are doing). &nbsp;
+      Make sure you have an RSA key (in the file <span
+        style="font-family: monospace;">.ssh/id_rsa.pub</span> in DiFX
+      user's home directory).&nbsp; If you don't, create one with the
+      following command (answer any questions by hitting "return"):<br>
+    </p>
+    <pre>	ssh-keygen -t rsa</pre>
+    You will have to log out and log back in for the new key to be
+    active, or type:<br>
+    <pre>	ssh-add</pre>
+    Then type this for <span style="font-weight: bold;">every node</span>
+    you are using, including the headnode itself.&nbsp; You should use
+    complete addresses for machine names, not aliases (it is not
+    entirely clear that this is a problem, but we had some issues with
+    it):<br>
+    <pre>	ssh-copy-id user@node<br></pre>
+    For instance, if your DiFX user is "difx", your headnode is "king"
+    and your other processing nodes and mark 5's are "pawn1", "pawn2",
+    "mark5-1" and "mark5-2" you would need to do the following (as the
+    DiFX user on "king"):<br>
+    <pre>	ssh-copy-id difx@king<br>	ssh-copy-id difx@pawn1<br>	ssh-copy-id difx@pawn2<br>	ssh-copy-id difx@mark5-1<br>	ssh-copy-id difx@mark5-2<br></pre>
+    To test whether this has worked, you should be able to "ssh" to your
+    DiFX user on all nodes from root on the DiFX headnode without
+    entering a password or key.&nbsp; If you can't do this, things are
+    not set up right and jobs will not run.&nbsp; Seek professional
+    help.<br>
+    <br>
+    These changes should survive reboots, as well as RSA key stuff ever
+    does.
     <p></p>
   </body>
 </html>
