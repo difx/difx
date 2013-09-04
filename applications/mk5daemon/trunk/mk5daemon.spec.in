@@ -1,7 +1,7 @@
 Summary: Mark5 utilities for the DiFX suite
 Name: mk5daemon
 Version: @version@
-Release: 4
+Release: 5
 License: GPL3
 Group: VLBI
 BuildRoot: /var/tmp/mk5daemon-@version@-buildroot
@@ -40,6 +40,7 @@ chmod a+x /sbin/halt
 %{_bindir}/mk5erase
 %{_bindir}/mk5lock
 %{_bindir}/mk5map
+%{_bindir}/mk5putdir
 %{_bindir}/record5c
 %{_bindir}/recover
 %{_bindir}/sukill

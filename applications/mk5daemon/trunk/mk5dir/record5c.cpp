@@ -58,8 +58,8 @@
  */
 const char program[] = "record5c";
 const char author[]  = "Walter Brisken";
-const char version[] = "0.4";
-const char verdate[] = "20120730";
+const char version[] = "0.5";
+const char verdate[] = "20130826";
 
 const unsigned int psnMask[3] = { 0x01, 0x02, 0x04 };
 const unsigned int defaultPacketSize = 0;	/* 0x80000000 (+ 5008 for Mark5B) */
@@ -180,6 +180,26 @@ long long int parseMAC(const char *str)
 	}
 
 	return (a << 40LL) | (b << 32LL) | (c << 24LL) | (d << 16LL) | (e << 8LL) | (f << 0LL);
+}
+
+// This replaces the TotalCapacityBytes field of S_BANKSTATUS which seems to be computed incorrectly for modules with drives > 2 TB
+static unsigned long long getTotalCapacity(SSHANDLE xlrDevice, int b)
+{
+	unsigned long long totalCapacity = 0;
+	
+	for(int d = 0; d < 8; ++d)
+	{
+		S_DRIVEINFO driveInfo;
+		XLR_RETURN_CODE xlrRC;
+
+		xlrRC = XLRGetDriveInfo(xlrDevice, d/2, d%2, &driveInfo);
+		if(xlrRC == XLR_SUCCESS)
+		{
+			totalCapacity += driveInfo.Capacity * 512LL;
+		}
+	}
+
+	return totalCapacity;
 }
 
 /* decode5B was taken straight from the DRS source code.  This code is originally (C) 2010 Walter Brisken */
@@ -361,7 +381,7 @@ static int decode5B(SSHANDLE xlrDevice, long long pointer, int framesToRead, uns
 	return returnValue;
 }
 
-static void printBankStat(int bank, const S_BANKSTATUS *bankStat, DifxMessageMk5Status *mk5status)
+static void printBankStat(int bank, const S_BANKSTATUS *bankStat, DifxMessageMk5Status *mk5status, unsigned long long totalCapacity)
 {
 	const char *vsn = bankStat->Label;
 	const char noVSN[] = "none";
@@ -409,6 +429,7 @@ static void printBankStat(int bank, const S_BANKSTATUS *bankStat, DifxMessageMk5
 		bankStat->ErrorData,
 		bankStat->Length,
 		bankStat->TotalCapacityBytes
+		// Use totalCapacity here instead if the firmware fix doesn't also fix the size calculation
 		);
 	fflush(stdout);
 }
@@ -571,8 +592,10 @@ static int record(int bank, const char *label, unsigned int packetSize, int payl
 
 	for(int b = 0; b < N_BANK; ++b)
 	{
+		unsigned long long totalCapacity = getTotalCapacity(xlrDevice, b);
+
 		WATCHDOGTEST( XLRGetBankStatus(xlrDevice, b, stat+b) );
-		printBankStat(b, stat+b, mk5status);
+		printBankStat(b, stat+b, mk5status, totalCapacity);
 	}
 
 	mk5status->state = MARK5_STATE_OPEN;
@@ -809,11 +832,14 @@ static int record(int bank, const char *label, unsigned int packetSize, int payl
 					{
 						continue;
 					}
+
+					unsigned long long totalCapacity = getTotalCapacity(xlrDevice, b);
+					
 					WATCHDOGTEST( XLRGetBankStatus(xlrDevice, b, &bankStat) );
 					if(memcmp(stat+b, &bankStat, sizeof(S_BANKSTATUS)) != 0)
 					{
 						memcpy(stat+b, &bankStat, sizeof(S_BANKSTATUS));
-						printBankStat(b, &bankStat, mk5status);
+						printBankStat(b, &bankStat, mk5status, totalCapacity);
 					}
 				}
 				difxMessageSendMark5Status(mk5status);

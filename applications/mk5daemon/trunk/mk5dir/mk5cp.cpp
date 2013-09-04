@@ -27,6 +27,8 @@
 //
 //============================================================================
 
+#define _GNU_SOURCE
+
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -44,8 +46,8 @@
 
 const char program[] = "mk5cp";
 const char author[]  = "Walter Brisken";
-const char version[] = "0.12";
-const char verdate[] = "20130826";
+const char version[] = "0.13";
+const char verdate[] = "20130903";
 
 const int defaultChunkSize = 50000000;
 
@@ -1706,6 +1708,22 @@ int main(int argc, char **argv)
 		else
 		{
 			return usage(argv[0]);
+		}
+	}
+
+	// If we are at USNO Mark5 unit at MK or PT, force fix5b
+	if(copyMode != COPY_MODE_NODIR && !fix5b)
+	{
+		const int MaxHostnameLength=100;
+		char hn[MaxHostnameLength+1];
+
+		gethostname(hn, MaxHostnameLength);
+		hn[MaxHostnameLength] = 0;
+		if(strcasestr(hn, "pt-mark5c-usno") != 0 || strcasestr(hn, "mk-mark5c-usno") != 0)
+		{
+			fix5b = 1;
+
+			printf("\n-> Because this is running on %s Mark5B data fixing will be performed\n\n", hn);
 		}
 	}
 

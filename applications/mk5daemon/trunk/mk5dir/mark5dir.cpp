@@ -1138,7 +1138,6 @@ int newdir2scans(std::vector<Mark5Scan> &scans, const unsigned char *dirData, in
 
 		if(type >= 3 && type <= 9)
 		{
-
 			switch(type)
 			{
 			case 3:
@@ -1251,17 +1250,20 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref, int (*callback)(i
 	else
 	{
 		FILE *out;
+		const char dumpFile[] = "/tmp/dir.dump";
 
 		printf("size=%d  len=%d\n", static_cast<int>(sizeof(struct Mark5LegacyDirectory)), len);
 
 		dirData = (unsigned char *)calloc(len, sizeof(int));
 		WATCHDOG( xlrRC = XLRGetUserDir(xlrDevice, len, 0, dirData) );
 
-		out = fopen("/tmp/dir.dump", "w");
+		out = fopen(dumpFile, "w");
 		fwrite(dirData, 1, len, out);
 		fclose(out);
 
-		printf("The directory was dumped to /tmp/dir.dump\n");
+		free(dirData);
+
+		printf("The directory was dumped to %s\n", dumpFile);
 
 		return -3;
 	}
@@ -1271,9 +1273,10 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref, int (*callback)(i
 	{
 		return -4;
 	}
+	WATCHDOG( xlrRC = XLRGetUserDir(xlrDevice, len, 0, dirData) );
 	m5dir = (struct Mark5LegacyDirectory *)dirData;
 
-	WATCHDOG( xlrRC = XLRGetUserDir(xlrDevice, len, 0, dirData) );
+	
 	if(xlrRC != XLR_SUCCESS)
 	{
 		free(dirData);

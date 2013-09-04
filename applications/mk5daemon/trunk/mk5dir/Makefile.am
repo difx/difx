@@ -6,6 +6,7 @@ bin_PROGRAMS = \
 	mk5dir \
 	mk5erase \
 	mk5lock \
+	mk5putdir \
 	mk5map \
 	record5c \
 	recover \
@@ -82,6 +83,14 @@ mk5erase_SOURCES = \
 	mark5dir.h \
 	mark5directorystructs.h \
 	mk5erase.cpp
+
+mk5putdir_SOURCES = \
+	watchdog.cpp \
+	watchdog.h \
+	mark5dir.cpp \
+	mark5dir.h \
+	mark5directorystructs.h \
+	mk5putdir.cpp
 
 mk5lock_SOURCES = \
 	mk5lock.cpp
