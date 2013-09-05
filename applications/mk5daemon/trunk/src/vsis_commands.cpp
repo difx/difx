@@ -1257,6 +1257,22 @@ int record_Command(Mk5Daemon *D, int nField, char **fields, char *response, int 
 	{
 		char scanLabel[MODULE_LEGACY_SCAN_LENGTH];
 
+		switch(nField)
+		{
+			case 1:
+			case 2:
+				// this error case is captured later
+				break;
+			case 3:
+				snprintf(scanLabel, MODULE_LEGACY_SCAN_LENGTH, "%s", fields[2]);
+				break;
+			case 4:
+				snprintf(scanLabel, MODULE_LEGACY_SCAN_LENGTH, "%s_X_%s", fields[3], fields[2]);
+				break;
+			default:
+				snprintf(scanLabel, MODULE_LEGACY_SCAN_LENGTH, "%s_%s_%s", fields[3], fields[4], fields[2]);
+				break;
+		}
 		if(D->recordState != RECORD_OFF)
 		{
 			v = snprintf(response, maxResponseLength, "!%s = 4 : Already recording;", fields[0]);
@@ -1282,20 +1298,12 @@ int record_Command(Mk5Daemon *D, int nField, char **fields, char *response, int 
 		{
 			v = snprintf(response, maxResponseLength, "!%s = 4 : Insufficient disk free;", fields[0]);
 		}
+		else if(strlen(scanLabel) > 39)
+		{
+			v = snprintf(response, maxResponseLength, "!%s = 4 : Scan name %s is too long (39 chars max);", fields[0], scanLabel);
+		}
 		else
 		{
-			switch(nField)
-			{
-				case 3:
-					snprintf(scanLabel, MODULE_LEGACY_SCAN_LENGTH, "%s", fields[2]);
-					break;
-				case 4:
-					snprintf(scanLabel, MODULE_LEGACY_SCAN_LENGTH, "%s_X_%s", fields[3], fields[2]);
-					break;
-				default:
-					snprintf(scanLabel, MODULE_LEGACY_SCAN_LENGTH, "%s_%s_%s", fields[3], fields[4], fields[2]);
-					break;
-			}
 
 			if(D->packetSize == 0)
 			{
