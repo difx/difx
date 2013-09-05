@@ -986,7 +986,7 @@ static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, vector<vector<
 		{
 			strcpy(D->datastream[dsId].dataFormat, "VDIF");
 		}
-		D->datastream[dsId].dataFrameSize = atoi(setup->formatName.substr(5).c_str());
+		D->datastream[dsId].dataFrameSize = atoi(setup->formatName.substr(4).c_str());
 	}
 	else if(setup->formatName.substr(0,14) == string("INTERLACEDVDIF"))
 	{
