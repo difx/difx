@@ -125,12 +125,18 @@ int new_type1 (DifxInput *D,                    // ptr to a filled-out difx inpu
                                     // and determine reference and remote antennas
         ref = -1;
         rem = -1;
-        for (k=0; k<2; k++)
+        if (a1 != a2)
+            for (k=0; k<2; k++)
+                {
+                if (a1 == pfb[n].stn[k].ant)
+                    ref = k;
+                if (a2 == pfb[n].stn[k].ant)
+                    rem = k;
+                }
+        else                        // autocorr - force both ants to be used
             {
-            if (a1 == pfb[n].stn[k].ant)
-                ref = k;
-            if (a2 == pfb[n].stn[k].ant)
-                rem = k;
+            ref = 0;
+            rem = 1;
             }
                                     // skip out if this baseline doesn't match
         if (ref < 0 || rem < 0)
@@ -138,13 +144,13 @@ int new_type1 (DifxInput *D,                    // ptr to a filled-out difx inpu
 
                                     // mk4 index is based on difx freq index & pol pair
         t101.index = 10 * pfb[n].stn[0].find;
-        if      (pfb[n].stn[ref].chan_id[4] == 'L' && pfb[n].stn[rem].chan_id[4] == 'L')
+        if      (pfb[n].stn[ref].pol == 'L' && pfb[n].stn[rem].pol == 'L')
             t101.index += 1;
-        else if (pfb[n].stn[ref].chan_id[4] == 'R' && pfb[n].stn[rem].chan_id[4] == 'R')
+        else if (pfb[n].stn[ref].pol == 'R' && pfb[n].stn[rem].pol == 'R')
             t101.index += 2;
-        else if (pfb[n].stn[ref].chan_id[4] == 'L' && pfb[n].stn[rem].chan_id[4] == 'R')
+        else if (pfb[n].stn[ref].pol == 'L' && pfb[n].stn[rem].pol == 'R')
             t101.index += 3;
-        else if (pfb[n].stn[ref].chan_id[4] == 'R' && pfb[n].stn[rem].chan_id[4] == 'L')
+        else if (pfb[n].stn[ref].pol == 'R' && pfb[n].stn[rem].pol == 'L')
             t101.index += 4;
                                     // insert channel ids into the type 101 record
         strcpy (t101.ref_chan_id, pfb[n].stn[ref].chan_id);
