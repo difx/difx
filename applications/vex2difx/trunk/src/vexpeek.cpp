@@ -40,8 +40,8 @@
 #include "vexload.h"
 
 const std::string program("vexpeek");
-const std::string version("0.5");
-const std::string verdate("20130508");
+const std::string version("0.6");
+const std::string verdate("20130907");
 const std::string author("Walter Brisken");
 
 void usage(const char *pgm)
@@ -56,13 +56,15 @@ void usage(const char *pgm)
 	std::cout << "options can include:" << std::endl;
 	std::cout << "  -h or --help : print help info and quit" << std::endl;
 	std::cout << "  -v or --verbose : print entire vextables structure of vexfile" << std::endl;
+	std::cout << "  -f or --format : add data format to output" << std::endl;
 	std::cout << "  -b or --bands : print list of band codes" << std::endl;
 	std::cout << std::endl;
 }
 
-void antennaSummary(const VexData *V)
+void antennaSummary(const VexData *V, int doFormat)
 {
 	std::map<std::string,VexInterval> as;
+	std::map<std::string,std::string> af;
 
 	for(unsigned int s = 0; s < V->nScan(); ++s)
 	{
@@ -75,6 +77,17 @@ void antennaSummary(const VexData *V)
 			if(as.count(it->first) == 0)
 			{
 				as[it->first] = VexInterval(vi);
+
+				// get format
+				const VexMode *M = V->getModeByDefName(scan->modeDefName);
+				if(M)
+				{
+					const VexSetup *S = M->getSetup(it->first);
+					if(S)
+					{
+						af[it->first] = S->formatName;
+					}
+				}
 			}
 			else
 			{
@@ -96,7 +109,12 @@ void antennaSummary(const VexData *V)
 
 	for(std::map<std::string,VexInterval>::const_iterator it = as.begin(); it != as.end(); ++it)
 	{
-		std::cout << it->first << " " << it->second.mjdStart << " " << it->second.mjdStop << std::endl;
+		std::cout << it->first << " " << it->second.mjdStart << " " << it->second.mjdStop;
+		if(doFormat)
+		{
+			std::cout << " " << af[it->first];
+		}
+		std::cout << std::endl;
 	}
 
 	std::cout.precision(p);
@@ -173,6 +191,7 @@ int main(int argc, char **argv)
 	int nWarn = 0;
 	int verbose = 0;
 	int doBandList = 0;
+	int doFormat = 0;
 	int a;
 	const char *fileName = 0;
 
@@ -187,6 +206,11 @@ int main(int argc, char **argv)
 		        strcmp(argv[a], "--bands") == 0)
 		{
 			++doBandList;
+		}
+		else if(strcmp(argv[a], "-f") == 0 ||
+		        strcmp(argv[a], "--format") == 0)
+		{
+			++doFormat;
 		}
 		else if(strcmp(argv[a], "-h") == 0 ||
 		        strcmp(argv[a], "--help") == 0)
@@ -248,7 +272,7 @@ int main(int argc, char **argv)
 	{
 		std::cout << V->getExper()->name << std::endl;
 
-		antennaSummary(V);
+		antennaSummary(V, doFormat);
 	}
 
 	delete V;
