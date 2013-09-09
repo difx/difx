@@ -30,38 +30,86 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <vdifio.h>
 
 const char program[] = "vsum";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
-const char version[] = "0.1";
-const char verdate[] = "20130817";
+const char version[] = "0.2";
+const char verdate[] = "20130909";
+
+static void usage(const char *pgm)
+{
+	printf("%s ver. %s  %s  %s\n\n", program, version, author, verdate);
+	printf("A utility to summarize the contents of VDIF data files\n\n");
+	printf("Usage: %s [<options>] <file1> [<file2> [ ... ] ]\n\n", pgm);
+	printf("  <fileX> is the name of a VDIF data file\n\n");
+	printf("  <options> can include:\n");
+	printf("    -h or --help      print this usage information and quit\n");
+	printf("    -s or --shortsum  print a short summary, also usable for input to vex2difx\n");
+	printf("\n");
+}
 
 int main(int argc, char **argv)
 {
 	if(argc < 2)
 	{
-		printf("%s ver. %s  %s  %s\n\n", program, version, author, verdate);
-		printf("A utility to summarize the contents of VDIF data files\n\n");
-		printf("Usage: %s <file1> [<file2> [ ... ] ]\n\n", argv[0]);
-		printf("Where each file contains VDIF data\n\n");
+		usage(argv[0]);
+
+		exit(EXIT_FAILURE);
 	}
 	else
 	{
 		struct vdif_file_summary sum;
 		int a, r;
+		int shortsum = 0;
 
 		for(a = 1; a < argc; ++a)
 		{
-			r = summarizevdiffile(&sum, argv[a], 0);
-
-			if(r < 0)
+			if(strcmp(argv[a], "-s") == 0 ||
+			   strcmp(argv[a], "--shortsum") == 0)
 			{
-				printf("File %s VDIF summary failed with return value %d\n\n", argv[a], r);
+				shortsum = 1;
+			}
+			else if(strcmp(argv[a], "-h") == 0 ||
+			   strcmp(argv[a], "--help") == 0)
+			{
+				usage(argv[0]);
+
+				exit(EXIT_SUCCESS);
 			}
 			else
 			{
-				printvdiffilesummary(&sum);
+				r = summarizevdiffile(&sum, argv[a], 0);
+
+				if(r < 0)
+				{
+					printf("File %s VDIF summary failed with return value %d\n\n", argv[a], r);
+				}
+				else if(shortsum)
+				{
+					double mjd1, mjd2;
+					char filename[1000];
+
+					mjd1 = vdiffilesummarygetstartmjd(&sum) + (sum.startSecond % 86400)/86400.0;
+					mjd2 = mjd1 + (sum.endSecond - sum.startSecond + 1)/86400.0;
+
+					if(argv[a][0] != '/')
+					{
+						char path[1000];
+						getcwd(path, 1000);
+						snprintf(filename, 1000, "%s/%s", path, argv[a]);
+					}
+					else
+					{
+						snprintf(filename, 1000, "%s", argv[a]);
+					}
+					printf("%s %14.8f %14.8f\n", filename, mjd1, mjd2);
+				}
+				else
+				{
+					printvdiffilesummary(&sum);
+				}
 			}
 		}
 	}
