@@ -311,6 +311,7 @@ print RUN<<EOF;
 startcorr.pl ${evlbicmd}-machinefile machines -np $np -monitor localhost /home/vlbi/difx2/bin/mpifxcorr $exper.input
 EOF
   close(RUN);
+  chmod 0755, 'run.sh';
 }
 
 # Machine file
@@ -509,7 +510,7 @@ sub getEOP (*$) {
   my $eops = defined($ENV{DIFX_EOP}) ? $ENV{RTFC_EOP}: "$home/.eops";
 
   ## TODO Get TAI-UTC
-  my $tai_utc = 34;
+  my $tai_utc = 35;
 
   if (! -f $eops) {
     warn "$eops does not exist. Need EOPS to correlate\n";
