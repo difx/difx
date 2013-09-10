@@ -9,8 +9,8 @@ import datetime
 from pyx import *
 
 program = 'plottsys'
-version = '0.3'
-verdate = '20130714'
+version = '0.4'
+verdate = '20130903'
 author = 'Walter Brisken <wbrisken@nrao.edu>'
 
 mjd0 = datetime.datetime(1858, 11, 17, 0, 0)
@@ -104,9 +104,16 @@ def plotAntennaTsys(pages, data, antName, obsCode, timeRange, verbose):
 	xmax = 0
 	xmin = 1e9
 
-	if len(data[0][0]) == 0:
+	nd = 0
+
+	for i in range(len(data)):
+		nd += len(data[i][0])
+
+	if nd == 0:
 		print '  Warning: no Tsys data for station %s' % antName
 		return 0
+
+	print '  %d data points for %s' % (nd, antName)
 
 	for chan in range(len(data)):
 		chanData = data[chan]

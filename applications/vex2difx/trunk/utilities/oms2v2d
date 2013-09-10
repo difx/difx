@@ -187,6 +187,7 @@ def writev2d(oms, v2dFile, prefix, nrt, verbose):
 		out.write('machines = %s\n' % machineString);
 		out.write('nCore = 4\n')
 		out.write('nThread = 8\n\n')
+		out.write('singleScan  = True\n\n')
 
 	for s in oms['SOURCE_INFO']:
 		srcParams = ''
