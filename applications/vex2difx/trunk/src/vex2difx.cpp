@@ -71,7 +71,7 @@ using namespace std;
 
 const string version(VERSION);
 const string program("vex2difx");
-const string verdate("20120222");
+const string verdate("20130910");
 const string author("Walter Brisken/Adam Deller");
 
 const int defaultMaxNSBetweenACAvg = 2000000;	// 2ms, good default for use with transient detection
@@ -965,11 +965,21 @@ static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, vector<vector<
 	}
 	else if(setup->formatName == string("VDIF"))
 	{
+		// look for pure "VDIF".  This implies single thread VDIF.  Assumes 5032 byte frames.  Not recommended to use this route
+		
 		strcpy(D->datastream[dsId].dataFormat, "VDIF");
 		D->datastream[dsId].dataFrameSize = 5032;
 	}
 	else if(setup->formatName.substr(0,4) == string("VDIF"))
 	{
+		// look for VDIF + extra information
+		// This attempts to be useful but can be confusing at the same time.
+		// For antennas "known" to produce multithread (interlaced) VDIF, this will assume that and a sequence of thread ids starting with 0 
+		// For other antennas, this defaults to single-thread vdif.
+		// Formats supported are:
+		//   VDIFxxxx		xxxx = frame size, assume threadId increases from zero with channel number
+		//   VDIF/xxxx		xxxx = frame size, assume threadId increases from zero with channel number
+
 		if(usesCannonicalVDIFThreadIds(antName.c_str()))
 		{
 			char sep = '/';
@@ -986,10 +996,24 @@ static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, vector<vector<
 		{
 			strcpy(D->datastream[dsId].dataFormat, "VDIF");
 		}
-		D->datastream[dsId].dataFrameSize = atoi(setup->formatName.substr(4).c_str());
+		size_t p = setup->formatName.find_last_of('/');
+		if(p == string::npos)
+		{
+			// VDIFxxxx case
+			D->datastream[dsId].dataFrameSize = atoi(setup->formatName.substr(4).c_str());
+		}
+		else
+		{
+			// VDIF/xxxx (and perhaps more complicated) case
+			D->datastream[dsId].dataFrameSize = atoi(setup->formatName.substr(setup->formatName.find_last_of('/')+1).c_str());
+		}
 	}
 	else if(setup->formatName.substr(0,14) == string("INTERLACEDVDIF"))
 	{
+		// here we assume a string of the form INTERLACEDVDIF:y:y:y:y.../xxxx
+		// where xxxx is the frame size and each y is a thread id.
+		// this forces multi-thread vdif with the supplied characteristics
+
 		strncpy(D->datastream[dsId].dataFormat, setup->formatName.substr(0,setup->formatName.find_last_of('/')).c_str(), DIFXIO_NAME_LENGTH-1);
 		D->datastream[dsId].dataFormat[DIFXIO_NAME_LENGTH-1] = 0;
 		D->datastream[dsId].dataFrameSize = atoi(setup->formatName.substr(setup->formatName.find_last_of('/')+1).c_str());
