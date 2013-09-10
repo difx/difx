@@ -546,7 +546,7 @@ float Mode::process(int index, int subloopindex)  //frac sample error, fringedel
 {
   double phaserotation, averagedelay, nearestsampletime, starttime, lofreq, walltimesecs, fftcentre, d0, d1, d2;
   f32 phaserotationfloat, fracsampleerror;
-  int status, count, nearestsample, integerdelay, acoffset;
+  int status, count, nearestsample, integerdelay, acoffset, freqindex;
   cf32* fftptr;
   cf32* fracsampptr1;
   cf32* fracsampptr2;
@@ -699,7 +699,8 @@ float Mode::process(int index, int subloopindex)  //frac sample error, fringedel
     if(config->getDRecordedLowerSideband(configindex, datastreamindex, i))
     {
       currentstepchannelfreqs = lsbstepchannelfreqs;
-      if(config->anyUsbXLsb(configindex))
+      freqindex = config->getDRecordedFreqFreqTableIndex(configindex, datastreamindex, i);
+      if(config->getFreqTableCorrelatedAgainstUpper(freqindex))
       {
         acoffset++;
       }

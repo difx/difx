@@ -792,12 +792,12 @@ void Visibility::writedifx(int dumpmjd, double dumpseconds)
         for(int k=0;k<config->getDNumTotalBands(currentconfigindex, i); k++)
         {
           freqindex = config->getDTotalFreqIndex(currentconfigindex, i, k);
-          if(config->anyUsbXLsb(currentconfigindex) && config->getFreqTableLowerSideband(freqindex))
+          if(config->anyUsbXLsb(currentconfigindex) && config->getFreqTableLowerSideband(freqindex) && config->getFreqTableCorrelatedAgainstUpper(freqindex))
           {
             freqindex = config->getOppositeSidebandFreqIndex(freqindex);
             if(freqindex < 0)
             {
-              csevere << startl << "Cannot find matching USB frequency to LSB freq table entry #" << config->getDTotalFreqIndex(currentconfigindex, i, k) << endl;
+              csevere << startl << "Cannot find matching USB frequency to LSB freq table entry #" << config->getDTotalFreqIndex(currentconfigindex, i, k) << " - this should be impossible!" << endl;
               freqindex = config->getDTotalFreqIndex(currentconfigindex, i, k);
             }
           }

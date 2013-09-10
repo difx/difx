@@ -161,6 +161,8 @@ public:
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].muxthreadmap; }
   inline datasampling getDSampling(int configindex, int configdatastreamindex)const
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].sampling; }
+  inline int getDRecordedFreqFreqTableIndex(int configindex, int configdatastreamindex, int datastreamrecordedfreqindex) const
+    { const datastreamdata &ds = datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]]; return ds.recordedfreqtableindices[datastreamrecordedfreqindex]; }
   inline int getDRecordedFreqIndex(int configindex, int configdatastreamindex, int datastreamrecordedbandindex) const
     { const datastreamdata &ds = datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]]; return ds.recordedfreqtableindices[ds.recordedbandlocalfreqindices[datastreamrecordedbandindex]]; }
   inline int getDZoomFreqIndex(int configindex, int configdatastreamindex, int datastreamzoombandindex) const
@@ -271,6 +273,7 @@ public:
   inline string getFreqTableRxName(int index) const { return freqtable[index].rxName; }
   inline double getFreqTableBandwidth(int index) const { return freqtable[index].bandwidth; }
   inline bool getFreqTableLowerSideband(int index) const { return freqtable[index].lowersideband; }
+  inline bool getFreqTableCorrelatedAgainstUpper(int index) const {return freqtable[index].correlatedagainstupper; }
   inline int getFNumChannels(int index) const { return freqtable[index].numchannels; }
   inline int getFChannelsToAverage(int index) const { return freqtable[index].channelstoaverage; }
   inline int getFMatchingWiderBandIndex(int index) const { return freqtable[index].matchingwiderbandindex; }
