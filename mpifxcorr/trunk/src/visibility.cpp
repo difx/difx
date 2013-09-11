@@ -946,7 +946,7 @@ void Visibility::multicastweights()
     {
       for(int j=0;j<n;j++) {
         freqindex = config->getDTotalFreqIndex(currentconfigindex, i, j);
-        if(config->isFrequencyUsed(currentconfigindex, freqindex)) {
+        if(config->isFrequencyUsed(currentconfigindex, freqindex) || config->isEquivalentFrequencyUsed(currentconfigindex, freqindex)) {
           weight[i] += autocorrweights[i][0][j];
           weightcount++;
         }
