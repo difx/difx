@@ -12,4 +12,5 @@ AC_OUTPUT([ \
 	getreleaselist/Makefile \
 	getslot/Makefile \
 	getmodules/Makefile \
+	getexplist/Makefile \
 ])

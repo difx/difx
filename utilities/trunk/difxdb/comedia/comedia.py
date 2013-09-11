@@ -236,7 +236,7 @@ class MainWindow(GenericWindow):
             os.system('rm -f /tmp/comedia_vsn.png')
             vsnString = "%s/%s/%s" % (slot.module.vsn, slot.module.capacity, slot.module.datarate)
             
-            options = dict(font_size=70, dpi=300, text_distance=0, quiet_zone=1, module_height=10) 
+            options = dict(font_size=62, dpi=300, text_distance=0, quiet_zone=1, module_height=10) 
             
             ean = barcode.get_barcode('code39', vsnString, writer=MyImageWriter())
             ean.save('/tmp/comedia_vsn', options )
