@@ -1601,7 +1601,7 @@ int pystream::writeLoifTable(const VexData *V)
 					int off = 1;
 					int field_count = 0;
 					int MAX_FIELDS = 5;
-					int synthFreq = 0;
+					double synthFreq = 0;
 					// parse BACKWARDS from end of string for space-separated tokens
 					// comment format: * [other comments] [{FirstSynth} {SecondSynth} {receiver} {FirstLO} {BROAD|NARROW|NA}]
 					// trailing spaces are permitted
@@ -1657,7 +1657,7 @@ int pystream::writeLoifTable(const VexData *V)
 							// firstSynth
 							case 3:
 								if( isdigit(comment[len - off + 1]) )
-									synthFreq = atoi(&comment[len - off + 1]);
+									synthFreq = atof(&comment[len - off + 1]);
 								else
 									synthFreq = 0;
 								++field_count;
@@ -1665,7 +1665,7 @@ int pystream::writeLoifTable(const VexData *V)
 							// secondSynth
 							case 4:
 								if( isdigit(comment[len - off + 1]) )
-									*this << ", " << atoi(&comment[len - off + 1]) << ", " << synthFreq;
+									*this << ", " << atof(&comment[len - off + 1]) << ", " << synthFreq;
 								else
 									*this << ", 0, " << synthFreq;
 								++field_count;
@@ -1896,7 +1896,7 @@ int pystream::writeDDCLoifTable(const VexData *V)
 						const int MaxCommentLength = 256;
 						char comment[MaxCommentLength] = {0};
 						double firstTune;
-						int synthFreq = 0;
+						double synthFreq = 0;
 						firstTune = fabs(setup->firstTuningForIF(i.name) - i.ifSSLO);
 
 						//*this << "# first tuning = " << (firstTune * 1.0e-6) << " MHz" << endl;
@@ -1968,7 +1968,7 @@ int pystream::writeDDCLoifTable(const VexData *V)
 									// firstSynth
 									case 3:
 										if( isdigit(comment[len - off + 1]) )
-											synthFreq = atoi(&comment[len - off + 1]);
+											synthFreq = atof(&comment[len - off + 1]);
 										else
 											synthFreq = 0;
 										++field_count;
@@ -1976,7 +1976,7 @@ int pystream::writeDDCLoifTable(const VexData *V)
 									// secondSynth
 									case 4:
 										if( isdigit(comment[len - off + 1]) )
-											*this << ", " << atoi(&comment[len - off + 1]) << ", " << synthFreq;
+											*this << ", " << atof(&comment[len - off + 1]) << ", " << synthFreq;
 										else
 											*this << ", 0, " << synthFreq;
 										++field_count;
