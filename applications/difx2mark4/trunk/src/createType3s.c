@@ -80,14 +80,17 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
            cha,
            az,
            el,
-           dec;
+           dec,
+           freq_i,
+           bw_i;
 
     char outname[256],
          pcal_filnam[256],
          ant[16],
          buff[5],
          *line,
-         ds_pols[64];
+         ds_pols[64],
+         sideband_i;
 
     FILE *fin;
     FILE *fout;
@@ -193,16 +196,29 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
             nf = -1;
             while (pfb[++nf].stn[0].ant >= 0) // check for end-of-table marker
                 {
+
                 for (k=0; k<2; k++)
-                    if (pfb[nf].stn[k].freq     == D->freq[i].freq
-                     && pfb[nf].stn[k].bw       == D->freq[i].bw  
-                     && pfb[nf].stn[k].sideband == D->freq[i].sideband)
+                    {
+                    freq_i =  D->freq[i].freq;
+                    bw_i =  D->freq[i].bw;
+                    sideband_i =  D->freq[i].sideband;
+                                    // zoom bands are identified by their lower edge, as if USB
+                    if (pfb[nf].stn[k].zoom && sideband_i == 'L')
+                        {
+                        sideband_i = 'U';
+                        freq_i -= bw_i;
+                        }
+                                    // check for match to this frequency
+                    if (pfb[nf].stn[k].freq     == freq_i
+                     && pfb[nf].stn[k].bw       == bw_i
+                     && pfb[nf].stn[k].sideband == sideband_i)
                         {
                         strcpy (t301.chan_id, pfb[nf].stn[k].chan_id);
                         strcpy (t302.chan_id, pfb[nf].stn[k].chan_id);
                         strcpy (t303.chan_id, pfb[nf].stn[k].chan_id);
                         break;      // found freq, do double break
                         }
+                    }
                 if (k < 2)
                     break;          // 2nd part of double break
                 }

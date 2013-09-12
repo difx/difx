@@ -2,6 +2,7 @@
 // for one baseline
 //
 //  first created from createType1s                  rjc  2012.5.8
+//  broke out put_t101 into a routine, fixed ac's    rjc  2013.9.12
 
 #include <stdio.h>
 #include <string.h>
@@ -46,6 +47,9 @@ int new_type1 (DifxInput *D,                    // ptr to a filled-out difx inpu
     struct type_101 t101;
 
     char outname[DIFXIO_FILENAME_LENGTH];
+
+                                    // function prototypes
+    void put_t101 (struct type_101 *, FILE *, int, char *, char *);
 
                                     // clear record areas
     memset (&t000, 0, sizeof (t000));
@@ -125,7 +129,8 @@ int new_type1 (DifxInput *D,                    // ptr to a filled-out difx inpu
                                     // and determine reference and remote antennas
         ref = -1;
         rem = -1;
-        if (a1 != a2)
+        if (a1 != a2)               // cross-correlation
+            {
             for (k=0; k<2; k++)
                 {
                 if (a1 == pfb[n].stn[k].ant)
@@ -133,30 +138,48 @@ int new_type1 (DifxInput *D,                    // ptr to a filled-out difx inpu
                 if (a2 == pfb[n].stn[k].ant)
                     rem = k;
                 }
-        else                        // autocorr - force both ants to be used
-            {
-            ref = 0;
-            rem = 1;
+            if (ref >= 0 && rem >= 0)
+                {
+                put_t101 (&t101, fout[nb], pfb[n].stn[0].find,
+                          pfb[n].stn[0].chan_id, pfb[n].stn[1].chan_id);
+                }
             }
-                                    // skip out if this baseline doesn't match
-        if (ref < 0 || rem < 0)
-            continue;
 
-                                    // mk4 index is based on difx freq index & pol pair
-        t101.index = 10 * pfb[n].stn[0].find;
-        if      (pfb[n].stn[ref].pol == 'L' && pfb[n].stn[rem].pol == 'L')
-            t101.index += 1;
-        else if (pfb[n].stn[ref].pol == 'R' && pfb[n].stn[rem].pol == 'R')
-            t101.index += 2;
-        else if (pfb[n].stn[ref].pol == 'L' && pfb[n].stn[rem].pol == 'R')
-            t101.index += 3;
-        else if (pfb[n].stn[ref].pol == 'R' && pfb[n].stn[rem].pol == 'L')
-            t101.index += 4;
-                                    // insert channel ids into the type 101 record
-        strcpy (t101.ref_chan_id, pfb[n].stn[ref].chan_id);
-        strcpy (t101.rem_chan_id, pfb[n].stn[rem].chan_id);
-                                    // and write this type 101
-        write_t101 (&t101, fout[nb]);
+        else                        // auto-correlations
+            {                       // ref station
+            if (a1 == pfb[n].stn[0].ant && pfb[n].stn[0].first_time)
+                put_t101 (&t101, fout[nb], pfb[n].stn[0].find,
+                          pfb[n].stn[0].chan_id, pfb[n].stn[0].chan_id);
+                                    // rem station
+            if (a1 == pfb[n].stn[1].ant && pfb[n].stn[1].first_time)
+                put_t101 (&t101, fout[nb], pfb[n].stn[1].find,
+                          pfb[n].stn[1].chan_id, pfb[n].stn[1].chan_id);
+            }
         }
     return (0);
+    }
+
+// function to finalize type 101 record and put it out
+
+void put_t101 (struct type_101 *t101,
+               FILE *fout,
+               int find,
+               char *ref_chan,
+               char *rem_chan)
+    {
+                                    // mk4 index is based on difx freq index & pol pair
+    t101->index = 10 * find;
+    if      (ref_chan[4] == 'L' && rem_chan[4] == 'L')
+        t101->index += 1;
+    else if (ref_chan[4] == 'R' && rem_chan[4] == 'R')
+        t101->index += 2;
+    else if (ref_chan[4] == 'L' && rem_chan[4] == 'R')
+        t101->index += 3;
+    else if (ref_chan[4] == 'R' && rem_chan[4] == 'L')
+        t101->index += 4;
+                                    // insert channel ids into the type 101 record
+    strcpy (t101->ref_chan_id, ref_chan);
+    strcpy (t101->rem_chan_id, rem_chan);
+                                    // and write this type 101
+    write_t101 (t101, fout);
     }
