@@ -1,7 +1,7 @@
 
 After a fresh svn checkout, run the following to build the programs:
 
-aclocal
+aclocal -I m4
 automake -a
 autoconf
 

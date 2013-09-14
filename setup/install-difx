@@ -246,7 +246,7 @@ if dofb:
 if dohops:
     apptargets.append(["hops", difx_version, True,False,True,False])
 if doguiserver:
-    apptargets.append(["guiserver", difx_version, True,False,False,True])
+    apptargets.append(["guiServer", difx_version, True,False,False,True])
 if mk5d:
     apptargets.append(["mk5daemon", difx_version, True,False,True,False])
 if domonitor:
