@@ -107,7 +107,6 @@ int mark5bfix(unsigned char *dest, int destSize, const unsigned char *src, int s
 	int startOutputFrame = -1;
 	int nDestFrames;	
 	int lastGoodFrameNumber = 0;
-	int frameNumber;
 	int i;
 
 	nDestFrames = destSize / MARK5B_FRAME_SIZE;
@@ -123,6 +122,7 @@ int mark5bfix(unsigned char *dest, int destSize, const unsigned char *src, int s
 	{
 		const unsigned char *cur = src + i;
 		int missed;
+		int frameNumber;
 
 		/* Look for sync word */
 		if(*((uint32_t *)cur) != MARK5B_SYNC_WORD)
@@ -272,7 +272,7 @@ int mark5bfix(unsigned char *dest, int destSize, const unsigned char *src, int s
 		i += MARK5B_FRAME_SIZE;
 	}
 
-	if(lastGoodFrameNumber < 0)
+	if(lastGoodFrameNumber < startOutputFrame)
 	{
 		/* no good data found */
 
@@ -305,7 +305,7 @@ int mark5bfix(unsigned char *dest, int destSize, const unsigned char *src, int s
 			bytes[5] = f >> 8;
 
 			/* then time code */
-			d = (m / framesPerSecond) - (frameNumber / framesPerSecond);
+			d = (m / framesPerSecond) - (lastGoodFrameNumber / framesPerSecond);
 
 			if(d != 0)
 			{
