@@ -3087,17 +3087,23 @@ DifxInput *updateDifxInput(DifxInput *D)
 	return D;
 }
 
-#warning "FIXME: really should use full filename and not require .input to be amputated"
 DifxInput *loadDifxInput(const char *filePrefix)
 {
 	DifxParameters *ip, *cp, *mp;
 	DifxInput *D, *DSave;
 	char inputFile[DIFXIO_FILENAME_LENGTH];
 	const char *calcFile;
-	int c, r, v;
+	int c, r, v, l;
 
-	/* make .input filename and open it. */
-	r = snprintf(inputFile, DIFXIO_FILENAME_LENGTH, "%s.input", filePrefix);
+	l = strlen(filePrefix);
+	if(strcmp(filePrefix + l - 6, ".input") == 0)
+	{
+		r = snprintf(inputFile, DIFXIO_FILENAME_LENGTH, "%s", filePrefix);
+	}
+	else
+	{
+		r = snprintf(inputFile, DIFXIO_FILENAME_LENGTH, "%s.input", filePrefix);
+	}
 	if(r >= DIFXIO_FILENAME_LENGTH)
 	{
 		return 0;
@@ -3184,8 +3190,17 @@ DifxInput *loadDifxCalc(const char *filePrefix)
 	char inputFile[DIFXIO_FILENAME_LENGTH];
 	const char *calcFile;
 	int configId, r;
+	int l;
 
-	r = snprintf(inputFile, DIFXIO_FILENAME_LENGTH, "%s.input", filePrefix);
+	l = strlen(filePrefix);
+	if(strcmp(filePrefix + l - 6, ".input") == 0)
+	{
+		r = snprintf(inputFile, DIFXIO_FILENAME_LENGTH, "%s", filePrefix);
+	}
+	else
+	{
+		r = snprintf(inputFile, DIFXIO_FILENAME_LENGTH, "%s.input", filePrefix);
+	}
 	if(r >= DIFXIO_FILENAME_LENGTH)
 	{
 		fprintf(stderr, "Developer error: loadDifxCalc: inputFile wanted %d bytes, not %d\n", r, DIFXIO_FILENAME_LENGTH);
