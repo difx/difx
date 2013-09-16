@@ -1,0 +1,798 @@
+VEX_rev = 1.5;
+*    SCHED vers: Version 11.1 Beta of June 19, 2013
+*    VEX/SCHED:  1.5.87
+*    Other versions: Sched:  11.1  Plot: 1.06  JPL-ephem: 1.01
+*------------------------------------------------------------------------------
+$GLOBAL;
+     ref $EXPER = n3204;
+*                                                      +------------+
+*                         PI revision number:          |    7.0000  |
+*                                                      +------------+
+*    mode:       S/X
+*------------------------------------------------------------------------------
+$EXPER;
+*
+def n3204;
+     exper_name = n3204;
+     exper_description = "USNO Daily UT1-UTC Measurement";
+     PI_name = "Alan Fey";
+     PI_email = ut1@nrao.edu;
+*    address:   United States Naval Observatory
+*               3450 Massachusetts Ave, NW
+*               Washington, DC 20392-5420
+*                U.S.A.
+*    phone:     202 762 1517
+*    during obs:202 762 1517
+*    fax:        
+*    notes:     DELZN-based UT1-UTC measurement
+*
+*    year, doy: 2013, 204
+*    date     : Tue 23 Jul 2013
+*    MJD      : 56496
+     exper_nominal_start=2013y204d06h30m00s;
+     exper_nominal_stop=2013y204d07h15m35s;
+*
+     target_correlator = VLBADIFX;
+*
+*    integr_time    :     2.000 s
+*    number_channels:    64
+*    number_antenna :  2
+*    cross_polarize : No
+*    weight_func    : UNIFORM
+*    distrib_medium : FTP
+*    distrib_format : FITS
+*    source_pos_cat : STANDARD
+*    distribute_to  : 
+*                     Walter Brisken
+*                     P. O. Box O
+*                     Socorro NM 87801
+*
+enddef;
+*------------------------------------------------------------------------------
+$MODE;
+*
+def rdbe.sx;
+     ref $PROCEDURES = Mode_01;
+     ref $FREQ = DualFreq16x32MHz:Mk:Pt;
+     ref $IF = DualFreqRPolTone/1:Mk:Pt;
+     ref $BBC = 16BBCs:Mk:Pt;
+     ref $TRACKS = MARK5B.16Ch2bit1to1:Mk:Pt;
+*    ref $HEAD_POS = DiskVoid <= obsolete definition
+     ref $ROLL = NoRoll:Mk:Pt;
+*    ref $PASS_ORDER = DiskVoid <= obsolete definition
+     ref $PHASE_CAL_DETECT = DsbDetect:Mk:Pt;
+enddef;
+*------------------------------------------------------------------------------
+$STATION;
+*
+def Mk;
+     ref $SITE = VLBA_MK;
+     ref $ANTENNA = VLBA_MK;
+     ref $DAS = 2RDBE+NONE<;
+enddef;
+*
+def Pt;
+     ref $SITE = VLBA_PT;
+     ref $ANTENNA = VLBA_PT;
+     ref $DAS = 2RDBE+NONE<;
+enddef;
+*------------------------------------------------------------------------------
+$PROCEDURES;
+*
+def Mode_01;
+     procedure_name_prefix =  "01";
+     tape_change =  420 sec;
+     headstack_motion =    6 sec;
+     new_source_command =    5 sec;
+     new_tape_setup =   20 sec;
+     setup_always = on :  20 sec;
+     parity_check = off : 100 sec;
+     tape_prepass = off : 600 sec;
+     preob_cal  = on :  10 sec : preob;
+     midob_cal  = on :  15 sec : midob;
+     postob_cal = on :   0 sec : postob;
+enddef;
+*------------------------------------------------------------------------------
+$SITE;
+*
+def VLBA_MK;
+     site_type = fixed;
+     site_name = VLBA_MK;
+     site_ID = Mk;
+*    elev= 3763.02 long= 155:27:19. lat= 19:48:05.0
+     site_position =-5464075.11160 m:-2495248.41970 m: 2148297.19630 m;
+     site_velocity = -0.014040   m/yr:  0.063640   m/yr:  0.032210  m/yr;
+*    First line below is VEX standard format.  Use only when readers are ready.
+*    site_position_epoch = 2008y001d;
+     site_position_epoch =   54466;
+     horizon_map_az =  0.0 deg:  5.0: 10.0: 15.0: 20.0:120.0:125.0:130.0:135.0:
+                               140.0:145.0:150.0:155.0:160.0:165.0:170.0:175.0:
+                               185.0:190.0:195.0:200.0:205.0:210.0:215.0:220.0:
+                               255.0:260.0:270.0:275.0:280.0:285.0:290.0:295.0:
+                               300.0:305.0:310.0:315.0:320.0:325.0:330.0:335.0:
+                               340.0:345.0:350.0:355.0:360.0;
+     horizon_map_el =  5.0 deg:  4.0:  3.0:  3.0:  2.0:  2.0:  4.0:  5.0:  5.0:
+                                 4.0:  4.0:  6.0:  8.0:  8.0: 11.0: 12.0: 13.0:
+                                13.0: 11.0: 11.0:  9.0:  7.0:  5.0:  3.0:  2.0:
+                                 2.0:  3.0:  3.0:  5.0:  6.0:  8.0: 10.0: 12.0:
+                                14.0: 12.0: 11.0:  9.0: 10.0: 11.0: 10.0: 12.0:
+                                14.0: 12.0:  9.0:  7.0:  5.0;
+enddef;
+*
+def VLBA_PT;
+     site_type = fixed;
+     site_name = VLBA_PT;
+     site_ID = Pt;
+*    elev= 2364.67 long= 108:07:09. lat= 34:18:03.7
+     site_position =-1640953.86460 m:-5014816.01990 m: 3575411.81060 m;
+     site_velocity = -0.014650   m/yr: -0.000140   m/yr: -0.005590  m/yr;
+*    First line below is VEX standard format.  Use only when readers are ready.
+*    site_position_epoch = 2008y001d;
+     site_position_epoch =   54466;
+     horizon_map_az =  0.0 deg:  5.0: 60.0: 65.0: 70.0: 75.0: 80.0: 85.0:165.0:
+                               170.0:180.0:185.0:190.0:195.0:200.0:240.0:245.0:
+                               250.0:255.0:265.0:270.0:275.0:280.0:285.0:360.0;
+     horizon_map_el =  2.0 deg:  2.0:  2.0:  3.0:  3.0:  2.0:  3.0:  2.0:  2.0:
+                                 3.0:  3.0:  4.0:  4.0:  3.0:  4.0:  4.0:  3.0:
+                                 4.0:  3.0:  3.0:  4.0:  3.0:  3.0:  2.0:  2.0;
+enddef;
+*------------------------------------------------------------------------------
+$ANTENNA;
+*
+def VLBA_MK;
+     axis_type = az : el;
+     antenna_motion = el :  28.3 deg/min :  6 sec;  *    0.250 deg/sec/sec
+     antenna_motion = az :  86.8 deg/min :  6 sec;  *    0.750 deg/sec/sec
+     axis_offset =    2.13400 m;
+enddef;
+*
+def VLBA_PT;
+     axis_type = az : el;
+     antenna_motion = el :  29.3 deg/min :  6 sec;  *    0.250 deg/sec/sec
+     antenna_motion = az :  82.3 deg/min :  6 sec;  *    0.750 deg/sec/sec
+     axis_offset =    2.13700 m;
+enddef;
+*------------------------------------------------------------------------------
+$DAS;
+*
+def 2RDBE+NONE<;
+     record_transport_type = Mark5C;
+     electronics_rack_type = RDBE;
+     number_drives = 2;
+     headstack = 1 :            : 0 ;
+     headstack = 2 :            : 1 ;
+     tape_motion = adaptive : 0 min: 0 min: 10 sec;
+enddef;
+*------------------------------------------------------------------------------
+$SOURCE;
+*
+def 0016+731;
+     source_name = 0016+731;
+*    this source had calibrator code: V
+*    alternate source name: J0019+7327
+*    alternate source name: J0019+73
+*    rfc_2012b Petrov, 2012, unpublished 51927 observations
+     ra = 00h19m45.7863590s; dec =  73d27'30.017580"; ref_coord_frame = J2000;
+*    ra = 00h16m54.1950808s; dec =  73d10'51.407143"; ref_coord_frame = B1950;
+*    ra = 00h20m37.2004046s; dec =  73d31'49.080435"; ref_coord_frame = Date;
+enddef;
+*
+def 0454+844;
+     source_name = 0454+844;
+*    this source had calibrator code: V
+*    alternate source name: J0508+8432
+*    alternate source name: J0508+84
+*    rfc_2012b Petrov, 2012, unpublished 8614 observations
+     ra = 05h08m42.3635040s; dec =  84d32'04.544100"; ref_coord_frame = J2000;
+*    ra = 04h54m57.1804591s; dec =  84d27'52.979150"; ref_coord_frame = B1950;
+*    ra = 05h12m24.1560495s; dec =  84d32'44.429491"; ref_coord_frame = Date;
+enddef;
+*
+def 0718+792;
+     source_name = 0718+792;
+*    this source had calibrator code: V
+*    alternate source name: J0726+7911
+*    alternate source name: 0718+79
+*    alternate source name: 0718+793
+*    alternate source name: J0726+79
+*    rfc_2012b Petrov, 2012, unpublished 42575 observations
+     ra = 07h26m11.7352590s; dec =  79d11'31.016210"; ref_coord_frame = J2000;
+*    ra = 07h18m08.8558982s; dec =  79d17'22.639355"; ref_coord_frame = B1950;
+*    ra = 07h28m16.0145860s; dec =  79d09'40.042255"; ref_coord_frame = Date;
+enddef;
+*
+def J1058+81;
+     source_name = J1058+81;
+*    this source had calibrator code: V
+*    alternate source name: J1058+8114
+*    alternate source name: 1053+815
+*    rfc_2012b Petrov, 2012, unpublished 33019 observations
+     ra = 10h58m11.5353900s; dec =  81d14'32.675120"; ref_coord_frame = J2000;
+*    ra = 10h53m36.2294546s; dec =  81d30'35.567764"; ref_coord_frame = B1950;
+*    ra = 10h59m16.6467909s; dec =  81d10'18.378986"; ref_coord_frame = Date;
+enddef;
+*
+def 1306+360;
+     source_name = 1306+360;
+*    this source had calibrator code: V
+*    alternate source name: J1308+3546
+*    rfc_2012b Petrov, 2012, unpublished 1841 observations
+     ra = 13h08m23.7091320s; dec =  35d46'37.163950"; ref_coord_frame = J2000;
+*    ra = 13h06m03.9306019s; dec =  36d02'36.262246"; ref_coord_frame = B1950;
+*    ra = 13h09m01.6338021s; dec =  35d42'29.293134"; ref_coord_frame = Date;
+enddef;
+*
+def 1308+328;
+     source_name = 1308+328;
+*    this source had calibrator code: V
+*    alternate source name: J1310+3233
+*    rfc_2012b Petrov, 2012, unpublished 8310 observations
+     ra = 13h10m59.4027310s; dec =  32d33'34.449480"; ref_coord_frame = J2000;
+*    ra = 13h08m38.4953640s; dec =  32d49'30.232799"; ref_coord_frame = B1950;
+*    ra = 13h11m37.7146108s; dec =  32d29'26.852280"; ref_coord_frame = Date;
+enddef;
+*
+def 1348+308;
+     source_name = 1348+308;
+*    this source had calibrator code: V
+*    alternate source name: J1350+3034
+*    alternate source name: J1350+30
+*    rfc_2012b Petrov, 2012, unpublished 722 observations
+     ra = 13h50m52.7362220s; dec =  30d34'53.590500"; ref_coord_frame = J2000;
+*    ra = 13h48m37.2456322s; dec =  30d49'42.803899"; ref_coord_frame = B1950;
+*    ra = 13h51m29.8811037s; dec =  30d31'05.466233"; ref_coord_frame = Date;
+enddef;
+*
+def 1456+044;
+     source_name = 1456+044;
+*    this source had calibrator code: V
+*    alternate source name: J1458+0416
+*    rfc_2012b Petrov, 2012, unpublished 1219 observations
+     ra = 14h58m59.3562120s; dec =  04d16'13.820330"; ref_coord_frame = J2000;
+*    ra = 14h56m29.1527222s; dec =  04d28'09.344431"; ref_coord_frame = B1950;
+*    ra = 14h59m41.2283225s; dec =  04d13'07.901234"; ref_coord_frame = Date;
+enddef;
+*
+def 1502+036;
+     source_name = 1502+036;
+*    this source had calibrator code: V
+*    alternate source name: J1505+0326
+*    alternate source name: J1505+03
+*    rfc_2012b Petrov, 2012, unpublished 4319 observations
+     ra = 15h05m06.4771570s; dec =  03d26'30.812460"; ref_coord_frame = J2000;
+*    ra = 15h02m35.6690032s; dec =  03d38'07.373344"; ref_coord_frame = B1950;
+*    ra = 15h05m48.5563222s; dec =  03d23'30.030752"; ref_coord_frame = Date;
+enddef;
+*
+def 1546+027;
+     source_name = 1546+027;
+*    this source had calibrator code: V
+*    alternate source name: J1549+0237
+*    alternate source name: J1549+02
+*    rfc_2012b Petrov, 2012, unpublished 10363 observations
+     ra = 15h49m29.4368450s; dec =  02d37'01.163080"; ref_coord_frame = J2000;
+*    ra = 15h46m58.2921709s; dec =  02d46'06.075727"; ref_coord_frame = B1950;
+*    ra = 15h50m11.8492759s; dec =  02d34'43.039232"; ref_coord_frame = Date;
+enddef;
+*
+def 1622-253;
+     source_name = 1622-253;
+*    this source had calibrator code: V
+*    alternate source name: J1625-2527
+*    alternate source name: J1625-25
+*    rfc_2012b Petrov, 2012, unpublished 42240 observations
+     ra = 16h25m46.8916400s; dec = -25d27'38.326980"; ref_coord_frame = J2000;
+*    ra = 16h22m44.1052988s; dec = -25d20'51.695777"; ref_coord_frame = B1950;
+*    ra = 16h26m38.4420514s; dec = -25d29'25.040798"; ref_coord_frame = Date;
+enddef;
+*
+def 1657-261;
+     source_name = 1657-261;
+*    this source had calibrator code: V
+*    alternate source name: J1700-2610
+*    alternate source name: J1700-26
+*    rfc_2012b Petrov, 2012, unpublished 4249 observations
+     ra = 17h00m53.1540610s; dec = -26d10'51.725470"; ref_coord_frame = J2000;
+*    ra = 16h57m47.7142378s; dec = -26d06'29.528275"; ref_coord_frame = B1950;
+*    ra = 17h01m45.5599708s; dec = -26d11'57.321937"; ref_coord_frame = Date;
+enddef;
+*
+def 1722+330;
+     source_name = 1722+330;
+*    this source had calibrator code: V
+*    alternate source name: J1724+3303
+*    rfc_2012b Petrov, 2012, unpublished 751 observations
+     ra = 17h24m14.1978310s; dec =  33d03'03.938930"; ref_coord_frame = J2000;
+*    ra = 17h22m23.3586362s; dec =  33d05'43.583946"; ref_coord_frame = B1950;
+*    ra = 17h24m46.0231489s; dec =  33d02'38.189309"; ref_coord_frame = Date;
+enddef;
+*
+def 1736+324;
+     source_name = 1736+324;
+*    this source had calibrator code: V
+*    alternate source name: J1738+3224
+*    rfc_2012b Petrov, 2012, unpublished 625 observations
+     ra = 17h38m40.5018200s; dec =  32d24'09.025470"; ref_coord_frame = J2000;
+*    ra = 17h36m48.9352627s; dec =  32d25'46.106415"; ref_coord_frame = B1950;
+*    ra = 17h39m12.5951850s; dec =  32d24'00.014824"; ref_coord_frame = Date;
+enddef;
+*
+def 1758+388;
+     source_name = 1758+388;
+*    this source had calibrator code: V
+*    alternate source name: J1800+3848
+*    alternate source name: J1800+38
+*    rfc_2012b Petrov, 2012, unpublished 2965 observations
+     ra = 18h00m24.7653610s; dec =  38d48'30.697390"; ref_coord_frame = J2000;
+*    ra = 17h58m44.7039518s; dec =  38d48'32.473405"; ref_coord_frame = B1950;
+*    ra = 18h00m53.8959758s; dec =  38d48'47.650186"; ref_coord_frame = Date;
+enddef;
+*
+def 1759-396;
+     source_name = 1759-396;
+*    this source had calibrator code: V
+*    alternate source name: J1802-3940
+*    rfc_2012b Petrov, 2012, unpublished 1773 observations
+     ra = 18h02m42.6800620s; dec = -39d40'07.908250"; ref_coord_frame = J2000;
+*    ra = 17h59m13.4806050s; dec = -39d40'12.120208"; ref_coord_frame = B1950;
+*    ra = 18h03m41.9908103s; dec = -39d39'59.699760"; ref_coord_frame = Date;
+enddef;
+*
+def 1846+322;
+     source_name = 1846+322;
+*    this source had calibrator code: V
+*    alternate source name: J1848+3219
+*    rfc_2012b Petrov, 2012, unpublished 6645 observations
+     ra = 18h48m22.0885790s; dec =  32d19'02.603680"; ref_coord_frame = J2000;
+*    ra = 18h46m29.6120361s; dec =  32d15'36.660280"; ref_coord_frame = B1950;
+*    ra = 18h48m54.7180621s; dec =  32d20'14.307039"; ref_coord_frame = Date;
+enddef;
+*
+def 1909+161;
+     source_name = 1909+161;
+*    this source had calibrator code: V
+*    alternate source name: J1911+1611
+*    rfc_2012b Petrov, 2012, unpublished 3779 observations
+     ra = 19h11m58.2574030s; dec =  16d11'46.865170"; ref_coord_frame = J2000;
+*    ra = 19h09m42.9030062s; dec =  16d06'41.987212"; ref_coord_frame = B1950;
+*    ra = 19h12m37.0397351s; dec =  16d13'24.449025"; ref_coord_frame = Date;
+enddef;
+*
+def 1923+210;
+     source_name = 1923+210;
+*    this source had calibrator code: V
+*    alternate source name: J1925+2106
+*    alternate source name: J1925+21
+*    rfc_2012b Petrov, 2012, unpublished 32646 observations
+     ra = 19h25m59.6053540s; dec =  21d06'26.161900"; ref_coord_frame = J2000;
+*    ra = 19h23m49.7923905s; dec =  21d00'23.304816"; ref_coord_frame = B1950;
+*    ra = 19h26m36.9346100s; dec =  21d08'19.275220"; ref_coord_frame = Date;
+enddef;
+*
+def 1929+226;
+     source_name = 1929+226;
+*    this source had calibrator code: V
+*    alternate source name: J1931+2243
+*    alternate source name: J1931+22
+*    rfc_2012b Petrov, 2012, unpublished 3020 observations
+     ra = 19h31m24.9167790s; dec =  22d43'31.258490"; ref_coord_frame = J2000;
+*    ra = 19h29m16.8948854s; dec =  22d37'06.350467"; ref_coord_frame = B1950;
+*    ra = 19h32m01.7812786s; dec =  22d45'30.208871"; ref_coord_frame = Date;
+enddef;
+*
+def 1954-388;
+     source_name = 1954-388;
+*    this source had calibrator code: V
+*    alternate source name: J1957-3845
+*    alternate source name: J1957-38
+*    rfc_2012b Petrov, 2012, unpublished 17896 observations
+     ra = 19h57m59.8192760s; dec = -38d45'06.355860"; ref_coord_frame = J2000;
+*    ra = 19h54m39.0495286s; dec = -38d53'13.525038"; ref_coord_frame = B1950;
+*    ra = 19h58m56.6881073s; dec = -38d42'39.935127"; ref_coord_frame = Date;
+enddef;
+*
+def 2000+148;
+     source_name = 2000+148;
+*    this source had calibrator code: V
+*    alternate source name: J2002+1501
+*    rfc_2012b Petrov, 2012, unpublished 933 observations
+     ra = 20h02m41.9992340s; dec =  15d01'14.573940"; ref_coord_frame = J2000;
+*    ra = 20h00m23.6003969s; dec =  14d52'47.662926"; ref_coord_frame = B1950;
+*    ra = 20h03m21.6572864s; dec =  15d03'46.047968"; ref_coord_frame = Date;
+enddef;
+*
+def 2059+034;
+     source_name = 2059+034;
+*    this source had calibrator code: V
+*    alternate source name: J2101+0341
+*    alternate source name: J2101+03
+*    rfc_2012b Petrov, 2012, unpublished 8743 observations
+     ra = 21h01m38.8341590s; dec =  03d41'31.320740"; ref_coord_frame = J2000;
+*    ra = 20h59m08.0115397s; dec =  03d29'41.483487"; ref_coord_frame = B1950;
+*    ra = 21h02m21.7717701s; dec =  03d44'57.528704"; ref_coord_frame = Date;
+enddef;
+*
+def 2127-096;
+     source_name = 2127-096;
+*    this source had calibrator code: V
+*    alternate source name: J2130-0927
+*    rfc_2012b Petrov, 2012, unpublished 971 observations
+     ra = 21h30m19.0882650s; dec = -09d27'37.435320"; ref_coord_frame = J2000;
+*    ra = 21h27m38.4083813s; dec = -09d40'49.820123"; ref_coord_frame = B1950;
+*    ra = 21h31m04.5986519s; dec = -09d23'47.561183"; ref_coord_frame = Date;
+enddef;
+*
+def 2141+175;
+     source_name = 2141+175;
+*    this source had calibrator code: V
+*    alternate source name: J2143+1743
+*    rfc_2012b Petrov, 2012, unpublished 6853 observations
+     ra = 21h43m35.5445640s; dec =  17d43'48.787500"; ref_coord_frame = J2000;
+*    ra = 21h41m13.7458209s; dec =  17d30'01.932843"; ref_coord_frame = B1950;
+*    ra = 21h44m16.0833954s; dec =  17d47'43.429176"; ref_coord_frame = Date;
+enddef;
+*
+def 2142+110;
+     source_name = 2142+110;
+*    this source had calibrator code: V
+*    alternate source name: J2145+1115
+*    rfc_2012b Petrov, 2012, unpublished 633 observations
+     ra = 21h45m18.7750690s; dec =  11d15'27.312220"; ref_coord_frame = J2000;
+*    ra = 21h42m52.3469410s; dec =  11d01'36.298729"; ref_coord_frame = B1950;
+*    ra = 21h46m00.4968938s; dec =  11d19'24.154388"; ref_coord_frame = Date;
+enddef;
+*
+def 2144+092;
+     source_name = 2144+092;
+*    this source had calibrator code: V
+*    alternate source name: J2147+0929
+*    alternate source name: J2147+09
+*    rfc_2012b Petrov, 2012, unpublished 2473 observations
+     ra = 21h47m10.1629690s; dec =  09d29'46.672320"; ref_coord_frame = J2000;
+*    ra = 21h44m42.4752706s; dec =  09d15'51.167822"; ref_coord_frame = B1950;
+*    ra = 21h47m52.2064514s; dec =  09d33'44.979304"; ref_coord_frame = Date;
+enddef;
+*
+def 2149+056;
+     source_name = 2149+056;
+*    this source had calibrator code: V
+*    alternate source name: J2151+0552
+*    alternate source name: J2151+05
+*    rfc_2012b Petrov, 2012, unpublished 6878 observations
+     ra = 21h51m37.8754930s; dec =  05d52'12.954420"; ref_coord_frame = J2000;
+*    ra = 21h49m07.7012434s; dec =  05d38'06.869901"; ref_coord_frame = B1950;
+*    ra = 21h52m20.5532589s; dec =  05d56'14.636538"; ref_coord_frame = Date;
+enddef;
+*
+def 2229+695;
+     source_name = 2229+695;
+*    this source had calibrator code: V
+*    alternate source name: J2230+6946
+*    alternate source name: J2230+69
+*    rfc_2012b Petrov, 2012, unpublished 26144 observations
+     ra = 22h30m36.4697200s; dec =  69d46'28.076890"; ref_coord_frame = J2000;
+*    ra = 22h29m11.6555381s; dec =  69d31'02.646453"; ref_coord_frame = B1950;
+*    ra = 22h31m04.0672958s; dec =  69d50'36.739045"; ref_coord_frame = Date;
+enddef;
+*------------------------------------------------------------------------------
+$FREQ;
+*
+def DualFreq16x32MHz;
+* mode =  1    stations =Mk:Pt
+     sample_rate =  64.000 Ms/sec;  * (2bits/sample)
+     chan_def = :  2180.00 MHz : U :  32.00 MHz : &CH01 : &BBC01 : &U_Cal; *Rcp
+     chan_def = :  2212.00 MHz : U :  32.00 MHz : &CH02 : &BBC02 : &U_Cal; *Rcp
+     chan_def = :  2244.00 MHz : U :  32.00 MHz : &CH03 : &BBC03 : &U_Cal; *Rcp
+     chan_def = :  2276.00 MHz : U :  32.00 MHz : &CH04 : &BBC04 : &U_Cal; *Rcp
+     chan_def = :  8460.00 MHz : L :  32.00 MHz : &CH05 : &BBC05 : &U_Cal; *Rcp
+     chan_def = :  8492.00 MHz : L :  32.00 MHz : &CH06 : &BBC06 : &U_Cal; *Rcp
+     chan_def = :  8524.00 MHz : L :  32.00 MHz : &CH07 : &BBC07 : &U_Cal; *Rcp
+     chan_def = :  8556.00 MHz : L :  32.00 MHz : &CH08 : &BBC08 : &U_Cal; *Rcp
+     chan_def = :  8620.00 MHz : L :  32.00 MHz : &CH09 : &BBC09 : &U_Cal; *Rcp
+     chan_def = :  8652.00 MHz : L :  32.00 MHz : &CH10 : &BBC10 : &U_Cal; *Rcp
+     chan_def = :  8716.00 MHz : L :  32.00 MHz : &CH11 : &BBC11 : &U_Cal; *Rcp
+     chan_def = :  8748.00 MHz : L :  32.00 MHz : &CH12 : &BBC12 : &U_Cal; *Rcp
+     chan_def = :  8812.00 MHz : L :  32.00 MHz : &CH13 : &BBC13 : &U_Cal; *Rcp
+     chan_def = :  8844.00 MHz : L :  32.00 MHz : &CH14 : &BBC14 : &U_Cal; *Rcp
+     chan_def = :  8876.00 MHz : L :  32.00 MHz : &CH15 : &BBC15 : &U_Cal; *Rcp
+     chan_def = :  8908.00 MHz : L :  32.00 MHz : &CH16 : &BBC16 : &U_Cal; *Rcp
+enddef;
+*------------------------------------------------------------------------------
+$IF;
+*
+def DualFreqRPolTone/1;
+* mode =  1    stations =Mk:Pt
+     if_def = &IF_A : A : R :  2900.00 MHz : L : 1 MHz ; *    7900.00   2900.00  13cm     0 NA
+     if_def = &IF_B : B : R :  7900.00 MHz : U : 1 MHz ; *    7900.00   2900.00  4cm     0 NA
+enddef;
+*------------------------------------------------------------------------------
+$BBC;
+*
+def 16BBCs;
+* mode =  1    stations =Mk:Pt
+     BBC_assign = &BBC01 :  1 : &IF_A;
+     BBC_assign = &BBC02 :  2 : &IF_A;
+     BBC_assign = &BBC03 :  3 : &IF_A;
+     BBC_assign = &BBC04 :  4 : &IF_A;
+     BBC_assign = &BBC05 :  5 : &IF_B;
+     BBC_assign = &BBC06 :  6 : &IF_B;
+     BBC_assign = &BBC07 :  7 : &IF_B;
+     BBC_assign = &BBC08 :  8 : &IF_B;
+     BBC_assign = &BBC09 :  9 : &IF_B;
+     BBC_assign = &BBC10 : 10 : &IF_B;
+     BBC_assign = &BBC11 : 11 : &IF_B;
+     BBC_assign = &BBC12 : 12 : &IF_B;
+     BBC_assign = &BBC13 : 13 : &IF_B;
+     BBC_assign = &BBC14 : 14 : &IF_B;
+     BBC_assign = &BBC15 : 15 : &IF_B;
+     BBC_assign = &BBC16 : 16 : &IF_B;
+enddef;
+*------------------------------------------------------------------------------
+$PHASE_CAL_DETECT;
+*
+def DsbDetect;
+* mode =  1    stations =Mk:Pt
+     phase_cal_detect = &U_Cal :  2;
+enddef;
+*------------------------------------------------------------------------------
+$TRACKS;
+*
+def MARK5B.16Ch2bit1to1;
+* mode =  1    stations =Mk:Pt
+*    firmware_type = RDBE_PFB;
+*    format = MARK5B, and fan-out = 1
+*    mode requires  64.00Mb/s/tr; stations using disks
+     track_frame_format = MARK5B;
+     fanout_def =   : &CH01 : sign : 1:  2;
+     fanout_def =   : &CH01 :  mag : 1:  3;
+     fanout_def =   : &CH02 : sign : 1:  4;
+     fanout_def =   : &CH02 :  mag : 1:  5;
+     fanout_def =   : &CH03 : sign : 1:  6;
+     fanout_def =   : &CH03 :  mag : 1:  7;
+     fanout_def =   : &CH04 : sign : 1:  8;
+     fanout_def =   : &CH04 :  mag : 1:  9;
+     fanout_def =   : &CH05 : sign : 1: 10;
+     fanout_def =   : &CH05 :  mag : 1: 11;
+     fanout_def =   : &CH06 : sign : 1: 12;
+     fanout_def =   : &CH06 :  mag : 1: 13;
+     fanout_def =   : &CH07 : sign : 1: 14;
+     fanout_def =   : &CH07 :  mag : 1: 15;
+     fanout_def =   : &CH08 : sign : 1: 16;
+     fanout_def =   : &CH08 :  mag : 1: 17;
+     fanout_def =   : &CH09 : sign : 1: 18;
+     fanout_def =   : &CH09 :  mag : 1: 19;
+     fanout_def =   : &CH10 : sign : 1: 20;
+     fanout_def =   : &CH10 :  mag : 1: 21;
+     fanout_def =   : &CH11 : sign : 1: 22;
+     fanout_def =   : &CH11 :  mag : 1: 23;
+     fanout_def =   : &CH12 : sign : 1: 24;
+     fanout_def =   : &CH12 :  mag : 1: 25;
+     fanout_def =   : &CH13 : sign : 1: 26;
+     fanout_def =   : &CH13 :  mag : 1: 27;
+     fanout_def =   : &CH14 : sign : 1: 28;
+     fanout_def =   : &CH14 :  mag : 1: 29;
+     fanout_def =   : &CH15 : sign : 1: 30;
+     fanout_def =   : &CH15 :  mag : 1: 31;
+     fanout_def =   : &CH16 : sign : 1: 32;
+     fanout_def =   : &CH16 :  mag : 1: 33;
+enddef;
+*------------------------------------------------------------------------------
+$HEAD_POS;
+def DiskVoid;
+* mode =  1    stations =Mk:Pt
+*     Head positions irrelevant for Disk: empty def
+enddef;
+*------------------------------------------------------------------------------
+$PASS_ORDER;
+*
+def DiskVoid;
+* mode =  1    stations =Mk:Pt
+*     Pass orders irrelevant for Disk: empty def
+enddef;
+*------------------------------------------------------------------------------
+$ROLL;
+*
+def NoRoll;
+* mode =  1    stations =Mk:Pt
+*    barrel-roll set to 'roll_off', so reverse-roll by  0 (1 head)
+     roll = off;
+enddef;
+*------------------------------------------------------------------------------
+$SCHED;
+* schedule section for experiment n3204   
+* USNO Daily UT1-UTC Measurement                                          
+scan No0002;
+*    start=2013y204d06h30m00s <= original start, modified for tape start.
+     start=2013y204d06h30m04s; mode=rdbe.sx; source=2141+175;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Mk:    0 sec:   16 sec:    0.000 GB:   :       : 1;
+     station=Pt:    0 sec:   16 sec:    0.000 GB:   :       : 1;
+endscan;
+scan No0003;
+*    start=2013y204d06h32m21s <= original start, modified for tape start.
+     start=2013y204d06h32m25s; mode=rdbe.sx; source=1456+044;
+     station=Mk:    0 sec:   16 sec:    4.103 GB:   :       : 1;
+     station=Pt:    0 sec:   16 sec:    4.103 GB:   :       : 1;
+endscan;
+scan No0004;
+*    start=2013y204d06h33m34s <= original start, modified for tape start.
+     start=2013y204d06h33m38s; mode=rdbe.sx; source=1308+328;
+     station=Mk:    0 sec:   16 sec:    8.205 GB:   :       : 1;
+     station=Pt:    0 sec:   16 sec:    8.205 GB:   :       : 1;
+endscan;
+scan No0005;
+*    start=2013y204d06h35m43s <= original start, modified for tape start.
+     start=2013y204d06h35m47s; mode=rdbe.sx; source=1722+330;
+     station=Mk:    0 sec:   16 sec:   12.308 GB:   :       : 1;
+     station=Pt:    0 sec:   16 sec:   12.308 GB:   :       : 1;
+endscan;
+scan No0006;
+*    start=2013y204d06h39m01s <= original start, modified for tape start.
+     start=2013y204d06h39m05s; mode=rdbe.sx; source=1759-396;
+     station=Mk:    0 sec:   16 sec:   16.410 GB:   :       : 1;
+     station=Pt:    0 sec:   16 sec:   16.410 GB:   :       : 1;
+endscan;
+scan No0007;
+*    start=2013y204d06h39m57s <= original start, modified for tape start.
+     start=2013y204d06h40m01s; mode=rdbe.sx; source=1954-388;
+     station=Mk:    0 sec:   16 sec:   20.513 GB:   :       : 1;
+     station=Pt:    0 sec:   16 sec:   20.513 GB:   :       : 1;
+endscan;
+scan No0008;
+*    start=2013y204d06h41m40s <= original start, modified for tape start.
+     start=2013y204d06h41m44s; mode=rdbe.sx; source=2059+034;
+     station=Mk:    0 sec:   16 sec:   24.615 GB:   :       : 1;
+     station=Pt:    0 sec:   16 sec:   24.615 GB:   :       : 1;
+endscan;
+scan No0009;
+*    start=2013y204d06h42m24s <= original start, modified for tape start.
+     start=2013y204d06h42m28s; mode=rdbe.sx; source=2142+110;
+     station=Mk:    0 sec:   16 sec:   28.718 GB:   :       : 1;
+     station=Pt:    0 sec:   16 sec:   28.718 GB:   :       : 1;
+endscan;
+scan No0010;
+*    start=2013y204d06h44m36s <= original start, modified for tape start.
+     start=2013y204d06h44m40s; mode=rdbe.sx; source=1846+322;
+     station=Mk:    0 sec:   16 sec:   32.820 GB:   :       : 1;
+     station=Pt:    0 sec:   16 sec:   32.820 GB:   :       : 1;
+endscan;
+scan No0011;
+*    start=2013y204d06h45m24s <= original start, modified for tape start.
+     start=2013y204d06h45m28s; mode=rdbe.sx; source=1758+388;
+     station=Mk:    0 sec:   16 sec:   36.923 GB:   :       : 1;
+     station=Pt:    0 sec:   16 sec:   36.923 GB:   :       : 1;
+endscan;
+scan No0012;
+*    start=2013y204d06h47m47s <= original start, modified for tape start.
+     start=2013y204d06h47m51s; mode=rdbe.sx; source=1306+360;
+     station=Mk:    0 sec:   16 sec:   41.026 GB:   :       : 1;
+     station=Pt:    0 sec:   16 sec:   41.026 GB:   :       : 1;
+endscan;
+scan No0013;
+*    start=2013y204d06h48m35s <= original start, modified for tape start.
+     start=2013y204d06h48m39s; mode=rdbe.sx; source=1348+308;
+     station=Mk:    0 sec:   16 sec:   45.128 GB:   :       : 1;
+     station=Pt:    0 sec:   16 sec:   45.128 GB:   :       : 1;
+endscan;
+scan No0014;
+*    start=2013y204d06h50m29s <= original start, modified for tape start.
+     start=2013y204d06h50m33s; mode=rdbe.sx; source=0718+792;
+     station=Mk:    0 sec:   16 sec:   49.231 GB:   :       : 1;
+     station=Pt:    0 sec:   16 sec:   49.231 GB:   :       : 1;
+endscan;
+scan No0015;
+*    start=2013y204d06h51m10s <= original start, modified for tape start.
+     start=2013y204d06h51m14s; mode=rdbe.sx; source=0454+844;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Mk:    0 sec:   16 sec:   53.333 GB:   :       : 1;
+     station=Pt:    0 sec:   16 sec:   53.333 GB:   :       : 1;
+endscan;
+scan No0016;
+*    start=2013y204d06h53m45s <= original start, modified for tape start.
+     start=2013y204d06h53m49s; mode=rdbe.sx; source=1622-253;
+     station=Mk:    0 sec:   16 sec:   57.436 GB:   :       : 1;
+     station=Pt:    0 sec:   16 sec:   57.436 GB:   :       : 1;
+endscan;
+scan No0017;
+*    start=2013y204d06h54m22s <= original start, modified for tape start.
+     start=2013y204d06h54m26s; mode=rdbe.sx; source=1657-261;
+     station=Mk:    0 sec:   16 sec:   61.538 GB:   :       : 1;
+     station=Pt:    0 sec:   16 sec:   61.538 GB:   :       : 1;
+endscan;
+scan No0018;
+*    start=2013y204d06h56m52s <= original start, modified for tape start.
+     start=2013y204d06h56m56s; mode=rdbe.sx; source=1929+226;
+     station=Mk:    0 sec:   16 sec:   65.641 GB:   :       : 1;
+     station=Pt:    0 sec:   16 sec:   65.641 GB:   :       : 1;
+endscan;
+scan No0019;
+*    start=2013y204d06h57m24s <= original start, modified for tape start.
+     start=2013y204d06h57m28s; mode=rdbe.sx; source=1923+210;
+     station=Mk:    0 sec:   16 sec:   69.743 GB:   :       : 1;
+     station=Pt:    0 sec:   16 sec:   69.743 GB:   :       : 1;
+endscan;
+scan No0020;
+*    start=2013y204d06h58m04s <= original start, modified for tape start.
+     start=2013y204d06h58m08s; mode=rdbe.sx; source=1909+161;
+     station=Mk:    0 sec:   16 sec:   73.846 GB:   :       : 1;
+     station=Pt:    0 sec:   16 sec:   73.846 GB:   :       : 1;
+endscan;
+scan No0021;
+*    start=2013y204d06h58m59s <= original start, modified for tape start.
+     start=2013y204d06h59m03s; mode=rdbe.sx; source=2000+148;
+     station=Mk:    0 sec:   16 sec:   77.949 GB:   :       : 1;
+     station=Pt:    0 sec:   16 sec:   77.949 GB:   :       : 1;
+endscan;
+scan No0022;
+*    start=2013y204d07h01m17s <= original start, modified for tape start.
+     start=2013y204d07h01m21s; mode=rdbe.sx; source=0016+731;
+     station=Mk:    0 sec:   16 sec:   82.051 GB:   :       : 1;
+     station=Pt:    0 sec:   16 sec:   82.051 GB:   :       : 1;
+endscan;
+scan No0023;
+*    start=2013y204d07h02m04s <= original start, modified for tape start.
+     start=2013y204d07h02m08s; mode=rdbe.sx; source=2229+695;
+     station=Mk:    0 sec:   16 sec:   86.154 GB:   :       : 1;
+     station=Pt:    0 sec:   16 sec:   86.154 GB:   :       : 1;
+endscan;
+scan No0024;
+*    start=2013y204d07h05m31s <= original start, modified for tape start.
+     start=2013y204d07h05m35s; mode=rdbe.sx; source=1456+044;
+     station=Mk:    0 sec:   16 sec:   90.256 GB:   :       : 1;
+     station=Pt:    0 sec:   16 sec:   90.256 GB:   :       : 1;
+endscan;
+scan No0025;
+*    start=2013y204d07h06m01s <= original start, modified for tape start.
+     start=2013y204d07h06m05s; mode=rdbe.sx; source=1502+036;
+     station=Mk:    0 sec:   16 sec:   94.359 GB:   :       : 1;
+     station=Pt:    0 sec:   16 sec:   94.359 GB:   :       : 1;
+endscan;
+scan No0026;
+*    start=2013y204d07h06m46s <= original start, modified for tape start.
+     start=2013y204d07h06m50s; mode=rdbe.sx; source=1546+027;
+     station=Mk:    0 sec:   16 sec:   98.461 GB:   :       : 1;
+     station=Pt:    0 sec:   16 sec:   98.461 GB:   :       : 1;
+endscan;
+scan No0027;
+*    start=2013y204d07h08m37s <= original start, modified for tape start.
+     start=2013y204d07h08m41s; mode=rdbe.sx; source=1759-396;
+     station=Mk:    0 sec:   16 sec:  102.564 GB:   :       : 1;
+     station=Pt:    0 sec:   16 sec:  102.564 GB:   :       : 1;
+endscan;
+scan No0028;
+*    start=2013y204d07h09m29s <= original start, modified for tape start.
+     start=2013y204d07h09m33s; mode=rdbe.sx; source=1954-388;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Mk:    0 sec:   16 sec:  106.666 GB:   :       : 1;
+     station=Pt:    0 sec:   16 sec:  106.666 GB:   :       : 1;
+endscan;
+scan No0029;
+*    start=2013y204d07h10m47s <= original start, modified for tape start.
+     start=2013y204d07h10m51s; mode=rdbe.sx; source=2127-096;
+     station=Mk:    0 sec:   16 sec:  110.769 GB:   :       : 1;
+     station=Pt:    0 sec:   16 sec:  110.769 GB:   :       : 1;
+endscan;
+scan No0030;
+*    start=2013y204d07h11m37s <= original start, modified for tape start.
+     start=2013y204d07h11m41s; mode=rdbe.sx; source=2149+056;
+     station=Mk:    0 sec:   16 sec:  114.872 GB:   :       : 1;
+     station=Pt:    0 sec:   16 sec:  114.872 GB:   :       : 1;
+endscan;
+scan No0031;
+*    start=2013y204d07h12m12s <= original start, modified for tape start.
+     start=2013y204d07h12m16s; mode=rdbe.sx; source=2144+092;
+     station=Mk:    0 sec:   16 sec:  118.974 GB:   :       : 1;
+     station=Pt:    0 sec:   16 sec:  118.974 GB:   :       : 1;
+endscan;
+scan No0032;
+*    start=2013y204d07h14m39s <= original start, modified for tape start.
+     start=2013y204d07h14m43s; mode=rdbe.sx; source=1722+330;
+     station=Mk:    0 sec:   16 sec:  123.077 GB:   :       : 1;
+     station=Pt:    0 sec:   16 sec:  123.077 GB:   :       : 1;
+endscan;
+scan No0033;
+*    start=2013y204d07h15m15s <= original start, modified for tape start.
+     start=2013y204d07h15m19s; mode=rdbe.sx; source=1736+324;
+     station=Mk:    0 sec:   16 sec:  127.179 GB:   :       : 1;
+     station=Pt:    0 sec:   16 sec:  127.179 GB:   :       : 1;
+endscan;
