@@ -11,8 +11,8 @@ from time import asctime
 from glob import glob
 
 program = 'difxbuild'
-version = '0.31'
-verdate = '20130723'
+version = '0.32'
+verdate = '20130917'
 author = 'Walter Brisken <wbrisken@nrao.edu>'
 
 difxbuildUrl = 'http://www.aoc.nrao.edu/~wbrisken/difxbuild'
@@ -29,6 +29,7 @@ automakeVersion = '1.11.6'
 libtoolVersion = '2.4'
 pkgconfigVersion = '0.28'
 cxOracleVersion = '5.1.2'
+pyxVersion = '0.12.1'	#http://sourceforge.net/projects/pyx/files/pyx/0.12.1/PyX-0.12.1.tar.gz/download
 gpstkVersion = '2.1'
 
 defaultDifxMessageGroup = '224.2.2.1'
@@ -37,7 +38,7 @@ defaultDifxMessagePort = 50200
 if version_info[0] < 3 and version_info[1] < 5:
 	psycopgVersion = '2.4.6'
 else:
-	psycopgVersion = '2.5'
+	psycopgVersion = '2.5.1'
 numMakeCpus = 4
 
 todo_list = """
@@ -59,7 +60,7 @@ TODO:
 
 MAYBE:
 * http://naif.jpl.nasa.gov/naif/toolkit_FORTRAN_PC_Linux_g77_32bit.html
-*  http://naif.jpl.nasa.gov/pub/naif/toolkit//FORTRAN/PC_Linux_g77_32bit/packages/toolkit.tar.Z
+* http://naif.jpl.nasa.gov/pub/naif/toolkit//FORTRAN/PC_Linux_g77_32bit/packages/toolkit.tar.Z
 
 """
 
@@ -1940,6 +1941,37 @@ def sched(origComps, params, args, verbose, pretend):
 	execute('make', verbose, pretend)
 	execute('cp %s/bin/sched %s/bin' % (schedDir, archDir), verbose, pretend)
 	
+def pyx(origComps, params, args, verbose, pretend):
+	if not environ.has_key('PYTHONPATH'):
+		print 'Need PYTHONPATH env var set.'
+		return
+	pythonPath = split(environ['PYTHONPATH'], ':')[0]
+	if not isdir(pythonPath):
+		execute('mkdir -p %s' % pythonPath, verbose, pretend)
+	arch = platform.machine()
+	pyxSrcFile = 'PyX-%s.tar.gz' % pyxVersion
+	pyxUrl = 'http://sourceforge.net/projects/pyx/files/pyx/%s/%s/download' % (pyxVersion, pyxSrcFile)
+	difxBase = environ['DIFX_BASE'] + '/'
+	archDir = difxBase + arch
+	archSrcDir = difxBase + arch + '/src/'
+	tarDir = difxBase + 'tar/'
+	ftpFile(pyxUrl, tarDir, pyxSrcFile, args, verbose, pretend)
+	if not isdir(archSrcDir):
+		execute('mkdir -p %s' % archSrcDir, verbose, pretend)
+	
+	pyxSrcDir = '%s/PyX-%s' % (archSrcDir, pyxVersion)
+	if isdir(pyxSrcDir):
+		print 'Stopping because %s exists' % pyxSrcDir
+		return
+	
+	chdir(archSrcDir)
+	execute('tar zxvf %s/%s' % (tarDir, pyxSrcFile), verbose, pretend)
+	chdir(pyxSrcDir)
+	execute('python setup.py build', verbose, pretend)
+	if '64' in platform.machine():
+		execute('python setup.py install --prefix=%s/../../.. --install-lib=%s/../../../lib64' % (pythonPath, pythonPath), verbose, pretend)
+	else:
+		execute('python setup.py install --prefix=%s/../../..' % pythonPath, verbose, pretend)
 
 def cxOracle(origComps, params, args, verbose, pretend):
 	if not environ.has_key('PYTHONPATH'):
@@ -2095,7 +2127,7 @@ def pgplot(origComps, params, args, verbose, pretend):
 
 
 def extra(origComps, params, args, verbose, pretend):
-	packages = ['cxOracle', 'psycopg', 'pgplot', 'png', 'sched', 'sked', 'spice', 'autotools', 'gpstk']
+	packages = ['cxOracle', 'psycopg', 'pgplot', 'png', 'pyx', 'sched', 'sked', 'spice', 'autotools', 'gpstk']
 	if len(args) < 1:
 		print 'The "extra" option allows installation of optional software.\n'
 		print 'Usage 1: difxbuild [options] extra [package(s)]\n'
@@ -2136,6 +2168,8 @@ def extra(origComps, params, args, verbose, pretend):
 		cxOracle(origComps, params, [], verbose, pretend)
 	if 'psycopg' in args:
 		psycopg(origComps, params, [], verbose, pretend)
+	if 'pyx' in args:
+		pyx(origComps, params, [], verbose, pretend)
 
 
 def newestOMPI(data, version):
