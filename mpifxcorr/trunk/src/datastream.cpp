@@ -496,10 +496,15 @@ int DataStream::calculateControlParams(int scan, int offsetsec, int offsetns)
     //cout << "Datastream " << mpiid << " is realigning bufferindex - it was " << bufferindex << endl;
     int tosubtract = (int(count*1000.0*(delayus2 - delayus1)/(bufferinfo[atsegment].sampletimens*bufferinfo[atsegment].blockspersend) + 0.5)*bufferinfo[atsegment].bytespersamplenum)/bufferinfo[atsegment].bytespersampledenom;
     if(bufferindex - tosubtract < atsegment*readbytes) {
-      cwarn << startl << "Changing geometric delay means that segment start time is " << atsegment*readbytes - (bufferindex-tosubtract) << " samples to late" << endl;
-      bufferindex = atsegment*readbytes;
-    }
-    else {
+      //The changing geometric delay since the start of the subint means we actually can't do this FFT - need to advance one further`
+      count++;
+      bufferindex += blockbytes;
+      if(count == bufferinfo[atsegment].blockspersend)
+      {
+        bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][1] = Mode::INVALID_SUBINT;
+        return 0;
+      }
+      tosubtract = (int(count*1000.0*(delayus2 - delayus1)/(bufferinfo[atsegment].sampletimens*bufferinfo[atsegment].blockspersend) + 0.5)*bufferinfo[atsegment].bytespersamplenum)/bufferinfo[atsegment].bytespersampledenom;
       bufferindex -= tosubtract;
     }
     //re-align the index to nearest previous 16 bit boundary
