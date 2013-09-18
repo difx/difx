@@ -252,4 +252,9 @@ echo -n "DDC - 2 DBE - VDIF - 4 IF (1/3/2/2)- 8 channel  "
 compare tx006c.8ch.1.3.2.2 NL
 
 #=============================================================================
+echo -n "Some antennas excluded from particular modes 1  "
+compare dq338 SC
 
+#=============================================================================
+echo -n "Some antennas excluded from particular modes 2  "
+compare gs032a1 FD
