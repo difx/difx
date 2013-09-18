@@ -1,0 +1,330 @@
+from edu.nrao.evla.observe import Mark5C
+from edu.nrao.evla.observe import ESSR
+from edu.nrao.evla.observe import MatrixSwitch
+from edu.nrao.evla.observe import RDBE
+from edu.nrao.evla.observe import VLBALoIfSetup
+from edu.nrao.evla.observe import Parameters
+from edu.nrao.evla.observe import bbc
+
+second = 1.0/86400.0
+
+deltat2 = 1
+
+obsCode = 'DQ338'
+stnCode = 'SC'
+mjdStart = 56554 + 25205*second
+
+# File written by vex2script version 0.20 vintage 20130918
+
+dbe0 = RDBE(0, 'ddc')
+dbe0.setALC(1)
+dbe0.setFormat('Mark5B')
+dbe0.setPSNMode(0)
+dbe0.setPacket(0, 0, 36, 5008)
+subarray.setDBE(dbe0)
+
+recorder0 = Mark5C('-1')
+recorder0.setMode('Mark5B')
+recorder0.setPSNMode(0)
+recorder0.setPacket(0, 0, 36, 5008)
+subarray.setRecorder(recorder0)
+
+# XCUBE init
+essr = ESSR()          # constructor
+essr.setMode(4)        # one in, one out
+essr.setRoute(2, 4)    # route incoming traffic from input 1 to output 1
+essr.setPace(4, 5)     # set port 4 packet pacing to 5
+subarray.setESSR(essr)
+
+loif0 = VLBALoIfSetup() 
+loif0.setIf('A', '20cm', 'R', 2400, 'L', 'NA', 0, '20cm', 14900, 2400, 992)
+loif0.setIf('C', '20cm', 'L', 2400, 'L', 'NA', 0, '20cm', 14900, 2400, 992)
+loif0.setPhaseCal(1)
+loif0.setDBEParams(0, -1, -1, 10, 0)
+loif0.setDBEParams(1, -1, -1, 10, 0)
+loif0.setDBERemember(0, 1)
+loif0.setDBERemember(1, 1)
+channelSet0 = [ \
+  bbc(0, 992, 16, 'L', 2, 0), \  # IF A
+  bbc(1, 992, 16, 'L', 2, 0), \  # IF C
+  bbc(0, 976, 16, 'L', 2, 0), \  # IF A
+  bbc(1, 976, 16, 'L', 2, 0) \  # IF C
+  ]
+
+loif1 = VLBALoIfSetup() 
+loif1.setIf('A', '20cm', 'R', 2400, 'L', 'NA', 0, '20cm', 14900, 2400, 750)
+loif1.setIf('C', '20cm', 'L', 2400, 'L', 'NA', 0, '20cm', 14900, 2400, 750)
+loif1.setPhaseCal(1)
+loif1.setDBEParams(0, -1, -1, 10, 0)
+loif1.setDBEParams(1, -1, -1, 10, 0)
+loif1.setDBERemember(0, 1)
+loif1.setDBERemember(1, 1)
+channelSet1 = [ \
+  bbc(0, 750, 16, 'L', 2, 0), \  # IF A
+  bbc(1, 750, 16, 'L', 2, 0), \  # IF C
+  bbc(0, 734, 16, 'L', 2, 0), \  # IF A
+  bbc(1, 734, 16, 'L', 2, 0) \  # IF C
+  ]
+
+loif2 = VLBALoIfSetup() 
+loif2.setIf('A', '13cm', 'R', 3100, 'L', 'NA', 0, '13cm', 15400, 3100, 813)
+loif2.setIf('C', '13cm', 'L', 3100, 'L', 'NA', 0, '13cm', 15400, 3100, 813)
+loif2.setPhaseCal(1)
+loif2.setDBEParams(0, -1, -1, 10, 0)
+loif2.setDBEParams(1, -1, -1, 10, 0)
+loif2.setDBERemember(0, 1)
+loif2.setDBERemember(1, 1)
+channelSet2 = [ \
+  bbc(0, 813, 16, 'L', 2, 0), \  # IF A
+  bbc(1, 813, 16, 'L', 2, 0), \  # IF C
+  bbc(0, 797, 16, 'L', 2, 0), \  # IF A
+  bbc(1, 797, 16, 'L', 2, 0) \  # IF C
+  ]
+
+loif3 = VLBALoIfSetup() 
+loif3.setIf('A', '6cm', 'R', 4100, 'U', 'NA', 0, '6cm', 15100, 4100, 858)
+loif3.setIf('C', '6cm', 'L', 4100, 'U', 'NA', 0, '6cm', 15100, 4100, 858)
+loif3.setPhaseCal(1)
+loif3.setDBEParams(0, -1, -1, 10, 0)
+loif3.setDBEParams(1, -1, -1, 10, 0)
+loif3.setDBERemember(0, 1)
+loif3.setDBERemember(1, 1)
+channelSet3 = [ \
+  bbc(0, 858, 16, 'U', 2, 0), \  # IF A
+  bbc(1, 858, 16, 'U', 2, 0), \  # IF C
+  bbc(0, 874, 16, 'U', 2, 0), \  # IF A
+  bbc(1, 874, 16, 'U', 2, 0) \  # IF C
+  ]
+
+loif4 = VLBALoIfSetup() 
+loif4.setIf('B', '4cm', 'R', 7600, 'U', 'NA', 0, '4cm', 7600, 15100, 799)
+loif4.setIf('D', '4cm', 'L', 7600, 'U', 'NA', 0, '4cm', 7600, 15100, 799)
+loif4.setPhaseCal(1)
+loif4.setDBEParams(0, -1, -1, 10, 0)
+loif4.setDBEParams(1, -1, -1, 10, 0)
+loif4.setDBERemember(0, 1)
+loif4.setDBERemember(1, 1)
+channelSet4 = [ \
+  bbc(0, 799, 16, 'U', 2, 0), \  # IF B
+  bbc(1, 799, 16, 'U', 2, 0), \  # IF D
+  bbc(0, 815, 16, 'U', 2, 0), \  # IF B
+  bbc(1, 815, 16, 'U', 2, 0) \  # IF D
+  ]
+
+loif5 = VLBALoIfSetup() 
+loif5.setIf('B', '2cm', 'R', 14600, 'U', 'NA', 0, '2cm', 14600, 11400, 669)
+loif5.setIf('D', '2cm', 'L', 14600, 'U', 'NA', 0, '2cm', 14600, 11400, 669)
+loif5.setPhaseCal(1)
+loif5.setDBEParams(0, -1, -1, 10, 0)
+loif5.setDBEParams(1, -1, -1, 10, 0)
+loif5.setDBERemember(0, 1)
+loif5.setDBERemember(1, 1)
+channelSet5 = [ \
+  bbc(0, 669, 16, 'U', 2, 0), \  # IF B
+  bbc(1, 669, 16, 'U', 2, 0), \  # IF D
+  bbc(0, 685, 16, 'U', 2, 0), \  # IF B
+  bbc(1, 685, 16, 'U', 2, 0) \  # IF D
+  ]
+
+loif6 = VLBALoIfSetup() 
+loif6.setIf('B', '1cm', 'R', 21500, 'U', 'NA', 12400, '1cm', 9100, 15100, 719)
+loif6.setIf('D', '1cm', 'L', 21500, 'U', 'NA', 12400, '1cm', 9100, 15100, 719)
+loif6.setPhaseCal(1)
+loif6.setDBEParams(0, -1, -1, 10, 0)
+loif6.setDBEParams(1, -1, -1, 10, 0)
+loif6.setDBERemember(0, 1)
+loif6.setDBERemember(1, 1)
+channelSet6 = [ \
+  bbc(0, 719, 16, 'U', 2, 0), \  # IF B
+  bbc(1, 719, 16, 'U', 2, 0), \  # IF D
+  bbc(0, 735, 16, 'U', 2, 0), \  # IF B
+  bbc(1, 735, 16, 'U', 2, 0) \  # IF D
+  ]
+
+loif7 = VLBALoIfSetup() 
+loif7.setIf('A', '7mm', 'R', 42400, 'U', 'NA', 34800, '7mm', 15100, 7600, 719)
+loif7.setIf('C', '7mm', 'L', 42400, 'U', 'NA', 34800, '7mm', 15100, 7600, 719)
+loif7.setPhaseCal(1)
+loif7.setDBEParams(0, -1, -1, 10, 0)
+loif7.setDBEParams(1, -1, -1, 10, 0)
+loif7.setDBERemember(0, 1)
+loif7.setDBERemember(1, 1)
+channelSet7 = [ \
+  bbc(0, 719, 16, 'U', 2, 0), \  # IF A
+  bbc(1, 719, 16, 'U', 2, 0), \  # IF C
+  bbc(0, 735, 16, 'U', 2, 0), \  # IF A
+  bbc(1, 735, 16, 'U', 2, 0) \  # IF C
+  ]
+
+loif8 = VLBALoIfSetup() 
+loif8.setIf('A', '6cm', 'R', 4100, 'U', 'NA', 0, '6cm', 15100, 4100, 826)
+loif8.setIf('C', '6cm', 'L', 4100, 'U', 'NA', 0, '6cm', 15100, 4100, 826)
+loif8.setPhaseCal(1)
+loif8.setDBEParams(0, -1, -1, 10, 0)
+loif8.setDBEParams(1, -1, -1, 10, 0)
+loif8.setDBERemember(0, 1)
+loif8.setDBERemember(1, 1)
+channelSet8 = [ \
+  bbc(0, 826, 32, 'U', 2, 0), \  # IF A
+  bbc(1, 826, 32, 'U', 2, 0), \  # IF C
+  bbc(0, 858, 32, 'U', 2, 0), \  # IF A
+  bbc(1, 858, 32, 'U', 2, 0) \  # IF C
+  ]
+
+loif9 = VLBALoIfSetup() 
+loif9.setIf('A', '6cm', 'R', 4100, 'U', 'NA', 0, '6cm', 15100, 4100, 874)
+loif9.setIf('C', '6cm', 'L', 4100, 'U', 'NA', 0, '6cm', 15100, 4100, 874)
+loif9.setPhaseCal(1)
+loif9.setDBEParams(0, -1, -1, 10, 0)
+loif9.setDBEParams(1, -1, -1, 10, 0)
+loif9.setDBERemember(0, 1)
+loif9.setDBERemember(1, 1)
+channelSet9 = [ \
+  bbc(0, 874, 8, 'U', 2, 0), \  # IF A
+  bbc(1, 874, 8, 'U', 2, 0), \  # IF C
+  bbc(0, 882, 8, 'U', 2, 0), \  # IF A
+  bbc(1, 882, 8, 'U', 2, 0) \  # IF C
+  ]
+
+source0 = Source(5.70762361992412, 0.12148754150517)
+source0.setName('2145+067')
+
+# Setup Scan 
+# changing to mode band.21cm
+subarray.setChannels(dbe0, channelSet0)
+subarray.setVLBALoIfSetup(dbe0, loif0)
+subarray.set4x4Switch('1A', 1)
+subarray.set4x4Switch('1B', 3)
+subarray.setSource(source0)
+# Setup scan - run right away, but do not start recording
+subarray.execute( array.time() + 2*second )
+
+# Scan 0 = No0001
+recorder0.setPacket(0, 0, 36, 5008)
+subarray.setRecord(mjdStart + 0*second, mjdStart+359*second, 'No0001', obsCode, stnCode )
+if array.time() < mjdStart + (359-10)*second:
+  subarray.execute(mjdStart + 354*second)
+else:
+  print 'Skipping scan which ended at time ' + str(mjdStart+359*second) + ' since array.time is ' + str(array.time())
+
+# Scan 1 = No0002
+# changing to mode band.18cm
+subarray.setChannels(dbe0, channelSet1)
+subarray.setVLBALoIfSetup(dbe0, loif1)
+subarray.set4x4Switch('1A', 1)
+subarray.set4x4Switch('1B', 3)
+recorder0.setPacket(0, 0, 36, 5008)
+subarray.setRecord(mjdStart + 479*second, mjdStart+838*second, 'No0002', obsCode, stnCode )
+if array.time() < mjdStart + (838-10)*second:
+  subarray.execute(mjdStart + 833*second)
+else:
+  print 'Skipping scan which ended at time ' + str(mjdStart+838*second) + ' since array.time is ' + str(array.time())
+
+# Scan 2 = No0003
+# changing to mode band.13cm
+subarray.setChannels(dbe0, channelSet2)
+subarray.setVLBALoIfSetup(dbe0, loif2)
+subarray.set4x4Switch('1A', 1)
+subarray.set4x4Switch('1B', 3)
+recorder0.setPacket(0, 0, 36, 5008)
+subarray.setRecord(mjdStart + 897*second, mjdStart+1256*second, 'No0003', obsCode, stnCode )
+if array.time() < mjdStart + (1256-10)*second:
+  subarray.execute(mjdStart + 1251*second)
+else:
+  print 'Skipping scan which ended at time ' + str(mjdStart+1256*second) + ' since array.time is ' + str(array.time())
+
+# Scan 3 = No0004
+# changing to mode band.6cm
+subarray.setChannels(dbe0, channelSet3)
+subarray.setVLBALoIfSetup(dbe0, loif3)
+subarray.set4x4Switch('1A', 1)
+subarray.set4x4Switch('1B', 3)
+recorder0.setPacket(0, 0, 36, 5008)
+subarray.setRecord(mjdStart + 1376*second, mjdStart+1735*second, 'No0004', obsCode, stnCode )
+if array.time() < mjdStart + (1735-10)*second:
+  subarray.execute(mjdStart + 1730*second)
+else:
+  print 'Skipping scan which ended at time ' + str(mjdStart+1735*second) + ' since array.time is ' + str(array.time())
+
+# Scan 4 = No0005
+# changing to mode band.4cm
+subarray.setChannels(dbe0, channelSet4)
+subarray.setVLBALoIfSetup(dbe0, loif4)
+subarray.set4x4Switch('1A', 2)
+subarray.set4x4Switch('1B', 4)
+recorder0.setPacket(0, 0, 36, 5008)
+subarray.setRecord(mjdStart + 1795*second, mjdStart+2154*second, 'No0005', obsCode, stnCode )
+if array.time() < mjdStart + (2154-10)*second:
+  subarray.execute(mjdStart + 2149*second)
+else:
+  print 'Skipping scan which ended at time ' + str(mjdStart+2154*second) + ' since array.time is ' + str(array.time())
+
+# Scan 5 = No0006
+# changing to mode band.2cm
+subarray.setChannels(dbe0, channelSet5)
+subarray.setVLBALoIfSetup(dbe0, loif5)
+subarray.set4x4Switch('1A', 2)
+subarray.set4x4Switch('1B', 4)
+recorder0.setPacket(0, 0, 36, 5008)
+subarray.setRecord(mjdStart + 2274*second, mjdStart+2633*second, 'No0006', obsCode, stnCode )
+if array.time() < mjdStart + (2633-10)*second:
+  subarray.execute(mjdStart + 2628*second)
+else:
+  print 'Skipping scan which ended at time ' + str(mjdStart+2633*second) + ' since array.time is ' + str(array.time())
+
+# Scan 6 = No0007
+# changing to mode band.1cm
+subarray.setChannels(dbe0, channelSet6)
+subarray.setVLBALoIfSetup(dbe0, loif6)
+subarray.set4x4Switch('1A', 2)
+subarray.set4x4Switch('1B', 4)
+recorder0.setPacket(0, 0, 36, 5008)
+subarray.setRecord(mjdStart + 2693*second, mjdStart+3052*second, 'No0007', obsCode, stnCode )
+if array.time() < mjdStart + (3052-10)*second:
+  subarray.execute(mjdStart + 3047*second)
+else:
+  print 'Skipping scan which ended at time ' + str(mjdStart+3052*second) + ' since array.time is ' + str(array.time())
+
+# Scan 7 = No0008
+# changing to mode band.7mm
+subarray.setChannels(dbe0, channelSet7)
+subarray.setVLBALoIfSetup(dbe0, loif7)
+subarray.set4x4Switch('1A', 1)
+subarray.set4x4Switch('1B', 3)
+recorder0.setPacket(0, 0, 36, 5008)
+subarray.setRecord(mjdStart + 3171*second, mjdStart+3530*second, 'No0008', obsCode, stnCode )
+if array.time() < mjdStart + (3530-10)*second:
+  subarray.execute(mjdStart + 3525*second)
+else:
+  print 'Skipping scan which ended at time ' + str(mjdStart+3530*second) + ' since array.time is ' + str(array.time())
+
+# Scan 8 = No0009
+# changing to mode band.6-32
+subarray.setChannels(dbe0, channelSet8)
+subarray.setVLBALoIfSetup(dbe0, loif8)
+subarray.set4x4Switch('1A', 1)
+subarray.set4x4Switch('1B', 3)
+recorder0.setPacket(0, 0, 36, 5008)
+subarray.setRecord(mjdStart + 3650*second, mjdStart+4009*second, 'No0009', obsCode, stnCode )
+if array.time() < mjdStart + (4009-10)*second:
+  subarray.execute(mjdStart + 4004*second)
+else:
+  print 'Skipping scan which ended at time ' + str(mjdStart+4009*second) + ' since array.time is ' + str(array.time())
+
+# Scan 9 = No0010
+# changing to mode band.6-8
+subarray.setChannels(dbe0, channelSet9)
+subarray.setVLBALoIfSetup(dbe0, loif9)
+subarray.set4x4Switch('1A', 1)
+subarray.set4x4Switch('1B', 3)
+recorder0.setPacket(0, 0, 36, 5008)
+subarray.setRecord(mjdStart + 4069*second, mjdStart+4428*second, 'No0010', obsCode, stnCode )
+if array.time() < mjdStart + (4428-10)*second:
+  subarray.execute(mjdStart + 4423*second)
+else:
+  print 'Skipping scan which ended at time ' + str(mjdStart+4428*second) + ' since array.time is ' + str(array.time())
+
+# Scan 10 = No0011
+# Antenna SC not in scan No0011
+
+array.wait(mjdStart + 4429*second)
