@@ -561,6 +561,13 @@ int pystream::writeDbeInit(const VexData *V)
 		        const VexMode *mode = V->getMode(modeNum);
     		    const VexSetup *setup = mode->getSetup(ant);
 
+//				cerr << "mode: " << modeNum << " chan size: " << setup->channels.size() << endl;
+
+				if( setup->channels.size() == 0 ) {
+					cerr << "No channels defined for mode " << modeNum << " and antenna " << ant << " - skipping." << endl;
+					continue;
+				}
+
 				if( setup->channels.size() > 2*MAX_DBE_CHAN ) {
 					cerr << "VEX error: too many channels defined: " << setup->channels.size() 
 						<< " vs max of " << 2*MAX_DBE_CHAN << " for DDC" << endl;
@@ -1551,6 +1558,11 @@ int pystream::writeLoifTable(const VexData *V)
 		const VexMode *mode = V->getMode(modeNum);
 		const VexSetup *setup = mode->getSetup(ant);
 
+        if( setup->channels.size() == 0 ) {
+           cerr << "No channels defined for mode " << modeNum << " and antenna " << ant << " - skipping. " << endl;
+           continue;
+        }
+
 		// initialize this here, will use this during writeScans
 		loifSetupFirstUse[modeNum] = true;
 
@@ -1815,6 +1827,11 @@ int pystream::writeDDCLoifTable(const VexData *V)
 	{
 		const VexMode *mode = V->getMode(modeNum);
 		const VexSetup *setup = mode->getSetup(ant);
+
+        if( setup->channels.size() == 0 ) {
+            cerr << "No channels defined for mode " << modeNum << " and antenna " << ant << " - skipping" << endl;
+            continue;
+        }
 
 		if(!setup)
 		{
