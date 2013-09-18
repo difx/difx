@@ -20,7 +20,7 @@ struct ps_array *psarray;
     {
     int scanpage, nvertpage, sno, soffset, scan;
     int year, day, hour, minute, second;
-    char label[10];
+    char label[11];
     float ssep, xpos, ypos, xmin, xmax, ymin, ymax;
     static int current_scanpage;
     extern int data_version;
