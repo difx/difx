@@ -40,9 +40,9 @@ struct psplot_cell *cell;
 char key;
 int do_fplot;
     {
-    int year, day, hour, minute, second, band;
+    int year, day, hour, minute, second, band, infoyear;
     float xtag, ytag, sepmin, xmin, xmax, ymin, ymax;
-    char infotxt[12];
+    char infotxt[13];
     static fringearray *fdatum;
     extern int data_version;
 
@@ -111,10 +111,19 @@ int do_fplot;
             cpgrect (INFO);
             int_to_time (fdatum->data.time_tag, &year, &day, &hour, &minute, &second);
             if (data_version > 1)
+            {
+                /* bug fix by Cormac Reynolds, which should be checked by someone more knowledgeable. sprintf does not truncate, and year has 3 digits for dates after 2000. Force truncating to two digits - I think infotxt is only used for user feedback so this should be o.k. */
+                infoyear = year;
+                if (infoyear > 100) {
+                    infoyear = infoyear-100;
+                }
                 sprintf (infotxt, "%02d%03d-%02d%02d%02d", 
-                                                year, day, hour, minute, second);
+                                                infoyear, day, hour, minute, second);
+            }
             else
+            {
                 sprintf (infotxt, "%02d%03d-%02d%02d", year, day, hour, minute);
+            }
             if (strlen (fdatum->data.scan_id) > 0) strcpy (infotxt, fdatum->data.scan_id);
             cpgsci (TEXT);
             cpgsch (0.9);
