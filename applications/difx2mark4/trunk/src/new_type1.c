@@ -119,6 +119,8 @@ int new_type1 (DifxInput *D,                    // ptr to a filled-out difx inpu
                                     // construct and write type 100 record
     memcpy (t100.baseline, blines+2*nb, 2);
     t100.nindex = D->baseline[blind].nFreq * D->baseline[blind].nPolProd[0];
+    if (a1 == a2)                   // for now, there are no XY autocorrelations
+        t100.nindex /= 2;
     write_t100 (&t100, fout[nb]);
 
                                     // loop through whole fblock table
