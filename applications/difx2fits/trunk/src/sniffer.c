@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2012 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2008-2013 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -36,6 +36,8 @@ typedef struct
 	fftw_complex ***spectrum;	/* [BBC][Time][Chan] */
 	int a1, a2, sourceId;
 	double mjdStart, mjdMax;
+	double mjdSum;
+	int mjdCount;
 	int nTime, nChan;
 	int nBBC;
 	double *weightSum;
@@ -89,6 +91,8 @@ void resetAccumulator(Accumulator *A)
 		A->nRec[i] = 0;
 	}
 	A->mjdStart = 0;
+	A->mjdSum = 0.0;
+	A->mjdCount = 0;
 }
 
 Accumulator *newAccumulatorArray(Sniffer *S, int n)
@@ -484,7 +488,7 @@ double peakup(double peak[3], int i, int n, double w)
 	return f/w;
 }
 
-static int dump(Sniffer *S, Accumulator *A, double mjd)
+static int dump(Sniffer *S, Accumulator *A)
 {
 	int b, j, p, a1, a2, besti, bestj;
 	fftw_complex **array;
@@ -502,11 +506,14 @@ static int dump(Sniffer *S, Accumulator *A, double mjd)
 	double freq;
 	int chan=1;
 	int maxNRec = 0;
+	double mjd;
 
-	if(A->sourceId < 0 || S->configId < 0)
+	if(A->sourceId < 0 || S->configId < 0 || A->mjdCount < 0)
 	{
 		return 0;
 	}
+
+	mjd = A->mjdSum / A->mjdCount;
 
 	config = S->D->config + S->configId;
 
@@ -851,7 +858,7 @@ static int dump(Sniffer *S, Accumulator *A, double mjd)
 	return 0;
 }
 
-static int add(Accumulator *A, int bbc, int index, float weight, const float *data, int stride, int isLSB)
+static int add(Accumulator *A, int bbc, int index, float weight, const float *data, int stride, int isLSB, double mjd)
 {
 	fftw_complex *array;
 	int c;
@@ -876,6 +883,8 @@ static int add(Accumulator *A, int bbc, int index, float weight, const float *da
 	{
 		A->weightMin[bbc] = weight;
 	}
+	++A->mjdCount;
+	A->mjdSum += mjd;
 
 	return A->nRec[bbc];
 }
@@ -941,7 +950,7 @@ int feedSnifferFITS(Sniffer *S, const DifxVis *dv)
 
 	if(mjd > A->mjdMax || A->sourceId != sourceId)
 	{
-		dump(S, A, mjd);
+		dump(S, A);
 		resetAccumulator(A);
 		A->sourceId = sourceId;
 	}
@@ -978,7 +987,7 @@ int feedSnifferFITS(Sniffer *S, const DifxVis *dv)
 			bbc = i*S->nPol + p;
 			weight = data->data[p + S->nStokes*i];
 			offset = S->nStokes*S->nIF + stride*S->nChan*i + p*S->nComplex;
-			add(A, bbc, index, weight, data->data+offset, stride, isLSB);
+			add(A, bbc, index, weight, data->data+offset, stride, isLSB, mjd);
 		}
 	}
 

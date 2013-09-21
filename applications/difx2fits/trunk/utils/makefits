@@ -236,9 +236,8 @@ class JobList:
 					exit(0)
 			difxLabel = getenv('DIFX_LABEL')
 			if difxLabel != None:
-				if difxLabel != self.kv['']:
-
-		self.kv['DiFX'] = difxVersion
+				if difxLabel != self.kv['DiFX']:
+					self.kv['DiFX'] = difxLabel
 
 		return difxVersion
 
