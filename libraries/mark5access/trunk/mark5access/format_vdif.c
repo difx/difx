@@ -3959,7 +3959,8 @@ int find_vdif_frame(const unsigned char *data, size_t length, size_t *offset, in
 			edvB      = frame[4] >> 24;
 
 			/* does it look reasonable? */
-			if(fsA == fs && fsB == fs && refEpochA == refEpochB && (secA == secB || secA+1 == secB) && edvA == edvB)
+//			if(fsA == fs && fsB == fs && refEpochA == refEpochB && (secA == secB || secA+1 == secB) && edvA == edvB)
+			if(fsA == fs && fsB == fs && refEpochA == refEpochB && (secA == secB || secA+1 == secB))
 			{
 				*framesize = fs;
 
