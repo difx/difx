@@ -37,8 +37,8 @@
 using namespace std;
 
 const string program("vex2script");
-const string version("0.20");
-const string verdate("20130918");
+const string version("0.21");
+const string verdate("20130923");
 const string author("Walter Brisken, Adam Deller, Matthias Bark");
 
 static void usage(int argc, char **argv)
