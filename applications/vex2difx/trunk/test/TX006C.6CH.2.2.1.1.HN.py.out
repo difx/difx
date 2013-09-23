@@ -14,7 +14,7 @@ obsCode = 'TX006C.6CH.2.2.1.1'
 stnCode = 'HN'
 mjdStart = 56461 + 67500*second
 
-# File written by vex2script version 0.19 vintage 20130912
+# File written by vex2script version 0.21 vintage 20130923
 
 dbe0 = RDBE(1, 'ddc', 'ddc_1501283.bin')
 dbe0.setALC(1)
@@ -23,7 +23,7 @@ dbe0.setPSNMode(0)
 dbe0.setPacket(0, 0, 28, 5032)
 subarray.setDBE(dbe0)
 
-dbe1 = RDBE(2, 'ddc', 'ddc_1501183.bin')
+dbe1 = RDBE(2, 'ddc', 'ddc_1501283.bin')
 dbe1.setALC(1)
 dbe1.setFormat('VDIF')
 dbe1.setPSNMode(0)
