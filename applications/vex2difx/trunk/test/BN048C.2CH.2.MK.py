@@ -14,7 +14,7 @@ obsCode = 'BN048C.2CH.2'
 stnCode = 'MK'
 mjdStart = 56459 + 77475*second
 
-# File written by vex2script version 0.19 vintage 20130912
+# File written by vex2script version 0.21 vintage 20130923
 
 dbe0 = RDBE(0, 'ddc')
 dbe0.setALC(1)

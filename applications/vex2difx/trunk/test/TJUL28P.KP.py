@@ -14,7 +14,7 @@ obsCode = 'TJUL28P'
 stnCode = 'KP'
 mjdStart = 56501 + 7200*second
 
-# File written by vex2script version 0.19 vintage 20130912
+# File written by vex2script version 0.21 vintage 20130923
 
 dbe0 = RDBE(0, 'pfb')
 dbe0.setALC(1)

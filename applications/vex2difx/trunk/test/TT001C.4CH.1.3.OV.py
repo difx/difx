@@ -14,7 +14,7 @@ obsCode = 'TT001C.4CH.1.3'
 stnCode = 'OV'
 mjdStart = 56450 + 15720*second
 
-# File written by vex2script version 0.19 vintage 20130912
+# File written by vex2script version 0.21 vintage 20130923
 
 dbe0 = RDBE(0, 'ddc', 'ddc_1501283.bin')
 dbe0.setALC(1)
