@@ -350,6 +350,16 @@ int createRoot (DifxInput *D,           // difx input structure pointer
                                     // Check that station is in this scan
                 else if (strncmp (pst[0], "station", 7) == 0)
                     {
+                                    // parse station line to find scan intersection
+                    pchar = strchr (line, ':');
+                    itime = atoi (pchar+1);
+                    if (itime > latest_start)
+                        latest_start = itime;
+                    pchar = strchr (pchar+1, ':');
+                    itime = atoi (pchar+1);
+                    if (itime < earliest_stop)
+                        earliest_stop = itime;
+
                     i = isValidAntenna(D, pst[2], scanId);
                     if(i < 0)
                         line[0] = 0;
@@ -358,15 +368,6 @@ int createRoot (DifxInput *D,           // difx input structure pointer
                         {
                         nant++;
                         stns[i].inscan = TRUE;
-                                    // parse station line to find scan intersection
-                        pchar = strchr (line, ':');
-                        itime = atoi (pchar+1);
-                        if (itime > latest_start)
-                            latest_start = itime;
-                        pchar = strchr (pchar+1, ':');
-                        itime = atoi (pchar+1);
-                        if (itime < earliest_stop)
-                            earliest_stop = itime;
                         }
                     }
                                     // source name may have been changed in .v2d
