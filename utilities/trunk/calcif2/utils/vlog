@@ -30,13 +30,13 @@
 #============================================================================
 
 from sys import argv, stdout, exit
-from os import getcwd
+from os import getcwd, system
 from string import split, strip, find, rfind, lower
 import gzip
 
 program = 'vlog'
-version = 1.6
-verdate = '20130723'
+version = 1.7
+verdate = '20130911'
 author  = 'Walter Brisken'
 
 def usage():
@@ -662,3 +662,27 @@ if mode in ['nouveau', 'transition']:
 			writetable(PHs, '%s.%s.pcal' % (exper, a), [a], 'PH', 0)
 		writetable(WRs, '%s.%s.weather' % (exper, a), [a], 'WR', 0)
 
+
+# add comment to and rename the cal.vlba file to deter Mark5C users from using it
+if isMark5C > 0 and 'legacy' not in inputFile:
+	if inputFile[-3:] == '.gz':
+		outputFile = inputFile[:-3] + '.legacy'
+		data = gzip.open(inputFile, 'r').readlines()
+	else:
+		outputFile = inputFile + '.legacy'
+		data = open(inputFile, 'r').readlines()
+	o = open(outputFile, 'w')
+	o.write('*** This file contains system temperature and pulse cal data from the LEGACY ***\n')
+	o.write('*** VLBA system.  The signal path and maybe the channelization is different  ***\n')
+	o.write('*** from that used for RDBE/MARK5C based observations.  Do not use the pulse ***\n')
+	o.write('*** cal data for calibration and only use the Tsys data if you really        ***\n')
+	o.write('*** understand what you are doing.  These data are mainly for use in system  ***\n')
+	o.write('*** debugging.                                                               ***\n\n')
+	for d in data:
+		o.write(d)
+	o.close()
+	system('gzip %s' % outputFile)
+	system('mv %s /tmp' % inputFile)
+	print '%s has been renamed %s and a warning has' % (inputFile, outputFile)
+	print 'been added.  The original file has been moved to /tmp which will be'
+	print 'deleted in some number of days.'
