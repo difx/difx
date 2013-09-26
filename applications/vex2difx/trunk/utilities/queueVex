@@ -10,8 +10,8 @@ from time import time
 import datetime
 
 program = 'queueVex'
-version = '1.21'
-verdate = '20130824'
+version = '1.22'
+verdate = '20130925'
 author  = 'Walter Brisken & Matthias Bark'
 
 verbose = 1
@@ -29,6 +29,8 @@ vex2scriptProgram = '%s/vex2script' % difxPath
 vlbaOpsPhone = '575-835-7250'
 gbEmailList = 'gbt-vlba-notify@nrao.edu'
 gbDestination = '/home/astro-util/vlba/gbscripts'
+genPath = '/home/vlba/docs/GEN/'
+obsPath = '/users/vlbaops/OBS/'
 
 # ------------------
 
@@ -44,6 +46,9 @@ def usage():
 	print '  -u or --usno                convert scripts to use USNO devices'
 	print '  -e or --edit                allow time to edit the files'
 	print '  -n or --nocopy              don\'t copy files to stations'
+	print '  --tapes                     do the equivalent of the old tapes program'
+	print '                              this is experimental/incomplete!'
+	print '  --tapesonly                 only run the tapes functionality'
 	print '  --vex2script <program>      use alternate version of vex2script'
 	print '  -d or --dbefile <filename>  use provided personality file for DBE\n'
 	print ''
@@ -129,8 +134,7 @@ def vexPeek(vexFile):
 	if verbose > 0:
 		print 'Executing command: %s' % cmd
 
-	p = popen(cmd)
-	data = p.readlines()
+	data = popen(cmd).readlines()
 
 	if len(data) == 0:
 		return 'Error', 'Error', 'Error'
@@ -171,6 +175,24 @@ def mjd2datetime(mjd):
 	t = mjd0 + dt
 	return '%04d%s%02d %02dh%02dm%02ds' % (t.year, mon[t.month-1], t.day, t.hour, t.minute, t.second)
 
+def mjd2date(mjd):
+	mon = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
+	dt = datetime.timedelta(int(mjd), int((mjd - int(mjd))*86400.0 + 0.5))
+	t = mjd0 + dt
+	return '%04d%s%02d' % (t.year, mon[t.month-1], t.day)
+
+def mjd2datedoytime(mjd):
+	mon = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
+	dt = datetime.timedelta(int(mjd), int((mjd - int(mjd))*86400.0 + 0.5))
+	t = mjd0 + dt
+	return '%04d%s%02d/%s %02d:%02d:%02d' % (t.year, mon[t.month-1], t.day, t.strftime('%j'), t.hour, t.minute, t.second)
+
+def mjd2datehm(mjd):
+	mon = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
+	dt = datetime.timedelta(int(mjd), int((mjd - int(mjd))*86400.0 + 0.5))
+	t = mjd0 + dt
+	return '%04d%s%02d %02d:%02d' % (t.year, mon[t.month-1], t.day, t.hour, t.minute)
+
 # take string date (d) and time (t), as formatted above, and return MJD
 def vlba2mjd(d, t):
 	monnames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
@@ -187,6 +209,118 @@ def vlba2mjd(d, t):
 	mjd = (datetime.datetime(yr, mn, da, 0, 0) - mjd0).days + hr/24.0 + mi/1440.0 + se/86400.0
 
 	return mjd
+
+# replace functionality of the VLBA tapes program
+def pseudotapes(vexfile, correlator):
+
+	knownAntennas = ['SC', 'HN', 'NL', 'FD', 'LA', 'PT', 'KP', 'OV', 'BR', 'MK', 'GB', 'Y']
+	frontEnds = {'P':'90c', 'L':'20cm', 'S':'13c,', 'C':'6cm', 'X':'4cm', 'U':'2cm', 'K':'1cm', 'Q':'7mm', 'W':'3mm'}
+	
+	todayMJD = time()/86400.0 + 40587
+
+	cmd = '%s/vexpeek --format --diskusage %s' % (difxPath, vexFile)
+	if verbose > 0:
+		print 'Executing command: %s' % cmd
+
+	data = popen(cmd).readlines()
+	if len(data) == 0:
+		return
+	obsCode = upper(strip(data[0]))
+	if obsCode[0:5] == 'ERROR':
+		return
+	
+	if correlator == '':
+		print 'Please enter which correlator for project %s' % obsCode
+		correlator = strip(stdin.readline())
+
+	# make if file
+	ifFile = genPath + lower(obsCode) + '.if'
+	o = open(ifFile, 'w')
+	o.write('%s Project Information\n' % upper(obsCode))
+	o.write('- %s %s\n' % (mjd2date(todayMJD), '-'*(8 + len(obsCode))))
+	o.write('Tape run times (UT)\n')
+	o.write('-------------------\n')
+
+	diskUsage = {}
+	formats = []
+	cmd = '%s/vexpeek --bands %s' % (difxPath, vexFile)
+	if verbose > 0:
+		print 'Executing command: %s' % cmd
+	bands = split(strip(popen(cmd).readline()))
+
+	timeList = {}
+
+	for d in data[1:]:
+		s = split(strip(d))
+		antName = s[0]
+		mjdStart = float(s[1])
+		mjdStop = float(s[2])
+		tt = (mjdStart, mjdStop)	# time tuple used as index to dictionary
+		if tt not in timeList.keys():
+			timeList[tt] = []
+		timeList[tt].append(upper(antName))
+		if s[3] not in formats:
+			formats.append(s[3])
+		diskUsage[upper(antName)] = s[4]
+		o.write('From file %scrd.%s\n' % (lower(obsCode), lower(antName)))
+		o.write('   NO Tape - %s to %s\n\n' % (mjd2datedoytime(mjdStart), mjd2datedoytime(mjdStop)))
+
+	o.write('Additional information\n')
+	o.write('----------------------\n')
+	if correlator == 'ut1':
+		o.write('   Data is electronically sent to USNO correlator.\n')
+	else:
+		o.write('   Send disks to the %s Correlator.\n' % correlator)
+	o.write('   Format:')
+	for f in formats:
+		o.write(' %s' % f)
+	o.write('\n')
+	o.write('   FE(s):');
+	for b in bands:
+		if b in frontEnds:
+			rx = frontEnds[b]
+		else:
+			rx = b
+		o.write(' %s' % rx);
+	o.write('\n')
+	for a in knownAntennas:
+		if a in diskUsage.keys():
+			o.write('   %s Disk used: %s GB.\n' % (a, diskUsage[a]))
+		
+	o.close()
+	
+	# make ce1 file
+	ce1File = genPath + lower(obsCode) + '.ce1'
+	o = open(ce1File, 'w')
+	for tt in timeList.keys():
+		o.write(' UT dates/times: %s to %s\n' % (mjd2datehm(tt[0]), mjd2datehm(tt[1] + 10./86400.)))
+		o.write('  Antennas used: ')
+		f = 1
+		for a in timeList[tt]:
+			if f == 1:
+				f = 0
+			else:
+				o.write(',')
+			o.write(a)
+		o.write('\n')
+	o.close()
+
+	# make tx file
+	txFile = obsPath + lower(obsCode) + '.tx'
+	o = open(txFile, 'w')
+	for tt in timeList.keys():
+		o.write('%scrd.ant %s %s > ' % (lower(obsCode), mjd2datetime(tt[0] - 5.0/86400.0), mjd2datetime(tt[1] + 15./86400.)))
+		f = 1
+		for a in timeList[tt]:
+			if f == 1:
+				f = 0
+			else:
+				o.write(',')
+			o.write(lower(a))
+		o.write('\n')
+	o.close()
+			
+
 
 def sortmetric(x):
         y = split(x)
@@ -253,6 +387,9 @@ haveFile = False
 haveV2S = False
 file = ''
 options = ''
+doTapes = False
+doTapesOnly = False
+correlator = ''
 
 for a in argv[1:]:
 	if haveFile:
@@ -283,6 +420,18 @@ for a in argv[1:]:
 			haveFile = True
 		elif a in ['--vex2script']:
 			haveV2S = True
+		elif a[0:13] == '--correlator=':
+			correlator = a[13:]
+		elif a in ['--tapes']:
+			doTapes = True
+		elif a in ['--tapesonly']:
+			doTapesOnly = True
+			doTapes = True
+		elif a in ['--tapestest']:
+			genPath = ''
+			obsPath = ''
+			doTapesOnly = True
+			doTapes = True
 		else:
 			print 'Unknown option "%s"\n' % a
 			exit(1)
@@ -335,6 +484,11 @@ for vexFile in vexFiles:
 		print 'Error: cannot find file %s' % vexFile
 		exit(0)
 
+if doTapes:
+	for vexFile in vexFiles:
+		pseudotapes(vexFile, correlator)
+	if doTapesOnly:
+		exit(0)
 
 tmpDir = '/tmp/' + replace(vexFiles[0], '/', ',') + '.workdir'
 
