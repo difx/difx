@@ -129,6 +129,7 @@ public:
 	VexScan(): size(0), mjdVex(0.0) {};
 	unsigned int nAntennasWithRecordedData(const VexData *V) const;
 	unsigned int nRecordChan(const VexData *V, const std::string &antName) const;
+	const VexInterval *getAntennaInterval(const std::string &antName) const;
 };
 
 class VexSource
@@ -207,6 +208,7 @@ public:
 	int phaseCalIntervalMHz() const;
 	const VexIF *getIF(const std::string &ifName) const;
 	double firstTuningForIF(const std::string &ifName) const;	// returns Hz
+	double dataRateMbps() const { return sampRate*nBit*nRecordChan/1000000.0; }
 
 	std::map<std::string,VexIF> ifs;		// Indexed by name in the vex file, such as IF_A
 	std::vector<VexChannel> channels;

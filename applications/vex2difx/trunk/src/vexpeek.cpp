@@ -40,8 +40,8 @@
 #include "vexload.h"
 
 const std::string program("vexpeek");
-const std::string version("0.6");
-const std::string verdate("20130907");
+const std::string version("0.7");
+const std::string verdate("20130925");
 const std::string author("Walter Brisken");
 
 void usage(const char *pgm)
@@ -58,10 +58,47 @@ void usage(const char *pgm)
 	std::cout << "  -v or --verbose : print entire vextables structure of vexfile" << std::endl;
 	std::cout << "  -f or --format : add data format to output" << std::endl;
 	std::cout << "  -b or --bands : print list of band codes" << std::endl;
+	std::cout << "  -u or --diskusage : print disk usage (GB)" << std::endl;
 	std::cout << std::endl;
 }
 
-void antennaSummary(const VexData *V, int doFormat)
+double totalDiskUsageGB(const VexData *V, const std::string &antName)
+{
+	double GB = 0.0;
+
+	for(unsigned int s = 0; s < V->nScan(); ++s)
+	{
+		const VexScan *scan = V->getScan(s);
+		if(!scan)
+		{
+			continue;
+		}
+
+		const VexInterval *I = scan->getAntennaInterval(antName);
+		if(!I)
+		{
+			continue;
+		}
+
+		const VexMode *M = V->getModeByDefName(scan->modeDefName);
+		if(!M)
+		{
+			continue;
+		}
+
+		const VexSetup *S = M->getSetup(antName);
+		if(!S)
+		{
+			continue;
+		}
+
+		GB += S->dataRateMbps()*I->duration_seconds()/8000.0;
+	}
+
+	return GB;
+}
+
+void antennaSummary(const VexData *V, int doFormat, int doUsage)
 {
 	std::map<std::string,VexInterval> as;
 	std::map<std::string,std::string> af;
@@ -113,6 +150,13 @@ void antennaSummary(const VexData *V, int doFormat)
 		if(doFormat)
 		{
 			std::cout << " " << af[it->first];
+		}
+		if(doUsage)
+		{
+			int p = std::cout.precision();
+			std::cout.precision(3);
+			std::cout << " " << totalDiskUsageGB(V, it->first);
+			std::cout.precision(p);
 		}
 		std::cout << std::endl;
 	}
@@ -192,6 +236,7 @@ int main(int argc, char **argv)
 	int verbose = 0;
 	int doBandList = 0;
 	int doFormat = 0;
+	int doUsage = 0;
 	int a;
 	const char *fileName = 0;
 
@@ -211,6 +256,11 @@ int main(int argc, char **argv)
 		        strcmp(argv[a], "--format") == 0)
 		{
 			++doFormat;
+		}
+		else if(strcmp(argv[a], "-u") == 0 ||
+			strcmp(argv[a], "--diskusage") == 0)
+		{
+			++doUsage;
 		}
 		else if(strcmp(argv[a], "-h") == 0 ||
 		        strcmp(argv[a], "--help") == 0)
@@ -272,7 +322,7 @@ int main(int argc, char **argv)
 	{
 		std::cout << V->getExper()->name << std::endl;
 
-		antennaSummary(V, doFormat);
+		antennaSummary(V, doFormat, doUsage);
 	}
 
 	delete V;

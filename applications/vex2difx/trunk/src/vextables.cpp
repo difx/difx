@@ -1342,6 +1342,19 @@ unsigned int VexScan::nRecordChan(const VexData *V, const std::string &antName) 
 	return nRecChan;
 }
 
+const VexInterval *VexScan::getAntennaInterval(const std::string &antName) const
+{
+	std::map<std::string,VexInterval>::const_iterator it = stations.find(antName);
+	if(it != stations.end())
+	{
+		return &it->second;
+	}
+	else
+	{
+		return 0;
+	}
+}
+
 void VexData::setScanSize(unsigned int num, double size)
 {
 	if(num >= nScan())
