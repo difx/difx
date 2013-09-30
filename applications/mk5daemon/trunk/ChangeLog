@@ -4,6 +4,9 @@ Version 2.3.0
 * mk5dir: support SDK9 legacy directories (as per DIMINO 2.2.1 w/ SDK 9.2)
 * mk5cp: add mode to "fix" Mark5B format scans
 * mk5putdir: replace the on-disk directory
+* mark5 utilities: normalize use of RT mode a bit
+* mk5dir: default: operate without RT mode
+* mk5dir: detect unusual data while decoding directories, namely data where the payload contains a repeating pattern.
 
 Version 2.2.0
 ~~~~~~~~~~~~~

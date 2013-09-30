@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2012 by Walter Brisken                                  *
+ *   Copyright (C) 2013 by Walter Brisken                                  *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -46,8 +46,8 @@
 
 const char program[] = "mk5map";
 const char author[]  = "Walter Brisken";
-const char version[] = "0.1";
-const char verdate[] = "20110907";
+const char version[] = "0.2";
+const char verdate[] = "20130930";
 
 const int defaultGrid = 20;
 const int defaultPrecision = 1<<25;
@@ -309,8 +309,14 @@ static int mk5map(char *vsn, double rate, double fraction, int64_t precision, in
 	WATCHDOGTEST( XLRSetBankMode(xlrDevice, SS_BANKMODE_NORMAL) );
 	if(readMode == MARK5_READ_MODE_RT)
 	{
+		printf("Setting real-time playback mode\n");
 		WATCHDOGTEST( XLRSetFillData(xlrDevice, MARK5_FILL_PATTERN) );
 		WATCHDOGTEST( XLRSetOption(xlrDevice, SS_OPT_SKIPCHECKDIR) );
+	}
+	else
+	{
+		WATCHDOGTEST( XLRClearOption(xlrDevice, SS_OPT_REALTIMEPLAYBACK) );
+		WATCHDOGTEST( XLRClearOption(xlrDevice, SS_OPT_SKIPCHECKDIR) );
 	}
 
 	v = getBankInfo(xlrDevice, &mk5status, ' ');

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2010-2012 by Walter Brisken                             *
+ *   Copyright (C) 2010-2013 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -44,8 +44,8 @@
 
 const char program[] = "testmod";
 const char author[]  = "Walter Brisken";
-const char version[] = "0.4";
-const char verdate[] = "20120102";
+const char version[] = "0.5";
+const char verdate[] = "20120930";
 
 const int defaultBlockSize = 10000000;
 const int defaultNBlock = 50;
@@ -89,8 +89,6 @@ static void usage(const char *pgm)
 	printf("             Reopen device after each major cycle\n\n");
 	printf("  --realtime\n");
 	printf("  -R         Enable real-time mode (sometimes needed for bad packs)\n\n");
-	printf("  --skipdircheck\n");
-	printf("  -d         Disable directory checking (sometimes needed for bad packs)\n\n");
 	printf("  --nrep <n>\n");
 	printf("  -n <n>     Perform the test <n> times (default=%d)\n\n", defaultNRep);
 	printf("  --blocksize <s>\n");
@@ -268,7 +266,7 @@ int getLabels(SSHANDLE xlrDevice, DifxMessageMk5Status *mk5status)
 }
 
 /*  This function has multiple hidden returns from the WATCHDOG macros.  It is thus best to put any memory alloc/dealloc in the calling function */
-static int testModuleCore(int bank, int mode, int nWrite, int bufferSize, int nRep, int options, int force, const char *dirFile, long long ptr, int fast, char *buffer1, char *buffer2)
+static int testModuleCore(int bank, int mode, int nWrite, int bufferSize, int nRep, int force, const char *dirFile, long long ptr, int fast, int realTime, char *buffer1, char *buffer2)
 {
 	SSHANDLE xlrDevice;
 	XLR_RETURN_CODE xlrRC;
@@ -306,7 +304,19 @@ static int testModuleCore(int bank, int mode, int nWrite, int bufferSize, int nR
 
 	WATCHDOGTEST( XLROpen(1, &xlrDevice) );
 	WATCHDOGTEST( XLRSetBankMode(xlrDevice, SS_BANKMODE_NORMAL) );
-	WATCHDOGTEST( XLRSetOption(xlrDevice, options) );
+	WATCHDOGTEST( XLRSetOption(xlrDevice, SS_OPT_DRVSTATS) );
+
+	if(realTime > 0)
+	{
+		printf("Setting real-time playback mode\n");
+		WATCHDOGTEST( XLRSetFillData(xlrDevice, MARK5_FILL_PATTERN) );
+		WATCHDOGTEST( XLRSetOption(xlrDevice, SS_OPT_SKIPCHECKDIR) );
+	}
+	else
+	{
+		WATCHDOGTEST( XLRClearOption(xlrDevice, SS_OPT_REALTIMEPLAYBACK) );
+		WATCHDOGTEST( XLRClearOption(xlrDevice, SS_OPT_SKIPCHECKDIR) );
+	}
 
 	for(int b = 0; b < XLR_MAXBINS; ++b)
 	{
@@ -517,12 +527,22 @@ static int testModuleCore(int bank, int mode, int nWrite, int bufferSize, int nR
 				{
 					WATCHDOG (XLRClose(xlrDevice));
 
-					printf("Closed streamtor ... sleeping 5 seconds\n");
+					printf("Closed StreamStor ... sleeping 5 seconds\n");
 					sleep(5);
 
 					WATCHDOGTEST( XLROpen(1, &xlrDevice) );
 					WATCHDOGTEST( XLRSetBankMode(xlrDevice, SS_BANKMODE_NORMAL) );
-					WATCHDOGTEST( XLRSetOption(xlrDevice, options) );
+					WATCHDOGTEST( XLRSetOption(xlrDevice, SS_OPT_DRVSTATS) );
+					if(realTime > 0)
+					{
+						WATCHDOGTEST( XLRSetFillData(xlrDevice, MARK5_FILL_PATTERN) );
+						WATCHDOGTEST( XLRSetOption(xlrDevice, SS_OPT_SKIPCHECKDIR) );
+					}
+					else
+					{
+						WATCHDOGTEST( XLRClearOption(xlrDevice, SS_OPT_REALTIMEPLAYBACK) );
+						WATCHDOGTEST( XLRClearOption(xlrDevice, SS_OPT_SKIPCHECKDIR) );
+					}
 
 					printf("Reopened StreamStor\n");
 				}
@@ -552,12 +572,22 @@ static int testModuleCore(int bank, int mode, int nWrite, int bufferSize, int nR
 				{
 					WATCHDOG (XLRClose(xlrDevice));
 
-					printf("Closed streamtor ... sleeping 5 seconds\n");
+					printf("Closed StreamStor ... sleeping 5 seconds\n");
 					sleep(5);
 
 					WATCHDOGTEST( XLROpen(1, &xlrDevice) );
 					WATCHDOGTEST( XLRSetBankMode(xlrDevice, SS_BANKMODE_NORMAL) );
-					WATCHDOGTEST( XLRSetOption(xlrDevice, options) );
+					WATCHDOGTEST( XLRSetOption(xlrDevice, SS_OPT_DRVSTATS) );
+					if(realTime > 0)
+					{
+						WATCHDOGTEST( XLRSetFillData(xlrDevice, MARK5_FILL_PATTERN) );
+						WATCHDOGTEST( XLRSetOption(xlrDevice, SS_OPT_SKIPCHECKDIR) );
+					}
+					else
+					{
+						WATCHDOGTEST( XLRClearOption(xlrDevice, SS_OPT_REALTIMEPLAYBACK) );
+						WATCHDOGTEST( XLRClearOption(xlrDevice, SS_OPT_SKIPCHECKDIR) );
+					}
 
 					printf("Reopened StreamStor\n");
 				}
@@ -710,12 +740,22 @@ static int testModuleCore(int bank, int mode, int nWrite, int bufferSize, int nR
 			{
 				WATCHDOG (XLRClose(xlrDevice));
 
-				printf("Closed streamtor ... sleeping 5 seconds\n");
+				printf("Closed StreamStor ... sleeping 5 seconds\n");
 				sleep(5);
 
 				WATCHDOGTEST( XLROpen(1, &xlrDevice) );
 				WATCHDOGTEST( XLRSetBankMode(xlrDevice, SS_BANKMODE_NORMAL) );
-				WATCHDOGTEST( XLRSetOption(xlrDevice, options) );
+				WATCHDOGTEST( XLRSetOption(xlrDevice, SS_OPT_DRVSTATS) );
+				if(realTime > 0)
+				{
+					WATCHDOGTEST( XLRSetFillData(xlrDevice, MARK5_FILL_PATTERN) );
+					WATCHDOGTEST( XLRSetOption(xlrDevice, SS_OPT_SKIPCHECKDIR) );
+				}
+				else
+				{
+					WATCHDOGTEST( XLRClearOption(xlrDevice, SS_OPT_REALTIMEPLAYBACK) );
+					WATCHDOGTEST( XLRClearOption(xlrDevice, SS_OPT_SKIPCHECKDIR) );
+				}
 
 				printf("Reopened StreamStor\n");
 			}
@@ -775,7 +815,7 @@ static int testModuleCore(int bank, int mode, int nWrite, int bufferSize, int nR
 	return 0;
 }
 
-static int testModule(int bank, int mode, int nWrite, int bufferSize, int nRep, int options, int force, const char *dirFile, long long ptr, int fast)
+static int testModule(int bank, int mode, int nWrite, int bufferSize, int nRep, int force, const char *dirFile, long long ptr, int fast, int realTime)
 {
 	int rv;
 	char *buffer1, *buffer2;
@@ -796,7 +836,7 @@ static int testModule(int bank, int mode, int nWrite, int bufferSize, int nRep, 
 		return -1;
 	}
 
-	rv = testModuleCore(bank, mode, nWrite, bufferSize, nRep, options, force, dirFile, ptr, fast, buffer1, buffer2);
+	rv = testModuleCore(bank, mode, nWrite, bufferSize, nRep, force, dirFile, ptr, fast, realTime, buffer1, buffer2);
 
 	free(buffer1);
 	free(buffer2);
@@ -815,7 +855,7 @@ int main(int argc, char **argv)
 	int verbose = 0;
 	int force = 0;
 	int fast = 0;
-	int options = SS_OPT_DRVSTATS;
+	int realTime = 0;
 	char *dirFile = 0;
 	long long ptr = 0;
 	int retval = EXIT_SUCCESS;
@@ -873,12 +913,7 @@ int main(int argc, char **argv)
 			else if(strcmp(argv[a], "-R") == 0 ||
 			        strcmp(argv[a], "--realtime") == 0)
 			{
-				options |= SS_OPT_REALTIMEPLAYBACK;
-			}
-			else if(strcmp(argv[a], "-d") == 0 ||
-			        strcmp(argv[a], "--skipdircheck") == 0)
-			{
-				options |= SS_OPT_SKIPCHECKDIR;
+				realTime = 1;
 			}
 			else if(strcmp(argv[a], "-S") == 0 ||
 			        strcmp(argv[a], "--speed") == 0)
@@ -964,7 +999,7 @@ int main(int argc, char **argv)
 	}
 	else
 	{
-		v = testModule(bank, mode, nRep, blockSize, nBlock, options, force, dirFile, ptr, fast);
+		v = testModule(bank, mode, nRep, blockSize, nBlock, force, dirFile, ptr, fast, realTime);
 		if(v < 0)
 		{
 			if(watchdogXLRError[0] != 0)

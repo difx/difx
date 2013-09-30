@@ -92,8 +92,8 @@ char ScanFormatErrorName[][40] =
 	"data is mostly zero",
 	"scan is too short",
 	"unsupported format",
-	"?",	// placeholder
-	"??",	// placeholder
+	"data is fill pattern",	
+	"repeating data",
 	"scan number out of range"
 };
 
@@ -1186,6 +1186,32 @@ int newdir2scans(std::vector<Mark5Scan> &scans, const unsigned char *dirData, in
 	return 0;
 }
 
+static int repeatingData(const char *bufferStart, int framebytes)
+{
+	uint32_t *p32 = (uint32_t *)bufferStart;
+	uint64_t *p64 = (uint64_t *)bufferStart;
+
+	if(framebytes < 500)
+	{
+		/* don't bother */
+
+		return 0;
+	}
+
+	/* look for 32-bit repetitions */
+	if(p32[20] == p32[21] && p32[20] == p32[23] && p32[20] == p32[100])
+	{
+		return 1;
+	}
+
+	if(p64[20] == p64[21] && p64[20] == p64[23] && p64[20] == p64[40])
+	{
+		return 1;
+	}
+
+	return 0;
+}
+
 int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref, int (*callback)(int, int, int, void *), void *data, float *replacedFrac, int cacheOnly, int startScan, int stopScan)
 {
 	XLR_RETURN_CODE xlrRC;
@@ -1564,7 +1590,34 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref, int (*callback)(i
 						scan.duration += 86400.0;
 					}
 
-					if(scan.duration < 1.0)
+					if(repeatingData((const char *)bufferStart, mf->framebytes) && repeatingData((const char *)bufferStop, mf->framebytes))
+					{
+						/* look for unusual repetition of payload bytes */
+
+						static bool first = true;
+
+						if(first)
+						{
+							FILE *out;
+							const char sampleFile[] = "/tmp/repeat.sample";
+
+							out = fopen(sampleFile, "w");
+							if(out)
+							{
+								fwrite(bufferStop, 1, bufferLength, out);
+								fclose(out);
+
+								fprintf(stderr, "Wrote %d bytes of repeating data to %s for inspection\n", bufferLength, sampleFile);
+							}
+
+							first = false;
+						}
+						scan.format = -SCAN_FORMAT_ERROR_REPEAT;
+
+						continue;
+					}
+
+					if(scan.duration < 1)
 					{
 						scan.format = -SCAN_FORMAT_ERROR_TOOSHORT;
 						scan.framespersecond = 0;

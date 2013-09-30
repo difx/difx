@@ -42,8 +42,8 @@
 
 const char program[] = "mk5dir";
 const char author[]  = "Walter Brisken";
-const char version[] = "0.12";
-const char verdate[] = "20120310";
+const char version[] = "0.13";
+const char verdate[] = "20120930";
 
 enum DMS_Mode
 {
@@ -297,7 +297,7 @@ static int getDirCore(struct Mark5Module *module, char *vsn, DifxMessageMk5Statu
 	return v;
 }
 
-static int mk5dir(char *vsn, int force, int fast, enum DMS_Mode dmsMode, int startScan, int stopScan)
+static int mk5dir(char *vsn, int force, int fast, enum DMS_Mode dmsMode, int startScan, int stopScan, int realTime)
 {
 	Mark5Module module;
 	DifxMessageMk5Status mk5status;
@@ -311,8 +311,18 @@ static int mk5dir(char *vsn, int force, int fast, enum DMS_Mode dmsMode, int sta
 
 	WATCHDOGTEST( XLROpen(1, &xlrDevice) );
 	WATCHDOGTEST( XLRSetBankMode(xlrDevice, SS_BANKMODE_NORMAL) );
-	WATCHDOGTEST( XLRSetFillData(xlrDevice, MARK5_FILL_PATTERN) );
-	WATCHDOGTEST( XLRSetOption(xlrDevice, SS_OPT_SKIPCHECKDIR) );
+
+	if(realTime > 0)
+	{
+		printf("Setting real-time playback mode\n");
+		WATCHDOGTEST( XLRSetFillData(xlrDevice, MARK5_FILL_PATTERN) );
+		WATCHDOGTEST( XLRSetOption(xlrDevice, SS_OPT_SKIPCHECKDIR) );
+	}
+	else
+	{
+		WATCHDOGTEST( XLRClearOption(xlrDevice, SS_OPT_REALTIMEPLAYBACK) );
+		WATCHDOGTEST( XLRClearOption(xlrDevice, SS_OPT_SKIPCHECKDIR) );
+	}
 
 	v = getBankInfo(xlrDevice, &mk5status, ' ');
 	if(v < 0)
@@ -420,7 +430,7 @@ static int mk5dir(char *vsn, int force, int fast, enum DMS_Mode dmsMode, int sta
 	return 0;
 }
 
-static int writeDir(char *vsn, int force, const char *filename, enum DMS_Mode dmsMode)
+static int writeDir(char *vsn, int force, const char *filename, enum DMS_Mode dmsMode, int realTime)
 {
 	Mark5Module module;
 	DifxMessageMk5Status mk5status;
@@ -461,8 +471,19 @@ static int writeDir(char *vsn, int force, const char *filename, enum DMS_Mode dm
 
 	WATCHDOGTEST( XLROpen(1, &xlrDevice) );
 	WATCHDOGTEST( XLRSetBankMode(xlrDevice, SS_BANKMODE_NORMAL) );
-	WATCHDOGTEST( XLRSetFillData(xlrDevice, MARK5_FILL_PATTERN) );
-	WATCHDOGTEST( XLRSetOption(xlrDevice, SS_OPT_SKIPCHECKDIR) );
+
+	if(realTime > 0)
+	{
+		printf("Setting real-time playback mode\n");
+		WATCHDOGTEST( XLRSetFillData(xlrDevice, MARK5_FILL_PATTERN) );
+		WATCHDOGTEST( XLRSetOption(xlrDevice, SS_OPT_SKIPCHECKDIR) );
+	}
+	else
+	{
+		WATCHDOGTEST( XLRClearOption(xlrDevice, SS_OPT_REALTIMEPLAYBACK) );
+		WATCHDOGTEST( XLRClearOption(xlrDevice, SS_OPT_SKIPCHECKDIR) );
+	}
+
 
 	v = getBankInfo(xlrDevice, &mk5status, ' ');
 	if(v < 0)
@@ -692,11 +713,11 @@ int main(int argc, char **argv)
 	{
 		if(writeFile == 0)
 		{
-			v = mk5dir(vsn, force, fast, dmsMode, startScan, stopScan);
+			v = mk5dir(vsn, force, fast, dmsMode, startScan, stopScan, realTime);
 		}
 		else
 		{
-			v = writeDir(vsn, force, writeFile, dmsMode);
+			v = writeDir(vsn, force, writeFile, dmsMode, realTime);
 		}
 		if(v < 0)
 		{

@@ -47,7 +47,7 @@
 const char program[] = "mk5cp";
 const char author[]  = "Walter Brisken";
 const char version[] = "0.13";
-const char verdate[] = "20130903";
+const char verdate[] = "20130930";
 
 const int defaultChunkSize = 50000000;
 
@@ -1165,9 +1165,14 @@ static int mk5cp(char *vsn, const char *scanList, const char *outPath, int force
 
 		if(module.mode == MARK5_READ_MODE_RT || readMode == MARK5_READ_MODE_RT)
 		{
+			fprintf(stderr, "Setting real-time playback mode\n");
 			WATCHDOGTEST( XLRSetFillData(xlrDevice, MARK5_FILL_PATTERN) );
 			WATCHDOGTEST( XLRSetOption(xlrDevice, SS_OPT_SKIPCHECKDIR) );
-			fprintf(stderr, "Enabled realtime playback mode\n");
+		}
+		else
+		{
+			WATCHDOGTEST( XLRClearOption(xlrDevice, SS_OPT_REALTIMEPLAYBACK) );
+			WATCHDOGTEST( XLRClearOption(xlrDevice, SS_OPT_SKIPCHECKDIR) );
 		}
 	}
 
@@ -1505,9 +1510,14 @@ static int mk5cp_nodir(char *vsn, const char *scanList, const char *outPath, int
 
 	if(readMode == MARK5_READ_MODE_RT)
 	{
+		fprintf(stderr, "Setting real-time playback mode\n");
 		WATCHDOGTEST( XLRSetFillData(xlrDevice, MARK5_FILL_PATTERN) );
 		WATCHDOGTEST( XLRSetOption(xlrDevice, SS_OPT_SKIPCHECKDIR) );
-		fprintf(stdout, "Enabled realtime playback mode\n");
+	}
+	else
+	{
+		WATCHDOGTEST( XLRClearOption(xlrDevice, SS_OPT_REALTIMEPLAYBACK) );
+		WATCHDOGTEST( XLRClearOption(xlrDevice, SS_OPT_SKIPCHECKDIR) );
 	}
 
 	if(bail)
