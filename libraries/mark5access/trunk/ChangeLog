@@ -4,6 +4,7 @@ Version 1.5.0
 * Add 3, 5, 6, and 7 channel VDIF decoders
 * Add functionality to repair Mark5B data streams (regrid frames, remove stray bytes, fill missing frames with fill pattern)
 * Add Mark5B file summary program, m5bsum, akin to vsum (in vdifio)
+* Reorder format checks to look for Mark5B earlier than Mark4 or VLBA as that format is becoming much more common
 
 Version 1.4.4
 * Slightly faster and more relaxed frame finding for VLBA and Mark4 formats

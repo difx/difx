@@ -9584,10 +9584,6 @@ static int mark5_format_vlba_init(struct mark5_stream *ms)
 				ms->Mbps = datarate;
 			}
 		}
-		else
-		{
-			fprintf(m5stderr, "Warning: rate calc. suspect\n");
-		}
 	}
 
 	ms->gframens = (int)(ms->framegranularity*ms->framens + 0.5);

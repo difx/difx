@@ -836,6 +836,29 @@ struct mark5_format *new_mark5_format_from_stream(struct mark5_stream_generic *s
 
 	/* Now go through known formats, looking for a match with the data */
 	
+	/* Mark5b */
+	f = new_mark5_format_mark5b(0, 16, 2, 1);
+	set_format(ms, f);
+	status = mark5_format_init(ms);
+	if(status < 0)
+	{
+		if(f->final_format)
+		{
+			f->final_format(ms);
+		}
+		free(f);
+	}
+	else
+	{
+		copy_format(ms, mf);
+		mf->format = MK5_FORMAT_MARK5B;
+		mf->ntrack = 0;
+		delete_mark5_stream(ms);
+		
+		return mf;
+	}
+	/* Warning: there is no way to know if data is KVN5B vs. Mark5B format.  Don't search for KVN5B as that is less standard. */
+
 	/* VLBA modes */
 	for(ntrack = 8; ntrack <= 64; ntrack*=2)
 	{
@@ -887,29 +910,6 @@ struct mark5_format *new_mark5_format_from_stream(struct mark5_stream_generic *s
 			return mf;
 		}
 	}
-
-	/* Mark5b */
-	f = new_mark5_format_mark5b(0, 16, 2, 1);
-	set_format(ms, f);
-	status = mark5_format_init(ms);
-	if(status < 0)
-	{
-		if(f->final_format)
-		{
-			f->final_format(ms);
-		}
-		free(f);
-	}
-	else
-	{
-		copy_format(ms, mf);
-		mf->format = MK5_FORMAT_MARK5B;
-		mf->ntrack = 0;
-		delete_mark5_stream(ms);
-		
-		return mf;
-	}
-	/* Warning: there is no way to know if data is KVN5B vs. Mark5B format.  Don't search for KVN5B as that is less standard. */
 
 	/* VDIF */
 	framesize = 0;
