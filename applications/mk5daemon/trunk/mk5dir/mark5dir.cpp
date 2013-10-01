@@ -36,6 +36,7 @@
 #include <time.h>
 #include <difxmessage.h>
 #include <mark5access.h>
+#include <stdint.h>
 #include <cmath>
 #include "mark5dir.h"
 #include "mark5directorystructs.h"
