@@ -254,7 +254,7 @@ cerr << " num of scans: " << nScan << endl;
 //				double firstScan = (int)(deltat2-lastStop) % (int)subscanLen; // account for partial scans in numScans
 				double firstScan = (int)(scanLen) % (int)subscanLen; // account for partial scans in numScans
 //				int numScans = (int)(((firstScan==0.0?0:1)) + (deltat2-lastStop) / subscanLen);
-				int numScans = (int)(((firstScan==0.0?0:1)) + (scanLen) / subscanLen);
+				int numScans = (int)(scanLen / subscanLen);
 				// check that we have enough sub scans for phase up
 				if( ((scanLen) / subscanLen) < 4) {
 					cerr << "Not enough scans for phase up!" << endl;
@@ -263,8 +263,8 @@ cerr << " num of scans: " << nScan << endl;
 				double scantime;
 				*this << "# total length: " << (scanLen) << endl;
 				for( int loop = 0; loop < numScans; loop++ ) {
-					if( loop == 0 && firstScan != 0 )
-						scantime = firstScan;
+					if( loop == 0 )
+						scantime = subscanLen + firstScan;
 					else
 						scantime = subscanLen;
 					hour = (int)floor( (scantime) / 3600);
