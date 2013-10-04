@@ -328,7 +328,7 @@ int optresources::writeLoifTable(const VexData *V)
 				const VexIF  *vif0 = 0;
 				const VexIF  *vif1 = 0;
 
-				*this << "    <eightbit>" << endl;
+				*this << "    <eightBit>" << endl;
 				bool used[setup->channels.size()];
 				for(unsigned int k = 0; k < setup->channels.size(); k++)
 					used[k] = false;
@@ -337,13 +337,13 @@ int optresources::writeLoifTable(const VexData *V)
 					string if0;
 					string if1;
 					if( ifCnt == 0 ) {
-						*this << "      <a0c0 centerGHz=\"" << 99999.9999;
-						*this << "\">" << endl;
+						*this << "      <a0c0>" << endl; //  centerGHz=\"" << 99999.9999;
+//						*this << "\">" << endl;
 						if0 = "A";
 						if1 = "C";
 					} else {
-						*this << "      <b0d0 centerGHz=\"" << 99999.9999;
-						*this << "\">" << endl;
+						*this << "      <b0d0>" << endl; //  centerGHz=\"" << 99999.9999;
+//						*this << "\">" << endl;
 						if0 = "B";
 						if1 = "D";
 					}
@@ -412,8 +412,8 @@ int optresources::writeLoifTable(const VexData *V)
 					
 				}
 			}
-			*this << "    </eightbit>" << endl;
-			*this << "  </resources>" << endl;
+			*this << "    </eightBit>" << endl;
+			*this << "  </resource>" << endl;
 			*this << "</sss:vex2opt>" << endl;
 			*this << endl;
 	}
