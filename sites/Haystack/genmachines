@@ -213,6 +213,8 @@ def getVsnsByMulticast(maxtime, modlist, verbose):
 
 		except socket.timeout:
 			t += dt
+		except socket.herror:
+			print 'Weird: cannot gethostbyaddr for %s' % address[0]
 
 	results.sort()
 	conflicts.sort()
@@ -355,8 +357,7 @@ def writemachines(basename, hostname, machines, cores, results, vsns, dssources,
 		elif cores[m] > overheadcores+1:
 			maxslots = 2
 			extrathreads.append(cores[m] - (overheadcores+1))
-	o.write('%s slots=1 max-slots=%d\n' % \
-		(hostname, maxslots))
+	o.write('%s\n' % (hostname))
 	# datastream nodes
 	for d in dsnodes:
 		m = machines.index(d)
@@ -367,8 +368,7 @@ def writemachines(basename, hostname, machines, cores, results, vsns, dssources,
 			extrathreads.append(cores[m] - (overheadcores+1))
 		else:
 			maxslots = 1
-		o.write('%s slots=1 max-slots=%d\n' % \
-			(d, maxslots))
+		o.write('%s\n' % (d))
 	# core nodes
 	foundsuitable = False
 	for m in range(len(machines)):
@@ -380,11 +380,11 @@ def writemachines(basename, hostname, machines, cores, results, vsns, dssources,
 				nthreads = 1
 			threads.append(nthreads)
 			foundsuitable = True
-			o.write('%s slots=1 max-slots=2\n' % machines[m])
+			o.write('%s\n' % (machines[m]))
 		elif cores[m] > 0:
 			threads.append(cores[m])
 			foundsuitable = True
-			o.write('%s slots=1 max-slots=1\n' % machines[m])
+			o.write('%s\n' % (machines[m]))
 	if not foundsuitable:
 		print "Could not find a core machine not already used"
 		print "Will allocate %s as a core, too" % (hostname)
@@ -396,7 +396,7 @@ def writemachines(basename, hostname, machines, cores, results, vsns, dssources,
 		else:
 			nthreads = 1
 		threads.append(nthreads)
-		o.write('%s slots=1 max-slots=%s\n' % (machines[m], headCount+1))
+		o.write('%s\n' % (machines[m]))
 	o.close()
 	for e in extrathreads:
 		threads.append(e)
