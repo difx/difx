@@ -426,7 +426,10 @@ int DataStream::calculateControlParams(int scan, int offsetsec, int offsetns)
   }
 
   //now that we obviously have a lock on all the data we need, fill the control buffer
-  blockbytes = (bufferinfo[atsegment].numchannels*2*bufferinfo[atsegment].bytespersamplenum)/bufferinfo[atsegment].bytespersampledenom;
+  int fftchannels = bufferinfo[atsegment].numchannels*2;
+  if (bufferinfo[atsegment].sampling== Configuration::COMPLEX)
+    fftchannels = bufferinfo[atsegment].numchannels;
+  blockbytes = (fftchannels*bufferinfo[atsegment].bytespersamplenum)/bufferinfo[atsegment].bytespersampledenom;
 
   //if the next segment has not been filled and we are beyond the current segment, bail out
   double currentsegmenttime = bufferinfo[atsegment].scanseconds + bufferinfo[atsegment].scanns/1.0e9;
