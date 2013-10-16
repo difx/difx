@@ -353,6 +353,8 @@ int main(int argc, char **argv)
 	v = initWatchdog();
 	if(v < 0)
 	{
+		free(dirData);
+
 		return EXIT_FAILURE;
 	}
 
