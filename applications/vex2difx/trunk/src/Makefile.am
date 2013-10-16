@@ -64,15 +64,6 @@ vex2opt_SOURCES = \
 	optresources.h \
 	vex2opt.cpp 
 
-#vdisks_SOURCES = \
-#	vdisks.cpp \
-#	vextables.cpp \
-#	vextables.h \
-#	vexload.cpp \
-#	vexload.h \
-#	corrparams.cpp \
-#	corrparams.h
-
 vexpeek_SOURCES = \
 	vexpeek.cpp \
 	vextables.cpp \
