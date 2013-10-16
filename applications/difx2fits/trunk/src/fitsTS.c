@@ -68,7 +68,7 @@ static void nanify(float X[2][array_MAX_BANDS])
 }
 
 /* ant D.O.Y. dur(days) nRecBand (tsys, bandName)[nRecBand] */
-static int parseTsys(const char *line, char *antName, double *time, float *timeInt, float tSys[])
+static int parseTsys(char *line, char *antName, double *time, float *timeInt, float tSys[])
 {
 	static char tsmAntName[10] = "XX";
 	int p, n, i, nRecBand;
@@ -120,6 +120,18 @@ static int parseTsys(const char *line, char *antName, double *time, float *timeI
 		}
 		*time = p;
 		s = timestr;
+
+		/* strip comment, if any */
+		for(i = 0; line[i]; ++i)
+		{
+			if(line[i] == '!')
+			{
+				line[i] = 0;
+				break;
+			}
+		}
+
+		/* get time */
 		for(i = 0; i < 3; ++i)
 		{
 			int last = 0;
@@ -142,14 +154,18 @@ static int parseTsys(const char *line, char *antName, double *time, float *timeI
 
 			s += j+1;
 		}
-		for(i = 0; i < nRecBand; ++i)
+
+		/* get tsys values */
+		nRecBand = 0;
+		for(i = 0;; ++i)
 		{
 			line += p;
 			n = sscanf(line, "%f%n", tSys + i, &p);
 			if(n != 1)
 			{
-				return -2;
+				break;
 			}
+			++nRecBand;
 		}
 	}
 	else if(strlen(firstWord) < 10 && firstWord[0] >= 'A' && firstWord[0] <= 'Z')	/* Assume it is a difx-style record */

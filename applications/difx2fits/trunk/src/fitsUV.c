@@ -1043,7 +1043,6 @@ static int RecordIsFlagged(const DifxVis *dv)
 static int storevis(DifxVis *dv)
 {
 	const DifxInput *D;
-	int isLSB;
 	int startChan;
 	int stopChan;
 	int i;
@@ -1070,12 +1069,6 @@ static int storevis(DifxVis *dv)
 	
 	D = dv->D;
 
-	isLSB = dv->sideband == 'L';
-
-/* Apparently this is no longer needed! */
-/* FIXME: remove the isLSB=true portions below */
-isLSB = 0;
-
 	startChan = D->startChan;
 	stopChan = startChan + D->nOutChan*D->specAvg;
 
@@ -1087,21 +1080,14 @@ isLSB = 0;
 		int j;
 		int index;
 
-		if(isLSB)
-		{
-			j = stopChan - 1 - i;
-		}
-		else
-		{
-			j = i - startChan;
-		}
+		j = i - startChan;
 		
 		index = ((dv->bandId*D->nOutChan + j/D->specAvg)*D->nPolar+dv->polId)*dv->nComplex;
 
 		for(k = 0; k < dv->nComplex; ++k)
 		{
 			/* swap phase/uvw for FITS-IDI conformance */
-			if(k % 3 == 1 && !isLSB)
+			if(k % 3 == 1)
 			{
 				dv->data[index+k] -= scale*dv->spectrum[dv->nComplex*i+k];
 			}

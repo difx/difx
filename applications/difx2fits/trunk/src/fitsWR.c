@@ -185,6 +185,8 @@ int processWeatherFile(const DifxInput *D, const char *antennaName, const char *
 		mjdLast[antId] = mjd;
 	}
 
+	fclose(in);
+
 	return nRec;
 }
 
@@ -288,7 +290,7 @@ const DifxInput *DifxInput2FitsWR(const DifxInput *D, struct fits_keywords *p_fi
 	}
 
 	/* Priority 2: look for multi-station weather file called weather */
-	v = processWeatherFile(D, 0, "weather", out, fitsbuf, nRowBytes, nColumn, columns, alreadyHasWeather, refDay, year, mjdLast);
+	processWeatherFile(D, 0, "weather", out, fitsbuf, nRowBytes, nColumn, columns, alreadyHasWeather, refDay, year, mjdLast);
 
 	/*  free memory, and return */
 	for(i = 0; i < D->nAntenna; ++i)
