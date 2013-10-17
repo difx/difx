@@ -198,7 +198,7 @@ int feedJobMatrix(JobMatrix *jm, const struct UVrow *data, int jobId)
 	{
 		return -1;
 	}
-	mjd = (int)(data->jd - 2400000.0) + data->iat;
+	mjd = (int)(data->jd - 2400000.0) + data->utc;
 	t = (mjd - jm->mjdStart)*86400.0/jm->deltaT;
 	if(t < 0 || t >= jm->nTime)
 	{

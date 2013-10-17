@@ -39,7 +39,7 @@
 struct __attribute__((packed)) UVrow
 {
 	float U, V, W;
-	double jd, iat;
+	double jd, utc;
 	int32_t baseline, filter;
 	int32_t sourceId1, freqId1;	/* 1-based FITS indices */
 	float intTime;
@@ -56,7 +56,7 @@ typedef struct
 	DifxParameters *dp;
 	FILE *in;
 	double U, V, W;
-	double mjd, iat;
+	double mjd, utc;
 	double *mjdLastRecord;		/* indexed by zero-based antenna id */
 	float tInt;
 	int baseline;

@@ -2,6 +2,8 @@ Version 3.3.0
 * Post DiFX-2.2
 * Improved clarity in generation of Flag, Tsys, Pcal, Gain and Weather tables: prioritized sources of data
 * Fix off-by-one timestamp error in the sniffer output files
+* All times are UTC (always have been).  Change variables and comments to
+reflect this and avoid some confusion.
 
 Version 3.2.0
 * Fix for correlation of mismatched sidebands.  Requires contemporaneous

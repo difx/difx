@@ -518,7 +518,7 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int skipextraautocorrs)
 	int bl;			/* bl number computed from antId1 and antId2 */
 	int dsId1, dsId2;	/* This refers to DifxInput Datastream table */
 	int scanId, binHeaderVersion, headerConfigIndex, intmjd;
-	double mjd, iat, dt, dt2, weight;
+	double mjd, utc, dt, dt2, weight;
 	double uvw[3];
 	char polPair[3];
 	int changed = 0;
@@ -569,8 +569,8 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int skipextraautocorrs)
 			v  = fread(&configBaselineId, sizeof(int), 1, dv->in);
 			v += fread(&intmjd, sizeof(int), 1, dv->in);
 			mjd = intmjd;
-			v += fread(&iat, sizeof(double), 1, dv->in);
-			iat /= 86400.0;	/* convert seconds to days */
+			v += fread(&utc, sizeof(double), 1, dv->in);
+			utc /= 86400.0;	/* convert seconds to days */
 			v += fread(&headerConfigIndex, sizeof(int), 1, dv->in);
 			v += fread(&sourceId, sizeof(int), 1, dv->in);
 			v += fread(&freqId, sizeof(int), 1, dv->in);
@@ -625,7 +625,7 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int skipextraautocorrs)
 #warning "FIXME: look at configId in the record as a check"
 
 	/* scanId at middle of integration */
-	scanId = DifxInputGetScanIdByJobId(dv->D, mjd+iat, dv->jobId);
+	scanId = DifxInputGetScanIdByJobId(dv->D, mjd+utc, dv->jobId);
 	if(scanId < 0)
 	{
 		if(verbose > 2)
@@ -679,13 +679,13 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int skipextraautocorrs)
 
 	/* see if it is still the same scan at the edges of integration */
 	dt2 = config->tInt/(86400.0*2.0001);  
-	if(scan->mjdStart > mjd+iat-dt2 || scan->mjdEnd < mjd+iat+dt2)
+	if(scan->mjdStart > mjd+utc-dt2 || scan->mjdEnd < mjd+utc+dt2)
 	{
 		/* Nope! */
 		dv->flagTransition = 1;
 		if(verbose > 2)
 		{
-			printf("Flag transition: mjd range=%12.6f to %12.6f\n", mjd+iat-dt2, mjd+iat+dt2);
+			printf("Flag transition: mjd range=%12.6f to %12.6f\n", mjd+utc-dt2, mjd+utc+dt2);
 		}
 
 		return SKIPPED_RECORD;
@@ -735,7 +735,7 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int skipextraautocorrs)
 	if(verbose >= 1 && scanId != dv->scanId)
 	{
 		printf("        MJD=%11.5f jobId=%d scanId=%d dv->scanId=%d Source=%s  FITS SourceId=%d\n", 
-			mjd+iat, dv->jobId, scanId, dv->scanId, 
+			mjd+utc, dv->jobId, scanId, dv->scanId, 
 			dv->D->source[scan->phsCentreSrcs[dv->phaseCentre]].name, 
 			dv->D->source[scan->phsCentreSrcs[dv->phaseCentre]].fitsSourceIds[configId]+1);
 	}
@@ -753,12 +753,12 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int skipextraautocorrs)
 	/* stash the weight for later incorporation into a record */
 	dv->recweight = weight;
 
-	if(bl != dv->baseline || fabs((mjd-dv->mjd) + (iat-dv->iat))  > 1.0/86400000.0)
+	if(bl != dv->baseline || fabs((mjd-dv->mjd) + (utc-dv->utc))  > 1.0/86400000.0)
 	{
 		changed = 1;
 		dv->baseline = bl;
 		dv->mjd = mjd;
-		dv->iat = iat;
+		dv->utc = utc;
 
 		/* swap phase/uvw for FITS-IDI conformance */
 		dv->U = -uvw[0];
@@ -771,7 +771,7 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int skipextraautocorrs)
 			double u, v, w;
 			int n;
 
-			n = getDifxScanIMIndex(scan, mjd, iat, &dt);
+			n = getDifxScanIMIndex(scan, mjd, utc, &dt);
 
 			u = dv->U;
 			v = dv->V;
@@ -790,7 +790,7 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int skipextraautocorrs)
 				}
 				else if(n < 0)
 				{
-					fprintf(stderr, "Error: interferometer model index out of range: scanId=%d mjd=%12.6f\n", scanId, mjd+iat);
+					fprintf(stderr, "Error: interferometer model index out of range: scanId=%d mjd=%12.6f\n", scanId, mjd+utc);
 				}
 				else
 				{
@@ -812,7 +812,7 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int skipextraautocorrs)
 			    !dv->flagTransition) 
 			{
 				printf("Warning: UVW diff: %d %d %d-%d %f %f  %f %f  %f %f  %f %f\n", 
-					scanId, n, antId1, antId2, mjd+iat, dt, u, dv->U, v, dv->V, w, dv->W);
+					scanId, n, antId1, antId2, mjd+utc, dt, u, dv->U, v, dv->V, w, dv->W);
 			}
 		}
 	}
@@ -904,7 +904,7 @@ int DifxVisCollectRandomParams(const DifxVis *dv)
 	dv->record->W		= dv->W/cLight;
 
 	dv->record->jd		= 2400000.5 + dv->mjd;
-	dv->record->iat		= dv->iat;
+	dv->record->utc		= dv->utc;
 
 	/* reminder: antennaIds, sourceId, freqId are 1-based in FITS */
 	dv->record->baseline	= dv->baseline;
@@ -931,7 +931,7 @@ static int RecordIsInvalid(const DifxVis *dv)
 			printf("Warning: record with !finite value: a1=%d a2=%d mjd=%13.7f\n",
 				(dv->record->baseline/256) - 1,
 				(dv->record->baseline%256) - 1,
-				dv->mjd + dv->iat);
+				dv->mjd + dv->utc);
 
 			return 1;
 		}
@@ -979,7 +979,7 @@ static int RecordIsOld(DifxVis *dv)
 	int antennaId1, antennaId2;
 	double mjd;
 
-	mjd = dv->mjd + dv->iat;
+	mjd = dv->mjd + dv->utc;
 	antennaId1 = (dv->record->baseline/256) - 1;
 	antennaId2 = (dv->record->baseline%256) - 1;
 	
@@ -1020,7 +1020,7 @@ static int RecordIsFlagged(const DifxVis *dv)
 		return 0;
 	}
 
-	mjd = (int)(dv->record->jd - 2400000.0) + dv->record->iat;
+	mjd = (int)(dv->record->jd - 2400000.0) + dv->record->utc;
 	antennaId1 = (dv->record->baseline/256) - 1;
 	antennaId2 = (dv->record->baseline%256) - 1;
 
@@ -1163,7 +1163,7 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fi
 		{"VV--SIN", "1E", "v", "SECONDS"},
 		{"WW--SIN", "1E", "w", "SECONDS"},
 		{"DATE", "1D", "Julian day at 0 hr current day", "DAYS"},
-		{"TIME", "1D", "IAT time", "DAYS"},
+		{"TIME", "1D", "UTC time", "DAYS"},
 		{"BASELINE", "1J", "baseline: ant1*256 + ant2", 0},
 		{"FILTER", "1J", "filter id number", 0},
 		{"SOURCE", "1J", "source id number from source tbl", 0},
@@ -1372,7 +1372,7 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fi
 		for(dvId = 0; dvId < nDifxVis; ++dvId)
 		{
 			dv = dvs[dvId];
-			mjd = (int)(dv->record->jd - 2400000.0) + dv->record->iat;
+			mjd = (int)(dv->record->jd - 2400000.0) + dv->record->utc;
 			if(mjd < bestmjd)
 			{
 				bestmjd = mjd;
@@ -1395,7 +1395,7 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fi
 		{
 			if(opts->verbose > 0)
 			{
-				fprintf(stdout, "Found a zero record at mjd=%12.6f baseline=%d sourceId=%d\n", dv->mjd+dv->iat, dv->baseline, dv->sourceId);
+				fprintf(stdout, "Found a zero record at mjd=%12.6f baseline=%d sourceId=%d\n", dv->mjd+dv->utc, dv->baseline, dv->sourceId);
 			}
 			++nZero;
 		}
@@ -1403,7 +1403,7 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fi
 		{
 			if(opts->verbose > 0)
 			{
-				fprintf(stdout, "Found a negative weight recorrd at mjd=%12.6f baseline=%d sourceId=%d\n", dv->mjd+dv->iat, dv->baseline, dv->sourceId);
+				fprintf(stdout, "Found a negative weight recorrd at mjd=%12.6f baseline=%d sourceId=%d\n", dv->mjd+dv->utc, dv->baseline, dv->sourceId);
 			}
 			++nNegWeight;
 		}

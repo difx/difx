@@ -918,7 +918,7 @@ int feedSnifferFITS(Sniffer *S, const DifxVis *dv)
 	}
 
 	mjd = data->jd - 2400000.5;
-	mjd += data->iat;
+	mjd += data->utc;
 	a1 = data->baseline/256 - 1;
 	a2 = data->baseline%256 - 1;
 	scanId = DifxInputGetScanIdByAntennaId(S->D, mjd, a1);
