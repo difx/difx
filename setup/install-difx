@@ -250,7 +250,7 @@ if doguiserver:
 if mk5d:
     apptargets.append(["mk5daemon", difx_version, True,False,True,False])
 if domonitor:
-    apptargets.append(["difx_monitor", difx_version, False,False,False,False])
+    apptargets.append(["difx_monitor", difx_version, True,False,False,True])
 
 # a navigation aid
 def os_chdir(dir):
