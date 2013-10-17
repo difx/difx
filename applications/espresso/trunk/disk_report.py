@@ -31,10 +31,18 @@ def remote_command(inputq, outputq):
 
 def sizesort(x):
     try:
-        sortstring = int(x.split()[0])
+        sortval = int(x.split()[0])
     except: 
-        sortstring = -1
-    return sortstring
+        sortval = -1
+
+    try:
+        # the 'total' line is a special case - always put at bottom.
+        if x.split()[1] == 'total':
+            sortval = -1
+    except:
+        pass
+
+    return sortval
 
 #def data_summary():
     #print 'here'

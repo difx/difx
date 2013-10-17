@@ -40,7 +40,7 @@ usage = '''%prog <path> <destination>
 will transfer <path> and all its subdirectories to <destination>. Small files are tarred before transfer. Larger files are transferred unmodified.
 
 e.g.
-%prog /data/corr/corrdata/vt13b cormac@cortex.ivec.org/pbstore/groupfs/astrotmp/Archive/vt13/vt13b
+%prog /data/corr/corrdata/vt13b cormac@cortex.ivec.org/pbstore/groupfs/astrotmp/as03/VLBI/Archive/Curtin/vt13/vt13b
 '''
 
 parser = optparse.OptionParser(usage=usage, version='%prog ' + '1.0')
@@ -102,7 +102,7 @@ for directory in os.walk(os.curdir):
     # directory when the input is stdin. Clearly a bug. Work round it by
     # ensuring the output dir is created.
     host, rootdir = splithost(args[1]) 
-    command = 'ssh ' + host + ' mkdir -p ' + rootdir + os.sep + directory[0]
+    command = "ssh " + host + " 'umask 0002; mkdir -p " + rootdir + os.sep + directory[0] + "'"
     subprocess.check_call(command, shell=True, stdout=sys.stdout)
 
     # create a checksum if you are paranoid.

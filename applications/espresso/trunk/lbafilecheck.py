@@ -251,6 +251,13 @@ except:
     raise Exception('You must set $CORR_HOSTS. No machines file created')
 
 headmachine = os.uname()[1].lower()
+
+# nodes that are also used as head or datastream nodes should get fewer
+# threads, if they are requested to be used as compute nodes at all.
+for machine in datamachines + [headmachine]:
+    if hosts[machine][0] > 1:
+        hosts[machine][0] -= 1
+
 if len(hosts) == 0:
     raise Exception('Did not find any hosts in your $CORR_HOSTS file')
 elif len(hosts) <= len(set(datamachines + [headmachine])):
@@ -269,7 +276,7 @@ for host in sorted(hosts.keys()):
             computemachines.append(host)
 
 if not computemachines:
-    raise Exception('You have no compute nodes left after the master node and datastream nodes have been allocated! Check your hosts in $CORR_HOSTS. Consider using the -H switch.')
+    raise Exception('You have no compute nodes left after the master node and datastream nodes have been allocated! Check your hosts in $CORR_HOSTS.')
 
 machines = [headmachine] + datamachines + computemachines
 check_machines(machines[:])
