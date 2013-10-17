@@ -20,7 +20,7 @@ sub send_cmd($$);
 sub launch_lbadr($$$$$$$$$$$);
 sub stop_lbadr ($$);
 sub stop_lbadr ($$);
-sub launch_mark5($$$$$$$$$);
+sub launch_mark5($$$$$$$$$$);
 sub stop_mark5 ($);
 sub launch_curtindas($$$);
 sub stop_curtindas ($);
@@ -196,7 +196,7 @@ if (defined $recorder_hosts && $evlbi) {
 		       $network[$i]->tcpwin, $network[$i]->port);
 	} elsif ($format eq 'MARK5B' || $format eq 'MKIV') {
 	  launch_mark5($recorder, $playback, $format, $bandwidth, $compression, $compression,
-		       $vsib_mode, $network[$i]->tcpwin, $ipd);
+		       $vsib_mode, $network[$i]->tcpwin, $network[$i]->port, $ipd);
 
 	} else {
 	  print "Cannot launch $format recorder\n";
@@ -437,8 +437,8 @@ sub mark5_disconnect ($) {
   $mark5->close();
 }
 
-sub mark5_config ($$$$$$$$$$;$) {
-  my ($mark5, $mark5b, $bandwidth, $mask, $rate, $ntrack, $winsize, $udp, $mtu, $ipd, $test) = @_;
+sub mark5_config ($$$$$$$$$$$;$) {
+  my ($mark5, $mark5b, $bandwidth, $mask, $rate, $ntrack, $winsize, $udp, $mtu, $ipd, $port, $test) = @_;
   $test = 0 if (!defined $test);
 
   my $winbytes = $winsize*1024;
@@ -476,6 +476,7 @@ sub mark5_config ($$$$$$$$$$;$) {
   } else {
     mark5_command($mark5, "net_protocol=tcp:$winbytes:131072:8");
   }
+  mark5_command($mark5, "port=$port");
 
 }
 
@@ -490,8 +491,8 @@ sub mark5_stop ($) {
   mark5_command($mark5, "in2net=disconnect");
 }
 
-sub launch_mark5 ($$$$$$$$$) {
-  my ($recorder, $host, $format, $bandwidth, $mask, $rate, $ntrack, $winsize, $ipd) = @_;
+sub launch_mark5 ($$$$$$$$$$) {
+  my ($recorder, $host, $format, $bandwidth, $mask, $rate, $ntrack, $winsize, $port, $ipd) = @_;
 
   my $mark5b = 0;
   if ($format eq 'MARK5B') {
@@ -509,7 +510,7 @@ sub launch_mark5 ($$$$$$$$$) {
   my $mark5 = mark5_connect($recorder);
   if ($mark5) {
     mark5_stop($mark5);
-    mark5_config($mark5, $mark5b, $bandwidth, $mask, $rate, $ntrack, $winsize, $udp, $mtu, $ipd, 0);
+    mark5_config($mark5, $mark5b, $bandwidth, $mask, $rate, $ntrack, $winsize, $udp, $mtu, $port, $ipd, 0);
     mark5_start($mark5, $host);
     mark5_disconnect($mark5);
   } else {
