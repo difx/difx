@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # a shell script to start CalcServer
 
 echo "terminate CALCServer that is currently running on" `hostname`
