@@ -438,7 +438,7 @@ sub mark5_disconnect ($) {
 }
 
 sub mark5_config ($$$$$$$$$$$;$) {
-  my ($mark5, $mark5b, $bandwidth, $mask, $rate, $ntrack, $winsize, $udp, $mtu, $ipd, $port, $test) = @_;
+  my ($mark5, $mark5b, $bandwidth, $mask, $rate, $ntrack, $winsize, $udp, $mtu, $port, $ipd, $test) = @_;
   $test = 0 if (!defined $test);
 
   my $winbytes = $winsize*1024;
@@ -476,7 +476,7 @@ sub mark5_config ($$$$$$$$$$$;$) {
   } else {
     mark5_command($mark5, "net_protocol=tcp:$winbytes:131072:8");
   }
-  mark5_command($mark5, "port=$port");
+  mark5_command($mark5, "net_port=$port");
 
 }
 
