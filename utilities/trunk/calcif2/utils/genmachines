@@ -31,48 +31,34 @@
 
 from string import split, strip, find, upper, lower
 from sys import argv, exit
-from os import popen, getenv, umask
+from os import popen, getenv, umask, environ
 from glob import glob
 import socket
 import struct
 import subprocess
 import signal
 import sys
+from optparse import OptionParser
 from xml.parsers import expat
 from copy import deepcopy
 
 
-program = 'genmachines'
 author  = 'Walter Brisken'
-version = '0.16'
-verdate = '20121216'
+version = '0.17'
+verdate = '20131017'
 
 defaultDifxMessagePort = 50200
 defaultDifxMessageGroup = '224.2.2.1'
 
-
-def usage():
-	print '\n%s ver. %s  %s %s' % (program, version, author, verdate)
-	print '\nA program to find required Mark5 modules and write the machines file'
-	print 'appropriate for a particular DiFX job.'
-	print '\nUsage : %s [options] <input>' % argv[0]
-	print '\noptions can include:'
-	print '\n  -h or --help'
-	print '          print this usage info and exit'
-	print '\n  -v or --verbose'
-	print '          increase verbosity of output'
-	print '\n  -o or --overheadcores <ohc>'
-	print '          set overheadcores to <ohc>, default = 1'
-	print '\n  -m <machinesfile> or --machines <machinesfile>'
-	print '          use <machinesfile> instead of $DIFX_MACHINES'
-	print '\n  -n or --no-threads'
-	print '          don\'t write a .threads file'
-	print '\n  -d or --difxdb'
-	print '          use difxdb database to obtain module slots'
-	print '\n<input> is a DiFX .input file.'
-	print '\nEnv. Var. DIFX_MACHINES must point to the machines file if no <machinesfile>'
-	print 'is specifided.\n'
-	exit(1)
+def getUsage():
+	usage = "%prog [options] [<input1> [<input2>] ...]\n"
+	usage += '\n<input> is a DiFX .input file.'
+	usage += '\nA program to find required Mark5 modules and write the machines file'
+	usage += '\nappropriate for a particular DiFX job.'
+	usage += '\n\nNote: %prog will require the DIFX_MACHINES environment to point to you cluster definition file if no -m option '
+	usage += '\nis specified.\n'
+	
+	return(usage)
 
 class Parser:
 
@@ -481,73 +467,70 @@ def signal_handler(signal, frame):
         print 'You pressed Ctrl+C!'
         sys.exit(8)
 
-if len(argv) < 2:
-	usage()
+if __name__ == "__main__":
 
-# catch ctrl+c
-signal.signal(signal.SIGINT, signal_handler)
+	# catch ctrl+c
+	signal.signal(signal.SIGINT, signal_handler)
 
+	usage = getUsage()
 
-files = []
-machinesfile = getenv('DIFX_MACHINES')
-overheadcores = 1
-verbose = 0
-dothreads = True
-useDifxDb = False
-if getenv('DIFX_GROUP_ID'):
-	umask(2)
+	parser = OptionParser(version=version, usage=usage)
+	parser.add_option("-v", "--verbose", action="count", dest="verbose", default=0, help="increase verbosity level");
+	parser.add_option("-o", "--overheadcores", dest="overheadcores", type="int", default=1, help="set overheadcores, default = 1");
+	parser.add_option("-m", "--machines", dest="machinesfile", default="", help="use MACHINESFILE instead of $DIFX_MACHINES")
+	parser.add_option("-n", "--nothreads", dest="dothreads", action="store_false", default=True, help="don't write a .threads file")
+	parser.add_option("-d", "--difxdb", dest="usedifxdb", action="store_true", default=False, help="use difxdb to obtain data location")
 
-a = 1
-while a < len(argv):
-	arg = argv[a]
-	if arg == '-h' or arg == '--help':
-		usage()
-	elif arg == '-v' or arg == '--verbose':
-		verbose += 1
-	elif arg == '-n' or arg == '--no-threads':
-		dothreads = False
-	elif arg == '-m' or arg == '--machinesfile':
-		a += 1
-		if a >= len(argv):
-			print 'No machinesfile specified!'
-			exit(1)
-		machinesfile = argv[a]
-	elif arg == '-o' or arg == '--overheadcores':
-		a += 1
-		if a >= len(argv):
-			print 'No overhead cores specified1'
-			exit(1)
-		overheadcores = int(argv[a])
-	elif arg == '-d' or arg == '--difxdb':
-		useDifxDb = True
+	(options, args) = parser.parse_args()
+
+	if len(args) == 0:
+		parser.print_usage()
+		sys.exit(1)
+
+	overheadcores = options.overheadcores
+	verbose = options.verbose
+	dothreads = options.dothreads
+	useDifxDb = options.usedifxdb
+
+	# assign the cluster definition file
+	if len(options.machinesfile) == 0:
+		try:
+			os.environ('DIFX_MACHINES')
+			machinesfile = getenv('DIFX_MACHINES')
+		except:
+			print ('DIFX_MACHINES environment has to be set. Use -m option instead')
+			sys.exit(1)
 	else:
-		files.append(arg)
-	a += 1
+		machinesfile = options.machinesfile
 
-if len(files) != 1:
-	usage()
+	if getenv('DIFX_GROUP_ID'):
+		umask(2)
 
-quit = False
-for f in files:
-	if len(glob(f)) != 1:
-		print 'File %s not found' % f
+	# list of input files to process
+	files = []
+	files.append(args)
+
+	quit = False
+	for f in files:
+		if len(glob(f)) != 1:
+			print 'File %s not found' % f
+			quit = True
+		
+	if machinesfile == None:
+		print 'DIFX_MACHINES env var not defined!';
 		quit = True
-	
-if machinesfile == None:
-	print 'DIFX_MACHINES env var not defined!';
-	quit = True
 
-elif len(glob(machinesfile)) != 1:
-	print 'Machinesfile %s not found.' % machinesfile
-	quit = True
-	
-if quit:
-	print 'genmachines quitting.'
-	exit(1)
+	elif len(glob(machinesfile)) != 1:
+		print 'Machinesfile %s not found.' % machinesfile
+		quit = True
+		
+	if quit:
+		print 'genmachines quitting.'
+		exit(1)
 
-if verbose > 0:
-	print 'DIFX_MACHINES -> %s' % machinesfile
-	
-v = run(files, machinesfile, overheadcores, verbose, dothreads, useDifxDb)
-if v != 0:
-	exit(v)
+	if verbose > 0:
+		print 'DIFX_MACHINES -> %s' % machinesfile
+		
+	v = run(files, machinesfile, overheadcores, verbose, dothreads, useDifxDb)
+	if v != 0:
+		exit(v)
