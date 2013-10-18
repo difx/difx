@@ -63,6 +63,7 @@ public:
 
   /// Supported types of recorded data sampling types
   enum datasampling {REAL, COMPLEX};
+  enum complextype {SINGLE, DOUBLE};
 
   /// Constant for the TCP window size for monitoring
   static int MONITOR_TCP_WINDOWBYTES;
@@ -656,6 +657,7 @@ private:
     dataformat format;
     datasource source;
     datasampling sampling;
+    complextype tcomplex;
     bool ismuxed;
     int phasecalintervalmhz;
     int switchedpowerfrequency; // e.g., 80 Hz for VLBA

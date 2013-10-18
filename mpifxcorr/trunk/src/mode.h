@@ -63,6 +63,7 @@ public:
   * @param nzoombands The number of subbands to be taken from within the recorded bands - can be zero
   * @param nbits The number of bits per sample
   * @param sampling The bit sampling type (real/complex)
+  * @param tcomplex Type of complex sampling (single or double sideband)
   * @param unpacksamp The number of samples to unpack in one hit
   * @param fbank Whether to use a polyphase filterbank to channelise (instead of FFT)
   * @param linear2circular Whether to do a linear to circular conversion after the FFT
@@ -71,7 +72,8 @@ public:
   * @param cacorrs Whether cross-polarisation autocorrelations are to be calculated
   * @param bclock The recorder clock-out frequency in MHz ("block clock")
   */
-  Mode(Configuration * conf, int confindex, int dsindex, int recordedbandchan, int chanstoavg, int bpersend, int gsamples, int nrecordedfreqs, double recordedbw, double * recordedfreqclkoffs, double * recordedfreqclkoffsdelta, double * recordedfreqphaseoffs, double * recordedfreqlooffs, int nrecordedbands, int nzoombands, int nbits, Configuration::datasampling sampling, int unpacksamp, bool fbank, bool linear2circular, int fringerotorder, int arraystridelen, bool cacorrs, double bclock);
+
+Mode(Configuration * conf, int confindex, int dsindex, int recordedbandchan, int chanstoavg, int bpersend, int gsamples, int nrecordedfreqs, double recordedbw, double * recordedfreqclkoffs, double * recordedfreqclkoffsdelta, double * recordedfreqphaseoffs, double * recordedfreqlooffs, int nrecordedbands, int nzoombands, int nbits, Configuration::datasampling sampling, Configuration::complextype tcomplex, int unpacksamp, bool fbank, bool linear2circular, int fringerotorder, int arraystridelen, bool cacorrs, double bclock);
 
  /**
   * Stores the FFT valid flags for this block of data
@@ -238,7 +240,7 @@ protected:
   double fftstartmicrosec, fftdurationmicrosec, intclockseconds;
   f32 dataweight;
   int samplesperblock, samplesperlookup, numlookups, flaglength, autocorrwidth;
-  int datascan, datasec, datans, datalengthbytes, usecomplex;
+  int datascan, datasec, datans, datalengthbytes, usecomplex, usedouble;
   bool filterbank, calccrosspolautocorrs, fractionalLoFreq, initok, isfft, linear2circular;
   double * recordedfreqclockoffsets;
   double * recordedfreqclockoffsetsdelta;
@@ -329,7 +331,7 @@ protected:
 
   // Linear to circular conversion
 
-  cf32 *phasecorr, *phasecorrconj; // 90 degrees + phase correction
+  cf32 *phasecorrA, *phasecorrconjA, *phasecorrB, *phasecorrconjB; // 90 degrees + phase correction
   cf32 * tmpvec; 
 
 private:
