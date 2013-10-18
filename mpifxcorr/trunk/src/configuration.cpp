@@ -760,7 +760,8 @@ Mode* Configuration::getMode(int configindex, int datastreamindex)
         framesamples *= getDNumRecordedBands(configindex, datastreamindex);
         framebytes = (framebytes - VDIF_HEADER_BYTES)*getDNumRecordedBands(configindex, datastreamindex) + VDIF_HEADER_BYTES;
       }
-      return new Mk5Mode(this, configindex, datastreamindex, streamrecbandchan, streamchanstoaverage, conf.blockspersend, guardsamples, stream.numrecordedfreqs, streamrecbandwidth, stream.recordedfreqclockoffsets, stream.recordedfreqclockoffsetsdelta, stream.recordedfreqphaseoffset, stream.recordedfreqlooffsets, stream.numrecordedbands, stream.numzoombands, stream.numbits, stream.sampling, stream.filterbank, stream.filterbank, conf.fringerotationorder, conf.arraystridelen, conf.writeautocorrs, framebytes, framesamples, stream.format);
+      return new Mk5Mode(this, configindex, datastreamindex, streamrecbandchan, streamchanstoaverage, conf.blockspersend, guardsamples, stream.numrecordedfreqs, streamrecbandwidth, stream.recordedfreqclockoffsets, stream.recordedfreqclockoffsetsdelta, stream.recordedfreqphaseoffset, stream.recordedfreqlooffsets, stream.numrecordedbands, stream.numzoombands, stream.numbits, stream.sampling, stream.tcomplex, stream.filterbank, stream.filterbank, conf.fringerotationorder, conf.arraystridelen, conf.writeautocorrs, framebytes, framesamples, stream.format);
+
       break;
     default:
       cerror << startl << "Unknown mode being requested!!!" << endl;
@@ -1179,8 +1180,14 @@ bool Configuration::processDatastreamTable(ifstream * input)
     getinputline(input, &line, "DATA SAMPLING");
     if(line == "REAL")
       datastreamtable[i].sampling = REAL;
-    else if(line == "COMPLEX")
+    else if(line == "COMPLEX" || line == "COMPLEX_IQ" || line == "COMPLEX_SSB") {
       datastreamtable[i].sampling = COMPLEX;
+      datastreamtable[i].tcomplex = SINGLE;
+    }
+    else if(line == "COMPLEX_DBL" || line == "COMPLEX_DSB") {
+      datastreamtable[i].sampling = COMPLEX;
+      datastreamtable[i].tcomplex = DOUBLE;
+    }
     else
     {
       if(mpiid == 0) //only write one copy of this error message

@@ -589,7 +589,6 @@ void set_abstime(struct timespec *abstime, double timeout) {
   status = gettimeofday(&now, NULL);
   abstime->tv_sec = now.tv_sec;
   abstime->tv_nsec = now.tv_usec*1000;
-
 #else
   status = clock_gettime(CLOCK_REALTIME, abstime);
 #endif
