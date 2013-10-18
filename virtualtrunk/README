@@ -5,4 +5,4 @@ The directories to be included in this virtual check-out are tabulated in svn_ex
 
 To update the list:
 
-  svn propset svn:externals . -F svn_ext_val.txt
+  svn propset svn:externals . -F svn_ext_val

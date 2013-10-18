@@ -1,8 +1,0 @@
-mpifxcorr		https://svn.atnf.csiro.au/difx/mpifxcorr/trunk
-libraries/difxio	https://svn.atnf.csiro.au/difx/libraries/difxio/trunk
-libraries/difxmessage	https://svn.atnf.csiro.au/difx/libraries/difxmessage/trunk
-libraries/mark5access	https://svn.atnf.csiro.au/difx/libraries/mark5access/trunk
-libraries/perl		https://svn.atnf.csiro.au/difx/libraries/perl/trunk
-libraries/python	https://svn.atnf.csiro.au/difx/libraries/python/trunk
-libraries/vdifio	https://svn.atnf.csiro.au/difx/libraries/vdifio/trunk
-libraries/vex		https://svn.atnf.csiro.au/difx/libraries/vex/trunk
