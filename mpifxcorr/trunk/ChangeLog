@@ -3,6 +3,9 @@ Version 2.3
 * LO offset correction is now always done with fringe rotation (so in the 
   time domain if fringe rotation is in the time domain).  Allows larger
   LO offsets to be corrected without inducing decorrelation.
+* Working polarization dependent delay and phase offsets (from Chris)
+* Experimental linear2circular conversion (from Chris)
+* Complex Double sideband (RDBE/Xcube) sampling support (from Chris)
 
 Version 2.2
 ~~~~~~~~~~~
