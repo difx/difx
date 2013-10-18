@@ -1,6 +1,8 @@
 Version 2.3
 ~~~~~~~~~~~
-* No new changes yet
+* LO offset correction is now always done with fringe rotation (so in the 
+  time domain if fringe rotation is in the time domain).  Allows larger
+  LO offsets to be corrected without inducing decorrelation.
 
 Version 2.2
 ~~~~~~~~~~~
