@@ -33,11 +33,11 @@ int main(int argc, char* argv[])
     char *longlist, *longlist_alloc;
     char *filename;
     int combinations_tested = 0;
-    const int rates[5] = { 64, 128, 256, 512, 1024 }; // only the most common ones...
+    const int rates[] = { 16, 32, 64, 128, 256, 512, 1024, 2048 }; // only the most common ones...
 
     if (argc <= 1) {
         fprintf(stderr, 
-               "\n  Usage: determine_tape_format <filename>\n\n"
+               "\n  Usage: m5findformats <filename>\n\n"
                "  Tries to open the file using MKIV/VLBA/Mark5B formats with\n"
                "  all combinations of fan-out, data rate, channel count and\n"
                "  Successful combinations are reported.\n\n");

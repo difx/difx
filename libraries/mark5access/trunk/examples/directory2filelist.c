@@ -36,7 +36,7 @@
 #include <signal.h>
 #include <dirent.h>
 #include <string.h>
-#include <limits.h>
+#include <time.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 
@@ -44,11 +44,12 @@
 
 const char program[] = "directory2filelist";
 const char author[]  = "Helge Rottmann";
-const char version[] = "1.2";
-const char verdate[] = "2011 Apr 06";
+const char version[] = "1.3";
+const char verdate[] = "2013 Oct 18";
 
-const static int DEFAULT_MJD = 57000;
-static long DEFAULT_EOF_READLEN = (80000+40000);
+const int MJD_UNIX0 = 40587;	// MJD at beginning of unix time
+
+static long eofReadLength = (80000+40000);
 
 int die = 0;
 
@@ -64,7 +65,7 @@ void siginthand(int j)
 	signal(SIGINT, oldsiginthand);
 }
 
-int usage(const char *pgm)
+int usage(const char *pgm, int defaultMJD)
 {
 	printf("\n");
 
@@ -78,7 +79,7 @@ int usage(const char *pgm)
 	printf("    VLBA1_2-256-8-2\n");
 	printf("    MKIV1_4-128-2-1\n");
 	printf("    Mark5B-512-16-2\n\n");
-	printf("  [<refMJD>]  changes the reference MJD (default is %d)\n\n", DEFAULT_MJD);
+	printf("  [<refMJD>]  changes the reference MJD (default is %d)\n\n", defaultMJD);
 
 	return 0;
 }
@@ -155,7 +156,7 @@ int verify(const char *filename, const char *formatname, int refMJD)
 	mark5_stream_get_frame_time(ms, &mjd, &sec, &ns);
 	startmjd = mjd + (sec + ns/1e9) / 86400.0;
 	stopmjd = startmjd;
-	DEFAULT_EOF_READLEN = ms->datawindowsize;
+	eofReadLength = ms->datawindowsize;
 
 	FILE *fp = fopen(filename, "rb");
 
@@ -232,7 +233,7 @@ int verify(const char *filename, const char *formatname, int refMJD)
 
 	// open short before EOF, with seeking to first valid-looking frame pair
         // note: this may generate many "Shortening datawindowsize" warnings
-	validoffset = length - DEFAULT_EOF_READLEN;
+	validoffset = length - eofReadLength;
 	ms = openmk5(filename, formatname, &validoffset);
 	if(!ms)
 	{
@@ -287,30 +288,31 @@ int verify(const char *filename, const char *formatname, int refMJD)
 
 int main(int argc, char **argv)
 {
+	const int MaxFilenameLength = 2048;
 	struct dirent *ep;
-	char filename[2048];
+	char filename[MaxFilenameLength];
 	int refMJD = 57000;
-	char *dir;
+	char dir;
 	char *fmt;
+	int defaultMJD;
 
 	oldsiginthand = signal(SIGINT, siginthand);
 
-	#if 0 // redirect mark5access STDOUT->STDERR; default disabled, function does not exist in older libraries
+	defaultMJD = time(0)/86400 + MJD_UNIX0;
+
+	// redirect mark5access STDOUT->STDERR
 	mark5_library_setoption(M5A_OPT_STDOUTFD, (void*)stderr);
-	#endif
 
 	if(argc != 3 && argc != 4)
 	{
-		usage(argv[0]);
+		usage(argv[0], defaultMJD);
 	
 		return EXIT_FAILURE;
 	}
 
-	dir = (char*)malloc(PATH_MAX+1);
-	dir = strncpy(dir, argv[1], PATH_MAX+1);
-	dir = strcat(dir, "/");
+	dir = argv[1];
 	fmt = argv[2];
-	refMJD = (argc==4) ? atoi(argv[3]) : DEFAULT_MJD;
+	refMJD = (argc==4) ? atoi(argv[3]) : defaultMJD;
 
 	DIR *dp = opendir(dir);
 	if (dp != NULL)
@@ -319,8 +321,13 @@ int main(int argc, char **argv)
 		{
 			if ((strcmp(ep->d_name, ".") != 0) && (strcmp(ep->d_name, "..") != 0))
 			{
-				strcpy(filename, dir);
-				strcat(filename, ep->d_name);	
+				int p;
+
+				p = snprintf(filename, MaxFilenameLength, "%s/%s", dir, ep->d_name);
+				if(p >= MaxFilenameLength)
+				{
+					fprintf(stderr, "ERROR: file name is too long: %s\n", ep->d_name);
+				}
 				verify(filename, fmt, refMJD);
 			}
 		}
@@ -331,7 +338,6 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 	(void) closedir (dp);
-
 
 	return EXIT_SUCCESS;
 }
