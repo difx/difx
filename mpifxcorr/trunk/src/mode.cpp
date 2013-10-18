@@ -803,6 +803,14 @@ float Mode::process(int index, int subloopindex)  //frac sample error is in micr
 
     //get ready to apply fringe rotation, if its pre-F
     lofreq = config->getDRecordedFreq(configindex, datastreamindex, i);
+    if (usecomplex && usedouble) {
+      if (config->getDRecordedLowerSideband(configindex, datastreamindex, i)) {
+	lofreq -= config->getDRecordedBandwidth(configindex, datastreamindex, i);
+      } else {
+	lofreq += config->getDRecordedBandwidth(configindex, datastreamindex, i);
+      }
+    }
+
     switch(fringerotationorder) {
       case 1: // linear
         status = vectorMulC_f64(subxval, lofreq, subphase, arraystridelength);
@@ -1085,7 +1093,11 @@ float Mode::process(int index, int subloopindex)  //frac sample error is in micr
             }
             if(config->getDRecordedLowerSideband(configindex, datastreamindex, i)) {
 	      if (usecomplex) {
-		status = vectorFlip_cf32(fftd, fftoutputs[j][subloopindex], recordedbandchannels);
+		if (usedouble) {
+		  status = vectorFlip_cf32(fftd, fftoutputs[j][subloopindex], recordedbandchannels/2);
+		  status = vectorFlip_cf32(&fftd[recordedbandchannels/2], &fftoutputs[j][subloopindex][recordedbandchannels/2], recordedbandchannels/2);
+		} else
+		  status = vectorFlip_cf32(fftd, fftoutputs[j][subloopindex], recordedbandchannels);
 	      } else {
 		status = vectorCopy_cf32(&(fftd[recordedbandchannels + 1]), fftoutputs[j][subloopindex], recordedbandchannels - 1);
 		fftoutputs[j][subloopindex][recordedbandchannels - 1] = fftd[0];

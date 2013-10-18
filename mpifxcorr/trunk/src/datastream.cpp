@@ -1685,13 +1685,17 @@ void DataStream::diskToMemory(int buffersegment)
   }
 
 #if 0
-  // Currently disabled but please do not remove
+  // Currently disabled but please do not remove (CJP)
   // Copy any saved bytes from the last segment, if a jump in time was detected
   if (tempbytes>0) {
     nbytes -= tempbytes;
     // Don't increment consumbed bytes as these were already counted from the last segment
     tempbytes=0;
   } 
+
+  //read some data
+  input.read(readto, nbytes);
+  consumedbytes += nbytes;
 #endif
 
   //deinterlace and mux if needed
@@ -1734,7 +1738,7 @@ void DataStream::diskToMemory(int buffersegment)
   }
 
 #if 0
-  // Currently disabled. Please do not remove - needs more testing
+  // Currently disabled. Please do not remove - needs more testing (CJP)
   // Go through buffer checking for large data jumps past the end of the buffer.
   // This does *not* correct for invalid data or dropped Mark5/VDIF frames. Does nothing for LBADR
   checkData(buffersegment);
