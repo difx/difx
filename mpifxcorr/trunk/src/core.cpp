@@ -687,6 +687,7 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
   double sampletimens;
   int starttimens;
   int fftsize;
+  int numBufferedFFTs;
 #endif
   int perr;
 
@@ -698,6 +699,7 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
     binloop = procslots[index].numpulsarbins;
   if(procslots[index].pulsarbin)
     binweights = currentpolyco->getBinWeights();
+  numBufferedFFTs = config->getNumBufferedFFTs(procslots[index].configindex);
 
   //set up the mode objects that will do the station-based processing
   for(int j=0;j<numdatastreams;j++)
@@ -773,23 +775,23 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
   xcshiftcount = 0;
   acblockcount = 0;
   acshiftcount = 0;
-  numfftloops = numblocks/config->getNumBufferedFFTs(procslots[index].configindex);
-  if(numblocks%config->getNumBufferedFFTs(procslots[index].configindex) != 0)
+  numfftloops = numblocks/numBufferedFFTs;
+  if(numblocks%numBufferedFFTs != 0)
     numfftloops++;
   blockns = ((double)(config->getSubintNS(procslots[index].configindex)))/((double)(config->getBlocksPerSend(procslots[index].configindex)));
 
   maxxcblocks = ((int)(model->getMaxNSBetweenXCAvg(procslots[index].offsets[0])/blockns));
-  maxxcblocks -= maxxcblocks%config->getNumBufferedFFTs(procslots[index].configindex);
+  maxxcblocks -= maxxcblocks%numBufferedFFTs;
   if(maxxcblocks == 0) {
-    maxxcblocks = config->getNumBufferedFFTs(procslots[index].configindex);
-    cverbose << startl << "Requested cross-correlation shift/average time of " << model->getMaxNSBetweenXCAvg(procslots[index].offsets[0]) << " ns cannot be met with " << config->getNumBufferedFFTs(procslots[index].configindex) << " FFTs being buffered; the time resolution which will be attained is " << maxxcblocks*blockns << " ns" << endl;
+    maxxcblocks = numBufferedFFTs;
+    cverbose << startl << "Requested cross-correlation shift/average time of " << model->getMaxNSBetweenXCAvg(procslots[index].offsets[0]) << " ns cannot be met with " << numBufferedFFTs << " FFTs being buffered; the time resolution which will be attained is " << maxxcblocks*blockns << " ns" << endl;
   }
 
   maxacblocks = ((int)(model->getMaxNSBetweenACAvg(procslots[index].offsets[0])/blockns));
-  maxacblocks -= maxacblocks%config->getNumBufferedFFTs(procslots[index].configindex);
+  maxacblocks -= maxacblocks%numBufferedFFTs;
   if(maxacblocks == 0) {
-    maxacblocks = config->getNumBufferedFFTs(procslots[index].configindex);
-    cverbose << startl << "Requested autocorrelation shift/average time of " << model->getMaxNSBetweenACAvg(procslots[index].offsets[0]) << " ns cannot be met with " << config->getNumBufferedFFTs(procslots[index].configindex) << " FFTs being buffered; the time resolution which will be attained is " << maxacblocks*blockns << " ns" << endl;
+    maxacblocks = numBufferedFFTs;
+    cverbose << startl << "Requested autocorrelation shift/average time of " << model->getMaxNSBetweenACAvg(procslots[index].offsets[0]) << " ns cannot be met with " << numBufferedFFTs << " FFTs being buffered; the time resolution which will be attained is " << maxacblocks*blockns << " ns" << endl;
   }
 
   //process each chunk of FFTs in turn
@@ -800,9 +802,9 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
     for(int j=0;j<numdatastreams;j++)
     {
       numfftsprocessed = 0;
-      for(int fftsubloop=0;fftsubloop<config->getNumBufferedFFTs(procslots[index].configindex);fftsubloop++)
+      for(int fftsubloop=0;fftsubloop<numBufferedFFTs;fftsubloop++)
       {
-        i = fftloop*config->getNumBufferedFFTs(procslots[index].configindex) + fftsubloop + startblock;
+        i = fftloop*numBufferedFFTs + fftsubloop + startblock;
 	if(i >= startblock+numblocks)
 	  break; //may not have to fully complete last fftloop
         scratchspace->dsweights[j][fftsubloop] = modes[j]->process(i, fftsubloop);
@@ -813,9 +815,9 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
     //if necessary, work out the pulsar bins
     if(procslots[index].pulsarbin)
     {
-      for(int fftsubloop=0;fftsubloop<config->getNumBufferedFFTs(procslots[index].configindex); fftsubloop++)
+      for(int fftsubloop=0;fftsubloop<numBufferedFFTs; fftsubloop++)
       {
-        i = fftloop*config->getNumBufferedFFTs(procslots[index].configindex) + fftsubloop + startblock;
+        i = fftloop*numBufferedFFTs + fftsubloop + startblock;
         offsetmins = ((double)i)*blockns/60000000000.0;
         currentpolyco->getBins(offsetmins, scratchspace->bins[fftsubloop]);
       }
@@ -833,7 +835,7 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
           papol = config->getFPhaseArrayPol(procslots[index].configindex, f, j);
 
           //weight and add the results for each baseline
-          for(int fftsubloop=0;fftsubloop<config->getNumBufferedFFTs(procslots[index].configindex);fftsubloop++)
+          for(int fftsubloop=0;fftsubloop<numBufferedFFTs;fftsubloop++)
           {
             for(int k=0;k<numdatastreams;k++)
             {
@@ -940,9 +942,9 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
 	      m2 = modes[ds2index];
 
               //do the baseline-based processing for this batch of FFT chunks
-              for(int fftsubloop=0;fftsubloop<config->getNumBufferedFFTs(procslots[index].configindex);fftsubloop++)
+              for(int fftsubloop=0;fftsubloop<numBufferedFFTs;fftsubloop++)
               {
-	        i = fftloop*config->getNumBufferedFFTs(procslots[index].configindex) + fftsubloop + startblock;
+	        i = fftloop*numBufferedFFTs + fftsubloop + startblock;
 	        if(i >= startblock+numblocks)
 		  break; //may not have to fully complete last fftloop
 
@@ -1036,9 +1038,9 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
     //finally, update the baselineweight if not doing any pulsar stuff
     if(!procslots[index].pulsarbin)
     {
-      for(int fftsubloop=0;fftsubloop<config->getNumBufferedFFTs(procslots[index].configindex);fftsubloop++)
+      for(int fftsubloop=0;fftsubloop<numBufferedFFTs;fftsubloop++)
       {
-        i = fftloop*config->getNumBufferedFFTs(procslots[index].configindex) + fftsubloop + startblock;
+        i = fftloop*numBufferedFFTs + fftsubloop + startblock;
         if(i >= startblock+numblocks)
           break; //may not have to fully complete last fftloop
         for(int f=0;f<config->getFreqTableLength();f++)

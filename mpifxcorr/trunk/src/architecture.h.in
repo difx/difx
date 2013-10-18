@@ -123,6 +123,14 @@
 #define vectorAdd_s32_I(src, srcdest, length)                               ippsAdd_32s_ISfs(src, srcdest, length, 0)
 #define vectorAdd_cf32_I(src, srcdest, length)                              ippsAdd_32fc_I(src, srcdest, length)
 #define vectorAdd_cf64_I(src, srcdest, length)                              ippsAdd_64fc_I(src, srcdest, length)
+
+#define vectorAdd_f32(src1, src2, dest, length)                             ippsAdd_32f(src1, src2, dest, length)
+#define vectorAdd_f64(src1, src2, dest, length)                             ippsAdd_64f(src1, src2, dest, length)
+#define vectorAdd_s16(src1, src2, dest, length)                             ippsAdd_16s(src1, src2, dest, length)
+#define vectorAdd_s32(src1, src2, dest, length)                             ippsAdd_32sc_Sfs(src1, src2, dest, length, 0)
+#define vectorAdd_cf32(src1, src2, dest, length)                            ippsAdd_32fc_I(src1, src2, dest, length)
+#define vectorAdd_cf64(src1, src2, dest, length)                            ippsAdd_64fc_I(src1, src2, dest, length)
+
 #define vectorAddC_f64(src, val, dest, length)                              ippsAddC_64f(src, val, dest, length)
 #define vectorAddC_f32(src, val, dest, length)                              ippsAddC_32f(src, val, dest, length)
 #define vectorAddC_f32_I(val, srcdest, length)                              ippsAddC_32f_I(val, srcdest, length)
@@ -197,6 +205,7 @@
 #define vectorSub_f32_I(src, srcdest, length)                               ippsSub_32f_I(src, srcdest, length)
 #define vectorSub_s32(src1, src2, dest, length)                             ippsSub_32s_Sfs(src1, src2, dest, length, 0)
 #define vectorSub_cf32_I(src, srcdest, length)                              ippsSub_32fc_I(src, srcdest, length)
+#define vectorSub_cf32(src1, src2, dest, length)                            ippsSub_32fc(src1, src2, dest, length)
 
 #define vectorSum_cf32(src, length, sum, hint)                              ippsSum_32fc(src, length, sum, hint)
 

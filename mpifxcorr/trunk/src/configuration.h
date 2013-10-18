@@ -502,6 +502,9 @@ public:
   */
   void getinputline(ifstream * input, std::string * line, std::string startofheader, int intval) const;
 
+  /** Actual function **/
+  void getinputline(ifstream * input, std::string * line, std::string startofheader, bool verbose) const;
+
  /**
   * Utility method which reads a line from a file, splitting it into a key and a value and storing both
   * @param input Open input stream to read from
@@ -665,6 +668,7 @@ private:
     int nummuxthreads;
     int * muxthreadmap;
     bool filterbank;
+    bool linear2circular;
     int numrecordedfreqs;
     int numzoomfreqs;
     int maxrecordedpcaltones;
@@ -674,6 +678,8 @@ private:
     int ** recordedfreqpcaltonefreqs; 
     int * recordedfreqpcaloffsetshz;
     double * recordedfreqclockoffsets;
+    double * recordedfreqclockoffsetsdelta;
+    double * recordedfreqphaseoffset;
     double * recordedfreqlooffsets;
     int * zoomfreqpols;
     int * zoomfreqtableindices;

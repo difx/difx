@@ -56,6 +56,8 @@ public:
   * @param nrecordedfreqs The number of recorded frequencies for this Mode
   * @param recordedbw The bandwidth of each of these IFs
   * @param recordedfreqclkoffs The time offsets in microseconds to be applied post-F for each of the frequencies
+  * @param recordedfreqclkoffsdelta The delay offsets in microseconds between Rcp and Lcp
+  * @param recordedfreqphaseoffs The phase offsets in degrees between Rcp and Lcp
   * @param recordedfreqlooffs The LO offsets in Hz for each recorded frequency
   * @param nrecordedbands The total number of subbands recorded
   * @param nzoombands The number of subbands to be taken from within the recorded bands - can be zero
@@ -63,12 +65,13 @@ public:
   * @param sampling The bit sampling type (real/complex)
   * @param unpacksamp The number of samples to unpack in one hit
   * @param fbank Whether to use a polyphase filterbank to channelise (instead of FFT)
+  * @param linear2circular Whether to do a linear to circular conversion after the FFT
   * @param fringerotorder The interpolation order across an FFT (Oth, 1st or 2nd order; 0th = post-F)
   * @param arraystridelen The number of samples to stride when doing complex multiplies to implement sin/cos operations efficiently
   * @param cacorrs Whether cross-polarisation autocorrelations are to be calculated
   * @param bclock The recorder clock-out frequency in MHz ("block clock")
   */
-  Mode(Configuration * conf, int confindex, int dsindex, int recordedbandchan, int chanstoavg, int bpersend, int gsamples, int nrecordedfreqs, double recordedbw, double * recordedfreqclkoffs, double * recordedfreqlooffs, int nrecordedbands, int nzoombands, int nbits, Configuration::datasampling sampling, int unpacksamp, bool fbank, int fringerotorder, int arraystridelen, bool cacorrs, double bclock);
+  Mode(Configuration * conf, int confindex, int dsindex, int recordedbandchan, int chanstoavg, int bpersend, int gsamples, int nrecordedfreqs, double recordedbw, double * recordedfreqclkoffs, double * recordedfreqclkoffsdelta, double * recordedfreqphaseoffs, double * recordedfreqlooffs, int nrecordedbands, int nzoombands, int nbits, Configuration::datasampling sampling, int unpacksamp, bool fbank, bool linear2circular, int fringerotorder, int arraystridelen, bool cacorrs, double bclock);
 
  /**
   * Stores the FFT valid flags for this block of data
@@ -236,9 +239,12 @@ protected:
   f32 dataweight;
   int samplesperblock, samplesperlookup, numlookups, flaglength, autocorrwidth;
   int datascan, datasec, datans, datalengthbytes, usecomplex;
-  bool filterbank, calccrosspolautocorrs, fractionalLoFreq, initok, isfft;
+  bool filterbank, calccrosspolautocorrs, fractionalLoFreq, initok, isfft, linear2circular;
   double * recordedfreqclockoffsets;
+  double * recordedfreqclockoffsetsdelta;
+  double * recordedfreqphaseoffset;
   double * recordedfreqlooffsets;
+  bool deltapoloffsets, phasepoloffset;
   u8  *   data;
   s16 *   lookup;
   s16 *   linearunpacked;
@@ -261,7 +267,7 @@ protected:
   //new arrays for strided complex multiply for fringe rotation and fractional sample correction
   cf32 * complexrotator;
   cf32 * complexunpacked;
-  cf32 * fracsamprotator;
+  cf32 * fracsamprotatorA, * fracsamprotatorB;  // Allow different delay correction for each pol
   cf32 * fftd;
 
   // variables for pcal
@@ -317,6 +323,11 @@ protected:
   f32 ** s2; //[numrecordedbands][recordedbandchannels]
   f32 ** sk; //[numrecordedbands][recordedbandchannels]
 
+  // Linear to circular conversion
+
+  cf32 *phasecorr, *phasecorrconj; // 90 degrees + phase correction
+  cf32 * tmpvec; 
+
 private:
   ///Array containing decorrelation percentages for a given number of bits
   static const float decorrelationpercentage[];
@@ -343,17 +354,20 @@ public:
   * @param nfreqs The number of frequencies for this Mode
   * @param bw The bandwidth of each of these IFs
   * @param recordedfreqclkoffs The time offsets in microseconds to be applied post-F for each of the frequencies
+  * @param recordedfreqclkoffsdelta The offsets in microseconds between Rcp and Lcp
+  * @param recordedfreqphaseoffs The phase offsets in degrees between Rcp and Lcp
   * @param recordedfreqlooffs The LO offsets in Hz for each recorded frequency
   * @param ninputbands The total number of subbands recorded
   * @param noutputbands The total number of subbands after prefiltering - not currently used (must be = numinputbands)
   * @param nbits The number of bits per sample
   * @param fbank Whether to use a polyphase filterbank to channelise (instead of FFT)
+  * @param linear2circular Whether to do a linear to circular conversion after the FFT
   * @param fringerotorder The interpolation order across an FFT (Oth, 1st or 2nd order; 0th = post-F)
   * @param arraystridelen The number of samples to stride when doing complex multiplies to implement sin/cos operations efficiently
   * @param cacorrs Whether cross-polarisation autocorrelations are to be calculated
   * @param unpackvalues 4 element array containing floating point unpack values for the four possible two bit values
   */
-    LBAMode(Configuration * conf, int confindex, int dsindex, int nchan, int chanstoavg, int bpersend, int gblocks, int nfreqs, double bw, double * recordedfreqclkoffs, double * recordedfreqlooffs, int ninputbands, int noutputbands, int nbits, bool fbank, int fringerotorder, int arraystridelen, bool cacorrs, const s16* unpackvalues);
+  LBAMode(Configuration * conf, int confindex, int dsindex, int nchan, int chanstoavg, int bpersend, int gblocks, int nfreqs, double bw, double * recordedfreqclkoffs, double * recordedfreqclkoffsdelta,double * recordedfreqphaseoffs, double * recordedfreqlooffs, int ninputbands, int noutputbands, int nbits, bool fbank, bool linear2circular, int fringerotorder, int arraystridelen, bool cacorrs, const s16* unpackvalues);
 
     ///unpack mapping for "standard" recording modes
     static const s16 stdunpackvalues[];
@@ -371,7 +385,7 @@ public:
  */
 class LBA8BitMode : public Mode{
 public:
-  LBA8BitMode(Configuration * conf, int confindex, int dsindex, int nchan, int chanstoavg, int bpersend, int gblocks, int nfreqs, double bw, double * recordedfreqclkoffs, double * recordedfreqlooffs, int ninputbands, int noutputbands, int nbits, bool fbank, int fringerotorder, int arraystridelen, bool cacorrs);
+  LBA8BitMode(Configuration * conf, int confindex, int dsindex, int nchan, int chanstoavg, int bpersend, int gblocks, int nfreqs, double bw, double * recordedfreqclkoffs, double * recordedfreqclkoffsdelta, double * recordedfreqphaseoffs, double * recordedfreqlooffs, int ninputbands, int noutputbands, int nbits, bool fbank, bool linear2circular, int fringerotorder, int arraystridelen, bool cacorrs);
 
   virtual float unpack(int sampleoffset);
 };
@@ -386,7 +400,7 @@ public:
  */
 class LBA16BitMode : public Mode{
 public:
-  LBA16BitMode(Configuration * conf, int confindex, int dsindex, int nchan, int chanstoavg, int bpersend, int gblocks, int nfreqs, double bw, double * recordedfreqclkoffs, double * recordedfreqlooffs, int ninputbands, int noutputbands, int nbits, bool fbank, int fringerotorder, int arraystridelen, bool cacorrs);
+  LBA16BitMode(Configuration * conf, int confindex, int dsindex, int nchan, int chanstoavg, int bpersend, int gblocks, int nfreqs, double bw, double * recordedfreqclkoffs, double * recordedfreqclkoffsdelta, double * recordedfreqphaseoffs, double * recordedfreqlooffs, int ninputbands, int noutputbands, int nbits, bool fbank, bool linear2circular, int fringerotorder, int arraystridelen, bool cacorrs);
 
   virtual float unpack(int sampleoffset);
 };
