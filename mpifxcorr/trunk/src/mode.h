@@ -275,6 +275,8 @@ protected:
   cf32 ** pcalresults;
   PCal ** extractor;
   
+  f64 * subtoff;
+  f64 * subtval;
   f64 * subxoff;
   f64 * subxval;
   f64 * subphase;
@@ -282,6 +284,8 @@ protected:
   f32 * subsin;
   f32 * subcos;
 
+  f64 * steptoff;
+  f64 * steptval;
   f64 * stepxoff;
   f64 * stepxval;
   f64 * stepphase;

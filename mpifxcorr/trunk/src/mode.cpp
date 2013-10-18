@@ -36,6 +36,7 @@ Mode::Mode(Configuration * conf, int confindex, int dsindex, int recordedbandcha
   int status, localfreqindex, parentfreqindex;
   int decimationfactor = config->getDDecimationFactor(configindex, datastreamindex);
   estimatedbytes = 0;
+  double looffsetcorrectioninterval, looffsetphasechange, worstlooffsetphasechange;
 
   if (sampling==Configuration::COMPLEX) 
     usecomplex=1;
@@ -71,6 +72,24 @@ Mode::Mode(Configuration * conf, int confindex, int dsindex, int recordedbandcha
   {
     if(config->getDRecordedFreq(configindex, datastreamindex, i) - int(config->getDRecordedFreq(configindex, datastreamindex, i)) > TINY)
       fractionalLoFreq = true;
+  }
+
+  //check whether LO offset correction will decorrelate too badly, if used
+  looffsetcorrectioninterval = sampletime/1e6;
+  if(fringerotorder == 0)
+    looffsetcorrectioninterval *= fftchannels;
+  worstlooffsetphasechange = 0.0;
+  for(int i=0;i<numrecordedfreqs;i++)
+  {
+    if(fabs(recordedfreqlooffsets[i]) > TINY) {
+      looffsetphasechange = fabs(recordedfreqlooffsets[i])*looffsetcorrectioninterval*TWO_PI;
+      if(looffsetphasechange > worstlooffsetphasechange)
+        worstlooffsetphasechange = looffsetphasechange;
+  }
+  if(worstlooffsetphasechange > 0.1)
+    csevere << startl << "LO offset will lead to significant decorrelation - phase change of " << worstlooffsetphasechange*360/TWO_PI << " degrees between updates!" << endl;
+  else if (worstlooffsetphasechange > 0.01)
+    cwarn << startl << "LO offset will lead to some decorrelation - phase change of " << worstlooffsetphasechange*360/TWO_PI << " degrees between updates!" << endl;
   }
 
   //now do the rest of the initialising
@@ -180,6 +199,8 @@ Mode::Mode(Configuration * conf, int confindex, int dsindex, int recordedbandcha
         tempstepxval = vectorAlloc_f64(numfrstrides);
         estimatedbytes += 16*numfrstrides;
       case 1:
+        subtoff  = vectorAlloc_f64(arraystridelength);
+        subtval  = vectorAlloc_f64(arraystridelength);
         subxoff  = vectorAlloc_f64(arraystridelength);
         subxval  = vectorAlloc_f64(arraystridelength);
         subphase = vectorAlloc_f64(arraystridelength);
@@ -188,6 +209,8 @@ Mode::Mode(Configuration * conf, int confindex, int dsindex, int recordedbandcha
         subcos   = vectorAlloc_f32(arraystridelength);
         estimatedbytes += (3*8+3*4)*arraystridelength;
 
+        steptoff  = vectorAlloc_f64(numfrstrides);
+        steptval  = vectorAlloc_f64(numfrstrides);
         stepxoff  = vectorAlloc_f64(numfrstrides);
         stepxval  = vectorAlloc_f64(numfrstrides);
         stepphase = vectorAlloc_f64(numfrstrides);
@@ -202,10 +225,14 @@ Mode::Mode(Configuration * conf, int confindex, int dsindex, int recordedbandcha
         fftd = vectorAlloc_cf32(fftchannels);
         estimatedbytes += 3*sizeof(cf32)*fftchannels;
 
-        for(int i=0;i<arraystridelength;i++)
+        for(int i=0;i<arraystridelength;i++) {
           subxoff[i] = (double(i)/double(fftchannels));
-        for(int i=0;i<numfrstrides;i++)
+          subtoff[i] = i*sampletime/1e6;
+        }
+        for(int i=0;i<numfrstrides;i++) {
           stepxoff[i] = double(i*arraystridelength)/double(fftchannels);
+          steptoff[i] = i*arraystridelength*sampletime/1e6;
+        }
         if(fringerotationorder == 2) { // Quadratic
           for(int i=0;i<numfrstrides;i++)
             stepxoffsquared[i] = stepxoff[i]*stepxoff[i];
@@ -444,6 +471,8 @@ Mode::~Mode()
       vectorFree(stepxoffsquared);
       vectorFree(tempstepxval);
     case 1:
+      vectorFree(subtoff);
+      vectorFree(subtval);
       vectorFree(subxoff);
       vectorFree(subxval);
       vectorFree(subphase);
@@ -451,6 +480,8 @@ Mode::~Mode()
       vectorFree(subsin);
       vectorFree(subcos);
 
+      vectorFree(steptoff);
+      vectorFree(steptval);
       vectorFree(stepxoff);
       vectorFree(stepxval);
       vectorFree(stepphase);
@@ -586,15 +617,16 @@ float Mode::unpack(int sampleoffset)
   return 1.0;
 }
 
-float Mode::process(int index, int subloopindex)  //frac sample error, fringedelay and wholemicroseconds are in microseconds 
+float Mode::process(int index, int subloopindex)  //frac sample error is in microseconds 
 {
-  double phaserotation, averagedelay, nearestsampletime, starttime, lofreq, walltimesecs, fftcentre, d0, d1, d2;
+  double phaserotation, averagedelay, nearestsampletime, starttime, lofreq, walltimesecs, fracwalltime, fftcentre, d0, d1, d2, fraclooffset;
   f32 phaserotationfloat, fracsampleerror;
-  int status, count, nearestsample, integerdelay, acoffset, k, RcpIndex, LcpIndex, freqindex;
+  int status, count, nearestsample, integerdelay, acoffset, k, RcpIndex, LcpIndex, freqindex, intwalltime;
   cf32* fftptr;
   cf32 *fracsampptr1A, *fracsampptr2A, *fracsampptr1B, *fracsampptr2B;
   f32* currentstepchannelfreqs;
   int indices[10];
+  bool looff, isfraclooffset;
   //cout << "For Mode of datastream " << datastreamindex << ", index " << index << ", validflags is " << validflags[index/FLAGS_PER_INT] << ", after shift you get " << ((validflags[index/FLAGS_PER_INT] >> (index%FLAGS_PER_INT)) & 0x01) << endl;
   
   if((datalengthbytes <= 1) || (offsetseconds == INVALID_SUBINT) || (((validflags[index/FLAGS_PER_INT] >> (index%FLAGS_PER_INT)) & 0x01) == 0))
@@ -617,7 +649,9 @@ float Mode::process(int index, int subloopindex)  //frac sample error, fringedel
   fftstartmicrosec = index*fftchannels*sampletime; //CHRIS CHECK
   starttime = (offsetseconds-datasec)*1000000.0 + (static_cast<long long>(offsetns) - static_cast<long long>(datans))/1000.0 + fftstartmicrosec - averagedelay;
   nearestsample = int(starttime/sampletime + 0.5);
-  walltimesecs= model->getScanStartSec(currentscan, config->getStartMJD(), config->getStartSeconds()) + offsetseconds + offsetns/1.0e9 + fftstartmicrosec/1.0e6;
+  walltimesecs = model->getScanStartSec(currentscan, config->getStartMJD(), config->getStartSeconds()) + offsetseconds + offsetns/1.0e9 + fftstartmicrosec/1.0e6;
+  intwalltime = static_cast<int>(walltimesecs);
+  fracwalltime = walltimesecs - intwalltime;
 
   //if we need to, unpack some more data - first check to make sure the pos is valid at all
   //cout << "Datalengthbytes for " << datastreamindex << " is " << datalengthbytes << endl;
@@ -756,6 +790,17 @@ float Mode::process(int index, int subloopindex)  //frac sample error, fringedel
       }
     }
 
+    looff = false;
+    isfraclooffset = false;
+    if(recordedfreqlooffsets[i] > 0.0 || recordedfreqlooffsets[i] < 0.0) {
+      looff = true;
+      fraclooffset = fabs(recordedfreqlooffsets[i]) - int(fabs(recordedfreqlooffsets[i]));
+      if (fraclooffset > Mode::TINY)
+        isfraclooffset = true;
+      if (recordedfreqlooffsets[i] < 0)
+        fraclooffset = -fraclooffset;
+    }
+
     //get ready to apply fringe rotation, if its pre-F
     lofreq = config->getDRecordedFreq(configindex, datastreamindex, i);
     switch(fringerotationorder) {
@@ -770,6 +815,28 @@ float Mode::process(int index, int subloopindex)  //frac sample error, fringedel
           status = vectorAddC_f64_I((lofreq-int(lofreq))*double(integerdelay), subphase, arraystridelength);
           if(status != vecNoErr)
             csevere << startl << "Error in linearinterpolate lofreq non-integer freq addition!!!" << status << endl;
+        }
+        if(looff) {
+          status = vectorMulC_f64(subtoff, -recordedfreqlooffsets[i], subtval, arraystridelength);
+          if(status != vecNoErr)
+            csevere << startl << "Error in LO offset calculation (time domain, sub vector)" << status << endl;
+          status = vectorMulC_f64(steptoff, -recordedfreqlooffsets[i], steptval, numfrstrides);
+          if(status != vecNoErr)
+            csevere << startl << "Error in LO offset calculation (time domain, step vector)" << status << endl;
+          status = vectorAdd_f64_I(subtval, subphase, arraystridelength);
+          if(status != vecNoErr)
+            csevere << startl << "Error in LO offset addition (time domain, sub vector)" << status << endl;
+          status = vectorAdd_f64_I(steptval, stepphase, numfrstrides);
+          if(status != vecNoErr)
+            csevere << startl << "Error in LO offset addition (time domain, step vector)" << status << endl;
+          status = vectorAddC_f64_I(-recordedfreqlooffsets[i]*fracwalltime, subphase, arraystridelength);
+          if(status != vecNoErr)
+            csevere << startl << "Error in LO offset addition (time domain, wallclock offset)" << status << endl;
+          if(isfraclooffset) {
+            status = vectorAddC_f64_I(-fraclooffset*intwalltime, subphase, arraystridelength);
+            if(status != vecNoErr)
+              csevere << startl << "Error in LO offset addition (time domain, frac LO offset wallclock offset)" << status << endl;
+          }
         }
         for(int j=0;j<arraystridelength;j++) {
           subarg[j] = -TWO_PI*(subphase[j] - int(subphase[j]));
@@ -810,6 +877,28 @@ float Mode::process(int index, int subloopindex)  //frac sample error, fringedel
         status = vectorMulC_f64(stepxval, lofreq, stepphase, numfrstrides);
         if(status != vecNoErr)
           csevere << startl << "Error in quadinterpolate lofreq step multiplication!!!" << status << endl;
+        if(looff) {
+          status = vectorMulC_f64(subtoff, -recordedfreqlooffsets[i], subtval, arraystridelength);
+          if(status != vecNoErr)
+            csevere << startl << "Error in LO offset calculation (time domain, sub vector)" << status << endl;
+          status = vectorMulC_f64(steptoff, -recordedfreqlooffsets[i], steptval, numfrstrides);
+          if(status != vecNoErr)
+            csevere << startl << "Error in LO offset calculation (time domain, step vector)" << status << endl;
+          status = vectorAdd_f64_I(subtval, subphase, arraystridelength);
+          if(status != vecNoErr)
+            csevere << startl << "Error in LO offset addition (time domain, sub vector)" << status << endl;
+          status = vectorAdd_f64_I(steptval, stepphase, numfrstrides);
+          if(status != vecNoErr)
+            csevere << startl << "Error in LO offset addition (time domain, step vector)" << status << endl;
+          status = vectorAddC_f64_I(-recordedfreqlooffsets[i]*fracwalltime, subphase, arraystridelength);
+          if(status != vecNoErr)
+            csevere << startl << "Error in LO offset addition (time domain, wallclock offset)" << status << endl;
+          if(isfraclooffset) {
+            status = vectorAddC_f64_I(-fraclooffset*intwalltime, subphase, arraystridelength);
+            if(status != vecNoErr)
+              csevere << startl << "Error in LO offset addition (time domain, frac LO offset wallclock offset)" << status << endl;
+          }
+        }
         for(int j=0;j<arraystridelength;j++) {
           subarg[j] = -TWO_PI*(subphase[j] - int(subphase[j]));
           subquadarg[j] = -TWO_PI*(subquadphase[j] - int(subquadphase[j]));
@@ -855,7 +944,7 @@ float Mode::process(int index, int subloopindex)  //frac sample error, fringedel
     if(status != vecNoErr)
       csevere << startl << "Error in frac sample correction, arg generation (step)!!!" << status << endl;
 
-    //sort out any LO offsets (+ fringe rotation if its post-F)
+    // For zero-th order (post-F) fringe rotation, calculate the fringe rotation (+ LO offset if necessary)
     if(fringerotationorder == 0) { // do both LO offset and fringe rotation  (post-F)
       phaserotation = (averagedelay-integerdelay)*lofreq;
       if(fractionalLoFreq)
@@ -865,16 +954,6 @@ float Mode::process(int index, int subloopindex)  //frac sample error, fringedel
       status = vectorAddC_f32_I(phaserotationfloat, subfracsamparg, arraystridelength);
       if(status != vecNoErr)
         csevere << startl << "Error in post-f phase rotation addition (+ maybe LO offset correction), sub!!!" << status << endl;
-    }
-    else { //not post-F, but must take care of LO offsets if present
-      if(recordedfreqlooffsets[i] > 0.0 || recordedfreqlooffsets[i] < 0.0)
-      {
-        phaserotation = -walltimesecs*recordedfreqlooffsets[i];
-        phaserotationfloat = (f32)(-TWO_PI*(phaserotation-int(phaserotation)));
-        status = vectorAddC_f32_I(phaserotationfloat, subfracsamparg, arraystridelength);
-        if(status != vecNoErr)
-          csevere << startl << "Error in LO offset correction (sub)!!!" << status << endl;
-      }
     }
 
     //create the fractional sample correction array
