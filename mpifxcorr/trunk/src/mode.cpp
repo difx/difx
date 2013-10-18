@@ -991,7 +991,7 @@ float Mode::process(int index, int subloopindex)  //frac sample error is in micr
       if(status != vecNoErr)
 	csevere << startl << "Error in frac sample correction, arg generation (step)!!!" << status << endl;
 
-      //sort out any LO offsets (+ fringe rotation if its post-F)
+      // For zero-th order (post-F) fringe rotation, calculate the fringe rotation (+ LO offset if necessary)
       if(fringerotationorder == 0) { // do both LO offset and fringe rotation  (post-F)
 	phaserotation = (averagedelay-integerdelay)*lofreq;
 	if(fractionalLoFreq)
@@ -1001,16 +1001,6 @@ float Mode::process(int index, int subloopindex)  //frac sample error is in micr
 	status = vectorAddC_f32_I(phaserotationfloat, subfracsamparg, arraystridelength);
 	if(status != vecNoErr)
 	  csevere << startl << "Error in post-f phase rotation addition (+ maybe LO offset correction), sub!!!" << status << endl;
-      }
-      else { //not post-F, but must take care of LO offsets if present
-	if(recordedfreqlooffsets[i] > 0.0 || recordedfreqlooffsets[i] < 0.0)
-	  {
-	    phaserotation = -walltimesecs*recordedfreqlooffsets[i];
-	    phaserotationfloat = (f32)(-TWO_PI*(phaserotation-int(phaserotation)));
-	    status = vectorAddC_f32_I(phaserotationfloat, subfracsamparg, arraystridelength);
-	    if(status != vecNoErr)
-	      csevere << startl << "Error in LO offset correction (sub)!!!" << status << endl;
-	  }
       }
       
       //create the fractional sample correction array
