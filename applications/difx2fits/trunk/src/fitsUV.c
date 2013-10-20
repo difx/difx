@@ -654,17 +654,6 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int skipextraautocorrs)
 	{
 		return SKIPPED_RECORD;
 	}
-	//if((configBaselineId % 257 == 0) && ((scan->nPhaseCentres == 1 && sourceId != scan->orgjobPhsCentreSrcs[0]) || 
-	//   (scan->nPhaseCentres > 1  && sourceId != scan->orgjobPointingCentreSrc)))
-	//{
-	//	printf("sourceId has been incorrectly recorded for baseline %d as %d - overriding!\n", configBaselineId, sourceId);
-	//	printf("number of phase centres for scan %d is %d, (original indices) pointing centre source was %d and 1st phase centre source was %d\n", scanId, scan->nPhaseCentres, scan->orgjobPointingCentreSrc, scan->orgjobPhsCentreSrcs[0]);
-	//	if(scan->nPhaseCentres == 1)
-	//		sourceId = scan->orgjobPhsCentreSrcs[0];
-	//	else
-	//		sourceId = scan->orgjobPointingCentreSrc;
-	//}
-	//printf("Sourceindex is %d, scanId is %d, baseline is %d\n", sourceId, scanId, configBaselineId);
 	if(sourceId != scan->orgjobPhsCentreSrcs[dv->phaseCentre] && (configBaselineId % 257 != 0) ) //don't skip autocorrelations
 	{
 		if(verbose > 2)
