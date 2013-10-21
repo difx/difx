@@ -38,7 +38,9 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include <stdint.h>
+#include <time.h>
 #include <vdifio.h>
 #include "config.h"
 
@@ -127,7 +129,7 @@ static void cornerturn_2thread_1bit(unsigned char *outputBuffer, const unsigned 
 
   const unsigned char *t0 = threadBuffers[0];
   const unsigned char *t1 = threadBuffers[1];
-  uint16_t *outputwordptr;
+  uint16_t *outputwordptr = (uint16_t *)outputBuffer;
   int i, n;
 
   n = outputDataSize/2;
@@ -155,7 +157,6 @@ static void cornerturn_2thread_2bit(unsigned char *outputBuffer, const unsigned 
 static void cornerturn_2thread_2bitSlow(unsigned char *outputBuffer, const unsigned char **threadBuffers, int outputDataSize)
 #endif
 {
-printf(".");
   // Efficiently handle the special case of 2 threads of 2-bit data.
   // This algorithm is optimized for 64-bit computers
   //
@@ -1398,6 +1399,118 @@ static void cornerturn_16thread_8bit(unsigned char *outputBuffer, const unsigned
 }
 
 
+static void (*getCornerTurner(int nThread, int nBit))(unsigned char *, const unsigned char **, int)
+{
+	if(nThread == 1)
+	{
+		return cornerturn_1thread;
+	}
+	else if(nBit == 1)
+	{
+		switch(nThread)
+		{
+		/* First list the most common ones: powers of two */
+		case 2:
+			return cornerturn_2thread_1bit;
+		/* unsupported cases */
+		default:
+			return 0;
+		}
+	}
+	else if(nBit == 2)
+	{
+		switch(nThread)
+		{
+		/* First list the most common ones: powers of two */
+		case 2:
+			return cornerturn_2thread_2bit;
+		case 4:
+			return cornerturn_4thread_2bit;
+		case 8:
+			return cornerturn_8thread_2bit;
+		case 16:
+			return cornerturn_16thread_2bit;
+		/* Then the non-powers-of-two */
+		case 3:
+			return cornerturn_3thread_2bit;
+		case 5:
+			return cornerturn_5thread_2bit;
+		case 6:
+			return cornerturn_6thread_2bit;
+		case 7:
+			return cornerturn_7thread_2bit;
+		case 10:
+			return cornerturn_10thread_2bit;
+		case 12:
+			return cornerturn_12thread_2bit;
+		case 14:
+			return cornerturn_14thread_2bit;
+		/* Alternate versions of some corner turners can be specified with negative values */
+		case -2:
+			return cornerturn_2thread_2bitSlow;
+		/* unsupported cases */
+		default:
+			return 0;
+		}
+	}
+	else if(nBit == 4)
+	{
+		switch(nThread)
+		{
+		/* First list the most common ones: powers of two */
+		case 2:
+			return cornerturn_2thread_4bit;
+		case 4:
+			return cornerturn_4thread_4bit;
+		case 8:
+			return cornerturn_8thread_4bit;
+		/* Then the non-powers-of-two */
+		case 3:
+			return cornerturn_3thread_4bit;
+		case 5:
+			return cornerturn_5thread_4bit;
+		case 6:
+			return cornerturn_6thread_4bit;
+		case 7:
+			return cornerturn_7thread_4bit;
+		/* unsupported cases */
+		default:
+			return 0;
+		}
+	}
+	else if(nBit == 8)
+	{
+		switch(nThread)
+		{
+		/* First list the most common ones: powers of two */
+		case 2:
+			return cornerturn_2thread_8bit;
+		case 4:
+			return cornerturn_4thread_8bit;
+		case 8:
+			return cornerturn_8thread_8bit;
+		case 16:
+			return cornerturn_16thread_8bit;
+		/* Then the non-powers-of-two */
+		case 3:
+			return cornerturn_3thread_8bit;
+		case 5:
+			return cornerturn_5thread_8bit;
+		case 6:
+			return cornerturn_6thread_8bit;
+		case 7:
+			return cornerturn_7thread_8bit;
+		/* unsupported cases */
+		default:
+			return 0;
+		}
+	}
+	else
+	{
+		return 0;
+	}
+}
+
 /* Params are:
  *
  * dest:
@@ -1480,6 +1593,15 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 
 	void (*cornerTurner)(unsigned char *, const unsigned char **, int);
 
+	cornerTurner = getCornerTurner(nThread, nBit);
+	if(cornerTurner == 0)
+	{
+		fprintf(stderr, "No corner turner implemented for %d threads and %d bits\n", nThread, nBit);
+
+		return -3;
+	}
+	nThread = abs(nThread);	/* in case a special corner turner was requested */
+
 	if(nSort <= 0)
 	{
 		maxSrcIndex = srcSize - inputFrameSize;
@@ -1498,149 +1620,6 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 	/* Choose a corner turning algorithm.  Currently the selection is limited to 2-bit cases or
 	 * anything with 1 thread.  Others can be implemented as needed.
 	 */
-	if(nThread == 1)
-	{
-		cornerTurner = cornerturn_1thread;
-	}
-	else if(nBit == 1)
-	{
-		switch(nThread)
-		{
-		/* First list the most common ones: powers of two */
-		case 2:
-			cornerTurner = cornerturn_2thread_1bit;
-			break;
-		default:
-			fprintf(stderr, "No corner turner implemented for 1 bit and %d threads\n", nThread);
-
-			return -3;
-		}
-	}
-	else if(nBit == 2)
-	{
-		switch(nThread)
-		{
-		/* First list the most common ones: powers of two */
-		case 2:
-			cornerTurner = cornerturn_2thread_2bit;
-			break;
-		case 4:
-			cornerTurner = cornerturn_4thread_2bit;
-			break;
-		case 8:
-			cornerTurner = cornerturn_8thread_2bit;
-			break;
-		case 16:
-			cornerTurner = cornerturn_16thread_2bit;
-			break;
-		/* Then the non-powers-of-two */
-		case 3:
-			cornerTurner = cornerturn_3thread_2bit;
-			break;
-		case 5:
-			cornerTurner = cornerturn_5thread_2bit;
-			break;
-		case 6:
-			cornerTurner = cornerturn_6thread_2bit;
-			break;
-		case 7:
-			cornerTurner = cornerturn_7thread_2bit;
-			break;
-		case 10:
-			cornerTurner = cornerturn_10thread_2bit;
-			break;
-		case 12:
-			cornerTurner = cornerturn_12thread_2bit;
-			break;
-		case 14:
-			cornerTurner = cornerturn_14thread_2bit;
-			break;
-		/* Alternate versions of some corner turners can be specified with negative values */
-		case -2:
-			nThread = 2;
-			cornerTurner = cornerturn_2thread_2bitSlow;
-			break;
-		default:
-			fprintf(stderr, "No corner turner implemented for %d bits and %d threads\n", nBit, nThread);
-
-			return -3;
-		}
-	}
-	else if(nBit == 4)
-	{
-		switch(nThread)
-		{
-		/* First list the most common ones: powers of two */
-		case 2:
-			cornerTurner = cornerturn_2thread_4bit;
-			break;
-		case 4:
-			cornerTurner = cornerturn_4thread_4bit;
-			break;
-		case 8:
-			cornerTurner = cornerturn_8thread_4bit;
-			break;
-		/* Then the non-powers-of-two */
-		case 3:
-			cornerTurner = cornerturn_3thread_4bit;
-			break;
-		case 5:
-			cornerTurner = cornerturn_5thread_4bit;
-			break;
-		case 6:
-			cornerTurner = cornerturn_6thread_4bit;
-			break;
-		case 7:
-			cornerTurner = cornerturn_7thread_4bit;
-			break;
-		default:
-			fprintf(stderr, "No corner turner implemented for %d bits and %d threads\n", nBit, nThread);
-
-			return -3;
-		}
-	}
-	else if(nBit == 8)
-	{
-		switch(nThread)
-		{
-		/* First list the most common ones: powers of two */
-		case 2:
-			cornerTurner = cornerturn_2thread_8bit;
-			break;
-		case 4:
-			cornerTurner = cornerturn_4thread_8bit;
-			break;
-		case 8:
-			cornerTurner = cornerturn_8thread_8bit;
-			break;
-		case 16:
-			cornerTurner = cornerturn_16thread_8bit;
-			break;
-		/* Then the non-powers-of-two */
-		case 3:
-			cornerTurner = cornerturn_3thread_8bit;
-			break;
-		case 5:
-			cornerTurner = cornerturn_5thread_8bit;
-			break;
-		case 6:
-			cornerTurner = cornerturn_6thread_8bit;
-			break;
-		case 7:
-			cornerTurner = cornerturn_7thread_8bit;
-			break;
-		default:
-			fprintf(stderr, "No corner turner implemented for %d bits and %d threads\n", nBit, nThread);
-
-			return -3;
-		}
-	}
-	else
-	{
-		fprintf(stderr, "No corner turner implemented for %d bits\n", nBit);
-
-		return -3;
-	}
 
 	for(nOutputChan = 1; nOutputChan < nThread; nOutputChan *= 2) ;
 
@@ -2146,5 +2125,125 @@ void resetvdifmuxstatistics(struct vdif_mux_statistics *stats)
 	if(stats)
 	{
 		memset(stats, 0, sizeof(struct vdif_mux_statistics));
+	}
+}
+
+static int testCornerTurn(const unsigned char *outputBuffer, const unsigned char **threadData, int outputBytes, int nt, int b)
+{
+	int nError = 0;
+	int nSample = 8*outputBytes/b;	/* total samples in output stream */
+	int s;
+	int ut;	/* lowest power of 2 >= nt */
+	unsigned int bitmask;
+
+	for(ut = 1; ut < nt; ut *= 2);
+
+	bitmask = (1 << b) - 1;
+
+	for(s = 0; s < nSample; ++s)
+	{
+		int t;	/* thread */
+		unsigned int outputvalue, inputvalue;
+		int outputsample, outputshift, inputsample, inputshift;
+
+		t = s % ut;
+		if(t >= nt)
+		{
+			/* ignore padded data */
+			continue;
+		}
+
+		outputsample = s*b / 8;
+		outputshift = (s*b) % 8;
+		outputvalue = (outputBuffer[outputsample] >> outputshift) & bitmask;
+
+		inputsample = s*b/ut / 8;
+		inputshift = (s*b/ut) % 8;
+		inputshift /= b;
+		inputshift *= b;
+		inputvalue = (threadData[t][inputsample] >> inputshift) & bitmask;
+
+		if(outputvalue != inputvalue)
+		{
+			++nError;
+		}
+	}
+
+	return nError;
+}
+
+void testvdifcornerturners(int outputBytes, int nTest)
+{
+	const int bits[] = {1, 2, 4, 8, 0};
+	const int maxThreads = 16;
+	int bi;
+	int t;
+	unsigned char *threadData[maxThreads];
+	unsigned char *outputBuffer;
+
+	for(t = 0; t < maxThreads; ++t)
+	{
+		FILE *in;
+		threadData[t] = (unsigned char *)malloc(outputBytes);
+		
+		/* fill with random values */
+		in = fopen("/dev/urandom", "r");
+		if(!in)
+		{
+			fprintf(stderr, "Error: cannot open /dev/urandom\n");
+
+			return;
+		}
+
+		fread(threadData[t], 1, outputBytes, in);
+
+		fclose(in);
+	}
+	outputBuffer = (unsigned char *)malloc(outputBytes);
+
+	for(bi = 0; bits[bi]; ++bi)
+	{
+		int b = bits[bi];
+		int nt;
+		for(nt = -maxThreads; nt <= maxThreads; ++nt)
+		{
+			int i;
+			void (*cornerTurner)(unsigned char *, const unsigned char **, int);
+			clock_t t0, t1;
+			int nError;
+			
+			cornerTurner = getCornerTurner(nt, b);
+
+			if(!cornerTurner)
+			{
+				continue;
+			}
+			printf("%d bits  %d threads...  ", b, nt);
+			fflush(stdout);
+
+			t0 = clock();
+			for(i = 0; i < nTest; ++i)
+			{
+				cornerTurner(outputBuffer, threadData, outputBytes);
+			}
+			t1 = clock();
+			if(t1 > t0)
+			{
+				printf("Took %d microseconds -> %0.0f Mbps", (int)(t1-t0), (8.0*nTest*outputBytes/(t1-t0)));
+			}
+			else
+			{
+				printf("Weird; took 0 time.");
+			}
+
+			nError = testCornerTurn(outputBuffer, threadData, outputBytes, abs(nt), b);
+			printf("   %d samples of %d were wrong.\n", nError, 8*outputBytes/b);
+		}
+	}
+
+	free(outputBuffer);
+	for(t = 0; t < maxThreads; ++t)
+	{
+		free(threadData[t]);
 	}
 }

@@ -20,11 +20,17 @@ bin_PROGRAMS = \
 	vmux \
 	vsum
 
+noinst_PROGRAMS = \
+	testcornerturners
+
 dist_bin_SCRIPTS = \
 	vdifbstate \
 	vdiffold \
 	vdifd \
 	vdifspec
+
+testcornerturners_SOURCES = \
+	testcornerturners.c
 
 stripVDIF_SOURCES = \
 	stripVDIF.c

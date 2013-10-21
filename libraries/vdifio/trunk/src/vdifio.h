@@ -153,6 +153,8 @@ void printvdifmuxstatistics(const struct vdif_mux_statistics *stats);
 
 void resetvdifmuxstatistics(struct vdif_mux_statistics *stats);
 
+void testvdifcornerturners(int outputBytes, int nTest);
+
 
 /* *** implemented in vdiffile.c *** */
 
