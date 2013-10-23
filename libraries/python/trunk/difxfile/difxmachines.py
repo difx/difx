@@ -83,6 +83,16 @@ class DifxMachines(object):
 		if len(node.fileUrls) > 0:
 			nodes.append(node)
 	return nodes
+    
+    def getHeadNodes(self):
+        """
+        returns a list of allowed headnodes
+        """
+        nodes = []
+	for name, node in self.nodes.iteritems():
+		if node.isHeadnode == 1:
+			nodes.append(node)
+	return nodes
 
     def getNetworkNodes(self):
 	"""
@@ -167,7 +177,11 @@ class DifxMachines(object):
 
 			fileUrls = []
 			networkUrls = []
-			
+                        
+                        # check for headnode
+                        if int(result.group(3).strip()) == 2:
+                            node.isHeadnode = 1
+                           			
 			if len(result.groups()) == 4:
 				      
 			        for url in result.group(4).split():
@@ -187,7 +201,7 @@ class DifxMachines(object):
 			if self.nodes.has_key(node.name):
 			        del self.nodes[node.name]
 			# add node if enabled
-			if result.group(3) == "1":
+			if int(result.group(3).strip()) > 0:
 			        self.nodes[node.name] = node
 
 	# check that version string was properly set in the cluster definition file
@@ -201,11 +215,12 @@ class Node:
 	name = ""
 	threads = 0
 	isMk5 = 0
+        isHeadnode = 0
 	fileUrls = []
 	networkUrls = []
 
 	def __str__(self):
-		result = "name=%s threads=%s isMk5=%s fileUrls=%s networkUrls=%s" % (self.name, self.threads, self.isMk5, self.fileUrls, self.networkUrls)
+		result = "name=%s threads=%s isHeadnode=%s isMk5=%s fileUrls=%s networkUrls=%s" % (self.name, self.threads, self.isHeadnode, self.isMk5, self.fileUrls, self.networkUrls)
 		return(result)
 		
 if __name__ == "__main__":
@@ -230,6 +245,10 @@ if __name__ == "__main__":
 	for node in difxmachines.getStorageNodes():
 		print node.name
 
+        print "------------\nHead nodes:\n------------"
+	for node in difxmachines.getHeadNodes():
+		print node.name
+                
 	print "------------\nNetwork nodes:\n------------"
 	for node in difxmachines.getNetworkNodes():
 		print node.name
