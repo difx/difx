@@ -63,6 +63,17 @@ class DifxMachines(object):
 			nodes.append(node)
 	return nodes
 
+    def getComputeNodes(self):
+        """
+        Returns a list of nodes serving as compute nodes. 
+        Compute nodes have a threads setting > 0
+        """
+        nodes = []
+        for name, node in self.nodes.iteritems():
+		if node.threads > 0:
+			nodes.append(node)
+	return nodes
+        
     def getStorageNodes(self):
 	"""
 	returns a list of all nodes having storage areas
@@ -152,7 +163,7 @@ class DifxMachines(object):
 		for nodeName in nodeNames:
 			node = Node()
 			node.name = nodeName
-			node.threads = result.group(2).strip()
+			node.threads = int(result.group(2).strip())
 
 			fileUrls = []
 			networkUrls = []
@@ -188,7 +199,7 @@ class Node:
 	Storage class representing a node found in the cluster definition file
 	"""
 	name = ""
-	threads = ""
+	threads = 0
 	isMk5 = 0
 	fileUrls = []
 	networkUrls = []
@@ -206,6 +217,11 @@ if __name__ == "__main__":
 	difxmachines = DifxMachines(sys.argv[1])
 
 	print difxmachines
+        
+        print "------------\nCompute nodes:\n------------"
+	for node in difxmachines.getComputeNodes():
+		print node.name, node.threads
+                
 	print "------------\nMark5 nodes:\n------------"
 	for node in difxmachines.getMk5Nodes():
 		print node.name
