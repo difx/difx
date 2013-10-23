@@ -49,7 +49,7 @@ static void usage(const char *pgm)
 int main(int argc, char **argv)
 {
 	int outputBytes = 100000;
-	int nTest = 1000;
+	int nTest = 10000;
 
 	testvdifcornerturners(outputBytes, nTest);
 

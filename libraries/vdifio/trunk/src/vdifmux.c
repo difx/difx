@@ -111,7 +111,7 @@ static void cornerturn_1thread(unsigned char *outputBuffer, const unsigned char 
   memcpy(outputBuffer, threadBuffers[0], outputDataSize);
 }
 
-static void cornerturn_2thread_1bit(unsigned char *outputBuffer, const unsigned char **threadBuffers, int outputDataSize)
+static void cornerturn_2thread_1bit_slow(unsigned char *outputBuffer, const unsigned char **threadBuffers, int outputDataSize)
 {
   // Efficiently handle the special case of 2 threads of 1-bit data.
   //
@@ -145,6 +145,358 @@ PRAGMA_OMP(for schedule(dynamic,125) nowait)
   }
 }
 
+static void cornerturn_2thread_1bit(unsigned char *outputBuffer, const unsigned char **threadBuffers, int outputDataSize)
+{
+  // Efficiently handle the special case of 2 threads of 1-bit data.
+  //
+  // Thread: ---------------1---------------   ---------------0---------------
+  // Byte:   ---------------0---------------   ---------------0---------------
+  // Input:  b7  b6  b5  b4  b3  b2  b1  b0    a7  a6  a5  a4  a3  a2  a1  a0
+  //
+  // Shift:   0  -1  -2  -3  -4  -5  -6  -7    +7  +6  +5  +4  +3  +2  +1   0
+  //
+  // Input:  b7  a7  b6  a6  b5  a5  b4  a4    b3  a3  b2  a2  b1  a1  b0  a0
+  // Byte:   ---------------0---------------   ---------------0---------------
+  //
+  //
+  // Take algorithm from http://graphics.stanford.edu/~seander/bithacks.html#Interleave64bitOps
+
+  const uint16_t *t0 = (uint16_t *)(threadBuffers[0]);
+  const uint16_t *t1 = (uint16_t *)(threadBuffers[1]);
+  uint32_t *outputwordptr = (uint32_t *)outputBuffer;
+  int i, n;
+  uint32_t x, y;
+
+  n = outputDataSize/4;
+
+PRAGMA_OMP(parallel private(i, x, y) shared(outputwordptr,t0,t1,n))
+  {
+PRAGMA_OMP(for schedule(dynamic,125) nowait)
+    for(i = 0; i < n; ++i)
+    {
+      x = t0[i];
+      x = (x | (x << 8)) & 0x00FF00FF;
+      x = (x | (x << 4)) & 0x0F0F0F0F;
+      x = (x | (x << 2)) & 0x33333333;
+      x = (x | (x << 1)) & 0x55555555;
+
+      y = t1[i];
+      y = (y | (y << 8)) & 0x00FF00FF;
+      y = (y | (y << 4)) & 0x0F0F0F0F;
+      y = (y | (y << 2)) & 0x33333333;
+      y = (y | (y << 1)) & 0x55555555;
+
+      outputwordptr[i] = x | (y << 1);
+    }
+  }
+}
+
+static void cornerturn_3thread_1bit(unsigned char *outputBuffer, const unsigned char **threadBuffers, int outputDataSize)
+{
+  const uint8_t *t0 = (uint8_t *)(threadBuffers[0]);
+  const uint8_t *t1 = (uint8_t *)(threadBuffers[1]);
+  const uint8_t *t2 = (uint8_t *)(threadBuffers[2]);
+  uint32_t *outputwordptr = (uint32_t *)outputBuffer;
+  int i, n;
+  uint32_t x, y, z, w;
+
+  n = outputDataSize/4;
+
+PRAGMA_OMP(parallel private(i, x, y, z) shared(outputwordptr,t0,t1,t2,n))
+  {
+PRAGMA_OMP(for schedule(dynamic,125) nowait)
+    for(i = 0; i < n; ++i)
+    {
+      x = t0[i];
+      x = (x | (x << 12));
+      x = (x | (x << 6)) & 0x03030303;
+      x = (x | (x << 3)) & 0x11111111;
+
+      y = t1[i];
+      y = (y | (y << 12));
+      y = (y | (y << 6)) & 0x03030303;
+      y = (y | (y << 3)) & 0x11111111;
+
+      z = t2[i];
+      z = (z | (z << 12));
+      z = (z | (z << 6)) & 0x03030303;
+      z = (z | (z << 3)) & 0x11111111;
+
+      outputwordptr[i] = x | (y << 1) | (z << 2);
+    }
+  }
+}
+
+static void cornerturn_4thread_1bit(unsigned char *outputBuffer, const unsigned char **threadBuffers, int outputDataSize)
+{
+  const uint8_t *t0 = (uint8_t *)(threadBuffers[0]);
+  const uint8_t *t1 = (uint8_t *)(threadBuffers[1]);
+  const uint8_t *t2 = (uint8_t *)(threadBuffers[2]);
+  const uint8_t *t3 = (uint8_t *)(threadBuffers[3]);
+  uint32_t *outputwordptr = (uint32_t *)outputBuffer;
+  int i, n;
+  uint32_t x, y, z, w;
+
+  n = outputDataSize/4;
+
+PRAGMA_OMP(parallel private(i, x, y, z, w) shared(outputwordptr,t0,t1,t2,t3,n))
+  {
+PRAGMA_OMP(for schedule(dynamic,125) nowait)
+    for(i = 0; i < n; ++i)
+    {
+      x = t0[i];
+      x = (x | (x << 12));
+      x = (x | (x << 6)) & 0x03030303;
+      x = (x | (x << 3)) & 0x11111111;
+
+      y = t1[i];
+      y = (y | (y << 12));
+      y = (y | (y << 6)) & 0x03030303;
+      y = (y | (y << 3)) & 0x11111111;
+
+      z = t2[i];
+      z = (z | (z << 12));
+      z = (z | (z << 6)) & 0x03030303;
+      z = (z | (z << 3)) & 0x11111111;
+
+      w = t3[i];
+      w = (w | (w << 12));
+      w = (w | (w << 6)) & 0x03030303;
+      w = (w | (w << 3)) & 0x11111111;
+
+      outputwordptr[i] = x | (y << 1) | (z << 2) | (w << 3);
+    }
+  }
+}
+
+static void cornerturn_5thread_1bit(unsigned char *outputBuffer, const unsigned char **threadBuffers, int outputDataSize)
+{
+  const uint8_t *t0 = (uint8_t *)(threadBuffers[0]);
+  const uint8_t *t1 = (uint8_t *)(threadBuffers[1]);
+  const uint8_t *t2 = (uint8_t *)(threadBuffers[2]);
+  const uint8_t *t3 = (uint8_t *)(threadBuffers[3]);
+  const uint8_t *t4 = (uint8_t *)(threadBuffers[4]);
+  uint64_t *outputwordptr = (uint64_t *)outputBuffer;
+  int i, n;
+  uint64_t a, b, c, d, e;
+
+  n = outputDataSize/8;
+
+PRAGMA_OMP(parallel private(i,a,b,c,d,e) shared(outputwordptr,t0,t1,t2,t3,t4,n))
+  {
+PRAGMA_OMP(for schedule(dynamic,125) nowait)
+    for(i = 0; i < n; ++i)
+    {
+      a = t0[i];
+      a = (a | (a << 28));
+      a = (a | (a << 14));
+      a = (a | (a << 7)) & 0x0101010101010101LL;
+
+      b = t1[i];
+      b = (b | (b << 28));
+      b = (b | (b << 14));
+      b = (b | (b << 7)) & 0x0101010101010101LL;
+
+      c = t2[i];
+      c = (c | (c << 28));
+      c = (c | (c << 14));
+      c = (c | (c << 7)) & 0x0101010101010101LL;
+
+      d = t3[i];
+      d = (d | (d << 28));
+      d = (d | (d << 14));
+      d = (d | (d << 7)) & 0x0101010101010101LL;
+
+      e = t4[i];
+      e = (e | (e << 28));
+      e = (e | (e << 14));
+      e = (e | (e << 7)) & 0x0101010101010101LL;
+
+      outputwordptr[i] = a | (b << 1) | (c << 2) | (d << 3) | (e << 4);
+    }
+  }
+}
+
+static void cornerturn_6thread_1bit(unsigned char *outputBuffer, const unsigned char **threadBuffers, int outputDataSize)
+{
+  const uint8_t *t0 = (uint8_t *)(threadBuffers[0]);
+  const uint8_t *t1 = (uint8_t *)(threadBuffers[1]);
+  const uint8_t *t2 = (uint8_t *)(threadBuffers[2]);
+  const uint8_t *t3 = (uint8_t *)(threadBuffers[3]);
+  const uint8_t *t4 = (uint8_t *)(threadBuffers[4]);
+  const uint8_t *t5 = (uint8_t *)(threadBuffers[5]);
+  uint64_t *outputwordptr = (uint64_t *)outputBuffer;
+  int i, n;
+  uint64_t a, b, c, d, e, f;
+
+  n = outputDataSize/8;
+
+PRAGMA_OMP(parallel private(i,a,b,c,d,e,f) shared(outputwordptr,t0,t1,t2,t3,t4,t5,n))
+  {
+PRAGMA_OMP(for schedule(dynamic,125) nowait)
+    for(i = 0; i < n; ++i)
+    {
+      a = t0[i];
+      a = (a | (a << 28));
+      a = (a | (a << 14));
+      a = (a | (a << 7)) & 0x0101010101010101LL;
+
+      b = t1[i];
+      b = (b | (b << 28));
+      b = (b | (b << 14));
+      b = (b | (b << 7)) & 0x0101010101010101LL;
+
+      c = t2[i];
+      c = (c | (c << 28));
+      c = (c | (c << 14));
+      c = (c | (c << 7)) & 0x0101010101010101LL;
+
+      d = t3[i];
+      d = (d | (d << 28));
+      d = (d | (d << 14));
+      d = (d | (d << 7)) & 0x0101010101010101LL;
+
+      e = t4[i];
+      e = (e | (e << 28));
+      e = (e | (e << 14));
+      e = (e | (e << 7)) & 0x0101010101010101LL;
+
+      f = t5[i];
+      f = (f | (f << 28));
+      f = (f | (f << 14));
+      f = (f | (f << 7)) & 0x0101010101010101LL;
+
+      outputwordptr[i] = a | (b << 1) | (c << 2) | (d << 3) | (e << 4) | (f << 5);
+    }
+  }
+}
+
+static void cornerturn_7thread_1bit(unsigned char *outputBuffer, const unsigned char **threadBuffers, int outputDataSize)
+{
+  const uint8_t *t0 = (uint8_t *)(threadBuffers[0]);
+  const uint8_t *t1 = (uint8_t *)(threadBuffers[1]);
+  const uint8_t *t2 = (uint8_t *)(threadBuffers[2]);
+  const uint8_t *t3 = (uint8_t *)(threadBuffers[3]);
+  const uint8_t *t4 = (uint8_t *)(threadBuffers[4]);
+  const uint8_t *t5 = (uint8_t *)(threadBuffers[5]);
+  const uint8_t *t6 = (uint8_t *)(threadBuffers[6]);
+  uint64_t *outputwordptr = (uint64_t *)outputBuffer;
+  int i, n;
+  uint64_t a, b, c, d, e, f, g;
+
+  n = outputDataSize/8;
+
+PRAGMA_OMP(parallel private(i,a,b,c,d,e,f,g) shared(outputwordptr,t0,t1,t2,t3,t4,t5,t6,n))
+  {
+PRAGMA_OMP(for schedule(dynamic,125) nowait)
+    for(i = 0; i < n; ++i)
+    {
+      a = t0[i];
+      a = (a | (a << 28));
+      a = (a | (a << 14));
+      a = (a | (a << 7)) & 0x0101010101010101LL;
+
+      b = t1[i];
+      b = (b | (b << 28));
+      b = (b | (b << 14));
+      b = (b | (b << 7)) & 0x0101010101010101LL;
+
+      c = t2[i];
+      c = (c | (c << 28));
+      c = (c | (c << 14));
+      c = (c | (c << 7)) & 0x0101010101010101LL;
+
+      d = t3[i];
+      d = (d | (d << 28));
+      d = (d | (d << 14));
+      d = (d | (d << 7)) & 0x0101010101010101LL;
+
+      e = t4[i];
+      e = (e | (e << 28));
+      e = (e | (e << 14));
+      e = (e | (e << 7)) & 0x0101010101010101LL;
+
+      f = t5[i];
+      f = (f | (f << 28));
+      f = (f | (f << 14));
+      f = (f | (f << 7)) & 0x0101010101010101LL;
+
+      g = t6[i];
+      g = (g | (g << 28));
+      g = (g | (g << 14));
+      g = (g | (g << 7)) & 0x0101010101010101LL;
+
+      outputwordptr[i] = a | (b << 1) | (c << 2) | (d << 3) | (e << 4) | (f << 5) | (g << 6);
+    }
+  }
+}
+
+static void cornerturn_8thread_1bit(unsigned char *outputBuffer, const unsigned char **threadBuffers, int outputDataSize)
+{
+  const uint8_t *t0 = (uint8_t *)(threadBuffers[0]);
+  const uint8_t *t1 = (uint8_t *)(threadBuffers[1]);
+  const uint8_t *t2 = (uint8_t *)(threadBuffers[2]);
+  const uint8_t *t3 = (uint8_t *)(threadBuffers[3]);
+  const uint8_t *t4 = (uint8_t *)(threadBuffers[4]);
+  const uint8_t *t5 = (uint8_t *)(threadBuffers[5]);
+  const uint8_t *t6 = (uint8_t *)(threadBuffers[6]);
+  const uint8_t *t7 = (uint8_t *)(threadBuffers[7]);
+  uint64_t *outputwordptr = (uint64_t *)outputBuffer;
+  int i, n;
+  uint64_t a, b, c, d, e, f, g, h;
+
+  n = outputDataSize/8;
+
+PRAGMA_OMP(parallel private(i,a,b,c,d,e,f,g,h) shared(outputwordptr,t0,t1,t2,t3,t4,t5,t6,t7,n))
+  {
+PRAGMA_OMP(for schedule(dynamic,125) nowait)
+    for(i = 0; i < n; ++i)
+    {
+      a = t0[i];
+      a = (a | (a << 28));
+      a = (a | (a << 14));
+      a = (a | (a << 7)) & 0x0101010101010101LL;
+
+      b = t1[i];
+      b = (b | (b << 28));
+      b = (b | (b << 14));
+      b = (b | (b << 7)) & 0x0101010101010101LL;
+
+      c = t2[i];
+      c = (c | (c << 28));
+      c = (c | (c << 14));
+      c = (c | (c << 7)) & 0x0101010101010101LL;
+
+      d = t3[i];
+      d = (d | (d << 28));
+      d = (d | (d << 14));
+      d = (d | (d << 7)) & 0x0101010101010101LL;
+
+      e = t4[i];
+      e = (e | (e << 28));
+      e = (e | (e << 14));
+      e = (e | (e << 7)) & 0x0101010101010101LL;
+
+      f = t5[i];
+      f = (f | (f << 28));
+      f = (f | (f << 14));
+      f = (f | (f << 7)) & 0x0101010101010101LL;
+
+      g = t6[i];
+      g = (g | (g << 28));
+      g = (g | (g << 14));
+      g = (g | (g << 7)) & 0x0101010101010101LL;
+
+      h = t7[i];
+      h = (h | (h << 28));
+      h = (h | (h << 14));
+      h = (h | (h << 7)) & 0x0101010101010101LL;
+
+      outputwordptr[i] = a | (b << 1) | (c << 2) | (d << 3) | (e << 4) | (f << 5) | (g << 6) | (h << 7);
+    }
+  }
+}
+
 /* For 2-bit 2-thread corner turning there are two implementions here.  One optimized for 64-bit and the other for 32-bit.
    At compile time one is named cornerturn_2thread_2bit and the other cornerturn_2thread_2bitSlow.  Which is which depends
    on sizeof(size_t)
@@ -152,9 +504,9 @@ PRAGMA_OMP(for schedule(dynamic,125) nowait)
 
 #if SIZEOF_SIZE_T == 8
 // 64-bit optimized version
-static void cornerturn_2thread_2bit(unsigned char *outputBuffer, const unsigned char **threadBuffers, int outputDataSize)
+static void cornerturn_2thread_2bit_slow(unsigned char *outputBuffer, const unsigned char **threadBuffers, int outputDataSize)
 #else
-static void cornerturn_2thread_2bitSlow(unsigned char *outputBuffer, const unsigned char **threadBuffers, int outputDataSize)
+static void cornerturn_2thread_2bit(unsigned char *outputBuffer, const unsigned char **threadBuffers, int outputDataSize)
 #endif
 {
   // Efficiently handle the special case of 2 threads of 2-bit data.
@@ -202,9 +554,9 @@ PRAGMA_OMP(for schedule(dynamic,125) nowait)
   }
 }
 #if SIZEOF_SIZE_T == 8
-static void cornerturn_2thread_2bitSlow(unsigned char *outputBuffer, const unsigned char **threadBuffers, int outputDataSize)
-#else
 static void cornerturn_2thread_2bit(unsigned char *outputBuffer, const unsigned char **threadBuffers, int outputDataSize)
+#else
+static void cornerturn_2thread_2bit_slow(unsigned char *outputBuffer, const unsigned char **threadBuffers, int outputDataSize)
 #endif
 {
   // Efficiently handle the special case of 2 threads of 2-bit data.
@@ -1354,6 +1706,114 @@ static void cornerturn_8thread_8bit(unsigned char *outputBuffer, const unsigned 
   }
 }
 
+static void cornerturn_10thread_8bit(unsigned char *outputBuffer, const unsigned char **threadBuffers, int outputDataSize)
+{
+  // interleave bytes
+  int i, n;
+  const unsigned char *t0  = threadBuffers[0];
+  const unsigned char *t1  = threadBuffers[1];
+  const unsigned char *t2  = threadBuffers[2];
+  const unsigned char *t3  = threadBuffers[3];
+  const unsigned char *t4  = threadBuffers[4];
+  const unsigned char *t5  = threadBuffers[5];
+  const unsigned char *t6  = threadBuffers[6];
+  const unsigned char *t7  = threadBuffers[7];
+  const unsigned char *t8  = threadBuffers[8];
+  const unsigned char *t9  = threadBuffers[9];
+
+  n = outputDataSize/16;
+
+  for(i = 0; i < n; ++i)
+  {
+    outputBuffer[16*i]    = t0[i];
+    outputBuffer[16*i+1]  = t1[i];
+    outputBuffer[16*i+2]  = t2[i];
+    outputBuffer[16*i+3]  = t3[i];
+    outputBuffer[16*i+4]  = t4[i];
+    outputBuffer[16*i+5]  = t5[i];
+    outputBuffer[16*i+6]  = t6[i];
+    outputBuffer[16*i+7]  = t7[i];
+    outputBuffer[16*i+8]  = t8[i];
+    outputBuffer[16*i+9]  = t9[i];
+  }
+}
+
+static void cornerturn_12thread_8bit(unsigned char *outputBuffer, const unsigned char **threadBuffers, int outputDataSize)
+{
+  // interleave bytes
+  int i, n;
+  const unsigned char *t0  = threadBuffers[0];
+  const unsigned char *t1  = threadBuffers[1];
+  const unsigned char *t2  = threadBuffers[2];
+  const unsigned char *t3  = threadBuffers[3];
+  const unsigned char *t4  = threadBuffers[4];
+  const unsigned char *t5  = threadBuffers[5];
+  const unsigned char *t6  = threadBuffers[6];
+  const unsigned char *t7  = threadBuffers[7];
+  const unsigned char *t8  = threadBuffers[8];
+  const unsigned char *t9  = threadBuffers[9];
+  const unsigned char *t10 = threadBuffers[10];
+  const unsigned char *t11 = threadBuffers[11];
+
+  n = outputDataSize/16;
+
+  for(i = 0; i < n; ++i)
+  {
+    outputBuffer[16*i]    = t0[i];
+    outputBuffer[16*i+1]  = t1[i];
+    outputBuffer[16*i+2]  = t2[i];
+    outputBuffer[16*i+3]  = t3[i];
+    outputBuffer[16*i+4]  = t4[i];
+    outputBuffer[16*i+5]  = t5[i];
+    outputBuffer[16*i+6]  = t6[i];
+    outputBuffer[16*i+7]  = t7[i];
+    outputBuffer[16*i+8]  = t8[i];
+    outputBuffer[16*i+9]  = t9[i];
+    outputBuffer[16*i+10] = t10[i];
+    outputBuffer[16*i+11] = t11[i];
+  }
+}
+
+static void cornerturn_14thread_8bit(unsigned char *outputBuffer, const unsigned char **threadBuffers, int outputDataSize)
+{
+  // interleave bytes
+  int i, n;
+  const unsigned char *t0  = threadBuffers[0];
+  const unsigned char *t1  = threadBuffers[1];
+  const unsigned char *t2  = threadBuffers[2];
+  const unsigned char *t3  = threadBuffers[3];
+  const unsigned char *t4  = threadBuffers[4];
+  const unsigned char *t5  = threadBuffers[5];
+  const unsigned char *t6  = threadBuffers[6];
+  const unsigned char *t7  = threadBuffers[7];
+  const unsigned char *t8  = threadBuffers[8];
+  const unsigned char *t9  = threadBuffers[9];
+  const unsigned char *t10 = threadBuffers[10];
+  const unsigned char *t11 = threadBuffers[11];
+  const unsigned char *t12 = threadBuffers[12];
+  const unsigned char *t13 = threadBuffers[13];
+
+  n = outputDataSize/16;
+
+  for(i = 0; i < n; ++i)
+  {
+    outputBuffer[16*i]    = t0[i];
+    outputBuffer[16*i+1]  = t1[i];
+    outputBuffer[16*i+2]  = t2[i];
+    outputBuffer[16*i+3]  = t3[i];
+    outputBuffer[16*i+4]  = t4[i];
+    outputBuffer[16*i+5]  = t5[i];
+    outputBuffer[16*i+6]  = t6[i];
+    outputBuffer[16*i+7]  = t7[i];
+    outputBuffer[16*i+8]  = t8[i];
+    outputBuffer[16*i+9]  = t9[i];
+    outputBuffer[16*i+10] = t10[i];
+    outputBuffer[16*i+11] = t11[i];
+    outputBuffer[16*i+12] = t12[i];
+    outputBuffer[16*i+13] = t13[i];
+  }
+}
+
 static void cornerturn_16thread_8bit(unsigned char *outputBuffer, const unsigned char **threadBuffers, int outputDataSize)
 {
   // interleave bytes
@@ -1412,6 +1872,22 @@ static void (*getCornerTurner(int nThread, int nBit))(unsigned char *, const uns
 		/* First list the most common ones: powers of two */
 		case 2:
 			return cornerturn_2thread_1bit;
+		case 4:
+			return cornerturn_4thread_1bit;
+		case 8:
+			return cornerturn_8thread_1bit;
+		/* Then the non-powers-of-two */
+		case 3:
+			return cornerturn_3thread_1bit;
+		case 5:
+			return cornerturn_5thread_1bit;
+		case 6:
+			return cornerturn_6thread_1bit;
+		case 7:
+			return cornerturn_7thread_1bit;
+		/* Alternate versions of some corner turners can be specified with negative values */
+		case -2:
+			return cornerturn_2thread_1bit_slow;
 		/* unsupported cases */
 		default:
 			return 0;
@@ -1447,7 +1923,7 @@ static void (*getCornerTurner(int nThread, int nBit))(unsigned char *, const uns
 			return cornerturn_14thread_2bit;
 		/* Alternate versions of some corner turners can be specified with negative values */
 		case -2:
-			return cornerturn_2thread_2bitSlow;
+			return cornerturn_2thread_2bit_slow;
 		/* unsupported cases */
 		default:
 			return 0;
@@ -1500,6 +1976,12 @@ static void (*getCornerTurner(int nThread, int nBit))(unsigned char *, const uns
 			return cornerturn_6thread_8bit;
 		case 7:
 			return cornerturn_7thread_8bit;
+		case 10:
+			return cornerturn_10thread_8bit;
+		case 12:
+			return cornerturn_12thread_8bit;
+		case 14:
+			return cornerturn_14thread_8bit;
 		/* unsupported cases */
 		default:
 			return 0;

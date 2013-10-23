@@ -2,10 +2,10 @@ Version 0.5
 ~~~~~~~~~~~
 * Post DiFX-2.2
 * Fix the 2-bit 16 thread case in the vdifmux function
-* 1-bit corner turners now supported: 1, 2 threads
+* 1-bit corner turners now supported: 1, 2, 3, 4, 5, 6, 7, 8 threads
 * 2-bit corner turners now supported: 1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 14, 16 threads
 * 4-bit corner turners now supported: 1, 2, 3, 4, 5, 6, 7, 8 threads
-* 8-bit corner turners now supported: 1, 2, 3, 4, 5, 6, 7, 8, 16 threads
+* 8-bit corner turners now supported: 1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 14, 16 threads
 * add corner turn test program: testcornerturners
 
 Version 0.4
