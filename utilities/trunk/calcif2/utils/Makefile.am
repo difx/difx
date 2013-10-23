@@ -1,8 +1,8 @@
 bin_PROGRAMS = calc2skd
 
 dist_bin_SCRIPTS = \
-	genmachines \
 	jobdisks \
+	genmachines.py \
 	joblist \
 	jobstatus \
 	difxsniff \
@@ -13,3 +13,6 @@ dist_bin_SCRIPTS = \
 
 calc2skd_SOURCES = \
 	calc2skd.c
+
+install-exec-hook:
+	mv $(DESTDIR)$(bindir)/genmachines.py $(DESTDIR)$(bindir)/genmachines
