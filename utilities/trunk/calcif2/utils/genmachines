@@ -32,23 +32,34 @@
 from string import split, strip, find, upper, lower
 from sys import argv, exit
 from os import popen, getenv, umask, environ
+from os.path import isfile
 from glob import glob
 import socket
 import struct
 import subprocess
 import signal
 import sys
+import re
 from optparse import OptionParser
 from xml.parsers import expat
 from copy import deepcopy
 
 
-author  = 'Walter Brisken'
+author  = 'Walter Brisken and Helge Rottmann'
 version = '0.17'
 verdate = '20131017'
+minMachinefileVersion = "1.0"	# cluster definition file must have at least this version
 
 defaultDifxMessagePort = 50200
 defaultDifxMessageGroup = '224.2.2.1'
+
+class Node:
+	name = ""
+	threads = ""
+	isMk5 = 0
+	fileUrls = []
+	networkUrls = []
+	
 
 def getUsage():
 	usage = "%prog [options] [<input1> [<input2>] ...]\n"
@@ -242,31 +253,6 @@ def getVsnsFromInputFile(inputfile):
 					vsns.append(value)
 	return (dssources, vsns)
 
-def readmachines(machinesfile, verbose):
-	machines = []
-	cores = []
-	ismk5 = {}
-	lines = open(machinesfile).readlines()
-	for l in lines:
-		l = split(strip(l), '#')[0]
-		s = split(l)
-		if len(s) >= 2:
-			machines.append(s[0])
-			cores.append(int(s[1]))
-			if len(s) >= 3:
-				ismk5[s[0]] = int(s[2])
-			else:
-				if s[0][:5] == 'mark5':
-					ismk5[s[0]] = 1
-				else:
-					ismk5[s[0]] = 0
-	if verbose > 1:
-		print 'MACHINES = ', machines
-		print 'CORES    = ', cores
-		print 'IS MK5   = ', ismk5
-
-	return machines,cores,ismk5
-
 def writethreads(basename, threads):
 	o = open(basename+'threads', 'w')
 	o.write('NUMBER OF CORES:    %d\n' % len(threads))
@@ -274,8 +260,7 @@ def writethreads(basename, threads):
 		o.write('%d\n' % t)
 	o.close()
 
-def writemachines(basename, hostname, machines, cores, results, vsns, dssources, ismk5, \
-	overheadcores, verbose):
+def writemachines(basename, hostname, nodes, results, vsns, dssources, overheadcores, verbose):
 	dsnodes = []
 	threads = []
 	extrathreads = []
@@ -396,12 +381,17 @@ def uniqueVsns(vsns):
 def run(files, machinesfile, overheadcores, verbose, dothreads, useDifxDb):
 	ok = True
 
-	machines, cores, ismk5 = readmachines(machinesfile, verbose)
+	difxmachines = DifxMachines(machinesfile)
+
+	nodes = difxmachines.getNodes()
+
+	#machines, cores, ismk5 = readmachines(machinesfile, verbose)
+	#nodes = readmachines(machinesfile, verbose)
 
 	hostname = socket.gethostname()
-	if not hostname in machines:
-		print 'ERROR: hostname not in machines file : %s' % machinesfile
-		exit(1)
+	#if not hostname in machines:
+#		print 'ERROR: hostname not in machines file : %s' % machinesfile
+#		exit(1)
 
 	infile = files[0]
 
@@ -452,8 +442,8 @@ def run(files, machinesfile, overheadcores, verbose, dothreads, useDifxDb):
 	if not ok:
 		return 1
 
-	t = writemachines(basename, hostname, machines, cores, results, \
-		vsns, dssources, ismk5, overheadcores, verbose)
+	t = writemachines(basename, hostname, nodes, results, \
+		vsns, dssources, overheadcores, verbose)
 
 	if len(t) == 0:
 		return 1
@@ -503,27 +493,22 @@ if __name__ == "__main__":
 	else:
 		machinesfile = options.machinesfile
 
+
+	# check that cluster definition file exist
+	if not isfile(machinesfile):
+		sys.exit("Machines file not found: %s" % machinesfile)
+
 	if getenv('DIFX_GROUP_ID'):
 		umask(2)
 
 	# list of input files to process
-	files = []
-	files.append(args)
+	files = args
 
 	quit = False
 	for f in files:
-		if len(glob(f)) != 1:
+		if not isfile(f):
 			print 'File %s not found' % f
 			quit = True
-		
-	if machinesfile == None:
-		print 'DIFX_MACHINES env var not defined!';
-		quit = True
-
-	elif len(glob(machinesfile)) != 1:
-		print 'Machinesfile %s not found.' % machinesfile
-		quit = True
-		
 	if quit:
 		print 'genmachines quitting.'
 		exit(1)
