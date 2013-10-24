@@ -62,6 +62,16 @@ class DifxMachines(object):
 		if node.isMk5 == 1:
 			nodes.append(node)
 	return nodes
+    
+    def getMk5NodeNames(self):
+	"""
+	returns a list of all Mk5 node names
+	"""
+	nodes = []
+	for name, node in self.nodes.iteritems():
+		if node.isMk5 == 1:
+			nodes.append(node.name)
+	return nodes
 
     def getComputeNodes(self):
         """
@@ -93,6 +103,16 @@ class DifxMachines(object):
 		if node.isHeadnode == 1:
 			nodes.append(node)
 	return nodes
+    
+    def getHeadNodeNames(self):
+        """
+        returns a list of allowed headnode names
+        """
+        nodes = []
+	for name, node in self.nodes.iteritems():
+		if node.isHeadnode == 1:
+			nodes.append(node.name)
+	return nodes
 
     def getNetworkNodes(self):
 	"""
@@ -117,7 +137,7 @@ class DifxMachines(object):
 	
 	lineCount = 0
 
-	reLine = re.compile("^\s*(.*?)\s*,\s*(\d{1,}?),\s*([0-2])\s*,?\s*(.*)")	
+	reLine = re.compile("^\s*(.*?)\s*,\s*([0-2]?),\s*(\d{1,})\s*,?\s*(.*)")	
 	reRange = re.compile("(.+)\[(.*)\-(.*)\]")
 	reLetter = re.compile("[a-z]")		
 
@@ -173,13 +193,13 @@ class DifxMachines(object):
 		for nodeName in nodeNames:
 			node = Node()
 			node.name = nodeName
-			node.threads = int(result.group(2).strip())
+			node.threads = int(result.group(3).strip())
 
 			fileUrls = []
 			networkUrls = []
                         
                         # check for headnode
-                        if int(result.group(3).strip()) == 2:
+                        if int(result.group(2).strip()) == 2:
                             node.isHeadnode = 1
                            			
 			if len(result.groups()) == 4:
@@ -201,7 +221,7 @@ class DifxMachines(object):
 			if self.nodes.has_key(node.name):
 			        del self.nodes[node.name]
 			# add node if enabled
-			if int(result.group(3).strip()) > 0:
+			if int(result.group(2).strip()) > 0:
 			        self.nodes[node.name] = node
 
 	# check that version string was properly set in the cluster definition file
