@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #**************************************************************************
-#   Copyright (C) 2008-2011 by Walter Brisken                             *
+#   Copyright (C) 2008-2013 by Walter Brisken                             *
 #                                                                         *
 #   This program is free software; you can redistribute it and/or modify  *
 #   it under the terms of the GNU General Public License as published by  *
@@ -29,45 +29,44 @@
 #
 #============================================================================
 
-from string import split, strip, find, upper, lower
-from sys import argv, exit
-from os import popen, getenv, umask, environ
+from string import split, strip, upper, lower
+from sys import exit
+from os import getenv, umask, environ
 from os.path import isfile
-from glob import glob
 import socket
 import struct
 import subprocess
 import signal
 import sys
-import re
 from optparse import OptionParser
 from xml.parsers import expat
 from copy import deepcopy
-
+try:
+    from difxfile.difxmachines import *
+except ImportError:
+    print "ERROR: Cannot find difxmachines library. Please include $DIFXROOT/lib/python in your $PYTHONPATH environment"
+    sys.exit(1)
 
 author  = 'Walter Brisken and Helge Rottmann'
 version = '0.17'
-verdate = '20131017'
+verdate = '20131024'
 minMachinefileVersion = "1.0"	# cluster definition file must have at least this version
 
 defaultDifxMessagePort = 50200
-defaultDifxMessageGroup = '224.2.2.1'
-
-class Node:
-	name = ""
-	threads = ""
-	isMk5 = 0
-	fileUrls = []
-	networkUrls = []
-	
+defaultDifxMessageGroup = '224.2.2.1'	
 
 def getUsage():
+        """
+        Compile usage text for OptionParser
+        """
 	usage = "%prog [options] [<input1> [<input2>] ...]\n"
 	usage += '\n<input> is a DiFX .input file.'
 	usage += '\nA program to find required Mark5 modules and write the machines file'
 	usage += '\nappropriate for a particular DiFX job.'
-	usage += '\n\nNote: %prog will require the DIFX_MACHINES environment to point to you cluster definition file if no -m option '
-	usage += '\nis specified.\n'
+	usage += '\n\nNote: %prog respects the following environment variables:'
+        usage +=  '\nDIFX_MACHINES: required, unless -m option is given. -m overrides DIFX_MACHINES.'
+        usage +=  '\nDIFX_GROUP: if not defined a default of %s will be used.' % defaultDifxMessageGroup
+        usage +=  '\nDIFX_PORT: if not defined a default of %s will be used.' % defaultDifxMessagePort
 	
 	return(usage)
 
@@ -148,9 +147,10 @@ def vsn_request():
 
 	return message
 
-def getVsnsByMulticast(maxtime, modlist, verbose):
+def getVsnsByMulticast(maxtime, datastreams, verbose):
 	dt = 0.2
 	t = 0.0
+        modlist = []
 
 	port = getenv('DIFX_MESSAGE_PORT')
 	if port == None:
@@ -161,6 +161,10 @@ def getVsnsByMulticast(maxtime, modlist, verbose):
 	if group == None:
 		group = defaultDifxMessageGroup
 
+        for stream in datastreams:
+            if len(stream.vsn) > 0:
+                modlist.append(stream.vsn)
+            
 	missing = deepcopy(modlist)
 
 	message = vsn_request()
@@ -221,13 +225,18 @@ def getVsnsByMulticast(maxtime, modlist, verbose):
 	return results, conflicts, missing, notidle
 
 def getVsnsFromInputFile(inputfile):
-	vsns = []
+        """
+        Parse the datastream section of the input file to
+        obtain VSNs file paths
+        """
+        datastreams = []
 	nds = 0
-	input = open(inputfile).readlines()
-	dsindices = []
+        dsindices = []
 	dssources = []
 	dscount = 0
-	dsfilecount = 0
+        
+	input = open(inputfile).readlines()
+    
 	for inputLine in input:
 		s = split(inputLine, ':')
 		if len(s) < 2:
@@ -235,142 +244,212 @@ def getVsnsFromInputFile(inputfile):
 		key = s[0].strip()
 		keyparts = key.split()
 		value = s[1].strip()
+                
+                # find number of datastreams
 		if key == 'ACTIVE DATASTREAMS':
 			nds = int(value)
-		if len(keyparts) == 3 and keyparts[0] == 'DATASTREAM' and keyparts[2] == 'INDEX':
+                        # create  empty Datastream objects
+                        for i in range (0, nds):
+                            stream = Datastream()
+                            datastreams.append(stream)
+                        
+                
+                # get datastream indices
+                if len(keyparts) == 3 and keyparts[0] == 'DATASTREAM' and keyparts[2] == 'INDEX':
 			dsindices.append(int(value))
+                
+                # obtain types of all datastreams
 		if key == 'DATA SOURCE':
 			if dscount in dsindices:
 				dssources.append(value)
+                                datastreams[dscount].type = value
 			dscount += 1
+                        
+                # parse data table
 		if len(keyparts) == 2 and keyparts[0] == 'FILE':
-			# VSNs only required for MODULES - will assume files are there for now
-			s = split(keyparts[1], '/')
-			ds = int(strip(s[0]))
+			
+                        # obtain datastream index
+			numDS,index = split(keyparts[1], '/')
+			ds = int(numDS.strip())
+                        di = int(index.strip())
 
-			if dssources[ds] == 'MODULE':
-				if ds < nds:
-					vsns.append(value)
-	return (dssources, vsns)
+                        if ds < nds:
+                            if datastreams[ds].type == 'MODULE':
+                                datastreams[ds].vsn = value
+                            elif datastreams[ds].type == 'FILE':
+                                if datastreams[ds].path == "":
+                                    datastreams[ds].path = os.path.dirname(value)
+                             
+            
+	return (datastreams)
 
 def writethreads(basename, threads):
+        """
+        Write the threads file to be used by mpifxcor
+        """
 	o = open(basename+'threads', 'w')
 	o.write('NUMBER OF CORES:    %d\n' % len(threads))
 	for t in threads:
 		o.write('%d\n' % t)
 	o.close()
 
-def writemachines(basename, hostname, nodes, results, vsns, dssources, overheadcores, verbose):
+def writemachines(basename, hostname, results, datastreams, overheadcores, verbose):
+        """
+        Write machines file to be used by mpirun
+        """
+        
 	dsnodes = []
 	threads = []
-	extrathreads = []
-	quit = False
+        
+	for stream in datastreams:
+            if stream.type == "FILE":
+                # check if path for this datastream matches storage area defined in the cluster definition file
+                # strip off last directory for matching
+                #path = stream.path[:rfind(stream.path, "/")]
+                        
+                matchCount = 0
+                matchNode = ""
+                for node in difxmachines.getStorageNodes():
+                    for url in node.fileUrls:
+                        if stream.path.startswith(url):
+                            print stream.path, url
+                            matchCount += 1
+                            matchNode = node.name
+                            break
+                if matchCount > 1:
+                    print "ERROR: identical storage area is associated with different hosts: %s" % path
+                    sys.exit(1)
+                elif matchCount == 1:
+                    dsnodes.append(matchNode)
+                else:
+                    # use compute node
+                    foundsuitable = False
+                    for node in difxmachines.getComputeNodes():
+                        # skip if already used as datastream node
+                        if node.name in dsnodes:
+                            continue
+                            
+                        dsnodes.append(node.name)
+                        foundsuitable = True
+                        break
+                    if not foundsuitable:
+                        print "Could not find a machine not already used"
+                        print "Will allocate a FILE datastream to %s" % (hostname)
+                        dsnodes.append(hostname)
+                        headCount += 1
+                
+            elif stream.type == "MODULE":    
+                matchNode = ""
+                for r in results:
+                    # find  module either in bank A or B
+                    if r[1] == stream.vsn or r[2] == stream.vsn:
+                            if r[0] in difxmachines.getMk5NodeNames():
+                                matchNode = r[0]
+                            else:
+                                # use message sending host
+                                matchNode = r[4]
 
-	moduleCount = 0
-	headCount = 0
-	for ds in dssources:
-		if ds == "FILE":
-			foundsuitable = False
-			for m in machines:
-				# don't use the head node
-				if m == hostname:
-					continue
-				# don't use machines already used as ds nodes
-				if m in dsnodes:
-					continue
-				# don't use mark5 machines
-				if ismk5[m] == 1:
-					continue
-				foundsuitable = True
-				dsnodes.append(m)		
-				break
-			if not foundsuitable:
-				print "Could not find a machine not already used"
-				print "Will allocate a FILE datastream to %s" % (hostname)
-				dsnodes.append(hostname)
-				headCount += 1
-		elif ds == "MODULE":
-			for r in results:
-				if r[1] == vsns[moduleCount] or r[2] == vsns[moduleCount]:
-					if r[0] in machines:
-                                		dsnodes.append(r[0])
-					else:
-						dsnodes.append(r[4])
-			moduleCount += 1
-
-	for d in dsnodes:
-		if not d in machines:
-			print '%s not enabled in machines file' % d
-			quit = True
-
-	if quit:
-		return []
+                if matchNode in difxmachines.getMk5NodeNames():
+                    dsnodes.append(matchNode)
+                else:
+                    print '%s not listed as an active mark5 host in machines file' % matchNode
+                    return []
+                
 	# Check if we must add the head node as a correlation node, too
 	foundsuitable = False
-	for m in range(len(machines)):
-		if machines[m] in dsnodes:
-			continue
-		if cores[m] < 1:
-			continue
-		foundsuitable = True
-		break
+        
+        for node in difxmachines.getComputeNodes():
+            if node.name in dsnodes:
+                continue
+            foundsuitable = True
+            break
 	if not foundsuitable:
 		headCount += 1
 
-	# write file
+	# write machine file
 	o = open(basename+'machines', 'w')
+        
+        # head node
+        o.write('%s slots=1 \n' % (hostname))
+        
+        # datastream nodes
+        for node in dsnodes:
+            o.write('%s slots=1 \n' % (node))
+            
+        # compute nodes
+        for node in difxmachines.getComputeNodes():
+            usedThreads = 0
+            # if compute node is also used as datastream nodes reduce number of threads
+            if node.name in dsnodes:
+                usedThreads = dsnodes.count(node.name)
+          
+            # if head node is also used as compute nodes reduce number of threads by one
+            if node.name in hostname:
+                usedThreads = 1
+                
+            o.write('%s slots=1 \n' % (node.name))
+            threads.append(node.threads-usedThreads)
+        
 	# head node
-	maxslots = 1
-	if hostname in machines:
-		m = machines.index(hostname)
-		if headCount > 0:
-			maxslots = headCount + 1
-		elif cores[m] > overheadcores+1:
-			maxslots = 2
-			extrathreads.append(cores[m] - (overheadcores+1))
-	o.write('%s slots=1 max-slots=%d\n' % \
-		(hostname, maxslots))
-	# datastream nodes
-	for d in dsnodes:
-		m = machines.index(d)
-		if headCount > 0:
-			maxslots = headCount + 1
-		elif cores[m] > overheadcores+1:
-			maxslots = 2
-			extrathreads.append(cores[m] - (overheadcores+1))
-		else:
-			maxslots = 1
-		o.write('%s slots=1 max-slots=%d\n' % \
-			(d, maxslots))
-	# core nodes
-	foundsuitable = False
-	for m in range(len(machines)):
-		if machines[m] in dsnodes:
-			continue
-		if cores[m] < 1:
-			continue
-		threads.append(cores[m])
-		foundsuitable = True
-		o.write('%s slots=1 max-slots=1\n' % machines[m])
-	if not foundsuitable:
-		print "Could not find a core machine not already used"
-		print "Will allocate %s as a core, too" % (hostname)
-		if hostname in machines:
-			m = machines.index(hostname)
-			nthreads = cores[m] - 2
-			if nthreads < 1:
-				nthreads = 1
-		else:
-			nthreads = 1
-		threads.append(nthreads)
-		o.write('%s slots=1 max-slots=%s\n' % (machines[m], headCount+1))
-	o.close()
-	for e in extrathreads:
-		threads.append(e)
+#	maxslots = 1
+#        m = machines.index(hostname)
+#        if headCount > 0:
+#                maxslots = headCount + 1
+#        elif cores[m] > overheadcores+1:
+#                maxslots = 2
+#                extrathreads.append(cores[m] - (overheadcores+1))
+#	o.write('%s slots=1 max-slots=%d\n' % \
+#		(hostname, maxslots))
+#	# datastream nodes
+#	for d in dsnodes:
+#		m = machines.index(d)
+#		if headCount > 0:
+#			maxslots = headCount + 1
+#		elif cores[m] > overheadcores+1:
+#			maxslots = 2
+#			extrathreads.append(cores[m] - (overheadcores+1))
+#		else:
+#			maxslots = 1
+#		o.write('%s slots=1 max-slots=%d\n' % \
+#			(d, maxslots))
+#	# core nodes
+#	foundsuitable = False
+#	for m in range(len(machines)):
+#		if machines[m] in dsnodes:
+#			continue
+#		if cores[m] < 1:
+#			continue
+#		threads.append(cores[m])
+#		foundsuitable = True
+#		o.write('%s slots=1 max-slots=1\n' % machines[m])
+#	if not foundsuitable:
+#		print "Could not find a core machine not already used"
+#		print "Will allocate %s as a core, too" % (hostname)
+#		if hostname in machines:
+#			m = machines.index(hostname)
+#			nthreads = cores[m] - 2
+#			if nthreads < 1:
+#				nthreads = 1
+#		else:
+#			nthreads = 1
+#		threads.append(nthreads)
+#		o.write('%s slots=1 max-slots=%s\n' % (machines[m], headCount+1))
+#	o.close()
+#	for e in extrathreads:
+#		threads.append(e)
 	return threads
 
-def uniqueVsns(vsns):
-	d = {}
+def uniqueVsns(datastreams):
+        """
+        Check for duplicate datastreams VSNs. Returns 1 if duplicates are found, 0 otherwise
+        """
+        
+        d = {}
+        vsns = []
+        for stream in datastreams:
+            if len(stream.vsn) > 0: 
+                vsns.append(stream.vsn)
+             
 	for v in vsns:
 		d[v] = 1
 	if len(d) != len(vsns):
@@ -381,17 +460,11 @@ def uniqueVsns(vsns):
 def run(files, machinesfile, overheadcores, verbose, dothreads, useDifxDb):
 	ok = True
 
-	difxmachines = DifxMachines(machinesfile)
-
-	nodes = difxmachines.getNodes()
-
-	#machines, cores, ismk5 = readmachines(machinesfile, verbose)
-	#nodes = readmachines(machinesfile, verbose)
-
+        # check if host is an allowed headnode
 	hostname = socket.gethostname()
-	#if not hostname in machines:
-#		print 'ERROR: hostname not in machines file : %s' % machinesfile
-#		exit(1)
+	if not hostname in difxmachines.getHeadNodeNames():
+		print 'ERROR: hostname is not an allowed headnode in the machines file : %s' % machinesfile
+		exit(1)
 
 	infile = files[0]
 
@@ -400,14 +473,13 @@ def run(files, machinesfile, overheadcores, verbose, dothreads, useDifxDb):
 		print 'expecting input file'
 		exit(1)
 				
-	(dssources,vsns) = getVsnsFromInputFile(infile)
+        datastreams =  getVsnsFromInputFile(infile)
 
-
-	if not uniqueVsns(vsns):
+	if not uniqueVsns(datastreams):
 		print 'ERROR: at least one duplicate VSN exists in %s !' % infile
 		exit(1)
-
-	results, conflicts, missing, notidle = getVsnsByMulticast(5, vsns, verbose)
+                
+	results, conflicts, missing, notidle = getVsnsByMulticast(5, datastreams, verbose)
 
 	if verbose > 0:
 		print 'Found modules:'
@@ -442,9 +514,8 @@ def run(files, machinesfile, overheadcores, verbose, dothreads, useDifxDb):
 	if not ok:
 		return 1
 
-	t = writemachines(basename, hostname, nodes, results, \
-		vsns, dssources, overheadcores, verbose)
-
+        t = writemachines(basename, hostname, results, datastreams, overheadcores, verbose)
+        
 	if len(t) == 0:
 		return 1
 
@@ -456,7 +527,16 @@ def run(files, machinesfile, overheadcores, verbose, dothreads, useDifxDb):
 def signal_handler(signal, frame):
         print 'You pressed Ctrl+C!'
         sys.exit(8)
-
+        
+class Datastream:
+        """
+        Storage class containing datastream description read from the input file
+        NETWORK datastreams not yet supported
+        """
+        type = ""
+        vsn = ""
+        path = ""
+        
 if __name__ == "__main__":
 
 	# catch ctrl+c
@@ -485,8 +565,7 @@ if __name__ == "__main__":
 	# assign the cluster definition file
 	if len(options.machinesfile) == 0:
 		try:
-			os.environ('DIFX_MACHINES')
-			machinesfile = getenv('DIFX_MACHINES')
+			machinesfile = environ['DIFX_MACHINES']
 		except:
 			print ('DIFX_MACHINES environment has to be set. Use -m option instead')
 			sys.exit(1)
@@ -515,7 +594,10 @@ if __name__ == "__main__":
 
 	if verbose > 0:
 		print 'DIFX_MACHINES -> %s' % machinesfile
-		
+	
+        # read machines file
+	difxmachines = DifxMachines(machinesfile)
+        
 	v = run(files, machinesfile, overheadcores, verbose, dothreads, useDifxDb)
 	if v != 0:
 		exit(v)
