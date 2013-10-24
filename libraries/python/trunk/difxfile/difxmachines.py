@@ -208,7 +208,11 @@ class DifxMachines(object):
 			                if url.strip().startswith("mark5://"):
 			                        node.isMk5 = 1
 			                elif  url.strip().startswith("file://"):
-			                        fileUrls.append(url.strip()[7:])
+                                                # add trailing "/" (if not present)
+                                                if url.strip().endswith("/"):
+                                                    fileUrls.append(url.strip()[7:])
+                                                else:
+                                                    fileUrls.append(url.strip()[7:] + "/")
 			                elif url.strip().startswith("network://"):
 			                        networkUrls.append(url.strip()[10:])
 
