@@ -271,7 +271,6 @@ def getVsnsFromInputFile(inputfile):
                         # obtain datastream index
 			numDS,index = split(keyparts[1], '/')
 			ds = int(numDS.strip())
-                        di = int(index.strip())
 
                         if ds < nds:
                             if datastreams[ds].type == 'MODULE':
@@ -312,7 +311,6 @@ def writemachines(basename, hostname, results, datastreams, overheadcores, verbo
                 for node in difxmachines.getStorageNodes():
                     for url in node.fileUrls:
                         if stream.path.startswith(url):
-                            print stream.path, url
                             matchCount += 1
                             matchNode = node.name
                             break
@@ -322,21 +320,14 @@ def writemachines(basename, hostname, results, datastreams, overheadcores, verbo
                 elif matchCount == 1:
                     dsnodes.append(matchNode)
                 else:
-                    # use compute node
-                    foundsuitable = False
+                    # use compute node             
                     for node in difxmachines.getComputeNodes():
                         # skip if already used as datastream node
                         if node.name in dsnodes:
                             continue
                             
                         dsnodes.append(node.name)
-                        foundsuitable = True
                         break
-                    if not foundsuitable:
-                        print "Could not find a machine not already used"
-                        print "Will allocate a FILE datastream to %s" % (hostname)
-                        dsnodes.append(hostname)
-                        headCount += 1
                 
             elif stream.type == "MODULE":    
                 matchNode = ""
@@ -355,17 +346,6 @@ def writemachines(basename, hostname, results, datastreams, overheadcores, verbo
                     print '%s not listed as an active mark5 host in machines file' % matchNode
                     return []
                 
-	# Check if we must add the head node as a correlation node, too
-	foundsuitable = False
-        
-        for node in difxmachines.getComputeNodes():
-            if node.name in dsnodes:
-                continue
-            foundsuitable = True
-            break
-	if not foundsuitable:
-		headCount += 1
-
 	# write machine file
 	o = open(basename+'machines', 'w')
         
@@ -390,53 +370,6 @@ def writemachines(basename, hostname, results, datastreams, overheadcores, verbo
             o.write('%s slots=1 \n' % (node.name))
             threads.append(node.threads-usedThreads)
         
-	# head node
-#	maxslots = 1
-#        m = machines.index(hostname)
-#        if headCount > 0:
-#                maxslots = headCount + 1
-#        elif cores[m] > overheadcores+1:
-#                maxslots = 2
-#                extrathreads.append(cores[m] - (overheadcores+1))
-#	o.write('%s slots=1 max-slots=%d\n' % \
-#		(hostname, maxslots))
-#	# datastream nodes
-#	for d in dsnodes:
-#		m = machines.index(d)
-#		if headCount > 0:
-#			maxslots = headCount + 1
-#		elif cores[m] > overheadcores+1:
-#			maxslots = 2
-#			extrathreads.append(cores[m] - (overheadcores+1))
-#		else:
-#			maxslots = 1
-#		o.write('%s slots=1 max-slots=%d\n' % \
-#			(d, maxslots))
-#	# core nodes
-#	foundsuitable = False
-#	for m in range(len(machines)):
-#		if machines[m] in dsnodes:
-#			continue
-#		if cores[m] < 1:
-#			continue
-#		threads.append(cores[m])
-#		foundsuitable = True
-#		o.write('%s slots=1 max-slots=1\n' % machines[m])
-#	if not foundsuitable:
-#		print "Could not find a core machine not already used"
-#		print "Will allocate %s as a core, too" % (hostname)
-#		if hostname in machines:
-#			m = machines.index(hostname)
-#			nthreads = cores[m] - 2
-#			if nthreads < 1:
-#				nthreads = 1
-#		else:
-#			nthreads = 1
-#		threads.append(nthreads)
-#		o.write('%s slots=1 max-slots=%s\n' % (machines[m], headCount+1))
-#	o.close()
-#	for e in extrathreads:
-#		threads.append(e)
 	return threads
 
 def uniqueVsns(datastreams):
@@ -524,7 +457,7 @@ def run(files, machinesfile, overheadcores, verbose, dothreads, useDifxDb):
 
 	return 0
 
-def signal_handler(signal, frame):
+def signalHandler(signal, frame):
         print 'You pressed Ctrl+C!'
         sys.exit(8)
         
@@ -540,13 +473,13 @@ class Datastream:
 if __name__ == "__main__":
 
 	# catch ctrl+c
-	signal.signal(signal.SIGINT, signal_handler)
+	signal.signal(signal.SIGINT, signalHandler)
 
 	usage = getUsage()
 
 	parser = OptionParser(version=version, usage=usage)
 	parser.add_option("-v", "--verbose", action="count", dest="verbose", default=0, help="increase verbosity level");
-	parser.add_option("-o", "--overheadcores", dest="overheadcores", type="int", default=1, help="set overheadcores, default = 1");
+	#parser.add_option("-o", "--overheadcores", dest="overheadcores", type="int", default=1, help="set overheadcores, default = 1");
 	parser.add_option("-m", "--machines", dest="machinesfile", default="", help="use MACHINESFILE instead of $DIFX_MACHINES")
 	parser.add_option("-n", "--nothreads", dest="dothreads", action="store_false", default=True, help="don't write a .threads file")
 	parser.add_option("-d", "--difxdb", dest="usedifxdb", action="store_true", default=False, help="use difxdb to obtain data location")
@@ -557,7 +490,8 @@ if __name__ == "__main__":
 		parser.print_usage()
 		sys.exit(1)
 
-	overheadcores = options.overheadcores
+	#overheadcores = options.overheadcores
+        overheadcores = 0
 	verbose = options.verbose
 	dothreads = options.dothreads
 	useDifxDb = options.usedifxdb
@@ -597,6 +531,25 @@ if __name__ == "__main__":
 	
         # read machines file
 	difxmachines = DifxMachines(machinesfile)
+        
+        # compare version
+        fail = False
+        major, minor = difxmachines.getVersion()
+        reqMaj,reqMin = minMachinefileVersion.split(".")
+        if (reqMaj < major):
+            fail = False
+        elif (reqMaj > major):
+            fail = True
+        else:
+            if reqMin > minor:
+                fail = True
+            elif reqMin < minor:
+                fail = False
+            else:
+                fail = False
+        if fail:
+            print "ERROR: This version of genmachines requires a cluster defintion file of version > %s. Found version is: %s.%s" % (minMachinefileVersion, major,minor)
+            exit(1)
         
 	v = run(files, machinesfile, overheadcores, verbose, dothreads, useDifxDb)
 	if v != 0:
