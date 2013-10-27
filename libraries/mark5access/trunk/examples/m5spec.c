@@ -87,6 +87,7 @@ static void usage(const char *pgm)
 	printf("The following options are supported\n\n");
 	printf("    -dbbc      Assume dBBC polarisation order (all Rcp then all Lcp)\n\n");
 	printf("    -nopol     Do not compute cross pol terms\n\n");
+	printf("    -double    Double sidebade (complex) data\n\n");
 	printf("    -help      This list\n\n");
 	printf("The folllowing options are supported\n\n");
 }
