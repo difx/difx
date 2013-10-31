@@ -235,6 +235,7 @@ int main(int argc, char *argv[])
   bool restart = false;
   string monitoropt;
   pthread_t commandthread;
+  pthread_attr_t attr;
   int nameslength = 1;
   char monhostname[nameslength];
   int port=0, monitor_skip=0, namelen;
@@ -326,7 +327,10 @@ int main(int argc, char *argv[])
   }
 
   //handle difxmessage setup for sending and receiving
-  perr = pthread_create(&commandthread, NULL, launchCommandMonitorThread, (void *)(config));
+  pthread_attr_init(&attr);
+  pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+  perr = pthread_create(&commandthread, &attr, launchCommandMonitorThread, (void *)(config));
+  pthread_attr_destroy(&attr);
   if (perr != 0)
     csevere << startl << "Error creating command monitoring thread!" << endl;
   else {

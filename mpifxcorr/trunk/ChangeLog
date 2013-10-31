@@ -6,6 +6,9 @@ Version 2.3
 * Working polarization dependent delay and phase offsets (from Chris)
 * Experimental linear2circular conversion (from Chris)
 * Complex Double sideband (RDBE/Xcube) sampling support (from Chris)
+* Explicitly set pthreads as joinable
+* Fix one aspect of non-power-of-two VDIF threads
+* Move some Mark5 functions around to simplify things for the new VDIF code
 
 Version 2.2
 ~~~~~~~~~~~

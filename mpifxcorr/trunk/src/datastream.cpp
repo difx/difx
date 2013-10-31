@@ -614,6 +614,7 @@ void DataStream::initialiseMemoryBuffer()
 {
   int perr;
   struct timespec abstime;
+  pthread_attr_t attr;
 
   readthreadstarted = false;
   cverbose << startl << "Datastream " << mpiid << " started initialising memory buffer" << endl;
@@ -633,28 +634,34 @@ void DataStream::initialiseMemoryBuffer()
   pthread_cond_init(&readcond, NULL);
   pthread_cond_init(&initcond, NULL);
 
+  //set the joinable attribute as not all pthreads do this by default.
+  pthread_attr_init(&attr);
+  pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+
   if(isfake)
   {
     //launch the fake data creation thread
-    perr = pthread_create(&readerthread, NULL, DataStream::launchNewFakeReadThread, (void *)(this));
+    perr = pthread_create(&readerthread, &attr, DataStream::launchNewFakeReadThread, (void *)(this));
     if(perr != 0)
       csevere << startl << "Error in launching telescope readerthread!!!" << endl;
   }
   else if(readfromfile)
   {
     //launch the file reader thread
-    perr = pthread_create(&readerthread, NULL, DataStream::launchNewFileReadThread, (void *)(this));
+    perr = pthread_create(&readerthread, &attr, DataStream::launchNewFileReadThread, (void *)(this));
     if(perr != 0)
       csevere << startl << "Error in launching telescope readerthread!!!" << endl;
   }
   else
   {
     //launch the network reader thread
-    perr = pthread_create(&readerthread, NULL, DataStream::launchNewNetworkReadThread, (void *)(this));
+    perr = pthread_create(&readerthread, &attr, DataStream::launchNewNetworkReadThread, (void *)(this));
     if(perr != 0)
       csevere << startl << "Error in launching telescope networkthread!!!" << endl;
   }
   
+  pthread_attr_destroy(&attr);
+
   while(!readthreadstarted) //wait to ensure the thread got started ok
   {
     set_abstime(&abstime, 0.5); // 0.5 sec

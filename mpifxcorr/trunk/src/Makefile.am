@@ -1,7 +1,9 @@
 if WITH_SS
 mark5_files = \
+	mark5utils.cpp \
 	nativemk5.cpp \
-	mark5dir.cpp
+	mark5dir.cpp \
+	watchdog.cpp
 else
 mark5_files = \
 	nativemk5_stubs.cpp
@@ -44,6 +46,7 @@ library_include_HEADERS = \
 	mark5dir.h \
 	nativemk5.h \
 	watchdog.h \
+	mark5utils.h \
 	mpifxcorr.h \
 	switchedpower.h \
 	datamuxer.h \

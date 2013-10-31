@@ -1068,7 +1068,7 @@ void Visibility::changeConfig(int configindex)
     pulsarwidth = 1;
     if(pulsarbinon && !config->scrunchOutputOn(currentconfigindex))
       pulsarwidth = config->getNumPulsarBins(currentconfigindex);
-    cverbose << startl << "Starting to delete some old arrays" << endl;
+//    cverbose << startl << "Starting to delete some old arrays" << endl;
     //need to delete the old arrays before allocating the new ones
     for(int i=0;i<numdatastreams;i++) {
       delete [] autocorrcalibs[i];

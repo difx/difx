@@ -71,6 +71,7 @@ FxManager::FxManager(Configuration * conf, int ncores, int * dids, int * cids, i
   int perr, minchans, confresultbytes, todiskbufferlen;
   double headerbloatfactor;
   const string * polnames;
+  pthread_attr_t attr;
 
   cinfo << startl << "STARTING " << PACKAGE_NAME << " version " << VERSION << endl;
 
@@ -189,6 +190,10 @@ FxManager::FxManager(Configuration * conf, int ncores, int * dids, int * cids, i
   keepwriting = true;
   writethreadinitialised = false;
   pthread_cond_init(&writecond, NULL);
+
+  //ensure these new threads are joinable
+  pthread_attr_init(&attr);
+  pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
   
   newestlockedvis = 1;
   oldestlockedvis = 0;
@@ -200,7 +205,7 @@ FxManager::FxManager(Configuration * conf, int ncores, int * dids, int * cids, i
   perr = pthread_mutex_lock(&(bufferlock[1]));
   if(perr != 0)
     csevere << startl << "FxManager: Error locking second visibility!!" << endl;
-  perr = pthread_create(&writethread, NULL, FxManager::launchNewWriteThread, (void *)(this));
+  perr = pthread_create(&writethread, &attr, FxManager::launchNewWriteThread, (void *)(this));
   if(perr != 0)
     csevere << startl << "FxManager: Error in launching writethread!!" << endl;
   while(!writethreadinitialised)
@@ -222,10 +227,12 @@ FxManager::FxManager(Configuration * conf, int ncores, int * dids, int * cids, i
     bufsize = 0;
     nbuf = 0;
 
-    perr = pthread_create(&monthread, NULL, FxManager::launchMonitorThread, (void *)(this));
+    perr = pthread_create(&monthread, &attr, FxManager::launchMonitorThread, (void *)(this));
     if(perr != 0)
       csevere << startl << "FxManager: Error in launching monitorthread!!" << endl;
   }
+
+  pthread_attr_destroy(&attr);
 
   //cinfo << startl << "Estimated memory usage by FXManager: " << float(uvw->getNumUVWPoints()*24 + config->getVisBufferLength()*config->getMaxResultLength()*8)/1048576.0 << " MB" << endl;
 
