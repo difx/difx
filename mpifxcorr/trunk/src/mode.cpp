@@ -635,7 +635,7 @@ float Mode::process(int index, int subloopindex)  //frac sample error is in micr
 {
   double phaserotation, averagedelay, nearestsampletime, starttime, lofreq, walltimesecs, fracwalltime, fftcentre, d0, d1, d2, fraclooffset;
   f32 phaserotationfloat, fracsampleerror;
-  int status, count, nearestsample, integerdelay, acoffset, k, RcpIndex, LcpIndex, freqindex, intwalltime;
+  int status, count, nearestsample, integerdelay, acoffset, RcpIndex, LcpIndex, freqindex, intwalltime;
   cf32* fftptr;
   cf32 *fracsampptr1A, *fracsampptr2A, *fracsampptr1B, *fracsampptr2B;
   f32* currentstepchannelfreqs;

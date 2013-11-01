@@ -163,7 +163,7 @@ Configuration::Configuration(const char * configfile, int id, double restartsec)
 
     //work out which frequencies are used in each config, and the minimum #channels
     freqdata freq;
-    int oppositefreqindex;
+    // int oppositefreqindex;
     for(int i=0;i<numconfigs;i++)
     {
       freq = freqtable[getBFreqIndex(i,0,0)];
@@ -2241,18 +2241,6 @@ bool Configuration::consistencyCheck()
     }
   }
 
-  // check that if MODULE is the data source, that the data reads are not too large
-  // (otherwise a bug in the mk5 unit playback might be excited)
-  for(int i=0;i<numdatastreams;i++)
-  {
-    if(isNativeMkV(i))
-    {
-      int readbytes = (int)(((long long)databufferfactor)*getMaxDataBytes(i)/numdatasegments);
-      if(readbytes > 25000000 && mpiid == 0)
-        csevere << startl << "Read size for datastream " << i << " is " << readbytes/1000000 << "MB! Large read sizes (>25 MB) have been known to cause zero-weight playback from Mk5 modules, continuing but suggest you rerun with smaller readsize!" << endl;
-    }
-  }
-
   //check that for all configs, if a datastream is muxed in one it is muxed in all, and frame size / num bits stays the same
   for(int i=0;i<numdatastreams;i++)
   {
@@ -2980,12 +2968,14 @@ void Configuration::getinputline(ifstream * input, std::string * line, std::stri
   if(keylength < DEFAULT_KEY_LENGTH)
     keylength = DEFAULT_KEY_LENGTH;
   if(startofheader.compare((*line).substr(0, startofheader.length())) != 0) //not what we expected
+  {
     if (verbose) 
       cerror << startl << "We thought we were reading something starting with '" << startofheader << "', when we actually got '" << (*line).substr(0, keylength) << "'" << endl;
     else {
       *line = "";
       return;
     }
+  }
   *line = line->substr(keylength);
 }
 

@@ -659,34 +659,6 @@ int Mark5Module::load(const char *filename)
 	return 0;
 }
 
-int Mark5Module::save(const char *filename)
-{
-	FILE *out;
-	
-	out = fopen(filename, "w");
-	if(!out)
-	{
-		error << "Cannot write to file: " << filename << "\n";
-
-		return -1;
-	}
-
-	fprintf(out, "%8s %d %c %u %d %s%s%s\n",
-		label.c_str(), nScans(), bank+'A', signature, dirVersion,
-		Mark5ReadModeName[mode], 
-		fast ? " Fast" : "",
-		synthetic ? " Synth" : "");
-
-	for(vector<Mark5Scan>::const_iterator s = scans.begin(); s != scans.end(); ++s)
-	{
-		s->writeDirEntry(out);
-	}
-
-	fclose(out);
-
-	return 0;
-}
-
 void Mark5Module::sort()
 {
 	std::sort(scans.begin(), scans.end());
@@ -941,8 +913,8 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref,
 	int bufferlen;
 	unsigned int x, newSignature;
 	int die = 0;
-	long long wGood=0, wBad=0;
-	long long wGoodSum=0, wBadSum=0;
+	long long wGood = 0, wBad = 0;
+	long long wGoodSum = 0, wBadSum = 0;
 	int nZero;
 	int newDirVersion;   /* == 0 for old style (pre-mark5-memo 81) */
 	                     /* == version number for mark5-memo 81 */
@@ -985,7 +957,7 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref,
 	oldLen1 = (int)sizeof(struct Mark5LegacyDirectory);
 	oldLen2 = oldLen1 + 64 + 8*88;	/* 88 = sizeof(S_DRIVEINFO) */
 	oldLen3 = oldLen1 + 64 + 16*88;
-	oldLen4 = 83552;	/* SDK9 with legacy */
+	oldLen4 = 83552;		/* SDK9 with legacy */
 	if(len == oldLen1 || len == oldLen2 || len == oldLen3 || len == oldLen4)
 	{
 		newDirVersion = 0;
@@ -1399,7 +1371,6 @@ int Mark5Module::getCachedDirectory(SSHANDLE xlrDevice,
 	{
 		error.str("");
 
-		v = save(filename);
 		if(v < 0)
 		{
 			error << "Saving directory file " << filename << " failed.  Error code=" << v << "\n";
@@ -1561,35 +1532,6 @@ int parseModuleLabel(const char *label, char *vsn, int *totalCapacity, int *rate
 	return 0;
 }
 
-int setModuleLabel(SSHANDLE xlrDevice, const char *vsn,  int newStatus, int dirVersion, int totalCapacity, int rate)
-{
-	const char RecordSeparator = 30;
-	char label[XLR_LABEL_LENGTH+1];
-	int v;
-
-	/* reset the label */
-	if(dirVersion == 0)
-	{
-		v = snprintf(label, XLR_LABEL_LENGTH+1, "%8s/%d/%d%c%s", 
-			vsn, totalCapacity, rate, RecordSeparator,
-			moduleStatusName(newStatus) );
-	}
-	else
-	{
-		v = snprintf(label, XLR_LABEL_LENGTH+1, "%8s/%d/%d", 
-			vsn, totalCapacity, rate);
-	}
-	
-	if(v > XLR_LABEL_LENGTH)
-	{
-		fprintf(stderr, "Error: label too long! Truncating!\n");
-	}
-
-	WATCHDOGTEST( XLRSetLabel(xlrDevice, label, strlen(label)) );
-
-	return 0;
-}
-
 int getModuleDirectoryVersion(SSHANDLE xlrDevice, int *dirVersion, int *dirLength, int *moduleStatus)
 {
 	int len;
@@ -1677,78 +1619,6 @@ int getModuleDirectoryVersion(SSHANDLE xlrDevice, int *dirVersion, int *dirLengt
 	return 0;
 }
 
-int resetModuleDirectory(SSHANDLE xlrDevice, const char *vsn, int newStatus, int dirVersion, int totalCapacity, int rate)
-{
-	int dirLength;
-	char *dirData;
-	struct Mark5DirectoryHeaderVer1 *dirHeader;
-
-	WATCHDOG( dirLength = XLRGetUserDirLength(xlrDevice) );
-	
-	dirData = 0;
-	if(dirVersion == -2)
-	{
-		dirLength = 0;
-		dirVersion = 0;
-		dirData = 0;
-	}
-	else if(dirVersion == -1)
-	{
-		if(dirLength < 80000 || dirLength % 128 == 0)
-		{
-			dirLength = 128;
-			dirData = (char *)calloc(dirLength, 1);
-			WATCHDOGTEST( XLRGetUserDir(xlrDevice, dirLength, 0, dirData) );
-			dirHeader = (struct Mark5DirectoryHeaderVer1 *)dirData;
-			dirVersion = dirHeader->version;
-			if(dirVersion < 2 || dirVersion > 100)
-			{
-				dirVersion = 1;
-			}
-			memset(dirData, 0, 128);
-			snprintf(dirHeader->vsn, MODULE_EXTENDED_VSN_LENGTH,
-				"%s/%d/%d", vsn, totalCapacity, rate);
-			dirHeader->status = newStatus;
-		}
-		else
-		{
-			dirVersion = 0;
-		}
-	}
-	else if(dirVersion == 0)
-	{
-		dirLength = 83424;
-	}
-	else
-	{
-		dirLength = 128;
-		dirData = (char *)calloc(dirLength, 1);
-		dirHeader = (struct Mark5DirectoryHeaderVer1 *)dirData;
-		dirHeader->version = dirVersion;
-		dirHeader->status = newStatus;
-		snprintf(dirHeader->vsn, MODULE_EXTENDED_VSN_LENGTH,
-			"%s/%d/%d", vsn, totalCapacity, rate);
-		strcpy(dirHeader->vsnPrev, "NA");
-		strcpy(dirHeader->vsnNext, "NA");
-	}
-
-	if(dirData == 0)
-	{
-		dirData = (char *)calloc(dirLength, 1);
-	}
-
-	printf("> Dir Size = %d  Dir Version = %d  Status = %d\n", 
-		dirLength, dirVersion, newStatus);
-
-	WATCHDOGTEST( XLRSetUserDir(xlrDevice, dirData, dirLength) );
-	if(dirData)
-	{
-		free(dirData);
-	}
-
-	return dirVersion;
-}
-
 int roundModuleSize(long long a)
 {
 	a /= 1000000000;
@@ -1801,9 +1671,7 @@ int getDriveInformation(SSHANDLE xlrDevice, struct DriveInformation drive[8], in
 		WATCHDOG( xlrRC = XLRGetDriveInfo(xlrDevice, d/2, d%2, &driveInfo) );
 		if(xlrRC != XLR_SUCCESS)
 		{
-			snprintf(message, DIFX_MESSAGE_LENGTH,
-				"XLRGetDriveInfo failed for disk %d (perhaps the disk is not present)", d);
-			printf("%s\n", message);
+			snprintf(message, DIFX_MESSAGE_LENGTH, "XLRGetDriveInfo failed for disk %d (perhaps the disk is not present)", d);
 			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_WARNING);
 
 			drive[d].model[0] = 0;
@@ -1833,8 +1701,7 @@ int getDriveInformation(SSHANDLE xlrDevice, struct DriveInformation drive[8], in
 		{
 			++nDrive;
 		}
-		if(minCapacity == 0 || 
-		   (drive[d].capacity > 0 && drive[d].capacity < minCapacity))
+		if(minCapacity == 0 || (drive[d].capacity > 0 && drive[d].capacity < minCapacity))
 		{
 			minCapacity = drive[d].capacity;
 		}
@@ -1845,135 +1712,3 @@ int getDriveInformation(SSHANDLE xlrDevice, struct DriveInformation drive[8], in
 	return nDrive;
 }
 
-
-int setDiscModuleStateLegacy(SSHANDLE xlrDevice, int newState)
-{
-	const char RecordSeparator = 30;	// ASCII "RS" == "Record separator"
-	char label[XLR_LABEL_LENGTH];
-	int labelLength = 0, rs = 0;
-	int wp;
-
-	wp = Mark5GetActiveBankWriteProtect(xlrDevice);
-
-	WATCHDOGTEST( XLRGetLabel(xlrDevice, label) );
-
-	for(labelLength = 0; labelLength < XLR_LABEL_LENGTH; ++labelLength)
-	{
-		if(!label[labelLength])
-		{
-			break;
-		}
-	}
-	if(labelLength >= XLR_LABEL_LENGTH)
-	{
-		cerr << "Module label is not terminated!" << endl;
-
-		return -1;
-	}
-
-	for(rs = 0; rs < labelLength; ++rs)
-	{
-		if(label[rs] == RecordSeparator)
-		{
-			break;
-		}
-	}
-	if(rs >= labelLength)
-	{
-		cerr << "Warning: module label record separator not found!" << endl;
-		label[rs] = RecordSeparator;
-		label[rs+1] = 0;
-	}
-
-	label[rs] = 0;
-
-	if(strcmp(label+rs+1, moduleStatusName(newState)) != 0)
-	{
-		cout << "Directory version 0: setting module DMS to " << moduleStatusName(newState) << endl;
-		label[rs] = RecordSeparator;	// ASCII "RS" == "Record separator"
-		strcpy(label+rs+1, moduleStatusName(newState));
-		if(wp == 1)
-		{
-			WATCHDOGTEST( XLRClearWriteProtect(xlrDevice) );
-		}
-		WATCHDOGTEST( XLRSetLabel(xlrDevice, label, strlen(label)) );
-		if(wp == 1)
-		{
-			WATCHDOGTEST( XLRSetWriteProtect(xlrDevice) );
-		}
-	}
-
-	return 0;
-}
-
-int setDiscModuleStateNew(SSHANDLE xlrDevice, int newState)
-{
-	int dirLength;
-	char *dirData;
-	struct Mark5DirectoryHeaderVer1 *dirHead;
-	int wp;
-
-	wp = Mark5GetActiveBankWriteProtect(xlrDevice);
-
-	WATCHDOG( dirLength = XLRGetUserDirLength(xlrDevice) );
-
-	if(dirLength < 128 || dirLength % 128 != 0)
-	{
-		// Version must not be > 1!
-		return -1;
-	}
-
-	dirData = (char *)calloc(dirLength, 1);
-	WATCHDOGTEST( XLRGetUserDir(xlrDevice, dirLength, 0, dirData) );
-	
-	dirHead = (struct Mark5DirectoryHeaderVer1 *)dirData;
-
-	if(dirHead->status != newState)
-	{
-		cout << "Directory version " << dirHead->version << ": setting module DMS to " << moduleStatusName(newState) << endl;
-		dirHead->status = newState;
-
-		if(wp == 1)
-		{
-			WATCHDOGTEST( XLRClearWriteProtect(xlrDevice) );
-		}
-		WATCHDOGTEST( XLRSetUserDir(xlrDevice, dirData, dirLength) );
-		if(wp == 1)
-		{
-			WATCHDOGTEST( XLRSetWriteProtect(xlrDevice) );
-		}
-	}
-
-	free(dirData);
-
-	return 0;
-}
-
-int setDiscModuleVSNNew(SSHANDLE xlrDevice, int newStatus, const char *newVSN, int capacity, int rate)
-{
-	struct Mark5DirectoryHeaderVer1 *dirHeader;
-	int dirLength;
-	char *data;
-
-	WATCHDOG( dirLength = XLRGetUserDirLength(xlrDevice) );
-
-	data = (char *)malloc(dirLength);
-	dirHeader = (struct Mark5DirectoryHeaderVer1 *)data;
-
-	WATCHDOGTEST( XLRGetUserDir(xlrDevice, dirLength, 0, data) );
-
-	if(newStatus >= 0)
-	{
-		dirHeader->status = newStatus;
-	}
-	if(newVSN)
-	{
-		snprintf(dirHeader->vsn, MODULE_EXTENDED_VSN_LENGTH, "%s/%d/%d", newVSN, capacity, rate);
-	}
-
-	WATCHDOGTEST( XLRSetUserDir(xlrDevice, data, dirLength) );
-
-	free(data);
-
-	return 0;
-}

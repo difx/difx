@@ -653,7 +653,6 @@ int NativeMk5DataStream::readonedemux(bool resetreference, int buffersegment)
 
 int NativeMk5DataStream::moduleRead(unsigned long *destination, int nbytes, long long start, int buffersegment)
 {
-	unsigned long a, b;
 	int bytes = nbytes;
 	XLR_RETURN_CODE xlrRC;
 	S_READDESC      xlrRD;
@@ -687,23 +686,55 @@ int NativeMk5DataStream::moduleRead(unsigned long *destination, int nbytes, long
 	/* always read multiples of 8 bytes */
 	bytes &= ~7;
 
-	a = start >> 32;
-	b = start & 0xFFFFFFFF; 
-
-	// set up the XLR info
-	xlrRD.AddrHi = a;
-	xlrRD.AddrLo = b;
-	xlrRD.XferLength = bytes;
-	xlrRD.BufferAddr = reinterpret_cast<streamstordatatype *>(destination);
-
-	// delay the read if needed
-	if(readDelayMicroseconds > 0)
+	const int maxReadBytes = 20000000;
 	{
-		usleep(readDelayMicroseconds);
+		/* divide the read into multiple sections */
+		int nRead = bytes/maxReadBytes + 1;
+		int readSize = (bytes / nRead + 7) & 0xFFFFFFF8;
+
+		for(int offset = 0; offset < bytes; offset += readSize)
+		{
+			if(offset + readSize > bytes)
+			{
+				readSize = bytes - offset;
+			}
+
+			// set up the XLR info
+			xlrRD.AddrHi = static_cast<unsigned long>( (start + offset) >> 32 );
+			xlrRD.AddrLo = static_cast<unsigned long>( (start + offset) & 0xFFFFFFF8 ); // enforce 8 byte boundary
+			xlrRD.XferLength = readSize;
+			xlrRD.BufferAddr = reinterpret_cast<streamstordatatype *>(reinterpret_cast<char *>(destination) + offset);
+
+			// delay the read if needed
+			if(readDelayMicroseconds > 0)
+			{
+				usleep(readDelayMicroseconds);
+			}
+
+			WATCHDOG( xlrRC = XLRReadData(xlrDevice, xlrRD.BufferAddr, xlrRD.AddrHi, xlrRD.AddrLo, xlrRD.XferLength) );
+			
+			if(readSize > 500)
+			{
+				int nzero = 0;
+				for(int ii = 100; ii < 500; ++ii)
+				{
+					if( (reinterpret_cast<char *>(destination))[offset+ii] == 0 )
+					{
+						++nzero;
+					}
+				}
+
+				if(xlrRC == XLR_SUCCESS && nzero > 30)
+				{
+					cwarn << startl << "High zero rate=" << nzero << "/" << 400 <<" in this data.  rereading!  readpointer=" << (start + offset) << " readsize=" << readSize << endl;
+
+					usleep(readDelayMicroseconds);
+					WATCHDOG( xlrRC = XLRReadData(xlrDevice, xlrRD.BufferAddr, xlrRD.AddrHi, xlrRD.AddrLo, xlrRD.XferLength) );
+				}
+			}
+		}
 	}
 
-	//execute the XLR read
-	WATCHDOG( xlrRC = XLRReadData(xlrDevice, xlrRD.BufferAddr, xlrRD.AddrHi, xlrRD.AddrLo, xlrRD.XferLength) );
 	if(xlrRC != XLR_SUCCESS)
 	{
 		xlrEC = XLRGetLastError();

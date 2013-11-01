@@ -8,7 +8,12 @@ Version 2.3
 * Complex Double sideband (RDBE/Xcube) sampling support (from Chris)
 * Explicitly set pthreads as joinable
 * Fix one aspect of non-power-of-two VDIF threads
+* Always close Mark5 device before freeing semaphore
+* Always set Mark5 into playback configuration
 * Move some Mark5 functions around to simplify things for the new VDIF code
+* Explicitly cut split up all Mark5 reads longer than 20MB
+* Never change Mark5 .dir files
+* Check Mark5 reads for lots of zero values and perform re-read if so
 
 Version 2.2
 ~~~~~~~~~~~

@@ -69,7 +69,6 @@ private:
 
 	DifxMessageMk5Status mk5status;
 
-	int executeseconds;
 	int invalidtime;
 	int filltime;
 	long long invalidstart;

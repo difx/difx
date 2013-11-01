@@ -237,7 +237,7 @@ protected:
   * Reads one segment's worth of data from the currently open file into the specified segment
   * @param buffersegment The segment of the databuffer that this read will be stored in
   */
-  void diskToMemory(int buffersegment);
+  virtual void diskToMemory(int buffersegment);
 
  /** 
   * Generates one segment's worth of data and places into the specified segment

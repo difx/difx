@@ -120,7 +120,6 @@ public:
 	int nScans() const { return scans.size(); }
 	void print() const;
 	int load(const char *filename);
-	int save(const char *filename);
 	void sort();
 	int sanityCheck();
 	int uniquifyScanNames();
@@ -194,19 +193,8 @@ int isLegalModuleLabel(const char *label);
 
 int parseModuleLabel(const char *label, char *vsn, int *totalCapacity, int *rate, int *moduleStatus);
 
-int setModuleLabel(SSHANDLE xlrDevice, const char *vsn, int newStatus, int dirVersion, int totalCapacity, int rate);
-
-int resetModuleDirectory(SSHANDLE xlrDevice, const char *vsn, int newStatus, int dirVersion, int totalCapacity, int rate);
-
 int getDriveInformation(SSHANDLE xlrDevice, struct DriveInformation drive[8], int *totalCapacity);
 
 int roundModuleSize(long long a);
-
-int setDiscModuleStateLegacy(SSHANDLE xlrDevice, int newState);
-
-int setDiscModuleStateNew(SSHANDLE xlrDevice, int newState);
-
-int setDiscModuleVSNNew(SSHANDLE xlrDevice, int newStatus, const char *newVSN, int capacity, int rate);
-
 
 #endif

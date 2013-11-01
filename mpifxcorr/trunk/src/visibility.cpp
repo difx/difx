@@ -168,8 +168,8 @@ void Visibility::increment()
   }
   sec = experseconds + model->getScanStartSec(currentscan, expermjd, experseconds) + currentstartseconds;
 
-  cinfo << startl << "Vis. " << visID << " is incrementing, since currentsubints = " << currentsubints << endl;
-  cinfo << startl << "The approximate mjd/seconds is " << expermjd + sec/86400 << "/" << (sec)%86400 << endl;
+  cverbose << startl << "Vis. " << visID << " is incrementing, since currentsubints = " << currentsubints << endl;
+  cverbose << startl << "The approximate mjd/seconds is " << expermjd + sec/86400 << "/" << (sec)%86400 << endl;
 
   currentsubints = 0;
   for(int i=0;i<numvisibilities;i++) //adjust the start time and offset
