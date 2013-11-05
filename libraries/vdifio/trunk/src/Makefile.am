@@ -5,6 +5,7 @@ c_sources = \
 	vdifbuffer.c \
 	vdiffile.c \
 	vdifio.c \
+	decode.c \
 	vdifmux.c
 
 library_includedir = $(includedir)

@@ -81,6 +81,7 @@ int createVDIFHeader(vdif_header *header, int framelength, int threadid, int bit
 
 /* Functions to grab just one value from the raw header */
 static inline int getVDIFThreadID(const vdif_header *header) { return (int)header->threadid; }
+static inline int getVDIFHeaderBytes(const vdif_header *header) { return header->legacymode ? VDIF_LEGACY_HEADER_BYTES : VDIF_HEADER_BYTES; }
 static inline int getVDIFFrameBytes(const vdif_header *header) { return (int)(header->framelength8)*8; }
 int getVDIFFrameMJD(const vdif_header *header);
 double getVDIFDMJD(const vdif_header *header, int framepersec);
@@ -198,6 +199,12 @@ int vdiffilesummarygetstartmjd(const struct vdif_file_summary *sum);
 static inline int vdiffilesummarygetbytespersecond(const struct vdif_file_summary *sum) { return sum->frameSize*sum->framesPerSecond; }
 
 int summarizevdiffile(struct vdif_file_summary *sum, const char *fileName, int frameSize);
+
+
+/* implemented in decode.c */
+
+int decodeSingleChannelVDIF(const unsigned char *vdifFrame, float *samples, int maxSamples);
+
 
 #ifdef __cplusplus
 }

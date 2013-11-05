@@ -7,6 +7,7 @@ Version 0.5
 * 4-bit corner turners now supported: 1, 2, 3, 4, 5, 6, 7, 8 threads
 * 8-bit corner turners now supported: 1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 14, 16 threads
 * add corner turn test program: testcornerturners
+* add function to decode data from a single frame of VDIF data
 
 Version 0.4
 ~~~~~~~~~~~

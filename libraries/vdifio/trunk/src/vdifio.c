@@ -36,19 +36,20 @@
 
 #define UNIXZERO_MJD 40587
 
-void mjd2ymd(int mjd, int *year, int *month, int *day) {
-  int jd, temp1, temp2;
+void mjd2ymd(int mjd, int *year, int *month, int *day)
+{
+	int jd, temp1, temp2;
 
-  jd = mjd + 2400001;
+	jd = mjd + 2400001;
 
-  // Do some rather cryptic calculations
-  
-  temp1 = 4*(jd+((6*(((4*jd-17918)/146097)))/4+1)/2-37);
-  temp2 = 10*(((temp1-237)%1461)/4)+5;
+	// Do some rather cryptic calculations
 
-  *year = temp1/1461-4712;
-  *month =((temp2/306+2)%12)+1;
-  *day = (temp2%306)/10+1;
+	temp1 = 4*(jd+((6*(((4*jd-17918)/146097)))/4+1)/2-37);
+	temp2 = 10*(((temp1-237)%1461)/4)+5;
+
+	*year = temp1/1461-4712;
+	*month =((temp2/306+2)%12)+1;
+	*day = (temp2%306)/10+1;
 }
 
 int ymd2doy(int yr, int mo, int day)
