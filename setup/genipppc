@@ -8,8 +8,8 @@ from os.path import islink, join, dirname, isfile
 from re import search
 
 program = 'genipppc'
-version = '0.1'
-verdate = '20101118'
+version = '0.2'
+verdate = '20131105'
 author  = 'Walter Brisken <wbrisken@nrao.edu>'
 
 def usage(prog):
@@ -117,7 +117,7 @@ def genipppc(path, ippversion):
 		else:
 			out.write('Libs: -Wl,-rpath,${base}/%s -L${base}/%s -lippsem64t -lguide -lippvmem64t -lippcoreem64t\n' % (libdir,libdir))
 			out.write('Cflags: -I${base}/include\n')
-	elif major == 7:
+	elif major == 7 or major == 8:
 		if ipparch == 32:
 			libdir = 'ia32'
 		else:
