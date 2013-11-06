@@ -6,6 +6,7 @@ nobase_dist_difxdblib_SCRIPTS = difxdbconfig.py \
 				model/__init__.py \
 				model/model.py \
 				business/experimentaction.py \
+				business/experimenttypeaction.py \
 				business/jobaction.py\
 				business/passaction.py \
 				business/slotaction.py \

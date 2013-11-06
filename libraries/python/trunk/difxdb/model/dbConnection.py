@@ -40,6 +40,7 @@ class Schema(object):
         
         self.experimentTable = Table("Experiment", self.metadata__, autoload=True)
         self.experimentStatusTable = Table("ExperimentStatus", self.metadata__, autoload=True)
+        self.experimentTypeTable = Table("ExperimentType", self.metadata__, autoload=True)
         self.slotTable = Table("Slot", self.metadata__, autoload=True)
         self.moduleTable = Table("Module", self.metadata__, autoload=True)
         self.jobTable = Table("Job", self.metadata__, autoload=True)
@@ -50,6 +51,7 @@ class Schema(object):
         
         #association table for many-to-many Experiment/Module relation 
         self.experimentModuleTable = Table('ExperimentAndModule', self.metadata__, autoload=True)
+        self.experimentAndTypeTable = Table('ExperimentAndType', self.metadata__, autoload=True)
   
         
 
@@ -72,10 +74,12 @@ class Schema(object):
         mapper(Pass, self.passTable, properties={'experiment':relation(Experiment, uselist=False), 'type':relation(PassType, uselist=False)})
         mapper(PassType, self.passTypeTable)
         mapper(ExperimentStatus, self.experimentStatusTable)
-        mapper(Experiment, self.experimentTable,properties={'status':relation(ExperimentStatus, uselist = False)})
-        mapper(Module, self.moduleTable, properties={'experiments': relation(Experiment, secondary=self.experimentModuleTable, primaryjoin=self.experimentModuleTable.c.moduleID==self.moduleTable.c.id, secondaryjoin=self.experimentModuleTable.c.experimentID==self.experimentTable.c.id, foreign_keys = [self.experimentModuleTable.c.experimentID, self.experimentModuleTable.c.moduleID], backref=backref('modules'))})
-        mapper(Slot, self.slotTable,properties={'module': relation(Module, uselist = False, backref=backref('slot', uselist=False))})
+        #mapper(Experiment, self.experimentTable,properties={'status':relation(ExperimentStatus, uselist = False)})
+        mapper(Experiment, self.experimentTable,properties={'status':relation(ExperimentStatus, uselist = False), 'types':relation(ExperimentType, secondary=self.experimentAndTypeTable, primaryjoin=self.experimentAndTypeTable.c.experimentID==self.experimentTable.c.id, secondaryjoin=self.experimentAndTypeTable.c.experimentTypeID==self.experimentTypeTable.c.id, foreign_keys = [self.experimentAndTypeTable.c.experimentID, self.experimentAndTypeTable.c.experimentTypeID])}) 
+	mapper(Module, self.moduleTable, properties={'experiments': relation(Experiment, secondary=self.experimentModuleTable, primaryjoin=self.experimentModuleTable.c.moduleID==self.moduleTable.c.id, secondaryjoin=self.experimentModuleTable.c.experimentID==self.experimentTable.c.id, foreign_keys = [self.experimentModuleTable.c.experimentID, self.experimentModuleTable.c.moduleID], backref=backref('modules'))}) 
+	mapper(Slot, self.slotTable,properties={'module': relation(Module, uselist = False, backref=backref('slot', uselist=False))})
         mapper(VersionHistory, self.versionHistoryTable)
+        mapper(ExperimentType, self.experimentTypeTable)
 
 class Connection(object):
     

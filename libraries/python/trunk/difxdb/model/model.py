@@ -16,7 +16,15 @@ class Slot (object):
     pass
      
 class Experiment(object):
-    pass
+    def __eq__(self, other):
+        if isinstance(other, self.__class__):
+            return self.__dict__ == other.__dict__
+        else:
+            return False
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+    
 
 class ExperimentStatus(object):
     pass
@@ -39,3 +47,5 @@ class Queue(object):
 class VersionHistory(object):
     pass
 
+class ExperimentType(object):
+    pass
