@@ -57,7 +57,7 @@ typedef struct vdif_header {
    uint32_t frame : 24;
    uint32_t epoch : 6;
    uint32_t unassigned : 2;
-   uint32_t framelength8 : 24;
+   uint32_t framelength8 : 24;	// Frame length (including header) divided by 8 
    uint32_t nchan : 5;
    uint32_t version : 3;
    uint32_t stationid : 16;

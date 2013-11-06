@@ -99,10 +99,12 @@ static int vdif_decode_1channel_1bit(const unsigned char *vdifFrame, float *samp
 	const float *fp;
 	int o, i;
 	int nsamp;
+	int hl;
 
-	buf = vdifFrame + getVDIFHeaderBytes( (vdif_header *)vdifFrame );
+	hl = getVDIFHeaderBytes( (vdif_header *)vdifFrame );
+	buf = vdifFrame + hl;
 
-	nsamp = getVDIFFrameBytes( (vdif_header *)vdifFrame );
+	nsamp = (getVDIFFrameBytes( (vdif_header *)vdifFrame ) - hl) * 8;
 	if(nsamp > maxSamples)
 	{
 		nsamp = maxSamples;
@@ -130,10 +132,12 @@ static int vdif_decode_1channel_2bit(const unsigned char *vdifFrame, float *samp
 	const float *fp;
 	int o, i;
 	int nsamp;
+	int hl;
 
-	buf = vdifFrame + getVDIFHeaderBytes( (vdif_header *)vdifFrame );
+	hl = getVDIFHeaderBytes( (vdif_header *)vdifFrame );
+	buf = vdifFrame + hl;
 
-	nsamp = getVDIFFrameBytes( (vdif_header *)vdifFrame );
+	nsamp = (getVDIFFrameBytes( (vdif_header *)vdifFrame ) - hl) * 4;
 	if(nsamp > maxSamples)
 	{
 		nsamp = maxSamples;
@@ -157,10 +161,12 @@ static int vdif_decode_1channel_4bit(const unsigned char *vdifFrame, float *samp
 	const float *fp;
 	int o, i;
 	int nsamp;
+	int hl;
 
-	buf = vdifFrame + getVDIFHeaderBytes( (vdif_header *)vdifFrame );
+	hl = getVDIFHeaderBytes( (vdif_header *)vdifFrame );
+	buf = vdifFrame + hl;
 
-	nsamp = getVDIFFrameBytes( (vdif_header *)vdifFrame );
+	nsamp = (getVDIFFrameBytes( (vdif_header *)vdifFrame ) - hl) * 2;
 	if(nsamp > maxSamples)
 	{
 		nsamp = maxSamples;
@@ -182,10 +188,12 @@ static int vdif_decode_1channel_8bit(const unsigned char *vdifFrame, float *samp
 	const unsigned char *buf;
 	int o;
 	int nsamp;
+	int hl;
 
-	buf = vdifFrame + getVDIFHeaderBytes( (vdif_header *)vdifFrame );
+	hl = getVDIFHeaderBytes( (vdif_header *)vdifFrame );
+	buf = vdifFrame + hl;
 
-	nsamp = getVDIFFrameBytes( (vdif_header *)vdifFrame );
+	nsamp = (getVDIFFrameBytes( (vdif_header *)vdifFrame ) - hl);
 	if(nsamp > maxSamples)
 	{
 		nsamp = maxSamples;
