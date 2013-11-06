@@ -56,23 +56,47 @@ def getActiveExperimentCodes(session):
         result.append(instance.code)
         
     return(result)
+
+def _addExperiment(session,experiment):
+    
+    if (experimentExists(session, experiment.code)):
+        return
  
-def addExperiment(session, code):
+def addExperiment(session, code, types=[], statuscode=0):
     '''
-    Adds an experiment to the database. New experiments receive the default state (=unknown)
+    Adds an experiment to the database. New experiments receive the default
+    state (=unknown). 
     '''
     
     if (experimentExists(session, code)):
         return
 
+    expTypes = []
     experiment = model.Experiment()
     experiment.code = upper(code)
     experiment.number = int(getLastExperimentNumber(session)) + 1
-    
+
+    try:
+	for type in types:
+		expType= session.query(model.ExperimentType).filter_by(type=type).one()
+                if expType is not None:
+                    expTypes.append(expType)
+    except:
+	raise Exception("Trying to set an unknown epxeriment type (%s)" (type))
+
+    experiment.types = expTypes
+
+    try:
+        status = session.query(model.ExperimentStatus).filter_by(statuscode=statuscode).one()
+        experiment.status = status
+    except:
+        raise Exception("Trying to set an unknown statuscode (%s)" % (statuscode))
+
     try:
         session.add(experiment)
         session.commit()     
     except:
+        raise Exception("Error adding experiment")
         session.rollback()
         
     session.flush()
@@ -100,6 +124,7 @@ def addExperimentWithState(session, code, statuscode):
         session.add(experiment)
         session.commit()       
     except:
+        raise Exception("Error adding experiment")
         session.rollback()
         
     session.flush()
@@ -118,10 +143,15 @@ def deleteExperimentByCode(session, code):
     if (len(experiment.modules) > 0):
         raise Exception("Experiment %s cannot be deleted because it has associated modules" % experiment.code)
     
+    # delete associatons to ExperimentType
+    #for type in experiment.types:
+#	experiment.remove(type)
+
     session.delete(experiment)
     try:
         session.commit() 
     except:
+        raise Exception("Error deleting experiment")
         session.rollback()
         
     session.flush()
