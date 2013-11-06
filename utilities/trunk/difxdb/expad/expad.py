@@ -25,12 +25,13 @@ from difxdb.model import model
 from difxdb.difxdbconfig import DifxDbConfig
 from difxdb.model.dbConnection import Schema, Connection
 from difxdb.business.experimentaction import *
+from difxdb.business.experimenttypeaction import *
 from difxdb.business.versionhistoryaction import *
 from difxutil.dbutil import *
 
-# minimum database schema version required by comedia
+# minimum database schema version required by this program
 minSchemaMajor = 1
-minSchemaMinor = 1
+minSchemaMinor = 2
 
 class GenericWindow(object):
     def __init__(self, parent=None,rootWidget=None):
@@ -38,6 +39,8 @@ class GenericWindow(object):
         self.rootWidget = rootWidget
         self.parent = parent
         self.config = None
+        self.editColor = "wheat"
+        self.defaultBgColor = self.rootWidget["background"]
         
 class MainWindow(GenericWindow):
     
@@ -51,18 +54,23 @@ class MainWindow(GenericWindow):
         self.rootWidget.title("expad: Experiment Administration")
         
         self.expEdit = 0
-        self.selectedExperiment = None
+        self.selectedExperimentId = None
         self.selectedExpIndex = -1
         self.cboStatusVar = StringVar()
-        self.defaultBgColor = self.rootWidget["background"]
+        self.cboTypeVar = StringVar()
+        
         
         # obtain all experiment stati from database
         self.expStati = []
         for status in  session.query(model.ExperimentStatus).order_by("statuscode").all():
             self.expStati.append(status.experimentstatus)
         
+         # obtain all experiment types from database
+        self.expTypes = []
+        for type in getActiveTypes(session):
+            self.expTypes.append(type.type)
+            
     def show(self):
-        
         
         self._setupWidgets()
         self.updateExpListbox()
@@ -86,10 +94,11 @@ class MainWindow(GenericWindow):
         col1 = ListboxColumn("experiment", 9)
         col2 = ListboxColumn("number", 4)
         col3 = ListboxColumn("status", 15)
-        col4 = ListboxColumn("created", 14) 
-        col5 = ListboxColumn("archived", 14)
-        col6 = ListboxColumn("released", 14) 
-        self.grdExps = MultiListbox(frmExps, col1, col2, col3, col4, col5, col6)
+        col4 = ListboxColumn("type", 15)
+        col5 = ListboxColumn("created", 14) 
+        col6 = ListboxColumn("archived", 14)
+        col7 = ListboxColumn("released", 14) 
+        self.grdExps = MultiListbox(frmExps, col1, col2, col3, col4, col5, col6, col7)
         self.grdExps.bindEvent("<ButtonRelease-1>", self.selectExpEvent)
         
         btnAddExp = Button(frmExps, text="Add experiment", command=self.addExperimentDlg.show)
@@ -98,19 +107,24 @@ class MainWindow(GenericWindow):
         Label(frmDetail, text="code: ").grid(row=0,column=0, sticky=W)
         Label(frmDetail, text="number: ").grid(row=1,column=0, sticky=W)
         Label(frmDetail, text="status: ").grid(row=10,column=0, sticky=W)
-        Label(frmDetail, text="released by: ").grid(row=11,column=0, sticky=W)
+        Label(frmDetail, text="type: ").grid(row=11,column=0, sticky=W)
+        Label(frmDetail, text="released by: ").grid(row=13,column=0, sticky=W)
         Label(frmDetail, text="date archived: ").grid(row=15,column=0, sticky=W)
         Label(frmDetail, text="archived by: ").grid(row=20,column=0, sticky=W)
         Label(frmDetail, text = "comments: ").grid(row=25, column=0, sticky=W) 
         self.txtCode = Entry(frmDetail, text = "")
         self.txtNumber = Entry(frmDetail, text = "")
         self.cboStatus = OptionMenu (frmDetail, self.cboStatusVar, *self.expStati ,command=self.onExpDetailChange)
+        self.cboType= Listbox(frmDetail, selectmode=MULTIPLE, height=4, selectforeground="white", selectbackground="dodger blue", fg="grey" )
         self.txtReleasedBy = Entry(frmDetail, text = "")
         self.txtDateArchived = Entry(frmDetail, text = "")
         self.txtArchivedBy = Entry(frmDetail, text = "")
         self.txtComment = Text(frmDetail, height=3, width=25)
         self.btnUpdate = Button(frmDetail, text="update experiment", command=self.updateExpEvent)
         self.btnDelete = Button(frmDetail, text="delete experiment", command=self.deleteExpEvent)
+        
+        self.cboType.insert(END, *self.expTypes)
+        
         
         #arrange widgets on root widget
         frmExps.grid(row=0, column=0, sticky=E+W+N+S)
@@ -124,7 +138,8 @@ class MainWindow(GenericWindow):
         self.txtCode.grid(row=0, column=1, sticky=E+W)
         self.txtNumber.grid(row=1, column=1, sticky=E+W)
         self.cboStatus.grid(row=10, column=1, sticky=E+W)
-        self.txtReleasedBy.grid(row=11, column=1, sticky=E+W)
+        self.cboType.grid(row=11, column=1, sticky=E+W)
+        self.txtReleasedBy.grid(row=13, column=1, sticky=E+W)
         self.txtDateArchived.grid(row=15, column=1, sticky=E+W)
         self.txtArchivedBy.grid(row=20, column=1, sticky=E+W)
         self.txtComment.grid(row=25, column=1, sticky=E+W)
@@ -135,40 +150,64 @@ class MainWindow(GenericWindow):
         self.txtNumber.bind("<KeyRelease>", self.onExpDetailChange)
         self.txtReleasedBy.bind("<KeyRelease>", self.onExpDetailChange)
         self.txtComment.bind("<KeyRelease>", self.onExpDetailChange)
-        
+        self.cboType.bind('<ButtonRelease-1>', self.onExpDetailChange)
         self.btnUpdate["state"] = DISABLED
         self.btnDelete["state"] = DISABLED
+        
+
   
     def onExpDetailChange(self, Event):
         
         self.expEdit = 0
+        currentTypes = []
+        origTypes= []
+        selectedExperiment = None
          
-        if (self.selectedExperiment is None):
+        if (self.selectedExperimentId is None):
             return
         
-        self.expEdit += self.setChangeColor(self.txtNumber, self.txtNumber.get(), self.selectedExperiment.number)
-        self.expEdit += self.setChangeColor(self.cboStatus, self.cboStatusVar.get(), self.selectedExperiment.status.experimentstatus)
-        self.expEdit += self.setChangeColor(self.txtComment, self.txtComment.get(1.0, END), self.selectedExperiment.comment)
-        self.expEdit += self.setChangeColor(self.txtReleasedBy, self.txtReleasedBy.get(), self.selectedExperiment.releasedBy)
+        selectedExperiment = session.query(model.Experiment).filter_by(id=self.selectedExperimentId).one()
         
-        if self.cboStatusVar.get() == "released" and self.selectedExperiment.status.experimentstatus != "released":
+
+        # get currently selected types
+        for sel in self.cboType.curselection():
+		currentTypes.append(self.cboType.get(sel))
+        #get original types
+        for type in selectedExperiment.types:
+		origTypes.append(type.type)
+        
+        self.expEdit += self.setChangeColor(self.txtNumber, self.txtNumber.get(), str(selectedExperiment.number).zfill(4))
+        self.expEdit += self.setChangeColor(self.cboStatus, self.cboStatusVar.get(), selectedExperiment.status.experimentstatus)
+        self.expEdit += self.setChangeColor(self.txtComment, self.txtComment.get(1.0, END), selectedExperiment.comment)
+        self.expEdit += self.setChangeColor(self.txtReleasedBy, self.txtReleasedBy.get(), selectedExperiment.releasedBy)
+        
+        if currentTypes != origTypes:
+            self.expEdit += self.setChangeColor(self.cboType, "1", "0")
+        else:
+            self.expEdit += self.setChangeColor(self.cboType, "0", "0")
+        
+        if self.cboStatusVar.get() == "released" and selectedExperiment.status.experimentstatus != "released":
             self.txtReleasedBy["state"] = NORMAL
         else:
             self.txtReleasedBy["state"] = DISABLED
+            
                
         if self.expEdit > 0:
             self.btnUpdate["state"] = NORMAL
-            self.btnUpdate["fg"] = "red"
-            self.btnUpdate["activeforeground"] = "red"
+            self.btnUpdate["bg"] = self.editColor
+            self.btnUpdate["activebackground"] = self.editColor
         else:
+            
             self.btnUpdate["state"] = DISABLED
+            self.btnUpdate["bg"] = self.defaultBgColor
+            self.btnUpdate["activebackground"] = self.defaultBgColor
                  
   
     def setChangeColor(self, component, componentValue, compareValue):
         
         isChange = 0
         color = self.defaultBgColor
-        editColor = "red"
+        editColor = self.editColor
         
         if (str(none2String(compareValue)) != strip(componentValue)):
             
@@ -184,19 +223,26 @@ class MainWindow(GenericWindow):
         return isChange
     
     def updateExpListbox(self):
-        session.expire_all()
-         
+                
         exps = session.query(model.Experiment).order_by(desc(model.Experiment.number)).all()
 
         self.grdExps.clearData()
-        
-        for exp in exps: 
-            self.grdExps.appendData((exp.code, "%04d" % exp.number, exp.status.experimentstatus, exp.dateCreated,  exp.dateArchived, exp.dateReleased))
+               
+        for exp in exps:
+            
+            # retrieve types
+            expTypes = [] 
+            for type in exp.types:
+                expTypes.append(type.type)
+                
+            self.grdExps.appendData((exp.code, "%04d" % exp.number, exp.status.experimentstatus, " ".join(expTypes), exp.dateCreated,  exp.dateArchived, exp.dateReleased))
             
         self.grdExps.update()
         self.grdExps.selection_set(self.selectedExpIndex)
-        
+             
         self.getExpDetails()
+        
+        
  
     def getExpDetails(self):
         '''
@@ -204,6 +250,7 @@ class MainWindow(GenericWindow):
         for the currently selected listbox item.
         Update the detail text fields accordingly
         '''
+        
         
         self.txtCode["state"] = NORMAL
         self.txtNumber["state"] = NORMAL
@@ -224,6 +271,7 @@ class MainWindow(GenericWindow):
             self.btnUpdate["state"] = DISABLED
             self.btnDelete["state"] = DISABLED
             self.cboStatus["state"] = DISABLED
+            self.cboType["state"] = DISABLED
             self.txtReleasedBy["state"] = DISABLED
             self.txtCode["state"] = DISABLED
             self.txtNumber["state"] = DISABLED
@@ -231,19 +279,36 @@ class MainWindow(GenericWindow):
             self.txtComment["state"] = DISABLED
             self.txtDateArchived["state"] = DISABLED
             
-            self.selectedExperiment = None
+            self.selectedExperimentId = None
             return
         
         self.btnDelete["state"] = NORMAL
         self.cboStatus["state"] = NORMAL
+        self.cboType["state"] = NORMAL
         
         
         selectedCode = self.grdExps.get(self.selectedExpIndex)[0]
         
         exp = getExperimentByCode(session, selectedCode)
+        
+        # get associated experiment types
+        expTypes = []
+        for type in exp.types:
+            expTypes.append(type.type)
+    
+        
+        index = 0
+        self.cboType.selection_clear(0,END)
+        for type in expTypes:
+            if type in self.cboType.get(0, END):
+                self.cboType.selection_set(index)
+                index += 1
+                continue
+            index += 1
              
         if (exp != None):
             self.cboStatusVar.set(exp.status.experimentstatus)
+            #self.cboTypeVar.set(types)
             self.txtReleasedBy.insert(0, none2String(exp.releasedBy))
             self.txtCode.insert(0, exp.code)
             self.txtNumber.insert(0, "%04d" % none2String(exp.number))
@@ -252,12 +317,14 @@ class MainWindow(GenericWindow):
             self.txtComment.insert(1.0, none2String(exp.comment))
             
             #remember original state of the selected experiment record
-            self.selectedExperiment = exp
+            self.selectedExperimentId = exp.id
         
         self.txtCode["state"] = DISABLED
         self.txtDateArchived["state"] = DISABLED
         self.txtArchivedBy["state"] = DISABLED
         self.txtReleasedBy["state"] = DISABLED
+        
+        self.onExpDetailChange(None)
         
     def selectExpEvent(self, Event):
         
@@ -294,18 +361,27 @@ class MainWindow(GenericWindow):
             
             # insert dateReleased
             exp.dateReleased = datetime.datetime.now()
+            
+        # get currently selected types
+        types = []
+        for sel in self.cboType.curselection():
+            type = session.query(model.ExperimentType).filter_by(type=self.cboType.get(sel)).one()
+            types.append(type)
+        
+      
         
         exp.status = status
         exp.number = self.txtNumber.get()
         exp.releasedBy = self.txtReleasedBy.get()
         exp.comment = strip(self.txtComment.get(1.0, END))
+        exp.types = types
         
+        self.selectedExperimentId = exp.id
         
         session.commit()
         session.flush()
-    
-    
-        self.selectedExperiment = exp
+        session.close()
+         
         self.editExp = 0
         self.onExpDetailChange(None)
         self.updateExpListbox()
@@ -314,6 +390,8 @@ class MainWindow(GenericWindow):
         
         if self.selectedExpIndex == -1:
             return
+        
+        
         
         code = self.grdExps.get(self.selectedExpIndex)[0]
         
@@ -329,8 +407,15 @@ class AddExperimentWindow(GenericWindow):
      
     def __init__(self, parent, rootWidget=None):
         super( AddExperimentWindow, self ).__init__(parent, rootWidget)
-      
-    
+        
+        self.cboTypeVar = StringVar()
+        self.expTypes=[]
+        
+        for type in  getActiveTypes(session):
+            self.expTypes.append(type.type)
+        # default selection "None"
+        #self.cboTypeVar.set(self.expTypes[0])
+        
     def show(self):
         
         # create modal dialog
@@ -350,34 +435,46 @@ class AddExperimentWindow(GenericWindow):
         self.dlg.destroy()
         
     def _setupWidgets(self):
-              
+                     
         Label(self.dlg, text="Code").grid(row=0, sticky=W)
         self.txtExpCode = Entry(self.dlg)
         
+        Label(self.dlg, text="Type").grid(row=2, sticky=W)
+        
+        self.cboType= Listbox(self.dlg, listvariable=self.cboTypeVar, selectmode=MULTIPLE, height=5, selectforeground="white", selectbackground="dodger blue", fg="grey" )
+        self.cboType.delete(0,END)
+	self.cboType.insert(0, *self.expTypes)
         
         btnOK = Button(self.dlg, text="OK", command=self._persistExperiment)
         btnCancel = Button(self.dlg, text="Cancel", command=self.close)
         
         self.txtExpCode.grid(row=0, column=1, sticky=E+W)
+        self.cboType.grid(row=2, column=1, sticky=E+W)
         btnOK.grid(row=10, column=0)
         btnCancel.grid(row=10, column=1, sticky=E)
         
         self.txtExpCode.focus_set()
         
     def _persistExperiment(self):
+         
+        selectedTypes = []
         
         code = upper(self.txtExpCode.get())
+       
         # check that Code has been set
         if (code == ""):
             return
-        
+	for sel in self.cboType.curselection():
+		selectedTypes.append(self.cboType.get(sel))
+                
+       
         try:
             # add experiment with state "scheduled"
-            addExperimentWithState(session, code, 10)
+            addExperiment(session, code, types=selectedTypes,statuscode=10)
         except Exception as e:
             tkMessageBox.showerror("Error", e)
-       
         
+            
         self.close()        
              
 if __name__ == "__main__":
@@ -410,15 +507,17 @@ if __name__ == "__main__":
             major, minor = getCurrentSchemaVersionNumber(session)
             print "Current difxdb database schema is %s.%s but %s.%s is minimum requirement." % (major, minor, minSchemaMajor, minSchemaMinor)
             sys.exit(1)
-    
+            
+        
         mainDlg = MainWindow(None, rootWidget=root)
 
         mainDlg.show()
 
         root.mainloop()
         
-    except Exception as e:
-       
+        
+        
+    except Exception as e:   
         sys.exit(e)
    
    
