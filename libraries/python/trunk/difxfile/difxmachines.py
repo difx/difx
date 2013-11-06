@@ -176,15 +176,17 @@ class DifxMachines(object):
 		if (sub):
 			start = sub.group(2)
 			stop = sub.group(3)
+                        
+                        if  not start.isdigit() or  not stop.isdigit():
+                            raise Exception("Illegal range specified in line %s of the machine file" % lineCount)
+                        
+                        if int(start) > int(stop):
+                            raise Exception("Illegal range specified in line %s of the machine file" % lineCount)
+                        
 			try:
-				# numeric range
-				if start.isdigit() and stop.isdigit():
-					for nodeNum in range(int(start), int(stop)+1):
-						nodeNames.append(sub.group(1) + str(nodeNum))
-				# letter range
-				if reLetter.match(start.lower()) and reLetter.match(stop.lower()):
-					for nodeNum in self._charRange(start, stop):
-						nodeNames.append(sub.group(1) + nodeNum)
+                            for nodeNum in range(int(start), int(stop)+1):
+                                    nodeNames.append(sub.group(1) + str(nodeNum).zfill(len(stop)))
+
 			except:
 				raise Exception("Illegal range specified in line %s of the machine file" % lineCount)
 		else:
