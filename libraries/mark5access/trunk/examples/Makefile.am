@@ -5,6 +5,7 @@ if WITH_FFTW
 fftw_programs = \
 	m5pcal \
 	m5spec \
+	m5tone \
 	zerocorr
 m5spec_CFLAGS = $(FFTW3_CFLAGS) $(INCLUDES)
 m5spec_LDADD = $(FFTW3_LIBS) $(LDADD)
@@ -15,6 +16,9 @@ zerocorr_LDADD = $(FFTW3_LIBS) $(LDADD)
 else
 fftw_programs = 
 endif
+
+m5tone_CFLAGS =  -I/cluster/pgplot 
+m5tone_LDADD =  $(LDADD)  -lfftw3 -lgfortran -lX11 -lpng /cluster/pgplot/libcpgplot.a /cluster/pgplot/libpgplot.a
 
 bin_PROGRAMS = \
 	directory2filelist \
@@ -29,6 +33,7 @@ bin_PROGRAMS = \
 	m5time \
 	m5slice \
 	m5findformats \
+	m5tone \
 	test5b \
 	test_mark5_stream \
 	test_unpacker \
@@ -66,6 +71,9 @@ m5test_SOURCES = \
 
 m5findformats_SOURCES = \
 	m5findformats.c
+
+m5tone_SOURCES = \
+	m5tone.c	
 
 test_mark5_stream_SOURCES = \
 	test_mark5_stream.c
