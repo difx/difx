@@ -60,6 +60,7 @@ class MainWindow(GenericWindow):
         
         # sub dialogs
         self.checkinDlg = CheckinWindow(self, rootWidget)  
+        self.checkoutDlg = CheckoutWindow(self, rootWidget)  
         self.changeSlotDlg = ChangeSlotWindow(self, rootWidget)  
         self.labelOptionsDlg= LabelOptionsWindow(self,rootWidget)
         self.databaseOptionsDlg= DatabaseOptionsWindow(self,rootWidget)
@@ -80,6 +81,7 @@ class MainWindow(GenericWindow):
         self.labelSizeY = 130
         self.moduleFilter = ""
         self.slotFilter = ""
+        self.forceCheckout = False
                 
     def show(self):
         
@@ -160,6 +162,7 @@ class MainWindow(GenericWindow):
         self.btnEditModule = Button(self.frmDetail, text="Update module", command=self.updateModule, state=DISABLED)
         self.btnPrintLibraryLabel = Button (self.frmDetail, text="Print library label", command=self.printLibraryLabel,state=DISABLED)
         self.btnPrintVSNLabel = Button (self.frmDetail, text="Print VSN label", command=self.printVSNLabel,state=DISABLED)
+        self.btnRescan = Button (self.frmDetail, text="Rescan directory", command=self.rescanModuleEvent,state=DISABLED)
         
         # widgets on frmEditExperiment
         scrollCboFreeExperiments = Scrollbar(self.frmEditExperiment)
@@ -204,6 +207,7 @@ class MainWindow(GenericWindow):
         self.btnDeleteModule.grid(row=20, column=1, sticky=E+W)
         self.btnPrintLibraryLabel.grid(row=21,column=0, sticky=E+W)
         self.btnPrintVSNLabel.grid(row=21,column=1, sticky=E+W)
+        self.btnRescan.grid(row=20,column=2, sticky=E+W)
         
         
         # arrange objects on frmEditExperiment
@@ -389,6 +393,7 @@ class MainWindow(GenericWindow):
          
         
         self.btnPrintVSNLabel["state"] = DISABLED
+        self.btnRescan["state"] = DISABLED
         self.btnPrintLibraryLabel["state"] = DISABLED
         self.btnDeleteModule["state"] = DISABLED
         self.txtLocationContent["state"] = NORMAL
@@ -420,6 +425,7 @@ class MainWindow(GenericWindow):
             return
         
         self.btnPrintVSNLabel["state"] = NORMAL
+        self.btnRescan["state"] = NORMAL
         self.btnPrintLibraryLabel["state"] = NORMAL
         self.btnDeleteModule["state"] = NORMAL
         
@@ -482,6 +488,7 @@ class MainWindow(GenericWindow):
         self.cboExperiments["state"] = DISABLED
         self.btnEditModule["state"] = DISABLED
         self.btnPrintVSNLabel["state"] = DISABLED
+        self.btnRescan["state"] = DISABLED
         self.btnPrintLibraryLabel["state"] = DISABLED
         self.btnDeleteModule["state"] = DISABLED
         self.btnChangeSlot["state"] = DISABLED
@@ -522,7 +529,9 @@ class MainWindow(GenericWindow):
         
         
         if (isCheckOutAllowed(session,module.vsn) == False):
-            tkMessageBox.showerror("Error", "Module cannot be checked-out.\nIt either contains experiments that have not been released yet or\n the module has not been scanned yet.")
+            self.checkoutDlg.show(module)
+            #tkMessageBox.showerror("Error", "Module cannot be checked-out.\nIt  contains unreleased experiments\nor\nIt hasn't been scanned yet.")
+            
             return
         elif (module.numScans == 0):
             if (tkMessageBox.askyesno("Empty module", "This module seems to be empty\nDo you really want to check-out this module") == False):
@@ -530,25 +539,29 @@ class MainWindow(GenericWindow):
             
 
         if (tkMessageBox.askokcancel("Confirm module check-out", "Do you really want to remove module " + slot.module.vsn + " from the library? ")):
-
-            session.delete(module) 
-            session.commit()
-            session.flush()
-
-            self.clearSlotSelection()
-
-            self.updateSlotListbox()
-            self.refreshStatusEvent()
-
-            # delete .dir file            
-            dirFile = buildDirFilename(settings["dirPath"], module.vsn)
-            if os.path.isfile(dirFile):
-                os.remove(dirFile)
-            else:
-                print "file %s does not exists" % dirFile
-     
+            doCheckout(module)
+        
         return
     
+    def doCheckout(self, module):
+        
+        session.delete(module) 
+        session.commit()
+        session.flush()
+
+        self.clearSlotSelection()
+
+        self.updateSlotListbox()
+        self.refreshStatusEvent()
+
+        # delete .dir file            
+        dirFile = buildDirFilename(settings["dirPath"], module.vsn)
+        if os.path.isfile(dirFile):
+            os.remove(dirFile)
+        else:
+            print "file %s does not exists" % dirFile
+            
+        
     def clearSearchEvent(self, Event):
         
         self.moduleFilter = ""
@@ -590,13 +603,22 @@ class MainWindow(GenericWindow):
             self.cboExperiments.insert(END, code)   
         
         self.editModuleDetailsEvent(None)
-            
+ 
+    def rescanModuleEvent(self):
+        
+        if self.selectedSlotIndex == -1:
+            return
+       
+        slot = getSlotByLocation(session, self.grdSlot.get(self.selectedSlotIndex)[0])
+        
+        self.scanModulesDlg.scanModules(slot.module)
+
       
     def scanModuleEvent(self):
        
         self.scanModulesDlg.scanModules()
-        self.refreshStatusEvent()
-        self.updateSlotListbox()
+      #  self.refreshStatusEvent()
+      #  self.updateSlotListbox()
             
             
     def refreshStatusEvent(self):
@@ -662,7 +684,7 @@ class MainWindow(GenericWindow):
         self.moduleEdit = 0
         
         color = self.defaultBgColor
-        editColor = "red"
+        editColor = "wheat"
         
         if (self.lastLocationContent != self.txtLocationContent.get()):
             self.txtLocationContent["background"] = editColor
@@ -722,9 +744,11 @@ class MainWindow(GenericWindow):
       
         if self.moduleEdit > 0:
             self.btnEditModule["state"] = NORMAL
-            self.btnEditModule["fg"] = editColor
-            self.btnEditModule["activeforeground"] = editColor
+            self.btnEditModule["bg"] = editColor
+            self.btnEditModule["activebackground"] = editColor
         else:
+            self.btnEditModule["bg"] = self.defaultBgColor 
+            self.btnEditModule["activebackground"] =  self.defaultBgColor 
             self.btnEditModule["state"] = DISABLED
             
         
@@ -752,6 +776,48 @@ class MainWindow(GenericWindow):
         
         self.changeSlotDlg.selectedSlot = slot
         self.changeSlotDlg.show()
+        
+class CheckoutWindow(GenericWindow):
+    
+    def __init__(self, parent=None, rootWidget=None):
+        
+        # call super class constructor
+        super( CheckoutWindow, self ).__init__(parent, rootWidget)
+        
+        
+    def show(self, module):
+        
+        self.module = module
+        # create modal dialog
+        self.dlg = Toplevel(self.rootWidget, takefocus=True)
+        self.dlg.title("Check-out module")
+        self.dlg.transient(self.rootWidget)
+        self.dlg.state("normal")
+        self.dlg.focus_set()
+        self.dlg.grab_set()
+        
+        self._setupWidgets()
+        #self.updateExperimentListbox()
+        
+    def _setupWidgets(self):
+        
+        Label(self.dlg, text="Module cannot be checked out.\n", font="Helvetica 10 bold", fg="red").grid(row=0, sticky=W)    
+        Label(self.dlg, text="It  contains unreleased experiments or hasn't been scanned yet.").grid(row=1, sticky=W)
+        
+        btnOK = Button(self.dlg, text="OK", command=self.dlg.destroy)
+        btnForce = Button(self.dlg, text="Force check-out", command=self._onButtonForce)
+        
+        btnOK.grid(row=10, column=1, sticky=W,pady=7)
+        btnForce.grid(row=10, column=3, sticky=E+W)
+        
+    def _onButtonForce(self):
+        if  tkMessageBox.askyesno("Force module check out?", "Do you really want to check out this module?") == True:
+            self.parent.doCheckout(self.module)
+            self.dlg.destroy()
+            
+        self.dlg.destroy()
+        return 
+        
         
 class CheckinWindow(GenericWindow):
      
@@ -789,8 +855,7 @@ class CheckinWindow(GenericWindow):
             self.lstExp.insert(END, code)
         
     def _setupWidgets(self):
-         
-
+        
         # create dialog elements
         yScroll = Scrollbar ( self.dlg, orient=VERTICAL )
         yScroll2 = Scrollbar ( self.dlg, orient=VERTICAL )
@@ -1180,16 +1245,26 @@ class ScanModulesWindow(GenericWindow):
 
         canvas.config(scrollregion=canvas.bbox("all"))
         
-    def scanModules(self):
+    def scanModules(self, module=None):
         
         outdatedDir = []
         self.checkList.clear()
         self.manualList.clear()
+        modules= []
         
-        modules = getUnscannedModules(session)
-        
-        for module in modules:
+        if module == None:
+            modules = getUnscannedModules(session)
+        else:
+            # delete information from previous scan
+            module.numScans = None
+            module.experiments= []
+            module.stationCode = None
             
+            session.commit()        
+            modules.append(module)
+            
+            
+        for module in modules:
             
             assignedExps = deque()
             
@@ -1248,6 +1323,9 @@ class ScanModulesWindow(GenericWindow):
         if (len(self.checkList) > 0) or (len(self.manualList) > 0):
             self.show()
             
+       # self.parent.refreshStatusEvent()
+      #  self.parent.updateSlotListbox()
+            
     
      
     def updateModuleEvent(self):
@@ -1295,6 +1373,7 @@ class ScanModulesWindow(GenericWindow):
         session.flush()
         
         self.parent.refreshStatusEvent()
+        self.parent.updateSlotListbox()
         self.dlg.destroy()
         
     class CheckModuleItem(object):
