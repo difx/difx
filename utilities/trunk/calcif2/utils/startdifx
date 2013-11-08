@@ -30,8 +30,8 @@
 #============================================================================
 
 PROGRAM = 'startdifx'
-VERSION = '1.0'
-VERDATE = '20120929'
+VERSION = '2.3.0'
+VERDATE = '20131108'
 AUTHOR  = 'Walter Brisken and Helge Rottmann'
 
 defaultgroup = "224.2.2.1"
@@ -573,7 +573,7 @@ def runDirect(fileBase, machinesPolicy, deletePolicy, makeModel, override, useLo
 	else:
 		restartOption = ''
 
-	cmd = 'mpirun -np %d --bynode --hostfile %s.machines %s  %s %s.input%s' % (np, fileBase, mpiOptions, difxProgram, fileBase, restartOption)
+	cmd = 'mpirun -np %d --hostfile %s.machines %s  %s %s.input%s' % (np, fileBase, mpiOptions, difxProgram, fileBase, restartOption)
 
 	sendMessage(fileBase, 'Spawning', 'Spawning %d processes' % np)
 	if verbose > 0:
