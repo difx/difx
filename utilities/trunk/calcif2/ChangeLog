@@ -171,6 +171,12 @@ Version 1.5
 
 genmachines
 ~~~~~~~~~~~
+Version 2.3.0
+* adapt to new cluster definition file format
+* removed the overhead cores option
+* allow mixed file/module based correlation
+* version for DiFX-2.3.0
+
 Version 0.15
 * properly react to ctrl+c
 
@@ -214,36 +220,40 @@ Version 0.1
 
 startdifx
 ~~~~~~~~~
-Version 0.1
-* First version
-Version 0.2
-* Record execute time
-* Fancier mpirun call
-* Run calcif if necessary
-Version 0.3
-* make fits if wanted
-* can run on input files
-* look at DIFX_VERSION
-* small fixes
-* respect DIFX_GROUP_ID and set permissions
-Version 0.4
-* check for length of job name
-* use DIFX_VERSION env var to choose which version to run
-* check for .im, not .uvw + .delay
-Version 0.5
-* -m option to use difxmessage
-Version 0.7
-* support for restart mode
+Version 2.3.0
+* removed bynode mpirun option to be compatible with new genmachines
+* version for DiFX-2.3.0
+
+Version 0.9
+* look for runmpifxcorr.$DIFX_LABEL if that env var is defined
+* check for DIFX_HEAD_NODE on startup
+* -l option consistently overrides DIFX_HEAD_NODE
 Version 0.8
 * loop over genmachines
 * respect CTRL-C
 * add option to enable difxdb usage
 * pass on --override-version and -v options  to calcif2
 * enable giving a .joblist file to execute
-Version 0.9
-* look for runmpifxcorr.$DIFX_LABEL if that env var is defined
-* check for DIFX_HEAD_NODE on startup
-* -l option consistently overrides DIFX_HEAD_NODE
+Version 0.7
+* support for restart mode
+Version 0.5
+* -m option to use difxmessage
+Version 0.4
+* check for length of job name
+* use DIFX_VERSION env var to choose which version to run
+* check for .im, not .uvw + .delay
+Version 0.3
+* make fits if wanted
+* can run on input files
+* look at DIFX_VERSION
+* small fixes
+* respect DIFX_GROUP_ID and set permissions
+Version 0.2
+* Record execute time
+* Fancier mpirun call
+* Run calcif if necessary
+Version 0.1
+* First version
 
 calcif
 ~~~~~~

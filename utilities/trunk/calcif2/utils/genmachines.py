@@ -48,8 +48,8 @@ except ImportError:
     sys.exit(1)
 
 author  = 'Walter Brisken and Helge Rottmann'
-version = '0.17'
-verdate = '20131024'
+version = '2.3.0'
+verdate = '20131108'
 minMachinefileVersion = "1.0"	# cluster definition file must have at least this version
 
 defaultDifxMessagePort = 50200
