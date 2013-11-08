@@ -69,8 +69,8 @@ class DifxDir(object):
                 if (vsn != self.vsn):
                     raise Exception("VSN mismatch. File %s contains VSN: %s" % (self.filename, vsn))
                     
-            else:         
-                if (len(fields) == 12):
+            else:     
+                if (len(fields) >= 12):
                     
                     scan = self.DirLine()
                     scan.startByte = fields[0]
