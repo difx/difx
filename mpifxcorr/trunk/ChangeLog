@@ -14,6 +14,7 @@ Version 2.3
 * Explicitly cut split up all Mark5 reads longer than 20MB
 * Never change Mark5 .dir files
 * Check Mark5 reads for lots of zero values and perform re-read if so
+* Support (maybe???) multi-threaded complex VDIF data
 
 Version 2.2
 ~~~~~~~~~~~

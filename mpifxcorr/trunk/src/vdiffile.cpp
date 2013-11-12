@@ -89,6 +89,8 @@ VDIFDataStream::VDIFDataStream(const Configuration * conf, int snum, int id, int
 	nthreads = 0; // no threads identified yet
 	threads = 0;  // null pointer indicating not yet initialized
 	invalidtime = 0;
+
+	samplingtype = Configuration::REAL;
 }
 
 VDIFDataStream::~VDIFDataStream()
@@ -187,6 +189,8 @@ int VDIFDataStream::calculateControlParams(int scan, int offsetsec, int offsetns
 	payloadbytes *= config->getDNumMuxThreads(bufferinfo[looksegment].configindex, streamnum);
 	framebytes = (framebytes-VDIF_HEADER_BYTES)*config->getDNumMuxThreads(bufferinfo[looksegment].configindex, streamnum) + VDIF_HEADER_BYTES;
 	framespersecond /= config->getDNumMuxThreads(bufferinfo[looksegment].configindex, streamnum);
+
+	samplingtype = config->getDSampling(bufferinfo[looksegment].configindex, streamnum);
 
 	//set the fraction of data to use to determine system temperature based on data rate
 	//the values set here work well for the today's computers and clusters...
@@ -411,6 +415,18 @@ int VDIFDataStream::dataRead(int buffersegment)
 {
 	unsigned long *destination;
 	int bytes;
+	int muxReturn;
+	int muxBits;
+
+	if(samplingtype == Configuration::COMPLEX)
+	{
+		// muxing complex data is exactly the same as muxing real data, except the number of bits per sample needs to be doubled so we keep real and imaginary parts together
+		muxBits = 2*nbits;
+	}
+	else
+	{
+		muxBits = nbits;
+	}
 
 	destination = reinterpret_cast<unsigned long *>(&databuffer[buffersegment*(bufferbytes/numdatasegments)]);
 
@@ -423,7 +439,7 @@ int VDIFDataStream::dataRead(int buffersegment)
 		// If there is some data left over, just demux that and send it out
 		if(readbufferleftover > minleftoverdata)
 		{
-			vdifmux(reinterpret_cast<unsigned char *>(destination), readbytes, readbuffer, readbufferleftover, inputframebytes, framespersecond, nbits, nthreads, threads, nSort, nGap, startOutputFrameNumber, &vstats);
+			vdifmux(reinterpret_cast<unsigned char *>(destination), readbytes, readbuffer, readbufferleftover, inputframebytes, framespersecond, muxBits, nthreads, threads, nSort, nGap, startOutputFrameNumber, &vstats);
 			readbufferleftover = 0;
 			bufferinfo[buffersegment].validbytes = vstats.destUsed;
 
@@ -446,10 +462,11 @@ int VDIFDataStream::dataRead(int buffersegment)
 	bytes = input.gcount();
 
 	// multiplex and corner turn the data
-	int X = vdifmux(reinterpret_cast<unsigned char *>(destination), readbytes, readbuffer, readbufferleftover + bytes, inputframebytes, framespersecond, nbits, nthreads, threads, nSort, nGap, startOutputFrameNumber, &vstats);
-	if(X < 0)
+	muxReturn = vdifmux(reinterpret_cast<unsigned char *>(destination), readbytes, readbuffer, readbufferleftover + bytes, inputframebytes, framespersecond, muxBits, nthreads, threads, nSort, nGap, startOutputFrameNumber, &vstats);
+
+	if(muxReturn < 0)
 	{
-		cwarn << startl << "vdifmux returned " << X << endl;
+		cwarn << startl << "vdifmux returned " << muxReturn << endl;
 	}
 
 	if(vstats.destUsed == vstats.destSize)

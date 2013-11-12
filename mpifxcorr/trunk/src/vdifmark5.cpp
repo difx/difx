@@ -684,6 +684,18 @@ int VDIFMark5DataStream::dataRead(int buffersegment)
 	int n1, n2;	/* slot number range of data to be processed.  Either n1==n2 or n1+1==n2 */
 	unsigned int muxend, bytesvisible;
 	int lockmod = readbufferslots - 1;
+	int muxReturn;
+	int muxBits;
+
+	if(samplingtype == Configuration::COMPLEX)
+	{
+		// muxing complex data is exactly the same as muxing real data, except the number of bits per sample needs to be doubled so we keep real and imaginary parts together
+		muxBits = 2*nbits;
+	}
+	else
+	{
+		muxBits = nbits;
+	}
 
 	if(lockstart < -1)
 	{
@@ -771,10 +783,10 @@ int VDIFMark5DataStream::dataRead(int buffersegment)
 	bytesvisible = muxend - muxindex;
 
 	// multiplex and corner turn the data
-	int X = vdifmux(reinterpret_cast<unsigned char *>(destination), readbytes, readbuffer+muxindex, bytesvisible, inputframebytes, framespersecond, nbits, nthreads, threads, nSort, nGap, startOutputFrameNumber, &vstats);
-	if(X < 0)
+	muxReturn = vdifmux(reinterpret_cast<unsigned char *>(destination), readbytes, readbuffer+muxindex, bytesvisible, inputframebytes, framespersecond, muxBits, nthreads, threads, nSort, nGap, startOutputFrameNumber, &vstats);
+	if(muxReturn < 0)
 	{
-		cwarn << startl << "vdifmux returned " << X << endl;
+		cwarn << startl << "vdifmux returned " << muxReturn << endl;
 	}
 
 	bufferinfo[buffersegment].validbytes = vstats.destUsed;

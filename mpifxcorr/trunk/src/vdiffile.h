@@ -104,6 +104,8 @@ protected:
 
   int nbits, framespersecond, nthreads, outputframebytes, inputframebytes;
   const int *threads;
+
+  Configuration::datasampling samplingtype;
 };
 
 #endif
