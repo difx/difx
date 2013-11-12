@@ -2,11 +2,15 @@ if WITH_SS
 mark5_files = \
 	mark5utils.cpp \
 	nativemk5.cpp \
+	mark5bmark5.cpp \
+	vdifmark5.cpp \
 	mark5dir.cpp \
 	watchdog.cpp
 else
 mark5_files = \
-	nativemk5_stubs.cpp
+	nativemk5_stubs.cpp \
+	mark5bmark5_stubs.cpp \
+	vdifmark5_stubs.cpp
 endif
 
 bin_PROGRAMS = mpifxcorr neuteredmpifxcorr
@@ -22,11 +26,13 @@ mpifxcorr_SOURCES = \
         model.cpp \
 	mk5.cpp \
 	mk5mode.cpp \
+	datamuxer.cpp \
+	mark5bfile.cpp \
+	vdiffile.cpp \
 	polyco.cpp \
 	alert.cpp \
 	pcal.cpp \
 	switchedpower.cpp \
-	datamuxer.cpp \
 	$(mark5_files)
 
 library_includedir = $(includedir)/mpifxcorr
@@ -50,6 +56,8 @@ library_include_HEADERS = \
 	mpifxcorr.h \
 	switchedpower.h \
 	datamuxer.h \
+	mark5bfile.h \
+	vdiffile.h \
 	alert.h 
 
 # historically these have been in both $(includedir)/{.,mpifxcorr}
@@ -70,6 +78,8 @@ libmpifxcorr_a_SOURCES = \
 	visibility.cpp \
 	alert.cpp \
 	switchedpower.cpp \
+	mark5bfile.cpp \
+	vdiffile.cpp \
 	datamuxer.cpp \
 	$(mark5_files)
 
@@ -91,6 +101,8 @@ neuteredmpifxcorr_SOURCES = \
 	datastream.cpp \
 	mk5.cpp \
 	switchedpower.cpp \
+	mark5bfile.cpp \
+	vdiffile.cpp \
 	datamuxer.cpp \
 	$(mark5_files)
 

@@ -267,7 +267,7 @@ void DataStream::execute()
       {
         //wait til everything has sent so we can reset the requests and go again
         MPI_Waitall(maxsendspersegment, bufferinfo[atsegment].datarequests, datastatuses);
-        MPI_Waitall(maxsendspersegment, bufferinfo[atsegment].controlrequests,  controlstatuses);
+        MPI_Waitall(maxsendspersegment, bufferinfo[atsegment].controlrequests, controlstatuses);
         bufferinfo[atsegment].numsent = 0;
       }
     }
@@ -285,7 +285,7 @@ void DataStream::execute()
     if(bufferinfo[i].numsent > 0)
     {
       MPI_Waitall(bufferinfo[i].numsent, bufferinfo[i].datarequests, datastatuses);
-      MPI_Waitall(bufferinfo[i].numsent, bufferinfo[i].controlrequests,  controlstatuses);
+      MPI_Waitall(bufferinfo[i].numsent, bufferinfo[i].controlrequests, controlstatuses);
       bufferinfo[i].numsent = 0;
     }
   }
@@ -567,7 +567,7 @@ int DataStream::calculateControlParams(int scan, int offsetsec, int offsetns)
   }
 
   if(bufferindex < atsegment*readbytes) {
-    cerror << startl << "Developer error: bufferindex is " << bufferindex << ", shouldn't be before " <<       atsegment*readbytes << endl;
+    cerror << startl << "Developer error: bufferindex is " << bufferindex << ", shouldn't be before " << atsegment*readbytes << endl;
   }
 
   return bufferindex;
@@ -659,7 +659,7 @@ void DataStream::initialiseMemoryBuffer()
     if(perr != 0)
       csevere << startl << "Error in launching telescope networkthread!!!" << endl;
   }
-  
+
   pthread_attr_destroy(&attr);
 
   while(!readthreadstarted) //wait to ensure the thread got started ok

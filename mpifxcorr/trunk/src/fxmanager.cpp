@@ -194,7 +194,7 @@ FxManager::FxManager(Configuration * conf, int ncores, int * dids, int * cids, i
   //ensure these new threads are joinable
   pthread_attr_init(&attr);
   pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
-  
+
   newestlockedvis = 1;
   oldestlockedvis = 0;
   islocked[0] = true;
