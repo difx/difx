@@ -16,6 +16,7 @@
 
 #include <complex>
 
+#define PL_DOUBLE
 #include <plplot/plplot.h>
 #include "architecture.h"
 #include "configuration.h"
