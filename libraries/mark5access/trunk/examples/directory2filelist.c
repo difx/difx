@@ -292,7 +292,7 @@ int main(int argc, char **argv)
 	struct dirent *ep;
 	char filename[MaxFilenameLength];
 	int refMJD = 57000;
-	char dir;
+	char *dir;
 	char *fmt;
 	int defaultMJD;
 
