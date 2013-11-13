@@ -11,7 +11,7 @@ from time import asctime
 from glob import glob
 
 program = 'difxbuild'
-version = '0.32'
+version = '0.33'
 verdate = '20130917'
 author = 'Walter Brisken <wbrisken@nrao.edu>'
 
@@ -30,7 +30,7 @@ libtoolVersion = '2.4'
 pkgconfigVersion = '0.28'
 cxOracleVersion = '5.1.2'
 pyxVersion = '0.12.1'	#http://sourceforge.net/projects/pyx/files/pyx/0.12.1/PyX-0.12.1.tar.gz/download
-gpstkVersion = '2.1'
+gpstkVersion = '2.2'
 
 defaultDifxMessageGroup = '224.2.2.1'
 defaultDifxMessagePort = 50200
@@ -172,6 +172,10 @@ Bootstrap parameter options include:
 
 * ldextra: extra paths to be added to the LD_LIBRARY_PATH environment
   variable that is set in the setup_difx script.
+
+* symlinkdir: a path where sym links to startup scripts will be created.
+  This is useful if the default bin path is not in the execute path of
+  the DiFX user and the scripts want to be put in an execute path.
 
 * wrapper: an optional wrapper program that can be used to spawn
   mpifxcorr.  This value gets coded into the runmpifxcorr.$DIFX-LABEL 
@@ -596,6 +600,13 @@ component_difxdb_trunk = \
 	['aclocal', 'autoconf', 'automake'] \
 ]
 
+component_nraodifxdb_trunk = \
+[ \
+	'nraodifxdb', \
+	'https://svn.atnf.csiro.au/difx/sites/NRAO/trunk/difxdb', \
+	['aclocal', 'autoconf', 'automake'] \
+]
+
 component_difxmonitor_trunk = \
 [ \
 	'difx_monitor', \
@@ -634,6 +645,7 @@ components['DIFX-DEVEL'] = \
 	component_difx2profile_trunk, \
 	component_vdifserver_trunk, \
 	component_difxdb_trunk, \
+	component_nraodifxdb_trunk, \
 	component_difxfilterbank_trunk, \
 	component_difxmonitor_trunk, \
 ]
@@ -843,6 +855,13 @@ component_sniff_2_2 = \
 	['aclocal', 'autoconf', 'automake', 'pgplot'] \
 ]
 
+component_nraodifxdb_2_2 = \
+[ \
+	'nraodifxdb', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.2/sites/NRAO/difxdb', \
+	['aclocal', 'autoconf', 'automake'] \
+]
+
 component_hops_2_2 = \
 [ \
 	'hops', \
@@ -872,6 +891,7 @@ components['DIFX-2.2'] = \
 	component_calcserver_2_2, \
 	component_rcwlib_2_2, \
 	component_sniff_2_2, \
+	component_nraodifxdb_2_2, \
 	component_hops_2_2, \
 	component_guiserver_2_2, \
 ]
@@ -896,7 +916,7 @@ def default(comps, params, args, verbose, pretend):
 	if isfile('%s/bin/setup_difx' % environ['DIFX_BASE']):
 		print 'Error: could not unlink existing DiFX version'
 		exit(2)
-	execute('ln -s %s/setup_difx %s/bin' % (environ['DIFXROOT'], environ['DIFX_BASE']), verbose, pretend)
+	execute('ln -f -s %s/setup_difx %s/bin' % (environ['DIFXROOT'], environ['DIFX_BASE']), verbose, pretend)
 	if not isfile('%s/bin/setup_difx' % environ['DIFX_BASE']):
 		print 'Error: could not link new DiFX version.  NO version is default now!'
 		exit(2)
@@ -912,7 +932,9 @@ def splitequals(str):
 		return [strip(str[:p]), strip(str[p+1:])]
 
 def writeinitfile(verbose, pretend):
-	initfile = environ['DIFX_BASE'] + '/init.d/nrao-difx'
+	initdir = environ['DIFX_BASE'] + '/init.d'
+	initfile = initdir + '/nrao-difx'
+	execute('mkdir -p %s' % initfile, verbose, pretend)
 	print 'Writing init file: %s' % initfile
 	out = open(initfile, 'w')
 	out.write('#!/bin/sh\n')
@@ -1032,6 +1054,11 @@ def bootstrap(comps, params, args, verbose, pretend):
 	if config['version'] not in components.keys():
 		print 'Error: version must be one of ', components.keys()
 		return
+
+	if config.has_key('symlinkdir'):
+		symlinkdir = config['symlinkdir']
+	else:
+		symlinkdir = None
 
 	if config.has_key('difxmessagegroup'):
 		difxMessageGroup = config['difxmessagegroup']
@@ -1154,6 +1181,9 @@ def bootstrap(comps, params, args, verbose, pretend):
 		out.close()
 		execute('chmod a+x %s' % runscript, verbose, pretend)
 
+		if symlinkdir != None:
+			execute('ln -f -s %s %s' % (runscript, symlinkdir), verbose, pretend)
+
 		genericscript = '%s/bin/rungeneric.%s' % (config['difxbase'], label)
 		
 		out = open(genericscript, 'w')
@@ -1163,6 +1193,9 @@ def bootstrap(comps, params, args, verbose, pretend):
 		out.write('$@\n')
 		out.close()
 		execute('chmod a+x %s' % genericscript, verbose, pretend)
+
+		if symlinkdir != None:
+			execute('ln -f -s %s %s' % (genericscript, symlinkdir), verbose, pretend)
 
 		out = open(setupFile, 'w')
 		
@@ -1266,7 +1299,7 @@ def bootstrap(comps, params, args, verbose, pretend):
 
 		execute('chmod +x %s' % setupFile, verbose, pretend)
 		execute('rm -f %s/bin/%s.%s' % (config['difxbase'], setupFileName, label), verbose, pretend)
-		execute('ln -s %s %s/bin/%s.%s' % (setupFile, config['difxbase'], setupFileName, label), verbose, pretend)
+		execute('ln -f -s %s %s/bin/%s.%s' % (setupFile, config['difxbase'], setupFileName, label), verbose, pretend)
 
 
 		# copy bootstrap file for future reference
@@ -1350,7 +1383,7 @@ def fromtar(origComps, params, args, verbose, pretend):
 			execute('rm -rf %s' % comp[0], verbose, pretend)
 			execute(cmd, verbose, pretend)
 			newDir = split(tarFile[:-7], '/')[-1]
-			execute('ln -s %s %s' % (newDir, comp[0]), verbose, pretend)
+			execute('ln -f -s %s %s' % (newDir, comp[0]), verbose, pretend)
 		else:
 			print 'No matching .tar.gz files found in %s for %s' % (distDir, comp[0])
 
@@ -1922,7 +1955,7 @@ def sched(origComps, params, args, verbose, pretend):
 	if islink('%s/sched' % archDir) and isdir('%s/sched' % archDir):
 		execute('rm %s/sched' % archDir, verbose, pretend)
 	if not isfile('%s/sched' % archDir):
-		execute('ln -s %s %s/sched' % (schedDir, archDir), verbose, pretend)
+		execute('ln -f -s %s %s/sched' % (schedDir, archDir), verbose, pretend)
 	
 	chdir(schedDir)
 	execute('tar zxvf %s/%s' % (tarDir, schedSrcFile), verbose, pretend)
@@ -2580,13 +2613,13 @@ def main():
 		elif o in ['-h', '--help']:
 			usage(argv[0])
 			exit(0)
-		elif o == ['-d', '--documentation']:
+		elif o in ['-d', '--documentation']:
 			print documentation
 			exit(0)
-		elif o == ['-t', '--todo']:
+		elif o in ['-t', '--todo']:
 			print todo_list
 			exit(0)
-		elif o == ['-p', '--pretend']:
+		elif o in ['-p', '--pretend']:
 			pretend = True
 
 	if len(args) <= 0:
