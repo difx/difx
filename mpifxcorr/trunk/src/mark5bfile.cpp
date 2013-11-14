@@ -388,6 +388,7 @@ int Mark5BDataStream::dataRead(int buffersegment)
 {
 	unsigned long *destination;
 	int bytes;
+	int fixReturn;
 
 	destination = reinterpret_cast<unsigned long *>(&databuffer[buffersegment*(bufferbytes/numdatasegments)]);
 
@@ -423,15 +424,15 @@ int Mark5BDataStream::dataRead(int buffersegment)
 	bytes = input.gcount();
 
 	// "fix" Mark5B data: remove stray packets/byts and put good frames on a uniform grid
-	int X = mark5bfix(reinterpret_cast<unsigned char *>(destination), readbytes, readbuffer, readbufferleftover + bytes, framespersecond,  startOutputFrameNumber, &m5bstats);
-	if(X < 0)
+	fixReturn = mark5bfix(reinterpret_cast<unsigned char *>(destination), readbytes, readbuffer, readbufferleftover + bytes, framespersecond,  startOutputFrameNumber, &m5bstats);
+	if(fixReturn < 0)
 	{
-		cerror << startl << "mark5bfix returned " << X << endl;
+		cerror << startl << "mark5bfix returned " << fixReturn << endl;
 
 		keepreading = false;
 		dataremaining = false;
 	}
-	if(X == 0)
+	if(fixReturn == 0)
 	{
 		cwarn << startl << "mark5bfix returned zero.  Going to next record scan..." << endl;
 

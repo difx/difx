@@ -190,14 +190,7 @@ void Mark5BMark5DataStream::mark5threadfunction()
 			}
 			else
 			{
-				if(mark5threadmutex[m].__data.__owner == pthread_self())
-				{
-					cerror << startl << "Dev error: mutex " << m << " already locked by me" << endl;
-				}
-				else
-				{
-					cerror << startl << "Dev error: mutex " << m << " already locked by other" << endl;
-				}
+				cerror << startl << "Dev error: mutex " << m << " already locked" << endl;
 			}
 		}
 
@@ -712,6 +705,7 @@ int Mark5BMark5DataStream::dataRead(int buffersegment)
 	int n1, n2;	/* slot number range of data to be processed.  Either n1==n2 or n1+1==n2 */
 	unsigned int fixend, bytesvisible;
 	int lockmod = readbufferslots - 1;
+	int fixReturn;
 
 	if(lockstart < -1)
 	{
@@ -794,10 +788,10 @@ int Mark5BMark5DataStream::dataRead(int buffersegment)
 	bytesvisible = fixend - fixindex;
 
 	// "fix" Mark5B data: remove stray packets/byts and put good frames on a uniform grid
-	int X = mark5bfix(reinterpret_cast<unsigned char *>(destination), readbytes, readbuffer+fixindex, bytesvisible, framespersecond, startOutputFrameNumber, &m5bstats);
-	if(X < 0)
+	fixReturn = mark5bfix(reinterpret_cast<unsigned char *>(destination), readbytes, readbuffer+fixindex, bytesvisible, framespersecond, startOutputFrameNumber, &m5bstats);
+	if(fixReturn < 0)
 	{
-		cwarn << startl << "mark5bfix returned " << X << endl;
+		cwarn << startl << "mark5bfix returned " << fixReturn << endl;
 	}
 	if(startOutputFrameNumber >= 0 && m5bstats.srcUsed <= 0)
 	{
@@ -805,7 +799,7 @@ int Mark5BMark5DataStream::dataRead(int buffersegment)
 
 		startOutputFrameNumber = -1;
 
-		X = mark5bfix(reinterpret_cast<unsigned char *>(destination), readbytes, readbuffer+fixindex, bytesvisible, framespersecond, startOutputFrameNumber, &m5bstats);
+		fixReturn = mark5bfix(reinterpret_cast<unsigned char *>(destination), readbytes, readbuffer+fixindex, bytesvisible, framespersecond, startOutputFrameNumber, &m5bstats);
 
 		cwarn << startl << "Just used zero bytes in fix operation.  Tried again.  startOutputFrame: " << lastOFN << " -> -1 -> " << (m5bstats.startFrameNumber + m5bstats.destUsed/10016) << endl;
 	}
