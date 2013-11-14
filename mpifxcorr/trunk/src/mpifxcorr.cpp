@@ -35,6 +35,10 @@
 #include "datastream.h"
 #include "mk5.h"
 #include "nativemk5.h"
+#include "mark5bfile.h"
+#include "mark5bmark5.h"
+#include "vdiffile.h"
+#include "vdifmark5.h"
 #include <sys/utsname.h>
 //includes for socket stuff - for monitoring
 #include "string.h"
@@ -377,7 +381,15 @@ int main(int argc, char *argv[])
     else if (myID >= fxcorr::FIRSTTELESCOPEID && myID < fxcorr::FIRSTTELESCOPEID + numdatastreams) //im a datastream
     {
       int datastreamnum = myID - fxcorr::FIRSTTELESCOPEID;
-      if(config->isMkV(datastreamnum)) {
+      if(config->isVDIFFile(datastreamnum)) {
+        stream = new VDIFDataStream(config, datastreamnum, myID, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
+      } else if(config->isVDIFMark5(datastreamnum)) {
+        stream = new VDIFMark5DataStream(config, datastreamnum, myID, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
+      } else if(config->isMark5BFile(datastreamnum)) {
+        stream = new Mark5BDataStream(config, datastreamnum, myID, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
+      } else if(config->isMark5BMark5(datastreamnum)) {
+        stream = new Mark5BMark5DataStream(config, datastreamnum, myID, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
+      } else if(config->isMkV(datastreamnum)) {
         stream = new Mk5DataStream(config, datastreamnum, myID, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
       } else if(config->isNativeMkV(datastreamnum))
         stream = new NativeMk5DataStream(config, datastreamnum, myID, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
