@@ -797,7 +797,14 @@ void Visibility::writedifx(int dumpmjd, double dumpseconds)
             freqindex = config->getOppositeSidebandFreqIndex(freqindex);
             if(freqindex < 0)
             {
-              csevere << startl << "Cannot find matching USB frequency to LSB freq table entry #" << config->getDTotalFreqIndex(currentconfigindex, i, k) << " - this should be impossible!" << endl;
+              static int nMatchError = 0;
+              ++nMatchError;
+
+              if( (nMatchError & (nMatchError-1)) == 0)
+              {
+                // only print when the number of errors is a power of 2.
+                cwarn << startl << "Cannot find matching USB frequency to LSB freq table entry #" << config->getDTotalFreqIndex(currentconfigindex, i, k) << " - this should be impossible!" << endl;
+              }
               freqindex = config->getDTotalFreqIndex(currentconfigindex, i, k);
             }
           }

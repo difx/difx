@@ -812,19 +812,34 @@ int VDIFMark5DataStream::dataRead(int buffersegment)
 		readnanoseconds = bufferinfo[buffersegment].scanns;
 		readseconds = bufferinfo[buffersegment].scanseconds;
 
-		if(vstats.destUsed == vstats.srcUsed)
+		// look at difference in data frames consumed and produced and proceed accordingly
+		int deltaDataFrames = vstats.srcUsed/(nthreads*inputframebytes) - vstats.destUsed/(nthreads*(inputframebytes-VDIF_HEADER_BYTES) + VDIF_HEADER_BYTES);
+		if(deltaDataFrames == 0)
 		{
-			// We should be able to preset startOutputFrameNumber, but not sure if that works well enough yet
+			// We should be able to preset startOutputFrameNumber.  Warning: early use of this was frought with peril but things seem OK now.
+			startOutputFrameNumber = vstats.startFrameNumber + vstats.nOutputFrame;
 		}
 		else
 		{
-			if(vstats.srcUsed < vstats.destUsed - 20*5032)
+			if(deltaDataFrames < -10)
 			{
-	//			cwarn << startl << "Data gap of " << (vstats.destUsed-vstats.srcUsed) << " bytes out of " << vstats.destUsed << " bytes found  startOutputFrameNumber=" << startOutputFrameNumber << " bytesvisible=" << bytesvisible << endl;
+				static int nGapWarn = 0;
+
+				++nGapWarn;
+				if( (nGapWarn & (nGapWarn - 1)) == 0)
+				{
+					cwarn << startl << "Data gap of " << (vstats.destUsed-vstats.srcUsed) << " bytes out of " << vstats.destUsed << " bytes found. startOutputFrameNumber=" << startOutputFrameNumber << " bytesvisible=" << bytesvisible << " N=" << nGapWarn << endl;
+				}
 			}
-			else if(vstats.srcUsed > vstats.destUsed + 20*5032)
+			else if(deltaDataFrames > 10)
 			{
-				cwarn << startl << "Data excess of " << (vstats.srcUsed-vstats.destUsed) << " bytes out of " << vstats.destUsed << " bytes found  startOutputFrameNumber=" << startOutputFrameNumber << " bytesvisible=" << bytesvisible << endl;
+				static int nExcessWarn = 0;
+
+				++nExcessWarn;
+				if( (nExcessWarn & (nExcessWarn - 1)) == 0)
+				{
+					cwarn << startl << "Data excess of " << (vstats.srcUsed-vstats.destUsed) << " bytes out of " << vstats.destUsed << " bytes found. startOutputFrameNumber=" << startOutputFrameNumber << " bytesvisible=" << bytesvisible << " N=" << nExcessWarn << endl;
+				}
 			}
 			startOutputFrameNumber = -1;
 		}

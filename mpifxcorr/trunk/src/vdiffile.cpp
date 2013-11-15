@@ -417,6 +417,7 @@ int VDIFDataStream::dataRead(int buffersegment)
 	int bytes;
 	int muxReturn;
 	int muxBits;
+	unsigned int bytesvisible;
 
 	if(samplingtype == Configuration::COMPLEX)
 	{
@@ -461,24 +462,15 @@ int VDIFDataStream::dataRead(int buffersegment)
 	input.read(reinterpret_cast<char *>(readbuffer + readbufferleftover), bytes);
 	bytes = input.gcount();
 
+	bytesvisible = readbufferleftover + bytes;
+
 	// multiplex and corner turn the data
-	muxReturn = vdifmux(reinterpret_cast<unsigned char *>(destination), readbytes, readbuffer, readbufferleftover + bytes, inputframebytes, framespersecond, muxBits, nthreads, threads, nSort, nGap, startOutputFrameNumber, &vstats);
+	muxReturn = vdifmux(reinterpret_cast<unsigned char *>(destination), readbytes, readbuffer, bytesvisible, inputframebytes, framespersecond, muxBits, nthreads, threads, nSort, nGap, startOutputFrameNumber, &vstats);
 
 	if(muxReturn < 0)
 	{
 		cwarn << startl << "vdifmux returned " << muxReturn << endl;
 	}
-
-	if(vstats.destUsed == vstats.destSize)
-	{
-		// FIXME: the line below should help things, but it causes first output frame to be invalid.  Hmmm....
-		//startOutputFrameNumber = vstats.startFrameNumber + vstats.nOutputFrame;
-	}
-	else
-	{
-		startOutputFrameNumber = -1;
-	}
-
 
 	consumedbytes += bytes;
 	bufferinfo[buffersegment].validbytes = vstats.destUsed;
@@ -501,6 +493,42 @@ int VDIFDataStream::dataRead(int buffersegment)
 
 		readnanoseconds = bufferinfo[buffersegment].scanns;
 		readseconds = bufferinfo[buffersegment].scanseconds;
+
+		// look at difference in data frames consumed and produced and proceed accordingly
+		int deltaDataFrames = vstats.srcUsed/(nthreads*inputframebytes) - vstats.destUsed/(nthreads*(inputframebytes-VDIF_HEADER_BYTES) + VDIF_HEADER_BYTES);
+		if(deltaDataFrames == 0)
+		{
+			// We should be able to preset startOutputFrameNumber.  Warning: early use of this was frought with peril but things seem OK now.
+			startOutputFrameNumber = vstats.startFrameNumber + vstats.nOutputFrame;
+		}
+		else
+		{
+			if(deltaDataFrames < -10)
+			{
+				static int nGapWarn = 0;
+
+				++nGapWarn;
+				if( (nGapWarn & (nGapWarn - 1)) == 0)
+				{
+					cwarn << startl << "Data gap of " << (vstats.destUsed-vstats.srcUsed) << " bytes out of " << vstats.destUsed << " bytes found. startOutputFrameNumber=" << startOutputFrameNumber << " bytesvisible=" << bytesvisible << " N=" << nGapWarn << endl;
+				}
+			}
+			else if(deltaDataFrames > 10)
+			{
+				static int nExcessWarn = 0;
+
+				++nExcessWarn;
+				if( (nExcessWarn & (nExcessWarn - 1)) == 0)
+				{
+					cwarn << startl << "Data excess of " << (vstats.srcUsed-vstats.destUsed) << " bytes out of " << vstats.destUsed << " bytes found. startOutputFrameNumber=" << startOutputFrameNumber << " bytesvisible=" << bytesvisible << " N=" << nExcessWarn << endl;
+				}
+			}
+			startOutputFrameNumber = -1;
+		}
+	}
+	else
+	{
+		startOutputFrameNumber = -1;
 	}
 
 	readbufferleftover += (bytes - vstats.srcUsed);
