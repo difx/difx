@@ -1026,7 +1026,6 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	}
 	if(nTone == 0)
 	{
-		printf("    No PC table will be written\n");
 		free(pcalSourceFile);
 
 		return D;

@@ -326,7 +326,7 @@ static int populateDifxTSys(float tSys[][array_MAX_BANDS], const DifxInput *D, i
 	return 0;
 }
 
-static int getDifxTsys(const DifxInput *D, int jobId, int antId, int origDsId, double avgSeconds, int phaseCentre, int nRowBytes, char *fitsbuf, int nColumn, const struct fitsBinTableColumn *columns, struct fitsPrivate *out, DifxTcal *T)
+static int getDifxTsys(const DifxInput *D, struct fits_keywords *p_fits_keys, int jobId, int antId, int origDsId, double avgSeconds, int phaseCentre, int nRowBytes, char *fitsbuf, int nColumn, const struct fitsBinTableColumn *columns, struct fitsPrivate *out, DifxTcal *T, int nRec)
 {
 	const int MaxLineLength=1000;
 	char line[MaxLineLength];
@@ -534,6 +534,15 @@ static int getDifxTsys(const DifxInput *D, int jobId, int antId, int origDsId, d
 				nanify(tSys);
 				populateDifxTSys(tSys, D, currentConfigId, antId, average, nRecBand, T);
 
+				if(nRec == 0)
+				{
+					fitsWriteBinTable(out, nColumn, columns, nRowBytes, "SYSTEM_TEMPERATURE");
+					arrayWriteKeys(p_fits_keys, out);
+					fitsWriteInteger(out, "NO_POL", D->nPol, "");
+					fitsWriteInteger(out, "TABREV", 1, "");
+					fitsWriteEnd(out);
+				}
+
 				p_fitsbuf = fitsbuf;
 			
 				FITS_WRITE_ITEM (time, p_fitsbuf);
@@ -555,6 +564,7 @@ static int getDifxTsys(const DifxInput *D, int jobId, int antId, int origDsId, d
 				FitsBinRowByteSwap(columns, nColumn, fitsbuf);
 #endif
 				fitsWriteBinRow(out, fitsbuf);
+				++nRec;
 			}
 
 			nAccum = 0;
@@ -585,7 +595,7 @@ static int getDifxTsys(const DifxInput *D, int jobId, int antId, int origDsId, d
 
 	globfree(&globBuffer);
 
-	return 1;
+	return nRec;
 }
 
 static int populateTSys(float tSys[][array_MAX_BANDS], const DifxInput *D, int configId, int antId, const float tSysRecBand[], int nRecBand)
@@ -633,11 +643,10 @@ static int populateTSys(float tSys[][array_MAX_BANDS], const DifxInput *D, int c
 	return 0;
 }
 
-int processTsysFile(const DifxInput *D, const char *antennaName, int phaseCentre, const char *tsysFile, struct fitsPrivate *out, char *fitsbuf, int nRowBytes, int nColumn, const struct fitsBinTableColumn *columns, const int *alreadyHasTsys, int refDay, int year)
+static int processTsysFile(const DifxInput *D, struct fits_keywords *p_fits_keys, const char *antennaName, int phaseCentre, const char *tsysFile, struct fitsPrivate *out, char *fitsbuf, int nRowBytes, int nColumn, const struct fitsBinTableColumn *columns, const int *alreadyHasTsys, int refDay, int year, int nRec)
 {
 	const int MaxLineLength=1000;
 	FILE *in;
-	int nRec = 0;
 	int32_t freqId1, arrayId1, sourceId1, antId1;
 	int configId, sourceId, scanId;
 	char antName[DIFXIO_NAME_LENGTH];
@@ -754,6 +763,15 @@ int processTsysFile(const DifxInput *D, const char *antennaName, int phaseCentre
 			antId1 = antId + 1;
 			sourceId1 = D->source[sourceId].fitsSourceIds[configId] + 1;
 		
+			if(nRec == 0)
+			{
+				fitsWriteBinTable(out, nColumn, columns, nRowBytes, "SYSTEM_TEMPERATURE");
+				arrayWriteKeys(p_fits_keys, out);
+				fitsWriteInteger(out, "NO_POL", D->nPol, "");
+				fitsWriteInteger(out, "TABREV", 1, "");
+				fitsWriteEnd(out);
+			}
+
 			p_fitsbuf = fitsbuf;
 		
 			FITS_WRITE_ITEM (time, p_fitsbuf);
@@ -768,7 +786,6 @@ int processTsysFile(const DifxInput *D, const char *antennaName, int phaseCentre
 				FITS_WRITE_ARRAY(tSys[i], p_fitsbuf, D->nIF);
 				FITS_WRITE_ARRAY(tAnt[i], p_fitsbuf, D->nIF);
 			}
-			++nRec;
 
 			testFitsBufBytes(p_fitsbuf - fitsbuf, nRowBytes, "TS");
 
@@ -776,6 +793,7 @@ int processTsysFile(const DifxInput *D, const char *antennaName, int phaseCentre
 			FitsBinRowByteSwap(columns, nColumn, fitsbuf);
 #endif
 			fitsWriteBinRow(out, fitsbuf);
+			++nRec;
 		}
 	}
 
@@ -816,6 +834,7 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D, struct fits_keywords *p_fi
 	DifxTcal *T;
 	const char *tcalFilename;
 	int year, month, day;
+	int nRec = 0;
 
 	if(D == 0)
 	{
@@ -881,12 +900,6 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D, struct fits_keywords *p_fi
 		exit(EXIT_FAILURE);
 	}
 
-	fitsWriteBinTable(out, nColumn, columns, nRowBytes, "SYSTEM_TEMPERATURE");
-	arrayWriteKeys(p_fits_keys, out);
-	fitsWriteInteger(out, "NO_POL", D->nPol, "");
-	fitsWriteInteger(out, "TABREV", 1, "");
-	fitsWriteEnd(out);
-
 	/* Priority 1: look for Tsys in DiFX output */
 	if(DifxTsysAvgSeconds > 0.0)
 	{
@@ -905,10 +918,11 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D, struct fits_keywords *p_fi
 				}
 				for(i = 0; i < n; ++i)
 				{
-					v = getDifxTsys(D, jobId, antId, origDsIds[i], DifxTsysAvgSeconds, phaseCentre, nRowBytes, fitsbuf, nColumn, columns, out, T);
-					if(v >= 0)
+					v = getDifxTsys(D, p_fits_keys, jobId, antId, origDsIds[i], DifxTsysAvgSeconds, phaseCentre, nRowBytes, fitsbuf, nColumn, columns, out, T, nRec);
+					if(v > nRec)
 					{
 						++alreadyHasTsys[antId];
+						nRec = v;
 					}
 				}
 			}
@@ -941,15 +955,16 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D, struct fits_keywords *p_fi
 			continue;
 		}
 
-		v = processTsysFile(D, D->antenna[antId].name, phaseCentre, tsysFile, out, fitsbuf, nRowBytes, nColumn, columns, alreadyHasTsys, refDay, year);
-		if(v > 0)
+		v = processTsysFile(D, p_fits_keys, D->antenna[antId].name, phaseCentre, tsysFile, out, fitsbuf, nRowBytes, nColumn, columns, alreadyHasTsys, refDay, year, nRec);
+		if(v > nRec)
 		{
 			++alreadyHasTsys[antId];
+			nRec = v;
 		}
 	}
 
 	/* Priority 3: look for multi-station Tsys file called tsys */
-	processTsysFile(D, 0, phaseCentre, "tsys", out, fitsbuf, nRowBytes, nColumn, columns, alreadyHasTsys, refDay, year);
+	nRec = processTsysFile(D, p_fits_keys, 0, phaseCentre, "tsys", out, fitsbuf, nRowBytes, nColumn, columns, alreadyHasTsys, refDay, year, nRec);
 
 	/*  free memory, and return */
 	free(alreadyHasTsys);

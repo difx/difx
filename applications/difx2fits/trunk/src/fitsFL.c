@@ -118,16 +118,15 @@ static void writeFLrow(struct fitsPrivate *out, char *fitsbuf, int nRowBytes, co
 	fitsWriteBinRow(out, fitsbuf);
 }
 
-int processFlagFile(const DifxInput *D, const char *antennaName, const char *flagFile, struct fitsPrivate *out, char *fitsbuf, int nRowBytes, int nColumn, const struct fitsBinTableColumn *columns, FlagDatum *FL, int refDay, int year)
+static int processFlagFile(const DifxInput *D, struct fits_keywords *p_fits_keys, const char *antennaName, const char *flagFile, struct fitsPrivate *out, char *fitsbuf, int nRowBytes, int nColumn, const struct fitsBinTableColumn *columns, FlagDatum *FL, int refDay, int year, int nRec)
 {
 	FILE *in;
-	int nRec = 0;
 	int i;
 	double start, stop;
 #warning "FIXME: only one configId supported here"
 	int configId = 0;
 
-	in = fopen("flag", "r");
+	in = fopen(flagFile, "r");
 	if(!in)
 	{
 		return 0;
@@ -257,7 +256,17 @@ int processFlagFile(const DifxInput *D, const char *antennaName, const char *fla
 					FL->bandMask[i] = 0;
 				}
 			}
+
+			if(nRec == 0)
+			{
+				fitsWriteBinTable(out, nColumn, columns, nRowBytes, "FLAG");
+				arrayWriteKeys (p_fits_keys, out);
+				fitsWriteInteger(out, "TABREV", 2, "");
+				fitsWriteEnd(out);
+			}
+			
 			writeFLrow(out, fitsbuf, nRowBytes, columns, nColumn, FL);
+			++nRec;
 		}
 	}
 	fclose(in);
@@ -291,6 +300,7 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D, struct fits_keywords *p_fi
 	int refDay;
 	int antId, i;
 	int year, month, day;
+	int nRec = 0;
 	FlagDatum FL;
 
 #warning "FIXME: only one configId supported here"
@@ -316,11 +326,6 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D, struct fits_keywords *p_fi
 		return 0;
 	}
 
-	fitsWriteBinTable(out, nColumn, columns, nRowBytes, "FLAG");
-	arrayWriteKeys (p_fits_keys, out);
-	fitsWriteInteger(out, "TABREV", 2, "");
-	fitsWriteEnd(out);
-
 	start = D->mjdStart - (int)D->mjdStart;
 	stop  = D->mjdStop  - (int)D->mjdStart;
 
@@ -332,9 +337,9 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D, struct fits_keywords *p_fi
 	FL.freqId1 = 0;
 	FL.arrayId1 = 0;
 	FL.severity = -1;
-	FL.chanRange1[0] = 0;
+	FL.chanRange1[0] = 0;	/* no channel selective flagging is done */
 	FL.chanRange1[1] = 0;
-	FL.baselineId1[1] = 0;
+	FL.baselineId1[1] = 0;	/* all flags generated here are antenna-based */
 
 	/* First: look for individual station flag files */
 	for(antId = 0; antId < D->nAntenna; ++antId)
@@ -358,13 +363,13 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D, struct fits_keywords *p_fi
 			continue;
 		}
 
-		v = processFlagFile(D, D->antenna[antId].name, flagFile, out, fitsbuf, nRowBytes, nColumn, columns, &FL, refDay, year);
+		nRec = processFlagFile(D, p_fits_keys, D->antenna[antId].name, flagFile, out, fitsbuf, nRowBytes, nColumn, columns, &FL, refDay, year, nRec);
 	}
 
 	/* Second: look for a multi-station flag file.  Unlike for tsys, pcal, and weather, flags will be applied from both
 	 * the antenna-specific flag file and "flag".
 	 */
-	processFlagFile(D, 0, "flag", out, fitsbuf, nRowBytes, nColumn, columns, &FL, refDay, year);
+	nRec = processFlagFile(D, p_fits_keys, 0, "flag", out, fitsbuf, nRowBytes, nColumn, columns, &FL, refDay, year, nRec);
 
 	/* Finally: make flags for bandId/polIds that were not observed */
 	FL.timeRange[0] = start;
@@ -407,8 +412,17 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D, struct fits_keywords *p_fi
 
 			for(antennaId = 0; antennaId < D->nAntenna; antennaId++)
 			{
+				if(nRec == 0)
+				{
+					fitsWriteBinTable(out, nColumn, columns, nRowBytes, "FLAG");
+					arrayWriteKeys (p_fits_keys, out);
+					fitsWriteInteger(out, "TABREV", 2, "");
+					fitsWriteEnd(out);
+				}
+
 				FL.baselineId1[0] = antennaId + 1;
 				writeFLrow(out, fitsbuf, nRowBytes, columns, nColumn, &FL);
+				++nRec;
 			}
 			
 			FL.bandMask[i] = 0;

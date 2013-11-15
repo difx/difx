@@ -47,6 +47,7 @@ const DifxInput *DifxInput2FitsSO(const DifxInput *D, struct fits_keywords *p_fi
 	char *fitsbuf;
 	char *p_fitsbuf;
 	int s;
+	int nRec = 0;
 	
 	if(D == 0)
 	{
@@ -60,11 +61,6 @@ const DifxInput *DifxInput2FitsSO(const DifxInput *D, struct fits_keywords *p_fi
 
 	nColumn = NELEMENTS(columns);
 	nRowBytes = FitsBinTableSize(columns, nColumn);
-
-	fitsWriteBinTable(out, nColumn, columns, nRowBytes, "SPACECRAFT_ORBIT");
-	arrayWriteKeys(p_fits_keys, out);
-	fitsWriteInteger(out, "TABREV", 1, "");
-	fitsWriteEnd(out);
 
 	fitsbuf = (char *)calloc(nRowBytes, 1);
 	if(fitsbuf == 0)
@@ -97,6 +93,14 @@ const DifxInput *DifxInput2FitsSO(const DifxInput *D, struct fits_keywords *p_fi
 
 			p_fitsbuf = fitsbuf;
 
+			if(nRec == 0)
+			{
+				fitsWriteBinTable(out, nColumn, columns, nRowBytes, "SPACECRAFT_ORBIT");
+				arrayWriteKeys(p_fits_keys, out);
+				fitsWriteInteger(out, "TABREV", 1, "");
+				fitsWriteEnd(out);
+			}
+
 			FITS_WRITE_ITEM (name, p_fitsbuf);
 			FITS_WRITE_ITEM (time, p_fitsbuf);
 			FITS_WRITE_ITEM (xyz, p_fitsbuf);
@@ -108,6 +112,8 @@ const DifxInput *DifxInput2FitsSO(const DifxInput *D, struct fits_keywords *p_fi
 			FitsBinRowByteSwap(columns, nColumn, fitsbuf);
 #endif
 			fitsWriteBinRow(out, fitsbuf);
+
+			++nRec;
 		}
 	}
 

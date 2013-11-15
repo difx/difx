@@ -56,17 +56,16 @@ static int parseWeather(const char *line, WRrow *wr, char *antName)
 	return 1;
 }
 
-int processWeatherFile(const DifxInput *D, const char *antennaName, const char *weatherFile, struct fitsPrivate *out, char **fitsbuf, int nRowBytes, int nColumn, const struct fitsBinTableColumn *columns, const int *alreadyHasWeather, int refDay, int year, double *mjdLast)
+static int processWeatherFile(const DifxInput *D, struct fits_keywords *p_fits_keys, const char *antennaName, const char *weatherFile, struct fitsPrivate *out, char **fitsbuf, int nRowBytes, int nColumn, const struct fitsBinTableColumn *columns, const int *alreadyHasWeather, int refDay, int year, double *mjdLast, int nRec)
 {
 	const int MaxLineLength=1000;
 	char line[MaxLineLength+1];
 	char antName[DIFXIO_NAME_LENGTH];
 	FILE *in;
-	int nRec = 0;
 	WRrow wr;
 	double mjd;
 
-	in = fopen("weather", "r");
+	in = fopen(weatherFile, "r");
 	if(!in)
 	{
 		return 0;
@@ -152,6 +151,19 @@ int processWeatherFile(const DifxInput *D, const char *antennaName, const char *
 		mjd = time + (int)(D->mjdStart);
 		if(mjd >= D->mjdStart && mjdLast[antId] < D->mjdStart && mjdLast[antId] > 50000.0)
 		{
+			if(nRec == 0)
+			{
+				/* write the table header just when needed */
+
+				fitsWriteBinTable(out, nColumn, columns, nRowBytes, "WEATHER");
+				arrayWriteKeys(p_fits_keys, out);
+				fitsWriteInteger(out, "TABREV", 1, "");
+				fitsWriteString(out, "MAPFUNC", " ", "");
+				fitsWriteString(out, "WVR_TYPE", " ", "");
+				fitsWriteString(out, "ION_TYPE", " ", "");
+				fitsWriteEnd(out);
+			}
+
 			fitsWriteBinRow(out, fitsbuf[antId]);
 			++nRec;
 		}
@@ -178,6 +190,19 @@ int processWeatherFile(const DifxInput *D, const char *antennaName, const char *
 		if( (mjd >= D->mjdStart && mjd <= D->mjdStop) ||
 		    (mjd > D->mjdStop && mjdLast[antId] < D->mjdStop) )
 		{
+			if(nRec == 0)
+			{
+				/* write the table header just when needed */
+
+				fitsWriteBinTable(out, nColumn, columns, nRowBytes, "WEATHER");
+				arrayWriteKeys(p_fits_keys, out);
+				fitsWriteInteger(out, "TABREV", 1, "");
+				fitsWriteString(out, "MAPFUNC", " ", "");
+				fitsWriteString(out, "WVR_TYPE", " ", "");
+				fitsWriteString(out, "ION_TYPE", " ", "");
+				fitsWriteEnd(out);
+			}
+
 			fitsWriteBinRow(out, fitsbuf[antId]);
 			++nRec;
 		}
@@ -218,6 +243,7 @@ const DifxInput *DifxInput2FitsWR(const DifxInput *D, struct fits_keywords *p_fi
 	int *alreadyHasWeather;	/* flag per antenna specifying whether or not weather has been found for this antenna yet */
 	double *mjdLast;
 	int year, month, day;
+	int nRec = 0;
 
 	if(D == 0)
 	{
@@ -226,7 +252,6 @@ const DifxInput *DifxInput2FitsWR(const DifxInput *D, struct fits_keywords *p_fi
 	
 
 	nColumn = NELEMENTS(columns);
-	
 	nRowBytes = FitsBinTableSize(columns, nColumn);
 
 	/* calloc space for storing table in FITS format */
@@ -247,14 +272,6 @@ const DifxInput *DifxInput2FitsWR(const DifxInput *D, struct fits_keywords *p_fi
 
 	mjd2dayno((int)(D->mjdStart), &refDay);
 	mjd2date((int)(D->mjdStart), &year, &month, &day);
-
-	fitsWriteBinTable(out, nColumn, columns, nRowBytes, "WEATHER");
-	arrayWriteKeys(p_fits_keys, out);
-	fitsWriteInteger(out, "TABREV", 1, "");
-	fitsWriteString(out, "MAPFUNC", " ", "");
-	fitsWriteString(out, "WVR_TYPE", " ", "");
-	fitsWriteString(out, "ION_TYPE", " ", "");
-	fitsWriteEnd(out);
 
 	/* Priority 1: look for station-specific Tsys file with name weather.<station> */
 	for(antId = 0; antId < D->nAntenna; ++antId)
@@ -282,7 +299,7 @@ const DifxInput *DifxInput2FitsWR(const DifxInput *D, struct fits_keywords *p_fi
 			continue;
 		}
 
-		v = processWeatherFile(D, D->antenna[antId].name, weatherFile, out, fitsbuf, nRowBytes, nColumn, columns, alreadyHasWeather, refDay, year, mjdLast);
+		nRec = processWeatherFile(D, p_fits_keys, D->antenna[antId].name, weatherFile, out, fitsbuf, nRowBytes, nColumn, columns, alreadyHasWeather, refDay, year, mjdLast, nRec);
 		if(v > 0)
 		{
 			++alreadyHasWeather[antId];
@@ -290,7 +307,7 @@ const DifxInput *DifxInput2FitsWR(const DifxInput *D, struct fits_keywords *p_fi
 	}
 
 	/* Priority 2: look for multi-station weather file called weather */
-	processWeatherFile(D, 0, "weather", out, fitsbuf, nRowBytes, nColumn, columns, alreadyHasWeather, refDay, year, mjdLast);
+	nRec = processWeatherFile(D, p_fits_keys, 0, "weather", out, fitsbuf, nRowBytes, nColumn, columns, alreadyHasWeather, refDay, year, mjdLast, nRec);
 
 	/*  free memory, and return */
 	for(i = 0; i < D->nAntenna; ++i)

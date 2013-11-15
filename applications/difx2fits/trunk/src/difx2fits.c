@@ -616,20 +616,41 @@ static const DifxInput *DifxInput2FitsTables(const DifxInput *D,
 	printf("  SO -- spacecraft orbit    ");
 	fflush(stdout);
 	D = DifxInput2FitsSO(D, &keys, out);
-	printf("%lld bytes\n", out->bytes_written - last_bytes);
-	last_bytes = out->bytes_written;
+	if(out->bytes_written == last_bytes)
+	{
+		printf("No table written\n");
+	}
+	else
+	{
+		printf("%lld bytes\n", out->bytes_written - last_bytes);
+		last_bytes = out->bytes_written;
+	}
 
 	printf("  GD -- pulsar gate duty    ");
 	fflush(stdout);
 	D = DifxInput2FitsGD(D, &keys, out);
-	printf("%lld bytes\n", out->bytes_written - last_bytes);
-	last_bytes = out->bytes_written;
+	if(out->bytes_written == last_bytes)
+	{
+		printf("No table written\n");
+	}
+	else
+	{
+		printf("%lld bytes\n", out->bytes_written - last_bytes);
+		last_bytes = out->bytes_written;
+	}
 
 	printf("  GM -- pulsar gate model   ");
 	fflush(stdout);
 	D = DifxInput2FitsGM(D, &keys, out, opts);
-	printf("%lld bytes\n", out->bytes_written - last_bytes);
-	last_bytes = out->bytes_written;
+	if(out->bytes_written == last_bytes)
+	{
+		printf("No table written\n");
+	}
+	else
+	{
+		printf("%lld bytes\n", out->bytes_written - last_bytes);
+		last_bytes = out->bytes_written;
+	}
 
 	printf("  UV -- visibility          \n");
 	fflush(stdout);
@@ -640,33 +661,68 @@ static const DifxInput *DifxInput2FitsTables(const DifxInput *D,
 	printf("  FL -- flag                ");
 	fflush(stdout);
 	D = DifxInput2FitsFL(D, &keys, out);
-	printf("%lld bytes\n", out->bytes_written - last_bytes);
-	last_bytes = out->bytes_written;
+	if(out->bytes_written == last_bytes)
+	{
+		printf("No table written\n");
+	}
+	else
+	{
+		printf("%lld bytes\n", out->bytes_written - last_bytes);
+		last_bytes = out->bytes_written;
+	}
 
 	printf("  TS -- system temperature  ");
 	fflush(stdout);
 	D = DifxInput2FitsTS(D, &keys, out, opts->phaseCentre, opts->DifxTsysAvgSeconds);
-	printf("%lld bytes\n", out->bytes_written - last_bytes);
-	last_bytes = out->bytes_written;
+	if(out->bytes_written == last_bytes)
+	{
+		printf("No table written\n");
+	}
+	else
+	{
+		printf("%lld bytes\n", out->bytes_written - last_bytes);
+		last_bytes = out->bytes_written;
+	}
 
 	printf("  PH -- phase cal           ");
 	fflush(stdout);
 	D = DifxInput2FitsPH(D, &keys, out, opts->phaseCentre, opts->DifxPcalAvgSeconds, opts->verbose);
 	printf("                            ");
-	printf("%lld bytes\n", out->bytes_written - last_bytes);
-	last_bytes = out->bytes_written;
+	if(out->bytes_written == last_bytes)
+	{
+		printf("No table written\n");
+	}
+	else
+	{
+		printf("%lld bytes\n", out->bytes_written - last_bytes);
+		last_bytes = out->bytes_written;
+	}
 
 	printf("  WR -- weather             ");
 	fflush(stdout);
 	D = DifxInput2FitsWR(D, &keys, out);
-	printf("%lld bytes\n", out->bytes_written - last_bytes);
-	last_bytes = out->bytes_written;
+	if(out->bytes_written == last_bytes)
+	{
+		printf("No table written\n");
+	}
+	else
+	{
+		printf("%lld bytes\n", out->bytes_written - last_bytes);
+		last_bytes = out->bytes_written;
+	}
 
 	printf("  GN -- gain curve          ");
 	fflush(stdout);
 	D = DifxInput2FitsGN(D, &keys, out);
-	printf("%lld bytes\n", out->bytes_written - last_bytes);
-	last_bytes = out->bytes_written;
+	if(out->bytes_written == last_bytes)
+	{
+		printf("No table written\n");
+	}
+	else
+	{
+		printf("%lld bytes\n", out->bytes_written - last_bytes);
+		last_bytes = out->bytes_written;
+	}
 
 	printf("                            -----\n");
 	printf("  Total                     %lld bytes\n", last_bytes);
