@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #**************************************************************************
-#   Copyright (C) 2008-2013 by Walter Brisken                             *
+#   Copyright (C) 2008-2013 by Walter Brisken & Helge Rottmann            *
 #                                                                         *
 #   This program is free software; you can redistribute it and/or modify  *
 #   it under the terms of the GNU General Public License as published by  *
@@ -67,6 +67,7 @@ def getUsage():
         usage +=  '\nDIFX_MACHINES: required, unless -m option is given. -m overrides DIFX_MACHINES.'
         usage +=  '\nDIFX_GROUP: if not defined a default of %s will be used.' % defaultDifxMessageGroup
         usage +=  '\nDIFX_PORT: if not defined a default of %s will be used.' % defaultDifxMessagePort
+	usage +=  '\nSee http://cira.ivec.org/dokuwiki/doku.php/difx/clusterdef for documentation on the machines file format'
 	
 	return(usage)
 
