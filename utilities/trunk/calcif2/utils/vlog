@@ -565,7 +565,11 @@ for a in argv[1:]:
 		mode = 'nouveau'
 	elif len(sections) == 0:
 		inputFile = a
-		sections, startyear, startdoy = chop(inputFile)
+		try:
+			sections, startyear, startdoy = chop(inputFile)
+		except IOError:
+			print 'Error opening %s' % inputFile;
+			exit(0)
 	elif antArg == None:
 		antArg = a
 	else:

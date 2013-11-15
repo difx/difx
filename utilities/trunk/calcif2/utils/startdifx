@@ -215,7 +215,8 @@ def getjobdifxversion(fileBase):
 
 	files = glob(fileBase+'.calc')
 	if len(files) < 1:
-		return None
+		print 'Can\'t find file %s.calc.  Quitting.' % fileBase
+		exit(0);
 	d = open(files[0]).readlines()
 	for l in d:
 		if l[:12] == 'DIFX VERSION':
