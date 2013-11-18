@@ -30,8 +30,12 @@
 #ifndef __MARK5UTILS_H__
 #define __MARK5UTILS_H__
 
+#include <xlrapi.h>
+
 int dirCallback(int scan, int nscan, int status, void *data);
 
 bool legalVSN(const char *vsn);
+
+XLR_RETURN_CODE difxMark5Read(SSHANDLE xlrDevice, long long readpointer, unsigned char *dest, int bytes, int readDelayMicroseconds);
 
 #endif

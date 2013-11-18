@@ -190,8 +190,7 @@ void VDIFMark5DataStream::mark5threadfunction()
 		while(!mark5threadstop)
 		{
 			int bytes;
-			XLR_RETURN_CODE xlrRC = XLR_SUCCESS;
-			S_READDESC      xlrRD;
+			XLR_RETURN_CODE xlrRC;
 			XLR_ERROR_CODE  xlrEC;
 			char errStr[XLR_ERROR_LENGTH];
 			bool endofscan = false;
@@ -237,54 +236,8 @@ cinfo << startl << "lastslot=" << lastslot << " endindex=" << endindex << endl;
 			// remember that all reads of a module must be 64 bit aligned
 			bytes -= (bytes % 8);		// enforce 8 byte multiple length
 
-			const int maxReadBytes = 20000000;
-			{
-				/* divide the read into multiple sections */
-				int nRead = bytes/maxReadBytes + 1;
-				int readSize = (bytes / nRead + 7) & 0xFFFFFFF8;
-
-				for(int offset = 0; offset < bytes; offset += readSize)
-				{
-					if(offset + readSize > bytes)
-					{
-						readSize = bytes - offset;
-					}
-
-					// set up the XLR info
-					xlrRD.AddrHi = static_cast<unsigned long>( (readpointer + offset) >> 32 );
-					xlrRD.AddrLo = static_cast<unsigned long>( (readpointer + offset) & 0xFFFFFFF8 ); // enforce 8 byte boundary
-					xlrRD.XferLength = readSize;
-					xlrRD.BufferAddr = reinterpret_cast<streamstordatatype *>(readbuffer + offset + readbufferwriteslot*readbufferslotsize);
-
-					// delay the read if needed
-					if(readDelayMicroseconds > 0)
-					{
-						usleep(readDelayMicroseconds);
-					}
-
-					WATCHDOG( xlrRC = XLRReadData(xlrDevice, xlrRD.BufferAddr, xlrRD.AddrHi, xlrRD.AddrLo, xlrRD.XferLength) );
-					
-					if(readSize > 500)
-					{
-						int nzero = 0;
-						for(int ii = 100; ii < 500; ++ii)
-						{
-							if(readbuffer[readbufferwriteslot*readbufferslotsize+offset+ii] == 0)
-							{
-								++nzero;
-							}
-						}
-
-						if(xlrRC == XLR_SUCCESS && nzero > 30)
-						{
-							cwarn << startl << "High zero rate=" << nzero << "/" << 400 <<" in this data.  rereading!  readpointer=" << (readpointer + offset) << " readsize=" << readSize << endl;
-
-							usleep(readDelayMicroseconds);
-							WATCHDOG( xlrRC = XLRReadData(xlrDevice, xlrRD.BufferAddr, xlrRD.AddrHi, xlrRD.AddrLo, xlrRD.XferLength) );
-						}
-					}
-				}
-			}
+			// This is where the actual read from the Mark5 unit happens
+			xlrRC = difxMark5Read(xlrDevice, readpointer, readbuffer + readbufferwriteslot*readbufferslotsize, bytes, readDelayMicroseconds);
 
 			if(xlrRC != XLR_SUCCESS)
 			{
@@ -1105,7 +1058,6 @@ void VDIFMark5DataStream::servoMark5()
 		now_us = tv_us;
 	}
 }
-
 
 
 int VDIFMark5DataStream::resetDriveStats()
