@@ -1501,9 +1501,8 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 		}
 	}/*end antenna loop*/
 
-	if(in2)	/* this should never be true the way things work */
+	if(in2)
 	{
-		fprintf(stderr, "\n\nDeveloper error: Somehow in2 != 0 at end of DifxInput2FitsPH.\nPlease file a bug report\n");
 		fclose(in2);
 	}
 

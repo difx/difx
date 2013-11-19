@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #**************************************************************************
-#   Copyright (C) 2009-2012 by Walter Brisken                             *
+#   Copyright (C) 2009-2013 by Walter Brisken                             *
 #                                                                         *
 #   This program is free software; you can redistribute it and/or modify  *
 #   it under the terms of the GNU General Public License as published by  *
@@ -38,11 +38,11 @@ from os.path import isfile, isdir, getsize
 from time import gmtime, time
 
 program = 'makefits'
-version = '0.7'
+version = '0.8'
 author  = 'Walter Brisken'
-verdate = '20120510'
+verdate = '20131119'
 
-calFiles = ['flag', 'pcal', 'tsys', 'weather']
+calfiles = 'tsys flag pcal weather *.*.flag *.*.weather *.*.pcal *.*.tsys *.*.cablecal'
 
 def usage(prog):
 	print '\n%s ver %s  %s  %s' % (program, version, author, verdate)
@@ -264,17 +264,10 @@ class JobList:
 			print 'Executing: %s' % cmd
 		system(cmd)
 
-		calfiles = ''
-		for f in calFiles:
-			if not isfile(f):
-				print 'Warning: file "%s" not in current directory.' % f
-			else:
-				calfiles = calfiles + ' ' + f
-		if len(calfiles) > 0:
-			cmd = 'cp %s %s' % (calfiles, tmp)
-			if verbose:
-				print 'Executing: %s' % cmd
-			system(cmd)
+		cmd = 'cp %s %s' % (calfiles, tmp)
+		if verbose:
+			print 'Executing: %s' % cmd
+		system(cmd)
 
 		if verbose:
 			print 'Changing to directory: %s' % tmp
@@ -362,7 +355,7 @@ class JobList:
 					if verbose:
 						print 'Executing: %s' % cmd
 					system(cmd)
-			j = j + 1
+			j += 1
 
 		# merge and gzip difxlog files
 		logFile = '%s/%s.difxlog' % (cwd, self.kv['pass'])
@@ -406,11 +399,10 @@ class JobList:
 					print 'Executing: %s' % cmd
 				system(cmd)
 
-		if len(calfiles) > 0:
-			cmd = 'rm %s' % calfiles
-			if verbose:
-				print 'Executing: %s' % cmd
-			system(cmd)
+		cmd = 'rm %s' % calfiles
+		if verbose:
+			print 'Executing: %s' % cmd
+		system(cmd)
 
 		chdir(cwd)
 
