@@ -24,7 +24,7 @@ PKG_CHECK_MODULES(GPSTK, gpstk, [hasgpstk=true], [hasgpstk=false])
 if test "$hasgpstk" == "true"; then
 	AC_DEFINE([HAVE_GPSTK], 1, [1=has GPSTK])
 fi
-AM_CONDITIONAL(WITH_GPSTK, $hasfftw)
+AM_CONDITIONAL(WITH_GPSTK, $hasgpstk)
 
 LIBS="${LEXLIB} ${LIBS} ${DIFXIO_LIBS} ${GPSTK_LIBS}"
 CFLAGS="${CFLAGS} ${DIFXIO_CFLAGS} ${DIFXMESSAGE_CFLAGS} ${GPSTK_CFLAGS}"

@@ -12,6 +12,7 @@
 
 dist_bin_SCRIPTS = \
 	padCalcScans \
+	difxspeed \
 	oms2v2d \
 	plottsys \
 	queueVex \
