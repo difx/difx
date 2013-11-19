@@ -1,0 +1,224 @@
+#!/bin/env python
+
+from sys import argv, exit
+from os import popen, environ
+from os.path import isfile, isdir
+from string import replace, strip, split, lower, upper
+from glob import glob
+
+program = 'showcal'
+version = '0.1'
+verdate = '20131119'
+author  = 'Walter Brisken'
+
+def usage(pgm):
+	print '%s ver. %s  %s  %s\n' % (program, version, author, verdate)
+	print 'Usage: %s [options] <vexFile> [passName]\n' % pgm
+
+# return project, [ants]    # all lowercase
+def parseVex(vexFile):
+	
+	cmd = 'vexpeek %s' % vexFile
+	
+	data = popen(cmd).readlines()
+	if len(data) == 0:
+		return None
+	
+	project = lower(strip(data[0]))
+	if project == 'error':
+		return None
+	
+	ants = []
+	for d in data[1:]:
+		s = split(strip(d))
+		ants.append(lower(s[0]))
+	
+	return project, ants
+
+def fileHasAntenna(file, antenna):
+	if not isfile(file):
+		return False
+	data = open(file).readlines()
+	for d in data:
+		s = split(d)
+		if lower(s[0]) == antenna:
+			return True
+	return False
+
+def getFlag(project, antenna):
+	flag = ''
+	if fileHasAntenna('%s.%s.flag' % (project, antenna), antenna):
+		flag = flag + 'F'
+	if fileHasAntenna('flag', antenna):
+		flag = flag + 'f'
+	
+	return flag
+
+def getTsys(project, antenna):
+	if fileHasAntenna('%s.%s.tsys' % (project, antenna), antenna):
+		return 'T'
+	elif fileHasAntenna('tsys', antenna):
+		return 't'
+
+	return ''
+
+def getWeather(project, antenna):
+	if fileHasAntenna('%s.%s.weather' % (project, antenna), antenna):
+		return 'W'
+	elif fileHasAntenna('weather', antenna):
+		return 'w'
+
+	return ''
+
+def getGain(gainPath, antenna):
+	if gainPath == '':
+		return ''
+	elif antenna in ['br', 'fd', 'hn', 'kp', 'la', 'mk', 'nl', 'ov', 'pt', 'sc'] and isfile(gainPath + '/vlba_gains.key'):
+		return 'G'
+	elif isfile('%s/gain.%s' % (gainPath, antenna)):
+		return 'G'
+
+	return ''
+	
+def getPcal(project, antenna):
+	if fileHasAntenna('%s.%s.pcal' % (project, antenna), antenna):
+		return 'P'
+	elif fileHasAntenna('pcal', antenna):
+		return 'p'
+
+	return ''
+
+def getCableCal(project, antenna):
+	# FIXME: look for DiFX-based
+	if fileHasAntenna('%s.%s.cablecal' % (project, antenna), antenna):
+		return 'C'
+	elif fileHasAntenna('%s.%s.pcal' % (project, antenna), antenna):
+		return 'P'
+	elif fileHasAntenna('pcal', antenna):
+		return 'p'
+
+	return ''
+
+def getDiFX(project, antenna, passName, queuePath, type):
+	v = 'X'
+
+	joblistFile = '%s.joblist' % passName
+	if not isfile(joblistFile):
+		print '\nError: %s not found!  Must stop.\n' % joblistFile
+		exit(0)
+	data = open(joblistFile).readlines()
+	if len(data) < 2:
+		print '\nError: %s has no jobs listed!  Must stop.\n' % joblistFile
+		exit(0)
+	for d in data[1:]:
+		s = split(d, '#')
+		if len(s) == 2:
+			if upper(antenna) in s[1]:
+				v = ''
+				# here we have found a job with the antenna in question
+				job = split(d)[0]
+				# first look locally
+				dd = '%s.difx' % job
+				if not isdir(dd) and queuePath != None:
+					# then look in queue
+					dd = '%s/%s.difx' % (queuePath, job)
+				if isdir(dd):
+					g = glob('%s/%s*%s' % (dd, type, upper(antenna)))
+					if len(g) > 0:
+						return 'D'
+
+	return v
+
+vexFile = None
+passName = None
+
+for a in argv[1:]:
+	if a[0] == '-':
+		if a in ['--help', '-h']:
+			usage(argv[0])
+			exit(0)
+		else:
+			print 'Unknown option: %s' % a
+			exit(0)
+	else:
+		if vexFile == None:
+			vexFile = a
+		elif passName == None:
+			passName = a
+		else:
+			print 'Error: unexpected parameter: %s' % a
+			exit(0)
+
+if vexFile == None:
+	print 'Error: need to provide vex filenmae'
+	exit(0)
+
+project, ants = parseVex(vexFile)
+
+if not environ.has_key('GAIN_CURVE_PATH'):
+	print 'Warning: Env. var. GAIN_CURVE_PATH needs to be defined for gain curves to be found.'
+	gainPath = ''
+else:
+	gainPath = environ['GAIN_CURVE_PATH']
+	if not isdir(gainPath):
+		print 'Warning: $GAIN_CURVE_PATH is not a directory!'
+		gainPath = ''
+
+if environ.has_key('DIFX_QUEUE'):
+	queuePath = environ['DIFX_QUEUE']
+else:
+	queuePath = ''
+
+# a list of file types that have been found to date
+codes = ''
+
+print '\nProject: %s\n' % upper(project)
+print 'Ant     Flag    Tsys    Weather Gain    Pcal    Cablecal'
+print '---     ----    ----    ------- ----    ----    --------'
+for a in ants:
+	f = getFlag(project, a)
+	w = getWeather(project, a)
+	if passName != None:
+		t = getDiFX(project, a, passName, queuePath, 'SWITCHEDPOWER')
+		p = getDiFX(project, a, passName, queuePath, 'PCAL')
+	else:
+		t = ''
+		p = ''
+	if t == '':
+		t = getTsys(project, a)
+	g = getGain(gainPath, a)
+	if p == '':
+		p = getPcal(project, a)
+	c = getCableCal(project, a)
+	if p == 'X' or t == 'X':
+		continue
+	print '%-8s%-8s%-8s%-8s%-8s%-8s%-8s' % (upper(a), f, t, w, g, p, c)
+
+	codes = codes + f + t + w + g + p + c
+
+print '\nSources of data are as follows:'
+if 'F' in codes:
+	print '  F = %s.<ant>.flag' % project
+if 'f' in codes:
+	print '  f = flag'
+if 'T' in codes:
+	print '  T = %s.<ant>.tsys' % project
+if 't' in codes:
+	print '  t = tsys'
+if 'W' in codes:
+	print '  W = %s.<ant>.weather' % project
+if 'w' in codes:
+	print '  w = weather'
+if 'G' in codes:
+	print '  G = $GAIN_CURVE_PATH/ = %s/' % gainPath
+if 'P' in codes:
+	print '  P = %s.<ant>.pcal' % project
+if 'p' in codes:
+	print '  p = pcal'
+if 'C' in codes:
+	print '  C = %s.<ant>.cablecal' % project
+if passName != None and 'D' in codes:
+	print '  D = DiFX extracted (%s.difx/)' % passName
+
+if passName == None:
+	print '\nWarning: no pass name given.  It cannot be determined\nif pulse cal or switched power (for Tsys) was extracted\nby DiFX.  It also is not clear which antennas were\ncorrelated; all are assumed.'

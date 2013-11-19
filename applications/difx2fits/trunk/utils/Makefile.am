@@ -1,2 +1,3 @@
 dist_bin_SCRIPTS = \
-	makefits
+	makefits \
+	showcal
