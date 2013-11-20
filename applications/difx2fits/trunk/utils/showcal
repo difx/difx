@@ -13,7 +13,21 @@ author  = 'Walter Brisken'
 
 def usage(pgm):
 	print '%s ver. %s  %s  %s\n' % (program, version, author, verdate)
-	print 'Usage: %s [options] <vexFile> [passName]\n' % pgm
+	print 'Usage: %s [options] <vexFile> [<passName>]\n' % pgm
+	print '\noptions can include:\n'
+	print '  -h or --help     print this help information and quit'
+	print '\n<vexFile> is the vex file associated with the project'
+	print '\n<passName> is the correlator pass name (.v2d file previx)'
+	print '\n\nThere are two modes of operation.  In the first, only a'
+	print 'vex file is provided.  In this case this program cannot look'
+	print 'into the DiFX output directories where pulse cal or Tsys data'
+	print 'may be found.  Without the information about the correlator'
+	print 'setup, this mode cannot determine which antennas were actually'
+	print 'to be correlated.  In the second mode, the correlator pass is'
+	print 'also specified so the DiFX output can be found.  Note that'
+	print 'in this mode only antennas specified for correlation are'
+	print 'listed.  It is most useful to run this mode only after'
+	print 'correlation has completed.\n'
 
 # return project, [ants]    # all lowercase
 def parseVex(vexFile):
@@ -121,7 +135,7 @@ def getDiFX(project, antenna, passName, queuePath, type):
 				dd = '%s.difx' % job
 				if not isdir(dd) and queuePath != None:
 					# then look in queue
-					dd = '%s/%s.difx' % (queuePath, job)
+					dd = '%s/%s/%s.difx' % (queuePath, upper(project), job)
 				if isdir(dd):
 					g = glob('%s/%s*%s' % (dd, type, upper(antenna)))
 					if len(g) > 0:
@@ -164,9 +178,12 @@ else:
 		print 'Warning: $GAIN_CURVE_PATH is not a directory!'
 		gainPath = ''
 
-if environ.has_key('DIFX_QUEUE'):
-	queuePath = environ['DIFX_QUEUE']
+if environ.has_key('DIFX_QUEUE_BASE'):
+	queuePath = environ['DIFX_QUEUE_BASE']
 else:
+	if passName != None:
+		print 'Error: Env. var. DIFX_QUEUE_BASE is required when a pass name is provided.'
+		exit(0)
 	queuePath = ''
 
 # a list of file types that have been found to date
@@ -218,7 +235,7 @@ if 'p' in codes:
 if 'C' in codes:
 	print '  C = %s.<ant>.cablecal' % project
 if passName != None and 'D' in codes:
-	print '  D = DiFX extracted (%s.difx/)' % passName
+	print '  D = DiFX extracted (%s_xxx.difx/)' % passName
 
 if passName == None:
 	print '\nWarning: no pass name given.  It cannot be determined\nif pulse cal or switched power (for Tsys) was extracted\nby DiFX.  It also is not clear which antennas were\ncorrelated; all are assumed.'
