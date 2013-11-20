@@ -84,15 +84,17 @@ def getWeather(project, antenna):
 
 	return ''
 
-def getGain(gainPath, antenna):
-	if gainPath == '':
+def getGain(project, antenna, gainPath):
+	if isfile('%s.%s.gain' % (project, antenna)):
+		return 'G'
+	elif gainPath == '':
 		return ''
 	elif antenna in ['br', 'fd', 'hn', 'kp', 'la', 'mk', 'nl', 'ov', 'pt', 'sc'] and isfile(gainPath + '/vlba_gains.key'):
-		return 'G'
+		return 'g'
 	elif isfile('%s/gain.%s' % (gainPath, antenna)):
-		return 'G'
-
-	return ''
+		return 'g'
+	else:
+		return ''
 	
 def getPcal(project, antenna):
 	if fileHasAntenna('%s.%s.pcal' % (project, antenna), antenna):
@@ -203,7 +205,7 @@ for a in ants:
 		p = ''
 	if t == '':
 		t = getTsys(project, a)
-	g = getGain(gainPath, a)
+	g = getGain(project, a, gainPath)
 	if p == '':
 		p = getPcal(project, a)
 	c = getCableCal(project, a)
@@ -227,7 +229,9 @@ if 'W' in codes:
 if 'w' in codes:
 	print '  w = weather'
 if 'G' in codes:
-	print '  G = $GAIN_CURVE_PATH/ = %s/' % gainPath
+	print '  G = %s.<ant>.gain' % project
+if 'g' in codes:
+	print '  g = $GAIN_CURVE_PATH/ = %s/' % gainPath
 if 'P' in codes:
 	print '  P = %s.<ant>.pcal' % project
 if 'p' in codes:
@@ -235,7 +239,7 @@ if 'p' in codes:
 if 'C' in codes:
 	print '  C = %s.<ant>.cablecal' % project
 if passName != None and 'D' in codes:
-	print '  D = DiFX extracted (%s_xxx.difx/)' % passName
+	print '  D = DiFX extracted (%s_<seq>.difx/)' % passName
 
 if passName == None:
 	print '\nWarning: no pass name given.  It cannot be determined\nif pulse cal or switched power (for Tsys) was extracted\nby DiFX.  It also is not clear which antennas were\ncorrelated; all are assumed.'
