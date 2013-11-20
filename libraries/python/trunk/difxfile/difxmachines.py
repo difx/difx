@@ -128,7 +128,13 @@ class DifxMachines(object):
 	"""
 	returns a tuple containing the major and minor version of the parsed cluster definition file
 	"""
-	return  self.version.split(".")
+	# Note: this code handles a 2-part version code despite the general consensus being that just 
+	# a single integer would do and would be simpler.  Here the version is augmented with ".0" if
+	# it is just an integer to allow the rest of the 2-part version to be handled with no change.
+	versionParts = self.version.split(".")
+	if len(versionParts) < 2:
+		versionParts.append('0')
+	return versionParts
 
     def _parse(self):
         '''
