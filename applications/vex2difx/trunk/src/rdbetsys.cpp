@@ -45,7 +45,7 @@ const char author[]  = "Walter Brisken";
 const char verdate[] = "20130725";
 
 const char defaultSwitchedPowerPath[] = "/home/vlba/metadata/switchedpower";
-const double defaultTsysInterval = 15.0;	// Seconds
+const double defaultTsysInterval = 30.0;	// Seconds
 const int MaxFilenameLength = 256;
 const char *defaultRxName = "0cm";
 
