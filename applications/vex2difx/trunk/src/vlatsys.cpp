@@ -339,7 +339,7 @@ static int processStation(std::vector<std::pair<double,std::string> > *tsysOutpu
 	double freq[MaxChannels];
 	double tsys[MaxChannels];
 	char pol[MaxChannels];
-	double timeoffset, ft;
+	double timeoffset=0.0, ft=1.0;
 	char antenna[MaxAntennaNameLength+1];
 	int year0, doy0;	// at start of experiment
 
