@@ -27,6 +27,9 @@
  *
  *==========================================================================*/
 
+#include <sstream>
+#include <utility>
+#include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -40,9 +43,9 @@
 #include "util.h"
 
 const char program[] = "vlatsys";
-const char version[] = "0.1";
+const char version[] = "0.2";
 const char author[]  = "Walter Brisken";
-const char verdate[] = "20130726";
+const char verdate[] = "20131120";
 
 const int MaxFilenameLength = 256;
 const char *defaultRxName = "0cm";
@@ -50,7 +53,7 @@ const char *defaultRxName = "0cm";
 static void usage(const char *pgm)
 {
 	printf("\n%s ver. %s   %s  %s\n\n", program, version, author, verdate);
-	printf("Usage: %s [options] <input vex file> <input VLANT file>\n\n", pgm);
+	printf("Usage: %s [options] <vex file> <VLAMP file 1> [<VLAMP file 2> ... ]\n\n", pgm);
 	printf("where options can include:\n\n");
 	printf("  --help\n");
 	printf("  -h          print help info and quit\n\n");
@@ -62,6 +65,9 @@ static void usage(const char *pgm)
 	printf("  -m          datestamp in MJD, not DOY (default)\n\n");
 	printf("  --doy\n");
 	printf("  -d          datestamp in DOY, not MJD\n\n");
+	printf("Multiple VLAMP files can be supplied.  The output tsys file will\n");
+	printf("be sorted in time order.  The output gain file will have all gain\n");
+	printf("entries concatenated.\n\n");
 }
 
 void mjd2yearday(int mjd, int *year, int *doy)
@@ -125,13 +131,6 @@ double filename2fracday(const char *fn)
 }
 
 
-void writeFileHeader(FILE *out)
-{
-	fprintf(out, "# TSYS file created by %s ver. %s\n", program, version);
-}
-
-
-
 class TsysAverager
 {
 public:
@@ -174,7 +173,7 @@ class TsysAccumulator
 private:
 	VexInterval accumTimeRange;
 	int nAccum;
-	FILE *out;
+	std::vector<std::pair<double, std::string> > *out;
 	bool doMJD;
 	std::string stn;
 	std::vector<TsysAverager> chans;
@@ -182,7 +181,7 @@ private:
 public:
 	TsysAccumulator();
 	~TsysAccumulator();
-	void setOutput(FILE *outFile,  bool doMJDFlag);
+	void setOutput(std::vector<std::pair<double, std::string> > *output,  bool doMJDFlag);
 	void setStation(const std::string &stnName);
 	void setup(const VexSetup &vexSetup, const std::string &str);
 	void feed(double mjd, int nChan, const double *tsys, const double *freq, const char *pol);
@@ -199,9 +198,9 @@ TsysAccumulator::~TsysAccumulator()
 {
 }
 
-void TsysAccumulator::setOutput(FILE *outFile, bool doMJDFlag)
+void TsysAccumulator::setOutput(std::vector<std::pair<double, std::string> > *output, bool doMJDFlag)
 {
-	out = outFile;
+	out = output;
 	doMJD = doMJDFlag;
 }
 
@@ -280,6 +279,7 @@ void TsysAccumulator::feed(double mjd, int nChan, const double *tsys, const doub
 {
 	double day;
 	int doy;
+	std::stringstream ss;
 	
 	mjd2yearday(int(mjd), 0, &doy);
 	day = doy + mjd - int(mjd);
@@ -296,18 +296,14 @@ void TsysAccumulator::feed(double mjd, int nChan, const double *tsys, const doub
 		}
 	}
 
-	if(doMJD)
-	{
-		fprintf(out, "%s %12.8f %10.8f %d", stn.c_str(), mjd, 0.0, static_cast<int>(chans.size()));
-	}
-	else
-	{
-		fprintf(out, "%s %12.8f %10.8f %d", stn.c_str(), day, 0.0, static_cast<int>(chans.size()));
-	}
 
+	ss.precision(14);
+	ss << stn << " " << (doMJD ? mjd : day) << " 0.0 " << chans.size();
+
+	ss.precision(6);
 	for(std::vector<TsysAverager>::iterator ta = chans.begin(); ta != chans.end(); ++ta)
 	{
-		fprintf(out, " %5.2f %s", ta->Tsys(), ta->rxName.c_str());
+		ss << " " << ta->Tsys() << " " << ta->rxName;
 
 		nGood += ta->nGood;
 		nBad += ta->nBad;
@@ -315,17 +311,16 @@ void TsysAccumulator::feed(double mjd, int nChan, const double *tsys, const doub
 		ta->reset();
 	}
 
-	fprintf(out, "\n");
+	out->push_back(std::pair<double,std::string>(mjd, ss.str()));
 }
 
-static int processStation(const std::string &filePrefix, const VexData &V, const std::string &stn, const char *antabFilename, const VexInterval &stnTimeRange, int verbose, long long *nGood, long long *nBad, long long *nLine, long long *nTimeError, long long *nSkip, bool doMJD)
+static int processStation(std::vector<std::pair<double,std::string> > *tsysOutput, std::vector<std::string> *gainOutput, const VexData &V, const std::string &stn, const std::string &antabFilename, const VexInterval &stnTimeRange, int verbose, long long *nGood, long long *nBad, long long *nLine, long long *nTimeError, long long *nSkip, bool doMJD)
 {
 	const int MaxChannels = 64;
 	const int MaxLineLength = 32768;	// make sure it is large enough!
 	const int MaxAntennaNameLength = 8;
 	char line[MaxLineLength];
 	FILE *in;				// antab file descriptor
-	FILE *out;				// first the .tsys file, then maybe the .gain file
 	std::string command;
 	int nRecord = 0;
 	char *v;
@@ -347,11 +342,10 @@ static int processStation(const std::string &filePrefix, const VexData &V, const
 	double timeoffset, ft;
 	char antenna[MaxAntennaNameLength+1];
 	int year0, doy0;	// at start of experiment
-	std::string outFilename;
 
 	mjd2yearday(int(V.getExper()->mjdStart), &year0, &doy0);
 
-	in = fopen(antabFilename, "r");
+	in = fopen(antabFilename.c_str(), "r");
 	if(!in)
 	{
 		std::cerr << "cannot open for read file: " << antabFilename << std::endl;
@@ -359,24 +353,8 @@ static int processStation(const std::string &filePrefix, const VexData &V, const
 		return -1;
 	}
 
-	outFilename = filePrefix + ".tsys";
-	out = fopen(outFilename.c_str(), "w");
-	if(!out)
-	{
-		std::cerr << "cannot open for write file: " << outFilename << std::endl;
-		fclose(in);
-
-		return -1;
-	}
-	writeFileHeader(out);
-
-	fprintf(out, "# %s %14.8f %14.8f\n", stn.c_str(), stnTimeRange.mjdStart, stnTimeRange.mjdStop);
-	fprintf(out, "# ant D.O.Y. dur(days) nRecChan (tsys, bandName)[nRecChan]\n");
-
-	TA.setOutput(out, doMJD);
+	TA.setOutput(tsysOutput, doMJD);
 	TA.setStation(stn);
-	*nLine = 0;
-	*nTimeError = 0;
 
 	// look for lines like:   !   1 RCP U  21916.00MHz   2.95 
 	rv = regcomp(&chanLineMatch, "([0-9]+)\\s+([RL])CP\\s+([UL])\\s+([0-9]*\\.?[0-9]*)\\s*([KMG]?)Hz", REG_EXTENDED | REG_ICASE);
@@ -500,18 +478,6 @@ static int processStation(const std::string &filePrefix, const VexData &V, const
 
 		if(line[0] == '/')
 		{
-			fclose(out);
-
-			outFilename = filePrefix + ".gain";
-			out = fopen(outFilename.c_str(), "w");
-			if(!out)
-			{
-				std::cerr << "cannot open for write file: " << outFilename << std::endl;
-				fclose(in);
-
-				return -1;
-			}
-
 			for(;;)
 			{
 				v = fgets(line, MaxLineLength-1, in);
@@ -519,7 +485,7 @@ static int processStation(const std::string &filePrefix, const VexData &V, const
 				{
 					break;
 				}
-				fprintf(out, line);
+				gainOutput->push_back(line);
 				++(*nLine);
 			}
 		
@@ -660,21 +626,20 @@ static int processStation(const std::string &filePrefix, const VexData &V, const
 	regfree(&dataLineMatch);
 
 	fclose(in);
-	fclose(out);
 
 	if(nGood)
 	{
-		*nGood = TA.getnGood();
+		*nGood += TA.getnGood();
 	}
 
 	if(nBad)
 	{
-		*nBad = TA.getnBad();
+		*nBad += TA.getnBad();
 	}
 
 	if(nSkip)
 	{
-		*nSkip = TA.getnSkip();
+		*nSkip += TA.getnSkip();
 	}
 
 	return nRecord;
@@ -717,10 +682,11 @@ int main(int argc, char **argv)
 	bool doMJD = true;
 	std::map<std::string,VexInterval> as;
 	const char *vexFilename = 0;	// input vex file
-	const char *antabFilename = 0;	// input Tsys file
+	std::vector<std::string> antabFiles;	// input Tsys files
+	std::vector<std::pair<double, std::string> > tsysOutput;	// store output tsys in a pair so we can sort on record MJD easily
+	std::vector<std::string> gainOutput;
 	int p;
 	int verbose = 1;
-	long long nGood=0, nBad=0, nLine=0, nTimeError=0, nSkip=0;
 
 	for(int a = 1; a < argc; ++a)
 	{
@@ -764,19 +730,13 @@ int main(int argc, char **argv)
 		{
 			vexFilename = argv[a];
 		}
-		else if(antabFilename == 0)
-		{
-			antabFilename = argv[a];
-		}
 		else
 		{
-			std::cerr << "Extra command line parameter: " << argv[a] << std::endl;
-
-			return EXIT_FAILURE;
+			antabFiles.push_back(argv[a]);
 		}
 	}
 
-	if(antabFilename == 0)
+	if(antabFiles.empty())
 	{
 		std::cerr << "Incomplete command line.  Run with -h for help." << std::endl;
 
@@ -818,7 +778,10 @@ int main(int argc, char **argv)
 	for(it = as.begin(); it != as.end(); ++it)
 	{
 		std::string filePrefix;
+		std::string outFilename;
+		long long nGood, nBad, nLine, nTimeError, nSkip;
 		int nRecord;
+		FILE *out;				// first the .tsys file, then maybe the .gain file
 
 		// it->first is the station name
 		// it->second is the VexInterval for that station's involvement
@@ -841,8 +804,59 @@ int main(int argc, char **argv)
 
 		filePrefix = V->getExper()->name + "." + stn;
 		Lower(filePrefix);
-		nRecord = processStation(filePrefix, *V, it->first, antabFilename, it->second, verbose, &nGood, &nBad, &nLine, &nTimeError, &nSkip, doMJD);
 
+		nRecord = 0;
+		nGood = nBad = nLine = nTimeError = nSkip = 0;
+		for(std::vector<std::string>::const_iterator af = antabFiles.begin(); af != antabFiles.end(); ++af)
+		{
+			nRecord += processStation(&tsysOutput, &gainOutput, *V, it->first, *af, it->second, verbose, &nGood, &nBad, &nLine, &nTimeError, &nSkip, doMJD);
+		}
+
+
+		// put tsys in time order
+		std::sort(tsysOutput.begin(), tsysOutput.end() );
+
+
+		// Write Tsys file
+		outFilename = filePrefix + ".tsys";
+		out = fopen(outFilename.c_str(), "w");
+		if(!out)
+		{
+			std::cerr << "cannot open for write file: " << outFilename << std::endl;
+
+			break;
+		}
+		printf("Writing TS: %s\n", outFilename.c_str());
+		fprintf(out, "# TSYS file created by %s ver. %s\n", program, version);
+		fprintf(out, "# %s %14.8f %14.8f\n", stn.c_str(), it->second.mjdStart, it->second.mjdStop);
+		fprintf(out, "# ant D.O.Y. dur(days) nRecChan (tsys, bandName)[nRecChan]\n");
+
+		for(std::vector<std::pair<double, std::string> >::const_iterator ol = tsysOutput.begin(); ol != tsysOutput.end(); ++ol)
+		{
+			fprintf(out, "%s\n", ol->second.c_str());
+		}
+		fclose(out);
+
+
+		// Write Gain file
+		outFilename = filePrefix + ".gain";
+		out = fopen(outFilename.c_str(), "w");
+		if(!out)
+		{
+			std::cerr << "cannot open for write file: " << outFilename << std::endl;
+
+			break;
+		}
+		printf("Writing GN: %s\n", outFilename.c_str());
+		fprintf(out, "# Gain file created by %s ver. %s\n", program, version);
+		for(std::vector<std::string>::const_iterator ol = gainOutput.begin(); ol != gainOutput.end(); ++ol)
+		{
+			fprintf(out, "%s", ol->c_str());
+		}
+		fclose(out);
+
+
+		// Summarize the findings
 		std::cout << nLine << " lines read" << std::endl;
 		std::cout << nRecord << " switched power records read" << std::endl;
 		std::cout << nGood << " good Tsys values created" << std::endl;
