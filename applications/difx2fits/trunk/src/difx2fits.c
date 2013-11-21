@@ -43,7 +43,7 @@ const char version[] = VERSION;
 
 const double DefaultSniffInterval = 30.0;	/* sec */
 const double DefaultJobMatrixInterval = 20.0;	/* sec */
-const double DefaultDifxTsysInterval = 60.0;	/* sec */
+const double DefaultDifxTsysInterval = 30.0;	/* sec */
 const double DefaultDifxPCalInterval = 30.0;	/* sec */
 
 static void usage(const char *pgm)

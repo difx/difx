@@ -40,9 +40,9 @@ from time import gmtime, time
 program = 'makefits'
 version = '0.8'
 author  = 'Walter Brisken'
-verdate = '20131119'
+verdate = '20131121'
 
-calfiles = 'tsys flag pcal weather *.*.flag *.*.weather *.*.pcal *.*.tsys *.*.cablecal'
+calfiles = 'tsys flag pcal weather *.*.flag *.*.weather *.*.pcal *.*.tsys *.*.cablecal *.*.gain'
 
 def usage(prog):
 	print '\n%s ver %s  %s  %s' % (program, version, author, verdate)
