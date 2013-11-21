@@ -46,7 +46,7 @@ public:
 	enum RecorderType {RECORDER_NONE, RECORDER_MARK5C};
 	enum DataFormat {FORMAT_NONE, FORMAT_UNKNOWN, FORMAT_MIXED, FORMAT_VLBA, FORMAT_MARK5B, FORMAT_VDIF,FORMAT_KVN5B};
 
-	pystream(): scriptType(SCRIPT_VLBA), personalityType(RDBE_UNKNOWN), recorderType(RECORDER_MARK5C), dataFormat(FORMAT_NONE), lastValid(0.0), lastSourceId(-1), lastModeId(-1), lastChannelSet(-1), evlaIntSec(0), evlasbChan(0), evlasbBits(0), evlaVCIVersion(0.0), mjd0(0.0), isMark5A(false), VDIFname("ddc_1501283.bin") {};
+	pystream(): scriptType(SCRIPT_VLBA), personalityType(RDBE_UNKNOWN), recorderType(RECORDER_MARK5C), dataFormat(FORMAT_NONE), lastValid(0.0), lastSourceId(-1), lastModeId(-1), lastChannelSet(-1), evlaIntSec(0), evlasbChan(0), evlasbBits(0), evlaVCIVersion(0.0), mjd0(0.0), isMark5A(false), VDIFname("ddc_1501383.bin") {};
 	void open(const std::string& antennaName, const VexData *V, ScriptType sType);
 	void close();
 	void addPhasingSource(const std::string &sourceName);
