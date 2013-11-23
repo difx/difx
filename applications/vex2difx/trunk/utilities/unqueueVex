@@ -9,8 +9,8 @@ from string import replace, strip, split, lower, upper, find
 import datetime
 
 program = 'unqueueVex'
-version = 0.2
-verdate = '20111214'
+version = 0.3
+verdate = '20131122'
 author  = 'Walter Brisken'
 
 verbose = 1
@@ -22,6 +22,7 @@ poststopTime = 30	# seconds
 difxPath = '/home/swc/DiFX-trunk/bin'
 difxbinpath = '/users/difx/bin'
 linesToShow = 10
+gbEmailList = 'gbt-vlba-notify@nrao.edu'
 
 # ------------------
 
@@ -158,6 +159,25 @@ def rmObservation(orig, expt, station):
 
 	return observations
 
+def legacy2new(proposal):
+	decoderRingPath = '/home/vlbiobs/astronomy/LEGACY/'
+
+	cmd = 'grep -h -i %s %s/*' % (proposal, decoderRingPath)
+	lines = popen(cmd, 'r').readlines()
+	if len(lines) == 0:
+		print 'Warning: legacy code %s not found in conversion tables' % proposal
+		return None
+	s = split(strip(lines[0]))
+	if len(s) != 2:
+		print 'Warning: malformatted line in legacy proposal code conversion file: %s' % strip(lines[0])
+		return None
+	if upper(s[0]) == upper(proposal):
+		return upper(s[1])
+	elif upper(s[1]) == upper(proposal):
+		return upper(s[0])
+	else:
+		return None
+
 # -----------------
 
 VLBAStations = ['br', 'fd', 'hn', 'kp', 'la', 'mk', 'nl', 'ov', 'pt', 'sc']
@@ -228,6 +248,7 @@ for vexFile in vexFiles:
 		vexFile = '%s/%s' % (cwd, vexFile)
 
 	obsCode, obsSeg, stationTimes = vexPeek(vexFile)
+	project = obsCode + obsSeg
 
 	scripts = []
 
@@ -252,12 +273,18 @@ for vexFile in vexFiles:
 			continue
 		expt = upper(s[0])
 		print '\n==========================================================================='
+		cc = '%s-cc.vlba.nrao.edu' % station
 		if station == 'gb':
-			cc = 'gb-cc.gb.nrao.edu'
-
-			continue	# GB not yet handled per the request of GB staff
-		else:
-			cc = '%s-cc.vlba.nrao.edu' % station
+			newProposalCode = legacy2new(obsCode)
+			cmd = "mail -s 'Project %s has been unqueued' %s" % (project, gbEmailList)
+			out = popen(cmd, "w")
+			out.write('\nA scheduling block for project %s has been unqueued.  Please\n' % newProposalCode)
+			out.write('disregard previously queued files for this project.\n\n')
+			out.write('The legacy proposal code for this project segment is %s\n\n' % project)
+			out.write('It is possible this project will again be requeued shortly. Please\n')
+			out.write('check your email carefully and contact VLBA operatons if tehre are\n')
+			out.write('any questions.\n\n')
+			out.close()
 		
 		upperStation = upper(station)
 		timeRange = stationTimes[upperStation]
