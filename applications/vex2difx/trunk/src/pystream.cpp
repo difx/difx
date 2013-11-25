@@ -1707,11 +1707,11 @@ int pystream::writeLoifTable(const VexData *V)
 
 			// auto gain/attenuation control
 			*this << "loif" << modeNum << ".setDBEParams(0, -1, -1, 10, 0)" << endl;
-			if(setup->ifs.size() == 2)
+			if(setup->ifs.size() >= 2)
 				*this << "loif" << modeNum << ".setDBEParams(1, -1, -1, 10, 0)" << endl;
 
 			*this << "loif" << modeNum << ".setDBERemember(0, 1)" << endl;
-			if(setup->ifs.size() == 2)
+			if(setup->ifs.size() >= 2)
 				*this << "loif" << modeNum << ".setDBERemember(1, 1)" << endl;
 
 			if(isMark5A && personalityType == RDBE_PFB)
@@ -2026,11 +2026,11 @@ int pystream::writeDDCLoifTable(const VexData *V)
 	
 				// auto gain/attenuation control
 				*this << "loif" << modeNum << dbeAppend << ".setDBEParams(0, -1, -1, 10, 0)" << endl;
-				if(setup->ifs.size() > 2 )
+				if(setup->ifs.size() >= 2 )
 					*this << "loif" << modeNum << dbeAppend << ".setDBEParams(1, -1, -1, 10, 0)" << endl;
 
 				*this << "loif" << modeNum << dbeAppend << ".setDBERemember(0, 1)" << endl;
-				if(setup->ifs.size() > 2)
+				if(setup->ifs.size() >= 2)
 					*this << "loif" << modeNum << dbeAppend << ".setDBERemember(1, 1)" << endl;
 
 //				cerr << "============================== DBE loop end" << endl;
