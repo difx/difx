@@ -62,7 +62,7 @@ def _addExperiment(session,experiment):
     if (experimentExists(session, experiment.code)):
         return
  
-def addExperiment(session, code, types=[], statuscode=0):
+def addExperiment(session, code, types=[], analyst=None, statuscode=0):
     '''
     Adds an experiment to the database. New experiments receive the default
     state (=unknown). 
@@ -75,6 +75,7 @@ def addExperiment(session, code, types=[], statuscode=0):
     experiment = model.Experiment()
     experiment.code = upper(code)
     experiment.number = int(getLastExperimentNumber(session)) + 1
+    experiment.user = analyst
 
     try:
 	for type in types:
@@ -85,6 +86,7 @@ def addExperiment(session, code, types=[], statuscode=0):
 	raise Exception("Trying to set an unknown epxeriment type (%s)" (type))
 
     experiment.types = expTypes
+    
 
     try:
         status = session.query(model.ExperimentStatus).filter_by(statuscode=statuscode).one()
