@@ -49,3 +49,6 @@ class VersionHistory(object):
 
 class ExperimentType(object):
     pass
+
+class User(object):
+    pass
