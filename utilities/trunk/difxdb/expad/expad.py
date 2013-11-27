@@ -194,6 +194,7 @@ class MainWindow(GenericWindow):
         
         self.expEdit += self.setChangeColor(self.txtNumber, self.txtNumber.get(), str(selectedExperiment.number).zfill(4))
         self.expEdit += self.setChangeColor(self.cboStatus, self.cboStatusVar.get(), selectedExperiment.status.experimentstatus)
+        
         if  selectedExperiment.user is not None:
             self.expEdit += self.setChangeColor(self.cboUser, self.cboUserVar.get(), selectedExperiment.user.name)
         else:
@@ -202,7 +203,7 @@ class MainWindow(GenericWindow):
         if  selectedExperiment.releasedByUser is not None:
             self.expEdit += self.setChangeColor(self.cboReleasedBy, self.cboReleasedByVar.get(), selectedExperiment.releasedByUser.name)
         else:
-            self.expEdit += self.setChangeColor(self.cboUser, self.cboUserVar.get(), "")
+            self.expEdit += self.setChangeColor(self.cboReleasedBy, self.cboReleasedByVar.get(), "")
         
         self.expEdit += self.setChangeColor(self.txtComment, self.txtComment.get(1.0, END), selectedExperiment.comment)
         
@@ -278,7 +279,7 @@ class MainWindow(GenericWindow):
         '''
         Retrieve the  experiment details from the database
         for the currently selected listbox item.
-        Update the detail text fields accordingly
+        Update the detail  fields accordingly
         '''
         
         
@@ -328,15 +329,13 @@ class MainWindow(GenericWindow):
         for type in exp.types:
             expTypes.append(type.type)
     
-        
-        index = 0
+        # select tpyes in Listbox
         self.cboType.selection_clear(0,END)
         for type in expTypes:
-            if type in self.cboType.get(0, END):
-                self.cboType.selection_set(index)
-                index += 1
-                continue
-            index += 1
+            for index in range(0,len(self.expTypes)):
+                if (self.expTypes[index] == type):
+                    self.cboType.selection_set(index)
+                    break
              
         if (exp != None):
             self.cboStatusVar.set(exp.status.experimentstatus)
@@ -405,7 +404,7 @@ class MainWindow(GenericWindow):
             
             # insert dateReleased
             exp.dateReleased = datetime.datetime.now()
-            
+          
         # get currently selected types
         types = []
         for sel in self.cboType.curselection():
