@@ -18,7 +18,7 @@ int main(int argc, char **argv) {
   string mnt ("/mnt/disk");
   string base ("/xcube");
 
-  Projects projects(mnt, base, 16);
+  Projects projects(mnt, base, 36);
   vector <PROJECT> prjs = projects.pmGetProjects();
 
   vector<PROJECT>::iterator itp;
