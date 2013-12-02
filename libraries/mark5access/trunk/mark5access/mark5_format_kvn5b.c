@@ -60,6 +60,7 @@ static float lut1bit[256][8];
 static float lut2bit[256][4];
 static unsigned char countlut2bit[256][4];
 static float zeros[8];
+static float ones[8];
 
 static void initluts()
 {
@@ -70,6 +71,7 @@ static void initluts()
 	for(i = 0; i < 8; ++i)
 	{
 		zeros[i] = 0.0;
+		ones[i] = 1.0;
 	}
 
 	for(b = 0; b < 256; ++b)
@@ -1337,7 +1339,7 @@ static int kvn5b_decode_2bitstream_2bit_decimation1(struct mark5_stream *ms, int
 }
 
 static int kvn5b_decode_2bitstream_2bit_decimation2(struct mark5_stream *ms, int nsamp, float **data)
-{ // No equiv KVN mode. Left same as Mark5B
+{ // KVN Mode 1: [256MHz-2b]*1 stream: Same as Mark5B
 	unsigned char *buf;
 	float *fp;
 	int o, i;
@@ -1381,7 +1383,7 @@ static int kvn5b_decode_2bitstream_2bit_decimation2(struct mark5_stream *ms, int
 }
 
 static int kvn5b_decode_2bitstream_2bit_decimation4(struct mark5_stream *ms, int nsamp, float **data)
-{ // No equiv KVN mode. Left same as Mark5B
+{ // KVN Mode 1: [256MHz-2b]*1 stream: Same as Mark5B
 	unsigned char *buf;
 	float *fp;
 	int o, i, df;
@@ -1489,31 +1491,39 @@ static int kvn5b_decode_4bitstream_2bit_decimation1(struct mark5_stream *ms, int
 }
 
 static int kvn5b_decode_4bitstream_2bit_decimation2(struct mark5_stream *ms, int nsamp, float **data)
-{ // No Equiv KVN mode
+{ // KVN Mode 2: [128MHz-2b]*2stream (1024 MBps 32MHz clock) every other sample
 	unsigned char *buf;
-	float *fp;
+	float *fp0,*fp1,*fp2,*fp3;
 	int o, i;
 	int nblank = 0;
 
 	buf = ms->payload;
 	i = ms->readposition;
 
-	for(o = 0; o < nsamp; ++o)
+	for(o = 0; o < nsamp; o+=4)
 	{
 		if(i <  ms->blankzonestartvalid[0] ||
 		   i >= ms->blankzoneendvalid[0])
 		{
-			fp = zeros;
-			++nblank;
+			fp0 = fp1 = fp2 = fp3 = zeros;
+			nblank+=2;i+=4;
 		}
 		else
 		{
-			fp = lut2bit[buf[i]];
+			fp0 = lut2bit[buf[i]];++i;
+			fp1 = lut2bit[buf[i]];++i;
+			fp2 = lut2bit[buf[i]];++i;
+			fp3 = lut2bit[buf[i]];++i;
 		}
-		++i;
 
-		data[0][o] = fp[0];
-		data[1][o] = fp[1];
+		data[0][o+0] = fp0[0];
+		data[0][o+1] = fp0[2];
+		data[0][o+2] = fp1[0];
+		data[0][o+3] = fp1[2];
+		data[1][o+0] = fp2[0];
+		data[1][o+1] = fp2[2];
+		data[1][o+2] = fp3[0];
+		data[1][o+3] = fp3[2];
 
 		if(i >= KVN5B_PAYLOADSIZE)
 		{
@@ -1532,9 +1542,9 @@ static int kvn5b_decode_4bitstream_2bit_decimation2(struct mark5_stream *ms, int
 }
 
 static int kvn5b_decode_4bitstream_2bit_decimation4(struct mark5_stream *ms, int nsamp, float **data)
-{ // No Equiv KVN mode
+{ // KVN Mode 2: [128MHz-2b]*2stream (1024 MBps 32MHz clock) every 4th sample
 	unsigned char *buf;
-	float *fp;
+	float *fp0,*fp1,*fp2,*fp3;
 	int o, i, df;
 	int nblank = 0;
 
@@ -1542,22 +1552,26 @@ static int kvn5b_decode_4bitstream_2bit_decimation4(struct mark5_stream *ms, int
 	i = ms->readposition;
 	df = ms->decimation/2;
 
-	for(o = 0; o < nsamp; ++o)
+	for(o = 0; o < nsamp; o+=2)
 	{
 		if(i <  ms->blankzonestartvalid[0] ||
 		   i >= ms->blankzoneendvalid[0])
 		{
-			fp = zeros;
-			++nblank;
+			fp0 = fp1 = fp2 = fp3 = zeros;
+			nblank++;i+=4;
 		}
 		else
 		{
-			fp = lut2bit[buf[i]];
+			fp0 = lut2bit[buf[i]];++i;
+			fp1 = lut2bit[buf[i]];++i;
+			fp2 = lut2bit[buf[i]];++i;
+			fp3 = lut2bit[buf[i]];++i;
 		}
-		i += df;
 
-		data[0][o] = fp[0];
-		data[1][o] = fp[1];
+		data[0][o+0] = fp0[0];
+		data[0][o+1] = fp1[0];
+		data[1][o+0] = fp2[0];
+		data[1][o+1] = fp3[0];
 
 		if(i >= KVN5B_PAYLOADSIZE)
 		{
@@ -1576,7 +1590,7 @@ static int kvn5b_decode_4bitstream_2bit_decimation4(struct mark5_stream *ms, int
 }
 
 static int kvn5b_decode_8bitstream_2bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
-{ // KVN mode 3: [64MHz-2b]*4stream (1024 MBps, 32MHz clock)
+{ // KVN mode 3: [64MHz-2b]*4stream (1024 MBps, 32MHz clock) 
 	unsigned char *buf;
 	float *fp1, *fp2, *fp3, *fp0;
 	int o, i;
@@ -1636,33 +1650,39 @@ static int kvn5b_decode_8bitstream_2bit_decimation1(struct mark5_stream *ms, int
 }
 
 static int kvn5b_decode_8bitstream_2bit_decimation2(struct mark5_stream *ms, int nsamp, float **data)
-{ // No Equiv KVN mode
+{ // KVN mode 3: [64MHz-2b]*4stream (1024 MBps, 32MHz clock) every other sample
 	unsigned char *buf;
-	float *fp;
+	float *fp1, *fp2, *fp3, *fp0;
 	int o, i;
 	int nblank = 0;
 
 	buf = ms->payload;
 	i = ms->readposition;
 
-	for(o = 0; o < nsamp; ++o)
+	for(o = 0; o < nsamp; o+=2)
 	{
 		if(i <  ms->blankzonestartvalid[0] ||
 		   i >= ms->blankzoneendvalid[0])
 		{
-			fp = zeros;
-			++nblank;
+			fp0=fp1=fp2=fp3= zeros;
+			nblank+=2;i+=4;
 		}
 		else
 		{
-			fp = lut2bit[buf[i]];
+			fp0 = lut2bit[buf[i]];i++;
+			fp1 = lut2bit[buf[i]];i++;
+			fp2 = lut2bit[buf[i]];i++;
+			fp3 = lut2bit[buf[i]];i++;
 		}
-		i += 2;
 
-		data[0][o] = fp[0];
-		data[1][o] = fp[1];
-		data[2][o] = fp[2];
-		data[3][o] = fp[3];
+		data[0][o+0] = fp0[0];
+		data[0][o+1] = fp0[2];
+		data[1][o+0] = fp1[0];
+		data[1][o+1] = fp1[2];
+		data[2][o+0] = fp2[0];
+		data[2][o+1] = fp2[2];
+		data[3][o+0] = fp3[0];
+		data[3][o+1] = fp3[2];
 
 		if(i >= KVN5B_PAYLOADSIZE)
 		{
@@ -1681,9 +1701,9 @@ static int kvn5b_decode_8bitstream_2bit_decimation2(struct mark5_stream *ms, int
 }
 
 static int kvn5b_decode_8bitstream_2bit_decimation4(struct mark5_stream *ms, int nsamp, float **data)
-{ // No Equiv KVN mode
+{ // KVN mode 3: [64MHz-2b]*4stream (1024 MBps, 32MHz clock) every 4th sample
 	unsigned char *buf;
-	float *fp;
+	float *fp1, *fp2, *fp3, *fp0;
 	int o, i, df;
 	int nblank = 0;
 
@@ -1696,19 +1716,21 @@ static int kvn5b_decode_8bitstream_2bit_decimation4(struct mark5_stream *ms, int
 		if(i <  ms->blankzonestartvalid[0] ||
 		   i >= ms->blankzoneendvalid[0])
 		{
-			fp = zeros;
-			++nblank;
+			fp0=fp1=fp2=fp3= zeros;
+			++nblank;i+=4;
 		}
 		else
 		{
-			fp = lut2bit[buf[i]];
+			fp0 = lut2bit[buf[i]];i++;
+			fp1 = lut2bit[buf[i]];i++;
+			fp2 = lut2bit[buf[i]];i++;
+			fp3 = lut2bit[buf[i]];i++;
 		}
-		i += df;
 
-		data[0][o] = fp[0];
-		data[1][o] = fp[1];
-		data[2][o] = fp[2];
-		data[3][o] = fp[3];
+		data[0][o+0] = fp0[0];
+		data[1][o+0] = fp1[0];
+		data[2][o+0] = fp2[0];
+		data[3][o+0] = fp3[0];
 
 		if(i >= KVN5B_PAYLOADSIZE)
 		{
@@ -1791,9 +1813,9 @@ static int kvn5b_decode_16bitstream_2bit_decimation1(struct mark5_stream *ms, in
 }
 
 static int kvn5b_decode_16bitstream_2bit_decimation2(struct mark5_stream *ms, int nsamp, float **data)
-{ // No equiv KVN mode. Left same as Mark5B
+{ // KVN mode 4: [32 MHz-2b]*8 streams every other sample
 	unsigned char *buf;
-	float *fp0, *fp1;
+	float *fp0, *fp1, *fp2, *fp3;
 	int o, i;
 	int nblank = 0;
 
@@ -1805,26 +1827,29 @@ static int kvn5b_decode_16bitstream_2bit_decimation2(struct mark5_stream *ms, in
 		if(i <  ms->blankzonestartvalid[0] ||
 		   i >= ms->blankzoneendvalid[0])
 		{
-			fp0 = fp1 = zeros;
-			i += 4;
-			++nblank;
+			fp0 = fp1 = fp2 = fp3 = zeros;
+			i += 4;++nblank;// 4 reads but only 1 samples
 		}
 		else
 		{
 			fp0 = lut2bit[buf[i]];
 			++i;
 			fp1 = lut2bit[buf[i]];
-			i += 3;
+			++i;
+			fp2 = lut2bit[buf[i]];
+			++i;
+			fp3 = lut2bit[buf[i]];
+			++i;
 		}
 
-		data[0][o] = fp0[0];
-		data[1][o] = fp0[1];
-		data[2][o] = fp0[2];
-		data[3][o] = fp0[3];
-		data[4][o] = fp1[0];
-		data[5][o] = fp1[1];
-		data[6][o] = fp1[2];
-		data[7][o] = fp1[3];
+		data[0][o+0] = fp0[0];
+		data[1][o+0] = fp0[2];
+		data[2][o+0] = fp1[0];
+		data[3][o+0] = fp1[2];
+		data[4][o+0] = fp2[0];
+		data[5][o+0] = fp2[2];
+		data[6][o+0] = fp3[0];
+		data[7][o+0] = fp3[2];
 
 		if(i >= KVN5B_PAYLOADSIZE)
 		{
@@ -1843,9 +1868,9 @@ static int kvn5b_decode_16bitstream_2bit_decimation2(struct mark5_stream *ms, in
 }
 
 static int kvn5b_decode_16bitstream_2bit_decimation4(struct mark5_stream *ms, int nsamp, float **data)
-{ // No equiv KVN mode. Left same as Mark5B
+{ // KVN mode 4: [32 MHz-2b]*8 streams every 4th sample
 	unsigned char *buf;
-	float *fp0, *fp1;
+	float *fp0, *fp1, *fp2, *fp3;
 	int o, i, df;
 	int nblank = 0;
 
@@ -1858,26 +1883,26 @@ static int kvn5b_decode_16bitstream_2bit_decimation4(struct mark5_stream *ms, in
 		if(i <  ms->blankzonestartvalid[0] ||
 		   i >= ms->blankzoneendvalid[0])
 		{
-			fp0 = fp1 = zeros;
-			++i;
-			++nblank;
+			fp0 = fp1 = fp2 = fp3 = zeros;
+			i += 8;++nblank;// 4 reads but only 1 samples
 		}
 		else
 		{
-			fp0 = lut2bit[buf[i]];
-			++i;
-			fp1 = lut2bit[buf[i]];
+			fp0 = lut2bit[buf[i]];++i;
+			fp1 = lut2bit[buf[i]];++i;
+			fp2 = lut2bit[buf[i]];++i;
+			fp3 = lut2bit[buf[i]];++i;
+			i+=4; // Skip next 4 reads & sample
 		}
-		i += df;
 
-		data[0][o] = fp0[0];
-		data[1][o] = fp0[1];
-		data[2][o] = fp0[2];
-		data[3][o] = fp0[3];
-		data[4][o] = fp1[0];
-		data[5][o] = fp1[1];
-		data[6][o] = fp1[2];
-		data[7][o] = fp1[3];
+		data[0][o+0] = fp0[0];
+		data[1][o+0] = fp0[2];
+		data[2][o+0] = fp1[0];
+		data[3][o+0] = fp1[2];
+		data[4][o+0] = fp2[0];
+		data[5][o+0] = fp2[2];
+		data[6][o+0] = fp3[0];
+		data[7][o+0] = fp3[2];
 
 		if(i >= KVN5B_PAYLOADSIZE)
 		{
@@ -2836,7 +2861,7 @@ static int mark5_format_kvn5b_init(struct mark5_stream *ms)
 	f = (struct mark5_format_kvn5b *)(ms->formatdata);
 
 	//	ms->samplegranularity = 8/(f->nbitstream*ms->decimation);
-	ms->samplegranularity = 32/(f->nbitstream*ms->decimation);
+	ms->samplegranularity = 32/f->nbitstream*ms->decimation;
 	if(ms->samplegranularity <= 0)
 	{
 	  ms->samplegranularity = 16;// If something odd has happened go big
@@ -3027,13 +3052,13 @@ struct mark5_format_generic *new_mark5_format_kvn5b(int Mbps, int nchan, int nbi
 	{
 		decoderindex += 12;
 	}
-	else if(decimation % 4 == 0)  /* all mults of 4 */
+	else if(decimation == 4)  /* all mults of 4 */
 	{
 		decoderindex += 24;
 	}
 	else
 	{
-		fprintf(m5stderr, "decimation must be 1, 2 or a mult of 4\n");
+		fprintf(m5stderr, "decimation must be 1, 2 or a multiple 4\n");
 	}
 
 	if(nbit == 1)
@@ -3235,9 +3260,10 @@ struct mark5_format_generic *new_mark5_format_kvn5b(int Mbps, int nchan, int nbi
 			break;
 	}
 
+	decoderindex = decoderindex%12; // Added the decimation now
 	if(f->decode == 0 || decoderindex < 7 || decoderindex > 11)
 	{
-		fprintf(m5stderr, "Illegal combination of decimation, bitstreams and bits\n");
+		fprintf(m5stderr, "Illegal combination of bitstreams and bits\n");
 		free(f);
 		free(m);
 
