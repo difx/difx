@@ -24,7 +24,7 @@ void write_t120 (struct type_120 *pt120,
 
     u.t120.index      = int_reverse (pt120->index);
     u.t120.ap         = int_reverse (pt120->ap);
-    u.t120.flag       = int_reverse (pt120->flag);
+    u.t120.fw.weight  = float_reverse (pt120->fw.weight);
     u.t120.status     = int_reverse (pt120->status);
     u.t120.fr_delay   = int_reverse (pt120->fr_delay);
     u.t120.delay_rate = int_reverse (pt120->delay_rate);

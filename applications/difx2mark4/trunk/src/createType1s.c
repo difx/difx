@@ -95,6 +95,7 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
     int new_type1 (DifxInput *, struct fblock_tag *, int, int, int, int, int *, 
                    struct stations *, char *, struct CommandLineOptions *, FILE **, 
                    int, char *, char *, char *, char *, int, int);
+    void write_t120 (struct type_120 *, FILE *);
 
                                     // initialize memory as necessary
                                     // quantization correction factor is pi/2 for
@@ -345,7 +346,12 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
             for (i=0; i<4; i++)     
                 if (strncmp (poltab[i], rec->pols, 2) == 0)
                     u.t120.index += i;
-
+                                    // copy over weight into former flag field
+                                    // use -0.0 to denote zero, for backward compatibility
+            if (rec->weight == 0)
+                u.t120.fw.weight = -0.0;
+            else
+                u.t120.fw.weight = rec->weight;
                                     // calculate accumulation period index from start of scan
             u.t120.ap = (8.64e4 * (rec->mjd - D->scan[scanId].mjdStart) + rec->iat)
                                  / D->config[configId].tInt;
