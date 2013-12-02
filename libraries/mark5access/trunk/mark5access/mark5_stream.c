@@ -482,6 +482,20 @@ struct mark5_format_generic *new_mark5_format_generic_from_string( const char *f
 
 		return new_mark5_format_vdif(a, b, c, d, e, 32, 0);
 	}
+	else if(strncasecmp(formatname, "VDIFL_", 6) == 0)
+	{
+		r = sscanf(formatname+6, "%d-%d-%d-%d/%d", &e, &a, &b, &c, &d);
+		if(r < 4)
+		{
+			return 0;
+		}
+		if(r < 5)
+		{
+			d = 1;
+		}
+
+		return new_mark5_format_vdif(a, b, c, d, e, 16, 0);
+	}
 	else if(strncasecmp(formatname, "VDIFB_", 6) == 0)
 	{
 		r = sscanf(formatname+6, "%d-%d-%d-%d/%d", &e, &a, &b, &c, &d);
@@ -510,6 +524,20 @@ struct mark5_format_generic *new_mark5_format_generic_from_string( const char *f
 
 		return new_mark5_format_vdif(a, b, c, d, e, 32, 1);
 	}
+	else if(strncasecmp(formatname, "VDIFCL_", 7) == 0)
+	{
+		r = sscanf(formatname+7, "%d-%d-%d-%d/%d", &e, &a, &b, &c, &d);
+		if(r < 4)
+		{
+			return 0;
+		}
+		if(r < 5)
+		{
+			d = 1;
+		}
+
+		return new_mark5_format_vdif(a, b, c, d, e, 16, 1);
+	}
 	else if(strncasecmp(formatname, "VLBN1_", 6) == 0)
 	{
 		r = sscanf(formatname+6, "%d-%d-%d-%d/%d", &a, &b, &c, &d, &e);
@@ -535,7 +563,7 @@ struct mark5_format_generic *new_mark5_format_generic_from_string( const char *f
 /* a string containg a list of supported formats */
 const char *mark5_stream_list_formats()
 {
-	return "VLBA1_*-*-*-*[/*], MKIV1_*-*-*-*[/*], MARK5B-*-*-*[/*], VDIF_*-*-*-*[/*], VLBN1_*-*-*-*[/*], VDIFB_*-*-*-*, VDIFL_*-*-*-*[/*], KVN5B-*-*-*[/*]";
+	return "VLBA1_*-*-*-*[/*], MKIV1_*-*-*-*[/*], MARK5B-*-*-*[/*], VDIF_*-*-*-*[/*], VDIFC_*-*-*-*[/*], VLBN1_*-*-*-*[/*], VDIFB_*-*-*-*, VDIFL_*-*-*-*[/*], VDIFCL_*-*-*-*[/*], KVN5B-*-*-*[/*]";
 }
 
 /* given a format string, populate a structure with info about format */
@@ -701,6 +729,23 @@ struct mark5_format *new_mark5_format_from_name(const char *formatname)
 		F = MK5_FORMAT_VDIF;
 		databytes = a;
 		framebytes = databytes + 16;
+		framens = 1000.0*(8.0*databytes/(double)b);
+		if(r > 4)
+		{
+			decimation = e;
+		}
+	}
+	/* for VDIF with complex sampling, a different name is used: */
+	else if(strncasecmp(formatname, "VDIFC_", 6) == 0)
+	{
+		r = sscanf(formatname+6, "%d-%d-%d-%d/%d", &a, &b, &c, &d, &e);
+		if(r < 4)
+		{
+			return 0;
+		}
+		F = MK5_FORMAT_VDIF;
+		databytes = a;
+		framebytes = databytes + 32;
 		framens = 1000.0*(8.0*databytes/(double)b);
 		if(r > 4)
 		{
