@@ -539,7 +539,7 @@ class MainWindow(GenericWindow):
             
 
         if (tkMessageBox.askokcancel("Confirm module check-out", "Do you really want to remove module " + slot.module.vsn + " from the library? ")):
-            doCheckout(module)
+            self.doCheckout(module)
         
         return
     
