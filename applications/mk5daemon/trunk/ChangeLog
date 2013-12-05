@@ -7,6 +7,7 @@ Version 2.3.0
 * mark5 utilities: normalize use of RT mode a bit
 * mk5dir: default: operate without RT mode
 * mk5dir: detect unusual data while decoding directories, namely data where the payload contains a repeating pattern.
+* mk5test: use XLRSelfTest to test a Streamstor card
 
 Version 2.2.0
 ~~~~~~~~~~~~~

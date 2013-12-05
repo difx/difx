@@ -8,6 +8,7 @@ bin_PROGRAMS = \
 	mk5lock \
 	mk5putdir \
 	mk5map \
+	mk5test \
 	record5c \
 	recover \
 	testmod \
@@ -43,6 +44,9 @@ mk5map_LDADD = \
 	${M5ACCESS_LIBS}
 
 recover_LDADD = \
+	${M5ACCESS_LIBS}
+
+mk5test_LDADD = \
 	${M5ACCESS_LIBS}
 
 testmod_LDADD = \
@@ -118,6 +122,11 @@ recover_SOURCES = \
 	mark5dir.h \
 	mark5directorystructs.h \
 	recover.cpp
+
+mk5test_SOURCES = \
+	watchdog.cpp \
+	watchdog.h \
+	mk5test.cpp
 
 testmod_SOURCES = \
 	watchdog.cpp \
