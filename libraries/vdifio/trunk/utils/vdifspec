@@ -2,8 +2,8 @@
 
 program = 'vdifspec'
 author  = 'Walter Brisken'
-version = '0.1'
-verdate = '20130406'
+version = '0.2'
+verdate = '20131206'
 
 from os import system
 from string import split
@@ -22,6 +22,7 @@ def usage():
 	print '  <nint> is the number of FFT frames to spectrometize\n'
 	print '  <outfile> is the name of the output file\n'
 	print '  <offset> optionally jump into input file by this many bytes\n'
+	print '  <nbit> is number of bits per sample (default is 2)\n'
 	print 'Note: Only works on 2-bit real data for now...\n'
 
 if len(argv) < 8:
@@ -37,7 +38,11 @@ nchan = int(argv[5])
 nint = int(argv[6])
 outfile = argv[7]
 if len(argv) > 8:
-	offset = int(argv[8])
+	nbit = int(argv[8])
+else:
+	nbit = 2
+if len(argv) > 9:
+	offset = int(argv[9])
 else:
 	offset = 0
 
@@ -49,7 +54,7 @@ outputpayload = nc*(framesize-32)
 framespersecond = (datarate*1000000)/(nt*(framesize-32)*8)
 outputdatarate = outputpayload*framespersecond*8/1000000
 
-cmd = 'vmux %s %d %d %s - %d | m5spec - VDIF_%d-%d-%d-2 %d %d %s' % (infile, framesize, framespersecond, threadlist, offset, outputpayload, outputdatarate, nc, nchan, nint, outfile) 
+cmd = 'vmux %s %d %d %s - %d %d | m5spec - VDIF_%d-%d-%d-%d %d %d %s' % (infile, framesize, framespersecond, threadlist, offset, nbit, outputpayload, outputdatarate, nc, nbit, nchan, nint, outfile) 
 
 print 'Executing: %s' % cmd
 system(cmd)

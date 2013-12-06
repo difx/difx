@@ -157,7 +157,7 @@ int vdif2to8(FILE *out, FILE *in, int inputFrameBytes)
 		convert(outputBuffer+VDIF_HEADER_BYTES, inputBuffer+index+VDIF_HEADER_BYTES, inputFrameBytes-VDIF_HEADER_BYTES);
 
 		/* write modified frame to disk */
-		v = fwrite(outputBuffer, 1, VDIF_HEADER_BYTES, out);
+		v = fwrite(outputBuffer, 1, outputFrameBytes, out);
 
 		if(v != outputFrameBytes)
 		{
@@ -172,8 +172,6 @@ int vdif2to8(FILE *out, FILE *in, int inputFrameBytes)
 
 	free(inputBuffer);
 	free(outputBuffer);
-	fclose(out);
-	fclose(in);
 
 	printf("Number of skipped bytes = %Ld\n", nSkip);
 

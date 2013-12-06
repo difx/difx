@@ -2,8 +2,8 @@
 
 program = 'vdiffold'
 author  = 'Walter Brisken'
-version = '0.1'
-verdate = '20130406'
+version = '0.2'
+verdate = '20131206'
 
 from os import system
 from string import split
@@ -14,7 +14,7 @@ def usage():
 	print '\n%s ver. %s  %s  %s\n' % (program, version, author, verdate)
 	print 'A VDIF decoder for multi-thread VDIF data.  Uses vmux'
 	print 'and m5d to do the heavy lifting.\n'
-	print 'Usage : %s <infile> <frame size> <data rate> <threadlist> <nbin> <nint> <freq> <outfile> [<offset>]\n'
+	print 'Usage : %s <infile> <frame size> <data rate> <threadlist> <nbin> <nint> <freq> <outfile> [<offset> [<nbit>] ]\n'
 	print '  <infile> is the name of the VDIF file\n'
 	print '  <frame size> is the size of each input VDIF frame, inc. header (e.g., 5032)\n'
 	print '  <data rate> is the stream data rate (Mbps)\n'
@@ -24,6 +24,7 @@ def usage():
 	print '  <freq> [Hz] -- the inverse of the period to be folded\n'
 	print '  <outfile> is the name of the output file\n'
 	print '  <offset> optionally jump into input file by this many bytes\n'
+	print '  <nbit> is number of bits per sample (default is 2)\n'
 	print 'Note: Only works on 2-bit real data for now...\n'
 
 if len(argv) < 9:
@@ -40,7 +41,11 @@ nint = int(argv[6])
 freq = argv[7]
 outfile = argv[8]
 if len(argv) > 9:
-	offset = int(argv[9])
+	nbit = int(argv[9])
+else:
+	nbit = 2
+if len(argv) > 10:
+	offset = int(argv[10])
 else:
 	offset = 0
 
@@ -52,7 +57,7 @@ outputpayload = nc*(framesize-32)
 framespersecond = (datarate*1000000)/(nt*(framesize-32)*8)
 outputdatarate = outputpayload*framespersecond*8/1000000
 
-cmd = 'vmux %s %d %d %s - %d | m5fold - VDIF_%d-%d-%d-2 %d %d %s %s' % (infile, framesize, framespersecond, threadlist, offset, outputpayload, outputdatarate, nc, nbin, nint, freq, outfile) 
+cmd = 'vmux %s %d %d %s - %d %d | m5fold - VDIF_%d-%d-%d-%d %d %d %s %s' % (infile, framesize, framespersecond, threadlist, offset, nbit, outputpayload, outputdatarate, nc, nbit, nbin, nint, freq, outfile) 
 
 print 'Executing: %s' % cmd
 system(cmd)

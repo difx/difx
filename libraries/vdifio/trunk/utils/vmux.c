@@ -59,11 +59,12 @@ int main(int argc, char **argv)
 	const char *inFile;
 	const char *outFile;
 	off_t offset = 0;
+	int nBit = 2;
 
 	if(argc < 6)
 	{
 		fprintf(stderr, "\n%s ver. %s  %s  %s\n\n", program, version, author, verdate);
-		fprintf(stderr, "Usage: %s <inputFile> <inputFrameSize> <framesPerSecond> <threadList>\n    <outputFile> [<offset> [<chunkSize>] ]\n", argv[0]);
+		fprintf(stderr, "Usage: %s <inputFile> <inputFrameSize> <framesPerSecond> <threadList>\n    <outputFile> [<offset> [ <nBit> [<chunkSize>] ] }\n", argv[0]);
 		fprintf(stderr, "\nA program to take a multi-thread VDIF file and multiplex into\n"
 				"a multi-channel, single thread file.  <thread list> should be\n"
 				"comma-separated without space.  Setting <input file> to - will take\n"
@@ -75,6 +76,7 @@ int main(int argc, char **argv)
 		fprintf(stderr, "<threadList> is a comma-separated list of integers in range 0 to 1023;\n    the order of the numbers is significant and dictates the order of\n    channels in the output data\n\n");
 		fprintf(stderr, "<outputFile> is the name of the output, single-thread VDIF file,\n    or - for stdout\n\n");
 		fprintf(stderr, "<offset> is an optional offset into the input file (in bytes)\n\n");
+		fprintf(stderr, "<nbit> is number of bits per sample (default = %d)\n", nBit);
 		fprintf(stderr, "<chunkSize> is (roughly) how many bytes to operate on at a time\n    [default=%d]\n\n", defaultChunkSize);
 
 		return 0;
@@ -134,7 +136,11 @@ int main(int argc, char **argv)
 	}
 	if(argc > 7)
 	{
-		destChunkSize = atoi(argv[7]);
+		nBit = atoi(argv[7]);
+	}
+	if(argc > 8)
+	{
+		destChunkSize = atoi(argv[8]);
 		srcChunkSize = destChunkSize*5/4;
 		destChunkSize -= destChunkSize % 8;
 		srcChunkSize -= srcChunkSize % 8;
@@ -224,7 +230,7 @@ int main(int argc, char **argv)
 		{
 			nSort = -nSort;
 		}
-		V = vdifmux(dest, destChunkSize, src, n+leftover, inputframesize, framesPerSecond, 2, nThread, threads, nSort, nGap, nextFrame, &stats);
+		V = vdifmux(dest, destChunkSize, src, n+leftover, inputframesize, framesPerSecond, nBit, nThread, threads, nSort, nGap, nextFrame, &stats);
 
 		if(V < 0)
 		{
