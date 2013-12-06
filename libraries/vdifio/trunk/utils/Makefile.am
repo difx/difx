@@ -17,6 +17,7 @@ bin_PROGRAMS = \
 	printVDIF \
 	peekVDIF \
 	searchVDIF \
+	vdif2to8 \
 	vmux \
 	vsum
 
@@ -67,6 +68,9 @@ printVDIF_SOURCES = \
 
 searchVDIF_SOURCES = \
 	searchVDIF.c
+
+vdif2to8_SOURCES = \
+	vdif2to8.c
 
 vmux_SOURCES = \
 	vmux.c
