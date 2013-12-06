@@ -114,7 +114,7 @@ static void initluts()
 		}
 
 		/* lut8bit */
-		lut8bit[b] = (b*2-255)/256.0;
+		lut8bit[b] = (b*2-255)/71.0;	/* This scaling mimics 2-bit data reasonably well. */
 
 		/* Complex lookups */
 
@@ -3547,7 +3547,6 @@ static int mark5_format_vdif_validate(const struct mark5_stream *ms)
 #ifdef DEBUG
 		fprintf(m5stderr, "mark5_format_vdif_validate: Skipping invalid frame\n");
 #endif
-
 		return 0;
 	}
 
@@ -3751,23 +3750,23 @@ struct mark5_format_generic *new_mark5_format_vdif(int Mbps,
 			f->decode = vdif_decode_8channel_4bit_decimation1;
 			break;
 
-		case 4001:
+		case 3001:
 			f->decode = vdif_decode_1channel_8bit_decimation1;
 			break;
-		case 4002:
+		case 3002:
 			f->decode = vdif_decode_2channel_8bit_decimation1;
 			break;
-		case 4003:
+		case 3003:
 			f->decode = vdif_decode_3channel_8bit_decimation1;
 			break;
-		case 4004:
+		case 3004:
 			f->decode = vdif_decode_4channel_8bit_decimation1;
 			break;
 	    }
 
 	    if(f->decode == 0)
 	    {
-		fprintf(m5stderr, "VDIF: Unsupported combination of decimation, channels and bits\n");
+		fprintf(m5stderr, "VDIF: Unsupported combination decimation=%d, channels=%d and bits=%d\n", decimation, nchan, nbit);
 		free(v);
 		free(f);
 		
@@ -3855,7 +3854,7 @@ struct mark5_format_generic *new_mark5_format_vdif(int Mbps,
 
 	    if(f->complex_decode == 0)
 	    {
-		fprintf(m5stderr, "VDIF: Unsupported combination of decimation, channels and bits\n");
+		fprintf(m5stderr, "VDIF: Unsupported combination decimation=%d, channels=%d and bits=%d\n", decimation, nchan, nbit);
 		free(v);
 		free(f);
 
@@ -3959,7 +3958,6 @@ int find_vdif_frame(const unsigned char *data, size_t length, size_t *offset, in
 			edvB      = frame[4] >> 24;
 
 			/* does it look reasonable? */
-//			if(fsA == fs && fsB == fs && refEpochA == refEpochB && (secA == secB || secA+1 == secB) && edvA == edvB)
 			if(fsA == fs && fsB == fs && refEpochA == refEpochB && (secA == secB || secA+1 == secB))
 			{
 				*framesize = fs;
