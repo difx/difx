@@ -19,4 +19,5 @@ dist_bin_SCRIPTS = \
 	unqueueVex \
 	calc2xyz \
 	calc2sked \
+	vex2script.files \
 	goUSNO
