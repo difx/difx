@@ -30,6 +30,7 @@
 #include <fstream>
 #include <cstring>
 #include <cstdlib>
+#include <errno.h>
 #include "pystream.h"
 #include "corrparams.h"
 #include "vexload.h"
@@ -37,11 +38,11 @@
 using namespace std;
 
 const string program("vex2script");
-const string version("0.23");
-const string verdate("20131125");
+const string version("0.24");
+const string verdate("20131209");
 const string author("Walter Brisken, Adam Deller, Matthias Bark");
 
-static void usage(int argc, char **argv)
+static void usage(int argc, char **argv, pystream *py)
 {
 	cout << endl;
 	cout << program << " version " << version << "  " << author << " " << verdate << endl;
@@ -55,6 +56,8 @@ static void usage(int argc, char **argv)
 	cout << "  --dbepersonality=[path/]filename (for VLBA)" << endl;
 	cout << "  --mark5a  Set up DBE as PFB, but don't record" << endl;
     cout << "  -gb, for GB script only" << endl;
+	cout << endl;
+	cout << "Default Personalities: PFB:" << py->pfbName << " DDC:" << py->ddcName << " VDIF:" << py->vdifName << endl;
 	cout << endl;
 }
 
@@ -147,6 +150,58 @@ pystream::DataFormat getDataFormat(const VexData *V, const string &antName)
 	return f;
 }
 
+void readFiles(char *pfb, char *ddc, char *vdif)
+{
+	FILE *f = fopen("vex2script.files", "r");
+	char *string = NULL;
+	char *file;
+	size_t size;
+	ssize_t read;
+	char path[100];
+
+	char *cmd = "dirname `which vex2script`";
+	f = popen(cmd, "r");
+	if( f == NULL ) {
+		printf("Couldn't determine parent directpry for vex2script!");
+		exit(-2);
+	}
+	getline(&string, &size, f);
+//	printf("string: <%s>\n", string);
+	strcpy(path, string);
+	path[strlen(string)-1] = '/';
+	path[strlen(string)] = '\0';
+	strcpy(&(path[strlen(string)]), "vex2script.files");
+	free(string);
+	pclose(f);
+//	printf("path: <%s>\n", path);
+	
+	string = NULL;
+	f = fopen(path, "r");
+	if( f == NULL ) {
+		printf("Can't read vex2script.files to get default personality names! errno: %i Exiting!\n", errno);
+		exit(-1);
+	}
+	while ( (read = getline(&string, &size, f)) != -1 ) {
+//		printf("read: %i size: %i  string: %s\n", read, size, string);
+		if( string[0] == '#' ) {
+			continue;
+		}
+		file = strchr(string, '=');
+		*file = '\0';
+		file++;
+		file[strlen(file)-1] = '\0';
+//		printf("string: <%s> file: <%s>\n", string, file);
+		if( strcmp(string, "pfb") == 0)
+			strcpy(pfb, file);
+		if( strcmp(string, "ddc") == 0)
+			strcpy(ddc, file);
+		if( strcmp(string, "vdif") == 0)
+			strcpy(vdif, file);
+	}
+	if( string )
+		free(string);
+}
+
 int main(int argc, char **argv)
 {
 	VexData *V;
@@ -158,12 +213,16 @@ int main(int argc, char **argv)
 	int nWarn = 0;
 	bool gb_only = false;
 
+	readFiles(py.pfbName, py.ddcName, py.vdifName);
+
 	if(argc < 2 || strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0)
 	{
-		usage(argc, argv);
+		usage(argc, argv, &py);
 
 		return EXIT_SUCCESS;
 	}
+
+	printf("Default Personalities: PFB <%s> DDC <%s> VDIF <%s>\n", py.pfbName, py.ddcName, py.vdifName);
 
 	P = new CorrParams();
 	P->vexFile = string(argv[1]);
