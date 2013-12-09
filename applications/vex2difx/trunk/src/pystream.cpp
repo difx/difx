@@ -550,7 +550,7 @@ int pystream::writeDbeInit(const VexData *V)
 			}
 			else
 			{
-				*this << "dbe0 = RDBE(0, 'pfb')" << endl;
+				*this << "dbe0 = RDBE(0, 'pfb', '" << pfbName << "')" << endl;
 			}
 		}
 		else if(personalityType == RDBE_DDC)
@@ -777,9 +777,16 @@ int pystream::writeDbeInit(const VexData *V)
 			else
 			{
 				if( dataFormat == FORMAT_VDIF )
-					*this << "dbe0 = RDBE(" << dbeNum << ", 'ddc', '" << VDIFname << "')" << endl;
+					*this << "dbe0 = RDBE(" << dbeNum << ", 'ddc', '" << vdifName << "')" << endl;
 				else
-					*this << "dbe0 = RDBE(" << dbeNum << ", 'ddc')" << endl;
+					if( personalityType == RDBE_PFB )
+						*this << "dbe0 = RDBE(" << dbeNum << ", 'pfb', '" << pfbName << "')" << endl;
+					else if( personalityType == RDBE_DDC )
+						*this << "dbe0 = RDBE(" << dbeNum << ", 'ddc', '" << ddcName << "')" << endl;
+					else {
+						cerr << "Unknown personality type" << endl;
+						exit(EXIT_FAILURE);
+					}
 			}
 		}
 		if(personalityType == RDBE_PFB || personalityType == RDBE_DDC)
@@ -810,9 +817,9 @@ int pystream::writeDbeInit(const VexData *V)
 			// if we need a 2nd DBE, only DDC+VDIF is supported
 			if( need2DBEs ) {
 				if(dbeFilename[0])
-				*this << "dbe1 = RDBE(2, 'ddc', '" << dbeFilename << "')" << endl;
+					*this << "dbe1 = RDBE(2, 'ddc', '" << dbeFilename << "')" << endl;
 				else
-					*this << "dbe1 = RDBE(2, 'ddc', '" << VDIFname << "')" << endl;
+					*this << "dbe1 = RDBE(2, 'ddc', '" << vdifName << "')" << endl;
 				*this << "dbe1.setALC(1)" << endl;
 				*this << "dbe1.setFormat('VDIF')" << endl;
 				*this << "dbe1.setPSNMode(0)" << endl;
