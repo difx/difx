@@ -150,7 +150,7 @@ pystream::DataFormat getDataFormat(const VexData *V, const string &antName)
 	return f;
 }
 
-void readFiles(char *pfb, char *ddc, char *vdif)
+void readFiles(char *program, char *pfb, char *ddc, char *vdif)
 {
 	FILE *f = fopen("vex2script.files", "r");
 	char *string = NULL;
@@ -158,8 +158,16 @@ void readFiles(char *pfb, char *ddc, char *vdif)
 	size_t size;
 	ssize_t read;
 	char path[100];
+	char cmd[100] = "dirname ";
 
-	char *cmd = "dirname `which vex2script`";
+	// check if program was launched as "vex2script", which means it has an entry "which" can find
+	if( strcmp(program, "vex2script") == 0 ) {
+		strcat(cmd, "`which vex2script`");
+	} else {
+	// or if it was launched with a full name including directory path, in which case we can extract that
+		strcat(cmd, program);
+	}
+
 	f = popen(cmd, "r");
 	if( f == NULL ) {
 		printf("Couldn't determine parent directpry for vex2script!");
@@ -213,7 +221,7 @@ int main(int argc, char **argv)
 	int nWarn = 0;
 	bool gb_only = false;
 
-	readFiles(py.pfbName, py.ddcName, py.vdifName);
+	readFiles(argv[0], py.pfbName, py.ddcName, py.vdifName);
 
 	if(argc < 2 || strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0)
 	{
