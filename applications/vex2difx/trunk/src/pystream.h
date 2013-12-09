@@ -76,6 +76,10 @@ public:
 	DataFormat getDataFormat() { return dataFormat; }
 	void setMark5A(bool x) { isMark5A = x; }
 
+	char ddcName[20];
+	char pfbName[20];
+	char vdifName[20];
+
 private:
 	ScriptType scriptType;
 	PersonalityType personalityType;
