@@ -167,7 +167,7 @@ static int getRecordChannel(const std::string &antName, const std::string &chanN
 	{
 		return n;
 	}
-	else if(setup.formatName.substr(0, 4) == "VDIF" || setup.formatName.substr(0, 14) == "INTERLACEDVDIF")
+	else if(setup.formatName.substr(0, 4) == "VDIF" || setup.formatName.substr(0, 5) == "VDIFL" || setup.formatName.substr(0, 14) == "INTERLACEDVDIF")
 	{
 		return n;
 	}
@@ -1115,7 +1115,7 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 				}
 			}
 
-			if(setup.formatName == "VLBA" || setup.formatName == "VLBN" || setup.formatName == "MKIV" || setup.formatName == "MARK5B" || setup.formatName == "KVN5B" || setup.formatName.substr(0, 4) == "VDIF")
+			if(setup.formatName == "VLBA" || setup.formatName == "VLBN" || setup.formatName == "MKIV" || setup.formatName == "MARK5B" || setup.formatName == "KVN5B" || setup.formatName.substr(0, 4) == "VDIF" || setup.formatName.substr(0, 5) == "VDIFL")
 			{
 				for(p = get_all_lowl(antName.c_str(), modeDefName, T_FANOUT_DEF, B_TRACKS, v); p; p = get_all_lowl_next())
 				{
@@ -1154,7 +1154,7 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 				}
 				if(ch2tracks.empty())
 				{
-					if (setup.formatName.substr(0, 4) == "VDIF")
+				  if (setup.formatName.substr(0, 4) == "VDIF" || setup.formatName.substr(0, 5) == "VDIFL")
 					{
 						// non-interlaced:  VDIF/size/bits, use all recorded channels, find 7777 below
 						setup.nRecordChan = 7777;
@@ -1174,7 +1174,7 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 
 					fanout = nTrack/ch2tracks.size()/nBit;
 					if(!(setup.formatName == "MARK5B" || setup.formatName == "KVN5B") && 
-					   setup.formatName.substr(0, 4) != "VDIF")
+					   (setup.formatName.substr(0, 4) != "VDIF" || setup.formatName.substr(0, 5) != "VDIFL")) // Is this VDIF tests needed
 					{
 						switch(fanout)
 						{
