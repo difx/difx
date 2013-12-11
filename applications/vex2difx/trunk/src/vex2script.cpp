@@ -34,6 +34,7 @@
 #include "pystream.h"
 #include "corrparams.h"
 #include "vexload.h"
+#include "../config.h"
 
 using namespace std;
 
@@ -41,6 +42,10 @@ const string program("vex2script");
 const string version("0.24");
 const string verdate("20131209");
 const string author("Walter Brisken, Adam Deller, Matthias Bark");
+
+#ifndef HAVE_GETLINE
+ssize_t getline(char **lineptr, size_t *n, FILE *stream);
+#endif
 
 static void usage(int argc, char **argv, pystream *py)
 {

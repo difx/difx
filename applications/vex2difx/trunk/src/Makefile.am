@@ -49,6 +49,8 @@ vex2script_SOURCES = \
 	pystream.cpp \
 	vex2script.cpp 
 
+vex2script_LDADD = $(id $(HAVE_GETLINE),,getline.o) $(top_builddir)/vex/libvex.la
+
 vex2opt_SOURCES = \
 	vextables.h \
 	vextables.cpp \
