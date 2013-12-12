@@ -1,6 +1,7 @@
                                         /*  Definitions of major parameter structures */
 #define MAXFREQ   64
 #define MAXINDEX 256
+#define MAX_ION_PTS 100
 #define LAG 0
 #define GLOBAL 1
 
@@ -46,6 +47,8 @@ struct type_param
     double      ah_amp;                 /* Ad hoc sinusoid amplitude (rad) */
     double      ah_poly[6];             /* Ad hoc polynomial coefficients */
     int         ah_phase;               /* Ad hoc phase correction mode */
+    char        ah_file[2][256];        // file names for ad hoc file mode pcal
+    char        ah_file_chans[2][256];  // channel codes for ah_file contents
     unsigned long bocf_period;          /* Correlator frame in systicks */
     int         bocfs_per_ap;           /* Correlator frames per AP */
     short       su_number[2];           /* Ref and remote SU number */
@@ -57,6 +60,7 @@ struct type_param
     int         first_plot;             // number of first chan to plot, when overridden
     int         nplot_chans;            // number of plot channels when overridden
     int         interpol;               // interpolation method
+    int         mbd_anchor;             // anchor total mbd to model or sbd
     double      pcal_spacing[2];        // pcal tone spacing (Hz) for ref & rem
     double      ion_diff;               // differential ionosphere (rem-ref in TEC units)
     int         ion_pts;                // number of pts in ionosphere coarse search
@@ -86,6 +90,8 @@ struct type_status
     int         zero_errors;            // # of AP's with zero (some lag count 0) errors
     int         total_ap;               /* Total # of ap's processed (both sb's )*/
     float       total_ap_frac;          /* Same, but with microediting */
+    float       total_usb_frac;         // usb subtotal of total_ap_frac 
+    float       total_lsb_frac;         // lsb    "      "    "     "
     int         ap_num[2][MAXFREQ];     /* # of aps for each sideband & freq */
     double      ap_frac[2][MAXFREQ];    /* Same, but with microediting */
     double      epoch_err[MAXFREQ];     /* Epoch error (offset from ref. time) */
@@ -164,4 +170,6 @@ struct type_status
     double      sbd_ra_width;
     double      sbd_dec_width;
     double      delay_offs[MAXFREQ][2]; // delay offsets (ns) by channel and station
+    double      dtec[MAX_ION_PTS][2];   // differential TEC pairs [index#][TEC:amplitude]
+    int         nion;                   // number of points in the dtec array
     };

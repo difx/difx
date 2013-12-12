@@ -112,7 +112,13 @@ int do_fplot;
             int_to_time (fdatum->data.time_tag, &year, &day, &hour, &minute, &second);
             if (data_version > 1)
             {
-                /* bug fix by Cormac Reynolds, which should be checked by someone more knowledgeable. sprintf does not truncate, and year has 3 digits for dates after 2000. Force truncating to two digits - I think infotxt is only used for user feedback so this should be o.k. */
+                /* bug fix by Cormac Reynolds, 2013-09-19
+                 * which should be checked by someone more knowledgeable.
+                 * sprintf does not truncate, and year has 3 digits for
+                 * dates after 2000. Force truncating to two digits--I
+                 * think infotxt is only used for user feedback so this
+                 * should be o.k. */
+#warning "Y2K Issues with AEDIT need to be investigated"
                 infoyear = year;
                 if (infoyear > 100) {
                     infoyear = infoyear-100;

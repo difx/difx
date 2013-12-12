@@ -32,18 +32,28 @@ struct type_pass *pass;
         ilmax,
         level,
         ionloop,
-        fine_pts;
+        fine_pts,
+        rc,
+        koff,
+        nip;
     double coarse_spacing,
            fine_spacing,
            step,
            bottom,
            center,
-           valmax;
+           valmax,
+           y[3],
+           q[3],
+           xmax,
+           ampmax,
+           xlo;
     struct data_corel *datum;
     complex *sbarray, *sbptr;
     extern int do_accounting;
     extern struct type_status status;
     double values[MAX_ION_PTS];
+    int parabola (double *, double, double, double *, double *, double *);
+    void sort_tecs (void);
 
 
     msg  ("Baseline %c%c subgroup %c", 1, 
@@ -99,7 +109,11 @@ struct type_pass *pass;
         }
     coarse_spacing = param->win_ion[1] - param->win_ion[0];
     if (param->ion_pts > 1)
+        {
         coarse_spacing /= param->ion_pts - 1;
+        nip = 0;
+        }
+
     fine_spacing = 0.2 * coarse_spacing;
     fine_pts = 7;
                                         // do search over ionosphere differential
@@ -120,11 +134,16 @@ struct type_pass *pass;
                                         // should do parabolic interpolation here
                 valmax = -1.0;
                 for (k=0; k<ilmax; k++)
+                    {
                     if (values[k] > valmax)
                         {
                         valmax = values[k];
                         kmax = k;
                         }
+                                        // store this coarse ionosphere point
+                    status.dtec[nip][0] = bottom + k * step;
+                    status.dtec[nip++][1] = values[k];
+                    }
                 if (kmax == 0)          // coarse maximum up against lower edge?
                     center = bottom + (fine_pts - 1) / 2.0 * fine_spacing;
                 else if (kmax == param->ion_pts) // upper edge?
@@ -142,13 +161,39 @@ struct type_pass *pass;
                                         // find maximum from fine search
                 valmax = -1.0;
                 for (k=0; k<ilmax; k++)
+                    {
                     if (values[k] > valmax)
                         {
                         valmax = values[k];
                         kmax = k;
                         }
+                                        // store this fine ionosphere point
+                    status.dtec[nip][0] = bottom + k * step;
+                    status.dtec[nip++][1] = values[k];
+                    }
                                         // should do parabolic interpolation here
-                center = bottom + kmax * step;
+                if (kmax == 0)
+                    koff = +1;
+                else if (kmax == ilmax - 1)
+                    koff = -1;
+                else
+                    koff = 0;
+
+                for (k=0; k<3; k++)
+                    {
+                    y[k] = values[kmax + k - 1 + koff];
+                    xlo = bottom + (kmax - 1 + koff) * step;
+                    }
+
+                rc = parabola (y, -1.0, 1.0, &xmax, &ampmax, q);
+
+                if (rc == 1)
+                    msg ("TEC fine interpolation error; peak out of search range");
+                else if (rc == 2)
+                    msg ("TEC fine interpolation error; positive curvature");
+
+                center = xlo + (xmax + 1.0) * step;
+
                 bottom = center;
                 ilmax = 1;
                 step = 0.0;
@@ -180,6 +225,17 @@ struct type_pass *pass;
                   1, param->ion_diff, status.delres_max);
             }
         }
+                                        // save the final ion. point, if there is one
+    if (param->ion_pts > 1)
+        {
+        status.dtec[nip][0] = center;
+        status.dtec[nip++][1] = values[0];
+        status.nion = nip;
+        sort_tecs ();
+        }
+    else
+        status.nion = 0;
+
                                         /* Write the fringe file to disk, with */
                                         /* or without traditional fringe plot */
                                         /* attached, depending on control info */
@@ -196,4 +252,32 @@ struct type_pass *pass;
     free (sbarray);
 
     return (0);
+    }
+
+// sort tec array
+void sort_tecs (void)
+    {
+    int i,
+        n,
+        changed = TRUE;
+
+    double temp[2];
+
+    extern struct type_status status;
+  
+    while (changed)
+        {
+        changed = FALSE;
+        for (n=0; n<status.nion-1; n++)
+            if (status.dtec[n][0] > status.dtec[n+1][0])
+                {
+                for (i=0; i<2; i++)
+                    {
+                    temp[i] = status.dtec[n][i];
+                    status.dtec[n][i] = status.dtec[n+1][i];
+                    status.dtec[n+1][i] = temp[i];
+                    }
+                changed = TRUE;
+                }
+        }
     }

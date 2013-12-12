@@ -131,6 +131,9 @@ struct c_block *f,*t;               // f (from) is source pointer
     if (f->fmatch_bw_pct != NULLFLOAT)
         t->fmatch_bw_pct = f->fmatch_bw_pct;
 
+    if (f->mbd_anchor != NULLINT)
+        t->mbd_anchor = f->mbd_anchor;
+
     if (f->nsamplers != NULLINT)
         {
         t->nsamplers = f->nsamplers;
@@ -165,6 +168,12 @@ struct c_block *f,*t;               // f (from) is source pointer
 
         if (f->ion_window[i] != NULLFLOAT)
             t->ion_window[i] = f->ion_window[i];
+
+        if (f->adhoc_file[i][0] != 0)
+            strcpy (t->adhoc_file[i], f->adhoc_file[i]);
+
+        if (f->adhoc_file_chans[i][0] != 0)
+            strcpy (t->adhoc_file_chans[i], f->adhoc_file_chans[i]);
         }
 
 

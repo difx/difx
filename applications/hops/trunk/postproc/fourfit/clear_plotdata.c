@@ -25,7 +25,8 @@ clear_plotdata ()
     plot.num_freq = 0;
     plot.dr_size = 0;
     plot.dr_size_max = 0;
-    for (i=0; i<512; i++) plot.mb_amp[i] = 0.0;
+    for (i=0; i<8192; i++) 
+        plot.mb_amp[i] = 0.0;
     for (i=0; i<MAXAP; i++) 
         {
         plot.d_rate[i] = 0.0;

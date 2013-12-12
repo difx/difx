@@ -22,8 +22,8 @@ struct c_block *cb_ptr;
                                                             // scalar parameters
     cb_ptr -> skip          = FALSE;
     cb_ptr -> max_parity    = 0.001;
-    cb_ptr -> pc_mode.ref   = NORMAL;
-    cb_ptr -> pc_mode.rem   = NORMAL;
+    cb_ptr -> pc_mode.ref   = MULTITONE;
+    cb_ptr -> pc_mode.rem   = MULTITONE;
     cb_ptr -> pc_period.ref   = 9999;
     cb_ptr -> pc_period.rem   = 9999;
     cb_ptr -> lsb_offset.ref= 0.0;
@@ -61,18 +61,24 @@ struct c_block *cb_ptr;
     cb_ptr -> ion_window[0]  = -20.0;
     cb_ptr -> ion_window[1]  =  20.0;
     cb_ptr -> ion_npts       = 1;
-    cb_ptr -> interpolator   = ITERATE;
+    cb_ptr -> interpolator   = SIMUL;
     cb_ptr -> station_delay.ref  = 150e-9;   // a priori station delay of 150 ns
     cb_ptr -> station_delay.rem  = 150e-9;
-    cb_ptr -> pc_delay_l.ref = 0.0;
-    cb_ptr -> pc_delay_l.rem = 0.0;
-    cb_ptr -> pc_delay_r.ref = 0.0;
-    cb_ptr -> pc_delay_r.rem = 0.0;
-    cb_ptr -> weak_channel    = 0.5;
-    cb_ptr -> pc_amp_hcode    = 0.005;
-    cb_ptr -> fmatch_bw_pct   = 25.0;
+    cb_ptr -> pc_delay_l.ref= 0.0;
+    cb_ptr -> pc_delay_l.rem= 0.0;
+    cb_ptr -> pc_delay_r.ref= 0.0;
+    cb_ptr -> pc_delay_r.rem= 0.0;
+    cb_ptr -> weak_channel  = 0.5;
+    cb_ptr -> pc_amp_hcode  = 0.005;
+    cb_ptr -> fmatch_bw_pct = 25.0;
+    cb_ptr -> mbd_anchor    = MODEL;
 
-                                                                      // vectors
+    for (i=0; i<2; i++)                              // clear ref and rem values
+        {
+        cb_ptr -> adhoc_file[i][0] = 0;
+        cb_ptr -> adhoc_file_chans[i][0] = 0;
+        }
+                      
     for (i=0; i<6; i++)
         cb_ptr -> adhoc_poly[i] = 0.0;       /* clear ad hoc phase polynomial */
 

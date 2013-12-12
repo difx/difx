@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.am 592 2012-01-24 21:37:06Z gbc $
+# $Id: Makefile.am 815 2013-06-07 21:03:45Z rjc $
 #
 
 SUBDIRS = .
@@ -51,7 +51,7 @@ fourfit_sources = \
 		  calc_normalization.c apply_passband.c max555.c \
 		  interp555.c pcalibrate.c sampler_delays.c \
 		  norm.c make_plotdata.c output.c \
-		  read_sdata.c
+		  read_sdata.c diff_file_phase.c
 fourfit_SOURCES = $(fourfit_sources)
 
 fourfit_CPPFLAGS = -DFF_PROGNAME=\"fourfit\" \

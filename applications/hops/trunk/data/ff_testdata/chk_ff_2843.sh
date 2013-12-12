@@ -1,6 +1,6 @@
-#!/bin/sh
+#!/bin/bash
 #
-# $Id: chk_ff_2843.sh 330 2011-06-10 13:32:10Z gbc $
+# $Id: chk_ff_2843.sh 879 2013-11-07 13:24:24Z gbc $
 #
 # canonical test suite for fourfit
 #
@@ -15,21 +15,27 @@ export DATADIR=`cd $srcdir/testdata; pwd`
 [ -n "$DISPLAY" ] || { echo Skipping test--DISPLAY is undefined; exit 0; }
 
 $verb && echo \
-fourfit -pt -b AI \\ && echo \
+fourfit -pt -b AI:S \\ && echo \
     $DATADIR/2843/321-1701_0552+398/0552+398.oifhak
 
 # AIT
 ( echo sff-2843.ps; echo q ) | (
-    fourfit -pt -b AI \
+    fourfit -pt -b AI:S \
 	$DATADIR/2843/321-1701_0552+398/0552+398.oifhak
 ) 2>/dev/null 1>&2
 
-set -- `ls -s ff-2843.ps` 0 no-such-file
-$verb && echo $@
+# pluck out line containing the snr and parse it
+line=$(grep '7570 9653' ./ff-2843.ps)
 
-# did we make a plot?
-[ $1 -ge 74 ]
+IFS='()'
+read a snr b <<<"$line"
 
+# snr bounds
+low=47.8
+high=48.6
+aok=$(echo "$snr>$low && $snr<$high" | bc)
+
+[ $aok -gt 0 ]
 #
 # eof
 #

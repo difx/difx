@@ -16,8 +16,8 @@
 #include <stdio.h>
 
 #define DR  1
-#define MBD 2
-#define SBD 3
+#define MD 2
+#define SD 3
 
 
 void
@@ -30,7 +30,8 @@ struct type_pass *pass;
     double sp, max, r_max, r, ph, c_phase(), peak, d_dr, d_mbd, dr, mbd,
            pcr, theta, center_mag, c_mag(),q[3],lower,upper,frac, 
            dr_lower,dr_upper,mbd_lower,mbd_upper,sbd_lower,sbd_upper,
-           dmin(),dmax(), delay_mag[3], drpt, delta_dr, divisor, eks;
+           dmin(),dmax(), delay_mag[3], drpt, delta_dr, divisor, eks,
+           xlim[3][2];
     int i, st, v, station, fr, lag, ap, inter, index, sbd, sband, flagbit,
         d_sbd,center_lag,ret_code, nl, ret, n, ndrpts;
     int isbd, imbd, idr;
@@ -72,10 +73,15 @@ struct type_pass *pass;
                         if (c_mag (pcal) > 0.0) 
                             {
                             ph = c_phase (pcal);
+
                             ph -= (status.pc_phase[fr][station][stnpol[station][pass->pol]]
-                               - M_PI * status.pc_offset[fr][station][stnpol[station][pass->pol]] / 180.0);
+                               + M_PI * status.pc_offset[fr][station][stnpol[station][pass->pol]] / 180.0);
+                               
                             ph -= 2.0 * M_PI * frq->frequency * r * param.acc_period * ap;
-                            msg  ("fr %d ap %d st %d ph %g",-4, fr, ap, station, ph);
+
+                            msg  ("fr %d ap %d st %d freq %g pcal %f %f ph %g", -4, 
+                                   fr, ap, station, frq->frequency, pcal.re, pcal.im, ph);
+
                             delay[index] = c_add (delay[index], c_exp(ph));
                             }
                         }
@@ -98,7 +104,7 @@ struct type_pass *pass;
                 break;
             msg ("pc_mode[%d]=%d",0, station,param.pc_mode[station]);
             }   
-        } 
+        }
 
                                         /* Calculate Delay Res. function by
                                            rotation and summation, then
@@ -124,7 +130,7 @@ struct type_pass *pass;
 
     if (param.win_mb[0] > param.win_mb[1])            /* is it a wrap around? */
         {
-        if (status.mbd_max_global > param.win_mb[0])
+        if (status.mbd_max_global >= param.win_mb[0])
             mbd_lower = dmax (mbd_lower, param.win_mb[0]);
 
         else
@@ -144,6 +150,10 @@ struct type_pass *pass;
 
     if (param.interpol == SIMUL)
         {
+        if (status.max_delchan < 2) // condition max_delchan so 5x5x5 cube stays in data
+            status.max_delchan = 2;
+        else if (status.max_delchan > 2 * nl - 3)
+            status.max_delchan = 2 * nl - 3;
                                     // form data cube 5x5x5 in sbd, mbd, dr
         for (isbd=0; isbd<5; isbd++)
             for (imbd=0; imbd<5; imbd++)
@@ -185,9 +195,19 @@ struct type_pass *pass;
                     drf[isbd][imbd][idr] = c_mag (z);
                     msg ("drf[%d][%d][%d] %lf", 0, isbd, imbd, idr, drf[isbd][imbd][idr]);
                     }
+                                    // form the search bounds in all 3 dimensions
+        xlim[0][0] = sbd_lower / status.sbd_sep - status.max_delchan + nl;
+        xlim[0][1] = sbd_upper / status.sbd_sep - status.max_delchan + nl;
 
+        xlim[1][0] = 2.0 * (mbd_lower - status.mbd_max_global) / status.mbd_sep;
+        xlim[1][1] = 2.0 * (mbd_upper - status.mbd_max_global) / status.mbd_sep;
+
+        xlim[2][0] = 2.0 * (dr_lower - status.dr_max_global) / status.rate_sep;
+        xlim[2][1] = 2.0 * (dr_upper - status.dr_max_global) / status.rate_sep;
+        msg ("xlim's %f %f    %f %f    %f %f", 0, xlim[0][0], xlim[0][1], 
+                xlim[1][0], xlim[1][1], xlim[2][0], xlim[2][1]);
                                     // find maximum value within cube via interpolatin
-        max555 (drf, xi, &drfmax);
+        max555 (drf, xlim, xi, &drfmax);
 
                                     // calculate location of maximum in actual coords
         status.sbd_max = (status.max_delchan - nl + xi[0]) * status.sbd_sep;
@@ -201,7 +221,7 @@ struct type_pass *pass;
         status.amp_corr_fact = status.amp_rate_corr;
         status.delres_max = drfmax * status.amp_corr_fact;  
         
-        msg ("max555 found amp %f at %f %f %e", 1,
+        msg ("max555 found amp %f at sbd %f mbd %f dr %e", 1,
               status.delres_max, status.sbd_max, status.mbd_max_global, status.dr_max_global);
         }
     else                            // iterative interpolation
@@ -224,7 +244,7 @@ struct type_pass *pass;
                                 / (status.rate_sep * sp);
                         break;
 
-                    case MBD:
+                    case MD:
                         d_dr = 0.0;
                         d_mbd = sp;
                         d_sbd = 0;
@@ -235,7 +255,7 @@ struct type_pass *pass;
                               / (status.mbd_sep * sp);
                         break;
 
-                    case SBD:
+                    case SD:
                         d_dr = 0.0;
                         d_mbd = 0.0;
                         d_sbd = 1;
@@ -271,7 +291,7 @@ struct type_pass *pass;
                                 if (frq->data[ap].flag)
                                     {
                                     // temporary kludge for tests rjc 2001.1.29
-                                    if (v == SBD)
+                                    if (v == SD)
                                       X = c_mult (frq->data[ap].sbdelay[sbd],
                                                   vrot (ap, dr, mbd, fr, 0, pass)); 
                                     else
@@ -318,7 +338,7 @@ struct type_pass *pass;
                                     if (frq->data[ap].flag)
                                         {
                                     // temporary kludge for tests rjc 2001.1.29
-                                        if (v == SBD)
+                                        if (v == SD)
                                           X = c_mult (frq->data[ap].sbdelay[sbd],
                                                       vrot (ap, drpt, mbd, fr, 0, pass)); 
                                         else
@@ -379,7 +399,7 @@ struct type_pass *pass;
                             status.interp_err |= INTP_ERR_RATE;
                         break;
 
-                    case MBD:
+                    case MD:
                         if (pass->nfreq != 1)
                             {
                             status.mbd_max_global += status.mbd_sep * sp * peak;
@@ -394,7 +414,7 @@ struct type_pass *pass;
                         status.delres_max = max;
                         break;
 
-                    case SBD:        /* condition sbd to lie within search window */
+                    case SD:         /* condition sbd to lie within search window */
                         status.sbd_max = (center_lag - nl + peak)
                                          * status.sbd_sep;
                         status.amp_corr_fact = max * status.amp_rate_corr / center_mag;

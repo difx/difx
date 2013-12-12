@@ -149,10 +149,17 @@ read_mk4corel (char *filename,
                     }
                                         /* Altogether too many APs */
                 ap = temp120->ap;
+                if (ap < 0)
+                    {
+                    msg ("Ignoring illegal type 120 record in corel file, "
+                         "idx,ap = %d,%d", 2, idx, ap);
+                         break;
+                    }
+
                 if (ap > MAXAP)
                     {
-                    msg ("Invalid type 120 record in corel file, idx,ap = %d,%d", 2,
-                                        idx, ap);
+                    msg ("Invalid type 120 record in corel file, "
+                         "idx,ap = %d,%d", 2, idx, ap);
                     return (-1);
                     }
                 if (temp120->nlags != lags)

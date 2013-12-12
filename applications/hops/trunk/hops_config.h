@@ -189,10 +189,10 @@
 #define HAVE_XLRGetDriveTemp 0
 
 /* HOPS package rev number */
-#define HOPS_REVISION 3.8
+#define HOPS_REVISION 3.9
 
 /* Haystack SVN rev number */
-#define HOPS_SVN_REV 805
+#define HOPS_SVN_REV 890
 
 /* Define to 1 if `lstat' dereferences a symlink specified with a trailing
    slash. */
@@ -208,13 +208,13 @@
 #define PACKAGE_NAME "hops"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "hops 3.8"
+#define PACKAGE_STRING "hops 3.9"
 
 /* Define to the one symbol short name of this package. */
 #define PACKAGE_TARNAME "hops"
 
 /* Define to the version of this package. */
-#define PACKAGE_VERSION "3.8"
+#define PACKAGE_VERSION "3.9"
 
 /* If using the C implementation of alloca, define if you know the
    direction of stack growth for your system; otherwise it will be
@@ -231,7 +231,7 @@
 /* #undef TM_IN_SYS_TIME */
 
 /* Version number of package */
-#define VERSION "3.8"
+#define VERSION "3.9"
 
 /* this is a LittleEndian Host */
 #define WORDS_BIGENDIAN 0

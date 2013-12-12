@@ -79,7 +79,15 @@ copy_120 (struct type_120 *t120,
         strncpy (t120_v0->rootcode, t120->rootcode, 6);
         cp_int (t120_v0->index, t120->index);
         cp_int (t120_v0->ap, t120->ap);
-        cp_int (t120_v0->flag, t120->flag);
+        if (type == SPECTRAL)
+            {
+            cp_float (t120_v0->fw.weight, t120->fw.weight);
+            }
+        else
+            {
+            cp_int (t120_v0->fw.flag, t120->fw.flag);
+            }
+
         cp_int (t120_v0->status, t120->status);
         cp_int (t120_v0->fr_delay, t120->fr_delay);
         cp_int (t120_v0->delay_rate, t120->delay_rate);

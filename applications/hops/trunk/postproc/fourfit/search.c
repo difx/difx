@@ -12,12 +12,12 @@
 #include "pass_struct.h"
 #include "control.h"
 
-#define MBD_GRID_MAX 1024
+#define MBD_GRID_MAX 8192
 int
 search (pass)
 struct type_pass *pass;
     {
-    complex data[MAXAP], mb_delay[MBD_GRID_MAX], rate_spectrum[MAXFREQ][MAXAP];
+    complex data[MBD_GRID_MAX], mb_delay[MBD_GRID_MAX], rate_spectrum[MAXFREQ][MAXAP];
     static double amps[MBD_GRID_MAX][MAXAP], drtemp[MAXAP];
     complex c_zero(), s_mult() ;
     int cnt, fr, i, j, station, lag, dr_index, mbd_index, mbdmax[2*MAXLAG], ap, newmax;
@@ -38,6 +38,8 @@ struct type_pass *pass;
     status.epoch_off_cent = 0.0;
     status.total_ap = 0;
     status.total_ap_frac = 0.0;
+    status.total_usb_frac = 0.0;
+    status.total_lsb_frac = 0.0;
                                         /* Make sure data will fit (note that auto
                                          * correlations use up twice as many lags */
     if (param.nlags*param.num_ap > MAX_APXLAG)
@@ -217,7 +219,7 @@ struct type_pass *pass;
                     max_amp[lag] = amps[mbd_index][dr_index];
                     mbdmax[lag] = mbd_index;                            
                     drmax[lag] = dr_index;
-                    msg ("search: lag %d dr_index %d mbd_index %d amp %f",-4,
+                    msg ("search: lag %d dr_index %d mbd_index %d amp %f",-3,
                               lag,   dr_index,   mbd_index,   max_amp[lag]);
                     }
 

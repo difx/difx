@@ -6,7 +6,7 @@
 # to detect endianism in bytflp.h for some of the tools.
 #
 AC_PREREQ(2.59)
-AC_INIT(hops, 3.8, gbc@haystack.mit.edu)
+AC_INIT(hops, 3.9, gbc@haystack.mit.edu)
 #AM_INIT_AUTOMAKE([foreign std-options])
 AM_INIT_AUTOMAKE([foreign])
 AC_CONFIG_SRCDIR([hops.bash.in])
@@ -330,7 +330,7 @@ if [test x${enable_pgplot-yes} = xyes ] ; then
 	fi
     fi
 fi
-AC_GBC_NOTICE([%%% have_pgplot is $have_pgplot (required)])
+AC_GBC_NOTICE([%%% have_pgplot is $have_pgplot ($need_png)])
 AM_CONDITIONAL(HAVE_PGPLOT, [test x$have_pgplot = xtrue])
 AC_SUBST(PGP_LIB)
 AC_SUBST(PGPLOT_DIR)
@@ -343,8 +343,8 @@ AC_CHECK_LIB(png12, png_access_version_number, have_png=true, have_png=false)
 if [$have_png] ; then
     AC_GBC_NOTICE([Found png12 normally])
     PNG_LIB='-lpng12'
-else
-    AC_GBC_NOTICE([Looking harder for png12])
+elif [ $need_png = required ] ; then
+    AC_GBC_NOTICE([Looking harder for png12 need_png is $need_png])
     if [test -z "$PNG12_LIB" ]; then
 	PNG12_LIB=${DIFX_ARCH_ROOT}/lib/libpng12.so.0
     elif [test -z "$PNG12_LIB" ]; then
@@ -357,6 +357,8 @@ else
 	have_png=false
 	PNG_LIB=''
     fi
+else
+    AC_GBC_NOTICE([Skipping png12 since need_png is $need_png])
 fi
 AC_GBC_NOTICE([%%% have_png is $have_png ($need_png)])
 AM_CONDITIONAL(HAVE_PNG, [test x$have_png = xtrue -o x$need_png = xoptional])
@@ -409,7 +411,7 @@ if [test x$enable_checks = xyes] ; then
 	AC_MSG_ERROR([halted because of X11 issues], 2)
     elif [test x$have_pgplot = xfalse] ; then
 	AC_MSG_ERROR([halted because of PGPLOT issues], 3)
-    elif [test x$have_png = xfalse] ; then
+    elif [test x$have_png = xfalse -a x$need_png = xrequired] ; then
 	AC_MSG_ERROR([halted because of PNG issues], 4)
     else
 	AC_GBC_BANNER([Configure passes sanity checks.])

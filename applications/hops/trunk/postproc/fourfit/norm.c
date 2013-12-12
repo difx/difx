@@ -36,7 +36,7 @@ norm (struct type_pass *pass,
       int fr, 
       int ap)
     { 
-    struct type_120 *rawdatum;
+    struct type_120 *t120;
     struct freq_corel *fdata;
     struct data_corel *datum;
     int flagbit, sb, st, i, rev_i, j, l, m, intshift, ct, nlags;
@@ -50,7 +50,7 @@ norm (struct type_pass *pass,
     unsigned short bitshift;
     double theta, shift, dd, norm_const, fb_fact, fb_amp_ratio();
     double samp_per_ap, corrfact, rawcorr, factor, mean;
-    double diff_delay, deltaf, polcof, polcof_sum;
+    double diff_delay, deltaf, polcof, polcof_sum, phase_shift;
     int freq_no,
         ibegin,
         sindex,
@@ -116,22 +116,22 @@ norm (struct type_pass *pass,
                                         /* Pluck out the requested polarization */
         switch (pol)
             {
-            case POL_LL: rawdatum = datum->apdata_ll[sb];
+            case POL_LL: t120 = datum->apdata_ll[sb];
                          polcof = (param.pol == POL_IXY) ?
                              cos (param.par_angle[1] - param.par_angle[0]) :
                              1.0;
                          break;
-            case POL_RR: rawdatum = datum->apdata_rr[sb];
+            case POL_RR: t120 = datum->apdata_rr[sb];
                          polcof = (param.pol == POL_IXY) ?
                              cos (param.par_angle[1] - param.par_angle[0]) :
                              1.0;
                          break;
-            case POL_LR: rawdatum = datum->apdata_lr[sb];
+            case POL_LR: t120 = datum->apdata_lr[sb];
                          polcof = (param.pol == POL_IXY) ?
                              sin (param.par_angle[1] - param.par_angle[0]) :
                              1.0;
                          break;
-            case POL_RL: rawdatum = datum->apdata_rl[sb];
+            case POL_RL: t120 = datum->apdata_rl[sb];
                          polcof = (param.pol == POL_IXY) ?
                             -sin (param.par_angle[1] - param.par_angle[0]) :
                              1.0;
@@ -155,21 +155,21 @@ norm (struct type_pass *pass,
                 if (l < 0) l += nlags*2;
                                         /* Form normalized correlation vector */
                                         /* Account for different formats */
-                if (rawdatum -> type == COUNTS_GLOBAL)
+                if (t120 -> type == COUNTS_GLOBAL)
                     {
-                    cosbits = rawdatum->ld.cg.cosbits;
-                    coscor = rawdatum->ld.cg.lags[i].coscor;
-                    sinbits = rawdatum->ld.cg.sinbits;
-                    sincor = rawdatum->ld.cg.lags[i].sincor;
+                    cosbits = t120->ld.cg.cosbits;
+                    coscor = t120->ld.cg.lags[i].coscor;
+                    sinbits = t120->ld.cg.sinbits;
+                    sincor = t120->ld.cg.lags[i].sincor;
                     }
-                else if (rawdatum -> type == COUNTS_PER_LAG)
+                else if (t120 -> type == COUNTS_PER_LAG)
                     {
-                    cosbits = rawdatum->ld.cpl[i].cosbits;
-                    coscor = rawdatum->ld.cpl[i].coscor;
-                    sinbits = rawdatum->ld.cpl[i].sinbits;
-                    sincor = rawdatum->ld.cpl[i].sincor;
+                    cosbits = t120->ld.cpl[i].cosbits;
+                    coscor = t120->ld.cpl[i].coscor;
+                    sinbits = t120->ld.cpl[i].sinbits;
+                    sincor = t120->ld.cpl[i].sincor;
                     }
-                else if (rawdatum -> type == AUTO_GLOBAL)
+                else if (t120 -> type == AUTO_GLOBAL)
                     {                       /* autocorrelation lags are duplicated here,
                                            since 2 values of i map to the same m */
                     if (i < nlags/2) m = nlags/2 - i;
@@ -179,12 +179,12 @@ norm (struct type_pass *pass,
                     if (i == 0)
                         continue;
                                         // old code: if (m == nlags/2) m -= 1;
-                    cosbits = rawdatum->ld.ag.cosbits;
-                    coscor = rawdatum->ld.ag.coscor[m];
+                    cosbits = t120->ld.ag.cosbits;
+                    coscor = t120->ld.ag.coscor[m];
                     sinbits = 0;
                     sincor = 0;
                     }
-                else if (rawdatum -> type == AUTO_PER_LAG)
+                else if (t120 -> type == AUTO_PER_LAG)
                     {
                     if (i < nlags/2) m = nlags/2 - i;
                     else m = i - nlags/2;
@@ -193,8 +193,8 @@ norm (struct type_pass *pass,
                     if (i == 0)
                         continue;
                                         // old code: if (m == nlags/2) m -= 1;
-                    cosbits = rawdatum->ld.apl[m].cosbits;
-                    coscor = rawdatum->ld.apl[m].coscor;
+                    cosbits = t120->ld.apl[m].cosbits;
+                    coscor = t120->ld.apl[m].coscor;
                     sinbits = 0;
                     sincor = 0;
                     }
@@ -295,29 +295,28 @@ norm (struct type_pass *pass,
                 {
                 status.ap_frac[sb][fr] += datum->lsbfrac;
                 status.total_ap_frac   += datum->lsbfrac;
+                status.total_lsb_frac  += datum->lsbfrac;
                 }
             else 
                 {
                 status.ap_frac[sb][fr] += datum->usbfrac;
                 status.total_ap_frac   += datum->usbfrac;
+                status.total_usb_frac  += datum->usbfrac;
                 }
                                         /* Avg to find center of scan */
             status.epoch_off_cent += (double)ap;  
                                         /* FFT to X-power spectrum  */
             FFT1 (xcor, nlags*2, 1, xp_spec, 1);
 
-                                        /* apply spectral filter as needed */
-            apply_passband (sb, fdata, xp_spec, nlags*2);
-
                                         /* Adjust for Bit-shift */
                                         /* First, decode total bitshift shift */
-            shift = fabs (rawdatum->delay_rate / TWO_32 * param.acc_period * SYSCLK_S);
+            shift = fabs (t120->delay_rate / TWO_32 * param.acc_period * SYSCLK_S);
                                         /* Get fractional part */
             if (param.bocfs_per_ap % 2) // if odd # of cf's/AP must 
                                         // extrapolate fractional delay to cf center
                 {
-                fraction = (rawdatum->fr_delay + 
-                            0.5 * param.bocf_period * rawdatum->delay_rate) / TWO_32;
+                fraction = (t120->fr_delay + 
+                            0.5 * param.bocf_period * t120->delay_rate) / TWO_32;
                                         /* adjust fraction to lie in [-0.5, 0.5] */
                 if (fraction > 0.5)
                     fraction -= 1.0;
@@ -327,7 +326,7 @@ norm (struct type_pass *pass,
                 }
             else
                                         /* even # of corr. frames per AP */
-                fraction = rawdatum->fr_delay / TWO_32;
+                fraction = t120->fr_delay / TWO_32;
 
                                         /* Calculate actual number of shifts, from
                                            AEER's 1988 memo */
@@ -350,7 +349,7 @@ norm (struct type_pass *pass,
                                         // retroactive fix for non-zero values of delay
                                         // and delay_rate coming from correlator in the
                                         // case of an autocorrelation      rjc 2007.8.14
-            if (rawdatum->type == AUTO_GLOBAL || rawdatum->type == AUTO_PER_LAG)
+            if (t120->type == AUTO_GLOBAL || t120->type == AUTO_PER_LAG)
                 {
                 fraction = 0.0;
                 shift = 1.0;
@@ -362,9 +361,9 @@ norm (struct type_pass *pass,
             }
         else                            // difx (spectral) mode; just copy spectrum in
             {
-            if (rawdatum -> type != SPECTRAL)
+            if (t120 -> type != SPECTRAL)
                 {
-                msg ("Conflicting correlation type %d", 2, rawdatum->type);
+                msg ("Conflicting correlation type %d", 2, t120->type);
                 return;
                 }
             
@@ -373,43 +372,54 @@ norm (struct type_pass *pass,
                 status.ap_num[sb][fr]++;
                 status.total_ap++;
                                     // sum to micro-edited totals
-                if (sb) 
-                    {
-                    datum->lsbfrac = 1.0;
+                if (sb)             // lower sideband
+                    {               // 0 weight encoded by negative 0
+                    if (*((unsigned int *)(&(t120->fw.weight))) == 0)
+                                    // +0 is backward-compatibility for no weight
+                        datum->lsbfrac = 1.0;
+                    else
+                        datum->lsbfrac = t120->fw.weight;
                     status.ap_frac[sb][fr] += datum->lsbfrac;
                     status.total_ap_frac   += datum->lsbfrac;
+                    status.total_lsb_frac   += datum->lsbfrac;
                     }
-                else 
+                else                // upper sideband
                     {
-                    datum->usbfrac = 1.0;
+                    if (*((unsigned int *)(&(t120->fw.weight))) == 0)
+                        datum->usbfrac = 1.0;
+                    else
+                        datum->usbfrac = t120->fw.weight;
                     status.ap_frac[sb][fr] += datum->usbfrac;
                     status.total_ap_frac   += datum->usbfrac;
+                    status.total_usb_frac   += datum->usbfrac;
                     }
                 }
             fb_fact = 1.0;          // may want to re-examine this assumption
             theta = 0.0;            // no fractional bit induced error correction
 
-            diff_delay = pass->control.delay_offs[freq_no].rem 
-                       - pass->control.delay_offs[freq_no].ref;
                                     // add in phase effects if multitone delays 
                                     // were extracted
             if (pass->control.nsamplers && param.pc_mode[0] == MULTITONE 
                                         && param.pc_mode[1] == MULTITONE)      
-                diff_delay += 1e9 * (datum->rem_sdata.mt_delay[stnpol[1][pol]] 
+                diff_delay = -1e9 * (datum->rem_sdata.mt_delay[stnpol[1][pol]]
                                    - datum->ref_sdata.mt_delay[stnpol[0][pol]]);
+            else
+                diff_delay = pass->control.delay_offs[freq_no].rem 
+                           - pass->control.delay_offs[freq_no].ref;
+
             msg ("ap %d fr %d pol %d diff_delay %f", -2, ap, fr, pol, diff_delay);
                                     // loop over spectral points
             for (i=0; i<nlags; i++)
                                     // filter out any nan's, if present
-                if (isnan (rawdatum->ld.spec[i].re) || isnan (rawdatum->ld.spec[i].im))
+                if (isnan (t120->ld.spec[i].re) || isnan (t120->ld.spec[i].im))
                     msg ("omitting nan's in visibility for ap %d fr %d lag %i", 
                           2, ap, fr, i);
                      
                                     // add in iff this is a requested pol product
                 else if (param.pol & 1<<ip || param.pol == 0)
                     {           
-                    z.re = rawdatum->ld.spec[i].re;
-                    z.im = rawdatum->ld.spec[i].im;
+                    z.re = t120->ld.spec[i].re;
+                    z.im = t120->ld.spec[i].im;
                                     // rotate each pol prod by pcal prior to adding in
                     if (sb==0)
                         z = c_mult (z, datum->pc_phasor[ip]);
@@ -422,17 +432,25 @@ norm (struct type_pass *pass,
 
                                     // calculate offset frequency in GHz 
                                     // from DC edge for this spectral point
-                    deltaf = 1e-3 * i / (2e6 * param.samp_period * nlags);
-                                    // refer phase ramp to actual midband
-                    if (datum->sband)
-                        deltaf -= 1e-3 / (4e6 * param.samp_period);
+                    deltaf = -1e-3 * i / (2e6 * param.samp_period * nlags);
+
+                                    // correction to mean phase depends on sideband
+                    phase_shift = - 1e-3 * diff_delay / (4e6 * param.samp_period);
+                    if (sb)
+                        phase_shift = -phase_shift;
+
                                     // apply phase ramp to spectral points 
-                    z = c_mult (z, c_exp (-2.0 * M_PI * diff_delay * deltaf));
+                    z = c_mult (z, c_exp (-2.0 * M_PI * (diff_delay * deltaf + phase_shift)));
                     xp_spec[i].re += z.re;
                     xp_spec[i].im += z.im;
                     }
             }                       // end of spectral mode code
         }                           // bottom of polarization loop
+
+                                    // also skip over this next section, if no data
+      if (sb == 0 & usb_present == 0
+       || sb == 1 & lsb_present == 0)
+          continue;
 
                                     /* apply spectral filter as needed */
       apply_passband (sb, fdata, xp_spec, nlags*2);
@@ -507,14 +525,15 @@ norm (struct type_pass *pass,
                                     // spectral version is done above
         if (param.corr_type == MK4HDW)
             {
-            diff_delay = pass->control.delay_offs[freq_no].rem 
-                       - pass->control.delay_offs[freq_no].ref;
                                     // add in phase effects if multitone delays 
                                     // were extracted
             if (pass->control.nsamplers && param.pc_mode[0] == MULTITONE 
                                         && param.pc_mode[1] == MULTITONE)      
-                diff_delay += 1e9 * (datum->rem_sdata.mt_delay[stnpol[1][pol]] 
-                                   - datum->ref_sdata.mt_delay[stnpol[0][pol]]);
+                diff_delay = -1e9 * (datum->rem_sdata.mt_delay[stnpol[1][pol]] 
+                                  - datum->ref_sdata.mt_delay[stnpol[0][pol]]);
+            else
+                diff_delay = pass->control.delay_offs[freq_no].rem 
+                           - pass->control.delay_offs[freq_no].ref;
 
             if (diff_delay != 0.0)  // apply only non-zero delay effects
                 {

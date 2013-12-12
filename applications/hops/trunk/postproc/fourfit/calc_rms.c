@@ -255,7 +255,14 @@ struct type_pass *pass;
             plot.seg_phs[pass->nfreq][seg] = c_phase (vsum);
             }
 
-        c = sin(c_phase(vsum) - status.coh_avg_phase);
+        c = c_phase(vsum) - status.coh_avg_phase;
+                                        // condition to lie in [-pi,pi] interval
+        c = fmod (c, 2.0 * M_PI);
+        if (c > M_PI)
+            c -= 2.0 * M_PI;
+        else if (c < - M_PI)
+            c += 2.0 * M_PI;
+
         status.timerms_phase += wt_dsb * c * c;
                                         /* Performs scalar sum over segments */
                                         /* of vector sums within segments and */
@@ -285,14 +292,22 @@ struct type_pass *pass;
                                         /* Calculate frequency rms values */
     for(fr=0;fr<pass->nfreq;fr++)
         {
-        c = sin(c_phase(status.fringe[fr]) - status.coh_avg_phase);
-        c = c*c;
-        status.freqrms_phase += c;
+        c = c_phase(status.fringe[fr]) - status.coh_avg_phase;
+                                        // condition to lie in [-pi,pi] interval
+        c = fmod (c, 2.0 * M_PI);
+        if (c > M_PI)
+            c -= 2.0 * M_PI;
+        else if (c < - M_PI)
+            c += 2.0 * M_PI;
+        status.freqrms_phase += c * c;
         c = c_mag(status.fringe[fr]) - status.delres_max;
-        c = c*c;
-        status.freqrms_amp += c;
+        status.freqrms_amp += c * c;
         }
-    status.freqrms_phase = sqrt(status.freqrms_phase / pass->nfreq) * 180./M_PI;
+    if (pass->nfreq > 2)                // avoid 0/0 singularity
+        status.freqrms_phase = sqrt(status.freqrms_phase 
+                                    / (pass->nfreq - 2)) * 180./M_PI;
+    else
+        status.freqrms_phase = 0.0;
     status.freqrms_amp = sqrt(status.freqrms_amp / pass->nfreq) * 100. / status.delres_max;
 
                                         /* Theoretical RMS values */
@@ -300,10 +315,10 @@ struct type_pass *pass;
                                         /* number of segments actually included */
                                         /* in the fit for switched mode */
     true_nseg = status.nseg * totap / (pass->num_ap * pass->nfreq);
-    if (true_nseg < 1.01) 
-        true_nseg = 1.01;
-    status.th_timerms_phase = sqrt(true_nseg - 1.0) * 180. / (M_PI * status.snr);
-    status.th_freqrms_phase = sqrt(pass->nfreq - 1.0) * 180. / (M_PI * status.snr);
+
+    status.th_timerms_phase = sqrt(true_nseg) * 180. / (M_PI * status.snr);
+    status.th_freqrms_phase = sqrt(pass->nfreq) * 180. / (M_PI * status.snr);
+        
     status.th_timerms_amp = status.th_timerms_phase * M_PI * 100. / 180.;
     status.th_freqrms_amp = status.th_freqrms_phase * M_PI * 100. / 180.;
     msg ("RMS = %lg %lg %lg %lg %lg %lg %lg %lg ",0,

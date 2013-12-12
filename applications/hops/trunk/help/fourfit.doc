@@ -1,5 +1,5 @@
 Documentation for the program "fourfit"
--- last update 2012.3.21
+-- last update 2013.6.5
 ---------------------------------------
 
 COMMAND NAME:   fourfit
@@ -304,8 +304,10 @@ SYNTACTIC KEYWORDS
 
 ACTION KEYWORDS         VALUES
    adhoc_amp          float
+   adhoc_file         string
+   adhoc_file_chans   string
    adhoc_period       float
-   adhoc_phase        'sinewave' or 'polynomial'
+   adhoc_phase        'sinewave', 'polynomial', or 'file'
    adhoc_poly         <7 floats/integers (mixture OK)
    adhoc_tref         float
    dc_block           `true' or `false' (default: false)
@@ -471,6 +473,9 @@ KEYWORD SEMANTICS
              past the most recent hour.
    adhoc_poly For the ad hoc phase polynomial model; From 1-6 coefficients
              describing a power-series model in time. (deg/sec^n)
+   adhoc_file Name of the file containing phases in the ad hoc file mode.
+   adhoc_file_chans String of channel labels for phases (columns) in the
+             ad hoc file.
    use_samples   If true, use the sampler statistics (aka state counts) to
              normalize the raw correlation sums to the equivalent analog
              correlation.

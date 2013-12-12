@@ -258,6 +258,8 @@ int parser ()
                        cb_ptr -> pc_amp_hcode = float_values[tval];
                    else if (toknum == FMATCH_BW_PCT_)
                        cb_ptr -> fmatch_bw_pct = float_values[tval];
+                   else if (toknum == MBD_ANCHOR_)
+                       cb_ptr -> mbd_anchor = tval;
                break;
 
 
@@ -578,15 +580,38 @@ int parser ()
                    cb_ptr -> frequency[i] = sideband; 
                break;
 
-           case INSERT_STRING:     // add string and change concatenation point
-               strcat (psc, char_values+tval);
-               for (cb_ptr=cond_start; cb_ptr!=NULL; cb_ptr=cb_ptr->cb_chain)
-                   cb_ptr -> psamplers[ns] = psc;
-               psc += strlen (char_values+tval) + 1;
-               ns++;
+           case INSERT_STRING:                   // handle all string arguments
+               if (toknum == SAMPLERS_)
+                   {               // add string and change concatenation point
+                   strcat (psc, char_values+tval);
+                   for (cb_ptr=cond_start; cb_ptr!=NULL; cb_ptr=cb_ptr->cb_chain)
+                       cb_ptr -> psamplers[ns] = psc;
+                   psc += strlen (char_values+tval) + 1;
+                   ns++;
                                 // transition if we've read all expected strings
-               if (ns == cond_start -> nsamplers)
-                   next_state = BLOCK_INTERIOR;
+                   if (ns == cond_start -> nsamplers)
+                       next_state = BLOCK_INTERIOR;
+                   }
+                                // store adhoc (pcal) file names
+               else if (toknum == ADHOC_FILE_)
+                   for (cb_ptr=cond_start; cb_ptr!=NULL; cb_ptr=cb_ptr->cb_chain)
+                       {
+                       if (cb_ptr -> baseline[1] == WILDCARD)      // ref station
+                           strncpy (cb_ptr -> adhoc_file[0], char_values+tval, 256);
+                       else if (cb_ptr -> baseline[0] == WILDCARD) // rem station
+                           strncpy (cb_ptr -> adhoc_file[1], char_values+tval, 256);
+                       }
+                                // store adhoc (pcal) file channels
+               else if (toknum == ADHOC_FILE_CHANS_)
+                   for (cb_ptr=cond_start; cb_ptr!=NULL; cb_ptr=cb_ptr->cb_chain)
+                       {
+                       if (cb_ptr -> baseline[1] == WILDCARD)      // ref station
+                           strncpy (cb_ptr -> adhoc_file_chans[0], 
+                                    char_values+tval, 128);
+                       else if (cb_ptr -> baseline[0] == WILDCARD) // rem station
+                           strncpy (cb_ptr -> adhoc_file_chans[1], 
+                                    char_values+tval, 128);
+                       }
                break;
 
             case POP_TOKEN:

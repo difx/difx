@@ -20,7 +20,7 @@ struct token_struct
    };
 
 
-#define MAX_TOKENS    90   /* Increase if many more tokens added */
+#define MAX_TOKENS   100   /* Increase if many more tokens added */
 #define MAX_STATES    20   /*     "    "   "    "   states   "   */
 
 
@@ -113,6 +113,12 @@ struct token_struct
 #define WEAK_CHANNEL_    83
 #define PC_AMP_HCODE_    84
 #define FMATCH_BW_PCT_   85
+#define FILE_            86
+#define ADHOC_FILE_      87
+#define ADHOC_FILE_CHANS_ 88
+#define MBD_ANCHOR_      89
+#define MODEL_           90
+#define SBD_             91
 
 
         /* Definitions of token categories */
@@ -145,6 +151,7 @@ struct token_struct
 #define GREATER_THAN        26
 #define TO                  27
 #define VECTOR_STRING_PARAM 28
+#define STRING_PARAM        29
 #define INT_CONST           1048576
 
 
@@ -171,6 +178,7 @@ struct token_struct
 #define NEED_2ND_SCAN       19
 #define NEED_VECTOR_STRING  20
 #define NEED_VS_NUMBER      21
+#define NEED_STRING         22
 
 
         /* Definitions of FSM actions */

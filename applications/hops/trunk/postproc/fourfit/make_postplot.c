@@ -46,11 +46,13 @@
 #define pscat(ps_string) strcat (pplot, ps_string)
 #define psleft(xcoord, ycoord, ps_string)\
              {xval = xcoord * 7570; yval = ycoord * 10500;\
-                sprintf (psbuf, "%d %d M (%s) SL\n", xval, yval, ps_string);\
+                snprintf (psbuf, sizeof(psbuf),\
+                    "%d %d M (%s) SL\n", xval, yval, ps_string);\
                 pscat (psbuf);}
 #define psright(xcoord, ycoord, ps_string)\
              {xval = xcoord * 7570; yval = ycoord * 10500;\
-                sprintf (psbuf, "%d %d M (%s) SR\n", xval, yval, ps_string);\
+                snprintf (psbuf, sizeof(psbuf),\
+                    "%d %d M (%s) SR\n", xval, yval, ps_string);\
                 pscat (psbuf);}
                                         /* Color shorthand */
 #define setred pscat ("1.0 0.0 0.0 setrgbcolor\n")
@@ -125,6 +127,7 @@ struct type_221 **t221)
     float xmin, xmax, ymin, ymax, sec1, sec2, plotwidth;
     float xpos, xposref,xposrem, ypos, spacing, offset, labelpos, lwid, yplace;
     double max_dr_win, max_sb_win, max_mb_win;
+    float max_amp;
     double plotstart, plotdur, plotend, totdur, tickinc, majinc, ticksize;
     float plot_time, trackerr, digitwidth, bandwidth, xstart, xend;
     int nc, nsbd, ncp, np, hr1, hr2, min1, min2, xval, yval, nplots, year;
@@ -138,6 +141,7 @@ struct type_221 **t221)
     char buffer[32];
     static char *pcstr[5]={"","NORMAL","AP BY AP","MANUAL", "MULTITONE"};
     static char ps_file[1024];
+    double delta_delay;
                                         /* Create a temporary file to hold */
                                         /* the postscript output */
     strcpy(ps_file, P_tmpdir "/fourfit_XXXXXX");
@@ -165,7 +169,7 @@ struct type_221 **t221)
     cpgsci (1);
                                         /* Delay-rate spectrum */
     xmin = xmax = 0;
-    ymax = 0;
+    max_amp = 1e4 * fringe.t208->amplitude;
     for(i=0; i<plot.dr_size_max; i++)
         {                               /* Convert to ns/s */
         drate = (double)i - (double)plot.dr_size_max / 2.0;
@@ -175,15 +179,9 @@ struct type_221 **t221)
         if (drate > xmax) xmax = drate;
         xr[i] = drate;
         yr[i] = plot.d_rate[i];
-        if (yr[i] > ymax) ymax = yr[i];
-        }
-    if (ymax == 0.0)
-        {
-        msg ("overriding ymax of 0 in delay rate spectrum; data suspect", 2);
-        ymax = 1.0;
         }
     cpgsvp (0.05, 0.80, 0.77, 0.95);
-    cpgswin(xmin, xmax, 0.0, ymax);
+    cpgswin(xmin, xmax, 0.0, max_amp);
     cpgsch (0.5);
     cpgbox ("BNST", 0.0, 0.0, "BNST", 0.0, 0.0);
     cpgsch (0.7);
@@ -211,31 +209,24 @@ struct type_221 **t221)
     if (pass->nfreq > 1)
         {
         xmin = xmax = 0;
-        ymax = 0;
-        for (i=0; i<256; i++)
+        for (i=0; i<status.grid_points; i++)
             {
-            mbd = (double)i - 128.0;
-            mbd /= 256.0;
+            mbd = i - status.grid_points/2;
+            mbd /= status.grid_points;
             mbd /= status.freq_space;
             if (mbd < xmin) xmin = mbd;
             if (mbd > xmax) xmax = mbd;
             xr[i] = mbd;
             yr[i] = plot.mb_amp[i];
-            if (yr[i] > ymax) ymax = yr[i];
             }
-        if (ymax == 0.0)
-            {
-            msg ("overriding ymax of 0 in multiband delay plot; data suspect", 2);
-            ymax = 1.0;
-            }
-        cpgswin (xmin, xmax, 0.0, ymax);
+        cpgswin (xmin, xmax, 0.0, max_amp);
         cpgsch (0.5);
         cpgbox ("CMST", 0.0, 0.0, "CMST", 0.0, 0.0);
         cpgsch (0.7);
         cpgsci (4);
         cpgmtxt("R", 2.0, 0.5, 0.5, "amplitude");
         cpgmtxt("T", 1.5, 0.5, 0.5, "multiband delay (\\gms)");
-        cpgline(256, xr, yr);
+        cpgline(status.grid_points, xr, yr);
                                         /* Draw in search window */
         max_mb_win = 0.5 / status.freq_space;
         if ((param.win_mb[0] > -max_mb_win) || (param.win_mb[1] < max_mb_win))
@@ -244,6 +235,7 @@ struct type_221 **t221)
             wrap = FALSE;
             if (param.win_mb[0] > param.win_mb[1]) wrap = TRUE;
             cpgsvp (0.05, 0.80, 0.952, 0.953);
+            cpgswin (xmin, xmax, 0.0, 1.0);
             xpos = param.win_mb[0];
             cpgmove (xpos, 0.5);
             cpgslw (3);
@@ -270,7 +262,6 @@ struct type_221 **t221)
                                         /* Singleband delay function */
     nsbd = 2 * param.nlags;
     xmin = xmax = 0;
-    ymax = 0;
     for (i=0; i<nsbd; i++)
         {
         sbd = (double)i - (double)nsbd / 2.0;
@@ -279,17 +270,14 @@ struct type_221 **t221)
         if (sbd > xmax) xmax = sbd;
         xr[i] = sbd;
         yr[i] = plot.sb_amp[i];
-        if (yr[i] > ymax) ymax = yr[i];
-        }
-    if (ymax == 0.0)
-        {
-        msg ("overriding ymax of 0 in singleband delay plot; data suspect", 2);
-        ymax = 1.0;
         }
     cpgsvp (0.05, 0.35, 0.63, 0.74);
-    cpgswin (xmin, xmax, 0.0, ymax);
+    cpgswin (xmin, xmax, 0.0, max_amp);
     cpgsch (0.5);
-    cpgbox ("BCNST", 0.0, 0.0, "BCNST", 0.0, 0.0);
+    if (status.nion > 0)                // upper tics suppressed if ion display
+        cpgbox ("BNST", 0.0, 0.0, "BCNST", 0.0, 0.0);
+    else
+        cpgbox ("BCNST", 0.0, 0.0, "BCNST", 0.0, 0.0);
     cpgsch (0.7);
     cpgsci (3);
     cpgmtxt("B", 2.0, 0.5, 0.5, "singleband delay (\\gms)");
@@ -309,6 +297,29 @@ struct type_221 **t221)
         cpgslw (1);
         }
     cpgsci (1);
+                                        // ionosphere search points (iff present)
+    if (status.nion > 0)
+        {
+        for(i=0; i<status.nion; i++)
+            {
+            xr[i] = status.dtec[i][0];
+            yr[i] = status.dtec[i][1];
+                                        // debug print
+            msg("TEC %f amp %f", 0, status.dtec[i][0], status.dtec[i][1]);
+            }
+         
+        xmin = status.dtec[0][0];
+        xmax = status.dtec[status.nion-1][0];
+        cpgswin (xmin, xmax, 0.0, max_amp);
+        cpgsch (0.5);
+        cpgbox ("CMST", 0.0, 0.0, "", 0.0, 0.0);
+        cpgsch (0.7);
+        cpgsci (2);
+        cpgmtxt("T", 0.5, 0.5, 0.5, "ion. TEC");
+        cpgline (status.nion, xr, yr);
+        cpgsci (1);
+        }
+
                                         /* Cross-power spectrum - amplitude */
     nlsb = nusb = numsb = 0;            /* count up total usb & lsb AP's */
     for (i=0; i<pass->nfreq; i++)
@@ -369,7 +380,7 @@ struct type_221 **t221)
     cpgsch (0.7);
     cpgmtxt("B", 2.0, 0.5, 0.5, "Avgd. Xpower Spectrum (MHz)");
     cpgmove (0.0, 0.0);
-    cpgdraw (0.0, ymax);
+    cpgdraw (0.0, max_amp);
                                         /* Blue dots */
     cpgsci (4);
     cpgslw (5.0);
@@ -1181,7 +1192,11 @@ struct type_221 **t221)
     xposrem = 0.0;
                                         // print manual pc_phases to zero out phase, mbd
     if (msglev < 2)
-        {
+        {                               // precalculate diff. delay
+        delta_delay = (param.mbd_anchor == MODEL) ?
+                      fringe.t208->resid_mbd :
+                      fringe.t208->resid_mbd - fringe.t208->resid_sbd;
+        fprintf (stderr, "delta_delay %g\n", delta_delay);
         fprintf (stderr, "pc_phases ");
         for (i=start_plot; i<start_plot+limit_plot; i++)
             fprintf (stderr, "%c", pass->pass_data[i].freq_code);
@@ -1468,21 +1483,13 @@ struct type_221 **t221)
                                     // to allow zeroing out phase and mbd residuals for
                                     // combining multiple bands    rjc 2010.1.5
         if (msglev < 2)
+            {
             fprintf (stderr, "%6.1f ", fmod((double)fringe.t207->ref_pcoffset[i].lsb 
               - (double)fringe.t207->rem_pcoffset[i].lsb
               + c_phase (status.fringe[i]) * 180.0 / pi
-              + 360 * fringe.t208->resid_mbd * 
-                       (pass->pass_data[i].frequency 
+              + 360 * delta_delay * (pass->pass_data[i].frequency 
                       - fringe.t205->ref_freq), 360.0));
-	    // fmod returns -360 .. 360 depending on sign of the phase
-	    // pcoffset.*lsb is identical to pcoffset.*usb
-        /*  fprintf (stderr, "%f %f %f %f %f %f\n", 
-                    (double)fringe.t207->ref_pcoffset[i].lsb, 
-                    (double)fringe.t207->rem_pcoffset[i].lsb,
-                    c_phase (status.fringe[i]) * 180.0 / pi,
-                    fringe.t208->resid_mbd, 
-                    pass->pass_data[i].frequency, 
-                    fringe.t205->ref_freq); */
+            }
         }
 
     if (msglev < 2)
@@ -1505,7 +1512,15 @@ struct type_221 **t221)
     yplace -= 0.145;
     ypos = yplace;
     pscat ("/Helvetica findfont 95 scalefont setfont\n");
-    psleft (0.0, ypos, "Group delay (usec)"); ypos -= 0.01;
+    if (param.mbd_anchor == MODEL)
+        {
+        psleft (0.0, ypos, "Group delay (usec)(model)"); 
+        }
+    else
+        {
+        psleft (0.0, ypos, "Group delay (usec)(sbd)"); 
+        }
+    ypos -= 0.01;
     psleft (0.0, ypos, "Sband delay (usec)"); ypos -= 0.01;
     psleft (0.0, ypos, "Phase delay (usec)"); ypos -= 0.01;
     psleft (0.0, ypos, "Delay rate (us/s)"); ypos -= 0.01;
@@ -1665,7 +1680,7 @@ struct type_221 **t221)
     psleft (0.82, ypos, buf);
     sprintf (buf, "%8.2f %8.2f", param.win_ion[0], param.win_ion[1]);
     psleft (0.92, ypos, buf);
-    ypos -= 0.015;
+    ypos -= 0.012;
                                     // az, el, par. angle
     sprintf (buf, "%c: az %.1f  el %.1f  pa %.1f", param.baseline[0],
             fringe.t202->ref_az, fringe.t202->ref_elev, 
@@ -1684,14 +1699,14 @@ struct type_221 **t221)
     else if (param.interpol == SIMUL)
         sprintf (buf, "simultaneous interpolator");
     psleft (0.90, ypos, buf);
-    ypos -= 0.015;
+    ypos -= 0.012;
 
     if (test_mode) strcpy (output_filename, "Suppressed by test mode");
     else strcpy (output_filename, fringename);
-                                        /* recreate input filename from output */
+                                        /* make input filename from output */
     strcpy (input_filename, fringename);
     i = strlen (input_filename);
-    while (input_filename[i] != '/')
+    while ((input_filename[i] != '/') && (i > 0))
         i--;
                                     // construct type 1 name from type 2 name
     strcpy (buf, input_filename+strlen(input_filename)-7);
@@ -1699,6 +1714,18 @@ struct type_221 **t221)
     sprintf (buf, "Control file: %s    Input file: %s    Output file: %s", 
              control_filename, input_filename, output_filename);
     psleft (0.00, ypos, buf);
+    ypos -= 0.01;
+                                    // samplers line, possibly
+    if (pass->control.nsamplers)
+        {
+        sprintf (buf, "Samplers: ");
+        for (i=0; i<pass->control.nsamplers; i++)
+            {
+            sprintf (buffer, "%s ", pass->control.psamplers[i]);
+            strcat (buf, buffer);
+            }
+        psleft (0.00, ypos, buf);
+        }
                                         /* Re-attach trailing part of file */
     strcat (pplot, trailer);
     (*t221)->ps_length = strlen (pplot);

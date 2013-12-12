@@ -63,6 +63,7 @@ struct c_block *cb_ptr;
     cb_ptr -> weak_channel    = NULLFLOAT;
     cb_ptr -> pc_amp_hcode    = NULLFLOAT;
     cb_ptr -> fmatch_bw_pct   = NULLFLOAT;
+    cb_ptr -> mbd_anchor      = NULLINT;
 
     for (i=0; i<6; i++)
         cb_ptr -> adhoc_poly[i] = NULLFLOAT;
@@ -72,14 +73,16 @@ struct c_block *cb_ptr;
 
     for (i=0; i<2; i++)
         {
-        cb_ptr -> baseline[i]  = WILDCARD;
-        cb_ptr -> scan[i]      = NULLINT;
-        cb_ptr -> sb_window[i] = NULLFLOAT;
-        cb_ptr -> mb_window[i] = NULLFLOAT;
-        cb_ptr -> dr_window[i] = NULLFLOAT;
-        cb_ptr -> time_span[i] = NULLINT;
-        cb_ptr -> passband[i]  = NULLFLOAT; 
-        cb_ptr -> ion_window[i]= NULLFLOAT;
+        cb_ptr -> baseline[i]            = WILDCARD;
+        cb_ptr -> scan[i]                = NULLINT;
+        cb_ptr -> sb_window[i]           = NULLFLOAT;
+        cb_ptr -> mb_window[i]           = NULLFLOAT;
+        cb_ptr -> dr_window[i]           = NULLFLOAT;
+        cb_ptr -> time_span[i]           = NULLINT;
+        cb_ptr -> passband[i]            = NULLFLOAT; 
+        cb_ptr -> ion_window[i]          = NULLFLOAT;
+        cb_ptr -> adhoc_file[i][0]       = 0; 
+        cb_ptr -> adhoc_file_chans[i][0] = 0; 
         }
 
     for (i=0; i<4; i++)

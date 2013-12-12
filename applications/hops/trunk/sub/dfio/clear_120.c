@@ -30,7 +30,7 @@ clear_120 (struct type_120 *t120)
     strcpy (t120->rootcode, "      ");
     t120->index = 0;
     t120->ap = 0;
-    t120->flag = 0;
+    t120->fw.flag = 0;
     t120->status = 0;
     t120->fr_delay = 0;
     t120->delay_rate = 0;

@@ -68,6 +68,12 @@ union lag_data
     struct spectral spec[1];
     };
 
+union flag_wgt
+    {
+    int             flag;           /* Up to 32 correlation flags             */
+    float           weight;         // in spectral mode: ap weight (0.0-1.0)
+    };
+
 struct type_120 
     {
     char            record_id[3];   /* Standard 3-digit id                    */
@@ -78,7 +84,7 @@ struct type_120
     char            rootcode[6];    /* Root suffix                            */
     int             index;          /* Index number for type 101 rec.         */
     int             ap;             /* Acc period number                      */
-    int             flag;           /* Up to 32 correlation flags             */
+    union flag_wgt  fw;             // either flag or weight for lag or spectral
     int             status;         /* Up to 32 status bits                   */
     int             fr_delay;       /* Mid-AP fractional delay (bits * 2^32)  */
     int             delay_rate;     /* Mid-AP delay rate (bits/sysclk * 2^32) */

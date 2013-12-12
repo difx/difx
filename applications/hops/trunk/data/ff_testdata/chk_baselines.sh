@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# $Id: chk_baselines.sh 787 2012-12-14 14:31:11Z gbc $
+# $Id: chk_baselines.sh 879 2013-11-07 13:24:24Z gbc $
 #
 # canonical test suite for fourfit
 #
@@ -27,6 +27,8 @@ do
     fourfit -b $bs $rdir/$targ.$time
     mv $rdir/$bs.*.*.$time .
 done
+chgrp difx ??.*.*.$time
+chmod 664 ??.*.*.$time
 
 files=`ls ??.?.?.$time | wc -l`
 $verb && echo files is $files
@@ -47,6 +49,12 @@ done
 
 # remove helper
 rm -f pplot_print
+
+for f in ??.?.?.$time.ps
+do
+    chgrp difx $f
+    chmod 664 $f
+done
 
 files=`ls ??.?.?.$time.ps | wc -l`
 bytes=`ls -s ??.?.?.$time.ps | awk '{s+=$1}END{print s}'`

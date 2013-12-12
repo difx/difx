@@ -30,7 +30,7 @@ struct type_pass *pass;
                         sbdbox[MAXFREQ], rj, c, ap_cnt[MAXAP], nap,
            offset, maxamp, sumwt, q[3],
            temp[MAXAP],
-           yy[3], eff_npol;
+           yy[3], eff_npol, sb_factor;
     int n, ij,
         maxi, npmax, nl;
                                         /* Make sure data will fit */
@@ -122,8 +122,8 @@ struct type_pass *pass;
                                         /* Calculate multi band delay. */
                                         /* Apply rotator to single band delay */
                                         /* values and add up over time. */
-                                        /* MBD FFT size hardcoded to 256 at present */
-    for (i = 0; i < 512; i++)
+                                        /* MBD FFT max size hardcoded to 8192 at present */
+    for (i = 0; i < status.grid_points; i++)
         {
         X[i] = c_zero();
         Y[i] = c_zero();
@@ -138,11 +138,14 @@ struct type_pass *pass;
                                 datum->sband, pass));   
                                         /* Weight by fractional AP */
             frac = 0.0;
-            if (datum->usbfrac >= 0.0) frac = datum->usbfrac;
-            if (datum->lsbfrac >= 0.0) frac += datum->lsbfrac;
+            if (datum->usbfrac >= 0.0) 
+                frac = datum->usbfrac;
+            if (datum->lsbfrac >= 0.0) 
+                frac += datum->lsbfrac;
                                         /* When both sidebands added together, */
                                         /* we use the mean fraction */
-            if ((datum->usbfrac >= 0.0) && (datum->lsbfrac >= 0.0)) frac /= 2.0;
+            if ((datum->usbfrac >= 0.0) && (datum->lsbfrac >= 0.0)) 
+                frac /= 2.0;
             Z = s_mult (Z, frac);
 
             X[fr] = c_add (X[fr], Z);
@@ -150,12 +153,13 @@ struct type_pass *pass;
         Y[status.mb_index[fr]] = X[fr];
         }
                                         /* FFt across freq to mbdelay spectrum */
-    FFT1(Y, 256, 1, Y, 1);
-    for (i = 0; i < 256; i++)
+    FFT1(Y, status.grid_points, 1, Y, 1);
+    for (i = 0; i < status.grid_points; i++)
         {
-        j = i - 128;
-        if (j < 0) j += 256;
-        plot.mb_amp[i] = c_mag(Y[j]) / (double)status.total_ap_frac;
+        j = i - status.grid_points / 2;
+        if (j < 0) 
+            j += status.grid_points;
+        plot.mb_amp[i] = c_mag(Y[j]) / status.total_ap_frac;
         }
 
                                         /* Calculate single band delay, */
@@ -215,8 +219,17 @@ struct type_pass *pass;
     for (i = 0; i < 2*nl; i++)
        {
        j = nl - i;
-       if (j < 0) j += 4*nl;
-       plot.cp_spectrum[i] = s_mult (Y[j], 2. / (status.total_ap_frac * 2*nl));
+       if (j <= 0)
+           sb_factor = status.total_usb_frac > 0 ? 
+               sqrt (0.5) / (M_PI * status.total_usb_frac) : 0.0;
+       else
+           sb_factor = status.total_lsb_frac > 0 ? 
+               sqrt (0.5) / (M_PI * status.total_lsb_frac) : 0.0;
+
+       if (j < 0)
+           j += 4*nl;
+            
+       plot.cp_spectrum[i] = s_mult (Y[j], sb_factor);
        Z = c_exp(-(status.sbd_max * (i-nl) * M_PI / (status.sbd_sep * 2*nl)));
        plot.cp_spectrum[i] = c_mult(Z, plot.cp_spectrum[i]);
        }

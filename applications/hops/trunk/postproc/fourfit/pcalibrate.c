@@ -140,6 +140,7 @@ void pcalibrate (struct type_pass *pass,
           del_avg = 0.0;
                                     // apply manual or offset pcal phase
           delta_phase[stn] = theta_ion + M_PI * status.pc_offset[fr][stn][ipol] / 180.0;
+
                                     // loop over time within the scan
           for (ap = pass->ap_off; ap < pass->ap_off + pass->num_ap; ap++, ip++)  
             {
@@ -242,6 +243,9 @@ void pcalibrate (struct type_pass *pass,
                 pc_amb = 1 / param.pcal_spacing[stn];
                 while (delay < sdelay - pc_amb / 2.0)
                     delay += pc_amb;
+                                    // add in a priori offset to delay for this chan & stn
+                delay += 1e-9 * status.delay_offs[fr][stn];
+
                 msg ("fr %d stn %d ipol %d delay %6.1f ns", 0, fr, stn, ipol, 1e9 * delay);
 
                                     // find mean of delay-adjusted phases at center frequency
@@ -266,9 +270,6 @@ void pcalibrate (struct type_pass *pass,
                     pc_sub[stn] = c_mean (rotval, nin);
                 else
                     pc_sub[stn] = c_zero ();
-                                    // conjugate LSB phase to USB equivalent
-                if (fcenter < 0.0) 
-                    pc_sub[stn].im *= -1.0;
                                     // write this value into all ap's of sub-int.
                 for (kap=ap_subint_start; kap<=ap; kap++)
                     {
@@ -302,8 +303,6 @@ void pcalibrate (struct type_pass *pass,
                   pc_adj[stn].re = 1.0;
                   pc_adj[stn].im = 0.0;
                   }
-              if (fcenter < 0.0)    // conjugate LSB phase to USB equivalent
-                  pc_adj[stn].im *= -1.0;
               msg ("non-multitone pcal phasor %7.2f %7.2f", -1, 
                       1e3 * c_mag (pc_adj[stn]), 180.0 / M_PI * c_phase (pc_adj[stn]));
               }
@@ -320,10 +319,6 @@ void pcalibrate (struct type_pass *pass,
           msg ("chan %d stn %d ipol %d pc_amp %6.2f pc_phase %7.2f\n", 0,
                fr, stn, ipol, 1e3 * status.pc_amp[fr][stn][ipol], 
                180.0 / M_PI * status.pc_phase[fr][stn][ipol]);
-
-                                    // copy delay calib. values into status array
-          status.delay_offs[fr][stn] = (stn) ? pass->control.delay_offs[fr].rem 
-                                             : pass->control.delay_offs[fr].ref;
           }                         // end of polarizaton loop
         }                           // bottom of stn = 0..1 loop
     }

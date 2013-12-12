@@ -32,7 +32,8 @@ double y[3],
        *amp_max,
        q[3];
     {
-    int i;
+    int i,
+        rc;
     double x, range, dwin(), c_mag();
 
     range = fabs (upper - lower);
@@ -54,11 +55,16 @@ double y[3],
 
     *amp_max = q[0] * *x_max * *x_max  +  q[1] * *x_max  +  q[2];
 
-    if (q[0] >= 0)       /* 0 or positive curvature is an interpolation error */
-	return (2);
-                                            /* Simple f.p. equality test can fail */
-                                            /* in machine dependent way */
-    else if (fabs (*x_max - x) > (0.001 * range)) return (1);
+                                    // Test for error conditions
 
-    return (0);                            /* signal error-free interpolation */
+    rc = 0;                         // default: indicates error-free interpolation
+    if (q[0] >= 0)                  // 0 or positive curvature is an interpolation error
+	    rc = 2;
+                                    // Is maximum at either edge?
+                                    // (simple floating point equality test can fail
+                                    // in machine-dependent way)
+    else if (fabs (*x_max - x) > (0.001 * range)) 
+        rc = 1;
+
+    return (rc); 
     }

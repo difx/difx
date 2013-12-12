@@ -42,7 +42,7 @@ void sampler_delays (struct type_pass *pass)
     extern struct type_param param;
                                     // debug print sampler group
     for (n=0; n<pass->control.nsamplers; n++)
-	    msg ("Sampler group %d: %s", 1, n, pass->control.psamplers[n]);
+	    msg ("Sampler group %d: %s", 0, n, pass->control.psamplers[n]);
 
                                     // loop over all ap's
     for (ap = pass->ap_off; ap < pass->ap_off + pass->num_ap; ap++)

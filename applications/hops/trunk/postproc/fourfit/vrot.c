@@ -1,25 +1,26 @@
-/***************************************************
-* Function to calculate complex rotator            *
-* used in computing delay res. function            *
-*                                                  *
-*                                                  *
-*                                                  *
-* INPUTS:                                          *
-*  ap  - accum. period index (timelike)            *
-*  dr  - delay rate value                          *
-*  mbd - multiband delay value                     *
-*  fr  - frequency channel                         *
-*  sb  - sideband  [-1, 0, 1] = [LSB, DSB, USB]    *
-*  pass- pass structure (used to get freqency)     *
-*                                                  *
-*  8/2/91    - cmn   original C version, based on  *
-*                    aeer's VROT                   *
-*  2001.1.17 - rjc   fix sbd correction bug        *
-*  2011.5.11 - rjc   use mbd from center of band   *
-*                    that was actually observed    *
-*  2012.1.4  - rjc   remove pcal rotation (done in *
-*                    norm to support multiple pols)*                  
-***************************************************/
+/****************************************************************************
+* Function to calculate complex rotator                                     *
+* used in computing delay res. function                                     *
+*                                                                           *
+*                                                                           *
+*                                                                           *
+* INPUTS:                                                                   *
+*  ap  - accum. period index (timelike)                                     *
+*  dr  - delay rate value                                                   *
+*  mbd - multiband delay value                                              *
+*  fr  - frequency channel                                                  *
+*  sb  - sideband  [-1, 0, 1] = [LSB, DSB, USB]                             *
+*  pass- pass structure (used to get freqency)                              *
+*                                                                           *
+*  8/2/91    - cmn   original C version, based on aeer's VROT               *
+*  2001.1.17 - rjc   fix sbd correction bug                                 *
+*  2011.5.11 - rjc   use mbd from center of band that was actually observed *
+*  2011.10.18- rjc   add optimize_closure to keep sb error from adding noise*
+*                    to edge phase, which is used in closure, but group     *
+*                    delay will be noisier, esp. with analog ch. filters    *
+*  2012.1.4  - rjc   remove pcal rotation (done in norm to support          *
+*                    multiple pols)                                         *
+****************************************************************************/
 
 #include <math.h>
 #include "mk4_data.h"

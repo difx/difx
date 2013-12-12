@@ -57,7 +57,9 @@ int do_record_merge(char *fileAName, char *fileBName,
         n = 0, new_idx,
         rc,
         nindex_A_save,
-        ap = 0;
+        ap = 0,
+        na_ind,                     // number of A indices actually present
+        nb_ind;                     // number of B indices actually present
     
     int index_map[NUM_CH_MAP][2];    // for index reassignment
                                      // [...][0] old #  [...][1] new #
@@ -144,28 +146,34 @@ int do_record_merge(char *fileAName, char *fileBName,
                 }
 
                             // initialize index_map with A's indices
+            na_ind = -1;
             for (i = 0; i < cdataA.t100->nindex; i++)
                 {
                 idxa = cdataA.index + i;
                 if ((t101a = idxa->t101) == NULL) 
                     continue;
                 msg("encountered A index %d", 0, t101a->index);
-                index_map[i][0] = index_map[i][1] = t101a->index;
+                na_ind++;
+                index_map[na_ind][0] = index_map[i][1] = t101a->index;
                 }
+            na_ind++;       // na_ind is now total# of A indices mapped
 
                             // if indices collide, make B's unique
+            nb_ind = -1;
             for (j = 0; j < cdataB.t100->nindex; j++)
                 {
                 idxb = cdataB.index + j;
                 if ((t101b = idxb->t101) == NULL)
                     continue;
                 msg("encountered B index %d", 0, t101b->index);
-                new_idx = index_map[i+j][0] = t101b->index;
+                nb_ind++;
+                new_idx = index_map[na_ind+nb_ind][0] = t101b->index;
                 for (n = 0; n < NUM_CH_MAP; n++)
                     while (new_idx == index_map[n][1])
                         new_idx += IDX_INC;
-                index_map[i+j][1] = new_idx;
+                index_map[na_ind+nb_ind][1] = new_idx;
                 }
+            nb_ind++;       // nb_ind is now total# of B indices mapped
         
                             // debug info
             for (n = 0; n < NUM_CH_MAP; n++)
@@ -192,7 +200,10 @@ int do_record_merge(char *fileAName, char *fileBName,
                 {
                 idxb = cdataB.index + j;
                 if (idxb->t101 == NULL) 
+                    {
+                    msg ("likely program error, investigate!!", 2);
                     continue;
+                    }
                 if ((t120 = idxb->t120) == NULL) 
                     continue;
         
@@ -244,6 +255,8 @@ int do_record_merge(char *fileAName, char *fileBName,
             for (i=0; i< cdataC.t100->nindex; i++)
                 {
                 idxc = cdataC.index + i;
+                if (idxc->t101 == NULL) 
+                    continue;
                 relabel_chan_ids(idxc->t101, i < nindex_A_save);
                 msg ("i %d index %hd primary %hd ref %s rem %s", 0,
                         i, idxc->t101->index, idxc->t101->primary,

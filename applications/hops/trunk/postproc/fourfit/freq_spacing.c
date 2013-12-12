@@ -54,7 +54,7 @@ struct type_pass *pass;
             for (i = 1; i < 8; i++)     /* power of 2 that will cover all points */
                 if((grid_pts - 1) < index)
                     grid_pts *= 2;
-            if ((index > 255) || (index < 0))
+            if ((index > 2047) || (index < 0))
                 {
                 status.space_err = 1;
                 status.mb_index[fr] = 0;
@@ -63,14 +63,14 @@ struct type_pass *pass;
         }
         while ((div < 256) && (spacing_ok == 0));
 
-/*  if (status.space_err==1)
-        msg("Frequency spacing too large for FFT"); */
+    if (status.space_err==1)
+        msg ("Frequency spacing too large for FFT, check f sequence or array dims!!", 2);
     status.freq_space = spacing;
     status.grid_points = grid_pts; 
     msg ("spacing %g grid_pts %d", 0, spacing, grid_pts);
 
-    if(status.grid_points > 256)
-        status.grid_points = 256;
+    if(status.grid_points > 2048)
+        status.grid_points = 2048;
     status.grid_points *= 4;
                                         /* This needs to account for mixed */
                                         /* single and double sideband data */
@@ -81,10 +81,15 @@ struct type_pass *pass;
                                         /* ap_num_frac.  Discuss on return */
     status.freq_spread = 0.0;
     for (fr = 0; fr < pass->nfreq; fr++)
+        {
         status.freq_spread += (pass->pass_data[fr].frequency - avg_freq) 
                                 * (pass->pass_data[fr].frequency - avg_freq);
-    if (pass->nfreq > 1) status.freq_spread= sqrt(status.freq_spread / pass->nfreq);
-    if (pass->nfreq == 1) status.freq_spread = 1.0 / (param.samp_period * 2.0E6 * sqrt(12.0));
+        msg ("freq[%d] %f mb_index %d", 0, fr, pass->pass_data[fr].frequency, status.mb_index[fr]);
+        }
+    if (pass->nfreq > 1) 
+        status.freq_spread= sqrt(status.freq_spread / pass->nfreq);
+    else if (pass->nfreq == 1) 
+        status.freq_spread = 1.0 / (param.samp_period * 2.0E6 * sqrt(12.0));
     msg ("grid_points %d freq_spread %lf", 0, status.grid_points, status.freq_spread);
     }
     

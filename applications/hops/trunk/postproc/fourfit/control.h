@@ -77,6 +77,8 @@ struct c_block                     /* Elemental control block structure */
    double adhoc_period;            /* period of sinewave (s) */
    double adhoc_amp;               /* amplitude in radians */
    double adhoc_poly[6];           /* ad hoc phase polynomial coefficients (rad/sec^n) */
+   char adhoc_file[2][256];        // file names if station(s) is in pc_mode file
+   char adhoc_file_chans[2][128];  // channel codes [a..zA..Z$%] for pc file phase fields
    double passband[2];             /* passband for spectral filtering (MHz) */
    double t_cohere;                /* coherence time (s) for co-adding fringe rates */
    struct dstats ionosphere;       // a priori ionospheres (TEC units = 1e16 el/m^2)
@@ -85,6 +87,7 @@ struct c_block                     /* Elemental control block structure */
    char *psamplers[MAX_SAMP];      // pointer to each sampler string (or NULL)
    char sampler_codes[256];        // contains all sampler strings
    int interpolator;               // interpolation method
+   int mbd_anchor;                 // mbd ambiguity choice: model or sbd
    struct dstats station_delay;    // station delay pc inject->digitizer (s)
    struct dstats pc_delay_l;       // delay diff (feed->inject)-(pulsegen->inject) (s)
    struct dstats pc_delay_r;       // same, but for RCP (or Y or V)
@@ -114,13 +117,17 @@ struct c_block                     /* Elemental control block structure */
 
 #define SINEWAVE    1              /* ad hoc phase adjustment mode */
 #define POLYNOMIAL  2
+#define PHYLE       3
 
 #define NULLINT   -12345           /* place-holder for no assigned integer value */
 #define NULLFLOAT 508.4482826      /*   "     "     "   "    "     floating   "  */
 #define NULLCHAR  0                /*   "     "     "   "    "     char       "  */
 
                                    // interpolation methods
-#define ITERATE 0
-#define SIMUL 1
+#define ITERATE 1
+#define SIMUL   2
+                                   // mbd anchor choice
+#define MODEL 1
+#define SBD   2
 
 #endif

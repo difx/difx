@@ -53,6 +53,8 @@ struct type_pass *pass;
     rate_offset = 0.0;
     
     param->ion_pts = pass->control.ion_npts;
+    param->mbd_anchor = pass->control.mbd_anchor;
+
     for (i=0; i<2; i++)             // Copy windows into working area
         {
         param->win_sb[i] = pass->control.sb_window[i] + delay_offset;
@@ -98,6 +100,11 @@ struct type_pass *pass;
         for (fr = 0; fr < pass->nfreq; fr++)  
             {
             j = fcode(pass->pass_data[fr].freq_code);
+
+                                    // copy delay calib. values into status array
+            status.delay_offs[fr][stn] = (stn) ? pass->control.delay_offs[j].rem 
+                                               : pass->control.delay_offs[j].ref;
+
             if (param->pc_mode[stn] != MULTITONE)
                 {                   // single tone used in this frequency band, process it
                                     // find corresponding freq index in control structure
@@ -249,6 +256,11 @@ struct type_pass *pass;
     param->ah_amp    = pass->control.adhoc_amp * conrad;
     for (i=0; i<6; i++)
         param->ah_poly[i] = pass->control.adhoc_poly[i] * conrad;
+    for (i=0; i<2; i++)
+        {
+        strcpy (param->ah_file[i], pass->control.adhoc_file[i]);
+        strcpy (param->ah_file_chans[i], pass->control.adhoc_file_chans[i]);
+        }
 
     if (do_accounting) account ("PreCorrect data");
     return (0);

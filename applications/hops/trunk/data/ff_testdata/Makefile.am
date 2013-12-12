@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.am 330 2011-06-10 13:32:10Z gbc $
+# $Id: Makefile.am 876 2013-10-15 16:08:24Z rjc $
 #
 
 SUBDIRS =
@@ -38,6 +38,18 @@ EXP_3365 =  testdata/3365/094-0644_HIGH/3C273.vmudbk \
 	    testdata/3365/094-0644_LOW/SP..vlncsf \
 	    testdata/3365/094-0644_LOW/S..vlncsf
 
+# 3372 is a scan with the legacy geodetic X band setup
+EXP_3372 = testdata/3372/193-1757/0529+483.vtqbsq \
+	    testdata/3372/193-1757/TV..vtqbsq \
+	    testdata/3372/193-1757/T..vtqbsq \
+	    testdata/3372/193-1757/V..vtqbsq
+
+# 3413 is a broadband experiment
+EXP_3413 =  testdata/3413/278-1758/0552+398.wmtukg \
+	    testdata/3413/278-1758/GE..wmtukg \
+	    testdata/3413/278-1758/G..wmtukg \
+	    testdata/3413/278-1758/E..wmtukg
+
 test_gs_device = nullpage
 
 TESTS_ENVIRONMENT = \
@@ -45,11 +57,11 @@ TESTS_ENVIRONMENT = \
 	GS_DEVICE=$(test_gs_device) PGPLOT_DIR=$(PGPLOT_DIR)
 
 if HAVE_DEVEL
-TESTS = chk_ff_2836.sh chk_ff_2843.sh chk_baselines.sh \
-	chk_alist.sh chk_adump.sh chk_aedit.sh chk_fringex.sh \
+TESTS = chk_ff_2836.sh chk_ff_2843.sh chk_ff_3372.sh chk_ff_3413.sh \
+	chk_baselines.sh chk_alist.sh chk_adump.sh chk_aedit.sh chk_fringex.sh \
 	chk_average.sh chk_cofit.sh chk_search.sh chk_fourmer.sh \
 	chk_frmrsrch.sh chk_hdlinks.sh
-expdata = $(EXP_2836) $(EXP_2843) $(EXP_3365)
+expdata = $(EXP_2836) $(EXP_2843) $(EXP_3365) $(EXP_3372) $(EXP_3413)
 else
 TESTS = chk_ff_2843.sh chk_baselines.sh \
 	chk_alist.sh chk_adump.sh chk_aedit.sh chk_fringex.sh \
@@ -57,7 +69,7 @@ TESTS = chk_ff_2843.sh chk_baselines.sh \
 expdata = $(EXP_2843) $(EXP_3365)
 endif
 
-EXTRA_DIST = tst_fourfit.sh $(expdata)
+EXTRA_DIST = $(expdata)
 
 dist_check_SCRIPTS = chk_env.sh $(TESTS)
 

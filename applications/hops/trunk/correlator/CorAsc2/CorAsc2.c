@@ -618,7 +618,7 @@ int main (int argc, char *argv[])
             (void) printf ("rootcode = %.6s ", t120->rootcode);
             (void) printf ("index = %d ", flip_int(t120->index));
             (void) printf ("ap = %d \n", flip_int(t120->ap));
-            (void) printf (" flag = %#8.8x ", flip_int(t120->flag));
+            (void) printf (" weight = %8.4f ", flip_float(t120->fw.weight));
             (void) printf ("status = %#8.8x ", flip_int(t120->status));
             /* (void) printf("bitshift = %f ", t120->bitshift); */
             (void) printf ("fr_delay = %d ", flip_int(t120->fr_delay));
@@ -1542,7 +1542,7 @@ int main (int argc, char *argv[])
                         printf ("%17s  ", "huge");
                     }
                 printf ("\n");
-                for (i = 0; i < nt; i++)
+                for (i = 0; i < 64; i++)
                     {
                     if (t309->chan[i].chan_name[0] == 0 ||
                         !isprint(t309->chan[i].chan_name[0]))

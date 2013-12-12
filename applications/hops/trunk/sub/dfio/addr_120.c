@@ -97,7 +97,14 @@ addr_120 (short version,
             }
         cp_int (t120->index, t120_v0->index);
         cp_int (t120->ap, t120_v0->ap);
-        cp_int (t120->flag, t120_v0->flag);
+        if (type == SPECTRAL)
+            {
+            cp_float (t120->fw.weight, t120_v0->fw.weight);
+            }
+        else
+            {
+            cp_int (t120->fw.flag, t120_v0->fw.flag);
+            }
         cp_int (t120->status, t120_v0->status);
         cp_int (t120->fr_delay, t120_v0->fr_delay);
         cp_int (t120->delay_rate, t120_v0->delay_rate);

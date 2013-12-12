@@ -29,6 +29,9 @@ struct type_pass *pass;
     struct interp_sdata *rrisd[2];
     extern struct type_status status;
     extern struct type_param param;
+                                    // function prototype
+    double diff_file_phase (struct type_pass *, char, double);
+
 
                                         /* This subroutine rotates to correct
                                            data for phasecal differences.
@@ -62,6 +65,12 @@ struct type_pass *pass;
                     zeta += param.ah_poly[i] * thyme_n;
                     thyme_n *= thyme;
                     }
+                }
+                                        // in adhoc file mode, find difference phase (f,t)
+            else if (param.ah_phase == PHYLE)
+                {
+                thyme = ((ap-0.5) * param.acc_period + param.start) / 8.64e4;
+                zeta = diff_file_phase (pass, pass->pass_data[fr].freq_code, thyme);
                 }
             else
                 zeta = 0.0;             /* no ad hoc phase model */

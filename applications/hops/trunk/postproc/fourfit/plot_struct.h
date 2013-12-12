@@ -18,7 +18,7 @@ struct type_plot {
         int             dr_size;            /* Size of delay rate spectrum */
         int             dr_size_max;        /* Size of dr spec in max sbd chan */
         double          sb_amp[2*MAXLAG];   /* Single band delay amplitude*/
-        double          mb_amp[512];        /* Multi band delay  amplitude*/
+        double          mb_amp[8192];       /* Multi band delay  amplitude*/
         double          d_rate[MAXAP];      /* Drate spect in max sbd chan */
         complex         cp_spectrum[2*MAXLAG];   /* Cross power spectrum , phase & mag. */ 
         complex         phasor[MAX_CHAN_PP+1][MAXAP];    /* Fringe phase & mag. */
