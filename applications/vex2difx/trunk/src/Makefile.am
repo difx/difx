@@ -38,6 +38,7 @@ rdbetsys_SOURCES = \
 	corrparams.cpp \
 	rdbetsys.cpp
 
+if USEMYGETLINE
 vex2script_SOURCES = \
 	vextables.h \
 	vextables.cpp \
@@ -47,9 +48,20 @@ vex2script_SOURCES = \
 	corrparams.cpp \
 	pystream.h \
 	pystream.cpp \
-	vex2script.cpp 
-
-vex2script_LDADD = $(id $(HAVE_GETLINE),,getline.o) $(top_builddir)/vex/libvex.la
+	vex2script.cpp \
+	getline.c
+else
+vex2script_SOURCES = \
+	vextables.h \
+	vextables.cpp \
+	vexload.h \
+	vexload.cpp \
+	corrparams.h \
+	corrparams.cpp \
+	pystream.h \
+	pystream.cpp \
+	vex2script.cpp
+endif
 
 vex2opt_SOURCES = \
 	vextables.h \
