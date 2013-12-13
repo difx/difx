@@ -18,8 +18,8 @@ AM_SANITY_CHECK
 
 AC_CHECK_LIB(m, erf,,[AC_MSG_ERROR("need libm")])
 
-AC_CHECK_FUNCS([getline])
-AM_CONDITIONAL([USEMYGETLINE], [test "$HAVE_GETLINE" -eq 1])
+AC_CHECK_FUNCS([getline], [hasgetline=true], [hasgetline=false])
+AM_CONDITIONAL([USEMYGETLINE], [test "$hasgetline" == "false"])
 
 PKG_CHECK_MODULES(DIFXIO, difxio >= 3.3.0)
 PKG_CHECK_MODULES(DIFXMESSAGE, [difxmessage >= 2.3.0 difxmessage < 7])
