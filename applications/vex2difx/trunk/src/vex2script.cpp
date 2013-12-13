@@ -34,9 +34,11 @@
 #include "pystream.h"
 #include "corrparams.h"
 #include "vexload.h"
-#include "../config.h"
+#include <stdio.h>
 
 using namespace std;
+
+extern char **environ;
 
 const string program("vex2script");
 const string version("0.24");
@@ -164,40 +166,31 @@ void readFiles(char *program, char *pfb, char *ddc, char *vdif)
 	char *file;
 	size_t size;
 	ssize_t read;
-	char path[100];
 	char cmd[100] = "dirname ";
+	char *path = NULL;
+	char fullPath[100];
+	int len;
 
-	// check if program was launched as "vex2script", which means it has an entry "which" can find
-	if( strcmp(program, "vex2script") == 0 ) {
-		strcat(cmd, "`which vex2script`");
-	} else {
-	// or if it was launched with a full name including directory path, in which case we can extract that
-		strcat(cmd, program);
-	}
+	// look for path to personality file list
+	path = getenv("PERSONALITYFILEPATH");
 
-	f = popen(cmd, "r");
-	if( f == NULL ) {
-		printf("Couldn't determine parent directpry for vex2script!");
-		exit(-2);
+	strcpy(fullPath, path);
+	len = strlen(path);
+	if( fullPath[len-1] != '/' ) {
+		fullPath[len] = '/';
+		fullPath[len+1] = '\0';
 	}
-	getline(&string, &size, f);
-//	printf("string: <%s>\n", string);
-	strcpy(path, string);
-	path[strlen(string)-1] = '/';
-	path[strlen(string)] = '\0';
-	strcpy(&(path[strlen(string)]), "vex2script.files");
-	free(string);
-	pclose(f);
-//	printf("path: <%s>\n", path);
+	len = strlen(fullPath);
+	strcpy(&(fullPath[len]), "vex2script.files");
 	
 	string = NULL;
-	f = fopen(path, "r");
+	f = fopen(fullPath, "r");
 	if( f == NULL ) {
-		printf("Can't read vex2script.files to get default personality names! errno: %i Exiting!\n", errno);
+		printf("Can't read vex2script.files to get default personality names! Check that PERSONALITYFILEPATH is set correctly.\n");
+		printf("errno: %i\nPERSONALITYFILEPATH=%s\nExiting!\n", errno, fullPath);
 		exit(-1);
 	}
 	while ( (read = getline(&string, &size, f)) != -1 ) {
-//		printf("read: %i size: %i  string: %s\n", read, size, string);
 		if( string[0] == '#' ) {
 			continue;
 		}
@@ -205,7 +198,6 @@ void readFiles(char *program, char *pfb, char *ddc, char *vdif)
 		*file = '\0';
 		file++;
 		file[strlen(file)-1] = '\0';
-//		printf("string: <%s> file: <%s>\n", string, file);
 		if( strcmp(string, "pfb") == 0)
 			strcpy(pfb, file);
 		if( strcmp(string, "ddc") == 0)
