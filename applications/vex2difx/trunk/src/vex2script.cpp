@@ -41,8 +41,8 @@ using namespace std;
 extern char **environ;
 
 const string program("vex2script");
-const string version("0.24");
-const string verdate("20131209");
+const string version("0.25");
+const string verdate("20131213");
 const string author("Walter Brisken, Adam Deller, Matthias Bark");
 
 #ifndef HAVE_GETLINE
