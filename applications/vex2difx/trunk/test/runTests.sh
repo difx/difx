@@ -20,10 +20,13 @@ function compare {
   #compare
   if [ "x`diff -q /tmp/project.py.orig /tmp/project.py`" != "x" ]; then
     echo "  ATTENTION - output has changed!  <--------------"
-    diff ${SCRIPT}.${2}.py ${SCRIPT}.${2}.py.out &> /tmp/${SCRIPT}.${2}.diff
+    diff ${SCRIPT}.${2}.py ${SCRIPT}.${2}.py.out &> /tmp/tzxacsf
+	echo "diff ${SCRIPT}.${2}.py ${SCRIPT}.${2}.py.out" > /tmp/${SCRIPT}.${2}.diff
+	cat /tmp/tzxacsf >> /tmp/${SCRIPT}.${2}.diff
+	rm -f /tmp/tzxacsf
     echo "  Check /tmp/${SCRIPT}.${2}.diff"
   else
-    echo "  Output unchanged"
+    echo "  Output unchanged " ${SCRIPT}.${2}.py
   fi
   rm -f /tmp/project.py.orig /tmp/project.py
 }
@@ -44,7 +47,7 @@ else
 	VEX2S=`which vex2script`
 fi
 echo "  remove old output files"
-rm -f *.py
+rm -f *.py /tmp/*.diff
 echo""
 echo "Using: " ${VEX2S}
 echo""

@@ -24,9 +24,9 @@ obsCode = 'XH000'
 stnCode = 'GB'
 mjdStart = 56534 + 50400*second
 
-# File written by vex2script version 0.21 vintage 20130923
+# File written by vex2script version 0.24 vintage 20131209
 
-dbe0 = RDBE(0, 'ddc', 'ddc_1501283.bin')
+dbe0 = RDBE(0, 'ddc', 'ddc_1501383.bin')
 dbe0.setALC(1)
 dbe0.setFormat('VDIF')
 dbe0.setPSNMode(0)

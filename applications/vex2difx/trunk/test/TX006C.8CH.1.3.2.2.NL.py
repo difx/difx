@@ -14,16 +14,16 @@ obsCode = 'TX006C.8CH.1.3.2.2'
 stnCode = 'NL'
 mjdStart = 56461 + 67500*second
 
-# File written by vex2script version 0.21 vintage 20130923
+# File written by vex2script version 0.24 vintage 20131209
 
-dbe0 = RDBE(1, 'ddc', 'ddc_1501283.bin')
+dbe0 = RDBE(1, 'ddc', 'ddc_1501383.bin')
 dbe0.setALC(1)
 dbe0.setFormat('VDIF')
 dbe0.setPSNMode(0)
 dbe0.setPacket(0, 0, 28, 5032)
 subarray.setDBE(dbe0)
 
-dbe1 = RDBE(2, 'ddc', 'ddc_1501283.bin')
+dbe1 = RDBE(2, 'ddc', 'ddc_1501383.bin')
 dbe1.setALC(1)
 dbe1.setFormat('VDIF')
 dbe1.setPSNMode(0)
@@ -48,13 +48,17 @@ loif0a = VLBALoIfSetup()
 loif0a.setIf('A', '6cm', 'R', 4100, 'U', 'NA', 0, '6cm', 7900, 4100, 752.25)
 loif0a.setPhaseCal(5)
 loif0a.setDBEParams(0, -1, -1, 10, 0)
+loif0a.setDBEParams(1, -1, -1, 10, 0)
 loif0a.setDBERemember(0, 1)
+loif0a.setDBERemember(1, 1)
 loif0b = VLBALoIfSetup() 
 loif0b.setIf('C', '6cm', 'L', 4100, 'U', 'NA', 0, '6cm', 7900, 4100, 752.25)
 loif0b.setIf('B', '6cm', 'R', 7900, 'L', 'NA', 0, '6cm', 7900, 4100, 816.25)
 loif0b.setPhaseCal(5)
 loif0b.setDBEParams(0, -1, -1, 10, 0)
+loif0b.setDBEParams(1, -1, -1, 10, 0)
 loif0b.setDBERemember(0, 1)
+loif0b.setDBERemember(1, 1)
 channelSet0a = [ \
   bbc(0, 752.25, 64, 'U', 2, 0), \  # IF A
   bbc(0, 816.25, 64, 'U', 2, 2)  \  # IF A
@@ -70,13 +74,17 @@ loif1a.setIf('A', '6cm', 'R', 4100, 'U', 'NA', 0, '6cm', 7900, 4100, 752.25)
 loif1a.setIf('D', '6cm', 'L', 7900, 'L', 'NA', 0, '6cm', 7900, 4100, 816.25)
 loif1a.setPhaseCal(5)
 loif1a.setDBEParams(0, -1, -1, 10, 0)
+loif1a.setDBEParams(1, -1, -1, 10, 0)
 loif1a.setDBERemember(0, 1)
+loif1a.setDBERemember(1, 1)
 loif1b = VLBALoIfSetup() 
 loif1b.setIf('C', '6cm', 'L', 4100, 'U', 'NA', 0, '6cm', 7900, 4100, 752.25)
 loif1b.setIf('B', '6cm', 'R', 7900, 'L', 'NA', 0, '6cm', 7900, 4100, 816.25)
 loif1b.setPhaseCal(5)
 loif1b.setDBEParams(0, -1, -1, 10, 0)
+loif1b.setDBEParams(1, -1, -1, 10, 0)
 loif1b.setDBERemember(0, 1)
+loif1b.setDBERemember(1, 1)
 channelSet1a = [ \
   bbc(0, 752.25, 64, 'U', 2, 0), \  # IF A
   bbc(0, 816.25, 64, 'U', 2, 2), \  # IF A
@@ -93,13 +101,17 @@ loif2a.setIf('A', '6cm', 'R', 4100, 'U', 'NA', 0, '6cm', 7900, 4100, 752.25)
 loif2a.setIf('D', '6cm', 'L', 7900, 'L', 'NA', 0, '6cm', 7900, 4100, 816.25)
 loif2a.setPhaseCal(5)
 loif2a.setDBEParams(0, -1, -1, 10, 0)
+loif2a.setDBEParams(1, -1, -1, 10, 0)
 loif2a.setDBERemember(0, 1)
+loif2a.setDBERemember(1, 1)
 loif2b = VLBALoIfSetup() 
 loif2b.setIf('B', '6cm', 'R', 7900, 'L', 'NA', 0, '6cm', 7900, 4100, 816.25)
 loif2b.setIf('C', '6cm', 'L', 4100, 'U', 'NA', 0, '6cm', 7900, 4100, 752.25)
 loif2b.setPhaseCal(5)
 loif2b.setDBEParams(0, -1, -1, 10, 0)
+loif2b.setDBEParams(1, -1, -1, 10, 0)
 loif2b.setDBERemember(0, 1)
+loif2b.setDBERemember(1, 1)
 channelSet2a = [ \
   bbc(0, 752.25, 64, 'U', 2, 0), \  # IF A
   bbc(0, 816.25, 64, 'U', 2, 2), \  # IF A
@@ -117,13 +129,17 @@ loif3a.setIf('B', '6cm', 'R', 7900, 'L', 'NA', 0, '6cm', 7900, 4100, 3047.75)
 loif3a.setIf('A', '6cm', 'R', 4100, 'U', 'NA', 0, '6cm', 7900, 4100, 752.25)
 loif3a.setPhaseCal(5)
 loif3a.setDBEParams(0, -1, -1, 10, 0)
+loif3a.setDBEParams(1, -1, -1, 10, 0)
 loif3a.setDBERemember(0, 1)
+loif3a.setDBERemember(1, 1)
 loif3b = VLBALoIfSetup() 
 loif3b.setIf('C', '6cm', 'L', 4100, 'U', 'NA', 0, '6cm', 7900, 4100, 2983.75)
 loif3b.setIf('D', '6cm', 'L', 7900, 'L', 'NA', 0, '6cm', 7900, 4100, 752.25)
 loif3b.setPhaseCal(5)
 loif3b.setDBEParams(0, -1, -1, 10, 0)
+loif3b.setDBEParams(1, -1, -1, 10, 0)
 loif3b.setDBERemember(0, 1)
+loif3b.setDBERemember(1, 1)
 channelSet3a = [ \
   bbc(0, 3047.75, 64, 'L', 2, 1), \  # IF B
   bbc(0, 2983.75, 64, 'L', 2, 2), \  # IF B

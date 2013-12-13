@@ -14,9 +14,9 @@ obsCode = 'BD170AR'
 stnCode = 'LA'
 mjdStart = 56493 + 10216*second
 
-# File written by vex2script version 0.21 vintage 20130923
+# File written by vex2script version 0.24 vintage 20131209
 
-dbe0 = RDBE(0, 'pfb')
+dbe0 = RDBE(0, 'pfb', 'PFBG_1_4.bin')
 dbe0.setALC(1)
 dbe0.setFormat('Mark5B')
 dbe0.setPSNMode(0)
