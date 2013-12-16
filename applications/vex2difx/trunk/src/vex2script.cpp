@@ -173,6 +173,11 @@ void readFiles(char *program, char *pfb, char *ddc, char *vdif)
 
 	// look for path to personality file list
 	path = getenv("PERSONALITYFILEPATH");
+	if( path == NULL ) {
+		printf("Can't read PERSONALITYFILEPATH from environment to get default personality names! Check that PERSONALITYFILEPATH is set correctly.\n");
+		printf("Exiting!\n");
+		exit(-1);
+	}
 
 	strcpy(fullPath, path);
 	len = strlen(path);
