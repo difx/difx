@@ -171,6 +171,10 @@ void readFiles(char *program, char *pfb, char *ddc, char *vdif)
 	char fullPath[100];
 	int len;
 
+	strcpy(pfb,  "<unknown>");
+	strcpy(ddc,  "<unknown>");
+	strcpy(vdif, "<unknown>");
+
 	// look for path to personality file list
 	path = getenv("PERSONALITYFILEPATH");
 	if( path == NULL ) {
