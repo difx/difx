@@ -42,7 +42,7 @@
                                            rjc 99.8.9                */
 #define MAXLAG 2048
 
-#define MAXMAX 2048                     /* set this to max(MAXAP,MAXLAG) */
+#define MAXMAX 8192                     /* set this to max(MAXAP,MAXLAG) */
 
 /* #define MAXAP 4096 */
 /* #define MAXLAG 1024 */
