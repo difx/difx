@@ -2385,6 +2385,8 @@ public class ExperimentEditor extends JFrame {
             }
             _deleteEOPFromVex = true;
         }
+        else
+            _deleteEOPFromVex = false;
         _v2dEditor.text( v2dFileParser.content() );
         
     }

@@ -4413,17 +4413,19 @@ public class SystemSettings extends JFrame {
         public void getData() {
             while ( _tableModel.getRowCount() > 0 )
                 _tableModel.removeRow( 0 );
-            for ( Iterator<String> iter = _guiServerEnvironment.keySet().iterator(); iter.hasNext(); ) {
-                String key = iter.next();
-                boolean useIt = true;
-                if ( _difxOnly.isSelected() ) {
-                    if ( key.length() > 4 && key.substring( 0, 4 ).contentEquals( "DIFX" ) )
-                        useIt = true;
-                    else
-                        useIt = false;
+            if ( _guiServerEnvironment != null ) {
+                for ( Iterator<String> iter = _guiServerEnvironment.keySet().iterator(); iter.hasNext(); ) {
+                    String key = iter.next();
+                    boolean useIt = true;
+                    if ( _difxOnly.isSelected() ) {
+                        if ( key.length() > 4 && key.substring( 0, 4 ).contentEquals( "DIFX" ) )
+                            useIt = true;
+                        else
+                            useIt = false;
+                    }
+                    if ( useIt )
+                        _tableModel.addRow( new Object[]{ key, _guiServerEnvironment.get( key ) } );
                 }
-                if ( useIt )
-                    _tableModel.addRow( new Object[]{ key, _guiServerEnvironment.get( key ) } );
             }
             _table.updateUI();
         }
