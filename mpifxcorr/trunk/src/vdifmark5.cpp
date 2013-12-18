@@ -467,7 +467,7 @@ void VDIFMark5DataStream::initialiseFile(int configindex, int fileindex)
 		cinfo << startl << "Advancing to next record scan from " << (scanNum+1) << endl;
 		++scanNum;
 		scanPointer = &module.scans[scanNum];
-		if(scanNum >= module.nScans() || scanPointer->mjd > jobEndMJD)
+		if(scanNum >= module.nScans() || scanPointer->mjdStart() > jobEndMJD)
 		{
 			cwarn << startl << "No more data for this job on this module" << endl;
 			scanPointer = 0;

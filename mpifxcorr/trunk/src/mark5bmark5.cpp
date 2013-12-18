@@ -487,10 +487,15 @@ void Mark5BMark5DataStream::initialiseFile(int configindex, int fileindex)
 
 	if(scanPointer && scanNum >= 0)  /* just continue by reading next valid scan */
 	{
-		cinfo << startl << "Advancing to next record scan from " << (scanNum+1) << endl;
+		int p = cinfo.precision();
+
+		cinfo << startl << "Advancing to next record scan from " << (scanNum+1) << " of " << module.nScans() << endl;
+		cinfo.precision(14);
+		cinfo << startl << "Scan start at MJD " << scanPointer->mjdStart() << " job ends at MJD " << jobEndMJD << endl;
+		cinfo.precision(p);
 		++scanNum;
 		scanPointer = &module.scans[scanNum];
-		if(scanNum >= module.nScans() || scanPointer->mjd > jobEndMJD)
+		if(scanNum >= module.nScans() || scanPointer->mjdStart() > jobEndMJD)
 		{
 			cwarn << startl << "No more data for this job on this module" << endl;
 			scanPointer = 0;
