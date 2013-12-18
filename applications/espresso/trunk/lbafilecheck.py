@@ -2,7 +2,7 @@
 # Simple wrapper for ls and chk_vlbi.py to create and check the data files for
 # the correlator
 # Cormac Reynolds: 2010 June 
-import os, subprocess, time, re, tempfile, optparse, time
+import os, subprocess, time, re, tempfile, optparse, time, shutil
 import espressolib
 
 #global threads_per_machine
@@ -110,14 +110,24 @@ def write_threads(expname, hosts, computemachines):
     THREADFILE.close()
 
 def write_run(expname, np, options):
-    RUNFILE = open("run", 'w')
-    print>>RUNFILE, "mpirun -np", np, options, "-machinefile machines.list $DIFXROOT/bin/mpifxcorr", expname + "_1.input"
-    try:
-        os.chmod(RUNFILE.name, 0775)
-    except:
-        print "could not change permissions of", RUNFILE.name
 
-    RUNFILE.close()
+    # prototype for the runfile which we will fill later
+    difx_runfile = os.environ.get('DIFX_RUNFILE')
+    runfilename = "run"
+
+    if difx_runfile:
+        shutil.copy(difx_runfile, runfilename)
+    else:
+        # in case no prototype run file, this basic run file will work for
+        # many sites
+        RUNFILE = open(runfilename, 'w')
+        print>>RUNFILE, "mpirun -np ", np, options, "-machinefile {JOBNAME}.list $DIFXROOT/bin/mpifxcorr {JOBNAME}.input"
+        RUNFILE.close()
+    try:
+        os.chmod(runfilename, 0775)
+    except:
+        print "could not change permissions of", runfilename
+
 
 def kill_children(pids):
     for pid in pids:
@@ -246,9 +256,9 @@ for pid in pids:
 
 # now make a default machine, threads and run file
 try:
-    hosts = espressolib.get_corrhosts(os.environ.get('CORR_HOSTS'))
+    hosts = espressolib.get_corrhosts(os.environ.get('DIFX_MACHINES'))
 except:
-    raise Exception('You must set $CORR_HOSTS. No machines file created')
+    raise Exception('You must set $DIFX_MACHINES. No machines file created')
 
 headmachine = os.uname()[1].lower()
 

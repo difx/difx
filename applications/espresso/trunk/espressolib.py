@@ -12,28 +12,109 @@ def get_corrhosts(hostsfilename):
     hostsfile = open(hostsfilename, 'r').readlines()
 
     hosts = dict()
-    for line in hostsfile:
+    version = int()
+    for line in enumerate(hostsfile):
+        linenum, line = line
         line.strip()
         # strip comments
         line = re.sub(r'#.*','', line)
+
+        if linenum == 0:
+            # first line should be the version number
+            try:
+                version = re.match(r'version\s*=\s*(\d+)', line).group(0)
+            except:
+                raise Exception('First line must be version number!')
+            continue
+            if version != 1:
+                print "Warning: version number in $DIFX_MACHINES is not 1. This may not work as expected"
+
         hostdata = line.split(',')
-        hostname = hostdata[0].strip()
-        if not hostname:
+        hostname_list = hostdata[0].strip()
+        if not hostname_list:
             # empty line
             continue
         try:
-            hostthreads = int(hostdata[1])
+            # host disabled?
+            if int(hostdata[1]) > 0:
+                enabled = 1
+            else:
+                enabled = 0
         except:
-            hostthreads = 6
+            # missing the host enabled column
+            raise Exception(" ".join(['Badly formatted file:', hostsfilename, str(linenum)]) )
+
         try:
-            hostdisks = hostdata[2].split()
+            # number of compute threads
+            hostthreads = int(hostdata[2])
         except:
+            hostthreads = 0
+
+        hostdisks = []
+        try:
+            # list of urls for storing data
+            hosturls = hostdata[3].split()
+            for url in hosturls:
+                filepath = re.match('file://(.*)', url)
+                if (filepath):
+                    hostdisks.append(filepath.group(1))
+        except:
+            # no urls given, not a data node
             hostdisks = []
 
-
-        hosts[hostname] = [hostthreads, hostdisks]
+        # expansion of zero-padded integers is allowed.
+        hostnames = expand0int(hostname_list)
+        for hostname in hostnames:
+            if hostname in hosts.keys():
+                del(hosts[hostname])
+            if enabled:
+                hosts[hostname] = [hostthreads, hostdisks]
 
     return hosts
+
+def expandstr(inputstr):
+    '''expand a string that may contain a pattern into a list of all
+    strings that match the pattern'''
+
+    outputstrs = [inputstr]
+    globpattern = '\[.*?\]'
+    for patternmatch in re.finditer(globpattern, inputstr):
+        newoutputstrs = []
+        startrange = False
+        pattern = inputstr[patternmatch.start()+1 : patternmatch.end()-1]
+        for outputstr in outputstrs:
+            lastchar = str()
+            for character in pattern:
+                if character != '-' and not startrange:
+                    newoutputstrs.append(re.sub(globpattern, character, outputstr, 1))
+                    lastchar = character
+                elif startrange:
+                    startrange = False
+                    for i in range(ord(lastchar)+1, ord(character)+1):
+                        newoutputstrs.append(re.sub(globpattern, chr(i), outputstr, 1))
+
+                elif character == '-':
+                    startrange = True
+        outputstrs = newoutputstrs
+
+    return outputstrs
+
+def expand0int(inputstr):
+    '''expand a string that may contain a range of zero-padded integers into
+    a list of all strings that match the given integer range'''
+
+    outputstrs = [inputstr]
+    globpattern = '\[(.*?)\]'
+    #for patternmatch in re.finditer(globpattern, inputstr):
+    int_range = re.search(globpattern, inputstr)
+    if int_range:
+        outputstrs = []
+        startrange, endrange = int_range.group(0)[1:-1].split('-')
+        for i in range(int(startrange), int(endrange)+1):
+            outputstrs.append(re.sub(globpattern, str(i).zfill(len(startrange)), inputstr))
+
+    return outputstrs
+
 
 def which(program):
     '''Search $PATH for an executable, kind of like the unix 'which' command''' 

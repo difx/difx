@@ -65,12 +65,10 @@ def copy_jobcontrol(expname, jobname, indir, outdir, extension):
 def make_new_runfiles(jobname, expname):
     # make copies of the prototype run and .thread files
     runfile = 'run_' + jobname
-    machinesfilename = jobname + '.machines'
     shutil.copy('run', runfile)
     for line in fileinput.FileInput(runfile, inplace=1):
-        if '_1.input' in line:
-            line = re.sub(r'\S*_1.input', jobname + '.input', line)
-            line = re.sub(r'machines.list', machinesfilename, line)
+        # update placeholders in prototype with actual jobname
+        line = re.sub(r'{JOBNAME}', jobname, line)
         print line,
     fileinput.close()
     os.chmod(runfile, 0775)
@@ -78,6 +76,7 @@ def make_new_runfiles(jobname, expname):
     threadfilename = jobname + '.threads'
     shutil.copy(expname + '.threads', threadfilename)
 
+    machinesfilename = jobname + '.machines'
     shutil.copy(expname + '.machines', machinesfilename)
 
 def parse_joblistfile(joblistfilename):
@@ -372,8 +371,8 @@ try:
             # we're finished with the log...
             os.kill(errormon2.pid, 9)
             time.sleep(1)
-            logfilename = outdir + jobname + '.log'
-            logfiles.append(jobname + '.log')
+            logfilename = outdir + jobname + '.difxlog'
+            logfiles.append(jobname + '.difxlog')
             logfile = open(logfilename, 'w')
             print "\nfiltering the log file and copying to", logfile.name
             #shutil.copy2('log', logfile)

@@ -12,9 +12,6 @@ def parseparam(param, line):
 
 def updateclock(clockepoch, clockoffset, clockrate, newclockepoch, offset_adjust, rate_adjust, frequency):
     # offsets are in microsec and rate in microsec/sec
-    clockoffset = float(clockoffset) 
-    clockepoch = float(clockepoch) 
-    clockrate = float(clockrate)
 
     # residual rate is given in mHz at a frequency in MHz. Must convert to
     # microsec/second
@@ -54,6 +51,7 @@ if len(args) != 1:
     parser.print_help()
     parser.error("no v2d file given")
 
+
 newclockepoch = options.newclockepoch
 
 if newclockepoch:
@@ -65,6 +63,7 @@ offset_list = []
 rate_list = []
 if options.station:
     station_list = options.station.split(',')
+    station_list = [station.upper() for station in station_list]
 if options.offset_adjust:
     offset_list = options.offset_adjust.split(',')
 if options.rate_adjust:
@@ -128,7 +127,7 @@ for line in v2dfile:
 
     # find the antenna name
     if 'ANTENNA' in line:
-        antname = re.search(r'ANTENNA\s+(\w+)', line).group(1)
+        antname = re.search(r'ANTENNA\s+(\w+)', line).group(1).upper()
 
     # open bracket starts parsing info for this antenna
     if '{' in line and antname:
@@ -144,6 +143,7 @@ for line in v2dfile:
     # update the clock in the cache if this is the end of the section
     if do_update and '}' in line:
         do_update = False
+        oldantname = antname
         antname = str()
         for i in range(len(cache)):
             if 'clockRate' in cache[i]:
@@ -157,8 +157,24 @@ for line in v2dfile:
                 # convert to MJD if necessary
                 clockepoch = espressolib.convertdate(clockepoch, 'mjd')
                 cache[i] = '#' + cache[i]
+
+        # convert the values to floats.
+        try:
+            clockoffset = float(clockoffset) 
+        except:
+            raise Exception('No clockOffset for ' + oldantname + ' in the .v2d file! Please check format.')
+        try:
+            clockepoch = float(clockepoch)
+        except:
+            raise Exception('No clockEpoch for ' + oldantname + ' in the .v2d file! Please check format.')
+        try:
+            clockrate = float(clockrate)
+        except:
+            raise Exception('No clockRate for ' + oldantname + ' in the .v2d file! Please check format.')
+
         if not newclockepoch:
-            newclockepoch = float(clockepoch)
+            newclockepoch = clockepoch
+
         newclockoffset, newclockrate = updateclock(clockepoch, clockoffset,
                 clockrate, newclockepoch, offset_adjust, rate_adjust,
                 frequency)

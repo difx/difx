@@ -47,7 +47,18 @@ def sizesort(x):
 #def data_summary():
     #print 'here'
 
-data_areas = espressolib.get_corrhosts(os.environ.get('CORR_HOSTS'))
+difx_machines = os.environ.get('DIFX_MACHINES')
+if not difx_machines:
+    difx_machines = os.environ.get('CORR_HOSTS')
+    if difx_machines:
+        sys.stderr.write('Warning: use of the $CORR_HOSTS variable is deprecated. Please define $DIFX_MACHINES instead\n')
+    else: 
+        raise Exception('$DIFX_MACHINES not set!')
+
+try:
+    data_areas = espressolib.get_corrhosts(difx_machines)
+except:
+    raise Exception("Problem with file: " + difx_machines)
 
 # run two processes per available cpu (the work is all being done remotely)
 nproc = multiprocessing.cpu_count()*2
