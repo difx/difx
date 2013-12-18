@@ -526,6 +526,14 @@ void VDIFMark5DataStream::initialiseFile(int configindex, int fileindex)
 					*scanPointer->framespersecond) + 0.5);
 				fbytes = scanPointer->framebytes*scanPointer->tracks;
 				readpointer += n*fbytes;
+				if(readpointer >= scanPointer->start + scanPointer->length)
+				{
+					cwarn << startl << "Scan " << (scanNum+1) << " duration seems misrepresented in the dir file.  Jumping to next scan to be safe." << endl;
+
+					readpointer = -1;
+
+					continue;
+				}
 				readseconds = 0;
 				readnanoseconds = 0;
 				while(readscan < (model->getNumScans()-1) && model->getScanEndSec(readscan, corrstartday, corrstartseconds) < readseconds)
@@ -652,7 +660,7 @@ int VDIFMark5DataStream::dataRead(int buffersegment)
 
 	if(lockstart < -1)
 	{
-		csevere << startl << "dataRead lockstart=" << lockstart << endl;
+		csevere << startl << "dataRead lockstart=" << lockstart << " muxindex=" << muxindex << " readbufferslotsize=" << readbufferslotsize << " endindex=" << endindex << " lastslot=" << lastslot << endl;
 	}
 
 	if(lockstart == -1)
@@ -721,7 +729,7 @@ int VDIFMark5DataStream::dataRead(int buffersegment)
 
 	if(muxend <= muxindex)
 	{
-		csevere << startl << "Weird: muxend=" << muxend << " <= muxindex=" << muxindex << ": this should never be!  n2=" << n2 << " readbufferslots=" << readbufferslots << " readbufferslotsize=" << readbufferslotsize << " n1=" << n1 << " n2=" << n2 << " endindex=" << endindex << " lastslot=" << lastslot << endl;
+		csevere << startl << "Weird: muxend=" << muxend << " <= muxindex=" << muxindex << ": this should never be!  readbufferslots=" << readbufferslots << " readbufferslotsize=" << readbufferslotsize << " n1=" << n1 << " n2=" << n2 << " endindex=" << endindex << " lastslot=" << lastslot << endl;
 
 		bufferinfo[buffersegment].validbytes = 0;
 		bufferinfo[buffersegment].readto = true;
@@ -807,7 +815,7 @@ int VDIFMark5DataStream::dataRead(int buffersegment)
 	if(lastslot == n2 && (muxindex+minleftoverdata > endindex || bytesvisible < readbytes / 4) )
 	{
 		// end of useful data for this scan
-		cverbose << startl << "End of data for record scan " << (scanNum+1) << endl;
+		cinfo << startl << "End of data for record scan " << (scanNum+1) << " bytesProcessed=" << vstats.bytesProcessed << " nGoodFrame=" << vstats.nGoodFrame << " nCall=" << vstats.nCall << endl;
 		dataremaining = false;
 		pthread_mutex_unlock(mark5threadmutex + (lockstart % lockmod));
 		if(lockstart != lockend)

@@ -15,6 +15,7 @@ Version 2.3
 * Never change Mark5 .dir files
 * Check Mark5 reads for lots of zero values and perform re-read if so
 * Support (maybe???) multi-threaded complex VDIF data
+* Bug fix: handle cases where the length in bytes of a first Mark5 scan is less than expected based on duration
 
 Version 2.2
 ~~~~~~~~~~~

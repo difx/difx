@@ -550,6 +550,14 @@ void Mark5BMark5DataStream::initialiseFile(int configindex, int fileindex)
 					*scanPointer->framespersecond) + 0.5);
 				fbytes = scanPointer->framebytes;
 				readpointer += n*fbytes;
+				if(readpointer >= scanPointer->start + scanPointer->length)
+				{
+					cwarn << startl << "Scan " << (scanNum+1) << " duration seems misrepresented in the dir file.  Jumping to next scan to be safe." << endl;
+
+					readpointer = -1;
+
+					continue;
+				}
 				readseconds = 0;
 				readnanoseconds = 0;
 				while(readscan < (model->getNumScans()-1) && model->getScanEndSec(readscan, corrstartday, corrstartseconds) < readseconds)
@@ -728,7 +736,7 @@ int Mark5BMark5DataStream::dataRead(int buffersegment)
 
 	if(fixend <= fixindex)
 	{
-		csevere << startl << "Weird: fixend=" << fixend << " <= fixindex=" << fixindex << ": this should never be!  n2=" << n2 << " readbufferslots=" << readbufferslots << " readbufferslotsize=" << readbufferslotsize << " n1=" << n1 << " n2=" << n2 << " endindex=" << endindex << " lastslot=" << lastslot << endl;
+		csevere << startl << "Weird: fixend=" << fixend << " <= fixindex=" << fixindex << ": this should never be!  readbufferslots=" << readbufferslots << " readbufferslotsize=" << readbufferslotsize << " n1=" << n1 << " n2=" << n2 << " endindex=" << endindex << " lastslot=" << lastslot << endl;
 
 		bufferinfo[buffersegment].validbytes = 0;
 		bufferinfo[buffersegment].readto = true;
