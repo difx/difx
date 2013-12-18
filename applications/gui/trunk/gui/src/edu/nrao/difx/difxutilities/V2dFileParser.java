@@ -110,6 +110,8 @@ public class V2dFileParser {
                         vexFile( newParam.value.trim() ) ;
                     else if ( newParam.name.contentEquals( "maxGap" ) )
                         _maxGap = Double.parseDouble( newParam.value );
+                    else if ( newParam.name.contentEquals( "maxLength" ) )
+                        _maxLength = Double.parseDouble( newParam.value );
                     else if ( newParam.name.contentEquals( "singleScan" ) )
                         _singleScan = Boolean.parseBoolean( newParam.value );
                     else if ( newParam.name.contentEquals( "jobSeries" ) )
@@ -256,6 +258,8 @@ public class V2dFileParser {
         //  we use them.
         if ( maxGap() != null )
             str += "maxGap = " + maxGap() + "\n";
+        if ( maxLength() != null )
+            str += "maxLength = " + maxLength() + "\n";
         if ( singleScan() != null )
             str += "singleScan = " + singleScan() + "\n";
         if ( jobSeries() != null )
@@ -399,6 +403,9 @@ public class V2dFileParser {
     
     public void maxGap( Double newVal ) { _maxGap = newVal; }
     public Double maxGap() { return _maxGap; }
+    
+    public void maxLength( Double newVal ) { _maxLength = newVal; }
+    public Double maxLength() { return _maxLength; }
     
     public void singleScan( Boolean newVal ) { _singleScan = newVal; }
     public Boolean singleScan() { return _singleScan; }
@@ -879,6 +886,7 @@ public class V2dFileParser {
     
     public String _vexFile;
     public Double _maxGap;
+    public Double _maxLength;
     public Boolean _singleScan;
     public String _jobSeries;
     public Integer _startSeries;

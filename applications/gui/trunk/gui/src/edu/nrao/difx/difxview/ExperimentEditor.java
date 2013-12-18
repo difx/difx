@@ -2288,6 +2288,7 @@ public class ExperimentEditor extends JFrame {
         
         //  This keeps vex2difx from splitting up jobs in an unexpected way
         v2dFileParser.maxGap( 180000.0 );
+        v2dFileParser.maxLength( 360000.0 );
         
         //  Whether or not we should split into one scan per job
         v2dFileParser.singleScan( !_singleInputFileCheck.isSelected() );
