@@ -1,6 +1,7 @@
 Version 2.3.0
 ~~~~~~~~~~~~~
-Post DiFX-2.3
+* DifxMessageMk5Control message type added
+* Version for DiFX-2.3, Dec 20, 2013
 
 Version 2.2.0
 ~~~~~~~~~~~~~
