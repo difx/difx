@@ -121,7 +121,7 @@ def write_run(expname, np, options):
         # in case no prototype run file, this basic run file will work for
         # many sites
         RUNFILE = open(runfilename, 'w')
-        print>>RUNFILE, "mpirun -np ", np, options, "-machinefile {JOBNAME}.list $DIFXROOT/bin/mpifxcorr {JOBNAME}.input"
+        print>>RUNFILE, "mpirun -np ", np, options, "-machinefile {JOBNAME}.machines $DIFXROOT/bin/mpifxcorr {JOBNAME}.input"
         RUNFILE.close()
     try:
         os.chmod(runfilename, 0775)
