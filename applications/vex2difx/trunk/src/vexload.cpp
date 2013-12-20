@@ -1173,8 +1173,7 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 					int fanout;
 
 					fanout = nTrack/ch2tracks.size()/nBit;
-					if(!(setup.formatName == "MARK5B" || setup.formatName == "KVN5B") && 
-					   (setup.formatName.substr(0, 4) != "VDIF" || setup.formatName.substr(0, 5) != "VDIFL")) // Is this VDIF tests needed
+					if(!(setup.formatName == "MARK5B" || setup.formatName == "KVN5B" || setup.formatName.substr(0, 4) == "VDIF")) 
 					{
 						switch(fanout)
 						{

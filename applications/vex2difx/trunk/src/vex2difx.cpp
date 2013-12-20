@@ -1028,7 +1028,7 @@ static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, vector<vector<
 			D->datastream[dsId].dataFrameSize = atoi(setup->formatName.substr(setup->formatName.find_last_of('/')+1).c_str());
 		}
 	}
-	else if(setup->formatName.substr(0,4) == string("VDIFC"))
+	else if(setup->formatName.substr(0,5) == string("VDIFC"))
 	{
 		strcpy(D->datastream[dsId].dataFormat, "VDIF");
 		size_t p = setup->formatName.find_last_of('/');
