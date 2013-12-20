@@ -32,6 +32,7 @@
 from sys import argv, exit
 from os import chdir, popen, system, getcwd
 from string import strip, split, find, lower, upper
+from time import sleep
 
 program = 'difxsniff'
 version = '2.1'
@@ -64,7 +65,9 @@ def reverseapd(dataline):
 def run(pgm, args):
 	print pgm
 	p = popen(pgm, 'w')
+	sleep(0.1)
 	for a in args:
+		sleep(0.05)
 		p.write('%s\n' % a)
 	p.close()
 

@@ -1,7 +1,7 @@
 calcif2
 ~~~~~~~
 Version 2.3.0
-* Post DiFX-2.2
+* vlog: split ANTAB file into antenna-specific files
 
 Version 2.2.0
 * Fix azimuth polynomial interpolation in case of wrap (John Morgan)

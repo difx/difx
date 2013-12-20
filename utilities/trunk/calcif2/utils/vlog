@@ -35,8 +35,8 @@ from string import split, strip, find, rfind, lower
 import gzip
 
 program = 'vlog'
-version = 1.7
-verdate = '20130911'
+version = 1.8
+verdate = '20131213'
 author  = 'Walter Brisken'
 
 def usage():
@@ -54,10 +54,6 @@ def usage():
 	print '    -c         force to run in Mark5C mode\n'
 	print '    --exper <exp>'
 	print '    -e <exp>   name the output files by <exp>.<ant>.<file>\n'
-	print '    --project'
-	print '    -p         take experiment name from input file\n'
-	print '    --transition'
-	print '    -t         transition mode: write both styles of output\n'
 	print '  <TSM file> is <project>cal.vlba or <project>cal.vlba.gz\n'
 	print '  <antenna list> is a comma separated list of antennas with'
 	print '          no spaces, e.g., FD,GB,Y.  Default -- all ants.\n'
@@ -530,10 +526,9 @@ ants = []
 useMJD = False
 antArg = None
 isMark5C = -1
-mode = 'classic'
 exper = ''
 getexper = False
-takeproject = False
+takeproject = True
 
 for a in argv[1:]:
 	if a[0] == '-':
@@ -546,23 +541,15 @@ for a in argv[1:]:
 			isMark5C = 0
 		elif lower(a) in ['-c', '--mark5c']:
 			isMark5C = 1
-		elif lower(a) in ['-t', '--transition']:
-			if exper == '':
-				takeproject = True
-			mode = 'transition'
-		elif lower(a) in ['-p', '--project']:
-			takeproject = True
-			mode = 'nouveau'
 		elif lower(a) in ['-e', '--exper']:
 			getexper = True
-			mode = 'nouveau'
 		else:
 			print 'unrecongized option %s' % a
 			exit(0)
 	elif getexper:
 		getexper = False
 		exper = a
-		mode = 'nouveau'
+		takeproject = False
 	elif len(sections) == 0:
 		inputFile = a
 		try:
@@ -639,32 +626,15 @@ for a in ants:
 		if ph != None:
 			PHs[a] = ph
 
-# Three possible modes:
-# 1. "classic" : write 4 files (don't separate by antenna or name with exper)
-# 2. "nouveau" : write antenna-specific files and name with experiment
-# 3. "transition" : do both
-
-if mode in ['classic', 'transition']:
-	writetable(FGs, 'flag',    ants, 'FG', 0)
-	writetable(WRs, 'weather', ants, 'WR', 0)
+for a in ants:
+	writetable(FGs, '%s.%s.flag' % (exper, a), [a], 'FG', 0)
 	if isMark5C > 0:
-		writetable(PHs, 'pcal',    ants, 'PH', 4)
+		# the tsys and pcal values here are not useful
+		writetable(PHs, '%s.%s.cablecal' % (exper, a), [a], 'PH', 4)
 	else:
-		writetable(PHs, 'pcal',    ants, 'PH', 0)
-		writetable(TSs, 'tsys',    ants, 'TS', 0)
-
-if mode in ['nouveau', 'transition']:
-	for a in ants:
-		if mode == 'nouveau':
-			# to avoid duplicate flags, transition mode won't write station-specific flag files
-			writetable(FGs, '%s.%s.flag' % (exper, a), [a], 'FG', 0)
-		if isMark5C > 0:
-			# the tsys and pcal values here are not useful
-			writetable(PHs, '%s.%s.cablecal' % (exper, a), [a], 'PH', 4)
-		else:
-			writetable(TSs, '%s.%s.tsys' % (exper, a), [a], 'TS', 0)
-			writetable(PHs, '%s.%s.pcal' % (exper, a), [a], 'PH', 0)
-		writetable(WRs, '%s.%s.weather' % (exper, a), [a], 'WR', 0)
+		writetable(TSs, '%s.%s.tsys' % (exper, a), [a], 'TS', 0)
+		writetable(PHs, '%s.%s.pcal' % (exper, a), [a], 'PH', 0)
+	writetable(WRs, '%s.%s.weather' % (exper, a), [a], 'WR', 0)
 
 
 # add comment to and rename the cal.vlba file to deter Mark5C users from using it
