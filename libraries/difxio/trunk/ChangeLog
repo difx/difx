@@ -1,5 +1,6 @@
 3.3.0
-* Post DiFX-2.2
+* Allow ".input" portion of input file to be optional
+* Version for DiFX-2.3, Dec 20, 2013
 
 3.2.0
 * Now the DifxIF structures are _always_ set to be USB.  This will break compatibility with earlier versions of difx2fits and maybe difx2mark4.
