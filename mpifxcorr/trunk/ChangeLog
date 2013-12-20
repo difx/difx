@@ -11,11 +11,14 @@ Version 2.3
 * Always close Mark5 device before freeing semaphore
 * Always set Mark5 into playback configuration
 * Move some Mark5 functions around to simplify things for the new VDIF code
-* Explicitly cut split up all Mark5 reads longer than 20MB
+* Fully new Mark5B and VDIF datastream code for files and Mark5 units
+* Explicitly split up all Mark5 reads longer than 20MB
 * Never change Mark5 .dir files
 * Check Mark5 reads for lots of zero values and perform re-read if so
 * Support (maybe???) multi-threaded complex VDIF data
 * Bug fix: handle cases where the length in bytes of a first Mark5 scan is less than expected based on duration
+* (lightly tested?) support for single-thread Legacy VDIF data
+* Tagged for DiFX-2.3, Dec 20, 2013
 
 Version 2.2
 ~~~~~~~~~~~
