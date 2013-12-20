@@ -1,8 +1,9 @@
 Version 2.3.0
 ~~~~~~~~~~~~~
-* Post DiFX-2.2
 * Suport for VDIFL added
 * Move some NRAO-specific utilities outside this package
+* vexpeek: new --format and --diskusage options
+* Version for DiFX-2.3, Dec 20, 2013
 
 Version 2.2.0
 ~~~~~~~~~~~~~
@@ -28,13 +29,11 @@ Version 2.2.0
 
 Version 2.1.0
 ~~~~~~~~~~~~~
-* Version number change prior to DiFX-2.1
 * Allowed zoom bands to be used with profile mode also
 * Version for DiFX-2.1, May 14, 2012
 
 Version 2.0.2
 ~~~~~~~~~~~~~
-* Post DiFX 2.0.1
 * Bug fix: when sorting events, round to nearest 0.1 second
 * Bug fix: order of operations in computing zoom channels: don't overflow integers
 * Change parameters to be better optimized for larger bandwidths (at marginal, if any, impact to small bandwidths)
