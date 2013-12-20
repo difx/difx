@@ -1,6 +1,8 @@
 Version 2.3.0
 ~~~~~~~~~~~~~
 * Post DiFX-2.2
+* Suport for VDIFL added
+* Move some NRAO-specific utilities outside this package
 
 Version 2.2.0
 ~~~~~~~~~~~~~

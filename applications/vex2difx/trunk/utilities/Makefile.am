@@ -14,9 +14,5 @@ dist_bin_SCRIPTS = \
 	padCalcScans \
 	difxspeed \
 	oms2v2d \
-	plottsys \
-	queueVex \
-	unqueueVex \
 	calc2xyz \
-	calc2sked \
-	goUSNO
+	calc2sked
