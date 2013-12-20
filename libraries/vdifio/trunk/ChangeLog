@@ -1,6 +1,5 @@
 Version 0.5
 ~~~~~~~~~~~
-* Post DiFX-2.2
 * Fix the 2-bit 16 thread case in the vdifmux function
 * 1-bit corner turners now supported: 1, 2, 3, 4, 5, 6, 7, 8 threads
 * 2-bit corner turners now supported: 1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 14, 16 threads
@@ -9,6 +8,7 @@ Version 0.5
 * add corner turn test program: testcornerturners
 * add function to decode data from a single frame of VDIF data
 * add utility to convert from 2-bit to 8-bit VDIF data (perhaps useful for testing)
+* Version for DiFX-2.3, Dec 20, 2013
 
 Version 0.4
 ~~~~~~~~~~~
