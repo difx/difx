@@ -1,3 +1,7 @@
+Version 1.6
+* use bash, not sh
+* Version for DiFX-2.3, Dec 20, 2013
+
 Version 1.5
 * Clean up some loose pointers
 * Version for DiFX-2.2
