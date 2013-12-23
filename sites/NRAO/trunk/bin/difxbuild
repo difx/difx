@@ -11,15 +11,14 @@ from time import asctime
 from glob import glob
 
 program = 'difxbuild'
-version = '0.33'
-verdate = '20130917'
+version = '0.34'
+verdate = '20131220'
 author = 'Walter Brisken <wbrisken@nrao.edu>'
 
 difxbuildUrl = 'http://www.aoc.nrao.edu/~wbrisken/difxbuild'
 
 openmpiVersion = '1.6'
 pgplotVersion = '5.2'
-jamVersion = '2.5.2'
 pngVersion = '1.2.50'
 schedVersion = '11.0'
 skedVersion = '2013jan23'
@@ -30,7 +29,7 @@ libtoolVersion = '2.4'
 pkgconfigVersion = '0.28'
 cxOracleVersion = '5.1.2'
 pyxVersion = '0.12.1'	#http://sourceforge.net/projects/pyx/files/pyx/0.12.1/PyX-0.12.1.tar.gz/download
-gpstkVersion = '2.2'
+gpstkVersion = '2.3'
 
 defaultDifxMessageGroup = '224.2.2.1'
 defaultDifxMessagePort = 50200
@@ -596,7 +595,7 @@ component_vdifserver_trunk = \
 component_difxdb_trunk = \
 [ \
 	'difxdb', \
-	'https://svn.atnf.csiro.au/difx/libraries/python/trunk', \
+	'https://svn.atnf.csiro.au/difx/utilities/difxdb/trunk', \
 	['aclocal', 'autoconf', 'automake'] \
 ]
 
@@ -894,6 +893,193 @@ components['DIFX-2.2'] = \
 	component_nraodifxdb_2_2, \
 	component_hops_2_2, \
 	component_guiserver_2_2, \
+]
+
+component_difxio_2_3 = \
+[ \
+	'difxio', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.3/libraries/difxio', \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'spice', 'slave'] \
+]
+
+component_difxmessage_2_3 = \
+[ \
+	'difxmessage', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.3/libraries/difxmessage', \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'slave', 'core'] \
+]
+
+component_mark5access_2_3 = \
+[ \
+	'mark5access', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.3/libraries/mark5access', \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'slave', 'core'] \
+]
+
+component_vdifio_2_3 = \
+[ \
+	'vdifio', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.3/libraries/vdifio', \
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake', 'slave', 'core'] \
+]
+
+component_python_2_3 = \
+[ \
+	'python', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.3/libraries/python', \
+	['aclocal', 'autoconf', 'automake'] \
+]
+
+component_mpifxcorr_2_3 = \
+[ \
+	'mpifxcorr', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.3/mpifxcorr', \
+	['aclocal', 'autoconf', 'autoheader', 'automake', 'mpicxx', 'ipp', 'slave', 'core'] \
+]
+
+component_difx2fits_2_3 = \
+[ \
+	'difx2fits', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.3/applications/difx2fits' ,\
+	['aclocal', 'autoconf', 'autoheader', 'automake'] \
+]
+
+component_difx2mark4_2_3 = \
+[ \
+	'difx2mark4', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.3/applications/difx2mark4' ,\
+	['aclocal', 'autoconf', 'autoheader', 'automake'] \
+]
+
+component_vex2difx_2_3 = \
+[ \
+	'vex2difx', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.3/applications/vex2difx' ,\
+	['aclocal', 'libtoolize', 'autoconf', 'autoheader', 'automake'] \
+]
+component_mk5daemon_2_3 = \
+[ \
+	'mk5daemon', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.3/applications/mk5daemon' ,\
+	['aclocal', 'autoconf', 'autoheader', 'automake', 'streamstor', 'slave', 'core'] \
+]
+
+component_calcif2_2_3 = \
+[ \
+	'calcif2', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.3/applications/calcif2' ,\
+	['aclocal', 'autoconf', 'autoheader', 'automake'], \
+]
+
+component_calcserver_2_3 = \
+[ \
+	'calcserver', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.3/applications/calcserver', \
+	['aclocal', 'libtoolize', 'autoconf', 'automake'] \
+]
+
+component_rcwlib_2_3 = \
+[ \
+	'rcwlib', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.3/sites/NRAO/rcwlib', \
+	['aclocal', 'libtoolize', 'autoconf', 'automake'] \
+]
+
+component_sniff_2_3 = \
+[ \
+	'SniffPlots', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.3/sites/NRAO/SniffPlots', \
+	['aclocal', 'autoconf', 'automake', 'pgplot'] \
+]
+
+component_nraodifxdb_2_3 = \
+[ \
+	'nraodifxdb', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.3/sites/NRAO/difxdb', \
+	['aclocal', 'autoconf', 'automake'] \
+]
+
+component_hops_2_3 = \
+[ \
+	'hops', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.3/applications/hops', \
+	['aclocalm4', 'autoconf', 'autoheader', 'automake', 'pgplot'] \
+]
+
+component_guiserver_2_3 = \
+[ \
+	'guiServer', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.3/applications/guiServer', \
+	['aclocal', 'autoconf', 'automake', 'mpicxx'], \
+]
+
+component_misc_utils_2_3 = \
+[ \
+	'misc_utils', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.3/utilities/misc', \
+	['aclocal', 'autoconf', 'automake'] \
+]
+
+component_vis2screen_2_3 = \
+[ \
+	'vis2screen', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.3/utilities/vis2screen', \
+	['aclocal', 'autoconf', 'automake', 'mpicxx'] \
+]
+
+component_difx2profile_2_3 = \
+[ \
+	'difx2profile', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.3/utilities/pulsar/difx2profile', \
+	['aclocal', 'autoconf', 'autoheader', 'automake', 'mpicxx'] \
+]
+
+component_difxdb_2_3 = \
+[ \
+	'difxdb', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.3/utilities/difxdb', \
+	['aclocal', 'autoconf', 'automake'] \
+]
+
+component_difxmonitor_2_3 = \
+[ \
+	'difx_monitor', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.3/applications/difx_monitor', \
+	['aclocal', 'autoconf', 'automake', 'mpicxx'] \
+]
+
+component_difxfilterbank_2_3 = \
+[ \
+	'difxfilterbank', \
+	'https://svn.atnf.csiro.au/difx/master_tags/DiFX-2.3/applications/difxfilterbank', \
+	['aclocal', 'autoconf', 'automake', 'mpicxx'] \
+]
+
+components['DIFX-2.3'] = \
+[ \
+	component_difxio_2_3, \
+	component_difxmessage_2_3, \
+	component_mark5access_2_3, \
+	component_vdifio_2_3, \
+	component_python_2_3, \
+	component_mpifxcorr_2_3, \
+	component_difx2fits_2_3, \
+	component_difx2mark4_2_3, \
+	component_vex2difx_2_3, \
+	component_mk5daemon_2_3, \
+	component_calcif2_2_3, \
+	component_calcserver_2_3, \
+	component_rcwlib_2_3, \
+	component_sniff_2_3, \
+	component_nraodifxdb_2_3, \
+	component_hops_2_3, \
+	component_guiserver_2_3, \
+	component_misc_utils_2_3, \
+	component_vis2screen_2_3, \
+	component_difx2profile_2_3, \
+	component_difxdb_2_3, \
+	component_difxfilterbank_2_3, \
+	component_difxmonitor_2_3, \
 ]
 
 # commands each have the following elements:
@@ -1217,7 +1403,7 @@ def bootstrap(comps, params, args, verbose, pretend):
 			out.write('if [[ ${HWPLATFORM} = "%s" ]]; then\n' % arch)
 			out.write('  export IPPROOT=%s\n' % ipproot[arch])
 			if pyPath.has_key(arch):
-				out.write('  export PYTHONPATH=%s\n' % pyPath[arch])
+				out.write('  export PYTHONPATH=%s:%s/lib/python\n' % (pyPath[arch], config['root']))
 			if arch in ['x86_64']:
 				out.write('  export DIFXBITS=64\n')
 				out.write('  export IPPARCH=intel64\n')
@@ -1846,28 +2032,23 @@ def gpstk(origComps, params, args, verbose, pretend):
 	execute('tar zxvf %s/%s' % (tarDir, gpstkSrcFile), verbose, pretend)
 	execute('mv %s %s' % (origSrcDir, gpstkSrcDir), verbose, pretend)
 
-	# check that jam is installed
-	if system('which jam') != 0:
-		# need to install it
-		jamSrcFile = 'ftjam-%s.tar.bz2' % jamVersion
-		jamUrl = 'http://sourceforge.net/projects/freetype/files/ftjam/%s/%s' % (jamVersion, jamSrcFile)
-		# get file
-		ftpFile(jamUrl, tarDir, jamSrcFile, args, verbose, pretend)
-		chdir(archSrcDir)
-		execute('tar jxvf %s/%s' % (tarDir, jamSrcFile), verbose, pretend)
-		chdir('ftjam-%s' % jamVersion)
-		execute('./configure --prefix=%s' % (difxBase + arch), verbose, pretend)
-		execute('make', verbose, pretend)
-		execute('make install', verbose, pretend)
-
-	print '\nNow building gpstk.  THIS CAN TAKE A LONG TIME!\n'
-
 	chdir(gpstkSrcDir)
-	execute('jam -q -j%d -sPREFIX=%s' % (numMakeCpus, difxBase + arch), verbose, pretend)
-	execute('jam -sPREFIX=%s install' % (difxBase + arch), verbose, pretend)
+	execute('mkdir build', verbose, pretend)
+	chdir(gpstkSrcDir + '/build')
+	print '\nNow building gpstk.  THIS CAN TAKE A LONG TIME!\n'
+	execute('cmake -DCMAKE_INSTALL_PREFIX:PATH=%s ../' % (difxBase + arch), verbose, pretend)
+	execute('make -j%d' % numMakeCpus, verbose, pretend)
+	execute('make install', verbose, pretend)
 
-	# gpstk seems to not install GNSSconstants.hpp automatically.  Do that forcefully here
-	# execute('cp src/GNSSconstants.hpp %s/include/gpstk' % (difxBase + arch), verbose, pretend)
+
+
+	if False:
+		chdir(gpstkSrcDir)
+		execute('jam -q -j%d -sPREFIX=%s' % (numMakeCpus, difxBase + arch), verbose, pretend)
+		execute('jam -sPREFIX=%s install' % (difxBase + arch), verbose, pretend)
+
+		# gpstk seems to not install GNSSconstants.hpp automatically.  Do that forcefully here
+		# execute('cp src/GNSSconstants.hpp %s/include/gpstk' % (difxBase + arch), verbose, pretend)
 
 	# make a .pc file for later convenience
 	if not isdir('%s/lib/pkgconfig' % (difxBase + arch)):
@@ -1881,7 +2062,7 @@ def gpstk(origComps, params, args, verbose, pretend):
 	out.write('Description: GPS Toolkit\n')
 	out.write('Requires:\n')
 	out.write('Version: %s\n' % gpstkVersion)
-	out.write('Libs: -L${libdir} -lgeodyn -lgpstk\n')
+	out.write('Libs: -L${libdir} -lgpstk\n')
 	out.write('Cflags: -I${includedir}/gpstk\n')
 	out.close()
 
