@@ -18,6 +18,8 @@ Version 2.3
 * Support (maybe???) multi-threaded complex VDIF data
 * Bug fix: handle cases where the length in bytes of a first Mark5 scan is less than expected based on duration
 * (lightly tested?) support for single-thread Legacy VDIF data
+* fixed bug where send size could be computed incorrectly by 1-2 bytes for 
+  Mark4/VLBA/Mark5B/VDIF formats, potentially resulting in very small amounts of data loss
 * Tagged for DiFX-2.3, Dec 20, 2013
 
 Version 2.2
