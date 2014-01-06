@@ -38,14 +38,14 @@ public class NodeBrowserScrollPane extends JPanel implements MouseMotionListener
         MouseWheelListener, MouseListener, AdjustmentListener {
     
     public NodeBrowserScrollPane() {
-        initialize( 20 );
+        initialize( true );
     }
     
-    public NodeBrowserScrollPane( int timeInterval ) {
-        initialize( timeInterval );
+    public NodeBrowserScrollPane( boolean useTimeout ) {
+        initialize( useTimeout );
     }
     
-    protected void initialize( int timeInterval ) {
+    protected void initialize( boolean useTimeout ) {
         this.setLayout( null );
         browserPane = new NodeBrowserPane();
         this.add( browserPane );
@@ -74,12 +74,15 @@ public class NodeBrowserScrollPane extends JPanel implements MouseMotionListener
         _scrollSense = -1;
         
         //  Set ourselves up to respond to a repeating timeout roughly 50 times
-        //  a second.  This is used for animation of the browser content.  The
-        //  time interval is set to match the timing of drag and mouse wheel
-        //  events.  Previously this was actually done with timeouts, but this was
-        //  found to bog down the event loop.  The "scroll thread" handles it now.
-        _scrollThread = new ScrollThread( timeInterval );
-        _scrollThread.start();
+        //  a second.  This is used for animation of the browser content and (quite
+        //  importantly) to update widgets that contain this browser periodically.
+        if ( useTimeout ) {
+            addTimeoutListener(new ActionListener() {
+                public void actionPerformed( ActionEvent e ) {
+                    timeoutIntervalEvent();
+                }
+            });
+        }
         
         //  The yOffset tracks where the browser data are located vertically.
         //  It is measured in pixels.
@@ -275,29 +278,6 @@ public class NodeBrowserScrollPane extends JPanel implements MouseMotionListener
             g.drawRect( 0, 0, d.width  - 1, d.height - 1 );
     }
 
-    public class ScrollThread extends Thread {
-        protected int _interval;
-        protected boolean _keepGoing;
-        public ScrollThread( int interval ) {
-            _interval = interval;
-            _keepGoing = true;
-        }
-        public void keepGoing( boolean newVal ) {
-            _keepGoing = newVal;
-        }
-        @Override
-        public void run() {
-            while ( _keepGoing ) {
-                timeoutIntervalEvent();
-                try {
-                    Thread.sleep( _interval );
-                } catch ( Exception e ) {
-                    _keepGoing = false;
-                }
-            }
-        }
-    }
-    
     /*
      * Add a "listener" to the timeout events that occur in this class (they are
      * used to redraw the browser at a rapid enough pace that it animates nicely).
@@ -482,15 +462,6 @@ public class NodeBrowserScrollPane extends JPanel implements MouseMotionListener
         }
     }
     
-    /*
-     * Stop the redraw timer.  This is only needed for scrolling...so if you resize
-     * to accommodate expanded sizes, you don't need it.
-     */
-    public void noTimer() {
-        if ( _scrollThread != null )
-            _scrollThread.keepGoing( false );
-    }
-
     public void addResizeEventListener( ActionListener a ) {
         if ( _resizeEventListeners == null )
             _resizeEventListeners = new EventListenerList();
@@ -552,10 +523,56 @@ public class NodeBrowserScrollPane extends JPanel implements MouseMotionListener
     protected boolean _drawFrame;
     protected boolean _noScrollbar;
     
-    protected ScrollThread _scrollThread;
-    
     static protected int SCROLLBAR_WIDTH = 16;
     
     protected EventListenerList _timeoutEventListeners;
+    
+    static EventListenerList _staticTimeoutListeners;
+    
+    public class TimeoutThread extends Thread {
+        protected int _interval;
+        protected boolean _keepGoing;
+        public TimeoutThread() {
+            _keepGoing = true;
+        }
+        public void keepGoing( boolean newVal ) {
+            _keepGoing = newVal;
+        }
+        @Override
+        public void run() {
+            while ( _keepGoing ) {
+                if ( _staticTimeoutListeners == null )
+                    return;
+                Object[] listeners = _staticTimeoutListeners.getListenerList();
+                int numListeners = listeners.length;
+                for ( int i = 0; i < numListeners; i+=2 ) {
+                    if ( listeners[i] == ActionListener.class )
+                        ((ActionListener)listeners[i+1]).actionPerformed( null );
+                }
+                try {
+                    Thread.sleep( 20 );
+                } catch ( Exception e ) {
+                    _keepGoing = false;
+                }
+            }
+        }
+    }
+    
+    static TimeoutThread _staticTimeoutThread;
+    
+    public void addTimeoutListener( ActionListener a ) {
+        if ( _staticTimeoutThread == null ) {
+            _staticTimeoutThread = new TimeoutThread();
+            _staticTimeoutThread.start();
+        }
+        if ( _staticTimeoutListeners == null )
+            _staticTimeoutListeners = new EventListenerList();
+        _staticTimeoutListeners.add( ActionListener.class, a );
+    }
+    
+    static public void initializeStatics() {
+        _staticTimeoutThread = null;
+        _staticTimeoutListeners = null;
+    }
     
 }

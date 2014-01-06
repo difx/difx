@@ -112,6 +112,11 @@ public class ExperimentEditor extends JFrame {
                 _this.newSize();
             }
         } );
+        _scrollPane.addResizeEventListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                _this.newSize();
+            }
+        } );
         this.getContentPane().add( _scrollPane );
         
         //  The "namePanel" holds all of the stuff that ALWAYS is shown.
@@ -562,11 +567,10 @@ public class ExperimentEditor extends JFrame {
         antennaPanel.open( false );
         antennaPanel.resizeOnTopBar( true );
         _scrollPane.addNode( antennaPanel );
-        _antennaPane = new NodeBrowserScrollPane();
+        _antennaPane = new NodeBrowserScrollPane( false );
         _antennaPane.drawFrame( false );
         _antennaPane.setLevel( 1 );
         _antennaPane.respondToResizeEvents( true );
-        _antennaPane.noTimer();
         antennaPanel.addScrollPane( _antennaPane );
         
         //  This panel contains the list of sources.
@@ -575,11 +579,10 @@ public class ExperimentEditor extends JFrame {
         sourcePanel.closedHeight( 20 );
         sourcePanel.resizeOnTopBar( true );
         _scrollPane.addNode( sourcePanel );
-        _sourcePane = new NodeBrowserScrollPane();
+        _sourcePane = new NodeBrowserScrollPane( false );
         _sourcePane.drawFrame( false );
         _sourcePane.setLevel( 1 );
         _sourcePane.respondToResizeEvents( true );
-        _sourcePane.noTimer();
         sourcePanel.addScrollPane( _sourcePane );
         
         //  This panel is used to select scans, which turn into jobs.
@@ -629,11 +632,10 @@ public class ExperimentEditor extends JFrame {
         eopPanel.closedHeight( 20 );
         eopPanel.resizeOnTopBar( true );
         _scrollPane.addNode( eopPanel );
-        _eopPane = new NodeBrowserScrollPane();
+        _eopPane = new NodeBrowserScrollPane( false );
         _eopPane.drawFrame( false );
         _eopPane.setLevel( 1 );
         _eopPane.respondToResizeEvents( true );
-        _eopPane.noTimer();
         eopPanel.addScrollPane( _eopPane );
         
         //  This panel is used to determine file names and related matters.
@@ -1757,11 +1759,10 @@ public class ExperimentEditor extends JFrame {
             vexEOPPanel.add( _vexEOPUseCheck );
             vexEOPPanel.resizeOnTopBar( true );
             _eopPane.addNode( vexEOPPanel );
-            _vexEOPPane = new NodeBrowserScrollPane();
+            _vexEOPPane = new NodeBrowserScrollPane( false );
             _vexEOPPane.drawFrame( false );
             _vexEOPPane.setLevel( 2 );
             _vexEOPPane.respondToResizeEvents( true );
-            _vexEOPPane.noTimer();
             vexEOPPanel.addScrollPane( _vexEOPPane );
             boolean doHeader = true;
             //  Then add an IndexedPanel item for each EOP data item.
@@ -1869,11 +1870,10 @@ public class ExperimentEditor extends JFrame {
             newEOPPanel.add( _newEOPUseCheck );
             newEOPPanel.resizeOnTopBar( true );
             _eopPane.addNode( newEOPPanel );
-            _newEOPPane = new NodeBrowserScrollPane();
+            _newEOPPane = new NodeBrowserScrollPane( false );
             _newEOPPane.drawFrame( false );
             _newEOPPane.setLevel( 2 );
             _newEOPPane.respondToResizeEvents( true );
-            _newEOPPane.noTimer();
             newEOPPanel.addScrollPane( _newEOPPane );
             replaceRemoteEOPData();
         }
@@ -2442,6 +2442,11 @@ public class ExperimentEditor extends JFrame {
                 if ( !db.connected() )
                     db = null;
             }
+            
+            //  Create a "file read queue" which buffers requests for file transfers
+            //  to/from the guiServer such that not too many occur simultaneously.
+            _fileReadQueue = new FileReadQueue();
+            _fileReadQueue.start();
 
             //  If this is a new experiment, create a node for it and fill it with
             //  appropriate data.  Also, create directories on the DiFX host and add it
@@ -2774,7 +2779,7 @@ public class ExperimentEditor extends JFrame {
                     _newPass.addChild( newJob );
                     newJob.passNode( _newPass );
                     _settings.queueBrowser().addJob( newJob );
-                    newJob.editorMonitor().editor( _this );
+                    //newJob.editorMonitor().editor( _this );
                     //  Add the new job to the database (if we are using it).
                     if ( db != null ) {
                         _statusLabel.setText( "adding job information to database" );
@@ -2803,7 +2808,8 @@ public class ExperimentEditor extends JFrame {
                     }
                     
                     //  Apply the input file data to the job.
-                    newJob.inputFile( newFile.trim(), true );
+                    //newJob.inputFile( newFile.trim(), true );
+                    _fileReadQueue.queueRead( newJob, newFile );
                     //  Add the input file path to the database if we are using it.
                     if ( db != null ) {
                         db.updateJob( databaseJobId, "inputFile", newFile.trim() );
@@ -2840,6 +2846,93 @@ public class ExperimentEditor extends JFrame {
         PassNode _newPass;
 
     }
+    
+    //  This class prevents too many threads being created to download files from the
+    //  guiServer.  Each job created by an experiment requires the creation of threads
+    //  to do these downloads.  If an experiment includes hundreds of jobs (which they
+    //  can), too many simultaneous threads will be required.  This thread (yes, another
+    //  thread), limits the number of simultaneous downloads to 10.  It accepts requests
+    //  in a FIFO queue.  After a minute of inactivity, it kills itself.
+    protected class FileReadQueue extends Thread {
+        
+        public FileReadQueue() {
+            _creationDeque = new ArrayDeque<JobStructure>();
+            _killCounter = 0;
+        }
+        
+        @Override
+        public void run() {
+            while( _killCounter < 600 ) {
+                if ( _creationDeque.isEmpty() )
+                    ++_killCounter;
+                else {
+                    _killCounter = 0;
+                    //  Take anything out of the queue that is finished and count those
+                    //  that are running.
+                    int readingCount = 0;
+                    synchronized ( _creationDeque ) {
+                        for ( Iterator<JobStructure> iter = _creationDeque.iterator(); iter.hasNext(); ) {
+                            JobStructure thisJob = (JobStructure)iter.next();
+                            if ( thisJob.started && thisJob.jobNode.readingDataFile() ) {
+                                //  Still running
+                                ++readingCount;
+                            }
+                            else if ( thisJob.started ) {
+                                //  Started and not running...must be finished.
+                                iter.remove();
+                            }
+                        }
+                        //  If there are fewer than 10 running, start new ones.
+                        for ( Iterator<JobStructure> iter = _creationDeque.iterator(); iter.hasNext() && readingCount < 10; ) {
+                            JobStructure thisJob = (JobStructure)iter.next();
+                            if ( !thisJob.started ) {
+                                thisJob.started = true;
+                                //thisJob.jobNode.inputFile( thisJob.fileName, true );
+                                ReadQueue newQueue = new ReadQueue( thisJob );
+                                ++readingCount;
+//                                System.out.println( "read " + thisJob.fileName );
+                            }
+                        }
+                    }
+                }
+                try { Thread.sleep( 100 ); } catch( Exception e ) {}
+            }
+//            System.out.println( "dissolving read queue!!!" );
+        }
+        
+        public void queueRead( JobNode newNode, String newFile ) {
+            JobStructure newStruct = new JobStructure();
+            newStruct.jobNode = newNode;
+            newStruct.jobNode.readDisable();
+            newStruct.fileName = newFile;
+            synchronized ( _creationDeque ) {
+                _creationDeque.add( newStruct );
+            }
+//            System.out.println( "queue " + newFile );
+        }
+        
+        protected class JobStructure {
+            JobNode jobNode;
+            String fileName;
+            boolean started;
+        }
+        
+        protected class ReadQueue extends Thread {
+            JobStructure _readItem;
+            ReadQueue( JobStructure newItem ) {
+                _readItem = newItem;
+                start();
+            }
+            public void run() {
+                _readItem.jobNode.inputFile( _readItem.fileName, true );
+            }
+        }
+        
+        protected ArrayDeque<JobStructure> _creationDeque;
+        protected int _killCounter;
+    }
+    
+    protected FileReadQueue _fileReadQueue;
     
     protected ExperimentNode _thisExperiment;
     protected SaneTextField _name;

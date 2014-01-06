@@ -65,11 +65,10 @@ public class StationPanel extends IndexedPanel {
             }
         } );
         this.add( _useCheck );
-        _contentPane = new NodeBrowserScrollPane();
+        _contentPane = new NodeBrowserScrollPane( false );
         _contentPane.setLevel( 2 );
         _contentPane.drawFrame( false );
         _contentPane.respondToResizeEvents( true );
-        _contentPane.noTimer();
         this.addScrollPane( _contentPane );
         
         //  The data source panel lets the user specify where data for this station

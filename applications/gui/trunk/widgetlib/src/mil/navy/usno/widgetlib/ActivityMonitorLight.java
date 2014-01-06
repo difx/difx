@@ -19,9 +19,12 @@ import javax.swing.AbstractAction;
 import javax.swing.Timer;
 
 import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Dimension;
+
+import javax.swing.event.EventListenerList;
 
 public class ActivityMonitorLight extends JPanel {
     
@@ -38,22 +41,11 @@ public class ActivityMonitorLight extends JPanel {
         alertColor( Color.RED );
         _currentColor = _offColor;
         //  Set up a repeating timeout that occurs every 10th of a second.
-        TimerThread timerThread = new TimerThread();
-        timerThread.start();
-    }
-    
-    protected class TimerThread extends Thread {
-        protected boolean _keepGoing = true;
-        public void run() {
-            while ( _keepGoing ) {
-                try {
-                    Thread.sleep( 100 );
-                } catch ( Exception e ) {
-                    _keepGoing = false;
-                }
+        addTimeoutListener(new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
                 timeoutIntervalEvent();
             }
-        }
+        });
     }
     
     @Override
@@ -180,4 +172,54 @@ public class ActivityMonitorLight extends JPanel {
     protected Color _warningColor;
     protected Color _alertColor;
     protected Color _currentColor;
+
+
+    static EventListenerList _staticTimeoutListeners;
+    
+    public class TimeoutThread extends Thread {
+        protected int _interval;
+        protected boolean _keepGoing;
+        public TimeoutThread() {
+            _keepGoing = true;
+        }
+        public void keepGoing( boolean newVal ) {
+            _keepGoing = newVal;
+        }
+        @Override
+        public void run() {
+            while ( _keepGoing ) {
+                if ( _staticTimeoutListeners == null )
+                    return;
+                Object[] listeners = _staticTimeoutListeners.getListenerList();
+                int numListeners = listeners.length;
+                for ( int i = 0; i < numListeners; i+=2 ) {
+                    if ( listeners[i] == ActionListener.class )
+                        ((ActionListener)listeners[i+1]).actionPerformed( null );
+                }
+                try {
+                    Thread.sleep( 100 );
+                } catch ( Exception e ) {
+                    _keepGoing = false;
+                }
+            }
+        }
+    }
+    
+    static TimeoutThread _staticTimeoutThread;
+    
+    public void addTimeoutListener( ActionListener a ) {
+        if ( _staticTimeoutThread == null ) {
+            _staticTimeoutThread = new TimeoutThread();
+            _staticTimeoutThread.start();
+        }
+        if ( _staticTimeoutListeners == null )
+            _staticTimeoutListeners = new EventListenerList();
+        _staticTimeoutListeners.add( ActionListener.class, a );
+    }
+    
+    static public void initializeStatics() {
+        _staticTimeoutThread = null;
+        _staticTimeoutListeners = null;
+    }
+    
 }

@@ -57,9 +57,9 @@ public class QueueBrowserPanel extends TearOffPanel {
         _settings = systemSettings;
         _settings.queueBrowser( this );
         setLayout( null );
-        _browserPane = new NodeBrowserScrollPane( 20 );
+        _browserPane = new NodeBrowserScrollPane();
         this.add( _browserPane );
-        _headerPane = new NodeBrowserScrollPane( 20 );
+        _headerPane = new NodeBrowserScrollPane();
         _headerPane.noScrollbar( true );
         this.add( _headerPane );
         addKeyListener( new KeyEventListener() );
@@ -974,7 +974,7 @@ public class QueueBrowserPanel extends TearOffPanel {
                 }
             } );
             _this.add( _deselectAllButton ) ;
-            _preview = new NodeBrowserScrollPane( 20 );
+            _preview = new NodeBrowserScrollPane();
             _preview.setBackground( Color.WHITE );
             _this.add( _preview );
             _autoUpdate = new JCheckBox( "Auto Update" );

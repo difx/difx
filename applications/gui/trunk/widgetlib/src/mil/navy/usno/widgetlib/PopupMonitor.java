@@ -63,9 +63,9 @@ public class PopupMonitor extends JDialog implements WindowListener  {
         _statusLabel2.setBounds( 80, 40, w - 90, 25 );
         _statusLabel2.setVisible( false );
         this.add( _statusLabel2 );
-        _spinner = new Spinner();
-        _spinner.setBounds( 20, 20, 40, 40 );
-        this.add( _spinner );
+//        _spinner = new Spinner();
+//        _spinner.setBounds( 20, 20, 40, 40 );
+//        this.add( _spinner );
         _progress = new JProgressBar();
         _progress.setBounds( 80, 50, w - 200, 25 );
         _progress.setVisible( false );
@@ -91,8 +91,14 @@ public class PopupMonitor extends JDialog implements WindowListener  {
         //  window.  This will give the process a chance to finish quietly if it is
         //  very quick.
         try { Thread.sleep( _delay ); } catch ( Exception e ) {}
-        if ( _success == false )
+        if ( _success == false ) {
+            //  The spinner involves a thread, so we add it here (instead of when
+            //  creating the popup).
+            _spinner = new Spinner();
+            _spinner.setBounds( 20, 20, 40, 40 );
+            this.add( _spinner );
             this.setVisible( true );
+        }
     }
     
     /*
@@ -134,7 +140,7 @@ public class PopupMonitor extends JDialog implements WindowListener  {
      */
     protected void successCondition() {
         _theWindow.setTitle( "DISMISSED" );
-        _spinner.stop();
+        if ( _spinner != null ) _spinner.stop();
         _success = true;
         _theWindow.setVisible( false );
     }
@@ -144,7 +150,8 @@ public class PopupMonitor extends JDialog implements WindowListener  {
      */
     protected void errorCondition() {
         _cancelButton.setText( "Dismiss" );
-        _spinner.error();
+        if ( _spinner != null ) _spinner.error();
+        if ( _spinner != null ) _spinner.stop();
         _dismissActive = true;
     }
     
@@ -185,7 +192,7 @@ public class PopupMonitor extends JDialog implements WindowListener  {
      */
     protected void cancelOperation() {
         _theWindow.setTitle( "DISMISSED" );
-        _spinner.stop();
+        if ( _spinner != null ) _spinner.stop();
         _success = false;
         _theWindow.setVisible( false );
     }

@@ -99,6 +99,11 @@ public class JobEditorMonitor extends JFrame {
                 newSize();
             }
         } );
+        _scrollPane.addResizeEventListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                newSize();
+            }
+        } );
         this.add( _scrollPane );
         
         //  This panel shows us the input file, which can be edited and sent to
@@ -502,8 +507,8 @@ public class JobEditorMonitor extends JFrame {
         _allObjectsBuilt = true;
         
         //  Start a thread that can be used to trigger repeated updates.
-        _updateThread = new UpdateThread( 1000 );
-        _updateThread.start();
+//        _updateThread = new UpdateThread( 1000 );
+//        _updateThread.start();
         
         this.newSize();
 

@@ -6,6 +6,7 @@ package edu.nrao.difx.difxview;
 
 import mil.navy.usno.widgetlib.MessageDisplayPanel;
 import mil.navy.usno.widgetlib.ZMenuItem;
+import mil.navy.usno.widgetlib.NodeBrowserScrollPane;
 
 import java.awt.event.WindowListener;
 import java.awt.event.WindowEvent;
@@ -32,6 +33,7 @@ import javax.swing.plaf.FontUIResource;
 
 import java.awt.Font;
 import javax.swing.*;
+import mil.navy.usno.widgetlib.ActivityMonitorLight;
 
 /**
  *
@@ -200,6 +202,13 @@ public class DiFXUI extends JFrame implements WindowListener {
     private void initComponents() {
         
         this.setLayout( null );
+        
+        //  These two widget types have static threads that run in them to do periodic
+        //  updates and animations.  The reason for this is to allow each instance of
+        //  the widgets to share a single thread, as there is a limit to threads and
+        //  there can be hundreds of these guys.
+        NodeBrowserScrollPane.initializeStatics();
+        ActivityMonitorLight.initializeStatics();
 
         _mainSplitPane = new javax.swing.JSplitPane();
         _topSplitPane = new javax.swing.JSplitPane();
