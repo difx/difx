@@ -12,7 +12,7 @@ point to the corr_hosts.txt file and $CORR_DATA should point to the data area
 where you want the correlator output data to end up. Add these to your .bashrc
 or similar:
 
-export CORR_HOSTS=/home/corr/corr_hosts.txt
+export DIFX_MACHINES=/home/corr/corr_hosts.txt
 export CORR_DATA=/data/corr/corrdat/
 
 3) Run the install script:
