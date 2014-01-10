@@ -49,6 +49,7 @@ void ServerSideConnection::machinesDefinition( DifxMessageGeneric* G ) {
     //  for diagnostic messages and to show progress.
     network::TCPClient* guiSocket = new network::TCPClient( S->address, S->port );
     guiSocket->waitForConnect();
+    
     //  Create a Machines Monitor Connection out of this new socket if it connected
     //  properly.  If it did not connect, we need to bail out now.
     if ( guiSocket->connected() ) {

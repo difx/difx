@@ -233,7 +233,7 @@ namespace network {
         //----------------------------------------------------------------------------
         //!  Send the specified data over the UDP socket.
         //----------------------------------------------------------------------------
-        virtual int writer( char *message, int messagelength )  {
+        virtual int writer( const char *message, int messagelength )  {
             return( sendto( _fd, message, messagelength, 0, (sockaddr *)&addr, sizeof(addr) ) );
         }
         

@@ -103,6 +103,7 @@ namespace guiServer {
         //---------------------------------------------------------------------
         static void* staticDifxMonitor( void* a ) {
             ( (ServerSideConnection*)a )->difxMonitor();
+            return NULL;
         }
         
         static const int MAX_MESSAGE_LENGTH = 10 * 1024;
@@ -113,7 +114,7 @@ namespace guiServer {
         //!  an error.
         //---------------------------------------------------------------------
         void difxMonitor() {
-            char hostName[512];
+            //char hostName[512];
             char message[MAX_MESSAGE_LENGTH + 1];
             //char hostIP[512];
             while ( _monitorSocket != NULL && _monitorSocket->fd() != -1 ) {
@@ -123,7 +124,7 @@ namespace guiServer {
                     delete _monitorSocket;
                     _monitorSocket = NULL;
                 }
-                else if ( ret > 0 && ret <= sizeof( DifxMessageGeneric ) ) {
+                else if ( ret > 0 && ret <= ((int)(sizeof( DifxMessageGeneric ))) ) {
                     //  Decide what to do with this message.
                     DifxMessageGeneric G;
                     if ( !difxMessageParse( &G, message ) ) {
@@ -219,11 +220,23 @@ namespace guiServer {
 #else
             sendPacket( GUISERVER_VERSION, "unknown", strlen( "unknown" ) );
 #endif
+            //  The "version" of guiServer is a little tricky to get right.  We first look
+            //  to see if a "label" has been defined for this DiFX build (this is part of the
+            //  difxbuild process, so if you aren't using it you probably don't have one).
+            const char* difxLabel = getenv( "DIFX_LABEL" );
+            if ( difxLabel ) {
+                sendPacket( GUISERVER_DIFX_VERSION, difxLabel, strlen( difxLabel ) );
+            }
+            //  Failing that, use the defined "version", which is the version of the DiFX
+            //  source.  If that doesn't exist, we don't know what version this is.
+            else {
 #ifdef DIFX_VERSION
-            sendPacket( GUISERVER_DIFX_VERSION, DIFX_VERSION, strlen( DIFX_VERSION ) );
+                sendPacket( GUISERVER_DIFX_VERSION, DIFX_VERSION, strlen( DIFX_VERSION ) );
 #else
-            sendPacket( GUISERVER_DIFX_VERSION, "unknown", strlen( "unknown" ) );
+                sendPacket( GUISERVER_DIFX_VERSION, "unknown", strlen( "unknown" ) );
 #endif
+            }
+            
             //  Send the current DiFX "base" that we are using.  This determines
             //  where the setup files for different versions exist.
             sendPacket( DIFX_BASE, _difxBase, strlen( _difxBase ) );

@@ -160,7 +160,7 @@ namespace network {
         //  Writing is considerably easier than reading.  It is mutex locked to be
         //  thread safe.
         //----------------------------------------------------------------------------
-        int writer( char* buff, int nBytes ) {
+        int writer( const char* buff, int nBytes ) {
             pthread_mutex_lock( &_writeMutex );
             int ret = write( _fd, buff, nBytes );
             pthread_mutex_unlock( &_writeMutex );

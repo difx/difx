@@ -40,7 +40,7 @@ namespace network {
         //!  or a -1 if there is a failure.  It is mutex locked to assure that
         //!  the entire packet is sent completely.
         //----------------------------------------------------------------------------
-        virtual int sendPacket( const int packetId, char* data, const int nBytes ) {
+        virtual int sendPacket( const int packetId, const char* data, const int nBytes ) {
             int swapped;
 
             //  Lock writing on the socket.  This makes certain this packet can't be 
@@ -163,7 +163,7 @@ namespace network {
         //!  inefficient.  And loses precision.  Probably could make this function
         //!  more flexible and useful by expanding the precision option.
         //----------------------------------------------------------------------------
-        int composeStringDouble( const double* data, int n = 1 ) {
+        void composeStringDouble( const double* data, int n = 1 ) {
             char buffer[15];
             for ( int i = 0; i < n; ++i ) {
                 snprintf( buffer, 15, "%14.6e", data[i] );

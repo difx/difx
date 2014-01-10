@@ -29,7 +29,7 @@ namespace network {
         //  _partialWrite variables are set to the  number of bytes sent 
         //  or received.
         virtual int reader( char* buff, int nBytes ) = 0;
-        virtual int writer( char* buff, int nBytes ) = 0;
+        virtual int writer( const char* buff, int nBytes ) = 0;
         
         unsigned int partialRead() { return _partialRead; }
         unsigned int partialWrite() { return _partialWrite; }

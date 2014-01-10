@@ -28,7 +28,7 @@ namespace network {
             //  Create the socket.  This shouldn't fail unless there are too many
             //  sockets already open, which would be kind of strange.
             if ( ( _fd = socket( AF_INET, SOCK_STREAM, 0 ) ) == -1 ) {
-                perror( "FleTCPClient() - socket() failed" );
+                perror( "TCPClient() - socket() failed" );
                 return;
             }
 
@@ -39,7 +39,7 @@ namespace network {
             _connAddr.sin_port = htons( port );
 
             if ( inet_pton( AF_INET, ipAddress, &_connAddr.sin_addr ) == -1 ) {
-                perror( "FleTCPClient() - inet_pton() failed" );
+                perror( "TCPClient() - inet_pton() failed" );
                 return;
             }
 
@@ -51,7 +51,7 @@ namespace network {
         //----------------------------------------------------------------------------
         void waitForConnect() {
             if ( connect( _fd, (struct sockaddr*)&_connAddr, sizeof( struct sockaddr_in ) ) == -1 ) {
-                perror( "FleTCPClient::waitForConnect() - connect() failed" );
+                perror( "TCPClient::waitForConnect() - connect() failed" );
                 return;
             }
             startMonitor();

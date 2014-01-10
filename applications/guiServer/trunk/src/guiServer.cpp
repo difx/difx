@@ -57,12 +57,13 @@ void* connectionMonitor( void* arg ) {
         pthread_mutex_unlock( &_clientConnectionsMutex );
         sleep( 1 );
     }
+    return NULL;
 }
 
 //-----------------------------------------------------------------------------
 //!  main
 //-----------------------------------------------------------------------------
-main( int argc, char **argv, char **envp ) {
+int main( int argc, char **argv, char **envp ) {
 
     char difxBase[DIFX_MESSAGE_LENGTH];
     char command[guiServer::ServerSideConnection::MAX_COMMAND_SIZE];
