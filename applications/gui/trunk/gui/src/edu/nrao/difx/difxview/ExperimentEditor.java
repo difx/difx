@@ -2809,7 +2809,7 @@ public class ExperimentEditor extends JFrame {
                     
                     //  Apply the input file data to the job.
                     //newJob.inputFile( newFile.trim(), true );
-                    _fileReadQueue.queueRead( newJob, newFile );
+                    _fileReadQueue.queueRead( newJob, newFile.trim() );
                     //  Add the input file path to the database if we are using it.
                     if ( db != null ) {
                         db.updateJob( databaseJobId, "inputFile", newFile.trim() );

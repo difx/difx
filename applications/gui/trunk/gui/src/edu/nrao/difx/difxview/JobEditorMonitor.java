@@ -781,7 +781,6 @@ public class JobEditorMonitor extends JFrame {
         // -- Create the XML defined messages and process through the system
         command.body().setDifxMachinesDefinition( cmd );
         try {
-            //command.sendPacket( _settings.guiServerConnection().COMMAND_PACKET );
             command.send();
         } catch ( java.net.UnknownHostException e ) {
             java.util.logging.Logger.getLogger("global").log(java.util.logging.Level.SEVERE, null,
