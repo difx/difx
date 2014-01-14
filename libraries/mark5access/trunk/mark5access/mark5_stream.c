@@ -19,9 +19,9 @@
 //===========================================================================
 // SVN properties (DO NOT CHANGE)
 //
-// $Id$
-// $HeadURL$
-// $LastChangedRevision$
+// $Id: mark5_stream.c 5533 2013-08-07 05:43:41Z RichardDodson $
+// $HeadURL: https://svn.atnf.csiro.au/difx/libraries/mark5access/trunk/mark5access/mark5_stream.c $
+// $LastChangedRevision: 5782 $
 // $Author$
 // $LastChangedDate$
 //
@@ -438,6 +438,19 @@ struct mark5_format_generic *new_mark5_format_generic_from_string( const char *f
 		}
 		return new_mark5_format_kvn5b(a, b, c, e);
 	}
+	else if(strncasecmp(formatname, "D2K-", 6) == 0)
+	{
+		r = sscanf(formatname+6, "%d-%d-%d/%d", &a, &b, &c, &e);
+		if(r < 3)
+		{
+			return 0;
+		}
+		if(r < 4)
+		{
+			e = 1;
+		}
+		return new_mark5_format_d2k(a, b, c, e);
+	}
 #ifdef K5WORKS
 	else if(strncasecmp(formatname, "K5_32-", 6) == 0)
 	{
@@ -563,7 +576,7 @@ struct mark5_format_generic *new_mark5_format_generic_from_string( const char *f
 /* a string containg a list of supported formats */
 const char *mark5_stream_list_formats()
 {
-	return "VLBA1_*-*-*-*[/*], MKIV1_*-*-*-*[/*], MARK5B-*-*-*[/*], VDIF_*-*-*-*[/*], VDIFC_*-*-*-*[/*], VLBN1_*-*-*-*[/*], VDIFB_*-*-*-*, VDIFL_*-*-*-*[/*], VDIFCL_*-*-*-*[/*], KVN5B-*-*-*[/*]";
+	return "VLBA1_*-*-*-*[/*], MKIV1_*-*-*-*[/*], MARK5B-*-*-*[/*], VDIF_*-*-*-*[/*], VDIFC_*-*-*-*[/*], VLBN1_*-*-*-*[/*], VDIFB_*-*-*-*, VDIFL_*-*-*-*[/*], VDIFCL_*-*-*-*[/*], KVN5B-*-*-*[/*], D2K-*-*-*[/*]";
 }
 
 /* given a format string, populate a structure with info about format */
@@ -640,6 +653,22 @@ struct mark5_format *new_mark5_format_from_name(const char *formatname)
 			return 0;
 		}
 		F = MK5_FORMAT_KVN5B;
+		databytes = 10000;
+		framebytes = databytes+16;
+		framens = 1000.0*(8.0*databytes/(double)b);
+		if(r > 3)
+		{
+			decimation = e;
+		}
+	}
+	else if(strncasecmp(formatname, "D2K-", 6) == 0)
+	{
+		r = sscanf(formatname+6, "%d-%d-%d/%d", &b, &c, &d, &e);
+		if(r < 3)
+		{
+			return 0;
+		}
+		F = MK5_FORMAT_D2K;
 		databytes = 10000;
 		framebytes = databytes+16;
 		framens = 1000.0*(8.0*databytes/(double)b);

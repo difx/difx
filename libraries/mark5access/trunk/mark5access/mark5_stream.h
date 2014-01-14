@@ -19,9 +19,9 @@
 //===========================================================================
 // SVN properties (DO NOT CHANGE)
 //
-// $Id$
-// $HeadURL$
-// $LastChangedRevision$
+// $Id: mark5_stream.h 5533 2013-08-07 05:43:41Z RichardDodson $
+// $HeadURL: https://svn.atnf.csiro.au/difx/libraries/mark5access/trunk/mark5access/mark5_stream.h $
+// $LastChangedRevision: 5533 $
 // $Author$
 // $LastChangedDate$
 //
@@ -65,7 +65,8 @@ enum Mark5Format
 	MK5_FORMAT_K5      =  5,		/* Not Yet Implemented */
 	MK5_FORMAT_VLBN    =  6,		/* VLBA format without NRZM */
 	MK5_FORMAT_KVN5B   =  7,		/* Same framing, different bit pattern as Mark5B */
-	MK5_FORMAT_VDIFB   =  8			/* Not to be propagated as an external format */
+	MK5_FORMAT_VDIFB   =  8,		/* Not to be propagated as an external format */
+	MK5_FORMAT_D2K     =  9			/* Not to be propagated as an external format */
 };
 
 #define MAXBLANKZONES		32
@@ -303,6 +304,8 @@ struct mark5_format_generic *new_mark5_format_k5(int Mbps, int nchan, int nbit, 
 /*   KVNMark5B format: under development */
 
 struct mark5_format_generic *new_mark5_format_kvn5b(int Mbps, int nchan, int nbit, int decimation);
+
+struct mark5_format_generic *new_mark5_format_d2k(int Mbps, int nchan, int nbit, int decimation);
 
 /*   Generate format from a string description */
 
