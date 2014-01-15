@@ -100,10 +100,11 @@ public class DiFXCommand_vex2difx extends DiFXCommand {
         @Override
         public void run() {
             //  Open a new server socket and await a connection.  The connection
-            //  will timeout after a given number of seconds (nominally 10).
+            //  will timeout after a given number of seconds (10 minutes to allow
+            //  calcif2 the time it needs to run on big jobs).
             try {
                 ServerSocket ssock = new ServerSocket( _port );
-                ssock.setSoTimeout( 10000 );  //  timeout is in millisec
+                ssock.setSoTimeout( 600000 );  //  timeout is in millisec
                 try {
                     Socket sock = ssock.accept();
                     //  Turn the socket into a "data stream", which has useful

@@ -2862,7 +2862,7 @@ public class ExperimentEditor extends JFrame {
         
         @Override
         public void run() {
-            while( _killCounter < 600 ) {
+            while( _killCounter < 6000 ) {
                 if ( _creationDeque.isEmpty() )
                     ++_killCounter;
                 else {
