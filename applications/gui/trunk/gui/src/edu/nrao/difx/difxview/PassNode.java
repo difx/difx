@@ -13,10 +13,12 @@ import javax.swing.JMenu;
 import javax.swing.JTextField;
 import javax.swing.JSeparator;
 import javax.swing.JOptionPane;
+import javax.swing.JLabel;
 
 import java.util.Iterator;
 import java.util.Map;
 import java.util.ArrayList;
+import java.awt.Color;
 import java.awt.Container;
 import java.awt.event.MouseEvent;
 
@@ -50,6 +52,9 @@ public class PassNode extends QueueBrowserNode {
             }
         });
         this.add( _nameEditor );
+        _stateLabel = new ColumnTextArea( "" );
+        _stateLabel.setVisible( false );
+        this.add( _stateLabel );
         //  Create a popup menu appropriate to a "project".
         _popup = new JPopupMenu();
         JMenuItem selectJobsItem = new JMenuItem( "Select All Jobs" );
@@ -102,6 +107,12 @@ public class PassNode extends QueueBrowserNode {
             }
         });
         _popup.add( deletePassItem );
+    }
+    
+    public void stateLabel( String text, Color color, boolean visible ) {
+        _stateLabel.setText( text );
+        _stateLabel.setBackground( color );
+        _stateLabel.setVisible( visible );
     }
     
     /*
@@ -174,6 +185,7 @@ public class PassNode extends QueueBrowserNode {
     public void positionItems() {
         super.positionItems();
         _nameEditor.setBounds( _level * _levelOffset, 0, _labelWidth, _ySize );
+        _stateLabel.setBounds( _level * _levelOffset + _xOffset + _labelWidth, 0, 300, _ySize );
     }
     
     public void selectAllJobsAction() {
@@ -388,5 +400,6 @@ public class PassNode extends QueueBrowserNode {
     protected ArrayList<JCheckBoxMenuItem> _checkList;
     protected ActivityLogFile _logFile;
     protected String _fullPath;
+    protected ColumnTextArea _stateLabel;
 
 }

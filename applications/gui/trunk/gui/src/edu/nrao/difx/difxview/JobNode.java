@@ -533,93 +533,25 @@ public class JobNode extends QueueBrowserNode {
                 _editorMonitor.calcFileName( filename );
                 _editorMonitor.parseCalcFile( getFile.inString() );
             }
-            _state.setText( _saveStateText );
-            _state.setBackground( _saveStateColor );
+            //  Set the state to reflect which files have been parsed - there should be
+            //  both a .input and a .calc file.
+            if ( _editorMonitor.inputFileParsed() && _editorMonitor.calcFileParsed() ) {
+                _state.setText( _saveStateText );
+                _state.setBackground( _saveStateColor );
+            }
+            else if ( _editorMonitor.inputFileParsed() ) {
+                _state.setText( "No Calc File" );
+                _state.setBackground( Color.orange );
+            }
+            else if ( _editorMonitor.calcFileParsed() ) {
+                _state.setText( "No Input File" );
+                _state.setBackground( Color.orange );
+            }
         }
         else {
             _state.setText( "file xfer error" );
             _state.setBackground( Color.ORANGE );
         }
-//        final DiFXCommand_getFile fileGet = new DiFXCommand_getFile( filename, _settings );
-//        final String fileStr = filename;
-//        fileGet.addEndListener( new ActionListener() {
-//            public void actionPerformed( ActionEvent e ) {
-//                //  Check the file size....this will tell us if anything went
-//                //  wrong, and to some degree what.
-//                int fileSize = fileGet.fileSize();
-//                if ( fileSize > 0 ) {
-//                    //  Was it only partially read?
-//                    if ( fileSize > fileGet.inString().length() ) {
-//                        java.util.logging.Logger.getLogger("global").log(java.util.logging.Level.SEVERE, 
-//                                "Warning - connection terminated with "
-//                                + fileGet.inString().length() + " of "
-//                                + fileSize + " bytes read." );
-//                        _state.setText( "file xfer error" );
-//                        _state.setBackground( Color.ORANGE );
-//                    }
-//                    else {
-//                        _state.setText( _saveStateText );
-//                        _state.setBackground( _saveStateColor );
-//                    }
-//                    //  Parse the file content based on the extension.
-//                    String ext = fileStr.substring( fileStr.lastIndexOf( '.' ) + 1 ).trim();
-//                    if ( ext.contentEquals( "input" ) ) {
-//                        _editorMonitor.inputFileName( fileStr, fileGet.inString() );
-//                        _editorMonitor.parseInputFile();
-//                        _inputFileRequestComplete = true;
-//                        //_startJobItem.setEnabled( true );
-//                        //_stopJobItem.setEnabled( true );
-//                        //_monitorMenuItem.setEnabled( true );
-//                        //_liveMonitorMenuItem.setEnabled( true );
-//                    }
-//                    else if ( ext.contentEquals( "calc" ) ) {
-//                        _editorMonitor.calcFileName( fileStr );
-//                        _editorMonitor.parseCalcFile( fileGet.inString() );
-//                    }
-//                }
-//                else {
-//                    _state.setText( "file xfer error" );
-//                    _state.setBackground( Color.ORANGE );
-//                    if ( fileSize == 0 ) {
-//                        java.util.logging.Logger.getLogger("global").log(java.util.logging.Level.SEVERE, 
-//                            "File \"" + _inputFile.getText() + "\" has zero length." );
-//                    }
-//                    else if ( fileSize == -10 ) {
-//                        java.util.logging.Logger.getLogger("global").log(java.util.logging.Level.SEVERE, 
-//                            "Socket connection timed out before DiFX host connected." );                                        }
-//                    else if ( fileSize == -11 ) {
-//                        java.util.logging.Logger.getLogger("global").log(java.util.logging.Level.SEVERE, 
-//                            "File transfer failed - " + fileGet.error() );
-//                    }
-//                    else if ( fileSize == -1 ) {
-//                        java.util.logging.Logger.getLogger("global").log(java.util.logging.Level.SEVERE, 
-//                            "JobNode: Bad file name (probably the path was not complete." );
-//                    }
-//                    else if ( fileSize == -2 ) {
-//                        java.util.logging.Logger.getLogger("global").log(java.util.logging.Level.SEVERE, 
-//                            "Requested file \"" + _inputFile.getText() + "\" does not exist." );
-//                    }
-//                    else if ( fileSize == -3 ) {
-//                        java.util.logging.Logger.getLogger("global").log(java.util.logging.Level.SEVERE, 
-//                            "Error - DiFX user " + _settings.difxControlUser()
-//                            + " does not have read permission for named file." );
-//                    }
-//                    else if ( fileSize == -4 ) {
-//                        java.util.logging.Logger.getLogger("global").log(java.util.logging.Level.SEVERE, 
-//                            "DiFX user name " + _settings.difxControlUser() +
-//                            " not valid on DiFX host." );   
-//                    }
-//                    else {
-//                        java.util.logging.Logger.getLogger("global").log(java.util.logging.Level.SEVERE, 
-//                            "Unknown error encountered during file transfer of " + _inputFile.getText() + "." );
-//                    }
-//                }
-//                _thisJobNode.setEnabled( true );
-//            }
-//        });  
-//        try {
-//            fileGet.readString();
-//        } catch ( Exception e ) {} //  BLAT we should be using the GetFileMonitor class here instead...
         _readingDataFile = false;
     }
     

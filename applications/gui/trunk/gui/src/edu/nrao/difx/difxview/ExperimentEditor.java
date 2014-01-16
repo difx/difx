@@ -2583,6 +2583,8 @@ public class ExperimentEditor extends JFrame {
                 //  case of the "default" pass).
                 _newPass = new PassNode( newPassName, _settings );
                 _newPass.type( (String)_passTypeList.getSelectedItem() );
+                _newPass.stateLabel( "Creating Pass on Host", Color.yellow, true );
+                _fileReadQueue.pass( _newPass );
                 if ( !createPass() )
                     _newPass.setHeight( 0 );
                 _thisExperiment.addChild( _newPass );
@@ -2681,6 +2683,7 @@ public class ExperimentEditor extends JFrame {
                     passDir = directory();
                     if ( createPass() )
                         passDir += "/" + passDirectory();
+                    _newPass.stateLabel( "Creating Jobs on Host", Color.yellow, true );
                     DiFXCommand_vex2difx v2d = new DiFXCommand_vex2difx( passDir, v2dFileName(), _settings, false );
                     v2d.addIncrementalListener( new ActionListener() {
                         public void actionPerformed( ActionEvent e ) {
@@ -2730,6 +2733,7 @@ public class ExperimentEditor extends JFrame {
          * the file is an ".input" file, it creates a new job based on it.
          */
         synchronized public void newFileCallback( String newFile ) {
+            _newPass.stateLabel( "Downloading Job Files", Color.yellow, true );
             //  Get a connection to the database if we are using it.
             QueueDBConnection db = null;
             if ( _settings.useDatabase() ) {
@@ -2825,6 +2829,7 @@ public class ExperimentEditor extends JFrame {
          * This callback occurs when the vex2difx process is complete.
          */
         synchronized public void endCallback( String newFile ) {
+            _newPass.stateLabel( "", Color.yellow, false );
             //  Send the pass log file to the DiFX host.
             Component comp = _this;
             while ( comp.getParent() != null )
@@ -2858,6 +2863,12 @@ public class ExperimentEditor extends JFrame {
         public FileReadQueue() {
             _creationDeque = new ArrayDeque<JobStructure>();
             _killCounter = 0;
+            _passNode = null;
+            _foundJob = false;
+        }
+        
+        public void pass( PassNode passNode ) {
+            _passNode = passNode;
         }
         
         @Override
@@ -2880,6 +2891,7 @@ public class ExperimentEditor extends JFrame {
                             else if ( thisJob.started ) {
                                 //  Started and not running...must be finished.
                                 iter.remove();
+                                _foundJob = true;
                             }
                         }
                         //  If there are fewer than 10 running, start new ones.
@@ -2898,6 +2910,8 @@ public class ExperimentEditor extends JFrame {
                 try { Thread.sleep( 100 ); } catch( Exception e ) {}
             }
 //            System.out.println( "dissolving read queue!!!" );
+            if ( !_foundJob && _passNode != null )
+                _passNode.stateLabel( "No Jobs Created", Color.red, true );
         }
         
         public void queueRead( JobNode newNode, String newFile ) {
@@ -2930,6 +2944,8 @@ public class ExperimentEditor extends JFrame {
         
         protected ArrayDeque<JobStructure> _creationDeque;
         protected int _killCounter;
+        protected PassNode _passNode;
+        protected boolean _foundJob;
     }
     
     protected FileReadQueue _fileReadQueue;
