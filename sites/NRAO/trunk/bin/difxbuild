@@ -11,8 +11,8 @@ from time import asctime
 from glob import glob
 
 program = 'difxbuild'
-version = '0.34'
-verdate = '20131220'
+version = '0.36'
+verdate = '20140116'
 author = 'Walter Brisken <wbrisken@nrao.edu>'
 
 difxbuildUrl = 'http://www.aoc.nrao.edu/~wbrisken/difxbuild'
@@ -30,6 +30,8 @@ pkgconfigVersion = '0.28'
 cxOracleVersion = '5.1.2'
 pyxVersion = '0.12.1'	#http://sourceforge.net/projects/pyx/files/pyx/0.12.1/PyX-0.12.1.tar.gz/download
 gpstkVersion = '2.3'
+libeventVersion = '2.0.21'
+expatVersion = '2.1.0'
 
 defaultDifxMessageGroup = '224.2.2.1'
 defaultDifxMessagePort = 50200
@@ -400,7 +402,10 @@ def filterComponentsOrig(origComps, args):
 
 def filterComponents(origComps, args):
 	if 'all' in args:
-		comps = origComps
+		comps = []
+		for c in origComps:
+			if not 'nodist' in c[2]:
+				comps.append(c)
 	elif 'core' in args:
 		comps = []
 		for c in origComps:
@@ -620,6 +625,13 @@ component_difxfilterbank_trunk = \
 	['aclocal', 'autoconf', 'automake', 'mpicxx'] \
 ]
 
+component_vlite_trunk = \
+[ \
+	'vliteExecutor', \
+	'https://svn.aoc.nrao.edu/repos/VLITE/vliteExecutor', \
+	['aclocal', 'autoconf', 'autoheader', 'automake', 'nodef'] \
+]
+
 components['DIFX-DEVEL'] = \
 [ \
 	component_difxio_trunk, \
@@ -647,6 +659,7 @@ components['DIFX-DEVEL'] = \
 	component_nraodifxdb_trunk, \
 	component_difxfilterbank_trunk, \
 	component_difxmonitor_trunk, \
+	component_vlite_trunk, \
 ]
 
 component_difxio_2_1 = \
@@ -1686,8 +1699,13 @@ def build(origComps, params, args, verbose, pretend):
 							print 'Bailing'
 							exit(2)
 						else:
-							print 'Continuing anyway'	
-				cmd = '%s/configure --prefix=${DIFXROOT}%s' % (srcPath, configureExtras)
+							print 'Continuing anyway'
+				if 'CFLAGS' in environ:
+					envCFLAGS = environ['CFLAGS']
+				else:
+					envCFLAGS = ''
+				configureExtras += " CFLAGS='-I%s/include %s' LIBS='-L%s/lib'" % (environ['DIFX_ARCH_ROOT'], envCFLAGS, environ['DIFX_ARCH_ROOT'])
+				cmd = '%s/configure --prefix=%s%s' % (srcPath, environ['DIFXROOT'], configureExtras)
 				execute(cmd, verbose, pretend)
 			
 			# building mpifxcorr sometimes fails if done in parallel
@@ -2275,6 +2293,57 @@ def png(origComps, params, args, verbose, pretend):
 	execute('make install', verbose, pretend)
 
 
+def libevent(origComps, params, args, verbose, pretend):
+	arch = platform.machine()
+	libeventSrcFile = 'libevent-%s-stable.tar.gz' % libeventVersion
+	libeventUrl = 'https://github.com/downloads/libevent/libevent/%s' % libeventSrcFile
+	difxBase = environ['DIFX_BASE'] + '/'
+	archDir = difxBase + arch
+	archSrcDir = difxBase + arch + '/src/'
+	tarDir = difxBase + 'tar/'
+	# get file
+	ftpFile(libeventUrl, tarDir, libeventSrcFile, args, verbose, pretend)
+	if not isdir(archSrcDir):
+		execute('mkdir -p %s' % archSrcDir, verbose, pretend)
+	
+	libeventSrcDir = '%s/libevent-%s-stable' % (archSrcDir, libeventVersion)
+	if isdir(libeventSrcDir):
+		print 'Stopping because %s exists' % libeventSrcDir
+		return
+	
+	chdir(archSrcDir)
+	execute('tar zxvf %s/%s' % (tarDir, libeventSrcFile), verbose, pretend)
+	chdir(libeventSrcDir)
+	execute('./configure --prefix=%s' % archDir, verbose, pretend)
+	execute('make -j %d' % numMakeCpus, verbose, pretend)
+	execute('make install', verbose, pretend)
+
+def expat(origComps, params, args, verbose, pretend):
+	arch = platform.machine()
+	expatSrcFile = 'expat-%s.tar.gz' % expatVersion
+	expatUrl = 'http://sourceforge.net/projects/expat/files/expat/%s/%s/download' % (expatVersion, expatSrcFile)
+	difxBase = environ['DIFX_BASE'] + '/'
+	archDir = difxBase + arch
+	archSrcDir = difxBase + arch + '/src/'
+	tarDir = difxBase + 'tar/'
+	# get file
+	ftpFile(expatUrl, tarDir, expatSrcFile, args, verbose, pretend)
+	if not isdir(archSrcDir):
+		execute('mkdir -p %s' % archSrcDir, verbose, pretend)
+	
+	expatSrcDir = '%s/expat-%s' % (archSrcDir, expatVersion)
+	if isdir(expatSrcDir):
+		print 'Stopping because %s exists' % expatSrcDir
+		return
+	
+	chdir(archSrcDir)
+	execute('tar zxvf %s/%s' % (tarDir, expatSrcFile), verbose, pretend)
+	chdir(expatSrcDir)
+	execute('./configure --prefix=%s' % archDir, verbose, pretend)
+	execute('make -j %d' % numMakeCpus, verbose, pretend)
+	execute('make install', verbose, pretend)
+
+
 def pgplot(origComps, params, args, verbose, pretend):
 	arch = platform.machine()
 	difxBase = environ['DIFX_BASE'] + '/'
@@ -2341,7 +2410,7 @@ def pgplot(origComps, params, args, verbose, pretend):
 
 
 def extra(origComps, params, args, verbose, pretend):
-	packages = ['cxOracle', 'psycopg', 'pgplot', 'png', 'pyx', 'sched', 'sked', 'spice', 'autotools', 'gpstk']
+	packages = ['cxOracle', 'psycopg', 'pgplot', 'png', 'pyx', 'sched', 'sked', 'spice', 'autotools', 'gpstk', 'libevent', 'expat']
 	if len(args) < 1:
 		print 'The "extra" option allows installation of optional software.\n'
 		print 'Usage 1: difxbuild [options] extra [package(s)]\n'
@@ -2374,6 +2443,10 @@ def extra(origComps, params, args, verbose, pretend):
 		gpstk(origComps, params, [], verbose, pretend)
 	if 'png' in args:
 		png(origComps, params, [], verbose, pretend)
+	if 'expat' in args:
+		expat(origComps, params, [], verbose, pretend)
+	if 'libevent' in args:
+		libevent(origComps, params, [], verbose, pretend)
 	if 'sched' in args:
 		sched(origComps, params, [], verbose, pretend)
 	if 'sked' in args:

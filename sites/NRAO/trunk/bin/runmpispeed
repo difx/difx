@@ -1,4 +1,4 @@
 #! /bin/bash
-. /home/swc/DiFX-trunk/setup_difx
+. /home/swc/VLBADiFX-2.3/setup_difx
 
 mpispeed
