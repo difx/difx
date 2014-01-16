@@ -15,6 +15,15 @@ if not 'DISPLAY' in os.environ.keys():
 from matplotlib import pyplot
 import numpy
 
+
+def corrtime2secs(obstime_match):
+    corrtime = obstime_match.groups()[0]
+    corr_fracsec = int(obstime_match.groups()[1]) * 1e-3
+    corrdatetime = datetime.datetime.strptime(corrtime, '%Y-%m-%d %H:%M:%S')
+    corr_secs = time.mktime(corrdatetime.timetuple()) + corr_fracsec
+    return corr_secs
+
+
 usage = '''%prog [options] <difxlog> 
 extracts the observation and correlation times from the <difxlog> file and plots the correlation speedup factor'''
 
@@ -100,6 +109,15 @@ for filename in args:
         nlines += 1
         line = line.strip()
 
+        # get the time of the first line in the log file
+        if nlines == 1:
+            starttime_match = re.search(r'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}),(\d{3})', line)
+            starttime = corrtime2secs(starttime_match)
+            this_xdata.append(starttime)
+            # give this an observation time of -1 (first vis. is at time 0)
+            this_ydata.append(-1)
+            continue
+
         # match the correlator time and observation time in the log file
         #obstime_match = re.search(r'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}),(\d{3}).*The approximate mjd/seconds is (.*)', line)
         obstime_match = re.search(r'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}),(\d{3}).*to write out time (.*)', line)
@@ -109,13 +127,10 @@ for filename in args:
             continue
 
         # convert correlator and observation time strings to seconds
-        corrtime = obstime_match.groups()[0]
-        corr_fracsec = int(obstime_match.groups()[1]) * 1e-3
+        corr_secs = corrtime2secs(obstime_match)
         #obstime_day, obstime_secs = obstime_match.groups()[2].split('/')
         #obs_secs = int(obstime_day)*(24*60*60.) + int(obstime_secs)
         obs_secs = float(obstime_match.groups()[2])
-        corrdatetime = datetime.datetime.strptime(corrtime, '%Y-%m-%d %H:%M:%S')
-        corr_secs = time.mktime(corrdatetime.timetuple()) + corr_fracsec
 
         # this_* are the data extracted for the current log file only
         this_xdata.append(corr_secs)
