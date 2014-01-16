@@ -2294,6 +2294,8 @@ public class JobEditorMonitor extends JFrame {
         _jobNode.updateDatabase( "numAntennas", _jobNode.numAntennas().toString() );
         
         buildDataSourceList();
+        
+        _inputFileParsed = true;
 
     }
     
@@ -2355,8 +2357,7 @@ public class JobEditorMonitor extends JFrame {
         _jobNode.updateDatabase( "difxVersion", _jobNode.difxVersion() );
         _jobNode.updateDatabase( "dutyCycle", _jobNode.dutyCycle().toString() );
 
-//            frCalc.close();
-            //System.out.printf("***************** Data model read input and calc file complete. \n");
+        _calcFileParsed = true;
     }
     
     public Integer startMJD() { return _startMJD; }
@@ -2461,5 +2462,15 @@ public class JobEditorMonitor extends JFrame {
     protected JulianCalendar _startTime;
     
     protected JobEditorMonitor _this;
+    
+    protected boolean _inputFileParsed;
+    protected boolean _calcFileParsed;
+    
+    public boolean inputFileParsed() {
+        return _inputFileParsed;
+    }
+    public boolean calcFileParsed() {
+        return _calcFileParsed;
+    }
     
 }

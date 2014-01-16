@@ -223,6 +223,13 @@ public class ButtonGrid  extends JPanel { //JScrollPane {
     }
     
     /*
+     * Total number of items, on or off.
+     */
+    public int items() {
+        return _buttonList.size();
+    }
+    
+    /*
      * Turn on or off a button based on its name.
      */
     public void setButton( String label, boolean on  ) {

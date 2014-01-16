@@ -2313,13 +2313,17 @@ public class ExperimentEditor extends JFrame {
         //  a warning if there are no scans included).
         if ( _scanGrid.onItems().size() > 0 ) {
             v2dFileParser.rule( "scansubset" );
-            String scanList = "";
-            for ( Iterator<String> iter = _scanGrid.onItems().iterator(); iter.hasNext(); ) {
-                scanList += iter.next();
-                if ( iter.hasNext() )
-                    scanList += ",";
+            if ( _scanGrid.onItems().size() == _scanGrid.items() )
+                v2dFileParser.ruleScan( "scansubset", "*" );
+            else {
+                String scanList = "";
+                for ( Iterator<String> iter = _scanGrid.onItems().iterator(); iter.hasNext(); ) {
+                    scanList += iter.next();
+                    if ( iter.hasNext() )
+                        scanList += ",";
+                }
+                v2dFileParser.ruleScan( "scansubset", scanList );
             }
-            v2dFileParser.ruleScan( "scansubset", scanList );
             v2dFileParser.ruleSetup( "scansubset", "normalSetup" );
         }
         else {

@@ -321,7 +321,7 @@ public class V2dFileParser {
                 }
                 else if ( section.type == RULE_SECTION ) {
                     RuleSection rule = (RuleSection)section;
-                    if ( rule.scan != null )
+                    if ( rule.scan != null && !rule.scan.contentEquals( "*" ) )
                         str += "    scan = " + rule.scan + "\n";
                     if ( rule.setup != null )
                         str += "    setup = " + rule.setup + "\n";
