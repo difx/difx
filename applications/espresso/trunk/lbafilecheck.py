@@ -32,7 +32,9 @@ def makefilelists(telescope, data_area, machine, dir_patterns, globpatterns, exp
     filelist.pop()
     filelist = sorted(filelist, key=sortbyfilename)
     for file in filelist:
-        print>>TEMPFILE, file
+        # ignore the VSIPACK files
+        if not 'VSIPACK' in file and not '.log' in file:
+            print>>TEMPFILE, file
 
     TEMPFILE.flush()
     TEMPFILE.close()

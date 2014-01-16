@@ -43,7 +43,7 @@ OUTFILE = open(outfile_name, 'w')
 
 #print>>OUTFILE, exper, '*.lba *no*'
 print>>OUTFILE, exper, '*'
-for station in stationfiles:
+for station in sorted(stationfiles):
     print>>OUTFILE, station, '=', 
     print>>OUTFILE, stationfiles[station]['machine'] + ':',
     for directory in stationfiles[station]['dir']:

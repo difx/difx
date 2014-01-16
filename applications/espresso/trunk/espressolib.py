@@ -236,3 +236,25 @@ class Email:
         self.server.quit()  
 
 
+class Msg_Filter:
+    """ writes output to a file (or similar object) after filtering. First
+    argument is the desired output object, remainder are the strings to
+    filter on. Should itself look like a file object. Filter is
+    case-insensitive"""
+
+    def __init__(self, file, *args):
+        self._file = file
+        self._filters = args
+
+    def write(self, string):
+        for filter_text in self._filters:
+            if filter_text.lower() in string.lower():
+                self._file.write (string)
+                break
+        self.flush()
+
+    def flush(self):
+        self._file.flush()
+
+    def fileno(self):
+        self._file.fileno()

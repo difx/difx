@@ -361,6 +361,7 @@ try:
         # start the correlator log
         print "starting errormon2 in the background"
         errormon2 = subprocess.Popen('errormon2')
+        #errormon2 = subprocess.Popen('errormon2 2>&1| grep ' + jobname, shell=True)
 
         try:
             runfile = jobname
