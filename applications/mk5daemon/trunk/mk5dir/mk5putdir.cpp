@@ -34,6 +34,7 @@
 #include <unistd.h>
 #include <time.h>
 #include <sys/time.h>
+#include <sys/stat.h>
 #include <difxmessage.h>
 #include <mark5ipc.h>
 #include "mark5dir.h"
@@ -42,8 +43,8 @@
 
 const char program[] = "mk5putdir";
 const char author[]  = "Walter Brisken";
-const char version[] = "0.1";
-const char verdate[] = "20130904";
+const char version[] = "0.2";
+const char verdate[] = "20140117";
 
 
 SSHANDLE xlrDevice;
@@ -52,13 +53,16 @@ static void usage(const char *pgm)
 {
 	fprintf(stderr, "\n%s ver. %s   %s %s\n\n", program, version, author, verdate);
 	fprintf(stderr, "A program to replace the on-disk directory of a Mark5 module\n\n");
-	fprintf(stderr, "Usage : %s [<options>] { <bank> | <vsn> } <scanFile>\n\n", pgm);
+	fprintf(stderr, "Usage : %s [<options>] { <bank> | <vsn> } <scanFile> [<version>]\n\n", pgm);
 	fprintf(stderr, "options can include:\n");
 	fprintf(stderr, "  --help\n");
 	fprintf(stderr, "  -h             Print this help message\n\n");
+	fprintf(stderr, "  --binary\n");
+	fprintf(stderr, "  -b             Push in a binary version of the dir\n\n");
 	fprintf(stderr, "<bank> is either A or B\n\n");
 	fprintf(stderr, "<vsn> is a valid module VSN (8 characters)\n\n");
 	fprintf(stderr, "<scanFile> is a text file as described below.\n\n");
+	fprintf(stderr, "<version> is the new version to set (for binary only).\n\n");
 
 
 
@@ -186,8 +190,44 @@ static int mk5putdir(SSHANDLE xlrDevice, const char *vsn, char *dirData, int dir
 
 	WATCHDOGTEST( XLRSetUserDir(xlrDevice, dirData, dirDataLength) );
 
-
 	WATCHDOG( XLRClose(xlrDevice) );
+
+	return 0;
+}
+
+int readBinaryDir(const char *filename, char **dirData, int *dirDataLength)
+{
+	struct stat st;
+	FILE *in;
+	int v;
+
+	stat(filename, &st);
+	*dirData = (char *)malloc(st.st_size);
+	*dirDataLength = st.st_size;
+
+	in = fopen(filename, "r");
+	if(!in)
+	{
+		fprintf(stderr, "Error opening %s\n", filename);
+		free(dirData);
+		*dirDataLength = 0;
+
+		return -1;
+	}
+
+	v = fread(*dirData, 1, st.st_size, in);
+
+	if(v != st.st_size)
+	{
+		fprintf(stderr, "Error reading %s\n", filename);
+		fclose(in);
+		free(dirData);
+		*dirDataLength = 0;
+
+		return -2;
+	}
+
+	fclose(in);
 
 	return 0;
 }
@@ -319,12 +359,13 @@ int main(int argc, char **argv)
 {
 	int v;
 	char *dirData;
+	int doBinary = 0;
 	int dirDataLength;
-	const char *scanLogFile;
+	const char *inputFile;
 	const char *vsn;
 	int retval = EXIT_SUCCESS;
 
-	if(argc != 3)
+	if(argc < 3 && argc > 5)
 	{
 		usage(argv[0]);
 
@@ -337,18 +378,36 @@ int main(int argc, char **argv)
 			return EXIT_FAILURE;
 		}
 	}
-
-	vsn = argv[1];
-	scanLogFile = argv[2];
-
-	v = readScanLog(scanLogFile, &dirData, &dirDataLength, "dump");
-	if(v != 0)
+	else if(argc == 3)
+	{
+		vsn = argv[1];
+		inputFile = argv[2];
+		v = readScanLog(inputFile, &dirData, &dirDataLength, "dump");
+		if(v != 0)
+		{
+			return EXIT_FAILURE;
+		}
+	}
+	else if(argc > 4 && (strcmp(argv[1], "--binary") == 0 || strcmp(argv[1], "-b") == 0))
+	{
+		doBinary = 1;
+		vsn = argv[2];
+		inputFile = argv[3];
+		v = readBinaryDir(inputFile, &dirData, &dirDataLength);
+		if(argc == 5)
+		{
+			((struct Mark5DirectoryHeaderVer1 *)dirData)->version = atoi(argv[4]);
+			printf("Setting version number to %d\n", atoi(argv[4]));
+		}
+		if(v != 0)
+		{
+			return EXIT_FAILURE;
+		}
+	}
+	else
 	{
 		return EXIT_FAILURE;
 	}
-	
-
-
 
 	v = initWatchdog();
 	if(v < 0)

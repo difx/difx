@@ -1,3 +1,7 @@
+Version 2.4.0
+~~~~~~~~~~~~~
+* mk5putdir: replace based on binary file / have ability to change version number
+
 Version 2.3.0
 ~~~~~~~~~~~~~
 * mk5dir: support SDK9 legacy directories (as per DIMINO 2.2.1 w/ SDK 9.2)
