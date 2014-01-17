@@ -4,7 +4,7 @@
 # Cormac Reynolds: June 2012 - python parallel version replaces old perl script
 
 from math import *
-import os, sys, re, mx.DateTime
+import os, sys, re, mx.DateTime, espressolib, subprocess
 
 def lbaFileLength(filesize, headervals):
 
@@ -50,6 +50,18 @@ def vsib_header(filename):
 
     return header;
 
+def m5_to_vextime(m5time):
+    '''Convert from m5time (MJD/hh:mm:ss.ss) to vex time'''
+    mjd, hms = m5time.split('/')
+    vexday = espressolib.convertdate(mjd, 'vex')
+    vexhms = hms.replace(':', 'h', 1)
+    vexhms = vexhms.replace(':', 'm', 1)
+    vexhms = vexhms[0:-3] + 's'
+
+    vextime = vexday[0:9] + vexhms
+
+    return vextime
+
 def check_file(infile):
     outfile = infile;
     if not os.path.exists(infile):
@@ -72,6 +84,30 @@ def check_file(infile):
         if (infile == filelist[len(filelist)-1]):
             comment = '#';
         outfile += " "  * 3 + comment + starttime + " " + endtime
+    else:
+        # assume it is a mark5 file of some description. Details of the format
+        # are not important for extracting the time
+        m5time = espressolib.which('m5time')
+        m5formats = ['VLBA1_2-256-8-2', 'MKIV1_4-128-2-1', 'Mark5B-512-16-2']
+        time_m5 = None
+        error = None
+        for m5format in m5formats:
+            if not time_m5:
+                command = " ".join([m5time, infile, m5format])
+                time_m5, error = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
+            else:
+                break
+
+        if time_m5:
+            time_m5 = time_m5.split('=')[1]
+            time_m5 = time_m5.strip()
+            starttime = m5_to_vextime(time_m5);
+            # comment out the start time for the last file
+            comment = '';
+            if (infile == filelist[len(filelist)-1]):
+                comment = '#';
+
+            outfile += " "  * 3 + comment + starttime
 
     return outfile
 
