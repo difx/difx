@@ -325,6 +325,7 @@ public class BrowserNode extends JPanel implements MouseListener, MouseMotionLis
     public void respondToResizeEvent() {
         this.updateUI();
         dispatchResizeEvent();
+        this.updateUI();
     }
     
     public void backgroundColor( Color newColor ) {
