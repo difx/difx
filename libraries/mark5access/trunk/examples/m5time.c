@@ -49,9 +49,9 @@ static void usage(const char *pgm)
 	printf("\n");
 
 	printf("%s ver. %s   %s  %s\n\n", program, version, author, verdate);
-	printf("A Mark5 dtime ecoder.  Can decode VLBA, Mark3/4, Mark5B and VDIF"
+	printf("A Mark5 time decoder.  Can decode VLBA, Mark3/4, Mark5B and VDIF"
 		"formats using the\nmark5access library.\n\n");
-	printf("Usage : %s <file> <dataformat>\n\n", pgm);
+	printf("Usage : %s <file> <dataformat> <offset>\n\n", pgm);
 	printf("  <file> is the name of the input file\n\n");
 	printf("  <dataformat> should be of the form: "
 		"<FORMAT>-<Mbps>-<nchan>-<nbit>, e.g.:\n");
@@ -59,6 +59,7 @@ static void usage(const char *pgm)
 	printf("    MKIV1_4-128-2-1\n");
 	printf("    Mark5B-512-16-2\n");
 	printf("    VDIF_1000-64-1-2 (here 1000 is payload size in bytes)\n\n");
+        printf("  <offset> is number of bytes into file to return time for \n\n");
 }
 
 int main(int argc, char **argv) {
@@ -66,13 +67,19 @@ int main(int argc, char **argv) {
   time_t currenttime;
   struct tm *tp;
   struct mark5_stream *ms;
+  long long offset = 0;
 
-  if(argc !=3 )	{
+  if(argc < 3 )	{
     usage(argv[0]);
     return EXIT_FAILURE;
   }
 
-  ms = new_mark5_stream_absorb(new_mark5_stream_file(argv[1], 0),
+  if(argc > 3) {
+    offset=atoll(argv[3]);
+  }
+
+
+  ms = new_mark5_stream_absorb(new_mark5_stream_file(argv[1], offset),
 			       new_mark5_format_generic_from_string(argv[2]));
 
   if(!ms) {
