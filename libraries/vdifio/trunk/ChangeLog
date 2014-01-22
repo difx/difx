@@ -1,3 +1,8 @@
+Version 0.6
+~~~~~~~~~~~
+* Post DiFX-2.3
+* Expose getVDIFEpochMJD: returns integer MJD corresponding to start of VDIF epoch
+
 Version 0.5
 ~~~~~~~~~~~
 * Fix the 2-bit 16 thread case in the vdifmux function

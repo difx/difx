@@ -93,6 +93,7 @@ int getVDIFNumChannels(const vdif_header *header);
 static inline int getVDIFFrameInvalid(const vdif_header *header) { return (int)header->invalid; }
 static inline int getVDIFFullSecond(const vdif_header *header) { return (int)header->seconds; }
 static inline int getVDIFEpoch(const vdif_header *header) { return (int)header->epoch; }
+int getVDIFEpochMJD(const vdif_header *header);
 
 /* Functions to set just one value from a raw header */
 void setVDIFFrameMJD(vdif_header *header, int framemjd);
