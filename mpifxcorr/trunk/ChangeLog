@@ -1,3 +1,8 @@
+Version 2.4
+~~~~~~~~~~~
+* Post DiFX-2.3
+* Add INTERLACEDVDIF Fake mode
+
 Version 2.3
 ~~~~~~~~~~~
 * LO offset correction is now always done with fringe rotation (so in the 

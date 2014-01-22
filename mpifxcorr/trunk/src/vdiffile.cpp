@@ -43,7 +43,6 @@
 
 /* TODO: 
    - make use of activesec and activescan
-   - make FAKE mode work
  */
 
 
@@ -372,35 +371,6 @@ void VDIFDataStream::initialiseFile(int configindex, int fileindex)
 	}
 }
 
-// FIXME: Warning: this needs some work???
-void VDIFDataStream::initialiseFake(int configindex)
-{
-	int nrecordedbands, fanout;
-	Configuration::dataformat format;
-	Configuration::datasampling sampling;
-	double bw;
-
-	DataStream::initialiseFake(configindex);
-
-	format = config->getDataFormat(configindex, streamnum);
-	nbits = config->getDNumBits(configindex, streamnum);
-	sampling = config->getDSampling(configindex, streamnum);
-	nrecordedbands = config->getDNumRecordedBands(configindex, streamnum);
-	bw = config->getDRecordedBandwidth(configindex, streamnum, 0);
-	inputframebytes = config->getFrameBytes(configindex, streamnum);
-	outputframebytes = (inputframebytes - VDIF_HEADER_BYTES)*config->getDNumMuxThreads(configindex, streamnum) + VDIF_HEADER_BYTES;
-	fanout = config->genMk5FormatName(format, nrecordedbands, bw, nbits, sampling, outputframebytes, config->getDDecimationFactor(configindex, streamnum), config->getDNumMuxThreads(configindex, streamnum), formatname);
-	if(fanout < 0)
-	{
-		cfatal << startl << "Fanout is " << fanout << ", which is impossible; no choice but to abort!" << endl;
-		MPI_Abort(MPI_COMM_WORLD, 1);
-	}
-	nthreads = config->getDNumMuxThreads(configindex, streamnum);
-	threads = config->getDMuxThreadMap(configindex, streamnum);
-
-	cwarn << startl << "Correlating fake data with format " << formatname << endl;
-}
-
 int VDIFDataStream::testForSync(int configindex, int buffersegment)
 {
 	// not needed.  vdifmux always leaves perfectly synchonized data behind
@@ -413,7 +383,7 @@ int VDIFDataStream::testForSync(int configindex, int buffersegment)
 // read data left over in the read buffer ready for next time
 int VDIFDataStream::dataRead(int buffersegment)
 {
-	unsigned long *destination;
+	unsigned char *destination;
 	int bytes;
 	int muxReturn;
 	int muxBits;
@@ -429,7 +399,7 @@ int VDIFDataStream::dataRead(int buffersegment)
 		muxBits = nbits;
 	}
 
-	destination = reinterpret_cast<unsigned long *>(&databuffer[buffersegment*(bufferbytes/numdatasegments)]);
+	destination = reinterpret_cast<unsigned char *>(&databuffer[buffersegment*(bufferbytes/numdatasegments)]);
 
 	// Bytes to read
 	bytes = readbuffersize - readbufferleftover;
@@ -440,7 +410,7 @@ int VDIFDataStream::dataRead(int buffersegment)
 		// If there is some data left over, just demux that and send it out
 		if(readbufferleftover > minleftoverdata)
 		{
-			vdifmux(reinterpret_cast<unsigned char *>(destination), readbytes, readbuffer, readbufferleftover, inputframebytes, framespersecond, muxBits, nthreads, threads, nSort, nGap, startOutputFrameNumber, &vstats);
+			vdifmux(destination, readbytes, readbuffer, readbufferleftover, inputframebytes, framespersecond, muxBits, nthreads, threads, nSort, nGap, startOutputFrameNumber, &vstats);
 			readbufferleftover = 0;
 			bufferinfo[buffersegment].validbytes = vstats.destUsed;
 
@@ -459,13 +429,13 @@ int VDIFDataStream::dataRead(int buffersegment)
 	// execute the file read
 	input.clear();
 
-	input.read(reinterpret_cast<char *>(readbuffer + readbufferleftover), bytes);
+	input.read(reinterpret_cast<char *>(readbuffer) + readbufferleftover, bytes);
 	bytes = input.gcount();
 
 	bytesvisible = readbufferleftover + bytes;
 
 	// multiplex and corner turn the data
-	muxReturn = vdifmux(reinterpret_cast<unsigned char *>(destination), readbytes, readbuffer, bytesvisible, inputframebytes, framespersecond, muxBits, nthreads, threads, nSort, nGap, startOutputFrameNumber, &vstats);
+	muxReturn = vdifmux(destination, readbytes, readbuffer, bytesvisible, inputframebytes, framespersecond, muxBits, nthreads, threads, nSort, nGap, startOutputFrameNumber, &vstats);
 
 	if(muxReturn < 0)
 	{

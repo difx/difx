@@ -226,12 +226,12 @@ protected:
  /** 
   * While the correlation continues keep generating fake data
   */
-  void loopfakeread();
+  virtual void loopfakeread();
 
  /** 
   * While the correlation continues and the network socket remains open, continues reading data into the databuffer as fast as possible
   */
-  void loopnetworkread();
+  virtual void loopnetworkread();
 
  /** 
   * Reads one segment's worth of data from the currently open file into the specified segment

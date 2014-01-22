@@ -29,6 +29,7 @@ mpifxcorr_SOURCES = \
 	datamuxer.cpp \
 	mark5bfile.cpp \
 	vdiffile.cpp \
+	vdiffake.cpp \
 	polyco.cpp \
 	alert.cpp \
 	pcal.cpp \
@@ -58,6 +59,7 @@ library_include_HEADERS = \
 	datamuxer.h \
 	mark5bfile.h \
 	vdiffile.h \
+	vdiffake.h \
 	alert.h 
 
 # historically these have been in both $(includedir)/{.,mpifxcorr}
@@ -80,6 +82,7 @@ libmpifxcorr_a_SOURCES = \
 	switchedpower.cpp \
 	mark5bfile.cpp \
 	vdiffile.cpp \
+	vdiffake.cpp \
 	datamuxer.cpp \
 	$(mark5_files)
 
@@ -103,6 +106,7 @@ neuteredmpifxcorr_SOURCES = \
 	switchedpower.cpp \
 	mark5bfile.cpp \
 	vdiffile.cpp \
+	vdiffake.cpp \
 	datamuxer.cpp \
 	$(mark5_files)
 

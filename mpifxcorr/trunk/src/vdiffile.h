@@ -79,8 +79,6 @@ protected:
   */
   virtual void initialiseFile(int configindex, int fileindex);
 
-  virtual void initialiseFake(int configindex);
-
   virtual int dataRead(int buffersegment);
 
   virtual void diskToMemory(int buffersegment);
