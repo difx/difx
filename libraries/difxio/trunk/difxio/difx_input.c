@@ -2855,6 +2855,8 @@ static void setGlobalValues(DifxInput *D)
 	int configId;
 	int hasR = 0;
 	int hasL = 0;
+	int hasX = 0;
+	int hasY = 0;
 
 	if(!D)
 	{
@@ -2957,6 +2959,12 @@ static void setGlobalValues(DifxInput *D)
 						case 'L':
 							hasL = 1;
 							break;
+						case 'X':
+							hasX = 1;
+							break;
+						case 'Y':
+							hasY = 1;
+							break;
 					}
 				}
 			}
@@ -2980,12 +2988,21 @@ static void setGlobalValues(DifxInput *D)
 			D->polPair[1] = 'L';
 		}
 	}
-	else
+	else if(hasL)
 	{
-		if(hasL)
+		D->polPair[0] = 'L';
+	}
+	else if(hasX)
+	{
+		D->polPair[0] = 'X';
+		if(hasY)
 		{
-			D->polPair[0] = 'L';
+			D->polPair[1] = 'Y';
 		}
+	}
+	else if(hasY)
+	{
+		D->polPair[0] = 'Y';
 	}
 }
 
