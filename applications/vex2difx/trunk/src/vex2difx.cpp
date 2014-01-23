@@ -669,6 +669,10 @@ static DifxAntenna *makeDifxAntennas(const VexJob& J, const VexData *V, const Co
 			{
 				A[i].Z = antSetup->Z;
 			}
+			if(antSetup->axisOffset > -1e5)
+			{
+				A[i].offset[0] = antSetup->axisOffset;
+			}
 			if(!antSetup->difxName.empty())
 			{
 				snprintf(A[i].name, DIFXIO_NAME_LENGTH, "%s", antSetup->difxName.c_str());

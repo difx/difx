@@ -872,6 +872,7 @@ AntennaSetup::AntennaSetup(const std::string &name) : vexName(name)
 	X = 0.0;
 	Y = 0.0;
 	Z = 0.0;
+	axisOffset = -1e6;
 	deltaClock = 0.0;
 	deltaClockRate = 0.0;
 	clock.mjdStart = -1e9;
@@ -1319,6 +1320,16 @@ int AntennaSetup::setkv(const std::string &key, const std::string &value)
 			++nWarn;
 		}
 		ss >> Z;
+	}
+	else if(key == "axisOffset")
+	{
+		if(axisOffset > -1.0e5)
+		{
+			std::cerr << "Warning: antenna " << vexName << " has multiple axisOffset definitions" << std::endl;
+
+			++nWarn;
+		}
+		ss >> axisOffset;
 	}
 	else if(key == "format")
 	{
@@ -2907,6 +2918,10 @@ std::ostream& operator << (std::ostream &os, const AntennaSetup &x)
 	if(fabs(x.X) > 0.1 || fabs(x.Y) > 0.1 || fabs(x.Z) > 0.1)
 	{
 		os << "  X=" << x.X <<" Y=" << x.Y << " Z=" << x.Z << std::endl;
+	}
+	if(x.axisOffset > -1.0e5)
+	{
+		os << "  axisOffset=" << x.axisOffset << std::endl;
 	}
 	if(x.clock.mjdStart > 0.0)
 	{
