@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2010 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2008-2014 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -35,39 +35,40 @@
 
 static double arrayGMST(int mjd)
 {
-    double mjd2000 = 51545.0;
-    double gstmn;
-    double convhs = 7.2722052166430399e-5;
-    double cent;
-    double daysj;
-    double gmstc[4];
-    /* double sidvel[3]; */
-    int igstmn;
-  
-    gmstc[0] = 24110.548410;
-    gmstc[1] = 8640184.8128660;
-    gmstc[2] = 0.0931040;
-    gmstc[3] = -6.2e-6;
+	double mjd2000 = 51545.0;
+	double gstmn;
+	double convhs = 7.2722052166430399e-5;
+	double cent;
+	double daysj;
+	double gmstc[4];
+	/* double sidvel[3]; */
+	int igstmn;
 
-/*
-    sidvel[0] = 1.0027379093507950;
-    sidvel[1] = 5.9006e-11;
-    sidvel[2] = -5.9e-15;
-*/
+	gmstc[0] = 24110.548410;
+	gmstc[1] = 8640184.8128660;
+	gmstc[2] = 0.0931040;
+	gmstc[3] = -6.2e-6;
 
-    daysj = mjd - mjd2000 + 0.5;
+	/*
+	sidvel[0] = 1.0027379093507950;
+	sidvel[1] = 5.9006e-11;
+	sidvel[2] = -5.9e-15;
+	*/
+
+	daysj = mjd - mjd2000 + 0.5;
+
+	cent = daysj / 36525;
+
+	gstmn = (gmstc[0] + gmstc[1]*cent + gmstc[2]*cent*cent + gmstc[3]*cent*cent*cent)*convhs;
+
+	igstmn = gstmn / (2.0*M_PI);
+	gstmn = gstmn - (double)igstmn * (2.0*M_PI);
+	if (gstmn < 0.0)
+	{
+		gstmn += (2.0*M_PI);
+	}
   
-    cent = daysj / 36525;
-  
-    gstmn = (gmstc[0] + gmstc[1] * cent + gmstc[2] * cent * cent 
-	     + gmstc[3] * cent * cent * cent) * convhs;
-  
-    igstmn = gstmn / (2.0*M_PI);
-    gstmn = gstmn - (double)igstmn * (2.0*M_PI);
-    if (gstmn < 0.0)
-	gstmn += (2.0*M_PI);
-  
-    return gstmn / (2.0*M_PI);
+	return gstmn / (2.0*M_PI);
 }
 
 struct __attribute__((packed)) AGrow
@@ -80,8 +81,7 @@ struct __attribute__((packed)) AGrow
 	float offset[3];
 };
 
-const DifxInput *DifxInput2FitsAG(const DifxInput *D,
-	struct fits_keywords *p_fits_keys, struct fitsPrivate *out)
+const DifxInput *DifxInput2FitsAG(const DifxInput *D, struct fits_keywords *p_fits_keys, struct fitsPrivate *out)
 {
 	/* define the antenna geometry FITS table columns */
 	static struct fitsBinTableColumn columns[] =
@@ -97,9 +97,7 @@ const DifxInput *DifxInput2FitsAG(const DifxInput *D,
 
 	char ref_date[12];
 	int nRowBytes;
-	int i, a, e, mjd;
-	struct AGrow row;
-	const DifxAntenna *antenna;
+	int a, mjd;
 
 	if(D == 0)
 	{
@@ -109,10 +107,9 @@ const DifxInput *DifxInput2FitsAG(const DifxInput *D,
 	nRowBytes = FitsBinTableSize(columns, NELEMENTS(columns));
 
 	/* A warning for developers */
-	if(nRowBytes != sizeof(row))
+	if(nRowBytes != sizeof(struct AGrow))
 	{
-		fprintf(stderr, "AG table : nRowBytes != sizeof(row) : "
-			"%d != %u\n", nRowBytes, (unsigned int)(sizeof(row)));
+		fprintf(stderr, "AG table : nRowBytes != sizeof(row) : %d != %u\n", nRowBytes, (unsigned int)(sizeof(struct AGrow)));
 
 		exit(EXIT_FAILURE);
 	}
@@ -137,7 +134,9 @@ const DifxInput *DifxInput2FitsAG(const DifxInput *D,
 	
 	if(D->nEOP > 0)
 	{
-		for(e = 0; e < D->nEOP; e++)
+		int e;
+
+		for(e = 0; e < D->nEOP; ++e)
 		{
 			if(fabs(D->eop[e].mjd - mjd) < 0.01)
 			{
@@ -167,8 +166,12 @@ const DifxInput *DifxInput2FitsAG(const DifxInput *D,
 	fitsWriteInteger(out, "TABREV", 1, "");
 	fitsWriteEnd(out);
 
-	for(a = 0; a < D->nAntenna; a++)
+	for(a = 0; a < D->nAntenna; ++a)
 	{
+		const DifxAntenna *antenna;
+		struct AGrow row;
+		int i;
+
 		antenna = D->antenna + a;
 
 		strcpypad(row.name, antenna->name, 8);
@@ -186,7 +189,7 @@ const DifxInput *DifxInput2FitsAG(const DifxInput *D,
 			printf("Expect parallactic angles to be calculated incorrectly.\n\n");
 		}
 
-		for(i = 0; i < 3; i++)
+		for(i = 0; i < 3; ++i)
 		{
 			row.offset[i] = antenna->offset[i];
 		}
