@@ -11,8 +11,8 @@ from time import asctime
 from glob import glob
 
 program = 'difxbuild'
-version = '0.37'
-verdate = '20140118'
+version = '0.38'
+verdate = '20140122'
 author = 'Walter Brisken <wbrisken@nrao.edu>'
 
 difxbuildUrl = 'http://www.aoc.nrao.edu/~wbrisken/difxbuild'
@@ -20,7 +20,7 @@ difxbuildUrl = 'http://www.aoc.nrao.edu/~wbrisken/difxbuild'
 openmpiVersion = '1.6'
 pgplotVersion = '5.2'
 pngVersion = '1.2.50'
-schedVersion = '11.0'
+schedVersion = '11.2'
 skedVersion = '2013jan23'
 m4Version = '1.4.16'
 autoconfVersion = '2.69'
@@ -600,7 +600,7 @@ component_vdifserver_trunk = \
 component_difxdb_trunk = \
 [ \
 	'difxdb', \
-	'https://svn.atnf.csiro.au/difx/utilities/difxdb/trunk', \
+	'https://svn.atnf.csiro.au/difx/utilities/trunk/difxdb', \
 	['aclocal', 'autoconf', 'automake'] \
 ]
 
@@ -1705,7 +1705,11 @@ def build(origComps, params, args, verbose, pretend):
 					envCFLAGS = environ['CFLAGS']
 				else:
 					envCFLAGS = ''
-				configureExtras += " CFLAGS='-I%s/include %s' LIBS='-L%s/lib'" % (environ['DIFX_ARCH_ROOT'], envCFLAGS, environ['DIFX_ARCH_ROOT'])
+				if 'CXXFLAGS' in environ:
+					envCXXFLAGS = environ['CXXFLAGS']
+				else:
+					envCXXFLAGS = ''
+				configureExtras += " CFLAGS='-I%s/include %s' CXXFLAGS='-I%s/include %s' LIBS='-L%s/lib'" % (environ['DIFX_ARCH_ROOT'], envCFLAGS, environ['DIFX_ARCH_ROOT'], envCXXFLAGS, environ['DIFX_ARCH_ROOT'])
 				cmd = '%s/configure --prefix=%s%s' % (srcPath, environ['DIFXROOT'], configureExtras)
 				execute(cmd, verbose, pretend)
 			
