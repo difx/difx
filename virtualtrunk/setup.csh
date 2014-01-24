@@ -18,7 +18,7 @@ setenv USEGFORTRAN "yes"
 
 ####### PERL VERSION/SUBVERSION #############
 set perlver="5"
-set perlsver="5.8.8"
+set perlsver="5.10.1"
 PREPEND PERL5LIB         ${DIFXROOT}/share/perl/$perlver
 
 ####### PORTS FOR DIFXMESSAGE ###############
@@ -60,11 +60,9 @@ PREPEND PATH             ${DIFXROOT}/bin
 if ($DIFXOS == "darwin") then
   PREPEND DYLD_LIBRARY_PATH  ${DIFXROOT}/lib
   PREPEND DYLD_LIBRARY_PATH  ${PGPLOTDIR}
-  PREPEND DYLD_LIBRARY_PATH  ${IPPROOT}/Libraries
 else
   PREPEND LD_LIBRARY_PATH  ${DIFXROOT}/lib
   PREPEND LD_LIBRARY_PATH  ${PGPLOTDIR}
-  PREPEND LD_LIBRARY_PATH  ${IPPROOT}/sharedlib
 endif
 if ($?PKG_CONFIG_PATH) then
   PREPEND PKG_CONFIG_PATH  ${DIFXROOT}/lib/pkgconfig
