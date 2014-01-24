@@ -129,6 +129,8 @@ static void usage(const char *pgm)
 	fprintf(stderr, "  --zero\n");
 	fprintf(stderr, "  -0                  Don't put visibility data in FITS file\n");
 	fprintf(stderr, "\n");
+	fprintf(stderr, "  --primary-band <pb> Add PRIBAND keyword with value <pb> to FITS file\n");
+	fprintf(stderr, "\n");
 	fprintf(stderr, "PLEASE file all bug reports at http://svn.atnf.csiro.au/trac/difx .\n");
 	fprintf(stderr, "Include at a minimum the output of difx2fits with extra verbosity\n");
 	fprintf(stderr, "(that is with -v -v).  The .input, .im & .calc files may help too.\n");
@@ -173,10 +175,16 @@ void deleteCommandLineOptions(struct CommandLineOptions *opts)
 			free(opts->fitsFile);
 			opts->fitsFile = 0;
 		}
+		if(opts->primaryBand)
+		{
+			free(opts->primaryBand);
+			opts->primaryBand = 0;
+		}
 		free(opts);
 	}
 }
 
+/* return 0 on success */
 int exceedOpenFileLimit(int numFiles)
 {
         struct rlimit limit;
@@ -184,15 +192,17 @@ int exceedOpenFileLimit(int numFiles)
 	// Get max number of open files that the OS allows
 	if (getrlimit(RLIMIT_NOFILE, &limit) != 0) 
 	{
-	    printf("Cannot determine user file open limit (errno=%d)\n", errno);
-	    return(1);
+		printf("Cannot determine user file open limit (errno=%d)\n", errno);
+		return 1;
 	}
 	//
 	// Check if the number of DIFX files (plus a buffer of 20) exceed OS limit
 	if (numFiles + 20 >= limit.rlim_cur)
-		return(1);
+	{
+		return 1;
+	}
 
-	return(0);
+	return 0;
 }
 
 struct CommandLineOptions *parseCommandLine(int argc, char **argv)
@@ -323,6 +333,11 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 				{
 					++i;
 					opts->phaseCentre = atoi(argv[i]);
+				}
+				else if(strcmp(argv[i], "--primary-band") == 0)
+				{
+					++i;
+					opts->primaryBand = strdup(argv[i]);
 				}
 				else
 				{
@@ -567,7 +582,7 @@ static const DifxInput *DifxInput2FitsTables(const DifxInput *D,
 
 	printf("  Header                    ");
 	fflush(stdout);
-	D = DifxInput2FitsHeader(D, out);
+	D = DifxInput2FitsHeader(D, out, opts->primaryBand);
 	printf("%lld bytes\n", out->bytes_written - last_bytes);
 	last_bytes = out->bytes_written;
 

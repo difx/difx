@@ -1,3 +1,6 @@
+Version 3.4.0
+* Add command line option --primary-band.  This causes a keyword to be added to the output FITS file.  Intended for VLITE.
+
 Version 3.3.0
 * Improved clarity in generation of Flag, Tsys, Pcal, Gain and Weather tables: prioritized sources of data
 * Fix off-by-one timestamp error in the sniffer output files

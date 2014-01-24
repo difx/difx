@@ -45,8 +45,7 @@ double timeMjd()
 	return MJD_UNIX0 + t.tv_sec/SEC_DAY + t.tv_usec/MUSEC_DAY;
 }
 
-const DifxInput *DifxInput2FitsHeader(const DifxInput *D, 
-	struct fitsPrivate *out)
+const DifxInput *DifxInput2FitsHeader(const DifxInput *D, struct fitsPrivate *out, const char *primaryBand)
 {
 	const int maxLength = 132;
 	char ref_date[12];
@@ -73,6 +72,10 @@ const DifxInput *DifxInput2FitsHeader(const DifxInput *D,
 	fitsWriteString(out, "OBSERVER", D->job->obsCode, "");
 	fitsWriteString(out, "ORIGIN", "VLBA Correlator", "");
 	fitsWriteString(out, "CORRELAT", "DIFX", "");
+	if(primaryBand)
+	{
+		fitsWriteString(out, "PRIBAND", primaryBand, "");
+	}
 	fitsWriteString(out, "DATE-OBS", ref_date, "");
 	mjd2fits((int)timeMjd(), strng);
 	fitsWriteString(out, "DATE-MAP", strng, "Correlation date");
