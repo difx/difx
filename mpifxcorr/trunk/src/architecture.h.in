@@ -646,13 +646,15 @@ inline vecStatus genericSqr_64f_I(f64 *srcdest, int length)
 /* #define vectorSub_f32_I(src, srcdest, length)                               ippsSub_32f_I(src, srcdest, length) */
 inline vecStatus genericSub_32f_I(const f32 *src, f32 *srcdest, int length)
 { for(int i=0;i<length;i++) {srcdest[i] -= src[i];} return vecNoErr; }
-
 /* #define vectorSub_s32(src1, src2, dest, length)                             ippsSub_32s_Sfs(src1, src2, dest, length, 0) */
 inline vecStatus genericSub_32s(const s32 *src1,const s32 *src2, s32 *dest, int length)
 { for(int i=0;i<length;i++) {dest[i] = src1[i]-src2[i];} return vecNoErr; }
 /* #define vectorSub_cf32_I(src, srcdest, length)                              ippsSub_32fc_I(src, srcdest, length) */
 inline vecStatus genericSub_32fc_I(const cf32 *src, cf32 *srcdest, int length)
 { for(int i=0;i<length;i++) {srcdest[i].re -= src[i].re;srcdest[i].im -= src[i].im;} return vecNoErr; }
+/* #define vectorSub_32fc(src1, src2, dest, length)                             ippsSub_32fc(src1, src2, dest, length) */
+inline vecStatus genericSub_32fc(const cf32 *src1, const cf32 *src2, cf32 *dest, int length)
+{ for(int i=0;i<length;i++) {dest[i].re = src1[i].re-src2[i].re;dest[i].im = src1[i].im-src2[i].im;} return vecNoErr; }
 
 /* #define vectorSum_cf32(src, length, sum, hint)                              ippsSum_32fc(src, length, sum, hint) */
 inline vecStatus genericSum_32fc(const cf32 *src, int length, cf32 *sum)
@@ -804,6 +806,7 @@ inline vecStatus genericMaxIndx_32f(f32 *src, int len, f32 *max, int *imax)
 #define vectorSub_f32_I(src, srcdest, length)                               genericSub_32f_I(src, srcdest, length)
 #define vectorSub_s32(src1, src2, dest, length)                             genericSub_32s(src1, src2, dest, length)
 #define vectorSub_cf32_I(src, srcdest, length)                              genericSub_32fc_I(src, srcdest, length)
+#define vectorSub_cf32(src1, src2, dest, length)                            genericSub_32fc(src1, src2, dest, length)
 
 #define vectorSum_cf32(src, length, sum, hint)                              genericSum_32fc(src, length, sum, hint)
 
