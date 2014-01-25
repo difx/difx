@@ -11,8 +11,8 @@ from time import asctime
 from glob import glob
 
 program = 'difxbuild'
-version = '0.38'
-verdate = '20140122'
+version = '0.39'
+verdate = '20140125'
 author = 'Walter Brisken <wbrisken@nrao.edu>'
 
 difxbuildUrl = 'http://www.aoc.nrao.edu/~wbrisken/difxbuild'
@@ -21,6 +21,7 @@ openmpiVersion = '1.6'
 pgplotVersion = '5.2'
 pngVersion = '1.2.50'
 schedVersion = '11.2'
+schedUpdate = '.u1'
 skedVersion = '2013jan23'
 m4Version = '1.4.16'
 autoconfVersion = '2.69'
@@ -28,7 +29,7 @@ automakeVersion = '1.11.6'
 libtoolVersion = '2.4'
 pkgconfigVersion = '0.28'
 cxOracleVersion = '5.1.2'
-pyxVersion = '0.12.1'	#http://sourceforge.net/projects/pyx/files/pyx/0.12.1/PyX-0.12.1.tar.gz/download
+pyxVersion = '0.12.1'	#http://sourceforge.net/projects/pyx/files/pyx/0.12.1/PyX-0.12.1.tar.gz
 gpstkVersion = '2.3'
 libeventVersion = '2.0.21'
 expatVersion = '2.1.0'
@@ -2127,7 +2128,7 @@ def sched(origComps, params, args, verbose, pretend):
 		exit(0)
 		
 	arch = platform.machine()
-	schedSrcFile = 'sched_%s.tar.gz' % schedVersion
+	schedSrcFile = 'sched_%s%s.tar.gz' % (schedVersion, schedUpdate)
 	schedUrl = 'ftp://ftp.aoc.nrao.edu/pub/sched/sched_%s/%s' % (schedVersion, schedSrcFile)
 	difxBase = environ['DIFX_BASE'] + '/'
 	archDir = difxBase + arch
@@ -2187,7 +2188,7 @@ def pyx(origComps, params, args, verbose, pretend):
 		execute('mkdir -p %s' % pythonPath, verbose, pretend)
 	arch = platform.machine()
 	pyxSrcFile = 'PyX-%s.tar.gz' % pyxVersion
-	pyxUrl = 'http://sourceforge.net/projects/pyx/files/pyx/%s/%s/download' % (pyxVersion, pyxSrcFile)
+	pyxUrl = 'http://sourceforge.net/projects/pyx/files/pyx/%s/%s' % (pyxVersion, pyxSrcFile)
 	difxBase = environ['DIFX_BASE'] + '/'
 	archDir = difxBase + arch
 	archSrcDir = difxBase + arch + '/src/'
