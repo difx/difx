@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # Simple program to show disk usage on the main CUPPA data storage areas
 # Cormac Reynolds: 2010 June 2
-import os, subprocess, sys, time
+import os, subprocess, sys, time, optparse
 import espressolib
 import multiprocessing
 from multiprocessing import Process, Queue
@@ -13,13 +13,14 @@ def remote_command(inputq, outputq):
             disk_query, machine, data_area  = inputq.get(block=False)
             command = str()
             if disk_query == 'du':
-                command = "ssh MACHINE 'du -c -B 1G DATA_AREA/*'"
+                command = "ssh MACHINE 'du -c -B 1G DATA_AREA'"
             elif disk_query == 'df':
                 command = "ssh MACHINE 'df -P -B 1G DATA_AREA'"
 
             command = command.replace('MACHINE', machine)
             command = command.replace('DATA_AREA', data_area)
-            sys.stderr.write(command + '\n')
+            if options.verbose:
+                sys.stderr.write(command + '\n')
 
             proc = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE)
             output = proc.communicate()[0]
@@ -46,6 +47,14 @@ def sizesort(x):
 
 #def data_summary():
     #print 'here'
+
+usage = '''%prog will produce a summary of data areas in $DIFX_MACHINES'''
+parser = optparse.OptionParser(usage=usage, version='%prog ' + '1.0')
+parser.add_option( "--verbose", "-v",
+        dest="verbose", action="store_true", default=False,
+        help='Echo commands to stderr' )
+
+(options, args) = parser.parse_args()
 
 difx_machines = os.environ.get('DIFX_MACHINES')
 if not difx_machines:
