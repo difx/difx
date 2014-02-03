@@ -501,7 +501,7 @@ int Mark5Scan::writeDirEntry(FILE *out) const
 		fprintf(out, " ");	/* put space between scan name and the thread list */
 		for(std::set<int>::const_iterator it = allThreads.begin(); it != allThreads.end(); ++it)
 		{
-			v += fprintf(out, "%s%d", it == startThreads.begin() ? " Threads=" : ",", *it);
+			v += fprintf(out, "%s%d", it == allThreads.begin() ? " Threads=" : ",", *it);
 		}
 	}
 

@@ -365,7 +365,7 @@ int main(int argc, char **argv)
 	const char *vsn;
 	int retval = EXIT_SUCCESS;
 
-	if(argc < 3 && argc > 5)
+	if(argc < 3 || argc > 5)
 	{
 		usage(argv[0]);
 
