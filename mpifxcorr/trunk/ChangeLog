@@ -2,6 +2,7 @@ Version 2.4
 ~~~~~~~~~~~
 * Post DiFX-2.3
 * Add INTERLACEDVDIF Fake mode
+* Change polId to recBandId in the PCAL files as per documentation
 
 Version 2.3
 ~~~~~~~~~~~

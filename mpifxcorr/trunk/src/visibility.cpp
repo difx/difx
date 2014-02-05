@@ -857,6 +857,7 @@ void Visibility::writedifx(int dumpmjd, double dumpseconds)
               config->getDMaxRecordedPCalTones(currentconfigindex, i), 
               0/*no state counts*/, config->getDNumRecordedBands(currentconfigindex, i));
       pcalline = pcalstr;
+      // Note: This outer p loop seems like it can be removed.  If that is done the test for matching polpair[p] need not be done and the increment of resultindex should be more natural.  The order of the output will be changed (no longer sorted by polarization).  This doesn't matter for difx2fits.  Not sure about other consumers of this file so I will defer for the moment.  --Walter Brisken 2014 Feb 05
       for(int p=0;p<maxpol;p++)
       {
         resultindex = config->getCoreResultPCalOffset(currentconfigindex, i);
@@ -881,12 +882,12 @@ void Visibility::writedifx(int dumpmjd, double dumpseconds)
 	    }
 	    tonefreq = config->getDRecordedFreqPCalToneFreq(currentconfigindex, i, config->getDLocalRecordedFreqIndex(currentconfigindex, i, j), t);
             if (config->getDRecordedLowerSideband(currentconfigindex, i, config->getDLocalRecordedFreqIndex(currentconfigindex, i, j))) {
-                sprintf(pcalstr, " %3d %d %12.5e %12.5e", p, tonefreq, 
+                sprintf(pcalstr, " %3d %d %12.5e %12.5e", j, tonefreq, 
                         results[resultindex].re,
                         results[resultindex].im);
             }
             else {
-                sprintf(pcalstr, " %3d %d %12.5e %12.5e", p, tonefreq, 
+                sprintf(pcalstr, " %3d %d %12.5e %12.5e", j, tonefreq, 
                         results[resultindex].re,
                         -results[resultindex].im);
             }
