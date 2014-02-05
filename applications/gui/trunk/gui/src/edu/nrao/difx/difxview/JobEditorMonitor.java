@@ -56,6 +56,7 @@ import mil.navy.usno.widgetlib.BrowserNode;
 import mil.navy.usno.widgetlib.SimpleTextEditor;
 import mil.navy.usno.widgetlib.MessageDisplayPanel;
 import mil.navy.usno.widgetlib.JulianCalendar;
+import mil.navy.usno.widgetlib.ZButton;
 
 public class JobEditorMonitor extends JFrame {
     
@@ -296,6 +297,16 @@ public class JobEditorMonitor extends JFrame {
                 _settings.defaultNames().chooseBasedOnModule = _chooseBasedOnModule.isSelected();
             }
         } );
+        _defaultMachinesButton = new ZButton( "Use Defaults" );
+        _defaultMachinesButton.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                selectNodeDefaults( true );
+            }
+        } );
+        _defaultMachinesButton.toolTip( "Set data source and processing nodes to sensible defaults\n"
+                + "base on user preferences and current node usage.\n"
+                + "This will replace any user-selected nodes.", null );
+        machinesListPanel.add( _defaultMachinesButton );
         _selectAllProcessorsButton = new JButton( "Select All" );
         _selectAllProcessorsButton.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
@@ -559,6 +570,7 @@ public class JobEditorMonitor extends JFrame {
             int thirdSize = ( w - 60 ) / 3;
             _dataSourcesLabel.setBounds( 10, 25, 2 * thirdSize, 25 );
             _dataSourcesPane.setBounds( 10, 50, 2 * thirdSize, 150 );
+            _defaultMachinesButton.setBounds( 30 + 2 * thirdSize, 175, thirdSize/2 - 5, 25 );
             _chooseBasedOnModule.setBounds( 30 + 2 * thirdSize, 50, thirdSize, 25 );
             _processorsLabel.setBounds( 10, 205, 2 * thirdSize, 25 );
             _processorsPane.setBounds( 10, 230, 2 * thirdSize, 150 );
@@ -685,6 +697,293 @@ public class JobEditorMonitor extends JFrame {
             thisNode.handSelected( false );
         }
     }
+    
+    /*
+     * Select "default" settings for the data source and processor node selections.  These
+     * selections are made based on the current state of affairs - i.e. nodes and threads that
+     * are currently busy will not be used.  This information is used when creating the machines
+     * and threads files - if that is done by hand (using the "Apply" button) then these default
+     * selections will not be made.
+     */
+    public void selectNodeDefaults( boolean doAlways ) {
+        _nodeRestrictionFailure = false;
+        //  Bail out of here if the user has set the machines already.  This is overridden
+        //  if "doAlways" is true.
+        if ( !doAlways && _machinesAppliedByHand == true ) 
+            return;
+        //  These lists keep track of nodes we are using and how many threads we are using
+        //  on each.  
+        class UsedNode {
+            public UsedNode( ProcessorNode newProcessorNode, int newThreads ) {
+                processorNode = newProcessorNode;
+                usedThreads = newThreads;
+            }
+            public ProcessorNode processorNode;
+            public int usedThreads;
+        };
+        //  Set the data source nodes to reasonable defaults for each data source requirement.
+        ArrayList<UsedNode> usedNodes = new ArrayList<UsedNode>();
+        ArrayList<UsedNode> dataSourceNodes = new ArrayList<UsedNode>();
+        for ( Iterator<BrowserNode> iter = _dataSourcesPane.browserTopNode().children().iterator();
+                iter.hasNext(); ) {
+            DataSource thisSource = (DataSource)(iter.next());
+            //  Currently we are only selecting the defaults for "FILE" data sources.
+            if ( thisSource.sourceType().equalsIgnoreCase( "FILE" ) ) {
+                FileSource fileSource = (FileSource)thisSource;
+                //  Now we choose a node based on user instructions, and what is available.
+                ProcessorNode foundNode = null;
+                //  First...see if specific paths have been linked to specific nodes.  This
+                //  will override any other considerations.
+                if ( _settings.assignBasedOnPath() ) {
+                    String nodeFromPath = _settings.nodeFromPath( fileSource.commonFilePath() );
+                    if ( nodeFromPath != null ) {
+                        for ( Iterator<BrowserNode> iter2 = _settings.hardwareMonitor().processorNodes().children().iterator();
+                                iter2.hasNext() && foundNode == null; ) {
+                            ProcessorNode thisNode = (ProcessorNode)(iter2.next());
+                            if ( thisNode.name().contentEquals( nodeFromPath ) )
+                                foundNode = thisNode;
+                        }
+                    }
+                }
+                //  Look through the list of available nodes that can act as data sources
+                //  and pick one that is appropriate.
+                for ( Iterator<BrowserNode> iter2 = _settings.hardwareMonitor().processorNodes().children().iterator();
+                        iter2.hasNext() && foundNode == null; ) {
+                    ProcessorNode thisNode = (ProcessorNode)(iter2.next());
+                    //  We start by assuming we can use this node, then eliminate it based on rules set
+                    //  by the user.
+                    boolean useNode = true;
+                    //  If we are not allowed to use the headnode as a data source, eliminate this node if
+                    //  it is the headnode.
+                    if ( !_settings.useHeadNodeCheck() && thisNode.name().contentEquals( _settings.headNode() ) )
+                        useNode = false;
+                    //  If we are not allowing multiple data sources to share a node as a data source
+                    //  within a job, eliminate this node if we are already using it for this job
+                    //  (by consulting a locally-generated list).
+                    if ( useNode && _settings.uniqueDataSource() ) {
+                        for ( Iterator<UsedNode> iter3 = usedNodes.iterator(); iter3.hasNext() && useNode; ) {
+                            UsedNode testNode = iter3.next();
+                            if ( testNode.processorNode == thisNode )
+                                useNode = false;
+                        }
+                    }
+                    //  If we are not allowed to use this node when it is used as a data source for
+                    //  other jobs, check that the node is not being used as a data source for another
+                    //  job.
+                    if ( useNode && !_settings.shareDataSourcesBetweenJobs() && thisNode.isDataSource() ) {
+                        useNode = false;
+                    }
+                    //  Make sure the minimum number of threads required is avaible on this node.
+                    if ( useNode ) {
+                        int totalThreadsUsed = thisNode.threadsUsed();
+                        //  We have to check the threads we are reserving locally, too.
+                        for ( Iterator<UsedNode> iter3 = usedNodes.iterator(); iter3.hasNext() && useNode; ) {
+                            UsedNode testNode = iter3.next();
+                            if ( testNode.processorNode == thisNode )
+                                totalThreadsUsed += testNode.usedThreads;
+                        }
+                        //  Subtract one more thread if this is the headnode.
+                        if (  thisNode.name().contentEquals( _settings.headNode() ) )
+                            ++totalThreadsUsed;
+                        //  We assume one thread per core, always reserving one core for mpi activities.
+                        if ( thisNode.numCores() - 1 < totalThreadsUsed + _settings.threadsPerDataSource() )
+                            useNode = false;
+                    }
+                    //  If we are allowed to use the node, do so.  We add it to our "local" list of used
+                    //  nodes and set "foundNode" so the search is stopped.
+                    if ( useNode ) {
+                        foundNode = thisNode;
+                        //  Reserve thread(s) for reading based on user requests.
+                        usedNodes.add( new UsedNode( thisNode, _settings.threadsPerDataSource() ) );
+                    }
+                }
+                //  If a node has been chosen, set it.  If we haven't found a node, stick with whatever
+                //  the initial default value was (i.e. don't change anything).
+                if ( foundNode != null ) {
+                    thisSource.setSourceNode( foundNode.name() );
+                    dataSourceNodes.add( new UsedNode( foundNode, _settings.threadsPerDataSource() ) );
+                }
+                else {
+                    _nodeRestrictionFailure = true;
+                    _messageDisplayPanel.warning( 0, "node selection", "Unable to select a node that meets data source requirements" );
+                }
+            }
+        }
+        //  Now set the processors.  The following is a list of processors we "intend"
+        //  to use - we can't actually reserve the processors until we've decided what
+        //  we want to do completely.
+        ArrayList<UsedNode> processingNodes = new ArrayList<UsedNode>();
+        boolean threadBasedFailure = false;
+        boolean nodeBasedFailure = false;
+        //  First determine a "process number" based on either the job
+        //  (which is always 1, as this is 1 job), or baselines, depending on the user
+        //  selection.
+        int processNum = 1;
+        if ( _settings.baselineCheck() ) {
+            //  Based on baselines...
+            processNum = processNum * _inputFile.baselineTable().num;
+        }
+        //  For each "process number" reserve a node/thread set, or simply a number
+        //  of threads, depending on user preference.
+        for ( int i = 0; i < processNum; ++i ) {
+            //  We do this if the user wants a specific number of nodes devoted to each
+            //  process.
+            if ( _settings.nodesPerCheck() ) {
+                //  We want to reserve a specific number of nodes for each "process number".
+                for ( int j = 0; j < _settings.nodesPer(); ++j ) {
+                    ProcessorNode foundNode = null;
+                    //  Look at each available node and see if we can use it (until we find one
+                    //  that works).
+                    for ( Iterator<BrowserNode> iter2 = _settings.hardwareMonitor().processorNodes().children().iterator();
+                            iter2.hasNext() && foundNode == null; ) {
+                        ProcessorNode thisNode = (ProcessorNode)(iter2.next());
+                        //  Make sure this node is in the pane that displays processor nodes.
+                        //  If for some reason it is not, we can't use it.
+                        PaneProcessorNode thisPaneNode = processorNodeByName( thisNode.name() );
+                        if ( thisPaneNode != null ) {
+                            //  Eliminate the node if it is the head node.
+                            if ( _settings.useHeadNodeCheck() || !thisNode.name().contentEquals( _settings.headNode() ) ) {
+                                //  Eliminate this node if it is used as a data source and we aren't sharing.
+                                boolean useThis = true;
+                                if ( !_settings.shareDataSourcesAsProcessors() ) {
+                                    //  Is the node already used as a data source?
+                                    if ( thisNode.isDataSource() )
+                                        useThis = false;
+                                    //  Is it "reserved" as a data source above?
+                                    for ( Iterator<UsedNode> iter3 = dataSourceNodes.iterator(); iter3.hasNext(); ) {
+                                        if ( iter3.next().processorNode.name().contentEquals( thisNode.name() ) )
+                                            useThis = false;
+                                    }
+                                }
+                                //  Make sure we haven't already used this node for processing (both
+                                //  for other jobs and reserved for this one).
+                                if ( useThis ) {
+                                    if ( thisNode.isProcessor() )
+                                        useThis = false;
+                                    for ( Iterator<UsedNode> iter3 = processingNodes.iterator(); iter3.hasNext(); ) {
+                                        if ( iter3.next().processorNode.name().contentEquals( thisNode.name() ) )
+                                            useThis = false;
+                                    }
+                                }
+                                //  See if the number of available threads is sufficient to match
+                                //  what the user wants.
+                                if ( useThis ) {
+                                    //  See how many threads this node has free.
+                                    int threadsFree = thisNode.numCores() - 1 - thisNode.threadsUsed();
+                                    //  Subtract any we have reserved for this job.
+                                    for ( Iterator<UsedNode> iter3 = usedNodes.iterator(); iter3.hasNext(); ) {
+                                        UsedNode testNode = iter3.next();
+                                        if ( testNode.processorNode == thisNode )
+                                            threadsFree -= testNode.usedThreads;
+                                    }
+                                    //  If the number of available threads meets requirements,
+                                    //  use the node!
+                                    if ( _settings.threadsPerCheck() && threadsFree >= _settings.threadsPerNode() ) {
+                                        usedNodes.add( new UsedNode( thisNode, _settings.threadsPerNode() ) );
+                                        processingNodes.add( new UsedNode( thisNode, _settings.threadsPerNode() ) );
+                                        foundNode = thisNode;
+                                    }
+                                    else if ( _settings.allThreadsCheck() && threadsFree >= _settings.minThreadsPerNode() ) {
+                                        usedNodes.add( new UsedNode( thisNode, threadsFree ) );
+                                        processingNodes.add( new UsedNode( thisNode, threadsFree ) );
+                                        foundNode = thisNode;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    if ( foundNode == null ) {
+                        _nodeRestrictionFailure = true;
+                        nodeBasedFailure = true;
+                    }
+                }
+            }
+            //  This is done if each process is assigned a specific number of threads.
+            //  These can be split between processors.
+            else {
+                //  We need this number of threads total.
+                int neededThreads = _settings.threadsPerNode();
+                //  Go through each available node and see if we can use some threads.
+                for ( Iterator<BrowserNode> iter2 = _settings.hardwareMonitor().processorNodes().children().iterator();
+                        iter2.hasNext(); ) {
+                    ProcessorNode thisNode = (ProcessorNode)(iter2.next());
+                    //  Make sure this node is in the pane that displays processor nodes.
+                    //  If for some reason it is not, we can't use it.
+                    PaneProcessorNode thisPaneNode = processorNodeByName( thisNode.name() );
+                    if ( thisPaneNode != null ) {
+                        //  Eliminate the node if it is the head node.
+                        if ( _settings.useHeadNodeCheck() || !thisNode.name().contentEquals( _settings.headNode() ) ) {
+                            //  Eliminate this node if it is used as a data source and we aren't sharing.
+                            boolean useThis = true;
+                            if ( !_settings.shareDataSourcesAsProcessors() ) {
+                                //  Is the node already used as a data source?
+                                if ( thisNode.isDataSource() )
+                                    useThis = false;
+                                //  Is it "reserved" as a data source above?
+                                for ( Iterator<UsedNode> iter3 = dataSourceNodes.iterator(); iter3.hasNext(); ) {
+                                    if ( iter3.next().processorNode.name().contentEquals( thisNode.name() ) )
+                                        useThis = false;
+                                }
+                            }
+                            if ( useThis ) {
+                                //  See how many threads this node has free.
+                                int threadsFree = thisNode.numCores() - 1 - thisNode.threadsUsed();
+                                //  Subtract any we have reserved for this job.
+                                for ( Iterator<UsedNode> iter3 = usedNodes.iterator(); iter3.hasNext(); ) {
+                                    UsedNode testNode = iter3.next();
+                                    if ( testNode.processorNode == thisNode )
+                                        threadsFree -= testNode.usedThreads;
+                                }
+                                //  If there are any available, reserve as many as we can/need to for this job.
+                                if ( threadsFree > 0 && neededThreads > 0 ) {
+                                    int reserveThreads = neededThreads;
+                                    if ( threadsFree < neededThreads )
+                                        reserveThreads = threadsFree;
+                                    usedNodes.add( new UsedNode( thisNode, reserveThreads ) );
+                                    processingNodes.add( new UsedNode( thisNode, reserveThreads ) );
+                                    neededThreads -= reserveThreads;
+                                }
+                            }
+                        }
+                    }
+                }
+                if ( neededThreads > 0 ) {
+                    _nodeRestrictionFailure = true;
+                    threadBasedFailure = true;
+                }
+            }
+        }
+        //  Now actually reserve the processors.  We do this first by clearing all
+        //  currently-selected processors.
+        deselectAllProcessors();
+        //  Now run through our list of "intentions" and actually reserve the
+        //  processors.
+        for ( Iterator<UsedNode> iter = processingNodes.iterator(); iter.hasNext(); ) {
+            UsedNode usedNode = (UsedNode)iter.next();
+            //  Locate this node in the processor pane and reserve it (if necessary).
+            //  Add the number of threads we need for this "intention".
+            PaneProcessorNode thisNode = processorNodeByName( usedNode.processorNode.name() );
+            if ( thisNode != null ) {  //  shouldn't happen!
+                if ( thisNode.selected() )
+                    thisNode.threads( thisNode.threads() + usedNode.usedThreads );
+                else {
+                    thisNode.selected( true );
+                    thisNode.threads( usedNode.usedThreads );
+                }
+            }
+        }
+        //  Warn the user if the available resources are insufficient to process the
+        //  job as requested.
+        if ( threadBasedFailure ) {
+            _messageDisplayPanel.warning( 0, "node selection", "Not enough free threads to meet processing requirements." );
+        }
+        if ( nodeBasedFailure ) {
+            _messageDisplayPanel.warning( 0, "node selection", "Not enough free nodes to meet processing requirements." );
+        }
+    }
+    
+    protected boolean _nodeRestrictionFailure;
+    public boolean nodeRestrictionFailure() { return _nodeRestrictionFailure; }
 
     /*
      * Send the current machines and thread settings to guiServer to produce .machines
@@ -1098,6 +1397,14 @@ public class JobEditorMonitor extends JFrame {
         // -- manager, enabled only
         DifxStart.Manager manager = command.factory().createDifxStartManager();
         manager.setNode( _headNode.getText() );
+        //  Tell this node it is being used as a head node, and add it to the list
+        //  of nodes employed by this job.
+        for ( Iterator<BrowserNode> iter2 = _settings.hardwareMonitor().processorNodes().children().iterator();
+                iter2.hasNext(); ) {
+            ProcessorNode usedNode = (ProcessorNode)(iter2.next());
+            if ( usedNode.name().contentEquals( _headNode.getText() ) )
+                usedNode.addJob( this, 1, ProcessorNode.CurrentUse.HEADNODE );
+        }
         jobStart.setManager( manager );
 
         // -- set difx version to use
@@ -1117,6 +1424,14 @@ public class JobEditorMonitor extends JFrame {
                 iter.hasNext(); ) {
             DataSource thisNode = (DataSource)(iter.next());
             dataNodeNames += thisNode.sourceNode() + " ";
+            //  Tell this node it is being used as a data source, and add it to the list
+            //  of nodes employed by this job.
+            for ( Iterator<BrowserNode> iter2 = _settings.hardwareMonitor().processorNodes().children().iterator();
+                    iter2.hasNext(); ) {
+                ProcessorNode usedNode = (ProcessorNode)(iter2.next());
+                if ( usedNode.name().contentEquals( thisNode.sourceNode() ) )
+                    usedNode.addJob( this, _settings.threadsPerDataSource(), ProcessorNode.CurrentUse.DATASOURCE );
+            }
         }
         dataStream.setNodes( dataNodeNames );
         jobStart.setDatastream(dataStream);
@@ -1132,6 +1447,14 @@ public class JobEditorMonitor extends JFrame {
                 process.setNodes( thisNode.name() );
                 process.setThreads( thisNode.threadsText() );
                 jobStart.getProcess().add( process );
+                //  Tell this node it is being used as a processor, and add it to the list
+                //  of nodes employed by this job.
+                for ( Iterator<BrowserNode> iter2 = _settings.hardwareMonitor().processorNodes().children().iterator();
+                        iter2.hasNext(); ) {
+                    ProcessorNode usedNode = (ProcessorNode)(iter2.next());
+                    if ( usedNode.name().contentEquals( thisNode.name() ) )
+                        usedNode.addJob( this, thisNode.threads(), ProcessorNode.CurrentUse.PROCESSOR );
+                }
             }
         }
 
@@ -1383,6 +1706,15 @@ public class JobEditorMonitor extends JFrame {
             _jobNode.correlationTime( 24.0 * 3600.0 * ( endTime.mjd() - _startTime.mjd() ) );
             _jobNode.logItem( "<RUN> CORRELATION TIME", "" + 24.0 * 3600.0 * ( endTime.mjd() - _startTime.mjd() ), false );
             _jobNode.logItem( "<RUN> JOB STATE", _jobNode.state().getText(), true );
+            //  This eliminates this job from any nodes where it is running.
+            //  Note that this will not exactly work if you are running the same
+            //  job multiple times, but if you are doing that many other things are
+            //  probably not going to work, so this should be minor.
+            for ( Iterator<BrowserNode> iter2 = _settings.hardwareMonitor().processorNodes().children().iterator();
+                    iter2.hasNext(); ) {
+                ProcessorNode usedNode = (ProcessorNode)(iter2.next());
+                usedNode.removeJob( _this );
+            }
        }
         
         protected int _port;
@@ -1934,8 +2266,17 @@ public class JobEditorMonitor extends JFrame {
         public void pickAppropriateSourceNode() {
         }
         
+        /*
+         * Set the source node to an item corresponding to a specified string - the source
+         * node name.
+         */
+        public void setSourceNode( String name ) {
+            _sourceNode.setSelectedItem( name );
+        }
+        
         public String sourceNode() { return (String)_sourceNode.getSelectedItem(); }
         public String sourceType() { return _sourceType.getText(); }
+        public String antenna() { return _antenna.getText(); }
         
         protected int _index;
         protected StyledComboBox _sourceNode;
@@ -2166,7 +2507,22 @@ public class JobEditorMonitor extends JFrame {
             }
         }
         
-        
+        /*
+         * Generate the "common path" for all files...this is the portion of the full
+         * path of each file that is common to all.
+         */
+        public String commonFilePath() {
+            if ( _file.length == 0 )
+                return null;
+            String commonStr = _file[0].getText();
+            for ( int i = 1; i < _file.length; ++i ) {
+                int sameIdx = 0;
+                while ( sameIdx < commonStr.length() && commonStr.charAt( sameIdx ) == _file[0].getText().charAt( sameIdx ) )
+                    ++sameIdx;
+                commonStr = commonStr.substring( 0, sameIdx );
+            }
+            return commonStr;
+        }
 
         /*
          * Override the mouseClicked event to make it work only when the "open/close"
@@ -2264,6 +2620,7 @@ public class JobEditorMonitor extends JFrame {
     public void setVisible( boolean newVal ) {
         if ( newVal )
             loadHardwareLists();
+        selectNodeDefaults( false );
         super.setVisible( newVal );
     }
     
@@ -2391,6 +2748,7 @@ public class JobEditorMonitor extends JFrame {
     protected JMenuItem _allJobsItem;
     protected JButton _applyToButton;
     protected JButton _applyMachinesButton;
+    protected ZButton _defaultMachinesButton;
     protected boolean _machinesAppliedByHand;
     protected JCheckBox _machinesLock;
     protected JCheckBox _forceOverwrite;

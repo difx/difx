@@ -179,6 +179,8 @@
                 <xsd:element ref="windowConfigSmartDisplayH"/>
                 <xsd:element ref="windowConfigEnvironmentVariableDisplayW"/>
                 <xsd:element ref="windowConfigEnvironmentVariableDisplayH"/>
+                <xsd:element ref="windowConfigSourceBasedOnPathDisplayW"/>
+                <xsd:element ref="windowConfigSourceBasedOnPathDisplayH"/>
                 <xsd:element ref="windowConfigDirectoryDisplayW"/>
                 <xsd:element ref="windowConfigDirectoryDisplayH"/>
                 <xsd:element ref="windowConfigMonitorDisplayW"/>
@@ -304,6 +306,28 @@
                 <xsd:element ref="invisibleProcessorCores" />
                 <xsd:element ref="invisibleMark5s" />
                 
+                <xsd:element ref="uniqueDataSource" />
+                <xsd:element ref="assignBasedOnPath" />
+                <xsd:element ref="shareDataSourcesBetweenJobs" />
+                <xsd:element ref="shareDataSourcesAsProcessors" />
+                <xsd:element ref="threadsPerDataSource" />
+                <xsd:element ref="nodesPerCheck" />
+                <xsd:element ref="nodesPer" />
+                <xsd:element ref="allThreadsCheck" />
+                <xsd:element ref="threadsPerNode" />
+                <xsd:element ref="minThreadsPerNode" />
+                <xsd:element ref="threadsPerCheck" />
+                <xsd:element ref="baselineCheck" />
+                <xsd:element ref="jobCheck" />
+                <xsd:element ref="sequentialCheck" />
+                <xsd:element ref="simultaneousCheck" />
+                <xsd:element name="pathNodePair" maxOccurs="unbounded" minOccurs="0">
+                    <xsd:complexType>
+                        <xsd:attribute name="node" type="xsd:string"/>
+                        <xsd:attribute name="path" type="xsd:string"/>
+                    </xsd:complexType>
+                </xsd:element>
+                
             </xsd:sequence>
         </xsd:complexType>
     </xsd:element>
@@ -388,6 +412,8 @@
     <xsd:element name="windowConfigSmartDisplayH" type="xsd:int"></xsd:element>
     <xsd:element name="windowConfigEnvironmentVariableDisplayW" type="xsd:int"></xsd:element>
     <xsd:element name="windowConfigEnvironmentVariableDisplayH" type="xsd:int"></xsd:element>
+    <xsd:element name="windowConfigSourceBasedOnPathDisplayW" type="xsd:int"></xsd:element>
+    <xsd:element name="windowConfigSourceBasedOnPathDisplayH" type="xsd:int"></xsd:element>
     <xsd:element name="windowConfigDirectoryDisplayW" type="xsd:int"></xsd:element>
     <xsd:element name="windowConfigDirectoryDisplayH" type="xsd:int"></xsd:element>
     <xsd:element name="windowConfigMonitorDisplayW" type="xsd:int"></xsd:element>
@@ -512,7 +538,23 @@
     <xsd:element name="invisibleProcessors" type="xsd:string"></xsd:element>
     <xsd:element name="invisibleProcessorCores" type="xsd:string"></xsd:element>
     <xsd:element name="invisibleMark5s" type="xsd:string"/>
-                
+                                
+    <xsd:element name="uniqueDataSource" type="xsd:boolean"></xsd:element>
+    <xsd:element name="assignBasedOnPath" type="xsd:boolean"></xsd:element>
+    <xsd:element name="shareDataSourcesBetweenJobs" type="xsd:boolean"></xsd:element>
+    <xsd:element name="shareDataSourcesAsProcessors" type="xsd:boolean"></xsd:element>
+    <xsd:element name="threadsPerDataSource" type="xsd:int"></xsd:element>
+    <xsd:element name="nodesPerCheck" type="xsd:boolean"></xsd:element>
+    <xsd:element name="nodesPer" type="xsd:int"></xsd:element>
+    <xsd:element name="allThreadsCheck" type="xsd:boolean"></xsd:element>
+    <xsd:element name="threadsPerNode" type="xsd:int"></xsd:element>
+    <xsd:element name="minThreadsPerNode" type="xsd:int"></xsd:element>
+    <xsd:element name="threadsPerCheck" type="xsd:boolean"></xsd:element>
+    <xsd:element name="baselineCheck" type="xsd:boolean"></xsd:element>
+    <xsd:element name="jobCheck" type="xsd:boolean"></xsd:element>
+    <xsd:element name="sequentialCheck" type="xsd:boolean"></xsd:element>
+    <xsd:element name="simultaneousCheck" type="xsd:boolean"></xsd:element>
+
     <xsd:complexType name="mark5Status">
         <xsd:sequence>
             <xsd:element name="bankAVSN" type="xsd:string"></xsd:element>

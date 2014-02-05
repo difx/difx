@@ -28,6 +28,7 @@ import java.awt.Color;
 import java.awt.Point;
 import java.awt.MouseInfo;
 import java.util.Calendar;
+import java.awt.Insets;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
@@ -40,6 +41,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Iterator;
 import java.util.ArrayList;
+import java.awt.Font;
+import java.awt.Dimension;
 
 import javax.swing.JFormattedTextField;
 import javax.swing.JLabel;
@@ -55,9 +58,13 @@ import javax.swing.JTextField;
 import javax.swing.JComboBox;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
+import javax.swing.JPanel;
 import javax.swing.JToolTip;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.TableCellEditor;
+import javax.swing.DefaultCellEditor;
+import javax.swing.table.TableColumn;
 
 import mil.navy.usno.widgetlib.NodeBrowserScrollPane;
 import mil.navy.usno.widgetlib.IndexedPanel;
@@ -76,6 +83,7 @@ import mil.navy.usno.widgetlib.ComplexToolTip;
 import mil.navy.usno.widgetlib.BrowserNode;
 import mil.navy.usno.widgetlib.FormattedTextField;
 import mil.navy.usno.widgetlib.ZCheckBox;
+import mil.navy.usno.widgetlib.ZButton;
 
 import javax.swing.JFrame;
 
@@ -89,6 +97,8 @@ import java.sql.ResultSet;
 public class SystemSettings extends JFrame {
     
     public SystemSettings( String settingsFile ) {
+        
+        _settings = this;
         
         //  The "look and feel" isn't a setting in the sense that these others are...it
         //  must be set prior to building menus, so ONLY the default value will be
@@ -757,7 +767,7 @@ public class SystemSettings extends JFrame {
         databasePanel.add( _databaseMessages );
          
         IndexedPanel jobSettingsPanel = new IndexedPanel( "Job Settings" );
-        jobSettingsPanel.openHeight( 235 );
+        jobSettingsPanel.openHeight( 365 );
         jobSettingsPanel.closedHeight( 20 );
         jobSettingsPanel.labelWidth( 300 );
         _scrollPane.addNode( jobSettingsPanel );
@@ -789,56 +799,180 @@ public class SystemSettings extends JFrame {
         headNodeLabel.setBounds( 10, 85, 150, 25 );
         headNodeLabel.setHorizontalAlignment( JLabel.RIGHT );
         jobSettingsPanel.add( headNodeLabel );
-        JLabel defaultToLabel = new JLabel( "Default Run To Use:" );
-        defaultToLabel.setBounds( 10, 115, 150, 25 );
+        _useHeadNodeCheck = new ZCheckBox( "Use Head Node in Processing" );
+        _useHeadNodeCheck.setBounds( 480, 85, 250, 25 );
+        _useHeadNodeCheck.toolTip( "Allow the head node to be used as a data source or processor.\n"
+                + "A thread will be reserved for head node activities.", null );
+        _useHeadNodeCheck.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                defaultNames().restrictHeadnodeProcessing = !_useHeadNodeCheck.isSelected();
+            }
+        } );
+        jobSettingsPanel.add( _useHeadNodeCheck );
+        JLabel dataSourceLabel = new JLabel( "Data Source Defaults:" );
+        dataSourceLabel.setFont( new Font( dataSourceLabel.getFont().getFamily(), Font.BOLD, dataSourceLabel.getFont().getSize() ) );
+        dataSourceLabel.setBounds( 30, 115, 200, 25 );
+        jobSettingsPanel.add( dataSourceLabel );
+        _uniqueDataSource = new ZCheckBox( "Unique Node per Data Source" );
+        _uniqueDataSource.toolTip( "Use a unique node as the data source for each antenna within a job.", null );
+        _uniqueDataSource.setBounds( 165, 140, 300, 25 );
+        jobSettingsPanel.add( _uniqueDataSource );
+        _assignBasedOnPath = new ZCheckBox( "Assign Based on Path" );
+        _assignBasedOnPath.setBounds( 165, 165, 160, 25 );
+        _assignBasedOnPath.toolTip( "Use specific nodes for particular data paths.  Paths are assigned\n"
+                + "to nodes using the \"Path Assignments\" settings.\n"
+                + "A specific path assignment will override all other considerations.", null );
+        _assignBasedOnPath.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                if ( _assignBasedOnPath.isSelected() ) {
+                    _uniqueDataSource.setEnabled( false );
+                    _shareDataSourcesBetweenJobs.setEnabled( false );
+                }
+                else {
+                    _uniqueDataSource.setEnabled( true );
+                    _shareDataSourcesBetweenJobs.setEnabled( true );
+                }
+            }
+        } );
+        jobSettingsPanel.add( _assignBasedOnPath );
+        _pathAssignments = new ZButton( "Path Assignments" );
+        _pathAssignments.setBounds( 325, 165, 140, 25 );
+        _pathAssignments.toolTip( "Assign data file paths to specific node names.", null );
+        _pathAssignments.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                if ( _sourceBasedOnPathDisplay == null ) {
+                    _sourceBasedOnPathDisplay = new SourceBasedOnPathDisplay( MouseInfo.getPointerInfo().getLocation().x, 
+                        MouseInfo.getPointerInfo().getLocation().y, _settings );
+                    if ( _sourceBasedOnPathList != null ) {
+                        for ( Iterator<String> iter = _sourceBasedOnPathList.keySet().iterator(); iter.hasNext(); ) {
+                            String path = iter.next();
+                            _sourceBasedOnPathDisplay.addPathNodePair( path, _sourceBasedOnPathList.get( path ) );
+                        }
+                    }
+                }
+                _sourceBasedOnPathDisplay.showAtPosition( MouseInfo.getPointerInfo().getLocation().x, 
+                        MouseInfo.getPointerInfo().getLocation().y );
+            }
+        } );
+        jobSettingsPanel.add( _pathAssignments );
+        _shareDataSourcesAsProcessors = new ZCheckBox( "Share Data Nodes With Processing" );
+        _shareDataSourcesAsProcessors.toolTip( "Allow processing on nodes being used as data sources.  Threads\n"
+                + "will be reserved for data reading activities.", null );
+        _shareDataSourcesAsProcessors.setBounds( 480, 140, 250, 25 );
+        jobSettingsPanel.add( _shareDataSourcesAsProcessors );
+        _shareDataSourcesBetweenJobs = new ZCheckBox( "Share Data Nodes Between Jobs" );
+        _shareDataSourcesBetweenJobs.toolTip( "Allow multiple jobs to use the same nodes as data sources.  Threads\n"
+                + "will be reserved for each.", null );
+        _shareDataSourcesBetweenJobs.setBounds( 480, 165, 250, 25 );
+        jobSettingsPanel.add( _shareDataSourcesBetweenJobs );
+        _threadsPerDataSource = new NumberBox();
+        _threadsPerDataSource.setBounds( 795, 140, 50, 25 );
+        _threadsPerDataSource.minimum( 1 );
+        _threadsPerDataSource.precision( 0 );
+        jobSettingsPanel.add( _threadsPerDataSource );
+        JLabel threadsPerLabel = new JLabel( "Threads Per Data Source" );
+        threadsPerLabel.setBounds( 850, 140, 200, 25 );
+        jobSettingsPanel.add( threadsPerLabel );
+        JLabel useThreadsLabel = new JLabel( "Use:" );
+        useThreadsLabel.setBounds( 740, 140, 50, 25 );
+        useThreadsLabel.setHorizontalAlignment( JLabel.RIGHT );
+        jobSettingsPanel.add( useThreadsLabel );
+        JLabel processingLabel = new JLabel( "Processing Defaults:" );
+        processingLabel.setBounds( 30, 195, 200, 25 );
+        processingLabel.setFont( new Font( processingLabel.getFont().getFamily(), Font.BOLD, processingLabel.getFont().getSize() ) );
+        jobSettingsPanel.add( processingLabel );
+        JLabel defaultToLabel = new JLabel( "Run Using:" );
+        defaultToLabel.setBounds( 10, 220, 150, 25 );
         defaultToLabel.setHorizontalAlignment( JLabel.RIGHT );
         jobSettingsPanel.add( defaultToLabel );
+        _nodesPerCheck = new ZCheckBox( "" );
+        _nodesPerCheck.setBounds( 165, 220, 25, 25 );
+        _nodesPerCheck.toolTip( "Check to base processing on nodes (as opposed to threads).", null );
+        _nodesPerCheck.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                if ( _nodesPerCheck.isSelected() ) {
+                    _allThreadsCheck.setEnabled( true );
+                    if ( _allThreadsCheck.isSelected()  )
+                        _minThreadsPerNode.setEnabled( true );
+                    _nodesPer.setEnabled( true );
+                }
+                else {
+                    _allThreadsCheck.setSelected( false );
+                    _allThreadsCheck.setEnabled( false );
+                    _threadsPerCheck.setSelected( true );
+                    _threadsPerNode.setEnabled( true );
+                    _minThreadsPerNode.setEnabled( false );
+                    _nodesPer.setEnabled( false );
+                }
+            }
+        } );
+        jobSettingsPanel.add( _nodesPerCheck );
         _nodesPer = new NumberBox();
-        _nodesPer.setBounds( 165, 115, 50, 25 );
+        _nodesPer.setBounds( 190, 220, 50, 25 );
         _nodesPer.minimum( 0 );
         _nodesPer.precision( 0 );
+        _nodesPer.toolTip( "Number of nodes to assign to processing.", null );
         jobSettingsPanel.add( _nodesPer );
         JLabel nodesLabel = new JLabel( "Nodes" );
-        nodesLabel.setBounds( 220, 115, 50, 25 );
+        nodesLabel.setBounds( 245, 220, 50, 25 );
         jobSettingsPanel.add( nodesLabel );
         JLabel withLabel = new JLabel( "With:" );
-        withLabel.setBounds( 270, 115, 50, 25 );
+        withLabel.setBounds( 305, 220, 50, 25 );
         withLabel.setHorizontalAlignment( JLabel.RIGHT );
         jobSettingsPanel.add( withLabel );
         _allThreadsCheck = new ZCheckBox( "All Threads" );
-        _allThreadsCheck.setBounds( 325, 115, 100, 25 );
+        _allThreadsCheck.setBounds( 355, 220, 100, 25 );
         _allThreadsCheck.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
                 _allThreadsCheck.setSelected( true );
                 _threadsPerCheck.setSelected( false );
                 _threadsPerNode.setEnabled( false );
+                _minThreadsPerNode.setEnabled( true );
             }
         } );
+        _allThreadsCheck.toolTip( "Utilize all <<italic>>available<</italic>> threads in each node - available\n"
+                + "threads will not include threads assigned as data sources or as the head node.", null );
         jobSettingsPanel.add( _allThreadsCheck );
+        _minThreadsPerNode = new NumberBox();
+        _minThreadsPerNode.setBounds( 505, 220, 50, 25 );
+        _minThreadsPerNode.minimum( 1 );
+        _minThreadsPerNode.precision( 0 );
+        _minThreadsPerNode.toolTip( "Minimum number of threads required when selecting \"All\" threads\n"
+                + "in a node.  If fewer are available for a node that otherwise meets\n"
+                + "requirements, a new node will be chosen.", null );
+        jobSettingsPanel.add( _minThreadsPerNode );
+        JLabel minThreadsLabel = new JLabel( "Min:" );
+        minThreadsLabel.setBounds( 450, 220, 50, 25 );
+        minThreadsLabel.setHorizontalAlignment( JLabel.RIGHT );
+        jobSettingsPanel.add( minThreadsLabel );
         _threadsPerNode = new NumberBox();
-        _threadsPerNode.setBounds( 350, 145, 50, 25 );
+        _threadsPerNode.setBounds( 380, 245, 50, 25 );
         _threadsPerNode.minimum( 1 );
         _threadsPerNode.precision( 0 );
         jobSettingsPanel.add( _threadsPerNode );
         _threadsPerCheck = new ZCheckBox( "" );
-        _threadsPerCheck.setBounds( 325, 145, 25, 25 );
+        _threadsPerCheck.setBounds( 355, 245, 25, 25 );
         _threadsPerCheck.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
                 _allThreadsCheck.setSelected( false );
                 _threadsPerCheck.setSelected( true );
                 _threadsPerNode.setEnabled( true );
+                _minThreadsPerNode.setEnabled( false );
             }
         } );
+        _threadsPerCheck.toolTip( "Use this many threads - if the number of nodes is also selected this\n"
+                + "number is interpreted as \"threads to use per node\" and only nodes\n"
+                + "having this number of threads will be utilized.", null );
         jobSettingsPanel.add( _threadsPerCheck );
-        JLabel threadsPerNodeLabel = new JLabel( "Threads/Node" );
-        threadsPerNodeLabel.setBounds( 405, 145, 100, 25 );
+        JLabel threadsPerNodeLabel = new JLabel( "Threads" );
+        threadsPerNodeLabel.setBounds( 435, 245, 100, 25 );
         jobSettingsPanel.add( threadsPerNodeLabel );
         JLabel forEachLabel = new JLabel( "For Each:" );
         forEachLabel.setHorizontalAlignment( JLabel.RIGHT );
-        forEachLabel.setBounds( 490, 115, 75, 25 );
+        forEachLabel.setBounds( 555, 220, 75, 25 );
         jobSettingsPanel.add( forEachLabel );
         _baselineCheck = new ZCheckBox( "Baseline" );
-        _baselineCheck.setBounds( 575, 115, 125, 25 );
+        _baselineCheck.setBounds( 635, 220, 125, 25 );
         _baselineCheck.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
                 _jobCheck.setSelected( false );
@@ -847,7 +981,7 @@ public class SystemSettings extends JFrame {
         } );
         jobSettingsPanel.add( _baselineCheck );
         _jobCheck = new ZCheckBox( "Job" );
-        _jobCheck.setBounds( 575, 145, 125, 25 );
+        _jobCheck.setBounds( 635, 245, 125, 25 );
         _jobCheck.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
                 _jobCheck.setSelected( true );
@@ -855,12 +989,18 @@ public class SystemSettings extends JFrame {
             }
         } );
         jobSettingsPanel.add( _jobCheck );
-        JLabel runMultipleLabel = new JLabel( "Run Multiple Jobs:" );
+        JLabel schedulerLabel = new JLabel( "Scheduler Settings:" );
+        schedulerLabel.setBounds( 30, 275, 200, 25 );
+        schedulerLabel.setFont( new Font( processingLabel.getFont().getFamily(), Font.BOLD, processingLabel.getFont().getSize() ) );
+        jobSettingsPanel.add( schedulerLabel );
+        JLabel runMultipleLabel = new JLabel( "Run Scheduled Jobs:" );
         runMultipleLabel.setHorizontalAlignment( JLabel.RIGHT );
-        runMultipleLabel.setBounds( 10, 175, 150, 25 );
+        runMultipleLabel.setBounds( 10, 300, 150, 25 );
         jobSettingsPanel.add( runMultipleLabel );
         _sequentialCheck = new ZCheckBox( "Sequentially" );
-        _sequentialCheck.setBounds( 165, 175, 125, 25 );
+        _sequentialCheck.setBounds( 165, 300, 125, 25 );
+        _sequentialCheck.toolTip( "Jobs run using the scheduler will wait until all\n"
+                + "previously scheduled jobs have been completed.", null );
         jobSettingsPanel.add( _sequentialCheck );
         _sequentialCheck.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
@@ -869,13 +1009,16 @@ public class SystemSettings extends JFrame {
             }
         } );
         _simultaneousCheck = new ZCheckBox( "Simultaneously" );
-        _simultaneousCheck.setBounds( 165, 205, 125, 25 );
+        _simultaneousCheck.setBounds( 165, 325, 125, 25 );
         _simultaneousCheck.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
                 _sequentialCheck.setSelected( false );
                 _simultaneousCheck.setSelected( true );
             }
         } );
+        _simultaneousCheck.toolTip( "Jobs run using the scheduler will be run simultaneously\n"
+                + "when resources sufficient to meet their default run criteria\n"
+                + "are available.", null );
         jobSettingsPanel.add( _simultaneousCheck );
         
         IndexedPanel eopSettingsPanel = new IndexedPanel( "EOP Settings" );
@@ -1075,6 +1218,43 @@ public class SystemSettings extends JFrame {
         //  Annoying and kludgey, but harmless.
         this.newSize();
         
+    }
+    
+    /*
+     * Enable the "Job Settings" buttons/checks related to nodes and threads based on
+     * what is checked or not checked.
+     */
+    public void setNodeAndThreadButtons() {
+        //  See if this is a node-based selection, selecting "all nodes" becomes
+        //  an option.
+        if ( _nodesPerCheck.isSelected() ) {
+            _allThreadsCheck.setEnabled( true );
+            _nodesPer.setEnabled( true );
+        }
+        //  If not, it is not an option, nor should it be selected.
+        else {
+            _allThreadsCheck.setEnabled( false );
+            _allThreadsCheck.setSelected( false );
+            _threadsPerCheck.setSelected( true );
+            _nodesPer.setEnabled( false );
+        }
+        //  If all threads is checked, enable the minimum number of threads.
+        if ( _allThreadsCheck.isSelected() ) {
+            _threadsPerNode.setEnabled( false );
+            _minThreadsPerNode.setEnabled( true );
+        }
+        else {
+            _threadsPerNode.setEnabled( true );
+            _minThreadsPerNode.setEnabled( false );
+        }
+        if ( _assignBasedOnPath.isSelected() ) {
+            _uniqueDataSource.setEnabled( false );
+            _shareDataSourcesBetweenJobs.setEnabled( false );
+        }
+        else {
+            _uniqueDataSource.setEnabled( true );
+            _shareDataSourcesBetweenJobs.setEnabled( true );
+        }
     }
     
     @Override
@@ -1647,8 +1827,15 @@ public class SystemSettings extends JFrame {
         _useStagingArea.setSelected( false );
         _headNode.setText( _difxControlAddress.getText() );
         _nodesPer.value( 2 );
+        _nodesPerCheck.setSelected( true );
         _allThreadsCheck.setSelected( false );
+        _uniqueDataSource.setSelected( true );
+        _assignBasedOnPath.setSelected( false );
+        _shareDataSourcesAsProcessors.setSelected( false );
+        _shareDataSourcesBetweenJobs.setSelected( false );
+        _threadsPerDataSource.value( 1 );
         _threadsPerNode.value( 8 );
+        _minThreadsPerNode.value( 1 );
         _threadsPerCheck.setSelected( true );
         _baselineCheck.setSelected( true );
         _jobCheck.setSelected( false );
@@ -1686,6 +1873,8 @@ public class SystemSettings extends JFrame {
         _windowConfiguration.smartDisplayH = 300;
         _windowConfiguration.environmentVariableDisplayW = 600;
         _windowConfiguration.environmentVariableDisplayH = 300;
+        _windowConfiguration.sourceBasedOnPathDisplayW = 600;
+        _windowConfiguration.sourceBasedOnPathDisplayH = 300;
         _windowConfiguration.directoryDisplayW = 600;
         _windowConfiguration.directoryDisplayH = 500;
         _windowConfiguration.monitorDisplayW = 600;
@@ -1721,6 +1910,7 @@ public class SystemSettings extends JFrame {
         _defaultNames.dirListLocation = "";
         _defaultNames.jobCreationSanityCheck = true;
         _defaultNames.restrictHeadnodeProcessing = true;
+        _useHeadNodeCheck.setSelected( false );
         _defaultNames.eliminateNonrespondingProcessors = true;
         _defaultNames.eliminateBusyProcessors = true;
         _defaultNames.chooseBasedOnModule = true;
@@ -1915,6 +2105,8 @@ public class SystemSettings extends JFrame {
         _jobLocationDefaults.passName = "";
         _jobLocationDefaults.autoUpdate = false;
 
+        setNodeAndThreadButtons();
+        
         //  Set up the communications based on current settings.
         changeDifxControlConnection();
         
@@ -1949,8 +2141,10 @@ public class SystemSettings extends JFrame {
      */
     public void settingsFile( String newFile ) {
         _settingsFile.setText( newFile );
-        if ( getSettingsFromFile( newFile ) )
+        if ( getSettingsFromFile( newFile ) ) {
             _settingsFile.setForeground( Color.BLACK );
+            setNodeAndThreadButtons();
+        }
         else {
             _settingsFile.setForeground( Color.RED );
             JOptionPane.showMessageDialog( this, "Settings file \"" + newFile
@@ -2532,6 +2726,10 @@ public class SystemSettings extends JFrame {
                 _windowConfiguration.environmentVariableDisplayW = doiConfig.getWindowConfigEnvironmentVariableDisplayW();
             if ( doiConfig.getWindowConfigEnvironmentVariableDisplayH() != 0 )
                 _windowConfiguration.environmentVariableDisplayH = doiConfig.getWindowConfigEnvironmentVariableDisplayH();
+            if ( doiConfig.getWindowConfigSourceBasedOnPathDisplayW() != 0 )
+                _windowConfiguration.sourceBasedOnPathDisplayW = doiConfig.getWindowConfigSourceBasedOnPathDisplayW();
+            if ( doiConfig.getWindowConfigSourceBasedOnPathDisplayH() != 0 )
+                _windowConfiguration.sourceBasedOnPathDisplayH = doiConfig.getWindowConfigSourceBasedOnPathDisplayH();
             if ( doiConfig.getWindowConfigDirectoryDisplayW() != 0 )
                 _windowConfiguration.directoryDisplayW = doiConfig.getWindowConfigDirectoryDisplayW();
             if ( doiConfig.getWindowConfigDirectoryDisplayH() != 0 )
@@ -2601,6 +2799,39 @@ public class SystemSettings extends JFrame {
                 _defaultNames.dirListLocation = doiConfig.getDefaultNamesDirListLocation();
             _defaultNames.jobCreationSanityCheck = doiConfig.isDefaultJobCreationSanityCheck();
             _defaultNames.restrictHeadnodeProcessing = doiConfig.isDefaultNamesRestrictHeadnodeProcessing();
+            _useHeadNodeCheck.setSelected( !_defaultNames.restrictHeadnodeProcessing );
+            
+            _uniqueDataSource.setSelected( !doiConfig.isUniqueDataSource() );
+            _assignBasedOnPath.setSelected( doiConfig.isAssignBasedOnPath() );
+            _shareDataSourcesBetweenJobs.setSelected( doiConfig.isShareDataSourcesBetweenJobs() );
+            _shareDataSourcesAsProcessors.setSelected( doiConfig.isShareDataSourcesAsProcessors() );
+            if ( doiConfig.getThreadsPerDataSource() != 0 )
+                _threadsPerDataSource.value( doiConfig.getThreadsPerDataSource() );
+            _nodesPerCheck.setSelected( !doiConfig.isNodesPerCheck() );
+            if ( doiConfig.getNodesPer() != 0 )
+                _nodesPer.value( doiConfig.getNodesPer() );
+            _allThreadsCheck.setSelected( doiConfig.isAllThreadsCheck() );
+            if ( doiConfig.getThreadsPerNode() != 0 )
+                _threadsPerNode.value( doiConfig.getThreadsPerNode() );
+            if ( doiConfig.getMinThreadsPerNode() != 0 )
+                _minThreadsPerNode.value( doiConfig.getMinThreadsPerNode() );
+            _threadsPerCheck.setSelected( !doiConfig.isThreadsPerCheck() );
+            _baselineCheck.setSelected( !doiConfig.isBaselineCheck() );
+            _jobCheck.setSelected( doiConfig.isJobCheck() );
+            _sequentialCheck.setSelected( doiConfig.isSequentialCheck() );
+            _simultaneousCheck.setSelected( !doiConfig.isSimultaneousCheck() );
+            for ( Iterator<DoiSystemConfig.PathNodePair> iter = doiConfig.getPathNodePair().iterator(); iter.hasNext(); ) {
+                DoiSystemConfig.PathNodePair pathNodePair = iter.next();
+                //  Create a list for the source/path pairs.  We can't add them to the
+                //  display yet because other items (hardware nodes, for instance) aren't necessarily
+                //  know yet.  We'll use the list when we have user actions - displaying
+                //  the source/path pairs, using them to set source nodes, etc.
+                if ( _sourceBasedOnPathList == null ) {
+                    _sourceBasedOnPathList = new HashMap<String,String>();
+                }
+                _sourceBasedOnPathList.put( pathNodePair.getPath(), pathNodePair.getNode() );
+            }
+
             _defaultNames.eliminateNonrespondingProcessors = doiConfig.isDefaultNamesEliminateNonrespondingProcessors();
             _defaultNames.eliminateBusyProcessors = doiConfig.isDefaultNamesElimnateBusyProcessors();
             _defaultNames.chooseBasedOnModule = doiConfig.isDefaultNamesChooseBasedOnModule();
@@ -2892,6 +3123,7 @@ public class SystemSettings extends JFrame {
             java.util.logging.Logger.getLogger("global").log( java.util.logging.Level.SEVERE, null, ex );
             return false;
         } catch ( Exception e ) {
+            java.util.logging.Logger.getLogger("global").log( java.util.logging.Level.SEVERE, null, e );
             return false;
         }
     }
@@ -2988,6 +3220,8 @@ public class SystemSettings extends JFrame {
         doiConfig.setWindowConfigSmartDisplayH( _windowConfiguration.smartDisplayH );
         doiConfig.setWindowConfigEnvironmentVariableDisplayW( _windowConfiguration.environmentVariableDisplayW );
         doiConfig.setWindowConfigEnvironmentVariableDisplayH( _windowConfiguration.environmentVariableDisplayH );
+        doiConfig.setWindowConfigSourceBasedOnPathDisplayW( _windowConfiguration.sourceBasedOnPathDisplayW );
+        doiConfig.setWindowConfigSourceBasedOnPathDisplayH( _windowConfiguration.sourceBasedOnPathDisplayH );
         doiConfig.setWindowConfigDirectoryDisplayW( _windowConfiguration.directoryDisplayW );
         doiConfig.setWindowConfigDirectoryDisplayH( _windowConfiguration.directoryDisplayH );
         doiConfig.setWindowConfigMonitorDisplayW( _windowConfiguration.monitorDisplayW );
@@ -3236,6 +3470,32 @@ public class SystemSettings extends JFrame {
         doiConfig.setJobLocationDefaultsPassName( _jobLocationDefaults.passName );
         doiConfig.setJobLocationDefaultsAutoUpdate( _jobLocationDefaults.autoUpdate );
         
+        doiConfig.setUniqueDataSource( !_uniqueDataSource.isSelected() );
+        doiConfig.setAssignBasedOnPath( _assignBasedOnPath.isSelected( ) );
+        doiConfig.setShareDataSourcesBetweenJobs( _shareDataSourcesBetweenJobs.isSelected() );
+        doiConfig.setShareDataSourcesAsProcessors( _shareDataSourcesAsProcessors.isSelected() );
+        doiConfig.setThreadsPerDataSource( _threadsPerDataSource.intValue() );
+        doiConfig.setNodesPerCheck( !_nodesPerCheck.isSelected() );
+        doiConfig.setNodesPer( _nodesPer.intValue() );
+        doiConfig.setAllThreadsCheck( _allThreadsCheck.isSelected() );
+        doiConfig.setThreadsPerNode( _threadsPerNode.intValue() );
+        doiConfig.setMinThreadsPerNode( _minThreadsPerNode.intValue() );
+        doiConfig.setThreadsPerCheck( !_threadsPerCheck.isSelected() );
+        doiConfig.setBaselineCheck( !_baselineCheck.isSelected() );
+        doiConfig.setJobCheck( _jobCheck.isSelected() );
+        doiConfig.setSequentialCheck( _sequentialCheck.isSelected() );
+        doiConfig.setSimultaneousCheck( !_simultaneousCheck.isSelected() );
+
+        if ( _sourceBasedOnPathDisplay != null && _sourceBasedOnPathDisplay.panels() != null ) {
+            for ( Iterator<SourceBasedOnPathDisplay.PanelItem> iter = _sourceBasedOnPathDisplay.panels().iterator(); iter.hasNext(); ) {
+                SourceBasedOnPathDisplay.PanelItem panelItem = iter.next();
+                DoiSystemConfig.PathNodePair pathNodePair = factory.createDoiSystemConfigPathNodePair();
+                pathNodePair.setPath( panelItem.textField.getText() );
+                pathNodePair.setNode( (String)panelItem.comboBox.getSelectedItem() );
+                doiConfig.getPathNodePair().add( pathNodePair );
+            }
+        }
+
         //  Build a lists of processors and Mark5s that are "invisible".  This comes
         //  from the hardware list.
         if ( _hardwareMonitor.processorNodes().children().size() > 0 ) {
@@ -4028,6 +4288,8 @@ public class SystemSettings extends JFrame {
         int smartDisplayH;
         int environmentVariableDisplayW;
         int environmentVariableDisplayH;
+        int sourceBasedOnPathDisplayW;
+        int sourceBasedOnPathDisplayH;
         int directoryDisplayW;
         int directoryDisplayH;
         int monitorDisplayW;
@@ -4443,17 +4705,238 @@ public class SystemSettings extends JFrame {
     
     protected String _difxVersionPreferred;
         
+    /*
+     * Class to display a table of environment variables.
+     */
+    public class SourceBasedOnPathDisplay extends JFrame {
+
+        public SourceBasedOnPathDisplay( int x, int y, SystemSettings settings ) {
+            _settings = settings;
+            setLookAndFeel();
+            this.setLayout( null );
+            this.setBounds( x, y, windowConfiguration().sourceBasedOnPathDisplayW,
+                windowConfiguration().sourceBasedOnPathDisplayH );
+            this.getContentPane().setLayout( null );
+            this.setTitle( "Source Node Assignments Based On Path" );
+            _this = this;
+            this.addComponentListener( new java.awt.event.ComponentAdapter() {
+                public void componentResized( ComponentEvent e ) {
+                    windowConfiguration().sourceBasedOnPathDisplayW = _this.getWidth();
+                    windowConfiguration().sourceBasedOnPathDisplayH = _this.getHeight();
+                    newSize();
+                }
+            });
+            this.addComponentListener( new java.awt.event.ComponentAdapter() {
+                public void componentShown( ComponentEvent e ) {
+                    newSize();
+                }
+            });
+            _viewPane = new JPanel();
+            _viewPane.setLayout( null );
+            _viewPane.setPreferredSize( new Dimension( 500, 500 ) );
+            _scrollPane = new JScrollPane( _viewPane );
+            this.add( _scrollPane );
+            _addButton = new ZButton( "Add" );
+            _addButton.setBounds( 20, 15, 100, 25 );
+            _addButton.toolTip( "Add a new Path/Source combination to the list.", null );
+            _addButton.addActionListener( new ActionListener() {
+                public void actionPerformed( ActionEvent e ) {
+                    addItem();
+                }
+            } );
+            this.add( _addButton );
+        }
+        
+        public void showAtPosition( int x, int y ) {
+            setBounds( x, y, windowConfiguration().sourceBasedOnPathDisplayW,
+                windowConfiguration().sourceBasedOnPathDisplayH );
+            setVisible( true );
+        }
+        
+        @Override
+        public void setBounds( int x, int y, int w, int h ) {
+            newSize();
+            super.setBounds( x, y, w, h );
+        }
+
+        public void newSize() {
+            if ( _scrollPane != null ) {
+                int w = this.getContentPane().getSize().width;
+                int h = this.getContentPane().getSize().height;
+                _scrollPane.setBounds( 0, 50, w, h - 50 );
+                if ( _panels != null ) {
+                    int width = w - 4;
+                    if ( 25 * _panels.size() > h - 50 )
+                        width = w - 19;
+                    _viewPane.setPreferredSize( new Dimension( width, 25 * _panels.size() ) );
+                    _viewPane.setBounds( 0, 0, width, 25 * _panels.size() );
+                    int i = 0;
+                    for ( Iterator<PanelItem> iter = _panels.iterator(); iter.hasNext(); ) {
+                        PanelItem panel = iter.next();
+                        panel.setBounds( 0, 25 * i, width, 25 );
+                        panel.textField.setBounds( 25 , 0, 3 * ( width - 25 ) / 5, 25 );
+                        panel.comboBox.setBounds( 25 + 3 * ( width - 25 ) / 5, 0, 2 * ( width - 25 ) / 5, 25 );
+                        ++i;
+                    }
+                    _viewPane.updateUI();
+                }
+            }
+        }
+        
+        public PanelItem addItem() {
+            PanelItem newPanel = new PanelItem();
+            //  Create a new Text Field in which a path can be entered.
+            newPanel.textField = new TabCompletedTextField( _settings );
+            newPanel.textField.setToolTipText( "Path to associate with a node.  Any file that exists below this\n"
+                    + "path will be assigned the selected node as a data source." );
+            //  Create a new combo box with all possible data source nodes.
+            newPanel.comboBox = new JComboBox();
+            newPanel.comboBox.setToolTipText( "Node name to use as the data source for the given path." );
+            for ( Iterator<BrowserNode> iter = _settings.hardwareMonitor().processorNodes().children().iterator();
+                    iter.hasNext(); ) {
+                ProcessorNode thisModule = (ProcessorNode)(iter.next());
+                newPanel.comboBox.addItem( thisModule.name() );
+            }
+            newPanel.setLayout( null );
+            if ( _panels == null )
+                _panels = new ArrayList<PanelItem>();
+            newPanel.setBounds( 0, 25 * _panels.size(), 825, 25 );
+            _viewPane.add( newPanel );
+            _panels.add( newPanel );
+            newPanel.delete = new ZButton( "\u2613" );
+            newPanel.delete.setFont( new Font( "Dialog", Font.BOLD, 16 ) );
+            newPanel.delete.setMargin( new Insets( 0, 0, 2, 0 ) );
+            newPanel.delete.setToolTipText( "Delete this item." );
+            final PanelItem deletePanel = newPanel;
+            newPanel.delete.addActionListener( new ActionListener() {
+                public void actionPerformed( ActionEvent e ) {
+                    _panels.remove( deletePanel );
+                    _viewPane.remove( deletePanel );
+                    newSize();
+                    _scrollPane.updateUI();
+                }
+            } );
+            newPanel.delete.setBounds( 0, 0, 25, 25 );
+            newPanel.add( newPanel.delete );
+            newPanel.add( newPanel.textField );
+            newPanel.add( newPanel.comboBox );
+            newPanel.textField.setBounds( 25, 0, 500, 25 );
+            newPanel.comboBox.setBounds( 525, 0, 300, 25 );
+            newSize();
+            _scrollPane.updateUI();
+            return newPanel;
+        }
+        
+        public void addPathNodePair( String path, String node ) {
+            PanelItem newPanel = addItem();
+            newPanel.textField.setText( path );
+            newPanel.comboBox.setSelectedItem( node );
+            _scrollPane.updateUI();
+        }
+        
+        public class PanelItem extends JPanel {
+            public ZButton delete;
+            public TabCompletedTextField textField;
+            public JComboBox comboBox;
+        }
+        
+        /*
+         * Find the node associated with this file path, if one exists.  The path
+         * associated with a node must be fully contained within the full file path.
+         * We must be careful to find the most specific path, i.e. the path that
+         * contains the largest portion of the full path.
+         */
+        public String nodeFromPath( String fullPath ) {
+            if ( fullPath == null || fullPath.length() == 0 )
+                return null;
+            String matchNode = null;
+            int matchNum = 0;
+            if ( _panels != null ) {
+                for ( Iterator<PanelItem> iter = _panels.iterator(); iter.hasNext(); ) {
+                    PanelItem thisPanel = iter.next();
+                    String thisText = thisPanel.textField.getText();
+                    if ( thisText != null && thisText.length() > 0 ) {
+                        if ( fullPath.indexOf( thisText ) == 0 ) {
+                            if ( thisText.length() > matchNum ) {
+                                matchNum = thisText.length();
+                                matchNode = (String)(thisPanel.comboBox.getSelectedItem());
+                            }
+                        }
+                    }
+                }
+            }
+            return matchNode;
+        }
+        
+        public ArrayList<PanelItem> panels() { return _panels; }
+        
+        protected SourceBasedOnPathDisplay _this;
+        protected JScrollPane _scrollPane;
+        protected JPanel _viewPane;
+        protected ZButton _addButton;
+        protected SystemSettings _settings;
+        protected ArrayList<PanelItem> _panels;
+
+    }
+    
+    public String nodeFromPath( String commonPath ) {        
+        if ( _sourceBasedOnPathDisplay == null ) {
+            //  Set up a new display (which won't be displayed) and fill it with
+            //  the "list" data, if that exists (it came from the XML settings file).
+            _sourceBasedOnPathDisplay = new SourceBasedOnPathDisplay( 0, 0, _settings );
+            if ( _sourceBasedOnPathList != null ) {
+                for ( Iterator<String> iter = _sourceBasedOnPathList.keySet().iterator(); iter.hasNext(); ) {
+                    String path = iter.next();
+                    _sourceBasedOnPathDisplay.addPathNodePair( path, _sourceBasedOnPathList.get( path ) );
+                }
+            }
+            //  Blow away the list so we don't use it again.
+            _sourceBasedOnPathList = null;
+        }
+        return _sourceBasedOnPathDisplay.nodeFromPath( commonPath );
+    }
+    
+    protected SourceBasedOnPathDisplay _sourceBasedOnPathDisplay;
+    protected HashMap<String,String> _sourceBasedOnPathList;
+    
+    protected ZCheckBox _useHeadNodeCheck;
+    protected ZCheckBox _uniqueDataSource;
+    protected ZCheckBox _assignBasedOnPath;
+    protected ZButton _pathAssignments;
+    protected ZCheckBox _shareDataSourcesBetweenJobs;
+    protected ZCheckBox _shareDataSourcesAsProcessors;
+    protected NumberBox _threadsPerDataSource;
+    protected ZCheckBox _nodesPerCheck;
     protected NumberBox _nodesPer;
     protected ZCheckBox _allThreadsCheck;
     protected NumberBox _threadsPerNode;
+    protected NumberBox _minThreadsPerNode;
     protected ZCheckBox _threadsPerCheck;
     protected ZCheckBox _baselineCheck;
     protected ZCheckBox _jobCheck;
     protected ZCheckBox _sequentialCheck;
     protected ZCheckBox _simultaneousCheck;
     
+    public boolean useHeadNodeCheck() { return _useHeadNodeCheck.isSelected(); }
+    public boolean assignBasedOnPath() { return _assignBasedOnPath.isSelected(); }
+    public boolean uniqueDataSource() { return _uniqueDataSource.isSelected(); }
+    public int threadsPerDataSource() { return _threadsPerDataSource.intValue(); }
+    public boolean shareDataSourcesBetweenJobs() { return _shareDataSourcesBetweenJobs.isSelected(); }
+    public boolean shareDataSourcesAsProcessors() { return _shareDataSourcesAsProcessors.isSelected(); }
+    public int nodesPer() { return _nodesPer.intValue(); }
+    public boolean nodesPerCheck() { return _nodesPerCheck.isSelected(); }
+    public boolean allThreadsCheck() { return _allThreadsCheck.isSelected(); }
+    public int threadsPerNode() { return _threadsPerNode.intValue(); }
+    public int minThreadsPerNode() { return _minThreadsPerNode.intValue(); }
+    public boolean threadsPerCheck() { return _threadsPerCheck.isSelected(); }
+    public boolean baselineCheck() { return _baselineCheck.isSelected(); }
+    public boolean jobCheck() { return _jobCheck.isSelected(); }
+    public boolean sequentialCheck() { return _sequentialCheck.isSelected(); }
+    public boolean simultaneousCheck() { return _simultaneousCheck.isSelected(); }
+
     protected String _invisibleProcessors;
     protected String _invisibleProcessorCores;
     protected String _invisibleMark5s;
 
+    protected SystemSettings _settings;
 }

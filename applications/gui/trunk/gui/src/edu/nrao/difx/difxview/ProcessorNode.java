@@ -20,6 +20,8 @@ import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.Color;
 import java.awt.Component;
+import java.util.ArrayList;
+import java.util.Iterator;
 
 import java.text.DecimalFormat;
 
@@ -40,6 +42,7 @@ public class ProcessorNode extends BrowserNode {
         _popupButton.setVisible( true );
         _networkActivity.warningTime( _settings.inactivityWarning() * 10 );
         _networkActivity.alertTime( _settings.inactivityError() * 10 );
+        _usageList = new ArrayList<CurrentUse>();
     }
     
     @Override
@@ -615,4 +618,64 @@ public class ProcessorNode extends BrowserNode {
     int _widthNetTxRate;
 
     protected SystemSettings _settings;
+
+    //  Used to keep track of a "use" of this processor by a job.  The job is
+    //  identified by its editor/monitor.
+    public class CurrentUse {
+        public static final int HEADNODE = 1;
+        public static final int DATASOURCE = 2;
+        public static final int PROCESSOR = 3;
+        
+        public JobEditorMonitor jobEditor;
+        public int threads;
+        public int use;
+    };
+    
+    ArrayList<CurrentUse> _usageList;
+    
+    public ArrayList<CurrentUse> usageList() { return _usageList; }
+    public int threadsUsed() {
+        int count = 0;
+        for ( Iterator<CurrentUse> iter = _usageList.iterator(); iter.hasNext(); ) {
+            CurrentUse thisUse = iter.next();
+            count += thisUse.threads;
+        }
+        return count;
+    }
+    public void removeJob( JobEditorMonitor job ) {
+        for ( Iterator<CurrentUse> iter = _usageList.iterator(); iter.hasNext(); ) {
+            CurrentUse thisUse = iter.next();
+            if ( thisUse.jobEditor == job )
+                iter.remove();
+        }
+    }
+    public void addJob( JobEditorMonitor job, int threads, int use ) {
+        CurrentUse newUse = new CurrentUse();
+        newUse.jobEditor = job;
+        newUse.threads = threads;
+        newUse.use = use;
+        System.out.print( "add job " + job.getName() + " thread: " + threads );
+        if ( use == CurrentUse.DATASOURCE )
+            System.out.println( "  for DATA SOURCE " );
+        if ( use == CurrentUse.PROCESSOR )
+            System.out.println( "  for PROCESSOR " );
+        if ( use == CurrentUse.HEADNODE )
+            System.out.println( "  for HEAD NODE " );
+    }
+    public boolean isDataSource() {
+        for ( Iterator<CurrentUse> iter = _usageList.iterator(); iter.hasNext(); ) {
+            CurrentUse thisUse = iter.next();
+            if ( thisUse.use == thisUse.DATASOURCE )
+                return true;
+        }
+        return false;
+    }
+    public boolean isProcessor() {
+        for ( Iterator<CurrentUse> iter = _usageList.iterator(); iter.hasNext(); ) {
+            CurrentUse thisUse = iter.next();
+            if ( thisUse.use == thisUse.PROCESSOR )
+                return true;
+        }
+        return false;
+    }
 }
