@@ -1200,8 +1200,6 @@ int DataStream::openrawstream(const char *device)
 #else
         cfatal << startl << "Raw socket support currently works only on Linux" << endl;
         MPI_Abort(MPI_COMM_WORLD, 1);
-
-        sdfsdf
 #endif
 
 	return 0;
