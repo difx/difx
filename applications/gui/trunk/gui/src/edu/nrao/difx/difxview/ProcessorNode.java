@@ -654,6 +654,7 @@ public class ProcessorNode extends BrowserNode {
         newUse.jobEditor = job;
         newUse.threads = threads;
         newUse.use = use;
+        _usageList.add( newUse );
         System.out.print( "add job " + job.getName() + " thread: " + threads );
         if ( use == CurrentUse.DATASOURCE )
             System.out.println( "  for DATA SOURCE " );
