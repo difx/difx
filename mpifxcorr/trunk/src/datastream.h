@@ -214,6 +214,12 @@ protected:
   void openstream(int portnumber, int tcpwindowsize);
 
  /** 
+  * Attempts to open a raw ethernet socket to read data from
+  * @param device The name of the ethernet device (e.g., eth1)
+  */
+  int openrawstream(const char *device);
+
+ /** 
   * Attempts to close a network socket
   */
   void closestream();
@@ -261,6 +267,17 @@ protected:
   */
   virtual int readnetwork(int sock, char* ptr, int bytestoread, int* nread);
 
+ /** 
+  * Reads the specified number of bytes from the specified raw socket into the provided buffer
+  * @param sock The network socket being read from
+  * @param ptr The buffer to store read data in
+  * @param bytestoread The number of bytes to read from the socket
+  * @param nread The number of bytes actually read
+  * @param packetsize Reject all packets not this size
+  * @param stripbytes Remove this many bytes from the begining of each packet before storing
+  */
+  virtual int readrawnetwork(int sock, char* ptr, int bytestoread, int* nread, int packetsize, int stripbytes);
+
  /**
   * Tests that sync has not been lost (assuming the format supports this)
   * @param configindex The current configuration index
@@ -307,6 +324,7 @@ protected:
   //local variables
   string stationname;
   int mpiid, filestartday, filestartseconds, numcores, numsent, delayincms, lastnearestindex, lastscan, lastvalidsegment, totaldelays, maxsendspersegment, waitsegment, portnumber, tcpwindowsizebytes, socketnumber, fullbuffersegments;
+  string ethernetdevice;
   int * coreids;
   int * filesread;
   int * confignumfiles;

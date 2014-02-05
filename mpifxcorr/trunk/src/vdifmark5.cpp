@@ -233,9 +233,6 @@ cinfo << startl << "lastslot=" << lastslot << " endindex=" << endindex << endl;
 				cverbose << startl << "At end of scan: shortening Mark5 read to only " << bytes << " bytes " << "(was " << origbytes << ")" << endl;
 			}
 
-			// remember that all reads of a module must be 64 bit aligned
-			bytes -= (bytes % 8);		// enforce 8 byte multiple length
-
 			// This is where the actual read from the Mark5 unit happens
 			xlrRC = difxMark5Read(xlrDevice, readpointer, readbuffer + readbufferwriteslot*readbufferslotsize, bytes, readDelayMicroseconds);
 

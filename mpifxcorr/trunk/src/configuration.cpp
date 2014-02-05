@@ -22,6 +22,7 @@
 #include <mpi.h>
 #include <string.h>
 #include <climits>
+#include <ctype.h>
 #include "mk5mode.h"
 #include "configuration.h"
 #include "mode.h"
@@ -1728,7 +1729,16 @@ void Configuration::processNetworkTable(ifstream * input)
   for(int i=0;i<datastreamtablelength;i++)
   {
     getinputline(input, &line, "PORT NUM ", i);
-    datastreamtable[i].portnumber = atoi(line.c_str());
+    if(isalpha(line[0]))
+    {
+      // sign that this is raw ethernet
+      datastreamtable[i].portnumber = 0;
+      datastreamtable[i].ethernetdevice = line;
+    }
+    else
+    {
+      datastreamtable[i].portnumber = atoi(line.c_str());
+    }
     getinputline(input, &line, "TCP WINDOW (KB) ", i);
     datastreamtable[i].tcpwindowsizekb = atoi(line.c_str());
   }

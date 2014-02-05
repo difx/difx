@@ -38,6 +38,7 @@
 #include "mark5bfile.h"
 #include "mark5bmark5.h"
 #include "vdiffile.h"
+#include "vdifnetwork.h"
 #include "vdiffake.h"
 #include "vdifmark5.h"
 #include <sys/utsname.h>
@@ -386,6 +387,8 @@ int main(int argc, char *argv[])
         stream = new VDIFDataStream(config, datastreamnum, myID, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
       } else if(config->isVDIFMark5(datastreamnum)) {
         stream = new VDIFMark5DataStream(config, datastreamnum, myID, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
+      } else if(config->isVDIFNetwork(datastreamnum)) {
+        stream = new VDIFNetworkDataStream(config, datastreamnum, myID, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
       } else if(config->isVDIFFake(datastreamnum)) {
         stream = new VDIFFakeDataStream(config, datastreamnum, myID, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
       } else if(config->isMark5BFile(datastreamnum)) {

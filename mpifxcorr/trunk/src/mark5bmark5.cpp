@@ -246,8 +246,6 @@ void Mark5BMark5DataStream::mark5threadfunction()
 				cinfo << startl << "endindex=" << endindex << " lastslot=" << lastslot << " readbufferwriteslot=" << readbufferwriteslot << endl;
 			}
 
-			bytes -= (bytes % 8);		// enforce 8 byte multiple length
-
 			// This is where the actual reading from the Mark5 device happens
 			xlrRC = difxMark5Read(xlrDevice, readpointer, readbuffer + readbufferwriteslot*readbufferslotsize, bytes, readDelayMicroseconds);
 

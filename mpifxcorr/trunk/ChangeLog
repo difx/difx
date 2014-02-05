@@ -3,6 +3,7 @@ Version 2.4
 * Post DiFX-2.3
 * Add INTERLACEDVDIF Fake mode
 * Change polId to recBandId in the PCAL files as per documentation
+* Add support for TCP, UDP and Raw Ethernet Interlaced VDIF.  ** Not yet tested **
 
 Version 2.3
 ~~~~~~~~~~~

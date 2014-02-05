@@ -35,6 +35,17 @@
 #include "config.h"
 #include "alert.h"
 
+// Raw socket support is OS dependent.  For now only Linux is supported
+#ifdef __linux__
+#include <sys/ioctl.h>
+#include <linux/if_packet.h>
+#include <linux/if.h>
+#include <linux/if_ether.h>
+#include <linux/if_arp.h>
+#include <stdlib.h>
+#include <stdio.h>
+#endif
+
 //#define DIFX_STRICTMUTEX
 
 DataStream::DataStream(const Configuration * conf, int snum, int id, int ncores, int * cids, int bufferfactor, int numsegments)
@@ -706,6 +717,7 @@ void DataStream::updateConfig(int segmentindex)
   bufferinfo[segmentindex].nsinc = int((bufferinfo[segmentindex].sampletimens*(bufferbytes/numdatasegments)*bufferinfo[segmentindex].bytespersampledenom)/(bufferinfo[segmentindex].bytespersamplenum) + 0.5);
   portnumber = config->getDPortNumber(bufferinfo[segmentindex].configindex, streamnum);
   tcpwindowsizebytes = config->getDTCPWindowSizeKB(bufferinfo[segmentindex].configindex, streamnum)*1024;
+  ethernetdevice = config->getDEthernetDevice(bufferinfo[segmentindex].configindex, streamnum);
   tcp = 1;
   if (tcpwindowsizebytes<0) {
     tcp = 0;
@@ -1139,6 +1151,62 @@ void DataStream::loopnetworkread()
   cinfo << startl << "Datastream " << mpiid << "'s networkreadthread is exiting!!! Keepreading was " << keepreading << ", framebytesremaining was " << framebytesremaining << endl;
 }
 
+int DataStream::openrawstream(const char *device)
+{
+#ifdef __linux__
+	int s, v;
+	struct ifreq ifr;
+	struct sockaddr_ll sll;
+
+        socketnumber = 0;
+
+	s = socket(PF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
+
+	if(s < 0)
+	{
+		return -1;
+	}
+
+	strncpy(ifr.ifr_name, device, IFNAMSIZ);
+	if(ioctl(s, SIOCGIFINDEX, &ifr) == -1)
+	{
+		close(s);
+
+		return -3;
+	}
+
+	if(device)
+	{
+		struct timeval tv;
+		
+		sll.sll_family = AF_PACKET;
+		sll.sll_ifindex = ifr.ifr_ifindex;
+		sll.sll_protocol = htons(ETH_P_ALL);
+
+		v = bind(s, (struct sockaddr *)&sll, sizeof(sll));
+		if(v < 0)
+		{
+			close(s);
+
+			return -4;
+		}
+
+		tv.tv_sec = 0;
+		tv.tv_usec = 100000;
+		setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+	}
+
+        socketnumber = s;
+#else
+        cfatal << startl << "Raw socket support currently works only on Linux" << endl;
+        MPI_Abort(MPI_COMM_WORLD, 1);
+
+        sdfsdf
+#endif
+
+	return 0;
+}
+
 void DataStream::openstream(int portnumber, int tcpwindowsizebytes)
 {
   //okay - this has no counterpart in the disk case.  Just gets the socket open
@@ -1513,6 +1581,46 @@ int DataStream::readnetwork(int sock, char* ptr, int bytestoread, int* nread)
     }
   }
   return(1);
+}
+
+int DataStream::readrawnetwork(int sock, char* ptr, int bytestoread, int* nread, int packetsize, int stripbytes)
+{
+  const int MaxPacketSize = 20000;
+  int length;
+  int goodbytes = packetsize - stripbytes;
+  char *ptr0 = ptr;
+  char *end = ptr + bytestoread - goodbytes;
+  char workbuffer[MaxPacketSize];
+
+  if(packetsize > MaxPacketSize)
+  {
+    cfatal << startl << "Error: readrawnetwork wants to read packets of size " << packetsize << " where MaxPacketSize=" << MaxPacketSize << endl;
+    MPI_Abort(MPI_COMM_WORLD, 1);
+  }
+
+  *nread = 0;
+
+  while(ptr <= end)
+  {
+    length = recvfrom(sock, workbuffer, MaxPacketSize, 0, 0, 0);
+    if(length <= 0)
+    {
+      // timeout on read?
+      break;
+    }
+    else if(length == packetsize)
+    {
+      memcpy(ptr, workbuffer + stripbytes, goodbytes);
+      ptr += goodbytes;
+    }
+  }
+
+  if(nread)
+  {
+    *nread = ptr - ptr0;
+  }
+
+  return 1;
 }
 
 int DataStream::peekfile(int configindex, int fileindex)

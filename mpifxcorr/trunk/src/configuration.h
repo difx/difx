@@ -193,6 +193,8 @@ public:
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].portnumber; }
   inline int getDTCPWindowSizeKB(int configindex, int configdatastreamindex) const
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].tcpwindowsizekb; }
+  inline const string &getDEthernetDevice(int configindex, int configdatastreamindex) const
+    { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].ethernetdevice; }
   inline int getDNumRecordedBands(int configindex, int configdatastreamindex) const
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].numrecordedbands; }
   inline int getDNumZoomBands(int configindex, int configdatastreamindex) const
@@ -761,6 +763,7 @@ private:
     string * datafilenames;
     int portnumber;
     int tcpwindowsizekb;
+    string ethernetdevice;  // for raw ethernet connections; empty string for TCP / regular UDP
     int maxnsslip;
   } datastreamdata;
 
