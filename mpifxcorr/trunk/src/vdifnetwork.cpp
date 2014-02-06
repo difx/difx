@@ -34,7 +34,7 @@
 
 
 VDIFNetworkDataStream::VDIFNetworkDataStream(const Configuration * conf, int snum, int id, int ncores, int * cids, int bufferfactor, int numsegments) :
-		VDIFDataStream(conf, snum, id, ncores, cids, bufferfactor, numsegments)
+	VDIFDataStream(conf, snum, id, ncores, cids, bufferfactor, numsegments)
 {
 	int perr;
 
@@ -45,12 +45,14 @@ VDIFNetworkDataStream::VDIFNetworkDataStream(const Configuration * conf, int snu
 	jobEndMJD = conf->getStartMJD() + (conf->getStartSeconds() + conf->getExecuteSeconds() + 1)/86400.0;
 
 	readbufferslots = 8;
-	readbufferslotsize = (bufferfactor/numsegments)*conf->getMaxDataBytes(streamnum)*21/10;
+	readbufferslotsize = (bufferfactor/numsegments)*conf->getMaxDataBytes(streamnum)*21LL/10LL;
 	readbufferslotsize -= (readbufferslotsize % 8); // make it a multiple of 8 bytes
 	readbuffersize = readbufferslots * readbufferslotsize;
 	// Note: the read buffer is allocated in vdiffile.cpp by VDIFDataStream::initialse()
 	// the above values override defaults for file-based VDIF
 
+cinfo << startl << "VDIFNetworkDataStream::VDIFNetworkDataStream: Set readbuffersize to " << readbuffersize << endl;
+cinfo << startl << "mdb = " << conf->getMaxDataBytes(streamnum) << "  rbslots=" << readbufferslots << "  readbufferslotsize=" << readbufferslotsize << endl;
 
 	// set up network reader thread
 	networkthreadstop = false;
@@ -108,8 +110,10 @@ void VDIFNetworkDataStream::networkthreadfunction()
 	int packetsize;				// for raw packets; reject all packets not this size
 	int stripbytes;				// for raw packets; strip this many bytes from beginning of RX packets
 
-	stripbytes = tcpwindowsizebytes;
-	packetsize = inputframebytes + stripbytes;
+	stripbytes = tcpwindowsizebytes/1024;
+	packetsize = config->getFrameBytes(0, streamnum); + stripbytes;
+
+cinfo << startl << "stripbytes=" << stripbytes << " packetsize=" << packetsize << endl;
 
 	for(;;)
 	{
@@ -497,11 +501,19 @@ void VDIFNetworkDataStream::loopnetworkread()
 
 	if(ethernetdevice.empty())
 	{
-		openstream(portnumber, tcpwindowsizebytes);
+		openstream(portnumber, tcpwindowsizebytes/1024);
 	}
 	else
 	{
-		openrawstream(ethernetdevice.c_str());
+		int v;
+		
+		v = openrawstream(ethernetdevice.c_str());
+		if(v < 0)
+		{
+			cfatal << startl << "Cannot open raw socket.  Perhaps root permission is required." << endl;
+			
+			MPI_Abort(MPI_COMM_WORLD, 1);
+		}
 	}
 
 	initialiseFile(bufferinfo[0].configindex, 0);

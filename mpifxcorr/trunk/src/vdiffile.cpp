@@ -76,7 +76,7 @@ VDIFDataStream::VDIFDataStream(const Configuration * conf, int snum, int id, int
 	// But the amount of excess should be large enough to encompass all reasonable amounts of interloper data
 	// Here we choose 1/10 extra as a compromise.  Might be worth a revisit in the future.
 
-	readbuffersize = (bufferfactor/numsegments)*conf->getMaxDataBytes(streamnum)*11/10;
+	readbuffersize = (bufferfactor/numsegments)*conf->getMaxDataBytes(streamnum)*11LL/10LL;
 	readbuffersize -= (readbuffersize % 8); // make it a multiple of 8 bytes
 	readbufferleftover = 0;
 	readbuffer = 0;	// to be allocated via initialize();

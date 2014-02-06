@@ -63,6 +63,14 @@ DataStream::DataStream(const Configuration * conf, int snum, int id, int ncores,
   datamuxer = 0;
   isnewfile = false;
   isfake = false;
+
+  portnumber = config->getDPortNumber(0, streamnum);
+  tcpwindowsizebytes = config->getDTCPWindowSizeKB(0, streamnum)*1024;
+  ethernetdevice = config->getDEthernetDevice(0, streamnum);
+  tcp = 1;
+  if (tcpwindowsizebytes<0) {
+    tcp = 0;
+  }
 }
 
 
@@ -715,6 +723,10 @@ void DataStream::updateConfig(int segmentindex)
     bufferinfo[segmentindex].bytesbetweenintegerns += bufferinfo[segmentindex].bytespersamplenum;
   } while (!(fabs(nsaccumulate - int(nsaccumulate)) < Mode::TINY));
   bufferinfo[segmentindex].nsinc = int((bufferinfo[segmentindex].sampletimens*(bufferbytes/numdatasegments)*bufferinfo[segmentindex].bytespersampledenom)/(bufferinfo[segmentindex].bytespersamplenum) + 0.5);
+
+  /* in theory these parameters below can change but in practice that would lead to major complications.  In any case
+   * they are initialized to values of the first configuration index here and are updated each time updateConfig is called
+   */
   portnumber = config->getDPortNumber(bufferinfo[segmentindex].configindex, streamnum);
   tcpwindowsizebytes = config->getDTCPWindowSizeKB(bufferinfo[segmentindex].configindex, streamnum)*1024;
   ethernetdevice = config->getDEthernetDevice(bufferinfo[segmentindex].configindex, streamnum);
@@ -1160,17 +1172,22 @@ int DataStream::openrawstream(const char *device)
 
         socketnumber = 0;
 
+        // Note: this operation requires root permission or some equivalent on most systems
 	s = socket(PF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
 
 	if(s < 0)
 	{
-		return -1;
+                cerror << startl << "DataStream::openrawstream: Cannot create socket" << endl;
+
+                return -1;
 	}
 
 	strncpy(ifr.ifr_name, device, IFNAMSIZ);
 	if(ioctl(s, SIOCGIFINDEX, &ifr) == -1)
 	{
 		close(s);
+
+                cerror << startl << "DataStream::openrawstream: ioctl SIOCGIFINDEX failed on " << device << endl;
 
 		return -3;
 	}
@@ -1187,6 +1204,8 @@ int DataStream::openrawstream(const char *device)
 		if(v < 0)
 		{
 			close(s);
+
+                        cerror << startl << "DataStream::openrawstream: bind failed on " << device << endl;
 
 			return -4;
 		}
