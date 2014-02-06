@@ -206,7 +206,7 @@ int readLF1file(string project, string stream, int npkt, bool hrft) {
 
 	  if (hrft) {
 	    uint32_t *q, *r;
-	    for (int i=0; i<512; i++) {
+	    for (int i=0; i<5; i++) {
 	      if (i!=0) printf("%49s", " ");
 	      q = (uint32_t*)&p[i*8192];
 	      r = q+1;
