@@ -1,5 +1,6 @@
 3.4.0
 * Fix X/Y polarization issue
+* Change internal representation of networkPort from integer to string to accomodate ethernet device names
 
 3.3.0
 * Allow ".input" portion of input file to be optional

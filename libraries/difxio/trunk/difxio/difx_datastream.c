@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2013 by Walter Brisken                             *
+ *   Copyright (C) 2008-2014 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -421,7 +421,7 @@ void fprintDifxDatastream(FILE *fp, const DifxDatastream *dd)
 	}
 	if(dd->dataSource == DataSourceNetwork)
 	{
-		fprintf(fp, "      network port = %d\n", dd->networkPort);
+		fprintf(fp, "      network port = %s\n", dd->networkPort);
 		fprintf(fp, "      window size = %d\n", dd->windowSize);
 	}
 	fprintf(fp, "    format = %s\n", dd->dataFormat);
@@ -628,7 +628,7 @@ void copyDifxDatastream(DifxDatastream *dest, const DifxDatastream *src, const i
 			dest->file[f] = strdup(src->file[f]);
 		}
 	}
-	dest->networkPort = src->networkPort;
+	snprintf(dest->networkPort, DIFXIO_ETH_DEV_SIZE, "%s", src->networkPort);
 	dest->windowSize  = src->windowSize;
 }
 
@@ -639,7 +639,7 @@ void moveDifxDatastream(DifxDatastream *dest, DifxDatastream *src)
 	dest->tSys = src->tSys;
 	snprintf(dest->dataFormat, DIFXIO_FORMAT_LENGTH, "%s", src->dataFormat);
 	dest->dataSampling = src->dataSampling;
-	dest->networkPort = src->networkPort;
+	snprintf(dest->networkPort, DIFXIO_ETH_DEV_SIZE, "%s", src->networkPort);
 	dest->windowSize = src->windowSize;
 	dest->quantBits = src->quantBits;
 	dest->dataFrameSize = src->dataFrameSize;

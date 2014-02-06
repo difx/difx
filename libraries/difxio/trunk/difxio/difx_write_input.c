@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2010 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2008-2014 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -171,7 +171,14 @@ static int writeNetworkTable(FILE *out, const DifxInput *D)
         for(i = 0; i < D->nDatastream; i++)
         {
                 ds = D->datastream + i;
-                writeDifxLineInt1(out, "PORT NUM %d", i, ds->networkPort);
+		if(ds->networkPort[0])
+		{
+                	writeDifxLine1(out, "PORT NUM %d", i, ds->networkPort);
+		}
+		else
+		{
+			writeDifxLineInt1(out, "PORT NUM %d", i, 0);
+		}
                 writeDifxLineInt1(out, "TCP WINDOW (KB) %d", i, ds->windowSize);
         }
 

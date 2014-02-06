@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2013 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2007-2014 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -1683,7 +1683,7 @@ static DifxInput *parseDifxInputNetworkTable(DifxInput *D,
                 r = DifxParametersfind1(ip, r, "PORT NUM %d", i);
                 if(r > 0)
                 {
-                        ds->networkPort = atoi(DifxParametersvalue(ip, r));
+                        snprintf(ds->networkPort, DIFXIO_ETH_DEV_SIZE, "%s", DifxParametersvalue(ip, r));
                 }
 
                 r = DifxParametersfind1(ip, r, "TCP WINDOW (KB) %d", i);

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2013 by Walter Brisken                             *
+ *   Copyright (C) 2008-2014 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -90,7 +90,7 @@ int writeDifxIM(const DifxInput *D)
 
 		writeDifxLine1(out, "SCAN %d POINTING SRC", s, D->source[scan->pointingCentreSrc].name);
 		writeDifxLineInt1(out, "SCAN %d NUM PHS CTRS", s, scan->nPhaseCentres);
-		for(i=0;i<scan->nPhaseCentres;i++)
+		for(i = 0; i < scan->nPhaseCentres; ++i)
 		{
 			writeDifxLine2(out, "SCAN %d PHS CTR %d SRC", s, i, D->source[scan->phsCentreSrcs[i]].name);
 		}
@@ -98,11 +98,11 @@ int writeDifxIM(const DifxInput *D)
 		if(!scan->im)
 		{
 			writeDifxLineInt1(out, "SCAN %d NUM POLY", s, 0);
-			fprintf("Warning: Scan %d being written with no delay model information\n", s);
+			fprintf(stderr, "Warning: Scan %d being written with no delay model information\n", s);
 			continue;
 		}
 		
-		for(refAnt = 0; refAnt < scan->nAntenna; refAnt++)
+		for(refAnt = 0; refAnt < scan->nAntenna; ++refAnt)
 		{
 			if(scan->im[refAnt])
 			{
@@ -117,7 +117,7 @@ int writeDifxIM(const DifxInput *D)
 
 		writeDifxLineInt1(out, "SCAN %d NUM POLY", s, scan->nPoly);
 		
-		for(p = 0; p < scan->nPoly; p++)
+		for(p = 0; p < scan->nPoly; ++p)
 		{
 			writeDifxLineInt2(out, "SCAN %d POLY %d MJD", s, p, scan->im[refAnt][0][p].mjd);
 			writeDifxLineInt2(out, "SCAN %d POLY %d SEC", s, p, scan->im[refAnt][0][p].sec);

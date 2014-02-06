@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2013 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2007-2014 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -52,6 +52,7 @@
 #define DIFXIO_TAPER_LENGTH		8
 #define DIFXIO_SHELF_LENGTH		8
 #define DIFXIO_RX_NAME_LENGTH		8
+#define DIFXIO_ETH_DEV_SIZE		12
 
 #define DIFXIO_POL_R			0x01
 #define DIFXIO_POL_L			0x02
@@ -282,7 +283,7 @@ typedef struct
 	enum SamplingType dataSampling; /* REAL or COMPLEX */
 	int nFile;              /* number of files */
         char **file;            /* list of files to correlate (if not VSN) */
-	int networkPort;        /* eVLBI port for this datastream */
+	char networkPort[DIFXIO_ETH_DEV_SIZE]; /* eVLBI port for this datastream */
 	int windowSize;         /* eVLBI TCP window size */
 	int quantBits;		/* quantization bits */
 	int dataFrameSize;	/* (bytes) size of formatted data frame */
