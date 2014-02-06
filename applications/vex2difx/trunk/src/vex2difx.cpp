@@ -722,7 +722,7 @@ static DifxDatastream *makeDifxDatastreams(const VexJob& J, const VexData *V, co
 			if(ant->dataSource == DataSourceNetwork)
 			{
 				dd->windowSize = antennaSetup->windowSize;
-				dd->networkPort = antennaSetup->networkPort;
+				snprintf(dd->networkPort, DIFXIO_ETH_DEV_SIZE, "%s", antennaSetup->networkPort.c_str());
 			}
 
 			if(antennaSetup->dataSampling < NumSamplingTypes)
@@ -1205,7 +1205,7 @@ static void populateFreqTable(DifxInput *D, const vector<freq>& freqs, const vec
 		if(chanBW > 0.51 && firstChanBWWarning)
 		{
 			firstChanBWWarning = 0;
-			cout << "Warning: channel bandwidth is " << chanBW << " MHZ, which is larger than the minimum recommended 0.5 MHz.  Consider decreasing the output spectral resolution." << endl;
+			cout << "Warning: channel bandwidth is " << chanBW << " MHz, which is larger than the minimum recommended 0.5 MHz.  Consider decreasing the output spectral resolution." << endl;
 		}
 
 		// This is to correct for the fact that mpifxcorr does not know about oversampling

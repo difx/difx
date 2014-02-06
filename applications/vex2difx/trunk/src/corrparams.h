@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2013 by Walter Brisken                             *
+ *   Copyright (C) 2009-2014 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -152,7 +152,7 @@ public:
 	enum DataSource dataSource;
 	enum SamplingType dataSampling;
 	std::vector<VexBasebandFile> basebandFiles;	// files to correlate
-	int networkPort;	// For eVLBI : port for this antenna
+	std::string networkPort;// For eVLBI : port for this antenna.  A non-number indicates raw mode attached to an ethernet interface
 	int windowSize;		// For eVLBI : TCP window size
 	int phaseCalIntervalMHz;// 0 if no phase cal extraction, positive gives interval between tones to extract
 	enum ToneSelection toneSelection;	// Which tones to propagate to FITS

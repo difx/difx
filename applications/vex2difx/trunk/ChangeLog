@@ -2,6 +2,7 @@ Version 2.4.0
 ~~~~~~~~~~~~~
 * Post DiFX-2.3
 * Support axis offset argument for ANTENNAs
+* Adapt to string-based networkPort in support of raw sockets
 
 Version 2.3.0
 ~~~~~~~~~~~~~
