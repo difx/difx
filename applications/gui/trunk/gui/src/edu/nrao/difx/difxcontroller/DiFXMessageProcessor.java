@@ -25,6 +25,8 @@ import java.awt.event.ComponentEvent;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
+import java.util.HashMap;
+
 import mil.navy.usno.widgetlib.ActivityMonitorLight;
 import mil.navy.usno.widgetlib.SimpleTextEditor;
 import mil.navy.usno.widgetlib.NumberBox;
@@ -41,6 +43,7 @@ import java.util.Iterator;
 import javax.swing.JScrollPane;
 import javax.swing.JScrollBar;
 import javax.swing.JTable;
+import javax.swing.JMenu;
 import javax.swing.JPopupMenu;
 import javax.swing.JButton;
 import javax.swing.JCheckBoxMenuItem;
@@ -342,137 +345,158 @@ public class DiFXMessageProcessor extends Thread
             _messageLimitLabel = new JLabel( "Message Buffer: " );
             _messageLimitLabel.setHorizontalAlignment( JLabel.RIGHT );
             _this.add( _messageLimitLabel );
-            _showButton = new JButton( "Show Type..." );
-            _showButton.setToolTipText( "Show Selected DiFX Message Types." );
+            _showButton = new JButton( "Show..." );
+            _showButton.setToolTipText( "Select messages to show." );
             _this.add( _showButton );
+            _showMenu = new JPopupMenu( "Show Messages..." );
             _showButton.addActionListener( new ActionListener() {
                 public void actionPerformed( ActionEvent e ) {
+                    buildSourceMenu();
                     _showMenu.show( _showButton, 0, 25 );
                 }
             });
             this.add( _showButton );
-            _showMenu = new JPopupMenu( "Show Message Types:" );
-            _allItem = new JCheckBoxMenuItem( "All Messages" );
-            _allItem.setSelected( true );
-            _allItem.addActionListener( new ActionListener() {
+            _showTypeMenu = new JMenu( "Show Message Types:" );
+            _showMenu.add( _showTypeMenu );
+            _showSourceMenu = new JMenu( "Show Messages Sources:" );
+            _showMenu.add( _showSourceMenu );
+            _allTypesItem = new JCheckBoxMenuItem( "All Message Types" );
+            _allTypesItem.setSelected( true );
+            _allTypesItem.addActionListener( new ActionListener() {
                 public void actionPerformed( ActionEvent e ) {
                     rebuildTable();
                 }
             });
-            _showMenu.add( _allItem );
-            _showMenu.add( new JSeparator() );
+            _showTypeMenu.add( _allTypesItem );
+            _showTypeMenu.add( new JSeparator() );
             _alertItem = new JCheckBoxMenuItem( "DifxAlertMessage" );
             _alertItem.addActionListener( new ActionListener() {
                 public void actionPerformed( ActionEvent e ) {
+                    _allTypesItem.setSelected( false );
                     rebuildTable();
                 }
             });
-            _showMenu.add( _alertItem );
+            _showTypeMenu.add( _alertItem );
             _commandItem = new JCheckBoxMenuItem( "DifxCommandMessage" );
             _commandItem.addActionListener( new ActionListener() {
                 public void actionPerformed( ActionEvent e ) {
+                    _allTypesItem.setSelected( false );
                     rebuildTable();
                 }
             });
-            _showMenu.add( _commandItem );
+            _showTypeMenu.add( _commandItem );
             _fileOperationItem = new JCheckBoxMenuItem( "DifxFileOperationMessage" );
             _fileOperationItem.addActionListener( new ActionListener() {
                 public void actionPerformed( ActionEvent e ) {
+                    _allTypesItem.setSelected( false );
                     rebuildTable();
                 }
             });
-            _showMenu.add( _fileOperationItem );
+            _showTypeMenu.add( _fileOperationItem );
             _fileTransferItem = new JCheckBoxMenuItem( "DifxFileTransferMessage" );
             _fileTransferItem.addActionListener( new ActionListener() {
                 public void actionPerformed( ActionEvent e ) {
+                    _allTypesItem.setSelected( false );
                     rebuildTable();
                 }
             });
-            _showMenu.add( _fileTransferItem );
+            _showTypeMenu.add( _fileTransferItem );
             _getDirectoryItem = new JCheckBoxMenuItem( "DifxGetDirectoryMessage" );
             _getDirectoryItem.addActionListener( new ActionListener() {
                 public void actionPerformed( ActionEvent e ) {
+                    _allTypesItem.setSelected( false );
                     rebuildTable();
                 }
             });
-            _showMenu.add( _getDirectoryItem );
+            _showTypeMenu.add( _getDirectoryItem );
             _infoItem = new JCheckBoxMenuItem( "DifxInfoMessage" );
             _infoItem.addActionListener( new ActionListener() {
                 public void actionPerformed( ActionEvent e ) {
+                    _allTypesItem.setSelected( false );
                     rebuildTable();
                 }
             });
-            _showMenu.add( _infoItem );
+            _showTypeMenu.add( _infoItem );
             _loadItem = new JCheckBoxMenuItem( "DifxLoadMessage" );
             _loadItem.addActionListener( new ActionListener() {
                 public void actionPerformed( ActionEvent e ) {
+                    _allTypesItem.setSelected( false );
                     rebuildTable();
                 }
             });
-            _showMenu.add( _loadItem );
+            _showTypeMenu.add( _loadItem );
             _machinesDefinitionItem = new JCheckBoxMenuItem( "DifxMachinesDefinitionMessage" );
             _machinesDefinitionItem.addActionListener( new ActionListener() {
                 public void actionPerformed( ActionEvent e ) {
+                    _allTypesItem.setSelected( false );
                     rebuildTable();
                 }
             });
-            _showMenu.add( _machinesDefinitionItem );
+            _showTypeMenu.add( _machinesDefinitionItem );
             _mk5ControlItem = new JCheckBoxMenuItem( "DifxMk5ControlMessage" );
             _mk5ControlItem.addActionListener( new ActionListener() {
                 public void actionPerformed( ActionEvent e ) {
+                    _allTypesItem.setSelected( false );
                     rebuildTable();
                 }
             });
-            _showMenu.add( _mk5ControlItem );
+            _showTypeMenu.add( _mk5ControlItem );
             _smartItem = new JCheckBoxMenuItem( "DifxSmartMessage" );
             _smartItem.addActionListener( new ActionListener() {
                 public void actionPerformed( ActionEvent e ) {
+                    _allTypesItem.setSelected( false );
                     rebuildTable();
                 }
             });
-            _showMenu.add( _smartItem );
+            _showTypeMenu.add( _smartItem );
             _statusItem = new JCheckBoxMenuItem( "DifxStatusMessage" );
             _statusItem.addActionListener( new ActionListener() {
                 public void actionPerformed( ActionEvent e ) {
+                    _allTypesItem.setSelected( false );
                     rebuildTable();
                 }
             });
-            _showMenu.add( _statusItem );
+            _showTypeMenu.add( _statusItem );
             _stopItem = new JCheckBoxMenuItem( "DifxStopMessage" );
             _stopItem.addActionListener( new ActionListener() {
                 public void actionPerformed( ActionEvent e ) {
+                    _allTypesItem.setSelected( false );
                     rebuildTable();
                 }
             });
-            _showMenu.add( _stopItem );
+            _showTypeMenu.add( _stopItem );
             _vex2DifxRunItem = new JCheckBoxMenuItem( "DifxVex2DifxRunMessage" );
             _vex2DifxRunItem.addActionListener( new ActionListener() {
                 public void actionPerformed( ActionEvent e ) {
+                    _allTypesItem.setSelected( false );
                     rebuildTable();
                 }
             });
-            _showMenu.add( _vex2DifxRunItem );
+            _showTypeMenu.add( _vex2DifxRunItem );
             _weightItem = new JCheckBoxMenuItem( "DifxWeightMessage" );
             _weightItem.addActionListener( new ActionListener() {
                 public void actionPerformed( ActionEvent e ) {
+                    _allTypesItem.setSelected( false );
                     rebuildTable();
                 }
             });
-            _showMenu.add( _weightItem );
+            _showTypeMenu.add( _weightItem );
             _mark5StatusItem = new JCheckBoxMenuItem( "Mark5StatusMessage" );
             _mark5StatusItem.addActionListener( new ActionListener() {
                 public void actionPerformed( ActionEvent e ) {
+                    _allTypesItem.setSelected( false );
                     rebuildTable();
                 }
             });
-            _showMenu.add( _mark5StatusItem );
+            _showTypeMenu.add( _mark5StatusItem );
             _unknownItem = new JCheckBoxMenuItem( "Unknown Message Type" );
             _unknownItem.addActionListener( new ActionListener() {
                 public void actionPerformed( ActionEvent e ) {
+                    _allTypesItem.setSelected( false );
                     rebuildTable();
                 }
             });
-            _showMenu.add( _unknownItem );
+            _showTypeMenu.add( _unknownItem );
 
             _mainSplitPane = new JSplitPane();
             _mainSplitPane.setDividerSize( 3 );
@@ -832,6 +856,52 @@ public class DiFXMessageProcessor extends Thread
 
         }
         
+        public class Selection {
+            Selection( boolean isSet ) { selected = isSet; }
+            boolean selected;
+        };
+        
+        protected HashMap<String,Selection> _sourceMap;
+        
+        protected boolean _alreadyBuiltSourceMenu;
+        
+        /*
+         * Dynamically build the source selections before making the popup menu visible.
+         */
+        public void buildSourceMenu() {
+            _showSourceMenu.removeAll();
+            _allSourceItem = new JCheckBoxMenuItem( "All Message Sources" );
+            if ( !_alreadyBuiltSourceMenu ) {
+                _allSourceItem.setSelected( true );
+                _alreadyBuiltSourceMenu = true;
+            }
+            _allSourceItem.addActionListener( new ActionListener() {
+                public void actionPerformed( ActionEvent e ) {
+                    rebuildTable();
+                }
+            });
+            _showSourceMenu.add( _allSourceItem );
+            _showSourceMenu.add( new JSeparator() );
+            for ( Iterator<String> iter = _sourceMap.keySet().iterator(); iter.hasNext(); ) {
+                final String source = iter.next();
+                final JCheckBoxMenuItem newItem = new JCheckBoxMenuItem( source );
+                if ( _sourceMap.get( source ).selected )
+                    newItem.setSelected( true );
+                _showSourceMenu.add( newItem );
+                newItem.addActionListener( new ActionListener() {
+                    public void actionPerformed( ActionEvent e ) {
+                        if ( newItem.isSelected() ) {
+                            _sourceMap.get( source ).selected = true;
+                            _allSourceItem.setSelected( false );
+                        }
+                        else
+                            _sourceMap.get( source ).selected = false;
+                        rebuildTable();
+                    }
+                });
+            }
+        }
+    
         public void newSize() {
             if ( _allObjectsBuilt ) {
                 int w = this.getWidth();
@@ -1003,13 +1073,13 @@ public class DiFXMessageProcessor extends Thread
             boolean found = false;
             Message theMessage = null;
             synchronized ( _messages ) {
-            for ( Iterator<Message> iter = _messages.iterator(); iter.hasNext() && !found; ) {
-                Message msg = iter.next();
-                if ( msg.tableRow == i ) {
-                    found = true;
-                    theMessage = msg;
+                for ( Iterator<Message> iter = _messages.iterator(); iter.hasNext() && !found; ) {
+                    Message msg = iter.next();
+                    if ( msg.tableRow == i ) {
+                        found = true;
+                        theMessage = msg;
+                    }
                 }
-            }
             }
             if ( theMessage != null ) {
                 //  Put the message text in the editor window.
@@ -1260,6 +1330,11 @@ public class DiFXMessageProcessor extends Thread
          * Absorb a new message.
          */
         void newMessage( String type, String from, ByteArrayInputStream is, DifxMessage difxMsg ) {
+            //  Add the "from" string to the source map, if it is new.
+            if ( _sourceMap == null )
+                _sourceMap = new HashMap<String,Selection>();
+            if ( !_sourceMap.containsKey( from ) )
+                _sourceMap.put( from, new Selection( false ) );
             _activity.data();
             Message msg = new Message();
             msg.type = type;
@@ -1322,85 +1397,97 @@ public class DiFXMessageProcessor extends Thread
                 _messageTable.removeRow( 0 );
             //  Figure out which messages we want to display.
             synchronized ( _messages ) {
-            for ( Iterator<Message> iter = _messages.iterator(); iter.hasNext(); ) {
-                Message msg = iter.next();
-                msg.tableRow = _messageTable.getRowCount();
-                boolean showMessage = false;
-                if ( _allItem.isSelected() )
-                    showMessage = true;
-                else {
-                    if ( msg.type.contentEquals( "DifxAlertMessage" ) ) {
-                        if ( _alertItem.isSelected() )
-                            showMessage = true;
+                for ( Iterator<Message> iter = _messages.iterator(); iter.hasNext(); ) {
+                    Message msg = iter.next();
+                    boolean typeOkay = false;
+                    if ( _allTypesItem.isSelected() )
+                        typeOkay = true;
+                    else {
+                        if ( msg.type.contentEquals( "DifxAlertMessage" ) ) {
+                            if ( _alertItem.isSelected() )
+                                typeOkay = true;
+                        }
+                        else if ( msg.type.contentEquals( "DifxCommandMessage" ) ) {
+                            if ( _commandItem.isSelected() )
+                                typeOkay = true;
+                        }
+                        else if ( msg.type.contentEquals( "DifxFileOperationMessage" ) ) {
+                            if ( _fileOperationItem.isSelected() )
+                                typeOkay = true;
+                        }
+                        else if ( msg.type.contentEquals( "DifxFileTransferMessage" ) ) {
+                            if ( _fileTransferItem.isSelected() )
+                                typeOkay = true;
+                        }
+                        else if ( msg.type.contentEquals( "DifxGetDirectoryMessage" ) ) {
+                            if ( _getDirectoryItem.isSelected() )
+                                typeOkay = true;
+                        }
+                        else if ( msg.type.contentEquals( "DifxInfoMessage" ) ) {
+                            if ( _infoItem.isSelected() )
+                                typeOkay = true;
+                        }
+                        else if ( msg.type.contentEquals( "DifxLoadMessage" ) ) {
+                            if ( _loadItem.isSelected() )
+                                typeOkay = true;
+                        }
+                        else if ( msg.type.contentEquals( "DifxMachinesDefinitionMessage" ) ) {
+                            if ( _machinesDefinitionItem.isSelected() )
+                                typeOkay = true;
+                        }
+                        else if ( msg.type.contentEquals( "DifxMk5ControlMessage" ) ) {
+                            if ( _mk5ControlItem.isSelected() )
+                                typeOkay = true;
+                        }
+                        else if ( msg.type.contentEquals( "DifxSmartMessage" ) ) {
+                            if ( _smartItem.isSelected() )
+                                typeOkay = true;
+                        }
+                        else if ( msg.type.contentEquals( "DifxStatusMessage" ) ) {
+                            if ( _statusItem.isSelected() )
+                                typeOkay = true;
+                        }
+                        else if ( msg.type.contentEquals( "DifxStopMessage" ) ) {
+                            if ( _stopItem.isSelected() )
+                                typeOkay = true;
+                        }
+                        else if ( msg.type.contentEquals( "DifxVex2DifxRunMessage" ) ) {
+                            if ( _vex2DifxRunItem.isSelected() )
+                                typeOkay = true;
+                        }
+                        else if ( msg.type.contentEquals( "DifxWeightMessage" ) ) {
+                            if ( _weightItem.isSelected() )
+                                typeOkay = true;
+                        }
+                        else if ( msg.type.contentEquals( "Mark5StatusMessage" ) ) {
+                            if ( _mark5StatusItem.isSelected() )
+                                typeOkay = true;
+                        }
+                        else if ( _unknownItem.isSelected() )
+                                typeOkay = true;
                     }
-                    else if ( msg.type.contentEquals( "DifxCommandMessage" ) ) {
-                        if ( _commandItem.isSelected() )
-                            showMessage = true;
+                    boolean fromOkay = false;
+                    if ( _allSourceItem == null || _allSourceItem.isSelected() )
+                        fromOkay = true;
+                    else {
+                        for ( Iterator<String> iter2 = _sourceMap.keySet().iterator(); iter2.hasNext(); ) {
+                            String source = iter2.next();
+                            if ( msg.from.contentEquals( source ) && _sourceMap.get( source ).selected )
+                                fromOkay = true;
+                        }
                     }
-                    else if ( msg.type.contentEquals( "DifxFileOperationMessage" ) ) {
-                        if ( _fileOperationItem.isSelected() )
-                            showMessage = true;
+                    if ( typeOkay && fromOkay ) {
+                        msg.tableRow = _messageTable.getRowCount();
+                        _messageTable.insertRow( _messageTable.getRowCount(),
+                            new Object[] { 
+                                ( msg.date + " " + msg.time ),
+                                ( msg.type ),
+                                ( msg.from )
+                            } );
                     }
-                    else if ( msg.type.contentEquals( "DifxFileTransferMessage" ) ) {
-                        if ( _fileTransferItem.isSelected() )
-                            showMessage = true;
-                    }
-                    else if ( msg.type.contentEquals( "DifxGetDirectoryMessage" ) ) {
-                        if ( _getDirectoryItem.isSelected() )
-                            showMessage = true;
-                    }
-                    else if ( msg.type.contentEquals( "DifxInfoMessage" ) ) {
-                        if ( _infoItem.isSelected() )
-                            showMessage = true;
-                    }
-                    else if ( msg.type.contentEquals( "DifxLoadMessage" ) ) {
-                        if ( _loadItem.isSelected() )
-                            showMessage = true;
-                    }
-                    else if ( msg.type.contentEquals( "DifxMachinesDefinitionMessage" ) ) {
-                        if ( _machinesDefinitionItem.isSelected() )
-                            showMessage = true;
-                    }
-                    else if ( msg.type.contentEquals( "DifxMk5ControlMessage" ) ) {
-                        if ( _mk5ControlItem.isSelected() )
-                            showMessage = true;
-                    }
-                    else if ( msg.type.contentEquals( "DifxSmartMessage" ) ) {
-                        if ( _smartItem.isSelected() )
-                            showMessage = true;
-                    }
-                    else if ( msg.type.contentEquals( "DifxStatusMessage" ) ) {
-                        if ( _statusItem.isSelected() )
-                            showMessage = true;
-                    }
-                    else if ( msg.type.contentEquals( "DifxStopMessage" ) ) {
-                        if ( _stopItem.isSelected() )
-                            showMessage = true;
-                    }
-                    else if ( msg.type.contentEquals( "DifxVex2DifxRunMessage" ) ) {
-                        if ( _vex2DifxRunItem.isSelected() )
-                            showMessage = true;
-                    }
-                    else if ( msg.type.contentEquals( "DifxWeightMessage" ) ) {
-                        if ( _weightItem.isSelected() )
-                            showMessage = true;
-                    }
-                    else if ( msg.type.contentEquals( "Mark5StatusMessage" ) ) {
-                        if ( _mark5StatusItem.isSelected() )
-                            showMessage = true;
-                    }
-                    else if ( _unknownItem.isSelected() )
-                            showMessage = true;
+                    else
+                        msg.tableRow = -2;  //  Just to show its not in the table
                 }
-                if ( showMessage ) {
-                    _messageTable.insertRow( _messageTable.getRowCount(),
-                        new Object[] { 
-                            ( msg.date + " " + msg.time ),
-                            ( msg.type ),
-                            ( msg.from )
-                        } );
-                }
-            }
             }
             //  Reset the selection (if there was one).
             final JScrollBar vbar = _tableScrollPane.getVerticalScrollBar();
@@ -1424,7 +1511,10 @@ public class DiFXMessageProcessor extends Thread
                         EventQueue.invokeLater( new Runnable () {
                             public void run () {
                                 vbar.setValue( scrollSetting );
-                                tableSelect( sRow );
+                                if ( sRow < dtable.getRowCount() )
+                                    tableSelect( sRow );
+                                else
+                                    tableSelect( dtable.getRowCount() - 1 );
                             }
                         });
                     }
@@ -1459,7 +1549,10 @@ public class DiFXMessageProcessor extends Thread
         protected JLabel _messageLimitLabel;
         protected JButton _showButton;
         protected JPopupMenu _showMenu;
-        protected JCheckBoxMenuItem _allItem;
+        protected JMenu _showSourceMenu;
+        protected JMenu _showTypeMenu;
+        protected JCheckBoxMenuItem _allTypesItem;
+        protected JCheckBoxMenuItem _allSourceItem;
         protected JCheckBoxMenuItem _alertItem;
         protected JCheckBoxMenuItem _commandItem;
         protected JCheckBoxMenuItem _fileOperationItem;

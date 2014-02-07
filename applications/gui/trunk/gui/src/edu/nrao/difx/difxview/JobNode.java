@@ -517,7 +517,7 @@ public class JobNode extends QueueBrowserNode {
         Point pt = new Point( 100, 100 );
         GetFileMonitor getFile = new GetFileMonitor( (Frame)comp, pt.x + 25, pt.y + 25,
                 filename, _settings );
-        if ( getFile.inString().length() > 0 && getFile.success() ) {
+        if ( getFile.inString() != null && getFile.inString().length() > 0 && getFile.success() ) {
             //  Parse the file content based on the extension.
             String ext = filename.substring( filename.lastIndexOf( '.' ) + 1 ).trim();
             if ( ext.contentEquals( "input" ) ) {
