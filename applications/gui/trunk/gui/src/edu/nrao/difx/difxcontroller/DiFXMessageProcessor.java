@@ -570,7 +570,21 @@ public class DiFXMessageProcessor extends Thread
                                   "Type",
                                   "From"
                     }, 0 );
-            _messageJTable = new JTable( _messageTable );
+            _messageJTable = new JTable( _messageTable ) {
+                @Override
+                public Object getValueAt( int row, int column ) {
+                    synchronized( _messageTable ) {
+                        //  Trap an occasional exception and ignore it.  This isn't
+                        //  an optimal solution but it does not have any impact on the
+                        //  performance (as the user sees it).  I believe the exception
+                        //  occurs occasionally (and rarely) during drawing operations
+                        //  and any effects are not noticeable because the screen is
+                        //  quickly redrawn.
+                        try { return super.getValueAt( row, column ); }
+                        catch ( Exception e ) { return null; }
+                    }
+                }
+            };
             _messageJTable.setShowGrid( false );
             _messageJTable.getSelectionModel().addListSelectionListener( new ListSelectionListener() {
                 public void valueChanged( ListSelectionEvent e ) {
@@ -1376,9 +1390,9 @@ public class DiFXMessageProcessor extends Thread
             if ( _messages == null )
                 _messages = new ArrayDeque<Message>();
             synchronized ( _messages ) {
-            _messages.add( msg );
-            while ( _messages.size() > _messageLimit.intValue() )
-                _messages.removeFirst();
+                _messages.add( msg );
+                while ( _messages.size() > _messageLimit.intValue() )
+                    _messages.removeFirst();
             }
             rebuildTable();
         }
@@ -1392,11 +1406,11 @@ public class DiFXMessageProcessor extends Thread
             final int scrollSetting = _tableScrollPane.getVerticalScrollBar().getValue();
             if ( selectedRow >= _messageTable.getRowCount() )
                 selectedRow = -1;
-            //  Empty the current table.
-            while ( _messageTable.getRowCount() > 0 )
-                _messageTable.removeRow( 0 );
-            //  Figure out which messages we want to display.
             synchronized ( _messages ) {
+                //  Empty the current table.
+                while ( _messageTable.getRowCount() > 0 )
+                    _messageTable.removeRow( 0 );
+                //  Figure out which messages we want to display.
                 for ( Iterator<Message> iter = _messages.iterator(); iter.hasNext(); ) {
                     Message msg = iter.next();
                     boolean typeOkay = false;
