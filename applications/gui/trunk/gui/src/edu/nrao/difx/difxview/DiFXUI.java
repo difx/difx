@@ -378,12 +378,12 @@ public class DiFXUI extends JFrame implements WindowListener {
         _systemSettings.windowConfiguration().queueBrowserH = _queueBrowser.getSize().height;
         _systemSettings.windowConfiguration().mainDividerLocation = _mainSplitPane.getDividerLocation();
         _systemSettings.windowConfiguration().topDividerLocation = _topSplitPane.getDividerLocation();
-        if ( _systemSettings.saveSettingsToFile( _systemSettings.settingsFile() ) )
+        if ( _systemSettings.saveSettingsToFile( _systemSettings.defaultSettingsFile() ) )
             System.exit( 0 );
         else {
             Object[] options = { "Exit", "Cancel" };
             int ans = JOptionPane.showOptionDialog( this, 
-                    "Unable to write settings file \"" + _systemSettings.settingsFile() + "\"\nExit Anyway?",
+                    "Unable to write default settings file \"" + _systemSettings.defaultSettingsFile() + "\"\nExit Anyway?",
                     "Settings File Write Error",
                     JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null, options, options[0] );
             if ( ans == 0 )

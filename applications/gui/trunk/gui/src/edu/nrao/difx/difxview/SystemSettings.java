@@ -141,15 +141,14 @@ public class SystemSettings extends JFrame {
             settingsFile( settingsFile );
             
         //  This stuff is used to trap resize events.
-		this.addComponentListener(new java.awt.event.ComponentAdapter() {
-			public void componentResized( ComponentEvent e ) {
-				_this.newSize();
-			}
-			public void componentMoved( ComponentEvent e ) {
-				_this.newSize();
-			}
-		} );
-        
+        this.addComponentListener(new java.awt.event.ComponentAdapter() {
+                public void componentResized( ComponentEvent e ) {
+                        _this.newSize();
+                }
+                public void componentMoved( ComponentEvent e ) {
+                        _this.newSize();
+                }
+        } );
 
         //  These threads are used to update from the database (updates can hang if
         //  the database can't be located).
@@ -227,16 +226,17 @@ public class SystemSettings extends JFrame {
         settingsFilePanel.openHeight( 100 );
         settingsFilePanel.closedHeight( 20 );
         _scrollPane.addNode( settingsFilePanel );
-        _settingsFile = new JFormattedTextField();
+        _settingsFile = new FormattedTextField();
         _settingsFile.setFocusLostBehavior( JFormattedTextField.COMMIT );
-        _settingsFile.setToolTipText( "XML file containing system settings (rewritten when GUI is exited)."
+        _settingsFile.setToolTipText( "XML file containing system settings."
                 + "  Red text indicates last attept to read this file failed." );
+        _settingsFile.setEditable( false );
         settingsFilePanel.add( _settingsFile );
         JLabel settingsFileLabel = new JLabel( "Current:" );
         settingsFileLabel.setBounds( 10, 25, 100, 25 );
         settingsFileLabel.setHorizontalAlignment( JLabel.RIGHT );
         settingsFilePanel.add( settingsFileLabel );
-        JButton loadFromFileButton = new JButton( "Open..." );
+        ZButton loadFromFileButton = new ZButton( "Open..." );
         loadFromFileButton.setBounds( 115, 55, 100, 25 );
         loadFromFileButton.setToolTipText( "Open a settings file" );
         loadFromFileButton.addActionListener( new ActionListener() {
@@ -245,7 +245,7 @@ public class SystemSettings extends JFrame {
             }
         } );
         settingsFilePanel.add( loadFromFileButton );
-        JButton saveButton = new JButton( "Save" );
+        ZButton saveButton = new ZButton( "Save" );
         saveButton.setBounds( 220, 55, 100, 25 );
         saveButton.setToolTipText( "Save current settings to the given file name." );
         saveButton.addActionListener( new ActionListener() {
@@ -254,7 +254,7 @@ public class SystemSettings extends JFrame {
             }
         } );
         settingsFilePanel.add( saveButton );
-        JButton saveAsButton = new JButton( "Save As..." );
+        ZButton saveAsButton = new ZButton( "Save As..." );
         saveAsButton.setBounds( 325, 55, 100, 25 );
         saveAsButton.setToolTipText( "Save the current settings to a new file name." );
         saveAsButton.addActionListener( new ActionListener() {
@@ -1763,7 +1763,7 @@ public class SystemSettings extends JFrame {
         if ( _settingsFile.getText() == null )
             saveSettingsAs();
         else
-            saveSettingsToFile( _settingsFile.getName() );
+            saveSettingsToFile( _settingsFile.getText() );
     }
     
     /*
@@ -1771,9 +1771,12 @@ public class SystemSettings extends JFrame {
      */
     public void saveSettingsAs() {
         _fileChooser.setDialogTitle( "Save System Settings to File..." );
+        _fileChooser.setCurrentDirectory( new File( settingsFile() ) );
+        _fileChooser.setApproveButtonText( "Save" );
         int ret = _fileChooser.showSaveDialog( this );
         if ( ret == JFileChooser.APPROVE_OPTION )
             saveSettingsToFile( _fileChooser.getSelectedFile().getAbsolutePath() );
+        _settingsFile.setText( _fileChooser.getSelectedFile().getAbsolutePath() );
     }
     
     /*
@@ -3166,8 +3169,12 @@ public class SystemSettings extends JFrame {
         doiConfig.setDifxTransferPortLimit( _maxTransferPorts.intValue() );
         doiConfig.setDifxMonitorHost( this.difxMonitorHost() );
         doiConfig.setDifxMonitorPort( this.difxMonitorPort() );
-        doiConfig.setDifxVersion( this.difxVersion() );
+        //  Only save the DiFX version if a sensible setting exists.
+        if ( this.difxVersion() != null && this.difxVersion().length() > 0 )
+            doiConfig.setDifxVersion( this.difxVersion() );
         doiConfig.setDontUseDefaultStartScript( !_useDefaultStartScript.isSelected() );
+        //  Likewise for the start script.
+        if ( _difxStartScript.getText() != null && _difxStartScript.getText().length() > 0 )
         doiConfig.setDifxStartScript( _difxStartScript.getText() );
         doiConfig.setDifxBase( this.difxBase() );
         doiConfig.setDbUseDataBase( this.useDatabase() );
@@ -4157,7 +4164,7 @@ public class SystemSettings extends JFrame {
     protected boolean _allObjectsBuilt;
 
     protected JMenuBar _menuBar;
-    protected JFormattedTextField _settingsFile;
+    protected FormattedTextField _settingsFile;
     
     protected String _jaxbPackage;
     protected String _home;
