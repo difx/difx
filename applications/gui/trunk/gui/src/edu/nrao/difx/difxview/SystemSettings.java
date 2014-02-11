@@ -2205,6 +2205,7 @@ public class SystemSettings extends JFrame {
             if ( _newDifxTransferPort >= _maxTransferPorts.intValue() )
                 _newDifxTransferPort = 0;
             if ( tryPort == initialTryPort ) {
+        System.out.println( "waiting for transfer port " + ( tryPort + _difxTransferPort.intValue() ) + "(" + tryPort + ") to free" );
                 _messageCenter.error( 0, "SystemSettings - newDifxTransferPort()", 
                         Thread.currentThread().getStackTrace()[2].getClassName() + ":" +
                         Thread.currentThread().getStackTrace()[2].getMethodName() + "cannot find open port - this may be bad (still trying though)" );
