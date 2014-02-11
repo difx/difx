@@ -2198,29 +2198,43 @@ public class SystemSettings extends JFrame {
         //  doing this waiting for an indetermined amount of time (maybe forever).
         //  It is the duty of the calling program not to get hung up waiting
         //  for this!
-        //System.out.println( "wait for transfer port " + ( tryPort + _difxTransferPort.intValue() ) + "(" + tryPort + ") to free" );
-        while ( _transferPortUsed[tryPort] ) {
-            tryPort = _newDifxTransferPort;
-            ++_newDifxTransferPort;
-            if ( _newDifxTransferPort >= _maxTransferPorts.intValue() )
-                _newDifxTransferPort = 0;
-            if ( tryPort == initialTryPort ) {
-        System.out.println( "waiting for transfer port " + ( tryPort + _difxTransferPort.intValue() ) + "(" + tryPort + ") to free" );
-                _messageCenter.error( 0, "SystemSettings - newDifxTransferPort()", 
-                        Thread.currentThread().getStackTrace()[2].getClassName() + ":" +
-                        Thread.currentThread().getStackTrace()[2].getMethodName() + "cannot find open port - this may be bad (still trying though)" );
-            }   
-            try { Thread.sleep( 100 ); } catch ( Exception e ) {}
+        boolean gotPort = false;
+        while ( !gotPort ) {
+            synchronized( _transferPortUsed ) {
+                if ( !_transferPortUsed[tryPort] ) {
+                    gotPort = true;
+                    _transferPortUsed[tryPort] = true;
+                    System.out.println( "try for port " + tryPort + "(" + ( tryPort + _difxTransferPort.intValue() ) + ") " );
+                }
+                else {
+                    tryPort = _newDifxTransferPort;
+                    ++_newDifxTransferPort;
+                    if ( _newDifxTransferPort >= _maxTransferPorts.intValue() )
+                        _newDifxTransferPort = 0;
+                    if ( tryPort == initialTryPort ) {
+                System.out.println( "failed waiting for transfer port " + tryPort + "(" + ( tryPort + _difxTransferPort.intValue() ) + ") to free" );
+                        _messageCenter.error( 0, "SystemSettings - newDifxTransferPort()", 
+                                Thread.currentThread().getStackTrace()[2].getClassName() + ":" +
+                                Thread.currentThread().getStackTrace()[2].getMethodName() + "cannot find open port - this may be bad (still trying though)" );
+                    }   
+                }
+            }
+            if ( !gotPort ) {
+                try { Thread.sleep( 100 ); } catch ( Exception e ) {}
+            }
         }
         //System.out.println( Thread.currentThread().getStackTrace()[2].getClassName() + ":"
         //        + Thread.currentThread().getStackTrace()[2].getMethodName() +
         //        " got port " + ( tryPort + _difxTransferPort.intValue() ) + " (" + tryPort + ")" );
-        _transferPortUsed[tryPort] = true;
+        //_transferPortUsed[tryPort] = true;
         return tryPort + _difxTransferPort.intValue();
     }
-    synchronized public void releaseTransferPort( int port ) {
+    public void releaseTransferPort( int port ) {
         //System.out.println( "release port " + port + "(" + ( port - _difxTransferPort.intValue() ) + ") " );
-        _transferPortUsed[port - _difxTransferPort.intValue()] = false;
+        synchronized( _transferPortUsed ) {
+           System.out.println( "release port " + port + "(" + ( port - _difxTransferPort.intValue() ) + ") " );
+           _transferPortUsed[port - _difxTransferPort.intValue()] = false;
+        }
     }
     //  This function is called when the number of transfer ports is changed.  It
     //  allocates an array of booleans to let us know when ports are "free".

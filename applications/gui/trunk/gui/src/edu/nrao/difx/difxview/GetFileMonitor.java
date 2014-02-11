@@ -27,6 +27,7 @@ public class GetFileMonitor extends PopupMonitor {
         _settings = settings;
         _filePath = filePath;
         //  Open a "get file" operation and set the various callbacks.
+        System.out.println( "GetFileMonitor: getting file " + _filePath );
         _fileGet = new DiFXCommand_getFile( _filePath, _settings );
         if ( _fileGet.error() != null ) {
             _error = _fileGet.error();
