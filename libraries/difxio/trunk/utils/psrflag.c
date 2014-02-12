@@ -115,8 +115,26 @@ double getPulsarSpinRate(const DifxPulsar *P, double mjd)
 	return P->polyco[p].f0 + P->polyco[p].coef[1]/60.0 + dt*P->polyco[p].coef[2]/3600.0 + dt*dt*P->polyco[p].coef[3]/216000.0;
 }
 
+void mjd2keyin(char *str, double mjd, int refmjd)
+{
+	int d, h, m, s;
+	double x;
+
+	x = mjd - refmjd;
+	d = (int)x;
+	x = (x - d)*24;
+	h = (int)x;
+	x = (x - h)*60;
+	m = (int)x;
+	x = (x - m)*60;
+	s = (int)x;
+
+	sprintf(str, "%d,%d,%d,%d", d, h, m, s);
+}
+
 int runPulsar(const DifxInput *D, int configId, const char *pulsarName)
 {
+	const double thresh = 0.1;
 	int pulsarId;
 	int scanId;
 	const DifxConfig *dc;
@@ -133,6 +151,8 @@ int runPulsar(const DifxInput *D, int configId, const char *pulsarName)
 	double m;
 	double binEnd0, binEnd1, binWeight1;
 	FILE *out;
+	FILE *flagOut;
+	char T1[20], T2[20];
 
 	dc = D->config + configId;
 	pulsarId = dc->pulsarId;
@@ -145,7 +165,7 @@ int runPulsar(const DifxInput *D, int configId, const char *pulsarName)
 	tInt = D->config[configId].tInt;
 	f0 = D->pulsar[pulsarId].polyco[0].f0;
 
-	printf("# tInt = %f sec, pulsar f0 = %f Hz\n", tInt, f0);
+	printf("  tInt = %f sec, pulsar f0 = %f Hz\n", tInt, f0);
 
 	nBin = D->pulsar[pulsarId].nBin;
 	
@@ -219,11 +239,26 @@ int runPulsar(const DifxInput *D, int configId, const char *pulsarName)
 		fclose(out);
 	}
 
+	snprintf(fileName, DIFXIO_FILENAME_LENGTH, "%s%s.%s.flag", D->job->obsCode, D->job->obsSession, pulsarName);
+	flagOut = fopen(fileName, "w");
+	if(!out)
+	{
+		fprintf(stderr, "Error: cannot open %s for write\n", fileName);
+	}
+
 	for(i = 1; i < D->nAntenna; ++i)
 	{
 		for(j = 0; j < i; ++j)
 		{
-			printf("%s -- %s\n", D->antenna[i].name, D->antenna[j].name);
+			double flagOn[16];	// mjd onset of fringy flag; 0 for not set
+			int k;
+
+			for(k = 0; k < 16; ++k)
+			{
+				flagOn[k] = 0;
+			}
+
+			// printf("%s -- %s\n", D->antenna[i].name, D->antenna[j].name);
 
 			snprintf(fileName, DIFXIO_FILENAME_LENGTH, "%s.%s-%s.rates", pulsarName, D->antenna[i].name, D->antenna[j].name);
 			out = fopen(fileName, "w");
@@ -240,7 +275,6 @@ int runPulsar(const DifxInput *D, int configId, const char *pulsarName)
 				{
 					continue;
 				}
-				fprintf(stderr, "pulsarId=%d scanId=%d\n", pulsarId, scanId);
 
 				fprintf(out, "\n");
 
@@ -277,6 +311,33 @@ int runPulsar(const DifxInput *D, int configId, const char *pulsarName)
 						}
 
 						fprintf(out, "  %f %f", fabs((R1-R2)*fq), M);
+
+						if(M > thresh)
+						{
+							if(flagOn[ii] < 1.0)
+							{
+								flagOn[ii] = mjd+sec/86400.0;
+							}
+						}
+						else
+						{
+							if(flagOn[ii] > 1.0)
+							{
+								double m1, m2, mAdd = 60/86400.0;
+
+								m1 = flagOn[ii];
+								m2 = mjd+sec/86400.0;
+
+								m1 -= mAdd;
+								m2 += mAdd;
+
+								mjd2keyin(T1, m1, (int)(D->mjdStart));
+								mjd2keyin(T2, m2, (int)(D->mjdStart));
+
+								fprintf(flagOut, "ant_name='%s' bas_name='%s' timerang=%s,%s bif=%d eif=%d, Reason='pulsar/fringe' /\n", D->antenna[i].name, D->antenna[j].name, T1, T2, ii+1, ii+1);
+								flagOn[ii] = 0;
+							}
+						}
 					}
 					fprintf(out, "\n");
 
@@ -292,6 +353,7 @@ int runPulsar(const DifxInput *D, int configId, const char *pulsarName)
 		}
 		
 	}
+	fclose(flagOut);
 
 	return 0;
 }
@@ -408,7 +470,7 @@ int main(int argc, char **argv)
 		}
 		if(configId >= D->nConfig)
 		{
-			printf("#Skipping pulsarId=%d because no config uses it\n", pulsarId);
+			printf("Skipping pulsarId=%d because no config uses it\n", pulsarId);
 
 			continue;
 		}
@@ -422,7 +484,7 @@ int main(int argc, char **argv)
 		}
 		if(scanId >= D->nScan)
 		{
-			printf("#Skipping pulsarId=%d because no scan uses it\n", pulsarId);
+			printf("Skipping pulsarId=%d because no scan uses it\n", pulsarId);
 
 			continue;
 		}
@@ -431,19 +493,14 @@ int main(int argc, char **argv)
 
 		if(sourceId < 0 || sourceId >= D->nSource)
 		{
-			printf("#Skipping pulsarId=%d because sourceId = %d and nSource = %d\n", pulsarId, sourceId, D->nSource);
+			printf("Skipping pulsarId=%d because sourceId = %d and nSource = %d\n", pulsarId, sourceId, D->nSource);
 
 			continue;
 		}
 
 		pulsarName = D->source[sourceId].name;
 
-//		if(strcmp(pulsarName, "J1022+1001") != 0)
-//		{
-//			continue;
-//		}
-
-		printf("#Processing pulsar %s:\n", pulsarName);
+		printf("Processing pulsar %s:\n", pulsarName);
 
 		runPulsar(D, configId, pulsarName);
 	}
