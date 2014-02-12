@@ -33,6 +33,7 @@
 #include <math.h>
 #include <complex.h>
 #include <fftw3.h>
+#include <time.h>
 #include "difx_input.h"
 
 const char program[] = "psrflag";
@@ -115,21 +116,14 @@ double getPulsarSpinRate(const DifxPulsar *P, double mjd)
 	return P->polyco[p].f0 + P->polyco[p].coef[1]/60.0 + dt*P->polyco[p].coef[2]/3600.0 + dt*dt*P->polyco[p].coef[3]/216000.0;
 }
 
-void mjd2keyin(char *str, double mjd, int refmjd)
+void mjd2keyin(char *str, double mjd)
 {
-	int d, h, m, s;
-	double x;
+	time_t t;
+	struct tm brokenTime;
 
-	x = mjd - refmjd;
-	d = (int)x;
-	x = (x - d)*24;
-	h = (int)x;
-	x = (x - h)*60;
-	m = (int)x;
-	x = (x - m)*60;
-	s = (int)x;
-
-	sprintf(str, "%d,%d,%d,%d", d, h, m, s);
+	t = (mjd - 40587.0)*86400.0;
+	gmtime_r(&t, &brokenTime);
+	strftime(str, 20, "%j,%H,%M,%S", &brokenTime);
 }
 
 int runPulsar(const DifxInput *D, int configId, const char *pulsarName)
@@ -331,10 +325,10 @@ int runPulsar(const DifxInput *D, int configId, const char *pulsarName)
 								m1 -= mAdd;
 								m2 += mAdd;
 
-								mjd2keyin(T1, m1, (int)(D->mjdStart));
-								mjd2keyin(T2, m2, (int)(D->mjdStart));
+								mjd2keyin(T1, m1);
+								mjd2keyin(T2, m2);
 
-								fprintf(flagOut, "ant_name='%s' bas_name='%s' timerang=%s,%s bif=%d eif=%d, Reason='pulsar/fringe' /\n", D->antenna[i].name, D->antenna[j].name, T1, T2, ii+1, ii+1);
+								fprintf(flagOut, "ant_name='%s' bas_name='%s' timerang=%s,%s bif=%d eif=%d Reason='pulsar/fringe' /\n", D->antenna[i].name, D->antenna[j].name, T1, T2, ii+1, ii+1);
 								flagOn[ii] = 0;
 							}
 						}
