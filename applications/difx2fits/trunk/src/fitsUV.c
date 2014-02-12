@@ -1109,6 +1109,10 @@ static int readvisrecord(DifxVis *dv, int verbose, int skipextraautocorrs)
 		{
 			printf("readvisrecord: changed is %d\n", dv->changed);
 		}
+		if(dv->changed == HEADER_READ_ERROR)
+		{
+			return -1;
+		}
 	}
 
 	return 0;
