@@ -47,7 +47,7 @@ public class DiFXCommand_vex2difx extends DiFXCommand {
         else
             v2d.setCalcifOnly( 0 );
         v2d.setAddress( _settings.guiServerConnection().myIPAddress() );
-        _port = _settings.newDifxTransferPort();
+        _port = _settings.newDifxTransferPort( 0, true, true );
         v2d.setPort( _port );
         this.body().setDifxVex2DifxRun( v2d );
         //  These lists contain "listeners" for callbacks when things occur...incremental

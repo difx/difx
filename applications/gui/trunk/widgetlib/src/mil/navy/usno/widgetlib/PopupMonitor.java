@@ -139,10 +139,11 @@ public class PopupMonitor extends JDialog implements WindowListener  {
      * Called when things succeed.  This makes the window go away.
      */
     protected void successCondition() {
-        _theWindow.setTitle( "DISMISSED" );
+        _theWindow.setVisible( false );
+        _theWindow.setTitle( "DISMISSED - SUCCESS" );
         if ( _spinner != null ) _spinner.stop();
         _success = true;
-        _theWindow.setVisible( false );
+        _cleanClose = true;
     }
     
     /*
@@ -191,10 +192,11 @@ public class PopupMonitor extends JDialog implements WindowListener  {
      * cancelled deliberately.
      */
     protected void cancelOperation() {
-        _theWindow.setTitle( "DISMISSED" );
+        _theWindow.setVisible( false );
+        _theWindow.setTitle( "DISMISSED - CANCEL" );
         if ( _spinner != null ) _spinner.stop();
         _success = false;
-        _theWindow.setVisible( false );
+        _cleanClose = true;
     }
     
     /*
@@ -216,7 +218,8 @@ public class PopupMonitor extends JDialog implements WindowListener  {
 
     @Override
     public void windowClosing(WindowEvent e) {
-        if ( _dismissActive )
+        if ( _cleanClose ) {}
+        else if ( _dismissActive )
             cancelOperation();
         else {
             int ans = JOptionPane.showConfirmDialog( this,
@@ -226,6 +229,7 @@ public class PopupMonitor extends JDialog implements WindowListener  {
             if ( ans == JOptionPane.YES_OPTION )
                 cancelOperation();
         }
+        _theWindow.windowClosing( e );
     }
 
     @Override
@@ -250,6 +254,7 @@ public class PopupMonitor extends JDialog implements WindowListener  {
     protected JButton _cancelButton;
     protected JProgressBar _progress;
     protected boolean _dismissActive;
+    protected boolean _cleanClose;
     protected Spinner _spinner;
     protected PopupMonitor _theWindow;
     protected int _delay;

@@ -12,6 +12,8 @@ import mil.navy.usno.widgetlib.PopupMonitor;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
+import java.util.HashMap;
+
 import edu.nrao.difx.difxutilities.DiFXCommand_getFile;
 
 import java.awt.Frame;
@@ -26,6 +28,15 @@ public class GetFileMonitor extends PopupMonitor {
         super( frame, x, y, 600, 145, 200 );
         _settings = settings;
         _filePath = filePath;
+        _inString = null;
+        //  See if we can reuse a previous read of this file.
+        if ( _allowReuse ) {
+            _inString = _reuseMap.get( _filePath );
+            if ( _inString != null ) {
+                successCondition();
+                return;
+            }
+        }
         //  Open a "get file" operation and set the various callbacks.
         System.out.println( "GetFileMonitor: getting file " + _filePath );
         _fileGet = new DiFXCommand_getFile( _filePath, _settings );
@@ -82,7 +93,10 @@ public class GetFileMonitor extends PopupMonitor {
         //  wrong, and to some degree what.
         int fileSize = _fileGet.fileSize();
         if ( _fileGet.inString() != null && fileSize == _fileGet.inString().length() ) {
-            //  It worked!  Set the "success" value and get rid of the window.
+            //  It worked!  Set the "success" value and get rid of the window.  Also
+            //  save the file contents if "reuse" is allowed.
+            if ( _allowReuse )
+                _reuseMap.put( _filePath, _fileGet.inString() );
             successCondition();
             return;
         }
@@ -100,7 +114,8 @@ public class GetFileMonitor extends PopupMonitor {
             error( "File \"" + _filePath + "\"", "has zero length." );
         }
         else if ( fileSize == -10 ) {
-            error( "Socket connection timed out before DiFX host connected.", null );                                        }
+            error( "Socket connection timed out before DiFX host connected.", null );
+        }
         else if ( fileSize == -11 ) {
             error( "File transfer failed: ", _fileGet.error() );
         }
@@ -126,13 +141,27 @@ public class GetFileMonitor extends PopupMonitor {
     /*
      * Get the file contents.
      */
-    public String inString() { return _fileGet.inString(); }
+    public String inString() { 
+        if ( _inString != null )
+            return _inString;
+        return _fileGet.inString();
+    }
     public String error() { return _error; }
     
     protected SystemSettings _settings;
     private DiFXCommand_getFile _fileGet;
     protected String _filePath;
     protected String _error;
+    protected String _inString;
+    
+    static protected boolean _allowReuse;
+    static void allowReuse( boolean newVal ) { 
+        _allowReuse = newVal;
+        if ( _reuseMap == null )
+            _reuseMap = new HashMap<String,String>();
+        _reuseMap.clear();
+    }
+    static HashMap<String,String> _reuseMap;
     
 }
 

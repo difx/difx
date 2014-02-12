@@ -61,7 +61,7 @@ public class DiFXCommand_getFile extends DiFXCommand {
         try {
             InetAddress[] foo = java.net.InetAddress.getAllByName( java.net.InetAddress.getLocalHost().getHostName() );
             xfer.setAddress( _settings.guiServerConnection().myIPAddress() );
-            _port = _settings.newDifxTransferPort();
+            _port = _settings.newDifxTransferPort( 0, true, true );
             xfer.setPort( _port );
             xfer.setDirection( "from DiFX" );
             xfer.setOrigin( filename );
@@ -181,6 +181,7 @@ public class DiFXCommand_getFile extends DiFXCommand {
     
     public int fileSize() { return _fileSize; }
     public String inString() { return _inString; }
+    public void inString( String newData ) { _inString = newData; }
     public String error() { return _error; }
     
     protected int _fileSize;

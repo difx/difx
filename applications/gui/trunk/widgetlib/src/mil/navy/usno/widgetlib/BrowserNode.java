@@ -372,7 +372,7 @@ public class BrowserNode extends JPanel implements MouseListener, MouseMotionLis
         
     }
     
-    public NameSort _nameSort;
+    private NameSort _nameSort;
 
     @Override
     public void paintComponent( Graphics g ) {

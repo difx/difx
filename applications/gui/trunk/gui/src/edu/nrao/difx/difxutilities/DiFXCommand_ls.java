@@ -42,7 +42,7 @@ public class DiFXCommand_ls extends DiFXCommand {
         //  (at least for now).
         ls.setDataNode( settings.difxControlAddress() );
         ls.setAddress( _settings.guiServerConnection().myIPAddress() );
-        _port = _settings.newDifxTransferPort();
+        _port = _settings.newDifxTransferPort( 0, true, true );
         ls.setPort( _port );
         this.body().setDifxFileOperation( ls );
         //  These lists contain "listeners" for callbacks when things occur...incremental
@@ -65,7 +65,7 @@ public class DiFXCommand_ls extends DiFXCommand {
         //  (at least for now).
         ls.setDataNode( settings.difxControlAddress() );
         ls.setAddress( _settings.guiServerConnection().myIPAddress() );
-        _port = _settings.newDifxTransferPort();
+        _port = _settings.newDifxTransferPort( 0, true, true );
         ls.setPort( _port );
         this.body().setDifxFileOperation( ls );
         //  These lists contain "listeners" for callbacks when things occur...incremental

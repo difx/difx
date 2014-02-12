@@ -32,7 +32,7 @@
       that, the user's directory).&nbsp; Failing to read either a
       specified file or the default file will cause internal default
       settings to be used which may or may not be attractive.&nbsp; When
-      the GUI is exited the same XML file is written to reflect the
+      the GUI is exited the default XML file is written to reflect the
       GUI's current state such that it can be started again in the
       future essentially unchanged from where it was left.&nbsp;
       Failures to read or write files will generate pop-up warnings, but
@@ -50,7 +50,7 @@
     <div align="left">
       <h5>Current</h5>
       <p>This field shows the full path to the XML file that was most
-        recently read, and that will be written to upon exit.&nbsp; If
+        recently read, either a user-specified file or the default.&nbsp; If
         this field is in red it indicates that the last read attempt
         failed for some reason and that whatever settings that existed
         previously are still in place.&nbsp; <br>
@@ -65,12 +65,12 @@
       </p>
       <h5>Save As...</h5>
       <p>This button produces a file browser from which a path for the
-        XML file can be picked.&nbsp; The XML file is written to
+        XML file can be picked.&nbsp; The XML file is written
         immediately.<br>
       </p>
       <h5>Defaults</h5>
       <p>The Defaults button will restore the GUI to internal
-        defaults.&nbsp; <br>
+        defaults (not the default XML file settings).&nbsp; <br>
         <br>
       </p>
     </div>

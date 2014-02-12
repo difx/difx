@@ -5,25 +5,6 @@
 package edu.nrao.difx.difxview;
 
 import edu.nrao.difx.difxcontroller.AttributedMessageListener;
-import mil.navy.usno.widgetlib.NodeBrowserScrollPane;
-import mil.navy.usno.widgetlib.BrowserNode;
-import mil.navy.usno.widgetlib.TearOffPanel;
-import mil.navy.usno.widgetlib.ActivityMonitorLight;
-import mil.navy.usno.widgetlib.Spinner;
-import mil.navy.usno.widgetlib.SaneTextField;
-import mil.navy.usno.widgetlib.ZMenuItem;
-
-import javax.swing.JLabel;
-import javax.swing.JButton;
-import javax.swing.JPopupMenu;
-import javax.swing.JMenuItem;
-import javax.swing.JCheckBoxMenuItem;
-import javax.swing.JSeparator;
-
-import java.awt.Font;
-import java.awt.Color;
-import java.awt.Insets;
-import java.awt.Point;
 
 import java.io.File;
 
@@ -31,8 +12,8 @@ import java.util.Iterator;
 import java.util.Date;
 import java.text.SimpleDateFormat;
 
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+//import java.awt.event.ActionEvent;
+//import java.awt.event.ActionListener;
 
 import edu.nrao.difx.difxcontroller.DiFXMessageProcessor;
 
@@ -1309,6 +1290,8 @@ public class QueueBrowserPanel extends TearOffPanel {
          * in the preview list are added to the queue browser.
          */
         public void apply() {
+            //  Do a count of the number of jobs we are retrieving for a progress bar.
+            int totalCount = 0;
             for ( Iterator<BrowserNode> iter = _preview.browserTopNode().childrenIterator(); iter.hasNext(); ) {
                 BrowserNode thisExperiment = iter.next();
                 if ( thisExperiment.selected() ) {
@@ -1317,16 +1300,87 @@ public class QueueBrowserPanel extends TearOffPanel {
                         if ( thisPass.selected() ) {
                             for ( Iterator<BrowserNode> iter3 = thisPass.childrenIterator(); iter3.hasNext(); ) {
                                 BrowserNode thisJob = iter3.next();
-                                if ( thisJob.selected() ) {
-                                    addDefinedJob( thisExperiment.name(), thisPass.name(), thisJob.name(), 
-                                            ((LocalJobNode)thisJob).inputFile(), ((LocalBrowserNode)thisExperiment).path() );
-                                }
+                                if ( thisJob.selected() )
+                                    totalCount += 1;
                             }
                         }
                     }
                 }
             }
+            final int _totalCount = totalCount;
+            //  Then actually to the retrieval.  This is done in a thread to allow the
+            //  user to do other things (and to permit cancellations).
+            Thread runThread = new Thread() {
+                public void run() {
+                    _continueRetrieval = true;
+                    int count = 0;
+                    RetrievalMonitor monitor = new RetrievalMonitor();
+                    monitor.progressBar.setMaximum( _totalCount );
+                    //  Set up the file reading system to save and reuse any files that it is
+                    //  asked to down load more than once.  This saves a lot of time in the
+                    //  download process.
+                    GetFileMonitor.allowReuse( true );
+                    monitor.setVisible( true );
+                    for ( Iterator<BrowserNode> iter = _preview.browserTopNode().childrenIterator(); iter.hasNext() && _continueRetrieval; ) {
+                        BrowserNode thisExperiment = iter.next();
+                        if ( thisExperiment.selected() ) {
+                            for ( Iterator<BrowserNode> iter2 = thisExperiment.childrenIterator(); iter2.hasNext() && _continueRetrieval; ) {
+                                BrowserNode thisPass = iter2.next();
+                                if ( thisPass.selected() ) {
+                                    for ( Iterator<BrowserNode> iter3 = thisPass.childrenIterator(); iter3.hasNext() && _continueRetrieval; ) {
+                                        BrowserNode thisJob = iter3.next();
+                                        if ( thisJob.selected() ) {
+                                            ++count;
+                                            monitor.label.setText( "Retrieving \"" 
+                                                    + thisExperiment.name() + "/" +
+                                                    thisPass.name() + "/" + thisJob.name() + "\" (" +
+                                                    count + "/" + _totalCount + ")" );
+                                            monitor.progressBar.setValue( count );
+                                            addDefinedJob( thisExperiment.name(), thisPass.name(), thisJob.name(), 
+                                                    ((LocalJobNode)thisJob).inputFile(), ((LocalBrowserNode)thisExperiment).path() );
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    //  Shut off the reuse feature.
+                    GetFileMonitor.allowReuse( false );
+                    monitor.setVisible( false );
+                }
+            };
+            runThread.start();
             _this.setVisible( false );
+        }
+        
+        //  Monitor window for the retrieval process.
+        public class RetrievalMonitor extends JFrame {
+            public RetrievalMonitor() {
+                super( "Loading Existing Jobs From Disk..." );
+                setLayout( null );
+                setBounds( _settings.queueBrowser().getX() + _settings.queueBrowser().getWidth(),
+                        _settings.queueBrowser().getY(), 500, 200 );
+                ZButton cancelButton = new ZButton( "Cancel" );
+                cancelButton.setBounds( 350, 125, 125, 25 );
+                cancelButton.setToolTipText( "Stop the current job retrieval process." );
+                cancelButton.addActionListener( new ActionListener() {
+                    public void actionPerformed( ActionEvent e ) {
+                        System.out.println( "CANCEL NOW!!!!!" );
+                        _continueRetrieval = false;
+                    }
+                });
+                this.add( cancelButton );
+                label = new JLabel( "Initializing" );
+                label.setBounds( 20, 20, 460, 25 );
+                this.add( label );
+                progressBar = new JProgressBar();
+                progressBar.setBounds( 20, 50, 460, 25 );
+                progressBar.setValue( 0 );
+                progressBar.setMinimum( 0 );
+                this.add( progressBar );
+            }
+            public JLabel label;
+            public JProgressBar progressBar;
         }
         
         public void expandAll() {
@@ -1383,6 +1437,7 @@ public class QueueBrowserPanel extends TearOffPanel {
             _preview.listChange();
         }
         
+        protected boolean _continueRetrieval;
         protected JMenuBar _menuBar;
         protected DiskSearchRules _this;
         protected boolean _allObjectsBuilt;

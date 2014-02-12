@@ -1504,9 +1504,12 @@ public class ExperimentEditor extends JFrame {
         public ArrayList<StationPanel> useList() {
             ArrayList<StationPanel> list = new ArrayList<StationPanel>();
             for ( Iterator<StationPanel> iter = this.iterator(); iter.hasNext(); ) {
-                StationPanel panel = iter.next();
-                if ( panel.use() )
-                    list.add( panel );
+                try {
+                    StationPanel panel = iter.next();
+                    if ( panel.use() )
+                        list.add( panel );
+                }
+                catch ( java.util.ConcurrentModificationException e ) {}
             }
             return list;
         }
@@ -2245,7 +2248,7 @@ public class ExperimentEditor extends JFrame {
                         //  Eliminate the button panel using the class cast exception.
                         try {
                             SourcePanel source = (SourcePanel)jter.next();
-                            if ( scan.source.equalsIgnoreCase( source.name() ) && source.use() )
+                            if ( source != null && scan.source.equalsIgnoreCase( source.name() ) && source.use() )
                                 _sourceFound = true;
                         } catch ( java.lang.ClassCastException e ) {
                         } catch ( java.util.ConcurrentModificationException e ) {}

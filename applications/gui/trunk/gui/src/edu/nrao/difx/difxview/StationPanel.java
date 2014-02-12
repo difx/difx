@@ -873,7 +873,7 @@ public class StationPanel extends IndexedPanel {
         // reporting.
         if ( _settings.sendCommandsViaTCP() ) {
             cmd.setAddress( _settings.guiServerConnection().myIPAddress() );
-            monitorPort = _settings.newDifxTransferPort();
+            monitorPort = _settings.newDifxTransferPort( 0, true, true );
             cmd.setPort( monitorPort );
         }
         

@@ -2186,25 +2186,25 @@ public class SystemSettings extends JFrame {
     public void difxTransferPort( int newVal ) { _difxTransferPort.intValue( newVal ); }
     public int difxTransferPort() { return _difxTransferPort.intValue(); }
     public void difxTransferPort( String newVal ) { difxTransferPort( Integer.parseInt( newVal ) ); }
-    synchronized public int newDifxTransferPort() {
+    synchronized public int newDifxTransferPort( int retryAttempts, boolean reportRetry, boolean reportFailure ) {
         int tryPort = _newDifxTransferPort;
         ++_newDifxTransferPort;
         if ( _newDifxTransferPort >= _maxTransferPorts.intValue() )
             _newDifxTransferPort = 0;
         int initialTryPort = tryPort;
         //  See if the port we want is "free".  If not, try subsequent ports until we
-        //  find one that is free.  If NONE of them are free, sleep for a bit and try
-        //  again (and produce an warning message).  Note that this function can hang
-        //  doing this waiting for an indetermined amount of time (maybe forever).
-        //  It is the duty of the calling program not to get hung up waiting
-        //  for this!
+        //  find one that is free (there is a short sleep between each attempt).  If NONE
+        //  of the ports are free, produce a warning message (if told to do so) and
+        //  retry up to a specified number of times (because the specification decrements
+        //  and stops at zero, you can force the retry cycle to go forever by giving it a
+        //  zero or negative number).  A failure may also produce a message if desired.
         boolean gotPort = false;
         while ( !gotPort ) {
             synchronized( _transferPortUsed ) {
                 if ( !_transferPortUsed[tryPort] ) {
                     gotPort = true;
                     _transferPortUsed[tryPort] = true;
-                    System.out.println( "try for port " + tryPort + "(" + ( tryPort + _difxTransferPort.intValue() ) + ") " );
+ //                   System.out.println( "try for port " + tryPort + "(" + ( tryPort + _difxTransferPort.intValue() ) + ") " );
                 }
                 else {
                     tryPort = _newDifxTransferPort;
@@ -2212,10 +2212,20 @@ public class SystemSettings extends JFrame {
                     if ( _newDifxTransferPort >= _maxTransferPorts.intValue() )
                         _newDifxTransferPort = 0;
                     if ( tryPort == initialTryPort ) {
-                System.out.println( "failed waiting for transfer port " + tryPort + "(" + ( tryPort + _difxTransferPort.intValue() ) + ") to free" );
-                        _messageCenter.error( 0, "SystemSettings - newDifxTransferPort()", 
-                                Thread.currentThread().getStackTrace()[2].getClassName() + ":" +
-                                Thread.currentThread().getStackTrace()[2].getMethodName() + "cannot find open port - this may be bad (still trying though)" );
+ //                       System.out.println( "failed waiting for transfer port " + tryPort + "(" + ( tryPort + _difxTransferPort.intValue() ) + ") to free" );
+                        --retryAttempts;
+                        if ( retryAttempts == 0 ) {
+                            //  We are giving up!
+                            if ( reportFailure )
+                                _messageCenter.error( 0, "SystemSettings - newDifxTransferPort()", 
+                                        Thread.currentThread().getStackTrace()[2].getClassName() + ":" +
+                                        Thread.currentThread().getStackTrace()[2].getMethodName() + "failed to find open port - giving up" );
+                            return -1;
+                        }
+                        if ( reportRetry )
+                            _messageCenter.warning( 0, "SystemSettings - newDifxTransferPort()", 
+                                    Thread.currentThread().getStackTrace()[2].getClassName() + ":" +
+                                    Thread.currentThread().getStackTrace()[2].getMethodName() + "cannot find open port - this may be bad (still trying though)" );
                     }   
                 }
             }
@@ -2232,7 +2242,7 @@ public class SystemSettings extends JFrame {
     public void releaseTransferPort( int port ) {
         //System.out.println( "release port " + port + "(" + ( port - _difxTransferPort.intValue() ) + ") " );
         synchronized( _transferPortUsed ) {
-           System.out.println( "release port " + port + "(" + ( port - _difxTransferPort.intValue() ) + ") " );
+ //          System.out.println( "release port " + port + "(" + ( port - _difxTransferPort.intValue() ) + ") " );
            _transferPortUsed[port - _difxTransferPort.intValue()] = false;
         }
     }
