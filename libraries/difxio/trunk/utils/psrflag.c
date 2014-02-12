@@ -128,7 +128,7 @@ int runPulsar(const DifxInput *D, int configId, const char *pulsarName)
 	double f0;	/* reference spin period, seconds */
 	fftw_complex Fgate[fftSize/2+1];
 	fftw_plan plan;
-	int i;
+	int i, j;
 	int nBin, bin;
 	double m;
 	double binEnd0, binEnd1, binWeight1;
@@ -219,76 +219,76 @@ int runPulsar(const DifxInput *D, int configId, const char *pulsarName)
 		fclose(out);
 	}
 
-	for(scanId = 0; scanId < D->nScan; ++scanId)
+	for(i = 1; i < D->nAntenna; ++i)
 	{
-		int pc;	/* phase center */
-		int i, j;
-		double fq1, fq2;	/* MHz */
-		DifxScan *scan;
-
-		scan = D->scan + scanId;
-
-		if(scan->configId != configId)
+		for(j = 0; j < i; ++j)
 		{
-			printf("#Skipping scan %d because it is for the wrong source\n", scanId);
-			continue;
-		}
+			printf("%s -- %s\n", D->antenna[i].name, D->antenna[j].name);
 
-		fq1 = dc->IF[0].freq;
-		fq2 = dc->IF[1].freq;
+			snprintf(fileName, DIFXIO_FILENAME_LENGTH, "%s.%s-%s.rates", pulsarName, D->antenna[i].name, D->antenna[j].name);
+			out = fopen(fileName, "w");
 
-		pc = scan->nPhaseCentres;
-
-		i = 3;	// LA
-		j = 7;	// PT
-		//for(i = 1; i < D->nAntenna; ++i)
-		{
-		//	for(j = 0; j < i; ++j)
+			for(scanId = 0; scanId < D->nScan; ++scanId)
 			{
+				int pc;	/* phase center */
+				DifxScan *scan;
+
+				scan = D->scan + scanId;
+				dc = D->config + scan->configId;
+
+				if(strcmp(pulsarName, D->source[scan->phsCentreSrcs[scan->nPhaseCentres-1]].name) != 0)
+				{
+					continue;
+				}
+				fprintf(stderr, "pulsarId=%d scanId=%d\n", pulsarId, scanId);
+
+				fprintf(out, "\n");
+
+				pc = scan->nPhaseCentres;
+
 				int mjd, sec;
 				mjd = (int)(scan->mjdStart);
 				sec = (int)((scan->mjdStart-mjd)*86400.0);
 	
-				printf("# %s -- %s\n", D->antenna[i].name, D->antenna[j].name);
-
 				while(mjd + sec/86400.0 < scan->mjdEnd)
 				{
-					double R1, R2, f, M1, M2;
+					double R1, R2, f, M;
 					int index;
+					int ii;
+					double fq; /* MHz */
 
 					R1 = getRate(D, i, scanId, pc, mjd, sec);
 					R2 = getRate(D, j, scanId, pc, mjd, sec);
 					f = getPulsarSpinRate(D->pulsar + pulsarId, mjd+sec/86400.0);
+
+					fprintf(out, "%14.7f %d  %f %f  %f", mjd+sec/86400.0, scanId, R1, R2, f);
+					
+					for(ii = 0; ii < dc->nIF; ++ii)
+					{
+						fq = dc->IF[ii].freq;
+						index = (int)(fabs((R1-R2)*fq)*tInt*fftSize/dataSize +0.5);
+						if(index < fftSize)
+						{
+							M = Fgate[index];
+						}
+						else
+						{
+							M = 0.0;
+						}
+
+						fprintf(out, "  %f %f", fabs((R1-R2)*fq), M);
+					}
+					fprintf(out, "\n");
+
 					++sec;
 					if(sec >= 86400)
 					{
 						sec = 0;
 						++mjd;
 					}
-
-					index = (int)(fabs((R1-R2)*fq1)*tInt*fftSize/dataSize +0.5);
-					if(index < fftSize)
-					{
-						M1 = Fgate[index];
-					}
-					else
-					{
-						M1 = 0.0;
-					}
-
-					index = (int)(fabs((R1-R2)*fq2)*tInt*fftSize/dataSize +0.5);
-					if(index < fftSize)
-					{
-						M2 = Fgate[index];
-					}
-					else
-					{
-						M2 = 0.0;
-					}
-
-					printf("%d %d %d  %14.7f  %f %f  %f %f  %f %f %f\n", scanId, i, j, mjd+sec/86400.0, R1, R2, fabs((R1-R2)*fq1), fabs((R1-R2)*fq2), f, M1, M2);
 				}
 			}
+			fclose(out);
 		}
 		
 	}
