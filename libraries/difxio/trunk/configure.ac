@@ -47,6 +47,28 @@ AM_CONDITIONAL(HAVE_SPICE, $spice_enabled)
 spicelibs="$SPICE_LIBS"
 AC_SUBST(spicelibs)
 
+AC_MSG_CHECKING([whether to enable fftw (default yes)])
+AC_ARG_WITH(fftw,
+    [  --without-fftw           disable fftw features],
+    with_fftw=$withval,
+    with_fftw=yes)
+AC_MSG_RESULT($with_fftw)
+
+if test "$with_fftw" == "yes"; then
+	PKG_CHECK_MODULES(FFTW3, fftw3, [hasfftw=true], [hasfftw=false])
+	if test "$hasfftw" == "true"; then
+		AC_DEFINE([HAVE_FFTW], 1, [1=has FFTW])
+	fi
+	AM_CONDITIONAL(WITH_FFTW, $hasfftw)
+
+	LIBS="${LIBS} ${FFTW3_LIBS}"
+	CFLAGS="${CFLAGS} ${FFTW3_CFLAGS}"
+	AC_SUBST(FFTW3_CFLAGS)
+	AC_SUBST(FFTW3_LIBS)
+else
+	AM_CONDITIONAL(WITH_FFTW, "false")
+fi
+
 version=AC_PACKAGE_VERSION
 AC_SUBST(version)
 
