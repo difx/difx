@@ -1023,3 +1023,20 @@ int DifxDatastreamGetZoomBands(DifxDatastream *dd, int freqId, char *pols, int *
 
         return n;
 }
+
+char getDifxDatastreamBandPol(const DifxDatastream *dd, int band)
+{
+	if(band < 0)
+	{
+		return ' ';
+	}
+	if(band < dd->nRecBand)
+	{
+		return dd->recBandPolName[band];
+	}
+	if(band < dd->nRecBand + dd->nZoomBand)
+	{
+		return dd->zoomBandPolName[band-dd->nRecBand];
+	}
+	return ' ';
+}

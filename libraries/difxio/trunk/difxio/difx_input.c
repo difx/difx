@@ -2849,6 +2849,70 @@ static void setOrbitingAntennas(DifxInput *D)
 }
 
 
+int DifxInputCalculateDoPolar(DifxInput *D, int configId)
+{
+	int i, b, f, blId;
+	int doPolar = 0;
+	DifxBaseline *bl;
+	DifxConfig *dc;
+	int has[4];
+
+	for(i = 0; i < 4; ++i)
+	{
+		has[i] = 0;
+	}
+
+	dc = D->config + configId;
+
+	for(b = 0; b < dc->nBaseline; b++)
+	{
+		blId = dc->baselineId[b];
+		if(blId < 0)
+		{
+			break;
+		}
+
+		bl = D->baseline + blId;
+		for(f = 0; f < bl->nFreq; f++)
+		{
+			const char pn[4] = { 'R', 'L', 'X', 'Y' };
+			int pp;
+
+			for(pp = 0; pp < bl->nPolProd[f]; ++pp)
+			{
+				char pol;
+
+				pol = getDifxDatastreamBandPol(D->datastream+bl->dsA, bl->bandA[f][pp]);
+				for(i = 0; i < 4; ++i)
+				{
+					if(pn[i] == pol)
+					{
+						has[i] = 1;
+					}
+				}
+				pol = getDifxDatastreamBandPol(D->datastream+bl->dsB, bl->bandB[f][pp]);
+				for(i = 0; i < 4; ++i)
+				{
+					if(pn[i] == pol)
+					{
+						has[i] = 1;
+					}
+				}
+
+			}
+		}
+	}
+
+	if((has[0] && has[1]) || (has[2] && has[3]))
+	{
+		doPolar = 1;
+	}
+
+	D->config[configId].doPolar = doPolar;
+
+	return doPolar;
+}
+
 static void setGlobalValues(DifxInput *D)
 {
 	int jobId;
@@ -2911,7 +2975,7 @@ static void setGlobalValues(DifxInput *D)
 		{
 			D->quantBits = 0;
 		}
-		doPolar = DifxConfigCalculateDoPolar(dc, D->baseline);
+		doPolar = DifxInputCalculateDoPolar(D, configId);
 		if(D->doPolar < doPolar)
 		{
 			D->doPolar = doPolar;

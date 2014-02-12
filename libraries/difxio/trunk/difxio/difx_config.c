@@ -310,6 +310,13 @@ int DifxConfigCalculateDoPolar(DifxConfig *dc, DifxBaseline *db)
 	int b, f, blId;
 	int doPolar = 0;
 	DifxBaseline *bl;
+	static int first = 1;
+
+	if(first)
+	{
+		printf("\nWARNING: DifxConfigCalculateDoPolar is being called.  This function is fundamentally flawed.  DifxInputCalculateDoPolar should be used instead.  Please report this!\n\n");
+		first = 0;
+	}
 
 	for(b = 0; b < dc->nBaseline; b++)
 	{
