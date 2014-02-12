@@ -30,6 +30,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #include <complex.h>
 #include <fftw3.h>
 #include "difx_input.h"
@@ -64,8 +65,61 @@ double interpolate(double x0, double y0, double x1, double y1, double x)
 	return y0 + (y1-y0)*(x-x0)/(x1-x0);
 }
 
-int fftGate(const DifxInput *D, int pulsarId, int configId, const char *pulsarName)
+double getRate(const DifxInput *D, int antennaId, int scanId, int pc, int mjd, int sec)
 {
+	int p;
+	DifxPolyModel *im;
+	int dt;
+
+	im = D->scan[scanId].im[antennaId][pc];
+
+	for(p = 0; p < D->scan[scanId].nPoly; ++p)
+	{
+		if(im[p].mjd == mjd && im[p].sec <= sec && im[p].sec+im[p].validDuration >= sec)
+		{
+			break;
+		}
+	}
+
+	if(p == D->scan[scanId].nPoly)
+	{
+		return -1e9;
+	}
+
+	dt = sec - im[p].sec;
+
+	return im[p].delay[1] + 2.0*im[p].delay[2]*dt + 6.0*im[p].delay[3]*dt*dt;
+}
+
+double getPulsarSpinRate(const DifxPulsar *P, double mjd)
+{
+	int p;
+	double dt;
+
+	for(p = 0; p < P->nPolyco; ++p)
+	{
+		if(fabs(mjd - P->polyco[p].mjd) <= P->polyco[p].nBlk/1440.0)
+		{
+			break;
+		}
+	}
+
+	if(p >= P->nPolyco)
+	{
+		return -1;
+	}
+
+	dt = (mjd - P->polyco[p].mjd)*86400.0;
+
+	/* FIXME: evaluate full polynomial */
+	return P->polyco[p].f0 + P->polyco[p].coef[1]/60.0 + dt*P->polyco[p].coef[2]/3600.0 + dt*dt*P->polyco[p].coef[3]/216000.0;
+}
+
+int runPulsar(const DifxInput *D, int configId, const char *pulsarName)
+{
+	int pulsarId;
+	int scanId;
+	const DifxConfig *dc;
 	const int dataSize=80000;
 	const int fftSize=560000;
 	char fileName[DIFXIO_FILENAME_LENGTH];
@@ -80,6 +134,9 @@ int fftGate(const DifxInput *D, int pulsarId, int configId, const char *pulsarNa
 	double binEnd0, binEnd1, binWeight1;
 	FILE *out;
 
+	dc = D->config + configId;
+	pulsarId = dc->pulsarId;
+
 	for(i = 0; i < fftSize; ++i)
 	{
 		gate[i] = 0;
@@ -88,7 +145,7 @@ int fftGate(const DifxInput *D, int pulsarId, int configId, const char *pulsarNa
 	tInt = D->config[configId].tInt;
 	f0 = D->pulsar[pulsarId].polyco[0].f0;
 
-	printf("tInt = %f sec, pulsar f0 = %f Hz\n", tInt, f0);
+	printf("# tInt = %f sec, pulsar f0 = %f Hz\n", tInt, f0);
 
 	nBin = D->pulsar[pulsarId].nBin;
 	
@@ -162,6 +219,79 @@ int fftGate(const DifxInput *D, int pulsarId, int configId, const char *pulsarNa
 		fclose(out);
 	}
 
+	for(scanId = 0; scanId < D->nScan; ++scanId)
+	{
+		int pc;	/* phase center */
+		int i, j;
+		double fq1, fq2;	/* MHz */
+		DifxScan *scan;
+
+		scan = D->scan + scanId;
+
+		if(scan->configId != configId)
+		{
+			printf("#Skipping scan %d because it is for the wrong source\n", scanId);
+			continue;
+		}
+
+		fq1 = dc->IF[0].freq;
+		fq2 = dc->IF[1].freq;
+
+		pc = scan->nPhaseCentres;
+
+		i = 3;	// LA
+		j = 7;	// PT
+		//for(i = 1; i < D->nAntenna; ++i)
+		{
+		//	for(j = 0; j < i; ++j)
+			{
+				int mjd, sec;
+				mjd = (int)(scan->mjdStart);
+				sec = (int)((scan->mjdStart-mjd)*86400.0);
+	
+				printf("# %s -- %s\n", D->antenna[i].name, D->antenna[j].name);
+
+				while(mjd + sec/86400.0 < scan->mjdEnd)
+				{
+					double R1, R2, f, M1, M2;
+					int index;
+
+					R1 = getRate(D, i, scanId, pc, mjd, sec);
+					R2 = getRate(D, j, scanId, pc, mjd, sec);
+					f = getPulsarSpinRate(D->pulsar + pulsarId, mjd+sec/86400.0);
+					++sec;
+					if(sec >= 86400)
+					{
+						sec = 0;
+						++mjd;
+					}
+
+					index = (int)(fabs((R1-R2)*fq1)*tInt*fftSize/dataSize +0.5);
+					if(index < fftSize)
+					{
+						M1 = Fgate[index];
+					}
+					else
+					{
+						M1 = 0.0;
+					}
+
+					index = (int)(fabs((R1-R2)*fq2)*tInt*fftSize/dataSize +0.5);
+					if(index < fftSize)
+					{
+						M2 = Fgate[index];
+					}
+					else
+					{
+						M2 = 0.0;
+					}
+
+					printf("%d %d %d  %14.7f  %f %f  %f %f  %f %f %f\n", scanId, i, j, mjd+sec/86400.0, R1, R2, fabs((R1-R2)*fq1), fabs((R1-R2)*fq2), f, M1, M2);
+				}
+			}
+		}
+		
+	}
 
 	return 0;
 }
@@ -267,7 +397,7 @@ int main(int argc, char **argv)
 		int sourceId;
 		int scanId;
 		int configId;
-		const char *psrName;
+		const char *pulsarName;
 
 		for(configId = 0; configId < D->nConfig; ++configId)
 		{
@@ -278,7 +408,7 @@ int main(int argc, char **argv)
 		}
 		if(configId >= D->nConfig)
 		{
-			printf("Skipping pulsarId=%d because no config uses it\n", pulsarId);
+			printf("#Skipping pulsarId=%d because no config uses it\n", pulsarId);
 
 			continue;
 		}
@@ -292,7 +422,7 @@ int main(int argc, char **argv)
 		}
 		if(scanId >= D->nScan)
 		{
-			printf("Skipping pulsarId=%d because no scan uses it\n", pulsarId);
+			printf("#Skipping pulsarId=%d because no scan uses it\n", pulsarId);
 
 			continue;
 		}
@@ -301,16 +431,21 @@ int main(int argc, char **argv)
 
 		if(sourceId < 0 || sourceId >= D->nSource)
 		{
-			printf("Skipping pulsarId=%d because sourceId = %d and nSource = %d\n", pulsarId, sourceId, D->nSource);
+			printf("#Skipping pulsarId=%d because sourceId = %d and nSource = %d\n", pulsarId, sourceId, D->nSource);
 
 			continue;
 		}
 
-		psrName = D->source[sourceId].name;
+		pulsarName = D->source[sourceId].name;
 
-		printf("Processing pulsar %s:\n", psrName);
+//		if(strcmp(pulsarName, "J1022+1001") != 0)
+//		{
+//			continue;
+//		}
 
-		fftGate(D, pulsarId, configId, psrName);
+		printf("#Processing pulsar %s:\n", pulsarName);
+
+		runPulsar(D, configId, pulsarName);
 	}
 
 	deleteDifxInput(D);
