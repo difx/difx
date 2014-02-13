@@ -38,9 +38,9 @@ from os.path import isfile, isdir, getsize
 from time import gmtime, time
 
 program = 'makefits'
-version = '0.9'
+version = '1.0'
 author  = 'Walter Brisken'
-verdate = '20140105'
+verdate = '20140213'
 
 calfiles = 'tsys flag pcal weather *.*.flag *.*.weather *.*.pcal *.*.tsys *.*.cablecal *.*.gain'
 
@@ -259,6 +259,8 @@ class JobList:
 
 	def makefits(self, queuedir, verbose, sniff, usecwd, options=''):
 
+		nSizeError = 0
+
 		groupId = getenv('DIFX_GROUP_ID')
 
 		cwd = getcwd()
@@ -341,17 +343,20 @@ class JobList:
 		nSrcDigits = countDigits(self.nsrcfiles)
 		format = 'VLBA_%%s_%%s_BIN%%0%dd_SRC%%0%dd_%%0%dd_%%s.idifits' % (nBinDigits, nSrcDigits, nDigit)
 		for i in indices:
-			fn = '%s.%d.bin%04d.source%04d.FITS' % (expt, i[0], i[1], i[2])
-			size = getsize(fn)/1000000.0
-			archfile = format % (self.kv['exper'], self.kv['pass'], i[1], i[2], i[0], datestr)
-			out.write('%s %4.2f %s\n' % (archfile, size, fn))
-			cmd = 'mv %s %s/%s' % (fn, dir, archfile)
+			fileName = '%s.%d.bin%04d.source%04d.FITS' % (expt, i[0], i[1], i[2])
+			archiveFile = format % (self.kv['exper'], self.kv['pass'], i[1], i[2], i[0], datestr)
+			size = getsize(fileName)
+			if size % 2880 != 0:
+				print 'ERROR!!! %s is not a multiple of 2880 bytes!' % archiveFile
+				nSizeError += 1
+			out.write('%s %4.2f %s\n' % (archiveFile, size/1000000.0, fileName))
+			cmd = 'mv %s %s/%s' % (fileName, dir, archiveFile)
 			if verbose:
 				print 'Executing: %s' % cmd
 			system(cmd)
 			if groupId != None:
 				# make sure anyone in the difx group can remove the file later
-				cmd = 'chown -R :%s %s/%s' % (groupId, dir, archfile)
+				cmd = 'chown -R :%s %s/%s' % (groupId, dir, archiveFile)
 				if verbose:
 					print 'Executing: %s' % cmd
 				system(cmd)
@@ -361,16 +366,16 @@ class JobList:
 		j = 1
 		format = 'VLBA_%%s_%%s_BIN%%0%dd_SRC%%0%dd_%%0%dd_%%s.jobmatrix.txt' % (nBinDigits, nSrcDigits, nDigit)
 		for i in indices:
-			fn = '%s.%d.bin%04d.source%04d.jobmatrix' % (expt, i[0], i[1], i[2])
-			if isfile(fn):
-				archfile = format % (self.kv['exper'], self.kv['pass'], i[1], i[2], i[0], datestr)
-				cmd = 'mv %s %s/%s' % (fn, dir, archfile)
+			fileName = '%s.%d.bin%04d.source%04d.jobmatrix' % (expt, i[0], i[1], i[2])
+			if isfile(fileName):
+				archiveFile = format % (self.kv['exper'], self.kv['pass'], i[1], i[2], i[0], datestr)
+				cmd = 'mv %s %s/%s' % (fileName, dir, archiveFile)
 				if verbose:
 					print 'Executing: %s' % cmd
 				system(cmd)
 				if groupId != None:
 					# make sure anyone in the difx group can remove the file later
-					cmd = 'chown -R :%s %s/%s' % (groupId, dir, archfile)
+					cmd = 'chown -R :%s %s/%s' % (groupId, dir, archiveFile)
 					if verbose:
 						print 'Executing: %s' % cmd
 					system(cmd)
@@ -381,9 +386,9 @@ class JobList:
 		cmd = 'cat'
 		nLog = 0
 		for j in self.jobs:
-			fn = dir + '/' + j.name + '.difxlog'
-			if isfile(fn):
-				cmd = cmd + ' ' + fn
+			fileName = dir + '/' + j.name + '.difxlog'
+			if isfile(fileName):
+				cmd = cmd + ' ' + fileName
 				nLog += 1
 		if nLog > 0:
 			cmd = cmd + ' > ' + logFile
@@ -431,7 +436,10 @@ class JobList:
 		if isdir(tmp):
 			print 'Warning: unexpected files left in %s' % tmp
 
-		return True
+		if nSizeError > 0:
+			return False
+		else:
+			return True
 
 	def verify(self, queuedir, allowPartial, usecwd):
 		if usecwd:
@@ -557,6 +565,9 @@ for arg in args:
 		exit(0)
 
 	OK = jl.makefits(difxQueueBase, verbose, sniff, usecwd, opts)
+
+	if not OK:
+		print 'Serious errors were detected!'
 
 if len(gcFilesMissing) > 0:
 	print '\nWarning: some gain curve files were not found:'
