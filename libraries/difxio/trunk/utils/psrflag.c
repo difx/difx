@@ -89,6 +89,8 @@ double getRate(const DifxInput *D, int antennaId, int scanId, int pc, int mjd, i
 
 	dt = sec - im[p].sec;
 
+	//printf("ANT %d  mjd %d sec %d -> %10.6f   im.sec = %d  dt=%d d[0]=%10.8e d[1]=%10.8e\n", antennaId, mjd, sec, mjd+sec/86400.0, im[p].sec, dt, im[p].delay[0], im[p].delay[1]);
+
 	return im[p].delay[1] + 2.0*im[p].delay[2]*dt + 6.0*im[p].delay[3]*dt*dt;
 }
 
@@ -128,7 +130,7 @@ void mjd2keyin(char *str, double mjd)
 
 int runPulsar(const DifxInput *D, int configId, const char *pulsarName)
 {
-	const double thresh = 0.1;
+	const double thresh = 0.05;
 	int pulsarId;
 	int scanId;
 	const DifxConfig *dc;
@@ -272,6 +274,7 @@ int runPulsar(const DifxInput *D, int configId, const char *pulsarName)
 
 				fprintf(out, "\n");
 
+				/* pc = 0 is pointing center; there are a total of nPhaseCentres+1 models; use the last one. */
 				pc = scan->nPhaseCentres;
 
 				int mjd, sec;
@@ -293,16 +296,30 @@ int runPulsar(const DifxInput *D, int configId, const char *pulsarName)
 					
 					for(ii = 0; ii < dc->nIF; ++ii)
 					{
+						const int nSpecPts = 100;
+						int l;
+						double spbw;
 						fq = dc->IF[ii].freq;
-						index = (int)(fabs((R1-R2)*fq)*tInt*fftSize/dataSize +0.5);
-						if(index < fftSize)
+						spbw = dc->IF[ii].bw/nSpecPts;
+						if(dc->IF[ii].sideband == 'L')
 						{
-							M = Fgate[index];
+							spbw = -spbw;
 						}
-						else
+						M = 0.0;
+
+						for(l = 0; l < nSpecPts; ++l)
 						{
-							M = 0.0;
+							double fqm;
+
+							fqm = fq + (0.5 + l)*spbw;
+
+							index = (int)(fabs((R1-R2)*fqm)*(f/f0)*tInt*fftSize/dataSize +0.5);
+							if(index < fftSize)
+							{
+								M += Fgate[index];
+							}
 						}
+						M /= nSpecPts;
 
 						fprintf(out, "  %f %f", fabs((R1-R2)*fq), M);
 
@@ -317,10 +334,12 @@ int runPulsar(const DifxInput *D, int configId, const char *pulsarName)
 						{
 							if(flagOn[ii] > 1.0)
 							{
-								double m1, m2, mAdd = 60/86400.0;
+								double m1, m2, mAdd;
 
 								m1 = flagOn[ii];
 								m2 = mjd+sec/86400.0;
+
+								mAdd = 0.5*(m2-m1);
 
 								m1 -= mAdd;
 								m2 += mAdd;

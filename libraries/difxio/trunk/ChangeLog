@@ -1,6 +1,7 @@
 3.4.0
 * Fix X/Y polarization issue
 * Change internal representation of networkPort from integer to string to accomodate ethernet device names
+* Fix polarization detection in cases where antennas have heterogeneous polarization needs
 
 3.3.0
 * Allow ".input" portion of input file to be optional
