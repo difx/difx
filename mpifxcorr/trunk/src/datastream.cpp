@@ -1083,6 +1083,7 @@ void DataStream::loopnetworkread()
     csevere << startl << "Error in initial telescope readthread lock of outstandingsendlock!!!" << endl;
 
   //open the socket
+cinfo << startl << "DataStream::loopnetworkread(): running openstream" << endl;
   openstream(portnumber, tcpwindowsizebytes);
 
   //start the first frame
@@ -1169,6 +1170,8 @@ int DataStream::openrawstream(const char *device)
 	int s, v;
 	struct ifreq ifr;
 	struct sockaddr_ll sll;
+	struct timeval tv;
+		
 
         socketnumber = 0;
 
@@ -1192,28 +1195,23 @@ int DataStream::openrawstream(const char *device)
 		return -3;
 	}
 
-	if(device)
-	{
-		struct timeval tv;
-		
-		sll.sll_family = AF_PACKET;
-		sll.sll_ifindex = ifr.ifr_ifindex;
-		sll.sll_protocol = htons(ETH_P_ALL);
+        sll.sll_family = AF_PACKET;
+        sll.sll_ifindex = ifr.ifr_ifindex;
+        sll.sll_protocol = htons(ETH_P_ALL);
 
-		v = bind(s, (struct sockaddr *)&sll, sizeof(sll));
-		if(v < 0)
-		{
-			close(s);
+        v = bind(s, (struct sockaddr *)&sll, sizeof(sll));
+        if(v < 0)
+        {
+                close(s);
 
-                        cerror << startl << "DataStream::openrawstream: bind failed on " << device << endl;
+                cerror << startl << "DataStream::openrawstream: bind failed on " << device << endl;
 
-			return -4;
-		}
+                return -4;
+        }
 
-		tv.tv_sec = 0;
-		tv.tv_usec = 100000;
-		setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
-	}
+        tv.tv_sec = 0;
+        tv.tv_usec = 100000;
+        setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
 
         socketnumber = s;
 #else
