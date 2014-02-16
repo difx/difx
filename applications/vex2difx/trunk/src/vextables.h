@@ -393,10 +393,12 @@ public:
 	unsigned int nScan() const { return scans.size(); }
 	const VexScan *getScan(unsigned int num) const;
 	const VexScan *getScanByDefName(const std::string &defName) const;
+	const VexScan *getScanByAntennaTime(const std::string &antName, double mjd) const;
 	void setScanSize(unsigned int num, double size);
 	void getScanList(std::list<std::string> &scans) const;
 
 	unsigned int nAntenna() const { return antennas.size(); }
+	int getAntennaIdByDefName(const std::string &antName) const;
 	const VexAntenna *getAntenna(unsigned int num) const;
 	const VexAntenna *getAntenna(const std::string &name) const;
 	double getAntennaStartMJD(const std::string &name) const;

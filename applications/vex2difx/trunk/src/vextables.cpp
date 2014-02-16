@@ -1299,6 +1299,23 @@ const VexScan *VexData::getScanByDefName(const std::string &defName) const
 	return 0;
 }
 
+const VexScan *VexData::getScanByAntennaTime(const std::string &antName, double mjd) const
+{
+	for(std::vector<VexScan>::const_iterator it = scans.begin(); it != scans.end(); ++it)
+	{
+		const VexInterval *interval = it->getAntennaInterval(antName);
+		if(interval)
+		{
+			if(interval->contains(mjd))
+			{
+				return &(*it);
+			}
+		}
+	}
+
+	return 0;
+}
+
 unsigned int VexScan::nAntennasWithRecordedData(const VexData *V) const
 {
 	unsigned int nAnt = 0;
@@ -1558,6 +1575,19 @@ const VexMode *VexData::getModeByDefName(const std::string &defName) const
 	}
 
 	return 0;
+}
+
+int VexData::getAntennaIdByDefName(const std::string &antName) const
+{
+	for(std::vector<VexAntenna>::const_iterator it = antennas.begin(); it != antennas.end(); ++it)
+	{
+		if(it->defName == antName)
+		{
+			return it - antennas.begin();
+		}
+	}
+
+	return -1;
 }
 
 int VexData::getModeIdByDefName(const std::string &defName) const
