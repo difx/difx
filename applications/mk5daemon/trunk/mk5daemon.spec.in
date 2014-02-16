@@ -1,19 +1,20 @@
 Summary: Mark5 utilities for the DiFX suite
 Name: mk5daemon
 Version: @version@
-Release: 7
+Release: 1
 License: GPL3
 Group: VLBI
 BuildRoot: /var/tmp/mk5daemon-@version@-buildroot
 Requires: streamstor >= 8.2
-Requires: difxmessage >= 2.2.0
-Requires: mark5access >= 1.4.4
+Requires: difxmessage >= 2.4.0
+Requires: mark5access >= 1.5
 Requires: expat
 Prefix: /usr
 Source: mk5daemon-@version@.tar.gz
 
 %description
-Several useful utilites for working with Mark5 units
+Originally this consisted only of several useful utilites for working with Mark5 units.
+It has been expanded to become an integral part of the DiFX monitor and control system.
 
 %prep
 %setup -q -n mk5daemon-@version@
@@ -32,6 +33,7 @@ chmod a+x /sbin/halt
 %defattr(-,root,root)
 %{_bindir}/checkdir
 %{_bindir}/fileto5c
+%{_bindir}/killjob
 %{_bindir}/mk5daemon
 %{_bindir}/mk5cat
 %{_bindir}/mk5control

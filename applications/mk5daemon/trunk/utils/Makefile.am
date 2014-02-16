@@ -1,2 +1,3 @@
 dist_bin_SCRIPTS = \
-	mk5control
+	mk5control \
+	killjob

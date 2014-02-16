@@ -226,6 +226,7 @@ int Mk5Daemon_system(const Mk5Daemon *D, const char *command, int verbose);
 FILE* Mk5Daemon_popen( const Mk5Daemon *D, const char *command, int verbose );
 void Mk5Daemon_reboot(Mk5Daemon *D);
 void Mk5Daemon_poweroff(Mk5Daemon *D);
+void Mk5Daemon_killJob(Mk5Daemon *D, const char *jobName);
 void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G, int noSu);
 void Mk5Daemon_stopMpifxcorr_USNO( Mk5Daemon *D, const DifxMessageGeneric *G );
 void Mk5Daemon_fileTransfer( Mk5Daemon *D, const DifxMessageGeneric *G );

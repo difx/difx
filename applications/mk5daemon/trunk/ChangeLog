@@ -1,6 +1,8 @@
 Version 2.4.0
 ~~~~~~~~~~~~~
 * mk5putdir: replace based on binary file / have ability to change version number
+* mk5daemon: add ability to kill a specific job. Invoke with:  mk5control "killmpifxcorr jobId" all
+* New utility  killjob  which executes: mk5control "killmpifxcorr jobId" all
 
 Version 2.3.0
 ~~~~~~~~~~~~~

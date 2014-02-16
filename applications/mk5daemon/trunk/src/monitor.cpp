@@ -281,6 +281,10 @@ void handleCommand(Mk5Daemon *D, const DifxMessageGeneric *G)
 		Mk5Daemon_system(D, "killall -9 mpifxcorr", 1);
 		Mk5Daemon_system(D, "killall -9 mpirun", 1);
 	}
+	else if(strncasecmp(cmd, "killmpifxcorr ", 14) == 0)
+	{
+		Mk5Daemon_killJob(D, cmd + 14);
+	}
 #ifdef HAVE_XLRAPI_H
 	else if(strcasecmp(cmd, "Clear") == 0)
 	{
@@ -540,3 +544,75 @@ void Mk5Daemon_poweroff(Mk5Daemon *D)
 	Mk5Daemon_system(D, command, 1);
 }
 
+void Mk5Daemon_killJob(Mk5Daemon *D, const char *jobName)
+{
+	const int CommandLength = 128;
+	const int LineLength = 512;
+	char message[DIFX_MESSAGE_LENGTH];
+	char cmd[CommandLength];
+	char line[LineLength];
+	FILE *pin;
+
+	snprintf(cmd, CommandLength, "ps aux | grep \" mpifxcorr \" | grep %s.input", jobName);
+	pin = popen(cmd, "r");
+	if(!pin)
+	{
+		snprintf(message, DIFX_MESSAGE_LENGTH, "Mk5Daemon_killJob: popen failed for jobName=%s", jobName);
+		Logger_logData(D->log, message);
+		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+
+		return;
+	}
+
+	for(;;)
+	{
+		int pid;
+
+		if(fgets(line, LineLength, pin) == 0)
+		{
+			break;
+		}
+		if(sscanf(line, "%*s%d", &pid) == 1)
+		{
+			snprintf(cmd, CommandLength, "kill -9 %d", pid);
+			snprintf(message, DIFX_MESSAGE_LENGTH, "Mk5Daemon_killJob: executing %s\n", cmd);
+			Logger_logData(D->log, message);
+			snprintf(message, CommandLength, "Killing mpifxcorr for job %s with process ID %d", jobName, pid);
+			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
+			system(cmd);
+		}
+	}
+	pclose(pin);
+
+	/* Now go back and make sure they are gone */
+	sleep(1);
+
+	snprintf(cmd, CommandLength, "ps aux | grep \" mpifxcorr \" | grep %s.input", jobName);
+	pin = popen(cmd, "r");
+	if(!pin)
+	{
+		snprintf(message, DIFX_MESSAGE_LENGTH, "Mk5Daemon_killJob: popen failed for jobName=%s (round 2)", jobName);
+		Logger_logData(D->log, message);
+		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+
+		return;
+	}
+
+	for(;;)
+	{
+		int pid;
+
+		if(fgets(line, LineLength, pin) == 0)
+		{
+			break;
+		}
+		if(sscanf(line, "%*s%d", &pid) == 1)
+		{
+			snprintf(message, DIFX_MESSAGE_LENGTH, "Mk5Daemon_killJob: Weird: pid %d remains after kill-9", pid);
+			Logger_logData(D->log, message);
+			snprintf(message, CommandLength, "Killing of job %s not successful.  Try again.", jobName);
+			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+		}
+	}
+	pclose(pin);
+}
