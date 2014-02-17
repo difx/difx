@@ -309,7 +309,7 @@ int spec(const char *filename, const char *formatname, int nchan, int nint, cons
 	int chunk;
 	long long total, unpacked;
 	FILE *out;
-	double f, sum;
+	double f, sum, chanbw;
 	double x, y;
 	int docomplex;
 
@@ -388,10 +388,12 @@ int spec(const char *filename, const char *formatname, int nchan, int nint, cons
 	}
 
 	f = ms->nchan*nchan/sum;
+	chanbw = ms->samprate/(2.0e6*nchan);
+	if (docomplex) chanbw *= 2;
 
 	for(c = 0; c < nchan; ++c)
 	{
-		fprintf(out, "%f ", (double)c*ms->samprate/(2.0e6*nchan));
+		fprintf(out, "%f ", (double)c*chanbw);
 		for(i = 0; i < ms->nchan; ++i)
 		{
 			fprintf(out, " %f", f*spec[i][c]);
