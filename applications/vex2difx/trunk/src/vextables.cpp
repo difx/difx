@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2012 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2009-2014 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -1575,6 +1575,19 @@ const VexMode *VexData::getModeByDefName(const std::string &defName) const
 	}
 
 	return 0;
+}
+
+int VexData::getAntennaIdByName(const std::string &antName) const
+{
+	for(std::vector<VexAntenna>::const_iterator it = antennas.begin(); it != antennas.end(); ++it)
+	{
+		if(it->name == antName)
+		{
+			return it - antennas.begin();
+		}
+	}
+
+	return -1;
 }
 
 int VexData::getAntennaIdByDefName(const std::string &antName) const

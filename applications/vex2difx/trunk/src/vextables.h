@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2012 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2009-2014 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -192,7 +192,7 @@ public:
 	double getLowerEdgeFreq() const;
 
 	std::string name;
-	double ifSSLO;		// SSLO of the IF
+	double ifSSLO;		// [Hz] SSLO of the IF
 	char ifSideBand;	// U or L
 	char pol;		// R or L
 	int phaseCalIntervalMHz;// MHz, typically 1 or 5 (or 0 if none)
@@ -398,6 +398,7 @@ public:
 	void getScanList(std::list<std::string> &scans) const;
 
 	unsigned int nAntenna() const { return antennas.size(); }
+	int getAntennaIdByName(const std::string &antName) const;
 	int getAntennaIdByDefName(const std::string &antName) const;
 	const VexAntenna *getAntenna(unsigned int num) const;
 	const VexAntenna *getAntenna(const std::string &name) const;
