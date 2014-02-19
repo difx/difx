@@ -19,10 +19,10 @@
 //===========================================================================
 // SVN properties (DO NOT CHANGE)
 //
-// $Id: m5spec.c 4587 2012-05-25 01:15:33Z ChrisPhillips $
+// $Id: m5fb.c 0001 2012-05-25 01:15:33Z RichardDOdson $
 // $HeadURL: https://svn.atnf.csiro.au/difx/libraries/mark5access/trunk/mark5access/mark5_stream.c $
-// $LastChangedRevision: 4587 $
-// $Author: ChrisPhillips $
+// $LastChangedRevision: 0001 $
+// $Author: RichardDodson $
 // $LastChangedDate: 2012-05-25 09:15:33 +0800 (Fri, 25 May 2012) $
 //
 //============================================================================
@@ -54,7 +54,7 @@ int die = 0;
 
 typedef enum {VLBA=1, DBBC, NOPOL} polmodetype;
 
-struct hd_info { int nchan; int nint; float freq; float max; float min; float mean; int nbit; } ;
+struct hd_info { int nchan; int nint; float freq; float max; float min; float mean; int nbit; char polid[16]; char *source;} ;
 
 typedef void (*sighandler_t)(int);
 
@@ -90,19 +90,20 @@ static void usage(const char *pgm)
 	printf("The following options are supported\n\n");
 	printf("    -dbbc      Assume dBBC polarisation order (all Rcp then all Lcp)\n\n");
 	printf("    -nopol     Do not compute cross pol terms\n\n");
-	printf("    -b         Write binary output\n\n");
+	printf("    -I         Compute intensity correlation\n\n");
+	printf("    -a         Write ascii output\n\n");
 	printf("    -p         String for pol terms. RLRL etc\n\n");
 	printf("    -i         String for IF terms. ULUL etc\n\n");
 	printf("    -help      This list\n\n");
-	printf("The folllowing options are supported\n\n");
 }
 
 int harvestComplexData(struct mark5_stream *ms, double **spec, fftw_complex **zdata, fftw_complex **zx, int nchan, int nint, int chunk, long long *total, long long *unpacked)
 {
 	fftw_plan *plan;
 	double complex **cdata;
-	int j,status;
+	int j,status,fftmode=0;
 
+	if (nchan<0) {nchan=-nchan;fftmode=1;}
 	plan = (fftw_plan *)malloc(ms->nchan*sizeof(fftw_plan));
 	cdata = (double complex **)malloc(ms->nchan*sizeof(double complex *));
 	for(j = 0; j < ms->nchan; ++j)
@@ -140,6 +141,9 @@ int harvestComplexData(struct mark5_stream *ms, double **spec, fftw_complex **zd
 
 		for(i = 0; i < ms->nchan; ++i)
 		{
+ 		  int fi;
+		  if (fftmode) for(fi=0; fi<nchan;++fi) 
+				{cdata[i][fi]= cabs(cdata[i][fi]);cdata[i][fi]*=cdata[i][fi];}
 			/* FFT */
 			fftw_execute(plan[i]);
 		}
@@ -184,8 +188,9 @@ int harvestRealData(struct mark5_stream *ms, double **spec, fftw_complex **zdata
 {
 	static fftw_plan *plan=NULL;
 	static double **data=NULL;
-	int j, status;
+	int j, status,fftmode=0;
 
+	if (nchan<0) {nchan=-nchan;fftmode=1;}
 	if (!data) { 
 	  plan = (fftw_plan *)malloc(ms->nchan*sizeof(fftw_plan));
 	  data = (double **)malloc(ms->nchan*sizeof(double *));
@@ -224,6 +229,10 @@ int harvestRealData(struct mark5_stream *ms, double **spec, fftw_complex **zdata
 
 		for(i = 0; i < ms->nchan; ++i)
 		{
+		  int fi;
+		  if (fftmode) for(fi=0; fi<nchan;++fi) 
+			{data[i][2*fi]=data[i][2*fi]*data[i][2*fi]+data[i][2*fi+1]*data[i][2*fi+1];
+			 data[i][2*fi+1]=0;}
 			/* FFT */
 			fftw_execute(plan[i]);
 		}
@@ -334,7 +343,7 @@ int print_header(struct mark5_stream *ms, struct hd_info hi,FILE *fo)
   printf("Sampling Time   : %d\n",hi.nint);
   printf("Num bits/sample : 8\n");
   printf("Data Format     : integer binary, little endian\n");
-  printf("Polarizations   : LL\n");
+  printf("Polarizations   : %s\n",hi.polid);
   printf("MJD             : %d\n",ms->mjd+56000);
   printf("UTC             : %02d:%02d:%02d\n",h,m,s);
   printf("Source          : J1745-2900\n");
@@ -363,10 +372,12 @@ int spec(const char *filename, const char *formatname, int nchan, int nint, cons
 	double f, sum, max, min;
 	double x, y;
 	int docomplex;
+	int fftmode=0;
 	struct hd_info hinfo; 
 
 	count =0 ; 
 	total = unpacked = 0;
+	if (nchan<0) {nchan=-nchan;fftmode=1;}
 
 	ms = new_mark5_stream_absorb(
 		new_mark5_stream_file(filename, offset),
@@ -421,11 +432,11 @@ int spec(const char *filename, const char *formatname, int nchan, int nint, cons
 	while (status>=0) { 
 	  if(docomplex)
 	    {
-		status=harvestComplexData(ms, spec, zdata, zx, nchan, nint, chunk, &total, &unpacked);
+	      status=harvestComplexData(ms, spec, zdata, zx, (1-fftmode*2)*nchan, nint, chunk, &total, &unpacked);
 	    } 
 	  else
 	    {
-	  status=harvestRealData(ms, spec, zdata, zx, nchan, nint, chunk, &total, &unpacked, polmode);
+	  status=harvestRealData(ms, spec, zdata, zx, (1-fftmode*2)*nchan, nint, chunk, &total, &unpacked, polmode);
 	    }
 
 	//fprintf(stderr, "Pass %d: %Ld / %Ld samples unpacked\n", ++count, unpacked, total);
@@ -482,6 +493,7 @@ int spec(const char *filename, const char *formatname, int nchan, int nint, cons
 	    hinfo.min=min;
 	    hinfo.mean=1/f;
 	    hinfo.nbit=8;
+	    strncpy(hinfo.polid,polid,nif);
 
 	    first=print_header(ms,hinfo,out); 
 	  }
@@ -549,8 +561,8 @@ int main(int argc, char **argv)
 {
 	long long offset = 0;
 	int nchan, nint,nif,npol;
-	int output_bin=0;
-	int retval;
+	int output_bin=1;
+	int retval,fftmode=0;
 	polmodetype polmode = VLBA;
 	char *ifid="ULULULULULULULUL",*polid="LLLLLLLLLLLLLLLL",*tmp; // 16 IFs swapping Upper Lower, All LHC
 #if USEGETOPT
@@ -558,14 +570,15 @@ int main(int argc, char **argv)
 	struct option options[] = {
 	  {"dbbc", 0, 0, 'B'},
 	  {"nopol", 0, 0, 'P'},
-	  {"bin", 0, 0, 'b'},
+	  {"intensity", 0, 0, 'I'},
+	  {"ascii", 0, 0, 'a'},
 	  {"polid", 1, 0, 'p'},
 	  {"ifid", 1, 0, 'i'},
 	  {"help", 0, 0, 'h'},
 	  {0, 0, 0, 0}
 	};
 
-	while ((opt = getopt_long_only(argc, argv, "BPbhp:i:", options, NULL)) != EOF)
+	while ((opt = getopt_long_only(argc, argv, "BPIahp:i:", options, NULL)) != EOF)
 	  switch (opt) {
 	  case 'B': // DBBC Pol mode (all Rcp then all LCP)
 	    polmode = DBBC;
@@ -577,9 +590,14 @@ int main(int argc, char **argv)
 	    printf("Not computing cross pol terms\n");
 	    break;
 	    
-	  case 'b': // Binary output
-	    output_bin=1;
-	    printf("Outputing binary file\n");
+	  case 'I': // compute Intensity FFT
+	    fftmode = 1;
+	    printf("Computing Intensity FFT\n");
+	    break;
+
+	  case 'a': // Ascii output
+	    output_bin=0;
+	    printf("Outputing ASCII file\n");
 	    break;
 	    
 	  case 'p': // polstring
@@ -691,7 +709,8 @@ int main(int argc, char **argv)
 		offset=atoll(argv[optind+5]);
 	}
 
-	retval = spec(argv[optind], argv[optind+1], nchan, nint, argv[optind+4], offset, polmode, output_bin, ifid, polid);
+	retval = spec(argv[optind], argv[optind+1], (1-fftmode*2)*nchan, nint, 
+		      argv[optind+4], offset, polmode, output_bin, ifid, polid);
 
 	return retval;
 }
