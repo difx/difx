@@ -32,7 +32,7 @@ public class DiFXCommand_sendFile extends DiFXCommand {
         this.header().setType( "DifxFileTransfer" );
         DifxFileTransfer xfer = this.factory().createDifxFileTransfer();
         xfer.setAddress( _settings.guiServerConnection().myIPAddress() );
-        _port = _settings.newDifxTransferPort( 0, true, true );
+        _port = _settings.newDifxTransferPort( 0, 100, true, true );
         xfer.setPort( _port );
         xfer.setDirection( "to DiFX" );
         xfer.setDestination( filename );

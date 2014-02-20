@@ -63,6 +63,7 @@ public class ButtonGrid  extends JPanel { //JScrollPane {
         
         public GridButton( String label ) {
             super( label );
+            _label = label;
             this.on( false );
         }
         
@@ -82,8 +83,14 @@ public class ButtonGrid  extends JPanel { //JScrollPane {
         public Object data() {
             return _data;
         }
+        public boolean hasLabel( String tryLabel ) {
+            if ( tryLabel.contentEquals( _label ) )
+                return true;
+            return false;
+        }
         
         protected Object _data;
+        protected String _label;
     }
     
     /*
@@ -133,7 +140,7 @@ public class ButtonGrid  extends JPanel { //JScrollPane {
                 offset += _scrollbar.getValue();
             int column = 0;
             int row = 0;
-            try {
+            synchronized ( _buttonList ) {
                 for ( Iterator iter = _buttonList.iterator(); iter.hasNext(); ) {
                     GridButton button = (GridButton)iter.next();
                     button.setBounds( column * buttonW, row * _buttonHeight - offset, buttonW, _buttonHeight );
@@ -143,7 +150,6 @@ public class ButtonGrid  extends JPanel { //JScrollPane {
                         row += 1;
                     }
                 }
-            } catch ( java.util.ConcurrentModificationException e ) {
             }
         }
         
@@ -190,7 +196,9 @@ public class ButtonGrid  extends JPanel { //JScrollPane {
         } );
         button.setToolTipText( tooltip );
         button.on( on );
-        _buttonList.add( button );
+        synchronized ( _buttonList ) {
+            _buttonList.add( button );
+        }
         _panel.add( button );
         return button;
     }
@@ -199,13 +207,13 @@ public class ButtonGrid  extends JPanel { //JScrollPane {
      * Get rid of all buttons.
      */
     public void clearButtons() {
-        try {
+        synchronized ( _buttonList ) {
             for ( Iterator iter = _buttonList.iterator(); iter.hasNext(); ) {
                 GridButton button = (GridButton)iter.next();
                 _panel.remove( button );
             }
-        } catch ( java.util.ConcurrentModificationException e ) {}
-        _buttonList.clear();
+            _buttonList.clear();
+        }
     }
         
     
@@ -214,12 +222,42 @@ public class ButtonGrid  extends JPanel { //JScrollPane {
      */
     public ArrayList<String> onItems() {
         ArrayList<String> newList = new ArrayList<String>();
-        for ( Iterator iter = _buttonList.iterator(); iter.hasNext(); ) {
-            GridButton button = (GridButton)iter.next();
-            if ( button.getBackground() == _onColor )
-                newList.add( button.getText() );
+        synchronized ( _buttonList ) {
+            for ( Iterator iter = _buttonList.iterator(); iter.hasNext(); ) {
+                GridButton button = (GridButton)iter.next();
+                if ( button.getBackground() == _onColor )
+                    newList.add( button.getText() );
+            }
         }
         return newList;
+    }
+    
+    /*
+     * Create a list of the data from all "on" items.
+     */
+    public Object buttonData( String name ) {
+        Object ret = null;
+        synchronized ( _buttonList ) {
+            for ( Iterator iter = _buttonList.iterator(); iter.hasNext() && ret == null; ) {
+                GridButton button = (GridButton)iter.next();
+                if ( button.hasLabel( name ) )
+                    ret = button._data;
+            }
+        }
+        return ret;
+    }
+    
+    /*
+     * Turn on/off the named button.
+     */
+    public void namedButtonOn( String name, boolean on ) {
+        synchronized ( _buttonList ) {
+            for ( Iterator iter = _buttonList.iterator(); iter.hasNext(); ) {
+                GridButton button = (GridButton)iter.next();
+                if ( button.hasLabel( name ) )
+                    button.on( on );
+            }
+        }
     }
     
     /*
@@ -234,10 +272,12 @@ public class ButtonGrid  extends JPanel { //JScrollPane {
      */
     public void setButton( String label, boolean on  ) {
         ArrayList<String> newList = new ArrayList<String>();
-        for ( Iterator iter = _buttonList.iterator(); iter.hasNext(); ) {
-            GridButton button = (GridButton)iter.next();
-            if ( button.getText().contentEquals( label ) )
-                button.on( on );
+        synchronized ( _buttonList ) {
+            for ( Iterator iter = _buttonList.iterator(); iter.hasNext(); ) {
+                GridButton button = (GridButton)iter.next();
+                if ( button.getText().contentEquals( label ) )
+                    button.on( on );
+            }
         }
     }
     
@@ -252,9 +292,11 @@ public class ButtonGrid  extends JPanel { //JScrollPane {
      * Turn all of the buttons "on".
      */
     public void allOn() {
-        for ( Iterator iter = _buttonList.iterator(); iter.hasNext(); ) {
-            GridButton button = (GridButton)iter.next();
-            button.on( true );
+        synchronized ( _buttonList ) {
+            for ( Iterator iter = _buttonList.iterator(); iter.hasNext(); ) {
+                GridButton button = (GridButton)iter.next();
+                button.on( true );
+            }
         }
     }
         
@@ -262,12 +304,12 @@ public class ButtonGrid  extends JPanel { //JScrollPane {
      * Turn all of the buttons "off".
      */
     public void allOff() {
-        try {
+        synchronized ( _buttonList ) {
             for ( Iterator iter = _buttonList.iterator(); iter.hasNext(); ) {
                 GridButton button = (GridButton)iter.next();
                 button.on( false );
             }
-        } catch ( java.util.ConcurrentModificationException e ) {}
+        }
     }
     
     public int buttonsPerLine() { return _buttonsPerLine; }

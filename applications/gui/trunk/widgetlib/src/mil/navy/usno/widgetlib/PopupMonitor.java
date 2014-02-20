@@ -91,7 +91,7 @@ public class PopupMonitor extends JDialog implements WindowListener  {
         //  window.  This will give the process a chance to finish quietly if it is
         //  very quick.
         try { Thread.sleep( _delay ); } catch ( Exception e ) {}
-        if ( _success == false ) {
+        if ( _success == false && _cleanClose == false ) {
             //  The spinner involves a thread, so we add it here (instead of when
             //  creating the popup).
             _spinner = new Spinner();
@@ -139,11 +139,11 @@ public class PopupMonitor extends JDialog implements WindowListener  {
      * Called when things succeed.  This makes the window go away.
      */
     protected void successCondition() {
-        _theWindow.setVisible( false );
+        _cleanClose = true;
         _theWindow.setTitle( "DISMISSED - SUCCESS" );
         if ( _spinner != null ) _spinner.stop();
         _success = true;
-        _cleanClose = true;
+        _theWindow.setVisible( false );
     }
     
     /*
@@ -192,11 +192,11 @@ public class PopupMonitor extends JDialog implements WindowListener  {
      * cancelled deliberately.
      */
     protected void cancelOperation() {
-        _theWindow.setVisible( false );
+        _cleanClose = true;
         _theWindow.setTitle( "DISMISSED - CANCEL" );
         if ( _spinner != null ) _spinner.stop();
         _success = false;
-        _cleanClose = true;
+        _theWindow.setVisible( false );
     }
     
     /*
@@ -229,7 +229,6 @@ public class PopupMonitor extends JDialog implements WindowListener  {
             if ( ans == JOptionPane.YES_OPTION )
                 cancelOperation();
         }
-        _theWindow.windowClosing( e );
     }
 
     @Override

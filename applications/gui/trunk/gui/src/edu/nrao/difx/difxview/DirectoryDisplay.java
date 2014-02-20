@@ -321,7 +321,7 @@ public class DirectoryDisplay extends JFrame {
         // reporting.
         if ( _settings.sendCommandsViaTCP() ) {
             cmd.setAddress( _settings.guiServerConnection().myIPAddress() );
-            monitorPort = _settings.newDifxTransferPort( 0, true, true );
+            monitorPort = _settings.newDifxTransferPort( 0, 100, true, true );
             cmd.setPort( monitorPort );
         }
         
@@ -571,7 +571,7 @@ public class DirectoryDisplay extends JFrame {
             // reporting.
             if ( _settings.sendCommandsViaTCP() ) {
                 cmd.setAddress( _settings.guiServerConnection().myIPAddress() );
-                monitorPort = _settings.newDifxTransferPort( 0, true, true );
+                monitorPort = _settings.newDifxTransferPort( 0, 100, true, true );
                 cmd.setPort( monitorPort );
             }
 

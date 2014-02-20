@@ -75,6 +75,8 @@ import mil.navy.usno.widgetlib.ButtonGrid;
 
 import javax.swing.event.EventListenerList;
 
+import java.awt.event.ComponentEvent;
+
 import java.sql.ResultSet;
 
 public class ExperimentEditor extends JFrame {
@@ -85,8 +87,15 @@ public class ExperimentEditor extends JFrame {
         this.setLayout( null );
         this.setBounds( x, y, _settings.windowConfiguration().experimentEditorW,
                 _settings.windowConfiguration().experimentEditorH );
-        this.getContentPane().setLayout( null );
         _this = this;
+        this.getContentPane().setLayout( null );
+    	this.addComponentListener( new java.awt.event.ComponentAdapter() {
+            public void componentResized( ComponentEvent e ) {
+                _settings.windowConfiguration().experimentEditorW = _this.getWidth();
+                _settings.windowConfiguration().experimentEditorH = _this.getHeight();
+                newSize();
+            }
+        });
         _menuBar = new JMenuBar();
         JMenu helpMenu = new JMenu( "  Help  " );
         _menuBar.add( helpMenu );
@@ -917,8 +926,6 @@ public class ExperimentEditor extends JFrame {
     public void newSize() {
         int w = this.getWidth();
         int h = this.getHeight();
-        _settings.windowConfiguration().experimentEditorW = w;
-        _settings.windowConfiguration().experimentEditorH = h;
         if ( _menuBar != null )
             _menuBar.setBounds( 0, 0, w, 25 );
         if ( _allObjectsBuilt ) {
@@ -1290,7 +1297,7 @@ public class ExperimentEditor extends JFrame {
                     pt = _thisExperiment.getLocationOnScreen();
                 GetFileMonitor getFile = new GetFileMonitor(  (Frame)comp, pt.x + 25, pt.y + 25,
                         basePath + v2dFileParser.vexFile(), _settings );
-                if ( getFile.inString() != null && getFile.inString().length() > 0 ) {
+                if ( getFile.success() && getFile.inString() != null && getFile.inString().length() > 0 ) {
                     _editor.text( getFile.inString() );
                     //  This should initialize all of the settings properly...we hope.
                     //  Specific .v2d file settings will then change them.
@@ -1400,7 +1407,14 @@ public class ExperimentEditor extends JFrame {
             public void actionPerformed( ActionEvent e ) {
                 //  Found anything at all?
                 if ( _lastV2dPath != null ) {
-                    readV2dFile( _lastV2dPath, _lastV2dBase );
+                    final String thePath = _lastV2dPath;
+                    final String theBase = _lastV2dBase;
+                    Thread doThisInAThread = new Thread() {
+                        public void run() {
+                            readV2dFile( thePath, theBase );
+                        }
+                    };
+                    doThisInAThread.start();       
                 }
             }
         });
@@ -1422,7 +1436,6 @@ public class ExperimentEditor extends JFrame {
      * function but it may have other uses.
      */
     public void readV2dFile( String fileName, String basePath ) {
-        //  Find thi d
         Component comp = _this;
         while ( comp.getParent() != null )
             comp = comp.getParent();
@@ -1910,12 +1923,12 @@ public class ExperimentEditor extends JFrame {
     
     /*
      * Fill the table containing EOP data from external sources (not from the .vex file)
-     * using current data.  This is done when the table is created intialy, or when there
+     * using current data.  This is done when the table is created initially, or when there
      * are changes to the data.
      */
     protected void replaceRemoteEOPData() {
         //  This has to be here because a callback is triggered before this pane is built.
-        if ( _newEOPPane == null )
+        if ( _newEOPPane == null || _eopMinTime == null || _eopMaxTime == null )
             return;
         _newEOPPane.clear();
         //  Generate EOP data from the EOP source (if available).  To do this, we first
@@ -2203,14 +2216,20 @@ public class ExperimentEditor extends JFrame {
      * selections.
      */
     public void checkScansAgainstAntennas() {
-        for ( Iterator<ButtonGrid.GridButton> iter = _scanGrid.buttonList().iterator(); iter.hasNext(); ) {
-            ButtonGrid.GridButton button = iter.next();
+        for ( Iterator<String> iter = _scanGrid.onItems().iterator(); iter.hasNext(); ) {
+            String buttonName = iter.next();
             //  Check any scan button that is already on against chosen antennas.
-            if ( button.on() ) {
-                VexFileParser.Scan scan = (VexFileParser.Scan)button.data();
+            VexFileParser.Scan scan = (VexFileParser.Scan)_scanGrid.buttonData( buttonName );
+            if ( scan != null ) {
                 //  The list of stations/antennas that is on...all of the scans antennas must
                 //  be included or it will be turned off.
                 boolean _stationsMatch = true;
+                //  Little thread thing to make sure there is time to collect the "scan" information.
+                int count = 10;
+                while ( scan.station == null && count != 0 ) {
+                    --count;
+                    try { Thread.sleep( 100 ); } catch ( Exception e ) {}
+                }
                 for ( Iterator jter = scan.station.iterator(); jter.hasNext(); ) {
                     VexFileParser.ScanStation station = (VexFileParser.ScanStation)jter.next();
                     if ( _antennaList == null || _antennaList.useList().isEmpty() )
@@ -2228,7 +2247,7 @@ public class ExperimentEditor extends JFrame {
                     }
                 }
                 if ( !_stationsMatch )
-                    button.on( false );
+                    _scanGrid.namedButtonOn( buttonName, false );
             }
         }
     }
@@ -2248,7 +2267,7 @@ public class ExperimentEditor extends JFrame {
                         //  Eliminate the button panel using the class cast exception.
                         try {
                             SourcePanel source = (SourcePanel)jter.next();
-                            if ( source != null && scan.source.equalsIgnoreCase( source.name() ) && source.use() )
+                            if ( scan != null && scan.source != null && source != null && scan.source.equalsIgnoreCase( source.name() ) && source.use() )
                                 _sourceFound = true;
                         } catch ( java.lang.ClassCastException e ) {
                         } catch ( java.util.ConcurrentModificationException e ) {}

@@ -25,7 +25,7 @@ import java.awt.Frame;
 public class GetFileMonitor extends PopupMonitor {
     
     public GetFileMonitor( Frame frame, int x, int y, String filePath, SystemSettings settings ) {
-        super( frame, x, y, 600, 145, 200 );
+        super( frame, x, y, 600, 145, 1000 );
         _settings = settings;
         _filePath = filePath;
         _inString = null;
@@ -38,7 +38,7 @@ public class GetFileMonitor extends PopupMonitor {
             }
         }
         //  Open a "get file" operation and set the various callbacks.
-        System.out.println( "GetFileMonitor: getting file " + _filePath );
+        //System.out.println( "GetFileMonitor: getting file " + _filePath );
         _fileGet = new DiFXCommand_getFile( _filePath, _settings );
         if ( _fileGet.error() != null ) {
             _error = _fileGet.error();

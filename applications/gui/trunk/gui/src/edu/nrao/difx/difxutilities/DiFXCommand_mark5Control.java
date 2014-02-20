@@ -48,7 +48,7 @@ public class DiFXCommand_mark5Control extends DiFXCommand {
             mk5Control.setCommand( cmd );
             mk5Control.setTargetNode( node );
             mk5Control.setAddress( _settings.guiServerConnection().myIPAddress() );
-            _port = _settings.newDifxTransferPort( 0, true, true );
+            _port = _settings.newDifxTransferPort( 0, 100, true, true );
             mk5Control.setPort( _port );
             this.body().setDifxMk5Control( mk5Control );
         }

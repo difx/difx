@@ -20,6 +20,7 @@ import javax.swing.JMenuItem;
 import javax.swing.JProgressBar;
 import javax.swing.JSeparator;
 import javax.swing.JTextField;
+import javax.swing.SwingUtilities;
 
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
@@ -177,11 +178,17 @@ public class JobNode extends QueueBrowserNode {
         _monitorMenuItem = new JMenuItem( "Controls for " + name() );
         _monitorMenuItem.addActionListener(new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
-                if ( updateEditorMonitor( 1000 ) )
-                    _editorMonitor.setVisible( true );
-                else
-                    JOptionPane.showMessageDialog( _this, "Timeout reading .input file data",
-                            "Failed", JOptionPane.WARNING_MESSAGE );
+//                Thread doThisInAThread = new Thread() {
+//                    public void run() {
+                        if ( updateEditorMonitor( 1000 ) ) {
+                            _editorMonitor.setVisible( true );
+                        }
+                        else
+                            JOptionPane.showMessageDialog( _this, "Timeout reading .input file data",
+                                    "Failed", JOptionPane.WARNING_MESSAGE );
+//                    }
+//                };
+//                doThisInAThread.start();
             }
         });
         _monitorMenuItem.setEnabled( false );

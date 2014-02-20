@@ -61,6 +61,7 @@ public class Spinner extends JPanel {
 
         public void run() {
             _value = 10;
+            _threadRunning = true;
             while ( _keepGoing ) {
                 try { Thread.sleep( 166 );
                 } catch ( Exception e ) {
@@ -70,12 +71,22 @@ public class Spinner extends JPanel {
                     _value = 0;
                 _this.updateUI();
             }
+            _threadRunning = false;
         }
         protected boolean _keepGoing;
         public void keepGoing( boolean newVal ) { _keepGoing = newVal; }
+        protected boolean _threadRunning;
+        public boolean threadRunning() { return _threadRunning; }
     }
 
-    public void stop() { _timeThread.keepGoing( false ); }
+    public void stop() { 
+        _timeThread.keepGoing( false );
+        int counter = 10;
+        while ( _timeThread.threadRunning() && counter != 0 ) {
+            --counter;
+            try { Thread.sleep( 250 ); } catch ( Exception e ) {}
+        }
+    }
     public void error() { _errorCondition = true; }
     public void ok() { _errorCondition = false; }
 

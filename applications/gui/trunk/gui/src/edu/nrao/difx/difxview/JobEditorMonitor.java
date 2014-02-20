@@ -49,6 +49,8 @@ import java.util.List;
 
 import javax.swing.event.EventListenerList;
 
+import java.awt.event.ComponentEvent;
+
 import mil.navy.usno.widgetlib.IndexedPanel;
 import mil.navy.usno.widgetlib.NodeBrowserScrollPane;
 import mil.navy.usno.widgetlib.NumberBox;
@@ -72,6 +74,13 @@ public class JobEditorMonitor extends JFrame {
         this.setLayout( null );
         this.setBounds( 500, 100, _settings.windowConfiguration().jobEditorMonitorWindowW,
                 _settings.windowConfiguration().jobEditorMonitorWindowH );
+    	this.addComponentListener( new java.awt.event.ComponentAdapter() {
+            public void componentResized( ComponentEvent e ) {
+                _settings.windowConfiguration().jobEditorMonitorWindowW = _this.getWidth();
+                _settings.windowConfiguration().jobEditorMonitorWindowH = _this.getHeight();
+                newSize();
+            }
+        });
         this.setTitle( "Controls for " + _jobNode.name() );
         _menuBar = new JMenuBar();
         _menuBar.setVisible( true );
@@ -521,7 +530,7 @@ public class JobEditorMonitor extends JFrame {
 //        _updateThread = new UpdateThread( 1000 );
 //        _updateThread.start();
         
-        this.newSize();
+        newSize();
 
     }
     
@@ -558,10 +567,6 @@ public class JobEditorMonitor extends JFrame {
     public void newSize() {
         //  The current sizes are saved in the settings...but we can't be certain
         //  the _settings variable has been set yet.
-        if ( _settings != null ) {
-            _settings.windowConfiguration().jobEditorMonitorWindowW = this.getWidth();
-            _settings.windowConfiguration().jobEditorMonitorWindowH = this.getHeight();
-        }
         if ( _allObjectsBuilt ) {
             int w = this.getContentPane().getSize().width;
             int h = this.getContentPane().getSize().height;
@@ -1012,7 +1017,7 @@ public class JobEditorMonitor extends JFrame {
         // reporting.
         if ( _settings.sendCommandsViaTCP() ) {
             cmd.setAddress( _settings.guiServerConnection().myIPAddress() );
-            monitorPort = _settings.newDifxTransferPort( 0, true, true );
+            monitorPort = _settings.newDifxTransferPort( 0, 100, true, true );
             cmd.setPort( monitorPort );
         }
         
@@ -1385,7 +1390,7 @@ public class JobEditorMonitor extends JFrame {
         // reporting.
         if ( _settings.sendCommandsViaTCP() ) {
             jobStart.setAddress( _settings.guiServerConnection().myIPAddress() );
-            monitorPort = _settings.newDifxTransferPort( 0, true, true );
+            monitorPort = _settings.newDifxTransferPort( 0, 100, true, true );
             jobStart.setPort( monitorPort );
         }
         
@@ -2556,7 +2561,7 @@ public class JobEditorMonitor extends JFrame {
      * Examine the current list of data sources for existence, sanity, and whatever
      * else.
      */
-    synchronized public void buildDataSourceList() {
+     public void buildDataSourceList() {
         //  Don't do anything if reading the input file failed.
         if ( _inputFile == null )
             return;
@@ -2627,7 +2632,7 @@ public class JobEditorMonitor extends JFrame {
     /*
      * Parse the string data in the .input file editor.
      */
-    synchronized public void parseInputFile() {
+    public void parseInputFile() {
         
         String str = _inputFileEditor.text();
         _inputFile = new InputFileParser( str );
@@ -2653,7 +2658,7 @@ public class JobEditorMonitor extends JFrame {
         buildDataSourceList();
         
         _inputFileParsed = true;
-
+        
     }
     
     /*

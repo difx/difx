@@ -156,7 +156,7 @@ public class ExperimentNode extends QueueBrowserNode {
     public void deleteAction() {
         if ( !this._children.isEmpty() ) {
             Object[] options = { "Delete All Passes", "Cancel" };
-            int ans = JOptionPane.showOptionDialog( this,
+            int ans = JOptionPane.showOptionDialog( this.getParent(),
                     "The Experiment still contains passes which must be deleted first!\n" +
                     "Do you wish to delete them now?",
                     "Experiment Contains Passes",

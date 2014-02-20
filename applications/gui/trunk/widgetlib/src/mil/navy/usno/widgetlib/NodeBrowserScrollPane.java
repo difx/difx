@@ -176,6 +176,7 @@ public class NodeBrowserScrollPane extends JPanel implements MouseMotionListener
         _scrollBar.setValues( -_yOffset, d.height, 0, browserPane.dataHeight() ); 
         testScrollBar( d.height );
         dispatchResizeEvent();
+        this.updateUI();
     }
     
     /*
@@ -272,6 +273,7 @@ public class NodeBrowserScrollPane extends JPanel implements MouseMotionListener
             g.setColor( Color.BLACK );
             g.drawRect( d.width - SCROLLBAR_WIDTH, 0, SCROLLBAR_WIDTH, d.height );
             _scrollBar.setValues( -_yOffset, d.height, 0, browserPane.dataHeight() ); 
+            _scrollBar.update( g );
         }
         g.setColor( Color.BLACK );
         if ( _drawFrame )

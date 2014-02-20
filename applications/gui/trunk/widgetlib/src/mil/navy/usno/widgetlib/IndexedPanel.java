@@ -86,6 +86,7 @@ public class IndexedPanel extends BrowserNode {
     public void paintComponent( Graphics g ) {
         if ( !_inBounds )
             return;
+        super.paintComponent( g );
         //  If the panel is closed and the mouse is in it, highlight it.
         if ( !_open && !_alwaysOpen && _mouseIn ) {
             g.setColor( _highlightColor );

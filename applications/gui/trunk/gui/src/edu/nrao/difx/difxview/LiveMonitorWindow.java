@@ -735,7 +735,7 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
             //  talk to monitor_server.  The thread will start a server at the
             //  specified port.
             java.nio.ByteBuffer bb = java.nio.ByteBuffer.allocate(4);
-            _usingPort = _settings.newDifxTransferPort( 0, true, true );
+            _usingPort = _settings.newDifxTransferPort( 0, 100, true, true );
             _monitorPort.setText( new Integer( _usingPort ).toString() );
             bb.putInt( _usingPort ); 
             byte [] intData = bb.array();
