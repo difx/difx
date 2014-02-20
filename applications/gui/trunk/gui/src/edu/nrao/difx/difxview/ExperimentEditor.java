@@ -2792,6 +2792,7 @@ public class ExperimentEditor extends JFrame {
                     //  Create a node associated with this new job, then put it into
                     //  the appropriate pass so that it will appear in the queue browser.
                     _statusLabel.setText( "creating new job \"" + jobName + "\"" );
+                    _newPass.stateLabel( "Downloading Files for Job \"" + jobName + "\"", Color.YELLOW, true );
                     //BLATSystem.out.println( "creating new job \"" + jobName + "\"" );
                     newJob = new JobNode( jobName, _settings );
                     newJob.fullName( fullName );
@@ -2807,6 +2808,7 @@ public class ExperimentEditor extends JFrame {
                             newJob.logFile().filename(), newJob.logFile().content(), _settings );
                     //  Add the job to the existing pass.
                     _newPass.addChild( newJob );
+                    _newPass.sortByName();
                     newJob.passNode( _newPass );
                     _settings.queueBrowser().addJob( newJob );
                     //newJob.editorMonitor().editor( _this );
