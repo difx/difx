@@ -32,6 +32,10 @@
 #include "vdiffile.h"
 #include <difxmessage.h>
 
+#ifdef __APPLE__
+#include "pthreadbarrier.h"
+#endif
+
 class VDIFNetworkDataStream : public VDIFDataStream
 {
 public:

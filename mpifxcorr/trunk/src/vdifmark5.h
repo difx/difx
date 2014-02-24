@@ -68,6 +68,9 @@ private:
 	unsigned int readbufferslots, readbufferslotsize;
 	pthread_t mark5thread;
 	pthread_mutex_t *mark5threadmutex;
+#ifdef __APPLE__
+#include "pthreadbarrier.h"
+#endif
 	pthread_barrier_t mark5threadbarrier;
 	bool mark5xlrfail;
 	bool mark5threadstop;
