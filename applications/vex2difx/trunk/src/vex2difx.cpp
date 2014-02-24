@@ -900,6 +900,8 @@ static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, vector<vector<
 	}
 	const VexSetup* setup = mode->getSetup(antName);
 
+	unsigned int nBits = setup->nBit;
+
 	if(setup == 0)
 	{
 		cerr << "Developer error: setFormat(ant=" << antName << ", mode=" << mode->defName << ") -> setup=0" << endl;
@@ -974,37 +976,28 @@ static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, vector<vector<
 		strcpy(D->datastream[dsId].dataFormat, "VDIF");
 		D->datastream[dsId].dataFrameSize = 5032;
 	}
-	else if(setup->formatName.substr(0,5) == string("VDIFL"))
-	{
-		// look for VDIF + extra information
-		// Formats supported are:
-		//   VDIFLxxxx		xxxx = frame size, assume threadId increases from zero with channel number
-		//   VDIFL/xxxx		xxxx = frame size, assume threadId increases from zero with channel number
-
-	  strcpy(D->datastream[dsId].dataFormat, "VDIFL");
-	  size_t p = setup->formatName.find_last_of('/');
-	  if(p == string::npos)
-	  {
-	    // VDIFxxxx case
-	    D->datastream[dsId].dataFrameSize = atoi(setup->formatName.substr(5).c_str());
-	  }
-	  else
-	  {
-	      // VDIF/xxxx (and perhaps more complicated) case
-	      D->datastream[dsId].dataFrameSize = atoi(setup->formatName.substr(setup->formatName.find_last_of('/')+1).c_str());
-	  }
-	}
 	else if(setup->formatName.substr(0,4) == string("VDIF"))
 	{
 		// look for VDIF + extra information
-		// This attempts to be useful but can be confusing at the same time.
-		// For antennas "known" to produce multithread (interlaced) VDIF, this will assume that and a sequence of thread ids starting with 0 
-		// For other antennas, this defaults to single-thread vdif.
-		// Formats supported are:
-		//   VDIFxxxx		xxxx = frame size, assume threadId increases from zero with channel number
-		//   VDIF/xxxx		xxxx = frame size, assume threadId increases from zero with channel number
-
-		if(usesCannonicalVDIFThreadIds(antName.c_str()))
+		// Formats supported are  VDIF, VDIFL and VDIFC
+		//   VDIFLxxx		xxxx = frame size
+		//   VDIF/xxxx		xxxx = frame size
+		//   VDIF/xxxx/bb	xxxx = frame size, bb = # bits
+	  int strOff;
+	  if (setup->formatName.substr(0,5) == string("VDIFL")) 
+	    {
+	      strcpy(D->datastream[dsId].dataFormat, "VDIFL");
+	      strOff = 5;
+	    } 
+	  else if (setup->formatName.substr(0,5) == string("VDIFC")) 
+	    {
+	      strcpy(D->datastream[dsId].dataFormat, "VDIF");
+	      strOff = 5;
+	    }
+	  else 
+	    {
+	      
+	      if(usesCannonicalVDIFThreadIds(antName.c_str()))
 		{
 			char sep = '/';
 			std::stringstream threadSS;
@@ -1020,33 +1013,34 @@ static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, vector<vector<
 		{
 			strcpy(D->datastream[dsId].dataFormat, "VDIF");
 		}
-		size_t p = setup->formatName.find_last_of('/');
-		if(p == string::npos)
-		{
-			// VDIFxxxx case
-			D->datastream[dsId].dataFrameSize = atoi(setup->formatName.substr(4).c_str());
-		}
-		else
-		{
-			// VDIF/xxxx (and perhaps more complicated) case
-			D->datastream[dsId].dataFrameSize = atoi(setup->formatName.substr(setup->formatName.find_last_of('/')+1).c_str());
-		}
-	}
-	else if(setup->formatName.substr(0,5) == string("VDIFC"))
-	{
-		strcpy(D->datastream[dsId].dataFormat, "VDIF");
-		size_t p = setup->formatName.find_last_of('/');
-		if(p == string::npos)
-		{
-			// VDIFxxxx case
-			D->datastream[dsId].dataFrameSize = atoi(setup->formatName.substr(5).c_str());
-		}
-		else
-		{
-			// VDIF/xxxx (and perhaps more complicated) case
-			D->datastream[dsId].dataFrameSize = atoi(setup->formatName.substr(setup->formatName.find_last_of('/')+1).c_str());
-		}
+	      strOff = 4;
+	    }
 
+
+	  size_t p = setup->formatName.find_first_of('/');
+		if(p == string::npos)
+		{
+			// VDIFxxxx case
+			D->datastream[dsId].dataFrameSize = atoi(setup->formatName.substr(strOff).c_str());
+
+		}
+		else
+		{
+		  string fstr = setup->formatName.substr(p+1);
+
+		  p = fstr.find_last_of('/');
+		  if (p == string::npos)
+		  {
+		      // VDIF/xxxx  case
+		      D->datastream[dsId].dataFrameSize = atoi(fstr.c_str());
+		  } 
+		  else 
+		  {
+		      // VDIF/xxxx/xxxx  case
+		      D->datastream[dsId].dataFrameSize = atoi(fstr.substr(0,p).c_str());
+		      nBits = atoi(fstr.substr(p+1).c_str());
+		  }
+		}
 	}
 	else if(setup->formatName.substr(0,14) == string("INTERLACEDVDIF"))
 	{
@@ -1081,7 +1075,7 @@ static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, vector<vector<
 		return 0;
 	}
 
-	D->datastream[dsId].quantBits = setup->nBit;
+	D->datastream[dsId].quantBits = nBits;
 	DifxDatastreamAllocBands(D->datastream + dsId, setup->nRecordChan);
 
 	for(vector<VexChannel>::const_iterator ch = setup->channels.begin(); ch != setup->channels.end(); ++ch)
