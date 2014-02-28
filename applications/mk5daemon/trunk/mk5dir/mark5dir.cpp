@@ -1227,7 +1227,7 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref, int (*callback)(i
 	int die = 0;
 	int newDirVersion;   /* == 0 for old style (pre-mark5-memo 81) */
 	                     /* == version number for mark5-memo 81 */
-	int oldLen1, oldLen2, oldLen3, oldLen4, oldLen5;
+	int oldLen1, oldLen2, oldLen3, oldLen4, oldLen5, oldLen6;
 	int start, stop;
 	int oldFast;
 	int nscans;
@@ -1267,7 +1267,8 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref, int (*callback)(i
 	oldLen3 = oldLen1 + 64 + 16*88;
 	oldLen4 = 83552;	/* DIMINO w/ SDK9 */
 	oldLen5 = 83488;	/* Another odd variant */
-	if(len == oldLen1 || len == oldLen2 || len == oldLen3 || len == oldLen4 || len == oldLen5)
+	oldLen6 = 5244512;	/* Old version with 65536 entries */
+	if(len == oldLen1 || len == oldLen2 || len == oldLen3 || len == oldLen4 || len == oldLen5 || len == oldLen6)
 	{
 		newDirVersion = 0;
 	}
