@@ -1247,6 +1247,8 @@ The columns are:
 \item {\em mjdStart} : the observe start time of the job
 \item {\em mjdStop} : the observe stop time of the job
 \item {\em nAnt} : the number of antennas in the job
+\item {\em maxPulsarBin} : the maximum number of pulsar bins to come from any scan in this job (usually zero)
+\item {\em nPhaseCenters} : the maximum number of phase centers to come from any scan in this job (usually one)
 \item {\em tOps} : estimated number of trillion floating point operations required to run the job
 \item {\em outSize} : estimated FITS file output size (MB)
 \end{enumerate}
@@ -1406,7 +1408,7 @@ A file called {\tt pcal} is created when program {\tt vlog} operates on the {\tt
 This file contains three measurements: the cable length calibration, pulse calibration, and state counts.
 This file contains two kinds of lines.
 Comment lines begin with an octothorpe (\#) and contain no vital information.
-Data lines always contain 8 fixed-size fields:
+Data lines always contain 9 fixed-size fields:
 \begin{enumerate}
 \item {\em antId} : Station name abbreviation, e.g., {\tt LA}
 \item {\em day} : Time centroid of measurement (day of year, including fractional portion)
