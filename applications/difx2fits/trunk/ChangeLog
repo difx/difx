@@ -1,6 +1,7 @@
 Version 3.4.0
 * Add command line option --primary-band.  This causes a keyword to be added to the output FITS file.  Intended for VLITE.
 * makefits: check for files being multiple of 2880 bytes
+* print MJD range of converted output
 
 Version 3.3.0
 * Improved clarity in generation of Flag, Tsys, Pcal, Gain and Weather tables: prioritized sources of data

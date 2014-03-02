@@ -1145,6 +1145,8 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fi
 	int jobId;
 	int nDifxVis;
 	int dvId;
+	double firstMJD = 1.0e7;
+	double lastMJD = 0.0;
 #ifdef HAVE_FFTW
 	Sniffer *S = 0;
 #endif
@@ -1425,6 +1427,15 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fi
 			FitsBinRowByteSwap(columns, nColumn, dv->record);
 #endif
 
+			if(dv->mjd+dv->utc < firstMJD)
+			{
+				firstMJD = dv->mjd+dv->utc;
+			}
+			if(dv->mjd+dv->utc > lastMJD)
+			{
+				lastMJD = dv->mjd+dv->utc;
+			}
+
 			fitsWriteBinRow(out, (char *)dv->record);
 			++nWritten;
 		}
@@ -1461,6 +1472,7 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fi
 	printf("      %d scan boundary records dropped\n", nTrans);
 	printf("      %d out-of-time-range records dropped\n", nOld);
 	printf("      %d records written\n", nWritten);
+	printf("      FITS MJD range: %12.6f to %12.6f\n", firstMJD, lastMJD);
 	if(opts->verbose > 1)
 	{
 		printf("        Note : 1 record is all data from 1 baseline for 1 timestamp\n");
