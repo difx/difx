@@ -35,8 +35,8 @@ from string import split, strip, find, rfind, lower
 import gzip
 
 program = 'vlog'
-version = 1.8
-verdate = '20131213'
+version = 1.9
+verdate = '20140303'
 author  = 'Walter Brisken'
 
 def usage():
@@ -514,10 +514,8 @@ def getIsMark5C():
 	ldir = lower(getcwd())
 	if find(ldir, 'mark5a') >= 0:
 		return 0
-	elif find(ldir, 'mark5c') >= 0:
-		return 1
 	else:
-		return -1;
+		return 1
 
 # -- main() -----------------
 
@@ -593,10 +591,6 @@ if len(ants) == 0:
 
 if isMark5C < 0:
 	isMark5C = getIsMark5C()
-
-if isMark5C < 0:
-	print 'Cannot determine if this is Mark5A or Mark5C.  Assuming Mark5A'
-	isMark5C = 0;
 
 print 'It looks like the observation started on day %d of year %d' % (startdoy, startyear)
 
