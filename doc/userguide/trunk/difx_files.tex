@@ -679,6 +679,9 @@ In the above table, $N$ is the number of parameters taking on multiple values an
 
 \subsection{\$DIFX\_MACHINES} \label{sec:difxmachines}
 
+This section describes the format of a file used through DiFX-2.2.
+For more recent versions please see documentation on the DiFX wiki \url{http://cira.ivec.org/dokuwiki/doku.php/difx/start/} .
+
 Environment variable {\tt DIFX\_MACHINES} should point to a file containing a list of machines that are to be considered elements of the software correlator.
 Program {\tt genmachines} (\S\ref{sec:genmachines}) uses this file and information within a {\tt .input} file to populate the {\tt .machines} file needed by {\tt mpifxcorr}.
 Because usually only one node in a cluster has direct access to a particular Mark5 module (or data from that module), the ordering of computer names in the {\tt .machines} file is important.
