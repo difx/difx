@@ -422,7 +422,6 @@ DiFX 2.1.1 was a minor patch release to fix a scaling issue with autocorrelation
 
 DiFX 2.1.1 was committed as a patch to DiFX 2.1 on June 7, 2012.
 
-
 \subsection{DiFX 2.2}
 
 \subsubsection{New features}
@@ -461,6 +460,41 @@ DiFX 2.1.1 was committed as a patch to DiFX 2.1 on June 7, 2012.
 
 
 DiFX 2.2 was released on June 12, 2013.
+
+
+
+\subsection{DiFX 2.3}
+
+\subsubsection{New features}
+
+\begin{enumerate}
+
+\item mpifxcorr: LO offsets are now corrected in the time domain when fringe rotation is also done in the time domain (the usual mode), allowing considerably larger LO offsets without decorrelation
+\item mpifxcorr: Working polarization dependent delay and phase offsets
+\item mpifxcorr: Experimental linear2circular conversion
+\item mpifxcorr: Complex Double sideband (RDBE/Xcube) sampling support (Note: things are not perfect here; wait for 2.4 for real use)
+\item mpifxcorr: new file/Mark5 based VDIF/Mark5b datastream (faster and more robust)
+\item mpifxcorr: implement work-around for buggy kernel-driver combinations; Mark5 read sizes >20 MB now allowed
+\item utilities: some new command line tools for Mark5B and VDIF files (vsum, mk5bsum, vmux, mk5bfix)
+\item new options for passing calibration (Walter B: memo forthcoming)
+\item Hops updated to version 3.9
+
+\end{enumerate}
+
+\subsubsection{Bug fixes}
+
+\begin{enumerate}
+
+\item mpifxcorr: Datasteam buffer send size now calculated correctly for complex sampled data
+\item mpifxcorr: Avoid very rare bug where combination of geometric delay and data commencing mid-subint meant one invalid FFT might be computed
+\item mpifxcorr: multicast weights are now computed correctly for mixed-sideband correlation
+\item mpifxcorr: fixed bug where some autocorrelations were not saved in a mixed-sideband correlation
+\item mpifxcorr: fixed bug where send size could be computed incorrectly by 1-2 bytes for
+\item Mark4/VLBA/Mark5B/VDIF formats, potentially resulting in very small amounts of data loss
+
+\end{enumerate}
+
+DiFX 2.3 was released on January 18, 2014.
 
 
 \subsection{Features left to implement}
