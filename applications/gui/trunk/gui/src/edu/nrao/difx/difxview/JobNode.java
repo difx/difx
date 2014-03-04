@@ -13,6 +13,7 @@ import mil.navy.usno.plotlib.Track2D;
 
 import edu.nrao.difx.difxutilities.DiFXCommand_getFile;
 import edu.nrao.difx.difxutilities.DiFXCommand_rm;
+import edu.nrao.difx.difxutilities.V2dFileParser;
 
 import javax.swing.JButton;
 import javax.swing.JPopupMenu;
@@ -178,17 +179,13 @@ public class JobNode extends QueueBrowserNode {
         _monitorMenuItem = new JMenuItem( "Controls for " + name() );
         _monitorMenuItem.addActionListener(new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
-//                Thread doThisInAThread = new Thread() {
-//                    public void run() {
-                        if ( updateEditorMonitor( 1000 ) ) {
-                            _editorMonitor.setVisible( true );
-                        }
-                        else
-                            JOptionPane.showMessageDialog( _this, "Timeout reading .input file data",
-                                    "Failed", JOptionPane.WARNING_MESSAGE );
-//                    }
-//                };
-//                doThisInAThread.start();
+                if ( updateEditorMonitor( 1000 ) ) {
+                    
+                    _editorMonitor.setVisible( true );
+                }
+                else
+                    JOptionPane.showMessageDialog( _this, "Timeout reading .input file data",
+                            "Failed", JOptionPane.WARNING_MESSAGE );
             }
         });
         _monitorMenuItem.setEnabled( false );
@@ -252,6 +249,8 @@ public class JobNode extends QueueBrowserNode {
     
     @Override
     public void positionItems() {
+        if ( _antennaLock == null )
+            _antennaLock = new Object();
         _colorColumn = false;
         _xOff = _level * 30;
         _networkActivity.setBounds( _xOff, 6, 10, 10 );
@@ -274,25 +273,29 @@ public class JobNode extends QueueBrowserNode {
                     boxSize += labelSize - 50;
                     labelSize = 50;
                 }
-                for ( int i = 0; i < _weights.length; ++i ) {
-                    if ( _antenna[i] != null ) { // why is this necessary??
-                        setTextArea( _antenna[i], labelSize );
-                        _antenna[i].setVisible( true );
-                    }
-                    if ( _showWeightsAsPlots ) {
-                        if ( _weightPlotWindow[i] != null ) {
-                            setTextArea( _weightPlotWindow[i], boxSize );
-                            _weightPlotWindow[i].setVisible( true );
-                            _weight[i].setVisible( false );
+                if ( _antenna != null && _weight != null ) {
+                    synchronized ( _antennaLock ) {
+                        for ( int i = 0; i < _weights.length; ++i ) {
+//                            if ( _antenna[i] != null ) { // why is this necessary??
+                                setTextArea( _antenna[i], labelSize );
+                                _antenna[i].setVisible( true );
+//                            }
+                            if ( _showWeightsAsPlots ) {
+//                                if ( _weightPlotWindow[i] != null ) {
+                                    setTextArea( _weightPlotWindow[i], boxSize );
+                                    _weightPlotWindow[i].setVisible( true );
+                                    _weight[i].setVisible( false );
+//                                }
+                            }
+                            else {
+//                                if ( _weight[i] != null ) {
+                                    setTextArea( _weight[i], boxSize );
+                                    _weight[i].setVisible( true );
+                                    _weightPlotWindow[i].setVisible( false );
+//                                }
+
+                            }
                         }
-                    }
-                    else {
-                        if ( _weight[i] != null ) {
-                            setTextArea( _weight[i], boxSize );
-                            _weight[i].setVisible( true );
-                            _weightPlotWindow[i].setVisible( false );
-                        }
-                        
                     }
                 }
             }
@@ -301,6 +304,7 @@ public class JobNode extends QueueBrowserNode {
         }
         else {
             if ( _antenna != null && _weight != null ) {
+            synchronized ( _antennaLock ) {
                 for ( int i = 0; i < _antenna.length && i < _weight.length; ++i ) {
                     if ( _antenna[i] != null )
                         _antenna[i].setVisible( false );
@@ -309,6 +313,7 @@ public class JobNode extends QueueBrowserNode {
                     if ( _weightPlotWindow[i] != null )
                         _weightPlotWindow[i].setVisible( false );
                 }
+            }
             }
         }
 //        _startButton.setBounds( _level * 30 + 150, 0, 70, 20 );
@@ -449,7 +454,6 @@ public class JobNode extends QueueBrowserNode {
             if ( delay != null )
                 _inputFileRequestComplete = false;
             requestInputFile();
-            //requestCalcFile();  Not needed - this is done when the input file is parsed!
             if ( delay != null ) {
                 //  Wait for the request (above) to be completed.
                 int waitSoFar = 0;
@@ -459,6 +463,7 @@ public class JobNode extends QueueBrowserNode {
                     if ( _inputFileRequestComplete )
                         return true;
                 }
+                _editorMonitor = null;  //  Get rid of this - so next time it will be generated
                 return false;  // failed!
             }
             else
@@ -659,6 +664,7 @@ public class JobNode extends QueueBrowserNode {
     protected void newWeightDisplay( int numAntennas ) {
         if ( _weightsBuilt )
             return;
+//        synchronized ( _antennaLock ) {
         _weights = new double[ numAntennas ];
         _antennas = new String[ numAntennas ];
         _weight = new ColumnTextArea[ numAntennas ];
@@ -696,6 +702,7 @@ public class JobNode extends QueueBrowserNode {
             _weightPlot[i].backgroundColor( Color.BLACK );
             _weightTrackSize[i] = 0;
         }
+//        }
         _weightsBuilt = true;
     }
     
@@ -779,6 +786,7 @@ public class JobNode extends QueueBrowserNode {
     public void weight( String antenna, String newString ) {
         double newVal = Double.valueOf( newString );
         int i = Integer.valueOf( antenna );
+//        synchronized ( _antenna ) {
         if ( i < _weights.length ) {
             _weights[i] = newVal;
             _weight[i].setText( newString );
@@ -788,6 +796,7 @@ public class JobNode extends QueueBrowserNode {
             _weightPlotWindow[i].updateUI();
             this.updateUI();
         }
+//        }
 //        for ( int i = 0; i < _weights.length; ++i ) {
 //            if ( _antennas[i].contentEquals( antenna ) ) {
 //                _weights[i] = newVal;
@@ -800,23 +809,33 @@ public class JobNode extends QueueBrowserNode {
 //        }
     }
     public double weight( String antenna ) {
-        for ( int i = 0; i < _weights.length; ++i )
-            if ( _antennas[i].contentEquals( antenna ) )
-                return _weights[i];
-        return 0.0;
+        double ret = 0.0;
+        boolean found = false;
+//        synchronized ( _antenna ) {
+        for ( int i = 0; i < _weights.length && !found; ++i )
+            if ( _antennas[i].contentEquals( antenna ) ) {
+                ret = _weights[i];
+                found = true;
+            }
+//        }
+        return ret;
     }
     public void antennaName( int i, String name ) {
+//        synchronized ( _antenna ) {
         if ( i < _antennas.length ) {
             _antennas[i] = name;
             _antenna[i].setText( name + ": " );
             _antenna[i].updateUI();
         }
+//        }
     }
     public String antennaName( int i ) {
+        String ret = null;
+//        synchronized ( _antenna ) {
         if ( i < _antennas.length )
-            return _antennas[i];
-        else
-            return null;
+            ret = _antennas[i];
+//        }
+        return ret;
     }
     public void numForeignAntennas( int newVal ) { _numForeignAntennas.setText( String.format( "%10d", newVal ) ); }
     public int numForeignAntennas() { return new Integer( _numForeignAntennas.getText() ).intValue(); }
@@ -1052,5 +1071,7 @@ public class JobNode extends QueueBrowserNode {
     
     protected JobNode _this;
     protected ActivityLogFile _logFile;
-
+    
+    protected Object _antennaLock;
+        
 }

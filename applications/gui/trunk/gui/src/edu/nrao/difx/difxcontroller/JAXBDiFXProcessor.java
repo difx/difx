@@ -51,7 +51,7 @@ public class JAXBDiFXProcessor
 
             marshaller = jaxbCtx.createMarshaller();
 
-            ObjectFactory factory = new ObjectFactory();
+//            ObjectFactory factory = new ObjectFactory();
             marshaller.setProperty(Marshaller.JAXB_ENCODING, "UTF-8");
             marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
             StringWriter writer = new StringWriter();

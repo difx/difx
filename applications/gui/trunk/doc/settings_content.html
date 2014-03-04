@@ -495,6 +495,84 @@ src="file:///Users/johnspitzak/difx/applications/gui/trunk/doc/images/settings/E
     </p>
     <ul>
     </ul>
+    
+    <h2><a name="Job Settings"></a>Job Settings</h2>
+
+    The Job Settings govern how individual jobs are run, both when started directly by
+    the user and when automatically run by the scheduler.  
+    
+    <h3>Data Source Defaults</h3>
+    
+    <h3>Processing Defaults</h3>
+    
+    <h3>Scheduler Settings</h3>
+    
+    Scheduler Settings govern the operation of the job scheduler.  The job scheduler can be set to run a large
+    number of jobs automatically.  For details on running jobs using the scheduler, see BLAT.
+    
+    <h3>Run Log Settings</h3>
+    
+    The GUI is designed to collect information about every job that is run.  The purpose of this, as designed at
+    least, is to generate statistics that allow the user, or possibly the GUI itself (if it ever gets that so
+    clever) to determine the "best" way to run jobs in the future.  The log may have other purposes as well.
+    
+    The run log is meant to be (mostly) invisible during regular use.  It will grow continuously, and consume
+    disk space in doing so.  If this proves annoying, run logging can be shut off at the cost of losing any information
+    the run log contains.
+    
+    <h5>Log Run Data</h5>
+    
+    This is a simple check box that turns logging on and off.
+    
+    <h5>Run Log File</h5>
+    
+    The name of the run log file is by default ".difxGuiRunLog", in the user's home directory.  Changing the name
+    of the file will essentially create a new log file, as the log data for each run operation is simply appended
+    to the run log file name specified here.gui
+    
+    <h5>Analyzing Run Log Data</h5>
+    
+    The run log data are stored in XML format - not especially human readable, but flexible and easy for the GUI
+    to read and write.  For each job that is run, they contain the following information (XML keyword and variable type
+    in parenthesis):
+    <ul>
+        <li><b>Active ID</b> ("active_id" - long): This is a unique long integer identifier assigned to the job - current the
+            data nd time of the run in milliseconds since January 1, 1970.
+        <li><b>Date/Time</b> ("time" - double): Start time of the job in seconds since January 1, 1970.
+        <li><b>Input File</b> ("inputFile" - string): Full path (as the head node sees it) to the input file associated with the job.
+            The input file contains detailed information about the job - if it is deleted you will lose that.
+        <li><b>Baselines</b> ("baselines" - int): Number of baselines in the job.
+        <li><b>Total Scan Data Measurement?</b> (scan_time): Some way of measuring the total processing volume that is required.
+            Not sure what this is yet.
+        <li><b>Scans</b> ("scans" - int): Number of scans in the job.
+        <li><b>Head Node</b> ("headnode" - string): Name of the head node used.
+        <li><b>Source Nodes</b> ("sourceNodes"): List of the source nodes used in the job.  Each item contains the following:
+            <ul>
+                <li><b>Source Node</b> ("node" - string): Node name of the source.
+                <li><b>Threads</b> ("threads" - int): Number of threads used for data.
+            </ul>
+        <li><b>Processing Nodes</b> ("processingNodes"): List of the nodes used for processing.  Each item has:
+            <ul>
+                <li><b>Processing Node</b> ("node" - string): Node name of processor.
+                <li><b>Threads</b> ("threads" - int): Number of threads used for processing.
+            </ul>
+        <li><b>Other Active IDs</b> ("activeIDs"): A list of the other jobs that were running at some point during the
+            processing of this job.
+        <li><b>Total Time</b> ("totalTime" - double): The "wall clock" time used to process the job.  This is a measure of how
+            fast it ran for the user under the conditions it was subject to (other processes running, etc.).
+        <li><b>Final State</b> ("state" - string): The "state" that the job terminated in - completed, failed, whatever.
+        <li><b>DiFX Version</b> ("difxVersion" - string): Version of DiFX used for the processing.
+    </ul>
+    
+    Because the run log is in development and it isn't certain what its final use will be, each entry is contained in
+    a "wrapper" that identifies the GUI version used to create it.  This will allow changes to be made to the logged
+    data in the future, if that proves necessary, without rendering existing data useless.  This wrapper looks like
+    this:
+    <ul>
+        <li><b>GUI Version</b> (gui_version): Version of the GUI used to run the job, and generate the XML.
+        <li><b>Job Data</b> (data): This contains the complete list of XML items above.
+    </ul>
+    
     <h2><a name="Database_Configuration"></a>Database Configuration</h2>
     Database trouble?&nbsp; See <a
       href="#Testing_the_Database_Configuration"><span

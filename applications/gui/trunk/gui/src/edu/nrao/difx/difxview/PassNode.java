@@ -402,5 +402,5 @@ public class PassNode extends QueueBrowserNode {
     protected ActivityLogFile _logFile;
     protected String _fullPath;
     protected ColumnTextArea _stateLabel;
-
+    
 }

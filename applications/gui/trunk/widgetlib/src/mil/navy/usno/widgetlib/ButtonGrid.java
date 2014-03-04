@@ -74,7 +74,12 @@ public class ButtonGrid  extends JPanel { //JScrollPane {
                 this.setBackground( _offColor );
         }
         public boolean on() {
-            return ( this.getBackground() == _onColor );
+            boolean ret = false;
+            synchronized ( _buttonList ) {
+                if ( this.getBackground() == _onColor )
+                    ret = true;
+            }
+            return ret;
         }
         
         public void data( Object newData ) {

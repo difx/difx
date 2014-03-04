@@ -767,7 +767,7 @@ public class SystemSettings extends JFrame {
         databasePanel.add( _databaseMessages );
          
         IndexedPanel jobSettingsPanel = new IndexedPanel( "Job Settings" );
-        jobSettingsPanel.openHeight( 365 );
+        jobSettingsPanel.openHeight( 445 );
         jobSettingsPanel.closedHeight( 20 );
         jobSettingsPanel.labelWidth( 300 );
         _scrollPane.addNode( jobSettingsPanel );
@@ -1020,7 +1020,25 @@ public class SystemSettings extends JFrame {
                 + "when resources sufficient to meet their default run criteria\n"
                 + "are available.", null );
         jobSettingsPanel.add( _simultaneousCheck );
-        
+        JLabel runLogLabel = new JLabel( "Run Log Settings:" );
+        runLogLabel.setBounds( 30, 355, 200, 25 );
+        runLogLabel.setFont( new Font( processingLabel.getFont().getFamily(), Font.BOLD, processingLabel.getFont().getSize() ) );
+        jobSettingsPanel.add( runLogLabel );
+        _runLogCheck = new ZCheckBox( "Log Run Data" );
+        _runLogCheck.setBounds( 165, 380, 125, 25 );
+        _runLogCheck.toolTip( "Collect performance statistics in the \"Run Log\" file\n"
+                + "for each job run.", null );
+        jobSettingsPanel.add( _runLogCheck );
+        JLabel runLogFileLabel = new JLabel( "Run Log File:" );
+        runLogFileLabel.setBounds( 10, 405, 150, 25 );
+        runLogFileLabel.setHorizontalAlignment( JLabel.RIGHT );
+        runLogFileLabel.setToolTipText( "File containing run log statistics." );
+        _runLogFile = new FormattedTextField();
+        _runLogFile.setFocusLostBehavior( JFormattedTextField.COMMIT );
+        _runLogFile.setToolTipText( "Root directory on the DiFX host for Experiment data." );
+        jobSettingsPanel.add( runLogFileLabel );
+        jobSettingsPanel.add( _runLogFile );
+
         IndexedPanel eopSettingsPanel = new IndexedPanel( "EOP Settings" );
         //  These editors may or may not be displayed, but they are used to hold
         //  EOP and leap second data regardless.
@@ -1316,6 +1334,7 @@ public class SystemSettings extends JFrame {
             _leapSecondsURL.setBounds( 165, 55, w - 295, 25 );
             _viewLeapSecondsFile.setBounds( w - 125, 55, 100, 25 );
             _updateEOPNow.setBounds( w - 250, 115, 120, 25 );
+            _runLogFile.setBounds( 165, 405, w - 185, 25 );
         }
     }
     
@@ -1844,6 +1863,8 @@ public class SystemSettings extends JFrame {
         _jobCheck.setSelected( false );
         _sequentialCheck.setSelected( false );
         _simultaneousCheck.setSelected( true );
+        _runLogCheck.setSelected( true );
+        _runLogFile.setText( System.getProperty( "user.home" ) + "/.difxGuiRunLog" );
         _queueBrowserSettings.showCompleted = true;
         _queueBrowserSettings.showIncomplete = true;
         _queueBrowserSettings.showSelected = true;
@@ -2846,6 +2867,9 @@ public class SystemSettings extends JFrame {
             _jobCheck.setSelected( doiConfig.isJobCheck() );
             _sequentialCheck.setSelected( doiConfig.isSequentialCheck() );
             _simultaneousCheck.setSelected( !doiConfig.isSimultaneousCheck() );
+            _runLogCheck.setSelected( !doiConfig.isRunLogCheck() );
+            if ( doiConfig.getRunLogFile() != null )
+                _runLogFile.setText( doiConfig.getRunLogFile() );
             for ( Iterator<DoiSystemConfig.PathNodePair> iter = doiConfig.getPathNodePair().iterator(); iter.hasNext(); ) {
                 DoiSystemConfig.PathNodePair pathNodePair = iter.next();
                 //  Create a list for the source/path pairs.  We can't add them to the
@@ -3515,6 +3539,8 @@ public class SystemSettings extends JFrame {
         doiConfig.setJobCheck( _jobCheck.isSelected() );
         doiConfig.setSequentialCheck( _sequentialCheck.isSelected() );
         doiConfig.setSimultaneousCheck( !_simultaneousCheck.isSelected() );
+        doiConfig.setRunLogCheck( !_runLogCheck.isSelected() );
+        doiConfig.setRunLogFile( _runLogFile.getText() );
 
         if ( _sourceBasedOnPathDisplay != null && _sourceBasedOnPathDisplay.panels() != null ) {
             for ( Iterator<SourceBasedOnPathDisplay.PanelItem> iter = _sourceBasedOnPathDisplay.panels().iterator(); iter.hasNext(); ) {
@@ -4946,6 +4972,8 @@ public class SystemSettings extends JFrame {
     protected ZCheckBox _jobCheck;
     protected ZCheckBox _sequentialCheck;
     protected ZCheckBox _simultaneousCheck;
+    protected ZCheckBox _runLogCheck;
+    protected FormattedTextField _runLogFile;
     
     public boolean useHeadNodeCheck() { return _useHeadNodeCheck.isSelected(); }
     public boolean assignBasedOnPath() { return _assignBasedOnPath.isSelected(); }
@@ -4963,10 +4991,57 @@ public class SystemSettings extends JFrame {
     public boolean jobCheck() { return _jobCheck.isSelected(); }
     public boolean sequentialCheck() { return _sequentialCheck.isSelected(); }
     public boolean simultaneousCheck() { return _simultaneousCheck.isSelected(); }
+    public boolean runLogCheck() { return _runLogCheck.isSelected(); }
+    public String runLogFile() { return _runLogFile.getText(); }
 
     protected String _invisibleProcessors;
     protected String _invisibleProcessorCores;
     protected String _invisibleMark5s;
 
     protected SystemSettings _settings;
+    
+    /*
+     * This stuff maintains an "active ID list" of unique (integer) job identifiers.
+     * The list contains each job that is actively running, and, for each, a list
+     * of all the jobs that have been at any time actively running while they were
+     * running.
+     */
+    protected HashMap<Long,ArrayList<Long>> _activeIDList;
+    
+    /*
+     * Add a new active ID to the active ID list.  This ID must first be added to
+     * every job already in the list.  Then a new list entry is created for the
+     * job itself.
+     */
+    public void addActiveID( long newID ) {
+        //  First make sure there is an active ID list.
+        if ( _activeIDList == null )
+            _activeIDList = new HashMap<Long,ArrayList<Long>>();
+        synchronized ( _activeIDList ) {
+            //  Add this ID to each list in the active ID list (this is a new, running
+            //  job, so it should be added to the lists of running job for each job that
+            //  is already running.
+            for ( Iterator<Long> iter = _activeIDList.keySet().iterator(); iter.hasNext(); ) {
+                _activeIDList.get( iter.next() ).add( newID );
+            }
+            //  Then create a new list for this job and add it to the main list.
+            _activeIDList.put( newID, new ArrayList<Long>() );
+        }
+    }
+    
+    /*
+     * Take an active ID out of the list of active IDs and return a list of all other
+     * IDs that were active while it was active.
+     */
+    public ArrayList<Long> endActiveID( long newID ) {
+        ArrayList<Long> ret = null;
+        //  First make sure there is an active ID list.
+        if ( _activeIDList == null )
+            _activeIDList = new HashMap<Long,ArrayList<Long>>();
+        synchronized ( _activeIDList ) {
+            if ( _activeIDList == null )
+                ret = _activeIDList.remove( newID );
+            }
+        return ret;
+    }
 }

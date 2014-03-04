@@ -1280,11 +1280,11 @@ public class ExperimentEditor extends JFrame {
      */
     public void parseStartingV2dFile( String basePath ) {
         //  The parser eats the content and stores it in structures.
-        V2dFileParser v2dFileParser = new V2dFileParser( _startingV2dFileContent );
+        _v2dFileParser = new V2dFileParser( _startingV2dFileContent );
         
         //  Grab the .vex file name, if it exists.
-        if ( v2dFileParser.vexFile() != null ) {
-            this.vexFileName( v2dFileParser.vexFile() );
+        if ( _v2dFileParser.vexFile() != null ) {
+            this.vexFileName( _v2dFileParser.vexFile() );
             //  Try to put the content of this file into the .vex file editor.  This
             //  requires a complete path, which needs to be constructed.  We don't do
             //  this if we don't have a "basePath".
@@ -1296,7 +1296,7 @@ public class ExperimentEditor extends JFrame {
                 if ( _thisExperiment != null )
                     pt = _thisExperiment.getLocationOnScreen();
                 GetFileMonitor getFile = new GetFileMonitor(  (Frame)comp, pt.x + 25, pt.y + 25,
-                        basePath + v2dFileParser.vexFile(), _settings );
+                        basePath + _v2dFileParser.vexFile(), _settings );
                 if ( getFile.success() && getFile.inString() != null && getFile.inString().length() > 0 ) {
                     _editor.text( getFile.inString() );
                     //  This should initialize all of the settings properly...we hope.
@@ -1307,31 +1307,31 @@ public class ExperimentEditor extends JFrame {
         }
         
         //  Global parameters...
-        if ( v2dFileParser.singleScan() != null )
-            _singleInputFileCheck.setSelected( v2dFileParser.singleScan() );
-        if ( v2dFileParser.jobSeries() != null )
-            _inputFileBaseName.setText( v2dFileParser.jobSeries() );
-        if (  v2dFileParser.startSeries() != null )
-            _inputFileSequenceStart.intValue( v2dFileParser.startSeries() );
+        if ( _v2dFileParser.singleScan() != null )
+            _singleInputFileCheck.setSelected( _v2dFileParser.singleScan() );
+        if ( _v2dFileParser.jobSeries() != null )
+            _inputFileBaseName.setText( _v2dFileParser.jobSeries() );
+        if (  _v2dFileParser.startSeries() != null )
+            _inputFileSequenceStart.intValue( _v2dFileParser.startSeries() );
         
         //  the "Normal" Setup section contains things from the "correlation parameters" settings.
-        if ( v2dFileParser.setupTInt( "normalSetup" ) != null )
-            _tInt.value( v2dFileParser.setupTInt( "normalSetup" ) );
-        if ( v2dFileParser.setupFFTSpecRes( "normalSetup" ) != null )
-            _fftSpecRes.value( v2dFileParser.setupFFTSpecRes( "normalSetup" ) );
-        if ( v2dFileParser.setupSpecRes( "normalSetup" ) != null )
-            _specRes.value( v2dFileParser.setupSpecRes( "normalSetup" ) );
-        if ( v2dFileParser.setupSubintNS( "normalSetup" ) != null )
-            _subintNS.intValue( v2dFileParser.setupSubintNS( "normalSetup" ) );
-        if ( v2dFileParser.setupDoPolar( "normalSetup" ) != null )
-            _doPolar.setSelected( v2dFileParser.setupDoPolar( "normalSetup" ) );
+        if ( _v2dFileParser.setupTInt( "normalSetup" ) != null )
+            _tInt.value( _v2dFileParser.setupTInt( "normalSetup" ) );
+        if ( _v2dFileParser.setupFFTSpecRes( "normalSetup" ) != null )
+            _fftSpecRes.value( _v2dFileParser.setupFFTSpecRes( "normalSetup" ) );
+        if ( _v2dFileParser.setupSpecRes( "normalSetup" ) != null )
+            _specRes.value( _v2dFileParser.setupSpecRes( "normalSetup" ) );
+        if ( _v2dFileParser.setupSubintNS( "normalSetup" ) != null )
+            _subintNS.intValue( _v2dFileParser.setupSubintNS( "normalSetup" ) );
+        if ( _v2dFileParser.setupDoPolar( "normalSetup" ) != null )
+            _doPolar.setSelected( _v2dFileParser.setupDoPolar( "normalSetup" ) );
         
         //  Which scans are on/off.
-        if ( v2dFileParser.ruleScan( "scansubset" ) != null ) {
+        if ( _v2dFileParser.ruleScan( "scansubset" ) != null ) {
             //  Turn them all off.
             _scanGrid.allOff();
             //  Then turn individual ones back on.
-            String[] scan = v2dFileParser.ruleScan( "scansubset" ).split( "," );
+            String[] scan = _v2dFileParser.ruleScan( "scansubset" ).split( "," );
             for ( int i = 0; i < scan.length; ++i ) {
                 _scanGrid.setButton( scan[i], true );
             }
@@ -1345,39 +1345,39 @@ public class ExperimentEditor extends JFrame {
                 for ( Iterator<StationPanel> iter = _antennaList.iterator(); iter.hasNext(); ) {
                     StationPanel antenna = iter.next();
                     //  If the antenna is not in the .v2d file, it is not being used.
-                    if ( v2dFileParser.antennaSection( antenna.name() ) == null )
+                    if ( _v2dFileParser.antennaSection( antenna.name() ) == null )
                         antenna.use( false );
                     else {
-                        if ( v2dFileParser.antennaPhaseCalInt( antenna.name() ) != null )
-                            antenna.phaseCalInt( v2dFileParser.antennaPhaseCalInt( antenna.name() ) );
-                        if ( v2dFileParser.antennaToneSelection( antenna.name() ) != null )
-                            antenna.toneSelection( v2dFileParser.antennaToneSelection( antenna.name() ) );
-                        if ( v2dFileParser.antennaFormat( antenna.name() ) != null )
-                            antenna.dataFormat( v2dFileParser.antennaFormat( antenna.name() ) );
-                        if ( v2dFileParser.antennaVsn( antenna.name() ) != null ) {
+                        if ( _v2dFileParser.antennaPhaseCalInt( antenna.name() ) != null )
+                            antenna.phaseCalInt( _v2dFileParser.antennaPhaseCalInt( antenna.name() ) );
+                        if ( _v2dFileParser.antennaToneSelection( antenna.name() ) != null )
+                            antenna.toneSelection( _v2dFileParser.antennaToneSelection( antenna.name() ) );
+                        if ( _v2dFileParser.antennaFormat( antenna.name() ) != null )
+                            antenna.dataFormat( _v2dFileParser.antennaFormat( antenna.name() ) );
+                        if ( _v2dFileParser.antennaVsn( antenna.name() ) != null ) {
                             antenna.useVsn( true );
-                            antenna.vsnSource( v2dFileParser.antennaVsn( antenna.name() ) );
+                            antenna.vsnSource( _v2dFileParser.antennaVsn( antenna.name() ) );
                         }
-                        else if ( v2dFileParser.antennaFile( antenna.name() ) != null ) {
+                        else if ( _v2dFileParser.antennaFile( antenna.name() ) != null ) {
                             antenna.useFile( true );
-                            Vector<String> fileList = v2dFileParser.antennaFile( antenna.name() );
+                            Vector<String> fileList = _v2dFileParser.antennaFile( antenna.name() );
                             for ( Iterator<String> iter1 = fileList.iterator(); iter1.hasNext(); )
                                 antenna.useFile( iter1.next() );
                         }
-                        else if ( v2dFileParser.antennaNetworkPort( antenna.name() ) != null ) {
+                        else if ( _v2dFileParser.antennaNetworkPort( antenna.name() ) != null ) {
                             antenna.useEVLBI( true );
-                            antenna.networkPort( v2dFileParser.antennaNetworkPort( antenna.name() ) );
+                            antenna.networkPort( _v2dFileParser.antennaNetworkPort( antenna.name() ) );
                         }
                         //  Position changes.
-                        if ( v2dFileParser.antennaX( antenna.name() ) != null )
-                            antenna.positionX( v2dFileParser.antennaX( antenna.name() ) );
-                        if ( v2dFileParser.antennaY( antenna.name() ) != null )
-                            antenna.positionY( v2dFileParser.antennaY( antenna.name() ) );
-                        if ( v2dFileParser.antennaZ( antenna.name() ) != null )
-                            antenna.positionZ( v2dFileParser.antennaZ( antenna.name() ) );
+                        if ( _v2dFileParser.antennaX( antenna.name() ) != null )
+                            antenna.positionX( _v2dFileParser.antennaX( antenna.name() ) );
+                        if ( _v2dFileParser.antennaY( antenna.name() ) != null )
+                            antenna.positionY( _v2dFileParser.antennaY( antenna.name() ) );
+                        if ( _v2dFileParser.antennaZ( antenna.name() ) != null )
+                            antenna.positionZ( _v2dFileParser.antennaZ( antenna.name() ) );
                         //  Clock settings.
-                        if ( v2dFileParser.antennaDeltaClock( antenna.name() ) != null )
-                            antenna.deltaClock( v2dFileParser.antennaDeltaClock( antenna.name() ) );
+                        if ( _v2dFileParser.antennaDeltaClock( antenna.name() ) != null )
+                            antenna.deltaClock( _v2dFileParser.antennaDeltaClock( antenna.name() ) );
                     }
                 }
             } catch ( java.util.ConcurrentModificationException e ) {}
@@ -1563,8 +1563,13 @@ public class ExperimentEditor extends JFrame {
     public void parseNewVexFile() {
         VexFileParser vexData = new VexFileParser();
         vexData.data( _editor.text() );
-        _eopMinTime = null;
-        _eopMaxTime = null;
+        _vexData = vexData;
+        if ( _eopLock == null )
+            _eopLock = new Object();
+        synchronized ( _eopLock ) {
+            _eopMinTime = null;
+            _eopMaxTime = null;
+        }
         _bandwidth = vexData.bandwidth();
         //  Build a grid out of the scans found
         _scanGrid.clearButtons();
@@ -1588,15 +1593,17 @@ public class ExperimentEditor extends JFrame {
                     endTime.add( Calendar.SECOND, station.delay + station.duration );
                     //  Check these against the minimum and maximum times for the whole set of scans
                     //  described by this .vex file.
-                    if ( _eopMinTime == null ) {
-                        _eopMinTime = startTime;
-                        _eopMaxTime = endTime;
-                    }
-                    else {
-                        if ( startTime.before( _eopMinTime ) )
+                    synchronized ( _eopLock ) {
+                        if ( _eopMinTime == null ) {
                             _eopMinTime = startTime;
-                        if ( endTime.after( _eopMaxTime ) )
                             _eopMaxTime = endTime;
+                        }
+                        else {
+                            if ( startTime.before( _eopMinTime ) )
+                                _eopMinTime = startTime;
+                            if ( endTime.after( _eopMaxTime ) )
+                                _eopMaxTime = endTime;
+                        }
                     }
                 }
                 //  Add a new button to the grid, then attach the associated data to it so they
@@ -1608,10 +1615,12 @@ public class ExperimentEditor extends JFrame {
         }
         //  Set the limits on the time limit panel.  We expand this a few percent beyond the
         //  actual limits to make sure everything is contained in the original timeline.
-        int adj = (int)( ( _eopMaxTime.getTimeInMillis() - _eopMinTime.getTimeInMillis() ) / 50 );
-        _eopMinTime.add( Calendar.MILLISECOND, -adj );
-        _eopMaxTime.add( Calendar.MILLISECOND, adj );
-        _timeLimits.limits( _eopMinTime, _eopMaxTime );
+        synchronized ( _eopLock ) {
+            int adj = (int)( ( _eopMaxTime.getTimeInMillis() - _eopMinTime.getTimeInMillis() ) / 50 );
+            _eopMinTime.add( Calendar.MILLISECOND, -adj );
+            _eopMaxTime.add( Calendar.MILLISECOND, adj );
+            _timeLimits.limits( _eopMinTime, _eopMaxTime );
+        }
         //  Add panels of information about each antenna.  First we clear the existing
         //  lists of antennas (these might have been formed the last time the .vex file
         //  was parsed).
@@ -1864,7 +1873,10 @@ public class ExperimentEditor extends JFrame {
         //  need to find the date of these observations (I'm using the midpoint of the
         //  observations, but it probably doesn't matter too much).
         JulianCalendar midTime = new JulianCalendar();
-        midTime.setTimeInMillis( _eopMinTime.getTimeInMillis() + ( _eopMaxTime.getTimeInMillis() - _eopMinTime.getTimeInMillis() ) / 2 );
+        synchronized ( _eopLock ) {
+            if ( _eopMinTime != null && _eopMaxTime != null )
+                midTime.setTimeInMillis( _eopMinTime.getTimeInMillis() + ( _eopMaxTime.getTimeInMillis() - _eopMinTime.getTimeInMillis() ) / 2 );
+        }
         _newEOP = _settings.eopData( midTime.julian() - 2.0, midTime.julian() + 3.0 );
         if ( _newEOP != null && _newEOP.size() > 0 ) {
             IndexedPanel newEOPPanel = new IndexedPanel( "Updated From Source" );
@@ -1928,6 +1940,8 @@ public class ExperimentEditor extends JFrame {
      */
     protected void replaceRemoteEOPData() {
         //  This has to be here because a callback is triggered before this pane is built.
+        if ( _eopLock == null )
+            _eopLock = new Object();
         if ( _newEOPPane == null || _eopMinTime == null || _eopMaxTime == null )
             return;
         _newEOPPane.clear();
@@ -1935,8 +1949,10 @@ public class ExperimentEditor extends JFrame {
         //  need to find the date of these observations (I'm using the midpoint of the
         //  observations, but it probably doesn't matter too much).
         JulianCalendar midTime = new JulianCalendar();
+        synchronized ( _eopLock ) {
         midTime.setTimeInMillis( _eopMinTime.getTimeInMillis() + ( _eopMaxTime.getTimeInMillis() - _eopMinTime.getTimeInMillis() ) / 2 );
-        _newEOP = _settings.eopData( midTime.julian() - 2.0, midTime.julian() + 3.0 );
+            _newEOP = _settings.eopData( midTime.julian() - 2.0, midTime.julian() + 3.0 );
+        }
         boolean doHeader = true;
         //  Then add an IndexedPanel item for each EOP data item.
         for ( Iterator<SystemSettings.EOPStructure> iter = _newEOP.iterator(); iter.hasNext(); ) {
@@ -2469,10 +2485,14 @@ public class ExperimentEditor extends JFrame {
                     db = null;
             }
             
+            //  Create a new v2d file parser.  This is added to each job as it is
+            //  created.
+            _v2dFileParser = new V2dFileParser( _v2dEditor.text() );
+            
             //  Create a "file read queue" which buffers requests for file transfers
             //  to/from the guiServer such that not too many occur simultaneously.
-            _fileReadQueue = new FileReadQueue();
-            _fileReadQueue.start();
+            //_fileReadQueue = new FileReadQueue();
+            //_fileReadQueue.start();
 
             //  If this is a new experiment, create a node for it and fill it with
             //  appropriate data.  Also, create directories on the DiFX host and add it
@@ -2610,7 +2630,7 @@ public class ExperimentEditor extends JFrame {
                 _newPass = new PassNode( newPassName, _settings );
                 _newPass.type( (String)_passTypeList.getSelectedItem() );
                 _newPass.stateLabel( "Creating Pass on Host", Color.yellow, true );
-                _fileReadQueue.pass( _newPass );
+                //_fileReadQueue.pass( _newPass );
                 if ( !createPass() )
                     _newPass.setHeight( 0 );
                 _thisExperiment.addChild( _newPass );
@@ -2792,7 +2812,7 @@ public class ExperimentEditor extends JFrame {
                     //  Create a node associated with this new job, then put it into
                     //  the appropriate pass so that it will appear in the queue browser.
                     _statusLabel.setText( "creating new job \"" + jobName + "\"" );
-                    _newPass.stateLabel( "Downloading Files for Job \"" + jobName + "\"", Color.YELLOW, true );
+                    _newPass.stateLabel( "creating new job \"" + jobName + "\"", Color.YELLOW, true );
                     //BLATSystem.out.println( "creating new job \"" + jobName + "\"" );
                     newJob = new JobNode( jobName, _settings );
                     newJob.fullName( fullName );
@@ -2811,7 +2831,6 @@ public class ExperimentEditor extends JFrame {
                     _newPass.sortByName();
                     newJob.passNode( _newPass );
                     _settings.queueBrowser().addJob( newJob );
-                    //newJob.editorMonitor().editor( _this );
                     //  Add the new job to the database (if we are using it).
                     if ( db != null ) {
                         _statusLabel.setText( "adding job information to database" );
@@ -2840,8 +2859,8 @@ public class ExperimentEditor extends JFrame {
                     }
                     
                     //  Apply the input file data to the job.
-                    //newJob.inputFile( newFile.trim(), true );
-                    _fileReadQueue.queueRead( newJob, newFile.trim() );
+                    newJob.inputFile( newFile.trim(), false );
+                    //_fileReadQueue.queueRead( newJob, newFile.trim() );
                     //  Add the input file path to the database if we are using it.
                     if ( db != null ) {
                         db.updateJob( databaseJobId, "inputFile", newFile.trim() );
@@ -3080,5 +3099,12 @@ public class ExperimentEditor extends JFrame {
     protected Calendar _eopMinTime;
     protected Calendar _eopMaxTime;
     protected ActivityLogFile _passLog;
+    protected VexFileParser _vexData;
+    protected V2dFileParser _v2dFileParser;
     
+    protected Object _eopLock;
+    
+    public VexFileParser vexFileParser() { return _vexData; }
+    public V2dFileParser v2dFileParser() { return _v2dFileParser; }
+
 }
