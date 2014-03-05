@@ -609,37 +609,46 @@ public class ProcessorNodesHeader extends BrowserNode {
     public void rebootAll() {
         for ( Iterator<BrowserNode> iter = _children.iterator(); iter.hasNext(); ) {
             ((ProcessorNode)(iter.next())).sendDiFXCommandMessage( "Reboot" );
+            try { Thread.sleep( 500 ); } catch ( Exception e ) {}
         }
     }
     public void rebootSelected() {
         for ( Iterator<BrowserNode> iter = _children.iterator(); iter.hasNext(); ) {
             BrowserNode thisNode = iter.next();
-            if ( thisNode.selected() )
+            if ( thisNode.selected() ) {
                 ((ProcessorNode)(thisNode)).sendDiFXCommandMessage( "Reboot" );
+                try { Thread.sleep( 500 ); } catch ( Exception e ) {}
+            }
         }
     }
     public void resetAll() {
         for ( Iterator<BrowserNode> iter = _children.iterator(); iter.hasNext(); ) {
             ((ProcessorNode)(iter.next())).sendDiFXCommandMessage( "ResetMark5" );
+            try { Thread.sleep( 500 ); } catch ( Exception e ) {}
         }
     }
     public void resetSelected() {
         for ( Iterator<BrowserNode> iter = _children.iterator(); iter.hasNext(); ) {
             BrowserNode thisNode = iter.next();
-            if ( thisNode.selected() )
+            if ( thisNode.selected() ) {
                 ((ProcessorNode)(thisNode)).sendDiFXCommandMessage( "ResetMark5" );
+                try { Thread.sleep( 500 ); } catch ( Exception e ) {}
+            }
         }
     }
     public void powerOffAll() {
         for ( Iterator<BrowserNode> iter = _children.iterator(); iter.hasNext(); ) {
             ((ProcessorNode)(iter.next())).sendDiFXCommandMessage( "Power Off" );
+            try { Thread.sleep( 500 ); } catch ( Exception e ) {}
         }
     }
     public void powerOffSelected() {
         for ( Iterator<BrowserNode> iter = _children.iterator(); iter.hasNext(); ) {
             BrowserNode thisNode = iter.next();
-            if ( thisNode.selected() )
+            if ( thisNode.selected() ) {
                 ((ProcessorNode)(thisNode)).sendDiFXCommandMessage( "Power Off" );
+                try { Thread.sleep( 500 ); } catch ( Exception e ) {}
+            }
         }
     }
     

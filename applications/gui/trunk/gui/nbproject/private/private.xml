@@ -8,8 +8,8 @@
         <file>
             <url>src/edu/nrao/difx/difxview/SystemSettings.java</url>
             <line>851</line>
-            <line>2849</line>
-            <line>4765</line>
+            <line>2873</line>
+            <line>4791</line>
         </file>
         <file>
             <url>src/edu/nrao/vlba/difxdatamodel/Queue.java</url>
@@ -18,7 +18,7 @@
         </file>
         <file>
             <url>src/edu/nrao/difx/difxview/JobNode.java</url>
-            <line>545</line>
+            <line>550</line>
         </file>
         <file>
             <url>src/edu/nrao/vlba/difxdatamodel/DiFXDataModel.java</url>
@@ -37,7 +37,7 @@
         </file>
         <file>
             <url>src/edu/nrao/difx/difxview/JobEditorMonitor.java</url>
-            <line>903</line>
+            <line>921</line>
         </file>
         <file>
             <url>src/edu/nrao/vlba/difxdatamodel/Job.java</url>
@@ -58,8 +58,8 @@
         </file>
         <file>
             <url>src/edu/nrao/difx/difxview/ExperimentEditor.java</url>
-            <line>607</line>
-            <line>1267</line>
+            <line>616</line>
+            <line>1274</line>
         </file>
         <file>
             <url>src/edu/nrao/vlba/difxview/JobManagerUI.java</url>
@@ -109,7 +109,7 @@
         </file>
         <file>
             <url>src/edu/nrao/difx/difxview/PassNode.java</url>
-            <line>135</line>
+            <line>136</line>
         </file>
     </editor-bookmarks>
 </project-private>
