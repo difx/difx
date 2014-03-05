@@ -107,11 +107,11 @@ static void usage(const char *pgm)
 	printf("  --getdata\n");
 	printf("  -d             Save time domain performance data\n\n");
 	printf("  --legacydir\n");
-	printf("  -l             Force a legacy directory on the module\n\n");
+	printf("  -l             Force a legacy (e.g., Mark5A) directory on the module\n\n");
 	printf("  --nodir\n");
 	printf("  -0             Put a zero length directory on the module\n\n");
 	printf("  --newdir\n");
-	printf("  -n             Force a new directory structure on the module\n\n");
+	printf("  -n             Force a new (e.g., Mark5C) directory structure on the module\n\n");
 	printf("<vsn> is a valid module VSN (8 characters)\n\n");
 	printf("Note: A single Mark5 unit needs to be installed in bank A for\n");
 	printf("proper operation.  If the VSN is not set, use the  vsn  utility\n");
@@ -465,6 +465,7 @@ int mk5erase(const char *vsn, enum ConditionMode mode, int verbose, int dirVersi
 {
 	SSHANDLE xlrDevice;
 	S_DEVSTATUS devStatus;
+	S_BANKSTATUS bankStatus;
 	char label[XLR_LABEL_LENGTH+1];
 	struct DriveInformation drive[8];
 	int nDrive;
@@ -550,7 +551,44 @@ int mk5erase(const char *vsn, enum ConditionMode mode, int verbose, int dirVersi
 	WATCHDOGTEST( XLRSetMode(xlrDevice, SS_MODE_PCI) );
 	WATCHDOGTEST( XLRGetDeviceStatus(xlrDevice, &devStatus) );
 	WATCHDOGTEST( XLRClearOption(xlrDevice, SS_OPT_SKIPCHECKDIR) );
-	WATCHDOGTEST( XLRClearWriteProtect(xlrDevice) );
+	WATCHDOGTEST( XLRGetBankStatus(xlrDevice, bank, &bankStatus) );
+	if(bankStatus.WriteProtected)
+	{
+		char resp[11];
+
+		printf("\nThis module is currently write protected.\n");
+		printf("Do you want to clear write protection and continue? [y|n]\n");
+		for(;;)
+		{
+			rv = fgets(resp, 10, stdin);
+			if(!rv)
+			{
+				/* must be ^D or similar */
+
+				return EXIT_SUCCESS;
+			}
+			if(strcmp(resp, "Y\n") == 0 || strcmp(resp, "y\n") == 0)
+			{
+				if(verbose)
+				{
+					printf("OK.  Continuing\n\n");
+				}
+				break;
+			}
+			else if(strcmp(resp, "N\n") == 0 || strcmp(resp, "n\n") == 0)
+			{
+				printf("Module erasure cancelled.\n\n");
+				
+				return EXIT_SUCCESS;
+			}
+			else
+			{
+				printf("Your response was not understood.\n");
+				printf("Continue? [y|n]\n");
+			}
+		}
+		WATCHDOGTEST( XLRClearWriteProtect(xlrDevice) );
+	}
 
 	/* Get drive info */
 	nDrive = getDriveInformation(xlrDevice, drive, &totalCapacity);

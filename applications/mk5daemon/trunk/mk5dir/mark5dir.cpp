@@ -1270,6 +1270,8 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref, int (*callback)(i
 	oldLen6 = 5244512;	/* Old version with 65536 entries */
 	if(len == oldLen1 || len == oldLen2 || len == oldLen3 || len == oldLen4 || len == oldLen5 || len == oldLen6)
 	{
+		printf("Dir version 0 with length %d detected\n", len);
+
 		newDirVersion = 0;
 	}
 	else if(len % 128 == 0)
