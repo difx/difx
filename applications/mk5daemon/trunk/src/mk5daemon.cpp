@@ -44,6 +44,10 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
+#include <ifaddrs.h>
+#include <netinet/in.h>
+#include <net/if.h>
+#include <sys/types.h>
 #include "mk5daemon.h"
 #include "../config.h"
 #include "logger.h"
@@ -287,6 +291,58 @@ int checkRunning(const char *hostname)
 	return 0;
 }
 
+void getLocalAddresses(std::list<std::string> *addrList)
+{
+	struct ifaddrs *localAddrs, *addr;
+	int rv;
+
+	addrList->clear();
+
+	rv = getifaddrs(&localAddrs);
+	if(rv != 0)
+	{
+		printf("Cannot get local addresses with getifaddrs\n");
+
+		return;
+	}
+	for(addr = localAddrs; addr != 0; addr = addr->ifa_next)
+	{
+		if(addr->ifa_addr && addr->ifa_flags & IFF_UP)
+		{
+			char addrString[INET_ADDRSTRLEN];
+
+			if(addr->ifa_addr->sa_family == AF_INET)
+			{
+				struct sockaddr_in *s4;
+
+				s4 = (struct sockaddr_in *)(addr->ifa_addr);
+				if(inet_ntop(addr->ifa_addr->sa_family, (void *)&(s4->sin_addr), addrString, INET_ADDRSTRLEN))
+				{
+					if(strcmp(addrString, "127.0.0.1") != 0)
+					{
+						addrList->push_back(std::string(addrString));
+					}
+				}
+			}
+			else if(addr->ifa_addr->sa_family == AF_INET6)
+			{
+				struct sockaddr_in6 *s6;
+
+				s6 = (struct sockaddr_in6 *)(addr->ifa_addr);
+				if(inet_ntop(addr->ifa_addr->sa_family, (void *)&(s6->sin6_addr), addrString, INET_ADDRSTRLEN))
+				{
+					if(strcmp(addrString, "::1") != 0)
+					{
+						addrList->push_back(std::string(addrString));
+					}
+				}
+			}
+		}
+	}
+
+	freeifaddrs(localAddrs);
+}
+
 Mk5Daemon *newMk5Daemon(const char *logPath, const char *userID, int isMk5)
 {
 	Mk5Daemon *D;
@@ -351,6 +407,10 @@ Mk5Daemon *newMk5Daemon(const char *logPath, const char *userID, int isMk5)
 		D->diskStateMask = atoi(dmsMask);
 	}
 
+	/* find all local IP addresses */
+	D->ipAddresses = new std::list<std::string>;
+	getLocalAddresses(D->ipAddresses);
+
 	return D;
 }
 
@@ -408,6 +468,7 @@ void deleteMk5Daemon(Mk5Daemon *D)
 		deleteLogger(D->log);
 		delete D->macList;
 		delete D->errors;
+		delete D->ipAddresses;
 		free(D);
 	}
 }
@@ -871,6 +932,21 @@ int Mk5Daemon_stopRecord(Mk5Daemon *D)
 	return 0;
 }
 #endif
+
+bool Mk5Daemon_addrMatches(const Mk5Daemon *D, const char *addrString)
+{
+	std::list<std::string>::const_iterator it;
+
+	for(it = D->ipAddresses->begin(); it != D->ipAddresses->end(); ++it)
+	{
+		if(*it == addrString)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
 
 int main(int argc, char **argv)
 {

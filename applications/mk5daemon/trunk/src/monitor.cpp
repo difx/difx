@@ -33,11 +33,22 @@
 #include <cstdlib>
 #include <unistd.h>
 #include <difxmessage.h>
+#include <net/if.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+#include <netinet/in.h>
 #include "config.h"
 #include "mk5daemon.h"
 
 int messageForMe(const Mk5Daemon *D, const DifxMessageGeneric *G)
 {
+	struct addrinfo hints;
+
+	memset(&hints, 0, sizeof hints);
+	hints.ai_family   = AF_UNSPEC;
+	hints.ai_socktype = SOCK_STREAM;
+	hints.ai_flags    = AI_PASSIVE;
+
 	if(G->nTo < 1)
 	{
 		return 0;
@@ -45,11 +56,14 @@ int messageForMe(const Mk5Daemon *D, const DifxMessageGeneric *G)
 
 	for(int t = 0; t < G->nTo; ++t)
 	{
-		if(strcasecmp(D->hostName, G->to[t]) == 0)
+		int rv;
+		struct addrinfo *results;
+
+		if(strcasecmp("all", G->to[t]) == 0)
 		{
 			return 1;
 		}
-		if(strcasecmp("all", G->to[t]) == 0)
+		if(strcasecmp(D->hostName, G->to[t]) == 0)
 		{
 			return 1;
 		}
@@ -66,6 +80,46 @@ int messageForMe(const Mk5Daemon *D, const DifxMessageGeneric *G)
 			{
 				return 1;
 			}
+		}
+		/* finally look closer at the network address */
+		/* do a name look-up on the to[] field */
+		rv = getaddrinfo(G->to[t], NULL, &hints, &results);
+		if(rv == 0)
+		{
+			/* No error, so continue */
+
+			struct addrinfo *result;
+
+			for(result = results; result != 0; result = result->ai_next)
+			{
+				struct in_addr *addr;
+				char addrString[INET_ADDRSTRLEN];
+				
+				if(result->ai_family == AF_INET)
+				{
+					struct sockaddr_in *ipv = (struct sockaddr_in *)result->ai_addr;
+					addr = &(ipv->sin_addr);
+				}
+				else if(result->ai_family == AF_INET6)
+				{
+					struct sockaddr_in6 *ipv6 = (struct sockaddr_in6 *)result->ai_addr;
+					addr = (struct in_addr *)&(ipv6->sin6_addr);
+				}
+				else
+				{
+					continue;
+				}
+				inet_ntop(result->ai_family, addr, addrString, INET_ADDRSTRLEN);
+
+				if(Mk5Daemon_addrMatches(D, addrString))
+				{
+					freeaddrinfo(results);
+
+					return 1;
+				}
+			}
+
+			freeaddrinfo(results);
 		}
 	}
 

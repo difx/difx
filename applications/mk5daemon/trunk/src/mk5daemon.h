@@ -163,6 +163,7 @@ typedef struct
 	int clientSocks[MaxConnections];
 	
 	std::map<MAC,bool> *macList;	/* map from a MAC address to enable flag */
+	std::list<std::string> *ipAddresses;	/* possible IP addresses for self */
 #ifdef HAVE_XLRAPI_H
 	/* FIXME: make bank structure??? */
 	Mk5Smart smartData[N_BANK];
@@ -235,6 +236,7 @@ void Mk5Daemon_vex2DifxRun( Mk5Daemon *D, const DifxMessageGeneric *G );
 void Mk5Daemon_addVSIError(Mk5Daemon *D, const char *errorMessage);
 void Mk5Daemon_delVSIError(Mk5Daemon *D, const char *errorMessage);
 int Mk5Daemon_popVSIError(Mk5Daemon *D, char *errorMessage, int maxLength);
+bool Mk5Daemon_addrMatches(const Mk5Daemon *D, const char *addrString);
 
 #ifdef HAVE_XLRAPI_H
 int lockStreamstor(Mk5Daemon *D, const char *identifier, int wait);
