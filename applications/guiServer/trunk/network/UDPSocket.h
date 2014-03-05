@@ -122,7 +122,7 @@ namespace network {
                     _fd = -1;
                     return;
                 }
-                int recBufSize = 512000;
+                int recBufSize = 768000;
                 setsockopt(_fd, SOL_SOCKET, SO_RCVBUF, &recBufSize, sizeof(recBufSize));
 
             }
