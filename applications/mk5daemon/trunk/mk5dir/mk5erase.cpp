@@ -167,7 +167,7 @@ double summarizeRates(const std::vector<double> &r, const char *passName)
 	double max = 0.0;
 	double avg = 0.0;
 	printf("Summary for %s pass\n", passName);
-	printf("  Number of rate samples: %d\n", r.size());
+	printf("  Number of rate samples: %d\n", (int)(r.size()));
 	if(r.size() < 4)
 	{
 		printf("  (This is too few samples for statistical analysis)\n");
@@ -475,6 +475,7 @@ int mk5erase(const char *vsn, enum ConditionMode mode, int verbose, int dirVersi
 	int newStatus = MODULE_STATUS_ERASED;
 	DifxMessageMk5Status mk5status;
 	char message[DIFX_MESSAGE_LENGTH];
+	int bank;
 
 	memset((char *)(&mk5status), 0, sizeof(mk5status));
 
@@ -514,12 +515,14 @@ int mk5erase(const char *vsn, enum ConditionMode mode, int verbose, int dirVersi
 		{
 			strncpy(mk5status.vsnA, label, 8);
 			mk5status.activeBank = 'A';
+			bank = BANK_B;
 		}
 	}
 	else
 	{
 		strncpy(mk5status.vsnB, label, 8);
 		mk5status.activeBank = 'B';
+		bank = BANK_A;
 	}
 
 	if(strlen(label) > 10)
@@ -560,10 +563,13 @@ int mk5erase(const char *vsn, enum ConditionMode mode, int verbose, int dirVersi
 		printf("Do you want to clear write protection and continue? [y|n]\n");
 		for(;;)
 		{
+			char *rv;
+			
 			rv = fgets(resp, 10, stdin);
 			if(!rv)
 			{
 				/* must be ^D or similar */
+				printf("Module erasure cancelled.\n\n");
 
 				return EXIT_SUCCESS;
 			}

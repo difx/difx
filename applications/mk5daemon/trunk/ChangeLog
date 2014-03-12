@@ -4,6 +4,7 @@ Version 2.4.0
 * mk5daemon: add ability to kill a specific job. Invoke with:  mk5control "killmpifxcorr jobId" all
 * New utility  killjob  which executes: mk5control "killmpifxcorr jobId" all
 * When looking at incoming command messages (monitor.cpp), check against all local addresses, not just the "hostname"
+* mk5erase: ask before continuing on write-protected module (even if force is specified)
 
 Version 2.3.0
 ~~~~~~~~~~~~~
