@@ -39,6 +39,9 @@ version = 1.10
 verdate = '20140312'
 author  = 'Walter Brisken'
 
+# put output files here
+jobdir = 'jobs'
+
 def usage():
 	print '\n%s ver. %s   %s %s\n' % (program, version, verdate, author)
 	print 'A program to preprocess the cal files to simiplfy difx2fits.\n'
@@ -57,6 +60,8 @@ def usage():
 	print '  <TSM file> is <project>cal.vlba or <project>cal.vlba.gz\n'
 	print '  <antenna list> is a comma separated list of antennas with'
 	print '          no spaces, e.g., FD,GB,Y.  Default -- all ants.\n'
+	print 'Output files will be placed in a subdirectory called %s' % jobdir
+	print 'which will be created if it does not already exist.\n'
 	exit(0)
 
 
@@ -601,6 +606,9 @@ TSs  = {}
 PHs  = {}
 WRs  = {}
 FGs  = {}
+
+system('mkdir -p %s' % jobdir)
+
 for a in ants:
 	ts, bbc = makeTS(sections, a, startyear, startdoy, useMJD)
 	if ts != None:
@@ -621,14 +629,14 @@ for a in ants:
 			PHs[a] = ph
 
 for a in ants:
-	writetable(FGs, '%s.%s.flag' % (exper, a), [a], 'FG', 0)
+	writetable(FGs, '%s/%s.%s.flag' % (jobdir, exper, a), [a], 'FG', 0)
 	if isMark5C > 0:
 		# the tsys and pcal values here are not useful
-		writetable(PHs, '%s.%s.cablecal' % (exper, a), [a], 'PH', 4)
+		writetable(PHs, '%s/%s.%s.cablecal' % (jobdir, exper, a), [a], 'PH', 4)
 	else:
-		writetable(TSs, '%s.%s.tsys' % (exper, a), [a], 'TS', 0)
-		writetable(PHs, '%s.%s.pcal' % (exper, a), [a], 'PH', 0)
-	writetable(WRs, '%s.%s.weather' % (exper, a), [a], 'WR', 0)
+		writetable(TSs, '%s/%s.%s.tsys' % (jobdir, exper, a), [a], 'TS', 0)
+		writetable(PHs, '%s/%s.%s.pcal' % (jobdir, exper, a), [a], 'PH', 0)
+	writetable(WRs, '%s/%s.%s.weather' % (jobdir, exper, a), [a], 'WR', 0)
 
 
 # add comment to and rename the cal.vlba file to deter Mark5C users from using it
@@ -640,14 +648,14 @@ if isMark5C > 0 and 'legacy' not in inputFile:
 		outputFile = inputFile + '.legacy'
 		data = open(inputFile, 'r').readlines()
 	o = open(outputFile, 'w')
-	o.write('!! --- WARNING --- !!\n')
+	o.write('*** --- WARNING ----- WARNING ----- WARNING ----- WARNING ----- WARNING ---- ***\n')
 	o.write('*** This file contains system temperature and pulse cal data from the LEGACY ***\n')
 	o.write('*** VLBA system.  The signal path and maybe the channelization is different  ***\n')
 	o.write('*** from that used for RDBE/MARK5C based observations.  Do not use the pulse ***\n')
 	o.write('*** cal data for calibration and only use the Tsys data if you really        ***\n')
 	o.write('*** understand what you are doing.  These data are mainly for use in system  ***\n')
-	o.write('*** debugging.                                                               ***\n\n')
-	o.write('!! --------------- !!\n')
+	o.write('*** debugging.                                                               ***\n')
+	o.write('*** -------------------------------------------------------------------------***\n\n')
 	for d in data:
 		o.write(d)
 	o.close()
@@ -656,5 +664,3 @@ if isMark5C > 0 and 'legacy' not in inputFile:
 	print '%s has been renamed %s and a warning has' % (inputFile, outputFile)
 	print 'been added.  The original file has been moved to /tmp which will be'
 	print 'deleted in some number of days.'
-	system('mkdir -p jobs')
-	system('cp %s.gz jobs/' % outputFile)
