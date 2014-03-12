@@ -1,6 +1,7 @@
 Version 2.4.0
 ~~~~~~~~~~~~~
 * Post DiFX-2.3
+* Increase receive buffer size for binary receives
 
 Version 2.3.0
 ~~~~~~~~~~~~~

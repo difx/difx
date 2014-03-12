@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2012 by Walter Brisken                             *
+ *   Copyright (C) 2007-2014 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -1027,9 +1027,9 @@ static void XMLCALL charHandler(void *userData, const XML_Char *str, int len)
 
 	l = strlen(G->_xml_string);
 
-	if(len + l > 1023)
+	if(len + l >= _DIFX_MESSAGE_XML_STRING_LENGTH)
 	{
-		len = 1023 - l;
+		len = _DIFX_MESSAGE_XML_STRING_LENGTH - 1 - l;
 		if(len <= 0)
 		{
 			return;

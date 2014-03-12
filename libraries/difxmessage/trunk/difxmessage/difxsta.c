@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2010-2012 by Walter Brisken and Adam Deller             *
+ *   Copyright (C) 2010-2014 by Walter Brisken and Adam Deller             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -27,6 +27,7 @@
 //
 //============================================================================
 #include <stdio.h>
+#include <sys/socket.h>
 #include "../difxmessage.h"
 #include "difxmessageinternal.h"
 
@@ -59,6 +60,9 @@ int difxMessageSendBinary(const char *message, int destination, int length)
 
 int difxMessageBinaryOpen(int destination)
 {
+	const int recBufSize = 1000000;
+	int sock = -1;
+
 	if(destination == BINARY_STA)
 	{
 		if(difxBinarySTAPort < 0)
@@ -66,11 +70,11 @@ int difxMessageBinaryOpen(int destination)
 			return -1;
 		}
 
-		return openMultiCastSocket(difxBinarySTAGroup, difxBinarySTAPort);
+		sock = openMultiCastSocket(difxBinarySTAGroup, difxBinarySTAPort);
 	}
 	else
 	{
-		if (destination != BINARY_LTA)
+		if(destination != BINARY_LTA)
                 {
                         return -1;
                 }
@@ -80,9 +84,16 @@ int difxMessageBinaryOpen(int destination)
                         return -1;
                 }
 
-                return openMultiCastSocket(difxBinaryLTAGroup, difxBinaryLTAPort);
+                sock = openMultiCastSocket(difxBinaryLTAGroup, difxBinaryLTAPort);
         }
 
+	/* Increase receive buffer size to accommodate bursty traffic */
+	if(sock >= 0)
+	{
+		setsockopt(sock, SOL_SOCKET, SO_RCVBUF, &recBufSize, sizeof(recBufSize));
+	}
+
+	return sock;
 }
 
 int difxMessageBinaryClose(int sock)

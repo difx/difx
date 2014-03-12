@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2012 by Walter Brisken                             *
+ *   Copyright (C) 2007-2014 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -44,7 +44,7 @@ int difxMessageReceiveOpen()
 
 	if(sock > 0)
 	{
-		int recBufSize = 768000;
+		const int recBufSize = 768000;
 
 		/* Increase receive buffer size to accommodate bursty traffic */
 		setsockopt(sock, SOL_SOCKET, SO_RCVBUF, &recBufSize, sizeof(recBufSize));

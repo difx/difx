@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2012 by Walter Brisken                             *
+ *   Copyright (C) 2007-2014 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -59,6 +59,8 @@ extern "C" {
 #define DIFX_MESSAGE_MAX_SMART_IDS	32
 #define DIFX_MESSAGE_MAX_INET_ADDRESS_LENGTH	64
 #define DIFX_MESSAGE_HOSTNAME_LENGTH	256
+
+#define _DIFX_MESSAGE_XML_STRING_LENGTH	1024
 
 /**** LOW LEVEL MULTICAST FUNCTIONS ****/
 
@@ -496,7 +498,7 @@ typedef struct
 	int _xml_level;			/* internal use only here and below */
 	char _xml_element[5][32];
 	int _xml_error_count;
-	char _xml_string[1024];
+	char _xml_string[_DIFX_MESSAGE_XML_STRING_LENGTH];
 	int _inDB;
 } DifxMessageGeneric;
 
