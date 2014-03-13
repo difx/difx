@@ -122,6 +122,8 @@ cinfo << startl << "stripbytes=" << stripbytes << " packetsize=" << packetsize <
 		/* First barrier is before the locking of slot number 1 */
 		pthread_barrier_wait(&networkthreadbarrier);
 
+cinfo << startl << "barrier 1" << endl;
+
 		readbufferwriteslot = 1;	// always 
 		pthread_mutex_lock(networkthreadmutex + (readbufferwriteslot % lockmod));
 		if(networkthreadstop)
@@ -131,30 +133,38 @@ cinfo << startl << "stripbytes=" << stripbytes << " packetsize=" << packetsize <
 		/* Second barrier is after the locking of slot number 1 */
 		pthread_barrier_wait(&networkthreadbarrier);
 
+cinfo << startl << "barrier 2" << endl;
 		while(!networkthreadstop)
 		{
 			int bytes;
 			bool endofscan = false;
 			int status;
 
+
+for(int ii = 0; ii < 1000; ++ii)
+{
 			// This is where the actual read from the Mark5 unit happens
+		cinfo << startl << "Reading... " << ii << endl;
 			if(ethernetdevice.empty())
 			{
 				// TCP or regular UDP
 				status = readnetwork(socketnumber, (char *)(readbuffer + readbufferwriteslot*readbufferslotsize), readbufferslotsize, &bytes);
+		cinfo << startl << "UDP bytes read = " << bytes << endl;
 			}
 			else
 			{
 				// Raw socket or trimmed UDP
 				status = readrawnetwork(socketnumber, (char *)(readbuffer + readbufferwriteslot*readbufferslotsize), readbufferslotsize, &bytes, packetsize, stripbytes);
+		cinfo << startl << "Raw bytes read = " << bytes << endl;
 			}
-
+			if(bytes > 0) break;
+}
 			if(bytes <= 0)
 			{
 				status = -1;
 		// Not sure what to do here
 			}
-			if(bytes < readbufferslotsize)
+			else if(bytes < readbufferslotsize)
 			{
 				// a partial read
 				endofscan = true;
@@ -501,6 +511,7 @@ void VDIFNetworkDataStream::loopnetworkread()
 
 	if(ethernetdevice.empty())
 	{
+cinfo << startl << "VDIFNetworkDataStream::loopnetworkread: running openstream" << endl;
 		openstream(portnumber, tcpwindowsizebytes/1024);
 	}
 	else

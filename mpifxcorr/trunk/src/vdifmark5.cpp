@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2013 by Walter Brisken and Adam Deller             *
+ *   Copyright (C) 2007-2014 by Walter Brisken and Adam Deller             *
  *                                                                         *
  *   This program is free for non-commercial use: see the license file     *
  *   at http://astronomy.swin.edu.au:~adeller/software/difx/ for more      *
@@ -494,9 +494,12 @@ void VDIFMark5DataStream::initialiseFile(int configindex, int fileindex)
 			scanstart = scanPointer->mjdStart();
 			scanend = scanPointer->mjdEnd();
 
- 			if(startmjd < scanstart)  /* obs starts before data */
+ 			if(startmjd < scanstart && scanstart < jobEndMJD)  /* obs starts before data */
 			{
-				cinfo << startl << "NM5 : scan found(1) : " << (scanNum+1) << endl;
+				int prec = cinfo.precision();
+				cinfo.precision(12);
+				cinfo << startl << "NM5 : scan found (1): " << (scanNum+1) << " named " << scanPointer->name << "  startmjd=" << startmjd << "  scanstart=" << scanstart << "  scanend=" << scanend << endl;
+				cinfo.precision(prec);
 				readpointer = scanPointer->start + scanPointer->frameoffset;
 				readseconds = (scanPointer->mjd-corrstartday)*86400 + scanPointer->sec - corrstartseconds + intclockseconds;
 				readnanoseconds = scanPointer->nsStart();
@@ -511,11 +514,15 @@ void VDIFMark5DataStream::initialiseFile(int configindex, int fileindex)
 				readseconds = readseconds - model->getScanStartSec(readscan, corrstartday, corrstartseconds);
 				break;
 			}
-			else if(startmjd < scanend) /* obs starts within data */
+			else if(startmjd < scanend && scanstart < jobEndMJD) /* obs starts within data */
 			{
 				int fbytes;
+				int prec = cinfo.precision();
 
-				cinfo << startl << "NM5 : scan found(2) : " << (scanNum+1) << endl;
+				cinfo.precision(12);
+				cinfo << startl << "NM5 : scan found (2): " << (scanNum+1) << " named " << scanPointer->name << "  startmjd=" << startmjd << "  scanstart=" << scanstart << "  scanend=" << scanend << endl;
+				cinfo.precision(prec);
+
 				readpointer = scanPointer->start + scanPointer->frameoffset;
 				n = static_cast<long long>((
 					( ( (corrstartday - scanPointer->mjd)*86400 
@@ -525,7 +532,7 @@ void VDIFMark5DataStream::initialiseFile(int configindex, int fileindex)
 				readpointer += n*fbytes;
 				if(readpointer >= scanPointer->start + scanPointer->length)
 				{
-					cwarn << startl << "Scan " << (scanNum+1) << " duration seems misrepresented in the dir file.  Jumping to next scan to be safe." << endl;
+					cerror << startl << "Scan " << (scanNum+1) << " duration seems misrepresented in the dir file.  Jumping to next scan to be safe." << endl;
 
 					readpointer = -1;
 
@@ -545,46 +552,36 @@ void VDIFMark5DataStream::initialiseFile(int configindex, int fileindex)
 				break;
 			}
 		}
-		cinfo << startl << "VDIFMark5DataStream positioned at byte=" << readpointer << " scheduled scan=" << readscan << " seconds=" << readseconds << " ns=" << readnanoseconds << " n=" << n << endl;
-
 		if(scanNum >= module.nScans() || scanPointer == 0)
 		{
-			cwarn << startl << "No valid data found.  Stopping playback!" << endl;
-
-			scanNum = module.nScans()-1;
-			scanPointer = &module.scans[scanNum];
-			readpointer = scanPointer->start + scanPointer->length - (1<<21);
-			if(readpointer < 0)
-			{
-				readpointer = 0;
-			}
-
-			readseconds = readseconds - model->getScanStartSec(readscan, corrstartday, corrstartseconds) + intclockseconds;
-			readnanoseconds = 0;
-
-			noDataOnModule = true;
+			readpointer = -1;
 		}
-
-		cinfo << startl << "Scan info: start=" << scanPointer->start << " frameoffset=" << scanPointer->frameoffset << " framebytes=" << scanPointer->framebytes << endl;
 	}
 
         if(readpointer == -1)
         {
-		cwarn << startl << "No data for this job on this module" << endl;
+		cwarn << startl << "initialiseFile: No data for this job on this module" << endl;
 		scanPointer = 0;
+		scanNum = 0;
 		dataremaining = false;
 		keepreading = false;
 		noMoreData = true;
+		noDataOnModule = true;
+		readseconds = 0;
+		readnanoseconds = 0;
 		sendMark5Status(MARK5_STATE_NOMOREDATA, 0, 0.0, 0.0);
+		mark5threadstop = true;
 
 		return;
         }
+	else
+	{
+		cinfo << startl << "The frame start day is " << scanPointer->mjd << ", the frame start seconds is " << scanPointer->secStart() << ", readscan is " << readscan << ", readseconds is " << readseconds << ", readnanoseconds is " << readnanoseconds << endl;
+	}
 
 	sendMark5Status(MARK5_STATE_GOTDIR, readpointer, scanPointer->mjdStart(), 0.0);
 
 	newscan = 1;
-
-	cinfo << startl << "The frame start day is " << scanPointer->mjd << ", the frame start seconds is " << scanPointer->secStart() << ", readscan is " << readscan << ", readseconds is " << readseconds << ", readnanoseconds is " << readnanoseconds << endl;
 
 	/* update all the configs to ensure that the nsincs and
 	 * headerbytes are correct
@@ -612,7 +609,14 @@ void VDIFMark5DataStream::initialiseFile(int configindex, int fileindex)
 	pthread_barrier_wait(&mark5threadbarrier);
 	pthread_barrier_wait(&mark5threadbarrier);
 
-	cinfo << startl << "Scan " << (scanNum+1) <<" initialised" << endl;
+	if(readpointer >= 0)
+	{
+		cinfo << startl << "Scan " << (scanNum+1) <<" initialised" << endl;
+	}
+	else
+	{
+		cinfo << startl << "The read thread should die shortly" << endl;
+	}
 }
 
 void VDIFMark5DataStream::openfile(int configindex, int fileindex)
@@ -908,10 +912,6 @@ void VDIFMark5DataStream::loopfileread()
 		}
 		lastvalidsegment = (numread-1) % numdatasegments;
 	}
-	else
-	{
-		cwarn << startl << "Couldn't find any valid data; will be shutting down gracefully!" << endl;
-	}
 	readthreadstarted = true;
 	perr = pthread_cond_signal(&initcond);
 	if(perr != 0)
@@ -921,7 +921,6 @@ void VDIFMark5DataStream::loopfileread()
 
 	if(noDataOnModule)
 	{
-		cwarn << startl << "No data on module" << endl;
 		dataremaining = false;
 		keepreading = false;
 	}
