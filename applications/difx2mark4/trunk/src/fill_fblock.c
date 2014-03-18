@@ -111,8 +111,8 @@ int fill_fblock (DifxInput *D,                    // difx input structure pointe
                 pfb[nprod].stn[1].bs       = pdsB->quantBits;
                 pfb[nprod].stn[1].zoom     = zoom;
 
-                                    // if either antenna zoom, make both proper USB
-                if (pfb[nprod].stn[0].zoom || pfb[nprod].stn[1].zoom)
+                                    // if sidebands mixed, make both USB
+                if (pfb[nprod].stn[0].sideband != pfb[nprod].stn[1].sideband)
                     for (k=0; k<2; k++)
                         if (pfb[nprod].stn[k].sideband == 'L')
                             {
