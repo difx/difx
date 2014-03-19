@@ -31,12 +31,15 @@ export CALC_SERVER=localhost
 ####### No User configurable values below here
 
 ####### Operating System, use $OSTYPE
-if [ $OSTYPE = "darwin" -o $OSTYPE = "darwin9.0" -o $OSTYPE = "linux" -o $OSTYPE = "linux-gnu" ] 
+if [ $OSTYPE = "darwin" -o $OSTYPE = "darwin9.0" -o $OSTYPE = "darwin13" ]
 then
-  OS=$OSTYPE
+ OS=darwin
+elif [ -o $OSTYPE = "linux" -o $OSTYPE = "linux-gnu" ] 
+then
+  OS=linux
 else
   echo "Warning unsupported O/S $OSTYPE"
-  exit 1
+  return
 fi
 
 PrependPath()
@@ -81,7 +84,7 @@ fi
 
 ####### LIBRARY/EXECUTABLE PATHS ############
 PrependPath PATH             ${DIFXROOT}/bin
-if [ $OS = "darwin" -o $OS = "darwin9.0" ] 
+if [ $OS = "darwin" ] 
 then
   PrependPath DYLD_LIBRARY_PATH  ${DIFXROOT}/lib
   PrependPath DYLD_LIBRARY_PATH  ${PGPLOTDIR}
