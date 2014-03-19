@@ -130,7 +130,7 @@ void mjd2keyin(char *str, double mjd)
 
 int runPulsar(const DifxInput *D, int configId, const char *pulsarName)
 {
-	const double thresh = 0.05;
+	const double thresh = 0.02;
 	int pulsarId;
 	int scanId;
 	const DifxConfig *dc;
@@ -283,7 +283,8 @@ int runPulsar(const DifxInput *D, int configId, const char *pulsarName)
 	
 				while(mjd + sec/86400.0 < scan->mjdEnd)
 				{
-					double R1, R2, f, M;
+					double R1, R2, f;
+					fftw_complex M;
 					int index;
 					int ii;
 					double fq; /* MHz */
@@ -321,9 +322,9 @@ int runPulsar(const DifxInput *D, int configId, const char *pulsarName)
 						}
 						M /= nSpecPts;
 
-						fprintf(out, "  %f %f", fabs((R1-R2)*fq), M);
+						fprintf(out, "  %f %f", fabs((R1-R2)*fq), cabs(M));
 
-						if(M > thresh)
+						if(cabs(M) > thresh)
 						{
 							if(flagOn[ii] < 1.0)
 							{
