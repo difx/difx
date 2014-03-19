@@ -91,7 +91,7 @@ try:
         "mk5daemon", "withmonitor", "rpfits", "perl", "withfb",
         "withhops", "withguiserver",
         "noinstall", "reconf", "noconf", "clean",
-        "g77", "noipp", "ipp", "cache=", "targ=", "pristine" ])
+        "g77", "noipp", "ipp", "nodoc", "cache=", "targ=", "pristine" ])
 except getopt.GetoptError, err:
     print err
     print main.__doc__
