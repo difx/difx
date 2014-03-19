@@ -381,7 +381,7 @@ static int pcal(const char *inFile, const char *format, int nInt, int nFreq, con
 
 				for(j = 0; j < ChunkSize/2; ++j)
 				{
-					sum += bins[i][j]*~bins[i][j];
+ 				        sum += creal(bins[i][j]*~bins[i][j]);
 				}
 				factor = 1.0/sqrt(sum);
 				for(j = 0; j < ChunkSize; ++j)
