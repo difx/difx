@@ -16,7 +16,8 @@ Usage:
         [--mk5daemon] [--withmonitor] [--rpfits] [--perl] [--withfb] \\
         [--withhops] [--withguiserver] [--noinstall] \\
         [--reconf] [--noconf] [--clean] \\
-        [--g77] [--noipp] [--ipp] [--nodoc] \\
+        [--g77] [--extraflags='flags'] [--makeflags='flags'] \\
+        [--noipp] [--ipp] [--nodoc] \\
         [--cache='name'] [--targ='...'] [--pristine]
 
 Builds and installs mpifxcorr and associated tools.  If invoked from the
@@ -61,6 +62,12 @@ Options:
 
    --g77           Use g77, rather than gfortran
 
+   --extraflags='flags' Add 'flags' to each of the CFLAGS, CXXFLAGS, and
+                   FFLAGS environment variables
+
+   --makeflags='flags' Add 'flags' to each direct call of the make program,
+                   (so you can do make -j 4 to speed up compilation)
+
    --noipp         Don't try and install ipp package config file
 
    --ipp           Force installation of ipp package config file
@@ -91,7 +98,8 @@ try:
         "mk5daemon", "withmonitor", "rpfits", "perl", "withfb",
         "withhops", "withguiserver",
         "noinstall", "reconf", "noconf", "clean",
-        "g77", "noipp", "ipp", "nodoc", "cache=", "targ=", "pristine" ])
+        "g77", "extraflags=", "makeflags=", 
+         "noipp", "ipp", "nodoc", "cache=", "targ=", "pristine" ])
 except getopt.GetoptError, err:
     print err
     print main.__doc__
@@ -108,6 +116,8 @@ reconf = False
 noinstall = False
 mk5d = False
 gfortran = True
+extraflags = None
+MAKEcommand = "make "
 rpfits = False
 perl = False
 doclean = False
@@ -162,6 +172,10 @@ if len(opts) > 0:
             dodoc = "False"
         if o == "--g77":
             gfortran = False
+        if o == "--extraflags":
+            extraflags = a
+        if o == "--makeflags":
+            MAKEcommand += a + ' '
         if o == "--ipp":
             doipp = 1
         if o == "--noipp":
@@ -197,6 +211,18 @@ mpicxx = os.environ.get('MPICXX')
 pgplotdir = os.environ.get('PGPLOTDIR')
 difxbits = os.environ.get('DIFXBITS')
 platform = sys.platform
+
+if(extraflags is not None):
+    ###### Get all relevant environment variables ###########
+    print "************************************"
+    print "Setting environmental variables"
+    print
+    for ftype in ["CFLAGS", "CXXFLAGS", "FFLAGS"]:
+        thisflags = extraflags
+        if(ftype in os.environ):
+            thisflags = os.environ[ftype] + ' ' + extraflags
+        os.environ[ftype] = thisflags
+
 
 ##### Check that appropriate setup has been done ########
 if not master_tag:
@@ -370,9 +396,9 @@ def auto_compile(doreconf, dolibtoolize, doautoheader, prefix, dompicxx):
             configstring += " CXX=" + mpicxx
         run(configstring)
 
-    run("make " + target)
+    run(MAKEcommand + target)
     if not noinstall:
-        run("make install")
+        run(MAKEcommand + "install")
     os_chdir(thisdir)
 
 ###### Subroutine to set up documentation area ##########
@@ -395,7 +421,7 @@ if doclean:
     if perl:
         print "**** Cleaning vexlib"
         os_chdir("libraries/vex/"+difx_version+"/vexlib")
-        run("make clean")
+        run(MAKEcommand + "clean")
         os_chdir(topdir)
     if rpfits:
         print "**** Cleaning rpfits"
@@ -406,7 +432,7 @@ if doclean:
                 os_chdir("libraries/rpfits/"+difx_version+"/linux/")
             else:
                 os_chdir("libraries/rpfits/"+difx_version+"/linux64/")
-        run("make clean")
+        run(MAKEcommand + "clean")
         os_chdir(topdir)
 
     os_chdir("libraries")
@@ -417,7 +443,7 @@ if doclean:
             print
             print "**** Cleaning "+targetdir
             os_chdir(targetdir)
-            run("make -k clean distclean")
+            run(MAKEcommand + "-k clean distclean")
             if pristine:
                 run("rm -rf " + autojunk)
         else:
@@ -435,7 +461,7 @@ if doclean:
             print
             print "**** Cleaning "+targetdir
             os_chdir(targetdir)
-            run("make -k clean distclean")
+            run(MAKEcommand + "-k clean distclean")
             if pristine:
                 run("rm -rf " + autojunk)
         else:
@@ -456,7 +482,7 @@ if doclean:
             print
             print "**** Cleaning "+targetdir
             os_chdir(targetdir)
-            run("make -k clean distclean")
+            run(MAKEcommand + "-k clean distclean")
             if pristine:
                 run("rm -rf " + autojunk)
         else:
@@ -470,7 +496,7 @@ if doclean:
         print
         print "**** Cleaning "+targetdir
         os_chdir(targetdir)
-        run("make -k clean distclean") 
+        run(MAKEcommand + "-k clean distclean") 
         if pristine:
             run("rm -rf " + autojunk)
         else:
@@ -523,17 +549,17 @@ if perl:
     print
     os_chdir("libraries/vex/"+difx_version+"/vexlib")
     if platform == "darwin":
-        run("make -f Makefile.osx")
+        run(MAKEcommand + "-f Makefile.osx")
     else:
-        run("make")
+        run(MAKEcommand)
     if not noinstall:
         run("mv -f libvex." + SHAREDPOSTFIX + " " + libdir)
         run("mv -f libvex.a " + libdir)
     os_chdir("../vexperl")
     run("perl Makefile.PL PREFIX=" + difxroot)
-    run("make")
+    run(MAKEcommand)
     if not noinstall:
-        run("make install")
+        run(MAKEcommand + "install")
     os_chdir(topdir)
 
     print
@@ -542,9 +568,9 @@ if perl:
     print
     os_chdir("libraries/perl/"+difx_version+"/Astro")
     run("perl Makefile.PL PREFIX="+difxroot)
-    run("make")
+    run(MAKEcommand)
     if not noinstall:
-        run("make install")
+        run(MAKEcommand + "install")
         os_chdir(topdir)
 
     print
@@ -553,9 +579,9 @@ if perl:
     print
     os.chdir("libraries/perl/"+difx_version+"/DIFX-Input")
     run("perl Makefile.PL PREFIX="+difxroot)
-    run("make")
+    run(MAKEcommand)
     if not noinstall:
-        run("make install")
+        run(MAKEcommand + "install")
         os.chdir(topdir)
 
 if rpfits:
@@ -570,7 +596,7 @@ if rpfits:
             os_chdir("libraries/rpfits/"+difx_version+"/linux/")
         else:
             os_chdir("libraries/rpfits/"+difx_version+"/linux64/")
-    run("make")
+    run(MAKEcommand)
     if not noinstall:
         run("mv -f librpfits.a " + libdir)
     os_chdir(topdir)
@@ -640,9 +666,9 @@ else:
         configstring += cache + "-CXX"
     run(configstring)
 
-run("make " + target)
+run(MAKEcommand + target)
 if not noinstall:
-    run("make install")
+    run(MAKEcommand + "install")
 os_chdir(topdir)
 
 ##### Make standard (autotool'd) applications ############
