@@ -1213,7 +1213,7 @@ static int repeatingData(const char *bufferStart, int framebytes)
 	return 0;
 }
 
-int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref, int (*callback)(int, int, int, void *), void *data, float *replacedFrac, int cacheOnly, int startScan, int stopScan)
+int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref, int (*callback)(int, int, int, void *), void *data, float *replacedFrac, int cacheOnly, int startScan, int stopScan, const char *binFilename)
 {
 	XLR_RETURN_CODE xlrRC;
 	struct Mark5LegacyDirectory *m5dir;
@@ -1285,7 +1285,7 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref, int (*callback)(i
 
 		printf("size=%d  len=%d\n", static_cast<int>(sizeof(struct Mark5LegacyDirectory)), len);
 
-		dirData = (unsigned char *)calloc(len, sizeof(int));
+		dirData = (unsigned char *)calloc(len, 1);
 		WATCHDOG( xlrRC = XLRGetUserDir(xlrDevice, len, 0, dirData) );
 
 		out = fopen(dumpFile, "w");
@@ -1733,6 +1733,16 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref, int (*callback)(i
 
 	free(bufferStart);
 	free(bufferStop);
+
+	if(binFilename)
+	{
+		FILE *out;
+
+		out = fopen(binFilename, "w");
+		fwrite(dirData, len, 1, out);
+		fclose(out);
+	}
+
 	free(dirData);
 
 	uniquifyScanNames();
@@ -1779,6 +1789,7 @@ int Mark5Module::getCachedDirectory(SSHANDLE xlrDevice,
 {
 	const int FilenameLength = 256;
 	char filename[FilenameLength];
+	char binFilename[FilenameLength];
 	int v, curbank;
 
 	clear();
@@ -1792,6 +1803,7 @@ int Mark5Module::getCachedDirectory(SSHANDLE xlrDevice,
 	}
 	
 	snprintf(filename, FilenameLength, "%s/%s.dir", dir, vsn);
+	snprintf(binFilename, FilenameLength, "%s/%s.bindir", dir, vsn);
 	
 	v = load(filename);
 	if(force)
@@ -1804,7 +1816,7 @@ int Mark5Module::getCachedDirectory(SSHANDLE xlrDevice,
 	}
 
 	fast = optionFast;
-	v = readDirectory(xlrDevice, mjdref, callback, data, replacedFrac, cacheOnly, startScan, stopScan);
+	v = readDirectory(xlrDevice, mjdref, callback, data, replacedFrac, cacheOnly, startScan, stopScan, binFilename);
 
 	if(v >= 0)
 	{

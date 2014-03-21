@@ -197,7 +197,7 @@ int main(int argc, char **argv)
 			WATCHDOG( xlrRC = XLRSelfTest( xlrDevice, (SS_SELFTEST)i) );
 			if(xlrRC == XLR_SUCCESS)
 			{
-				printf("Success\n", i-XLR_BIST_DISK0);
+				printf("Success: %d\n", i-XLR_BIST_DISK0);
 			}
 			else
 			{
@@ -207,7 +207,7 @@ int main(int argc, char **argv)
 				xlrError = XLRGetLastError();
 				if(xlrError == 7)
 				{
-					printf("Unpopulated\n", i-XLR_BIST_DISK0);
+					printf("Unpopulated: %d\n", i-XLR_BIST_DISK0);
 				}
 				else
 				{

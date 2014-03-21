@@ -225,7 +225,7 @@ int setvsn(int bank, char *newVSN, int newStatus, enum WriteProtectAction wpa, i
 #endif
 	char label[XLR_LABEL_LENGTH+1];
 	char oldLabel[XLR_LABEL_LENGTH+1];
-	int dirVersion = -1;
+	int dirVersion = -1;	/* 0 = Legacy or NeoLegacy, 1 = Mark5C, -1 = unset */
 	int nDrive, capacity, rate;
 	int d;
 	char oldVSN[10];
@@ -237,6 +237,8 @@ int setvsn(int bank, char *newVSN, int newStatus, enum WriteProtectAction wpa, i
 	struct DriveInformation drive[8];
 	bool needsNewDir = false;
 	FILE *out = 0;
+	struct Mark5DirectoryInfo dirInfo;
+	unsigned char *dirData;
 
 	WATCHDOGTEST( XLROpen(1, &xlrDevice) );
 	WATCHDOGTEST( XLRSetBankMode(xlrDevice, SS_BANKMODE_NORMAL) );
@@ -309,35 +311,40 @@ int setvsn(int bank, char *newVSN, int newStatus, enum WriteProtectAction wpa, i
 	}
 
 	WATCHDOG( dirLength = XLRGetUserDirLength(xlrDevice) );
-
-	if(dirLength % 128 != 0 || dirLength == 0)
+	dirData = (unsigned char *)calloc(dirLength, 1);
+	WATCHDOG( xlrRC = XLRGetUserDir(xlrDevice, dirLength, 0, dirData) );
+	v = getMark5DirectoryInfo(&dirInfo, dirData, dirLength);
+	free(dirData);
+	if(v != Mark5DirectoryInfoSuccess)
 	{
-		if(dirLength == 0)
+		fprintf(stderr, "Directory parse error %d encountered: %s\n", v, Mark5DirectoryInfoStatusStrings[v]);
+	}
+
+	switch(dirInfo.dirClass)
+	{
+	case Mark5DirClassNone:
+		fprintf(stderr, "Warning: there is no directory on this module.\n");
+		if(moduleStatus == MODULE_STATUS_UNKNOWN)
 		{
-			fprintf(stderr, "Warning: there is no directory on this module.\n");
-			if(moduleStatus == MODULE_STATUS_UNKNOWN)
-			{
-				dirVersion = 1;
-				moduleStatus = MODULE_STATUS_ERASED;
-			}
-			else
-			{
-				dirVersion = 0;
-				needsNewDir = true;
-				if(verbose)
-				{
-					fprintf(stderr, "Will have new directory set if a change is made.\n");
-				}
-			}
+			dirVersion = 1;
+			moduleStatus = MODULE_STATUS_ERASED;
 		}
 		else
 		{
-			parseModuleLabel(label, 0, 0, 0, &moduleStatus);
 			dirVersion = 0;
+			needsNewDir = true;
+			if(verbose)
+			{
+				fprintf(stderr, "Will have new directory set if a change is made.\n");
+			}
 		}
-	}
-	else
-	{
+		break;
+	case Mark5DirClassLegacy:
+	case Mark5DirClassNeoLegacy:
+		parseModuleLabel(label, 0, 0, 0, &moduleStatus);
+		dirVersion = 0;
+		break;
+	case Mark5DirClassMark5C:
 		v = getModuleDirectoryVersion(xlrDevice, &dirVersion, 0, &moduleStatus);
 		if(v < 0)
 		{
@@ -349,6 +356,15 @@ int setvsn(int bank, char *newVSN, int newStatus, enum WriteProtectAction wpa, i
 
 			return v;
 		}
+		break;
+	case Mark5DirClassIllegal:
+		fprintf(stderr, "Warning: the module directory is corrupt.\n");
+		break;
+	}
+
+	if(out)
+	{
+		fprintMark5DirectoryInfo(out, &dirInfo);
 	}
 
 	if(isLegalModuleLabel(oldLabel))
@@ -365,7 +381,7 @@ int setvsn(int bank, char *newVSN, int newStatus, enum WriteProtectAction wpa, i
 		{
 			printf("\nCurrent extended VSN is %s/%d/%d\n", vsn, capacity, rate);
 			printf("Current disk module status is %s\n", moduleStatusName(moduleStatus) );
-			printf("\nModule directory version is %d\n", dirVersion);
+			fprintMark5DirectoryInfo(stdout, &dirInfo);
 			printf("This module contains %lld bytes of recorded data and is %4.2f%% full.\n", dir.Length,
 				100.0*roundModuleSize(dir.Length)/capacity);
 			printf("Write protection is %s.", bankStat.WriteProtected ? "ON" : "OFF");

@@ -121,7 +121,7 @@ public:
 	int uniquifyScanNames();
 	int readDirectory(SSHANDLE xlrDevice, int mjdref,
 		int (*callback)(int, int, int, void *), void *data,
-		float *replacedFrac, int cacheOnly, int startScan, int stopScan);
+		float *replacedFrac, int cacheOnly, int startScan, int stopScan, const char *binFilename = 0);
 	int getCachedDirectory(SSHANDLE xlrDevice, int mjdref, const char *vsn, 
 		const char *dir, int (*callback)(int, int, int, void *), void *data,
 		float *replacedFrac, int force, int optionFast, int cacheOnly, int startScan, int stopScan);

@@ -77,6 +77,7 @@ mk5dir_SOURCES = \
 	watchdog.h \
 	mark5dir.cpp \
 	mark5dir.h \
+	mark5directorystructs.cpp \
 	mark5directorystructs.h \
 	mk5dir.cpp
 
@@ -141,6 +142,7 @@ vsn_SOURCES = \
 	watchdog.h \
 	mark5dir.cpp \
 	mark5dir.h \
+	mark5directorystructs.cpp \
 	mark5directorystructs.h \
 	nraobaddrives.cpp \
 	nraobaddrives.h \
