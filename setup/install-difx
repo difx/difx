@@ -169,7 +169,7 @@ if len(opts) > 0:
         if o == "--clean":
             doclean = True
         if o == "--nodoc":
-            dodoc = "False"
+            dodoc = False
         if o == "--g77":
             gfortran = False
         if o == "--extraflags":
@@ -716,13 +716,14 @@ for utiltarget in utiltargets:
 os_chdir(topdir)
 
 ##### Make documentation #################################
-basedocdir = difxroot + '/doc/'
-make_doc_area(basedocdir)
-os.chdir("mpifxcorr/" + difx_version)
-if os.system("which doxygen") != 0:
-    print "No doxygen installed - skipping mpifxcorr documentation"
-else:
-    os.system("doxygen Doxyfile")
+if(dodoc):
+    basedocdir = difxroot + '/doc/'
+    make_doc_area(basedocdir)
+    os.chdir("mpifxcorr/" + difx_version)
+    if os.system("which doxygen") != 0:
+        print "No doxygen installed - skipping mpifxcorr documentation"
+    else:
+        os.system("doxygen Doxyfile")
 
 ##### Check for errors and list if present ###############
 if (force and not errors == []):
