@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2013 by Walter Brisken                             *
+ *   Copyright (C) 2008-2014 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -601,6 +601,7 @@ void Mark5Module::clear()
 	signature = 0;
 	mode = MARK5_READ_MODE_NORMAL;
 	dirVersion = 0;
+	dirSubversion = -1;
 	fast = 0;
 	synthetic = 0;
 }
@@ -614,8 +615,16 @@ void Mark5Module::print() const
 		return;
 	}
 	
-	printf("VSN=%s  nScan=%d  bank=%c  sig=%u  dirVer=%d  mode=%s\n", 
-		label.c_str(), nScans(), bank+'A', signature, dirVersion, Mark5ReadModeName[mode]);
+	if(dirSubversion >= 0)
+	{
+		printf("VSN=%s  nScan=%d  bank=%c  sig=%u  dirVer=%d  dirSubver=%d  mode=%s\n", 
+			label.c_str(), nScans(), bank+'A', signature, dirVersion, dirSubversion, Mark5ReadModeName[mode]);
+	}
+	else
+	{
+		printf("VSN=%s  nScan=%d  bank=%c  sig=%u  dirVer=%d  mode=%s\n", 
+			label.c_str(), nScans(), bank+'A', signature, dirVersion, Mark5ReadModeName[mode]);
+	}
 
 	if(error.str().size() > 0)
 	{
@@ -638,7 +647,8 @@ int Mark5Module::load(const char *filename)
 	char *v;
 	char bankName;
 	char dirLabel[XLR_LABEL_LENGTH];
-	char extra[3][12];
+	char extra[5][20];
+	int nNumber = 0;
 
 	clear();
 
@@ -659,8 +669,8 @@ int Mark5Module::load(const char *filename)
 		return -1;
 	}
 
-	n = sscanf(line, "%8s %d %c %u %11s %11s %11s",
-		dirLabel, &nscans, &bankName, &signature, extra[0], extra[1], extra[2]);
+	n = sscanf(line, "%8s %d %c %u %19s %19s %19s %19s %19s",
+		dirLabel, &nscans, &bankName, &signature, extra[0], extra[1], extra[2], extra[3], extra[4]);
 	if(n < 3)
 	{
 		error << "Directory file: " << filename << " is corrupt.\n";
@@ -689,7 +699,16 @@ int Mark5Module::load(const char *filename)
 		}
 		else if(sscanf(extra[j-4], "%d", &i) == 1)
 		{
-			dirVersion = i;
+			switch(nNumber)
+			{
+			case 0:
+				dirVersion = i;
+				break;
+			case 1:
+				dirSubversion = i;
+				break;
+			}
+			++nNumber;
 		}
 	}
 
@@ -727,7 +746,17 @@ int Mark5Module::load(const char *filename)
 int Mark5Module::save(const char *filename)
 {
 	FILE *out;
+	char sub[10];
 	
+	if(dirSubversion >= 0)
+	{
+		snprintf(sub, 10, "%d", dirSubversion);
+	}
+	else
+	{
+		sub[0] = 0;
+	}
+
 	out = fopen(filename, "w");
 	if(!out)
 	{
@@ -737,8 +766,9 @@ int Mark5Module::save(const char *filename)
 		return -1;
 	}
 
-	fprintf(out, "%8s %d %c %u %d %s%s%s\n",
+	fprintf(out, "%8s %d %c %u %d %s %s%s%s\n",
 		label.c_str(), nScans(), bank+'A', signature, dirVersion,
+		sub,
 		Mark5ReadModeName[mode], 
 		fast ? " Fast" : "",
 		synthetic ? " Synth" : "");
@@ -1216,21 +1246,18 @@ static int repeatingData(const char *bufferStart, int framebytes)
 int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref, int (*callback)(int, int, int, void *), void *data, float *replacedFrac, int cacheOnly, int startScan, int stopScan, const char *binFilename)
 {
 	XLR_RETURN_CODE xlrRC;
-	struct Mark5LegacyDirectory *m5dir;
+	struct Mark5LegacyDirectory *legacyDir;
+	struct Mark5NeoLegacyDirectory *neolegacyDir;
 	unsigned char *dirData;
-	int len;
+	int dirLength;
 	struct mark5_format *mf;
 	char newLabel[XLR_LABEL_LENGTH];
 	int newBank;
 	int bufferLength;
-	unsigned int newSignature;
+	struct Mark5DirectoryInfo dirInfo;
 	int die = 0;
-	int newDirVersion;   /* == 0 for old style (pre-mark5-memo 81) */
-	                     /* == version number for mark5-memo 81 */
-	int oldLen1, oldLen2, oldLen3, oldLen4, oldLen5, oldLen6;
-	int start, stop;
 	int oldFast;
-	int nscans;
+	int v;
 
 	streamstordatatype *bufferStart, *bufferStop, *bufferPrefil;
 
@@ -1255,115 +1282,56 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref, int (*callback)(i
 	}
 	newLabel[8] = 0;
 
-	WATCHDOG( len = XLRGetUserDirLength(xlrDevice) );
-	/* The historic directories written by Mark5A could come in three sizes.
-	 * See readdir() in Mark5A.c.  If one of these matches the actual dir size,
-	 * then assume it is old style, which we declare to be directory version
-	 * 0.  Otherwise check for divisibility by 128.  If so, then it is considered 
-	 * new style, and the version number can be extracted from the header.
-	 */
-	oldLen1 = (int)sizeof(struct Mark5LegacyDirectory);
-	oldLen2 = oldLen1 + 64 + 8*88;	/* 88 = sizeof(S_DRIVEINFO) */
-	oldLen3 = oldLen1 + 64 + 16*88;
-	oldLen4 = 83552;	/* DIMINO w/ SDK9 */
-	oldLen5 = 83488;	/* Another odd variant */
-	oldLen6 = 5244512;	/* Old version with 65536 entries */
-	if(len == oldLen1 || len == oldLen2 || len == oldLen3 || len == oldLen4 || len == oldLen5 || len == oldLen6)
-	{
-		printf("Dir version 0 with length %d detected\n", len);
-
-		newDirVersion = 0;
-	}
-	else if(len % 128 == 0)
-	{
-		newDirVersion = -1;  /* signal to get version number later */
-	}
-	else
-	{
-		FILE *out;
-		const char dumpFile[] = "/tmp/dir.dump";
-
-		printf("size=%d  len=%d\n", static_cast<int>(sizeof(struct Mark5LegacyDirectory)), len);
-
-		dirData = (unsigned char *)calloc(len, 1);
-		WATCHDOG( xlrRC = XLRGetUserDir(xlrDevice, len, 0, dirData) );
-
-		out = fopen(dumpFile, "w");
-		fwrite(dirData, 1, len, out);
-		fclose(out);
-
-		free(dirData);
-
-		printf("The directory was dumped to %s\n", dumpFile);
-
-		return -3;
-	}
-
-	dirData = (unsigned char *)calloc(len, sizeof(int));
+	WATCHDOG( dirLength = XLRGetUserDirLength(xlrDevice) );
+	dirData = (unsigned char *)calloc(dirLength, 1);
 	if(dirData == 0)
 	{
 		return -4;
 	}
-	WATCHDOG( xlrRC = XLRGetUserDir(xlrDevice, len, 0, dirData) );
-	m5dir = (struct Mark5LegacyDirectory *)dirData;
+	WATCHDOG( xlrRC = XLRGetUserDir(xlrDevice, dirLength, 0, dirData) );
+	v = getMark5DirectoryInfo(&dirInfo, dirData, dirLength);
+	if(v != Mark5DirectoryInfoSuccess)
+	{
+		FILE *out;
+		const char dumpFile[] = "/tmp/dir.dump";
 
-	
+		fprintf(stderr, "\nModule directory parse error %d encountered: %s\n", v, Mark5DirectoryInfoStatusStrings[v]);
+		fprintf(stderr, "The directory size was %d\n", dirLength);
+		fprintf(stderr, "The best guess about the directory content is printed below:\n");
+		fprintMark5DirectoryInfo(stderr, &dirInfo);
+		fprintf(stderr, "The binary directory was dumped to %s\n", dumpFile);
+
+		out = fopen(dumpFile, "w");
+		fwrite(dirData, 1, dirLength, out);
+		fclose(out);
+
+		free(dirData);
+
+		return -3;
+	}
+
+	fprintMark5DirectoryInfo(stdout, &dirInfo);
+
+	legacyDir = (struct Mark5LegacyDirectory *)dirData;
+	neolegacyDir = (struct Mark5NeoLegacyDirectory *)dirData;
+
 	if(xlrRC != XLR_SUCCESS)
 	{
 		free(dirData);
 
 		return -5;
 	}
-	if(newDirVersion == -1)
-	{
-		newDirVersion = ((int *)dirData)[0];
-	}
 
-	if(newDirVersion < 0 || newDirVersion > 1)
-	{
-		free(dirData);
-
-		return -6;
-	}
-
-	/* the adventurous would use md5 here */
-	if(newDirVersion == 0)
-	{
-		start = 0;
-		stop = 81952;
-	}
-	else
-	{
-		/* Don't base directory on header material as that can change */
-		start = sizeof(struct Mark5DirectoryHeaderVer1);
-		stop = len;
-	}
-
-	newSignature = 1;
-	if(start < stop)
-	{
-		for(int j = start/4; j < stop/4; ++j)
-		{
-			unsigned int x = ((unsigned int *)dirData)[j] + 1;
-			newSignature = newSignature ^ x;
-		}
-
-		/* prevent a zero signature */
-		if(newSignature == 0)
-		{
-			newSignature = 0x55555555;
-		}
-	}
-
-	if(signature == newSignature && nScans() > 0)
+	if(signature == dirInfo.signature && nScans() > 0)
 	{
 		/* Cached version seems up to date */
 
 		bank = newBank;
-		if(dirVersion != newDirVersion)
+		if(dirVersion != dirInfo.dirClass)
 		{
-			fprintf(stderr, "Warning: disagreement in directory version! %d != %d\n", dirVersion, newDirVersion);
-			dirVersion = newDirVersion;
+			fprintf(stderr, "Warning: disagreement in directory version! %d != %d\n", dirVersion, dirInfo.dirClass);
+			dirVersion = dirInfo.dirClass;
+			dirSubversion = dirInfo.dirVersion;
 		}
 		free(dirData);
 
@@ -1384,40 +1352,27 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref, int (*callback)(i
 	clear();
 	fast = oldFast;
 	
-	if(newDirVersion == 0)
-	{
-		nscans = m5dir->nscans;
-	}
-	else
-	{
-		nscans = len/128 - 1;
-	}
-	scans.resize(nscans);
 	bank = newBank;
-	signature = newSignature;
 	label = newLabel;
-	dirVersion = newDirVersion;
+	dirVersion = dirInfo.dirClass;
+	dirSubversion = dirInfo.dirVersion;
+	signature = dirInfo.signature;
+	scans.resize(dirInfo.nScan);
 	mode = MARK5_READ_MODE_NORMAL;
 
-	if(dirVersion == 0 && nscans > MODULE_LEGACY_MAX_SCANS)
-	{
-		fprintf(stderr, "Warning: Legacy module with %d scans (only %d scans allowed!)\n", nscans, MODULE_LEGACY_MAX_SCANS);
-		nscans = MODULE_LEGACY_MAX_SCANS;
-	}
-
+	/* perhaps limit the range of scans to interrogate */
 	if(startScan < 0)
 	{
 		startScan = 0;
 	}
-
 	if(stopScan < 0 || stopScan > nScans())
 	{
 		stopScan = nScans();
 	}
 
-	if(fast && dirVersion > 0)
+	if(fast && dirInfo.dirClass == Mark5DirClassMark5C)
 	{
-		newdir2scans(scans, dirData, len, startScan, stopScan);
+		newdir2scans(scans, dirData, dirLength, startScan, stopScan);
 	}
 	else
 	{
@@ -1442,13 +1397,19 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref, int (*callback)(i
 				fast = 0;
 			}
 
-			if(dirVersion == 0)
+			if(dirInfo.dirClass == Mark5DirClassLegacy)
 			{
-				scan.name   = m5dir->scanName[i];
-				scan.start  = m5dir->start[i];
-				scan.length = m5dir->length[i];
+				scan.name   = legacyDir->scanName[i];
+				scan.start  = legacyDir->start[i];
+				scan.length = legacyDir->length[i];
 			}
-			else if(dirVersion == 1)
+			if(dirInfo.dirClass == Mark5DirClassNeoLegacy)
+			{
+				scan.name   = neolegacyDir->scanName[i];
+				scan.start  = neolegacyDir->start[i];
+				scan.length = neolegacyDir->length[i];
+			}
+			else if(dirInfo.dirClass == Mark5DirClassMark5C)
 			{
 				const struct Mark5DirectoryScanHeaderVer1 *scanHeader;
 				scanHeader = (struct Mark5DirectoryScanHeaderVer1 *)(dirData + 128*i + 128);
@@ -1739,7 +1700,7 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref, int (*callback)(i
 		FILE *out;
 
 		out = fopen(binFilename, "w");
-		fwrite(dirData, len, 1, out);
+		fwrite(dirData, dirLength, 1, out);
 		fclose(out);
 	}
 

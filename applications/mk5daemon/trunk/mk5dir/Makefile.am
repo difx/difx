@@ -25,6 +25,7 @@ fileto5c_SOURCES = \
 	watchdog.h \
 	mark5dir.cpp \
 	mark5dir.h \
+	mark5directorystructs.cpp \
 	mark5directorystructs.h \
 	fileto5c.cpp
 
@@ -61,6 +62,7 @@ mk5cat_SOURCES = \
 	watchdog.h \
 	mark5dir.cpp \
 	mark5dir.h \
+	mark5directorystructs.cpp \
 	mark5directorystructs.h \
 	mk5cp.cpp
 
@@ -69,6 +71,7 @@ mk5cp_SOURCES = \
 	watchdog.h \
 	mark5dir.cpp \
 	mark5dir.h \
+	mark5directorystructs.cpp \
 	mark5directorystructs.h \
 	mk5cp.cpp
 
@@ -86,6 +89,7 @@ mk5erase_SOURCES = \
 	watchdog.h \
 	mark5dir.cpp \
 	mark5dir.h \
+	mark5directorystructs.cpp \
 	mark5directorystructs.h \
 	mk5erase.cpp
 
@@ -94,6 +98,7 @@ mk5putdir_SOURCES = \
 	watchdog.h \
 	mark5dir.cpp \
 	mark5dir.h \
+	mark5directorystructs.cpp \
 	mark5directorystructs.h \
 	mk5putdir.cpp
 
@@ -105,6 +110,7 @@ mk5map_SOURCES = \
 	watchdog.h \
 	mark5dir.cpp \
 	mark5dir.h \
+	mark5directorystructs.cpp \
 	mark5directorystructs.h \
 	mk5map.cpp
 
@@ -113,6 +119,7 @@ record5c_SOURCES = \
 	watchdog.h \
 	mark5dir.cpp \
 	mark5dir.h \
+	mark5directorystructs.cpp \
 	mark5directorystructs.h \
 	record5c.cpp
 
@@ -121,6 +128,7 @@ recover_SOURCES = \
 	watchdog.h \
 	mark5dir.cpp \
 	mark5dir.h \
+	mark5directorystructs.cpp \
 	mark5directorystructs.h \
 	recover.cpp
 
@@ -134,6 +142,7 @@ testmod_SOURCES = \
 	watchdog.h \
 	mark5dir.cpp \
 	mark5dir.h \
+	mark5directorystructs.cpp \
 	mark5directorystructs.h \
 	testmod.cpp
 

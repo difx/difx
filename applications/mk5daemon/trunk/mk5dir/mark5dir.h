@@ -105,7 +105,8 @@ public:
 	int bank;
 	unsigned int signature;	/* a hash code used to determine if dir is current */
 	enum Mark5ReadMode mode;
-	int dirVersion;		/* directory version = 0 for pre memo 81 */
+	int dirVersion;		/* directory version = 0 for pre memo 81, 1 for memo 81 */
+	int dirSubversion;	/* variant of directory version */
 	int fast;		/* if true, the directory came from the ModuleUserDirectory only */
 	int synthetic;		/* directory was synthesized */	
 
