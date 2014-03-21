@@ -106,17 +106,23 @@ def genipppc(path, ippversion):
 	if platform == "darwin":
 		mac = True
 
+        print "Platform=", platform
+        print "ipparch=", ipparch
+
 	if major == 6 or major == 5:
 		if mac:
 			libdir = 'Libraries'
 		else:
 			libdir = 'sharedlib'
-		if ipparch == 32:
+
+		if ipparch == 64 and platform != 'darwin' :
+                        out.write('Libs: -Wl,-rpath,${base}/%s -L${base}/%s -lippsem64t -lguide -lippvmem64t -lippcoreem64t\n' % (libdir,libdir))
+                else:
 			out.write('Libs: -Wl,-rpath,${base}/%s -L${base}/%s -lipps -lguide -lippvm -lippcore\n' % (libdir,libdir))
-			out.write('Cflags: -I${base}/include\n')
-		else:
-			out.write('Libs: -Wl,-rpath,${base}/%s -L${base}/%s -lippsem64t -lguide -lippvmem64t -lippcoreem64t\n' % (libdir,libdir))
-			out.write('Cflags: -I${base}/include\n')
+
+                out.write('Cflags: -I${base}/include\n')
+
+
 	elif major == 7 or major == 8:
 		if ipparch == 32:
 			libdir = 'ia32'
