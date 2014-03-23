@@ -4,6 +4,7 @@ Version 2.4
 * Add INTERLACEDVDIF Fake mode
 * Change polId to recBandId in the PCAL files as per documentation
 * Add support for TCP, UDP and Raw Ethernet Interlaced VDIF.  ** Not yet tested **
+* Text Mark5 XLRReadData() calls by tainting the end of the destination buffer and verifying it gets untainted.
 
 Version 2.3
 ~~~~~~~~~~~

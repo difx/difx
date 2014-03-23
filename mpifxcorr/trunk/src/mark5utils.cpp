@@ -158,7 +158,7 @@ XLR_RETURN_CODE difxMark5Read(SSHANDLE xlrDevice, long long readpointer, unsigne
 		}
 
 		// place watermark at end of buffer
-		watermarkSpot = reinterpret_cast<long long *>(dest + offset) - 1;
+		watermarkSpot = reinterpret_cast<long long *>(dest + offset + readSize) - 1;
 		*watermarkSpot = XLR_WATERMARK_VALUE;
 
 		WATCHDOG( xlrRC = XLRReadData(xlrDevice, xlrRD.BufferAddr, xlrRD.AddrHi, xlrRD.AddrLo, xlrRD.XferLength) );
@@ -172,6 +172,17 @@ XLR_RETURN_CODE difxMark5Read(SSHANDLE xlrDevice, long long readpointer, unsigne
 				{
 					++nZero;
 				}
+			}
+
+			if(xlrRC != XLR_SUCCESS)
+			{
+				XLR_ERROR_CODE xlrError;
+				char errString[XLR_ERROR_LENGTH];
+
+				xlrError = XLRGetLastError();
+				XLRGetErrorMessage(errString, xlrError);
+
+				cwarn << startl << "XLRReadData resulted in an error: " << errString << endl;
 			}
 
 			if(xlrRC == XLR_SUCCESS && nZero > 30)
@@ -194,16 +205,38 @@ XLR_RETURN_CODE difxMark5Read(SSHANDLE xlrDevice, long long readpointer, unsigne
 				++nWatermarkFound;
 				if( (nWatermarkFound & (nWatermarkFound-1)) == 0)
 				{
-					cwarn << startl << "XLR Read incomplete.  rereading!  readpointer=" << (readpointer + offset) << "readSize=" << readSize << " N=" << nWatermarkFound << endl;
+					cwarn << startl << "XLR Read incomplete.  rereading!  readpointer=" << (readpointer + offset) << "  readSize=" << readSize << " N=" << nWatermarkFound << endl;
 				}
 
 				usleep(readDelayMicroseconds);
 				WATCHDOG( xlrRC = XLRReadData(xlrDevice, xlrRD.BufferAddr, xlrRD.AddrHi, xlrRD.AddrLo, xlrRD.XferLength) );
 
-				if(*watermarkSpot == XLR_WATERMARK_VALUE && (nWatermarkFound & (nWatermarkFound-1)) == 0)
+				if( (nWatermarkFound & (nWatermarkFound-1)) == 0)
 				{
-					cwarn << startl << "Reread did not help!" << endl;
+					if(*watermarkSpot == XLR_WATERMARK_VALUE)
+					{
+						cwarn << startl << "Reread did not help!" << endl;
+					}
+					else
+					{
+						cinfo << startl << "Reread did help!" << endl;
+					}
 				}
+			}
+			else
+			{
+				xlrRC = XLR_SUCCESS;
+			}
+
+			if(xlrRC != XLR_SUCCESS)
+			{
+				XLR_ERROR_CODE xlrError;
+				char errString[XLR_ERROR_LENGTH];
+
+				xlrError = XLRGetLastError();
+				XLRGetErrorMessage(errString, xlrError);
+
+				cwarn << startl << "XLRReadData second attempt resulted in an error: " << errString << endl;
 			}
 		}
 	}
