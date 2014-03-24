@@ -48,6 +48,8 @@
 
 #endif
 
+#define FLIP(x)  ((((x)>>1)&0x5555555555555555LL) | (((x)<<1)&0xAAAAAAAAAAAAAAAALL))
+
 #ifdef DEVELOPMENT_MACHINE
 #define READ_BUFFER_SIZE 5
 #else
@@ -398,13 +400,13 @@ int convert2VDIF(string project, string stream, string outname,
 	      for (int j=1; j<1024; j++) {
 		if (mode==NONE) {
 		  // Merge the 4 streams
-		  frame64[vdifwords] = if1[j];
+		  frame64[vdifwords] = FLIP(if1[j]);
 		  vdifwords++;
-		  frame64[vdifwords] = if2[j];
+		  frame64[vdifwords] = FLIP(if2[j]);
 		  vdifwords++;
-		  frame64[vdifwords] = if3[j];
+		  frame64[vdifwords] = FLIP(if3[j]);
 		  vdifwords++;
-		  frame64[vdifwords] = if4[j];
+		  frame64[vdifwords] = FLIP(if4[j]);
 		  vdifwords++;
 		} else {
 		  // Take one byte from 2 IF only
