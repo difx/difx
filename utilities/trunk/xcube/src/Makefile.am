@@ -3,6 +3,7 @@ AM_CFLAGS = $(VDIFIO_CFLAGS)
 
 bin_PROGRAMS = \
 	lf1extract \
+	vdifextract \
 	lf1list \
 	x3projects \
 	lf1vdifcheck \
@@ -18,6 +19,15 @@ lf1extract_LDADD = \
 
 lf1extract_SOURCES = \
 	lf1extract.cpp 
+
+vdifextract_LDADD = \
+	../x3c/lib/libpacketReader.a \
+	../x3c/lib/libprojectManagement.a \
+	../x3c/lib/libIndexer.a \
+	../x3c/lib/libx3cCommon.a
+
+vdifextract_SOURCES = \
+	vdifextract.cpp 
 
 #x3stream_LDADD = \
 #	../x3c/lib/libpacketReader.a \
