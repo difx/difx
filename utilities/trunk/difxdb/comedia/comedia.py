@@ -86,8 +86,8 @@ class MainWindow(GenericWindow):
     def show(self):
         
         self._setupWidgets()
-        self.updateSlotListbox()
         self.refreshStatusEvent()
+        self.updateSlotListbox()
         
         
     def _setupWidgets(self):
@@ -630,14 +630,26 @@ class MainWindow(GenericWindow):
              
         for slot in slots:
             
+	    isDir = False
+	    isScan = False
             # find modules without .dir file
             if (not hasDir(slot.module.vsn)):
                 dirLessCount += 1
+	    else:
+		isDir = True
         
             # find unvalidated modules
             if (slot.module.numScans == None):
                 unvalidatedCount += 1
-        
+	    else:
+		isScan = True
+
+	    # find modules that have been previously scanned but no .dir file
+	    # exists anymore (e.g. when manually deleted from disk)
+	    if isScan and not isDir:
+		self.scanModulesDlg.scanModules(slot.module)
+		print "rescan module: ", slot.module.vsn
+		
         
         self.lblNumDirLess["text"] = dirLessCount
         self.lblNumUnscanned["text"] = unvalidatedCount - dirLessCount
