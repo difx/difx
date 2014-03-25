@@ -84,13 +84,13 @@
             <line>2148</line>
         </file>
         <file>
+            <url>src/edu/nrao/vlba/difxdatamodel/DiFXSystemStatus.java</url>
+            <line>480</line>
+        </file>
+        <file>
             <url>src/edu/nrao/vlba/difxcontroller/JAXBPacketProcessor.java</url>
             <line>33</line>
             <line>51</line>
-        </file>
-        <file>
-            <url>src/edu/nrao/vlba/difxdatamodel/DiFXSystemStatus.java</url>
-            <line>480</line>
         </file>
         <file>
             <url>src/edu/nrao/vlba/difxdatamodel/Mark5Unit.java</url>
@@ -101,15 +101,15 @@
             <line>73</line>
         </file>
         <file>
+            <url>src/edu/nrao/difx/difxview/PassNode.java</url>
+            <line>136</line>
+        </file>
+        <file>
             <url>src/edu/nrao/vlba/difxview/ProjectManagerUI.java</url>
             <line>762</line>
             <line>767</line>
             <line>832</line>
             <line>1010</line>
-        </file>
-        <file>
-            <url>src/edu/nrao/difx/difxview/PassNode.java</url>
-            <line>136</line>
         </file>
     </editor-bookmarks>
 </project-private>

@@ -11,6 +11,7 @@ import java.io.File;
 import java.util.Iterator;
 import java.util.Date;
 import java.text.SimpleDateFormat;
+import java.util.ArrayDeque;
 
 //import java.awt.event.ActionEvent;
 //import java.awt.event.ActionListener;
@@ -107,15 +108,15 @@ public class QueueBrowserPanel extends TearOffPanel {
         });
         _selectMenu.add( unselectAllItem );
         _selectMenu.add( new JSeparator() );
-        ZMenuItem runSelectedItem = new ZMenuItem( "Run Selected" );
+        ZMenuItem runSelectedItem = new ZMenuItem( "Schedule Selected" );
         runSelectedItem.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
                 runSelected();
             }
         });
-        runSelectedItem.setEnabled( false );
+        runSelectedItem.setEnabled( true );
         _selectMenu.add( runSelectedItem );
-        runSelectedItem.toolTip( "Run the selected jobs using either job-specific user settings\n"
+        runSelectedItem.toolTip( "Schedule the selected jobs to run using either job-specific user settings\n"
                 + "or the current automated run parameters.\n"
                 + "Automated run parameters can be viewed and changed in the Settings Window.", null );
         //runSelectedItem.setEnabled( false );
@@ -250,6 +251,11 @@ public class QueueBrowserPanel extends TearOffPanel {
                 _triggerDatabaseUpdate = true;
             }
         });
+        
+        //  Create a queue for the scheduler and then start the scheduler itself.
+        _scheduleQueue = new ArrayDeque<JobNode>();
+        _scheduleThread = new ScheduleThread();
+        _scheduleThread.start();
 
     }
     
@@ -472,12 +478,31 @@ public class QueueBrowserPanel extends TearOffPanel {
         
     protected void selectAll() {};
     protected void unselectAll() {};
-    protected void runSelected() {};
     protected void deleteSelected() {};
     protected void showItemChange() {};
     protected void expandAll() {};
     protected void collapseAll() {};
                 
+    /*
+     * Schedule all selected jobs to be run.
+     */
+    protected void runSelected() {
+        for ( Iterator<BrowserNode> projectIter = _browserPane.browserTopNode().children().iterator();
+            projectIter.hasNext(); ) {
+            ExperimentNode thisExperiment = (ExperimentNode)projectIter.next();
+            if ( thisExperiment.children().size() > 0 ) {
+                for ( Iterator<BrowserNode> iter = thisExperiment.childrenIterator(); iter.hasNext(); ) {
+                    PassNode thisPass = (PassNode)(iter.next());
+                    for ( Iterator<BrowserNode> jobIter = thisPass.children().iterator(); jobIter.hasNext(); ) {
+                        JobNode thisJob = (JobNode)jobIter.next();
+                        if ( thisJob.selected() )
+                            thisJob.autoStartJob();
+                    }
+                }
+            }
+        }
+    }
+    
     /*
      * This thread is used to update the queue from the data base.  It runs continuously
      * waiting for a request to update.  It will then trigger the update and wait for
@@ -1711,5 +1736,102 @@ public class QueueBrowserPanel extends TearOffPanel {
     protected JLabel _workingLabel;
     protected DatabaseUpdateThread _databaseUpdateThread;
     protected DiskSearchRules _diskSearchRules;
+    protected ArrayDeque<JobNode> _scheduleQueue;
+    protected ScheduleThread _scheduleThread;
+    
+    /*
+     * Add a new job to the scheduling queue.  Return true if this was successful, false if not
+     * (false usually means its already there).
+     */
+    public boolean addJobToSchedule( JobNode newJob ) {
+        //  Make sure the job isn't already in the list of jobs to be run...
+        boolean found = false;
+        synchronized ( _scheduleQueue ) {
+            for ( Iterator<JobNode> iter = _scheduleQueue.iterator(); iter.hasNext() && !found; ) {
+                JobNode thisJob = iter.next();
+                if ( thisJob.inputFile().contentEquals( newJob.inputFile() ) )
+                    found = true;
+            }
+        }
+        if ( found )
+            return false;
+        synchronized ( _scheduleQueue ) {
+            _scheduleQueue.add( newJob );
+        }
+        return true;
+    }
+    
+    /*
+     * Remove a job from the scheduling queue.
+     */
+    public boolean removeJobFromSchedule( JobNode newJob ) {
+        boolean found = false;
+        synchronized ( _scheduleQueue ) {
+            for ( Iterator<JobNode> iter = _scheduleQueue.iterator(); iter.hasNext() && !found; ) {
+                JobNode thisJob = iter.next();
+                if ( thisJob.inputFile().contentEquals( newJob.inputFile() ) ) {
+                    iter.remove();
+                    found = true;
+                }
+            }
+        }
+        return found;
+    }
+    
+    class ScheduleThread extends Thread {
+        public boolean keepGoing = true;
+        @Override
+        public void run() {
+            while ( keepGoing ) {
+                synchronized ( _scheduleQueue ) {
+                    //  Check the state of jobs in the queue - first remove any jobs that are "done",
+                    //  which could mean failed or finished cleanly - we are only concerned here with
+                    //  whether we should consider scheduling them for something in the future (which
+                    //  we should not for "done" jobs).
+                    boolean runningJob = false;
+                    int scheduleCount = 0;
+                    for ( Iterator<JobNode> iter = _scheduleQueue.iterator(); iter.hasNext(); ) {
+                        JobNode thisJob = iter.next();
+                        //  If we are only supposed to run one job at a time, we need to know if any jobs
+                        //  are running or in the process of allocating resources.
+                        if ( thisJob.autostate() == JobNode.AUTOSTATE_INITIALIZING || thisJob.autostate() == JobNode.AUTOSTATE_RUNNING )
+                            runningJob = true;
+                        else if ( thisJob.autostate() == JobNode.AUTOSTATE_SCHEDULED ) {
+                            ++scheduleCount;
+                            thisJob.state().setText( "Scheduled (" + scheduleCount + ")" );
+                            thisJob.state().updateUI();
+                        }
+                        else if ( thisJob.autostate() == JobNode.AUTOSTATE_DONE )
+                            iter.remove();
+                    }
+                    //  If any jobs are running and we are only supposed to run jobs sequentially,
+                    //  we are done for this cycle.
+                    if ( !_settings.sequentialCheck() || !runningJob ) { 
+                        //  Look at the remaining jobs in the queue and run them according to scheduling
+                        //  rules.  We run only one at a time for each cycle of the scheduler.  First see
+                        //  if any are ready to run.
+                        boolean didSomething = false;
+                        for ( Iterator<JobNode> iter = _scheduleQueue.iterator(); iter.hasNext() && !didSomething; ) {
+                            JobNode thisJob = iter.next();
+                            if ( thisJob.autostate() == JobNode.AUTOSTATE_READY ) {
+                                thisJob.autostartJobStart();
+                                didSomething = true;
+                            }
+                        }
+                        //  Next see if anything needs to be initialized (hardware resources allocated, etc.).
+                        //  Once again, we do only one of these.
+                        for ( Iterator<JobNode> iter = _scheduleQueue.iterator(); iter.hasNext() && !didSomething; ) {
+                            JobNode thisJob = iter.next();
+                            if ( thisJob.autostate() == JobNode.AUTOSTATE_SCHEDULED ) {
+                                thisJob.autostartCheckResources();
+                                didSomething = true;
+                            }
+                        }
+                    }
+                }
+                try { Thread.sleep( 1000 ); } catch ( Exception e ) {}
+            }
+        }
+    }
     
 }

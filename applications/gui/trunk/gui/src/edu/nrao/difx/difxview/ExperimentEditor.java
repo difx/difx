@@ -1950,8 +1950,10 @@ public class ExperimentEditor extends JFrame {
         //  observations, but it probably doesn't matter too much).
         JulianCalendar midTime = new JulianCalendar();
         synchronized ( _eopLock ) {
-        midTime.setTimeInMillis( _eopMinTime.getTimeInMillis() + ( _eopMaxTime.getTimeInMillis() - _eopMinTime.getTimeInMillis() ) / 2 );
-            _newEOP = _settings.eopData( midTime.julian() - 2.0, midTime.julian() + 3.0 );
+            if ( _eopMinTime != null && _eopMaxTime != null ) {
+                midTime.setTimeInMillis( _eopMinTime.getTimeInMillis() + ( _eopMaxTime.getTimeInMillis() - _eopMinTime.getTimeInMillis() ) / 2 );
+                _newEOP = _settings.eopData( midTime.julian() - 2.0, midTime.julian() + 3.0 );
+            }
         }
         boolean doHeader = true;
         //  Then add an IndexedPanel item for each EOP data item.
@@ -2389,10 +2391,15 @@ public class ExperimentEditor extends JFrame {
                     else if ( antenna.useFile() ) {
                         ArrayList<String> fileList = antenna.fileList();
                         if ( fileList.size() > 0 ) {
-                            for ( Iterator<String> jter = fileList.iterator(); jter.hasNext(); ) {
-                                String filename = jter.next();
-                                v2dFileParser.antennaFile( antenna.name(), filename );
-                                _fileToNodeMap.put( filename, antenna.machineForFile( filename ) );
+                            if ( antenna.useFileList() ) {
+                                v2dFileParser.antennaFileList( antenna.name(), fileList.get( 0 ) );
+                            }
+                            else {
+                                for ( Iterator<String> jter = fileList.iterator(); jter.hasNext(); ) {
+                                    String filename = jter.next();
+                                    v2dFileParser.antennaFile( antenna.name(), filename );
+                                    _fileToNodeMap.put( filename, antenna.machineForFile( filename ) );
+                                }
                             }
                         }
                     }

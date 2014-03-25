@@ -261,6 +261,7 @@ public class PassNode extends QueueBrowserNode {
     public void deleteThisPass() {
         for ( Iterator<BrowserNode> iter = childrenIterator(); iter.hasNext(); ) {
             JobNode thisJob = (JobNode)(iter.next());
+            _settings.queueBrowser().removeJobFromSchedule( thisJob );
             thisJob.removeFromDatabase();
         }
         clearChildren();
@@ -290,13 +291,16 @@ public class PassNode extends QueueBrowserNode {
      * Delete any selected jobs from this pass.
      */
     public void deleteSelectedAction() {
-        for ( Iterator<BrowserNode> iter = childrenIterator(); iter.hasNext(); ) {
-            JobNode thisJob = (JobNode)(iter.next());
-            if ( thisJob.selected() ) {
-                thisJob.removeFromDatabase();
-                removeChild( thisJob );
+        try {
+            for ( Iterator<BrowserNode> iter = childrenIterator(); iter.hasNext(); ) {
+                JobNode thisJob = (JobNode)(iter.next());
+                if ( thisJob.selected() ) {
+                    _settings.queueBrowser().removeJobFromSchedule( thisJob );
+                    thisJob.removeFromDatabase();
+                    removeChild( thisJob );
+                }
             }
-        }
+        } catch ( java.util.ConcurrentModificationException e ) {}
     }
     
     public void type( String newVal ) {

@@ -11,6 +11,7 @@ package edu.nrao.difx.difxview;
 import mil.navy.usno.widgetlib.SaneTextField;
 import mil.navy.usno.widgetlib.BrowserNode;
 import mil.navy.usno.widgetlib.NumberBox;
+import mil.navy.usno.widgetlib.ZCheckBox;
 
 import edu.nrao.difx.difxutilities.DiFXCommand_ls;
 
@@ -263,6 +264,16 @@ public class StationPanel extends IndexedPanel {
             }
         } );
         _dataSourcePanel.add( _fileFilter ); 
+        _fileListCheck = new ZCheckBox( "File List" );
+        _fileListCheck.setToolTipText( "Check here if the (single) named file contains a \"file list\"\n"
+                + "of data files and their start and stop times.  This will considerably\n"
+                + "speed up processing for large data sets with many jobs." );
+        _fileListCheck.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent evt ) {
+                dispatchChangeCallback();
+            }
+        } );
+        _dataSourcePanel.add( _fileListCheck );
         _fileList = new NodeBrowserScrollPane();
         _fileList.setBackground( Color.WHITE );
         _dataSourcePanel.add( _fileList );
@@ -438,6 +449,7 @@ public class StationPanel extends IndexedPanel {
         _vsnList.setEnabled( false );
         _dirListLocation.setEnabled( false );
         _fileFilter.setEnabled( false );
+        _fileListCheck.setEnabled( false );
         _fileList.setVisible( false );
         _dataSourcePanel.staticHeight( 135 );
         //  Then turn appropriate stuff back on.
@@ -456,6 +468,7 @@ public class StationPanel extends IndexedPanel {
             else
                 _dataSourcePanel.name( "Data Source: unspecified files" );
             _fileFilter.setEnabled( true );
+            _fileListCheck.setEnabled( true );
             _fileList.setVisible( true );
             _dataSourcePanel.staticHeight( 265 );
         }
@@ -592,7 +605,8 @@ public class StationPanel extends IndexedPanel {
      */
     public void newWidth( int w ) {
         _sourceNodeChoice.setBounds( 480, 30, w - 505, 25 );
-        _fileFilter.setBounds( 280, 120, w - 305, 25 );
+        _fileFilter.setBounds( 280, 120, w - 410, 25 );
+        _fileListCheck.setBounds( w - 105, 120, 100, 25 );
         _fileList.setBounds( 230, 155, w - 255, 120 );
         _dirListLocation.setBounds( 480, 60, w - 505, 25 );
         _contentPane.setBounds( 0, 20, w - 2, _contentPane.dataHeight() );
@@ -694,12 +708,14 @@ public class StationPanel extends IndexedPanel {
      * Add a new item to the list of files - presumably a new file name.
      */
     public void addToFileList( String newFile, String sourceNode ) {
-        //  Make sure this doesn't terminate with a "/" character - so we
-        //  know its a file.
-        if ( newFile.charAt( newFile.length() - 1 ) != '/' )
-            _fileList.addNode( new FileListItem( newFile, sourceNode, true ) );
-        else
-            _fileList.addNode( new FileListItem( newFile, sourceNode, false ) );
+        synchronized ( _fileList ) {
+            //  Make sure this doesn't terminate with a "/" character - so we
+            //  know its a file.
+            if ( newFile.charAt( newFile.length() - 1 ) != '/' )
+                _fileList.addNode( new FileListItem( newFile, sourceNode, true ) );
+            else
+                _fileList.addNode( new FileListItem( newFile, sourceNode, false ) );
+        }
     }
 
     /*
@@ -709,45 +725,53 @@ public class StationPanel extends IndexedPanel {
         _fileList.browserTopNode().clearChildren();
     }
 
+    public boolean useFileList() { return _fileListCheck.isSelected(); }
+
     /*
      * Return a list of all filenames listed in the file list.  Only those
      * items with the "use" check are listed.
      */
     public ArrayList<String> fileList() {
-        ArrayList<String> newList = new ArrayList<String>();
-        for ( Iterator<BrowserNode> iter = _fileList.browserTopNode().childrenIterator(); iter.hasNext(); ) {
-            FileListItem newItem = (FileListItem)iter.next();
-            if ( newItem.use() )
-                newList.add( newItem.name() );
+        ArrayList<String> newList = null;
+        synchronized ( _fileList ) {
+            newList = new ArrayList<String>();
+            for ( Iterator<BrowserNode> iter = _fileList.browserTopNode().childrenIterator(); iter.hasNext(); ) {
+                FileListItem newItem = (FileListItem)iter.next();
+                if ( newItem.use() )
+                    newList.add( newItem.name() );
+            }
         }
         return newList;
     }
 
     public void useFile( String newFile ) {
-        for ( Iterator<BrowserNode> iter = _fileList.browserTopNode().childrenIterator(); iter.hasNext(); ) {
-            FileListItem newItem = (FileListItem)iter.next();
-            if ( newItem.name().contentEquals( newFile ) ) {
-                newItem.use( true );
-                return;
+        synchronized ( _fileList ) {
+            boolean found = false;
+            for ( Iterator<BrowserNode> iter = _fileList.browserTopNode().childrenIterator(); iter.hasNext() && !found; ) {
+                FileListItem newItem = (FileListItem)iter.next();
+                if ( newItem.name().contentEquals( newFile ) ) {
+                    newItem.use( true );
+                    found = true;
+                }
             }
+            if ( !found )
+                _fileList.addNode( new FileListItem( newFile, null, true ) );
         }
-        _fileList.addNode( new FileListItem( newFile, null, true ) );
-
     }
 
     /*
      * Return the machine name associated with the given file item.
      */
     public String machineForFile( String filename ) {
-        try {
-            for ( Iterator<BrowserNode> iter = _fileList.browserTopNode().childrenIterator(); iter.hasNext(); ) {
+        String ret = null;
+        synchronized ( _fileList ) {
+            for ( Iterator<BrowserNode> iter = _fileList.browserTopNode().childrenIterator(); iter.hasNext() && ret == null; ) {
                 FileListItem newItem = (FileListItem)iter.next();
                 if ( newItem.name().contentEquals( filename ) )
-                    return newItem.sourceNode();
+                    ret = newItem.sourceNode();
             }
         }
-        catch ( java.util.ConcurrentModificationException e ) {}
-        return null;
+        return ret;
     }
     
     public void vsnSource( String name ) {
@@ -1021,6 +1045,7 @@ public class StationPanel extends IndexedPanel {
     protected JLabel _dataSource;
     protected EventListenerList _changeListeners;
     protected SaneTextField _fileFilter;
+    protected ZCheckBox _fileListCheck;
     protected NodeBrowserScrollPane _fileList;
     protected StationPanel _this;
     protected SaneTextField _dirListLocation;

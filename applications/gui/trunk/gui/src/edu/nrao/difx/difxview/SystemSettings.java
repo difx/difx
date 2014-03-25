@@ -65,6 +65,8 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableCellEditor;
 import javax.swing.DefaultCellEditor;
 import javax.swing.table.TableColumn;
+import javax.swing.event.PopupMenuEvent;
+import javax.swing.event.PopupMenuListener;
 
 import mil.navy.usno.widgetlib.NodeBrowserScrollPane;
 import mil.navy.usno.widgetlib.IndexedPanel;
@@ -877,6 +879,38 @@ public class SystemSettings extends JFrame {
         useThreadsLabel.setBounds( 740, 140, 50, 25 );
         useThreadsLabel.setHorizontalAlignment( JLabel.RIGHT );
         jobSettingsPanel.add( useThreadsLabel );
+        
+        _restrictSourcesCheck = new ZCheckBox( "Restrict Data Sources" );
+        _restrictSourcesCheck.setBounds( 760, 165, 160, 25 );
+        _restrictSourcesCheck.toolTip( "Restrict data sources to a list of \"allowed\" source nodes.\n"
+                + "This setting should be used if only a subset of available nodes has\n"
+                + "access to the storage systems containing source data.", null );
+        _restrictSourcesCheck.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+            }
+        } );
+        jobSettingsPanel.add( _restrictSourcesCheck );
+        _viewRestrictedSourceList = new ZButton( "Allowed Sources" );
+        _viewRestrictedSourceList.setBounds( 920, 165, 140, 25 );
+        _viewRestrictedSourceList.toolTip( "View/edit the list nodes that are \"allowed\" data sources.", null );
+        _viewRestrictedSourceList.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                if ( _restrictedSourceListDisplay == null ) {
+                    _restrictedSourceListDisplay = new RestrictedSourceListDisplay( MouseInfo.getPointerInfo().getLocation().x, 
+                        MouseInfo.getPointerInfo().getLocation().y, _settings );
+                    if ( _restrictedSourceList != null ) {
+                        for ( Iterator<String> iter = _restrictedSourceList.iterator(); iter.hasNext(); ) {
+                            String nodeName = iter.next();
+                            _restrictedSourceListDisplay.addNode( nodeName );
+                        }
+                    }
+                }
+                _restrictedSourceListDisplay.showAtPosition( MouseInfo.getPointerInfo().getLocation().x, 
+                        MouseInfo.getPointerInfo().getLocation().y );
+            }
+        } );
+        jobSettingsPanel.add( _viewRestrictedSourceList );
+        
         JLabel processingLabel = new JLabel( "Processing Defaults:" );
         processingLabel.setBounds( 30, 195, 200, 25 );
         processingLabel.setFont( new Font( processingLabel.getFont().getFamily(), Font.BOLD, processingLabel.getFont().getSize() ) );
@@ -886,8 +920,8 @@ public class SystemSettings extends JFrame {
         defaultToLabel.setHorizontalAlignment( JLabel.RIGHT );
         jobSettingsPanel.add( defaultToLabel );
         _nodesPerCheck = new ZCheckBox( "" );
-        _nodesPerCheck.setBounds( 165, 220, 25, 25 );
-        _nodesPerCheck.toolTip( "Check to base processing on nodes (as opposed to threads).", null );
+        _nodesPerCheck.setBounds( 165, 245, 25, 25 );
+        _nodesPerCheck.toolTip( "Specify the number of nodes used in processing.", null );
         _nodesPerCheck.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
                 if ( _nodesPerCheck.isSelected() ) {
@@ -895,6 +929,7 @@ public class SystemSettings extends JFrame {
                     if ( _allThreadsCheck.isSelected()  )
                         _minThreadsPerNode.setEnabled( true );
                     _nodesPer.setEnabled( true );
+                    _allNodesCheck.setSelected( false );
                 }
                 else {
                     _allThreadsCheck.setSelected( false );
@@ -908,14 +943,37 @@ public class SystemSettings extends JFrame {
         } );
         jobSettingsPanel.add( _nodesPerCheck );
         _nodesPer = new NumberBox();
-        _nodesPer.setBounds( 190, 220, 50, 25 );
+        _nodesPer.setBounds( 190, 245, 50, 25 );
         _nodesPer.minimum( 0 );
         _nodesPer.precision( 0 );
         _nodesPer.toolTip( "Number of nodes to assign to processing.", null );
         jobSettingsPanel.add( _nodesPer );
         JLabel nodesLabel = new JLabel( "Nodes" );
-        nodesLabel.setBounds( 245, 220, 50, 25 );
+        nodesLabel.setBounds( 245, 245, 50, 25 );
         jobSettingsPanel.add( nodesLabel );
+        _allNodesCheck = new ZCheckBox( "All Nodes" );
+        _allNodesCheck.setBounds( 165, 220, 100, 25 );
+        _allNodesCheck.toolTip( "Use all available nodes in processing.", null );
+        _allNodesCheck.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                if ( _allNodesCheck.isEnabled() ) {
+                    _allThreadsCheck.setEnabled( true );
+                    if ( _allThreadsCheck.isSelected()  )
+                        _minThreadsPerNode.setEnabled( true );
+                    _nodesPerCheck.setSelected( false );
+                    _nodesPer.setEnabled( false );
+                }
+                else {
+                    _allThreadsCheck.setSelected( false );
+                    _allThreadsCheck.setEnabled( false );
+                    _threadsPerCheck.setSelected( true );
+                    _threadsPerNode.setEnabled( true );
+                    _minThreadsPerNode.setEnabled( false );
+                    _nodesPer.setEnabled( false );
+                }
+            }
+        } );
+        jobSettingsPanel.add( _allNodesCheck );
         JLabel withLabel = new JLabel( "With:" );
         withLabel.setBounds( 305, 220, 50, 25 );
         withLabel.setHorizontalAlignment( JLabel.RIGHT );
@@ -1245,7 +1303,7 @@ public class SystemSettings extends JFrame {
     public void setNodeAndThreadButtons() {
         //  See if this is a node-based selection, selecting "all nodes" becomes
         //  an option.
-        if ( _nodesPerCheck.isSelected() ) {
+        if ( _nodesPerCheck.isSelected() || _allNodesCheck.isSelected() ) {
             _allThreadsCheck.setEnabled( true );
             _nodesPer.setEnabled( true );
         }
@@ -1850,6 +1908,7 @@ public class SystemSettings extends JFrame {
         _headNode.setText( _difxControlAddress.getText() );
         _nodesPer.value( 2 );
         _nodesPerCheck.setSelected( true );
+        _allNodesCheck.setSelected( false );
         _allThreadsCheck.setSelected( false );
         _uniqueDataSource.setSelected( true );
         _assignBasedOnPath.setSelected( false );
@@ -1899,6 +1958,8 @@ public class SystemSettings extends JFrame {
         _windowConfiguration.environmentVariableDisplayH = 300;
         _windowConfiguration.sourceBasedOnPathDisplayW = 600;
         _windowConfiguration.sourceBasedOnPathDisplayH = 300;
+        _windowConfiguration.restrictedSourceListDisplayW = 400;
+        _windowConfiguration.restrictedSourceListDisplayH = 300;
         _windowConfiguration.directoryDisplayW = 600;
         _windowConfiguration.directoryDisplayH = 500;
         _windowConfiguration.monitorDisplayW = 600;
@@ -1935,6 +1996,7 @@ public class SystemSettings extends JFrame {
         _defaultNames.jobCreationSanityCheck = true;
         _defaultNames.restrictHeadnodeProcessing = true;
         _useHeadNodeCheck.setSelected( false );
+        _restrictSourcesCheck.setSelected( false );
         _defaultNames.eliminateNonrespondingProcessors = true;
         _defaultNames.eliminateBusyProcessors = true;
         _defaultNames.chooseBasedOnModule = true;
@@ -2777,6 +2839,10 @@ public class SystemSettings extends JFrame {
                 _windowConfiguration.sourceBasedOnPathDisplayW = doiConfig.getWindowConfigSourceBasedOnPathDisplayW();
             if ( doiConfig.getWindowConfigSourceBasedOnPathDisplayH() != 0 )
                 _windowConfiguration.sourceBasedOnPathDisplayH = doiConfig.getWindowConfigSourceBasedOnPathDisplayH();
+            if ( doiConfig.getWindowConfigRestrictedSourceListDisplayW() != 0 )
+                _windowConfiguration.restrictedSourceListDisplayW = doiConfig.getWindowConfigRestrictedSourceListDisplayW();
+            if ( doiConfig.getWindowConfigRestrictedSourceListDisplayH() != 0 )
+                _windowConfiguration.restrictedSourceListDisplayH = doiConfig.getWindowConfigRestrictedSourceListDisplayH();
             if ( doiConfig.getWindowConfigDirectoryDisplayW() != 0 )
                 _windowConfiguration.directoryDisplayW = doiConfig.getWindowConfigDirectoryDisplayW();
             if ( doiConfig.getWindowConfigDirectoryDisplayH() != 0 )
@@ -2852,9 +2918,11 @@ public class SystemSettings extends JFrame {
             _assignBasedOnPath.setSelected( doiConfig.isAssignBasedOnPath() );
             _shareDataSourcesBetweenJobs.setSelected( doiConfig.isShareDataSourcesBetweenJobs() );
             _shareDataSourcesAsProcessors.setSelected( doiConfig.isShareDataSourcesAsProcessors() );
+            _restrictSourcesCheck.setSelected( doiConfig.isRestrictSources() );
             if ( doiConfig.getThreadsPerDataSource() != 0 )
                 _threadsPerDataSource.value( doiConfig.getThreadsPerDataSource() );
             _nodesPerCheck.setSelected( !doiConfig.isNodesPerCheck() );
+            _allNodesCheck.setSelected( doiConfig.isNodesPerCheck() );
             if ( doiConfig.getNodesPer() != 0 )
                 _nodesPer.value( doiConfig.getNodesPer() );
             _allThreadsCheck.setSelected( doiConfig.isAllThreadsCheck() );
@@ -2874,12 +2942,20 @@ public class SystemSettings extends JFrame {
                 DoiSystemConfig.PathNodePair pathNodePair = iter.next();
                 //  Create a list for the source/path pairs.  We can't add them to the
                 //  display yet because other items (hardware nodes, for instance) aren't necessarily
-                //  know yet.  We'll use the list when we have user actions - displaying
+                //  known yet.  We'll use the list when we have user actions - displaying
                 //  the source/path pairs, using them to set source nodes, etc.
                 if ( _sourceBasedOnPathList == null ) {
                     _sourceBasedOnPathList = new HashMap<String,String>();
                 }
                 _sourceBasedOnPathList.put( pathNodePair.getPath(), pathNodePair.getNode() );
+            }
+            for ( Iterator<DoiSystemConfig.AllowedNode> iter = doiConfig.getAllowedNode().iterator(); iter.hasNext(); ) {
+                DoiSystemConfig.AllowedNode allowedNode = iter.next();
+                //  Create a list of allowed nodes.
+                if ( _restrictedSourceList == null ) {
+                    _restrictedSourceList = new ArrayList<String>();
+                }
+                _restrictedSourceList.add( allowedNode.getNode() );
             }
 
             _defaultNames.eliminateNonrespondingProcessors = doiConfig.isDefaultNamesEliminateNonrespondingProcessors();
@@ -3276,6 +3352,8 @@ public class SystemSettings extends JFrame {
         doiConfig.setWindowConfigEnvironmentVariableDisplayH( _windowConfiguration.environmentVariableDisplayH );
         doiConfig.setWindowConfigSourceBasedOnPathDisplayW( _windowConfiguration.sourceBasedOnPathDisplayW );
         doiConfig.setWindowConfigSourceBasedOnPathDisplayH( _windowConfiguration.sourceBasedOnPathDisplayH );
+        doiConfig.setWindowConfigRestrictedSourceListDisplayW( _windowConfiguration.restrictedSourceListDisplayW );
+        doiConfig.setWindowConfigRestrictedSourceListDisplayH( _windowConfiguration.restrictedSourceListDisplayH );
         doiConfig.setWindowConfigDirectoryDisplayW( _windowConfiguration.directoryDisplayW );
         doiConfig.setWindowConfigDirectoryDisplayH( _windowConfiguration.directoryDisplayH );
         doiConfig.setWindowConfigMonitorDisplayW( _windowConfiguration.monitorDisplayW );
@@ -3528,6 +3606,7 @@ public class SystemSettings extends JFrame {
         doiConfig.setAssignBasedOnPath( _assignBasedOnPath.isSelected( ) );
         doiConfig.setShareDataSourcesBetweenJobs( _shareDataSourcesBetweenJobs.isSelected() );
         doiConfig.setShareDataSourcesAsProcessors( _shareDataSourcesAsProcessors.isSelected() );
+        doiConfig.setRestrictSources( _restrictSourcesCheck.isSelected() );
         doiConfig.setThreadsPerDataSource( _threadsPerDataSource.intValue() );
         doiConfig.setNodesPerCheck( !_nodesPerCheck.isSelected() );
         doiConfig.setNodesPer( _nodesPer.intValue() );
@@ -3549,6 +3628,31 @@ public class SystemSettings extends JFrame {
                 pathNodePair.setPath( panelItem.textField.getText() );
                 pathNodePair.setNode( (String)panelItem.comboBox.getSelectedItem() );
                 doiConfig.getPathNodePair().add( pathNodePair );
+            }
+        }
+        else if ( _sourceBasedOnPathList != null ) {
+            for ( Iterator<String> iter = _sourceBasedOnPathList.keySet().iterator(); iter.hasNext(); ) {
+                String path = iter.next();
+                DoiSystemConfig.PathNodePair pathNodePair = factory.createDoiSystemConfigPathNodePair();
+                pathNodePair.setPath( path );
+                pathNodePair.setNode( _sourceBasedOnPathList.get( path ) );
+                doiConfig.getPathNodePair().add( pathNodePair );
+            }
+        }
+        if ( _restrictedSourceListDisplay != null && _restrictedSourceListDisplay.panels() != null ) {
+            for ( Iterator<RestrictedSourceListDisplay.PanelItem> iter = _restrictedSourceListDisplay.panels().iterator(); iter.hasNext(); ) {
+                RestrictedSourceListDisplay.PanelItem panelItem = iter.next();
+                DoiSystemConfig.AllowedNode allowedNode = factory.createDoiSystemConfigAllowedNode();
+                allowedNode.setNode( (String)panelItem.comboBox.getSelectedItem() );
+                doiConfig.getAllowedNode().add( allowedNode );
+            }
+        }
+        else if ( _restrictedSourceList != null ) {
+            for ( Iterator<String> iter = _restrictedSourceList.iterator(); iter.hasNext(); ) {
+                String nodeName = iter.next();
+                DoiSystemConfig.AllowedNode allowedNode = factory.createDoiSystemConfigAllowedNode();
+                allowedNode.setNode( nodeName );
+                doiConfig.getAllowedNode().add( allowedNode );
             }
         }
 
@@ -4346,6 +4450,8 @@ public class SystemSettings extends JFrame {
         int environmentVariableDisplayH;
         int sourceBasedOnPathDisplayW;
         int sourceBasedOnPathDisplayH;
+        int restrictedSourceListDisplayW;
+        int restrictedSourceListDisplayH;
         int directoryDisplayW;
         int directoryDisplayH;
         int monitorDisplayW;
@@ -4762,7 +4868,7 @@ public class SystemSettings extends JFrame {
     protected String _difxVersionPreferred;
         
     /*
-     * Class to display a table of environment variables.
+     * Class to display and edit a list of path/data source pairs.
      */
     public class SourceBasedOnPathDisplay extends JFrame {
 
@@ -4848,6 +4954,7 @@ public class SystemSettings extends JFrame {
             //  Create a new combo box with all possible data source nodes.
             newPanel.comboBox = new JComboBox();
             newPanel.comboBox.setToolTipText( "Node name to use as the data source for the given path." );
+            newPanel.comboBox.setEditable( true );
             for ( Iterator<BrowserNode> iter = _settings.hardwareMonitor().processorNodes().children().iterator();
                     iter.hasNext(); ) {
                 ProcessorNode thisModule = (ProcessorNode)(iter.next());
@@ -4878,6 +4985,28 @@ public class SystemSettings extends JFrame {
             newPanel.add( newPanel.comboBox );
             newPanel.textField.setBounds( 25, 0, 500, 25 );
             newPanel.comboBox.setBounds( 525, 0, 300, 25 );
+            final JComboBox thisBox = newPanel.comboBox;
+            newPanel.comboBox.addPopupMenuListener( new PopupMenuListener() {
+                public void popupMenuCanceled( PopupMenuEvent e) {
+                }
+                public void popupMenuWillBecomeInvisible( PopupMenuEvent e) {
+                }
+                public void popupMenuWillBecomeVisible( PopupMenuEvent e) {
+                    //  Check the list of possible data sources against those available.
+                    //  Accomodates source nodes that might appear after this item is
+                    //  created.
+                    for ( Iterator<BrowserNode> iter = _settings.hardwareMonitor().processorNodes().children().iterator();
+                            iter.hasNext(); ) {
+                        ProcessorNode thisModule = (ProcessorNode)(iter.next());
+                        boolean found = false;
+                        for ( int i = 0; i < thisBox.getItemCount() && ! found; ++i )
+                            if ( thisModule.name().contentEquals( (String)thisBox.getItemAt(i) ) )
+                                found = true;
+                        if ( !found )
+                            thisBox.addItem( thisModule.name() );
+                    }
+                }
+            });
             newSize();
             _scrollPane.updateUI();
             return newPanel;
@@ -4955,6 +5084,202 @@ public class SystemSettings extends JFrame {
     protected SourceBasedOnPathDisplay _sourceBasedOnPathDisplay;
     protected HashMap<String,String> _sourceBasedOnPathList;
     
+    /*
+     * Class to display a list of nodes that are permitted to be used as source node.
+     */
+    public class RestrictedSourceListDisplay extends JFrame {
+
+        public RestrictedSourceListDisplay( int x, int y, SystemSettings settings ) {
+            _settings = settings;
+            setLookAndFeel();
+            this.setLayout( null );
+            this.setBounds( x, y, windowConfiguration().restrictedSourceListDisplayW,
+                windowConfiguration().restrictedSourceListDisplayH );
+            this.getContentPane().setLayout( null );
+            this.setTitle( "List of Permitted Source Nodes" );
+            _this = this;
+            this.addComponentListener( new java.awt.event.ComponentAdapter() {
+                public void componentResized( ComponentEvent e ) {
+                    windowConfiguration().restrictedSourceListDisplayW = _this.getWidth();
+                    windowConfiguration().restrictedSourceListDisplayH = _this.getHeight();
+                    newSize();
+                }
+            });
+            this.addComponentListener( new java.awt.event.ComponentAdapter() {
+                public void componentShown( ComponentEvent e ) {
+                    newSize();
+                }
+            });
+            _viewPane = new JPanel();
+            _viewPane.setLayout( null );
+            _viewPane.setPreferredSize( new Dimension( 500, 500 ) );
+            _scrollPane = new JScrollPane( _viewPane );
+            this.add( _scrollPane );
+            _addButton = new ZButton( "Add" );
+            _addButton.setBounds( 20, 15, 100, 25 );
+            _addButton.toolTip( "Add a source node to the list.", null );
+            _addButton.addActionListener( new ActionListener() {
+                public void actionPerformed( ActionEvent e ) {
+                    addItem();
+                }
+            } );
+            this.add( _addButton );
+        }
+        
+        public void showAtPosition( int x, int y ) {
+            setBounds( x, y, windowConfiguration().restrictedSourceListDisplayW,
+                windowConfiguration().restrictedSourceListDisplayH );
+            setVisible( true );
+        }
+        
+        @Override
+        public void setBounds( int x, int y, int w, int h ) {
+            newSize();
+            super.setBounds( x, y, w, h );
+        }
+
+        public void newSize() {
+            if ( _scrollPane != null ) {
+                int w = this.getContentPane().getSize().width;
+                int h = this.getContentPane().getSize().height;
+                _scrollPane.setBounds( 0, 50, w, h - 50 );
+                if ( _panels != null ) {
+                    int width = w - 4;
+                    if ( 25 * _panels.size() > h - 50 )
+                        width = w - 19;
+                    _viewPane.setPreferredSize( new Dimension( width, 25 * _panels.size() ) );
+                    _viewPane.setBounds( 0, 0, width, 25 * _panels.size() );
+                    int i = 0;
+                    for ( Iterator<PanelItem> iter = _panels.iterator(); iter.hasNext(); ) {
+                        PanelItem panel = iter.next();
+                        panel.setBounds( 0, 25 * i, width, 25 );
+                        panel.comboBox.setBounds( 25, 0, width - 25, 25 );
+                        ++i;
+                    }
+                    _viewPane.updateUI();
+                }
+            }
+        }
+        
+        public PanelItem addItem() {
+            PanelItem newPanel = new PanelItem();
+            //  Create a new combo box with all possible data source nodes.
+            newPanel.comboBox = new JComboBox();
+            newPanel.comboBox.setEditable( true );
+            for ( Iterator<BrowserNode> iter = _settings.hardwareMonitor().processorNodes().children().iterator();
+                    iter.hasNext(); ) {
+                ProcessorNode thisModule = (ProcessorNode)(iter.next());
+                newPanel.comboBox.addItem( thisModule.name() );
+            }
+            final JComboBox thisBox = newPanel.comboBox;
+            newPanel.comboBox.addPopupMenuListener( new PopupMenuListener() {
+                public void popupMenuCanceled( PopupMenuEvent e) {
+                }
+                public void popupMenuWillBecomeInvisible( PopupMenuEvent e) {
+                }
+                public void popupMenuWillBecomeVisible( PopupMenuEvent e) {
+                    //  Check the list of possible data sources against those available.
+                    //  Accomodates source nodes that might appear after this item is
+                    //  created.
+                    for ( Iterator<BrowserNode> iter = _settings.hardwareMonitor().processorNodes().children().iterator();
+                            iter.hasNext(); ) {
+                        ProcessorNode thisModule = (ProcessorNode)(iter.next());
+                        boolean found = false;
+                        for ( int i = 0; i < thisBox.getItemCount() && ! found; ++i )
+                            if ( thisModule.name().contentEquals( (String)thisBox.getItemAt(i) ) )
+                                found = true;
+                        if ( !found )
+                            thisBox.addItem( thisModule.name() );
+                    }
+                }
+            });
+            newPanel.setLayout( null );
+            if ( _panels == null )
+                _panels = new ArrayList<PanelItem>();
+            newPanel.setBounds( 0, 25 * _panels.size(), 825, 25 );
+            _viewPane.add( newPanel );
+            _panels.add( newPanel );
+            newPanel.delete = new ZButton( "\u2613" );
+            newPanel.delete.setFont( new Font( "Dialog", Font.BOLD, 16 ) );
+            newPanel.delete.setMargin( new Insets( 0, 0, 2, 0 ) );
+            newPanel.delete.setToolTipText( "Delete this item." );
+            final PanelItem deletePanel = newPanel;
+            newPanel.delete.addActionListener( new ActionListener() {
+                public void actionPerformed( ActionEvent e ) {
+                    _panels.remove( deletePanel );
+                    _viewPane.remove( deletePanel );
+                    newSize();
+                    _scrollPane.updateUI();
+                }
+            } );
+            newPanel.delete.setBounds( 0, 0, 25, 25 );
+            newPanel.add( newPanel.delete );
+            newPanel.add( newPanel.comboBox );
+            newPanel.comboBox.setBounds( 525, 0, 300, 25 );
+            newSize();
+            _scrollPane.updateUI();
+            return newPanel;
+        }
+        
+        public void addNode( String node ) {
+            PanelItem newPanel = addItem();
+            newPanel.comboBox.setSelectedItem( node );
+            _scrollPane.updateUI();
+        }
+        
+        public class PanelItem extends JPanel {
+            public ZButton delete;
+            public JComboBox comboBox;
+        }
+        
+        /*
+         * See if the given node is on our "permitted" list.
+         */
+        public boolean sourceNodePermitted( String nodeName ) {
+            if ( _panels != null ) {
+                for ( Iterator<PanelItem> iter = _panels.iterator(); iter.hasNext(); ) {
+                    PanelItem thisPanel = iter.next();
+                    String thisText = (String)thisPanel.comboBox.getSelectedItem();
+                    if ( thisText != null && thisText.length() > 0 ) {
+                        if ( thisText.contentEquals( nodeName ) )
+                            return true;
+                    }
+                }
+            }
+            return false;
+        }
+        
+        public ArrayList<PanelItem> panels() { return _panels; }
+        
+        protected RestrictedSourceListDisplay _this;
+        protected JScrollPane _scrollPane;
+        protected JPanel _viewPane;
+        protected ZButton _addButton;
+        protected SystemSettings _settings;
+        protected ArrayList<PanelItem> _panels;
+
+    }
+    
+    public boolean sourceNodePermitted( String nodeName ) {        
+        if ( _restrictedSourceListDisplay == null ) {
+            //  Set up a new display (which won't be displayed) and fill it with
+            //  the "list" data, if that exists (it came from the XML settings file).
+            _restrictedSourceListDisplay = new RestrictedSourceListDisplay( 0, 0, _settings );
+            if ( _restrictedSourceList != null ) {
+                for ( Iterator<String> iter = _restrictedSourceList.iterator(); iter.hasNext(); ) {
+                    String path = iter.next();
+                    _restrictedSourceListDisplay.addNode( path );
+                }
+            }
+            //  Blow away the list so we don't use it again.
+            _restrictedSourceList = null;
+        }
+        return _restrictedSourceListDisplay.sourceNodePermitted( nodeName );
+    }
+    
+    protected RestrictedSourceListDisplay _restrictedSourceListDisplay;
+    protected ArrayList<String> _restrictedSourceList;
+    
     protected ZCheckBox _useHeadNodeCheck;
     protected ZCheckBox _uniqueDataSource;
     protected ZCheckBox _assignBasedOnPath;
@@ -4962,6 +5287,9 @@ public class SystemSettings extends JFrame {
     protected ZCheckBox _shareDataSourcesBetweenJobs;
     protected ZCheckBox _shareDataSourcesAsProcessors;
     protected NumberBox _threadsPerDataSource;
+    protected ZCheckBox _restrictSourcesCheck;
+    protected ZButton _viewRestrictedSourceList;
+    protected ZCheckBox _allNodesCheck;
     protected ZCheckBox _nodesPerCheck;
     protected NumberBox _nodesPer;
     protected ZCheckBox _allThreadsCheck;
@@ -4976,6 +5304,7 @@ public class SystemSettings extends JFrame {
     protected FormattedTextField _runLogFile;
     
     public boolean useHeadNodeCheck() { return _useHeadNodeCheck.isSelected(); }
+    public boolean restrictSources() { return _restrictSourcesCheck.isSelected(); }
     public boolean assignBasedOnPath() { return _assignBasedOnPath.isSelected(); }
     public boolean uniqueDataSource() { return _uniqueDataSource.isSelected(); }
     public int threadsPerDataSource() { return _threadsPerDataSource.intValue(); }
@@ -4983,6 +5312,7 @@ public class SystemSettings extends JFrame {
     public boolean shareDataSourcesAsProcessors() { return _shareDataSourcesAsProcessors.isSelected(); }
     public int nodesPer() { return _nodesPer.intValue(); }
     public boolean nodesPerCheck() { return _nodesPerCheck.isSelected(); }
+    public boolean allNodesCheck() { return _allNodesCheck.isSelected(); }
     public boolean allThreadsCheck() { return _allThreadsCheck.isSelected(); }
     public int threadsPerNode() { return _threadsPerNode.intValue(); }
     public int minThreadsPerNode() { return _minThreadsPerNode.intValue(); }

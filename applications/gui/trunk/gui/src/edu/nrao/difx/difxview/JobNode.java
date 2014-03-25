@@ -6,6 +6,7 @@ package edu.nrao.difx.difxview;
 
 import mil.navy.usno.widgetlib.BrowserNode;
 import mil.navy.usno.widgetlib.ActivityMonitorLight;
+import mil.navy.usno.widgetlib.ZMenuItem;
 
 import mil.navy.usno.plotlib.PlotWindow;
 import mil.navy.usno.plotlib.Plot2DObject;
@@ -55,6 +56,7 @@ public class JobNode extends QueueBrowserNode {
         _columnColor = Color.LIGHT_GRAY;
         _settings = settings;
         _this = this;
+        _autostate = new Integer( AUTOSTATE_UNDETERMINED );
         //_editorMonitor = new JobEditorMonitor( this, _settings );
     }
     
@@ -179,8 +181,7 @@ public class JobNode extends QueueBrowserNode {
         _monitorMenuItem = new JMenuItem( "Controls for " + name() );
         _monitorMenuItem.addActionListener(new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
-                if ( updateEditorMonitor( 1000 ) ) {
-                    
+                if ( updateEditorMonitor( 1000 ) ) {                    
                     _editorMonitor.setVisible( true );
                 }
                 else
@@ -219,23 +220,34 @@ public class JobNode extends QueueBrowserNode {
 //        JMenuItem menuItem8 = new JMenuItem( "Queue" );
 //        menuItem8.setToolTipText( "Put this job in the runnable queue." );
 //        _popup.add( menuItem8 );
-        _startJobItem = new JMenuItem( "Start" );
-        _startJobItem.addActionListener(new ActionListener() {
+        _scheduleJobItem = new ZMenuItem( "Schedule to Run" );
+        _scheduleJobItem.setToolTipText( "Schedule this job to the be run using the automated scheduler\n"
+                + "according to user settings that govern scheduled jobs." );
+        _scheduleJobItem.addActionListener(new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
-                if ( updateEditorMonitor( 1000 ) )
-                    _editorMonitor.startJob();
+                autoStartJob();
             }
         });
-        _startJobItem.setEnabled( false );
-        _popup.add( _startJobItem );
-//        JMenuItem menuItem6 = new JMenuItem( "Pause" );
-//        menuItem6.addActionListener(new ActionListener() {
-//            public void actionPerformed( ActionEvent e ) {
-//                updateEditorMonitor();
-//                _editorMonitor.pauseJob();
-//            }
-//        });
-//        _popup.add( menuItem6 );
+        _scheduleJobItem.setEnabled( false );
+        _popup.add( _scheduleJobItem );
+        _unscheduleJobItem = new ZMenuItem( "Remove from Schedule" );
+        _unscheduleJobItem.setToolTipText( "Remove this job from the scheduler list, if it is there.\n"
+                + "Removing a non-listed job is harmless." );
+        _unscheduleJobItem.addActionListener(new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                if ( _settings.queueBrowser().removeJobFromSchedule( _this ) ) {
+                    if ( _editorMonitor != null )
+                        _editorMonitor.setState( "Unscheduled", Color.GRAY );
+                    else {
+                        state().setText( "Unscheduled" );
+                        state().setBackground( Color.GRAY );
+                        state().updateUI();
+                    }
+                    _scheduleJobItem.setEnabled( true );
+                }
+            }
+        });
+        _popup.add( _unscheduleJobItem );
         _stopJobItem = new JMenuItem( "Stop" );
         _stopJobItem.addActionListener(new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
@@ -365,6 +377,107 @@ public class JobNode extends QueueBrowserNode {
     }
     
     /*
+     * These values track the "state" of the job for autostart purposes.
+     */
+    public final static int AUTOSTATE_UNDETERMINED = 0;
+    public final static int AUTOSTATE_SCHEDULED    = 1;
+    public final static int AUTOSTATE_INITIALIZING = 2;
+    public final static int AUTOSTATE_READY        = 3;
+    public final static int AUTOSTATE_RUNNING      = 4;
+    public final static int AUTOSTATE_DONE         = 5;
+    
+    protected Integer _autostate;
+    public int autostate() {
+        int ret = AUTOSTATE_UNDETERMINED;
+        synchronized ( _autostate ) {
+            ret = _autostate;
+        }
+        return ret;
+    }
+    public void autostate( int newState ) { _autostate = newState; }
+    
+    /* 
+     * Function to start a job - this checks that the "editor" exists (which includes
+     * downloading necessary files), chooses default nodes (if the user hasn't picked
+     * them), and runs the job, all in a thread.
+     */
+    public void autoStartJob() {
+        if ( _settings.queueBrowser().addJobToSchedule( this ) ) {
+            _scheduleJobItem.setEnabled( false );
+            state().setText( "Scheduled" );
+            state().setBackground( Color.YELLOW );
+            state().updateUI();
+            autostate( AUTOSTATE_SCHEDULED );
+        }
+    }
+
+    /*
+     * This is the thread that runs a job completely.  Might have other purposes.
+     */
+    public class JobThread extends Thread {
+        public void run() {
+            state().setText( "Scheduled" );
+            state().setBackground( Color.YELLOW );
+            state().updateUI();
+            if ( updateEditorMonitor( 1000 ) ) {
+                _editorMonitor.setState( "Check Resources", Color.YELLOW );
+                _editorMonitor.loadHardwareLists();
+                _editorMonitor.selectNodeDefaults( false, true );
+                _editorMonitor.setState( "Pre-Start", Color.YELLOW );
+                _editorMonitor.startJob();
+            }     
+        }
+    }
+    
+    /*
+     * Thread to run the "resource allocation" portion of a job - for automatic job
+     * running.
+     */
+    public class CheckResourcesThread extends Thread {
+        public void run() {
+            state().setText( "Check Resources" );
+            state().setBackground( Color.YELLOW );
+            state().updateUI();
+            if ( updateEditorMonitor( 1000 ) ) {
+                _editorMonitor.setState( "Check Resources", Color.YELLOW );
+                _editorMonitor.loadHardwareLists();
+                if ( _editorMonitor.selectNodeDefaults( false, true ) ) {
+                    _editorMonitor.setState( "Pre-Start", Color.YELLOW );
+                    autostate( AUTOSTATE_READY );
+                }
+                else {
+                    _editorMonitor.setState( "Resource Wait", Color.YELLOW );
+                    autostate( AUTOSTATE_SCHEDULED );
+                }
+            }
+            else {
+                state().setText( "Monitor Error" );
+                state().setBackground( Color.RED );
+                state().updateUI();
+                autostate( AUTOSTATE_DONE );
+            }
+        }
+    }
+    
+    /*
+     * Function to trigger the CheckResourcesThread.
+     */
+    public void autostartCheckResources() {
+        autostate( AUTOSTATE_INITIALIZING );
+        CheckResourcesThread checkResources = new CheckResourcesThread();
+        checkResources.start();
+    }
+    
+    /*
+     * Function to run a job that has resources allocated.  The startJob() function
+     * already runs a thread to do the delayed work.
+     */
+    public void autostartJobStart() {
+        autostate( AUTOSTATE_RUNNING );
+        _editorMonitor.startJob();
+    }
+    
+    /*
      * Private function used repeatedly in positionItems().
      */
     protected void setTextArea( Component area, int xSize ) {
@@ -394,6 +507,7 @@ public class JobNode extends QueueBrowserNode {
     public void deleteAction() {
         removeFromDatabase();
         removeFromHost();
+        _settings.queueBrowser().removeJobFromSchedule( this );
         ((BrowserNode)(this.getParent())).removeChild( this );
     }
     
@@ -536,7 +650,7 @@ public class JobNode extends QueueBrowserNode {
                 _editorMonitor.inputFileName( filename, getFile.inString() );
                 _editorMonitor.parseInputFile();
                 _inputFileRequestComplete = true;
-                //_startJobItem.setEnabled( true );
+                //_scheduleJobItem.setEnabled( true );
                 //_stopJobItem.setEnabled( true );
                 //_monitorMenuItem.setEnabled( true );
                 //_liveMonitorMenuItem.setEnabled( true );
@@ -641,12 +755,12 @@ public class JobNode extends QueueBrowserNode {
             }
             List<DifxStatus.Weight> weightList = difxMsg.getBody().getDifxStatus().getWeight();
             //  Create a new list of antennas/weights if one hasn't been created yet.
-            System.out.println( "size of weight list is " + weightList.size() );
+            //System.out.println( "size of weight list is " + weightList.size() );
             if ( !_weightsBuilt )
                 newWeightDisplay( weightList.size() );
             for ( Iterator<DifxStatus.Weight> iter = weightList.iterator(); iter.hasNext(); ) {
                 DifxStatus.Weight thisWeight = iter.next();
-                System.out.println( thisWeight.getAnt() +  "  " + thisWeight.getWt() );
+                //System.out.println( thisWeight.getAnt() +  "  " + thisWeight.getWt() );
                 weight( thisWeight.getAnt(), thisWeight.getWt() );
             }
         }
@@ -750,7 +864,7 @@ public class JobNode extends QueueBrowserNode {
         File tryFile = new File( newVal );
         _directoryPath = tryFile.getParent();
         //  Now that we have an input file, enable controls associated with it.
-        _startJobItem.setEnabled( true );
+        _scheduleJobItem.setEnabled( true );
         _stopJobItem.setEnabled( true );
         _monitorMenuItem.setEnabled( true );
         _liveMonitorMenuItem.setEnabled( true );
@@ -1064,7 +1178,8 @@ public class JobNode extends QueueBrowserNode {
     protected boolean _lockState;
 //    protected Integer _databaseJobId;
     
-    protected JMenuItem _startJobItem;
+    protected JMenuItem _scheduleJobItem;
+    protected JMenuItem _unscheduleJobItem;
     protected JMenuItem _stopJobItem;
     
     protected boolean _weightsBuilt;

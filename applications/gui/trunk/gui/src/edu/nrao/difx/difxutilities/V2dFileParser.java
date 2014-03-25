@@ -156,6 +156,10 @@ public class V2dFileParser {
                             antenna.file = new Vector<String>();
                         antenna.file.add( newParam.value );
                     }
+                    else if ( newParam.name.contentEquals( "filelist" ) ) {
+                        if ( antenna.filelist == null )
+                            antenna.filelist = newParam.value;
+                    }
                     else if ( newParam.name.contentEquals( "networkPort" ) )
                         antenna.networkPort = Integer.parseInt( newParam.value );
                     else if ( newParam.name.contentEquals( "X" ) )
@@ -351,7 +355,9 @@ public class V2dFileParser {
                         str += "    format = " + antenna.format + "\n";
                     if ( antenna.vsn != null )
                         str += "    vsn = " + antenna.vsn + "\n";
-                    if ( antenna.file != null ) {
+                    if ( antenna.filelist != null )
+                        str += "    filelist = " + antenna.filelist + "\n";
+                    else if ( antenna.file != null ) {
                         for ( Iterator<String> iter2 = antenna.file.iterator(); iter2.hasNext(); )
                             str += "    file = " + iter2.next() + "\n";
                     }
@@ -537,6 +543,9 @@ public class V2dFileParser {
     }
     public void antennaVsn( String name, String newVal ) {
         findAntenna( name ).vsn = newVal;
+    }
+    public void antennaFileList( String name, String newVal ) {
+        findAntenna( name ).filelist = newVal;
     }
     public String antennaVsn( String name ) {
         if ( antennaSection( name ) == null )
@@ -917,6 +926,7 @@ public class V2dFileParser {
         public String toneSelection;
         public String format;
         public String vsn;
+        public String filelist;
         public Vector<String> file;
         public Integer networkPort;
         public Double X;

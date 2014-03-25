@@ -322,7 +322,7 @@ public class JobEditorMonitor extends JFrame {
         _defaultMachinesButton = new ZButton( "Use Defaults" );
         _defaultMachinesButton.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
-                selectNodeDefaults( true );
+                selectNodeDefaults( true, false );
             }
         } );
         _defaultMachinesButton.toolTip( "Set data source and processing nodes to sensible defaults\n"
@@ -723,12 +723,12 @@ public class JobEditorMonitor extends JFrame {
      * and threads files - if that is done by hand (using the "Apply" button) then these default
      * selections will not be made.
      */
-    public void selectNodeDefaults( boolean doAlways ) {
+    public boolean selectNodeDefaults( boolean doAlways, boolean externalOperation ) {
         _nodeRestrictionFailure = false;
         //  Bail out of here if the user has set the machines already.  This is overridden
         //  if "doAlways" is true.
         if ( !doAlways && _machinesAppliedByHand == true ) 
-            return;
+            return true;
         //  These lists keep track of nodes we are using and how many threads we are using
         //  on each.  
         class UsedNode {
@@ -774,6 +774,10 @@ public class JobEditorMonitor extends JFrame {
                     //  If we are not allowed to use the headnode as a data source, eliminate this node if
                     //  it is the headnode.
                     if ( !_settings.useHeadNodeCheck() && thisNode.name().contentEquals( _settings.headNode() ) )
+                        useNode = false;
+                    //  If we are restricted to a subset of the processor nodes, eliminate this item if
+                    //  it is not among those allowed.
+                    if ( _settings.restrictSources() && !_settings.sourceNodePermitted( thisNode.name() ) )
                         useNode = false;
                     //  If we are not allowing multiple data sources to share a node as a data source
                     //  within a job, eliminate this node if we are already using it for this job
@@ -823,6 +827,8 @@ public class JobEditorMonitor extends JFrame {
                 }
                 else {
                     _nodeRestrictionFailure = true;
+                    if ( externalOperation )
+                        return false;
                     _messageDisplayPanel.warning( 0, "node selection", "Unable to select a node that meets data source requirements" );
                 }
             }
@@ -844,9 +850,66 @@ public class JobEditorMonitor extends JFrame {
         //  For each "process number" reserve a node/thread set, or simply a number
         //  of threads, depending on user preference.
         for ( int i = 0; i < processNum; ++i ) {
+            //  We do this if all nodes are selected for each "process".
+            if ( _settings.allNodesCheck() ) {
+                ProcessorNode foundNode = null;
+                //  Look at each available node and see if we can use it.
+                for ( Iterator<BrowserNode> iter2 = _settings.hardwareMonitor().processorNodes().children().iterator();
+                        iter2.hasNext(); ) {
+                    ProcessorNode thisNode = (ProcessorNode)(iter2.next());
+                    //  Make sure this node is in the pane that displays processor nodes.
+                    //  If for some reason it is not, we can't use it.
+                    PaneProcessorNode thisPaneNode = processorNodeByName( thisNode.name() );
+                    if ( thisPaneNode != null ) {
+                        //  Eliminate the node if it is the head node.
+                        if ( _settings.useHeadNodeCheck() || !thisNode.name().contentEquals( _settings.headNode() ) ) {
+                            //  Eliminate this node if it is used as a data source and we aren't sharing.
+                            boolean useThis = true;
+                            if ( !_settings.shareDataSourcesAsProcessors() ) {
+                                //  Is the node already used as a data source?
+                                if ( thisNode.isDataSource() )
+                                    useThis = false;
+                                //  Is it "reserved" as a data source above?
+                                for ( Iterator<UsedNode> iter3 = dataSourceNodes.iterator(); iter3.hasNext(); ) {
+                                    if ( iter3.next().processorNode.name().contentEquals( thisNode.name() ) )
+                                        useThis = false;
+                                }
+                            }
+                            //  See if the number of available threads is sufficient to match
+                            //  what the user wants.
+                            if ( useThis ) {
+                                //  See how many threads this node has free.
+                                int threadsFree = thisNode.numCores() - 1 - thisNode.threadsUsed();
+                                //  Subtract any we have reserved for this job.
+                                for ( Iterator<UsedNode> iter3 = usedNodes.iterator(); iter3.hasNext(); ) {
+                                    UsedNode testNode = iter3.next();
+                                    if ( testNode.processorNode == thisNode )
+                                        threadsFree -= testNode.usedThreads;
+                                }
+                                //  If the number of available threads meets requirements,
+                                //  use the node!
+                                if ( _settings.threadsPerCheck() && threadsFree >= _settings.threadsPerNode() ) {
+                                    usedNodes.add( new UsedNode( thisNode, _settings.threadsPerNode() ) );
+                                    processingNodes.add( new UsedNode( thisNode, _settings.threadsPerNode() ) );
+                                    foundNode = thisNode;
+                                }
+                                else if ( _settings.allThreadsCheck() && threadsFree >= _settings.minThreadsPerNode() ) {
+                                    usedNodes.add( new UsedNode( thisNode, threadsFree ) );
+                                    processingNodes.add( new UsedNode( thisNode, threadsFree ) );
+                                    foundNode = thisNode;
+                                }
+                            }
+                        }
+                    }
+                }
+                if ( foundNode == null ) {
+                    _nodeRestrictionFailure = true;
+                    nodeBasedFailure = true;
+                }
+            }
             //  We do this if the user wants a specific number of nodes devoted to each
             //  process.
-            if ( _settings.nodesPerCheck() ) {
+            else if ( _settings.nodesPerCheck() ) {
                 //  We want to reserve a specific number of nodes for each "process number".
                 for ( int j = 0; j < _settings.nodesPer(); ++j ) {
                     ProcessorNode foundNode = null;
@@ -993,11 +1056,16 @@ public class JobEditorMonitor extends JFrame {
         //  Warn the user if the available resources are insufficient to process the
         //  job as requested.
         if ( threadBasedFailure ) {
+            if ( externalOperation )
+                return false;
             _messageDisplayPanel.warning( 0, "node selection", "Not enough free threads to meet processing requirements." );
         }
         if ( nodeBasedFailure ) {
+            if ( externalOperation )
+                return false;
             _messageDisplayPanel.warning( 0, "node selection", "Not enough free nodes to meet processing requirements." );
         }
+        return true;
     }
     
     protected boolean _nodeRestrictionFailure;
@@ -1249,7 +1317,13 @@ public class JobEditorMonitor extends JFrame {
                             Component comp = _applyMachinesButton;
                             while ( comp.getParent() != null )
                                 comp = comp.getParent();
-                            Point pt = _applyMachinesButton.getLocationOnScreen();
+                            Point pt = null;
+                            try {
+                                pt = _applyMachinesButton.getLocationOnScreen();
+                            }
+                            catch ( java.awt.IllegalComponentStateException e ) {
+                                pt = new Point( 100, 100 );
+                            }
                             GetFileMonitor getFile = new GetFileMonitor(  (Frame)comp, pt.x + 25, pt.y + 25,
                                     _machinesFileName.getText(), _settings );
                             if ( getFile.inString() != null && getFile.inString().length() > 0 ) {
@@ -1264,7 +1338,13 @@ public class JobEditorMonitor extends JFrame {
                             Component comp = _applyMachinesButton;
                             while ( comp.getParent() != null )
                                 comp = comp.getParent();
-                            Point pt = _applyMachinesButton.getLocationOnScreen();
+                            Point pt = null;
+                            try {
+                                pt = _applyMachinesButton.getLocationOnScreen();
+                            }
+                            catch ( java.awt.IllegalComponentStateException e ) {
+                                pt = new Point( 100, 100 );
+                            }
                             GetFileMonitor getFile = new GetFileMonitor(  (Frame)comp, pt.x + 25, pt.y + 25,
                                     _threadsFileName.getText(), _settings );
                             if ( getFile.inString() != null && getFile.inString().length() > 0 ) {
@@ -1505,6 +1585,7 @@ public class JobEditorMonitor extends JFrame {
                     e.getMessage() );  //BLAT should be a pop-up
             setState( "Failed Start", Color.RED );
             _jobNode.logItem( "<RUN> FAILED START", "", true );
+            _jobNode.autostate( JobNode.AUTOSTATE_DONE );
         }
     }
     
@@ -1737,6 +1818,8 @@ public class JobEditorMonitor extends JFrame {
                 ProcessorNode usedNode = (ProcessorNode)(iter2.next());
                 usedNode.removeJob( _this );
             }
+            _jobNode._scheduleJobItem.setEnabled( true );
+            _jobNode.autostate( JobNode.AUTOSTATE_DONE );
         }
         
         protected int _port;
@@ -2736,7 +2819,7 @@ public class JobEditorMonitor extends JFrame {
     public void setVisible( boolean newVal ) {
         if ( newVal )
             loadHardwareLists();
-        selectNodeDefaults( false );
+        selectNodeDefaults( false, false );
         super.setVisible( newVal );
     }
     
