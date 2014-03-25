@@ -5,6 +5,7 @@ mark5_files = \
 	mark5bmark5.cpp \
 	vdifmark5.cpp \
 	mark5dir.cpp \
+	mark5directorystructs.cpp \
 	watchdog.cpp
 else
 mark5_files = \

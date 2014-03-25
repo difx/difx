@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2011 by Walter Brisken                             *
+ *   Copyright (C) 2008-2014 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -527,6 +527,7 @@ void Mark5Module::clear()
 	signature = 0;
 	mode = MARK5_READ_MODE_NORMAL;
 	dirVersion = 0;
+	dirSubversion = -1;
 	fast = 0;
 	synthetic = 0;
 }
@@ -540,8 +541,16 @@ void Mark5Module::print() const
 		return;
 	}
 	
-	printf("VSN=%s  nScan=%d  bank=%c  sig=%u  dirVer=%d  mode=%s\n", 
-		label.c_str(), nScans(), bank+'A', signature, dirVersion, Mark5ReadModeName[mode]);
+	if(dirSubversion >= 0)
+	{
+		printf("VSN=%s  nScan=%d  bank=%c  sig=%u  dirVer=%d  dirSubver=%d  mode=%s\n", 
+			label.c_str(), nScans(), bank+'A', signature, dirVersion, dirSubversion, Mark5ReadModeName[mode]);
+	}
+	else
+	{
+		printf("VSN=%s  nScan=%d  bank=%c  sig=%u  dirVer=%d  mode=%s\n", 
+			label.c_str(), nScans(), bank+'A', signature, dirVersion, Mark5ReadModeName[mode]);
+	}
 
 	if(error.str().size() > 0)
 	{
@@ -564,7 +573,8 @@ int Mark5Module::load(const char *filename)
 	char *v;
 	char bankName;
 	char dirLabel[XLR_LABEL_LENGTH];
-	char extra[3][12];
+	char extra[5][20];
+	int nNumber = 0;
 
 	clear();
 
@@ -585,8 +595,8 @@ int Mark5Module::load(const char *filename)
 		return -1;
 	}
 
-	n = sscanf(line, "%8s %d %c %u %11s %11s %11s",
-		dirLabel, &nscans, &bankName, &signature, extra[0], extra[1], extra[2]);
+	n = sscanf(line, "%8s %d %c %u %19s %19s %19s %19s %19s",
+		dirLabel, &nscans, &bankName, &signature, extra[0], extra[1], extra[2], extra[3], extra[4]);
 	if(n < 3)
 	{
 		error << "Directory file " << filename << " is corrupt.\n";
@@ -615,7 +625,16 @@ int Mark5Module::load(const char *filename)
 		}
 		else if(sscanf(extra[j-4], "%d", &i) == 1)
 		{
-			dirVersion = i;
+			switch(nNumber)
+			{
+			case 0:
+				dirVersion = i;
+				break;
+			case 1:
+				dirSubversion = i;
+				break;
+			}
+			++nNumber;
 		}
 	}
 
@@ -897,34 +916,23 @@ int Mark5BankSetByVSN(SSHANDLE xlrDevice, const char *vsn)
 	return b;
 }
 
-int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref, 
-	int (*callback)(int, int, int, void *), void *data,
-	float *replacedFrac, int cacheOnly, int startScan, int stopScan)
+int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref, int (*callback)(int, int, int, void *), void *data, float *replacedFrac, int cacheOnly, int startScan, int stopScan, const char *binFilename)
 {
 	XLR_RETURN_CODE xlrRC;
-	struct Mark5LegacyDirectory *m5dir;
+	struct Mark5LegacyDirectory *legacyDir;
+	struct Mark5NeoLegacyDirectory *neolegacyDir;
 	unsigned char *dirData;
-	int len, n;
-	int j;
+	int dirLength;
 	struct mark5_format *mf;
 	char newLabel[XLR_LABEL_LENGTH];
 	int newBank;
-	unsigned long a, b;
-	int bufferlen;
-	unsigned int x, newSignature;
+	int bufferLength;
+	struct Mark5DirectoryInfo dirInfo;
 	int die = 0;
-	long long wGood = 0, wBad = 0;
-	long long wGoodSum = 0, wBadSum = 0;
-	int nZero;
-	int newDirVersion;   /* == 0 for old style (pre-mark5-memo 81) */
-	                     /* == version number for mark5-memo 81 */
-	int oldLen1, oldLen2, oldLen3, oldLen4;
-	int start, stop;
 	int oldFast;
-	double overhead = 0.0;
-	int nscans;
+	int v;
 
-	streamstordatatype *buffer;
+	streamstordatatype *bufferStart, *bufferStop, *bufferPrefil;
 
 	if(replacedFrac)
 	{
@@ -932,7 +940,7 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref,
 	}
 
 	/* allocate a bit more than the minimum needed */
-	bufferlen = 20160*8*10;
+	bufferLength = 20160*8*4;
 
 	newBank = Mark5BankGet(xlrDevice);
 	if(newBank < 0)
@@ -947,97 +955,56 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref,
 	}
 	newLabel[8] = 0;
 
-	WATCHDOG( len = XLRGetUserDirLength(xlrDevice) );
-	/* The historic directories written by Mark5A could come in three sizes.
-	 * See readdir() in Mark5A.c.  If one of these matches the actual dir size,
-	 * then assume it is old style, which we declare to be directory version
-	 * 0.  Otherwise check for divisibility by 128.  If so, then it is considered 
-	 * new style, and the version number can be extracted from the header.
-	 */
-	oldLen1 = (int)sizeof(struct Mark5LegacyDirectory);
-	oldLen2 = oldLen1 + 64 + 8*88;	/* 88 = sizeof(S_DRIVEINFO) */
-	oldLen3 = oldLen1 + 64 + 16*88;
-	oldLen4 = 83552;		/* SDK9 with legacy */
-	if(len == oldLen1 || len == oldLen2 || len == oldLen3 || len == oldLen4)
-	{
-		newDirVersion = 0;
-	}
-	else if(len % 128 == 0)
-	{
-		newDirVersion = -1;  /* signal to get version number later */
-	}
-	else
-	{
-		printf("size=%d  len=%d\n", static_cast<int>(sizeof(struct Mark5LegacyDirectory)), len);
-
-		return -3;
-	}
-
-	dirData = (unsigned char *)calloc(len, sizeof(int));
+	WATCHDOG( dirLength = XLRGetUserDirLength(xlrDevice) );
+	dirData = (unsigned char *)calloc(dirLength, 1);
 	if(dirData == 0)
 	{
 		return -4;
 	}
-	m5dir = (struct Mark5LegacyDirectory *)dirData;
+	WATCHDOG( xlrRC = XLRGetUserDir(xlrDevice, dirLength, 0, dirData) );
+	v = getMark5DirectoryInfo(&dirInfo, dirData, dirLength);
+	if(v != Mark5DirectoryInfoSuccess)
+	{
+		FILE *out;
+		const char dumpFile[] = "/tmp/dir.dump";
 
-	WATCHDOG( xlrRC = XLRGetUserDir(xlrDevice, len, 0, dirData) );
+		fprintf(stderr, "\nModule directory parse error %d encountered: %s\n", v, Mark5DirectoryInfoStatusStrings[v]);
+		fprintf(stderr, "The directory size was %d\n", dirLength);
+		fprintf(stderr, "The best guess about the directory content is printed below:\n");
+		fprintMark5DirectoryInfo(stderr, &dirInfo);
+		fprintf(stderr, "The binary directory was dumped to %s\n", dumpFile);
+
+		out = fopen(dumpFile, "w");
+		fwrite(dirData, 1, dirLength, out);
+		fclose(out);
+
+		free(dirData);
+
+		return -3;
+	}
+
+	fprintMark5DirectoryInfo(stdout, &dirInfo);
+
+	legacyDir = (struct Mark5LegacyDirectory *)dirData;
+	neolegacyDir = (struct Mark5NeoLegacyDirectory *)dirData;
+
 	if(xlrRC != XLR_SUCCESS)
 	{
 		free(dirData);
 
 		return -5;
 	}
-	if(newDirVersion == -1)
-	{
-		newDirVersion = ((int *)dirData)[0];
-	}
 
-	if(newDirVersion < 0 || newDirVersion > 1)
-	{
-		free(dirData);
-
-		return -6;
-	}
-
-	/* the adventurous would use md5 here */
-	if(newDirVersion == 0)
-	{
-		start = 0;
-		stop = 81952;
-	}
-	else
-	{
-		/* Don't base directory on header material as that can change */
-		start = sizeof(struct Mark5DirectoryHeaderVer1);
-		stop = len;
-	}
-
-	newSignature = 1;
-	if(start < stop)
-	{
-		for(j = start/4; j < stop/4; ++j)
-		{
-			x = ((unsigned int *)dirData)[j] + 1;
-			newSignature = newSignature ^ x;
-		}
-
-		/* prevent a zero signature */
-		if(newSignature == 0)
-		{
-			newSignature = 0x55555555;
-		}
-	}
-
-	if(signature == newSignature && nScans() > 0)
+	if(signature == dirInfo.signature && nScans() > 0)
 	{
 		/* Cached version seems up to date */
 
 		bank = newBank;
-		if(dirVersion != newDirVersion)
+		if(dirVersion != dirInfo.dirClass)
 		{
-			fprintf(stderr, "Warning: disagreement in directory version! %d != %d\n",
-				dirVersion, newDirVersion);
-			dirVersion = newDirVersion;
+			fprintf(stderr, "Warning: disagreement in directory version! %d != %d\n", dirVersion, dirInfo.dirClass);
+			dirVersion = dirInfo.dirClass;
+			dirSubversion = dirInfo.dirVersion;
 		}
 		free(dirData);
 
@@ -1048,120 +1015,61 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref,
 		return DIRECTORY_NOT_CACHED;
 	}
 
+	return DIRECTORY_NOT_CACHED;
+
+#if 0
+	
+	// This is commented out because we don't ever read directories from within mpifxcorr.
+
+
 	/* If we got this far, we're going to attempt to do the directory read */
 
-	buffer = (streamstordatatype *)malloc(bufferlen);
-	
+	bufferStart = (streamstordatatype *)malloc(bufferLength);
+	bufferStop  = (streamstordatatype *)malloc(bufferLength*2);
+	bufferPrefil = (streamstordatatype *)((char *)bufferStop + bufferLength);
+
 	oldFast = fast;		/* don't forget if we want to do this in fast mode or not */
 	clear();
 	fast = oldFast;
 	
-	if(newDirVersion == 0)
-	{
-		nscans = m5dir->nscans;
-	}
-	else
-	{
-		nscans = len/128 - 1;
-	}
-	scans.resize(nscans);
 	bank = newBank;
-	signature = newSignature;
 	label = newLabel;
-	dirVersion = newDirVersion;
+	dirVersion = dirInfo.dirClass;
+	dirSubversion = dirInfo.dirVersion;
+	signature = dirInfo.signature;
+	scans.resize(dirInfo.nScan);
 	mode = MARK5_READ_MODE_NORMAL;
 
-	if(dirVersion == 0 && nscans > MODULE_LEGACY_MAX_SCANS)
-	{
-		fprintf(stderr, "Warning: Legacy module with %d scans (only %d scans allowed!)\n", nscans, MODULE_LEGACY_MAX_SCANS);
-		nscans = MODULE_LEGACY_MAX_SCANS;
-	}
-
+	/* perhaps limit the range of scans to interrogate */
 	if(startScan < 0)
 	{
 		startScan = 0;
 	}
-
 	if(stopScan < 0 || stopScan > nScans())
 	{
 		stopScan = nScans();
 	}
 
-	if(fast && dirVersion > 0)
+	if(fast && dirInfo.dirClass == Mark5DirClassMark5C)
 	{
-		for(int i = startScan; i < stopScan; ++i)
-		{
-			struct Mark5DirectoryScanHeaderVer1 *scanHeader;
-			int type;
-
-			Mark5Scan &scan = scans[i];
-
-			scanHeader = (struct Mark5DirectoryScanHeaderVer1 *)(dirData + 128*i + 128);
-			type = scanHeader->typeNumber & 0xFF;
-			
-			expandScanName1(scan.name, scanHeader);
-			scan.start  = scanHeader->startByte;
-			scan.length = scanHeader->stopByte - scanHeader->startByte;
-			scan.framebytes  = scanHeader->frameLength;
-
-			if(type >= 3 && type <= 9)
-			{
-				struct Mark5DirectoryLegacyBodyVer1 *scanBody;
-				scanBody = (struct Mark5DirectoryLegacyBodyVer1 *)(dirData + 128*i + 192);
-
-				switch(type)
-				{
-				case 3:
-					scan.format = MK5_FORMAT_VLBA;
-					overhead = 1.008;
-					break;
-				case 4:
-					scan.format = MK5_FORMAT_MARK4;
-					overhead = 1.0;
-					break;
-				case 8:
-				case 9:
-					scan.format = MK5_FORMAT_MARK5B;
-					scan.framebytes = 10016;
-					overhead = 1.0016;
-					break;
-				default:
-					scan.format = -1;
-					continue;
-				}
-				convertTimeBCD(scanBody->timeBCD, &scan.mjd, &scan.sec);
-				scan.frameoffset = scanBody->byteOffset;
-				if(scan.format == MK5_FORMAT_MARK5B)
-				{
-					scan.tracks = upround2(countbits(scanBody->nTrack));
-				}
-				else
-				{
-					scan.tracks = scanBody->nTrack;
-				}
-				scan.framespersecond = int(125000.0*(double)(scanBody->trackRate)*overhead*(double)(scan.tracks)/(double)(scan.framebytes) + 0.5);
-				scan.framenuminsecond = scanBody->firstFrame;
-				if(scan.framespersecond > 0)
-				{
-					scan.duration = (int)((scan.length - scan.frameoffset)
-						/ scan.framebytes)/(double)(scan.framespersecond);
-				}
-			}
-			else
-			{
-				/* Currently unsupported type */
-				scan.format = -SCAN_FORMAT_ERROR_UNSUPPORTED;
-			}
-		
-		}
+		newdir2scans(scans, dirData, dirLength, startScan, stopScan);
 	}
 	else
 	{
+		long long wGoodSum=0, wBadSum=0;
+		int lastread = -10;
+		
+		/* Work around possible streamstor bug */
+		WATCHDOG( xlrRC = XLRReadData(xlrDevice, bufferStart, 0, 0, bufferLength) );
+
 		for(int i = 0; i < nScans(); ++i)
 		{
+			unsigned long a, b;
+			long long wGood=0, wBad=0;
+			int nZero;
+			
 			Mark5Scan &scan = scans[i];
 
-			wGood = wBad = 0;
 			if(fast)
 			{
 				printf("Fast directory read requested but not supported for this module.\n");
@@ -1169,13 +1077,19 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref,
 				fast = 0;
 			}
 
-			if(dirVersion == 0)
+			if(dirInfo.dirClass == Mark5DirClassLegacy)
 			{
-				scan.name   = m5dir->scanName[i];
-				scan.start  = m5dir->start[i];
-				scan.length = m5dir->length[i];
+				scan.name   = legacyDir->scanName[i];
+				scan.start  = legacyDir->start[i];
+				scan.length = legacyDir->length[i];
 			}
-			else if(dirVersion == 1)
+			if(dirInfo.dirClass == Mark5DirClassNeoLegacy)
+			{
+				scan.name   = neolegacyDir->scanName[i];
+				scan.start  = neolegacyDir->start[i];
+				scan.length = neolegacyDir->length[i];
+			}
+			else if(dirInfo.dirClass == Mark5DirClassMark5C)
 			{
 				const struct Mark5DirectoryScanHeaderVer1 *scanHeader;
 				scanHeader = (struct Mark5DirectoryScanHeaderVer1 *)(dirData + 128*i + 128);
@@ -1183,7 +1097,7 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref,
 				scan.start  = scanHeader->startByte;
 				scan.length = scanHeader->stopByte - scanHeader->startByte;
 			}
-			if(scan.length < bufferlen)
+			if(scan.length < bufferLength)
 			{
 				if(callback)
 				{
@@ -1213,9 +1127,27 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref,
 				continue;
 			}
 
-			a = scan.start>>32;
-			b = scan.start % (1LL<<32);
-			WATCHDOG( xlrRC = XLRReadData(xlrDevice, buffer, a, b, bufferlen) );
+			if(lastread == i-1)
+			{
+				memcpy(bufferStart, bufferPrefil, bufferLength);
+			}
+			else
+			{
+				a = scan.start>>32;
+				b = scan.start % (1LL<<32);
+				WATCHDOG( xlrRC = XLRReadData(xlrDevice, bufferStart, a, b, bufferLength) );
+			}
+			a = (scan.start+scan.length-bufferLength)>>32;
+			b = (scan.start+scan.length-bufferLength) % (1LL<<32);
+			if(i < nScans() - 1)
+			{
+				WATCHDOG( xlrRC = XLRReadData(xlrDevice, bufferStop, a, b, 2*bufferLength) );
+				lastread = i;
+			}
+			else
+			{
+				WATCHDOG( xlrRC = XLRReadData(xlrDevice, bufferStop, a, b, bufferLength) );
+			}
 
 			if(xlrRC == XLR_FAIL)
 			{
@@ -1228,8 +1160,8 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref,
 				continue;
 			}
 
-			nZero = countZeros(buffer, bufferlen/4);
-			if(nZero > bufferlen/8)	/* more than half 32-bit words are pure zero */
+			nZero = countZeros(bufferStart, bufferLength/4);
+			if(nZero > bufferLength/8)	/* more than half 32-bit words are pure zero */
 			{
 				if(callback)
 				{
@@ -1238,16 +1170,163 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref,
 				scan.format = -SCAN_FORMAT_ERROR_ZEROS;
 			}
 
-			countReplaced(buffer, bufferlen/4, &wGood, &wBad);
+			countReplaced(bufferStart, bufferLength/4, &wGood, &wBad);
+			countReplaced(bufferStop, bufferLength/4, &wGood, &wBad);
 
 			if(die)
 			{
 				break;
 			}
 
-			mf = new_mark5_format_from_stream(new_mark5_stream_memory(buffer, bufferlen));
-		
-			if(!mf)
+			if( (mf = new_mark5_format_from_stream(new_mark5_stream_memory(bufferStart, bufferLength))) != 0)
+			{
+				/* Fix mjd. */
+#warning FIXME: this should be in mark5access
+				if(mf->format == MK5_FORMAT_VLBA || mf->format == MK5_FORMAT_MARK5B)
+				{
+					int n = (mjdref - mf->mjd + 500) / 1000;
+					mf->mjd += n*1000;
+				}
+				else if(mf->format == MK5_FORMAT_MARK4)
+				{
+					int n = static_cast<int>((mjdref - mf->mjd + 1826)/3652.4);
+					mf->mjd = addDecades(mf->mjd, n);
+				}
+				
+				scan.mjd = mf->mjd;
+				scan.sec = mf->sec;
+				scan.format      = mf->format;
+				scan.frameoffset = mf->frameoffset;
+				scan.tracks      = mf->ntrack;
+				scan.framespersecond = int(1000000000.0/mf->framens + 0.5);
+				scan.framenuminsecond = int(mf->ns/mf->framens + 0.5);
+				scan.framebytes  = mf->framebytes;
+				scan.duration    = (int)((scan.length - scan.frameoffset) / scan.framebytes)/(double)(scan.framespersecond);
+
+				delete_mark5_format(mf);
+
+				// Look at end of scan to verify things look OK
+				mf = new_mark5_format_from_stream(new_mark5_stream_memory(bufferStop, bufferLength));
+
+				if(mf)
+				{
+					const int maxIter = 5;	// max number of times to loop in calculating frame rate
+					long long deltaBytes;
+					int iter;
+
+					/* Fix mjd. */
+#warning FIXME: this should be in mark5access
+					if(mf->format == MK5_FORMAT_VLBA || mf->format == MK5_FORMAT_MARK5B)
+					{
+						int n = (mjdref - mf->mjd + 500) / 1000;
+						mf->mjd += n*1000;
+					}
+					else if(mf->format == MK5_FORMAT_MARK4)
+					{
+						int n = static_cast<int>((mjdref - mf->mjd + 1826)/3652.4);
+						mf->mjd = addDecades(mf->mjd, n);
+					}
+
+					deltaBytes = (scan.start+scan.length-bufferLength+mf->frameoffset) - (scan.start+scan.frameoffset);
+					int deltaFrames = int(mf->ns/mf->framens + 0.5) - scan.framenuminsecond;
+
+					scan.duration = mf->sec - scan.sec;
+					if(scan.duration < 0)
+					{
+						scan.duration += 86400.0;
+					}
+
+					if(repeatingData((const char *)bufferStart, mf->framebytes) && repeatingData((const char *)bufferStop, mf->framebytes))
+					{
+						/* look for unusual repetition of payload bytes */
+
+						static bool first = true;
+
+						if(first)
+						{
+							FILE *out;
+							const char sampleFile[] = "/tmp/repeat.sample";
+
+							out = fopen(sampleFile, "w");
+							if(out)
+							{
+								fwrite(bufferStop, 1, bufferLength, out);
+								fclose(out);
+
+								fprintf(stderr, "Wrote %d bytes of repeating data to %s for inspection\n", bufferLength, sampleFile);
+							}
+
+							first = false;
+						}
+						scan.format = -SCAN_FORMAT_ERROR_REPEAT;
+
+						continue;
+					}
+
+					if(scan.duration < 1)
+					{
+						scan.format = -SCAN_FORMAT_ERROR_TOOSHORT;
+						scan.framespersecond = 0;
+						scan.duration = 0.0;
+						scan.framebytes = 0;
+						scan.mjd = 0;
+						scan.sec = 0;
+						scan.frameoffset = 0;
+						scan.framenuminsecond = 0;
+
+						continue;
+					}
+
+					for(iter = 0; iter < maxIter; ++iter)
+					{
+						int frameRate;		// [frames per second]
+						int dataRate;		// [Mbps]
+
+						frameRate = scan.framespersecond;
+						dataRate = static_cast<int>((deltaBytes*static_cast<double>(mf->databytes)/static_cast<double>(mf->framebytes))/((scan.duration + deltaFrames/static_cast<double>(scan.framespersecond))*125000.0 + 0.9));
+
+						if(mf->format == MK5_FORMAT_VDIF)
+						{
+							dataRate /= mf->ntrack;		// div by nThread
+						}
+						if(dataRate <= 1)
+						{
+							dataRate = 1;
+						}
+						else
+						{
+							// Change to nearest power of two
+							int n = static_cast<int>(log(static_cast<double>(dataRate))/log(2.0) + 0.5);
+							dataRate = 1 << n;
+						}
+						scan.framespersecond = dataRate*125000/mf->databytes;
+				
+						if(mf->format == MK5_FORMAT_VDIF)
+						{
+							dataRate *= mf->ntrack;
+						}
+						if(frameRate == scan.framespersecond)
+						{
+							break;
+						}
+					}
+					if(iter >= maxIter)
+					{
+						fprintf(stderr, "Developer error: Cannot converge on frame rate.  Last value was %d\n", scan.framespersecond);
+					}
+
+					scan.duration += static_cast<double>(deltaFrames)/scan.framespersecond;
+
+					if(mf->format == MK5_FORMAT_VDIF)
+					{
+						getVdifThreads(scan.startThreads, reinterpret_cast<char *>(bufferStart) + scan.frameoffset, bufferLength - scan.frameoffset, scan.framebytes);
+						getVdifThreads(scan.endThreads, reinterpret_cast<char *>(bufferStop) + mf->frameoffset, bufferLength - mf->frameoffset, scan.framebytes);
+					}
+					
+					delete_mark5_format(mf);
+				}
+			}
+			else 
 			{
 				if(callback)
 				{
@@ -1257,37 +1336,11 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref,
 
 				continue;
 			}
-			
+
 			if(die)
 			{
 				break;
 			}
-
-			/* Fix mjd. */
-#warning FIXME: this should be in mark5access
-			if(mf->format == 0 || mf->format == 2)  /* VLBA or Mark5B format */
-			{
-				n = (mjdref - mf->mjd + 500) / 1000;
-				mf->mjd += n*1000;
-			}
-			else if(mf->format == 1)	/* Mark4 format */
-			{
-				n = (int)((mjdref - mf->mjd + 1826)/3652.4);
-				mf->mjd = addDecades(mf->mjd, n);
-			}
-			
-			scan.mjd = mf->mjd;
-			scan.sec = mf->sec;
-			scan.format      = mf->format;
-			scan.frameoffset = mf->frameoffset;
-			scan.tracks      = mf->ntrack;
-			scan.framespersecond = int(1000000000.0/mf->framens + 0.5);
-			scan.framenuminsecond = int(mf->ns/mf->framens + 0.5);
-			scan.framebytes  = mf->framebytes;
-			scan.duration    = (int)((scan.length - scan.frameoffset)
-				/ scan.framebytes)/(double)(scan.framespersecond);
-			
-			delete_mark5_format(mf);
 
 			if(callback)
 			{
@@ -1315,11 +1368,22 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref,
 
 		if(replacedFrac)
 		{
-			*replacedFrac = (double)wBad/(double)wGood;
+			*replacedFrac = (double)wBadSum/(double)wGoodSum;
 		}
 	}
 
-	free(buffer);
+	free(bufferStart);
+	free(bufferStop);
+
+	if(binFilename)
+	{
+		FILE *out;
+
+		out = fopen(binFilename, "w");
+		fwrite(dirData, dirLength, 1, out);
+		fclose(out);
+	}
+
 	free(dirData);
 
 	uniquifyScanNames();
@@ -1327,6 +1391,8 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref,
 	sort();
 
 	return -die;
+
+#endif
 }
 
 /* retrieves directory (either from cache or module) and makes sure

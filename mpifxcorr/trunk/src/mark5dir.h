@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2012 by Walter Brisken                             *
+ *   Copyright (C) 2008-2014 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -110,7 +110,8 @@ public:
 	int bank;
 	unsigned int signature;	/* a hash code used to determine if dir is current */
 	enum Mark5ReadMode mode;
-	int dirVersion;		/* directory version = 0 for pre memo 81 */
+	int dirVersion;		/* directory version = 0 for pre memo 81, 1 for memo 81 */
+	int dirSubversion;	/* variant of directory version */
 	int fast;		/* if true, the directory came from the ModuleUserDirectory only */
 	int synthetic;		/* directory was synthesized */	
 
@@ -125,7 +126,7 @@ public:
 	int uniquifyScanNames();
 	int readDirectory(SSHANDLE xlrDevice, int mjdref,
 		int (*callback)(int, int, int, void *), void *data,
-		float *replacedFrac, int cacheOnly, int startScan, int stopScan);
+		float *replacedFrac, int cacheOnly, int startScan, int stopScan, const char *binFilename = 0);
 	int getCachedDirectory(SSHANDLE xlrDevice, int mjdref, const char *vsn, 
 		const char *dir, int (*callback)(int, int, int, void *), void *data,
 		float *replacedFrac, int force, int optionFast, int cacheOnly, int startScan, int stopScan);
