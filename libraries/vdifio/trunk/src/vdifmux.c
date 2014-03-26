@@ -104,14 +104,14 @@ static unsigned int gcd(unsigned int u, unsigned int v)
 
 
 
-static void cornerturn_1thread(unsigned char *outputBuffer, const unsigned char **threadBuffers, int outputDataSize)
+static void cornerturn_1thread(unsigned char *outputBuffer, const unsigned char * const *threadBuffers, int outputDataSize)
 {
   // Trivial case of 1 thread: just a copy
 
   memcpy(outputBuffer, threadBuffers[0], outputDataSize);
 }
 
-static void cornerturn_2thread_1bit_slow(unsigned char *outputBuffer, const unsigned char **threadBuffers, int outputDataSize)
+static void cornerturn_2thread_1bit_slow(unsigned char *outputBuffer, const unsigned char * const *threadBuffers, int outputDataSize)
 {
   // Efficiently handle the special case of 2 threads of 1-bit data.
   //
@@ -145,7 +145,7 @@ PRAGMA_OMP(for schedule(dynamic,125) nowait)
   }
 }
 
-static void cornerturn_2thread_1bit(unsigned char *outputBuffer, const unsigned char **threadBuffers, int outputDataSize)
+static void cornerturn_2thread_1bit(unsigned char *outputBuffer, const unsigned char * const *threadBuffers, int outputDataSize)
 {
   // Efficiently handle the special case of 2 threads of 1-bit data.
   //
@@ -191,14 +191,14 @@ PRAGMA_OMP(for schedule(dynamic,125) nowait)
   }
 }
 
-static void cornerturn_3thread_1bit(unsigned char *outputBuffer, const unsigned char **threadBuffers, int outputDataSize)
+static void cornerturn_3thread_1bit(unsigned char *outputBuffer, const unsigned char * const *threadBuffers, int outputDataSize)
 {
   const uint8_t *t0 = (uint8_t *)(threadBuffers[0]);
   const uint8_t *t1 = (uint8_t *)(threadBuffers[1]);
   const uint8_t *t2 = (uint8_t *)(threadBuffers[2]);
   uint32_t *outputwordptr = (uint32_t *)outputBuffer;
   int i, n;
-  uint32_t x, y, z, w;
+  uint32_t x, y, z;
 
   n = outputDataSize/4;
 
@@ -227,7 +227,7 @@ PRAGMA_OMP(for schedule(dynamic,125) nowait)
   }
 }
 
-static void cornerturn_4thread_1bit(unsigned char *outputBuffer, const unsigned char **threadBuffers, int outputDataSize)
+static void cornerturn_4thread_1bit(unsigned char *outputBuffer, const unsigned char * const *threadBuffers, int outputDataSize)
 {
   const uint8_t *t0 = (uint8_t *)(threadBuffers[0]);
   const uint8_t *t1 = (uint8_t *)(threadBuffers[1]);
@@ -269,7 +269,7 @@ PRAGMA_OMP(for schedule(dynamic,125) nowait)
   }
 }
 
-static void cornerturn_5thread_1bit(unsigned char *outputBuffer, const unsigned char **threadBuffers, int outputDataSize)
+static void cornerturn_5thread_1bit(unsigned char *outputBuffer, const unsigned char * const *threadBuffers, int outputDataSize)
 {
   const uint8_t *t0 = (uint8_t *)(threadBuffers[0]);
   const uint8_t *t1 = (uint8_t *)(threadBuffers[1]);
@@ -317,7 +317,7 @@ PRAGMA_OMP(for schedule(dynamic,125) nowait)
   }
 }
 
-static void cornerturn_6thread_1bit(unsigned char *outputBuffer, const unsigned char **threadBuffers, int outputDataSize)
+static void cornerturn_6thread_1bit(unsigned char *outputBuffer, const unsigned char * const *threadBuffers, int outputDataSize)
 {
   const uint8_t *t0 = (uint8_t *)(threadBuffers[0]);
   const uint8_t *t1 = (uint8_t *)(threadBuffers[1]);
@@ -371,7 +371,7 @@ PRAGMA_OMP(for schedule(dynamic,125) nowait)
   }
 }
 
-static void cornerturn_7thread_1bit(unsigned char *outputBuffer, const unsigned char **threadBuffers, int outputDataSize)
+static void cornerturn_7thread_1bit(unsigned char *outputBuffer, const unsigned char * const *threadBuffers, int outputDataSize)
 {
   const uint8_t *t0 = (uint8_t *)(threadBuffers[0]);
   const uint8_t *t1 = (uint8_t *)(threadBuffers[1]);
@@ -431,7 +431,7 @@ PRAGMA_OMP(for schedule(dynamic,125) nowait)
   }
 }
 
-static void cornerturn_8thread_1bit(unsigned char *outputBuffer, const unsigned char **threadBuffers, int outputDataSize)
+static void cornerturn_8thread_1bit(unsigned char *outputBuffer, const unsigned char * const *threadBuffers, int outputDataSize)
 {
   const uint8_t *t0 = (uint8_t *)(threadBuffers[0]);
   const uint8_t *t1 = (uint8_t *)(threadBuffers[1]);
@@ -504,9 +504,9 @@ PRAGMA_OMP(for schedule(dynamic,125) nowait)
 
 #if SIZEOF_SIZE_T == 8
 // 64-bit optimized version
-static void cornerturn_2thread_2bit_slow(unsigned char *outputBuffer, const unsigned char **threadBuffers, int outputDataSize)
+static void cornerturn_2thread_2bit_slow(unsigned char *outputBuffer, const unsigned char * const *threadBuffers, int outputDataSize)
 #else
-static void cornerturn_2thread_2bit(unsigned char *outputBuffer, const unsigned char **threadBuffers, int outputDataSize)
+static void cornerturn_2thread_2bit(unsigned char *outputBuffer, const unsigned char * const *threadBuffers, int outputDataSize)
 #endif
 {
   // Efficiently handle the special case of 2 threads of 2-bit data.
@@ -554,9 +554,9 @@ PRAGMA_OMP(for schedule(dynamic,125) nowait)
   }
 }
 #if SIZEOF_SIZE_T == 8
-static void cornerturn_2thread_2bit(unsigned char *outputBuffer, const unsigned char **threadBuffers, int outputDataSize)
+static void cornerturn_2thread_2bit(unsigned char *outputBuffer, const unsigned char * const *threadBuffers, int outputDataSize)
 #else
-static void cornerturn_2thread_2bit_slow(unsigned char *outputBuffer, const unsigned char **threadBuffers, int outputDataSize)
+static void cornerturn_2thread_2bit_slow(unsigned char *outputBuffer, const unsigned char * const *threadBuffers, int outputDataSize)
 #endif
 {
   // Efficiently handle the special case of 2 threads of 2-bit data.
@@ -600,7 +600,7 @@ PRAGMA_OMP(for schedule(dynamic,125) nowait)
   }
 }
 
-static void cornerturn_3thread_2bit(unsigned char *outputBuffer, const unsigned char **threadBuffers, int outputDataSize)
+static void cornerturn_3thread_2bit(unsigned char *outputBuffer, const unsigned char * const *threadBuffers, int outputDataSize)
 {
   // Efficiently handle the special case of 3 threads of 2-bit data.  
   //
@@ -647,7 +647,7 @@ PRAGMA_OMP(for schedule(dynamic,125) nowait)
   }
 }
 
-static void cornerturn_4thread_2bit(unsigned char *outputBuffer, const unsigned char **threadBuffers, int outputDataSize)
+static void cornerturn_4thread_2bit(unsigned char *outputBuffer, const unsigned char * const *threadBuffers, int outputDataSize)
 {
   // Efficiently handle the special case of 4 threads of 2-bit data.  because nthread = samples/byte
   // this is effectively a matrix transpose.  With this comes some symmetries that make this case
@@ -704,7 +704,7 @@ PRAGMA_OMP(for schedule(dynamic,125) nowait)
   }
 }
 
-static void cornerturn_5thread_2bit(unsigned char *outputBuffer, const unsigned char **threadBuffers, int outputDataSize)
+static void cornerturn_5thread_2bit(unsigned char *outputBuffer, const unsigned char * const *threadBuffers, int outputDataSize)
 {
   // Efficiently handle the special case of 5 threads of 2-bit data.
   // This will be packed into an 8-channel output stream where the 3 unused channels will be all zeros
@@ -762,7 +762,7 @@ PRAGMA_OMP(for schedule(dynamic,125) nowait)
   }
 }
 
-static void cornerturn_6thread_2bit(unsigned char *outputBuffer, const unsigned char **threadBuffers, int outputDataSize)
+static void cornerturn_6thread_2bit(unsigned char *outputBuffer, const unsigned char * const *threadBuffers, int outputDataSize)
 {
   // Efficiently handle the special case of 6 threads of 2-bit data.
   //
@@ -820,7 +820,7 @@ PRAGMA_OMP(for schedule(dynamic,125) nowait)
   }
 }
 
-static void cornerturn_7thread_2bit(unsigned char *outputBuffer, const unsigned char **threadBuffers, int outputDataSize)
+static void cornerturn_7thread_2bit(unsigned char *outputBuffer, const unsigned char * const *threadBuffers, int outputDataSize)
 {
   // Efficiently handle the special case of 7 threads of 2-bit data.
   //
@@ -879,7 +879,7 @@ PRAGMA_OMP(for schedule(dynamic,125) nowait)
   }
 }
 
-static void cornerturn_8thread_2bit(unsigned char *outputBuffer, const unsigned char **threadBuffers, int outputDataSize)
+static void cornerturn_8thread_2bit(unsigned char *outputBuffer, const unsigned char * const *threadBuffers, int outputDataSize)
 {
   // Efficiently handle the special case of 8 threads of 2-bit data.
   //
@@ -939,7 +939,7 @@ PRAGMA_OMP(for schedule(dynamic,125) nowait)
   }
 }
 
-static void cornerturn_10thread_2bit(unsigned char *outputBuffer, const unsigned char **threadBuffers, int outputDataSize)
+static void cornerturn_10thread_2bit(unsigned char *outputBuffer, const unsigned char * const *threadBuffers, int outputDataSize)
 {
   // Efficiently handle the special case of 10 threads of 2-bit data.
   //
@@ -1005,7 +1005,7 @@ PRAGMA_OMP(for schedule(dynamic,125) nowait)
   }
 }
 
-static void cornerturn_12thread_2bit(unsigned char *outputBuffer, const unsigned char **threadBuffers, int outputDataSize)
+static void cornerturn_12thread_2bit(unsigned char *outputBuffer, const unsigned char * const *threadBuffers, int outputDataSize)
 {
   // Efficiently handle the special case of 12 threads of 2-bit data.
   //
@@ -1073,7 +1073,7 @@ PRAGMA_OMP(for schedule(dynamic,125) nowait)
   }
 }
 
-static void cornerturn_14thread_2bit(unsigned char *outputBuffer, const unsigned char **threadBuffers, int outputDataSize)
+static void cornerturn_14thread_2bit(unsigned char *outputBuffer, const unsigned char * const *threadBuffers, int outputDataSize)
 {
   // Efficiently handle the special case of 14 threads of 2-bit data.
   //
@@ -1145,7 +1145,7 @@ PRAGMA_OMP(for schedule(dynamic,125) nowait)
   }
 }
 
-static void cornerturn_16thread_2bit(unsigned char *outputBuffer, const unsigned char **threadBuffers, int outputDataSize)
+static void cornerturn_16thread_2bit(unsigned char *outputBuffer, const unsigned char * const *threadBuffers, int outputDataSize)
 {
   // Efficiently handle the special case of 16 threads of 2-bit data.
   //
@@ -1219,7 +1219,7 @@ PRAGMA_OMP(for schedule(dynamic,125) nowait)
   }
 }
 
-static void cornerturn_2thread_4bit(unsigned char *outputBuffer, const unsigned char **threadBuffers, int outputDataSize)
+static void cornerturn_2thread_4bit(unsigned char *outputBuffer, const unsigned char * const *threadBuffers, int outputDataSize)
 {
   // Efficiently handle the special case of 2 threads of 4-bit data.
   //
@@ -1258,7 +1258,7 @@ PRAGMA_OMP(for schedule(dynamic,125) nowait)
   }
 }
 
-static void cornerturn_3thread_4bit(unsigned char *outputBuffer, const unsigned char **threadBuffers, int outputDataSize)
+static void cornerturn_3thread_4bit(unsigned char *outputBuffer, const unsigned char * const *threadBuffers, int outputDataSize)
 {
   // Efficiently handle the special case of 3 threads of 4-bit data.
   //
@@ -1301,7 +1301,7 @@ PRAGMA_OMP(for schedule(dynamic,125) nowait)
   }
 }
 
-static void cornerturn_4thread_4bit(unsigned char *outputBuffer, const unsigned char **threadBuffers, int outputDataSize)
+static void cornerturn_4thread_4bit(unsigned char *outputBuffer, const unsigned char * const *threadBuffers, int outputDataSize)
 {
   // Efficiently handle the special case of 4 threads of 4-bit data.
   //
@@ -1346,7 +1346,7 @@ PRAGMA_OMP(for schedule(dynamic,125) nowait)
   }
 }
 
-static void cornerturn_5thread_4bit(unsigned char *outputBuffer, const unsigned char **threadBuffers, int outputDataSize)
+static void cornerturn_5thread_4bit(unsigned char *outputBuffer, const unsigned char * const *threadBuffers, int outputDataSize)
 {
   // Efficiently handle the special case of 5 threads of 4-bit data.
   //
@@ -1396,7 +1396,7 @@ PRAGMA_OMP(for schedule(dynamic,125) nowait)
   }
 }
 
-static void cornerturn_6thread_4bit(unsigned char *outputBuffer, const unsigned char **threadBuffers, int outputDataSize)
+static void cornerturn_6thread_4bit(unsigned char *outputBuffer, const unsigned char * const *threadBuffers, int outputDataSize)
 {
   // Efficiently handle the special case of 6 threads of 4-bit data.
   //
@@ -1447,7 +1447,7 @@ PRAGMA_OMP(for schedule(dynamic,125) nowait)
   }
 }
 
-static void cornerturn_7thread_4bit(unsigned char *outputBuffer, const unsigned char **threadBuffers, int outputDataSize)
+static void cornerturn_7thread_4bit(unsigned char *outputBuffer, const unsigned char * const *threadBuffers, int outputDataSize)
 {
   // Efficiently handle the special case of 7 threads of 4-bit data.
   //
@@ -1499,7 +1499,7 @@ PRAGMA_OMP(for schedule(dynamic,125) nowait)
   }
 }
 
-static void cornerturn_8thread_4bit(unsigned char *outputBuffer, const unsigned char **threadBuffers, int outputDataSize)
+static void cornerturn_8thread_4bit(unsigned char *outputBuffer, const unsigned char * const *threadBuffers, int outputDataSize)
 {
   // Efficiently handle the special case of 8 threads of 4-bit data.
   //
@@ -1552,7 +1552,7 @@ PRAGMA_OMP(for schedule(dynamic,125) nowait)
   }
 }
 
-static void cornerturn_2thread_8bit(unsigned char *outputBuffer, const unsigned char **threadBuffers, int outputDataSize)
+static void cornerturn_2thread_8bit(unsigned char *outputBuffer, const unsigned char * const *threadBuffers, int outputDataSize)
 {
   // interleave bytes
   int i, n;
@@ -1568,7 +1568,7 @@ static void cornerturn_2thread_8bit(unsigned char *outputBuffer, const unsigned 
   }
 }
 
-static void cornerturn_3thread_8bit(unsigned char *outputBuffer, const unsigned char **threadBuffers, int outputDataSize)
+static void cornerturn_3thread_8bit(unsigned char *outputBuffer, const unsigned char * const *threadBuffers, int outputDataSize)
 {
   // interleave bytes
   int i, n;
@@ -1586,7 +1586,7 @@ static void cornerturn_3thread_8bit(unsigned char *outputBuffer, const unsigned 
   }
 }
 
-static void cornerturn_4thread_8bit(unsigned char *outputBuffer, const unsigned char **threadBuffers, int outputDataSize)
+static void cornerturn_4thread_8bit(unsigned char *outputBuffer, const unsigned char * const *threadBuffers, int outputDataSize)
 {
   // interleave bytes
   int i, n;
@@ -1606,7 +1606,7 @@ static void cornerturn_4thread_8bit(unsigned char *outputBuffer, const unsigned 
   }
 }
 
-static void cornerturn_5thread_8bit(unsigned char *outputBuffer, const unsigned char **threadBuffers, int outputDataSize)
+static void cornerturn_5thread_8bit(unsigned char *outputBuffer, const unsigned char * const *threadBuffers, int outputDataSize)
 {
   // interleave bytes
   int i, n;
@@ -1628,7 +1628,7 @@ static void cornerturn_5thread_8bit(unsigned char *outputBuffer, const unsigned 
   }
 }
 
-static void cornerturn_6thread_8bit(unsigned char *outputBuffer, const unsigned char **threadBuffers, int outputDataSize)
+static void cornerturn_6thread_8bit(unsigned char *outputBuffer, const unsigned char * const *threadBuffers, int outputDataSize)
 {
   // interleave bytes
   int i, n;
@@ -1652,7 +1652,7 @@ static void cornerturn_6thread_8bit(unsigned char *outputBuffer, const unsigned 
   }
 }
 
-static void cornerturn_7thread_8bit(unsigned char *outputBuffer, const unsigned char **threadBuffers, int outputDataSize)
+static void cornerturn_7thread_8bit(unsigned char *outputBuffer, const unsigned char * const *threadBuffers, int outputDataSize)
 {
   // interleave bytes
   int i, n;
@@ -1678,7 +1678,7 @@ static void cornerturn_7thread_8bit(unsigned char *outputBuffer, const unsigned 
   }
 }
 
-static void cornerturn_8thread_8bit(unsigned char *outputBuffer, const unsigned char **threadBuffers, int outputDataSize)
+static void cornerturn_8thread_8bit(unsigned char *outputBuffer, const unsigned char * const *threadBuffers, int outputDataSize)
 {
   // interleave bytes
   int i, n;
@@ -1706,7 +1706,7 @@ static void cornerturn_8thread_8bit(unsigned char *outputBuffer, const unsigned 
   }
 }
 
-static void cornerturn_10thread_8bit(unsigned char *outputBuffer, const unsigned char **threadBuffers, int outputDataSize)
+static void cornerturn_10thread_8bit(unsigned char *outputBuffer, const unsigned char * const *threadBuffers, int outputDataSize)
 {
   // interleave bytes
   int i, n;
@@ -1738,7 +1738,7 @@ static void cornerturn_10thread_8bit(unsigned char *outputBuffer, const unsigned
   }
 }
 
-static void cornerturn_12thread_8bit(unsigned char *outputBuffer, const unsigned char **threadBuffers, int outputDataSize)
+static void cornerturn_12thread_8bit(unsigned char *outputBuffer, const unsigned char * const *threadBuffers, int outputDataSize)
 {
   // interleave bytes
   int i, n;
@@ -1774,7 +1774,7 @@ static void cornerturn_12thread_8bit(unsigned char *outputBuffer, const unsigned
   }
 }
 
-static void cornerturn_14thread_8bit(unsigned char *outputBuffer, const unsigned char **threadBuffers, int outputDataSize)
+static void cornerturn_14thread_8bit(unsigned char *outputBuffer, const unsigned char * const *threadBuffers, int outputDataSize)
 {
   // interleave bytes
   int i, n;
@@ -1814,7 +1814,7 @@ static void cornerturn_14thread_8bit(unsigned char *outputBuffer, const unsigned
   }
 }
 
-static void cornerturn_16thread_8bit(unsigned char *outputBuffer, const unsigned char **threadBuffers, int outputDataSize)
+static void cornerturn_16thread_8bit(unsigned char *outputBuffer, const unsigned char * const *threadBuffers, int outputDataSize)
 {
   // interleave bytes
   int i, n;
@@ -1859,7 +1859,7 @@ static void cornerturn_16thread_8bit(unsigned char *outputBuffer, const unsigned
 }
 
 
-static void (*getCornerTurner(int nThread, int nBit))(unsigned char *, const unsigned char **, int)
+static void (*getCornerTurner(int nThread, int nBit))(unsigned char *, const unsigned char * const *, int)
 {
 	if(nThread == 1)
 	{
@@ -2073,7 +2073,7 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 	int highestSortedDestIndex = -1;
 	int vhUnset = 1;
 
-	void (*cornerTurner)(unsigned char *, const unsigned char **, int);
+	void (*cornerTurner)(unsigned char *, const unsigned char * const *, int);
 
 	cornerTurner = getCornerTurner(nThread, nBit);
 	if(cornerTurner == 0)
@@ -2336,7 +2336,7 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 
 							if(p[7] != 0)
 							{
-								const unsigned char **threadBuffers2;
+								const unsigned char * const *threadBuffers2;
 
 								threadBuffers  = (const unsigned char **)(dest + outputFrameSize*e + VDIF_HEADER_BYTES);
 								threadBuffers2 = (const unsigned char **)(dest + outputFrameSize*f + VDIF_HEADER_BYTES);
@@ -2436,7 +2436,7 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 
 			if(mask != goodMask)
 			{
-				const unsigned char **threadBuffers = (const unsigned char **)(dest + outputFrameSize*f + VDIF_HEADER_BYTES);
+				const unsigned char * const *threadBuffers = (const unsigned char **)(dest + outputFrameSize*f + VDIF_HEADER_BYTES);
 				int t;
 				
 				highestDestIndex = f-1;
@@ -2468,7 +2468,7 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 
 			if(mask != goodMask)
 			{
-				const unsigned char **threadBuffers = (const unsigned char **)(dest + outputFrameSize*f + VDIF_HEADER_BYTES);
+				const unsigned char * const *threadBuffers = (const unsigned char **)(dest + outputFrameSize*f + VDIF_HEADER_BYTES);
 				int t;
 				
 				highestDestIndex = f-1;
@@ -2516,7 +2516,7 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 
 		if(mask == goodMask)
 		{
-			const unsigned char **threadBuffers = (const unsigned char **)(frame + VDIF_HEADER_BYTES);
+			const unsigned char * const *threadBuffers = (const unsigned char * const *)(frame + VDIF_HEADER_BYTES);
 
 			/* Note: The following function only works because all of the corner turners make a copy of the
 			 * thread pointers before beginning */
@@ -2610,7 +2610,7 @@ void resetvdifmuxstatistics(struct vdif_mux_statistics *stats)
 	}
 }
 
-static int testCornerTurn(const unsigned char *outputBuffer, const unsigned char **threadData, int outputBytes, int nt, int b)
+static int testCornerTurn(const unsigned char *outputBuffer, const unsigned char * const *threadData, int outputBytes, int nt, int b)
 {
 	int nError = 0;
 	int nSample = 8*outputBytes/b;	/* total samples in output stream */
@@ -2656,6 +2656,7 @@ static int testCornerTurn(const unsigned char *outputBuffer, const unsigned char
 
 void testvdifcornerturners(int outputBytes, int nTest)
 {
+	const char devRandom[] = "/dev/urandom";
 	const int bits[] = {1, 2, 4, 8, 0};
 	const int maxThreads = 16;
 	int bi;
@@ -2666,18 +2667,25 @@ void testvdifcornerturners(int outputBytes, int nTest)
 	for(t = 0; t < maxThreads; ++t)
 	{
 		FILE *in;
+		int nRead;
 		threadData[t] = (unsigned char *)malloc(outputBytes);
 		
 		/* fill with random values */
-		in = fopen("/dev/urandom", "r");
+		in = fopen(devRandom, "r");
 		if(!in)
 		{
-			fprintf(stderr, "Error: cannot open /dev/urandom\n");
+			fprintf(stderr, "Error: cannot open %s\n", devRandom);
 
 			return;
 		}
 
-		fread(threadData[t], 1, outputBytes, in);
+		nRead = fread(threadData[t], 1, outputBytes, in);
+		if(nRead <= 0)
+		{
+			fprintf(stderr, "Error: cannot read from %s\n", devRandom);
+
+			return;
+		}
 
 		fclose(in);
 	}
@@ -2690,7 +2698,7 @@ void testvdifcornerturners(int outputBytes, int nTest)
 		for(nt = -maxThreads; nt <= maxThreads; ++nt)
 		{
 			int i;
-			void (*cornerTurner)(unsigned char *, const unsigned char **, int);
+			void (*cornerTurner)(unsigned char *, const unsigned char * const *, int);
 			clock_t t0, t1;
 			int nError;
 			
@@ -2706,7 +2714,7 @@ void testvdifcornerturners(int outputBytes, int nTest)
 			t0 = clock();
 			for(i = 0; i < nTest; ++i)
 			{
-				cornerTurner(outputBuffer, threadData, outputBytes);
+				cornerTurner(outputBuffer, (const unsigned char * const*)threadData, outputBytes);
 			}
 			t1 = clock();
 			if(t1 > t0)
@@ -2718,7 +2726,7 @@ void testvdifcornerturners(int outputBytes, int nTest)
 				printf("Weird; took 0 time.");
 			}
 
-			nError = testCornerTurn(outputBuffer, threadData, outputBytes, abs(nt), b);
+			nError = testCornerTurn(outputBuffer, (const unsigned char * const*)threadData, outputBytes, abs(nt), b);
 			printf("   %d samples of %d were wrong.\n", nError, 8*outputBytes/b);
 		}
 	}

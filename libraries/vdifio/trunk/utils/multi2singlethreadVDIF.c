@@ -177,7 +177,7 @@ int main(int argc, char **argv)
   int * threadindexmap; // [numthreads]
   int f, i, j, k, l, verbose, processindex;
   unsigned int copyword, activemask;
-  int wordsperinputframe, samplesperinputword, samplesperoutputword, numinputthreads, framesinbuffer, nmissing, totalmissing;
+  int wordsperinputframe, samplesperinputword, samplesperoutputword, numinputthreads, framesinbuffer, nmissing, totalmissing = 0;
   long long processframenumber;
   vdif_header *header;
 

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2013 by Walter Brisken                                  *
+ *   Copyright (C) 2014 by Walter Brisken                                  *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -51,7 +51,13 @@ int main(int argc, char **argv)
 	int outputBytes = 100000;
 	int nTest = 10000;
 
+	if(argc > 1 && (strcmp(argv[1], "--help") == 0 || strcmp(argv[1], "-h") == 0))
+	{
+		usage(argv[0]);
+		return EXIT_SUCCESS;
+	}
+
 	testvdifcornerturners(outputBytes, nTest);
 
-	return 0;
+	return EXIT_SUCCESS;
 }

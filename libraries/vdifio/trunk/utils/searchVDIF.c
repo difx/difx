@@ -50,7 +50,7 @@ int main(int argc, char **argv)
 {
   char buffer[MAX_VDIF_FRAME_BYTES];
   FILE * input;
-  int readbytes, framebytes, framemjd, framesecond, framenumber, frameinvalid, datambps, framespersecond;
+  int readbytes, framebytes, framemjd, framesecond, framenumber, frameinvalid;
   int packetdropped, expectedframebytes;
   off_t byteshift;
   long long bytecount, lastbytecount;
@@ -85,6 +85,10 @@ int main(int argc, char **argv)
   lastbytecount = 0;
   while(!feof(input)) {
     readbytes = fread(buffer, 1, VDIF_HEADER_BYTES, input); //read the VDIF header
+    if(readbytes <= 0)
+    {
+      break;
+    }
     framebytes = getVDIFFrameBytes((vdif_header *)buffer);
     framemjd = getVDIFFrameMJD((vdif_header *)buffer);
     framesecond = getVDIFFrameSecond((vdif_header *)buffer);
@@ -102,7 +106,7 @@ int main(int argc, char **argv)
     bytecount += byteshift;
     fseeko(input, byteshift-32, SEEK_CUR); //go back to the start
   }
-  printf("Read %ll bytes\n", bytecount);
+  printf("Read %lld bytes\n", bytecount);
   fclose(input);
 
   return EXIT_SUCCESS;
