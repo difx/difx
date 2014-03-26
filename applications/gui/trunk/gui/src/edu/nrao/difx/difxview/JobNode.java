@@ -702,12 +702,17 @@ public class JobNode extends QueueBrowserNode {
         return false;
     }
     
-    public void consumeMessage( DifxMessage difxMsg ) {
+    public void consumeMessage( DifxMessage difxMsg, boolean unknown ) {
         
         //  If this job is "running" (it was started by the job editor/monitor) 
-        //  then send the message to the monitor.
-        updateEditorMonitor( 1000 );
-        _editorMonitor.consumeMessage( difxMsg );
+        //  then send the message to the monitor.  We don't want to do this if the
+        //  job is "unknown" (which is to say we didn't create it) because the
+        //  editor/monitor is meaningless.
+        if ( !unknown )
+            updateEditorMonitor( 1000 );
+        
+        if ( _editorMonitor != null )
+            _editorMonitor.consumeMessage( difxMsg );
         
         //  Got something...
         _networkActivity.data();
@@ -731,7 +736,7 @@ public class JobNode extends QueueBrowserNode {
             if ( !lockState() ) {
                 _state.setText( difxMsg.getBody().getDifxStatus().getState() );
                 if ( _state.getText().equalsIgnoreCase( "done" ) || _state.getText().equalsIgnoreCase( "mpidone" ) ) {
-                    if ( _editorMonitor.doneWithErrors() ) {
+                    if ( _editorMonitor != null && _editorMonitor.doneWithErrors() ) {
                         _state.setBackground( Color.ORANGE );
                         _state.setText( "complete w/errors");
                         _state.setToolTipText( "The job completed with some errors." );

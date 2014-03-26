@@ -1593,6 +1593,7 @@ public class QueueBrowserPanel extends TearOffPanel {
 
             //  If we didn't find this job, create an entry for it in the "unaffiliated"
             //  project (which we might have to create if it doesn't exist!).
+            boolean unknownJob = false;
             if ( thisJob == null ) {
                 if ( _unaffiliated == null ) {
                     _unaffiliated = new ExperimentNode( "Jobs Outside Queue", _settings );
@@ -1606,10 +1607,11 @@ public class QueueBrowserPanel extends TearOffPanel {
                 _unknown.addChild( thisJob );
                 thisJob.passNode( _unknown );
                 _header.addJob( thisJob );
+                unknownJob = true;
             }
 
             //  Send the message to the job node.
-            thisJob.consumeMessage( difxMsg );
+            thisJob.consumeMessage( difxMsg, unknownJob );
         
         }
         
