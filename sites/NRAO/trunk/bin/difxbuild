@@ -11,8 +11,8 @@ from time import asctime
 from glob import glob
 
 program = 'difxbuild'
-version = '0.39'
-verdate = '20140125'
+version = '0.40'
+verdate = '20140326'
 author = 'Walter Brisken <wbrisken@nrao.edu>'
 
 difxbuildUrl = 'http://www.aoc.nrao.edu/~wbrisken/difxbuild'
@@ -170,10 +170,16 @@ Bootstrap parameter options include:
   the default of "-O2 -Wall -march=core2" will be used.
 
 * pathextra: extra binary search paths to add the the PATH environment
-  variable that is set in the setup_difx script.
+  variable that is set in the setup_difx script.  These are added to the end
+  of the path list.
+
+* prepathextra: like pathextra, but added before the existing PATH
 
 * ldextra: extra paths to be added to the LD_LIBRARY_PATH environment
-  variable that is set in the setup_difx script.
+  variable that is set in the setup_difx script.  These are added to the
+  end of the list.
+
+* preldextra: like ldextra but to be prepended
 
 * symlinkdir: a path where sym links to startup scripts will be created.
   This is useful if the default bin path is not in the execute path of
@@ -1476,12 +1482,20 @@ def bootstrap(comps, params, args, verbose, pretend):
 			pathExtra = ':%s' % config['pathextra']
 		else:
 			pathExtra = ''
-		out.write('export PATH=./:${DIFX_ARCH_ROOT}/bin:${DIFXROOT}/bin:${DIFX_BASE}/bin:~/bin:/bin:/usr/bin%s\n' % pathExtra)
+		if config.has_key('prepathextra'):
+			prepathExtra = '%s:' % config['prepathextra']
+		else:
+			prepathExtra = ''
+		out.write('export PATH=%s/./:${DIFX_ARCH_ROOT}/bin:${DIFXROOT}/bin:${DIFX_BASE}/bin:~/bin:/bin:/usr/bin%s\n' % (prepathExtra, pathExtra))
 		if config.has_key('ldextra'):
 			ldExtra = ':%s' % config['ldextra']
 		else:
 			ldExtra = ''
-		out.write('export LD_LIBRARY_PATH=${DIFX_ARCH_ROOT}/lib:/lib:/usr/lib:${DIFXROOT}/lib:${IPPROOT}/lib/${IPPARCH}:${IPPROOT}/ipp/lib/${IPPARCH}%s:${PGPLOT_DIR}\n' % ldExtra)
+		if config.has_key('preldextra'):
+			preldExtra = '%s:' % config['preldextra']
+		else:
+			preldExtra = ''
+		out.write('export LD_LIBRARY_PATH=%s${DIFX_ARCH_ROOT}/lib:/lib:/usr/lib:${DIFXROOT}/lib:${IPPROOT}/lib/${IPPARCH}:${IPPROOT}/ipp/lib/${IPPARCH}%s:${PGPLOT_DIR}\n' % (preldExtra, ldExtra))
 
 		for e in env:
 			out.write('export %s=%s\n' % (e[0], e[1]))
