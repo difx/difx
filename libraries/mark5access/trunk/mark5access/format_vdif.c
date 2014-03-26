@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2012 by Walter Brisken, Adam Deller, Chris Phillips*
+ *   Copyright (C) 2009-2014 by Walter Brisken, Adam Deller, Chris Phillips*
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -3943,19 +3943,16 @@ int find_vdif_frame(const unsigned char *data, size_t length, size_t *offset, in
 			unsigned int secA, secB;
 			unsigned int refEpochA, refEpochB;
 			unsigned int fsA, fsB;
-			unsigned int edvA, edvB;
 			const unsigned int *frame;
 
 			frame = ((unsigned int *)data) + *offset/4;
 			secA      = frame[0] & 0x3FFFFFFF;
 			refEpochA = (frame[1] >> 24) & 0x3F;
 			fsA       = (frame[2] & 0x00FFFFFF) << 3;
-			edvA      = frame[4] >> 24;
 			frame += fs/4;
 			secB      = frame[0] & 0x3FFFFFFF;
 			refEpochB = (frame[1] >> 24) & 0x3F;
 			fsB       = (frame[2] & 0x00FFFFFF) << 3;
-			edvB      = frame[4] >> 24;
 
 			/* does it look reasonable? */
 			if(fsA == fs && fsB == fs && refEpochA == refEpochB && (secA == secB || secA+1 == secB))

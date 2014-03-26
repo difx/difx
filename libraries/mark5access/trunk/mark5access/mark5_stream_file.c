@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2006-2013 by Walter Brisken                             *
+ *   Copyright (C) 2006-2014 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -298,6 +298,12 @@ static int mark5_stream_file_seek(struct mark5_stream *ms, long long framenum)
 	ms->frame = F->buffer;
 
 	sook = lseek(F->in, pos, SEEK_SET);
+	if(sook < 0)
+	{
+		fprintf(stderr, "Seek error: pos=%Ld\n", (long long int)pos);
+
+		return -1;
+	}
 
 	status = mark5_stream_file_fill(ms, 0, F->fetchsize);
 	if(status < 0)

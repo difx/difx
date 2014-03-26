@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2013 by Walter Brisken                                  *
+ *   Copyright (C) 2013-2014 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -56,6 +56,7 @@ static void usage(const char *pgm)
 
 int main(int argc, char **argv)
 {
+	const int PathSize = 1000;
 	int fixday = 0;
 	int shortsum = 0;
 
@@ -107,20 +108,28 @@ int main(int argc, char **argv)
 					if(shortsum)
 					{
 						double mjd1, mjd2;
-						char filename[1000];
+						char filename[PathSize];
 
 						mjd1 = sum.startDay + sum.startSecond/86400.0 + sum.startFrame/(86400.0*sum.framesPerSecond);
 						mjd2 = sum.endDay + sum.endSecond/86400.0 + sum.endFrame/(86400.0*sum.framesPerSecond);
 
 						if(argv[a][0] != '/')
 						{
-							char path[1000];
-							getcwd(path, 1000);
-							snprintf(filename, 1000, "%s/%s", path, argv[a]);
+							char path[PathSize];
+							char *rv;
+							
+							rv = getcwd(path, PathSize);
+							if(!rv)
+							{
+								fprintf(stderr, "Weird: getcwd returned null!  Cannot continue.\n");
+
+								exit(EXIT_FAILURE);
+							}
+							snprintf(filename, PathSize, "%s/%s", path, argv[a]);
 						}
 						else
 						{
-							snprintf(filename, 1000, "%s", argv[a]);
+							snprintf(filename, PathSize, "%s", argv[a]);
 						}
 						printf("%s %14.8f %14.8f\n", filename, mjd1, mjd2);
 					}
