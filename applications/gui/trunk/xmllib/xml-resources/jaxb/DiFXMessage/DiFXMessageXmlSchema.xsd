@@ -324,6 +324,7 @@
                 <xsd:element ref="baselineCheck" />
                 <xsd:element ref="jobCheck" />
                 <xsd:element ref="sequentialCheck" />
+                <xsd:element ref="maxJobs" />
                 <xsd:element ref="simultaneousCheck" />
                 <xsd:element ref="runLogCheck" />
                 <xsd:element ref="runLogFile" />
@@ -568,6 +569,7 @@
     <xsd:element name="baselineCheck" type="xsd:boolean"></xsd:element>
     <xsd:element name="jobCheck" type="xsd:boolean"></xsd:element>
     <xsd:element name="sequentialCheck" type="xsd:boolean"></xsd:element>
+    <xsd:element name="maxJobs" type="xsd:int"></xsd:element>
     <xsd:element name="simultaneousCheck" type="xsd:boolean"></xsd:element>
     <xsd:element name="runLogCheck" type="xsd:boolean"></xsd:element>
     <xsd:element name="runLogFile" type="xsd:string"></xsd:element>

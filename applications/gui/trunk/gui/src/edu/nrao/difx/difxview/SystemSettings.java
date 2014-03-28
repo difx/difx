@@ -1064,6 +1064,7 @@ public class SystemSettings extends JFrame {
             public void actionPerformed( ActionEvent e ) {
                 _sequentialCheck.setSelected( true );
                 _simultaneousCheck.setSelected( false );
+                _maxJobs.setEnabled( false );
             }
         } );
         _simultaneousCheck = new ZCheckBox( "Simultaneously" );
@@ -1072,12 +1073,22 @@ public class SystemSettings extends JFrame {
             public void actionPerformed( ActionEvent e ) {
                 _sequentialCheck.setSelected( false );
                 _simultaneousCheck.setSelected( true );
+                _maxJobs.setEnabled( true );
             }
         } );
         _simultaneousCheck.toolTip( "Jobs run using the scheduler will be run simultaneously\n"
                 + "when resources sufficient to meet their default run criteria\n"
                 + "are available.", null );
         jobSettingsPanel.add( _simultaneousCheck );
+        _maxJobs = new NumberBox();
+        _maxJobs.setBounds( 295, 325, 50, 25 );
+        _maxJobs.minimum( 1 );
+        _maxJobs.precision( 0 );
+        _maxJobs.toolTip( "Maximum number of jobs to run simultaneously", null );
+        jobSettingsPanel.add( _maxJobs );
+        JLabel maxJobsLabel = new JLabel( "Maximum" );
+        maxJobsLabel.setBounds( 350, 325, 100, 25 );
+        jobSettingsPanel.add( maxJobsLabel );
         JLabel runLogLabel = new JLabel( "Run Log Settings:" );
         runLogLabel.setBounds( 30, 355, 200, 25 );
         runLogLabel.setFont( new Font( processingLabel.getFont().getFamily(), Font.BOLD, processingLabel.getFont().getSize() ) );
@@ -1922,6 +1933,7 @@ public class SystemSettings extends JFrame {
         _jobCheck.setSelected( false );
         _sequentialCheck.setSelected( false );
         _simultaneousCheck.setSelected( true );
+        _maxJobs.intValue( 3 );
         _runLogCheck.setSelected( true );
         _runLogFile.setText( System.getProperty( "user.home" ) + "/.difxGuiRunLog" );
         _queueBrowserSettings.showCompleted = true;
@@ -2935,6 +2947,9 @@ public class SystemSettings extends JFrame {
             _jobCheck.setSelected( doiConfig.isJobCheck() );
             _sequentialCheck.setSelected( doiConfig.isSequentialCheck() );
             _simultaneousCheck.setSelected( !doiConfig.isSimultaneousCheck() );
+            _maxJobs.setEnabled( !doiConfig.isSimultaneousCheck() );
+            if ( doiConfig.getMaxJobs() != 0 )
+                _maxJobs.intValue( doiConfig.getMaxJobs() );
             _runLogCheck.setSelected( !doiConfig.isRunLogCheck() );
             if ( doiConfig.getRunLogFile() != null )
                 _runLogFile.setText( doiConfig.getRunLogFile() );
@@ -3617,6 +3632,7 @@ public class SystemSettings extends JFrame {
         doiConfig.setBaselineCheck( !_baselineCheck.isSelected() );
         doiConfig.setJobCheck( _jobCheck.isSelected() );
         doiConfig.setSequentialCheck( _sequentialCheck.isSelected() );
+        doiConfig.setMaxJobs( _maxJobs.intValue() );
         doiConfig.setSimultaneousCheck( !_simultaneousCheck.isSelected() );
         doiConfig.setRunLogCheck( !_runLogCheck.isSelected() );
         doiConfig.setRunLogFile( _runLogFile.getText() );
@@ -5300,6 +5316,7 @@ public class SystemSettings extends JFrame {
     protected ZCheckBox _jobCheck;
     protected ZCheckBox _sequentialCheck;
     protected ZCheckBox _simultaneousCheck;
+    protected NumberBox _maxJobs;
     protected ZCheckBox _runLogCheck;
     protected FormattedTextField _runLogFile;
     
@@ -5323,6 +5340,7 @@ public class SystemSettings extends JFrame {
     public boolean simultaneousCheck() { return _simultaneousCheck.isSelected(); }
     public boolean runLogCheck() { return _runLogCheck.isSelected(); }
     public String runLogFile() { return _runLogFile.getText(); }
+    public int maxJobs() { return _maxJobs.intValue(); }
 
     protected String _invisibleProcessors;
     protected String _invisibleProcessorCores;

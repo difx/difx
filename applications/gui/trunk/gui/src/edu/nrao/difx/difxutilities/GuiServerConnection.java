@@ -61,7 +61,6 @@ public class GuiServerConnection {
     public final int DIFX_RUN_LABEL                 = 15;
     public final int GUISERVER_USER                 = 16;
 
-    
     public GuiServerConnection( SystemSettings settings, String IP, int port, int timeout ) {
         _settings = settings;
         _connectListeners = new EventListenerList();
@@ -70,6 +69,7 @@ public class GuiServerConnection {
     }
     
     public boolean connect() {
+        boolean ret = true;
         try {
             _socket = new Socket( _settings.difxControlAddress(), _settings.difxControlPort() );
             _socket.setSoTimeout( _settings.timeout() );
@@ -82,14 +82,15 @@ public class GuiServerConnection {
             //  Request guiServer version information...and anything else it wants
             //  to tell us at startup.
             sendPacket( GUISERVER_VERSION, 0, null );
-            return true;
+            ret = true;
         } catch ( java.net.UnknownHostException e ) {
             _connected = false;
-            return false;
+            ret = false;
         } catch ( java.io.IOException e ) {
             _connected = false;
-            return false;
+            ret = false;
         }
+        return ret;
     }
     
     public String myIPAddress() {
@@ -174,6 +175,8 @@ public class GuiServerConnection {
     protected class ReceiveThread extends Thread {
         
         public void run() {
+            int lastNBytes = 0;
+            int lastID = 0;
             while ( _connected ) {
                 byte[] data = null;
                 try {
@@ -181,11 +184,12 @@ public class GuiServerConnection {
                     int nBytes = _in.readInt();
                     if ( nBytes > WARNING_SIZE || nBytes < 0 ) {
                         java.util.logging.Logger.getLogger("global").log(java.util.logging.Level.WARNING, 
-                                "trying to read (" + nBytes + " of data) - packetID is " + packetId );
+                                "trying to read (" + nBytes + " of data) - packetID is " + packetId + " last is " + lastID + "(" + lastNBytes + ")" );
                         java.util.logging.Logger.getLogger("global").log(java.util.logging.Level.WARNING, 
                                 "Message has NOT BEEN READ" );
                     }
                     else {
+                        lastNBytes = nBytes;
                         data = new byte[nBytes];
                         _in.readFully( data );
                         //  Sort out what to do with this packet.
@@ -242,7 +246,7 @@ public class GuiServerConnection {
                     _connected = false;
                     connectEvent( e.toString() );
                 }
-            try { Thread.sleep( 2 ); } catch ( Exception e ) {}
+            //try { Thread.sleep( 2 ); } catch ( Exception e ) {}
             }
         }
         

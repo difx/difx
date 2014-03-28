@@ -1608,7 +1608,7 @@ public class QueueBrowserPanel extends TearOffPanel {
                 _header.addJob( thisJob );
             }
             
-            boolean unknownJob = thisJob.passNode().experimentNode().name().contentEquals( "Jobs Outside Queue" );
+            boolean unknownJob = ( thisJob == null || thisJob.passNode() == null || thisJob.passNode() == _unknown );
 
             //  Send the message to the job node.
             thisJob.consumeMessage( difxMsg, unknownJob );
@@ -1792,12 +1792,16 @@ public class QueueBrowserPanel extends TearOffPanel {
                     //  we should not for "done" jobs).
                     boolean runningJob = false;
                     int scheduleCount = 0;
+                    int runningCount = 0;
                     for ( Iterator<JobNode> iter = _scheduleQueue.iterator(); iter.hasNext(); ) {
                         JobNode thisJob = iter.next();
                         //  If we are only supposed to run one job at a time, we need to know if any jobs
                         //  are running or in the process of allocating resources.
-                        if ( thisJob.autostate() == JobNode.AUTOSTATE_INITIALIZING || thisJob.autostate() == JobNode.AUTOSTATE_RUNNING )
+                        if ( thisJob.autostate() == JobNode.AUTOSTATE_INITIALIZING || thisJob.autostate() == JobNode.AUTOSTATE_RUNNING ) {
                             runningJob = true;
+                            if ( thisJob.autostate() == JobNode.AUTOSTATE_RUNNING )
+                                ++runningCount;
+                        }
                         else if ( thisJob.autostate() == JobNode.AUTOSTATE_SCHEDULED ) {
                             ++scheduleCount;
                             thisJob.state().setText( "Scheduled (" + scheduleCount + ")" );
@@ -1807,8 +1811,9 @@ public class QueueBrowserPanel extends TearOffPanel {
                             iter.remove();
                     }
                     //  If any jobs are running and we are only supposed to run jobs sequentially,
-                    //  we are done for this cycle.
-                    if ( !_settings.sequentialCheck() || !runningJob ) { 
+                    //  we are done for this cycle.  Also bail out if we are running as many jobs
+                    //  as our maximum limit of simultaneous jobs.
+                    if ( ( !_settings.sequentialCheck() && runningCount < _settings.maxJobs() ) || !runningJob ) { 
                         //  Look at the remaining jobs in the queue and run them according to scheduling
                         //  rules.  We run only one at a time for each cycle of the scheduler.  First see
                         //  if any are ready to run.
