@@ -50,6 +50,8 @@ import java.io.BufferedWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 
 import java.util.*;
 import java.util.List;
@@ -1082,6 +1084,16 @@ public class JobEditorMonitor extends JFrame {
         command.identifier( _jobNode.name() );
         int monitorPort = 0;
 
+        //  If the headnode is not to be used, generate an IP address for it so that
+        //  we can compare other nodes to it.
+        InetAddress headnodeAddr = null;
+        if ( _restrictHeadnodeProcessing.isSelected() ) {
+            try {
+                headnodeAddr = InetAddress.getByName( _headNode.getText() );
+            } catch ( UnknownHostException e ) {
+            }
+        }
+
         //  We are going to test processor nodes, so remove the results of any previous
         //  tests.
         for ( Iterator<BrowserNode> iter = _processorsPane.browserTopNode().children().iterator();
@@ -1128,8 +1140,25 @@ public class JobEditorMonitor extends JFrame {
                 iter.hasNext(); ) {
             PaneProcessorNode thisNode = (PaneProcessorNode)(iter.next());
             if ( thisNode.selected() ) {
+                //  Generate an IP address for this node if we need to compare it to that of the headnode.
+                //  Then see if they match.
+                InetAddress thisAddr = null;
+                boolean headnodeMatch = false;
+                if ( headnodeAddr != null ) {
+                    try {
+                        thisAddr = InetAddress.getByName( thisNode.name() );
+                        headnodeMatch = true;
+                        if ( thisAddr.getAddress().length != headnodeAddr.getAddress().length )
+                            headnodeMatch = false;
+                        for ( int i = 0; i < thisAddr.getAddress().length && headnodeMatch == true; ++i ) {
+                            if ( thisAddr.getAddress()[i] != headnodeAddr.getAddress()[i] )
+                                headnodeMatch = false;
+                        }
+                    } catch ( UnknownHostException e ) {
+                    }
+                }
                 //  Avoid the headnode - if there are other nodes
-                if ( _restrictHeadnodeProcessing.isSelected() && thisNode.name().contentEquals( _headNode.getText() ) &&
+                if ( _restrictHeadnodeProcessing.isSelected() && headnodeMatch &&
                         _processorsPane.browserTopNode().children().size() > 1 ) {}
                 else {
                     DifxMachinesDefinition.Process process = command.factory().createDifxMachinesDefinitionProcess();
@@ -2299,6 +2328,16 @@ public class JobEditorMonitor extends JFrame {
      */
     public void loadHardwareLists() {
         
+        //  If the headnode is not to be used, generate an IP address for it so that
+        //  we can compare other nodes to it.
+        InetAddress headnodeAddr = null;
+        if ( _restrictHeadnodeProcessing.isSelected() ) {
+            try {
+                headnodeAddr = InetAddress.getByName( _headNode.getText() );
+            } catch ( UnknownHostException e ) {
+            }
+        }
+        
         //  We need to "relocate" everything in the existing processor list, so unset a
         //  "found" flag for each.
         for ( Iterator<BrowserNode> iter = _processorsPane.browserTopNode().children().iterator();
@@ -2324,7 +2363,25 @@ public class JobEditorMonitor extends JFrame {
                 if ( foundNode == null ) {
                     PaneProcessorNode newNode = new PaneProcessorNode( thisModule.name() );
                     newNode.cores( ((ProcessorNode)(thisModule)).numCores() );
-                    if ( _restrictHeadnodeProcessing.isSelected() && thisModule.name().equalsIgnoreCase( _headNode.getText() ) )
+                    //  Generate an IP address for this node if we need to compare it to that of the headnode.
+                    //  Then see if they match.
+                    InetAddress thisAddr = null;
+                    boolean headnodeMatch = false;
+                    if ( headnodeAddr != null ) {
+                        try {
+                            thisAddr = InetAddress.getByName( thisModule.name() );
+                            headnodeMatch = true;
+                            if ( thisAddr.getAddress().length != headnodeAddr.getAddress().length )
+                                headnodeMatch = false;
+                            for ( int i = 0; i < thisAddr.getAddress().length && headnodeMatch == true; ++i ) {
+                                if ( thisAddr.getAddress()[i] != headnodeAddr.getAddress()[i] )
+                                    headnodeMatch = false;
+                            }
+                        } catch ( UnknownHostException e ) {
+                        }
+                    }
+                    //  Eliminate this node if it matches the headnode and we aren't using the headnode.
+                    if ( _restrictHeadnodeProcessing.isSelected() && headnodeMatch )
                         newNode.threads( 0 );
                     else {
                         if ( ((ProcessorNode)(thisModule)).numCores() > 1 )
