@@ -56,6 +56,7 @@
  * Changelog:
  *   05Oct2009 - added support for arbitrary input segment lengths
  *   08oct2009 - added Briskens rotationless method
+ *   19Mar2014 - added support for extraction from complex samples
  *
  ********************************************************************************************************/
 
@@ -238,6 +239,65 @@ class PCalExtractorImplicitShift : public PCal {
        * @return true on success, false if results were frozen by calling getFinalPCal()
        */
       bool extractAndIntegrate(f32 const* samples, const size_t len);
+
+      /**
+       * Computes the final extraction result. No more sample data can be added.
+       * The PCal extraction results are copied into the specified output array.
+       *
+       * @param out Pointer to user PCal array with getLength() values
+       * @return number of samples that were integrated for the result
+       */
+      uint64_t getFinalPCal(cf32* out);
+};
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+// DERIVED CLASS: extraction of PCal signals with complex samples and non-zero offset
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+class PCalExtractorComplex : public PCal {
+   public:
+      PCalExtractorComplex(double bandwidth_hz, double pcal_spacing_hz, int pcal_offset_hz, int lsb);
+      ~PCalExtractorComplex();
+   private:
+      PCalExtractorComplex& operator= (const PCalExtractorComplex& o); /* no copy */
+      PCalExtractorComplex(const PCalExtractorComplex& o); /* no copy */
+
+   public:
+      /**
+       * Clear the extracted and accumulated PCal data by setting it to zero.
+       */
+      void clear();
+
+      /**
+       * Adjust the sample offset.
+       *
+       * The extractor needs a time-continuous input sample stream. Samples
+       * are numbered 0...N according to their offset from the start of the 
+       * stream. The stream can be split into smaller chunks that
+       * are added individually through several extractAndIntegrate() calls.
+       *
+       * If for some reason two chunks are not continuous in time,
+       * some internal indices need to be corrected by calling this
+       * function and specifying at what sample number the next
+       * chunk passed to extractAndIntegrate() starts.
+       *
+       * @param sampleoffset sample offset of chunk passed to next extractAndIntegrate() call
+       */
+      void adjustSampleOffset(const size_t sampleoffset);
+
+      /**
+       * Process a new chunk of time-continuous single channel data.
+       * Time-integrates the data into the internal result buffer.
+       *
+       * If this function is called several times to integrate additional data
+       * and these multiple pieces of data are not continuous in time,
+       * please see adjustSampleOffset().
+       *
+       * @param samples Chunk of the input signal consisting of 'float' samples
+       * @param len     Length of the input signal chunk
+       * @return true on success, false if results were frozen by calling getFinalPCal()
+       */
+      bool extractAndIntegrate (f32 const* samples, const size_t len);
 
       /**
        * Computes the final extraction result. No more sample data can be added.

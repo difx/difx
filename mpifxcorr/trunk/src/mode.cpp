@@ -405,9 +405,11 @@ Mode::Mode(Configuration * conf, int confindex, int dsindex, int recordedbandcha
 
       pcalOffset = config->getDRecordedFreqPCalOffsetsHz(configindex, dsindex, localfreqindex);
 
+      int lsb = config->getDRecordedLowerSideband(configindex, datastreamindex, i);
+
       extractor[i] = PCal::getNew(1e6*recordedbandwidth, 
                                   1e6*config->getDPhaseCalIntervalMHz(configindex, datastreamindex),
-                                      pcalOffset, 0);
+                                      pcalOffset, 0, usecomplex, lsb);
 
       estimatedbytes += extractor[i]->getEstimatedBytes();
 
@@ -718,9 +720,12 @@ float Mode::process(int index, int subloopindex)  //frac sample error is in micr
       for(int i=0;i<numrecordedbands;i++)
       {
         extractor[i]->adjustSampleOffset(datasamples+nearestsample);
-        // status = extractor[i]->extractAndIntegrate(unpackedarrays[i], unpacksamples);
-	status = extractor[i]->extractAndIntegrate(&(unpackedarrays[i][nearestsample
-	    - unpackstartsamples]), fftchannels);
+        if (!usecomplex)
+	        status = extractor[i]->extractAndIntegrate (&(unpackedarrays[i][nearestsample
+	                 - unpackstartsamples]), fftchannels);
+        else
+	        status = extractor[i]->extractAndIntegrate ((f32 *) (&(unpackedcomplexarrays[i][nearestsample
+	                 - unpackstartsamples])), fftchannels);
         if(status != true)
           csevere << startl << "Error in phase cal extractAndIntegrate" << endl;
       }
@@ -1111,8 +1116,10 @@ float Mode::process(int index, int subloopindex)  //frac sample error is in micr
 		if (usedouble) {
 		  status = vectorFlip_cf32(fftd, fftoutputs[j][subloopindex], recordedbandchannels/2);
 		  status = vectorFlip_cf32(&fftd[recordedbandchannels/2], &fftoutputs[j][subloopindex][recordedbandchannels/2], recordedbandchannels/2);
-		} else
-		  status = vectorFlip_cf32(fftd, fftoutputs[j][subloopindex], recordedbandchannels);
+		} else {
+              status = vectorCopy_cf32(&(fftd[1]), fftoutputs[j][subloopindex], recordedbandchannels - 1);
+              fftoutputs[j][subloopindex][recordedbandchannels - 1] = fftd[0];
+              }
 	      } else {
 		status = vectorCopy_cf32(&(fftd[recordedbandchannels + 1]), fftoutputs[j][subloopindex], recordedbandchannels - 1);
 		fftoutputs[j][subloopindex][recordedbandchannels - 1] = fftd[0];
