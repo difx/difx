@@ -142,7 +142,9 @@ int main(int argc, const char * argv[])
       cerr << "Reader: at segmenmt "<<atsegment<<endl;
     }
     record = (DifxMessageSTARecord *)(starecords[atsegment]);
-    fprintDifxMessageSTARecord(stderr,record,0);
+    if (debug) {
+      fprintDifxMessageSTARecord(stderr,record,0);
+    }
 
     //check it belongs to us
     if(strcmp(record->identifier, jobname.c_str()) == 0) {
