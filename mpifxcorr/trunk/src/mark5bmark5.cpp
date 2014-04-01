@@ -590,7 +590,19 @@ void Mark5BMark5DataStream::initialiseFile(int configindex, int fileindex)
 		}
 	}
 
-        if(readpointer == -1)
+	if(readpointer >= 0)
+	{
+		cinfo << startl << "The frame start day is " << scanPointer->mjd << ", the frame start seconds is " << scanPointer->secStart() << ", readscan is " << readscan << ", readseconds is " << readseconds << ", readnanoseconds is " << readnanoseconds << ", readpointer is " << readpointer << endl;
+
+		if(module.scans[scanNum].format != MK5_FORMAT_MARK5B)
+		{
+			cerror << startl << "Error! A Mark5B scan was expected (based on the .input file), but the scan for the matching time is not Mark5B formatted!  The actual format number (as found in the .dir file) is: " << module.scans[scanNum].format << endl;
+
+			readpointer = -1;
+		}
+	}
+
+        if(readpointer <= -1)
         {
 		cwarn << startl << "initialiseFile: No data for this job on this module" << endl;
 		scanPointer = 0;
@@ -606,10 +618,6 @@ void Mark5BMark5DataStream::initialiseFile(int configindex, int fileindex)
 
 		return;
         }
-	else
-	{
-		cinfo << startl << "The frame start day is " << scanPointer->mjd << ", the frame start seconds is " << scanPointer->secStart() << ", readscan is " << readscan << ", readseconds is " << readseconds << ", readnanoseconds is " << readnanoseconds << ", readpointer is " << readpointer << endl;
-	}
 
 	sendMark5Status(MARK5_STATE_GOTDIR, readpointer, scanPointer->mjdStart(), 0.0);
 

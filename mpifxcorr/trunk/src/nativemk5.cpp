@@ -544,24 +544,48 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
 		cinfo << startl << "Scan info. start = " << scanPointer->start << " off = " << scanPointer->frameoffset << " size = " << scanPointer->framebytes << endl;
 	}
 
-        if(readpointer == -1)
+	if(readpointer >= 0)
+	{
+		cinfo << startl << "The frame start day is " << scanPointer->mjd << ", the frame start seconds is " << scanPointer->secStart() << ", readscan is " << readscan << ", readseconds is " << readseconds << ", readnanoseconds is " << readnanoseconds << ", readpointer is " << readpointer << endl;
+
+		/* look for format mismatch */
+		if( (format == Configuration::MARK5B   && module.scans[scanNum].format != MK5_FORMAT_MARK5B) ||
+		    (format == Configuration::VDIF     && module.scans[scanNum].format != MK5_FORMAT_VDIF)   ||
+		    (format == Configuration::VDIFL    && module.scans[scanNum].format != MK5_FORMAT_VDIFL)  ||
+		    (format == Configuration::VLBA     && module.scans[scanNum].format != MK5_FORMAT_VLBA)   ||
+		    (format == Configuration::VLBN     && module.scans[scanNum].format != MK5_FORMAT_VLBA)   ||
+		    (format == Configuration::MKIV     && module.scans[scanNum].format != MK5_FORMAT_MARK4)  ||
+		    (format == Configuration::K5VSSP   && module.scans[scanNum].format != MK5_FORMAT_K5)     ||
+		    (format == Configuration::K5VSSP32 && module.scans[scanNum].format != MK5_FORMAT_K5)     ||
+		    (format == Configuration::KVN5B    && (module.scans[scanNum].format != MK5_FORMAT_MARK5B || module.scans[scanNum].format != MK5_FORMAT_KVN5B))
+		    )
+
+		{
+			cerror << startl << "Error! A " << formatname << " scan was expected (based on the .input file), but the scan for the matching time is not in " << formatname << " format!  The actual format number (as found in the .dir file) is: " << module.scans[scanNum].format << endl;
+
+			readpointer = -1;
+		}
+	}
+
+        if(readpointer <= -1)
         {
-		cwarn << startl << "No data for this job on this module" << endl;
+		cwarn << startl << "initialiseFile: No data for this job on this module" << endl;
 		scanPointer = 0;
+		scanNum = 0;
 		dataremaining = false;
 		keepreading = false;
 		noMoreData = true;
+		readseconds = 0;
+		readnanoseconds = 0;
 		sendMark5Status(MARK5_STATE_NOMOREDATA, 0, 0.0, 0.0);
 
 		return;
         }
 
 	sendMark5Status(MARK5_STATE_GOTDIR, readpointer, scanPointer->mjdStart(), 0.0);
-
+	
 	newscan = 1;
 
-	cinfo << startl << "The frame start day is " << scanPointer->mjd << ", the frame start seconds is " << scanPointer->secStart()
-		<< ", readscan is " << readscan << ", readseconds is " << readseconds << ", readnanoseconds is " << readnanoseconds << endl;
 
 	/* update all the configs - to ensure that the nsincs and 
 	 * headerbytes are correct
