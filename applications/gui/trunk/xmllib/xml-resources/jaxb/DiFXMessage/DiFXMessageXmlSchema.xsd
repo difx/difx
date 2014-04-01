@@ -325,6 +325,10 @@
                 <xsd:element ref="jobCheck" />
                 <xsd:element ref="sequentialCheck" />
                 <xsd:element ref="maxJobs" />
+                <xsd:element ref="maxSecondsForHardware" />
+                <xsd:element ref="useMaxSecondsForHardware" />
+                <xsd:element ref="maxSecondsForProcessing" />
+                <xsd:element ref="useMaxSecondsForProcessing" />
                 <xsd:element ref="simultaneousCheck" />
                 <xsd:element ref="runLogCheck" />
                 <xsd:element ref="runLogFile" />
@@ -570,6 +574,10 @@
     <xsd:element name="jobCheck" type="xsd:boolean"></xsd:element>
     <xsd:element name="sequentialCheck" type="xsd:boolean"></xsd:element>
     <xsd:element name="maxJobs" type="xsd:int"></xsd:element>
+    <xsd:element name="maxSecondsForHardware" type="xsd:int"></xsd:element>
+    <xsd:element name="useMaxSecondsForHardware" type="xsd:boolean"></xsd:element>
+    <xsd:element name="maxSecondsForProcessing" type="xsd:int"></xsd:element>
+    <xsd:element name="useMaxSecondsForProcessing" type="xsd:boolean"></xsd:element>
     <xsd:element name="simultaneousCheck" type="xsd:boolean"></xsd:element>
     <xsd:element name="runLogCheck" type="xsd:boolean"></xsd:element>
     <xsd:element name="runLogFile" type="xsd:string"></xsd:element>

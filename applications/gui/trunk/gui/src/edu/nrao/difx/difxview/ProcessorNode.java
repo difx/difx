@@ -655,13 +655,13 @@ public class ProcessorNode extends BrowserNode {
         newUse.threads = threads;
         newUse.use = use;
         _usageList.add( newUse );
-        System.out.print( "add job " + job.getName() + " thread: " + threads );
-        if ( use == CurrentUse.DATASOURCE )
-            System.out.println( "  for DATA SOURCE " );
-        if ( use == CurrentUse.PROCESSOR )
-            System.out.println( "  for PROCESSOR " );
-        if ( use == CurrentUse.HEADNODE )
-            System.out.println( "  for HEAD NODE " );
+//        System.out.print( "add job " + job.getName() + " thread: " + threads );
+//        if ( use == CurrentUse.DATASOURCE )
+//            System.out.println( "  for DATA SOURCE " );
+//        if ( use == CurrentUse.PROCESSOR )
+//            System.out.println( "  for PROCESSOR " );
+//        if ( use == CurrentUse.HEADNODE )
+//            System.out.println( "  for HEAD NODE " );
     }
     public boolean isDataSource() {
         for ( Iterator<CurrentUse> iter = _usageList.iterator(); iter.hasNext(); ) {

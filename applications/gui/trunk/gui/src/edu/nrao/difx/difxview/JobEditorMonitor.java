@@ -451,7 +451,7 @@ public class JobEditorMonitor extends JFrame {
         _startButton.setBounds( 10, 30, 110, 25 );
         _startButton.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
-                startJob();
+                startJob( true );
             }
         } );
         runControlPanel.add( _startButton );
@@ -767,8 +767,13 @@ public class JobEditorMonitor extends JFrame {
                 }
                 //  Look through the list of available nodes that can act as data sources
                 //  and pick one that is appropriate.
+                if ( foundNode != null )
+                    _dataSourcesTested = true;
+                else
+                    _dataSourcesTested = false;
                 for ( Iterator<BrowserNode> iter2 = _settings.hardwareMonitor().processorNodes().children().iterator();
                         iter2.hasNext() && foundNode == null; ) {
+                    _dataSourcesTested = true;
                     ProcessorNode thisNode = (ProcessorNode)(iter2.next());
                     //  We start by assuming we can use this node, then eliminate it based on rules set
                     //  by the user.
@@ -831,7 +836,10 @@ public class JobEditorMonitor extends JFrame {
                     _nodeRestrictionFailure = true;
                     if ( externalOperation )
                         return false;
-                    _messageDisplayPanel.warning( 0, "node selection", "Unable to select a node that meets data source requirements" );
+                    if ( _dataSourcesTested )
+                        _messageDisplayPanel.warning( 0, "node selection", "Unable to select a node that meets data source requirements" );
+                    else
+                        _messageDisplayPanel.error( 0, "node selection", "No nodes are available to act as data sources." );
                 }
             }
         }
@@ -848,6 +856,31 @@ public class JobEditorMonitor extends JFrame {
         if ( _settings.baselineCheck() ) {
             //  Based on baselines...
             processNum = processNum * _inputFile.baselineTable().num;
+        }
+        //  This is a quick test to indicate whether there are enough processors THEORETICALLY
+        //  available (assuming they are idle, have threads, whatever) to do what is requested.
+        //  This is different from not having the resources presently because they are busy -
+        //  a failure here will ALWAYS fail.
+        _processorsSufficient = false;
+        if ( _settings.allNodesCheck() ) {
+            if ( _settings.hardwareMonitor().processorNodes().children().size() > 0 )
+                _processorsSufficient = true;
+        }
+        else if ( _settings.nodesPerCheck() ) {
+             if ( _settings.hardwareMonitor().processorNodes().children().size() >= _settings.nodesPer() * processNum )
+                _processorsSufficient = true;
+        }
+        else {
+             int neededThreads = _settings.threadsPerNode();
+             int numGoodNodes = 0;
+             for ( Iterator<BrowserNode> iter2 = _settings.hardwareMonitor().processorNodes().children().iterator();
+                  iter2.hasNext(); ) {
+                  ProcessorNode thisNode = (ProcessorNode)(iter2.next());
+                  if ( thisNode.numCores() >= neededThreads )
+                      ++numGoodNodes;
+             }
+             if ( numGoodNodes >= _settings.nodesPer() * processNum )
+                 _processorsSufficient = true;
         }
         //  For each "process number" reserve a node/thread set, or simply a number
         //  of threads, depending on user preference.
@@ -1056,22 +1089,34 @@ public class JobEditorMonitor extends JFrame {
             }
         }
         //  Warn the user if the available resources are insufficient to process the
-        //  job as requested.
-        if ( threadBasedFailure ) {
-            if ( externalOperation )
-                return false;
-            _messageDisplayPanel.warning( 0, "node selection", "Not enough free threads to meet processing requirements." );
+        //  job as requested.  This is interpeted as an error if there simply are not enough
+        //  hardware resources to do the trick even if everything is idle.
+        if ( _processorsSufficient ) {
+            if ( threadBasedFailure ) {
+                if ( externalOperation )
+                    return false;
+                _messageDisplayPanel.warning( 0, "node selection", "Not enough free threads to meet processing requirements." );
+            }
+            if ( nodeBasedFailure ) {
+                if ( externalOperation )
+                    return false;
+                _messageDisplayPanel.warning( 0, "node selection", "Not enough free nodes to meet processing requirements." );
+            }
         }
-        if ( nodeBasedFailure ) {
+        else {
             if ( externalOperation )
                 return false;
-            _messageDisplayPanel.warning( 0, "node selection", "Not enough free nodes to meet processing requirements." );
+            _messageDisplayPanel.error( 0, "node selection", "Not enough nodes to EVER meet processing requirements." );
         }
         return true;
     }
     
     protected boolean _nodeRestrictionFailure;
     public boolean nodeRestrictionFailure() { return _nodeRestrictionFailure; }
+    protected boolean _dataSourcesTested;
+    public boolean dataSourcesTested() { return _dataSourcesTested; }
+    protected boolean _processorsSufficient;
+    public boolean processorsSufficient() { return _processorsSufficient; }
 
     /*
      * Send the current machines and thread settings to guiServer to produce .machines
@@ -1467,7 +1512,7 @@ public class JobEditorMonitor extends JFrame {
             while ( machines.isAlive() )
                 try { Thread.sleep( 100 ); } catch ( Exception e ) {}
             _machinesAppliedByHand = true;
-            startJob();
+            startJob( true );
         }
     }
     
@@ -1478,7 +1523,7 @@ public class JobEditorMonitor extends JFrame {
      * dedicated socket and report any errors.  In the latter case the job start
      * instruction is more of a "set and forget" kind of operation.
      */
-    public void startJob() {
+    public void startJob( boolean applyMachinesInThread ) {
         _jobNode.logItem( "<RUN> START JOB", _jobNode.inputFile(), false );
         _startTime = new JulianCalendar();
         _startTime.setTime( new Date() );
@@ -1495,11 +1540,20 @@ public class JobEditorMonitor extends JFrame {
         //  Alternatively, has the use edited and uploaded .machines and .threads
         //  files by hand?  If these things have not been done, the files need to
         //  be generated before running.  The thread we create will do this and then
-        //  restart the job.
+        //  restart the job.  We also have the option of NOT doing this in a thread,
+        //  which is used by the scheduler.
         if ( !_machinesAppliedByHand ) {
-            ApplyMachinesThenStart applyMachinesThread = new ApplyMachinesThenStart();
-            applyMachinesThread.start();
-            return;
+            if ( applyMachinesInThread ) {
+                ApplyMachinesThenStart applyMachinesThread = new ApplyMachinesThenStart();
+                applyMachinesThread.start();
+                return;
+            }
+            else {
+                MachinesDefinitionMonitor machines = applyMachinesAction();
+                while ( machines.isAlive() )
+                    try { Thread.sleep( 100 ); } catch ( Exception e ) {}
+                _machinesAppliedByHand = true;
+            }
         }
         DiFXCommand command = new DiFXCommand( _settings );
         command.header().setType( "DifxStart" );
@@ -1853,6 +1907,19 @@ public class JobEditorMonitor extends JFrame {
         
         protected int _port;
         
+    }
+    
+    /*
+     * This is used to remove this job from the nodes where it has reserved resources,
+     * freeing up those resources for other jobs.  This should only be called when the
+     * job is stopped, or when it is assumed to have stopped.
+     */
+    public void flushFromActiveNodes() {
+        for ( Iterator<BrowserNode> iter2 = _settings.hardwareMonitor().processorNodes().children().iterator();
+                iter2.hasNext(); ) {
+            ProcessorNode usedNode = (ProcessorNode)(iter2.next());
+            usedNode.removeJob( _this );
+        }
     }
     
     protected long _activeID;

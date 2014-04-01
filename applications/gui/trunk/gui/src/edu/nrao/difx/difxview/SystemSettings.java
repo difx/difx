@@ -1089,6 +1089,40 @@ public class SystemSettings extends JFrame {
         JLabel maxJobsLabel = new JLabel( "Maximum" );
         maxJobsLabel.setBounds( 350, 325, 100, 25 );
         jobSettingsPanel.add( maxJobsLabel );
+        _useMaxSecondsForHardware = new ZCheckBox( "" );
+        _useMaxSecondsForHardware.setBounds( 475, 300, 25, 25 );
+        _useMaxSecondsForHardware.setToolTipText( "Use the maximum number of seconds to limit the time the scheduler\n"
+                + "will devote to allocating hardware when no activity appears to be occurring." );
+        jobSettingsPanel.add( _useMaxSecondsForHardware );
+        _maxSecondsForHardware = new NumberBox();
+        _maxSecondsForHardware.setToolTipText( "Maximum number of seconds allowed for allocating hardware resources\n"
+                + "If the correlator appears to be inactive, jobs that exceed this limit\n"
+                + "are assumed to be \"stuck\" and may be terminated by the scheduler." );
+        _maxSecondsForHardware.setBounds( 505, 300, 70, 25 );
+        _maxSecondsForHardware.minimum( 10 );
+        _maxSecondsForHardware.precision( 0 );
+        jobSettingsPanel.add( _maxSecondsForHardware );
+        JLabel maxSecondsForHardwareLabel = new JLabel( "Resource Allocation Time Limit (Seconds)" );
+        maxSecondsForHardwareLabel.setBounds( 580, 300, 300, 25 );
+        jobSettingsPanel.add( maxSecondsForHardwareLabel );
+        _useMaxSecondsForProcessing = new ZCheckBox( "" );
+        _useMaxSecondsForProcessing.setBounds( 475, 325, 25, 25 );
+        _useMaxSecondsForProcessing.setToolTipText( "Use the maximum number of seconds to limit the time the scheduler\n"
+                + "will consider a job to be running when no activity appears to be occurring." );
+        jobSettingsPanel.add( _useMaxSecondsForProcessing );
+        _maxSecondsForProcessing = new NumberBox();
+        _maxSecondsForProcessing.setToolTipText( "Maximum number of seconds the scheduler will consider a job \"running\".\n"
+                + "If the correlator appears to be inactive, jobs that exceed this limit\n"
+                + "are assumed to be \"stuck\" and may be removed from the queue by the\n"
+                + "scheduler, thus allowing other jobs to start.  The job may continue to\n"
+                + "run - the scheduler cannot stop a job once it has started." );
+        _maxSecondsForProcessing.setBounds( 505, 325, 70, 25 );
+        _maxSecondsForProcessing.minimum( 10 );
+        _maxSecondsForProcessing.precision( 0 );
+        jobSettingsPanel.add( _maxSecondsForProcessing );
+        JLabel maxSecondsForProcessingLabel = new JLabel( "Processing Time Limit (Seconds)" );
+        maxSecondsForProcessingLabel.setBounds( 580, 325, 300, 25 );
+        jobSettingsPanel.add( maxSecondsForProcessingLabel );
         JLabel runLogLabel = new JLabel( "Run Log Settings:" );
         runLogLabel.setBounds( 30, 355, 200, 25 );
         runLogLabel.setFont( new Font( processingLabel.getFont().getFamily(), Font.BOLD, processingLabel.getFont().getSize() ) );
@@ -1934,6 +1968,10 @@ public class SystemSettings extends JFrame {
         _sequentialCheck.setSelected( false );
         _simultaneousCheck.setSelected( true );
         _maxJobs.intValue( 3 );
+        _maxSecondsForHardware.intValue( 600 );
+        _useMaxSecondsForHardware.setSelected( false );
+        _maxSecondsForProcessing.intValue( 1800 );
+        _useMaxSecondsForProcessing.setSelected( false );
         _runLogCheck.setSelected( true );
         _runLogFile.setText( System.getProperty( "user.home" ) + "/.difxGuiRunLog" );
         _queueBrowserSettings.showCompleted = true;
@@ -2950,6 +2988,13 @@ public class SystemSettings extends JFrame {
             _maxJobs.setEnabled( !doiConfig.isSimultaneousCheck() );
             if ( doiConfig.getMaxJobs() != 0 )
                 _maxJobs.intValue( doiConfig.getMaxJobs() );
+            if ( doiConfig.getMaxSecondsForHardware() != 0 )
+                _maxSecondsForHardware.intValue( doiConfig.getMaxSecondsForHardware() );
+            _useMaxSecondsForHardware.setSelected( doiConfig.isUseMaxSecondsForHardware() );
+            if ( doiConfig.getMaxSecondsForProcessing() != 0 )
+                _maxSecondsForProcessing.intValue( doiConfig.getMaxSecondsForProcessing() );
+            _useMaxSecondsForProcessing.setSelected( doiConfig.isUseMaxSecondsForProcessing() );
+
             _runLogCheck.setSelected( !doiConfig.isRunLogCheck() );
             if ( doiConfig.getRunLogFile() != null )
                 _runLogFile.setText( doiConfig.getRunLogFile() );
@@ -3633,6 +3678,10 @@ public class SystemSettings extends JFrame {
         doiConfig.setJobCheck( _jobCheck.isSelected() );
         doiConfig.setSequentialCheck( _sequentialCheck.isSelected() );
         doiConfig.setMaxJobs( _maxJobs.intValue() );
+        doiConfig.setMaxSecondsForHardware( _maxSecondsForHardware.intValue() );
+        doiConfig.setUseMaxSecondsForHardware( _useMaxSecondsForHardware.isSelected() );
+        doiConfig.setMaxSecondsForProcessing( _maxSecondsForProcessing.intValue() );
+        doiConfig.setUseMaxSecondsForProcessing( _useMaxSecondsForProcessing.isSelected() );
         doiConfig.setSimultaneousCheck( !_simultaneousCheck.isSelected() );
         doiConfig.setRunLogCheck( !_runLogCheck.isSelected() );
         doiConfig.setRunLogFile( _runLogFile.getText() );
@@ -5317,6 +5366,10 @@ public class SystemSettings extends JFrame {
     protected ZCheckBox _sequentialCheck;
     protected ZCheckBox _simultaneousCheck;
     protected NumberBox _maxJobs;
+    protected NumberBox _maxSecondsForHardware;
+    protected ZCheckBox _useMaxSecondsForHardware;
+    protected NumberBox _maxSecondsForProcessing;
+    protected ZCheckBox _useMaxSecondsForProcessing;
     protected ZCheckBox _runLogCheck;
     protected FormattedTextField _runLogFile;
     
@@ -5341,6 +5394,10 @@ public class SystemSettings extends JFrame {
     public boolean runLogCheck() { return _runLogCheck.isSelected(); }
     public String runLogFile() { return _runLogFile.getText(); }
     public int maxJobs() { return _maxJobs.intValue(); }
+    public int maxSecondsForHardware() { return _maxSecondsForHardware.intValue(); }
+    public int maxSecondsForProcessing() { return _maxSecondsForProcessing.intValue(); }
+    public boolean useMaxSecondsForHardware() { return _useMaxSecondsForHardware.isSelected(); }
+    public boolean useMaxSecondsForProcessing() { return _useMaxSecondsForProcessing.isSelected(); }
 
     protected String _invisibleProcessors;
     protected String _invisibleProcessorCores;

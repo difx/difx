@@ -1791,6 +1791,7 @@ public class QueueBrowserPanel extends TearOffPanel {
                     //  whether we should consider scheduling them for something in the future (which
                     //  we should not for "done" jobs).
                     boolean runningJob = false;
+                    boolean initializingJob = false;
                     int scheduleCount = 0;
                     int runningCount = 0;
                     for ( Iterator<JobNode> iter = _scheduleQueue.iterator(); iter.hasNext(); ) {
@@ -1799,8 +1800,11 @@ public class QueueBrowserPanel extends TearOffPanel {
                         //  are running or in the process of allocating resources.
                         if ( thisJob.autostate() == JobNode.AUTOSTATE_INITIALIZING || thisJob.autostate() == JobNode.AUTOSTATE_RUNNING ) {
                             runningJob = true;
+                            thisJob.incrementIdleTime();
                             if ( thisJob.autostate() == JobNode.AUTOSTATE_RUNNING )
                                 ++runningCount;
+                            else if ( thisJob.autostate() == JobNode.AUTOSTATE_INITIALIZING )
+                                initializingJob = true;
                         }
                         else if ( thisJob.autostate() == JobNode.AUTOSTATE_SCHEDULED ) {
                             ++scheduleCount;
@@ -1813,11 +1817,11 @@ public class QueueBrowserPanel extends TearOffPanel {
                     //  If any jobs are running and we are only supposed to run jobs sequentially,
                     //  we are done for this cycle.  Also bail out if we are running as many jobs
                     //  as our maximum limit of simultaneous jobs.
+                    boolean didSomething = false;
                     if ( ( !_settings.sequentialCheck() && runningCount < _settings.maxJobs() ) || !runningJob ) { 
                         //  Look at the remaining jobs in the queue and run them according to scheduling
                         //  rules.  We run only one at a time for each cycle of the scheduler.  First see
                         //  if any are ready to run.
-                        boolean didSomething = false;
                         for ( Iterator<JobNode> iter = _scheduleQueue.iterator(); iter.hasNext() && !didSomething; ) {
                             JobNode thisJob = iter.next();
                             if ( thisJob.autostate() == JobNode.AUTOSTATE_READY ) {
@@ -1826,11 +1830,32 @@ public class QueueBrowserPanel extends TearOffPanel {
                             }
                         }
                         //  Next see if anything needs to be initialized (hardware resources allocated, etc.).
-                        //  Once again, we do only one of these.
-                        for ( Iterator<JobNode> iter = _scheduleQueue.iterator(); iter.hasNext() && !didSomething; ) {
+                        //  Only one job should be initializing at a time - this keeps the hardware allocation
+                        //  logic from getting confused (jobs that are initialized look for free hardware, but
+                        //  hardware does not become "reserved" - i.e. not free - until the job starts...so a
+                        //  bunch of jobs could be simultaneously initialized with inaccurate hardware availability).
+                        for ( Iterator<JobNode> iter = _scheduleQueue.iterator(); iter.hasNext() && !didSomething && !initializingJob; ) {
                             JobNode thisJob = iter.next();
                             if ( thisJob.autostate() == JobNode.AUTOSTATE_SCHEDULED ) {
                                 thisJob.autostartCheckResources();
+                                didSomething = true;
+                            }
+                        }
+                    }
+                    //  If there has been no activity for the maximum number of seconds allowed
+                    //  to either check resources or run jobs, try unscheduling an activity in
+                    //  an effort to kick the correlator back into action.
+                    if ( !didSomething && _settings.useMaxSecondsForHardware() ) {
+                        for ( Iterator<JobNode> iter = _scheduleQueue.iterator(); iter.hasNext() && !didSomething; ) {
+                            JobNode thisJob = iter.next();
+                            if ( thisJob.autostate() == JobNode.AUTOSTATE_INITIALIZING && 
+                                thisJob.idleTime() >= _settings.maxSecondsForHardware() ) {
+                                thisJob.autoUnscheduleResourceAllocation();
+                                didSomething = true;
+                            }
+                            else if ( thisJob.autostate() == JobNode.AUTOSTATE_RUNNING && 
+                                thisJob.idleTime() >= _settings.maxSecondsForProcessing() ) {
+                                thisJob.autoUnscheduleProcessing();
                                 didSomething = true;
                             }
                         }

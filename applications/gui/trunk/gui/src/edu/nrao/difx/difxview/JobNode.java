@@ -396,6 +396,27 @@ public class JobNode extends QueueBrowserNode {
     }
     public void autostate( int newState ) { _autostate = newState; }
     
+    //  The "idle time" is used by the scheduler to determine when jobs have been
+    //  doing nothing for periods of time that are too long.  When not running 
+    //  with the scheduler it should be harmless.
+    protected Long _idleTime = new Long( 0 );
+    public long idleTime() { 
+        long ret = (long)0;
+        synchronized ( _idleTime ) {
+            ret = _idleTime;
+        }
+        return ret;
+    }
+    public void resetIdleTime() {
+        synchronized ( _idleTime ) {
+            _idleTime = (long)0;
+        }
+    }
+    public void incrementIdleTime() {
+        synchronized ( _idleTime ) {
+            ++_idleTime;
+        }
+    }
     /* 
      * Function to start a job - this checks that the "editor" exists (which includes
      * downloading necessary files), chooses default nodes (if the user hasn't picked
@@ -424,7 +445,7 @@ public class JobNode extends QueueBrowserNode {
                 _editorMonitor.loadHardwareLists();
                 _editorMonitor.selectNodeDefaults( false, true );
                 _editorMonitor.setState( "Pre-Start", Color.YELLOW );
-                _editorMonitor.startJob();
+                _editorMonitor.startJob( true );
             }     
         }
     }
@@ -446,8 +467,18 @@ public class JobNode extends QueueBrowserNode {
                     autostate( AUTOSTATE_READY );
                 }
                 else {
-                    _editorMonitor.setState( "Resource Wait", Color.YELLOW );
-                    autostate( AUTOSTATE_SCHEDULED );
+                    if ( !_editorMonitor.dataSourcesTested() ) {
+                        _editorMonitor.setState( "Data Source Fail", Color.RED );
+                        autostate( AUTOSTATE_DONE );
+                    }
+                    else if ( !_editorMonitor.processorsSufficient() ) {
+                        _editorMonitor.setState( "Processor Fail", Color.RED );
+                        autostate( AUTOSTATE_DONE );
+                    }
+                    else {
+                        _editorMonitor.setState( "Resource Wait", Color.YELLOW );
+                        autostate( AUTOSTATE_SCHEDULED );
+                    }
                 }
             }
             else {
@@ -463,6 +494,7 @@ public class JobNode extends QueueBrowserNode {
      * Function to trigger the CheckResourcesThread.
      */
     public void autostartCheckResources() {
+        resetIdleTime();
         autostate( AUTOSTATE_INITIALIZING );
         CheckResourcesThread checkResources = new CheckResourcesThread();
         checkResources.start();
@@ -473,8 +505,32 @@ public class JobNode extends QueueBrowserNode {
      * already runs a thread to do the delayed work.
      */
     public void autostartJobStart() {
+        resetIdleTime();
         autostate( AUTOSTATE_RUNNING );
-        _editorMonitor.startJob();
+        _editorMonitor.startJob( false );
+    }
+    
+    /*
+     * Used by the scheduler to unschedule a job that appears to be stuck during
+     * hardware resource allocation.
+     */
+    public void autoUnscheduleResourceAllocation() {
+        state().setText( "Auto Timeout (HW)" );
+        state().setBackground( Color.RED );
+        state().updateUI();
+        autostate( AUTOSTATE_DONE );
+    }
+    
+    /*
+     * Used by the scheduler to unschedule a job that appears to be stuck during
+     * a run.
+     */
+    public void autoUnscheduleProcessing() {
+        _editorMonitor.flushFromActiveNodes();
+        state().setText( "Auto Timeout (Proc)" );
+        state().setBackground( Color.RED );
+        state().updateUI();
+        autostate( AUTOSTATE_DONE );
     }
     
     /*
@@ -703,6 +759,8 @@ public class JobNode extends QueueBrowserNode {
     }
     
     public void consumeMessage( DifxMessage difxMsg, boolean unknown ) {
+        
+        resetIdleTime();
         
         //  If this job is "running" (it was started by the job editor/monitor) 
         //  then send the message to the monitor.  We don't want to do this if the
