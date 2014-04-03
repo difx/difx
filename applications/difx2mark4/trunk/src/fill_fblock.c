@@ -238,4 +238,5 @@ int fill_fblock (DifxInput *D,                    // difx input structure pointe
                   pfb[n].stn[1].bw, pfb[n].stn[1].chan_id);
 
     pfb[nprod].stn[0].ant = -1;     // mark end of table
+    return 0;                       // signify that all is well
     }
