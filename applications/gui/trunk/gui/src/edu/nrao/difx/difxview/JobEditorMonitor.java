@@ -1668,7 +1668,7 @@ public class JobEditorMonitor extends JFrame {
                     e.getMessage() );  //BLAT should be a pop-up
             setState( "Failed Start", Color.RED );
             _jobNode.logItem( "<RUN> FAILED START", "", true );
-            _jobNode.autostate( JobNode.AUTOSTATE_DONE );
+            _jobNode.autostate( JobNode.AUTOSTATE_FAILED );
         }
     }
     
@@ -1902,7 +1902,12 @@ public class JobEditorMonitor extends JFrame {
                 usedNode.removeJob( _this );
             }
             _jobNode._scheduleJobItem.setEnabled( true );
-            _jobNode.autostate( JobNode.AUTOSTATE_DONE );
+            //  Base the final "autostate" on the color of the display.  This is pretty
+            //  kludgey, although it has the advantage that it will look consisten to the user.
+            if ( _jobNode.state().getBackground() == Color.RED )
+                _jobNode.autostate( JobNode.AUTOSTATE_FAILED );
+            else
+                _jobNode.autostate( JobNode.AUTOSTATE_DONE );
         }
         
         protected int _port;

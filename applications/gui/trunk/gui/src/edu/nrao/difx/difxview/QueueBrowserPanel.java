@@ -120,6 +120,16 @@ public class QueueBrowserPanel extends TearOffPanel {
                 + "or the current automated run parameters.\n"
                 + "Automated run parameters can be viewed and changed in the Settings Window.", null );
         //runSelectedItem.setEnabled( false );
+        ZMenuItem unscheduleSelectedItem = new ZMenuItem( "Remove Selected From Schedule" );
+        unscheduleSelectedItem.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                unscheduleSelected();
+            }
+        });
+        unscheduleSelectedItem.setEnabled( true );
+        _selectMenu.add( unscheduleSelectedItem );
+        unscheduleSelectedItem.toolTip( "Remove the selected jobs from the current schedule.  This\n"
+                + "is harmless if the job is not actually scheduled.", null );
         ZMenuItem deleteSelectedItem = new ZMenuItem( "Delete Selected" );
         deleteSelectedItem.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
@@ -154,6 +164,15 @@ public class QueueBrowserPanel extends TearOffPanel {
         _showUnselectedItem.setEnabled( false );
         _showUnselectedItem.setSelected( _settings.queueBrowserSettings().showUnselected );
         _showMenu.add( _showUnselectedItem );
+        _showIncompleteItem = new JCheckBoxMenuItem( "Scheduled" );
+        _showIncompleteItem.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                showItemChange();
+            }
+        });
+        _showIncompleteItem.setEnabled( false );
+        _showIncompleteItem.setSelected( _settings.queueBrowserSettings().showIncomplete );
+        _showMenu.add( _showIncompleteItem );
         _showCompletedItem = new JCheckBoxMenuItem( "Completed" );
         _showCompletedItem.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
@@ -163,15 +182,25 @@ public class QueueBrowserPanel extends TearOffPanel {
         _showCompletedItem.setEnabled( false );
         _showCompletedItem.setSelected( _settings.queueBrowserSettings().showCompleted );
         _showMenu.add( _showCompletedItem );
-        _showIncompleteItem = new JCheckBoxMenuItem( "Incomplete" );
-        _showIncompleteItem.addActionListener( new ActionListener() {
+        _showMenu.add( new JSeparator() );
+        _showExperimentScheduledItem = new JCheckBoxMenuItem( "Experiment Schedule Progress" );
+        _showExperimentScheduledItem.setEnabled( true );
+        _showExperimentScheduledItem.setSelected( _settings.queueBrowserSettings().showExperimentScheduled );
+        _showExperimentScheduledItem.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
-                showItemChange();
+                showExperimentScheduled();
             }
         });
-        _showIncompleteItem.setEnabled( false );
-        _showIncompleteItem.setSelected( _settings.queueBrowserSettings().showIncomplete );
-        _showMenu.add( _showIncompleteItem );
+        _showMenu.add( _showExperimentScheduledItem );
+        _showPassScheduledItem = new JCheckBoxMenuItem( "Pass Schedule Progress" );
+        _showPassScheduledItem.setEnabled( true );
+        _showPassScheduledItem.setSelected( _settings.queueBrowserSettings().showPassScheduled );
+        _showPassScheduledItem.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                showPassScheduled();
+            }
+        });
+        _showMenu.add( _showPassScheduledItem );
         _showMenu.add( new JSeparator() );
         ZMenuItem expandAllItem = new ZMenuItem( "Expand All" );
         expandAllItem.addActionListener( new ActionListener() {
@@ -179,7 +208,6 @@ public class QueueBrowserPanel extends TearOffPanel {
                 expandAll();
             }
         });
-        expandAllItem.setEnabled( false );
         _showMenu.add( expandAllItem );
         ZMenuItem collapseAllItem = new ZMenuItem( "Collapse All" );
         collapseAllItem.addActionListener( new ActionListener() {
@@ -187,7 +215,6 @@ public class QueueBrowserPanel extends TearOffPanel {
                 collapseAll();
             }
         });
-        collapseAllItem.setEnabled( false );
         _showMenu.add( collapseAllItem );
         _showButton = new JButton( "Show..." );
         _showButton.addActionListener(new ActionListener() {
@@ -475,13 +502,70 @@ public class QueueBrowserPanel extends TearOffPanel {
         win.newExperimentMode( true );
         win.setVisible( true );
     }
-        
-    protected void selectAll() {};
-    protected void unselectAll() {};
-    protected void deleteSelected() {};
+    
+    /*
+     * Select all jobs the queue browser knows about.
+     */
+    protected void selectAll() {
+        for ( Iterator<BrowserNode> projectIter = _browserPane.browserTopNode().children().iterator();
+            projectIter.hasNext(); ) {
+            ExperimentNode thisExperiment = (ExperimentNode)projectIter.next();
+            thisExperiment.selectAllJobsAction();
+        }
+    }
+    
+    /*
+     * Clear the selection of all jobs.
+     */
+    protected void unselectAll() {
+        for ( Iterator<BrowserNode> projectIter = _browserPane.browserTopNode().children().iterator();
+            projectIter.hasNext(); ) {
+            ExperimentNode thisExperiment = (ExperimentNode)projectIter.next();
+            thisExperiment.unselectAllJobsAction();
+        }
+    }
+
+    /*
+     * Delete the selected jobs.  
+     */
+    protected void deleteSelected() {
+        for ( Iterator<BrowserNode> projectIter = _browserPane.browserTopNode().children().iterator();
+            projectIter.hasNext(); ) {
+            ExperimentNode thisExperiment = (ExperimentNode)projectIter.next();
+            thisExperiment.deleteSelectedAction();
+        }
+    }
+    
     protected void showItemChange() {};
-    protected void expandAll() {};
-    protected void collapseAll() {};
+    
+    /*
+     * Open all experiments and passes so all jobs are visible.
+     */
+    protected void expandAll() {
+        for ( Iterator<BrowserNode> projectIter = _browserPane.browserTopNode().children().iterator();
+            projectIter.hasNext(); ) {
+            ExperimentNode thisExperiment = (ExperimentNode)projectIter.next();
+            thisExperiment.open( true );
+            if ( thisExperiment.children().size() > 0 ) {
+                for ( Iterator<BrowserNode> iter = thisExperiment.childrenIterator(); iter.hasNext(); ) {
+                    PassNode thisPass = (PassNode)(iter.next());
+                    thisPass.open( true );
+                }
+            }
+        }
+    }
+    
+    /*
+     * Close all experiments so all you see is a list of experiments.  This doesn't
+     * bother with the passes.
+     */
+    protected void collapseAll() {
+        for ( Iterator<BrowserNode> projectIter = _browserPane.browserTopNode().children().iterator();
+            projectIter.hasNext(); ) {
+            ExperimentNode thisExperiment = (ExperimentNode)projectIter.next();
+            thisExperiment.open( false );
+        }
+    }
                 
     /*
      * Schedule all selected jobs to be run.
@@ -497,6 +581,53 @@ public class QueueBrowserPanel extends TearOffPanel {
                         JobNode thisJob = (JobNode)jobIter.next();
                         if ( thisJob.selected() )
                             thisJob.autoStartJob();
+                    }
+                }
+            }
+        }
+    }
+    
+    /*
+     * Set all experiments to show/not show scheduling information.
+     */
+    protected void showExperimentScheduled() {
+        for ( Iterator<BrowserNode> projectIter = _browserPane.browserTopNode().children().iterator();
+            projectIter.hasNext(); ) {
+            ExperimentNode thisExperiment = (ExperimentNode)projectIter.next();
+            thisExperiment.statsVisible( _showExperimentScheduledItem.isSelected() );
+        }
+    }
+    
+    /*
+     * Show (or not) the scheduling information for each pass.
+     */
+    protected void showPassScheduled() {
+        for ( Iterator<BrowserNode> projectIter = _browserPane.browserTopNode().children().iterator();
+            projectIter.hasNext(); ) {
+            ExperimentNode thisExperiment = (ExperimentNode)projectIter.next();
+            if ( thisExperiment.children().size() > 0 ) {
+                for ( Iterator<BrowserNode> iter = thisExperiment.childrenIterator(); iter.hasNext(); ) {
+                    PassNode thisPass = (PassNode)(iter.next());
+                    thisPass.statsVisible( _showPassScheduledItem.isSelected() );
+                }
+            }
+        }
+    }
+    
+    /*
+     * Remove selected jobs from the schedule.
+     */
+    protected void unscheduleSelected() {
+        for ( Iterator<BrowserNode> projectIter = _browserPane.browserTopNode().children().iterator();
+            projectIter.hasNext(); ) {
+            ExperimentNode thisExperiment = (ExperimentNode)projectIter.next();
+            if ( thisExperiment.children().size() > 0 ) {
+                for ( Iterator<BrowserNode> iter = thisExperiment.childrenIterator(); iter.hasNext(); ) {
+                    PassNode thisPass = (PassNode)(iter.next());
+                    for ( Iterator<BrowserNode> jobIter = thisPass.children().iterator(); jobIter.hasNext(); ) {
+                        JobNode thisJob = (JobNode)jobIter.next();
+                        if ( thisJob.selected() )
+                            thisJob.unschedule();
                     }
                 }
             }
@@ -610,6 +741,7 @@ public class QueueBrowserPanel extends TearOffPanel {
                     thisExperiment.inDatabase( true );
                     thisExperiment.creationDate( dateCreated );
                     thisExperiment.directory( directory );
+                    thisExperiment.statsVisible( _showPassScheduledItem.isSelected() );
                     //thisExperiment.segment( segment );
                     _browserPane.addNode( thisExperiment );
                 }
@@ -660,6 +792,7 @@ public class QueueBrowserPanel extends TearOffPanel {
                         thisPass.experimentNode( thisExperiment );
                         thisExperiment.addChild( thisPass );                        
                         thisPass.found( true );
+                        thisPass.statsVisible( _showPassScheduledItem.isSelected() );
                     }
                     else {
                         //  TODO:  accomodate passes outside of the experiment structure
@@ -1643,6 +1776,7 @@ public class QueueBrowserPanel extends TearOffPanel {
             thisExperiment.inDatabase( false );      //  dunno
             thisExperiment.status( "unknown" );
             thisExperiment.directory( experimentPath );
+            thisExperiment.statsVisible( _showPassScheduledItem.isSelected() );
             //  Use the creation date of the experiment path as the experiment's
             //  creation date.  This should be pretty accurate.
             thisExperiment.useCreationDate( experimentPath );
@@ -1665,6 +1799,7 @@ public class QueueBrowserPanel extends TearOffPanel {
 //            thisPass.id( id );
 //            thisPass.inDatabase( true );
             thisPass.experimentNode( thisExperiment );
+            thisPass.statsVisible( _showPassScheduledItem.isSelected() );
             thisExperiment.addChild( thisPass );      
             //  Try to grab the Pass log file from the DiFX host, if it exists.  This
             //  is a bit icky - we have to figure out how to create the proper file
@@ -1728,6 +1863,8 @@ public class QueueBrowserPanel extends TearOffPanel {
     protected JCheckBoxMenuItem _showUnselectedItem;
     protected JCheckBoxMenuItem _showCompletedItem;
     protected JCheckBoxMenuItem _showIncompleteItem;
+    protected JCheckBoxMenuItem _showExperimentScheduledItem;
+    protected JCheckBoxMenuItem _showPassScheduledItem;
     protected ActivityMonitorLight _guiServerConnectionLight;
     protected JLabel _guiServerConnectionLabel;
     protected NumLabel _numExperiments;
@@ -1811,7 +1948,9 @@ public class QueueBrowserPanel extends TearOffPanel {
                             thisJob.state().setText( "Scheduled (" + scheduleCount + ")" );
                             thisJob.state().updateUI();
                         }
-                        else if ( thisJob.autostate() == JobNode.AUTOSTATE_DONE )
+                        else if ( thisJob.autostate() == JobNode.AUTOSTATE_DONE ||
+                                thisJob.autostate() == JobNode.AUTOSTATE_UNSCHEDULED ||
+                                thisJob.autostate() == JobNode.AUTOSTATE_FAILED )
                             iter.remove();
                     }
                     //  If any jobs are running and we are only supposed to run jobs sequentially,
@@ -1860,6 +1999,41 @@ public class QueueBrowserPanel extends TearOffPanel {
                             }
                         }
                     }
+                }
+                //  Count the number of jobs, and the number scheduled, completed and failed
+                //  for each pass and experiment.
+                for ( Iterator<BrowserNode> iter = _browserPane.browserTopNode().childrenIterator(); iter.hasNext(); ) {
+                    ExperimentNode thisExperiment = (ExperimentNode)(iter.next());
+                    thisExperiment.clearCounters();
+                    for ( Iterator<BrowserNode> pIter = thisExperiment.childrenIterator(); pIter.hasNext(); ) {
+                        PassNode thisPass = (PassNode)(pIter.next());
+                        thisPass.clearCounters();
+                        for ( Iterator<BrowserNode> jIter = thisPass.childrenIterator(); jIter.hasNext(); ) {
+                            JobNode thisJob = (JobNode)(jIter.next());
+                            thisPass.addJobs( 1 );
+                            switch ( thisJob.autostate() ) {
+                                case JobNode.AUTOSTATE_DONE:
+                                    thisPass.addCompleted( 1 );
+                                    break;
+                                case JobNode.AUTOSTATE_FAILED:
+                                    thisPass.addFailed( 1 );
+                                    break;
+                                case JobNode.AUTOSTATE_INITIALIZING:
+                                case JobNode.AUTOSTATE_READY:
+                                case JobNode.AUTOSTATE_RUNNING:
+                                case JobNode.AUTOSTATE_SCHEDULED:
+                                    thisPass.addScheduled( 1 );
+                                    break;
+                            }
+                        }
+                        thisExperiment.addJobs( thisPass.numJobs() );
+                        thisExperiment.addScheduled( thisPass.numScheduled() );
+                        thisExperiment.addCompleted( thisPass.numCompleted() );
+                        thisExperiment.addFailed( thisPass.numFailed() );
+                    }
+                    System.out.println( "experiment " + thisExperiment.name() + ": " + thisExperiment.numJobs() +
+                            " jobs, " + thisExperiment.numScheduled() + " scheduled, " + thisExperiment.numCompleted() +
+                            " completed, " + thisExperiment.numFailed() + " failed" );
                 }
                 try { Thread.sleep( 1000 ); } catch ( Exception e ) {}
             }

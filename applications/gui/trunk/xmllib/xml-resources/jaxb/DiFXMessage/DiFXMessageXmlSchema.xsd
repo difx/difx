@@ -145,6 +145,8 @@
                 <xsd:element ref="queueShowIncomplete"/>
                 <xsd:element ref="queueShowSelected"/>
                 <xsd:element ref="queueShowUnselected"/>
+                <xsd:element ref="queueShowExperimentScheduled"/>
+                <xsd:element ref="queueShowPassScheduled"/>
                 <xsd:element ref="inactivityWarning"/>
                 <xsd:element ref="inactivityError"/>
                 
@@ -394,6 +396,8 @@
     <xsd:element name="queueShowIncomplete" type="xsd:boolean"></xsd:element>
     <xsd:element name="queueShowSelected" type="xsd:boolean"></xsd:element>
     <xsd:element name="queueShowUnselected" type="xsd:boolean"></xsd:element>
+    <xsd:element name="queueShowExperimentScheduled" type="xsd:boolean"></xsd:element>
+    <xsd:element name="queueShowPassScheduled" type="xsd:boolean"></xsd:element>
     <xsd:element name="inactivityWarning" type="xsd:int"></xsd:element>
     <xsd:element name="inactivityError" type="xsd:int"></xsd:element>
                 

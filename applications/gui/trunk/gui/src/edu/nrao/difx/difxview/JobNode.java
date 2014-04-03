@@ -235,16 +235,7 @@ public class JobNode extends QueueBrowserNode {
                 + "Removing a non-listed job is harmless." );
         _unscheduleJobItem.addActionListener(new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
-                if ( _settings.queueBrowser().removeJobFromSchedule( _this ) ) {
-                    if ( _editorMonitor != null )
-                        _editorMonitor.setState( "Unscheduled", Color.GRAY );
-                    else {
-                        state().setText( "Unscheduled" );
-                        state().setBackground( Color.GRAY );
-                        state().updateUI();
-                    }
-                    _scheduleJobItem.setEnabled( true );
-                }
+                unschedule();
             }
         });
         _popup.add( _unscheduleJobItem );
@@ -385,6 +376,8 @@ public class JobNode extends QueueBrowserNode {
     public final static int AUTOSTATE_READY        = 3;
     public final static int AUTOSTATE_RUNNING      = 4;
     public final static int AUTOSTATE_DONE         = 5;
+    public final static int AUTOSTATE_UNSCHEDULED  = 6;
+    public final static int AUTOSTATE_FAILED       = 7;
     
     protected Integer _autostate;
     public int autostate() {
@@ -451,29 +444,71 @@ public class JobNode extends QueueBrowserNode {
     }
     
     /*
+     * Set this item to an "unscheduled" state.  This WILL NOT remove the item
+     * from the schedule list - it simply changes the state readout and sets the
+     * internal status.
+     */
+    public void setUnscheduledState() {
+        if ( _editorMonitor != null )
+            _editorMonitor.setState( "Unscheduled", Color.GRAY );
+        else {
+            state().setText( "Unscheduled" );
+            state().setBackground( Color.GRAY );
+            state().updateUI();
+        }
+    }
+    
+    /*
+     * Actually unschedule a job - this will only do things (like changing the state
+     * readout) if the job is actually scheduled.
+     */
+    public void unschedule() {
+        autostate( AUTOSTATE_UNSCHEDULED );
+        if ( _settings.queueBrowser().removeJobFromSchedule( _this ) ) {
+            setUnscheduledState();
+            _scheduleJobItem.setEnabled( true );
+        }
+    }
+    
+    /*
      * Thread to run the "resource allocation" portion of a job - for automatic job
-     * running.
+     * running.  A large number of checks have been put in place to catch when the
+     * user has "unscheduled" a job during this process.  Probably these are overkill.
      */
     public class CheckResourcesThread extends Thread {
         public void run() {
-            state().setText( "Check Resources" );
-            state().setBackground( Color.YELLOW );
-            state().updateUI();
+            if ( autostate() == AUTOSTATE_UNSCHEDULED )
+                setUnscheduledState();
+            else {
+                state().setText( "Check Resources" );
+                state().setBackground( Color.YELLOW );
+                state().updateUI();
+            }
             if ( updateEditorMonitor( 1000 ) ) {
-                _editorMonitor.setState( "Check Resources", Color.YELLOW );
-                _editorMonitor.loadHardwareLists();
-                if ( _editorMonitor.selectNodeDefaults( false, true ) ) {
-                    _editorMonitor.setState( "Pre-Start", Color.YELLOW );
-                    autostate( AUTOSTATE_READY );
+                if ( autostate() == AUTOSTATE_UNSCHEDULED )
+                    setUnscheduledState();
+                else {
+                    _editorMonitor.setState( "Check Resources", Color.YELLOW );
+                    _editorMonitor.loadHardwareLists();
                 }
+                if ( _editorMonitor.selectNodeDefaults( false, true ) ) {
+                    if ( autostate() == AUTOSTATE_UNSCHEDULED )
+                        setUnscheduledState();
+                    else {
+                        _editorMonitor.setState( "Pre-Start", Color.YELLOW );
+                        autostate( AUTOSTATE_READY );
+                    }
+                }
+                else if ( autostate() == AUTOSTATE_UNSCHEDULED )
+                    setUnscheduledState();
                 else {
                     if ( !_editorMonitor.dataSourcesTested() ) {
                         _editorMonitor.setState( "Data Source Fail", Color.RED );
-                        autostate( AUTOSTATE_DONE );
+                        autostate( AUTOSTATE_FAILED );
                     }
                     else if ( !_editorMonitor.processorsSufficient() ) {
                         _editorMonitor.setState( "Processor Fail", Color.RED );
-                        autostate( AUTOSTATE_DONE );
+                        autostate( AUTOSTATE_FAILED );
                     }
                     else {
                         _editorMonitor.setState( "Resource Wait", Color.YELLOW );
@@ -482,10 +517,14 @@ public class JobNode extends QueueBrowserNode {
                 }
             }
             else {
-                state().setText( "Monitor Error" );
-                state().setBackground( Color.RED );
-                state().updateUI();
-                autostate( AUTOSTATE_DONE );
+                if ( autostate() == AUTOSTATE_UNSCHEDULED )
+                    setUnscheduledState();
+                else {
+                    state().setText( "Monitor Error" );
+                    state().setBackground( Color.RED );
+                    state().updateUI();
+                    autostate( AUTOSTATE_FAILED );
+                }
             }
         }
     }
@@ -515,10 +554,10 @@ public class JobNode extends QueueBrowserNode {
      * hardware resource allocation.
      */
     public void autoUnscheduleResourceAllocation() {
+        autostate( AUTOSTATE_UNSCHEDULED );
         state().setText( "Auto Timeout (HW)" );
         state().setBackground( Color.RED );
         state().updateUI();
-        autostate( AUTOSTATE_DONE );
     }
     
     /*
@@ -526,11 +565,11 @@ public class JobNode extends QueueBrowserNode {
      * a run.
      */
     public void autoUnscheduleProcessing() {
+        autostate( AUTOSTATE_UNSCHEDULED );
         _editorMonitor.flushFromActiveNodes();
         state().setText( "Auto Timeout (Proc)" );
         state().setBackground( Color.RED );
         state().updateUI();
-        autostate( AUTOSTATE_DONE );
     }
     
     /*

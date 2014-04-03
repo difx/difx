@@ -32,12 +32,11 @@ import java.awt.Font;
  *
  * @author jspitzak
  */
-public class PassNode extends QueueBrowserNode {
+public class PassNode extends QueueBrowserContainerNode {
     
     public PassNode( String name, SystemSettings settings ) {
-        super( name );
+        super( name, settings );
         _name = name;
-        _settings = settings;
         this.labelWidth( 400 );
     }
     
@@ -184,6 +183,8 @@ public class PassNode extends QueueBrowserNode {
      */
     @Override
     public void positionItems() {
+        if ( _settings != null )
+            _labelWidth = _settings.jobColumnSpecs().name.width + 44;
         super.positionItems();
         _nameEditor.setBounds( _level * _levelOffset, 0, _labelWidth, _ySize );
         _stateLabel.setBounds( _level * _levelOffset + _xOffset + _labelWidth, 0, 300, _ySize );
@@ -400,11 +401,10 @@ public class PassNode extends QueueBrowserNode {
     protected JCheckBoxMenuItem _clockItem;
     protected JCheckBoxMenuItem _testItem;
     protected JTextField _nameEditor;
-    protected SystemSettings _settings;
     protected JMenu _typeMenu;
     protected ArrayList<JCheckBoxMenuItem> _checkList;
     protected ActivityLogFile _logFile;
     protected String _fullPath;
     protected ColumnTextArea _stateLabel;
-    
+
 }

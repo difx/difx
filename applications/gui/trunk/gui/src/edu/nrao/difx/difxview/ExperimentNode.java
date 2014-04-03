@@ -1,7 +1,3 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
 package edu.nrao.difx.difxview;
 
 import mil.navy.usno.widgetlib.BrowserNode;
@@ -27,16 +23,11 @@ import edu.nrao.difx.difxdatabase.QueueDBConnection;
 import edu.nrao.difx.difxutilities.DiFXCommand_mv;
 import edu.nrao.difx.difxutilities.DiFXCommand_rm;
 
-/**
- *
- * @author jspitzak
- */
-public class ExperimentNode extends QueueBrowserNode {
+public class ExperimentNode extends QueueBrowserContainerNode {
     
     public ExperimentNode( String name, SystemSettings settings ) {
-        super( name );
+        super( name, settings );
         name( name );
-        _settings = settings;
     }
     
     @Override
@@ -146,6 +137,8 @@ public class ExperimentNode extends QueueBrowserNode {
      */
     @Override
     public void positionItems() {
+        if ( _settings != null )
+            _labelWidth = _settings.jobColumnSpecs().name.width + 74;
         super.positionItems();
     }
     
@@ -316,7 +309,6 @@ public class ExperimentNode extends QueueBrowserNode {
     public void vexFile( String newVal ) { _vexFile = newVal; }
     public String vexFile() { return _vexFile; }
     
-    protected SystemSettings _settings;
     protected String _name;
     protected String _creationDate;
     protected String _status;

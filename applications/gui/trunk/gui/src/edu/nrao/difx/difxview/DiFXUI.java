@@ -32,6 +32,7 @@ import java.awt.Point;
 import javax.swing.plaf.FontUIResource;
 
 import java.awt.Font;
+import java.awt.Color;
 import javax.swing.*;
 import mil.navy.usno.widgetlib.ActivityMonitorLight;
 
@@ -61,7 +62,10 @@ public class DiFXUI extends JFrame implements WindowListener {
     public DiFXUI( String settingsFile ) {
         
         setUIFont( new javax.swing.plaf.FontUIResource( "Sans", Font.PLAIN, 12 ) );
-
+        //  This goofiness makes the text on progress bars black.
+        UIManager.put( "ProgressBar.selectionForeground", Color.DARK_GRAY );
+        UIManager.put( "ProgressBar.selectionBackground", Color.DARK_GRAY );
+        
         //  Produce system settings using the settings file that came from command
         //  line arguments (which might be null, indicating we should use default
         //  values).

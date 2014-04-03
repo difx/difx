@@ -1978,6 +1978,8 @@ public class SystemSettings extends JFrame {
         _queueBrowserSettings.showIncomplete = true;
         _queueBrowserSettings.showSelected = true;
         _queueBrowserSettings.showUnselected = true;
+        _queueBrowserSettings.showExperimentScheduled = true;
+        _queueBrowserSettings.showPassScheduled = true;
         _windowConfiguration.mainX = 0;
         _windowConfiguration.mainY = 0;
         _windowConfiguration.mainW = 1400;
@@ -2833,6 +2835,8 @@ public class SystemSettings extends JFrame {
             _queueBrowserSettings.showIncomplete = doiConfig.isQueueShowIncomplete();
             _queueBrowserSettings.showSelected = doiConfig.isQueueShowSelected();
             _queueBrowserSettings.showUnselected = doiConfig.isQueueShowUnselected();
+            _queueBrowserSettings.showExperimentScheduled = doiConfig.isQueueShowExperimentScheduled();
+            _queueBrowserSettings.showPassScheduled = doiConfig.isQueueShowPassScheduled();
             if ( doiConfig.getWindowConfigMainX() != 0 )
                 _windowConfiguration.mainX = doiConfig.getWindowConfigMainX();
             if ( doiConfig.getWindowConfigMainY() != 0 )
@@ -3377,6 +3381,8 @@ public class SystemSettings extends JFrame {
         doiConfig.setQueueShowIncomplete( _queueBrowserSettings.showIncomplete );
         doiConfig.setQueueShowSelected( _queueBrowserSettings.showSelected );
         doiConfig.setQueueShowUnselected( _queueBrowserSettings.showUnselected );
+        doiConfig.setQueueShowExperimentScheduled( _queueBrowserSettings.showExperimentScheduled );
+        doiConfig.setQueueShowPassScheduled( _queueBrowserSettings.showPassScheduled );
         
         doiConfig.setWorkingDirectory( _workingDirectory.getText() );
         doiConfig.setStagingArea( _stagingArea.getText() );
@@ -4481,6 +4487,8 @@ public class SystemSettings extends JFrame {
         boolean showUnselected;
         boolean showCompleted;
         boolean showIncomplete;
+        boolean showExperimentScheduled;
+        boolean showPassScheduled;
     }
     protected QueueBrowserSettings _queueBrowserSettings;
     
