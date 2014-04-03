@@ -82,8 +82,6 @@ private:
 
 	DifxMessageMk5Status mk5status;
 
-	int nGap, nExcess;
-	long long *mk5pointer;
 	int filltime;
 	long long invalidstart;
 	int newscan;
