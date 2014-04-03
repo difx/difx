@@ -1475,12 +1475,13 @@ static void populateBaselineTable(DifxInput *D, const CorrParams *P, const CorrS
 						}
 						if(n2 == 0)
 						{
-							//still no dice? Try the zoom bands of datastream 2
+							//still no dice? Try the zoom bands of datastream 2 with the same sideband
 							for(int f2 = 0; f2 < D->datastream[a2].nZoomFreq; ++f2)
 							{
 								altFreqId = D->datastream[a2].zoomFreqId[f2];
 								if(D->freq[freqId].freq == D->freq[altFreqId].freq &&
-								   D->freq[freqId].bw   == D->freq[altFreqId].bw)
+								   D->freq[freqId].bw   == D->freq[altFreqId].bw &&
+								   D->freq[freqId].sideband == D->freq[altFreqId].sideband)
 								{
 									n2 = DifxDatastreamGetZoomBands(D->datastream+a2, altFreqId, a2p, a2c);
 									zoom2 = true;
