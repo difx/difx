@@ -156,7 +156,7 @@ enum Mark5DirectoryInfoStatus getMark5DirectoryInfo(struct Mark5DirectoryInfo *i
 						}
 					}
 				}
-				else if(nConnect < info->nScan/2-1)
+				if(nConnect < info->nScan/2-1)
 				{
 					status = Mark5DirectoryInfoErrorConnection;
 				}
@@ -206,7 +206,7 @@ enum Mark5DirectoryInfoStatus getMark5DirectoryInfo(struct Mark5DirectoryInfo *i
 						}
 					}
 				}
-				else if(nConnect < info->nScan/2-1)
+				if(nConnect < info->nScan/2-1)
 				{
 					status = Mark5DirectoryInfoErrorConnection;
 				}
