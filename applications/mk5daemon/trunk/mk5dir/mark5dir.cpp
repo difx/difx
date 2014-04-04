@@ -1393,15 +1393,15 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref, int (*callback)(i
 			if(fast)
 			{
 				printf("Fast directory read requested but not supported for this module.\n");
-				printf("Performing normal directory read\n");
+				printf("Performing normal directory read.\n");
 				fast = 0;
 			}
 
 			if(dirInfo.dirClass == Mark5DirClassLegacy)
 			{
-				scan.name   = neolegacyDir->scanName[i];
-				scan.start  = neolegacyDir->start[i];
-				scan.length = neolegacyDir->length[i];
+				scan.name   = legacyDir->scanName[i];
+				scan.start  = legacyDir->start[i];
+				scan.length = legacyDir->length[i];
 			}
 			if(dirInfo.dirClass == Mark5DirClassNeoLegacy)
 			{
@@ -1419,6 +1419,7 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref, int (*callback)(i
 			}
 			if(scan.length < bufferLength)
 			{
+				printf("Scan found: %s start=%Ld length=%Ld bufferLength=%d\n", scan.name, scan.start, scan.length, bufferLength);
 				if(callback)
 				{
 					die = callback(i, nScans(), MARK5_DIR_SHORT_SCAN, data);
