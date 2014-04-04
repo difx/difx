@@ -54,7 +54,7 @@ struct Mark5NeoLegacyDirectory
 {
 	int nscans; /* Number of scans herein */
 	int n; /* Next scan to be accessed by "next_scan" */
-	char scanName[MODULE_NEOLEGACY_MAX_SCANS][MODULE_LEGACY_SCAN_LENGTH]; /* Extended name */
+	char scanName[MODULE_NEOLEGACY_MAX_SCANS][MODULE_NEOLEGACY_SCAN_LENGTH]; /* Extended name */
 	unsigned long long start[MODULE_NEOLEGACY_MAX_SCANS]; /* Start byte position */
 	unsigned long long length[MODULE_NEOLEGACY_MAX_SCANS]; /* Length in bytes */
 	unsigned long long recpnt; /* Record offset, bytes (not a pointer) */
