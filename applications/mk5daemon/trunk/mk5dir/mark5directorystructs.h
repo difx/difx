@@ -15,6 +15,11 @@
 #define MODULE_STATUS_RECORDED          0x04
 #define MODULE_STATUS_BANK_MODE         0x08
 
+/*
+ * Note: This set of routines handles Mark5 directory types as defined by
+ * Mark5 memos 81 and 100.
+ */
+
 enum Mark5DirClass
 {
 	Mark5DirClassLegacy = 0,	/* Mark5A or B, with 1024 scan max */

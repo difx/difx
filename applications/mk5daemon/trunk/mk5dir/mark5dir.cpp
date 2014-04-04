@@ -1399,9 +1399,9 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref, int (*callback)(i
 
 			if(dirInfo.dirClass == Mark5DirClassLegacy)
 			{
-				scan.name   = legacyDir->scanName[i];
-				scan.start  = legacyDir->start[i];
-				scan.length = legacyDir->length[i];
+				scan.name   = neolegacyDir->scanName[i];
+				scan.start  = neolegacyDir->start[i];
+				scan.length = neolegacyDir->length[i];
 			}
 			if(dirInfo.dirClass == Mark5DirClassNeoLegacy)
 			{
