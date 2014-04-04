@@ -15,6 +15,14 @@
 #define MODULE_STATUS_RECORDED          0x04
 #define MODULE_STATUS_BANK_MODE         0x08
 
+
+/* This set of routines and structures handles Mark5 directory structures as documented in:
+ * Mark5 memo 81: http://www.haystack.mit.edu/tech/vlbi/mark5/mark5_memos/081.pdf
+ * and
+ * Mark5 memo 100: http://www.haystack.mit.edu/tech/vlbi/mark5/mark5_memos/100.pdf
+ */
+
+
 enum Mark5DirClass
 {
 	Mark5DirClassLegacy = 0,	/* Mark5A or B, with 1024 scan max */
