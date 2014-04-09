@@ -53,12 +53,12 @@ typedef struct
 } FlagDatum;
 
 
-static int parseFlag(char *line, char *antName, float timeRange[2], char *reason, int *recBand)
+static int parseFlag(char *line, char *antName, double timeRange[2], char *reason, int *recBand)
 {
 	int l;
 	int n;
 
-	n = sscanf(line, "%s%f%f%d%n", antName, timeRange+0, timeRange+1, recBand, &l);
+	n = sscanf(line, "%s%lf%lf%d%n", antName, timeRange+0, timeRange+1, recBand, &l);
 
 	if(n < 4)
 	{
@@ -129,7 +129,7 @@ static int processFlagFile(const DifxInput *D, struct fits_keywords *p_fits_keys
 	in = fopen(flagFile, "r");
 	if(!in)
 	{
-		return 0;
+		return nRec;
 	}
 
 	start = D->mjdStart - (int)D->mjdStart;
@@ -145,6 +145,7 @@ static int processFlagFile(const DifxInput *D, struct fits_keywords *p_fits_keys
 		char line[MaxLineLength+1];
 		int recBand;
 		int v;
+		double timeRange[2];
 		
 		rv = fgets(line, MaxLineLength, in);
 		if(!rv)
@@ -157,7 +158,7 @@ static int processFlagFile(const DifxInput *D, struct fits_keywords *p_fits_keys
 		{
 			continue;
 		}
-		else if(parseFlag(line, antName, FL->timeRange, FL->reason, &recBand))
+		else if(parseFlag(line, antName, timeRange, FL->reason, &recBand))
 		{
 			int antennaId;
 			int freqId;
@@ -174,32 +175,36 @@ static int processFlagFile(const DifxInput *D, struct fits_keywords *p_fits_keys
 				continue;
 			}
 
-			if(FL->timeRange[0] > 50000.0)	/* must be MJD */
+			if(timeRange[0] > 50000.0)	/* must be MJD */
 			{
-				FL->timeRange[0] -= (int)(D->mjdStart);
-				FL->timeRange[1] -= (int)(D->mjdStart);
+				timeRange[0] -= (int)(D->mjdStart);
+				timeRange[1] -= (int)(D->mjdStart);
 			}
 			else	/* must be day of year */
 			{
-				FL->timeRange[0] -= refDay;
-				FL->timeRange[1] -= refDay;
-				if(FL->timeRange[0] < -300.0)	/* must be new years crossing */
+				timeRange[0] -= refDay;
+				timeRange[1] -= refDay;
+				if(timeRange[0] < -300.0)	/* must be new years crossing */
 				{
-					FL->timeRange[0] += DaysThisYear(year);
+					timeRange[0] += DaysThisYear(year);
 				}
-				else if(FL->timeRange[0] > 300.0)/* must be partial project after new year */
+				else if(timeRange[0] > 300.0)/* must be partial project after new year */
 				{
-					FL->timeRange[0] -= DaysLastYear(year);
+					timeRange[0] -= DaysLastYear(year);
 				}
-				if(FL->timeRange[1] < -300.0)	/* must be new years crossing */
+				if(timeRange[1] < -300.0)	/* must be new years crossing */
 				{
-					FL->timeRange[1] += DaysThisYear(year);
+					timeRange[1] += DaysThisYear(year);
 				}
-				else if(FL->timeRange[1] > 300.0)/* must be partial project after new year */
+				else if(timeRange[1] > 300.0)/* must be partial project after new year */
 				{
-					FL->timeRange[1] -= DaysLastYear(year);
+					timeRange[1] -= DaysLastYear(year);
 				}
 			}
+
+			/* Copying after manipulation to preserve precision */
+			FL->timeRange[0] = timeRange[0];
+			FL->timeRange[1] = timeRange[1];
 			
 			if(strncmp(FL->reason, "recorder", 8) == 0)
 			{
@@ -225,7 +230,7 @@ static int processFlagFile(const DifxInput *D, struct fits_keywords *p_fits_keys
 			{
 				/* Observation ended at this site.  Flag remainder of it */
 
-				FL->timeRange[1] = 1.0;
+				FL->timeRange[1] = stop;
 			}
 			
 			/* Set antenna of flag.  ALL flags are associated with exactly 1 antenna. */
@@ -355,15 +360,27 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D, struct fits_keywords *p_fi
 			exit(0);
 		}
 
+		/* here look for experiment-based file */
 		v = globcase(__FUNCTION__, "*.*.flag", flagFile);
-		if(v == 0)
+		if(v > 0)
 		{
-			/* no files match */
-
-			continue;
+			nRec = processFlagFile(D, p_fits_keys, D->antenna[antId].name, flagFile, out, fitsbuf, nRowBytes, nColumn, columns, &FL, refDay, year, nRec);
 		}
+		else
+		{
+			/* here look for job-based files */
+			int j, l;
 
-		nRec = processFlagFile(D, p_fits_keys, D->antenna[antId].name, flagFile, out, fitsbuf, nRowBytes, nColumn, columns, &FL, refDay, year, nRec);
+			for(j = 0; j < D->nJob; ++j)
+			{
+				l = strlen(D->job[j].inputFile);
+				strncpy(flagFile, D->job[j].inputFile, l);
+				snprintf(flagFile+l-5, DIFXIO_FILENAME_LENGTH-l+5, "%s.flag", D->antenna[antId].name);
+
+				nRec = processFlagFile(D, p_fits_keys, D->antenna[antId].name, flagFile, out, fitsbuf, nRowBytes, nColumn, columns, &FL, refDay, year, nRec);
+			}
+			
+		}
 	}
 
 	/* Second: look for a multi-station flag file.  Unlike for tsys, pcal, and weather, flags will be applied from both
