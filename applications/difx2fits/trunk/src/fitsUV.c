@@ -558,7 +558,7 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int skipextraautocorrs)
 		v = fread(&binHeaderVersion, sizeof(int), 1, dv->in);
 		if(v != 1)
 		{
-			fprintf(stderr, "Error reading difs output header version\n");
+			fprintf(stderr, "Error reading DiFX output header version\n");
 
 			return HEADER_READ_ERROR;
 		}
