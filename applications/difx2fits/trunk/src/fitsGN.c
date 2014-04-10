@@ -164,6 +164,24 @@ static int isHSAAntenna(const char *token)
 		return 0;
 	}
 }
+
+static int isVLITEAntenna(const char *token)
+{
+	if(strlen(token) != 2)
+	{
+		return 0;
+	}
+	if(token[0] != 'V')
+	{
+		return 0;
+	}
+	if(token[1] < '0' || token[1] > '9')
+	{
+		return 0;
+	}
+
+	return 1;
+}
 				
 static int getNoQuote(char firstchar, FILE *in, char *token)
 {
@@ -399,7 +417,7 @@ static int parseGN(const char *filename, int row, GainRow *G)
 			}
 			else
 			{
-				if(isHSAAntenna(token))
+				if(isHSAAntenna(token) || isVLITEAntenna(token))
 				{
 					v = snprintf(G[row].antName, ANTENNA_NAME_LENGTH, "%s", token);
 					if(v >= ANTENNA_NAME_LENGTH)
