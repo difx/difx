@@ -1419,7 +1419,7 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref, int (*callback)(i
 			}
 			if(scan.length < bufferLength)
 			{
-				printf("Scan found: %s start=%Ld length=%Ld bufferLength=%d\n", scan.name, scan.start, scan.length, bufferLength);
+				printf("Short scan found: %s start=%Ld length=%Ld bufferLength=%d\n", scan.name.c_str(), scan.start, scan.length, bufferLength);
 				if(callback)
 				{
 					die = callback(i, nScans(), MARK5_DIR_SHORT_SCAN, data);
