@@ -397,7 +397,8 @@ Mode::Mode(Configuration * conf, int confindex, int dsindex, int recordedbandcha
     pcalnbins = new int[numrecordedbands];
     for(int i=0;i<numrecordedbands;i++)
     {
-      int pcalOffset;
+      int pcalOffset,
+          lsb;
       
       localfreqindex = conf->getDLocalRecordedFreqIndex(confindex, dsindex, i);
 
@@ -405,7 +406,7 @@ Mode::Mode(Configuration * conf, int confindex, int dsindex, int recordedbandcha
 
       pcalOffset = config->getDRecordedFreqPCalOffsetsHz(configindex, dsindex, localfreqindex);
 
-      int lsb = config->getDRecordedLowerSideband(configindex, datastreamindex, i);
+      lsb = config->getDRecordedLowerSideband(configindex, datastreamindex, localfreqindex);
 
       extractor[i] = PCal::getNew(1e6*recordedbandwidth, 
                                   1e6*config->getDPhaseCalIntervalMHz(configindex, datastreamindex),
