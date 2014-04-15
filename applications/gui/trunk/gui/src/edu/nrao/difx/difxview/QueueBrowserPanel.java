@@ -2031,9 +2031,6 @@ public class QueueBrowserPanel extends TearOffPanel {
                         thisExperiment.addCompleted( thisPass.numCompleted() );
                         thisExperiment.addFailed( thisPass.numFailed() );
                     }
-                    System.out.println( "experiment " + thisExperiment.name() + ": " + thisExperiment.numJobs() +
-                            " jobs, " + thisExperiment.numScheduled() + " scheduled, " + thisExperiment.numCompleted() +
-                            " completed, " + thisExperiment.numFailed() + " failed" );
                 }
                 try { Thread.sleep( 1000 ); } catch ( Exception e ) {}
             }

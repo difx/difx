@@ -456,13 +456,15 @@ public class SystemSettings extends JFrame {
         });
         _difxVersion.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
-                //  Set the DiFX setup path to match this version.
-                if ( _useDefaultStartScript.isSelected() )
-                    _difxStartScript.setText( "rungeneric." + (String)_difxVersion.getSelectedItem() );
-                guiServerConnection().sendPacket( guiServerConnection().DIFX_SETUP_PATH, 
-                        _difxStartScript.getText().length(), _difxStartScript.getText().getBytes() );
-                guiServerConnection().sendPacket( guiServerConnection().DIFX_RUN_LABEL,
-                        ((String)_difxVersion.getSelectedItem()).length(), ((String)_difxVersion.getSelectedItem()).getBytes() );
+                synchronized ( _difxVersion ) {
+                    //  Set the DiFX setup path to match this version.
+                    if ( _useDefaultStartScript.isSelected() )
+                        _difxStartScript.setText( "rungeneric." + (String)_difxVersion.getSelectedItem() );
+                    guiServerConnection().sendPacket( guiServerConnection().DIFX_SETUP_PATH, 
+                            _difxStartScript.getText().length(), _difxStartScript.getText().getBytes() );
+                    guiServerConnection().sendPacket( guiServerConnection().DIFX_RUN_LABEL,
+                            ((String)_difxVersion.getSelectedItem()).length(), ((String)_difxVersion.getSelectedItem()).getBytes() );
+                }
             }
         });
         difxControlPanel.add( _difxVersion );
@@ -631,6 +633,47 @@ public class SystemSettings extends JFrame {
         } );
         _viewDifxMessagesButton.setBounds( 480, 175, 175, 25 );
         networkPanel.add( _viewDifxMessagesButton );
+        JLabel requestLabel = new JLabel( "Request: " );
+        requestLabel.setBounds( 630, 175, 100, 25 );
+        requestLabel.setHorizontalAlignment( JLabel.RIGHT );
+        networkPanel.add( requestLabel );
+        _requestAllMessages = new ZCheckBox( "All" );
+        _requestAllMessages.setBounds( 730, 175, 50, 25 );
+        _requestAllMessages.setToolTipText( "Instruct <<italic>>guiServer<</italic>> to send <<bold>>ALL<</bold>> DiFX message traffic.\n"
+                + "Many DiFX messages are not interpreted by the GUI\n"
+                + "and will be ignored." );
+        _requestAllMessages.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                _requestAllMessages.setSelected( true );
+                _requestSpecificMessages.setSelected( false );
+                _difxMessageListDisplay.changeCallback();
+            }
+        } );
+        networkPanel.add( _requestAllMessages );
+        _requestSpecificMessages = new ZCheckBox( "Selected" );
+        _requestSpecificMessages.setBounds( 780, 175, 80, 25 );
+        _requestSpecificMessages.setToolTipText( "Instruct <<italic>>guiServer<</italic>> to send only specific DiFX messages\n"
+                + "This will limit socket traffic between the GUI and <<italic>>guiServer<</italic>>.\n"
+                + "Messages can be chosen using the \"Requested Messages\" button." );
+        _requestSpecificMessages.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                _requestAllMessages.setSelected( false );
+                _requestSpecificMessages.setSelected( true );
+                _difxMessageListDisplay.changeCallback();
+            }
+        } );
+        networkPanel.add( _requestSpecificMessages );
+        _requestMessagesButton = new ZButton( "Selected Messages" );
+        _requestMessagesButton.setBounds( 860, 175, 175, 25 );
+        _requestMessagesButton.setToolTipText( "Pick the DiFX messages that will be sent by <<italic>>guiServer<</italic>>." );
+        _requestMessagesButton.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                _difxMessageListDisplay.position( _requestMessagesButton.getX() - 100,
+                            _requestMessagesButton.getY() + 25 );
+                _difxMessageListDisplay.setVisible( true );
+            }
+        } );
+        networkPanel.add( _requestMessagesButton );
         
         IndexedPanel databasePanel = new IndexedPanel( "Database Configuration" );
         databasePanel.openHeight( 305 );
@@ -1462,6 +1505,10 @@ public class SystemSettings extends JFrame {
 //            }
             //  Turn on/off the relay based on the checkbox (and the quality of the connection).
             if ( _guiServerConnection != null && _guiServerConnection.connected() ) {
+                //  Tell guiServer which messages we are interested in relaying (if
+                //  we are, in fact, relaying).
+                if ( _useTCPRelayCheck.isSelected() )
+                    _difxMessageListDisplay.changeCallback();
                 _guiServerConnection.relayBroadcast( _useTCPRelayCheck.isSelected() );
             }
         }
@@ -1537,6 +1584,10 @@ public class SystemSettings extends JFrame {
                         _counter = 0;
                         if ( _messageCenter != null )
                             _messageCenter.message( 0, "SystemSettings - guiServer connection", "connection successful" );
+                        //  Tell guiServer which messages we are interested in relaying (if
+                        //  we are, in fact, relaying).
+                        if ( _useTCPRelayCheck.isSelected() )
+                            _difxMessageListDisplay.changeCallback();
                         //  This is used to relay multicast packets.
                         _guiServerConnection.relayBroadcast( _useTCPRelayCheck.isSelected() );
                         //  Hang out while this connection is running.  We'll notice a
@@ -1912,6 +1963,10 @@ public class SystemSettings extends JFrame {
         _useTCPRelayCheck.setSelected( false );
         _identifyMark5sCheck.setSelected( true );
         _mark5Pattern.setText( "mark5.*" );
+        _requestAllMessages.setSelected( true );
+        _requestSpecificMessages.setSelected( false );
+        if ( _difxMessageListDisplay == null )
+            _difxMessageListDisplay = new DiFXMessageListDisplay( 0, 0, _settings );
         _inactivityWarning.intValue( 20 );
         _inactivityError.intValue( 60 );
         generateMark5PatternList();
@@ -2012,6 +2067,8 @@ public class SystemSettings extends JFrame {
         _windowConfiguration.sourceBasedOnPathDisplayH = 300;
         _windowConfiguration.restrictedSourceListDisplayW = 400;
         _windowConfiguration.restrictedSourceListDisplayH = 300;
+        _windowConfiguration.requestedMessageListDisplayW = 320;
+        _windowConfiguration.requestedMessageListDisplayH = 500;
         _windowConfiguration.directoryDisplayW = 600;
         _windowConfiguration.directoryDisplayH = 500;
         _windowConfiguration.monitorDisplayW = 600;
@@ -2430,8 +2487,10 @@ public class SystemSettings extends JFrame {
             this.difxVersion( _difxVersionPreferred );
     }
     public void clearDifxVersion() {
-        _difxVersion.removeAllItems();
-        _difxVersion.setEnabled( false );
+        synchronized ( _difxVersion ) {
+            _difxVersion.removeAllItems();
+            _difxVersion.setEnabled( false );
+        }
     }
     
     public void difxBase( String newVal ) { _difxBase.setText( newVal ); }
@@ -2764,6 +2823,14 @@ public class SystemSettings extends JFrame {
                 _mark5Pattern.setText( doiConfig.getMark5Pattern() );
                 generateMark5PatternList();
             }
+            if ( doiConfig.isRequestSpecificMessages() ) {
+                _requestAllMessages.setSelected( false );
+                _requestSpecificMessages.setSelected( true );
+            }
+            else {
+                _requestAllMessages.setSelected( true );
+                _requestSpecificMessages.setSelected( false );
+            }
             this.loggingEnabled( doiConfig.isLoggingEnabled() );
             if ( doiConfig.getStatusValidDuration() != 0 )
                 this.statusValidDuration( doiConfig.getStatusValidDuration() );
@@ -2897,6 +2964,10 @@ public class SystemSettings extends JFrame {
                 _windowConfiguration.restrictedSourceListDisplayW = doiConfig.getWindowConfigRestrictedSourceListDisplayW();
             if ( doiConfig.getWindowConfigRestrictedSourceListDisplayH() != 0 )
                 _windowConfiguration.restrictedSourceListDisplayH = doiConfig.getWindowConfigRestrictedSourceListDisplayH();
+            if ( doiConfig.getWindowConfigSelectedMessagesDisplayW() != 0 )
+                _windowConfiguration.requestedMessageListDisplayW = doiConfig.getWindowConfigSelectedMessagesDisplayW();
+            if ( doiConfig.getWindowConfigSelectedMessagesDisplayH() != 0 )
+                _windowConfiguration.requestedMessageListDisplayH = doiConfig.getWindowConfigSelectedMessagesDisplayH();
             if ( doiConfig.getWindowConfigDirectoryDisplayW() != 0 )
                 _windowConfiguration.directoryDisplayW = doiConfig.getWindowConfigDirectoryDisplayW();
             if ( doiConfig.getWindowConfigDirectoryDisplayH() != 0 )
@@ -3342,6 +3413,7 @@ public class SystemSettings extends JFrame {
         doiConfig.setBufferSize( this.bufferSize() );
         doiConfig.setSuppressUnknownMessageWarnings( _suppressWarningsCheck.isSelected() );
         doiConfig.setDontIdentifyMark5SByPattern( !_identifyMark5sCheck.isSelected() );
+        doiConfig.setRequestSpecificMessages( _requestSpecificMessages.isSelected() );
         doiConfig.setMark5Pattern( _mark5Pattern.getText() );
         doiConfig.setLoggingEnabled( this.loggingEnabled() );
         doiConfig.setStatusValidDuration( this.statusValidDuration() );
@@ -3420,6 +3492,8 @@ public class SystemSettings extends JFrame {
         doiConfig.setWindowConfigSourceBasedOnPathDisplayH( _windowConfiguration.sourceBasedOnPathDisplayH );
         doiConfig.setWindowConfigRestrictedSourceListDisplayW( _windowConfiguration.restrictedSourceListDisplayW );
         doiConfig.setWindowConfigRestrictedSourceListDisplayH( _windowConfiguration.restrictedSourceListDisplayH );
+        doiConfig.setWindowConfigSelectedMessagesDisplayW( _windowConfiguration.requestedMessageListDisplayW );
+        doiConfig.setWindowConfigSelectedMessagesDisplayH( _windowConfiguration.requestedMessageListDisplayH );
         doiConfig.setWindowConfigDirectoryDisplayW( _windowConfiguration.directoryDisplayW );
         doiConfig.setWindowConfigDirectoryDisplayH( _windowConfiguration.directoryDisplayH );
         doiConfig.setWindowConfigMonitorDisplayW( _windowConfiguration.monitorDisplayW );
@@ -4525,6 +4599,8 @@ public class SystemSettings extends JFrame {
         int sourceBasedOnPathDisplayH;
         int restrictedSourceListDisplayW;
         int restrictedSourceListDisplayH;
+        int requestedMessageListDisplayW;
+        int requestedMessageListDisplayH;
         int directoryDisplayW;
         int directoryDisplayH;
         int monitorDisplayW;
@@ -5406,6 +5482,11 @@ public class SystemSettings extends JFrame {
     public int maxSecondsForProcessing() { return _maxSecondsForProcessing.intValue(); }
     public boolean useMaxSecondsForHardware() { return _useMaxSecondsForHardware.isSelected(); }
     public boolean useMaxSecondsForProcessing() { return _useMaxSecondsForProcessing.isSelected(); }
+    
+    protected ZCheckBox _requestAllMessages;
+    protected ZCheckBox _requestSpecificMessages;
+    protected ZButton _requestMessagesButton;
+    protected DiFXMessageListDisplay _difxMessageListDisplay;
 
     protected String _invisibleProcessors;
     protected String _invisibleProcessorCores;
@@ -5413,6 +5494,276 @@ public class SystemSettings extends JFrame {
 
     protected SystemSettings _settings;
     
+    /*
+     * Class to display a list of nodes that are permitted to be used as source node.
+     */
+    public class DiFXMessageListDisplay extends JFrame {
+
+        public DiFXMessageListDisplay( int x, int y, SystemSettings settings ) {
+            _settings = settings;
+            setLookAndFeel();
+            this.setLayout( null );
+            this.setBounds( x, y, windowConfiguration().requestedMessageListDisplayW,
+                windowConfiguration().requestedMessageListDisplayH );
+            this.getContentPane().setLayout( null );
+            this.setTitle( "Selected DiFX Message List" );
+            _this = this;
+            this.addComponentListener( new java.awt.event.ComponentAdapter() {
+                public void componentResized( ComponentEvent e ) {
+                    windowConfiguration().requestedMessageListDisplayW = _this.getWidth();
+                    windowConfiguration().requestedMessageListDisplayH = _this.getHeight();
+                    newSize();
+                }
+            });
+            this.addComponentListener( new java.awt.event.ComponentAdapter() {
+                public void componentShown( ComponentEvent e ) {
+                    newSize();
+                }
+            });
+            int ny = 20;
+            _alertItem = new ZCheckBox( "DifxAlertMessage" );
+            _alertItem.setBounds( 10, ny, 300, 25 );
+            ny += 25;
+            _alertItem.addActionListener( new ActionListener() {
+                public void actionPerformed( ActionEvent e ) {
+                    if ( _requestSpecificMessages.isSelected() )
+                        changeCallback();
+                }
+            });
+            this.add( _alertItem );
+            _commandItem = new ZCheckBox( "DifxCommandMessage" );
+            _commandItem.setBounds( 10, ny, 300, 25 );
+            ny += 25;
+            _commandItem.addActionListener( new ActionListener() {
+                public void actionPerformed( ActionEvent e ) {
+                    if ( _requestSpecificMessages.isSelected() )
+                        changeCallback();
+                }
+            });
+            this.add( _commandItem );
+            _fileOperationItem = new ZCheckBox( "DifxFileOperationMessage" );
+            _fileOperationItem.setBounds( 10, ny, 300, 25 );
+            ny += 25;
+            _fileOperationItem.addActionListener( new ActionListener() {
+                public void actionPerformed( ActionEvent e ) {
+                    if ( _requestSpecificMessages.isSelected() )
+                        changeCallback();
+                }
+            });
+            this.add( _fileOperationItem );
+            _fileTransferItem = new ZCheckBox( "DifxFileTransferMessage" );
+            _fileTransferItem.setBounds( 10, ny, 300, 25 );
+            ny += 25;
+            _fileTransferItem.addActionListener( new ActionListener() {
+                public void actionPerformed( ActionEvent e ) {
+                    if ( _requestSpecificMessages.isSelected() )
+                        changeCallback();
+                }
+            });
+            this.add( _fileTransferItem );
+            _getDirectoryItem = new ZCheckBox( "DifxGetDirectoryMessage" );
+            _getDirectoryItem.setBounds( 10, ny, 300, 25 );
+            ny += 25;
+            _getDirectoryItem.addActionListener( new ActionListener() {
+                public void actionPerformed( ActionEvent e ) {
+                    if ( _requestSpecificMessages.isSelected() )
+                        changeCallback();
+                }
+            });
+            this.add( _getDirectoryItem );
+            _infoItem = new ZCheckBox( "DifxInfoMessage" );
+            _infoItem.setBounds( 10, ny, 300, 25 );
+            ny += 25;
+            _infoItem.addActionListener( new ActionListener() {
+                public void actionPerformed( ActionEvent e ) {
+                    if ( _requestSpecificMessages.isSelected() )
+                        changeCallback();
+                }
+            });
+            this.add( _infoItem );
+            _loadItem = new ZCheckBox( "DifxLoadMessage" );
+            _loadItem.setBounds( 10, ny, 300, 25 );
+            ny += 25;
+            _loadItem.addActionListener( new ActionListener() {
+                public void actionPerformed( ActionEvent e ) {
+                    if ( _requestSpecificMessages.isSelected() )
+                        changeCallback();
+                }
+            });
+            this.add( _loadItem );
+            _machinesDefinitionItem = new ZCheckBox( "DifxMachinesDefinitionMessage" );
+            _machinesDefinitionItem.setBounds( 10, ny, 300, 25 );
+            ny += 25;
+            _machinesDefinitionItem.addActionListener( new ActionListener() {
+                public void actionPerformed( ActionEvent e ) {
+                    if ( _requestSpecificMessages.isSelected() )
+                        changeCallback();
+                }
+            });
+            this.add( _machinesDefinitionItem );
+            _mk5ControlItem = new ZCheckBox( "DifxMk5ControlMessage" );
+            _mk5ControlItem.setBounds( 10, ny, 300, 25 );
+            ny += 25;
+            _mk5ControlItem.addActionListener( new ActionListener() {
+                public void actionPerformed( ActionEvent e ) {
+                    if ( _requestSpecificMessages.isSelected() )
+                        changeCallback();
+                }
+            });
+            this.add( _mk5ControlItem );
+            _smartItem = new ZCheckBox( "DifxSmartMessage" );
+            _smartItem.setBounds( 10, ny, 300, 25 );
+            ny += 25;
+            _smartItem.addActionListener( new ActionListener() {
+                public void actionPerformed( ActionEvent e ) {
+                    if ( _requestSpecificMessages.isSelected() )
+                        changeCallback();
+                }
+            });
+            this.add( _smartItem );
+            _statusItem = new ZCheckBox( "DifxStatusMessage" );
+            _statusItem.setBounds( 10, ny, 300, 25 );
+            ny += 25;
+            _statusItem.addActionListener( new ActionListener() {
+                public void actionPerformed( ActionEvent e ) {
+                    if ( _requestSpecificMessages.isSelected() )
+                        changeCallback();
+                }
+            });
+            this.add( _statusItem );
+            _stopItem = new ZCheckBox( "DifxStopMessage" );
+            _stopItem.setBounds( 10, ny, 300, 25 );
+            ny += 25;
+            _stopItem.addActionListener( new ActionListener() {
+                public void actionPerformed( ActionEvent e ) {
+                    if ( _requestSpecificMessages.isSelected() )
+                        changeCallback();
+                }
+            });
+            this.add( _stopItem );
+            _vex2DifxRunItem = new ZCheckBox( "DifxVex2DifxRunMessage" );
+            _vex2DifxRunItem.setBounds( 10, ny, 300, 25 );
+            ny += 25;
+            _vex2DifxRunItem.addActionListener( new ActionListener() {
+                public void actionPerformed( ActionEvent e ) {
+                    if ( _requestSpecificMessages.isSelected() )
+                        changeCallback();
+                }
+            });
+            this.add( _vex2DifxRunItem );
+            _weightItem = new ZCheckBox( "DifxWeightMessage" );
+            _weightItem.setBounds( 10, ny, 300, 25 );
+            ny += 25;
+            _weightItem.addActionListener( new ActionListener() {
+                public void actionPerformed( ActionEvent e ) {
+                    if ( _requestSpecificMessages.isSelected() )
+                        changeCallback();
+                }
+            });
+            this.add( _weightItem );
+            _mark5StatusItem = new ZCheckBox( "Mark5StatusMessage" );
+            _mark5StatusItem.setBounds( 10, ny, 300, 25 );
+            ny += 25;
+            _mark5StatusItem.addActionListener( new ActionListener() {
+                public void actionPerformed( ActionEvent e ) {
+                    if ( _requestSpecificMessages.isSelected() )
+                        changeCallback();
+                }
+            });
+            this.add( _mark5StatusItem );
+            _unknownItem = new ZCheckBox( "Unknown Message Type" );
+            _unknownItem.setBounds( 10, ny, 300, 25 );
+            ny += 25;
+            _unknownItem.addActionListener( new ActionListener() {
+                public void actionPerformed( ActionEvent e ) {
+                    if ( _requestSpecificMessages.isSelected() )
+                        changeCallback();
+                }
+            });
+            this.add( _unknownItem );
+            _close = new ZButton( "Close" );
+            _close.setBounds( 200, ny + 10, 100, 25 );
+            _close.addActionListener( new ActionListener() {
+                public void actionPerformed( ActionEvent e ) {
+                    _this.setVisible( false );
+                }
+            } );
+            this.add( _close );
+        }
+        
+        public void position( int x, int y ) {
+            this.setBounds( x, y, windowConfiguration().requestedMessageListDisplayW,
+                windowConfiguration().requestedMessageListDisplayH );
+        }
+        
+        /*
+         * The user changed which messages are requested from guiServer.  Compose a
+         * message to guiServer conveying the new state.
+         */
+        protected void changeCallback() {
+            String messStr = "";
+            if ( _requestAllMessages.isSelected() ) {
+                messStr = "ALL_MESSAGES\n";
+            }
+            else {
+                messStr = "SELECTED_MESSAGES\n";
+                if ( _alertItem.isSelected() )
+                    messStr += "ALERT_MESSAGES\n";
+                if ( _commandItem.isSelected() )
+                    messStr += "COMMAND_MESSAGES\n";
+                if ( _fileOperationItem.isSelected() )
+                    messStr += "FILEOPERATION_MESSAGES\n";
+                if ( _fileTransferItem.isSelected() )
+                    messStr += "FILETRANSFER_MESSAGES\n";
+                if ( _getDirectoryItem.isSelected() )
+                    messStr += "GETDIRECTORY_MESSAGES\n";
+                if ( _infoItem.isSelected() )
+                    messStr += "INFO_MESSAGES\n";
+                if ( _loadItem.isSelected() )
+                    messStr += "LOAD_MESSAGES\n";
+                if ( _machinesDefinitionItem.isSelected() )
+                    messStr += "MACHINESDEFINITION_MESSAGES\n";
+                if ( _mk5ControlItem.isSelected() )
+                    messStr += "MK5CONTROL_MESSAGES\n";
+                if ( _smartItem.isSelected() )
+                    messStr += "SMART_MESSAGES\n";
+                if ( _statusItem.isSelected() )
+                    messStr += "STATUS_MESSAGES\n";
+                if ( _stopItem.isSelected() )
+                    messStr += "STOP_MESSAGES\n";
+                if ( _vex2DifxRunItem.isSelected() )
+                    messStr += "VEX2DIFXRUN_MESSAGES\n";
+                if ( _weightItem.isSelected() )
+                    messStr += "WEIGHT_MESSAGES\n";
+                if ( _mark5StatusItem.isSelected() )
+                    messStr += "MARK5STATUS_MESSAGES\n";
+                if ( _unknownItem.isSelected() )
+                    messStr += "UNKNOWN_MESSAGES\n";
+            }
+            guiServerConnection().sendPacketWithString( _guiServerConnection.MESSAGE_SELECTION_PACKET, messStr );
+        }
+        
+        protected DiFXMessageListDisplay _this;
+        protected ZCheckBox _alertItem;
+        protected ZCheckBox _commandItem;
+        protected ZCheckBox _fileOperationItem;
+        protected ZCheckBox _fileTransferItem;
+        protected ZCheckBox _getDirectoryItem;
+        protected ZCheckBox _infoItem;
+        protected ZCheckBox _loadItem;
+        protected ZCheckBox _machinesDefinitionItem;
+        protected ZCheckBox _mk5ControlItem;
+        protected ZCheckBox _smartItem;
+        protected ZCheckBox _statusItem;
+        protected ZCheckBox _stopItem;
+        protected ZCheckBox _vex2DifxRunItem;
+        protected ZCheckBox _weightItem;
+        protected ZCheckBox _mark5StatusItem;
+        protected ZCheckBox _unknownItem;
+        protected ZButton _close;
+
+    }
+
     /*
      * This stuff maintains an "active ID list" of unique (integer) job identifiers.
      * The list contains each job that is actively running, and, for each, a list

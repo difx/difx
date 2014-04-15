@@ -185,6 +185,8 @@
                 <xsd:element ref="windowConfigSourceBasedOnPathDisplayH"/>
                 <xsd:element ref="windowConfigRestrictedSourceListDisplayW"/>
                 <xsd:element ref="windowConfigRestrictedSourceListDisplayH"/>
+                <xsd:element ref="windowConfigSelectedMessagesDisplayW"/>
+                <xsd:element ref="windowConfigSelectedMessagesDisplayH"/>
                 <xsd:element ref="windowConfigDirectoryDisplayW"/>
                 <xsd:element ref="windowConfigDirectoryDisplayH"/>
                 <xsd:element ref="windowConfigMonitorDisplayW"/>
@@ -224,6 +226,7 @@
                 <xsd:element ref="suppressUnknownMessageWarnings"/>
                 <xsd:element ref="dontIdentifyMark5sByPattern"/>
                 <xsd:element ref="mark5Pattern"/>
+                <xsd:element ref="requestSpecificMessages"/>
 
                 <xsd:element ref="eopURL"/>
                 <xsd:element ref="leapSecondsURL"/>
@@ -436,6 +439,8 @@
     <xsd:element name="windowConfigSourceBasedOnPathDisplayH" type="xsd:int"></xsd:element>
     <xsd:element name="windowConfigRestrictedSourceListDisplayW" type="xsd:int"></xsd:element>
     <xsd:element name="windowConfigRestrictedSourceListDisplayH" type="xsd:int"></xsd:element>
+    <xsd:element name="windowConfigSelectedMessagesDisplayW" type="xsd:int"></xsd:element>
+    <xsd:element name="windowConfigSelectedMessagesDisplayH" type="xsd:int"></xsd:element>
     <xsd:element name="windowConfigDirectoryDisplayW" type="xsd:int"></xsd:element>
     <xsd:element name="windowConfigDirectoryDisplayH" type="xsd:int"></xsd:element>
     <xsd:element name="windowConfigMonitorDisplayW" type="xsd:int"></xsd:element>
@@ -475,6 +480,7 @@
     <xsd:element name="suppressUnknownMessageWarnings" type="xsd:boolean"></xsd:element>
     <xsd:element name="dontIdentifyMark5sByPattern" type="xsd:boolean"></xsd:element>
     <xsd:element name="mark5Pattern" type="xsd:string"></xsd:element>
+    <xsd:element name="requestSpecificMessages" type="xsd:boolean"></xsd:element>
 
     <xsd:element name="eopURL" type="xsd:string"></xsd:element>
     <xsd:element name="leapSecondsURL" type="xsd:string"></xsd:element>

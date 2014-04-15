@@ -60,6 +60,7 @@ public class GuiServerConnection {
     public final int START_DIFX_MONITOR             = 14;
     public final int DIFX_RUN_LABEL                 = 15;
     public final int GUISERVER_USER                 = 16;
+    public final int MESSAGE_SELECTION_PACKET       = 17;
 
     public GuiServerConnection( SystemSettings settings, String IP, int port, int timeout ) {
         _settings = settings;
