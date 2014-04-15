@@ -818,6 +818,7 @@ static int loadDifxTcalDIFX(DifxTcal *dt)
 		char receiver[MAX_DIFX_TCAL_RECEIVER_LENGTH] = "";
 		int n;
 		float freq, tcal1, tcal2;
+		char pol1, pol2;
 
 		rv = fgets(line, MaxVLBATcalLineLength-1, in);
 		if(!rv)
@@ -828,8 +829,10 @@ static int loadDifxTcalDIFX(DifxTcal *dt)
 		{
 			continue;
 		}
-		n = sscanf(line, "%s%s%f%f%f", antenna, receiver, &freq, &tcal1, &tcal2);
-		if(n == 5)
+		pol1 = 'R';
+		pol2 = 'L';
+		n = sscanf(line, "%s%s%f%f%f%c%c", antenna, receiver, &freq, &tcal1, &tcal2, &pol1, &pol2);
+		if(n == 5 || n == 7)
 		{
 			int newGroup = 0;
 			int v;
@@ -876,7 +879,7 @@ static int loadDifxTcalDIFX(DifxTcal *dt)
 				dt->group[g].mjdStart = 0;
 			}
 
-			v = addDifxTcalValue(dt->group+g, freq, tcal1, 'R', tcal2, 'L');
+			v = addDifxTcalValue(dt->group+g, freq, tcal1, pol1, tcal2, pol2);
 			if(v < 0)
 			{
 				fclose(in);
@@ -885,7 +888,7 @@ static int loadDifxTcalDIFX(DifxTcal *dt)
 			}
 
 			/* here is where the duplicate tcal value is actually added */
-			v = addDifxTcalValue(dt->group+gAnt, freq, tcal1, 'R', tcal2, 'L');
+			v = addDifxTcalValue(dt->group+gAnt, freq, tcal1, pol1, tcal2, pol2);
 			if(v < 0)
 			{
 				fclose(in);
