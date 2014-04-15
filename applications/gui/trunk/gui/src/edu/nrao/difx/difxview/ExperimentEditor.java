@@ -1341,7 +1341,7 @@ public class ExperimentEditor extends JFrame {
         //  all of the antennas we know about (they should have been listed in the .vex
         //  file).
         if ( _antennaList != null && !_antennaList.useList().isEmpty() ) {
-            try {
+            synchronized ( _antennaList ) {
                 for ( Iterator<StationPanel> iter = _antennaList.iterator(); iter.hasNext(); ) {
                     StationPanel antenna = iter.next();
                     //  If the antenna is not in the .v2d file, it is not being used.
@@ -1380,7 +1380,7 @@ public class ExperimentEditor extends JFrame {
                             antenna.deltaClock( _v2dFileParser.antennaDeltaClock( antenna.name() ) );
                     }
                 }
-            } catch ( java.util.ConcurrentModificationException e ) {}
+            }
         }
         
     }
@@ -1517,12 +1517,9 @@ public class ExperimentEditor extends JFrame {
         public ArrayList<StationPanel> useList() {
             ArrayList<StationPanel> list = new ArrayList<StationPanel>();
             for ( Iterator<StationPanel> iter = this.iterator(); iter.hasNext(); ) {
-                try {
-                    StationPanel panel = iter.next();
-                    if ( panel.use() )
-                        list.add( panel );
-                }
-                catch ( java.util.ConcurrentModificationException e ) {}
+                StationPanel panel = iter.next();
+                if ( panel.use() )
+                    list.add( panel );
             }
             return list;
         }
@@ -1625,8 +1622,11 @@ public class ExperimentEditor extends JFrame {
         //  lists of antennas (these might have been formed the last time the .vex file
         //  was parsed).
         _antennaPane.clear();
-        if ( _antennaList != null )
-            _antennaList.clear();
+        if ( _antennaList != null ) {
+            synchronized ( _antennaList ) {
+                _antennaList.clear();
+            }
+        }
         if ( vexData.stationList() != null ) {
             for ( Iterator<VexFileParser.Station> iter = vexData.stationList().iterator(); iter.hasNext(); ) {
                 VexFileParser.Station station = iter.next();
@@ -1645,7 +1645,9 @@ public class ExperimentEditor extends JFrame {
                     }
                 } );
                 _antennaPane.addNode( panel );
-                _antennaList.add( panel );
+                synchronized ( _antennaList ) {
+                    _antennaList.add( panel );
+                }
                 //  Add the appropriate site information for this station.
                 for ( Iterator<VexFileParser.Site> jter = vexData.siteList().iterator(); jter.hasNext(); ) {
                     VexFileParser.Site site = jter.next();
@@ -2254,10 +2256,12 @@ public class ExperimentEditor extends JFrame {
                         _stationsMatch = false;
                     else {
                         boolean stationFound = false;
-                        for ( Iterator<StationPanel> kter = _antennaList.useList().iterator(); kter.hasNext(); ) {
-                            StationPanel antenna = kter.next();
-                            if ( antenna.name().equalsIgnoreCase( station.name ) ) {
-                                stationFound = true;
+                        synchronized ( _antennaList ) {
+                            for ( Iterator<StationPanel> kter = _antennaList.useList().iterator(); kter.hasNext(); ) {
+                                StationPanel antenna = kter.next();
+                                if ( antenna.name().equalsIgnoreCase( station.name ) ) {
+                                    stationFound = true;
+                                }
                             }
                         }
                         if ( !stationFound )
@@ -2378,43 +2382,45 @@ public class ExperimentEditor extends JFrame {
             _fileToNodeMap = new HashMap<String,String>();
         _fileToNodeMap.clear();
         if ( _antennaList != null && !_antennaList.useList().isEmpty() ) {
-            for ( Iterator<StationPanel> iter = _antennaList.useList().iterator(); iter.hasNext(); ) {
-                StationPanel antenna = iter.next();
-                if ( antenna.use() ) {
-                    v2dFileParser.antenna( antenna.name() );
-                    v2dFileParser.antennaPhaseCalInt( antenna.name(), antenna.phaseCalInt() );
-                    v2dFileParser.antennaToneSelection( antenna.name(), antenna.toneSelection() );
-                    v2dFileParser.antennaFormat( antenna.name(), antenna.dataFormat() );
-                    if ( antenna.useVsn() ) {
-                        v2dFileParser.antennaVsn( antenna.name(), antenna.vsnSource() );
-                    }
-                    else if ( antenna.useFile() ) {
-                        ArrayList<String> fileList = antenna.fileList();
-                        if ( fileList.size() > 0 ) {
-                            if ( antenna.useFileList() ) {
-                                v2dFileParser.antennaFileList( antenna.name(), fileList.get( 0 ) );
-                            }
-                            else {
-                                for ( Iterator<String> jter = fileList.iterator(); jter.hasNext(); ) {
-                                    String filename = jter.next();
-                                    v2dFileParser.antennaFile( antenna.name(), filename );
-                                    _fileToNodeMap.put( filename, antenna.machineForFile( filename ) );
+            synchronized ( _antennaList ) {
+                for ( Iterator<StationPanel> iter = _antennaList.useList().iterator(); iter.hasNext(); ) {
+                    StationPanel antenna = iter.next();
+                    if ( antenna.use() ) {
+                        v2dFileParser.antenna( antenna.name() );
+                        v2dFileParser.antennaPhaseCalInt( antenna.name(), antenna.phaseCalInt() );
+                        v2dFileParser.antennaToneSelection( antenna.name(), antenna.toneSelection() );
+                        v2dFileParser.antennaFormat( antenna.name(), antenna.dataFormat() );
+                        if ( antenna.useVsn() ) {
+                            v2dFileParser.antennaVsn( antenna.name(), antenna.vsnSource() );
+                        }
+                        else if ( antenna.useFile() ) {
+                            ArrayList<String> fileList = antenna.fileList();
+                            if ( fileList.size() > 0 ) {
+                                if ( antenna.useFileList() ) {
+                                    v2dFileParser.antennaFileList( antenna.name(), fileList.get( 0 ) );
+                                }
+                                else {
+                                    for ( Iterator<String> jter = fileList.iterator(); jter.hasNext(); ) {
+                                        String filename = jter.next();
+                                        v2dFileParser.antennaFile( antenna.name(), filename );
+                                        _fileToNodeMap.put( filename, antenna.machineForFile( filename ) );
+                                    }
                                 }
                             }
                         }
+                        else if ( antenna.useEVLBI() )
+                            v2dFileParser.antennaNetworkPort( antenna.name(), antenna.networkPort() );
+                        //  Position changes.
+                        if ( antenna.positionXChange() )
+                            v2dFileParser.antennaX( antenna.name(), antenna.positionX() );
+                        if ( antenna.positionYChange() )
+                            v2dFileParser.antennaY( antenna.name(), antenna.positionY() );
+                        if ( antenna.positionZChange() )
+                            v2dFileParser.antennaZ( antenna.name(), antenna.positionZ() );
+                        //  Clock settings.
+                        if ( antenna.deltaClockChange() )
+                            v2dFileParser.antennaDeltaClock( antenna.name(), antenna.deltaClock() );
                     }
-                    else if ( antenna.useEVLBI() )
-                        v2dFileParser.antennaNetworkPort( antenna.name(), antenna.networkPort() );
-                    //  Position changes.
-                    if ( antenna.positionXChange() )
-                        v2dFileParser.antennaX( antenna.name(), antenna.positionX() );
-                    if ( antenna.positionYChange() )
-                        v2dFileParser.antennaY( antenna.name(), antenna.positionY() );
-                    if ( antenna.positionZChange() )
-                        v2dFileParser.antennaZ( antenna.name(), antenna.positionZ() );
-                    //  Clock settings.
-                    if ( antenna.deltaClockChange() )
-                        v2dFileParser.antennaDeltaClock( antenna.name(), antenna.deltaClock() );
                 }
             }
         }
@@ -2572,44 +2578,46 @@ public class ExperimentEditor extends JFrame {
                 
                 //  Do some sanity checking on the settings that went into the v2d file.
                 if ( _doSanityCheck.isSelected() ) {
-                    if ( _antennaList != null && !_antennaList.useList().isEmpty() ) {                    
-                        for ( Iterator<StationPanel> iter = _antennaList.useList().iterator(); iter.hasNext(); ) {
-                            StationPanel antenna = iter.next();
-                            if ( antenna.use() ) {
-                                if ( antenna.useVsn() ) {
-                                    if ( antenna.vsnSource() != null && antenna.vsnSource().length() > 0 ) {
-                                        //  Try to locate the directory list.  If it does not
-                                        //  exist, see if the user wants to continue.
-                                        try {
-                                            int exs = DiFXCommand_ls.fileExists( 4, antenna.dirListLocation(), _settings );
-                                            if ( exs == DiFXCommand_ls.FILE_DOESNT_EXIST ) {
-                                                int ret = JOptionPane.showConfirmDialog( _this, 
-                                                        "The directory listing for VSN " + antenna.vsnSource() + "\""
-                                                        + antenna.dirListLocation() + "\" does not exist.\nDo you wish to continue?",
-                                                        "Directory Listing Not Found", 
-                                                        JOptionPane.YES_NO_OPTION );
-                                                if ( ret == JOptionPane.NO_OPTION )
-                                                    continueRun = false;
+                    if ( _antennaList != null && !_antennaList.useList().isEmpty() ) {        
+                        synchronized ( _antennaList ) {
+                            for ( Iterator<StationPanel> iter = _antennaList.useList().iterator(); iter.hasNext(); ) {
+                                StationPanel antenna = iter.next();
+                                if ( antenna.use() ) {
+                                    if ( antenna.useVsn() ) {
+                                        if ( antenna.vsnSource() != null && antenna.vsnSource().length() > 0 ) {
+                                            //  Try to locate the directory list.  If it does not
+                                            //  exist, see if the user wants to continue.
+                                            try {
+                                                int exs = DiFXCommand_ls.fileExists( 4, antenna.dirListLocation(), _settings );
+                                                if ( exs == DiFXCommand_ls.FILE_DOESNT_EXIST ) {
+                                                    int ret = JOptionPane.showConfirmDialog( _this, 
+                                                            "The directory listing for VSN " + antenna.vsnSource() + "\""
+                                                            + antenna.dirListLocation() + "\" does not exist.\nDo you wish to continue?",
+                                                            "Directory Listing Not Found", 
+                                                            JOptionPane.YES_NO_OPTION );
+                                                    if ( ret == JOptionPane.NO_OPTION )
+                                                        continueRun = false;
+                                                }
+                                            } catch ( java.net.UnknownHostException e ) {
+                                                //  BLAT handle this properly!
                                             }
-                                        } catch ( java.net.UnknownHostException e ) {
-                                            //  BLAT handle this properly!
+                                        }
+                                        else {
+                                            int ret = JOptionPane.showConfirmDialog( _this, 
+                                                    "No VSN has been specified for antenna " + antenna.name() + ".\nDo you wish to continue?",
+                                                    antenna.name() + "Lacks Data Source", 
+                                                    JOptionPane.YES_NO_OPTION );
+                                            if ( ret == JOptionPane.NO_OPTION )
+                                                continueRun = false;
                                         }
                                     }
-                                    else {
-                                        int ret = JOptionPane.showConfirmDialog( _this, 
-                                                "No VSN has been specified for antenna " + antenna.name() + ".\nDo you wish to continue?",
-                                                antenna.name() + "Lacks Data Source", 
-                                                JOptionPane.YES_NO_OPTION );
-                                        if ( ret == JOptionPane.NO_OPTION )
-                                            continueRun = false;
-                                    }
-                                }
-                                else if ( antenna.useFile() ) {
-                                    ArrayList<String> fileList = antenna.fileList();
-                                    if ( fileList.size() > 0 ) {
-                                        for ( Iterator<String> jter = fileList.iterator(); jter.hasNext(); ) {
-                                            String filename = jter.next();
-                                            _fileToNodeMap.put( filename, antenna.machineForFile( filename ) );
+                                    else if ( antenna.useFile() ) {
+                                        ArrayList<String> fileList = antenna.fileList();
+                                        if ( fileList.size() > 0 ) {
+                                            for ( Iterator<String> jter = fileList.iterator(); jter.hasNext(); ) {
+                                                String filename = jter.next();
+                                                _fileToNodeMap.put( filename, antenna.machineForFile( filename ) );
+                                            }
                                         }
                                     }
                                 }

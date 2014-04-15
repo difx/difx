@@ -227,6 +227,11 @@
                 <xsd:element ref="dontIdentifyMark5sByPattern"/>
                 <xsd:element ref="mark5Pattern"/>
                 <xsd:element ref="requestSpecificMessages"/>
+                <xsd:element name="selectedMessage" maxOccurs="unbounded" minOccurs="0">
+                    <xsd:complexType>
+                        <xsd:attribute name="type" type="xsd:string"/>
+                    </xsd:complexType>
+                </xsd:element>
 
                 <xsd:element ref="eopURL"/>
                 <xsd:element ref="leapSecondsURL"/>

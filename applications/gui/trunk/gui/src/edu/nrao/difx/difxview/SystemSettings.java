@@ -2831,6 +2831,11 @@ public class SystemSettings extends JFrame {
                 _requestAllMessages.setSelected( true );
                 _requestSpecificMessages.setSelected( false );
             }
+            for ( Iterator<DoiSystemConfig.SelectedMessage> iter = doiConfig.getSelectedMessage().iterator(); iter.hasNext(); ) {
+                if ( _difxMessageListDisplay == null )
+                    _difxMessageListDisplay = new DiFXMessageListDisplay( 0, 0, _settings );
+                _difxMessageListDisplay.selectMessage( iter.next().getType() );
+            }
             this.loggingEnabled( doiConfig.isLoggingEnabled() );
             if ( doiConfig.getStatusValidDuration() != 0 )
                 this.statusValidDuration( doiConfig.getStatusValidDuration() );
@@ -3414,6 +3419,13 @@ public class SystemSettings extends JFrame {
         doiConfig.setSuppressUnknownMessageWarnings( _suppressWarningsCheck.isSelected() );
         doiConfig.setDontIdentifyMark5SByPattern( !_identifyMark5sCheck.isSelected() );
         doiConfig.setRequestSpecificMessages( _requestSpecificMessages.isSelected() );
+        if ( _difxMessageListDisplay != null ) {
+            for ( Iterator<String> iter = _difxMessageListDisplay.selectedMessages().iterator(); iter.hasNext(); ) {
+                DoiSystemConfig.SelectedMessage selectedMessage = factory.createDoiSystemConfigSelectedMessage();
+                selectedMessage.setType( iter.next() );
+                doiConfig.getSelectedMessage().add( selectedMessage );
+            }
+        }
         doiConfig.setMark5Pattern( _mark5Pattern.getText() );
         doiConfig.setLoggingEnabled( this.loggingEnabled() );
         doiConfig.setStatusValidDuration( this.statusValidDuration() );
@@ -5742,6 +5754,85 @@ public class SystemSettings extends JFrame {
             }
             guiServerConnection().sendPacketWithString( _guiServerConnection.MESSAGE_SELECTION_PACKET, messStr );
         }
+        
+        /*
+         * Select the "string version" of a message type.  This is used for the XML file.
+         */
+        public void selectMessage( String messStr ) {
+            if ( messStr.contentEquals( "ALERT_MESSAGES" ) )
+                _alertItem.setSelected( true );
+            else if ( messStr.contentEquals( "COMMAND_MESSAGES" ) )
+                _commandItem.setSelected( true );
+            else if ( messStr.contentEquals( "FILEOPERATION_MESSAGES" ) )
+                _fileOperationItem.setSelected( true );
+            else if ( messStr.contentEquals( "FILETRANSFER_MESSAGES" ) )
+                _fileTransferItem.setSelected( true );
+            else if ( messStr.contentEquals( "GETDIRECTORY_MESSAGES" ) )
+                _getDirectoryItem.setSelected( true );
+            else if ( messStr.contentEquals( "INFO_MESSAGES" ) )
+                _infoItem.setSelected( true );
+            else if ( messStr.contentEquals( "LOAD_MESSAGES" ) )
+                _loadItem.setSelected( true );
+            else if ( messStr.contentEquals( "MACHINESDEFINITION_MESSAGES" ) )
+                _machinesDefinitionItem.setSelected( true );
+            else if ( messStr.contentEquals( "MK5CONTROL_MESSAGES" ) )
+                _mk5ControlItem.setSelected( true );
+            else if ( messStr.contentEquals( "SMART_MESSAGES" ) )
+                _smartItem.setSelected( true );
+            else if ( messStr.contentEquals( "STATUS_MESSAGES" ) )
+                _statusItem.setSelected( true );
+            else if ( messStr.contentEquals( "STOP_MESSAGES" ) )
+                _stopItem.setSelected( true );
+            else if ( messStr.contentEquals( "VEX2DIFX_MESSAGES" ) )
+                _vex2DifxRunItem.setSelected( true );
+            else if ( messStr.contentEquals( "WEIGHT_MESSAGES" ) )
+                _weightItem.setSelected( true );
+            else if ( messStr.contentEquals( "MARK5STATUS_MESSAGES" ) )
+                _mark5StatusItem.setSelected( true );
+            else if ( messStr.contentEquals( "UNKNOWN_MESSAGES" ) )
+                _unknownItem.setSelected( true );
+        }
+        
+        /*
+         * Produce a list of message types that have been selected - for writing
+         * XML.
+         */
+        public ArrayList<String> selectedMessages() {
+            ArrayList<String> newList = new ArrayList<String>();
+            if ( _alertItem.isSelected() )
+                newList.add( "ALERT_MESSAGES" );
+            if ( _commandItem.isSelected() )
+                newList.add( "COMMAND_MESSAGES" );
+            if ( _fileOperationItem.isSelected() )
+                newList.add( "FILEOPERATION_MESSAGES" );
+            if ( _fileTransferItem.isSelected() )
+                newList.add( "FILETRANSFER_MESSAGES" );
+            if ( _getDirectoryItem.isSelected() )
+                newList.add( "GETDIRECTORY_MESSAGES" );
+            if ( _infoItem.isSelected() )
+                newList.add( "INFO_MESSAGES" );
+            if ( _loadItem.isSelected() )
+                newList.add( "LOAD_MESSAGES" );
+            if ( _machinesDefinitionItem.isSelected() )
+                newList.add( "MACHINESDEFINITION_MESSAGES" );
+            if ( _mk5ControlItem.isSelected() )
+                newList.add( "MK5CONTROL_MESSAGES" );
+            if ( _smartItem.isSelected() )
+                newList.add( "SMART_MESSAGES" );
+            if ( _statusItem.isSelected() )
+                newList.add( "STATUS_MESSAGES" );
+            if ( _stopItem.isSelected() )
+                newList.add( "STOP_MESSAGES" );
+            if ( _vex2DifxRunItem.isSelected() )
+                newList.add( "VEX2DIFXRUN_MESSAGES" );
+            if ( _weightItem.isSelected() )
+                newList.add( "WEIGHT_MESSAGES" );
+            if ( _mark5StatusItem.isSelected() )
+                newList.add( "MARK5STATUS_MESSAGES" );
+            if ( _unknownItem.isSelected() )
+                newList.add( "UNKNOWN_MESSAGES" );
+            return newList;
+         }
         
         protected DiFXMessageListDisplay _this;
         protected ZCheckBox _alertItem;
