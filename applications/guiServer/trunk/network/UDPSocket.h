@@ -35,7 +35,7 @@
 #include <sys/ioctl.h>
 #include <arpa/inet.h>
 #include <network/GenericSocket.h>
-#include <difxmessage.h>
+//#include <difxmessage.h>
 
 namespace network {
 

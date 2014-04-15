@@ -48,6 +48,7 @@ namespace guiServer {
         static const int START_DIFX_MONITOR             = 14;
         static const int DIFX_RUN_LABEL                 = 15;
         static const int GUISERVER_USER                 = 16;
+        static const int MESSAGE_SELECTION_PACKET       = 17;
 
     public:
 
@@ -62,6 +63,23 @@ namespace guiServer {
             _difxAlertsOn = false;
             _relayDifxMulticasts = false;
             _diagnosticPacketsOn = true;
+            _relayAllPackets = true;
+            _relayAlertPackets = false;
+            _relayCommandPackets = false;
+            _relayFileOperationPackets = false;
+            _relayFileTransferPackets = false;
+            _relayGetDirectoryPackets = false;
+            _relayInfoPackets = false;
+            _relayLoadPackets = false;
+            _relayMachinesDefinitionPackets = false;
+            _relayMk5ControlPackets = false;
+            _relaySmartPackets = false;
+            _relayStatusPackets = false;
+            _relayStopPackets = false;
+            _relayVex2DifxRunPackets = false;
+            _relayWeightPackets = false;
+            _relayMark5StatusPackets = false;
+            _relayUnknownPackets = false;
             snprintf( _clientIP, 16, "%s", clientIP );
             strncpy( _difxBase, difxBase, DIFX_MESSAGE_LENGTH );
             _envp = envp;
@@ -154,8 +172,57 @@ namespace guiServer {
 //                        default:
 //                            break;
 //                        }
-                        if ( _relayDifxMulticasts )
-                            sendPacket( RELAY_PACKET, message, strlen( message ) );
+                        if ( _relayDifxMulticasts ) {
+                            //  Relay the packet if it is one of the types the GUI has selected.
+                            bool relayThis = false;
+                            if ( _relayAllPackets )
+                                relayThis = true;
+                            else {
+                                if ( _relayAlertPackets && G.type == DIFX_MESSAGE_ALERT )
+                                    relayThis = true;
+                                else if ( _relayCommandPackets && G.type == DIFX_MESSAGE_COMMAND )
+                                    relayThis = true;
+                                else if ( _relayFileOperationPackets && G.type == DIFX_MESSAGE_FILEOPERATION )
+                                    relayThis = true;
+                                else if ( _relayFileTransferPackets && G.type == DIFX_MESSAGE_FILETRANSFER )
+                                    relayThis = true;
+                                else if ( _relayGetDirectoryPackets && G.type == DIFX_MESSAGE_GETDIRECTORY )
+                                    relayThis = true;
+                                else if ( _relayInfoPackets && G.type == DIFX_MESSAGE_INFO )
+                                    relayThis = true;
+                                else if ( _relayLoadPackets && G.type == DIFX_MESSAGE_LOAD )
+                                    relayThis = true;
+                                else if ( _relayMachinesDefinitionPackets && G.type == DIFX_MESSAGE_MACHINESDEFINITION )
+                                    relayThis = true;
+                                else if ( _relayMk5ControlPackets && G.type == DIFX_MESSAGE_MK5CONTROL )
+                                    relayThis = true;
+                                else if ( _relaySmartPackets && G.type == DIFX_MESSAGE_SMART )
+                                    relayThis = true;
+                                else if ( _relayStatusPackets && G.type == DIFX_MESSAGE_STATUS )
+                                    relayThis = true;
+                                else if ( _relayStopPackets && G.type == DIFX_MESSAGE_STOP )
+                                    relayThis = true;
+                                else if ( _relayVex2DifxRunPackets && G.type == DIFX_MESSAGE_VEX2DIFXRUN )
+                                    relayThis = true;
+//       does this message type still exist?
+//                                else if ( _relayWeightPackets && G.type == DIFX_MESSAGE_UNKNOWN )
+//                                    relayThis = true;
+                                else if ( _relayMark5StatusPackets && G.type == DIFX_MESSAGE_MARK5STATUS )
+                                    relayThis = true;
+                                else if ( _relayUnknownPackets && G.type == DIFX_MESSAGE_UNKNOWN )
+                                    relayThis = true;
+//       unrecognized message types?
+//	                            DIFX_MESSAGE_DATASTREAM,
+//	                            DIFX_MESSAGE_PARAMETER,
+//	                            DIFX_MESSAGE_START,
+//	                            DIFX_MESSAGE_MARK5VERSION,
+//	                            DIFX_MESSAGE_TRANSIENT,
+//	                            DIFX_MESSAGE_DRIVE_STATS,
+//	                            DIFX_MESSAGE_DIAGNOSTIC,
+                            }
+                            if ( relayThis )
+                                sendPacket( RELAY_PACKET, message, strlen( message ) );
+                        }
                     }
                 }
                 //sched_yield();
@@ -197,6 +264,9 @@ namespace guiServer {
                     break;
                 case START_DIFX_MONITOR:
                     startDifxMonitor( data, nBytes );
+                    break;
+                case MESSAGE_SELECTION_PACKET:
+                    messageSelection( data, nBytes );
                     break;
                 default:
                     break;
@@ -278,6 +348,87 @@ namespace guiServer {
                 sendPacket( GUISERVER_ENVIRONMENT, *env, strlen( *env ) );
                 
         }
+        
+        //---------------------------------------------------------------------
+        //!  Parse a command from the GUI to change which packets are relayed.
+        //---------------------------------------------------------------------
+        void messageSelection( char* data, const int nBytes ) {
+            char* nextPtr = data;
+            char* thisPtr = strsep( &nextPtr, "\n" );
+            _relayAlertPackets = false;
+            _relayCommandPackets = false;
+            _relayFileOperationPackets = false;
+            _relayFileTransferPackets = false;
+            _relayGetDirectoryPackets = false;
+            _relayInfoPackets = false;
+            _relayLoadPackets = false;
+            _relayMachinesDefinitionPackets = false;
+            _relayMk5ControlPackets = false;
+            _relaySmartPackets = false;
+            _relayStatusPackets = false;
+            _relayStopPackets = false;
+            _relayVex2DifxRunPackets = false;
+            _relayWeightPackets = false;
+            _relayMark5StatusPackets = false;
+            _relayUnknownPackets = false;
+            while ( thisPtr != NULL ) {
+                if ( strstr( thisPtr, "ALL_MESSAGES" ) != NULL ) {
+                    _relayAllPackets = true;
+                }
+                else if ( strstr( thisPtr, "SELECTED_MESSAGES" ) != NULL ) {
+                    _relayAllPackets = false;
+                } 
+                else if ( strstr( thisPtr, "ALERT_MESSAGES" ) != NULL ) {
+                    _relayAlertPackets = true;
+                } 
+                else if ( strstr( thisPtr, "COMMAND_MESSAGES" ) != NULL ) {
+                    _relayCommandPackets = true;
+                } 
+                else if ( strstr( thisPtr, "FILEOPERATION_MESSAGES" ) != NULL ) {
+                    _relayFileOperationPackets = true;
+                } 
+                else if ( strstr( thisPtr, "FILETRANSFER_MESSAGES" ) != NULL ) {
+                    _relayFileTransferPackets = true;
+                } 
+                else if ( strstr( thisPtr, "GETDIRECTORY_MESSAGES" ) != NULL ) {
+                    _relayGetDirectoryPackets = true;
+                } 
+                else if ( strstr( thisPtr, "INFO_MESSAGES" ) != NULL ) {
+                    _relayInfoPackets = true;
+                } 
+                else if ( strstr( thisPtr, "LOAD_MESSAGES" ) != NULL ) {
+                    _relayLoadPackets = true;
+                } 
+                else if ( strstr( thisPtr, "MACHINESDEFINITION_MESSAGES" ) != NULL ) {
+                    _relayMachinesDefinitionPackets = true;
+                } 
+                else if ( strstr( thisPtr, "MK5CONTROL_MESSAGES" ) != NULL ) {
+                    _relayMk5ControlPackets = true;
+                } 
+                else if ( strstr( thisPtr, "SMART_MESSAGES" ) != NULL ) {
+                    _relaySmartPackets = true;
+                } 
+                else if ( strstr( thisPtr, "STATUS_MESSAGES" ) != NULL ) {
+                    _relayStatusPackets = true;
+                } 
+                else if ( strstr( thisPtr, "STOP_MESSAGES" ) != NULL ) {
+                    _relayStopPackets = true;
+                } 
+                else if ( strstr( thisPtr, "VEX2DIFXRUN_MESSAGES" ) != NULL ) {
+                    _relayVex2DifxRunPackets = true;
+                } 
+                else if ( strstr( thisPtr, "WEIGHT_MESSAGES" ) != NULL ) {
+                    _relayWeightPackets = true;
+                } 
+                else if ( strstr( thisPtr, "MARK5STATUS_MESSAGES" ) != NULL ) {
+                    _relayMark5StatusPackets = true;
+                } 
+                else if ( strstr( thisPtr, "UNKNOWN_MESSAGES" ) != NULL ) {
+                    _relayUnknownPackets = true;
+                } 
+                thisPtr = strsep( &nextPtr, "\n" );
+            }
+        }
 
         //---------------------------------------------------------------------
         //!  Override the relay function.  The relay command starts with a
@@ -313,7 +464,7 @@ namespace guiServer {
                 }
                 _commandSocket = new network::UDPSocket( network::UDPSocket::MULTICAST, _multicastGroup, _multicastPort );
             }
-            //  Send this message to the socket (assuming its good)
+            //  Send this message to the socket assuming the socket is good.
             if ( _commandSocket != NULL ) {
                 _commandSocket->writer( data, nBytes );
             }
@@ -618,7 +769,24 @@ namespace guiServer {
         std::list<std::string> _runningJobs;
         pthread_mutex_t _runningJobsMutex;
         
-    };
+        bool _relayAllPackets;
+        bool _relayAlertPackets;
+        bool _relayCommandPackets;
+        bool _relayFileOperationPackets;
+        bool _relayFileTransferPackets;
+        bool _relayGetDirectoryPackets;
+        bool _relayInfoPackets;
+        bool _relayLoadPackets;
+        bool _relayMachinesDefinitionPackets;
+        bool _relayMk5ControlPackets;
+        bool _relaySmartPackets;
+        bool _relayStatusPackets;
+        bool _relayStopPackets;
+        bool _relayVex2DifxRunPackets;
+        bool _relayWeightPackets;
+        bool _relayMark5StatusPackets;
+        bool _relayUnknownPackets;
+};
 
 }
 

@@ -97,7 +97,18 @@ void ServerSideConnection::vex2difxRun( DifxMessageGeneric* G ) {
         }
         delete executor;
 		
-		//  This is where we actually run vex2difx
+    	//  Open a TCP socket connection to the server that should be running for us on the
+        //  remote host.  This is used to transfer lists of all of the files we have created.
+        int sockfd;
+        struct sockaddr_in servaddr;
+        sockfd = socket( AF_INET, SOCK_STREAM, 0 );
+        memset( &servaddr, 0, sizeof( servaddr ) );
+        servaddr.sin_family = AF_INET;
+        servaddr.sin_port = htons( S->port );
+        inet_pton( AF_INET, S->address, &servaddr.sin_addr );
+        int sockConnectReturn = connect( sockfd, (const sockaddr*)&servaddr, sizeof( servaddr ) );
+        
+		//  This is where we actually run vex2difx - this creates the input files.
 		snprintf( command, MAX_COMMAND_SIZE, "cd %s; %s vex2difx -f %s", 
 				  S->passPath,
 				  _difxSetupPath,
@@ -139,19 +150,8 @@ void ServerSideConnection::vex2difxRun( DifxMessageGeneric* G ) {
         delete executor;
         
 		
-    	//  Open a TCP socket connection to the server that should be running for us on the
-        //  remote host.  This is used to transfer a list of all of the files we have created.
-        int sockfd;
-        struct sockaddr_in servaddr;
-        sockfd = socket( AF_INET, SOCK_STREAM, 0 );
-        memset( &servaddr, 0, sizeof( servaddr ) );
-        servaddr.sin_family = AF_INET;
-        servaddr.sin_port = htons( S->port );
-        inet_pton( AF_INET, S->address, &servaddr.sin_addr );
-        int ret = connect( sockfd, (const sockaddr*)&servaddr, sizeof( servaddr ) );
-        
-        //  Hopefully the connection worked....
-        if ( ret == 0 ) {
+        //  Use the socket connection to return a list of all new files.
+        if ( sockConnectReturn == 0 ) {
             //snprintf( message, DIFX_MESSAGE_LENGTH, "Client address: %s   port: %d - connection looks good", S->address, S->port );
             //difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_WARNING );
 		    //  Produce a list of the files in the target directory and send that back to the GUI.
