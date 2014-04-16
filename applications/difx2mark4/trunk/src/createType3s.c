@@ -291,7 +291,7 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
             }
 
                                     // construct type 309 pcal records and write them
-                                    // check to see if there is a input pcal file for this antenna
+                                    // check to see if there is an input pcal file for this antenna
         mjd_latest = 0.0;
         for (j = startJob; j <= endJob; j++)
             {
@@ -400,7 +400,7 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                                     jf = b / npol;
                                         // skip over non-matching polarizations
                                     if (np != b % npol)
-                                        continue;  
+                                        continue;
 
                                     isb = (D->freq[jf].sideband == 'U') ? 1 : -1;
                                     f_rel = isb * (freq - D->freq[jf].freq);
@@ -417,7 +417,7 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                                                 if (pfb[nf].stn[k].freq     == D->freq[jf].freq
                                                  && pfb[nf].stn[k].bw       == D->freq[jf].bw  
                                                  && pfb[nf].stn[k].sideband == D->freq[jf].sideband
-                                                 && pfb[nf].stn[k].pol      == ds_pols[b])
+                                                 && pfb[nf].stn[k].pol      == ds_pols[record_chan])
                                                     {
                                                     strcpy (t309.chan[b].chan_name, pfb[nf].stn[k].chan_id);
                                                     break;      // found freq, do double break
