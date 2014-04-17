@@ -264,6 +264,8 @@ int readScanLog(const char *filename, char **dirData, int *dirDataLength, const 
 	}
 
 	H = (struct Mark5DirectoryHeaderVer1 *)(*dirData);
+	H->version = 1;
+	H->status = MODULE_STATUS_PLAYED;
 
 	for(;;)
 	{
@@ -340,9 +342,6 @@ int readScanLog(const char *filename, char **dirData, int *dirDataLength, const 
 
 	*dirDataLength = sizeof(struct Mark5DirectoryHeaderVer1) + n*(sizeof(struct Mark5DirectoryScanHeaderVer1) + sizeof(struct Mark5DirectoryLegacyBodyVer1));
 
-	H->version = 1;
-	H->status = MODULE_STATUS_PLAYED;
-
 	if(dumpFile)
 	{
 		FILE *out;
@@ -365,7 +364,7 @@ int main(int argc, char **argv)
 	const char *vsn;
 	int retval = EXIT_SUCCESS;
 
-	if(argc < 3 || argc > 5)
+	if(argc != 3 && argc != 5)
 	{
 		usage(argv[0]);
 
