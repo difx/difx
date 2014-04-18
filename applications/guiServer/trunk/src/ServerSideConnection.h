@@ -49,6 +49,9 @@ namespace guiServer {
         static const int DIFX_RUN_LABEL                 = 15;
         static const int GUISERVER_USER                 = 16;
         static const int MESSAGE_SELECTION_PACKET       = 17;
+        static const int CHANNEL_ALL_DATA               = 18;
+        static const int CHANNEL_ALL_DATA_ON            = 19;
+        static const int CHANNEL_ALL_DATA_OFF           = 20;
 
     public:
 
@@ -80,6 +83,7 @@ namespace guiServer {
             _relayWeightPackets = false;
             _relayMark5StatusPackets = false;
             _relayUnknownPackets = false;
+            _channelAllData = false;
             snprintf( _clientIP, 16, "%s", clientIP );
             strncpy( _difxBase, difxBase, DIFX_MESSAGE_LENGTH );
             _envp = envp;
@@ -268,6 +272,14 @@ namespace guiServer {
                 case MESSAGE_SELECTION_PACKET:
                     messageSelection( data, nBytes );
                     break;
+                case CHANNEL_ALL_DATA_ON:
+                    _channelAllData = true;
+                    printf( "channeling data!\n" );
+                    break;
+                case CHANNEL_ALL_DATA_OFF:
+                    _channelAllData = false;
+                    printf( "data channel off\n" );
+                    break;
                 default:
                     break;
             }
@@ -346,6 +358,9 @@ namespace guiServer {
             char** env;
             for ( env = _envp; *env != 0; ++env )
                 sendPacket( GUISERVER_ENVIRONMENT, *env, strlen( *env ) );
+                
+            //  Let the GUI know this guiServer has "data channeling" ability.
+            sendPacket( CHANNEL_ALL_DATA, NULL, 0 );
                 
         }
         
@@ -786,6 +801,8 @@ namespace guiServer {
         bool _relayWeightPackets;
         bool _relayMark5StatusPackets;
         bool _relayUnknownPackets;
+        
+        bool _channelAllData;
 };
 
 }
