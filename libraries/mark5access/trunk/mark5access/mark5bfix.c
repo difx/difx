@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2013 by Walter Brisken                                  *
+ *   Copyright (C) 2013-2014 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -185,9 +185,9 @@ int mark5bfix(unsigned char *dest, int destSize, const unsigned char *src, int s
 					lastGoodFrameNumber = startOutputFrame - 1;	/* make sure to fill in invalid status */
 				}
 			}
-			else if(frameInSecond == 0)
+			else if(frameInSecond < 30)
 			{
-				/* must have been a seconds increment */
+				/* must have been a seconds increment recently */
 				++second;
 
 				lastFrameInSecond -= framesPerSecond;
@@ -369,7 +369,7 @@ void fprintmark5bfixstatistics(FILE *out, const struct mark5b_fix_statistics *st
 	if(stats)
 	{
 		fprintf(out, "Mark5B fixer statistics:\n");
-		fprintf(out, "  Number of calls to vdifmux         = %d\n", stats->nCall);
+		fprintf(out, "  Number of calls to fixmark5b       = %d\n", stats->nCall);
 		fprintf(out, "  Number of valid input frames       = %Ld\n", stats->nValidFrame);
 		fprintf(out, "  Number of invalid input frames     = %Ld\n", stats->nInvalidFrame);
 		fprintf(out, "  Number of skipped interloper bytes = %Ld\n", stats->nSkippedByte);

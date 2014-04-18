@@ -1,3 +1,8 @@
+Version 1.5.1
+* Post DiFX-2.3
+* Improve behavior of fixmark5b() in the case that fill pattern is seen at the 1 second transition.
+* m5bsum calculates frame rates now rather than just assuming 25600 frames per second
+
 Version 1.5.0
 * Add KVN5B format: like Mark5B but different data bit patterns (Richard Dodson)
 * Add 3, 5, 6, and 7 channel VDIF decoders

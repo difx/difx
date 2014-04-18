@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2013 Walter Brisken                                     *
+ *   Copyright (C) 2013-2014 Walter Brisken                                *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -126,6 +126,7 @@ int summarizemark5bfile(struct mark5b_file_summary *sum, const char *fileName)
 	int rv;
 	int lastOffset;
 	FILE *in;
+	int seconds0, seconds1;
 
 	/* Initialize things */
 
@@ -225,6 +226,16 @@ int summarizemark5bfile(struct mark5b_file_summary *sum, const char *fileName)
 	sum->endDay = (p[11] >> 4)*100 + (p[11] & 0x0F)*10 + (p[10] >> 4);
 	sum->endSecond = (p[10] & 0x0F)*10000 + (p[9] >> 4)*1000 + (p[9] & 0x0F)*100 + (p[8] >> 4)*10 +  (p[8] & 0x0F);
 	sum->endFrame = p[4] + (p[5] * 256);
+
+	seconds0 = sum->startDay*86400 + sum->startSecond;
+	seconds1 = sum->endDay*86400 + sum->endSecond;
+
+	if(seconds1 > seconds0)
+	{
+		sum->framesPerSecond = (sum->fileSize/10016 - sum->endFrame + sum->startFrame)/(seconds1 - seconds0);
+
+		sum->framesPerSecond = ((sum->framesPerSecond + 50)/100)*100;
+	}
 
 
 	/* Clean up */
