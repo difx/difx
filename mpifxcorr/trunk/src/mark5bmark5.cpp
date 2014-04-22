@@ -806,7 +806,7 @@ int Mark5BMark5DataStream::dataRead(int buffersegment)
 
 		if(m5bstats.destUsed == m5bstats.srcUsed)
 		{
-			startOutputFrameNumber = m5bstats.startFrameNumber + m5bstats.destUsed/10016;
+			startOutputFrameNumber = (m5bstats.startFrameNumber + m5bstats.destUsed/10016) % framespersecond;
 		}
 		else
 		{

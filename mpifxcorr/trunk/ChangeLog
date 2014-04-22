@@ -7,6 +7,7 @@ Version 2.4
 * Text Mark5 XLRReadData() calls by tainting the end of the destination buffer and verifying it gets untainted.
 * Add more generalized support for the zoo of Mark5 module directory
 * When reading data from Mark5 units, verify that the data is in the same format class as requested by the .input file.
+* Improve Mark5B decoding
 
 Version 2.3
 ~~~~~~~~~~~

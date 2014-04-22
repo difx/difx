@@ -423,16 +423,16 @@ int Mark5BDataStream::dataRead(int buffersegment)
 	input.read(reinterpret_cast<char *>(readbuffer + readbufferleftover), bytes);
 	bytes = input.gcount();
 
-	// "fix" Mark5B data: remove stray packets/byts and put good frames on a uniform grid
-	fixReturn = mark5bfix(reinterpret_cast<unsigned char *>(destination), readbytes, readbuffer, readbufferleftover + bytes, framespersecond,  startOutputFrameNumber, &m5bstats);
+	// "fix" Mark5B data: remove stray packets/bytes and put good frames on a uniform grid
+	fixReturn = mark5bfix(reinterpret_cast<unsigned char *>(destination), readbytes, readbuffer, readbufferleftover + bytes, framespersecond, startOutputFrameNumber, &m5bstats);
 	if(fixReturn < 0)
 	{
-		cerror << startl << "mark5bfix returned " << fixReturn << endl;
+		cerror << startl << "mark5bfix returned " << fixReturn << " destsize=" << readbytes << " srcsize=" << (readbufferleftover + bytes) << " framespersecond=" << framespersecond << " startOutputFrameNumber=" << startOutputFrameNumber << " nCall=" << m5bstats.nCall << endl;
 
 		keepreading = false;
 		dataremaining = false;
 	}
-	if(fixReturn == 0)
+	else if(fixReturn == 0)
 	{
 		cwarn << startl << "mark5bfix returned zero.  Going to next record scan..." << endl;
 
@@ -461,8 +461,7 @@ int Mark5BDataStream::dataRead(int buffersegment)
 
 		if(m5bstats.destUsed == m5bstats.destSize)
 		{
-			// FIXME: the line below should help things, but it causes first output frame to be invalid.  Hmmm....
-			startOutputFrameNumber = m5bstats.startFrameNumber + m5bstats.destUsed/10016;
+			startOutputFrameNumber = (m5bstats.startFrameNumber + m5bstats.destUsed/10016) % framespersecond;
 		}
 		else
 		{
