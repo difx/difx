@@ -120,9 +120,11 @@ int mark5bfix(unsigned char *dest, int destSize, const unsigned char *src, int s
 
 	for(i = 0; i <= N; )
 	{
-		const unsigned char *cur = src + i;
+		const unsigned char *cur;
 		int missed;
 		int frameNumber;
+
+		cur = src + i;
 
 		/* Look for sync word */
 		if(*((uint32_t *)cur) != MARK5B_SYNC_WORD)
@@ -221,10 +223,13 @@ int mark5bfix(unsigned char *dest, int destSize, const unsigned char *src, int s
 			/* 1 or more frames was not found to be good, so mark it/them with an invalid bit */
 			for(m = frameNumber - missed; m < frameNumber; ++m)
 			{
-				unsigned char *bytes = dest + (m-startOutputFrame)*MARK5B_FRAME_SIZE;
-				uint32_t *words = (uint32_t *)bytes;
+				unsigned char *bytes;
+				uint32_t *words;
 				int d, f;
-				
+
+				bytes = dest + (m-startOutputFrame)*MARK5B_FRAME_SIZE;
+				words = (uint32_t *)bytes;
+
 				/* copy frame header data to make the frame legal */
 
 				/* first the sync word */
@@ -256,10 +261,9 @@ int mark5bfix(unsigned char *dest, int destSize, const unsigned char *src, int s
 					memcpy(bytes + 8, cur + 8, 8);
 				}
 
-				/* to mark a frame invalid, set fill pattern word at first and last word of the payload */
-				words[4] = MARK5_FILL_WORD;
-				words[2503] = MARK5_FILL_WORD;
-
+				/* to mark a frame invalid, set invalid bit (actually TVG bit) */
+				bytes[5] |= 0x80;
+				
 				++nLostPacket;
 			}
 		}
@@ -289,10 +293,14 @@ int mark5bfix(unsigned char *dest, int destSize, const unsigned char *src, int s
 		/* 1 or more frames was not found to be good, so mark it/them with an invalid bit */
 		for(m = lastGoodFrameNumber + 1; m < nDestFrames; ++m)
 		{
-			const unsigned char *cur = dest + (lastGoodFrameNumber - startOutputFrame)*MARK5B_FRAME_SIZE;
-			unsigned char *bytes = dest + (m - startOutputFrame)*MARK5B_FRAME_SIZE;
-			uint32_t *words = (uint32_t *)bytes;
+			const unsigned char *cur;
+			unsigned char *bytes;
+			uint32_t *words;
 			int d, f;
+
+			cur = dest + (lastGoodFrameNumber - startOutputFrame)*MARK5B_FRAME_SIZE;
+			bytes = dest + (m - startOutputFrame)*MARK5B_FRAME_SIZE;
+			words = (uint32_t *)bytes;
 			
 			/* copy frame header data to make the frame legal */
 
@@ -309,7 +317,7 @@ int mark5bfix(unsigned char *dest, int destSize, const unsigned char *src, int s
 
 			if(d != 0)
 			{
-				/* This should be the rare case where a second jump happened at the time of the missing data */
+				/* This should be the not-so-rare case where a second jump happened at the time of the missing data */
 
 				if(dt != d)
 				{
@@ -325,9 +333,8 @@ int mark5bfix(unsigned char *dest, int destSize, const unsigned char *src, int s
 				memcpy(bytes + 8, cur + 8, 8);
 			}
 
-			/* to mark a frame invalid, set fill pattern word at first and last word of the payload */
-			words[4] = MARK5_FILL_WORD;
-			words[2503] = MARK5_FILL_WORD;
+			/* to mark a frame invalid, set invalid bit (Actually the TVG bit) */
+			bytes[5] |= 0x80;
 
 			++nLostPacket;
 		}
