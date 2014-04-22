@@ -161,7 +161,7 @@ int mark5bfix(unsigned char *dest, int destSize, const unsigned char *src, int s
 
 			continue;
 		}
-		if(cur[5] & 0x80)	/* invalid bit set */
+		if(cur[5] & 0x80)	/* TVG (here interpreted as invalid) bit set */
 		{
 			++nInvalidFrame;
 			i += MARK5B_FRAME_SIZE;
@@ -210,7 +210,7 @@ int mark5bfix(unsigned char *dest, int destSize, const unsigned char *src, int s
 			break;
 		}
 
-		missed = (frameInSecond - lastFrameInSecond - 1);
+		missed = (frameInSecond - lastFrameInSecond - 1 + framesPerSecond) % framesPerSecond;
 
 		lastFrameInSecond = frameInSecond;
 
@@ -291,7 +291,7 @@ int mark5bfix(unsigned char *dest, int destSize, const unsigned char *src, int s
 		unsigned char timebytes[4];
 
 		/* 1 or more frames was not found to be good, so mark it/them with an invalid bit */
-		for(m = lastGoodFrameNumber + 1; m < nDestFrames; ++m)
+		for(m = lastGoodFrameNumber + 1; m < startOutputFrame+nDestFrames; ++m)
 		{
 			const unsigned char *cur;
 			unsigned char *bytes;
