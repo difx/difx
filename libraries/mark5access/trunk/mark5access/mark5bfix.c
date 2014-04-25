@@ -214,7 +214,7 @@ int mark5bfix(unsigned char *dest, int destSize, const unsigned char *src, int s
 
 		lastFrameInSecond = frameInSecond;
 
-		if(missed > 0)
+		if(missed > 0 && missed < framesPerSecond/2)
 		{
 			int m;
 			int dt = 0;
