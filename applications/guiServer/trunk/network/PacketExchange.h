@@ -45,12 +45,29 @@ namespace network {
 
             //  Lock writing on the socket.  This makes certain this packet can't be 
             //  broken up by calls to this function from other threads.
-            _sock->writeLock();
+            writeLock();
 
+            //  Send a bunch of leading bytes and then the "synchronization" string.
+            //  The leading bytes are a pad that is generally read and ignored by the
+            //  guiServer.  However because messages occasionally arrive without some
+            //  portion of the leading bytes this cuts down on the number of messages
+            //  that are missed (however it does not cut them down to zero!).  Why this
+            //  is happening is not entirely clear - this is a kludge.
+            int ret = _sock->writer( "        ", 8 );
+            ret = _sock->writer( "        ", 8 );
+            ret = _sock->writer( "DIFXSYNC", 8 );
+            //  We want to send packet data that lines up on 8-byte boundaries.
+            //  From the nBytes, figure out how many extra bytes are necessary for
+            //  padding to accomplish this.
+            int padBytes = 0;
+            char pad[8];
+            if ( nBytes % 8 )
+               padBytes = 8 - nBytes % 8;
+            
             //  Our trivial packet protocol is to send the packetId first (network byte
             //  ordered)...
             swapped = htonl( packetId );
-            int ret = _sock->writer( (char*)&swapped, sizeof( int ) );
+            ret = _sock->writer( (char*)&swapped, sizeof( int ) );
 
             //  ...then the size of the packet...
             if ( ret != -1 ) {
@@ -61,9 +78,13 @@ namespace network {
             //  ...then the data.
             if ( ret != -1 )
                 ret = _sock->writer( data, nBytes );
+
+            //  ...and the padding.
+            if ( ret != -1 && padBytes )
+                ret = _sock->writer( pad, padBytes );
                 
             //  Unlock the socket.
-            _sock->writeUnlock();
+            writeUnlock();
             
             return ret;
 
@@ -91,7 +112,7 @@ namespace network {
             int swapped;
 
             //  Lock writing on the socket.
-            _sock->writeLock();
+            writeLock();
 
             //  packet ID
             swapped = htonl( packetId );
@@ -176,7 +197,7 @@ namespace network {
         //!  the write lock.
         //----------------------------------------------------------------------------
         void composeEnd() {
-            _sock->writeUnlock();
+            writeUnlock();
         }
         
         //----------------------------------------------------------------------------
@@ -298,8 +319,8 @@ namespace network {
 
         }
         
-        void writeLock() { _sock->writeLock(); }
-        void writeUnlock() { _sock->writeUnlock(); }
+        void writeLock() { pthread_mutex_lock( &_sendPacketMutex ); }
+        void writeUnlock() { pthread_mutex_unlock( &_sendPacketMutex ); }
 
 
     protected:

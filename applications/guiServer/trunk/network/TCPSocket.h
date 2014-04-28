@@ -161,10 +161,33 @@ namespace network {
         //  thread safe.
         //----------------------------------------------------------------------------
         int writer( const char* buff, int nBytes ) {
+            int soFar = 0;
+            int ret;
+            fd_set wfds;
             pthread_mutex_lock( &_writeMutex );
-            int ret = write( _fd, buff, nBytes );
+            FD_ZERO( &wfds );
+            FD_SET( _fd, &wfds );
+            while ( soFar < nBytes ) {
+
+                ret = select( _fd + 1, NULL, &wfds, NULL, _timeout );
+                if ( ret == -1 ) {  //  broken socket
+                    return -1;
+                }
+                if ( ret == 0 ) {  // timeout occurred
+                    return 0;
+                }
+
+                ret = write( _fd, (void*)( buff + soFar ), nBytes - soFar );
+                if ( ret == -1 || ret == 0 ) {  //  broken socket
+                    return -1;
+                }
+
+                soFar += ret;
+
+            }
+
             pthread_mutex_unlock( &_writeMutex );
-            return ret;
+            return soFar;
         }
         
         //----------------------------------------------------------------------------
