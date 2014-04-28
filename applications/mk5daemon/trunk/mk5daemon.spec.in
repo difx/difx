@@ -43,6 +43,7 @@ chmod a+x /sbin/halt
 %{_bindir}/mk5lock
 %{_bindir}/mk5map
 %{_bindir}/mk5putdir
+%{_bindir}/mk5test
 %{_bindir}/record5c
 %{_bindir}/recover
 %{_bindir}/sukill
