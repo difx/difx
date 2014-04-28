@@ -61,6 +61,9 @@ public class GuiServerConnection {
     public final int DIFX_RUN_LABEL                 = 15;
     public final int GUISERVER_USER                 = 16;
     public final int MESSAGE_SELECTION_PACKET       = 17;
+    public final int CHANNEL_ALL_DATA               = 18;
+    public final int CHANNEL_ALL_DATA_ON            = 19;
+    public final int CHANNEL_ALL_DATA_OFF           = 20;
 
     public GuiServerConnection( SystemSettings settings, String IP, int port, int timeout ) {
         _settings = settings;
@@ -79,6 +82,7 @@ public class GuiServerConnection {
             _connected = true;
             connectEvent( "connected" );
             _receiveThread = new ReceiveThread();
+            _settings.channelAllDataAvailable( false );
             _receiveThread.start();
             //  Request guiServer version information...and anything else it wants
             //  to tell us at startup.
@@ -178,21 +182,71 @@ public class GuiServerConnection {
         public void run() {
             int lastNBytes = 0;
             int lastID = 0;
+            byte pad;
+            byte[] inNum = new byte[8];
+            boolean newVersionKnowledge = true;
             while ( _connected ) {
                 byte[] data = null;
                 try {
+                    //  Search for the synchronization string if the guiServer version is modern
+                    //  enough to be sending it (older than version 1.03).  This version check
+                    //  is temporary (used to accommodate a frozen version on the USNO SWC).
+                    double guiServerVersion = 0.0;
+                    try {
+                        guiServerVersion = Double.valueOf( _settings.guiServerVersion() );
+                    }
+                    catch ( java.lang.NumberFormatException e ) {}
+                    if ( guiServerVersion > 1.03 ) {
+                        if ( newVersionKnowledge ) {
+                            sendPacket( GUISERVER_VERSION, 0, null );
+                            newVersionKnowledge = false;
+                        }
+                        boolean notFound = true;
+                        int counter = 0;
+                        while ( notFound ) {
+                            _in.readFully( inNum );
+                            if ( new String( inNum ).contentEquals( "DIFXSYNC" ) )
+                                notFound = false;
+                            else
+                                ++counter;
+                        }
+                        if ( counter > 3 ) {
+                            System.out.println( "counter is " + counter );
+                            java.util.logging.Logger.getLogger("global").log(java.util.logging.Level.WARNING, 
+                                    "synchronizer skipped " + ( counter * 8 ) + " bytes following message ID " + lastID + "(" + lastNBytes + ")" );
+                        }
+                    }
                     int packetId = _in.readInt();
                     int nBytes = _in.readInt();
                     if ( nBytes > WARNING_SIZE || nBytes < 0 ) {
-                        java.util.logging.Logger.getLogger("global").log(java.util.logging.Level.WARNING, 
-                                "trying to read (" + nBytes + " of data) - packetID is " + packetId + " last is " + lastID + "(" + lastNBytes + ")" );
-                        java.util.logging.Logger.getLogger("global").log(java.util.logging.Level.WARNING, 
-                                "Message has NOT BEEN READ" );
+                        //  Only report this error if there have been packets received
+                        //  already - otherwise it may just indicate a connection/handshaking
+                        //  issue.
+                        if ( lastID != 0 ) {
+                            java.util.logging.Logger.getLogger("global").log(java.util.logging.Level.WARNING, 
+                                    "trying to read (" + nBytes + " of data) - packetID is " + packetId + " last is " + lastID + "(" + lastNBytes + ")" );
+                            java.util.logging.Logger.getLogger("global").log(java.util.logging.Level.WARNING, 
+                                    "Message has NOT BEEN READ" );
+                        }
                     }
                     else {
+                        lastID = packetId;
                         lastNBytes = nBytes;
                         data = new byte[nBytes];
+                        try {
                         _in.readFully( data );
+                        } catch ( java.io.EOFException e ) {
+                            System.out.println( "EOFException!" );
+                        }
+                        //  Read the pad bytes, if there are any, that are used to put
+                        //  the packet transmission on an integer boundary.
+                        if ( guiServerVersion > 1.03 ) {
+                            if ( nBytes % 8 > 0 ) {
+                                int n = 8 - nBytes % 8;
+                                for ( int i = 0; i < n; ++i )
+                                    pad = _in.readByte();
+                            }
+                        }
                         //  Sort out what to do with this packet.
                         if ( packetId == RELAY_PACKET && data != null ) {
                             if ( _difxRelayStack == null )
@@ -239,6 +293,17 @@ public class GuiServerConnection {
                             //  These are environment variables from the guiServer
                             _settings.addGuiServerEnvironment( new String( data ) );
                         }
+                        else if ( packetId == CHANNEL_ALL_DATA ) {
+                            //  Indicates the guiServer has the ability to "channel" all data
+                            //  through a single TCP port.
+                            _settings.channelAllDataAvailable( true );
+                            //  Tell guiServer whether we want to do this based on the current
+                            //  setting.
+                            if ( _settings.channelAllData() )
+                                sendPacket( CHANNEL_ALL_DATA_ON, 0, null );
+                            else
+                                sendPacket( CHANNEL_ALL_DATA_OFF, 0, null );
+                        }
                         receiveEvent( data.length );
                     }
                 } catch ( SocketTimeoutException e ) {
@@ -247,7 +312,6 @@ public class GuiServerConnection {
                     _connected = false;
                     connectEvent( e.toString() );
                 }
-            //try { Thread.sleep( 2 ); } catch ( Exception e ) {}
             }
         }
         

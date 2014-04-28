@@ -120,28 +120,32 @@ public class DiFXCommand_ls extends DiFXCommand {
             //  Open a new server socket and await a connection.  The connection
             //  will timeout after a given number of seconds (nominally 10).
             try {
-                ServerSocket ssock = new ServerSocket( _port );
+                System.out.println( "This is the ls operation" );
+                ChannelServerSocket ssock = new ChannelServerSocket( _port, _settings );
                 ssock.setSoTimeout( 10000 );  //  timeout is in millisec
                 try {
-                    Socket sock = ssock.accept();
-                    //  Turn the socket into a "data stream", which has useful
-                    //  functions.
-                    DataInputStream in = new DataInputStream( sock.getInputStream() );
+//                    Socket sock = ssock.accept();
+//                    //  Turn the socket into a "data stream", which has useful
+//                    //  functions.
+//                    DataInputStream in = new DataInputStream( sock.getInputStream() );
+                    ssock.accept();
                     //  Read each line of incoming data until there are no more.
                     boolean finished = false;
                     while ( !finished ) {
                         //  Read the size of the next file name....
-                        int sz = in.readInt();
+//                        int sz = in.readInt();
+                        int sz = ssock.readInt();
                         if ( sz == 0 )
                             finished = true;
                         else {
                             byte[] foo = new byte[sz + 1];
-                            in.readFully( foo, 0, sz );
+//                            in.readFully( foo, 0, sz );
+                            ssock.readFully( foo, 0, sz );
                             String inLine = new String( foo );
                             incrementalCallback( inLine );
                         }
                     }
-                    sock.close();
+//                    sock.close();
                 } catch ( SocketTimeoutException e ) {
                     
                 }

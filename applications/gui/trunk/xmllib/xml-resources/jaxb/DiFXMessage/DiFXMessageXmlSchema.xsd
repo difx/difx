@@ -113,6 +113,7 @@
                 <xsd:element ref="bufferSize"/>
                 <xsd:element ref="loggingEnabled"/>
                 <xsd:element ref="statusValidDuration"/>
+                <xsd:element ref="channelAllData"/>
                 
                 <xsd:element ref="jaxbPackage"/>
                 <xsd:element ref="timeout"/>
@@ -372,6 +373,7 @@
     <xsd:element name="bufferSize" type="xsd:int"></xsd:element>
     <xsd:element name="loggingEnabled" type="xsd:boolean"></xsd:element>
     <xsd:element name="statusValidDuration" type="xsd:unsignedInt"></xsd:element>
+    <xsd:element name="channelAllData" type="xsd:boolean"></xsd:element>
                 
     <xsd:element name="jaxbPackage" type="xsd:string"></xsd:element>
     <xsd:element name="timeout" type="xsd:int"></xsd:element>

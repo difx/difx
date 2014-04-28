@@ -423,6 +423,22 @@ public class SystemSettings extends JFrame {
             }
         } );
         difxControlPanel.add( viewEnvironmentVars );
+        _channelAllData = new ZCheckBox( "Channel All Data" );
+        _channelAllData.setToolTipText( "Channel all data exchange between the GUI and <<italic>>guiServer<</italic>>\n"
+                + "using the primary TCP communications port (i.e. with only one TCP\n"
+                + "connection).  This is useful if you are remotely operating through\n"
+                + "an SSH tunnel." );
+        _channelAllData.setBounds( 550, 25, 175, 25 );
+        _channelAllData.setEnabled( false );
+        _channelAllData.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                if ( _channelAllData.isSelected() )
+                    guiServerConnection().sendPacket( guiServerConnection().CHANNEL_ALL_DATA_ON, 0, null );
+                else
+                    guiServerConnection().sendPacket( guiServerConnection().CHANNEL_ALL_DATA_OFF, 0, null );
+            }
+        });
+        difxControlPanel.add( _channelAllData );
         JLabel guiServerDifxVersionLabel = new JLabel( "built w/DiFX:" );
         guiServerDifxVersionLabel.setBounds( 210, 115, 150, 25 );
         guiServerDifxVersionLabel.setHorizontalAlignment( JLabel.RIGHT );
@@ -1980,6 +1996,7 @@ public class SystemSettings extends JFrame {
         _difxControlPort.intValue( 50200 );
         _difxTransferPort.intValue( 50300 );
         _maxTransferPorts.intValue( 100 );
+        _channelAllData.setSelected( false );
         maxTransferPorts();
         _difxMonitorPort.intValue( 52300 );
         _difxMonitorHost.setText( "guiServer.hostname" );
@@ -2839,6 +2856,7 @@ public class SystemSettings extends JFrame {
             this.loggingEnabled( doiConfig.isLoggingEnabled() );
             if ( doiConfig.getStatusValidDuration() != 0 )
                 this.statusValidDuration( doiConfig.getStatusValidDuration() );
+            _channelAllData.setSelected( doiConfig.isChannelAllData() );
             
             if ( doiConfig.getJaxbPackage() != null )
                 this.jaxbPackage( doiConfig.getJaxbPackage() );
@@ -3429,6 +3447,7 @@ public class SystemSettings extends JFrame {
         doiConfig.setMark5Pattern( _mark5Pattern.getText() );
         doiConfig.setLoggingEnabled( this.loggingEnabled() );
         doiConfig.setStatusValidDuration( this.statusValidDuration() );
+        doiConfig.setChannelAllData( _channelAllData.isSelected() );
         
         doiConfig.setJaxbPackage( this.jaxbPackage() );
         doiConfig.setTimeout( this.timeout() );
@@ -5499,6 +5518,19 @@ public class SystemSettings extends JFrame {
     protected ZCheckBox _requestSpecificMessages;
     protected ZButton _requestMessagesButton;
     protected DiFXMessageListDisplay _difxMessageListDisplay;
+    
+    protected ZCheckBox _channelAllData;
+    
+    public boolean channelAllData() {
+        if ( _channelAllData.isEnabled() )
+            return _channelAllData.isSelected();
+        else
+            return false;
+    }
+    
+    public void channelAllDataAvailable( boolean newVal ) {
+        _channelAllData.setEnabled( newVal );
+    }
 
     protected String _invisibleProcessors;
     protected String _invisibleProcessorCores;
