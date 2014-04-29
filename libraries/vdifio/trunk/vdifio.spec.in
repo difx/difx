@@ -1,7 +1,7 @@
 Summary: Library and utilities to work with VDIF data
 Name: vdifio
 Version: @version@
-Release: 3
+Release: 1
 License: GPL3
 Group: VLBI
 BuildRoot: /var/tmp/vdifio-@version@-buildroot
@@ -43,6 +43,7 @@ make
 %{_bindir}/printVDIF
 %{_bindir}/searchVDIF
 %{_bindir}/peekVDIF
+%{_bindir}/vdif2to8
 %{_bindir}/vmux
 %{_bindir}/vsum
 %{_bindir}/vdifd
