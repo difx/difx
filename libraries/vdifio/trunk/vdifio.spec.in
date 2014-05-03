@@ -41,6 +41,7 @@ make
 %{_bindir}/extractVDIFThreads
 %{_bindir}/countVDIFPackets
 %{_bindir}/printVDIF
+%{_bindir}/printVDIFheader
 %{_bindir}/searchVDIF
 %{_bindir}/peekVDIF
 %{_bindir}/vdif2to8

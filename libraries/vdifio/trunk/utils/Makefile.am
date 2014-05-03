@@ -15,6 +15,7 @@ bin_PROGRAMS = \
 	extractVDIFThreads \
 	countVDIFPackets \
 	printVDIF \
+	printVDIFheader \
 	peekVDIF \
 	searchVDIF \
 	vdif2to8 \
@@ -65,6 +66,9 @@ fakemultiVDIF_SOURCES = \
 
 printVDIF_SOURCES = \
 	printVDIF.c
+
+printVDIFheader_SOURCES = \
+	printVDIFheader.c
 
 searchVDIF_SOURCES = \
 	searchVDIF.c

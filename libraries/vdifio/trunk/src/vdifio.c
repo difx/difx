@@ -237,3 +237,42 @@ int setVDIFTime(vdif_header *header, time_t time) {
 
   return(VDIF_NOERROR);
 }
+
+void printVDIFHeader(const vdif_header *header)
+{
+	printf("VDIF Header\n");
+	printf("  seconds = %d\n", header->seconds);
+	printf("  legacymode = %d\n", header->legacymode);
+	printf("  invalid = %d\n", header->invalid);
+	printf("  frame = %d\n", header->frame);
+	printf("  epoch = %d\n", header->epoch);
+	printf("  framelength8 = %d -> frame length = %d\n", header->framelength8, header->framelength8*8);
+	printf("  nchan = %d\n", header->nchan);
+	printf("  version = %d\n", header->version);
+	printf("  stationid = %d\n", header->stationid);
+	printf("  threadid = %d\n", header->threadid);
+	printf("  nbits-1 = %d -> nbits = %d\n", header->nbits, header->nbits + 1);
+	printf("  iscomplex = %d\n", header->iscomplex);
+	printf("  eversion = %d\n", header->eversion);
+	if(header->eversion == 3)
+	{
+		const vdif_edv3_header *edv3 = (const vdif_edv3_header *)header;
+		
+		printf("  samprate = 0x%06x = %d %s\n", edv3->samprate, edv3->samprate, edv3->samprateunits ? "MHz" : "kHz");
+		printf("  syncword = %08x\n", edv3->syncword);
+		printf("  tuning = 0x%08x = %d Hz\n", edv3->tuning, edv3->tuning);
+		printf("  dbeunit = %d\n", edv3->dbeunit);
+		printf("  ifnumber = %d\n", edv3->ifnumber);
+		printf("  subband = %d\n", edv3->subband);
+		printf("  sideband = %d -> %s\n", edv3->sideband, edv3->sideband ? "U" : "L");
+		printf("  rev = %d.%d\n", edv3->majorrev, edv3->minorrev);
+		printf("  personalitytype = 0x%2x\n", edv3->personalitytype);
+	}
+	else
+	{
+		printf("  extended1 = %06x\n", header->extended1);
+		printf("  extended2 = %08x\n", header->extended2);
+		printf("  extended3 = %08x\n", header->extended3);
+		printf("  extended4 = %08x\n", header->extended4);
+	}
+}

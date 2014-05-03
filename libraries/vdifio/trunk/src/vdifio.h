@@ -64,12 +64,48 @@ typedef struct vdif_header {
    uint32_t threadid : 10;
    uint32_t nbits : 5;
    uint32_t iscomplex : 1;
-   uint32_t eversion : 8;
    uint32_t extended1 : 24;
+   uint32_t eversion : 8;
    uint32_t extended2;
    uint32_t extended3;
-   uint32_t extdended4;
+   uint32_t extended4;
  } vdif_header;
+
+typedef struct vdif_edv3_header {	/* see http://www.vlbi.org/vdif/docs/vlbaupgradememo42.pdf */
+   uint32_t seconds : 30;
+   uint32_t legacymode : 1;
+   uint32_t invalid : 1;
+   
+   uint32_t frame : 24;
+   uint32_t epoch : 6;
+   uint32_t unassigned : 2;
+   
+   uint32_t framelength8 : 24;	// Frame length (including header) divided by 8 
+   uint32_t nchan : 5;
+   uint32_t version : 3;
+   
+   uint32_t stationid : 16;
+   uint32_t threadid : 10;
+   uint32_t nbits : 5;
+   uint32_t iscomplex : 1;
+
+   uint32_t samprate : 23;	// in samprateunits
+   uint32_t samprateunits : 1;	// 0 = kHz, 1 = MHz
+   uint32_t eversion : 8;
+   
+   uint32_t syncword;		// 0xACABFEED
+   
+   uint32_t tuning;		// Hz  (BCD?)
+   
+   uint32_t personalitytype : 8;
+   uint32_t minorrev : 4;	// minor part of rev number
+   uint32_t majorrev : 4;	// major part of revision number
+   uint32_t sideband : 1;	// 1 = upper, 0 = lower
+   uint32_t subband : 3;	// subband selector (RDBE specific)
+   uint32_t ifnumber : 4;	// which input IF
+   uint32_t dbeunit : 4;	// which unit produced this data
+   uint32_t unassigned2 : 4;
+ } vdif_edv3_header;
 
 /* Date manipulation functions */
 int ymd2doy(int yr, int mo, int day);
@@ -108,6 +144,8 @@ void setVDIFThreadID(vdif_header *header, int threadid);
 int setVDIFTime(vdif_header *header, time_t time);
 void setVDIFEpoch(vdif_header *header, int mjd);
 int nextVDIFHeader(vdif_header *header, int framepersec);
+
+void printVDIFHeader(const vdif_header *header);
 
 
 /* *** implemented in vdifbuffer.c *** */
