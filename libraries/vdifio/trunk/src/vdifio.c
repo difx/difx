@@ -238,41 +238,135 @@ int setVDIFTime(vdif_header *header, time_t time) {
   return(VDIF_NOERROR);
 }
 
-void printVDIFHeader(const vdif_header *header)
+static void fprintVDIFHeaderHex(FILE *out, const vdif_header *header)
 {
-	printf("VDIF Header\n");
-	printf("  seconds = %d\n", header->seconds);
-	printf("  legacymode = %d\n", header->legacymode);
-	printf("  invalid = %d\n", header->invalid);
-	printf("  frame = %d\n", header->frame);
-	printf("  epoch = %d\n", header->epoch);
-	printf("  framelength8 = %d -> frame length = %d\n", header->framelength8, header->framelength8*8);
-	printf("  nchan = %d\n", header->nchan);
-	printf("  version = %d\n", header->version);
-	printf("  stationid = %d\n", header->stationid);
-	printf("  threadid = %d\n", header->threadid);
-	printf("  nbits-1 = %d -> nbits = %d\n", header->nbits, header->nbits + 1);
-	printf("  iscomplex = %d\n", header->iscomplex);
-	printf("  eversion = %d\n", header->eversion);
-	if(header->eversion == 3)
+	const uint32_t *data = (const uint32_t *)header;
+	
+	fprintf(out, "%08x %08x %08x %08x", data[0], data[1], data[2], data[3]);
+	if(header->legacymode == 0)
+	{
+		fprintf(out, "  %08x %08x %08x %08x", data[4], data[5], data[6], data[7]);
+	}
+	fprintf(out, "\n");
+}
+
+static void fprintVDIFHeaderLong(FILE *out, const vdif_header *header)
+{
+	fprintf(out, "VDIF Header\n");
+	fprintf(out, "  seconds = %d\n", header->seconds);
+	fprintf(out, "  legacymode = %d\n", header->legacymode);
+	fprintf(out, "  invalid = %d\n", header->invalid);
+	fprintf(out, "  frame = %d\n", header->frame);
+	fprintf(out, "  epoch = %d\n", header->epoch);
+	fprintf(out, "  framelength8 = %d -> frame length = %d\n", header->framelength8, header->framelength8*8);
+	fprintf(out, "  ln2 nchan = %d -> nchan = %d\n", header->nchan, 1 << header->nchan);
+	fprintf(out, "  version = %d\n", header->version);
+	fprintf(out, "  stationid = %d\n", header->stationid);
+	fprintf(out, "  threadid = %d\n", header->threadid);
+	fprintf(out, "  nbits-1 = %d -> nbits = %d\n", header->nbits, header->nbits + 1);
+	fprintf(out, "  iscomplex = %d\n", header->iscomplex);
+	fprintf(out, "  eversion = %d\n", header->eversion);
+	if(header->eversion == 1)
+	{
+		const vdif_edv1_header *edv1 = (const vdif_edv1_header *)header;
+		
+		fprintf(out, "  samprate = 0x%06x = %d %s\n", edv1->samprate, edv1->samprate, edv1->samprateunits ? "MHz" : "kHz");
+		fprintf(out, "  syncword = %08x\n", edv1->syncword);
+		fprintf(out, "  name = %8s", edv1->name);
+	}
+	else if(header->eversion == 3)
 	{
 		const vdif_edv3_header *edv3 = (const vdif_edv3_header *)header;
 		
-		printf("  samprate = 0x%06x = %d %s\n", edv3->samprate, edv3->samprate, edv3->samprateunits ? "MHz" : "kHz");
-		printf("  syncword = %08x\n", edv3->syncword);
-		printf("  tuning = 0x%08x = %d Hz\n", edv3->tuning, edv3->tuning);
-		printf("  dbeunit = %d\n", edv3->dbeunit);
-		printf("  ifnumber = %d\n", edv3->ifnumber);
-		printf("  subband = %d\n", edv3->subband);
-		printf("  sideband = %d -> %s\n", edv3->sideband, edv3->sideband ? "U" : "L");
-		printf("  rev = %d.%d\n", edv3->majorrev, edv3->minorrev);
-		printf("  personalitytype = 0x%2x\n", edv3->personalitytype);
+		fprintf(out, "  samprate = 0x%06X = %d %s\n", edv3->samprate, edv3->samprate, edv3->samprateunits ? "MHz" : "kHz");
+		fprintf(out, "  syncword = 0x%08X\n", edv3->syncword);
+		fprintf(out, "  tuning = 0x%08X = %d Hz\n", edv3->tuning, edv3->tuning);
+		fprintf(out, "  dbeunit = %d\n", edv3->dbeunit);
+		fprintf(out, "  ifnumber = %d\n", edv3->ifnumber);
+		fprintf(out, "  subband = %d\n", edv3->subband);
+		fprintf(out, "  sideband = %d -> %s\n", edv3->sideband, edv3->sideband ? "U" : "L");
+		fprintf(out, "  rev = %d.%d\n", edv3->majorrev, edv3->minorrev);
+		fprintf(out, "  personalitytype = 0x%2X\n", edv3->personalitytype);
 	}
 	else
 	{
-		printf("  extended1 = %06x\n", header->extended1);
-		printf("  extended2 = %08x\n", header->extended2);
-		printf("  extended3 = %08x\n", header->extended3);
-		printf("  extended4 = %08x\n", header->extended4);
+		fprintf(out, "  extended1 = %06X\n", header->extended1);
+		fprintf(out, "  extended2 = %08X\n", header->extended2);
+		fprintf(out, "  extended3 = %08X\n", header->extended3);
+		fprintf(out, "  extended4 = %08X\n", header->extended4);
+	}
+}
+
+static void fprintVDIFHeaderShort(FILE *out, const vdif_header *header)
+{
+	fprintf(out, "%5d %7d %6d %6d %5d %4d %d %d %d %3d", header->epoch, header->seconds, header->threadid, header->framelength8*8, 1 << header->nchan, header->nbits+1, header->legacymode, header->invalid, header->iscomplex, header->eversion);
+	if(header->eversion == 1)
+	{
+		const vdif_edv1_header *edv1 = (const vdif_edv1_header *)header;
+		long long int samprate;
+
+		samprate = edv1->samprate * (edv1->samprateunits ? 1000000LL : 1000LL);
+		fprintf(out, " %10Ld 0x%08X %8s", samprate, edv1->syncword, edv1->name);
+	}
+	else if(header->eversion ==3)
+	{
+		const vdif_edv3_header *edv3 = (const vdif_edv3_header *)header;
+		long long int samprate;
+
+		samprate = edv3->samprate * (edv3->samprateunits ? 1000000LL : 1000LL);
+		fprintf(out, " %10Ld 0x%08X %3d %2d %3d    %c %d.%d 0x%2X", samprate, edv3->syncword, edv3->dbeunit, edv3->ifnumber, edv3->subband, edv3->sideband ? 'U' : 'L', edv3->majorrev, edv3->minorrev, edv3->personalitytype);
+	}
+	fprintf(out, "\n");
+}
+
+static void fprintVDIFHeaderColumns(FILE *out, const vdif_header *header)
+{
+	fprintf(out, "Epoch Seconds Thread Length Chans Bits L I C EDV");
+	if(header->eversion == 1)
+	{
+		fprintf(out, " SampleRate   SyncWord Name");
+	}
+	if(header->eversion == 3)
+	{
+		fprintf(out, " SampleRate   SyncWord DBE IF Sub Side Rev Per");
+	}
+	fprintf(out, "\n");
+}
+
+void fprintVDIFHeader(FILE *out, const vdif_header *header, enum VDIFHeaderPrintLevel printLevel)
+{
+	switch(printLevel)
+	{
+	case VDIFHeaderPrintLevelHex:
+		fprintVDIFHeaderHex(out, header);
+		break;
+        case VDIFHeaderPrintLevelLong:
+		fprintVDIFHeaderLong(out, header);
+		break;
+        case VDIFHeaderPrintLevelColumns:
+		fprintVDIFHeaderColumns(out, header);
+		break;
+        case VDIFHeaderPrintLevelShort:
+		fprintVDIFHeaderShort(out, header);
+		break;
+	}
+}
+
+void printVDIFHeader(const vdif_header *header, enum VDIFHeaderPrintLevel printLevel)
+{
+	switch(printLevel)
+	{
+	case VDIFHeaderPrintLevelHex:
+		fprintVDIFHeaderHex(stdout, header);
+		break;
+        case VDIFHeaderPrintLevelLong:
+		fprintVDIFHeaderLong(stdout, header);
+		break;
+        case VDIFHeaderPrintLevelColumns:
+		fprintVDIFHeaderColumns(stdout, header);
+		break;
+        case VDIFHeaderPrintLevelShort:
+		fprintVDIFHeaderShort(stdout, header);
+		break;
 	}
 }

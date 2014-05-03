@@ -41,9 +41,10 @@ static void usage()
   fprintf(stderr, "\n%s ver. %s  %s  %s\n\n", program, version,
           author, verdate);
   fprintf(stderr, "A program to dump some basic info about VDIF packets to the screen\n");
-  fprintf(stderr, "\nUsage: %s <VDIF input file> <Mbps>\n", program);
+  fprintf(stderr, "\nUsage: %s <VDIF input file> <Mbps> [<prtlev>]\n", program);
   fprintf(stderr, "\n<VDIF input file> is the name of the VDIF file to read\n");
   fprintf(stderr, "\n<Mbps> is the data rate in Mbps expected for this file\n");
+  fprintf(stderr, "\n<prtlev> is output type: hex short long\n");
 }
 
 int main(int argc, char **argv)
@@ -54,8 +55,9 @@ int main(int argc, char **argv)
   int readbytes, framebytes, framemjd, framesecond, framenumber, frameinvalid, datambps, framespersecond;
   long long framesread;
   vdif_header *header;
+  enum VDIFHeaderPrintLevel lev = VDIFHeaderPrintLevelShort;
 
-  if(argc != 3)
+  if(argc < 3 || argc > 4)
   {
     usage();
 
@@ -70,6 +72,26 @@ int main(int argc, char **argv)
   }
 
   datambps = atoi(argv[2]);
+  if(argc == 4)
+  {
+  	if(strcmp(argv[3], "hex") == 0)
+	{
+		lev = VDIFHeaderPrintLevelHex;
+	}
+	else if(strcmp(argv[3], "short") == 0)
+	{
+		lev = VDIFHeaderPrintLevelShort;
+	}
+  	else if(strcmp(argv[3], "long") == 0)
+	{
+		lev = VDIFHeaderPrintLevelLong;
+	}
+	else
+	{
+		fprintf(stderr, "Print level must be one of hex, short or long.\n");
+		exit(EXIT_FAILURE);
+	}
+  }
   readbytes = fread(buffer, 1, MaxFrameSize, input); //read the VDIF header
   header = (vdif_header*)buffer;
   framebytes = getVDIFFrameBytes(header);
@@ -98,7 +120,11 @@ int main(int argc, char **argv)
     framesecond = getVDIFFrameSecond(header);
     framenumber = getVDIFFrameNumber(header);
     frameinvalid = getVDIFFrameInvalid(header);
-    printVDIFHeader(header);
+    if(lev == VDIFHeaderPrintLevelShort && framesread % 20 == 0)
+    {
+      printVDIFHeader(header, VDIFHeaderPrintLevelColumns);
+    }
+    printVDIFHeader(header, lev);
     if(getVDIFFrameBytes(header) != framebytes) { 
       fprintf(stderr, "Framebytes has changed! Can't deal with this, aborting\n");
       break;

@@ -2,8 +2,7 @@ Version 0.6
 ~~~~~~~~~~~
 * Post DiFX-2.3
 * Expose getVDIFEpochMJD: returns integer MJD corresponding to start of VDIF epoch
-* Add printVDIFheader which will also print contents of EDV3 (TODO: also EDV1)
-  - fix vdif_header ordering of edvversion and extended1
+* Add printVDIFheader which will also print contents of EDV1 and EDV3 
 
 Version 0.5
 ~~~~~~~~~~~

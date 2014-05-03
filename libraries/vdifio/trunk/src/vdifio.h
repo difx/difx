@@ -71,7 +71,34 @@ typedef struct vdif_header {
    uint32_t extended4;
  } vdif_header;
 
-typedef struct vdif_edv3_header {	/* see http://www.vlbi.org/vdif/docs/vlbaupgradememo42.pdf */
+typedef struct vdif_edv1_header {	/* NICT extensions: see http://www.vlbi.org/vdif/docs/VDIF_Extension_NICT_Version2014.pdf */
+   uint32_t seconds : 30;
+   uint32_t legacymode : 1;
+   uint32_t invalid : 1;
+   
+   uint32_t frame : 24;
+   uint32_t epoch : 6;
+   uint32_t unassigned : 2;
+   
+   uint32_t framelength8 : 24;	// Frame length (including header) divided by 8 
+   uint32_t nchan : 5;
+   uint32_t version : 3;
+   
+   uint32_t stationid : 16;
+   uint32_t threadid : 10;
+   uint32_t nbits : 5;
+   uint32_t iscomplex : 1;
+
+   uint32_t samprate : 23;	// in samprateunits
+   uint32_t samprateunits : 1;	// 0 = kHz, 1 = MHz
+   uint32_t eversion : 8;
+   
+   uint32_t syncword;		// 0xACABFEED
+   
+   char name[8];		// DAS/Station Name
+ } vdif_edv1_header;
+
+typedef struct vdif_edv3_header {	/* VLBA extensions: see http://www.vlbi.org/vdif/docs/vlbaupgradememo42.pdf */
    uint32_t seconds : 30;
    uint32_t legacymode : 1;
    uint32_t invalid : 1;
@@ -106,6 +133,14 @@ typedef struct vdif_edv3_header {	/* see http://www.vlbi.org/vdif/docs/vlbaupgra
    uint32_t dbeunit : 4;	// which unit produced this data
    uint32_t unassigned2 : 4;
  } vdif_edv3_header;
+
+enum VDIFHeaderPrintLevel	// for printVDIFHeader function
+{
+	VDIFHeaderPrintLevelHex = 0,	// Just dump header as hex
+	VDIFHeaderPrintLevelColumns,	// Just print the column headers for VDIFHeaderPrintLevelShort
+	VDIFHeaderPrintLevelShort,	// Decode header and print one-liner
+	VDIFHeaderPrintLevelLong	// Print full header details
+};
 
 /* Date manipulation functions */
 int ymd2doy(int yr, int mo, int day);
@@ -145,7 +180,8 @@ int setVDIFTime(vdif_header *header, time_t time);
 void setVDIFEpoch(vdif_header *header, int mjd);
 int nextVDIFHeader(vdif_header *header, int framepersec);
 
-void printVDIFHeader(const vdif_header *header);
+void fprintVDIFHeader(FILE *out, const vdif_header *header, enum VDIFHeaderPrintLevel);
+void printVDIFHeader(const vdif_header *header, enum VDIFHeaderPrintLevel);
 
 
 /* *** implemented in vdifbuffer.c *** */
