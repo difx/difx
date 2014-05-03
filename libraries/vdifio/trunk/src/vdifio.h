@@ -122,7 +122,7 @@ typedef struct vdif_edv3_header {	/* VLBA extensions: see http://www.vlbi.org/vd
    
    uint32_t syncword;		// 0xACABFEED
    
-   uint32_t tuning;		// Hz  (BCD?)
+   uint32_t tuning;		// In DDS units of 1/2^24 MHz
    
    uint32_t personalitytype : 8;
    uint32_t minorrev : 4;	// minor part of rev number
