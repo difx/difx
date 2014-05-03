@@ -29,111 +29,158 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "vdifio.h"
 
-const char program[] = "printVDIF";
-const char author[]  = "Adam Deller <adeller@nrao.edu>";
+const char program[] = "printVDIFheader";
+const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
 const char version[] = "0.1";
-const char verdate[] = "20140501";
+const char verdate[] = "20140502";
 
 static void usage()
 {
-  fprintf(stderr, "\n%s ver. %s  %s  %s\n\n", program, version,
-          author, verdate);
-  fprintf(stderr, "A program to dump some basic info about VDIF packets to the screen\n");
-  fprintf(stderr, "\nUsage: %s <VDIF input file> <Mbps> [<prtlev>]\n", program);
-  fprintf(stderr, "\n<VDIF input file> is the name of the VDIF file to read\n");
-  fprintf(stderr, "\n<Mbps> is the data rate in Mbps expected for this file\n");
-  fprintf(stderr, "\n<prtlev> is output type: hex short long\n");
+	fprintf(stderr, "\n%s ver. %s  %s  %s\n\n", program, version, author, verdate);
+	fprintf(stderr, "A program to dump some basic info about VDIF packets to the screen\n");
+	fprintf(stderr, "\nUsage: %s <VDIF input file> <framesize> [<prtlev>]\n", program);
+	fprintf(stderr, "\n<VDIF input file> is the name of the VDIF file to read\n");
+	fprintf(stderr, "\n<framesize> VDIF frame size, including header (5032 for VLBA)\n");
+	fprintf(stderr, "\n<prtlev> is output type: hex short long\n\n");
 }
 
 int main(int argc, char **argv)
 {
-  const int MaxFrameSize = 16*MAX_VDIF_FRAME_BYTES;
-  char buffer[MaxFrameSize];
-  FILE * input;
-  int readbytes, framebytes, framemjd, framesecond, framenumber, frameinvalid, datambps, framespersecond;
-  long long framesread;
-  vdif_header *header;
-  enum VDIFHeaderPrintLevel lev = VDIFHeaderPrintLevelShort;
+	const int MaxFrameSize = 16*MAX_VDIF_FRAME_BYTES; /* read this much at a time */
+	char buffer[MaxFrameSize];
+	enum VDIFHeaderPrintLevel lev = VDIFHeaderPrintLevelShort;
+	int leftover = 0;
+	int framesize;
+	FILE *input;
+	long long framesread = 0;
+	const vdif_header *header;
+	int nSkip = 0;
 
-  if(argc < 3 || argc > 4)
-  {
-    usage();
-
-    return EXIT_FAILURE;
-  }
-  
-  input = fopen(argv[1], "r");
-  if(input == NULL)
-  {
-    fprintf(stderr, "Cannot open input file %s\n", argv[1]);
-    exit(EXIT_FAILURE);
-  }
-
-  datambps = atoi(argv[2]);
-  if(argc == 4)
-  {
-  	if(strcmp(argv[3], "hex") == 0)
+	if(argc < 3 || argc > 4)
 	{
-		lev = VDIFHeaderPrintLevelHex;
+		usage();
+
+		return EXIT_FAILURE;
 	}
-	else if(strcmp(argv[3], "short") == 0)
+
+	if(strcmp(argv[1], "-") == 0)
 	{
-		lev = VDIFHeaderPrintLevelShort;
-	}
-  	else if(strcmp(argv[3], "long") == 0)
-	{
-		lev = VDIFHeaderPrintLevelLong;
+		input = stdin;
 	}
 	else
 	{
-		fprintf(stderr, "Print level must be one of hex, short or long.\n");
-		exit(EXIT_FAILURE);
+		input = fopen(argv[1], "r");
+		if(!input)
+		{
+			fprintf(stderr, "Cannot open input file %s\n", argv[1]);
+
+			exit(EXIT_FAILURE);
+		}
 	}
-  }
-  readbytes = fread(buffer, 1, MaxFrameSize, input); //read the VDIF header
-  header = (vdif_header*)buffer;
-  framebytes = getVDIFFrameBytes(header);
-  if(framebytes > MaxFrameSize) {
-    fprintf(stderr, "Cannot read frame with %d bytes > max (%d), formal max %d\n", framebytes, MaxFrameSize, MAX_VDIF_FRAME_BYTES);
-    exit(EXIT_FAILURE);
-  }
-  framemjd = getVDIFFrameMJD(header);
-  framesecond = getVDIFFrameSecond(header);
-  framenumber = getVDIFFrameNumber(header);
-  frameinvalid = getVDIFFrameInvalid(header);
-  framespersecond = (int)((((long long)datambps)*1000000)/(8*(framebytes-VDIF_HEADER_BYTES)));
-  printf("Frames per second is %d\n", framespersecond);
- 
-  rewind(input); //go back to the start
 
-  framesread = 0;
-  while(!feof(input)) {
-    readbytes = fread(buffer, 1, framebytes, input); //read the whole VDIF packet
-    if (readbytes < framebytes) {
-      fprintf(stderr, "Header read failed - probably at end of file.\n");
-      break;
-    }
-    header = (vdif_header*)buffer;
-    framemjd = getVDIFFrameMJD(header);
-    framesecond = getVDIFFrameSecond(header);
-    framenumber = getVDIFFrameNumber(header);
-    frameinvalid = getVDIFFrameInvalid(header);
-    if(lev == VDIFHeaderPrintLevelShort && framesread % 20 == 0)
-    {
-      printVDIFHeader(header, VDIFHeaderPrintLevelColumns);
-    }
-    printVDIFHeader(header, lev);
-    if(getVDIFFrameBytes(header) != framebytes) { 
-      fprintf(stderr, "Framebytes has changed! Can't deal with this, aborting\n");
-      break;
-    }
-    framesread++;
-  }
+	framesize = atoi(argv[2]);
+	if(argc == 4)
+	{
+		if(strcmp(argv[3], "hex") == 0)
+		{
+			lev = VDIFHeaderPrintLevelHex;
+		}
+		else if(strcmp(argv[3], "short") == 0)
+		{
+			lev = VDIFHeaderPrintLevelShort;
+		}
+		else if(strcmp(argv[3], "long") == 0)
+		{
+			lev = VDIFHeaderPrintLevelLong;
+		}
+		else
+		{
+			fprintf(stderr, "Print level must be one of hex, short or long.\n");
+			
+			exit(EXIT_FAILURE);
+		}
+	}
 
-  printf("Read %lld frames\n", framesread);
-  fclose(input);
+	for(;;)
+	{
+		int index, fill, readbytes;
 
-  return EXIT_SUCCESS;
+		index = 0;
+
+  		readbytes = fread(buffer+leftover, 1, MaxFrameSize-leftover, input); //read the VDIF header
+		if(readbytes <= 0)
+		{
+			break;
+		}
+		fill = readbytes + leftover;
+		for(;;)
+		{
+			if(fill-index < framesize)
+			{
+				/* need more data */
+				leftover = fill-index;
+				memmove(buffer, buffer+index, leftover);
+				break;
+			}
+			header = (const vdif_header *)(buffer + index);
+			if(getVDIFFrameBytes(header) != framesize)
+			{
+				++index;
+				++nSkip;
+				continue;
+			}
+			if(header->eversion == 0 && (header->extended1 != 0 || header->extended2 != 0 || header->extended3 != 0 || header->extended1 != 0))
+			{
+				++index;
+				++nSkip;
+				continue;
+			}
+			if(header->eversion == 1 || header->eversion == 3)
+			{
+				const uint32_t *ui;
+
+				ui = (const uint32_t *)(buffer + index);
+				if(ui[5] != 0xACABFEED)
+				{
+					continue;
+				}
+			}
+
+			if(nSkip > 0)
+			{
+				printf("Skipped %d interloper bytes\n", nSkip);
+				nSkip = 0;
+			}
+
+			if(lev == VDIFHeaderPrintLevelShort && framesread % 24 == 0)
+			{
+				printf("FrameNum ");
+				printVDIFHeader(header, VDIFHeaderPrintLevelColumns);
+			}
+			if(lev == VDIFHeaderPrintLevelLong)
+			{
+				printf("Frame %lld ", framesread);
+			}
+			else
+			{
+				printf("%8lld ", framesread);
+			}
+			printVDIFHeader(header, lev);
+			
+			index += framesize;
+			++framesread;
+		}
+	}
+
+	printf("Read %lld frames\n", framesread);
+	
+	if(input != stdin)
+	{
+  		fclose(input);
+	}
+
+	return EXIT_SUCCESS;
 }

@@ -299,7 +299,7 @@ static void fprintVDIFHeaderLong(FILE *out, const vdif_header *header)
 
 static void fprintVDIFHeaderShort(FILE *out, const vdif_header *header)
 {
-	fprintf(out, "%5d %7d %6d %6d %5d %4d %d %d %d %3d", header->epoch, header->seconds, header->threadid, header->framelength8*8, 1 << header->nchan, header->nbits+1, header->legacymode, header->invalid, header->iscomplex, header->eversion);
+	fprintf(out, "%5d %8d %5d %6d %6d %5d %4d %d %d %d %3d", header->epoch, header->seconds, header->frame, header->threadid, header->framelength8*8, 1 << header->nchan, header->nbits+1, header->legacymode, header->invalid, header->iscomplex, header->eversion);
 	if(header->eversion == 1)
 	{
 		const vdif_edv1_header *edv1 = (const vdif_edv1_header *)header;
@@ -321,14 +321,14 @@ static void fprintVDIFHeaderShort(FILE *out, const vdif_header *header)
 
 static void fprintVDIFHeaderColumns(FILE *out, const vdif_header *header)
 {
-	fprintf(out, "Epoch Seconds Thread Length Chans Bits L I C EDV");
+	fprintf(out, "Epoch  Seconds Frame Thread Length Chans Bits L I C EDV");
 	if(header->eversion == 1)
 	{
 		fprintf(out, " SampleRate   SyncWord Name");
 	}
 	if(header->eversion == 3)
 	{
-		fprintf(out, " SampleRate   SyncWord DBE IF Sub Side Rev Per");
+		fprintf(out, " SampleRate   SyncWord DBE IF Sub Side Rev Pers");
 	}
 	fprintf(out, "\n");
 }
