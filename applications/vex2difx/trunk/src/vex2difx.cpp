@@ -1235,7 +1235,7 @@ static void populateFreqTable(DifxInput *D, const vector<freq>& freqs, const vec
 }
 
 #warning "FIXME: populateBaselineTable assumes nAntenna == nDatastream!"
-static void populateBaselineTable(DifxInput *D, const CorrParams *P, const CorrSetup *corrSetup, vector<set <int> > blockedfreqids)
+static double populateBaselineTable(DifxInput *D, const CorrParams *P, const CorrSetup *corrSetup, vector<set <int> > blockedfreqids)
 {	
 	int n1, n2;
 	int nPol;
@@ -1246,6 +1246,7 @@ static void populateBaselineTable(DifxInput *D, const CorrParams *P, const CorrS
 	DifxConfig *config;
 	int freqId, altFreqId, blId, configId;
 	double lowedgefreq, altlowedgefreq;
+	double globalBandwidth = 0;
 
 	// Calculate maximum number of possible baselines based on list of configs
 	D->nBaseline = 0;
@@ -1535,6 +1536,18 @@ static void populateBaselineTable(DifxInput *D, const CorrParams *P, const CorrS
 							continue;
 						}
 
+						if(globalBandwidth == 0)
+						{
+							globalBandwidth = D->freq[freqId].bw;
+						}
+						else if(globalBandwidth > 0)
+						{
+							if(globalBandwidth != D->freq[freqId].bw)
+							{
+								globalBandwidth = -1;
+							}
+						}
+
 						++nFreq;
 					}
 
@@ -1642,6 +1655,18 @@ static void populateBaselineTable(DifxInput *D, const CorrParams *P, const CorrS
 							continue;
 						}
 
+						if(globalBandwidth == 0)
+						{
+							globalBandwidth = D->freq[freqId].bw;
+						}
+						else if(globalBandwidth > 0)
+						{
+							if(globalBandwidth != D->freq[freqId].bw)
+							{
+								globalBandwidth = -1;
+							}
+						}
+
 						++nFreq;
 					}
 	
@@ -1662,6 +1687,8 @@ static void populateBaselineTable(DifxInput *D, const CorrParams *P, const CorrS
 
 	// set actual number of baselines
 	D->nBaseline = blId;
+
+	return globalBandwidth;
 }
 
 static void populateEOPTable(DifxInput *D, const vector<VexEOP>& E)
@@ -2078,6 +2105,7 @@ static int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int 
 	int nZoomBands, fqId, polcount, zoomChans = 0, minChans;
 	int overSamp, decimation, worstcaseguardns;
 	DifxDatastream *dd;
+	double globalBandwidth;
 	vector<set <int> > blockedfreqids;
 
 	// Initialize toneSets with the trivial case, which is used for all zoom bands
@@ -2896,7 +2924,15 @@ static int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int 
 	populateFreqTable(D, freqs, toneSets);
 
 	// Make baseline table
-	populateBaselineTable(D, P, corrSetup, blockedfreqids);
+	globalBandwidth = populateBaselineTable(D, P, corrSetup, blockedfreqids);
+	if(globalBandwidth < 0)	// Implies conflicting frequencies found
+	{
+		cerr << "WARNING: differing correlation channel bandwidths found.  You can correlate this data, but won't be able to convert to FITS!" << endl;
+	}
+	if(globalBandwidth == 0) // Implies no baselines found
+	{
+		cerr << "WARNING: no correlatable baselines were found." << endl;
+	}
 
 	// Merge identical table entries
 	simplifyDifxFreqs(D);
