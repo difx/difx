@@ -1,7 +1,5 @@
 bin_PROGRAMS = difx2mark4
-check_PROGRAMS = update_station_chk
 
-TESTS = update_station_chk
 TESTS_ENVIRONMENT = srcdir=$(srcdir) HOPS_STATION_CODE=debug.envir
 
 difx2mark4_SOURCES = \
@@ -12,7 +10,6 @@ difx2mark4_SOURCES = \
 	createType3s.c \
 	root_id.c \
 	single_code.c \
-	update_stations.c \
 	conv2date.c \
 	get_vis.c \
 	swabr.c \
@@ -40,7 +37,5 @@ difx2mark4_SOURCES = \
 	difx2mark4.h \
 	other.h
 
-update_station_chk_SOURCES = update_stations.c single_code.c
-update_station_chk_CPPFLAGS = -DSTANDALONE_CHECK=1 -DAWK=\"@AWK@\"
 
 CLEANFILES = *debug*

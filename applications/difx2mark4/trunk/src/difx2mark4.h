@@ -150,8 +150,6 @@ int int_reverse (int);
 long long_reverse (long);
 float float_reverse (float);
 double double_reverse (double);
-                                    // update_stations.c
-void update_stations(char*,char[52][4]);
 
 #endif
 // vim: shiftwidth=4:softtabstop=4:expandtab:cindent:cinoptions={1sf1s^-1s
