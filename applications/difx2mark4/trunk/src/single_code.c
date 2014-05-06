@@ -51,10 +51,9 @@ char single_code (char *station)
             while
                  (rc > 0 && ++i < 500);
                                     // fell out of loop, append the default table
-
-            memcpy (codes[i], code_table[0], 208);
-            ncodes = i + 52;
             }
+        memcpy (codes[i], code_table[0], 208);
+        ncodes = i + 52;
         first_time = FALSE;
         }
 
