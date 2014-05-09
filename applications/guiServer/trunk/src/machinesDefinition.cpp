@@ -12,23 +12,64 @@
 #include <ServerSideConnection.h>
 #include <sys/statvfs.h>
 #include <network/TCPClient.h>
-#include <MachinesMonitorConnection.h>
+#include <network/PacketExchange.h>
 #include <list>
 #include <string>
 #include <signal.h>
+#include <GUIClient.h>
 
 using namespace guiServer;
 
 //-----------------------------------------------------------------------------
-//!  Called in response to a user request to start a DiFX session.  This function
-//!  does all of the necessary checking to assure (or at least increase the chances)
-//!  that DiFX will run.  It also creates .thread and .machine files.  The actual
-//!  running of DiFX is performed in a thread that this function, as its last act,
-//!  spawns.
+//  These are packet types used for sending diagnostic and progress messages from
+//  a machines definition task to the GUI.  These get rather highly specific.
+//-----------------------------------------------------------------------------
+static const int MACHINE_DEF_TASK_TERMINATED                     = 100;
+static const int MACHINE_DEF_TASK_ENDED_GRACEFULLY               = 101;
+static const int MACHINE_DEF_TASK_STARTED                        = 102;
+static const int MACHINE_DEF_PARAMETER_CHECK_IN_PROGRESS         = 103;
+static const int MACHINE_DEF_PARAMETER_CHECK_SUCCESS             = 104;
+static const int MACHINE_DEF_FAILURE_NO_HEADNODE                 = 105;
+static const int MACHINE_DEF_FAILURE_NO_DATASOURCES              = 106;
+static const int MACHINE_DEF_FAILURE_NO_PROCESSORS               = 107;
+static const int MACHINE_DEF_WARNING_NO_MACHINES_FILE_SPECIFIED  = 108;
+static const int MACHINE_DEF_WARNING_NO_THREADS_FILE_SPECIFIED   = 109;
+static const int MACHINE_DEF_THREADS_FILE_NAME                   = 110;
+static const int MACHINE_DEF_MACHINES_FILE_NAME                  = 111;
+static const int MACHINE_DEF_FAILURE_NO_FILES_SPECIFIED          = 112;
+static const int MACHINE_DEF_FAILURE_OPEN_MACHINES_FILE          = 113;
+static const int MACHINE_DEF_FAILURE_OPEN_THREADS_FILE           = 114;
+static const int MACHINE_DEF_MACHINES_FILE_CREATED               = 115;
+static const int MACHINE_DEF_THREADS_FILE_CREATED                = 116;
+static const int MACHINE_DEF_FAILURE_FILE_REMOVAL                = 117;
+static const int MACHINE_DEF_FAILURE_POPEN                       = 118;
+static const int MACHINE_DEF_FAILURE_MPIRUN                      = 119;
+static const int MACHINE_DEF_SUCCESS_MPIRUN                      = 120;
+static const int MACHINE_DEF_LOW_THREAD_COUNT                    = 121;
+static const int MACHINE_DEF_RUNNING_MPIRUN_TESTS                = 122;
+
+//-----------------------------------------------------------------------------
+//!  Called in response to a user request to specify machines/threads for
+//!  mpirun to use in a DiFX processing session.  This creates .thread and 
+//!  .machine files with names that match the associated job.  The bulk of the
+//!  work is threaded.
 //-----------------------------------------------------------------------------
 void ServerSideConnection::machinesDefinition( DifxMessageGeneric* G ) {
+
+    MachinesDefinitionInfo* machinesDefinitionInfo = new MachinesDefinitionInfo;
+    machinesDefinitionInfo->ssc = this;
+    memcpy( &(machinesDefinitionInfo->definition), &(G->body.machinesDefinition), sizeof( DifxMessageMachinesDefinition ) );
+    pthread_attr_init( &(machinesDefinitionInfo->threadAttr) );
+    pthread_create( &(machinesDefinitionInfo->threadId), &(machinesDefinitionInfo->threadAttr), 
+                    staticRunMachinesDefinition, (void*)machinesDefinitionInfo );      
+}
+
+//-----------------------------------------------------------------------------
+//!  Thread function for actually running the machines definition operations.
+//-----------------------------------------------------------------------------
+void ServerSideConnection::runMachinesDefinition( MachinesDefinitionInfo* machinesDefinitionInfo ) {
+
 	int l;
-	int childPid;
 	char machinesFilename[DIFX_MESSAGE_FILENAME_LENGTH];
 	char threadsFilename[DIFX_MESSAGE_FILENAME_LENGTH];
 	char workingDir[DIFX_MESSAGE_FILENAME_LENGTH];
@@ -37,65 +78,52 @@ void ServerSideConnection::machinesDefinition( DifxMessageGeneric* G ) {
 	char command[MAX_COMMAND_SIZE];
 	char nodename[MAX_COMMAND_SIZE];
 	FILE *out;
-	const DifxMessageMachinesDefinition *S;
+	const DifxMessageMachinesDefinition *S = &(machinesDefinitionInfo->definition);
 	const char *mpiWrapper;
-	MachinesMonitorConnection* monitor;
+	GUIClient* monitor;
 
-	//  Cast the body of this message to a DifxMessageStart structure.
-	S = &G->body.machinesDefinition;
-
-	//  Open a TCP socket connection to the server that should be running for us on the
-    //  host that requested this task (the GUI, presumably).  This socket is used
+	//  Open a client connection to the server that should be running for us on the
+    //  host that requested this task (the GUI, presumably).  This connection is used
     //  for diagnostic messages and to show progress.
-    network::TCPClient* guiSocket = new network::TCPClient( S->address, S->port );
-    guiSocket->waitForConnect();
+    monitor = new GUIClient( machinesDefinitionInfo->ssc, S->address, S->port );
+    monitor->packetExchange();
     
-    //  Create a Machines Monitor Connection out of this new socket if it connected
-    //  properly.  If it did not connect, we need to bail out now.
-    if ( guiSocket->connected() ) {
-        monitor = new MachinesMonitorConnection( guiSocket );
-        monitor->sendPacket( MachinesMonitorConnection::TASK_STARTED, NULL, 0 );
-    }
+    //  If the connection was made properly, send acknowledgement.  If not, we need to bail out now.
+    if ( monitor->okay() )
+        monitor->sendPacket( MACHINE_DEF_TASK_STARTED, NULL, 0 );
     else {
         diagnostic( ERROR, "client socket connection from guiServer to GUI failed - unable to create machines/threads files" );
-        delete guiSocket;
-	        exit( EXIT_SUCCESS );
-        //return;
+        delete monitor;
+	    return;
     }
     
     //=========================================================================
     //  Checks below are run BEFORE we start the thread that creates the machines
     //  and threads files.
     //=========================================================================
-    monitor->sendPacket( MachinesMonitorConnection::PARAMETER_CHECK_IN_PROGRESS, NULL, 0 );
+    monitor->sendPacket( MACHINE_DEF_PARAMETER_CHECK_IN_PROGRESS, NULL, 0 );
 
 	//  Make sure all needed parameters are included in the message.
 	if ( S->headNode[0] == 0 ) {
     	diagnostic( ERROR, "Machines specification failed - no headnode specified." );
-    	monitor->sendPacket( MachinesMonitorConnection::FAILURE_NO_HEADNODE, NULL, 0 );
-        monitor->sendPacket( MachinesMonitorConnection::TASK_TERMINATED, NULL, 0 );
+    	monitor->sendPacket( MACHINE_DEF_FAILURE_NO_HEADNODE, NULL, 0 );
+        monitor->sendPacket( MACHINE_DEF_TASK_TERMINATED, NULL, 0 );
         delete monitor;
-        delete guiSocket;
-	        exit( EXIT_SUCCESS );
-		//return;
+	    return;
 	}
 	if ( S->nDatastream <= 0 ) {
     	diagnostic( ERROR, "Machines specification failed - no data sources specified." );
-    	monitor->sendPacket( MachinesMonitorConnection::FAILURE_NO_DATASOURCES, NULL, 0 );
-        monitor->sendPacket( MachinesMonitorConnection::TASK_TERMINATED, NULL, 0 );
+    	monitor->sendPacket( MACHINE_DEF_FAILURE_NO_DATASOURCES, NULL, 0 );
+        monitor->sendPacket( MACHINE_DEF_TASK_TERMINATED, NULL, 0 );
         delete monitor;
-        delete guiSocket;
-	        exit( EXIT_SUCCESS );
-		//return;
+	    return;
 	}
 	if ( S->nProcess <= 0 ) {
     	diagnostic( ERROR, "Machines specification failed - no processing nodes  specified." );
-    	monitor->sendPacket( MachinesMonitorConnection::FAILURE_NO_PROCESSORS, NULL, 0 );
-        monitor->sendPacket( MachinesMonitorConnection::TASK_TERMINATED, NULL, 0 );
+    	monitor->sendPacket( MACHINE_DEF_FAILURE_NO_PROCESSORS, NULL, 0 );
+        monitor->sendPacket( MACHINE_DEF_TASK_TERMINATED, NULL, 0 );
         delete monitor;
-        delete guiSocket;
-	        exit( EXIT_SUCCESS );
-		//return;
+	    return;
 	}
 
 	//  We need names for the threads and machines files.  If these are not provided, we
@@ -104,16 +132,14 @@ void ServerSideConnection::machinesDefinition( DifxMessageGeneric* G ) {
 	//  Machines file first.
 	if ( S->machinesFilename[0] == 0 ) {
     	diagnostic( WARNING, "No machines file specified - generating path from input file." );
-    	monitor->sendPacket( MachinesMonitorConnection::WARNING_NO_MACHINES_FILE_SPECIFIED, NULL, 0 );
+    	monitor->sendPacket( MACHINE_DEF_WARNING_NO_MACHINES_FILE_SPECIFIED, NULL, 0 );
     	//  Check the input file name...it must be there!
 	    if ( S->inputFilename[0] == 0 ) {
         	diagnostic( ERROR, "Machines specification failed - no input file or machines file specified" );
-        	monitor->sendPacket( MachinesMonitorConnection::FAILURE_NO_FILES_SPECIFIED, NULL, 0 );
-            monitor->sendPacket( MachinesMonitorConnection::TASK_TERMINATED, NULL, 0 );
+        	monitor->sendPacket( MACHINE_DEF_FAILURE_NO_FILES_SPECIFIED, NULL, 0 );
+            monitor->sendPacket( MACHINE_DEF_TASK_TERMINATED, NULL, 0 );
             delete monitor;
-            delete guiSocket;
-	        exit( EXIT_SUCCESS );
-		    //return;
+	        return;
 	    }
 	    //  Create a .machines file name using the input file name.
 	    strncpy( machinesFilename, S->inputFilename, DIFX_MESSAGE_FILENAME_LENGTH );
@@ -128,21 +154,19 @@ void ServerSideConnection::machinesDefinition( DifxMessageGeneric* G ) {
 	}
 	else
 	    strncpy( machinesFilename, S->machinesFilename, DIFX_MESSAGE_FILENAME_LENGTH );
-	monitor->sendPacket( MachinesMonitorConnection::MACHINES_FILE_NAME, machinesFilename, strlen( machinesFilename ) );
+	monitor->sendPacket( MACHINE_DEF_MACHINES_FILE_NAME, machinesFilename, strlen( machinesFilename ) );
 
 	//  Threads file.
 	if ( S->threadsFilename[0] == 0 ) {
     	diagnostic( WARNING, "No threads file specified - generating path from input file." );
-    	monitor->sendPacket( MachinesMonitorConnection::WARNING_NO_THREADS_FILE_SPECIFIED, NULL, 0 );
+    	monitor->sendPacket( MACHINE_DEF_WARNING_NO_THREADS_FILE_SPECIFIED, NULL, 0 );
     	//  Check the input file name...it must be there!
 	    if ( S->inputFilename[0] == 0 ) {
         	diagnostic( ERROR, "Machines specification failed - no input file or machines file specified" );
-        	monitor->sendPacket( MachinesMonitorConnection::FAILURE_NO_FILES_SPECIFIED, NULL, 0 );
-            monitor->sendPacket( MachinesMonitorConnection::TASK_TERMINATED, NULL, 0 );
+        	monitor->sendPacket( MACHINE_DEF_FAILURE_NO_FILES_SPECIFIED, NULL, 0 );
+            monitor->sendPacket( MACHINE_DEF_TASK_TERMINATED, NULL, 0 );
             delete monitor;
-            delete guiSocket;
-	        exit( EXIT_SUCCESS );
-		    //return;
+	        return;
 	    }
 	    //  Create a .machines file name using the input file name.
 	    strncpy( threadsFilename, S->inputFilename, DIFX_MESSAGE_FILENAME_LENGTH );
@@ -157,35 +181,22 @@ void ServerSideConnection::machinesDefinition( DifxMessageGeneric* G ) {
 	}
 	else
 	    strncpy( threadsFilename, S->threadsFilename, DIFX_MESSAGE_FILENAME_LENGTH );
-	monitor->sendPacket( MachinesMonitorConnection::THREADS_FILE_NAME, threadsFilename, strlen( threadsFilename ) );
+	monitor->sendPacket( MACHINE_DEF_THREADS_FILE_NAME, threadsFilename, strlen( threadsFilename ) );
 
-    monitor->sendPacket( MachinesMonitorConnection::PARAMETER_CHECK_SUCCESS, NULL, 0 );
-    
+    monitor->sendPacket( MACHINE_DEF_PARAMETER_CHECK_SUCCESS, NULL, 0 );
 
-	//  Fork a process to test the specified machines and create the files.  This is forked
-	//  because the testing can take some time.
-    signal( SIGCHLD, SIG_IGN );
-    childPid = fork();
-    if( childPid == 0 ) {
-    
-        //  Make (flexible) lists of each processor and data source we are using.
-        std::list<std::string> dataNodes;
-        std::list<std::string> processNodes;
-        std::list<int> processThreads;
-        for ( int i = 0; i < S->nDatastream; ++i ) {
-            bool pass = true;
-            if ( pass ) {
-                dataNodes.push_back( std::string( S->datastreamNode[i] ) );
-            }
-        }
-        for ( int i = 0; i < S->nProcess; ++i ) {
-            bool pass = true;
-            if ( pass ) {
-                processNodes.push_back( std::string( S->processNode[i] ) );
-                //  We need to save the number of threads associated with each processor as well.
-                processThreads.push_back( S->nThread[i] );
-            }
-        }
+    //  Make (flexible) lists of each processor and data source we are using.
+    std::list<std::string> dataNodes;
+    std::list<std::string> processNodes;
+    std::list<int> processThreads;
+    for ( int i = 0; i < S->nDatastream; ++i ) {
+        dataNodes.push_back( std::string( S->datastreamNode[i] ) );
+    }
+    for ( int i = 0; i < S->nProcess; ++i ) {
+        processNodes.push_back( std::string( S->processNode[i] ) );
+        //  We need to save the number of threads associated with each processor as well.
+        processThreads.push_back( S->nThread[i] );
+    }
         
         //  Find the "working directory" - where the .input file resides and .threads and .machines
         //  files will be put.  This is also where data are written when the job is eventually run.
@@ -209,7 +220,7 @@ void ServerSideConnection::machinesDefinition( DifxMessageGeneric* G ) {
         //  This should test both write permission for the host and ssh permission required by
         //  mpirun (which is more likely to be a problem).  Maybe these tests can get more 
         //  elaborate - test processing time, etc, if we get adventurous.
-        monitor->sendPacket( MachinesMonitorConnection::RUNNING_MPIRUN_TESTS, NULL, 0 );
+        monitor->sendPacket( MACHINE_DEF_RUNNING_MPIRUN_TESTS, NULL, 0 );
         std::list<std::string>::iterator i;
         std::list<int>::iterator j = processThreads.begin();
         for ( i = processNodes.begin(); i != processNodes.end(); ) {
@@ -231,7 +242,7 @@ void ServerSideConnection::machinesDefinition( DifxMessageGeneric* G ) {
             //  work the way we expected.
             ret = unlink( testPath );
             if ( ret == -1 ) {
-    	        monitor->sendPacket( MachinesMonitorConnection::FAILURE_MPIRUN, nodename, 
+    	        monitor->sendPacket( MACHINE_DEF_FAILURE_MPIRUN, nodename, 
     	            strlen( nodename ) );
     	        //  Eliminate this node if we are supposed to be doing so...
     	        if ( S->testProcessors ) {
@@ -244,7 +255,7 @@ void ServerSideConnection::machinesDefinition( DifxMessageGeneric* G ) {
     	        }
             }
             else {
-    	        monitor->sendPacket( MachinesMonitorConnection::SUCCESS_MPIRUN, nodename, 
+    	        monitor->sendPacket( MACHINE_DEF_SUCCESS_MPIRUN, nodename, 
     	            strlen( nodename ) );
     	        ++i;
     	        ++j;
@@ -255,12 +266,10 @@ void ServerSideConnection::machinesDefinition( DifxMessageGeneric* G ) {
         out = fopen( machinesFilename, "w" );
         if ( !out ) {
 	        diagnostic( ERROR, "Cannot open machines file \"%s\" for writing", machinesFilename );
-	        monitor->sendPacket( MachinesMonitorConnection::FAILURE_OPEN_MACHINES_FILE, strerror( errno ), 
+	        monitor->sendPacket( MACHINE_DEF_FAILURE_OPEN_MACHINES_FILE, strerror( errno ), 
 	            strlen( strerror( errno ) ) );
-            monitor->sendPacket( MachinesMonitorConnection::TASK_TERMINATED, NULL, 0 );
+            monitor->sendPacket( MACHINE_DEF_TASK_TERMINATED, NULL, 0 );
             delete monitor;
-            delete guiSocket;
-	        exit( EXIT_SUCCESS );
         }
         //  The "head" or "manager" node is always first.
         fprintf(out, "%s\n", S->headNode);
@@ -282,21 +291,19 @@ void ServerSideConnection::machinesDefinition( DifxMessageGeneric* G ) {
             ++j;
         }
         fclose( out );
-        monitor->sendPacket( MachinesMonitorConnection::MACHINES_FILE_CREATED, NULL, 0 );
+        monitor->sendPacket( MACHINE_DEF_MACHINES_FILE_CREATED, NULL, 0 );
 
         //  Write the threads file.
         out = fopen( threadsFilename, "w" );
         if( !out ) {
             diagnostic( ERROR, "Cannot open threads file \"%s\" for writing", threadsFilename );
 	        snprintf( message, DIFX_MESSAGE_LENGTH, "%s - %s", threadsFilename, strerror( errno ) );
-	        monitor->sendPacket( MachinesMonitorConnection::FAILURE_OPEN_THREADS_FILE, strerror( errno ), 
+	        monitor->sendPacket( MACHINE_DEF_FAILURE_OPEN_THREADS_FILE, strerror( errno ), 
 	            strlen( strerror( errno ) ) );
-            monitor->sendPacket( MachinesMonitorConnection::TASK_TERMINATED, NULL, 0 );
+            monitor->sendPacket( MACHINE_DEF_TASK_TERMINATED, NULL, 0 );
             delete monitor;
-            delete guiSocket;
-	        exit( EXIT_SUCCESS );
         }
-        fprintf(out, "NUMBER OF CORES:    %d\n", processNodes.size() );
+        fprintf(out, "NUMBER OF CORES:    %d\n", (int)processNodes.size() );
         //  Tally the total number of processing threads - make sure there is at
         //  least one!
         int threadCount = 0;
@@ -321,17 +328,14 @@ void ServerSideConnection::machinesDefinition( DifxMessageGeneric* G ) {
         
         //  A zero thread count is probably indicative of a problem.
         if ( threadCount < 1 )
-            monitor->sendPacket( MachinesMonitorConnection::LOW_THREAD_COUNT, NULL, 0 );
+            monitor->sendPacket( MACHINE_DEF_LOW_THREAD_COUNT, NULL, 0 );
             
-        monitor->sendPacket( MachinesMonitorConnection::THREADS_FILE_CREATED, NULL, 0 );
+        monitor->sendPacket( MACHINE_DEF_THREADS_FILE_CREATED, NULL, 0 );
 	
         //  Healthy process end...
-        monitor->sendPacket( MachinesMonitorConnection::TASK_ENDED_GRACEFULLY, NULL, 0 );
+        monitor->sendPacket( MACHINE_DEF_TASK_ENDED_GRACEFULLY, NULL, 0 );
         delete monitor;
-        delete guiSocket;
-        exit(EXIT_SUCCESS);		
-
-    }
+//        delete guiSocket;
 		
 }
 

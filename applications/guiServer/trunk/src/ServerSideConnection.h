@@ -20,15 +20,18 @@
 #include <network/UDPSocket.h>
 #include <network/ActivePacketExchange.h>
 #include <difxmessage.h>
-#include <JobMonitorConnection.h>
 #include <list>
 #include <string>
 #include <glob.h>
 
 namespace guiServer {
 
+    class GUIClient;  //  forward definition...
+
     class ServerSideConnection : public network::ActivePacketExchange {
     
+    public:
+
         //---------------------------------------------------------------------
         //!  These are the packet types recognized and/or sent by this protocol.
         //---------------------------------------------------------------------
@@ -52,8 +55,8 @@ namespace guiServer {
         static const int CHANNEL_ALL_DATA               = 18;
         static const int CHANNEL_ALL_DATA_ON            = 19;
         static const int CHANNEL_ALL_DATA_OFF           = 20;
-
-    public:
+        static const int CHANNEL_CONNECTION             = 21;
+        static const int CHANNEL_DATA                   = 22;
 
         static const int MAX_COMMAND_SIZE = 1024;
         
@@ -88,6 +91,7 @@ namespace guiServer {
             strncpy( _difxBase, difxBase, DIFX_MESSAGE_LENGTH );
             _envp = envp;
             pthread_mutex_init( &_runningJobsMutex, NULL );
+            pthread_mutex_init( &_channelDataLock, NULL );
         }
         
         ~ServerSideConnection() {
@@ -132,7 +136,7 @@ namespace guiServer {
         
         //---------------------------------------------------------------------
         //!  This is the function that actually monitors DiFX multicasts - it
-        //!  runs as a continuous thread until the socket it closed or returns
+        //!  runs as a continuous thread until the socket closes or returns
         //!  an error.
         //---------------------------------------------------------------------
         void difxMonitor() {
@@ -280,6 +284,8 @@ namespace guiServer {
                     _channelAllData = false;
                     printf( "data channel off\n" );
                     break;
+                case CHANNEL_DATA:
+                    channelData( data, nBytes );
                 default:
                     break;
             }
@@ -339,10 +345,11 @@ namespace guiServer {
             } else {
                 //  Parse the "version" out of the name of each setup file we find.  This
                 //  version is then transmitted back to the GUI so it knows it is an option.
-                for ( int i = 0; i < globbuf.gl_pathc; ++i ) {
+                for ( unsigned int i = 0; i < globbuf.gl_pathc; ++i ) {
                     std::string nextPath( globbuf.gl_pathv[i] );
+                    printf( "%s\n", nextPath.c_str() );
                     int nPos = nextPath.rfind( "setup_difx." );
-                    if ( nPos < nextPath.length() - strlen( "setup_difx." ) )
+                    if ( nPos < (int)nextPath.length() - (int)strlen( "setup_difx." ) )
                         strncpy( newVersion, globbuf.gl_pathv[i] + nPos + strlen( "setup_difx." ), DIFX_MESSAGE_LENGTH );
                     else
                         newVersion[0] = 0;
@@ -493,7 +500,7 @@ namespace guiServer {
         virtual void command( char* data, const int nBytes ) {
             //  Use the DiFX message parser on the XML this message presumably
             //  contains.
-            if ( nBytes > sizeof( DifxMessageGeneric ) ) {
+            if ( nBytes > (int)sizeof( DifxMessageGeneric ) ) {
                 diagnostic( ERROR, "Message length (%d) is longer than allowed DiFX maximum (%d) - ignored!\n", nBytes,
                     sizeof( DifxMessageGeneric ) );
                 return;
@@ -539,6 +546,86 @@ namespace guiServer {
                 ServerSideConnection::diagnostic( ServerSideConnection::WARNING, 
                     "The guiServer DiFX parser received a command it could not parse." );
             }
+        }
+        
+        //---------------------------------------------------------------------
+        //!  Structure used to hold channel data.
+        //---------------------------------------------------------------------
+        struct ChannelData {
+            int port;
+            char* data;
+            int n;
+            int offset;
+        };
+        
+        //---------------------------------------------------------------------
+        //!  This message from the GUI contains "channelled" data.  It comes
+        //!  with a "port" number, which is used to identify it.  These data
+        //!  are just dumped in a FIFO where they can be grabbed later by the
+        //!  function call getChannelData() - see below.
+        //---------------------------------------------------------------------
+        void channelData( char* data, const int nBytes ) {
+            //  Form a structure out of these data and dump it on the back of
+            //  the list.
+            ChannelData newData;
+            newData.port = ntohl( *(int*)data );
+            newData.data = new char[nBytes];
+            memcpy( newData.data, data + sizeof( int ), nBytes );
+            newData.n = nBytes - sizeof( int );
+            newData.offset = 0;
+            pthread_mutex_lock( &_channelDataLock );
+            _channelDataList.push_back( newData );
+            pthread_mutex_unlock( &_channelDataLock );
+        }
+        
+        //---------------------------------------------------------------------
+        //!  Find the oldest instance of data associated with the given port
+        //!  in the channel data list and read nBytes of data from it.  Delete
+        //!  it from the list if all the data are used.  Copy the desired data
+        //!  to the (externally allocated) data pointer.  The number of bytes
+        //!  is returned (which should be nBytes, if they are there).
+        //---------------------------------------------------------------------
+        int getChannelData( int port, char* data, int nBytes ) {
+            bool found = false;
+            int n = 0;
+            pthread_mutex_lock( &_channelDataLock );
+            for ( std::list<ChannelData>::iterator i = _channelDataList.begin(); i != _channelDataList.end() && !found; ++i ) {
+                if ( i->port == port ) {
+                    found = true;
+                    if ( nBytes > i->n + i->offset )
+                        n = i->n + i->offset;
+                    else
+                        n = nBytes;
+                    memcpy( data, i->data + i->offset, n );
+                    i->offset += n;
+                    if ( i->offset >= i->n ) {
+                        delete [] i->data;
+                        _channelDataList.erase( i );
+                    }
+                }
+            }
+            pthread_mutex_unlock( &_channelDataLock );
+            return n;
+        }
+        
+        //---------------------------------------------------------------------
+        //!  Delete any data associated with the given port in the channel data
+        //!  list.  This is done when a port is "closed".
+        //---------------------------------------------------------------------
+        void purgeChannelData( int port ) {
+            pthread_mutex_lock( &_channelDataLock );
+            bool found = true;
+            while ( found ) {
+                found = false;
+                for ( std::list<ChannelData>::iterator i = _channelDataList.begin(); i != _channelDataList.end() && !found; ++i ) {
+                    if ( i->port == port ) {
+                        found = true;
+                        delete [] i->data;
+                        _channelDataList.erase( i );
+                    }
+                }
+            }
+            pthread_mutex_unlock( &_channelDataLock );
         }
         
         //---------------------------------------------------------------------
@@ -641,7 +728,7 @@ namespace guiServer {
         //---------------------------------------------------------------------
         struct DifxStartInfo {
             ServerSideConnection* ssc;
-            JobMonitorConnection* jobMonitor;
+            GUIClient* jobMonitor;
             int force;
             int sockFd;
             char removeCommand[MAX_COMMAND_SIZE];
@@ -654,15 +741,6 @@ namespace guiServer {
         };
         
         //-----------------------------------------------------------------------------
-        //!  This is the structure used to pass information used to monitor the data
-        //!  products of a DiFX job in real time.
-        //-----------------------------------------------------------------------------
-        struct DifxMonitorInfo {
-            ServerSideConnection* ssc;
-            int connectionPort;
-        };
-
-        //-----------------------------------------------------------------------------
         //!  Static function called to start the DiFX run thread.
         //-----------------------------------------------------------------------------	
         static void* staticRunDifxThread( void* a ) {
@@ -671,6 +749,15 @@ namespace guiServer {
             return NULL;
         }
         
+        //-----------------------------------------------------------------------------
+        //!  This is the structure used to pass information used to monitor the data
+        //!  products of a DiFX job in real time.
+        //-----------------------------------------------------------------------------
+        struct DifxMonitorInfo {
+            ServerSideConnection* ssc;
+            int connectionPort;
+        };
+
         //-----------------------------------------------------------------------------
         //!  Static function called to start the DiFX monitor thread.
         //-----------------------------------------------------------------------------	
@@ -682,6 +769,27 @@ namespace guiServer {
         }
         
         //-----------------------------------------------------------------------------
+        //!  This is the structure used to pass information used to monitor the data
+        //!  products of a DiFX job in real time.
+        //-----------------------------------------------------------------------------
+        struct MachinesDefinitionInfo {
+            pthread_t threadId;
+            pthread_attr_t threadAttr;
+            ServerSideConnection* ssc;
+            DifxMessageMachinesDefinition definition;
+        };
+
+        //-----------------------------------------------------------------------------
+        //!  Static function called to start the DiFX monitor thread.
+        //-----------------------------------------------------------------------------	
+        static void* staticRunMachinesDefinition( void* a ) {
+            MachinesDefinitionInfo* machinesDefintionInfo = (MachinesDefinitionInfo*)a;
+            machinesDefintionInfo->ssc->runMachinesDefinition( machinesDefintionInfo );
+            delete machinesDefintionInfo;
+            return NULL;
+        }
+        
+        //-----------------------------------------------------------------------------
         //!  Structure used to start file operations.
         //-----------------------------------------------------------------------------
         struct DifxFileOperation {
@@ -689,6 +797,7 @@ namespace guiServer {
             pthread_attr_t threadAttr;
             ServerSideConnection* ssc;
             DifxMessageFileOperation operation;
+            bool channelAllData;
         };
         
         //-----------------------------------------------------------------------------
@@ -698,6 +807,27 @@ namespace guiServer {
             DifxFileOperation* fileOperation = (DifxFileOperation*)a;
             fileOperation->ssc->runFileOperation( fileOperation );
             delete fileOperation;
+            return NULL;
+        }
+        
+        //-----------------------------------------------------------------------------
+        //!  Structure used to start file transfers.
+        //-----------------------------------------------------------------------------
+        struct DifxFileTransfer {
+            pthread_t threadId;
+            pthread_attr_t threadAttr;
+            ServerSideConnection* ssc;
+            DifxMessageFileTransfer transfer;
+            bool channelAllData;
+        };
+        
+        //-----------------------------------------------------------------------------
+        //!  Static function to start a file operation thread.
+        //-----------------------------------------------------------------------------
+        static void* staticRunFileTransfer( void* a ) {
+            DifxFileTransfer* fileTransfer = (DifxFileTransfer*)a;
+            fileTransfer->ssc->runFileTransfer( fileTransfer );
+            delete fileTransfer;
             return NULL;
         }
         
@@ -749,11 +879,13 @@ namespace guiServer {
         void stopDifx( DifxMessageGeneric* G );
         void runDifxMonitor( DifxMonitorInfo* monitorInfo );
         void difxFileTransfer( DifxMessageGeneric* G );
+        void runFileTransfer( DifxFileTransfer* fileTransfer );  //  in difxFileTransfer.cpp
         void difxFileOperation( DifxMessageGeneric* G );
         void runFileOperation( DifxFileOperation* fileOperation );
         void getDirectory( DifxMessageGeneric* G );
         void vex2difxRun( DifxMessageGeneric* G );
         void machinesDefinition( DifxMessageGeneric* G );
+        void runMachinesDefinition( MachinesDefinitionInfo* machinesDefinitionInfo );  // in machinesDefintion.cpp
         void mk5Control( DifxMessageGeneric* G );
         void diagnostic( const int severity, const char *fmt, ... );
         int popenRWE( int *rwepipe, const char *exe, const char *const argv[] );
@@ -761,7 +893,9 @@ namespace guiServer {
         
         const char* difxSetupPath() { return _difxSetupPath; }
         const char* difxRunLabel() { return _difxRunLabel; }
-
+        
+        const bool channelData() { return _channelAllData; }
+        
     protected:
     
         network::UDPSocket* _monitorSocket;
@@ -783,6 +917,8 @@ namespace guiServer {
         char** _envp;
         std::list<std::string> _runningJobs;
         pthread_mutex_t _runningJobsMutex;
+        std::list<ChannelData> _channelDataList;
+        pthread_mutex_t _channelDataLock;
         
         bool _relayAllPackets;
         bool _relayAlertPackets;
@@ -803,7 +939,7 @@ namespace guiServer {
         bool _relayUnknownPackets;
         
         bool _channelAllData;
-};
+    };
 
 }
 

@@ -49,12 +49,13 @@ namespace network {
         //  Wait for the connection to be made.  This call will hang until a server
         //  connection is made.
         //----------------------------------------------------------------------------
-        void waitForConnect() {
+        void waitForConnect( bool runMonitor = true ) {
             if ( connect( _fd, (struct sockaddr*)&_connAddr, sizeof( struct sockaddr_in ) ) == -1 ) {
                 perror( "TCPClient::waitForConnect() - connect() failed" );
                 return;
             }
-            startMonitor();
+            if ( runMonitor )
+                startMonitor();
         }
 
     protected:

@@ -11,8 +11,6 @@
 //=============================================================================
 #include <ServerSideConnection.h>
 #include <sys/statvfs.h>
-#include <network/TCPClient.h>
-#include <JobMonitorConnection.h>
 #include <signal.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -26,8 +24,39 @@
 #include <fcntl.h>
 #include <ExecuteSystem.h>
 #include <configuration.h>
+#include <GUIClient.h>
 
 using namespace guiServer;
+
+//-----------------------------------------------------------------------------
+//!  These are packet types used for sending diagnostic and progress messages from
+//!  running jobs to the GUI.  These get rather highly specific.  There are a
+//!  few types that are used to obtain data from the GUI as well.
+//-----------------------------------------------------------------------------
+static const int RUN_DIFX_JOB_TERMINATED                     = 100;
+static const int RUN_DIFX_JOB_ENDED_GRACEFULLY               = 101;
+static const int RUN_DIFX_JOB_STARTED                        = 102;
+static const int RUN_DIFX_PARAMETER_CHECK_IN_PROGRESS        = 103;
+static const int RUN_DIFX_PARAMETER_CHECK_SUCCESS            = 104;
+static const int RUN_DIFX_FAILURE_NO_HEADNODE                = 105;
+static const int RUN_DIFX_FAILURE_NO_DATASOURCES             = 106;
+static const int RUN_DIFX_FAILURE_NO_PROCESSORS              = 107;
+static const int RUN_DIFX_FAILURE_NO_INPUTFILE_SPECIFIED     = 108;
+static const int RUN_DIFX_FAILURE_INPUTFILE_NOT_FOUND        = 109;
+static const int RUN_DIFX_FAILURE_INPUTFILE_NAME_TOO_LONG    = 110;
+static const int RUN_DIFX_FAILURE_OUTPUT_EXISTS              = 111;
+static const int RUN_DIFX_DELETING_PREVIOUS_OUTPUT           = 112;
+static const int RUN_DIFX_STARTING_DIFX                      = 113;
+static const int RUN_DIFX_DIFX_MESSAGE                       = 114;
+static const int RUN_DIFX_DIFX_WARNING                       = 115;
+static const int RUN_DIFX_DIFX_ERROR                         = 116;
+static const int RUN_DIFX_DIFX_COMPLETE                      = 117;
+static const int RUN_DIFX_DATA_FILE_SIZE                     = 118;
+static const int RUN_DIFX_JOB_FAILED                         = 119;
+static const int RUN_DIFX_JOB_ENDED_WITH_ERRORS              = 120;
+static const int RUN_DIFX_DIFX_MONITOR_CONNECTION_ACTIVE     = 121;
+static const int RUN_DIFX_DIFX_MONITOR_CONNECTION_BROKEN     = 122;
+static const int RUN_DIFX_DIFX_MONITOR_CONNECTION_FAILED     = 123;
 
 //-----------------------------------------------------------------------------
 //!  Called in response to a user request to start a DiFX session.  This function
@@ -51,25 +80,22 @@ void ServerSideConnection::startDifx( DifxMessageGeneric* G ) {
 	bool outputExists = false;
 	const char *mpiOptions;
 	const char *mpiWrapper;
-	JobMonitorConnection* jobMonitor;
+	GUIClient* jobMonitor;
 
 	//  Cast the body of this message to a DifxMessageStart structure.
 	S = &G->body.start;
 
-	//  Open a TCP socket connection to the server that should be running for us on the
-    //  host that requested this job start (the GUI, presumably).  This socket is used
+	//  Open a client connection to the server that should be running for us on the
+    //  host that requested this job start (the GUI, presumably).  This connection is used
     //  for diagnostic messages and to show progress on this specific job.  It can
     //  also be used for some rudimentary control of the job.
-    network::TCPClient* guiSocket = new network::TCPClient( S->address, S->port );
-    guiSocket->waitForConnect();
-    //  Create a Job Monitor Connection out of this new socket if it connected properly.
-    //  If it did not connect, we need to bail out now.
-    if ( guiSocket->connected() ) {
-        jobMonitor = new JobMonitorConnection( guiSocket );
-        jobMonitor->sendPacket( JobMonitorConnection::JOB_STARTED, NULL, 0 );
-    }
+    jobMonitor = new GUIClient( this, S->address, S->port );
+    jobMonitor->packetExchange();
+    if ( jobMonitor->okay() )
+        jobMonitor->sendPacket( RUN_DIFX_JOB_STARTED, NULL, 0 );
     else {
         diagnostic( ERROR, "client socket connection from guiServer to GUI failed - unable to start job" );
+        delete jobMonitor;
         return;
     }
     
@@ -79,51 +105,57 @@ void ServerSideConnection::startDifx( DifxMessageGeneric* G ) {
     //  DifxMessageGeneric structure in this function call.  The thread can't
     //  use it.
     //=========================================================================
-    jobMonitor->sendPacket( JobMonitorConnection::PARAMETER_CHECK_IN_PROGRESS, NULL, 0 );
+    jobMonitor->sendPacket( RUN_DIFX_PARAMETER_CHECK_IN_PROGRESS, NULL, 0 );
 
 	//  Make sure all needed parameters are included in the message.
 	if ( S->headNode[0] == 0 ) {
     	diagnostic( ERROR, "DiFX start failed - no headnode specified." );
-    	jobMonitor->sendPacket( JobMonitorConnection::FAILURE_NO_HEADNODE, NULL, 0 );
-        jobMonitor->sendPacket( JobMonitorConnection::JOB_TERMINATED, NULL, 0 );
+    	jobMonitor->sendPacket( RUN_DIFX_FAILURE_NO_HEADNODE, NULL, 0 );
+        jobMonitor->sendPacket( RUN_DIFX_JOB_TERMINATED, NULL, 0 );
+        delete jobMonitor;
 		return;
 	}
 	if ( S->nDatastream <= 0 ) {
     	diagnostic( ERROR, "DiFX start failed - no data sources specified." );
-    	jobMonitor->sendPacket( JobMonitorConnection::FAILURE_NO_DATASOURCES, NULL, 0 );
-        jobMonitor->sendPacket( JobMonitorConnection::JOB_TERMINATED, NULL, 0 );
+    	jobMonitor->sendPacket( RUN_DIFX_FAILURE_NO_DATASOURCES, NULL, 0 );
+        jobMonitor->sendPacket( RUN_DIFX_JOB_TERMINATED, NULL, 0 );
+        delete jobMonitor;
 		return;
 	}
 	if ( S->nProcess <= 0 ) {
     	diagnostic( ERROR, "DiFX start failed - no processing nodes  specified." );
-    	jobMonitor->sendPacket( JobMonitorConnection::FAILURE_NO_PROCESSORS, NULL, 0 );
-        jobMonitor->sendPacket( JobMonitorConnection::JOB_TERMINATED, NULL, 0 );
+    	jobMonitor->sendPacket( RUN_DIFX_FAILURE_NO_PROCESSORS, NULL, 0 );
+        jobMonitor->sendPacket( RUN_DIFX_JOB_TERMINATED, NULL, 0 );
+        delete jobMonitor;
 		return;
 	}
 	if ( S->inputFilename[0] == 0 ) {
     	diagnostic( ERROR, "DiFX start failed - no input file specified" );
-    	jobMonitor->sendPacket( JobMonitorConnection::FAILURE_NO_INPUTFILE_SPECIFIED, NULL, 0 );
-        jobMonitor->sendPacket( JobMonitorConnection::JOB_TERMINATED, NULL, 0 );
+    	jobMonitor->sendPacket( RUN_DIFX_FAILURE_NO_INPUTFILE_SPECIFIED, NULL, 0 );
+        jobMonitor->sendPacket( RUN_DIFX_JOB_TERMINATED, NULL, 0 );
+        delete jobMonitor;
 		return;
 	}
 
 	//  Check to make sure the input file exists
 	if( access(S->inputFilename, R_OK) != 0 ) {
 		diagnostic( ERROR, "DiFX start failed - input file %s not found.", S->inputFilename );
-    	jobMonitor->sendPacket( JobMonitorConnection::FAILURE_INPUTFILE_NOT_FOUND, NULL, 0 );
-        jobMonitor->sendPacket( JobMonitorConnection::JOB_TERMINATED, NULL, 0 );
+    	jobMonitor->sendPacket( RUN_DIFX_FAILURE_INPUTFILE_NOT_FOUND, NULL, 0 );
+        jobMonitor->sendPacket( RUN_DIFX_JOB_TERMINATED, NULL, 0 );
+        delete jobMonitor;
 		return;
 	}
 
     //  Make sure the filename can fit in our allocated space for such things.
 	if( strlen( S->inputFilename ) + 12 > DIFX_MESSAGE_FILENAME_LENGTH ) {
 		diagnostic( ERROR, "Filename %s is too long.", S->inputFilename );
-    	jobMonitor->sendPacket( JobMonitorConnection::FAILURE_INPUTFILE_NAME_TOO_LONG, NULL, 0 );
-        jobMonitor->sendPacket( JobMonitorConnection::JOB_TERMINATED, NULL, 0 );
+    	jobMonitor->sendPacket( RUN_DIFX_FAILURE_INPUTFILE_NAME_TOO_LONG, NULL, 0 );
+        jobMonitor->sendPacket( RUN_DIFX_JOB_TERMINATED, NULL, 0 );
+        delete jobMonitor;
 		return;
 	}
 	
-    jobMonitor->sendPacket( JobMonitorConnection::PARAMETER_CHECK_SUCCESS, NULL, 0 );
+    jobMonitor->sendPacket( RUN_DIFX_PARAMETER_CHECK_SUCCESS, NULL, 0 );
 
     //  Find the "working directory" (where the .input file resides and data will be put), the
     //  "filebase" (the path of the input file with ".input") and the "job name" (the name of
@@ -172,6 +204,7 @@ void ServerSideConnection::startDifx( DifxMessageGeneric* G ) {
 		diagnostic( ERROR, 
 		    "statvfs failed when accessing directory %s : it seems not to exist!", 
 			workingDir );
+        delete jobMonitor;
 		return;
 	}
 	
@@ -183,8 +216,9 @@ void ServerSideConnection::startDifx( DifxMessageGeneric* G ) {
 	if( outputExists && !S->force ) {
 		diagnostic( ERROR, "Output file %s exists.  Aborting correlation.", 
 			filename );
-        jobMonitor->sendPacket( JobMonitorConnection::FAILURE_OUTPUT_EXISTS, NULL, 0 );
-        jobMonitor->sendPacket( JobMonitorConnection::JOB_TERMINATED, NULL, 0 );
+        jobMonitor->sendPacket( RUN_DIFX_FAILURE_OUTPUT_EXISTS, NULL, 0 );
+        jobMonitor->sendPacket( RUN_DIFX_JOB_TERMINATED, NULL, 0 );
+        delete jobMonitor;
 		return;
 	}
 
@@ -302,14 +336,14 @@ void ServerSideConnection::runDifxThread( DifxStartInfo* startInfo ) {
 
     //  Delete data directories if "force" is in effect.
     if ( startInfo->force ) {
-	    startInfo->jobMonitor->sendPacket( JobMonitorConnection::DELETING_PREVIOUS_OUTPUT, NULL, 0 );
+	    startInfo->jobMonitor->sendPacket( RUN_DIFX_DELETING_PREVIOUS_OUTPUT, NULL, 0 );
         system( startInfo->removeCommand );
     }
     
     //  Run the DiFX process!
     diagnostic( WARNING, "executing: %s\n", startInfo->startCommand );
     printf( "%s\n", startInfo->startCommand );
-	startInfo->jobMonitor->sendPacket( JobMonitorConnection::STARTING_DIFX, NULL, 0 );
+	startInfo->jobMonitor->sendPacket( RUN_DIFX_STARTING_DIFX, NULL, 0 );
 	bool noErrors = true;  //  track whether any errors occured
 	bool stillGoing = true;  //  track whether job still ran despite errors
     ExecuteSystem* executor = new ExecuteSystem( startInfo->startCommand );
@@ -317,7 +351,7 @@ void ServerSideConnection::runDifxThread( DifxStartInfo* startInfo ) {
         while ( int ret = executor->nextOutput( message, DIFX_MESSAGE_LENGTH ) ) {
             if ( ret == 1 ) { // stdout
                 diagnostic( INFORMATION, "%s... %s", startInfo->difxProgram, message );
-                startInfo->jobMonitor->sendPacket( JobMonitorConnection::DIFX_MESSAGE, message, strlen( message ) );
+                startInfo->jobMonitor->sendPacket( RUN_DIFX_DIFX_MESSAGE, message, strlen( message ) );
                 stillGoing = true;
             }
             else {            // stderr
@@ -327,11 +361,11 @@ void ServerSideConnection::runDifxThread( DifxStartInfo* startInfo ) {
                     //  indicating that....it is a warning.
                     if ( strcasestr( message, "WARNING" ) != NULL ) {
                         diagnostic( WARNING, "%s... %s", startInfo->difxProgram, message );
-                        startInfo->jobMonitor->sendPacket( JobMonitorConnection::DIFX_WARNING, message, strlen( message ) );
+                        startInfo->jobMonitor->sendPacket( RUN_DIFX_DIFX_WARNING, message, strlen( message ) );
                     }
                     else {
                         diagnostic( ERROR, "%s... %s", startInfo->difxProgram, message );
-	                    startInfo->jobMonitor->sendPacket( JobMonitorConnection::DIFX_ERROR, message, strlen( message ) );
+	                    startInfo->jobMonitor->sendPacket( RUN_DIFX_DIFX_ERROR, message, strlen( message ) );
 	                    noErrors = false;
 	                    stillGoing = false;
                     }
@@ -342,42 +376,42 @@ void ServerSideConnection::runDifxThread( DifxStartInfo* startInfo ) {
             if ( runningJobExists( startInfo->inputFile ) ) {
                 diagnostic( WARNING, "%s complete", startInfo->difxProgram );
                 difxMessageSendDifxStatus2( startInfo->jobName, DIFX_STATE_MPIDONE, "" );
-        		startInfo->jobMonitor->sendPacket( JobMonitorConnection::DIFX_COMPLETE, NULL, 0 );
-                startInfo->jobMonitor->sendPacket( JobMonitorConnection::JOB_ENDED_GRACEFULLY, NULL, 0 );
+        		startInfo->jobMonitor->sendPacket( RUN_DIFX_DIFX_COMPLETE, NULL, 0 );
+                startInfo->jobMonitor->sendPacket( RUN_DIFX_JOB_ENDED_GRACEFULLY, NULL, 0 );
             } else {
                 diagnostic( WARNING, "%s terminated by user", startInfo->difxProgram );
-                startInfo->jobMonitor->sendPacket( JobMonitorConnection::JOB_TERMINATED, NULL, 0 );
+                startInfo->jobMonitor->sendPacket( RUN_DIFX_JOB_TERMINATED, NULL, 0 );
             }
 		}
         else if ( stillGoing ) {
             if ( runningJobExists( startInfo->inputFile ) ) {
                 diagnostic( WARNING, "%s complete", startInfo->difxProgram );
                 difxMessageSendDifxStatus2( startInfo->jobName, DIFX_STATE_MPIDONE, "" );
-        		startInfo->jobMonitor->sendPacket( JobMonitorConnection::DIFX_COMPLETE, NULL, 0 );
-                startInfo->jobMonitor->sendPacket( JobMonitorConnection::JOB_ENDED_WITH_ERRORS, NULL, 0 );
+        		startInfo->jobMonitor->sendPacket( RUN_DIFX_DIFX_COMPLETE, NULL, 0 );
+                startInfo->jobMonitor->sendPacket( RUN_DIFX_JOB_ENDED_WITH_ERRORS, NULL, 0 );
             } else {
                 diagnostic( WARNING, "%s terminated by user", startInfo->difxProgram );
-                startInfo->jobMonitor->sendPacket( JobMonitorConnection::JOB_TERMINATED, NULL, 0 );
+                startInfo->jobMonitor->sendPacket( RUN_DIFX_JOB_TERMINATED, NULL, 0 );
             }
 		}
         else {
             if ( runningJobExists( startInfo->inputFile ) ) {
                 diagnostic( ERROR, "%s FAILED", startInfo->difxProgram );
                 snprintf( message, DIFX_MESSAGE_LENGTH, "%s FAILED", startInfo->difxProgram );
-                startInfo->jobMonitor->sendPacket( JobMonitorConnection::DIFX_ERROR, message, strlen( message ) );
-                startInfo->jobMonitor->sendPacket( JobMonitorConnection::JOB_FAILED, NULL, 0 );
+                startInfo->jobMonitor->sendPacket( RUN_DIFX_DIFX_ERROR, message, strlen( message ) );
+                startInfo->jobMonitor->sendPacket( RUN_DIFX_JOB_FAILED, NULL, 0 );
                 difxMessageSendDifxStatus2( startInfo->jobName, DIFX_STATE_ABORTING, "" );
             } else {
                 diagnostic( WARNING, "%s terminated by user", startInfo->difxProgram );
-                startInfo->jobMonitor->sendPacket( JobMonitorConnection::JOB_TERMINATED, NULL, 0 );
+                startInfo->jobMonitor->sendPacket( RUN_DIFX_JOB_TERMINATED, NULL, 0 );
             }
         }
     }
     else {
         diagnostic( ERROR, "%s process not started for job %s; popen failed", startInfo->difxProgram, startInfo->jobName );
         snprintf( message, DIFX_MESSAGE_LENGTH, "%s process not started for job %s; popen failed", startInfo->difxProgram, startInfo->jobName );
-	    startInfo->jobMonitor->sendPacket( JobMonitorConnection::DIFX_ERROR, message, strlen( message ) );
-        startInfo->jobMonitor->sendPacket( JobMonitorConnection::JOB_FAILED, NULL, 0 );
+	    startInfo->jobMonitor->sendPacket( RUN_DIFX_DIFX_ERROR, message, strlen( message ) );
+        startInfo->jobMonitor->sendPacket( RUN_DIFX_JOB_FAILED, NULL, 0 );
         difxMessageSendDifxStatus2( startInfo->jobName, DIFX_STATE_ABORTING, "" );
     }
     delete executor;
@@ -387,6 +421,9 @@ void ServerSideConnection::runDifxThread( DifxStartInfo* startInfo ) {
     
     //  Remove the job from the running job list.
     removeRunningJob( startInfo->inputFile );
+    
+    //  Torch the client connection.
+    delete startInfo->jobMonitor;
 
 }
 

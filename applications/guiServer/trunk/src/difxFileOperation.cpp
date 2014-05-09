@@ -15,6 +15,7 @@
 #include <pwd.h>
 #include <fcntl.h>
 #include <network/TCPClient.h>
+#include <GUIClient.h>
 
 using namespace guiServer;
 
@@ -27,9 +28,7 @@ void ServerSideConnection::difxFileOperation( DifxMessageGeneric* G ) {
 	const DifxMessageFileOperation *S;
 	char message[DIFX_MESSAGE_LENGTH];
 	char command[MAX_COMMAND_SIZE];
-	char hostname[DIFX_MESSAGE_LENGTH];
 	const char *user;
-	pid_t childPid;
 	
 	S = &G->body.fileOperation;
 	
@@ -95,6 +94,8 @@ void ServerSideConnection::difxFileOperation( DifxMessageGeneric* G ) {
 	    snprintf( fileOperation->operation.arg, DIFX_MESSAGE_FILENAME_LENGTH, "%s", S->arg );
 	    snprintf( fileOperation->operation.address, DIFX_MESSAGE_PARAM_LENGTH, "%s", S->address );
 	    fileOperation->operation.port = S->port;
+	    fileOperation->channelAllData = _channelAllData;
+	    fileOperation->ssc = this;
         pthread_attr_init( &(fileOperation->threadAttr) );
         pthread_create( &(fileOperation->threadId), &(fileOperation->threadAttr), staticRunFileOperation, (void*)fileOperation );      	
 	}
@@ -108,7 +109,9 @@ void ServerSideConnection::difxFileOperation( DifxMessageGeneric* G ) {
 }
 
 //-----------------------------------------------------------------------------
-//!  Thread function for actually running file operations.
+//!  Thread function for running file operations that require feedback to
+//!  a remote host.  At the moment this is set up to run "ls" only, but
+//!  could be expanded.
 //-----------------------------------------------------------------------------
 void ServerSideConnection::runFileOperation( DifxFileOperation* fileOperation ) {
 
@@ -116,19 +119,12 @@ void ServerSideConnection::runFileOperation( DifxFileOperation* fileOperation ) 
 	char pCommand[MAX_COMMAND_SIZE];
 	const DifxMessageFileOperation *S = &(fileOperation->operation);
 	
-	//  Open a TCP socket connection to the server that should be running for us on the
+	//  Open a client connection to the server that should be running for us on the
     //  remote host.  This is used to transfer the list of files.
-    int sockfd;
-    struct sockaddr_in servaddr;
-    sockfd = socket( AF_INET, SOCK_STREAM, 0 );
-    memset( &servaddr, 0, sizeof( servaddr ) );
-    servaddr.sin_family = AF_INET;
-    servaddr.sin_port = htons( S->port );
-    inet_pton( AF_INET, S->address, &servaddr.sin_addr );
-    int ret = connect( sockfd, (const sockaddr*)&servaddr, sizeof( servaddr ) );
+    GUIClient* gc = new GUIClient( fileOperation->ssc, S->address, S->port );
 
     //  Make sure the connection worked....
-    if ( ret == 0 ) {
+    if ( gc->okay() ) {
         //snprintf( message, DIFX_MESSAGE_LENGTH, "Client address: %s   port: %d - connection looks good", S->address, S->port );
         //difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_WARNING );
 
@@ -143,23 +139,23 @@ void ServerSideConnection::runFileOperation( DifxFileOperation* fileOperation ) 
   		    //  Send the full path.
         	//  Each separate file is preceded by its string length.
         	int sz = htonl( strlen( fullPath ) );
-        	write( sockfd, &sz, sizeof( int ) );
-        	write( sockfd, fullPath, strlen( fullPath ) );
+            gc->writer( &sz, sizeof( int ) );
+            gc->writer( fullPath, strlen( fullPath ) );
   		    //difxMessageSendDifxAlert( fullPath, DIFX_ALERT_LEVEL_INFO );
   	    }
         pclose( fp );	    
-  		//  Sending a zero length tells the GUI that the list is finished.
+  		//  Sending a zero length tells the remote host that the list is finished.
         int zero = 0;
-        write( sockfd, &zero, sizeof( int ) );
+        gc->writer( &zero, sizeof( int ) );
 	} 
 
-	//  Error with the socket...
+	//  Error with the connection...
 	else {
         snprintf( message, DIFX_MESSAGE_LENGTH, "Client address: %s   port: %d - connection FAILED", S->address, S->port );
       	difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_ERROR );
     }
  
-    close( sockfd );
+    delete gc;
 
 }
 

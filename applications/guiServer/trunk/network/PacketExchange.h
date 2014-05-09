@@ -31,6 +31,12 @@ namespace network {
             _sock = sock;
             pthread_mutex_init( &_sendPacketMutex, NULL );
         }
+        
+        ~PacketExchange() {
+//            writeLock();
+//            writeUnlock();
+//            pthread_mutex_destroy( &_sendPacketMutex );
+        }
 
         //----------------------------------------------------------------------------
         //!  This function sends a packet of data of given length, along with an
@@ -53,21 +59,21 @@ namespace network {
             //  portion of the leading bytes this cuts down on the number of messages
             //  that are missed (however it does not cut them down to zero!).  Why this
             //  is happening is not entirely clear - this is a kludge.
-            int ret = _sock->writer( "        ", 8 );
-            ret = _sock->writer( "        ", 8 );
-            ret = _sock->writer( "DIFXSYNC", 8 );
+//            int ret = _sock->writer( "        ", 8 );
+//            ret = _sock->writer( "        ", 8 );
+//            ret = _sock->writer( "DIFXSYNC", 8 );
             //  We want to send packet data that lines up on 8-byte boundaries.
             //  From the nBytes, figure out how many extra bytes are necessary for
             //  padding to accomplish this.
-            int padBytes = 0;
-            char pad[8];
-            if ( nBytes % 8 )
-               padBytes = 8 - nBytes % 8;
+//            int padBytes = 0;
+//            char pad[8];
+//            if ( nBytes % 8 )
+//               padBytes = 8 - nBytes % 8;
             
             //  Our trivial packet protocol is to send the packetId first (network byte
             //  ordered)...
             swapped = htonl( packetId );
-            ret = _sock->writer( (char*)&swapped, sizeof( int ) );
+            int ret = _sock->writer( (char*)&swapped, sizeof( int ) );
 
             //  ...then the size of the packet...
             if ( ret != -1 ) {
@@ -80,8 +86,8 @@ namespace network {
                 ret = _sock->writer( data, nBytes );
 
             //  ...and the padding.
-            if ( ret != -1 && padBytes )
-                ret = _sock->writer( pad, padBytes );
+//            if ( ret != -1 && padBytes )
+//                ret = _sock->writer( pad, padBytes );
                 
             //  Unlock the socket.
             writeUnlock();

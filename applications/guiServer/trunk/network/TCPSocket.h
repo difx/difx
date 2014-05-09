@@ -49,6 +49,8 @@ namespace network {
         //  Destructor closes the socket.  
         //----------------------------------------------------------------------------
         ~TCPSocket() {
+            closeConnection();
+            usleep( 1000 );
             delete[] _buffer;
             _buffer = NULL;
             if ( _fd > -1 )

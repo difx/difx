@@ -16,6 +16,7 @@
 #include <fcntl.h>
 #include <network/TCPClient.h>
 #include <signal.h>
+#include <GUIClient.h>
 
 using namespace guiServer;
 
@@ -23,18 +24,37 @@ using namespace guiServer;
 //!  Called in response to a user request to transfer a file either from the
 //!  DiFX host to an external host (the GUI, presumably) or the reverse.  This
 //!  is accomplished by opening a client TCP connection to the external host
-//!  (which must have initiated a server already).
+//!  (which must have initiated a server already).  The bulk of the work is
+//!  threaded.
 //-----------------------------------------------------------------------------
 void ServerSideConnection::difxFileTransfer( DifxMessageGeneric* G ) {
-	const DifxMessageFileTransfer *S;
+
+    //  Cast the message to a File Transfer message.
+	const DifxMessageFileTransfer *S = &G->body.fileTransfer;
+	//  Make a copy of information about the current file operation, including thread information
+	//  (so the thread variables are still viable after this function call returns).
+	DifxFileTransfer* fileTransfer = new DifxFileTransfer;
+	snprintf( fileTransfer->transfer.origin, DIFX_MESSAGE_FILENAME_LENGTH, "%s", S->origin );
+	snprintf( fileTransfer->transfer.destination, DIFX_MESSAGE_FILENAME_LENGTH, "%s", S->destination );
+	snprintf( fileTransfer->transfer.dataNode, DIFX_MESSAGE_HOSTNAME_LENGTH, "%s", S->dataNode );
+	snprintf( fileTransfer->transfer.address, DIFX_MESSAGE_PARAM_LENGTH, "%s", S->address );
+	snprintf( fileTransfer->transfer.direction, DIFX_MESSAGE_PARAM_LENGTH, "%s", S->direction );
+	fileTransfer->transfer.port = S->port;
+	fileTransfer->channelAllData = _channelAllData;
+	fileTransfer->ssc = this;
+    pthread_attr_init( &(fileTransfer->threadAttr) );
+    pthread_create( &(fileTransfer->threadId), &(fileTransfer->threadAttr), staticRunFileTransfer, (void*)fileTransfer );      
+}	
+
+//-----------------------------------------------------------------------------
+//!  Thread function for actually running file transfer operations.
+//-----------------------------------------------------------------------------
+void ServerSideConnection::runFileTransfer( DifxFileTransfer* fileTransfer ) {
+
+	const DifxMessageFileTransfer *S = &(fileTransfer->transfer);
 	char message[DIFX_MESSAGE_LENGTH];
 	char command[MAX_COMMAND_SIZE];
-	char hostname[DIFX_MESSAGE_LENGTH];
 	const char *user;
-	pid_t childPid;
-	
-	//  Cast the message to a File Transfer message.
-	S = &G->body.fileTransfer;
 
 	user = getlogin();
 	if ( !user ) {
@@ -45,52 +65,26 @@ void ServerSideConnection::difxFileTransfer( DifxMessageGeneric* G ) {
 	
     	//snprintf( message, DIFX_MESSAGE_LENGTH, "Request for transfer of file from %s on remote host to DiFX host - filesize is unknown", S->origin );
         //difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_WARNING );
-    	//  Fork a process to do the file transfer via a TCP client.
-    	signal( SIGCHLD, SIG_IGN );
-    	childPid = fork();
-    	if( childPid == 0 ) {
-    	    //  Open a TCP socket connection to the server that should be running for us on the
+
+    	    //  Open a client connection to the server that should be running for us on the
     	    //  remote host.
-    	    int sockfd;
-    	    struct sockaddr_in servaddr;
-    	    sockfd = socket( AF_INET, SOCK_STREAM, 0 );
-    	    memset( &servaddr, 0, sizeof( servaddr ) );
-    	    servaddr.sin_family = AF_INET;
-    	    servaddr.sin_port = htons( S->port );
-    	    inet_pton( AF_INET, S->address, &servaddr.sin_addr );
-      	    int filesize = connect( sockfd, (const sockaddr*)&servaddr, sizeof( servaddr ) );
+    	    int filesize = 0;
+            GUIClient* gc = new GUIClient( fileTransfer->ssc, S->address, S->port );
       	    
-      	    //  Assuming the socket connection was successful, write the file contents to the socket.
-      	    if ( filesize == 0 ) {
+      	    //  Assuming the connection was successful, read the file contents.
+      	    if ( gc->okay() ) {
             	//snprintf( message, DIFX_MESSAGE_LENGTH, "Client address: %s   port: %d - connection looks good", S->address, S->port );
-            	//printf( "%s\n", message );
             	//difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_WARNING );
             	//  Get the number of bytes we expect.
             	int n = 0;
-            	fd_set rfds;
-                struct timeval tv;
-            	int rn = 0;
-            	int trySec = 5;
-            	while ( trySec > 0 && rn < (int)(sizeof( int )) ) {
-            	    FD_ZERO(&rfds);
-                    FD_SET( sockfd, &rfds );
-                    tv.tv_sec = 1;
-                    tv.tv_usec = 0;
-                    int rtn = select( sockfd + 1, &rfds, NULL, NULL, &tv );
-                    if ( rtn >= 0 ) {
-            	        int readRtn = read( sockfd, (unsigned char*)(&n) + rn, sizeof( int ) - rn );
-            	        if ( readRtn > 0 )
-            	            rn += readRtn;
-            	    }
-            	    else if ( rtn < 0 ) {
-            	        snprintf( message, DIFX_MESSAGE_LENGTH, "Select error (%s) %s port: %d - transfer FAILED", strerror( errno ), S->address, S->port );
-            	        difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_ERROR );
-            	    }
-            	    --trySec;
+                int rtn = gc->reader( &n, sizeof( int ) );
+            	if ( rtn < 0 ) {
+            	    snprintf( message, DIFX_MESSAGE_LENGTH, "Select error (%s) %s port: %d - transfer FAILED", strerror( errno ), S->address, S->port );
+            	    difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_ERROR );
             	}
             	filesize = ntohl( n );
-            	//  Then read the data.
-            	int ret = 0;
+            	//  Then read the data.  This is broken into 1024-byte blocks.  I'm not certain
+            	//  why there is (or was) a need to do this, but it works!
             	int count = 0;
             	short blockSize = 1024;
             	char blockData[blockSize + 1];
@@ -98,23 +92,16 @@ void ServerSideConnection::difxFileTransfer( DifxMessageGeneric* G ) {
             	char tmpFile[tmpFileSize];
             	snprintf( tmpFile, tmpFileSize, "/tmp/filetransfer_%d", S->port );
             	FILE *fp = fopen( tmpFile, "w" );
-            	int rtn = 0;
+            	rtn = 0;
             	while ( count < filesize && rtn != -1 ) {
             	    int readn = blockSize;
             	    if ( filesize - count < readn )
             	        readn = filesize - count;
-            	    FD_ZERO(&rfds);
-                    FD_SET( sockfd, &rfds );
-                    tv.tv_sec = 1;
-                    tv.tv_usec = 0;
-                    rtn = select( sockfd + 1, &rfds, NULL, NULL, &tv );
+                    rtn = gc->reader( blockData, readn );
                     if ( rtn != -1 ) {
-            	        ret = read( sockfd, blockData, readn );
-            	        if ( ret > 0 ) {
-            	            count += ret;
-            	            blockData[ret] = 0;
+            	            count += rtn;
+            	            blockData[rtn] = 0;
             	            fprintf( fp, "%s", blockData );
-            	        }
                     }
             	    else {
             	        snprintf( message, DIFX_MESSAGE_LENGTH, "Select error (%s) %s port: %d - transfer FAILED", strerror( errno ), S->address, S->port );
@@ -183,17 +170,14 @@ void ServerSideConnection::difxFileTransfer( DifxMessageGeneric* G ) {
     	        }
     	    }
 
-            //printf( "sending %d as confirmation\n", filesize );
             int n = htonl( filesize );            	
-            write( sockfd, &n, sizeof( int ) );
+            gc->writer( &n, sizeof( int ) );
 
       		//  Then clean up our litter.
     		snprintf( command, MAX_COMMAND_SIZE, "rm -f /tmp/filetransfer_%d", S->port );
             system( command );
-            close( sockfd );
+            delete gc;
       		
-    		exit(EXIT_SUCCESS);
-    	}
 	}
 	    
 	else if ( !strcmp( S->direction, "from DiFX" ) ) {
@@ -255,28 +239,17 @@ void ServerSideConnection::difxFileTransfer( DifxMessageGeneric* G ) {
       		system( command );
   		}
     	
-    	//  Fork a process to do the file transfer via a TCP client.
-    	signal( SIGCHLD, SIG_IGN );
-    	childPid = fork();
-    	if( childPid == 0 ) {
-    	    //  Open a TCP socket connection to the server that should be running for us on the
+    	    //  Open a client connection to the server that should be running for us on the
     	    //  remote host.
-    	    int sockfd;
-    	    struct sockaddr_in servaddr;
-    	    sockfd = socket( AF_INET, SOCK_STREAM, 0 );
-    	    memset( &servaddr, 0, sizeof( servaddr ) );
-    	    servaddr.sin_family = AF_INET;
-    	    servaddr.sin_port = htons( S->port );
-    	    inet_pton( AF_INET, S->address, &servaddr.sin_addr );
-      	    int ret = connect( sockfd, (const sockaddr*)&servaddr, sizeof( servaddr ) );
+            GUIClient* gc = new GUIClient( this, S->address, S->port );
       	    
-      	    //  Assuming the socket connection was successful, write the file contents to the socket.
-      	    if ( ret == 0 ) {
+      	    //  Assuming the socket connection was successful, write the file contents to the server.
+      	    if ( gc->okay() ) {
             	//snprintf( message, DIFX_MESSAGE_LENGTH, "Client address: %s   port: %d - connection looks good", S->address, S->port );
             	//difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_WARNING );
             	//  Send the total size first.
             	int n = htonl( filesize );            	
-            	write( sockfd, &n, sizeof( int ) );
+            	gc->writer( &n, sizeof( int ) );
             	if ( filesize > 0 ) {
             	    //  Then break the file up into "blocks" for sending.
             	    short blockSize = 1024;
@@ -287,9 +260,7 @@ void ServerSideConnection::difxFileTransfer( DifxMessageGeneric* G ) {
             	    int fd = open( tmpFile, O_RDONLY );
             	    while ( filesize > 0 ) {
             	        short readsize = read( fd, blockData, blockSize );
-            	        short ns = htons( readsize );
-            	        //write( sockfd, &ns, sizeof( short ) );
-            	        write( sockfd, blockData, readsize );
+            	        gc->writer( blockData, readsize );
             	        filesize -= readsize;
             	    }
             	    close( fd );
@@ -300,14 +271,11 @@ void ServerSideConnection::difxFileTransfer( DifxMessageGeneric* G ) {
             	difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_ERROR );
       	    }
     
-            //  Clean up our litter and bail out of this forked process
-    		snprintf( command, MAX_COMMAND_SIZE, "rm -f /tmp/filetransfer_%d", S->port );
+            //  Clean up our litter.
+    		//snprintf( command, MAX_COMMAND_SIZE, "rm -f /tmp/filetransfer_%d", S->port );
             system( command );
-      		close( sockfd );
-      		
-    		exit( EXIT_SUCCESS );
-    	}
-    	
+      		delete gc;
+      		    	
 	}
 		
 }
