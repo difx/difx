@@ -45,6 +45,13 @@ static void usage()
 	fprintf(stderr, "\n<VDIF input file> is the name of the VDIF file to read\n");
 	fprintf(stderr, "\n<framesize> VDIF frame size, including header (5032 for VLBA)\n");
 	fprintf(stderr, "\n<prtlev> is output type: hex short long\n\n");
+	fprintf(stderr, "In normal operation this program searches for valid VDIF frames.\n");
+	fprintf(stderr, "The heuristics used to identify valid frames are somewhat weak as\n");
+	fprintf(stderr, "VDIF has no formal sync word.  Some data can fool this program.\n\n");
+	fprintf(stderr, "If the data are known to contain only entire, valid VDIF frames of\n");
+	fprintf(stderr, "of constant length (equal to that provided), <prtlev> can be set to\n");
+	fprintf(stderr, "one of the following: forcehex forceshort forcelong.  If one of\n");
+	fprintf(stderr, "these is used, the frame finding heuristics are bypassed.\n\n");
 }
 
 int main(int argc, char **argv)
@@ -58,6 +65,7 @@ int main(int argc, char **argv)
 	long long framesread = 0;
 	const vdif_header *header;
 	int nSkip = 0;
+	int force = 0;
 
 	if(argc < 3 || argc > 4)
 	{
@@ -84,7 +92,11 @@ int main(int argc, char **argv)
 	framesize = atoi(argv[2]);
 	if(argc == 4)
 	{
-		if(strcmp(argv[3], "hex") == 0)
+		if(strcmp(argv[3], "force") == 0)
+		{
+			force = 1;
+		}
+		else if(strcmp(argv[3], "hex") == 0)
 		{
 			lev = VDIFHeaderPrintLevelHex;
 		}
@@ -95,6 +107,21 @@ int main(int argc, char **argv)
 		else if(strcmp(argv[3], "long") == 0)
 		{
 			lev = VDIFHeaderPrintLevelLong;
+		}
+		else if(strcmp(argv[3], "forcehex") == 0)
+		{
+			lev = VDIFHeaderPrintLevelHex;
+			force = 1;
+		}
+		else if(strcmp(argv[3], "forceshort") == 0)
+		{
+			lev = VDIFHeaderPrintLevelShort;
+			force = 1;
+		}
+		else if(strcmp(argv[3], "forcelong") == 0)
+		{
+			lev = VDIFHeaderPrintLevelLong;
+			force = 1;
 		}
 		else
 		{
@@ -126,33 +153,36 @@ int main(int argc, char **argv)
 				break;
 			}
 			header = (const vdif_header *)(buffer + index);
-			if(getVDIFFrameBytes(header) != framesize)
+			if(force == 0)	/* if not forced, look for a match */
 			{
-				++index;
-				++nSkip;
-				continue;
-			}
-			if(header->eversion == 0 && (header->extended1 != 0 || header->extended2 != 0 || header->extended3 != 0 || header->extended1 != 0))
-			{
-				++index;
-				++nSkip;
-				continue;
-			}
-			if(header->eversion == 1 || header->eversion == 3)
-			{
-				const uint32_t *ui;
-
-				ui = (const uint32_t *)(buffer + index);
-				if(ui[5] != 0xACABFEED)
+				if(getVDIFFrameBytes(header) != framesize)
 				{
+					++index;
+					++nSkip;
 					continue;
 				}
-			}
+				if(header->eversion == 0 && (header->extended1 != 0 || header->extended2 != 0 || header->extended3 != 0 || header->extended1 != 0))
+				{
+					++index;
+					++nSkip;
+					continue;
+				}
+				if(header->eversion == 1 || header->eversion == 3)
+				{
+					const uint32_t *ui;
 
-			if(nSkip > 0)
-			{
-				printf("Skipped %d interloper bytes\n", nSkip);
-				nSkip = 0;
+					ui = (const uint32_t *)(buffer + index);
+					if(ui[5] != 0xACABFEED)
+					{
+						continue;
+					}
+				}
+
+				if(nSkip > 0)
+				{
+					printf("Skipped %d interloper bytes\n", nSkip);
+					nSkip = 0;
+				}
 			}
 
 			if(lev == VDIFHeaderPrintLevelShort && framesread % 24 == 0)

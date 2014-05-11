@@ -253,25 +253,25 @@ static void fprintVDIFHeaderHex(FILE *out, const vdif_header *header)
 static void fprintVDIFHeaderLong(FILE *out, const vdif_header *header)
 {
 	fprintf(out, "VDIF Header\n");
-	fprintf(out, "  epoch = %d\n", header->epoch);
-	fprintf(out, "  seconds = %d\n", header->seconds);
-	fprintf(out, "  frame = %d\n", header->frame);
-	fprintf(out, "  threadid = %d\n", header->threadid);
-	fprintf(out, "  framelength8 = %d -> frame length = %d\n", header->framelength8, header->framelength8*8);
-	fprintf(out, "  ln2 nchan = %d -> nchan = %d\n", header->nchan, 1 << header->nchan);
-	fprintf(out, "  nbits-1 = %d -> nbits = %d\n", header->nbits, header->nbits + 1);
+	fprintf(out, "  epoch = 0x%X = %d\n", header->epoch, header->epoch);
+	fprintf(out, "  seconds = 0x%X = %d\n", header->seconds, header->seconds);
+	fprintf(out, "  frame = 0x%X = %d\n", header->frame, header->frame);
+	fprintf(out, "  threadid = 0x%X = %d\n", header->threadid, header->threadid);
+	fprintf(out, "  framelength8 = 0x%X -> frame length = %d\n", header->framelength8, header->framelength8*8);
+	fprintf(out, "  ln2 nchan = 0x%X -> nchan = %d\n", header->nchan, 1 << header->nchan);
+	fprintf(out, "  nbits-1 = 0x%X -> nbits = %d\n", header->nbits, header->nbits + 1);
 	fprintf(out, "  legacymode = %d\n", header->legacymode);
 	fprintf(out, "  invalid = %d\n", header->invalid);
 	fprintf(out, "  version = %d\n", header->version);
-	fprintf(out, "  stationid = %d\n", header->stationid);
+	fprintf(out, "  stationid = 0x%X = %d\n", header->stationid, header->stationid);
 	fprintf(out, "  iscomplex = %d\n", header->iscomplex);
-	fprintf(out, "  eversion = %d\n", header->eversion);
+	fprintf(out, "  eversion = 0x%X = %d\n", header->eversion, header->eversion);
 	if(header->eversion == 1)
 	{
 		const vdif_edv1_header *edv1 = (const vdif_edv1_header *)header;
 		
-		fprintf(out, "  samprate = 0x%06x = %d %s\n", edv1->samprate, edv1->samprate, edv1->samprateunits ? "MHz" : "kHz");
-		fprintf(out, "  syncword = %08x\n", edv1->syncword);
+		fprintf(out, "  samprate = 0x%06X = %d %s\n", edv1->samprate, edv1->samprate, edv1->samprateunits ? "MHz" : "kHz");
+		fprintf(out, "  syncword = 0x%08X\n", edv1->syncword);
 		fprintf(out, "  name = %8s", edv1->name);
 	}
 	else if(header->eversion == 3)
