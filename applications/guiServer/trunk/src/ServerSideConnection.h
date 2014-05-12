@@ -229,7 +229,7 @@ namespace guiServer {
 //	                            DIFX_MESSAGE_DIAGNOSTIC,
                             }
                             if ( relayThis )
-                                sendPacket( RELAY_PACKET, message, strlen( message ) );
+                                sendPacket( RELAY_PACKET, message, strlen( message ), channelData() );
                         }
                     }
                 }

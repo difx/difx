@@ -26,19 +26,19 @@ ServerSideConnection::diagnostic( const int severity, const char *fmt, ... ) {
         if ( _difxAlertsOn )
             difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_INFO );
         if ( _diagnosticPacketsOn )
-            sendPacket( INFORMATION_PACKET, message, strlen( message ) );
+            sendPacket( INFORMATION_PACKET, message, strlen( message ), channelData() );
         break;
     case WARNING:
         if ( _difxAlertsOn )
             difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_WARNING );
         if ( _diagnosticPacketsOn )
-            sendPacket( WARNING_PACKET, message, strlen( message ) );
+            sendPacket( WARNING_PACKET, message, strlen( message ), channelData() );
         break;
     case ERROR:
         if ( _difxAlertsOn )
             difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_ERROR );
         if ( _diagnosticPacketsOn )
-            sendPacket( ERROR_PACKET, message, strlen( message ) );
+            sendPacket( ERROR_PACKET, message, strlen( message ), channelData() );
         break;
     }
 }

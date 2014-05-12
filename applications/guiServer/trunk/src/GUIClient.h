@@ -55,7 +55,7 @@ namespace guiServer {
             //  Send the connection message if this is channelled.
             if ( _channelData ) {
                 _swapPort = htonl( _port );
-                _ssc->sendPacket( ServerSideConnection::CHANNEL_CONNECTION, (char*)&_swapPort, sizeof( int ) );
+                _ssc->sendPacket( ServerSideConnection::CHANNEL_CONNECTION, (char*)&_swapPort, sizeof( int ), true );
                 _ret = 0;
             }
             //  Conventional TCP setup if channeling is not on.
@@ -84,7 +84,7 @@ namespace guiServer {
                 }
                 memcpy( _buff, &_swapPort, len );
                 memcpy( (char*)_buff + sizeof( int ), data, n );
-                _ssc->sendPacket( ServerSideConnection::CHANNEL_DATA, (char*)_buff, len );
+                _ssc->sendPacket( ServerSideConnection::CHANNEL_DATA, (char*)_buff, len, true );
                 return len;
             }
             else {
