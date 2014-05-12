@@ -46,7 +46,7 @@ namespace network {
         //!  or a -1 if there is a failure.  It is mutex locked to assure that
         //!  the entire packet is sent completely.
         //----------------------------------------------------------------------------
-        virtual int sendPacket( const int packetId, const char* data, const int nBytes ) {
+        virtual int sendPacket( const int packetId, const char* data, const int nBytes, bool sendSync = false ) {
             int swapped;
 
             //  Lock writing on the socket.  This makes certain this packet can't be 
@@ -59,16 +59,19 @@ namespace network {
             //  portion of the leading bytes this cuts down on the number of messages
             //  that are missed (however it does not cut them down to zero!).  Why this
             //  is happening is not entirely clear - this is a kludge.
-//            int ret = _sock->writer( "        ", 8 );
-//            ret = _sock->writer( "        ", 8 );
-//            ret = _sock->writer( "DIFXSYNC", 8 );
-            //  We want to send packet data that lines up on 8-byte boundaries.
-            //  From the nBytes, figure out how many extra bytes are necessary for
-            //  padding to accomplish this.
-//            int padBytes = 0;
-//            char pad[8];
-//            if ( nBytes % 8 )
-//               padBytes = 8 - nBytes % 8;
+            printf( "send packet %d - sendSync is %d\n", packetId, sendSync );
+            int padBytes = 0;
+            char pad[8];
+            if ( sendSync ) {
+                int ret = _sock->writer( "        ", 8 );
+                ret = _sock->writer( "        ", 8 );
+                ret = _sock->writer( "DIFXSYNC", 8 );
+                //  We want to send packet data that lines up on 8-byte boundaries.
+                //  From the nBytes, figure out how many extra bytes are necessary for
+                //  padding to accomplish this.
+                if ( nBytes % 8 )
+                   padBytes = 8 - nBytes % 8;
+            }
             
             //  Our trivial packet protocol is to send the packetId first (network byte
             //  ordered)...
@@ -86,8 +89,10 @@ namespace network {
                 ret = _sock->writer( data, nBytes );
 
             //  ...and the padding.
-//            if ( ret != -1 && padBytes )
-//                ret = _sock->writer( pad, padBytes );
+            if ( sendSync ) {
+                if ( ret != -1 && padBytes )
+                    ret = _sock->writer( pad, padBytes );
+            }
                 
             //  Unlock the socket.
             writeUnlock();
