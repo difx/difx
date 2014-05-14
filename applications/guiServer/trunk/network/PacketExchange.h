@@ -59,7 +59,6 @@ namespace network {
             //  portion of the leading bytes this cuts down on the number of messages
             //  that are missed (however it does not cut them down to zero!).  Why this
             //  is happening is not entirely clear - this is a kludge.
-            printf( "send packet %d - sendSync is %d\n", packetId, sendSync );
             int padBytes = 0;
             char pad[8];
             if ( sendSync ) {

@@ -18,31 +18,32 @@
 #include <dirent.h>
 #include <network/TCPClient.h>
 #include <signal.h>
+#include <GUIClient.h>
 
 using namespace guiServer;
 
 //-----------------------------------------------------------------------------
-//!  Called in response to a user request to transfer a file either from the
-//!  DiFX host to an external host (the GUI, presumably) or the reverse.  This
-//!  is accomplished by opening a client TCP connection to the external host
-//!  (which must have initiated a server already).
+//!  Called in response to a request to run "vex2difx".  Work is done in a
+//!  thread.
 //-----------------------------------------------------------------------------
 void ServerSideConnection::vex2difxRun( DifxMessageGeneric* G ) {
-	const DifxMessageVex2DifxRun *S;
+    Vex2DifxInfo* vex2DifxInfo = new Vex2DifxInfo;
+    vex2DifxInfo->ssc = this;
+    memcpy( &(vex2DifxInfo->v2dRun), &(G->body.vex2DifxRun), sizeof( DifxMessageVex2DifxRun ) );
+    pthread_attr_init( &(vex2DifxInfo->threadAttr) );
+    pthread_create( &(vex2DifxInfo->threadId), &(vex2DifxInfo->threadAttr), 
+                    staticRunVex2Difx, (void*)vex2DifxInfo );      
+}
+
+//----------------------------------------------------------------------------
+//!  And this is the thread.
+//----------------------------------------------------------------------------
+void ServerSideConnection::runVex2Difx( Vex2DifxInfo* vex2DifxInfo ) {
+	const DifxMessageVex2DifxRun *S = &(vex2DifxInfo->v2dRun);
 	char message[DIFX_MESSAGE_LENGTH];
 	char command[MAX_COMMAND_SIZE];
-	pid_t childPid;
     ExecuteSystem* executor;
-	
-	S = &G->body.vex2DifxRun;
-
-	childPid = fork();
-	
-	//  Forked process runs vex2difx...
-    signal( SIGCHLD, SIG_IGN );
-	if( childPid == 0 )
-	{	    	
-	    
+		    
 	    //  Generate a temporary garbage file that will give us a time stamp for when this
 	    //  function call was made - this is used below to determine which files have been
 	    //  created by the activities that follow in this function.  This used to be done with
@@ -97,16 +98,13 @@ void ServerSideConnection::vex2difxRun( DifxMessageGeneric* G ) {
         }
         delete executor;
 		
-    	//  Open a TCP socket connection to the server that should be running for us on the
-        //  remote host.  This is used to transfer lists of all of the files we have created.
-        int sockfd;
-        struct sockaddr_in servaddr;
-        sockfd = socket( AF_INET, SOCK_STREAM, 0 );
-        memset( &servaddr, 0, sizeof( servaddr ) );
-        servaddr.sin_family = AF_INET;
-        servaddr.sin_port = htons( S->port );
-        inet_pton( AF_INET, S->address, &servaddr.sin_addr );
-        int sockConnectReturn = connect( sockfd, (const sockaddr*)&servaddr, sizeof( servaddr ) );
+	GUIClient* monitor;
+
+	//  Open a client connection to the server that should be running for us on the
+    //  host that requested this task (the GUI, presumably).  This connection is used
+    //  to communicate which .input files have been created.
+    monitor = new GUIClient( vex2DifxInfo->ssc, S->address, S->port );
+    monitor->packetExchange();
         
 		//  This is where we actually run vex2difx - this creates the input files.
 		snprintf( command, MAX_COMMAND_SIZE, "cd %s; %s vex2difx -f %s", 
@@ -150,8 +148,8 @@ void ServerSideConnection::vex2difxRun( DifxMessageGeneric* G ) {
         delete executor;
         
 		
-        //  Use the socket connection to return a list of all new files.
-        if ( sockConnectReturn == 0 ) {
+        //  Use the client connection to return a list of all new files.
+        if ( monitor->okay() ) {
             //snprintf( message, DIFX_MESSAGE_LENGTH, "Client address: %s   port: %d - connection looks good", S->address, S->port );
             //difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_WARNING );
 		    //  Produce a list of the files in the target directory and send that back to the GUI.
@@ -176,15 +174,15 @@ void ServerSideConnection::vex2difxRun( DifxMessageGeneric* G ) {
                 	    //  Send the full path name of this file.
                 	    //  Each separate file is preceded by its string length.
                 	    int sz = htonl( strlen( fullPath ) );
-                	    write( sockfd, &sz, sizeof( int ) );
-                	    write( sockfd, fullPath, strlen( fullPath ) );
+                	    monitor->writer( &sz, sizeof( int ) );
+                	    monitor->writer( fullPath, strlen( fullPath ) );
                 	}
                     free( namelist[n] );
                 }
                 free( namelist );
                 //  Sending a zero length tells the GUI that the list is finished.
                 int zero = 0;
-                write( sockfd, &zero, sizeof( int ) );
+                monitor->writer( &zero, sizeof( int ) );
             }
 		} 
 		
@@ -193,11 +191,8 @@ void ServerSideConnection::vex2difxRun( DifxMessageGeneric* G ) {
             snprintf( message, DIFX_MESSAGE_LENGTH, "Client address: %s   port: %d - connection FAILED", S->address, S->port );
           	difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_ERROR );
         }
-        close( sockfd );
+        delete monitor;
         
 		//difxMessageSendDifxAlert("vex2difx completed", DIFX_ALERT_LEVEL_INFO);
-    	exit(EXIT_SUCCESS);
-		
-	}
 }
 

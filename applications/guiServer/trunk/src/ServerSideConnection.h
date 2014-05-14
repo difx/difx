@@ -790,6 +790,27 @@ namespace guiServer {
         }
         
         //-----------------------------------------------------------------------------
+        //!  This is the structure used to pass information used to monitor the data
+        //!  products of a vex2difx run in real time.
+        //-----------------------------------------------------------------------------
+        struct Vex2DifxInfo {
+            pthread_t threadId;
+            pthread_attr_t threadAttr;
+            ServerSideConnection* ssc;
+            DifxMessageVex2DifxRun v2dRun;
+        };
+
+        //-----------------------------------------------------------------------------
+        //!  Static function called to start the DiFX monitor thread.
+        //-----------------------------------------------------------------------------	
+        static void* staticRunVex2Difx( void* a ) {
+            Vex2DifxInfo* vex2DifxInfo = (Vex2DifxInfo*)a;
+            vex2DifxInfo->ssc->runVex2Difx( vex2DifxInfo );
+            delete vex2DifxInfo;
+            return NULL;
+        }
+        
+        //-----------------------------------------------------------------------------
         //!  Structure used to start file operations.
         //-----------------------------------------------------------------------------
         struct DifxFileOperation {
@@ -884,6 +905,7 @@ namespace guiServer {
         void runFileOperation( DifxFileOperation* fileOperation );
         void getDirectory( DifxMessageGeneric* G );
         void vex2difxRun( DifxMessageGeneric* G );
+        void runVex2Difx( Vex2DifxInfo* v2dRun );   //  in vex2difxRun.cpp
         void machinesDefinition( DifxMessageGeneric* G );
         void runMachinesDefinition( MachinesDefinitionInfo* machinesDefinitionInfo );  // in machinesDefintion.cpp
         void mk5Control( DifxMessageGeneric* G );
