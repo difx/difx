@@ -47,7 +47,7 @@ public:
 	virtual void loopfileread();
 	virtual int calculateControlParams(int scan, int offsetsec, int offsetns);
 	virtual int readonedemux(bool resetreference, int buffersegment);
-	int moduleRead(unsigned long * destination, int nbytes, long long start, int buffersegment);
+	int moduleRead(u32 * destination, int nbytes, long long start, int buffersegment);
 	int sendMark5Status(enum Mk5State state, long long position, double dataMJD, float rate);
 	int resetDriveStats();
 	int reportDriveStats();
@@ -72,7 +72,7 @@ private:
 	int invalidtime;
 	int filltime;
 	long long invalidstart;
-	unsigned long lastval;
+	u32 lastval;
 	struct mark5_stream *mark5stream;
 	int newscan;
 	double lastrate;

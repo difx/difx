@@ -648,7 +648,7 @@ int NativeMk5DataStream::readonedemux(bool resetreference, int buffersegment)
   }
 
   //cinfo << startl << "At the beginning of readonedemux, readpointer is " << readpointer << endl;
-  rbytes = moduleRead((unsigned long*)datamuxer->getCurrentDemuxBuffer(), datamuxer->getSegmentBytes(), readpointer, buffersegment);
+  rbytes = moduleRead((u32 *)datamuxer->getCurrentDemuxBuffer(), datamuxer->getSegmentBytes(), readpointer, buffersegment);
   //the main readpointer will be updated outside of this routine, use localreadpointer for here
   localreadpointer = readpointer + rbytes;
   if(rbytes != datamuxer->getSegmentBytes()) {
@@ -658,7 +658,7 @@ int NativeMk5DataStream::readonedemux(bool resetreference, int buffersegment)
   while(fixbytes > 0) {
     ++nfix;
     readto = reinterpret_cast<char*>(datamuxer->getCurrentDemuxBuffer()) + rbytes - fixbytes;
-    moduleRead(reinterpret_cast<unsigned long*>(readto), fixbytes, localreadpointer, buffersegment);
+    moduleRead(reinterpret_cast<u32 *>(readto), fixbytes, localreadpointer, buffersegment);
     readpointer += fixbytes; //but if we need extra reads, then we must add these "extra" values to the readpointer
     localreadpointer += fixbytes; //and to the local one also of course
     fixbytes = datamuxer->datacheck(datamuxer->getCurrentDemuxBuffer(), rbytes, rbytes - fixbytes);
@@ -675,7 +675,7 @@ int NativeMk5DataStream::readonedemux(bool resetreference, int buffersegment)
   return rbytes;
 }
 
-int NativeMk5DataStream::moduleRead(unsigned long *destination, int nbytes, long long start, int buffersegment)
+int NativeMk5DataStream::moduleRead(u32 *destination, int nbytes, long long start, int buffersegment)
 {
 	int bytes = nbytes;
 	XLR_RETURN_CODE xlrRC;
@@ -728,7 +728,7 @@ int NativeMk5DataStream::moduleRead(unsigned long *destination, int nbytes, long
 			// first fill buffer with fill pattern
 			for(int w = 0; w < bytes/4; ++w)
 			{
-				(reinterpret_cast<unsigned int *>(destination))[w] = MARK5_FILL_PATTERN;
+				destination[w] = MARK5_FILL_PATTERN;
 			}
 
 			// then try to reset card
@@ -760,7 +760,7 @@ int NativeMk5DataStream::moduleRead(unsigned long *destination, int nbytes, long
 
 void NativeMk5DataStream::moduleToMemory(int buffersegment)
 {
-	unsigned long *buf, *data;
+	u32 *buf, *data;
 	char *readto;
 	int rbytes, obytes;
 	double tv_us;
@@ -774,7 +774,7 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 	int n = 0;
 
 	/* All reads of a module must be 64 bit aligned */
-	data = buf = reinterpret_cast<unsigned long *>(&databuffer[buffersegment*(bufferbytes/numdatasegments)]);
+	data = buf = reinterpret_cast<u32 *>(&databuffer[buffersegment*(bufferbytes/numdatasegments)]);
 
 	waitForBuffer(buffersegment);
 

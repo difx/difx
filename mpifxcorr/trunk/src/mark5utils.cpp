@@ -146,8 +146,8 @@ XLR_RETURN_CODE difxMark5Read(SSHANDLE xlrDevice, long long readpointer, unsigne
 		}
 
 		// set up the XLR info
-		xlrRD.AddrHi = static_cast<unsigned long>( (readpointer + offset) >> 32 );
-		xlrRD.AddrLo = static_cast<unsigned long>( (readpointer + offset) & 0xFFFFFFF8 ); // enforce 8 byte boundary
+		xlrRD.AddrHi = (readpointer + offset) >> 32;
+		xlrRD.AddrLo = (readpointer + offset) & 0xFFFFFFF8; // enforce 8 byte boundary
 		xlrRD.XferLength = readSize;
 		xlrRD.BufferAddr = reinterpret_cast<streamstordatatype *>(dest + offset);
 

@@ -386,11 +386,11 @@ int Mark5BDataStream::testForSync(int configindex, int buffersegment)
 // read data left over in the read buffer ready for next time
 int Mark5BDataStream::dataRead(int buffersegment)
 {
-	unsigned long *destination;
+	u32 *destination;
 	int bytes;
 	int fixReturn;
 
-	destination = reinterpret_cast<unsigned long *>(&databuffer[buffersegment*(bufferbytes/numdatasegments)]);
+	destination = reinterpret_cast<u32 *>(&databuffer[buffersegment*(bufferbytes/numdatasegments)]);
 
 	// Bytes to read
 	bytes = readbuffersize - readbufferleftover;
@@ -511,9 +511,9 @@ int Mark5BDataStream::dataRead(int buffersegment)
 
 void Mark5BDataStream::diskToMemory(int buffersegment)
 {
-	unsigned long *buf;
+	u32 *buf;
 
-	buf = reinterpret_cast<unsigned long *>(&databuffer[buffersegment*(bufferbytes/numdatasegments)]);
+	buf = reinterpret_cast<u32 *>(&databuffer[buffersegment*(bufferbytes/numdatasegments)]);
 
 	//do the buffer housekeeping
 	waitForBuffer(buffersegment);

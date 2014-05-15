@@ -526,9 +526,9 @@ int VDIFDataStream::dataRead(int buffersegment)
 
 void VDIFDataStream::diskToMemory(int buffersegment)
 {
-	unsigned long *buf;
+	u32 *buf;
 
-	buf = reinterpret_cast<unsigned long *>(&databuffer[buffersegment*(bufferbytes/numdatasegments)]);
+	buf = reinterpret_cast<u32 *>(&databuffer[buffersegment*(bufferbytes/numdatasegments)]);
 
 	//do the buffer housekeeping
 	waitForBuffer(buffersegment);

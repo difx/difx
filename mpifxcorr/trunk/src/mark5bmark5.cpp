@@ -679,7 +679,7 @@ int Mark5BMark5DataStream::dataRead(int buffersegment)
 	// Note: here readbytes is actually the length of the buffer segment, i.e., the amount of data wanted to be "read" by calling processes. 
 	// In this threaded approach the actual size of reads off Mark5 modules (as implemented in the ring buffer writing thread) is generally larger.
 
-	unsigned long *destination = reinterpret_cast<unsigned long *>(&databuffer[buffersegment*(bufferbytes/numdatasegments)]);
+	unsigned char *destination = reinterpret_cast<unsigned char *>(&databuffer[buffersegment*(bufferbytes/numdatasegments)]);
 	int n1, n2;	/* slot number range of data to be processed.  Either n1==n2 or n1+1==n2 */
 	unsigned int fixend, bytesvisible;
 	int lockmod = readbufferslots - 1;
@@ -766,7 +766,7 @@ int Mark5BMark5DataStream::dataRead(int buffersegment)
 	bytesvisible = fixend - fixindex;
 
 	// "fix" Mark5B data: remove stray packets/byts and put good frames on a uniform grid
-	fixReturn = mark5bfix(reinterpret_cast<unsigned char *>(destination), readbytes, readbuffer+fixindex, bytesvisible, framespersecond, startOutputFrameNumber, &m5bstats);
+	fixReturn = mark5bfix(destination, readbytes, readbuffer+fixindex, bytesvisible, framespersecond, startOutputFrameNumber, &m5bstats);
 	if(fixReturn < 0)
 	{
 		cwarn << startl << "mark5bfix returned " << fixReturn << endl;
@@ -777,7 +777,7 @@ int Mark5BMark5DataStream::dataRead(int buffersegment)
 
 		startOutputFrameNumber = -1;
 
-		fixReturn = mark5bfix(reinterpret_cast<unsigned char *>(destination), readbytes, readbuffer+fixindex, bytesvisible, framespersecond, startOutputFrameNumber, &m5bstats);
+		fixReturn = mark5bfix(destination, readbytes, readbuffer+fixindex, bytesvisible, framespersecond, startOutputFrameNumber, &m5bstats);
 
 		cwarn << startl << "Just used zero bytes in fix operation.  Tried again.  startOutputFrame: " << lastOFN << " -> -1 -> " << (m5bstats.startFrameNumber + m5bstats.destUsed/10016) << endl;
 	}
