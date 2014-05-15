@@ -85,7 +85,7 @@ namespace guiServer {
                 memcpy( _buff, &_swapPort, len );
                 memcpy( (char*)_buff + sizeof( int ), data, n );
                 _ssc->sendPacket( ServerSideConnection::CHANNEL_DATA, (char*)_buff, len, true );
-                //usleep( 100000 );
+                usleep( 100000 );
                 return len;
             }
             else {
