@@ -111,7 +111,7 @@ void VDIFNetworkDataStream::networkthreadfunction()
 	int stripbytes;				// for raw packets; strip this many bytes from beginning of RX packets
 
 	stripbytes = tcpwindowsizebytes/1024;
-	packetsize = config->getFrameBytes(0, streamnum); + stripbytes;
+	packetsize = config->getFrameBytes(0, streamnum) + stripbytes;
 
 cinfo << startl << "stripbytes=" << stripbytes << " packetsize=" << packetsize << endl;
 
