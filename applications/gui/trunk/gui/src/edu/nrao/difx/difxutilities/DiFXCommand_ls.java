@@ -9,20 +9,11 @@ import edu.nrao.difx.difxview.SystemSettings;
 
 import edu.nrao.difx.xmllib.difxmessage.DifxFileOperation;
 
-import java.net.Socket;
-import java.net.ServerSocket;
-import java.net.SocketException;
 import java.net.SocketTimeoutException;
-
-import java.util.ArrayList;
-import java.util.Iterator;
 
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
 
-import java.io.DataInputStream;
-
-import java.net.UnknownHostException;
 import javax.swing.event.EventListenerList;
 
 /**
@@ -120,32 +111,24 @@ public class DiFXCommand_ls extends DiFXCommand {
             //  Open a new server socket and await a connection.  The connection
             //  will timeout after a given number of seconds (nominally 10).
             try {
-                System.out.println( "This is the ls operation" );
                 ChannelServerSocket ssock = new ChannelServerSocket( _port, _settings );
                 ssock.setSoTimeout( 10000 );  //  timeout is in millisec
                 try {
-//                    Socket sock = ssock.accept();
-//                    //  Turn the socket into a "data stream", which has useful
-//                    //  functions.
-//                    DataInputStream in = new DataInputStream( sock.getInputStream() );
                     ssock.accept();
                     //  Read each line of incoming data until there are no more.
                     boolean finished = false;
                     while ( !finished ) {
                         //  Read the size of the next file name....
-//                        int sz = in.readInt();
                         int sz = ssock.readInt();
                         if ( sz == 0 )
                             finished = true;
                         else {
                             byte[] foo = new byte[sz + 1];
-//                            in.readFully( foo, 0, sz );
                             ssock.readFully( foo, 0, sz );
                             String inLine = new String( foo );
                             incrementalCallback( inLine );
                         }
                     }
-//                    sock.close();
                 } catch ( SocketTimeoutException e ) {
                     
                 }

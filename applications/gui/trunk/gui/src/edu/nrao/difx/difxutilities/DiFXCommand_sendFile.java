@@ -108,21 +108,16 @@ public class DiFXCommand_sendFile extends DiFXCommand {
             //  Open a new server socket and await a connection.  The connection
             //  will timeout after a given number of seconds (nominally 10).
             try {
-                ServerSocket ssock = new ServerSocket( _port );
+                ChannelServerSocket ssock = new ChannelServerSocket( _port, _settings );
                 ssock.setSoTimeout( 10000 );  //  timeout is in millisec
                 try {
-                    Socket sock = ssock.accept();
+                    ssock.accept();
                     acceptCallback();
-                    //  Turn the socket into a "data stream", which has useful
-                    //  functions.
-                    DataOutputStream out = new DataOutputStream( sock.getOutputStream() );
-                    out.writeInt( _content.length() );
-                    out.writeBytes( _content );
-//                    out.flush();
+                    //  Write the number of bytes in the file, then the file data.
+                    ssock.writeInt( _content.length() );
+                    ssock.writeBytes( _content );
                     //  Read how many characters were received.
-                    DataInputStream in = new DataInputStream( sock.getInputStream() );
-                    _fileSize = in.readInt();
-                    sock.close();
+                    _fileSize = ssock.readInt();
                 } catch ( SocketTimeoutException e ) {
                     _fileSize = -10;
                 }

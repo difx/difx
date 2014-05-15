@@ -2786,6 +2786,7 @@ public class ExperimentEditor extends JFrame {
             _operationCancelled = true;
             _operationRunning = false;
             _okButton.setText( "Apply" );
+            
         }
           
         /*
@@ -2802,7 +2803,10 @@ public class ExperimentEditor extends JFrame {
                 if ( !db.connected() )
                     db = null;
             }
-            //  Get the extension and "full name" (the full path without the extension) on this new file...
+            //  Get the extension and "full name" (the full path without the extension) on this new file.
+            //  If the file doesn't have an extension we are currently not interested in it.
+            if ( newFile.lastIndexOf( '.' ) == -1 )
+                return;
             String extn = newFile.substring( newFile.lastIndexOf( '.' ) + 1 ).trim();
             String fullName = newFile.substring( 0, newFile.lastIndexOf( '.' ) ).trim();
             int databaseJobId = 0;

@@ -14,14 +14,16 @@ import javax.swing.plaf.basic.BasicComboPopup;
 import edu.nrao.difx.difxutilities.DiFXCommand;
 import edu.nrao.difx.difxutilities.InputFileParser;
 import edu.nrao.difx.difxutilities.CalcFileParser;
+import edu.nrao.difx.difxutilities.ChannelServerSocket;
+
 import edu.nrao.difx.xmllib.difxmessage.DifxMessage;
 import edu.nrao.difx.xmllib.difxmessage.DifxMachinesDefinition;
 import edu.nrao.difx.xmllib.difxmessage.DifxStart;
 import edu.nrao.difx.xmllib.difxmessage.DifxStop;
-import edu.nrao.difx.xmllib.difxmessage.DifxStatus;
 import edu.nrao.difx.xmllib.difxmessage.DifxJobLog;
 import edu.nrao.difx.xmllib.difxmessage.DifxJobLog.Data.*;
 import edu.nrao.difx.xmllib.difxmessage.ObjectFactory;
+
 import java.awt.*;
 
 import javax.swing.JFrame;
@@ -43,24 +45,18 @@ import javax.swing.event.PopupMenuListener;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
-import java.io.DataInputStream;
+import javax.swing.event.EventListenerList;
+
 import java.io.PrintWriter;
 import java.io.FileWriter;
 import java.io.BufferedWriter;
-import java.net.ServerSocket;
-import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 
 import java.util.*;
-import java.util.List;
-
-import javax.swing.event.EventListenerList;
 
 import java.awt.event.ComponentEvent;
-
-import edu.nrao.difx.difxcontroller.JAXBDiFXProcessor;
 
 import javax.xml.bind.Marshaller;
 
@@ -1264,43 +1260,39 @@ public class JobEditorMonitor extends JFrame {
          * These packet types are sent by the "JobMonitorConnection" class in the
          * guiServer application on the DiFX host.
          */
-        protected final int TASK_TERMINATED                     = 100;
-        protected final int TASK_ENDED_GRACEFULLY               = 101;
-        protected final int TASK_STARTED                        = 102;
-        protected final int PARAMETER_CHECK_IN_PROGRESS         = 103;
-        protected final int PARAMETER_CHECK_SUCCESS             = 104;
-        protected final int FAILURE_NO_HEADNODE                 = 105;
-        protected final int FAILURE_NO_DATASOURCES              = 106;
-        protected final int FAILURE_NO_PROCESSORS               = 107;
-        protected final int WARNING_NO_MACHINES_FILE_SPECIFIED  = 108;
-        protected final int WARNING_NO_THREADS_FILE_SPECIFIED   = 109;
-        protected final int THREADS_FILE_NAME                   = 110;
-        protected final int MACHINES_FILE_NAME                  = 111;
-        protected final int FAILURE_NO_FILES_SPECIFIED          = 112;
-        protected final int FAILURE_OPEN_MACHINES_FILE          = 113;
-        protected final int FAILURE_OPEN_THREADS_FILE           = 114;
-        protected final int MACHINES_FILE_CREATED               = 115;
-        protected final int THREADS_FILE_CREATED                = 116;
-        protected final int FAILURE_FILE_REMOVAL                = 117;
-        protected final int FAILURE_POPEN                       = 118;
-        protected final int FAILURE_MPIRUN                      = 119;
-        protected final int SUCCESS_MPIRUN                      = 120;
-        protected final int LOW_THREAD_COUNT                    = 121;
-        protected final int RUNNING_MPIRUN_TESTS                = 122;
+        protected final int MACHINE_DEF_TASK_TERMINATED                     = 100;
+        protected final int MACHINE_DEF_TASK_ENDED_GRACEFULLY               = 101;
+        protected final int MACHINE_DEF_TASK_STARTED                        = 102;
+        protected final int MACHINE_DEF_PARAMETER_CHECK_IN_PROGRESS         = 103;
+        protected final int MACHINE_DEF_PARAMETER_CHECK_SUCCESS             = 104;
+        protected final int MACHINE_DEF_FAILURE_NO_HEADNODE                 = 105;
+        protected final int MACHINE_DEF_FAILURE_NO_DATASOURCES              = 106;
+        protected final int MACHINE_DEF_FAILURE_NO_PROCESSORS               = 107;
+        protected final int MACHINE_DEF_WARNING_NO_MACHINES_FILE_SPECIFIED  = 108;
+        protected final int MACHINE_DEF_WARNING_NO_THREADS_FILE_SPECIFIED   = 109;
+        protected final int MACHINE_DEF_THREADS_FILE_NAME                   = 110;
+        protected final int MACHINE_DEF_MACHINES_FILE_NAME                  = 111;
+        protected final int MACHINE_DEF_FAILURE_NO_FILES_SPECIFIED          = 112;
+        protected final int MACHINE_DEF_FAILURE_OPEN_MACHINES_FILE          = 113;
+        protected final int MACHINE_DEF_FAILURE_OPEN_THREADS_FILE           = 114;
+        protected final int MACHINE_DEF_MACHINES_FILE_CREATED               = 115;
+        protected final int MACHINE_DEF_THREADS_FILE_CREATED                = 116;
+        protected final int MACHINE_DEF_FAILURE_FILE_REMOVAL                = 117;
+        protected final int MACHINE_DEF_FAILURE_POPEN                       = 118;
+        protected final int MACHINE_DEF_FAILURE_MPIRUN                      = 119;
+        protected final int MACHINE_DEF_SUCCESS_MPIRUN                      = 120;
+        protected final int MACHINE_DEF_LOW_THREAD_COUNT                    = 121;
+        protected final int MACHINE_DEF_RUNNING_MPIRUN_TESTS                = 122;
         
         @Override
         public void run() {
             //  Open a new server socket and await a connection.  The connection
             //  will timeout after a given number of seconds (nominally 10).
             try {
-                ServerSocket ssock = new ServerSocket( _port );
+                ChannelServerSocket ssock = new ChannelServerSocket( _port, _settings );
                 ssock.setSoTimeout( 10000 );  //  timeout is in millisec
                 try {
-                    Socket sock = ssock.accept();
-                    //  Turn the socket into a "data stream", which has useful
-                    //  functions.
-                    DataInputStream in = new DataInputStream( sock.getInputStream() );
-                    
+                    ssock.accept();
                     //  Loop collecting diagnostic packets from the guiServer.  These
                     //  are identified by an initial integer, and then are followed
                     //  by a data length, then data.
@@ -1309,83 +1301,83 @@ public class JobEditorMonitor extends JFrame {
                     while ( connected ) {
                         //  Read the packet type as an integer.  The packet types
                         //  are defined above (within this class).
-                        int packetType = in.readInt();
+                        int packetType = ssock.readInt();
                         //  Read the size of the incoming data (bytes).
-                        int packetSize = in.readInt();
+                        int packetSize = ssock.readInt();
                         //  Read the data (as raw bytes)
                         byte [] data = null;
                         if ( packetSize > 0 ) {
                             data = new byte[packetSize];
-                            in.readFully( data );
+                            ssock.readFully( data, 0, packetSize );
                         }
                         //  Interpret the packet type.
-                        if ( packetType == TASK_TERMINATED ) {
+                        if ( packetType == MACHINE_DEF_TASK_TERMINATED ) {
                             _messageDisplayPanel.warning( 0, "machines monitor", "Task terminated prematurely." );
                             connected = false;
                         }
-                        else if ( packetType == TASK_ENDED_GRACEFULLY ) {
+                        else if ( packetType == MACHINE_DEF_TASK_ENDED_GRACEFULLY ) {
                             _messageDisplayPanel.warning( 0, "machines monitor", "Task finished gracefully." );
                             statusInfo( ".machines and .threads files created." );
                             connected = false;
                         }
-                        else if ( packetType == TASK_STARTED ) {
+                        else if ( packetType == MACHINE_DEF_TASK_STARTED ) {
                             _messageDisplayPanel.message( 0, "machines monitor", "Task started by guiServer." );
                         }
-                        else if ( packetType == PARAMETER_CHECK_IN_PROGRESS ) {
+                        else if ( packetType == MACHINE_DEF_PARAMETER_CHECK_IN_PROGRESS ) {
                             _messageDisplayPanel.message( 0, "machines monitor", "Checking parameters." );
                         }
-                        else if ( packetType == PARAMETER_CHECK_SUCCESS ) {
+                        else if ( packetType == MACHINE_DEF_PARAMETER_CHECK_SUCCESS ) {
                             _messageDisplayPanel.message( 0, "machines monitor", "Parameter check successful." );
                         }
-                        else if ( packetType == FAILURE_NO_HEADNODE ) {
+                        else if ( packetType == MACHINE_DEF_FAILURE_NO_HEADNODE ) {
                             _messageDisplayPanel.error( 0, "machines monitor", "No headnone was specified." );
                             statusError( "Headnode needs to be specified to create .machines and .threads files." );
                         }
-                        else if ( packetType == FAILURE_NO_DATASOURCES ) {
+                        else if ( packetType == MACHINE_DEF_FAILURE_NO_DATASOURCES ) {
                             _messageDisplayPanel.error( 0, "machines monitor", "No valid data streams were specified." );
                             statusError( "No valid data streams were specified - could not create .mahcines and .threads files." );
                         }
-                        else if ( packetType == FAILURE_NO_PROCESSORS ) {
+                        else if ( packetType == MACHINE_DEF_FAILURE_NO_PROCESSORS ) {
                             _messageDisplayPanel.error( 0, "machines monitor", "No valid processors were specified." );
                             statusError( "No valid processors were specified - could not create .mahcines and .threads files." );
                         }
-                        else if ( packetType == WARNING_NO_MACHINES_FILE_SPECIFIED ) {
+                        else if ( packetType == MACHINE_DEF_WARNING_NO_MACHINES_FILE_SPECIFIED ) {
                             workState = packetType;
                             _messageDisplayPanel.message( 0, "machines monitor", "No machines file name was specified - forming one using input file name." );
                         }
-                        else if ( packetType == MACHINES_FILE_NAME ) {
+                        else if ( packetType == MACHINE_DEF_MACHINES_FILE_NAME ) {
                             _machinesFileName.setText( new String( data ) );
                             _messageDisplayPanel.message( 0, "machines monitor", "Creating machines file \"" + _machinesFileName.getText() + "\"" );
                             statusInfo( "creating \"" + _machinesFileName.getText() + "\"" );
                         }
-                        else if ( packetType == THREADS_FILE_NAME ) {
+                        else if ( packetType == MACHINE_DEF_THREADS_FILE_NAME ) {
                             _threadsFileName.setText( new String( data ) );
                             _messageDisplayPanel.message( 0, "machines monitor", "Creating threads file \"" + _threadsFileName.getText() + "\"" );
                             statusInfo( "creating \"" + _threadsFileName.getText() + "\"" );
                         }
-                        else if ( packetType == WARNING_NO_THREADS_FILE_SPECIFIED ) {
+                        else if ( packetType == MACHINE_DEF_WARNING_NO_THREADS_FILE_SPECIFIED ) {
                             workState = packetType;
                             _messageDisplayPanel.message( 0, "machines monitor", "No threads file name was specified - forming one using input file name." );
                         }
-                        else if ( packetType == FAILURE_NO_FILES_SPECIFIED ) {
-                            if ( workState == WARNING_NO_MACHINES_FILE_SPECIFIED )
+                        else if ( packetType == MACHINE_DEF_FAILURE_NO_FILES_SPECIFIED ) {
+                            if ( workState == MACHINE_DEF_WARNING_NO_MACHINES_FILE_SPECIFIED )
                                 _messageDisplayPanel.message( 0, "machines monitor", "No input file name specified - unable to form machines file name." );
-                            else if ( workState == WARNING_NO_THREADS_FILE_SPECIFIED )
+                            else if ( workState == MACHINE_DEF_WARNING_NO_THREADS_FILE_SPECIFIED )
                                 _messageDisplayPanel.message( 0, "machines monitor", "No input file name specified - unable to form threads file name." );
                             else
                                 _messageDisplayPanel.message( 0, "machines monitor", "Unknown error involving missing file names." );
                         }
-                        else if ( packetType == FAILURE_OPEN_MACHINES_FILE ) {
+                        else if ( packetType == MACHINE_DEF_FAILURE_OPEN_MACHINES_FILE ) {
                             _machinesFileName.setText( new String( data ) );
                             _messageDisplayPanel.message( 0, "machines monitor", "Failure to open machines file (" + new String( data ) + ")" );
                             statusError( "could not open machines file \"" + new String( data ) + "\"" );
                         }
-                        else if ( packetType == FAILURE_OPEN_THREADS_FILE ) {
+                        else if ( packetType == MACHINE_DEF_FAILURE_OPEN_THREADS_FILE ) {
                             _machinesFileName.setText( new String( data ) );
                             _messageDisplayPanel.message( 0, "machines monitor", "Failure to open threads file (" + new String( data ) + ")" );
                             statusError( "could not open threads file \"" + new String( data ) + "\"" );
                         }
-                        else if ( packetType == MACHINES_FILE_CREATED ) {
+                        else if ( packetType == MACHINE_DEF_MACHINES_FILE_CREATED ) {
                             _messageDisplayPanel.message( 0, "machines monitor", "machines file created" );
                             //  Download the machines file to its editor.
                             Component comp = _applyMachinesButton;
@@ -1406,7 +1398,7 @@ public class JobEditorMonitor extends JFrame {
                             _messageDisplayPanel.message( 0, "machines monitor", "machines file successfully downloaded" );
                             statusInfo( ".machines file created" );
                         }
-                        else if ( packetType == THREADS_FILE_CREATED ) {
+                        else if ( packetType == MACHINE_DEF_THREADS_FILE_CREATED ) {
                             _messageDisplayPanel.message( 0, "machines monitor", "threads file created" );
                             //  Download the threads file to its editor.
                             Component comp = _applyMachinesButton;
@@ -1427,14 +1419,14 @@ public class JobEditorMonitor extends JFrame {
                             _messageDisplayPanel.message( 0, "machines monitor", "threads file successfully downloaded" );
                             statusInfo( ".threads file created" );
                         }
-                        else if ( packetType == FAILURE_FILE_REMOVAL ) {
+                        else if ( packetType == MACHINE_DEF_FAILURE_FILE_REMOVAL ) {
                             _messageDisplayPanel.error( 0, "machines monitor", "Failed to remove file on DiFX host: " + new String( data ) );
                             statusError( "permissions prevent removal of a file on DiFX host" );
                         }
-                        else if ( packetType == FAILURE_POPEN ) {
+                        else if ( packetType == MACHINE_DEF_FAILURE_POPEN ) {
                             _messageDisplayPanel.error( 0, "machines monitor", "Popen failed on DiFX host: " + new String( data ) );
                         }
-                        else if ( packetType == FAILURE_MPIRUN ) {
+                        else if ( packetType == MACHINE_DEF_FAILURE_MPIRUN ) {
                             PaneProcessorNode node = processorNodeByName( new String( data ) );
                             if ( node != null )
                                 node.mpiTest( false, _eliminateNonrespondingProcessors.isSelected() );
@@ -1443,15 +1435,15 @@ public class JobEditorMonitor extends JFrame {
                             else
                                 _messageDisplayPanel.warning( 0, "machines monitor", "Processing node " + new String( data ) + " failed mpirun test" );
                         }
-                        else if ( packetType == SUCCESS_MPIRUN ) {
+                        else if ( packetType == MACHINE_DEF_SUCCESS_MPIRUN ) {
                             PaneProcessorNode node = processorNodeByName( new String( data ) );
                             if ( node != null )
                                 node.mpiTest( true, true );
                         }
-                        else if ( packetType == LOW_THREAD_COUNT ) {
+                        else if ( packetType == MACHINE_DEF_LOW_THREAD_COUNT ) {
                             _messageDisplayPanel.error( 0, "machines monitor", "Number of processing threads is zero" );
                         }
-                        else if ( packetType == RUNNING_MPIRUN_TESTS ) {
+                        else if ( packetType == MACHINE_DEF_RUNNING_MPIRUN_TESTS ) {
                             _messageDisplayPanel.message( 0, "machines monitor", "Running mpirun tests." );
                             statusInfo( "running mpirun tests" );
                         }
@@ -1459,7 +1451,6 @@ public class JobEditorMonitor extends JFrame {
                             _messageDisplayPanel.warning( 0, "GUI", "Ignoring unrecongized job monitor packet type (" + packetType + ")." );
                         }
                     }
-                    sock.close();
                 } catch ( SocketTimeoutException e ) {
                 }
                 ssock.close();
@@ -1686,30 +1677,30 @@ public class JobEditorMonitor extends JFrame {
          * These packet types are sent by the "JobMonitorConnection" class in the
          * guiServer application on the DiFX host.
          */
-        protected final int JOB_TERMINATED                   = 100;
-        protected final int JOB_ENDED_GRACEFULLY             = 101;
-        protected final int JOB_STARTED                      = 102;
-        protected final int PARAMETER_CHECK_IN_PROGRESS      = 103;
-        protected final int PARAMETER_CHECK_SUCCESS          = 104;
-        protected final int FAILURE_NO_HEADNODE              = 105;
-        protected final int FAILURE_NO_DATASOURCES           = 106;
-        protected final int FAILURE_NO_PROCESSORS            = 107;
-        protected final int FAILURE_NO_INPUTFILE_SPECIFIED   = 108;
-        protected final int FAILURE_INPUTFILE_NOT_FOUND      = 109;
-        protected final int FAILURE_INPUTFILE_NAME_TOO_LONG  = 110;
-        protected final int FAILURE_OUTPUT_EXISTS            = 111;
-        protected final int DELETING_PREVIOUS_OUTPUT         = 112;
-        protected final int STARTING_DIFX                    = 113;
-        protected final int DIFX_MESSAGE                     = 114;
-        protected final int DIFX_WARNING                     = 115;
-        protected final int DIFX_ERROR                       = 116;
-        protected final int DIFX_COMPLETE                    = 117;
-        protected final int DATA_FILE_SIZE                   = 118;
-        protected final int JOB_FAILED                       = 119;
-        protected final int JOB_ENDED_WITH_ERRORS            = 120;
-        protected final int DIFX_MONITOR_CONNECTION_ACTIVE   = 121;
-        protected final int DIFX_MONITOR_CONNECTION_BROKEN   = 122;
-        protected final int DIFX_MONITOR_CONNECTION_FAILED   = 123;
+        protected final int RUN_DIFX_JOB_TERMINATED                   = 100;
+        protected final int RUN_DIFX_JOB_ENDED_GRACEFULLY             = 101;
+        protected final int RUN_DIFX_JOB_STARTED                      = 102;
+        protected final int RUN_DIFX_PARAMETER_CHECK_IN_PROGRESS      = 103;
+        protected final int RUN_DIFX_PARAMETER_CHECK_SUCCESS          = 104;
+        protected final int RUN_DIFX_FAILURE_NO_HEADNODE              = 105;
+        protected final int RUN_DIFX_FAILURE_NO_DATASOURCES           = 106;
+        protected final int RUN_DIFX_FAILURE_NO_PROCESSORS            = 107;
+        protected final int RUN_DIFX_FAILURE_NO_INPUTFILE_SPECIFIED   = 108;
+        protected final int RUN_DIFX_FAILURE_INPUTFILE_NOT_FOUND      = 109;
+        protected final int RUN_DIFX_FAILURE_INPUTFILE_NAME_TOO_LONG  = 110;
+        protected final int RUN_DIFX_FAILURE_OUTPUT_EXISTS            = 111;
+        protected final int RUN_DIFX_DELETING_PREVIOUS_OUTPUT         = 112;
+        protected final int RUN_DIFX_STARTING_DIFX                    = 113;
+        protected final int RUN_DIFX_DIFX_MESSAGE                     = 114;
+        protected final int RUN_DIFX_DIFX_WARNING                     = 115;
+        protected final int RUN_DIFX_DIFX_ERROR                       = 116;
+        protected final int RUN_DIFX_DIFX_COMPLETE                    = 117;
+        protected final int RUN_DIFX_DATA_FILE_SIZE                   = 118;
+        protected final int RUN_DIFX_JOB_FAILED                       = 119;
+        protected final int RUN_DIFX_JOB_ENDED_WITH_ERRORS            = 120;
+        protected final int RUN_DIFX_DIFX_MONITOR_CONNECTION_ACTIVE   = 121;
+        protected final int RUN_DIFX_DIFX_MONITOR_CONNECTION_BROKEN   = 122;
+        protected final int RUN_DIFX_DIFX_MONITOR_CONNECTION_FAILED   = 123;
 
                 
         @Override
@@ -1717,15 +1708,11 @@ public class JobEditorMonitor extends JFrame {
             //  Open a new server socket and await a connection.  The connection
             //  will timeout after a given number of seconds (nominally 10).
             try {
-                ServerSocket ssock = new ServerSocket( _port );
+                ChannelServerSocket ssock = new ChannelServerSocket( _port, _settings );
                 ssock.setSoTimeout( 10000 );  //  timeout is in millisec
                 try {
-                    Socket sock = ssock.accept();
+                    ssock.accept();
 //                    acceptCallback();
-                    //  Turn the socket into a "data stream", which has useful
-                    //  functions.
-                    DataInputStream in = new DataInputStream( sock.getInputStream() );
-                    
                     //  Loop collecting diagnostic packets from the guiServer.  These
                     //  are identified by an initial integer, and then are followed
                     //  by a data length, then data.
@@ -1733,28 +1720,17 @@ public class JobEditorMonitor extends JFrame {
                     while ( connected ) {
                         //  Read the packet type as an integer.  The packet types
                         //  are defined above (within this class).
-                        int packetType = in.readInt();
+                        int packetType = ssock.readInt();
                         //  Read the size of the incoming data (bytes).
-                        int packetSize = in.readInt();
+                        int packetSize = ssock.readInt();
                         //  Read the data (as raw bytes)
                         byte [] data = null;
                         if ( packetSize > 0 ) {
                             data = new byte[packetSize];
-                            in.readFully( data );
+                            ssock.readFully( data, 0, packetSize );
                         }
-//                    _inString = "";
-//                    incrementalCallback();
-//                    while ( _inString.length() < _fileSize ) {
-//                        int sz = _fileSize - _inString.length();
-//                        if ( sz > 1024 )
-//                            sz = 1024;
-//                        byte [] data = new byte[sz];
-//                        int n = in.read( data, 0, sz );
-//                        //_inString += in.readUTF();
-//                        _inString += new String( Arrays.copyOfRange( data, 0, n ) );
-//                        incrementalCallback();
                         //  Interpret the packet type.
-                        if ( packetType == JOB_FAILED ) {
+                        if ( packetType == RUN_DIFX_JOB_FAILED ) {
                             _messageDisplayPanel.error( 0, "job monitor", "Job failed to complete." );
                             statusError( "job failed to complete" );
                             statusPanelColor( _statusPanelBackground.darker()  );
@@ -1762,7 +1738,7 @@ public class JobEditorMonitor extends JFrame {
                             setState( "Failed", Color.RED );
                             _jobNode.lockState( true );
                         }
-                        else if ( packetType == JOB_TERMINATED ) {
+                        else if ( packetType == RUN_DIFX_JOB_TERMINATED ) {
                             _messageDisplayPanel.warning( 0, "job monitor", "Job terminated by user." );
                             statusWarning( "job terminated by user" );
                             statusPanelColor( _statusPanelBackground.darker() );
@@ -1770,72 +1746,72 @@ public class JobEditorMonitor extends JFrame {
                             setState( "Terminated", Color.RED );
                             _jobNode.lockState( true );
                         }
-                        else if ( packetType == JOB_ENDED_GRACEFULLY ) {
+                        else if ( packetType == RUN_DIFX_JOB_ENDED_GRACEFULLY ) {
                             _messageDisplayPanel.warning( 0, "job monitor", "Job finished gracefully." );
                             statusInfo( "job completed" );
                             connected = false;
                             statusPanelColor( _statusPanelBackground.darker() );
                         }
-                        else if ( packetType == JOB_STARTED ) {
+                        else if ( packetType == RUN_DIFX_JOB_STARTED ) {
                             _doneWithErrors = false;
                             _messageDisplayPanel.message( 0, "job monitor", "Job started by guiServer." );
                             statusInfo( "job started" );
                         }
-                        else if ( packetType == JOB_ENDED_WITH_ERRORS ) {
+                        else if ( packetType == RUN_DIFX_JOB_ENDED_WITH_ERRORS ) {
                             _doneWithErrors = true;
                             connected = false;
                         }
-                        else if ( packetType == PARAMETER_CHECK_IN_PROGRESS ) {
+                        else if ( packetType == RUN_DIFX_PARAMETER_CHECK_IN_PROGRESS ) {
                             _messageDisplayPanel.message( 0, "job monitor", "Checking parameters." );
                             statusInfo( "checking parameters..." );
                         }
-                        else if ( packetType == PARAMETER_CHECK_SUCCESS ) {
+                        else if ( packetType == RUN_DIFX_PARAMETER_CHECK_SUCCESS ) {
                             _messageDisplayPanel.message( 0, "job monitor", "Parameter check successful." );
                         }
-                        else if ( packetType == FAILURE_NO_HEADNODE ) {
+                        else if ( packetType == RUN_DIFX_FAILURE_NO_HEADNODE ) {
                             _messageDisplayPanel.error( 0, "job monitor", "No headnone was specified." );
                         }
-                        else if ( packetType == FAILURE_NO_DATASOURCES ) {
+                        else if ( packetType == RUN_DIFX_FAILURE_NO_DATASOURCES ) {
                             _messageDisplayPanel.error( 0, "job monitor", "No valid data sources were specified." );
                         }
-                        else if ( packetType == FAILURE_NO_PROCESSORS ) {
+                        else if ( packetType == RUN_DIFX_FAILURE_NO_PROCESSORS ) {
                             _messageDisplayPanel.error( 0, "job monitor", "No valid processors were specified." );
                         }
-                        else if ( packetType == FAILURE_NO_INPUTFILE_SPECIFIED ) {
+                        else if ( packetType == RUN_DIFX_FAILURE_NO_INPUTFILE_SPECIFIED ) {
                             _messageDisplayPanel.error( 0, "job monitor", "No input file was specified." );
                         }
-                        else if ( packetType == FAILURE_INPUTFILE_NOT_FOUND ) {
+                        else if ( packetType == RUN_DIFX_FAILURE_INPUTFILE_NOT_FOUND ) {
                             _messageDisplayPanel.error( 0, "job monitor", "Input file " + _jobNode.inputFile() + " was not found on DiFX host." );
                         }
-                        else if ( packetType == FAILURE_INPUTFILE_NAME_TOO_LONG ) {
+                        else if ( packetType == RUN_DIFX_FAILURE_INPUTFILE_NAME_TOO_LONG ) {
                             _messageDisplayPanel.message( 0, "job monitor", "Input file name \"" + _jobNode.inputFile() + "\" is too long for DiFX." );
                         }
-                        else if ( packetType == FAILURE_OUTPUT_EXISTS ) {
+                        else if ( packetType == RUN_DIFX_FAILURE_OUTPUT_EXISTS ) {
                             _messageDisplayPanel.error( 0, "job monitor", "Output exists for this job on DiFX host - use \"force\" to replace." );
                         }
-                        else if ( packetType == DELETING_PREVIOUS_OUTPUT ) {
+                        else if ( packetType == RUN_DIFX_DELETING_PREVIOUS_OUTPUT ) {
                             statusInfo( "force output - deleting existing output files" );
                             _messageDisplayPanel.warning( 0, "job monitor", "force output - deleting existing output files" );
                         }
-                        else if ( packetType == STARTING_DIFX ) {
+                        else if ( packetType == RUN_DIFX_STARTING_DIFX ) {
                             statusInfo( "DiFX running!" );
                             _messageDisplayPanel.warning( 0, "job monitor", "DiFX started!" );
                             statusPanelColor( Color.GREEN );                            //  turn the frame green!!!!
                             setState( "Starting", Color.YELLOW );
                         }
-                        else if ( packetType == DIFX_MESSAGE ) {
+                        else if ( packetType == RUN_DIFX_DIFX_MESSAGE ) {
                             if ( data != null )
                                 _messageDisplayPanel.message( 0, "job monitor", new String( data ) );
                             else
                                 _messageDisplayPanel.message( 0, "job monitor", "" );
                         }
-                        else if ( packetType == DIFX_WARNING ) {
+                        else if ( packetType == RUN_DIFX_DIFX_WARNING ) {
                             if ( data != null )
                                 _messageDisplayPanel.warning( 0, "job monitor", new String( data ) );
                             else
                                 _messageDisplayPanel.warning( 0, "job monitor", "" );
                         }
-                        else if ( packetType == DIFX_ERROR ) {
+                        else if ( packetType == RUN_DIFX_DIFX_ERROR ) {
                             if ( data != null )
                                 _messageDisplayPanel.error( 0, "job monitor", new String( data ) );
                             else
@@ -1843,24 +1819,24 @@ public class JobEditorMonitor extends JFrame {
                             statusPanelColor( Color.ORANGE );
                             setState( "DiFX running with errors", Color.ORANGE );
                         }
-                        else if ( packetType == DIFX_COMPLETE ) {
+                        else if ( packetType == RUN_DIFX_DIFX_COMPLETE ) {
                             statusInfo( "DiFX compete!" );
                             _messageDisplayPanel.warning( 0, "job monitor", "DiFX complete!" );
                             statusPanelColor( _statusPanelBackground.darker() );
                         }
-                        else if ( packetType == DIFX_MONITOR_CONNECTION_ACTIVE ) {
+                        else if ( packetType == RUN_DIFX_DIFX_MONITOR_CONNECTION_ACTIVE ) {
                             if ( _liveMonitorWindow == null )
                                 _liveMonitorWindow = new LiveMonitorWindow( MouseInfo.getPointerInfo().getLocation().x, 
                                     MouseInfo.getPointerInfo().getLocation().y, _settings, _inputFileName.getText() );
                             _liveMonitorWindow.connectionInfo( "CONNECTED", "connected" );
                         }
-                        else if ( packetType == DIFX_MONITOR_CONNECTION_BROKEN ) {
+                        else if ( packetType == RUN_DIFX_DIFX_MONITOR_CONNECTION_BROKEN ) {
                             if ( _liveMonitorWindow == null )
                                 _liveMonitorWindow = new LiveMonitorWindow( MouseInfo.getPointerInfo().getLocation().x, 
                                     MouseInfo.getPointerInfo().getLocation().y, _settings, _inputFileName.getText() );
                             _liveMonitorWindow.connectionInfo( "NOT CONNECTED", "connection broken" );
                         }
-                        else if ( packetType == DIFX_MONITOR_CONNECTION_FAILED ) {
+                        else if ( packetType == RUN_DIFX_DIFX_MONITOR_CONNECTION_FAILED ) {
                             if ( _liveMonitorWindow == null )
                                 _liveMonitorWindow = new LiveMonitorWindow( MouseInfo.getPointerInfo().getLocation().x, 
                                     MouseInfo.getPointerInfo().getLocation().y, _settings, _inputFileName.getText() );
@@ -1870,7 +1846,6 @@ public class JobEditorMonitor extends JFrame {
                             _messageDisplayPanel.warning( 0, "GUI", "Ignoring unrecongized job monitor packet type (" + packetType + ")." );
                         }
                     }
-                    sock.close();
                 } catch ( SocketTimeoutException e ) {
 //                    _fileSize = -10;
                 }

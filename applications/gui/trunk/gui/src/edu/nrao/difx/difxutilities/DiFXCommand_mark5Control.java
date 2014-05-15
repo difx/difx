@@ -11,11 +11,7 @@ import java.awt.event.ActionEvent;
 
 import edu.nrao.difx.difxview.SystemSettings;
 
-import java.net.Socket;
-import java.net.ServerSocket;
 import java.net.SocketTimeoutException;
-
-import java.io.DataInputStream;
 
 import edu.nrao.difx.xmllib.difxmessage.DifxCommand;
 import edu.nrao.difx.xmllib.difxmessage.DifxMk5Control;
@@ -117,24 +113,21 @@ public class DiFXCommand_mark5Control extends DiFXCommand {
             //  Open a new server socket and await a connection.  The connection
             //  will timeout after a given number of seconds (nominally 10).
             try {
-                ServerSocket ssock = new ServerSocket( _port );
+                ChannelServerSocket ssock = new ChannelServerSocket( _port, _settings );
                 ssock.setSoTimeout( 10000 );  //  timeout is in millisec
                 try {
-                    Socket sock = ssock.accept();
-                    //  Turn the socket into a "data stream", which has useful
-                    //  functions.
-                    DataInputStream in = new DataInputStream( sock.getInputStream() );
+                    ssock.accept();
                     //  Read each line of incoming data until there are no more.
                     boolean finished = false;
                     while ( !finished ) {
                         //  Read the next packet type and size of the packet.
-                        int packetType = in.readInt();
-                        int packetSize = in.readInt();
+                        int packetType = ssock.readInt();
+                        int packetSize = ssock.readInt();
                         //  At the moment all of our data is string data...will this
                         //  continue?
                         if ( packetSize > 0 ) {
                             byte[] foo = new byte[packetSize + 1];
-                            in.readFully( foo, 0, packetSize );
+                            ssock.readFully( foo, 0, packetSize );
                             _inLine = new String( foo );
                         }
                         //  Respond to the packet based on its type.
@@ -155,7 +148,6 @@ public class DiFXCommand_mark5Control extends DiFXCommand {
                                 break;
                         }
                     }
-                    sock.close();
                 } catch ( SocketTimeoutException e ) {
                     
                 }

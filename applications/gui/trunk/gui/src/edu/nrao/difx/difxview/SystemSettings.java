@@ -472,14 +472,16 @@ public class SystemSettings extends JFrame {
         });
         _difxVersion.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
-                synchronized ( _difxVersion ) {
-                    //  Set the DiFX setup path to match this version.
-                    if ( _useDefaultStartScript.isSelected() )
-                        _difxStartScript.setText( "rungeneric." + (String)_difxVersion.getSelectedItem() );
-                    guiServerConnection().sendPacket( guiServerConnection().DIFX_SETUP_PATH, 
-                            _difxStartScript.getText().length(), _difxStartScript.getText().getBytes() );
-                    guiServerConnection().sendPacket( guiServerConnection().DIFX_RUN_LABEL,
-                            ((String)_difxVersion.getSelectedItem()).length(), ((String)_difxVersion.getSelectedItem()).getBytes() );
+                if ( !_difxVersionClearOperation ) {
+                    synchronized ( _difxVersion ) {
+                        //  Set the DiFX setup path to match this version.
+                        if ( _useDefaultStartScript.isSelected() )
+                            _difxStartScript.setText( "rungeneric." + (String)_difxVersion.getSelectedItem() );
+                        guiServerConnection().sendPacket( guiServerConnection().DIFX_SETUP_PATH, 
+                                _difxStartScript.getText().length(), _difxStartScript.getText().getBytes() );
+                        guiServerConnection().sendPacket( guiServerConnection().DIFX_RUN_LABEL,
+                                ((String)_difxVersion.getSelectedItem()).length(), ((String)_difxVersion.getSelectedItem()).getBytes() );
+                    }
                 }
             }
         });
@@ -2505,10 +2507,14 @@ public class SystemSettings extends JFrame {
     }
     public void clearDifxVersion() {
         synchronized ( _difxVersion ) {
+            _difxVersionClearOperation = true;
             _difxVersion.removeAllItems();
             _difxVersion.setEnabled( false );
+            _difxVersionClearOperation = false;
         }
     }
+    
+    protected boolean _difxVersionClearOperation;
     
     public void difxBase( String newVal ) { _difxBase.setText( newVal ); }
     public String difxBase() { return _difxBase.getText(); }

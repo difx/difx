@@ -8,7 +8,6 @@ import javax.swing.JFrame;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.table.DefaultTableModel;
-import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -16,32 +15,22 @@ import javax.swing.JOptionPane;
 import edu.nrao.difx.difxutilities.DiFXCommand;
 import edu.nrao.difx.xmllib.difxmessage.DifxMessage;
 import edu.nrao.difx.xmllib.difxmessage.DifxGetDirectory;
-import edu.nrao.difx.xmllib.difxmessage.DifxStart;
-import edu.nrao.difx.xmllib.difxmessage.DifxStop;
-import edu.nrao.difx.xmllib.difxmessage.DifxStatus;
 
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
 
-import java.awt.Component;
-
 import java.awt.event.ComponentEvent;
 
 import java.util.Date;
-import java.util.Iterator;
 import java.util.StringTokenizer;
 
-import java.text.SimpleDateFormat;
-
-import java.io.DataInputStream;
-import java.net.ServerSocket;
-import java.net.Socket;
 import java.net.SocketTimeoutException;
 
 import mil.navy.usno.widgetlib.Spinner;
 import mil.navy.usno.widgetlib.SaneTextField;
 
 import edu.nrao.difx.difxutilities.DiFXCommand_mark5Control;
+import edu.nrao.difx.difxutilities.ChannelServerSocket;
 import edu.nrao.difx.difxcontroller.AttributedMessageListener;
 
 public class DirectoryDisplay extends JFrame {
@@ -380,14 +369,10 @@ public class DirectoryDisplay extends JFrame {
             //  Open a new server socket and await a connection.  The connection
             //  will timeout after a given number of seconds (nominally 10).
             try {
-                ServerSocket ssock = new ServerSocket( _port );
+                ChannelServerSocket ssock = new ChannelServerSocket( _port, _settings );
                 ssock.setSoTimeout( 10000 );  //  timeout is in millisec
                 try {
-                    Socket sock = ssock.accept();
-                    //  Turn the socket into a "data stream", which has useful
-                    //  functions.
-                    DataInputStream in = new DataInputStream( sock.getInputStream() );
-                    
+                    ssock.accept();
                     //  Loop collecting diagnostic packets from the guiServer.  These
                     //  are identified by an initial integer, and then are followed
                     //  by a data length, then data.
@@ -395,14 +380,14 @@ public class DirectoryDisplay extends JFrame {
                     while ( connected ) {
                         //  Read the packet type as an integer.  The packet types
                         //  are defined above (within this class).
-                        int packetType = in.readInt();
+                        int packetType = ssock.readInt();
                         //  Read the size of the incoming data (bytes).
-                        int packetSize = in.readInt();
+                        int packetSize = ssock.readInt();
                         //  Read the data (as raw bytes)
                         byte [] data = null;
                         if ( packetSize > 0 ) {
                             data = new byte[packetSize];
-                            in.readFully( data );
+                            ssock.readFully( data, 0, packetSize );
                         }
                         //  Interpret the packet type.
                         if ( packetType == GETDIRECTORY_STARTED ) {
@@ -508,7 +493,6 @@ public class DirectoryDisplay extends JFrame {
                             }
                         }
                     }
-                    sock.close();
                 } catch ( SocketTimeoutException e ) {
                 }
                 ssock.close();

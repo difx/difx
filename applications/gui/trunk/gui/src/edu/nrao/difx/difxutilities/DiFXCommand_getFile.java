@@ -27,16 +27,11 @@ package edu.nrao.difx.difxutilities;
 import edu.nrao.difx.difxview.SystemSettings;
 
 import edu.nrao.difx.xmllib.difxmessage.DifxFileTransfer;
-import java.net.UnknownHostException;
-import java.net.Socket;
-import java.net.ServerSocket;
-import java.net.SocketException;
 import java.net.SocketTimeoutException;
 
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
 
-import java.io.DataInputStream;
 import java.util.Arrays;
 
 import javax.swing.event.EventListenerList;
@@ -140,17 +135,14 @@ public class DiFXCommand_getFile extends DiFXCommand {
             //  Open a new server socket and await a connection.  The connection
             //  will timeout after a given number of seconds (nominally 10).
             try {
-                ServerSocket ssock = new ServerSocket( _port );
+                ChannelServerSocket ssock = new ChannelServerSocket( _port, _settings );
                 ssock.setSoTimeout( 10000 );  //  timeout is in millisec
                 try {
-                    Socket sock = ssock.accept();
+                    ssock.accept();
                     acceptCallback();
-                    //  Turn the socket into a "data stream", which has useful
-                    //  functions.
-                    DataInputStream in = new DataInputStream( sock.getInputStream() );
-                    //  Read the size of the incoming data (bytes).  This is the
-                    //  total size - it will be broken into blocks.
-                    _fileSize = in.readInt();
+                    //  Read the size of the incoming file, then the bytes (broken into
+                    //  1024 bytes blocks).
+                    _fileSize = ssock.readInt();
                     _inString = "";
                     incrementalCallback();
                     while ( _inString.length() < _fileSize ) {
@@ -158,12 +150,10 @@ public class DiFXCommand_getFile extends DiFXCommand {
                         if ( sz > 1024 )
                             sz = 1024;
                         byte [] data = new byte[sz];
-                        int n = in.read( data, 0, sz );
-                        //_inString += in.readUTF();
-                        _inString += new String( Arrays.copyOfRange( data, 0, n ) );
+                        ssock.readFully( data, 0, sz );
+                        _inString += new String( Arrays.copyOfRange( data, 0, sz ) );
                         incrementalCallback();
                     }
-                    sock.close();
                 } catch ( SocketTimeoutException e ) {
                     _fileSize = -10;
                 }

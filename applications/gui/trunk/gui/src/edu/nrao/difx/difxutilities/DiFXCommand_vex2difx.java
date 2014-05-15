@@ -14,17 +14,11 @@ import edu.nrao.difx.difxview.SystemSettings;
 
 import edu.nrao.difx.xmllib.difxmessage.DifxVex2DifxRun;
 
-import java.net.Socket;
-import java.net.ServerSocket;
-import java.net.SocketException;
 import java.net.SocketTimeoutException;
 
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
 
-import java.io.DataInputStream;
-
-import java.net.UnknownHostException;
 import javax.swing.event.EventListenerList;
 
 /**
@@ -103,28 +97,24 @@ public class DiFXCommand_vex2difx extends DiFXCommand {
             //  will timeout after a given number of seconds (10 minutes to allow
             //  calcif2 the time it needs to run on big jobs).
             try {
-                ServerSocket ssock = new ServerSocket( _port );
+                ChannelServerSocket ssock = new ChannelServerSocket( _port, _settings );
                 ssock.setSoTimeout( 600000 );  //  timeout is in millisec
                 try {
-                    Socket sock = ssock.accept();
-                    //  Turn the socket into a "data stream", which has useful
-                    //  functions.
-                    DataInputStream in = new DataInputStream( sock.getInputStream() );
+                    ssock.accept();
                     //  Read each line of incoming data until there are no more.
                     boolean finished = false;
                     while ( !finished ) {
                         //  Read the size of the next file name....
-                        int sz = in.readInt();
+                        int sz = ssock.readInt();
                         if ( sz == 0 )
                             finished = true;
                         else {
                             byte[] foo = new byte[sz + 1];
-                            in.readFully( foo, 0, sz );
+                            ssock.readFully( foo, 0, sz );
                             String inLine = new String( foo );
                             incrementalCallback( inLine );
                         }
                     }
-                    sock.close();
                 } catch ( SocketTimeoutException e ) {
                     
                 }

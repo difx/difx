@@ -28,6 +28,7 @@ import java.util.Iterator;
 import java.util.ArrayList;
 
 import edu.nrao.difx.difxutilities.DiFXCommand;
+import edu.nrao.difx.difxutilities.ChannelServerSocket;
 import edu.nrao.difx.xmllib.difxmessage.DifxGetDirectory;
 
 import java.awt.event.ActionEvent;
@@ -35,9 +36,6 @@ import java.awt.event.ActionListener;
 import javax.swing.event.PopupMenuListener;
 import javax.swing.event.PopupMenuEvent;
 
-import java.io.DataInputStream;
-import java.net.ServerSocket;
-import java.net.Socket;
 import java.net.SocketTimeoutException;
 
 import mil.navy.usno.widgetlib.NodeBrowserScrollPane;
@@ -950,14 +948,10 @@ public class StationPanel extends IndexedPanel {
             //  Open a new server socket and await a connection.  The connection
             //  will timeout after a given number of seconds (nominally 10).
             try {
-                ServerSocket ssock = new ServerSocket( _port );
+                ChannelServerSocket ssock = new ChannelServerSocket( _port, _settings );
                 ssock.setSoTimeout( 10000 );  //  timeout is in millisec
                 try {
-                    Socket sock = ssock.accept();
-                    //  Turn the socket into a "data stream", which has useful
-                    //  functions.
-                    DataInputStream in = new DataInputStream( sock.getInputStream() );
-                    
+                    ssock.accept();
                     //  Loop collecting diagnostic packets from the guiServer.  These
                     //  are identified by an initial integer, and then are followed
                     //  by a data length, then data.
@@ -965,14 +959,14 @@ public class StationPanel extends IndexedPanel {
                     while ( connected ) {
                         //  Read the packet type as an integer.  The packet types
                         //  are defined above (within this class).
-                        int packetType = in.readInt();
+                        int packetType = ssock.readInt();
                         //  Read the size of the incoming data (bytes).
-                        int packetSize = in.readInt();
+                        int packetSize = ssock.readInt();
                         //  Read the data (as raw bytes)
                         byte [] data = null;
                         if ( packetSize > 0 ) {
                             data = new byte[packetSize];
-                            in.readFully( data );
+                            ssock.readFully( data, 0, packetSize );
                         }
                         //  Interpret the packet type.
                         if ( packetType == GETDIRECTORY_STARTED ) {
@@ -1004,7 +998,6 @@ public class StationPanel extends IndexedPanel {
                         else if ( packetType == GETDIRECTORY_FILEDATA ) {
                         }
                     }
-                    sock.close();
                     dispatchChangeCallback();
                 } catch ( SocketTimeoutException e ) {
                 }

@@ -29,6 +29,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 import java.util.ArrayDeque;
+import java.util.HashMap;
 
 import javax.swing.JOptionPane;
 
@@ -64,6 +65,8 @@ public class GuiServerConnection {
     public final int CHANNEL_ALL_DATA               = 18;
     public final int CHANNEL_ALL_DATA_ON            = 19;
     public final int CHANNEL_ALL_DATA_OFF           = 20;
+    public final int CHANNEL_CONNECTION             = 21;
+    public final int CHANNEL_DATA                   = 22;
 
     public GuiServerConnection( SystemSettings settings, String IP, int port, int timeout ) {
         _settings = settings;
@@ -184,34 +187,26 @@ public class GuiServerConnection {
             int lastID = 0;
             byte pad;
             byte[] inNum = new byte[8];
-            boolean newVersionKnowledge = true;
             while ( _connected ) {
                 byte[] data = null;
                 try {
                     //  Search for the synchronization string if the guiServer version is modern
                     //  enough to be sending it (older than version 1.03).  This version check
                     //  is temporary (used to accommodate a frozen version on the USNO SWC).
-                    double guiServerVersion = 0.0;
-                    try {
-                        guiServerVersion = Double.valueOf( _settings.guiServerVersion() );
-                    }
-                    catch ( java.lang.NumberFormatException e ) {}
-                    if ( guiServerVersion > 1.03 ) {
-                        if ( newVersionKnowledge ) {
-                            sendPacket( GUISERVER_VERSION, 0, null );
-                            newVersionKnowledge = false;
-                        }
+                    if ( _settings.channelAllData() ) {
                         boolean notFound = true;
                         int counter = 0;
                         while ( notFound ) {
                             _in.readFully( inNum );
                             if ( new String( inNum ).contentEquals( "DIFXSYNC" ) )
                                 notFound = false;
-                            else
+                            else {
                                 ++counter;
+//                                System.out.println( "looks like this \"" + new String( inNum ) + "\"" );
+                            }
                         }
-                        if ( counter > 3 ) {
-                            System.out.println( "counter is " + counter );
+                        if ( counter > 2 ) {
+//                            System.out.println( "counter is " + counter );
                             java.util.logging.Logger.getLogger("global").log(java.util.logging.Level.WARNING, 
                                     "synchronizer skipped " + ( counter * 8 ) + " bytes following message ID " + lastID + "(" + lastNBytes + ")" );
                         }
@@ -240,7 +235,7 @@ public class GuiServerConnection {
                         }
                         //  Read the pad bytes, if there are any, that are used to put
                         //  the packet transmission on an integer boundary.
-                        if ( guiServerVersion > 1.03 ) {
+                        if ( _settings.channelAllData() ) {
                             if ( nBytes % 8 > 0 ) {
                                 int n = 8 - nBytes % 8;
                                 for ( int i = 0; i < n; ++i )
@@ -303,6 +298,31 @@ public class GuiServerConnection {
                                 sendPacket( CHANNEL_ALL_DATA_ON, 0, null );
                             else
                                 sendPacket( CHANNEL_ALL_DATA_OFF, 0, null );
+                        }
+                        else if ( packetId == CHANNEL_CONNECTION ) {
+                            //  A "channelled" TCP connection is requested.  
+                            ByteBuffer b = ByteBuffer.wrap( data, 0, 4 );
+                            b.order( ByteOrder.BIG_ENDIAN );
+                            int port = b.getInt();
+                            synchronized ( _channelConnected ) {
+                                if ( _channelConnected.containsKey( port ) ) {
+                                    _channelConnected.put( port, true );
+                                    //  Create a "map" for data on this channel.
+                                    _channelMap.put( port, new ArrayDeque<ByteBuffer>() );
+                                }
+                                else
+                                    java.util.logging.Logger.getLogger("global").log(java.util.logging.Level.WARNING, 
+                                            "guiServer trying to connect to port " + port + " for a channel TCP connection, but this port doesn't exist" );
+                            }
+                        }
+                        else if ( packetId == CHANNEL_DATA ) {
+                            //  Data over a "channelled" TCP connection.
+                            ByteBuffer b = ByteBuffer.wrap( data, 0, nBytes );
+                            b.order( ByteOrder.BIG_ENDIAN );
+                            int port = b.getInt();
+                            synchronized ( _channelConnected ) {
+                                _channelMap.get( port ).add( b );  
+                            }
                         }
                         receiveEvent( data.length );
                     }
@@ -383,4 +403,67 @@ public class GuiServerConnection {
     protected ArrayDeque<byte[]> _difxRelayStack;
     protected ReceiveThread _receiveThread;
     protected SystemSettings _settings;
+    
+    //  Stuff used for channeling data.
+    protected HashMap<Integer,ArrayDeque<ByteBuffer>> _channelMap;
+    protected HashMap<Integer,Boolean> _channelConnected;
+    
+    //  "Open" a new channeling port.  This is supposed to look (externally) like
+    //  an independent TCP port, but the data for it are channelled through the 
+    //  primary TCP connection.  The port number is used to decide where data are
+    //  to go.
+    public boolean openChannelPort( int port ) {
+        //  Create maps if they don't already exist.
+        if ( _channelMap == null ) {
+            _channelMap = new HashMap<Integer,ArrayDeque<ByteBuffer>>();
+            _channelConnected = new HashMap<Integer,Boolean>();
+        }
+        boolean ret = true;
+        synchronized ( _channelConnected ) {
+            //  Bail out if this port is already in the map.
+            if ( _channelConnected.get( port ) != null )
+                ret = false;
+            else
+                //  Add a new map item to await a connection at the given port.
+                _channelConnected.put( port, false );
+        }
+        return ret;
+    }
+    
+    //  Determine whether a port has been connected to by the guiServer.
+    public boolean portConnected( int port ) {
+        boolean ret = false;
+        synchronized ( _channelConnected ) {
+            if ( _channelConnected.containsKey( port ) && _channelConnected.get( port ) == true )
+                ret = true;
+        }
+        return ret;
+    }
+    
+    //  Is there data on this port?
+    public boolean portData( int port ) {
+        boolean ret = false;
+        synchronized( _channelConnected ) {
+            ret = _channelMap.get( port ).size() > 0;
+        }
+        return ret;
+    }
+    
+    //  Return the oldest data associated with this channel port.
+    public ByteBuffer portBuffer( int port ) {
+        ByteBuffer ret = null;
+        synchronized( _channelConnected ) {
+            ret = _channelMap.get( port ).pollFirst();
+        }
+        return ret;
+    }
+    
+    //  Close anything associated with this port.
+    public void portClose( int port ) {
+        synchronized( _channelConnected ) {
+            _channelMap.remove( port );
+            _channelConnected.remove( port );
+        }
+    }
+    
 }
