@@ -62,7 +62,7 @@ class MainWindow(GenericWindow):
         self.cboUserVar = StringVar()
         self.cboReleasedByVar = StringVar()
         
-        
+        session = dbConn.session()
         # obtain all experiment stati from database
         self.expStati = []
         for status in  session.query(model.ExperimentStatus).order_by("statuscode").all():
@@ -77,6 +77,8 @@ class MainWindow(GenericWindow):
         self.users = []
         for user in getEnabledUsers(session):
             self.users.append(user.name)
+            
+        session.close()
             
         
             
@@ -181,7 +183,7 @@ class MainWindow(GenericWindow):
          
         if (self.selectedExperimentId is None):
             return
-        
+        session = dbConn.session()
         selectedExperiment = session.query(model.Experiment).filter_by(id=self.selectedExperimentId).one()
         
 
@@ -228,6 +230,8 @@ class MainWindow(GenericWindow):
             self.btnUpdate["state"] = DISABLED
             self.btnUpdate["bg"] = self.defaultBgColor
             self.btnUpdate["activebackground"] = self.defaultBgColor
+            
+        session.close()
                  
   
     def setChangeColor(self, component, componentValue, compareValue):
@@ -251,6 +255,7 @@ class MainWindow(GenericWindow):
     
     def updateExpListbox(self):
                 
+        session = dbConn.session()
         exps = session.query(model.Experiment).order_by(desc(model.Experiment.number)).all()
 
         self.grdExps.clearData()
@@ -267,11 +272,15 @@ class MainWindow(GenericWindow):
                 username = exp.user.name
                 
             self.grdExps.appendData((exp.code, "%04d" % exp.number, exp.status.experimentstatus, " ".join(expTypes), username, exp.dateCreated,  exp.dateArchived, exp.dateReleased))
-            
+     
+        session.close()
+        
         self.grdExps.update()
         self.grdExps.selection_set(self.selectedExpIndex)
              
         self.getExpDetails()
+        
+        
         
         
  
@@ -322,6 +331,7 @@ class MainWindow(GenericWindow):
 
         selectedCode = self.grdExps.get(self.selectedExpIndex)[0]
         
+        session = dbConn.session()
         exp = getExperimentByCode(session, selectedCode)
         
         # get associated experiment types
@@ -365,6 +375,8 @@ class MainWindow(GenericWindow):
         
         self.onExpDetailChange(None)
         
+        session.close()
+        
     def selectExpEvent(self, Event):
         
         if (len(self.grdExps.curselection()) > 0):
@@ -379,6 +391,7 @@ class MainWindow(GenericWindow):
         if self.selectedExpIndex == -1:
             return
         
+        session = dbConn.session()
         
         selectedStatus = self.cboStatusVar
         status = session.query(model.ExperimentStatus).filter_by(experimentstatus=selectedStatus.get()).one()
@@ -425,17 +438,19 @@ class MainWindow(GenericWindow):
         session.commit()
         session.flush()
         session.close()
-         
+        
+        session.close()
         self.editExp = 0
         self.onExpDetailChange(None)
         self.updateExpListbox()
+        
         
     def deleteExpEvent(self):
         
         if self.selectedExpIndex == -1:
             return
         
-        
+        session = dbConn.session()
         
         code = self.grdExps.get(self.selectedExpIndex)[0]
         
@@ -444,7 +459,8 @@ class MainWindow(GenericWindow):
                 deleteExperimentByCode(session, code)
             except Exception as e:
                 tkMessageBox.showerror("Error", e)
-        
+            
+        session.close()
         self.updateExpListbox()
         
 class AddExperimentWindow(GenericWindow):
@@ -457,12 +473,15 @@ class AddExperimentWindow(GenericWindow):
         self.expTypes=[]
         self.users=[]
         
+        session = dbConn.session()
+        
         for type in  getActiveTypes(session):
             self.expTypes.append(type.type)
     
         for user in getEnabledUsers(session):
             self.users.append(user.name)
-            
+        
+        session.close()
         
     def show(self):
         
@@ -516,6 +535,9 @@ class AddExperimentWindow(GenericWindow):
         # check that Code has been set
         if (code == ""):
             return
+        
+        session = dbConn.session()
+        
         # get selected types
 	for sel in self.cboType.curselection():
 		selectedTypes.append(self.cboType.get(sel))
@@ -530,6 +552,7 @@ class AddExperimentWindow(GenericWindow):
         except Exception as e:
             tkMessageBox.showerror("Error", e)
         
+        session.close()
             
         self.close()        
              
@@ -561,10 +584,11 @@ if __name__ == "__main__":
         
         if not isSchemaVersion(session, minSchemaMajor, minSchemaMinor):
             major, minor = getCurrentSchemaVersionNumber(session)
+            session.close()
             print "Current difxdb database schema is %s.%s but %s.%s is minimum requirement." % (major, minor, minSchemaMajor, minSchemaMinor)
             sys.exit(1)
             
-        
+        session.close()
         mainDlg = MainWindow(None, rootWidget=root)
 
         mainDlg.show()
