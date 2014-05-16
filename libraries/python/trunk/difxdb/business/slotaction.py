@@ -18,6 +18,10 @@ def slotExists(session, location):
     else:
         return(False)
     
+def getSlotById(session, id):
+    
+    return(session.query(model.Slot).filter_by(id=id).one())
+
 def getSlotByLocation(session, location):
     
     return(session.query(model.Slot).filter_by(location=location).one())
