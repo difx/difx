@@ -232,6 +232,7 @@ class MainWindow(GenericWindow):
         if (self.selectedSlotIndex < 0):
             return
         
+        session = dbConn.session()
         slot = model.Slot()
         slot = getSlotByLocation(session, self.grdSlot.get(self.selectedSlotIndex)[0])
         
@@ -247,6 +248,8 @@ class MainWindow(GenericWindow):
             
             os.system( self.config.get("Comedia", "printCommand") + ' -o ppi=300 /tmp/comedia_vsn.png')
             os.system('rm -f /tmp/comedia_vsn.png')
+        
+        session.close()
     
     def printLibraryLabel(self, slotName=None):
         
@@ -256,6 +259,7 @@ class MainWindow(GenericWindow):
             else:
                 slotName = self.grdSlot.get(self.selectedSlotIndex)[0]
         
+        session = dbConn.session()
         slot = model.Slot()
         slot = session.query(model.Slot).filter_by(location=slotName).one()
         
@@ -279,15 +283,21 @@ class MainWindow(GenericWindow):
             
             os.system( self.config.get("Comedia", "printCommand") + ' /tmp/comedia_tmp.png')
             os.system('rm -f /tmp/comedia_tmp.png')
+        
+        session.close()
             
     def updateModule(self):
+        
+        
         
         if (self.selectedSlotIndex == -1):
             return
         
         if (self.isConnected == False):
             return
-            
+        
+        session = dbConn.session()
+        
         slot = model.Slot()
         slot = getSlotByLocation(session, self.grdSlot.get(self.selectedSlotIndex)[0])
         
@@ -311,6 +321,8 @@ class MainWindow(GenericWindow):
             session.commit()
             session.flush()
         
+        session.close()
+        
         self.frmEditExperiment.grid_remove()
         self.moduleEdit = 0
         self._saveModuleDetails()
@@ -326,6 +338,8 @@ class MainWindow(GenericWindow):
         
            
     def updateSlotListbox(self):
+        
+        session = dbConn.session()
     
         # deselect active slot
         self.selectedSlotIndex = -1
@@ -371,6 +385,8 @@ class MainWindow(GenericWindow):
        
         self.grdSlot.update()
         self.updateSlotDetails()
+        
+        session.close()
    
     
     def _saveModuleDetails(self):
@@ -429,6 +445,7 @@ class MainWindow(GenericWindow):
         self.btnPrintLibraryLabel["state"] = NORMAL
         self.btnDeleteModule["state"] = NORMAL
         
+        session = dbConn.session()
         slot = model.Slot()  
         slot = getSlotByLocation(session, self.grdSlot.get(self.selectedSlotIndex)[0])
     
@@ -461,6 +478,8 @@ class MainWindow(GenericWindow):
         self.txtLocationContent["state"] = DISABLED
         self.lblReceivedContent["state"] = DISABLED
         self.cboExperiments["state"] = NORMAL
+        
+        session.close()
      
     def clearSlotSelection(self):
         
@@ -513,6 +532,8 @@ class MainWindow(GenericWindow):
         if (self.selectedSlotIndex == -1):
             return
         
+        session = dbConn.session()
+        
         slot = model.Slot()    
         slot = getSlotByLocation(session, self.grdSlot.get(self.selectedSlotIndex)[0])
 
@@ -529,7 +550,7 @@ class MainWindow(GenericWindow):
         
         
         if (isCheckOutAllowed(session,module.vsn) == False):
-            self.checkoutDlg.show(module)
+            self.checkoutDlg.show(module.id)
             #tkMessageBox.showerror("Error", "Module cannot be checked-out.\nIt  contains unreleased experiments\nor\nIt hasn't been scanned yet.")
             
             return
@@ -541,9 +562,15 @@ class MainWindow(GenericWindow):
         if (tkMessageBox.askokcancel("Confirm module check-out", "Do you really want to remove module " + slot.module.vsn + " from the library? ")):
             self.doCheckout(module)
         
+        
+        session.close()
         return
     
-    def doCheckout(self, module):
+    def doCheckout(self, moduleId):
+        
+        session = dbConn.session()
+        
+        module = getModuleById (session, moduleId)
         
         session.delete(module) 
         session.commit()
@@ -559,7 +586,9 @@ class MainWindow(GenericWindow):
         if os.path.isfile(dirFile):
             os.remove(dirFile)
         else:
-            print "file %s does not exists" % dirFile
+            print "Warning: file %s does not exists" % dirFile
+            
+        session.close()
             
         
     def clearSearchEvent(self, Event):
@@ -608,10 +637,14 @@ class MainWindow(GenericWindow):
         
         if self.selectedSlotIndex == -1:
             return
-       
+        
+        session = dbConn.session()
+        
         slot = getSlotByLocation(session, self.grdSlot.get(self.selectedSlotIndex)[0])
         
         self.scanModulesDlg.scanModules(slot.module)
+        
+        session.close()
 
       
     def scanModuleEvent(self):
@@ -625,6 +658,8 @@ class MainWindow(GenericWindow):
         
         dirLessCount = 0
         unvalidatedCount = 0
+        
+        session = dbConn.session()
         
         slots = getOccupiedSlots(session)
              
@@ -659,7 +694,7 @@ class MainWindow(GenericWindow):
         else:
             self.btnModuleScan["state"] = DISABLED
                 
-        
+        session.close()
         
     def selectSlotEvent(self, Event):
     
@@ -783,11 +818,15 @@ class MainWindow(GenericWindow):
         if (self.selectedSlotIndex < 0):
             return
         
+        session = dbConn.session()
         slot = model.Slot()
         slot = getSlotByLocation(session, self.grdSlot.get(self.selectedSlotIndex)[0])
-        
-        self.changeSlotDlg.selectedSlot = slot
+                
+        #self.changeSlotDlg.selectedSlot = slot  
+        self.changeSlotDlg.selectedSlotId = slot.id
         self.changeSlotDlg.show()
+        
+        session.close()
         
 class CheckoutWindow(GenericWindow):
     
@@ -797,9 +836,9 @@ class CheckoutWindow(GenericWindow):
         super( CheckoutWindow, self ).__init__(parent, rootWidget)
         
         
-    def show(self, module):
+    def show(self, moduleId):
         
-        self.module = module
+        self.moduleId = moduleId
         # create modal dialog
         self.dlg = Toplevel(self.rootWidget, takefocus=True)
         self.dlg.title("Check-out module")
@@ -824,7 +863,9 @@ class CheckoutWindow(GenericWindow):
         
     def _onButtonForce(self):
         if  tkMessageBox.askyesno("Force module check out?", "Do you really want to check out this module?") == True:
-            self.parent.doCheckout(self.module)
+            
+            self.parent.doCheckout(self.moduleId)
+            
             self.dlg.destroy()
             
         self.dlg.destroy()
@@ -858,13 +899,16 @@ class CheckinWindow(GenericWindow):
         self.updateExperimentListbox()
      
     def updateExperimentListbox(self):
-         
+        
+        session = dbConn.session()
         self.lstExp.delete(0,END)
         
         # obtain listbox items from database
         experiments = getActiveExperimentCodes(session)
         for code in experiments:
             self.lstExp.insert(END, code)
+            
+        session.close()
         
     def _setupWidgets(self):
         
@@ -884,10 +928,13 @@ class CheckinWindow(GenericWindow):
         yScroll.config(command=self.lstSlot.yview)
         yScroll2.config(command=self.lstExp.yview)
 
+        session = dbConn.session()
         # populate slot list
         ciSlotItems = getEmptySlots(session)
         for instance in ciSlotItems:
             self.lstSlot.insert(END, instance.location)
+            
+        session.close()
 
         #frame = LabelFrame(self.dlg)
         btnOK = Button(self.dlg, text="OK", command=self._persistSlot)
@@ -957,8 +1004,11 @@ class CheckinWindow(GenericWindow):
             tkMessageBox.showerror("Error", "Illegal VSN label content. Must be VSN/capacity/datarate.")
             return
         
+        session = dbConn.session()
+        
         if (moduleExists(session, vsn)):
             tkMessageBox.showerror("Error","Module\n%s\nalready checked-in" % vsn)
+            session.close()
             return
 
         # retrieve currently selected item from slot select box
@@ -994,7 +1044,8 @@ class CheckinWindow(GenericWindow):
             
             self.dlg.destroy()
          
-
+        
+        session.close()
         return
     
 class ChangeSlotWindow(GenericWindow):
@@ -1004,9 +1055,12 @@ class ChangeSlotWindow(GenericWindow):
         # call super class constructor
         super( ChangeSlotWindow, self ).__init__(parent, rootWidget) 
         
-        self.selectedSlot = None
+        #self.selectedSlot = None
+        self.selectedSlotId = -1
         self.chkPrintLibLabelVar = IntVar()
         self.chkPrintLibLabelVar.set(1)
+        
+        self.selectedSlot = None
         
     def show(self):
         
@@ -1021,6 +1075,13 @@ class ChangeSlotWindow(GenericWindow):
     
     
     def _setupWidgets(self):
+        
+        if self.selectedSlotId == -1:
+            return
+            
+        session = dbConn.session()
+        
+        self.selectedSlot = getSlotById(session, self.selectedSlotId)
         
         yScroll = Scrollbar ( self.dlg, orient=VERTICAL )
         
@@ -1037,6 +1098,7 @@ class ChangeSlotWindow(GenericWindow):
         Button(self.dlg, text="Cancel", command=self.dlg.destroy).grid(row=10, column=1, sticky=E+W) 
         
         # populate slot list
+        session = dbConn.session()
         ciSlotItems = getEmptySlots(session)
         for instance in ciSlotItems:
             self.lstSlot.insert(END, instance.location)
@@ -1044,12 +1106,20 @@ class ChangeSlotWindow(GenericWindow):
         self.lstSlot.grid(row=3, column=1)
         yScroll.grid ( row=3, column=2, sticky=W+N+S )
         
+        session.close()
+        
     def _persistSlot(self):
         
-        if self.selectedSlot == None:
+        if self.selectedSlotId == -1:
             return
+        
+
         if self.lstSlot.get(self.lstSlot.curselection()[0]) == "":
             return
+        
+        session = dbConn.session()
+        
+        self.selectedSlot = getSlotById(session, self.selectedSlotId)
         
         module = self.selectedSlot.module
         
@@ -1065,12 +1135,18 @@ class ChangeSlotWindow(GenericWindow):
         session.commit()
         session.flush()
         
+        
+        
         if (self.chkPrintLibLabelVar.get() == 1):
             self.parent.printLibraryLabel(slotName = newSlot.location)
+        
+        
         
         self.parent.updateSlotListbox()
         
         self.dlg.destroy()
+        
+        session.close()
         
 class DatabaseOptionsWindow(GenericWindow):
      
@@ -1264,6 +1340,7 @@ class ScanModulesWindow(GenericWindow):
         self.manualList.clear()
         modules= []
         
+        session = dbConn.session()
         if module == None:
             modules = getUnscannedModules(session)
         else:
@@ -1335,12 +1412,16 @@ class ScanModulesWindow(GenericWindow):
         if (len(self.checkList) > 0) or (len(self.manualList) > 0):
             self.show()
             
+        session.close()
+            
        # self.parent.refreshStatusEvent()
       #  self.parent.updateSlotListbox()
             
     
      
     def updateModuleEvent(self):
+        
+        session = dbConn.session()
         
         for checkModule in self.checkList:
             
@@ -1383,6 +1464,8 @@ class ScanModulesWindow(GenericWindow):
                 
         session.commit()
         session.flush()
+        
+        session.close()
         
         self.parent.refreshStatusEvent()
         self.parent.updateSlotListbox()
@@ -1511,10 +1594,13 @@ class AddExperimentWindow(GenericWindow):
             return
         
         try:
+            session = dbConn.session()
             # add experiment with state "scheduled"
             addExperimentWithState(session, code, 10)
         except Exception as e:
             tkMessageBox.showerror("Error", e)
+        finally:
+            session.close()
         
      
         self.close()
@@ -1553,16 +1639,9 @@ class ComediaConfig(DifxDbConfig):
         self.config.set('Comedia', 'fontSize', '24')
         self.config.set('Comedia', 'printCommand', 'lpr -P')   
           
-#def getEmptySlots():   
-    
-#    result =  session.query(model.Slot).order_by(model.Slot.location).filter_by(isActive = 1).order_by(model.Slot.location).filter(model.Slot.moduleID == None)
-    
-#    return(result)
-
 if __name__ == "__main__":
     
     dbConn = None
-    session = None
     settings = {}
     
     configName = 'difxdb.ini'
@@ -1611,12 +1690,12 @@ if __name__ == "__main__":
     
     try:
         dbConn = Schema(connection)
-        session = dbConn.session()
+        sess = dbConn.session()
 
         mainDlg.isConnected = True
         
-        if not isSchemaVersion(session, minSchemaMajor, minSchemaMinor):
-            major, minor = getCurrentSchemaVersionNumber(session)
+        if not isSchemaVersion(sess, minSchemaMajor, minSchemaMinor):
+            major, minor = getCurrentSchemaVersionNumber(sess)
             print "Current difxdb database schema is %s.%s but %s.%s is minimum requirement." % (major, minor, minSchemaMajor, minSchemaMinor)
             sys.exit(1)
         
@@ -1624,6 +1703,8 @@ if __name__ == "__main__":
         print "Error: ",  e, "\nPlease check your database settings in %s " % settings["configFile"] 
         mainDlg.isConnected = False
         sys.exit()
+    finally:
+        sess.close()
         
         
 
