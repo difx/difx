@@ -19,6 +19,11 @@ def moduleExists(session, vsn):
     else:
         return(False)
 
+def getModuleById(session, id):
+    
+    return(session.query(model.Module).filter_by(id=id).one())
+   
+   
 def getModuleByVSN(session, vsn):
     
     return(session.query(model.Module).filter_by(vsn=vsn).one())
