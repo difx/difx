@@ -340,6 +340,12 @@ int convertMark4 (struct CommandLineOptions *opts, int *nScan)
             else
                 {
                 *nScan += 1;
+                if (*nScan > D->nScan)
+                    {
+                    printf ("Error Detected! Output has more scans (%d) than exist (%d)!\n",
+                            *nScan, D->nScan);
+                    return 0;
+                    }
                 scanId = newScanId;
                 }
             }
