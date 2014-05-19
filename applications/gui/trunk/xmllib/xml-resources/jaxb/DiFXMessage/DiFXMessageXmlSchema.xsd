@@ -159,6 +159,7 @@
                 <xsd:element ref="windowConfigMainY"/>
                 <xsd:element ref="windowConfigMainW"/>
                 <xsd:element ref="windowConfigMainH"/>
+                <xsd:element ref="windowConfigTitle"/>
                 <xsd:element ref="windowConfigVerticalPanels"/>
                 <xsd:element ref="windowConfigMainDividerLocation"/>
                 <xsd:element ref="windowConfigTopDividerLocation"/>
@@ -419,6 +420,7 @@
     <xsd:element name="windowConfigMainY" type="xsd:int"></xsd:element>
     <xsd:element name="windowConfigMainW" type="xsd:int"></xsd:element>
     <xsd:element name="windowConfigMainH" type="xsd:int"></xsd:element>
+    <xsd:element name="windowConfigTitle" type="xsd:string"></xsd:element>
     <xsd:element name="windowConfigVerticalPanels" type="xsd:boolean"></xsd:element>
     <xsd:element name="windowConfigMainDividerLocation" type="xsd:int"></xsd:element>
     <xsd:element name="windowConfigTopDividerLocation" type="xsd:int"></xsd:element>

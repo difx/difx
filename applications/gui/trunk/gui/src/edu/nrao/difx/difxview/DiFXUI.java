@@ -69,7 +69,7 @@ public class DiFXUI extends JFrame implements WindowListener {
         //  Produce system settings using the settings file that came from command
         //  line arguments (which might be null, indicating we should use default
         //  values).
-        _systemSettings = new SystemSettings( settingsFile );
+        _systemSettings = new SystemSettings( this, settingsFile );
         _systemSettings.setLookAndFeel();
         
         //  This function builds all of the GUI components.
@@ -225,8 +225,7 @@ public class DiFXUI extends JFrame implements WindowListener {
         } );
 
         setDefaultCloseOperation( javax.swing.WindowConstants.DO_NOTHING_ON_CLOSE );
-        setTitle( "USNO DiFX GUI" );
-        setName("DiFXUI");
+        setName( "DiFXUI" );
         setSize( new java.awt.Dimension( _systemSettings.windowConfiguration().mainW, 
                 _systemSettings.windowConfiguration().mainH ) );
         
@@ -520,7 +519,6 @@ public class DiFXUI extends JFrame implements WindowListener {
      */
     public static void main( final String args[] ) {
         
-
         // Create manager UI using the first command line argument as a system settings
         // file.
         String settingsFile = null;
@@ -528,7 +526,6 @@ public class DiFXUI extends JFrame implements WindowListener {
             settingsFile = args[0];
         DiFXUI view = new DiFXUI( settingsFile );
         view.setVisible(true);
-        view.setTitle( view.getTitle() + " " + VersionWindow.version() );
 
     }
                     

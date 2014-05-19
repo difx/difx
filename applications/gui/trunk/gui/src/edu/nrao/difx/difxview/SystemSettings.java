@@ -98,9 +98,13 @@ import java.sql.ResultSet;
 
 public class SystemSettings extends JFrame {
     
-    public SystemSettings( String settingsFile ) {
+    public SystemSettings( DiFXUI newUI, String settingsFile ) {
         
         _settings = this;
+        
+        //  Set the "top level" GUI window.  This will allow the settings menu to change
+        //  the title (and might have other uses).
+        difxUI( newUI );
         
         //  The "look and feel" isn't a setting in the sense that these others are...it
         //  must be set prior to building menus, so ONLY the default value will be
@@ -225,7 +229,7 @@ public class SystemSettings extends JFrame {
         this.add( _scrollPane );
         
         IndexedPanel settingsFilePanel = new IndexedPanel( "Settings File" );
-        settingsFilePanel.openHeight( 100 );
+        settingsFilePanel.openHeight( 130 );
         settingsFilePanel.closedHeight( 20 );
         _scrollPane.addNode( settingsFilePanel );
         _settingsFile = new FormattedTextField();
@@ -273,6 +277,18 @@ public class SystemSettings extends JFrame {
                 setDefaults();
             }
         } );
+        _title = new FormattedTextField();
+        _title.setToolTipText( "Title of the main window of the GUI." );
+        _title.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                _difxUI.setTitle( _title.getText() );
+            }
+        } );
+        settingsFilePanel.add( _title );
+        JLabel titleLabel = new JLabel( "GUI Title:" );
+        titleLabel.setBounds( 10, 85, 100, 25 );
+        titleLabel.setHorizontalAlignment( JLabel.RIGHT );
+        settingsFilePanel.add( titleLabel );
         settingsFilePanel.add( defaultsButton );
         
         IndexedPanel difxControlPanel = new IndexedPanel( "DiFX Control Connection" );
@@ -1451,7 +1467,8 @@ public class SystemSettings extends JFrame {
             int h = this.getContentPane().getSize().height;
             _menuBar.setBounds( 0, 0, w, 25 );
             _scrollPane.setBounds( 0, 25, w, h - 25 );
-            _settingsFile.setBounds( 115, 25, w - 135, 25 );
+            _settingsFile.setBounds( 115, 25, w - 145, 25 );
+            _title.setBounds( 115, 85, w - 145, 25 );
             //  DiFX Controll Connection settings
             _difxControlAddress.setBounds( 165, 55, 300, 25 );
             _difxControlPort.setBounds( 165, 85, 100, 25 );
@@ -1484,21 +1501,21 @@ public class SystemSettings extends JFrame {
             _testDatabaseButton.setBounds( 610, 55, 125, 25 );
             _databaseMessages.setBounds( 480, 85, w - 505, 175 );
             //  Documentation Addresses
-            _guiDocPath.setBounds( 115, 25, w - 240, 25 );
-            _guiDocPathBrowseButton.setBounds( w - 120, 25, 100, 25 );
-            _difxUsersGroupURL.setBounds( 115, 55, w - 135, 25 );
-            _difxWikiURL.setBounds( 115, 85, w - 135, 25 );
-            _difxSVN.setBounds( 115, 115, w - 135, 25 );
+            _guiDocPath.setBounds( 115, 25, w - 255, 25 );
+            _guiDocPathBrowseButton.setBounds( w - 135, 25, 105, 25 );
+            _difxUsersGroupURL.setBounds( 115, 55, w - 145, 25 );
+            _difxWikiURL.setBounds( 115, 85, w - 145, 25 );
+            _difxSVN.setBounds( 115, 115, w - 145, 25 );
             //  Job settings
-            _workingDirectory.setBounds( 165, 25, w - 185, 25 );
-            _stagingArea.setBounds( 165, 55, w - 185, 25 );
+            _workingDirectory.setBounds( 165, 25, w - 195, 25 );
+            _stagingArea.setBounds( 165, 55, w - 195, 25 );
             _headNode.setBounds( 165, 85, 300, 25 );
-            _eopURL.setBounds( 165, 25, w - 295, 25 );
-            _viewEOPFile.setBounds( w - 125, 25, 100, 25 );
-            _leapSecondsURL.setBounds( 165, 55, w - 295, 25 );
-            _viewLeapSecondsFile.setBounds( w - 125, 55, 100, 25 );
-            _updateEOPNow.setBounds( w - 250, 115, 120, 25 );
-            _runLogFile.setBounds( 165, 405, w - 185, 25 );
+            _eopURL.setBounds( 165, 25, w - 305, 25 );
+            _viewEOPFile.setBounds( w - 135, 25, 105, 25 );
+            _leapSecondsURL.setBounds( 165, 55, w - 305, 25 );
+            _viewLeapSecondsFile.setBounds( w - 135, 55, 105, 25 );
+            _updateEOPNow.setBounds( w - 260, 115, 120, 25 );
+            _runLogFile.setBounds( 165, 405, w - 195, 25 );
         }
     }
     
@@ -2058,6 +2075,9 @@ public class SystemSettings extends JFrame {
         _windowConfiguration.mainY = 0;
         _windowConfiguration.mainW = 1400;
         _windowConfiguration.mainH = 800;
+        _windowConfiguration.title = "USNO DiFX GUI " + VersionWindow.version();
+        _title.setText( _windowConfiguration.title );
+        _difxUI.setTitle( _windowConfiguration.title );
         _windowConfiguration.verticalPanels = false;
         _windowConfiguration.mainDividerLocation = 650;
         _windowConfiguration.topDividerLocation = 700;
@@ -2941,6 +2961,10 @@ public class SystemSettings extends JFrame {
                 _windowConfiguration.mainW = doiConfig.getWindowConfigMainW();
             if ( doiConfig.getWindowConfigMainH() != 0 )
                 _windowConfiguration.mainH = doiConfig.getWindowConfigMainH();
+            if ( doiConfig.getWindowConfigTitle() != null ) {
+                _title.setText( doiConfig.getWindowConfigTitle() );
+                _difxUI.setTitle( doiConfig.getWindowConfigTitle() );
+            }
             _windowConfiguration.verticalPanels = doiConfig.isWindowConfigVerticalPanels();
             if ( doiConfig.getWindowConfigMainDividerLocation() != 0 )
                 _windowConfiguration.mainDividerLocation = doiConfig.getWindowConfigMainDividerLocation();
@@ -3502,6 +3526,7 @@ public class SystemSettings extends JFrame {
         doiConfig.setWindowConfigMainY( _windowConfiguration.mainY );
         doiConfig.setWindowConfigMainW( _windowConfiguration.mainW );
         doiConfig.setWindowConfigMainH( _windowConfiguration.mainH );
+        doiConfig.setWindowConfigTitle( _title.getText() );
         doiConfig.setWindowConfigVerticalPanels( _windowConfiguration.verticalPanels );
         doiConfig.setWindowConfigMainDividerLocation( _windowConfiguration.mainDividerLocation );
         doiConfig.setWindowConfigTopDividerLocation( _windowConfiguration.topDividerLocation );
@@ -4006,6 +4031,10 @@ public class SystemSettings extends JFrame {
         return _hardwareMonitor;
     }
     
+    public void difxUI( DiFXUI newUI ) {
+        _difxUI = newUI;
+    }
+    
     public void queueBrowser( QueueBrowserPanel newBrowser ) {
         _queueBrowser = newBrowser;
     }
@@ -4500,6 +4529,7 @@ public class SystemSettings extends JFrame {
 
     protected JMenuBar _menuBar;
     protected FormattedTextField _settingsFile;
+    protected FormattedTextField _title;
     
     protected String _jaxbPackage;
     protected String _home;
@@ -4609,6 +4639,7 @@ public class SystemSettings extends JFrame {
         int mainY;
         int mainW;
         int mainH;
+        String title;
         boolean verticalPanels;
         int mainDividerLocation;
         int topDividerLocation;
@@ -4800,6 +4831,7 @@ public class SystemSettings extends JFrame {
     
     //  These items are used by multiple classes - they are put here as a matter
     //  of convenience as all locations have access to this class.
+    DiFXUI _difxUI;
     HardwareMonitorPanel _hardwareMonitor;
     QueueBrowserPanel _queueBrowser;
     MessageDisplayPanel _messageCenter;
