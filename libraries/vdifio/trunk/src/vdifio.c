@@ -83,7 +83,7 @@ int ymd2mjd(int yr, int mo, int day)
 //  return ymd2mjd(2000 + epoch/2, (epoch%2)*6+1, 1); // Year and Jan/July
 //}
 
-int createVDIFHeader(vdif_header *header, int framelength, int threadid, int bits, int nchan,
+int createVDIFHeader(vdif_header *header, int dataarraylength, int threadid, int bits, int nchan,
 		      int iscomplex, char stationid[3]) {
   int lognchan;
 
@@ -91,7 +91,7 @@ int createVDIFHeader(vdif_header *header, int framelength, int threadid, int bit
 
   if (VDIF_VERSION>7) return(VDIF_ERROR);
   if (bits>32 || bits<1) return(VDIF_ERROR);
-  if (framelength%8!=0 || framelength<0) return(VDIF_ERROR);
+  if (dataarraylength%8!=0 || dataarraylength<0) return(VDIF_ERROR);
   if (threadid>1023 || threadid<0) return(VDIF_ERROR);
 
   // Number of channels encoded as power of 2
@@ -107,8 +107,10 @@ int createVDIFHeader(vdif_header *header, int framelength, int threadid, int bit
   memset(header, 0, VDIF_HEADER_BYTES);
 
   header->version = VDIF_VERSION;
+  header->legacymode = 0;
+  header->invalid = 0;
   header->nchan = lognchan;
-  header->framelength8 = framelength/8;
+  header->framelength8 = (dataarraylength+VDIF_HEADER_BYTES)/8;
   if (iscomplex)
     header->iscomplex = 1;
   else
@@ -118,7 +120,6 @@ int createVDIFHeader(vdif_header *header, int framelength, int threadid, int bit
   header->stationid = stationid[0]<<8 | stationid[1];
 
   header->frame=0;
-  //header->framepersec=framepersec;
 
   return(VDIF_NOERROR);
 }

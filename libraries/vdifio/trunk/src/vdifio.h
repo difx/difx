@@ -147,7 +147,7 @@ int ymd2doy(int yr, int mo, int day);
 int ymd2mjd(int yr, int mo, int day);
 
 /* Function to completely fill header struct, returns non-zero on error */
-int createVDIFHeader(vdif_header *header, int framelength, int threadid, int bits, int nchan,
+int createVDIFHeader(vdif_header *header, int dataarraylength, int threadid, int bits, int nchan,
 		     int iscomplex, char stationid[3]);
 
 /* Functions to grab just one value from the raw header */
