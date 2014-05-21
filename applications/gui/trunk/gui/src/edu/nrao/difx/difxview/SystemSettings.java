@@ -536,7 +536,7 @@ public class SystemSettings extends JFrame {
         difxSetupPathLabel.setBounds( 10, 235, 150, 25 );
         difxControlPanel.add( difxSetupPathLabel );
         
-        IndexedPanel networkPanel = new IndexedPanel( "DiFX Multicast Messages" );
+        IndexedPanel networkPanel = new IndexedPanel( "DiFX Message Traffic" );
         networkPanel.openHeight( 270 );
         networkPanel.closedHeight( 20 );
         _scrollPane.addNode( networkPanel );
@@ -709,142 +709,6 @@ public class SystemSettings extends JFrame {
         } );
         networkPanel.add( _requestMessagesButton );
         
-        IndexedPanel databasePanel = new IndexedPanel( "Database Configuration" );
-        databasePanel.openHeight( 305 );
-        databasePanel.closedHeight( 20 );
-        databasePanel.labelWidth( 300 );
-        _scrollPane.addNode( databasePanel );
-        _dbUseDataBase = new ZCheckBox( "" );
-        _dbUseDataBase.setBounds( 165, 25, 25, 25 );
-        databasePanel.add( _dbUseDataBase );
-        JLabel dbUseDataBaseLabel = new JLabel( "Use Data Base:" );
-        dbUseDataBaseLabel.setBounds( 10, 25, 150, 25 );
-        dbUseDataBaseLabel.setHorizontalAlignment( JLabel.RIGHT );
-        databasePanel.add( dbUseDataBaseLabel );
-        _dbVersion = new JFormattedTextField();
-        _dbVersion.setFocusLostBehavior( JFormattedTextField.COMMIT );
-        _dbVersion.setBounds( 285, 25, 180, 25 );
-        databasePanel.add( _dbVersion );
-        JLabel dbVersionLabel = new JLabel( "Version:" );
-        dbVersionLabel.setBounds( 200, 25, 80, 25 );
-        dbVersionLabel.setHorizontalAlignment( JLabel.RIGHT );
-        databasePanel.add( dbVersionLabel );
-        _dbHost = new JFormattedTextField();
-        _dbHost.setFocusLostBehavior( JFormattedTextField.COMMIT );
-        _dbHost.addActionListener( new ActionListener() {
-            public void actionPerformed( ActionEvent e ) {
-                setDbURL();
-            }
-        } );
-        databasePanel.add( _dbHost );
-        JLabel dbHostLabel = new JLabel( "Host:" );
-        dbHostLabel.setBounds( 10, 55, 150, 25 );
-        dbHostLabel.setHorizontalAlignment( JLabel.RIGHT );
-        databasePanel.add( dbHostLabel );
-        _dbPort = new JFormattedTextField();
-        _dbPort.setFocusLostBehavior( JFormattedTextField.COMMIT );
-        _dbPort.addActionListener( new ActionListener() {
-            public void actionPerformed( ActionEvent e ) {
-                setDbURL();
-            }
-        } );
-        databasePanel.add( _dbPort );
-        JLabel dbPortLabel = new JLabel( "Port:" );
-        dbPortLabel.setBounds( 10, 85, 150, 25 );
-        dbPortLabel.setHorizontalAlignment( JLabel.RIGHT );
-        databasePanel.add( dbPortLabel );
-        _dbUser = new JFormattedTextField();
-        _dbUser.setFocusLostBehavior( JFormattedTextField.COMMIT );
-        databasePanel.add( _dbUser );
-        _dbUser.addActionListener( new ActionListener() {
-            public void actionPerformed( ActionEvent e ) {
-                setDbURL();
-            }
-        } );
-        JLabel dbUserLabel = new JLabel( "User:" );
-        dbUserLabel.setBounds( 10, 115, 150, 25 );
-        dbUserLabel.setHorizontalAlignment( JLabel.RIGHT );
-        databasePanel.add( dbUserLabel );
-        _dbPwd = new JPasswordField();
-        _dbPwd.addActionListener( new ActionListener() {
-            public void actionPerformed( ActionEvent e ) {
-                generateDatabaseChangeEvent();
-            }
-        } );
-        databasePanel.add( _dbPwd );
-        JLabel dbPwdLabel = new JLabel( "Password:" );
-        dbPwdLabel.setBounds( 10, 145, 150, 25 );
-        dbPwdLabel.setHorizontalAlignment( JLabel.RIGHT );
-        databasePanel.add( dbPwdLabel );
-        _dbName = new JFormattedTextField();
-        _dbName.setFocusLostBehavior( JFormattedTextField.COMMIT );
-        databasePanel.add( _dbName );
-        JLabel dbNameLabel = new JLabel( "DiFX Database:" );
-        dbNameLabel.setBounds( 10, 175, 150, 25 );
-        dbNameLabel.setHorizontalAlignment( JLabel.RIGHT );
-        databasePanel.add( dbNameLabel );
-        _dbMS = new JFormattedTextField();
-        _dbMS.setToolTipText( "Database Management System - mysql, postgres, etc." );
-        _dbMS.setFocusLostBehavior( JFormattedTextField.COMMIT );
-        _dbMS.addActionListener( new ActionListener() {
-            public void actionPerformed( ActionEvent e ) {
-                generateDatabaseChangeEvent();
-            }
-        } );
-        databasePanel.add( _dbMS );
-        JLabel dbMSLabel = new JLabel( "Management System:" );
-        dbMSLabel.setBounds( 10, 205, 150, 25 );
-        dbMSLabel.setHorizontalAlignment( JLabel.RIGHT );
-        databasePanel.add( dbMSLabel );
-        _dbDriver = new JFormattedTextField();
-        _dbDriver.setFocusLostBehavior( JFormattedTextField.COMMIT );
-        _dbDriver.addActionListener( new ActionListener() {
-            public void actionPerformed( ActionEvent e ) {
-                generateDatabaseChangeEvent();
-            }
-        } );
-        databasePanel.add( _dbDriver );
-        JLabel dbDriverLabel = new JLabel( "JDBC Driver:" );
-        dbDriverLabel.setBounds( 10, 235, 150, 25 );
-        dbDriverLabel.setHorizontalAlignment( JLabel.RIGHT );
-        databasePanel.add( dbDriverLabel );
-        _dbAutoUpdate = new ZCheckBox( "" );
-        _dbAutoUpdate.setBounds( 165, 275, 25, 25 );
-        databasePanel.add( _dbAutoUpdate );
-        JLabel dbAutoUpdateLabel = new JLabel( "Periodic Update:" );
-        dbAutoUpdateLabel.setBounds( 10, 275, 150, 25 );
-        dbAutoUpdateLabel.setHorizontalAlignment( JLabel.RIGHT );
-        databasePanel.add( dbAutoUpdateLabel );
-        _dbAutoUpdateInterval = new NumberBox();
-        _dbAutoUpdateInterval.setBounds( 230, 275, 50, 25 );
-        _dbAutoUpdateInterval.minimum( 1.0 );
-        databasePanel.add( _dbAutoUpdateInterval );
-        JLabel dbAutoUpdateIntervalLabel1 = new JLabel( "every" );
-        dbAutoUpdateIntervalLabel1.setBounds( 130, 275, 95, 25 );
-        dbAutoUpdateIntervalLabel1.setHorizontalAlignment( JLabel.RIGHT );
-        databasePanel.add( dbAutoUpdateIntervalLabel1 );
-        JLabel dbAutoUpdateIntervalLabel2 = new JLabel( "seconds" );
-        dbAutoUpdateIntervalLabel2.setBounds( 285, 275, 65, 25 );
-        databasePanel.add( dbAutoUpdateIntervalLabel2 );
-        _pingHostButton = new JButton( "Ping Host" );
-        _pingHostButton.setToolTipText( "ping the database host" );
-        _pingHostButton.addActionListener( new ActionListener() {
-            public void actionPerformed( ActionEvent e ) {
-                pingDatabaseHost();
-            }
-        } );
-        databasePanel.add( _pingHostButton );
-        _testDatabaseButton = new JButton( "Test Database" );
-        _testDatabaseButton.setToolTipText( "Run a connection test using the current database settings." );
-        _testDatabaseButton.addActionListener( new ActionListener() {
-            public void actionPerformed( ActionEvent e ) {
-                testDatabaseAction();
-            }
-        } );
-        databasePanel.add( _testDatabaseButton );
-        _databaseMessages = new MessageScrollPane();
-        databasePanel.add( _databaseMessages );
-         
         IndexedPanel jobSettingsPanel = new IndexedPanel( "Job Settings" );
         jobSettingsPanel.openHeight( 445 );
         jobSettingsPanel.closedHeight( 20 );
@@ -1219,6 +1083,142 @@ public class SystemSettings extends JFrame {
         jobSettingsPanel.add( runLogFileLabel );
         jobSettingsPanel.add( _runLogFile );
 
+        IndexedPanel databasePanel = new IndexedPanel( "Database Configuration" );
+        databasePanel.openHeight( 305 );
+        databasePanel.closedHeight( 20 );
+        databasePanel.labelWidth( 300 );
+        _scrollPane.addNode( databasePanel );
+        _dbUseDataBase = new ZCheckBox( "" );
+        _dbUseDataBase.setBounds( 165, 25, 25, 25 );
+        databasePanel.add( _dbUseDataBase );
+        JLabel dbUseDataBaseLabel = new JLabel( "Use Data Base:" );
+        dbUseDataBaseLabel.setBounds( 10, 25, 150, 25 );
+        dbUseDataBaseLabel.setHorizontalAlignment( JLabel.RIGHT );
+        databasePanel.add( dbUseDataBaseLabel );
+        _dbVersion = new JFormattedTextField();
+        _dbVersion.setFocusLostBehavior( JFormattedTextField.COMMIT );
+        _dbVersion.setBounds( 285, 25, 180, 25 );
+        databasePanel.add( _dbVersion );
+        JLabel dbVersionLabel = new JLabel( "Version:" );
+        dbVersionLabel.setBounds( 200, 25, 80, 25 );
+        dbVersionLabel.setHorizontalAlignment( JLabel.RIGHT );
+        databasePanel.add( dbVersionLabel );
+        _dbHost = new JFormattedTextField();
+        _dbHost.setFocusLostBehavior( JFormattedTextField.COMMIT );
+        _dbHost.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                setDbURL();
+            }
+        } );
+        databasePanel.add( _dbHost );
+        JLabel dbHostLabel = new JLabel( "Host:" );
+        dbHostLabel.setBounds( 10, 55, 150, 25 );
+        dbHostLabel.setHorizontalAlignment( JLabel.RIGHT );
+        databasePanel.add( dbHostLabel );
+        _dbPort = new JFormattedTextField();
+        _dbPort.setFocusLostBehavior( JFormattedTextField.COMMIT );
+        _dbPort.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                setDbURL();
+            }
+        } );
+        databasePanel.add( _dbPort );
+        JLabel dbPortLabel = new JLabel( "Port:" );
+        dbPortLabel.setBounds( 10, 85, 150, 25 );
+        dbPortLabel.setHorizontalAlignment( JLabel.RIGHT );
+        databasePanel.add( dbPortLabel );
+        _dbUser = new JFormattedTextField();
+        _dbUser.setFocusLostBehavior( JFormattedTextField.COMMIT );
+        databasePanel.add( _dbUser );
+        _dbUser.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                setDbURL();
+            }
+        } );
+        JLabel dbUserLabel = new JLabel( "User:" );
+        dbUserLabel.setBounds( 10, 115, 150, 25 );
+        dbUserLabel.setHorizontalAlignment( JLabel.RIGHT );
+        databasePanel.add( dbUserLabel );
+        _dbPwd = new JPasswordField();
+        _dbPwd.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                generateDatabaseChangeEvent();
+            }
+        } );
+        databasePanel.add( _dbPwd );
+        JLabel dbPwdLabel = new JLabel( "Password:" );
+        dbPwdLabel.setBounds( 10, 145, 150, 25 );
+        dbPwdLabel.setHorizontalAlignment( JLabel.RIGHT );
+        databasePanel.add( dbPwdLabel );
+        _dbName = new JFormattedTextField();
+        _dbName.setFocusLostBehavior( JFormattedTextField.COMMIT );
+        databasePanel.add( _dbName );
+        JLabel dbNameLabel = new JLabel( "DiFX Database:" );
+        dbNameLabel.setBounds( 10, 175, 150, 25 );
+        dbNameLabel.setHorizontalAlignment( JLabel.RIGHT );
+        databasePanel.add( dbNameLabel );
+        _dbMS = new JFormattedTextField();
+        _dbMS.setToolTipText( "Database Management System - mysql, postgres, etc." );
+        _dbMS.setFocusLostBehavior( JFormattedTextField.COMMIT );
+        _dbMS.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                generateDatabaseChangeEvent();
+            }
+        } );
+        databasePanel.add( _dbMS );
+        JLabel dbMSLabel = new JLabel( "Management System:" );
+        dbMSLabel.setBounds( 10, 205, 150, 25 );
+        dbMSLabel.setHorizontalAlignment( JLabel.RIGHT );
+        databasePanel.add( dbMSLabel );
+        _dbDriver = new JFormattedTextField();
+        _dbDriver.setFocusLostBehavior( JFormattedTextField.COMMIT );
+        _dbDriver.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                generateDatabaseChangeEvent();
+            }
+        } );
+        databasePanel.add( _dbDriver );
+        JLabel dbDriverLabel = new JLabel( "JDBC Driver:" );
+        dbDriverLabel.setBounds( 10, 235, 150, 25 );
+        dbDriverLabel.setHorizontalAlignment( JLabel.RIGHT );
+        databasePanel.add( dbDriverLabel );
+        _dbAutoUpdate = new ZCheckBox( "" );
+        _dbAutoUpdate.setBounds( 165, 275, 25, 25 );
+        databasePanel.add( _dbAutoUpdate );
+        JLabel dbAutoUpdateLabel = new JLabel( "Periodic Update:" );
+        dbAutoUpdateLabel.setBounds( 10, 275, 150, 25 );
+        dbAutoUpdateLabel.setHorizontalAlignment( JLabel.RIGHT );
+        databasePanel.add( dbAutoUpdateLabel );
+        _dbAutoUpdateInterval = new NumberBox();
+        _dbAutoUpdateInterval.setBounds( 230, 275, 50, 25 );
+        _dbAutoUpdateInterval.minimum( 1.0 );
+        databasePanel.add( _dbAutoUpdateInterval );
+        JLabel dbAutoUpdateIntervalLabel1 = new JLabel( "every" );
+        dbAutoUpdateIntervalLabel1.setBounds( 130, 275, 95, 25 );
+        dbAutoUpdateIntervalLabel1.setHorizontalAlignment( JLabel.RIGHT );
+        databasePanel.add( dbAutoUpdateIntervalLabel1 );
+        JLabel dbAutoUpdateIntervalLabel2 = new JLabel( "seconds" );
+        dbAutoUpdateIntervalLabel2.setBounds( 285, 275, 65, 25 );
+        databasePanel.add( dbAutoUpdateIntervalLabel2 );
+        _pingHostButton = new JButton( "Ping Host" );
+        _pingHostButton.setToolTipText( "ping the database host" );
+        _pingHostButton.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                pingDatabaseHost();
+            }
+        } );
+        databasePanel.add( _pingHostButton );
+        _testDatabaseButton = new JButton( "Test Database" );
+        _testDatabaseButton.setToolTipText( "Run a connection test using the current database settings." );
+        _testDatabaseButton.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                testDatabaseAction();
+            }
+        } );
+        databasePanel.add( _testDatabaseButton );
+        _databaseMessages = new MessageScrollPane();
+        databasePanel.add( _databaseMessages );
+         
         IndexedPanel eopSettingsPanel = new IndexedPanel( "EOP Settings" );
         //  These editors may or may not be displayed, but they are used to hold
         //  EOP and leap second data regardless.

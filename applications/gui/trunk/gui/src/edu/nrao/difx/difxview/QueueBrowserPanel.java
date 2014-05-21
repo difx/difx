@@ -400,14 +400,16 @@ public class QueueBrowserPanel extends TearOffPanel {
         int experimentCount = 0;
         int passCount = 0;
         int jobCount = 0;
-        for ( Iterator<BrowserNode> iter = _browserPane.browserTopNode().childrenIterator(); iter.hasNext(); ) {
-            ExperimentNode thisExperiment = (ExperimentNode)(iter.next());
-            ++experimentCount;
-            for ( Iterator<BrowserNode> pIter = thisExperiment.childrenIterator(); pIter.hasNext(); ) {
-                PassNode thisPass = (PassNode)(pIter.next());
-                ++passCount;
-                for ( Iterator<BrowserNode> jIter = thisPass.childrenIterator(); jIter.hasNext(); )
-                    ++jobCount;
+        synchronized ( _browserPane ) {
+            for ( Iterator<BrowserNode> iter = _browserPane.browserTopNode().childrenIterator(); iter.hasNext(); ) {
+                ExperimentNode thisExperiment = (ExperimentNode)(iter.next());
+                ++experimentCount;
+                for ( Iterator<BrowserNode> pIter = thisExperiment.childrenIterator(); pIter.hasNext(); ) {
+                    PassNode thisPass = (PassNode)(pIter.next());
+                    ++passCount;
+                    for ( Iterator<BrowserNode> jIter = thisPass.childrenIterator(); jIter.hasNext(); )
+                        ++jobCount;
+                }
             }
         }
         _numExperiments.value( experimentCount );
@@ -419,7 +421,9 @@ public class QueueBrowserPanel extends TearOffPanel {
      * Add a new experiment to the browser.
      */
     public void addExperiment( ExperimentNode newExperiment ) {
-        _browserPane.addNode( newExperiment );
+        synchronized ( _browserPane ) {
+            _browserPane.addNode( newExperiment );
+        }
     }
     
     /*
@@ -468,11 +472,13 @@ public class QueueBrowserPanel extends TearOffPanel {
         else {
             //  Look at all existing experiments that are NOT in the database and
             //  get their ID numbers.  Find the largest and increment by 1.
-            BrowserNode experimentList = _browserPane.browserTopNode();
-            for ( Iterator<BrowserNode> iter = experimentList.childrenIterator(); iter.hasNext(); ) {
-                ExperimentNode thisExperiment = (ExperimentNode)(iter.next());
-                if ( thisExperiment.id() != null && thisExperiment.id() >= newExperimentId )
-                    newExperimentId = thisExperiment.id() + 1;
+            synchronized ( _browserPane ) {
+                BrowserNode experimentList = _browserPane.browserTopNode();
+                for ( Iterator<BrowserNode> iter = experimentList.childrenIterator(); iter.hasNext(); ) {
+                    ExperimentNode thisExperiment = (ExperimentNode)(iter.next());
+                    if ( thisExperiment.id() != null && thisExperiment.id() >= newExperimentId )
+                        newExperimentId = thisExperiment.id() + 1;
+                }
             }
         }
         
@@ -507,10 +513,12 @@ public class QueueBrowserPanel extends TearOffPanel {
      * Select all jobs the queue browser knows about.
      */
     protected void selectAll() {
-        for ( Iterator<BrowserNode> projectIter = _browserPane.browserTopNode().children().iterator();
-            projectIter.hasNext(); ) {
-            ExperimentNode thisExperiment = (ExperimentNode)projectIter.next();
-            thisExperiment.selectAllJobsAction();
+        synchronized ( _browserPane ) {
+            for ( Iterator<BrowserNode> projectIter = _browserPane.browserTopNode().children().iterator();
+                projectIter.hasNext(); ) {
+                ExperimentNode thisExperiment = (ExperimentNode)projectIter.next();
+                thisExperiment.selectAllJobsAction();
+            }
         }
     }
     
@@ -518,10 +526,12 @@ public class QueueBrowserPanel extends TearOffPanel {
      * Clear the selection of all jobs.
      */
     protected void unselectAll() {
-        for ( Iterator<BrowserNode> projectIter = _browserPane.browserTopNode().children().iterator();
-            projectIter.hasNext(); ) {
-            ExperimentNode thisExperiment = (ExperimentNode)projectIter.next();
-            thisExperiment.unselectAllJobsAction();
+        synchronized ( _browserPane ) {
+            for ( Iterator<BrowserNode> projectIter = _browserPane.browserTopNode().children().iterator();
+                projectIter.hasNext(); ) {
+                ExperimentNode thisExperiment = (ExperimentNode)projectIter.next();
+                thisExperiment.unselectAllJobsAction();
+            }
         }
     }
 
@@ -529,10 +539,12 @@ public class QueueBrowserPanel extends TearOffPanel {
      * Delete the selected jobs.  
      */
     protected void deleteSelected() {
-        for ( Iterator<BrowserNode> projectIter = _browserPane.browserTopNode().children().iterator();
-            projectIter.hasNext(); ) {
-            ExperimentNode thisExperiment = (ExperimentNode)projectIter.next();
-            thisExperiment.deleteSelectedAction();
+        synchronized ( _browserPane ) {
+            for ( Iterator<BrowserNode> projectIter = _browserPane.browserTopNode().children().iterator();
+                projectIter.hasNext(); ) {
+                ExperimentNode thisExperiment = (ExperimentNode)projectIter.next();
+                thisExperiment.deleteSelectedAction();
+            }
         }
     }
     
@@ -542,14 +554,16 @@ public class QueueBrowserPanel extends TearOffPanel {
      * Open all experiments and passes so all jobs are visible.
      */
     protected void expandAll() {
-        for ( Iterator<BrowserNode> projectIter = _browserPane.browserTopNode().children().iterator();
-            projectIter.hasNext(); ) {
-            ExperimentNode thisExperiment = (ExperimentNode)projectIter.next();
-            thisExperiment.open( true );
-            if ( thisExperiment.children().size() > 0 ) {
-                for ( Iterator<BrowserNode> iter = thisExperiment.childrenIterator(); iter.hasNext(); ) {
-                    PassNode thisPass = (PassNode)(iter.next());
-                    thisPass.open( true );
+        synchronized ( _browserPane ) {
+            for ( Iterator<BrowserNode> projectIter = _browserPane.browserTopNode().children().iterator();
+                projectIter.hasNext(); ) {
+                ExperimentNode thisExperiment = (ExperimentNode)projectIter.next();
+                thisExperiment.open( true );
+                if ( thisExperiment.children().size() > 0 ) {
+                    for ( Iterator<BrowserNode> iter = thisExperiment.childrenIterator(); iter.hasNext(); ) {
+                        PassNode thisPass = (PassNode)(iter.next());
+                        thisPass.open( true );
+                    }
                 }
             }
         }
@@ -560,10 +574,12 @@ public class QueueBrowserPanel extends TearOffPanel {
      * bother with the passes.
      */
     protected void collapseAll() {
-        for ( Iterator<BrowserNode> projectIter = _browserPane.browserTopNode().children().iterator();
-            projectIter.hasNext(); ) {
-            ExperimentNode thisExperiment = (ExperimentNode)projectIter.next();
-            thisExperiment.open( false );
+        synchronized ( _browserPane ) {
+            for ( Iterator<BrowserNode> projectIter = _browserPane.browserTopNode().children().iterator();
+                projectIter.hasNext(); ) {
+                ExperimentNode thisExperiment = (ExperimentNode)projectIter.next();
+                thisExperiment.open( false );
+            }
         }
     }
                 
@@ -571,16 +587,18 @@ public class QueueBrowserPanel extends TearOffPanel {
      * Schedule all selected jobs to be run.
      */
     protected void runSelected() {
-        for ( Iterator<BrowserNode> projectIter = _browserPane.browserTopNode().children().iterator();
-            projectIter.hasNext(); ) {
-            ExperimentNode thisExperiment = (ExperimentNode)projectIter.next();
-            if ( thisExperiment.children().size() > 0 ) {
-                for ( Iterator<BrowserNode> iter = thisExperiment.childrenIterator(); iter.hasNext(); ) {
-                    PassNode thisPass = (PassNode)(iter.next());
-                    for ( Iterator<BrowserNode> jobIter = thisPass.children().iterator(); jobIter.hasNext(); ) {
-                        JobNode thisJob = (JobNode)jobIter.next();
-                        if ( thisJob.selected() )
-                            thisJob.autoStartJob();
+        synchronized ( _browserPane ) {
+            for ( Iterator<BrowserNode> projectIter = _browserPane.browserTopNode().children().iterator();
+                projectIter.hasNext(); ) {
+                ExperimentNode thisExperiment = (ExperimentNode)projectIter.next();
+                if ( thisExperiment.children().size() > 0 ) {
+                    for ( Iterator<BrowserNode> iter = thisExperiment.childrenIterator(); iter.hasNext(); ) {
+                        PassNode thisPass = (PassNode)(iter.next());
+                        for ( Iterator<BrowserNode> jobIter = thisPass.children().iterator(); jobIter.hasNext(); ) {
+                            JobNode thisJob = (JobNode)jobIter.next();
+                            if ( thisJob.selected() )
+                                thisJob.autoStartJob();
+                        }
                     }
                 }
             }
@@ -591,10 +609,12 @@ public class QueueBrowserPanel extends TearOffPanel {
      * Set all experiments to show/not show scheduling information.
      */
     protected void showExperimentScheduled() {
-        for ( Iterator<BrowserNode> projectIter = _browserPane.browserTopNode().children().iterator();
-            projectIter.hasNext(); ) {
-            ExperimentNode thisExperiment = (ExperimentNode)projectIter.next();
-            thisExperiment.statsVisible( _showExperimentScheduledItem.isSelected() );
+        synchronized ( _browserPane ) {
+            for ( Iterator<BrowserNode> projectIter = _browserPane.browserTopNode().children().iterator();
+                projectIter.hasNext(); ) {
+                ExperimentNode thisExperiment = (ExperimentNode)projectIter.next();
+                thisExperiment.statsVisible( _showExperimentScheduledItem.isSelected() );
+            }
         }
     }
     
@@ -602,13 +622,15 @@ public class QueueBrowserPanel extends TearOffPanel {
      * Show (or not) the scheduling information for each pass.
      */
     protected void showPassScheduled() {
-        for ( Iterator<BrowserNode> projectIter = _browserPane.browserTopNode().children().iterator();
-            projectIter.hasNext(); ) {
-            ExperimentNode thisExperiment = (ExperimentNode)projectIter.next();
-            if ( thisExperiment.children().size() > 0 ) {
-                for ( Iterator<BrowserNode> iter = thisExperiment.childrenIterator(); iter.hasNext(); ) {
-                    PassNode thisPass = (PassNode)(iter.next());
-                    thisPass.statsVisible( _showPassScheduledItem.isSelected() );
+        synchronized ( _browserPane ) {
+            for ( Iterator<BrowserNode> projectIter = _browserPane.browserTopNode().children().iterator();
+                projectIter.hasNext(); ) {
+                ExperimentNode thisExperiment = (ExperimentNode)projectIter.next();
+                if ( thisExperiment.children().size() > 0 ) {
+                    for ( Iterator<BrowserNode> iter = thisExperiment.childrenIterator(); iter.hasNext(); ) {
+                        PassNode thisPass = (PassNode)(iter.next());
+                        thisPass.statsVisible( _showPassScheduledItem.isSelected() );
+                    }
                 }
             }
         }
@@ -618,16 +640,18 @@ public class QueueBrowserPanel extends TearOffPanel {
      * Remove selected jobs from the schedule.
      */
     protected void unscheduleSelected() {
-        for ( Iterator<BrowserNode> projectIter = _browserPane.browserTopNode().children().iterator();
-            projectIter.hasNext(); ) {
-            ExperimentNode thisExperiment = (ExperimentNode)projectIter.next();
-            if ( thisExperiment.children().size() > 0 ) {
-                for ( Iterator<BrowserNode> iter = thisExperiment.childrenIterator(); iter.hasNext(); ) {
-                    PassNode thisPass = (PassNode)(iter.next());
-                    for ( Iterator<BrowserNode> jobIter = thisPass.children().iterator(); jobIter.hasNext(); ) {
-                        JobNode thisJob = (JobNode)jobIter.next();
-                        if ( thisJob.selected() )
-                            thisJob.unschedule();
+        synchronized ( _browserPane ) {
+            for ( Iterator<BrowserNode> projectIter = _browserPane.browserTopNode().children().iterator();
+                projectIter.hasNext(); ) {
+                ExperimentNode thisExperiment = (ExperimentNode)projectIter.next();
+                if ( thisExperiment.children().size() > 0 ) {
+                    for ( Iterator<BrowserNode> iter = thisExperiment.childrenIterator(); iter.hasNext(); ) {
+                        PassNode thisPass = (PassNode)(iter.next());
+                        for ( Iterator<BrowserNode> jobIter = thisPass.children().iterator(); jobIter.hasNext(); ) {
+                            JobNode thisJob = (JobNode)jobIter.next();
+                            if ( thisJob.selected() )
+                                thisJob.unschedule();
+                        }
                     }
                 }
             }
@@ -696,16 +720,18 @@ public class QueueBrowserPanel extends TearOffPanel {
         //  already know about - if we don't "find" any one item again, we'll
         //  remove it.
         BrowserNode experimentList = _browserPane.browserTopNode();
-        for ( Iterator<BrowserNode> iter = experimentList.childrenIterator(); iter.hasNext(); ) {
-            QueueBrowserNode thisExperiment = (QueueBrowserNode)(iter.next());
-            thisExperiment.found( false );
-            //  Within each experiment, flag passes....
-            for ( Iterator<BrowserNode> pIter = thisExperiment.childrenIterator(); pIter.hasNext(); ) {
-                QueueBrowserNode thisPass = (QueueBrowserNode)(pIter.next());
-                thisPass.found( false );
-                //  Within each pass, flag each job...
-                for ( Iterator<BrowserNode> jIter = thisPass.childrenIterator(); jIter.hasNext(); )
-                    ((QueueBrowserNode)(jIter.next())).found( false );
+        synchronized ( _browserPane ) {
+            for ( Iterator<BrowserNode> iter = experimentList.childrenIterator(); iter.hasNext(); ) {
+                QueueBrowserNode thisExperiment = (QueueBrowserNode)(iter.next());
+                thisExperiment.found( false );
+                //  Within each experiment, flag passes....
+                for ( Iterator<BrowserNode> pIter = thisExperiment.childrenIterator(); pIter.hasNext(); ) {
+                    QueueBrowserNode thisPass = (QueueBrowserNode)(pIter.next());
+                    thisPass.found( false );
+                    //  Within each pass, flag each job...
+                    for ( Iterator<BrowserNode> jIter = thisPass.childrenIterator(); jIter.hasNext(); )
+                        ((QueueBrowserNode)(jIter.next())).found( false );
+                }
             }
         }
         
@@ -726,13 +752,15 @@ public class QueueBrowserPanel extends TearOffPanel {
                 String directory = dbExperimentList.getString( "directory" );
                 //  Find a match in our experiment list.
                 ExperimentNode thisExperiment = null;
-                experimentList = _browserPane.browserTopNode();
-                for ( Iterator<BrowserNode> iter = experimentList.childrenIterator(); iter.hasNext(); ) {
-                    ExperimentNode testExperiment = (ExperimentNode)(iter.next());
-                    //  We should be able to use the ID to match experiments, as it is
-                    //  supposed to be unique.
-                    if ( testExperiment.inDatabase() && testExperiment.idMatch( id ) )
-                        thisExperiment = testExperiment;
+                synchronized ( _browserPane ) {
+                    experimentList = _browserPane.browserTopNode();
+                    for ( Iterator<BrowserNode> iter = experimentList.childrenIterator(); iter.hasNext(); ) {
+                        ExperimentNode testExperiment = (ExperimentNode)(iter.next());
+                        //  We should be able to use the ID to match experiments, as it is
+                        //  supposed to be unique.
+                        if ( testExperiment.inDatabase() && testExperiment.idMatch( id ) )
+                            thisExperiment = testExperiment;
+                    }
                 }
                 //  Create a new experiment if we didn't find the named one.
                 if ( thisExperiment == null ) {
@@ -763,18 +791,20 @@ public class QueueBrowserPanel extends TearOffPanel {
                         passType = dbPassTypeList.getString( "type" );
                 PassNode thisPass = null;
                 ExperimentNode thisExperiment = null;
-                experimentList = _browserPane.browserTopNode();
-                for ( Iterator<BrowserNode> iter = experimentList.childrenIterator(); iter.hasNext(); ) {
-                    ExperimentNode testExperiment = (ExperimentNode)(iter.next());
-                    //  Match the experiment ID.
-                    if ( testExperiment.idMatch( experimentId ) ) {
-                        thisExperiment = testExperiment;
-                        //  Then find the pass in the experiment.
-                        for ( Iterator<BrowserNode> pIter = testExperiment.childrenIterator(); pIter.hasNext(); ) {
-                            PassNode testPass = (PassNode)(pIter.next());
-                            //  Match the pass ID.
-                            if ( id.intValue() == testPass.id().intValue() )
-                                thisPass = testPass;
+                synchronized ( _browserPane ) {
+                    experimentList = _browserPane.browserTopNode();
+                    for ( Iterator<BrowserNode> iter = experimentList.childrenIterator(); iter.hasNext(); ) {
+                        ExperimentNode testExperiment = (ExperimentNode)(iter.next());
+                        //  Match the experiment ID.
+                        if ( testExperiment.idMatch( experimentId ) ) {
+                            thisExperiment = testExperiment;
+                            //  Then find the pass in the experiment.
+                            for ( Iterator<BrowserNode> pIter = testExperiment.childrenIterator(); pIter.hasNext(); ) {
+                                PassNode testPass = (PassNode)(pIter.next());
+                                //  Match the pass ID.
+                                if ( id.intValue() == testPass.id().intValue() )
+                                    thisPass = testPass;
+                            }
                         }
                     }
                 }
@@ -790,7 +820,9 @@ public class QueueBrowserPanel extends TearOffPanel {
                         thisPass.id( id );
                         thisPass.inDatabase( true );
                         thisPass.experimentNode( thisExperiment );
-                        thisExperiment.addChild( thisPass );                        
+                        synchronized ( _browserPane ) {
+                            thisExperiment.addChild( thisPass );  
+                        }
                         thisPass.found( true );
                         thisPass.statsVisible( _showPassScheduledItem.isSelected() );
                     }
@@ -815,19 +847,21 @@ public class QueueBrowserPanel extends TearOffPanel {
                 PassNode thisPass = null;
                 JobNode thisJob = null;
                 ExperimentNode thisExperiment = null;
-                experimentList = _browserPane.browserTopNode();
-                for ( Iterator<BrowserNode> iter = experimentList.childrenIterator(); iter.hasNext() && thisJob == null; ) {
-                    ExperimentNode testExperiment = (ExperimentNode)(iter.next());
-                    for ( Iterator<BrowserNode> pIter = testExperiment.childrenIterator(); pIter.hasNext() && thisJob == null && thisPass == null; ) {
-                        PassNode testPass = (PassNode)(pIter.next());
-                        if ( passId.equals( testPass.id() ) ) {
-                            thisPass = testPass;
-                            thisExperiment = testExperiment;
-                            for ( Iterator<BrowserNode> jIter = thisPass.childrenIterator(); jIter.hasNext() && thisJob == null; ) {
-                                JobNode testJob = (JobNode)(jIter.next());
-                                if ( id.intValue() == testJob.id().intValue() ) {
-                                    thisJob = testJob;
-                                    thisJob.found( true );
+                synchronized ( _browserPane ) {
+                    experimentList = _browserPane.browserTopNode();
+                    for ( Iterator<BrowserNode> iter = experimentList.childrenIterator(); iter.hasNext() && thisJob == null; ) {
+                        ExperimentNode testExperiment = (ExperimentNode)(iter.next());
+                        for ( Iterator<BrowserNode> pIter = testExperiment.childrenIterator(); pIter.hasNext() && thisJob == null && thisPass == null; ) {
+                            PassNode testPass = (PassNode)(pIter.next());
+                            if ( passId.equals( testPass.id() ) ) {
+                                thisPass = testPass;
+                                thisExperiment = testExperiment;
+                                for ( Iterator<BrowserNode> jIter = thisPass.childrenIterator(); jIter.hasNext() && thisJob == null; ) {
+                                    JobNode testJob = (JobNode)(jIter.next());
+                                    if ( id.intValue() == testJob.id().intValue() ) {
+                                        thisJob = testJob;
+                                        thisJob.found( true );
+                                    }
                                 }
                             }
                         }
@@ -901,23 +935,25 @@ public class QueueBrowserPanel extends TearOffPanel {
 
         //  Eliminate any items we have failed to find in the data base,
         //  with the exception of those that aren't actually in the data base.
-        experimentList = _browserPane.browserTopNode();
-        for ( Iterator<BrowserNode> iter = experimentList.childrenIterator(); iter.hasNext(); ) {
-            ExperimentNode thisExperiment = (ExperimentNode)(iter.next());
-            if ( !thisExperiment.found() && thisExperiment.inDatabase() )
-                _browserPane.browserTopNode().removeChild( thisExperiment );
-            else {
-                //  Eliminate passes under each experiment...
-                for ( Iterator<BrowserNode> pIter = thisExperiment.childrenIterator(); pIter.hasNext(); ) {
-                    PassNode thisPass = (PassNode)(pIter.next());
-                    if ( !thisPass.found() && thisPass.inDatabase() )
-                        thisExperiment.removeChild( thisPass );
-                    else {
-                        //  Eliminate jobs under each pass.
-                        for ( Iterator<BrowserNode> jIter = thisPass.childrenIterator(); jIter.hasNext(); ) {
-                            JobNode thisJob = (JobNode)(jIter.next());
-                            if ( !thisJob.found() && thisJob.inDatabase() ) {
-                                thisPass.removeChild( thisJob );
+        synchronized ( _browserPane ) {
+            experimentList = _browserPane.browserTopNode();
+            for ( Iterator<BrowserNode> iter = experimentList.childrenIterator(); iter.hasNext(); ) {
+                ExperimentNode thisExperiment = (ExperimentNode)(iter.next());
+                if ( !thisExperiment.found() && thisExperiment.inDatabase() )
+                    _browserPane.browserTopNode().removeChild( thisExperiment );
+                else {
+                    //  Eliminate passes under each experiment...
+                    for ( Iterator<BrowserNode> pIter = thisExperiment.childrenIterator(); pIter.hasNext(); ) {
+                        PassNode thisPass = (PassNode)(pIter.next());
+                        if ( !thisPass.found() && thisPass.inDatabase() )
+                            thisExperiment.removeChild( thisPass );
+                        else {
+                            //  Eliminate jobs under each pass.
+                            for ( Iterator<BrowserNode> jIter = thisPass.childrenIterator(); jIter.hasNext(); ) {
+                                JobNode thisJob = (JobNode)(jIter.next());
+                                if ( !thisJob.found() && thisJob.inDatabase() ) {
+                                    thisPass.removeChild( thisJob );
+                                }
                             }
                         }
                     }
@@ -1386,11 +1422,13 @@ public class QueueBrowserPanel extends TearOffPanel {
                 if ( !_noPass.isSelected() ) {
                     boolean passFound = false;
                     BrowserNode thisPass = null;
-                    for ( Iterator<BrowserNode> iter3 = thisExperiment.childrenIterator();
-                          !passFound && iter3.hasNext(); ) {
-                        thisPass = iter3.next();
-                        if ( thisPass.name().contentEquals( passName ) )
-                            passFound = true;
+                    synchronized ( _browserPane ) {
+                        for ( Iterator<BrowserNode> iter3 = thisExperiment.childrenIterator();
+                              !passFound && iter3.hasNext(); ) {
+                            thisPass = iter3.next();
+                            if ( thisPass.name().contentEquals( passName ) )
+                                passFound = true;
+                        }
                     }
                     if ( !passFound ) {
                         thisPass = new LocalBrowserNode( passName );
@@ -1398,9 +1436,13 @@ public class QueueBrowserPanel extends TearOffPanel {
                         thisPass.selected( true );
                         thisPass.xOffset( 20 );
                         thisPass.addCountWhenClosed( true );
-                        thisExperiment.addChild( thisPass );
+                        synchronized ( _browserPane ) {
+                            thisExperiment.addChild( thisPass );
+                        }
                     }
-                    thisPass.addChild( newJob );
+                    synchronized ( _browserPane ) {
+                        thisPass.addChild( newJob );
+                    }
                 }
                 else {
                     thisExperiment.addChild( newJob );
@@ -1684,27 +1726,7 @@ public class QueueBrowserPanel extends TearOffPanel {
             //  is easy for multiple jobs to have the same names.  Until we have access
             //  to a unique identifier, this is the best we can do.  Note that jobs
             //  become "running" when the user starts them from the GUI.
-            for ( Iterator<BrowserNode> projectIter = _browserPane.browserTopNode().children().iterator();
-                    projectIter.hasNext() && thisJob == null; ) {
-                ExperimentNode testExperiment = (ExperimentNode)projectIter.next();
-                PassNode thisPass = null;
-                if ( testExperiment.children().size() > 0 ) {
-                    for ( Iterator<BrowserNode> iter = testExperiment.childrenIterator(); iter.hasNext(); ) {
-                        PassNode testPass = (PassNode)(iter.next());
-                        //  Within each project, look at all jobs...
-                        for ( Iterator<BrowserNode> jobIter = testPass.children().iterator(); 
-                            jobIter.hasNext() && thisJob == null; ) {
-                            JobNode testJob = (JobNode)jobIter.next();
-                            if ( testJob.name().equals( difxMsg.getHeader().getIdentifier() ) && testJob.running() )
-                                thisJob = testJob;
-                        }
-                    }
-                }
-            }
-            
-            //  If the job hasn't been located using the "active" search above, try
-            //  finding the job just using its name.
-            if ( thisJob == null ) {
+            synchronized ( _browserPane ) {
                 for ( Iterator<BrowserNode> projectIter = _browserPane.browserTopNode().children().iterator();
                         projectIter.hasNext() && thisJob == null; ) {
                     ExperimentNode testExperiment = (ExperimentNode)projectIter.next();
@@ -1716,8 +1738,32 @@ public class QueueBrowserPanel extends TearOffPanel {
                             for ( Iterator<BrowserNode> jobIter = testPass.children().iterator(); 
                                 jobIter.hasNext() && thisJob == null; ) {
                                 JobNode testJob = (JobNode)jobIter.next();
-                                if ( testJob.name().equals( difxMsg.getHeader().getIdentifier() ) )
+                                if ( testJob.name().equals( difxMsg.getHeader().getIdentifier() ) && testJob.running() )
                                     thisJob = testJob;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            //  If the job hasn't been located using the "active" search above, try
+            //  finding the job just using its name.
+            if ( thisJob == null ) {
+                synchronized ( _browserPane ) {
+                    for ( Iterator<BrowserNode> projectIter = _browserPane.browserTopNode().children().iterator();
+                            projectIter.hasNext() && thisJob == null; ) {
+                        ExperimentNode testExperiment = (ExperimentNode)projectIter.next();
+                        PassNode thisPass = null;
+                        if ( testExperiment.children().size() > 0 ) {
+                            for ( Iterator<BrowserNode> iter = testExperiment.childrenIterator(); iter.hasNext(); ) {
+                                PassNode testPass = (PassNode)(iter.next());
+                                //  Within each project, look at all jobs...
+                                for ( Iterator<BrowserNode> jobIter = testPass.children().iterator(); 
+                                    jobIter.hasNext() && thisJob == null; ) {
+                                    JobNode testJob = (JobNode)jobIter.next();
+                                    if ( testJob.name().equals( difxMsg.getHeader().getIdentifier() ) )
+                                        thisJob = testJob;
+                                }
                             }
                         }
                     }
@@ -1760,11 +1806,13 @@ public class QueueBrowserPanel extends TearOffPanel {
 
         //  Locate the experiment in the current list...if it is there.
         ExperimentNode thisExperiment = null;
-        for ( Iterator<BrowserNode> iter = _browserPane.browserTopNode().childrenIterator();
-                iter.hasNext() && thisExperiment == null; ) {
-            ExperimentNode testExperiment = (ExperimentNode)iter.next();
-            if ( testExperiment.name().contentEquals( experiment ) )
-                thisExperiment = testExperiment;
+        synchronized ( _browserPane ) {
+            for ( Iterator<BrowserNode> iter = _browserPane.browserTopNode().childrenIterator();
+                    iter.hasNext() && thisExperiment == null; ) {
+                ExperimentNode testExperiment = (ExperimentNode)iter.next();
+                if ( testExperiment.name().contentEquals( experiment ) )
+                    thisExperiment = testExperiment;
+            }
         }
         //  Create a new experiment if it was not found.
         if ( thisExperiment == null ) {
@@ -1786,11 +1834,13 @@ public class QueueBrowserPanel extends TearOffPanel {
         
         //  Locate the pass under this experiment, if there.
         PassNode thisPass = null;
-        for ( Iterator<BrowserNode> iter = thisExperiment.childrenIterator(); 
-                iter.hasNext() && thisPass == null; ) {
-            PassNode testPass = (PassNode)iter.next();
-            if ( testPass.name().contentEquals( pass ) )
-                thisPass = testPass;
+        synchronized ( _browserPane ) {
+            for ( Iterator<BrowserNode> iter = thisExperiment.childrenIterator(); 
+                    iter.hasNext() && thisPass == null; ) {
+                PassNode testPass = (PassNode)iter.next();
+                if ( testPass.name().contentEquals( pass ) )
+                    thisPass = testPass;
+            }
         }
         //  Create the pass if we didn't find that.
         if ( thisPass == null ) {
@@ -1809,11 +1859,13 @@ public class QueueBrowserPanel extends TearOffPanel {
         
         //  Then locate the job, if there.
         JobNode thisJob = null;
-        for ( Iterator<BrowserNode> iter = thisPass.childrenIterator();
-                iter.hasNext() && thisJob == null; ) {
-            JobNode testJob = (JobNode)iter.next();
-            if ( testJob.inputFile().contentEquals( inputFile ) )
-                thisJob = testJob;
+        synchronized ( _browserPane ) {
+            for ( Iterator<BrowserNode> iter = thisPass.childrenIterator();
+                    iter.hasNext() && thisJob == null; ) {
+                JobNode testJob = (JobNode)iter.next();
+                if ( testJob.inputFile().contentEquals( inputFile ) )
+                    thisJob = testJob;
+            }
         }
         //  If the job wasn't found, add it.
         if ( thisJob == null ) {
@@ -1830,15 +1882,21 @@ public class QueueBrowserPanel extends TearOffPanel {
             //  If such a file exists already, force it to be downloaded the first time it
             //  is used.
             thisJob.logFile().downloadExisting( true );
-            thisPass.addChild( thisJob );
-            _header.addJob( thisJob );
+            synchronized ( _browserPane ) {
+                thisPass.addChild( thisJob );
+                _header.addJob( thisJob );
+            }
         }
         //  Adjust the setting of the experiment editor to match the most recently
         //  added job settings (based on that job's .v2d file).  This won't always
-        //  be useful, but will at least sometimes be what the user wants.
-        ExperimentEditor editor = thisExperiment.generateEditor();
-        String v2dFileBase = inputFile.substring( 0, inputFile.lastIndexOf( '/' ) + 1 );
-        editor.findOldV2dFile( v2dFileBase );
+        //  be useful, but will at least sometimes be what the user wants.  We only
+        //  do this if the experiment editor was just created (otherwise this might
+        //  be done over and over again).
+        if ( thisExperiment.editor() == null ) {
+            ExperimentEditor editor = thisExperiment.generateEditor();
+            String v2dFileBase = inputFile.substring( 0, inputFile.lastIndexOf( '/' ) + 1 );
+            editor.findOldV2dFile( v2dFileBase );
+        }
     }   
     
     protected NodeBrowserScrollPane _browserPane;
@@ -2002,34 +2060,36 @@ public class QueueBrowserPanel extends TearOffPanel {
                 }
                 //  Count the number of jobs, and the number scheduled, completed and failed
                 //  for each pass and experiment.
-                for ( Iterator<BrowserNode> iter = _browserPane.browserTopNode().childrenIterator(); iter.hasNext(); ) {
-                    ExperimentNode thisExperiment = (ExperimentNode)(iter.next());
-                    thisExperiment.clearCounters();
-                    for ( Iterator<BrowserNode> pIter = thisExperiment.childrenIterator(); pIter.hasNext(); ) {
-                        PassNode thisPass = (PassNode)(pIter.next());
-                        thisPass.clearCounters();
-                        for ( Iterator<BrowserNode> jIter = thisPass.childrenIterator(); jIter.hasNext(); ) {
-                            JobNode thisJob = (JobNode)(jIter.next());
-                            thisPass.addJobs( 1 );
-                            switch ( thisJob.autostate() ) {
-                                case JobNode.AUTOSTATE_DONE:
-                                    thisPass.addCompleted( 1 );
-                                    break;
-                                case JobNode.AUTOSTATE_FAILED:
-                                    thisPass.addFailed( 1 );
-                                    break;
-                                case JobNode.AUTOSTATE_INITIALIZING:
-                                case JobNode.AUTOSTATE_READY:
-                                case JobNode.AUTOSTATE_RUNNING:
-                                case JobNode.AUTOSTATE_SCHEDULED:
-                                    thisPass.addScheduled( 1 );
-                                    break;
+                synchronized ( _browserPane ) {
+                    for ( Iterator<BrowserNode> iter = _browserPane.browserTopNode().childrenIterator(); iter.hasNext(); ) {
+                        ExperimentNode thisExperiment = (ExperimentNode)(iter.next());
+                        thisExperiment.clearCounters();
+                        for ( Iterator<BrowserNode> pIter = thisExperiment.childrenIterator(); pIter.hasNext(); ) {
+                            PassNode thisPass = (PassNode)(pIter.next());
+                            thisPass.clearCounters();
+                            for ( Iterator<BrowserNode> jIter = thisPass.childrenIterator(); jIter.hasNext(); ) {
+                                JobNode thisJob = (JobNode)(jIter.next());
+                                thisPass.addJobs( 1 );
+                                switch ( thisJob.autostate() ) {
+                                    case JobNode.AUTOSTATE_DONE:
+                                        thisPass.addCompleted( 1 );
+                                        break;
+                                    case JobNode.AUTOSTATE_FAILED:
+                                        thisPass.addFailed( 1 );
+                                        break;
+                                    case JobNode.AUTOSTATE_INITIALIZING:
+                                    case JobNode.AUTOSTATE_READY:
+                                    case JobNode.AUTOSTATE_RUNNING:
+                                    case JobNode.AUTOSTATE_SCHEDULED:
+                                        thisPass.addScheduled( 1 );
+                                        break;
+                                }
                             }
+                            thisExperiment.addJobs( thisPass.numJobs() );
+                            thisExperiment.addScheduled( thisPass.numScheduled() );
+                            thisExperiment.addCompleted( thisPass.numCompleted() );
+                            thisExperiment.addFailed( thisPass.numFailed() );
                         }
-                        thisExperiment.addJobs( thisPass.numJobs() );
-                        thisExperiment.addScheduled( thisPass.numScheduled() );
-                        thisExperiment.addCompleted( thisPass.numCompleted() );
-                        thisExperiment.addFailed( thisPass.numFailed() );
                     }
                 }
                 try { Thread.sleep( 1000 ); } catch ( Exception e ) {}
