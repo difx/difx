@@ -10,6 +10,7 @@ Version 2.4
 * Improve Mark5B decoding
 * Fix Bonn Bug 1: on 64-bit systems sizeof(unsigned long) is 8 bytes, not 4 as it is on 32-bit systems.
   - some other variable types changed as well to minimize casting and prevent future similar problems.
+* Fix Bonn Bug 2: Lower sideband interacted badly with zoom bands
 
 Version 2.3
 ~~~~~~~~~~~

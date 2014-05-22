@@ -678,7 +678,6 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
   int acblockcount, maxacblocks, acshiftcount;
   int freqchannels;
   int xmacstridelength, xmacpasses, xmacstart, destbin, destchan, localfreqindex;
-  int outputoffset, input1offset, input2offset, xmacmullength;
   int dsfreqindex;
   char papol;
   double offsetmins, blockns;
@@ -898,47 +897,6 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
             localfreqindex = config->getBLocalFreqIndex(procslots[index].configindex, j, f);
             if(localfreqindex >= 0)
             {
-              outputoffset = 0;
-              input1offset = 0;
-              input2offset = 0;
-              xmacmullength = xmacstridelength;
-              //check for the annoying case of correlating USB with LSB
-              if(config->anyUsbXLsb(procslots[index].configindex))
-              {
-                const int &bFreqOddLSB = config->getBFreqOddLSB(procslots[index].configindex, j, localfreqindex);
-                if(bFreqOddLSB > 0)
-                {
-                  // uh-oh.  Need to move any LSB datastreams' FFT results appropriately
-                  // basically start counting one index earlier on those...
-
-                  if(bFreqOddLSB == 1)
-                  {
-                    //just the first is LSB
-                    input1offset = -1;
-                  }
-                  else if(bFreqOddLSB == 2)
-                  {
-                    //just the second is LSB
-                    input2offset = -1;
-                  }
-                  else
-                  {
-                    //both are LSB
-                    input1offset = -1;
-                    input2offset = -1;
-                  }
-                  if(x == 0)
-                  {
-                    // for first loop through, shorten the xmac loop by one (ignoring the _first_ sample)
-                    // otherwise we fall off the DC edge of the LSB samples
-                    xmacmullength--;
-                    outputoffset++;
-                    input1offset++;
-                    input2offset++;
-                  }
-                }
-              }
-
               //get the two modes that contribute to this baseline
               ds1index = config->getBOrderedDataStream1Index(procslots[index].configindex, j);
 	      ds2index = config->getBOrderedDataStream2Index(procslots[index].configindex, j);
@@ -957,13 +915,13 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
                 for(int p=0;p<config->getBNumPolProducts(procslots[index].configindex,j,localfreqindex);p++)
                 {
                   //get the appropriate arrays to multiply
-                  vis1 = &(m1->getFreqs(config->getBDataStream1BandIndex(procslots[index].configindex, j, localfreqindex, p), fftsubloop)[xmacstart+input1offset]);
-                  vis2 = &(m2->getConjugatedFreqs(config->getBDataStream2BandIndex(procslots[index].configindex, j, localfreqindex, p), fftsubloop)[xmacstart+input2offset]);
+                  vis1 = &(m1->getFreqs(config->getBDataStream1BandIndex(procslots[index].configindex, j, localfreqindex, p), fftsubloop)[xmacstart]);
+                  vis2 = &(m2->getConjugatedFreqs(config->getBDataStream2BandIndex(procslots[index].configindex, j, localfreqindex, p), fftsubloop)[xmacstart]);
 
                   if(procslots[index].pulsarbin)
                   {
                     //multiply into scratch space
-                    status = vectorMul_cf32(vis1, vis2, scratchspace->pulsarscratchspace, xmacmullength);
+                    status = vectorMul_cf32(vis1, vis2, scratchspace->pulsarscratchspace, xmacstridelength);
                     if(status != vecNoErr)
                       csevere << startl << "Error trying to xmac baseline " << j << " frequency " << localfreqindex << " polarisation product " << p << ", status " << status << endl;
 
@@ -971,13 +929,13 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
                     if(procslots[index].scrunchoutput)
                     {
                       bweight = scratchspace->dsweights[ds1index][fftsubloop]*scratchspace->dsweights[ds2index][fftsubloop]/(freqchannels);
-                      destchan = xmacstart+outputoffset;
-                      for(int l=0;l<xmacmullength;l++)
+                      destchan = xmacstart;
+                      for(int l=0;l<xmacstridelength;l++)
                       {
                         //the first zero (the source slot) is because we are limiting to one pulsar ephemeris for now
                         destbin = scratchspace->bins[fftsubloop][f][destchan];
-                        scratchspace->pulsaraccumspace[f][x][j][0][p][destbin][l+outputoffset].re += scratchspace->pulsarscratchspace[l].re;
-                        scratchspace->pulsaraccumspace[f][x][j][0][p][destbin][l+outputoffset].im += scratchspace->pulsarscratchspace[l].im;
+                        scratchspace->pulsaraccumspace[f][x][j][0][p][destbin][l].re += scratchspace->pulsarscratchspace[l].re;
+                        scratchspace->pulsaraccumspace[f][x][j][0][p][destbin][l].im += scratchspace->pulsarscratchspace[l].im;
                         scratchspace->baselineweight[f][0][j][p] += bweight*binweights[destbin];
                         destchan++;
                       }
@@ -985,12 +943,12 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
                     else
                     {
                       bweight = scratchspace->dsweights[ds1index][fftsubloop]*scratchspace->dsweights[ds2index][fftsubloop]/(freqchannels);
-                      destchan = xmacstart+outputoffset;
-                      for(int l=0;l<xmacmullength;l++)
+                      destchan = xmacstart;
+                      for(int l=0;l<xmacstridelength;l++)
                       {
                         destbin = scratchspace->bins[fftsubloop][f][destchan];
                         //cindex = resultindex + (scratchspace->bins[freqindex][destchan]*config->getBNumPolProducts(procslots[index].configindex,j,localfreqindex) + p)*(freqchannels+1) + destchan;
-                        cindex = resultindex + (destbin*config->getBNumPolProducts(procslots[index].configindex,j,localfreqindex) + p)*xmacstridelength + l + outputoffset;
+                        cindex = resultindex + (destbin*config->getBNumPolProducts(procslots[index].configindex,j,localfreqindex) + p)*xmacstridelength + l;
                         scratchspace->threadcrosscorrs[cindex].re += scratchspace->pulsarscratchspace[l].re;
                         scratchspace->threadcrosscorrs[cindex].im += scratchspace->pulsarscratchspace[l].im;
                         scratchspace->baselineweight[f][destbin][j][p] += bweight;
@@ -1001,7 +959,7 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
                   else
                   {
                     //not pulsar binning, so this is nice and simple - just cross multiply accumulate
-                    status = vectorAddProduct_cf32(vis1, vis2, &(scratchspace->threadcrosscorrs[resultindex+outputoffset+p*xmacstridelength]), xmacmullength);
+                    status = vectorAddProduct_cf32(vis1, vis2, &(scratchspace->threadcrosscorrs[resultindex+p*xmacstridelength]), xmacstridelength);
 
                     if(status != vecNoErr)
                       csevere << startl << "Error trying to xmac baseline " << j << " frequency " << localfreqindex << " polarisation product " << p << ", status " << status << endl;

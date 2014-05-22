@@ -297,7 +297,6 @@ protected:
   cf32 * stepcplx;
 
   f32 * subchannelfreqs;
-  f32 * lsbsubchannelfreqs;
   f32 * subfracsamparg;
   f32 * subfracsampsin;
   f32 * subfracsampcos;
