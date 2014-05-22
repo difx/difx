@@ -125,16 +125,18 @@ int createVDIFHeader(vdif_header *header, int dataarraylength, int threadid, int
 }
 
 
-void setVDIFThreadID(vdif_header *header, int threadid)
+int setVDIFThreadID(vdif_header *header, int threadid)
 {
   // Should check bounds
   header->threadid = threadid;
+  return(VDIF_NOERROR);
 }
 
-void setVDIFFrameBytes(vdif_header *header, int bytes)
+int setVDIFFrameBytes(vdif_header *header, int bytes)
 {
   // Should check modulo8 and not too big
   header->framelength8 = bytes/8;
+  return(VDIF_NOERROR);
 }
 
 int getVDIFEpochMJD(const vdif_header *header)
@@ -143,7 +145,7 @@ int getVDIFEpochMJD(const vdif_header *header)
   return ymd2mjd(2000 + epoch/2, (epoch%2)*6+1, 1);
 }
 
-void setVDIFNumChannels(vdif_header *header, int numchannels)
+int setVDIFNumChannels(vdif_header *header, int numchannels)
 {
   unsigned int logchans = 0;
   while(numchannels > 1)
@@ -152,6 +154,7 @@ void setVDIFNumChannels(vdif_header *header, int numchannels)
       logchans++;
     }
   header->nchan = logchans;
+  return(VDIF_NOERROR);
 }
 
 int getVDIFNumChannels(const vdif_header *header)
@@ -170,7 +173,7 @@ int getVDIFFrameMJD(const vdif_header *header)
 {
   int mjd = getVDIFEpochMJD(header);
 
-  return mjd + header->seconds/86400; // Seconds may be greater than one day
+  return mjd + header->seconds/86400; // Seconds will usually be greater than one day
 }
 
 double getVDIFDMJD(const vdif_header *header, int framepersec) 
@@ -181,27 +184,44 @@ double getVDIFDMJD(const vdif_header *header, int framepersec)
 }
 
 // Note assumes the Epoch is already set
-void setVDIFFrameMJD(vdif_header *header, int framemjd)
+int setVDIFFrameMJD(vdif_header *header, int mjd)
 {
   int emjd = getVDIFEpochMJD(header);
-  int seconds = (int)header->seconds;
-  int mjd = emjd + seconds/86400;    // BUG? I think this step is wrong CJP
-  if(emjd == framemjd) return; //its already right
-  header->seconds = (framemjd-mjd)*86400;
-}
+  header->seconds = (mjd-emjd)*86400;
+  return(VDIF_NOERROR);
+} 
 
-void setVDIFMJDSec(vdif_header *header, uint64_t mjdsec)
+int setVDIFFrameMJDSec(vdif_header *header, uint64_t mjdsec)
 {
-  int epoch = (int)header->epoch;
-  int emjd = ymd2mjd(2000 + epoch/2, (epoch%2)*6+1, 1);
+  int emjd = getVDIFEpochMJD(header);
   header->seconds = (int)(mjdsec - ((uint64_t)emjd)*86400);
+  return(VDIF_NOERROR);
 }
 
-void setVDIFEpoch(vdif_header *header, int mjd) {
+uint64_t getVDIFFrameMJDSec(vdif_header *header)
+{
+  uint64_t emjd = getVDIFEpochMJD(header);
+  return emjd*86400 + header->seconds;
+}
+
+
+
+// Assumes Epoch is already set and frame time is set to desired MJD. 
+// Does not attempt to deal with wraps of time
+int setVDIFFrameSecond(vdif_header *header, int seconds)
+{
+  uint64_t mjdsec = getVDIFFrameMJDSec(header);
+  mjdsec =- (mjdsec % 86400); // Remove fraction of a day
+
+  return setVDIFFrameMJDSec(header, mjdsec + seconds);
+}
+
+int setVDIFEpochMJD(vdif_header *header, int mjd) {
   int year, month, day;
   mjd2ymd(mjd, &year, &month, &day);
   header->epoch = (year-2000)*2;
   if (month>6) header->epoch++;
+  return(VDIF_NOERROR);
 }
 
 int nextVDIFHeader(vdif_header *header, int framepersec) {
@@ -219,7 +239,8 @@ uint64_t time2mjdsec(time_t time) {
   return ((uint64_t)UNIXZERO_MJD*24*60*60 + (uint64_t)time);
 
 }
-int setVDIFTime(vdif_header *header, time_t time) {
+
+int setVDIFEpochTime(vdif_header *header, time_t time) {
   int epoch;
   struct tm t;
 
@@ -233,10 +254,12 @@ int setVDIFTime(vdif_header *header, time_t time) {
   epoch %= 32;
   header->epoch = epoch;
 
-  uint64_t mjdsec = time2mjdsec(time);
-  setVDIFMJDSec(header, mjdsec);
-
   return(VDIF_NOERROR);
+}
+
+int setVDIFFrameTime(vdif_header *header, time_t time) {
+  uint64_t mjdsec = time2mjdsec(time);
+  return setVDIFFrameMJDSec(header, mjdsec);
 }
 
 static void fprintVDIFHeaderHex(FILE *out, const vdif_header *header)

@@ -69,7 +69,7 @@ typedef struct vdif_header {
    uint32_t extended2;
    uint32_t extended3;
    uint32_t extended4;
- } vdif_header;
+} vdif_header;
 
 typedef struct vdif_edv1_header {	/* NICT extensions: see http://www.vlbi.org/vdif/docs/VDIF_Extension_NICT_Version2014.pdf */
    uint32_t seconds : 30;
@@ -154,6 +154,7 @@ int createVDIFHeader(vdif_header *header, int dataarraylength, int threadid, int
 static inline int getVDIFThreadID(const vdif_header *header) { return (int)header->threadid; }
 static inline int getVDIFHeaderBytes(const vdif_header *header) { return header->legacymode ? VDIF_LEGACY_HEADER_BYTES : VDIF_HEADER_BYTES; }
 static inline int getVDIFFrameBytes(const vdif_header *header) { return (int)(header->framelength8)*8; }
+uint64_t getVDIFFrameMJDSec(vdif_header *header);
 int getVDIFFrameMJD(const vdif_header *header);
 double getVDIFDMJD(const vdif_header *header, int framepersec);
 static inline int getVDIFFrameSecond(const vdif_header *header) { return ((int)header->seconds)%86400; }
@@ -162,22 +163,25 @@ static inline int getVDIFStationID(const vdif_header *header) { return (int)head
 static inline int getVDIFBitsPerSample(const vdif_header *header) { return ((int)header->nbits+1); }
 int getVDIFNumChannels(const vdif_header *header);
 static inline int getVDIFFrameInvalid(const vdif_header *header) { return (int)header->invalid; }
-static inline int getVDIFFullSecond(const vdif_header *header) { return (int)header->seconds; }
+static inline int getVDIFFrameFullSecond(const vdif_header *header) { return (int)header->seconds; }
 static inline int getVDIFEpoch(const vdif_header *header) { return (int)header->epoch; }
 int getVDIFEpochMJD(const vdif_header *header);
 
 /* Functions to set just one value from a raw header */
-void setVDIFFrameMJD(vdif_header *header, int framemjd);
-void setVDIFMJDSec(vdif_header *header, uint64_t mjdsec);
-static inline void setVDIFFrameSecond(vdif_header *header, int framesecond) { header->seconds = framesecond; }
+int setVDIFFrameMJD(vdif_header *header, int framemjd);
+int setVDIFFrameMJDSec(vdif_header *header, uint64_t mjdsec);
+static inline void setVDIFFrameFullSecond(vdif_header *header, int seconds) { header->seconds = seconds; }
 static inline void setVDIFFrameNumber(vdif_header *header, int framenumber) { header->frame = framenumber; }
 static inline void setVDIFFrameInvalid(vdif_header *header, unsigned int invalid) { header->invalid = invalid; }
 static inline void setVDIFBitsPerSample(vdif_header *header, int nbits) { header->nbits = nbits-1; }
-void setVDIFFrameBytes(vdif_header *header, int bytes);
-void setVDIFNumChannels(vdif_header *header, int numchannels);
-void setVDIFThreadID(vdif_header *header, int threadid);
-int setVDIFTime(vdif_header *header, time_t time);
-void setVDIFEpoch(vdif_header *header, int mjd);
+int setVDIFFrameBytes(vdif_header *header, int bytes);
+int setVDIFFrameSecond(vdif_header *header, int seconds);
+int setVDIFNumChannels(vdif_header *header, int numchannels);
+int setVDIFThreadID(vdif_header *header, int threadid);
+int setVDIFFrameTime(vdif_header *header, time_t time);
+int setVDIFEpochTime(vdif_header *header, time_t time);
+static inline void setVDIFEpoch(vdif_header *header, int epoch) { header->epoch = epoch; }
+int setVDIFEpochMJD(vdif_header *header, int mjd);
 int nextVDIFHeader(vdif_header *header, int framepersec);
 
 void fprintVDIFHeader(FILE *out, const vdif_header *header, enum VDIFHeaderPrintLevel);
