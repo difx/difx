@@ -485,7 +485,7 @@ int main(int argc, char * const argv[]) {
     
       mjdsec = lround(mjd*24*60*60);
       setVDIFEpoch(&vdif_headers[i],mjdsec/(24*60*60));
-      setVDIFMJDSec(&vdif_headers[i], mjdsec);
+      setVDIFFrameMJDSec(&vdif_headers[i], mjdsec);
       if (status!=VDIF_NOERROR) {
         fprintf(stderr, "Error setting VDIF file (%d)\n", status);
         exit(1);
