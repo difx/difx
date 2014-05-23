@@ -34,7 +34,7 @@ int fill_fblock (DifxInput *D,                    // difx input structure pointe
         zoom;
 
     char pol,
-         buff[5];
+         buff[6];
 
     double temp,
            freqs[128];
