@@ -156,21 +156,21 @@ static inline int getVDIFHeaderBytes(const vdif_header *header) { return header-
 static inline int getVDIFFrameBytes(const vdif_header *header) { return (int)(header->framelength8)*8; }
 uint64_t getVDIFFrameMJDSec(vdif_header *header);
 int getVDIFFrameMJD(const vdif_header *header);
-double getVDIFDMJD(const vdif_header *header, int framepersec);
+double getVDIFFrameDMJD(const vdif_header *header, int framepersec);
 static inline int getVDIFFrameSecond(const vdif_header *header) { return ((int)header->seconds)%86400; }
 static inline int getVDIFFrameNumber(const vdif_header *header) { return (int)header->frame; }
 static inline int getVDIFStationID(const vdif_header *header) { return (int)header->stationid; }
 static inline int getVDIFBitsPerSample(const vdif_header *header) { return ((int)header->nbits+1); }
 int getVDIFNumChannels(const vdif_header *header);
 static inline int getVDIFFrameInvalid(const vdif_header *header) { return (int)header->invalid; }
-static inline int getVDIFFrameFullSecond(const vdif_header *header) { return (int)header->seconds; }
+static inline int getVDIFFrameEpochSecOffset(const vdif_header *header) { return (int)header->seconds; }
 static inline int getVDIFEpoch(const vdif_header *header) { return (int)header->epoch; }
 int getVDIFEpochMJD(const vdif_header *header);
 
 /* Functions to set just one value from a raw header */
 int setVDIFFrameMJD(vdif_header *header, int framemjd);
 int setVDIFFrameMJDSec(vdif_header *header, uint64_t mjdsec);
-static inline void setVDIFFrameFullSecond(vdif_header *header, int seconds) { header->seconds = seconds; }
+static inline void setVDIFFrameEpochSecOffset(vdif_header *header, int seconds) { header->seconds = seconds; }
 static inline void setVDIFFrameNumber(vdif_header *header, int framenumber) { header->frame = framenumber; }
 static inline void setVDIFFrameInvalid(vdif_header *header, unsigned int invalid) { header->invalid = invalid; }
 static inline void setVDIFBitsPerSample(vdif_header *header, int nbits) { header->nbits = nbits-1; }

@@ -1,7 +1,20 @@
 Version 0.7
 ~~~~~~~~~~~
  * Changed parameter in createVDIFHeader (pass size of dataarray not full
-   VDIF frame).
+	VDIF frame).
+* Changed function of getVDIFEpoch and setVDIFFrameSecond
+* Renamed:
+	getVDIFMJD
+	getVDIFFrameFullSecond -> getVDIFFrameEpochSecOffset
+	setVDIFFrameSecond -> setVDIFFrameEpochSecOffset
+	setVDIFFrameFull
+	setVDIFMJDSec -> setVDIFFrameMJDSec
+	getVDIFDMJD -> getVDIFFrameDMJD
+	setVDIFTime -> setVDIFFrameTime (and changed functionality)
+	setVDIFEpoch -> setVDIFEpochMJD
+ * Added
+	getVDIFFrameMJDSec
+	setVDIFEpochTime
 
 Version 0.6
 ~~~~~~~~~~~

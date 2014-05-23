@@ -176,7 +176,7 @@ int getVDIFFrameMJD(const vdif_header *header)
   return mjd + header->seconds/86400; // Seconds will usually be greater than one day
 }
 
-double getVDIFDMJD(const vdif_header *header, int framepersec) 
+double getVDIFFrameDMJD(const vdif_header *header, int framepersec) 
 {
   int mjd = getVDIFFrameMJD(header);
   int sec = getVDIFFrameSecond(header);
@@ -187,7 +187,8 @@ double getVDIFDMJD(const vdif_header *header, int framepersec)
 int setVDIFFrameMJD(vdif_header *header, int mjd)
 {
   int emjd = getVDIFEpochMJD(header);
-  header->seconds = (mjd-emjd)*86400;
+  int sec = header->seconds % 86400;  // Remember fraction of a day
+  header->seconds = (mjd-emjd)*86400 + sec;
   return(VDIF_NOERROR);
 } 
 
