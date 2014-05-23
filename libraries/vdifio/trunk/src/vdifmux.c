@@ -2187,7 +2187,7 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 			continue;
 		}
 
-		frameNumber = (long long)(getVDIFFullSecond(vh)) * inputFramesPerSecond + getVDIFFrameNumber(vh);
+		frameNumber = (long long)(getVDIFFrameEpochSecOffset(vh)) * inputFramesPerSecond + getVDIFFrameNumber(vh);
 		
 		if(startFrameNumber < 0)	/* we haven't seen data yet */
 		{

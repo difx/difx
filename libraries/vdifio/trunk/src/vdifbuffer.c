@@ -68,8 +68,8 @@ int determinevdifframesize(const unsigned char *buffer, int bufferSize)
 			   getVDIFFrameBytes(vh3) == frameSize &&
 			   getVDIFEpoch(vh1) == getVDIFEpoch(vh2) &&
 			   getVDIFEpoch(vh1) == getVDIFEpoch(vh3) &&
-			   getVDIFFullSecond(vh2) - getVDIFFullSecond(vh1) < 2 &&
-			   getVDIFFullSecond(vh3) - getVDIFFullSecond(vh2) < 2 &&
+			   getVDIFFrameEpochSecOffset(vh2) - getVDIFFrameEpochSecOffset(vh1) < 2 &&
+			   getVDIFFrameEpochSecOffset(vh3) - getVDIFFrameEpochSecOffset(vh2) < 2 &&
 			   getVDIFFrameNumber(vh2) - getVDIFFrameNumber(vh1) < 5 &&
 			   getVDIFFrameNumber(vh3) - getVDIFFrameNumber(vh1) < 5)
 			{
@@ -97,8 +97,8 @@ int determinevdifframesize(const unsigned char *buffer, int bufferSize)
 			   getVDIFFrameBytes(vh3) == frameSize &&
 			   getVDIFEpoch(vh1) == getVDIFEpoch(vh2) &&
 			   getVDIFEpoch(vh1) == getVDIFEpoch(vh3) &&
-			   getVDIFFullSecond(vh2) - getVDIFFullSecond(vh1) < 2 &&
-			   getVDIFFullSecond(vh3) - getVDIFFullSecond(vh2) < 2 &&
+			   getVDIFFrameEpochSecOffset(vh2) - getVDIFFrameEpochSecOffset(vh1) < 2 &&
+			   getVDIFFrameEpochSecOffset(vh3) - getVDIFFrameEpochSecOffset(vh2) < 2 &&
 			   getVDIFFrameNumber(vh2) - getVDIFFrameNumber(vh1) < 5 &&
 			   getVDIFFrameNumber(vh3) - getVDIFFrameNumber(vh1) < 5)
 			{
@@ -133,7 +133,7 @@ int determinevdifframeoffset(const unsigned char *buffer, int bufferSize, int fr
 		if(getVDIFFrameBytes(vh1) == frameSize &&
 		   getVDIFFrameBytes(vh2) == frameSize &&
 		   getVDIFEpoch(vh1) == getVDIFEpoch(vh2) &&
-		   getVDIFFullSecond(vh2) - getVDIFFullSecond(vh1) < 2)
+		   getVDIFFrameEpochSecOffset(vh2) - getVDIFFrameEpochSecOffset(vh1) < 2)
 		{
 			return i;
 		}

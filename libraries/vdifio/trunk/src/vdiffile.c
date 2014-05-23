@@ -178,12 +178,12 @@ int summarizevdiffile(struct vdif_file_summary *sum, const char *fileName, int f
 		int f, s;
 
 		vh = (struct vdif_header *)(buffer + i);
-		s = getVDIFFullSecond(vh);
+		s = getVDIFFrameEpochSecOffset(vh);
 		
 		if(getVDIFFrameBytes(vh) == frameSize &&
 		   getVDIFEpoch(vh) == sum->epoch &&
 		   getVDIFBitsPerSample(vh) == sum->nBit &&
-		   abs(s - getVDIFFullSecond(vh0)) < 2)
+		   abs(s - getVDIFFrameEpochSecOffset(vh0)) < 2)
 		{
 			hasThread[getVDIFThreadID(vh)] = 1;
 			f = getVDIFFrameNumber(vh);
@@ -257,12 +257,12 @@ int summarizevdiffile(struct vdif_file_summary *sum, const char *fileName, int f
 			int f, s;
 
 			vh = (struct vdif_header *)(buffer + i);
-			s = getVDIFFullSecond(vh);
+			s = getVDIFFrameEpochSecOffset(vh);
 			
 			if(getVDIFFrameBytes(vh) == frameSize &&
 			   getVDIFEpoch(vh) == sum->epoch &&
 			   getVDIFBitsPerSample(vh) == sum->nBit &&
-			   abs(s - getVDIFFullSecond(vh0)) < 2)
+			   abs(s - getVDIFFrameEpochSecOffset(vh0)) < 2)
 			{
 				hasThread[getVDIFThreadID(vh)] = 1;
 				f = getVDIFFrameNumber(vh);
