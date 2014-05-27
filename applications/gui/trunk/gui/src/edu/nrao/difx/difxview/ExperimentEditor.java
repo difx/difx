@@ -2649,6 +2649,7 @@ public class ExperimentEditor extends JFrame {
                 if ( !createPass() )
                     _newPass.setHeight( 0 );
                 _thisExperiment.addChild( _newPass );
+                _newPass.experimentNode( _thisExperiment );
                 _databasePassId = 0;
                 if ( db != null ) {
                     _statusLabel.setText( "adding pass information to database" );
