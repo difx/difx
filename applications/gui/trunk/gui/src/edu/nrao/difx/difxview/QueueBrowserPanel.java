@@ -432,6 +432,15 @@ public class QueueBrowserPanel extends TearOffPanel {
      */
     public void addJob( JobNode newJob ) {
         _header.addJob( newJob );
+        //  Increment the counters in the headers for the pass and experiment for this job.
+        //  This may not keep it 100% accurate, but it should make it more accurate, and
+        //  more visually pleasing, if that's worth anything.
+        newJob.passNode().addJobs( 1 );
+        newJob.passNode().displayNow();
+        newJob.passNode().experimentNode().addJobs( 1 ); 
+        newJob.passNode().experimentNode().displayNow();
+        _browserPane.setBounds( _browserPane.getX(), _browserPane.getY(), _browserPane.getWidth(), _browserPane.getHeight() );
+        _browserPane.updateUI();
     }
     
     /*
@@ -887,7 +896,9 @@ public class QueueBrowserPanel extends TearOffPanel {
                         thisJob.experiment( thisExperiment.name() );
                         thisJob.pass( thisPass.name() );
                         thisJob.passNode( thisPass );
-                        thisPass.addChild( thisJob );
+                        synchronized ( _browserPane ) {
+                            thisPass.addChild( thisJob );
+                        }
                         _header.addJob( thisJob ); 
                     }
                     else {
@@ -1448,6 +1459,8 @@ public class QueueBrowserPanel extends TearOffPanel {
                     thisExperiment.addChild( newJob );
                 }
             }
+            _preview.setBounds( _preview.getX(), _preview.getY(), _preview.getWidth(), _preview.getHeight() );
+            _preview.updateUI();
             _this.newSize();
         }
         
@@ -1884,9 +1897,16 @@ public class QueueBrowserPanel extends TearOffPanel {
             thisJob.logFile().downloadExisting( true );
             synchronized ( _browserPane ) {
                 thisPass.addChild( thisJob );
-                _header.addJob( thisJob );
             }
+            _header.addJob( thisJob );
         }
+        //  Increment the counters in the headers for the pass and experiment for this job.
+        //  This may not keep it 100% accurate, but it should make it more accurate, and
+        //  more visually pleasing, if that's worth anything.
+        thisPass.addJobs( 1 );
+        thisPass.displayNow();
+        thisExperiment.addJobs( 1 ); 
+        thisExperiment.displayNow();
         //  Adjust the setting of the experiment editor to match the most recently
         //  added job settings (based on that job's .v2d file).  This won't always
         //  be useful, but will at least sometimes be what the user wants.  We only
@@ -1897,6 +1917,8 @@ public class QueueBrowserPanel extends TearOffPanel {
             String v2dFileBase = inputFile.substring( 0, inputFile.lastIndexOf( '/' ) + 1 );
             editor.findOldV2dFile( v2dFileBase );
         }
+        _browserPane.setBounds( _browserPane.getX(), _browserPane.getY(), _browserPane.getWidth(), _browserPane.getHeight() );
+        _browserPane.updateUI();
     }   
     
     protected NodeBrowserScrollPane _browserPane;
@@ -2060,7 +2082,7 @@ public class QueueBrowserPanel extends TearOffPanel {
                 }
                 //  Count the number of jobs, and the number scheduled, completed and failed
                 //  for each pass and experiment.
-                synchronized ( _browserPane ) {
+                try {
                     for ( Iterator<BrowserNode> iter = _browserPane.browserTopNode().childrenIterator(); iter.hasNext(); ) {
                         ExperimentNode thisExperiment = (ExperimentNode)(iter.next());
                         thisExperiment.clearCounters();
@@ -2085,12 +2107,15 @@ public class QueueBrowserPanel extends TearOffPanel {
                                         break;
                                 }
                             }
+                            thisPass.displayNow();
                             thisExperiment.addJobs( thisPass.numJobs() );
                             thisExperiment.addScheduled( thisPass.numScheduled() );
                             thisExperiment.addCompleted( thisPass.numCompleted() );
                             thisExperiment.addFailed( thisPass.numFailed() );
                         }
+                        thisExperiment.displayNow();
                     }
+                } catch ( java.util.ConcurrentModificationException e ) {
                 }
                 try { Thread.sleep( 1000 ); } catch ( Exception e ) {}
             }

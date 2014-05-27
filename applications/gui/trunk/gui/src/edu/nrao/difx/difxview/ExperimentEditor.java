@@ -1098,7 +1098,7 @@ public class ExperimentEditor extends JFrame {
             while ( comp.getParent() != null )
                 comp = comp.getParent();
             Point pt = _fromHost.getLocationOnScreen();
-            GetFileMonitor fileGet = new GetFileMonitor( (Frame)comp, pt.x + 25, pt.y + 25, _fromHostLocation.getText(), _settings );
+            GetFileMonitor fileGet = new GetFileMonitor( (Frame)comp, pt.x + 25, pt.y + 25, _fromHostLocation.getText(), _settings, false );
             //fileGet.setVisible( true );
             //  We only use the content of the file if it was read successfully.
             if ( fileGet.success() ) {
@@ -1193,7 +1193,7 @@ public class ExperimentEditor extends JFrame {
             while ( comp.getParent() != null )
                 comp = comp.getParent();
             Point pt = _v2dFromHost.getLocationOnScreen();
-            GetFileMonitor fileGet = new GetFileMonitor( (Frame)comp, pt.x + 25, pt.y + 25, _v2dFromHostLocation.getText(), _settings );
+            GetFileMonitor fileGet = new GetFileMonitor( (Frame)comp, pt.x + 25, pt.y + 25, _v2dFromHostLocation.getText(), _settings, false );
             //  We only use the content of the file if it was read successfully.
             if ( fileGet.success() ) {
                 _settings.defaultNames().v2dFileSource = _v2dFromHostLocation.getText();
@@ -1296,7 +1296,7 @@ public class ExperimentEditor extends JFrame {
                 if ( _thisExperiment != null )
                     pt = _thisExperiment.getLocationOnScreen();
                 GetFileMonitor getFile = new GetFileMonitor(  (Frame)comp, pt.x + 25, pt.y + 25,
-                        basePath + _v2dFileParser.vexFile(), _settings );
+                        basePath + _v2dFileParser.vexFile(), _settings, false );
                 if ( getFile.success() && getFile.inString() != null && getFile.inString().length() > 0 ) {
                     _editor.text( getFile.inString() );
                     //  This should initialize all of the settings properly...we hope.
@@ -1443,7 +1443,7 @@ public class ExperimentEditor extends JFrame {
         if ( _thisExperiment != null )
             pt = _thisExperiment.getLocationOnScreen();
         GetFileMonitor getFile = new GetFileMonitor(  (Frame)comp, pt.x + 25, pt.y + 25,
-                fileName, _settings );
+                fileName, _settings, false );
         if ( getFile.inString() != null && getFile.inString().length() > 0 ) {
             _startingV2dFileContent = getFile.inString();
             parseStartingV2dFile( basePath );
@@ -2847,7 +2847,8 @@ public class ExperimentEditor extends JFrame {
                             newJob.logFile().filename(), newJob.logFile().content(), _settings );
                     //  Add the job to the existing pass.
                     _newPass.addChild( newJob );
-                    _newPass.sortByName();
+                    //  BLAT
+//                    _newPass.sortByName();
                     newJob.passNode( _newPass );
                     _settings.queueBrowser().addJob( newJob );
                     //  Add the new job to the database (if we are using it).

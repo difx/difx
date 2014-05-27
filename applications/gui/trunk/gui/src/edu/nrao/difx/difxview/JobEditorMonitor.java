@@ -148,7 +148,7 @@ public class JobEditorMonitor extends JFrame {
                     comp = comp.getParent();
                 Point pt = _refreshInputButton.getLocationOnScreen();
                 GetFileMonitor getFile = new GetFileMonitor(  (Frame)comp, pt.x + 25, pt.y + 25,
-                        _inputFileName.getText(), _settings );
+                        _inputFileName.getText(), _settings, false );
                 if ( getFile.inString() != null && getFile.inString().length() > 0 ) {
                     _inputFileEditor.text( getFile.inString() );
                     parseInputFile();
@@ -191,7 +191,7 @@ public class JobEditorMonitor extends JFrame {
                     comp = comp.getParent();
                 Point pt = _refreshCalcButton.getLocationOnScreen();
                 GetFileMonitor getFile = new GetFileMonitor(  (Frame)comp, pt.x + 25, pt.y + 25,
-                        _calcFileName.getText(), _settings );
+                        _calcFileName.getText(), _settings, false );
                 if ( getFile.inString() != null && getFile.inString().length() > 0 ) {
                     _calcFileEditor.text( getFile.inString() );
                     parseCalcFile( _calcFileEditor.text() );
@@ -363,7 +363,7 @@ public class JobEditorMonitor extends JFrame {
                     comp = comp.getParent();
                 Point pt = _refreshMachinesButton.getLocationOnScreen();
                 GetFileMonitor getFile = new GetFileMonitor(  (Frame)comp, pt.x + 25, pt.y + 25,
-                        _machinesFileName.getText(), _settings );
+                        _machinesFileName.getText(), _settings, false );
                 if ( getFile.inString() != null && getFile.inString().length() > 0 ) {
                     _machinesFileEditor.text( getFile.inString() );
                 }
@@ -408,7 +408,7 @@ public class JobEditorMonitor extends JFrame {
                     comp = comp.getParent();
                 Point pt = _refreshThreadsButton.getLocationOnScreen();
                 GetFileMonitor getFile = new GetFileMonitor(  (Frame)comp, pt.x + 25, pt.y + 25,
-                        _threadsFileName.getText(), _settings );
+                        _threadsFileName.getText(), _settings, false );
                 if ( getFile.inString() != null && getFile.inString().length() > 0 ) {
                     statusInfo( "\"" + _threadsFileName.getText() + "\" (" + getFile.inString().length() + " chars) read from DiFX host." );
                     _threadsFileEditor.text( getFile.inString() );
@@ -1391,7 +1391,7 @@ public class JobEditorMonitor extends JFrame {
                                 pt = new Point( 100, 100 );
                             }
                             GetFileMonitor getFile = new GetFileMonitor(  (Frame)comp, pt.x + 25, pt.y + 25,
-                                    _machinesFileName.getText(), _settings );
+                                    _machinesFileName.getText(), _settings, false );
                             if ( getFile.inString() != null && getFile.inString().length() > 0 ) {
                                 _machinesFileEditor.text( getFile.inString() );
                             }
@@ -1412,7 +1412,7 @@ public class JobEditorMonitor extends JFrame {
                                 pt = new Point( 100, 100 );
                             }
                             GetFileMonitor getFile = new GetFileMonitor(  (Frame)comp, pt.x + 25, pt.y + 25,
-                                    _threadsFileName.getText(), _settings );
+                                    _threadsFileName.getText(), _settings, false );
                             if ( getFile.inString() != null && getFile.inString().length() > 0 ) {
                                 _threadsFileEditor.text( getFile.inString() );
                             }
@@ -1878,7 +1878,7 @@ public class JobEditorMonitor extends JFrame {
             }
             _jobNode._scheduleJobItem.setEnabled( true );
             //  Base the final "autostate" on the color of the display.  This is pretty
-            //  kludgey, although it has the advantage that it will look consisten to the user.
+            //  kludgey, although it has the advantage that it will look consistent to the user.
             if ( _jobNode.state().getBackground() == Color.RED )
                 _jobNode.autostate( JobNode.AUTOSTATE_FAILED );
             else
@@ -1965,6 +1965,8 @@ public class JobEditorMonitor extends JFrame {
                 Marshaller marshaller = jaxbCtx.createMarshaller();
                 marshaller.setProperty( Marshaller.JAXB_ENCODING, "UTF-8" );
                 marshaller.setProperty( Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE );
+                if ( new java.io.File( _settings.runLogFile() ).isFile() )
+                    marshaller.setProperty( Marshaller.JAXB_FRAGMENT, Boolean.TRUE );
                 StringWriter writer = new StringWriter();
                 marshaller.marshal( log, writer );
                 String xmlString = writer.toString();
@@ -1979,20 +1981,21 @@ public class JobEditorMonitor extends JFrame {
             }
         }
         //  Try reading the run log file.
-        java.io.File theFile = new java.io.File( _settings.runLogFile() );
-        if ( theFile.exists() ) {
-        //  Now parse the thing, or try to.
-        ObjectFactory factory = new ObjectFactory();
-        DifxJobLog log = factory.createDifxJobLog();
-        try {
-            javax.xml.bind.JAXBContext jaxbCtx =
-                    javax.xml.bind.JAXBContext.newInstance( log.getClass().getPackage().getName() );
-            javax.xml.bind.Unmarshaller unmarshaller = jaxbCtx.createUnmarshaller();
-            log = (DifxJobLog)(unmarshaller.unmarshal( theFile ));
-            System.out.println( "got a job log " + log.getData().getActiveID() );
-        } catch ( Exception e ) {
-            System.out.println( e.toString() ); }
-        }
+//        java.io.File theFile = new java.io.File( _settings.runLogFile() );
+//        if ( theFile.isFile() ) {
+//            //  Now parse the thing, or try to.
+//            ObjectFactory factory = new ObjectFactory();
+//            DifxJobLog log = factory.createDifxJobLog();
+//            try {
+//                javax.xml.bind.JAXBContext jaxbCtx =
+//                        javax.xml.bind.JAXBContext.newInstance( log.getClass().getPackage().getName() );
+//                javax.xml.bind.Unmarshaller unmarshaller = jaxbCtx.createUnmarshaller();
+//                log = (DifxJobLog)(unmarshaller.unmarshal( theFile ));
+////                System.out.println( "got a job log " + log.getData().getActiveID() );
+//            } catch ( Exception e ) {
+////                System.out.println( e.toString() );
+//            }
+//        }
     }
     
     

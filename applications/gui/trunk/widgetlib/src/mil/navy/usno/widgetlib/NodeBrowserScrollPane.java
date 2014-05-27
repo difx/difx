@@ -173,7 +173,7 @@ public class NodeBrowserScrollPane extends JPanel implements MouseMotionListener
         browserPane.addChild( newNode );
         Dimension d = getSize();
         browserPane.measureDataBounds();
-        _scrollBar.setValues( -_yOffset, d.height, 0, browserPane.dataHeight() ); 
+        _scrollBar.setValues( -_yOffset, d.height, 0, browserPane.dataHeight() );
         testScrollBar( d.height );
         dispatchResizeEvent();
         this.updateUI();

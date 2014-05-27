@@ -23,7 +23,7 @@ import java.awt.Frame;
 public class SendFileMonitor extends PopupMonitor {
     
     public SendFileMonitor( Frame frame, int x, int y, String filePath, String content, SystemSettings settings ) {
-        super( frame, x, y, 600, 145, 200 );
+        super( frame, x, y, 600, 145, 2000 );
         _settings = settings;
         _filePath = filePath;
         _content = content;

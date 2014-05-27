@@ -737,7 +737,7 @@ public class JobNode extends QueueBrowserNode {
             comp = comp.getParent();
         Point pt = new Point( 100, 100 );
         GetFileMonitor getFile = new GetFileMonitor( (Frame)comp, pt.x + 25, pt.y + 25,
-                filename, _settings );
+                filename, _settings, false );
         if ( getFile.inString() != null && getFile.inString().length() > 0 && getFile.success() ) {
             //  Parse the file content based on the extension.
             String ext = filename.substring( filename.lastIndexOf( '.' ) + 1 ).trim();
@@ -1173,9 +1173,17 @@ public class JobNode extends QueueBrowserNode {
                 comp = comp.getParent();
             Point pt = new Point( 100, 100 );
             GetFileMonitor getLog = new GetFileMonitor( (Frame)comp, pt.x + 25, pt.y + 25,
-                    logFile().filename(), _settings );
+                    logFile().filename(), _settings, true );
             if ( getLog.inString().length() > 0 )
                 logFile().content( getLog.inString() );
+            //  Create the log file if it didn't exist.
+            else {
+                logFile( new ActivityLogFile( inputFile().substring( 0, inputFile().lastIndexOf( "/" ) ) + "/guiLogs"
+                        + inputFile().substring( inputFile().lastIndexOf( "/" ) ).replace( ".input", ".jobLog" ) ) );
+                _settings.messageCenter().warning( 0, "JobNode::logItem()", 
+                        inputFile().substring( 0, inputFile().lastIndexOf( "/" ) ) + "/guiLogs"
+                        + inputFile().substring( inputFile().lastIndexOf( "/" ) ).replace( ".input", ".jobLog" ) + " does not exist - creating it");
+            }
             logFile().downloadExisting( false );
         }
         //  Finally, add the new item.

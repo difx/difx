@@ -24,11 +24,12 @@ import java.awt.Frame;
  */
 public class GetFileMonitor extends PopupMonitor {
     
-    public GetFileMonitor( Frame frame, int x, int y, String filePath, SystemSettings settings ) {
-        super( frame, x, y, 600, 145, 1000 );
+    public GetFileMonitor( Frame frame, int x, int y, String filePath, SystemSettings settings, boolean noFileOK ) {
+        super( frame, x, y, 600, 145, 2000 );
         _settings = settings;
         _filePath = filePath;
         _inString = null;
+        _noFileOK = noFileOK;
         //  See if we can reuse a previous read of this file.
         if ( _allowReuse ) {
             _inString = _reuseMap.get( _filePath );
@@ -123,7 +124,10 @@ public class GetFileMonitor extends PopupMonitor {
             error( "Bad file name (probably the path was not complete.", null );
         }
         else if ( fileSize == -2 ) {
-            error( "File \"" + _filePath + "\"", "does not exist on \"" + _settings.difxControlAddress() + "\"." );
+            if ( _noFileOK )
+                silentError();
+            else
+                error( "File \"" + _filePath + "\"", "does not exist on \"" + _settings.difxControlAddress() + "\"." );
         }
         else if ( fileSize == -3 ) {
             error( "Error - DiFX user \"" + _settings.difxControlUser() + "\"",
@@ -153,6 +157,8 @@ public class GetFileMonitor extends PopupMonitor {
     protected String _filePath;
     protected String _error;
     protected String _inString;
+    
+    protected boolean _noFileOK;
     
     static protected boolean _allowReuse;
     static void allowReuse( boolean newVal ) { 

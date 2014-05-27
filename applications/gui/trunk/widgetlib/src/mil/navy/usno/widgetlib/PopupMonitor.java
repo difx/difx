@@ -2,7 +2,7 @@
  * This class provides a "monitor" popup - a modal dialog window that can be used
  * to monitor some process (a file transfer, or whatever).  The actual process takes
  * place during the (overridden) "run()" function.  The "success( true )" function should
- * be called when the process (what ever it is) completes successfully - at which
+ * be called when the process (whatever it is) completes successfully - at which
  * point the popup window will disappear.  The "errorCondition()" function should
  * be called if the process fails for some reason - the window will remain to
  * display an error message.  When running, there is a "cancel" button that turns
@@ -42,16 +42,13 @@ import java.awt.Color;
 
 import java.awt.Frame;
 
-/**
- *
- * @author jspitzak
- */
 public class PopupMonitor extends JDialog implements WindowListener  {
     
     public PopupMonitor( Frame frame, int x, int y, int w, int h, int delay ) {
         super( frame, "", true );
         _theWindow = this;
         _delay = delay;
+        _displayLock = new Object();
         this.setDefaultCloseOperation( JDialog.DO_NOTHING_ON_CLOSE );
         this.setLayout( null );
         this.setBounds( x, y, w, h );
@@ -63,9 +60,6 @@ public class PopupMonitor extends JDialog implements WindowListener  {
         _statusLabel2.setBounds( 80, 40, w - 90, 25 );
         _statusLabel2.setVisible( false );
         this.add( _statusLabel2 );
-//        _spinner = new Spinner();
-//        _spinner.setBounds( 20, 20, 40, 40 );
-//        this.add( _spinner );
         _progress = new JProgressBar();
         _progress.setBounds( 80, 50, w - 200, 25 );
         _progress.setVisible( false );
@@ -91,14 +85,16 @@ public class PopupMonitor extends JDialog implements WindowListener  {
         //  window.  This will give the process a chance to finish quietly if it is
         //  very quick.
         try { Thread.sleep( _delay ); } catch ( Exception e ) {}
-        if ( _success == false && _cleanClose == false ) {
-            //  The spinner involves a thread, so we add it here (instead of when
-            //  creating the popup).
-            _spinner = new Spinner();
-            _spinner.setBounds( 20, 20, 40, 40 );
-            this.add( _spinner );
-            this.setVisible( true );
-        }
+//        synchronized ( _displayLock ) {
+            if ( _success == false && _cleanClose == false && !_noSpinnerStart ) {
+                //  The spinner involves a thread, so we add it here (instead of when
+                //  creating the popup).
+                _spinner = new Spinner();
+                _spinner.setBounds( 20, 20, 40, 40 );
+                this.add( _spinner );
+                this.setVisible( true );
+            }
+//        }
     }
     
     /*
@@ -139,21 +135,40 @@ public class PopupMonitor extends JDialog implements WindowListener  {
      * Called when things succeed.  This makes the window go away.
      */
     protected void successCondition() {
-        _cleanClose = true;
-        _theWindow.setTitle( "DISMISSED - SUCCESS" );
-        if ( _spinner != null ) _spinner.stop();
-        _success = true;
-        _theWindow.setVisible( false );
+//        synchronized ( _displayLock ) {
+            _cleanClose = true;
+            _noSpinnerStart = true;
+            _theWindow.setTitle( "DISMISSED - SUCCESS" );
+            if ( _spinner != null ) _spinner.stop();
+            _success = true;
+            _theWindow.setVisible( false );
+//        }
     }
     
     /*
      * Called when things fail.
      */
     protected void errorCondition() {
-        _cancelButton.setText( "Dismiss" );
-        if ( _spinner != null ) _spinner.error();
-        if ( _spinner != null ) _spinner.stop();
-        _dismissActive = true;
+//        synchronized ( _displayLock ) {
+            _noSpinnerStart = true;
+            _cancelButton.setText( "Dismiss" );
+            if ( _spinner != null ) _spinner.error();
+            if ( _spinner != null ) _spinner.stop();
+            _dismissActive = true;
+//        }
+    }
+    
+    /*
+     * A "silent" failure.  This gets rid of any pop-up windows.
+     */
+    protected void silentError() {
+//        synchronized ( _displayLock ) {
+            _noSpinnerStart = true;
+            showProgress( false );
+            if ( _spinner != null ) _spinner.stop();
+            _cleanClose = true;
+            _theWindow.setVisible( false );
+//        }
     }
     
     /*
@@ -192,11 +207,14 @@ public class PopupMonitor extends JDialog implements WindowListener  {
      * cancelled deliberately.
      */
     protected void cancelOperation() {
-        _cleanClose = true;
-        _theWindow.setTitle( "DISMISSED - CANCEL" );
-        if ( _spinner != null ) _spinner.stop();
-        _success = false;
-        _theWindow.setVisible( false );
+//        synchronized ( _displayLock ) {
+            _noSpinnerStart = true;
+            _cleanClose = true;
+            _theWindow.setTitle( "DISMISSED - CANCEL" );
+            if ( _spinner != null ) _spinner.stop();
+            _success = false;
+            _theWindow.setVisible( false );
+//        }
     }
     
     /*
@@ -257,5 +275,7 @@ public class PopupMonitor extends JDialog implements WindowListener  {
     protected Spinner _spinner;
     protected PopupMonitor _theWindow;
     protected int _delay;
+    protected boolean _noSpinnerStart;
+    protected Object _displayLock;
     
 }

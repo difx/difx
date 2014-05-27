@@ -53,31 +53,18 @@ public class QueueBrowserContainerNode extends QueueBrowserNode {
     
     public void addJobs( int n ) {
         _numJobs += n;
-        if ( _setupComplete ) {
-            _jobsLabel.setText( _numJobs + " jobs" );
-        }
-        checkVisibility();
     }
 
     public void addScheduled( int n ) {
         _numScheduled += n;
-        setProgress();
-        checkVisibility();
     }
 
     public void addCompleted( int n ) {
         _numCompleted += n;
-        setProgress();
-        checkVisibility();
     }
 
     public void addFailed( int n ) {
         _numFailed += n;
-        setProgress();
-        if ( _setupComplete ) {
-            _failedLabel.setText( _numFailed + " failed" );
-        }
-        checkVisibility();
     }
     
     public void setProgress() {
@@ -95,15 +82,15 @@ public class QueueBrowserContainerNode extends QueueBrowserNode {
     }
     
     public void checkVisibility() {
-        if ( _statsVisible && _numJobs > 0 )
+        if ( _statsVisible && !_overrideVisible && _numJobs > 0 )
             _jobsLabel.setVisible( true );
         else
             _jobsLabel.setVisible( false );
-        if ( _statsVisible && _numScheduled + _numCompleted + _numFailed > 0 )
+        if ( _statsVisible && !_overrideVisible && _numScheduled + _numCompleted + _numFailed > 0 )
             _progress.setVisible( true );
         else
             _progress.setVisible( false );
-        if ( _statsVisible && _numFailed > 0 )
+        if ( _statsVisible && !_overrideVisible && _numFailed > 0 )
             _failedLabel.setVisible( true );
         else
             _failedLabel.setVisible( false );
@@ -119,6 +106,19 @@ public class QueueBrowserContainerNode extends QueueBrowserNode {
     public int numScheduled() { return _numScheduled; }
     public int numCompleted() { return _numCompleted; }
     public int numFailed() { return _numFailed; }
+    
+    public void displayNow() {
+        if ( _setupComplete ) {
+            _jobsLabel.setText( _numJobs + " jobs" );
+            _failedLabel.setText( _numFailed + " failed" );
+        }
+        setProgress();
+        checkVisibility();        
+    }
+    
+    public void overrideVisible( boolean newVal ) {
+        _overrideVisible = newVal;
+    }
 
     protected int _numJobs;
     protected int _numScheduled;
@@ -134,5 +134,6 @@ public class QueueBrowserContainerNode extends QueueBrowserNode {
     protected ColumnTextArea _failedLabel;
     
     protected boolean _statsVisible;
+    protected boolean _overrideVisible;
     
 }

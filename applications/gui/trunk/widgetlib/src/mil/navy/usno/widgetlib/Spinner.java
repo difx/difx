@@ -81,12 +81,13 @@ public class Spinner extends JPanel {
 
     public void stop() { 
         _timeThread.keepGoing( false );
-        int counter = 20;
+        int counter = 60;
         while ( _timeThread.threadRunning() && counter != 0 ) {
             --counter;
             _timeThread.keepGoing( false );
             try { Thread.sleep( 250 ); } catch ( Exception e ) {}
         }
+//        _timeThread.interrupt();
     }
     public void error() { _errorCondition = true; }
     public void ok() { _errorCondition = false; }

@@ -113,6 +113,7 @@ public class PassNode extends QueueBrowserContainerNode {
         _stateLabel.setText( text );
         _stateLabel.setBackground( color );
         _stateLabel.setVisible( visible );
+        overrideVisible( visible );
     }
     
     /*
