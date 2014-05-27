@@ -369,8 +369,8 @@ int newScan(DifxInput *D, struct CommandLineOptions *opts, char *node, int scanI
     struct tm *t;
     struct stat stat_s;
     char *rcode,                    // six-letter timecode suffix
-         rootname[DIFXIO_NAME_LENGTH],             // full root filename
-         path[DIFXIO_NAME_LENGTH+5];
+         rootname[DIFXIO_FILENAME_LENGTH],             // full root filename
+         path[DIFXIO_FILENAME_LENGTH+5];
 
     struct stations stns[D->nAntenna];
     struct fblock_tag fblock[MAX_FPPAIRS];
@@ -393,7 +393,7 @@ int newScan(DifxInput *D, struct CommandLineOptions *opts, char *node, int scanI
     rcode = root_id (year, day, hour, min, sec);
                  
                                 // make scan directory
-    snprintf(path, DIFXIO_NAME_LENGTH, "%s/%s", node, D->scan[scanId].identifier);
+    snprintf(path, DIFXIO_FILENAME_LENGTH, "%s/%s", node, D->scan[scanId].identifier);
     err = stat(path, &stat_s);
     if(!err)
         {
