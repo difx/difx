@@ -58,6 +58,9 @@ public class ProcessorNode extends BrowserNode {
         _numCores = new ColumnTextArea();
         _numCores.justify( ColumnTextArea.RIGHT );
         this.add( _numCores );
+        _threadsUsed = new ColumnTextArea();
+        _threadsUsed.justify( ColumnTextArea.RIGHT );
+        this.add( _threadsUsed );
         _bogusGHz = new ColumnTextArea();
         _bogusGHz.justify( ColumnTextArea.RIGHT );
         this.add( _bogusGHz );
@@ -205,6 +208,8 @@ public class ProcessorNode extends BrowserNode {
         _colorColumn = false;
         if( _showNumCPUs )
             setTextArea( _numCPUs, _widthNumCPUs );
+        if ( _showThreadsUsed )
+            setTextArea( _threadsUsed, _widthThreadsUsed );
         if ( _showNumCores )
             setTextArea( _numCores, _widthNumCores );
         if ( _showBogusGHz )
@@ -370,6 +375,11 @@ public class ProcessorNode extends BrowserNode {
         _numCPUs.setVisible( newVal );
     }
     
+    public void showThreadsUsed( boolean newVal ) {
+        _showThreadsUsed = newVal;
+        _threadsUsed.setVisible( newVal );
+    }
+    
     public void showNumCores( boolean newVal ) {
         _showNumCores = newVal;
         _numCores.setVisible( newVal );
@@ -441,6 +451,7 @@ public class ProcessorNode extends BrowserNode {
     }
 
     public void widthNumCPUs( int newVal ) { _widthNumCPUs = newVal; }
+    public void widthThreadsUsed( int newVal ) { _widthThreadsUsed = newVal; }
     public void widthNumCores( int newVal ) { _widthNumCores = newVal; }
     public void widthBogusGHz( int newVal ) { _widthBogusGHz = newVal; }
     public void widthType( int newVal ) { _widthType = newVal; }
@@ -469,6 +480,7 @@ public class ProcessorNode extends BrowserNode {
     public void loadMessage( DifxMessage difxMsg ) {
         _networkActivity.data();
         _numCPUs.setText( "0" );
+        _threadsUsed.setText( threadsUsed() + "/" + ( difxMsg.getBody().getDifxLoad().getNCore() - 1 ) );
         _numCores.setText( "" + difxMsg.getBody().getDifxLoad().getNCore() );
         _bogusGHz.setText( "0" );
         _type.setText( "0" );
@@ -556,6 +568,8 @@ public class ProcessorNode extends BrowserNode {
     boolean _showNetworkActivity;
     ColumnTextArea _numCPUs;
     boolean _showNumCPUs;
+    ColumnTextArea _threadsUsed;
+    boolean _showThreadsUsed;
     ColumnTextArea _numCores;
     boolean _showNumCores;
     ColumnTextArea _bogusGHz;
@@ -602,6 +616,7 @@ public class ProcessorNode extends BrowserNode {
     DecimalFormat _dec;
 
     int _widthNumCPUs;
+    int _widthThreadsUsed;
     int _widthNumCores;
     int _widthBogusGHz;
     int _widthType;
@@ -648,6 +663,7 @@ public class ProcessorNode extends BrowserNode {
             if ( thisUse.jobEditor == job )
                 iter.remove();
         }
+        changeThreadsUsed();
     }
     public void addJob( JobEditorMonitor job, int threads, int use ) {
         CurrentUse newUse = new CurrentUse();
@@ -655,6 +671,7 @@ public class ProcessorNode extends BrowserNode {
         newUse.threads = threads;
         newUse.use = use;
         _usageList.add( newUse );
+        changeThreadsUsed();
 //        System.out.print( "add job " + job.getName() + " thread: " + threads );
 //        if ( use == CurrentUse.DATASOURCE )
 //            System.out.println( "  for DATA SOURCE " );
@@ -678,5 +695,9 @@ public class ProcessorNode extends BrowserNode {
                 return true;
         }
         return false;
+    }
+    
+    public void changeThreadsUsed() {
+        _threadsUsed.setText( threadsUsed() + "/" + ( numCores() - 1 ) );
     }
 }

@@ -5,7 +5,10 @@ package edu.nrao.difx.difxview;
 
 import java.awt.*;
 import javax.swing.JPanel;
+import javax.swing.text.JTextComponent;
+import javax.swing.JToolTip;
 
+import mil.navy.usno.widgetlib.ComplexToolTip;
 
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
@@ -143,6 +146,39 @@ public class ColumnTextArea extends JPanel implements MouseListener, MouseMotion
         foo.dispatchEvent( e );
     }
     
+    @Override
+    public JToolTip createToolTip() {
+        _tip = new ComplexToolTip();
+        _tip.setComponent( this );
+        _tip.dynamicLinkPath( _dynamicLinkPath );
+        return _tip;
+    }
+    @Override
+    public Point getToolTipLocation( MouseEvent e) {
+        return new Point( 10, getHeight() );
+    }
+    
+    public ComplexToolTip toolTip() { return _tip; }
+    
+    /*
+     * Allows the user of this widget to set a "dynamic path" for links in the
+     * tooltip string.  See the ComplexToolTip class for details.
+     */
+    public void toolTipDynamicLinkPath( JTextComponent textField ) {
+        _dynamicLinkPath = textField;
+    }
+    
+    /*
+     * A tooltip-setting function that includes the above.
+     */
+    public void toolTip( String str, JTextComponent textField ) {
+        this.setToolTipText( str );
+        this.toolTipDynamicLinkPath( textField );
+    }
+
+    ComplexToolTip _tip;
+    JTextComponent _dynamicLinkPath;
+
     static int CENTER = 0;
     static int LEFT = 1;
     static int RIGHT = 2;

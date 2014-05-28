@@ -281,6 +281,7 @@
                 <xsd:element ref="hardwareIgnored" />
                 <xsd:element ref="hardwareBroadcastMonitor" />
                 <xsd:element ref="hardwareNumCPUs" />
+                <xsd:element ref="hardwareThreadsUsed" />
                 <xsd:element ref="hardwareNumCores" />
                 <xsd:element ref="hardwareBogusGHz" />
                 <xsd:element ref="hardwareType" />
@@ -537,6 +538,7 @@
     <xsd:element name="hardwareIgnored" type="columnSpec"></xsd:element>
     <xsd:element name="hardwareBroadcastMonitor" type="columnSpec"></xsd:element>
     <xsd:element name="hardwareNumCPUs" type="columnSpec"></xsd:element>
+    <xsd:element name="hardwareThreadsUsed" type="columnSpec"></xsd:element>
     <xsd:element name="hardwareNumCores" type="columnSpec"></xsd:element>
     <xsd:element name="hardwareBogusGHz" type="columnSpec"></xsd:element>
     <xsd:element name="hardwareType" type="columnSpec"></xsd:element>

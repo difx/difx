@@ -59,6 +59,17 @@ public class ProcessorNodesHeader extends BrowserNode {
             }
         });
         this.add( _numCPUs );
+        _threadsUsed = new ColumnTextArea( "Threads" );
+        _threadsUsed.setToolTipText( "The number of threads the GUI believes is in use,\n"
+                + "and the total number available.  These numbers are not\n"
+                + "reported by the processor itself - the GUI infers them." );
+        _threadsUsed.addKillButton(new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                _showThreadsUsed.setState( false );
+                columnChangeActivity();
+            }
+        });
+        this.add( _threadsUsed );
         _numCores = new ColumnTextArea( "Cores" );
         _numCores.addKillButton(new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
@@ -290,6 +301,13 @@ public class ProcessorNodesHeader extends BrowserNode {
             }
         });
         _popup.add( _showNumCPUs );
+        _showThreadsUsed = new JCheckBoxMenuItem( "Threads" );
+        _showThreadsUsed.addActionListener(new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                columnChangeActivity();
+            }
+        });
+        _popup.add( _showThreadsUsed );
         _showNumCores = new JCheckBoxMenuItem( "Cores" );
         _showNumCores.addActionListener(new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
@@ -396,6 +414,7 @@ public class ProcessorNodesHeader extends BrowserNode {
     public void activateAll() {
         _broadcastMonitor.setState( true );
         _showNumCPUs.setState( true );
+        _showThreadsUsed.setState( true );
         _showNumCores.setState( true );
         _showBogusGHz.setState( true );
         _showType.setState( true );
@@ -427,6 +446,12 @@ public class ProcessorNodesHeader extends BrowserNode {
         }
         else
             _positionNumCPUs = -100;
+        if ( _showThreadsUsed.getState() ) {
+            setTextArea( _threadsUsed, _settings.hardwareColumnSpecs().ThreadsUsed.width );
+            _positionThreadsUsed = _xOff;
+        }
+        else
+            _positionThreadsUsed = -100;
         if ( _showNumCores.getState() ) {
             setTextArea( _numCores, _settings.hardwareColumnSpecs().NumCores.width );
             _positionNumCores = _xOff;
@@ -543,6 +568,7 @@ public class ProcessorNodesHeader extends BrowserNode {
         _showIgnored.setState( _settings.hardwareColumnSpecs().Ignored.show );
         _broadcastMonitor.setState( _settings.hardwareColumnSpecs().broadcastMonitor.show );
         _showNumCPUs.setState( _settings.hardwareColumnSpecs().NumCPUs.show );
+        _showThreadsUsed.setState( _settings.hardwareColumnSpecs().ThreadsUsed.show );
         _showNumCores.setState( _settings.hardwareColumnSpecs().NumCores.show );
         _showBogusGHz.setState( _settings.hardwareColumnSpecs().BogusGHz.show );
         _showType.setState( _settings.hardwareColumnSpecs().Type.show );
@@ -567,6 +593,7 @@ public class ProcessorNodesHeader extends BrowserNode {
             ProcessorNode thisNode = (ProcessorNode)(iter.next());
             //  Change the settings on these items to match our current specifications.
             thisNode.widthNumCPUs( _settings.hardwareColumnSpecs().NumCPUs.width );
+            thisNode.widthThreadsUsed( _settings.hardwareColumnSpecs().ThreadsUsed.width );
             thisNode.widthNumCores( _settings.hardwareColumnSpecs().NumCores.width );
             thisNode.widthBogusGHz( _settings.hardwareColumnSpecs().BogusGHz.width );
             thisNode.widthType( _settings.hardwareColumnSpecs().Type.width );
@@ -811,6 +838,7 @@ public class ProcessorNodesHeader extends BrowserNode {
     public void mouseMoved( MouseEvent e ) {
         this.setCursor( _normalCursor );
         _adjustNumCPUs = false;
+        _adjustThreadsUsed = false;
         _adjustNumCores = false;
         _adjustBogusGHz = false;
         _adjustType = false;
@@ -828,6 +856,10 @@ public class ProcessorNodesHeader extends BrowserNode {
         if ( e.getX() > _positionNumCPUs - 3 && e.getX() < _positionNumCPUs + 2 ) {
             setCursor( _columnAdjustCursor );
             _adjustNumCPUs = true;
+        }
+        else if ( e.getX() > _positionThreadsUsed - 3 && e.getX() < _positionThreadsUsed + 2 ) {
+            setCursor( _columnAdjustCursor );
+            _adjustThreadsUsed = true;
         }
         else if ( e.getX() > _positionNumCores - 3 && e.getX() < _positionNumCores + 2 ) {
             setCursor( _columnAdjustCursor );
@@ -900,6 +932,10 @@ public class ProcessorNodesHeader extends BrowserNode {
             _startWidth = _settings.hardwareColumnSpecs().NumCPUs.width;
             _startX = e.getX();
         }
+        else if ( _adjustThreadsUsed ) {
+            _startWidth = _settings.hardwareColumnSpecs().ThreadsUsed.width;
+            _startX = e.getX();
+        }
         else if ( _adjustNumCores ) {
             _startWidth = _settings.hardwareColumnSpecs().NumCores.width;
             _startX = e.getX();
@@ -968,6 +1004,10 @@ public class ProcessorNodesHeader extends BrowserNode {
         if ( _adjustNumCPUs ) {
             if ( e.getX() - _startX + _startWidth > 5 )
                 _settings.hardwareColumnSpecs().NumCPUs.width = _startWidth + e.getX() - _startX;
+        }
+        else if ( _adjustThreadsUsed ) {
+            if ( e.getX() - _startX + _startWidth > 5 )
+                _settings.hardwareColumnSpecs().ThreadsUsed.width = _startWidth + e.getX() - _startX;
         }
         else if ( _adjustNumCores ) {
             if ( e.getX() - _startX + _startWidth > 5 )
@@ -1057,6 +1097,7 @@ public class ProcessorNodesHeader extends BrowserNode {
             thisNode.showIgnored( _showIgnored.getState() );
             thisNode.showNetworkActivity( _broadcastMonitor.getState() );
             thisNode.showNumCPUs( _showNumCPUs.getState() );
+            thisNode.showThreadsUsed( _showThreadsUsed.getState() );
             thisNode.showNumCores( _showNumCores.getState() );
             thisNode.showBogusGHz( _showBogusGHz.getState() );
             thisNode.showType( _showType.getState() );
@@ -1075,6 +1116,7 @@ public class ProcessorNodesHeader extends BrowserNode {
         }
         //  Update the headers as well.
         _numCPUs.setVisible( _showNumCPUs.getState() );
+        _threadsUsed.setVisible( _showThreadsUsed.getState() );
         _numCores.setVisible( _showNumCores.getState() );
         _bogusGHz.setVisible( _showBogusGHz.getState() );
         _type.setVisible( _showType.getState() );
@@ -1094,6 +1136,7 @@ public class ProcessorNodesHeader extends BrowserNode {
         _settings.hardwareColumnSpecs().Ignored.show = _showIgnored.getState();
         _settings.hardwareColumnSpecs().broadcastMonitor.show = _broadcastMonitor.getState();
         _settings.hardwareColumnSpecs().NumCPUs.show = _showNumCPUs.getState();
+        _settings.hardwareColumnSpecs().ThreadsUsed.show = _showThreadsUsed.getState();
         _settings.hardwareColumnSpecs().NumCores.show = _showNumCores.getState();
         _settings.hardwareColumnSpecs().BogusGHz.show = _showBogusGHz.getState();
         _settings.hardwareColumnSpecs().Type.show = _showType.getState();
@@ -1113,6 +1156,7 @@ public class ProcessorNodesHeader extends BrowserNode {
     protected JCheckBoxMenuItem _showIgnored;
     protected JCheckBoxMenuItem _broadcastMonitor;
     protected JCheckBoxMenuItem _showNumCPUs;
+    protected JCheckBoxMenuItem _showThreadsUsed;
     protected JCheckBoxMenuItem _showNumCores;
     protected JCheckBoxMenuItem _showBogusGHz;
     protected JCheckBoxMenuItem _showType;
@@ -1129,6 +1173,7 @@ public class ProcessorNodesHeader extends BrowserNode {
     protected JCheckBoxMenuItem _showNetTxRate;
     
     ColumnTextArea _numCPUs;
+    ColumnTextArea _threadsUsed;
     ColumnTextArea _numCores;
     ColumnTextArea _bogusGHz;
     ColumnTextArea _type;
@@ -1145,6 +1190,7 @@ public class ProcessorNodesHeader extends BrowserNode {
     ColumnTextArea _netTxRate;
 
     int _positionNumCPUs;
+    int _positionThreadsUsed;
     int _positionNumCores;
     int _positionBogusGHz;
     int _positionType;
@@ -1161,6 +1207,7 @@ public class ProcessorNodesHeader extends BrowserNode {
     int _positionNetTxRate;
 
     boolean _adjustNumCPUs;
+    boolean _adjustThreadsUsed;
     boolean _adjustNumCores;
     boolean _adjustBogusGHz;
     boolean _adjustType;

@@ -6,6 +6,10 @@
             <line>181</line>
         </file>
         <file>
+            <url>src/edu/nrao/difx/difxview/SystemSettings.java</url>
+            <line>279</line>
+        </file>
+        <file>
             <url>src/edu/nrao/vlba/difxdatamodel/Queue.java</url>
             <line>777</line>
             <line>870</line>
@@ -31,7 +35,7 @@
         </file>
         <file>
             <url>src/edu/nrao/difx/difxview/JobEditorMonitor.java</url>
-            <line>2405</line>
+            <line>2408</line>
         </file>
         <file>
             <url>src/edu/nrao/vlba/difxdatamodel/Job.java</url>
@@ -40,11 +44,11 @@
         </file>
         <file>
             <url>src/edu/nrao/difx/difxview/QueueBrowserPanel.java</url>
-            <line>469</line>
-            <line>1294</line>
-            <line>1336</line>
-            <line>1447</line>
-            <line>1757</line>
+            <line>482</line>
+            <line>1341</line>
+            <line>1383</line>
+            <line>1502</line>
+            <line>1816</line>
         </file>
         <file>
             <url>src/edu/nrao/vlba/difxcontroller/ProcessMessageThread.java</url>
@@ -78,13 +82,13 @@
             <line>2148</line>
         </file>
         <file>
-            <url>src/edu/nrao/vlba/difxdatamodel/DiFXSystemStatus.java</url>
-            <line>480</line>
-        </file>
-        <file>
             <url>src/edu/nrao/vlba/difxcontroller/JAXBPacketProcessor.java</url>
             <line>33</line>
             <line>51</line>
+        </file>
+        <file>
+            <url>src/edu/nrao/vlba/difxdatamodel/DiFXSystemStatus.java</url>
+            <line>480</line>
         </file>
         <file>
             <url>src/edu/nrao/vlba/difxdatamodel/Mark5Unit.java</url>
@@ -95,15 +99,15 @@
             <line>73</line>
         </file>
         <file>
+            <url>src/edu/nrao/difx/difxview/PassNode.java</url>
+            <line>136</line>
+        </file>
+        <file>
             <url>src/edu/nrao/vlba/difxview/ProjectManagerUI.java</url>
             <line>762</line>
             <line>767</line>
             <line>832</line>
             <line>1010</line>
-        </file>
-        <file>
-            <url>src/edu/nrao/difx/difxview/PassNode.java</url>
-            <line>135</line>
         </file>
     </editor-bookmarks>
 </project-private>

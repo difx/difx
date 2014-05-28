@@ -713,6 +713,13 @@ public class JobEditorMonitor extends JFrame {
             thisNode.handSelected( false );
         }
     }
+    public void zeroAllProcessorThreads() {
+        for ( Iterator<BrowserNode> iter = _processorsPane.browserTopNode().children().iterator();
+                iter.hasNext(); ) {
+            PaneProcessorNode thisNode = (PaneProcessorNode)(iter.next());
+            thisNode.threads( 0 );
+        }
+    }
     
     /*
      * Select "default" settings for the data source and processor node selections.  These
@@ -811,21 +818,21 @@ public class JobEditorMonitor extends JFrame {
                         if (  thisNode.name().contentEquals( _settings.headNode() ) )
                             ++totalThreadsUsed;
                         //  We assume one thread per core, always reserving one core for mpi activities.
-                        if ( thisNode.numCores() - 1 < totalThreadsUsed + _settings.threadsPerDataSource() )
+                        if ( thisNode.numCores() - 1 <= totalThreadsUsed + _settings.threadsPerDataSource() )
                             useNode = false;
                     }
                     //  If we are allowed to use the node, do so.  We add it to our "local" list of used
                     //  nodes and set "foundNode" so the search is stopped.
                     if ( useNode ) {
                         foundNode = thisNode;
-                        //  Reserve thread(s) for reading based on user requests.
-                        usedNodes.add( new UsedNode( thisNode, _settings.threadsPerDataSource() ) );
                     }
                 }
                 //  If a node has been chosen, set it.  If we haven't found a node, stick with whatever
                 //  the initial default value was (i.e. don't change anything).
                 if ( foundNode != null ) {
                     thisSource.setSourceNode( foundNode.name() );
+                    //  Reserve thread(s) for reading based on user requests.
+                    usedNodes.add( new UsedNode( foundNode, _settings.threadsPerDataSource() ) );
                     dataSourceNodes.add( new UsedNode( foundNode, _settings.threadsPerDataSource() ) );
                 }
                 else {
@@ -911,11 +918,15 @@ public class JobEditorMonitor extends JFrame {
                             if ( useThis ) {
                                 //  See how many threads this node has free.
                                 int threadsFree = thisNode.numCores() - 1 - thisNode.threadsUsed();
+                                //  Subtract one more thread if this is the headnode.
+                                if (  thisNode.name().contentEquals( _settings.headNode() ) )
+                                    --threadsFree;
                                 //  Subtract any we have reserved for this job.
                                 for ( Iterator<UsedNode> iter3 = usedNodes.iterator(); iter3.hasNext(); ) {
                                     UsedNode testNode = iter3.next();
-                                    if ( testNode.processorNode == thisNode )
+                                    if ( testNode.processorNode == thisNode ) {
                                         threadsFree -= testNode.usedThreads;
+                                    }
                                 }
                                 //  If the number of available threads meets requirements,
                                 //  use the node!
@@ -982,6 +993,9 @@ public class JobEditorMonitor extends JFrame {
                                 if ( useThis ) {
                                     //  See how many threads this node has free.
                                     int threadsFree = thisNode.numCores() - 1 - thisNode.threadsUsed();
+                                    //  Subtract one more thread if this is the headnode.
+                                    if (  thisNode.name().contentEquals( _settings.headNode() ) )
+                                        --threadsFree;
                                     //  Subtract any we have reserved for this job.
                                     for ( Iterator<UsedNode> iter3 = usedNodes.iterator(); iter3.hasNext(); ) {
                                         UsedNode testNode = iter3.next();
@@ -1040,6 +1054,9 @@ public class JobEditorMonitor extends JFrame {
                             if ( useThis ) {
                                 //  See how many threads this node has free.
                                 int threadsFree = thisNode.numCores() - 1 - thisNode.threadsUsed();
+                                //  Subtract one more thread if this is the headnode.
+                                if (  thisNode.name().contentEquals( _settings.headNode() ) )
+                                    --threadsFree;
                                 //  Subtract any we have reserved for this job.
                                 for ( Iterator<UsedNode> iter3 = usedNodes.iterator(); iter3.hasNext(); ) {
                                     UsedNode testNode = iter3.next();
@@ -1068,6 +1085,7 @@ public class JobEditorMonitor extends JFrame {
         //  Now actually reserve the processors.  We do this first by clearing all
         //  currently-selected processors.
         deselectAllProcessors();
+        zeroAllProcessorThreads();
         //  Now run through our list of "intentions" and actually reserve the
         //  processors.
         for ( Iterator<UsedNode> iter = processingNodes.iterator(); iter.hasNext(); ) {

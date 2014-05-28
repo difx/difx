@@ -2219,6 +2219,7 @@ public class SystemSettings extends JFrame {
         _hardwareColumnSpecs.Ignored.show = false;
         _hardwareColumnSpecs.broadcastMonitor.show = true;
         _hardwareColumnSpecs.NumCPUs.show = false;
+        _hardwareColumnSpecs.ThreadsUsed.show = false;
         _hardwareColumnSpecs.NumCores.show = false;
         _hardwareColumnSpecs.BogusGHz.show = false;
         _hardwareColumnSpecs.Type.show = false;
@@ -2247,6 +2248,7 @@ public class SystemSettings extends JFrame {
 
         _hardwareColumnSpecs.broadcastMonitor.width = 70;
         _hardwareColumnSpecs.NumCPUs.width = 70;
+        _hardwareColumnSpecs.ThreadsUsed.width = 70;
         _hardwareColumnSpecs.NumCores.width = 70;
         _hardwareColumnSpecs.BogusGHz.width = 70;
         _hardwareColumnSpecs.Type.width = 70;
@@ -3307,6 +3309,10 @@ public class SystemSettings extends JFrame {
                 _hardwareColumnSpecs.NumCPUs.show = doiConfig.getHardwareNumCPUs().isShow();
                 _hardwareColumnSpecs.NumCPUs.width = doiConfig.getHardwareNumCPUs().getWidth();
             }
+            if ( doiConfig.getHardwareThreadsUsed() != null ) {
+                _hardwareColumnSpecs.ThreadsUsed.show = doiConfig.getHardwareThreadsUsed().isShow();
+                _hardwareColumnSpecs.ThreadsUsed.width = doiConfig.getHardwareThreadsUsed().getWidth();
+            }
             if ( doiConfig.getHardwareNumCores() != null ) {
                 _hardwareColumnSpecs.NumCores.show = doiConfig.getHardwareNumCores().isShow();
                 _hardwareColumnSpecs.NumCores.width = doiConfig.getHardwareNumCores().getWidth();
@@ -3718,6 +3724,9 @@ public class SystemSettings extends JFrame {
         doiConfig.setHardwareNumCPUs( factory.createColumnSpec() );
         doiConfig.getHardwareNumCPUs().setShow( _hardwareColumnSpecs.NumCPUs.show );
         doiConfig.getHardwareNumCPUs().setWidth( _hardwareColumnSpecs.NumCPUs.width );
+        doiConfig.setHardwareThreadsUsed( factory.createColumnSpec() );
+        doiConfig.getHardwareThreadsUsed().setShow( _hardwareColumnSpecs.ThreadsUsed.show );
+        doiConfig.getHardwareThreadsUsed().setWidth( _hardwareColumnSpecs.ThreadsUsed.width );
         doiConfig.setHardwareNumCores( factory.createColumnSpec() );
         doiConfig.getHardwareNumCores().setShow( _hardwareColumnSpecs.NumCores.show );
         doiConfig.getHardwareNumCores().setWidth( _hardwareColumnSpecs.NumCores.width );
@@ -4788,6 +4797,7 @@ public class SystemSettings extends JFrame {
         ColumnSpec Ignored = new ColumnSpec();
         ColumnSpec broadcastMonitor = new ColumnSpec();
         ColumnSpec NumCPUs = new ColumnSpec();
+        ColumnSpec ThreadsUsed = new ColumnSpec();
         ColumnSpec NumCores = new ColumnSpec();
         ColumnSpec BogusGHz = new ColumnSpec();
         ColumnSpec Type = new ColumnSpec();
