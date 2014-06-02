@@ -91,7 +91,13 @@ def check_file(infile):
         # assume it is a mark5 file of some description. Details of the format
         # are not important for extracting the start time. If we don't have
         # m5time in our path we simply will not do this.
-        m5formats = ['VLBA1_2-256-8-2', 'MKIV1_4-128-2-1', 'Mark5B-512-16-2']
+        m5formats = ['VLBA1_2-256-8-2', 'Mark5B-512-16-2']
+        # for MkIV must get both fanout and number of bits correct to determine time. Check nbits=2 formats first as they are much more common.
+        for nbits in [2,1]:
+            for fanout in [1,2,4]:
+                m4format = 'MKIV1_' + str(fanout) + '-1024-16-' + str(nbits)
+                m5formats.append(m4format)
+
         starttime_m5 = []
         error = None
         for m5format in m5formats:
