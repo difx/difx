@@ -979,7 +979,7 @@ static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, vector<vector<
 	else if(setup->formatName.substr(0,4) == string("VDIF"))
 	{
 		// look for VDIF + extra information
-		// Formats supported are  VDIF, VDIFL and VDIFC
+		// Formats supported are  VDIF, VDIFL, VDIFC and VDIFD
 		//   VDIFLxxx		xxxx = frame size
 		//   VDIF/xxxx		xxxx = frame size
 		//   VDIF/xxxx/bb	xxxx = frame size, bb = # bits
@@ -991,6 +991,13 @@ static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, vector<vector<
 	    } 
 	  else if (setup->formatName.substr(0,5) == string("VDIFC")) 
 	    {
+	      D->datastream[dsId].dataSampling = SamplingComplex;
+	      strcpy(D->datastream[dsId].dataFormat, "VDIF");
+	      strOff = 5;
+	    }
+	  else if (setup->formatName.substr(0,5) == string("VDIFD")) 
+	    {
+	      D->datastream[dsId].dataSampling = SamplingComplexDSB;
 	      strcpy(D->datastream[dsId].dataFormat, "VDIF");
 	      strOff = 5;
 	    }
