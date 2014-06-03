@@ -32,9 +32,9 @@
 
 
 program = 'checkdir'
-version = '0.7'
+version = '0.8'
 author  = 'Walter Brisken'
-verdate = '20121220'
+verdate = '20140603'
 
 from sys import exit, argv
 from os.path import isfile, isdir
@@ -161,6 +161,11 @@ class Scan:
 			return "Zero length scan"
 		return None
 
+	def checkDuration(self):
+		if self.duration > 4200:
+			return "Long scan (%d min).  This is unusual and possibly problematic." % int(self.duration/60)
+		return None
+
 	def checkName(self):
 		if find(self.name, 'UKN') >= 0:
 			return "This scan was rescued and might consist of multiple scans.  mk5map can be used to dissect it (for Mark5B format only)"
@@ -230,14 +235,24 @@ def checkForOverlap(scans):
 	n = len(scans)
 	if n < 2:
 		return None
+	rv = ''
 	for i in range(1, n):
+		overlapTimeScans = ''
+		overlapByteScans = ''
 		for j in range(0, i):
 			if min(scans[i].stopMJD, scans[j].stopMJD) > max(scans[i].startMJD, scans[j].startMJD):
-				return 'Scans %d and %d overlap in time' % (j+1, i+1)
+				overlapTimeScans += ' %d' % (j+1)
 			if min(scans[i].endBytes, scans[j].endBytes) > max(scans[i].startBytes, scans[j].startBytes):
-				return 'Scans %d and %d overlap in bytes' % (j+1, i+1)
+				overlapByteScans += ' %d' % (j+1)
+		if overlapTimeScans != '':
+			rv += '\n   Scans %d overlaps in time with scan(s)%s' % (i+1, overlapTimeScans)
+		if overlapByteScans != '':
+			rv += '\n   Scans %d overlaps in bytes with scan(s)%s' % (i+1, overlapByteScans)
 
-	return None
+	if rv == '':
+		return None
+	else:
+		return rv
 
 def checkForOrder(scans):
 	n = len(scans)
@@ -295,6 +310,9 @@ def checkFile(module, histogram, verbose=1):
 	for t in text[1:]:
 		scan = Scan(t)
 		scans.append(scan)
+		durCheck = scan.checkDuration()
+		if durCheck != None:
+			print '%s scan %d: %s' % (module, len(scans), durCheck)
 		if scan.error == None:
 			scan.error = scan.checkLength()
 		if scan.error == None:
@@ -331,7 +349,7 @@ def checkFile(module, histogram, verbose=1):
 	err = checkForOverlap(scans)
 	if err == None:
 		err = checkForOrder(scans)
-	if err != None:
+	else:
 		print '%s : %s' % (module, err)
 		return 0
 
