@@ -23,7 +23,7 @@
 from sys import argv, exit
 from string import split, strip
 from math import *
-from pylab import np, plot, show, scatter, xlabel, ylabel, title
+from pylab import np, plot, show, scatter, xlabel, ylabel, title, axes, savefig
 
 program = 'plotpcal'
 author = 'Walter Brisken <wbrisken@nrao.edu>'
@@ -442,10 +442,12 @@ def generatePlots(op, toneSelect, dataDict, options):
 
 				xlabel('Real')
 				ylabel('Imag')
+				axes().set_aspect('equal')
 				for i in range(nColumn):
 					scatter(plotDataX[i], plotDataY[i], color=colors[i%len(colors)], s=3)
 				
 
+		savefig('%s-pcal-%s.pdf' % (a, op), bbox_inches='tight')
 		show()
 
 
