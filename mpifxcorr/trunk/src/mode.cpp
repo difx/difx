@@ -637,7 +637,6 @@ float Mode::process(int index, int subloopindex)  //frac sample error is in micr
   f32 phaserotationfloat, fracsampleerror;
   int status, count, nearestsample, integerdelay, RcpIndex, LcpIndex, intwalltime;
   cf32* fftptr;
-  cf32 *fracsampptr1A, *fracsampptr2A, *fracsampptr1B, *fracsampptr2B;
   f32* currentstepchannelfreqs;
   int indices[10];
   bool looff, isfraclooffset;
@@ -790,12 +789,6 @@ float Mode::process(int index, int subloopindex)  //frac sample error is in micr
     //updated so that Nyquist channel is not accumulated for either USB or LSB data
     //and is excised entirely, so both USB and LSB data start at the same place (no sidebandoffset)
     currentstepchannelfreqs = stepchannelfreqs;
-    fracsampptr1A = &(fracsamprotatorA[0]);
-    fracsampptr2A = &(fracsamprotatorA[arraystridelength]);
-    if (deltapoloffsets) {
-      fracsampptr1B = &(fracsamprotatorB[0]);
-      fracsampptr2B = &(fracsamprotatorB[arraystridelength]);
-    }
     if(config->getDRecordedLowerSideband(configindex, datastreamindex, i))
     {
       currentstepchannelfreqs = lsbstepchannelfreqs;
@@ -983,20 +976,20 @@ float Mode::process(int index, int subloopindex)  //frac sample error is in micr
     status = vectorSinCos_f32(stepfracsamparg, stepfracsampsin, stepfracsampcos, numfracstrides/2);
     if(status != vecNoErr)
       csevere << startl << "Error in frac sample correction, sin/cos (sub)!!!" << status << endl;
-    status = vectorRealToComplex_f32(subfracsampcos, subfracsampsin, fracsampptr1A, arraystridelength);
+    status = vectorRealToComplex_f32(subfracsampcos, subfracsampsin, fracsamprotatorA, arraystridelength);
     if(status != vecNoErr)
       csevere << startl << "Error in frac sample correction, real to complex (sub)!!!" << status << endl;
     status = vectorRealToComplex_f32(stepfracsampcos, stepfracsampsin, stepfracsampcplx, numfracstrides/2);
     if(status != vecNoErr)
       csevere << startl << "Error in frac sample correction, real to complex (step)!!!" << status << endl;
     for(int j=1;j<numfracstrides/2;j++) {
-      status = vectorMulC_cf32(fracsampptr1A, stepfracsampcplx[j], &(fracsampptr2A[(j-1)*arraystridelength]), arraystridelength);
+      status = vectorMulC_cf32(fracsamprotatorA, stepfracsampcplx[j], &(fracsamprotatorA[j*arraystridelength]), arraystridelength);
       if(status != vecNoErr)
         csevere << startl << "Error doing the time-saving complex multiplication in frac sample correction!!!" << endl;
     }
 
     // now do the first arraystridelength elements (which are different from fracsampptr1 for LSB case)
-    status = vectorMulC_cf32_I(stepfracsampcplx[0], fracsampptr1A, arraystridelength);
+    status = vectorMulC_cf32_I(stepfracsampcplx[0], fracsamprotatorA, arraystridelength);
     if(status != vecNoErr)
     csevere << startl << "Error doing the first bit of the time-saving complex multiplication in frac sample correction!!!" << endl;
 
@@ -1030,20 +1023,20 @@ float Mode::process(int index, int subloopindex)  //frac sample error is in micr
       status = vectorSinCos_f32(stepfracsamparg, stepfracsampsin, stepfracsampcos, numfracstrides/2);
       if(status != vecNoErr)
 	csevere << startl << "Error in frac sample correction, sin/cos (sub)!!!" << status << endl;
-      status = vectorRealToComplex_f32(subfracsampcos, subfracsampsin, fracsampptr1B, arraystridelength); // L2C change pointers
+      status = vectorRealToComplex_f32(subfracsampcos, subfracsampsin, fracsamprotatorB, arraystridelength); // L2C change pointers
       if(status != vecNoErr)
 	csevere << startl << "Error in frac sample correction, real to complex (sub)!!!" << status << endl;
       status = vectorRealToComplex_f32(stepfracsampcos, stepfracsampsin, stepfracsampcplx, numfracstrides/2);
       if(status != vecNoErr)
 	csevere << startl << "Error in frac sample correction, real to complex (step)!!!" << status << endl;
       for(int j=1;j<numfracstrides/2;j++) {
-	status = vectorMulC_cf32(fracsampptr1B, stepfracsampcplx[j], &(fracsampptr2B[(j-1)*arraystridelength]), arraystridelength); // L2C change pointers
+	status = vectorMulC_cf32(fracsamprotatorB, stepfracsampcplx[j], &(fracsamprotatorB[j*arraystridelength]), arraystridelength); // L2C change pointers
 	if(status != vecNoErr)
 	  csevere << startl << "Error doing the time-saving complex multiplication in frac sample correction!!!" << endl;
       }
 
       // now do the first arraystridelength elements (which are different from fracsampptr1 for LSB case)
-      status = vectorMulC_cf32_I(stepfracsampcplx[0], fracsampptr1B, arraystridelength); // L2C change pointers
+      status = vectorMulC_cf32_I(stepfracsampcplx[0], fracsamprotatorB, arraystridelength); // L2C change pointers
       if(status != vecNoErr)
 	csevere << startl << "Error doing the first bit of the time-saving complex multiplication in frac sample correction!!!" << endl;
 
