@@ -87,7 +87,9 @@ Mark5BMark5DataStream::Mark5BMark5DataStream(const Configuration * conf, int snu
 		}
 	}
 #endif
+	sendMark5Status(MARK5_STATE_OPENING, 0, 0.0, 0.0);
 	openStreamstor();
+	sendMark5Status(MARK5_STATE_OPEN, 0, 0.0, 0.0);
 
         // Start up mark5 watchdog thread
         perr = initWatchdog();
@@ -1157,33 +1159,12 @@ void Mark5BMark5DataStream::openStreamstor()
 {
 	XLR_RETURN_CODE xlrRC;
 
-	sendMark5Status(MARK5_STATE_OPENING, 0, 0.0, 0.0);
-
-	WATCHDOG( xlrRC = XLROpen(1, &xlrDevice) );
-  
-  	if(xlrRC == XLR_FAIL)
-	{
-#if HAVE_MARK5IPC
-                unlockMark5();
-#endif
-		WATCHDOG( XLRClose(xlrDevice) );
-		cfatal << startl << "Cannot open Streamstor device.  Either this Mark5 unit has crashed, you do not have read/write permission to /dev/windrvr6, or some other process has full control of the Streamstor device." << endl;
-		MPI_Abort(MPI_COMM_WORLD, 1);
-	}
-
-	// FIXME: for non-bank-mode operation, need to look at the modules to determine what to do here.
-	WATCHDOG( xlrRC = XLRSetBankMode(xlrDevice, SS_BANKMODE_NORMAL) );
+	xlrRC = openMark5(&xlrDevice);
 	if(xlrRC != XLR_SUCCESS)
 	{
-		cerror << startl << "Cannot put Mark5 unit in bank mode" << endl;
+		cfatal << startl << "openMark5 did not return XLR_SUCCESS.  Must abort." << endl;
+		MPI_Abort(MPI_COMM_WORLD, 1);
 	}
-
-	WATCHDOG( XLRSetMode(xlrDevice, SS_MODE_SINGLE_CHANNEL) );
-	WATCHDOG( XLRClearChannels(xlrDevice) );
-	WATCHDOG( XLRSelectChannel(xlrDevice, 0) );
-	WATCHDOG( XLRBindOutputChannel(xlrDevice, 0) );
-
-	sendMark5Status(MARK5_STATE_OPEN, 0, 0.0, 0.0);
 }
 
 void Mark5BMark5DataStream::closeStreamstor()

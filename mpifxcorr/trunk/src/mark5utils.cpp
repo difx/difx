@@ -31,9 +31,14 @@
 #include <cstring>
 #include <unistd.h>
 #include <difxmessage.h>
+#include "config.h"
 #include "alert.h"
 #include "mark5dir.h"
 #include "watchdog.h"
+
+#if HAVE_MARK5IPC
+#include <mark5ipc.h>
+#endif
 
 #define XLR_WATERMARK_VALUE	0x0FF00FFFF0005555LL
 
@@ -114,6 +119,61 @@ bool legalVSN(const char *vsn)
 	}
 
 	return true;
+}
+
+
+XLR_RETURN_CODE openMark5(SSHANDLE *xlrDevice)
+{
+	XLR_RETURN_CODE xlrRC;
+	S_XLRSWREV swVersion;
+	S_DEVINFO devInfo;
+
+	WATCHDOG( xlrRC = XLROpen(1, xlrDevice) );
+  
+  	if(xlrRC == XLR_FAIL)
+	{
+#if HAVE_MARK5IPC
+                unlockMark5();
+#endif
+		WATCHDOG( XLRClose(*xlrDevice) );
+		cfatal << startl << "Cannot open Streamstor device.  Either this Mark5 unit has crashed, you do not have read/write permission to /dev/windrvr6, or some other process has full control of the Streamstor device." << endl;
+		
+		return xlrRC;
+	}
+
+	WATCHDOG( xlrRC = XLRGetVersion(*xlrDevice, &swVersion) );
+	if(xlrRC != XLR_SUCCESS)
+	{
+		cerror << startl << "Cannot get Streamstor software versions" << endl;
+	}
+	else
+	{
+		cinfo << startl << "Mark5 Streamstor software version info: ApiVersion=" << swVersion.ApiVersion << " ApiDateCode=" << swVersion.ApiDateCode << " FirmwareVersion=" << swVersion.FirmwareVersion << " FirmDateCode=" << swVersion.FirmDateCode << " MonitorVersion=" << swVersion.MonitorVersion << " XbarVersion=" << swVersion.XbarVersion << " AtaVersion=" << swVersion.AtaVersion << " UAtaVersion=" << swVersion.UAtaVersion << " DriverVersion=" << swVersion.DriverVersion << endl;
+	}
+
+	WATCHDOG( xlrRC = XLRGetDeviceInfo(*xlrDevice, &devInfo) );
+	if(xlrRC != XLR_SUCCESS)
+	{
+		cerror << startl << "Cannot get Streamstor device info" << endl;
+	}
+	else
+	{
+		cinfo << startl << "Mark5 Streamstor device info: BoardType=" << devInfo.BoardType << " SerialNum=" << devInfo.SerialNum << endl;
+	}
+
+	// FIXME: for non-bank-mode operation, need to look at the modules to determine what to do here.
+	WATCHDOG( xlrRC = XLRSetBankMode(*xlrDevice, SS_BANKMODE_NORMAL) );
+	if(xlrRC != XLR_SUCCESS)
+	{
+		cerror << startl << "Cannot put Mark5 unit in bank mode" << endl;
+	}
+
+	WATCHDOG( XLRSetMode(*xlrDevice, SS_MODE_SINGLE_CHANNEL) );
+	WATCHDOG( XLRClearChannels(*xlrDevice) );
+	WATCHDOG( XLRSelectChannel(*xlrDevice, 0) );
+	WATCHDOG( XLRBindOutputChannel(*xlrDevice, 0) );
+
+	return XLR_SUCCESS;
 }
 
 /* This function reads <bytes> bytes of data from a Mark5 module starting at pointer <readpointer>

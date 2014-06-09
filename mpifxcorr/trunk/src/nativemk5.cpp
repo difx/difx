@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2013 by Walter Brisken and Adam Deller             *
+ *   Copyright (C) 2007-2014 by Walter Brisken and Adam Deller             *
  *                                                                         *
  *   This program is free for non-commercial use: see the license file     *
  *   at http://astronomy.swin.edu.au:~adeller/software/difx/ for more      *
@@ -101,38 +101,12 @@ void NativeMk5DataStream::openStreamstor()
 {
 	XLR_RETURN_CODE xlrRC;
 
-	sendMark5Status(MARK5_STATE_OPENING, 0, 0.0, 0.0);
-
-	cinfo << startl << "Opening Streamstor" << endl;
-	WATCHDOG( xlrRC = XLROpen(1, &xlrDevice) );
-  
-  	if(xlrRC == XLR_FAIL)
-	{
-#if HAVE_MARK5IPC
-                unlockMark5();
-#endif
-		WATCHDOG( XLRClose(xlrDevice) );
-		cfatal << startl << "Cannot open Streamstor device.  Either this Mark5 unit has crashed, you do not have read/write permission to /dev/windrvr6, or some other process has full control of the Streamstor device." << endl;
-		MPI_Abort(MPI_COMM_WORLD, 1);
-	}
-	else
-	{
-		cinfo << startl << "Success opening Streamstor device" << endl;
-	}
-
-	// FIXME: for non-bank-mode operation, need to look at the modules to determine what to do here.
-	WATCHDOG( xlrRC = XLRSetBankMode(xlrDevice, SS_BANKMODE_NORMAL) );
+	xlrRC = openMark5(&xlrDevice);
 	if(xlrRC != XLR_SUCCESS)
 	{
-		cerror << startl << "Cannot put Mark5 unit in bank mode" << endl;
+		cfatal << startl << "openMark5 did not return XLR_SUCCESS.  Must abort." << endl;
+		MPI_Abort(MPI_COMM_WORLD, 1);
 	}
-
-	WATCHDOG( XLRSetMode(xlrDevice, SS_MODE_SINGLE_CHANNEL) );
-	WATCHDOG( XLRClearChannels(xlrDevice) );
-	WATCHDOG( XLRSelectChannel(xlrDevice, 0) );
-	WATCHDOG( XLRBindOutputChannel(xlrDevice, 0) );
-
-	sendMark5Status(MARK5_STATE_OPEN, 0, 0.0, 0.0);
 }
 
 void NativeMk5DataStream::closeStreamstor()
@@ -189,7 +163,9 @@ NativeMk5DataStream::NativeMk5DataStream(const Configuration * conf, int snum,
                 }
         }
 #endif
+	sendMark5Status(MARK5_STATE_OPENING, 0, 0.0, 0.0);
 	openStreamstor();
+	sendMark5Status(MARK5_STATE_OPEN, 0, 0.0, 0.0);
 
         // Start up mark5 watchdog thread
         perr = initWatchdog();
