@@ -42,8 +42,7 @@ void ServerSideConnection::difxFileTransfer( DifxMessageGeneric* G ) {
 	fileTransfer->transfer.port = S->port;
 	fileTransfer->channelAllData = _channelAllData;
 	fileTransfer->ssc = this;
-    pthread_attr_init( &(fileTransfer->threadAttr) );
-    pthread_create( &(fileTransfer->threadId), &(fileTransfer->threadAttr), staticRunFileTransfer, (void*)fileTransfer );      
+    pthread_create( &(fileTransfer->threadId), NULL, staticRunFileTransfer, (void*)fileTransfer );      
 }	
 
 //-----------------------------------------------------------------------------
@@ -114,13 +113,14 @@ void ServerSideConnection::runFileTransfer( DifxFileTransfer* fileTransfer ) {
       	    else {
             	snprintf( message, DIFX_MESSAGE_LENGTH, "Client address: %s   port: %d - transfer FAILED", S->address, S->port );
             	difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_ERROR );
+            	filesize = -10;
       	    }
     
     	    //  Check the destination filename
         	if( S->destination[0] != '/' )  {
         		filesize = -1;
         	}
-        	else {
+        	else if ( filesize >= 0 ) {
         	    //  Check the existence of the destination directory
         	    char path[DIFX_MESSAGE_FILENAME_LENGTH];
         	    snprintf( path, DIFX_MESSAGE_FILENAME_LENGTH, "%s", S->destination );

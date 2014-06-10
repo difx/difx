@@ -315,10 +315,8 @@ void ServerSideConnection::startDifx( DifxMessageGeneric* G ) {
               S->inputFilename, monitorOption );
 	
 	//  Start a thread to run difx and report back stdout/stderr feedback.
-    pthread_attr_t threadAttr;
     pthread_t threadId;
-    pthread_attr_init( &threadAttr );
-    pthread_create( &threadId, &threadAttr, staticRunDifxThread, (void*)startInfo );
+    pthread_create( &threadId, NULL, staticRunDifxThread, (void*)startInfo );
                    	
 }
 

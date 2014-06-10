@@ -96,8 +96,7 @@ void ServerSideConnection::difxFileOperation( DifxMessageGeneric* G ) {
 	    fileOperation->operation.port = S->port;
 	    fileOperation->channelAllData = _channelAllData;
 	    fileOperation->ssc = this;
-        pthread_attr_init( &(fileOperation->threadAttr) );
-        pthread_create( &(fileOperation->threadId), &(fileOperation->threadAttr), staticRunFileOperation, (void*)fileOperation );      	
+        pthread_create( &(fileOperation->threadId), NULL, staticRunFileOperation, (void*)fileOperation );      	
 	}
 	else {
 		snprintf( message, DIFX_MESSAGE_LENGTH, "Illegal DifxFileOperation request received - operation \"%s\" is not permitted", S->operation );

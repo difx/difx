@@ -21,8 +21,7 @@ namespace network {
     
         ActivePacketExchange( GenericSocket* sock ) : PacketExchange( sock ) {
             _receiveActive = false;
-            pthread_attr_init( &_receiveAttr );
-            pthread_create( &_receiveId, &_receiveAttr, staticReceiveThread, this );               
+            pthread_create( &_receiveId, NULL, staticReceiveThread, this );               
         }
         
         ~ActivePacketExchange() {
@@ -66,7 +65,6 @@ namespace network {
         
     protected:
     
-        pthread_attr_t _receiveAttr;
         pthread_t _receiveId;
         bool _receiveActive;
 

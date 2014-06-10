@@ -59,8 +59,7 @@ void ServerSideConnection::machinesDefinition( DifxMessageGeneric* G ) {
     MachinesDefinitionInfo* machinesDefinitionInfo = new MachinesDefinitionInfo;
     machinesDefinitionInfo->ssc = this;
     memcpy( &(machinesDefinitionInfo->definition), &(G->body.machinesDefinition), sizeof( DifxMessageMachinesDefinition ) );
-    pthread_attr_init( &(machinesDefinitionInfo->threadAttr) );
-    pthread_create( &(machinesDefinitionInfo->threadId), &(machinesDefinitionInfo->threadAttr), 
+    pthread_create( &(machinesDefinitionInfo->threadId), NULL, 
                     staticRunMachinesDefinition, (void*)machinesDefinitionInfo );      
 }
 

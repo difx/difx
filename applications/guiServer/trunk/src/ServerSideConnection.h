@@ -23,6 +23,8 @@
 #include <list>
 #include <string>
 #include <glob.h>
+#include <dirent.h>
+
 
 namespace guiServer {
 
@@ -120,8 +122,7 @@ namespace guiServer {
             _monitorSocket = new network::UDPSocket( network::UDPSocket::RECEIVE, _multicastGroup, _multicastPort );
             _monitorSocket->ignoreOwn( false );
             //  Start the thread that reads the multicast messages.
-            pthread_attr_init( &_monitorAttr );
-            pthread_create( &_monitorId, &_monitorAttr, staticDifxMonitor, this );      
+            pthread_create( &_monitorId, NULL, staticDifxMonitor, this );      
         }
         
         //---------------------------------------------------------------------
@@ -543,8 +544,7 @@ namespace guiServer {
                 }
             }
             else {
-                ServerSideConnection::diagnostic( ServerSideConnection::WARNING, 
-                    "The guiServer DiFX parser received a command it could not parse." );
+                diagnostic( WARNING, "The guiServer DiFX parser received a command it could not parse." );
             }
         }
         
@@ -688,10 +688,8 @@ namespace guiServer {
             DifxMonitorInfo* monitorInfo = new DifxMonitorInfo;
             monitorInfo->connectionPort = ntohl( *(int*)data );
             monitorInfo->ssc = this;
-            pthread_attr_t threadAttr;
             pthread_t threadId;
-            pthread_attr_init( &threadAttr );
-            pthread_create( &threadId, &threadAttr, staticRunDifxMonitor, (void*)(monitorInfo) );
+            pthread_create( &threadId, NULL, staticRunDifxMonitor, (void*)(monitorInfo) );
         }
         
         //---------------------------------------------------------------------
@@ -774,7 +772,6 @@ namespace guiServer {
         //-----------------------------------------------------------------------------
         struct MachinesDefinitionInfo {
             pthread_t threadId;
-            pthread_attr_t threadAttr;
             ServerSideConnection* ssc;
             DifxMessageMachinesDefinition definition;
         };
@@ -795,7 +792,6 @@ namespace guiServer {
         //-----------------------------------------------------------------------------
         struct Vex2DifxInfo {
             pthread_t threadId;
-            pthread_attr_t threadAttr;
             ServerSideConnection* ssc;
             DifxMessageVex2DifxRun v2dRun;
         };
@@ -811,11 +807,51 @@ namespace guiServer {
         }
         
         //-----------------------------------------------------------------------------
+        //!  Structure used to transfer data to the vex2difx monitor thread.
+        //-----------------------------------------------------------------------------
+        struct Vex2DifxMonitorInfo {
+            pthread_t threadId;
+            pthread_cond_t* done;
+            ServerSideConnection* ssc;
+            const DifxMessageVex2DifxRun *S;
+            GUIClient* guiClient;
+            ulong modTime;
+        };
+        
+        //-----------------------------------------------------------------------------
+        //!  Static function to start a the vex2difx monitor thread.
+        //-----------------------------------------------------------------------------
+        static void* staticRunVex2DifxMonitor( void* a ) {
+            Vex2DifxMonitorInfo* info = (Vex2DifxMonitorInfo*)a;
+            info->ssc->runVex2DifxMonitor( info );
+            delete info;
+            return NULL;
+        }
+        
+        //-----------------------------------------------------------------------------
+        //!  Simple function for locating files with extensions we are interested in
+        //!  (.input and .calc).  Used by scandir() in vex2difxRun.
+        //-----------------------------------------------------------------------------
+        static int vex2DifxFilter( const struct dirent *nameList ) {
+            int idx = strlen( nameList->d_name );
+            while ( idx > 0 && nameList->d_name[idx] != '.' ) {
+                --idx;
+            }
+            if ( idx == 0 )
+                return 0;
+            //  Bail out on files without names...
+            if ( nameList->d_name[idx-1] == '/' )
+                return 0;
+            if ( !strcmp( nameList->d_name + idx, ".input" ) || !strcmp( nameList->d_name + idx, ".im" ) )
+                return 1;
+            return 0;
+        }
+
+        //-----------------------------------------------------------------------------
         //!  Structure used to start file operations.
         //-----------------------------------------------------------------------------
         struct DifxFileOperation {
             pthread_t threadId;
-            pthread_attr_t threadAttr;
             ServerSideConnection* ssc;
             DifxMessageFileOperation operation;
             bool channelAllData;
@@ -836,7 +872,6 @@ namespace guiServer {
         //-----------------------------------------------------------------------------
         struct DifxFileTransfer {
             pthread_t threadId;
-            pthread_attr_t threadAttr;
             ServerSideConnection* ssc;
             DifxMessageFileTransfer transfer;
             bool channelAllData;
@@ -906,6 +941,8 @@ namespace guiServer {
         void getDirectory( DifxMessageGeneric* G );
         void vex2difxRun( DifxMessageGeneric* G );
         void runVex2Difx( Vex2DifxInfo* v2dRun );   //  in vex2difxRun.cpp
+        ulong fileTimeStamp( bool& someError, const char* path = NULL );  //  in vex2difxRun.cpp
+        void runVex2DifxMonitor( Vex2DifxMonitorInfo* info );   //  in vex2difxRun.cpp
         void machinesDefinition( DifxMessageGeneric* G );
         void runMachinesDefinition( MachinesDefinitionInfo* machinesDefinitionInfo );  // in machinesDefintion.cpp
         void mk5Control( DifxMessageGeneric* G );
@@ -922,9 +959,7 @@ namespace guiServer {
     
         network::UDPSocket* _monitorSocket;
         network::UDPSocket* _commandSocket;
-        pthread_attr_t _monitorAttr;
         pthread_t _monitorId;
-        pthread_attr_t _runAttr;
         pthread_t _runId;
         bool _relayDifxMulticasts;
         bool _difxAlertsOn;

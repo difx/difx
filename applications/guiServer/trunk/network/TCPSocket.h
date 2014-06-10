@@ -259,8 +259,7 @@ namespace network {
             _readPtrWrap = 0;
             _connected = true;
             _monitored = true;
-            pthread_attr_init( &_attr );
-            pthread_create( &_threadId, &_attr, staticThreadStart, this );
+            pthread_create( &_threadId, NULL, staticThreadStart, this );
         }
         
         //----------------------------------------------------------------------------
@@ -374,7 +373,6 @@ namespace network {
 
         int _fd;
         bool _connected;
-        pthread_attr_t _attr;
         pthread_t _threadId;
         struct timeval timeoutStruct;
         struct timeval* _timeout;
