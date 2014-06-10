@@ -52,6 +52,11 @@ def parseCommandLine():
 				options['verbose'] += 1
 			elif a in ['-q', '--quiet']:
 				options['verbose'] -= 1
+			else:
+				if len(a) > 2 && a[1] == '-':
+					options[a[2:]] = 1
+				else:
+					options[a[1:]] = 1
 		elif '=' in a:	
 			# this is a tone selector
 			toneSelect.append(a)
@@ -232,23 +237,32 @@ def getTwoToneColumns(toneSelect, dataLine):
 			# look for specific tone number.  Should be unambiguous
 			cd = split(tss[1], ',')	# column identifying data
 			rb = int(cd[0])		# rec band (0 based)
-			if cd[1] == 'ends':
-				tn1 = 0
-				tn2 = -1
+			if cd[1] == 'pairs':
+				for tn1 in range(0, nTone, 2):
+					tn2 = tn1+1
+					for t in range(0, totalTones, nTone):
+						if int(s[toneOffset + 4*t]) == rb:
+							columns.append([toneOffset+4*(t+tn1), toneOffset+4*(t+tn2)])
+							break
+
 			else:
-				tn1 = int(cd[1])	# first tone num
-				tn2 = int(cd[2])	# last tone num
-			if tn1 < 0:
-				# negative number means count from back, python style
-				tn1 += nTone
-			if tn2 < 0:
-				# negative number means count from back, python style
-				tn2 += nTone
-			if tn1 < nTone and tn2 < nTone:
-				for t in range(0, totalTones, nTone):
-					if int(s[toneOffset + 4*t]) == rb:
-						columns.append([toneOffset+4*(t+tn1), toneOffset+4*(t+tn2)])
-						break
+				if cd[1] == 'ends':
+					tn1 = 0
+					tn2 = -1
+				else:
+					tn1 = int(cd[1])	# first tone num
+					tn2 = int(cd[2])	# last tone num
+				if tn1 < 0:
+					# negative number means count from back, python style
+					tn1 += nTone
+				if tn2 < 0:
+					# negative number means count from back, python style
+					tn2 += nTone
+				if tn1 < nTone and tn2 < nTone:
+					for t in range(0, totalTones, nTone):
+						if int(s[toneOffset + 4*t]) == rb:
+							columns.append([toneOffset+4*(t+tn1), toneOffset+4*(t+tn2)])
+							break
 		elif tss[0] == 't':
 			# look for specific tone number.  Should be unambiguous
 			cd = split(tss[1], ',')	# column identifying data
@@ -316,8 +330,8 @@ def unwrapPhases(phaseData):
 		lastPhase = phaseData[i]
 
 def unwrapDelays(delayData, ambig):
-	lastDelay = delayData[0]
-	for i in range(1, len(delayData)):
+	lastDelay = 0
+	for i in range(len(delayData)):
 		while delayData[i] > lastDelay + ambig/2:
 			delayData[i] -= ambig
 		while delayData[i] < lastDelay - ambig/2:
@@ -373,7 +387,10 @@ def generatePlots(op, toneSelect, dataDict, options):
 				xlabel('Time (Day of Year)')
 				ylabel('Amplitude')
 				for i in range(1, nColumn):
-					scatter(plotData[0], plotData[i], color=colors[(i-1)%len(colors)], s=3)
+					if 'lines' in options:
+						plot(plotData[0], plotData[i], color=colors[(i-1)%len(colors)], linewidth=1)
+					else:
+						scatter(plotData[0], plotData[i], color=colors[(i-1)%len(colors)], s=3)
 						
 			elif op == 'phase':
 				toneColumns = getOneToneColumns(toneSelect, firstLine)
@@ -395,7 +412,10 @@ def generatePlots(op, toneSelect, dataDict, options):
 				xlabel('Time (Day of Year)')
 				ylabel('Phase (radians)')
 				for i in range(1, nColumn):
-					scatter(plotData[0], plotData[i], color=colors[(i-1)%len(colors)], s=3)
+					if 'lines' in options:
+						plot(plotData[0], plotData[i], color=colors[(i-1)%len(colors)], linewidth=1)
+					else:
+						scatter(plotData[0], plotData[i], color=colors[(i-1)%len(colors)], s=3)
 
 			elif op == 'delay':
 				toneColumns = getTwoToneColumns(toneSelect, firstLine)
@@ -422,7 +442,10 @@ def generatePlots(op, toneSelect, dataDict, options):
 				xlabel('Time (Day of Year)')
 				ylabel('Delay (ns)')
 				for i in range(1, nColumn):
-					scatter(plotData[0], plotData[i], color=colors[(i-1)%len(colors)], s=3)
+					if 'lines' in options:
+						plot(plotData[0], plotData[i], color=colors[(i-1)%len(colors)], linewidth=1)
+					else:
+						scatter(plotData[0], plotData[i], color=colors[(i-1)%len(colors)], s=3)
 
 			elif op == 'xy':
 				toneColumns = getOneToneColumns(toneSelect, firstLine)
@@ -444,7 +467,10 @@ def generatePlots(op, toneSelect, dataDict, options):
 				ylabel('Imag')
 				axes().set_aspect('equal')
 				for i in range(nColumn):
-					scatter(plotDataX[i], plotDataY[i], color=colors[i%len(colors)], s=3)
+					if 'lines' in options:
+						plot(plotDataX[i], plotDataY[i], color=colors[i%len(colors)], linewidth=1)
+					else:
+						scatter(plotDataX[i], plotDataY[i], color=colors[i%len(colors)], s=3)
 				
 
 		savefig('%s-pcal-%s.pdf' % (a, op), bbox_inches='tight')
