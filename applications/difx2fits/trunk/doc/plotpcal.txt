@@ -1,0 +1,198 @@
+Documentation taken from an email on June 10, 2014
+
+plotpcal is a python program using matplotlib to plot pulse cal data.
+Because the number of pulse cal tones can vary from channel to channel and
+from mode to mode, getting a good general strategy is difficult.  So far I
+have implemented a number of useful subsets to get general problem.  I think
+we should go through these tomorrow.  I can narrate while you do the
+execution.
+
+The program gets its input from the command line.  The general structure of
+a command line is:
+
+plotpcal [options] [operation] [tone selection] [data]
+
+The installed version of the program, which you should be able to copy, is
+/home/swc/software/VLBADIFX-TRUNK/bin/plotpcal
+
+[options] will eventually be more useful, but currently the only thing it
+can support is:
+
+	--lines
+
+which replaces the scatter plot with a line plot
+
+
+[operation] chooses what calculation to perform.  Currently there are 4
+options:
+
+phase   plot the phase of the tone(s) vs. time
+
+amp     plot the amplitude of the tone(s) vs. time
+
+xy      plot the real part vs. imag part
+
+delay   plot the delay as determined by differencing phases of 2 tones
+
+
+[tone selection] is where things get complicated.  For the first three
+operations, where a single tone is considered at a time the following syntax
+is currently supported.  One or more of these can be included on the command
+line and they can be of different kinds.  The operations that these are
+relevant for are amp, phase and xy.
+
+rt=x,y		"Record Channel   Tone"
+
+	x is the record baseband channel (0-based)
+	y is the tone number in that baseband channel (0-based)
+
+rf=x,y		"Record Channel   Freq"
+
+	x is the record baseband channel (0-based)
+	y is the frequency (MHz) of the desired tone
+
+f=x		"Frequency"
+
+	x is the frequency (MHz) of the desired tone(s)
+	Note: more than one tone may match.  They will be orderd by record
+	channel
+
+f=%x		"Frequency mod x"
+
+	Select all tones from all recorded channels where
+	frequency mod x = 0 (MHz)
+
+r=x		"Record channel"
+
+	x is the record baseband channel (0-based)
+	Note: all tones in that channel will be selected.  Usually for USB
+	the tones will be in order of inceasing frequency and for LSB the
+	tones will be in order of decreasing frequency
+
+t=x		"Tone number"
+
+	x is the tone number in that baseband channel (0-based)
+	For all record channels, tone x will be selected.  The ordering
+	is by record number (starting with 0)
+
+For the  delay  operation two tones are differenced.  They must come from
+the same record baseband channel.  The following tone selections can be
+used:
+
+rt=x,y,z	"Record channel, tone 1, tone 2"
+
+	x is the record baseband channel (0-based)
+	y is one tone from that record band (0-based)
+	z is the other tone from that record band (0-based)
+	Delay is calculated from
+		(Phi(tone1)-Phi(tone2))/(Freq(tone1)-Freq(tone2))
+
+rt=x,ends	"Extreme channels from one record channel"
+
+	x is the record baseband channel (0-based)
+	Selected tones are the highest and lowest frequency tones from the
+	band.  Sometimes this is not good because tones near the edge of
+	the band can be corrupted by filter response / aliasing.
+
+rt=x,good	"Channels near the end of one record channel"
+
+	x is the record baseband channel (0-based)
+	Selected channels try to be 1/8 of the band away from the edge
+	frequency when possible.
+
+rt=x,pairs	"Select pairs of channels across one record channel"
+
+	x is the record baseband channel (0-based)
+	For a channel with nTone tones, form nTone/2 delays by considering
+	first and second tones for first delay, third and fourth for
+	second delay, ...
+
+t=x,y		"Tone 1 and Tone 2 from all channels"
+
+	Like rt=x,y,z but for all record channels.  Will produce nChannel
+	delays ordered by record channel number.
+
+t=ends		"Extreme channels from all record channels"
+
+	Like rt=x,ends but for all channels.  Will produce nChannel delays
+	ordered by record channel number.
+
+t=good		"Channels near the end of all record channels"
+
+	Like rt=x,good, but for all channels.  Will produce nChannel delays
+	ordered by record channel number.
+
+
+[data] is a list of DiFX derived pulse cal data.  When produced thay come
+from the .difx/ directories produced by DiFX.  There will be a separate file
+per antenna per job.
+
+
+When plotpcal is run it first sorts data by antenna name and makes one plot
+per antenna.
+
+Some concrete examples (that we can work through tomorrow)
+
+First go to /home/swc/difx/tests/pcal/testdata  or do a recursive copy of
+this directory on your machine.  Then:
+
+Amplitude of a single tone (record channel 2, tone 0)
+
+plotpcal amp rt=2,0 long*.difx/PCAL*
+
+Things to note: first sample is low, then three pairs of scans, each pair
+being a 5 MHz spacing followed by a 1 MHz spacing.  5 MHz spacing should
+have 5 times the voltage (as plotted) or 25x the power.
+
+Note: there are two stations: HN and SC.  When you close the first (HN)
+window, a second window will appear shortly for SC.  Kill that to end the
+program.
+
+Note: you can zoom, ...
+
+Amp of 2 tones:
+
+  plotpcal amp rt=2,0 rt=4,0 long*.difx/PCAL*
+
+Amp of 2 tones (but only one tone for the 5 MHz mode):
+
+  plotpcal amp rt=2,0 rt=4,2 long*.difx/PCAL*
+
+Phase of 2 tones:
+
+  plotpcal phase rt=2,0 rt=2,1 long*.difx/PCAL*
+
+Note: tone 0 and tone 1 differ in actual frequency between two setups.
+
+Phase of 2 tones on 5 MHz steps
+
+  plotpcal phase rf=0,%5 long*.difx/PCAL*
+
+Plot re vs im for all tones for one record band
+
+  plotpcal xy r=5 long*.difx/PCAL*
+
+Plot one delay for each record channel
+
+  plotpcal delay t=good long*.difx/PCAL*
+
+Note how much more precise (factor of 5ish) the 5 MHz pulse cals are!
+
+Except for 2 baseband channels from HN (cyan on top and magenta on bottom,
+corresponding to record channels 6 and 7), delays from a single IF match
+well, as expected.  The mismatch here is curious.
+
+
+I think as long as you can get the code and data to work I can work you
+through the driving.  If you want to come up with your own examples,
+possibly using other data available for recentlt correlated data in one of
+the subdirectories of /home/swc/difx/queue feel free!  If you do this you
+should problably select the data with something like:
+
+/home/swc/difx/queue/N4089B/n4089b*.difx/PCAL*
+
+Note that experiments correlated before february 2014 won't work properly
+with the plotting code.
+
+	-Walter
+

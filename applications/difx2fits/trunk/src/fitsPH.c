@@ -233,7 +233,7 @@ static int getNTone(const char *filename, const char *antenna, double t1, double
 		n = sscanf(line, "%31s%lf%*f%*f%*d%*d%d", antName1, &t, &nTone);
 		if(verbose > 2)
 		{
-			printf("DEBUG: gNTone: ant %s, nTone %d\n", antName1, nTone);
+			printf("DEBUG: getNTone: ant %s, nTone %d\n", antName1, nTone);
 		}
 		if(n != 3)
 		{
@@ -579,13 +579,14 @@ static int parseDifxPulseCal(const char *line,
 	const DifxFreq *df;
 	const DifxDatastream *dd;
 	int np, nb, nt, ns;
-	int nRecBand, nIF, difxPol, nRecTone;
+	int nRecBand, nIF, difxRecBand, nRecTone;
 	double toneFreq[array_MAX_TONES];
 	int IFs[array_MAX_BANDS];
 	int n, p, i, k, v;
+	int nSkip;
 	int tone;
 	int toneIndex;
-	int band, pol, bandpol, recFreq;
+	int band, pol, bandPol, recFreq;
 	int nonTiny = 0;
 	int A;
 	float B, C;
@@ -593,6 +594,9 @@ static int parseDifxPulseCal(const char *line,
 	char antName[DIFXIO_NAME_LENGTH];
 	double cableCal;
 	float timeInt, dt;
+	int slot;
+
+const char *origline = line;
 
 	/* Note: This is a particular NaN variant the FITS-IDI format/convention 
 	 * wants, namely 0xFFFFFFFF */
@@ -702,103 +706,206 @@ static int parseDifxPulseCal(const char *line,
 	{
 		return -7;
 	}
+
+	slot = 0;
 	/* Read in pulse cal information */
 	for(pol = 0; pol < D->nPol; ++pol)
 	{
 		for(band = 0; band < dd->nRecBand; ++band)
 		{
-			v = DifxConfigRecBand2FreqPol(D, *configId, dd->antennaId, band, &recFreq, &bandpol);
-			if(v < 0)
+			v = DifxConfigRecBand2FreqPol(D, *configId, dd->antennaId, band, &recFreq, &bandPol);
+			if(v < 0 || pol != bandPol)
 			{
-				/* band unused for this antenna */
-				continue;	/* to next band */
-			}
-			if(pol != bandpol)
-			{
-				//band doesn't match
+				/* this pol/band combination is not used.  Read all of the dummies from PCAL file */
+				for(tone = 0; tone < nt; ++tone)	/* nt is taken from line header and is max number of tones */
+				{
+					n = sscanf(line, "%d%d%f%f%n", &difxRecBand, &A, &B, &C, &p);
+					++slot;
+					if(n < 4)
+					{
+						static int nScanError = 0;
+
+						++nScanError;
+						if(nScanError <= 20)
+						{
+							printf("\nWarning: parseDifxPulseCal: Error scanning line.  DiFX PCAL file is malformed.  slot=%d\n", slot);
+						}
+						if(nScanError == 20)
+						{
+							printf(" ^-Note: No more warnings of this kind will be produced\n");
+						}
+						
+						return -8;
+					}
+					line += p;
+
+					if(difxRecBand != -1)
+					{
+						static int nUnexpectedDataError = 0;
+
+						++nUnexpectedDataError;
+						if(nUnexpectedDataError <= 20)
+						{
+							printf("\nWarning: parseDifxPulseCal: found recBand=%d when expected -1  slot=%d\n", difxRecBand, slot);
+						}
+						if(nUnexpectedDataError == 20)
+						{
+							printf(" ^-Note: No more warnings of this kind will be produced\n");
+						}
+					}
+				}
+
 				continue;
 			}
 
 			df = D->freq + recFreq;
 
 			/* set up pcal information for this recFreq (only up to nRecTones)*/
+			/* nRecTone is simply the number of tones that fall within the recorded band */
+			/* not all of them may be desired. */
 			nRecTone = DifxDatastreamGetPhasecalTones(toneFreq, dd, df, nt);
 
-			if(nRecTone > 0)
+			nSkip = 0;				/* number of tones skipped because they weren't selected in the .input file */
+			k = 0; 					/* tone index within freqs, pulseCalRe and pulseCalIm */
+			for(tone = 0; tone < nt; ++tone)	/* nt is taken from line header and is max number of tones */
 			{
-				k = 0; 					/* tone index within freqs, pulseCalRe and pulseCalIm */
-				for(tone = 0; tone < nt; ++tone)	/* nt is taken from line header and is max number of tones */
+				n = sscanf(line, "%d%d%f%f%n", &difxRecBand, &A, &B, &C, &p);
+				++slot;
+				if(n < 4)
 				{
-					n = sscanf(line, "%d%d%f%f%n", &difxPol, &A, &B, &C, &p);
-					if(n < 4)
-					{
-						printf("Warning: parseDifxPulseCal: Error scanning line\n");
-						
-						return -8;
-					}
-					line += p;
+					static int nScanError = 0;
 
-					/* Only write out specified frequencies */
-					if(toneFreq[tone] < 0.0)
+					++nScanError;
+					if(nScanError <= 20)
 					{
-						continue;
+						printf("\nWarning: parseDifxPulseCal: Error scanning line.  DiFX PCAL file is malformed.  slot=%d\n", slot);
 					}
-
-					/* Check that frequency is correct */
-					if(A != (int)(toneFreq[tone]+0.5))
+					if(nScanError == 20)
 					{
-						printf("\nWarning: parseDifxPulseCal: tone frequency in PCAL file %d doesn't match expected %g for antenna %d, mjd %12.6f\n", A, toneFreq[tone], dd->antennaId, mjd);
+						printf(" ^-Note: No more warnings of this kind will be produced\n");
 					}
+					
+					return -8;
+				}
+				line += p;
 
-					if(k >= nTone)
+				if(nRecTone <= tone)
+				{
+					continue;
+				}
+
+				if(difxRecBand != band)
+				{
+					if(difxRecBand == -1)
 					{
-						if(tooMany[pol][band] == 0)
+						static int nSkipError = 0;
+
+						++nSkipError;
+						if(nSkipError <= 20)
 						{
-							printf("\nWarning: parseDifxPulseCal: trying to extract too many (%d >= %d) tones in pol %d band %d recFreq %d\n", k, nTone, pol, band, recFreq);
+							printf("\nWarning: parseDifxPulseCal: Unexpected RecBand=-1.  Some pulse cal data will be lost.  slot=%d", slot);
 						}
-						++tooMany[pol][band];
-						
-						break;
+						if(nSkipError == 20)
+						{
+							printf(" ^-Note: No more warnings of this kind will be produced\n");
+						}
+					}
+					else
+					{
+						static int nRecBandError = 0;
+
+						++nRecBandError;
+						if(nRecBandError <= 20)
+						{
+							printf("\nWarning: parseDifxPulseCal: difxRecBand = %d and band = %d.  They should be equal.  slot=%d\n", difxRecBand, band, slot);
+						}
+						if(nRecBandError == 20)
+						{
+							printf(" ^-Note: No more warnings of this kind will be produced\n");
+						}
 					}
 
-					nIF = DifxInputGetIFsByRecFreq(IFs, D, dsId, *configId, recFreq, pol, array_MAX_BANDS);
+					continue;
+				}
 
+				/* Only write out specified frequencies */
+				if(toneFreq[tone] < 0.0)
+				{
+					++nSkip;
+
+					continue;
+				}
+
+				/* Check that frequency is correct */
+				if(A != (int)(toneFreq[tone]+0.5))
+				{
+					static int nFreqMatchError = 0;
+
+					++nFreqMatchError;
+					if(nFreqMatchError <= 20)
+					{
+						printf("\nWarning: parseDifxPulseCal: tone frequency in PCAL file %d doesn't match expected %g for antenna %d, mjd %12.6f  slot=%d\n", A, toneFreq[tone], dd->antennaId, mjd, slot);
+					}
+					if(nFreqMatchError == 20)
+					{
+						printf(" ^-Note: No more warnings of this kind will be produced\n");
+					}
+				}
+
+				if(k >= nTone)
+				{
+					if(tooMany[pol][band] == 0)
+					{
+						printf("\nWarning: parseDifxPulseCal: trying to extract too many (%d >= %d) tones in pol %d band %d recFreq %d\n", k, nTone, pol, band, recFreq);
+					}
+					++tooMany[pol][band];
+					
+					break;
+				}
+
+				if(fabs(B) > pcaltiny || fabs(C) > pcaltiny)
+				{
+					++nonTiny;	/* there is something here! */
+
+					/* fill in actual pcal info */
+					nIF = DifxInputGetIFsByRecFreq(IFs, D, dsId, *configId, recFreq, pol, array_MAX_BANDS);
 					if(nIF > 0)
 					{
 						for(i = 0; i < nIF; ++i)
 						{
 							if(df->sideband == 'U')
 							{
-							      toneIndex = IFs[i]*nTone + k;
+								toneIndex = IFs[i]*nTone + k;
 							}
 							else
 							{
 								toneIndex = (IFs[i]+1)*nTone - k - 1;	/* make LSB ascend in frequency */
 							}
 							freqs[pol][toneIndex] = toneFreq[tone]*1.0e6;	/* MHz to Hz */
-							if(fabs(B) > pcaltiny || fabs(C) > pcaltiny)
-							{
-								++nonTiny;
-								pulseCalRe[pol][toneIndex] = B;
-								pulseCalIm[pol][toneIndex] = C;
-							}
+							pulseCalRe[pol][toneIndex] = B;
+							pulseCalIm[pol][toneIndex] = C;
 						}
-						++k;
 					}
+					++k;
 				}
-				if(k < nTone)
+				else
 				{
-					if(tooFew[pol][band] == 0)
-					{
-						printf("\nWarning: parseDifxPulseCal: Not enough (%d < %d) extracted tones for pol %d recFreq %d\n", k, nTone, pol, recFreq);
-					}
-					++tooFew[pol][band];
-					
-					continue;
+					printf("Tiny!\n");
 				}
+			} /* loop over tones */
+			if(k < nTone - nSkip)
+			{
+				if(tooFew[pol][band] == 0)
+				{
+					printf("\nWarning: parseDifxPulseCal: Not enough (%d < %d) extracted tones for pol %d recFreq %d\n", k, nTone, pol, recFreq);
+					printf("Line=%s\n", origline);
+				}
+				++tooFew[pol][band];
+				
+				continue;
 			}
-		}
-	}
+		} /* loop over freqs */
+	} /* loop over polarizations */
 	if(nonTiny == 0)
 	{
 		return -8;
