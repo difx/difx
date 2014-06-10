@@ -1408,8 +1408,9 @@ public class DiFXMessageProcessor extends Thread
                 selectedRow = -1;
             synchronized ( _messages ) {
                 //  Empty the current table.
-                while ( _messageTable.getRowCount() > 0 )
-                    _messageTable.removeRow( 0 );
+                //while ( _messageTable.getRowCount() > 0 )
+                //    _messageTable.removeRow( 0 );
+                _messageTable.setRowCount( 0 ); 
                 //  Figure out which messages we want to display.
                 for ( Iterator<Message> iter = _messages.iterator(); iter.hasNext(); ) {
                     Message msg = iter.next();

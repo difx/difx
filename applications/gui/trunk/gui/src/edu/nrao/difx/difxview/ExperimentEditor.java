@@ -2796,7 +2796,7 @@ public class ExperimentEditor extends JFrame {
          * the file is an ".input" file, it creates a new job based on it.
          */
         synchronized public void newFileCallback( String newFile ) {
-            _newPass.stateLabel( "Downloading Job Files", Color.yellow, true );
+//            _newPass.stateLabel( "Downloading Job Files", Color.yellow, true );
             //  Get a connection to the database if we are using it.
             QueueDBConnection db = null;
             if ( _settings.useDatabase() ) {
@@ -2811,9 +2811,13 @@ public class ExperimentEditor extends JFrame {
             String extn = newFile.substring( newFile.lastIndexOf( '.' ) + 1 ).trim();
             String fullName = newFile.substring( 0, newFile.lastIndexOf( '.' ) ).trim();
             int databaseJobId = 0;
-            //  If its an .input create a new job based on it.
+            //  If its an .input file, create a new job based on it (unless one already exists
+            //  in which case we recycle to old one).  It is expected that there will be only
+            //  one trasmission of the .input file.
             if ( extn.contentEquals( "input" ) ) {
-                //  See if we've already created it by searching existing jobs for the
+                //  Produce a job "name" based on the filenames produced by vex2difx.
+                String jobName = newFile.substring( newFile.lastIndexOf( '/' ) + 1, newFile.lastIndexOf( '.' ) );
+                //  See if we've already created this job by searching existing jobs for the
                 //  "full name".
                 JobNode newJob = null;
                 for ( Iterator<BrowserNode> iter = _newPass.childrenIterator(); iter.hasNext(); ) {
@@ -2821,14 +2825,8 @@ public class ExperimentEditor extends JFrame {
                     if ( fullName.contentEquals( thisJob.fullName() ) )
                         newJob = thisJob;
                 }
-                //  Okay...maybe we have to create it.
+                //  Job doesn't exist yet, we have to create it.
                 if ( newJob == null ) {
-                    //  Add the .input file name to the pass log file.
-                    _passLog.addLabelItem( "INPUT FILE", newFile.trim() );
-                    //  Produce a job "name"...for the moment, these are based on the
-                    //  filenames produced by vex2difx.  Ultimately we may give the user
-                    //  some more palatable choices.
-                    String jobName = newFile.substring( newFile.lastIndexOf( '/' ) + 1, newFile.lastIndexOf( '.' ) );
                     //  Create a node associated with this new job, then put it into
                     //  the appropriate pass so that it will appear in the queue browser.
                     _statusLabel.setText( "creating new job \"" + jobName + "\"" );
@@ -2836,20 +2834,10 @@ public class ExperimentEditor extends JFrame {
                     //BLATSystem.out.println( "creating new job \"" + jobName + "\"" );
                     newJob = new JobNode( jobName, _settings );
                     newJob.fullName( fullName );
-                    //  Create a new log file for this job.
-                    newJob.logFile( new ActivityLogFile( newFile.trim().substring( 0, newFile.lastIndexOf( "/" ) ) + "/guiLogs/" + jobName + ".jobLog" ) );
-                    newJob.logFile().addLabelItem( "INPUT FILE", newFile.trim() );
-                    //  Send the log file to the DiFX host.
-                    Component comp = _this;
-                    while ( comp.getParent() != null )
-                        comp = comp.getParent();
-                    Point pt = new Point( 100, 100 );
-                    SendFileMonitor sendLog = new SendFileMonitor( (Frame)comp, pt.x + 25, pt.y + 25,
-                            newJob.logFile().filename(), newJob.logFile().content(), _settings );
                     //  Add the job to the existing pass.
                     _newPass.addChild( newJob );
                     //  BLAT
-//                    _newPass.sortByName();
+                    _newPass.sortByName();
                     newJob.passNode( _newPass );
                     _settings.queueBrowser().addJob( newJob );
                     //  Add the new job to the database (if we are using it).
@@ -2878,7 +2866,22 @@ public class ExperimentEditor extends JFrame {
                         newJob.id( databaseJobId );
                         newJob.inDatabase( false );
                     }
-                    
+                    //  Set the state for this job to show the missing .im file (which
+                    //  we expect soon!).
+                    newJob.state().setText( "await .im file" );
+                    newJob.state().setBackground( Color.YELLOW );
+                    //  Add the .input file name to the pass log file.
+                    _passLog.addLabelItem( "INPUT FILE", newFile.trim() );
+                    //  Create a new log file for this job.
+                    newJob.logFile( new ActivityLogFile( newFile.trim().substring( 0, newFile.lastIndexOf( "/" ) ) + "/guiLogs/" + jobName + ".jobLog" ) );
+                    newJob.logFile().addLabelItem( "INPUT FILE", newFile.trim() );
+                    //  Send the log file to the DiFX host.
+                    Component comp = _this;
+                    while ( comp.getParent() != null )
+                        comp = comp.getParent();
+                    Point pt = new Point( 100, 100 );
+                    SendFileMonitor sendLog = new SendFileMonitor( (Frame)comp, pt.x + 25, pt.y + 25,
+                            newJob.logFile().filename(), newJob.logFile().content(), _settings );
                     //  Apply the input file data to the job.
                     newJob.inputFile( newFile.trim(), false );
                     //_fileReadQueue.queueRead( newJob, newFile.trim() );
@@ -2888,8 +2891,26 @@ public class ExperimentEditor extends JFrame {
                     }
                 }
             }
+            else if ( extn.contentEquals( "im" ) ) {
+                //  Produce a job "name" based on the filenames produced by vex2difx.
+                String jobName = newFile.substring( newFile.lastIndexOf( '/' ) + 1, newFile.lastIndexOf( '.' ) );
+                //  Locate the job node for this .im file - it should be created.  If it
+                //  isn't, there is a problem (but we'll ignore it as stray .input files in
+                //  the directory that we did not create will create similarly-named .im files).
+                JobNode newJob = null;
+                for ( Iterator<BrowserNode> iter = _newPass.childrenIterator(); iter.hasNext(); ) {
+                    JobNode thisJob = (JobNode)iter.next();
+                    if ( fullName.contentEquals( thisJob.fullName() ) )
+                        newJob = thisJob;
+                }
+                if ( newJob != null ) {
+                    _newPass.stateLabel( "adding .im file for \"" + jobName + "\"", Color.YELLOW, true );
+                    newJob.state().setText( "not started" );
+                    newJob.state().setBackground( Color.LIGHT_GRAY );
+                }
+            }
             else {
-                //System.out.println( "ExperimentEditor: new extension \"" + extn + "\"" );
+                _newPass.stateLabel( "Finalizing Job Creation", Color.yellow, true );
             }
         }
 

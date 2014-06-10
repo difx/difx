@@ -85,6 +85,11 @@ public class MessageScrollPane extends JPanel implements MouseMotionListener,
             
     }
     
+    
+    void close() {
+        _scrollThread.stopNow();
+    }
+    
     /*
      * Measure the height of all (visible) messages in the list.
      */
@@ -180,13 +185,17 @@ public class MessageScrollPane extends JPanel implements MouseMotionListener,
         //  Eliminate messages older than a given time, measured in milliseconds.
         if ( _diffTime != null ) {
             long refTime = Calendar.getInstance().getTimeInMillis() - _diffTime;
-            while ( _messageList.peek() != null && _messageList.peek().isOlderThan( refTime ) ) {
-                _messageList.remove();
+            synchronized ( _messageList ) {
+                while ( _messageList.peek() != null && _messageList.peek().isOlderThan( refTime ) ) {
+                    _messageList.remove();
+                }
             }
         }
         if ( _maxMessages != null ) {
-            while ( _messageList.size() > _maxMessages )
-                _messageList.remove();
+            synchronized( _messageList ) {
+                while ( _messageList.size() > _maxMessages )
+                    _messageList.remove();
+            }
         }
         //testScrollBar( d.height );
         //this.updateUI();
@@ -497,17 +506,21 @@ public class MessageScrollPane extends JPanel implements MouseMotionListener,
         public ScrollThread( int interval ) {
             _interval = interval;
         }
+        Boolean _keepGoing;
         @Override
         public void run() {
-            boolean keepGoing = true;
-            while ( keepGoing ) {
+            _keepGoing = true;
+            while ( _keepGoing ) {
                 timeoutIntervalEvent();
                 try {
                     Thread.sleep( _interval );
                 } catch ( Exception e ) {
-                    keepGoing = false;
+                    _keepGoing = false;
                 }
             }
+        }
+        void stopNow() {
+            _keepGoing = false;
         }
     }
     

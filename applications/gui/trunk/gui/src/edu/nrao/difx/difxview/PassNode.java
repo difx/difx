@@ -5,6 +5,7 @@
 package edu.nrao.difx.difxview;
 
 import mil.navy.usno.widgetlib.BrowserNode;
+import mil.navy.usno.widgetlib.ZMenuItem;
 
 import javax.swing.JPopupMenu;
 import javax.swing.JMenuItem;
@@ -71,6 +72,14 @@ public class PassNode extends QueueBrowserContainerNode {
             }
         });
         _popup.add( unselectJobsItem );
+        ZMenuItem selectIncompleteItem = new ZMenuItem( "Select Incomplete Jobs" );
+        selectIncompleteItem.setToolTipText( "Select all jobs for which the State is not \"Done\"." );
+        selectIncompleteItem.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                selectIncomplete();
+            }
+        });
+        _popup.add( selectIncompleteItem );
         _popup.add( new JSeparator() );
         JMenuItem menuItem4 = new JMenuItem( "Rename" );
         menuItem4.setToolTipText( "Rename this Pass." );
@@ -195,6 +204,16 @@ public class PassNode extends QueueBrowserContainerNode {
         for ( Iterator<BrowserNode> iter = childrenIterator(); iter.hasNext(); ) {
             JobNode thisJob = (JobNode)(iter.next());
             thisJob.selected( true );
+        }
+    }
+    
+    public void selectIncomplete() {
+        for ( Iterator<BrowserNode> iter = childrenIterator(); iter.hasNext(); ) {
+            JobNode thisJob = (JobNode)(iter.next());
+            if ( !thisJob.state().getText().contentEquals( "Done" ) )
+                thisJob.selected( true );
+            else
+                thisJob.selected( false );
         }
     }
     

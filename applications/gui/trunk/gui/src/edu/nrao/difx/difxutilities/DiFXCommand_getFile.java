@@ -135,7 +135,25 @@ public class DiFXCommand_getFile extends DiFXCommand {
             //  Open a new server socket and await a connection.  The connection
             //  will timeout after a given number of seconds (nominally 10).
             try {
-                ChannelServerSocket ssock = new ChannelServerSocket( _port, _settings );
+                //  This garbage used to be only the single line where the ssock was initialized.
+                //  I'm trying to trap a (fairly rare) BindException.  If that happens we try
+                //  the next port number.  It appears as if the port eventually frees up when
+                //  the exception occurs, so this should be okay.
+                int tryCount = 0;
+                ChannelServerSocket ssock = null;
+                while ( ssock == null && tryCount < 10 ) {
+                    try {
+                        ssock = new ChannelServerSocket( _port, _settings );
+                    } catch ( java.net.BindException e ) {
+                        ssock = null;
+                        ++tryCount;
+                        _settings.messageCenter().warning( 0, "ChannelServerSocket", "Bind exception from port " + _port + " - trying another" );
+                        _settings.releaseTransferPort( _port );
+                        _port = _settings.newDifxTransferPort( 0, 1000, false, true );
+                        try { Thread.sleep( 1000 ); } catch ( Exception ex ) {}
+                    }
+                }
+                if ( ssock != null ) {
                 ssock.setSoTimeout( 10000 );  //  timeout is in millisec
                 try {
                     ssock.accept();
@@ -158,6 +176,11 @@ public class DiFXCommand_getFile extends DiFXCommand {
                     _fileSize = -10;
                 }
                 ssock.close();
+                }
+                else {
+                    _error = "repeated BindException";
+                    _fileSize = -11;
+                }
             } catch ( java.io.IOException e ) {
                 e.printStackTrace();
                 _error = "IOException : " + e.toString();

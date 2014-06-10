@@ -573,6 +573,32 @@ public class JobNode extends QueueBrowserNode {
     }
     
     /*
+     * Delete the editor monitor, which should free up any associated memory requirements
+     * (if the garbage collector does its job).  This is performed in a thread after the
+     * given number of seconds.
+     */
+    public void freeResources( int delay ) {
+        FreeResourcesThread freeThread = new FreeResourcesThread( delay );
+        freeThread.start();
+    }
+    
+    /*
+     * This thread sleeps for a given number of seconds and then deletes the EditorMonitor
+     * instance associated with this job.  This is useful if you are running tons of jobs
+     * as the EditorMonitor can swallow lots of memory.
+     */
+    public class FreeResourcesThread extends Thread {
+        public FreeResourcesThread( int delay ) {
+            _delay = delay;
+        }
+        public void run() {
+            try { Thread.sleep( _delay * 1000 ); } catch ( Exception e ) {}
+            _editorMonitor.close();
+            _editorMonitor = null;
+        }
+        int _delay;
+    }
+    /*
      * Private function used repeatedly in positionItems().
      */
     protected void setTextArea( Component area, int xSize ) {

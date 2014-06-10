@@ -256,6 +256,10 @@ public class MessageDisplayPanel extends JPanel {
 
     }
     
+    public void close() {
+        _messageBrowser.close();
+    }
+    
     @Override
     public void setBounds( int x, int y, int w, int h ) {
         if ( _hideMenuBar ) {

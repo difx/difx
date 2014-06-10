@@ -16,6 +16,8 @@ import java.util.Iterator;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
+import mil.navy.usno.widgetlib.ZMenuItem;
+
 import edu.nrao.difx.difxutilities.DiFXCommand_ls;
 
 import edu.nrao.difx.difxdatabase.QueueDBConnection;
@@ -48,6 +50,14 @@ public class ExperimentNode extends QueueBrowserContainerNode {
             }
         });
         _popup.add( unselectJobsItem );
+        ZMenuItem selectIncompleteItem = new ZMenuItem( "Select Incomplete Jobs" );
+        selectIncompleteItem.setToolTipText( "Select all jobs for which the State is not \"Done\"." );
+        selectIncompleteItem.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                selectIncomplete();
+            }
+        });
+        _popup.add( selectIncompleteItem );
         _popup.add( new JSeparator() );
         JMenuItem menuItem4 = new JMenuItem( "Edit Properties" );
         menuItem4.setToolTipText( "Show/Edit the properties of this Experiment, add a new Pass, and create new Jobs." );
@@ -121,6 +131,13 @@ public class ExperimentNode extends QueueBrowserContainerNode {
         for ( Iterator<BrowserNode> iter = childrenIterator(); iter.hasNext(); ) {
             PassNode thisPass = (PassNode)(iter.next());
             thisPass.selectAllJobsAction();
+        }
+    }
+    
+    public void selectIncomplete() {
+        for ( Iterator<BrowserNode> iter = childrenIterator(); iter.hasNext(); ) {
+            PassNode thisPass = (PassNode)(iter.next());
+            thisPass.selectIncomplete();
         }
     }
     

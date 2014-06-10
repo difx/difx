@@ -85,10 +85,11 @@ public class SendFileMonitor extends PopupMonitor {
                        " of " + _content.length() + " characters were transmitted." );
         }
         else if ( fileSize == -10 ) {
-            error( "Socket connection timed out before DiFX host connected.", null );
+            error( "Socket connection timed out before DiFX host connected.", 
+                   "Upload of \"" + _filePath + "\" failed: " );
         }
         else if ( fileSize == -11 ) {
-            error( "File transfer failed: ", _fileSend.error() );
+            error( "Upload of \"" + _filePath + "\" failed: ", _fileSend.error() );
         }
         else if ( fileSize == -1 ) {
             error( "Mangled path name \"" + _filePath + "\".", 

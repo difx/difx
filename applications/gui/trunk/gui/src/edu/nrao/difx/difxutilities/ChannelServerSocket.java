@@ -25,7 +25,7 @@ import java.nio.ByteOrder;
 
 public class ChannelServerSocket {
     
-    public ChannelServerSocket( int port, SystemSettings settings ) throws IOException {
+    public ChannelServerSocket( int port, SystemSettings settings ) throws IOException, java.net.BindException {
         _settings = settings;
         //  If we are working with a data "channel" (all TCP traffic through one socket),
         //  fake a server socket.
@@ -36,8 +36,11 @@ public class ChannelServerSocket {
                 throw new IOException();
         }
         //  Otherwise create a normal ServerSocket.
-        else
-            _serverSock = new ServerSocket( port );
+        else {
+            try {
+                _serverSock = new ServerSocket( port );
+            } catch ( java.net.BindException e ) { throw e; }
+        }
     }
     
     public void setSoTimeout( int msec ) throws SocketException {

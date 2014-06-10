@@ -13,9 +13,6 @@ import java.util.Date;
 import java.text.SimpleDateFormat;
 import java.util.ArrayDeque;
 
-//import java.awt.event.ActionEvent;
-//import java.awt.event.ActionListener;
-
 import edu.nrao.difx.difxcontroller.DiFXMessageProcessor;
 
 import edu.nrao.difx.xmllib.difxmessage.DifxMessage;
@@ -107,6 +104,14 @@ public class QueueBrowserPanel extends TearOffPanel {
             }
         });
         _selectMenu.add( unselectAllItem );
+        ZMenuItem selectIncompleteItem = new ZMenuItem( "Select Incomplete" );
+        selectIncompleteItem.setToolTipText( "Select all jobs for which the State is not \"Done\"." );
+        selectIncompleteItem.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                selectIncomplete();
+            }
+        });
+        _selectMenu.add( selectIncompleteItem );
         _selectMenu.add( new JSeparator() );
         ZMenuItem runSelectedItem = new ZMenuItem( "Schedule Selected" );
         runSelectedItem.addActionListener( new ActionListener() {
@@ -114,12 +119,26 @@ public class QueueBrowserPanel extends TearOffPanel {
                 runSelected();
             }
         });
-        runSelectedItem.setEnabled( true );
         _selectMenu.add( runSelectedItem );
         runSelectedItem.toolTip( "Schedule the selected jobs to run using either job-specific user settings\n"
                 + "or the current automated run parameters.\n"
                 + "Automated run parameters can be viewed and changed in the Settings Window.", null );
-        //runSelectedItem.setEnabled( false );
+        ZMenuItem scheduleIncompleteItem = new ZMenuItem( "Schedule Incomplete" );
+        scheduleIncompleteItem.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                scheduleIncomplete();
+            }
+        });
+        _selectMenu.add( scheduleIncompleteItem );
+        scheduleIncompleteItem.toolTip( "Schedule any jobs that do not have state \"Done\".", null );
+        ZMenuItem scheduleAllItem = new ZMenuItem( "Schedule All" );
+        scheduleAllItem.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                scheduleAll();
+            }
+        });
+        _selectMenu.add( scheduleAllItem );
+        scheduleIncompleteItem.toolTip( "Schedule any jobs that do not have state \"Done\".\n", null );
         ZMenuItem unscheduleSelectedItem = new ZMenuItem( "Remove Selected From Schedule" );
         unscheduleSelectedItem.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
@@ -223,12 +242,6 @@ public class QueueBrowserPanel extends TearOffPanel {
             }
         });
         this.add( _showButton );
-        //_numExperiments = new NumLabel( "Experiments", this );
-        //_numExperiments.setBounds( 360, 30, 120, 25 );
-        //_numPasses = new NumLabel( "Passes", this );
-        //_numPasses.setBounds( 490, 30, 120, 25 );
-        //_numJobs = new NumLabel( "Jobs", this );
-        //_numJobs.setBounds( 620, 30, 120, 25 );
         _guiServerConnectionLight = new ActivityMonitorLight() {
              public JToolTip createToolTip() {
                  ComplexToolTip tip = new ComplexToolTip();
@@ -532,6 +545,19 @@ public class QueueBrowserPanel extends TearOffPanel {
     }
     
     /*
+     * Select all jobs that don't have "Done" as their state.
+     */
+    protected void selectIncomplete() {
+        synchronized ( _browserPane ) {
+            for ( Iterator<BrowserNode> projectIter = _browserPane.browserTopNode().children().iterator();
+                projectIter.hasNext(); ) {
+                ExperimentNode thisExperiment = (ExperimentNode)projectIter.next();
+                thisExperiment.selectIncomplete();
+            }
+        }
+    }
+    
+    /*
      * Clear the selection of all jobs.
      */
     protected void unselectAll() {
@@ -615,6 +641,49 @@ public class QueueBrowserPanel extends TearOffPanel {
     }
     
     /*
+     * Schedule all jobs to be run whether they are selected or not.
+     */
+    protected void scheduleAll() {
+        synchronized ( _browserPane ) {
+            for ( Iterator<BrowserNode> projectIter = _browserPane.browserTopNode().children().iterator();
+                projectIter.hasNext(); ) {
+                ExperimentNode thisExperiment = (ExperimentNode)projectIter.next();
+                if ( thisExperiment.children().size() > 0 ) {
+                    for ( Iterator<BrowserNode> iter = thisExperiment.childrenIterator(); iter.hasNext(); ) {
+                        PassNode thisPass = (PassNode)(iter.next());
+                        for ( Iterator<BrowserNode> jobIter = thisPass.children().iterator(); jobIter.hasNext(); ) {
+                            JobNode thisJob = (JobNode)jobIter.next();
+                            thisJob.autoStartJob();
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    /*
+     * Schedule all jobs to be run if they are not currently "Done".
+     */
+    protected void scheduleIncomplete() {
+        synchronized ( _browserPane ) {
+            for ( Iterator<BrowserNode> projectIter = _browserPane.browserTopNode().children().iterator();
+                projectIter.hasNext(); ) {
+                ExperimentNode thisExperiment = (ExperimentNode)projectIter.next();
+                if ( thisExperiment.children().size() > 0 ) {
+                    for ( Iterator<BrowserNode> iter = thisExperiment.childrenIterator(); iter.hasNext(); ) {
+                        PassNode thisPass = (PassNode)(iter.next());
+                        for ( Iterator<BrowserNode> jobIter = thisPass.children().iterator(); jobIter.hasNext(); ) {
+                            JobNode thisJob = (JobNode)jobIter.next();
+                            if ( !thisJob.state().getText().contentEquals( "Done" ) )
+                                thisJob.autoStartJob();
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    /*
      * Set all experiments to show/not show scheduling information.
      */
     protected void showExperimentScheduled() {
@@ -625,6 +694,7 @@ public class QueueBrowserPanel extends TearOffPanel {
                 thisExperiment.statsVisible( _showExperimentScheduledItem.isSelected() );
             }
         }
+        _settings.queueBrowserSettings().showExperimentScheduled = _showExperimentScheduledItem.isSelected();
     }
     
     /*
@@ -643,6 +713,7 @@ public class QueueBrowserPanel extends TearOffPanel {
                 }
             }
         }
+        _settings.queueBrowserSettings().showPassScheduled = _showPassScheduledItem.isSelected();
     }
     
     /*
@@ -1571,7 +1642,7 @@ public class QueueBrowserPanel extends TearOffPanel {
             public RetrievalMonitor() {
                 super( "Loading Existing Jobs From Disk..." );
                 setLayout( null );
-                setBounds( _settings.queueBrowser().getX() + _settings.queueBrowser().getWidth(),
+                setBounds( _settings.queueBrowser().getX() + _settings.queueBrowser().getWidth() - 500,
                         _settings.queueBrowser().getY(), 500, 200 );
                 ZButton cancelButton = new ZButton( "Cancel" );
                 cancelButton.setBounds( 350, 125, 125, 25 );
@@ -2028,8 +2099,11 @@ public class QueueBrowserPanel extends TearOffPanel {
                             thisJob.state().setText( "Scheduled (" + scheduleCount + ")" );
                             thisJob.state().updateUI();
                         }
-                        else if ( thisJob.autostate() == JobNode.AUTOSTATE_DONE ||
-                                thisJob.autostate() == JobNode.AUTOSTATE_UNSCHEDULED ||
+                        else if ( thisJob.autostate() == JobNode.AUTOSTATE_DONE ) {
+                            thisJob.freeResources( 60 );
+                            iter.remove();
+                        }
+                        else if ( thisJob.autostate() == JobNode.AUTOSTATE_UNSCHEDULED ||
                                 thisJob.autostate() == JobNode.AUTOSTATE_FAILED )
                             iter.remove();
                     }

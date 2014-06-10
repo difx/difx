@@ -2432,7 +2432,6 @@ public class SystemSettings extends JFrame {
         //  and stops at zero, you can force the retry cycle to go forever by giving it a
         //  zero or negative number).  A failure may also produce a message if desired.
         boolean gotPort = false;
-//        System.out.println( "try for port " + tryPort + "(" + ( tryPort + _difxTransferPort.intValue() ) + ") " );
         while ( !gotPort ) {
             synchronized( _transferPortUsed ) {
                 if ( !_transferPortUsed[tryPort] ) {

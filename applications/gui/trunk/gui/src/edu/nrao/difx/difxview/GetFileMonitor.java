@@ -115,13 +115,14 @@ public class GetFileMonitor extends PopupMonitor {
             error( "File \"" + _filePath + "\"", "has zero length." );
         }
         else if ( fileSize == -10 ) {
-            error( "Socket connection timed out before DiFX host connected.", null );
+            error( "Socket connection timed out before DiFX host connected.", 
+                   "Download of \"" + _filePath + " failed." );
         }
         else if ( fileSize == -11 ) {
-            error( "File transfer failed: ", _fileGet.error() );
+            error( "Download of \"" + _filePath + "\" failed: ", _fileGet.error() );
         }
         else if ( fileSize == -1 ) {
-            error( "Bad file name (probably the path was not complete.", null );
+            error( "Bad file name:", "\"" + _filePath + "\"" );
         }
         else if ( fileSize == -2 ) {
             if ( _noFileOK )

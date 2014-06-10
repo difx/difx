@@ -545,6 +545,10 @@ public class JobEditorMonitor extends JFrame {
 
     }
     
+    public void close() {
+        _messageDisplayPanel.close();
+    }
+    
     protected class UpdateThread extends Thread {
         protected int _interval;
         protected boolean _keepGoing;
@@ -1533,7 +1537,7 @@ public class JobEditorMonitor extends JFrame {
      * instruction is more of a "set and forget" kind of operation.
      */
     public void startJob( boolean applyMachinesInThread ) {
-        _jobNode.logItem( "<RUN> START JOB", _jobNode.inputFile(), false );
+//        _jobNode.logItem( "<RUN> START JOB", _jobNode.inputFile(), false );
         _startTime = new JulianCalendar();
         _startTime.setTime( new Date() );
         _activeID = _startTime.getTimeInMillis();
@@ -1668,7 +1672,7 @@ public class JobEditorMonitor extends JFrame {
         
         // -- Create the XML defined messages and process through the system
         command.body().setDifxStart(jobStart);
-        _jobNode.logItem( "<RUN> START COMMAND", command.convertToXML(), true );
+//        _jobNode.logItem( "<RUN> START COMMAND", command.convertToXML(), true );
         try {
             //command.sendPacket( _settings.guiServerConnection().COMMAND_PACKET );
             command.send();
@@ -1676,7 +1680,7 @@ public class JobEditorMonitor extends JFrame {
             java.util.logging.Logger.getLogger("global").log(java.util.logging.Level.SEVERE, null,
                     e.getMessage() );  //BLAT should be a pop-up
             setState( "Failed Start", Color.RED );
-            _jobNode.logItem( "<RUN> FAILED START", "", true );
+//            _jobNode.logItem( "<RUN> FAILED START", "", true );
             _jobNode.autostate( JobNode.AUTOSTATE_FAILED );
         }
     }
@@ -1882,8 +1886,8 @@ public class JobEditorMonitor extends JFrame {
             endTime.setTime( new Date() );
             _jobNode.correlationEnd( endTime.mjd() );
             _jobNode.correlationTime( 24.0 * 3600.0 * ( endTime.mjd() - _startTime.mjd() ) );
-            _jobNode.logItem( "<RUN> CORRELATION TIME", "" + 24.0 * 3600.0 * ( endTime.mjd() - _startTime.mjd() ), false );
-            _jobNode.logItem( "<RUN> JOB STATE", _jobNode.state().getText(), true );
+//            _jobNode.logItem( "<RUN> CORRELATION TIME", "" + 24.0 * 3600.0 * ( endTime.mjd() - _startTime.mjd() ), false );
+//            _jobNode.logItem( "<RUN> JOB STATE", _jobNode.state().getText(), true );
             logRun();
             //  This eliminates this job from any nodes where it is running.
             //  Note that this will not exactly work if you are running the same
@@ -2901,7 +2905,7 @@ public class JobEditorMonitor extends JFrame {
     
     /*
      * The data source list is built using the known data requirements (from
-     * the .input file) in the "fillDataSourceList()" function.  Here was reflect any
+     * the .input file) in the "fillDataSourceList()" function.  Here we reflect any
      * changes in the state of data source machines or whatever associated with the
      * items on this list.
      */
@@ -3139,8 +3143,6 @@ public class JobEditorMonitor extends JFrame {
     
     protected boolean _doneWithErrors;
     public boolean doneWithErrors() { return _doneWithErrors; }
-    //protected int _numDataStreams;
-    //protected Vector<String> _dataSources;
     
     protected InputFileParser _inputFile;
     protected JulianCalendar _startTime;
