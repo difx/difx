@@ -249,6 +249,16 @@ def getTwoToneColumns(toneSelect, dataLine):
 				if cd[1] == 'ends':
 					tn1 = 0
 					tn2 = -1
+				elif cd[1] == 'good':
+					if nTone == 2:
+						tn1 = 0
+						tn2 = 1
+					elif nTone == 4:
+						tn1 = 1
+						tn2 = 2
+				else:
+					tn1 = nTone / 8
+					tn2 = nTone - 1 - tn1
 				else:
 					tn1 = int(cd[1])	# first tone num
 					tn2 = int(cd[2])	# last tone num
