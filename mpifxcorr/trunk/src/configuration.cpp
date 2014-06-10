@@ -684,6 +684,41 @@ int Configuration::getMaxProducts() const
   return maxproducts;
 }
 
+// returns number of polarisations recorded.  Lists the polarisations in the pols argument
+// sort order is always R L X Y
+int Configuration::getRecordedPolarisations(char *pols) const
+{
+  int nPol = 0;
+  bool hasR=false;
+  bool hasL=false;
+  bool hasX=false;
+  bool hasY=false;
+  for(int i=0;i<4;i++)
+  {
+    pols[i] = 0;
+  }
+  for(int d=0;d<getDatastreamTableLength();++d)
+  {
+    for(int i=0;i<datastreamtable[d].numrecordedbands;i++)
+    {
+      char p = datastreamtable[d].recordedbandpols[i];
+      switch(p)
+      {
+        case 'R': hasR=true; break;
+        case 'L': hasL=true; break;
+        case 'X': hasX=true; break;
+        case 'Y': hasY=true; break;
+      }
+    }
+  }
+  if(hasR) pols[nPol++] = 'R';
+  if(hasL) pols[nPol++] = 'L';
+  if(hasX) pols[nPol++] = 'X';
+  if(hasY) pols[nPol++] = 'Y';
+
+  return nPol;
+}
+
 int Configuration::getDMatchingBand(int configindex, int datastreamindex, int bandindex) const
 {
   datastreamdata ds = datastreamtable[configs[configindex].datastreamindices[datastreamindex]];

@@ -71,6 +71,11 @@ public:
   bool addData(cf32* subintresults);
 
  /**
+  * For all datastreams with pulse cal extraction enabled, write some comments to the beginning of the pulse cal file
+  */
+  void initialisePcalFiles();
+
+ /**
   * Writes this Visibility's integrated results to disk, after amplitude calibration
   */
   void writedata();
@@ -199,6 +204,8 @@ private:
   int ** pulsarbins;
   Model * model;
   Polyco * polyco;
+  int numpolarisationsinconfig;     // number of unique recorded polarisations
+  char polarisationsinconfig[7]; // list of polarisations (long enough for at least 6 pols and a trailing 0
 };
 
 #endif

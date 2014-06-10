@@ -524,6 +524,12 @@ public:
   int getDataBytes(int configindex, int datastreamindex) const;
 
  /**
+  * @param pols Pointer to array of 4 chars to receive list of polarizations used
+  * @return The total number of unique polarizations in the configuration file
+  */
+  int getRecordedPolarisations(char *pols) const;
+
+ /**
   * @param configindex The index of the configuration being used (from the table in the input file)
   * @param datastreamindex The index of the datastream (from the table in the input file)
   * @param bandindex The index of the band within this datastream

@@ -643,6 +643,9 @@ void FxManager::initialiseOutput()
         }
       }
     }
+
+    //write comments at top of pcal files
+    visbuffer[0]->initialisePcalFiles();
   }
 }
 

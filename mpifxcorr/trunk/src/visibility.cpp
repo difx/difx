@@ -91,8 +91,46 @@ Visibility::Visibility(Configuration * conf, int id, int numvis, char * dbuffer,
   }
   for(int i=0;i<visID;i++)
     updateTime();
+  
+  // Save polarisations recorded for use in constructing pulse cal output
+  polarisationsinconfig[4] = 0;
+  numpolarisationsinconfig = config->getRecordedPolarisations(polarisationsinconfig);
 }
 
+// Note: not to be called until .difx/ dir is created.
+void Visibility::initialisePcalFiles()
+{
+  char pcalfilename[256];
+  ofstream pcaloutput;
+
+  for(int i=0;i<numdatastreams;i++)
+  {
+    for(int c=0;c<config->getNumConfigs();c++)
+    {
+      if(config->getDPhaseCalIntervalMHz(c, i) > 0)
+      {
+        sprintf(pcalfilename, "%s/PCAL_%05d_%06d_%s", config->getOutputFilename().c_str(), config->getStartMJD(), config->getStartSeconds(), config->getTelescopeName(i).c_str());
+        pcaloutput.open(pcalfilename, ios::app);
+
+        // Write a few comments at top of PCAL file
+        pcaloutput << "# DiFX-derived pulse cal data" << endl;
+        // Note: the next four lines are special comments that may be parsed by other software.  Please keep the format unchanged.
+        pcaloutput << "# File version = 1" << endl; // If need be, this version can be changed in the future.
+        pcaloutput << "# Start MJD = " << config->getStartMJD() << endl;
+        pcaloutput << "# Start seconds = " << config->getStartSeconds() << endl;
+        pcaloutput << "# Telescope name = " << config->getTelescopeName(i) << endl;
+        for(int p=0;p<numpolarisationsinconfig;p++)
+        {
+          // Note: this is a special comment that may be parsed by other software.  Please keep the format unchanged.
+          pcaloutput << "# Polarisation " << p << " = " << polarisationsinconfig[p] << endl;
+        }
+
+        pcaloutput.close();
+      }
+      break;  // just do it once; go to next antenna once one config w/ pulse cal is found
+    }
+  }
+}       
 
 Visibility::~Visibility()
 {
@@ -671,7 +709,7 @@ void Visibility::writedifx(int dumpmjd, double dumpseconds)
   char pcalfilename[256];
   char pcalstr[256];
   string pcalline;
-  int binloop, freqindex, numpolproducts, resultindex, freqchannels, maxpol;
+  int binloop, freqindex, numpolproducts, resultindex, freqchannels;
   int year, month, day, startyearmjd, dummyseconds;
   int ant1index, ant2index, sourceindex, baselinenumber, numfiles, filecount, tonefreq;
   float currentweight;
@@ -680,6 +718,7 @@ void Visibility::writedifx(int dumpmjd, double dumpseconds)
   bool nonzero;
   double buvw[3]; //the u,v and w for this baseline at this time
   char polpair[3]; //the polarisation eg RR, LL
+  const char noToneAvailable[] = " -1 0 0 0";
 
   if(currentscan >= model->getNumScans()) {
     cwarn << startl << "Visibility will not write out time " << dumpmjd << "/" << dumpseconds << " since currentscan is " << currentscan << " and numscans is " << model->getNumScans() << endl;
@@ -839,11 +878,7 @@ void Visibility::writedifx(int dumpmjd, double dumpseconds)
   config->mjd2ymd(dumpmjd, year, month, day);
   config->getMJD(startyearmjd, dummyseconds, year, 1, 1, 0, 0, 0);
   pcaldoy = dumpmjd - startyearmjd + 1.0 + dumpseconds/86400.0;
-  maxpol = 1;
-  if(config->getMaxProducts(currentconfigindex) > 1)
-    maxpol = 2;
-  polpair[0] = config->getDRecordedBandPol(0, 0, 0);
-  polpair[1] = config->getOppositePol(polpair[0]);
+
   for(int i=0;i<numdatastreams;i++)
   {
     if(config->getDPhaseCalIntervalMHz(currentconfigindex, i) > 0)
@@ -853,36 +888,38 @@ void Visibility::writedifx(int dumpmjd, double dumpseconds)
       sprintf(pcalstr, "%s %10.7f %9.7f %.2f %d %d %d %d %d",
               config->getTelescopeName(i).c_str(), pcaldoy,
               config->getIntTime(currentconfigindex)/86400.0, cablecaldelay,
-              maxpol, config->getDNumRecordedFreqs(currentconfigindex, i),
+              numpolarisationsinconfig, config->getDNumRecordedFreqs(currentconfigindex, i),
               config->getDMaxRecordedPCalTones(currentconfigindex, i), 
               0/*no state counts*/, config->getDNumRecordedBands(currentconfigindex, i));
       pcalline = pcalstr;
-      // Note: This outer p loop seems like it can be removed.  If that is done the test for matching polpair[p] need not be done and the increment of resultindex should be more natural.  The order of the output will be changed (no longer sorted by polarization).  This doesn't matter for difx2fits.  Not sure about other consumers of this file so I will defer for the moment.  --Walter Brisken 2014 Feb 05
-      for(int p=0;p<maxpol;p++)
+      for(int p=0;p<numpolarisationsinconfig;p++)
       {
         resultindex = config->getCoreResultPCalOffset(currentconfigindex, i);
+
         for(int j=0;j<config->getDNumRecordedBands(currentconfigindex, i);j++)
         //we have to loop over bands as they are used to index the pcal results
         {
-          if(config->getDRecordedBandPol(currentconfigindex, i, j) != polpair[p]) {
+          if(config->getDRecordedBandPol(currentconfigindex, i, j) != polarisationsinconfig[p]) {
             // update resultindex by the tones we are skipping over
             resultindex += config->getDRecordedFreqNumPCalTones(currentconfigindex, i, config->getDLocalRecordedFreqIndex(currentconfigindex, i, j));
-	      //skip band if it's not the right polarisation without writing out dummy pcal
-	      continue;
+
+            // write dummy pcals to ensure proper array ordering
+            for(int t=0;t<config->getDMaxRecordedPCalTones(currentconfigindex, i);t++) {
+              pcalline += noToneAvailable;
+            }
+
+	    continue;
           }
 	  for(int t=0;t<config->getDMaxRecordedPCalTones(currentconfigindex, i);t++)
           {
-            //get the default response ready in case we don't find anything
-	    sprintf(pcalstr, " %3d %d %.5e %.5e", -1, 0, 0.0, 0.0);
-	      
             //write out empty tone and continue for any tones outside the bandwidth of the channel.
 	    if(t >= config->getDRecordedFreqNumPCalTones(currentconfigindex, i, config->getDLocalRecordedFreqIndex(currentconfigindex, i, j))) {
-                pcalline += pcalstr;
+                pcalline += noToneAvailable;
 		continue; //move on
 	    }
 	    tonefreq = config->getDRecordedFreqPCalToneFreq(currentconfigindex, i, config->getDLocalRecordedFreqIndex(currentconfigindex, i, j), t);
             if (config->getDRecordedLowerSideband(currentconfigindex, i, config->getDLocalRecordedFreqIndex(currentconfigindex, i, j))) {
-                sprintf(pcalstr, " %3d %d %12.5e %12.5e", j, tonefreq, 
+                sprintf(pcalstr, " %3d %d %12.5e %12.5e", j, tonefreq,
                         results[resultindex].re,
                         results[resultindex].im);
             }

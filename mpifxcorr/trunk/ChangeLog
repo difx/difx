@@ -11,6 +11,9 @@ Version 2.4
 * Fix Bonn Bug 1: on 64-bit systems sizeof(unsigned long) is 8 bytes, not 4 as it is on 32-bit systems.
   - some other variable types changed as well to minimize casting and prevent future similar problems.
 * Fix Bonn Bug 2: Lower sideband interacted badly with zoom bands
+* Emit Mark5 version information via cinfo on startup
+* PCAL: Pcal files generated are now consistent with http://cira.ivec.org/dokuwiki/lib/exe/fetch.php/difx/difxuserguide.pdf
+* PCAL: Write informational header in comments to top of PCAL files
 
 Version 2.3
 ~~~~~~~~~~~
