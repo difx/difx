@@ -172,7 +172,6 @@ def getOneToneColumns(toneSelect, dataLine):
 				for t in range(totalTones):
 					if int(s[toneOffset + 4*t]) == rb and int(s[toneOffset + 4*t + 1]) % fq == 0:
 						columns.append(toneOffset+4*t)
-						break
 			else:
 				fq = float(cd[1])	# freq (MHz)
 				for t in range(totalTones):
