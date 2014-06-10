@@ -315,8 +315,11 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                 while (TRUE)            // read loop over all input records
                     {
                     line = fgets (lbuff, LBUFF_SIZE, fin);
-                    if (line == NULL)          //EOF
+                    if (line == NULL)   // EOF?
                         break;
+                    else if (*line == '#')
+                        continue;       // skip over comment lines
+
                     sscanf (line, "%s%lf%lf%lf%d%d%d%d%d%n", ant, &t, &tint, &cable_delay, 
                                      &npol, &nchan, &ntones, &nstates, &nrc, &nchars);
                     mjd = t - refDay + (int)(D->mjdStart);
@@ -392,6 +395,9 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                                         // identify channel and tone
                                 sscanf (line + nchars, "%d%lf%lf%lf%n", 
                                         &record_chan, &freq, &cquad, &squad, &mchars);
+                                        // skip over channels which weren't recorded
+                                if (record_chan < 0)
+                                    continue;
                                         // swap sign of imaginary part
                                 squad *= -1;
                                 nchars += mchars;
