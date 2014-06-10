@@ -53,7 +53,7 @@ def parseCommandLine():
 			elif a in ['-q', '--quiet']:
 				options['verbose'] -= 1
 			else:
-				if len(a) > 2 && a[1] == '-':
+				if len(a) > 2 and a[1] == '-':
 					options[a[2:]] = 1
 				else:
 					options[a[1:]] = 1
@@ -256,9 +256,9 @@ def getTwoToneColumns(toneSelect, dataLine):
 					elif nTone == 4:
 						tn1 = 1
 						tn2 = 2
-				else:
-					tn1 = nTone / 8
-					tn2 = nTone - 1 - tn1
+					else:
+						tn1 = nTone / 8
+						tn2 = nTone - 1 - tn1
 				else:
 					tn1 = int(cd[1])	# first tone num
 					tn2 = int(cd[2])	# last tone num
