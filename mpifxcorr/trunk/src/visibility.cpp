@@ -91,10 +91,6 @@ Visibility::Visibility(Configuration * conf, int id, int numvis, char * dbuffer,
   }
   for(int i=0;i<visID;i++)
     updateTime();
-  
-  // Save polarisations recorded for use in constructing pulse cal output
-  polarisationsinconfig[4] = 0;
-  numpolarisationsinconfig = config->getRecordedPolarisations(polarisationsinconfig);
 }
 
 // Note: not to be called until .difx/ dir is created.
@@ -119,11 +115,6 @@ void Visibility::initialisePcalFiles()
         pcaloutput << "# Start MJD = " << config->getStartMJD() << endl;
         pcaloutput << "# Start seconds = " << config->getStartSeconds() << endl;
         pcaloutput << "# Telescope name = " << config->getTelescopeName(i) << endl;
-        for(int p=0;p<numpolarisationsinconfig;p++)
-        {
-          // Note: this is a special comment that may be parsed by other software.  Please keep the format unchanged.
-          pcaloutput << "# Polarisation " << p << " = " << polarisationsinconfig[p] << endl;
-        }
 
         pcaloutput.close();
       }
@@ -710,10 +701,10 @@ void Visibility::writedifx(int dumpmjd, double dumpseconds)
   char pcalstr[256];
   string pcalline;
   int binloop, freqindex, numpolproducts, resultindex, freqchannels;
-  int year, month, day, startyearmjd, dummyseconds;
+  int year, month, day;
   int ant1index, ant2index, sourceindex, baselinenumber, numfiles, filecount, tonefreq;
   float currentweight;
-  double scanoffsetsecs, pcaldoy, cablecaldelay;
+  double scanoffsetsecs, pcalmjd, cablecaldelay;
   bool modelok;
   bool nonzero;
   double buvw[3]; //the u,v and w for this baseline at this time
@@ -873,11 +864,42 @@ void Visibility::writedifx(int dumpmjd, double dumpseconds)
   output.write(todiskbuffer, todiskmemptrs[0]);
   output.close();
 
+
+/* Pulse cal data format is described here.
+
+Each antenna's pulse cal data is written to one file.
+
+Top of file has comments starting with #.  Some of these comments
+contain useful information.  See Visibility::initialisePcalFiles()
+for details.
+
+Then there are a series of lines.  Each line corresponds to one visibility
+dump from one data stream.  Normally there will be 1 datastream per antenna.
+
+The beginning of each line has the following columns of information:
+
+1. Station code
+2. MJD+fraction of the integration time
+3. Duration (days) of the integration
+4. DiFX datastream index
+5. Number of recorded basebands
+6. Maximum number of tones from any one of the recorded bands
+
+Following that are 4 columns per tone.  The tone number within band is the 
+fast increasing index and the record band is the slowly increasing index.
+The four columns are:
+
+1. Tone frequency (MHz), currently enforced to be an integer.
+2. Polarization.  One of R, L, X or Y
+3. Real part of pulse cal tone
+4. Imag part of pulse cal tone
+
+*/
+
   //now each pcal (if necessary)
   cablecaldelay = 0.0;
   config->mjd2ymd(dumpmjd, year, month, day);
-  config->getMJD(startyearmjd, dummyseconds, year, 1, 1, 0, 0, 0);
-  pcaldoy = dumpmjd - startyearmjd + 1.0 + dumpseconds/86400.0;
+  pcalmjd = dumpmjd + dumpseconds/86400.0;
 
   for(int i=0;i<numdatastreams;i++)
   {
@@ -885,57 +907,51 @@ void Visibility::writedifx(int dumpmjd, double dumpseconds)
     {
       nonzero = false;
       //write the header string - note state counts are not written, and cablecal is dummy
-      sprintf(pcalstr, "%s %10.7f %9.7f %.2f %d %d %d %d %d",
-              config->getTelescopeName(i).c_str(), pcaldoy,
-              config->getIntTime(currentconfigindex)/86400.0, cablecaldelay,
-              numpolarisationsinconfig, config->getDNumRecordedFreqs(currentconfigindex, i),
-              config->getDMaxRecordedPCalTones(currentconfigindex, i), 
-              0/*no state counts*/, config->getDNumRecordedBands(currentconfigindex, i));
+      sprintf(pcalstr, "%s %13.7f %9.7f %d %d %d",
+              config->getTelescopeName(i).c_str(), pcalmjd,
+              config->getIntTime(currentconfigindex)/86400.0, i,
+              config->getDNumRecordedBands(currentconfigindex, i),
+              config->getDMaxRecordedPCalTones(currentconfigindex, i)); 
       pcalline = pcalstr;
-      for(int p=0;p<numpolarisationsinconfig;p++)
+
+      resultindex = config->getCoreResultPCalOffset(currentconfigindex, i);
+
+      for(int j=0;j<config->getDNumRecordedBands(currentconfigindex, i);j++)
+      //we have to loop over bands as they are used to index the pcal results
       {
-        resultindex = config->getCoreResultPCalOffset(currentconfigindex, i);
-
-        for(int j=0;j<config->getDNumRecordedBands(currentconfigindex, i);j++)
-        //we have to loop over bands as they are used to index the pcal results
+        for(int t=0;t<config->getDMaxRecordedPCalTones(currentconfigindex, i);t++)
         {
-          if(config->getDRecordedBandPol(currentconfigindex, i, j) != polarisationsinconfig[p]) {
-            // update resultindex by the tones we are skipping over
-            resultindex += config->getDRecordedFreqNumPCalTones(currentconfigindex, i, config->getDLocalRecordedFreqIndex(currentconfigindex, i, j));
-
-            // write dummy pcals to ensure proper array ordering
-            for(int t=0;t<config->getDMaxRecordedPCalTones(currentconfigindex, i);t++) {
-              pcalline += noToneAvailable;
-            }
-
-	    continue;
-          }
-	  for(int t=0;t<config->getDMaxRecordedPCalTones(currentconfigindex, i);t++)
+          //write out empty tone and continue for any tones outside the bandwidth of the channel.
+          if(t >= config->getDRecordedFreqNumPCalTones(currentconfigindex, i, config->getDLocalRecordedFreqIndex(currentconfigindex, i, j)))
           {
-            //write out empty tone and continue for any tones outside the bandwidth of the channel.
-	    if(t >= config->getDRecordedFreqNumPCalTones(currentconfigindex, i, config->getDLocalRecordedFreqIndex(currentconfigindex, i, j))) {
-                pcalline += noToneAvailable;
-		continue; //move on
-	    }
-	    tonefreq = config->getDRecordedFreqPCalToneFreq(currentconfigindex, i, config->getDLocalRecordedFreqIndex(currentconfigindex, i, j), t);
-            if (config->getDRecordedLowerSideband(currentconfigindex, i, config->getDLocalRecordedFreqIndex(currentconfigindex, i, j))) {
-                sprintf(pcalstr, " %3d %d %12.5e %12.5e", j, tonefreq,
-                        results[resultindex].re,
-                        results[resultindex].im);
-            }
-            else {
-                sprintf(pcalstr, " %3d %d %12.5e %12.5e", j, tonefreq, 
-                        results[resultindex].re,
-                        -results[resultindex].im);
-            }
-            if(results[resultindex].re != 0.0 && -results[resultindex].im != 0.0)
-            {
-              nonzero = true;
-            }
-            pcalline += pcalstr;
-            resultindex++;
+            pcalline += noToneAvailable;
+            continue; //move on
+          }
+
+          tonefreq = config->getDRecordedFreqPCalToneFreq(currentconfigindex, i, config->getDLocalRecordedFreqIndex(currentconfigindex, i, j), t);
+          if(config->getDRecordedLowerSideband(currentconfigindex, i, config->getDLocalRecordedFreqIndex(currentconfigindex, i, j)))
+          {
+            sprintf(pcalstr, " %d %c %12.5e %12.5e",
+                    tonefreq,
+                    config->getDRecordedBandPol(currentconfigindex, i, j),
+                    results[resultindex].re,
+                    results[resultindex].im);
+          }
+          else
+          {
+            sprintf(pcalstr, " %d %c %12.5e %12.5e",
+                    tonefreq,
+                    config->getDRecordedBandPol(currentconfigindex, i, j),
+                    results[resultindex].re,
+                    -results[resultindex].im);
           }
         }
+        if(results[resultindex].re != 0.0 && -results[resultindex].im != 0.0)
+        {
+          nonzero = true;
+        }
+        pcalline += pcalstr;
+        resultindex++;
       }
       if(nonzero) // If at least one tone had non-zero amplitude, write the line to the file
       {

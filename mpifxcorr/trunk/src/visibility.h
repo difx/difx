@@ -204,8 +204,6 @@ private:
   int ** pulsarbins;
   Model * model;
   Polyco * polyco;
-  int numpolarisationsinconfig;     // number of unique recorded polarisations
-  char polarisationsinconfig[7]; // list of polarisations (long enough for at least 6 pols and a trailing 0
 };
 
 #endif
