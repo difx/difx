@@ -704,7 +704,7 @@ void Visibility::writedifx(int dumpmjd, double dumpseconds)
   int year, month, day;
   int ant1index, ant2index, sourceindex, baselinenumber, numfiles, filecount, tonefreq;
   float currentweight;
-  double scanoffsetsecs, pcalmjd, cablecaldelay;
+  double scanoffsetsecs, pcalmjd;
   bool modelok;
   bool nonzero;
   double buvw[3]; //the u,v and w for this baseline at this time
@@ -897,7 +897,6 @@ The four columns are:
 */
 
   //now each pcal (if necessary)
-  cablecaldelay = 0.0;
   config->mjd2ymd(dumpmjd, year, month, day);
   pcalmjd = dumpmjd + dumpseconds/86400.0;
 
@@ -945,13 +944,13 @@ The four columns are:
                     results[resultindex].re,
                     -results[resultindex].im);
           }
+          if(results[resultindex].re != 0.0 && -results[resultindex].im != 0.0)
+          {
+            nonzero = true;
+          }
+          pcalline += pcalstr;
+          resultindex++;
         }
-        if(results[resultindex].re != 0.0 && -results[resultindex].im != 0.0)
-        {
-          nonzero = true;
-        }
-        pcalline += pcalstr;
-        resultindex++;
       }
       if(nonzero) // If at least one tone had non-zero amplitude, write the line to the file
       {
