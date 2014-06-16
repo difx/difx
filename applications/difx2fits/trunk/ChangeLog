@@ -5,7 +5,7 @@ Version 3.4.0
   - this fixes a bad bug when number of jobs is large; max number of file descriptors got exceeded.
 * print MJD range of converted output
 * add utility plotpcal
-* update pulse cal
+* update pulse cal: Use new, more natural format for .difx/PCAL* files made by mpifxcorr
 
 Version 3.3.0
 * Improved clarity in generation of Flag, Tsys, Pcal, Gain and Weather tables: prioritized sources of data
