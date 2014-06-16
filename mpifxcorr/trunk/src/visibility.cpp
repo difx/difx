@@ -905,7 +905,7 @@ The four columns are:
     if(config->getDPhaseCalIntervalMHz(currentconfigindex, i) > 0)
     {
       nonzero = false;
-      //write the header string - note state counts are not written, and cablecal is dummy
+      // write the header string
       sprintf(pcalstr, "%s %13.7f %9.7f %d %d %d",
               config->getTelescopeName(i).c_str(), pcalmjd,
               config->getIntTime(currentconfigindex)/86400.0, i,
@@ -950,8 +950,8 @@ The four columns are:
           }
           pcalline += pcalstr;
           resultindex++;
-        }
-      }
+        } // end of tone loop
+      } // end of recorded band loop
       if(nonzero) // If at least one tone had non-zero amplitude, write the line to the file
       {
         sprintf(pcalfilename, "%s/PCAL_%05d_%06d_%s", config->getOutputFilename().c_str(), config->getStartMJD(), config->getStartSeconds(), config->getTelescopeName(i).c_str());
