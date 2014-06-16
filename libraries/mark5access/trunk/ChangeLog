@@ -3,6 +3,7 @@ Version 1.5.1
 * Improve behavior of fixmark5b() in the case that fill pattern is seen at the 1 second transition.
 * m5bsum calculates frame rates now rather than just assuming 25600 frames per second
 * Improve blanking of mark5b in fix case (make use of the TVG bit to blank frame by frame)
+* Mark4 format: Change default decade from 2000 to 2010
 
 Version 1.5.0
 * Add KVN5B format: like Mark5B but different data bit patterns (Richard Dodson)
