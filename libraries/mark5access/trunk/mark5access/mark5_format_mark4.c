@@ -261,7 +261,7 @@ static int mark5_format_mark4_frame_time_int(const struct mark5_stream *ms, int 
 
 	if(mjd)
 	{
-		*mjd = 55196 + 365*nibs[0] + nibs[1]*100 + nibs[2]*10 + nibs[3] + (int)((nibs[0]+3)/4);
+		*mjd = 51543 + 365*nibs[0] + nibs[1]*100 + nibs[2]*10 + nibs[3] + (int)((nibs[0]+3)/4);
 	}
 	if(sec)
 	{
@@ -462,7 +462,7 @@ static int mark5_format_mark4_fixmjd(struct mark5_stream *ms, int refmjd)
 		extractnibbles(ms->frame + 4*v->ntrack, v->ntrack, 4, nibs);
 		nibs[0] += v->decade;
 
-		ms->mjd = 55196 + 365*nibs[0] + nibs[1]*100 + nibs[2]*10 + nibs[3] + (int)((nibs[0]+3)/4);
+		ms->mjd = 51543 + 365*nibs[0] + nibs[1]*100 + nibs[2]*10 + nibs[3] + (int)((nibs[0]+3)/4);
 
 		return 1;
 	}
