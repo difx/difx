@@ -301,30 +301,29 @@ namespace guiServer {
         //---------------------------------------------------------------------
         virtual void guiServerVersionRequest() {
             char newVersion[DIFX_MESSAGE_LENGTH];
-            //  The guiServer version and the version of DiFX which was used
-            //  to compile it come from compilation defines, which isn't pretty
-            //  but it works.
+            //  The guiServer version comes from the "configure.ac" file, which needs to be
+            //  changed by hand.  It would be nice if this were automated somehow.  Hopefully
+            //  it is defined.
 #ifdef VERSION
             sendPacket( GUISERVER_VERSION, VERSION, strlen( VERSION ) );
 #else
-            sendPacket( GUISERVER_VERSION, "unknown", strlen( "unknown" ) );
-#endif
-            //  The "version" of guiServer is a little tricky to get right.  We first look
-            //  to see if a "label" has been defined for this DiFX build (this is part of the
-            //  difxbuild process, so if you aren't using it you probably don't have one).
+            //  If that doesn't work, we try to use the "DIFX_LABEL" from the difxbuild
+            //  process _ if you aren't using that to build guiServer you probably don't
+            //  have one.
             const char* difxLabel = getenv( "DIFX_LABEL" );
             if ( difxLabel ) {
-                sendPacket( GUISERVER_DIFX_VERSION, difxLabel, strlen( difxLabel ) );
+                sendPacket( GUISERVER_VERSION, difxLabel, strlen( difxLabel ) );
             }
             //  Failing that, use the defined "version", which is the version of the DiFX
             //  source.  If that doesn't exist, we don't know what version this is.
             else {
 #ifdef DIFX_VERSION
-                sendPacket( GUISERVER_DIFX_VERSION, DIFX_VERSION, strlen( DIFX_VERSION ) );
+                sendPacket( GUISERVER_VERSION, DIFX_VERSION, strlen( DIFX_VERSION ) );
 #else
-                sendPacket( GUISERVER_DIFX_VERSION, "unknown", strlen( "unknown" ) );
+                sendPacket( GUISERVER_VERSION, "unknown", strlen( "unknown" ) );
 #endif
             }
+#endif
             
             //  Send the current DiFX "base" that we are using.  This determines
             //  where the setup files for different versions exist.
