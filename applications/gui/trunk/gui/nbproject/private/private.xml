@@ -44,11 +44,11 @@
         </file>
         <file>
             <url>src/edu/nrao/difx/difxview/QueueBrowserPanel.java</url>
-            <line>482</line>
-            <line>1341</line>
-            <line>1383</line>
-            <line>1502</line>
-            <line>1816</line>
+            <line>487</line>
+            <line>1391</line>
+            <line>1433</line>
+            <line>1552</line>
+            <line>1866</line>
         </file>
         <file>
             <url>src/edu/nrao/vlba/difxcontroller/ProcessMessageThread.java</url>
@@ -82,13 +82,13 @@
             <line>2148</line>
         </file>
         <file>
+            <url>src/edu/nrao/vlba/difxdatamodel/DiFXSystemStatus.java</url>
+            <line>480</line>
+        </file>
+        <file>
             <url>src/edu/nrao/vlba/difxcontroller/JAXBPacketProcessor.java</url>
             <line>33</line>
             <line>51</line>
-        </file>
-        <file>
-            <url>src/edu/nrao/vlba/difxdatamodel/DiFXSystemStatus.java</url>
-            <line>480</line>
         </file>
         <file>
             <url>src/edu/nrao/vlba/difxdatamodel/Mark5Unit.java</url>
@@ -99,15 +99,15 @@
             <line>73</line>
         </file>
         <file>
-            <url>src/edu/nrao/difx/difxview/PassNode.java</url>
-            <line>136</line>
-        </file>
-        <file>
             <url>src/edu/nrao/vlba/difxview/ProjectManagerUI.java</url>
             <line>762</line>
             <line>767</line>
             <line>832</line>
             <line>1010</line>
+        </file>
+        <file>
+            <url>src/edu/nrao/difx/difxview/PassNode.java</url>
+            <line>136</line>
         </file>
     </editor-bookmarks>
 </project-private>

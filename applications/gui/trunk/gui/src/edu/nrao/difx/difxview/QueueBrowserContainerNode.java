@@ -29,6 +29,7 @@ public class QueueBrowserContainerNode extends QueueBrowserNode {
         this.add( _failedLabel );
         _statsVisible = true;
         _setupComplete = true;
+        resizeOnTopBar( true );
     }
     
     @Override

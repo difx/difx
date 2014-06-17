@@ -2230,8 +2230,8 @@ public class ExperimentEditor extends JFrame {
     }
     
     /*
-     * Check the scan selections against antennas that have been selected.  If all
-     * antennas required for the scan have NOT been selected, the scan is switched
+     * Check the scan selections against antennas that have been selected.  If less
+     * than two antennas required for the scan have been selected, the scan is switched
      * off.  This should probably only be called after changes to the antenna
      * selections.
      */
@@ -2241,34 +2241,32 @@ public class ExperimentEditor extends JFrame {
             //  Check any scan button that is already on against chosen antennas.
             VexFileParser.Scan scan = (VexFileParser.Scan)_scanGrid.buttonData( buttonName );
             if ( scan != null ) {
-                //  The list of stations/antennas that is on...all of the scans antennas must
-                //  be included or it will be turned off.
-                boolean _stationsMatch = true;
                 //  Little thread thing to make sure there is time to collect the "scan" information.
                 int count = 10;
                 while ( scan.station == null && count != 0 ) {
                     --count;
                     try { Thread.sleep( 100 ); } catch ( Exception e ) {}
                 }
+                int matchingStations = 0;
                 for ( Iterator jter = scan.station.iterator(); jter.hasNext(); ) {
                     VexFileParser.ScanStation station = (VexFileParser.ScanStation)jter.next();
-                    if ( _antennaList == null || _antennaList.useList().isEmpty() )
-                        _stationsMatch = false;
-                    else {
-                        boolean stationFound = false;
+                    boolean stationMatch = false;
+                    if ( _antennaList != null && !_antennaList.useList().isEmpty() ) {
                         synchronized ( _antennaList ) {
                             for ( Iterator<StationPanel> kter = _antennaList.useList().iterator(); kter.hasNext(); ) {
                                 StationPanel antenna = kter.next();
                                 if ( antenna.name().equalsIgnoreCase( station.name ) ) {
-                                    stationFound = true;
+                                    stationMatch = true;
                                 }
                             }
                         }
-                        if ( !stationFound )
-                            _stationsMatch = false;
                     }
+                    if ( stationMatch )
+                        matchingStations += 1;
                 }
-                if ( !_stationsMatch )
+                if ( matchingStations >= 2 )
+                    _scanGrid.namedButtonOn( buttonName, true );
+                else
                     _scanGrid.namedButtonOn( buttonName, false );
             }
         }

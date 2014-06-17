@@ -3,8 +3,6 @@
  */
 package mil.navy.usno.widgetlib;
 
-import java.awt.Color;
-import javax.swing.JScrollPane;
 import javax.swing.JPanel;
 import javax.swing.JButton;
 import javax.swing.JScrollBar;
@@ -15,7 +13,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 
 import java.awt.Color;
-import java.awt.Graphics;
 
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
@@ -26,11 +23,7 @@ import javax.swing.event.EventListenerList;
 import java.awt.event.AdjustmentListener;
 import java.awt.event.AdjustmentEvent;
 
-/**
- *
- * @author jspitzak
- */
-public class ButtonGrid  extends JPanel { //JScrollPane {
+public class ButtonGrid  extends JPanel {
     
     protected ArrayList<GridButton> _buttonList = new ArrayList<GridButton>();
     protected int _buttonsPerLine = 5;
@@ -44,7 +37,6 @@ public class ButtonGrid  extends JPanel { //JScrollPane {
         this.setLayout( null );
         _panel = new GridPanel();
         this.setBorder( BorderFactory.createLineBorder( Color.BLACK ) ); 
-        //this.setViewportView( _panel );
         this.add( _panel );
         _changeListeners = new EventListenerList();
         _scrollbar = new JScrollBar();
@@ -68,18 +60,14 @@ public class ButtonGrid  extends JPanel { //JScrollPane {
         }
         
         public void on( boolean newVal ) {
+            _on = newVal;
             if ( newVal )
                 this.setBackground( _onColor );
             else
                 this.setBackground( _offColor );
         }
         public boolean on() {
-            boolean ret = false;
-            synchronized ( _buttonList ) {
-                if ( this.getBackground() == _onColor )
-                    ret = true;
-            }
-            return ret;
+            return _on;
         }
         
         public void data( Object newData ) {
@@ -96,6 +84,7 @@ public class ButtonGrid  extends JPanel { //JScrollPane {
         
         protected Object _data;
         protected String _label;
+        protected boolean _on;
     }
     
     /*
@@ -230,7 +219,7 @@ public class ButtonGrid  extends JPanel { //JScrollPane {
         synchronized ( _buttonList ) {
             for ( Iterator iter = _buttonList.iterator(); iter.hasNext(); ) {
                 GridButton button = (GridButton)iter.next();
-                if ( button.getBackground() == _onColor )
+                if ( button.on() )
                     newList.add( button.getText() );
             }
         }

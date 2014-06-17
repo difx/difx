@@ -409,7 +409,8 @@ public class SystemSettings extends JFrame {
         difxControlPanel.add( userAddressLabel );
         _guiServerVersion = new SaneTextField();
         _guiServerVersion.setText( "N/A" );
-        _guiServerVersion.setToolTipText( "Compiled version of guiServer - this does not (necessarily) match the DiFX version." );
+        _guiServerVersion.setToolTipText( "Compiled version of guiServer - this does not (necessarily) match the \n"
+                + "\"Run w/DiFX\" version, but ideally should match the GUI version." );
         _guiServerVersion.setEditable( false );
         _guiServerVersion.setBackground( this.getBackground() );
         _guiServerVersion.setBounds( 165, 115, 100, 25 );
@@ -418,15 +419,32 @@ public class SystemSettings extends JFrame {
         guiServerVersionLabel.setBounds( 10, 115, 150, 25 );
         guiServerVersionLabel.setHorizontalAlignment( JLabel.RIGHT );
         difxControlPanel.add( guiServerVersionLabel );
+        //  This item is not currently visible but I'm keeping it around for the moment.
         _guiServerDifxVersion = new SaneTextField();
-        _guiServerDifxVersion.setText( "N/A" );
-        _guiServerDifxVersion.setEditable( false );
-        _guiServerDifxVersion.setToolTipText( "Version of DiFX used to build guiServer.\n"
-                + "This does not need to match the version of DiFX you are using\n"
-                + "for processing." );
-        _guiServerDifxVersion.setBackground( this.getBackground() );
-        _guiServerDifxVersion.setBounds( 365, 115, 100, 25 );
-        difxControlPanel.add( _guiServerDifxVersion );
+//        _guiServerDifxVersion.setText( "N/A" );
+//        _guiServerDifxVersion.setEditable( false );
+//        _guiServerDifxVersion.setToolTipText( "Version of DiFX used to build guiServer.\n"
+//                + "This does not need to match the version of DiFX you are using\n"
+//                + "for processing." );
+//        _guiServerDifxVersion.setBackground( this.getBackground() );
+//        _guiServerDifxVersion.setBounds( 365, 115, 100, 25 );
+//        difxControlPanel.add( _guiServerDifxVersion );
+//        JLabel guiServerDifxVersionLabel = new JLabel( "built w/DiFX:" );
+//        guiServerDifxVersionLabel.setBounds( 210, 115, 150, 25 );
+//        guiServerDifxVersionLabel.setHorizontalAlignment( JLabel.RIGHT );
+//        difxControlPanel.add( guiServerDifxVersionLabel );
+        _guiVersion = new SaneTextField();
+        _guiVersion.setText( VersionWindow.version() );
+        _guiVersion.setEditable( false );
+        _guiVersion.setToolTipText( "GUI Version.  This should match (or be close\n"
+                + "to) the version of guiServer." );
+        _guiVersion.setBackground( this.getBackground() );
+        _guiVersion.setBounds( 365, 115, 100, 25 );
+        difxControlPanel.add( _guiVersion );
+        JLabel guiVersionLabel = new JLabel( "GUI Version:" );
+        guiVersionLabel.setBounds( 210, 115, 150, 25 );
+        guiVersionLabel.setHorizontalAlignment( JLabel.RIGHT );
+        difxControlPanel.add( guiVersionLabel );
         JButton viewEnvironmentVars = new JButton( "Host Environment Vars" );
         viewEnvironmentVars.setBounds( 480, 115, 175, 25 );
         viewEnvironmentVars.setToolTipText( "Show the environment variables on the DiFX host (as seen by guiServer)." );
@@ -455,10 +473,6 @@ public class SystemSettings extends JFrame {
             }
         });
         difxControlPanel.add( _channelAllData );
-        JLabel guiServerDifxVersionLabel = new JLabel( "built w/DiFX:" );
-        guiServerDifxVersionLabel.setBounds( 210, 115, 150, 25 );
-        guiServerDifxVersionLabel.setHorizontalAlignment( JLabel.RIGHT );
-        difxControlPanel.add( guiServerDifxVersionLabel );
         _difxVersion = new JComboBox();
         _difxVersion.setToolTipText( "Run all DiFX applications (vex2difx, mpifxcorr, etc.) using this DiFx version." );
         _difxVersion.setEditable( true );
@@ -1960,8 +1974,10 @@ public class SystemSettings extends JFrame {
         _fileChooser.setFileSelectionMode( JFileChooser.DIRECTORIES_ONLY );
         _fileChooser.setApproveButtonText( "Select" );
         int ret = _fileChooser.showOpenDialog( this );
-        if ( ret == JFileChooser.APPROVE_OPTION )
+        if ( ret == JFileChooser.APPROVE_OPTION ) {
             _guiDocPath.setText( "file://" + _fileChooser.getSelectedFile().getAbsolutePath() );
+            _guiDocPathSet = true;
+        }
     }
     
     /*
@@ -2032,7 +2048,29 @@ public class SystemSettings extends JFrame {
         _dbPort.setText( "3306" );
         this.setDbURL();
         _reportLoc = "/users/difx/Desktop";
-        _guiDocPath.setText( "file://" + System.getProperty( "user.dir" ) + "/../doc" );
+        //  Try to locate the documentation by taking the path to the .jar file and
+        //  searching upward for the doc directory.  This might be a silly way to do it...
+        boolean foundIt = false;
+        String docPath = SystemSettings.class.getProtectionDomain().getCodeSource().getLocation().getPath();
+        while ( !foundIt ) {
+            String theName = new File( docPath ).getName();
+            if ( theName.isEmpty() ) {
+                docPath = null;
+                foundIt = true;
+            }
+            else {
+                docPath = docPath.substring( 0, docPath.lastIndexOf( theName ) );
+                if ( new File( docPath + "doc" ).isDirectory() ) {
+                    docPath = docPath + "doc";
+                    foundIt = true;
+                }
+            }
+        }
+        //  Try for a different default if we didn't find the documentation path.
+        if ( docPath == null )
+            docPath = System.getProperty( "user.dir" ) + "/../doc";
+        _guiDocPath.setText( "file://" + docPath );
+        _guiDocPathSet = false;
         _difxUsersGroupURL.setText( "http://groups.google.com/group/difx-users/topics" );
         _difxWikiURL.setText( "http://cira.ivec.org/dokuwiki/doku.php/difx/start" );
         _difxSVN.setText( "https://svn.atnf.csiro.au/trac/difx" );
@@ -2929,8 +2967,10 @@ public class SystemSettings extends JFrame {
                 this.inactivityError( doiConfig.getInactivityError() );
             if ( doiConfig.getReportLoc() != null )
                 _reportLoc = doiConfig.getReportLoc();
-            if ( doiConfig.getGuiDocPath() != null )
+            if ( doiConfig.getGuiDocPath() != null ) {
+                _guiDocPathSet = true;
                 _guiDocPath.setText( doiConfig.getGuiDocPath() );
+            }
             if ( doiConfig.getDifxUsersGroupURL() != null )
                 _difxUsersGroupURL.setText( doiConfig.getDifxUsersGroupURL() );
             if ( doiConfig.getDifxWikiURL() != null )
@@ -3509,7 +3549,8 @@ public class SystemSettings extends JFrame {
         doiConfig.setInactivityWarning( this.inactivityWarning() );
         doiConfig.setInactivityError( this.inactivityError() );
         doiConfig.setReportLoc( _reportLoc );
-        doiConfig.setGuiDocPath( _guiDocPath.getText() );
+        if ( _guiDocPathSet )
+            doiConfig.setGuiDocPath( _guiDocPath.getText() );
         doiConfig.setDifxUsersGroupURL( _difxUsersGroupURL.getText() );
         doiConfig.setDifxWikiURL( _difxWikiURL.getText() );
         doiConfig.setDifxSVN( _difxSVN.getText() );
@@ -4596,6 +4637,7 @@ public class SystemSettings extends JFrame {
     
     //  These are locations for "help" - GUI and DiFX documentation.
     protected JFormattedTextField _guiDocPath;
+    protected boolean _guiDocPathSet;
     protected JButton _guiDocPathBrowseButton;
     protected JFormattedTextField _difxUsersGroupURL;
     protected JFormattedTextField _difxWikiURL;
@@ -4909,6 +4951,7 @@ public class SystemSettings extends JFrame {
     protected DatabaseThread _databaseThread;
     
     protected SaneTextField _guiServerVersion;
+    protected SaneTextField _guiVersion;
     protected SaneTextField _guiServerDifxVersion;
     protected SaneTextField _difxStartScript;
     

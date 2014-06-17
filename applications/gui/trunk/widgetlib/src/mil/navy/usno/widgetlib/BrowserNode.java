@@ -418,7 +418,7 @@ public class BrowserNode extends JPanel implements MouseListener, MouseMotionLis
     @Override
     public void mouseClicked( MouseEvent e ) {
         int levelOffset = ( _level - 1 ) * _levelOffset + _xOffset;
-        if ( ( e.getX() > levelOffset + 5 && e.getX() < levelOffset + 25 ) || 
+        if ( ( e.getX() > levelOffset + 5 && e.getX() < levelOffset + 25 && e.getY() > 0 && e.getY() < _resizeTopBarSize ) || 
                 ( _resizeOnTopBar && e.getY() < _resizeTopBarSize ) ) {
             _open = !_open;
             labelCheck();
@@ -426,8 +426,8 @@ public class BrowserNode extends JPanel implements MouseListener, MouseMotionLis
             dispatchResizeEvent();
         }
         else {
-            Container foo = this.getParent();
-            foo.dispatchEvent( e );
+            //Container foo = this.getParent();
+            //foo.dispatchEvent( e );
         }
    }
     

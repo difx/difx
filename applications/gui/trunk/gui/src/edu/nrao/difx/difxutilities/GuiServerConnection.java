@@ -258,11 +258,12 @@ public class GuiServerConnection {
                             _settings.clearGuiServerEnvironment();
                         }
                         else if ( packetId == GUISERVER_DIFX_VERSION ) {
-                            //  This is the difx version for which the guiServer was compiled.
+                            //  This is the difx version for which the guiServer was compiled.  Not
+                            //  currently used.
                             _settings.guiServerDifxVersion( new String( data ) );
                         }
                         else if ( packetId == GUISERVER_USER ) {
-                            //  This is the difx version for which the guiServer was compiled.
+                            //  This is the username used to start guiServer.
                             _settings.difxControlUser( new String( data ) );
                         }
                         else if ( packetId == AVAILABLE_DIFX_VERSION ) {
