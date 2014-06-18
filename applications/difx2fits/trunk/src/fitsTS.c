@@ -859,7 +859,7 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D, struct fits_keywords *p_fi
 		v = setDifxTcalDIFX(T, tcalFilename);
 		if(v < 0)
 		{
-			fprintf(stderr, "Error initializing VLBA Tcal values\n");
+			fprintf(stderr, "Problem with TCal file: %s\n", tcalFilename);
 
 			exit(EXIT_FAILURE);
 		}
