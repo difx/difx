@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2010-2012 by Walter Brisken                             *
+ *   Copyright (C) 2010-2014 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -35,6 +35,8 @@
 #include <ctype.h>
 #include <sys/time.h>
 #include <signal.h>
+#include <time.h>
+#include <sys/time.h>
 #include <difxmessage.h>
 #include <mark5ipc.h>
 #include <xlrapi.h>
@@ -63,8 +65,8 @@
 
 const char program[] = "mk5erase";
 const char author[]  = "Walter Brisken";
-const char version[] = "0.5";
-const char verdate[] = "20120801";
+const char version[] = "0.6";
+const char verdate[] = "20140617";
 
 
 #define MJD_UNIX0       40587.0
@@ -161,16 +163,22 @@ int erase(SSHANDLE xlrDevice)
 	return 0;
 }
 
-double summarizeRates(const std::vector<double> &r, const char *passName)
+double summarizeRates(FILE *out, const std::vector<double> &r, const char *passName)
 {
 	double min = 1.0e19;
 	double max = 0.0;
 	double avg = 0.0;
-	printf("Summary for %s pass\n", passName);
-	printf("  Number of rate samples: %d\n", (int)(r.size()));
+
+	if(!out)
+	{
+		return 0.0;
+	}
+
+	fprintf(out, "Summary for %s pass\n", passName);
+	fprintf(out, "  Number of rate samples: %d\n", (int)(r.size()));
 	if(r.size() < 4)
 	{
-		printf("  (This is too few samples for statistical analysis)\n");
+		fprintf(out, "  (This is too few samples for statistical analysis)\n");
 	}
 	else
 	{
@@ -188,14 +196,48 @@ double summarizeRates(const std::vector<double> &r, const char *passName)
 			}
 		}
 		avg /= (r.size() - 4);
-		printf("  Maximum rate = %7.2f Mbps\n", max);
-		printf("  Average rate = %7.2f Mbps\n", avg);
-		printf("  Minimum rate = %7.2f Mbps\n", min);
-		printf("  First three rates were %7.2f, %7.2f and %7.2f Mbps\n", r[0], r[1], r[2]);
-		printf("  Last three rates were  %7.2f, %7.2f and %7.2f Mbps\n", r[n-3], r[n-2], r[n-1]);
+		fprintf(out, "  Maximum rate = %7.2f Mbps\n", max);
+		fprintf(out, "  Average rate = %7.2f Mbps\n", avg);
+		fprintf(out, "  Minimum rate = %7.2f Mbps\n", min);
+		fprintf(out, "  First three rates were %7.2f, %7.2f and %7.2f Mbps\n", r[0], r[1], r[2]);
+		fprintf(out, "  Last three rates were  %7.2f, %7.2f and %7.2f Mbps\n", r[n-3], r[n-2], r[n-1]);
 	}
 
 	return min;
+}
+
+FILE *openConditionReportFile(const char *conditionPath, const char *vsn)
+{
+	// make dir : conditionPath/vsn/
+	// file name : 
+	// open file
+	//
+	// return 0 on any error
+	
+	const int MaxFileNameLength = 256;
+	const int TimeLength = 32;
+	char str[MaxFileNameLength];
+	char timeStr[TimeLength];
+	struct tm tm;
+	FIlE *out;
+
+	gmtime(time(0), &tm);
+
+	snprintf(str, MaxFileNameLength, "mkdir -p %s/%s", conditionPath, vsn);
+	system("str");
+
+	strftime(timeStr, TimeLength-1, "%Y_%j_%H_%M_%S", &tm);
+
+	snprintf(str, MaxFileNameLength, "%s/%s/%s_%s", conditionPath, vsn, vsn, timeStr);
+	
+	out = fopen(str, "w");
+
+	if(out)
+	{
+		printf("Writing conditioning report to %s\n", str);
+	}
+
+	return out;
 }
 
 int condition(SSHANDLE xlrDevice, const char *vsn, enum ConditionMode mode, DifxMessageMk5Status *mk5status, int verbose, int getData, const struct DriveInformation drive[8], int *rate)
@@ -212,11 +254,15 @@ int condition(SSHANDLE xlrDevice, const char *vsn, enum ConditionMode mode, Difx
 	int nPass, pass = 0;
 	char opName[10] = "";
 	FILE *out=0;
+	FILE *conditionReportOut;
 	std::vector<double> rate0;
 	std::vector<double> rate1;
 	char message[DIFX_MESSAGE_LENGTH];
 	DifxMessageDriveStats driveStatsMessage;
 	const int printInterval = 10;
+	const char *conditionPath;
+
+	conditionPath = getenv("MARK5_CONDITION_PATH");
 
 	mk5status->state = MARK5_STATE_CONDITION;
 	difxMessageSendMark5Status(mk5status);
@@ -382,16 +428,33 @@ int condition(SSHANDLE xlrDevice, const char *vsn, enum ConditionMode mode, Difx
 		WATCHDOG( xlrRC = XLRStop(xlrDevice) );
 	}
 
+	if(conditionPath)
+	{
+		conditionReportOut = openConditionReportFile(conditionPath, vsn);
+
+		if(!conditionReportOut)
+		{
+			fprintf(stderr, "\nWarning: error opening conditioning report file.\n");
+			fprintf(stderr, "You will need to manually save this report if you wish to retain it!\n\n");
+		}
+	}
+
 	if(!die)
 	{
 		const int hostnameLength = 32;
 		char hostname[hostnameLength];
 		double lowestRate = 0.0;
 
-		printf("> %s Conditioning %s took %7.2f seconds\n", opName, vsn, dt);
-
 		gethostname(hostname, hostnameLength);
+
+		printf("> %s Conditioning %s took %7.2f seconds\n", opName, vsn, dt);
 		printf("> Hostname %s\n", hostname);
+		if(conditionReportOut)
+		{
+			fprintf(conditionReportOut, "> %s Conditioning %s took %7.2f seconds\n", opName, vsn, dt);
+			fprintf(conditionReportOut, "> Hostname %s\n", hostname);
+		}
+
 
 		driveStatsMessage.startMJD = MJD_UNIX0 + time1.tv_sec/SEC_DAY + time1.tv_usec/USEC_DAY;
 		driveStatsMessage.stopMJD = MJD_UNIX0 + time2.tv_sec/SEC_DAY + time2.tv_usec/USEC_DAY;
@@ -401,16 +464,20 @@ int condition(SSHANDLE xlrDevice, const char *vsn, enum ConditionMode mode, Difx
 		switch(mode)
 		{
 		case CONDITION_WRITE_ONLY:
-			lowestRate = summarizeRates(rate0, "Write");
+			lowestRate = summarizeRates(stdout, rate0, "Write");
+			summarizeRates(conditionReportOut, rate0, "Write");
 			driveStatsMessage.type = DRIVE_STATS_TYPE_CONDITION_W;
 			break;
 		case CONDITION_READ_ONLY:
-			lowestRate = summarizeRates(rate0, "Read");
+			lowestRate = summarizeRates(stdout, rate0, "Read");
+			summarizeRates(conditionReportOut, rate0, "Read");
 			driveStatsMessage.type = DRIVE_STATS_TYPE_CONDITION_R;
 			break;
 		default:
-			summarizeRates(rate0, "Read");
+			summarizeRates(stdout, rate0, "Read");
+			summarizeRates(conditionReportOut, rate0, "Read");
 			lowestRate = summarizeRates(rate1, "Write");
+			summarizeRates(conditionReportOut, rate1, "Write");
 			driveStatsMessage.type = DRIVE_STATS_TYPE_CONDITION;
 			break;
 		}
@@ -427,6 +494,10 @@ int condition(SSHANDLE xlrDevice, const char *vsn, enum ConditionMode mode, Difx
 				strncpy(driveStatsMessage.modelNumber, drive[d].model, DIFX_MESSAGE_DISC_MODEL_LENGTH);
 				driveStatsMessage.diskSize = drive[d].capacity/1000000000LL;
 				printf("> Disk %d stats : %s", d, drive[d].serial);
+				if(conditionReportOut)
+				{
+					fprintf(conditonReportOut, "> Disk %d stats : %s", d, drive[d].serial);
+				}
 				for(int i = 0; i < DIFX_MESSAGE_N_CONDITION_BINS; ++i)
 				{
 					driveStatsMessage.bin[i] = -1;
@@ -440,22 +511,41 @@ int condition(SSHANDLE xlrDevice, const char *vsn, enum ConditionMode mode, Difx
 						{
 							driveStatsMessage.bin[i] = driveStats[i].count;
 							printf(" : %d", driveStatsMessage.bin[i]);
+							if(conditionReportOut)
+							{
+								fprintf(conditionReportOut, " : %d", driveStatsMessage.bin[i]);
+							}
 						}
 					}
 				}
 				else
 				{
 					XLRGetErrorMessage(message, XLRGetLastError());
-					printf(" : %s", message);
+					if(conditionReportOut)
+					{
+						fprintf(conditionReportOut, " : %s", message);
+					}
 				}
-				printf("\n");
+				if(conditionReportOut)
+				{
+					fprintf(conditionReportOut, "\n");
+				}
 				difxMessageSendDriveStats(&driveStatsMessage);
 			}
 			else
 			{
 				printf("! Disk %d stats : Not found!\n", d);
+				if(conditionReportOut)
+				{
+					fprintf(conditionReportOut, "! Disk %d stats : Not found!\n", d);
+				}
 			}
 		}
+	}
+
+	if(conditionReportOut)
+	{
+		fclose(conditionReportOut);
 	}
 
 	return 0;
