@@ -195,7 +195,7 @@ double summarizeRates(FILE *out, const std::vector<double> &r, const char *passN
 				min = r[i];
 			}
 		}
-		avg /= (r.size() - 4);
+		avg /= (n - 4);
 		fprintf(out, "  Maximum rate = %7.2f Mbps\n", max);
 		fprintf(out, "  Average rate = %7.2f Mbps\n", avg);
 		fprintf(out, "  Minimum rate = %7.2f Mbps\n", min);
@@ -209,7 +209,7 @@ double summarizeRates(FILE *out, const std::vector<double> &r, const char *passN
 FILE *openConditionReportFile(const char *conditionPath, const char *vsn)
 {
 	// make dir : conditionPath/vsn/
-	// file name : 
+	// file name : VSN_Year_DOY_HH_MM_SS.condition
 	// open file
 	//
 	// return 0 on any error
@@ -219,16 +219,18 @@ FILE *openConditionReportFile(const char *conditionPath, const char *vsn)
 	char str[MaxFileNameLength];
 	char timeStr[TimeLength];
 	struct tm tm;
-	FIlE *out;
+	time_t t;
+	FILE *out;
 
-	gmtime(time(0), &tm);
+	t = time(0);
+	gmtime_r(&t, &tm);
 
 	snprintf(str, MaxFileNameLength, "mkdir -p %s/%s", conditionPath, vsn);
 	system("str");
 
 	strftime(timeStr, TimeLength-1, "%Y_%j_%H_%M_%S", &tm);
 
-	snprintf(str, MaxFileNameLength, "%s/%s/%s_%s", conditionPath, vsn, vsn, timeStr);
+	snprintf(str, MaxFileNameLength, "%s/%s/%s_%s.condition", conditionPath, vsn, vsn, timeStr);
 	
 	out = fopen(str, "w");
 
@@ -254,7 +256,7 @@ int condition(SSHANDLE xlrDevice, const char *vsn, enum ConditionMode mode, Difx
 	int nPass, pass = 0;
 	char opName[10] = "";
 	FILE *out=0;
-	FILE *conditionReportOut;
+	FILE *conditionReportOut = 0;
 	std::vector<double> rate0;
 	std::vector<double> rate1;
 	char message[DIFX_MESSAGE_LENGTH];
@@ -476,7 +478,7 @@ int condition(SSHANDLE xlrDevice, const char *vsn, enum ConditionMode mode, Difx
 		default:
 			summarizeRates(stdout, rate0, "Read");
 			summarizeRates(conditionReportOut, rate0, "Read");
-			lowestRate = summarizeRates(rate1, "Write");
+			lowestRate = summarizeRates(stdout, rate1, "Write");
 			summarizeRates(conditionReportOut, rate1, "Write");
 			driveStatsMessage.type = DRIVE_STATS_TYPE_CONDITION;
 			break;
@@ -496,7 +498,7 @@ int condition(SSHANDLE xlrDevice, const char *vsn, enum ConditionMode mode, Difx
 				printf("> Disk %d stats : %s", d, drive[d].serial);
 				if(conditionReportOut)
 				{
-					fprintf(conditonReportOut, "> Disk %d stats : %s", d, drive[d].serial);
+					fprintf(conditionReportOut, "> Disk %d stats : %s", d, drive[d].serial);
 				}
 				for(int i = 0; i < DIFX_MESSAGE_N_CONDITION_BINS; ++i)
 				{

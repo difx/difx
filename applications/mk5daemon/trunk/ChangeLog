@@ -7,6 +7,7 @@ Version 2.4.0
 * mk5erase: ask before continuing on write-protected module (even if force is specified)
 * mk5dir: save a copy of the binary directory as well as the decoded directory
 * Revamped support for Mark5 directory structures: vsn, mk5dir
+* mk5erase: if MARK5_CONDITION_PATH env var is set, write conditioning results to file within that path.
 
 Version 2.3.0
 ~~~~~~~~~~~~~
