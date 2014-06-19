@@ -639,15 +639,35 @@ static int parseDifxPulseCal(const char *line,
 
 	if(nt > array_MAX_TONES)
 	{
-		fprintf(stderr, "Error: too many tones!  %d > array_MAX_TONES = %d\n", nt, array_MAX_TONES);
+		static int nTooManyError = 0;
+
+		++nTooManyError;
+		if(nTooManyError <= 20)
+		{
+			fprintf(stderr, "Error: too many tones!  %d > array_MAX_TONES = %d\n", nt, array_MAX_TONES);
+		}
+		if(nTooManyError == 20)
+		{
+			printf(" ^-Note: No more errors of this kind will be produced\n");
+		}
 
 		return -1;
 	}
 
 	if(n != 6)
 	{
-		fprintf(stderr, "Error: parseDifxPulseCal: header information not parsable (n=%d)\n", n);
-		fprintf(stderr, "Line: %s\n", line);
+		static int nNotParsableError = 0;
+
+		++nNotParsableError;
+		if(nNotParsableError <= 20)
+		{
+			fprintf(stderr, "Error: parseDifxPulseCal: header information not parsable (n=%d)\n", n);
+			fprintf(stderr, "       Line: %s\n", line);
+		}
+		if(nNotParsableError == 20)
+		{
+			printf(" ^-Note: No more errors of this kind will be produced\n");
+		}
 
 		return -1;
 	}
