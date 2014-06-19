@@ -230,7 +230,7 @@ static int getNTone(const char *filename, const char *antenna, double t1, double
 		{
 			break;
 		}
-		n = sscanf(line, "%31s%lf%*f%*f%*d%*d%d", antName1, &t, &nTone);
+		n = sscanf(line, "%31s%lf%*f%*f%*d%d", antName1, &t, &nTone);
 		if(verbose > 2)
 		{
 			printf("DEBUG: getNTone: ant %s, nTone %d\n", antName1, nTone);
@@ -1125,22 +1125,19 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 			}
 		}
 
-		if(maxDifxTones == 0)
+		if(pcalSourceFile[a])
 		{
-			if(pcalSourceFile[a])
+			inTSM = fopen(pcalSourceFile[a], "r");
+			if(inTSM == 0)
 			{
-				inTSM = fopen(pcalSourceFile[a], "r");
-				if(inTSM == 0)
-				{
-					fprintf(stderr, "Error: cannot open %s.  This should never happen!\n", pcalSourceFile[a]);
+				fprintf(stderr, "Error: cannot open %s.  This should never happen!\n", pcalSourceFile[a]);
 
-					continue;
-				}
+				continue;
 			}
-			else
-			{
-				inTSM = 0;
-			}
+		}
+		else
+		{
+			inTSM = 0;
 		}
 
 		for(k = 0; k < 2; ++k)
@@ -1222,7 +1219,8 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 				}
 			}
 
-			/* At this point exactly one of inTSM and inDifx should be non-zero */
+			/* At this point at least one of inTSM and inDifx should be non-zero */
+			/* If both are nonzero, inDifx points to pulse cal data and inTSM points to cable cal data */
 
 			/* set defaults */
 			cableScanId = -1;
@@ -1238,7 +1236,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 
 			while(1)	/* each pass here reads one line from a pcal file */
 			{
-				if(inTSM)	/* try reading pcal file */
+				if(inTSM && !nDifxTone)	/* try reading pcal file if no DiFX-supplied pulse cal is available */
 				{
 					rv = fgets(line, MaxLineLength, inTSM);
 					if(rv)
@@ -1396,7 +1394,6 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 						{
 							while(nextCableTime < dumpTime || lineCableScanId < 0)
 							{
-
 								rv = fgets(line, MaxLineLength, inTSM);
 								if(!rv)
 								{
