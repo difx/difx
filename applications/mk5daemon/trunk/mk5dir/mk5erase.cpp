@@ -66,7 +66,7 @@
 const char program[] = "mk5erase";
 const char author[]  = "Walter Brisken";
 const char version[] = "0.6";
-const char verdate[] = "20140617";
+const char verdate[] = "20140619";
 
 
 #define MJD_UNIX0       40587.0
@@ -126,6 +126,7 @@ static void usage(const char *pgm)
 void siginthand(int j)
 {
 	printf("SIGINT caught; aborting operation.\n");
+	fflush(stdout);
 	die = 1;
 }
 
@@ -237,6 +238,7 @@ FILE *openConditionReportFile(const char *conditionPath, const char *vsn)
 	if(out)
 	{
 		printf("Writing conditioning report to %s\n", str);
+		fflush(stdout);
 	}
 
 	return out;
@@ -308,6 +310,7 @@ int condition(SSHANDLE xlrDevice, const char *vsn, enum ConditionMode mode, Difx
 
 		snprintf(fileName, FilenameLength, "%s.timedata", vsn);
 		printf("Opening %s for output...\n", fileName);
+		fflush(stdout);
 		out = fopen(fileName, "w");
 		if(!out)
 		{
@@ -403,6 +406,7 @@ int condition(SSHANDLE xlrDevice, const char *vsn, enum ConditionMode mode, Difx
 
 			snprintf(message, DIFX_MESSAGE_LENGTH, ". Time = %8.3f  Pos = %14Ld  Rate = %7.2f  Done = %5.2f %%\n", dt, mk5status->position, mk5status->rate, done);
 			printf("%s", message);
+			fflush(stdout);
 			if(out)
 			{
 				fprintf(out, "%s", message);
@@ -424,6 +428,7 @@ int condition(SSHANDLE xlrDevice, const char *vsn, enum ConditionMode mode, Difx
 	dt = (time2.tv_sec - time1.tv_sec) + (time2.tv_usec - time1.tv_usec)/1000000.0;
 
 	printf("\n");
+	fflush(stdout);
 
 	if(devStatus.Recording)
 	{
@@ -544,6 +549,8 @@ int condition(SSHANDLE xlrDevice, const char *vsn, enum ConditionMode mode, Difx
 			}
 		}
 	}
+
+	fflush(stdout);
 
 	if(conditionReportOut)
 	{
