@@ -730,6 +730,10 @@ static int parseDifxPulseCal(const char *line,
 	/* Read in pulse cal information */
 	for(band = 0; band < dd->nRecBand; ++band)
 	{
+		int toneCount;
+
+		toneCount = 0;
+
 		v = DifxConfigRecBand2FreqPol(D, *configId, dd->antennaId, band, &recFreq, &bandPol);
 		/* this pol/band combination is not used.  Read all of the dummies from PCAL file */
 		for(tone = 0; tone < nt; ++tone)	/* nt is taken from line header and is max number of tones */
@@ -820,16 +824,32 @@ static int parseDifxPulseCal(const char *line,
 					{
 						if(df->sideband == 'U')
 						{
-							toneIndex = IFs[i]*nTone + tone;
+							toneIndex = IFs[i]*nTone + toneCount;
 						}
 						else
 						{
-							toneIndex = (IFs[i]+1)*nTone - tone - 1;	/* make LSB ascend in frequency */
+							toneIndex = (IFs[i]+1)*nTone - toneCount - 1;	/* make LSB ascend in frequency */
 						}
 						freqs[bandPol][toneIndex] = toneFreq[tone]*1.0e6;	/* MHz to Hz */
 						pulseCalRe[bandPol][toneIndex] = B;
 						pulseCalIm[bandPol][toneIndex] = C;
 					}
+				}
+
+				++toneCount;
+			}
+			if(toneCount > nTone)
+			{
+				static int nTooManyError;
+
+				++nTooManyError;
+				if(nTooManyError <= 20)
+				{
+					printf("Warning: parseDifxPulseCal: too many pulse cal tones found!  toneCount=%d nTone=%d antenna=%d mjd=%12.6f slot=%d\n", toneCount, nTone, dd->antennaId, mjd, slot);
+				}
+				if(nTooManyError == 20)
+				{
+					printf(" ^-Note: No more warnings of this kind will be produced\n");
 				}
 			}
 		} /* loop over tones */
