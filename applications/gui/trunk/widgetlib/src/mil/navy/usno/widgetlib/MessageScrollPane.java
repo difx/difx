@@ -88,6 +88,7 @@ public class MessageScrollPane extends JPanel implements MouseMotionListener,
     
     void close() {
         _scrollThread.stopNow();
+        _messageList.clear();
     }
     
     /*
