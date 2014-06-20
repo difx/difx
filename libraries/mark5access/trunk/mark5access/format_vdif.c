@@ -3523,7 +3523,7 @@ static int mark5_format_vdif_validate(const struct mark5_stream *ms)
 		
 		mark5_stream_frame_time_vdif(ms, &mjd_d, &sec_d, &ns_d);
 
-		ns_t = (long long)(ms->framenum)*(long long)(ms->gframens/ms->framegranularity) + (long long)(ms->ns);
+		ns_t = (long long)(ms->framenum/ms->framegranularity)*(long long)(ms->gframens) + (long long)(ms->ns);
 		sec_t = ns_t / 1000000000L;
 		ns_t -= (long long)sec_t * 1000000000L;
 		sec_t += ms->sec;
