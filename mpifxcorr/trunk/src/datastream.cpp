@@ -1195,6 +1195,30 @@ int DataStream::openrawstream(const char *device)
 		return -3;
 	}
 
+        /* is the interface up? */
+        ioctl(s, SIOCGIFFLAGS, &ifr);
+        if( (ifr.ifr_flags & IFF_UP) == 0)
+        {
+                close(s);
+
+                cerror << startl << "DataStream::openrawstream: interface " << device << " is not up." << endl;
+
+                return -5;
+        }
+
+        /* set promisc flag -- sometimes this is needed.  Othertimes it doesn't seem to hurt */
+        ifr.ifr_flags |= IFF_PROMISC;
+        if(ioctl (s, SIOCSIFFLAGS, &ifr) == -1)
+        {
+                close(s);
+
+                cerror << startl << "DataStream::openrawstream: cannot enter PROMISC mode on device " << device << endl;
+
+                return -6;
+        }
+
+        ioctl(s, SIOCGIFINDEX, &ifr);
+
         sll.sll_family = AF_PACKET;
         sll.sll_ifindex = ifr.ifr_ifindex;
         sll.sll_protocol = htons(ETH_P_ALL);
