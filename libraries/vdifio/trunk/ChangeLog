@@ -1,6 +1,6 @@
 Version 0.7
 ~~~~~~~~~~~
- * Changed parameter in createVDIFHeader (pass size of dataarray not full
+* Changed parameter in createVDIFHeader (pass size of dataarray not full
 	VDIF frame).
 * Changed function of getVDIFEpoch and setVDIFFrameSecond
 * Renamed:
@@ -12,9 +12,10 @@ Version 0.7
 	getVDIFDMJD -> getVDIFFrameDMJD
 	setVDIFTime -> setVDIFFrameTime (and changed functionality)
 	setVDIFEpoch -> setVDIFEpochMJD
- * Added
+* Added
 	getVDIFFrameMJDSec
 	setVDIFEpochTime
+* Added new utility printVDIFgaps to examine a VDIF stream for missing data
 
 Version 0.6
 ~~~~~~~~~~~
