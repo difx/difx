@@ -533,6 +533,7 @@ int condition(SSHANDLE xlrDevice, const char *vsn, enum ConditionMode mode, Difx
 						fprintf(conditionReportOut, " : %s", message);
 					}
 				}
+				printf("\n");
 				if(conditionReportOut)
 				{
 					fprintf(conditionReportOut, "\n");
