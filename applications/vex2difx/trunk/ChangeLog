@@ -4,6 +4,7 @@ Version 2.4.0
 * Support axis offset argument for ANTENNAs
 * Adapt to string-based networkPort in support of raw sockets
 * Detect mismatched bandwidths and issue warning
+* Fix smart tone selection for phase cal interval != 1 MHz
 
 Version 2.3.0
 ~~~~~~~~~~~~~

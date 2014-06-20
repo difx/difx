@@ -153,12 +153,14 @@ void VexChannel::selectTones(int toneIntervalMHz, enum ToneSelection selection, 
 
 	if(bbcSideBand == 'U')
 	{
-		firstToneMHz = static_cast<int>((bbcFreq + epsilonHz)*1.0e-6 + toneIntervalMHz);
+		int m = static_cast<int>( (bbcFreq + epsilonHz)*1.0e-6/toneIntervalMHz );
+		firstToneMHz = (m+1)*toneIntervalMHz;
 		tonesInBand = static_cast<int>((bbcFreq + bbcBandwidth)*1.0e-6 - firstToneMHz)/toneIntervalMHz + 1;
 	}
 	else
 	{
-		firstToneMHz = static_cast<int>((bbcFreq - epsilonHz)*1.0e-6);
+		int m = static_cast<int>( (bbcFreq - epsilonHz)*1.0e-6/toneIntervalMHz );
+		firstToneMHz = m*toneIntervalMHz;
 		tonesInBand = static_cast<int>(firstToneMHz - (bbcFreq - bbcBandwidth)*1.0e-6)/toneIntervalMHz + 1;
 	}
 
@@ -190,8 +192,14 @@ void VexChannel::selectTones(int toneIntervalMHz, enum ToneSelection selection, 
 		// Nothing to do
 		break;
 	case ToneSelectionEnds:
-		tones.push_back(0);
-		tones.push_back(tonesInBand - 1);
+		if(tonesInBand > 0)
+		{
+			tones.push_back(0);
+		}
+		if(tonesInBand > 1)
+		{
+			tones.push_back(tonesInBand - 1);
+		}
 		break;
 	case ToneSelectionAll:
 		for(int i = 0; i < tonesInBand; ++i)
@@ -200,42 +208,55 @@ void VexChannel::selectTones(int toneIntervalMHz, enum ToneSelection selection, 
 		}
 		break;
 	case ToneSelectionSmart:
-		for(int i = 0; i < tonesInBand; ++i)
+		if(tonesInBand == 1)
 		{
-			if(bbcSideBand == 'U')
+			tones.push_back(0);
+		}
+		else if(tonesInBand == 2)
+		{
+			tones.push_back(0);
+			tones.push_back(1);
+		}
+		else if(tonesInBand > 2)
+		{
+			for(int i = 0; i < tonesInBand; ++i)
 			{
-				double f = firstToneMHz + i*toneIntervalMHz;
-				if(f > (bbcFreq*1.0e-6+guardBandMHz) && f < ((bbcFreq+bbcBandwidth)*1.0e-6-guardBandMHz))
+				if(bbcSideBand == 'U')
 				{
-					if(tones.size() < 2)
+					double f = firstToneMHz + i*toneIntervalMHz;
+					if(f > (bbcFreq*1.0e-6+guardBandMHz) && f < ((bbcFreq+bbcBandwidth)*1.0e-6-guardBandMHz))
 					{
-						tones.push_back(i);
-					}
-					else
-					{
-						tones[1] = i;
+						if(tones.size() < 2)
+						{
+							tones.push_back(i);
+						}
+						else
+						{
+							tones[1] = i;
+						}
 					}
 				}
-			}
-			else
-			{
-				double f = firstToneMHz - i*toneIntervalMHz;
-				if(f < (bbcFreq*1.0e-6-guardBandMHz) && f > ((bbcFreq-bbcBandwidth)*1.0e-6+guardBandMHz))
+				else
 				{
-					if(tones.size() < 2)
+					double f = firstToneMHz - i*toneIntervalMHz;
+					if(f < (bbcFreq*1.0e-6-guardBandMHz) && f > ((bbcFreq-bbcBandwidth)*1.0e-6+guardBandMHz))
 					{
-						tones.push_back(i);
-					}
-					else
-					{
-						tones[1] = i;
+						if(tones.size() < 2)
+						{
+							tones.push_back(i);
+						}
+						else
+						{
+							tones[1] = i;
+						}
 					}
 				}
 			}
 		}
-		if(tones.size() < 2 && guardBandMHz > bbcBandwidth*1.0e-6/200)
+		if(tonesInBand > 2 && tones.size() < 2 && guardBandMHz > bbcBandwidth*1.0e-6/2000)
 		{
 			// If not enough tones are found, recurse a bit...
+			printf("Recursing %f\n", guardBandMHz/2.0);
 			selectTones(toneIntervalMHz, selection, guardBandMHz/2.0);	
 		}
 		break;
@@ -259,7 +280,7 @@ void VexChannel::selectTones(int toneIntervalMHz, enum ToneSelection selection, 
 				}
 			}
 		}
-		if(tones.size() < 2 && guardBandMHz > bbcBandwidth*1.0e-6/200)
+		if(tones.size() < tonesInBand && tones.size() < 2 && guardBandMHz > bbcBandwidth*1.0e-6/2000)
 		{
 			// If not enough tones are found, recurse a bit...
 			selectTones(toneIntervalMHz, selection, guardBandMHz/2.0);	
