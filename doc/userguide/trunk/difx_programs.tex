@@ -1740,6 +1740,7 @@ Program {\tt mk5dir} extracts the directory from a module.
 Normally one would not call this program directly but would use the {\tt getdir} option of {\tt mk5control}.
 By default this program will change the disk module state to {\tt played}.
 There is a danger that if this is done with an SDK~9 unit and the disk is later needed in an SDK~8 unit that it will no longer be readable in the later without a full reset of its VSN.
+As of April 2014 this program supports decoding of all directory types described by Mark5 Memos 81 (\url{http://www.haystack.mit.edu/tech/vlbi/mark5/mark5_memos/081.pdf}) and 100 (\url{http://www.haystack.mit.edu/tech/vlbi/mark5/mark5_memos/100.pdf}).
 
 \begin{itemize}
 \item[] Usage: {\tt mk5dir} $[$ {\em options} $]$ \{ {\em bank} $\mid$ {\em VSN} \}

@@ -548,7 +548,38 @@ Data for each antenna is written to a separate file; if correlation is restarted
 The pulse cal data files are systematically named in the form: {\tt PCAL\_}{\em day}{\tt \_}{\em sec}{\tt \_}{\em ant}, where {\em day} is the 5 digit integer MJD of the start of visibilities, {\em sec} is a zero-padded 6 digit number of seconds since the MJD midnight, and {\em ant} is the 1 or 2 letter antenna name in capital letters.
 There is potential for these text files to have very long lines (more than 10,000 bytes) when many pulse cal tones are extracted.
 
-The data format is exactly the same as documented in \S\ref{sec:pcal} so this will not be repeated here.
+For DiFX versions 2.3 and earlier the data format was exactly the same as documented in \S\ref{sec:pcal}.
+This old version will be considered ``version 0''.
+
+The data format being used now is similar in spirit but more convenient for {\tt mpfixcorr} to produce and for {\tt difx2fits} and {\tt difx2mark4} to digest leading to broader support (in theory complete) of the various polarization, frequency, and sideband combinations allowed by DiFX.
+The data format is as follows:
+
+Comment lines begin with an octothorpe (\#).
+The first few lines of comments may contain machine-readable information in the following format:
+\begin{verbatim}
+# DiFX-derived pulse cal data
+# File version = 1
+# Start MJD = 
+# Start seconds = 
+# Telescope name = 
+\end{verbatim}
+
+Data lines always contain 6 fixed-size fields:
+\begin{enumerate}
+\item {\em antId} : Station name abbreviation, e.g., {\tt LA}
+\item {\em day} : Time centroid of measurement (MJD, including fractional portion)
+\item {\em dur} : Duration of measurement (days)
+\item {\em datastreamId} : The datastream index of for this data.
+\item {\em nRecBand} : Number of recorded baseband channels
+\item {\em nTone} : (Maximum) number of pulse cal tones detected per band per polarization
+\end{enumerate}
+Following these fields is a variable-length arrays of numbers.
+This array contains the pulse cal data and consists of {\em nRecBand*nTone} groups of four numbers.
+The groups are arranged in ascending record band index (slow index) and ascending tone number (fast index) where the tone number increases away from the reference frequency; not sure what happens with dual-sideband complex!
+The first member of this group is the tone frequency (MHz), or -1 to indicate there was not a measurment.
+The second member of this group is the polarization, one of {\tt R}, {\tt L}, {\tt X} or {\tt Y}.
+The third and fourth are respectively the real and imaginary parts of the tone measured at the given sky frequency.
+
 
 \subsubsection{Switched power files} \label{sec:difxswitchedpower}
 
@@ -1423,7 +1454,7 @@ Data lines always contain 9 fixed-size fields:
 \item {\em nState} : Number of state count states measured per band per polarization, possibly zero
 \item {\em nRecChan} : Number of record channels at time of measurement ($\le$ \em{nPol * nBand})
 \end{enumerate}
-Following these eight fields are two variable-length arrays of numbers.
+Following these nine fields are two variable-length arrays of numbers.
 The first variable-length field is the pulse cal data field consisting of {\em nPol*nBand*nTone} groups of four numbers.
 The first member of this group is the recorder channel number (zero-based) corresponding to the measurement.
 The second member of this group is the tone sky frequency (MHz).
