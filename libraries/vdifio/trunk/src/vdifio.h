@@ -151,6 +151,8 @@ int createVDIFHeader(vdif_header *header, int dataarraylength, int threadid, int
 		     int iscomplex, char stationid[3]);
 
 /* Functions to grab just one value from the raw header */
+static inline int getVDIFComplex(const vdif_header *header) { return (int)header->iscomplex; }
+static inline int getVDIFLegacy(const vdif_header *header) { return (int)header->legacymode; }
 static inline int getVDIFThreadID(const vdif_header *header) { return (int)header->threadid; }
 static inline int getVDIFHeaderBytes(const vdif_header *header) { return header->legacymode ? VDIF_LEGACY_HEADER_BYTES : VDIF_HEADER_BYTES; }
 static inline int getVDIFFrameBytes(const vdif_header *header) { return (int)(header->framelength8)*8; }
