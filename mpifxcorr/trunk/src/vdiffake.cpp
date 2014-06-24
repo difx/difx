@@ -50,7 +50,6 @@ void VDIFFakeDataStream::initialiseFile(int configindex, int fileindex)
 	Configuration::datasampling sampling;
 	Configuration::dataformat format;
 	double bw;
-
 	double startmjd;
 
 	format = config->getDataFormat(configindex, streamnum);
@@ -79,8 +78,13 @@ void VDIFFakeDataStream::initialiseFile(int configindex, int fileindex)
 
 	memset(&header, 0, sizeof(header));
 	header.version = 1;
-	setVDIFEpoch(&header, (int)startmjd);
+
+	// set the epoch field based on the MJD
+	setVDIFEpochMJD(&header, (int)startmjd);
+	
+	// set the seconds field
 	header.seconds = (int)((startmjd-getVDIFEpochMJD(&header))*86400.0 + 0.5);
+	
 	setVDIFBitsPerSample(&header, nbits);
 	setVDIFFrameBytes(&header, inputframebytes);
 	setVDIFNumChannels(&header, 1);
