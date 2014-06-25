@@ -521,13 +521,13 @@ static void cornerturn_2thread_2bit(unsigned char *outputBuffer, const unsigned 
   // Output: b15 a15 b14 a14  b13 a13 b12 a12  b11 a11 b10 a10  b9  a9  b8  a8   b7  a7  b6  a6   b5  a5  b4  a4   b3  a3  b2  a2   b1  a1  b0  a0
   // Byte:   ------7-------   ------6-------   ------5-------   ------4-------   ------3-------   ------2-------   ------1-------   ------0-------
 
-  const uint64_t M0 = 0xC003C003C003C003;
-  const uint64_t M1 = 0x3000300030003000;
-  const uint64_t M2 = 0x000C000C000C000C;
-  const uint64_t M3 = 0x0C000C000C000C00;
-  const uint64_t M4 = 0x0030003000300030;
-  const uint64_t M5 = 0x0300030003000300;
-  const uint64_t M6 = 0x00C000C000C000C0;
+  const uint64_t M0 = 0xC003C003C003C003ULL;
+  const uint64_t M1 = 0x3000300030003000ULL;
+  const uint64_t M2 = 0x000C000C000C000CULL;
+  const uint64_t M3 = 0x0C000C000C000C00ULL;
+  const uint64_t M4 = 0x0030003000300030ULL;
+  const uint64_t M5 = 0x0300030003000300ULL;
+  const uint64_t M6 = 0x00C000C000C000C0ULL;
 
   const unsigned char *t0 = threadBuffers[0];
   const unsigned char *t1 = threadBuffers[1];
