@@ -46,7 +46,7 @@ void printvdiffilesummary(const struct vdif_file_summary *sum)
 	int i;
 
 	printf("VDIF file: %s\n", sum->fileName);
-	printf("  size = %Ld bytes\n", sum->fileSize);
+	printf("  size = %lld bytes\n", sum->fileSize);
 	printf("  nThread = %d\n", sum->nThread);
 	printf("  Thread Ids =");
 	for(i = 0; i < sum->nThread; ++i)

@@ -2576,21 +2576,21 @@ void printvdifmuxstatistics(const struct vdif_mux_statistics *stats)
 	{
 		printf("VDIF multiplexer statistics:\n");
 		printf("  Number of calls to vdifmux         = %d\n", stats->nCall);
-		printf("  Number of valid input frames       = %Ld\n", stats->nValidFrame);
-		printf("  Number of invalid input frames     = %Ld\n", stats->nInvalidFrame);
-		printf("  Number of duplicate frames         = %Ld\n", stats->nDuplicateFrame);
-		printf("  Number of discarded frames         = %Ld\n", stats->nDiscardedFrame);
-		printf("  Number of wrong-thread frames      = %Ld\n", stats->nWrongThread);
-		printf("  Number of skipped interloper bytes = %Ld\n", stats->nSkippedByte);
-		printf("  Number of fill pattern bytes       = %Ld\n", stats->nFillByte);
-		printf("  Total number of bytes processed    = %Ld\n", stats->bytesProcessed);
-		printf("  Total number of good output frames = %Ld\n", stats->nGoodFrame);
+		printf("  Number of valid input frames       = %lld\n", stats->nValidFrame);
+		printf("  Number of invalid input frames     = %lld\n", stats->nInvalidFrame);
+		printf("  Number of duplicate frames         = %lld\n", stats->nDuplicateFrame);
+		printf("  Number of discarded frames         = %lld\n", stats->nDiscardedFrame);
+		printf("  Number of wrong-thread frames      = %lld\n", stats->nWrongThread);
+		printf("  Number of skipped interloper bytes = %lld\n", stats->nSkippedByte);
+		printf("  Number of fill pattern bytes       = %lld\n", stats->nFillByte);
+		printf("  Total number of bytes processed    = %lld\n", stats->bytesProcessed);
+		printf("  Total number of good output frames = %lld\n", stats->nGoodFrame);
 		printf("Properties of output data from recent call:\n");
 		printf("  Input frame size                   = %d\n", stats->inputFrameSize);
 		printf("  Output frame size                  = %d\n", stats->outputFrameSize);
 		printf("  Number of output frames            = %d\n", stats->nOutputFrame);
 		printf("  Epoch                              = %d\n", stats->epoch);
-		printf("  Start output frame number          = %Ld\n", stats->startFrameNumber);
+		printf("  Start output frame number          = %lld\n", stats->startFrameNumber);
 		printf("  Output frame granularity           = %d\n", stats->outputFrameGranularity);
 		printf("  Output frames per second           = %d\n", stats->outputFramesPerSecond);
 		printf("  %d/%d src bytes consumed\n", stats->srcUsed, stats->srcSize);
@@ -2683,7 +2683,7 @@ void testvdifcornerturners(int outputBytes, int nTest)
 		if(nRead <= 0)
 		{
 			fprintf(stderr, "Error: cannot read from %s\n", devRandom);
-
+			fclose(in);
 			return;
 		}
 

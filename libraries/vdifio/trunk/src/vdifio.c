@@ -212,7 +212,7 @@ uint64_t getVDIFFrameMJDSec(vdif_header *header)
 int setVDIFFrameSecond(vdif_header *header, int seconds)
 {
   uint64_t mjdsec = getVDIFFrameMJDSec(header);
-  mjdsec =- (mjdsec % 86400); // Remove fraction of a day
+  mjdsec -= (mjdsec % 86400); // Remove fraction of a day
 
   return setVDIFFrameMJDSec(header, mjdsec + seconds);
 }
@@ -331,7 +331,7 @@ static void fprintVDIFHeaderShort(FILE *out, const vdif_header *header)
 		long long int samprate;
 
 		samprate = edv1->samprate * (edv1->samprateunits ? 1000000LL : 1000LL);
-		fprintf(out, " %10Ld 0x%08X %8s", samprate, edv1->syncword, edv1->name);
+		fprintf(out, " %10lld 0x%08X %8s", samprate, edv1->syncword, edv1->name);
 	}
 	else if(header->eversion ==3)
 	{
@@ -339,7 +339,7 @@ static void fprintVDIFHeaderShort(FILE *out, const vdif_header *header)
 		long long int samprate;
 
 		samprate = edv3->samprate * (edv3->samprateunits ? 1000000LL : 1000LL);
-		fprintf(out, " %10Ld 0x%08X %3d %2d %2d %10.6f    %c %d.%d 0x%2X", samprate, edv3->syncword, edv3->dbeunit, edv3->ifnumber, edv3->subband, edv3->tuning/16777216.0, edv3->sideband ? 'U' : 'L', edv3->majorrev, edv3->minorrev, edv3->personalitytype);
+		fprintf(out, " %10lld 0x%08X %3d %2d %2d %10.6f    %c %d.%d 0x%2X", samprate, edv3->syncword, edv3->dbeunit, edv3->ifnumber, edv3->subband, edv3->tuning/16777216.0, edv3->sideband ? 'U' : 'L', edv3->majorrev, edv3->minorrev, edv3->personalitytype);
 	}
 	fprintf(out, "\n");
 }

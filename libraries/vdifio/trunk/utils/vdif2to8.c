@@ -173,7 +173,7 @@ int vdif2to8(FILE *out, FILE *in, int inputFrameBytes)
 	free(inputBuffer);
 	free(outputBuffer);
 
-	printf("Number of skipped bytes = %Ld\n", nSkip);
+	printf("Number of skipped bytes = %lld\n", nSkip);
 
 	return 0;
 }

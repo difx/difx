@@ -178,7 +178,7 @@ int main(int argc, char **argv)
 
 			if(r != 0)
 			{
-				fprintf(stderr, "Error encountered in seek to position %Ld\n", (long long)offset);
+				fprintf(stderr, "Error encountered in seek to position %lld\n", (long long)offset);
 				fclose(in);
 
 				return EXIT_FAILURE;

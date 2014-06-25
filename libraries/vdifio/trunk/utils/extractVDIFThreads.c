@@ -176,10 +176,10 @@ int main(int argc, char **argv)
     tempframesec = getVDIFFrameSecond(header);
     while(tempframenum != currentframenum || tempframesec != currentframesec){
       for(j=0;j<numthreads;j++) {
-        setVDIFFrameInvalid(writebuffer + j*framebytes, 1);
-	setVDIFThreadID(writebuffer + j*framebytes, threadids[j]);
-	setVDIFFrameNumber(writebuffer + j*framebytes, currentframenum);
-	setVDIFFrameSecond(writebuffer + j*framebytes, currentframesec);
+        setVDIFFrameInvalid((vdif_header*)(writebuffer + j*framebytes), 1);
+	setVDIFThreadID((vdif_header*)(writebuffer + j*framebytes), threadids[j]);
+	setVDIFFrameNumber((vdif_header*)(writebuffer + j*framebytes), currentframenum);
+	setVDIFFrameSecond((vdif_header*)(writebuffer + j*framebytes), currentframesec);
       }
       fprintf(stderr, "Printing an invalid frame for time %d, %d (looking at a frame from %d, %d)\n", currentframesec, currentframenum, tempframesec, tempframenum);
       wrotebytes = fwrite(writebuffer, 1, numthreads*framebytes, output);
@@ -203,13 +203,13 @@ int main(int argc, char **argv)
 	  fprintf(stderr, "Buffer for this thread already full!\n");
 	  fprintf(stderr, "Thread id was %d, time is %d\n", threadids[i], getVDIFFrameNumber(header));
 	  //before we go further, write out invalid tag data for all threads for the current time
-	  tempframenum = getVDIFFrameNumber(writebuffer + i*framebytes);
-	  tempframesec = getVDIFFrameSecond(writebuffer + i*framebytes);
+	  tempframenum = getVDIFFrameNumber((vdif_header*)(writebuffer + i*framebytes));
+	  tempframesec = getVDIFFrameSecond((vdif_header*)(writebuffer + i*framebytes));
           for(j=0;j<numthreads;j++) {
-	    setVDIFFrameInvalid(writebuffer + j*framebytes, 1);
-	    setVDIFThreadID(writebuffer + j*framebytes, threadids[j]);
-	    setVDIFFrameNumber(writebuffer + j*framebytes, tempframenum);
-	    setVDIFFrameSecond(writebuffer + j*framebytes, tempframesec);
+	    setVDIFFrameInvalid((vdif_header*)(writebuffer + j*framebytes), 1);
+	    setVDIFThreadID((vdif_header*)(writebuffer + j*framebytes), threadids[j]);
+	    setVDIFFrameNumber((vdif_header*)(writebuffer + j*framebytes), tempframenum);
+	    setVDIFFrameSecond((vdif_header*)(writebuffer + j*framebytes), tempframesec);
 	  }
 	  wrotebytes = fwrite(writebuffer, 1, numthreads*framebytes, output);
 	  if(wrotebytes != framebytes*numthreads)

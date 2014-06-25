@@ -179,7 +179,7 @@ int main(int argc, char **argv)
 				}
 				if(lastframe < 0 || lastframe > header->frame)
 				{
-					printf("second = %d  frames read = %d  ngap = %d  ntoofew = %d  ntoomany = %d  dur = %d sec\n", header->seconds, framesread, ngap, ntoofew, ntoomany, header->seconds - startsec);
+					printf("second = %d  frames read = %lld  ngap = %d  ntoofew = %d  ntoomany = %d  dur = %d sec\n", header->seconds, framesread, ngap, ntoofew, ntoomany, header->seconds - startsec);
 					fflush(stdout);
 				}
 

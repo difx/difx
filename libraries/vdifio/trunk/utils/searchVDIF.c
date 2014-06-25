@@ -51,7 +51,7 @@ int main(int argc, char **argv)
   char buffer[MAX_VDIF_FRAME_BYTES];
   FILE * input;
   int readbytes, framebytes, framemjd, framesecond, framenumber, frameinvalid;
-  int packetdropped, expectedframebytes;
+  int expectedframebytes;
   off_t byteshift;
   long long bytecount, lastbytecount;
 
