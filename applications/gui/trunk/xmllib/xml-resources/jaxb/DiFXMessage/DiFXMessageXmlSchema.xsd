@@ -187,6 +187,8 @@
                 <xsd:element ref="windowConfigSourceBasedOnPathDisplayH"/>
                 <xsd:element ref="windowConfigRestrictedSourceListDisplayW"/>
                 <xsd:element ref="windowConfigRestrictedSourceListDisplayH"/>
+                <xsd:element ref="windowConfigAntennaDefaultsDisplayW"/>
+                <xsd:element ref="windowConfigAntennaDefaultsDisplayH"/>
                 <xsd:element ref="windowConfigSelectedMessagesDisplayW"/>
                 <xsd:element ref="windowConfigSelectedMessagesDisplayH"/>
                 <xsd:element ref="windowConfigDirectoryDisplayW"/>
@@ -356,6 +358,14 @@
                         <xsd:attribute name="node" type="xsd:string"/>
                     </xsd:complexType>
                 </xsd:element>
+                <xsd:element name="antennaDefault" maxOccurs="unbounded" minOccurs="0">
+                    <xsd:complexType>
+                        <xsd:attribute name="antennaName" type="xsd:string"/>
+                        <xsd:attribute name="format" type="xsd:string"/>
+                        <xsd:attribute name="source" type="xsd:string"/>
+                        <xsd:attribute name="dataPath" type="xsd:string"/>
+                    </xsd:complexType>
+                </xsd:element>
                 
             </xsd:sequence>
         </xsd:complexType>
@@ -449,6 +459,8 @@
     <xsd:element name="windowConfigSourceBasedOnPathDisplayH" type="xsd:int"></xsd:element>
     <xsd:element name="windowConfigRestrictedSourceListDisplayW" type="xsd:int"></xsd:element>
     <xsd:element name="windowConfigRestrictedSourceListDisplayH" type="xsd:int"></xsd:element>
+    <xsd:element name="windowConfigAntennaDefaultsDisplayW" type="xsd:int"></xsd:element>
+    <xsd:element name="windowConfigAntennaDefaultsDisplayH" type="xsd:int"></xsd:element>
     <xsd:element name="windowConfigSelectedMessagesDisplayW" type="xsd:int"></xsd:element>
     <xsd:element name="windowConfigSelectedMessagesDisplayH" type="xsd:int"></xsd:element>
     <xsd:element name="windowConfigDirectoryDisplayW" type="xsd:int"></xsd:element>

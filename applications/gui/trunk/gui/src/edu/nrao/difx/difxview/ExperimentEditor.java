@@ -771,35 +771,35 @@ public class ExperimentEditor extends JFrame {
         passDirectoryLabel.setBounds( 10, 50, 270, 25 );
         passDirectoryLabel.setHorizontalAlignment( JLabel.RIGHT );
         buttonPanel.add( passDirectoryLabel );
-        _stagingArea = new TabCompletedTextField( _settings );
-        _stagingArea.setBounds( 285, 80, 280, 25 );
-        _stagingArea.setToolTipText( "Directory into which to copy all input files for processing." );
-        _stagingArea.setText( _settings.stagingArea() );
-        buttonPanel.add( _stagingArea );
-        JLabel stagingAreaLabel = new JLabel( "Use Staging Area:" );
-        stagingAreaLabel.setBounds( 10, 80, 240, 25 );
-        stagingAreaLabel.setHorizontalAlignment( JLabel.RIGHT );
-        buttonPanel.add( stagingAreaLabel );
-        _useStagingArea = new JCheckBox( "" );
-        _useStagingArea.setBounds( 255, 80, 25, 25 );
-        _useStagingArea.setSelected( _settings.useStagingArea() );
-        if ( _useStagingArea.isSelected() ) {
-            _stagingArea.setEnabled( true );
-        }
-        else {
-            _stagingArea.setEnabled( false );
-        }
-        _useStagingArea.addActionListener( new ActionListener() {
-            public void actionPerformed( ActionEvent e ) {
-                if ( _useStagingArea.isSelected() ) {
-                    _stagingArea.setEnabled( true );
-                }
-                else {
-                    _stagingArea.setEnabled( false );
-                }
-            }
-        });
-        buttonPanel.add( _useStagingArea );
+//        _stagingArea = new TabCompletedTextField( _settings );
+//        _stagingArea.setBounds( 285, 80, 280, 25 );
+//        _stagingArea.setToolTipText( "Directory into which to copy all input files for processing." );
+//        _stagingArea.setText( _settings.stagingArea() );
+//        buttonPanel.add( _stagingArea );
+//        JLabel stagingAreaLabel = new JLabel( "Use Staging Area:" );
+//        stagingAreaLabel.setBounds( 10, 80, 240, 25 );
+//        stagingAreaLabel.setHorizontalAlignment( JLabel.RIGHT );
+//        buttonPanel.add( stagingAreaLabel );
+//        _useStagingArea = new JCheckBox( "" );
+//        _useStagingArea.setBounds( 255, 80, 25, 25 );
+//        _useStagingArea.setSelected( _settings.useStagingArea() );
+//        if ( _useStagingArea.isSelected() ) {
+//            _stagingArea.setEnabled( true );
+//        }
+//        else {
+//            _stagingArea.setEnabled( false );
+//        }
+//        _useStagingArea.addActionListener( new ActionListener() {
+//            public void actionPerformed( ActionEvent e ) {
+//                if ( _useStagingArea.isSelected() ) {
+//                    _stagingArea.setEnabled( true );
+//                }
+//                else {
+//                    _stagingArea.setEnabled( false );
+//                }
+//            }
+//        });
+//        buttonPanel.add( _useStagingArea );
         _passTypeList = new JComboBox();
         _passTypeList.setBounds( 130, 20, 150, 25 );
         _passTypeList.setToolTipText( "List of possible pass types." );
@@ -967,7 +967,7 @@ public class ExperimentEditor extends JFrame {
             _v2dFileName.setBounds( 100, 30, w - 125, 25 );
             _v2dEditor.setBounds( 10, 60, w - 35, 430 );
             _passDirectory.setBounds( 285, 50, w - 310, 25 );
-            _stagingArea.setBounds( 285, 80, w - 310, 25 );
+//            _stagingArea.setBounds( 285, 80, w - 310, 25 );
             //  These things set the panel sizes based on their content.
             _antennaPane.setBounds( 0, 20, w, _antennaPane.dataHeight() );
             try {
@@ -3100,7 +3100,7 @@ public class ExperimentEditor extends JFrame {
     protected ButtonGrid _scanGrid;
     protected JCheckBox _singleInputFileCheck;
     protected SaneTextField _passDirectory;
-    protected TabCompletedTextField _stagingArea;
+//    protected TabCompletedTextField _stagingArea;
     protected JCheckBox _useStagingArea;
     protected boolean _keepPassDirectory;
     protected NodeBrowserScrollPane _antennaPane;

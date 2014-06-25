@@ -723,11 +723,11 @@ public class SystemSettings extends JFrame {
         } );
         networkPanel.add( _requestMessagesButton );
         
-        IndexedPanel jobSettingsPanel = new IndexedPanel( "Job Settings" );
-        jobSettingsPanel.openHeight( 445 );
-        jobSettingsPanel.closedHeight( 20 );
-        jobSettingsPanel.labelWidth( 300 );
-        _scrollPane.addNode( jobSettingsPanel );
+        IndexedPanel jobCreationPanel = new IndexedPanel( "Job Creation Settings" );
+        jobCreationPanel.openHeight( 100 );
+        jobCreationPanel.closedHeight( 20 );
+        jobCreationPanel.labelWidth( 300 );
+        _scrollPane.addNode( jobCreationPanel );
         JLabel workingDirectoryLabel = new JLabel( "Working Directory:" );
         workingDirectoryLabel.setBounds( 10, 25, 150, 25 );
         workingDirectoryLabel.setHorizontalAlignment( JLabel.RIGHT );
@@ -735,29 +735,49 @@ public class SystemSettings extends JFrame {
         _workingDirectory = new TabCompletedTextField( this );
         _workingDirectory.setFocusLostBehavior( JFormattedTextField.COMMIT );
         _workingDirectory.setToolTipText( "Root directory on the DiFX host for Experiment data." );
-        jobSettingsPanel.add( workingDirectoryLabel );
-        jobSettingsPanel.add( _workingDirectory );
-        _stagingArea = new JFormattedTextField();
-        _stagingArea.setFocusLostBehavior( JFormattedTextField.COMMIT );
-        _stagingArea.setToolTipText( "Staging area root directory on the DiFX host." );
-        jobSettingsPanel.add( _stagingArea );
-        JLabel useStagingAreaLabel = new JLabel( "Use Staging Area:" );
-        useStagingAreaLabel.setBounds( 10, 55, 120, 25 );
-        useStagingAreaLabel.setHorizontalAlignment( JLabel.RIGHT );
-        useStagingAreaLabel.setToolTipText( "Use the staging area to run jobs (or don't)." );
-        _useStagingArea = new ZCheckBox( "" );
-        _useStagingArea.setBounds( 133, 55, 25, 25 );
-        _useStagingArea.setToolTipText( "Use the staging area to run jobs (or don't)." );
-        jobSettingsPanel.add( useStagingAreaLabel );
-        jobSettingsPanel.add( _useStagingArea );
+        jobCreationPanel.add( workingDirectoryLabel );
+        jobCreationPanel.add( _workingDirectory );
+//        _stagingArea = new JFormattedTextField();
+//        _stagingArea.setFocusLostBehavior( JFormattedTextField.COMMIT );
+//        _stagingArea.setToolTipText( "Staging area root directory on the DiFX host." );
+//        jobCreationPanel.add( _stagingArea );
+//        JLabel useStagingAreaLabel = new JLabel( "Use Staging Area:" );
+//        useStagingAreaLabel.setBounds( 10, 55, 120, 25 );
+//        useStagingAreaLabel.setHorizontalAlignment( JLabel.RIGHT );
+//        useStagingAreaLabel.setToolTipText( "Use the staging area to run jobs (or don't)." );
+//        _useStagingArea = new ZCheckBox( "" );
+//        _useStagingArea.setBounds( 133, 55, 25, 25 );
+//        _useStagingArea.setToolTipText( "Use the staging area to run jobs (or don't)." );
+//        jobCreationPanel.add( useStagingAreaLabel );
+//        jobCreationPanel.add( _useStagingArea );
+        //  This is the display for antenna data defaults, used below.
+        _antennaDefaultsDisplay = new AntennaDefaultsDisplay( 0, 0, _settings );
+        ZButton antennaDefaultsButton = new ZButton( "Antenna Defaults" );
+        antennaDefaultsButton.setBounds( 165, 55, 160, 25 );
+        antennaDefaultsButton.toolTip( "View/edit the default settings applied to data sources\n"
+                + "based on antenna name.", null );
+        antennaDefaultsButton.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                _antennaDefaultsDisplay.showAtPosition( MouseInfo.getPointerInfo().getLocation().x, 
+                        MouseInfo.getPointerInfo().getLocation().y );
+            }
+        } );
+        jobCreationPanel.add( antennaDefaultsButton );
+
+        IndexedPanel jobProcessingPanel = new IndexedPanel( "Job Processing Settings" );
+        jobProcessingPanel.openHeight( 385 );
+        jobProcessingPanel.closedHeight( 20 );
+        jobProcessingPanel.labelWidth( 300 );
+        _scrollPane.addNode( jobProcessingPanel );
         _headNode = new SaneTextField();
-        jobSettingsPanel.add( _headNode );
+        _headNode.setBounds( 165, 25, 300, 25 );
+        jobProcessingPanel.add( _headNode );
         JLabel headNodeLabel = new JLabel( "Head Node:" );
-        headNodeLabel.setBounds( 10, 85, 150, 25 );
+        headNodeLabel.setBounds( 10, 25, 150, 25 );
         headNodeLabel.setHorizontalAlignment( JLabel.RIGHT );
-        jobSettingsPanel.add( headNodeLabel );
+        jobProcessingPanel.add( headNodeLabel );
         _useHeadNodeCheck = new ZCheckBox( "Use Head Node in Processing" );
-        _useHeadNodeCheck.setBounds( 480, 85, 250, 25 );
+        _useHeadNodeCheck.setBounds( 480, 25, 250, 25 );
         _useHeadNodeCheck.toolTip( "Allow the head node to be used as a data source or processor.\n"
                 + "A thread will be reserved for head node activities.", null );
         _useHeadNodeCheck.addActionListener( new ActionListener() {
@@ -765,17 +785,17 @@ public class SystemSettings extends JFrame {
                 defaultNames().restrictHeadnodeProcessing = !_useHeadNodeCheck.isSelected();
             }
         } );
-        jobSettingsPanel.add( _useHeadNodeCheck );
+        jobProcessingPanel.add( _useHeadNodeCheck );
         JLabel dataSourceLabel = new JLabel( "Data Source Defaults:" );
         dataSourceLabel.setFont( new Font( dataSourceLabel.getFont().getFamily(), Font.BOLD, dataSourceLabel.getFont().getSize() ) );
-        dataSourceLabel.setBounds( 30, 115, 200, 25 );
-        jobSettingsPanel.add( dataSourceLabel );
+        dataSourceLabel.setBounds( 30, 55, 200, 25 );
+        jobProcessingPanel.add( dataSourceLabel );
         _uniqueDataSource = new ZCheckBox( "Unique Node per Data Source" );
         _uniqueDataSource.toolTip( "Use a unique node as the data source for each antenna within a job.", null );
-        _uniqueDataSource.setBounds( 165, 140, 300, 25 );
-        jobSettingsPanel.add( _uniqueDataSource );
+        _uniqueDataSource.setBounds( 165, 80, 300, 25 );
+        jobProcessingPanel.add( _uniqueDataSource );
         _assignBasedOnPath = new ZCheckBox( "Assign Based on Path" );
-        _assignBasedOnPath.setBounds( 165, 165, 160, 25 );
+        _assignBasedOnPath.setBounds( 165, 105, 160, 25 );
         _assignBasedOnPath.toolTip( "Use specific nodes for particular data paths.  Paths are assigned\n"
                 + "to nodes using the \"Path Assignments\" settings.\n"
                 + "A specific path assignment will override all other considerations.", null );
@@ -791,9 +811,9 @@ public class SystemSettings extends JFrame {
                 }
             }
         } );
-        jobSettingsPanel.add( _assignBasedOnPath );
+        jobProcessingPanel.add( _assignBasedOnPath );
         _pathAssignments = new ZButton( "Path Assignments" );
-        _pathAssignments.setBounds( 325, 165, 140, 25 );
+        _pathAssignments.setBounds( 325, 105, 140, 25 );
         _pathAssignments.toolTip( "Assign data file paths to specific node names.", null );
         _pathAssignments.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
@@ -811,32 +831,32 @@ public class SystemSettings extends JFrame {
                         MouseInfo.getPointerInfo().getLocation().y );
             }
         } );
-        jobSettingsPanel.add( _pathAssignments );
+        jobProcessingPanel.add( _pathAssignments );
         _shareDataSourcesAsProcessors = new ZCheckBox( "Share Data Nodes With Processing" );
         _shareDataSourcesAsProcessors.toolTip( "Allow processing on nodes being used as data sources.  Threads\n"
                 + "will be reserved for data reading activities.", null );
-        _shareDataSourcesAsProcessors.setBounds( 480, 140, 250, 25 );
-        jobSettingsPanel.add( _shareDataSourcesAsProcessors );
+        _shareDataSourcesAsProcessors.setBounds( 480, 80, 250, 25 );
+        jobProcessingPanel.add( _shareDataSourcesAsProcessors );
         _shareDataSourcesBetweenJobs = new ZCheckBox( "Share Data Nodes Between Jobs" );
         _shareDataSourcesBetweenJobs.toolTip( "Allow multiple jobs to use the same nodes as data sources.  Threads\n"
                 + "will be reserved for each.", null );
-        _shareDataSourcesBetweenJobs.setBounds( 480, 165, 250, 25 );
-        jobSettingsPanel.add( _shareDataSourcesBetweenJobs );
+        _shareDataSourcesBetweenJobs.setBounds( 480, 105, 250, 25 );
+        jobProcessingPanel.add( _shareDataSourcesBetweenJobs );
         _threadsPerDataSource = new NumberBox();
-        _threadsPerDataSource.setBounds( 795, 140, 50, 25 );
+        _threadsPerDataSource.setBounds( 795, 80, 50, 25 );
         _threadsPerDataSource.minimum( 1 );
         _threadsPerDataSource.precision( 0 );
-        jobSettingsPanel.add( _threadsPerDataSource );
+        jobProcessingPanel.add( _threadsPerDataSource );
         JLabel threadsPerLabel = new JLabel( "Threads Per Data Source" );
-        threadsPerLabel.setBounds( 850, 140, 200, 25 );
-        jobSettingsPanel.add( threadsPerLabel );
+        threadsPerLabel.setBounds( 850, 80, 200, 25 );
+        jobProcessingPanel.add( threadsPerLabel );
         JLabel useThreadsLabel = new JLabel( "Use:" );
-        useThreadsLabel.setBounds( 740, 140, 50, 25 );
+        useThreadsLabel.setBounds( 740, 80, 50, 25 );
         useThreadsLabel.setHorizontalAlignment( JLabel.RIGHT );
-        jobSettingsPanel.add( useThreadsLabel );
+        jobProcessingPanel.add( useThreadsLabel );
         
         _restrictSourcesCheck = new ZCheckBox( "Restrict Data Sources" );
-        _restrictSourcesCheck.setBounds( 760, 165, 160, 25 );
+        _restrictSourcesCheck.setBounds( 760, 105, 160, 25 );
         _restrictSourcesCheck.toolTip( "Restrict data sources to a list of \"allowed\" source nodes.\n"
                 + "This setting should be used if only a subset of available nodes has\n"
                 + "access to the storage systems containing source data.", null );
@@ -844,9 +864,9 @@ public class SystemSettings extends JFrame {
             public void actionPerformed( ActionEvent e ) {
             }
         } );
-        jobSettingsPanel.add( _restrictSourcesCheck );
+        jobProcessingPanel.add( _restrictSourcesCheck );
         _viewRestrictedSourceList = new ZButton( "Allowed Sources" );
-        _viewRestrictedSourceList.setBounds( 920, 165, 140, 25 );
+        _viewRestrictedSourceList.setBounds( 920, 105, 140, 25 );
         _viewRestrictedSourceList.toolTip( "View/edit the list nodes that are \"allowed\" data sources.", null );
         _viewRestrictedSourceList.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
@@ -864,18 +884,18 @@ public class SystemSettings extends JFrame {
                         MouseInfo.getPointerInfo().getLocation().y );
             }
         } );
-        jobSettingsPanel.add( _viewRestrictedSourceList );
+        jobProcessingPanel.add( _viewRestrictedSourceList );
         
-        JLabel processingLabel = new JLabel( "Processing Defaults:" );
-        processingLabel.setBounds( 30, 195, 200, 25 );
+        JLabel processingLabel = new JLabel( "Processor Defaults:" );
+        processingLabel.setBounds( 30, 135, 200, 25 );
         processingLabel.setFont( new Font( processingLabel.getFont().getFamily(), Font.BOLD, processingLabel.getFont().getSize() ) );
-        jobSettingsPanel.add( processingLabel );
+        jobProcessingPanel.add( processingLabel );
         JLabel defaultToLabel = new JLabel( "Run Using:" );
-        defaultToLabel.setBounds( 10, 220, 150, 25 );
+        defaultToLabel.setBounds( 10, 160, 150, 25 );
         defaultToLabel.setHorizontalAlignment( JLabel.RIGHT );
-        jobSettingsPanel.add( defaultToLabel );
+        jobProcessingPanel.add( defaultToLabel );
         _nodesPerCheck = new ZCheckBox( "" );
-        _nodesPerCheck.setBounds( 165, 245, 25, 25 );
+        _nodesPerCheck.setBounds( 165, 185, 25, 25 );
         _nodesPerCheck.toolTip( "Specify the number of nodes used in processing.", null );
         _nodesPerCheck.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
@@ -896,18 +916,18 @@ public class SystemSettings extends JFrame {
                 }
             }
         } );
-        jobSettingsPanel.add( _nodesPerCheck );
+        jobProcessingPanel.add( _nodesPerCheck );
         _nodesPer = new NumberBox();
-        _nodesPer.setBounds( 190, 245, 50, 25 );
+        _nodesPer.setBounds( 190, 185, 50, 25 );
         _nodesPer.minimum( 0 );
         _nodesPer.precision( 0 );
         _nodesPer.toolTip( "Number of nodes to assign to processing.", null );
-        jobSettingsPanel.add( _nodesPer );
+        jobProcessingPanel.add( _nodesPer );
         JLabel nodesLabel = new JLabel( "Nodes" );
-        nodesLabel.setBounds( 245, 245, 50, 25 );
-        jobSettingsPanel.add( nodesLabel );
+        nodesLabel.setBounds( 245, 185, 50, 25 );
+        jobProcessingPanel.add( nodesLabel );
         _allNodesCheck = new ZCheckBox( "All Nodes" );
-        _allNodesCheck.setBounds( 165, 220, 100, 25 );
+        _allNodesCheck.setBounds( 165, 160, 100, 25 );
         _allNodesCheck.toolTip( "Use all available nodes in processing.", null );
         _allNodesCheck.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
@@ -928,13 +948,13 @@ public class SystemSettings extends JFrame {
                 }
             }
         } );
-        jobSettingsPanel.add( _allNodesCheck );
+        jobProcessingPanel.add( _allNodesCheck );
         JLabel withLabel = new JLabel( "With:" );
-        withLabel.setBounds( 305, 220, 50, 25 );
+        withLabel.setBounds( 305, 160, 50, 25 );
         withLabel.setHorizontalAlignment( JLabel.RIGHT );
-        jobSettingsPanel.add( withLabel );
+        jobProcessingPanel.add( withLabel );
         _allThreadsCheck = new ZCheckBox( "All Threads" );
-        _allThreadsCheck.setBounds( 355, 220, 100, 25 );
+        _allThreadsCheck.setBounds( 355, 160, 100, 25 );
         _allThreadsCheck.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
                 _allThreadsCheck.setSelected( true );
@@ -945,26 +965,26 @@ public class SystemSettings extends JFrame {
         } );
         _allThreadsCheck.toolTip( "Utilize all <<italic>>available<</italic>> threads in each node - available\n"
                 + "threads will not include threads assigned as data sources or as the head node.", null );
-        jobSettingsPanel.add( _allThreadsCheck );
+        jobProcessingPanel.add( _allThreadsCheck );
         _minThreadsPerNode = new NumberBox();
-        _minThreadsPerNode.setBounds( 505, 220, 50, 25 );
+        _minThreadsPerNode.setBounds( 505, 160, 50, 25 );
         _minThreadsPerNode.minimum( 1 );
         _minThreadsPerNode.precision( 0 );
         _minThreadsPerNode.toolTip( "Minimum number of threads required when selecting \"All\" threads\n"
                 + "in a node.  If fewer are available for a node that otherwise meets\n"
                 + "requirements, a new node will be chosen.", null );
-        jobSettingsPanel.add( _minThreadsPerNode );
+        jobProcessingPanel.add( _minThreadsPerNode );
         JLabel minThreadsLabel = new JLabel( "Min:" );
-        minThreadsLabel.setBounds( 450, 220, 50, 25 );
+        minThreadsLabel.setBounds( 450, 160, 50, 25 );
         minThreadsLabel.setHorizontalAlignment( JLabel.RIGHT );
-        jobSettingsPanel.add( minThreadsLabel );
+        jobProcessingPanel.add( minThreadsLabel );
         _threadsPerNode = new NumberBox();
-        _threadsPerNode.setBounds( 380, 245, 50, 25 );
+        _threadsPerNode.setBounds( 380, 185, 50, 25 );
         _threadsPerNode.minimum( 1 );
         _threadsPerNode.precision( 0 );
-        jobSettingsPanel.add( _threadsPerNode );
+        jobProcessingPanel.add( _threadsPerNode );
         _threadsPerCheck = new ZCheckBox( "" );
-        _threadsPerCheck.setBounds( 355, 245, 25, 25 );
+        _threadsPerCheck.setBounds( 355, 185, 25, 25 );
         _threadsPerCheck.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
                 _allThreadsCheck.setSelected( false );
@@ -976,45 +996,45 @@ public class SystemSettings extends JFrame {
         _threadsPerCheck.toolTip( "Use this many threads - if the number of nodes is also selected this\n"
                 + "number is interpreted as \"threads to use per node\" and only nodes\n"
                 + "having this number of threads will be utilized.", null );
-        jobSettingsPanel.add( _threadsPerCheck );
+        jobProcessingPanel.add( _threadsPerCheck );
         JLabel threadsPerNodeLabel = new JLabel( "Threads" );
-        threadsPerNodeLabel.setBounds( 435, 245, 100, 25 );
-        jobSettingsPanel.add( threadsPerNodeLabel );
+        threadsPerNodeLabel.setBounds( 435, 185, 100, 25 );
+        jobProcessingPanel.add( threadsPerNodeLabel );
         JLabel forEachLabel = new JLabel( "For Each:" );
         forEachLabel.setHorizontalAlignment( JLabel.RIGHT );
-        forEachLabel.setBounds( 555, 220, 75, 25 );
-        jobSettingsPanel.add( forEachLabel );
+        forEachLabel.setBounds( 555, 160, 75, 25 );
+        jobProcessingPanel.add( forEachLabel );
         _baselineCheck = new ZCheckBox( "Baseline" );
-        _baselineCheck.setBounds( 635, 220, 125, 25 );
+        _baselineCheck.setBounds( 635, 160, 125, 25 );
         _baselineCheck.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
                 _jobCheck.setSelected( false );
                 _baselineCheck.setSelected( true );
             }
         } );
-        jobSettingsPanel.add( _baselineCheck );
+        jobProcessingPanel.add( _baselineCheck );
         _jobCheck = new ZCheckBox( "Job" );
-        _jobCheck.setBounds( 635, 245, 125, 25 );
+        _jobCheck.setBounds( 635, 185, 125, 25 );
         _jobCheck.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
                 _jobCheck.setSelected( true );
                 _baselineCheck.setSelected( false );
             }
         } );
-        jobSettingsPanel.add( _jobCheck );
+        jobProcessingPanel.add( _jobCheck );
         JLabel schedulerLabel = new JLabel( "Scheduler Settings:" );
-        schedulerLabel.setBounds( 30, 275, 200, 25 );
+        schedulerLabel.setBounds( 30, 215, 200, 25 );
         schedulerLabel.setFont( new Font( processingLabel.getFont().getFamily(), Font.BOLD, processingLabel.getFont().getSize() ) );
-        jobSettingsPanel.add( schedulerLabel );
+        jobProcessingPanel.add( schedulerLabel );
         JLabel runMultipleLabel = new JLabel( "Run Scheduled Jobs:" );
         runMultipleLabel.setHorizontalAlignment( JLabel.RIGHT );
-        runMultipleLabel.setBounds( 10, 300, 150, 25 );
-        jobSettingsPanel.add( runMultipleLabel );
+        runMultipleLabel.setBounds( 10, 240, 150, 25 );
+        jobProcessingPanel.add( runMultipleLabel );
         _sequentialCheck = new ZCheckBox( "Sequentially" );
-        _sequentialCheck.setBounds( 165, 300, 125, 25 );
+        _sequentialCheck.setBounds( 165, 240, 125, 25 );
         _sequentialCheck.toolTip( "Jobs run using the scheduler will wait until all\n"
                 + "previously scheduled jobs have been completed.", null );
-        jobSettingsPanel.add( _sequentialCheck );
+        jobProcessingPanel.add( _sequentialCheck );
         _sequentialCheck.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
                 _sequentialCheck.setSelected( true );
@@ -1023,7 +1043,7 @@ public class SystemSettings extends JFrame {
             }
         } );
         _simultaneousCheck = new ZCheckBox( "Simultaneously" );
-        _simultaneousCheck.setBounds( 165, 325, 125, 25 );
+        _simultaneousCheck.setBounds( 165, 265, 125, 25 );
         _simultaneousCheck.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
                 _sequentialCheck.setSelected( false );
@@ -1034,68 +1054,68 @@ public class SystemSettings extends JFrame {
         _simultaneousCheck.toolTip( "Jobs run using the scheduler will be run simultaneously\n"
                 + "when resources sufficient to meet their default run criteria\n"
                 + "are available.", null );
-        jobSettingsPanel.add( _simultaneousCheck );
+        jobProcessingPanel.add( _simultaneousCheck );
         _maxJobs = new NumberBox();
-        _maxJobs.setBounds( 295, 325, 50, 25 );
+        _maxJobs.setBounds( 295, 265, 50, 25 );
         _maxJobs.minimum( 1 );
         _maxJobs.precision( 0 );
         _maxJobs.toolTip( "Maximum number of jobs to run simultaneously", null );
-        jobSettingsPanel.add( _maxJobs );
+        jobProcessingPanel.add( _maxJobs );
         JLabel maxJobsLabel = new JLabel( "Maximum" );
-        maxJobsLabel.setBounds( 350, 325, 100, 25 );
-        jobSettingsPanel.add( maxJobsLabel );
+        maxJobsLabel.setBounds( 350, 265, 100, 25 );
+        jobProcessingPanel.add( maxJobsLabel );
         _useMaxSecondsForHardware = new ZCheckBox( "" );
-        _useMaxSecondsForHardware.setBounds( 475, 300, 25, 25 );
+        _useMaxSecondsForHardware.setBounds( 475, 240, 25, 25 );
         _useMaxSecondsForHardware.setToolTipText( "Use the maximum number of seconds to limit the time the scheduler\n"
                 + "will devote to allocating hardware when no activity appears to be occurring." );
-        jobSettingsPanel.add( _useMaxSecondsForHardware );
+        jobProcessingPanel.add( _useMaxSecondsForHardware );
         _maxSecondsForHardware = new NumberBox();
         _maxSecondsForHardware.setToolTipText( "Maximum number of seconds allowed for allocating hardware resources\n"
                 + "If the correlator appears to be inactive, jobs that exceed this limit\n"
                 + "are assumed to be \"stuck\" and may be terminated by the scheduler." );
-        _maxSecondsForHardware.setBounds( 505, 300, 70, 25 );
+        _maxSecondsForHardware.setBounds( 505, 240, 70, 25 );
         _maxSecondsForHardware.minimum( 10 );
         _maxSecondsForHardware.precision( 0 );
-        jobSettingsPanel.add( _maxSecondsForHardware );
+        jobProcessingPanel.add( _maxSecondsForHardware );
         JLabel maxSecondsForHardwareLabel = new JLabel( "Resource Allocation Time Limit (Seconds)" );
-        maxSecondsForHardwareLabel.setBounds( 580, 300, 300, 25 );
-        jobSettingsPanel.add( maxSecondsForHardwareLabel );
+        maxSecondsForHardwareLabel.setBounds( 580, 240, 300, 25 );
+        jobProcessingPanel.add( maxSecondsForHardwareLabel );
         _useMaxSecondsForProcessing = new ZCheckBox( "" );
-        _useMaxSecondsForProcessing.setBounds( 475, 325, 25, 25 );
+        _useMaxSecondsForProcessing.setBounds( 475, 265, 25, 25 );
         _useMaxSecondsForProcessing.setToolTipText( "Use the maximum number of seconds to limit the time the scheduler\n"
                 + "will consider a job to be running when no activity appears to be occurring." );
-        jobSettingsPanel.add( _useMaxSecondsForProcessing );
+        jobProcessingPanel.add( _useMaxSecondsForProcessing );
         _maxSecondsForProcessing = new NumberBox();
         _maxSecondsForProcessing.setToolTipText( "Maximum number of seconds the scheduler will consider a job \"running\".\n"
                 + "If the correlator appears to be inactive, jobs that exceed this limit\n"
                 + "are assumed to be \"stuck\" and may be removed from the queue by the\n"
                 + "scheduler, thus allowing other jobs to start.  The job may continue to\n"
                 + "run - the scheduler cannot stop a job once it has started." );
-        _maxSecondsForProcessing.setBounds( 505, 325, 70, 25 );
+        _maxSecondsForProcessing.setBounds( 505, 265, 70, 25 );
         _maxSecondsForProcessing.minimum( 10 );
         _maxSecondsForProcessing.precision( 0 );
-        jobSettingsPanel.add( _maxSecondsForProcessing );
+        jobProcessingPanel.add( _maxSecondsForProcessing );
         JLabel maxSecondsForProcessingLabel = new JLabel( "Processing Time Limit (Seconds)" );
-        maxSecondsForProcessingLabel.setBounds( 580, 325, 300, 25 );
-        jobSettingsPanel.add( maxSecondsForProcessingLabel );
+        maxSecondsForProcessingLabel.setBounds( 580, 265, 300, 25 );
+        jobProcessingPanel.add( maxSecondsForProcessingLabel );
         JLabel runLogLabel = new JLabel( "Run Log Settings:" );
-        runLogLabel.setBounds( 30, 355, 200, 25 );
+        runLogLabel.setBounds( 30, 295, 200, 25 );
         runLogLabel.setFont( new Font( processingLabel.getFont().getFamily(), Font.BOLD, processingLabel.getFont().getSize() ) );
-        jobSettingsPanel.add( runLogLabel );
+        jobProcessingPanel.add( runLogLabel );
         _runLogCheck = new ZCheckBox( "Log Run Data" );
-        _runLogCheck.setBounds( 165, 380, 125, 25 );
+        _runLogCheck.setBounds( 165, 320, 125, 25 );
         _runLogCheck.toolTip( "Collect performance statistics in the \"Run Log\" file\n"
                 + "for each job run.", null );
-        jobSettingsPanel.add( _runLogCheck );
+        jobProcessingPanel.add( _runLogCheck );
         JLabel runLogFileLabel = new JLabel( "Run Log File:" );
-        runLogFileLabel.setBounds( 10, 405, 150, 25 );
+        runLogFileLabel.setBounds( 10, 345, 150, 25 );
         runLogFileLabel.setHorizontalAlignment( JLabel.RIGHT );
         runLogFileLabel.setToolTipText( "File containing run log statistics." );
         _runLogFile = new FormattedTextField();
         _runLogFile.setFocusLostBehavior( JFormattedTextField.COMMIT );
         _runLogFile.setToolTipText( "Root directory on the DiFX host for Experiment data." );
-        jobSettingsPanel.add( runLogFileLabel );
-        jobSettingsPanel.add( _runLogFile );
+        jobProcessingPanel.add( runLogFileLabel );
+        jobProcessingPanel.add( _runLogFile );
 
         IndexedPanel databasePanel = new IndexedPanel( "Database Configuration" );
         databasePanel.openHeight( 305 );
@@ -1522,14 +1542,13 @@ public class SystemSettings extends JFrame {
             _difxSVN.setBounds( 115, 115, w - 145, 25 );
             //  Job settings
             _workingDirectory.setBounds( 165, 25, w - 195, 25 );
-            _stagingArea.setBounds( 165, 55, w - 195, 25 );
-            _headNode.setBounds( 165, 85, 300, 25 );
+//            _stagingArea.setBounds( 165, 55, w - 195, 25 );
             _eopURL.setBounds( 165, 25, w - 305, 25 );
             _viewEOPFile.setBounds( w - 135, 25, 105, 25 );
             _leapSecondsURL.setBounds( 165, 55, w - 305, 25 );
             _viewLeapSecondsFile.setBounds( w - 135, 55, 105, 25 );
             _updateEOPNow.setBounds( w - 260, 115, 120, 25 );
-            _runLogFile.setBounds( 165, 405, w - 195, 25 );
+            _runLogFile.setBounds( 165, 345, w - 195, 25 );
         }
     }
     
@@ -2077,8 +2096,8 @@ public class SystemSettings extends JFrame {
         _dbAutoUpdate.setSelected( false );
         _dbAutoUpdateInterval.intValue( 100 );
         _workingDirectory.setText( "/" );
-        _stagingArea.setText( "/queue" );
-        _useStagingArea.setSelected( false );
+//        _stagingArea.setText( "/queue" );
+//        _useStagingArea.setSelected( false );
         _headNode.setText( _difxControlAddress.getText() );
         _nodesPer.value( 2 );
         _nodesPerCheck.setSelected( true );
@@ -2144,6 +2163,8 @@ public class SystemSettings extends JFrame {
         _windowConfiguration.sourceBasedOnPathDisplayH = 300;
         _windowConfiguration.restrictedSourceListDisplayW = 400;
         _windowConfiguration.restrictedSourceListDisplayH = 300;
+        _windowConfiguration.antennaDefaultsDisplayW = 400;
+        _windowConfiguration.antennaDefaultsDisplayH = 300;
         _windowConfiguration.requestedMessageListDisplayW = 320;
         _windowConfiguration.requestedMessageListDisplayH = 500;
         _windowConfiguration.directoryDisplayW = 600;
@@ -2659,11 +2680,11 @@ public class SystemSettings extends JFrame {
     public String workingDirectory() { return _workingDirectory.getText(); }
     public void workingDirectory( String newVal ) { _workingDirectory.setText( newVal ); }
     
-    public String stagingArea() { return _stagingArea.getText(); }
-    public void stagingArea( String newVal ) { _stagingArea.setText( newVal ); }
+//    public String stagingArea() { return _stagingArea.getText(); }
+//    public void stagingArea( String newVal ) { _stagingArea.setText( newVal ); }
     
-    public boolean useStagingArea() { return _useStagingArea.isSelected(); }
-    public void useStagingArea( boolean newVal ) { _useStagingArea.setSelected( newVal ); }
+//    public boolean useStagingArea() { return _useStagingArea.isSelected(); }
+//    public void useStagingArea( boolean newVal ) { _useStagingArea.setSelected( newVal ); }
     
     public String headNode() { return _headNode.getText(); }
     public void headNode( String newVal ) { _headNode.setText( newVal ); }
@@ -2982,9 +3003,9 @@ public class SystemSettings extends JFrame {
                 _dbAutoUpdateInterval.intValue( doiConfig.getDbAutoUpdateInterval() );
             if ( doiConfig.getWorkingDirectory() != null )
                 _workingDirectory.setText( doiConfig.getWorkingDirectory() );
-            if ( doiConfig.getStagingArea() != null )
-                _stagingArea.setText( doiConfig.getStagingArea() );
-            _useStagingArea.setSelected( doiConfig.isUseStagingArea() );
+//            if ( doiConfig.getStagingArea() != null )
+//                _stagingArea.setText( doiConfig.getStagingArea() );
+//            _useStagingArea.setSelected( doiConfig.isUseStagingArea() );
             if ( doiConfig.getDifxHeadNode() != null )
                 this.headNode( doiConfig.getDifxHeadNode() );
 
@@ -3058,6 +3079,10 @@ public class SystemSettings extends JFrame {
                 _windowConfiguration.restrictedSourceListDisplayW = doiConfig.getWindowConfigRestrictedSourceListDisplayW();
             if ( doiConfig.getWindowConfigRestrictedSourceListDisplayH() != 0 )
                 _windowConfiguration.restrictedSourceListDisplayH = doiConfig.getWindowConfigRestrictedSourceListDisplayH();
+            if ( doiConfig.getWindowConfigAntennaDefaultsDisplayW() != 0 )
+                _windowConfiguration.antennaDefaultsDisplayW = doiConfig.getWindowConfigAntennaDefaultsDisplayW();
+            if ( doiConfig.getWindowConfigAntennaDefaultsDisplayH() != 0 )
+                _windowConfiguration.antennaDefaultsDisplayH = doiConfig.getWindowConfigAntennaDefaultsDisplayH();
             if ( doiConfig.getWindowConfigSelectedMessagesDisplayW() != 0 )
                 _windowConfiguration.requestedMessageListDisplayW = doiConfig.getWindowConfigSelectedMessagesDisplayW();
             if ( doiConfig.getWindowConfigSelectedMessagesDisplayH() != 0 )
@@ -3185,6 +3210,14 @@ public class SystemSettings extends JFrame {
                     _restrictedSourceList = new ArrayList<String>();
                 }
                 _restrictedSourceList.add( allowedNode.getNode() );
+            }
+            for ( Iterator<DoiSystemConfig.AntennaDefault> iter = doiConfig.getAntennaDefault().iterator(); iter.hasNext(); ) {
+                DoiSystemConfig.AntennaDefault antennaDefault = iter.next();
+                AntennaDefaultsDisplay.PanelItem panel = _antennaDefaultsDisplay.addItem();
+                panel.antennaName( antennaDefault.getAntennaName() );
+                panel.format( antennaDefault.getFormat() );
+                panel.source( antennaDefault.getSource() );
+                panel.dataPath( antennaDefault.getDataPath() );
             }
 
             _defaultNames.eliminateNonrespondingProcessors = doiConfig.isDefaultNamesEliminateNonrespondingProcessors();
@@ -3564,8 +3597,8 @@ public class SystemSettings extends JFrame {
         doiConfig.setQueueShowPassScheduled( _queueBrowserSettings.showPassScheduled );
         
         doiConfig.setWorkingDirectory( _workingDirectory.getText() );
-        doiConfig.setStagingArea( _stagingArea.getText() );
-        doiConfig.setUseStagingArea( _useStagingArea.isSelected() );
+//        doiConfig.setStagingArea( _stagingArea.getText() );
+//        doiConfig.setUseStagingArea( _useStagingArea.isSelected() );
         doiConfig.setDifxHeadNode( this.headNode() );
         
         doiConfig.setWindowConfigMainX( _windowConfiguration.mainX );
@@ -3600,6 +3633,8 @@ public class SystemSettings extends JFrame {
         doiConfig.setWindowConfigSourceBasedOnPathDisplayH( _windowConfiguration.sourceBasedOnPathDisplayH );
         doiConfig.setWindowConfigRestrictedSourceListDisplayW( _windowConfiguration.restrictedSourceListDisplayW );
         doiConfig.setWindowConfigRestrictedSourceListDisplayH( _windowConfiguration.restrictedSourceListDisplayH );
+        doiConfig.setWindowConfigAntennaDefaultsDisplayW( _windowConfiguration.antennaDefaultsDisplayW );
+        doiConfig.setWindowConfigAntennaDefaultsDisplayH( _windowConfiguration.antennaDefaultsDisplayH );
         doiConfig.setWindowConfigSelectedMessagesDisplayW( _windowConfiguration.requestedMessageListDisplayW );
         doiConfig.setWindowConfigSelectedMessagesDisplayH( _windowConfiguration.requestedMessageListDisplayH );
         doiConfig.setWindowConfigDirectoryDisplayW( _windowConfiguration.directoryDisplayW );
@@ -3909,6 +3944,17 @@ public class SystemSettings extends JFrame {
                 DoiSystemConfig.AllowedNode allowedNode = factory.createDoiSystemConfigAllowedNode();
                 allowedNode.setNode( nodeName );
                 doiConfig.getAllowedNode().add( allowedNode );
+            }
+        }
+        if ( _antennaDefaultsDisplay.panels() != null ) {
+            for ( Iterator<AntennaDefaultsDisplay.PanelItem> iter = _antennaDefaultsDisplay.panels().iterator(); iter.hasNext(); ) {
+                AntennaDefaultsDisplay.PanelItem panel = iter.next();
+                DoiSystemConfig.AntennaDefault antennaDefault = factory.createDoiSystemConfigAntennaDefault();
+                antennaDefault.setAntennaName( panel.antennaName() );
+                antennaDefault.setFormat( panel.format() );
+                antennaDefault.setSource( panel.source() );
+                antennaDefault.setDataPath( panel.dataPath() );
+                doiConfig.getAntennaDefault().add( antennaDefault );
             }
         }
 
@@ -4645,8 +4691,8 @@ public class SystemSettings extends JFrame {
     
     //  Items that govern the creation and running of jobs.
     protected JFormattedTextField _workingDirectory;
-    protected JFormattedTextField _stagingArea;
-    protected ZCheckBox _useStagingArea;
+//    protected JFormattedTextField _stagingArea;
+//    protected ZCheckBox _useStagingArea;
     protected SaneTextField _headNode;
     
     //  EOP Settings items.
@@ -4717,6 +4763,8 @@ public class SystemSettings extends JFrame {
         int sourceBasedOnPathDisplayH;
         int restrictedSourceListDisplayW;
         int restrictedSourceListDisplayH;
+        int antennaDefaultsDisplayW;
+        int antennaDefaultsDisplayH;
         int requestedMessageListDisplayW;
         int requestedMessageListDisplayH;
         int directoryDisplayW;
@@ -5549,6 +5597,238 @@ public class SystemSettings extends JFrame {
     
     protected RestrictedSourceListDisplay _restrictedSourceListDisplay;
     protected ArrayList<String> _restrictedSourceList;
+    
+    /*
+     * Class to display a list of nodes that are permitted to be used as source node.
+     */
+    public class AntennaDefaultsDisplay extends JFrame {
+
+        public AntennaDefaultsDisplay( int x, int y, SystemSettings settings ) {
+            _settings = settings;
+            setLookAndFeel();
+            this.setLayout( null );
+            this.setBounds( x, y, windowConfiguration().antennaDefaultsDisplayW,
+                windowConfiguration().restrictedSourceListDisplayH );
+            this.getContentPane().setLayout( null );
+            this.setTitle( "Default Source Settings Based on Antenna" );
+            _this = this;
+            this.addComponentListener( new java.awt.event.ComponentAdapter() {
+                public void componentResized( ComponentEvent e ) {
+                    windowConfiguration().antennaDefaultsDisplayW = _this.getWidth();
+                    windowConfiguration().antennaDefaultsDisplayH = _this.getHeight();
+                    newSize();
+                }
+            });
+            this.addComponentListener( new java.awt.event.ComponentAdapter() {
+                public void componentShown( ComponentEvent e ) {
+                    newSize();
+                }
+            });
+            _viewPane = new JPanel();
+            _viewPane.setLayout( null );
+            _viewPane.setPreferredSize( new Dimension( 500, 500 ) );
+            _scrollPane = new JScrollPane( _viewPane );
+            this.add( _scrollPane );
+            _addButton = new ZButton( "Add" );
+            _addButton.setBounds( 20, 15, 100, 25 );
+            _addButton.toolTip( "Add a source node to the list.", null );
+            _addButton.addActionListener( new ActionListener() {
+                public void actionPerformed( ActionEvent e ) {
+                    addItem();
+                }
+            } );
+            this.add( _addButton );
+        }
+        
+        public void showAtPosition( int x, int y ) {
+            setBounds( x, y, windowConfiguration().antennaDefaultsDisplayW,
+                windowConfiguration().antennaDefaultsDisplayH );
+            setVisible( true );
+        }
+        
+        @Override
+        public void setBounds( int x, int y, int w, int h ) {
+            newSize();
+            super.setBounds( x, y, w, h );
+        }
+
+        public void newSize() {
+            if ( _scrollPane != null ) {
+                int w = this.getContentPane().getSize().width;
+                int h = this.getContentPane().getSize().height;
+                _scrollPane.setBounds( 0, 50, w, h - 50 );
+                if ( _panels != null ) {
+                    int width = w - 4;
+                    if ( 25 * _panels.size() > h - 50 )
+                        width = w - 19;
+                    _viewPane.setPreferredSize( new Dimension( width, 25 * _panels.size() ) );
+                    _viewPane.setBounds( 0, 0, width, 25 * _panels.size() );
+                    int i = 0;
+                    for ( Iterator<PanelItem> iter = _panels.iterator(); iter.hasNext(); ) {
+                        PanelItem panel = iter.next();
+                        panel.setBounds( 0, 25 * i, width, 25 );
+                        panel.antennaName.setBounds( 25, 0, 100, 25 );
+                        panel.format.setBounds( 125, 0, 150, 25 );
+                        panel.source.setBounds( 275, 0, 100, 25 );
+                        panel.dataPath.setBounds( 375, 0, width - 375, 25 );
+                        ++i;
+                    }
+                    _viewPane.updateUI();
+                }
+            }
+        }
+        
+        public PanelItem addItem() {
+            PanelItem newPanel = new PanelItem();
+            newPanel.antennaName = new FormattedTextField();
+            newPanel.add( newPanel.antennaName );
+            newPanel.format = new JComboBox();
+            newPanel.format.setEditable( false );
+            for ( Iterator<String> iter = _moduleFormatList.iterator(); iter.hasNext(); )
+                newPanel.format.addItem( iter.next() );
+            newPanel.add( newPanel.format );
+            newPanel.source = new JComboBox();
+            newPanel.source.setEditable( false );
+            newPanel.source.addItem( "Files" );
+            newPanel.source.addItem( "Module" );
+            newPanel.source.addItem( "Network" );
+            newPanel.add( newPanel.source );
+            newPanel.dataPath = new TabCompletedTextField( _settings );
+            newPanel.dataPath.setText( "" );
+            newPanel.add( newPanel.dataPath );
+            newPanel.setLayout( null );
+            if ( _panels == null )
+                _panels = new ArrayList<PanelItem>();
+            newPanel.setBounds( 0, 25 * _panels.size(), 825, 25 );
+            _viewPane.add( newPanel );
+            _panels.add( newPanel );
+            newPanel.delete = new ZButton( "\u2613" );
+            newPanel.delete.setFont( new Font( "Dialog", Font.BOLD, 16 ) );
+            newPanel.delete.setMargin( new Insets( 0, 0, 2, 0 ) );
+            newPanel.delete.setToolTipText( "Delete this item." );
+            final PanelItem deletePanel = newPanel;
+            newPanel.delete.addActionListener( new ActionListener() {
+                public void actionPerformed( ActionEvent e ) {
+                    _panels.remove( deletePanel );
+                    _viewPane.remove( deletePanel );
+                    newSize();
+                    _scrollPane.updateUI();
+                }
+            } );
+            newPanel.delete.setBounds( 0, 0, 25, 25 );
+            newPanel.add( newPanel.delete );
+            newSize();
+            _scrollPane.updateUI();
+            return newPanel;
+        }
+        
+        public void addNode( String node ) {
+            PanelItem newPanel = addItem();
+            _scrollPane.updateUI();
+        }
+        
+        public class PanelItem extends JPanel {
+            public ZButton delete;
+            public FormattedTextField antennaName;
+            public JComboBox format;
+            public JComboBox source;
+            public TabCompletedTextField dataPath;
+            public String antennaName() {
+                if ( antennaName.getText() != null )
+                    return antennaName.getText();
+                else
+                    return "";
+            }
+            public String format() {
+                if ( format.getSelectedItem() != null )
+                    return (String)format.getSelectedItem();
+                else
+                    return "";
+            }
+            public String source() {
+                if ( source.getSelectedItem() != null )
+                    return (String)source.getSelectedItem();
+                else
+                    return "";
+            }
+            public String dataPath() {
+                if ( dataPath.getText() != null )
+                    return dataPath.getText();
+                else
+                    return "";
+            }
+            public void antennaName( String newName ) {
+                antennaName.setText( newName );
+            }
+            public void source( String newSource ) {
+                source.setSelectedItem( newSource );
+            }
+            public void format( String newFormat ) {
+                format.setSelectedItem( newFormat );
+            }
+            public void dataPath( String newPath ) {
+                dataPath.setText( newPath );
+            }
+        }
+        
+        /*
+         * Get the given panel item by name.
+         */
+        public PanelItem panelItem( String antennaName ) {
+            if ( _panels != null ) {
+                for ( Iterator<PanelItem> iter = _panels.iterator(); iter.hasNext(); ) {
+                    PanelItem thisPanel = iter.next();
+                    String thisText = (String)thisPanel.antennaName.getText();
+                    if ( thisText != null && thisText.length() > 0 ) {
+                        if ( thisText.contentEquals( antennaName ) )
+                            return thisPanel;
+                    }
+                }
+//                    String thisText = (String)thisPanel.comboBox.getSelectedItem();
+//                    if ( thisText != null && thisText.length() > 0 ) {
+//                        if ( thisText.contentEquals( nodeName ) )
+//                            return true;
+//                    }
+            }
+            return null;
+        }
+        
+        public ArrayList<PanelItem> panels() { return _panels; }
+        
+        protected AntennaDefaultsDisplay _this;
+        protected JScrollPane _scrollPane;
+        protected JPanel _viewPane;
+        protected ZButton _addButton;
+        protected SystemSettings _settings;
+        protected ArrayList<PanelItem> _panels;
+
+    }
+    
+    public String antennaDefaultFormat( String name ) {
+        AntennaDefaultsDisplay.PanelItem panel = _antennaDefaultsDisplay.panelItem( name );
+        if ( panel == null )
+            return null;
+        else
+            return panel.format();
+    }
+    
+    public String antennaDefaultSource( String name ) {
+        AntennaDefaultsDisplay.PanelItem panel = _antennaDefaultsDisplay.panelItem( name );
+        if ( panel == null )
+            return null;
+        else
+            return panel.source();
+    }
+    
+    public String antennaDefaultDataPath( String name ) {
+        AntennaDefaultsDisplay.PanelItem panel = _antennaDefaultsDisplay.panelItem( name );
+        if ( panel == null )
+            return null;
+        else
+            return panel.dataPath();
+    }
+    
+    protected AntennaDefaultsDisplay _antennaDefaultsDisplay;
     
     protected ZCheckBox _useHeadNodeCheck;
     protected ZCheckBox _uniqueDataSource;

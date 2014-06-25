@@ -506,6 +506,8 @@ public class JobEditorMonitor extends JFrame {
             _showMonitorButton.setEnabled( true );
         else
             _showMonitorButton.setEnabled( false );
+        _runMonitor.setSelected( false );
+        _runMonitor.setEnabled( false );
         
         //  The Status Panel shows the current state of the job.
         _statusPanel = new IndexedPanel( "" );
@@ -1730,148 +1732,164 @@ public class JobEditorMonitor extends JFrame {
             //  Open a new server socket and await a connection.  The connection
             //  will timeout after a given number of seconds (nominally 10).
             try {
-                ChannelServerSocket ssock = new ChannelServerSocket( _port, _settings );
-                ssock.setSoTimeout( 10000 );  //  timeout is in millisec
-                try {
-                    ssock.accept();
-//                    acceptCallback();
-                    //  Loop collecting diagnostic packets from the guiServer.  These
-                    //  are identified by an initial integer, and then are followed
-                    //  by a data length, then data.
-                    boolean connected = true;
-                    while ( connected ) {
-                        //  Read the packet type as an integer.  The packet types
-                        //  are defined above (within this class).
-                        int packetType = ssock.readInt();
-                        //  Read the size of the incoming data (bytes).
-                        int packetSize = ssock.readInt();
-                        //  Read the data (as raw bytes)
-                        byte [] data = null;
-                        if ( packetSize > 0 ) {
-                            data = new byte[packetSize];
-                            ssock.readFully( data, 0, packetSize );
-                        }
-                        //  Interpret the packet type.
-                        if ( packetType == RUN_DIFX_JOB_FAILED ) {
-                            _messageDisplayPanel.error( 0, "job monitor", "Job failed to complete." );
-                            statusError( "job failed to complete" );
-                            statusPanelColor( _statusPanelBackground.darker()  );
-                            connected = false;
-                            setState( "Failed", Color.RED );
-                            _jobNode.lockState( true );
-                        }
-                        else if ( packetType == RUN_DIFX_JOB_TERMINATED ) {
-                            _messageDisplayPanel.warning( 0, "job monitor", "Job terminated by user." );
-                            statusWarning( "job terminated by user" );
-                            statusPanelColor( _statusPanelBackground.darker() );
-                            connected = false;
-                            setState( "Terminated", Color.RED );
-                            _jobNode.lockState( true );
-                        }
-                        else if ( packetType == RUN_DIFX_JOB_ENDED_GRACEFULLY ) {
-                            _messageDisplayPanel.warning( 0, "job monitor", "Job finished gracefully." );
-                            statusInfo( "job completed" );
-                            connected = false;
-                            statusPanelColor( _statusPanelBackground.darker() );
-                        }
-                        else if ( packetType == RUN_DIFX_JOB_STARTED ) {
-                            _doneWithErrors = false;
-                            _messageDisplayPanel.message( 0, "job monitor", "Job started by guiServer." );
-                            statusInfo( "job started" );
-                        }
-                        else if ( packetType == RUN_DIFX_JOB_ENDED_WITH_ERRORS ) {
-                            _doneWithErrors = true;
-                            connected = false;
-                        }
-                        else if ( packetType == RUN_DIFX_PARAMETER_CHECK_IN_PROGRESS ) {
-                            _messageDisplayPanel.message( 0, "job monitor", "Checking parameters." );
-                            statusInfo( "checking parameters..." );
-                        }
-                        else if ( packetType == RUN_DIFX_PARAMETER_CHECK_SUCCESS ) {
-                            _messageDisplayPanel.message( 0, "job monitor", "Parameter check successful." );
-                        }
-                        else if ( packetType == RUN_DIFX_FAILURE_NO_HEADNODE ) {
-                            _messageDisplayPanel.error( 0, "job monitor", "No headnone was specified." );
-                        }
-                        else if ( packetType == RUN_DIFX_FAILURE_NO_DATASOURCES ) {
-                            _messageDisplayPanel.error( 0, "job monitor", "No valid data sources were specified." );
-                        }
-                        else if ( packetType == RUN_DIFX_FAILURE_NO_PROCESSORS ) {
-                            _messageDisplayPanel.error( 0, "job monitor", "No valid processors were specified." );
-                        }
-                        else if ( packetType == RUN_DIFX_FAILURE_NO_INPUTFILE_SPECIFIED ) {
-                            _messageDisplayPanel.error( 0, "job monitor", "No input file was specified." );
-                        }
-                        else if ( packetType == RUN_DIFX_FAILURE_INPUTFILE_NOT_FOUND ) {
-                            _messageDisplayPanel.error( 0, "job monitor", "Input file " + _jobNode.inputFile() + " was not found on DiFX host." );
-                        }
-                        else if ( packetType == RUN_DIFX_FAILURE_INPUTFILE_NAME_TOO_LONG ) {
-                            _messageDisplayPanel.message( 0, "job monitor", "Input file name \"" + _jobNode.inputFile() + "\" is too long for DiFX." );
-                        }
-                        else if ( packetType == RUN_DIFX_FAILURE_OUTPUT_EXISTS ) {
-                            _messageDisplayPanel.error( 0, "job monitor", "Output exists for this job on DiFX host - use \"force\" to replace." );
-                        }
-                        else if ( packetType == RUN_DIFX_DELETING_PREVIOUS_OUTPUT ) {
-                            statusInfo( "force output - deleting existing output files" );
-                            _messageDisplayPanel.warning( 0, "job monitor", "force output - deleting existing output files" );
-                        }
-                        else if ( packetType == RUN_DIFX_STARTING_DIFX ) {
-                            statusInfo( "DiFX running!" );
-                            _messageDisplayPanel.warning( 0, "job monitor", "DiFX started!" );
-                            statusPanelColor( Color.GREEN );                            //  turn the frame green!!!!
-                            setState( "Starting", Color.YELLOW );
-                        }
-                        else if ( packetType == RUN_DIFX_DIFX_MESSAGE ) {
-                            if ( data != null )
-                                _messageDisplayPanel.message( 0, "job monitor", new String( data ) );
-                            else
-                                _messageDisplayPanel.message( 0, "job monitor", "" );
-                        }
-                        else if ( packetType == RUN_DIFX_DIFX_WARNING ) {
-                            if ( data != null )
-                                _messageDisplayPanel.warning( 0, "job monitor", new String( data ) );
-                            else
-                                _messageDisplayPanel.warning( 0, "job monitor", "" );
-                        }
-                        else if ( packetType == RUN_DIFX_DIFX_ERROR ) {
-                            if ( data != null )
-                                _messageDisplayPanel.error( 0, "job monitor", new String( data ) );
-                            else
-                                _messageDisplayPanel.error( 0, "job monitor", "" );
-                            statusPanelColor( Color.ORANGE );
-                            setState( "DiFX running with errors", Color.ORANGE );
-                        }
-                        else if ( packetType == RUN_DIFX_DIFX_COMPLETE ) {
-                            statusInfo( "DiFX compete!" );
-                            _messageDisplayPanel.warning( 0, "job monitor", "DiFX complete!" );
-                            statusPanelColor( _statusPanelBackground.darker() );
-                        }
-                        else if ( packetType == RUN_DIFX_DIFX_MONITOR_CONNECTION_ACTIVE ) {
-                            if ( _liveMonitorWindow == null )
-                                _liveMonitorWindow = new LiveMonitorWindow( MouseInfo.getPointerInfo().getLocation().x, 
-                                    MouseInfo.getPointerInfo().getLocation().y, _settings, _inputFileName.getText() );
-                            _liveMonitorWindow.connectionInfo( "CONNECTED", "connected" );
-                        }
-                        else if ( packetType == RUN_DIFX_DIFX_MONITOR_CONNECTION_BROKEN ) {
-                            if ( _liveMonitorWindow == null )
-                                _liveMonitorWindow = new LiveMonitorWindow( MouseInfo.getPointerInfo().getLocation().x, 
-                                    MouseInfo.getPointerInfo().getLocation().y, _settings, _inputFileName.getText() );
-                            _liveMonitorWindow.connectionInfo( "NOT CONNECTED", "connection broken" );
-                        }
-                        else if ( packetType == RUN_DIFX_DIFX_MONITOR_CONNECTION_FAILED ) {
-                            if ( _liveMonitorWindow == null )
-                                _liveMonitorWindow = new LiveMonitorWindow( MouseInfo.getPointerInfo().getLocation().x, 
-                                    MouseInfo.getPointerInfo().getLocation().y, _settings, _inputFileName.getText() );
-                            _liveMonitorWindow.connectionInfo( "NOT CONNECTED", "connection failed" );
-                        }
-                        else {
-                            _messageDisplayPanel.warning( 0, "GUI", "Ignoring unrecongized job monitor packet type (" + packetType + ")." );
-                        }
+                //  Because this is an important socket, and because it sometimes fails,
+                //  repeatedly try to open it on failure.  Give up after 10.
+                boolean socketGood = false;
+                int socketTryCount = 0;
+                ChannelServerSocket ssock = null;
+                while ( !socketGood && socketTryCount < 10 ) {
+                    try {
+                        ssock = new ChannelServerSocket( _port, _settings );
+                        socketGood = true;
                     }
-                } catch ( SocketTimeoutException e ) {
-//                    _fileSize = -10;
+                    catch ( java.net.BindException e ) { 
+                        ++socketTryCount;
+                        _settings.releaseTransferPort( _port );
+                    }
                 }
-                ssock.close();
+                if ( socketGood ) {
+                    ssock.setSoTimeout( 10000 );  //  timeout is in millisec
+                    try {
+                        ssock.accept();
+    //                    acceptCallback();
+                        //  Loop collecting diagnostic packets from the guiServer.  These
+                        //  are identified by an initial integer, and then are followed
+                        //  by a data length, then data.
+                        boolean connected = true;
+                        while ( connected ) {
+                            //  Read the packet type as an integer.  The packet types
+                            //  are defined above (within this class).
+                            int packetType = ssock.readInt();
+                            //  Read the size of the incoming data (bytes).
+                            int packetSize = ssock.readInt();
+                            //  Read the data (as raw bytes)
+                            byte [] data = null;
+                            if ( packetSize > 0 ) {
+                                data = new byte[packetSize];
+                                ssock.readFully( data, 0, packetSize );
+                            }
+                            //  Interpret the packet type.
+                            if ( packetType == RUN_DIFX_JOB_FAILED ) {
+                                _messageDisplayPanel.error( 0, "job monitor", "Job failed to complete." );
+                                statusError( "job failed to complete" );
+                                statusPanelColor( _statusPanelBackground.darker()  );
+                                connected = false;
+                                setState( "Failed", Color.RED );
+                                _jobNode.lockState( true );
+                            }
+                            else if ( packetType == RUN_DIFX_JOB_TERMINATED ) {
+                                _messageDisplayPanel.warning( 0, "job monitor", "Job terminated by user." );
+                                statusWarning( "job terminated by user" );
+                                statusPanelColor( _statusPanelBackground.darker() );
+                                connected = false;
+                                setState( "Terminated", Color.RED );
+                                _jobNode.lockState( true );
+                            }
+                            else if ( packetType == RUN_DIFX_JOB_ENDED_GRACEFULLY ) {
+                                _messageDisplayPanel.warning( 0, "job monitor", "Job finished gracefully." );
+                                statusInfo( "job completed" );
+                                connected = false;
+                                statusPanelColor( _statusPanelBackground.darker() );
+                            }
+                            else if ( packetType == RUN_DIFX_JOB_STARTED ) {
+                                _doneWithErrors = false;
+                                _messageDisplayPanel.message( 0, "job monitor", "Job started by guiServer." );
+                                statusInfo( "job started" );
+                            }
+                            else if ( packetType == RUN_DIFX_JOB_ENDED_WITH_ERRORS ) {
+                                _doneWithErrors = true;
+                                connected = false;
+                            }
+                            else if ( packetType == RUN_DIFX_PARAMETER_CHECK_IN_PROGRESS ) {
+                                _messageDisplayPanel.message( 0, "job monitor", "Checking parameters." );
+                                statusInfo( "checking parameters..." );
+                            }
+                            else if ( packetType == RUN_DIFX_PARAMETER_CHECK_SUCCESS ) {
+                                _messageDisplayPanel.message( 0, "job monitor", "Parameter check successful." );
+                            }
+                            else if ( packetType == RUN_DIFX_FAILURE_NO_HEADNODE ) {
+                                _messageDisplayPanel.error( 0, "job monitor", "No headnone was specified." );
+                            }
+                            else if ( packetType == RUN_DIFX_FAILURE_NO_DATASOURCES ) {
+                                _messageDisplayPanel.error( 0, "job monitor", "No valid data sources were specified." );
+                            }
+                            else if ( packetType == RUN_DIFX_FAILURE_NO_PROCESSORS ) {
+                                _messageDisplayPanel.error( 0, "job monitor", "No valid processors were specified." );
+                            }
+                            else if ( packetType == RUN_DIFX_FAILURE_NO_INPUTFILE_SPECIFIED ) {
+                                _messageDisplayPanel.error( 0, "job monitor", "No input file was specified." );
+                            }
+                            else if ( packetType == RUN_DIFX_FAILURE_INPUTFILE_NOT_FOUND ) {
+                                _messageDisplayPanel.error( 0, "job monitor", "Input file " + _jobNode.inputFile() + " was not found on DiFX host." );
+                            }
+                            else if ( packetType == RUN_DIFX_FAILURE_INPUTFILE_NAME_TOO_LONG ) {
+                                _messageDisplayPanel.message( 0, "job monitor", "Input file name \"" + _jobNode.inputFile() + "\" is too long for DiFX." );
+                            }
+                            else if ( packetType == RUN_DIFX_FAILURE_OUTPUT_EXISTS ) {
+                                _messageDisplayPanel.error( 0, "job monitor", "Output exists for this job on DiFX host - use \"force\" to replace." );
+                            }
+                            else if ( packetType == RUN_DIFX_DELETING_PREVIOUS_OUTPUT ) {
+                                statusInfo( "force output - deleting existing output files" );
+                                _messageDisplayPanel.warning( 0, "job monitor", "force output - deleting existing output files" );
+                            }
+                            else if ( packetType == RUN_DIFX_STARTING_DIFX ) {
+                                statusInfo( "DiFX running!" );
+                                _messageDisplayPanel.warning( 0, "job monitor", "DiFX started!" );
+                                statusPanelColor( Color.GREEN );                            //  turn the frame green!!!!
+                                setState( "Starting", Color.YELLOW );
+                            }
+                            else if ( packetType == RUN_DIFX_DIFX_MESSAGE ) {
+                                if ( data != null )
+                                    _messageDisplayPanel.message( 0, "job monitor", new String( data ) );
+                                else
+                                    _messageDisplayPanel.message( 0, "job monitor", "" );
+                            }
+                            else if ( packetType == RUN_DIFX_DIFX_WARNING ) {
+                                if ( data != null )
+                                    _messageDisplayPanel.warning( 0, "job monitor", new String( data ) );
+                                else
+                                    _messageDisplayPanel.warning( 0, "job monitor", "" );
+                            }
+                            else if ( packetType == RUN_DIFX_DIFX_ERROR ) {
+                                if ( data != null )
+                                    _messageDisplayPanel.error( 0, "job monitor", new String( data ) );
+                                else
+                                    _messageDisplayPanel.error( 0, "job monitor", "" );
+                                statusPanelColor( Color.ORANGE );
+                                setState( "DiFX running with errors", Color.ORANGE );
+                            }
+                            else if ( packetType == RUN_DIFX_DIFX_COMPLETE ) {
+                                statusInfo( "DiFX compete!" );
+                                _messageDisplayPanel.warning( 0, "job monitor", "DiFX complete!" );
+                                statusPanelColor( _statusPanelBackground.darker() );
+                            }
+                            else if ( packetType == RUN_DIFX_DIFX_MONITOR_CONNECTION_ACTIVE ) {
+                                if ( _liveMonitorWindow == null )
+                                    _liveMonitorWindow = new LiveMonitorWindow( MouseInfo.getPointerInfo().getLocation().x, 
+                                        MouseInfo.getPointerInfo().getLocation().y, _settings, _inputFileName.getText() );
+                                _liveMonitorWindow.connectionInfo( "CONNECTED", "connected" );
+                            }
+                            else if ( packetType == RUN_DIFX_DIFX_MONITOR_CONNECTION_BROKEN ) {
+                                if ( _liveMonitorWindow == null )
+                                    _liveMonitorWindow = new LiveMonitorWindow( MouseInfo.getPointerInfo().getLocation().x, 
+                                        MouseInfo.getPointerInfo().getLocation().y, _settings, _inputFileName.getText() );
+                                _liveMonitorWindow.connectionInfo( "NOT CONNECTED", "connection broken" );
+                            }
+                            else if ( packetType == RUN_DIFX_DIFX_MONITOR_CONNECTION_FAILED ) {
+                                if ( _liveMonitorWindow == null )
+                                    _liveMonitorWindow = new LiveMonitorWindow( MouseInfo.getPointerInfo().getLocation().x, 
+                                        MouseInfo.getPointerInfo().getLocation().y, _settings, _inputFileName.getText() );
+                                _liveMonitorWindow.connectionInfo( "NOT CONNECTED", "connection failed" );
+                            }
+                            else {
+                                _messageDisplayPanel.warning( 0, "GUI", "Ignoring unrecongized job monitor packet type (" + packetType + ")." );
+                            }
+                        }
+                    } catch ( SocketTimeoutException e ) {
+    //                    _fileSize = -10;
+                    }
+                    ssock.close();
+                }
             } catch ( java.io.IOException e ) {
                 e.printStackTrace();
 //                _error = "IOException : " + e.toString();

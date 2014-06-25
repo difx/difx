@@ -310,6 +310,40 @@ public class StationPanel extends IndexedPanel {
         _dataSourcePanel.add( _eVLBIPort );
         setEnabledItems( null );
         
+        //  Set defaults for the data source if those are available in the setting menu.
+        String antennaFormat = _settings.antennaDefaultFormat( station.name );
+        if ( antennaFormat != null )
+            _dataFormat.setSelectedItem( antennaFormat );
+        String antennaSource = _settings.antennaDefaultSource( station.name );
+        if ( antennaSource != null ) {
+            _vsnCheck.setSelected( false );
+            _fileCheck.setSelected( false );
+            _eVLBICheck.setSelected( false );
+            if ( antennaSource.contentEquals( "Files" ) ) {
+                _fileCheck.setSelected( true );
+                setEnabledItems( _fileCheck );
+                String antennaDataPath = _settings.antennaDefaultDataPath( station.name );
+                if ( antennaDataPath != null ) {
+                    _fileFilter.setText( antennaDataPath );
+                    fileFilterCallback();
+                }
+            }
+            else if ( antennaSource.contentEquals( "Network" ) ) {
+                _eVLBICheck.setSelected( true );
+                setEnabledItems( _eVLBICheck );
+            }
+            else if ( antennaSource.contentEquals( "Module" ) ) {
+                _vsnCheck.setSelected( true );
+                setEnabledItems( _eVLBICheck );
+                String antennaDataPath = _settings.antennaDefaultDataPath( station.name );
+                if ( antennaDataPath != null )
+                    _vsnList.setSelectedItem( antennaDataPath );
+            }
+            else
+                _vsnCheck.setSelected( true );
+        }
+
+        
         //  The antenna panel contains information about the antenna - mount, offsets,
         //  size, etc.  This is filled in by a function call.
         _antennaPanel = new IndexedPanel( "Antenna: " + station.antenna );
