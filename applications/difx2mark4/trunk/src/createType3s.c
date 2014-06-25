@@ -51,13 +51,18 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
         mchars,
         norm_corr,
         isb,
-        record_chan,
+        record_chan = 0,
         once = FALSE,
         oncef = FALSE,
         refDay,
         configId,
         nclock,
-        sourceId;
+        sourceId,
+        ifreq,
+        version = 0,                // version# of pcal file format (0 = legacy)
+        dstr,                       // difx datastream index
+        lowerb,                     // lower bound for b loop
+        upperb;                     // upper bound for b loop
 
 
 
@@ -89,8 +94,12 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
          ant[16],
          buff[5],
          *line,
+         *pc,
          ds_pols[64],
-         sideband_i;
+         sideband_i,
+         polar;
+
+    DifxDatastream *pdds;
 
     FILE *fin;
     FILE *fout;
@@ -318,11 +327,28 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                     if (line == NULL)   // EOF?
                         break;
                     else if (*line == '#')
+                        {
+                        pc = strstr (line, "File version =");
+                        if (pc)         // get version, if present
+                            sscanf (pc + 14, "%d", &version);
                         continue;       // skip over comment lines
+                        }
 
-                    sscanf (line, "%s%lf%lf%lf%d%d%d%d%d%n", ant, &t, &tint, &cable_delay, 
+                    if (version == 0)   // legacy is version 0
+                        {
+                        sscanf (line, "%s%lf%lf%lf%d%d%d%d%d%n", ant, &t, &tint, &cable_delay, 
                                      &npol, &nchan, &ntones, &nstates, &nrc, &nchars);
-                    mjd = t - refDay + (int)(D->mjdStart);
+                        mjd = t - refDay + (int)(D->mjdStart);
+                        }
+                    else                // by elimination, version must be 1
+                        {
+                        sscanf (line, "%s%lf%lf%d%d%d%n", ant, &mjd, &tint,
+                                     &dstr, &nchan, &ntones, &nchars);
+                        pdds = D->datastream + dstr;
+                        npol = 1;       // for compatible np-loop control
+                        t = mjd + refDay - (int)(D->mjdStart);
+                        }
+
 
                     if (mjd < D->scan[scanId].mjdStart)
                                         // skip to next line
@@ -368,9 +394,9 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                     t309.acc_period =  D->config[configId].tInt;
                                         // debug print
                     if (opts->verbose > 2)
-                        printf ("      pcal record ant %s t %lf tint %lf cable_delay %lf"
+                        printf ("      pcal record ant %s t %lf tint %lf"
                               "\n      rot %lf acc_period %lf\n",
-                                 ant, t, tint, cable_delay, t309.rot, t309.acc_period);
+                                 ant, t, tint, t309.rot, t309.acc_period);
                                         // initialize list of next available tone location
                     for (i=0; i<NPC_TONES; i++)
                         xtones[i] = 0;
@@ -393,20 +419,46 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                             for (nt=0; nt<ntones; nt++)
                                 {
                                         // identify channel and tone
-                                sscanf (line + nchars, "%d%lf%lf%lf%n", 
-                                        &record_chan, &freq, &cquad, &squad, &mchars);
+                                if (version == 0)
+                                    sscanf (line + nchars, "%d%lf%lf%lf%n", 
+                                            &record_chan, &freq, &cquad, &squad, &mchars);
+                                else    // for now, version 1 is only alternative
+                                    {
+                                    sscanf (line + nchars, "%d %c %lf%lf%n", 
+                                            &ifreq, &polar, &cquad, &squad, &mchars);
+                                    freq = ifreq;
+                                    }
                                         // skip over channels which weren't recorded
                                 if (record_chan < 0)
                                     continue;
                                         // swap sign of imaginary part
                                 squad *= -1;
                                 nchars += mchars;
-                                for (b=0; b<D->nFreq*npol; b++)
+                                        // b is channel index into the t309 record array
+                                if (version == 0)
                                     {
-                                    jf = b / npol;
+                                    lowerb = 0;
+                                    upperb = D->nFreq*npol;
+                                    }
+                                else    // version 1 doesn't require actual search
+                                    {
+                                    lowerb = nc;
+                                    upperb = lowerb + 1;
+                                    }
+                                for (b=lowerb; b<upperb; b++)
+                                    {
+                                    if (version == 0)
+                                        {
+                                        jf = b / npol;
                                         // skip over non-matching polarizations
-                                    if (np != b % npol)
-                                        continue;
+                                        if (np != b % npol)
+                                            continue;
+                                        }
+                                    else // handle version 1
+                                        {
+                                        record_chan = nc;
+                                        jf = *(pdds->recFreqId + *(pdds->recBandFreqId + nc));
+                                        }
 
                                     isb = (D->freq[jf].sideband == 'U') ? 1 : -1;
                                     f_rel = isb * (freq - D->freq[jf].freq);
@@ -442,7 +494,7 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                                             if (fabs (f_rel - xtones[i]) < 1e-9)
                                                 break;
                                             else if (xtones[i] == 0.0)
-                                                {
+                                                {               // not found - allocate a new slot
                                                 xtones[i] = f_rel;
                                                 t309.ntones++;
                                                 break;
