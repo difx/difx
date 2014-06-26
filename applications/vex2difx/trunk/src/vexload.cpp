@@ -1484,7 +1484,7 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 					}
 					else
 					{
-						setup.channels.back().selectTones(vif->phaseCalIntervalMHz, ToneSelectionVex, 0);
+						setup.channels.back().selectTones(vif->phaseCalIntervalMHz, ToneSelectionSmart, bandwidth/1000000.0/8.0);
 					}
 				}
 				else
