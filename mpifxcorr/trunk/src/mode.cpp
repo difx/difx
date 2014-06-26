@@ -1102,8 +1102,7 @@ float Mode::process(int index, int subloopindex)  //frac sample error is in micr
 		  status = vectorFlip_cf32(fftd, fftoutputs[j][subloopindex], recordedbandchannels/2+1);
 		  status = vectorFlip_cf32(&fftd[recordedbandchannels/2]+1, &fftoutputs[j][subloopindex][recordedbandchannels/2]+1, recordedbandchannels/2-1);
 		} else {
-              status = vectorCopy_cf32(&(fftd[1]), fftoutputs[j][subloopindex], recordedbandchannels - 1);
-              fftoutputs[j][subloopindex][recordedbandchannels - 1] = fftd[0];
+              status = vectorCopy_cf32(fftd, fftoutputs[j][subloopindex], recordedbandchannels);
               }
 	      } else {
 		status = vectorCopy_cf32(&(fftd[recordedbandchannels]), fftoutputs[j][subloopindex], recordedbandchannels);
