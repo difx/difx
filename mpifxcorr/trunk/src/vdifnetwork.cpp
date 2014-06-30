@@ -46,13 +46,13 @@ VDIFNetworkDataStream::VDIFNetworkDataStream(const Configuration * conf, int snu
 
 	readbufferslots = 8;
 	readbufferslotsize = (bufferfactor/numsegments)*conf->getMaxDataBytes(streamnum)*21LL/10LL;
-	readbufferslotsize -= (readbufferslotsize % 8); // make it a multiple of 8 bytes
+	readbufferslotsize -= (readbufferslotsize % config->getFrameBytes(0, streamnum)); // make it a multiple of frame size
 	readbuffersize = readbufferslots * readbufferslotsize;
 	// Note: the read buffer is allocated in vdiffile.cpp by VDIFDataStream::initialse()
 	// the above values override defaults for file-based VDIF
 
-cinfo << startl << "VDIFNetworkDataStream::VDIFNetworkDataStream: Set readbuffersize to " << readbuffersize << endl;
-cinfo << startl << "mdb = " << conf->getMaxDataBytes(streamnum) << "  rbslots=" << readbufferslots << "  readbufferslotsize=" << readbufferslotsize << endl;
+	cinfo << startl << "VDIFNetworkDataStream::VDIFNetworkDataStream: Set readbuffersize to " << readbuffersize << endl;
+	cinfo << startl << "mdb = " << conf->getMaxDataBytes(streamnum) << "  rbslots=" << readbufferslots << "  readbufferslotsize=" << readbufferslotsize << endl;
 
 	// set up network reader thread
 	networkthreadstop = false;
@@ -113,7 +113,7 @@ void VDIFNetworkDataStream::networkthreadfunction()
 	stripbytes = tcpwindowsizebytes/1024;
 	packetsize = config->getFrameBytes(0, streamnum) + stripbytes;
 
-cinfo << startl << "stripbytes=" << stripbytes << " packetsize=" << packetsize << endl;
+	cinfo << startl << "stripbytes=" << stripbytes << " packetsize=" << packetsize << endl;
 
 	for(;;)
 	{
@@ -121,8 +121,6 @@ cinfo << startl << "stripbytes=" << stripbytes << " packetsize=" << packetsize <
 
 		/* First barrier is before the locking of slot number 1 */
 		pthread_barrier_wait(&networkthreadbarrier);
-
-cinfo << startl << "barrier 1" << endl;
 
 		readbufferwriteslot = 1;	// always 
 		pthread_mutex_lock(networkthreadmutex + (readbufferwriteslot % lockmod));
@@ -133,32 +131,24 @@ cinfo << startl << "barrier 1" << endl;
 		/* Second barrier is after the locking of slot number 1 */
 		pthread_barrier_wait(&networkthreadbarrier);
 
-cinfo << startl << "barrier 2" << endl;
 		while(!networkthreadstop)
 		{
 			int bytes;
 			bool endofscan = false;
 			int status;
 
-
-for(int ii = 0; ii < 1000; ++ii)
-{
 			// This is where the actual read from the Mark5 unit happens
-		cinfo << startl << "Reading... " << ii << endl;
 			if(ethernetdevice.empty())
 			{
 				// TCP or regular UDP
 				status = readnetwork(socketnumber, (char *)(readbuffer + readbufferwriteslot*readbufferslotsize), readbufferslotsize, &bytes);
-		cinfo << startl << "UDP bytes read = " << bytes << endl;
 			}
 			else
 			{
 				// Raw socket or trimmed UDP
 				status = readrawnetwork(socketnumber, (char *)(readbuffer + readbufferwriteslot*readbufferslotsize), readbufferslotsize, &bytes, packetsize, stripbytes);
-		cinfo << startl << "Raw bytes read = " << bytes << endl;
 			}
-			if(bytes > 0) break;
-}
+
 			if(bytes <= 0)
 			{
 				status = -1;
@@ -369,6 +359,17 @@ int VDIFNetworkDataStream::dataRead(int buffersegment)
 		cwarn << startl << "vdifmux returned " << muxReturn << endl;
 	}
 
+
+	{
+		static int C = 0;
+
+		if(C % 100 == 0)
+		{
+			cinfo << startl << "C=" << C << " VDIF multiplexing statistics: nValidFrame=" << vstats.nValidFrame << " nInvalidFrame=" << vstats.nInvalidFrame << " nDiscardedFrame=" << vstats.nDiscardedFrame << " nWrongThread=" << vstats.nWrongThread << " nSkippedByte=" << vstats.nSkippedByte << " nFillByte=" << vstats.nFillByte << " nDuplicateFrame=" << vstats.nDuplicateFrame << " bytesProcessed=" << vstats.bytesProcessed << " nGoodFrame=" << vstats.nGoodFrame << " nCall=" << vstats.nCall << endl;
+		}
+		++C;
+	}
+
 	bufferinfo[buffersegment].validbytes = vstats.destUsed;
 	bufferinfo[buffersegment].readto = true;
 	consumedbytes += vstats.srcUsed;
@@ -380,6 +381,7 @@ int VDIFNetworkDataStream::dataRead(int buffersegment)
 		// FIXME: below assumes each scan is < 86400 seconds long
 		bufferinfo[buffersegment].scan = readscan;
 		bufferinfo[buffersegment].scanseconds = (vstats.startFrameNumber / framespersecond)%86400 + intclockseconds - corrstartseconds - model->getScanStartSec(readscan, corrstartday, corrstartseconds);
+
 		if(bufferinfo[buffersegment].scanseconds > 86400/2)
 		{
 			bufferinfo[buffersegment].scanseconds -= 86400;

@@ -1171,7 +1171,6 @@ int DataStream::openrawstream(const char *device)
 	struct ifreq ifr;
 	struct sockaddr_ll sll;
 	struct timeval tv;
-		
 
         socketnumber = 0;
 
