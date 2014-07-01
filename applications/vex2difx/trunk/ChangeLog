@@ -7,6 +7,7 @@ Version 2.4.0
 * Fix smart tone selection for phase cal interval != 1 MHz
 * Make tone selection default the same whether an ANTENNA section exists or
   not (default is Smart)
+* EB and AR to use VLBA Cannonical Thread Ids for VDIF
 
 Version 2.3.0
 ~~~~~~~~~~~~~

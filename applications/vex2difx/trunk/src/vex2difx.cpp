@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2013 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2009-2014 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -71,7 +71,7 @@ using namespace std;
 
 const string version(VERSION);
 const string program("vex2difx");
-const string verdate("20130910");
+const string verdate("20140701");
 const string author("Walter Brisken/Adam Deller");
 
 const int defaultMaxNSBetweenACAvg = 2000000;	// 2ms, good default for use with transient detection
@@ -112,6 +112,8 @@ static bool usesCannonicalVDIFThreadIds(const char *antName)
 	   strcasecmp(antName, "PT") == 0 ||
 	   strcasecmp(antName, "SC") == 0 ||
 	   strcasecmp(antName, "GB") == 0 ||
+	   strcasecmp(antName, "EB") == 0 ||
+	   strcasecmp(antName, "AR") == 0 ||
 	   strcasecmp(antName, "Y") == 0)
 	{
 		return true;
