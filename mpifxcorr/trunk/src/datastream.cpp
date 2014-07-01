@@ -104,7 +104,14 @@ DataStream::~DataStream()
 void DataStream::initialise()
 {
   int status, currentconfigindex, currentoverflowbytes, overflowbytes = 0;
-  bufferbytes = databufferfactor*config->getMaxDataBytes(streamnum);
+  int maxbytes = config->getMaxDataBytes(streamnum);
+
+  if ((uint64_t)maxbytes*databufferfactor>4294967296LL) { // Will overflow 32bit int
+    cfatal << startl << "Datastream " << mpiid << " cannot allocate databuffer of " << (uint64_t)maxbytes*databufferfactor/1024/1024/1024 << " GB - 32bit overflow. Aborting!!!" << endl;
+    MPI_Abort(MPI_COMM_WORLD, 1);
+  }
+
+  bufferbytes = databufferfactor*maxbytes;
   readbytes = bufferbytes/numdatasegments;
   estimatedbytes = config->getEstimatedBytes();
   consumedbytes = 0;

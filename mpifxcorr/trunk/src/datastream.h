@@ -171,7 +171,8 @@ protected:
   
   const int databufferfactor, numdatasegments;
   int activescan, activesec, activens;
-  int streamnum, atsegment, readscan, readseconds, corrstartday, corrstartseconds, readbytes, bufferbytes, readnanoseconds, intclockseconds;
+  int streamnum, atsegment, readscan, readseconds, corrstartday, corrstartseconds, readbytes, readnanoseconds, intclockseconds;
+  uint32_t bufferbytes; // Maybe should be 64bit, but that then will fail on 32bit machines
   long long estimatedbytes;
   bool dataremaining;
   readinfo * bufferinfo;
