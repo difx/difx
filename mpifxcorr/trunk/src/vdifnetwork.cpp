@@ -61,7 +61,7 @@ VDIFNetworkDataStream::VDIFNetworkDataStream(const Configuration * conf, int snu
 
 	perr = pthread_barrier_init(&networkthreadbarrier, 0, 2);
 	networkthreadmutex = new pthread_mutex_t[readbufferslots];
-	for(unsigned int m = 0; m < readbufferslots; ++m)
+	for(int m = 0; m < readbufferslots; ++m)
 	{
 		if(perr == 0)
 		{
@@ -95,7 +95,7 @@ VDIFNetworkDataStream::~VDIFNetworkDataStream()
 
 	pthread_join(networkthread, 0);
 
-	for(unsigned int m = 0; m < readbufferslots; ++m)
+	for(int m = 0; m < readbufferslots; ++m)
 	{
 		pthread_mutex_destroy(networkthreadmutex + m);
 	}
@@ -133,7 +133,7 @@ void VDIFNetworkDataStream::networkthreadfunction()
 
 		while(!networkthreadstop)
 		{
-			int bytes;
+			unsigned int bytes;
 			bool endofscan = false;
 			int status;
 
@@ -149,7 +149,7 @@ void VDIFNetworkDataStream::networkthreadfunction()
 				status = readrawnetwork(socketnumber, (char *)(readbuffer + readbufferwriteslot*readbufferslotsize), readbufferslotsize, &bytes, packetsize, stripbytes);
 			}
 
-			if(bytes <= 0)
+			if(bytes == 0)
 			{
 				status = -1;
 		// Not sure what to do here

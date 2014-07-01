@@ -65,7 +65,8 @@ private:
 	const Mark5Scan *scanPointer;
 	long long readpointer, readend;
 	SSHANDLE xlrDevice;
-	unsigned int readbufferslots, readbufferslotsize;
+	int readbufferslots;
+	unsigned int readbufferslotsize;
 	pthread_t mark5thread;
 	pthread_mutex_t *mark5threadmutex;
 #ifdef __APPLE__
@@ -76,7 +77,7 @@ private:
 	bool mark5threadstop;
 	int lockstart, lockend, lastslot;
 	unsigned int endindex, muxindex;
-	unsigned int readbufferwriteslot;
+	int readbufferwriteslot;
 	double jobEndMJD;
 #endif
 

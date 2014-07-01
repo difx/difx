@@ -106,7 +106,7 @@ VDIFMark5DataStream::VDIFMark5DataStream(const Configuration * conf, int snum, i
 
 	perr = pthread_barrier_init(&mark5threadbarrier, 0, 2);
 	mark5threadmutex = new pthread_mutex_t[readbufferslots];
-	for(unsigned int m = 0; m < readbufferslots; ++m)
+	for(int m = 0; m < readbufferslots; ++m)
 	{
 		if(perr == 0)
 		{
@@ -146,7 +146,7 @@ VDIFMark5DataStream::~VDIFMark5DataStream()
 	unlockMark5();
 #endif
 
-	for(unsigned int m = 0; m < readbufferslots; ++m)
+	for(int m = 0; m < readbufferslots; ++m)
 	{
 		pthread_mutex_destroy(mark5threadmutex + m);
 	}
@@ -655,7 +655,8 @@ int VDIFMark5DataStream::dataRead(int buffersegment)
 
 	unsigned char *destination = reinterpret_cast<unsigned char *>(&databuffer[buffersegment*(bufferbytes/numdatasegments)]);
 	int n1, n2;	/* slot number range of data to be processed.  Either n1==n2 or n1+1==n2 */
-	unsigned int muxend, bytesvisible;
+	unsigned int muxend;
+	int bytesvisible;
 	int lockmod = readbufferslots - 1;
 	int muxReturn;
 	int muxBits;

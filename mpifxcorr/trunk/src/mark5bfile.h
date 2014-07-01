@@ -99,7 +99,7 @@ protected:
   int readbufferleftover;
   int minleftoverdata;
   struct mark5b_fix_statistics m5bstats;
-  long long startOutputFrameNumber;
+  int startOutputFrameNumber;   // This is the Mark5B frame number within 1 second.  It should always be in [0, 25600) or -1.
   int invalidtime;
 
   int nbits, framespersecond, framebytes;

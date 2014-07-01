@@ -1054,7 +1054,7 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref, int (*callback)(i
 			if( (mf = new_mark5_format_from_stream(new_mark5_stream_memory(bufferStart, bufferLength))) != 0)
 			{
 				/* Fix mjd. */
-#warning FIXME: this should be in mark5access
+#warning "FIXME: this should be in mark5access"
 				if(mf->format == MK5_FORMAT_VLBA || mf->format == MK5_FORMAT_MARK5B)
 				{
 					int n = (mjdref - mf->mjd + 500) / 1000;
@@ -1088,7 +1088,7 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref, int (*callback)(i
 					int iter;
 
 					/* Fix mjd. */
-#warning FIXME: this should be in mark5access
+#warning "FIXME: this should be in mark5access"
 					if(mf->format == MK5_FORMAT_VLBA || mf->format == MK5_FORMAT_MARK5B)
 					{
 						int n = (mjdref - mf->mjd + 500) / 1000;

@@ -40,7 +40,7 @@
 #include <mark5ipc.h>
 #endif
 
-#define XLR_WATERMARK_VALUE	0x0FF00FFFF0005555LL
+#define XLR_WATERMARK_VALUE	0x0FF00FFFF0005555ULL
 
 int dirCallback(int scan, int nscan, int status, void *data)
 {
@@ -185,20 +185,20 @@ XLR_RETURN_CODE openMark5(SSHANDLE *xlrDevice)
  * This can be indicative of certain problems.  Each time this condition is found a second read attempt
  * is made.
  */
-XLR_RETURN_CODE difxMark5Read(SSHANDLE xlrDevice, long long readpointer, unsigned char *dest, int bytes, int readDelayMicroseconds)
+XLR_RETURN_CODE difxMark5Read(SSHANDLE xlrDevice, unsigned long long readpointer, unsigned char *dest, unsigned int bytes, unsigned int readDelayMicroseconds)
 {
-	const int maxReadBytes = 20000000;	// The maximum number of bytes to read in one call of XLRRead()
+	const unsigned int maxReadBytes = 20000000;	// The maximum number of bytes to read in one call of XLRRead()
 
 	XLR_RETURN_CODE xlrRC = XLR_SUCCESS;
 	S_READDESC      xlrRD;
 
 	/* divide the read into multiple sections */
-	int nRead = bytes/(maxReadBytes-1) + 1;
-	int readSize = (bytes / nRead + 7) & 0xFFFFFFF8;
+	unsigned int nRead = bytes/(maxReadBytes-1) + 1;
+	unsigned int readSize = (bytes / nRead + 7) & 0xFFFFFFF8UL;
 
-	for(int offset = 0; offset < bytes; offset += readSize)
+	for(unsigned int offset = 0; offset < bytes; offset += readSize)
 	{
-		long long *watermarkSpot;
+		unsigned long long *watermarkSpot;
 
 		if(offset + readSize > bytes)
 		{
@@ -207,7 +207,7 @@ XLR_RETURN_CODE difxMark5Read(SSHANDLE xlrDevice, long long readpointer, unsigne
 
 		// set up the XLR info
 		xlrRD.AddrHi = (readpointer + offset) >> 32;
-		xlrRD.AddrLo = (readpointer + offset) & 0xFFFFFFF8; // enforce 8 byte boundary
+		xlrRD.AddrLo = (readpointer + offset) & 0xFFFFFFF8UL; // enforce 8 byte boundary
 		xlrRD.XferLength = readSize;
 		xlrRD.BufferAddr = reinterpret_cast<streamstordatatype *>(dest + offset);
 
@@ -218,15 +218,15 @@ XLR_RETURN_CODE difxMark5Read(SSHANDLE xlrDevice, long long readpointer, unsigne
 		}
 
 		// place watermark at end of buffer
-		watermarkSpot = reinterpret_cast<long long *>(dest + offset + readSize) - 1;
+		watermarkSpot = reinterpret_cast<unsigned long long *>(dest + offset + readSize) - 1;
 		*watermarkSpot = XLR_WATERMARK_VALUE;
 
 		WATCHDOG( xlrRC = XLRReadData(xlrDevice, xlrRD.BufferAddr, xlrRD.AddrHi, xlrRD.AddrLo, xlrRD.XferLength) );
 		
 		if(readSize > 1000)
 		{
-			int nZero = 0;
-			for(int i = 600; i < 1000; ++i)
+			unsigned int nZero = 0;
+			for(unsigned int i = 600; i < 1000; ++i)
 			{
 				if(dest[offset+i] == 0)
 				{
@@ -247,7 +247,7 @@ XLR_RETURN_CODE difxMark5Read(SSHANDLE xlrDevice, long long readpointer, unsigne
 
 			if(xlrRC == XLR_SUCCESS && nZero > 30)
 			{
-				static int nHighZeroRate = 0;
+				static unsigned int nHighZeroRate = 0;
 
 				++nHighZeroRate;
 				if( (nHighZeroRate & (nHighZeroRate-1)) == 0)
@@ -260,7 +260,7 @@ XLR_RETURN_CODE difxMark5Read(SSHANDLE xlrDevice, long long readpointer, unsigne
 			}
 			else if(*watermarkSpot == XLR_WATERMARK_VALUE)
 			{
-				static int nWatermarkFound = 0;
+				static unsigned int nWatermarkFound = 0;
 
 				++nWatermarkFound;
 				if( (nWatermarkFound & (nWatermarkFound-1)) == 0)

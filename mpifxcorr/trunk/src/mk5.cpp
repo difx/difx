@@ -709,7 +709,7 @@ void Mk5DataStream::networkToMemory(int buffersegment, uint64_t & framebytesrema
 *****/
 
 
-int Mk5DataStream::readnetwork(int sock, char* ptr, int bytestoread, int* nread)
+int Mk5DataStream::readnetwork(int sock, char* ptr, int bytestoread, unsigned int* nread)
 {
   ssize_t nr;
 
@@ -758,7 +758,7 @@ int Mk5DataStream::readnetwork(int sock, char* ptr, int bytestoread, int* nread)
     for (unsigned int i=0; i<segmentsize; i++) {
       packets_arrived[i] = false;
     }
-    *nread = -1;
+    *nread = 0;
     done = 0;
 
     // First copy left over bytes from last packet
@@ -802,6 +802,7 @@ int Mk5DataStream::readnetwork(int sock, char* ptr, int bytestoread, int* nread)
 	  next_segmentstart = packet_head;  // CHECK THIS IS CORRECT
 	}
 	done = 1;
+#warning "WFB: The next statement is fishy to me.  Shouldn't this be the actual number of bytes memcpyed"
 	*nread = bytestoread;
 
       } else {
@@ -875,6 +876,7 @@ int Mk5DataStream::readnetwork(int sock, char* ptr, int bytestoread, int* nread)
 	  } else
 	    next_segmentstart = sequence; 
 	  packet_head = sequence;
+#warning "WFB: This next statement is fishy to me: what if some leftover bytes were copied?  That count gets lost."
 	  *nread = bytestoread;
 	  packets_arrived[packet_index] = true;
 	  done = 1;

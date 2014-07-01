@@ -110,7 +110,7 @@ Mark5BMark5DataStream::Mark5BMark5DataStream(const Configuration * conf, int snu
 
 	perr = pthread_barrier_init(&mark5threadbarrier, 0, 2);
 	mark5threadmutex = new pthread_mutex_t[readbufferslots];
-	for(unsigned int m = 0; m < readbufferslots; ++m)
+	for(int m = 0; m < readbufferslots; ++m)
 	{
 		if(perr == 0)
 		{
@@ -150,7 +150,7 @@ Mark5BMark5DataStream::~Mark5BMark5DataStream()
 	unlockMark5();
 #endif
 
-	for(unsigned int m = 0; m < readbufferslots; ++m)
+	for(int m = 0; m < readbufferslots; ++m)
 	{
 		pthread_mutex_destroy(mark5threadmutex + m);
 	}
@@ -683,7 +683,8 @@ int Mark5BMark5DataStream::dataRead(int buffersegment)
 
 	unsigned char *destination = reinterpret_cast<unsigned char *>(&databuffer[buffersegment*(bufferbytes/numdatasegments)]);
 	int n1, n2;	/* slot number range of data to be processed.  Either n1==n2 or n1+1==n2 */
-	unsigned int fixend, bytesvisible;
+	unsigned int fixend;
+	int bytesvisible;
 	int lockmod = readbufferslots - 1;
 	int fixReturn;
 

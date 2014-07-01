@@ -1351,11 +1351,12 @@ void DataStream::closestream()
 uint64_t DataStream::openframe()
 {
   char *buf;
-  short fnamesize;
-  int ntoread, nread, status;
+  unsigned int ntoread, nread;
+  int status;
   uint64_t framesize;
+  uint16_t fnamesize;
 
-  ntoread = sizeof(long long) + sizeof(short);
+  ntoread = sizeof(uint64_t) + sizeof(uint16_t);
 
   buf = (char*)malloc(LBA_HEADER_LENGTH); // Minimum size of file header
 
@@ -1377,7 +1378,7 @@ uint64_t DataStream::openframe()
 	
   // Read totalnumber of expected bytes and filename size
   memcpy(&framesize,  buf, sizeof(uint64_t));
-  memcpy(&fnamesize,  buf+sizeof(uint64_t), sizeof(short));
+  memcpy(&fnamesize,  buf+sizeof(uint64_t), sizeof(uint16_t));
   
   framesize = framesize - LBA_HEADER_LENGTH;
 
@@ -1504,8 +1505,8 @@ int DataStream::initialiseFrame(char * frameheader)
 void DataStream::networkToMemory(int buffersegment, uint64_t & framebytesremaining)
 {
   char *ptr;
-  unsigned int bytestoread;
-  int nread, status, synccatchbytes, previoussegment;
+  unsigned int bytestoread, nread;
+  int status, synccatchbytes, previoussegment;
   long long validns, nextns;
   int bytestocopy;
 
@@ -1595,7 +1596,7 @@ void DataStream::networkToMemory(int buffersegment, uint64_t & framebytesremaini
     keepreading = false;
 }
 
-int DataStream::readnetwork(int sock, char* ptr, int bytestoread, int* nread)
+int DataStream::readnetwork(int sock, char* ptr, int bytestoread, unsigned int* nread)
 {
   int nr;
 
@@ -1621,7 +1622,7 @@ int DataStream::readnetwork(int sock, char* ptr, int bytestoread, int* nread)
   return(1);
 }
 
-int DataStream::readrawnetwork(int sock, char* ptr, int bytestoread, int* nread, int packetsize, int stripbytes)
+int DataStream::readrawnetwork(int sock, char* ptr, int bytestoread, unsigned int* nread, int packetsize, int stripbytes)
 {
   const int MaxPacketSize = 20000;
   int length;

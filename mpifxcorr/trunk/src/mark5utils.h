@@ -38,6 +38,6 @@ bool legalVSN(const char *vsn);
 
 XLR_RETURN_CODE openMark5(SSHANDLE *xlrDevice);
 
-XLR_RETURN_CODE difxMark5Read(SSHANDLE xlrDevice, long long readpointer, unsigned char *dest, int bytes, int readDelayMicroseconds);
+XLR_RETURN_CODE difxMark5Read(SSHANDLE xlrDevice, unsigned long long readpointer, unsigned char *dest, unsigned int bytes, unsigned int readDelayMicroseconds);
 
 #endif
