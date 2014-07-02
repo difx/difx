@@ -1243,6 +1243,10 @@ int DataStream::openrawstream(const char *device)
         tv.tv_usec = 100000;
         setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
 
+        int rawbufbytes;
+        rawbufbytes = 32*1024*1024;
+        setsockopt(s, SOL_SOCKET, SO_RCVBUF, (char *) &rawbufbytes, sizeof(rawbufbytes));
+
         socketnumber = s;
 #else
         cfatal << startl << "Raw socket support currently works only on Linux" << endl;
