@@ -57,10 +57,12 @@ import java.net.UnknownHostException;
 import java.util.*;
 
 import java.awt.event.ComponentEvent;
+import java.io.IOException;
 
 import javax.xml.bind.Marshaller;
 
 import java.io.StringWriter;
+import java.net.SocketException;
 
 import mil.navy.usno.widgetlib.IndexedPanel;
 import mil.navy.usno.widgetlib.NodeBrowserScrollPane;
@@ -1665,24 +1667,32 @@ public class JobEditorMonitor extends JFrame {
         
         //  Set up a monitor thread if this job is being run using guiServer.  This
         //  thread will collect and interpret diagnostic messages directly from
-        //  guiServer as it sets up and runs the job.  If the job is being run by
-        //  mk5daemon, it is simply started and forgotten.
+        //  guiServer as it sets up and runs the job.
+        boolean cleanStart = true;
         if ( _settings.sendCommandsViaTCP() ) {
             RunningJobMonitor runMonitor = new RunningJobMonitor( monitorPort );
-            runMonitor.start();
+            cleanStart = runMonitor.socketInit();
+            if ( cleanStart )
+                runMonitor.start();
         }
         
-        // -- Create the XML defined messages and process through the system
-        command.body().setDifxStart(jobStart);
-//        _jobNode.logItem( "<RUN> START COMMAND", command.convertToXML(), true );
-        try {
-            //command.sendPacket( _settings.guiServerConnection().COMMAND_PACKET );
-            command.send();
-        } catch ( java.net.UnknownHostException e ) {
-            java.util.logging.Logger.getLogger("global").log(java.util.logging.Level.SEVERE, null,
-                    e.getMessage() );  //BLAT should be a pop-up
-            setState( "Failed Start", Color.RED );
-//            _jobNode.logItem( "<RUN> FAILED START", "", true );
+        if ( cleanStart ) {
+            // -- Create the XML defined messages and process through the system
+            command.body().setDifxStart( jobStart );
+    //        _jobNode.logItem( "<RUN> START COMMAND", command.convertToXML(), true );
+            try {
+                //command.sendPacket( _settings.guiServerConnection().COMMAND_PACKET );
+                command.send();
+            } catch ( java.net.UnknownHostException e ) {
+                java.util.logging.Logger.getLogger("global").log(java.util.logging.Level.SEVERE, null,
+                        e.getMessage() );  //BLAT should be a pop-up
+                setState( "Failed Start", Color.RED );
+    //            _jobNode.logItem( "<RUN> FAILED START", "", true );
+                _jobNode.autostate( JobNode.AUTOSTATE_FAILED );
+            }
+        }
+        else {
+            setState( "Socket Failure", Color.RED );
             _jobNode.autostate( JobNode.AUTOSTATE_FAILED );
         }
     }
@@ -1695,6 +1705,38 @@ public class JobEditorMonitor extends JFrame {
         
         public RunningJobMonitor( int port ) {
             _port = port;
+        }
+        
+        public int port() { return _port; }
+        
+        protected ChannelServerSocket _ssock;
+        protected boolean _socketGood;
+        
+        /*
+         * Set up the server socket for the guiServer.  This was split out from the
+         * "run()" thread because it would fail in rare instances.  The return value
+         * from this function indicates whether the socket worked.
+         */
+        public boolean socketInit() {
+            _socketGood = false;
+            int socketTryCount = 0;
+            _ssock = null;
+            while ( !_socketGood && socketTryCount < 10 ) {
+                try {
+                    _ssock = new ChannelServerSocket( _port, _settings );
+                    _socketGood = true;
+                }
+                catch ( java.net.BindException e ) { 
+                    ++socketTryCount;
+                    try { Thread.sleep( 100 ); } catch ( Exception ex ) {}
+                    _settings.releaseTransferPort( _port );
+                } 
+                catch ( java.io.IOException e ) {
+                    e.printStackTrace();
+                }
+
+            }
+            return _socketGood;
         }
         
         /*
@@ -1731,27 +1773,31 @@ public class JobEditorMonitor extends JFrame {
         public void run() {
             //  Open a new server socket and await a connection.  The connection
             //  will timeout after a given number of seconds (nominally 10).
-            try {
-                //  Because this is an important socket, and because it sometimes fails,
-                //  repeatedly try to open it on failure.  Give up after 10.
-                boolean socketGood = false;
-                int socketTryCount = 0;
-                ChannelServerSocket ssock = null;
-                while ( !socketGood && socketTryCount < 10 ) {
+//            try {
+//                //  Because this is an important socket, and because it sometimes fails,
+//                //  repeatedly try to open it on failure.  Give up after 10.
+//                boolean socketGood = false;
+//                int socketTryCount = 0;
+//                ChannelServerSocket ssock = null;
+//                while ( !socketGood && socketTryCount < 10 ) {
+//                    try {
+//                        ssock = new ChannelServerSocket( _port, _settings );
+//                        socketGood = true;
+//                    }
+//                    catch ( java.net.BindException e ) { 
+//                        ++socketTryCount;
+//                        try { Thread.sleep( 100 ); } catch ( Exception ex ) {}
+//                        _settings.releaseTransferPort( _port );
+//                    }
+//                }
+                if ( _socketGood ) {
                     try {
-                        ssock = new ChannelServerSocket( _port, _settings );
-                        socketGood = true;
+                        _ssock.setSoTimeout( 10000 );  //  timeout is in millisec
+                    } catch ( java.net.SocketException e ) {
+                        e.printStackTrace();
                     }
-                    catch ( java.net.BindException e ) { 
-                        ++socketTryCount;
-                        _settings.releaseTransferPort( _port );
-                    }
-                }
-                if ( socketGood ) {
-                    ssock.setSoTimeout( 10000 );  //  timeout is in millisec
                     try {
-                        ssock.accept();
-    //                    acceptCallback();
+                        _ssock.accept();
                         //  Loop collecting diagnostic packets from the guiServer.  These
                         //  are identified by an initial integer, and then are followed
                         //  by a data length, then data.
@@ -1759,14 +1805,14 @@ public class JobEditorMonitor extends JFrame {
                         while ( connected ) {
                             //  Read the packet type as an integer.  The packet types
                             //  are defined above (within this class).
-                            int packetType = ssock.readInt();
+                            int packetType = _ssock.readInt();
                             //  Read the size of the incoming data (bytes).
-                            int packetSize = ssock.readInt();
+                            int packetSize = _ssock.readInt();
                             //  Read the data (as raw bytes)
                             byte [] data = null;
                             if ( packetSize > 0 ) {
                                 data = new byte[packetSize];
-                                ssock.readFully( data, 0, packetSize );
+                                _ssock.readFully( data, 0, packetSize );
                             }
                             //  Interpret the packet type.
                             if ( packetType == RUN_DIFX_JOB_FAILED ) {
@@ -1886,15 +1932,15 @@ public class JobEditorMonitor extends JFrame {
                             }
                         }
                     } catch ( SocketTimeoutException e ) {
-    //                    _fileSize = -10;
+                        e.printStackTrace();
+                    } catch ( java.io.IOException e ) {
+                        e.printStackTrace();
                     }
-                    ssock.close();
+                    try { _ssock.close(); }
+                    catch ( java.io.IOException e ) {
+                        e.printStackTrace();
+                    }
                 }
-            } catch ( java.io.IOException e ) {
-                e.printStackTrace();
-//                _error = "IOException : " + e.toString();
-//                _fileSize = -11;
-            }
             //  We keep the state of this job "running" for a little bit so that we properly
             //  process any late messages.
             try { Thread.sleep( 1000 ); } catch ( Exception e ) {}
