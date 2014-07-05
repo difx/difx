@@ -2511,7 +2511,7 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 
 		/* generate header for output frame */
 		memcpy(frame, (const char *)&outputHeader, VDIF_HEADER_BYTES);
-		setVDIFFrameSecond((vdif_header *)frame, seconds);
+		setVDIFFrameEpochSecOffset((vdif_header *)frame, seconds);
 		setVDIFFrameNumber((vdif_header *)frame, frameNum);
 
 		if(mask == goodMask)
