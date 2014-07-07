@@ -252,6 +252,18 @@ public class QueueBrowserPanel extends TearOffPanel {
                 return new Point( 10, getHeight() );
              }
         };
+        _difxVersionLabel = new JLabel( "" ) {
+             public JToolTip createToolTip() {
+                 ComplexToolTip tip = new ComplexToolTip();
+                 tip.setComponent(this);
+                 return tip;
+             }
+             public Point getToolTipLocation( MouseEvent e) {
+                return new Point( 10, getHeight() );
+             }
+        };
+        _difxVersionLabel.setHorizontalAlignment( JLabel.RIGHT );
+        this.add( _difxVersionLabel );
         _guiServerConnectionLight.setBounds( 360, 32, 12, 12 );
         _guiServerConnectionLight.alertTime( 0 );
         _guiServerConnectionLight.warningTime( 0 );
@@ -337,6 +349,7 @@ public class QueueBrowserPanel extends TearOffPanel {
         _experimentButton.setBounds( 5, 30, 110, 25 );
         _selectButton.setBounds( 120, 30, 110, 25 );
         _showButton.setBounds( 235, 30, 110, 25 );
+        _difxVersionLabel.setBounds( width - 510, 30, 280, 25 );
         _guiServerConnectionLight.setBounds( width - 160, 37, 12, 12 );
         _guiServerConnectionLabel.setBounds( width - 140, 30, 130, 25 );
         _workingSpinner.setBounds( width - 210, 32, 21, 21 );
@@ -375,6 +388,30 @@ public class QueueBrowserPanel extends TearOffPanel {
                 + "to connect to <<italic>>guiServer<</italic>>";
         _guiServerConnectionLight.setToolTipText( newTooltip );
         _guiServerConnectionLabel.setToolTipText( newTooltip );
+    }
+    
+    /*
+     * Control the content of the DiFX Version label.  This produces a tooltip that
+     * includes all of the possibilities.
+     */
+    public void setDifxVersionLabel() {
+        String newTooltip = "DiFX Processing will be done using this DiFX version.\n";
+        if ( _settings.difxVersion() != null ) {
+            _difxVersionLabel.setText( "using DiFX version \"" + _settings.difxVersion() + "\"" );
+            _difxVersionLabel.setForeground( Color.BLACK );
+            newTooltip += "Available versions include:\n";
+            ArrayList<String> list = _settings.availableDifxVersions();
+            for ( Iterator<String> iter = list.iterator(); iter.hasNext(); )
+                newTooltip += "<<bold>>" + iter.next() + "<</bold>>\n";
+        }
+        else {
+            _difxVersionLabel.setText( "DiFX unavailable" );
+            _difxVersionLabel.setForeground( Color.RED );
+            newTooltip += "<<red>>No valid version of DiFX is currently available.<</red>>\n";
+        }
+        newTooltip += "\nSee <<blue>><<underline>><<link=" + _settings.guiBrowsePath() + "/settings_content.html>>"
+                + "DiFX Control Connection<</link>><</underline>><</color>> for more information.";
+        _difxVersionLabel.setToolTipText( newTooltip );
     }
 
     /*
@@ -2018,6 +2055,7 @@ public class QueueBrowserPanel extends TearOffPanel {
     protected JCheckBoxMenuItem _showPassScheduledItem;
     protected ActivityMonitorLight _guiServerConnectionLight;
     protected JLabel _guiServerConnectionLabel;
+    protected JLabel _difxVersionLabel;
     protected NumLabel _numExperiments;
     protected NumLabel _numPasses;
     protected NumLabel _numJobs;

@@ -511,6 +511,8 @@ public class SystemSettings extends JFrame {
                                 _difxStartScript.getText().length(), _difxStartScript.getText().getBytes() );
                         guiServerConnection().sendPacket( guiServerConnection().DIFX_RUN_LABEL,
                                 ((String)_difxVersion.getSelectedItem()).length(), ((String)_difxVersion.getSelectedItem()).getBytes() );
+                        if ( _settings.queueBrowser() != null )
+                            _settings.queueBrowser().setDifxVersionLabel();
                     }
                 }
             }
@@ -2592,6 +2594,13 @@ public class SystemSettings extends JFrame {
             _difxVersion.setEnabled( false );
             _difxVersionClearOperation = false;
         }
+    }
+    public ArrayList<String> availableDifxVersions() {
+        ArrayList<String> ret = new ArrayList<String>();
+        for ( int i = 0; i < _difxVersion.getItemCount(); ++i ) {
+            ret.add( (String)_difxVersion.getItemAt( i ) );
+        }
+        return ret;
     }
     
     protected boolean _difxVersionClearOperation;
