@@ -128,9 +128,9 @@ void mjd2keyin(char *str, double mjd)
 	strftime(str, 20, "%j,%H,%M,%S", &brokenTime);
 }
 
-int runPulsar(const DifxInput *D, int configId, const char *pulsarName)
+int runPulsar(const DifxInput *D, int configId, const char *pulsarName, double thresh)
 {
-	const double thresh = 0.02;
+	//const double thresh = 0.02;
 	int pulsarId;
 	int scanId;
 	const DifxConfig *dc;
@@ -237,7 +237,7 @@ int runPulsar(const DifxInput *D, int configId, const char *pulsarName)
 
 	snprintf(fileName, DIFXIO_FILENAME_LENGTH, "%s%s.%s.flag", D->job->obsCode, D->job->obsSession, pulsarName);
 	flagOut = fopen(fileName, "w");
-	if(!out)
+	if(!flagOut)
 	{
 		fprintf(stderr, "Error: cannot open %s for write\n", fileName);
 	}
@@ -247,7 +247,8 @@ int runPulsar(const DifxInput *D, int configId, const char *pulsarName)
 		for(j = 0; j < i; ++j)
 		{
 			double flagOn[16];	// mjd onset of fringy flag; 0 for not set
-			int k;
+			int k, ii;
+			int mjd, sec;
 
 			for(k = 0; k < 16; ++k)
 			{
@@ -277,7 +278,6 @@ int runPulsar(const DifxInput *D, int configId, const char *pulsarName)
 				/* pc = 0 is pointing center; there are a total of nPhaseCentres+1 models; use the last one. */
 				pc = scan->nPhaseCentres;
 
-				int mjd, sec;
 				mjd = (int)(scan->mjdStart);
 				sec = (int)((scan->mjdStart-mjd)*86400.0);
 	
@@ -286,7 +286,6 @@ int runPulsar(const DifxInput *D, int configId, const char *pulsarName)
 					double R1, R2, f;
 					fftw_complex M;
 					int index;
-					int ii;
 					double fq; /* MHz */
 
 					R1 = getRate(D, i, scanId, pc, mjd, sec);
@@ -348,7 +347,7 @@ int runPulsar(const DifxInput *D, int configId, const char *pulsarName)
 								mjd2keyin(T1, m1);
 								mjd2keyin(T2, m2);
 
-								fprintf(flagOut, "ant_name='%s' bas_name='%s' timerang=%s,%s bif=%d eif=%d Reason='pulsar/fringe' /\n", D->antenna[i].name, D->antenna[j].name, T1, T2, ii+1, ii+1);
+								fprintf(flagOut, "ant_name='%s' bas_name='%s' timerang=%s,%s bif=%d eif=%d sources='%s' Reason='pulsar/fringe' /\n", D->antenna[i].name, D->antenna[j].name, T1, T2, ii+1, ii+1, pulsarName);
 								flagOn[ii] = 0;
 							}
 						}
@@ -363,6 +362,23 @@ int runPulsar(const DifxInput *D, int configId, const char *pulsarName)
 					}
 				}
 			}
+			//close off any open flags
+			for(ii = 0; ii < dc->nIF; ++ii)
+			{
+				if(flagOn[ii] > 1.0)
+				{
+					double m1, m2, mAdd;
+					m1 = flagOn[ii];
+					m2 = mjd+sec/86400.0;
+					mAdd = 0.5*(m2-m1);
+					m1 -= mAdd;
+					m2 += mAdd;
+					mjd2keyin(T1, m1);
+					mjd2keyin(T2, m2);
+					fprintf(flagOut, "ant_name='%s' bas_name='%s' timerang=%s,%s bif=%d eif=%d sources='%s' Reason='pulsar/fringe' /\n", D->antenna[i].name, D->antenna[j].name, T1, T2, ii+1, ii+1, pulsarName);
+					flagOn[ii] = 0;
+				}
+			}
 			fclose(out);
 		}
 		
@@ -375,6 +391,7 @@ int runPulsar(const DifxInput *D, int configId, const char *pulsarName)
 int main(int argc, char **argv)
 {
 	DifxInput *D = 0;
+	double threshold = 0.02;
 	int a;
 	int verbose = 0;
 	int mergable, compatible;
@@ -397,6 +414,20 @@ int main(int argc, char **argv)
 				usage();
 
 				exit(EXIT_SUCCESS);
+			}
+			else if(strcmp(argv[a], "-t") == 0)
+			{
+				if(a+1 < argc)
+				{
+					threshold = atof(argv[a+1]);
+					++a;
+				}
+				else
+				{
+					usage();
+
+					exit(EXIT_FAILURE);
+				}
 			}
 			else
 			{
@@ -516,7 +547,7 @@ int main(int argc, char **argv)
 
 		printf("Processing pulsar %s:\n", pulsarName);
 
-		runPulsar(D, configId, pulsarName);
+		runPulsar(D, configId, pulsarName, threshold);
 	}
 
 	deleteDifxInput(D);
