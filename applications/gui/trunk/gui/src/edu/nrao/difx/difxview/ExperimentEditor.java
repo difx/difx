@@ -2715,13 +2715,18 @@ public class ExperimentEditor extends JFrame {
                     _passLog = new ActivityLogFile( directory() + "/" + passDir + "guiLogs/" + passLogFileName() );
                     _newPass.logFile( _passLog );
                     _statusLabel.setText( "Writing file \"" + directory() + "/" + passDir + vexFileName() + "\"" );
-                    //  Remove the EOP data from the .vex file before sending if necessary.
+                    //  Prepare the .vex file content for sending.  This includes removing EOP data if necessary,
+                    //  removing stations within scans if they have a "-1" code and eliminating scans that
+                    //  are not actually used.
                     String vexData = "";
                     if ( _deleteEOPFromVex ) {
                         vexData = VexFileParser.deleteEOPData( _editor.text() );
                     }
                     else {
                         vexData = _editor.text();
+                    }
+                    if ( _settings.eliminateCodeStationsCheck() ) {
+                        vexData = VexFileParser.editStations( vexData );
                     }
                     Component comp = _okButton;
                     while ( comp.getParent() != null )

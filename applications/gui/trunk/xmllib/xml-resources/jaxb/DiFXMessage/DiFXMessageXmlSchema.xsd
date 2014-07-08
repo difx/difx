@@ -323,6 +323,8 @@
                 <xsd:element ref="invisibleProcessorCores" />
                 <xsd:element ref="invisibleMark5s" />
                 
+                <xsd:element ref="eliminateCodeStationsCheck" />
+                <xsd:element ref="exciseUnusedScansCheck" />
                 <xsd:element ref="uniqueDataSource" />
                 <xsd:element ref="assignBasedOnPath" />
                 <xsd:element ref="shareDataSourcesBetweenJobs" />
@@ -590,6 +592,8 @@
     <xsd:element name="invisibleProcessorCores" type="xsd:string"></xsd:element>
     <xsd:element name="invisibleMark5s" type="xsd:string"/>
                                 
+    <xsd:element name="eliminateCodeStationsCheck" type="xsd:boolean"></xsd:element>
+    <xsd:element name="exciseUnusedScansCheck" type="xsd:boolean"></xsd:element>
     <xsd:element name="uniqueDataSource" type="xsd:boolean"></xsd:element>
     <xsd:element name="assignBasedOnPath" type="xsd:boolean"></xsd:element>
     <xsd:element name="shareDataSourcesBetweenJobs" type="xsd:boolean"></xsd:element>

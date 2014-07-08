@@ -726,7 +726,7 @@ public class SystemSettings extends JFrame {
         networkPanel.add( _requestMessagesButton );
         
         IndexedPanel jobCreationPanel = new IndexedPanel( "Job Creation Settings" );
-        jobCreationPanel.openHeight( 100 );
+        jobCreationPanel.openHeight( 160 );
         jobCreationPanel.closedHeight( 20 );
         jobCreationPanel.labelWidth( 300 );
         _scrollPane.addNode( jobCreationPanel );
@@ -765,6 +765,18 @@ public class SystemSettings extends JFrame {
             }
         } );
         jobCreationPanel.add( antennaDefaultsButton );
+        _eliminateCodeStationsCheck = new ZCheckBox( "Eliminate Stations With \"-1\" Code");
+        _eliminateCodeStationsCheck.setBounds( 165, 85, 300, 25 );
+        _eliminateCodeStationsCheck.setToolTipText( "Comment out station lines containing a \"-1\" code in the\n"
+                + "Scans sections of the .vex file.  This will cause the\n"
+                + "scans to be processed without the station." );
+        jobCreationPanel.add( _eliminateCodeStationsCheck );
+        _exciseUnusedScansCheck = new ZCheckBox( "Excise Unused Scans From .vex File");
+        _exciseUnusedScansCheck.setBounds( 165, 115, 300, 25 );
+        _exciseUnusedScansCheck.setToolTipText( "Remove any unused scans from the .vex file created\n"
+                + "in the final pass directory.  Scans will remain in\n"
+                + "the original source .vex file." );
+        jobCreationPanel.add( _exciseUnusedScansCheck );
 
         IndexedPanel jobProcessingPanel = new IndexedPanel( "Job Processing Settings" );
         jobProcessingPanel.openHeight( 385 );
@@ -2100,6 +2112,8 @@ public class SystemSettings extends JFrame {
         _workingDirectory.setText( "/" );
 //        _stagingArea.setText( "/queue" );
 //        _useStagingArea.setSelected( false );
+        _eliminateCodeStationsCheck.setSelected( true );
+        _exciseUnusedScansCheck.setSelected( true );
         _headNode.setText( _difxControlAddress.getText() );
         _nodesPer.value( 2 );
         _nodesPerCheck.setSelected( true );
@@ -2689,6 +2703,9 @@ public class SystemSettings extends JFrame {
     public String workingDirectory() { return _workingDirectory.getText(); }
     public void workingDirectory( String newVal ) { _workingDirectory.setText( newVal ); }
     
+    public boolean eliminateCodeStationsCheck() { return _eliminateCodeStationsCheck.isSelected(); }
+    public boolean exciseUnusedScansCheck() { return _exciseUnusedScansCheck.isSelected(); }
+    
 //    public String stagingArea() { return _stagingArea.getText(); }
 //    public void stagingArea( String newVal ) { _stagingArea.setText( newVal ); }
     
@@ -3012,6 +3029,8 @@ public class SystemSettings extends JFrame {
                 _dbAutoUpdateInterval.intValue( doiConfig.getDbAutoUpdateInterval() );
             if ( doiConfig.getWorkingDirectory() != null )
                 _workingDirectory.setText( doiConfig.getWorkingDirectory() );
+            _eliminateCodeStationsCheck.setSelected( !doiConfig.isEliminateCodeStationsCheck() );
+            _exciseUnusedScansCheck.setSelected( !doiConfig.isExciseUnusedScansCheck() );
 //            if ( doiConfig.getStagingArea() != null )
 //                _stagingArea.setText( doiConfig.getStagingArea() );
 //            _useStagingArea.setSelected( doiConfig.isUseStagingArea() );
@@ -3608,6 +3627,8 @@ public class SystemSettings extends JFrame {
         doiConfig.setWorkingDirectory( _workingDirectory.getText() );
 //        doiConfig.setStagingArea( _stagingArea.getText() );
 //        doiConfig.setUseStagingArea( _useStagingArea.isSelected() );
+        doiConfig.setEliminateCodeStationsCheck( !_eliminateCodeStationsCheck.isSelected() );
+        doiConfig.setExciseUnusedScansCheck( !_exciseUnusedScansCheck.isSelected() );
         doiConfig.setDifxHeadNode( this.headNode() );
         
         doiConfig.setWindowConfigMainX( _windowConfiguration.mainX );
@@ -4700,6 +4721,8 @@ public class SystemSettings extends JFrame {
     
     //  Items that govern the creation and running of jobs.
     protected JFormattedTextField _workingDirectory;
+    protected ZCheckBox _eliminateCodeStationsCheck;
+    protected ZCheckBox _exciseUnusedScansCheck;
 //    protected JFormattedTextField _stagingArea;
 //    protected ZCheckBox _useStagingArea;
     protected SaneTextField _headNode;

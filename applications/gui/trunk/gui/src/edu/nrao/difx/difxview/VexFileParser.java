@@ -642,7 +642,10 @@ public class VexFileParser {
         ArrayList<String> x_wobble;
         ArrayList<String> y_wobble;
     }
-    
+
+    /*
+     * Takes an input string of .vex data and removes the EOP data from it.
+     */
     static String deleteEOPData( String inStr ) {
         String outStr = "";
         int pos = 0;
@@ -663,6 +666,40 @@ public class VexFileParser {
                     inEOP = false;
                 }
                 if ( !inEOP )
+                    outStr += inStr.substring( pos, endPos + 1 );
+                pos = endPos + 1;
+            }
+        }
+        return outStr;
+    }
+    
+    /*
+     * Takes an input string of .vex data and removes stations within scan specifications
+     * that have "-1" codes attached to them.
+     */
+    static String editStations( String inStr ) {
+        String outStr = "";
+        int pos = 0;
+        int endPos = 0;
+        boolean done = false;
+        boolean inScan = false;
+        while ( !done ) {
+            endPos = inStr.indexOf( '\n', pos );
+            if ( endPos == -1 ) {
+                done = true;
+            }
+            else {
+                if ( !inScan && inStr.substring( pos, endPos ).trim().regionMatches( true, 0, "SCAN", 0, 4 ) ) {
+                    inScan = true;
+                }
+                else if ( inStr.substring( pos, endPos ).trim().regionMatches( true, 0, "ENDSCAN", 0, 7 ) ) {
+                    inScan = false;
+                }
+                if ( inScan && inStr.substring( pos, endPos ).trim().regionMatches( true, 0, "STATION", 0, 7 ) ) {
+                    if ( !inStr.substring( pos, endPos ).substring( inStr.substring( pos, endPos ).lastIndexOf( ":" ) + 1, endPos - pos ).trim().regionMatches( true, 0, "-1", 0, 2 ) )
+                        outStr += inStr.substring( pos, endPos + 1 );
+                }
+                else
                     outStr += inStr.substring( pos, endPos + 1 );
                 pos = endPos + 1;
             }
