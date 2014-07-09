@@ -401,7 +401,7 @@ public class TimeLimitPanel extends JPanel implements MouseMotionListener,
                 newLabel += calcCal.get( Calendar.YEAR ) + "/";
             if ( calc == _firstBigStep || calcCal.get( Calendar.DAY_OF_YEAR ) != startDay )
                 newLabel += calcCal.get( Calendar.DAY_OF_YEAR ) + " ";
-            newLabel += String.format( "%02d", calcCal.get( Calendar.HOUR ) ) + ":" +
+            newLabel += String.format( "%02d", calcCal.get( Calendar.HOUR_OF_DAY ) ) + ":" +
                     String.format( "%02d", calcCal.get( Calendar.MINUTE ) ) + ":" +
                     String.format( "%02d", calcCal.get( Calendar.SECOND ) );
             g2.drawLine( xpos, d.height - 13, xpos, d.height );

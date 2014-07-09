@@ -315,9 +315,12 @@ public class VexFileParser {
                     sPos = thisLine.indexOf( ':', ePos ) + 1;
                     ePos = thisLine.indexOf( 's', sPos + 1 );
                     newStation.duration = Integer.parseInt( thisLine.substring( sPos, ePos ).trim() );
-                    //  And the rest of the line that we currently don't know what to do with.
+                    //  The rest of the line that we (mostly) don't know what to do with.
                     sPos = thisLine.indexOf( ':', ePos ) + 1;
                     newStation.otherStuff = thisLine.substring( sPos );
+                    //  Extract from the end of the line the "omit" flag.  If this is -1, the
+                    //  station is considered "omitted".
+                    newStation.omitFlag = newStation.otherStuff.substring( newStation.otherStuff.lastIndexOf( ":" ) + 1 ).trim().contentEquals( "-1" ); 
                     //  Make a copy of the whole string.
                     newStation.wholeString = thisLine;
                     //  Add this station to the list of stations associated with this
@@ -582,6 +585,7 @@ public class VexFileParser {
         int delay;
         int duration;
         String otherStuff;
+        boolean omitFlag;
         String wholeString;
     }
     
