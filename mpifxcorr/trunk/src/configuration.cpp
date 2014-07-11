@@ -1429,7 +1429,7 @@ bool Configuration::processDatastreamTable(ifstream * input)
         }
         if (highbandedge <= parenthighbandedge && lowbandedge >= parentlowbandedge) {
           datastreamtable[i].zoomfreqparentdfreqindices[j] = k;
-          datastreamtable[i].zoomfreqchanneloffset[j] = (int)(((lowbandedge - parentlowbandedge)/freqtable[datastreamtable[i].recordedfreqtableindices[0]].bandwidth)*freqtable[datastreamtable[i].recordedfreqtableindices[0]].numchannels);
+          datastreamtable[i].zoomfreqchanneloffset[j] = (int)(((lowbandedge - parentlowbandedge)/freqtable[datastreamtable[i].recordedfreqtableindices[0]].bandwidth)*freqtable[datastreamtable[i].recordedfreqtableindices[0]].numchannels + 0.5);
           //if (freqtable[datastreamtable[i].zoomfreqtableindices[j]].lowersideband)
           //  datastreamtable[i].zoomfreqchanneloffset[j] += freqtable[datastreamtable[i].zoomfreqtableindices[j]].numchannels;
         }
