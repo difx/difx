@@ -557,7 +557,7 @@ static DifxJob *makeDifxJob(string directory, const VexJob& J, int nAntenna, con
 	job->polyOrder = 5;
 	job->polyInterval = 120;
 	job->aberCorr = AberCorrExact;
-	job->activeBaselines = nAntenna;
+	job->activeDatastreams = nAntenna;
 	job->activeBaselines = nAntenna*(nAntenna-1)/2;
 	job->dutyCycle = J.dutyCycle;
 
