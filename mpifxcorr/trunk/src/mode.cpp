@@ -1120,6 +1120,17 @@ float Mode::process(int index, int subloopindex)  //frac sample error is in micr
             break;
         }
 
+	// At this point in the code the array fftoutputs[j] contains complex-valued voltage spectra with the following properties:
+	//
+	// 1. The zero element corresponds to the lowest sky frequency.  That is:
+	//    fftoutputs[j][0] = Local Oscillator Frequency              (for Upper Sideband)
+	//    fftoutputs[j][0] = Local Oscillator Frequency - bandwidth  (for Lower Sideband)
+	// 
+	// 2. The frequency increases monotonically with index
+	// 
+	// 3. The last element of the array corresponds to the highest sky frequency minus the spectral resolution.
+	//    (i.e., the first element beyond the array bound corresponds to the highest sky frequency)
+
         if(dumpkurtosis) //do the necessary accumulation
         {
           status = vectorMagnitude_cf32(fftoutputs[j][subloopindex], kscratch, recordedbandchannels);
