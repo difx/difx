@@ -223,10 +223,10 @@ XLR_RETURN_CODE difxMark5Read(SSHANDLE xlrDevice, unsigned long long readpointer
 
 		WATCHDOG( xlrRC = XLRReadData(xlrDevice, xlrRD.BufferAddr, xlrRD.AddrHi, xlrRD.AddrLo, xlrRD.XferLength) );
 		
-		if(readSize > 1000)
+		if(readSize > 2000)
 		{
 			unsigned int nZero = 0;
-			for(unsigned int i = 600; i < 1000; ++i)
+			for(unsigned int i = 1600; i < 2000; ++i)
 			{
 				if(dest[offset+i] == 0)
 				{
