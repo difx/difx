@@ -2379,13 +2379,13 @@ static int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int 
 		snprintf(scan->identifier, DIFXIO_NAME_LENGTH, "%s", S->defName.c_str());
 		snprintf(scan->obsModeName, DIFXIO_NAME_LENGTH, "%s", S->modeDefName.c_str());
 
-		if(!sourceSetup->pointingCentre.ephemFile.empty() || sourceSetup->pointingCentre.gpsId > 0)
+		if(sourceSetup->pointingCentre.isSpacecraft())
 		{
 			spacecraftSet.insert(sourceSetup->pointingCentre.difxName);
 		}
 		for(vector<PhaseCentre>::const_iterator p=sourceSetup->phaseCentres.begin(); p != sourceSetup->phaseCentres.end(); ++p)
 		{
-			if(!p->ephemFile.empty() || p->gpsId > 0)
+			if(p->isSpacecraft())
 			{
 				spacecraftSet.insert(p->difxName);
 			}
@@ -2693,7 +2693,6 @@ static int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int 
 			{
 				hasGPS = true;
 			}
-			
 		}
 #if HAVE_GPSTK
 		if(hasGPS)
@@ -2903,9 +2902,94 @@ static int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int 
 				exit(EXIT_FAILURE);
 #endif
 			}
+			else if(phaseCentre->isGeosync())
+			{
+#if HAVE_GPSTK
+				EOPDataStore eopDataTable;
+				Matrix<double> S(3,3,0.0);
+				int mjd = static_cast<int>(D->mjdStart);
+				// start time in seconds rounded down to nearest 10 minute boundary
+				int sec = static_cast<int>((D->mjdStart - mjd)*144.0)*600;
+				long int gps_utc = D->eop[2].tai_utc - TAImGPST();
+				long int deltaT = 24;	// seconds
+
+				int nPoint;
+
+				S(0,1) = 1.0;
+				S(1,0) = -1.0;
+
+				for(int e = 0; e < D->nEOP; ++e)
+				{
+					CommonTime T_UTC;
+					T_UTC.set(D->eop[e].mjd + 2400001, 0, 0.0, TimeSystem(TimeSystem::UTC));
+
+					/* Note that gpstk wants ut1-utc in arcsec, not seconds, hence the 15. */
+					eopDataTable.addEOPData(T_UTC, EOPDataStore::EOPData(D->eop[e].xPole, D->eop[e].yPole, D->eop[e].ut1_utc*15.0));
+				}
+
+				CommonTime T_UTC;
+				T_UTC.set(mjd + 2400001, sec, 0.0, TimeSystem(TimeSystem::UTC));
+
+				CommonTime T_GPS;
+				T_GPS.set(mjd + 2400001, sec, 0.0, TimeSystem(TimeSystem::GPS));
+				T_GPS.addSeconds(gps_utc);
+
+				nPoint = (D->mjdStop - D->mjdStart) * (86400/deltaT) + 100;
+
+				ds->nPoint = nPoint;
+				ds->pos = (sixVector *)calloc(nPoint, sizeof(sixVector));
+
+				for(int p = 0; p < nPoint; ++p)
+				{
+					double M = mjd + (sec + p*deltaT)/86400.0;
+					double dera;
+					
+					Vector<double> x_ECEF(3);
+					Vector<double> v_ECEF(3);
+					x_ECEF[0] = phaseCentre->X;
+					x_ECEF[1] = phaseCentre->Y;
+					x_ECEF[2] = phaseCentre->Z;
+					v_ECEF[0] = 0.0;
+					v_ECEF[1] = 0.0;
+					v_ECEF[2] = 0.0;
+					
+					EOPDataStore::EOPData ERP = eopDataTable.getEOPData(T_UTC);
+					Matrix<double> POM, Theta, NP;
+					J2kToECEFMatrix(T_UTC, ERP, POM, Theta, NP);
+					
+					double TT = (M-51544.0 + (TTmTAI() + D->eop[2].tai_utc)/86400.0)/36525.0;
+					dera = (1.002737909350795 + 5.9006e-11 * TT - 5.9e-15 * TT * TT ) * 2.0*M_PI/ 86400.0;
+
+					// Derivative of Earth rotation 
+					Matrix<double> dTheta = dera * S * Theta;
+					Matrix<double> c2t = POM * Theta * NP;
+					Matrix<double> dc2t = POM * dTheta * NP;
+
+					Vector<double> x_J2000 = transpose(c2t)*x_ECEF;
+					Vector<double> v_J2000 = transpose(c2t)*v_ECEF + transpose(dc2t)*x_ECEF;
+
+					ds->pos[p].mjd = static_cast<int>(M);
+					ds->pos[p].fracDay = M - ds->pos[p].mjd;
+					ds->pos[p].X  = x_J2000[0];
+					ds->pos[p].Y  = x_J2000[1];
+					ds->pos[p].Z  = x_J2000[2];
+					ds->pos[p].dX = v_J2000[0];
+					ds->pos[p].dY = v_J2000[1];
+					ds->pos[p].dZ = v_J2000[2];
+
+					T_GPS.addSeconds(deltaT);
+					T_UTC.addSeconds(deltaT);
+				}
+
+#else
+				cerr << "Error: geosync satellite set but gpstk support not compiled in." << endl;
+
+				exit(EXIT_FAILURE);
+#endif
+			}
 			else
 			{
-				cerr << "Developer error: not bsp or gps spacecraft type." << endl;
+				cerr << "Developer error: not bsp or gps or geosync spacecraft type." << endl;
 
 				exit(EXIT_FAILURE);
 			}

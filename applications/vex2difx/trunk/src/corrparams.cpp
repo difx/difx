@@ -725,6 +725,7 @@ void PhaseCentre::initialise(double r, double d, std::string name)
 	ephemFile = "";
 	naifFile = "";  
 	gpsId = 0;		// not a GPS satellite
+	X = Y = Z = 0.0;	// not a geosyncronous satellite
 }
 
 SourceSetup::SourceSetup(const std::string &name) : vexName(name)
@@ -796,6 +797,33 @@ int SourceSetup::setkv(const std::string &key, const std::string &value, PhaseCe
 	else if(key == "gpsId")
 	{
 		ss >> pc->gpsId;
+	}
+	else if(key == "X" || key == "x")
+	{
+		if(pc->X != 0.0)
+		{
+			std::cerr << "Warning: phase centre " << pc->difxName << " has multiple X definitions" << std::endl;
+			++nWarn;
+		}
+		ss >> pc->X;
+	}
+	else if(key == "Y" || key == "y")
+	{
+		if(pc->Y != 0.0)
+		{
+			std::cerr << "Warning: phase centre " << pc->difxName << " has multiple Y definitions" << std::endl;
+			++nWarn;
+		}
+		ss >> pc->Y;
+	}
+	else if(key == "Z" || key == "z")
+	{
+		if(pc->Z != 0.0)
+		{
+			std::cerr << "Warning: phase centre " << pc->difxName << " has multiple Z definitions" << std::endl;
+			++nWarn;
+		}
+		ss >> pc->Z;
 	}
 	else if(key == "naifFile")
 	{

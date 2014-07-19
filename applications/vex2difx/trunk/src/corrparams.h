@@ -66,6 +66,8 @@ public:
 
 	//methods
 	void initialise(double ra, double dec, std::string name);
+	bool isGeosync() const { return (X != 0.0 || Y != 0.0 || Z != 0.0); };
+	bool isSpacecraft() const { return (isGeosync() || gpsId != 0 || !ephemFile.empty()); };
 
 	//variables
 	double ra;	//radians
@@ -81,6 +83,7 @@ public:
 	double ephemStellarAber;	// 0 = don't apply (default), 1 = apply, other: scale correction accordingly
 	double ephemClockError;		// (sec) 0.0 is no error
 	int gpsId;		// GPS satellite number [0 means not a GPS satellite]
+	double X, Y, Z;			// For geosync satellite [0, 0, 0 means not a geosync]
 };
 
 class SourceSetup
