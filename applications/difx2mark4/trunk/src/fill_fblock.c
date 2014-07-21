@@ -83,6 +83,7 @@ int fill_fblock (DifxInput *D,                    // difx input structure pointe
                 pfb[nprod].stn[0].bw       = pfr->bw;
                 pfb[nprod].stn[0].bs       = pdsA->quantBits;
                 pfb[nprod].stn[0].zoom     = zoom;
+                pfb[nprod].stn[0].pcal_int = pdsA->phaseCalIntervalMHz;
 
                                     // bandB  (remote station)
                 if (ibandB < pdsB->nRecBand)
@@ -110,6 +111,7 @@ int fill_fblock (DifxInput *D,                    // difx input structure pointe
                 pfb[nprod].stn[1].bw       = pfr->bw;
                 pfb[nprod].stn[1].bs       = pdsB->quantBits;
                 pfb[nprod].stn[1].zoom     = zoom;
+                pfb[nprod].stn[1].pcal_int = pdsB->phaseCalIntervalMHz;
 
                                     // if sidebands mixed, make both USB
                 if (pfb[nprod].stn[0].sideband != pfb[nprod].stn[1].sideband)
@@ -117,6 +119,7 @@ int fill_fblock (DifxInput *D,                    // difx input structure pointe
                         if (pfb[nprod].stn[k].sideband == 'L')
                             {
                             pfb[nprod].stn[k].freq -= pfb[nprod].stn[k].bw;
+                            pfb[nprod].stn[k].find = pfb[nprod].stn[1-k].find;
                             pfb[nprod].stn[k].sideband = 'U';
                             }
 
@@ -228,13 +231,15 @@ int fill_fblock (DifxInput *D,                    // difx input structure pointe
         }
     if (opts->verbose > 1)
         for (n=0; n<nprod; n++)     // debug - print out fblock table
-            printf ("    fblock[%02d] %c %c %d %d %d %d %.3f %.3f %s\n"
-                    "               %c %c %d %d %d %d %.3f %.3f %s\n",
+            printf ("    fblock[%02d] %c %c %2d %2d %2d %2d %1d %.3f %.3f %s\n"
+                      "               %c %c %2d %2d %2d %2d %1d %.3f %.3f %s\n",
                   n, pfb[n].stn[0].sideband, pfb[n].stn[0].pol, pfb[n].stn[0].first_time,
-                  pfb[n].stn[0].ant, pfb[n].stn[0].find, pfb[n].stn[0].zoom, pfb[n].stn[0].freq,
+                  pfb[n].stn[0].ant, pfb[n].stn[0].find, pfb[n].stn[0].zoom, 
+                  pfb[n].stn[0].pcal_int, pfb[n].stn[0].freq,
                   pfb[n].stn[0].bw, pfb[n].stn[0].chan_id,
                   pfb[n].stn[1].sideband, pfb[n].stn[1].pol, pfb[n].stn[1].first_time,
-                  pfb[n].stn[1].ant, pfb[n].stn[1].find, pfb[n].stn[1].zoom, pfb[n].stn[1].freq,
+                  pfb[n].stn[1].ant, pfb[n].stn[1].find, pfb[n].stn[1].zoom, 
+                  pfb[n].stn[1].pcal_int, pfb[n].stn[1].freq, 
                   pfb[n].stn[1].bw, pfb[n].stn[1].chan_id);
 
     pfb[nprod].stn[0].ant = -1;     // mark end of table

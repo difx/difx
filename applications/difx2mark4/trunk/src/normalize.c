@@ -26,7 +26,8 @@ void normalize (struct CommandLineOptions *opts,  // array of command line optio
         fr,
         pol,
         polref,
-        polrem;
+        polrem,
+        n_aczero = 0;               // number of 0 autocorrelations
 
     double t,                       // time of current records
            factor,
@@ -140,9 +141,15 @@ void normalize (struct CommandLineOptions *opts,  // array of command line optio
                 }
                                     // ensure that there is no 0-divide
             if (pant[aref][fr][polref] == 0.0 || pant[arem][fr][polrem] == 0.0)
+                {
                 factor = 1.0;
+                n_aczero++;
+                }
             else
                 factor = 1.0 / (pant[aref][fr][polref] * pant[arem][fr][polrem]);
+            // printf("n %d factor %f pant[%d][%d][%d] %f pant[%d][%d][%d] %f\n",
+            //        n,factor,aref,fr,polref,pant[aref][fr][polref],
+            //        arem,fr,polrem,pant[arem][fr][polrem]);
             for (i=0; i<nvis; i++)
                 {
                 vr->comp[i].real *= factor;
@@ -154,6 +161,11 @@ void normalize (struct CommandLineOptions *opts,  // array of command line optio
         else
             nbeg = nend + 1;        // go on to next time
         }
-
-
+                                    // warn if there were problems
+    if (n_aczero)
+        {
+        printf ("Warning! There were %d records with autocorrelation amplitude of 0.0\n",
+                n_aczero);
+        printf ("This will affect the amplitude normalization.\n");
+        }
     }

@@ -35,7 +35,10 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
         j,
         k,
         b,
+        ochan,                       // output array channel #
+        nochan,                      // number of output array channels
         l,
+        m,
         n,
         jf,
         npol,
@@ -62,7 +65,9 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
         version = 0,                // version# of pcal file format (0 = legacy)
         dstr,                       // difx datastream index
         lowerb,                     // lower bound for b loop
-        upperb;                     // upper bound for b loop
+        upperb,                     // upper bound for b loop
+        findex,
+        found;
 
 
 
@@ -323,6 +328,7 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
 
                 while (TRUE)            // read loop over all input records
                     {
+                    nochan = 0;
                     line = fgets (lbuff, LBUFF_SIZE, fin);
                     if (line == NULL)   // EOF?
                         break;
@@ -401,6 +407,9 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                     for (i=0; i<NPC_TONES; i++)
                         xtones[i] = 0;
                     t309.ntones = 0;
+                                        // clear record accumulators
+                    memset (&(t309.chan[0].acc[0][0]), 0, NPC_FREQS * NPC_TONES * 2 * sizeof (U32));
+
                                         // loop over tones within record
                     for (np=0; np<npol; np++)
                         for (nc=0; nc<nchan; nc++)
@@ -420,20 +429,26 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                                 {
                                         // identify channel and tone
                                 if (version == 0)
+                                    {
                                     sscanf (line + nchars, "%d%lf%lf%lf%n", 
                                             &record_chan, &freq, &cquad, &squad, &mchars);
+                                    nchars += mchars;
+                                        // skip over channels which weren't recorded
+                                    if (record_chan < 0)
+                                        continue;
+                                    }
                                 else    // for now, version 1 is only alternative
                                     {
                                     sscanf (line + nchars, "%d %c %lf%lf%n", 
                                             &ifreq, &polar, &cquad, &squad, &mchars);
+                                    nchars += mchars;
                                     freq = ifreq;
+                                        // skip over tones that weren't extracted
+                                    if (ifreq == -1)
+                                        continue;
                                     }
-                                        // skip over channels which weren't recorded
-                                if (record_chan < 0)
-                                    continue;
                                         // swap sign of imaginary part
                                 squad *= -1;
-                                nchars += mchars;
                                         // b is channel index into the t309 record array
                                 if (version == 0)
                                     {
@@ -458,6 +473,21 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                                         {
                                         record_chan = nc;
                                         jf = *(pdds->recFreqId + *(pdds->recBandFreqId + nc));
+                                        // check to see if tone is also in a zoom band
+                                        if (pdds->nZoomBand > 0)
+                                            for (i=0; i<pdds->nZoomBand; i++)
+                                                {
+                                                // skip over zoom bands with wrong polarization
+                                                if ((*(pdds->zoomBandPolName + i)) != polar)
+                                                    continue;
+                                                findex = *(pdds->zoomFreqId + *(pdds->zoomBandFreqId + i));
+                                                // zoom bands are always usb, is it in this one?
+                                                if (freq - D->freq[findex].freq < D->freq[findex].bw)
+                                                    {  // yes
+                                                    jf = findex;
+                                                    break;
+                                                    }
+                                                }
                                         }
 
                                     isb = (D->freq[jf].sideband == 'U') ? 1 : -1;
@@ -469,24 +499,59 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                                         // find matching freq channel
                                         // loop through whole fblock table
                                         nf = -1;
+                                        found = FALSE;
                                         while (pfb[++nf].stn[0].ant >= 0) // check for end-of-table marker
                                             {
                                             for (k=0; k<2; k++)
-                                                if (pfb[nf].stn[k].freq     == D->freq[jf].freq
+                                                {
+                                                if (((pfb[nf].stn[k].freq     == D->freq[jf].freq
+                                                   && pfb[nf].stn[k].sideband == D->freq[jf].sideband)
+                                                 || ((pfb[nf].stn[k].freq + pfb[nf].stn[k].bw == D->freq[jf].freq)
+                                                 && pfb[nf].stn[k].sideband == 'U' && D->freq[jf].sideband == 'L'))
                                                  && pfb[nf].stn[k].bw       == D->freq[jf].bw  
-                                                 && pfb[nf].stn[k].sideband == D->freq[jf].sideband
                                                  && pfb[nf].stn[k].pol      == ds_pols[record_chan])
                                                     {
-                                                    strcpy (t309.chan[b].chan_name, pfb[nf].stn[k].chan_id);
-                                                    break;      // found freq, do double break
+                                                                // this channel matches, is name
+                                                                // already in the table?
+                                                    for (m=0; m<nochan; m++)
+                                                        if (strcmp (t309.chan[m].chan_name, pfb[nf].stn[k].chan_id) == 0)
+                                                            {   // found it - use this output channel#
+                                                            ochan = m;
+                                                            found = TRUE;
+                                                            break;
+                                                            }
+                                                                // on falling through, allocate
+                                                                // new output channel #
+                                                    if (m == nochan)
+                                                        {
+                                                        ochan = m;
+                                                        strcpy (t309.chan[ochan].chan_name, pfb[nf].stn[k].chan_id);
+                                                        nochan++;// bump output channel #
+                                                        found = TRUE;
+                                                        break;  // found freq, do double break
+                                                        }
                                                     }
-                                            if (k < 2)
+                                                }
+                                            if (found)
                                                 break;          // 2nd part of double break
                                             }
                                         // this freq not in table - skip it
-                                        if (k == 2)
+                                        if (!found)
                                             continue;
 
+                                        // trap potential array overwrites
+                                    if (nochan >= NPC_FREQS)
+                                        {
+                                        printf ("skipping write for tone %d since channel %d too large\n", i, b);
+                                        break;
+                                        }
+
+                                        // change tones to usb if this corr is a mixed usb x lsb case
+                                    if (pfb[nf].stn[k].sideband != D->freq[jf].sideband)
+                                        {
+                                        f_rel = D->freq[jf].bw - f_rel;
+                                        isb = 1;
+                                        }
                                         // find out which tone slot this goes in
                                         for (i=0; i<NPC_TONES; i++)
                                             {
@@ -511,18 +576,18 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                                                 }
                                             continue;
                                             }
-                                        // trap potential array overwrites
-                                        if (b >= NPC_FREQS)
-                                            {
-                                            printf ("skipping write for tone %d since channel %d too large\n", i, b);
-                                            break;
-                                            }
+                                        // FIXME ad hoc temporary fix for non-normalize pcal in zoom mode
+                                        if (abs(cquad) > 1e3)
+                                            cquad /= 6e7;
+                                        if (abs(squad) > 1e3)
+                                            squad /= 6e7;
+
                                         // renormalize correlations to those created in the DOM
                                         norm_corr = - isb * floor (cquad * srate * t309.acc_period * 128.0 + 0.5);
-                                        memcpy (&t309.chan[b].acc[i][0], &norm_corr, 4);
+                                        memcpy (&t309.chan[ochan].acc[i][0], &norm_corr, 4);
 
                                         norm_corr = floor (squad * srate * t309.acc_period * 128.0 + 0.5);
-                                        memcpy (&t309.chan[b].acc[i][1], &norm_corr, 4);
+                                        memcpy (&t309.chan[ochan].acc[i][1], &norm_corr, 4);
 
                                         // tone freqs (in Hz) are spread through channel recs
                                         t309.chan[i].freq = 1e6 * isb * f_rel;

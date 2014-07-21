@@ -575,13 +575,14 @@ int createRoot (DifxInput *D,           // difx input structure pointer
                         continue;
                                     // print out a chan_def line
                     fprintf (fout, "   chan_def = %s : : %9.2f MHz : %c : %8.3f MHz"
-                                   " : &Ch%02d : &BBC%c;\n", 
+                                   " : &Ch%02d : &BBC%c%1d;\n", 
                              pfb[i].stn[k].chan_id,
                              fabs (pfb[i].stn[k].freq),
                              pfb[i].stn[k].sideband,
                              pfb[i].stn[k].bw,
                              j, 
-                             pfb[i].stn[k].pol);
+                             pfb[i].stn[k].pol,
+                             pfb[i].stn[k].pcal_int);
                     ik = i;         // save i for which k applied
                     j++;
                     }
@@ -591,17 +592,19 @@ int createRoot (DifxInput *D,           // difx input structure pointer
             }
         fprintf (fout, "$BBC;\n");
         fprintf (fout, "  def bbcs;\n");
-        fprintf (fout, "    BBC_assign = &BBCL : 01 : &IFL;\n");
-        fprintf (fout, "    BBC_assign = &BBCR : 02 : &IFR;\n");
+        fprintf (fout, "    BBC_assign = &BBCL1 : 01 : &IFL1;\n");
+        fprintf (fout, "    BBC_assign = &BBCR1 : 02 : &IFR1;\n");
+        fprintf (fout, "    BBC_assign = &BBCL5 : 03 : &IFL5;\n");
+        fprintf (fout, "    BBC_assign = &BBCR5 : 04 : &IFR5;\n");
         fprintf (fout, "  enddef;\n");
         
         fprintf (fout, "$IF;\n");
         fprintf (fout, "  def ifs;\n");
-                                    // FIXME - need pcal per dereferenced datastream
-        fprintf (fout, "    if_def = &IFL : 1N : L : 10000.0 MHz : U : %d MHz : 0 Hz;\n",
-                 D->datastream[0].phaseCalIntervalMHz);
-        fprintf (fout, "    if_def = &IFR : 2N : R : 10000.0 MHz : U : %d MHz : 0 Hz;\n",
-                 D->datastream[0].phaseCalIntervalMHz);
+                                   
+        fprintf (fout, "    if_def = &IFL1 : 1N : L : 10000.0 MHz : U : 1 MHz : 0 Hz;\n");
+        fprintf (fout, "    if_def = &IFR1 : 2N : R : 10000.0 MHz : U : 1 MHz : 0 Hz;\n");
+        fprintf (fout, "    if_def = &IFL5 : 1N : L : 10000.0 MHz : U : 5 MHz : 0 Hz;\n");
+        fprintf (fout, "    if_def = &IFR5 : 2N : R : 10000.0 MHz : U : 5 MHz : 0 Hz;\n");
         fprintf (fout, "  enddef;\n");
         
         fprintf (fout, "$TRACKS;\n");
