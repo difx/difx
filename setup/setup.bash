@@ -34,7 +34,7 @@ export CALC_SERVER=localhost
 if [ $OSTYPE = "darwin" -o $OSTYPE = "darwin9.0" -o $OSTYPE = "darwin13" ]
 then
  OS=darwin
-elif [ -o $OSTYPE = "linux" -o $OSTYPE = "linux-gnu" ] 
+elif [ $OSTYPE = "linux" -o $OSTYPE = "linux-gnu" ] 
 then
   OS=linux
 else
