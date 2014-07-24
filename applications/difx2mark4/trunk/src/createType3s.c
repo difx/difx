@@ -520,6 +520,9 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                                                             found = TRUE;
                                                             break;
                                                             }
+                                                    if (found)
+                                                        break;  // 2nd part of double break
+
                                                                 // on falling through, allocate
                                                                 // new output channel #
                                                     if (m == nochan)
@@ -540,18 +543,18 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                                             continue;
 
                                         // trap potential array overwrites
-                                    if (nochan >= NPC_FREQS)
-                                        {
-                                        printf ("skipping write for tone %d since channel %d too large\n", i, b);
-                                        break;
-                                        }
+                                        if (nochan >= NPC_FREQS)
+                                            {
+                                            printf ("skipping write for tone %d since channel %d too large\n", i, b);
+                                            break;
+                                            }
 
                                         // change tones to usb if this corr is a mixed usb x lsb case
-                                    if (pfb[nf].stn[k].sideband != D->freq[jf].sideband)
-                                        {
-                                        f_rel = D->freq[jf].bw - f_rel;
-                                        isb = 1;
-                                        }
+                                        if (pfb[nf].stn[k].sideband != D->freq[jf].sideband)
+                                            {
+                                            f_rel = D->freq[jf].bw - f_rel;
+                                            isb = 1;
+                                            }
                                         // find out which tone slot this goes in
                                         for (i=0; i<NPC_TONES; i++)
                                             {
@@ -577,9 +580,9 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                                             continue;
                                             }
                                         // FIXME ad hoc temporary fix for non-normalize pcal in zoom mode
-                                        if (abs(cquad) > 1e3)
+                                        if (abs(cquad) > 10.0)
                                             cquad /= 6e7;
-                                        if (abs(squad) > 1e3)
+                                        if (abs(squad) > 10.0)
                                             squad /= 6e7;
 
                                         // renormalize correlations to those created in the DOM
