@@ -1241,6 +1241,12 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 
 			/* At this point at least one of inTSM and inDifx should be non-zero */
 			/* If both are nonzero, inDifx points to pulse cal data and inTSM points to cable cal data */
+			if(inDifx == 0 && inTSM == 0)
+			{
+				printf("<No tones found>");
+
+				continue;
+			}
 
 			/* set defaults */
 			cableScanId = -1;
