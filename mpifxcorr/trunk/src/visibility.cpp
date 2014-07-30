@@ -338,7 +338,7 @@ void Visibility::writedata()
   int ds1, ds2, ds1bandindex, ds2bandindex, localfreqindex, freqindex, freqchannels;
   int status, resultindex, binloop;
   int dumpmjd, intsec;
-  double dumpseconds;
+  double dumpseconds, acw;
 
 //  cdebug << startl << "Vis. " << visID << " is starting to write out data" << endl;
 
@@ -580,13 +580,17 @@ void Visibility::writedata()
         localfreqindex = config->getDLocalRecordedFreqIndex(currentconfigindex, i, j);
         freqindex = config->getDRecordedFreqIndex(currentconfigindex, i, localfreqindex);
         freqchannels = config->getFNumChannels(freqindex)/config->getFChannelsToAverage(freqindex);
-        if(autocorrweights[i][0][j] > 0.0)
-        {
-          scale = 1.0/(autocorrweights[i][0][j]*meansubintsperintegration*((float)(config->getBlocksPerSend(currentconfigindex)*2*freqchannels*config->getFChannelsToAverage(freqindex))));
+        // when in zoom mode w/ no matching autos, scale pcals by data contribution only
+        acw = autocorrweights[i][0][j];
+        if (acw == 0.0 && config->getDNumTotalBands(currentconfigindex, i) > config->getDNumRecordedBands(currentconfigindex, i))
+          acw = 1.0;
+        if(acw > 0.0)
+          {
+          scale = 1.0/(acw*meansubintsperintegration*((float)(config->getBlocksPerSend(currentconfigindex)*2*freqchannels*config->getFChannelsToAverage(freqindex))));
           status = vectorMulC_f32_I(scale, &(floatresults[resultindex]), config->getDRecordedFreqNumPCalTones(currentconfigindex, i, localfreqindex)*2);
           if(status != vecNoErr)
             csevere << startl << "Error trying to amplitude calibrate the pulsecal data!!" << endl;
-        }
+          }
         resultindex += config->getDRecordedFreqNumPCalTones(currentconfigindex, i, localfreqindex)*2;
       }
     }
