@@ -25,6 +25,7 @@
 #include <ctype.h>
 #include <cmath>
 #include <sys/time.h>
+#include <sys/socket.h>
 #include <mpi.h>
 #include <unistd.h>
 #include <vdifio.h>
@@ -103,6 +104,68 @@ VDIFNetworkDataStream::~VDIFNetworkDataStream()
 	pthread_barrier_destroy(&networkthreadbarrier);
 }
 
+int VDIFNetworkDataStream::readrawnetworkVDIF(int sock, char* ptr, int bytestoread, unsigned int* nread, int packetsize, int stripbytes)
+{
+	const int MaxPacketSize = 20000;
+	int length;
+	int goodbytes = packetsize - stripbytes;
+	char *ptr0 = ptr;
+	char *end = ptr + bytestoread - goodbytes;
+	char workbuffer[MaxPacketSize];
+	const vdif_header *vh;
+
+	vh = reinterpret_cast<const vdif_header *>(workbuffer + stripbytes);
+
+	if(packetsize > MaxPacketSize)
+	{
+		cfatal << startl << "Error: readrawnetworkVDIF wants to read packets of size " << packetsize << " where MaxPacketSize=" << MaxPacketSize << endl;
+		MPI_Abort(MPI_COMM_WORLD, 1);
+	}
+
+	*nread = 0;
+
+	while(ptr <= end)
+	{
+		length = recvfrom(sock, workbuffer, MaxPacketSize, 0, 0, 0);
+		if(length <= 0)
+		{
+			// timeout on read?
+			break;
+		}
+		else if(length == packetsize)
+		{
+			memcpy(ptr, workbuffer + stripbytes, goodbytes);
+			ptr += goodbytes;
+
+			if( (vh->frame == 0) && (vh->threadid == 0) && (vh->seconds % 10 == 0) )
+			{
+				/* first frame of the 10 second interval.  Compare with local clock time for kicks */
+				struct timespec ck;
+				double deltat;		// [sec]
+
+				clock_gettime(CLOCK_REALTIME, &ck);
+				deltat = (ck.tv_sec % 10) - (vh->seconds % 10);
+				deltat += ck.tv_nsec*1.0e-9;
+				if(deltat < -3.0)
+				{
+					deltat += 10.0;
+				}
+				int p = cinfo.precision();
+				cinfo.precision(6);
+				cinfo << startl << "VDIF clock is " << deltat << " seconds behind system clock" << endl;
+				cinfo.precision(p);
+			}
+		}
+	}
+
+	if(nread)
+	{
+		*nread = ptr - ptr0;
+	}
+
+	return 1;
+}
+
 // this function implements the network reader.  It is continuously either filling data into a ring buffer or waiting for a mutex to clear.
 void VDIFNetworkDataStream::networkthreadfunction()
 {
@@ -146,7 +209,7 @@ void VDIFNetworkDataStream::networkthreadfunction()
 			else
 			{
 				// Raw socket or trimmed UDP
-				status = readrawnetwork(socketnumber, (char *)(readbuffer + readbufferwriteslot*readbufferslotsize), readbufferslotsize, &bytes, packetsize, stripbytes);
+				status = readrawnetworkVDIF(socketnumber, (char *)(readbuffer + readbufferwriteslot*readbufferslotsize), readbufferslotsize, &bytes, packetsize, stripbytes);
 			}
 
 			if(bytes == 0)
@@ -160,7 +223,7 @@ void VDIFNetworkDataStream::networkthreadfunction()
 				endofscan = true;
 				lastslot = readbufferwriteslot;
 				endindex = lastslot*readbufferslotsize + bytes; // No data in this slot from here to end
-				cverbose << startl << "gap in data seen; read only " << bytes << " bytes where " << readbufferslotsize << " bytes were requested" << endl;
+				cverbose << startl << "Short read: only " << bytes << " bytes where " << readbufferslotsize << " bytes were requested" << endl;
 			}
 
 			// FIXME: do the right thing in various error conditions.  code block below is if data is good
@@ -180,6 +243,19 @@ void VDIFNetworkDataStream::networkthreadfunction()
 				if(!dataremaining)
 				{
 					endofscan = true;
+				}
+			}
+			else
+			{
+				static int nBadReadStatus = 0;
+				++nBadReadStatus;
+				if((nBadReadStatus & (nBadReadStatus - 1)) == 0)
+				{
+					cwarn << startl << "read returned status=" << status << " N=" << nBadReadStatus << endl;
+				}
+				if(nBadReadStatus > 1)
+				{
+					keepreading = false;
 				}
 			}
 			if(endofscan || !keepreading)
@@ -352,6 +428,8 @@ int VDIFNetworkDataStream::dataRead(int buffersegment)
 
 	bytesvisible = muxend - muxindex;
 
+//cverbose << "About to mux " << readbytes << " from slot(s) " << n1 << "-" << n2 << endl;
+
 	// multiplex and corner turn the data
 	muxReturn = vdifmux(destination, readbytes, readbuffer+muxindex, bytesvisible, inputframebytes, framespersecond, muxBits, nthreads, threads, nSort, nGap, startOutputFrameNumber, &vstats);
 	if(muxReturn < 0)
@@ -363,9 +441,9 @@ int VDIFNetworkDataStream::dataRead(int buffersegment)
 	{
 		static int C = 0;
 
-		if(C % 100 == 0)
+		if(C % 400 == 0)
 		{
-			cinfo << startl << "C=" << C << " VDIF multiplexing statistics: nValidFrame=" << vstats.nValidFrame << " nInvalidFrame=" << vstats.nInvalidFrame << " nDiscardedFrame=" << vstats.nDiscardedFrame << " nWrongThread=" << vstats.nWrongThread << " nSkippedByte=" << vstats.nSkippedByte << " nFillByte=" << vstats.nFillByte << " nDuplicateFrame=" << vstats.nDuplicateFrame << " bytesProcessed=" << vstats.bytesProcessed << " nGoodFrame=" << vstats.nGoodFrame << " nCall=" << vstats.nCall << endl;
+			cinfo << startl << "C=" << C << " VDIF multiplexing statistics: nValidFrame=" << vstats.nValidFrame << " nInvalidFrame=" << vstats.nInvalidFrame << " nDiscardedFrame=" << vstats.nDiscardedFrame << " nWrongThread=" << vstats.nWrongThread << " nSkippedByte=" << vstats.nSkippedByte << " nFillByte=" << vstats.nFillByte << " nDuplicateFrame=" << vstats.nDuplicateFrame << " bytesProcessed=" << vstats.bytesProcessed << " nGoodFrame=" << vstats.nGoodFrame << " nCall=" << vstats.nCall << " destUsed=" << vstats.destUsed << " srcUsed=" << vstats.srcUsed << endl;
 		}
 		++C;
 	}
@@ -410,7 +488,7 @@ int VDIFNetworkDataStream::dataRead(int buffersegment)
 				++nGapWarn;
 				if( (nGapWarn & (nGapWarn - 1)) == 0)
 				{
-					cwarn << startl << "Data gap of " << (vstats.destUsed-vstats.srcUsed) << " bytes out of " << vstats.destUsed << " bytes found. startOutputFrameNumber=" << startOutputFrameNumber << " bytesvisible=" << bytesvisible << " N=" << nGapWarn << endl;
+					cwarn << startl << "Data gap of " << (vstats.destUsed-vstats.srcUsed) << " bytes out of " << vstats.destUsed << " bytes found. startOutputFrameNumber=" << startOutputFrameNumber << " bytesvisible=" << bytesvisible << " deltaDataFrames=" << deltaDataFrames << " N=" << nGapWarn << endl;
 				}
 			}
 			else if(deltaDataFrames > 10)
@@ -420,7 +498,8 @@ int VDIFNetworkDataStream::dataRead(int buffersegment)
 				++nExcessWarn;
 				if( (nExcessWarn & (nExcessWarn - 1)) == 0)
 				{
-					cwarn << startl << "Data excess of " << (vstats.srcUsed-vstats.destUsed) << " bytes out of " << vstats.destUsed << " bytes found. startOutputFrameNumber=" << startOutputFrameNumber << " bytesvisible=" << bytesvisible << " N=" << nExcessWarn << endl;
+					cwarn << startl << "Data excess of " << (vstats.srcUsed-vstats.destUsed) << " bytes out of " << vstats.destUsed << " bytes found. startOutputFrameNumber=" << startOutputFrameNumber << " bytesvisible=" << bytesvisible << " deltaDataFrames=" << deltaDataFrames << " N=" << nExcessWarn << endl;
+					cwarn << startl << "readbufferslotsize=" << readbufferslotsize << " n1=" << n1 << " n2=" << n2 << endl;
 				}
 			}
 			startOutputFrameNumber = -1;
@@ -513,7 +592,6 @@ void VDIFNetworkDataStream::loopnetworkread()
 
 	if(ethernetdevice.empty())
 	{
-cinfo << startl << "VDIFNetworkDataStream::loopnetworkread: running openstream" << endl;
 		openstream(portnumber, tcpwindowsizebytes/1024);
 	}
 	else
@@ -531,6 +609,7 @@ cinfo << startl << "VDIFNetworkDataStream::loopnetworkread: running openstream" 
 
 	initialiseFile(bufferinfo[0].configindex, 0);
 
+	dataremaining = true;
 
 	if(keepreading)
 	{

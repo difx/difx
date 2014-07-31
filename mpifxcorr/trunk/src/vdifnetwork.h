@@ -45,6 +45,7 @@ public:
 protected:
 	virtual int dataRead(int buffersegment);
 	static void *launchnetworkthreadfunction(void *self);
+	int readrawnetworkVDIF(int sock, char* ptr, int bytestoread, unsigned int* nread, int packetsize, int stripbytes);
 	void networkthreadfunction();
 	virtual void loopnetworkread();
 
