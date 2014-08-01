@@ -152,7 +152,7 @@ int VDIFNetworkDataStream::readrawnetworkVDIF(int sock, char* ptr, int bytestore
 				}
 				int p = cinfo.precision();
 				cinfo.precision(6);
-				cinfo << startl << "VDIF clock is " << deltat << " seconds behind system clock" << endl;
+				cinfo << startl << "VDIF clock is " << deltat << " seconds behind system clock for antenna " << stationname << endl;
 				cinfo.precision(p);
 			}
 		}
