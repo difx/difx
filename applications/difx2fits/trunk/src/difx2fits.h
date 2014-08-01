@@ -69,10 +69,11 @@ struct CommandLineOptions
 	double DifxPcalAvgSeconds;
 	double jobMatrixDeltaT; /* seconds */
 	char *primaryBand;	/* for VLITE */
+	char *historyFile;	/* if set, dump contents to FITS history */
 };
 
 const DifxInput *DifxInput2FitsHeader(const DifxInput *D,
-	struct fitsPrivate *out, const char *primaryBand);
+	struct fitsPrivate *out, const struct CommandLineOptions *opts);
 
 const DifxInput *DifxInput2FitsAG(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out);

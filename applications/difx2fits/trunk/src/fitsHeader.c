@@ -45,7 +45,7 @@ double timeMjd()
 	return MJD_UNIX0 + t.tv_sec/SEC_DAY + t.tv_usec/MUSEC_DAY;
 }
 
-const DifxInput *DifxInput2FitsHeader(const DifxInput *D, struct fitsPrivate *out, const char *primaryBand)
+const DifxInput *DifxInput2FitsHeader(const DifxInput *D, struct fitsPrivate *out, const struct CommandLineOptions *opts)
 {
 	const int maxLength = 132;
 	char ref_date[12];
@@ -72,9 +72,9 @@ const DifxInput *DifxInput2FitsHeader(const DifxInput *D, struct fitsPrivate *ou
 	fitsWriteString(out, "OBSERVER", D->job->obsCode, "");
 	fitsWriteString(out, "ORIGIN", "VLBA Correlator", "");
 	fitsWriteString(out, "CORRELAT", "DIFX", "");
-	if(primaryBand)
+	if(opts->primaryBand)
 	{
-		fitsWriteString(out, "PRIBAND", primaryBand, "");
+		fitsWriteString(out, "PRIBAND", opts->primaryBand, "");
 	}
 	fitsWriteString(out, "DATE-OBS", ref_date, "");
 	mjd2fits((int)timeMjd(), strng);
@@ -139,6 +139,39 @@ const DifxInput *DifxInput2FitsHeader(const DifxInput *D, struct fitsPrivate *ou
 		time2str(D->job[j].mjdStart + D->job[j].duration/86400.0, "", str);
 		snprintf(strng, maxLength, "FILESTOP  : %s", str);
 		fitsWriteComment(out, "HISTORY", strng);
+	}
+
+	if(opts->historyFile)
+	{
+		FILE *in;
+
+		in = fopen(opts->historyFile, "r");
+		if(!in)
+		{
+			printf("\nWarning: cannot load history file: %s\n                            ", opts->historyFile);
+		}
+		else
+		{
+			for(;;)
+			{
+				fgets(strng, 70, in);
+				if(feof(in))
+				{
+					break;
+				}
+				strng[70] = 0;
+				for(j = 0; strng[j]; ++j)
+				{
+					if(strng[j] < ' ')
+					{
+						strng[j] = ' ';
+					}
+				}
+				fitsWriteComment(out, "HISTORY", strng);
+			}
+
+			fclose(in);
+		}
 	}
 	
 	fitsWriteEnd(out);

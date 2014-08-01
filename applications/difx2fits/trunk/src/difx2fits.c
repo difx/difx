@@ -109,7 +109,12 @@ static void usage(const char *pgm)
 	fprintf(stderr, "  --ac-always\n");
 	fprintf(stderr, "  -a                  Always write autocorrelations\n");
 	fprintf(stderr, "\n");
-        fprintf(stderr, "  --skip-extra-autocorrs Ignore e.g. LL autocorrs in a job with only RR cross-corrs\n");
+        fprintf(stderr, "  --skip-extra-autocorrs\n");
+	fprintf(stderr, "                      Ignore e.g. LL autocorrs in a job with only RR cross-corrs\n");
+	fprintf(stderr, "\n");
+	fprintf(stderr, "  --history <file>\n");
+	fprintf(stderr, "  -H <file>           Read file <file> and populate FITS History\n");
+	fprintf(stderr, "\n");
 #ifdef HAVE_FFTW
 	fprintf(stderr, "  --sniff-all\n");
 	fprintf(stderr, "  -S                  Sniff all bins and centers\n");
@@ -179,6 +184,11 @@ void deleteCommandLineOptions(struct CommandLineOptions *opts)
 		{
 			free(opts->primaryBand);
 			opts->primaryBand = 0;
+		}
+		if(opts->historyFile)
+		{
+			free(opts->historyFile);
+			opts->historyFile = 0;
 		}
 		free(opts);
 	}
@@ -338,6 +348,12 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 				{
 					++i;
 					opts->primaryBand = strdup(argv[i]);
+				}
+				else if(strcmp(argv[i], "--history") == 0 ||
+					strcmp(argv[i], "-H") == 0)
+				{
+					++i;
+					opts->historyFile = strdup(argv[i]);
 				}
 				else
 				{
@@ -582,7 +598,7 @@ static const DifxInput *DifxInput2FitsTables(const DifxInput *D,
 
 	printf("  Header                    ");
 	fflush(stdout);
-	D = DifxInput2FitsHeader(D, out, opts->primaryBand);
+	D = DifxInput2FitsHeader(D, out, opts);
 	printf("%lld bytes\n", out->bytes_written - last_bytes);
 	last_bytes = out->bytes_written;
 

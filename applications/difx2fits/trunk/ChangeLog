@@ -6,6 +6,7 @@ Version 3.4.0
 * print MJD range of converted output
 * add utility plotpcal
 * update pulse cal: Use new, more natural format for .difx/PCAL* files made by mpifxcorr
+* allow addition of history though external file (--history option)
 
 Version 3.3.0
 * Improved clarity in generation of Flag, Tsys, Pcal, Gain and Weather tables: prioritized sources of data
