@@ -14,6 +14,8 @@ Version 2.4
 * Emit Mark5 version information via cinfo on startup
 * PCAL: Pcal files generated are now consistent with http://cira.ivec.org/dokuwiki/lib/exe/fetch.php/difx/difxuserguide.pdf
 * PCAL: Write informational header in comments to top of PCAL files
+* Reduce sort window for VDIF to 32 frames to accomodate lower bandwidths.
+  - Someday this should be tuned a bit better.
 
 Version 2.3
 ~~~~~~~~~~~

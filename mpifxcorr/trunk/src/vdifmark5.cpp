@@ -802,7 +802,7 @@ int VDIFMark5DataStream::dataRead(int buffersegment)
 				++nGapWarn;
 				if( (nGapWarn & (nGapWarn - 1)) == 0)
 				{
-					cwarn << startl << "Data gap of " << (vstats.destUsed-vstats.srcUsed) << " bytes out of " << vstats.destUsed << " bytes found. startOutputFrameNumber=" << startOutputFrameNumber << " bytesvisible=" << bytesvisible << " N=" << nGapWarn << endl;
+					cwarn << startl << "Data gap of " << (vstats.destUsed-vstats.srcUsed) << " bytes out of " << vstats.destUsed << " bytes found. startOutputFrameNumber=" << startOutputFrameNumber << " bytesvisible=" << bytesvisible << " N=" << nGapWarn << " deltaDataFrames=" << deltaDataFrames << endl;
 				}
 			}
 			else if(deltaDataFrames > 10)

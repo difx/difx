@@ -67,7 +67,7 @@ VDIFDataStream::VDIFDataStream(const Configuration * conf, int snum, int id, int
 	}
 
 	// Set some VDIF muxer parameters
-	nSort = 64;	// allow data to be this many frames out of order without any loss at read boundaries
+	nSort = 32;	// allow data to be this many frames out of order without any loss at read boundaries
 	nGap = 1000;	// a gap of this many frames will trigger an interruption of muxing
 	startOutputFrameNumber = -1;
 
