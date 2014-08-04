@@ -225,7 +225,8 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                                     // check for match to this frequency
                     if (pfb[nf].stn[k].freq     == freq_i
                      && pfb[nf].stn[k].bw       == bw_i
-                     && pfb[nf].stn[k].sideband == sideband_i)
+                     && pfb[nf].stn[k].sideband == sideband_i
+                     && pfb[nf].stn[k].ant      == n)
                         {
                         strcpy (t301.chan_id, pfb[nf].stn[k].chan_id);
                         strcpy (t302.chan_id, pfb[nf].stn[k].chan_id);
@@ -509,7 +510,8 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                                                  || ((pfb[nf].stn[k].freq + pfb[nf].stn[k].bw == D->freq[jf].freq)
                                                  && pfb[nf].stn[k].sideband == 'U' && D->freq[jf].sideband == 'L'))
                                                  && pfb[nf].stn[k].bw       == D->freq[jf].bw  
-                                                 && pfb[nf].stn[k].pol      == ds_pols[record_chan])
+                                                 && pfb[nf].stn[k].pol      == ds_pols[record_chan]
+                                                 && pfb[nf].stn[k].ant      == n)
                                                     {
                                                                 // this channel matches, is name
                                                                 // already in the table?
