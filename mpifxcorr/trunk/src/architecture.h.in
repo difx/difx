@@ -285,6 +285,7 @@
 #define s16                      int16_t
 #define cs16                     complex short
 #define s32                      int32_t
+#define u32                      uint32_t
 #define f32                      float
 #define f64                      double
 #define cf32                     fc32  // fftwf_complex
