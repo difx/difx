@@ -150,6 +150,10 @@ int VDIFNetworkDataStream::readrawnetworkVDIF(int sock, char* ptr, int bytestore
 				{
 					deltat += 10.0;
 				}
+				if(deltat > 5)
+				{
+					deltat -= 10.0;
+				}
 				int p = cinfo.precision();
 				cinfo.precision(6);
 				cinfo << startl << "VDIF clock is " << deltat << " seconds behind system clock for antenna " << stationname << endl;
