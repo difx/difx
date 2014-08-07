@@ -583,6 +583,11 @@ int createRoot (DifxInput *D,           // difx input structure pointer
                              j, 
                              pfb[i].stn[k].pol,
                              pfb[i].stn[k].pcal_int);
+                    if (pfb[i].stn[k].pcal_int != 1
+                     && pfb[i].stn[k].pcal_int != 5
+                     && pfb[i].stn[k].pcal_int != 10)
+                        printf ("Warning! Pcal interval of %d MHz has no BBC statement.\n",
+                                pfb[i].stn[k].pcal_int);
                     ik = i;         // save i for which k applied
                     j++;
                     }
@@ -596,6 +601,8 @@ int createRoot (DifxInput *D,           // difx input structure pointer
         fprintf (fout, "    BBC_assign = &BBCR1 : 02 : &IFR1;\n");
         fprintf (fout, "    BBC_assign = &BBCL5 : 03 : &IFL5;\n");
         fprintf (fout, "    BBC_assign = &BBCR5 : 04 : &IFR5;\n");
+        fprintf (fout, "    BBC_assign = &BBCL10: 05 : &IFL10;\n");
+        fprintf (fout, "    BBC_assign = &BBCR10: 06 : &IFR10;\n");
         fprintf (fout, "  enddef;\n");
         
         fprintf (fout, "$IF;\n");
@@ -605,6 +612,8 @@ int createRoot (DifxInput *D,           // difx input structure pointer
         fprintf (fout, "    if_def = &IFR1 : 2N : R : 10000.0 MHz : U : 1 MHz : 0 Hz;\n");
         fprintf (fout, "    if_def = &IFL5 : 1N : L : 10000.0 MHz : U : 5 MHz : 0 Hz;\n");
         fprintf (fout, "    if_def = &IFR5 : 2N : R : 10000.0 MHz : U : 5 MHz : 0 Hz;\n");
+        fprintf (fout, "    if_def = &IFL10: 1N : L : 10000.0 MHz : U :10 MHz : 0 Hz;\n");
+        fprintf (fout, "    if_def = &IFR10: 2N : R : 10000.0 MHz : U :10 MHz : 0 Hz;\n");
         fprintf (fout, "  enddef;\n");
         
         fprintf (fout, "$TRACKS;\n");
