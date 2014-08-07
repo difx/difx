@@ -442,6 +442,7 @@ int VDIFNetworkDataStream::dataRead(int buffersegment)
 	}
 
 
+	if(0)
 	{
 		static int C = 0;
 
@@ -488,11 +489,22 @@ int VDIFNetworkDataStream::dataRead(int buffersegment)
 			if(deltaDataFrames < -10)
 			{
 				static int nGapWarn = 0;
+				int nSkip;
+
 
 				++nGapWarn;
-				if( (nGapWarn & (nGapWarn - 1)) == 0)
+				if( (nGapWarn & (nGapWarn - 1)) == 0 || nGapWarn <= 10)
 				{
 					cwarn << startl << "Data gap of " << (vstats.destUsed-vstats.srcUsed) << " bytes out of " << vstats.destUsed << " bytes found. startOutputFrameNumber=" << startOutputFrameNumber << " bytesvisible=" << bytesvisible << " deltaDataFrames=" << deltaDataFrames << " N=" << nGapWarn << endl;
+				}
+
+				nSkip = bytesvisible/2;
+				nSkip -= (nSkip % inputframebytes);
+				muxindex += nSkip;
+
+				if(nGapWarn > 6)
+				{
+					dataremaining = false;
 				}
 			}
 			else if(deltaDataFrames > 10)
