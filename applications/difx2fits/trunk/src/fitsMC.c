@@ -84,6 +84,7 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 	int printed=0;
 	/* 1-based indices for FITS file */
 	int32_t antId1, arrayId1, sourceId1, freqId1;
+	int polyDuration = 0;
 
 	if(D == 0)
 	{
@@ -111,6 +112,17 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 		return 0;
 	}
   
+	for(a = 0; a < D->nAntenna; ++a)
+	{
+		if(D->scan->im[a])
+		{
+			polyDuration = D->scan->im[a][0][0].validDuration;
+			break;
+		}
+	}
+
+	printf("DUR = %d\n", polyDuration);
+
 	fitsWriteBinTable(out, nColumn, columns, nRowBytes, "MODEL_COMPS");
 	arrayWriteKeys(p_fits_keys, out);
 	fitsWriteInteger(out, "NO_POL", nPol, "");
@@ -119,6 +131,7 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 	fitsWriteInteger(out, "ZERO_PAD", 0, "");
 	fitsWriteInteger(out, "FFT_TWID", 1, "Version of FFT twiddle table used");
 	fitsWriteString(out, "TAPER_FN", D->job->taperFunction, "");
+	fitsWriteFloat(out, "DELTAT", polyDuration/86400.0, "");
 	fitsWriteInteger(out, "TABREV", 1, "");
 #warning "populate the new keyword below"
 	//fitsWriteDouble(out, "DELTAT", , "DAYS");
