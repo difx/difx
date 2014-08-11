@@ -130,6 +130,7 @@ public:
 	unsigned int nAntennasWithRecordedData(const VexData *V) const;
 	unsigned int nRecordChan(const VexData *V, const std::string &antName) const;
 	const VexInterval *getAntennaInterval(const std::string &antName) const;
+	bool getRecordEnable(const std::string &antName) const;
 };
 
 class VexSource

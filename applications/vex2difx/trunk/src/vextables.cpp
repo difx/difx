@@ -1350,7 +1350,7 @@ unsigned int VexScan::nAntennasWithRecordedData(const VexData *V) const
 	for(std::map<std::string,VexInterval>::const_iterator it = stations.begin(); it != stations.end(); ++it)
 	{
 		std::map<std::string,VexSetup>::const_iterator S = M->setups.find(it->first);
-		if(S != M->setups.end() && S->second.nRecordChan > 0 && S->second.formatName != "NONE")
+		if(S != M->setups.end() && S->second.nRecordChan > 0 && S->second.formatName != "NONE" && getRecordEnable(it->first) == true)
 		{
 			++nAnt;
 		}
@@ -1378,6 +1378,19 @@ unsigned int VexScan::nRecordChan(const VexData *V, const std::string &antName) 
 	}
 
 	return nRecChan;
+}
+
+bool VexScan::getRecordEnable(const std::string &antName) const
+{
+	std::map<std::string,bool>::const_iterator it = recordEnable.find(antName);
+	if(it != recordEnable.end())
+	{
+		return it->second;
+	}
+	else
+	{
+		return false;
+	}
 }
 
 const VexInterval *VexScan::getAntennaInterval(const std::string &antName) const
