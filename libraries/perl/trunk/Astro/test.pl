@@ -97,15 +97,16 @@ $Astro::Time::StrSep = ':';
 printf("mjd2dayno:  MJD %.2f ==> %03d/$year (%s)\n", $mjd, $dayno,
        turn2str($ut,'H',0));
 
-printf("mjd2time:   MJD %.2f ==> %s\n", $mjd, mjd2time($mjd));
-printf("mjd2vextime:MJD %.2f ==> %s\n", $mjd, mjd2vextime($mjd));
-
 $mjd = dayno2mjd($dayno, $year, $ut);
 printf("dayno2mjd:  %03d/$year (%s) ==> MJD %.2f\n", $dayno,
        turn2str($ut,'H',0), $mjd);
 
 my $mstr = month2str($month);
 printf("month2str:  $month is $mstr\n");
+
+my $dow = mjd2weekday($mjd);
+my $dowstr = mjd2weekdaystr($mjd, 1);
+printf("Day of week:$dow   $dowstr\n");
 
 $dUT1 = -0.2;
 $gst = gst($mjd, $dUT1);
@@ -135,6 +136,9 @@ printf("lst2mjd:    LST %s on $dayno/$year \@ %s ==> MJD %.6f\n",
 
 $Astro::Time::StrSep = ':';
 
+my $time = mjd2epoch($mjd);
+printf("mjd2epoch:  MJD %.6f is Unix Epoch %d\n", $mjd, $time);
+
 $ra = 0.5356;
 $dec = 0.1025;
 
@@ -153,6 +157,10 @@ printf("xy2azel:    %s,%s ==> %s,%s\n", turn2str($x,'D',0),
 ($x, $y) = azel2xy($az, $el);
 printf("azel2xy:    %s,%s ==> %s,%s\n", turn2str($az,'D',0), 
        turn2str($el,'D',0), turn2str($x,'D',0), turn2str($y,'D',0));
+
+($ha, $dec) = eqazel($az, $el, $latitude,1);
+printf("eqazel:     %s,%s ==> %s,%s (azel->hadec)\n", turn2str($az,'D',0),
+       turn2str($el,'D',0), turn2str($ha,'H',0), turn2str($dec,'D',0));
 
 ($ha, $dec) = eqazel($az, $el, $latitude);
 printf("eqazel:     %s,%s ==> %s,%s (azel->hadec)\n", turn2str($az,'D',0),

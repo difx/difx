@@ -41,3 +41,15 @@
 	- Added month2str and str2month
 0.71 18 Aug 2008
 	- Added $np option to mjd2time
+0.72 28 Apr 2010
+	- Acutally add str2month
+0.73 19 Aug 2010
+     	- Added optional argument to eqazel to allow negative ha and az returned
+0.74 11 Mar 2011
+     	- Added mjd2weekday and mjd2weekdaystr
+0.75 19 Feb 2012
+     	- Added doco for last few functions added
+0.76 13 Aug 2014
+     	- Added mjd2epoch
+0.77 15 Aug 2014
+	- Added mjd2vextime

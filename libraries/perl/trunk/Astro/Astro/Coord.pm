@@ -30,7 +30,7 @@ BEGIN {
   use Exporter ();
   use vars qw( $VERSION @ISA @EXPORT @EXPORT_OK @EXPORT_FAIL 
 	       $bepoch );
-  $VERSION = '1.42';
+  $VERSION = '1.43';
 
   @ISA = qw(Exporter);
 
@@ -228,17 +228,19 @@ sub azel2xy ($$) {
 
   ($ha, $dec) = eqazel($az, $el, $latitude);
   ($az, $el) = eqazel($ha, $dec, $latitude);
+  ($ha, $dec) = eqazel($az, $el, $latitude, $allownegative);
 
  Converts HA/Dec coordinates to Az/El and vice versa. 
    $ha, $dec     Hour angle and declination of source (turns)
    $az, $el      Azimuth and elevation of source (turns)
    $latitude     Latitude of the observatory (turns)
+   $allownegative  If true, allow negative $ha or $az on return (Optional)
  Note:
   The ha,dec and az,el conversion is symmetrical
 
 =cut
 
-sub eqazel ($$$) {
+sub eqazel ($$$;$) {
   my $sphi = sin(turn2rad($_[2]));
   my $cphi = cos(turn2rad($_[2]));
   my $sleft = sin(turn2rad($_[0]));
@@ -246,7 +248,8 @@ sub eqazel ($$$) {
   my $sright = sin(turn2rad($_[1]));
   my $cright = cos(turn2rad($_[1]));
   my $left_out = atan2(-$sleft,-$cleft*$sphi+$sright*$cphi/$cright)/(2.0*$PI);
-  $left_out = ($left_out < 0.0) ? $left_out + 1.0 : $left_out;
+  $left_out = ($left_out < 0.0) ? $left_out + 1.0 : $left_out 
+    if (!(defined $_[3] && $_[3]));
   my $right_out= asin($cleft*$cright*$cphi + $sright*$sphi)/(2.0*$PI);
 
   return($left_out, $right_out);

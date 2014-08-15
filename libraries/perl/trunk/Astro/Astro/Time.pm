@@ -36,12 +36,12 @@ BEGIN {
   use Exporter ();
   use vars qw($VERSION @ISA @EXPORT @EXPORT_OK @EXPORT_FAIL
               $PI $StrSep $StrZero $Quiet );
-  $VERSION = '1.18';
+  $VERSION = '1.22';
   @ISA = qw(Exporter);
 
   @EXPORT      = qw( cal2dayno dayno2cal leap yesterday tomorrow
-                     mjd2cal cal2mjd mjd2dayno dayno2mjd now2mjd
-                     jd2mjd mjd2jd mjd2time mjd2vextime
+                     mjd2cal cal2mjd mjd2dayno dayno2mjd now2mjd mjd2epoch
+                     jd2mjd mjd2jd mjd2time mjd2vextime mjd2weekday mjd2weekdaystr
                      gst mjd2lst cal2lst dayno2lst rise lst2mjd
                      turn2str deg2str rad2str str2turn str2deg str2rad
                      hms2time time2hms month2str str2month
@@ -49,7 +49,7 @@ BEGIN {
                      $PI );
   @EXPORT_OK   = qw ( daynoOK monthOK dayOK utOK nint $StrSep $StrZero
 		      $Quiet);
-  @EXPORT_FAIL = qw ( @days @MonthShortStr @MonthStr);
+  @EXPORT_FAIL = qw ( @days @MonthShortStr @MonthStr @WeekShortStr @WeekStr);
 
   use Carp;
   use POSIX qw( fmod floor ceil acos );
@@ -70,6 +70,10 @@ my @MonthShortStr = ('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug',
 		     'Sep', 'Oct', 'Nov', 'Dec');
 my @MonthStr = ('January', 'February', 'March', 'April', 'May', 'June', 'July',
 		'August', 'September','October', 'November', 'December');
+
+my @WeekShortStr = ('Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun');
+my @WeekStr = ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 
+	       'Saturday', 'Sunday');
 
 # Is the dayno valid?
 sub daynoOK ($$) {
@@ -131,6 +135,8 @@ sub nint ($) {
   my ($x) = @_;
   ($x<0.0) ? return(ceil($x-0.5)) : return(floor($x+0.5))
 }
+
+=over 4
 
 =item B<turn2str>
 
@@ -1050,6 +1056,23 @@ sub mjd2vextime($;$) {
   return sprintf("%dy%03dd%s", $year, $dayno, turn2str($ut, 'H', $np, 'hms'));
 }
 
+=item B<mjd2epoch>
+
+  $time = mjd2epoch($mjd);
+
+ Converts a Modified Julian day to unix Epoch (seconds sinve 1 Jan 1970)
+ Rounded to the nearest second
+    $mjd     Modified Julian day
+    $tie     Seconds since 1 Jan 1970
+
+=cut
+
+sub mjd2epoch($) {
+  my $mjd = shift;
+  my $epoch = ($mjd - 40587)*24*60*60;
+  return int($epoch + $epoch/abs($epoch*2)); # Work even if epoch is negative
+}
+
 =item B<gst>
 
   $gst  = gst($mjd);
@@ -1275,6 +1298,21 @@ sub lst2mjd($$$$;$) {
   return($mjd + $delay/$SOLAR_TO_SIDEREAL);
 }
 
+=item B<month2str>
+
+  $monthstr = month2str($month);
+  $longmonthstr = month2str($month,1);
+
+  This routine returns the name of the given month (as a number 1..12), 
+  where 1 is January. The default is a 3 character version of the month
+  ('Jan', 'Feb', etc) in the second form the full month is returned
+
+
+  The required inputs are :
+    $month      - The month in question with 1 == January.
+
+=cut
+
 sub month2str($;$) {
   my ($mon, $long) = @_;
 
@@ -1285,7 +1323,71 @@ sub month2str($;$) {
   } else {
     return $MonthShortStr[$mon-1];
   }
+}
 
+=item B<mjd2weekday>
+
+  $weekday = mjd2weekday($mjd);
+
+ Returns the weekday correspondig to the given MJD.
+ 0 ==> Monday. May not work for historical dates.
+
+    $mjd     Modified Julian day (JD-2400000.5)
+
+=cut
+
+
+
+sub mjd2weekday ($) {
+  my $mjd = int floor ((shift)+0.00001);  # MJD as an int...
+  return ($mjd-5) % 7;
+}
+
+=item B<mjd2weekdaystr>
+
+  $weekdaystr = mjd2weekdaystr($mjd);
+
+ Returns the name of the weekday correspondig to the given MJD.
+ May not work for historical dates.
+
+    $mjd     Modified Julian day (JD-2400000.5)
+
+=cut
+
+
+sub mjd2weekdaystr($;$) {
+  my ($mjd, $long) = @_;
+  my $dow = mjd2weekday($mjd);
+  if ($long) {
+    return $WeekStr[$dow];
+  } else {
+    return $WeekShortStr[$dow];
+  }
+}
+
+=item B<str2month>
+
+  $month = month2str($monthstr);
+
+  Given the name of a month (in English), this routine returns the
+  an integer between 1 and 12, where 1 is January. Full month names of
+  3 character abbreviations are acceptable. Minumum matching (e.g. "Marc")
+  is not supported.
+
+  The required inputs are :
+    $month      - Name of the month ('Jan', 'January', 'Feb', 'February' etc)
+
+=cut
+
+sub str2month($) {
+  my $month = uc(shift);
+
+  for (my $i=0; $i<12; $i++) {
+    if ($month eq uc($MonthStr[$i]) || $month eq uc($MonthShortStr[$i])) {
+      return $i+1;
+    }
+  }
+  return undef;
 }
 
 1;
