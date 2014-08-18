@@ -121,8 +121,6 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 		}
 	}
 
-	printf("DUR = %d\n", polyDuration);
-
 	fitsWriteBinTable(out, nColumn, columns, nRowBytes, "MODEL_COMPS");
 	arrayWriteKeys(p_fits_keys, out);
 	fitsWriteInteger(out, "NO_POL", nPol, "");
