@@ -56,11 +56,11 @@ public class NodeBrowserPane extends BrowserNode {
         for ( Iterator<BrowserNode> iter = _children.iterator(); iter.hasNext(); ) {
             //  Don't bother setting the draw conditions for items that fall off the
             //  bottom of the browser window.
-            try {
+            //try {
                 yOffset += iter.next().setDrawConditions( yOffset, true );
-            } catch ( java.util.ConcurrentModificationException e ) {
+            //} catch ( java.util.ConcurrentModificationException e ) {  //  I just removed this 7/11/2014
                 //  Ignore these - a redraw will occur soon enough BLAT
-            }
+            //}
         }
         //  Measure the total height of the data currently displayed in the
         //  browser.

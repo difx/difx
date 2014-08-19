@@ -17,8 +17,8 @@ package edu.nrao.difx.difxview;
 
 import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.Calendar;
 import java.util.GregorianCalendar;
+import java.util.Locale;
 
 /**
  *
@@ -30,7 +30,7 @@ public class VexFileParser {
      * Accept a string of data as the contents of a .vex file.  Parse the contents
      * and organize it.
      */
-    public void data( String str ) {
+    public void data( String str, boolean omitStations ) {
         _str = str;
         _length = _str.length();
         
@@ -67,7 +67,7 @@ public class VexFileParser {
                 else if ( sectionName.equalsIgnoreCase( "$FREQ" ) )
                     parseFreqData( sectionData );
                 else if ( sectionName.equalsIgnoreCase( "$SCHED" ) )
-                    parseSchedData( sectionData );
+                    parseSchedData( sectionData, omitStations );
                 else if ( sectionName.equalsIgnoreCase( "$SITE" ) )
                     parseSiteData( sectionData );
                 else if ( sectionName.equalsIgnoreCase( "$SOURCE" ) )
@@ -259,7 +259,7 @@ public class VexFileParser {
      * Extract "sched" data from a list of data lines.  These data include all of
      * the scans.
      */
-    protected void parseSchedData( ArrayList<String> data ) {
+    protected void parseSchedData( ArrayList<String> data, boolean omitStations ) {
         Scan currentScan = null;
         for ( Iterator<String> iter = data.iterator(); iter.hasNext(); ) {
             String thisLine = iter.next();
@@ -279,15 +279,15 @@ public class VexFileParser {
                 }
             }
             else if ( thisLine.length() > 5 && thisLine.substring( 0, 5 ).equalsIgnoreCase( "START" ) ) {
-                //  Convert the start time to a Java Calendar format.
+                //  Convert the start time to a Java GregorianCalendar format.
                 if ( currentScan != null ) {
                     String dataStr = skipEq( thisLine );
                     currentScan.start = new GregorianCalendar();
-                    currentScan.start.set( Calendar.YEAR, Integer.parseInt( dataStr.substring( 0, 4 )));
-                    currentScan.start.set( Calendar.DAY_OF_YEAR, Integer.parseInt( dataStr.substring( 5, 8 )));
-                    currentScan.start.set( Calendar.HOUR_OF_DAY, Integer.parseInt( dataStr.substring( 9, 11 )));
-                    currentScan.start.set( Calendar.MINUTE, Integer.parseInt( dataStr.substring( 12, 14 )));
-                    currentScan.start.set( Calendar.SECOND, Integer.parseInt( dataStr.substring( 15, 17 )));
+                    currentScan.start.set( GregorianCalendar.YEAR, Integer.parseInt( dataStr.substring( 0, 4 )));
+                    currentScan.start.set( GregorianCalendar.DAY_OF_YEAR, Integer.parseInt( dataStr.substring( 5, 8 )));
+                    currentScan.start.set( GregorianCalendar.HOUR_OF_DAY, Integer.parseInt( dataStr.substring( 9, 11 )));
+                    currentScan.start.set( GregorianCalendar.MINUTE, Integer.parseInt( dataStr.substring( 12, 14 )));
+                    currentScan.start.set( GregorianCalendar.SECOND, Integer.parseInt( dataStr.substring( 15, 17 )));
                 }
             }
             else if ( thisLine.length() > 4 && thisLine.substring( 0, 4 ).equalsIgnoreCase( "MODE" ) ) {
@@ -319,8 +319,10 @@ public class VexFileParser {
                     sPos = thisLine.indexOf( ':', ePos ) + 1;
                     newStation.otherStuff = thisLine.substring( sPos );
                     //  Extract from the end of the line the "omit" flag.  If this is -1, the
-                    //  station is considered "omitted".
-                    newStation.omitFlag = newStation.otherStuff.substring( newStation.otherStuff.lastIndexOf( ":" ) + 1 ).trim().contentEquals( "-1" ); 
+                    //  station is considered "omitted".  We only do this if the "omitStation" flag
+                    //  is true.
+                    if ( omitStations )
+                        newStation.omitFlag = newStation.otherStuff.substring( newStation.otherStuff.lastIndexOf( ":" ) + 1 ).trim().contentEquals( "-1" ); 
                     //  Make a copy of the whole string.
                     newStation.wholeString = thisLine;
                     //  Add this station to the list of stations associated with this
@@ -591,9 +593,10 @@ public class VexFileParser {
     
     public class Scan {
         String name;
-        Calendar start;
+        GregorianCalendar start;
         String mode;
         String source;
+        boolean omitFlag;
         ArrayList<ScanStation> station;
     }
     
@@ -678,33 +681,99 @@ public class VexFileParser {
     }
     
     /*
-     * Takes an input string of .vex data and removes stations within scan specifications
-     * that have "-1" codes attached to them.
+     * Takes an input string of .vex data and removes stations that have been "omitted",
+     * and scans that have been either removed or have not enough un-omitted stations
+     * utilized to scan them.  The information about scans and stations are contained in
+     * the "scanList", which is produced an instance of the VexFileParser class.  There
+     * is a switch to determine whether scans are actually removed from the final .vex
+     * product or if they are left in.  If this setting is false the stations will be
+     * commented out instead of removed.  
      */
-    static String editStations( String inStr ) {
+    static String editScans( String inStr, boolean exciseScans, ArrayList<Scan> scanList ) {
         String outStr = "";
         int pos = 0;
         int endPos = 0;
         boolean done = false;
         boolean inScan = false;
+        Scan currentScan = null;
+        boolean deleteScan = false;
+        boolean endScan = false;
         while ( !done ) {
             endPos = inStr.indexOf( '\n', pos );
             if ( endPos == -1 ) {
                 done = true;
             }
             else {
-                if ( !inScan && inStr.substring( pos, endPos ).trim().regionMatches( true, 0, "SCAN", 0, 4 ) ) {
+                //  Locate a "scan" line in the vex data.  These take the form of the work "scan" followed by
+                //  the name of the scan and a terminating ";".  Looking for the latter discriminates among
+                //  other lines that annoyingly use the word "SCAN".
+                if ( !inScan && inStr.substring( pos, endPos ).trim().regionMatches( true, 0, "SCAN", 0, 4 ) &&
+                        inStr.substring( pos, endPos ).trim().lastIndexOf( ";" ) > 0 ) {
                     inScan = true;
+                    currentScan = null;
+                    deleteScan = false;
+                    endScan = false;
+                    if ( scanList != null ) {
+                        //  Find this scan in our list of scans.  It *should* be there, but if not...well, that's weird,
+                        //  but deal with it by just leaving it alone.
+                        String thisScanName = inStr.substring( pos, endPos ).trim().substring( 5, inStr.substring( pos, endPos ).trim().lastIndexOf( ";" ) );
+                        for ( Iterator<Scan> iter = scanList.iterator(); iter.hasNext() && currentScan == null; ) {
+                            Scan testScan = iter.next();
+                            if ( testScan.name.contentEquals( thisScanName ) )
+                                currentScan = testScan;
+                        }
+                    }
+                    //  Tests to see if we should get rid of this scan, applied only if the
+                    //  exciseScans flag is set.
+                    if ( exciseScans && currentScan != null && currentScan.omitFlag )
+                        deleteScan = true;
+                    //  Only save the scan if it has enough stations.  Once again, this depends
+                    //  on the exciseScans flag.
+                    if ( exciseScans ) {
+                        int stationCount = 0;
+                        for ( Iterator<ScanStation> iter = currentScan.station.iterator(); iter.hasNext(); ) {
+                            if ( !iter.next().omitFlag )
+                                ++stationCount;
+                        }
+                        if ( stationCount < 2 )
+                            deleteScan = true;
+                    }
                 }
                 else if ( inStr.substring( pos, endPos ).trim().regionMatches( true, 0, "ENDSCAN", 0, 7 ) ) {
                     inScan = false;
+                    currentScan = null;
+                    if ( deleteScan )
+                        endScan = true;
+                    deleteScan = false;
                 }
-                if ( inScan && inStr.substring( pos, endPos ).trim().regionMatches( true, 0, "STATION", 0, 7 ) ) {
-                    if ( !inStr.substring( pos, endPos ).substring( inStr.substring( pos, endPos ).lastIndexOf( ":" ) + 1, endPos - pos ).trim().regionMatches( true, 0, "-1", 0, 2 ) )
+                //  Don't include any lines from scans that have been deleted
+                if ( !deleteScan && !endScan ) {
+                    //  Look for station lines in this scan.
+                    if ( inScan && inStr.substring( pos, endPos ).trim().regionMatches( true, 0, "STATION", 0, 7 ) ) {
+                        //  Locate the name of the station.
+                        String stationName = inStr.substring( pos, endPos ).substring( inStr.substring( pos, endPos ).indexOf( "=" ) + 1,
+                                inStr.substring( pos, endPos ).indexOf( ":" ) ).trim();
+                        //  Match it to the station listed in the currentScan.  It should be there, but
+                        //  handle the possibility that it isn't (by not doing anything).
+                        ScanStation currentStation = null;
+                        for ( Iterator<ScanStation> iter = currentScan.station.iterator(); iter.hasNext(); ) {
+                            ScanStation testScan = iter.next();
+                            if ( testScan.name.contentEquals( stationName ) )
+                                currentStation = testScan;
+                        }
+                        //  If we are "excising" deleted scans, just get rid of an omitted station.
+                        //  If not, omitted stations should be commented out.
+                        if ( currentStation != null && currentStation.omitFlag ) {
+                            if ( !exciseScans )
+                                outStr += "*" + inStr.substring( pos, endPos + 1 );
+                        }
+                        else
+                            outStr += inStr.substring( pos, endPos + 1 );
+                    }
+                    else
                         outStr += inStr.substring( pos, endPos + 1 );
                 }
-                else
-                    outStr += inStr.substring( pos, endPos + 1 );
+                endScan = false;
                 pos = endPos + 1;
             }
         }

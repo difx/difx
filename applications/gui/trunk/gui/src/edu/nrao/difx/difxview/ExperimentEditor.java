@@ -59,6 +59,7 @@ import java.text.SimpleDateFormat;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseWheelEvent;
+import java.awt.event.MouseEvent;
 
 import java.net.URL;
 import java.net.MalformedURLException;
@@ -582,6 +583,20 @@ public class ExperimentEditor extends JFrame {
         _antennaPane.respondToResizeEvents( true );
         antennaPanel.addScrollPane( _antennaPane );
         
+        //  This panel allows the user to select time specific stations for each
+        //  scan.
+        _scanStationTimeline = new ScanStationTimeline( "Scan/Station Timeline" );
+        _scanStationTimeline.open( false );
+        _scanStationTimeline.closedHeight( 20 );
+        _scanStationTimeline.drawFrame( false );
+        _scanStationTimeline.resizeOnTopBar( true );
+        _scanStationTimeline.addVexChangeListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                vexDataChange();
+            }
+        });
+        _scrollPane.addNode( _scanStationTimeline );
+        
         //  This panel contains the list of sources.
         IndexedPanel sourcePanel = new IndexedPanel( "Sources" );
         sourcePanel.open( false );
@@ -603,7 +618,18 @@ public class ExperimentEditor extends JFrame {
         _scanGrid = new ButtonGrid();
         _scanGrid.addChangeListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
-                produceV2dFile();
+                //  Find out which button in the grid was pushed.
+                ButtonGrid.GridButton lastButton = _scanGrid.lastEventButton();
+                //  Hunt through the vex data for the scan that matches this button.
+                //  Turn everything in the scan on or off based on the new button setting.
+                if ( _vexData != null ) {
+                    VexFileParser.Scan scan = (VexFileParser.Scan)lastButton.data();
+                    scan.omitFlag = !lastButton.on();
+                    for ( Iterator<VexFileParser.ScanStation> iter2 = scan.station.iterator(); iter2.hasNext(); ) {
+                        iter2.next().omitFlag = !lastButton.on();
+                    }
+                }
+                vexDataChange();
             }
         });
         scanPanel.add( _scanGrid );
@@ -614,7 +640,7 @@ public class ExperimentEditor extends JFrame {
             public void actionPerformed( ActionEvent e ) {
                 _scanGrid.allOn();
                 _timeLimits.maxLimits();
-                produceV2dFile();
+                vexDataChange();
             }
         });
         scanPanel.add( _selectAllScansButton );
@@ -624,7 +650,7 @@ public class ExperimentEditor extends JFrame {
         _selectNoScansButton.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
                 _scanGrid.allOff();
-                produceV2dFile();
+                vexDataChange();
             }
         });
         scanPanel.add( _selectNoScansButton );
@@ -1457,8 +1483,10 @@ public class ExperimentEditor extends JFrame {
      */
     public class SourcePanel extends IndexedPanel {
 
-        public SourcePanel( VexFileParser.Source source, SystemSettings settings ) {
+        public SourcePanel( VexFileParser.Source source, VexFileParser vexData, SystemSettings settings ) {
             super( source.name );
+            _source = source;
+            _vexData = vexData;
             _settings = settings;
             _this = this;
             _changeListeners = new EventListenerList();
@@ -1477,10 +1505,148 @@ public class ExperimentEditor extends JFrame {
             _useCheck.setSelected( true );
             _useCheck.addActionListener( new ActionListener() {
                 public void actionPerformed( ActionEvent evt ) {
+                    if ( _buttons != null ) {
+                        for ( Iterator<StationButton> iter = _buttons.iterator(); iter.hasNext(); ) {
+                            StationButton button = iter.next();
+                            button.selected = _useCheck.isSelected();
+                            button.selectionChange();
+                        }
+                    }
                     dispatchChangeCallback();
                 }
             } );
             this.add( _useCheck );
+            //  Add a button for each station involved in this experiment, or gaps for those stations
+            //  that are not used.
+            _buttons = new ArrayList<StationButton>();
+            int xOffset = 300;
+            for ( Iterator<VexFileParser.Station> iter = vexData.stationList().iterator(); iter.hasNext(); ) {
+                VexFileParser.Station station = iter.next();
+                ArrayList<VexFileParser.Scan> scanList = new ArrayList<VexFileParser.Scan>();
+                //  Find all of the scans that use this station.
+                for ( Iterator<VexFileParser.Scan> iter2 = vexData.scanList().iterator(); iter2.hasNext(); ) {
+                    VexFileParser.Scan scan = iter2.next();
+                    if ( scan.source.equalsIgnoreCase( _source.name ) ) {
+                        boolean found = false;
+                        for ( Iterator<VexFileParser.ScanStation> iter3 = scan.station.iterator(); iter3.hasNext() && !found; ) {
+                            VexFileParser.ScanStation scanStation = iter3.next();
+                            if ( scanStation.name.equalsIgnoreCase( station.name ) )
+                                found = true;
+                        }
+                        if ( found )
+                            scanList.add( scan );
+                    }
+                }
+                //  Create a button if it has been used.
+                if ( scanList.size() > 0 ) {
+                    final StationButton thisLabel = new StationButton();
+                    thisLabel.scanList = scanList;
+                    thisLabel.setBounds( xOffset, 1, 75, 18 );
+                    thisLabel.setBorder( BorderFactory.createLineBorder( Color.BLACK ) ); 
+                    thisLabel.selected = true;
+                    thisLabel.setBackground( Color.ORANGE );
+                    thisLabel.stationName = station.name;
+                    thisLabel.setTooltip();
+                    this.add( thisLabel );
+                    _buttons.add( thisLabel );
+                }
+                xOffset += 80;
+            }
+            newTooltipText();
+        }
+        
+        /*
+         * Class to hold one of the buttons.
+         */
+        class StationButton extends JButton {
+            public StationButton() {
+                //  Pushing the button either turns on or off all instances of this station in the
+                //  scans associated with this source.  This causes changes to other things, so
+                //  triggers a callback that causes a redraw.
+                addActionListener( new ActionListener() {
+                    public void actionPerformed( ActionEvent evt ) {
+                        selected = !selected;
+                        selectionChange();
+                        if ( selected )
+                            setBackground( Color.ORANGE );
+                        else
+                            setBackground( Color.WHITE );
+                        newTooltipText();
+                        dispatchChangeCallback();
+                    }
+                } );      
+            }
+
+            //  The button's tooltip lists all of the scans used by the current station.
+            public void setTooltip() {
+                String tooltip = "<<bold>>" + _name + " uses " + stationName + " in scans:<</bold>>\n";
+                int len = 0;
+                for ( Iterator<VexFileParser.Scan> iter3 = scanList.iterator(); iter3.hasNext(); ) {
+                    VexFileParser.Scan scan = iter3.next();
+                    if ( scan.omitFlag )
+                        tooltip += "<<red>>";
+                    tooltip += scan.name;
+                    if ( scan.omitFlag )
+                        tooltip += "<</color>>";
+                    len += getFontMetrics( getFont() ).stringWidth( scan.name );
+                    if ( iter3.hasNext() ) {
+                        tooltip += ", ";
+                        if ( len > 400 ) {
+                            len = 0;
+                            tooltip += "\n";
+                        }
+                    }
+                }
+                setToolTipText( tooltip );
+            }
+                    
+            public JToolTip createToolTip() {
+                _tip = new ComplexToolTip();
+                _tip.setComponent( this );
+                return _tip;
+            }
+            public Point getToolTipLocation( MouseEvent e) {
+                return new Point( 10, getHeight() );
+            }
+            public ArrayList<VexFileParser.Scan> scanList;
+            public void selectionChange() {
+                for ( Iterator<VexFileParser.Scan> iter4 = scanList.iterator(); iter4.hasNext(); ) {
+                    VexFileParser.Scan scan = iter4.next();
+                    for ( Iterator<VexFileParser.ScanStation> iter5 = scan.station.iterator(); iter5.hasNext(); ) {
+                        VexFileParser.ScanStation scanStation = iter5.next();
+                        if ( scanStation.name.equalsIgnoreCase( stationName ) )
+                            scanStation.omitFlag = !selected;
+                    }
+                }
+            }
+            public boolean selected;
+            public String stationName;
+        };
+        
+        /*
+         * A change has been made in the vex data.  Look through the station buttons
+         * and change their colors based on whether they are now used or not.
+         */
+        public void redraw() {
+            //  Search through all of the station buttons associated with this source.  For each button,
+            //  see if any of the scans are currently using the station.  We need only one to turn this
+            //  button "on".
+            for ( Iterator<StationButton> iter = _buttons.iterator(); iter.hasNext(); ) {
+                StationButton button = iter.next();
+                boolean selected = false;
+                for ( Iterator<VexFileParser.Scan> iter2 = button.scanList.iterator(); iter2.hasNext() && !selected; ) {
+                    for ( Iterator<VexFileParser.ScanStation> iter3 = iter2.next().station.iterator(); iter3.hasNext() && !selected; ) {
+                        VexFileParser.ScanStation scanStation = iter3.next();
+                        if ( scanStation.name.equalsIgnoreCase( button.stationName ) && !scanStation.omitFlag )
+                            selected = true;
+                    }
+                }
+                if ( selected )
+                    button.setBackground( Color.ORANGE );
+                else
+                    button.setBackground( Color.WHITE );
+                button.setTooltip();
+            }
         }
 
         public void newWidth( int w ) {
@@ -1501,11 +1667,84 @@ public class ExperimentEditor extends JFrame {
         }
         
         public boolean use() { return _useCheck.isSelected(); }
-        void use( boolean newVal ) { _useCheck.setSelected( newVal ); }
+        void use( boolean newVal ) {
+            _useCheck.setSelected( newVal );
+            if ( _buttons != null ) {
+                for ( Iterator<StationButton> iter = _buttons.iterator(); iter.hasNext(); ) {
+                    StationButton button = iter.next();
+                    button.selected = _useCheck.isSelected();
+                    newTooltipText();
+                    button.selectionChange();
+                }
+            }
+        }
+        public VexFileParser.Source source() { return _source; }
+        
+        /*
+         * Create a new tooltip showing information about this source and which scans
+         * are used to observe it.
+         */
+        protected void newTooltipText() {
+            String tooltip = "<<bold>>" + _source.name + "<</bold>>\n";
+            tooltip += "<<fixed>><<bold>>RA:<</bold>>  " + _source.ra + "\n";
+            tooltip += "<<bold>>DEC:<</bold>> " + _source.dec + "\n";
+            tooltip += "\n<<bold>>Scans/Stations Using This Source:\n";
+            for ( int i = 0; i < 30; ++i )
+                tooltip += " ";
+            for ( Iterator<VexFileParser.Station> iter = _vexData.stationList().iterator(); iter.hasNext(); )
+                tooltip += " " + iter.next().name.toUpperCase() + " ";
+            tooltip += "<</bold>>\n";
+            //  This next bit is a little messy, but it works.  We make a list of scan names
+            //  by looking at all of the buttons, then at which stations are used in each.
+            ArrayList<String> scanNames = new ArrayList<String>();
+            for ( Iterator<StationButton> iter = _buttons.iterator(); iter.hasNext(); ) {
+                ArrayList<VexFileParser.Scan> scanList = iter.next().scanList;
+                for ( Iterator<VexFileParser.Scan> iter4 = scanList.iterator(); iter4.hasNext(); ) {
+                    VexFileParser.Scan scan = iter4.next();
+                    tooltip += "<<bold>>" + scan.name + "<</bold>>";
+                    for ( int i = scan.name.length(); i < 30; ++i )
+                        tooltip += " ";
+                    //  Look for each station.  If it is used, add an appropriate marking.
+                    for ( Iterator<VexFileParser.Station> iter2 = _vexData.stationList().iterator(); iter2.hasNext(); ) {
+                        VexFileParser.Station station = iter2.next();
+                        boolean found = false;
+                        for ( Iterator<VexFileParser.ScanStation> iter5 = scan.station.iterator(); iter5.hasNext() && !found; ) {
+                            VexFileParser.ScanStation scanStation = iter5.next();
+                            if ( scanStation.name.equalsIgnoreCase( station.name ) ) {
+                                found = true;
+                                if ( scanStation.omitFlag )
+                                    tooltip += " <<red>>X<</color>>  ";
+                                else
+                                    tooltip += " X  ";
+                            }
+                        }
+                        if ( !found )
+                            tooltip += "    ";
+                    }
+                    tooltip += "\n";
+                }
+            }
+            _this.setToolTipText( tooltip );
+        }
+
+        @Override
+        public JToolTip createToolTip() {
+            _tip = new ComplexToolTip();
+            _tip.setComponent( this );
+            return _tip;
+        }
+        @Override
+        public Point getToolTipLocation( MouseEvent e) {
+            return new Point( 10, getHeight() );
+        }
 
         protected SourcePanel _this;
         protected JCheckBox _useCheck;
         protected EventListenerList _changeListeners;
+        protected VexFileParser.Source _source;
+        protected VexFileParser _vexData;
+        protected ComplexToolTip _tip;
+        protected ArrayList<StationButton> _buttons;
     }
     
     /*
@@ -1559,8 +1798,9 @@ public class ExperimentEditor extends JFrame {
      */
     public void parseNewVexFile() {
         VexFileParser vexData = new VexFileParser();
-        vexData.data( _editor.text() );
+        vexData.data( _editor.text(), _settings.eliminateCodeStationsCheck() );
         _vexData = vexData;
+        _scanStationTimeline.vexData( vexData );
         if ( _eopLock == null )
             _eopLock = new Object();
         synchronized ( _eopLock ) {
@@ -1617,6 +1857,7 @@ public class ExperimentEditor extends JFrame {
             _eopMinTime.add( Calendar.MILLISECOND, -adj );
             _eopMaxTime.add( Calendar.MILLISECOND, adj );
             _timeLimits.limits( _eopMinTime, _eopMaxTime );
+            _scanStationTimeline.limits( _eopMinTime, _eopMaxTime );
         }
         //  Add panels of information about each antenna.  First we clear the existing
         //  lists of antennas (these might have been formed the last time the .vex file
@@ -1634,8 +1875,10 @@ public class ExperimentEditor extends JFrame {
                 if ( _antennaList == null )
                     _antennaList = new AntennaList();
                 StationPanel panel = new StationPanel( station, _settings );
+                panel.vexData( _vexData );
                 panel.addChangeListener( new ActionListener() {
                     public void actionPerformed( ActionEvent evt ) {
+                        vexDataChange();
                         //  Slightly slippery here...this ignores user's specific selections
                         //  of scans and turns on/off all those that meet station restrictions
                         //  (as well as other restrictions - sources, etc.).
@@ -1664,6 +1907,8 @@ public class ExperimentEditor extends JFrame {
         }
         //  Add panels of information about each source.
         _sourcePane.clear();
+        if ( _sourcePanelList != null )
+            _sourcePanelList.clear();
         if ( vexData.sourceList() != null ) {
             //  First add a kind of "header" panel that includes select and deselect
             //  buttons.
@@ -1680,7 +1925,7 @@ public class ExperimentEditor extends JFrame {
             selectAllSources.setBounds( 10, 5, 115, 25 );
             selectAllSources.addActionListener( new ActionListener() {
                 public void actionPerformed( ActionEvent e ) {
-                  selectAllSources( true );
+                    selectAllSources( true );
                 }
             });
             sourceButtonPanel.add( selectAllSources );
@@ -1688,7 +1933,7 @@ public class ExperimentEditor extends JFrame {
             deselectAllSources.setBounds( 130, 5, 115, 25 );
             deselectAllSources.addActionListener( new ActionListener() {
                 public void actionPerformed( ActionEvent e ) {
-                  selectAllSources( false );
+                    selectAllSources( false );
                 }
             });
             sourceButtonPanel.add( deselectAllSources );
@@ -1705,7 +1950,7 @@ public class ExperimentEditor extends JFrame {
                 sourceButtonPanel.add( thisLabel );
             }
             _sourcePane.addNode( sourceButtonPanel );
-            //  Now add the individual sources.
+            //  Now add the individual sources to the source panel.
             for ( Iterator<VexFileParser.Source> iter = vexData.sourceList().iterator(); iter.hasNext(); ) {
                 VexFileParser.Source source = iter.next();
                 //  Make sure this source is used in one of the scans!  If not, we
@@ -1720,40 +1965,15 @@ public class ExperimentEditor extends JFrame {
                     }
                 }
                 if ( keepSource ) {
-                    SourcePanel panel = new SourcePanel( source, _settings );
+                    if ( _sourcePanelList == null )
+                        _sourcePanelList = new ArrayList<SourcePanel>();
+                    SourcePanel panel = new SourcePanel( source, _vexData, _settings );
+                    _sourcePanelList.add( panel );
                     panel.addChangeListener( new ActionListener() {
                         public void actionPerformed( ActionEvent evt ) {
-                            //  Slightly slippery here...this ignores user's specific selections
-                            //  of scans and turns on/off all those that meet station restrictions
-                            //  (as well as other restrictions - sources, etc.).
-                            _scanGrid.allOn();
-                            produceV2dFile();
+                            vexDataChange();
                         }
                     } );
-                    //  Add a grid box for each station involved in this experiment.  Make the
-                    //  grid box green if it is used to observe this source, white if not.
-                    xOffset = 300;
-                    for ( Iterator<VexFileParser.Station> iter2 = vexData.stationList().iterator(); iter2.hasNext(); ) {
-                        VexFileParser.Station station = iter2.next();
-                        JPanel thisLabel = new JPanel();
-                        thisLabel.setBounds( xOffset, 1, 75, 18 );
-                        xOffset += 80;
-                        thisLabel.setBorder( BorderFactory.createLineBorder( Color.BLACK ) ); 
-                        thisLabel.setBackground( Color.WHITE );
-                        //  This is where we deterimine if it has been used.
-                        if ( stationsUsed != null ) {
-                            boolean gotIt = false;
-                            for ( Iterator<VexFileParser.ScanStation> iter3 = stationsUsed.iterator(); iter3.hasNext() && !gotIt; ) {
-                                VexFileParser.ScanStation usedStation = iter3.next();
-                                if ( usedStation.name.equalsIgnoreCase( station.name ) ) {
-                                    thisLabel.setBackground( Color.ORANGE );
-                                    panel.add( thisLabel );
-                                    gotIt = true;
-                                }
-                            }
-                        }
-                    }
-                    
                     _sourcePane.addNode( panel );
                 }
             }
@@ -1907,7 +2127,7 @@ public class ExperimentEditor extends JFrame {
             newEOPPanel.addScrollPane( _newEOPPane );
             replaceRemoteEOPData();
         }
-        produceV2dFile();
+        vexDataChange();
         //  Add a "listener" to pick up changes in the EOP data.  These will cause
         //  the EOP table to be rebuilt.
         _settings.eopChangeListener( new ActionListener() {
@@ -1922,17 +2142,9 @@ public class ExperimentEditor extends JFrame {
      * Turn on or off the selection of all sources in the source list.
      */
     void selectAllSources( boolean on ) {
-        for ( Iterator<BrowserNode> jter = _sourcePane.browserTopNode().childrenIterator(); jter.hasNext(); ) {
-            //  Eliminate the button panel using the class cast exception.
-            try {
-                SourcePanel source = (SourcePanel)jter.next();
-                source.use( on );
-            } catch ( java.lang.ClassCastException e ) {
-            }
-        }
-        //  Make the scan selections respond to the new source selections.
-        _scanGrid.allOn();
-        produceV2dFile();
+        for ( Iterator<SourcePanel> iter = _sourcePanelList.iterator(); iter.hasNext(); )
+            iter.next().use( on );
+        vexDataChange();
     }
     
     /*
@@ -2230,6 +2442,56 @@ public class ExperimentEditor extends JFrame {
     }
     
     /*
+     * Called when a change has been made by one of the menus to stations or scans.
+     * This redraws all of the menus and forms a new .v2d file.
+     */
+    public void vexDataChange() {
+        //  This causes changes to be shown in the scan/station timeline.
+        if ( _scanStationTimeline != null )
+            _scanStationTimeline.redraw();
+        //  Change the source panel list.
+        if ( _sourcePanelList != null ) {
+            for ( Iterator<SourcePanel> iter = _sourcePanelList.iterator(); iter.hasNext(); )
+                iter.next().redraw();
+        }
+        //  Change the scan grid.  Each scan is examined for the "omit" flag, which
+        //  indicates it has been deliberately turned off.  Then its accompanying stations
+        //  are looked at - if there are not enough to form a baseline the scan is
+        //  turned off.
+        for ( Iterator<ButtonGrid.GridButton> iter = _scanGrid.buttonList().iterator(); iter.hasNext(); ) {
+            ButtonGrid.GridButton button = iter.next();
+            VexFileParser.Scan scan = (VexFileParser.Scan)button.data();
+            String tooltip = "<<bold>>" + scan.name + "<</bold>>\n" + scan.source + "\n" +
+                    scan.start.get( Calendar.YEAR ) + "-" + scan.start.get( Calendar.DAY_OF_YEAR ) + " (" +
+                    scan.start.get( Calendar.MONTH ) + "/" + scan.start.get( Calendar.DAY_OF_MONTH ) + ")  " +
+                    String.format( "%02d", scan.start.get( Calendar.HOUR_OF_DAY ) ) + ":" +
+                    String.format( "%02d", scan.start.get( Calendar.MINUTE ) ) + ":" + 
+                    String.format( "%02d", scan.start.get( Calendar.SECOND ) ) + "\n";
+            boolean on = true;
+            if ( scan.omitFlag )
+                on = false;
+            int stationCount = 0;
+            for ( Iterator<VexFileParser.ScanStation> iter2 = scan.station.iterator(); iter2.hasNext(); ) {
+                VexFileParser.ScanStation station = iter2.next();
+                if ( !station.omitFlag )
+                    ++stationCount;
+                tooltip += "<<fixed>>" + station.wholeString;
+                if ( station.omitFlag )
+                    tooltip += "<<red>> station omitted<</color>>\n";
+                else
+                    tooltip += "\n";
+            }
+            if ( stationCount < 2 )
+                on = false;
+            button.setToolTipText( tooltip );
+            button.on( on );
+        }
+        //  Run through the list of scan grid buttons, figuring out which should be
+        //  on and off.
+        produceV2dFile();
+    }
+    
+    /*
      * Check the scan selections against antennas that have been selected.  If less
      * than two antennas required for the scan have been selected, the scan is switched
      * off.  This should probably only be called after changes to the antenna
@@ -2251,12 +2513,14 @@ public class ExperimentEditor extends JFrame {
                 for ( Iterator jter = scan.station.iterator(); jter.hasNext(); ) {
                     VexFileParser.ScanStation station = (VexFileParser.ScanStation)jter.next();
                     boolean stationMatch = false;
-                    if ( _antennaList != null && !_antennaList.useList().isEmpty() ) {
+                    if ( _antennaList != null ) {
                         synchronized ( _antennaList ) {
-                            for ( Iterator<StationPanel> kter = _antennaList.useList().iterator(); kter.hasNext(); ) {
-                                StationPanel antenna = kter.next();
-                                if ( antenna.name().equalsIgnoreCase( station.name ) ) {
-                                    stationMatch = true;
+                            if ( !_antennaList.useList().isEmpty() ) {
+                                for ( Iterator<StationPanel> kter = _antennaList.useList().iterator(); kter.hasNext(); ) {
+                                    StationPanel antenna = kter.next();
+                                    if ( antenna.name().equalsIgnoreCase( station.name ) ) {
+                                        stationMatch = true;
+                                    }
                                 }
                             }
                         }
@@ -2350,28 +2614,63 @@ public class ExperimentEditor extends JFrame {
         v2dFileParser.setupSubintNS( "normalSetup", _subintNS.intValue() );
         v2dFileParser.setupDoPolar( "normalSetup", _doPolar.isSelected() );
         
-        //  Produce a list of the scans we want to include.  These come from the
-        //  scan grid.  We only do this if any scans have been chosen (we produce
-        //  a warning if there are no scans included).
-        if ( _scanGrid.onItems().size() > 0 ) {
-            v2dFileParser.rule( "scansubset" );
-            if ( _scanGrid.onItems().size() == _scanGrid.items() )
-                v2dFileParser.ruleScan( "scansubset", "*" );
-            else {
-                String scanList = "";
-                for ( Iterator<String> iter = _scanGrid.onItems().iterator(); iter.hasNext(); ) {
-                    scanList += iter.next();
+        //  Produce a list of the scans we want to include, or indicate that all should
+        //  be used.  The "all" specification is used either when we are actually using
+        //  all of the scans in the "source" .vex file, or when the "excise unused scans" setting
+        //  is set.  In the latter case any unused scans will be removed from the .vex
+        //  file.
+        String scanList = "";
+        int usedScanCount = 0;
+        int totalScanCount = 0;
+        //  Count how many scans are used and create a string of them.
+        for ( Iterator<VexFileParser.Scan> iter = _vexData.scanList().iterator(); iter.hasNext(); ) {
+            VexFileParser.Scan scan = iter.next();
+            //  Make sure the scan is not omitted.
+            if ( !scan.omitFlag ) {
+                //  Make sure it has sufficient stations to form a baseline.
+                int stationCount = 0;
+                for ( Iterator<VexFileParser.ScanStation> iter2 = scan.station.iterator(); iter2.hasNext(); ) {
+                    VexFileParser.ScanStation station = iter2.next();
+                    if ( !station.omitFlag )
+                        ++stationCount;
+                }
+                if ( stationCount > 1 ) {
+                    ++usedScanCount;
+                    scanList += scan.name;
                     if ( iter.hasNext() )
                         scanList += ",";
                 }
-                v2dFileParser.ruleScan( "scansubset", scanList );
+                ++totalScanCount;
             }
+        }
+        //  Add this information to the v2d output.
+        if ( usedScanCount > 0 ) {
+            v2dFileParser.rule( "scansubset" );
+            if ( usedScanCount == totalScanCount || _settings.exciseUnusedScansCheck() )
+                v2dFileParser.ruleScan( "scansubset", "*" );
+            else
+                v2dFileParser.ruleScan( "scansubset", scanList );
             v2dFileParser.ruleSetup( "scansubset", "normalSetup" );
         }
-        else {
-//            JOptionPane.showMessageDialog( _this, "No scans have been chosen for this processing\n(so no jobs will be created)!",
-//                    "Zero Scans Included", JOptionPane.WARNING_MESSAGE );
-        }
+//        if ( _scanGrid.onItems().size() > 0 ) {
+//            v2dFileParser.rule( "scansubset" );
+//            if ( _scanGrid.onItems().size() == _scanGrid.items() )
+//                v2dFileParser.ruleScan( "scansubset", "*" );
+//            else {
+//                String scanList = "";
+//                for ( Iterator<String> iter = _scanGrid.onItems().iterator(); iter.hasNext(); ) {
+//                    scanList += iter.next();
+//                    if ( iter.hasNext() )
+//                        scanList += ",";
+//                }
+//                v2dFileParser.ruleScan( "scansubset", scanList );
+//            }
+//            v2dFileParser.ruleSetup( "scansubset", "normalSetup" );
+//        }
+//        else {
+////            JOptionPane.showMessageDialog( _this, "No scans have been chosen for this processing\n(so no jobs will be created)!",
+////                    "Zero Scans Included", JOptionPane.WARNING_MESSAGE );
+//        }
         
         //  Describe specifics for each used antenna...data source, etc.  The following
         //  hash map allows us to locate the machines that each file source originated
@@ -2379,8 +2678,8 @@ public class ExperimentEditor extends JFrame {
         if ( _fileToNodeMap == null )
             _fileToNodeMap = new HashMap<String,String>();
         _fileToNodeMap.clear();
-        if ( _antennaList != null && !_antennaList.useList().isEmpty() ) {
-            synchronized ( _antennaList ) {
+        synchronized ( _antennaList ) {
+            if ( _antennaList != null && !_antennaList.useList().isEmpty() ) {
                 for ( Iterator<StationPanel> iter = _antennaList.useList().iterator(); iter.hasNext(); ) {
                     StationPanel antenna = iter.next();
                     if ( antenna.use() ) {
@@ -2718,22 +3017,20 @@ public class ExperimentEditor extends JFrame {
                     //  Prepare the .vex file content for sending.  This includes removing EOP data if necessary,
                     //  removing stations within scans if they have a "-1" code and eliminating scans that
                     //  are not actually used.
-                    String vexData = "";
+                    String newVexData = "";
                     if ( _deleteEOPFromVex ) {
-                        vexData = VexFileParser.deleteEOPData( _editor.text() );
+                        newVexData = VexFileParser.deleteEOPData( _editor.text() );
                     }
                     else {
-                        vexData = _editor.text();
+                        newVexData = _editor.text();
                     }
-                    if ( _settings.eliminateCodeStationsCheck() ) {
-                        vexData = VexFileParser.editStations( vexData );
-                    }
+                    newVexData = VexFileParser.editScans( newVexData, _settings.exciseUnusedScansCheck(), _vexData.scanList() );
                     Component comp = _okButton;
                     while ( comp.getParent() != null )
                         comp = comp.getParent();
                     Point pt = _okButton.getLocationOnScreen();
                     SendFileMonitor sendVex = new SendFileMonitor( (Frame)comp, pt.x + 25, pt.y + 25,
-                            directory() + "/" + passDir + vexFileName(), vexData, _settings );
+                            directory() + "/" + passDir + vexFileName(), newVexData, _settings );
                     _passLog.addLabelItem( "VEX FILE", directory() + "/" + passDir + vexFileName() );
                     //  Delay for a bit to avoid having the following operation step on the end of this
                     //  one.  Mk5daemon may still be busy.
@@ -3146,6 +3443,10 @@ public class ExperimentEditor extends JFrame {
     protected ActivityLogFile _passLog;
     protected VexFileParser _vexData;
     protected V2dFileParser _v2dFileParser;
+    
+    protected ScanStationTimeline _scanStationTimeline;
+    
+    protected ArrayList<SourcePanel> _sourcePanelList;
     
     protected Object _eopLock;
     

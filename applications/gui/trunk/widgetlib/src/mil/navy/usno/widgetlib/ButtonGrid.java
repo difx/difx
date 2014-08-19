@@ -116,12 +116,12 @@ public class ButtonGrid  extends JPanel {
         _panel.setBounds( 1, 1, _panelWidth, this.getHeight() - 2 );
     }
     
-   protected class GridPanel extends JPanel {
+    protected class GridPanel extends JPanel {
        
-       public GridPanel() {
-           super();
-           this.setLayout( null );
-       }
+        public GridPanel() {
+            super();
+            this.setLayout( null );
+        }
                 
         @Override
         public void setBounds( int x, int y, int w, int h ) {
@@ -185,6 +185,7 @@ public class ButtonGrid  extends JPanel {
         button.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent evt ) {
                 button.on( !button.on() );
+                _lastEventButton = button;
                 dispatchChangeCallback();
             }
         } );
@@ -283,6 +284,13 @@ public class ButtonGrid  extends JPanel {
     }
     
     /*
+     * Return the button that created the last event.
+     */
+    public GridButton lastEventButton() {
+        return _lastEventButton;
+    }
+    
+    /*
      * Turn all of the buttons "on".
      */
     public void allOn() {
@@ -306,6 +314,7 @@ public class ButtonGrid  extends JPanel {
         }
     }
     
+    protected GridButton _lastEventButton;
     public int buttonsPerLine() { return _buttonsPerLine; }
     public void buttonsPerLine( int newVal ) { _buttonsPerLine = newVal; }
     public void onColor( Color newVal ) { _onColor = newVal; }

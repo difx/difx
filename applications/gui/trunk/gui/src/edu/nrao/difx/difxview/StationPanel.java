@@ -60,6 +60,18 @@ public class StationPanel extends IndexedPanel {
         _useCheck.setSelected( true );
         _useCheck.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent evt ) {
+                //  Locate this station in the vex data scans and turn it off within
+                //  them.
+                if ( _vexData != null ) {
+                    for ( Iterator<VexFileParser.Scan> iter = _vexData.scanList().iterator(); iter.hasNext(); ) {
+                        VexFileParser.Scan scan = iter.next();
+                        for ( Iterator<VexFileParser.ScanStation> iter2 = scan.station.iterator(); iter2.hasNext(); ) {
+                            VexFileParser.ScanStation scanStation = iter2.next();
+                            if ( scanStation.name.equalsIgnoreCase( _name ) )
+                                scanStation.omitFlag = !_useCheck.isSelected();
+                        }
+                    }
+                }
                 dispatchChangeCallback();
             }
         } );
@@ -1062,6 +1074,10 @@ public class StationPanel extends IndexedPanel {
         return null;
     }
     
+    public void vexData( VexFileParser vexData ) {
+        _vexData = vexData;
+    }
+    
     protected JCheckBox _useCheck;
     protected JCheckBox _vsnCheck;
     protected JCheckBox _fileCheck;
@@ -1098,5 +1114,7 @@ public class StationPanel extends IndexedPanel {
     protected NumberBox _deltaClock;
     protected JComboBox _toneSelection;
     protected NumberBox _phaseCalInt;
+    
+    protected VexFileParser _vexData;
 
 }
