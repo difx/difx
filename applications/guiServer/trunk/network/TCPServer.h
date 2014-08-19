@@ -38,7 +38,17 @@ namespace network {
 
             int on = 1;
         	if ( setsockopt( _listenFd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof( on ) ) < 0 ) {
-                perror( "TCPServer: trouble with setsockopt" );
+                perror( "TCPServer: trouble with setsockopt (SO_REUSEADDR)" );
+                close( _listenFd );
+                _listenFd = -1;
+                return;
+            }
+
+            struct linger lin;
+            lin.l_onoff = 1;
+            lin.l_linger = 1;  //  seconds to "linger"
+        	if ( setsockopt( _listenFd, SOL_SOCKET, SO_LINGER, &lin, sizeof( struct linger ) ) < 0 ) {
+                perror( "TCPServer: trouble with setsockopt (SO_LINGER)" );
                 close( _listenFd );
                 _listenFd = -1;
                 return;
