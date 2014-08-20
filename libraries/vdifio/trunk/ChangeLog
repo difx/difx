@@ -16,6 +16,8 @@ Version 0.7
 	getVDIFFrameMJDSec
 	setVDIFEpochTime
 * Added new utility printVDIFgaps to examine a VDIF stream for missing data
+* vdifmux now fed by a structure.  This allows for safer, faster and more
+	flexible muxing.
 
 Version 0.6
 ~~~~~~~~~~~

@@ -66,6 +66,8 @@
 #define FILL_PATTERN 0x11223344UL
 #endif
 
+#define MAGIC_BAD_THREAD	20000
+
 
 /* greatest common divisor, from wikipedia */
 static unsigned int gcd(unsigned int u, unsigned int v)
@@ -1995,14 +1997,6 @@ static void (*getCornerTurner(int nThread, int nBit))(unsigned char *, const uns
 
 /* Params are:
  *
- * dest:
- *	pointer to output (multiplexed, single-thread) VDIF data.
- * destSize:
- *	the size of the output (dest) array.
- * src:
- *	pointer to input (multi-thread) VDIF data.
- * srcSize:
- *	length of the input (src) array.
  * inputFrameSize:
  *	length of single-thread VDIF data packet
  * inputFramesPerSecond:
@@ -2017,6 +2011,135 @@ static void (*getCornerTurner(int nThread, int nBit))(unsigned char *, const uns
  *	maximum out-of-orderness to allow.
  * nGap:
  *	maximum gap in frame number to allow before returning early.
+ *
+ * Returns:
+ *  < 0 on error
+ *  0 on success
+ *
+ * see ../utils/vmux.c for example usage of this function
+ */
+int configurevdifmux(struct vdif_mux *vm, int inputFrameSize, int inputFramesPerSecond, int nBit, int nThread, const int *threadIds, int nSort, int nGap, int flags)
+{
+	int i;
+
+	vm->cornerTurner = getCornerTurner(nThread, nBit);
+	if(vm->cornerTurner == 0)
+	{
+		fprintf(stderr, "No corner turner implemented for %d threads and %d bits\n", nThread, nBit);
+		
+		return -1;
+	}
+
+	vm->inputFrameSize = inputFrameSize;
+	vm->inputFramesPerSecond = inputFramesPerSecond;
+	vm->frameGranularity = inputFramesPerSecond/gcd(inputFramesPerSecond, 1000000000);
+	vm->nBit = nBit;
+	vm->nSort = nSort;
+	vm->nGap = nGap;
+	nThread = abs(nThread);	/* in case a special corner turner was requested */
+	vm->nThread = nThread;
+	vm->flags = flags;
+
+	if(vm->nGap < vm->nSort)
+	{
+		vm->nGap = vm->nSort;
+	}
+
+	for(vm->nOutputChan = 1; vm->nOutputChan < vm->nThread; vm->nOutputChan *= 2) ;
+
+
+
+	/* NOTE!!! legacy header support is not yet complete.  It is being designed so that it may be possible to come from and go to either LEGACY or nonLEGACY headers */
+	/* to complete the feature, all reference to VDIF_HEADER_BYTES in vdifmux() need to be replaced */
+
+	if(flags & VDIF_MUX_FLAG_INPUTLEGACY)
+	{
+		vm->inputDataSize = vm->inputFrameSize - VDIF_LEGACY_HEADER_BYTES;
+	}
+	else
+	{
+		vm->inputDataSize = vm->inputFrameSize - VDIF_HEADER_BYTES;
+	}
+
+	vm->outputDataSize = vm->inputDataSize*vm->nOutputChan;
+
+	if(flags & VDIF_MUX_FLAG_OUTPUTLEGACY)
+	{
+		vm->outputFrameSize = vm->outputDataSize + VDIF_LEGACY_HEADER_BYTES;
+	}
+	else
+	{
+		vm->outputFrameSize = vm->outputDataSize + VDIF_HEADER_BYTES;
+	}
+
+
+	for(i = 0; i <= VDIF_MAX_THREAD_ID; ++i)
+	{
+		vm->chanIndex[i] = MAGIC_BAD_THREAD;
+	}
+	for(i = 0; i < nThread; ++i)
+	{
+		if(threadIds[i] < 0 || threadIds[i] > VDIF_MAX_THREAD_ID)
+		{
+			fprintf(stderr, "Error: illegal thread Id: %d ; needs to be within 0..%d, inclusive.\n", threadIds[i], VDIF_MAX_THREAD_ID);
+			
+			return -2;
+		}
+		vm->chanIndex[threadIds[i]] = i;
+	}
+
+	vm->goodMask = (1 << nThread) - 1;	/* nThread 1s as LSBs and 0s above that */
+
+	return 0;
+}
+
+void printvdifmux(const struct vdif_mux *vm)
+{
+	if(vm)
+	{
+		int i;
+
+		printf("vdif_mux:\n");
+		printf("  inputFrameSize = %d\n", vm->inputFrameSize);
+		printf("  inputDataSize = %d\n", vm->inputDataSize);
+		printf("  outputFrameSize = %d\n", vm->outputFrameSize);
+		printf("  outputDataSize = %d\n", vm->outputDataSize);
+		printf("  inputFramesPerSecond = %d\n", vm->inputFramesPerSecond);
+		printf("  frameGranularity = %d\n", vm->frameGranularity);
+		printf("  nBit = %d\n", vm->nBit);
+		printf("  nSort = %d\n", vm->nSort);
+		printf("  nGap = %d\n", vm->nGap);
+		printf("  nThread = %d\n", vm->nThread);
+		printf("  nOutputChan = %d\n", vm->nOutputChan);
+		printf("  goodMask = 0x%04x\n", vm->goodMask);
+		printf("  flags = 0x%02x\n", vm->flags);
+		printf("  thread to channel map:\n");
+		for(i = 0; i <= VDIF_MAX_THREAD_ID; ++i)
+		{
+			if(vm->chanIndex[i] != MAGIC_BAD_THREAD)
+			{
+				printf("    %d -> %d\n", i, vm->chanIndex[i]);
+			}
+		}
+	}
+	else
+	{
+		printf("vdif_mux is NULL\n");
+	}
+}
+
+/* Params are:
+ *
+ * dest:
+ *	pointer to output (multiplexed, single-thread) VDIF data.
+ * destSize:
+ *	the size of the output (dest) array.
+ * src:
+ *	pointer to input (multi-thread) VDIF data.
+ * srcSize:
+ *	length of the input (src) array.
+ * vm:
+ *      vdif_mux structure initialized by call to above function
  * startOutputFrameNumber:
  *      if >= 0, fix the beginning of the dest buffer grid to be this.
  *      Set to -1 unless you really know what frame number to expect.
@@ -2037,11 +2160,8 @@ static void (*getCornerTurner(int nThread, int nBit))(unsigned char *, const uns
  *
  * see ../utils/vmux.c for example usage of this function
  */
-
-int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int srcSize, int inputFrameSize, int inputFramesPerSecond, int nBit, int nThread, const int *threadIds, int nSort, int nGap, long long startOutputFrameNumber, struct vdif_mux_statistics *stats)
+int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int srcSize, const struct vdif_mux *vm, long long startOutputFrameNumber, struct vdif_mux_statistics *stats)
 {
-	const int maxThreads = 1024;
-	unsigned char chanIndex[maxThreads];	/* map from threadId to channel number (0 to nThread-1) */
 	int threadId;
 	int nValidFrame = 0;			/* counts number of valid input frames found so far */
 	int nSkip = 0;				/* counts number of bytes skipped (not what we are looking for) */
@@ -2049,19 +2169,13 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 	int nDup = 0;				/* number of duplicate frames found */
 	int nInvalidFrame = 0;			/* counts number of VDIF frames skipped because of invalid bits */
 	long long startFrameNumber;		/* = seconds*inputFramesPerSecond + frameNumber */
-	int frameGranularity;			/* number of frames required to make an integer number of nanoseconds */
 
 	int i;					/* index into src */
 	int f;
-	int N = srcSize - inputFrameSize;	/* max value to allow i to be */
+	int N;					/* max value to allow i to be */
 	int highestDestIndex = 0;
 	int maxDestIndex;
 	int maxSrcIndex;
-	int inputDataSize;
-	int outputFrameSize;
-	int outputDataSize;
-	int nOutputChan;			/* nThread rounded up to nearest power of 2 */
-	uint32_t goodMask;			/* mask value that represents all channels are present */
 	int bytesProcessed = 0;			/* the program return value */
 	int nEnd = 0;				/* number of frames processed after the end of the buffer first reached */
 	int nGoodOutput = 0;
@@ -2073,61 +2187,39 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 	int highestSortedDestIndex = -1;
 	int vhUnset = 1;
 
-	void (*cornerTurner)(unsigned char *, const unsigned char * const *, int);
+	N = srcSize - vm->inputFrameSize;
 
-	cornerTurner = getCornerTurner(nThread, nBit);
-	if(cornerTurner == 0)
+	if(vm->flags & VDIF_MUX_FLAG_GOTOEND)
 	{
-		fprintf(stderr, "No corner turner implemented for %d threads and %d bits\n", nThread, nBit);
-
-		return -3;
-	}
-	nThread = abs(nThread);	/* in case a special corner turner was requested */
-
-	if(nSort <= 0)
-	{
-		maxSrcIndex = srcSize - inputFrameSize;
-		nSort = -nSort;
+		maxSrcIndex = srcSize - vm->inputFrameSize;
 	}
 	else
 	{
-		maxSrcIndex = srcSize - nSort*inputFrameSize;
+		maxSrcIndex = srcSize - vm->nSort*vm->inputFrameSize;
 	}
 
-	if(nGap < nSort)
+	if(vm->flags & VDIF_MUX_FLAG_RESPECTGRANULARITY)
 	{
-		nGap = nSort;
-	}
-
-	/* Choose a corner turning algorithm.  Currently the selection is limited to 2-bit cases or
-	 * anything with 1 thread.  Others can be implemented as needed.
-	 */
-
-	for(nOutputChan = 1; nOutputChan < nThread; nOutputChan *= 2) ;
-
-	memset(chanIndex, 255, maxThreads);
-	for(threadId = 0; threadId < nThread; ++threadId)
-	{
-		if(threadIds[threadId] < 0 || threadIds[threadId] >= maxThreads)
+		if(startOutputFrameNumber > 0)
 		{
-			return -4;
+			int m;
+
+			m = startOutputFrameNumber % vm->frameGranularity;
+			if(m != 0)
+			{
+				m += (vm->frameGranularity - m);
+			}
 		}
-		chanIndex[threadIds[threadId]] = threadId;
 	}
 
-	inputDataSize = inputFrameSize - VDIF_HEADER_BYTES;
-	outputDataSize = inputDataSize*nOutputChan;
-	outputFrameSize = outputDataSize + VDIF_HEADER_BYTES;
-	frameGranularity = inputFramesPerSecond/gcd(inputFramesPerSecond, 1000000000);
-	maxDestIndex = destSize/outputFrameSize - 1;
-	goodMask = (1 << nThread) - 1;	/* nThread 1s as LSBs and 0s above that */
+	maxDestIndex = destSize/vm->outputFrameSize - 1;
 
 	startFrameNumber = startOutputFrameNumber;
 
 	/* clear mask of presence */
 	for(i = 0; i <= maxDestIndex; ++i)
 	{
-		uint32_t *p = (uint32_t *)(dest + outputFrameSize*i);
+		uint32_t *p = (uint32_t *)(dest + vm->outputFrameSize*i);
 		p[7] = 0;
 	}
 
@@ -2140,20 +2232,19 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 		int destIndex;		/* frame index into destination array */
 		int chanId;
 
-/* This is disabled for now; the VLA produces only "invalid" data
-		if(getVDIFFrameInvalid(vh) > 0)
+		if( (vm->flags & VDIF_MUX_FLAG_ENABLEVALIDITY) && (getVDIFFrameInvalid(vh) > 0) )
 		{
-			i += inputFrameSize;
+			i += vm->inputFrameSize;
 			++nInvalidFrame;
 
 			continue;
 		}
-*/
-		if(*((uint32_t *)(cur+inputFrameSize-4)) == FILL_PATTERN)
+
+		if(*((uint32_t *)(cur+vm->inputFrameSize-4)) == FILL_PATTERN)
 		{
 			/* Fill pattern at end of frame or invalid bit is set */
-			i += inputFrameSize;
-			nFill += inputFrameSize;
+			i += vm->inputFrameSize;
+			nFill += vm->inputFrameSize;
 
 			continue;
 		}
@@ -2165,9 +2256,9 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 
 			continue;
 		}
-		if(getVDIFFrameBytes(vh) != inputFrameSize ||
+		if(getVDIFFrameBytes(vh) != vm->inputFrameSize ||
 		   getVDIFNumChannels(vh) != 1 ||
-		   getVDIFBitsPerSample(vh) != nBit)
+		   getVDIFBitsPerSample(vh) != vm->nBit)
 		{
 			i += 4;
 			nSkip += 4;
@@ -2177,22 +2268,22 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 
 		/* If we are here, it looks like we have a VDIF frame to work with */
 		threadId = getVDIFThreadID(vh);
-		chanId = chanIndex[threadId];
-		if(chanId > 32)
+		chanId = vm->chanIndex[threadId];
+		if(chanId == MAGIC_BAD_THREAD)
 		{
 			/* Not one of the threads we are looking for */
-			i += inputFrameSize;
+			i += vm->inputFrameSize;
 			++nWrongThread;
 
 			continue;
 		}
 
-		frameNumber = (long long)(getVDIFFrameEpochSecOffset(vh)) * inputFramesPerSecond + getVDIFFrameNumber(vh);
+		frameNumber = (long long)(getVDIFFrameEpochSecOffset(vh)) * vm->inputFramesPerSecond + getVDIFFrameNumber(vh);
 		
 		if(startFrameNumber < 0)	/* we haven't seen data yet */
 		{
-			startFrameNumber = frameNumber - nSort;
-			startFrameNumber -= (startFrameNumber % frameGranularity);	/* to ensure first frame starts on integer ns */
+			startFrameNumber = frameNumber - vm->nSort;
+			startFrameNumber -= (startFrameNumber % vm->frameGranularity);	/* to ensure first frame starts on integer ns */
 		}
 
 		if(vhUnset)
@@ -2201,9 +2292,9 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 			memset(((char *)&outputHeader) + 16, 0, 16);
 
 			/* use this first good frame to generate the prototype VDIF header for the output */
-			setVDIFNumChannels(&outputHeader, nOutputChan);
+			setVDIFNumChannels(&outputHeader, vm->nOutputChan);
 			setVDIFThreadID(&outputHeader, 0);
-			setVDIFFrameBytes(&outputHeader, outputFrameSize);
+			setVDIFFrameBytes(&outputHeader, vm->outputFrameSize);
 			setVDIFFrameInvalid(&outputHeader, 0);
 			epoch = getVDIFEpoch(&outputHeader);
 
@@ -2215,8 +2306,8 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 		if(destIndex < 0)
 		{
 			/* no choice but to discard this data */
-			i += inputFrameSize;
-			nSkip += inputFrameSize;
+			i += vm->inputFrameSize;
+			nSkip += vm->inputFrameSize;
 
 			continue;
 		}
@@ -2234,20 +2325,20 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 			{
 				bytesProcessed = i;
 			}
-			i += inputFrameSize;
+			i += vm->inputFrameSize;
 			++nEnd;
-			if(nEnd >= nSort)
+			if(nEnd >= vm->nSort)
 			{
 				break;
 			}
 		}
 		else /* here we have a usable packet */
 		{
-			uint32_t *p = (uint32_t *)(dest + outputFrameSize*destIndex);
+			uint32_t *p = (uint32_t *)(dest + vm->outputFrameSize*destIndex);
 			
-			if(destIndex > highestDestIndex + nGap)
+			if(destIndex > highestDestIndex + vm->nGap)
 			{
-				if(nValidFrame > nSort || startOutputFrameNumber >= 0)
+				if(nValidFrame > vm->nSort || startOutputFrameNumber >= 0)
 				{
 					/* if we are out of the probationary nSort period, start the shut-down procedure */
 					if(bytesProcessed == 0)
@@ -2255,7 +2346,7 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 						bytesProcessed = i;
 					}
 					++nEnd;
-					if(nEnd >= nSort)
+					if(nEnd >= vm->nSort)
 					{
 						break;
 					}
@@ -2264,23 +2355,23 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 				{
 					/* otherwise we take this opportunity to reset the startFrameNumber and clear data moved up to now */
 					
-					startFrameNumber = frameNumber - nSort;
-					startFrameNumber -= (startFrameNumber % frameGranularity);	/* to ensure first frame starts on integer ns */
+					startFrameNumber = frameNumber - vm->nSort;
+					startFrameNumber -= (startFrameNumber % vm->frameGranularity);	/* to ensure first frame starts on integer ns */
 
 					/* clear mask of presence */
 					for(destIndex = 0; destIndex < highestDestIndex; ++destIndex)
 					{
-						p = (uint32_t *)(dest + outputFrameSize*destIndex);
+						p = (uint32_t *)(dest + vm->outputFrameSize*destIndex);
 						p[7] = 0;
 					}
 					highestDestIndex = 0;
 
 					/* at this point we're starting over, so there are no valid frames. */
-					nSkip += nValidFrame*inputFrameSize;
+					nSkip += nValidFrame*vm->inputFrameSize;
 					nValidFrame = 0;	
 
 					destIndex = frameNumber - startFrameNumber;
-					p = (uint32_t *)(dest + outputFrameSize*destIndex);
+					p = (uint32_t *)(dest + vm->outputFrameSize*destIndex);
 				}
 			}
 
@@ -2292,7 +2383,7 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 			else
 			{
 				/* NOTE!  We're using just a bit of the dest buffer to store pointers to the original data payloads */
-				const unsigned char **threadBuffers = (const unsigned char **)(dest + outputFrameSize*destIndex + VDIF_HEADER_BYTES);
+				const unsigned char **threadBuffers = (const unsigned char **)(dest + vm->outputFrameSize*destIndex + VDIF_HEADER_BYTES);
 
 				p[7] |= (1 << chanId);
 				threadBuffers[chanId] = cur + VDIF_HEADER_BYTES;	/* store pointer to data for later corner turning */
@@ -2305,13 +2396,13 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 				}
 				
 				/* Once we have nSort good frames, we know the earliest frame acceptable, so now scrunch forward... */
-				if(nValidFrame == nSort && startOutputFrameNumber < 0)
+				if(nValidFrame == vm->nSort && startOutputFrameNumber < 0)
 				{
 					int firstUsed;
 
 					for(firstUsed = 0; firstUsed <= highestDestIndex; ++firstUsed)
 					{
-						p = (uint32_t *)(dest + outputFrameSize*firstUsed);
+						p = (uint32_t *)(dest + vm->outputFrameSize*firstUsed);
 
 						if(p[7] > 0)
 						{
@@ -2322,7 +2413,7 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 					if(firstUsed > 0 && firstUsed <= highestDestIndex)
 					{
 						/* Ensure frame granularity conditions remain met */
-						firstUsed -= (firstUsed % frameGranularity);
+						firstUsed -= (firstUsed % vm->frameGranularity);
 
 						/* slide data forward */
 						for(f = firstUsed; f <= highestDestIndex; ++f)
@@ -2330,17 +2421,17 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 							int e = f-firstUsed;
 							uint32_t *q;
 
-							p = (uint32_t *)(dest + outputFrameSize*e);
-							q = (uint32_t *)(dest + outputFrameSize*f);
+							p = (uint32_t *)(dest + vm->outputFrameSize*e);
+							q = (uint32_t *)(dest + vm->outputFrameSize*f);
 							p[7] = q[7];
 
 							if(p[7] != 0)
 							{
 								const unsigned char * const *threadBuffers2;
 
-								threadBuffers  = (const unsigned char **)(dest + outputFrameSize*e + VDIF_HEADER_BYTES);
-								threadBuffers2 = (const unsigned char **)(dest + outputFrameSize*f + VDIF_HEADER_BYTES);
-								memcpy(threadBuffers, threadBuffers2, nThread*sizeof(const unsigned char *));
+								threadBuffers  = (const unsigned char **)(dest + vm->outputFrameSize*e + VDIF_HEADER_BYTES);
+								threadBuffers2 = (const unsigned char **)(dest + vm->outputFrameSize*f + VDIF_HEADER_BYTES);
+								memcpy(threadBuffers, threadBuffers2, vm->nThread*sizeof(const unsigned char *));
 							}
 						}
 
@@ -2349,7 +2440,7 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 						{
 							uint32_t *q;
 
-							q = (uint32_t *)(dest + outputFrameSize*f);
+							q = (uint32_t *)(dest + vm->outputFrameSize*f);
 							q[7] = 0;
 						}
 
@@ -2360,7 +2451,7 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 					}
 				}
 			}
-			i += inputFrameSize;
+			i += vm->inputFrameSize;
 		}
 	}
 
@@ -2370,16 +2461,16 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 	}
 
 	/* If there were fewer than nSort frames read and start output frame number not specified, scrunch output to front */
-	if(nValidFrame < nSort && startOutputFrameNumber < 0)
+	if(nValidFrame < vm->nSort && startOutputFrameNumber < 0)
 	{
 		int firstUsed;
 		uint32_t *p;
 
 		for(firstUsed = 0; firstUsed <= highestDestIndex; ++firstUsed)
 		{
-			p = (uint32_t *)(dest + outputFrameSize*firstUsed);
+			p = (uint32_t *)(dest + vm->outputFrameSize*firstUsed);
 
-			if(p[7] == goodMask)
+			if(p[7] == vm->goodMask)
 			{
 				break;
 			}
@@ -2387,7 +2478,7 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 		if(firstUsed > 0 && firstUsed <= highestDestIndex)
 		{
 			/* Ensure frame granularity conditions remain met */
-			firstUsed -= (firstUsed % frameGranularity);
+			firstUsed -= (firstUsed % vm->frameGranularity);
 
 			/* slide data forward */
 			for(f = firstUsed; f <= highestDestIndex; ++f)
@@ -2395,8 +2486,8 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 				int e = f-firstUsed;
 				uint32_t *q;
 
-				p = (uint32_t *)(dest + outputFrameSize*e);
-				q = (uint32_t *)(dest + outputFrameSize*f);
+				p = (uint32_t *)(dest + vm->outputFrameSize*e);
+				q = (uint32_t *)(dest + vm->outputFrameSize*f);
 				p[7] = q[7];
 
 				if(p[7] != 0)
@@ -2404,9 +2495,9 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 					const unsigned char **threadBuffers;
 					const unsigned char **threadBuffers2;
 
-					threadBuffers  = (const unsigned char **)(dest + outputFrameSize*e + VDIF_HEADER_BYTES);
-					threadBuffers2 = (const unsigned char **)(dest + outputFrameSize*f + VDIF_HEADER_BYTES);
-					memcpy(threadBuffers, threadBuffers2, nThread*sizeof(const unsigned char *));
+					threadBuffers  = (const unsigned char **)(dest + vm->outputFrameSize*e + VDIF_HEADER_BYTES);
+					threadBuffers2 = (const unsigned char **)(dest + vm->outputFrameSize*f + VDIF_HEADER_BYTES);
+					memcpy(threadBuffers, threadBuffers2, vm->nThread*sizeof(const unsigned char *));
 				}
 			}
 
@@ -2415,7 +2506,7 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 			{
 				uint32_t *q;
 
-				q = (uint32_t *)(dest + outputFrameSize*f);
+				q = (uint32_t *)(dest + vm->outputFrameSize*f);
 				q[7] = 0;
 			}
 
@@ -2431,16 +2522,16 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 	{
 		for(f = highestDestIndex; f > highestSortedDestIndex; --f)
 		{
-			const uint32_t *p = (const uint32_t *)(dest + outputFrameSize*f);
+			const uint32_t *p = (const uint32_t *)(dest + vm->outputFrameSize*f);
 			uint32_t mask = p[7];
 
-			if(mask != goodMask)
+			if(mask != vm->goodMask)
 			{
-				const unsigned char * const *threadBuffers = (const unsigned char **)(dest + outputFrameSize*f + VDIF_HEADER_BYTES);
+				const unsigned char * const *threadBuffers = (const unsigned char **)(dest + vm->outputFrameSize*f + VDIF_HEADER_BYTES);
 				int t;
 				
 				highestDestIndex = f-1;
-				for(t = 0; t < nThread; ++t)
+				for(t = 0; t < vm->nThread; ++t)
 				{
 					if(mask & (1<<t))
 					{
@@ -2459,20 +2550,20 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 	}
 	else
 	{
-		int minDestIndex = highestDestIndex - nSort/nThread;
+		int minDestIndex = highestDestIndex - vm->nSort/vm->nThread;
 
 		if(minDestIndex >= 0) for(f = highestDestIndex; f >= minDestIndex; --f)
 		{
-			const uint32_t *p = (const uint32_t *)(dest + outputFrameSize*f);
+			const uint32_t *p = (const uint32_t *)(dest + vm->outputFrameSize*f);
 			uint32_t mask = p[7];
 
-			if(mask != goodMask)
+			if(mask != vm->goodMask)
 			{
-				const unsigned char * const *threadBuffers = (const unsigned char **)(dest + outputFrameSize*f + VDIF_HEADER_BYTES);
+				const unsigned char * const *threadBuffers = (const unsigned char **)(dest + vm->outputFrameSize*f + VDIF_HEADER_BYTES);
 				int t;
 				
 				highestDestIndex = f-1;
-				for(t = 0; t < nThread; ++t)
+				for(t = 0; t < vm->nThread; ++t)
 				{
 					if(mask & (1<<t))
 					{
@@ -2491,19 +2582,19 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 	}
 
 	/* If source did not dry up and dest got within nGap of filling, set highestDestIndex to produce (invalid) data through the end of the dest buffer for continuity */
-	if(i < N && highestDestIndex < maxDestIndex && highestDestIndex > maxDestIndex - nGap)
+	if(i < N && highestDestIndex < maxDestIndex && highestDestIndex > maxDestIndex - vm->nGap)
 	{
 		highestDestIndex = maxDestIndex;
 	}
 
 	/* Stage 2: do the corner turning and header population */
 
-	seconds = startFrameNumber/inputFramesPerSecond;
-	frameNum = startFrameNumber%inputFramesPerSecond;
+	seconds = startFrameNumber/vm->inputFramesPerSecond;
+	frameNum = startFrameNumber%vm->inputFramesPerSecond;
 
 	for(f = 0; f <= highestDestIndex; ++f)
 	{
-		unsigned char *frame = dest + outputFrameSize*f;	/* points to rearrangement destination */
+		unsigned char *frame = dest + vm->outputFrameSize*f;	/* points to rearrangement destination */
 		const uint32_t *p = (const uint32_t *)frame;
 		uint32_t mask;
 
@@ -2514,13 +2605,13 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 		setVDIFFrameEpochSecOffset((vdif_header *)frame, seconds);
 		setVDIFFrameNumber((vdif_header *)frame, frameNum);
 
-		if(mask == goodMask)
+		if(mask == vm->goodMask)
 		{
 			const unsigned char * const *threadBuffers = (const unsigned char * const *)(frame + VDIF_HEADER_BYTES);
 
 			/* Note: The following function only works because all of the corner turners make a copy of the
 			 * thread pointers before beginning */
-			cornerTurner(frame + VDIF_HEADER_BYTES, threadBuffers, outputDataSize);
+			vm->cornerTurner(frame + VDIF_HEADER_BYTES, threadBuffers, vm->outputDataSize);
 
 			++nGoodOutput;
 		}
@@ -2533,10 +2624,10 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 		}
 
 		++frameNum;
-		if(frameNum >= inputFramesPerSecond)
+		if(frameNum >= vm->inputFramesPerSecond)
 		{
 			++seconds;
-			frameNum -= inputFramesPerSecond;
+			frameNum -= vm->inputFramesPerSecond;
 		}
 	}
 
@@ -2544,7 +2635,7 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 	{
 		stats->nValidFrame += nValidFrame;
 		stats->nInvalidFrame += nInvalidFrame;
-		stats->nDiscardedFrame += (nValidFrame - nThread*nGoodOutput);
+		stats->nDiscardedFrame += (nValidFrame - vm->nThread*nGoodOutput);
 		stats->nWrongThread += nWrongThread;
 		stats->nDuplicateFrame += nDup;
 		stats->nSkippedByte += nSkip;
@@ -2555,11 +2646,11 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 		stats->srcSize = srcSize;
 		stats->srcUsed = bytesProcessed;
 		stats->destSize = destSize;
-		stats->destUsed = (nGoodOutput + nBadOutput)*outputFrameSize;
-		stats->inputFrameSize = inputFrameSize;
-		stats->outputFrameSize = outputFrameSize;
-		stats->outputFrameGranularity = frameGranularity;
-		stats->outputFramesPerSecond = inputFramesPerSecond;
+		stats->destUsed = (nGoodOutput + nBadOutput)*vm->outputFrameSize;
+		stats->inputFrameSize = vm->inputFrameSize;
+		stats->outputFrameSize = vm->outputFrameSize;
+		stats->outputFrameGranularity = vm->frameGranularity;
+		stats->outputFramesPerSecond = vm->inputFramesPerSecond;
 		stats->nOutputFrame = nGoodOutput + nBadOutput;
 		stats->epoch = epoch;
 		stats->startFrameNumber = startFrameNumber;
@@ -2684,6 +2775,7 @@ void testvdifcornerturners(int outputBytes, int nTest)
 		{
 			fprintf(stderr, "Error: cannot read from %s\n", devRandom);
 			fclose(in);
+
 			return;
 		}
 

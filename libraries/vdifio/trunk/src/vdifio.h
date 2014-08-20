@@ -199,6 +199,31 @@ int determinevdifframeoffset(const unsigned char *buffer, int bufferSize, int fr
 
 /* *** implemented in vdifmux.c *** */
 
+#define VDIF_MUX_FLAG_GOTOEND			0x01		/* risk inability to sort in order to possibly reach end of input array */
+#define VDIF_MUX_FLAG_RESPECTGRANULARITY	0x02		/* always produce output startFrame that is multiple of frame granularity */
+#define VDIF_MUX_FLAG_ENABLEVALIDITY		0x04		/* if set, throw away VDIF frames coming in with invalid bit set */
+#define	VDIF_MUX_FLAG_INPUTLEGACY		0x08		/* if set, accept LEGACY frames; NOT YET IMPLEMENTED */
+#define	VDIF_MUX_FLAG_OUTPUTLEGACY		0x10		/* if set, produce LEGACY frames; NOT YET IMPLEMENTED */
+
+
+struct vdif_mux {
+  int inputFrameSize;					/* size of one input data frame, inc header */
+  int inputDataSize;					/* size of one input data frame, without header */
+  int outputFrameSize;					/* size of one output data frame, inc header */
+  int outputDataSize;					/* size of one output data frame, without header */
+  int inputFramesPerSecond;				/* per thread */
+  int nBit;						/* per sample */
+  int nThread;
+  int nSort;
+  int nGap;
+  int frameGranularity;
+  int nOutputChan;					/* nThread rounded up to nearest power of 2 */
+  unsigned int flags;
+  uint16_t chanIndex[VDIF_MAX_THREAD_ID+1];		/* map from threadId to channel number (0 to nThread-1) */
+  uint32_t goodMask;
+  void (*cornerTurner)(unsigned char *, const unsigned char * const *, int);
+};
+
 struct vdif_mux_statistics {
   /* The first 8 accumulate over multiple calls to vdifmux */
   long long nValidFrame;		/* number of valid VDIF input frames encountered */
@@ -229,7 +254,12 @@ struct vdif_mux_statistics {
   /* duration of output data */
 };
 
-int vdifmux(unsigned char *dest, int nFrame, const unsigned char *src, int length, int inputFrameSize, int inputFramesPerSecond, int nBit, int nThread, const int *threadIds, int nSort, int nGap, long long startOutputFrameNumber, struct vdif_mux_statistics *stats);
+/* return 0 on success, or code on error */
+int configurevdifmux(struct vdif_mux *vm, int inputFrameSize, int inputFramesPerSecond, int nBit, int nThread, const int *threadIds, int nSort, int nGap, int flags);
+
+void printvdifmux(const struct vdif_mux *vm);
+
+int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int srcSize, const struct vdif_mux *vm, long long startOutputFrameNumber, struct vdif_mux_statistics *stats);
 
 void printvdifmuxstatistics(const struct vdif_mux_statistics *stats);
 

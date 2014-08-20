@@ -34,8 +34,8 @@
 
 const char program[] = "vmux";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
-const char version[] = "0.2";
-const char verdate[] = "20130506";
+const char version[] = "0.3";
+const char verdate[] = "20140820";
 
 const int defaultChunkSize = 2000000;
 
@@ -44,7 +44,7 @@ int main(int argc, char **argv)
 	unsigned char *src;
 	unsigned char *dest;
 	FILE *in, *out;
-	int n;
+	int n, rv;
 	int threads[32];
 	int nThread;
 	int inputframesize;
@@ -60,6 +60,8 @@ int main(int argc, char **argv)
 	const char *outFile;
 	off_t offset = 0;
 	int nBit = 2;
+	struct vdif_mux vm;
+	int flags = 0;
 
 	if(argc < 6)
 	{
@@ -147,8 +149,6 @@ int main(int argc, char **argv)
 	}
 
 
-
-
 	if(strcmp(inFile, "-") == 0)
 	{
 		if(offset != 0)
@@ -206,6 +206,19 @@ int main(int argc, char **argv)
 	dest = (unsigned char *)malloc(destChunkSize);
 
 	leftover = 0;
+
+	rv = configurevdifmux(&vm, inputframesize, framesPerSecond, nBit, nThread, threads, nSort, nGap, flags);
+	if(rv < 0)
+	{
+		fprintf(stderr, "Error configuring vdifmux: %d\n", rv);
+
+		return EXIT_FAILURE;
+	}
+
+	if(strcmp(outFile, "-") != 0)
+	{
+		printvdifmux(&vm);
+	}
 	
 	resetvdifmuxstatistics(&stats);
 	
@@ -230,7 +243,7 @@ int main(int argc, char **argv)
 		{
 			nSort = -nSort;
 		}
-		V = vdifmux(dest, destChunkSize, src, n+leftover, inputframesize, framesPerSecond, nBit, nThread, threads, nSort, nGap, nextFrame, &stats);
+		V = vdifmux(dest, destChunkSize, src, n+leftover, &vm, nextFrame, &stats);
 
 		if(V < 0)
 		{
