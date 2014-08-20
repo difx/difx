@@ -354,7 +354,6 @@ void VDIFMark5DataStream::initialiseFile(int configindex, int fileindex)
 	Configuration::dataformat format;
 	double bw;
 	int rv;
-
 	char defaultDirPath[] = ".";
 	double startmjd;
 	long long n;
@@ -371,14 +370,23 @@ void VDIFMark5DataStream::initialiseFile(int configindex, int fileindex)
         bw = config->getDRecordedBandwidth(configindex, streamnum, 0);
 
 	nGap = framespersecond/4;	// 1/4 second gap of data yields a mux break
+	if(nGap > 1024)
+	{
+		nGap = 1024;
+	}
 	startOutputFrameNumber = -1;
-
-        outputframebytes = (inputframebytes-VDIF_HEADER_BYTES)*config->getDNumMuxThreads(configindex, streamnum) + VDIF_HEADER_BYTES;
 
 	nthreads = config->getDNumMuxThreads(configindex, streamnum);
 	threads = config->getDMuxThreadMap(configindex, streamnum);
 
-	fanout = config->genMk5FormatName(format, nrecordedbands, bw, nbits, sampling, outputframebytes, config->getDDecimationFactor(configindex, streamnum), config->getDNumMuxThreads(configindex, streamnum), formatname);
+	rv = configurevdifmux(&vm, inputframebytes, framespersecond, nbits, nthreads, threads, nSort, nGap, VDIF_MUX_FLAG_RESPECTGRANULARITY);
+	if(rv < 0)
+	{
+		cfatal << startl << "configurevmux failed with return code " << rv << endl;
+		MPI_Abort(MPI_COMM_WORLD, 1);
+	}
+
+	fanout = config->genMk5FormatName(format, nrecordedbands, bw, nbits, sampling, vm.outputFrameSize, config->getDDecimationFactor(configindex, streamnum), config->getDNumMuxThreads(configindex, streamnum), formatname);
         if(fanout != 1)
         {
 		cfatal << startl << "Fanout is " << fanout << ", which is impossible; no choice but to abort!" << endl;
@@ -757,7 +765,7 @@ int VDIFMark5DataStream::dataRead(int buffersegment)
 	bytesvisible = muxend - muxindex;
 
 	// multiplex and corner turn the data
-	muxReturn = vdifmux(destination, readbytes, readbuffer+muxindex, bytesvisible, inputframebytes, framespersecond, muxBits, nthreads, threads, nSort, nGap, startOutputFrameNumber, &vstats);
+	muxReturn = vdifmux(destination, readbytes, readbuffer+muxindex, bytesvisible, &vm, startOutputFrameNumber, &vstats);
 	if(muxReturn < 0)
 	{
 		cwarn << startl << "vdifmux returned " << muxReturn << endl;

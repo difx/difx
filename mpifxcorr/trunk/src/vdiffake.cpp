@@ -51,6 +51,7 @@ void VDIFFakeDataStream::initialiseFile(int configindex, int fileindex)
 	Configuration::dataformat format;
 	double bw;
 	double startmjd;
+	int rv;
 
 	format = config->getDataFormat(configindex, streamnum);
 	sampling = config->getDSampling(configindex, streamnum);
@@ -60,12 +61,17 @@ void VDIFFakeDataStream::initialiseFile(int configindex, int fileindex)
 	framespersecond = config->getFramesPerSecond(configindex, streamnum)/config->getDNumMuxThreads(configindex, streamnum);
         bw = config->getDRecordedBandwidth(configindex, streamnum, 0);
 
-        outputframebytes = (inputframebytes-VDIF_HEADER_BYTES)*config->getDNumMuxThreads(configindex, streamnum) + VDIF_HEADER_BYTES;
-
 	nthreads = config->getDNumMuxThreads(configindex, streamnum);
 	threads = config->getDMuxThreadMap(configindex, streamnum);
 
-	fanout = config->genMk5FormatName(format, nrecordedbands, bw, nbits, sampling, outputframebytes, config->getDDecimationFactor(configindex, streamnum), config->getDNumMuxThreads(configindex, streamnum), formatname);
+	rv = configurevdifmux(&vm, inputframebytes, framespersecond, nbits, nthreads, threads, nSort, nGap, VDIF_MUX_FLAG_RESPECTGRANULARITY);
+	if(rv < 0)
+	{
+		cfatal << startl << "configurevmux failed with return code " << rv << endl;
+		MPI_Abort(MPI_COMM_WORLD, 1);
+	}
+
+	fanout = config->genMk5FormatName(format, nrecordedbands, bw, nbits, sampling, vm.outputFrameSize, config->getDDecimationFactor(configindex, streamnum), config->getDNumMuxThreads(configindex, streamnum), formatname);
         if(fanout != 1)
         {
 		cfatal << startl << "Fanout is " << fanout << ", which is impossible; no choice but to abort!" << endl;
@@ -141,7 +147,7 @@ int VDIFFakeDataStream::dataRead(int buffersegment)
 	bytesvisible = readbufferleftover + bytes;
 
 	// multiplex and corner turn the data
-	muxReturn = vdifmux(reinterpret_cast<unsigned char *>(&databuffer[buffersegment*(bufferbytes/numdatasegments)]), readbytes, readbuffer, bytesvisible, inputframebytes, framespersecond, muxBits, nthreads, threads, nSort, nGap, startOutputFrameNumber, &vstats);
+	muxReturn = vdifmux(reinterpret_cast<unsigned char *>(&databuffer[buffersegment*(bufferbytes/numdatasegments)]), readbytes, readbuffer, bytesvisible, &vm, startOutputFrameNumber, &vstats);
 
 	if(muxReturn < 0)
 	{

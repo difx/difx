@@ -3,7 +3,7 @@ Version 2.4
 * Post DiFX-2.3
 * Add INTERLACEDVDIF Fake mode
 * Change polId to recBandId in the PCAL files as per documentation
-* Add support for TCP, UDP and Raw Ethernet Interlaced VDIF.  ** Not yet tested **
+* Add support for TCP, UDP and Raw Ethernet Interlaced VDIF.  (TCP and UDP Not yet tested)
 * Text Mark5 XLRReadData() calls by tainting the end of the destination buffer and verifying it gets untainted.
 * Add more generalized support for the zoo of Mark5 module directory
 * When reading data from Mark5 units, verify that the data is in the same format class as requested by the .input file.
@@ -16,6 +16,7 @@ Version 2.4
 * PCAL: Write informational header in comments to top of PCAL files
 * Reduce sort window for VDIF to 32 frames to accomodate lower bandwidths.
   - Someday this should be tuned a bit better.
+* Adapt new call API of vdifio
 
 Version 2.3
 ~~~~~~~~~~~

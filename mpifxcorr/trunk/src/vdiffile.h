@@ -96,11 +96,12 @@ protected:
   int readbufferleftover;
   int minleftoverdata;
   int nSort, nGap;  // muxer tuning parameters
+  struct vdif_mux vm;
   struct vdif_mux_statistics vstats;
   long long startOutputFrameNumber;
   int invalidtime;
 
-  int nbits, framespersecond, nthreads, outputframebytes, inputframebytes;
+  int nbits, framespersecond, nthreads, inputframebytes;
   const int *threads;
 
   Configuration::datasampling samplingtype;
