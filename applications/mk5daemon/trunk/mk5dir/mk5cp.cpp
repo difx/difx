@@ -1112,6 +1112,7 @@ static int mk5cp(char *vsn, const char *scanList, const char *outPath, int force
 		v = module.getCachedDirectory(xlrDevice, mjdNow, 
 			vsn, mk5dirpath, &dirCallback, &mk5status,
 			&replacedFrac, false, 0, 1, -1, -1);
+/*
 		if(replacedFrac > 0.01)
 		{
 			snprintf(message, DIFX_MESSAGE_LENGTH,
@@ -1120,6 +1121,7 @@ static int mk5cp(char *vsn, const char *scanList, const char *outPath, int force
 			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_WARNING);
 			fprintf(stderr, "Warning: %s\n", message);
 		}
+*/
 		if(v < 0)
 		{
 			if(v == DIRECTORY_NOT_CACHED)
@@ -1134,6 +1136,7 @@ static int mk5cp(char *vsn, const char *scanList, const char *outPath, int force
 					"Unsuccessful dir read for module %s.  Return value = %d\n", vsn, v);
 			}
 			fprintf(stderr, "%s\n", message);
+			fprintf(stderr, "\n%s\n", module.error.str().c_str());
 			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_WARNING);
 			mk5status.activeBank = ' ';
 			bail = 1;

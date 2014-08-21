@@ -447,7 +447,8 @@ void Mark5Scan::print() const
 }
 
 // Parse a line from a .dir file into an existing Mark5Scan class
-void Mark5Scan::parseDirEntry(const char *line)
+// returns 0 on success
+int Mark5Scan::parseDirEntry(const char *line)
 {
 	char scanName[MODULE_LEGACY_SCAN_LENGTH];
 
@@ -456,6 +457,13 @@ void Mark5Scan::parseDirEntry(const char *line)
 		&duration, &framebytes, &frameoffset, &tracks, &format, scanName);
 
 	name = scanName;
+
+	if(framebytes <= 0)
+	{
+		return -1;
+	}
+
+	return 0;
 }
 
 int Mark5Scan::writeDirEntry(FILE *out) const
@@ -726,6 +734,8 @@ int Mark5Module::load(const char *filename)
 
 	for(std::vector<Mark5Scan>::iterator s = scans.begin(); s != scans.end(); ++s)
 	{
+		int rv;
+
 		v = fgets(line, MaxLineLength, in);
 		if(!v)
 		{
@@ -735,11 +745,18 @@ int Mark5Module::load(const char *filename)
 			return -1;
 		}
 		
-		s->parseDirEntry(line);
+		rv = s->parseDirEntry(line);
+		if(rv != 0)
+		{
+			error << "Directory file: " << filename << " is corrupt: at least one scan line is invalid.\n";
+			fclose(in);
+
+			return -1;
+		}
 	}
 
 	fclose(in);
-	
+
 	return 0;
 }
 
@@ -1775,6 +1792,10 @@ int Mark5Module::getCachedDirectory(SSHANDLE xlrDevice,
 	if(v < 0)
 	{
 		error << "Loading directory file " << filename << " failed.  Error code=" << v << "\n";
+		if(cacheOnly)
+		{
+			return -1;
+		}
 	}
 
 	fast = optionFast;

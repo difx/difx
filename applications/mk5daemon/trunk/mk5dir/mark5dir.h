@@ -84,7 +84,7 @@ public:
 	Mark5Scan();
 	~Mark5Scan();
 	void print() const;
-	void parseDirEntry(const char *line);
+	int parseDirEntry(const char *line);
 	int writeDirEntry(FILE *out) const;
 	int sanityCheck() const;
 	int nsStart() const;
