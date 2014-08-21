@@ -2,6 +2,7 @@ Version 2.4.0
 ~~~~~~~~~~~~~
 * Post DiFX-2.3
 * Increase receive buffer size for binary receives
+* Add function to send DifxStop message
 
 Version 2.3.0
 ~~~~~~~~~~~~~
@@ -31,7 +32,6 @@ Version for DiFX-2.1, May 4, 2012
 
 Version 2.0.2
 ~~~~~~~~~~~~~
-Post 2.0.1
 Add new Mark5 states "booting", "recording" and "copyto"
 Add new Mark5 state "record"
 Add SMART monitor message type for disk diagnostics
@@ -49,7 +49,6 @@ Add utility restartdifx
 
 Version 2.0.1
 ~~~~~~~~~~~~~
-Post version 2.0.0
 Add binary message option for testdifxmessagereceive
 Able to make RedHat RPM
 Version for DiFX-2.0.1, June 10, 2011

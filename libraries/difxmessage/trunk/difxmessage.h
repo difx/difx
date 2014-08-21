@@ -568,6 +568,7 @@ int difxMessageSendDifxStatus3(enum DifxState state, const char *stateMessage, d
 int difxMessageSendLoad(const DifxMessageLoad *load);
 int difxMessageSendDifxAlert(const char *errorMessage, int severity);
 int difxMessageSendDifxInfo(const char *infoMessage);
+int difxMessageSendStop(const char *inputFilename, const char *mpiWrapper, const char *difxVersion, const char *difxProgram);
 int difxMessageSendDifxDiagnosticBufferStatus(int threadid, int numelements, int startelement, int numactiveelements);
 int difxMessageSendDifxDiagnosticProcessingTime(int threadid, double durationMicrosec);
 int difxMessageSendDifxDiagnosticMemoryUsage(long long membytes);

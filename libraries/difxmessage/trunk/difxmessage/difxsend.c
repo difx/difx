@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2012 by Walter Brisken                             *
+ *   Copyright (C) 2007-2014 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -271,6 +271,75 @@ int difxMessageSendDifxAlert(const char *alertMessage, int severity)
 		}
 	}
 	
+	return 0;
+}
+
+int difxMessageSendStop(const char *inputFilename, const char *mpiWrapper, const char *difxVersion, const char *difxProgram)
+{
+	char message[DIFX_MESSAGE_LENGTH];
+	char body[DIFX_MESSAGE_LENGTH];
+	int size;
+
+	if(difxMessagePort <= 0)
+	{
+		fprintf(stderr, "Error: could not deliver stop message for input file %s because difxMessagePort is not set.\n", inputFilename);
+
+		return -1;
+	}
+
+	if(inputFilename == 0)
+	{
+		return -2;
+	}
+
+	if(difxProgram == 0)
+	{
+		difxProgram = "mpifxcorr";
+	}
+	if(difxVersion == 0)
+	{
+		difxVersion = "";
+	}
+	if(mpiWrapper == 0)
+	{
+		mpiWrapper = "";
+	}
+
+	size = snprintf(body, DIFX_MESSAGE_LENGTH,
+		
+		"<difxStop>"
+		  "<input>%s</input>"
+		  "<mpiWrapper>%s</mpiWrapper>"
+		  "<difxVersion>%s</difxVersion>"
+		  "<difxProgram>%s</difxProgram>"
+		"</difxStop>",
+
+		inputFilename,
+		mpiWrapper,
+		difxVersion,
+		difxProgram);
+	
+	if(size >= DIFX_MESSAGE_LENGTH)
+	{
+		fprintf(stderr, "difxMessageSendStop: message body overflow (%d >= %d)\n", size, DIFX_MESSAGE_LENGTH);
+		
+		return -1;
+	}
+
+	size = snprintf(message, DIFX_MESSAGE_LENGTH,
+		difxMessageXMLFormat, 
+		DifxMessageTypeStrings[DIFX_MESSAGE_STOP],
+		difxMessageSequenceNumber++, body);
+	
+	if(size >= DIFX_MESSAGE_LENGTH)
+	{
+		fprintf(stderr, "difxMessageSendStop: message overflow (%d >= %d)\n", size, DIFX_MESSAGE_LENGTH);
+
+		return -1;
+	}
+
+	difxMessageSend2(message, size);
+
 	return 0;
 }
 
