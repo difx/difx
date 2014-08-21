@@ -66,8 +66,7 @@ for phyle in all_files:
     f = open (phyle, 'r+')
     inlines = f.readlines ()
                     # first pass through file, gathering information
-    nl = 0
-    for line in inlines:
+    for nl, line in enumerate (inlines):
                     # determine telescope #'s corresponding to 2 char names
         fields = line.split ()
         if len(fields) > 0:
@@ -103,7 +102,7 @@ for phyle in all_files:
             elif fields[1] == 'DATA' and fields[2] == 'TABLE':
                 if nstop < 0:
                     nstop = nl -2
-        nl += 1
+    
                     # check that the baseline was found
     if nstart < 0:
         print 'did not find baseline', bline, 'in',phyle,'- skipping it'
@@ -115,28 +114,44 @@ for phyle in all_files:
 
                 
                     # second pass through file image, deleting baseline
-    nl = 0
-    for line in inlines:
+    for nl, line in enumerate (inlines):
         fields = line.split ()
         if len(fields) > 0:
                     # modify lines
+                    # decrement baseline count
+            if fields[0] == 'ACTIVE' and fields[1] == 'BASELINES:':
+                nbase = str(int(fields[2]) - 1)
+                line = 'ACTIVE BASELINES:   ' + nbase + '\n'
+               
+                    # FIXME - actual baseline should be deleted, and
+                    # indices moved down by one
+            elif fields[0] == 'BASELINE' and fields[1] == nbase and fields[2] == 'INDEX:':
+                continue
+
                     # subtract one from the number of baselines
-            if fields[0] == 'BASELINE' and fields[1] == 'ENTRIES:':
+            elif fields[0] == 'BASELINE' and fields[1] == 'ENTRIES:':
                 line = 'BASELINE ENTRIES:   ' + str(int(fields[2]) - 1) + '\n'
-                outlines.append (line)
+              
                     # copy up til deleted block
             elif nl < nstart:
-                outlines.append (line)
-                    # copy lines after deleted block
-            elif nl > nstop:
+                pass           
+                    # delete lines for affected baseline
+            elif nl <= nstop:
+                continue
                     # change indexing down by one after deleted block
-                if fields[0] == 'D/STREAM' and fields[2] == 'INDEX':
-                    idx = str (int(fields[3].rstrip (':'))-1) + ': '
-                    line = 'D/STREAM ' + fields[1] + ' INDEX ' + idx + fields[4] + '\n'
-                outlines.append (line)
-        else:       # make sure empty lines get appended, too
-            outlines.append (line)
-        nl += 1
+            elif fields[0] == 'D/STREAM' and fields[2] == 'INDEX':
+                idx = str (int(fields[3].rstrip (':'))-1) + ': '
+                line = 'D/STREAM ' + fields[1] + ' INDEX ' + idx + fields[4] + '\n'
+            elif fields[0] == 'NUM' and fields[1] == 'FREQS':
+                idx = str (int(fields[2].rstrip (':'))-1) + ':        '
+                line = 'NUM FREQS ' + idx + fields[3] + '\n'
+
+            elif fields[0] == 'POL' and fields[1] == 'PRODUCTS':
+                subfield = fields[2].split ('/')
+                idx = str (int(subfield[0])-1) + '/' + subfield[1] + '   '
+                line = 'POL PRODUCTS ' + idx + fields[3] + '\n'
+
+        outlines.append (line)
             
     f.seek (0)      # rewind current file to start
                     # write out modified file contents
