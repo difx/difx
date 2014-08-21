@@ -158,7 +158,7 @@ int fill_fblock (DifxInput *D,                    // difx input structure pointe
         for (n=0; n<nprod; n++)
             for (k=0; k<2; k++)     // k = 0|1 for ref|rem antenna
                 {
-                if (pfb[n].stn[k].ant == ants[i])
+                if (pfb[n].stn[k].ant == i)
                     {               // antenna matches; look for unique freq
                     present = FALSE;// is frequency new?
                     for (j=0; j<nfreq; j++)
@@ -230,6 +230,8 @@ int fill_fblock (DifxInput *D,                    // difx input structure pointe
             }
         }
     if (opts->verbose > 1)
+        {
+        printf ("              sb p 1st a id  z pc  freq    bw   ch_id\n");
         for (n=0; n<nprod; n++)     // debug - print out fblock table
             printf ("    fblock[%02d] %c %c %2d %2d %2d %2d %1d %.3f %.3f %s\n"
                       "               %c %c %2d %2d %2d %2d %1d %.3f %.3f %s\n",
@@ -241,6 +243,7 @@ int fill_fblock (DifxInput *D,                    // difx input structure pointe
                   pfb[n].stn[1].ant, pfb[n].stn[1].find, pfb[n].stn[1].zoom, 
                   pfb[n].stn[1].pcal_int, pfb[n].stn[1].freq, 
                   pfb[n].stn[1].bw, pfb[n].stn[1].chan_id);
+        }
 
     pfb[nprod].stn[0].ant = -1;     // mark end of table
     return 0;                       // signify that all is well
