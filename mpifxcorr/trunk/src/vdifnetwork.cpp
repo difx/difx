@@ -450,6 +450,16 @@ int VDIFNetworkDataStream::dataRead(int buffersegment)
 		cwarn << startl << "vdifmux returned " << muxReturn << endl;
 	}
 
+	if(vstats.startFrameNumber % vm.frameGranularity != 0)
+	{
+		/* This should never happen.  Maybe this test gets removed some day */
+		csevere << startl << "Input startFrameNumber was " << startOutputFrameNumber << " and Output startFrameNumber was " << vstats.startFrameNumber << " flags=" << vm.flags << " frameGranularity=" << vm.frameGranularity << " trying again." << endl;
+
+		muxindex += vm.frameGranularity*vm.inputFrameSize;
+		bytesvisible -= vm.frameGranularity*vm.inputFrameSize;
+		muxReturn = vdifmux(destination, readbytes, readbuffer+muxindex, bytesvisible, &vm, startOutputFrameNumber, &vstats);
+	}
+
 	if(0)
 	{
 		static int C = 0;
