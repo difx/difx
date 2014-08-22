@@ -2207,7 +2207,7 @@ int vdifmux(unsigned char *dest, int destSize, const unsigned char *src, int src
 			m = startOutputFrameNumber % vm->frameGranularity;
 			if(m != 0)
 			{
-				m += (vm->frameGranularity - m);
+				startOutputFrameNumber += (vm->frameGranularity - m);
 			}
 		}
 	}
