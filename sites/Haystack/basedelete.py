@@ -86,6 +86,12 @@ for phyle in all_files:
                     dstrs.append (dsi)
 
             elif fields[0] == 'D/STREAM' and fields[1] == 'A' and fields[2] == 'INDEX':
+                    # split last field if necessary due to missing space
+                if len (fields) == 4:
+                   subfield = fields[3].split (':')
+                   fields[3] = subfield[0] + ':'
+                   fields.append (subfield[1])
+                   
                 if nstart < 0:
                     # no matching A-line yet, examine this one
                     if fields[4] == ants[0] or fields[4] == ants[1]:
@@ -94,6 +100,12 @@ for phyle in all_files:
                     nstop = nl - 1
 
             elif fields[0] == 'D/STREAM' and fields[1] == 'B' and fields[2] == 'INDEX':
+                    # split last field if necessary due to missing space
+                if len (fields) == 4:
+                   subfield = fields[3].split (':')
+                   fields[3] = subfield[0] + ':'
+                   fields.append (subfield[1])
+                   
                 if fields[4] != ants[0] and fields[4] != ants[1]:
                     if nstop < 0:
                     # false alarm, reset nstart whether set or not
@@ -140,6 +152,11 @@ for phyle in all_files:
                 continue
                     # change indexing down by one after deleted block
             elif fields[0] == 'D/STREAM' and fields[2] == 'INDEX':
+                    # split last field if necessary due to missing space
+                if len (fields) == 4:
+                   subfield = fields[3].split (':')
+                   fields[3] = subfield[0] + ':'
+                   fields.append (subfield[1])
                 idx = str (int(fields[3].rstrip (':'))-1) + ': '
                 line = 'D/STREAM ' + fields[1] + ' INDEX ' + idx + fields[4] + '\n'
             elif fields[0] == 'NUM' and fields[1] == 'FREQS':
