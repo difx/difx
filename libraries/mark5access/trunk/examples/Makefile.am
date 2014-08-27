@@ -5,11 +5,11 @@ if WITH_FFTW
 fftw_programs = \
 	m5pcal \
 	m5spec \
-	m5fb \
+        m5fb \
 	zerocorr
 m5spec_CFLAGS = $(FFTW3_CFLAGS) $(INCLUDES)
-m5fb_CFLAGS = $(FFTW3_CFLAGS) $(INCLUDES)
 m5spec_LDADD = $(FFTW3_LIBS) $(LDADD)
+m5fb_CFLAGS = $(FFTW3_CFLAGS) $(INCLUDES)
 m5fb_LDADD = $(FFTW3_LIBS) $(LDADD)
 m5pcal_CFLAGS = $(FFTW3_CFLAGS) $(INCLUDES)
 m5pcal_LDADD = $(FFTW3_LIBS) $(LDADD)
