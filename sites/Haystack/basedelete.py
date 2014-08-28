@@ -119,7 +119,7 @@ for phyle in all_files:
     if nstart < 0:
         print 'did not find baseline', bline, 'in',phyle,'- skipping it'
         f.close ()
-        break
+        continue
 
     elif opts.verbose:
         print 'deleting lines', nstart, 'through', nstop
