@@ -1,9 +1,24 @@
-#bin/#!/usr/python
+#!/usr/bin/python
 import os
 import sys
 import re
 import getopt 
 import math
+
+def usage():
+  print ' '
+  print '  filterbank.py -x <vexfile>  -s <Source Name>  -l <dir2filelist.lst>'
+  print '                -m <data format e.g. Mark5B-1024-16-2>'
+  print '                -t <spectrogram time resolution [microsec]>'
+  print '                -n <num spectral bins per IF>'
+  print '                -f <fch1>  [-p <1|2>]\n'
+  print '  Most arguments are obligatory.'
+  print ' '
+  sys.exit(-1)
+  return
+
+def substring_after(s, delim):
+  return s.partition(delim)[2]
 
 def getClass(Class,ALLtext):
   sourcestat=()
@@ -89,7 +104,7 @@ def getScanFile(Scan,FileList):
     match = get('\S+'+Scan,line)
     if match: 
       Path=match
-      time = re.search(Path+' (\S+)',line).group(1)
+      time = line.split()[1]
   return Path,time
 
 ################ GETS TELSCOPE NUMBER FROM FILELIST.TEL ##############
@@ -117,12 +132,10 @@ def getSourceNum(Source,SourceInfo):
 def getCoord(Source,SourceInfo):
   Index=getSourceNum(Source,SourceInfo)
   for stuff in SourceInfo[Index]:
-    matchRA=get('ra=\d+.\d+',stuff)
-    if matchRA:
-      RA=get('\d+.\d+',matchRA)
-    matchDEC=get('dec=[-]\d+.\d+',stuff)
-    if matchDEC:
-      DEC=get('[-]\d+.\d+',matchDEC)
+    if stuff.startswith('ra='):
+       RA=substring_after(stuff,'ra=')
+    if stuff.startswith('dec='):
+       DEC=substring_after(stuff,'dec=')
   return RA,DEC
 
 # Convert RA (deg) to H.M.S: (From http://supernovae.in2p3.fr/~baumont/phAse/src/HTML/astroTools.py)
@@ -171,18 +184,30 @@ def deg2DMS( Decin ):
    return out
    
 def main(): 
-  opts,args = getopt.getopt(sys.argv[1:],"x:l:s:t:m:o:n:f:d:")
+  Npols = '1'
+  Polstr=''
+
+  try:
+    opts,args = getopt.getopt(sys.argv[1:],"hx:l:s:t:m:o:n:f:d:")
+    for item in opts:
+      if item[0] == '-h': usage()
+      if item[0] == '-x': VEX = item[1]
+      if item[0] == '-l': FileList = item[1]
+      if item[0] == '-s': Source = item[1]
+      if item[0] == '-t': tsamp = item[1]
+      if item[0] == '-m': mode = item[1]
+      if item[0] == '-o': out = item[1]
+      if item[0] == '-n': nchanPif = item[1] 
+      if item[0] == '-f': fch1= item[1]
+      #if item[0] == '-d': foff =item[1] 
+  except getopt.GetoptError as ee:
+      print 'Error: unknown command line argument.'
+      usage()
+ 
+  print 'Number of polarisations: '+Npols
+  if (Npols!='1' and Npols!='2'):
+    print 'Number of polarisations ('+Npols+') is odd'
   
-  for item in opts:
-    if item[0] == '-x': VEX = item[1]
-    if item[0] == '-l': FileList = item[1]
-    if item[0] == '-s': Source = item[1]
-    if item[0] == '-t': tsamp = item[1]
-    if item[0] == '-m': mode = item[1]
-    if item[0] == '-o': out = item[1]
-    if item[0] == '-n': nchanPif = item[1] 
-    if item[0] == '-f': fch1= item[1]
-    #if item[0] == '-d': foff =item[1] 
   SourceInfo,ScanInfo = extract_info( VEX )
   ScanList= ScanNum(Source,ScanInfo)
   TeleNum,TeleName=getTele(FileList)
@@ -193,18 +218,28 @@ def main():
  
   ModeNums=re.findall('-\d+',mode)
   NumIfs=get('\d+',ModeNums[1])
-  nchans=str(int(nchanPif)*int(NumIfs))
+  nchans=str(int(nchanPif)*int(NumIfs)/int(Npols))
+  #nchans=str(int(nchanPif)*int(NumIfs))
   tsampInSec=str(float(float(tsamp)/1000000))
   foff=str(float(ModeNums[0])/int(ModeNums[2])/-2.0/int(nchanPif)/int(NumIfs))
+  fch1 = str(float(fch1) +float(foff)/2.0)
 
+  if Npols=='2':
+    P1='UULLUULLUULLUULL'
+    P2='RLRLRLRLRLRLRLRL'
+    P1=P1[0:(int(NumIfs))]
+    P2=P2[0:(int(NumIfs))]
+    Polstr='-i '+P1+' -p '+P2+' '
 
   for scan in ScanList: 
     ScanFile,TimeSt = getScanFile(scan,FileList)
     
     if ScanFile!='':
       biNAME= Source+'_'+TimeSt+TeleName+'_'+scan  
-      quote1='m5fb -b -nopol '+ScanFile+' '+mode+' '+nchanPif+' '+tsamp+' '+biNAME+'.fb'
+      quote1='m5fb -b -nopol '+Polstr+ScanFile+' '+mode+' '+nchanPif+' '+tsamp+' '+biNAME+'.fb'
       quote2a='makeheader -tstart '+TimeSt+' -source_name '+Source+' -nchans '+ nchans+' -tsamp '+tsampInSec
+      if Npols != '1':
+        quote2a = quote2a+' -nifs '+Npols
       quote2b=' -telescope_id '+TeleNum+' -src_raj '+RA+' -src_dej '+DEC+' -fch1 '+fch1+' -foff '+foff+' > '+biNAME+'.fil'
       quote2=quote2a+quote2b
       quote3='cat '+biNAME+'.fb >> '+biNAME+'.fil' 
@@ -215,8 +250,6 @@ def main():
       #os.system(quote1)
       #os.system(quote2)
       #os.system(quote3)   
-
-
 
 
 if __name__ == '__main__':
