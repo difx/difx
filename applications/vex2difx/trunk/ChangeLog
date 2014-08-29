@@ -8,7 +8,8 @@ Version 2.4.0
 * Make tone selection default the same whether an ANTENNA section exists or
   not (default is Smart)
 * EB and AR to use VLBA Cannonical Thread Ids for VDIF
-* Respect record enable bit in SCHED section
+* Respect record enable bit in SCHED section (enable column must be > 0 to
+  retain the data)
 
 Version 2.3.0
 ~~~~~~~~~~~~~

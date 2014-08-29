@@ -787,8 +787,7 @@ static int getScans(VexData *V, Vex *v, const CorrParams &params)
 			}
 
 			vex_field(T_STATION, p, 7, &link, &name, &value, &units);
-			recordEnable[stationName] = (atoi(value) != 0);
-//printf("***** record: %i for %s for scan %s\n", (recordEnable[stationName]?1:0), stationName.c_str(), scanId);
+			recordEnable[stationName] = (atoi(value) > 0);
 
 			stations[stationName] = VexInterval(startAnt, stopAnt);
 
