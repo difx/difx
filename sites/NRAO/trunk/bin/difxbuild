@@ -33,6 +33,7 @@ pyxVersion = '0.12.1'	#http://sourceforge.net/projects/pyx/files/pyx/0.12.1/PyX-
 gpstkVersion = '2.3'
 libeventVersion = '2.0.21'
 expatVersion = '2.1.0'
+libmicrohttpdVersion = '0.9.35'
 
 defaultDifxMessageGroup = '224.2.2.1'
 defaultDifxMessagePort = 50200
@@ -653,7 +654,7 @@ components['DIFX-DEVEL'] = \
 	component_calcif2_trunk, \
 	component_calcserver_trunk, \
 	component_guiserver_trunk, \
-	component_gui_trunk, \
+	#component_gui_trunk, \
 	component_rcwlib_trunk, \
 	component_sniff_trunk, \
 	component_hops_trunk, \
@@ -662,7 +663,6 @@ components['DIFX-DEVEL'] = \
 	component_vis2screen_trunk, \
 	component_difx2profile_trunk, \
 	component_vdifserver_trunk, \
-	component_difxdb_trunk, \
 	component_nraodifxdb_trunk, \
 	component_difxfilterbank_trunk, \
 	component_difxmonitor_trunk, \
@@ -2363,6 +2363,30 @@ def expat(origComps, params, args, verbose, pretend):
 	execute('make -j %d' % numMakeCpus, verbose, pretend)
 	execute('make install', verbose, pretend)
 
+def libmicrohttpd(origComps, params, args, verbose, pretend):
+	arch = platform.machine()
+	mhdSrcFile = 'libmicrohttpd-%s.tar.gz' % libmicrohttpdVersion
+	mhdUrl = 'http://ftp.gnu.org/gnu/libmicrohttpd/%s' % mhdSrcFile
+	difxBase = environ['DIFX_BASE'] + '/'
+	archDir = difxBase + arch
+	archSrcDir = difxBase + arch + '/src/'
+	tarDir = difxBase + 'tar/'
+	# get file
+	ftpFile(mhdUrl, tarDir, mhdSrcFile, args, verbose, pretend)
+	if not isdir(archSrcDir):
+		execute('mkdir -p %s' % archSrcDir, verbose, pretend)
+	
+	mhdSrcDir = '%s/libmicrohttpd-%s' % (archSrcDir, libmicrohttpdVersion)
+	if isdir(mhdSrcDir):
+		print 'Stopping because %s exists' % mhdSrcDir
+		return
+	
+	chdir(archSrcDir)
+	execute('tar zxvf %s/%s' % (tarDir, mhdSrcFile), verbose, pretend)
+	chdir(mhdSrcDir)
+	execute('./configure --prefix=%s' % archDir, verbose, pretend)
+	execute('make -j %d' % numMakeCpus, verbose, pretend)
+	execute('make install', verbose, pretend)
 
 def pgplot(origComps, params, args, verbose, pretend):
 	arch = platform.machine()
@@ -2430,7 +2454,7 @@ def pgplot(origComps, params, args, verbose, pretend):
 
 
 def extra(origComps, params, args, verbose, pretend):
-	packages = ['cxOracle', 'psycopg', 'pgplot', 'png', 'pyx', 'sched', 'sked', 'spice', 'autotools', 'gpstk', 'libevent', 'expat']
+	packages = ['cxOracle', 'psycopg', 'pgplot', 'png', 'pyx', 'sched', 'sked', 'spice', 'autotools', 'gpstk', 'libevent', 'expat', 'libmicrohttpd']
 	if len(args) < 1:
 		print 'The "extra" option allows installation of optional software.\n'
 		print 'Usage 1: difxbuild [options] extra [package(s)]\n'
@@ -2465,6 +2489,8 @@ def extra(origComps, params, args, verbose, pretend):
 		png(origComps, params, [], verbose, pretend)
 	if 'expat' in args:
 		expat(origComps, params, [], verbose, pretend)
+	if 'libmicrohttpd' in args:
+		libmicrohttpd(origComps, params, [], verbose, pretend)
 	if 'libevent' in args:
 		libevent(origComps, params, [], verbose, pretend)
 	if 'sched' in args:
