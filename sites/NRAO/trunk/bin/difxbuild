@@ -11,8 +11,8 @@ from time import asctime
 from glob import glob
 
 program = 'difxbuild'
-version = '0.40'
-verdate = '20140326'
+version = '0.41'
+verdate = '20140831'
 author = 'Walter Brisken <wbrisken@nrao.edu>'
 
 difxbuildUrl = 'http://www.aoc.nrao.edu/~wbrisken/difxbuild'
@@ -623,7 +623,7 @@ component_difxmonitor_trunk = \
 [ \
 	'difx_monitor', \
 	'https://svn.atnf.csiro.au/difx/applications/difx_monitor/trunk', \
-	['aclocal', 'autoconf', 'automake', 'mpicxx'] \
+	['aclocal', 'autoconf', 'automake', 'mpicxx', 'nodef'] \
 ]
 
 component_difxfilterbank_trunk = \
@@ -1477,6 +1477,11 @@ def bootstrap(comps, params, args, verbose, pretend):
 		if len(platformhostsStr) > 0:
 			out.write('export PLATFORM_HOSTS=%s\n' % platformhostsStr)
 
+		if config.has_key('svn'):
+			out.write('export DIFX_SVN_VERSION=%s' % config['svn'])
+		else:
+			out.write('unset DIFX_SVN_VERSION')
+
 		out.write('\n')
 		if config.has_key('pathextra'):
 			pathExtra = ':%s' % config['pathextra']
@@ -1542,6 +1547,12 @@ def svnupdate(origComps, params, args, verbose, pretend):
 
 	badRepositories = []
 
+	rev = environ['DIFX_SVN_VERSION']
+	if rev == None:
+		svnRev = ''
+	else:
+		svnRev = '-r %s' % rev
+
 	for comp in comps:
 		path = srcDir + comp[0] + '/'
 		if verbose > 0:
@@ -1560,7 +1571,7 @@ def svnupdate(origComps, params, args, verbose, pretend):
 					badRepositories.append('%s %s' % (comp[0], path))
 		else:
 			chdir(srcDir)
-			cmd = 'svn co %s %s' % (comp[1], comp[0])
+			cmd = 'svn co %s %s %s' % (svnRev, comp[1], comp[0])
 			execute(cmd, verbose, pretend)
 	
 	if len(badRepositories) > 0:
@@ -1570,7 +1581,7 @@ def svnupdate(origComps, params, args, verbose, pretend):
 		print 'Please remove these directories and try again taking care to preserve any local changes you may have made'
 	elif updatePaths != '':
 		chdir(srcDir)
-		cmd = 'svn update ' + updatePaths
+		cmd = 'svn update %s %s' %(svnRev, updatePaths)
 		execute(cmd, verbose, pretend)
 
 def fromtar(origComps, params, args, verbose, pretend):
