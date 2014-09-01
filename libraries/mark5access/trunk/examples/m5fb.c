@@ -103,7 +103,11 @@ int harvestComplexData(struct mark5_stream *ms, double **spec, fftw_complex **zd
 	double complex **cdata;
 	int j,status,fftmode=0;
 
-	if (nchan<0) {nchan=-nchan;fftmode=1;}
+	if(nchan<0)
+	{
+		nchan = -nchan;
+		fftmode = 1;
+	}
 	plan = (fftw_plan *)malloc(ms->nchan*sizeof(fftw_plan));
 	cdata = (double complex **)malloc(ms->nchan*sizeof(double complex *));
 	for(j = 0; j < ms->nchan; ++j)
@@ -141,9 +145,15 @@ int harvestComplexData(struct mark5_stream *ms, double **spec, fftw_complex **zd
 
 		for(i = 0; i < ms->nchan; ++i)
 		{
- 		  int fi;
-		  if (fftmode) for(fi=0; fi<nchan;++fi) 
-				{cdata[i][fi]= cabs(cdata[i][fi]);cdata[i][fi]*=cdata[i][fi];}
+			int fi;
+			if (fftmode)
+			{
+				for(fi=0; fi<nchan;++fi)
+				{
+					cdata[i][fi]  = cabs(cdata[i][fi]);
+					cdata[i][fi] *= cdata[i][fi];
+				}
+			}
 			/* FFT */
 			fftw_execute(plan[i]);
 		}
@@ -155,7 +165,7 @@ int harvestComplexData(struct mark5_stream *ms, double **spec, fftw_complex **zd
 			for(c = 0; c < nchan; ++c)
 			{
 				double re, im;
-				
+
 				re = creal(zdata[i][c]);
 				im = cimag(zdata[i][c]);
 				spec[i][c] += re*re + im*im;
@@ -190,15 +200,21 @@ int harvestRealData(struct mark5_stream *ms, double **spec, fftw_complex **zdata
 	static double **data=NULL;
 	int j, status,fftmode=0;
 
-	if (nchan<0) {nchan=-nchan;fftmode=1;}
-	if (!data) { 
-	  plan = (fftw_plan *)malloc(ms->nchan*sizeof(fftw_plan));
-	  data = (double **)malloc(ms->nchan*sizeof(double *));
-	  for(j = 0; j < ms->nchan; ++j)
-	    {
-		data[j] = (double *)malloc((chunk+2)*sizeof(double));
-		plan[j] = fftw_plan_dft_r2c_1d(nchan*2, data[j], zdata[j], FFTW_MEASURE);
-	    }}
+	if(nchan<0)
+	{
+		nchan = -nchan;
+		fftmode = 1;
+	}
+	if(!data)
+	{
+		plan = (fftw_plan *)malloc(ms->nchan*sizeof(fftw_plan));
+		data = (double **)malloc(ms->nchan*sizeof(double *));
+		for(j = 0; j < ms->nchan; ++j)
+		{
+			data[j] = (double *)malloc((chunk+2)*sizeof(double));
+			plan[j] = fftw_plan_dft_r2c_1d(nchan*2, data[j], zdata[j], FFTW_MEASURE);
+		}
+	}
 
 	for(j = 0; j < nint; ++j)
 	{
@@ -229,10 +245,15 @@ int harvestRealData(struct mark5_stream *ms, double **spec, fftw_complex **zdata
 
 		for(i = 0; i < ms->nchan; ++i)
 		{
-		  int fi;
-		  if (fftmode) for(fi=0; fi<nchan;++fi) 
-			{data[i][2*fi]=data[i][2*fi]*data[i][2*fi]+data[i][2*fi+1]*data[i][2*fi+1];
-			 data[i][2*fi+1]=0;}
+			int fi;
+			if (fftmode)
+			{
+				for(fi=0; fi<nchan;++fi)
+				{
+					data[i][2*fi] = data[i][2*fi]*data[i][2*fi] + data[i][2*fi+1]*data[i][2*fi+1];
+					data[i][2*fi+1] = 0;
+				}
+			}
 			/* FFT */
 			fftw_execute(plan[i]);
 		}
@@ -244,64 +265,68 @@ int harvestRealData(struct mark5_stream *ms, double **spec, fftw_complex **zdata
 			for(c = 0; c < nchan; ++c)
 			{
 				double re, im;
-				
+
 				re = creal(zdata[i][c]);
 				im = cimag(zdata[i][c]);
 				spec[i][c] += re*re + im*im;
 			}
 		}
 
-		if (polmode==VLBA) 
+		if (polmode==VLBA)
 		{
-		  for(i = 0; i < ms->nchan/2; ++i)
-		  {
-			int c;
-
-			for(c = 0; c < nchan; ++c)
+			for(i = 0; i < ms->nchan/2; ++i)
 			{
-				zx[i][c] += zdata[2*i][c]*~zdata[2*i+1][c];
+				int c;
+
+				for(c = 0; c < nchan; ++c)
+				{
+					zx[i][c] += zdata[2*i][c]*~zdata[2*i+1][c];
+				}
 			}
-		  }
-		} 
-		else if (polmode==DBBC) 
+		}
+		else if (polmode==DBBC)
 		{
-		  for(i = 0; i < ms->nchan/2; ++i)
-		  {
-			int c;
-
-			for(c = 0; c < nchan; ++c)
+			for(i = 0; i < ms->nchan/2; ++i)
 			{
-				zx[i][c] += zdata[i][c]*~zdata[i+ms->nchan/2][c];
+				int c;
+
+				for(c = 0; c < nchan; ++c)
+				{
+					zx[i][c] += zdata[i][c]*~zdata[i+ms->nchan/2][c];
+				}
 			}
-		  }
 		}
 	}
 
 	if (status<0) {
-	  for(j = 0; j < ms->nchan; ++j)
-	    {
-	      fftw_destroy_plan(plan[j]);
-	      free(data[j]);
-	    }
-	  free(plan);
-	  free(data);
+		for(j = 0; j < ms->nchan; ++j)
+		{
+			fftw_destroy_plan(plan[j]);
+			free(data[j]);
+		}
+		free(plan);
+		free(data);
 	}
 
-        printf("\t\t\tTime Processed Appx: %.4e s\r",ms->framens*1e-9*ms->framenum);
+	printf("\t\t\tTime Processed Appx: %.4e s\r",ms->framens*1e-9*ms->framenum);
 	return status;
 }
 
 int print_header(struct mark5_stream *ms, struct hd_info hi,FILE *fo)
 {
-  char tmp[32];
-  int h,m,s,i;
+	char tmp[32];
+	int h, m, s, i;
 
-  h=ms->sec;h=h/3600;i=ms->sec-h*3600;m=i/60;s=i-m*60;
+	h = ms->sec;
+	h = h/3600;
+	i = ms->sec-h*3600;
+	m = i/60;
+	s = i-m*60;
 
-  strncpy(tmp,"KVNTN",5);
-  //i=(int) strlen(ms->streamname);
-  //strncpy(tmp,(char *)strchr((char *)(ms->streamname+i+3),'_')+1,32);
-  //(strchr(tmp,'_'))[0]='\0';
+	strncpy(tmp,"KVNTN",5);
+	//i=(int) strlen(ms->streamname);
+	//strncpy(tmp,(char *)strchr((char *)(ms->streamname+i+3),'_')+1,32);
+	//(strchr(tmp,'_'))[0]='\0';
 /*
   fprintf(fo,"Site            : %s\n",tmp);
   fprintf(fo,"Observer        : %s\n","Nemo");
@@ -328,36 +353,37 @@ int print_header(struct mark5_stream *ms, struct hd_info hi,FILE *fo)
   fprintf(fo,"Bad Channels    : \n");
   fprintf(fo,"Bit shift value : \n");
 */
-  printf("Default Header\n");
-  printf("Site            : %s\n",tmp);
-  printf("Observer        : %s\n","Nemo");
-  printf("Proposal        : %s\n","XX");
-  printf("Array Mode      : %s\n","SD");
-  printf("Observing Mode  : \n");
-  printf("Date            : %s\n","0/0/0");//mjd2date(ms->mjd+56000));
-  printf("Num Antennas    : \n");
-  printf("Antennas List   : \n");
-  printf("Num Channels    : %d\n",hi.nchan);
-  printf("Channel width   : %f\n",ms->nchan*ms->samprate/2.0E6/hi.nchan);
-  printf("Frequency Ch.1  : %f\n",hi.freq);
-  printf("Sampling Time   : %d\n",hi.nint);
-  printf("Num bits/sample : 8\n");
-  printf("Data Format     : integer binary, little endian\n");
-  printf("Polarizations   : %s\n",hi.polid);
-  printf("MJD             : %d\n",ms->mjd+56000);
-  printf("UTC             : %02d:%02d:%02d\n",h,m,s);
-  printf("Source          : J1745-2900\n");
-  printf("Coordinates     : 17:45:40.0383, -29:00:28.06\n");
-  printf("Coordinate Sys  : J2000\n");
-  printf("Drift Rate      : 0.0, 0.0\n");
-  printf("Obs. Length     : \n");
-  printf("Bad Channels    : \n");
-  printf("Bit shift value : \n");
+	printf("Default Header\n");
+	printf("Site            : %s\n",tmp);
+	printf("Observer        : %s\n","Nemo");
+	printf("Proposal        : %s\n","XX");
+	printf("Array Mode      : %s\n","SD");
+	printf("Observing Mode  : \n");
+	printf("Date            : %s\n","0/0/0");//mjd2date(ms->mjd+56000));
+	printf("Num Antennas    : \n");
+	printf("Antennas List   : \n");
+	printf("Num Channels    : %d\n",hi.nchan);
+	printf("Channel width   : %f\n",ms->nchan*ms->samprate/2.0E6/hi.nchan);
+	printf("Frequency Ch.1  : %f\n",hi.freq);
+	printf("Sampling Time   : %d\n",hi.nint);
+	printf("Num bits/sample : 8\n");
+	printf("Data Format     : integer binary, little endian\n");
+	printf("Polarizations   : %s\n",hi.polid);
+	printf("MJD             : %d\n",ms->mjd+56000);
+	printf("UTC             : %02d:%02d:%02d\n",h,m,s);
+	printf("Source          : J1745-2900\n");
+	printf("Coordinates     : 17:45:40.0383, -29:00:28.06\n");
+	printf("Coordinate Sys  : J2000\n");
+	printf("Drift Rate      : 0.0, 0.0\n");
+	printf("Obs. Length     : \n");
+	printf("Bad Channels    : \n");
+	printf("Bit shift value : \n");
 
-  i=ftell(fo);bzero(tmp,32);
+	i = ftell(fo);
+	bzero(tmp,32);
 
-  return 0;
-  }
+	return 0;
+}
 
 int spec(const char *filename, const char *formatname, int nchan, int nint, const char *outfile, long long offset, polmodetype polmode, int output_bin, char* ifid, char* polid)
 {
@@ -373,11 +399,16 @@ int spec(const char *filename, const char *formatname, int nchan, int nint, cons
 	double x, y;
 	int docomplex;
 	int fftmode=0;
-	struct hd_info hinfo; 
+	struct hd_info hinfo;
 
-	count =0 ; 
+	count =0 ;
 	total = unpacked = 0;
-	if (nchan<0) {nchan=-nchan;fftmode=1;}
+	if(nchan < 0)
+	{
+		nchan = -nchan;
+		fftmode = 1;
+	}
+
 
 	ms = new_mark5_stream_absorb(
 		new_mark5_stream_file(filename, offset),
@@ -392,7 +423,7 @@ int spec(const char *filename, const char *formatname, int nchan, int nint, cons
 
 	mark5_stream_print(ms);
 
-	if(ms->complex_decode != 0) 
+	if(ms->complex_decode != 0)
 	{
 		printf("Complex decode\n");
 		docomplex = 1;
@@ -429,15 +460,16 @@ int spec(const char *filename, const char *formatname, int nchan, int nint, cons
 		zx[i] = (fftw_complex *)calloc(nchan, sizeof(fftw_complex));
 	}
 
-	while (status>=0) { 
-	  if(docomplex)
-	    {
-	      status=harvestComplexData(ms, spec, zdata, zx, (1-fftmode*2)*nchan, nint, chunk, &total, &unpacked);
-	    } 
-	  else
-	    {
-	  status=harvestRealData(ms, spec, zdata, zx, (1-fftmode*2)*nchan, nint, chunk, &total, &unpacked, polmode);
-	    }
+	while(status>=0)
+	{
+		if(docomplex)
+		{
+			status=harvestComplexData(ms, spec, zdata, zx, (1-fftmode*2)*nchan, nint, chunk, &total, &unpacked);
+		}
+		else
+		{
+			status=harvestRealData(ms, spec, zdata, zx, (1-fftmode*2)*nchan, nint, chunk, &total, &unpacked, polmode);
+		}
 
 	//fprintf(stderr, "Pass %d: %Ld / %Ld samples unpacked\n", ++count, unpacked, total);
 
@@ -453,14 +485,14 @@ int spec(const char *filename, const char *formatname, int nchan, int nint, cons
 	float *uplow;
 	uplow=(float *) malloc(sizeof(float)*strlen(ifid));
 	for (i=0;i<strlen(ifid);i++) {uplow[i]= (ifid[i]=='U')? 1:-1;}
-       
+
 	char *tmp;int nif=ms->nchan; // nif is introduced so that we can have blank IFs or short reads
-	if (strlen(ifid)<nif) 
+	if (strlen(ifid)<nif)
 	{ nif=strlen(ifid);if (first) printf("Shortening IFs to %d\n",nif);}
 	//char *tmp;tmp=calloc(nchan*4,sizeof(char));
 
-	if (!output_bin || first) 
-	  { // normalize across all ifs/channels 
+	if (!output_bin || first)
+	  { // normalize across all ifs/channels
 	       max = sum = 0.0; min = 1e32;
 	       for(c = 0; c < nchan; ++c)
 	       {
@@ -470,37 +502,39 @@ int spec(const char *filename, const char *formatname, int nchan, int nint, cons
 			if (spec[i][c]>max) max=spec[i][c];
 			if (spec[i][c]<min) min=spec[i][c];
 	       }}
-	       f = ms->nchan*nchan/sum; 
+	       f = ms->nchan*nchan/sum;
    		// Add 10% to max and min
 	       if (max>0) {max *=1.1;}
 	       else {max *=0.9;}
 	       if (min<0) {min *=1.1;}
 	       else {min *=0.9;}
-	  } 
-	      
-	if (first) printf("Scale factor used is %E\n",f);
-
-	if (output_bin) {
-	  if (first) { 
-            tmp=calloc(nchan*nif,sizeof(char));
-	    //	    hinfo.nchan=nchan;
-	    hinfo.nchan=nchan*nif;
-	    hinfo.nint=nint/(ms->samprate*1E-6/chunk);
-	    hinfo.freq=(uplow[ms->nchan-1]<0)?
-		-uplow[ms->nchan-1]: // Lower Side
-		uplow[ms->nchan-1]+ms->samprate/2.0E6; //Upper
-	    hinfo.max=max;
-	    hinfo.min=min;
-	    hinfo.mean=1/f;
-	    hinfo.nbit=8;
-	    strncpy(hinfo.polid,polid,nif);
-
-	    first=print_header(ms,hinfo,out); 
 	  }
 
+	if (first) { printf("Scale factor used is %E\n",f); }
+
+	if (output_bin)
+	{
+		if (first)
+		{
+				tmp=calloc(nchan*nif,sizeof(char));
+			//	    hinfo.nchan=nchan;
+			hinfo.nchan=nchan*nif;
+			hinfo.nint=nint/(ms->samprate*1E-6/chunk);
+			hinfo.freq=(uplow[ms->nchan-1]<0)
+				? -uplow[ms->nchan-1] /* Lower Side */
+				: uplow[ms->nchan-1]+ms->samprate/2.0E6; /* Upper */
+			hinfo.max=max;
+			hinfo.min=min;
+			hinfo.mean=1/f;
+			hinfo.nbit=8;
+			strncpy(hinfo.polid,polid,nif);
+
+			first=print_header(ms,hinfo,out);
+		}
+
 	  bzero(tmp,nchan*nif*sizeof(char));
-	  for(i = 0; i<ms->nchan && i<nif; ++i) { for(c = 0; c < nchan; ++c) { 
-	  //for(i = 3; i < 0; --i) for(c = 0; c < nchan; ++c) { 
+	  for(i = 0; i<ms->nchan && i<nif; ++i) { for(c = 0; c < nchan; ++c) {
+	  //for(i = 3; i < 0; --i) for(c = 0; c < nchan; ++c) {
 	      //int j= (uplow[i]<0)? (i+1)*nchan-c-1:i*nchan+c;
 	      int j= (uplow[i]>0)?
 		(nif-i)*nchan-c-1:(nif-1-i)*nchan+c;
@@ -538,7 +572,7 @@ int spec(const char *filename, const char *formatname, int nchan, int nint, cons
 
 	} // end of file
 
-        fclose(out);
+	fclose(out);
 
 	for(i = 0; i < ms->nchan; ++i)
 	{
@@ -568,53 +602,56 @@ int main(int argc, char **argv)
 #if USEGETOPT
 	int opt;
 	struct option options[] = {
-	  {"dbbc", 0, 0, 'B'},
-	  {"nopol", 0, 0, 'P'},
-	  {"intensity", 0, 0, 'I'},
-	  {"ascii", 0, 0, 'a'},
-	  {"polid", 1, 0, 'p'},
-	  {"ifid", 1, 0, 'i'},
-	  {"help", 0, 0, 'h'},
-	  {0, 0, 0, 0}
+		{"dbbc", 0, 0, 'B'},
+		{"nopol", 0, 0, 'P'},
+		{"intensity", 0, 0, 'I'},
+		{"ascii", 0, 0, 'a'},
+		{"polid", 1, 0, 'p'},
+		{"ifid", 1, 0, 'i'},
+		{"help", 0, 0, 'h'},
+		{0, 0, 0, 0}
 	};
 
 	while ((opt = getopt_long_only(argc, argv, "BPIahp:i:", options, NULL)) != EOF)
-	  switch (opt) {
-	  case 'B': // DBBC Pol mode (all Rcp then all LCP)
-	    polmode = DBBC;
-	    printf("Assuming DBBC polarisation order\n");
-	    break;
-	    
-	  case 'P': // Don't compute cross pols
-	    polmode = NOPOL;
-	    printf("Not computing cross pol terms\n");
-	    break;
-	    
-	  case 'I': // compute Intensity FFT
-	    fftmode = 1;
-	    printf("Computing Intensity FFT\n");
-	    break;
+	{
+		switch (opt)
+		{
+			case 'B': // DBBC Pol mode (all Rcp then all LCP)
+			polmode = DBBC;
+			printf("Assuming DBBC polarisation order\n");
+			break;
 
-	  case 'a': // Ascii output
-	    output_bin=0;
-	    printf("Outputing ASCII file\n");
-	    break;
-	    
-	  case 'p': // polstring
-	    polid=strdup(optarg);
-	    printf("Pol ID string: %s\n",polid);
-	    break;
-	    
-	  case 'i': // polstring
-	    ifid=strdup(optarg);
-	    printf("IF ID string: %s\n",ifid);
-	    break;
+			case 'P': // Don't compute cross pols
+				polmode = NOPOL;
+				printf("Not computing cross pol terms\n");
+				break;
 
-	  case 'h': // help
-	    usage(argv[0]);
-	    return EXIT_SUCCESS;
-	    break;
-	  }
+			case 'I': // compute Intensity FFT
+				fftmode = 1;
+				printf("Computing Intensity FFT\n");
+				break;
+
+			case 'a': // Ascii output
+				output_bin=0;
+				printf("Outputing ASCII file\n");
+				break;
+
+			case 'p': // polstring
+				polid=strdup(optarg);
+				printf("Pol ID string: %s\n",polid);
+				break;
+
+			case 'i': // polstring
+				ifid=strdup(optarg);
+				printf("IF ID string: %s\n",ifid);
+				break;
+
+			case 'h': // help
+				usage(argv[0]);
+				return EXIT_SUCCESS;
+				break;
+		}
+	}
 
 #else
 	int optind=1;
@@ -623,7 +660,7 @@ int main(int argc, char **argv)
 	oldsiginthand = signal(SIGINT, siginthand);
 
 
-	if (argc-optind == 1)
+	if((argc-optind) == 1)
 	{
 		struct mark5_format *mf;
 		int bufferlen = 1<<11;
@@ -643,7 +680,7 @@ int main(int argc, char **argv)
 		if(!in)
 		{
 			fprintf(stderr, "Error: cannot open file '%s'\n", argv[1]);
-			
+
 			return EXIT_FAILURE;
 		}
 
@@ -666,8 +703,10 @@ int main(int argc, char **argv)
 			print_mark5_format(mf);
 			delete_mark5_format(mf);
 
-			mf = new_mark5_format_from_stream(new_mark5_stream_memory(buffer, 
-									   bufferlen/2));
+			mf = new_mark5_format_from_stream(
+					new_mark5_stream_memory(buffer,
+					bufferlen/2)
+				);
 
 			print_mark5_format(mf);
 			delete_mark5_format(mf);
@@ -691,27 +730,43 @@ int main(int argc, char **argv)
 	npol=strlen(polid);
 	nif=strlen(ifid);
 	printf("Number of IFs labelled: %d\nNumber of POLs labelled: %d\n",nif,npol);
-	if (npol!=nif) {printf("These don't match assuming missing are same as last");
-	  if (npol<nif) {
-	    tmp=strdup(polid);polid=malloc(nif*sizeof(char));strcpy(polid,tmp);
-	    for (retval=npol;retval<nif;retval++) polid[retval]=polid[npol-1];}
-	  if (npol>nif) {
-	    tmp=strdup(ifid);ifid=malloc(npol*sizeof(char));strcpy(ifid,tmp);
-	    for (retval=nif;retval<npol;retval++) ifid[retval]=ifid[npol-1];}
+	if(npol != nif)
+	{
+		printf("These don't match assuming missing are same as last");
+		if(npol < nif)
+		{
+			tmp=strdup(polid);
+			polid=malloc(nif*sizeof(char));strcpy(polid,tmp);
+			for(retval=npol; retval < nif; retval++)
+			{
+				polid[retval]=polid[npol-1];
+			}
+		}
+		if(npol > nif)
+		{
+			tmp=strdup(ifid);
+			ifid=malloc(npol*sizeof(char));
+			strcpy(ifid,tmp);
+			for(retval=nif; retval < npol; retval++)
+			{
+				ifid[retval]=ifid[npol-1];
+			}
+		}
 	}
 	if(nint <= 0)
 	{
 		nint = 2000000000L;
 	}
 
-	if(argc-optind > 5)
+	if((argc-optind) > 5)
 	{
 		offset=atoll(argv[optind+5]);
 	}
 
-	retval = spec(argv[optind], argv[optind+1], (1-fftmode*2)*nchan, nint, 
-		      argv[optind+4], offset, polmode, output_bin, ifid, polid);
+	retval = spec(
+		argv[optind], argv[optind+1], (1-fftmode*2)*nchan, nint,
+		argv[optind+4], offset, polmode, output_bin, ifid, polid
+	);
 
 	return retval;
 }
-
