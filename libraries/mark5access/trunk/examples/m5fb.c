@@ -471,104 +471,127 @@ int spec(const char *filename, const char *formatname, int nchan, int nint, cons
 			status=harvestRealData(ms, spec, zdata, zx, (1-fftmode*2)*nchan, nint, chunk, &total, &unpacked, polmode);
 		}
 
-	//fprintf(stderr, "Pass %d: %Ld / %Ld samples unpacked\n", ++count, unpacked, total);
+		//fprintf(stderr, "Pass %d: %Ld / %Ld samples unpacked\n", ++count, unpacked, total);
 
-	// Needs to be read in some how
-	/*float uplow[16]={22315.00,-22347.00,22347.00,-22379.00,
-			 42893.00,-42925.00,42925.00,-42957.00,
-			 86353.00,-86385.00,86385.00,-86417.00,
-			 86417.00,-86449.00,86449.00,-86481.00};
-	float uplow[16]={21700.00,-21732.00,21732.00,-21764.00,
-                         21764.00,-21796.00,21796.00,-21828.00,
-                         21828.00,-21860.00,21860.00,-21892.00,
-                         21892.00,-21924.00,21924.00,-21956.00};*/
-	float *uplow;
-	uplow=(float *) malloc(sizeof(float)*strlen(ifid));
-	for (i=0;i<strlen(ifid);i++) {uplow[i]= (ifid[i]=='U')? 1:-1;}
-
-	char *tmp;int nif=ms->nchan; // nif is introduced so that we can have blank IFs or short reads
-	if (strlen(ifid)<nif)
-	{ nif=strlen(ifid);if (first) printf("Shortening IFs to %d\n",nif);}
-	//char *tmp;tmp=calloc(nchan*4,sizeof(char));
-
-	if (!output_bin || first)
-	  { // normalize across all ifs/channels
-	       max = sum = 0.0; min = 1e32;
-	       for(c = 0; c < nchan; ++c)
-	       {
-	                for(i = 0; i < ms->nchan; ++i)
-	       {
-			sum += spec[i][c];
-			if (spec[i][c]>max) max=spec[i][c];
-			if (spec[i][c]<min) min=spec[i][c];
-	       }}
-	       f = ms->nchan*nchan/sum;
-   		// Add 10% to max and min
-	       if (max>0) {max *=1.1;}
-	       else {max *=0.9;}
-	       if (min<0) {min *=1.1;}
-	       else {min *=0.9;}
-	  }
-
-	if (first) { printf("Scale factor used is %E\n",f); }
-
-	if (output_bin)
-	{
-		if (first)
+		// Needs to be read in some how
+		/*float uplow[16]={22315.00,-22347.00,22347.00,-22379.00,
+				 42893.00,-42925.00,42925.00,-42957.00,
+				 86353.00,-86385.00,86385.00,-86417.00,
+				 86417.00,-86449.00,86449.00,-86481.00};
+		float uplow[16]={21700.00,-21732.00,21732.00,-21764.00,
+							 21764.00,-21796.00,21796.00,-21828.00,
+							 21828.00,-21860.00,21860.00,-21892.00,
+							 21892.00,-21924.00,21924.00,-21956.00};*/
+		float *uplow;
+		uplow=(float *) malloc(sizeof(float)*strlen(ifid));
+		for(i=0; i < strlen(ifid); i++)
 		{
-				tmp=calloc(nchan*nif,sizeof(char));
-			//	    hinfo.nchan=nchan;
-			hinfo.nchan=nchan*nif;
-			hinfo.nint=nint/(ms->samprate*1E-6/chunk);
-			hinfo.freq=(uplow[ms->nchan-1]<0)
-				? -uplow[ms->nchan-1] /* Lower Side */
-				: uplow[ms->nchan-1]+ms->samprate/2.0E6; /* Upper */
-			hinfo.max=max;
-			hinfo.min=min;
-			hinfo.mean=1/f;
-			hinfo.nbit=8;
-			strncpy(hinfo.polid,polid,nif);
-
-			first=print_header(ms,hinfo,out);
+			uplow[i] = (ifid[i]=='U')? 1 : -1;
 		}
 
-	  bzero(tmp,nchan*nif*sizeof(char));
-	  for(i = 0; i<ms->nchan && i<nif; ++i) { for(c = 0; c < nchan; ++c) {
-	  //for(i = 3; i < 0; --i) for(c = 0; c < nchan; ++c) {
-	      //int j= (uplow[i]<0)? (i+1)*nchan-c-1:i*nchan+c;
-	      int j= (uplow[i]>0)?
-		(nif-i)*nchan-c-1:(nif-1-i)*nchan+c;
-		// Top out for scale
-	      if (spec[i][c]>max) spec[i][c]=max;
-	      if (spec[i][c]<min) spec[i][c]=min;
-	      tmp[j] = 255*((spec[i][c]-min)/(max-min));}}
-          printf("%d/%d samples: \r",
-	  fwrite(tmp,sizeof(char),nchan*nif,out),count++);
-	      //fwrite(tmp,sizeof(char),nchan*4,out);
-	} else {
-	  for(c = 0; c < nchan; ++c)
-	    {
-		fprintf(out, "%f ", (double)c*ms->samprate/(2.0e6*nchan));
+		char *tmp;
+		int nif=ms->nchan; // nif is introduced so that we can have blank IFs or short reads
+		if(strlen(ifid) < nif)
+		{
+			nif = strlen(ifid);
+			if(first) { printf("Shortening IFs to %d\n",nif); }
+		}
+		//char *tmp;tmp=calloc(nchan*4,sizeof(char));
+
+		if(!output_bin || first)
+		{ // normalize across all ifs/channels
+			max = sum = 0.0;
+			min = 1e32;
+			for(c = 0; c < nchan; ++c)
+			{
+				for(i = 0; i < ms->nchan; ++i)
+				{
+					sum += spec[i][c];
+					if (spec[i][c]>max) max=spec[i][c];
+					if (spec[i][c]<min) min=spec[i][c];
+				}
+			}
+			f = ms->nchan*nchan/sum;
+			// Add 10% to max and min
+			if (max>0) {max *=1.1;}
+			else {max *=0.9;}
+			if (min<0) {min *=1.1;}
+			else {min *=0.9;}
+		}
+
+		if (first) { printf("Scale factor used is %E\n",f); }
+
+		if (output_bin)
+		{
+			if (first)
+			{
+				tmp=calloc(nchan*nif,sizeof(char));
+				//	    hinfo.nchan=nchan;
+				hinfo.nchan=nchan*nif;
+				hinfo.nint=nint/(ms->samprate*1E-6/chunk);
+				hinfo.freq=(uplow[ms->nchan-1]<0)
+					? -uplow[ms->nchan-1] /* Lower Side */
+					: uplow[ms->nchan-1]+ms->samprate/2.0E6; /* Upper */
+				hinfo.max=max;
+				hinfo.min=min;
+				hinfo.mean=1/f;
+				hinfo.nbit=8;
+				strncpy(hinfo.polid,polid,nif);
+
+				first=print_header(ms,hinfo,out);
+			}
+
+			bzero(tmp,nchan*nif*sizeof(char));
+			for(i = 0; i<ms->nchan && i<nif; ++i)
+			{
+				for(c = 0; c < nchan; ++c)
+				{
+					//for(i = 3; i < 0; --i) for(c = 0; c < nchan; ++c) {
+					//int j= (uplow[i]<0)? (i+1)*nchan-c-1:i*nchan+c;
+					int j= (uplow[i]>0) ? ((nif-i)*nchan-c-1) : ((nif-1-i)*nchan+c);
+					// Top out for scale
+					if (spec[i][c]>max) spec[i][c]=max;
+					if (spec[i][c]<min) spec[i][c]=min;
+					tmp[j] = 255*((spec[i][c]-min)/(max-min));
+				}
+			}
+			ssize_t nwr = fwrite(tmp,sizeof(char),nchan*nif,out);
+			printf("%d/%d samples: \r", nwr, count++);
+			//fwrite(tmp,sizeof(char),nchan*4,out);
+		}
+		else
+		{
+			for(c = 0; c < nchan; ++c)
+			{
+				fprintf(out, "%f ", (double)c*ms->samprate/(2.0e6*nchan));
+				for(i = 0; i < ms->nchan; ++i)
+				{
+					fprintf(out, " %f", f*spec[i][c]);
+				}
+
+				if(polmode != NOPOL)
+				{
+					for(i = 0; i < ms->nchan/2; ++i)
+					{
+						x = creal(zx[i][c])*f;
+						y = cimag(zx[i][c])*f;
+						fprintf(out, "  %f %f", sqrt(x*x+y*y), atan2(y, x));
+					}
+				}
+				fprintf(out, "\n");
+			}
+		}
+
+		// Zero the integrations
 		for(i = 0; i < ms->nchan; ++i)
 		{
-			fprintf(out, " %f", f*spec[i][c]);
+			bzero(spec[i],nchan*sizeof(double));
+			bzero(zdata[i],(nchan+2)*sizeof(fftw_complex));
 		}
-
-		if (polmode!=NOPOL) for(i = 0; i < ms->nchan/2; ++i)
+		for(i = 0; i < ms->nchan/2; ++i)
 		{
-			x = creal(zx[i][c])*f;
-			y = cimag(zx[i][c])*f;
-			fprintf(out, "  %f %f", sqrt(x*x+y*y), atan2(y, x));
+			bzero(zx[i],nchan*sizeof(fftw_complex));
 		}
-		fprintf(out, "\n");
-	    }}
-
-	// Zero the integrations
-	for(i = 0; i < ms->nchan; ++i)
-	  { bzero(spec[i],nchan*sizeof(double));
-	    bzero(zdata[i],(nchan+2)*sizeof(fftw_complex)); }
-	for(i = 0; i < ms->nchan/2; ++i)
-	  { bzero(zx[i],nchan*sizeof(fftw_complex)); }
 
 	} // end of file
 
