@@ -11,8 +11,8 @@ from time import asctime
 from glob import glob
 
 program = 'difxbuild'
-version = '0.41'
-verdate = '20140831'
+version = '0.42'
+verdate = '20140902'
 author = 'Walter Brisken <wbrisken@nrao.edu>'
 
 difxbuildUrl = 'http://www.aoc.nrao.edu/~wbrisken/difxbuild'
@@ -1547,11 +1547,10 @@ def svnupdate(origComps, params, args, verbose, pretend):
 
 	badRepositories = []
 
-	rev = environ['DIFX_SVN_VERSION']
-	if rev == None:
-		svnRev = ''
+	if environ.has_key('DIFX_SVN_VERSION'):
+		svnRev = '-r %s' % environ['DIFX_SVN_VERSION']
 	else:
-		svnRev = '-r %s' % rev
+		svnRev = ''
 
 	for comp in comps:
 		path = srcDir + comp[0] + '/'

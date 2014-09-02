@@ -1,5 +1,5 @@
 #! /bin/bash
-. /home/swc/DiFX-trunk/setup_difx
+. /home/swc/software/VLBADIFX-TRUNK/setup_difx
 export DIFX_MTU=4000
 #transient_wrapper  -v -- mpifxcorr $@ &> /tmp/transient_wrapper.DEVEL.log.`date +%y%m%d_%H%M%S`
 mpifxcorr $@
