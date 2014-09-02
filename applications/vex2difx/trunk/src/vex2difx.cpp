@@ -3655,7 +3655,7 @@ int main(int argc, char **argv)
 	difxLabel = getenv("DIFX_LABEL");
 	of.open(jobListFile.c_str());
 	of.precision(12);
-	of << "exper=" << V->getExper()->name << "  v2d=" << v2dFile <<"  pass=" << P->jobSeries << "  mjd=" << current_mjd() << "  DiFX=" << difxVersion << "  vex2difx=" << version;
+	of << "exper=" << V->getExper()->name << "  v2d=" << v2dFile <<"  pass=" << P->jobSeries << "  mjd=" << current_mjd() << "  DiFX=" << difxVersion << "  vex2difx=" << version << "  vex=" << P->vexFile;
 	if(difxLabel)
 	{
 		of << "  label=" << difxLabel;
