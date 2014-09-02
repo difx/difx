@@ -1,4 +1,16 @@
 #!/usr/bin/python
+#
+# Command generator
+# for VLBI single-antenna data to SIGPROC filterbank conversion
+#
+# This python script creates a series of command line
+# commands that process a VLBI recording, observation VEX
+# schedule file, and 'directory2filelist' (mark5access)
+# text list of recorded files into a SIGPROC filterbank
+# file (spectrogram, dynamic spectrum).
+# Useful for pulsar searches in single-dish 2-bit data.
+#
+
 import os
 import sys
 import re
@@ -233,11 +245,10 @@ def main():
 
   for scan in ScanList: 
     ScanFile,TimeSt = getScanFile(scan,FileList)
-    
     if ScanFile!='':
       biNAME= Source+'_'+TimeSt+TeleName+'_'+scan  
       quote1='m5fb -b -nopol '+Polstr+ScanFile+' '+mode+' '+nchanPif+' '+tsamp+' '+biNAME+'.fb'
-      quote2a='makeheader -tstart '+TimeSt+' -source_name '+Source+' -nchans '+ nchans+' -tsamp '+tsampInSec
+      quote2a='m5fb_makeheader -tstart '+TimeSt+' -source_name '+Source+' -nchans '+ nchans+' -tsamp '+tsampInSec
       if Npols != '1':
         quote2a = quote2a+' -nifs '+Npols
       quote2b=' -telescope_id '+TeleNum+' -src_raj '+RA+' -src_dej '+DEC+' -fch1 '+fch1+' -foff '+foff+' > '+biNAME+'.fil'
