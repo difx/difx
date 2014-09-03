@@ -458,7 +458,7 @@ class MainWindow(GenericWindow):
             self.lblCapacityContent.insert(0, slot.module.capacity)
             self.lblDatarateContent.insert(0, slot.module.datarate)
             self.lblReceivedContent.insert(0, slot.module.received)
-            self.txtComment.insert(1.0, unicode(none2String(slot.module.comment)))
+            self.txtComment.insert(1.0, unicode(none2String(slot.module.comment),errors='ignore'))
             
             # update experiment listbox
             for experiment in slot.module.experiments:
@@ -560,7 +560,8 @@ class MainWindow(GenericWindow):
             
 
         if (tkMessageBox.askokcancel("Confirm module check-out", "Do you really want to remove module " + slot.module.vsn + " from the library? ")):
-            self.doCheckout(module)
+	    session.close()
+            self.doCheckout(module.id)
         
         
         session.close()
