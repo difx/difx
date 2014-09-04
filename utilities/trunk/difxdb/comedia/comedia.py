@@ -19,6 +19,7 @@ import time
 import tkMessageBox
 import PIL
 import barcode
+import subprocess
 
 from difxdb.business.versionhistoryaction import *
 from difxdb.business.experimentaction import * 
@@ -159,11 +160,11 @@ class MainWindow(GenericWindow):
         scrollCboExperiments.config(command=self.cboExperiments.yview)
         self.txtComment = Text(self.frmDetail, height=3, width=25)
         self.btnDeleteModule = Button(self.frmDetail, text="Check-out module", command=self.checkOutModule, state=DISABLED)
-        self.btnEditModule = Button(self.frmDetail, text="Update module", command=self.updateModule, state=DISABLED)
+        self.btnEditModule = Button(self.frmDetail, text="Update details", command=self.updateModule, state=DISABLED)
         self.btnPrintLibraryLabel = Button (self.frmDetail, text="Print library label", command=self.printLibraryLabel,state=DISABLED)
         self.btnPrintVSNLabel = Button (self.frmDetail, text="Print VSN label", command=self.printVSNLabel,state=DISABLED)
         self.btnRescan = Button (self.frmDetail, text="Rescan directory", command=self.rescanModuleEvent,state=DISABLED)
-        
+        self.btnExpad = Button (self.frmDetail, text="Show exp. details", command=self.showExpDetailEvent,state=DISABLED) 
         # widgets on frmEditExperiment
         scrollCboFreeExperiments = Scrollbar(self.frmEditExperiment)
         self.cboFreeExperiments = Listbox(self.frmEditExperiment, height=3, yscrollcommand=scrollCboFreeExperiments.set, selectmode=MULTIPLE)
@@ -205,10 +206,10 @@ class MainWindow(GenericWindow):
         self.txtComment.grid(row=8, column=1, columnspan=2, sticky=E+W)
         self.btnEditModule.grid(row=20, column=0, sticky=E+W)
         self.btnDeleteModule.grid(row=20, column=1, sticky=E+W)
+        self.btnRescan.grid(row=20,column=2, sticky=E+W)
         self.btnPrintLibraryLabel.grid(row=21,column=0, sticky=E+W)
         self.btnPrintVSNLabel.grid(row=21,column=1, sticky=E+W)
-        self.btnRescan.grid(row=20,column=2, sticky=E+W)
-        
+        self.btnExpad.grid(row=21,column=2, sticky=E+W)
         
         # arrange objects on frmEditExperiment
         self.cboFreeExperiments.grid(row=0, column=1, rowspan=2, sticky=W+N+S)
@@ -410,6 +411,7 @@ class MainWindow(GenericWindow):
         
         self.btnPrintVSNLabel["state"] = DISABLED
         self.btnRescan["state"] = DISABLED
+        self.btnExpad["state"] = DISABLED
         self.btnPrintLibraryLabel["state"] = DISABLED
         self.btnDeleteModule["state"] = DISABLED
         self.txtLocationContent["state"] = NORMAL
@@ -472,6 +474,9 @@ class MainWindow(GenericWindow):
                 if code in assignedCodes:
                     continue
                 self.cboFreeExperiments.insert(END, code)
+
+	    if len(assignedCodes) > 0:
+		self.btnExpad["state"] = NORMAL
                 
             self._saveModuleDetails()
             
@@ -634,6 +639,26 @@ class MainWindow(GenericWindow):
         
         self.editModuleDetailsEvent(None)
  
+    def showExpDetailEvent(self):
+
+	if self.selectedSlotIndex == -1:
+            return
+
+	session = dbConn.session()
+        slot = model.Slot()
+        slot = getSlotByLocation(session, self.grdSlot.get(self.selectedSlotIndex)[0])
+
+	if len(slot.module.experiments) == 0:
+		return
+	expadArgs = ["expad"]
+
+	for exp in slot.module.experiments:
+		expadArgs.append(exp.code)
+
+	subprocess.call(expadArgs)
+
+	session.close()
+	
     def rescanModuleEvent(self):
         
         if self.selectedSlotIndex == -1:
