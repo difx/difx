@@ -11,12 +11,12 @@
 # $LastChangedDate$
 #
 #============================================================================
-__author__="Helge Rottmann"
 
 import os
 import sys
 import tkMessageBox
 import datetime
+from optparse import OptionParser
 from Tkinter import *
 from tkinter.multilistbox import *
 from string import  upper
@@ -30,9 +30,16 @@ from difxdb.business.versionhistoryaction import *
 from difxdb.business.useraction import *
 from difxutil.dbutil import *
 
+__author__="Helge Rottmann <rottmann@mpifr-bonn.mpg.de>"
+__prog__ = os.path.basename(__file__)
+__build__= "$Revision$"
+__date__ ="$Date$"
+__lastAuthor__="$Author$"
+
 # minimum database schema version required by this program
 minSchemaMajor = 1
 minSchemaMinor = 2
+
 
 class GenericWindow(object):
     def __init__(self, parent=None,rootWidget=None):
@@ -73,7 +80,7 @@ class MainWindow(GenericWindow):
         for type in getActiveTypes(session):
             self.expTypes.append(type.type)
             
-        # obtain all enbaled users from the database
+        # obtain all enaibled users from the database
         self.users = []
         for user in getEnabledUsers(session):
             self.users.append(user.name)
@@ -110,7 +117,7 @@ class MainWindow(GenericWindow):
         col2 = ListboxColumn("number", 4)
         col3 = ListboxColumn("status", 10)
         col4 = ListboxColumn("type", 8)
-        col5 = ListboxColumn("user", 12)
+        col5 = ListboxColumn("analyst", 12)
         col6 = ListboxColumn("created", 14) 
         col7 = ListboxColumn("archived", 14)
         col8 = ListboxColumn("released", 14) 
@@ -261,6 +268,14 @@ class MainWindow(GenericWindow):
         self.grdExps.clearData()
                
         for exp in exps:
+	    
+	    # show only single experiment given on command line
+	    if (defaultExp != ""):
+		if (exp.code != defaultExp):
+			continue
+		else:
+			self.selectedExpIndex = 0
+			
             
             # retrieve types
             expTypes = [] 
@@ -555,14 +570,30 @@ class AddExperimentWindow(GenericWindow):
         session.close()
             
         self.close()        
+
+def getUsage():
+
+        usage = "%prog [options] [<experiment>]\n\n"
+        usage += '\nA GUI program for administration of difx experiments stored in a database. \n\n'
+	usage += 'If the optional <experiment> is given, information will be listed for this experiment only.\n'
+	usage += 'This program is part of the difxdb tools (for information consult the difx wiki pages).\n\n'
+        usage += 'NOTE: The program requires the DIFXROOT environment to be defined.\n'
+        usage += "The program reads the database configuration from difxdb.ini located under $DIFXROOT/conf.\n"
+        return usage
              
 if __name__ == "__main__":
     
     root = Tk()
+    defaultExp = ""
     
     try:
         if (os.getenv("DIFXROOT") == None):
             sys.exit("Error: DIFXROOT environment must be defined.")
+
+	usage = getUsage()
+	version = "%s\nSVN  %s\nOriginal author: %s\nLast changes by: %s\nLast changes on: %s" % (__prog__, __build__, __author__, __lastAuthor__, __date__)
+	parser = OptionParser(version=version, usage=usage)
+	(options, args) = parser.parse_args()
 
         configPath = os.getenv("DIFXROOT") + "/conf/difxdb.ini"
 
@@ -585,9 +616,18 @@ if __name__ == "__main__":
         if not isSchemaVersion(session, minSchemaMajor, minSchemaMinor):
             major, minor = getCurrentSchemaVersionNumber(session)
             session.close()
-            print "Current difxdb database schema is %s.%s but %s.%s is minimum requirement." % (major, minor, minSchemaMajor, minSchemaMinor)
+            print "Error: current difxdb database schema is %s.%s but %s.%s is minimum requirement." % (major, minor, minSchemaMajor, minSchemaMinor)
             sys.exit(1)
-            
+
+	# check for experiment passed on the command line
+	if len(args) > 1:
+		parser.error("Incorrect number of arguments")
+	elif len(args) == 1:
+		defaultExp = upper(args[0])
+		if not experimentExists(session, defaultExp):
+			print "Error: experiment %s not found in database." % defaultExp
+			sys.exit(1)
+
         session.close()
         mainDlg = MainWindow(None, rootWidget=root)
 
