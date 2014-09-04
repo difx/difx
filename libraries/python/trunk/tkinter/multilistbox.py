@@ -146,7 +146,7 @@ class MultiListbox(Frame):
                         colValue = str(dataRow[col])
                     self.lists[col].insert(END, colValue)
             
-            self.origData = copy.deepcopy(self.get(0,END))
+	self.origData = copy.deepcopy(self.get(0,END))
             
             
         
