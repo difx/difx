@@ -268,13 +268,11 @@ class MainWindow(GenericWindow):
         self.grdExps.clearData()
                
         for exp in exps:
-	    
-	    # show only single experiment given on command line
-	    if (defaultExp != ""):
-		if (exp.code != defaultExp):
+
+	    # show only experiments given on command line
+	    if len(defaultExps) > 0:
+		if exp.code not in  defaultExps:
 			continue
-		else:
-			self.selectedExpIndex = 0
 			
             
             # retrieve types
@@ -584,7 +582,7 @@ def getUsage():
 if __name__ == "__main__":
     
     root = Tk()
-    defaultExp = ""
+    defaultExps = []
     
     try:
         if (os.getenv("DIFXROOT") == None):
@@ -619,14 +617,13 @@ if __name__ == "__main__":
             print "Error: current difxdb database schema is %s.%s but %s.%s is minimum requirement." % (major, minor, minSchemaMajor, minSchemaMinor)
             sys.exit(1)
 
-	# check for experiment passed on the command line
-	if len(args) > 1:
-		parser.error("Incorrect number of arguments")
-	elif len(args) == 1:
-		defaultExp = upper(args[0])
-		if not experimentExists(session, defaultExp):
-			print "Error: experiment %s not found in database." % defaultExp
+	# check for experiment(s) passed on the command line
+	for arg in args:
+		exp = upper(arg)
+		if not experimentExists(session, exp):
+			print "Error: experiment %s not found in database." % exp
 			sys.exit(1)
+		defaultExps.append(exp)
 
         session.close()
         mainDlg = MainWindow(None, rootWidget=root)
