@@ -219,6 +219,12 @@ int VDIFDataStream::calculateControlParams(int scan, int offsetsec, int offsetns
 	// bufferindex was previously computed assuming no framing overhead
 	framesin = vlbaoffset/payloadbytes;
 
+	// here we enforce frame granularity.  We simply back up to the previous frame that is a multiple of the frame granularity.
+	if(framesin % vm.frameGranularity != 0)
+	{
+		framesin -= (framesin % vm.frameGranularity);
+	}
+
 	// Note here a time is needed, so we only count payloadbytes
 	long long segoffns = bufferinfo[atsegment].scanns + (long long)((1000000000.0*framesin)/framespersecond);
 	bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][1] = bufferinfo[atsegment].scanseconds + ((int)(segoffns/1000000000));
@@ -337,7 +343,6 @@ void VDIFDataStream::initialiseFile(int configindex, int fileindex)
 
 	// If verbose...
 	printvdiffilesummary(&fileSummary);
-
 
 	// Here set readseconds to time since beginning of job
 	readseconds = 86400*(vdiffilesummarygetstartmjd(&fileSummary)-corrstartday) + vdiffilesummarygetstartsecond(&fileSummary)-corrstartseconds + intclockseconds;

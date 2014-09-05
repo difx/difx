@@ -1244,7 +1244,7 @@ int DataStream::openrawstream(const char *device)
         setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
 
         int rawbufbytes;
-        rawbufbytes = 32*1024*1024;
+        rawbufbytes = 16*1024*1024;
         setsockopt(s, SOL_SOCKET, SO_RCVBUF, (char *) &rawbufbytes, sizeof(rawbufbytes));
 
         socketnumber = s;

@@ -5,7 +5,7 @@ Version 2.4
 * Change polId to recBandId in the PCAL files as per documentation
 * Add support for TCP, UDP and Raw Ethernet Interlaced VDIF.  (TCP and UDP Not yet tested)
 * Text Mark5 XLRReadData() calls by tainting the end of the destination buffer and verifying it gets untainted.
-* Add more generalized support for the zoo of Mark5 module directory
+* Add more generalized support for the zoo of Mark5 module directory formats
 * When reading data from Mark5 units, verify that the data is in the same format class as requested by the .input file.
 * Improve Mark5B decoding
 * Fix Bonn Bug 1: on 64-bit systems sizeof(unsigned long) is 8 bytes, not 4 as it is on 32-bit systems.
@@ -17,6 +17,8 @@ Version 2.4
 * Reduce sort window for VDIF to 32 frames to accomodate lower bandwidths.
   - Someday this should be tuned a bit better.
 * Adapt new call API of vdifio
+* VDIF: respect frame granularity when unpacking
+  - Frame durations not interger nanoseconds in length were affected by a roundoff error.
 
 Version 2.3
 ~~~~~~~~~~~
