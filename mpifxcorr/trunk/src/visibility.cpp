@@ -862,11 +862,14 @@ void Visibility::writedifx(int dumpmjd, double dumpseconds)
     }
   }
 
-  //write out the autocorrelations, all in one hit
-  sprintf(filename, "%s/DIFX_%05d_%06d.s%04d.b%04d", config->getOutputFilename().c_str(), expermjd, experseconds, 0, 0);
-  output.open(filename, ios::app);
-  output.write(todiskbuffer, todiskmemptrs[0]);
-  output.close();
+  if(todiskmemptrs[0] > 0)
+  {
+    //write out the autocorrelations, all in one hit
+    sprintf(filename, "%s/DIFX_%05d_%06d.s%04d.b%04d", config->getOutputFilename().c_str(), expermjd, experseconds, 0, 0);
+    output.open(filename, ios::app);
+    output.write(todiskbuffer, todiskmemptrs[0]);
+    output.close();
+  }
 
 
 /* Pulse cal data format is described here.

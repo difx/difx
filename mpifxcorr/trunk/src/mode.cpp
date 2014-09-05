@@ -805,7 +805,7 @@ float Mode::process(int index, int subloopindex)  //frac sample error is in micr
         fraclooffset = -fraclooffset;
     }
 
-    //get ready to apply fringe rotation, if its pre-F
+    //get ready to apply fringe rotation, if it is pre-F
     lofreq = config->getDRecordedFreq(configindex, datastreamindex, i);
     if (usecomplex && usedouble) {
       if (config->getDRecordedLowerSideband(configindex, datastreamindex, i)) {
@@ -1066,7 +1066,7 @@ float Mode::process(int index, int subloopindex)  //frac sample error is in micr
             }
             if(config->getDRecordedLowerSideband(configindex, datastreamindex, i))
             {
-              status = vectorConjFlip_cf32(fftptr, fftoutputs[j][subloopindex], recordedbandchannels);
+              status = vectorConjFlip_cf32(&(fftptr[1]), fftoutputs[j][subloopindex], recordedbandchannels);
               if(status != vecNoErr)
                 csevere << startl << "Error in conjugate!!!" << status << endl;
             }
