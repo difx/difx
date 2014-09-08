@@ -1538,14 +1538,14 @@ There should be {\em nCore} such lines.
 \subsection{tsys} \label{sec:tsys}
 
 A file called {\tt tsys} is created when program {\tt vlog} operates on the {\tt cal.vlba} file.
-This file contains measurements of the system temperature and name of receiver for each baseband channel.
-This file contains two finds of lines.
+This text file contains measurements of the system temperature and name of receiver for each baseband channel.
+This file contains two kinds of lines.
 Comment lines begin with an octothorpe (\#) and contain no vital information.
 Data lines always contain 4 fixed-size fields:
 \begin{enumerate}
 \item {\em antId} : Station name abbreviation, e.g., {\tt LA}
-\item {\em day} : Time centroid of measurement (day of year, including fractional portion)
-\item {\em dur} : Duration of measurement (days); currently set to zero for lack of information
+\item {\em day} : Time centroid of measurement (day of year or mjd, including fractional portion)
+\item {\em dur} : Duration of measurement (days) or zero if not known
 \item {\em nRecChan} : Number of baseband channels recorded 
 \end{enumerate}
 Following these 4 fields are {\em nRecChan} pairs of values, one for each baseband channel.
