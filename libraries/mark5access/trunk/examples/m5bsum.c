@@ -48,17 +48,19 @@ static void usage(const char *pgm)
 	printf("Usage : %s [<options>] <file1> [<file2> ...]\n\n", pgm);
 	printf("  <fileX> is the name of the input file\n\n");
 	printf("  <options> can include:\n");
-	printf("    -h or --help      print this usage information and quit\n");
-	printf("    -f or --fixmjd    use today's date to resolve MJD ambiguity\n");
-	printf("    -s or --shortsum  print a short summary, also usable for input to vex2difx\n");
+	printf("    -h or --help                 print this usage information and quit\n");
+	printf("    -f or --fixmjd               use today's date to resolve MJD ambiguity (default behavior)\n");
+	printf("    -r <mjd> or --refmjd <mjd>   use a specific reference date to resolve MJD ambiguity\n");
+	printf("    -s or --shortsum             print a short summary, also usable for input to vex2difx\n");
 	printf("\n");
 }
 
 int main(int argc, char **argv)
 {
 	const int PathSize = 1000;
-	int fixday = 0;
+	int fixday = 1;
 	int shortsum = 0;
+	int refmjd = 0;
 
 	if(argc < 2)
 	{
@@ -78,10 +80,16 @@ int main(int argc, char **argv)
 			{
 				fixday = 1;
 			}
+			else if(strcmp(argv[a], "-r") == 0 ||
+			   strcmp(argv[a], "--refmjd") == 0)
+			{
+				refmjd = atoi( argv[a+1] );
+				fixday = 0;
+				++a;
+			}
 			else if(strcmp(argv[a], "-s") == 0 ||
 			   strcmp(argv[a], "--shortsum") == 0)
 			{
-				fixday = 1;
 				shortsum = 1;
 			}
 			else if(strcmp(argv[a], "-h") == 0 ||
@@ -104,6 +112,10 @@ int main(int argc, char **argv)
 					if(fixday)
 					{
 						mark5bfilesummaryfixmjdtoday(&sum);
+					}
+					else if ( refmjd )
+					{
+					    mark5bfilesummaryfixmjd(&sum, refmjd);
 					}
 					if(shortsum)
 					{
