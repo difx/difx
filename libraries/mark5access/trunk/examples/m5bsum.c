@@ -58,7 +58,7 @@ static void usage(const char *pgm)
 int main(int argc, char **argv)
 {
 	const int PathSize = 1000;
-	int fixday = 1;
+	int fixday = 0;
 	int shortsum = 0;
 	int refmjd = 0;
 
@@ -84,13 +84,13 @@ int main(int argc, char **argv)
 			   strcmp(argv[a], "--refmjd") == 0)
 			{
 				refmjd = atoi( argv[a+1] );
-				fixday = 0;
 				++a;
 			}
 			else if(strcmp(argv[a], "-s") == 0 ||
 			   strcmp(argv[a], "--shortsum") == 0)
 			{
 				shortsum = 1;
+				fixday = 1;
 			}
 			else if(strcmp(argv[a], "-h") == 0 ||
 			   strcmp(argv[a], "--help") == 0)
@@ -109,13 +109,13 @@ int main(int argc, char **argv)
 				}
 				else
 				{
-					if(fixday)
-					{
-						mark5bfilesummaryfixmjdtoday(&sum);
-					}
-					else if ( refmjd )
+					if ( refmjd )
 					{
 					    mark5bfilesummaryfixmjd(&sum, refmjd);
+					}
+					else if(fixday)
+					{
+						mark5bfilesummaryfixmjdtoday(&sum);
 					}
 					if(shortsum)
 					{
