@@ -1378,8 +1378,6 @@ public class ExperimentEditor extends JFrame {
                             antenna.phaseCalInt( _v2dFileParser.antennaPhaseCalInt( antenna.name() ) );
                         if ( _v2dFileParser.antennaToneSelection( antenna.name() ) != null )
                             antenna.toneSelection( _v2dFileParser.antennaToneSelection( antenna.name() ) );
-                        if ( _v2dFileParser.antennaFormat( antenna.name() ) != null )
-                            antenna.dataFormat( _v2dFileParser.antennaFormat( antenna.name() ) );
                         if ( _v2dFileParser.antennaVsn( antenna.name() ) != null ) {
                             antenna.useVsn( true );
                             antenna.vsnSource( _v2dFileParser.antennaVsn( antenna.name() ) );
@@ -1800,6 +1798,10 @@ public class ExperimentEditor extends JFrame {
         VexFileParser vexData = new VexFileParser();
         vexData.data( _editor.text(), _settings.eliminateCodeStationsCheck() );
         _vexData = vexData;
+//        //  See if the .vex file is making use of multiple format types.  
+//        if ( _vexData.usedModes().size() > 1 )
+//            JOptionPane.showMessageDialog( _this, "Scan data in this .vex file require mulitple modes.\n"
+//                    + "The GUI may or may not handle this situation well.", "Multiple Modes", JOptionPane.WARNING_MESSAGE );            
         _scanStationTimeline.vexData( vexData );
         if ( _eopLock == null )
             _eopLock = new Object();
@@ -1807,6 +1809,7 @@ public class ExperimentEditor extends JFrame {
             _eopMinTime = null;
             _eopMaxTime = null;
         }
+        //  The GUI is assuming here that only one bandwidth exists.
         _bandwidth = vexData.bandwidth();
         //  Build a grid out of the scans found
         _scanGrid.clearButtons();
@@ -1907,8 +1910,11 @@ public class ExperimentEditor extends JFrame {
         }
         //  Add panels of information about each source.
         _sourcePane.clear();
-        if ( _sourcePanelList != null )
-            _sourcePanelList.clear();
+        if ( _sourcePanelList != null ) {
+            synchronized( _sourcePanelList ) {
+                _sourcePanelList.clear();
+            }
+        }
         if ( vexData.sourceList() != null ) {
             //  First add a kind of "header" panel that includes select and deselect
             //  buttons.
@@ -1968,7 +1974,9 @@ public class ExperimentEditor extends JFrame {
                     if ( _sourcePanelList == null )
                         _sourcePanelList = new ArrayList<SourcePanel>();
                     SourcePanel panel = new SourcePanel( source, _vexData, _settings );
-                    _sourcePanelList.add( panel );
+                    synchronized( _sourcePanelList ) {
+                        _sourcePanelList.add( panel );
+                    }
                     panel.addChangeListener( new ActionListener() {
                         public void actionPerformed( ActionEvent evt ) {
                             vexDataChange();
@@ -2142,8 +2150,10 @@ public class ExperimentEditor extends JFrame {
      * Turn on or off the selection of all sources in the source list.
      */
     void selectAllSources( boolean on ) {
-        for ( Iterator<SourcePanel> iter = _sourcePanelList.iterator(); iter.hasNext(); )
-            iter.next().use( on );
+        synchronized( _sourcePanelList ) {
+            for ( Iterator<SourcePanel> iter = _sourcePanelList.iterator(); iter.hasNext(); )
+                iter.next().use( on );
+        }
         vexDataChange();
     }
     
@@ -2451,8 +2461,10 @@ public class ExperimentEditor extends JFrame {
             _scanStationTimeline.redraw();
         //  Change the source panel list.
         if ( _sourcePanelList != null ) {
-            for ( Iterator<SourcePanel> iter = _sourcePanelList.iterator(); iter.hasNext(); )
-                iter.next().redraw();
+            synchronized( _sourcePanelList ) {
+                for ( Iterator<SourcePanel> iter = _sourcePanelList.iterator(); iter.hasNext(); )
+                    iter.next().redraw();
+            }
         }
         //  Change the scan grid.  Each scan is examined for the "omit" flag, which
         //  indicates it has been deliberately turned off.  Then its accompanying stations
@@ -2623,24 +2635,26 @@ public class ExperimentEditor extends JFrame {
         int usedScanCount = 0;
         int totalScanCount = 0;
         //  Count how many scans are used and create a string of them.
-        for ( Iterator<VexFileParser.Scan> iter = _vexData.scanList().iterator(); iter.hasNext(); ) {
-            VexFileParser.Scan scan = iter.next();
-            //  Make sure the scan is not omitted.
-            if ( !scan.omitFlag ) {
-                //  Make sure it has sufficient stations to form a baseline.
-                int stationCount = 0;
-                for ( Iterator<VexFileParser.ScanStation> iter2 = scan.station.iterator(); iter2.hasNext(); ) {
-                    VexFileParser.ScanStation station = iter2.next();
-                    if ( !station.omitFlag )
-                        ++stationCount;
+        if ( _vexData != null && _vexData.scanList() != null ) {
+            for ( Iterator<VexFileParser.Scan> iter = _vexData.scanList().iterator(); iter.hasNext(); ) {
+                VexFileParser.Scan scan = iter.next();
+                //  Make sure the scan is not omitted.
+                if ( !scan.omitFlag ) {
+                    //  Make sure it has sufficient stations to form a baseline.
+                    int stationCount = 0;
+                    for ( Iterator<VexFileParser.ScanStation> iter2 = scan.station.iterator(); iter2.hasNext(); ) {
+                        VexFileParser.ScanStation station = iter2.next();
+                        if ( !station.omitFlag )
+                            ++stationCount;
+                    }
+                    if ( stationCount > 1 ) {
+                        ++usedScanCount;
+                        scanList += scan.name;
+                        if ( iter.hasNext() )
+                            scanList += ",";
+                    }
+                    ++totalScanCount;
                 }
-                if ( stationCount > 1 ) {
-                    ++usedScanCount;
-                    scanList += scan.name;
-                    if ( iter.hasNext() )
-                        scanList += ",";
-                }
-                ++totalScanCount;
             }
         }
         //  Add this information to the v2d output.
@@ -2652,25 +2666,6 @@ public class ExperimentEditor extends JFrame {
                 v2dFileParser.ruleScan( "scansubset", scanList );
             v2dFileParser.ruleSetup( "scansubset", "normalSetup" );
         }
-//        if ( _scanGrid.onItems().size() > 0 ) {
-//            v2dFileParser.rule( "scansubset" );
-//            if ( _scanGrid.onItems().size() == _scanGrid.items() )
-//                v2dFileParser.ruleScan( "scansubset", "*" );
-//            else {
-//                String scanList = "";
-//                for ( Iterator<String> iter = _scanGrid.onItems().iterator(); iter.hasNext(); ) {
-//                    scanList += iter.next();
-//                    if ( iter.hasNext() )
-//                        scanList += ",";
-//                }
-//                v2dFileParser.ruleScan( "scansubset", scanList );
-//            }
-//            v2dFileParser.ruleSetup( "scansubset", "normalSetup" );
-//        }
-//        else {
-////            JOptionPane.showMessageDialog( _this, "No scans have been chosen for this processing\n(so no jobs will be created)!",
-////                    "Zero Scans Included", JOptionPane.WARNING_MESSAGE );
-//        }
         
         //  Describe specifics for each used antenna...data source, etc.  The following
         //  hash map allows us to locate the machines that each file source originated
@@ -2678,45 +2673,46 @@ public class ExperimentEditor extends JFrame {
         if ( _fileToNodeMap == null )
             _fileToNodeMap = new HashMap<String,String>();
         _fileToNodeMap.clear();
-        synchronized ( _antennaList ) {
-            if ( _antennaList != null && !_antennaList.useList().isEmpty() ) {
-                for ( Iterator<StationPanel> iter = _antennaList.useList().iterator(); iter.hasNext(); ) {
-                    StationPanel antenna = iter.next();
-                    if ( antenna.use() ) {
-                        v2dFileParser.antenna( antenna.name() );
-                        v2dFileParser.antennaPhaseCalInt( antenna.name(), antenna.phaseCalInt() );
-                        v2dFileParser.antennaToneSelection( antenna.name(), antenna.toneSelection() );
-                        v2dFileParser.antennaFormat( antenna.name(), antenna.dataFormat() );
-                        if ( antenna.useVsn() ) {
-                            v2dFileParser.antennaVsn( antenna.name(), antenna.vsnSource() );
-                        }
-                        else if ( antenna.useFile() ) {
-                            ArrayList<String> fileList = antenna.fileList();
-                            if ( fileList.size() > 0 ) {
-                                if ( antenna.useFileList() ) {
-                                    v2dFileParser.antennaFileList( antenna.name(), fileList.get( 0 ) );
-                                }
-                                else {
-                                    for ( Iterator<String> jter = fileList.iterator(); jter.hasNext(); ) {
-                                        String filename = jter.next();
-                                        v2dFileParser.antennaFile( antenna.name(), filename );
-                                        _fileToNodeMap.put( filename, antenna.machineForFile( filename ) );
+        if ( _antennaList != null ) {
+            synchronized ( _antennaList ) {
+                if ( _antennaList != null && !_antennaList.useList().isEmpty() ) {
+                    for ( Iterator<StationPanel> iter = _antennaList.useList().iterator(); iter.hasNext(); ) {
+                        StationPanel antenna = iter.next();
+                        if ( antenna.use() ) {
+                            v2dFileParser.antenna( antenna.name() );
+                            v2dFileParser.antennaPhaseCalInt( antenna.name(), antenna.phaseCalInt() );
+                            v2dFileParser.antennaToneSelection( antenna.name(), antenna.toneSelection() );
+                            if ( antenna.useVsn() ) {
+                                v2dFileParser.antennaVsn( antenna.name(), antenna.vsnSource() );
+                            }
+                            else if ( antenna.useFile() ) {
+                                ArrayList<String> fileList = antenna.fileList();
+                                if ( fileList.size() > 0 ) {
+                                    if ( antenna.useFileList() ) {
+                                        v2dFileParser.antennaFileList( antenna.name(), antenna.fileListName() );
+                                    }
+                                    else {
+                                        for ( Iterator<String> jter = fileList.iterator(); jter.hasNext(); ) {
+                                            String filename = jter.next();
+                                            v2dFileParser.antennaFile( antenna.name(), filename );
+                                            _fileToNodeMap.put( filename, antenna.machineForFile( filename ) );
+                                        }
                                     }
                                 }
                             }
+                            else if ( antenna.useEVLBI() )
+                                v2dFileParser.antennaNetworkPort( antenna.name(), antenna.networkPort() );
+                            //  Position changes.
+                            if ( antenna.positionXChange() )
+                                v2dFileParser.antennaX( antenna.name(), antenna.positionX() );
+                            if ( antenna.positionYChange() )
+                                v2dFileParser.antennaY( antenna.name(), antenna.positionY() );
+                            if ( antenna.positionZChange() )
+                                v2dFileParser.antennaZ( antenna.name(), antenna.positionZ() );
+                            //  Clock settings.
+                            if ( antenna.deltaClockChange() )
+                                v2dFileParser.antennaDeltaClock( antenna.name(), antenna.deltaClock() );
                         }
-                        else if ( antenna.useEVLBI() )
-                            v2dFileParser.antennaNetworkPort( antenna.name(), antenna.networkPort() );
-                        //  Position changes.
-                        if ( antenna.positionXChange() )
-                            v2dFileParser.antennaX( antenna.name(), antenna.positionX() );
-                        if ( antenna.positionYChange() )
-                            v2dFileParser.antennaY( antenna.name(), antenna.positionY() );
-                        if ( antenna.positionZChange() )
-                            v2dFileParser.antennaZ( antenna.name(), antenna.positionZ() );
-                        //  Clock settings.
-                        if ( antenna.deltaClockChange() )
-                            v2dFileParser.antennaDeltaClock( antenna.name(), antenna.deltaClock() );
                     }
                 }
             }

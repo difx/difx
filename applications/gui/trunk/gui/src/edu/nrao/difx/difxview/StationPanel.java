@@ -12,9 +12,12 @@ import mil.navy.usno.widgetlib.SaneTextField;
 import mil.navy.usno.widgetlib.BrowserNode;
 import mil.navy.usno.widgetlib.NumberBox;
 import mil.navy.usno.widgetlib.ZCheckBox;
+import mil.navy.usno.widgetlib.ZButton;
+import mil.navy.usno.widgetlib.PopupMonitor;
 
 import edu.nrao.difx.difxutilities.DiFXCommand_ls;
 
+import javax.swing.JOptionPane;
 import javax.swing.JLabel;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
@@ -23,9 +26,14 @@ import javax.swing.JButton;
 
 import java.awt.Color;
 import java.awt.Cursor;
+import java.awt.Point;
+
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
 import java.util.Iterator;
 import java.util.ArrayList;
+import java.util.GregorianCalendar;
 
 import edu.nrao.difx.difxutilities.DiFXCommand;
 import edu.nrao.difx.difxutilities.ChannelServerSocket;
@@ -37,6 +45,8 @@ import javax.swing.event.PopupMenuListener;
 import javax.swing.event.PopupMenuEvent;
 
 import java.net.SocketTimeoutException;
+import java.util.Calendar;
+import java.util.Locale;
 
 import mil.navy.usno.widgetlib.NodeBrowserScrollPane;
 import mil.navy.usno.widgetlib.IndexedPanel;
@@ -92,58 +102,12 @@ public class StationPanel extends IndexedPanel {
         _contentPane.addNode( _dataSourcePanel );
         //  The data format applies to all data sources.
         String defaultdataFormat = _settings.dataFormat();
-        _dataFormat = new JComboBox();
+        _dataFormat = new SaneTextField();
+        _dataFormat.setText( "N/A" );
+        _dataFormat.setToolTipText( "Format specified by the .vex file for this station." );
+        _dataFormat.setEditable( false );
+        _dataFormat.setBackground( this.getBackground() );
         _dataFormat.setBounds( 200, 30, 180, 25 );
-        _dataFormat.setToolTipText( "Format of the data, regardless of source." );
-        _dataFormat.setEditable( true );
-        //  This little bit causes a typed-in item to be treated as a format.
-        _dataFormat.getEditor().addActionListener( new ActionListener() {
-            public void actionPerformed( ActionEvent e ) {
-                //  If not already in the list of VSNs, add this name.
-                if ( !_settings.inModuleFormatList( (String)_dataFormat.getEditor().getItem() ) ) {
-                    if ( ((String)_dataFormat.getEditor().getItem()).length() > 0 )
-                        _settings.addModuleFormat( (String)_dataFormat.getEditor().getItem() );
-                }
-                dispatchChangeCallback();
-            }
-        });
-        _dataFormat.setBackground( Color.WHITE );
-        _dataFormat.addActionListener( new ActionListener() {
-            public void actionPerformed( ActionEvent e ) {
-                dispatchChangeCallback();
-            }
-        });
-        //  Put current items in the popup menu and set the current selection to match the
-        //  default.
-        int index = 0;
-        int selectionIndex = 0;
-        for ( Iterator<String> iter2 = _settings.moduleFormatList().iterator(); iter2.hasNext(); ) {
-            String thisItem = iter2.next();
-            _dataFormat.addItem( thisItem );
-            if ( thisItem.contentEquals( defaultdataFormat ) )
-                selectionIndex = index;
-            ++index;
-        }
-        _dataFormat.setSelectedIndex( selectionIndex );
-        //  This causes the popup menu to be rebuilt each time the button is hit.
-        //  Hopefully this is quick!
-        _dataFormat.addPopupMenuListener( new PopupMenuListener() {
-            public void popupMenuWillBecomeVisible( PopupMenuEvent e ) {
-                //  Save the current item so we can make it the choice of the new, rebuilt
-                //  popup.
-                String currentItem = dataFormat();
-                _dataFormat.removeAllItems();
-                for ( Iterator<String> iter = _settings.moduleFormatList().iterator(); iter.hasNext(); )
-                    _dataFormat.addItem( iter.next() );
-                _dataFormat.setSelectedItem( currentItem );
-            }
-            public void popupMenuCanceled( PopupMenuEvent e ) {
-                //System.out.println( "canceled" );
-            }
-            public void popupMenuWillBecomeInvisible( PopupMenuEvent e ) {
-                //System.out.println( "make invisible" );
-            }
-        });
         _dataSourcePanel.add( _dataFormat );
         _useSourceNode = new JCheckBox( "" );
         _useSourceNode.setBounds( 390, 30, 25, 25 );
@@ -284,6 +248,17 @@ public class StationPanel extends IndexedPanel {
             }
         } );
         _dataSourcePanel.add( _fileListCheck );
+        _generateFileList = new ZButton( "Generate FileList" );
+        _generateFileList.setToolTipText( "Attempt to generate a file list from the data files listed.\n"
+                + "Results will be put in the file name in the \"Filter\" field.\n"
+                + "This process may or may not work, depending on the file\n"
+                + "format." );
+        _generateFileList.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent evt ) {
+                generateFileList();
+            }
+        } );
+        _dataSourcePanel.add( _generateFileList );
         _fileList = new NodeBrowserScrollPane();
         _fileList.setBackground( Color.WHITE );
         _dataSourcePanel.add( _fileList );
@@ -323,9 +298,6 @@ public class StationPanel extends IndexedPanel {
         setEnabledItems( null );
         
         //  Set defaults for the data source if those are available in the setting menu.
-        String antennaFormat = _settings.antennaDefaultFormat( station.name );
-        if ( antennaFormat != null )
-            _dataFormat.setSelectedItem( antennaFormat );
         String antennaSource = _settings.antennaDefaultSource( station.name );
         if ( antennaSource != null ) {
             _vsnCheck.setSelected( false );
@@ -413,8 +385,8 @@ public class StationPanel extends IndexedPanel {
         });
         //  Put current items in the popup menu and set the current selection to match the
         //  default.
-        index = 0;
-        selectionIndex = 0;
+        int index = 0;
+        int selectionIndex = 0;
         for ( Iterator<String> iter2 = _settings.toneSelectionList().iterator(); iter2.hasNext(); ) {
             String thisItem = iter2.next().trim();
             _toneSelection.addItem( thisItem );
@@ -494,6 +466,7 @@ public class StationPanel extends IndexedPanel {
         _dirListLocation.setEnabled( false );
         _fileFilter.setEnabled( false );
         _fileListCheck.setEnabled( false );
+        _generateFileList.setEnabled( false );
         _fileList.setVisible( false );
         _dataSourcePanel.staticHeight( 135 );
         //  Then turn appropriate stuff back on.
@@ -513,6 +486,7 @@ public class StationPanel extends IndexedPanel {
                 _dataSourcePanel.name( "Data Source: unspecified files" );
             _fileFilter.setEnabled( true );
             _fileListCheck.setEnabled( true );
+            _generateFileList.setEnabled( true );
             _fileList.setVisible( true );
             _dataSourcePanel.staticHeight( 265 );
         }
@@ -649,8 +623,9 @@ public class StationPanel extends IndexedPanel {
      */
     public void newWidth( int w ) {
         _sourceNodeChoice.setBounds( 480, 30, w - 505, 25 );
-        _fileFilter.setBounds( 280, 120, w - 410, 25 );
+        _fileFilter.setBounds( 280, 120, w - 560, 25 );
         _fileListCheck.setBounds( w - 105, 120, 100, 25 );
+        _generateFileList.setBounds( w - 275, 120, 150, 25 );
         _fileList.setBounds( 230, 155, w - 255, 120 );
         _dirListLocation.setBounds( 480, 60, w - 505, 25 );
         _contentPane.setBounds( 0, 20, w - 2, _contentPane.dataHeight() );
@@ -770,6 +745,8 @@ public class StationPanel extends IndexedPanel {
     }
 
     public boolean useFileList() { return _fileListCheck.isSelected(); }
+    
+    public String fileListName() { return _fileFilter.getText(); }
 
     /*
      * Return a list of all filenames listed in the file list.  Only those
@@ -838,15 +815,6 @@ public class StationPanel extends IndexedPanel {
     public boolean useEVLBI() { return _eVLBICheck.isSelected(); }
     public void useEVLBI( boolean newVal ) { setEnabledItems( _eVLBICheck ); }
     public String vsnSource() { return (String)_vsnList.getSelectedItem(); }
-    public String dataFormat() { return (String)_dataFormat.getSelectedItem(); }
-    public void dataFormat( String newVal ) {
-        for ( int i = 0; i < _dataFormat.getItemCount(); ++i ) {
-            if ( newVal.contentEquals( (String)_dataFormat.getItemAt( i ) ) ) {
-                _dataFormat.setSelectedIndex( i );
-                return;
-            }
-        }
-    }
     public String toneSelection() { return (String)_toneSelection.getSelectedItem(); }
     public void toneSelection( String newVal ) {
         for ( int i = 0; i < _toneSelection.getItemCount(); ++i ) {
@@ -1074,8 +1042,267 @@ public class StationPanel extends IndexedPanel {
         return null;
     }
     
+    //  Set the vex data for this station.
     public void vexData( VexFileParser vexData ) {
         _vexData = vexData;
+        ArrayList<String> formats = _vexData.formats( _this.name() );
+        if ( formats.size() > 0 ) {
+            _dataFormat.setText( formats.get( 0 ) );
+            if ( formats.size() > 1 ) {
+                _dataFormat.setForeground( Color.RED );
+                String str = "Multiple data formats for this station were found in the vex file:\n";
+                for ( Iterator<String> iter = formats.iterator(); iter.hasNext(); )
+                    str += "     " + iter.next() + "\n";
+                str += "This is not a problem for DiFX processing, but generating a filelist\n"
+                        + "may not be possible.";
+                _dataFormat.setToolTipText( str );
+            }
+            else {
+                _dataFormat.setForeground( Color.BLACK );
+                _dataFormat.setToolTipText( "Data format for scans using this station." );
+            }
+        }
+        else {
+            _dataFormat.setText( "N/A" );
+            _dataFormat.setForeground( Color.RED );
+            _dataFormat.setToolTipText( "No data format was located in the vex file.\n"
+                    + "This is likely indicative of a problem." );
+        }
+    }
+    
+    protected int _messageX;
+    protected int _messageY;
+    
+    /*
+     * Using the current filter value as a set of files, instruct guiServer to try to
+     * generate a filelist file.  This process will often fail depending on the data,
+     * so a pop up window will provide feedback and some control.
+     */
+    public void generateFileList() {
+        //  Get the list of files we want to include in the file list.  This is every
+        //  "checked" file in the file list window.
+        _listOfFiles = fileList();
+        //  Make sure at least one file is included in this list.  Otherwise pop up a
+        //  warning.
+        if ( _listOfFiles.size() < 1 ) {
+            JOptionPane.showMessageDialog( _fileFilter, "No files specified as part of the file list!",
+                    "Zero Files", JOptionPane.WARNING_MESSAGE );
+            return;
+        }
+        //  Get a new port for this activity.  If this fails, produce an error.
+        int port = _settings.newDifxTransferPort( 0, 100, true, true );
+        if ( port == -1 ) {
+            JOptionPane.showMessageDialog( _fileFilter, "Unable to allocate transfer port.",
+                    "Port Error", JOptionPane.ERROR_MESSAGE );
+            return;
+        }
+        //  Figure out what the name of the file list should be, then prompt the
+        //  user to see if its okay.
+        String fileListName = _fileFilter.getText().substring( 0, _fileFilter.getText().lastIndexOf( "/" ) );
+        fileListName += "/FileList";
+        fileListName = JOptionPane.showInputDialog( _fileFilter, "FileList will be written to:", fileListName );
+        if ( fileListName == null )
+            return;
+        //  Create packet data to transmit all we need for the filelist generation
+        //  on guiServer.  4 bytes for the port...
+        int nbytes = 4;
+        //  4 bytes for the number of files to be included.
+        nbytes += 4;
+        //  4 bytes for length of each file list name, then enough to contain each name.
+        for ( Iterator<String> iter = _listOfFiles.iterator(); iter.hasNext(); ) {
+            nbytes += 4;
+            nbytes += iter.next().length();
+        }
+        //  Then space to send the "filter" value, which is the destination.
+        nbytes += 4;
+        nbytes += fileListName.length();
+        //  Space for the current format.
+        nbytes += 4;
+        nbytes += _dataFormat.getText().length();
+        //  Space for the reference MJD
+        nbytes += 4;
+        //  Space for the address.
+        nbytes += 4;
+        nbytes += _settings.guiServerConnection().myIPAddress().length();
+        //  Allocate a properly-sized buffer for the message.
+        java.nio.ByteBuffer bb = java.nio.ByteBuffer.allocate( nbytes );
+        //  Add the number of files to the message.
+        bb.putInt( _listOfFiles.size() );
+        //  Then each file name, preceded by its character length.
+        for ( Iterator<String> iter = _listOfFiles.iterator(); iter.hasNext(); ) {
+            String name = iter.next();
+            bb.putInt( name.length() );
+            bb.put( name.getBytes() );
+        }
+        //  Then the filter value.
+        bb.putInt( fileListName.length() );
+        bb.put( fileListName.getBytes() );
+        //  And the data format.
+        bb.putInt( _dataFormat.getText().length() );
+        bb.put( _dataFormat.getText().getBytes() );
+        //  The reference MJD for these data.  This is used to resolve ambiguities
+        //  in MKIV and Mark5B data.  Not always necessary, but including it doesn't
+        //  hurt.  We use the date associated with the first scan in the .vex file,
+        //  hopefully this is a sensible assumption.  The reference MJD doesn't have
+        //  to be exact so this is a rough calculation of it.
+        int refmjd = 365 * ( _vexData.scanList().get(0).start.get( GregorianCalendar.YEAR ) - 1970) +
+                _vexData.scanList().get(0).start.get( GregorianCalendar.DAY_OF_YEAR ) + 40587;
+        bb.putInt( refmjd ); 
+        //  The communications IP address.
+        bb.putInt( _settings.guiServerConnection().myIPAddress().length() );
+        bb.put( _settings.guiServerConnection().myIPAddress().getBytes() );
+        //  Finally, the communications port.
+        bb.putInt( port ); 
+        byte [] generateData = bb.array();
+        //  Start a thread to monitor generate of the filelist.  The thread (below) is
+        //  self-terminating.
+        GenerateFileListMonitor monitor = new GenerateFileListMonitor( port );
+        _messageX = _fileFilter.getX();
+        _messageY = _fileFilter.getY();
+        monitor.start();
+        //  Wait a second for the monitor to start.  Not sure why it takes so long, but
+        //  this seems to be a problem.
+        try { Thread.sleep( 100 ); } catch ( Exception e ) {}
+        //  Send the request to the guiServer - it will connect with the thread.
+        _settings.guiServerConnection().sendPacket( _settings.guiServerConnection().GENERATE_FILELIST,
+                generateData.length, generateData );
+    }
+    
+    /*
+     * This thread opens and monitors a TCP socket for diagnostic reports from the
+     * guiServer as it generates a filelist.  The opposite side of this
+     * communication link is in the file "guiServer/src/generateFileList.cpp" in
+     * the DiFX source tree.
+     */
+    protected class GenerateFileListMonitor extends Thread {
+        
+        public GenerateFileListMonitor( int port ) {
+            _port = port;
+        }
+        
+        /*
+         * These packet types are exchanged with the "FileListConnection" class in the
+         * guiServer application on the DiFX host.
+         */
+        protected final int GENERATE_FILELIST_TASK_TERMINATED                     = 100;
+        protected final int GENERATE_FILELIST_TASK_ENDED_GRACEFULLY               = 101;
+        protected final int GENERATE_FILELIST_TASK_STARTED                        = 102;
+        protected final int GENERATE_FILELIST_DESTINATION_EXISTS                  = 103;
+        protected final int GENERATE_FILELIST_FINAL_NAME                          = 104;
+        protected final int GENERATE_FILELIST_PATH_ACCESS_FAILURE                 = 105;
+        protected final int GENERATE_FILELIST_OVERWRITE                           = 106;
+        protected final int GENERATE_FILELIST_CANCEL                              = 107;
+        protected final int GENERATE_FILELIST_OPEN_ERROR                          = 108;
+        protected final int GENERATE_FILELIST_BAD_FORMAT                          = 109;
+        protected final int GENERATE_FILELIST_PROCESSED_COUNT                     = 110;
+        protected final int GENERATE_FILELIST_FILE_RESULT                         = 111;
+        protected final int GENERATE_FILELIST_ERRORS_ENCOUNTERED                  = 112;
+        
+        @Override
+        public void run() {
+            Point pt = _fileList.getLocationOnScreen();
+            PopupMonitor popupMonitor = new PopupMonitor( null, pt.x, pt.y, 600, 145, 100 );
+            popupMonitor.showProgress( true );
+            boolean errors = false;
+            String fileListName = null;
+            int processedCount = 0;
+            //  Open a new server socket and await a connection.  The connection
+            //  will timeout after a given number of seconds (nominally 10).
+            try {
+                ChannelServerSocket ssock = new ChannelServerSocket( _port, _settings );
+                ssock.setSoTimeout( 10000 );  //  timeout is in millisec
+                try {
+                    ssock.accept();
+                    //  Loop collecting diagnostic packets from the guiServer.  These
+                    //  are identified by an initial integer, and then are followed
+                    //  by a data length, then data.
+                    boolean connected = true;
+                    while ( connected ) {
+                        //  Read the packet type as an integer.  The packet types
+                        //  are defined above (within this class).
+                        int packetType = ssock.readInt();
+                        //  Read the size of the incoming data (bytes).
+                        int packetSize = ssock.readInt();
+                        //  Read the data (as raw bytes)
+                        byte [] data = null;
+                        if ( packetSize > 0 ) {
+                            data = new byte[packetSize];
+                            ssock.readFully( data, 0, packetSize );
+                        }
+                        //  Interpret the packet type.
+                        if ( packetType == GENERATE_FILELIST_TASK_TERMINATED ) {
+                            connected = false;
+                        }
+                        else if ( packetType == GENERATE_FILELIST_TASK_ENDED_GRACEFULLY ) {
+                            connected = false;
+                        }
+                        else if ( packetType == GENERATE_FILELIST_TASK_STARTED ) {
+                        }
+                        else if ( packetType == GENERATE_FILELIST_DESTINATION_EXISTS ) {
+                            Object[] options = { "Overwrite", "Cancel" };
+                            int ret = JOptionPane.showOptionDialog( _fileFilter, "Destination path \"" + new String( data ) + "\"\nexists!", 
+                                "Destinations Exists", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null, options, options[0] );
+                            if ( ret == JOptionPane.YES_OPTION )
+                                ssock.writeInt( GENERATE_FILELIST_OVERWRITE );
+                            else {
+                                ssock.writeInt( GENERATE_FILELIST_CANCEL );
+                            }
+                        }
+                        else if ( packetType == GENERATE_FILELIST_PATH_ACCESS_FAILURE ) {
+                            JOptionPane.showMessageDialog( _fileFilter, "Access denied to path \"" + new String( data ) + "\"",
+                                "Access Error", JOptionPane.ERROR_MESSAGE );
+                            connected = false;
+                        }
+                        else if ( packetType == GENERATE_FILELIST_FINAL_NAME ) {
+                            fileListName = new String( data );
+                            _fileFilter.setText( fileListName );
+                            processedCount = 0;
+                            popupMonitor.start();
+                            popupMonitor.progress( 0, _listOfFiles.size() );
+                        }
+                        else if ( packetType == GENERATE_FILELIST_OPEN_ERROR ) {
+                            JOptionPane.showMessageDialog( _fileFilter, "Error opening destination file:\n" + new String( data ),
+                                    "File Open Error", JOptionPane.ERROR_MESSAGE );
+                        }
+                        else if ( packetType == GENERATE_FILELIST_BAD_FORMAT ) {
+                            JOptionPane.showMessageDialog( _fileFilter, "Data format \"" + new String( data ) + "\" is not recognized.\n"
+                                    + "Filelist cannot be generated.",
+                                "Format Error", JOptionPane.ERROR_MESSAGE );
+                            connected = false;
+                        }
+                        else if ( packetType == GENERATE_FILELIST_PROCESSED_COUNT ) {
+                            ByteBuffer b = ByteBuffer.wrap( data, 0, 4 );
+                            b.order( ByteOrder.BIG_ENDIAN );
+                            processedCount = b.getInt();
+                            popupMonitor.progress( processedCount, _listOfFiles.size() );
+                        }
+                        else if ( packetType == GENERATE_FILELIST_FILE_RESULT ) {
+                            popupMonitor.status( new String( data ) );
+                        }
+                        else if ( packetType == GENERATE_FILELIST_ERRORS_ENCOUNTERED ) {
+                            popupMonitor.error( processedCount + " of " + _listOfFiles.size() + " files processed.",
+                                    "There were errors generated (see message window for details)." );
+                            errors = true;
+                        }
+                    }
+                } catch ( SocketTimeoutException e ) {
+                }
+                ssock.close();
+            } catch ( java.io.IOException e ) {
+                e.printStackTrace();
+            }
+            _settings.releaseTransferPort( _port );
+            if ( !errors ) {
+                popupMonitor.success( "Complete!", "FileList \"" + _fileFilter.getText() + "\" Created.", 
+                        processedCount + " of " + _listOfFiles.size() + " files processed." );
+                _fileListCheck.setSelected( true );
+                _dataSourcePanel.name( "Data Source: files " + _fileFilter.getText().trim() );
+                dispatchChangeCallback();
+            }
+        }
+        
+        protected int _port;
+        
     }
     
     protected JCheckBox _useCheck;
@@ -1084,14 +1311,17 @@ public class StationPanel extends IndexedPanel {
     protected JCheckBox _eVLBICheck;
     protected NumberBox _eVLBIPort;
     protected JComboBox _vsnList;
-    protected JComboBox _dataFormat;
+    protected SaneTextField _dataFormat;
     protected JLabel _dataSource;
     protected EventListenerList _changeListeners;
     protected SaneTextField _fileFilter;
     protected ZCheckBox _fileListCheck;
+    protected ZButton _generateFileList;
     protected NodeBrowserScrollPane _fileList;
     protected StationPanel _this;
     protected SaneTextField _dirListLocation;
+    protected ArrayList<String> _listOfFiles;
+
     
     protected SystemSettings _settings;
     

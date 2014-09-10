@@ -25,6 +25,7 @@ public class Spinner extends JPanel {
         for ( int i = 0; i < 12; ++i )
             _colors[i] = 255;
         _errorCondition = false;
+        _successCondition = false;
     }
 
     @Override
@@ -40,6 +41,9 @@ public class Spinner extends JPanel {
         for ( int i = 0; i < 12; ++i ) {
             if ( _errorCondition ) {
                 g2.setColor( Color.RED );
+            }
+            else if ( _successCondition ) {
+                g2.setColor( Color.GREEN );
             }
             else {
                 g2.setColor( new Color( _colors[i], 255, _colors[i] ) );
@@ -91,11 +95,14 @@ public class Spinner extends JPanel {
     }
     public void error() { _errorCondition = true; }
     public void ok() { _errorCondition = false; }
+    public void success() { _successCondition = true; }
 
     protected int _value;
     protected TimeThread _timeThread;
     protected boolean _errorCondition;
     protected Spinner _this;
     protected int[] _colors;
+    protected boolean _successCondition;
+    
 }
 

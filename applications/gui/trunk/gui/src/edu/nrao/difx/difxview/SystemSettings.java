@@ -2232,6 +2232,19 @@ public class SystemSettings extends JFrame {
         _defaultNames.correlationNFFTChan = 128;
         _defaultNames.phaseCalInt = 1;
         _defaultNames.correlationSubintNS = 100000000;
+        _defaultNames.strideLength = 32;
+        _defaultNames.xmacLength = 64;
+        _defaultNames.numBufferedFFTs = 1;
+        _defaultNames.applyDoPolar = false;
+        _defaultNames.applyTInt = false;
+        _defaultNames.applySpecRes = false;
+        _defaultNames.applyFFTSpecRes = false;
+        _defaultNames.applyNFFTChan = false;
+        _defaultNames.applyPhaseCalInt = false;
+        _defaultNames.applySubIntNS = false;
+        _defaultNames.applyStrideLength = false;
+        _defaultNames.applyXmacLength = false;
+        _defaultNames.applyNumBufferedFFTs = false;
         _defaultNames.toneSelection = "smart";
         _defaultNames.dataFormat = "Mark5B";
         _defaultNames.runMonitor = false;
@@ -3267,6 +3280,22 @@ public class SystemSettings extends JFrame {
                 _defaultNames.correlationNFFTChan = doiConfig.getCorrelationNFFTChan();
             if ( _defaultNames.correlationSubintNS != 0 )
                 _defaultNames.correlationSubintNS = doiConfig.getCorrelationSubintNS();
+            if ( doiConfig.getCorrelationStrideLength() != 0 )
+                _defaultNames.strideLength = doiConfig.getCorrelationStrideLength();
+            if ( doiConfig.getCorrelationXmacLength() != 0 )
+                _defaultNames.xmacLength = doiConfig.getCorrelationXmacLength();
+            if ( doiConfig.getCorrelationNumBufferedFFTs() != 0 )
+                _defaultNames.numBufferedFFTs = doiConfig.getCorrelationNumBufferedFFTs();
+            _defaultNames.applyDoPolar = doiConfig.isCorrelationApplyDoPolar();
+            _defaultNames.applyTInt = doiConfig.isCorrelationApplyTInt();
+            _defaultNames.applySpecRes = doiConfig.isCorrelationApplySpecRes();
+            _defaultNames.applyFFTSpecRes = doiConfig.isCorrelationApplyFFTSpecRes();
+            _defaultNames.applyNFFTChan = doiConfig.isCorrelationApplyNFFTChan();
+            _defaultNames.applyPhaseCalInt = doiConfig.isCorrelationApplyPhaseCalInt();
+            _defaultNames.applySubIntNS = doiConfig.isCorrelationApplySubIntNS();
+            _defaultNames.applyStrideLength = doiConfig.isCorrelationApplyStrideLength();
+            _defaultNames.applyXmacLength = doiConfig.isCorrelationApplyXmacLength();
+            _defaultNames.applyNumBufferedFFTs = doiConfig.isCorrelationApplyNumBufferedFFTs();
             _defaultNames.runMonitor = !doiConfig.isDefaultNamesRunMonitorOff();
             
             _defaultNames.phaseCalInt = doiConfig.getDefaultNamesPhaseCalInt();
@@ -3724,6 +3753,19 @@ public class SystemSettings extends JFrame {
         doiConfig.setCorrelationFFTSpecRes( _defaultNames.correlationFFTSpecRes );
         doiConfig.setCorrelationNFFTChan( _defaultNames.correlationNFFTChan );
         doiConfig.setCorrelationSubintNS( _defaultNames.correlationSubintNS );
+        doiConfig.setCorrelationStrideLength( _defaultNames.strideLength );
+        doiConfig.setCorrelationXmacLength( _defaultNames.xmacLength );
+        doiConfig.setCorrelationNumBufferedFFTs( _defaultNames.numBufferedFFTs );
+        doiConfig.setCorrelationApplyDoPolar( _defaultNames.applyDoPolar );
+        doiConfig.setCorrelationApplyTInt( _defaultNames.applyTInt );
+        doiConfig.setCorrelationApplySpecRes( _defaultNames.applySpecRes );
+        doiConfig.setCorrelationApplyFFTSpecRes( _defaultNames.applyFFTSpecRes );
+        doiConfig.setCorrelationApplyNFFTChan( _defaultNames.applyNFFTChan );
+        doiConfig.setCorrelationApplyPhaseCalInt( _defaultNames.applyPhaseCalInt );
+        doiConfig.setCorrelationApplySubIntNS( _defaultNames.applySubIntNS );
+        doiConfig.setCorrelationApplyStrideLength( _defaultNames.applyStrideLength );
+        doiConfig.setCorrelationApplyXmacLength( _defaultNames.applyXmacLength );
+        doiConfig.setCorrelationApplyNumBufferedFFTs( _defaultNames.applyNumBufferedFFTs );
         
         doiConfig.setDefaultNamesPhaseCalInt( _defaultNames.phaseCalInt );
         doiConfig.setDefaultNamesToneSelection( _defaultNames.toneSelection );
@@ -4851,14 +4893,29 @@ public class SystemSettings extends JFrame {
         int correlationNChan;
         double correlationFFTSpecRes;
         int correlationNFFTChan;
-        int phaseCalInt;
         int correlationSubintNS;
+        int strideLength;
+        int xmacLength;
+        int numBufferedFFTs;
+        // "Apply" values for correlator settings.  The settings will only be used
+        // if these are true.
+        boolean applyDoPolar;
+        boolean applyTInt;
+        boolean applySpecRes;
+        boolean applyFFTSpecRes;
+        boolean applyNFFTChan;
+        boolean applyPhaseCalInt;
+        boolean applySubIntNS;
+        boolean applyStrideLength;
+        boolean applyXmacLength;
+        boolean applyNumBufferedFFTs;
+        int phaseCalInt;
         String toneSelection;
         String dataFormat;
         boolean runMonitor;
     }
     protected DefaultNames _defaultNames;
-    
+        
     /*
      * Default values for items in the "job location" windows (see the QueueBrowser).
      */

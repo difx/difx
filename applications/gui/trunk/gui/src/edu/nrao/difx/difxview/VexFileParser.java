@@ -74,6 +74,10 @@ public class VexFileParser {
                     parseSourceData( sectionData );
                 else if ( sectionName.equalsIgnoreCase( "$EOP" ) )
                     parseEOPData( sectionData );
+                else if ( sectionName.equalsIgnoreCase( "$MODE" ) )
+                    parseModeData( sectionData );
+                else if ( sectionName.equalsIgnoreCase( "$TRACKS" ) )
+                    parseTracksData( sectionData );
                 //  Clear the data list and record this new section.
                 sectionName = line;
                 sectionData.clear();
@@ -230,28 +234,51 @@ public class VexFileParser {
     }
 
     /*
-     * Extract "freq" data from a list of data lines.
+     * Extract "freq" data from a list of data lines.  These take the form of definitions
+     * which are referred to elsewhere in the .vex data.
      */
     protected void parseFreqData( ArrayList<String> data ) {
-        //  At the moment all we are intersted in is the bandwidth, which is the 
-        //  4th column in "chan_def" lines.  We plow through three column separators
-        //  (":" characters) to get to it.  If the line we are on cannot produce
-        //  these separators, we ignore the line.
+        Freq currentFreq = null;
         for ( Iterator<String> iter = data.iterator(); iter.hasNext(); ) {
             String thisLine = iter.next();
-            //  Get beyond the third ":" character.
-            boolean okay = true;
-            int count = 0;
-            while ( okay && count < 3 ) {
-                ++count;
-                if ( thisLine.indexOf( ':' ) != -1 )
-                    thisLine = thisLine.substring( thisLine.indexOf( ':' ) + 1 );
-                else
-                    okay = false;
+            //  A new freq. definition.
+            if ( thisLine.length() > 3 && thisLine.substring( 0, 3 ).equalsIgnoreCase( "DEF" ) ) {
+                currentFreq = new Freq();
+                currentFreq.def = thisLine.substring( thisLine.indexOf( ' ' ) ).trim();
+                currentFreq.channelDefs = new ArrayList<ChannelDef>();
             }
-            //  If the line looks good, extract the next number - the bandwidth.
-            if ( okay )
-                _bandwidth = Double.valueOf( thisLine.trim().substring( 0, thisLine.trim().indexOf( ' ' ) ) );
+            //  The end of a freq. definition.
+            else if ( thisLine.length() >= 6 && thisLine.substring( 0, 6 ).equalsIgnoreCase( "ENDDEF" ) ) {
+                if ( currentFreq != null ) {
+                    //  Add the current mode to the list of modes.
+                    if ( _freqList == null )
+                        _freqList = new ArrayList<Freq>();
+                    _freqList.add( currentFreq );
+                }
+                currentFreq = null;
+            }
+            else if ( thisLine.length() >= 11 && thisLine.substring( 0, 11 ).equalsIgnoreCase( "sample_rate" ) ) {
+                if ( currentFreq != null ) {
+                    //  The value for sample rate is after the equal sign.  Is this always
+                    //  in the same units?
+                    String lineData = skipEq( thisLine );
+                    currentFreq.sampleRate = Double.valueOf( lineData.trim().substring( 0, lineData.trim().indexOf( ' ' ) ) );
+                    currentFreq.sampleRateUnits = lineData.trim().substring( lineData.trim().indexOf( ' ' ) ).trim();
+                }
+            }
+            else if ( thisLine.length() >= 8 && thisLine.substring( 0, 8 ).equalsIgnoreCase( "chan_def" ) ) {
+                //  Colon-separated list of things.  At the moment we are only paying attention
+                //  to the frequency and bandwidth (2nd and 4th items).                
+                String[] lineItems = skipEq( thisLine ).split( ":" );
+                if ( lineItems.length > 3 ) {
+                    ChannelDef channelDef = new ChannelDef();
+                    channelDef.freq = Double.valueOf( lineItems[1].trim().substring( 0, lineItems[1].trim().indexOf( ' ' ) ).trim() );
+                    channelDef.bandwidth = Double.valueOf( lineItems[3].trim().substring( 0, lineItems[3].trim().indexOf( ' ' ) ).trim() );
+                    _bandwidth = channelDef.bandwidth;
+                    if ( currentFreq != null )
+                        currentFreq.channelDefs.add( channelDef );
+                }
+            }
         }
     }
 
@@ -293,6 +320,10 @@ public class VexFileParser {
             else if ( thisLine.length() > 4 && thisLine.substring( 0, 4 ).equalsIgnoreCase( "MODE" ) ) {
                 if ( currentScan != null ) {
                     currentScan.mode = skipEq( thisLine );
+                    if ( _usedModes == null )
+                        _usedModes = new ArrayList<String>();
+                    if ( !_usedModes.contains( currentScan.mode ) )
+                        _usedModes.add( currentScan.mode );
                 }
             }
             else if ( thisLine.length() > 6 && thisLine.substring( 0, 6 ).equalsIgnoreCase( "SOURCE" ) ) {
@@ -566,6 +597,136 @@ public class VexFileParser {
     }
     
     /*
+     * The mode data contains a bunch of stuff, but we are (for the moment) interested
+     * only in things that will tell us the data format associated with each antenna.
+     * These are stored in the "$TRACKS" and "$FREQ" information.  There may, of course, 
+     * be multiple mode definitions...
+     */
+    protected void parseModeData( ArrayList<String> data ) {
+        Mode currentMode = null;
+        for ( Iterator<String> iter = data.iterator(); iter.hasNext(); ) {
+            String thisLine = iter.next();
+            //  A new mode definition.
+            if ( thisLine.length() > 3 && thisLine.substring( 0, 3 ).equalsIgnoreCase( "DEF" ) ) {
+                currentMode = new Mode();
+                currentMode.trackRefs = new ArrayList<ModeReference>();
+                currentMode.freqRefs = new ArrayList<ModeReference>();
+                currentMode.def = thisLine.substring( thisLine.indexOf( ' ' ) ).trim();
+            }
+            //  The end of a mode definition.
+            else if ( thisLine.length() >= 6 && thisLine.substring( 0, 6 ).equalsIgnoreCase( "ENDDEF" ) ) {
+                if ( currentMode != null ) {
+                    //  Add the current mode to the list of modes.
+                    if ( _modeList == null )
+                        _modeList = new ArrayList<Mode>();
+                    _modeList.add( currentMode );
+                }
+                currentMode = null;
+            }
+            //  This is a "track" line.  It includes a reference name and a list of 
+            //  antennas that the track applies to.
+            else if ( thisLine.length() > 12 && thisLine.substring( 3 ).trim().substring( 0, 7 ).equalsIgnoreCase( "$TRACKS" ) ) {
+                //  Colon-separated list of things.
+                String[] lineItems = skipEq( thisLine ).split( ":" );
+                if ( lineItems.length > 0 ) {
+                    ModeReference modeReference = new ModeReference();
+                    modeReference.antennas = new ArrayList<String>();
+                    //  First is the reference name.
+                    modeReference.name = lineItems[0].trim();
+                    //  Then each additional item is an antenna.
+                    int i = 1;
+                    while ( i < lineItems.length ) {
+                        modeReference.antennas.add( lineItems[i].toUpperCase().trim() );
+                        ++i;
+                    }
+                    if ( currentMode != null )
+                        currentMode.trackRefs.add( modeReference );
+                }
+            }
+            //  Frequencies are also "references", using the same format as tracks: a
+            //  name followed by a list of antennas.
+            else if ( thisLine.length() > 12 && thisLine.substring( 3 ).trim().substring( 0, 5 ).equalsIgnoreCase( "$FREQ" ) ) {
+                //  Colon-separated list of things.
+                String[] lineItems = skipEq( thisLine ).split( ":" );
+                if ( lineItems.length > 0 ) {
+                    ModeReference modeReference = new ModeReference();
+                    modeReference.antennas = new ArrayList<String>();
+                    //  First is the reference name.
+                    modeReference.name = lineItems[0].trim();
+                    //  Then each additional item is an antenna.
+                    int i = 1;
+                    while ( i < lineItems.length ) {
+                        modeReference.antennas.add( lineItems[i].toUpperCase().trim() );
+                        ++i;
+                    }
+                    if ( currentMode != null )
+                        currentMode.freqRefs.add( modeReference );
+                }
+            }
+        }
+    }
+    
+    /*
+     * The Tracks section contains a list of definitions that are used in "modes", and
+     * possibly elsewhere.
+     */
+    protected void parseTracksData( ArrayList<String> data ) {
+        Track currentTrack = null;
+        boolean needFanoutFactor = true;
+        boolean needBitsPerSample = true;
+        String saveChannel = "";
+        for ( Iterator<String> iter = data.iterator(); iter.hasNext(); ) {
+            String thisLine = iter.next();
+            //  A new Track definition.
+            if ( thisLine.length() > 3 && thisLine.substring( 0, 3 ).equalsIgnoreCase( "DEF" ) ) {
+                currentTrack = new Track();
+                currentTrack.def = thisLine.substring( thisLine.indexOf( ' ' ) ).trim();
+                needFanoutFactor = true;
+                needBitsPerSample = true;
+                saveChannel = "";
+            }
+            //  The end of a Track definition.
+            else if ( thisLine.length() >= 6 && thisLine.substring( 0, 6 ).equalsIgnoreCase( "ENDDEF" ) ) {
+                if ( currentTrack != null ) {
+                    //  Add the current mode to the list of modes.
+                    if ( _trackList == null )
+                        _trackList = new ArrayList<Track>();
+                    _trackList.add( currentTrack );
+                }
+                currentTrack = null;
+            }
+            //  The data format.
+            else if ( thisLine.length() >= 18 && thisLine.substring( 0, 18 ).equalsIgnoreCase( "track_frame_format" ) ) {
+                if ( currentTrack != null ) {
+                    currentTrack.trackFrameFormat = skipEq( thisLine ).trim();
+                }
+            }
+            //  Fanout definitions.  For the moment we're only using these to look for
+            //  bits/sample (number of duplicate channels listed) and the fanout factor
+            //  (related to the number of columns).  In both cases we are assuming these
+            //  numbers are uniform for the whole Track definition.
+            else if ( thisLine.length() >= 10 && thisLine.substring( 0, 10 ).equalsIgnoreCase( "fanout_def" ) ) {
+                if ( currentTrack != null ) {
+                    if ( needFanoutFactor ) {
+                        String[] lineItems = skipEq( thisLine ).split( ":" );
+                        saveChannel = lineItems[1].trim();
+                        currentTrack.fanoutFactor = lineItems.length - 4;
+                        currentTrack.bitsPerSample = 1;
+                        needFanoutFactor = false;
+                    }
+                    else if ( needBitsPerSample ) {
+                        String[] lineItems = skipEq( thisLine ).split( ":" );
+                        if ( saveChannel.contentEquals( lineItems[1].trim() ) )
+                            ++currentTrack.bitsPerSample;
+                        else
+                            needBitsPerSample = false;
+                    }
+                }
+            }
+        }
+    }
+    
+    /*
      * Skip to the character immediately following an "=" sign, which is a common
      * thing to have to do...
      */
@@ -581,6 +742,9 @@ public class VexFileParser {
     public ArrayList<Antenna> antennaList() { return _antennaList; }
     public ArrayList<Source> sourceList() { return _sourceList; }
     public ArrayList<EOP> eopList() { return _eopList; }
+    public ArrayList<Mode> modeList() { return _modeList; }
+    public ArrayList<Freq> freqList() { return _freqList; }
+    public ArrayList<Track> trackList() { return _trackList; }
     
     public class ScanStation {
         String name;
@@ -648,6 +812,36 @@ public class VexFileParser {
         ArrayList<String> ut1_utc;
         ArrayList<String> x_wobble;
         ArrayList<String> y_wobble;
+    }
+    
+    public class ModeReference {
+        String name;
+        ArrayList<String> antennas;
+    }
+    
+    public class Mode {
+        String def;
+        ArrayList<ModeReference> trackRefs;
+        ArrayList<ModeReference> freqRefs;
+    }
+    
+    public class ChannelDef {
+        double freq;
+        double bandwidth;
+    }
+    
+    public class Freq {
+        String def;
+        Double sampleRate;
+        String sampleRateUnits;
+        ArrayList<ChannelDef> channelDefs;
+    }
+    
+    public class Track {
+        String def;
+        String trackFrameFormat;
+        Integer bitsPerSample;
+        Integer fanoutFactor;
     }
 
     /*
@@ -780,6 +974,92 @@ public class VexFileParser {
         return outStr;
     }
     
+    /*
+     * Generate a list of complex format names for the given station.  
+     */
+    public ArrayList<String> formats( String station ) {
+        ArrayList<String> ret = new ArrayList<String>();
+        //  Locate the station in the track and frequency items referenced in the
+        //  modes.  Each mode is assumed to have at most one format for each station
+        //  (although it may have zero).
+        if ( modeList() != null ) {
+            for ( Iterator<Mode> iter = modeList().iterator(); iter.hasNext(); ) {
+                Mode mode = iter.next();
+                //  Make sure this mode is actually used in a scan.
+                boolean used = false;
+                for ( Iterator<String> iter2 = usedModes().iterator(); iter2.hasNext() && !used; ) {
+                    if ( mode.def.equalsIgnoreCase( iter2.next() ) )
+                        used = true;
+                }
+                if ( used ) {
+                    String trackFrameFormat = null;
+                    Integer fanoutFactor = null;
+                    Integer numChannels = null;
+                    Integer bandwidth = null;
+                    Integer bitsPerSample = null;
+                    //  Look through the "tracks" on this mode to see if any have this station.
+                    for ( Iterator<ModeReference> iter2 = mode.trackRefs.iterator(); iter2.hasNext(); ) {
+                        ModeReference modeReference = iter2.next();
+                        if ( modeReference.antennas.contains( station.toUpperCase() ) ) {
+                            //  This track reference applies to this antenna...look at it in the
+                            //  "tracks" list.
+                            for ( Iterator<Track> iter3 = trackList().iterator(); iter3.hasNext(); ) {
+                                Track track = iter3.next();
+                                if ( track.def.equalsIgnoreCase( modeReference.name ) ) {
+                                    //  We've got a track that applies to this station in the current
+                                    //  mode.  Fill in any items it has that we are interested in.
+                                    if ( track.trackFrameFormat != null )
+                                        trackFrameFormat = track.trackFrameFormat;
+                                    if ( track.bitsPerSample != null )
+                                        bitsPerSample = track.bitsPerSample;
+                                    if ( track.fanoutFactor != null )
+                                        fanoutFactor = track.fanoutFactor;
+                                }
+                            }
+                        }
+                    }
+                    //  Now look through the "freqs" on this mode to see if any have this station.
+                    for ( Iterator<ModeReference> iter2 = mode.freqRefs.iterator(); iter2.hasNext(); ) {
+                        ModeReference modeReference = iter2.next();
+                        if ( modeReference.antennas.contains( station.toUpperCase() ) ) {
+                            //  This freq reference applies to this antenna...look at it in the
+                            //  "freqs" list.
+                            for ( Iterator<Freq> iter3 = freqList().iterator(); iter3.hasNext(); ) {
+                                Freq freq = iter3.next();
+                                if ( freq.def.equalsIgnoreCase( modeReference.name ) ) {
+                                    //  We've got a freq that applies to this station in the current
+                                    //  mode.  Fill in any items it has that we are interested in.
+                                    if ( freq.channelDefs != null && freq.channelDefs.size() > 0 ) {
+                                        numChannels = freq.channelDefs.size();
+                                        //  We are assuming all of the bandwidths are equal, and in MHz.
+                                        bandwidth = new Double( freq.channelDefs.get( 0 ).bandwidth ).intValue();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    //  If all of the information we need is non-null, form a new format
+                    //  string and add it to our list.
+                    if ( trackFrameFormat != null && fanoutFactor != null && numChannels != null &&
+                            bandwidth != null && bitsPerSample != null ) {
+                        //  Change the format name to reflect conventions for each type and add fanout
+                        //  factor if that's done.
+                        String name = trackFrameFormat;
+                        if ( trackFrameFormat.equalsIgnoreCase( "Mark4" ) ) {
+                            name = "MKIV1_" + fanoutFactor;
+                        }
+                        else if ( trackFrameFormat.equalsIgnoreCase( "VLBA" ) ) {
+                            name = "VLBA1_" + fanoutFactor;
+                        }
+                        int totalBitRate = bitsPerSample * numChannels * bandwidth * 2;
+                        ret.add( name + "-" + totalBitRate + "-" + numChannels + "-" + bitsPerSample );
+                    }
+                }
+            }
+        }
+        return ret;
+    }
+    
     protected double _revision;
     protected double _bandwidth;
     protected int _pos;
@@ -791,5 +1071,14 @@ public class VexFileParser {
     protected ArrayList<Site> _siteList;
     protected ArrayList<Source> _sourceList;
     protected ArrayList<EOP> _eopList;
+    protected ArrayList<Mode> _modeList;
+    protected ArrayList<Freq> _freqList;
+    protected ArrayList<Track> _trackList;
+    
+    //  This list is used to list all the mode reference names used.  If there is
+    //  only one (the situation I'm familiar with) things are good.  If there is
+    //  more than one, stuff may get complicated.
+    protected ArrayList<String> _usedModes;
+    public ArrayList<String> usedModes() { return _usedModes; }
     
 }

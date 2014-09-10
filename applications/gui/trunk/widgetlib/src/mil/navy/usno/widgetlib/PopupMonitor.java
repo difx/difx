@@ -141,7 +141,7 @@ public class PopupMonitor extends JDialog implements WindowListener  {
     /*
      * Called when things succeed.  This makes the window go away.
      */
-    protected void successCondition() {
+    public void successCondition() {
 //        synchronized ( _displayLock ) {
             _cleanClose = true;
             _noSpinnerStart = true;
@@ -153,9 +153,29 @@ public class PopupMonitor extends JDialog implements WindowListener  {
     }
     
     /*
+     * Called to trumpet success.  Window will not go away (the user must
+     * dismiss it).  
+     */
+    public void success( String title, String message1, String message2 ) {
+        _noSpinnerStart = true;
+        if ( _spinner != null ) {
+            _spinner.success();
+            _spinner.stop();
+        }
+        _theWindow.setTitle( title );
+        _cancelButton.setText( "Dismiss" );
+        status( message1 );
+        if ( message2 != null ) {
+            showProgress( false );
+            status2( message2 );
+            showStatus2( true );
+        }
+    }
+    
+    /*
      * Called when things fail.
      */
-    protected void errorCondition() {
+    public void errorCondition() {
 //        synchronized ( _displayLock ) {
             _noSpinnerStart = true;
             _cancelButton.setText( "Dismiss" );
@@ -181,7 +201,7 @@ public class PopupMonitor extends JDialog implements WindowListener  {
     /*
      * Set the progress.
      */
-    protected void progress( int value, int maximum ) {
+    public void progress( int value, int maximum ) {
         _progress.setMaximum( maximum );
         _progress.setValue( value );
     }
@@ -190,8 +210,9 @@ public class PopupMonitor extends JDialog implements WindowListener  {
      * Combine a few things - set the first and second status lines (the second one
      * is optional), remove the progress bar, and set the error condition.
      */
-    protected void error( String stat1, String stat2 ) {
+    public void error( String stat1, String stat2 ) {
         showProgress( false );
+        showStatus2( true );
         if ( stat2 != null )
             showStatus2( true );
         status( stat1 );

@@ -251,6 +251,19 @@
                 <xsd:element ref="correlationFFTSpecRes" />
                 <xsd:element ref="correlationNFFTChan" />
                 <xsd:element ref="correlationSubintNS" />
+                <xsd:element ref="correlationStrideLength" />
+                <xsd:element ref="correlationXmacLength" />
+                <xsd:element ref="correlationNumBufferedFFTs" />
+                <xsd:element ref="correlationApplyDoPolar" />
+                <xsd:element ref="correlationApplyTInt" />
+                <xsd:element ref="correlationApplySpecRes" />
+                <xsd:element ref="correlationApplyFFTSpecRes" />
+                <xsd:element ref="correlationApplyNFFTChan" />
+                <xsd:element ref="correlationApplyPhaseCalInt" />
+                <xsd:element ref="correlationApplySubIntNS" />
+                <xsd:element ref="correlationApplyStrideLength" />
+                <xsd:element ref="correlationApplyXmacLength" />
+                <xsd:element ref="correlationApplyNumBufferedFFTs" />
     
                 <xsd:element ref="jobNetworkActivity" />
                 <xsd:element ref="jobName" />
@@ -520,6 +533,19 @@
     <xsd:element name="correlationFFTSpecRes" type="xsd:double"></xsd:element>
     <xsd:element name="correlationNFFTChan" type="xsd:int"></xsd:element>
     <xsd:element name="correlationSubintNS" type="xsd:int"></xsd:element>
+    <xsd:element name="correlationStrideLength" type="xsd:int"></xsd:element>
+    <xsd:element name="correlationXmacLength" type="xsd:int"></xsd:element>
+    <xsd:element name="correlationNumBufferedFFTs" type="xsd:int"></xsd:element>
+    <xsd:element name="correlationApplyDoPolar" type="xsd:boolean"></xsd:element>
+    <xsd:element name="correlationApplyTInt" type="xsd:boolean"></xsd:element>
+    <xsd:element name="correlationApplySpecRes" type="xsd:boolean"></xsd:element>
+    <xsd:element name="correlationApplyFFTSpecRes" type="xsd:boolean"></xsd:element>
+    <xsd:element name="correlationApplyNFFTChan" type="xsd:boolean"></xsd:element>
+    <xsd:element name="correlationApplyPhaseCalInt" type="xsd:boolean"></xsd:element>
+    <xsd:element name="correlationApplySubIntNS" type="xsd:boolean"></xsd:element>
+    <xsd:element name="correlationApplyStrideLength" type="xsd:boolean"></xsd:element>
+    <xsd:element name="correlationApplyXmacLength" type="xsd:boolean"></xsd:element>
+    <xsd:element name="correlationApplyNumBufferedFFTs" type="xsd:boolean"></xsd:element>
     
     <xsd:element name="jobNetworkActivity" type="columnSpec"></xsd:element>
     <xsd:element name="jobName" type="columnSpec"></xsd:element>

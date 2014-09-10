@@ -55,8 +55,6 @@ public class V2dFileParser {
             }
         }
         
-        //System.out.println( bigStr );
-        
         //  Now break this string into things we are interested in.  It contains
         //  "sections" with brace ("{") delimiters and settings ("parameter = value").
         //  For the moment sections are not contained in sections, something we will
@@ -325,8 +323,28 @@ public class V2dFileParser {
                 }
                 else if ( section.type == RULE_SECTION ) {
                     RuleSection rule = (RuleSection)section;
-                    if ( rule.scan != null && !rule.scan.contentEquals( "*" ) )
-                        str += "    scan = " + rule.scan + "\n";
+                    if ( rule.scan != null && !rule.scan.contentEquals( "*" ) ) {
+                        //  Divide the scan list by the commas that separate scan names.
+                        String[] scanList = rule.scan.split( "," );
+                        int i = 0;
+                        int lineCount = 0;
+                        while ( i < scanList.length ) {
+                            if ( lineCount == 0 )
+                                str += "    scan = ";
+                            str += scanList[i];
+                            ++i;
+                            ++lineCount;
+                            if ( i < scanList.length ) {
+                                if ( lineCount == 10 ) {
+                                    lineCount = 0;
+                                    str += "\n";
+                                }
+                                else
+                                    str += ", ";
+                            }
+                        }
+                        str += "\n";
+                    }
                     if ( rule.setup != null )
                         str += "    setup = " + rule.setup + "\n";
                 }
