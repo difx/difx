@@ -13,6 +13,7 @@ guiServer_SOURCES = \
 	difxFileOperation.cpp \
 	vex2difxRun.cpp \
 	machinesDefinition.cpp \
+	generateFileList.cpp \
 	getDirectory.cpp \
 	runDifxMonitor.cpp \
 	DifxMonitorExchange.h \

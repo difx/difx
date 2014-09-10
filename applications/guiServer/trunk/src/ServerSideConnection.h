@@ -24,6 +24,7 @@
 #include <string>
 #include <glob.h>
 #include <dirent.h>
+#include <mark5access/mark5_stream.h>
 
 
 namespace guiServer {
@@ -59,6 +60,7 @@ namespace guiServer {
         static const int CHANNEL_ALL_DATA_OFF           = 20;
         static const int CHANNEL_CONNECTION             = 21;
         static const int CHANNEL_DATA                   = 22;
+        static const int GENERATE_FILELIST              = 23;
 
         static const int MAX_COMMAND_SIZE = 1024;
         
@@ -287,6 +289,10 @@ namespace guiServer {
                     break;
                 case CHANNEL_DATA:
                     channelData( data, nBytes );
+                    break;
+                case GENERATE_FILELIST:
+                    startGenerateFileList( data, nBytes );
+                    break;
                 default:
                     break;
             }
@@ -887,6 +893,76 @@ namespace guiServer {
         }
         
         //---------------------------------------------------------------------
+        //!  Structure used to generate file lists.
+        //---------------------------------------------------------------------
+        struct GenerateFileListInfo {
+            ServerSideConnection* ssc;
+            int nFiles;
+            std::string* file;
+            std::string address;
+            int port;
+            int refmjd;
+            std::string format;
+            std::string destination;
+        };
+        
+        //---------------------------------------------------------------------
+        //!  This is a request to generate a file list using a specified list
+        //!  of files.  A destination file, file format (all strings) and a comminications
+        //!  port (integer) are all included.  The actual process is run in a
+        //!  thread.
+        //---------------------------------------------------------------------
+        void startGenerateFileList( char* data, const int nBytes ) {
+            GenerateFileListInfo* generateFileListInfo = new GenerateFileListInfo;
+            generateFileListInfo->ssc = this;
+            char* dataPtr = data;
+            //  Get the number of files in the list and allocate a pointer for each.
+            generateFileListInfo->nFiles = ntohl( *(int*)dataPtr );
+            dataPtr += 4;
+            generateFileListInfo->file = new std::string[generateFileListInfo->nFiles];
+            //  Then read the name of each file.
+            for ( int i = 0; i < generateFileListInfo->nFiles; ++i ) {
+                int len = ntohl( *(int*)dataPtr );
+                dataPtr += 4;
+                generateFileListInfo->file[i].assign( dataPtr, len );
+                dataPtr += len;
+            }
+            //  The destination.
+            int len = ntohl( *(int*)dataPtr );
+            dataPtr += 4;
+            generateFileListInfo->destination.assign( dataPtr, len );
+            dataPtr += len;
+            //  The data format.
+            len = ntohl( *(int*)dataPtr );
+            dataPtr += 4;
+            generateFileListInfo->format.assign( dataPtr, len );
+            dataPtr += len;
+            //  The reference MJD (date pulled from the observations).
+            generateFileListInfo->refmjd = ntohl( *(int*)dataPtr );
+            dataPtr += 4;
+            //  The IP address of the GUI
+            len = ntohl( *(int*)dataPtr );
+            dataPtr += 4;
+            generateFileListInfo->address.assign( dataPtr, len );
+            dataPtr += len;
+            //  The communications port.
+            generateFileListInfo->port = ntohl( *(int*)dataPtr );
+            pthread_t threadId;
+            pthread_create( &threadId, NULL, staticGenerateFileList, (void*)(generateFileListInfo) );
+        }
+        
+        //---------------------------------------------------------------------
+        //!  Static function for running the process that generates a file list.
+        //---------------------------------------------------------------------
+        static void* staticGenerateFileList( void* a ) {
+            GenerateFileListInfo* generateFileListInfo = (GenerateFileListInfo*)a;
+            generateFileListInfo->ssc->generateFileList( generateFileListInfo );
+            delete [] generateFileListInfo->file;
+            delete generateFileListInfo;
+            return NULL;
+        }
+        
+        //---------------------------------------------------------------------
         //!  Add a job to the list of running jobs.  Jobs are identified by input
         //!  file name (full path).  These should be unique.
         //---------------------------------------------------------------------
@@ -944,6 +1020,10 @@ namespace guiServer {
         void runVex2DifxMonitor( Vex2DifxMonitorInfo* info );   //  in vex2difxRun.cpp
         void machinesDefinition( DifxMessageGeneric* G );
         void runMachinesDefinition( MachinesDefinitionInfo* machinesDefinitionInfo );  // in machinesDefintion.cpp
+        void generateFileList( GenerateFileListInfo* generateFileListInfo );
+        int verify( const char *filename, const char *formatname, double& startmjd, double& stopmjd, int refMJD );  // in generateFileList.cpp
+        struct mark5_stream* openmk5( const char *filename, const char *formatname, long *offset );  // in generateFileList.cpp
+        int is_reasonable_timediff( double startmjd, double stopmjd );  // in generateFileList.cpp
         void mk5Control( DifxMessageGeneric* G );
         void diagnostic( const int severity, const char *fmt, ... );
         int popenRWE( int *rwepipe, const char *exe, const char *const argv[] );
