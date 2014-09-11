@@ -683,39 +683,43 @@ public class JobNodesHeader extends BrowserNode {
      * This functions propogates current column widths to all jobs.
      */
     public void setJobColumnWidths() {
-        for ( Iterator<JobNode> iter = _jobs.iterator(); iter.hasNext(); ) {
-            JobNode thisJob = iter.next();
-            //  Change the settings on these items to match our current specifications.
-            thisJob.widthName( _settings.jobColumnSpecs().name.width );
-            thisJob.widthProgressBar( _settings.jobColumnSpecs().progressBar.width );
-            thisJob.widthState( _settings.jobColumnSpecs().state.width );
-            thisJob.widthExperiment( _settings.jobColumnSpecs().experiment.width );
-            thisJob.widthPass( _settings.jobColumnSpecs().pass.width );
-            thisJob.widthPriority( _settings.jobColumnSpecs().priority.width );
-            thisJob.widthQueueTime( _settings.jobColumnSpecs().queueTime.width );
-            thisJob.widthCorrelationStart( _settings.jobColumnSpecs().correlationStart.width );
-            thisJob.widthCorrelationEnd( _settings.jobColumnSpecs().correlationEnd.width );
-            thisJob.widthCorrelationTime( _settings.jobColumnSpecs().correlationTime.width );
-            thisJob.widthJobStart( _settings.jobColumnSpecs().jobStart.width );
-            thisJob.widthJobDuration( _settings.jobColumnSpecs().jobDuration.width );
-            thisJob.widthInputFile( _settings.jobColumnSpecs().inputFile.width );
-            thisJob.widthOutputFile( _settings.jobColumnSpecs().outputFile.width );
-            thisJob.widthOutputSize( _settings.jobColumnSpecs().outputSize.width );
-            thisJob.widthDifxVersion( _settings.jobColumnSpecs().difxVersion.width );
-            thisJob.widthSpeedUpFactor( _settings.jobColumnSpecs().speedUpFactor.width );
-            thisJob.widthNumAntennas( _settings.jobColumnSpecs().numAntennas.width );
-            thisJob.widthNumForeignAntennas( _settings.jobColumnSpecs().numForeignAntennas.width );
-            thisJob.widthDutyCycle( _settings.jobColumnSpecs().dutyCycle.width );
-            thisJob.widthStatus( _settings.jobColumnSpecs().status.width );
-            thisJob.widthActive( _settings.jobColumnSpecs().active.width );
-            thisJob.widthStatusId( _settings.jobColumnSpecs().statusId.width );
-            thisJob.widthWeights( _settings.jobColumnSpecs().weights.width );
-            thisJob.updateUI();
+        synchronized( _jobs ) {
+            for ( Iterator<JobNode> iter = _jobs.iterator(); iter.hasNext(); ) {
+                JobNode thisJob = iter.next();
+                //  Change the settings on these items to match our current specifications.
+                thisJob.widthName( _settings.jobColumnSpecs().name.width );
+                thisJob.widthProgressBar( _settings.jobColumnSpecs().progressBar.width );
+                thisJob.widthState( _settings.jobColumnSpecs().state.width );
+                thisJob.widthExperiment( _settings.jobColumnSpecs().experiment.width );
+                thisJob.widthPass( _settings.jobColumnSpecs().pass.width );
+                thisJob.widthPriority( _settings.jobColumnSpecs().priority.width );
+                thisJob.widthQueueTime( _settings.jobColumnSpecs().queueTime.width );
+                thisJob.widthCorrelationStart( _settings.jobColumnSpecs().correlationStart.width );
+                thisJob.widthCorrelationEnd( _settings.jobColumnSpecs().correlationEnd.width );
+                thisJob.widthCorrelationTime( _settings.jobColumnSpecs().correlationTime.width );
+                thisJob.widthJobStart( _settings.jobColumnSpecs().jobStart.width );
+                thisJob.widthJobDuration( _settings.jobColumnSpecs().jobDuration.width );
+                thisJob.widthInputFile( _settings.jobColumnSpecs().inputFile.width );
+                thisJob.widthOutputFile( _settings.jobColumnSpecs().outputFile.width );
+                thisJob.widthOutputSize( _settings.jobColumnSpecs().outputSize.width );
+                thisJob.widthDifxVersion( _settings.jobColumnSpecs().difxVersion.width );
+                thisJob.widthSpeedUpFactor( _settings.jobColumnSpecs().speedUpFactor.width );
+                thisJob.widthNumAntennas( _settings.jobColumnSpecs().numAntennas.width );
+                thisJob.widthNumForeignAntennas( _settings.jobColumnSpecs().numForeignAntennas.width );
+                thisJob.widthDutyCycle( _settings.jobColumnSpecs().dutyCycle.width );
+                thisJob.widthStatus( _settings.jobColumnSpecs().status.width );
+                thisJob.widthActive( _settings.jobColumnSpecs().active.width );
+                thisJob.widthStatusId( _settings.jobColumnSpecs().statusId.width );
+                thisJob.widthWeights( _settings.jobColumnSpecs().weights.width );
+                thisJob.updateUI();
+            }
         }
     }
     
     public void addJob( JobNode newNode ) {
-        _jobs.add( newNode );
+        synchronized( _jobs ) {
+            _jobs.add( newNode );
+        }
         setJobColumnWidths();
         updateDisplayedData();
     }
@@ -1066,36 +1070,38 @@ public class JobNodesHeader extends BrowserNode {
     public void updateDisplayedData() {
         //  Run through the list of all "child" nodes, which are all of the listed
         //  cluster nodes.
-        for ( Iterator<JobNode> iter = _jobs.iterator(); iter.hasNext(); ) {
-            JobNode thisJob = (JobNode)(iter.next());
-            //  Change the settings on these items to match our current specifications.
-            thisJob.showNetworkActivity( _showNetworkActivity.getState() );
-            thisJob.showName( _showName.getState() );
-            thisJob.showProgressBar( _showProgressBar.getState() );
-            thisJob.showState( _showState.getState() );
-            thisJob.showExperiment( _showExperiment.getState() );
-            thisJob.showPass( _showPass.getState() );
-            thisJob.showPriority( _showPriority.getState() );
-            thisJob.showQueueTime( _showQueueTime.getState() );
-            thisJob.showCorrelationStart( _showCorrelationStart.getState() );
-            thisJob.showCorrelationEnd( _showCorrelationEnd.getState() );
-            thisJob.showCorrelationTime( _showCorrelationTime.getState() );
-            thisJob.showJobStart( _showJobStart.getState() );
-            thisJob.showJobDuration( _showJobDuration.getState() );
-            thisJob.showInputFile( _showInputFile.getState() );
-            thisJob.showOutputFile( _showOutputFile.getState() );
-            thisJob.showOutputSize( _showOutputSize.getState() );
-            thisJob.showDifxVersion( _showDifxVersion.getState() );
-            thisJob.showSpeedUpFactor( _showSpeedUpFactor.getState() );
-            thisJob.showNumAntennas( _showNumAntennas.getState() );
-            thisJob.showNumForeignAntennas( _showNumForeignAntennas.getState() );
-            thisJob.showDutyCycle( _showDutyCycle.getState() );
-            thisJob.showStatus( _showStatus.getState() );
-            thisJob.showActive( _showActive.getState() );
-            thisJob.showStatusId( _showStatusId.getState() );
-            thisJob.showWeights( _showWeights.getState() );
-            thisJob.showWeightsAsPlots( _showWeightsAsPlots.getState() );
-            thisJob.updateUI();
+        synchronized( _jobs ) {
+            for ( Iterator<JobNode> iter = _jobs.iterator(); iter.hasNext(); ) {
+                JobNode thisJob = (JobNode)(iter.next());
+                //  Change the settings on these items to match our current specifications.
+                thisJob.showNetworkActivity( _showNetworkActivity.getState() );
+                thisJob.showName( _showName.getState() );
+                thisJob.showProgressBar( _showProgressBar.getState() );
+                thisJob.showState( _showState.getState() );
+                thisJob.showExperiment( _showExperiment.getState() );
+                thisJob.showPass( _showPass.getState() );
+                thisJob.showPriority( _showPriority.getState() );
+                thisJob.showQueueTime( _showQueueTime.getState() );
+                thisJob.showCorrelationStart( _showCorrelationStart.getState() );
+                thisJob.showCorrelationEnd( _showCorrelationEnd.getState() );
+                thisJob.showCorrelationTime( _showCorrelationTime.getState() );
+                thisJob.showJobStart( _showJobStart.getState() );
+                thisJob.showJobDuration( _showJobDuration.getState() );
+                thisJob.showInputFile( _showInputFile.getState() );
+                thisJob.showOutputFile( _showOutputFile.getState() );
+                thisJob.showOutputSize( _showOutputSize.getState() );
+                thisJob.showDifxVersion( _showDifxVersion.getState() );
+                thisJob.showSpeedUpFactor( _showSpeedUpFactor.getState() );
+                thisJob.showNumAntennas( _showNumAntennas.getState() );
+                thisJob.showNumForeignAntennas( _showNumForeignAntennas.getState() );
+                thisJob.showDutyCycle( _showDutyCycle.getState() );
+                thisJob.showStatus( _showStatus.getState() );
+                thisJob.showActive( _showActive.getState() );
+                thisJob.showStatusId( _showStatusId.getState() );
+                thisJob.showWeights( _showWeights.getState() );
+                thisJob.showWeightsAsPlots( _showWeightsAsPlots.getState() );
+                thisJob.updateUI();
+            }
         }
         //  Update the headers as well.
         _nameArea.setVisible( _showName.getState() );

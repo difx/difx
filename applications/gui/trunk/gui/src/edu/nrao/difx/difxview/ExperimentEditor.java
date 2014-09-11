@@ -634,22 +634,37 @@ public class ExperimentEditor extends JFrame {
         });
         scanPanel.add( _scanGrid );
         _selectAllScansButton = new JButton( "Select All" );
-        _selectAllScansButton.setBounds( 10, 40, 100, 25 );
+        _selectAllScansButton.setBounds( 10, 40, 110, 25 );
         _selectAllScansButton.setToolTipText( "Select all scans for which all restrictions apply." );
         _selectAllScansButton.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
-                _scanGrid.allOn();
                 _timeLimits.maxLimits();
+                //  Look at all scans in the scan grid, find them in the .vex data, and
+                //  turn them on.
+                for ( Iterator<ButtonGrid.GridButton> iter = _scanGrid.buttonList().iterator(); iter.hasNext(); ) {
+                    ButtonGrid.GridButton button = iter.next();
+                    VexFileParser.Scan scan = (VexFileParser.Scan)button.data();
+                    scan.omitFlag = false;
+                    for ( Iterator<VexFileParser.ScanStation> iter2 = scan.station.iterator(); iter2.hasNext(); ) {
+                        iter2.next().omitFlag = false;
+                    }
+                }
                 vexDataChange();
             }
         });
         scanPanel.add( _selectAllScansButton );
-        _selectNoScansButton = new JButton( "Clear All" );
-        _selectNoScansButton.setBounds( 115, 40, 100, 25 );
+        _selectNoScansButton = new JButton( "Deselect All" );
+        _selectNoScansButton.setBounds( 125, 40, 110, 25 );
         _selectNoScansButton.setToolTipText( "De-select all scans." );
         _selectNoScansButton.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
-                _scanGrid.allOff();
+                //  Look at all scans in the scan grid, find them in the .vex data, and
+                //  turn them off.
+                for ( Iterator<ButtonGrid.GridButton> iter = _scanGrid.buttonList().iterator(); iter.hasNext(); ) {
+                    ButtonGrid.GridButton button = iter.next();
+                    VexFileParser.Scan scan = (VexFileParser.Scan)button.data();
+                    scan.omitFlag = true;
+                }
                 vexDataChange();
             }
         });
@@ -675,7 +690,7 @@ public class ExperimentEditor extends JFrame {
         
         //  This panel is used to determine file names and related matters.
         IndexedPanel namesPanel = new IndexedPanel( "Names, Etc." );
-        namesPanel.openHeight( 160 );
+        namesPanel.openHeight( 100 );
         namesPanel.closedHeight( 20 );
         namesPanel.open( false );
         _scrollPane.addNode( namesPanel );
@@ -708,36 +723,36 @@ public class ExperimentEditor extends JFrame {
         sequenceStartLabel.setBounds( 10, 60, 155, 25 );
         sequenceStartLabel.setHorizontalAlignment( JLabel.RIGHT );
         namesPanel.add( sequenceStartLabel );
-        _inputJobNames = new JCheckBox( "Based on Input Files" );
-        _inputJobNames.setBounds( 170, 90, 325, 25 );
-        _inputJobNames.addActionListener( new ActionListener() {
-            public void actionPerformed(  ActionEvent e ) {
-                _inputJobNames.setSelected( true );
-                _scanJobNames.setSelected( false );
-            }
-        });
-        namesPanel.add( _inputJobNames );
-        _scanJobNames = new JCheckBox( "Use Scan Name" );
-        _scanJobNames.setBounds( 170, 120, 325, 25 );
-        _scanJobNames.addActionListener( new ActionListener() {
-            public void actionPerformed(  ActionEvent e ) {
-                _inputJobNames.setSelected( false );
-                _scanJobNames.setSelected( true );
-            }
-        });
-        namesPanel.add( _scanJobNames );
-        if ( _settings.defaultNames().scanBasedJobNames ) {
-            _scanJobNames.setSelected( true );
-            _inputJobNames.setSelected( false );
-        }
-        else {
-            _scanJobNames.setSelected( false );
-            _inputJobNames.setSelected( true );
-        }
-        JLabel jobNameLabel = new JLabel( "Job Names:" );
-        jobNameLabel.setBounds( 10, 90, 155, 25 );
-        jobNameLabel.setHorizontalAlignment( JLabel.RIGHT );
-        namesPanel.add( jobNameLabel );
+//        _inputJobNames = new JCheckBox( "Based on Input Files" );
+//        _inputJobNames.setBounds( 170, 90, 325, 25 );
+//        _inputJobNames.addActionListener( new ActionListener() {
+//            public void actionPerformed(  ActionEvent e ) {
+//                _inputJobNames.setSelected( true );
+//                _scanJobNames.setSelected( false );
+//            }
+//        });
+//        namesPanel.add( _inputJobNames );
+//        _scanJobNames = new JCheckBox( "Use Scan Name" );
+//        _scanJobNames.setBounds( 170, 120, 325, 25 );
+//        _scanJobNames.addActionListener( new ActionListener() {
+//            public void actionPerformed(  ActionEvent e ) {
+//                _inputJobNames.setSelected( false );
+//                _scanJobNames.setSelected( true );
+//            }
+//        });
+//        namesPanel.add( _scanJobNames );
+//        if ( _settings.defaultNames().scanBasedJobNames ) {
+//            _scanJobNames.setSelected( true );
+//            _inputJobNames.setSelected( false );
+//        }
+//        else {
+//            _scanJobNames.setSelected( false );
+//            _inputJobNames.setSelected( true );
+//        }
+//        JLabel jobNameLabel = new JLabel( "Job Names:" );
+//        jobNameLabel.setBounds( 10, 90, 155, 25 );
+//        jobNameLabel.setHorizontalAlignment( JLabel.RIGHT );
+//        namesPanel.add( jobNameLabel );
         
         //  The v2d editor allows the .v2d file to be edited by hand.  At the
         //  moment it is visible, but I plan to make it not so!
@@ -1633,7 +1648,8 @@ public class ExperimentEditor extends JFrame {
                 StationButton button = iter.next();
                 boolean selected = false;
                 for ( Iterator<VexFileParser.Scan> iter2 = button.scanList.iterator(); iter2.hasNext() && !selected; ) {
-                    for ( Iterator<VexFileParser.ScanStation> iter3 = iter2.next().station.iterator(); iter3.hasNext() && !selected; ) {
+                    VexFileParser.Scan scan = iter2.next();
+                    for ( Iterator<VexFileParser.ScanStation> iter3 = scan.station.iterator(); iter3.hasNext() && !selected; ) {
                         VexFileParser.ScanStation scanStation = iter3.next();
                         if ( scanStation.name.equalsIgnoreCase( button.stationName ) && !scanStation.omitFlag )
                             selected = true;
@@ -1882,12 +1898,6 @@ public class ExperimentEditor extends JFrame {
                 panel.addChangeListener( new ActionListener() {
                     public void actionPerformed( ActionEvent evt ) {
                         vexDataChange();
-                        //  Slightly slippery here...this ignores user's specific selections
-                        //  of scans and turns on/off all those that meet station restrictions
-                        //  (as well as other restrictions - sources, etc.).
-                        _scanGrid.allOn();
-                        checkScansAgainstAntennas();
-                        produceV2dFile();
                     }
                 } );
                 _antennaPane.addNode( panel );
@@ -1928,7 +1938,7 @@ public class ExperimentEditor extends JFrame {
             sourceButtonPanel.alwaysOpen( true );
             sourceButtonPanel.noArrow( true );
             JButton selectAllSources = new JButton( "Select All" );
-            selectAllSources.setBounds( 10, 5, 115, 25 );
+            selectAllSources.setBounds( 10, 5, 110, 25 );
             selectAllSources.addActionListener( new ActionListener() {
                 public void actionPerformed( ActionEvent e ) {
                     selectAllSources( true );
@@ -1936,7 +1946,7 @@ public class ExperimentEditor extends JFrame {
             });
             sourceButtonPanel.add( selectAllSources );
             JButton deselectAllSources = new JButton( "Deselect All" );
-            deselectAllSources.setBounds( 130, 5, 115, 25 );
+            deselectAllSources.setBounds( 125, 5, 110, 25 );
             deselectAllSources.addActionListener( new ActionListener() {
                 public void actionPerformed( ActionEvent e ) {
                     selectAllSources( false );
@@ -2151,8 +2161,15 @@ public class ExperimentEditor extends JFrame {
      */
     void selectAllSources( boolean on ) {
         synchronized( _sourcePanelList ) {
+            //  This turns on/off all of the buttons.
             for ( Iterator<SourcePanel> iter = _sourcePanelList.iterator(); iter.hasNext(); )
                 iter.next().use( on );
+            //  This turns on/off the stations within the scans associated with the buttons.
+            for ( Iterator<VexFileParser.Scan> iter = _vexData.scanList().iterator(); iter.hasNext(); ) {
+            VexFileParser.Scan scan = iter.next();
+                for ( Iterator<VexFileParser.ScanStation> iter2 = scan.station.iterator(); iter2.hasNext(); )
+                    iter2.next().omitFlag = !on;
+            }
         }
         vexDataChange();
     }
@@ -2580,7 +2597,7 @@ public class ExperimentEditor extends JFrame {
      * v2d editor.
      */
     public void produceV2dFile() {
-        checkScansAgainstSources();
+        //checkScansAgainstSources();
         //  Create a v2d file name, if one hasn't been used already....we use the
         //  .vex file name (if it exists).
         if ( _v2dFileName.getText().length() == 0 ) {
@@ -2653,8 +2670,8 @@ public class ExperimentEditor extends JFrame {
                         if ( iter.hasNext() )
                             scanList += ",";
                     }
-                    ++totalScanCount;
                 }
+                ++totalScanCount;
             }
         }
         //  Add this information to the v2d output.

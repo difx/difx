@@ -2113,7 +2113,7 @@ public class SystemSettings extends JFrame {
 //        _stagingArea.setText( "/queue" );
 //        _useStagingArea.setSelected( false );
         _eliminateCodeStationsCheck.setSelected( true );
-        _exciseUnusedScansCheck.setSelected( true );
+        _exciseUnusedScansCheck.setSelected( false );
         _headNode.setText( _difxControlAddress.getText() );
         _nodesPer.value( 2 );
         _nodesPerCheck.setSelected( true );
@@ -3043,7 +3043,7 @@ public class SystemSettings extends JFrame {
             if ( doiConfig.getWorkingDirectory() != null )
                 _workingDirectory.setText( doiConfig.getWorkingDirectory() );
             _eliminateCodeStationsCheck.setSelected( !doiConfig.isEliminateCodeStationsCheck() );
-            _exciseUnusedScansCheck.setSelected( !doiConfig.isExciseUnusedScansCheck() );
+            _exciseUnusedScansCheck.setSelected( doiConfig.isExciseUnusedScansCheck() );
 //            if ( doiConfig.getStagingArea() != null )
 //                _stagingArea.setText( doiConfig.getStagingArea() );
 //            _useStagingArea.setSelected( doiConfig.isUseStagingArea() );
@@ -3657,7 +3657,7 @@ public class SystemSettings extends JFrame {
 //        doiConfig.setStagingArea( _stagingArea.getText() );
 //        doiConfig.setUseStagingArea( _useStagingArea.isSelected() );
         doiConfig.setEliminateCodeStationsCheck( !_eliminateCodeStationsCheck.isSelected() );
-        doiConfig.setExciseUnusedScansCheck( !_exciseUnusedScansCheck.isSelected() );
+        doiConfig.setExciseUnusedScansCheck( _exciseUnusedScansCheck.isSelected() );
         doiConfig.setDifxHeadNode( this.headNode() );
         
         doiConfig.setWindowConfigMainX( _windowConfiguration.mainX );
