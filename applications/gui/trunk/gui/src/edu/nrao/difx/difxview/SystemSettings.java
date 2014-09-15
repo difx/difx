@@ -2233,7 +2233,7 @@ public class SystemSettings extends JFrame {
         _defaultNames.phaseCalInt = 1;
         _defaultNames.correlationSubintNS = 100000000;
         _defaultNames.strideLength = 32;
-        _defaultNames.xmacLength = 64;
+        _defaultNames.xmacLength = 128;
         _defaultNames.numBufferedFFTs = 1;
         _defaultNames.applyDoPolar = false;
         _defaultNames.applyTInt = false;
@@ -3256,7 +3256,7 @@ public class SystemSettings extends JFrame {
                 DoiSystemConfig.AntennaDefault antennaDefault = iter.next();
                 AntennaDefaultsDisplay.PanelItem panel = _antennaDefaultsDisplay.addItem();
                 panel.antennaName( antennaDefault.getAntennaName() );
-                panel.format( antennaDefault.getFormat() );
+                panel.filelist( antennaDefault.isFilelist() );
                 panel.source( antennaDefault.getSource() );
                 panel.dataPath( antennaDefault.getDataPath() );
             }
@@ -4023,7 +4023,7 @@ public class SystemSettings extends JFrame {
                 AntennaDefaultsDisplay.PanelItem panel = iter.next();
                 DoiSystemConfig.AntennaDefault antennaDefault = factory.createDoiSystemConfigAntennaDefault();
                 antennaDefault.setAntennaName( panel.antennaName() );
-                antennaDefault.setFormat( panel.format() );
+                antennaDefault.setFilelist( panel.filelist() );
                 antennaDefault.setSource( panel.source() );
                 antennaDefault.setDataPath( panel.dataPath() );
                 doiConfig.getAntennaDefault().add( antennaDefault );
@@ -5757,9 +5757,9 @@ public class SystemSettings extends JFrame {
                         PanelItem panel = iter.next();
                         panel.setBounds( 0, 25 * i, width, 25 );
                         panel.antennaName.setBounds( 25, 0, 100, 25 );
-                        panel.format.setBounds( 125, 0, 150, 25 );
-                        panel.source.setBounds( 275, 0, 100, 25 );
-                        panel.dataPath.setBounds( 375, 0, width - 375, 25 );
+                        panel.source.setBounds( 125, 0, 100, 25 );
+                        panel.dataPath.setBounds( 225, 0, width - 325, 25 );
+                        panel.filelist.setBounds( width - 100, 0, 100, 25 );
                         ++i;
                     }
                     _viewPane.updateUI();
@@ -5771,11 +5771,6 @@ public class SystemSettings extends JFrame {
             PanelItem newPanel = new PanelItem();
             newPanel.antennaName = new FormattedTextField();
             newPanel.add( newPanel.antennaName );
-            newPanel.format = new JComboBox();
-            newPanel.format.setEditable( false );
-            for ( Iterator<String> iter = _moduleFormatList.iterator(); iter.hasNext(); )
-                newPanel.format.addItem( iter.next() );
-            newPanel.add( newPanel.format );
             newPanel.source = new JComboBox();
             newPanel.source.setEditable( false );
             newPanel.source.addItem( "Files" );
@@ -5785,6 +5780,9 @@ public class SystemSettings extends JFrame {
             newPanel.dataPath = new TabCompletedTextField( _settings );
             newPanel.dataPath.setText( "" );
             newPanel.add( newPanel.dataPath );
+            newPanel.filelist = new ZCheckBox( "FileList" );
+            newPanel.filelist.setSelected( false );
+            newPanel.add( newPanel.filelist );
             newPanel.setLayout( null );
             if ( _panels == null )
                 _panels = new ArrayList<PanelItem>();
@@ -5819,18 +5817,12 @@ public class SystemSettings extends JFrame {
         public class PanelItem extends JPanel {
             public ZButton delete;
             public FormattedTextField antennaName;
-            public JComboBox format;
             public JComboBox source;
             public TabCompletedTextField dataPath;
+            public ZCheckBox filelist;
             public String antennaName() {
                 if ( antennaName.getText() != null )
                     return antennaName.getText();
-                else
-                    return "";
-            }
-            public String format() {
-                if ( format.getSelectedItem() != null )
-                    return (String)format.getSelectedItem();
                 else
                     return "";
             }
@@ -5846,14 +5838,17 @@ public class SystemSettings extends JFrame {
                 else
                     return "";
             }
+            public Boolean filelist() {
+                return filelist.isSelected();
+            }
             public void antennaName( String newName ) {
                 antennaName.setText( newName );
             }
             public void source( String newSource ) {
                 source.setSelectedItem( newSource );
             }
-            public void format( String newFormat ) {
-                format.setSelectedItem( newFormat );
+            public void filelist( boolean newVal ) {
+                filelist.setSelected( newVal );
             }
             public void dataPath( String newPath ) {
                 dataPath.setText( newPath );
@@ -5873,11 +5868,6 @@ public class SystemSettings extends JFrame {
                             return thisPanel;
                     }
                 }
-//                    String thisText = (String)thisPanel.comboBox.getSelectedItem();
-//                    if ( thisText != null && thisText.length() > 0 ) {
-//                        if ( thisText.contentEquals( nodeName ) )
-//                            return true;
-//                    }
             }
             return null;
         }
@@ -5893,12 +5883,12 @@ public class SystemSettings extends JFrame {
 
     }
     
-    public String antennaDefaultFormat( String name ) {
+    public Boolean antennaDefaultFileList( String name ) {
         AntennaDefaultsDisplay.PanelItem panel = _antennaDefaultsDisplay.panelItem( name );
         if ( panel == null )
             return null;
         else
-            return panel.format();
+            return panel.filelist();
     }
     
     public String antennaDefaultSource( String name ) {

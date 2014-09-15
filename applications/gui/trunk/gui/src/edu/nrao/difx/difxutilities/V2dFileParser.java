@@ -181,6 +181,12 @@ public class V2dFileParser {
                         setup.subintNS = Integer.parseInt( newParam.value );
                     else if ( newParam.name.contentEquals( "doPolar" ) )
                         setup.doPolar = Boolean.parseBoolean( newParam.value );
+                    else if ( newParam.name.contentEquals( "strideLength" ) )
+                        setup.strideLength = Integer.parseInt( newParam.value );
+                    else if ( newParam.name.contentEquals( "xmacLength" ) )
+                        setup.xmacLength = Integer.parseInt( newParam.value );
+                    else if ( newParam.name.contentEquals( "numBufferedFFTs" ) )
+                        setup.numBufferedFFTs = Integer.parseInt( newParam.value );
                 }
                 else if ( _sectionType == RULE_SECTION ) {
                     RuleSection rule = (RuleSection)_currentSection;
@@ -360,6 +366,12 @@ public class V2dFileParser {
                         str += "    subintNS = " + setup.subintNS + "\n";
                     if ( setup.doPolar != null )
                         str += "    doPolar = " + setup.doPolar + "\n";
+                    if ( setup.strideLength != null )
+                        str += "    strideLength = " + setup.strideLength + "\n";
+                    if ( setup.xmacLength != null )
+                        str += "    xmacLength = " + setup.xmacLength + "\n";
+                    if ( setup.numBufferedFFTs != null )
+                        str += "    numBufferedFFTs = " + setup.numBufferedFFTs + "\n";
                 }
                 else if ( section.type == ANTENNA_SECTION ) {
                     AntennaSection antenna = (AntennaSection)section;
@@ -737,6 +749,33 @@ public class V2dFileParser {
         else
             return setupSection( name ).doPolar;
     }
+    public void setupStrideLength( String name, Integer newVal ) {
+        findSetup( name ).strideLength = newVal;
+    }
+    public Integer setupStrideLength( String name ) {
+        if ( setupSection( name ) == null )
+            return null;
+        else
+            return setupSection( name ).strideLength;
+    }
+    public void setupXmacLength( String name, Integer newVal ) {
+        findSetup( name ).xmacLength = newVal;
+    }
+    public Integer setupXmacLength( String name ) {
+        if ( setupSection( name ) == null )
+            return null;
+        else
+            return setupSection( name ).xmacLength;
+    }
+    public void setupNumBufferedFFTs( String name, Integer newVal ) {
+        findSetup( name ).numBufferedFFTs = newVal;
+    }
+    public Integer setupNumBufferedFFTs( String name ) {
+        if ( setupSection( name ) == null )
+            return null;
+        else
+            return setupSection( name ).numBufferedFFTs;
+    }
     public void setupParameter( String name, String param, String value ) {
         //  Add a generic parameter.
         SetupSection section = findSetup( name );
@@ -957,7 +996,10 @@ public class V2dFileParser {
         public Double FFTSpecRes;
         public Double specRes;
         public Integer subintNS;
-        public Boolean doPolar;        
+        public Boolean doPolar;
+        public Integer strideLength;
+        public Integer xmacLength;
+        public Integer numBufferedFFTs;
     }
     class RuleSection extends GenericSection {
         public String scan;

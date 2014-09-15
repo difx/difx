@@ -11,6 +11,7 @@ import mil.navy.usno.widgetlib.AePlayWave;
 import mil.navy.usno.widgetlib.BrowserNode;
 import mil.navy.usno.widgetlib.JulianCalendar;
 import mil.navy.usno.widgetlib.ComplexToolTip;
+import mil.navy.usno.widgetlib.ZCheckBox;
 
 import edu.nrao.difx.difxutilities.DiFXCommand_getFile;
 import edu.nrao.difx.difxutilities.DiFXCommand_sendFile;
@@ -267,7 +268,7 @@ public class ExperimentEditor extends JFrame {
         startingV2dPanel.openHeight( 185 );
         startingV2dPanel.closedHeight( 20 );
         startingV2dPanel.open( false );
-        _scrollPane.addNode( startingV2dPanel );
+        //_scrollPane.addNode( startingV2dPanel );
         _v2dFromHost = new JCheckBox( "from DiFX Host" );
         _v2dFromHost.setSelected( _settings.defaultNames().v2dFromHost );
         _v2dFromHost.setToolTipText( "Copy the .v2d file data from a named file on the DiFX Host." );
@@ -456,13 +457,14 @@ public class ExperimentEditor extends JFrame {
         
         //  This panel contains a few often-changed parameters that govern the
         //  correlation.  These (mostly) end up in the "setup" section of the v2d file.
-        IndexedPanel correlationPanel = new IndexedPanel( "Correlation Parameters" );
+        IndexedPanel correlationPanel = new IndexedPanel( "Correlation Tuning Parameters" );
         correlationPanel.openHeight( 155 );
         correlationPanel.closedHeight( 20 );
         correlationPanel.open( false );
         _scrollPane.addNode( correlationPanel );
         _tInt = new NumberBox();
-        _tInt.setBounds( 180, 30, 100, 25 );
+        _tInt.setToolTipText( "Integration Time in seconds." );
+        _tInt.setBounds( 205, 30, 100, 25 );
         _tInt.limits( 0.0, 100.0 );
         _tInt.precision( 1 );
         _tInt.value( _settings.defaultNames().correlationTInt );
@@ -473,12 +475,32 @@ public class ExperimentEditor extends JFrame {
             }
         });
         correlationPanel.add( _tInt );
+        _tIntApply = new ZCheckBox( "" );
+        _tIntApply.setBounds( 180, 32, 20, 20 );
+        _tIntApply.setSelected( _settings.defaultNames().applyTInt );
+        _tIntApply.setToolTipText( "Apply the current value of Integration Time to\n"
+                + "the correlation." );
+        _tIntApply.addActionListener( new ActionListener() {
+            public void actionPerformed(  ActionEvent e ) {
+                _settings.defaultNames().applyTInt = _tIntApply.isSelected();
+                if ( _tIntApply.isSelected() )
+                    _tInt.setBackground( Color.GREEN );
+                else
+                    _tInt.setBackground( Color.WHITE );
+                produceV2dFile();
+            }
+        });
+        if ( _tIntApply.isSelected() )
+            _tInt.setBackground( Color.GREEN );
+        else
+            _tInt.setBackground( Color.WHITE );
+        correlationPanel.add( _tIntApply );
         JLabel tIntLabel = new JLabel( "Integration Time (sec):" );
         tIntLabel.setBounds( 20, 30, 155, 25 );
         tIntLabel.setHorizontalAlignment( JLabel.RIGHT );
         correlationPanel.add( tIntLabel );
-        _doPolar = new JCheckBox( "Do Polar" );
-        _doPolar.setBounds( 300, 30, 100, 25 );
+        _doPolar = new ZCheckBox( "Do Polar" );
+        _doPolar.setBounds( 700, 30, 100, 25 );
         _doPolar.setToolTipText( "Correlate cross hands when possible." );
         _doPolar.setSelected( _settings.defaultNames().correlationDoPolar );
         _doPolar.addActionListener( new ActionListener() {
@@ -488,8 +510,28 @@ public class ExperimentEditor extends JFrame {
             }
         });
         correlationPanel.add( _doPolar );
+        _doPolarApply = new ZCheckBox( "" );
+        _doPolarApply.setBounds( 675, 32, 20, 20 );
+        _doPolarApply.setSelected( _settings.defaultNames().applyDoPolar );
+        _doPolarApply.setToolTipText( "Apply the \"Do Polar\" setting to\n"
+                + "the correlation." );
+        _doPolarApply.addActionListener( new ActionListener() {
+            public void actionPerformed(  ActionEvent e ) {
+                _settings.defaultNames().applyDoPolar = _doPolarApply.isSelected();
+                if ( _doPolarApply.isSelected() )
+                    _doPolar.setBackground( Color.GREEN );
+                else
+                    _doPolar.setBackground( _doPolarApply.getBackground() );
+                produceV2dFile();
+            }
+        });
+        if ( _doPolarApply.isSelected() )
+            _doPolar.setBackground( Color.GREEN );
+        else
+            _doPolar.setBackground( _doPolarApply.getBackground() );
+        correlationPanel.add( _doPolarApply );
         _specRes = new NumberBox();
-        _specRes.setBounds( 180, 60, 100, 25 );
+        _specRes.setBounds( 205, 60, 100, 25 );
         _specRes.precision( 5 );
         _specRes.value( _settings.defaultNames().correlationSpecRes );
         _specRes.setToolTipText( "Spectral resolution of visibilities produced." );
@@ -500,12 +542,36 @@ public class ExperimentEditor extends JFrame {
             }
         });
         correlationPanel.add( _specRes );
+        _specResApply = new ZCheckBox( "" );
+        _specResApply.setBounds( 180, 62, 20, 20 );
+        _specResApply.setSelected( _settings.defaultNames().applySpecRes );
+        _specResApply.setToolTipText( "Apply the current value of Spectral Resolution to\n"
+                + "the correlation." );
+        _specResApply.addActionListener( new ActionListener() {
+            public void actionPerformed(  ActionEvent e ) {
+                _settings.defaultNames().applySpecRes = _specResApply.isSelected();
+                if ( _specResApply.isSelected() )
+                    _specRes.setBackground( Color.GREEN );
+                else
+                    _specRes.setBackground( Color.WHITE );
+                produceV2dFile();
+            }
+        });
+        if ( _specResApply.isSelected() )
+            _specRes.setBackground( Color.GREEN );
+        else
+            _specRes.setBackground( Color.WHITE );
+        correlationPanel.add( _specResApply );
         JLabel specResLabel = new JLabel( "Spectral Resolution:" );
         specResLabel.setHorizontalAlignment( JLabel.RIGHT );
         specResLabel.setBounds( 20, 60, 155, 25 );
         correlationPanel.add( specResLabel );
         _nChan = new Power2NumberBox();
-        _nChan.setBounds( 350, 60, 100, 25 );
+        _nChan.setBounds( 375, 60, 100, 25 );
+        _nChan.setToolTipText( "Number of channels to divide the current bandwidth into.\n"
+                + "This number can be used to set the Spectral Resolution (but\n"
+                + "the reverse is not true - changing the Spectral Resolution\n"
+                + "will not change this number!)." );
         _nChan.value( _settings.defaultNames().correlationNChan );
         _nChan.addActionListener( new ActionListener() {
             public void actionPerformed(  ActionEvent e ) {
@@ -517,11 +583,11 @@ public class ExperimentEditor extends JFrame {
         });
         correlationPanel.add( _nChan );
         JLabel nChanLabel = new JLabel( "Channels:" );
-        nChanLabel.setBounds( 280, 60, 65, 25 );
+        nChanLabel.setBounds( 305, 60, 65, 25 );
         nChanLabel.setHorizontalAlignment( JLabel.RIGHT );
         correlationPanel.add( nChanLabel );
         _fftSpecRes = new NumberBox();
-        _fftSpecRes.setBounds( 180, 90, 100, 25 );
+        _fftSpecRes.setBounds( 205, 90, 100, 25 );
         _fftSpecRes.precision( 5 );
         _fftSpecRes.value( _settings.defaultNames().correlationFFTSpecRes );
         _fftSpecRes.setToolTipText( "Spectral resolution of first stage FFTs." );
@@ -536,8 +602,32 @@ public class ExperimentEditor extends JFrame {
         fftSpecResLabel.setHorizontalAlignment( JLabel.RIGHT );
         fftSpecResLabel.setBounds( 20, 90, 155, 25 );
         correlationPanel.add( fftSpecResLabel );
+        _fftSpecResApply = new ZCheckBox( "" );
+        _fftSpecResApply.setBounds( 180, 92, 20, 20 );
+        _fftSpecResApply.setSelected( _settings.defaultNames().applyFFTSpecRes );
+        _fftSpecResApply.setToolTipText( "Apply the current value of FFT Spectral Resolution to\n"
+                + "the correlation." );
+        _fftSpecResApply.addActionListener( new ActionListener() {
+            public void actionPerformed(  ActionEvent e ) {
+                _settings.defaultNames().applyFFTSpecRes = _fftSpecResApply.isSelected();
+                if ( _fftSpecResApply.isSelected() )
+                    _fftSpecRes.setBackground( Color.GREEN );
+                else
+                    _fftSpecRes.setBackground( Color.WHITE );
+                produceV2dFile();
+            }
+        });
+        if ( _fftSpecResApply.isSelected() )
+            _fftSpecRes.setBackground( Color.GREEN );
+        else
+            _fftSpecRes.setBackground( Color.WHITE );
+        correlationPanel.add( _fftSpecResApply );
         _fftNChan = new Power2NumberBox();
-        _fftNChan.setBounds( 350, 90, 100, 25 );
+        _fftNChan.setToolTipText( "Number of FFT channels to divide the current bandwidth into.\n"
+                + "This number can be used to set the FFT Spectral Resolution (but\n"
+                + "the reverse is not true - changing the FFT Spectral Resolution\n"
+                + "will not change this number!)." );
+        _fftNChan.setBounds( 375, 90, 100, 25 );
         _fftNChan.value( _settings.defaultNames().correlationNFFTChan );
         _fftNChan.addActionListener( new ActionListener() {
             public void actionPerformed(  ActionEvent e ) {
@@ -549,14 +639,14 @@ public class ExperimentEditor extends JFrame {
         });
         correlationPanel.add( _fftNChan );
         JLabel fftNChanLabel = new JLabel( "Channels:" );
-        fftNChanLabel.setBounds( 280, 90, 65, 25 );
+        fftNChanLabel.setBounds( 305, 90, 65, 25 );
         fftNChanLabel.setHorizontalAlignment( JLabel.RIGHT );
         correlationPanel.add( fftNChanLabel );
         _subintNS = new NumberBox();
-        _subintNS.setBounds( 180, 120, 100, 25 );
+        _subintNS.setBounds( 205, 120, 100, 25 );
         _subintNS.precision( 0 );
         _subintNS.intValue( _settings.defaultNames().correlationSubintNS );
-        _subintNS.setToolTipText( "The mpifxcorr sub integration time (in nanoseconds)" );
+        _subintNS.setToolTipText( "The sub integration time (in nanoseconds)" );
         _subintNS.addActionListener( new ActionListener() {
             public void actionPerformed(  ActionEvent e ) {
                 _settings.defaultNames().correlationSubintNS = _subintNS.intValue();
@@ -568,6 +658,139 @@ public class ExperimentEditor extends JFrame {
         subintNSLabel.setHorizontalAlignment( JLabel.RIGHT );
         subintNSLabel.setBounds( 20, 120, 155, 25 );
         correlationPanel.add( subintNSLabel );
+        _subintNSApply = new ZCheckBox( "" );
+        _subintNSApply.setBounds( 180, 122, 20, 20 );
+        _subintNSApply.setSelected( _settings.defaultNames().applySubIntNS );
+        _subintNSApply.setToolTipText( "Apply the current value of Subintegration Time to\n"
+                + "the correlation." );
+        _subintNSApply.addActionListener( new ActionListener() {
+            public void actionPerformed(  ActionEvent e ) {
+                _settings.defaultNames().applySubIntNS = _subintNSApply.isSelected();
+                if ( _subintNSApply.isSelected() )
+                    _subintNS.setBackground( Color.GREEN );
+                else
+                    _subintNS.setBackground( Color.WHITE );
+                produceV2dFile();
+            }
+        });
+        if ( _subintNSApply.isSelected() )
+            _subintNS.setBackground( Color.GREEN );
+        else
+            _subintNS.setBackground( Color.WHITE );
+        correlationPanel.add( _subintNSApply );
+        _strideLength = new NumberBox();
+        _strideLength.setBounds( 700, 60, 100, 25 );
+        _strideLength.precision( 0 );
+        _strideLength.minimum( 1.0 );
+        _strideLength.intValue( _settings.defaultNames().strideLength );
+        _strideLength.setToolTipText( "The number of channels to “stride” for fringe rotation, fractional\n"
+                + "sample correction etc." );
+        _strideLength.addActionListener( new ActionListener() {
+            public void actionPerformed(  ActionEvent e ) {
+                _settings.defaultNames().strideLength = _strideLength.intValue();
+                produceV2dFile();
+            }
+        });
+        correlationPanel.add( _strideLength );
+        JLabel strideLengthLabel = new JLabel( "Stride Length:" );
+        strideLengthLabel.setHorizontalAlignment( JLabel.RIGHT );
+        strideLengthLabel.setBounds( 515, 60, 155, 25 );
+        correlationPanel.add( strideLengthLabel );
+        _strideLengthApply = new ZCheckBox( "" );
+        _strideLengthApply.setBounds( 675, 62, 20, 20 );
+        _strideLengthApply.setSelected( _settings.defaultNames().applyStrideLength );
+        _strideLengthApply.setToolTipText( "Apply the Stride Length setting to\n"
+                + "the correlation." );
+        _strideLengthApply.addActionListener( new ActionListener() {
+            public void actionPerformed(  ActionEvent e ) {
+                _settings.defaultNames().applyStrideLength = _strideLengthApply.isSelected();
+                if ( _strideLengthApply.isSelected() )
+                    _strideLength.setBackground( Color.GREEN );
+                else
+                    _strideLength.setBackground( Color.WHITE );
+                produceV2dFile();
+            }
+        });
+        if ( _strideLengthApply.isSelected() )
+            _strideLength.setBackground( Color.GREEN );
+        else
+            _strideLength.setBackground( Color.WHITE );
+        correlationPanel.add( _strideLengthApply );
+        _xmacLength = new NumberBox();
+        _xmacLength.setBounds( 700, 90, 100, 25 );
+        _xmacLength.minimum( 1.0 );
+        _xmacLength.precision( 0 );
+        _xmacLength.intValue( _settings.defaultNames().xmacLength );
+        _xmacLength.setToolTipText( "The number of channels to \"stride\" for cross-multiply accumulations." );
+        _xmacLength.addActionListener( new ActionListener() {
+            public void actionPerformed(  ActionEvent e ) {
+                _settings.defaultNames().xmacLength = _xmacLength.intValue();
+                produceV2dFile();
+            }
+        });
+        correlationPanel.add( _xmacLength );
+        JLabel xmacLengthLabel = new JLabel( "XMAC Length:" );
+        xmacLengthLabel.setHorizontalAlignment( JLabel.RIGHT );
+        xmacLengthLabel.setBounds( 515, 90, 155, 25 );
+        correlationPanel.add( xmacLengthLabel );
+        _xmacLengthApply = new ZCheckBox( "" );
+        _xmacLengthApply.setBounds( 675, 92, 20, 20 );
+        _xmacLengthApply.setSelected( _settings.defaultNames().applyXmacLength );
+        _xmacLengthApply.setToolTipText( "Apply the XMAC Length setting to\n"
+                + "the correlation." );
+        _xmacLengthApply.addActionListener( new ActionListener() {
+            public void actionPerformed(  ActionEvent e ) {
+                _settings.defaultNames().applyXmacLength = _xmacLengthApply.isSelected();
+                if ( _xmacLengthApply.isSelected() )
+                    _xmacLength.setBackground( Color.GREEN );
+                else
+                    _xmacLength.setBackground( Color.WHITE );
+                produceV2dFile();
+            }
+        });
+        if ( _xmacLengthApply.isSelected() )
+            _xmacLength.setBackground( Color.GREEN );
+        else
+            _xmacLength.setBackground( Color.WHITE );
+        correlationPanel.add( _xmacLengthApply );
+        _bufferedFFTs = new NumberBox();
+        _bufferedFFTs.setBounds( 700, 120, 100, 25 );
+        _bufferedFFTs.precision( 0 );
+        _bufferedFFTs.minimum( 1.0 );
+        _bufferedFFTs.intValue( _settings.defaultNames().numBufferedFFTs );
+        _bufferedFFTs.setToolTipText( "The number of channels to “stride” for fringe rotation, fractional\n"
+                + "sample correction etc." );
+        _bufferedFFTs.addActionListener( new ActionListener() {
+            public void actionPerformed(  ActionEvent e ) {
+                _settings.defaultNames().numBufferedFFTs = _bufferedFFTs.intValue();
+                produceV2dFile();
+            }
+        });
+        correlationPanel.add( _bufferedFFTs );
+        JLabel bufferedFFTsLabel = new JLabel( "# Buffered FFTs:" );
+        bufferedFFTsLabel.setHorizontalAlignment( JLabel.RIGHT );
+        bufferedFFTsLabel.setBounds( 515, 120, 155, 25 );
+        correlationPanel.add( bufferedFFTsLabel );
+        _bufferedFFTsApply = new ZCheckBox( "" );
+        _bufferedFFTsApply.setBounds( 675, 122, 20, 20 );
+        _bufferedFFTsApply.setSelected( _settings.defaultNames().applyNumBufferedFFTs );
+        _bufferedFFTsApply.setToolTipText( "Apply the Number of Buffered FFTs setting to\n"
+                + "the correlation." );
+        _bufferedFFTsApply.addActionListener( new ActionListener() {
+            public void actionPerformed(  ActionEvent e ) {
+                _settings.defaultNames().applyNumBufferedFFTs = _bufferedFFTsApply.isSelected();
+                if ( _bufferedFFTsApply.isSelected() )
+                    _bufferedFFTs.setBackground( Color.GREEN );
+                else
+                    _bufferedFFTs.setBackground( Color.WHITE );
+                produceV2dFile();
+            }
+        });
+        if ( _bufferedFFTsApply.isSelected() )
+            _bufferedFFTs.setBackground( Color.GREEN );
+        else
+            _bufferedFFTs.setBackground( Color.WHITE );
+        correlationPanel.add( _bufferedFFTsApply );
 
         
         //  This panel is used to display and adjust antenna information.
@@ -2637,11 +2860,38 @@ public class ExperimentEditor extends JFrame {
         
         //  Setup section contains things from the "correlation parameters" settings.
         v2dFileParser.setup( "normalSetup" );
-        v2dFileParser.setupTInt( "normalSetup", _tInt.value() );
-        v2dFileParser.setupFFTSpecRes( "normalSetup", _fftSpecRes.value() );
-        v2dFileParser.setupSpecRes( "normalSetup", _specRes.value() );
-        v2dFileParser.setupSubintNS( "normalSetup", _subintNS.intValue() );
-        v2dFileParser.setupDoPolar( "normalSetup", _doPolar.isSelected() );
+        if ( _tIntApply.isSelected() )
+            v2dFileParser.setupTInt( "normalSetup", _tInt.value() );
+        else
+            v2dFileParser.setupTInt( "normalSetup", null );
+        if ( _fftSpecResApply.isSelected() )
+            v2dFileParser.setupFFTSpecRes( "normalSetup", _fftSpecRes.value() );
+        else
+            v2dFileParser.setupFFTSpecRes( "normalSetup", null );
+        if ( _specResApply.isSelected() )
+            v2dFileParser.setupSpecRes( "normalSetup", _specRes.value() );
+        else
+            v2dFileParser.setupSpecRes( "normalSetup", null );
+        if ( _subintNSApply.isSelected() )
+            v2dFileParser.setupSubintNS( "normalSetup", _subintNS.intValue() );
+        else
+            v2dFileParser.setupSubintNS( "normalSetup", null );
+        if ( _doPolarApply.isSelected() )
+            v2dFileParser.setupDoPolar( "normalSetup", _doPolar.isSelected() );
+        else
+            v2dFileParser.setupDoPolar( "normalSetup", null );
+        if ( _strideLengthApply.isSelected() )
+            v2dFileParser.setupStrideLength( "normalSetup", _strideLength.intValue() );
+        else
+            v2dFileParser.setupStrideLength( "normalSetup", null );
+        if ( _xmacLengthApply.isSelected() )
+            v2dFileParser.setupXmacLength( "normalSetup", _xmacLength.intValue() );
+        else
+            v2dFileParser.setupXmacLength( "normalSetup", null );
+        if ( _bufferedFFTsApply.isSelected() )
+            v2dFileParser.setupNumBufferedFFTs( "normalSetup", _bufferedFFTs.intValue() );
+        else
+            v2dFileParser.setupNumBufferedFFTs( "normalSetup", null );
         
         //  Produce a list of the scans we want to include, or indicate that all should
         //  be used.  The "all" specification is used either when we are actually using
@@ -3444,12 +3694,23 @@ public class ExperimentEditor extends JFrame {
     protected boolean _deleteEOPFromVex;
     protected int _databasePassId;
     protected NumberBox _tInt;
+    protected ZCheckBox _tIntApply;
     protected NumberBox _fftSpecRes;
+    protected ZCheckBox _fftSpecResApply;
     protected Power2NumberBox _fftNChan;
     protected NumberBox _specRes;
+    protected ZCheckBox _specResApply;
     protected Power2NumberBox _nChan;
-    protected JCheckBox _doPolar;
+    protected ZCheckBox _doPolar;
+    protected ZCheckBox _doPolarApply;
     protected NumberBox _subintNS;
+    protected ZCheckBox _subintNSApply;
+    protected NumberBox _strideLength;
+    protected ZCheckBox _strideLengthApply;
+    protected NumberBox _xmacLength;
+    protected ZCheckBox _xmacLengthApply;
+    protected NumberBox _bufferedFFTs;
+    protected ZCheckBox _bufferedFFTsApply;
     protected double _bandwidth;
     protected Calendar _eopMinTime;
     protected Calendar _eopMaxTime;

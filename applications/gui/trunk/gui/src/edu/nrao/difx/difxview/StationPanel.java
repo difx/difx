@@ -311,6 +311,9 @@ public class StationPanel extends IndexedPanel {
                     _fileFilter.setText( antennaDataPath );
                     fileFilterCallback();
                 }
+                Boolean antennaFileList = _settings.antennaDefaultFileList( station.name );
+                if ( antennaFileList != null )
+                    _fileListCheck.setSelected( antennaFileList );
             }
             else if ( antennaSource.contentEquals( "Network" ) ) {
                 _eVLBICheck.setSelected( true );
