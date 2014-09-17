@@ -1485,86 +1485,88 @@ public class QueueBrowserPanel extends TearOffPanel {
                 //  experiment name.  Also extract the experiment path.  Might need to do some
                 //  checks here to avoid running out of path (if input files are stored
                 //  too high in the directory tree).
-                experimentPath = nextFile.substring( 0, nextFile.lastIndexOf( "/" ) );
-                if ( _noPass.isSelected() ) {
-                    if ( !_experimentNamed.isSelected() )
-                        experimentName = experimentPath.substring( experimentPath.lastIndexOf( "/" ) + 1 );
-                }
-                else {
-                    experimentPath = experimentPath.substring( 0, experimentPath.lastIndexOf( "/" ) );
-                    if ( !_experimentNamed.isSelected() )
-                        experimentName = experimentPath.substring( experimentPath.lastIndexOf( "/" ) + 1 );
-                }
-                //  Then the pass name (if there is one).
-                if ( _passNamed.isSelected() )
-                    passName = _passName.getText();
-                else if ( _passBasedOnPath.isSelected() ) {
-                    String shortName = nextFile.substring( 0, nextFile.lastIndexOf( "/" ) );
-                    passName = shortName.substring( shortName.lastIndexOf( "/" ) + 1 );
-                }
-                else
-                    passName = "";
-                //  Get the name of the job from the .input file name.  I'm assuming
-                //  this is accurate...
-                String shortName = nextFile.substring( nextFile.lastIndexOf( "/" ) + 1 );
-                jobName = shortName.substring( 0, shortName.lastIndexOf( "." ) );
+                if ( nextFile.lastIndexOf( "/" ) > 0 ) {
+                    experimentPath = nextFile.substring( 0, nextFile.lastIndexOf( "/" ) );
+                    if ( _noPass.isSelected() ) {
+                        if ( !_experimentNamed.isSelected() )
+                            experimentName = experimentPath.substring( experimentPath.lastIndexOf( "/" ) + 1 );
+                    }
+                    else {
+                        experimentPath = experimentPath.substring( 0, experimentPath.lastIndexOf( "/" ) );
+                        if ( !_experimentNamed.isSelected() )
+                            experimentName = experimentPath.substring( experimentPath.lastIndexOf( "/" ) + 1 );
+                    }
+                    //  Then the pass name (if there is one).
+                    if ( _passNamed.isSelected() )
+                        passName = _passName.getText();
+                    else if ( _passBasedOnPath.isSelected() ) {
+                        String shortName = nextFile.substring( 0, nextFile.lastIndexOf( "/" ) );
+                        passName = shortName.substring( shortName.lastIndexOf( "/" ) + 1 );
+                    }
+                    else
+                        passName = "";
+                    //  Get the name of the job from the .input file name.  I'm assuming
+                    //  this is accurate...
+                    String shortName = nextFile.substring( nextFile.lastIndexOf( "/" ) + 1 );
+                    jobName = shortName.substring( 0, shortName.lastIndexOf( "." ) );
 
-                //  Create a new job entry and add it to the proper location in the preview browser.
-                //  Create experiments and passes as necessary.
-                LocalJobNode newJob = new LocalJobNode( jobName, nextFile );
-                newJob.addSelectionButton( null, null );
-                newJob.selected( true );
-                newJob.xOffset( 20 );
-                
-                //  Search for the experiment name...
-                BrowserNode experimentList = _preview.browserTopNode();
-                boolean experimentFound = false;
-                BrowserNode thisExperiment = null;
-                for ( Iterator<BrowserNode> iter2 = experimentList.childrenIterator(); 
-                      !experimentFound && iter2.hasNext(); ) {
-                    thisExperiment = iter2.next();
-                    //  Match the name of each experiment with our new experiment...
-                    if ( thisExperiment.name().contentEquals( experimentName ) )
-                        experimentFound = true;
-                }
-                //  Create a new experiment if we didn't find out current one...
-                if ( !experimentFound ) {
-                    thisExperiment = new LocalBrowserNode( experimentName );
-                    thisExperiment.addSelectionButton( null, null );
-                    thisExperiment.selected( true );
-                    thisExperiment.xOffset( 20 );
-                    thisExperiment.addCountWhenClosed( true );
-                    ((LocalBrowserNode)thisExperiment).path( experimentPath );
-                    _preview.addNode( thisExperiment );
-                }
-                //  Then find the pass...if there is one.
-                if ( !_noPass.isSelected() ) {
-                    boolean passFound = false;
-                    BrowserNode thisPass = null;
-                    synchronized ( _browserPane ) {
-                        for ( Iterator<BrowserNode> iter3 = thisExperiment.childrenIterator();
-                              !passFound && iter3.hasNext(); ) {
-                            thisPass = iter3.next();
-                            if ( thisPass.name().contentEquals( passName ) )
-                                passFound = true;
-                        }
+                    //  Create a new job entry and add it to the proper location in the preview browser.
+                    //  Create experiments and passes as necessary.
+                    LocalJobNode newJob = new LocalJobNode( jobName, nextFile );
+                    newJob.addSelectionButton( null, null );
+                    newJob.selected( true );
+                    newJob.xOffset( 20 );
+
+                    //  Search for the experiment name...
+                    BrowserNode experimentList = _preview.browserTopNode();
+                    boolean experimentFound = false;
+                    BrowserNode thisExperiment = null;
+                    for ( Iterator<BrowserNode> iter2 = experimentList.childrenIterator(); 
+                          !experimentFound && iter2.hasNext(); ) {
+                        thisExperiment = iter2.next();
+                        //  Match the name of each experiment with our new experiment...
+                        if ( thisExperiment.name().contentEquals( experimentName ) )
+                            experimentFound = true;
                     }
-                    if ( !passFound ) {
-                        thisPass = new LocalBrowserNode( passName );
-                        thisPass.addSelectionButton( null, null );
-                        thisPass.selected( true );
-                        thisPass.xOffset( 20 );
-                        thisPass.addCountWhenClosed( true );
+                    //  Create a new experiment if we didn't find out current one...
+                    if ( !experimentFound ) {
+                        thisExperiment = new LocalBrowserNode( experimentName );
+                        thisExperiment.addSelectionButton( null, null );
+                        thisExperiment.selected( true );
+                        thisExperiment.xOffset( 20 );
+                        thisExperiment.addCountWhenClosed( true );
+                        ((LocalBrowserNode)thisExperiment).path( experimentPath );
+                        _preview.addNode( thisExperiment );
+                    }
+                    //  Then find the pass...if there is one.
+                    if ( !_noPass.isSelected() ) {
+                        boolean passFound = false;
+                        BrowserNode thisPass = null;
                         synchronized ( _browserPane ) {
-                            thisExperiment.addChild( thisPass );
+                            for ( Iterator<BrowserNode> iter3 = thisExperiment.childrenIterator();
+                                  !passFound && iter3.hasNext(); ) {
+                                thisPass = iter3.next();
+                                if ( thisPass.name().contentEquals( passName ) )
+                                    passFound = true;
+                            }
+                        }
+                        if ( !passFound ) {
+                            thisPass = new LocalBrowserNode( passName );
+                            thisPass.addSelectionButton( null, null );
+                            thisPass.selected( true );
+                            thisPass.xOffset( 20 );
+                            thisPass.addCountWhenClosed( true );
+                            synchronized ( _browserPane ) {
+                                thisExperiment.addChild( thisPass );
+                            }
+                        }
+                        synchronized ( _browserPane ) {
+                            thisPass.addChild( newJob );
                         }
                     }
-                    synchronized ( _browserPane ) {
-                        thisPass.addChild( newJob );
+                    else {
+                        thisExperiment.addChild( newJob );
                     }
-                }
-                else {
-                    thisExperiment.addChild( newJob );
                 }
             }
             _preview.setBounds( _preview.getX(), _preview.getY(), _preview.getWidth(), _preview.getHeight() );
@@ -1900,6 +1902,8 @@ public class QueueBrowserPanel extends TearOffPanel {
                     _unknown = new PassNode( "", _settings );
                     _unknown.experimentNode( _unaffiliated );
                     _unknown.setHeight( 0 );
+                    _unknown.showNothing( true );
+                    _unknown.statsVisible( false );
                     _unaffiliated.addChild( _unknown );
                 }
                 thisJob = new JobNode( difxMsg.getHeader().getIdentifier(), _settings );

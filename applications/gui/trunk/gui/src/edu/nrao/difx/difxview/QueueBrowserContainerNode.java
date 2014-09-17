@@ -83,15 +83,15 @@ public class QueueBrowserContainerNode extends QueueBrowserNode {
     }
     
     public void checkVisibility() {
-        if ( _statsVisible && !_overrideVisible && _numJobs > 0 )
+        if ( !_showNothing && _statsVisible && !_overrideVisible && _numJobs > 0 )
             _jobsLabel.setVisible( true );
         else
             _jobsLabel.setVisible( false );
-        if ( _statsVisible && !_overrideVisible && _numScheduled + _numCompleted + _numFailed > 0 )
+        if ( !_showNothing && _statsVisible && !_overrideVisible && _numScheduled + _numCompleted + _numFailed > 0 )
             _progress.setVisible( true );
         else
             _progress.setVisible( false );
-        if ( _statsVisible && !_overrideVisible && _numFailed > 0 )
+        if ( !_showNothing && _statsVisible && !_overrideVisible && _numFailed > 0 )
             _failedLabel.setVisible( true );
         else
             _failedLabel.setVisible( false );
@@ -120,6 +120,11 @@ public class QueueBrowserContainerNode extends QueueBrowserNode {
     public void overrideVisible( boolean newVal ) {
         _overrideVisible = newVal;
     }
+    
+    //  Yet another way to make things completely invisible...
+    public void showNothing( boolean newVal ) {
+        _showNothing = newVal;
+    }
 
     protected int _numJobs;
     protected int _numScheduled;
@@ -127,6 +132,8 @@ public class QueueBrowserContainerNode extends QueueBrowserNode {
     protected int _numFailed;
     
     protected boolean _setupComplete;
+    
+    protected boolean _showNothing;
     
     protected SystemSettings _settings;
     
