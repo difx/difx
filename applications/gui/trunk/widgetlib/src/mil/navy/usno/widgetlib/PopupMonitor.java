@@ -53,6 +53,7 @@ public class PopupMonitor extends JDialog implements WindowListener  {
         this.setLayout( null );
         this.setBounds( x, y, w, h );
         this.setResizable( false );
+        this.setModalityType( JDialog.DEFAULT_MODALITY_TYPE );
         _statusLabel = new JLabel( "" );
         _statusLabel.setBounds( 80, 20, w - 90, 25 );
         this.add( _statusLabel );

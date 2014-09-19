@@ -152,6 +152,12 @@ public class GetFileMonitor extends PopupMonitor {
         return _fileGet.inString();
     }
     public String error() { return _error; }
+    public void error( String str1, String str2 ) {
+        super.error( str1, str2 );
+        _error = str1;
+        if ( str2 != null )
+            _error += "\n" + str2;
+    }
     
     protected SystemSettings _settings;
     private DiFXCommand_getFile _fileGet;
