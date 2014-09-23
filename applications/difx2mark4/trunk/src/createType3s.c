@@ -64,6 +64,7 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
         ifreq,
         version = 0,                // version# of pcal file format (0 = legacy)
         dstr,                       // difx datastream index
+        redstr,                     // (potentially) remapped datastream index
         lowerb,                     // lower bound for b loop
         upperb,                     // upper bound for b loop
         findex,
@@ -351,7 +352,12 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                         {
                         sscanf (line, "%s%lf%lf%d%d%d%n", ant, &mjd, &tint,
                                      &dstr, &nchan, &ntones, &nchars);
-                        pdds = D->datastream + dstr;
+                                        // remap datastream if mapping used in this job
+                        if ((D->job[j]).datastreamIdRemap)
+                            redstr = *((D->job[j]).datastreamIdRemap + dstr);
+                        else
+                            redstr = dstr;
+                        pdds = D->datastream + redstr;
                         npol = 1;       // for compatible np-loop control
                         t = mjd + refDay - (int)(D->mjdStart);
                         }
