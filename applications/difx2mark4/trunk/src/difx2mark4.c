@@ -90,11 +90,11 @@ int main(int argc, char **argv)
     {
     struct CommandLineOptions *opts;
     int nConverted = 0;
-    int n, nScan = 0;
+    int n, nScan = 0, nScanTot = 0;
                                     // function prototypes
     struct CommandLineOptions *parseCommandLine (int, char **);
     void deleteCommandLineOptions (struct CommandLineOptions *);
-    int convertMark4 (struct CommandLineOptions *, int *);
+    int convertMark4 (struct CommandLineOptions *, int *, int *);
 
     if(argc < 2)
         {
@@ -113,7 +113,7 @@ int main(int argc, char **argv)
     /* merge as many jobs as possible and process */
     for(;;)
         {
-        n = convertMark4(opts, &nScan);
+        n = convertMark4(opts, &nScan, &nScanTot);
         if (n > 0)
             nConverted += n;
         else
@@ -133,7 +133,7 @@ int main(int argc, char **argv)
     return 0;
     }
 
-int convertMark4 (struct CommandLineOptions *opts, int *nScan)
+int convertMark4 (struct CommandLineOptions *opts, int *nScan, int *nScanTot)
     {
     DifxInput *D, *D1, *D2;
     // struct fitsPrivate outfile;
@@ -274,7 +274,8 @@ int convertMark4 (struct CommandLineOptions *opts, int *nScan)
             "Using UNIFORM.\n", D->job->taperFunction);
         strcpy(D->job->taperFunction, "UNIFORM");
         }
-
+                                // add in this batch of scans to total
+    *nScanTot += D->nScan;
 
 
     if(!opts->pretend)
@@ -340,10 +341,10 @@ int convertMark4 (struct CommandLineOptions *opts, int *nScan)
             else
                 {
                 *nScan += 1;
-                if (*nScan > D->nScan)
+                if (*nScan > *nScanTot)
                     {
                     printf ("Error Detected! Output has more scans (%d) than exist (%d)!\n",
-                            *nScan, D->nScan);
+                            *nScan, *nScanTot);
                     return 0;
                     }
                 scanId = newScanId;
