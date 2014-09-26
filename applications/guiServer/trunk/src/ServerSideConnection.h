@@ -21,6 +21,7 @@
 #include <network/ActivePacketExchange.h>
 #include <difxmessage.h>
 #include <list>
+#include <map>
 #include <string>
 #include <glob.h>
 #include <dirent.h>
@@ -96,6 +97,7 @@ namespace guiServer {
             _envp = envp;
             pthread_mutex_init( &_runningJobsMutex, NULL );
             pthread_mutex_init( &_channelDataLock, NULL );
+            pthread_mutex_init( &_loggingJobsMutex, NULL );
         }
         
         ~ServerSideConnection() {
@@ -157,6 +159,10 @@ namespace guiServer {
                     //  Decide what to do with this message.
                     DifxMessageGeneric G;
                     if ( !difxMessageParse( &G, message ) ) {
+                        //  This function call is used for creating "difxlog" files from each
+                        //  running job.  Each intercepted message is passed to the function to
+                        //  determine whether it should form part of the log.
+                        logDifxMessage( &G, message );
 //                        _monitorSocket->fromIPAddress( hostIP );
                         //  Replace the "from" field in the message header with the full address
                         //  of the source of this message (as guiServer sees it).  We are assuming
@@ -183,7 +189,8 @@ namespace guiServer {
 //                        default:
 //                            break;
 //                        }
-                        if ( _relayDifxMulticasts ) {
+                        
+                         if ( _relayDifxMulticasts ) {
                             //  Relay the packet if it is one of the types the GUI has selected.
                             bool relayThis = false;
                             if ( _relayAllPackets )
@@ -725,7 +732,7 @@ namespace guiServer {
         
         //---------------------------------------------------------------------
         //!  Structure used to pass information to the thread that monitors
-        //!  the messages received from running DiFX job.  This has nothing to
+        //!  the messages received from running a DiFX job.  This has nothing to
         //!  do with real-time monitoring of DiFX output!  That is done by the
         //!  DifxMonitorInfo struct.  Apologies for the confusing names.
         //---------------------------------------------------------------------
@@ -740,7 +747,10 @@ namespace guiServer {
             char filebase[MAX_COMMAND_SIZE];
             char inputFile[DIFX_MESSAGE_FILENAME_LENGTH];
             char difxProgram[DIFX_MESSAGE_FILENAME_LENGTH];
+            FILE* logFile;
+            char identifier[DIFX_MESSAGE_FILENAME_LENGTH];
             int runMonitor;
+            int runDifxLog;
         };
         
         //-----------------------------------------------------------------------------
@@ -1007,6 +1017,9 @@ namespace guiServer {
         //---------------------------------------------------------------------
         void startDifx( DifxMessageGeneric* G );
         void runDifxThread( DifxStartInfo* startInfo );  //  in startDifx.cpp
+        void logDifxMessage( DifxMessageGeneric* G, char* message );  //  in startDifx.cpp
+        void turnLoggingOn( DifxStartInfo* startInfo );  //  in startDifx.cpp
+        void turnLoggingOff( DifxStartInfo* startInfo );  //  in startDifx.cpp
         void stopDifx( DifxMessageGeneric* G );
         void runDifxMonitor( DifxMonitorInfo* monitorInfo );
         void difxFileTransfer( DifxMessageGeneric* G );
@@ -1055,6 +1068,8 @@ namespace guiServer {
         pthread_mutex_t _runningJobsMutex;
         std::list<ChannelData> _channelDataList;
         pthread_mutex_t _channelDataLock;
+        std::map<char*, void*> _loggingJobsList;
+        pthread_mutex_t _loggingJobsMutex;
         
         bool _relayAllPackets;
         bool _relayAlertPackets;

@@ -13,6 +13,7 @@
 #include <sys/statvfs.h>
 #include <signal.h>
 #include <sys/types.h>
+#include <sys/syscall.h>
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <stdlib.h>
@@ -329,6 +330,10 @@ void ServerSideConnection::startDifx( DifxMessageGeneric* G ) {
 void ServerSideConnection::runDifxThread( DifxStartInfo* startInfo ) {
 	char message[DIFX_MESSAGE_LENGTH];
 	
+	//  Turn on logging - this create a .difxlog file out of all messages related
+	//  to this job.
+	turnLoggingOn( startInfo );
+
     //  Add this job to the "running" jobs list.
     addRunningJob( startInfo->inputFile );
 
@@ -413,6 +418,9 @@ void ServerSideConnection::runDifxThread( DifxStartInfo* startInfo ) {
         difxMessageSendDifxStatus2( startInfo->jobName, DIFX_STATE_ABORTING, "" );
     }
     delete executor;
+    
+    //  Turn off logging.
+    turnLoggingOff( startInfo );
 
     //  Shut down the monitor thread.
     startInfo->runMonitor = 0;
@@ -422,6 +430,134 @@ void ServerSideConnection::runDifxThread( DifxStartInfo* startInfo ) {
     
     //  Torch the client connection.
     delete startInfo->jobMonitor;
+
+}
+
+//-----------------------------------------------------------------------------
+//!  Turn logging on for the given job.  This adds this jobs "identifier" to
+//!  a list that can be searched when DiFX processing messages are received.
+//!  Messages that are for this job are then logged to the logfile we open.
+//-----------------------------------------------------------------------------
+void ServerSideConnection::turnLoggingOn( DifxStartInfo* startInfo ) {
+	char logFile[DIFX_MESSAGE_FILENAME_LENGTH];
+	
+    //  Figure out the log file name and open it for (appended) writing.
+    strncpy( logFile, startInfo->inputFile, DIFX_MESSAGE_FILENAME_LENGTH );
+    int l = strlen( logFile );
+    for( int i = l-1; i > 0; i-- ) {
+	    if( logFile[i] == '.' ) {
+		    logFile[i] = 0;
+		    break;
+	    }
+    }
+    strncat( logFile, ".difxlog", DIFX_MESSAGE_FILENAME_LENGTH );
+	startInfo->logFile = fopen( logFile, "a" );
+	if( !startInfo->logFile ) {
+        diagnostic( ERROR, "unable to open \"%s\" for writing: %s", logFile, strerror( errno ) );
+        return;
+	}
+	
+	//  The "identifier" is the name of the job - use the filebase without any path
+	//  information.
+	l = strlen( startInfo->filebase );
+	int i = 0;
+    for( i = l-1; i > 0; i-- ) {
+	    if( startInfo->filebase[i] == '/' ) {
+		    break;
+	    }
+    }
+    strncpy( startInfo->identifier, startInfo->filebase + i + 1, DIFX_MESSAGE_FILENAME_LENGTH );
+	
+	//  Add this job to the map of jobs that are logging, using the identifier as a key.
+    pthread_mutex_lock( &_loggingJobsMutex );
+	_loggingJobsList.insert( std::pair<char*, void*>( startInfo->identifier, startInfo ) );
+    pthread_mutex_unlock( &_loggingJobsMutex );
+    
+}
+
+//-----------------------------------------------------------------------------
+//!  Turn logging off for the given job.  The job is located in the logging list
+//!  using its identifier, and then removed.
+//-----------------------------------------------------------------------------
+void ServerSideConnection::turnLoggingOff( DifxStartInfo* startInfo ) {
+    pthread_mutex_lock( &_loggingJobsMutex );
+	for ( std::map<char*, void*>::iterator iter = _loggingJobsList.begin(); iter != _loggingJobsList.end(); ++iter ) {
+	    //  Match the key...
+	    if ( !strcmp( iter->first, startInfo->identifier ) ) {
+	        if ( startInfo->logFile )
+	            fclose( startInfo->logFile );
+	        _loggingJobsList.erase( iter );
+	    }
+	}
+    pthread_mutex_unlock( &_loggingJobsMutex );
+}
+
+//-----------------------------------------------------------------------------
+//!  This function is called each time guiServer intercepts a UDP message.  The
+//!  "identifier" of the message is used to search a list of jobs that we are
+//!  interested in logging.
+//!
+//!  Code was mostly swiped from difxmessage/utils/difxlog.c.
+//-----------------------------------------------------------------------------
+void ServerSideConnection::logDifxMessage( DifxMessageGeneric* G, char* message ) {
+	const int TimeLength = 32;
+	const int TagLength = 64+DIFX_MESSAGE_PARAM_LENGTH;
+	int logLevel = DIFX_ALERT_LEVEL_INFO;
+	time_t t;
+	char timestr[TimeLength];
+	char tag[TagLength];
+
+    //  Search through the list of jobs that should be logging to find this identifier.
+    pthread_mutex_lock( &_loggingJobsMutex );
+	for ( std::map<char*, void*>::iterator iter = _loggingJobsList.begin(); iter != _loggingJobsList.end(); ++iter ) {
+	    //  Match the key...
+	    if ( !strcmp( iter->first, G->identifier ) ) {
+	        //  This message pertains to a job in the list!
+		    DifxStartInfo* startInfo = (DifxStartInfo*)iter->second;
+	        //  Time-tag the message and include it in the logfile.
+	        if ( startInfo->logFile ) {
+		        time( &t );
+		        strcpy( timestr, ctime( &t ) );
+		        timestr[strlen( timestr )-1] = 0;
+			    int l = snprintf( tag, TagLength, "%s %3d %s", timestr, G->mpiId, G->from );
+			    if( l >= TagLength )
+				    fprintf( stderr, "Developer error: TagLength is too small for timestr='%s', mpiIf=%d, from='%s'\n", timestr, G->mpiId, G->from );
+			    if( G->type == DIFX_MESSAGE_ALERT ) {
+				    const DifxMessageAlert *A;
+				    A = &G->body.alert;
+				    if( A->severity <= logLevel ) {
+					    fprintf( startInfo->logFile, "%s %s  %s\n", tag, difxMessageAlertString[A->severity], A->message );
+					    fflush( startInfo->logFile );
+				    }
+			    }
+			    else if(G->type == DIFX_MESSAGE_STATUS) {
+				    const DifxMessageStatus *S;
+				    S = &G->body.status;				
+				    fprintf( startInfo->logFile, "%s  STATUS %s  %s\n", tag, DifxStateStrings[S->state], S->message );
+				    if( S->maxDS >= 0 ) {
+					    fprintf( startInfo->logFile, "%s  WEIGHTS", tag );
+					    for( int i = 0; i <= S->maxDS; ++i ) {
+						    fprintf( startInfo->logFile, " %4.2f", S->weight[i] );
+					    }
+					    fprintf( startInfo->logFile, "\n" );
+				    }
+			    }
+			    else if( G->type == DIFX_MESSAGE_TRANSIENT ) {
+				    const DifxMessageTransient *T;
+				    T = &G->body.transient;
+				    fprintf( startInfo->logFile, "Transient event received: jobId=%s priority=%f startMJD=%14.8f stopMJD=%14.8f destDir=\"%s\" comment=\"%s\"\n",
+					    T->jobId, 
+					    T->priority,
+					    T->startMJD,
+					    T->stopMJD,
+					    T->destDir,
+					    T->comment );
+				    fflush( startInfo->logFile );
+			    }
+	        }
+	    }
+	}
+    pthread_mutex_unlock( &_loggingJobsMutex );
 
 }
 
