@@ -2001,12 +2001,12 @@ public class QueueBrowserPanel extends TearOffPanel {
             thisJob.pass( thisPass.name() );
             thisJob.passNode( thisPass );
             thisJob.inputFile( inputFile, false );
-            //  Create a new log file for this job using what we expect its name to be.
-            thisJob.logFile( new ActivityLogFile( inputFile.substring( 0, inputFile.lastIndexOf( "/" ) ) + "/guiLogs"
-                    + inputFile.substring( inputFile.lastIndexOf( "/" ) ).replace( ".input", ".jobLog" ) ) );
-            //  If such a file exists already, force it to be downloaded the first time it
-            //  is used.
-            thisJob.logFile().downloadExisting( true );
+//            //  Create a new log file for this job using what we expect its name to be.
+//            thisJob.logFile( new ActivityLogFile( inputFile.substring( 0, inputFile.lastIndexOf( "/" ) ) + "/guiLogs"
+//                    + inputFile.substring( inputFile.lastIndexOf( "/" ) ).replace( ".input", ".jobLog" ) ) );
+//            //  If such a file exists already, force it to be downloaded the first time it
+//            //  is used.
+//            thisJob.logFile().downloadExisting( true );
             synchronized ( _browserPane ) {
                 thisPass.addChild( thisJob );
             }

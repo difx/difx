@@ -216,9 +216,11 @@ public class BrowserNode extends JPanel implements MouseListener, MouseMotionLis
         //  object.  These heights will be zero if this object isn't open, but
         //  we need to do this anyway to make the children not visible in that
         //  instance.
-        for ( Iterator<BrowserNode> iter = _children.iterator(); iter.hasNext(); ) {
-            height += iter.next().setDrawConditions( height, _open && open );
-        }
+        try {
+            for ( Iterator<BrowserNode> iter = _children.iterator(); iter.hasNext(); ) {
+                height += iter.next().setDrawConditions( height, _open && open );
+            }
+        } catch ( java.util.ConcurrentModificationException e ) {}
         //  Set the bounds of this object such that it contains all of its
         //  children.  We only bother doing this if the parent object is open, 
         //  thus making this object visible.
