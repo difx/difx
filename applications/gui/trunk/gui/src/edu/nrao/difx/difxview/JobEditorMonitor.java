@@ -1151,16 +1151,6 @@ public class JobEditorMonitor extends JFrame {
         command.identifier( _jobNode.name() );
         int monitorPort = 0;
 
-        //  If the headnode is not to be used, generate an IP address for it so that
-        //  we can compare other nodes to it.
-        InetAddress headnodeAddr = null;
-        if ( _restrictHeadnodeProcessing.isSelected() ) {
-            try {
-                headnodeAddr = InetAddress.getByName( _headNode.getText() );
-            } catch ( UnknownHostException e ) {
-            }
-        }
-
         //  We are going to test processor nodes, so remove the results of any previous
         //  tests.
         for ( Iterator<BrowserNode> iter = _processorsPane.browserTopNode().children().iterator();
@@ -1202,30 +1192,12 @@ public class JobEditorMonitor extends JFrame {
         // Add enabled processors and threads.  Don't include processors that have no
         // threads!  Also avoid the headnode if the user has indicated it should be
         // avoided (recommended if there are other processors).
-        String processNodeNames = "";
         for ( Iterator<BrowserNode> iter = _processorsPane.browserTopNode().children().iterator();
                 iter.hasNext(); ) {
             PaneProcessorNode thisNode = (PaneProcessorNode)(iter.next());
             if ( thisNode.selected() ) {
-                //  Generate an IP address for this node if we need to compare it to that of the headnode.
-                //  Then see if they match.
-                InetAddress thisAddr = null;
-                boolean headnodeMatch = false;
-                if ( headnodeAddr != null ) {
-                    try {
-                        thisAddr = InetAddress.getByName( thisNode.name() );
-                        headnodeMatch = true;
-                        if ( thisAddr.getAddress().length != headnodeAddr.getAddress().length )
-                            headnodeMatch = false;
-                        for ( int i = 0; i < thisAddr.getAddress().length && headnodeMatch == true; ++i ) {
-                            if ( thisAddr.getAddress()[i] != headnodeAddr.getAddress()[i] )
-                                headnodeMatch = false;
-                        }
-                    } catch ( UnknownHostException e ) {
-                    }
-                }
                 //  Avoid the headnode - if there are other nodes
-                if ( _restrictHeadnodeProcessing.isSelected() && headnodeMatch &&
+                if ( _restrictHeadnodeProcessing.isSelected() && _headNode.getText().contentEquals( thisNode.name() ) &&
                         _processorsPane.browserTopNode().children().size() > 1 ) {}
                 else {
                     DifxMachinesDefinition.Process process = command.factory().createDifxMachinesDefinitionProcess();
@@ -1639,7 +1611,6 @@ public class JobEditorMonitor extends JFrame {
 
         // Add enabled processors and threads.  Don't include processors that have no
         // threads!
-        String processNodeNames = "";
         for ( Iterator<BrowserNode> iter = _processorsPane.browserTopNode().children().iterator();
                 iter.hasNext(); ) {
             PaneProcessorNode thisNode = (PaneProcessorNode)(iter.next());
