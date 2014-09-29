@@ -219,45 +219,47 @@ void ServerSideConnection::runMachinesDefinition( MachinesDefinitionInfo* machin
         //  This should test both write permission for the host and ssh permission required by
         //  mpirun (which is more likely to be a problem).  Maybe these tests can get more 
         //  elaborate - test processing time, etc, if we get adventurous.
-        monitor->sendPacket( MACHINE_DEF_RUNNING_MPIRUN_TESTS, NULL, 0 );
         std::list<std::string>::iterator i;
         std::list<int>::iterator j = processThreads.begin();
-        for ( i = processNodes.begin(); i != processNodes.end(); ) {
-            printf( "%s %d\n", i->c_str(), *j );
-            snprintf( nodename, MAX_COMMAND_SIZE, "%s", i->c_str() );
-            //  Create a test file name.
-            snprintf( testPath, DIFX_MESSAGE_FILENAME_LENGTH, "%s/test_%s", workingDir, nodename );
-            //  Execute an mpirun command to create a new file using each processor.
-            snprintf( command, MAX_COMMAND_SIZE, "%s -host %s %s touch %s &", 
-                mpiWrapper,
-                nodename,
-                _difxSetupPath,
-                testPath );
-            int ret = system( command );
-            //  We give the remote system a generous one second to complete this task.
-            sleep( 1 );
-            //  Now, try to delete the test file.  If it exists, the delete should return
-            //  without an error.  If there IS an error, our assumption is that the mpirun did not
-            //  work the way we expected.
-            ret = unlink( testPath );
-            if ( ret == -1 ) {
-    	        monitor->sendPacket( MACHINE_DEF_FAILURE_MPIRUN, nodename, 
-    	            strlen( nodename ) );
-    	        //  Eliminate this node if we are supposed to be doing so...
-    	        if ( S->testProcessors ) {
-    	            i = processNodes.erase( i );
-    	            j = processThreads.erase( j );
-    	        }
-    	        else {
-    	            ++i;
-    	            ++j;
-    	        }
-            }
-            else {
-    	        monitor->sendPacket( MACHINE_DEF_SUCCESS_MPIRUN, nodename, 
-    	            strlen( nodename ) );
-    	        ++i;
-    	        ++j;
+        if ( S->testProcessors ) {
+            monitor->sendPacket( MACHINE_DEF_RUNNING_MPIRUN_TESTS, NULL, 0 );
+            for ( i = processNodes.begin(); i != processNodes.end(); ) {
+                printf( "%s %d\n", i->c_str(), *j );
+                snprintf( nodename, MAX_COMMAND_SIZE, "%s", i->c_str() );
+                //  Create a test file name.
+                snprintf( testPath, DIFX_MESSAGE_FILENAME_LENGTH, "%s/test_%s", workingDir, nodename );
+                //  Execute an mpirun command to create a new file using each processor.
+                snprintf( command, MAX_COMMAND_SIZE, "%s -host %s %s touch %s &", 
+                    mpiWrapper,
+                    nodename,
+                    _difxSetupPath,
+                    testPath );
+                int ret = system( command );
+                //  We give the remote system a generous one second to complete this task.
+                sleep( 1 );
+                //  Now, try to delete the test file.  If it exists, the delete should return
+                //  without an error.  If there IS an error, our assumption is that the mpirun did not
+                //  work the way we expected.
+                ret = unlink( testPath );
+                if ( ret == -1 ) {
+        	        monitor->sendPacket( MACHINE_DEF_FAILURE_MPIRUN, nodename, 
+        	            strlen( nodename ) );
+        	        //  Eliminate this node if we are supposed to be doing so...
+        	        if ( S->testProcessors ) {
+        	            i = processNodes.erase( i );
+        	            j = processThreads.erase( j );
+        	        }
+        	        else {
+        	            ++i;
+        	            ++j;
+        	        }
+                }
+                else {
+        	        monitor->sendPacket( MACHINE_DEF_SUCCESS_MPIRUN, nodename, 
+        	            strlen( nodename ) );
+        	        ++i;
+        	        ++j;
+                }
             }
         }
         
