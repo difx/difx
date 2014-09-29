@@ -1014,45 +1014,45 @@ public class VexFileParser {
                                         bitsPerSample = track.bitsPerSample;
                                     if ( track.fanoutFactor != null )
                                         fanoutFactor = track.fanoutFactor;
-                                }
-                            }
-                        }
-                    }
-                    //  Now look through the "freqs" on this mode to see if any have this station.
-                    for ( Iterator<ModeReference> iter2 = mode.freqRefs.iterator(); iter2.hasNext(); ) {
-                        ModeReference modeReference = iter2.next();
-                        if ( modeReference.antennas.contains( station.toUpperCase() ) ) {
-                            //  This freq reference applies to this antenna...look at it in the
-                            //  "freqs" list.
-                            for ( Iterator<Freq> iter3 = freqList().iterator(); iter3.hasNext(); ) {
-                                Freq freq = iter3.next();
-                                if ( freq.def.equalsIgnoreCase( modeReference.name ) ) {
-                                    //  We've got a freq that applies to this station in the current
-                                    //  mode.  Fill in any items it has that we are interested in.
-                                    if ( freq.channelDefs != null && freq.channelDefs.size() > 0 ) {
-                                        numChannels = freq.channelDefs.size();
-                                        //  We are assuming all of the bandwidths are equal, and in MHz.
-                                        bandwidth = new Double( freq.channelDefs.get( 0 ).bandwidth ).intValue();
+                                    //  Now look through the "freqs" on this mode to see if any have this station.
+                                    for ( Iterator<ModeReference> iter4 = mode.freqRefs.iterator(); iter4.hasNext(); ) {
+                                        ModeReference modeReference2 = iter4.next();
+                                        if ( modeReference2.antennas.contains( station.toUpperCase() ) ) {
+                                            //  This freq reference applies to this antenna...look at it in the
+                                            //  "freqs" list.
+                                            for ( Iterator<Freq> iter5 = freqList().iterator(); iter5.hasNext(); ) {
+                                                Freq freq = iter5.next();
+                                                if ( freq.def.equalsIgnoreCase( modeReference2.name ) ) {
+                                                    //  We've got a freq that applies to this station in the current
+                                                    //  mode.  Fill in any items it has that we are interested in.
+                                                    if ( freq.channelDefs != null && freq.channelDefs.size() > 0 ) {
+                                                        numChannels = freq.channelDefs.size();
+                                                        //  We are assuming all of the bandwidths are equal, and in MHz.
+                                                        bandwidth = new Double( freq.channelDefs.get( 0 ).bandwidth ).intValue();
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                    //  If all of the information we need is non-null, form a new format
+                                    //  string and add it to our list.
+                                    if ( trackFrameFormat != null && fanoutFactor != null && numChannels != null &&
+                                            bandwidth != null && bitsPerSample != null ) {
+                                        //  Change the format name to reflect conventions for each type and add fanout
+                                        //  factor if that's done.
+                                        String name = trackFrameFormat;
+                                        if ( trackFrameFormat.equalsIgnoreCase( "Mark4" ) ) {
+                                            name = "MKIV1_" + fanoutFactor;
+                                        }
+                                        else if ( trackFrameFormat.equalsIgnoreCase( "VLBA" ) ) {
+                                            name = "VLBA1_" + fanoutFactor;
+                                        }
+                                        int totalBitRate = bitsPerSample * numChannels * bandwidth * 2;
+                                        ret.add( name + "-" + totalBitRate + "-" + numChannels + "-" + bitsPerSample );
                                     }
                                 }
                             }
                         }
-                    }
-                    //  If all of the information we need is non-null, form a new format
-                    //  string and add it to our list.
-                    if ( trackFrameFormat != null && fanoutFactor != null && numChannels != null &&
-                            bandwidth != null && bitsPerSample != null ) {
-                        //  Change the format name to reflect conventions for each type and add fanout
-                        //  factor if that's done.
-                        String name = trackFrameFormat;
-                        if ( trackFrameFormat.equalsIgnoreCase( "Mark4" ) ) {
-                            name = "MKIV1_" + fanoutFactor;
-                        }
-                        else if ( trackFrameFormat.equalsIgnoreCase( "VLBA" ) ) {
-                            name = "VLBA1_" + fanoutFactor;
-                        }
-                        int totalBitRate = bitsPerSample * numChannels * bandwidth * 2;
-                        ret.add( name + "-" + totalBitRate + "-" + numChannels + "-" + bitsPerSample );
                     }
                 }
             }

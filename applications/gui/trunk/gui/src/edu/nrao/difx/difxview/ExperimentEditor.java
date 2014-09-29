@@ -12,6 +12,7 @@ import mil.navy.usno.widgetlib.BrowserNode;
 import mil.navy.usno.widgetlib.JulianCalendar;
 import mil.navy.usno.widgetlib.ComplexToolTip;
 import mil.navy.usno.widgetlib.ZCheckBox;
+import mil.navy.usno.widgetlib.ZButton;
 
 import edu.nrao.difx.difxutilities.DiFXCommand_getFile;
 import edu.nrao.difx.difxutilities.DiFXCommand_sendFile;
@@ -445,15 +446,17 @@ public class ExperimentEditor extends JFrame {
         _scrollPane.addNode( editorPanel );
         _editor = new SimpleTextEditor();
         editorPanel.add( _editor );
-        _useMyEditor = new JButton( "Alternate Editor" );
-        _useMyEditor.setToolTipText( "Use your preferred text editor to edit the .vex file.\nThe preferred editor is specified in the Settings Window." );
-        _useMyEditor.setBounds( 20, 30, 140, 25 );
-        _useMyEditor.addActionListener( new ActionListener() {
+        _parseEditorContent = new ZButton( "Parse Content" );
+        _parseEditorContent.setToolTipText( "Use the editor content in the .vex file parser for this experiment.\n"
+                + "The changed .vex data will become the new .vex file for the experiment\n"
+                + "(the source of the original .vex data will not be changed)." );
+        _parseEditorContent.setBounds( 20, 30, 140, 25 );
+        _parseEditorContent.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
-                useMyEditor();
+                parseNewVexFile();
             }
         });
-        editorPanel.add( _useMyEditor );
+        editorPanel.add( _parseEditorContent );
         
         //  This panel contains a few often-changed parameters that govern the
         //  correlation.  These (mostly) end up in the "setup" section of the v2d file.
@@ -3630,7 +3633,7 @@ public class ExperimentEditor extends JFrame {
     protected JMenuBar _menuBar;
     protected boolean _allObjectsBuilt;
     protected SimpleTextEditor _editor;
-    protected JButton _useMyEditor;
+    protected ZButton _parseEditorContent;
     protected SimpleTextEditor _v2dEditor;
     protected SaneTextField _v2dFileName;
     protected JCheckBox _fromHost;

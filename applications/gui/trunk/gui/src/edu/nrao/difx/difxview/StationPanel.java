@@ -38,6 +38,7 @@ import java.util.GregorianCalendar;
 import edu.nrao.difx.difxutilities.DiFXCommand;
 import edu.nrao.difx.difxutilities.ChannelServerSocket;
 import edu.nrao.difx.xmllib.difxmessage.DifxGetDirectory;
+import java.awt.Dialog.ModalityType;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -1206,6 +1207,7 @@ public class StationPanel extends IndexedPanel {
             Point pt = _fileList.getLocationOnScreen();
             PopupMonitor popupMonitor = new PopupMonitor( null, pt.x, pt.y, 600, 145, 100 );
             popupMonitor.showProgress( true );
+            popupMonitor.setModalityType( ModalityType.MODELESS );
             boolean errors = false;
             String fileListName = null;
             int processedCount = 0;
