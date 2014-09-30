@@ -83,11 +83,15 @@ public class ChannelServerSocket {
             }
         }
         else {
-            _sock = _serverSock.accept();
-            //  Turn the socket into a "data stream", which has useful
-            //  functions.
-            _inStream = new DataInputStream( _sock.getInputStream() );
-            _outStream = new DataOutputStream( _sock.getOutputStream() );
+            try {
+                _sock = _serverSock.accept();
+                //  Turn the socket into a "data stream", which has useful
+                //  functions.
+                _inStream = new DataInputStream( _sock.getInputStream() );
+                _outStream = new DataOutputStream( _sock.getOutputStream() );
+            } catch ( java.net.SocketTimeoutException e ) {
+                throw new SocketTimeoutException();
+            }
         }
     }
     

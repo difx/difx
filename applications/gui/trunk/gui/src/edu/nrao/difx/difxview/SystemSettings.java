@@ -2220,8 +2220,8 @@ public class SystemSettings extends JFrame {
         _defaultNames.restrictHeadnodeProcessing = true;
         _useHeadNodeCheck.setSelected( false );
         _restrictSourcesCheck.setSelected( false );
-        _defaultNames.eliminateNonrespondingProcessors = true;
-        _defaultNames.eliminateBusyProcessors = true;
+        _defaultNames.eliminateNonrespondingProcessors = false;
+        _defaultNames.eliminateBusyProcessors = false;
         _defaultNames.chooseBasedOnModule = true;
         _defaultNames.busyPercentage = 50.0;
         _defaultNames.correlationDoPolar = true;
