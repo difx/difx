@@ -69,8 +69,10 @@ C ------------------------------------------------------------------
 C
 C           Plot the spectrum if this is a desired station.
 C
-            IF( DOSTA .EQ. ' ' .OR. ( DOSTA .EQ. NAME1 .OR.
-     1          DOSTA .EQ. NAME2 ))  THEN
+            IF( ( DOSTA .EQ. ' ' .OR. ( DOSTA .EQ. NAME1 .OR.
+     1                 DOSTA .EQ. NAME2 )) .AND. 
+     2          ( DOSTA2 .EQ. ' ' .OR. ( DOSTA2 .EQ. NAME1 .OR.
+     3          DOSTA2 .EQ. NAME2 )))  THEN
 C
 C              Get the average and the plot limit for a possible 
 C              expanded plot.

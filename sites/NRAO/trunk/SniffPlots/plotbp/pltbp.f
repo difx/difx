@@ -16,7 +16,7 @@ C
       DATA  LEFT, RIGHT / 0.1, 0.95 /
       DATA  BOTTOM, ATOP, PTOP / 0.15, 0.6, 0.85 /
       DATA  FIRSTS / .TRUE. /
-      SAVE  FIRSTS
+      SAVE  FIRSTS, NX, NY
 C -------------------------------------------------
 C
 C     Divide the plot surface into screens if it hasn't already
@@ -108,6 +108,7 @@ C
          END DO
 C
 C        Draw lines between the BB channels and label them.
+C        Also write the frequency, polarization, and sideband.
 C
          DO IIF = 1, NIF
             ICH1 =  ( IIF - 1 ) * NCHIF
@@ -118,7 +119,10 @@ C
             IF( IIF .NE. 1 ) CALL PGLINE( 2, XD, YD )
             IF( NEWFMT .OR. IIF .EQ. 1 ) THEN
                XCH = ICH1 + 0.05 * NCHIF
-               YCH = AMAX * 0.1
+               YCH = AMAX * 0.9
+               IF( NIF .GT. 8 .AND. NX .GT. 1 ) THEN
+                  YCH = YCH + AMAX * ( -0.04 + 0.07 * MOD( IIF, 2 ) )
+               END IF
                WRITE( PRSCH, '(F9.2)' ) FREQ(IIF)
                IF( NIF .GE. 8 ) CALL PGSCH( CHSIZE*0.6 )
                CALL PGTEXT( XCH, YCH, PRSCH )
@@ -151,6 +155,7 @@ C     1          SOURCE(1:LEN1(SOURCE))//'  Last plot, expanded scale.'
             END DO
 C    
 C           Draw lines between the BB channels and label them.
+C           Also write the frequency, polarization, and sideband.
 C    
             DO IIF = 1, NIF
                ICH1 =  ( IIF - 1 ) * NCHIF
@@ -161,7 +166,10 @@ C
                IF( IIF .NE. 1 ) CALL PGLINE( 2, XD, YD )
                IF( NEWFMT .OR. IIF .EQ. 1 ) THEN
                   XCH = ICH1 + 0.05 * NCHIF
-                  YCH = ALMAX * 0.1
+                  YCH = ALMAX * 0.9
+                  IF( NIF .GT. 8 .AND. NX .GT. 1 ) THEN
+                     YCH = YCH + ALMAX * ( -0.04 + 0.07*MOD( IIF, 2 ) )
+                  END IF
                   WRITE( PRSCH, '(F9.2)' ) FREQ(IIF)
                   IF( NIF .GE. 8 ) CALL PGSCH( CHSIZE*0.6 )
                   CALL PGTEXT( XCH, YCH, PRSCH )
@@ -191,6 +199,7 @@ C
          END DO
 C
 C        Draw lines between the BB channels and label them.
+C        Also write the frequency, polarization, and sideband.
 C
          CALL PGSLS( 2 )
          DO IIF = 1, NIF
@@ -202,7 +211,10 @@ C
             IF( IIF .NE. 1 ) CALL PGLINE( 2, XD, YD )
             IF( NEWFMT .OR. IIF .EQ. 1 ) THEN
                XCH = ICH1 + 0.05 * NCHIF
-               YCH = AMAX * 0.1
+               YCH = AMAX * 0.9
+               IF( NIF .GT. 8 .AND. NX .GT. 1 ) THEN
+                  YCH = YCH + AMAX * ( -0.04 + 0.07 * MOD( IIF, 2 ) )
+               END IF
                WRITE( PRSCH, '(F9.2)' ) FREQ(IIF)
                IF( NIF .GE. 8 ) CALL PGSCH( CHSIZE*0.7 )
                CALL PGTEXT( XCH, YCH, PRSCH )

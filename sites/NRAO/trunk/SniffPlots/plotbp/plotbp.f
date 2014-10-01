@@ -6,9 +6,14 @@ C
 C     Antenna selection added.  April 2007.  Put in standard version
 C     July 5, 2007  RCW.
 C
+C     Add baseline selection.  Now needed because data files have all
+C     baselines.  Sept. 29, 2014  RCW.
+C
+C     Move frequency print to top of plot.  Sept. 29, 2014.  RCW.
+C
       INCLUDE 'plotbp.inc'
 C
-      INTEGER    IER, VLBOPE, PGOPEN, ICH, ISTA, IFR
+      INTEGER    IER, VLBOPE, PGOPEN, ICH, ICH2, ISTA, IFR, LEN1
       CHARACTER  BPFILE*256, CBUFF*250
 C ---------------------------------------------------------------------
 C     Open file
@@ -29,9 +34,18 @@ C
 C
 C     Get station to plot.
 C
-      WRITE(*,*) 'Station to plot (blank for all):'
+      WRITE(*,*) 'Station to plot '//
+     1     '(blank for all.  eg PT:LA for a baseline):'
       READ(*,'(A)') DOSTA
       CALL UPCASE( DOSTA )
+      IF( INDEX( DOSTA, ':' ) .GT. 1 )  THEN
+         ICH = INDEX( DOSTA, ':' ) + 1
+         ICH2 = LEN1( DOSTA )
+         DOSTA2 = DOSTA(ICH:ICH2)
+         ICH2 = ICH - 2
+         DOSTA = DOSTA(1:ICH2)
+         WRITE(*,*) ' Will plot baseline ', DOSTA, ' ', DOSTA2
+      END IF
 C
 C     Initialize accumulators for the summary plots.
 C

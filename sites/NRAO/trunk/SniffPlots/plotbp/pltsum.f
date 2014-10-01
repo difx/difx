@@ -7,21 +7,44 @@ C     For the cross correlation, the highest-average-amplitude
 C     spectrum from each station/band is plotted.  The data for these
 C     plots is gathered in routine ACCSUM.
 C
+C     Some day, make the 16 IF plots full width.  But for observations
+C     with multiple NIF settings, that might get into trouble.  
+C     Worry about it later.
+C
       INCLUDE   'plotbp.inc'
 C
       INTEGER    ICH, IFR, ISTA, IIF, ICH1
-      INTEGER    IER, PGBEG, LEN1
+      INTEGER    IER, PGBEG, LEN1, NX, NY
       REAL       XMIN, XMAX, XCH, YCH
       REAL       XCHAN(MCHAN)
       REAL       LEFT, RIGHT, BOTTOM, ATOP, PTOP
       REAL       CHSIZE, XD(2), YD(2)
-      LOGICAL    GOTAC, GOTXC
+      LOGICAL    GOTAC, GOTXC, FIRSTS
       CHARACTER  HDLINE*80, BTLINE*80, JDATE*9, PRSCH*9
 C
       DATA     LEFT, RIGHT / 0.1, 0.95 /
       DATA     BOTTOM, ATOP, PTOP / 0.15, 0.6, 0.85 /
       DATA     PMIN, PMAX / -185.0, 185.0 /
+      DATA     FIRSTS / .TRUE. /
 C ---------------------------------------------------------------------
+C     Key off the first scan as to whether or not to make two plots
+C     per row or one.  The main case where you want 1 is for PFB
+C     and all scans will have 16 basebands in that case, so this 
+C     should work most of the time, and it's not fatal if it doesn't.
+C     This plot doesn't appear in interactive use so don't worry 
+C     about the X windows cases.
+C
+      IF( FIRSTS ) THEN
+         IF( NIF .LE. 8 ) THEN
+            NX = 2
+         ELSE
+            NX = 1
+         END IF
+         NY = 5
+C          CALL PGSUBP( NX, NY )
+         FIRSTS = .FALSE.
+      END IF
+
 C     See what we've got.  Don't make these plots if we are running
 C     in interactive mode - the user might not have write permission.
 C
@@ -44,7 +67,7 @@ C         Open plot file.  For now, don't allow a choice of plot
 C         name or type.  Can modify later, if needed, but I want
 C         this to not require a change to the analysts scripts.
 C
-         IER = PGBEG( 0, 'acbandsum.ps/vps', 2, 5 )
+         IER = PGBEG( 0, 'acbandsum.ps/vps', NX, NY )
          IF( IER .NE. 1 ) THEN
             WRITE(*,*) 'Error opening AC summary plot file.'
             GO TO 999
@@ -82,7 +105,7 @@ C
 C
 C         Open plot file.  Same deal as AC plot.
 C
-         IER = PGBEG( 0, 'xcbandmax.ps/vps', 2, 5 )
+         IER = PGBEG( 0, 'xcbandmax.ps/vps', NX, NY )
          IF( IER .NE. 1 ) THEN
             WRITE(*,*) 'Error opening XC summary plot file.'
             GO TO 999
@@ -148,7 +171,10 @@ C
                      YD(2) = AMAX
                      IF( IIF .NE. 1 ) CALL PGLINE( 2, XD, YD )
                      XCH = ICH1 + 0.05 * SNCHIF(IFR)
-                     YCH = AMAX * 0.1
+                     YCH = AMAX * 0.9
+                     IF( NIF .GT. 8 ) THEN
+                        YCH = YCH + AMAX * ( -0.04 + 0.07 * MOD(IIF,2) )
+                     END IF
                      WRITE( PRSCH, '(F9.2)' ) SFREQ(IIF,IFR)
                      IF( NIF .GE. 8 ) CALL PGSCH( CHSIZE*0.75 )
                      CALL PGTEXT( XCH, YCH, PRSCH )

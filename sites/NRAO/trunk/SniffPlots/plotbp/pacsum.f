@@ -162,7 +162,10 @@ C
          YD(2) = AMAX
          IF( IIF .NE. 1 ) CALL PGLINE( 2, XD, YD )
          XCH = ICH1 + 0.05 * SNCHIF(IFR)
-         YCH = AMAX * 0.1
+         YCH = AMAX * 0.9
+         IF( NIF .GT. 8 ) THEN
+            YCH = YCH + AMAX * ( -0.04 + 0.07 * MOD(IIF,2) )
+         END IF
          WRITE( PRSCH, '(F9.2)' ) SFREQ(IIF,IFR)
          IF( NIF .GE. 8 ) CALL PGSCH( CHSIZE*0.75 )
          CALL PGTEXT( XCH, YCH, PRSCH )
