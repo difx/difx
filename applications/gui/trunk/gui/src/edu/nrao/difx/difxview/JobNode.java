@@ -45,6 +45,8 @@ import edu.nrao.difx.xmllib.difxmessage.DifxAlert;
 import edu.nrao.difx.xmllib.difxmessage.DifxStatus;
 import java.awt.Font;
 
+import java.lang.Runtime;
+
 import edu.nrao.difx.difxdatabase.QueueDBConnection;
 import javax.swing.JOptionPane;
 
@@ -593,8 +595,14 @@ public class JobNode extends QueueBrowserNode {
         }
         public void run() {
             try { Thread.sleep( _delay * 1000 ); } catch ( Exception e ) {}
+            Runtime rt = Runtime.getRuntime();
+            long usedMB = (rt.totalMemory() - rt.freeMemory()) / 1024 / 1024;
+            System.out.println( "memory usage before " + usedMB);
             _editorMonitor.close();
             _editorMonitor = null;
+            System.gc();
+            usedMB = (rt.totalMemory() - rt.freeMemory()) / 1024 / 1024;
+            System.out.println( "memory usage after " + usedMB);
         }
         int _delay;
     }

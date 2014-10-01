@@ -309,6 +309,21 @@ public class QueueBrowserPanel extends TearOffPanel {
         _scheduleThread = new ScheduleThread();
         _scheduleThread.start();
 
+        _memoryMonitor = new MemoryMonitor();
+        _memoryMonitor.start();
+    }
+
+    public MemoryMonitor _memoryMonitor;
+    
+    public class MemoryMonitor extends Thread {
+        public boolean stop;
+        public void run () {
+            while ( !stop ) {
+                Runtime rt = Runtime.getRuntime();
+                System.out.println( ( (rt.totalMemory() - rt.freeMemory()) / 1024 / 1024 ) + "/" + ( rt.totalMemory() / 1024 / 1024 ) + " MB" );
+                try { Thread.sleep( 1000 ); } catch ( Exception e ) {}
+            }
+        }
     }
     
     /*
