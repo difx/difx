@@ -11,8 +11,8 @@ from time import asctime
 from glob import glob
 
 program = 'difxbuild'
-version = '0.42'
-verdate = '20140902'
+version = '0.43'
+verdate = '20141001'
 author = 'Walter Brisken <wbrisken@nrao.edu>'
 
 difxbuildUrl = 'http://www.aoc.nrao.edu/~wbrisken/difxbuild'
@@ -236,7 +236,7 @@ def getippversion(path):
 	if islink(path):
 		path = join(dirname(path), readlink(path))
 # First try ippversion.h
-        ippheader = path+'/include/ippversion.h'
+	ippheader = path+'/include/ippversion.h'
 	if not isfile(ippheader):
 		ippheader = path+'/ipp/include/ippversion.h'
 		if not isfile(ippheader):
@@ -263,13 +263,13 @@ def getippversion(path):
 		major = minor = None
 		for line in open(ippheader):
 			m = re.search('#define\s+IPP_VERSION_STR\s+"(\S+)"', line)
-			if (m != None):
+			if m != None:
 				print "Got version ", m.group(1)
 				return m.group(1)
-			if (major == None):
-			    major = re.search('#define\s+IPP_VERSION_MAJOR\s+(\S)', line)
-			if (minor == None):
-			    minor = re.search('#define\s+IPP_VERSION_MINOR\s+(\S)', line)
+			if major == None:
+				major = re.search('#define\s+IPP_VERSION_MAJOR\s+(\S)', line)
+			if minor == None:
+				minor = re.search('#define\s+IPP_VERSION_MINOR\s+(\S)', line)
 		if (major != None and minor != None):
 			print "Have version ", major.group(1) + "." + minor.group(1)
 			return major.group(1) + "." + minor.group(1)
@@ -282,8 +282,8 @@ def getarch():
 	if bs != None:
 		return int(bs)
 	else:
-		print 'Warning: defaulting to 32 bit assumption'
-		return 32
+		print 'Warning: defaulting to 64 bit assumption'
+		return 64
 
 def genipppc(path):
 	ippversion = getippversion(path)
@@ -1220,6 +1220,8 @@ def writeinitfile(verbose, pretend):
 
 def bootstrap(comps, params, args, verbose, pretend):
 	setupFileName = 'setup_difx'
+	cshFileName = 'setup_difx.csh'	# to be used by non-developers
+	bashFileName = 'setup_difx.sh'	# to be used by non-developers using csh or tcsh
 	requiredConfigParams = ['difxbase', 'version', 'headnode']
 	if not isfile(params['ConfigFile']):
 		print 'Error: bootstrapping needs the specified configuration file, %s, to exist.' % params['ConfigFile']
@@ -1295,6 +1297,8 @@ def bootstrap(comps, params, args, verbose, pretend):
 
 	if 1:
 		setupFile = config['root'] + '/' + setupFileName
+		cshFile   = config['root'] + '/' +   cshFileName
+		bashFile  = config['root'] + '/' +  bashFileName
 		if verbose > 0:
 			print 'Writing setup file %s' % setupFile
 
@@ -1310,7 +1314,7 @@ def bootstrap(comps, params, args, verbose, pretend):
 
 		platforms = {}	# indexed by arch
 		platformhostsStr = ''
-		
+
 		# make entry for primary architecture, which is assumed to be the one where bootstrapping is done
 		# unless overridden by primaryarch parameter
 		if config.has_key('primaryarch'):
@@ -1318,7 +1322,7 @@ def bootstrap(comps, params, args, verbose, pretend):
 		else:
 			primaryarch = platform.machine()
 		platforms[primaryarch] = []
-		
+
 		for i in range(1, 10):
 			if not config.has_key('altplatform%d' % i):
 				break
@@ -1377,6 +1381,25 @@ def bootstrap(comps, params, args, verbose, pretend):
 					pyPath[arch] = '$DIFX_ARCH_ROOT/lib/python%s/site-packages' % pyVer
 			if config.has_key('pythonpath%s' % arch):
 				pyPath[arch] = config['pythonpath%s' % arch]
+
+		if config.has_key('pathextra'):
+			pathExtra = ':%s' % config['pathextra']
+		else:
+			pathExtra = ''
+		if config.has_key('prepathextra'):
+			prepathExtra = '%s:' % config['prepathextra']
+		else:
+			prepathExtra = ''
+		execPath = '${DIFX_ARCH_ROOT}/bin:${DIFXROOT}/bin:${DIFX_BASE}/bin'
+		if config.has_key('ldextra'):
+			ldExtra = ':%s' % config['ldextra']
+		else:
+			ldExtra = ''
+		if config.has_key('preldextra'):
+			preldExtra = '%s:' % config['preldextra']
+		else:
+			preldExtra = ''
+		ldPath = '${DIFX_ARCH_ROOT}/lib:/lib:/usr/lib:${DIFXROOT}/lib:${IPPROOT}/lib/${IPPARCH}:${IPPROOT}/ipp/lib/${IPPARCH}:${PGPLOT_DIR}'
 
 		runscript = '%s/bin/runmpifxcorr.%s' % (config['difxbase'], label) 
 		out = open(runscript, 'w')
@@ -1483,24 +1506,8 @@ def bootstrap(comps, params, args, verbose, pretend):
 			out.write('unset DIFX_SVN_VERSION')
 
 		out.write('\n')
-		if config.has_key('pathextra'):
-			pathExtra = ':%s' % config['pathextra']
-		else:
-			pathExtra = ''
-		if config.has_key('prepathextra'):
-			prepathExtra = '%s:' % config['prepathextra']
-		else:
-			prepathExtra = ''
-		out.write('export PATH=%s/./:${DIFX_ARCH_ROOT}/bin:${DIFXROOT}/bin:${DIFX_BASE}/bin:~/bin:/bin:/usr/bin%s\n' % (prepathExtra, pathExtra))
-		if config.has_key('ldextra'):
-			ldExtra = ':%s' % config['ldextra']
-		else:
-			ldExtra = ''
-		if config.has_key('preldextra'):
-			preldExtra = '%s:' % config['preldextra']
-		else:
-			preldExtra = ''
-		out.write('export LD_LIBRARY_PATH=%s${DIFX_ARCH_ROOT}/lib:/lib:/usr/lib:${DIFXROOT}/lib:${IPPROOT}/lib/${IPPARCH}:${IPPROOT}/ipp/lib/${IPPARCH}%s:${PGPLOT_DIR}\n' % (preldExtra, ldExtra))
+		out.write('export PATH=%s/./:%s:~/bin:/bin:/usr/bin%s\n' % (prepathExtra, execPath, pathExtra))
+		out.write('export LD_LIBRARY_PATH=%s%s%s\n' % (preldExtra, ldPath, ldExtra))
 
 		for e in env:
 			out.write('export %s=%s\n' % (e[0], e[1]))
@@ -1517,9 +1524,82 @@ def bootstrap(comps, params, args, verbose, pretend):
 		out.write("\nif [[ ${1: -9} == difxbuild ]]; then $@; fi  # this must be the last statement in the file\n")
 		out.close()
 
-		execute('chmod +x %s' % setupFile, verbose, pretend)
-		execute('rm -f %s/bin/%s.%s' % (config['difxbase'], setupFileName, label), verbose, pretend)
-		execute('ln -f -s %s %s/bin/%s.%s' % (setupFile, config['difxbase'], setupFileName, label), verbose, pretend)
+# csh user setup script
+		out = open(cshFile, 'w')
+		
+		out.write('setenv DIFX_VERSION %s\n' % config['version'])
+		out.write('setenv DIFX_LABEL %s\n' % label)
+		out.write('setenv DIFX_ARCH_ROOT %s/`uname -m`\n' % config['difxbase'])
+		out.write('setenv DIFXROOT %s\n' % config['root'])
+		out.write('setenv IPPROOT %s\n' % ipproot[arch])
+		if config.has_key('primaryarch') and config['primaryarch'] in ['i386', 'i686']:
+			out.write('setenv DIFXBITS 32\n')
+			out.write('setenv IPPARCH ia32\n')
+		else:
+			out.write('setenv DIFXBITS 64\n')
+			out.write('setenv IPPARCH intel64\n')
+		out.write('setenv CALC_SERVER %s\n' % calcserver)
+		out.write('setenv DIFX_HEAD_NODE %s\n' % config['headnode'])
+		out.write('setenv DIFX_BASE %s\n' % config['difxbase'])
+		out.write('setenv MARK5_DIR_PATH ${DIFX_BASE}/directories\n')
+		out.write('setenv PGPLOT_DIR ${DIFX_ARCH_ROOT}/pgplot\n')
+		out.write('setenv DIFX_MESSAGE_GROUP %s\n' % difxMessageGroup)
+		out.write('setenv DIFX_MESSAGE_PORT %d\n' % difxMessagePort)
+		out.write('if ! $?PATH then\n')
+		out.write('  setenv PATH %s%s%s\n' % (prepathExtra, execPath, pathExtra))
+		out.write('else\n')
+		out.write('  setenv PATH %s${PATH}:%s%s\n' % (prepathExtra, execPath, pathExtra))
+		out.write('endif\n')
+		out.write('if ! $?LD_LIBRARY_PATH then\n')
+		out.write('  setenv LD_LIBRARY_PATH %s%s%s\n' % (preldExtra, ldPath, ldExtra))
+		out.write('else\n')
+		out.write('  setenv LD_LIBRARY_PATH %s${LD_LIBRARY_PATH}:%s%s\n' % (preldExtra, ldPath, ldExtra))
+		out.write('endif\n')
+		for e in env:
+			out.write('setenv %s %s\n' % (e[0], e[1]))
+		if config.has_key('sched'):
+			if config['sched'][0] in ['1', 'Y', 'y', 't', 'T']:
+				out.write('setenv SCHED ${DIFX_ARCH_ROOT}/sched\n')
+		out.close()
+
+
+# bash user setup script
+		out = open(bashFile, 'w')
+		
+		out.write('export DIFX_VERSION=%s\n' % config['version'])
+		out.write('export DIFX_LABEL=%s\n' % label)
+		out.write('export DIFX_ARCH_ROOT=%s/`uname -m`\n' % config['difxbase'])
+		out.write('export DIFXROOT=%s\n' % config['root'])
+		out.write('export IPPROOT=%s\n' % ipproot[arch])
+		if config.has_key('primaryarch') and config['primaryarch'] in ['i386', 'i686']:
+			out.write('export DIFXBITS=32\n')
+			out.write('export IPPARCH=ia32\n')
+		else:
+			out.write('export DIFXBITS=64\n')
+			out.write('export IPPARCH=intel64\n')
+		out.write('export CALC_SERVER=%s\n' % calcserver)
+		out.write('export DIFX_HEAD_NODE=%s\n' % config['headnode'])
+		out.write('export DIFX_BASE=%s\n' % config['difxbase'])
+		out.write('export MARK5_DIR_PATH=${DIFX_BASE}/directories\n')
+		out.write('export PGPLOT_DIR=${DIFX_ARCH_ROOT}/pgplot\n')
+		out.write('export DIFX_MESSAGE_GROUP=%s\n' % difxMessageGroup)
+		out.write('export DIFX_MESSAGE_PORT=%d\n' % difxMessagePort)
+		out.write('export PATH=%s${PATH}:%s%s\n' % (prepathExtra, execPath, pathExtra))
+		out.write('export LD_LIBRARY_PATH=%s${LD_LIBRARY_PATH}:%s%s\n' % (preldExtra, ldPath, ldExtra))
+		for e in env:
+			out.write('export %s=%s\n' % (e[0], e[1]))
+
+		if config.has_key('sched'):
+			if config['sched'][0] in ['1', 'Y', 'y', 't', 'T']:
+				out.write('export SCHED=${DIFX_ARCH_ROOT}/sched\n')
+		out.close()
+
+
+		execute('chmod +x %s %s %s' % (setupFile, cshFile, bashFile), verbose, pretend)
+
+		for e in ['', '.sh', '.csh']:
+			execute('rm -f %s/bin/%s.%s%s' % (config['difxbase'], setupFileName, label, e), verbose, pretend)
+			execute('ln -f -s %s%s %s/bin/%s.%s%s' % (setupFile, e, config['difxbase'], setupFileName, label, e), verbose, pretend)
 
 
 		# copy bootstrap file for future reference
