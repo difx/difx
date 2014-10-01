@@ -550,6 +550,7 @@ public class JobEditorMonitor extends JFrame {
     }
     
     public void close() {
+        _scrollPane.close();
         _messageDisplayPanel.close();
     }
     

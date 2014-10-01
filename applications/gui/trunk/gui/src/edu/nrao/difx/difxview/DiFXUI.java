@@ -66,6 +66,13 @@ public class DiFXUI extends JFrame implements WindowListener {
         UIManager.put( "ProgressBar.selectionForeground", Color.DARK_GRAY );
         UIManager.put( "ProgressBar.selectionBackground", Color.DARK_GRAY );
         
+        //  These two widget types have static threads that run in them to do periodic
+        //  updates and animations.  The reason for this is to allow each instance of
+        //  the widgets to share a single thread, as there is a limit to threads and
+        //  there can be hundreds of these guys.
+        NodeBrowserScrollPane.initializeStatics();
+        ActivityMonitorLight.initializeStatics();
+
         //  Produce system settings using the settings file that came from command
         //  line arguments (which might be null, indicating we should use default
         //  values).
@@ -207,13 +214,6 @@ public class DiFXUI extends JFrame implements WindowListener {
         
         this.setLayout( null );
         
-        //  These two widget types have static threads that run in them to do periodic
-        //  updates and animations.  The reason for this is to allow each instance of
-        //  the widgets to share a single thread, as there is a limit to threads and
-        //  there can be hundreds of these guys.
-        NodeBrowserScrollPane.initializeStatics();
-        ActivityMonitorLight.initializeStatics();
-
         _mainSplitPane = new javax.swing.JSplitPane();
         _topSplitPane = new javax.swing.JSplitPane();
         _messageCenter = new mil.navy.usno.widgetlib.MessageDisplayPanel();

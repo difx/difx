@@ -77,11 +77,12 @@ public class NodeBrowserScrollPane extends JPanel implements MouseMotionListener
         //  a second.  This is used for animation of the browser content and (quite
         //  importantly) to update widgets that contain this browser periodically.
         if ( useTimeout ) {
-            addTimeoutListener(new ActionListener() {
+            _actionListener = new ActionListener() {
                 public void actionPerformed( ActionEvent e ) {
                     timeoutIntervalEvent();
                 }
-            });
+            };            
+            addTimeoutListener( _actionListener );
         }
         
         //  The yOffset tracks where the browser data are located vertically.
@@ -96,6 +97,11 @@ public class NodeBrowserScrollPane extends JPanel implements MouseMotionListener
         //  is nice, sometimes not.
         _drawFrame = true;
     
+    }
+    
+    public void close() {
+        removeTimeoutListener( _actionListener );
+        try { Thread.sleep( 40 ); } catch ( Exception e ) {}
     }
     
     /*
@@ -524,6 +530,7 @@ public class NodeBrowserScrollPane extends JPanel implements MouseMotionListener
     protected boolean _scrolledToEnd;
     protected boolean _drawFrame;
     protected boolean _noScrollbar;
+    protected ActionListener _actionListener;
     
     static protected int SCROLLBAR_WIDTH = 16;
     
@@ -572,6 +579,11 @@ public class NodeBrowserScrollPane extends JPanel implements MouseMotionListener
         _staticTimeoutListeners.add( ActionListener.class, a );
     }
     
+    public void removeTimeoutListener( ActionListener a ) {
+        if ( _staticTimeoutListeners != null )
+            _staticTimeoutListeners.remove( ActionListener.class, a );
+    }
+        
     static public void initializeStatics() {
         _staticTimeoutThread = null;
         _staticTimeoutListeners = null;

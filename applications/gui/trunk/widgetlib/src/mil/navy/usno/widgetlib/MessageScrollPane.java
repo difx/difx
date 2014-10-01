@@ -88,7 +88,10 @@ public class MessageScrollPane extends JPanel implements MouseMotionListener,
     
     void close() {
         _scrollThread.stopNow();
+        //  Makes sure the thread has actually stopped by waiting twice its interval.
+        try { Thread.sleep( 40 ); } catch ( Exception e ) {}
         _messageList.clear();
+        _messageList = null;
     }
     
     /*
@@ -151,9 +154,11 @@ public class MessageScrollPane extends JPanel implements MouseMotionListener,
     }
     
     public void clear() {
+        System.out.println( "there are " + _messageList.size() + " messages" );
         synchronized( _messageList ) {
             _messageList.clear();
         }
+        System.out.println( "now there are " + _messageList.size() );
         Dimension d = getSize();
         int dataHeight = measureDataHeight();
         _scrollBar.setValues( -_yOffset, d.height, 0, dataHeight ); 
@@ -170,6 +175,8 @@ public class MessageScrollPane extends JPanel implements MouseMotionListener,
     
     public void addMessage( MessageNode newNode ) {
         boolean atEnd = scrolledToEnd();
+        //  In case messages are sent here after the "close()" operation.
+        if ( _messageList == null ) return;
         synchronized( _messageList ) {
             _messageList.add( newNode );
             if ( _maxMessages != null ) {

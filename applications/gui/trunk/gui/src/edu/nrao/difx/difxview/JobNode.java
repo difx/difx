@@ -595,14 +595,15 @@ public class JobNode extends QueueBrowserNode {
         }
         public void run() {
             try { Thread.sleep( _delay * 1000 ); } catch ( Exception e ) {}
-            Runtime rt = Runtime.getRuntime();
-            long usedMB = (rt.totalMemory() - rt.freeMemory()) / 1024 / 1024;
-            System.out.println( "memory usage before " + usedMB);
+//            Runtime rt = Runtime.getRuntime();
+//            long usedMB = (rt.totalMemory() - rt.freeMemory()) / 1024 / 1024;
+//            System.gc();
+//            System.out.println( "memory usage before " + usedMB);
             _editorMonitor.close();
             _editorMonitor = null;
-            System.gc();
-            usedMB = (rt.totalMemory() - rt.freeMemory()) / 1024 / 1024;
-            System.out.println( "memory usage after " + usedMB);
+//            System.gc();
+//            usedMB = (rt.totalMemory() - rt.freeMemory()) / 1024 / 1024;
+//            System.out.println( "memory usage after " + usedMB);
         }
         int _delay;
     }
@@ -936,7 +937,7 @@ public class JobNode extends QueueBrowserNode {
             this.add( _weightPlotWindow[i] );
             _weightPlot[i] = new Plot2DObject();
             _weightPlotWindow[i].add2DPlot( _weightPlot[i] );
-            _weightTrack[i] = new Track2D();
+//            _weightTrack[i] = new Track2D();
             _weightPlot[i].name( "Weight Plot " + i.toString() );
             _weightPlot[i].drawBackground( true );
             _weightPlot[i].drawFrame( true );

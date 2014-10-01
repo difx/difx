@@ -23,6 +23,8 @@ import edu.nrao.difx.difxutilities.TabCompletedTextField;
 
 import java.awt.*;
 
+import java.lang.instrument.Instrumentation;
+
 import java.awt.event.*;
 
 import java.sql.ResultSet;
@@ -317,10 +319,13 @@ public class QueueBrowserPanel extends TearOffPanel {
     
     public class MemoryMonitor extends Thread {
         public boolean stop;
+        public Instrumentation inst;
+        public MemoryMonitor() {
+        }
         public void run () {
             while ( !stop ) {
                 Runtime rt = Runtime.getRuntime();
-                System.out.println( ( (rt.totalMemory() - rt.freeMemory()) / 1024 / 1024 ) + "/" + ( rt.totalMemory() / 1024 / 1024 ) + " MB" );
+                System.out.println( ( (rt.totalMemory() - rt.freeMemory()) / 1024 / 1024 ) + " MB" );
                 try { Thread.sleep( 1000 ); } catch ( Exception e ) {}
             }
         }
