@@ -897,8 +897,8 @@ public class JobNode extends QueueBrowserNode {
                 newWeightDisplay( weightList.size() );
             for ( Iterator<DifxStatus.Weight> iter = weightList.iterator(); iter.hasNext(); ) {
                 DifxStatus.Weight thisWeight = iter.next();
-                //System.out.println( thisWeight.getAnt() +  "  " + thisWeight.getWt() );
-                weight( thisWeight.getAnt(), thisWeight.getWt() );
+                System.out.println( thisWeight.getAnt() +  "  " + thisWeight.getWt() );
+                //weight( thisWeight.getAnt(), thisWeight.getWt() );
             }
         }
         else if ( difxMsg.getBody().getDifxAlert() != null ) {
@@ -937,7 +937,6 @@ public class JobNode extends QueueBrowserNode {
             this.add( _weightPlotWindow[i] );
             _weightPlot[i] = new Plot2DObject();
             _weightPlotWindow[i].add2DPlot( _weightPlot[i] );
-//            _weightTrack[i] = new Track2D();
             _weightPlot[i].name( "Weight Plot " + i.toString() );
             _weightPlot[i].drawBackground( true );
             _weightPlot[i].drawFrame( true );

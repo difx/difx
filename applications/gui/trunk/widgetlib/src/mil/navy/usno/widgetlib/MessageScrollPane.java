@@ -154,11 +154,9 @@ public class MessageScrollPane extends JPanel implements MouseMotionListener,
     }
     
     public void clear() {
-        System.out.println( "there are " + _messageList.size() + " messages" );
         synchronized( _messageList ) {
             _messageList.clear();
         }
-        System.out.println( "now there are " + _messageList.size() );
         Dimension d = getSize();
         int dataHeight = measureDataHeight();
         _scrollBar.setValues( -_yOffset, d.height, 0, dataHeight ); 
