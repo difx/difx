@@ -552,6 +552,8 @@ public class JobEditorMonitor extends JFrame {
     public void close() {
         _scrollPane.close();
         _messageDisplayPanel.close();
+        _dataSourcesPane.close();
+        _processorsPane.close();
     }
     
     protected class UpdateThread extends Thread {

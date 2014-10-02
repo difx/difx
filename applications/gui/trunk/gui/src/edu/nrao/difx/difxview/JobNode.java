@@ -897,8 +897,8 @@ public class JobNode extends QueueBrowserNode {
                 newWeightDisplay( weightList.size() );
             for ( Iterator<DifxStatus.Weight> iter = weightList.iterator(); iter.hasNext(); ) {
                 DifxStatus.Weight thisWeight = iter.next();
-                System.out.println( thisWeight.getAnt() +  "  " + thisWeight.getWt() );
-                //weight( thisWeight.getAnt(), thisWeight.getWt() );
+                //System.out.println( thisWeight.getAnt() +  "  " + thisWeight.getWt() );
+                weight( thisWeight.getAnt(), thisWeight.getWt() );
             }
         }
         else if ( difxMsg.getBody().getDifxAlert() != null ) {
