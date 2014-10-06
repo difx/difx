@@ -40,6 +40,8 @@ import java.awt.event.MouseMotionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 
 import java.util.ArrayDeque;
 import java.util.Vector;
@@ -129,7 +131,7 @@ public class BrowserNode extends JPanel implements MouseListener, MouseMotionLis
             _selectedLabel = "\u2605";  //  filled star
         else
             _selectedLabel = selectedLabel;
-        _selectedButton = new JButton( _unselectedLabel );
+        _selectedButton = new SelectButton( _unselectedLabel );
         _selectedButton.setBorderPainted( false );
         _selectedButton.setContentAreaFilled( false );
         _selectedButton.setMargin( new Insets( 0, 0, 2, 0 ) );
@@ -598,14 +600,12 @@ public class BrowserNode extends JPanel implements MouseListener, MouseMotionLis
         }
     }
 
-    
     protected boolean _open;
     protected boolean _showThis;
     protected boolean _inBounds;
     protected int _ySize;
     protected int _xSize;
     protected int _level;
-//    protected ArrayDeque<BrowserNode> _children;
     protected Vector<BrowserNode> _children;
     protected boolean _mouseIn;
     protected Color _backgroundColor;
@@ -626,10 +626,62 @@ public class BrowserNode extends JPanel implements MouseListener, MouseMotionLis
     protected boolean _addCountAlways;
     
     protected boolean _selected;
-    protected JButton _selectedButton;
+    protected SelectButton _selectedButton;
     protected String _selectedLabel;
     protected String _unselectedLabel;
     protected Color _selectedColor;
     protected Color _unselectedColor;
+    
+
+    public class SelectButton extends ZButton implements MouseListener {
+
+        public SelectButton( String label ) {
+            super( label );
+            //  Remove all of the old action and mouse listeners, add our mouse listener
+            //  which will generate an action event.
+            MouseListener [] mouseListeners = this.getMouseListeners();
+            for ( int i = 0; i < mouseListeners.length; ++i )
+                this.removeMouseListener( mouseListeners[i] );
+            ActionListener [] actionListeners = this.getActionListeners();
+            for ( int i = 0; i < actionListeners.length; ++i )
+                this.removeActionListener( actionListeners[i] );
+            addMouseListener( this );
+        }
+
+        private boolean _shiftDown;
+
+        public boolean shiftDown() {
+            return _shiftDown;
+        }
+
+        @Override
+        public void mouseClicked( MouseEvent e ) {
+            _shiftDown = e.isShiftDown();
+            //  Generate an action for all action listeners.
+            ActionListener [] actionListeners = this.getActionListeners();
+            for ( int i = 0; i < actionListeners.length; ++i ) {
+                actionListeners[i].actionPerformed( new ActionEvent( this, ActionEvent.ACTION_PERFORMED, "" ) );
+            }
+        }
+    
+        @Override
+        public void mouseEntered( MouseEvent e ) {
+        }
+
+        @Override
+        public void mouseExited( MouseEvent e ) {
+        }
+
+        @Override
+        public void mousePressed( MouseEvent e ) {
+        }
+
+        @Override
+        public void mouseReleased( MouseEvent e ) {
+        }
+    
+    }    
 
 }
+
+

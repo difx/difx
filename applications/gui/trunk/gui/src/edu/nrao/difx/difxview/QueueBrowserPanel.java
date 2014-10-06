@@ -640,6 +640,77 @@ public class QueueBrowserPanel extends TearOffPanel {
         }
     }
     
+    /*
+     * Select or deselect a group of jobs between the two given (including the two given).  The
+     * given jobs are not necessarily in order (i.e. "end" can be before "start").
+     */
+    public void groupSelection( JobNode job1, JobNode job2, boolean select ) {
+        if ( job1 == null || job2 == null )
+            return;
+        //  First locate the start and end job (we need to make sure we can find both!).
+        JobNode start = null;
+        JobNode end = null;
+        synchronized ( _browserPane ) {
+            for ( Iterator<BrowserNode> projectIter = _browserPane.browserTopNode().children().iterator(); 
+                    projectIter.hasNext() && end == null; ) {
+                ExperimentNode thisExperiment = (ExperimentNode)projectIter.next();
+                for ( Iterator<BrowserNode> passIter = thisExperiment.childrenIterator(); 
+                        passIter.hasNext() && end == null; ) {
+                    PassNode thisPass = (PassNode)passIter.next();
+                    for ( Iterator<BrowserNode> jobIter = thisPass.childrenIterator(); 
+                            jobIter.hasNext() && end == null; ) {
+                        JobNode thisJob = (JobNode)jobIter.next();
+                        //  Look first for the start...
+                        if ( start == null ) {
+                            if ( job1.inputFile().contentEquals( thisJob.inputFile() ) || 
+                                    job2.inputFile().contentEquals( thisJob.inputFile() ) ) {
+                                start = thisJob;
+                            }
+                        }
+                        //  Then look for the end.  This might be the same job as the start!
+                        if ( start != null ) {
+                            if ( ( job1 != start && job1.inputFile().contentEquals( thisJob.inputFile() ) ) ||
+                                    ( job2 != start && job2.inputFile().contentEquals( thisJob.inputFile() ) ) ) {
+                                end = thisJob;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        //  If both have been found, run through the list and select them and everything
+        //  in between them.
+        if ( start != null && end != null ) {
+            boolean done = false;
+            boolean started = false;
+            synchronized ( _browserPane ) {
+                for ( Iterator<BrowserNode> projectIter = _browserPane.browserTopNode().children().iterator(); 
+                        projectIter.hasNext() && !done; ) {
+                    ExperimentNode thisExperiment = (ExperimentNode)projectIter.next();
+                    for ( Iterator<BrowserNode> passIter = thisExperiment.childrenIterator(); 
+                            passIter.hasNext() && !done; ) {
+                        PassNode thisPass = (PassNode)passIter.next();
+                        for ( Iterator<BrowserNode> jobIter = thisPass.childrenIterator(); 
+                                jobIter.hasNext() && !done; ) {
+                            JobNode thisJob = (JobNode)jobIter.next();
+                            //  Look first for the start...
+                            if ( !started && start == thisJob ) {
+                                started = true;
+                            }
+                            //  Select/deselect the job if we've started.
+                            if ( started ) {
+                                thisJob.selected( select );
+                                //  Then look for the end.
+                                if ( end == thisJob )
+                                    done = true;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
     protected void showItemChange() {};
     
     /*

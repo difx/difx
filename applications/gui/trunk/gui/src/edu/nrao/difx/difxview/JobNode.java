@@ -59,7 +59,17 @@ public class JobNode extends QueueBrowserNode {
         _settings = settings;
         _this = this;
         _autostate = new Integer( AUTOSTATE_UNDETERMINED );
-        //_editorMonitor = new JobEditorMonitor( this, _settings );
+        //  Override the selection button action to look for shift events.
+        //  Remove old ones.
+        ActionListener[] actionListeners = _selectedButton.getActionListeners();
+        for ( int i = 0; i < actionListeners.length; ++i )
+            _selectedButton.removeActionListener( actionListeners[i] );
+        _selectedButton.addActionListener(new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                selectionButtonAction();
+                checkForShift();
+            }
+        });
     }
     
     @Override
@@ -250,6 +260,7 @@ public class JobNode extends QueueBrowserNode {
         });
         _stopJobItem.setEnabled( false );
         _popup.add( _stopJobItem );
+        
     }
     
     @Override
@@ -367,6 +378,32 @@ public class JobNode extends QueueBrowserNode {
             setTextArea( _active, _widthActive );
         if ( _statusId.isVisible() )
             setTextArea( _statusId, _widthStatusId );
+    }
+    
+    static JobNode _lastSelection = null;
+    static JobNode _lastDeselection = null;
+    
+    /*
+     * Look for uses of the shift key that indicate "regions" of selected jobs.
+     */
+    public void checkForShift() {
+        if ( _selected ) {
+            //  Tell the top-level queue browser that it looks like the user may
+            //  be selecting a bunch of items if the shift key is down.  This requires
+            //  both this selection and the previous one (if it exists).
+            if ( _lastSelection != null && _selectedButton.shiftDown() ) {
+                _settings.queueBrowser().groupSelection( this, _lastSelection, true );
+            }
+            _lastSelection = this;
+            _lastDeselection = null;
+        }
+        else {
+            if ( _lastDeselection != null && _selectedButton.shiftDown() ) {
+                _settings.queueBrowser().groupSelection( this, _lastDeselection, false );
+            }
+            _lastSelection = null;
+            _lastDeselection = this;
+        }
     }
     
     /*
