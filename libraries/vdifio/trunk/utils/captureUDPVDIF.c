@@ -133,6 +133,7 @@ int main(int argc, char **argv)
   struct sockaddr_in server;    /* Socket address */
   struct msghdr msg;
   struct iovec iov[1];
+  char* iobase;
 
   //non-UDP socket related variables
   int skipbytesfront, skipbytesback;
@@ -227,11 +228,12 @@ int main(int argc, char **argv)
   //loop through reading frames
   printf("Finished initialising socket etc - about to start reading data\n");
   framesread = 0;
+  iobase = wtd.receivebuffers[wtd.fillsegment];
   while(!done) {
     memset(&msg, 0, sizeof(msg));
     msg.msg_iov     = &iov[0];
     msg.msg_iovlen  = 1;
-    iov[0].iov_base = wtd.receivebuffers[wtd.fillsegment] + currentframes*wtd.udpframesize;
+    iov[0].iov_base = iobase;
     iov[0].iov_len  = BUFFERSEGBYTES - currentframes*wtd.udpframesize;
 
     receivedbytes = recvmsg(socketnumber,&msg,MSG_WAITALL);
@@ -245,40 +247,45 @@ int main(int argc, char **argv)
       fprintf(stderr, "Remote socket closed - aborting\n");
       done=1;
       continue;
-    } else if (receivedbytes!=wtd.udpframesize) {
+    } else if (receivedbytes!=(wtd.udpframesize + skipbytesfront + skipbytesback)) {
       if(wtd.udpframesize != 0) { //not the first packet - something bad happened
-        fprintf(stderr, "Received %d bytes vs framesize %d - aborting\n", receivedbytes, wtd.udpframesize);
+        fprintf(stderr, "Received %d bytes vs framesize %d+%d+%d - aborting\n", receivedbytes, wtd.udpframesize, skipbytesfront, skipbytesback);
         done = 1;
         continue;
       }
       else { //was the first time - set framebytes
-        wtd.udpframesize = receivedbytes;
+        wtd.udpframesize = receivedbytes - skipbytesfront - skipbytesback;
         wtd.framespersegment = BUFFERSEGBYTES/wtd.udpframesize;
-	header = (vdif_header*)(wtd.receivebuffers[wtd.fillsegment] + wtd.udpframesize*currentframes);
+	header = (vdif_header*)iobase;
         printf("Setting framebytes to %d, framespersegment to %d\n", wtd.udpframesize, wtd.framespersegment);
         printf("Starting from front, framebytes is %d, MJD is %d, seconds is %d, num channels is %d\n", 
                getVDIFFrameBytes(header),
                getVDIFFrameMJD(header),
                getVDIFFrameSecond(header),
                getVDIFNumChannels(header));
-	header = (vdif_header*)((char*)header+8);
+	header = (vdif_header*)(iobase+8);
         printf("Starting from 8 bytes in, framebytes is %d, MJD is %d, seconds is %d, num channels is %d\n",
                getVDIFFrameBytes(header),
                getVDIFFrameMJD(header),
                getVDIFFrameSecond(header),
                getVDIFNumChannels(header));
+	header = (vdif_header*)(iobase+skipbytesfront);
+        printf("Starting from 'skipbytesfront' in, framebytes is %d, MJD is %d, seconds is %d, num channels is %d\n",
+               getVDIFFrameBytes(header),
+               getVDIFFrameMJD(header),
+               getVDIFFrameSecond(header),
+               getVDIFNumChannels(header));
 	printf("The hex value of that first byte is %llx\n", 
-               *((unsigned long long*)(wtd.receivebuffers[wtd.fillsegment] + wtd.udpframesize*currentframes)));
+               *((unsigned long long*)(iobase)));
       }
     }
     //if we get here its ok
     if(skipbytesfront != 0) //move the stuff in memory if needed
-      memmove(wtd.receivebuffers[wtd.fillsegment] + wtd.udpframesize*currentframes, 
-              wtd.receivebuffers[wtd.fillsegment] + wtd.udpframesize*currentframes + skipbytesfront,
-              wtd.udpframesize - skipbytesfront - skipbytesback);
+      memmove(iobase, iobase+skipbytesfront, wtd.udpframesize);
     ++currentframes;
     ++framesread;
-    if(currentframes == wtd.framespersegment) {
+    iobase += wtd.udpframesize;
+    if(currentframes >= wtd.framespersegment) {
       perr = pthread_mutex_lock(&(wtd.locks[(wtd.fillsegment+1)%NUMSEGMENTS]));
       if(perr != 0) {
         fprintf(stderr, "Main thread error locking segment %d - aborting!\n", (wtd.fillsegment+1)%NUMSEGMENTS);
@@ -292,6 +299,7 @@ int main(int argc, char **argv)
         done = 1;
       }
       wtd.fillsegment = (wtd.fillsegment+1)%NUMSEGMENTS;
+      iobase = wtd.receivebuffers[wtd.fillsegment];
       currentframes = 0;
     }
   }
