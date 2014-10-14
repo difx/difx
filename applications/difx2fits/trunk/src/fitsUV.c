@@ -1154,9 +1154,9 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D, struct fits_keywords *p_fi
 	/* define the columns in the UV data FITS Table */
 	struct fitsBinTableColumn columns[] =
 	{
-		{"UU--SIN", "1E", "u", "SECONDS"},
-		{"VV--SIN", "1E", "v", "SECONDS"},
-		{"WW--SIN", "1E", "w", "SECONDS"},
+		{"UU---SIN", "1E", "u", "SECONDS"},
+		{"VV---SIN", "1E", "v", "SECONDS"},
+		{"WW---SIN", "1E", "w", "SECONDS"},
 		{"DATE", "1D", "Julian day at 0 hr current day", "DAYS"},
 		{"TIME", "1D", "UTC time", "DAYS"},
 		{"BASELINE", "1J", "baseline: ant1*256 + ant2", 0},
