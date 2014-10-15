@@ -290,56 +290,66 @@ static void fprintVDIFHeaderLong(FILE *out, const vdif_header *header)
 	fprintf(out, "  version = %d\n", header->version);
 	fprintf(out, "  stationid = 0x%X = %d\n", header->stationid, header->stationid);
 	fprintf(out, "  iscomplex = %d\n", header->iscomplex);
-	fprintf(out, "  eversion = 0x%X = %d\n", header->eversion, header->eversion);
-	if(header->eversion == 1)
+	if(header->legacymode == 0)
 	{
-		const vdif_edv1_header *edv1 = (const vdif_edv1_header *)header;
-		
-		fprintf(out, "  samprate = 0x%06X = %d %s\n", edv1->samprate, edv1->samprate, edv1->samprateunits ? "MHz" : "kHz");
-		fprintf(out, "  syncword = 0x%08X\n", edv1->syncword);
-		fprintf(out, "  name = %8s", edv1->name);
-	}
-	else if(header->eversion == 3)
-	{
-		const vdif_edv3_header *edv3 = (const vdif_edv3_header *)header;
-		
-		fprintf(out, "  samprate = 0x%06X = %d %s\n", edv3->samprate, edv3->samprate, edv3->samprateunits ? "MHz" : "kHz");
-		fprintf(out, "  syncword = 0x%08X\n", edv3->syncword);
-		fprintf(out, "  tuning = 0x%08X = %8.6f MHz\n", edv3->tuning, edv3->tuning/16777216.0);
-		fprintf(out, "  dbeunit = %d\n", edv3->dbeunit);
-		fprintf(out, "  ifnumber = %d\n", edv3->ifnumber);
-		fprintf(out, "  subband = %d\n", edv3->subband);
-		fprintf(out, "  sideband = %d -> %s\n", edv3->sideband, edv3->sideband ? "U" : "L");
-		fprintf(out, "  rev = %d.%d\n", edv3->majorrev, edv3->minorrev);
-		fprintf(out, "  personalitytype = 0x%2X\n", edv3->personalitytype);
-	}
-	else
-	{
-		fprintf(out, "  extended1 = %06X\n", header->extended1);
-		fprintf(out, "  extended2 = %08X\n", header->extended2);
-		fprintf(out, "  extended3 = %08X\n", header->extended3);
-		fprintf(out, "  extended4 = %08X\n", header->extended4);
+		fprintf(out, "  eversion = 0x%X = %d\n", header->eversion, header->eversion);
+		if(header->eversion == 1)
+		{
+			const vdif_edv1_header *edv1 = (const vdif_edv1_header *)header;
+			
+			fprintf(out, "  samprate = 0x%06X = %d %s\n", edv1->samprate, edv1->samprate, edv1->samprateunits ? "MHz" : "kHz");
+			fprintf(out, "  syncword = 0x%08X\n", edv1->syncword);
+			fprintf(out, "  name = %8s", edv1->name);
+		}
+		else if(header->eversion == 3)
+		{
+			const vdif_edv3_header *edv3 = (const vdif_edv3_header *)header;
+			
+			fprintf(out, "  samprate = 0x%06X = %d %s\n", edv3->samprate, edv3->samprate, edv3->samprateunits ? "MHz" : "kHz");
+			fprintf(out, "  syncword = 0x%08X\n", edv3->syncword);
+			fprintf(out, "  tuning = 0x%08X = %8.6f MHz\n", edv3->tuning, edv3->tuning/16777216.0);
+			fprintf(out, "  dbeunit = %d\n", edv3->dbeunit);
+			fprintf(out, "  ifnumber = %d\n", edv3->ifnumber);
+			fprintf(out, "  subband = %d\n", edv3->subband);
+			fprintf(out, "  sideband = %d -> %s\n", edv3->sideband, edv3->sideband ? "U" : "L");
+			fprintf(out, "  rev = %d.%d\n", edv3->majorrev, edv3->minorrev);
+			fprintf(out, "  personalitytype = 0x%2X\n", edv3->personalitytype);
+		}
+		else
+		{
+			fprintf(out, "  extended1 = %06X\n", header->extended1);
+			fprintf(out, "  extended2 = %08X\n", header->extended2);
+			fprintf(out, "  extended3 = %08X\n", header->extended3);
+			fprintf(out, "  extended4 = %08X\n", header->extended4);
+		}
 	}
 }
 
 static void fprintVDIFHeaderShort(FILE *out, const vdif_header *header)
 {
-	fprintf(out, "%5d %8d %5d %6d %6d %5d %4d %d %d %d %3d", header->epoch, header->seconds, header->frame, header->threadid, header->framelength8*8, 1 << header->nchan, header->nbits+1, header->legacymode, header->invalid, header->iscomplex, header->eversion);
-	if(header->eversion == 1)
+	if(header->legacymode == 0)
 	{
-		const vdif_edv1_header *edv1 = (const vdif_edv1_header *)header;
-		long long int samprate;
+		fprintf(out, "%5d %8d %5d %6d %6d %5d %4d %d %d %d %3d", header->epoch, header->seconds, header->frame, header->threadid, header->framelength8*8, 1 << header->nchan, header->nbits+1, header->legacymode, header->invalid, header->iscomplex, header->eversion);
+		if(header->eversion == 1)
+		{
+			const vdif_edv1_header *edv1 = (const vdif_edv1_header *)header;
+			long long int samprate;
 
-		samprate = edv1->samprate * (edv1->samprateunits ? 1000000LL : 1000LL);
-		fprintf(out, " %10lld 0x%08X %8s", samprate, edv1->syncword, edv1->name);
+			samprate = edv1->samprate * (edv1->samprateunits ? 1000000LL : 1000LL);
+			fprintf(out, " %10lld 0x%08X %8s", samprate, edv1->syncword, edv1->name);
+		}
+		else if(header->eversion ==3)
+		{
+			const vdif_edv3_header *edv3 = (const vdif_edv3_header *)header;
+			long long int samprate;
+
+			samprate = edv3->samprate * (edv3->samprateunits ? 1000000LL : 1000LL);
+			fprintf(out, " %10lld 0x%08X %3d %2d %2d %10.6f    %c %d.%d 0x%2X", samprate, edv3->syncword, edv3->dbeunit, edv3->ifnumber, edv3->subband, edv3->tuning/16777216.0, edv3->sideband ? 'U' : 'L', edv3->majorrev, edv3->minorrev, edv3->personalitytype);
+		}
 	}
-	else if(header->eversion ==3)
+	else
 	{
-		const vdif_edv3_header *edv3 = (const vdif_edv3_header *)header;
-		long long int samprate;
-
-		samprate = edv3->samprate * (edv3->samprateunits ? 1000000LL : 1000LL);
-		fprintf(out, " %10lld 0x%08X %3d %2d %2d %10.6f    %c %d.%d 0x%2X", samprate, edv3->syncword, edv3->dbeunit, edv3->ifnumber, edv3->subband, edv3->tuning/16777216.0, edv3->sideband ? 'U' : 'L', edv3->majorrev, edv3->minorrev, edv3->personalitytype);
+		fprintf(out, "%5d %8d %5d %6d %6d %5d %4d %d %d %d NA", header->epoch, header->seconds, header->frame, header->threadid, header->framelength8*8, 1 << header->nchan, header->nbits+1, header->legacymode, header->invalid, header->iscomplex);
 	}
 	fprintf(out, "\n");
 }
