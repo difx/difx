@@ -20,8 +20,8 @@
 
 const char program[] = "m5bstate";
 const char author[]  = "Alessandra Bertarini";
-const char version[] = "1.1";
-const char verdate[] = "2011 Sep 12";
+const char version[] = "1.2";
+const char verdate[] = "2014 Oct 20";
 
 int die = 0;
 
@@ -58,24 +58,292 @@ int usage(const char *pgm)
 	return 0;
 }
 
+int process_realdata(struct mark5_stream *ms, int nframes, int nstates) {
+  int i, j, k, status, sum;
+  long long total, unpacked;
+  double x;
+  
+  int chunk = ms->framesamples;
+  int nif = ms->nchan;
+
+  double **data = (double **)malloc(nif*sizeof(double *));
+  long **bstate = (long **)malloc(nif*sizeof(long *));
+  /*Haystack gain's calculation*/
+  double *gfact = (double *)malloc(nif*sizeof(double));
+ 
+
+/* a is required for Haystack gain calculation*/
+  double a = 8 * (M_PI - 3) / (3 * M_PI * (4 - M_PI));
+
+  total = unpacked = 0;
+
+  for(i = 0; i < nif; i++)
+  {
+    data[i] = (double *)malloc((chunk+2)*sizeof(double)); 
+    bstate[i] = (long *)malloc((nstates)*sizeof(long)); 
+  }
+
+  /* initialize bstate variable to zeroes*/
+  for(i = 0; i < nif; i++)
+  {
+    for(j = 0; j < nstates; j++)
+    {
+      bstate[i][j] = 0;
+    }
+  }
+	  
+	  
+  for(j = 0; j < nframes; j++)
+  {
+  if(die)
+  {
+    break;
+  }
+	      
+  status = mark5_stream_decode_double(ms, chunk, data);
+	      
+  if(status < 0)
+  {
+    break;
+  }
+  else
+  {
+    total += chunk;
+    unpacked += status;
+  }
+	      
+  if(ms->consecutivefails > 5)
+  {
+    break;
+  }
+	      
+	      
+  for(i = 0; i < nif; i++) 
+  {
+		  
+    for(k = 0; k < chunk; k++)
+    {
+      /*       printf("%lf\n", data[i][k]); */
+      /* now start to count the states from data[i][k]*/
+		      
+      if (ms->nbit == 1)
+      {
+	if (data[i][k] > 0) bstate[i][1]++;
+	if (data[i][k] < 0) bstate[i][0]++;
+      }
+      else if (ms->nbit == 2)
+      {
+	if (data[i][k] > 0 && data[i][k] < 2.) bstate[i][2]++;
+	if (data[i][k] > 2.) bstate[i][3]++;
+	if (data[i][k] < 0 && data[i][k] > -2.) bstate[i][1]++;
+	if (data[i][k] < -2.) bstate[i][0]++;
+      }
+      
+    }
+  } 
+	      
+  }
+
+  fprintf(stderr, "%Ld / %Ld samples unpacked\n", unpacked, total);
+
+  /* header of the output bstate table based on Haystack bstate output*/
+  if (ms->nbit == 1)
+  {
+    printf("\nCh    -      +         -      +     gfact\n");
+  }
+  else if (ms->nbit == 2)
+  {
+    printf("\nCh    --      -     +     ++        --      -      +     ++     gfact\n");
+  }
+	  
+  /* normalize */
+  for(i = 0; i < nif; i++)
+  {
+    printf("%2d ", i);
+    sum = 0.0;
+    for(j = 0; j < nstates; j++)
+    {
+      sum += bstate[i][j];
+    }
+    for(j = 0; j < nstates; j++)
+    {
+      printf("%7ld ", bstate[i][j]);
+    }
+    printf("    ");
+    for(j = 0; j < nstates; j++)
+    {
+      printf("%5.1f  ", (float)bstate[i][j]/sum * 100.);
+    }
+    /* Haystack gain correction calculation */
+	      
+    x = (double) (bstate[i][1] + bstate[i][2]) / sum;
+    gfact[i] = sqrt (-4 / (M_PI * a) - log (1 - x*x)
+		     + 2 * sqrt (pow (2 / (M_PI * a) + log (1 - x*x) / 2, 2)
+				 - log (1-x*x)/a)) / 0.91;
+    printf("%5.2lf", gfact[i]);  
+    printf("\n");
+  }
+	  
+	  
+  for(i = 0; i < nif; i++)
+  {
+    free(data[i]);
+    free(bstate[i]);
+  }
+  free(data);
+  free(gfact);
+  free(bstate);
+}
+
+int process_complexdata(struct mark5_stream *ms, int nframes, int nstates) {
+  int i, j, k, status, sum;
+  long long total, unpacked;
+  double x;
+  
+  int chunk = ms->framesamples;
+  int nif = ms->nchan;
+
+  double complex **cdata = (double complex**)malloc(nif*sizeof(double complex*));
+  long **bstate = (long **)malloc(nif*sizeof(long *));
+  /*Haystack gain's calculation*/
+  double *gfact = (double *)malloc(nif*sizeof(double));
+ 
+
+/* a is required for Haystack gain calculation*/
+  double a = 8 * (M_PI - 3) / (3 * M_PI * (4 - M_PI));
+
+  total = unpacked = 0;
+
+  for(i = 0; i < nif; i++)
+  {
+    cdata[i] = (double complex*)malloc((chunk+2)*sizeof(double complex)); 
+    bstate[i] = (long *)malloc((nstates*2)*sizeof(long)); 
+  }
+
+  /* initialize bstate variable to zeroes*/
+  for(i = 0; i < nif; i++)
+  {
+    for(j = 0; j < nstates*2; j++)
+    {
+      bstate[i][j] = 0;
+    }
+  }
+	  
+	  
+  for(j = 0; j < nframes; j++)
+  {
+    if(die)
+      {
+	break;
+      }
+	      
+    status = mark5_stream_decode_double_complex(ms, chunk, cdata);
+	      
+    if(status < 0)
+      {
+	break;
+      }
+    else
+      {
+	total += chunk;
+	unpacked += status;
+      }
+    
+    if(ms->consecutivefails > 5)
+      {
+	break;
+      }
+    
+    
+    for(i = 0; i < nif; i++) 
+      {
+	
+	for(k = 0; k < chunk; k++)
+	  {
+	    /*       printf("%lf\n", data[i][k]); */
+	    /* now start to count the states from data[i][k]*/
+	    
+	    if (ms->nbit == 1)
+	      {
+		if (creal(cdata[i][k]) > 0) bstate[i][1]++;
+		if (creal(cdata[i][k]) < 0) bstate[i][0]++;
+		if (cimag(cdata[i][k]) > 0) bstate[i][3]++;
+		if (cimag(cdata[i][k]) < 0) bstate[i][2]++;
+	      }
+	    else if (ms->nbit == 2)
+	      {
+		if (creal(cdata[i][k]) > 0 && creal(cdata[i][k]) < 2.) bstate[i][2]++;
+		if (creal(cdata[i][k]) > 2.) bstate[i][3]++;
+		if (creal(cdata[i][k]) < 0 && creal(cdata[i][k]) > -2.) bstate[i][1]++;
+		if (creal(cdata[i][k]) < -2.) bstate[i][0]++;
+		if (cimag(cdata[i][k]) > 0 && cimag(cdata[i][k]) < 2.) bstate[i][6]++;
+		if (cimag(cdata[i][k]) > 2.) bstate[i][7]++;
+		if (cimag(cdata[i][k]) < 0 && cimag(cdata[i][k]) > -2.) bstate[i][5]++;
+		if (cimag(cdata[i][k]) < -2.) bstate[i][4]++;
+	      }
+	  }
+      }
+  }    
+   
+  fprintf(stderr, "%Ld / %Ld samples unpacked\n", unpacked, total);
+    
+  /* header of the output bstate table based on Haystack bstate output*/
+  if (ms->nbit == 1)
+    {
+      printf("\nCh    -      +         -      +    -      +         -      +     gfact\n");
+    }
+  else if (ms->nbit == 2)
+    {
+      printf("\nCh     --       -       +      ++      --       -       +      ++        --      -      +     ++     --      -      +     ++    gfact\n");
+    }
+  
+  /* normalize */
+  for(i = 0; i < nif; i++)
+    {
+      printf("%2d ", i);
+      sum = 0.0;
+      for(j = 0; j < nstates; j++)
+	{
+	  sum += bstate[i][j];
+	}
+      for(j = 0; j < nstates*2; j++)
+	{
+	  printf("%7ld ", bstate[i][j]);
+	}
+      printf("    ");
+      for(j = 0; j < nstates*2; j++)
+	{
+	  printf("%5.1f  ", (float)bstate[i][j]/sum * 100.);
+	}
+      /* Haystack gain correction calculation */
+      
+      x = (double) (bstate[i][1] + bstate[i][2]) / sum;
+      gfact[i] = sqrt (-4 / (M_PI * a) - log (1 - x*x)
+		       + 2 * sqrt (pow (2 / (M_PI * a) + log (1 - x*x) / 2, 2)
+				   - log (1-x*x)/a)) / 0.91;
+      printf("%5.2lf", gfact[i]);  
+      printf("\n");
+    }
+    
+  
+  for(i = 0; i < nif; i++)
+    {
+      free(cdata[i]);
+      free(bstate[i]);
+    }
+  free(cdata);
+  free(gfact);
+  free(bstate);
+}
+
+
 int bstate(const char *filename, const char *formatname, int nframes,
 	   long long offset)
 {
 	struct mark5_stream *ms;
-        double **data;
-        long **bstate;
 	int i, j, k, status;
-	int chunk, nif, nstates;
-	long long total, unpacked;
-	double a, x;
-        int sum;       
-        double *gfact;
-
-/* a is required for Haystack gain calculation*/
-        a = 8 * (M_PI - 3) / (3 * M_PI * (4 - M_PI));
-
-
-	total = unpacked = 0;
+	int nstates;
+	int docomplex;
 
 	ms = new_mark5_stream_absorb(
 		new_mark5_stream_file(filename, offset),
@@ -90,6 +358,18 @@ int bstate(const char *filename, const char *formatname, int nframes,
 
 	mark5_stream_print(ms);
 
+	if(ms->complex_decode != 0) 
+	{
+		printf("Complex decode\n");
+		docomplex = 1;
+		//chunk = nchan;
+	}
+	else
+	{
+		docomplex = 0;
+		//chunk = 2*nchan;
+	}
+
        /*53601 is the max no. of frames for Mark5B that would overflow bstate storage in worst case */
         if(nframes <= 0 || nframes > 53601)
         {
@@ -98,8 +378,6 @@ int bstate(const char *filename, const char *formatname, int nframes,
         }
 
 
-        chunk = ms->framesamples;
-	nif = ms->nchan;
 
         /* bstate 2nd dim. is either 2 for the 1bit: ++ -- or 4 for the 2 bits ++ + - -- */
         if(ms->nbit == 1) 
@@ -112,132 +390,16 @@ int bstate(const char *filename, const char *formatname, int nframes,
         }
         else 
         {
-                printf("Error: invalid bit sampling %d, must be either 1 or 2\n", ms->nbit);
+                printf("Error: unsupported bit sampling %d, must be either 1 or 2\n", ms->nbit);
 
                 return 0;
         }
 
-        data = (double **)malloc(nif*sizeof(double *));
-        bstate = (long **)malloc(nif*sizeof(long *));
-        /*Haystack gain's calculation*/
-        gfact = (double *)malloc(nif*sizeof(double));
- 
-        for(i = 0; i < nif; i++)
-        {
-                data[i] = (double *)malloc((chunk+2)*sizeof(double)); 
-                bstate[i] = (long *)malloc((nstates)*sizeof(long)); 
-        }
-
-        /* initialize bstate variable to zeroes*/
-        for(i = 0; i < nif; i++)
-        {
-                for(j = 0; j < nstates; j++)
-                {
-                       bstate[i][j] = 0;
-                }
-        }
-        
- 
-	for(j = 0; j < nframes; j++)
-	{
-		if(die)
-		{
-			break;
-		}
-
-		status = mark5_stream_decode_double(ms, chunk, data);
-
-               if(status < 0)
-                {
-                        break;
-                }
-                else
-                {
-                        total += chunk;
-                        unpacked += status;
-                }
-
-                if(ms->consecutivefails > 5)
-                {
-                        break;
-                }
-
-
-                for(i = 0; i < nif; i++) 
-                {
-
-                       for(k = 0; k < chunk; k++)
-                       {
-                        /*       printf("%lf\n", data[i][k]); */
-                        /* now start to count the states from data[i][k]*/
-
-                               if (ms->nbit == 1)
-                               {
-                                      if (data[i][k] > 0) bstate[i][1]++;
-                                      if (data[i][k] < 0) bstate[i][0]++;
-                               }
-                               else if (ms->nbit == 2)
-                               {
-                                      if (data[i][k] > 0 && data[i][k] < 2.) bstate[i][2]++;
-                                      if (data[i][k] > 2.) bstate[i][3]++;
-                                      if (data[i][k] < 0 && data[i][k] > -2.) bstate[i][1]++;
-                                      if (data[i][k] < -2.) bstate[i][0]++;
-                               }
- 
-                       }
-                } 
-
+	if (docomplex) {
+	  process_complexdata(ms, nframes, nstates);
+	} else {
+	  process_realdata(ms, nframes, nstates);
 	}
-
-	fprintf(stderr, "%Ld / %Ld samples unpacked\n", unpacked, total);
-
-        /* header of the output bstate table based on Haystack bstate output*/
-        if (ms->nbit == 1)
-        {
-                 printf("\nCh    -      +         -      +     gfact\n");
-        }
-        else if (ms->nbit == 2)
-        {
-                 printf("\nCh    --      -     +     ++        --      -      +     ++     gfact\n");
-        }
-
-	/* normalize */
-	for(i = 0; i < nif; i++)
-	{
-                printf("%2d ", i);
-                sum = 0.0;
-		for(j = 0; j < nstates; j++)
-		{
-			sum += bstate[i][j];
-		}
-                for(j = 0; j < nstates; j++)
-                {
-                       printf("%7ld ", bstate[i][j]);
-                }
-                printf("    ");
-                for(j = 0; j < nstates; j++)
-                {
-                       printf("%5.1f  ", (float)bstate[i][j]/sum * 100.);
-                }
-/* Haystack gain correction calculation */
-
-                x = (double) (bstate[i][1] + bstate[i][2]) / sum;
-                gfact[i] = sqrt (-4 / (M_PI * a) - log (1 - x*x)
-                           + 2 * sqrt (pow (2 / (M_PI * a) + log (1 - x*x) / 2, 2)
-                           - log (1-x*x)/a)) / 0.91;
-                printf("%5.2lf", gfact[i]);  
-                printf("\n");
-	}
-
-
-	for(i = 0; i < nif; i++)
-	{
-		free(data[i]);
-		free(bstate[i]);
-	}
-	free(data);
-	free(gfact);
-	free(bstate);
 
 	delete_mark5_stream(ms);
 
