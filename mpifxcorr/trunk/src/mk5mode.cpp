@@ -55,6 +55,8 @@ Mk5Mode::Mk5Mode(Configuration * conf, int confindex, int dsindex, int recordedb
     }
     else
     {
+      if(conf->isNetwork(dsindex))
+        mark5stream->blanker = blanker_none;
       if(mark5stream->samplegranularity > 1)
         samplestounpack += mark5stream->samplegranularity;
       sprintf(mark5stream->streamname, "DS%d", dsindex);

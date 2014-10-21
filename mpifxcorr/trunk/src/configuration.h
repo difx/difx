@@ -323,6 +323,12 @@ public:
     s = datastreamtable[configs[0].datastreamindices[datastreamindex]].source;
     return (f == INTERLACEDVDIF && s == MK5MODULE);
   }
+  inline bool isNetwork(int datastreamindex) const
+  {
+    datasource s;
+    s = datastreamtable[configs[0].datastreamindices[datastreamindex]].source;
+    return (s == NETWORKSTREAM);
+  }
   inline bool isVDIFNetwork(int datastreamindex) const
   {
     dataformat f;
