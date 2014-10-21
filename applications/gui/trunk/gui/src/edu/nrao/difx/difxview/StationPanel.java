@@ -1143,7 +1143,7 @@ public class StationPanel extends IndexedPanel {
         bb.put( fileListName.getBytes() );
         //  And the data format.
         bb.putInt( _dataFormat.getText().length() );
-        bb.put( _dataFormat.getText().getBytes() );
+        bb.put( _dataFormat.getText().toUpperCase().getBytes() );
         //  The reference MJD for these data.  This is used to resolve ambiguities
         //  in MKIV and Mark5B data.  Not always necessary, but including it doesn't
         //  hurt.  We use the date associated with the first scan in the .vex file,
