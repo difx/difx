@@ -8,19 +8,40 @@
   </head>
   <body>
     <h1>DiFX GUI System Settings Window</h1>
-    The DiFX GUI System Settings window contains all user-editable
-    parameters that control the configuration and appearance of the GUI,
-    as well as its communication with the core DiFX software.&nbsp; The
-    System Settings are organized in a browse-able hierarchy of
-    "sub-topic" panels that can be opened and closed as needed.&nbsp;
-    Sub-topic panels include:<br>
+    The DiFX GUI has a fairly large number of configurable settings that
+    can be used to tailor its appearance and functionality to a
+    particular purpose.&nbsp; All settings are saved to files when the
+    GUI is shut down (or when the user requests it) to maintain
+    consistency between sessions.&nbsp; Some settings, such as window
+    sizes, are "invisible" in that the way to change them is to actually
+    do something, like change the size of a window.&nbsp; Most, however,
+    are collected in the System Settings Window where they are organized
+    into categories based on their function:<br>
     <ul>
-      <li><a href="#SETTINGS_FILE">Settings File</a></li>
-      <li><a href="#DiFX_Control_Connection">DiFX Control Connection</a><br>
+      <li><a href="#SETTINGS_FILE">Settings File</a> - controls the XML
+        files used to store setting.&nbsp; Also lets you set the GUI
+        title.</li>
+      <li><a href="#DiFX_Control_Connection">DiFX Control Connection</a>
+        - used to set up the TCP connection to the <i>guiServer</i>
+        (and DiFX).</li>
+      <li><a href="#DiFX_Message_Traffic">DiFX Message Traffic</a> -
+        controls which messages are sent to/from DiFX.<br>
       </li>
-      <li><a href="#Broadcast_Network">DiFX Mulitcast Messages</a></li>
-      <li><a href="#Database_Configuration">Database Configuration</a></li>
-      <li>Documentation Locations</li>
+      <li><a href="#Job%20Settings">Job Processing Settings</a> - used
+        to control where and how jobs are processed, and how scheduled
+        jobs are run.<br>
+      </li>
+      <li><a href="#Database_Configuration">Database Configuration</a> -
+        governs the use and configuration of a database for tracking
+        DiFX jobs.<br>
+      </li>
+      <li><a href="#EOP_Settings">EOP Settings</a> - controls where and
+        how EOP data are obtained.<br>
+      </li>
+      <li><a href="#Documentation_Settings">Documentation Locations</a>
+        - used to set the location of items available through the "Help"
+        menu button.<br>
+      </li>
     </ul>
     <h2><a name="SETTINGS_FILE"></a>Settings File</h2>
     <p>When the GUI is started it attempts to read an XML file
@@ -50,10 +71,10 @@
     <div align="left">
       <h5>Current</h5>
       <p>This field shows the full path to the XML file that was most
-        recently read, either a user-specified file or the default.&nbsp; If
-        this field is in red it indicates that the last read attempt
-        failed for some reason and that whatever settings that existed
-        previously are still in place.&nbsp; <br>
+        recently read, either a user-specified file or the
+        default.&nbsp; If this field is in red it indicates that the
+        last read attempt failed for some reason and that whatever
+        settings that existed previously are still in place.&nbsp; <br>
       </p>
       <h5>Open</h5>
       <p>Open can be used to open an existing XML file that contains GUI
@@ -69,8 +90,8 @@
         immediately.<br>
       </p>
       <h5>Defaults</h5>
-      <p>The Defaults button will restore the GUI to internal
-        defaults (not the default XML file settings).&nbsp; <br>
+      <p>The Defaults button will restore the GUI to internal defaults
+        (not the default XML file settings).&nbsp; <br>
         <br>
       </p>
     </div>
@@ -89,6 +110,8 @@
         traffic is collected by <span style="font-style: italic;">guiServer</span>
         and relayed over the TCP socket to the GUI (for more information
         about message traffic, see the <a href="#Broadcast_Network">DiFX
+
+
 
 
 
@@ -136,6 +159,8 @@
     <br>
     <ul>
       <li> <a href="#MulticastguiServer_Check_Boxes">Multicast/guiServer
+
+
           Check Boxes</a></li>
       <li><a href="#guiServer_Connection_Light">guiServer Connection
           Light</a></li>
@@ -168,6 +193,8 @@
       Light</h5>
     <p>The guiServer Connection light gives an immediate indication
       whether a healthy TCP connection exists between the GUI and <i>guiServer</i>.&nbsp;
+
+
       A green light means a good connection.&nbsp; Red means a broken
       connection.&nbsp; A yellow light occurs when the GUI has some
       concern about the connection (these usually turn red quickly) or
@@ -334,7 +361,8 @@ src="file:///Users/johnspitzak/difx/applications/gui/trunk/doc/images/settings/E
     Note that because the script is run on each node you can actually
     have a different script on each node doing different things, as long
     as they all share the same name.<br>
-    <h2><a name="Broadcast_Network"></a>DiFX Multicast Messages</h2>
+    <h2><a name="DiFX_Message_Traffic"></a>DiFX Message Traffic<br>
+    </h2>
     DiFX uses UDP multicast messages to periodically broadcast the
     status of individual nodes and the state of running jobs -
     information the user interface displays.&nbsp; The messages
@@ -342,6 +370,8 @@ src="file:///Users/johnspitzak/difx/applications/gui/trunk/doc/images/settings/E
     that should be running on each node in the DiFX cluster.&nbsp; This
     same multicast system is used by the user interface (either through
     <i>guiServer</i> or directly) <span style="font-style: italic;"></span>to
+
+
 
 
 
@@ -386,7 +416,9 @@ src="file:///Users/johnspitzak/difx/applications/gui/trunk/doc/images/settings/E
       italic;">guiServer</span> and retransmitted to the user interface
     where they are parsed and displayed exactly as if the user interface
     were on the subnet.&nbsp; This option is only available if the DiFX
-    Control Connection is set to "guiServer" (see above).<br>
+    Control Connection is set to "guiServer" (see above).&nbsp; As the
+    purely multicast operation of the GUI is archaic and running with <i>guiServer</i>
+    is assumed, this setting should always be checked.<br>
     <h4><a name="Group_Address"></a>Group Address</h4>
     This address is used to identify the UDP multicast "group" that <span
       style="font-style: italic;">mk5daemon</span> is using.&nbsp; It
@@ -491,88 +523,197 @@ src="file:///Users/johnspitzak/difx/applications/gui/trunk/doc/images/settings/E
       settings let you change the number of seconds that elapse without
       messages before the lights change.&nbsp; They should be adjusted
       to what works for your installation.<br>
-      <br>
+    </p>
+    <p><br>
+    </p>
+    <h2>Job Creation Settings</h2>
+    <p>Job Creation Settings govern how experiments, passes, and jobs
+      are created using the <a href="experimentEditor_content.html">Experiment
+        Editor</a>.<br>
+    </p>
+    <h5>Working Directory</h5>
+    <p>The working directory is the default path where a directory
+      devoted to a new experiment will be created.&nbsp; For instance,
+      if the Working Directory is defined as:<br>
+    </p>
+    <pre>	/home/difx/jobPath<br></pre>
+    a new experiment assigned the (abitrary) name "MyExperiment" will be
+    created in:<br>
+    <pre>	/home/difx/jobPath/MyExperiment<br></pre>
+    <p></p>
+    <p>This is just the default - the actual path can be changed to
+      whatever the user wants in the Experiment Editor <a
+        href="experimentEditor_content.html#IDENTIFICATION_DATE">Identification
+        Data</a> section.<br>
+    </p>
+    <h5><a name="ANTENNA_DEFAULTS"></a>Antenna Defaults</h5>
+    <p>The Antenna Defaults button shows the "Default Source Settings
+      Based on Antenna" window which can be used to connect settings for
+      data format and data sources to particular antennas based on their
+      two-character code names.&nbsp; These specifications are applied
+      to antennas that appear in the "Stations" section of the
+      Experiment Editor and, if done properly, can eliminate tedious and
+      error-prone user settings.<br>
+      <b>IMAGE</b><br>
+      The controls in the window are pretty straight-forward.&nbsp; To
+      add a new specification, click the "Add" button and edit the line
+      that appears.&nbsp; To remove a specification click the "X" button
+      associated with it.&nbsp; Only one specification for each antenna
+      code should be used (if there are multiple specifications for an
+      antenna the first one in the list will <i>probably</i> be used,
+      but this is not guaranteed behavior).&nbsp; The first field in a
+      new specification should be filled in with the (upper case) two
+      letter code for the antenna.&nbsp; A pull-down list provides
+      choices among data types a text field allows path or node
+      specification depending on data type (the former for "file" data,
+      the latter for "module" data).&nbsp; A check box indicates that
+      the specified file path is a file list.<br>
+    </p>
+    <p>The Antenna Defaults will be applied to the Stations section of
+      the Experiment Editor when a new .vex file is used.&nbsp; They are
+      not necessarily final settings - users can still change them.<br>
+    </p>
+    <h5><a name="Eliminate_Stations_With_Code"></a>Eliminate Stations
+      With "-1" Code</h5>
+    <p>This check box will cause the GUI to not use stations that have a
+      "-1" in the "code" column associated with their scan section in
+      the "source" .vex file.&nbsp; The lines associated with unused
+      scans are either deleted if "Excise Unused Scans from .vex File"
+      is checked (see below), or are commented out if it is not
+      checked.&nbsp; Examples:</p>
+    <p><b>The following lines:</b></p>
+    <p><b>are replaced by this if "Excise Unused Scans from .vex File"
+        is checked:</b></p>
+    <p><b>or this if it is not checked:<br>
+      </b></p>
+    <p>Doing this duplicates behavior found in hardware
+      correlators.&nbsp; Stations removed in this manner may be restored
+      by hand using the Scans/Station Timeline settings.&nbsp; By
+      default this box is checked - uncheck it if you don't want this
+      behavior.<br>
+    </p>
+    <h5>Excise Unused Scans from .vex File</h5>
+    <p>When creating a new experiment the user often eliminates scans
+      contained in the original .vex file.&nbsp; When this happens the
+      .v2d file must create a list of all remaining scans.&nbsp;
+      Unfortunately there is a limit to the total number of characters
+      that can be used to do this, and as experiments get larger and
+      include more scans this limit is invariably encountered.&nbsp; The
+      .v2d file can also request "all" scans in the .vex file using very
+      few characters.&nbsp; As a kludge to get around the character
+      limit, the unused scans are instead removed from the .vex file
+      altogether and the "all" request is left in the .v2d file.&nbsp;
+      The .vex file without the scans is a copy, placed in the pass
+      directory for the new experiment.&nbsp; The original "source" .vex
+      file is not altered.<br>
+    </p>
+    <p>This setting will also remove stations from scans when they have
+      been selectively eliminated (either using the "-1" code as
+      described <a href="#Eliminate_Stations_With_Code">above</a> or by
+      the user when creating an experiment).&nbsp; When the "Excise"
+      option is not selected, stations are commented out.<br>
+    </p>
+    <p>The primary motivation for this option (long scan lines in the
+      .v2d file) has been eliminated since its introduction, so by
+      default it is "off".&nbsp; The option has been left in place in
+      the event it serves some other purpose.<br>
     </p>
     <ul>
     </ul>
-    
-    <h2><a name="Job Settings"></a>Job Settings</h2>
-
-    The Job Settings govern how individual jobs are run, both when started directly by
-    the user and when automatically run by the scheduler.  
-    
+    <h2><a name="Job Settings"></a>Job Processing Settings</h2>
+    The Job Settings govern how individual jobs are run, both when
+    started directly by the user and when automatically run by the
+    scheduler.
     <h3>Data Source Defaults</h3>
-    
     <h3>Processing Defaults</h3>
-    
     <h3>Scheduler Settings</h3>
-    
-    Scheduler Settings govern the operation of the job scheduler.  The job scheduler can be set to run a large
-    number of jobs automatically.  For details on running jobs using the scheduler, see BLAT.
-    
+    Scheduler Settings govern the operation of the job scheduler. The
+    job scheduler can be set to run a large number of jobs
+    automatically. For details on running jobs using the scheduler, see
+    BLAT.
     <h3>Run Log Settings</h3>
-    
-    The GUI is designed to collect information about every job that is run.  The purpose of this, as designed at
-    least, is to generate statistics that allow the user, or possibly the GUI itself (if it ever gets that so
-    clever) to determine the "best" way to run jobs in the future.  The log may have other purposes as well.
-    
-    The run log is meant to be (mostly) invisible during regular use.  It will grow continuously, and consume
-    disk space in doing so.  If this proves annoying, run logging can be shut off at the cost of losing any information
-    the run log contains.
-    
+    The GUI is designed to collect information about every job that is
+    run. The purpose of this, as designed at least, is to generate
+    statistics that allow the user, or possibly the GUI itself (if it
+    ever gets that so clever) to determine the "best" way to run jobs in
+    the future. The log may have other purposes as well. The run log is
+    meant to be (mostly) invisible during regular use. It will grow
+    continuously, and consume disk space in doing so. If this proves
+    annoying, run logging can be shut off at the cost of losing any
+    information the run log contains.
     <h5>Log Run Data</h5>
-    
     This is a simple check box that turns logging on and off.
-    
     <h5>Run Log File</h5>
-    
-    The name of the run log file is by default ".difxGuiRunLog", in the user's home directory.  Changing the name
-    of the file will essentially create a new log file, as the log data for each run operation is simply appended
-    to the run log file name specified here.gui
-    
+    The name of the run log file is by default ".difxGuiRunLog", in the
+    user's home directory. Changing the name of the file will
+    essentially create a new log file, as the log data for each run
+    operation is simply appended to the run log file name specified
+    here.gui
     <h5>Analyzing Run Log Data</h5>
-    
-    The run log data are stored in XML format - not especially human readable, but flexible and easy for the GUI
-    to read and write.  For each job that is run, they contain the following information (XML keyword and variable type
-    in parenthesis):
+    The run log data are stored in XML format - not especially human
+    readable, but flexible and easy for the GUI to read and write. For
+    each job that is run, they contain the following information (XML
+    keyword and variable type in parenthesis):
     <ul>
-        <li><b>Active ID</b> ("active_id" - long): This is a unique long integer identifier assigned to the job - current the
-            data nd time of the run in milliseconds since January 1, 1970.
-        <li><b>Date/Time</b> ("time" - double): Start time of the job in seconds since January 1, 1970.
-        <li><b>Input File</b> ("inputFile" - string): Full path (as the head node sees it) to the input file associated with the job.
-            The input file contains detailed information about the job - if it is deleted you will lose that.
-        <li><b>Baselines</b> ("baselines" - int): Number of baselines in the job.
-        <li><b>Total Scan Data Measurement?</b> (scan_time): Some way of measuring the total processing volume that is required.
-            Not sure what this is yet.
-        <li><b>Scans</b> ("scans" - int): Number of scans in the job.
-        <li><b>Head Node</b> ("headnode" - string): Name of the head node used.
-        <li><b>Source Nodes</b> ("sourceNodes"): List of the source nodes used in the job.  Each item contains the following:
-            <ul>
-                <li><b>Source Node</b> ("node" - string): Node name of the source.
-                <li><b>Threads</b> ("threads" - int): Number of threads used for data.
-            </ul>
-        <li><b>Processing Nodes</b> ("processingNodes"): List of the nodes used for processing.  Each item has:
-            <ul>
-                <li><b>Processing Node</b> ("node" - string): Node name of processor.
-                <li><b>Threads</b> ("threads" - int): Number of threads used for processing.
-            </ul>
-        <li><b>Other Active IDs</b> ("activeIDs"): A list of the other jobs that were running at some point during the
-            processing of this job.
-        <li><b>Total Time</b> ("totalTime" - double): The "wall clock" time used to process the job.  This is a measure of how
-            fast it ran for the user under the conditions it was subject to (other processes running, etc.).
-        <li><b>Final State</b> ("state" - string): The "state" that the job terminated in - completed, failed, whatever.
-        <li><b>DiFX Version</b> ("difxVersion" - string): Version of DiFX used for the processing.
+      <li><b>Active ID</b> ("active_id" - long): This is a unique long
+        integer identifier assigned to the job - current the data nd
+        time of the run in milliseconds since January 1, 1970. </li>
+      <li><b>Date/Time</b> ("time" - double): Start time of the job in
+        seconds since January 1, 1970. </li>
+      <li><b>Input File</b> ("inputFile" - string): Full path (as the
+        head node sees it) to the input file associated with the job.
+        The input file contains detailed information about the job - if
+        it is deleted you will lose that. </li>
+      <li><b>Baselines</b> ("baselines" - int): Number of baselines in
+        the job. </li>
+      <li><b>Total Scan Data Measurement?</b> (scan_time): Some way of
+        measuring the total processing volume that is required. Not sure
+        what this is yet. </li>
+      <li><b>Scans</b> ("scans" - int): Number of scans in the job. </li>
+      <li><b>Head Node</b> ("headnode" - string): Name of the head node
+        used. </li>
+      <li><b>Source Nodes</b> ("sourceNodes"): List of the source nodes
+        used in the job. Each item contains the following:
+        <ul>
+          <li><b>Source Node</b> ("node" - string): Node name of the
+            source. </li>
+          <li><b>Threads</b> ("threads" - int): Number of threads used
+            for data. </li>
+        </ul>
+      </li>
+      <li><b>Processing Nodes</b> ("processingNodes"): List of the nodes
+        used for processing. Each item has:
+        <ul>
+          <li><b>Processing Node</b> ("node" - string): Node name of
+            processor. </li>
+          <li><b>Threads</b> ("threads" - int): Number of threads used
+            for processing. </li>
+        </ul>
+      </li>
+      <li><b>Other Active IDs</b> ("activeIDs"): A list of the other
+        jobs that were running at some point during the processing of
+        this job. </li>
+      <li><b>Total Time</b> ("totalTime" - double): The "wall clock"
+        time used to process the job. This is a measure of how fast it
+        ran for the user under the conditions it was subject to (other
+        processes running, etc.). </li>
+      <li><b>Final State</b> ("state" - string): The "state" that the
+        job terminated in - completed, failed, whatever. </li>
+      <li><b>DiFX Version</b> ("difxVersion" - string): Version of DiFX
+        used for the processing. </li>
     </ul>
-    
-    Because the run log is in development and it isn't certain what its final use will be, each entry is contained in
-    a "wrapper" that identifies the GUI version used to create it.  This will allow changes to be made to the logged
-    data in the future, if that proves necessary, without rendering existing data useless.  This wrapper looks like
-    this:
+    Because the run log is in development and it isn't certain what its
+    final use will be, each entry is contained in a "wrapper" that
+    identifies the GUI version used to create it. This will allow
+    changes to be made to the logged data in the future, if that proves
+    necessary, without rendering existing data useless. This wrapper
+    looks like this:
     <ul>
-        <li><b>GUI Version</b> (gui_version): Version of the GUI used to run the job, and generate the XML.
-        <li><b>Job Data</b> (data): This contains the complete list of XML items above.
+      <li><b>GUI Version</b> (gui_version): Version of the GUI used to
+        run the job, and generate the XML. </li>
+      <li><b>Job Data</b> (data): This contains the complete list of XML
+        items above. </li>
     </ul>
-    
     <h2><a name="Database_Configuration"></a>Database Configuration</h2>
     Database trouble?&nbsp; See <a
       href="#Testing_the_Database_Configuration"><span
@@ -667,7 +808,7 @@ src="file:///Users/johnspitzak/difx/applications/gui/trunk/doc/images/settings/E
       charset=windows-1252">
     <br>
     <table style="text-align: left; width: 814px; height: 91px;"
-      border="1" cellpadding="2" cellspacing="2">
+      cellpadding="2" cellspacing="2" border="1">
       <tbody>
         <tr>
           <td style="vertical-align: top;"><span style="font-weight:
@@ -707,6 +848,8 @@ src="file:///Users/johnspitzak/difx/applications/gui/trunk/doc/images/settings/E
     in real time (or reasonably close to it if you make your interval
     short).
     <h2><a name="Testing_the_Database_Configuration"></a>Trouble-shooting
+
+
 
 
 
@@ -842,6 +985,8 @@ src="file:///Users/johnspitzak/difx/applications/gui/trunk/doc/images/settings/E
 
 
 
+
+
     Then remote log into that host and see if the mySQL server is
     runing:<br>
     <ul style="margin-left: 40px;">
@@ -913,6 +1058,8 @@ src="file:///Users/johnspitzak/difx/applications/gui/trunk/doc/images/settings/E
 
 
 
+
+
         Database contains 0 jobs.</span></h6>
     <br>
     This is not an error, however you may encounter this message.&nbsp;
@@ -921,6 +1068,10 @@ src="file:///Users/johnspitzak/difx/applications/gui/trunk/doc/images/settings/E
     instance, you've recently queued something), check the value in the
     "DiFX Database" field.&nbsp; It should match your the name of the
     database where queuing is going on (which is probably "difxdb").<br>
-    <br>
+    <h2><a name="EOP_Settings"></a>EOP Settings</h2>
+    blah<br>
+    <h2><a name="Documentation_Settings"></a>Documentation Settings</h2>
+    <p>blkjkdsf<br>
+    </p>
   </body>
 </html>

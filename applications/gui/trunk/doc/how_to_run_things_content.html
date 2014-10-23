@@ -45,8 +45,11 @@
     </h3>
     Starting the GUI and setting up a connection such that it can
     control DiFX is a multi-stage process.&nbsp; Some components of DiFX
-    should be running for the GUI to properly communicate with it.<br>
-    <h5>Assure Necessary DiFX Components Are Running</h5>
+    should be running for the GUI to properly communicate with it.&nbsp;
+    There is no requirement that these processes be started before the
+    GUI is started, and they and the GUI are designed to recover from
+    losing contact with each other - effectively you should be able to
+    start and stop all of them at will.<br>
     <p><i><b>guiServer</b></i><br>
     </p>
     <p><br>
@@ -57,8 +60,14 @@
       they are needed, however a properly configured DiFX installation
       will have some light-impact processes that are running
       constantly.&nbsp; Specifically important for the GUI, the <i>mk5daemon</i>
-      process should be running on all DiFX hardware components
-      (processors, MK5 units, etc.).<br>
+      process should be running on every DiFX hardware component
+      (processors, MK5 units, etc.).&nbsp; The reason for this is that
+      <i>mk5daemon</i> produces the periodic "heartbeats" for each
+      component, including such information as CPU and memory load and
+      read/write operations.&nbsp; <i>Mk5daemon</i> is also important
+      because it is the only way the GUI knows that a component exists
+      and is available as a resource - without it the component will not
+      be utilized in DiFX processing.<br>
       <br>
       It is possible to run DiFX using the GUI with <i>mk5daemon</i>
       absent on some or all components, but this is not a subject
@@ -69,15 +78,20 @@
       If you wish to monitor running jobs through the GUI's real-time
       plotting capabilities, the DiFX application <i>monitor_server</i>
       needs to be running.&nbsp; This program provides a TCP server at
-      whichreal-time data from running DiFX processes can be
+      which real-time data from running DiFX processes can be
       obtained.&nbsp; The absence of this process is not usually a
       problem - if you request the real-time plotting it should be
       started automatically.&nbsp; However if you find that real-time
       plotting isn't working, this could be a cause.&nbsp; For details,
       see the<a href="realtime_monitor_content.html"> Real-Time Monitor
-        Documentation</a>.<br>
+        Documentation</a>.&nbsp; Note that at this time real-time
+      monitoring is best considered "experimental".<br>
     </p>
     <h5>Starting the GUI and Connecting to DiFX</h5>
+    <p>blah, blah<br>
+    </p>
+    <h5>Connecting Remotely Using SSH Tunneling<br>
+    </h5>
     <p><br>
     </p>
     <h3><a name="Some_Important_Settings"></a>Some Important Settings</h3>
@@ -127,7 +141,224 @@
     </p>
     <h3><a name="Creating_a_New_Experiment"></a>Creating a New
       Experiment</h3>
-    <h3><a name="Running_a_DiFX_Job"></a>Running a DiFX Job</h3>
+    <p>To create a new experiment all that is required is a .vex file
+      and appropriate data.&nbsp; The GUI will perform (or facilitate)
+      the various steps required to set up an experiment for DiFX
+      processing based on instructions from the user.&nbsp; In short,
+      these steps amount to:<br>
+    </p>
+    <ol>
+      <li>Setting up a location to do the processing</li>
+      <li>Creating a .v2d file to go with the .vex file</li>
+      <li>Running <i>vex2difx</i> and <i>calcif2</i> to create .input
+        and .im files</li>
+    </ol>
+    The GUI tries to be as flexible as possible about this, although it
+    has a "preferred" way of arranging things such that running DiFX
+    processing on the created experiments is possible through the GUI as
+    well.&nbsp; <br>
+    <br>
+    To create a new experiment, select "Create New.." under the
+    "Experiments" menu in the Queue Browser.<br>
+    <b>IMAGE<br>
+    </b>This will bring up the "Create New Experiment" window:<br>
+    <b>IMAGE</b><br>
+    The purpose of this window is to allow the user to tailor a new
+    experiment to meet their needs.&nbsp; It creates a "working"
+    directory for the new experiment, allows the specification of data
+    sources, and puts all relevant DiFX files (<tt>.v2d</tt>, <tt>.input</tt>,
+    etc.) in the working directory from which they can be run (either
+    through the GUI or by hand).&nbsp; Experimentation with different
+    GUI settings while creating an experiment is not dangerous as the
+    original <tt>.vex</tt> file and data files are not moved or altered
+    in any way.&nbsp; If you mess up, delete the experiment and try
+    again.<br>
+    <h4>Naming the New Experiment and Putting It Somewhere<br>
+    </h4>
+    <h4>Getting .vex File Content<br>
+    </h4>
+    <p>bleah<br>
+    </p>
+    <h4>Changing .vex File Content</h4>
+    <p>Once you have obtained .vex data from some source, the data are
+      displayed in the ".vex File Editor" panel.&nbsp; This panel
+      provides a (rather rudimentary) text editor that can be used to
+      edit the .vex data by hand.&nbsp; The final edited text is used in
+      the .vex file assigned to your created experiment, a copy of which
+      is put in your working directory.&nbsp; <br>
+    </p>
+    <p>Some care should be taken in directly editing .vex data as it is
+      trivial to corrupt the .vex to the point where it can't be used
+      (the DiFX operational paradigm says that users should never need
+      to do this), but editing this content does not alter the original
+      source .vex file, only the final .vex file associated with the
+      experiment - so playing around with things is not permanently
+      harmful.<br>
+    </p>
+    <h4>Correlation Tuning Parameters</h4>
+    <p>The Correlation Tuning Parameters section includes values that
+      can be changed to adjust the quality of the correlation results,
+      and/or the total time processing takes.&nbsp; Adjustments to many
+      of these values is something of an art in itself, and the details
+      of what things do and what their "best" values should be is not
+      covered here (some talks at the DiFX Users Meetings have covered
+      the subject - slides can be viewed here).<br>
+    </p>
+    <p>Each item has an associated "apply" check box.&nbsp; If this box
+      is not checked, no instructions regarding the item will be put in
+      the <font face="Courier New, Courier, monospace">.v2d</font> file
+      and <i>vex2difx</i> will be allowed to pick its own
+      defaults.&nbsp; <i>Unless you know what you are doing, don't
+        check the apply box - let </i>vex2difx<i> pick the values!</i>&nbsp;
+      The GUI has default values for all items but they are not based on
+      anything - they are essentially placeholders.&nbsp; The default
+      values that are picked by <i>vex2difx</i> are far better.&nbsp; <br>
+    </p>
+    <h4>Stations and Data Sources</h4>
+    <p>Each antenna involved in the observations described by the .vex
+      data triggers the creation of a panel in the "Stations"
+      section.&nbsp; The two-letter code station/antenna code is used as
+      a panel title (associated with each station is a check box that
+      can be used to eliminate the station from the experiment - see <a
+        href="#Eliminating_Stations_in_the_Stations">below</a>).&nbsp;
+      Each station panel contains four sub-sections: Data Source;
+      Antenna; Site; and Settings.<br>
+      <b>IMAGE OF A STATION PANEL<br>
+      </b>In most cases users only make changes to the Settings and Data
+      Source sections.<br>
+    </p>
+    <h5>&nbsp;&nbsp;&nbsp; Data Source</h5>
+    <p>The Data Source section tells DiFX where the data for a
+      particular station/antenna can be found.<br>
+    </p>
+    <p>Because filling out the Data Source section can be tedious, the
+      DiFX GUI provides a way of pre-defining all Data Source settings
+      for a station/antenna in the Settings "Job Creation Settings"
+      section (see <a href="settings_content.html#ANTENNA_DEFAULTS">Antenna
+        Defaults</a>).<br>
+    </p>
+    <h5>&nbsp;&nbsp;&nbsp; Settings</h5>
+    <p>The Settings section contains settings for Tone, Phase
+      Calibration Interval and Delta Clock.&nbsp; The Delta Clock value
+      is often gleaned by running a "Clock Pass" on a subset of the
+      experiment's data (see some sort of explanation here).<br>
+    </p>
+    <h4>Selecting Specific Scans<br>
+    </h4>
+    When new .vex data are selected, the GUI begins with the assumption
+    that all scans described in the data will be included in the new
+    experiment.&nbsp; There are a number of ways of adjusting which
+    scans are ultimately used, and which stations are used in which
+    scans.&nbsp; These changes are reflected in the final .v2d and .vex
+    files that are created as part of the new experiment.&nbsp; The
+    "Scan Selection" Editor can be used at any time to view the scans
+    that will be included in the experiment when it is created.<br>
+    <b>IMAGE OF SCAN SELECTION EDITOR</b><br>
+    <br>
+    Some of the scan and station selection controls can work at
+    cross-purposes - effectively they provide more than one way to cause
+    a scan or a station to be used.&nbsp; When a conflict occurs, the
+    GUI will give the most recent command precedence (if, for instance,
+    a command is given that a scan be included in the final experiment
+    when a previous command eliminated the scan, the GUI will include
+    the scan).&nbsp; <br>
+    <h5>&nbsp;&nbsp;&nbsp; Eliminating Stations in the "Source" .vex
+      Data</h5>
+    <p>Stations can be eliminated from individual scans by putting a
+      "-1" in the "code" column within the appropriate "scan" section in
+      the "source" .vex data.&nbsp; When the GUI encounters the "-1", it
+      will remove the station from the scan.&nbsp; This duplicates
+      hardware correlator behavior.&nbsp; Starting with the .vex data
+      example below, the final .vex file will not include the station
+      BLAT because of the "-1" in the final column.<br>
+    </p>
+    <pre>gslkadfglkdgflksdgflkjsdfgklsjdfkgl<br>fdsgl;jsdfgljkdsfgklsdfkjlkjfgsdkjdfsgkjldf<br>dfs;lgjsdgfjksdjkfjksdfjkdsfgjkdfsgj<br></pre>
+    If you do not want the GUI to pay attention to the "-1" code in this
+    way, un-check the <a
+      href="settings_content.html#Eliminate_Stations_With_Code">Eliminate
+      Stations With "-1" Code</a> box in the Settings menu.<br>
+    <h5><a name="Eliminating_Stations_in_the_Stations"></a>&nbsp;&nbsp;&nbsp;
+      Eliminating Stations in the "Stations" Section<br>
+    </h5>
+    <p>The "Stations" section is primarily set up to change parameters
+      related to each antenna involved in an experiment, and to select
+      the data sources associated with them (see above).&nbsp; However
+      it also includes a check box that can be used to completely remove
+      each station from the experiment. Any scans that no longer have
+      enough stations to form a baseline (i.e. less than two) will be
+      eliminated.&nbsp; <br>
+      <b>IMAGE</b><br>
+    </p>
+    <h5>&nbsp;&nbsp;&nbsp; The "Scan/Station Timeline" Editor</h5>
+    <p>The "Scan/Station Timeline" section provides a visual map of all
+      scans and the stations used in them in a timeline.&nbsp; It allows
+      the selection/deselection of individual stations within scans or
+      the inclusion of data from different stations based on time.<br>
+      <b>IMAGE<br>
+      </b>Somewhat more complex explanation here.<br>
+    </p>
+    <h5>&nbsp;&nbsp;&nbsp; Selecting by Source Using the "Sources"
+      Editor<br>
+    </h5>
+    <p>The "Sources" section shows all sources and the stations used to
+      observe them.&nbsp; It allows sources to be selected and
+      deselected, and stations to be selectively used or eliminated from
+      sources.<br>
+      <b>IMAGE<br>
+      </b></p>
+    <ul>
+      <li>All sources included in the .vex file are listed.&nbsp; Boxes
+        show which sources are observed with which stations.</li>
+      <li>Hover over the name of a source to produce a tooltip that
+        includes information about the source as well as the names of
+        the scans used to observe it and the stations used for each of
+        those scans (stations marked in red have been eliminated).</li>
+      <li>Hover over the boxes to produce a tooltip that includes which
+        scans use the associated station on the associated source.&nbsp;
+        A scan that appears in red text has been eliminated - either
+        explicitly or because it lacks sufficient stations to form a
+        baseline.<br>
+      </li>
+      <li>Use check boxes to add or eliminate a source.&nbsp; When a
+        source is removed, all scans associated with it are eliminated
+        from the final experiment.&nbsp; When a source is added, all
+        scans associated with it are put into the final experiment
+        (assuming they have sufficient stations to form a baseline).</li>
+      <li>Click on the boxes to add or eliminate a station from the
+        observations of a given source.&nbsp; Scans will be added or
+        eliminated from the final experiment based on whether changes
+        give them enough stations to form a baseline.<br>
+      </li>
+    </ul>
+    <p><b></b>The Sources section is something of a work in progress,
+      and not something anyone uses at the USNO, so it is a little
+      confused at this point as to what it wants to be.&nbsp; It was
+      developed originally with the idea that astronomical observers
+      would be interested in sources (in geodesy they are
+      uninteresting).&nbsp; Suggestions are welcome.</p>
+    <h5>&nbsp;&nbsp;&nbsp; Selecting Specific Scans With the "Scan
+      Selection" Editor<br>
+    </h5>
+    <p>At any time in the scan/station selection process, the "Scan
+      Selection" editor will show which scans will be included in the
+      final experiment (included scans are green, scans not included are
+      gray).&nbsp; It allows the user to make selections on a
+      scan-by-scan basis by clicking on individual scans, or by turning
+      all scans on or off using the "Select All" and "Clear All"
+      buttons.<br>
+      <b>IMAGE OF SCAN SELECTION PANEL WITH LABELS HERE<br>
+      </b>The Scan Selection Editor includes a "Time Limits" plot that
+      shows all scans from the original .vex file as a time sequence
+      (again, scans in green are included, those in gray are not
+      included).&nbsp; The mouse wheel can be used to "zoom in" on
+      different time limits, and the red and blue triangles can be
+      grabbed and dragged to limit the final experiment in time.&nbsp;
+      This widget is somewhat redundant with the Scan/Station Timeline
+      Editor, but it may be useful to someone.<br>
+    </p>
+    <h3><a name="Running_a_DiFX_Job"></a>Running DiFX Jobs</h3>
+    <h3>Scheduling Large Numbers of Jobs<br>
+    </h3>
     <h3><a name="Using_the_Real-Time_Monitor"></a>Using the Real-Time
       Monitor</h3>
     <h3><a name="Problems_you_May_Encounter_and_What_to"></a>Problems
@@ -147,13 +378,13 @@
       fail.&nbsp; You need to make sure all of your keys are in place
       beforehand.<br>
     </p>
-    <p>To do so, log into your headnode - where you are running <i>guiServer</i>
+    <p>To do so, log into your head node - where you are running <i>guiServer</i>
       - using the same user name (I'm calling this user name the "DiFX
       user" below) and <i>network route</i> that you are using to run <i>guiServer</i>
       itself.&nbsp; The latter is quite important - if you are running <i>guiServer</i>
-      by logging into the headnode remotely, log in again that
-      way.&nbsp; If you are running <i>guiServer </i>from the headnode
-      console, log in that way.</p>
+      by logging into the head node remotely, log in again that
+      way.&nbsp; If you are running <i>guiServer </i>from the head
+      node console, log in that way.</p>
     <p>Next, try using <i>ssh</i> to remotely log into all of the nodes
       on your cluster.&nbsp; If you can do so without any key or
       password requests, you should be set.<br>
@@ -171,18 +402,18 @@
     active, or type:<br>
     <pre>	ssh-add</pre>
     Then type this for <span style="font-weight: bold;">every node</span>
-    you are using, including the headnode itself.&nbsp; You should use
+    you are using, including the head node itself.&nbsp; You should use
     complete addresses for machine names, not aliases (it is not
     entirely clear that this is a problem, but we had some issues with
     it):<br>
     <pre>	ssh-copy-id user@node<br></pre>
-    For instance, if your DiFX user is "difx", your headnode is "king"
+    For instance, if your DiFX user is "difx", your head node is "king"
     and your other processing nodes and mark 5's are "pawn1", "pawn2",
     "mark5-1" and "mark5-2" you would need to do the following (as the
     DiFX user on "king"):<br>
     <pre>	ssh-copy-id difx@king<br>	ssh-copy-id difx@pawn1<br>	ssh-copy-id difx@pawn2<br>	ssh-copy-id difx@mark5-1<br>	ssh-copy-id difx@mark5-2<br></pre>
     To test whether this has worked, you should be able to "ssh" to your
-    DiFX user on all nodes from root on the DiFX headnode without
+    DiFX user on all nodes from root on the DiFX head node without
     entering a password or key.&nbsp; If you can't do this, things are
     not set up right and jobs will not run.&nbsp; Seek professional
     help.<br>
