@@ -43,7 +43,7 @@ static void usage()
           author, verdate);
   fprintf(stderr, "A program to translate multiple thread VDIF format to single thread\n");
   fprintf(stderr, "Must be one datastream in and one datastream out\n");
-  fprintf(stderr, "\nUsage: %s <VDIF input file> <VDIF output file> <Num input threads> <Num output threads>", program);
+  fprintf(stderr, "\nUsage: %s <VDIF input file> <VDIF output file> <Num input threads> <Num output threads> ", program);
   fprintf(stderr, "<input Mbps/thread> <threadId0> <threadId1> ... <threadIdN> [-v]\n");
   fprintf(stderr, "\n<VDIF input file> is the name of the multiple thread VDIF file to read\n");
   fprintf(stderr, "\n<VDIF output file> is the name of the single thread VDIF file to write\n");
@@ -162,7 +162,7 @@ int main(int argc, char **argv)
   FILE * output;
   int inputthreadmbps, numthreads, readbytes, wrotebytes, numbufferframes, threadbufmultiplier, numthreadbufframes;
   int bitspersample, samplesperframe, framespersecond;
-  int inputframebytes, outputframebytes, refframemjd, refframesecond, refframenumber;
+  int inputframebytes, outputframebytes, refframeepoch, refframemjd, refframesecond, refframenumber;
   int outputframecount;
   char * inputbuffer; // [framebytes * numbufferframes]
   char * outputbuffer; // [framebytes * numbufferframes]
@@ -252,6 +252,7 @@ int main(int argc, char **argv)
   outputframebytes = (inputframebytes-VDIF_HEADER_BYTES)*numthreads + VDIF_HEADER_BYTES;
   bitspersample = getVDIFBitsPerSample(header);
   activemask = bitmask[bitspersample];
+  refframeepoch = header->epoch;
   refframemjd = getVDIFFrameMJD(header);
   refframesecond = getVDIFFrameSecond(header);
   refframenumber = getVDIFFrameNumber(header);
@@ -363,13 +364,15 @@ int main(int argc, char **argv)
 	    fprintf(stderr, "EOF has been *not* reached\n");
 	}
 	header = (vdif_header*)(outputbuffer + outputframecount*outputframebytes);
-	setVDIFFrameInvalid(header, 1);
 	setVDIFNumChannels(header, numthreads);
 	setVDIFFrameNumber(header, (processframenumber+refframenumber)%framespersecond);
-	setVDIFFrameSecond(header, refframesecond + (processframenumber+refframenumber)/framespersecond);
 	setVDIFFrameBytes(header, outputframebytes);
 	setVDIFBitsPerSample(header, bitspersample);
 	setVDIFThreadID(header, 0);
+        header->epoch = refframeepoch; // required for setVDIFFrameMJD to work correctly
+        setVDIFFrameMJD(header, refframemjd);
+        setVDIFFrameSecond(header, refframesecond + (processframenumber+refframenumber)/framespersecond);
+	setVDIFFrameInvalid(header, 1);
         //clear the data we just used
 	for(i=0;i<numthreads;++i)
 	  bufferframefull[i][processframenumber % numthreadbufframes] = 0;
