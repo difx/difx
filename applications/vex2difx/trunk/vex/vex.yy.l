@@ -17,7 +17,6 @@
 #define isodigit(x) ((x) >= '0' && (x) <= '7')
 #define hextoint(x) (isdigit((x)) ? (x) - '0'\
                                   : ((x) - 'A') + 10)
-
 static struct llist *lit();
 static char *find_end(char *buffer, char *text);
 static char *quote();
@@ -27,6 +26,8 @@ static trailing=0;
 int lines=1;
 static int version=1;
 %}
+
+%option noyywrap
 
 %x VERSION DEF LINE REF
 
