@@ -14,13 +14,13 @@
 #include <unistd.h>
 #include <ExecuteSystem.h>
 #include <configuration.h>
-#include <network/ActivePacketExchange.h>
+#include <GUIClient.h>
 #include <ServerSideConnection.h>
 #include <vector>
 
 namespace guiServer {
 
-    class DifxMonitorExchange : public network::ActivePacketExchange {
+    class DifxMonitorExchange {
     
     public:
 
@@ -65,15 +65,57 @@ namespace guiServer {
         static const int SOURCE                             = 135;
         static const int SOURCE_RA                          = 136;
         static const int SOURCE_DEC                         = 137;
+        static const int VISIBILITY_SCAN                    = 138;
+        static const int FFT_SIZE                           = 139;
+        static const int MEAN_AMPLITUDE_DATA                = 140;
+        static const int MEAN_PHASE_DATA                    = 141;
+        static const int MEAN_LAG_DATA                      = 142;
     
-        DifxMonitorExchange( network::GenericSocket* sock, ServerSideConnection::DifxMonitorInfo* monitorInfo ) : 
-            network::ActivePacketExchange( sock ) {
+        DifxMonitorExchange( GUIClient* guiClient, ServerSideConnection::DifxMonitorInfo* monitorInfo ) {
             _keepGoing = true;
             _visConnectionOperating = false;
             _monitorInfo = monitorInfo;
+            _receiveActive = false;
+            _guiClient = guiClient;
+            _guiClient->packetExchange(); 
+            pthread_create( &_receiveId, NULL, staticReceiveThread, this );               
         }
         
         ~DifxMonitorExchange() {
+            _receiveActive = false;
+        }
+        
+        //---------------------------------------------------------------------
+        //!  Static start function for the receive thread.
+        //---------------------------------------------------------------------
+        static void* staticReceiveThread( void* a ) {
+            ( (DifxMonitorExchange*)a )->receiveThread();
+            return NULL;
+        }
+        
+        //---------------------------------------------------------------------
+        //!  Thread to receive all incoming data on the socket.  Each received
+        //!  packet spawns the do-nothing function "newPacket()" with type ID
+        //!  byte size, and data content.  This function should be overridden by
+        //!  inheriting classes to actually accomplish something.
+        //---------------------------------------------------------------------
+        void receiveThread() {
+            _receiveActive = true;
+            while ( _receiveActive ) {
+                int packetId = 0;
+                int nBytes;
+                char* data;
+                if ( _guiClient->getPacket( packetId, data, nBytes ) == -1 ) {
+                    //  connection failure
+                    _receiveActive = false;
+                }
+                else {
+                    newPacket( packetId, data, nBytes );
+                    //  Free the space allocated to this incoming message.  This
+                    //  means the newPacket function must copy it if necessary.
+                    delete [] data;
+                }
+            }
         }
         
         //-----------------------------------------------------------------------------
@@ -85,7 +127,7 @@ namespace guiServer {
                     inputFilePath( data, nBytes );
                     break;
                 case CLOSE_CONNECTION:
-                    closeConnection( data, nBytes );
+                    closeConnection();
                     break;
                 case START_PRODUCT_REQUESTS:
                     startProductRequests( data, nBytes );
@@ -96,6 +138,10 @@ namespace guiServer {
                 case END_PRODUCT_REQUESTS:
                     endProductRequests( data, nBytes );
                     break;
+                case FFT_SIZE:
+                    if ( nBytes == 4 )
+                        _fftSize = ntohl( *(int*)data );
+                    break;
                 default:
                     break;
             }
@@ -104,10 +150,12 @@ namespace guiServer {
         //-----------------------------------------------------------------------------
         //!  Respond to a GUI instruction to close this connection.
         //-----------------------------------------------------------------------------
-        void closeConnection( char* data, const int nBytes ) {
+        void closeConnection() {
             printf( "received close connection request\n" );
             if ( _monitorServerClient != NULL )
                 delete _monitorServerClient;
+            _monitorServerClient = NULL;
+            printf( "close connection completed\n" );
             _keepGoing = false;
         }
         
@@ -145,7 +193,7 @@ namespace guiServer {
                             --len;
                         }
                         if ( portNum == monitorServerPort ) {
-                            formatPacket( MESSAGE, "located monitor_server instance: %s\n", message );
+                            _guiClient->formatPacket( MESSAGE, "located monitor_server instance: %s\n", message );
                             found = true;
                         }
                     }
@@ -155,15 +203,17 @@ namespace guiServer {
             if ( !found ) {
                 snprintf( monCommand, ServerSideConnection::MAX_COMMAND_SIZE,
                      "%s monitor_server %d &> /dev/null &", _monitorInfo->ssc->difxSetupPath(), monitorServerPort );
-                formatPacket( WARNING, "monitor_server needs to be started - executing: %s\n", monCommand );
+                _guiClient->formatPacket( WARNING, "monitor_server needs to be started - executing: %s\n", monCommand );
                 system( monCommand );
+                //  Delay a bit to allow the monitor_server to start up.
+                sleep( 1 );
             }
 
             //  Make a new client connection to the monitor_server, which *should* now be running.
             //  At the moment the port is hard-wired to 52300 which might not be a perfect
             //  long term solution.  The host is the local host (so I'm using the loopback
             //  address).
-            printf( "making client connection\n" );
+            printf( "making client connection to monitor_server\n" );
             _monitorServerClient = new network::TCPClient( "127.0.0.1", 52300 );
             _monitorServerClient->waitForConnect();
             printf( "connection established!\n" );
@@ -171,15 +221,15 @@ namespace guiServer {
                 int status;
                 _monitorServerClient->reader( (char*)(&status), sizeof( int ) );
                 if ( status == 0 ) {
-                    formatPacket( MESSAGE, "connection established with monitor_server" );
+                    _guiClient->formatPacket( MESSAGE, "connection established with monitor_server" );
                 }
                 else {
-                    formatPacket( ERROR, "monitor_server returned initial status failure (%d) - real time monitor will not run", status );
+                    _guiClient->formatPacket( ERROR, "monitor_server returned initial status failure (%d) - real time monitor will not run", status );
                     _keepGoing = false;
                 }
             }
             else {
-                formatPacket( ERROR, "connection with monitor_server failed - real time monitor will not run" );
+                _guiClient->formatPacket( ERROR, "connection with monitor_server failed - real time monitor will not run" );
                 _keepGoing = false;
             }
 
@@ -187,7 +237,7 @@ namespace guiServer {
             if ( _keepGoing ) {
                 _config = new Configuration( data, 0 );
                 if ( !_config->consistencyOK() ) {
-                    formatPacket( ERROR, "Configuration had a problem parsing input file %s - real time monitor will not run",
+                    _guiClient->formatPacket( ERROR, "Configuration had a problem parsing input file %s - real time monitor will not run",
                         data );
                     _keepGoing = false;
                 }
@@ -201,145 +251,150 @@ namespace guiServer {
                     _productInfo.clear();
                     
                     //  Indicate we are starting a new block of correlation products
-                    sendPacket( CORRELATION_PRODUCTS, NULL, 0 );
+                    _guiClient->sendPacket( CORRELATION_PRODUCTS, NULL, 0 );
                     
                     int nScans = _config->getModel()->getNumScans();
-                    intPacket( NUM_SCANS, &nScans );
-                    formatPacket( JOB_NAME, "%s", _config->getJobName().c_str() );
-                    formatPacket( OBS_CODE, "%s", _config->getObsCode().c_str() );
-                    int currentScan = 0;
-                    intPacket( SCAN, &currentScan );
-                    formatPacket( SCAN_IDENTIFIER, "%s", _config->getModel()->getScanIdentifier( currentScan ).c_str() );
-                    formatPacket( SCAN_START_TIME, "%.7f", _config->getModel()->getScanStartMJD( currentScan ) );
-                    formatPacket( SCAN_END_TIME, "%.7f", _config->getModel()->getScanEndMJD( currentScan ) );
-                    formatPacket( SOURCE, "%s", _config->getModel()->getScanPointingCentreSource( currentScan )->name.c_str() );
-                    formatPacket( SOURCE_RA, "%.15f", _config->getModel()->getScanPointingCentreSource( currentScan )->ra );
-                    formatPacket( SOURCE_DEC, "%.15f", _config->getModel()->getScanPointingCentreSource( currentScan )->dec );
-                    int configindex = _config->getScanConfigIndex( currentScan );
-                    char polpair[3];
-                    polpair[2] = 0;
-                    printf( "config index is %d\n", configindex );
-                    printf( "start time is %d\n", _config->getStartSeconds() );
-
-                    int nBaselines = _config->getNumBaselines();
-                    intPacket( NUM_BASELINES, &nBaselines );        
+                    _guiClient->intPacket( NUM_SCANS, &nScans );
+                    _guiClient->formatPacket( JOB_NAME, "%s", _config->getJobName().c_str() );
+                    _guiClient->formatPacket( OBS_CODE, "%s", _config->getObsCode().c_str() );
                     
-                    int productN = 0;            
+                    //  Send information on correlation products for all scans.
+                    for ( int currentScan = 0; currentScan < nScans; ++currentScan ) {
+                        _guiClient->intPacket( SCAN, &currentScan );
+                        _guiClient->formatPacket( SCAN_IDENTIFIER, "%s", _config->getModel()->getScanIdentifier( currentScan ).c_str() );
+                        _guiClient->formatPacket( SCAN_START_TIME, "%.7f", _config->getModel()->getScanStartMJD( currentScan ) );
+                        _guiClient->formatPacket( SCAN_END_TIME, "%.7f", _config->getModel()->getScanEndMJD( currentScan ) );
+                        _guiClient->formatPacket( SOURCE, "%s", _config->getModel()->getScanPointingCentreSource( currentScan )->name.c_str() );
+                        _guiClient->formatPacket( SOURCE_RA, "%.15f", _config->getModel()->getScanPointingCentreSource( currentScan )->ra );
+                        _guiClient->formatPacket( SOURCE_DEC, "%.15f", _config->getModel()->getScanPointingCentreSource( currentScan )->dec );
+                        int configindex = _config->getScanConfigIndex( currentScan );
+                        char polpair[3];
+                        polpair[2] = 0;
+                        printf( "config index is %d\n", configindex );
 
-                    for ( int i = 0; i < nBaselines; i++ ) {
-                        intPacket( BASELINE, &i );
-                        int ds1index = _config->getBDataStream1Index( configindex, i );
-                        int ds2index = _config->getBDataStream2Index( configindex, i );
-                        formatPacket( TELESCOPE_1, "%s", _config->getTelescopeName( ds1index ).c_str() );
-                        formatPacket( TELESCOPE_2, "%s", _config->getTelescopeName( ds2index ).c_str() );
+                        int nBaselines = _config->getNumBaselines();
+                        _guiClient->intPacket( NUM_BASELINES, &nBaselines );        
                         
-                        int nFrequencies = _config->getBNumFreqs( configindex, i );
-                        intPacket( NUM_FREQUENCIES, &nFrequencies );
+                        int productN = 0;            
 
-                        for( int j = 0; j < nFrequencies; j++ ) {
-                            int freqindex = _config->getBFreqIndex( configindex, i, j );
-                            double frequency = _config->getFreqTableFreq( freqindex );
-                            doublePacket( FREQUENCY, &frequency );
-                            int resultIndex = _config->getCoreResultBaselineOffset( configindex, freqindex, i );
-                            int freqchannels = _config->getFNumChannels( freqindex ) / _config->getFChannelsToAverage( freqindex );
+                        for ( int i = 0; i < nBaselines; i++ ) {
+                            _guiClient->intPacket( BASELINE, &i );
+                            int ds1index = _config->getBDataStream1Index( configindex, i );
+                            int ds2index = _config->getBDataStream2Index( configindex, i );
+                            _guiClient->formatPacket( TELESCOPE_1, "%s", _config->getTelescopeName( ds1index ).c_str() );
+                            _guiClient->formatPacket( TELESCOPE_2, "%s", _config->getTelescopeName( ds2index ).c_str() );
                             
-                            int nPhaseCenters = _config->getMaxPhaseCentres( configindex );
-                            intPacket( NUM_PHASE_CENTERS, &nPhaseCenters );
+                            int nFrequencies = _config->getBNumFreqs( configindex, i );
+                            _guiClient->intPacket( NUM_FREQUENCIES, &nFrequencies );
 
-                            for( int s = 0; s < nPhaseCenters; s++ ) {
-                                intPacket( PHASE_CENTER, &s );
+                            for( int j = 0; j < nFrequencies; j++ ) {
+                                int freqindex = _config->getBFreqIndex( configindex, i, j );
+                                double frequency = _config->getFreqTableFreq( freqindex );
+                                _guiClient->doublePacket( FREQUENCY, &frequency );
+                                int resultIndex = _config->getCoreResultBaselineOffset( configindex, freqindex, i );
+                                int freqchannels = _config->getFNumChannels( freqindex ) / _config->getFChannelsToAverage( freqindex );
                                 
-                                int binloop = 1;
-                                if ( _config->pulsarBinOn( configindex ) && !_config->scrunchOutputOn( configindex ) )
-                                    binloop = _config->getNumPulsarBins( configindex );
-                                intPacket( NUM_PULSAR_BINS, &binloop );
-                                
-	                            for( int b = 0; b < binloop; b++ ) {
-	                                intPacket( PULSAR_BIN, &b );
-	                                
-	                                int nPolProducts = _config->getBNumPolProducts( configindex, i, j );
-	                                intPacket( NUM_POL_PRODUCTS, &nPolProducts );
-	                                
-	                                for( int k = 0; k < nPolProducts; k++ ) {
-	                                    intPacket( POL_PRODUCT, &k );
+                                int nPhaseCenters = _config->getMaxPhaseCentres( configindex );
+                                _guiClient->intPacket( NUM_PHASE_CENTERS, &nPhaseCenters );
+
+                                for( int s = 0; s < nPhaseCenters; s++ ) {
+                                    _guiClient->intPacket( PHASE_CENTER, &s );
+                                    
+                                    int binloop = 1;
+                                    if ( _config->pulsarBinOn( configindex ) && !_config->scrunchOutputOn( configindex ) )
+                                        binloop = _config->getNumPulsarBins( configindex );
+                                    _guiClient->intPacket( NUM_PULSAR_BINS, &binloop );
+                                    
+	                                for( int b = 0; b < binloop; b++ ) {
+	                                    _guiClient->intPacket( PULSAR_BIN, &b );
 	                                    
-	                                    _config->getBPolPair( configindex, i, j, k, polpair );
+	                                    int nPolProducts = _config->getBNumPolProducts( configindex, i, j );
+	                                    _guiClient->intPacket( NUM_POL_PRODUCTS, &nPolProducts );
+	                                    
+	                                    for( int k = 0; k < nPolProducts; k++ ) {
+	                                        _guiClient->intPacket( POL_PRODUCT, &k );
+	                                        
+	                                        _config->getBPolPair( configindex, i, j, k, polpair );
 
-                                        //  Send the number, resultIndex (offset) and frequency channels for this
-                                        //  product.
-                                        int productData[3];
-                                        productData[0] = productN;
-                                        productData[1] = resultIndex;
-                                        productData[2] = freqchannels;
-                                        intPacket( NEW_PRODUCT, productData, 3 );
-                                        
-                                        //  Add everything we know about this product to the product information list.
-                                        _productInfo.push_back( ProductInfo( ds1index,
-                                                                             ds2index,
-                                                                             _config->getTelescopeName( ds1index ), 
-					                                                         _config->getTelescopeName( ds2index ),
-					                                                         _config->getFreqTableFreq( freqindex ),
-					                                                         _config->getFreqTableBandwidth( freqindex ),
-					                                                         polpair,
-					                                                         s,
-					                                                         b,
-					                                                         resultIndex,
-					                                                         freqchannels,
-					                                                         _config->getFreqTableLowerSideband( freqindex ) ) );
-                                        ++productN;
+                                            //  Send the number, resultIndex (offset) and frequency channels for this
+                                            //  product.
+                                            int productData[3];
+                                            productData[0] = productN;
+                                            productData[1] = resultIndex;
+                                            productData[2] = freqchannels;
+                                            _guiClient->intPacket( NEW_PRODUCT, productData, 3 );
+                                            
+                                            //  Add everything we know about this product to the product information list.
+                                            _productInfo.push_back( ProductInfo( ds1index,
+                                                                                 ds2index,
+                                                                                 _config->getTelescopeName( ds1index ), 
+					                                                             _config->getTelescopeName( ds2index ),
+					                                                             _config->getFreqTableFreq( freqindex ),
+					                                                             _config->getFreqTableBandwidth( freqindex ),
+					                                                             polpair,
+					                                                             s,
+					                                                             b,
+					                                                             resultIndex,
+					                                                             freqchannels,
+					                                                             _config->getFreqTableLowerSideband( freqindex ) ) );
+                                            ++productN;
+                                        }
                                     }
                                 }
                             }
                         }
-                    }
 
-                    //  Auto correlations
-                    int autocorrwidth = ( _config->getMaxProducts() > 2 )? 2: 1;
+                        //  Auto correlations
+                        int autocorrwidth = ( _config->getMaxProducts() > 2 )? 2: 1;
 
-                    for( int i = 0; i < _config->getNumDataStreams(); i++ ) {
-                        int offset = _config->getCoreResultAutocorrOffset( configindex, i );
+                        for( int i = 0; i < _config->getNumDataStreams(); i++ ) {
+                            int offset = _config->getCoreResultAutocorrOffset( configindex, i );
 
-                        for( int j = 0; j < autocorrwidth; j++ ) {
-                            for( int k=0; k < _config->getDNumRecordedBands( configindex, i ); k++ ) {
+                            for( int j = 0; j < autocorrwidth; j++ ) {
+                                for( int k=0; k < _config->getDNumRecordedBands( configindex, i ); k++ ) {
 
-                                formatPacket( AUTOCORRELATION, "%s", _config->getDStationName( configindex, i ).c_str() );
+                                    _guiClient->formatPacket( AUTOCORRELATION, "%s", _config->getDStationName( configindex, i ).c_str() );
 
-                                polpair[0] = _config->getDRecordedBandPol( configindex, i, k );
-                                if ( j==0 )
-                                    polpair[1] = polpair[0];
-                                else
-                                    polpair[1] = ( polpair[0] == 'R' )? 'L': 'R';
+                                    polpair[0] = _config->getDRecordedBandPol( configindex, i, k );
+                                    if ( j==0 )
+                                        polpair[1] = polpair[0];
+                                    else
+                                        polpair[1] = ( polpair[0] == 'R' )? 'L': 'R';
 
-                                int freqindex = _config->getDRecordedFreqIndex( configindex, i, k );
-                                double frequency = _config->getFreqTableFreq( freqindex );
-                                doublePacket( FREQUENCY, &frequency );
-                                int freqchannels = _config->getFNumChannels( freqindex ) / _config->getFChannelsToAverage( freqindex );
+                                    int freqindex = _config->getDRecordedFreqIndex( configindex, i, k );
+                                    double frequency = _config->getFreqTableFreq( freqindex );
+                                    _guiClient->doublePacket( FREQUENCY, &frequency );
+                                    int freqchannels = _config->getFNumChannels( freqindex ) / _config->getFChannelsToAverage( freqindex );
 
-                                int productData[3];
-                                productData[0] = productN;
-                                productData[1] = offset;
-                                productData[2] = freqchannels;
-                                intPacket( NEW_PRODUCT, productData, 3 );
-                                _productInfo.push_back( ProductInfo( i,
-                                     i,
-                                     _config->getDStationName( configindex, i ), 
-                                     "",
-                                     _config->getFreqTableFreq( freqindex ),
-                                     _config->getFreqTableBandwidth( freqindex ),
-                                     polpair,
-                                     0,
-                                     0,
-                                     offset,
-                                     freqchannels,
-                                     _config->getFreqTableLowerSideband( freqindex ) ) );
-                                ++productN;
-                                offset += freqchannels;
+                                    int productData[3];
+                                    productData[0] = productN;
+                                    productData[1] = offset;
+                                    productData[2] = freqchannels;
+                                    _guiClient->intPacket( NEW_PRODUCT, productData, 3 );
+                                    _productInfo.push_back( ProductInfo( i,
+                                         i,
+                                         _config->getDStationName( configindex, i ), 
+                                         "",
+                                         _config->getFreqTableFreq( freqindex ),
+                                         _config->getFreqTableBandwidth( freqindex ),
+                                         polpair,
+                                         0,
+                                         0,
+                                         offset,
+                                         freqchannels,
+                                         _config->getFreqTableLowerSideband( freqindex ) ) );
+                                    ++productN;
+                                    offset += freqchannels;
 
+                                }
                             }
                         }
+                    
                     }
-
-                    sendPacket( CORRELATION_PRODUCTS, NULL, 0 );
+                    
+                    //  This packet indicates that we are done sending the correlation products
+                    //  information.
+                    _guiClient->sendPacket( CORRELATION_PRODUCTS, NULL, 0 );
                 }     
             }
             
@@ -367,7 +422,7 @@ namespace guiServer {
         //!  Respond to a GUI product request.
         //-----------------------------------------------------------------------------
         void endProductRequests( char* data, const int nBytes ) {
-            printf( "at end of requests...there are %d\n", _productList.size() );
+            printf( "at end of requests...there are %d\n", (int)_productList.size() );
             if ( _productList.size() > 0 ) {
                 //  See if we need to make a new connection to the monitor server.  This might happen if a request
                 //  was already made, run through, and timed out.
@@ -380,15 +435,15 @@ namespace guiServer {
                         int status;
                         _monitorServerClient->reader( (char*)(&status), sizeof( int ) );
                         if ( status == 0 ) {
-                            formatPacket( MESSAGE, "connection established with monitor_server" );
+                            _guiClient->formatPacket( MESSAGE, "connection established with monitor_server" );
                         }
                         else {
-                            formatPacket( ERROR, "monitor_server returned initial status failure (%d) - real time monitor will not run", status );
+                            _guiClient->formatPacket( ERROR, "monitor_server returned initial status failure (%d) - real time monitor will not run", status );
                             _keepGoing = false;
                         }
                     }
                     else {
-                        formatPacket( ERROR, "connection with monitor_server failed - real time monitor will not run" );
+                        _guiClient->formatPacket( ERROR, "connection with monitor_server failed - real time monitor will not run" );
                         _keepGoing = false;
                     }
                 }
@@ -407,17 +462,17 @@ namespace guiServer {
                     int status;
                     _monitorServerClient->reader( (char*)(&status), sizeof( int ) );
                     if ( status == 0 ) {
-                        formatPacket( MESSAGE, "data product requests sent to monitor_server" );
+                        _guiClient->formatPacket( MESSAGE, "data product requests sent to monitor_server" );
                         //  Start the thread that reads visibilities (assuming its not already running!).
                         if ( _visConnectionOperating )
-                            formatPacket( WARNING, "a thread is already monitoring data products - a new one cannot be started!" );
+                            _guiClient->formatPacket( WARNING, "a thread is already monitoring data products - a new one cannot be started!" );
                         else {
                             pthread_attr_init( &_monitorAttr );
                             pthread_create( &_monitorId, &_monitorAttr, staticVisibilityMonitor, this );      
                         }
                     }
                     else {
-                        formatPacket( ERROR, "monitor_server returned failure status (%d) after data product requests", status );
+                        _guiClient->formatPacket( ERROR, "monitor_server returned failure status (%d) after data product requests", status );
                         _keepGoing = false;
                     }
                 }
@@ -439,6 +494,7 @@ namespace guiServer {
         void visibilityMonitor() {
             _visConnectionOperating = true;
             int timeStamp;
+            int integrationTime;
             int nReturn;
             int buffSize = 0;
             int newBuffSize;
@@ -448,16 +504,24 @@ namespace guiServer {
             int procChannels = 0;
             double delay = 0.0;
             double snr = 0.0;
+            int activeScan = -1;
+            int meanCounter = 0;
             Ipp64f* amp = NULL;
             Ipp64f* phase = NULL;
             Ipp64f* lags = NULL;
             Ipp64f* delayLags = NULL;
             Ipp64fc* vis64 = NULL;
+            Ipp64fc* fftVis64 = NULL;
+            Ipp64fc* meanVis64 = NULL;
+            Ipp64fc* meanfftVis64 = NULL;
             IppsFFTSpec_R_64f* fftspec = NULL;
             int threadTimeoutCount = 0;
             bool threadTimeoutActive = false;
             int threadTimeoutModelCount = 0;
             bool threadTimeoutInitialized = false;
+            Ipp64fc complexZero;
+            complexZero.re = 0.0;
+            complexZero.im = 0.0;
             while( _keepGoing && _visConnectionOperating ) {
                 //  Read the next block of visibility data.  We put a timeout on this to kill
                 //  the thread when the user isn't doing anything.
@@ -473,7 +537,7 @@ namespace guiServer {
                     if ( threadTimeoutActive ) {
                         ++threadTimeoutCount;
                         if ( threadTimeoutCount > 3 * threadTimeoutModelCount ) {
-                            formatPacket( WARNING, "real-time monitor thread has timed out after %d seconds of inactivity", 2 * threadTimeoutModelCount );
+                            _guiClient->formatPacket( WARNING, "real-time monitor thread has timed out after %d seconds of inactivity", 2 * threadTimeoutModelCount );
                             _visConnectionOperating = false;
                         }
                     }
@@ -482,7 +546,7 @@ namespace guiServer {
                 }
                 else if ( ret < 0 ) {
                     _visConnectionOperating = false;
-                    formatPacket( ERROR, "problem with socket connection to monitor_server: %d returned", ret );
+                    _guiClient->formatPacket( ERROR, "problem with socket connection to monitor_server: %d returned", ret );
                 }
                 else {
                     threadTimeoutCount = 0;
@@ -492,6 +556,24 @@ namespace guiServer {
                     }
                     else
                         threadTimeoutActive = true;
+                    //  Compare the time stamp to the range for each scan in this job so we can figure
+                    //  out which scan we are looking at.  
+                    int nScans = _config->getModel()->getNumScans();
+                    for ( int currentScan = 0; currentScan < nScans; ++currentScan ) {
+                        if ( timeStamp >= _config->getStartSeconds() + _config->getModel()->getScanStartSec( currentScan, _config->getStartMJD(), _config->getStartSeconds() ) &&
+                             timeStamp < _config->getStartSeconds() + _config->getModel()->getScanEndSec( currentScan, _config->getStartMJD(), _config->getStartSeconds() ) ) {
+                            //  Find the integration time (the size of each accumulation period) for this scan.
+                            integrationTime = lrint( _config->getIntTime( _config->getScanConfigIndex( currentScan ) ) );
+                            _guiClient->formatPacket( VISIBILITY_SCAN, "%s", _config->getModel()->getScanIdentifier( currentScan ).c_str() );
+                            _guiClient->formatPacket( SOURCE, "%s", _config->getModel()->getScanPointingCentreSource( currentScan )->name.c_str() );
+                            //  If this is a new scan, zero the "mean" counter.
+                            if ( currentScan != activeScan ) {
+                                activeScan = currentScan;
+                                meanCounter = 0;
+                            }
+	                        ++meanCounter;
+                        }
+                    }
                     _monitorServerClient->reader( (char*)&nReturn, sizeof( int ) );
                     _monitorServerClient->reader( (char*)&newBuffSize, sizeof( int ) );
                     if ( buffSize < newBuffSize ) {
@@ -503,7 +585,7 @@ namespace guiServer {
                     int ret = _monitorServerClient->reader( buff, buffSize );
                     if ( ret != buffSize ) {
                         _visConnectionOperating = false;
-                        formatPacket( ERROR, "problem with visibility data from monitor_server: %d out of %d bytes returned", ret, buffSize );
+                        _guiClient->formatPacket( ERROR, "problem with visibility data from monitor_server: %d out of %d bytes returned", ret, buffSize );
                     }
                     else {
                         //  These are raw complex data - no effort to change byte order, etc.
@@ -514,6 +596,7 @@ namespace guiServer {
                         int buffOffset = 0;
                         int iProduct = 0;
                         Ipp32fc* vis32 = NULL;
+                        
                         for ( int iVis = 0; iVis < nReturn; ++iVis ) {
                             int nChannels = *(int32_t*)(buff + buffOffset);
                             buffOffset += sizeof( int32_t );
@@ -523,7 +606,10 @@ namespace guiServer {
                             buffOffset += nChannels * sizeof( Ipp32fc );
                             //visBuff = (char*)(buff + buffOffset);
                             //buffOffset += nChannels * 2 * sizeof( int );
-                            printf( "%d channels from product %d\n", nChannels, iProduct );
+                            //  Use the FFT size specified by the user unless it is smaller than the data.
+                            int useFFTSize = _fftSize;
+                            if ( useFFTSize < nChannels * 2 )
+                                useFFTSize = nChannels * 2;
                             //  Allocate vectors to hold and process the visibilities.  We only need to do this if
                             //  the size of our arrays (determined by nChannels) changes.
                             if ( procChannels != nChannels ) {
@@ -541,37 +627,74 @@ namespace guiServer {
                                 if ( fftspec != NULL )
                                     ippsFFTFree_R_64f( fftspec );
                                 vis64 = ippsMalloc_64fc( nChannels );
+                                meanVis64 = ippsMalloc_64fc( nChannels );
                                 //  For each product....
                                 amp = ippsMalloc_64f( nChannels );
                                 phase = ippsMalloc_64f( nChannels );
-                                lags = ippsMalloc_64f( nChannels * 2 );
-                                delayLags = ippsMalloc_64f( nChannels * 2 );
+//                                lags = ippsMalloc_64f( nChannels * 2 );
+//                                delayLags = ippsMalloc_64f( nChannels * 2 );
+/**/                                lags = ippsMalloc_64f( useFFTSize );
+/**/                                delayLags = ippsMalloc_64f( useFFTSize );
+                                fftVis64 = ippsMalloc_64fc( useFFTSize / 2 );
+                                meanfftVis64 = ippsMalloc_64fc( useFFTSize / 2 );
                                 if ( amp == NULL || phase == NULL || lags == NULL ) {
-                                    formatPacket( ERROR, "Failure to allocate memory for visibility processing arrays." );
+                                    _guiClient->formatPacket( ERROR, "Failure to allocate memory for visibility processing arrays." );
                                     _visConnectionOperating = false;
                                     break;
                                 }
                                 int order = 0;
-                                while( ( ( nChannels * 2 ) >> order ) > 1 )
+//                                while( ( ( nChannels * 2 ) >> order ) > 1 )
+/**/                                while( ( ( useFFTSize ) >> order ) > 1 )
                                     order++;
                                 ippsFFTInitAlloc_R_64f( &fftspec, order, IPP_FFT_NODIV_BY_ANY, ippAlgHintFast );
                             }
                             //  Put the visibility data into double-precision complex arrays.
+	                        ippsSet_64fc( complexZero, fftVis64, useFFTSize / 2 );
+	                        if ( meanCounter == 0 )
+	                            ippsSet_64fc( complexZero, meanfftVis64, useFFTSize / 2 );
 	                        for ( int i = 0; i < nChannels; i++ ) {
 	                          vis64[i].re = vis32[i].re;
 	                          vis64[i].im = vis32[i].im;
+	                          fftVis64[i].re = vis32[i].re;
+	                          fftVis64[i].im = vis32[i].im;
+	                          //  Collect mean values.
+	                          if ( meanCounter > 1 ) {
+	                              meanVis64[i].re *= (double)(meanCounter - 1);
+	                              meanVis64[i].im *= (double)(meanCounter - 1);
+	                              meanfftVis64[i].re *= (double)(meanCounter - 1);
+	                              meanfftVis64[i].im *= (double)(meanCounter - 1);
+	                              meanVis64[i].re += vis32[i].re;
+	                              meanVis64[i].im += vis32[i].im;
+	                              meanfftVis64[i].re += vis32[i].re;
+	                              meanfftVis64[i].im += vis32[i].im;
+	                          }
+	                          else {
+	                              meanVis64[i].re = vis32[i].re;
+	                              meanVis64[i].im = vis32[i].im;
+	                              meanfftVis64[i].re = vis32[i].re;
+	                              meanfftVis64[i].im = vis32[i].im;
+	                          }
 	                        }
+	                        //  Adjust mean values.
+	                        for ( int i = 0; i < nChannels; i++ ) {
+                                meanVis64[i].re /= (double)meanCounter;
+                                meanVis64[i].im /= (double)meanCounter;
+                                meanfftVis64[i].re /= (double)meanCounter;
+                                meanfftVis64[i].im /= (double)meanCounter;
+                            }
 	                        //  Compute amplitude, phase, lags...
                             ippsMagnitude_64fc( vis64, amp, nChannels );
                             ippsPhase_64fc( vis64, phase, nChannels );
                             ippsMulC_64f_I( 180.0/M_PI, phase, nChannels );
-                            ippsFFTInv_CCSToR_64f( (Ipp64f*)vis64, lags, fftspec, 0 );
+//                            ippsFFTInv_CCSToR_64f( (Ipp64f*)vis64, lags, fftspec, 0 );
+/**/                            ippsFFTInv_CCSToR_64f( (Ipp64f*)fftVis64, lags, fftspec, 0 );
                             //  Generate a delay calculation...(swiped from vcal.cpp)
                             Ipp64f max = 0.0;
                             Ipp64f stddev = 0.0;
                             int imax = 0;
                             int i1 = 0;
                             int i2 = 0;
+                            /*
                             ippsAbs_64f( lags, delayLags, nChannels * 2 );
                             ippsMaxIndx_64f( delayLags, nChannels * 2, &max, &imax );
                             i1 = ( imax - 10 + nChannels * 2 ) % ( nChannels * 2 );
@@ -582,43 +705,130 @@ namespace guiServer {
                                 ippsMove_64f( &delayLags[i2], delayLags, nChannels * 2 - 20 );    
                             }
                             ippsStdDev_64f( delayLags, nChannels * 2 - 20, &stddev );
+                            ippsAbs_64f( lags, delayLags, nChannels * 2 );
+                            */
+                            ippsAbs_64f( lags, delayLags, useFFTSize );
+                            ippsMaxIndx_64f( delayLags, useFFTSize, &max, &imax );
+                            int windowSize = useFFTSize / 20;
+                            i1 = ( imax - windowSize + useFFTSize ) % ( useFFTSize );
+                            i2 = ( imax + windowSize ) % ( useFFTSize );
+                            if ( i1 < i2 ) {
+                                ippsMove_64f( &delayLags[i2], &delayLags[i1], useFFTSize - i2 );
+                            } else {
+                                ippsMove_64f( &delayLags[i2], delayLags, useFFTSize - 2 * windowSize );    
+                            }
+                            ippsStdDev_64f( delayLags, useFFTSize - 2 * windowSize, &stddev );
+                            ippsAbs_64f( lags, delayLags, useFFTSize );
+                            /**/
                             int maxChannel = imax;
-                            if ( imax > nChannels ) 
-                                imax -= nChannels * 2;
+//                            if ( imax > nChannels ) 
+//                                imax -= nChannels * 2;
+/**/                            if ( imax > useFFTSize / 2 ) 
+/**/                                imax -= useFFTSize;
                             //  Convert a difference in FFT index to a time difference.  vcal.cpp says "really
                             //  should use sampling rate".  Probably true.
-                            delay = (double)imax / ( 2.0 * _productInfo[iProduct].Bandwidth );
+                            delay = (double)imax / ( 2.0 * _productInfo[iProduct].Bandwidth ) * ( (double)nChannels / (double)useFFTSize );
                             snr = (float)( max / stddev );
                             //  Send amplitude data to the client.  For sending these plot data we are using
                             //  "composed" packets, explained in the PacketExchange.  Double precision numbers
                             //  are sent as strings because Java and C++ don't appear to play nicely together.
-                            composePacket( AMPLITUDE_DATA, nChannels * sizeof( double ) + 3 * sizeof( int ) );
-                            composeInt( &iProduct );
-                            composeInt( &nChannels );
-                            composeInt( &timeStamp );
-                            composeStringDouble( amp, nChannels );
-                            composeEnd();
+                            _guiClient->composePacket( AMPLITUDE_DATA, nChannels * sizeof( double ) + 3 * sizeof( int ) );
+                            _guiClient->composeInt( &iProduct );
+                            _guiClient->composeInt( &nChannels );
+                            _guiClient->composeInt( &timeStamp );
+                            _guiClient->composeInt( &integrationTime );
+                            _guiClient->composeStringDouble( amp, nChannels );
+                            _guiClient->composeEnd();
                             //  Phase data.
-                            composePacket( PHASE_DATA, nChannels * sizeof( double ) + 3 * sizeof( int ) );
-                            composeInt( &iProduct );
-                            composeInt( &nChannels );
-                            composeInt( &timeStamp );
-                            composeStringDouble( phase, nChannels );
-                            composeEnd();
+                            _guiClient->composePacket( PHASE_DATA, nChannels * sizeof( double ) + 3 * sizeof( int ) );
+                            _guiClient->composeInt( &iProduct );
+                            _guiClient->composeInt( &nChannels );
+                            _guiClient->composeInt( &timeStamp );
+                            _guiClient->composeInt( &integrationTime );
+                            _guiClient->composeStringDouble( phase, nChannels );
+                            _guiClient->composeEnd();
                             //  Lag data require some rearrange.
-                            composePacket( LAG_DATA, 2 * ( nChannels + 1) * sizeof( double ) + 4 * sizeof( int ) );
-                            composeInt( &iProduct );
-                            composeInt( &nChannels );
-                            composeInt( &timeStamp );
-                            composeInt( &maxChannel );
-                            composeStringDouble( &delay );
-                            composeStringDouble( &snr );
-                            composeStringDouble( lags + nChannels, nChannels );
-                            composeStringDouble( lags, nChannels );
-                            composeEnd();
+//                            _guiClient->composePacket( LAG_DATA, 2 * ( nChannels + 1) * sizeof( double ) + 4 * sizeof( int ) );
+/**/                            _guiClient->composePacket( LAG_DATA, ( 2 + useFFTSize ) * sizeof( double ) + 4 * sizeof( int ) );
+                            _guiClient->composeInt( &iProduct );
+//                            _guiClient->composeInt( &nChannels );
+/**/                            int halfSize = useFFTSize / 2;
+/**/                            _guiClient->composeInt( &halfSize );
+                            _guiClient->composeInt( &timeStamp );
+                            _guiClient->composeInt( &integrationTime );
+                            _guiClient->composeInt( &maxChannel );
+                            _guiClient->composeStringDouble( &delay );
+                            _guiClient->composeStringDouble( &snr );
+//                            _guiClient->composeStringDouble( delayLags + nChannels, nChannels );
+//                            _guiClient->composeStringDouble( delayLags, nChannels );
+/**/                            _guiClient->composeStringDouble( delayLags + useFFTSize / 2, useFFTSize / 2 );
+/**/                            _guiClient->composeStringDouble( delayLags, useFFTSize / 2 );
+                            _guiClient->composeEnd();
+                            
+                            //  Repeat analysis for the scan mean vectors.
+	                        //  Compute amplitude, phase, lags...
+                            ippsMagnitude_64fc( meanVis64, amp, nChannels );
+                            ippsPhase_64fc( meanVis64, phase, nChannels );
+                            ippsMulC_64f_I( 180.0/M_PI, phase, nChannels );
+                            ippsFFTInv_CCSToR_64f( (Ipp64f*)meanfftVis64, lags, fftspec, 0 );
+                            //  Generate a delay calculation...(swiped from vcal.cpp)
+                            max = 0.0;
+                            stddev = 0.0;
+                            imax = 0;
+                            i1 = 0;
+                            i2 = 0;
+                            ippsAbs_64f( lags, delayLags, useFFTSize );
+                            ippsMaxIndx_64f( delayLags, useFFTSize, &max, &imax );
+                            i1 = ( imax - windowSize + useFFTSize ) % ( useFFTSize );
+                            i2 = ( imax + windowSize ) % ( useFFTSize );
+                            if ( i1 < i2 ) {
+                                ippsMove_64f( &delayLags[i2], &delayLags[i1], useFFTSize - i2 );
+                            } else {
+                                ippsMove_64f( &delayLags[i2], delayLags, useFFTSize - 2 * windowSize );    
+                            }
+                            ippsStdDev_64f( delayLags, useFFTSize - 2 * windowSize, &stddev );
+                            ippsAbs_64f( lags, delayLags, useFFTSize );
+                            maxChannel = imax;
+                            if ( imax > useFFTSize / 2 ) 
+                                imax -= useFFTSize;
+                            //  Convert a difference in FFT index to a time difference.  vcal.cpp says "really
+                            //  should use sampling rate".  Probably true.
+                            delay = (double)imax / ( 2.0 * _productInfo[iProduct].Bandwidth ) * ( (double)nChannels / (double)useFFTSize );
+                            snr = (float)( max / stddev );
+                            
+                            //  Send mean amplitude data to the client.
+                            _guiClient->composePacket( MEAN_AMPLITUDE_DATA, nChannels * sizeof( double ) + 3 * sizeof( int ) );
+                            _guiClient->composeInt( &iProduct );
+                            _guiClient->composeInt( &nChannels );
+                            _guiClient->composeInt( &timeStamp );
+                            _guiClient->composeInt( &integrationTime );
+                            _guiClient->composeStringDouble( amp, nChannels );
+                            _guiClient->composeEnd();
+                            //  Phase data.
+                            _guiClient->composePacket( MEAN_PHASE_DATA, nChannels * sizeof( double ) + 3 * sizeof( int ) );
+                            _guiClient->composeInt( &iProduct );
+                            _guiClient->composeInt( &nChannels );
+                            _guiClient->composeInt( &timeStamp );
+                            _guiClient->composeInt( &integrationTime );
+                            _guiClient->composeStringDouble( phase, nChannels );
+                            _guiClient->composeEnd();
+                            //  Lag data require some rearrange.
+                            _guiClient->composePacket( MEAN_LAG_DATA, ( 2 + useFFTSize ) * sizeof( double ) + 4 * sizeof( int ) );
+                            _guiClient->composeInt( &iProduct );
+                            halfSize = useFFTSize / 2;
+                            _guiClient->composeInt( &halfSize );
+                            _guiClient->composeInt( &timeStamp );
+                            _guiClient->composeInt( &integrationTime );
+                            _guiClient->composeInt( &maxChannel );
+                            _guiClient->composeStringDouble( &delay );
+                            _guiClient->composeStringDouble( &snr );
+                            _guiClient->composeStringDouble( delayLags + useFFTSize / 2, useFFTSize / 2 );
+                            _guiClient->composeStringDouble( delayLags, useFFTSize / 2 );
+                            _guiClient->composeEnd();
+
                             //  Indicate that we have sent all the data associated with this most
                             //  recent set of visibilities.
-                            semaphorePacket( END_VISIBILITY_BLOCK );
+                            _guiClient->semaphorePacket( END_VISIBILITY_BLOCK );
                         }
                     }
                 }
@@ -647,6 +857,7 @@ namespace guiServer {
     
         bool _keepGoing;
         bool _visConnectionOperating;
+        int _fftSize;
         pthread_attr_t _monitorAttr;
         pthread_t _monitorId;
         ServerSideConnection::DifxMonitorInfo* _monitorInfo;
@@ -700,6 +911,12 @@ namespace guiServer {
         };
         std::vector<ProductInfo> _productInfo;
             
+        pthread_t _receiveId;
+        bool _receiveActive;
+        
+        GUIClient* _guiClient;
+
+
     };
 
 }

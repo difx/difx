@@ -98,6 +98,7 @@ namespace guiServer {
             pthread_mutex_init( &_runningJobsMutex, NULL );
             pthread_mutex_init( &_channelDataLock, NULL );
             pthread_mutex_init( &_loggingJobsMutex, NULL );
+            pthread_mutex_init( &_channelWriteMutex, NULL );
         }
         
         ~ServerSideConnection() {
@@ -699,6 +700,7 @@ namespace guiServer {
         void startDifxMonitor( char* data, const int nBytes ) {
             DifxMonitorInfo* monitorInfo = new DifxMonitorInfo;
             monitorInfo->connectionPort = ntohl( *(int*)data );
+            monitorInfo->addr.assign( _clientIP );
             monitorInfo->ssc = this;
             pthread_t threadId;
             pthread_create( &threadId, NULL, staticRunDifxMonitor, (void*)(monitorInfo) );
@@ -768,6 +770,7 @@ namespace guiServer {
         //-----------------------------------------------------------------------------
         struct DifxMonitorInfo {
             ServerSideConnection* ssc;
+            std::string addr;
             int connectionPort;
         };
 
@@ -1047,6 +1050,9 @@ namespace guiServer {
         
         const bool channelData() { return _channelAllData; }
         
+        void channelWriteLock() { pthread_mutex_lock( &_channelWriteMutex ); }
+        void channelWriteUnlock() { pthread_mutex_unlock( &_channelWriteMutex ); }
+
     protected:
     
         network::UDPSocket* _monitorSocket;
@@ -1070,6 +1076,8 @@ namespace guiServer {
         pthread_mutex_t _channelDataLock;
         std::map<char*, void*> _loggingJobsList;
         pthread_mutex_t _loggingJobsMutex;
+
+        pthread_mutex_t _channelWriteMutex;
         
         bool _relayAllPackets;
         bool _relayAlertPackets;

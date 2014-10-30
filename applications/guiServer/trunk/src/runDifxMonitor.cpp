@@ -7,14 +7,12 @@
 //
 //=============================================================================
 #include <ServerSideConnection.h>
-#include <network/TCPClient.h>
+#include <GUIClient.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <ExecuteSystem.h>
 #include <configuration.h>
-#include <network/TCPServer.h>
-#include <network/TCPSocket.h>
 #include <DifxMonitorExchange.h>
 
 using namespace guiServer;
@@ -31,35 +29,29 @@ void ServerSideConnection::runDifxMonitor( DifxMonitorInfo* monitorInfo ) {
     DifxMonitorExchange* exchange = NULL;
     
     //  Start a server on the connection port and await a connection from the GUI.  
-    printf( "using monitor port #%d\n", monitorInfo->connectionPort );
-    network::TCPServer* server = new network::TCPServer( monitorInfo->connectionPort );
-    network::TCPSocket* monitorClient = server->acceptClient();
-    if ( monitorClient == NULL ) {
-        allIsWell = false;
-        diagnostic( ERROR, "acceptClient() failure in runDifxMonitor - real-time monitoring will not run" );
-    }
-    //  Once we have a connection we don't need the server anymore.
-    delete server;
+    printf( "using monitor port #%d - gui address is %s\n", monitorInfo->connectionPort, monitorInfo->addr.c_str() );
+    GUIClient* client = new GUIClient( monitorInfo->ssc, monitorInfo->addr.c_str(), monitorInfo->connectionPort );
 
     //  We have a packet exchange mechanism to govern the connection to the GUI.
-    if ( allIsWell )
-        exchange = new DifxMonitorExchange( monitorClient, monitorInfo );
+    if ( client->okay() ) {
+        exchange = new DifxMonitorExchange( client, monitorInfo );
 
-    while ( exchange->keepGoing() ) {
+        //  One-second cycle to monitor the exchange with the GUI.  Once it is
+        //  finished we will shut it down and delete it.
+        while ( exchange->keepGoing() ) {
 
-        //printf( "tick\n" );
-        usleep( 1000000 );
-        
-    }
+            //printf( "tick\n" );
+            usleep( 1000000 );
+            
+        }
     
-//    delete config;
+    }
+
     printf( "closing the monitor socket\n" );
-//    monitorServerClient->closeConnection();
-//    delete monitorServerClient;
-    monitorClient->closeConnection();
-    delete monitorClient;
+    exchange->closeConnection();
     printf( "deleting packet exchange\n" );
     sleep( 1 );
+    delete client;
     delete exchange;
     printf( "exiting monitor thread\n" );
     
