@@ -13,6 +13,7 @@ import mil.navy.usno.widgetlib.JulianCalendar;
 import mil.navy.usno.widgetlib.ComplexToolTip;
 import mil.navy.usno.widgetlib.ZCheckBox;
 import mil.navy.usno.widgetlib.ZButton;
+import mil.navy.usno.widgetlib.Power2NumberBox;
 
 import edu.nrao.difx.difxutilities.DiFXCommand_getFile;
 import edu.nrao.difx.difxutilities.DiFXCommand_sendFile;
@@ -2005,33 +2006,6 @@ public class ExperimentEditor extends JFrame {
         
     }
     
-    /*
-     * Extension of the NumberBox class to make it handle only powers of 2.
-     */
-    protected class Power2NumberBox extends NumberBox {
-        
-        public Power2NumberBox() {
-            precision( 0 );
-            minimum( 2.0 );
-        }
-        
-        public void mouseWheelMoved( MouseWheelEvent e ) {
-            if ( e.getWheelRotation() > 0 )
-                checkNewValue( value() * 2.0 * (double)( e.getWheelRotation() ) );
-            else
-                checkNewValue( value() / ( 2.0 * (double)( -e.getWheelRotation() ) ) );
-        }
-
-        protected void upKey() {
-            checkNewValue( value() * 2.0 );
-        }
-
-        protected void downKey() {
-            checkNewValue( value() / 2.0 );        
-        }
-    
-    }
-
     /*
      * Read the current vex file, which is stored in the editor, and parse out items
      * that we can use in the .v2d file.

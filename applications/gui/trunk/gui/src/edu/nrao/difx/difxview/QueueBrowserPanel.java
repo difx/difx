@@ -311,8 +311,9 @@ public class QueueBrowserPanel extends TearOffPanel {
         _scheduleThread = new ScheduleThread();
         _scheduleThread.start();
 
-        _memoryMonitor = new MemoryMonitor();
-        _memoryMonitor.start();
+        //  MEMORY LEAK MONITOR
+        //_memoryMonitor = new MemoryMonitor();
+        //_memoryMonitor.start();
     }
 
     public MemoryMonitor _memoryMonitor;

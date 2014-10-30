@@ -340,3 +340,4 @@ public class NumberBox extends FormattedTextField implements MouseListener,
     protected boolean _mouseActive;
     
 }
+

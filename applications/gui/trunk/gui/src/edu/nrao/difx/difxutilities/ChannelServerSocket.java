@@ -113,6 +113,37 @@ public class ChannelServerSocket {
     }
     
     /*
+     * Read a double from the input stream.
+     */
+    public double readDouble() throws IOException {
+        if ( _channelOn ) {
+            boolean found = false;
+            while ( !found ) {
+                if ( _settings.guiServerConnection().portData( _port ) )
+                    found = true;
+                try { Thread.sleep( 1 ); } catch ( Exception e ) {}
+            }
+            return _settings.guiServerConnection().portBuffer( _port ).getDouble();
+        }
+        else
+            return _inStream.readDouble();
+    }
+    
+    /*
+     * Read a double precision number as a string.
+     */
+    public double readStringDouble() {
+        byte [] data = new byte[14];
+        try {
+            readFully( data, 0, 14 );
+            return Double.parseDouble( new String( data ) );
+        } 
+        catch ( java.io.IOException e ) {
+            return 0.0;
+        }
+    }
+
+    /*
      * Read a bunch of bytes from the input stream.
      */
     public void readFully( byte[] bytes, int off, int len ) throws IOException {
@@ -155,7 +186,7 @@ public class ChannelServerSocket {
     /*
      * Write a string.
      */
-    public void writeBytes( String content ) throws IOException {
+    public void writeString( String content ) throws IOException {
         if ( _channelOn ) {
             ByteBuffer b = ByteBuffer.allocate( 4 + content.length() );
             b.order( ByteOrder.BIG_ENDIAN );
@@ -165,6 +196,21 @@ public class ChannelServerSocket {
         }
         else
             _outStream.writeBytes( content );
+    }
+                    
+    /*
+     * Write a string.
+     */
+    public void writeBytes( byte [] data ) throws IOException {
+        if ( _channelOn ) {
+            ByteBuffer b = ByteBuffer.allocate( 4 + data.length );
+            b.order( ByteOrder.BIG_ENDIAN );
+            b.putInt( _port );
+            b.put( data );
+            _settings.guiServerConnection().sendPacket( _settings.guiServerConnection().CHANNEL_DATA, 4 + data.length, b.array() );
+        }
+        else
+            _outStream.write( data );
     }
                     
     protected SystemSettings _settings;

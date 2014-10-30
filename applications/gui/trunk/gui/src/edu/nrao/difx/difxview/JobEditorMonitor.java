@@ -509,7 +509,7 @@ public class JobEditorMonitor extends JFrame {
         else
             _showMonitorButton.setEnabled( false );
         _runMonitor.setSelected( false );
-        _runMonitor.setEnabled( false );
+        //_runMonitor.setEnabled( false );
         
         //  The Status Panel shows the current state of the job.
         _statusPanel = new IndexedPanel( "" );

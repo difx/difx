@@ -115,7 +115,7 @@ public class DiFXCommand_sendFile extends DiFXCommand {
                     acceptCallback();
                     //  Write the number of bytes in the file, then the file data.
                     ssock.writeInt( _content.length() );
-                    ssock.writeBytes( _content );
+                    ssock.writeString( _content );
                     //  Read how many characters were received.
                     _fileSize = ssock.readInt();
                 } catch ( SocketTimeoutException e ) {

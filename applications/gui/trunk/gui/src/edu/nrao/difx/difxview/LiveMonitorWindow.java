@@ -4,7 +4,10 @@
  */
 package edu.nrao.difx.difxview;
 
-import edu.nrao.difx.difxutilities.GuiServerConnection;
+import edu.nrao.difx.difxutilities.ChannelServerSocket;
+
+import java.net.SocketTimeoutException;
+
 import javax.swing.JFrame;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
@@ -31,6 +34,8 @@ import mil.navy.usno.plotlib.PlotWindow;
 import mil.navy.usno.plotlib.Plot2DObject;
 import mil.navy.usno.plotlib.Track2D;
 import mil.navy.usno.plotlib.DrawObject;
+
+import mil.navy.usno.widgetlib.Power2NumberBox;
 
 import java.awt.event.ComponentEvent;
 
@@ -115,6 +120,7 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
         _connectionPanel = new IndexedPanel( "Connection Controls" );
         _connectionPanel.openHeight( 120 );
         _connectionPanel.closedHeight( 20 );
+        _connectionPanel.open( false );
         _scrollPane.addNode( _connectionPanel );
         _monitorHost = new SaneTextField();
         _monitorHost.setText( _settings.difxMonitorHost() );
@@ -156,7 +162,7 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
         _connectionPlotWindow.backgroundColor( this.getBackground() );
         _connectionPanel.add( _connectionPlotWindow );
         _connectionPlot = new Plot2DObject();
-        _connectionPlot.title( "bytes/sec", Plot2DObject.LEFT_JUSTIFY );
+        _connectionPlot.title( "Transfer Traffic", Plot2DObject.LEFT_JUSTIFY );
         _connectionPlot.titlePosition( 0.0, -12.0 );
         _connectionPlot.titleColor( Color.WHITE, true );
         _connectionPlot.titleFont( new Font( "Dialog", Font.BOLD, 12 ) );
@@ -260,10 +266,21 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
             }
         } );
         _dataPanel.add( _allCheck ); 
-        //_productTable = new DefaultTableModel();
+        _fftSizeLabel = new JLabel( "FFT Size:" );
+        _fftSizeLabel.setHorizontalAlignment( JLabel.RIGHT );
+        _dataPanel.add( _fftSizeLabel );
+        _fftSize = new Power2NumberBox();
+        _fftSize.setToolTipText( "Size of the FFT used to create the lag portion of real-time\n"
+                + "plots.  Large values increase the precision of the delay calculation.\n"
+                + "If this value is smaller than the data size, the data size will be\n"
+                + "used instead." );
+        _fftSize.minimum( 2 );
+        _fftSize.intValue( 4096 );
+        _dataPanel.add( _fftSize );
         _productTable = new DefaultTableModel(
                 new Object[]{ "Selected",
                               "Index",
+                              "Scan",
                               "Baseline",
                               "Frequency",
                               "Phase Center",
@@ -347,55 +364,32 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
         _showButton.setBounds( 150, 2, 100, 18 );
         _showButton.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
-                _showMenu.show( _showButton, 0, _showButton.getHeight() );
+                synchronized ( _showMenu ) {
+                    _showMenu.show( _showButton, 0, _showButton.getHeight() );
+                }
             }
         } );
         _plotPanel.add( _showButton );
+        generateShowMenu();
+        
+        _allObjectsBuilt = true;
+        newSize();
+        
+        // Set ourselves up to intercept window operations (close, iconize, etc).
+        addWindowListener( this );
+        
+        newConnection();
+        
+    }
+    
+    /*
+     * Generate a new menu for the "show" button.
+     */
+    public void generateShowMenu() {
+        
         _showMenu = new JPopupMenu();
-        _showAll = new JCheckBoxMenuItem( "All Accumulation Periods" );
-        _showAll.addActionListener( new ActionListener() {
-            public void actionPerformed( ActionEvent e ) {
-                //  There is no point to showing "all" and "latest" at the same time (since
-                //  the last of "all" IS latest).  So it this has been selected, turn
-                //  off "latest".  On the other hand, deselecting this will not cause
-                //  latest to go on.
-                if ( _showAll.isSelected() )
-                    _showLatest.setSelected( false );
-                updatePlotLocations();
-            }
-        } );
-        _showAll.setSelected( false );
-        _showMenu.add( _showAll );
-        _showLatest = new JCheckBoxMenuItem( "Latest Only" );
-        _showLatest.addActionListener( new ActionListener() {
-            public void actionPerformed( ActionEvent e ) {
-                //  See above comments about latest/all...
-                if ( _showLatest.isSelected() )
-                    _showAll.setSelected( false );
-                updatePlotLocations();
-            }
-        } );
-        _showLatest.setSelected( true );
-        _showMenu.add( _showLatest );
-        _showTimeSummary = new JCheckBoxMenuItem( "Time Summary" );
-        _showTimeSummary.setToolTipText( "Show plots displaying averages across time." );
-        _showTimeSummary.addActionListener( new ActionListener() {
-            public void actionPerformed( ActionEvent e ) {
-                updatePlotLocations();
-            }
-        } );
-        _showTimeSummary.setSelected( true );
-        _showMenu.add( _showTimeSummary );
-        _showChannelSummary = new JCheckBoxMenuItem( "Channel Summary" );
-        _showChannelSummary.setToolTipText( "Show plots displaying averages across channels." );
-        _showChannelSummary.addActionListener( new ActionListener() {
-            public void actionPerformed( ActionEvent e ) {
-                updatePlotLocations();
-            }
-        } );
-        _showChannelSummary.setSelected( true );
-        _showMenu.add( _showChannelSummary );
-        _showMenu.add( new JSeparator() );
+
+        //  Group of menu items that determine what plots contain.
         _showPhase = new JCheckBoxMenuItem( "Phase" );
         _showPhase.setSelected( true );
         _showPhase.addActionListener( new ActionListener() {
@@ -432,17 +426,113 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
             }
         } );
         _showMenu.add( _showDelay );
+        _showSNR = new JCheckBoxMenuItem( "S/N" );
+        _showSNR.setSelected( true );
+        _showSNR.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                updatePlotLocations();
+            }
+        } );
+        _showMenu.add( _showSNR );
         
-        _allObjectsBuilt = true;
-        newSize();
+        //  Group of menu items that determine what type of plots to show - for each
+        //  accumulation period, for the latest accumulation period (these two mutually
+        //  exclusive) and a plot showing the total data collection for each scan.
+        _showMenu.add( new JSeparator() );
+        _showAll = new JCheckBoxMenuItem( "All Accumulation Periods" );
+        _showAll.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                //  There is no point to showing "all" and "latest" at the same time (since
+                //  the last of "all" IS latest).  So it this has been selected, turn
+                //  off "latest".  On the other hand, deselecting this will not cause
+                //  latest to go on.
+                if ( _showAll.isSelected() )
+                    _showLatest.setSelected( false );
+                updatePlotLocations();
+            }
+        } );
+        _showAll.setSelected( false );
+        _showMenu.add( _showAll );
+        _showLatest = new JCheckBoxMenuItem( "Latest Accumulation Period" );
+        _showLatest.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                //  See above comments about latest/all...
+                if ( _showLatest.isSelected() )
+                    _showAll.setSelected( false );
+                updatePlotLocations();
+            }
+        } );
+        _showLatest.setSelected( true );
+        _showMenu.add( _showLatest );
+        _showTimeSummary = new JCheckBoxMenuItem( "Scan Summary" );
+        _showTimeSummary.setToolTipText( "Show plots displaying results for all data within each scan." );
+        _showTimeSummary.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                updatePlotLocations();
+            }
+        } );
+        _showTimeSummary.setSelected( true );
+        _showMenu.add( _showTimeSummary );
         
-        // Set ourselves up to intercept window operations (close, iconize, etc).
-        addWindowListener( this );
-        
-        newConnection();
-        
+        //  Group of menu items to select which scans within a job should be plotted.
+        //  There may be none (if we haven't started yet), one, or many.
+        _showMenu.add( new JSeparator() );
+        _showAllScans = new JCheckBoxMenuItem( "All Scans" );
+        _showAllScans.setToolTipText( "Plot results for all scans in this job" );
+        _showAllScans.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                if ( _scanMenuItems != null ) {
+                    for ( Iterator<JCheckBoxMenuItem> menuItem = _scanMenuItems.iterator(); menuItem.hasNext(); ) {
+                        menuItem.next().setSelected( false );
+                    }
+                }
+                updatePlotLocations();
+            }
+        } );
+        _showAllScans.setSelected( true );
+        _showMenu.add( _showAllScans );
+    } 
+    
+    /*
+     * Add a scan name (if it is unique) to the checkbox menu items in the "show"
+     * menu.  This is done in a thread to assure that the show menu is not being
+     * viewed when the change is made (otherwise the item would be added to the
+     * visible menu and then picking it would cause a crash).
+     */
+    public void addScanToShowMenu( String scanName ) {
+        if ( _scanMenuItems == null )
+            _scanMenuItems = new ArrayDeque<JCheckBoxMenuItem>();
+        final String theName = scanName;
+        Thread newThread = new Thread() {
+            public void run() {
+                while ( _showMenu.isVisible() ) {
+                    try { Thread.sleep( 100 ); } catch ( Exception e ) {}
+                }
+                synchronized ( _showMenu ) {
+                    boolean found = false;
+                    for ( Iterator<JCheckBoxMenuItem> menuItem = _scanMenuItems.iterator(); menuItem.hasNext() && !found; ) {
+                        if ( menuItem.next().getText().contentEquals( theName ) )
+                            found = true;
+                    }
+                    if ( !found ) {
+                        JCheckBoxMenuItem menuItem = new JCheckBoxMenuItem( theName );
+                        _scanMenuItems.add( menuItem );
+                        menuItem.setToolTipText( "Plot results for scan \"" + menuItem.getText() + "\"" );
+                        menuItem.addActionListener( new ActionListener() {
+                            public void actionPerformed( ActionEvent e ) {
+                                _showAllScans.setSelected( false );
+                                updatePlotLocations();
+                            }
+                        } );
+                        _showMenu.add( menuItem );
+                    }
+                }
+            }
+        };
+        newThread.start();
     }
     
+   
     /*
      * This is a class used for the plot panel.  It is an indexed panel that traps
      * mouse wheel events.
@@ -460,33 +550,39 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
         public void mouseWheelMoved( MouseWheelEvent e ) {
             boolean redrawStuff = false;
             synchronized ( _plotDataLock ) {
-                //  Make sure there are lists of plots to consult.
-                if ( _productPlots != null && _timeSummaryPlots != null ) {
-                    //  Make sure they have a (complete) time history, i.e. there are more than
-                    //  one of them AND there are the same number of each.  For this we are looking
-                    //  at the channel summary plot list (even if we aren't actually drawing it)
-                    //  because it is the last created.
-                    if ( _channelSummaryPlots.lagPlots.size() > 0 ) {
-                        //  If we are "locked" to the most recent (i.e. we haven't been fiddling with the
-                        //  mouse wheel yet, or last time we did we went to the latest), set the "current"
-                        //  plot index to be the most recent plot.
-                        if ( _lockToLatest )
-                            _currentPlotIndex = _channelSummaryPlots.lagPlots.size() - 1;
-                        //  Now change the value of the current plot based on the mouse wheel movement
-                        //  (rolling the wheel away from you INCREMENTS in my book, which of course doesn't
-                        //  agree with Java).
-                        _currentPlotIndex -= e.getWheelRotation();
-                        //  Make sure this is not smaller than zero or larger than the highest plot index.
-                        if ( _currentPlotIndex < 0 )
-                            _currentPlotIndex = 0;
-                        if ( _currentPlotIndex > _channelSummaryPlots.lagPlots.size() - 1 )
-                            _currentPlotIndex = _channelSummaryPlots.lagPlots.size() - 1;
-                        if ( _currentPlotIndex == _channelSummaryPlots.lagPlots.size() - 1 )
-                            _lockToLatest = true;
-                        else
-                            _lockToLatest = false;
-                        redrawStuff = true;
+                if ( _productPlotsByScan == null ) {
+                    _lockToLatest = true;
+                }
+                else {
+                    //  Count the maximum number of plots we can count backwards.
+                    int maxPlots = 0;
+                    for ( Iterator<ProductPlotsList> iter1 = _productPlotsByScan.iterator(); iter1.hasNext(); ) {
+                        ProductPlotsList productList = iter1.next();
+                        for ( Iterator<ProductPlots> iter = productList.iterator(); iter.hasNext(); ) {
+                            ProductPlots thisPP = iter.next();
+                            if ( thisPP.lagPlots.size() > maxPlots )
+                                maxPlots = thisPP.lagPlots.size();
+                        }
                     }
+                    //  If we are "locked" to the most recent (i.e. we haven't been fiddling with the
+                    //  mouse wheel yet, or last time we did we went to the latest), set the "current"
+                    //  plot index to be the most recent plot.
+                    if ( _lockToLatest )
+                        _currentPlotIndex = 0;
+                    //  Now change the value of the current plot based on the mouse wheel movement
+                    //  (rolling the wheel away from you INCREMENTS in my book, which of course doesn't
+                    //  agree with Java).
+                    _currentPlotIndex += e.getWheelRotation();
+                    //  Make sure this is not smaller than zero or larger than the maximum plot list size.
+                    if ( _currentPlotIndex > maxPlots )
+                        _currentPlotIndex = maxPlots;
+                    if ( _currentPlotIndex < 0 )
+                        _currentPlotIndex = 0;
+                    if ( _currentPlotIndex == 0 )
+                        _lockToLatest = true;
+                    else
+                        _lockToLatest = false;
+                    redrawStuff = true;
                 }
             }
             if ( redrawStuff )
@@ -578,6 +674,7 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
         
         //  This thread monitors the traffic on our data/control connection with
         //  the guiServer.
+        _bytesTransfered = new Long( 0 );
         _dataTransferMonitorThread = new DataTransferMonitorThread();
         _dataTransferMonitorThread.start();
         
@@ -683,6 +780,11 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
     protected final int SOURCE                             = 135;
     protected final int SOURCE_RA                          = 136;
     protected final int SOURCE_DEC                         = 137;
+    protected final int VISIBILITY_SCAN                    = 138;
+    protected final int FFT_SIZE                           = 139;
+    protected final int MEAN_AMPLITUDE_DATA                = 140;
+    protected final int MEAN_PHASE_DATA                    = 141;
+    protected final int MEAN_LAG_DATA                      = 142;
         
     /*
      * Send a packet with ID, number of bytes, and data.
@@ -690,10 +792,13 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
     public void sendPacket( int packetId, int nBytes, byte[] data ) {
         if ( _connected ) {
             try {
-                _out.writeInt( packetId );
-                _out.writeInt( nBytes );
+                //_out.writeInt( packetId );
+                //_out.writeInt( nBytes );
+                _ssock.writeInt( packetId );
+                _ssock.writeInt( nBytes );
                 if ( data != null && data.length > 0 ) {
-                    _out.write( data );
+                    //_out.write( data );
+                    _ssock.writeBytes( data );
                 }
             } catch ( java.io.IOException e ) {
                 //  socket failure
@@ -731,458 +836,555 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
         }
         
         public void run() {
-            //  Send a request to the guiServer to start the thread that will
-            //  talk to monitor_server.  The thread will start a server at the
-            //  specified port.
-            java.nio.ByteBuffer bb = java.nio.ByteBuffer.allocate(4);
-            _usingPort = _settings.newDifxTransferPort( 0, 100, true, true );
-            _monitorPort.setText( new Integer( _usingPort ).toString() );
-            bb.putInt( _usingPort ); 
-            byte [] intData = bb.array();
-            _settings.guiServerConnection().sendPacket( _settings.guiServerConnection().START_DIFX_MONITOR, intData.length, intData );
-            while ( _keepGoing ) {
-                
-                makeConnection();
-                //  Send the path to the input file.
+            try {
+                _connectionLight.warning();
+                _connectionLabel.setText( "connecting..." );
+                //  Open a new connection server.
+                _usingPort = _settings.newDifxTransferPort( 0, 100, true, true );
+                _monitorPort.setText( new Integer( _usingPort ).toString() );
+                _ssock = new ChannelServerSocket( _usingPort, _settings );
+                _ssock.setSoTimeout( _settings.timeout() );  //  timeout is in millisec
+                //  Send a request to the guiServer to start the thread that will
+                //  talk to monitor_server.  The thread will start a server at the
+                //  specified port.
+                java.nio.ByteBuffer bb = java.nio.ByteBuffer.allocate(4);
+                bb.putInt( _usingPort ); 
+                byte [] intData = bb.array();
+                _settings.guiServerConnection().sendPacket( _settings.guiServerConnection().START_DIFX_MONITOR, intData.length, intData );
+                try {
+                    _ssock.accept();
+                _connectionLight.on( true );
+                _connectionLabel.setText( "connected" );
+                _connected = true;
+                //  Send the path to the input file for this job.  This allows the monitor_server
+                //  to identify it.
                 sendString( INPUT_FILE_PATH, _inputFile );                    
+                //  Loop collecting packets from the guiServer.  These
+                //  are identified by an initial integer, and then are followed
+                //  by a data length, then data.
                 while ( _connected ) {
-                    try {
-                        //  Read the packet type as an integer.  The packet types
-                        //  are defined above (within this class).
-                        int packetType = _in.readInt();
-                        //  Read the size of the incoming data (bytes).
-                        int packetSize = _in.readInt();
-                        //---------------------------------------------------------------------
-                        //  These are messages that are written directly to the message window.
-                        //---------------------------------------------------------------------
-                        if ( packetType == MESSAGE ) {
-                            byte [] data = null;
-                            if ( packetSize > 0 ) {
-                                data = new byte[packetSize];
-                                _in.readFully( data );
-                            }
-                            if ( data != null && data.length > 0 )
-                                _messages.message( 0, "", new String( data ) );
+                    //  Read the packet type as an integer.  The packet types
+                    //  are defined above (within this class).
+                    int packetType = _ssock.readInt();
+                    //  Read the size of the incoming data (bytes).
+                    int packetSize = _ssock.readInt();
+                    trackBytes( 8 );
+                    //---------------------------------------------------------------------
+                    //  These are messages that are written directly to the message window.
+                    //---------------------------------------------------------------------
+                    if ( packetType == MESSAGE ) {
+                        byte [] data = null;
+                        if ( packetSize > 0 ) {
+                            data = new byte[packetSize];
+                            _ssock.readFully( data, 0, packetSize );
+                            trackBytes( packetSize );
                         }
-                        else if ( packetType == WARNING ) {
-                            byte [] data = null;
-                            if ( packetSize > 0 ) {
-                                data = new byte[packetSize];
-                                _in.readFully( data );
-                            }
-                            if ( data != null && data.length > 0 )
-                                _messages.warning( 0, "", new String( data ) );
+                        if ( data != null && data.length > 0 )
+                            _messages.message( 0, "", new String( data ) );
+                    }
+                    else if ( packetType == WARNING ) {
+                        byte [] data = null;
+                        if ( packetSize > 0 ) {
+                            data = new byte[packetSize];
+                            _ssock.readFully( data, 0, packetSize );
+                            trackBytes( packetSize );
                         }
-                        else if ( packetType == ERROR ) {
-                            byte [] data = null;
-                            if ( packetSize > 0 ) {
-                                data = new byte[packetSize];
-                                _in.readFully( data );
-                            }
-                            if ( data != null && data.length > 0 )
-                                _messages.error( 0, "", new String( data ) );
+                        if ( data != null && data.length > 0 )
+                            _messages.warning( 0, "", new String( data ) );
+                    }
+                    else if ( packetType == ERROR ) {
+                        byte [] data = null;
+                        if ( packetSize > 0 ) {
+                            data = new byte[packetSize];
+                            _ssock.readFully( data, 0, packetSize );
+                            trackBytes( packetSize );
                         }
-                        //---------------------------------------------------------------------------
-                        //  The following are data received from the input file parser.  These data
-                        //  are used to tell us what data products are available for the job
-                        //  specified by the input file.
-                        //---------------------------------------------------------------------------
-                        else if ( packetType == CORRELATION_PRODUCTS ) {
-                            //  Indicates the beginning or end of desciptions of cross
-                            //  correlations.
-                            if ( _readingProducts ) {
-                                updateDataProductControls();
-                            }
-                            else {
-                                //  Blow away our current list of products.  We'll be making
-                                //  a new one.
-                                _products = new ArrayDeque<Product>();
-                            }
-                            _readingProducts = !_readingProducts;
+                        if ( data != null && data.length > 0 )
+                            _messages.error( 0, "", new String( data ) );
+                    }
+                    //---------------------------------------------------------------------------
+                    //  The following are data received from the input file parser.  These data
+                    //  are used to tell us what data products are available for the job
+                    //  specified by the input file.
+                    //---------------------------------------------------------------------------
+                    else if ( packetType == CORRELATION_PRODUCTS ) {
+                        //  Indicates the beginning or end of desciptions of cross
+                        //  correlations.
+                        if ( _readingProducts ) {
+                            updateDataProductControls();
                         }
-                        else if ( packetType == JOB_NAME ) {
-                            //  This probably matches the name in the GUI menu.
-                            byte [] data = new byte[packetSize];
-                            _in.readFully( data );
-                            _jobName = new String( data );
+                        else {
+                            //  Blow away our current list of products.  We'll be making
+                            //  a new one.
+                            _products = new ArrayDeque<Product>();
                         }
-                        else if ( packetType == OBS_CODE ) {
-                            //  Hopefully this is the name of the scan.
-                            byte [] data = new byte[packetSize];
-                            _in.readFully( data );
-                            _obsCode = new String( data );
+                        _readingProducts = !_readingProducts;
+                    }
+                    else if ( packetType == JOB_NAME ) {
+                        //  This probably matches the name in the GUI menu.
+                        byte [] data = new byte[packetSize];
+                        _ssock.readFully( data, 0, packetSize );
+                        trackBytes( packetSize );
+                        _jobName = new String( data );
+                    }
+                    else if ( packetType == OBS_CODE ) {
+                        //  Hopefully this is the name of the scan.
+                        byte [] data = new byte[packetSize];
+                        _ssock.readFully( data, 0, packetSize );
+                        trackBytes( packetSize );
+                        _obsCode = new String( data );
+                    }
+                    else if ( packetType == NUM_SCANS ) {
+                        //  Number of scans available.  This is probably always 1, ignore it
+                        //  for now.  However, I'm using it as a trigger for the "start" of
+                        //  scans for a particular job.
+                        _nScans = _ssock.readInt();
+                        trackBytes( 4 );
+                        //  This forces us to plot the "latest" plots when we have a time
+                        //  series of them.  Using the mousewheel to scroll through the time
+                        //  series shuts this off.
+                        _lockToLatest = true;
+                    }
+                    else if ( packetType == SCAN ) {
+                        //  Usually 0.  Ignore for now.
+                        _scan = _ssock.readInt();
+                        trackBytes( 4 );
+                    }
+                    else if ( packetType == NUM_BASELINES ) {
+                        //  Number of baselines in the current scan.
+                        _nBaselines = _ssock.readInt();
+                        trackBytes( 4 );
+                    }
+                    else if ( packetType == BASELINE ) {
+                        //  This is a baseline index number.
+                        _currentBaseline = new Baseline();
+                        _currentBaseline.index = _ssock.readInt();
+                        trackBytes( 4 );
+                    }
+                    else if ( packetType == TELESCOPE_1 ) {
+                        //  "Reference" telescope in the current baseline pair.
+                        byte [] data = new byte[packetSize];
+                        _ssock.readFully( data, 0, packetSize );
+                        trackBytes( packetSize );
+                        _currentBaseline.telescope1 = new String( data );
+                    }
+                    else if ( packetType == TELESCOPE_2 ) {
+                        //  Second telescope in the current baseline pair.
+                        byte [] data = new byte[packetSize];
+                        _ssock.readFully( data, 0, packetSize );
+                        trackBytes( packetSize );
+                        _currentBaseline.telescope2 = new String( data );
+                    }
+                    else if ( packetType == AUTOCORRELATION ) {
+                        //  This is the name of a single telescope used in an autocorrelation.
+                        //  These we essentially fake by making the "baseline" between the 
+                        //  same telescope.
+                        _currentBaseline = new Baseline();
+                        byte [] data = new byte[packetSize];
+                        _ssock.readFully( data, 0, packetSize );
+                        trackBytes( packetSize );
+                        _currentBaseline.telescope1 = new String( data );
+                        _currentBaseline.telescope2 = new String( data );
+                    }
+                    else if ( packetType == SCAN_IDENTIFIER ) {
+                        byte [] data = new byte[packetSize];
+                        _ssock.readFully( data, 0, packetSize );
+                        trackBytes( packetSize );
+                        _scanIdentifier = new String( data );
+                    }
+                    else if ( packetType == SCAN_START_TIME ) {
+                        byte [] data = new byte[packetSize];
+                        _ssock.readFully( data, 0, packetSize );
+                        trackBytes( packetSize );
+                        _scanStartTime = new String( data );
+                    }
+                    else if ( packetType == SCAN_END_TIME ) {
+                        byte [] data = new byte[packetSize];
+                        _ssock.readFully( data, 0, packetSize );
+                        trackBytes( packetSize );
+                        _scanEndTime = new String( data );
+                    }
+                    else if ( packetType == SOURCE ) {
+                        byte [] data = new byte[packetSize];
+                        _ssock.readFully( data, 0, packetSize );
+                        trackBytes( packetSize );
+                        _source = new String( data );
+                    }
+                    else if ( packetType == SOURCE_RA ) {
+                        byte [] data = new byte[packetSize];
+                        _ssock.readFully( data, 0, packetSize );
+                        trackBytes( packetSize );
+                        _sourceRA = new String( data );
+                    }
+                    else if ( packetType == SOURCE_DEC ) {
+                        byte [] data = new byte[packetSize];
+                        _ssock.readFully( data, 0, packetSize );
+                        trackBytes( packetSize );
+                        _sourceDEC = new String( data );
+                    }
+                    else if ( packetType == NUM_FREQUENCIES ) {
+                        //  Number of frequencies available for the current
+                        //  baseline pair.
+                        _nFrequencies = _ssock.readInt();
+                        trackBytes( 4 );
+                    }
+                    else if ( packetType == FREQUENCY ) {
+                        //  This is one of the frequencies available to this baseline
+                        //  pair.  It is a double.
+                        _currentFrequency = _ssock.readDouble();
+                        trackBytes( 8 );
+                    }
+                    else if ( packetType == NUM_PHASE_CENTERS ) {
+                        //
+                        _nPhaseCenters = _ssock.readInt();
+                        trackBytes( 4 );
+                    }
+                    else if ( packetType == PHASE_CENTER ) {
+                        //
+                        _currentPhaseCenter = _ssock.readInt();
+                        trackBytes( 4 );
+                    }
+                    else if ( packetType == NUM_PULSAR_BINS ) {
+                        //
+                        _nPulsarBins = _ssock.readInt();
+                        trackBytes( 4 );
+                    }
+                    else if ( packetType == PULSAR_BIN ) {
+                        //
+                        _currentPulsarBin = _ssock.readInt();
+                        trackBytes( 4 );
+                    }
+                    else if ( packetType == NUM_POL_PRODUCTS ) {
+                        //
+                        _nPolProducts = _ssock.readInt();
+                        trackBytes( 4 );
+                    }
+                    else if ( packetType == POL_PRODUCT ) {
+                        //
+                        _currentPolProduct = _ssock.readInt();
+                        trackBytes( 4 );
+                    }
+                    else if ( packetType == NEW_PRODUCT ) {
+                        Product newProduct = new Product();
+                        newProduct.index = _ssock.readInt();
+                        newProduct.scan = _scanIdentifier;
+                        newProduct.offset = _ssock.readInt();
+                        newProduct.freqChannels = _ssock.readInt();
+                        trackBytes( 12 );
+                        newProduct.frequency = _currentFrequency;
+                        newProduct.baseline = _currentBaseline;
+                        newProduct.polProduct = _currentPolProduct;
+                        _products.add( newProduct );
+                    }
+                    else if ( packetType == VISIBILITY_SCAN ) {
+                        //  This packet is received when we are starting a new scan.  
+                        byte [] data = new byte[packetSize];
+                        _ssock.readFully( data, 0, packetSize );
+                        trackBytes( packetSize );
+                        if ( _scanNames == null )
+                            _scanNames = new ArrayDeque<String>();
+                        _currentScan = new String( data );
+                        String newName = new String( data );
+                        if ( !_scanNames.contains( newName ) ) {
+                            _scanNames.add( newName );
+                            //  The new scan needs a new list of product plots.
+                            _productPlots = new ProductPlotsList( newName );
+                            _productPlotsByScan.add( _productPlots );
                         }
-                        else if ( packetType == NUM_SCANS ) {
-                            //  Number of scans available.  This is probably always 1, ignore it
-                            //  for now.  However, I'm using it as a trigger for the "start" of
-                            //  scans for a particular job.
-                            _nScans = _in.readInt();
-                            System.out.println( "There are " + _nScans + " scans!" );
-                            //  This forces us to plot the "latest" plots when we have a time
-                            //  series of them.  Using the mousewheel to scroll through the time
-                            //  series shuts this off.
-                            _lockToLatest = true;
+                        addScanToShowMenu( newName );
+                    }
+                    else if ( packetType == VISIBILITY_DATA ) {
+                        byte [] data = null;
+                        if ( packetSize > 0 ) {
+                            data = new byte[packetSize];
+                            _ssock.readFully( data, 0, packetSize );
+                            _bytesTransfered += packetSize;
                         }
-                        else if ( packetType == SCAN ) {
-                            //  Usually 0.  Ignore for now.
-                            _scan = _in.readInt();
+                    }
+                    else if ( packetType == AMPLITUDE_DATA ) {
+                        int iProduct = _ssock.readInt();
+                        int nChannels = _ssock.readInt();
+                        int timeStamp = _ssock.readInt();
+                        int integrationTime = _ssock.readInt();
+                        trackBytes( 16 );
+                        IncPlot newPlot = new IncPlot( iProduct, nChannels, timeStamp, integrationTime, _currentScan );
+                        double x = 0.0;
+                        double maxVal = 0.0;
+                        double xVals[] = new double[nChannels];
+                        double yVals[] = new double[nChannels];
+                        for ( int i = 0; i < nChannels; ++i ) {
+                            double amp = _ssock.readStringDouble();
+                            trackBytes( 14 );
+                            xVals[i] = x;
+                            yVals[i] = amp;
+                            x += 1.0;
+                            if ( amp > maxVal )
+                                maxVal = amp;
                         }
-                        else if ( packetType == NUM_BASELINES ) {
-                            //  Number of baselines in the current scan.
-                            _nBaselines = _in.readInt();
+                        //  The minimum for amplitude *should* be 0.0...
+                        newPlot.min = 0.0;
+                        newPlot.max = maxVal;
+                        newPlot.curve( xVals, yVals );
+                        synchronized ( _plotDataLock ) {
+                            _productPlots.productPlot( iProduct ).ampPlots.add( newPlot );
                         }
-                        else if ( packetType == BASELINE ) {
-                            //  This is a baseline index number.
-                            _currentBaseline = new Baseline();
-                            _currentBaseline.index = _in.readInt();
+                    }
+                    else if ( packetType == PHASE_DATA ) {
+                        int iProduct = _ssock.readInt();
+                        int nChannels = _ssock.readInt();
+                        int timeStamp = _ssock.readInt();
+                        int integrationTime = _ssock.readInt();
+                        trackBytes( 16 );
+                        IncPlot newPlot = new IncPlot( iProduct, nChannels, timeStamp, integrationTime, _currentScan );
+                        double x = 0.0;
+                        double xVals[] = new double[nChannels];
+                        double yVals[] = new double[nChannels];
+                        for ( int i = 0; i < nChannels; ++i ) {
+                            double phase = _ssock.readStringDouble();                           
+                            trackBytes( 14 );
+                            xVals[i] = x;
+                            yVals[i] = phase;
+                            x += 1.0;
                         }
-                        else if ( packetType == TELESCOPE_1 ) {
-                            //  "Reference" telescope in the current baseline pair.
-                            byte [] data = new byte[packetSize];
-                            _in.readFully( data );
-                            _currentBaseline.telescope1 = new String( data );
+                        DrawObject trackCircle = new DrawObject();
+                        //  This draws a circle around the point...doesn't look so great
+                        //trackCircle.circle( 0.0, 0.0, 3.0, true );
+                        //  Try using a "cross" character...also looks crappy
+                        //trackCircle.complexText( DrawObject.CENTER_JUSTIFY, 0.0, 0.0, "<size=0.5><y=-0.4>\u271a" );
+                        //  Draw a cross using line segments - looks cleaner.
+                        DrawObject path = new DrawObject();
+                        path.startPath( 0.0, 0.0 );
+                        DrawObject vertex = new DrawObject();
+                        vertex.vertex( 0.0, -3.0 );
+                        path.add( vertex );
+                        vertex = new DrawObject();
+                        vertex.vertex( 0.0, 3.0 );
+                        path.add( vertex );
+                        DrawObject stroke = new DrawObject();
+                        stroke.stroke();
+                        path.add( stroke );
+                        trackCircle.add( path );
+                        path = new DrawObject();
+                        path.startPath( 0.0, 0.0 );
+                        vertex = new DrawObject();
+                        vertex.vertex( -3.0, 0.0 );
+                        path.add( vertex );
+                        vertex = new DrawObject();
+                        vertex.vertex( 3.0, 0.0 );
+                        path.add( vertex );
+                        stroke = new DrawObject();
+                        stroke.stroke();
+                        path.add( stroke );
+                        trackCircle.add( path );
+                        newPlot.track( xVals, yVals, trackCircle );
+                        newPlot.min = -180.0;
+                        newPlot.max = 180.0;
+                        synchronized ( _plotDataLock ) {
+                            _productPlots.productPlot( iProduct ).phasePlots.add( newPlot );
                         }
-                        else if ( packetType == TELESCOPE_2 ) {
-                            //  Second telescope in the current baseline pair.
-                            byte [] data = new byte[packetSize];
-                            _in.readFully( data );
-                            _currentBaseline.telescope2 = new String( data );
+                    }
+                    else if ( packetType == LAG_DATA ) {
+                        int iProduct = _ssock.readInt();
+                        int nChannels = _ssock.readInt();
+                        int timeStamp = _ssock.readInt();
+                        int integrationTime = _ssock.readInt();
+                        trackBytes( 16 );
+                        //  Create a new plot to hold these data.
+                        IncPlot newPlot = new IncPlot( iProduct, nChannels, timeStamp, integrationTime, _currentScan );
+                        newPlot.maxChannel = (double)_ssock.readInt();
+                        trackBytes( 4 );
+                        newPlot.delay = _ssock.readStringDouble();
+                        newPlot.snr = _ssock.readStringDouble();
+                        trackBytes( 28 );
+                        double x = (double)(-nChannels);
+                        Double maxVal = null;
+                        Double minVal = null;
+                        double xVals[] = new double[2 * nChannels];
+                        double yVals[] = new double[2 * nChannels];
+                        for ( int i = 0; i < 2 * nChannels; ++i ) {
+                            double lag = _ssock.readStringDouble();                           
+                            trackBytes( 14 );
+                            if ( maxVal == null || lag > maxVal )
+                                maxVal = lag;
+                            if ( minVal == null || lag < minVal )
+                                minVal = lag;
+                            xVals[i] = x;
+                            yVals[i] = lag;
+                            x += 1.0;     
                         }
-                        else if ( packetType == AUTOCORRELATION ) {
-                            //  This is the name of a single telescope used in an autocorrelation.
-                            //  These we essentially fake by making the "baseline" between the 
-                            //  same telescope.
-                            _currentBaseline = new Baseline();
-                            byte [] data = new byte[packetSize];
-                            _in.readFully( data );
-                            _currentBaseline.telescope1 = new String( data );
-                            _currentBaseline.telescope2 = new String( data );
+                        newPlot.curve( xVals, yVals );
+                        newPlot.min = minVal;
+                        newPlot.max = maxVal;
+                        //  Add the plot to the product plot list for this index.
+                        synchronized ( _plotDataLock ) {
+                            _productPlots.productPlot( iProduct ).lagPlots.add( newPlot );
                         }
-                        else if ( packetType == SCAN_IDENTIFIER ) {
-                            byte [] data = new byte[packetSize];
-                            _in.readFully( data );
-                            _scanIdentifier = new String( data );
-                            System.out.println( "scan identifier is " + _scanIdentifier );
+                    }
+                    else if ( packetType == MEAN_AMPLITUDE_DATA ) {
+                        int iProduct = _ssock.readInt();
+                        int nChannels = _ssock.readInt();
+                        int timeStamp = _ssock.readInt();
+                        int integrationTime = _ssock.readInt();
+                        trackBytes( 16 );
+                        IncPlot newPlot = new IncPlot( iProduct, nChannels, timeStamp, integrationTime, _currentScan );
+                        double x = 0.0;
+                        double maxVal = 0.0;
+                        double xVals[] = new double[nChannels];
+                        double yVals[] = new double[nChannels];
+                        for ( int i = 0; i < nChannels; ++i ) {
+                            double amp = _ssock.readStringDouble();
+                            trackBytes( 14 );
+                            xVals[i] = x;
+                            yVals[i] = amp;
+                            x += 1.0;
+                            if ( amp > maxVal )
+                                maxVal = amp;
                         }
-                        else if ( packetType == SCAN_START_TIME ) {
-                            byte [] data = new byte[packetSize];
-                            _in.readFully( data );
-                            _scanStartTime = new String( data );
+                        //  The minimum for amplitude *should* be 0.0...
+                        newPlot.min = 0.0;
+                        newPlot.max = maxVal;
+                        newPlot.curve( xVals, yVals );
+                        synchronized ( _plotDataLock ) {
+                            _productPlots.productPlot( iProduct ).meanAmpPlots.add( newPlot );
                         }
-                        else if ( packetType == SCAN_END_TIME ) {
-                            byte [] data = new byte[packetSize];
-                            _in.readFully( data );
-                            _scanEndTime = new String( data );
+                    }
+                    else if ( packetType == MEAN_PHASE_DATA ) {
+                        int iProduct = _ssock.readInt();
+                        int nChannels = _ssock.readInt();
+                        int timeStamp = _ssock.readInt();
+                        int integrationTime = _ssock.readInt();
+                        trackBytes( 16 );
+                        IncPlot newPlot = new IncPlot( iProduct, nChannels, timeStamp, integrationTime, _currentScan );
+                        double x = 0.0;
+                        double xVals[] = new double[nChannels];
+                        double yVals[] = new double[nChannels];
+                        for ( int i = 0; i < nChannels; ++i ) {
+                            double phase = _ssock.readStringDouble();                           
+                            trackBytes( 14 );
+                            xVals[i] = x;
+                            yVals[i] = phase;
+                            x += 1.0;
                         }
-                        else if ( packetType == SOURCE ) {
-                            byte [] data = new byte[packetSize];
-                            _in.readFully( data );
-                            _source = new String( data );
+                        DrawObject trackCircle = new DrawObject();
+                        //  This draws a circle around the point...doesn't look so great
+                        //trackCircle.circle( 0.0, 0.0, 3.0, true );
+                        //  Try using a "cross" character...also looks crappy
+                        //trackCircle.complexText( DrawObject.CENTER_JUSTIFY, 0.0, 0.0, "<size=0.5><y=-0.4>\u271a" );
+                        //  Draw a cross using line segments - looks cleaner.
+                        DrawObject path = new DrawObject();
+                        path.startPath( 0.0, 0.0 );
+                        DrawObject vertex = new DrawObject();
+                        vertex.vertex( 0.0, -3.0 );
+                        path.add( vertex );
+                        vertex = new DrawObject();
+                        vertex.vertex( 0.0, 3.0 );
+                        path.add( vertex );
+                        DrawObject stroke = new DrawObject();
+                        stroke.stroke();
+                        path.add( stroke );
+                        trackCircle.add( path );
+                        path = new DrawObject();
+                        path.startPath( 0.0, 0.0 );
+                        vertex = new DrawObject();
+                        vertex.vertex( -3.0, 0.0 );
+                        path.add( vertex );
+                        vertex = new DrawObject();
+                        vertex.vertex( 3.0, 0.0 );
+                        path.add( vertex );
+                        stroke = new DrawObject();
+                        stroke.stroke();
+                        path.add( stroke );
+                        trackCircle.add( path );
+                        newPlot.track( xVals, yVals, trackCircle );
+                        newPlot.min = -180.0;
+                        newPlot.max = 180.0;
+                        synchronized ( _plotDataLock ) {
+                            _productPlots.productPlot( iProduct ).meanPhasePlots.add( newPlot );
                         }
-                        else if ( packetType == SOURCE_RA ) {
-                            byte [] data = new byte[packetSize];
-                            _in.readFully( data );
-                            _sourceRA = new String( data );
+                    }
+                    else if ( packetType == MEAN_LAG_DATA ) {
+                        int iProduct = _ssock.readInt();
+                        int nChannels = _ssock.readInt();
+                        int timeStamp = _ssock.readInt();
+                        int integrationTime = _ssock.readInt();
+                        trackBytes( 16 );
+                        //  Create a new plot to hold these data.
+                        IncPlot newPlot = new IncPlot( iProduct, nChannels, timeStamp, integrationTime, _currentScan );
+                        newPlot.maxChannel = (double)_ssock.readInt();
+                        trackBytes( 4 );
+                        newPlot.delay = _ssock.readStringDouble();
+                        newPlot.snr = _ssock.readStringDouble();
+                        trackBytes( 28 );
+                        double x = (double)(-nChannels);
+                        Double maxVal = null;
+                        Double minVal = null;
+                        double xVals[] = new double[2 * nChannels];
+                        double yVals[] = new double[2 * nChannels];
+                        for ( int i = 0; i < 2 * nChannels; ++i ) {
+                            double lag = _ssock.readStringDouble();                           
+                            trackBytes( 14 );
+                            if ( maxVal == null || lag > maxVal )
+                                maxVal = lag;
+                            if ( minVal == null || lag < minVal )
+                                minVal = lag;
+                            xVals[i] = x;
+                            yVals[i] = lag;
+                            x += 1.0;     
                         }
-                        else if ( packetType == SOURCE_DEC ) {
-                            byte [] data = new byte[packetSize];
-                            _in.readFully( data );
-                            _sourceDEC = new String( data );
+                        newPlot.curve( xVals, yVals );
+                        newPlot.min = minVal;
+                        newPlot.max = maxVal;
+                        //  Add the plot to the product plot list for this index.
+                        synchronized ( _plotDataLock ) {
+                            _productPlots.productPlot( iProduct ).meanLagPlots.add( newPlot );
                         }
-                        else if ( packetType == NUM_FREQUENCIES ) {
-                            //  Number of frequencies available for the current
-                            //  baseline pair.
-                            _nFrequencies = _in.readInt();
+                    }
+                    else if ( packetType == END_VISIBILITY_BLOCK ) {
+                        //  We have just received the data associated with visibilities for ONE
+                        //  of our data products.  Here we compare the numbers of plots (each from
+                        //  a set of visibilities) for ALL data products.  If the data from the
+                        //  most recent accumulation period are complete, these should all be equal,
+                        //  and we should replot.  If not, we don't bother replotting because more
+                        //  data are on the way.
+                        if ( _numPlots == null ) {
+                            _numPlots = new Integer( 1 );
                         }
-                        else if ( packetType == FREQUENCY ) {
-                            //  This is one of the frequencies available to this baseline
-                            //  pair.  It is a double.
-                            _currentFrequency = _in.readDouble();
-                        }
-                        else if ( packetType == NUM_PHASE_CENTERS ) {
-                            //
-                            _nPhaseCenters = _in.readInt();
-                        }
-                        else if ( packetType == PHASE_CENTER ) {
-                            //
-                            _currentPhaseCenter = _in.readInt();
-                        }
-                        else if ( packetType == NUM_PULSAR_BINS ) {
-                            //
-                            _nPulsarBins = _in.readInt();
-                        }
-                        else if ( packetType == PULSAR_BIN ) {
-                            //
-                            _currentPulsarBin = _in.readInt();
-                        }
-                        else if ( packetType == NUM_POL_PRODUCTS ) {
-                            //
-                            _nPolProducts = _in.readInt();
-                        }
-                        else if ( packetType == POL_PRODUCT ) {
-                            //
-                            _currentPolProduct = _in.readInt();
-                        }
-                        else if ( packetType == NEW_PRODUCT ) {
-                            Product newProduct = new Product();
-                            newProduct.index = _in.readInt();
-                            newProduct.offset = _in.readInt();
-                            newProduct.freqChannels = _in.readInt();
-                            newProduct.frequency = _currentFrequency;
-                            newProduct.baseline = _currentBaseline;
-                            newProduct.polProduct = _currentPolProduct;
-                            _products.add( newProduct );
-                        }
-                        else if ( packetType == VISIBILITY_DATA ) {
-                            byte [] data = null;
-                            if ( packetSize > 0 ) {
-                                data = new byte[packetSize];
-                                _in.readFully( data );
-                                _bytesTransfered += packetSize;
-                            }
-                        }
-                        else if ( packetType == AMPLITUDE_DATA ) {
-                            int iProduct = _in.readInt();
-                            int nChannels = _in.readInt();
-                            int timeStamp = _in.readInt();
-                            IncPlot newPlot = new IncPlot( iProduct, nChannels, timeStamp );
-                            double x = 0.0;
-                            double maxVal = 0.0;
-                            double xVals[] = new double[nChannels];
-                            double yVals[] = new double[nChannels];
-                            for ( int i = 0; i < nChannels; ++i ) {
-                                double amp = _in.readStringDouble();                           
-                                xVals[i] = x;
-                                yVals[i] = amp;
-                                x += 1.0;
-                                if ( amp > maxVal )
-                                    maxVal = amp;
-                            }
-                            //  The minimum for amplitude *should* be 0.0...
-                            newPlot.min = 0.0;
-                            newPlot.max = maxVal;
-                            newPlot.curve( xVals, yVals );
-                            synchronized ( _plotDataLock ) {
-                                _productPlots.productPlot( iProduct ).ampPlots.add( newPlot );
-                                _timeSummaryPlots.productPlot( iProduct ).ampPlots.meanAdd( 
-                                        iProduct, nChannels, timeStamp, xVals, yVals, null, null, null );
-                                //  This is for the "cross channel" summary...
-                                if ( _summaryAmpPlot == null ) {
-                                    //  If new, just dump in the data.
-                                    _summaryAmpPlot = new IncPlot( iProduct, nChannels, timeStamp );
-                                    double newYVals[] = new double[yVals.length];
-                                    for ( int i = 0; i < yVals.length; ++i )
-                                        newYVals[i] = yVals[i];
-                                    _summaryAmpPlot.curve( xVals, newYVals );                                
+                        else {
+                            _numPlots = new Integer( _numPlots.intValue() + 1 );
+                            if ( _numPlots.intValue() == _productRequests ) {
+                                //  We are going to plot things that are based on the current scan
+                                //  (and source).  Add these things to the list of scans and sources
+                                //  so we can put them in labels at the plot base.
+                                if ( _scanList == null ) {
+                                    _scanList = new ArrayDeque<String>();
+                                    _sourceList = new ArrayDeque<String>();
                                 }
-                                else {
-                                    //  If existing, add new data to the old
-                                    for ( int i = 0; i < _summaryAmpPlot.nData; ++i )
-                                        _summaryAmpPlot.yData[i] = _summaryAmpPlot.yData[i] + yVals[i];
+                                if ( !_scanList.contains( _currentScan ) ) {
+                                    _scanList.add( _currentScan );
+                                    _sourceList.add( _source );
                                 }
+                                updatePlotLocations();
+                                _numPlots = null;
                             }
                         }
-                        else if ( packetType == PHASE_DATA ) {
-                            int iProduct = _in.readInt();
-                            int nChannels = _in.readInt();
-                            int timeStamp = _in.readInt();
-                            IncPlot newPlot = new IncPlot( iProduct, nChannels, timeStamp );
-                            double x = 0.0;
-                            double xVals[] = new double[nChannels];
-                            double yVals[] = new double[nChannels];
-                            for ( int i = 0; i < nChannels; ++i ) {
-                                double phase = _in.readStringDouble();                           
-                                xVals[i] = x;
-                                yVals[i] = phase;
-                                x += 1.0;
-                            }
-                            DrawObject trackCircle = new DrawObject();
-                            //  This draws a circle around the point...doesn't look so great
-                            //trackCircle.circle( 0.0, 0.0, 3.0, true );
-                            //  Try using a "cross" character...also looks crappy
-                            //trackCircle.complexText( DrawObject.CENTER_JUSTIFY, 0.0, 0.0, "<size=0.5><y=-0.4>\u271a" );
-                            //  Draw a cross using line segments - looks cleaner.
-                            DrawObject path = new DrawObject();
-                            path.startPath( 0.0, 0.0 );
-                            DrawObject vertex = new DrawObject();
-                            vertex.vertex( 0.0, -3.0 );
-                            path.add( vertex );
-                            vertex = new DrawObject();
-                            vertex.vertex( 0.0, 3.0 );
-                            path.add( vertex );
-                            DrawObject stroke = new DrawObject();
-                            stroke.stroke();
-                            path.add( stroke );
-                            trackCircle.add( path );
-                            path = new DrawObject();
-                            path.startPath( 0.0, 0.0 );
-                            vertex = new DrawObject();
-                            vertex.vertex( -3.0, 0.0 );
-                            path.add( vertex );
-                            vertex = new DrawObject();
-                            vertex.vertex( 3.0, 0.0 );
-                            path.add( vertex );
-                            stroke = new DrawObject();
-                            stroke.stroke();
-                            path.add( stroke );
-                            trackCircle.add( path );
-                            newPlot.track( xVals, yVals, trackCircle );
-                            newPlot.min = -180.0;
-                            newPlot.max = 180.0;
-                            synchronized ( _plotDataLock ) {
-                                _productPlots.productPlot( iProduct ).phasePlots.add( newPlot );
-                                _timeSummaryPlots.productPlot( iProduct ).phasePlots.meanAdd( 
-                                        iProduct, nChannels, timeStamp, xVals, yVals, trackCircle, null, null );
-                                //  This is for the "cross channel" summary...
-                                if ( _summaryPhasePlot == null ) {
-                                    //  If new, just dump in the data.
-                                    _summaryPhasePlot = new IncPlot( iProduct, nChannels, timeStamp );
-                                    double newYVals[] = new double[yVals.length];
-                                    for ( int i = 0; i < yVals.length; ++i )
-                                        newYVals[i] = yVals[i];
-                                    _summaryPhasePlot.track( xVals, newYVals, trackCircle );     
-                                }
-                                else {
-                                    //  If existing, add new data to the old
-                                    for ( int i = 0; i < _summaryPhasePlot.nData; ++i )
-                                        _summaryPhasePlot.yData[i] = _summaryPhasePlot.yData[i] + yVals[i];
-                                    _summaryPhasePlot.plot.clearData();
-                                    _summaryPhasePlot.track( xVals, _summaryPhasePlot.yData, _summaryPhasePlot.trackObject );
-                                }
-                            }
-                        }
-                        else if ( packetType == LAG_DATA ) {
-                            int iProduct = _in.readInt();
-                            int nChannels = _in.readInt();
-                            int timeStamp = _in.readInt();
-                            //  Create a new plot to hold these data.
-                            IncPlot newPlot = new IncPlot( iProduct, nChannels, timeStamp );
-                            newPlot.maxChannel = (double)_in.readInt();
-                            newPlot.delay = _in.readStringDouble();
-                            newPlot.snr = _in.readStringDouble();
-                            double x = (double)(-nChannels);
-                            Double maxVal = null;
-                            Double minVal = null;
-                            double xVals[] = new double[2 * nChannels];
-                            double yVals[] = new double[2 * nChannels];
-                            for ( int i = 0; i < 2 * nChannels; ++i ) {
-                                double lag = _in.readStringDouble();                           
-                                if ( maxVal == null || lag > maxVal )
-                                    maxVal = lag;
-                                if ( minVal == null || lag < minVal )
-                                    minVal = lag;
-                                xVals[i] = x;
-                                yVals[i] = lag;
-                                x += 1.0;     
-                            }
-                            newPlot.curve( xVals, yVals );
-                            newPlot.min = minVal;
-                            newPlot.max = maxVal;
-                            //  Add the plot to the product plot list for this index.
-                            synchronized ( _plotDataLock ) {
-                                _productPlots.productPlot( iProduct ).lagPlots.add( newPlot );
-                                //  This is for the "time" summary.
-                                _timeSummaryPlots.productPlot( iProduct ).lagPlots.meanAdd( 
-                                        iProduct, nChannels, timeStamp, xVals, yVals, null, newPlot.maxChannel, newPlot.delay );
-                                //  This is for the "cross channel" summary...
-                                if ( _summaryLagPlot == null ) {
-                                    //  If new, just dump in the data.
-                                    _summaryLagPlot = new IncPlot( iProduct, nChannels, timeStamp );
-                                    double newYVals[] = new double[yVals.length];
-                                    for ( int i = 0; i < yVals.length; ++i )
-                                        newYVals[i] = yVals[i];
-                                    _summaryLagPlot.curve( xVals, newYVals );      
-                                    _summaryLagPlot.maxChannel = newPlot.maxChannel;
-                                    _summaryLagPlot.delay = newPlot.delay;
-                                }
-                                else {
-                                    //  If existing, add new data to the old
-                                    for ( int i = 0; i < _summaryLagPlot.nData; ++i )
-                                        _summaryLagPlot.yData[i] = _summaryLagPlot.yData[i] + yVals[i];
-                                    _summaryLagPlot.maxChannel += newPlot.maxChannel;
-                                    _summaryLagPlot.delay += newPlot.delay;
-                                }
-                            }
-                        }
-                        else if ( packetType == END_VISIBILITY_BLOCK ) {
-                            //  We have just received the data associated with visibilities for ONE
-                            //  of our data products.  Here we compare the numbers of plots (each from
-                            //  a set of visibilities) for ALL data products.  If the data from the
-                            //  most recent accumulation period are complete, these should all be equal,
-                            //  and we should replot.  If not, we don't bother replotting because more
-                            //  data are on the way.
-                            if ( _numPlots == null ) {
-                                _numPlots = new Integer( 1 );
-                            }
-                            else {
-                                _numPlots = new Integer( _numPlots.intValue() + 1 );
-                                if ( _numPlots.intValue() == _productRequests ) {
-                                    synchronized ( _plotDataLock ) {
-                                        _numPlots = null;
-                                        //  Create the "cross" summary plots - the summaries of the summaries
-                                        //  Amp "cross" summary
-                                        double xData[] = new double[ _summaryAmpPlot.xData.length ];
-                                        double yData[] = new double[ _summaryAmpPlot.xData.length ];
-                                        for ( int i = 0; i < _summaryAmpPlot.xData.length; ++i ) {
-                                            xData[i] = _summaryAmpPlot.xData[i];
-                                            yData[i] = _summaryAmpPlot.yData[i] / ( (double)(_productPlots.size()) );
-                                        }
-                                        _crossSummaryPlots.ampPlots.meanAdd( 0, _summaryAmpPlot.nChannels, _summaryAmpPlot.timeStamp,
-                                                xData, yData, null, null, null );
-                                        //  Lag "cross" summary
-                                        xData = new double[ _summaryLagPlot.xData.length ];
-                                        yData = new double[ _summaryLagPlot.xData.length ];
-                                        for ( int i = 0; i < _summaryLagPlot.xData.length; ++i ) {
-                                            xData[i] = _summaryLagPlot.xData[i];
-                                            yData[i] = _summaryLagPlot.yData[i] / ( (double)(_productPlots.size()) );
-                                        }
-                                        _crossSummaryPlots.lagPlots.meanAdd( 0, _summaryLagPlot.nChannels, _summaryLagPlot.timeStamp,
-                                                xData, yData, null, 
-                                                _summaryLagPlot.maxChannel / ( (double)(_productPlots.size()) ),
-                                                _summaryLagPlot.delay / ( (double)(_productPlots.size()) ) );
-                                        //  Phase "cross" summary
-                                        xData = new double[ _summaryPhasePlot.xData.length ];
-                                        yData = new double[ _summaryPhasePlot.xData.length ];
-                                        for ( int i = 0; i < _summaryPhasePlot.xData.length; ++i ) {
-                                            xData[i] = _summaryPhasePlot.xData[i];
-                                            yData[i] = _summaryPhasePlot.yData[i] / ( (double)(_productPlots.size()) );
-                                        }
-                                        _crossSummaryPlots.phasePlots.meanAdd( 0, _summaryPhasePlot.nChannels, _summaryPhasePlot.timeStamp,
-                                                xData, yData, _summaryPhasePlot.trackObject, null, null );
-                                        //  The summary plots are summations right now, divide by the
-                                        //  number of products to get means for the "channel" summaries
-                                        //  Amp
-                                        for ( int i = 0; i < _summaryAmpPlot.nData; ++i )
-                                            _summaryAmpPlot.yData[i] = _summaryAmpPlot.yData[i] / ( (double)(_productPlots.size()) );
-                                        _channelSummaryPlots.ampPlots.add( _summaryAmpPlot );
-                                        _summaryAmpPlot = null;
-                                        //  Lag
-                                        for ( int i = 0; i < _summaryLagPlot.nData; ++i )
-                                            _summaryLagPlot.yData[i] = _summaryLagPlot.yData[i] / ( (double)(_productPlots.size()) );
-                                        _summaryLagPlot.delay = _summaryLagPlot.delay / ( (double)(_productPlots.size()) );
-                                        _summaryLagPlot.maxChannel = _summaryLagPlot.maxChannel / ( (double)(_productPlots.size()) );
-                                        _channelSummaryPlots.lagPlots.add( _summaryLagPlot );
-                                        _summaryLagPlot = null;
-                                        //  Phase
-                                        for ( int i = 0; i < _summaryPhasePlot.nData; ++i )
-                                            _summaryPhasePlot.yData[i] = _summaryPhasePlot.yData[i] / ( (double)(_productPlots.size()) );
-                                        _channelSummaryPlots.phasePlots.add( _summaryPhasePlot );
-                                        _summaryPhasePlot = null;
-                                    }
-                                    updatePlotLocations();
-                                }
-                            }
-                        }
-                    } catch ( java.io.IOException e ) {
-                        //  This should just be a timeout.
                     }
                 }
-                try {
-                    if ( _socket != null )
-                        _socket.close();
-                } catch ( java.io.IOException e ) {}
-                try { Thread.sleep( 1000 ); } catch( Exception e ) {}
+            } catch ( SocketTimeoutException e ) {
+            _connected = false;
+            _connectionLabel.setText( "connection failed" );
+            _connectionLight.alert();
             }
+            _ssock.close();
+                } catch ( java.io.IOException e ) {
+            _connected = false;
+            _connectionLabel.setText( "connection error" );
+            _connectionLight.alert();
+                }
+            try {
+                if ( _socket != null )
+                    _socket.close();
+            } catch ( java.io.IOException e ) {}
+            try { Thread.sleep( 1000 ); } catch( Exception e ) {}
         }
         
         protected boolean _keepGoing;        
@@ -1197,15 +1399,6 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
             //  Clear all plots - we are going to redraw them.
             _plotWindow.plotList().clear();
 
-            //  Count the number of data products (channels) we are plotting (exit if there aren't
-            //  any).  Each of these will form a column of plots.
-            if ( _productPlots == null || _productPlots.size() == 0 )
-                return;
-            int columns = _productPlots.size();
-            //  If we are computing a mean across channels, add another column for those.
-            if ( _showChannelSummary.isSelected() )
-                columns += 1;
-
             //  Count the number of plots for each data product, each of which forms a row.
             //  How many there are depend on what exactly is being displayed.  First, count
             //  the number of accumulation periods if "all" of these are selected, which we
@@ -1213,73 +1406,44 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
             //  (because some products may not have transimitted their latest accumulation
             //  data when we do this, these numbers may not be the same for all products).
             int rows = 0;
-            if ( _showAll.isSelected() ) {
-                int maxPlots = 0;
-                for ( Iterator<ProductPlots> iter = _productPlots.iterator(); iter.hasNext(); ) {
-                    ProductPlots thisPP = iter.next();
-                    if ( thisPP.lagPlots.size() > maxPlots )
-                        maxPlots = thisPP.lagPlots.size();
-                }        
-                rows += maxPlots;
+            for ( Iterator<ProductPlotsList> iter1 = _productPlotsByScan.iterator(); iter1.hasNext(); ) {
+                ProductPlotsList productList = iter1.next();
+                //  Maybe the user wants to see all scans.
+                boolean showScan = _showAllScans.isSelected();
+                //  If not, check if each individual scan is selected for showing.
+                if ( !showScan && _scanMenuItems != null ) {
+                    for ( Iterator<JCheckBoxMenuItem> menuIter = _scanMenuItems.iterator(); menuIter.hasNext() && !showScan; ) {
+                        JCheckBoxMenuItem menuItem = menuIter.next();
+                        if ( productList.scanName.contentEquals( menuItem.getText() ) && menuItem.isSelected() )
+                            showScan = true;
+                    }
+                }
+                if ( showScan ) {
+                    if ( _showAll.isSelected() ) {
+                        int maxPlots = 0;
+                        for ( Iterator<ProductPlots> iter = productList.iterator(); iter.hasNext(); ) {
+                            ProductPlots thisPP = iter.next();
+                            if ( thisPP.lagPlots.size() > maxPlots )
+                                maxPlots = thisPP.lagPlots.size();
+                        }        
+                        rows += maxPlots;
+                    }
+                    //  Add a "latest" plot.
+                    if ( _showLatest.isSelected() )
+                        rows += 1;
+                    //  And a row for averages across all accumulation periods.
+                    if ( _showTimeSummary.isSelected() ) 
+                        rows += 1;
+                }
             }
-            //  Add a "latest" plot.
-            if ( _showLatest.isSelected() )
-                rows += 1;
-            //  And a row for averages across all accumulation periods.
-            if ( _showTimeSummary.isSelected() )
-                rows += 1;
-
+            
             //  Set the sizes of individual plots.
             double xStart = 0.16;
-            double xStep = 0.75 / (double)columns;
+            double xStep = 0.75 / (double)_productRequests;
             double xSize = xStep * 0.98;
             double yStart = 0.08;
             double yStep = 0.75 / (double)rows;
             double ySize = yStep * 0.97;
-
-            //  Compute the maximum and minimum values for all plotted items.  All products
-            //  and times use the same values for limits so they can be easily compared.
-            //  The limits on phase plots never change (-180 to 180).
-            double lagMin = 0.0;
-            double lagMax = 0.0;
-            boolean lagLimitsSet = false;
-            double ampMin = 0.0;
-            double ampMax = 0.0;
-            boolean ampLimitsSet = false;
-            double phaseMin = -180.0;
-            double phaseMax = 180.0;
-            for ( Iterator<ProductPlots> iter = _productPlots.iterator(); iter.hasNext(); ) {
-                ProductPlots thisPP = iter.next();
-                //  Find the "global" maximum and minimum values for lag and amplitude plots.
-                for ( Iterator<IncPlot> pIter = thisPP.lagPlots.iterator(); pIter.hasNext(); ) {
-                    IncPlot incPlot = pIter.next();
-                    if ( lagLimitsSet ) {
-                        if ( incPlot.min < lagMin )
-                            lagMin = incPlot.min;
-                        if ( incPlot.max > lagMax )
-                            lagMax = incPlot.max;
-                    }
-                    else {
-                        lagMin = incPlot.min;
-                        lagMax = incPlot.max;
-                        lagLimitsSet = true;
-                    }
-                }
-                for ( Iterator<IncPlot> pIter = thisPP.ampPlots.iterator(); pIter.hasNext(); ) {
-                    IncPlot incPlot = pIter.next();
-                    if ( ampLimitsSet ) {
-                        if ( incPlot.min < ampMin )
-                            ampMin = incPlot.min;
-                        if ( incPlot.max > ampMax )
-                            ampMax = incPlot.max;
-                    }
-                    else {
-                        ampMin = incPlot.min;
-                        ampMax = incPlot.max;
-                        ampLimitsSet = true;
-                    }
-                }
-            }
 
             //  Add a "big frame" plot.  This is used for labels and other information below the
             //  actual plots.
@@ -1293,519 +1457,423 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
             obj.complexText( DrawObject.RIGHT_JUSTIFY, "<y=1>Observation: " );
             obj = bigFramePlot.newExtraItem( 0.0, Plot2DObject.ExtraItem.BY_FRAME, 
                     -1.03, Plot2DObject.ExtraItem.BY_FRAME );
-            obj.complexText( DrawObject.RIGHT_JUSTIFY, "<y=2>Scan: " );
+            obj.complexText( DrawObject.RIGHT_JUSTIFY, "<y=2>Start Time: " );
             obj = bigFramePlot.newExtraItem( 0.0, Plot2DObject.ExtraItem.BY_FRAME, 
                     -1.03, Plot2DObject.ExtraItem.BY_FRAME );
-            obj.complexText( DrawObject.RIGHT_JUSTIFY, "<y=3>Start Time: " );
-            obj = bigFramePlot.newExtraItem( 0.0, Plot2DObject.ExtraItem.BY_FRAME, 
-                    -1.03, Plot2DObject.ExtraItem.BY_FRAME );
-            obj.complexText( DrawObject.RIGHT_JUSTIFY, "<y=4>End Time: " );
-            obj = bigFramePlot.newExtraItem( 0.0, Plot2DObject.ExtraItem.BY_FRAME, 
-                    -1.03, Plot2DObject.ExtraItem.BY_FRAME );
-            obj.complexText( DrawObject.RIGHT_JUSTIFY, "<y=5>Source: " );
-            obj = bigFramePlot.newExtraItem( 0.0, Plot2DObject.ExtraItem.BY_FRAME, 
-                    -1.03, Plot2DObject.ExtraItem.BY_FRAME );
-            obj.complexText( DrawObject.RIGHT_JUSTIFY, "<y=6>RA: " );
-            obj = bigFramePlot.newExtraItem( 0.0, Plot2DObject.ExtraItem.BY_FRAME, 
-                    -1.03, Plot2DObject.ExtraItem.BY_FRAME );
-            obj.complexText( DrawObject.RIGHT_JUSTIFY, "<y=7>DEC: " );
-            obj = bigFramePlot.newExtraItem( 0.0, Plot2DObject.ExtraItem.BY_FRAME, 
-                    -1.03, Plot2DObject.ExtraItem.BY_FRAME );
-            if ( _obsCode != null )
+            obj.complexText( DrawObject.RIGHT_JUSTIFY, "<y=3>End Time: " );
+            if ( _scanList != null ) {
+                obj = bigFramePlot.newExtraItem( 0.0, Plot2DObject.ExtraItem.BY_FRAME, 
+                        -1.03, Plot2DObject.ExtraItem.BY_FRAME );
+                if ( _scanList.size() > 1 )
+                    obj.complexText( DrawObject.RIGHT_JUSTIFY, "<y=4>Scans (Sources): " );
+                else
+                    obj.complexText( DrawObject.RIGHT_JUSTIFY, "<y=4>Scan (Source): " );
+                String scansAndSources = "";
+                Iterator<String> source = _sourceList.iterator();
+                for ( Iterator<String> scan = _scanList.iterator(); scan.hasNext(); ) {
+                    if ( scansAndSources.length() > 0 )
+                        scansAndSources += ", ";
+                    scansAndSources += scan.next() + " (" + source.next() + ")";
+                }
+                obj = bigFramePlot.newExtraItem( 0.0, Plot2DObject.ExtraItem.BY_FRAME, 
+                        -1.03, Plot2DObject.ExtraItem.BY_FRAME );
+                obj.complexText( DrawObject.LEFT_JUSTIFY, "<y=4>" + scansAndSources );
+            }
+            if ( _obsCode != null ) {
+                obj = bigFramePlot.newExtraItem( 0.0, Plot2DObject.ExtraItem.BY_FRAME, 
+                        -1.03, Plot2DObject.ExtraItem.BY_FRAME );
                 obj.complexText( DrawObject.LEFT_JUSTIFY, "<y=1>" + _obsCode );
-            obj = bigFramePlot.newExtraItem( 0.0, Plot2DObject.ExtraItem.BY_FRAME, 
-                    -1.03, Plot2DObject.ExtraItem.BY_FRAME );
-            if ( _scanIdentifier != null )
-                obj.complexText( DrawObject.LEFT_JUSTIFY, "<y=2>" + _scanIdentifier );
-            obj = bigFramePlot.newExtraItem( 0.0, Plot2DObject.ExtraItem.BY_FRAME, 
-                    -1.03, Plot2DObject.ExtraItem.BY_FRAME );
-            if ( _scanStartTime != null )
-                obj.complexText( DrawObject.LEFT_JUSTIFY, "<y=3>" + _scanStartTime );
-            obj = bigFramePlot.newExtraItem( 0.0, Plot2DObject.ExtraItem.BY_FRAME, 
-                    -1.03, Plot2DObject.ExtraItem.BY_FRAME );
-            if ( _scanEndTime != null )
-                obj.complexText( DrawObject.LEFT_JUSTIFY, "<y=4>" + _scanEndTime );
-            obj = bigFramePlot.newExtraItem( 0.0, Plot2DObject.ExtraItem.BY_FRAME, 
-                    -1.03, Plot2DObject.ExtraItem.BY_FRAME );
-            if ( _source != null )
-                obj.complexText( DrawObject.LEFT_JUSTIFY, "<y=5>" + _source );
-            obj = bigFramePlot.newExtraItem( 0.0, Plot2DObject.ExtraItem.BY_FRAME, 
-                    -1.03, Plot2DObject.ExtraItem.BY_FRAME );
-            if ( _sourceRA != null )
-                obj.complexText( DrawObject.LEFT_JUSTIFY, "<y=6>" + _sourceRA );
-            obj = bigFramePlot.newExtraItem( 0.0, Plot2DObject.ExtraItem.BY_FRAME, 
-                    -1.03, Plot2DObject.ExtraItem.BY_FRAME );
-            if ( _sourceDEC != null )
-                obj.complexText( DrawObject.LEFT_JUSTIFY, "<y=7>" + _sourceDEC );
+            }
+            if ( _scanStartTime != null ) {
+                obj = bigFramePlot.newExtraItem( 0.0, Plot2DObject.ExtraItem.BY_FRAME, 
+                        -1.03, Plot2DObject.ExtraItem.BY_FRAME );
+                obj.complexText( DrawObject.LEFT_JUSTIFY, "<y=2>" + _scanStartTime );
+            }
+            if ( _scanEndTime != null ) {
+                obj = bigFramePlot.newExtraItem( 0.0, Plot2DObject.ExtraItem.BY_FRAME, 
+                        -1.03, Plot2DObject.ExtraItem.BY_FRAME );
+                obj.complexText( DrawObject.LEFT_JUSTIFY, "<y=3>" + _scanEndTime );
+            }
             _plotWindow.add2DPlot( bigFramePlot );
 
-            //  These variables are used as the actual drawing positions of each plot - they will
-            //  change as we step through all of the plots.
-            double x = xStart;
+            //  All plots are piled on top of each other so we start at the page top outside
+            //  any loops.
             double y = yStart;
+            
+            //  Loop through the lists of lists of plots - each of which is associated with a scan.
+            for ( Iterator<ProductPlotsList> listIter = _productPlotsByScan.iterator(); listIter.hasNext(); ) {
+                ProductPlotsList productList = listIter.next();
 
-            //  Now draw the plots, as chosen by the user.  Loop through each of the "products" (channels)
-            //  selected.
-            int productIndex = 0;
-            for ( Iterator<ProductPlots> iter = _productPlots.iterator(); iter.hasNext(); ) {
-                ProductPlots thisPP = iter.next();
-                y = yStart;
+                //  See if this scan is selected for plotting.
+                boolean showScan = _showAllScans.isSelected();
+                //  If not, check if each individual scan is selected for showing.
+                if ( !showScan && _scanMenuItems != null ) {
+                    for ( Iterator<JCheckBoxMenuItem> menuIter = _scanMenuItems.iterator(); menuIter.hasNext() && !showScan; ) {
+                        JCheckBoxMenuItem menuItem = menuIter.next();
+                        if ( productList.scanName.contentEquals( menuItem.getText() ) && menuItem.isSelected() )
+                            showScan = true;
+                    }
+                }
+                
+                if ( showScan ) {
+                    //  Start each new row of plots at the left edge of the page.
+                    double x = xStart;
 
-                //  Clear "extra" items from each plot.  This is to prevent litter from previous drawings
-                //  from appearing on the one we are creating now.  "Extra" items are labels, titles,
-                //  etc. which will be reattached to the plots as necessary below.
-                for ( Iterator<IncPlot> pIter = thisPP.lagPlots.iterator(); pIter.hasNext(); )
-                    pIter.next().plot.clearExtraItems();
-                for ( Iterator<IncPlot> pIter = thisPP.ampPlots.iterator(); pIter.hasNext(); )
-                    pIter.next().plot.clearExtraItems();
-                for ( Iterator<IncPlot> pIter = thisPP.phasePlots.iterator(); pIter.hasNext(); )
-                    pIter.next().plot.clearExtraItems();
-
-                //  Plot the individual accumulation periods, if requested.
-                if ( _showAll.isSelected() ) {
-                    //  This is the loop through each accumulation time period.
-                    Iterator<IncPlot> ampIter = thisPP.ampPlots.iterator();
-                    Iterator<IncPlot> phaseIter = thisPP.phasePlots.iterator();
-                    for ( Iterator<IncPlot> lagIter = thisPP.lagPlots.iterator(); lagIter.hasNext(); ) {
-                        IncPlot lagPlot = lagIter.next();
-                        IncPlot ampPlot = ampIter.next();
-                        IncPlot phasePlot = phaseIter.next();
-                        boolean drawXLabels = false;
-                        boolean drawYLabels = false;
-                        //  Draw a "background" plot below each plot.  This has any items we want below the data.
-                        _plotWindow.add2DPlot( newBackgroundPlot( x, y, xSize, ySize ) );
-                        //  Add the data plots.
-                        if ( _showLag.isSelected() ) {
-                            //  X labels are drawn on the last plot (in time) ONLY if there are no summary
-                            //  or other plots following.
-                            if ( lagPlot == thisPP.lagPlots.peekLast() && !_showTimeSummary.isSelected() && !_showLatest.isSelected() )
-                                drawXLabels = true;
-                            else
-                                drawXLabels = false;
-                            //  Y labels are drawn on the first channel plot.
-                            if ( x == xStart )
-                                drawYLabels = true;
-                            else
-                                drawXLabels = false;
-                            _plotWindow.add2DPlot( newLagPlot( lagPlot, x, y, xSize, ySize,
-                                    lagMin, lagMax, lagLimitsSet, drawXLabels, drawYLabels ) );
-                        }
-                        if ( _showAmp.isSelected() ) {
-                            //  X labels need to be drawn if this is the last plot (in time) AND they
-                            //  have not already been drawn by the lag plot.
-                            drawXLabels = false;
-                            //  Y labels appear only on the last plot if there are not channel
-                            //  summary plots following.
-                            if ( thisPP == _productPlots.peekLast() && !_showChannelSummary.isSelected() )
-                                drawYLabels = true;
-                            else
-                                drawYLabels = false;
-                            _plotWindow.add2DPlot( newAmpPlot( ampPlot, x, y, xSize, ySize,
-                                    ampMin, ampMax, ampLimitsSet, drawXLabels, drawYLabels ) );
-                        }
-                        if ( _showPhase.isSelected() ) {
-                            //  X labels need to be drawn if this is the last plot (in time) AND they
-                            //  have not already been drawn by the lag plot.
-                            drawXLabels = false;
-                            //  Y labels appear only if this is the first (channel) plot.
-                            if ( thisPP == _productPlots.peekFirst() )
-                                drawYLabels = true;
-                            else
-                                drawYLabels = false;
-                            _plotWindow.add2DPlot( newPhasePlot( phasePlot, x, y, xSize, ySize,
-                                    -180.0, 180.0, true, drawXLabels, drawYLabels ) );
-                        }
-                        //  Add a frame to the plot.
-                        Plot2DObject framePlot = newFramePlot( x, y, xSize, ySize );
-                        //  Identify the product if this is the first plot in the (time) series.
-                        if ( lagPlot == thisPP.lagPlots.peekFirst() )
-                            plotChannelInformation( framePlot, thisPP.index );
-                        //  Add a time stamp if this is the left-most plot.
-                        if ( x == xStart ) {
-                            DrawObject newObject = framePlot.newExtraItem( -0.75 * xStart / xSize, Plot2DObject.ExtraItem.BY_FRAME, 
-                                    0.0, Plot2DObject.ExtraItem.BY_FRAME );
-                            newObject.complexText( DrawObject.LEFT_JUSTIFY, "<y=1>" + lagPlot.timeStamp );
-                            //  If this is the first plot in the time series, add a title to identify
-                            //  what the time stamp is.
-                            if ( y == yStart ) {
-                                newObject = framePlot.newExtraItem( -0.75 * xStart / xSize, Plot2DObject.ExtraItem.BY_FRAME, 
-                                        30.0, Plot2DObject.ExtraItem.BY_PIXEL );
-                                newObject.complexText( DrawObject.LEFT_JUSTIFY,
-                                        "<y=1>Accumulation" );
-                                newObject = framePlot.newExtraItem( -0.75 * xStart / xSize, Plot2DObject.ExtraItem.BY_FRAME, 
-                                        30.0, Plot2DObject.ExtraItem.BY_PIXEL );
-                                newObject.complexText( DrawObject.LEFT_JUSTIFY,
-                                        "<y=2>Period Start" );
+                    //  Compute the maximum and minimum values for all plotted items.  All products
+                    //  and times use the same values for limits so they can be easily compared.
+                    //  The limits on phase plots never change (-180 to 180).
+                    double lagMin = 0.0;
+                    double lagMax = 0.0;
+                    boolean lagLimitsSet = false;
+                    double ampMin = 0.0;
+                    double ampMax = 0.0;
+                    boolean ampLimitsSet = false;
+                    double meanLagMin = 0.0;
+                    double meanLagMax = 0.0;
+                    boolean meanLagLimitsSet = false;
+                    double meanAmpMin = 0.0;
+                    double meanAmpMax = 0.0;
+                    boolean meanAmpLimitsSet = false;
+                    double phaseMin = -180.0;
+                    double phaseMax = 180.0;
+                    for ( Iterator<ProductPlots> iter = productList.iterator(); iter.hasNext(); ) {
+                        ProductPlots thisPP = iter.next();
+                        //  Find the "global" maximum and minimum values for lag and amplitude plots.
+                        for ( Iterator<IncPlot> pIter = thisPP.lagPlots.iterator(); pIter.hasNext(); ) {
+                            IncPlot incPlot = pIter.next();
+                            if ( lagLimitsSet ) {
+                                if ( incPlot.min < lagMin )
+                                    lagMin = incPlot.min;
+                                if ( incPlot.max > lagMax )
+                                    lagMax = incPlot.max;
+                            }
+                            else {
+                                lagMin = incPlot.min;
+                                lagMax = incPlot.max;
+                                lagLimitsSet = true;
                             }
                         }
-                        _plotWindow.add2DPlot( framePlot );                    
+                        for ( Iterator<IncPlot> pIter = thisPP.ampPlots.iterator(); pIter.hasNext(); ) {
+                            IncPlot incPlot = pIter.next();
+                            if ( ampLimitsSet ) {
+                                if ( incPlot.min < ampMin )
+                                    ampMin = incPlot.min;
+                                if ( incPlot.max > ampMax )
+                                    ampMax = incPlot.max;
+                            }
+                            else {
+                                ampMin = incPlot.min;
+                                ampMax = incPlot.max;
+                                ampLimitsSet = true;
+                            }
+                        }
+                        //  Duplicate effort for the mean plots.  Here we only look at the limits that
+                        //  apply to whichever we are actually plotting - the latest or an incremented
+                        //  plot.
+                        IncPlot lagPlot = thisPP.meanLagPlots.peekLast();
+                        IncPlot ampPlot = thisPP.meanAmpPlots.peekLast();
+                        //  ...unless the user has used the mouse wheel to change that.
+                        if ( !_lockToLatest ) {
+                            int index = 0;
+                            if ( _currentPlotIndex < thisPP.meanLagPlots.size() )
+                                index = thisPP.meanLagPlots.size() - _currentPlotIndex;
+                            Iterator<IncPlot> ampIter = thisPP.meanAmpPlots.iterator();
+                            Iterator<IncPlot> lagIter = thisPP.meanLagPlots.iterator();
+                            while ( index > -1 ) {
+                                lagPlot = lagIter.next();
+                                ampPlot = ampIter.next();
+                                --index;
+                            }
+                        }
+                        if ( meanLagLimitsSet ) {
+                            if ( lagPlot.min < meanLagMin )
+                                meanLagMin = lagPlot.min;
+                            if ( lagPlot.max > meanLagMax )
+                                meanLagMax = lagPlot.max;
+                        }
+                        else {
+                            meanLagMin = lagPlot.min;
+                            meanLagMax = lagPlot.max;
+                            meanLagLimitsSet = true;
+                        }
+                        if ( meanAmpLimitsSet ) {
+                            if ( ampPlot.min < meanAmpMin )
+                                meanAmpMin = ampPlot.min;
+                            if ( ampPlot.max > meanAmpMax )
+                                meanAmpMax = ampPlot.max;
+                        }
+                        else {
+                            meanAmpMin = ampPlot.min;
+                            meanAmpMax = ampPlot.max;
+                            meanAmpLimitsSet = true;
+                        }
+                    }
+
+                    //  Now draw the plots, as chosen by the user.  Loop through each of the "products" (channels)
+                    //  selected.
+                    int productIndex = 0;
+                    double tempStart = y;
+                    for ( Iterator<ProductPlots> iter = productList.iterator(); iter.hasNext(); ) {
+                        ProductPlots thisPP = iter.next();
+                        y = tempStart;
+
+                        //  Clear "extra" items from each plot.  This is to prevent litter from previous drawings
+                        //  from appearing on the one we are creating now.  "Extra" items are labels, titles,
+                        //  etc. which will be reattached to the plots as necessary below.
+                        for ( Iterator<IncPlot> pIter = thisPP.lagPlots.iterator(); pIter.hasNext(); )
+                            pIter.next().plot.clearExtraItems();
+                        for ( Iterator<IncPlot> pIter = thisPP.ampPlots.iterator(); pIter.hasNext(); )
+                            pIter.next().plot.clearExtraItems();
+                        for ( Iterator<IncPlot> pIter = thisPP.phasePlots.iterator(); pIter.hasNext(); )
+                            pIter.next().plot.clearExtraItems();
+
+                        //  Plot the individual accumulation periods, if requested.
+                        if ( _showAll.isSelected() ) {
+                            //  This is the loop through each accumulation time period.
+                            Iterator<IncPlot> ampIter = thisPP.ampPlots.iterator();
+                            Iterator<IncPlot> phaseIter = thisPP.phasePlots.iterator();
+                            for ( Iterator<IncPlot> lagIter = thisPP.lagPlots.iterator(); lagIter.hasNext(); ) {
+                                IncPlot lagPlot = lagIter.next();
+                                IncPlot ampPlot = ampIter.next();
+                                IncPlot phasePlot = phaseIter.next();
+                                boolean drawXLabels = false;
+                                boolean drawYLabels = false;
+                                //  Draw a "background" plot below each plot.  This has any items we want below the data.
+                                _plotWindow.add2DPlot( newBackgroundPlot( x, y, xSize, ySize ) );
+                                //  Add the data plots.
+                                if ( _showLag.isSelected() ) {
+                                    //  X labels are drawn on the last plot (in time) ONLY if there are no summary
+                                    //  or other plots following.
+                                    if ( lagPlot == thisPP.lagPlots.peekLast() && !_showTimeSummary.isSelected() && !_showLatest.isSelected() )
+                                        drawXLabels = true;
+                                    else
+                                        drawXLabels = false;
+                                    //  Y labels are drawn on the first channel plot.
+                                    if ( x == xStart )
+                                        drawYLabels = true;
+                                    else
+                                        drawXLabels = false;
+                                    _plotWindow.add2DPlot( newLagPlot( lagPlot, x, y, xSize, ySize,
+                                            lagMin, lagMax, lagLimitsSet, drawXLabels, drawYLabels ) );
+                                }
+                                if ( _showAmp.isSelected() ) {
+                                    //  X labels need to be drawn if this is the last plot (in time) AND they
+                                    //  have not already been drawn by the lag plot.
+                                    drawXLabels = false;
+                                    //  Y labels appear only on the last plot.
+                                    if ( thisPP == productList.peekLast() )
+                                        drawYLabels = true;
+                                    else
+                                        drawYLabels = false;
+                                    _plotWindow.add2DPlot( newAmpPlot( ampPlot, x, y, xSize, ySize,
+                                            ampMin, ampMax, ampLimitsSet, drawXLabels, drawYLabels ) );
+                                }
+                                if ( _showPhase.isSelected() ) {
+                                    //  X labels need to be drawn if this is the last plot (in time) AND they
+                                    //  have not already been drawn by the lag plot.
+                                    drawXLabels = false;
+                                    //  Y labels appear only if this is the first (channel) plot.
+                                    if ( thisPP == productList.peekFirst() )
+                                        drawYLabels = true;
+                                    else
+                                        drawYLabels = false;
+                                    _plotWindow.add2DPlot( newPhasePlot( phasePlot, x, y, xSize, ySize,
+                                            -180.0, 180.0, true, drawXLabels, drawYLabels ) );
+                                }
+                                //  Add a frame to the plot.
+                                Plot2DObject framePlot = newFramePlot( x, y, xSize, ySize );
+                                //  Identify the product if this is the first plot in the column.
+                                if ( y == yStart )
+                                    plotChannelInformation( framePlot, thisPP.index );
+                                //  Add a time stamp if this is the left-most plot.
+                                if ( x == xStart ) {
+                                    DrawObject newObject = framePlot.newExtraItem( -0.90 * xStart / xSize, Plot2DObject.ExtraItem.BY_FRAME, 
+                                            0.0, Plot2DObject.ExtraItem.BY_FRAME );
+                                    newObject.complexText( DrawObject.LEFT_JUSTIFY, "<y=1>" + lagPlot.scanName );
+                                    newObject = framePlot.newExtraItem( -0.90 * xStart / xSize, Plot2DObject.ExtraItem.BY_FRAME, 
+                                            0.0, Plot2DObject.ExtraItem.BY_FRAME );
+                                    newObject.complexText( DrawObject.LEFT_JUSTIFY, "<y=2>" + 
+                                            lagPlot.timeStamp + " - " +  ( lagPlot.timeStamp + lagPlot.integrationTime ) );
+                                }
+                                _plotWindow.add2DPlot( framePlot );                    
+                                y += yStep;
+                            }
+                        }
+
+                        //  Plot the "latest".
+                        if ( _showLatest.isSelected() ) {
+                            //  Background.
+                            _plotWindow.add2DPlot( newBackgroundPlot( x, y, xSize, ySize ) );
+                            //  Latest plots are the last in the array...
+                            IncPlot lagPlot = thisPP.lagPlots.peekLast();
+                            IncPlot ampPlot = thisPP.ampPlots.peekLast();
+                            IncPlot phasePlot = thisPP.phasePlots.peekLast();
+                            //  ...unless the user has used the mouse wheel to change that.
+                            if ( !_lockToLatest ) {
+                                int index = 0;
+                                if ( _currentPlotIndex < thisPP.lagPlots.size() )
+                                    index = thisPP.lagPlots.size() - _currentPlotIndex;
+                                Iterator<IncPlot> ampIter = thisPP.ampPlots.iterator();
+                                Iterator<IncPlot> phaseIter = thisPP.phasePlots.iterator();
+                                Iterator<IncPlot> lagIter = thisPP.lagPlots.iterator();
+                                while ( index > -1 ) {
+                                    lagPlot = lagIter.next();
+                                    ampPlot = ampIter.next();
+                                    phasePlot = phaseIter.next();
+                                    --index;
+                                }
+                            }
+                            boolean drawXLabels = false;
+                            boolean drawLeftYLabels = false;
+                            boolean drawRightYLabels = false;
+                            //  Add the data plots.
+                            if ( _showLag.isSelected() ) {
+                                //  X labels are drawn on the last plot (in time) ONLY if there are no summary
+                                //  or other plots following.
+                                if ( !_showTimeSummary.isSelected() )
+                                    drawXLabels = true;
+                                else
+                                    drawXLabels = false;
+                                //  Y labels are drawn on the first channel plot.
+                                if ( x == xStart )
+                                    drawLeftYLabels = true;
+                                else
+                                    drawLeftYLabels = false;
+                                _plotWindow.add2DPlot( newLagPlot( lagPlot, x, y, xSize, ySize,
+                                        lagMin, lagMax, lagLimitsSet, drawXLabels, drawLeftYLabels ) );
+                            }
+                            if ( _showAmp.isSelected() ) {
+                                //  X labels need to be drawn if this is the last plot (in time) AND they
+                                //  have not already been drawn by the lag plot.
+                                drawXLabels = false;
+                                //  Y labels appear only on the last plot.
+                                if ( thisPP == productList.peekLast() )
+                                    drawRightYLabels = true;
+                                else
+                                    drawRightYLabels = false;
+                                _plotWindow.add2DPlot( newAmpPlot( ampPlot, x, y, xSize, ySize,
+                                        ampMin, ampMax, ampLimitsSet, drawXLabels, drawRightYLabels ) );
+                            }
+                            if ( _showPhase.isSelected() ) {
+                                //  X labels need to be drawn if this is the last plot (in time) AND they
+                                //  have not already been drawn by the lag plot.
+                                drawXLabels = false;
+                                //  Y labels appear only if this is the first (channel) plot.
+                                if ( x == xStart && !drawLeftYLabels )
+                                    drawLeftYLabels = true;
+                                else
+                                    drawLeftYLabels = false;
+                                _plotWindow.add2DPlot( newPhasePlot( phasePlot, x, y, xSize, ySize,
+                                        -180.0, 180.0, true, drawXLabels, drawLeftYLabels ) );
+                            }
+                            //  Add a frame to the plot.
+                            Plot2DObject framePlot = newFramePlot( x, y, xSize, ySize );
+                            //  Identify the product if this is the first plot in the column.
+                            if ( y == yStart )
+                                plotChannelInformation( framePlot, thisPP.index );
+                            if ( x == xStart ) {
+                                DrawObject newObject = framePlot.newExtraItem( -0.90 * xStart / xSize, Plot2DObject.ExtraItem.BY_FRAME, 
+                                        0.0, Plot2DObject.ExtraItem.BY_FRAME );
+                                newObject.complexText( DrawObject.LEFT_JUSTIFY, "<y=1>" + lagPlot.scanName );
+                                newObject = framePlot.newExtraItem( -0.90 * xStart / xSize, Plot2DObject.ExtraItem.BY_FRAME, 
+                                        0.0, Plot2DObject.ExtraItem.BY_FRAME );
+                                newObject.complexText( DrawObject.LEFT_JUSTIFY, "<y=2>" + 
+                                        lagPlot.timeStamp + " - " +  ( lagPlot.timeStamp + lagPlot.integrationTime ) );
+                            }
+                            _plotWindow.add2DPlot( framePlot );                    
+                            y += yStep;
+                        }
+
+                        //  Increment the product column.
+                        x += xStep;
+                        ++productIndex;
+                    }
+
+                    //  These are the "time summary" plots that appear in the last row.
+                    if ( _showTimeSummary.isSelected() ) {
+                        x = xStart;
+                        for ( Iterator<ProductPlots> iter = productList.iterator(); iter.hasNext(); ) {
+                            ProductPlots thisPP = iter.next();
+                            //  Draw a "background" plot below each plot.
+                            _plotWindow.add2DPlot( newBackgroundPlot( x, y, xSize, ySize ) );
+                            //  Latest plots are the last in the array...
+                            IncPlot lagPlot = thisPP.meanLagPlots.peekLast();
+                            IncPlot ampPlot = thisPP.meanAmpPlots.peekLast();
+                            IncPlot phasePlot = thisPP.meanPhasePlots.peekLast();
+                            //  ...unless the user has used the mouse wheel to change that.
+                            if ( !_lockToLatest ) {
+                                int index = 0;
+                                if ( _currentPlotIndex < thisPP.meanLagPlots.size() )
+                                    index = thisPP.meanLagPlots.size() - _currentPlotIndex;
+                                Iterator<IncPlot> ampIter = thisPP.meanAmpPlots.iterator();
+                                Iterator<IncPlot> phaseIter = thisPP.meanPhasePlots.iterator();
+                                Iterator<IncPlot> lagIter = thisPP.meanLagPlots.iterator();
+                                while ( index > -1 ) {
+                                    lagPlot = lagIter.next();
+                                    ampPlot = ampIter.next();
+                                    phasePlot = phaseIter.next();
+                                    --index;
+                                }
+                            }
+                            boolean drawXLabels = false;
+                            boolean drawYLabels = false;
+                            //  Add the data plots.
+                            if ( _showLag.isSelected() ) {
+                                //  Y labels are drawn on the first channel plot.
+                                if ( x == xStart )
+                                    drawYLabels = true;
+                                else
+                                    drawXLabels = false;
+                                _plotWindow.add2DPlot( newLagPlot( lagPlot, x, y, xSize, ySize,
+                                        meanLagMin, meanLagMax, meanLagLimitsSet, drawXLabels, drawYLabels ) );
+                            }
+                            if ( _showAmp.isSelected() ) {
+                                //  X labels need to be drawn if this is the last plot (in time) AND they
+                                //  have not already been drawn by the lag plot.
+                                drawXLabels = false;
+                                //  Y labels appear only on the last plot.
+                                if ( thisPP == productList.peekLast() )
+                                    drawYLabels = true;
+                                else
+                                    drawYLabels = false;
+                                _plotWindow.add2DPlot( newAmpPlot( ampPlot, x, y, xSize, ySize,
+                                        meanAmpMin, meanAmpMax, meanAmpLimitsSet, drawXLabels, drawYLabels ) );
+                            }
+                            if ( _showPhase.isSelected() ) {
+                                //  X labels need to be drawn if this is the last plot (in time) AND they
+                                //  have not already been drawn by the lag plot.
+                                drawXLabels = false;
+                                //  Y labels appear only if this is the first (channel) plot.
+                                if ( x == xStart )
+                                    drawYLabels = true;
+                                else
+                                    drawYLabels = false;
+                                _plotWindow.add2DPlot( newPhasePlot( phasePlot, x, y, xSize, ySize,
+                                        -180.0, 180.0, true, drawXLabels, drawYLabels ) );
+                            }
+                            //  Add a frame to the plot.
+                            Plot2DObject framePlot = newFramePlot( x, y, xSize, ySize );
+                            //  Identify the product if this is the first plot in the column.
+                            if ( y == yStart )
+                                plotChannelInformation( framePlot, thisPP.index );
+                            //  If this is the first plot on the left side, identify it as a time
+                            //  summary.
+                            if ( x == xStart ) {
+                                DrawObject newObject = framePlot.newExtraItem( -0.90 * xStart / xSize, Plot2DObject.ExtraItem.BY_FRAME, 
+                                        0.0, Plot2DObject.ExtraItem.BY_FRAME );
+                                newObject.complexText( DrawObject.LEFT_JUSTIFY, "<y=1>" + productList.scanName );
+                                if ( _showAll.isSelected() || _showLatest.isSelected() ) {
+                                    newObject = framePlot.newExtraItem( -0.90 * xStart / xSize, Plot2DObject.ExtraItem.BY_FRAME, 
+                                            0.0, Plot2DObject.ExtraItem.BY_FRAME );
+                                    newObject.complexText( DrawObject.LEFT_JUSTIFY,
+                                            "<y=2>Full Scan" );
+                                }
+                            }
+                            _plotWindow.add2DPlot( framePlot );    
+                            x += xStep;
+                        }
                         y += yStep;
                     }
-                }
-
-                //  Plot the "latest".
-                if ( _showLatest.isSelected() ) {
-                    //  Background.
-                    _plotWindow.add2DPlot( newBackgroundPlot( x, y, xSize, ySize ) );
-                    //  Latest plots are the last in the array...
-                    IncPlot lagPlot = thisPP.lagPlots.peekLast();
-                    IncPlot ampPlot = thisPP.ampPlots.peekLast();
-                    IncPlot phasePlot = thisPP.phasePlots.peekLast();
-                    //  ...unless the user has used the mouse wheel to change that.
-                    if ( !_lockToLatest ) {
-                        int index = 0;
-                        Iterator<IncPlot> ampIter = thisPP.ampPlots.iterator();
-                        Iterator<IncPlot> phaseIter = thisPP.phasePlots.iterator();
-                        for ( Iterator<IncPlot> lagIter = thisPP.lagPlots.iterator(); lagIter.hasNext() && index <= _currentPlotIndex; ) {
-                            lagPlot = lagIter.next();
-                            ampPlot = ampIter.next();
-                            phasePlot = phaseIter.next();
-                            ++index;
-                        }
-                    }
-                    boolean drawXLabels = false;
-                    boolean drawYLabels = false;
-                    //  Add the data plots.
-                    if ( _showLag.isSelected() ) {
-                        //  X labels are drawn on the last plot (in time) ONLY if there are no summary
-                        //  or other plots following.
-                        if ( !_showTimeSummary.isSelected() )
-                            drawXLabels = true;
-                        else
-                            drawXLabels = false;
-                        //  Y labels are drawn on the first channel plot.
-                        if ( x == xStart )
-                            drawYLabels = true;
-                        else
-                            drawYLabels = false;
-                        _plotWindow.add2DPlot( newLagPlot( lagPlot, x, y, xSize, ySize,
-                                lagMin, lagMax, lagLimitsSet, drawXLabels, drawYLabels ) );
-                    }
-                    if ( _showAmp.isSelected() ) {
-                        //  X labels need to be drawn if this is the last plot (in time) AND they
-                        //  have not already been drawn by the lag plot.
-                        drawXLabels = false;
-                        //  Y labels appear only on the last plot if there are not channel
-                        //  summary plots following.
-                        if ( thisPP == _productPlots.peekLast() && !_showChannelSummary.isSelected() )
-                            drawYLabels = true;
-                        else
-                            drawYLabels = false;
-                        _plotWindow.add2DPlot( newAmpPlot( ampPlot, x, y, xSize, ySize,
-                                ampMin, ampMax, ampLimitsSet, drawXLabels, drawYLabels ) );
-                    }
-                    if ( _showPhase.isSelected() ) {
-                        //  X labels need to be drawn if this is the last plot (in time) AND they
-                        //  have not already been drawn by the lag plot.
-                        drawXLabels = false;
-                        //  Y labels appear only if this is the first (channel) plot.
-                        if ( thisPP == _productPlots.peekFirst() )
-                            drawYLabels = true;
-                        else
-                            drawYLabels = false;
-                        _plotWindow.add2DPlot( newPhasePlot( phasePlot, x, y, xSize, ySize,
-                                -180.0, 180.0, true, drawXLabels, drawYLabels ) );
-                    }
-                    //  Add a frame to the plot.
-                    Plot2DObject framePlot = newFramePlot( x, y, xSize, ySize );
-                    //  Identify the product if only "latest" plots are shown (i.e. this is the
-                    //  first plot in the column).
-                    if ( !_showAll.isSelected() )
-                        plotChannelInformation( framePlot, thisPP.index );
-                    if ( x == xStart ) {
-                        DrawObject newObject = framePlot.newExtraItem( -0.75 * xStart / xSize, Plot2DObject.ExtraItem.BY_FRAME, 
-                                0.0, Plot2DObject.ExtraItem.BY_FRAME );
-                        newObject.complexText( DrawObject.LEFT_JUSTIFY, "<y=1>" + lagPlot.timeStamp );
-                        //  If this is the first plot in the time series, add a title to identify
-                        //  what the time stamp is.
-                        if ( y == yStart ) {
-                            newObject = framePlot.newExtraItem( -0.75 * xStart / xSize, Plot2DObject.ExtraItem.BY_FRAME, 
-                                    30.0, Plot2DObject.ExtraItem.BY_PIXEL );
-                            newObject.complexText( DrawObject.LEFT_JUSTIFY,
-                                    "<y=1>Accumulation" );
-                            newObject = framePlot.newExtraItem( -0.75 * xStart / xSize, Plot2DObject.ExtraItem.BY_FRAME, 
-                                    30.0, Plot2DObject.ExtraItem.BY_PIXEL );
-                            newObject.complexText( DrawObject.LEFT_JUSTIFY,
-                                    "<y=2>Period Start" );
-                        }
-                    }
-                    _plotWindow.add2DPlot( framePlot );                    
-                    y += yStep;
-                }
-
-                //  Increment the product column.
-                x += xStep;
-                ++productIndex;
-            }
-
-            //  This is the "channel summary" column, if the user has requested it.
-            if ( _showChannelSummary.isSelected() ) {
-                y = yStart;
-                //  Possibly we want to see all accumulation periods...
-                if ( _showAll.isSelected() ) {
-                    //  Loop through each accumulation time period.
-                    Iterator<IncPlot> ampIter = _channelSummaryPlots.ampPlots.iterator();
-                    Iterator<IncPlot> phaseIter = _channelSummaryPlots.phasePlots.iterator();
-                    for ( Iterator<IncPlot> lagIter = _channelSummaryPlots.lagPlots.iterator(); lagIter.hasNext(); ) {
-                        IncPlot lagPlot = lagIter.next();
-                        IncPlot ampPlot = ampIter.next();
-                        IncPlot phasePlot = phaseIter.next();
-                        boolean drawXLabels = false;
-                        boolean drawYLabels = false;
-                        //  Draw a "background" plot below each plot.  This has any items we want below the data.
-                        _plotWindow.add2DPlot( newBackgroundPlot( x, y, xSize, ySize ) );
-                        //  Add the data plots.
-                        if ( _showLag.isSelected() ) {
-                            drawXLabels = false;
-                            //  Y labels never appear on these plots
-                            drawYLabels = false;
-                            _plotWindow.add2DPlot( newLagPlot( lagPlot, x, y, xSize, ySize,
-                                    lagMin, lagMax, lagLimitsSet, drawXLabels, drawYLabels ) );
-                        }
-                        if ( _showAmp.isSelected() ) {
-                            //  X labels need to be drawn if this is the last plot (in time) AND they
-                            //  have not already been drawn by the lag plot.
-                            drawXLabels = false;
-                            //  Y labels always appear on these plots.
-                            drawYLabels = true;
-                            _plotWindow.add2DPlot( newAmpPlot( ampPlot, x, y, xSize, ySize,
-                                    ampMin, ampMax, ampLimitsSet, drawXLabels, drawYLabels ) );
-                        }
-                        if ( _showPhase.isSelected() ) {
-                            //  X labels need to be drawn if this is the last plot (in time) AND they
-                            //  have not already been drawn by the lag plot.
-                            drawXLabels = false;
-                            //  Y labels never appear on these plots.
-                            drawYLabels = false;
-                            _plotWindow.add2DPlot( newPhasePlot( phasePlot, x, y, xSize, ySize,
-                                    -180.0, 180.0, true, drawXLabels, drawYLabels ) );
-                        }
-                        //  Add a frame to the plot.
-                        Plot2DObject newFrame = newFramePlot( x, y, xSize, ySize );
-                        if ( lagPlot == _channelSummaryPlots.lagPlots.peekFirst() ) {
-                            DrawObject newObject = newFrame.newExtraItem( 0.0, Plot2DObject.ExtraItem.BY_FRAME, 
-                                    30.0, Plot2DObject.ExtraItem.BY_PIXEL );
-                            newObject.complexText( DrawObject.LEFT_JUSTIFY,
-                                    "<y=1>Channel" );
-                            newObject = newFrame.newExtraItem( 0.0, Plot2DObject.ExtraItem.BY_FRAME, 
-                                    30.0, Plot2DObject.ExtraItem.BY_PIXEL );
-                            newObject.complexText( DrawObject.LEFT_JUSTIFY,
-                                    "<y=2>Summary" );
-                        }
-                        _plotWindow.add2DPlot( newFrame );
-                        y += yStep;
-                    }
-                }
-                //  ...or just the latest.
-                if ( _showLatest.isSelected() ) {
-                    //  Draw a "background" plot below each plot.  This has any items we want below the data.
-                    _plotWindow.add2DPlot( newBackgroundPlot( x, y, xSize, ySize ) );
-                    //  Latest plots are the last in the array...
-                    IncPlot lagPlot = _channelSummaryPlots.lagPlots.peekLast();
-                    IncPlot ampPlot = _channelSummaryPlots.ampPlots.peekLast();
-                    IncPlot phasePlot = _channelSummaryPlots.phasePlots.peekLast();
-                    //  ...unless the user has used the mouse wheel to change that.
-                    if ( !_lockToLatest ) {
-                        int index = 0;
-                        Iterator<IncPlot> ampIter = _channelSummaryPlots.ampPlots.iterator();
-                        Iterator<IncPlot> phaseIter = _channelSummaryPlots.phasePlots.iterator();
-                        for ( Iterator<IncPlot> lagIter = _channelSummaryPlots.lagPlots.iterator(); lagIter.hasNext() && index <= _currentPlotIndex; ) {
-                            lagPlot = lagIter.next();
-                            ampPlot = ampIter.next();
-                            phasePlot = phaseIter.next();
-                            ++index;
-                        }
-                    }
-                    boolean drawXLabels = false;
-                    boolean drawYLabels = false;
-                    //  Add the data plots.
-                    if ( _showLag.isSelected() ) {
-                        drawXLabels = false;
-                        //  Y labels are drawn on the first channel plot.
-                        if ( x == xStart )
-                            drawYLabels = true;
-                        else
-                            drawYLabels = false;
-                        _plotWindow.add2DPlot( newLagPlot( lagPlot, x, y, xSize, ySize,
-                                lagMin, lagMax, lagLimitsSet, drawXLabels, drawYLabels ) );
-                    }
-                    if ( _showAmp.isSelected() ) {
-                        drawXLabels = false;
-                        drawYLabels = true;
-                        _plotWindow.add2DPlot( newAmpPlot( ampPlot, x, y, xSize, ySize,
-                                ampMin, ampMax, ampLimitsSet, drawXLabels, drawYLabels ) );
-                    }
-                    if ( _showPhase.isSelected() ) {
-                        drawXLabels = false;
-                        //  Y labels appear only if this is the first (channel) plot.
-                        if ( x == xStart )
-                            drawYLabels = true;
-                        else
-                            drawYLabels = false;
-                    for ( int i = 0; i < phasePlot.yData.length; ++i )
-                        phasePlot.yData[i] = 0.0;
-                        _plotWindow.add2DPlot( newPhasePlot( phasePlot, x, y, xSize, ySize,
-                                -180.0, 180.0, true, drawXLabels, drawYLabels ) );
-                    }
-                    //  Add a frame to the plot.
-                    Plot2DObject newFrame = newFramePlot( x, y, xSize, ySize );
-                    if ( y == yStart ) {
-                        DrawObject newObject = newFrame.newExtraItem( 0.0, Plot2DObject.ExtraItem.BY_FRAME, 
-                                30.0, Plot2DObject.ExtraItem.BY_PIXEL );
-                        newObject.complexText( DrawObject.LEFT_JUSTIFY,
-                                "<y=1>Channel" );
-                        newObject = newFrame.newExtraItem( 0.0, Plot2DObject.ExtraItem.BY_FRAME, 
-                                30.0, Plot2DObject.ExtraItem.BY_PIXEL );
-                        newObject.complexText( DrawObject.LEFT_JUSTIFY,
-                                "<y=2>Summary" );
-                    }
-                    _plotWindow.add2DPlot( newFrame );
-                    y += yStep;
-                }
-            }
-
-            //  These are the "time summary" plots that appear in the last row.
-            if ( _showTimeSummary.isSelected() ) {
-                x = xStart;
-                for ( Iterator<ProductPlots> iter = _timeSummaryPlots.iterator(); iter.hasNext(); ) {
-                    ProductPlots thisPP = iter.next();
-                    //  Draw a "background" plot below each plot.
-                    _plotWindow.add2DPlot( newBackgroundPlot( x, y, xSize, ySize ) );
-                    //  Latest plots are the last in the array...
-                    IncPlot lagPlot = thisPP.lagPlots.peekLast();
-                    IncPlot ampPlot = thisPP.ampPlots.peekLast();
-                    IncPlot phasePlot = thisPP.phasePlots.peekLast();
-                    //  ...unless the user has used the mouse wheel to change that.
-                    if ( !_lockToLatest ) {
-                        int index = 0;
-                        Iterator<IncPlot> ampIter = thisPP.ampPlots.iterator();
-                        Iterator<IncPlot> phaseIter = thisPP.phasePlots.iterator();
-                        for ( Iterator<IncPlot> lagIter = thisPP.lagPlots.iterator(); lagIter.hasNext() && index <= _currentPlotIndex; ) {
-                            lagPlot = lagIter.next();
-                            ampPlot = ampIter.next();
-                            phasePlot = phaseIter.next();
-                            ++index;
-                        }
-                    }
-                    boolean drawXLabels = false;
-                    boolean drawYLabels = false;
-                    //  Add the data plots.
-                    if ( _showLag.isSelected() ) {
-                        //  X labels are drawn on the last plot (in time) ONLY if there are no summary
-                        //  or other plots following.
-                        if ( !_showTimeSummary.isSelected() )
-                            drawXLabels = true;
-                        else
-                            drawXLabels = false;
-                        //  Y labels are drawn on the first channel plot.
-                        if ( x == xStart )
-                            drawYLabels = true;
-                        else
-                            drawXLabels = false;
-                        _plotWindow.add2DPlot( newLagPlot( lagPlot, x, y, xSize, ySize,
-                                lagMin, lagMax, lagLimitsSet, drawXLabels, drawYLabels ) );
-                    }
-                    if ( _showAmp.isSelected() ) {
-                        //  X labels need to be drawn if this is the last plot (in time) AND they
-                        //  have not already been drawn by the lag plot.
-                        drawXLabels = false;
-                        //  Y labels appear only on the last plot if there are not channel
-                        //  summary plots following.
-                        if ( thisPP == _timeSummaryPlots.peekLast() && !_showChannelSummary.isSelected() )
-                            drawYLabels = true;
-                        else
-                            drawYLabels = false;
-                        _plotWindow.add2DPlot( newAmpPlot( ampPlot, x, y, xSize, ySize,
-                                ampMin, ampMax, ampLimitsSet, drawXLabels, drawYLabels ) );
-                    }
-                    if ( _showPhase.isSelected() ) {
-                        //  X labels need to be drawn if this is the last plot (in time) AND they
-                        //  have not already been drawn by the lag plot.
-                        drawXLabels = false;
-                        //  Y labels appear only if this is the first (channel) plot.
-                        if ( x == xStart )
-                            drawYLabels = true;
-                        else
-                            drawYLabels = false;
-                        _plotWindow.add2DPlot( newPhasePlot( phasePlot, x, y, xSize, ySize,
-                                -180.0, 180.0, true, drawXLabels, drawYLabels ) );
-                    }
-                    //  Add a frame to the plot.
-                    Plot2DObject framePlot = newFramePlot( x, y, xSize, ySize );
-                    //  Identify the product if this is the first plot in the column (which
-                    //  means "all" and "latest" plots are not shown.
-                    if ( !_showAll.isSelected() && !_showLatest.isSelected() )
-                        plotChannelInformation( framePlot, thisPP.index );
-                    //  If this is the first plot on the left side, identify it as a time
-                    //  summary.
-                    if ( x == xStart ) {
-                        DrawObject newObject = framePlot.newExtraItem( -0.75 * xStart / xSize, Plot2DObject.ExtraItem.BY_FRAME, 
-                                0.0, Plot2DObject.ExtraItem.BY_FRAME );
-                        newObject.complexText( DrawObject.LEFT_JUSTIFY,
-                                "<y=1>Time" );
-                        newObject = framePlot.newExtraItem( -0.75 * xStart / xSize, Plot2DObject.ExtraItem.BY_FRAME, 
-                                0.0, Plot2DObject.ExtraItem.BY_FRAME );
-                        newObject.complexText( DrawObject.LEFT_JUSTIFY,
-                                "<y=2>Summary" );
-                    }
-                    _plotWindow.add2DPlot( framePlot );                    
-                    x += xStep;
-                }
-                //  The "cross" summary plot is only drawn if both time and channel summary have
-                //  been selected.
-                if ( _showChannelSummary.isSelected() ) {
-                    //  Draw a "background" plot below each plot.
-                    _plotWindow.add2DPlot( newBackgroundPlot( x, y, xSize, ySize ) );
-                    //  Use the latest...
-                    IncPlot lagPlot = _crossSummaryPlots.lagPlots.peekLast();
-                    IncPlot ampPlot = _crossSummaryPlots.ampPlots.peekLast();
-                    IncPlot phasePlot = _crossSummaryPlots.phasePlots.peekLast();
-                    //  ...unless the user has used the mouse wheel to change that.
-                    if ( !_lockToLatest ) {
-                        int index = 0;
-                        Iterator<IncPlot> ampIter = _crossSummaryPlots.ampPlots.iterator();
-                        Iterator<IncPlot> phaseIter = _crossSummaryPlots.phasePlots.iterator();
-                        for ( Iterator<IncPlot> lagIter = _crossSummaryPlots.lagPlots.iterator(); lagIter.hasNext() && index <= _currentPlotIndex; ) {
-                            lagPlot = lagIter.next();
-                            ampPlot = ampIter.next();
-                            phasePlot = phaseIter.next();
-                            ++index;
-                        }
-                    }
-                    boolean drawXLabels = false;
-                    boolean drawYLabels = false;
-                    //  Add the data plots.
-                    if ( _showLag.isSelected() ) {
-                        drawXLabels = false;
-                        drawYLabels = false;
-                        _plotWindow.add2DPlot( newLagPlot( lagPlot, x, y, xSize, ySize,
-                                lagMin, lagMax, lagLimitsSet, drawXLabels, drawYLabels ) );
-                    }
-                    if ( _showAmp.isSelected() ) {
-                        drawXLabels = false;
-                        drawYLabels = true;
-                        _plotWindow.add2DPlot( newAmpPlot( ampPlot, x, y, xSize, ySize,
-                                ampMin, ampMax, ampLimitsSet, drawXLabels, drawYLabels ) );
-                    }
-                    if ( _showPhase.isSelected() ) {
-                        drawXLabels = false;
-                        drawYLabels = false;
-                        _plotWindow.add2DPlot( newPhasePlot( phasePlot, x, y, xSize, ySize,
-                                -180.0, 180.0, true, drawXLabels, drawYLabels ) );
-                    }
-                    //  Add a frame to the plot.
-                    Plot2DObject framePlot = newFramePlot( x, y, xSize, ySize );
-                    if ( y == yStart ) {
-                        DrawObject newObject = framePlot.newExtraItem( 0.0, Plot2DObject.ExtraItem.BY_FRAME, 
-                                30.0, Plot2DObject.ExtraItem.BY_PIXEL );
-                        newObject.complexText( DrawObject.LEFT_JUSTIFY,
-                                "<y=1>Channel" );
-                        newObject = framePlot.newExtraItem( 0.0, Plot2DObject.ExtraItem.BY_FRAME, 
-                                30.0, Plot2DObject.ExtraItem.BY_PIXEL );
-                        newObject.complexText( DrawObject.LEFT_JUSTIFY,
-                                "<y=2>Summary" );
-                    }
-                    _plotWindow.add2DPlot( framePlot );                    
                 }
             }
 
@@ -1894,6 +1962,14 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
                         incPlot.maxChannel + .1, 1.0, Color.MAGENTA, 
                         String.format( "<size=0.8> delay = %.4f", incPlot.delay ),
                         30.0, 0.0, Plot2DObject.LEFT_JUSTIFY,
+                        useMax, false, 
+                        false );
+            }
+            if ( _showSNR.isSelected() ) {
+                thisPlot.addLabels( Plot2DObject.X_AXIS, incPlot.maxChannel,
+                        incPlot.maxChannel + .1, 1.0, Color.MAGENTA, 
+                        String.format( "<size=0.8> S/N = %.4f", incPlot.snr ),
+                        0.0, 10.0, Plot2DObject.LEFT_JUSTIFY,
                         useMax, false, 
                         false );
             }
@@ -2017,33 +2093,6 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
         }
     }
     
-    /*
-     * Add information about the product to this plot.  This is all put on the left
-     * hand side of the plot, which is assumed to be empty.
-     */
-    void plotProductInformation( IncPlot incPlot, double xPos ) {
-        if ( incPlot == null )
-            return;
-        Plot2DObject thisPlot = incPlot.plot;
-        //  Find the product we are interested in.
-        Product product = null;
-        for ( Iterator<Product> iter = _products.iterator(); iter.hasNext() && product == null; ) {
-            Product thisProduct = iter.next();
-            if ( thisProduct.index == incPlot.iProduct )
-                product = thisProduct;
-        }
-        if ( product != null ) {
-            DrawObject newObject = thisPlot.newExtraItem( xPos, Plot2DObject.ExtraItem.BY_FRAME, 
-                    0.0, Plot2DObject.ExtraItem.BY_FRAME );
-            newObject.complexText( DrawObject.LEFT_JUSTIFY,
-                    " <y=1>" + product.baseline.telescope1 + "-" + product.baseline.telescope2 );
-            newObject = thisPlot.newExtraItem( xPos, Plot2DObject.ExtraItem.BY_FRAME, 
-                    0.0, Plot2DObject.ExtraItem.BY_FRAME );
-            newObject.complexText( DrawObject.LEFT_JUSTIFY,
-                    " <y=2>" + product.frequency + " MHz\n" );
-        }
-    }
-    
     //  Simple class that locates strings in an ArrayDeque.
     protected class StringList extends ArrayDeque<String> {
         public boolean contains( String testString ) {
@@ -2137,6 +2186,7 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
             _viewButton.setVisible( true );
             _selectedCheck.setVisible( true );
             _allCheck.setVisible( true );
+            _fftSize.setVisible( true );
             _applyButton.setVisible( true );
         }
         alterProductTable();
@@ -2172,6 +2222,7 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
                             //( checkStr ), 
                             ( selectedValue ),
                             ( "" + thisProduct.index ),
+                            ( "" + thisProduct.scan ),
                             ( baseline ),
                             ( "" + thisProduct.frequency ),
                             ( "" + thisProduct.phaseCenter ),
@@ -2208,18 +2259,30 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
             return;
         }
         
-        //  Set up an array to hold the plots of all product data results.
+        //  Set up arrays to hold the plots of all product data results.
         //  This *should* clean out all existing plots if the garbage collector works.
         synchronized ( _plotDataLock ) {
-            _productPlots = new ProductPlotsList();
-            _timeSummaryPlots = new ProductPlotsList();
-            _channelSummaryPlots = new ProductPlots( 0 );
-            _crossSummaryPlots = new ProductPlots( 0 );
+            _productPlotsByScan = new ArrayDeque<ProductPlotsList>();
+        }
+        
+        //  Send the requested FFT size.
+        try {
+            _ssock.writeInt( FFT_SIZE );
+            _ssock.writeInt( 4 );
+            _ssock.writeInt( _fftSize.intValue() );
+        } catch ( java.io.IOException e ) {
+            _connected = false;
+            _connectionLight.alert();
+            _connectionLabel.setText( "write failed" );
+            JOptionPane.showMessageDialog( this, 
+                e.getMessage() + " ", "Write to guiServer monitor application failed.", 
+                JOptionPane.ERROR_MESSAGE );
         }
         
         //  Initiate the start of requests.
         sendPacket( START_PRODUCT_REQUESTS, 0, null );
         _productRequests = 0;
+        String countingScan = null;
         
         //  Send requests for each data product.
         for ( Iterator<Product> iter = _products.iterator(); iter.hasNext(); ) {
@@ -2231,18 +2294,26 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
                     //  and number of frequency channels.
                     if ( _connected ) {
                         try {
-                            //  This is the "packet type", so guiServer can know what we are
-                            //  doing.
-                            _out.writeInt( PRODUCT_REQUEST );
-                            //  This is the number of bytes of data in this request - 3 integers worth.
-                            _out.writeInt( 12 );
-                            //  The index.
-                            _out.writeInt( thisProduct.index );
-                            //  The offset.
-                            _out.writeInt( thisProduct.offset );
-                            //  And the number of frequency channels.
-                            _out.writeInt( thisProduct.freqChannels );
-                            ++_productRequests;
+                            //  Count the number of product requests - this is for plotting purposes.
+                            //  We only count those unique to a scan, as all scans will be identical.
+                            //  We also use this to avoid sending the product requests repeatedly
+                            //  for the multiple scans.
+                            if ( countingScan == null )
+                                countingScan = thisProduct.scan;
+                            if ( thisProduct.scan.contentEquals( countingScan ) ) {
+                                ++_productRequests;
+                                //  This is the "packet type", so guiServer can know what we are
+                                //  doing.
+                                _ssock.writeInt( PRODUCT_REQUEST );
+                                //  This is the number of bytes of data in this request - 3 integers worth.
+                                _ssock.writeInt( 12 );
+                                //  The index.
+                                _ssock.writeInt( thisProduct.index );
+                                //  The offset.
+                                _ssock.writeInt( thisProduct.offset );
+                                //  And the number of frequency channels.
+                                _ssock.writeInt( thisProduct.freqChannels );
+                            }
                         } catch ( java.io.IOException e ) {
                             _connected = false;
                             _connectionLight.alert();
@@ -2270,9 +2341,7 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
      */
     protected void updateDataProductControls() {
         if ( _products != null ) {
-            //  Two grids of buttons represent each telescope.
-            StringList telescopes = new StringList();
-            StringList frequencies = new StringList();
+            //  Clear all the current buttons, if anything is there.
             if ( _telescope1Grid == null )
                 _telescope1Grid = new ArrayDeque<JToggleButton>();
             else {
@@ -2294,8 +2363,13 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
                     _dataPanel.remove( iter.next() );
             }
             _frequenciesGrid.clear();
+            //  Run through the existing products and create new grids of buttons.
+            StringList telescopes = new StringList();
+            StringList frequencies = new StringList();
             for ( Iterator<Product> iter = _products.iterator(); iter.hasNext(); ) {
                 Product newProduct = iter.next();
+                //  If this is a new telescope, create two new buttons for it, one in each
+                //  grid - the duplicate telescope in the second grid allows autocorrelation.
                 if ( telescopes.addUnique( newProduct.baseline.telescope1 ) ) {
                     JToggleButton newButton = new JToggleButton( newProduct.baseline.telescope1 );
                     newButton.addActionListener( new ActionListener() {
@@ -2303,6 +2377,7 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
                             productSelectionChange();
                         }
                     } );
+                    newButton.setToolTipText( newProduct.scan );
                     _dataPanel.add( newButton );
                     _telescope1Grid.add( newButton );
                     newButton = new JToggleButton( newProduct.baseline.telescope2 );
@@ -2311,9 +2386,27 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
                             productSelectionChange();
                         }
                     } );
+                    newButton.setToolTipText( newProduct.scan );
                     _dataPanel.add( newButton );
                     _telescope2Grid.add( newButton );
                 }
+                //  Otherwise find the buttons associated with this telescope and add
+                //  the name of the scan to the tooltip.
+                else {
+                    for ( Iterator<JToggleButton> iter2 = _telescope1Grid.iterator(); iter2.hasNext(); ) {
+                        JToggleButton button = iter2.next();
+                        if ( button.getText().contentEquals( newProduct.baseline.telescope1 ) )
+                            if ( button.getToolTipText() != null && !button.getToolTipText().contains( newProduct.scan ) )
+                                button.setToolTipText( button.getToolTipText() + ", " + newProduct.scan );
+                    }
+                    for ( Iterator<JToggleButton> iter2 = _telescope2Grid.iterator(); iter2.hasNext(); ) {
+                        JToggleButton button = iter2.next();
+                        if ( button.getText().contentEquals( newProduct.baseline.telescope1 ) )
+                            if ( button.getToolTipText() != null && !button.getToolTipText().contains( newProduct.scan ) )
+                                button.setToolTipText( button.getToolTipText() + ", " + newProduct.scan );
+                    }
+                }
+                //  Same for the second telescopes in each baseline.
                 if ( telescopes.addUnique( newProduct.baseline.telescope2 ) ) {
                     JToggleButton newButton = new JToggleButton( newProduct.baseline.telescope2 );
                     newButton.addActionListener( new ActionListener() {
@@ -2321,6 +2414,7 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
                             productSelectionChange();
                         }
                     } );
+                    newButton.setToolTipText( newProduct.scan );
                     _dataPanel.add( newButton );
                     _telescope1Grid.add( newButton );
                     newButton = new JToggleButton( newProduct.baseline.telescope1 );
@@ -2329,9 +2423,25 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
                             productSelectionChange();
                         }
                     } );
+                    newButton.setToolTipText( newProduct.scan );
                     _dataPanel.add( newButton );
                     _telescope2Grid.add( newButton );
                 }
+                else {
+                    for ( Iterator<JToggleButton> iter2 = _telescope1Grid.iterator(); iter2.hasNext(); ) {
+                        JToggleButton button = iter2.next();
+                        if ( button.getText().contentEquals( newProduct.baseline.telescope2 ) )
+                            if ( button.getToolTipText() != null && !button.getToolTipText().contains( newProduct.scan ) )
+                                button.setToolTipText( button.getToolTipText() + ", " + newProduct.scan );
+                    }
+                    for ( Iterator<JToggleButton> iter2 = _telescope2Grid.iterator(); iter2.hasNext(); ) {
+                        JToggleButton button = iter2.next();
+                        if ( button.getText().contentEquals( newProduct.baseline.telescope2 ) )
+                            if ( button.getToolTipText() != null && !button.getToolTipText().contains( newProduct.scan ) )
+                                button.setToolTipText( button.getToolTipText() + ", " + newProduct.scan );
+                    }
+                }
+                //  The frequencies only have one button each.
                 if ( frequencies.addUnique( newProduct.frequency.toString() ) ) {
                     JToggleButton newButton = new JToggleButton( newProduct.frequency.toString() );
                     newButton.addActionListener( new ActionListener() {
@@ -2339,8 +2449,17 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
                             productSelectionChange();
                         }
                     } );
+                    newButton.setToolTipText( newProduct.scan );
                     _dataPanel.add( newButton );
                     _frequenciesGrid.add( newButton );
+                }
+                else {
+                    for ( Iterator<JToggleButton> iter2 = _frequenciesGrid.iterator(); iter2.hasNext(); ) {
+                        JToggleButton button = iter2.next();
+                        if ( button.getText().contentEquals( newProduct.frequency.toString() ) )
+                            if ( button.getToolTipText() != null && !button.getToolTipText().contains( newProduct.scan ) )
+                                button.setToolTipText( button.getToolTipText() + ", " + newProduct.scan );
+                    }
                 }
             }
             _automaticallyResize = true;
@@ -2425,6 +2544,8 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
         _viewButton.setBounds( 195, y + 35, 125, 25 );
         _selectedCheck.setBounds( 330, y + 35, 100, 25 );
         _allCheck.setBounds( 440, y + 35, 100, 25 );
+        _fftSizeLabel.setBounds( 545, y + 35, 60, 25 );
+        _fftSize.setBounds( 610, y + 35, 80, 25 );
         _applyButton.setBounds( w - 160, y + 35, 125, 25 );
         y += 35;
         if ( _automaticallyResize ) {
@@ -2450,8 +2571,13 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
         try { Thread.sleep( 1000 ); } catch ( Exception e ) {}
     }
     
+    protected void trackBytes( int moreBytes ) {
+        synchronized ( _bytesTransfered ) {
+            _bytesTransfered += moreBytes;
+        }
+    }
     /*
-     * Simplistic class for handling data transfer rate.  This checks every seconds
+     * Simplistic class for handling data transfer rate.  This checks every 1/10 second
      * for any new data transfer and reports it.
      */
     protected class DataTransferMonitorThread extends Thread {
@@ -2466,16 +2592,18 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
         
         public void run() {
             while ( _keepGoing ) {
-                //  Compute the size of the data transfer.
-                long newData = 10 * ( _bytesTransfered - _lastBytes );
-                _lastBytes = _bytesTransfered;
-                if ( 1.25 * (double)newData > _connectionMaxBytes )
-                    _connectionMaxBytes = 1.25 * (double)newData;
-                _connectionPlot.limits( (double)(_connectionTrackSize - _connectionPlot.w()),
-                        (double)(_connectionTrackSize), -.05 * _connectionMaxBytes, _connectionMaxBytes );
-                _connectionTrack.add( (double)(_connectionTrackSize), (double)(newData) );
-                _connectionTrackSize += 1;
-                _connectionPlotWindow.updateUI();
+                synchronized ( _bytesTransfered ) {
+                    //  Compute the size of the data transfer.
+                    long newData = 10 * ( _bytesTransfered - _lastBytes );
+                    _lastBytes = _bytesTransfered;
+                    if ( 1.25 * (double)newData > _connectionMaxBytes )
+                        _connectionMaxBytes = 1.25 * (double)newData;
+                    _connectionPlot.limits( (double)(_connectionTrackSize - _connectionPlot.w()),
+                            (double)(_connectionTrackSize), -.05 * _connectionMaxBytes, _connectionMaxBytes );
+                    _connectionTrack.add( (double)(_connectionTrackSize), (double)(newData) );
+                    _connectionTrackSize += 1;
+                    _connectionPlotWindow.updateUI();
+                }
                 try { Thread.sleep( 100 ); } catch ( Exception e ) {}
             }
         }
@@ -2528,7 +2656,7 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
     protected Plot2DObject _connectionPlot;
     protected Track2D _connectionTrack;
     protected int _connectionTrackSize;
-    protected long _bytesTransfered;
+    protected Long _bytesTransfered;
     protected double _connectionMaxBytes;
     protected DataTransferMonitorThread _dataTransferMonitorThread;
     protected Socket _socket;
@@ -2544,6 +2672,7 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
     protected IndexedPanel _messagePanel;
     protected MessageDisplayPanel _messages;
     protected int _usingPort;
+    protected ChannelServerSocket _ssock;
     
     protected String _jobName;
     protected String _obsCode;
@@ -2570,6 +2699,7 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
     protected int _currentPolProduct;
     protected class Product {
         public int index;
+        public String scan;
         public Baseline baseline;
         public Double frequency;
         public int phaseCenter;
@@ -2589,6 +2719,8 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
     protected JLabel _frequenciesGridLabel;
     protected JLabel _productsLabel;
     protected JToggleButton _viewButton;
+    protected JLabel _fftSizeLabel;
+    protected Power2NumberBox _fftSize;
     protected JButton _applyButton;
     protected JCheckBox _selectedCheck;
     protected JCheckBox _allCheck;
@@ -2596,11 +2728,13 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
     protected JScrollPane _tableScrollPane;
     protected PlotWindow _plotWindow;
     protected class IncPlot {
-        public IncPlot( int newProduct, int newChannels, int newTime ) {
+        public IncPlot( int newProduct, int newChannels, int newTime, int newIntegrationTime, String newName ) {
             plot = new Plot2DObject();
             timeStamp = newTime;
             iProduct = newProduct;
             nChannels = newChannels;
+            integrationTime = newIntegrationTime;
+            scanName = newName;
         }
         public void curve( double x[], double y[] ) {
             xData = x;
@@ -2629,7 +2763,9 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
         public Track2D track;
         public int timeStamp;
         public int nChannels;
+        public int integrationTime;
         public int iProduct;
+        public String scanName;
         public double min;
         public double max;
         public double delay;
@@ -2640,54 +2776,28 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
         public int nData;
         public DrawObject trackObject;
     }
-    protected class IncArray extends ArrayDeque<IncPlot> {
-        //  This function creates a new plot that is the mean of the current data
-        //  and all data in the former plots, if there are any.
-        public void meanAdd( int iProduct, int nChannels, int timeStamp, double x[], double y[],
-                DrawObject trackObject, Double maxChannel, Double delay ) {
-            IncPlot newPlot = new IncPlot( iProduct, nChannels, timeStamp );
-            if ( this.size() > 0 ) {  //  There is a former plot.
-                IncPlot lastPlot = this.peekLast();
-                double n = (double)this.size();
-                double ny[] = new double[lastPlot.nData];
-                for ( int i = 0; i < lastPlot.nData; ++i ) {
-                    ny[i] = ( n * lastPlot.yData[i] + y[i] ) / ( n + 1 );
-                }
-                if ( trackObject == null )
-                    newPlot.curve( x, ny );
-                else
-                    newPlot.track( x, ny, trackObject );
-                if ( maxChannel != null ) {
-                    newPlot.maxChannel = ( n * lastPlot.maxChannel + maxChannel ) / ( n + 1 );
-                    newPlot.delay = ( n * lastPlot.delay + delay ) / ( n + 1 );;
-                }
-            }
-            else {  // This is the first plot.
-                if ( trackObject == null )
-                    newPlot.curve( x, y ); 
-                else
-                    newPlot.track( x, y, trackObject );
-                if ( maxChannel != null ) {
-                    newPlot.maxChannel = maxChannel;
-                    newPlot.delay = delay;
-                }
-            }
-            this.add( newPlot );
-        }
-    }
     protected class ProductPlots {
         public ProductPlots( int newIndex ) {
-            lagPlots = new IncArray();
-            ampPlots = new IncArray();
-            phasePlots = new IncArray();
+            lagPlots = new ArrayDeque<IncPlot>();
+            ampPlots = new ArrayDeque<IncPlot>();
+            phasePlots = new ArrayDeque<IncPlot>();
+            meanLagPlots = new ArrayDeque<IncPlot>();
+            meanAmpPlots = new ArrayDeque<IncPlot>();
+            meanPhasePlots = new ArrayDeque<IncPlot>();
             index = newIndex;
         }
-        public IncArray lagPlots;
-        public IncArray ampPlots;
-        public IncArray phasePlots;
+        public ArrayDeque<IncPlot> lagPlots;
+        public ArrayDeque<IncPlot> ampPlots;
+        public ArrayDeque<IncPlot> phasePlots;
+        public ArrayDeque<IncPlot> meanLagPlots;
+        public ArrayDeque<IncPlot> meanAmpPlots;
+        public ArrayDeque<IncPlot> meanPhasePlots;
         public int index;
     }
     protected class ProductPlotsList extends ArrayDeque<ProductPlots> {
+        public ProductPlotsList( String name ) {
+            scanName = name;
+        }
         //  This function returns the ProductPlots instance corresponding to a given
         //  product index number if it exists.  If it does not exist, it creates one
         //  and returns that.
@@ -2705,14 +2815,11 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
             }
             return foundPP;
         }
+        public String scanName;
     }
+    
+    ArrayDeque<ProductPlotsList> _productPlotsByScan;
     protected ProductPlotsList _productPlots;
-    protected ProductPlotsList _timeSummaryPlots;
-    protected ProductPlots _crossSummaryPlots;
-    protected ProductPlots _channelSummaryPlots;
-    protected IncPlot _summaryLagPlot;
-    protected IncPlot _summaryPhasePlot;
-    protected IncPlot _summaryAmpPlot;
     protected Integer _numPlots;
     protected int _productRequests;
     protected boolean _lockToLatest;
@@ -2723,11 +2830,16 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
     JCheckBoxMenuItem _showLatest;
     JCheckBoxMenuItem _showAll;
     JCheckBoxMenuItem _showTimeSummary;
-    JCheckBoxMenuItem _showChannelSummary;
     JCheckBoxMenuItem _showAmp;
     JCheckBoxMenuItem _showPhase;
     JCheckBoxMenuItem _showLag;
     JCheckBoxMenuItem _showDelay;
+    JCheckBoxMenuItem _showSNR;
+    JCheckBoxMenuItem _showAllScans;
+    ArrayDeque<String> _scanNames;
+    ArrayDeque<JCheckBoxMenuItem> _scanMenuItems;
+    ArrayDeque<String> _scanList;
+    ArrayDeque<String> _sourceList;
     
     JFileChooser _fileChooser;
     
@@ -2737,6 +2849,8 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
     protected String _source;
     protected String _sourceRA;
     protected String _sourceDEC;
+    
+    protected String _currentScan;
     
     public class ExtendedDataInputStream extends DataInputStream {
         public ExtendedDataInputStream( InputStream in ) {
