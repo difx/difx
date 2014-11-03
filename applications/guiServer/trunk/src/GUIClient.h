@@ -324,7 +324,21 @@ namespace guiServer {
         //---------------------------------------------------------------------
         int getPacket( int& packetId, char*& data, int& nBytes ) {
             if ( _channelData ) {
-                //  DO SOMETHING
+                int swapped;
+                //  Get the id.
+                if ( reader( (char*)&swapped, sizeof( int ) ) == -1 )
+                    return -1;
+                packetId = ntohl( swapped );
+                //  Then the number of bytes.
+                if ( reader( (char*)&swapped, sizeof( int ) ) == -1 )
+                    return -1;
+                nBytes = ntohl( swapped );
+                //  Allocate the space for the data, then get it.
+                data = new char[ nBytes + 1 ];
+                int ret = reader( data, nBytes );
+                if ( ret >= 0 )
+                    data[ret] = 0;
+                return( ret );
             }
             else if ( _packetExchange != NULL )
                 return _packetExchange->getPacket( packetId, data, nBytes );
@@ -353,7 +367,10 @@ namespace guiServer {
             else {
                 if ( _packetExchange != NULL )
                     delete _packetExchange;
-                delete _client;
+                _packetExchange = NULL;
+                if ( _client != NULL )
+                    delete _client;
+                _client = NULL;
             }
         }
 

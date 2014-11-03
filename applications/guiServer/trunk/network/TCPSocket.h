@@ -51,7 +51,8 @@ namespace network {
         ~TCPSocket() {
             closeConnection();
             usleep( 1000 );
-            delete[] _buffer;
+            if ( _buffer != NULL )
+                delete[] _buffer;
             _buffer = NULL;
             if ( _fd > -1 )
                 close( _fd );
