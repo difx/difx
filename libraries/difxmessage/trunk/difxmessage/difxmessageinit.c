@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2012 by Walter Brisken                             *
+ *   Copyright (C) 2007-2014 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -40,6 +40,7 @@ char difxMessageGroup[MAX_GROUP_SIZE] = "";
 int difxMessagePort = -1; 
 char difxMessageIdentifier[DIFX_MESSAGE_IDENTIFIER_LENGTH] = "";
 char difxMessageHostname[DIFX_MESSAGE_PARAM_LENGTH] = "";
+char difxMessageInputFilenameTag[DIFX_MESSAGE_FILENAME_TAG_LENGTH] = "";
 int difxMessageMpiProcessId = -1;
 char difxMessageXMLFormat[DIFX_MESSAGE_FORMAT_LENGTH] = "";
 char difxMessageToXMLFormat[DIFX_MESSAGE_FORMAT_LENGTH] = "";
@@ -55,6 +56,23 @@ const char *getDifxMessageIdentifier()
 	return difxMessageIdentifier;
 }
 
+/* if called, the <inputFile> tag will be added within DifxMessageAlert and DifxMessageStatus <body> */
+int difxMessageSetInputFilename(const char *inputFilename)
+{
+	int v;
+
+	v = snprintf(difxMessageInputFilenameTag, DIFX_MESSAGE_FILENAME_TAG_LENGTH, "<input>%s</input>", inputFilename);
+
+	if(v >= DIFX_MESSAGE_FILENAME_TAG_LENGTH)
+	{
+		/* name was too long */
+
+		return -1;
+	}
+
+	return 0;
+}
+
 int difxMessageInitFull(int mpiId, const char *identifier, const char *publishedHostname)
 {
 	const char *envstr;
@@ -62,8 +80,13 @@ int difxMessageInitFull(int mpiId, const char *identifier, const char *published
 
 	difxMessageSequenceNumber = 0;
 	difxMessageInUse = 1;
+	difxMessageInputFilenameTag[0] = 0;
 	
-	snprintf(difxMessageIdentifier, DIFX_MESSAGE_IDENTIFIER_LENGTH, "%s", identifier);
+	if(identifier != difxMessageIdentifier)
+	{
+		/* only copy if the pointers differ -- there are legitmate reasons why they may be the same */
+		snprintf(difxMessageIdentifier, DIFX_MESSAGE_IDENTIFIER_LENGTH, "%s", identifier);
+	}
 
 	difxMessageMpiProcessId = mpiId;
 
@@ -157,6 +180,9 @@ int difxMessageInitFull(int mpiId, const char *identifier, const char *published
 
 		return -1;
 	}
+
+	/* send a message to prime the network for multicast */
+	difxMessageSendDifxAlert("Initialized", DIFX_ALERT_LEVEL_VERBOSE);
 	
 	return 0;
 }

@@ -236,10 +236,12 @@ int difxMessageSendDifxAlert(const char *alertMessage, int severity)
 		size = snprintf(body, DIFX_MESSAGE_LENGTH,
 			
 			"<difxAlert>"
+			  "%s"
 			  "<alertMessage>%s</alertMessage>"
 			  "<severity>%d</severity>"
 			"</difxAlert>",
 
+			difxMessageInputFilenameTag,
 			alertMessageExpanded,
 			severity);
 		
@@ -513,6 +515,7 @@ int difxMessageSendMark5Status(const DifxMessageMk5Status *mk5status)
 	size = snprintf(body, DIFX_MESSAGE_LENGTH,
 	
 		"<mark5Status>"
+		  "%s"
 		  "<bankAVSN>%s</bankAVSN>"
 		  "<bankBVSN>%s</bankBVSN>"
 		  "<statusWord>0x%08x</statusWord>"
@@ -525,6 +528,7 @@ int difxMessageSendMark5Status(const DifxMessageMk5Status *mk5status)
 		  "<dataMJD>%13.7f</dataMJD>"
 		"</mark5Status>",
 
+		difxMessageInputFilenameTag,
 		vsnA,
 		vsnB,
 		mk5status->status,
@@ -687,12 +691,14 @@ int difxMessageSendDifxStatus(enum DifxState state, const char *stateMessage, do
 	size = snprintf(body, DIFX_MESSAGE_LENGTH,
 		
 		"<difxStatus>"
+		  "%s"
 		  "<state>%s</state>"
 		  "<message>%s</message>"
 		  "<visibilityMJD>%9.7f</visibilityMJD>"
 		  "%s"
 		"</difxStatus>",
 
+		difxMessageInputFilenameTag,
 		DifxStateStrings[state],
 		stateMessageExpanded,
 		visMJD,
@@ -748,6 +754,7 @@ int difxMessageSendDifxStatus2(const char *jobName, enum DifxState state, const 
 		  "<body>"
 		    "<seqNumber>%d</seqNumber>"
 		    "<difxStatus>"
+		      "%s"
 		      "<state>%s</state>"
 		      "<message>%s</message>"
 		      "<visibilityMJD>0</visibilityMJD>"
@@ -758,6 +765,7 @@ int difxMessageSendDifxStatus2(const char *jobName, enum DifxState state, const 
 		difxMessageHostname,
 		jobName,
 		difxMessageSequenceNumber++,
+		difxMessageInputFilenameTag,
 		DifxStateStrings[state],
 		stateMessageExpanded);
 
@@ -812,6 +820,7 @@ int difxMessageSendDifxStatus3(enum DifxState state, const char *stateMessage,
 	size = snprintf(body, DIFX_MESSAGE_LENGTH,
 		
 		"<difxStatus>"
+		  "%s"
 		  "<state>%s</state>"
 		  "<message>%s</message>"
 		  "<visibilityMJD>%9.7f</visibilityMJD>"
@@ -820,6 +829,7 @@ int difxMessageSendDifxStatus3(enum DifxState state, const char *stateMessage,
 		  "%s"
 		"</difxStatus>",
 
+		difxMessageInputFilenameTag,
 		DifxStateStrings[state],
 		stateMessageExpanded,
 		visMJD, mjdStart, mjdStop,

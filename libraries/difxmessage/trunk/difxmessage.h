@@ -282,6 +282,7 @@ typedef struct
 {
 	char message[DIFX_MESSAGE_LENGTH];
 	int severity;
+	char inputFilename[DIFX_MESSAGE_FILENAME_LENGTH];
 } DifxMessageAlert;
 
 typedef struct
@@ -292,6 +293,7 @@ typedef struct
 	float weight[DIFX_MESSAGE_MAX_DATASTREAMS];
 	int maxDS;
 	double jobStartMJD, jobStopMJD;	/* MJD range of job; these are optional */
+	char inputFilename[DIFX_MESSAGE_FILENAME_LENGTH];
 } DifxMessageStatus;
 
 typedef struct
@@ -552,6 +554,7 @@ const char *difxMessageGetVersion();
 int difxMessageInit(int mpiId, const char *identifier);
 int difxMessageInitFull(int mpiId, const char *identifier, const char *publishedHostname);
 int difxMessageInitBinary();	/* looks @ env vars DIFX_BINARY_GROUP & _PORT */
+int difxMessageSetInputFilename(const char *inputFilename);
 void difxMessagePrint();
 void difxMessageGetMulticastGroupPort(char *group, int *port);
 

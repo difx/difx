@@ -3,6 +3,7 @@ Version 2.4.0
 * Post DiFX-2.3
 * Increase receive buffer size for binary receives
 * Add function to send DifxStop message
+* Add input file name to Alert and Status messages as <input> tags in the <body>
 
 Version 2.3.0
 ~~~~~~~~~~~~~

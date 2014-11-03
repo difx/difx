@@ -369,6 +369,11 @@ static void XMLCALL endElement(void *userData, const char *name)
 					{
 						G->body.alert.severity = atoi(s);
 					}
+					else if(strcmp(elem, "input") == 0)
+					{
+						strncpy(G->body.alert.inputFilename, s, DIFX_MESSAGE_FILENAME_LENGTH-1);
+						G->body.alert.inputFilename[DIFX_MESSAGE_FILENAME_LENGTH-1] = 0;
+					}
 					break;
 				case DIFX_MESSAGE_MARK5STATUS:
 					if(strcmp(elem, "bankAVSN") == 0)
@@ -604,6 +609,11 @@ static void XMLCALL endElement(void *userData, const char *name)
 					else if(strcmp(elem, "jobstopMJD") == 0)
 					{
 						G->body.status.jobStopMJD = atof(s);
+					}
+					else if(strcmp(elem, "input") == 0)
+					{
+						strncpy(G->body.status.inputFilename, s, DIFX_MESSAGE_FILENAME_LENGTH-1);
+						G->body.status.inputFilename[DIFX_MESSAGE_FILENAME_LENGTH-1] = 0;
 					}
 					break;
 				case DIFX_MESSAGE_INFO:
