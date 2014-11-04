@@ -91,8 +91,9 @@ def genipppc(path, ippversion):
 	# if no version actually supplied, try to guess from path
 	if ippversion == '':
 		ippversion = getippversion(path)
-	ipparch = getarch()
 
+	ipparch = getarch()
+    
 	major = int(split(ippversion, '.')[0])
 	out = open('ipp.pc', 'w')
 	out.write('base = %s\n' % path)
@@ -101,16 +102,12 @@ def genipppc(path, ippversion):
 	out.write('Description: Intel Performance Primitives\n')
 	out.write('Requires:\n')
 	out.write('Version: %s\n' % ippversion)
-	
-	mac = False
-	if platform == "darwin":
-		mac = True
 
-        print "Platform=", platform
-        print "ipparch=", ipparch
+	print "Platform=", platform
+	print "ipparch=", ipparch
 
 	if major == 6 or major == 5:
-		if mac:
+		if platform == "darwin":
 			libdir = 'Libraries'
 		else:
 			libdir = 'sharedlib'
@@ -124,13 +121,17 @@ def genipppc(path, ippversion):
 
 
 	elif major == 7 or major == 8:
-		if ipparch == 32:
-			libdir = 'ia32'
+        
+		if platform == "darwin":
+			out.write('Libs: -Wl,-rpath,${base}/ipp/lib -L${base}/ipp/lib -lipps -lippvm -lippcore\n')
 		else:
-			libdir = 'intel64'
-		out.write('Libs: -Wl,-rpath,${base}/lib/%s -Wl,-rpath,${base}/ipp/lib/%s -L${base}/lib/%s -L${base}/ipp/lib/%s -L${base}/compiler/lib/%s -lipps -lippvm -lippcore -liomp5\n' % (libdir,libdir,libdir,libdir,libdir))
+			if ipparch == 32:
+				libdir = 'ia32'
+			else:
+				libdir = 'intel64'
+			out.write('Libs: -Wl,-rpath,${base}/lib/%s -Wl,-rpath,${base}/ipp/lib/%s -L${base}/lib/%s -L${base}/ipp/lib/%s -L${base}/compiler/lib/%s -lipps -lippvm -lippcore -liomp5\n' % (libdir,libdir,libdir,libdir,libdir))
+            
 		out.write('Cflags: -I${base}/ipp/include\n')
-
 	else:
 		print 'Sorry, IPP %d not yet supported by this script\n' % major
 
