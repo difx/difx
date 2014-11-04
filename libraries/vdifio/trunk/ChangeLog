@@ -1,5 +1,6 @@
-Version 0.7
+Version 1.0
 ~~~~~~~~~~~
+* ******* NOTE CHANGES TO THE API *********
 * Changed parameter in createVDIFHeader (pass size of dataarray not full
 	VDIF frame).
 * Changed function of getVDIFEpoch and setVDIFFrameSecond
@@ -21,6 +22,7 @@ Version 0.7
 * printVDIFheader: when legacy data don't print any EDV info
 * multi2singlethreadVDIF: fixed bug where frames with invalid bit set had zero epoch and wrong seconds
 * captureUDPVDIF: properly use skipbytes at the front and back of the packet
+* Version for DiFX-2.4, Nov 4, 2014
 
 Version 0.6
 ~~~~~~~~~~~
