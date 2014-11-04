@@ -1,9 +1,10 @@
 Version 2.4.0
 ~~~~~~~~~~~~~
-* Post DiFX-2.3
 * Increase receive buffer size for binary receives
 * Add function to send DifxStop message
+* utils/difxwatch: added socket timeout, and changed the 'tag' to check for a job start
 * Add input file name to Alert and Status messages as <input> tags in the <body>
+* Version for DiFX-2.4, Nov 4, 2014
 
 Version 2.3.0
 ~~~~~~~~~~~~~
