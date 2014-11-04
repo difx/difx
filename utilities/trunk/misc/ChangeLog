@@ -1,3 +1,8 @@
+Version 2.4
+* Added m5fb_makeheader, to generate SIGPROC filterbank header
+* filterbankprep.py: Bugfixes and extensions
+* Tagged DiFX-2.4 on Nov 4, 2014 
+
 Version 2.3
 -----------
 * Post DiFX-2.2
