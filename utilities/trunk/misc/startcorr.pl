@@ -452,6 +452,7 @@ sub mark5_config ($$$$$$$$$$$;$) {
       mark5_command($mark5, "clock_set=$rate:ext:$rate");
     }
     mark5_command($mark5, "dot_set=:force");
+    sleep(2);
     mark5_command($mark5, "dot?");
 
     my $decimation = $rate/($bandwidth*2);
