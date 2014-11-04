@@ -3,6 +3,8 @@
 * Change internal representation of networkPort from integer to string to accomodate ethernet device names
 * Fix polarization detection in cases where antennas have heterogeneous polarization needs
 * Add psrflag utility -- looks at fringe rates beating against pulsar period with full pulsar gate as a window function 
+* Psrflag utility updated to allow user-settable threshold
+* Version for DiFX-2.4, Nov 04, 2014
 
 3.3.0
 * Allow ".input" portion of input file to be optional
