@@ -67,4 +67,6 @@ INDEX  PARAMETER NAME                   INDEX  PARAMETER NAME
 31:    mhz_arcsec_ew                    (68):  total_rate
 32:    pcnt_discard                     (69):  total_mbd
 33:    min_max_ratio                    (70):  total_sbd-mbd
+                                        (71):  procdate
+                                        (72):  qcode
 \end{verbatim}

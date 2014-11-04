@@ -74,10 +74,16 @@ struct freq_corel *corel)
             if (strcmp (remch->chan_name, t101->rem_chan_id) == 0) st2ch = ch;
             }
         
-        if (st1ch < 0 || st2ch < 0)     /* sanity check */
+        if (st1ch < 0)                  // sanity check
             {
-            msg ("Can't identify channel array numbers in t101: either %s or %s not in root", 
-                 2, t101->ref_chan_id, t101->rem_chan_id);
+            msg ("Can't identify ref stn channel in t101: %s does not appear in root", 
+                 2, t101->ref_chan_id);
+            return (-1);
+            }
+        if (st2ch < 0)                  // sanity check, part deux
+            {
+            msg ("Can't identify rem stn channel in t101: %s does not appear in root", 
+                 2, t101->rem_chan_id);
             return (-1);
             }
         refch = stn1->channels + st1ch;
@@ -250,6 +256,10 @@ struct freq_corel *corel)
             first = FALSE;
 
             tindex = idx->t120[ap]->ap - param->minap;
+                                        // negative tindex indicates data before scheduled
+                                        // scan start, so discard it
+            if (tindex < 0)
+                continue;
                                         /* set flags to indicate data presence */
             fc->data[tindex].flag |= 1 << (2 * polarization + sideband);
             switch (polarization)

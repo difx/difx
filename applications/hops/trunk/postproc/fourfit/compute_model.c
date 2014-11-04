@@ -92,22 +92,30 @@ double *ref_stn_delay)
                                         /* for all channels, so we just take */
                                         /* channel 0 */
     for (i=0; i<refsd->t300->nsplines; i++)
-        {
-        if (refsd->model[0].t301[i]->interval == (int)ref_int_no) break;
-        }
+        if (refsd->model[0].t301[i]->interval == (int)ref_int_no) 
+            break;
     if (i == refsd->t300->nsplines)
         {
-        msg ("Could not find correct spline coefficients for apriori model", 2);
-        return (-1);
+        msg ("Warning!! FRT is outside of ref spline range - must extrapolate!", 2);
+                                    // use spline nearest the frt
+        if (ref_tdiff < 0.0)
+            i = 0;
+        else
+            i = refsd->t300->nsplines - 1;
         }
     ref301 = refsd->model[0].t301[i];
 
     for (i=0; i<remsd->t300->nsplines; i++)
-        if (remsd->model[0].t301[i]->interval == (int)rem_int_no) break;
+        if (remsd->model[0].t301[i]->interval == (int)rem_int_no)
+            break;
     if (i == remsd->t300->nsplines)
         {
-        msg ("Could not find correct spline coefficients for apriori model", 2);
-        return (-1);
+        msg ("Warning!! FRT is outside of rem spline range - must extrapolate!", 2);
+                                    // use spline nearest the frt
+        if (rem_tdiff < 0.0)
+            i = 0;
+        else
+            i = remsd->t300->nsplines - 1;
         }
     rem301 = remsd->model[0].t301[i];
                                         /* Seconds in target interval */
@@ -190,22 +198,30 @@ double *ref_stn_delay)
                                         /* for all channels, so we just take */
                                         /* channel 0 */
     for (i=0; i<refsd->t300->nsplines; i++)
-        {
-        if (refsd->model[0].t301[i]->interval == (int)ref_int_no) break;
-        }
+        if (refsd->model[0].t301[i]->interval == (int)ref_int_no) 
+            break;
     if (i == refsd->t300->nsplines)
         {
-        msg ("Could not find correct spline coefficients for apriori model", 2);
-        return (-1);
+        msg ("Warning!! FRT is outside of ref spline range - must extrapolate!", 2);
+                                    // use spline nearest the frt
+        if (ref_tdiff < 0.0)
+            i = 0;
+        else
+            i = refsd->t300->nsplines - 1;
         }
     ref301 = refsd->model[0].t301[i];
 
     for (i=0; i<remsd->t300->nsplines; i++)
-        if (remsd->model[0].t301[i]->interval == (int)rem_int_no) break;
+        if (remsd->model[0].t301[i]->interval == (int)rem_int_no)
+            break;
     if (i == remsd->t300->nsplines)
         {
-        msg ("Could not find correct spline coefficients for apriori model", 2);
-        return (-1);
+        msg ("Warning!! FRT is outside of rem spline range - must extrapolate!", 2);
+                                    // use spline nearest the frt
+        if (rem_tdiff < 0.0)
+            i = 0;
+        else
+            i = remsd->t300->nsplines - 1;
         }
     rem301 = remsd->model[0].t301[i];
                                         /* Seconds in target interval */

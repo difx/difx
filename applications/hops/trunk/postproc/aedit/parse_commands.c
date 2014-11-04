@@ -36,7 +36,7 @@ int *n;
 	field[0] = strtok(line,";");
 	if(field[0] == NULL) {		/* Nothing on line - quit */
 	    *n = 0;
-	    return;
+	    return(0);
 	}
 	for(i=1;i<10;i++) {		/* Step through fields */
 	    if((field[i] = strtok(NULL,";")) == NULL) break;
@@ -44,7 +44,7 @@ int *n;
 	if(i == 10) {			/* User overzealous, chastize */
 	    msg("Too many commands on one line", 2);
 	    *n = 0;
-	    return;
+	    return(0);
 	}
 	nfields = i;
 
@@ -73,4 +73,5 @@ int *n;
 	    }
 	}
 	*n = nfields;
+	return(0);
 }

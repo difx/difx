@@ -39,6 +39,11 @@
 #else /* GS_EXEC */
 # warning "GS_EXEC provided by preprocessor"
 #endif /* GS_EXEC */
+#ifndef GS_COPYPAGE_OK
+# define GS_COPYPAGE_OK 1
+#else /* GS_COPYPAGE_OK */
+# define GS_COPYPAGE_OK 0
+#endif /* GS_COPYPAGE_OK */
 #ifdef P_tmpdir
 # define P_tmpdir "/tmp"
 #endif /* P_tmpdir */
@@ -82,12 +87,11 @@ display_221 (struct type_221 *t221,
         return ('\0');
         }
     nchar = end_of_plot - pplot;
+    end_of_plot += strlen("PGPLOT restore showpage");
                                         /* Open gs and display the plot */
     if (! gsopen)
         {
         gs = popen (GS_EXEC " -q -", "w");
-//      gs = popen ("/usr/bin/gs -q -", "w");
-//      gs = popen ("/usr/bin/gs -", "w");
         gsopen = TRUE;
         if (gs == NULL)
             {
@@ -132,33 +136,35 @@ display_221 (struct type_221 *t221,
         }
                                         /* Substitute copypage for showpage to */
                                         /* keep ghostscript happy */
+#if GS_COPYPAGE_OK
+    /* showpage->copypage worked through version 9.05 */
     sprintf (psbuf, "PGPLOT restore copypage");
+#else /* GS_COPYPAGE_OK */
+    /* this is required by version 9.14 */
+    sprintf (psbuf, "PGPLOT restore false .outputpage\n"
+                    "%% copypage changed in PostScriptLevel3");
+#endif
     fwrite (psbuf, 1, strlen (psbuf), gs);
-                                        /* Append the rest of the file */
-    end_of_plot += strlen (psbuf);
-                                        /* following line causes blank page
-                                           to be written; comment out rjc
-                                           2004.5.24 */
-    /*  fwrite (end_of_plot, 1, strlen (end_of_plot), gs); */
-
-                                        /* Flush to force the display */ 
     fflush (gs);
-                                        /* Wait for a keystroke unless mode=-1 */
+                                        /* Pause to flush and take any user */
+                                        /* user input, unless mode==-1.  The */
+                                        /* rest of the plot follows below. */
     loop = TRUE;
     if (mode == -1) 
         {
         c = 'q';
+        fwrite (end_of_plot, 1, strlen (end_of_plot), gs);
         loop = FALSE;
         }
     while (loop)
         {
         system ("stty -echo -icanon min 1");
         c = getchar();
-                                        /* send rest of plot after char
-                                           received; otherwise it gets
-                                           prematurely erased 
-                                                     rjc 2004.11.23 */
+        if (end_of_plot)
+        {
         fwrite (end_of_plot, 1, strlen (end_of_plot), gs);
+        end_of_plot = 0;                /* finish plot, once */
+        }
         system ("stty echo icanon");
 
         switch (c)
@@ -167,8 +173,6 @@ display_221 (struct type_221 *t221,
             case 'h':
             case 'H':
                 {
-//              ps_file = tmpnam (NULL);
-//              if ((fp = fopen (ps_file, "w")) == NULL)
                 strcpy(ps_file, P_tmpdir "/sub-dfio_XXXXXX");
                 if ((fp = fdopen(size=mkstemp(ps_file), "w")) == NULL)
                     {

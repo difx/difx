@@ -45,12 +45,14 @@ struct type_230 *t230)
     for (lag = 0; lag < nl * 2; lag++)
         {
         j = lag - nl;
-        if (j < 0) j += 4 * nl;
-        value = datum->sbdelay[lag];
+        if (j < 0) 
+            j += 4 * nl;
+        // value = datum->sbdelay[lag];
                                         /* Remove mean phasecal */
-        theta = (status.pc_phase[fr][1][stnpol[1][pass->pol]] 
-               - status.pc_phase[fr][0][stnpol[0][pass->pol]]);
-        work_array[j] = c_mult (value, c_exp (theta));
+        // theta = (status.pc_phase[fr][1][stnpol[1][pass->pol]] 
+        //       - status.pc_phase[fr][0][stnpol[0][pass->pol]]);
+        // work_array[j] = c_mult (value, c_exp (theta));
+        work_array[j] = datum->sbdelay[lag];
         }
                                         /* FFT sband delay to xpower spectrum */
     FFT1 (work_array, 4 * nl, 1, work_array, 1);

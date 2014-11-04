@@ -97,6 +97,9 @@ strip_bline (char *line,
 	    case NFREQ:
 		sprintf (fld_value, fields[i].format, fdata.no_freq);
 		break;
+	    case POL:
+		sprintf (fld_value, fields[i].format, fdata.polarization);
+		break;
 	    case AMP:
 		sprintf (fld_value, fields[i].format, fdata.amp);
 		break;

@@ -28,6 +28,7 @@ void max555 (double drf[5][5][5],   // input: real function
            value,
            bestval,
            xbest[3],
+           dwin(),
            epsilon = 0.0001;        // convergence criterion
   
                                     // initialize search to center of cube
@@ -39,13 +40,13 @@ void max555 (double drf[5][5][5],   // input: real function
         {
                                     // search over 11x11x11 cube for max
                                     // first compress search range to fit into bounds
-        x0_lower = max (xlim[0][0], center[0] - 5 * dx0);
-        x1_lower = max (xlim[1][0], center[1] - 5 * dx1);
-        x2_lower = max (xlim[2][0], center[2] - 5 * dx2);
+        x0_lower = dwin (center[0] - 5 * dx0, xlim[0][0], xlim[0][1]);
+        x1_lower = dwin (center[1] - 5 * dx1, xlim[1][0], xlim[1][1]);
+        x2_lower = dwin (center[2] - 5 * dx2, xlim[2][0], xlim[2][1]);
 
-        x0_upper = min (xlim[0][1], center[0] + 5 * dx0);
-        x1_upper = min (xlim[1][1], center[1] + 5 * dx1);
-        x2_upper = min (xlim[2][1], center[2] + 5 * dx2);
+        x0_upper = dwin (center[0] + 5 * dx0, xlim[0][0], xlim[0][1]);
+        x1_upper = dwin (center[1] + 5 * dx1, xlim[1][0], xlim[1][1]);
+        x2_upper = dwin (center[2] + 5 * dx2, xlim[2][0], xlim[2][1]);
 
         dx0 = (x0_upper - x0_lower) / 10.0;
         dx1 = (x1_upper - x1_lower) / 10.0;
@@ -65,7 +66,8 @@ void max555 (double drf[5][5][5],   // input: real function
                     x[2] = center[2] + dx2 * (k-5);
                                     // find interpolated value at this point
                     interp555 (drf, x, &value);
-                    // msg ("i %d j %d k %d value %lf", 2, i, j, k, value);
+                       // msg ("i %d j %d k %d x %g %g %g value %lf", 
+                       //     2, i, j, k, x[0], x[1], x[2], value);
                                     // is this a new maximum? 
                                     // if so, save value and coords.
                     if (value > bestval)

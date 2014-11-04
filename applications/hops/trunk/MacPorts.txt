@@ -1,11 +1,8 @@
 Getting HOPS running via MacPorts.
 
-0) get Macports.  I used the SnowLeopard dmg (1.9.2) downloaded from
+0) get Macports.
 
-    http://www.macports.org/install.php
-
-    but there are Leopard and Tiger versions as well.  It also installs
-    via a source tarball, but I haven't tried that.
+    http://guide.macports.org
 
     From the dmg, it installs the same way as other *.dmg packages do--and
     by default it goes into /opt/local (which is ok with me:  /opt has
@@ -45,81 +42,45 @@ Getting HOPS running via MacPorts.
     xorg-xextproto xorg-xf86bigfontproto xorg-xtrans xorg-libXt
     xorg-libsm xorg-libice
 
-oops:
-
-    --->  Configuring db46
-    Error: db46 requires the Java for Mac OS X development headers.
-    Error: Download the Java Developer Package from: <https://connect.apple.com/cgi-bin/WebObjects/MemberSite.woa/wa/getSoftware?bundleID=20719>
-    Error: Target org.macports.configure returned: missing Java headers
-    Error: Failed to install db46
-    Log for db46 is at: /opt/local/var/macports/logs/_opt_local_var_macports_sources_rsync.macports.org_release_ports_databases_db46/main.log
-    Error: The following dependencies were not installed: xorg-libXext xorg-libX11 xorg-libxcb python27 db46 gdbm readline sqlite3 xorg-libpthread-stubs xorg-xcb-proto libxml2 xorg-util-macros xorg-xcmiscproto xorg-xextproto xorg-xf86bigfontproto xorg-xtrans xorg-libXt xorg-libsm xorg-libice
-    Error: Status 1 encountered during processing.
-    To report a bug, see <http://guide.macports.org/#project.tickets>
-
-so:
-    https://connect.apple.com/cgi-bin/WebObjects/MemberSite.woa/wa/getSoftware?bundleID=20719
-
-
-Ok, download the java developer package, install it, and try again
-
-sudo port install ghostscript
-Password:
---->  Computing dependencies for ghostscript
---->  Dependencies to be installed: xorg-libXext xorg-libX11 xorg-libxcb python27 db46 gdbm readline sqlite3 xorg-libpthread-stubs xorg-xcb-proto libxml2 xorg-util-macros xorg-xcmiscproto xorg-xextproto xorg-xf86bigfontproto xorg-xtrans xorg-libXt xorg-libsm xorg-libice
---->  Configuring db46
-
-
-    sudo ln -s /opt/local/bin/gs /usr/bin/gs
+    You may need to install java as well.
 
 4) pgplot
 
     sudo port install pgplot
 
---->  Dependencies to be installed: gcc44 gmp mpfr
+    pgplot is probably now compiled with libpng16 and the underlying
+    png driver in pgplot may or may not be compatible with it.  HOPS
+    is currently wired to require libpng12, so create libpng12.*
+    links to whatever you have installed.  Ugly, but as long as you
+    don't actually try to make a png with HOPS you should be ok, and
+    heck, it might even work.
 
-    Unfortunately this port sprays the various pgplot pieces into
-    quasilogical places that HOPS doesn't know about, so, as root:
-
-    cd /opt/local
-    mkdir /opt/local/pgplot
-    cd /opt/local/pgplot
-    for l in ../lib/*pgplot* ; do ln -s $l . ; done
-    ln -s ../bin/*pgxwin* .
-    ln -s ../share/pgplot/* .
-
-N) Grab Hops (3.3 is the current release via ftp--similar instructions
+5) Grab Hops (3.3 is the current release via ftp--similar instructions
     most likely to apply to later HOPS releases).
 
     mkdir ~/HOPS
     cd ~/HOPS
 
-    wget ftp://gemini.haystack.mit.edu/pub/hops/README-3.3.txt
-    wget ftp://gemini.haystack.mit.edu/pub/hops/hops-3.3.tar.gz
+    wget ftp://gemini.haystack.mit.edu/pub/hops/README-3.10.txt
+    wget ftp://gemini.haystack.mit.edu/pub/hops/hops-3.10.tar.gz
 
-N+2) Configure it...
+6) Configure it...
 
     Follow the instructions as in the README; however a few configure
-    arguments are needed:
+    arguments are needed (depending on what happened with your X11 install):
 
     ../hops-3.3/configure LDFLAGS=-L/usr/X11/lib \
 	PGPLOT_DIR=/opt/local/pgplot
 
+    ../hops-3.10/configure LDFLAGS=-L/opt/local/lib FFLAGS=-c
+
     (The PGPLOT_DIR assignment is unnecessary if you've installed
     MacPorts in the default hierarchy under /opt/local.)
     
-    Due to the way Apple hacked the gnu gcc compiler, the configure
-    script will probably generate a number of annoying error messages:
-
-	rm: conftest.dSYM: is a directory
-
-    which you can safely ignore.  You should be in good shape if you
-    then see:
-
       Configure passes sanity checks.
 
 	 have_hops is true (required)
-	 have_devel is false (optional)
+	 have_devel is true (optional)
 	 have_gs is true (required)
 	 have_x11 is true (required)
 	 have_pgplot is true (required)
@@ -141,5 +102,8 @@ N+2) Configure it...
     The 3.2 release requires <stdint.h> being included in the #else
     case of T1.h.  That was fixed in 3.3.  However other less
     obvious errors might still be present, so be ware....
+
+    This worked in 3.10; it is unclear what prescription to
+    follow on all the intermediate releases.
 
 eof

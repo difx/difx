@@ -123,7 +123,9 @@ struct type_pass *pass;
                                         /* Apply rotator to single band delay */
                                         /* values and add up over time. */
                                         /* MBD FFT max size hardcoded to 8192 at present */
-    for (i = 0; i < status.grid_points; i++)
+                                        // set floor of 256 points in mbd plot
+    plot.num_mb_pts = (status.grid_points < 256) ? 256 : status.grid_points;
+    for (i = 0; i < plot.num_mb_pts; i++)
         {
         X[i] = c_zero();
         Y[i] = c_zero();
@@ -153,12 +155,12 @@ struct type_pass *pass;
         Y[status.mb_index[fr]] = X[fr];
         }
                                         /* FFt across freq to mbdelay spectrum */
-    FFT1(Y, status.grid_points, 1, Y, 1);
-    for (i = 0; i < status.grid_points; i++)
+    FFT1(Y, plot.num_mb_pts, 1, Y, 1);
+    for (i = 0; i < plot.num_mb_pts; i++)
         {
-        j = i - status.grid_points / 2;
+        j = i - plot.num_mb_pts / 2;
         if (j < 0) 
-            j += status.grid_points;
+            j += plot.num_mb_pts;
         plot.mb_amp[i] = c_mag(Y[j]) / status.total_ap_frac;
         }
 

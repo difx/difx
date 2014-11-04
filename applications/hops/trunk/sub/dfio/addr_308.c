@@ -63,8 +63,8 @@ addr_308 (short version,
 					/* pointer in file image */
 	*size = sizeof (struct type_308_v0);
 	t308_v0 = (struct type_308_v0 *)address;
-					/* Copy structure elements, */
-					/* with hidden byte flipping if needed */
+					/* Copy structure elements, with */
+					/* hidden byte flipping if needed */
 					/* (see bytflp.h) */
 	strncpy (t308->record_id, "308", 3);
 	strncpy (t308->version_no, "00", 2);
@@ -76,7 +76,8 @@ addr_308 (short version,
 	cp_float (t308->duration, t308_v0->duration);
 	for (i=0; i<32; i++)
 	    {
-	    strcpy (t308->pcal[i].chan_id, t308_v0->pcal[i].chan_id);
+            if (t308->pcal[i].chan_id != t308_v0->pcal[i].chan_id)
+                strncpy (t308->pcal[i].chan_id, t308_v0->pcal[i].chan_id, 8);
 	    cp_float (t308->pcal[i].real, t308_v0->pcal[i].real);
 	    cp_float (t308->pcal[i].imaginary, t308_v0->pcal[i].imaginary);
 	    cp_float (t308->pcal[i].frequency, t308_v0->pcal[i].frequency);

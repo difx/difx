@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# $Id: chk_ff_2843.sh 879 2013-11-07 13:24:24Z gbc $
+# $Id: chk_ff_2843.sh 974 2014-07-28 16:03:19Z rjc $
 #
 # canonical test suite for fourfit
 #
@@ -12,17 +12,14 @@ verb=false
 ${HOPS_SETUP-'false'} || . $srcdir/chk_env.sh
 export DATADIR=`cd $srcdir/testdata; pwd`
 
-[ -n "$DISPLAY" ] || { echo Skipping test--DISPLAY is undefined; exit 0; }
-
+rm -f ff-2843.ps
 $verb && echo \
-fourfit -pt -b AI:S \\ && echo \
+fourfit -t -d diskfile:ff-2843.ps -b AI:S \\ && echo \
     $DATADIR/2843/321-1701_0552+398/0552+398.oifhak
 
 # AIT
-( echo sff-2843.ps; echo q ) | (
-    fourfit -pt -b AI:S \
-	$DATADIR/2843/321-1701_0552+398/0552+398.oifhak
-) 2>/dev/null 1>&2
+fourfit -t -d diskfile:ff-2843.ps -b AI:S \
+    $DATADIR/2843/321-1701_0552+398/0552+398.oifhak set start -3 2>/dev/null 1>&2
 
 # pluck out line containing the snr and parse it
 line=$(grep '7570 9653' ./ff-2843.ps)
@@ -34,8 +31,9 @@ read a snr b <<<"$line"
 low=47.8
 high=48.6
 aok=$(echo "$snr>$low && $snr<$high" | bc)
+$verb && echo aok is $aok and "$low < $snr < $high" is expected from: $line
 
-[ $aok -gt 0 ]
+[ "$aok" -gt 0 ]
 #
 # eof
 #

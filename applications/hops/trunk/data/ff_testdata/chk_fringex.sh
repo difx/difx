@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# $Id: chk_fringex.sh 330 2011-06-10 13:32:10Z gbc $
+# $Id: chk_fringex.sh 931 2014-02-23 15:12:21Z gbc $
 #
 # canonical test suite for fringex
 #
@@ -17,6 +17,7 @@ rdir="2843/321-1701_0552+398"
 targ="0552+398"
 time=oifhak
 
+umask 0002
 [ -d $rdir ] || mkdir -p $rdir
 [ -d $srcdir/testdata/$rdir ] || { echo Missing 2843 data; exit 2; }
 [ -f alist-aedit.out ] || { echo Run chk_aedit.sh first; exit 3; }

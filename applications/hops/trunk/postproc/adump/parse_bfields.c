@@ -33,6 +33,7 @@ struct flist type2_fields[] = {
     { "freq_code",        FREQ_CODE,      "%c"     },
     { "mode",             MODE,           "%c"     },
     { "nfreq",            NFREQ,          "%d"     },
+    { "polarization",     POL,            "%2s"    },
     { "amplitude",        AMP,            "%6.2f"  },
     { "snr",              SNR,            "%#5.4g" },
     { "phase",            PHASE,          "%5.1f"  },

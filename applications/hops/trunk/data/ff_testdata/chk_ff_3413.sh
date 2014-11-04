@@ -12,21 +12,21 @@ verb=false
 ${HOPS_SETUP-'false'} || . $srcdir/chk_env.sh
 export DATADIR=`cd $srcdir/testdata; pwd`
 
-[ -n "$DISPLAY" ] || { echo Skipping test--DISPLAY is undefined; exit 0; }
-
 os=`uname -s` || os=idunno
 grep -v $os $DATADIR/3413/cf3413 > ./cf3413
 
+$verb && type fourfit
+$verb && printenv > ff-3413-env.out
+
+rm -f ff-3413.ps
 $verb && echo \
-fourfit -pt -b GE \\ && echo \
+fourfit -t -d diskfile:ff-3413.ps -b GE -P LL \\ && echo \
     -c ./cf3413 \\ && echo \
     $DATADIR/3413/278-1758/0552+398.wmtukg
 
-( echo sff-3413.ps; echo q ) | (
-    fourfit -pt -b GE \
-	-c ./cf3413 \
-	$DATADIR/3413/278-1758/0552+398.wmtukg
-) 2>/dev/null 1>&2
+fourfit -t -d diskfile:ff-3413.ps -b GE -P LL \
+    -c ./cf3413 \
+    $DATADIR/3413/278-1758/0552+398.wmtukg 2>/dev/null 1>&2
 
 # pluck out line containing the snr and parse it
 line=$(grep '7570 9653' ./ff-3413.ps)
@@ -38,8 +38,9 @@ read a snr b <<<"$line"
 low=123.8
 high=124.6
 aok=$(echo "$snr>$low && $snr<$high" | bc)
+$verb && echo aok is $aok and "$low < $snr < $high" is expected from: $line
 
-[ $aok -gt 0 ]
+[ "$aok" -gt 0 ]
 
 #
 # eof

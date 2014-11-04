@@ -44,6 +44,7 @@
 #define		SCOTIME		39
 #define		NCOTIME		40
 #define		PARENTS		41
+#define     POL         42
 					/* Quantities needing a bit of */
 					/* derivation */
 #define		PROCDAY		50

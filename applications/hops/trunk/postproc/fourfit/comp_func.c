@@ -5,7 +5,6 @@
 #include <stdio.h>
 #include "type_comp.h"
 
-
 double c_mag(z)				/* Magnitude of complex number */
 complex z;
     {
@@ -17,17 +16,8 @@ complex z;
 
 double c_phase(z) 			/* Phase of complex number */
 complex z;
-
     {
-    if (z.re == 0.0)
-       {
-       if (z.im > 0.0)
-	  return (1.570796327);
-       else
-	  return (-1.570796327);
-       }
-    else 
-	return (atan2(z.im,z.re));
+    return (atan2(z.im,z.re));
     }
 
 

@@ -29,7 +29,7 @@ double max_val;
 
                                     // keep mbd_max within search bounds
                                     // test for and handle usual case
-    if (param.win_mb[1] > param.win_mb[0])
+    if (param.win_mb[1] >= param.win_mb[0])
         {
         if (mbd_max < param.win_mb[0])
             mbd_max = param.win_mb[0];

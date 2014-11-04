@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.am 802 2013-03-18 13:26:38Z gbc $
+# $Id: Makefile.am 1001 2014-10-02 18:47:18Z gbc $
 #
 
 SUBDIRS = .
@@ -7,7 +7,8 @@ SUBDIRS = .
 TESTS = test_compress test_mk4fringe
 TESTS_ENVIRONMENT = srcdir=$(srcdir)
 
-AM_CPPFLAGS = -I$(top_srcdir)/include -DGS_EXEC=\"@GS_EXEC@\"
+AM_CPPFLAGS = -I$(top_srcdir)/include -DGS_EXEC=\"@GS_EXEC@\" \
+		-DGS_COPYPAGE_OK=@GS_COPYPAGE_OK@
 
 pkginclude_HEADERS = bytflp.h
 

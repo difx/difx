@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# $Id: chk_fourmer.sh 313 2011-06-07 14:09:32Z gbc $
+# $Id: chk_fourmer.sh 931 2014-02-23 15:12:21Z gbc $
 #
 # a test for fourmer
 #
@@ -31,6 +31,7 @@ lo='3365/094-0644_LOW/3C273.vlncsf'
 wdir='3365/094-0644_'$HOPS_FOURMER_JOIN
 
 # clean slate
+umask 0002
 rm -rf $wdir $rdir/$hidir $rdir/$lodir
 mkdir -p $wdir
 

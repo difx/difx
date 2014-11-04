@@ -37,6 +37,7 @@ struct mk4_fringe *fringe;
         "pshardcopy",
         "psscreen"
         };
+    enum {XWINDOW, DISKFILE, HARDCOPY, PSHARDCOPY, PSSCREEN};
     static int noptions = 5;
     static int gsopen = FALSE;
     static FILE *gs;
@@ -56,7 +57,7 @@ struct mk4_fringe *fringe;
 
     switch (i)
         {
-        case 1:
+        case DISKFILE:
 	    if (strlen(display_name) < 10)
 		{
 		msg ("Illegal diskfile request %s", 2, display_name);
@@ -74,34 +75,35 @@ struct mk4_fringe *fringe;
 	    msg ("Created PS plot %s", 1, ps_file);
             break;
 
-        case 2:
-        case 3:
+        case HARDCOPY:
+        case PSHARDCOPY:
             // ps_file = tmpnam (NULL);
             // if ((fp = fopen (ps_file, "w")) == NULL)
-	    strcpy(ps_file, P_tmpdir "/fourfit_XXXXXX");
-	    if ((fp = fdopen(size=mkstemp(ps_file), "w")) == NULL)
-                {
-                msg ("PS file (%s,%d) for printing failed", 2, ps_file, size);
-                return (0);
-                }
+	        strcpy(ps_file, P_tmpdir "/fourfit_XXXXXX");
+	        if ((fp = fdopen(size=mkstemp(ps_file), "w")) == NULL)
+                    {
+                    msg ("PS file (%s,%d) for printing failed", 2, ps_file, size);
+                    return (0);
+                    }
             size = strlen (fringe->t221->pplot);
             fwrite (fringe->t221->pplot, 1, size, fp);
             fclose (fp);
             //sprintf (cmd, "pplot_print %s", ps_file);
-	    sprintf (cmd, "%s %s", (i==3)?"pplot_print":"lpr", ps_file);
+	        sprintf (cmd, "%s %s", (i==3)?"pplot_print":"lpr", ps_file);
             system (cmd);
             msg ("Printing hardcopy of fringe plot (%s)", 1, ps_file);
             unlink (ps_file);		/* Tidy up */
             break;
 
-        case 0:
-	    putenv("GS_DEVICE=x11");	/* fall through */
-        case 4:
+        case XWINDOW:
+	        putenv("GS_DEVICE=x11");	/* fall through */
+        case PSSCREEN:
                                         /* Mode 0 is basic mode (no 'p', 'n') */
             c = display_221 (fringe->t221, 0);
             msg ("display_221() character returned = '%c'", -1, c);
                                         /* Special return for quit key */
-            if (c == 'q') return (-1);
+            if (c == 'q') 
+                return (-1);
             break;
     
         default:

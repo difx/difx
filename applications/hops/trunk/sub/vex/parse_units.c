@@ -98,6 +98,7 @@ parse_units (char *unitstring,
             { "km", 1e3 },
             { "in", 2.54*1e-2 },
             { "ft", 12*2.54*1e-2 },
+            { "GB", 1.0 },          // kludge to allow GB as a "length"  rjc 2014.1.30
             { NULL  , 0.0 } };
 
     static struct 

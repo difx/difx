@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# $Id: chk_baselines.sh 879 2013-11-07 13:24:24Z gbc $
+# $Id: chk_baselines.sh 940 2014-04-24 16:55:40Z gbc $
 #
 # canonical test suite for fourfit
 #
@@ -16,6 +16,14 @@ rdir="$DATADIR/2843/321-1701_0552+398"
 targ="0552+398"
 time=oifhak
 
+# use difx if defined, otherwise first group named
+for g in `groups`
+do
+    [ -z "$grp" ] && grp=$g
+    [ "$g" = 'difx' ] && grp='difx'
+done
+$verb && echo using group $grp
+
 chmod +w $rdir
 
 for bs in AI AT IT
@@ -27,7 +35,7 @@ do
     fourfit -b $bs $rdir/$targ.$time
     mv $rdir/$bs.*.*.$time .
 done
-chgrp difx ??.*.*.$time
+chgrp $grp ??.*.*.$time
 chmod 664 ??.*.*.$time
 
 files=`ls ??.?.?.$time | wc -l`
@@ -52,7 +60,7 @@ rm -f pplot_print
 
 for f in ??.?.?.$time.ps
 do
-    chgrp difx $f
+    chgrp $grp $f
     chmod 664 $f
 done
 

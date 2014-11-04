@@ -30,10 +30,10 @@ struct type_pass *pass;
     double sp, max, r_max, r, ph, c_phase(), peak, d_dr, d_mbd, dr, mbd,
            pcr, theta, center_mag, c_mag(),q[3],lower,upper,frac, 
            dr_lower,dr_upper,mbd_lower,mbd_upper,sbd_lower,sbd_upper,
-           dmin(),dmax(), delay_mag[3], drpt, delta_dr, divisor, eks,
+           dmin(),dmax(), dwin(), delay_mag[3], drpt, delta_dr, divisor, eks,
            xlim[3][2];
     int i, st, v, station, fr, lag, ap, inter, index, sbd, sband, flagbit,
-        d_sbd,center_lag,ret_code, nl, ret, n, ndrpts;
+        d_sbd,center_lag,ret_code, nl, ret, n, ndrpts, first;
     int isbd, imbd, idr;
     int stnpol[2][4] = {0, 1, 0, 1, 0, 1, 1, 0}; // [stn][pol] = 0:L, 1:R
     complex z;
@@ -44,12 +44,17 @@ struct type_pass *pass;
     struct freq_corel *frq;
     struct interp_sdata *isd;
 
+    delay[1] = c_zero();
     status.pc_rate[0] = status.pc_rate[1] = 0.0;
     status.interp_err = 0;
-                                        /* Interpolate to find phase-cal rate */
-    for (station = 0; station < 2; station++)
+                                        /* Interpolate to find phase-cal rate for normal mode */
+    for (station = 0, first=TRUE; station < 2; station++)
+      if (param.pc_mode[station] == NORMAL)
         {
         sp = 32.0;                      // Set initial spacing of interpolated points
+                                        // ensure at most 0.5 rot of pcal phase per ap
+        while (sp > 0.5 / (param.ref_freq * param.acc_period * status.rate_sep))
+            sp /= 2.0;
         for (inter = 0; inter < 20; inter++)
             {                                        /* Evaluate  at 3 points */
             for (index = 0; index < 3; index++)
@@ -63,12 +68,10 @@ struct type_pass *pass;
                         {
                         if (station == 0) 
                             isd = &(frq->data[ap].ref_sdata);
-                        else if 
-                            (station == 1) isd = &(frq->data[ap].rem_sdata);
-                        if (param.pc_mode[station] == MULTITONE)
-                            pcal = isd->mt_pcal[stnpol[station][pass->pol]];
-                        else            // FIXME!! these pols shouldn't be added together
-                            pcal = c_add (isd->phasecal_lcp[pass->pci[station][fr]],
+                        else if (station == 1) 
+                            isd = &(frq->data[ap].rem_sdata);
+                                        // FIXME!! these pols shouldn't be added together
+                        pcal = c_add (isd->phasecal_lcp[pass->pci[station][fr]],
                                           isd->phasecal_rcp[pass->pci[station][fr]]);
                         if (c_mag (pcal) > 0.0) 
                             {
@@ -95,34 +98,38 @@ struct type_pass *pass;
                              delay_mag[1], delay_mag[2], max,   r_max, ret);
             msg ("st.pcr=%le st.rs=%le sp=%le",-1,
                      status.pc_rate[station], status.rate_sep, sp);
-            status.pc_rate[station] += status.rate_sep * r_max * sp;
+            if (ret == 0)               // only apply corrections from good fit
+                status.pc_rate[station] += status.rate_sep * r_max * sp;
+            else if (first)
+                {
+                msg ("Warning: pcal rate interpolation error for station %c", 
+                      2, param.baseline[station]);
+                status.pc_rate[station] = 0;
+                first = FALSE;          // only one message per station per baseline
+                }
             status.int_pc_amp[station] = max;
             if (ret == 0)               // on successful interp, halve the interval
                 sp /= 2.0;
                                         // exit loop on terminal spacing achieved
             if (sp < 0.5)
                 break;
-            msg ("pc_mode[%d]=%d",0, station,param.pc_mode[station]);
             }   
         }
+      else
+        status.pc_rate[station] = 0.0;
+
+    pcr = status.pc_rate[1] - status.pc_rate[0];
 
                                         /* Calculate Delay Res. function by
                                            rotation and summation, then
-                                           interpolate to find maximum value.
-                                           If manual or ap_by_ap phase cal is
-                                           used, then pcal rate = 0           */
-    if (param.pc_mode[0] == MANUAL || param.pc_mode[0] == AP_BY_AP)
-        status.pc_rate[0] = 0.0;
-    if (param.pc_mode[1] == MANUAL || param.pc_mode[1] == AP_BY_AP)
-        status.pc_rate[1] = 0.0;
-    pcr = status.pc_rate[1] - status.pc_rate[0];
+                                           interpolate to find maximum value. */
     
                                             /* set interpolation bounds to user
                                                windows, but constrained to lie
                                                within +/- 1 search grid point */
 
-    dr_lower = dmax (param.win_dr[0] - pcr, status.dr_max_global - status.rate_sep);
-    dr_upper = dmin (param.win_dr[1] - pcr, status.dr_max_global + status.rate_sep);
+    dr_lower = dwin (status.dr_max_global - pcr - status.rate_sep, param.win_dr[0], param.win_dr[1]);
+    dr_upper = dwin (status.dr_max_global - pcr + status.rate_sep, param.win_dr[0], param.win_dr[1]);
 
 
     mbd_lower = status.mbd_max_global - status.mbd_sep;
@@ -140,8 +147,8 @@ struct type_pass *pass;
                               /* if wide open, don't alter the tabular points */
     else if (param.win_mb[1] - param.win_mb[0] < 0.9999 / status.freq_space)
         {                            /* otherwise make them fit within window */
-        mbd_lower = dmax (mbd_lower, param.win_mb[0]);
-        mbd_upper = dmin (mbd_upper, param.win_mb[1]);
+        mbd_lower = dwin (mbd_lower, param.win_mb[0], param.win_mb[1]);
+        mbd_upper = dwin (mbd_upper, param.win_mb[0], param.win_mb[1]);
         }
 
     nl = param.nlags;
@@ -161,9 +168,9 @@ struct type_pass *pass;
                     {
                     z = c_zero ();
                                     // calculate location of this tabular point
-                    sbd = status.max_delchan + isbd - 2;
+                    sbd = status.max_delchan    +        isbd - 2;
                     mbd = status.mbd_max_global + 0.5 * (imbd - 2) * status.mbd_sep;
-                    dr = status.dr_max_global   + 0.5 * (idr - 2) * status.rate_sep;
+                    dr  = status.dr_max_global  + 0.5 * (idr - 2)  * status.rate_sep;
 
                     msg ("[interp]dr %le mbd %le sbd %d sbd_max(ns) %10.6f", -1,
                      dr,mbd,sbd,status.sbd_max);
@@ -206,7 +213,7 @@ struct type_pass *pass;
         xlim[2][1] = 2.0 * (dr_upper - status.dr_max_global) / status.rate_sep;
         msg ("xlim's %f %f    %f %f    %f %f", 0, xlim[0][0], xlim[0][1], 
                 xlim[1][0], xlim[1][1], xlim[2][0], xlim[2][1]);
-                                    // find maximum value within cube via interpolatin
+                                    // find maximum value within cube via interpolation
         max555 (drf, xlim, xi, &drfmax);
 
                                     // calculate location of maximum in actual coords

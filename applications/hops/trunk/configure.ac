@@ -6,7 +6,7 @@
 # to detect endianism in bytflp.h for some of the tools.
 #
 AC_PREREQ(2.59)
-AC_INIT(hops, 3.9, gbc@haystack.mit.edu)
+AC_INIT(hops, 3.10, gbc@haystack.mit.edu)
 #AM_INIT_AUTOMAKE([foreign std-options])
 AM_INIT_AUTOMAKE([foreign])
 AC_CONFIG_SRCDIR([hops.bash.in])
@@ -122,18 +122,35 @@ else
     am__fastdepCXX_FALSE='#'
 fi
 # HOPS prints and displays with ghostscript (gs)
+# which might be at /usr/bin/gs, but which could be elsewhere
 AC_PATH_PROG(GS_EXEC, [gs], [/bin/false])
 AC_SUBST(GS_EXEC)
+# copypage changed behavior between gs versions 9.05 and 9.10
+# 8.7x (sci linux) copypage ok
+# 9.05 (fedora 16) copypage ok
+# 9.10 (MacPorts) copypage not ok
+# 9.14 (fedora 19) copypage not ok
+AC_ARG_VAR(GS_COPYPAGE_OK, [Set to 1 when gs version is prior to 9.10])
 if [test "x$GS_EXEC" = "x/bin/false" ] ; then
     AC_GBC_NOTICE([%%% have_gs is false (required)])
     AC_GBC_NOTICE([PATH does not include ghostscript (gs)])
+    GS_COPYPAGE_OK=1
+    AC_GBC_NOTICE([no gs so no gs version])
 else
     AC_GBC_NOTICE([%%% have_gs is true (required)])
     AC_GBC_NOTICE([GS_EXEC is $GS_EXEC])
+    gsvers=`$GS_EXEC --version`
+    if [test -z "$GS_COPYPAGE_OK" ] ; then
+        `echo $gsvers | awk '{if ($1 < 9.10) exit 1; else exit 0;}'`
+        GS_COPYPAGE_OK=$?
+#   modern autoconf macro:
+#   AS_VERSION_COMPARE([$gsvers], [9.10],
+#       [GS_COPYPAGE_OK=1], [GS_COPYPAGE_OK=0], [GS_COPYPAGE_OK=0])
+    fi
+    AC_GBC_NOTICE([$GS_EXEC version is $gsvers, cf 9.10])
 fi
-# it formerly insisted on having it at /usr/bin/gs
-#AC_CHECK_PROG(HAVE_GS, [gs], [true], [false], [/usr/bin])
-#AC_GBC_NOTICE([%%% have_gs is $HAVE_GS (required)])
+AC_GBC_NOTICE([GS_COPYPAGE_OK is $GS_COPYPAGE_OK])
+AC_SUBST(GS_COPYPAGE_OK)
 
 # PERL/Python might be in nonstandard locations
 AC_PATH_PROGS(PERL, perl, /bin/false)
@@ -343,7 +360,7 @@ AC_CHECK_LIB(png12, png_access_version_number, have_png=true, have_png=false)
 if [$have_png] ; then
     AC_GBC_NOTICE([Found png12 normally])
     PNG_LIB='-lpng12'
-elif [ $need_png = required ] ; then
+elif [test $need_png = required]; then
     AC_GBC_NOTICE([Looking harder for png12 need_png is $need_png])
     if [test -z "$PNG12_LIB" ]; then
 	PNG12_LIB=${DIFX_ARCH_ROOT}/lib/libpng12.so.0

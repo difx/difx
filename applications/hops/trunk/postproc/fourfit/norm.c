@@ -32,6 +32,7 @@
 #define TWO_32   4294967296.0
 #define SYSCLK_S 32.e6                  /* number of sysclks / sec */
 
+void
 norm (struct type_pass *pass, 
       int fr, 
       int ap)
@@ -42,7 +43,7 @@ norm (struct type_pass *pass,
     int flagbit, sb, st, i, rev_i, j, l, m, intshift, ct, nlags;
     int cosbits, coscor, sinbits, sincor;
     int ip, ips;
-    complex xcor[4*MAXLAG], xp_spec[2*MAXLAG], S[4*MAXLAG];
+    complex xcor[4*MAXLAG], xp_spec[4*MAXLAG], S[4*MAXLAG];
     complex c_zero(), conju(), c_mult(), c_add(), c_exp(), s_mult();
     complex z;
     double c_mag ();
@@ -55,7 +56,8 @@ norm (struct type_pass *pass,
         ibegin,
         sindex,
         pol,
-        usb_present, lsb_present;
+        usb_present, lsb_present,
+        usb_bypol[4],lsb_bypol[4];
 
     int stnpol[2][4] = {0, 1, 0, 1, 0, 1, 1, 0}; // [stn][pol] = 0:L/X/H, 1:R/Y/V
     extern struct type_param param;
@@ -93,8 +95,11 @@ norm (struct type_pass *pass,
                                         // check sidebands for each pol. for data
     for (ip=ips; ip<pass->pol+1; ip++)
         {
-        usb_present |= ((datum->flag & (USB_FLAG << 2*ip)) != 0);
-        lsb_present |= ((datum->flag & (LSB_FLAG << 2*ip)) != 0);
+        usb_bypol[ip] = ((datum->flag & (USB_FLAG << 2*ip)) != 0);
+        lsb_bypol[ip] = ((datum->flag & (LSB_FLAG << 2*ip)) != 0);
+
+        usb_present |= usb_bypol[ip];
+        lsb_present |= lsb_bypol[ip];
         }
     datum->sband = usb_present - lsb_present;
                                         /*  sideband # -->  0=upper , 1= lower */
@@ -110,8 +115,8 @@ norm (struct type_pass *pass,
         if (param.pol)
             pol = ip;
                                         // If no data for this sb/pol, go on to next
-        if (sb == 0 & usb_present == 0
-         || sb == 1 & lsb_present == 0)
+        if (sb == 0 & usb_bypol[ip] == 0
+         || sb == 1 & lsb_bypol[ip] == 0)
             continue;
                                         /* Pluck out the requested polarization */
         switch (pol)
@@ -401,7 +406,7 @@ norm (struct type_pass *pass,
                                     // were extracted
             if (pass->control.nsamplers && param.pc_mode[0] == MULTITONE 
                                         && param.pc_mode[1] == MULTITONE)      
-                diff_delay = -1e9 * (datum->rem_sdata.mt_delay[stnpol[1][pol]]
+                diff_delay = +1e9 * (datum->rem_sdata.mt_delay[stnpol[1][pol]]
                                    - datum->ref_sdata.mt_delay[stnpol[0][pol]]);
             else
                 diff_delay = pass->control.delay_offs[freq_no].rem 

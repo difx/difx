@@ -112,7 +112,7 @@ struct freqlist *fl)
             if (fabs ((freq - fl[i].sky_frequency) / bw) > param.fmatch_bw_pct/100.0)
                 continue;
                                         /* Which combo is it? */
-                                        /* LL=0,UL=1,LR=2,UR=3 */
+                                        /* UL=0,LL=1,UR=2,LR=3 */
             index = 0;
             if (chnl->net_sideband == 'L') index += 1;
             if (chnl->polarization == 'R') index += 2;
@@ -136,7 +136,7 @@ struct freqlist *fl)
             if (fabs ((freq - fl[i].sky_frequency) / bw) > param.fmatch_bw_pct/100.0)
                 continue;
                                         /* Which combo is it? */
-                                        /* LL=0,UL=1,LR=2,UR=3 */
+                                        /* UL=0,LL=1,UR=2,LR=3 */
             index = 0;
             if (chnl->net_sideband == 'L') index += 1;
             if (chnl->polarization == 'R') index += 2;

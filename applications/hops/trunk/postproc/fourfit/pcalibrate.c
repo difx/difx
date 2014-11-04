@@ -38,7 +38,8 @@ void pcalibrate (struct type_pass *pass,
         ipol,                       // 0:1 = L:R or X:Y
         lowpol,
         hipol,
-        ndelpts;
+        ndelpts,
+        lsb;
 
     double minf,
            peak,
@@ -118,9 +119,13 @@ void pcalibrate (struct type_pass *pass,
             }
                                     // center freq (Hz), assuming Nyquist sampling
         fcenter = 0.25 / param.samp_period;
+        lsb = FALSE;
 
         if (fdata->pc_freqs[stn][pass->pcinband[stn][fr][ilo]] < 0.0)
+            {
             fcenter = -fcenter;     // LSB case
+            lsb = TRUE;
+            }
 
                                     // calculate a priori differential ionosphere rotation
                                     // FIXME - this is an ad hoc place for the ionosphere
@@ -260,7 +265,7 @@ void pcalibrate (struct type_pass *pass,
                         theta = 2.0 * M_PI * delay * deltaf;
 
                         rotval[i] = c_mult (pc_avg[stn][i], c_exp (theta));
-                        msg ("stn %d chan %d pol %d ap %d-%d tone %d "
+                        msg ("stn %d chan %02d pol %d ap %02d-%02d tone %02d "
                              "rotated pcal phasor %7.2f %7.2f", 0, 
                              stn, fr, ipol, ap_subint_start, ap, i,
                              1e3 * c_mag(rotval[i]), 180.0 / M_PI * c_phase(rotval[i]));
@@ -277,7 +282,8 @@ void pcalibrate (struct type_pass *pass,
                     ksd = (stn == 0) ? &(kdatum->ref_sdata) : &(kdatum->rem_sdata);
                                     // also rotate by offsets and ionosphere
                     ksd->mt_pcal[ipol] = c_mult (pc_sub[stn], c_exp(delta_phase[stn]));
-                    ksd->mt_delay[ipol] = delay;
+                                    // invert delay sign when derived from lsb tones
+                    ksd->mt_delay[ipol] = lsb ? -delay : delay;
                                     // keep track of avg delay for ch/stn/pol
                     del_avg += delay;
                     ndelpts++;

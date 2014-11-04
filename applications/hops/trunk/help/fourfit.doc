@@ -1,5 +1,5 @@
 Documentation for the program "fourfit"
--- last update 2013.6.5
+-- last update 2013.12.5
 ---------------------------------------
 
 COMMAND NAME:   fourfit
@@ -183,15 +183,15 @@ ARGUMENTS:  data file list
             argument list buffer on large experiments.  In such
             cases, specify the experiment directory instead.
 
-	    The postscript rendering is performed by ghostscript
-	    [gs(1)], and GS_* environment variables can be used
-	    to produce a variety of graphics when the "psscreen"
-	    (see -d above).  For example,
+        The postscript rendering is performed by ghostscript
+        [gs(1)], and GS_* environment variables can be used
+        to produce a variety of graphics when the "psscreen"
+        (see -d above).  For example,
 
-		GS_OPTIONS=-sOutputFile=abc.png GS_DEVICE=png16 \
-		fourfit ...
+        GS_OPTIONS=-sOutputFile=abc.png GS_DEVICE=png16 \
+        fourfit ...
 
-	    will generate a 16-color PNG plot.
+        will generate a 16-color PNG plot.
 
         set <control file syntax statements>
             This command line argument is optional, and
@@ -325,6 +325,7 @@ ACTION KEYWORDS         VALUES
    lsb_offset         float
    max_parity         float
    mb_win             2 floats
+   mbd_anchor         'sbd' or 'model' (default: model)
    optimize_closure   'true' or 'false' (default: false)
    passband           2 floats
    period             int
@@ -493,6 +494,10 @@ KEYWORD SEMANTICS
              can result in poorer single-baseline fits
    station_delay a priori guess at the delay from the pcal injection point
              down to the digitizers (ns).
+   mbd_anchor controls the basis for choosing the mbd ambiguity when
+             forming the total. If 'sbd' then the ambiguity closest to
+             the singleband delay is chosen; if 'model' then the
+             ambiguity closest to the a priori model is chosen.
 
 ** miscellaneous functions
    fmatch_bw_pct associate freqs < this percentage of bw together (25% default)

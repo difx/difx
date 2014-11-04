@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.am 876 2013-10-15 16:08:24Z rjc $
+# $Id: Makefile.am 964 2014-07-25 16:36:47Z gbc $
 #
 
 SUBDIRS =
@@ -39,13 +39,15 @@ EXP_3365 =  testdata/3365/094-0644_HIGH/3C273.vmudbk \
 	    testdata/3365/094-0644_LOW/S..vlncsf
 
 # 3372 is a scan with the legacy geodetic X band setup
-EXP_3372 = testdata/3372/193-1757/0529+483.vtqbsq \
+EXP_3372 =  testdata/3372/cf3372 \
+	    testdata/3372/193-1757/0529+483.vtqbsq \
 	    testdata/3372/193-1757/TV..vtqbsq \
 	    testdata/3372/193-1757/T..vtqbsq \
 	    testdata/3372/193-1757/V..vtqbsq
 
 # 3413 is a broadband experiment
-EXP_3413 =  testdata/3413/278-1758/0552+398.wmtukg \
+EXP_3413 =  testdata/3413/cf3413 \
+	    testdata/3413/278-1758/0552+398.wmtukg \
 	    testdata/3413/278-1758/GE..wmtukg \
 	    testdata/3413/278-1758/G..wmtukg \
 	    testdata/3413/278-1758/E..wmtukg
@@ -55,6 +57,9 @@ test_gs_device = nullpage
 TESTS_ENVIRONMENT = \
 	srcdir=$(srcdir) bindir=$(bindir) \
 	GS_DEVICE=$(test_gs_device) PGPLOT_DIR=$(PGPLOT_DIR)
+
+# FIXME: gs issue
+#       chk_ff_display.sh
 
 if HAVE_DEVEL
 TESTS = chk_ff_2836.sh chk_ff_2843.sh chk_ff_3372.sh chk_ff_3413.sh \

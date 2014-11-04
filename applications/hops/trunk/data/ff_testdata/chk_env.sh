@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# $Id: chk_env.sh 332 2011-06-10 18:06:52Z gbc $
+# $Id: chk_env.sh 992 2014-09-03 20:33:07Z gbc $
 #
 # environment setup -- HOPS_SETUP is not set or false
 # This script is really only needed for distcheck where
@@ -19,6 +19,7 @@ $verb &&
     echo bindir is $bindir
 
 # normal setup
+umask 0002
 [ -n "$bindir" -a -d "$bindir" -a -x "$tste" -a -x $hops ] && {
     . $hops
     $verb && echo path set up using $hops
@@ -37,12 +38,19 @@ $verb &&
     do
 	[ -x ../../../scripts/$e ] && ln -s ../../../scripts/$e .
     done
+    for t in blk_stmt.txt  pformat.txt
+    do
+	[ -f ../../../../sub/vex/text/$t ] &&
+	    ln -s ../../../../sub/vex/text/$t .
+    done
     export PATH=`pwd`:$PATH
     [ -z "$LD_LIBRARY_PATH" ] && LD_LIBRARY_PATH=/dev/null
     export LD_LIBRARY_PATH LD_LIBRARY_PATH=$PGPLOT_DIR:$LD_LIBRARY_PATH
     export DEF_CONTROL=/dev/null
+    export TEXT=`pwd`
     $verb &&
 	echo made links in `pwd` &&
+	echo TEXT is $TEXT &&
 	echo PATH is $PATH &&
 	echo LD_LIBRARY_PATH is $LD_LIBRARY_PATH &&
 	echo DEF_CONTROL is /dev/null &&
