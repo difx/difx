@@ -10,6 +10,7 @@ Version 2.4.0
 * EB and AR to use VLBA Cannonical Thread Ids for VDIF
 * Respect record enable bit in SCHED section (enable column must be > 0 to
   retain the data)
+* Reading complex type and #bits from vexfile 
 
 Version 2.3.0
 ~~~~~~~~~~~~~
