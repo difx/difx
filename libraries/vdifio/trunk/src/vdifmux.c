@@ -896,8 +896,6 @@ static void cornerturn_8thread_2bit(unsigned char *outputBuffer, const unsigned 
   //
   // This one is a bit complicated.  A resonable way to proceed seems to be to perform two separate 4-thread corner turns and then 
   // do a final suffle of byte sized chunks.  There may be a better way...
-  //
-  // FIXME: This is thought to work but has yet to be fully verified.
 
   const unsigned int M0 = 0xC0300C03;
   const unsigned int M1 = 0x300C0300;
