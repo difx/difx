@@ -19,6 +19,8 @@ Version 0.7
 * vdifmux now fed by a structure.  This allows for safer, faster and more
 	flexible muxing.
 * printVDIFheader: when legacy data don't print any EDV info
+* multi2singlethreadVDIF: fixed bug where frames with invalid bit set had zero epoch and wrong seconds
+* captureUDPVDIF: properly use skipbytes at the front and back of the packet
 
 Version 0.6
 ~~~~~~~~~~~
