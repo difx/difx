@@ -1,5 +1,10 @@
+Version 0.5
+* plotDynamicSpectrum.py: bugfixes, plus in all-IF mode also plot phases in a second figure
+* plotDiFX: option to unwrap phase, option to exclude autocorrelations from plot
+* Tagged as DiFX-2.4 on November 4, 2014
+
 Version 0.4
-* post DiFX-2.2
+* Tagged as DiFX-2.3 in December 2013
 
 Version 0.3
 * post DiFX 2.1
