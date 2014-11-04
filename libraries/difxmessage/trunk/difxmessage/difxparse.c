@@ -1102,6 +1102,10 @@ void difxMessageGenericPrint(const DifxMessageGeneric *G)
 	case DIFX_MESSAGE_ALERT:
 		printf("    severity = %d\n", G->body.alert.severity);
 		printf("    message = %s\n", G->body.alert.message);
+		if(G->body.alert.inputFilename[0])
+		{
+			printf("    input file = %s\n", G->body.alert.inputFilename);
+		}
 		break;
 	case DIFX_MESSAGE_MARK5STATUS:
 		printf("    state = %s %d\n", 
@@ -1171,6 +1175,10 @@ void difxMessageGenericPrint(const DifxMessageGeneric *G)
 	case DIFX_MESSAGE_STATUS:
 		printf("    state = %s %d\n", DifxStateStrings[G->body.status.state], G->body.status.state);
 		printf("    message = %s\n", G->body.status.message);
+		if(G->body.status.inputFilename[0])
+		{
+			printf("    input file = %s\n", G->body.status.inputFilename);
+		}
 		break;
 	case DIFX_MESSAGE_INFO:
 		printf("    message = %s\n", G->body.info.message);
