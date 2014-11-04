@@ -1,10 +1,14 @@
 Version 1.4
 ~~~~~~~~~~~
 Version for DiFX-2.4, Nov 4, 2014
+* support mixed/zoom mode correlations
+* support version 1 file format for pcal
+* in mixed mode denote sidebands as upper for hops
 
 Version 1.3
 ~~~~~~~~~~~
 Version for DiFX-2.3, Dec 20, 2013
+* put data weights into type 120 record
 
 Version 1.2
 ~~~~~~~~~~~
