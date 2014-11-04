@@ -1,6 +1,5 @@
 Version 2.4
 ~~~~~~~~~~~
-* Post DiFX-2.3
 * Add INTERLACEDVDIF Fake mode
 * Change polId to recBandId in the PCAL files as per documentation
 * Add support for TCP, UDP and Raw Ethernet Interlaced VDIF.  (TCP and UDP Not yet tested)
@@ -18,7 +17,8 @@ Version 2.4
   - Someday this should be tuned a bit better.
 * Adapt new call API of vdifio
 * VDIF: respect frame granularity when unpacking
-  - Frame durations not interger nanoseconds in length were affected by a roundoff error.
+  - Frame durations not integer nanoseconds in length were affected by a roundoff error.
+* Tagged for DiFX-2.4, 4 November 2014
 
 Version 2.3
 ~~~~~~~~~~~
