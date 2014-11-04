@@ -1,4 +1,4 @@
-AC_INIT([difx2mark4], [1.3], [Roger Cappallo <rjc@haystack.mit.edu>])
+AC_INIT([difx2mark4], [1.4], [Roger Cappallo <rjc@haystack.mit.edu>])
 AM_CONFIG_HEADER([config.h])
 
 AC_C_BIGENDIAN
@@ -11,7 +11,7 @@ AM_SANITY_CHECK
 
 AC_CHECK_LIB(m, erf,,[AC_MSG_ERROR("need libm")])
 
-PKG_CHECK_MODULES(DIFXIO, difxio >= 3.1.0)
+PKG_CHECK_MODULES(DIFXIO, difxio >= 3.4.0)
 
 LIBS="${LIBS} ${DIFXIO_LIBS}"
 CFLAGS="-D_LARGE_FILE_SOURCE -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64 ${CFLAGS} ${DIFXIO_CFLAGS} "
