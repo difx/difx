@@ -47,19 +47,19 @@ AC_SUBST(mathcflags, [${MATH_CFLAGS}])
 dnl **********************************************************
 dnl **** Find difxmessage library                         ****
 dnl **********************************************************
-PKG_CHECK_MODULES(DIFXMESSAGE, [difxmessage >= 2.2.0 difxmessage < 7])
+PKG_CHECK_MODULES(DIFXMESSAGE, [difxmessage >= 2.4.0 difxmessage < 7])
 
 dnl **********************************************************
 dnl **** Find vdifio library                              ****
 dnl **********************************************************
-PKG_CHECK_MODULES(VDIFIO, vdifio >= 0.4)
+PKG_CHECK_MODULES(VDIFIO, vdifio >= 1.0)
 
 dnl **********************************************************
 dnl **** Find mark5ipc library                            ****
 dnl **********************************************************
 m5ipc_enabled=true
 PKG_CHECK_MODULES(MARK5IPC,
-        [mark5ipc >= 2.2.0 mark5ipc < 7],
+        [mark5ipc >= 2.4.0 mark5ipc < 7],
 	[AC_DEFINE([HAVE_MARK5IPC], 1, [1=has MARK5IPC])],
 	m5ipc_enabled=false)
 AM_CONDITIONAL(WITH_MARK5IPC, $m5ipc_enabled)
@@ -89,7 +89,7 @@ AM_CONDITIONAL(WITH_SS, $ss_enabled)
 dnl **********************************************************
 dnl **** Find mark5access library                         ****
 dnl **********************************************************
-PKG_CHECK_MODULES(M5ACCESS, mark5access >= 1.4.4)
+PKG_CHECK_MODULES(M5ACCESS, mark5access >= 1.5.1)
 dnl **********************************************************
 
 dnl for Mutex lock in datastream.cpp
