@@ -8,6 +8,7 @@ Version 2.4.0
 * mk5dir: save a copy of the binary directory as well as the decoded directory
 * Revamped support for Mark5 directory structures: vsn, mk5dir
 * mk5erase: if MARK5_CONDITION_PATH env var is set, write conditioning results to file within that path.
+* Version for DiFX-2.4, Nov 4, 2014
 
 Version 2.3.0
 ~~~~~~~~~~~~~
