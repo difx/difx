@@ -1,8 +1,12 @@
 Version 1.5.1
-* Post DiFX-2.3
 * Improve behavior of fixmark5b() in the case that fill pattern is seen at the 1 second transition.
 * m5bsum calculates frame rates now rather than just assuming 25600 frames per second
 * Improve blanking of mark5b in fix case (make use of the TVG bit to blank frame by frame)
+* Added support for "d2k" mode, which is Mark5B with sign and magnitude bits swapped
+* m5bstate: complex sampling is now supported
+* examples/makeheader: tool to make a SIGPROC pulsar filterbank compatible header.
+* m5bfb: Additions to polarisation support.
+* Version for DiFX-2.4, Nov 4, 2014
 
 Version 1.5.0
 * Add KVN5B format: like Mark5B but different data bit patterns (Richard Dodson)
