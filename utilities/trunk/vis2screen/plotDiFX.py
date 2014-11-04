@@ -28,6 +28,10 @@ parser.add_option("--firstpermatch", dest="firstpermatch", default=False, action
                   help="For each baseline plot only the first matching entry")
 parser.add_option("--singleplot", dest="singleplot", default=False, action="store_true",
                   help="Plot everything on one axis")
+parser.add_option("--unwrap", dest="unwrap", default=False, action="store_true",
+                  help="Unwrap the phase")
+parser.add_option("--noauto", dest="noauto", default=False, action="store_true",
+                  help="Exclude autocorrelation data")
 parser.add_option("--amprange", dest="amprange", default="-1,-1", 
                   help="Range for the y axis for amplitude subplot in form min,max")
 (options, args) = parser.parse_args()
@@ -48,6 +52,8 @@ singlevis      = options.singlevis
 singleplot     = options.singleplot
 firstpermatch  = options.firstpermatch
 amprange       = options.amprange.split(',')
+unwrap         = options.unwrap
+noauto         = options.noauto
 
 if inputfile == "":
     parser.error("You must supply an input file!")
@@ -161,14 +167,19 @@ while not len(nextheader[0]) == 0 and keeplooping:
 			if match_freq:
 				print 'Skip old baseline %s with desired freq %d = %d' % (str(baseline[i]),freqindex[i],targetfreq)
 			targetbaseline = 13
+
         for j in range(nchan[i]):
             cvis = struct.unpack("ff", buffer[8*j:8*(j+1)])
             vis[i][j] = complex(cvis[0], cvis[1])
             amp[i][j] = math.sqrt(cvis[0]*cvis[0] + cvis[1]*cvis[1])
             phase[i][j] = math.atan2(cvis[1], cvis[0])
-        phase[i] = (numpy.unwrap(phase[i]))*180.0/math.pi
+
+        if unwrap:
+	    phase[i] = (numpy.unwrap(phase[i]))*180.0/math.pi
+
 	if (targetbaseline < 0 or targetbaseline == baseline[i]) and \
-	    (targetfreq < 0 or targetfreq == freqindex[i]) and (polpair[i] in pollist):
+	    (targetfreq < 0 or targetfreq == freqindex[i]) and (polpair[i] in pollist) and \
+	    not (noauto and (baseline[i] % 257) == 0):
             lag[i] = fft.ifft(vis[i], nchan[i])
             for j in range(nchan[i]/2):
                 lagamp[i][j+nchan[i]/2] = abs(lag[i][j])
@@ -199,7 +210,7 @@ while not len(nextheader[0]) == 0 and keeplooping:
 		    pylab.ylim(amprange)
                 pylab.plot(chans[:nchan[i]], amp[i][:nchan[i]], ls)
                 pylab.subplot(312)
-                pylab.plot(chans[:nchan[i]], phase[i][:nchan[i]], ls)
+                pylab.plot(chans[:nchan[i]], phase[i][:nchan[i]], ls+'+')
                 pylab.subplot(313)
                 pylab.plot(chans[:nchan[i]], lagamp[i][:nchan[i]], ls)
                 lagamp[i][maxindex] = 0
@@ -211,8 +222,10 @@ while not len(nextheader[0]) == 0 and keeplooping:
                 snr = maxlag/rms
                 print snr
                 print maxlag
+
     if (targetbaseline < 0 or baseline[0] == targetbaseline) and \
-       (targetfreq < 0 or freqindex[0] == targetfreq) and (polpair[0] in pollist):
+       (targetfreq < 0 or freqindex[0] == targetfreq) and (polpair[0] in pollist) and \
+        not (noauto and (baseline[i] % 257) == 0):
         pylab.subplot(311)
         ant1index = baseline[0] / 256 - 1
         ant2index = baseline[0] % 256 - 1
