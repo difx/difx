@@ -9,6 +9,7 @@ Version 3.4.0
 * allow addition of history though external file (--history option)
 * add DELTAT keyword to ModelComps table.  Required for != 2 minute polynomial intervals
 * Tsys: replace 999 with NaN for one case of invalid Tsys
+* Version for DiFX-2.4, Nov 4, 2014
 
 Version 3.3.0
 * Improved clarity in generation of Flag, Tsys, Pcal, Gain and Weather tables: prioritized sources of data
