@@ -1,4 +1,5 @@
-0.5: post DiFX-2.2
+0.5:
+* Tagged for DiFX-2.4 on Nov 4, 2014
 
 0.4: post DiFX-2.1
 * Eliminated IPP from configure.ac as it was unnecessary
