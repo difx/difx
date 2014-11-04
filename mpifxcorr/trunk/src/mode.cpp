@@ -696,6 +696,38 @@ float Mode::process(int index, int subloopindex)  //frac sample error is in micr
     //need to unpack more data
     dataweight = unpack(nearestsample);
 
+ /*
+  * After DiFX-2.4, it is proposed to change the handling of lower sideband and dual sideband data, such
+  * that the data are manipulated here (directly after unpacking) to ensure that it appears like single 
+  * sideband USB data.  In order to do that, we will loop over all recorded bands, performing the 
+  * following checks and if necessary manipulations:
+  * 1) if band sense is LSB, cast the unpacked data as a complex f32 and conjugate it.  If it was a complex
+  *    sampled band, this flips the sideband.  If it was a real sampled band, then every second sample
+  *    will be multiplied by -1, which is exactly was is required to flip the sideband also.
+  *    *** NOTE: For real data, will need to use fracwalltimesecs plus the sampling rate to determine
+  *              whether it is necessary to offset the start of the vector by one sample.
+  * 2) Now the frequencies definitely run from most negative to most positive, but we also want the lowest
+  *    frequency channel to be "DC", and this is not the case for complex double sideband data.  So for
+  *    complex double sideband data, rotate the unpacked data by e^{-i 2 pi BW t} to shift the most negative
+  *    frequency component up to 0 Hz.  Need to use wallclocksecs for time here too.
+  * Now nothing in mode.cpp or core.cpp needs to know about whether the data was originally lower sideband
+  * or not.  That will mean taking out some of the current logic, pretty much all to do with fractional sample
+  * correction.
+  * 
+  * Some other specific implementation notes:
+  * - Need to do this straight after an unpack, for the whole unpacksamples, so the two calls to unpack()
+  *   above will need to be combined.
+  * - It may be profitable to move the LO offset correction up to here also, and possibly also to refactor 
+  *   it to change the steptval array rather than doing a separate addition. (although a separate addition
+  *   for fraclooffset if required would still be needed).  Be careful of zero-order fringe rotation.
+  * - lsbfracsample arrays will need to be removed, as will the checks that select them.
+  * - Elsewhere, it will probably be preferable to maintain information slightly differently (for each
+  *   subband, maintain lower edge frequency, bandwidth, SSLO, sampling type [real/complex], matching band).
+  *   This would be in configuration.cpp/.h, maybe also vex2difx?
+  * - mark5access has option to unpack real data as complex - could consider using this to save time.  
+  *   Would need to make a similar option for LBA data.
+  */
+
   if(!(dataweight > 0.0)) {
     for(int i=0;i<numrecordedbands;i++)
     {
