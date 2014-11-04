@@ -2,11 +2,11 @@
 #===========================================================================
 # SVN properties (DO NOT CHANGE)
 #
-# $Id: $
-# $HeadURL: $
-# $LastChangedRevision:  $
-# $Author: $
-# $LastChangedDate: $
+# $Id$
+# $HeadURL$
+# $LastChangedRevision$
+# $Author$
+# $LastChangedDate$
 #
 #============================================================================
 import os
@@ -18,9 +18,9 @@ from optparse import OptionParser
 
 __author__="Helge Rottmann <rottmann@mpifr-bonn.mpg.de>"
 __prog__ = os.path.basename(__file__)
-__build__= "$Revision: $"
-__date__ ="$Date: $"
-__lastAuthor__="$Author: $"
+__build__= "$Revision$"
+__date__ ="$Date$"
+__lastAuthor__="$Author$"
 
 
 def getUsage():
