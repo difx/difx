@@ -1,6 +1,5 @@
 Version 2.4.0
 ~~~~~~~~~~~~~
-* Post DiFX-2.3
 * Support axis offset argument for ANTENNAs
 * Adapt to string-based networkPort in support of raw sockets
 * Detect mismatched bandwidths and issue warning
@@ -10,7 +9,9 @@ Version 2.4.0
 * EB and AR to use VLBA Cannonical Thread Ids for VDIF
 * Respect record enable bit in SCHED section (enable column must be > 0 to
   retain the data)
-* Reading complex type and #bits from vexfile 
+* Bugfix for allocating bands to baselines for some combinations of zoom bands and LSB
+* Reading complex type and #bits from vexfile
+* Version for DiFX-2.4, Nov 4, 2014
 
 Version 2.3.0
 ~~~~~~~~~~~~~
