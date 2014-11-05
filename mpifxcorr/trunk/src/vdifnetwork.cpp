@@ -143,7 +143,15 @@ int VDIFNetworkDataStream::readrawnetworkVDIF(int sock, char* ptr, int bytestore
 				struct timespec ck;
 				double deltat;		// [sec]
 
+#ifdef __MACH__                 // OS X does not have clock_gettime, use gettimeofday
+				struct timeval now;
+				int status;
+				status = gettimeofday(&now, NULL);
+				ck.tv_sec = now.tv_sec;
+				ck.tv_nsec = now.tv_usec*1000;
+#else
 				clock_gettime(CLOCK_REALTIME, &ck);
+#endif
 				deltat = (ck.tv_sec % 10) - (vh->seconds % 10);
 				deltat += ck.tv_nsec*1.0e-9;
 				if(deltat < -3.0)
