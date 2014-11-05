@@ -258,7 +258,6 @@ namespace guiServer {
         //!  data, and size.  This can be overridden by inheriting functions.
         //---------------------------------------------------------------------
         void newPacket( int packetId, char* data, const int nBytes ) {
-            printf( "ServerSideConnection: packet id is %d size is %d\n", packetId, nBytes );
             switch( packetId ) {
                 case RELAY_PACKET:
                     relay( data, nBytes );

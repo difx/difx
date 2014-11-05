@@ -40,7 +40,7 @@ namespace guiServer {
         static const int SCAN                               = 110;
         static const int TELESCOPE_1                        = 111;
         static const int TELESCOPE_2                        = 112;
-        static const int CORRELATION_PRODUCTS               = 113;
+        static const int BEGIN_CORRELATION_PRODUCTS         = 113;
         static const int NUM_PHASE_CENTERS                  = 114;
         static const int PHASE_CENTER                       = 115;
         static const int NUM_PULSAR_BINS                    = 116;
@@ -70,6 +70,7 @@ namespace guiServer {
         static const int MEAN_AMPLITUDE_DATA                = 140;
         static const int MEAN_PHASE_DATA                    = 141;
         static const int MEAN_LAG_DATA                      = 142;
+        static const int END_CORRELATION_PRODUCTS           = 143;
     
         DifxMonitorExchange( GUIClient* guiClient, ServerSideConnection::DifxMonitorInfo* monitorInfo ) {
             _keepGoing = true;
@@ -251,7 +252,7 @@ namespace guiServer {
                     _productInfo.clear();
                     
                     //  Indicate we are starting a new block of correlation products
-                    _guiClient->sendPacket( CORRELATION_PRODUCTS, NULL, 0 );
+                    _guiClient->sendPacket( BEGIN_CORRELATION_PRODUCTS, NULL, 0 );
                     
                     int nScans = _config->getModel()->getNumScans();
                     _guiClient->intPacket( NUM_SCANS, &nScans );
@@ -281,8 +282,8 @@ namespace guiServer {
                             _guiClient->intPacket( BASELINE, &i );
                             int ds1index = _config->getBDataStream1Index( configindex, i );
                             int ds2index = _config->getBDataStream2Index( configindex, i );
-                            _guiClient->formatPacket( TELESCOPE_1, "%s", _config->getTelescopeName( ds1index ).c_str() );
-                            _guiClient->formatPacket( TELESCOPE_2, "%s", _config->getTelescopeName( ds2index ).c_str() );
+                            _guiClient->formatPacket( TELESCOPE_1, "%s  ", _config->getTelescopeName( ds1index ).c_str() );
+                            _guiClient->formatPacket( TELESCOPE_2, "%s  ", _config->getTelescopeName( ds2index ).c_str() );
                             
                             int nFrequencies = _config->getBNumFreqs( configindex, i );
                             _guiClient->intPacket( NUM_FREQUENCIES, &nFrequencies );
@@ -290,7 +291,9 @@ namespace guiServer {
                             for( int j = 0; j < nFrequencies; j++ ) {
                                 int freqindex = _config->getBFreqIndex( configindex, i, j );
                                 double frequency = _config->getFreqTableFreq( freqindex );
-                                _guiClient->doublePacket( FREQUENCY, &frequency );
+                                int ifreq = (int)frequency;
+                                _guiClient->intPacket( FREQUENCY, &ifreq );
+//                                _guiClient->doublePacket( FREQUENCY, &frequency );
                                 int resultIndex = _config->getCoreResultBaselineOffset( configindex, freqindex, i );
                                 int freqchannels = _config->getFNumChannels( freqindex ) / _config->getFChannelsToAverage( freqindex );
                                 
@@ -353,7 +356,7 @@ namespace guiServer {
                             for( int j = 0; j < autocorrwidth; j++ ) {
                                 for( int k=0; k < _config->getDNumRecordedBands( configindex, i ); k++ ) {
 
-                                    _guiClient->formatPacket( AUTOCORRELATION, "%s", _config->getDStationName( configindex, i ).c_str() );
+                                    _guiClient->formatPacket( AUTOCORRELATION, "%s  ", _config->getDStationName( configindex, i ).c_str() );
 
                                     polpair[0] = _config->getDRecordedBandPol( configindex, i, k );
                                     if ( j==0 )
@@ -363,7 +366,9 @@ namespace guiServer {
 
                                     int freqindex = _config->getDRecordedFreqIndex( configindex, i, k );
                                     double frequency = _config->getFreqTableFreq( freqindex );
-                                    _guiClient->doublePacket( FREQUENCY, &frequency );
+                                    int ifreq = (int)frequency;
+                                    _guiClient->intPacket( FREQUENCY, &ifreq );
+//                                    _guiClient->doublePacket( FREQUENCY, &frequency );
                                     int freqchannels = _config->getFNumChannels( freqindex ) / _config->getFChannelsToAverage( freqindex );
 
                                     int productData[3];
@@ -388,13 +393,12 @@ namespace guiServer {
 
                                 }
                             }
-                        }
-                    
+                        }                    
                     }
-                    
+
                     //  This packet indicates that we are done sending the correlation products
                     //  information.
-                    _guiClient->sendPacket( CORRELATION_PRODUCTS, NULL, 0 );
+                    _guiClient->sendPacket( END_CORRELATION_PRODUCTS, NULL, 0 );
                 }     
             }
             

@@ -84,8 +84,7 @@ namespace guiServer {
                 }
                 memcpy( _buff, &_swapPort, len );
                 memcpy( (char*)_buff + sizeof( int ), data, n );
-                _ssc->sendPacket( ServerSideConnection::CHANNEL_DATA, (char*)_buff, len, true );
-                usleep( 100000 );
+                int ret = _ssc->sendPacket( ServerSideConnection::CHANNEL_DATA, (char*)_buff, len, true );
                 return len;
             }
             else {
@@ -105,7 +104,7 @@ namespace guiServer {
                 while ( rn < n ) {
                     rn += _ssc->getChannelData( _port, (char*)data + rn, n );
                     if ( rn < n )
-                        usleep( 1000000 );
+                        usleep( 10000 );
                 }
             }
             else {
@@ -356,6 +355,9 @@ namespace guiServer {
             else
                 return _client->connected();
         }
+
+        void writeLock() { pthread_mutex_lock( &_sendPacketMutex ); }
+        void writeUnlock() { pthread_mutex_unlock( &_sendPacketMutex ); }
         
     protected:
     
@@ -383,8 +385,6 @@ namespace guiServer {
         void* _buff;
         int _buffSize;
         network::PacketExchange* _packetExchange;
-        void writeLock() { pthread_mutex_lock( &_sendPacketMutex ); }
-        void writeUnlock() { pthread_mutex_unlock( &_sendPacketMutex ); }
         pthread_mutex_t _sendPacketMutex;
         network::TCPClient* _client;
     };

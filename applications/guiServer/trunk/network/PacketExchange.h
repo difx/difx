@@ -61,6 +61,7 @@ namespace network {
             //  is happening is not entirely clear - this is a kludge.
             int padBytes = 0;
             char pad[8];
+/*
             if ( sendSync ) {
                 int ret = _sock->writer( "        ", 8 );
                 ret = _sock->writer( "        ", 8 );
@@ -68,9 +69,11 @@ namespace network {
                 //  We want to send packet data that lines up on 8-byte boundaries.
                 //  From the nBytes, figure out how many extra bytes are necessary for
                 //  padding to accomplish this.
+printf( "nBytes is %d\n", nBytes );
                 if ( nBytes % 8 )
                    padBytes = 8 - nBytes % 8;
             }
+*/
             
             //  Our trivial packet protocol is to send the packetId first (network byte
             //  ordered)...
@@ -88,10 +91,10 @@ namespace network {
                 ret = _sock->writer( data, nBytes );
 
             //  ...and the padding.
-            if ( sendSync ) {
-                if ( ret != -1 && padBytes )
-                    ret = _sock->writer( pad, padBytes );
-            }
+//            if ( sendSync ) {
+//                if ( ret != -1 && padBytes )
+//                    ret = _sock->writer( pad, padBytes );
+//            }
                 
             //  Unlock the socket.
             writeUnlock();
@@ -299,9 +302,9 @@ namespace network {
         //!  This function sends a "sychronizing" sequence of characters.  It is
         //!  outside the packet protocol.
         //----------------------------------------------------------------------------
-        int sendSync( char* data, const int nBytes ) {
-            return( _sock->writer( data, nBytes ) );
-        }
+//        int sendSync( char* data, const int nBytes ) {
+//            return( _sock->writer( data, nBytes ) );
+//        }
 
         //----------------------------------------------------------------------------
         //!  This function tries to locate a synchronizing sequence in a data
