@@ -12,6 +12,7 @@ nobase_dist_difxdblib_SCRIPTS = difxdbconfig.py \
 				business/slotaction.py \
 				business/__init__.py   \
 				business/moduleaction.py \
-				business/queueaction.py\
-				business/versionhistoryaction.py
+				business/queueaction.py \
+				business/versionhistoryaction.py \
+				business/useraction.py
 
