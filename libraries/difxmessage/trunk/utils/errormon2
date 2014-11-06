@@ -15,6 +15,7 @@ import socket
 import struct
 import logging
 import logging.handlers
+import getopt
 
 from string import split, strip, find, upper, lower
 from sys import argv, exit
@@ -29,6 +30,8 @@ author  = 'Walter Brisken + ?'
 version = '0.6'
 verdate = '20130508'
 
+splitByID = False
+splitLoggers = {}
 
 def usage(prog):
 	print '%s ver. %s  %s  %s\n' % (program, version, author, verdate)
@@ -36,6 +39,9 @@ def usage(prog):
 	print 'options can include:'
 	print '  --help'
 	print '  -h        print help information and quit\n'
+	print '  --split'
+	print '  -s        split messages into separate log files'
+	print '            based on the ID/experiment code\n'
 	print '<maxlevel>  is the max alert error level to print\n'
 
 ##############################################################################
@@ -75,7 +81,6 @@ logging.addLevelName(10, 'VERBOSE_DEBUG')
 
 # Set up a single logger
 difxLogger = logging.getLogger('DiFXAlert')
-log = difxLogger.log
 
 # This is currently unused:
 # Set up different loggers for different kinds of difxmessage. All will write 
@@ -101,16 +106,23 @@ difxLogger.addHandler(stdout_handler)
 ###############################################################################
 # Set up logging to file
 ###############################################################################
-try:
-    file_handler = logging.handlers.RotatingFileHandler(path.join(logpath, logname),
+def makeFileHandler(logpath, logname, logcount):
+    try:
+    	file_handler = logging.handlers.RotatingFileHandler(path.join(logpath, logname),
                                                         backupCount = logcount)
-    file_handler.setFormatter(logfile_format)
-    file_handler.setLevel(alertLevels[logfile_level])
-    file_handler.doRollover()
-    difxLogger.addHandler(file_handler)
+    	file_handler.setFormatter(logfile_format)
+    	file_handler.setLevel(alertLevels[logfile_level])
+    	file_handler.doRollover()
+    	return file_handler
+    except:
+    	return None
+
+fh = makeFileHandler(logpath, logname, logcount)
+try:
+    difxLogger.addHandler(fh)
 except:
     # Adding exc_info=True writes the python exception to the log
-    log(alertLevels[3], "Error starting log file. Only log to stdout", exc_info=True)
+    difxLogger.log(alertLevels[3], "Error starting log file. Only log to stdout", exc_info=True)
 
 ###############################################################################
 # Set up other loggers. See
@@ -203,9 +215,16 @@ def run():
 			p = Parser()
 			p.feed(message)
 			level, info = p.getinfo()
+			id = p.id
 			p.close()
 			if len(info) > 0:
-				log(alertLevels[level], info)
+			    difxLogger.log(alertLevels[level], info)
+			    if splitByID:
+				if not(id in splitLoggers):
+				    fh = makeFileHandler(logpath, logname + '-' + id, logcount)
+				    splitLoggers[id] = logging.getLogger('DiFXAlert'+id)
+				    splitLoggers[id].addHandler(fh)
+				splitLoggers[id].log(alertLevels[level], info)
 		except socket.timeout:
 		    pass
 		except expat.ExpatError:
@@ -215,9 +234,24 @@ def run():
     except KeyboardInterrupt:
 	    pass
 
-if len(argv) > 1:
-	if argv[1] in ['-h', '--help']:
+try:
+	optlist, args = getopt.getopt(argv[1:], 'hs', ['help','split'])
+except getopt.GetoptError as err:
+	print str(err)
+	usage(argv[0])
+	exit(0)
+
+for o, a in optlist:
+	if o in ('-h', '--help'):
 		usage(argv[0])
 		exit(0)
+	elif o in ('-s', '--split'):
+		splitByID = True
+	else:
+		assert False, 'unhandled option'
+
+if len(args)>0:
+	stdout_level = int(args[0])
+	stdout_handler.setLevel(alertLevels[stdout_level])
 
 run()
