@@ -161,7 +161,7 @@ public class StationPanel extends IndexedPanel {
         vsnLabel.setBounds( 100, 60, 95, 25 );
         vsnLabel.setHorizontalAlignment( JLabel.RIGHT );
         _dataSourcePanel.add( vsnLabel );
-        _vsnList = new JComboBox();
+        _vsnList = new JComboBox<String>();
         _vsnList.setBounds( 230, 60, 150, 25 );
         _vsnList.setToolTipText( "VSN of module containing data for this antenna." );
         _vsnList.setEditable( true );
@@ -1315,7 +1315,7 @@ public class StationPanel extends IndexedPanel {
     protected JCheckBox _fileCheck;
     protected JCheckBox _eVLBICheck;
     protected NumberBox _eVLBIPort;
-    protected JComboBox _vsnList;
+    protected JComboBox<String> _vsnList;
     protected SaneTextField _dataFormat;
     protected JLabel _dataSource;
     protected EventListenerList _changeListeners;

@@ -636,7 +636,8 @@ public class JobNode extends QueueBrowserNode {
 //            long usedMB = (rt.totalMemory() - rt.freeMemory()) / 1024 / 1024;
 //            System.gc();
 //            System.out.println( "memory usage before " + usedMB);
-            _editorMonitor.close();
+            if ( _editorMonitor != null )
+                _editorMonitor.close();
             _editorMonitor = null;
 //            System.gc();
 //            usedMB = (rt.totalMemory() - rt.freeMemory()) / 1024 / 1024;

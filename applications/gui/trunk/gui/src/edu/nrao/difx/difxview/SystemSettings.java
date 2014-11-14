@@ -463,7 +463,7 @@ public class SystemSettings extends JFrame {
                 + "connection).  This is useful if you are remotely operating through\n"
                 + "an SSH tunnel." );
         _channelAllData.setBounds( 550, 25, 175, 25 );
-        _channelAllData.setEnabled( false );
+        _channelAllData.setEnabled( true );
         _channelAllData.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
                 if ( _channelAllData.isSelected() )

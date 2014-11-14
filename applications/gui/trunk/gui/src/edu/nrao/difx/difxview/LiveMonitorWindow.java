@@ -712,7 +712,7 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
      * Try making a connection to the DiFX monitor server using the current settings
      * for host and port.
      */
-    void makeConnection() {
+    void makeConnectionFOO() {
         _connectionLight.warning();
         _connectionLabel.setText( "connecting..." );
         try {
@@ -755,7 +755,7 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
     protected final int SCAN                               = 110;
     protected final int TELESCOPE_1                        = 111;
     protected final int TELESCOPE_2                        = 112;
-    protected final int CORRELATION_PRODUCTS               = 113;
+    protected final int BEGIN_CORRELATION_PRODUCTS         = 113;
     protected final int NUM_PHASE_CENTERS                  = 114;
     protected final int PHASE_CENTER                       = 115;
     protected final int NUM_PULSAR_BINS                    = 116;
@@ -785,6 +785,7 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
     protected final int MEAN_AMPLITUDE_DATA                = 140;
     protected final int MEAN_PHASE_DATA                    = 141;
     protected final int MEAN_LAG_DATA                      = 142;
+    protected final int END_CORRELATION_PRODUCTS           = 143;
         
     /*
      * Send a packet with ID, number of bytes, and data.
@@ -867,7 +868,9 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
                     //  are defined above (within this class).
                     int packetType = _ssock.readInt();
                     //  Read the size of the incoming data (bytes).
-                    int packetSize = _ssock.readInt();
+                    int packetSize = 0;
+                    if ( packetType >= 100 && packetType <= 143 )
+                        packetSize = _ssock.readInt();
                     trackBytes( 8 );
                     //---------------------------------------------------------------------
                     //  These are messages that are written directly to the message window.
@@ -907,18 +910,13 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
                     //  are used to tell us what data products are available for the job
                     //  specified by the input file.
                     //---------------------------------------------------------------------------
-                    else if ( packetType == CORRELATION_PRODUCTS ) {
-                        //  Indicates the beginning or end of desciptions of cross
-                        //  correlations.
-                        if ( _readingProducts ) {
-                            updateDataProductControls();
-                        }
-                        else {
-                            //  Blow away our current list of products.  We'll be making
-                            //  a new one.
-                            _products = new ArrayDeque<Product>();
-                        }
-                        _readingProducts = !_readingProducts;
+                    else if ( packetType == BEGIN_CORRELATION_PRODUCTS ) {
+                        //  Blow away our current list of products.  We'll be making
+                        //  a new one.
+                        _products = new ArrayDeque<Product>();
+                    }
+                    else if ( packetType == END_CORRELATION_PRODUCTS ) {
+                        updateDataProductControls();
                     }
                     else if ( packetType == JOB_NAME ) {
                         //  This probably matches the name in the GUI menu.
@@ -966,14 +964,14 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
                         byte [] data = new byte[packetSize];
                         _ssock.readFully( data, 0, packetSize );
                         trackBytes( packetSize );
-                        _currentBaseline.telescope1 = new String( data );
+                        _currentBaseline.telescope1 = new String( data ).trim();
                     }
                     else if ( packetType == TELESCOPE_2 ) {
                         //  Second telescope in the current baseline pair.
                         byte [] data = new byte[packetSize];
                         _ssock.readFully( data, 0, packetSize );
                         trackBytes( packetSize );
-                        _currentBaseline.telescope2 = new String( data );
+                        _currentBaseline.telescope2 = new String( data ).trim();
                     }
                     else if ( packetType == AUTOCORRELATION ) {
                         //  This is the name of a single telescope used in an autocorrelation.
@@ -983,8 +981,8 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
                         byte [] data = new byte[packetSize];
                         _ssock.readFully( data, 0, packetSize );
                         trackBytes( packetSize );
-                        _currentBaseline.telescope1 = new String( data );
-                        _currentBaseline.telescope2 = new String( data );
+                        _currentBaseline.telescope1 = new String( data ).trim();
+                        _currentBaseline.telescope2 = new String( data ).trim();
                     }
                     else if ( packetType == SCAN_IDENTIFIER ) {
                         byte [] data = new byte[packetSize];
@@ -1368,6 +1366,8 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
                             }
                         }
                     }
+                    else
+                        System.out.println( "unrecognized packet type " + packetType );
                 }
             } catch ( SocketTimeoutException e ) {
             _connected = false;
@@ -2465,6 +2465,7 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
             _automaticallyResize = true;
             _productsLabel.setText( "No Products Selected" );
         }
+        _this.update( _this.getGraphics() );
     }
     
     /*
@@ -2572,9 +2573,9 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
     }
     
     protected void trackBytes( int moreBytes ) {
-        synchronized ( _bytesTransfered ) {
-            _bytesTransfered += moreBytes;
-        }
+//        synchronized ( _bytesTransfered ) {
+//            _bytesTransfered += moreBytes;
+//        }
     }
     /*
      * Simplistic class for handling data transfer rate.  This checks every 1/10 second

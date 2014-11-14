@@ -86,7 +86,7 @@ public class GuiServerConnection {
             _connected = true;
             connectEvent( "connected" );
             _receiveThread = new ReceiveThread();
-            _settings.channelAllDataAvailable( false );
+            _settings.channelAllDataAvailable( true );
             _receiveThread.start();
             //  Request guiServer version information...and anything else it wants
             //  to tell us at startup.
@@ -191,27 +191,6 @@ public class GuiServerConnection {
             while ( _connected ) {
                 byte[] data = null;
                 try {
-                    //  Search for the synchronization string if the guiServer version is modern
-                    //  enough to be sending it (older than version 1.03).  This version check
-                    //  is temporary (used to accommodate a frozen version on the USNO SWC).
-                    if ( _settings.channelAllData() ) {
-                        boolean notFound = true;
-                        int counter = 0;
-                        while ( notFound ) {
-                            _in.readFully( inNum );
-                            if ( new String( inNum ).contentEquals( "DIFXSYNC" ) )
-                                notFound = false;
-                            else {
-                                ++counter;
-//                                System.out.println( "looks like this \"" + new String( inNum ) + "\"" );
-                            }
-                        }
-                        if ( counter > 2 ) {
-//                            System.out.println( "counter is " + counter );
-                            java.util.logging.Logger.getLogger("global").log(java.util.logging.Level.WARNING, 
-                                    "synchronizer skipped " + ( counter * 8 ) + " bytes following message ID " + lastID + "(" + lastNBytes + ")" );
-                        }
-                    }
                     int packetId = _in.readInt();
                     int nBytes = _in.readInt();
                     if ( nBytes > WARNING_SIZE || nBytes < 0 ) {
@@ -233,15 +212,6 @@ public class GuiServerConnection {
                         _in.readFully( data );
                         } catch ( java.io.EOFException e ) {
                             System.out.println( "EOFException!" );
-                        }
-                        //  Read the pad bytes, if there are any, that are used to put
-                        //  the packet transmission on an integer boundary.
-                        if ( _settings.channelAllData() ) {
-                            if ( nBytes % 8 > 0 ) {
-                                int n = 8 - nBytes % 8;
-                                for ( int i = 0; i < n; ++i )
-                                    pad = _in.readByte();
-                            }
                         }
                         //  Sort out what to do with this packet.
                         if ( packetId == RELAY_PACKET && data != null ) {
@@ -409,6 +379,7 @@ public class GuiServerConnection {
     //  Stuff used for channeling data.
     protected HashMap<Integer,ArrayDeque<ByteBuffer>> _channelMap;
     protected HashMap<Integer,Boolean> _channelConnected;
+    protected HashMap<Integer,ByteBuffer> _lastBuffer;
     
     //  "Open" a new channeling port.  This is supposed to look (externally) like
     //  an independent TCP port, but the data for it are channelled through the 
@@ -419,6 +390,7 @@ public class GuiServerConnection {
         if ( _channelMap == null ) {
             _channelMap = new HashMap<Integer,ArrayDeque<ByteBuffer>>();
             _channelConnected = new HashMap<Integer,Boolean>();
+            _lastBuffer = new HashMap<Integer,ByteBuffer>();
         }
         boolean ret = true;
         synchronized ( _channelConnected ) {
@@ -445,8 +417,20 @@ public class GuiServerConnection {
     //  Is there data on this port?
     public boolean portData( int port ) {
         boolean ret = false;
+        if ( _channelConnected != null ) {
+            synchronized( _channelConnected ) {
+                ret = _channelMap.get( port ).size() > 0;
+            }
+        }
+        return ret;
+    }
+    
+    //  How many bytes are available in the next data item on the port?
+    public int portDataNum( int port ) {
+        int ret = 0;
         synchronized( _channelConnected ) {
-            ret = _channelMap.get( port ).size() > 0;
+            if ( portData( port ) )
+                ret = _channelMap.get( port ).peekFirst().remaining();
         }
         return ret;
     }
@@ -455,7 +439,13 @@ public class GuiServerConnection {
     public ByteBuffer portBuffer( int port ) {
         ByteBuffer ret = null;
         synchronized( _channelConnected ) {
-            ret = _channelMap.get( port ).pollFirst();
+            //  See if we have an existing buffer associated with this port.
+            ret = _lastBuffer.get( port );
+            //  Get a new buffer if one doesn't exist or the last one is empty.
+            if ( ret == null || ret.remaining() <= 0 ) {
+                ret = _channelMap.get( port ).pollFirst();
+                _lastBuffer.put( port, ret );
+            }
         }
         return ret;
     }
