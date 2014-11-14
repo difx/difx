@@ -152,11 +152,9 @@ namespace guiServer {
         //!  Respond to a GUI instruction to close this connection.
         //-----------------------------------------------------------------------------
         void closeConnection() {
-            printf( "received close connection request\n" );
             if ( _monitorServerClient != NULL )
                 delete _monitorServerClient;
             _monitorServerClient = NULL;
-            printf( "close connection completed\n" );
             _keepGoing = false;
         }
         
@@ -271,7 +269,6 @@ namespace guiServer {
                         int configindex = _config->getScanConfigIndex( currentScan );
                         char polpair[3];
                         polpair[2] = 0;
-                        printf( "config index is %d\n", configindex );
 
                         int nBaselines = _config->getNumBaselines();
                         _guiClient->intPacket( NUM_BASELINES, &nBaselines );        
@@ -282,8 +279,8 @@ namespace guiServer {
                             _guiClient->intPacket( BASELINE, &i );
                             int ds1index = _config->getBDataStream1Index( configindex, i );
                             int ds2index = _config->getBDataStream2Index( configindex, i );
-                            _guiClient->formatPacket( TELESCOPE_1, "%s  ", _config->getTelescopeName( ds1index ).c_str() );
-                            _guiClient->formatPacket( TELESCOPE_2, "%s  ", _config->getTelescopeName( ds2index ).c_str() );
+                            _guiClient->formatPacket( TELESCOPE_1, "%s", _config->getTelescopeName( ds1index ).c_str() );
+                            _guiClient->formatPacket( TELESCOPE_2, "%s", _config->getTelescopeName( ds2index ).c_str() );
                             
                             int nFrequencies = _config->getBNumFreqs( configindex, i );
                             _guiClient->intPacket( NUM_FREQUENCIES, &nFrequencies );
@@ -291,9 +288,7 @@ namespace guiServer {
                             for( int j = 0; j < nFrequencies; j++ ) {
                                 int freqindex = _config->getBFreqIndex( configindex, i, j );
                                 double frequency = _config->getFreqTableFreq( freqindex );
-                                int ifreq = (int)frequency;
-                                _guiClient->intPacket( FREQUENCY, &ifreq );
-//                                _guiClient->doublePacket( FREQUENCY, &frequency );
+                                _guiClient->doublePacket( FREQUENCY, &frequency );
                                 int resultIndex = _config->getCoreResultBaselineOffset( configindex, freqindex, i );
                                 int freqchannels = _config->getFNumChannels( freqindex ) / _config->getFChannelsToAverage( freqindex );
                                 
@@ -356,7 +351,7 @@ namespace guiServer {
                             for( int j = 0; j < autocorrwidth; j++ ) {
                                 for( int k=0; k < _config->getDNumRecordedBands( configindex, i ); k++ ) {
 
-                                    _guiClient->formatPacket( AUTOCORRELATION, "%s  ", _config->getDStationName( configindex, i ).c_str() );
+                                    _guiClient->formatPacket( AUTOCORRELATION, "%s", _config->getDStationName( configindex, i ).c_str() );
 
                                     polpair[0] = _config->getDRecordedBandPol( configindex, i, k );
                                     if ( j==0 )
@@ -366,9 +361,7 @@ namespace guiServer {
 
                                     int freqindex = _config->getDRecordedFreqIndex( configindex, i, k );
                                     double frequency = _config->getFreqTableFreq( freqindex );
-                                    int ifreq = (int)frequency;
-                                    _guiClient->intPacket( FREQUENCY, &ifreq );
-//                                    _guiClient->doublePacket( FREQUENCY, &frequency );
+                                    _guiClient->doublePacket( FREQUENCY, &frequency );
                                     int freqchannels = _config->getFNumChannels( freqindex ) / _config->getFChannelsToAverage( freqindex );
 
                                     int productData[3];
@@ -550,6 +543,10 @@ namespace guiServer {
                 }
                 else if ( ret < 0 ) {
                     _visConnectionOperating = false;
+                    //  Pause for a moment here to avoid a double free - if the connection was specifically
+                    //  severed by a client "CLOSE_CONNECTION" message we need to give the closeConnection()
+                    //  function time to work.
+                    sleep( 1 );
                     _guiClient->formatPacket( ERROR, "problem with socket connection to monitor_server: %d returned", ret );
                 }
                 else {
@@ -736,7 +733,7 @@ namespace guiServer {
                             //  Send amplitude data to the client.  For sending these plot data we are using
                             //  "composed" packets, explained in the PacketExchange.  Double precision numbers
                             //  are sent as strings because Java and C++ don't appear to play nicely together.
-                            _guiClient->composePacket( AMPLITUDE_DATA, nChannels * sizeof( double ) + 3 * sizeof( int ) );
+                            _guiClient->composePacket( AMPLITUDE_DATA, nChannels * sizeof( double ) + 4 * sizeof( int ) );
                             _guiClient->composeInt( &iProduct );
                             _guiClient->composeInt( &nChannels );
                             _guiClient->composeInt( &timeStamp );
@@ -744,7 +741,7 @@ namespace guiServer {
                             _guiClient->composeStringDouble( amp, nChannels );
                             _guiClient->composeEnd();
                             //  Phase data.
-                            _guiClient->composePacket( PHASE_DATA, nChannels * sizeof( double ) + 3 * sizeof( int ) );
+                            _guiClient->composePacket( PHASE_DATA, nChannels * sizeof( double ) + 4 * sizeof( int ) );
                             _guiClient->composeInt( &iProduct );
                             _guiClient->composeInt( &nChannels );
                             _guiClient->composeInt( &timeStamp );
