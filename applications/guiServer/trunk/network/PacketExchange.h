@@ -46,35 +46,13 @@ namespace network {
         //!  or a -1 if there is a failure.  It is mutex locked to assure that
         //!  the entire packet is sent completely.
         //----------------------------------------------------------------------------
-        virtual int sendPacket( const int packetId, const char* data, const int nBytes, bool sendSync = false ) {
+        virtual int sendPacket( const int packetId, const char* data, const int nBytes ) {
             int swapped;
 
             //  Lock writing on the socket.  This makes certain this packet can't be 
             //  broken up by calls to this function from other threads.
             writeLock();
 
-            //  Send a bunch of leading bytes and then the "synchronization" string.
-            //  The leading bytes are a pad that is generally read and ignored by the
-            //  guiServer.  However because messages occasionally arrive without some
-            //  portion of the leading bytes this cuts down on the number of messages
-            //  that are missed (however it does not cut them down to zero!).  Why this
-            //  is happening is not entirely clear - this is a kludge.
-            int padBytes = 0;
-            char pad[8];
-
-            if ( sendSync ) {
-//                int ret = _sock->writer( "        ", 8 );
-//                ret = _sock->writer( "        ", 8 );
-//                ret = _sock->writer( "DIFXSYNC", 8 );
-                //  We want to send packet data that lines up on 8-byte boundaries.
-                //  From the nBytes, figure out how many extra bytes are necessary for
-                //  padding to accomplish this.
-//printf( "n pad Bytes is %d\n", nBytes % 8 );
-//                if ( nBytes % 8 )
-//                   padBytes = 8 - nBytes % 8;
-            }
-
-            
             //  Our trivial packet protocol is to send the packetId first (network byte
             //  ordered)...
             swapped = htonl( packetId );
@@ -90,12 +68,6 @@ namespace network {
             if ( ret != -1 )
                 ret = _sock->writer( data, nBytes );
 
-            //  ...and the padding.
-//            if ( sendSync ) {
-//                if ( ret != -1 && padBytes )
-//                    ret = _sock->writer( pad, padBytes );
-//            }
-                
             //  Unlock the socket.
             writeUnlock();
             
