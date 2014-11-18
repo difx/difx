@@ -2415,7 +2415,7 @@ public class ExperimentEditor extends JFrame {
                 JLabel mjd = new JLabel( "MJD" );
                 mjd.setBounds( 90, 2, 120, 16 );
                 eopHeaderPanel.add( mjd );
-                JLabel tai = new JLabel( "TAI-UTC" );
+                JLabel tai = new JLabel( "Leap Seconds" );
                 tai.setToolTipText( "Leap second count" );
                 tai.setBounds( 230, 2, 100, 16 );
                 eopHeaderPanel.add( tai );
@@ -2453,7 +2453,7 @@ public class ExperimentEditor extends JFrame {
             JLabel tai = new JLabel( (int)eop.tai_utc + " sec" );
             tai.setBounds( 230, 2, 100, 16 );
             eopPanel.add( tai );
-            JLabel ut1 = new JLabel( String.format( "%.6f sec ", eop.ut1_tai / 1000000.0 + eop.tai_utc ) );
+            JLabel ut1 = new JLabel( String.format( "%.6f sec ", eop.ut1_utc ) );
             ut1.setBounds( 350, 2, 100, 16 );
             eopPanel.add( ut1 );
             JLabel xp = new JLabel( String.format( "%.6f asec ", eop.xPole / 10.0 ) );

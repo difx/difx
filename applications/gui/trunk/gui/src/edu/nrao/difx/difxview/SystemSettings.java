@@ -86,6 +86,7 @@ import mil.navy.usno.widgetlib.BrowserNode;
 import mil.navy.usno.widgetlib.FormattedTextField;
 import mil.navy.usno.widgetlib.ZCheckBox;
 import mil.navy.usno.widgetlib.ZButton;
+import mil.navy.usno.widgetlib.JulianCalendar;
 
 import javax.swing.JFrame;
 
@@ -1859,7 +1860,7 @@ public class SystemSettings extends JFrame {
             _eopText.text( "" );
             while ( ( bytesRead = reader.read( buffer, 0, 99999 ) ) > 0 ) {
                 _eopText.addText( new String( buffer ).substring( 0, bytesRead ) );
-        }
+            }
         } catch ( IOException e ) {
             java.util.logging.Logger.getLogger( "global" ).log( java.util.logging.Level.SEVERE,
                 "EOP URL " + _eopURL.getText() + " triggered exception: " + e.getMessage() );
@@ -1897,8 +1898,12 @@ public class SystemSettings extends JFrame {
         double sXPole;   //  X pole uncertainty in 0.1 arcsec
         double sYPole;   //  Y pole uncertainty in 0.1 arcsec
         double sUt1_tai; //  UT1-TAI uncertainty in microseconds of time
+        double ut1_utc;  //  UT1 - UTC in seconds
     }
 
+    protected final int GODDARD_MODIFIED_EOP_FORMAT                                   = 1;
+    protected final int USNO_FINAL_FORMAT                                             = 2;
+    
     /*
      * Generate an array list of structures containing EOP data for a specified range
      * of days.
@@ -1907,21 +1912,58 @@ public class SystemSettings extends JFrame {
         ArrayList<EOPStructure> newList = new ArrayList<EOPStructure>();
         int fromIndex = 0;
         String content = _eopText.text();
+        int fileFormat = 0;
+        //  Break the data into lines - at the moment all known formats are organized with data for
+        //  a specific date on a single line.
         int toIndex = content.indexOf( '\n', 0 );
+        boolean firstLine = true;
         while ( toIndex != -1 ) {
+            //  If this is the first line in the EOP data file, try to use it to identify the file
+            //  format.
+            if ( firstLine ) {
+                if ( content.substring( fromIndex, fromIndex + 7 ).contentEquals( "EOP-MOD" ) ) {
+                    //  This looks like the Goddard "modified" format.  There are versions to this format
+                    //  but I am ignoring them (at my peril).
+                    fileFormat = GODDARD_MODIFIED_EOP_FORMAT;
+                }
+                else {
+                    //  For the moment we are guessing that the data are in "USNO final" format.
+                    fileFormat = USNO_FINAL_FORMAT;
+                }
+                firstLine = false;
+            }
             try {
-                double testDate = Double.parseDouble( content.substring( fromIndex, fromIndex + 9 ) );
-                if ( testDate > before && testDate < after ) {
-                    EOPStructure newEOP = new EOPStructure();
-                    newEOP.date = testDate;
-                    newEOP.tai_utc = leapSecond( testDate );
-                    newEOP.xPole = Double.parseDouble( _eopText.text().substring( fromIndex + 10, fromIndex + 17 ) );
-                    newEOP.yPole = Double.parseDouble( _eopText.text().substring( fromIndex + 18, fromIndex + 26 ) );
-                    newEOP.ut1_tai = Double.parseDouble( _eopText.text().substring( fromIndex + 26, fromIndex + 35 ) );
-                    newEOP.sXPole = Double.parseDouble( _eopText.text().substring( fromIndex + 36, fromIndex + 42 ) );
-                    newEOP.sYPole = Double.parseDouble( _eopText.text().substring( fromIndex + 43, fromIndex + 49 ) );
-                    newEOP.sUt1_tai = Double.parseDouble( _eopText.text().substring( fromIndex + 50, fromIndex + 57 ) );
-                    newList.add( newEOP );
+                if ( fileFormat == GODDARD_MODIFIED_EOP_FORMAT ) {
+                    double testDate = Double.parseDouble( content.substring( fromIndex, fromIndex + 9 ) );
+                    if ( testDate > before && testDate < after ) {
+                        EOPStructure newEOP = new EOPStructure();
+                        newEOP.date = testDate;
+                        newEOP.tai_utc = leapSecond( testDate );
+                        newEOP.xPole = Double.parseDouble( _eopText.text().substring( fromIndex + 10, fromIndex + 17 ) );
+                        newEOP.yPole = Double.parseDouble( _eopText.text().substring( fromIndex + 18, fromIndex + 26 ) );
+                        newEOP.ut1_tai = Double.parseDouble( _eopText.text().substring( fromIndex + 26, fromIndex + 35 ) );
+                        newEOP.sXPole = Double.parseDouble( _eopText.text().substring( fromIndex + 36, fromIndex + 42 ) );
+                        newEOP.sYPole = Double.parseDouble( _eopText.text().substring( fromIndex + 43, fromIndex + 49 ) );
+                        newEOP.sUt1_tai = Double.parseDouble( _eopText.text().substring( fromIndex + 50, fromIndex + 57 ) );
+                        newEOP.ut1_utc = newEOP.ut1_tai / 1000000.0 + newEOP.tai_utc;
+                        newList.add( newEOP );
+                    }
+                }
+                else if ( fileFormat == USNO_FINAL_FORMAT ) {
+                    double testDate = Double.parseDouble( content.substring( fromIndex + 7, fromIndex + 12 ) );
+                    JulianCalendar theDate = new JulianCalendar();
+                    theDate.clear();
+                    theDate.mjd( testDate );
+                    testDate = theDate.julian() + .5;
+                    if ( testDate > before && testDate < after ) {
+                        EOPStructure newEOP = new EOPStructure();
+                        newEOP.date = testDate;
+                        newEOP.tai_utc = leapSecond( testDate );
+                        newEOP.xPole = 10.0 * Double.parseDouble( content.substring( fromIndex + 18, fromIndex + 27 ) );
+                        newEOP.yPole = 10.0 * Double.parseDouble( content.substring( fromIndex + 37, fromIndex + 46 ) );
+                        newEOP.ut1_utc = Double.parseDouble( content.substring( fromIndex + 58, fromIndex + 68 ) );
+                        newList.add( newEOP );
+                    }
                 }
             } catch ( java.lang.NumberFormatException e ) {
                 //  We expect a few of these...comments, etc.
