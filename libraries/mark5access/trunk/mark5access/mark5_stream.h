@@ -273,6 +273,8 @@ void mark5_format_vdif_set_leapsecs(struct mark5_stream *ms, int leapsecs);
 
 int find_vdif_frame(const unsigned char *data, size_t length, size_t *offset, int *framesize);
 
+int find_vdifl_frame(const unsigned char *data, size_t length, size_t *offset, int *framesize);
+
 int get_vdif_chans_per_thread(const unsigned char *data);
 
 int get_vdif_quantization_bits(const unsigned char *data);

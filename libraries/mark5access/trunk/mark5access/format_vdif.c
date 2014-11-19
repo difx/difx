@@ -3902,6 +3902,36 @@ static int is_legal_vdif_framesize(int framesize)
 	}
 }
 
+static int is_legal_vdifl_framesize(int framesize)
+{
+	framesize -= 16;
+
+	if(framesize % 8 != 0)
+	{
+		return 0;
+	}
+
+	framesize /= 8;
+
+	while(framesize % 2 == 0)
+	{
+		framesize /= 2;
+	}
+	while(framesize % 5 == 0)
+	{
+		framesize /= 5;
+	}
+
+	if(framesize != 1)
+	{
+		return 0;
+	}
+	else
+	{
+		return 1;
+	}
+}
+
 /* if *framesize is set to 0, the frame size will be determined by this call
  * and returned into the same variable.
  *
@@ -3936,6 +3966,66 @@ int find_vdif_frame(const unsigned char *data, size_t length, size_t *offset, in
 		if(maxOffset > length - fs - 32)
 		{
 			maxOffset = length - fs - 32;
+		}
+
+		for(*offset = 0; *offset < maxOffset; *offset += 8)
+		{
+			unsigned int secA, secB;
+			unsigned int refEpochA, refEpochB;
+			unsigned int fsA, fsB;
+			const unsigned int *frame;
+
+			frame = ((unsigned int *)data) + *offset/4;
+			secA      = frame[0] & 0x3FFFFFFF;
+			refEpochA = (frame[1] >> 24) & 0x3F;
+			fsA       = (frame[2] & 0x00FFFFFF) << 3;
+			frame += fs/4;
+			secB      = frame[0] & 0x3FFFFFFF;
+			refEpochB = (frame[1] >> 24) & 0x3F;
+			fsB       = (frame[2] & 0x00FFFFFF) << 3;
+
+			/* does it look reasonable? */
+			if(fsA == fs && fsB == fs && refEpochA == refEpochB && (secA == secB || secA+1 == secB))
+			{
+				*framesize = fs;
+
+				return 0;
+			}
+
+		}
+	}
+
+	return -1;
+}
+
+/* same as above, but for legacy frames */
+int find_vdifl_frame(const unsigned char *data, size_t length, size_t *offset, int *framesize)
+{
+	int fs, fs0, fs1;
+
+	if(framesize && *framesize)
+	{
+		fs0 = fs1 = *framesize;
+	}
+	else
+	{
+		fs0 = 24;
+		fs1 = 8216;
+	}
+
+	for(fs = fs0; fs <= fs1; ++fs)
+	{
+		size_t maxOffset;
+
+		if(!is_legal_vdifl_framesize(fs))
+		{
+			continue;
+		}
+
+		maxOffset = 5*fs;	/* check over a maximum of 5 frame lengths */
+		if(maxOffset > length - fs - 16)
+		{
+			maxOffset = length - fs - 16;
 		}
 
 		for(*offset = 0; *offset < maxOffset; *offset += 8)

@@ -1020,6 +1020,41 @@ struct mark5_format *new_mark5_format_from_stream(struct mark5_stream_generic *s
 		}
 	}
 
+	/* VDIFL */
+	framesize = 0;
+	if(find_vdifl_frame(ms->datawindow, ms->datawindowsize, &offset, &framesize) >= 0)
+	{
+		ms->frameoffset = offset;
+		f = new_mark5_format_vdif(
+			1024, 	// Need to give it something.  This will be wrong in general and will have to be fixed by downstream software.
+			get_vdif_chans_per_thread(ms->datawindow+offset),
+			get_vdif_quantization_bits(ms->datawindow+offset),
+			1,
+			framesize-16,
+			16,
+			get_vdif_complex(ms->datawindow+offset) );
+
+		set_format(ms, f);
+		status = mark5_format_init(ms);
+		if(status < 0)
+		{
+			if(f->final_format)
+			{
+				f->final_format(ms);
+			}
+			free(f);
+		}
+		else
+		{
+			copy_format(ms, mf);
+			mf->format = MK5_FORMAT_VDIF;
+			mf->ntrack = get_vdif_threads(ms->datawindow+offset, ms->datawindowsize-offset, framesize);
+			delete_mark5_stream(ms);
+			
+			return mf;
+		}
+	}
+
 #ifdef K5WORKS
 	/* k5 */
 	f = new_mark5_format_k5(0, 0, 0, -1);

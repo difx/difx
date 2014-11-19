@@ -1,3 +1,7 @@
+Version 1.5.2
+* Post DiFX-2.4
+* Detect Legacy VDIF
+
 Version 1.5.1
 * Improve behavior of fixmark5b() in the case that fill pattern is seen at the 1 second transition.
 * m5bsum calculates frame rates now rather than just assuming 25600 frames per second
