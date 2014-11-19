@@ -1,4 +1,4 @@
-AC_INIT([mark5access], [1.5.1], [Walter Brisken <wbrisken@nrao.edu>])
+AC_INIT([mark5access], [1.5.2], [Walter Brisken <wbrisken@nrao.edu>])
 
 AM_CONFIG_HEADER(config.h)
 
