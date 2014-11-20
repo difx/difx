@@ -1,0 +1,21 @@
+## Very basic installation instructions
+## You may do the steps below manually or can also run this file with
+##   . ./COMPILING
+
+aclocal
+libtoolize --copy --force
+
+autoconf
+autoheader
+automake -a -c
+
+## In case you want to install into a non-default location:
+# ./configure --prefix=somewhere
+
+## In case the default install location is fine:
+./configure 
+
+make
+
+## Install for all users
+# sudo make install

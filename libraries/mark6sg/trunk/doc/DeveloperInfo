@@ -1,0 +1,95 @@
+-----------------------------------------------------------------------------
+--- Info for Developers -----------------------------------------------------
+-----------------------------------------------------------------------------
+
+This is a very brief overview of the library functions.
+
+This library provides a level of abstraction over VLBI scan data
+recorded in SG (scatter-gather) mode with the Mark6 software.
+The library functions gather the scattered pieces of scan data and 
+provide access to it via standard VFS-like functions (e.g., open, read).
+
+The VFS-like interface is
+
+  mark6_sg_open()
+  mark6_sg_close()
+  mark6_sg_lseek()
+  mark6_sg_read()
+  mark6_sg_fstat()
+
+Convenience functions are
+
+  mark6_sg_verbositylevel()
+  mark6_sg_packetsize()
+
+  mark6_sg_list_all_scans()
+
+Include: #include <mark6sg.h> 
+Link:    LDLIBS=-lmark6sg     or link against   libmark6sg.la
+
+The current interface is C only, not C++.
+To keep the implementation simple the functions are not yet thread-safe.
+
+-----------------------------------------------------------------------------
+
+Summary of the VFS-like functions
+
+C: int fd = mark6_sg_open(scanname, O_RDONLY);
+
+  Opens the set of files associated with the given scan.
+  This involves a metadata extraction pass across all these files
+  and may a few seconds, depending on the total length of the scan.
+
+C: mark6_sg_close(fd);
+
+  Closes the file descriptor. Carries out some internal clean-up.
+
+C: off_t newoff = mark6_sg_lseek(fd, (off_t)offset, SEEK_SET/*or other*/);
+
+  Changes the current read offset.
+
+C: size_t nread = mark6_sg_read(fd, (void*)buf, (size_t)nrequested);
+
+  Reads data from the scan.
+  The data are gathered from the individual files of the scan.
+  No restrictions on read size or byte alignment.
+
+C: struct stat st;
+C: mark6_sg_fstat(fd, &st);
+
+  Returns the 'stat' information on the opened file. See 'man 2 fstat'.
+  Note that 
+    st_size     : total size in bytes of the entire scan
+    st_blksize  : packet size that the Mark6 software thought it was recording
+    time fields : time infos of the first file, *not* VLBI data timestamps
+
+  For VLBI data time stamps, the user application must decode the
+  scan data returned with read(). Usually Mark6 software is used to capture
+  10 GbE network data streams that contain data in VDIF format.
+
+-----------------------------------------------------------------------------
+
+Summary of the convenience functions
+
+C: mark6_sg_verbositylevel(0);
+
+  Changes the verbosity or printout level,
+  0=none, 1=little, 2=debug, 3=more debug
+
+C: int packetsize = mark6_sg_packetsize(fd);
+
+  Opens the packet size that the Mark6 software thought it was recording.
+  Here 'fd' is the file descriptor of a scan opened with mark6_sg_open().
+
+C: char** uniquenamelist;
+C: int nscans = mark6_sg_list_all_scans(&uniquenamelist);
+
+  Allocates space in the string array 'uniquenamelist'
+  and adds all scans found under "/mnt/disks/[1-2]/[0-7]/*"
+  to this string array.
+  Scan names can be used in the call to "open()".
+
+  The user application must free() the uniquenamelist[0..nscans-1]
+  entries and free() uniquenamelist[] when no longer used.
+
+-----------------------------------------------------------------------------

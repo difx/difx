@@ -1,0 +1,20 @@
+
+
+  == Mark6 Scatter-Gather File Abstraction : mark6sg v1.0.0 ==
+
+
+The library is available under a GNU GPL 3.0 license.
+
+The library provides file-like access to recordings made in 
+the Mark6 SG (scatter-gather) mode. Documentation on how
+to use the library from user programs can be found under 
+the doc/ directory.
+
+An example program can be found under test/
+
+See COMPILING for instructions to build the library.
+
+The last step ('sudo make install') will install the library, 
+header files, and a package config file. You may check if
+the latter worked via
+  pkg-config --cflags mark6sg

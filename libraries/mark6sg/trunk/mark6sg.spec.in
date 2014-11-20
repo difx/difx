@@ -1,0 +1,85 @@
+Summary: Library for reading Mark6 scatter-gather recordings
+Name: mark6sg
+Version: @version@
+Release: 1
+License: GPL3
+Group: VLBI
+BuildRoot: /var/tmp/mark6sg-@version@-buildroot
+Requires: gcc >= 4.1.0
+Prefix: /usr
+Source: mark6sg-@version@.tar.gz
+
+%description
+A library intended to help reconstruct VLBI scans that were written in
+a special scatter-gather format onto a JBOD array of disks.
+
+The library provides a VFS-like read-only file interface (standard 
+open(), read(), and so on calls) that allow programs to read these 
+scattered files as if they were a single file.
+
+The library assumes that files were written on a 10GbE network data capture
+computer with the Mark6 software (dplane and cplane; using versions at least 
+until 11/2014). A single 10GbE capture session in Mark6 software produces a
+series of scattered files, for example:
+
+/mnt/disks/1/0/wrtest_kjcc_test_2014y314d10h59m09s.vdif
+/mnt/disks/1/1/wrtest_kjcc_test_2014y314d10h59m09s.vdif
+/mnt/disks/1/2/wrtest_kjcc_test_2014y314d10h59m09s.vdif
+/mnt/disks/1/3/wrtest_kjcc_test_2014y314d10h59m09s.vdif
+/mnt/disks/1/4/wrtest_kjcc_test_2014y314d10h59m09s.vdif
+/mnt/disks/1/5/wrtest_kjcc_test_2014y314d10h59m09s.vdif
+/mnt/disks/1/6/wrtest_kjcc_test_2014y314d10h59m09s.vdif
+/mnt/disks/1/7/wrtest_kjcc_test_2014y314d10h59m09s.vdif
+/mnt/disks/2/0/wrtest_kjcc_test_2014y314d10h59m09s.vdif
+/mnt/disks/2/1/wrtest_kjcc_test_2014y314d10h59m09s.vdif
+/mnt/disks/2/2/wrtest_kjcc_test_2014y314d10h59m09s.vdif
+/mnt/disks/2/3/wrtest_kjcc_test_2014y314d10h59m09s.vdif
+/mnt/disks/2/4/wrtest_kjcc_test_2014y314d10h59m09s.vdif
+/mnt/disks/2/5/wrtest_kjcc_test_2014y314d10h59m09s.vdif
+/mnt/disks/2/6/wrtest_kjcc_test_2014y314d10h59m09s.vdif
+/mnt/disks/2/7/wrtest_kjcc_test_2014y314d10h59m09s.vdif
+
+The Mark6 recordings are identified by their base filename. In the above 
+example the recording is "wrtest_kjcc_test_2014y314d10h59m09s.vdif".
+
+The several files associated with a recording each contain hundreds
+of typically ~10MB-sized data blocks. During recording, the incoming 10GbE 
+UDP/IP data are combined into blocks by Mark6 software. To prevent 
+slower-throughput disks from forming a performance bottleneck, Mark6
+software scatters blocks to files in the order as earlier writes
+are completing (i.e. not Round-robin scheduling). Hence the time order 
+of data across files is somewhat random.
+
+Upon open()'ing a recording the library thus needs to check the metadata
+of all files associated with the recording. This can take a few seconds.
+
+After this read() and lseek() can be used to read data from a recording.
+There are no special restrictions.
+
+Interpreting the data is up to the user application.
+Typically it is VDIF format VLBI data.
+
+%prep
+%setup -q -n mark6sg-@version@
+
+%build
+%configure
+make
+
+%install
+%makeinstall
+
+%files
+%defattr(-,root,root)
+%{_libdir}/libmark6sg.la
+%{_libdir}/libmark6sg.so.0.0.0
+%{_libdir}/libmark6sg.so.0
+%{_libdir}/libmark6sg.so
+%{_libdir}/libmark6sg.a
+%{_includedir}/mark6sg.h
+%{_includedir}/mark6sg/mark6_sg_utils.h
+%{_includedir}/mark6sg/mark6_sg_vfs.h
+
+%changelog
+20 Nov 2014 Jan Wagner <jwagner@kasi.re.kr>
+

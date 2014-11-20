@@ -1,0 +1,22 @@
+ACLOCAL_AMFLAGS=-I m4
+
+SUBDIRS = mark6sg test extra
+
+EXTRA_DIST = COMPILING mark6sg.spec.in
+
+dist-hook: mark6sg.spec
+	cp mark6sg.spec $(distdir)
+
+DIST_SUBDIRS = mark6sg test extra
+
+library_includedir = $(includedir)
+library_include_HEADERS = 
+
+pkgconfigdir = $(libdir)/pkgconfig
+pkgconfig_DATA = mark6sg.pc
+
+rpm: distdir
+	tardir=$(distdir) && $(am__tar) | GZIP=$(GZIP_ENV) gzip -c >$(distdir).tar.gz
+	rpmbuild -tb $(distdir).tar.gz
+	$(am__remove_distdir)
+
