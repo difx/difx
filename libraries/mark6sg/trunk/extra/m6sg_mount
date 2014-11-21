@@ -1,0 +1,140 @@
+#!/usr/bin/python
+
+##########################################################################
+##
+## Mark6 utility   m6sg_mount v1.0    Jan Wagner 2014
+##
+## Usage:  m6sg_mount [-u]
+##
+## With the '-u' option all scatter-gather disks are unmounted.
+## With no options specified, all "diskpack" disks are mounted.
+##
+## The main purpose of this script is to avoid having to start cplane,
+## then dplane, and then send the necessary da-client commands.
+##
+##########################################################################
+
+import subprocess
+import sys
+import os
+
+# A note on Mark6 partitions
+#
+#   sda = Linux/OS with multiple partitions
+#   sdb = first disk of array, sdc = second disk of array, ..., sdq (or higher) = last disk of array
+#
+# Disks have 2 partitions in scatter-gather mode
+#
+#   sdX1 = data       default mountpoint /mnt/disks/[1-4]/[0-7]/
+#   sdX2 = metadata   default mountpoint /mnt/disks/.meta/[1-4]/[0-7]/
+#     where X related to disk number 1..16 is converted to 'module' ([1-4]) via module=(nr/8)+1 and 'slot' via slot=nr%8
+
+def getPartitions():
+	partitions = []
+	with open("/proc/partitions") as f:
+		partitions = f.readlines()
+	partitions[:] = [s.strip('\n') for s in partitions]
+	partitions[:] = [s.split(' ')[-1] for s in partitions[2:]]
+
+	mounted = []
+	with open("/etc/mtab") as f:
+		mounted = f.readlines()
+	mounted[:] = [s.split(' ')[0] for s in mounted]
+	mounted[:] = [s.split('/')[-1] for s in mounted]
+
+	partitions.sort()
+	mounted.sort()
+	return (partitions,mounted)
+
+## Mounting
+
+def getMountables(partitions, mounted):
+	unmounted = list(set(partitions).difference(mounted))
+	unmounted[:] = [s for s in unmounted if not s.startswith('sda')]
+	mountable = [s for s in unmounted if (s.startswith('sd') and s.endswith('1') and len(s)==4)]
+	mountable.sort()
+
+	mountlist = []
+	for pt in mountable:
+		disknr = ord(pt[-2]) - ord('b')
+		modnr  = (disknr/8) + 1
+		slotnr = disknr % 8
+		tp = (  '/dev/%s' % (pt), 
+			'/mnt/disks/%d/%d/' % (modnr,slotnr), 
+			'/dev/%s2' % (pt[:-1]), 
+			'/mnt/disks/.meta/%d/%d/' % (modnr,slotnr)
+		)
+		mountlist.append(tp)
+
+	return mountlist
+
+def doBatchMount(mountlist):
+	# Mount in the order below so it looks "pretty" in /etc/mtag
+	# sdX1 --> /mnt/disks/a/b/
+	for m in mountlist:
+		doMount(m[0],m[1])
+	# sdX2 --> /mnt/disks/.meta/a/b/
+	for m in mountlist:
+		doMount(m[2],m[3])
+
+def doMount(dev,dir):
+	cmd_mount = ["sudo", "/bin/mount", dev,dir] 
+	cmd_chmod = ["sudo", "chmod", "775", dir]
+	cmd_chown = ["sudo", "chown", "root:mark6", dir]
+	(o,rc1) = subprocess.Popen(cmd_mount, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
+	(o,rc2) = subprocess.Popen(cmd_chmod, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
+	(o,rc3) = subprocess.Popen(cmd_chown, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
+	if len(rc1)>0 or len(rc2)>0 or len(rc3)>0:
+		print rc1, rc2, rc3
+
+## Unmounting
+
+def getUnMountables(partitions, mounted):
+	mounted_sgdisks = ['/dev/%s' % (s) for s in mounted if (s.startswith('sd') and not s.startswith('sda'))]
+	mounted_sgdisks.sort()
+	return mounted_sgdisks
+
+def doBatchUnMount(mountlist):
+	for m in mountlist:
+		cmd_umount = ["sudo", "/bin/umount", m] 
+		(o,rc) = subprocess.Popen(cmd_umount, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
+		if len(rc)>0:
+			print rc
+
+
+
+## Main
+
+(Lpart,Lmount)  = getPartitions()
+(Lmountables)   = getMountables(Lpart,Lmount)
+(Lunmountables) = getUnMountables(Lpart,Lmount)
+
+if len(sys.argv)!=1 and len(sys.argv)!=2 or (len(sys.argv)==2 and not sys.argv[1]=='-u'):
+	print 'Usage: m6sg_mount [-u]'
+	sys.exit(-1)
+
+if len(sys.argv)==2:
+
+	print 'Mounted scatter-gather partitions that will be unmounted:\n%s\n' % (str(Lunmountables))
+	if len(Lunmountables)<1:
+		print 'Nothing to do.'
+		sys.exit(0)
+
+	print 'Continue (y/n)?'
+	a = raw_input()
+	if a=='y':
+		doBatchUnMount(Lunmountables)
+		print 'Done.'
+else:
+
+	print 'Partitions to mount, and their mount points:\n%s\n' % (str(Lmountables))
+	if len(Lmountables)<1:
+		print 'Nothing to do.'
+		sys.exit(0)
+
+	print 'Continue (y/n)?'
+	a = raw_input()
+	if a=='y':
+		doBatchMount(Lmountables)
+		print 'Done.'
+
