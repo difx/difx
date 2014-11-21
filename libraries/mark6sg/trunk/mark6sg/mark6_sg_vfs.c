@@ -120,10 +120,21 @@ int mark6_sg_open(const char *scanname, int flags)
     // Gather all metadata about the scan's files
     vfd->nfiles  = mark6_sg_filelist_from_name(scanname, &(vfd->filepathlist), &(vfd->filenamelist));
     vfd->nblocks = mark6_sg_blocklist(vfd->nfiles, (const char**)(vfd->filepathlist), &(vfd->blks));
-    vfd->len     = vfd->blks[vfd->nblocks-1].virtual_offset + vfd->blks[vfd->nblocks-1].datalen;
     for (i=0; i<(vfd->nfiles); i++)
     {
         vfd->fds[i] = fopen(vfd->filepathlist[i], "r");
+    }
+    if (vfd->nfiles <= 0)
+    {
+        mark6_sg_close(fd);
+        errno = ENOENT;
+        return -1;
+    }
+
+    // Total scan length
+    if (vfd->nblocks > 0)
+    {
+        vfd->len = vfd->blks[vfd->nblocks-1].virtual_offset + vfd->blks[vfd->nblocks-1].datalen;
     }
 
     m6sg_open_files_list.nopen++;
@@ -237,8 +248,7 @@ ssize_t mark6_sg_read(int fd, void* buf, size_t count)
         nremain       -= nwanted;
     }
 
-    vfd->rdoffset += nread;
-    return 0;
+    return nread;
 }
 
 
@@ -317,7 +327,7 @@ int mark6_sg_fstat(int fd, struct stat *buf)
 
     // Do some adjustments
     buf->st_size = vfd->len;
-    buf->st_blksize = vfd->blks[0].packetsize;
+    buf->st_blksize = (vfd->nblocks > 0) ? vfd->blks[0].packetsize : 0;
 
     return 0;
 }
@@ -344,5 +354,9 @@ int mark6_sg_packetsize(int fd)
         return -1;
     }
 
-    return (vfd->blks[0].packetsize);
+    if (vfd->nblocks > 0)
+    {
+        return vfd->blks[0].packetsize;
+    }
+    return 0;
 }

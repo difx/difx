@@ -287,6 +287,7 @@ int mark6_sg_blocklist(int nfiles, const char** filenamelist, m6sg_blockmeta_t**
     }
 
     // Get the file format descriptor of each file
+    memset(&fhdr, 0, sizeof(fhdr));
     for (i=0; i<nfiles; i++)
     {
         f[i] = fopen(filenamelist[i], "r");
@@ -316,6 +317,7 @@ int mark6_sg_blocklist(int nfiles, const char** filenamelist, m6sg_blockmeta_t**
     }
 
     // Get all block descriptors from all files
+    memset(&bhdr, 0, sizeof(bhdr));
     if (m_m6sg_dbglevel > 0) { printf("Extracting block list from %d files...\n", nfiles); }
     while (nopened>0)
     {
@@ -365,7 +367,7 @@ int mark6_sg_blocklist(int nfiles, const char** filenamelist, m6sg_blockmeta_t**
     if (nblocks == 0)
     {
         fprintf(stderr, "mark6_sg_blocklist: no data found in files.\n");
-        *blocklist = blks;
+        *blocklist = NULL;
         return nblocks;
     }
 
