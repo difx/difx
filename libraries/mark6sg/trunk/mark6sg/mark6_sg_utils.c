@@ -94,7 +94,8 @@ typedef struct wb_header_tag_v1     // write block header - version 1
  */
 int mark6_sg_verbositylevel(int level)
 {
-    m_m6sg_dbglevel = (level >= 0) ? level : 0;
+    m_m6sg_dbglevel = (level >= 0) ? level : m_m6sg_dbglevel;
+    return level;
 }
 
 /**

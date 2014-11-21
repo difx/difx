@@ -38,6 +38,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/time.h>
 
 #include "mark6sg.h"
 
@@ -80,6 +81,9 @@ int main(int argc, char** argv)
     int    fdin;
     FILE*  fdout;
     struct stat st;
+    struct timeval tstart;
+    struct timeval tstop;
+    double dT;
 
     int show_progress = 1;
 
@@ -160,6 +164,7 @@ int main(int argc, char** argv)
 
     // Copy
     printf("Copying to output file %s...\n", destination);
+    gettimeofday(&tstart, NULL);
     if (show_progress)
     {
         setbuf(stdout, NULL);
@@ -185,7 +190,12 @@ int main(int argc, char** argv)
             printf(" %ld/%ld MByte                 \r", ncopied/(1024*1024), ntotal/(1024*1024));
         }
     }
-    printf("Copied %ld of %ld bytes.\n", ncopied, ntotal);
+    gettimeofday(&tstop, NULL);
+
+    dT = (tstop.tv_sec - tstart.tv_sec) + 1e-6*(tstop.tv_usec - tstart.tv_usec);
+    printf("Elapsed time %.2f seconds (excluding file open time); rate %.0f MB/s; %ld bytes copied.\n",
+           dT, ((double)ncopied)/(1024.0*1024.0*dT), ncopied
+    );
 
     fclose(fdout);
     mark6_sg_close(fdin);

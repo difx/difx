@@ -29,6 +29,7 @@
 
 // A short program to test / try out some of the library functions.
 
+#include <errno.h>
 #include <glob.h>
 #include <linux/limits.h>
 #include <stdlib.h>
@@ -43,18 +44,14 @@
 
 int main(int argc, char** argv)
 {
-    FILE* fo;
-    int i, nscans, nfiles, fd;
-    char** filepathlist;
-    char** filenamelist;
+    int    i, nscans, fd;
     char** uniquenamelist;
     char*  fname;
 
-    struct stat st;
-    int packetsize;
-
-    m6sg_blockmeta_t* blks;
-    void* buf;
+    FILE*   fo;
+    void*   buf;
+    ssize_t nrd;
+    struct  stat st;
 
     /* Change verbosity */
     mark6_sg_verbositylevel(0); // 0=none, 1=little, 2=debug, 3=more debug
@@ -74,25 +71,42 @@ int main(int argc, char** argv)
 
     /* Choose a scan */
     fname = uniquenamelist[0]; // first scan
-    // fname = strdup("wrtest_kjcc_test_2014y314d10h59m09s.vdif"); // some known other scan
+    //fname = strdup("wrtest_kjcc_test_2014y314d10h59m09s.vdif"); // some known other scan
 
     /* Extract some data from the scan */
     buf = malloc(M_BUFSIZE);
 
-    printf("Opening a scan, seeking a bit, and reading ~128MB of data...\n");
+    printf("Opening a scan...\n");
     fd  = mark6_sg_open(fname, O_RDONLY);
-    packetsize = mark6_sg_packetsize(fd);
-    (off_t)mark6_sg_lseek(fd, ((off_t)packetsize)*14000, SEEK_SET);
-    (size_t)mark6_sg_read(fd, buf, M_BUFSIZE);
+    if (fd < 0)
+    {
+        printf("Error opening scan: %s\n", strerror(errno));
+        exit(-1);
+    }
 
+    printf("Getting scan infos...\n");
     (int)mark6_sg_fstat(fd, &st);
-    printf("File size %ld, block size %ld (=packet size)\n", st.st_size, st.st_blksize);
-    (int)mark6_sg_close(fd);
+    printf("Stat: file size %ld, block size %ld.  mark6_sg_packetsize(): %d bytes\n",
+            st.st_size, st.st_blksize, mark6_sg_packetsize(fd)
+    );
 
-    printf("Writing extracted data to %s\n", OUT_FILE);
-    fo  = fopen(OUT_FILE, "w");
-    fwrite(buf, M_BUFSIZE, 1, fo);
-    fclose(fo);
+    printf("Doing lseek() to skip 14000 packets...\n");
+    (off_t)mark6_sg_lseek(fd, ((off_t)mark6_sg_packetsize(fd))*14000, SEEK_SET);
+
+    printf("Trying to read...\n");
+    nrd = mark6_sg_read(fd, buf, M_BUFSIZE);
+    if (nrd > 0)
+    {
+        printf("Writing %ld bytes of extracted data to %s\n", nrd, OUT_FILE);
+        fo  = fopen(OUT_FILE, "w");
+        fwrite(buf, nrd, 1, fo);
+        fclose(fo);
+    }
+    else
+    {
+        printf("Scan %s could not be read or contained no data\n", fname);
+    }
+    (int)mark6_sg_close(fd);
     free(buf);
 
     /* Clean-up for mark6_sg_list_all_scans() */
