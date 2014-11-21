@@ -1951,10 +1951,7 @@ public class SystemSettings extends JFrame {
                 }
                 else if ( fileFormat == USNO_FINAL_FORMAT ) {
                     double testDate = Double.parseDouble( content.substring( fromIndex + 7, fromIndex + 12 ) );
-                    JulianCalendar theDate = new JulianCalendar();
-                    theDate.clear();
-                    theDate.mjd( testDate );
-                    testDate = theDate.julian() + .5;
+                    testDate += 2400000.5;
                     if ( testDate > before && testDate < after ) {
                         EOPStructure newEOP = new EOPStructure();
                         newEOP.date = testDate;

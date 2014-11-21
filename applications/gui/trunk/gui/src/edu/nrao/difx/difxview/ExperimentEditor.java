@@ -2055,10 +2055,12 @@ public class ExperimentEditor extends JFrame {
                             _eopMaxTime = endTime;
                         }
                         else {
-                            if ( startTime.before( _eopMinTime ) )
+                            if ( startTime.before( _eopMinTime ) ) {
                                 _eopMinTime = startTime;
-                            if ( endTime.after( _eopMaxTime ) )
+                            }
+                            if ( endTime.after( _eopMaxTime ) ) {
                                 _eopMaxTime = endTime;
+                            }
                         }
                     }
                 }
@@ -2317,7 +2319,7 @@ public class ExperimentEditor extends JFrame {
             if ( _eopMinTime != null && _eopMaxTime != null )
                 midTime.setTimeInMillis( _eopMinTime.getTimeInMillis() + ( _eopMaxTime.getTimeInMillis() - _eopMinTime.getTimeInMillis() ) / 2 );
         }
-        _newEOP = _settings.eopData( midTime.julian() - 2.0, midTime.julian() + 3.0 );
+        _newEOP = _settings.eopData( midTime.julian() - 2.5, midTime.julian() + 2.5 );
         if ( _newEOP != null && _newEOP.size() > 0 ) {
             IndexedPanel newEOPPanel = new IndexedPanel( "Updated From Source" );
             newEOPPanel.open( false );
@@ -2392,7 +2394,6 @@ public class ExperimentEditor extends JFrame {
         JulianCalendar midTime = new JulianCalendar();
         synchronized ( _eopLock ) {
             if ( _eopMinTime != null && _eopMaxTime != null ) {
-                midTime.setTimeInMillis( _eopMinTime.getTimeInMillis() + ( _eopMaxTime.getTimeInMillis() - _eopMinTime.getTimeInMillis() ) / 2 );
                 _newEOP = _settings.eopData( midTime.julian() - 2.0, midTime.julian() + 3.0 );
             }
         }
