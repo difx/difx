@@ -1,5 +1,6 @@
 
 bin_PROGRAMS = m6sg_blocknrs m6sg_gather
+bin_SCRIPTS = m6sg_mount
 
 m6sg_blocknrs_SOURCES = m6sg_blocknrs.c
 
