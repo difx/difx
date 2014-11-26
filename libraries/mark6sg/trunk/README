@@ -18,3 +18,22 @@ The last step ('sudo make install') will install the library,
 header files, and a package config file. You may check if
 the latter worked via
   pkg-config --cflags mark6sg
+
+The library includes some command line utilities:
+
+$ m6sg_mount [-u]
+
+ Mounts or unmounts (-u) all Mark6 disks.
+ No need to start dplane, cplane and da-client.
+
+$ m6sg_gather [--list | <scanname> <destination>]
+ 
+ A counterpart of the Mark6 'gather' utility but using
+ the mark6sg library.
+
+ Combines all scattered files associated with a single scan,
+ specified by <scanname>, and writes the gathered data into
+ the specifified <destination> file or directory.
+
+ When invoked with --list, all scans on the Mark6 disks are listed. 
+ These scan names can be used as the <scanname> argument later.
