@@ -10,7 +10,7 @@ dist-hook: mark6sg.spec
 DIST_SUBDIRS = mark6sg test extra
 
 library_includedir = $(includedir)
-library_include_HEADERS = 
+library_include_HEADERS = mark6sg.h
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = mark6sg.pc
