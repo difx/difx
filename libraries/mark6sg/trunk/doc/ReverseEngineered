@@ -1,0 +1,223 @@
+
+There is apparently no documentation on the Mark6 non-RAID recording format(?).
+
+The below information was reverse-engineered from the Mark6 scatter-gather (SG)
+mode file system layut and data, and the Mark6 d-plane 1.12 source code.
+The information is quite low-level.
+
+
+0) RAID vs. SG:
+
+In SG mode when a disk fails, just a subset of data is lost.
+In RAID 0 mode when a disk fails, it is likely that all data are lost (or hard to recover).
+In RAID 5 mode when a disk fails, the data can still be recovered.
+
+The scan files on a SG mode recording need to be reassembled from files scattered across disks. 
+The SG mode metadata embedded into the files has to be removed during this gathering process.
+The scan files on a RAID 5 are accessible directly without extra steps.
+
+The RAID 5 mode is probably fine for 4 Gbps recording, but for 4 to 16+ Gbps
+it might be too slow (I didn't test) and SG mode might have to be used(?)
+
+
+Each of the two LSI SAS HBA cards in the Mark6 handles 16 disks. The Mark6 software 
+for some reason (historical, the typical diskpack size) divides each 16 disks into 
+two 8-disk groups. Hence there can be 4 groups of 8 disks (groups 1 to 4; disks 0 to 7).
+
+
+1) In scatter-gather mode there is a set of files associated with each VLBI scan.
+
+The files are on scatter-gather related disk partitions on XFS.file systems.
+
+All partitions are:
+
+ cat /proc/partitions
+   8        0  488386584 sda            -- OS disk (fixed)
+   8        1  468596736 sda1           Linux, Mark6 root file system
+   8        2          1 sda2           ?
+   8        5   19786752 sda5           Linux, swap
+   8       16 3907018584 sdb            -- VLBI disk, 1 of 16 (removable)
+   8       17 3906919424 sdb1           data partition, XFS file system
+   8       18      97280 sdb2           meta data partition, XFS file system
+ ...
+   8      240 3907018584 sdp            -- VLBI disk, 15 of 16 (removable)
+   8      241 3906919424 sdp1           data partition, XFS file system
+   8      242      97280 sdp2           meta data partition, XFS file system
+  65        0 3907018584 sdq            -- VLBI disk, 16 of 16 (removable)
+  65        1 3906919424 sdq1           data partition, XFS file system
+  65        2      97280 sdq2           meta data partition, XFS file system
+
+Mounted as:
+
+  /dev/sdb1 on /mnt/disks/1/0 type xfs (rw)
+  /dev/sdb2 on /mnt/disks/.meta/1/0 type xfs (rw)
+  ...
+  /dev/sdp1 on /mnt/disks/2/6 type xfs (rw)
+  /dev/sdp2 on /mnt/disks/.meta/2/6 type xfs (rw)
+  /dev/sdq1 on /mnt/disks/2/7 type xfs (rw)
+  /dev/sdq2 on /mnt/disks/.meta/2/7 type xfs (rw)
+
+Meta data files (see 2):
+
+  /mnt/disks/.meta/[1-4]/[0-7]/group    diskpack volume serial number
+  /mnt/disks/.meta/[1-4]/[0-7]/slist    scan list in JSON format
+
+Scatter-gather files (see 3):
+
+  /mnt/disks/[1-4]/[0-7]/filename       
+
+  When scans are recorded across 16-disks ("2 diskpacks") in SG mode the
+  resulting set of data files is, for example:
+
+  /mnt/disks/1/0:
+  -rw-r--r--  1 oper mark6 1.2G Oct 26 15:13 n14st02c_fila10_2014y299d06h12m40s.vdif
+  -rw-r--r--  1 oper mark6 1.3G Oct 26 15:09 n14st02c_fila10_2014y299d15h08m49s.vdif
+  /mnt/disks/1/1:
+  -rw-r--r--  1 oper mark6 1.4G Oct 26 15:13 n14st02c_fila10_2014y299d06h12m40s.vdif
+  -rw-r--r--  1 oper mark6 1.3G Oct 26 15:09 n14st02c_fila10_2014y299d15h08m49s.vdif
+  /mnt/disks/1/2:
+  -rw-r--r--  1 oper mark6 1.4G Oct 26 15:13 n14st02c_fila10_2014y299d06h12m40s.vdif
+  -rw-r--r--  1 oper mark6 1.3G Oct 26 15:09 n14st02c_fila10_2014y299d15h08m49s.vdif
+  ...
+  /mnt/disks/1/7:
+  -rw-r--r--  1 oper mark6 1.3G Oct 26 15:13 n14st02c_fila10_2014y299d06h12m40s.vdif
+  -rw-r--r--  1 oper mark6 1.4G Oct 26 15:09 n14st02c_fila10_2014y299d15h08m49s.vdif
+  /mnt/disks/2/0:
+  -rw-r--r--  1 oper mark6 1.3G Oct 26 15:13 n14st02c_fila10_2014y299d06h12m40s.vdif
+  -rw-r--r--  1 oper mark6 1.4G Oct 26 15:09 n14st02c_fila10_2014y299d15h08m49s.vdif
+  ...
+  /mnt/disks/2/7:
+  -rw-r--r--  1 oper mark6 1.3G Oct 26 15:13 n14st02c_fila10_2014y299d06h12m40s.vdif
+  -rw-r--r--  1 oper mark6 1.3G Oct 26 15:09 n14st02c_fila10_2014y299d15h08m49s.vdif
+
+  In the above example two scans (n14st02c_fila10_2014y299d06h12m40s.vdif and
+  n14st02c_fila10_2014y299d15h08m49s.vdif) were recorded on the two diskpacks.
+  The scatter files are about 1.3 GB in size each. The total size of one 
+  scan was about 21 GB, or 16 files x 1.3 GB/file.
+
+
+
+2) About 'group' and 'slist' files under /mnt/disks/.meta/[1-4]/[0-7]/
+
+The 'group' meta data files contain a single line, without a newline.
+
+The information reflects (hopefully) the volume serial number sticker on the diskpack. 
+When recording across two diskpacks (16 disks total) the metadata might look like this:
+
+$ for ii in `seq 0 7`; do cat /mnt/disks/.meta/1/$ii/group; echo; done
+2:KVN00500/32000/4/8:KVN00600/32000/4/8
+2:KVN00500/32000/4/8:KVN00600/32000/4/8
+2:KVN00500/32000/4/8:KVN00600/32000/4/8
+2:KVN00500/32000/4/8:KVN00600/32000/4/8
+2:KVN00500/32000/4/8:KVN00600/32000/4/8
+2:KVN00500/32000/4/8:KVN00600/32000/4/8
+2:KVN00500/32000/4/8:KVN00600/32000/4/8
+2:KVN00500/32000/4/8:KVN00600/32000/4/8
+$ for ii in `seq 0 7`; do cat /mnt/disks/.meta/2/$ii/group; echo; done
+2:KVN00500/32000/4/8:KVN00600/32000/4/8
+2:KVN00500/32000/4/8:KVN00600/32000/4/8
+2:KVN00500/32000/4/8:KVN00600/32000/4/8
+2:KVN00500/32000/4/8:KVN00600/32000/4/8
+2:KVN00500/32000/4/8:KVN00600/32000/4/8
+2:KVN00500/32000/4/8:KVN00600/32000/4/8
+2:KVN00500/32000/4/8:KVN00600/32000/4/8
+2:KVN00500/32000/4/8:KVN00600/32000/4/8
+
+The 'slist' meta data contains a list of scans on the disks.
+Each disk should contain a copy identical with the 'slist' files
+on the other disks of a diskpack or disk group.
+
+$ for ii in `seq 0 7`; do md5sum /mnt/disks/.meta/1/$ii/slist; done
+ff872a296c46b64138041cb27b1197b1  /mnt/disks/.meta/1/0/slist
+ff872a296c46b64138041cb27b1197b1  /mnt/disks/.meta/1/1/slist
+ff872a296c46b64138041cb27b1197b1  /mnt/disks/.meta/1/2/slist
+ff872a296c46b64138041cb27b1197b1  /mnt/disks/.meta/1/3/slist
+ff872a296c46b64138041cb27b1197b1  /mnt/disks/.meta/1/4/slist
+ff872a296c46b64138041cb27b1197b1  /mnt/disks/.meta/1/5/slist
+ff872a296c46b64138041cb27b1197b1  /mnt/disks/.meta/1/6/slist
+ff872a296c46b64138041cb27b1197b1  /mnt/disks/.meta/1/7/slist
+ for ii in `seq 0 7`; do md5sum /mnt/disks/.meta/2/$ii/slist; done
+ff872a296c46b64138041cb27b1197b1  /mnt/disks/.meta/2/0/slist
+ff872a296c46b64138041cb27b1197b1  /mnt/disks/.meta/2/1/slist
+ff872a296c46b64138041cb27b1197b1  /mnt/disks/.meta/2/2/slist
+ff872a296c46b64138041cb27b1197b1  /mnt/disks/.meta/2/3/slist
+ff872a296c46b64138041cb27b1197b1  /mnt/disks/.meta/2/4/slist
+ff872a296c46b64138041cb27b1197b1  /mnt/disks/.meta/2/5/slist
+ff872a296c46b64138041cb27b1197b1  /mnt/disks/.meta/2/6/slist
+ff872a296c46b64138041cb27b1197b1  /mnt/disks/.meta/2/7/slist
+
+The 'slist' files are in JSON format, for example (with slight reformatting):
+
+{
+  1: {'status': 'recorded', 'num_str': 1, 'start_tm': 1410876577.706074, 'create_time': '2014y259d14h09m38s', 'sn': 'wrtest_2nd_test_001', 'dur': 100, 'spc': 0, 'size': '7.546'}, 
+  2: {'status': 'recorded', 'size': '8.533', 'start_tm': 1410909599.106127, 'create_time': '2014y259d23h20m00s', 'sn': 'wrtest_2nd_tvg_001', 'dur': 100, 'spc': 0, 'num_str': 1}, 
+  3: {'status': 'recorded', 'size': '0.000', 'start_tm': 1410938164.948671, 'create_time': '2014y260d07h16m05s', 'sn': 'wrtest_2nd_cw_001', 'dur': 100, 'spc': 0, 'num_str': 1},
+  ...
+  59: {'status': 'recorded', 'size': '15.226', 'start_tm': 1415584753.080439, 'create_time': '2014y314d01h59m14s', 'sn': 'wrtest_kjcc_test_2014y314d10h59m09s', 'dur': 15, 'spc': 0, 'num_str': 1}}
+}
+
+
+We can look at the last scan ('wrtest_kjcc_test_2014y314d10h59m09s', 16 files called "wrtest_kjcc_test_2014y314d10h59m09s.vdif").
+The recording was started manually and the file name part about 2014y314d10h59m09s is not entirely correct.
+In addition the Mark6 system was in the KST time zone (Korean Standard Time).
+
+The 16 files can be combined for a readable VDIF file using Mark6 'gather' or 'm6sg_gather' in this library package.
+JSON/slist: the create_time of the scan is 2014y314d01h59m14s
+VDIF file:  the first time stamp is MJD = 56971/01:59:14.19 (10Nov2014/DOY314) as inserted set by the VLBI backend
+
+The VDIF time stamp and the time stamp in the JSON-formatted metadata agree.
+
+If one were to check a diskpack contents in say, DiFX, to correlate a full diskpack without
+explicitly specifying a list of individual scans, one could *probably* use the JSON data to 
+map different time ranges to scan names.
+
+
+
+3) The contents of each VLBI data file in SG mode looks like this:
+
+  [file header]
+  [block a header] [block a data (~10MB)]
+  [block b header] [block b data (~10MB)]
+  [block c header] [block c data (~10MB)]
+  ...
+
+The file and block header describe mainly the packet size and the size of a data block.
+In the Mark6 source code these blocks are sometimes referred to as "cells" (?)
+
+The data section of each block is ensured to contain an integer number of VLBI frames.
+In version 2 of the file format the blocks can differ in size from one block to the next,
+perhaps to accomodate some kind of VLBI data that yields a dynamically changing packet size.
+
+The block numbers within a file are always (?) increasing. Consecutive blocks in the same
+file have increasing block numbers that have "gaps" (e.g, a=0, b=16, c=35, ...). 
+The block numbers that are "missing" in one file (in this example, the missing blocks would 
+be 1,2,3..,15,17,18,..,34,...) are found in one of the other files associated with the scan.
+
+The Mark6 recording software is able to do on-the fly conversion from Mark5B into VDIF,
+and one may probably safely assume that the recorded data on the disks are always VDIF.
+
+During scatter-gather mode recording the Mark6 opens one file on each of the disks.
+Network data are written to this set of open files. Because the 10GbE recording in 
+Mark6 software is not done Round-Robin across these files, the order of blocks across 
+the files is somewhat random.
+
+In a 4-disk example, the four files of one SG recording (one file on every disk) might contain:
+
+        file 0  file 1  file 2  file 3
+      --------------------------------
+block        0       1       2       3
+block        4       7       5       6
+block        9       8      10      11
+block      ...
+
+It is not clear from the Mark6 source code whether the following is also possible,
+e.g., when the disk containing file 3 is very slow compared to the other disks:
+
+        file 0  file 1  file 2  file 3
+      --------------------------------
+block        0       1       2       3
+block        4       5       6       9
+block        7       8      10      13
+block       11       12     14     ...
+
+
