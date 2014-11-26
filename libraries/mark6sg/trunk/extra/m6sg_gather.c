@@ -53,7 +53,7 @@ void usage(void)
            "piecewise files from several disks associated with scatter-gather\n"
            "mode VLBI recording in Mark6 software.\n"
            "\n"
-           "Usage: m6sg_gather [--list | <scanname> <destination>]\n"
+           "Usage: m6sg_gather  [ --list | <scanname> <destination | - > ]\n"
            "\n"
            "   --list         show a list of available scan names on the disks\n"
            "\n"
@@ -61,7 +61,7 @@ void usage(void)
            "   <destination>  is the output directory or full output file name and path\n"
            "\n"
            "The scanname will be used as the name of the output file if the specified\n"
-           "destination is a directory.\n"
+           "destination is a directory. The destination '-' outputs to stdout for piping.\n"
            "\n"
     );
 }
@@ -111,14 +111,14 @@ int main(int argc, char** argv)
         nscans = mark6_sg_list_all_scans(&uniquenamelist);
         if (nscans <= 0)
         {
-            printf("No scans. Are disks of the JBOD array / 'diskpack' mounted?\n");
+            fprintf(stderr, "No scans. Are disks of the JBOD array / 'diskpack' mounted?\n");
         }
         else
         {
-            printf("There are %d scans in total. The scan names are:\n", nscans);
+            fprintf(stderr, "There are %d scans in total. The scan names are:\n", nscans);
             for (i=0; i<nscans; i++)
             {
-                printf("\t%s\n", uniquenamelist[i]);
+                fprintf(stdout, "\t%s\n", uniquenamelist[i]);
             }
         }
         return 0;
@@ -129,11 +129,11 @@ int main(int argc, char** argv)
     buf = malloc(M_READ_BUF_SIZE);
 
     // Input "file"
-    printf("Opening scatter-gather files of scan %s...\n", argv[1]);
+    fprintf(stderr, "Opening scatter-gather files of scan %s...\n", argv[1]);
     fdin = mark6_sg_open(argv[1], O_RDONLY);
     if (fdin < 0)
     {
-        printf("error: open failed (%s)\n", strerror(errno));
+        fprintf(stderr, "error: open failed (%s)\n", strerror(errno));
         exit(-1);
     }
 
@@ -143,27 +143,34 @@ int main(int argc, char** argv)
     ntotal  = st.st_size;
     if (ntotal <= 0)
     {
-        printf("Scan seems to have no data. Stopping.\n");
+        fprintf(stderr, "Scan seems to have no data. Stopping.\n");
         return 0;
     }
 
     // Output file
-    stat(destination, &st);
-    if (S_ISDIR(st.st_mode))
+    if (strcmp(destination, "-") != 0)
     {
-        char tmp[PATH_MAX];
-        snprintf(tmp, PATH_MAX-1, "%s/%s", destination, scanname);
-        destination = strdup(tmp);
+        stat(destination, &st);
+        if (S_ISDIR(st.st_mode))
+        {
+            char tmp[PATH_MAX];
+            snprintf(tmp, PATH_MAX-1, "%s/%s", destination, scanname);
+            destination = strdup(tmp);
+        }
+        fdout = fopen(destination, "w");
+        if (fdout == NULL)
+        {
+            fprintf(stderr, "error: could not open output file %s (%s)\n", destination, strerror(errno));
+            exit(-1);
+        }
     }
-    fdout = fopen(destination, "w");
-    if (fdout == NULL)
+    else
     {
-        printf("error: could not open output file %s (%s)\n", destination, strerror(errno));
-        exit(-1);
+        fdout = stdout;
     }
 
     // Copy
-    printf("Copying to output file %s...\n", destination);
+    fprintf(stderr, "Copying to output file %s...\n", destination);
     gettimeofday(&tstart, NULL);
     if (show_progress)
     {
@@ -177,7 +184,7 @@ int main(int argc, char** argv)
         nrd = mark6_sg_read(fdin, buf, nwanted);
         if (nrd <= 0)
         {
-            printf("\n unexpected EOF\n");
+            fprintf(stderr, "\n unexpected EOF\n");
             break;
         }
 
@@ -187,13 +194,13 @@ int main(int argc, char** argv)
 
         if(show_progress)
         {
-            printf(" %ld/%ld MByte                 \r", ncopied/(1024*1024), ntotal/(1024*1024));
+            fprintf(stderr, " %ld/%ld MByte                 \r", ncopied/(1024*1024), ntotal/(1024*1024));
         }
     }
     gettimeofday(&tstop, NULL);
 
     dT = (tstop.tv_sec - tstart.tv_sec) + 1e-6*(tstop.tv_usec - tstart.tv_usec);
-    printf("Elapsed time %.2f seconds (excluding file open time); rate %.0f MB/s; %ld bytes copied.\n",
+    fprintf(stderr, "Elapsed time %.2f seconds (excluding file open time); rate %.0f MB/s; %ld bytes copied.\n",
            dT, ((double)ncopied)/(1024.0*1024.0*dT), ncopied
     );
 
