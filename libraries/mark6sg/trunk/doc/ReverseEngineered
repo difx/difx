@@ -1,32 +1,70 @@
 
-There is apparently no documentation on the Mark6 non-RAID recording format(?).
+There exists a document "Scatter-Gather File System Format" (Roger Cappallo 2014.7.1)
+with a description of the overall structure of scatter-gather files. However there is 
+apparently no public documentation yet on the Mark6 non-RAID recording format.
 
-The below information was reverse-engineered from the Mark6 scatter-gather (SG)
-mode file system layut and data, and the Mark6 d-plane 1.12 source code.
-The information is quite low-level.
+The information here was reverse-engineered from a disk set with actual Mark6 scatter-
+gather (SG) mode recordings, the data in individual files, and Mark6 d-plane 1.12 source code.
 
-
-0) RAID vs. SG:
-
-In SG mode when a disk fails, just a subset of data is lost.
-In RAID 0 mode when a disk fails, it is likely that all data are lost (or hard to recover).
-In RAID 5 mode when a disk fails, the data can still be recovered.
-
-The scan files on a SG mode recording need to be reassembled from files scattered across disks. 
-The SG mode metadata embedded into the files has to be removed during this gathering process.
-The scan files on a RAID 5 are accessible directly without extra steps.
-
-The RAID 5 mode is probably fine for 4 Gbps recording, but for 4 to 16+ Gbps
-it might be too slow (I didn't test) and SG mode might have to be used(?)
+0) Some points on SG mode vs. RAID
+1) Description of scatter-gather mode file sets and mounted disks
+2) The metadata files under /mnt/disks/.meta/[1-4]/[0-7]/ ('group', 'slist')
+3) The layout of data and headers in files of a SG mode file set
+4) Failure modes
 
 
-Each of the two LSI SAS HBA cards in the Mark6 handles 16 disks. The Mark6 software 
-for some reason (historical, the typical diskpack size) divides each 16 disks into 
-two 8-disk groups. Hence there can be 4 groups of 8 disks (groups 1 to 4; disks 0 to 7).
+0) Some points on SG mode vs. RAID
+
+Disk failure after recording in:
+
+  SG mode      -->  a subset of data is lost (periodic chunks in reconstructed file)
+  RAID 0 mode  -->  the XFS file system will be broken and all files are lost,
+                    although a low-level VDIF-specific recovery might be possible if
+                    there are suitable tools for this...
+  RAID 5 mode  -->  single disk failure is survivable, no data lost
+
+Disk failure during recording in:
+
+  SG mode      -->  might be able to continue recording? Mark6 dplane implementation
+                    not quite clear...
+  RAID 0 mode  -->  recording probably freezes
+  RAID 5 mode  -->  should be able to continue writing even with the degraded RAID,
+                    at least until the next disk fails
+
+Recording-time performance:
+
+  SG mode       --> should allow best throughput, should be resilient to disk
+                     failures although this depends on the Mark6 dplane implementation
+  RAID 5 mode   --> probably fine for 4 Gbps recording, but for 4 to 16+ Gbps
+                     it might be too slow? (untested...)
+
+Data reassembly in:
+
+  SG mode      -->  data from files scattered across all disks has to be combined,
+                    removing embedded metadata during this gathering process
+  RAID 0&5     -->  no special reassembly steps
+   
+Mark6 disk mounting:
+
+  SG mode
+
+  Each of the two LSI SAS HBA cards in the Mark6 handles 16 disks. 
+  The Mark6 software divides the disks into 8-disk groups (historical reasons?)
+  Hence there can be 4 groups with 8 disks each (groups 1 to 4; disks 0 to 7)
+  Disks have each their own XFS file systems (2 XFS partitions per disk: data and metadata)
+  Automounting? Apparently not, must mount with a script, or manually, or via dplane+cplane+da-client
+
+  RAID mode
+
+  Certainly just a single XFS file system distributed over all disks
+  Not tested if individual disks have two partitions (could have 1 in RAID, 1 with disk-specific metadata)
+  Automounting? mdadm automount perhaps?
 
 
-1) In scatter-gather mode there is a set of files associated with each VLBI scan.
 
+1) Description of scatter-gather mode file sets and mounted disks
+
+In scatter-gather mode there is a set of files associated with each VLBI scan.
 The files are on scatter-gather related disk partitions on XFS.file systems.
 
 All partitions are:
@@ -97,7 +135,7 @@ Scatter-gather files (see 3):
 
 
 
-2) About 'group' and 'slist' files under /mnt/disks/.meta/[1-4]/[0-7]/
+2) The metadata files under /mnt/disks/.meta/[1-4]/[0-7]/ ('group', 'slist')
 
 The 'group' meta data files contain a single line, without a newline.
 
@@ -173,7 +211,9 @@ map different time ranges to scan names.
 
 
 
-3) The contents of each VLBI data file in SG mode looks like this:
+3) The layout of data and headers in files of a SG mode file set
+
+Each file in a SG file set (files associated with the same scan) looks like this:
 
   [file header]
   [block a header] [block a data (~10MB)]
@@ -181,7 +221,27 @@ map different time ranges to scan names.
   [block c header] [block c data (~10MB)]
   ...
 
+The file header
+   sync_word      uint32  0xfeed6666
+   version        uint32  version number of the SG file format
+   block_size     uint32  nominal size of blocks including block header
+   packet_format  uint32  0:vdif, 1:mark5, 2:unknown   (not sure what this is used for)
+   packet_size    uint32  length of data packets (frames?) in bytes
+
+The block header (version 1)
+   blocknum       uint32  sequence number of the block, increasing and unique
+                          in the file set of the scan
+
+The block header (version 2)
+   blocknum       uint32  sequence number of the block, increasing and unique
+                          in the file set of the scan
+   wb_size        uint32  size of this block including the block header,
+                          might be shorter than block_size of the file header,
+                          e.g. the last block in a scan might be just partially filled 
+
+
 The file and block header describe mainly the packet size and the size of a data block.
+
 In the Mark6 source code these blocks are sometimes referred to as "cells" (?)
 
 The data section of each block is ensured to contain an integer number of VLBI frames.
@@ -221,3 +281,41 @@ block        7       8      10      13
 block       11       12     14     ...
 
 
+
+4) Failure modes
+
+Hard failures
+
+In RAID 0 mode most failures are probably catastrophic.
+
+In RAID 5 mode a disk failure probably needs the operator to 
+insert a new disk and start the rebuild of the degraded array.
+At that time, or even if reading data while in degraded mode
+without starting the array rebuild, Murphy's law lad dictates
+that a second disk will fail, causing a catastrophic failure.
+
+
+Soft failures
+
+Dead/unmounted disk in SG mode: regular pieces will be
+missing in the VLBI data. Equivalent to reading a VDIF
+file where some frames are missing.
+
+Missing a file in a file set of some scan: equivalent to
+the above case.
+
+Disks attached but not mounted: just mount them normally
+
+
+Bizarre failures
+
+Scatter-gather file metadata corrupt, or XFS file systems
+partially corrupt and return bad file data: 
+  probably needs manual intervention, might try to rename that
+  file in the file set that contains bad metadata, or unmount
+  that particular disk/file system
+
+Mismatch in /mnt/disks/.meta/[1-4]/[0-7]/group and ./slist JSON metadata
+and actual contents of XFS file systems on the scatter-gather disks:
+  needs manual intervention? 
+  or just ignore those metadata, they are largely just for convenience?
