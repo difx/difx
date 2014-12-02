@@ -1,7 +1,7 @@
 
-There exists a document "Scatter-Gather File System Format" (Roger Cappallo 2014.7.1)
+There exists a private document "Scatter-Gather File System Format" (Roger Cappallo 2014.7.1)
 with a description of the overall structure of scatter-gather files. However there is 
-apparently no public documentation yet on the Mark6 non-RAID recording format.
+apparently no *public* documentation yet on the Mark6 non-RAID recording format.
 
 The information here was reverse-engineered from a disk set with actual Mark6 scatter-
 gather (SG) mode recordings, the data in individual files, and Mark6 d-plane 1.12 source code.
