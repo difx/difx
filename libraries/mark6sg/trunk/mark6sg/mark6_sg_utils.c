@@ -37,6 +37,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include <jsmn.h> // Jasmine/JSMN C parser library for JSON
+
 #include "mark6_sg_utils.h"
 
 // Global library debug level
@@ -411,4 +413,218 @@ int mark6_sg_blocklist(int nfiles, const char** filenamelist, m6sg_blockmeta_t**
 
     *blocklist = blks;
     return nblocks;
+}
+
+/**
+ * Read the context of all Mark6 SG metadata files, i.e., the 'slist' (JSON) and 'group' (flat text)
+ * files found under /mnt/disks/.meta/[1-4]/[0-7]/. Duplicate metadata entries are removed.
+ * Produces a linked list of scanlist metadata entries. Allocates the required memory.
+ * Returns the number of entries, or -1 on error.
+ */
+int mark6_sg_collect_metadata(m6sg_slistmeta_t** list)
+{
+    int   disk;
+    int   nscans = 0;
+    char  tmppath[1024];
+    char  group_meta_str[512];
+    m6sg_slistmeta_t  slistentry;
+    m6sg_slistmeta_t* ptr_list;
+    m6sg_slistmeta_t* tmp_entry;
+
+    jsmn_parser p;     // Jasmin (JSMN) JSON C parser library http://zserge.com/jsmn.html
+    void*       json;
+    size_t      json_strlen;
+    jsmntok_t*  tok;
+    size_t      tokcount;
+    size_t      tokidx;
+    size_t      ii;
+    int         rc;
+
+    FILE* f;
+    struct stat st;
+
+    if (list == NULL)
+    {
+        return -1;
+    }
+
+    ptr_list = NULL;
+    *list    = NULL;
+
+    for (disk=0; disk<MARK6_SG_MAXFILES; disk++)  // note: max disks = max num. of scatter-gather files per scan
+    {
+        int group = (disk/8) + 1;
+        int gdisk = disk % 8;
+
+        // Read the 'group' metadata first.
+        // In the current Mark6 cplane v1.12 version it is a single text line without a terminating newline,
+        // and has a format like "2:KVN00500/32000/4/8:KVN00600/32000/4/8".
+        memset(group_meta_str, 0, sizeof(group_meta_str));
+        memset(tmppath, 0, sizeof(tmppath));
+        sprintf(tmppath, "/mnt/disks/.meta/%d/%d/group", group, gdisk);
+        f = fopen(tmppath, "r");
+        if (f != NULL)
+        {
+             fread(group_meta_str, sizeof(group_meta_str)-1, 1, f);
+             fclose(f);
+        }
+        else if (m_m6sg_dbglevel > 0) { printf("mark6_sg_collect_metadata: %s not found\n", tmppath); }
+
+        // Now read the 'slist' JSON metadata.
+        memset(tmppath, 0, sizeof(tmppath));
+        sprintf(tmppath, "/mnt/disks/.meta/%d/%d/slist", group, gdisk);
+        f = fopen(tmppath, "r");
+        if (f == NULL)
+        {
+            if (m_m6sg_dbglevel > 0) { printf("mark6_sg_collect_metadata: %s not found\n", tmppath); }
+            continue;
+        }
+        fstat(fileno(f), &st);
+        json_strlen = st.st_size;
+
+        json = malloc(json_strlen + 16);
+        fread(json, json_strlen, 1, f);
+        fclose(f);
+
+        // Parse JSON using the he Jasmin (JSMN) JSON C parser library
+        jsmn_init(&p);
+        tokcount = 8; // an initial guess
+
+        // The JSMN JSON parser does not allocate memory itself. Instead it tells
+        // if a parse attempt will fit into a user-provided buffer or not. Need
+        // to grow the buffer and "try again" until parser output fits:
+        tok = malloc(sizeof(*tok) * tokcount);
+        rc  = jsmn_parse(&p, json, json_strlen, tok, tokcount);
+        while (rc == JSMN_ERROR_NOMEM)
+        {
+            tokcount = tokcount * 2;
+            tok = realloc(tok, sizeof(*tok) * tokcount);
+            rc  = jsmn_parse(&p, json, json_strlen, tok, tokcount);
+        }
+
+        // The contents of 'slist' in Mark6 cplane v1.12 is:
+        //    "{ 1:{scandata1}, 2:{scandata2}, ..., n:{scandatan} }"
+        // where {scandata} entries look like, for example,
+        //    "{'status': 'recorded', 'num_str': 1, 'start_tm': 1412834280.3427939,
+        //     'create_time': '2014y282d05h58m01s', 'sn': 'wrtest_ys_scan_1009_05',
+        //     'dur': 10, 'spc': 0, 'size': '7.276'}"
+        if (rc < 1 || tok[0].type != JSMN_OBJECT)
+        {
+            // "{ 1:{scandata1}, ... }" missing
+            if (m_m6sg_dbglevel > 0) { printf("mark6_sg_collect_metadata: JSON data in %s looks bad (no top-level object)\n", tmppath); }
+            continue;
+	}
+
+	tokcount = tok[0].size;
+        tokidx   = 1;
+        if (m_m6sg_dbglevel > 0) { printf("mark6_sg_collect_metadata: JSON data in %s has %ld scans\n", tmppath, tokcount); }
+
+        for (ii=0; ii<tokcount; ii++)
+        {
+            int nsubentries, jj, exists;
+
+            if (tok[tokidx].type != JSMN_PRIMITIVE)
+            {
+                // the "n:" of "n:{scandatan}" is missing
+                if (m_m6sg_dbglevel > 0) { printf("mark6_sg_collect_metadata: JSON data in %s looks bad (a sub-obj ID number is missing; token %ld)\n", tmppath, tokidx); }
+                break;
+            }
+            tokidx++;
+
+            if (tok[tokidx].type != JSMN_OBJECT)
+            {
+                // the "{scandatan}" of "n:{scandatan}" is missing
+                if (m_m6sg_dbglevel > 0) { printf("mark6_sg_collect_metadata: JSON data in %s looks bad (a sub-obj ID number is missing; token %ld)\n", tmppath, tokidx); }
+                break;
+            }
+
+            // Prepare storage of newest scan list entry metadata
+            memset(&slistentry, 0, sizeof(slistentry));
+            slistentry.group = strdup(group_meta_str);
+            slistentry.next  = NULL;
+
+//FIXME: JSMN parser fails for entries that contain a space, for example "'create_time': 'Sat Sep 13 09:55:17 2014'"
+
+            // Decode entries inside "{scandata}"
+            nsubentries = tok[tokidx].size;
+            tokidx++;
+            for (jj=0; jj<nsubentries; jj++, tokidx+=2)
+            {
+                char* key      = (char*)json + tok[tokidx+0].start;
+                char* arg      = (char*)json + tok[tokidx+1].start;
+                int key_strlen = tok[tokidx+0].end - tok[tokidx+0].start;
+                int arg_strlen = tok[tokidx+1].end - tok[tokidx+1].start;
+
+                if (m_m6sg_dbglevel > 1)
+                {
+                    printf("JSON file %s : field %d/%d ", tmppath, jj+1, nsubentries);
+                    printf("key-arg pair : tok[%ld].size=%d l=%d %.*s : ", tokidx, tok[tokidx].size, key_strlen, key_strlen, key);
+                    printf("tok[%ld].size=%d l=%d %.*s) \n", tokidx+1, tok[tokidx+1].size, arg_strlen, arg_strlen, arg);
+                }
+
+                if (strncmp(key, "'sn'", key_strlen) == 0)
+                {
+                    // Format is " 'sn': 'wrtest_ys_scan_1009_05' ", discard the '' single hypens
+                    slistentry.scanname = strndup(arg+1, arg_strlen-2);
+                    // TODO: add .vdif suffix?
+                }
+                else if (strncmp(key, "'size'", key_strlen) == 0)
+                {
+                    // Format is " 'size': '7.276' ",  discard the '' single hyphens
+                    arg[arg_strlen - 1] = '\0';
+                    slistentry.size = atof(arg+1) * 1024.0*1024.0*1024.0;
+                }
+                else if (strncmp(key, "'start_tm'", key_strlen) == 0)
+                {
+                    // Format is " 'start_tm': 1412834280.3427939 " and arg has no single hyphens
+                    slistentry.starttime = atof(arg);
+                }
+            }
+
+            // Check and ignore if entry is already found in list
+            ptr_list = *list;
+            exists   = 0;
+            while ((ptr_list != NULL) && !exists)
+            {
+                exists   = (slistentry.starttime == ptr_list->starttime)
+                             && (slistentry.size   == ptr_list->size)
+                             && (strcmp(slistentry.scanname, ptr_list->scanname) == 0);
+                ptr_list = (m6sg_slistmeta_t*) ptr_list->next;
+            }
+            if (exists)
+            {
+                if (slistentry.scanname != NULL) { free(slistentry.scanname); }
+                if (m_m6sg_dbglevel > 1) { printf("mark6_sg_collect_metadata: skipping duplicate entry\n"); }
+                continue;
+            }
+
+            // Add to the list
+            tmp_entry = malloc(sizeof(slistentry));
+            memcpy(tmp_entry, &slistentry, sizeof(slistentry));
+            if (*list == NULL)
+            {
+                // First entry in the list
+                *list = tmp_entry;
+            }
+            else
+            {
+                // Some later entry in the list
+                ptr_list = *list;
+                while (ptr_list->next != NULL)
+                {
+                    ptr_list = (m6sg_slistmeta_t*) ptr_list->next;
+                }
+                ptr_list->next = tmp_entry;
+            }
+            nscans++;
+
+            // Freeing up list->scanname and list->next is up to the callee later.
+
+        }//(while tokcount)
+
+        free(json);
+    }
+
+    if (m_m6sg_dbglevel > 0) { printf("mark6_sg_collect_metadata: %d unique scans added\n", nscans); }
+    return nscans;
 }
