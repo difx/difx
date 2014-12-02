@@ -19,15 +19,13 @@ header files, and a package config file. You may check if
 the latter worked via
   pkg-config --cflags mark6sg
 
-The library includes some command line utilities:
-
 $ m6sg_mount [-u]
 
  Mounts or unmounts (-u) all Mark6 disks.
  No need to start dplane, cplane and da-client.
 
-$ m6sg_gather [--list | <scanname> <destination>]
- 
+$ m6sg_gather [--list | <scanname> <destination|->]
+
  A counterpart of the Mark6 'gather' utility but using
  the mark6sg library.
 
@@ -35,5 +33,33 @@ $ m6sg_gather [--list | <scanname> <destination>]
  specified by <scanname>, and writes the gathered data into
  the specifified <destination> file or directory.
 
- When invoked with --list, all scans on the Mark6 disks are listed. 
+ When invoked with --list, all scans on the Mark6 disks are listed.
  These scan names can be used as the <scanname> argument later.
+
+$ fuseMk6 /mnt/mark6sg
+
+ A simple file system example based on 'mark6sg' library functions. 
+
+ This FUSE-based file system presents scatter-gather filesets as single files.
+
+ The file system layer does not parse the VLBI data contents of the files,
+ meaning the format of the VLBI recordings is free (although usually it is VDIF).
+
+ Some scan details are taken from Mark6 /mnt/disks/.meta/[1-4]/[0-7]/slist metadata.
+ This leads to some peculiarities:
+
+   1) scan size : the Mark6 'slist' metadata contains only an inexact estimate
+
+      This means that the size of "files" listed under /mnt/mark6sg 
+      can change somewhat at the first time they are opened.
+      Only when a "file" is opened will the mark6sg library calculate
+      the true scan length, accounting also for example for lost disks.
+
+   2) scan timestamp : the Mark6 'slist' metadata has some kind of timestamp
+
+      This time stamp from 'slist' is used as the "file" modification 
+      date&time, shown when doing e.g. an "ls -al /mnt/mark6sg".
+
+      The timestamp appears to match the scan data start time (e.g.,
+      the first VDIF frame time stamp), but it is not certain whether
+      this will really always be the case (depends on Mark6 cplane/dplane).

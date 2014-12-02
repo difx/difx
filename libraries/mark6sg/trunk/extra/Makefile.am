@@ -1,9 +1,15 @@
+h_sources = mark6_sg_utils.h mark6_sg_vfs.h
+c_sources = mark6_sg_utils.c mark6_sg_vfs.c ../jsmn/jsmn.c
 
-bin_PROGRAMS = m6sg_blocknrs m6sg_gather
-bin_SCRIPTS = m6sg_mount
+library_includedir = $(includedir)/mark6sg
+library_include_HEADERS = $(h_sources)
 
-m6sg_blocknrs_SOURCES = m6sg_blocknrs.c
+INCLUDES = -I$(top_srcdir)
 
-m6sg_gather_CFLAGS = -I$(top_srcdir)/mark6sg -I$(srcdir)/.. -Wall
-m6sg_gather_LDADD = $(top_builddir)/mark6sg/libmark6sg.la -lm
-m6sg_gather_SOURCES = m6sg_gather.c
+lib_LTLIBRARIES = libmark6sg.la
+
+libmark6sg_la_SOURCES = $(h_sources) $(c_sources)
+libmark6sg_la_LDFLAGS = -version-info $(LIBRARY_VERSION)
+# libmark6sg_la_LIBDADD = ../jsmn/libjsmn.a ../jsmn/jsmn.o
+libmark6sg_la_CFLAGS = -Wall -I../jsmn/
+
