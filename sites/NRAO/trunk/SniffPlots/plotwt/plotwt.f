@@ -9,7 +9,7 @@ C     average interval will be plotted.
 C
       INCLUDE    'plotwt.inc'
 C
-      INTEGER    NP1, ST1, VLBOPE, IER
+      INTEGER    NP1, ST1, VLBOPE, IER, IP, NPAGE, NPERPAGE
       INTEGER    TIN(8), I, LEN1
       DOUBLE PRECISION  GETNUM
       CHARACTER  CBUFF*256
@@ -17,7 +17,7 @@ C -------------------------------------------------------------------
 C     Get the file names.
 C
       GOTSUM = .FALSE.
-100   WRITE(*,*) 'Name of weights file: '
+100   WRITE(*,*) 'Name of weights file (<256 char): '
       READ(*,'(A)') WTFILE
       IER = VLBOPE( INUNIT, WTFILE, 'TEXT', 'OLD', CBUFF )
       IF( IER .NE. 1 ) GO TO 100
@@ -36,7 +36,8 @@ C
 C
 C     Open the plot file.
 C
-      WRITE(*,*) 'Name of plot file (eg wtsfile.ps/vps):'
+      WRITE(*,*) 'Name of plot file (eg wtsfile.ps/vps or /xs '//
+     1               '(interactive)):'
       READ(*,'(A)') PLTFILE
 C
 C     Get the desired time range.
@@ -88,22 +89,21 @@ C     Get the data.
 C
       CALL GETWT
 C
-C     Plot the data - First set up so that no more than 10
-C     stations are plotted on one sheet. 
+C     Plot the data 
+C     Split reasonably evenly between pages with up to 12 per
+C     page.
 C
-      IF( NSTA .GT. 12 ) THEN
-          NP1 = NSTA / 2 + 1
-      ELSE
-          NP1 = NSTA
-      END IF
+      NPAGE = INT( ( NSTA - 1 ) / 12 ) + 1
+      NPERPAGE = INT( ( NSTA + ( NPAGE - 1 ) ) / NPAGE )
 C
-C     Now call PLTWT once for each page
+      DO IP = 1, NPAGE
+         ST1 = ( IP - 1 ) * NPERPAGE + 1
+         NP1 = MIN( ST1 + NPERPAGE, NSTA )
 C
-      CALL PLTWT( 1, NP1 )
-      IF( NP1 .LT. NSTA ) THEN
-         ST1 = NP1 + 1
-         CALL PLTWT( ST1, NSTA )
-      END IF
+C        Now call PLTWT once for each page
+C
+         CALL PLTWT( ST1, NP1 )
+      END DO
 C
 C     Finished
 C
