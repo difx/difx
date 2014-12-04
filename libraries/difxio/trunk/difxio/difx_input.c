@@ -659,6 +659,9 @@ static int generateAipsIFs(DifxInput *D, int configId)
 		}
 	}
 
+	/* Set reference frequency to the bottom edge of the first frequency */
+	D->refFreq = dc->IF[0].freq;
+
 	return 0;
 }
 
@@ -1710,16 +1713,6 @@ static DifxInput *deriveDifxInputValues(DifxInput *D)
 		fprintf(stderr, "deriveDifxInputValues : nConfig < 1\n");
 
 		return 0;
-	}
-
-	/* Set reference frequency to the lowest of the freqs */
-	D->refFreq = 0.0;
-	for(fqId = 0; fqId < D->nFreq; ++fqId)
-	{
-		if(D->freq[fqId].freq < D->refFreq || D->refFreq <= 0.0)
-		{
-			D->refFreq = D->freq[fqId].freq;
-		}
 	}
 
 	for(c = 0; c < D->nConfig; ++c)

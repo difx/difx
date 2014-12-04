@@ -4,6 +4,7 @@
 * Fix polarization detection in cases where antennas have heterogeneous polarization needs
 * Add psrflag utility -- looks at fringe rates beating against pulsar period with full pulsar gate as a window function 
 * Psrflag utility updated to allow user-settable threshold
+* Change reference frequency, used by difx2fits, to be the bottom edge of the first AIPS IF
 * Version for DiFX-2.4, Nov 04, 2014
 
 3.3.0
