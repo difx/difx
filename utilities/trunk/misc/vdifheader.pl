@@ -11,7 +11,10 @@ sub readheader($);
 my ($invalid, $legacy, $seconds, $refepoch, $frame, $version, $nchan, $framelength, $complex, $nbits, $threadid, $antid, $edv, $eud1, $eud2, $edu3, $eud4);
 
 my $once = 0;
-GetOptions('once'=>\$once);
+my $check = 0;
+GetOptions('once'=>\$once, 'check'=>\$check);
+
+my ($lastframe, $lastsec);
 
 foreach (@ARGV) {
   open(VDIF, $_) || die "Could not open $_: $!\n";
@@ -32,12 +35,12 @@ foreach (@ARGV) {
       last;
     }
 
-    print "-------------------\n" if (!$first);
-    $first = 0;
+    print "-------------------\n" if (!$first && !$check);
     
     my $timestr = turn2str(fmod($seconds/60/60/24, 1.0));
-
-    print<<EOF;
+	
+	if (!$check) {
+	  print<<EOF;
 INVALID:     $invalid
 LEGACY:      $legacy
 FRAMELENGTH: $framelength
@@ -51,9 +54,28 @@ NBITS:       $nbits
 COMPLEX:     $complex
 ANTID:       $antid
 EOF
-
-    my $status;
-    if ($legacy) {
+	} else { # $check==True
+	  if ($first) {
+		$lastsec = $seconds;
+		$lastframe = $frame;
+	  } else {
+		if ($frame-$lastframe!=1) {
+		  if ($seconds==$lastsec) {
+			printf("Skipped %d frames at $timestr/$lastframe--$frame\n", $frame-$lastframe-1);
+		  } elsif ($seconds-$lastsec==1) {
+			if ($frame!=0) {
+			  printf("Skipped > %d frames at $timestr/$lastframe--$frame\n", $frame);
+			}
+		  } else {
+			printf("Skipped  %d seconds at $timestr\n", $seconds-$lastsec);
+		  }
+		}
+		$lastframe = $frame;
+		$lastsec = $seconds;
+	  }
+	}
+	my $status;
+	if ($legacy) {
       $status = sysseek(VDIF, $framelength-16, 1);
     } else {
       $status = sysseek(VDIF, $framelength-32, 1);
@@ -63,6 +85,7 @@ EOF
       last;
     }
     last if ($once);
+	$first = 0;
   }
 }
 
