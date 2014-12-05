@@ -409,14 +409,15 @@ public class JobNode extends QueueBrowserNode {
     /*
      * These values track the "state" of the job for autostart purposes.
      */
-    public final static int AUTOSTATE_UNDETERMINED = 0;
-    public final static int AUTOSTATE_SCHEDULED    = 1;
-    public final static int AUTOSTATE_INITIALIZING = 2;
-    public final static int AUTOSTATE_READY        = 3;
-    public final static int AUTOSTATE_RUNNING      = 4;
-    public final static int AUTOSTATE_DONE         = 5;
-    public final static int AUTOSTATE_UNSCHEDULED  = 6;
-    public final static int AUTOSTATE_FAILED       = 7;
+    public final static int AUTOSTATE_UNDETERMINED     = 0;
+    public final static int AUTOSTATE_SCHEDULED        = 1;
+    public final static int AUTOSTATE_INITIALIZING     = 2;
+    public final static int AUTOSTATE_READY            = 3;
+    public final static int AUTOSTATE_RUNNING          = 4;
+    public final static int AUTOSTATE_DONE             = 5;
+    public final static int AUTOSTATE_UNSCHEDULED      = 6;
+    public final static int AUTOSTATE_FAILED           = 7;
+    public final static int AUTOSTATE_RESOURCE_TIMEOUT = 8;
     
     protected Integer _autostate;
     public int autostate() {
@@ -516,53 +517,55 @@ public class JobNode extends QueueBrowserNode {
      */
     public class CheckResourcesThread extends Thread {
         public void run() {
-            if ( autostate() == AUTOSTATE_UNSCHEDULED )
-                setUnscheduledState();
-            else {
-                state().setText( "Check Resources" );
-                state().setBackground( Color.YELLOW );
-                state().updateUI();
-            }
-            if ( updateEditorMonitor( 1000 ) ) {
+            if ( autostate() != AUTOSTATE_RESOURCE_TIMEOUT ) {
                 if ( autostate() == AUTOSTATE_UNSCHEDULED )
                     setUnscheduledState();
                 else {
-                    _editorMonitor.setState( "Check Resources", Color.YELLOW );
-                    _editorMonitor.loadHardwareLists();
+                    state().setText( "Check Resources" );
+                    state().setBackground( Color.YELLOW );
+                    state().updateUI();
                 }
-                if ( _editorMonitor.selectNodeDefaults( false, true ) ) {
+                if ( updateEditorMonitor( 1000 ) ) {
                     if ( autostate() == AUTOSTATE_UNSCHEDULED )
                         setUnscheduledState();
                     else {
-                        _editorMonitor.setState( "Pre-Start", Color.YELLOW );
-                        autostate( AUTOSTATE_READY );
+                        _editorMonitor.setState( "Check Resources", Color.YELLOW );
+                        _editorMonitor.loadHardwareLists();
                     }
-                }
-                else if ( autostate() == AUTOSTATE_UNSCHEDULED )
-                    setUnscheduledState();
-                else {
-                    if ( !_editorMonitor.dataSourcesTested() ) {
-                        _editorMonitor.setState( "Data Source Fail", Color.RED );
-                        autostate( AUTOSTATE_FAILED );
+                    if ( _editorMonitor.selectNodeDefaults( false, true ) ) {
+                        if ( autostate() == AUTOSTATE_UNSCHEDULED )
+                            setUnscheduledState();
+                        else {
+                            _editorMonitor.setState( "Pre-Start", Color.YELLOW );
+                            autostate( AUTOSTATE_READY );
+                        }
                     }
-                    else if ( !_editorMonitor.processorsSufficient() ) {
-                        _editorMonitor.setState( "Processor Fail", Color.RED );
-                        autostate( AUTOSTATE_FAILED );
-                    }
+                    else if ( autostate() == AUTOSTATE_UNSCHEDULED )
+                        setUnscheduledState();
                     else {
-                        _editorMonitor.setState( "Resource Wait", Color.YELLOW );
-                        autostate( AUTOSTATE_SCHEDULED );
+                        if ( !_editorMonitor.dataSourcesTested() ) {
+                            _editorMonitor.setState( "Data Source Fail", Color.RED );
+                            autostate( AUTOSTATE_FAILED );
+                        }
+                        else if ( !_editorMonitor.processorsSufficient() ) {
+                            _editorMonitor.setState( "Processor Fail", Color.RED );
+                            autostate( AUTOSTATE_FAILED );
+                        }
+                        else {
+                            _editorMonitor.setState( "Resource Wait", Color.YELLOW );
+                            autostate( AUTOSTATE_SCHEDULED );
+                        }
                     }
                 }
-            }
-            else {
-                if ( autostate() == AUTOSTATE_UNSCHEDULED )
-                    setUnscheduledState();
                 else {
-                    state().setText( "Monitor Error" );
-                    state().setBackground( Color.RED );
-                    state().updateUI();
-                    autostate( AUTOSTATE_FAILED );
+                    if ( autostate() == AUTOSTATE_UNSCHEDULED )
+                        setUnscheduledState();
+                    else {
+                        state().setText( "Monitor Error" );
+                        state().setBackground( Color.RED );
+                        state().updateUI();
+                        autostate( AUTOSTATE_FAILED );
+                    }
                 }
             }
         }
@@ -593,7 +596,7 @@ public class JobNode extends QueueBrowserNode {
      * hardware resource allocation.
      */
     public void autoUnscheduleResourceAllocation() {
-        autostate( AUTOSTATE_UNSCHEDULED );
+        autostate( AUTOSTATE_RESOURCE_TIMEOUT );
         state().setText( "Auto Timeout (HW)" );
         state().setBackground( Color.RED );
         state().updateUI();

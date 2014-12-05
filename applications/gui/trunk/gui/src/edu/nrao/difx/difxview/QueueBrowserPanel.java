@@ -2238,7 +2238,8 @@ public class QueueBrowserPanel extends TearOffPanel {
                             iter.remove();
                         }
                         else if ( thisJob.autostate() == JobNode.AUTOSTATE_UNSCHEDULED ||
-                                thisJob.autostate() == JobNode.AUTOSTATE_FAILED )
+                                thisJob.autostate() == JobNode.AUTOSTATE_FAILED ||
+                                thisJob.autostate() == JobNode.AUTOSTATE_RESOURCE_TIMEOUT )
                             iter.remove();
                     }
                     //  If any jobs are running and we are only supposed to run jobs sequentially,
