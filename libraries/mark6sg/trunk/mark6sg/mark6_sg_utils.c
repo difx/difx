@@ -34,6 +34,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <sys/time.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 
@@ -278,10 +279,14 @@ int mark6_sg_blocklist(int nfiles, const char** filenamelist, m6sg_blockmeta_t**
     struct wb_header_tag_v2 bhdr[MARK6_SG_MAXFILES];
     size_t bhdr_size = sizeof(wb_header_tag_v2_t);
 
+    struct timeval tv_start;
+
     m6sg_blockmeta_t* blks = NULL;
     m6sg_blockmeta_t* prevblk = NULL;
     int nblocks = 0, nallocated = 0, nmissing = 0;
     int i, j;
+
+    gettimeofday(&tv_start, NULL);
 
     if (nfiles > MARK6_SG_MAXFILES)
     {
@@ -396,6 +401,13 @@ int mark6_sg_blocklist(int nfiles, const char** filenamelist, m6sg_blockmeta_t**
         }
 
         prevblk = &blks[i];
+    }
+
+    if (m_m6sg_dbglevel > 1)
+    {
+        struct timeval tv_stop;
+        gettimeofday(&tv_stop, NULL);
+        printf("Building a block list took %.2f seconds.\n", (tv_stop.tv_sec-tv_start.tv_sec) + 1e-6*(tv_stop.tv_usec-tv_start.tv_usec));
     }
 
     if (m_m6sg_dbglevel > 2)
@@ -562,19 +574,19 @@ int mark6_sg_collect_metadata(m6sg_slistmeta_t** list)
                     printf("tok[%ld].size=%d l=%d %.*s) \n", tokidx+1, tok[tokidx+1].size, arg_strlen, arg_strlen, arg);
                 }
 
-                if (strncmp(key, "'sn'", key_strlen) == 0)
+                if (strncmp(key, "sn", key_strlen) == 0)
                 {
-                    // Format is " 'sn': 'wrtest_ys_scan_1009_05' ", discard the '' single hypens
-                    slistentry.scanname = strndup(arg+1, arg_strlen-2);
+                    // Format is " 'sn': 'wrtest_ys_scan_1009_05' "
+                    slistentry.scanname = strndup(arg, arg_strlen);
                     // TODO: add .vdif suffix?
                 }
-                else if (strncmp(key, "'size'", key_strlen) == 0)
+                else if (strncmp(key, "size", key_strlen) == 0)
                 {
-                    // Format is " 'size': '7.276' ",  discard the '' single hyphens
+                    // Format is " 'size': '7.276' "
                     arg[arg_strlen - 1] = '\0';
-                    slistentry.size = atof(arg+1) * 1024.0*1024.0*1024.0;
+                    slistentry.size = atof(arg) * 1024.0*1024.0*1024.0;
                 }
-                else if (strncmp(key, "'start_tm'", key_strlen) == 0)
+                else if (strncmp(key, "start_tm", key_strlen) == 0)
                 {
                     // Format is " 'start_tm': 1412834280.3427939 " and arg has no single hyphens
                     slistentry.starttime = atof(arg);
@@ -587,8 +599,8 @@ int mark6_sg_collect_metadata(m6sg_slistmeta_t** list)
             while ((ptr_list != NULL) && !exists)
             {
                 exists   = (slistentry.starttime == ptr_list->starttime)
-                             && (slistentry.size   == ptr_list->size)
-                             && (strcmp(slistentry.scanname, ptr_list->scanname) == 0);
+                             && (slistentry.size == ptr_list->size)
+                             && (ptr_list->scanname != NULL && strcmp(slistentry.scanname, ptr_list->scanname) == 0);
                 ptr_list = (m6sg_slistmeta_t*) ptr_list->next;
             }
             if (exists)
