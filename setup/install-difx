@@ -14,7 +14,7 @@ Build and Install DiFX
 Usage:
     install-difx [-fhv] [--force] [--help] [--verb] \\
         [--mk5daemon] [--withmonitor] [--rpfits] [--perl] [--withfb] \\
-        [--withhops] [--withguiserver] [--noinstall] \\
+        [--withhops] [--withm6support] [--withguiserver] [--noinstall] \\
         [--reconf] [--noconf] [--clean] \\
         [--g77] [--extraflags='flags'] [--makeflags='flags'] \\
         [--noipp] [--ipp] [--nodoc] \\
@@ -49,6 +49,8 @@ Options:
    --withfb        Build filterbank (which requires pgplot)
 
    --withhops      Build HOPS (which requires pgplot)
+
+   --withm6support Build Mark6 support (which requires FUSE)
 
    --withguiserver Build guiServer
 
@@ -96,7 +98,7 @@ try:
     opts, args = getopt.gnu_getopt(sys.argv[1:], "fhv",
         ["force", "help", "verb",
         "mk5daemon", "withmonitor", "rpfits", "perl", "withfb",
-        "withhops", "withguiserver",
+        "withhops", "withm6support", "withguiserver",
         "noinstall", "reconf", "noconf", "clean",
         "g77", "extraflags=", "makeflags=", 
          "noipp", "ipp", "nodoc", "cache=", "targ=", "pristine" ])
@@ -130,6 +132,7 @@ noconf = False
 pristine = False
 dofb = False
 dohops = False
+dom6support = False
 doguiserver = False
 dodoc = True
 doipp = 0
@@ -157,6 +160,8 @@ if len(opts) > 0:
             dofb = True
         if o == "--withhops":
             dohops = True
+        if o == "--withm6support":
+            dom6support = True
         if o == "--withguiserver":
             doguiserver = True
         if o == "--noinstall":
@@ -271,6 +276,8 @@ if dofb:
     apptargets.append(["difxfilterbank", difx_version, True,False,False,True])
 if dohops:
     apptargets.append(["hops", difx_version, True,False,True,False])
+if dom6support:
+    apptargets.append(["m6support", difx_version, True,False,True,False])
 if doguiserver:
     apptargets.append(["guiServer", difx_version, True,False,False,True])
 if mk5d:
