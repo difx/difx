@@ -9,6 +9,10 @@
 #endif /* _GNU_SOURCE */
 #include <fcntl.h>
 
+#ifndef O_CLOEXEC
+#define O_CLOEXEC 0
+#endif /* O_CLOEXEC */
+
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>

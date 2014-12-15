@@ -1,7 +1,7 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-AC_PREREQ([2.63])
+AC_PREREQ([2.59])
 AC_INIT([m6support], [0.14], [gbc@haystack.mit.edu])
 AM_INIT_AUTOMAKE([foreign])
 AC_CONFIG_SRCDIR([vdifuse.h])
@@ -47,16 +47,16 @@ AC_CHECK_HEADERS([\
 #AM_CONDITIONAL(HAVE_PCAP, $have_pcap)
 
 # Checks for typedefs, structures, and compiler characteristics.
-AC_TYPE_INT32_T
-AC_TYPE_INT64_T
-AC_TYPE_OFF_T
-AC_TYPE_SIZE_T
-AC_TYPE_SSIZE_T
+##AC_TYPE_INT32_T
+##AC_TYPE_INT64_T
+##AC_TYPE_OFF_T
+##AC_TYPE_SIZE_T
+##AC_TYPE_SSIZE_T
 AC_CHECK_MEMBERS([struct stat.st_blksize])
 AC_STRUCT_ST_BLOCKS
 AC_CHECK_MEMBERS([struct stat.st_rdev])
-AC_TYPE_UINT32_T
-AC_TYPE_UINT64_T
+##AC_TYPE_UINT32_T
+##AC_TYPE_UINT64_T
 
 # Checks for library functions.
 AC_FUNC_FSEEKO
@@ -75,9 +75,9 @@ AM_CONDITIONAL(HAVE_FUSE, $hasfuse && $with_fuse)
 
 AC_CONFIG_FILES([Makefile])
 
-AM_COND_IF([WITH_FUSE],
-    [AC_SUBST(CONFIG_OPS,--enable-fuse)],
-    [AC_SUBST(CONFIG_OPS,'')])
+##AM_COND_IF([WITH_FUSE],
+##    [AC_SUBST(CONFIG_OPS,--enable-fuse)],
+##    [AC_SUBST(CONFIG_OPS,'')])
 
 AC_OUTPUT
 #
