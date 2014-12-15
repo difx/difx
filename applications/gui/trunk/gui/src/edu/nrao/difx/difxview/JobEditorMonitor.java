@@ -1814,6 +1814,7 @@ public class JobEditorMonitor extends JFrame {
                             else if ( packetType == RUN_DIFX_JOB_STARTED ) {
                                 _doneWithErrors = false;
                                 _messageDisplayPanel.message( 0, "job monitor", "Job started by guiServer." );
+                                _jobNode.lockState( false );
                                 statusInfo( "job started" );
                             }
                             else if ( packetType == RUN_DIFX_JOB_ENDED_WITH_ERRORS ) {
@@ -2111,10 +2112,10 @@ public class JobEditorMonitor extends JFrame {
             //  Only change the "state" of this job if it hasn't been "locked" by the GUI.  This
             //  happens when the GUI detects an error.  If this job is "starting" the state should
             //  be unlocked - it means another attempt is being made to run it.
-            if ( difxMsg.getBody().getDifxStatus().getState().equalsIgnoreCase( "starting" ) ) {
-                _jobNode.lockState( false );
-                _restartSeconds.value( 0.0 );
-            }
+//            if ( difxMsg.getBody().getDifxStatus().getState().equalsIgnoreCase( "starting" ) ) {
+//                _jobNode.lockState( false );
+//                _restartSeconds.value( 0.0 );
+//            }
             if ( !_jobNode.lockState() ) {
                 _state.setText( difxMsg.getBody().getDifxStatus().getState() );
                 if ( _state.getText().equalsIgnoreCase( "done" ) || _state.getText().equalsIgnoreCase( "mpidone" ) ) {

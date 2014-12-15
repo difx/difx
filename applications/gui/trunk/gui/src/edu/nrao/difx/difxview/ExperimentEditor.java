@@ -2393,8 +2393,12 @@ public class ExperimentEditor extends JFrame {
         //  observations, but it probably doesn't matter too much).
         JulianCalendar midTime = new JulianCalendar();
         synchronized ( _eopLock ) {
+            if ( _eopMinTime != null && _eopMaxTime != null )
+                midTime.setTimeInMillis( _eopMinTime.getTimeInMillis() + ( _eopMaxTime.getTimeInMillis() - _eopMinTime.getTimeInMillis() ) / 2 );
+        }
+        synchronized ( _eopLock ) {
             if ( _eopMinTime != null && _eopMaxTime != null ) {
-                _newEOP = _settings.eopData( midTime.julian() - 2.0, midTime.julian() + 3.0 );
+                _newEOP = _settings.eopData( midTime.julian() - 2.5, midTime.julian() + 2.5 );
             }
         }
         boolean doHeader = true;
@@ -2973,7 +2977,7 @@ public class ExperimentEditor extends JFrame {
                 //  Use the modified Julian Day for this date.
                 v2dFileParser.eop( String.format( "%d", (int)theDate.mjd() ), 
                         eop.tai_utc, 
-                        eop.ut1_tai / 1000000.0 + eop.tai_utc, 
+                        eop.ut1_utc, 
                         eop.xPole / 10.0, 
                         eop.yPole / 10.0 );
             }
