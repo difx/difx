@@ -1,5 +1,5 @@
 /*
- * $Id: sg_access.c 2473 2014-09-15 19:43:25Z gbc $
+ * $Id: sg_access.c 2708 2014-12-16 14:57:10Z gbc $
  *
  * Code to understand and access sg files efficiently.
  */
