@@ -28,6 +28,9 @@
 # are probably lazy and too busy to read anything, just execute
 # this file and you may do just fine.
 
+# You will need to have installed fuse, fuse-libs and fuse-devel
+# (the libraries to link to, the fuse-devel to compile).
+
 # untar:
 # tar zxf m6support-0.14.tar.gz
 # cd m6support-0.14
