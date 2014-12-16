@@ -7,8 +7,13 @@ SUBDIRS = .
 EXTRA_DIST = readme.sh lgpl-3.0.txt
 
 if WITH_FUSE
+if HAVE_FUSE
 vdifuse =vdifuse
 vdifuse_h = vdifuse.h vdifsg2.h
+else
+vdifuse =
+vdifuse_h =
+endif
 else
 vdifuse =
 vdifuse_h =
@@ -30,9 +35,13 @@ scan_check_CPPFLAGS = -DEXTEND_HCHK=1
 vdif_time_SOURCES   = vdif_time_main.c vdif_time.c
 
 if WITH_FUSE
+if HAVE_FUSE
 vdsrc = vdifuse.c vdifopt.c vdifsup.c vdiftst.c vdifseq.c \
 	vdiforr.c vdifsg2.c sg_access.c vdiflat.c vdifrex.c
 dist_vdifuse_SOURCES = $(vdsrc)
+else
+dist_vdifuse_SOURCES =
+endif
 else
 dist_vdifuse_SOURCES =
 endif
