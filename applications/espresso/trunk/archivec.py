@@ -1,8 +1,7 @@
 #!/usr/bin/python
-# archive DiFX data files to a remote machine. Tar the plethora of small files
-# before transfer. Transfer larger files unmodified. Preserve the original
-# directory structure. Uses globus-url-copy by default or scp/ssh on request. 
-# Cormac Reynolds: Jan 2012
+# archive DiFX data files to the iVEC permanent data store. Tar the plethora of
+# small files before transfer. Transfer FITS and other user files unmodified.   
+# Cormac Reynolds: Dec 2014
 
 import optparse, os, re, subprocess, sys, shutil
 
