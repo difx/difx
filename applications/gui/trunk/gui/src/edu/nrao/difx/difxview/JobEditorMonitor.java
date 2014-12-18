@@ -683,12 +683,12 @@ public class JobEditorMonitor extends JFrame {
         return null;
     }
 
-    public DataNode dataNodeByName( String name ) {
+    public DataSource dataNodeByName( String name ) {
         for ( Iterator<BrowserNode> iter = _dataSourcesPane.browserTopNode().children().iterator();
                 iter.hasNext(); ) {
-            DataNode thisNode = (DataNode)(iter.next());
-            if ( thisNode.name().contentEquals( name ) )
-                return thisNode;
+            DataSource thisSource = (DataSource)(iter.next());
+            if ( thisSource.name().contentEquals( name ) )
+                return thisSource;
         }
         return null;
     }
@@ -2094,110 +2094,6 @@ public class JobEditorMonitor extends JFrame {
                 ((ActionListener)listeners[i+1]).actionPerformed( null );
         }
     }
-
-    /*
-     * This class is used to contain the name of a single data source node.  The data
-     * source can be a Mark5, file, or network connection.  The controls necessary
-     * for each of these options differ quite a bit, so they will be in inheriting
-     * classes.
-     */
-    protected class DataNode extends BrowserNode {
-        
-        public DataNode( String name ) {
-            super( name );
-        }
-        
-        @Override
-        public void createAdditionalItems() {
-            _selected = new JCheckBox();
-            _selected.setBackground( Color.WHITE );
-            //  Any time the user specifically selects an item, we change it state
-            //  slightly - it can't be automatically selected or unselected based
-            //  on cpu load.
-            _selected.addActionListener( new ActionListener() {
-                public void actionPerformed( ActionEvent e ) {
-                    _handSelected = true;
-                }
-            });
-            this.add( _selected );
-            _dataObjectA = new JLabel( "" );
-            this.add( _dataObjectA );
-            _dataObjectB = new JLabel( "" );
-            this.add( _dataObjectB );
-            _antenna = new JLabel( "" );
-            this.add( _antenna );
-        }
-        
-        @Override
-        public void positionItems() {
-            super.positionItems();
-            _selected.setBounds( 7, 2, 18, 18 );
-            _label.setBounds( 30, 0, 215, _ySize );
-            _dataObjectA.setBounds( 250, 0, 500, 25 );
-            _dataObjectB.setBounds( 400, 0, 500, 25 );
-            _antenna.setBounds( 550, 0, 500, 25 );
-        }
-        
-        public void dataObjectA( String newVal ) { _dataObjectA.setText( newVal ); }
-        public String dataObjectA() { return _dataObjectA.getText(); }
-        public void dataObjectB( String newVal ) { _dataObjectB.setText( newVal ); }
-        public String dataObjectB() { return _dataObjectB.getText(); }
-        public void antenna( String newVal ) { _antenna.setText( newVal ); }
-        public String antenna() { return _antenna.getText(); }
-        
-        public void foundA( boolean newVal ) {
-            _foundA = newVal;
-            if ( newVal ) {
-                _dataObjectA.setForeground( Color.BLUE );
-            }
-            else {
-                _dataObjectA.setForeground( Color.GRAY );
-            }
-        }
-        public void foundB( boolean newVal ) {
-            _foundB = newVal;
-            if ( newVal ) {
-                _dataObjectB.setForeground( Color.BLUE );
-            }
-            else {
-                _dataObjectB.setForeground( Color.GRAY );
-            }
-        }
-        public boolean foundA() { return _foundA; }
-        public boolean foundB() { return _foundB; }
-        
-        public void checkFound( boolean doCheck ) {
-            if ( doCheck && !_handSelected ) {
-                if ( _foundA || _foundB )
-                    _selected.setSelected( true );
-                else
-                    _selected.setSelected( false );
-            }
-        }
-        
-        public void missingA() {
-            _missing = true;
-            _dataObjectA.setForeground( Color.RED );
-        }
-        public boolean missing() { return _missing; }
-        
-        public boolean selected() { return _selected.isSelected(); }
-        public void selected( boolean newVal ) { _selected.setSelected( newVal ); }
-        public void hideSelection() { _selected.setVisible( false ); }
-        public boolean hideSelected() { return !_selected.isVisible(); }
-        public boolean handSelected() { return _handSelected; }
-        public void handSelected( boolean newVal ) { _handSelected = newVal; }
-        
-        public boolean foundIt;
-        protected JCheckBox _selected;
-        protected boolean _handSelected;
-        protected JLabel _dataObjectA;
-        protected JLabel _dataObjectB;
-        protected boolean _foundA;
-        protected boolean _foundB;
-        protected boolean _missing;
-        protected JLabel _antenna;
-    }
     
     /*
      * This class provides information about a "Processor".  It allows
@@ -2325,6 +2221,34 @@ public class JobEditorMonitor extends JFrame {
         protected boolean _handSelected;
         protected JLabel _mpiTestDisplay;
         
+    }
+    
+    /*
+     * See if data are available to run this job as currently defined.  This isn't
+     * a perfect check, in that it will under many circumstances succeed when there
+     * isn't really data.  But it will catch some things. Failure changes the state of
+     * the job, both in the monitor window and in the job node.
+     */
+    public boolean dataAvailableCheck() {
+        boolean dataOK = true;
+        String dataMissing = "";
+        for ( Iterator<BrowserNode> iter = _dataSourcesPane.browserTopNode().children().iterator();
+                iter.hasNext(); ) {
+            DataSource thisSource = (DataSource)(iter.next());
+            if ( thisSource.missing() ) {
+                if ( dataMissing.length() > 0 )
+                    dataMissing += ", ";
+                dataMissing += thisSource.antenna();
+                dataOK = false;
+            }
+        }
+        if ( !dataOK ) {
+            setState( dataMissing + " data Missing", Color.RED );
+            _jobNode.state().setText( dataMissing + " data Missing" );
+            _jobNode.state().setBackground( Color.RED );
+            _jobNode.state().updateUI();
+        }
+        return dataOK;
     }
     
     /*
@@ -2511,8 +2435,10 @@ public class JobEditorMonitor extends JFrame {
         public String sourceNode() { return (String)_sourceNode.getSelectedItem(); }
         public String sourceType() { return _sourceType.getText(); }
         public String antenna() { return _antenna.getText(); }
+        public boolean missing() { return _missing; }
         
         protected int _index;
+        protected boolean _missing;
         protected StyledComboBox _sourceNode;
         protected JLabel _antenna;
         protected JLabel _sourceType;
@@ -2594,10 +2520,12 @@ public class JobEditorMonitor extends JFrame {
                  selection.moduleB().contentEquals( _moduleName.getText() ) ) {
                 _moduleName.setForeground( Color.BLUE );
                 _moduleName.setToolTipText( "" );
+                _missing = false;
             }
             else {
                 _moduleName.setForeground( Color.RED );
                 _moduleName.setToolTipText( "Required module is not owned by this Mark5." );
+                _missing = true;
             }
         }
         
@@ -2690,6 +2618,10 @@ public class JobEditorMonitor extends JFrame {
             //  File data can include a list of files, each of which we display.
             //  Find out how many files we have and create a label for each one.
             int n = _inputFile.dataTable().idx[index].numFiles;
+            if ( n == 0 )
+                _missing = true;
+            else
+                _missing = false;
             _file = new JLabel[n];
             for ( int i = 0; i < n; ++i ) {
                 //  This first file in the list needs to indicate that the list is expandable.

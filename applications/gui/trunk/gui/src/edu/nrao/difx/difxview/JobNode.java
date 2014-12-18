@@ -530,6 +530,12 @@ public class JobNode extends QueueBrowserNode {
                         setUnscheduledState();
                     else {
                         _editorMonitor.setState( "Check Resources", Color.YELLOW );
+                        //  Run a "data" check to see if, for whatever reason, data are not
+                        //  available for this job.
+                        if ( !_editorMonitor.dataAvailableCheck() ) {
+                            autostate( AUTOSTATE_FAILED );
+                            return;
+                        }
                         _editorMonitor.loadHardwareLists();
                     }
                     if ( _editorMonitor.selectNodeDefaults( false, true ) ) {
