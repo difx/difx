@@ -1516,12 +1516,8 @@ public class JobEditorMonitor extends JFrame {
      * instruction is more of a "set and forget" kind of operation.
      */
     public void startJob( boolean applyMachinesInThread ) {
-//        _jobNode.logItem( "<RUN> START JOB", _jobNode.inputFile(), false );
         _startTime = new JulianCalendar();
         _startTime.setTime( new Date() );
-        _activeID = _startTime.getTimeInMillis();
-        //  Save this new job in the active ID list.
-        _settings.addActiveID( _activeID );
         _jobNode.correlationStart( _startTime.mjd() );
         _jobNode.running( true );
         setState( "Initializing", Color.YELLOW );
@@ -1653,7 +1649,6 @@ public class JobEditorMonitor extends JFrame {
         if ( cleanStart ) {
             // -- Create the XML defined messages and process through the system
             command.body().setDifxStart( jobStart );
-    //        _jobNode.logItem( "<RUN> START COMMAND", command.convertToXML(), true );
             try {
                 //command.sendPacket( _settings.guiServerConnection().COMMAND_PACKET );
                 command.send();
@@ -1661,7 +1656,6 @@ public class JobEditorMonitor extends JFrame {
                 java.util.logging.Logger.getLogger("global").log(java.util.logging.Level.SEVERE, null,
                         e.getMessage() );  //BLAT should be a pop-up
                 setState( "Failed Start", Color.RED );
-    //            _jobNode.logItem( "<RUN> FAILED START", "", true );
                 _jobNode.autostate( JobNode.AUTOSTATE_FAILED );
             }
         }
@@ -1925,9 +1919,6 @@ public class JobEditorMonitor extends JFrame {
             endTime.setTime( new Date() );
             _jobNode.correlationEnd( endTime.mjd() );
             _jobNode.correlationTime( 24.0 * 3600.0 * ( endTime.mjd() - _startTime.mjd() ) );
-//            _jobNode.logItem( "<RUN> CORRELATION TIME", "" + 24.0 * 3600.0 * ( endTime.mjd() - _startTime.mjd() ), false );
-//            _jobNode.logItem( "<RUN> JOB STATE", _jobNode.state().getText(), true );
-            logRun();
             //  This eliminates this job from any nodes where it is running.
             //  Note that this will not exactly work if you are running the same
             //  job multiple times, but if you are doing that many other things are
@@ -1962,103 +1953,6 @@ public class JobEditorMonitor extends JFrame {
             usedNode.removeJob( _this );
         }
     }
-    
-    protected long _activeID;
-    
-    /*
-     * Append a "log" of this job to the run log file, if the user is doing that sort of
-     * thing.  This also removes this job from the "active" list (regardless of whether the
-     * logging is on or off).
-     */
-    public void logRun() {
-        //  This gets this job out of the active list and returns a list of other
-        //  jobs that were active at the same time.
-        ArrayList<Long> activeList = _settings.endActiveID( _activeID );
-        //  If we are logging things, and the log file makes sense, log this job.
-        if ( _settings.runLogCheck() && _settings.runLogFile() != null && _settings.runLogFile().length() > 0 ) {
-            ObjectFactory factory = new ObjectFactory();
-            DifxJobLog log = factory.createDifxJobLog();
-            log.setGuiVersion( VersionWindow.version() );
-            log.setData( factory.createDifxJobLogData() );
-            log.getData().setActiveID( _activeID );
-//            log.getData().setTime( ((double)_startTime.getTimeInMillis()) / 24.0 / 3600.0 / 1000.0 );
-            log.getData().setTime( _startTime.mjd() );
-            log.getData().setInputFile( _inputFileName.getText() );
-            log.getData().setBaselines( _inputFile.baselineTable().num );
-            //  Scans, and scan time are complicated.  This information needs to be grabbed from the
-            //  .calc file.
-            log.getData().setScanTime( 0.0 );
-            log.getData().setScans( 1 );
-            if ( calcFileParsed() ) {
-                log.getData().setScans( _calcFileParser.numScans() );
-                double totalTime = 0.0;
-                for ( int i = 0; i < _calcFileParser.numScans(); ++i ) {
-                    totalTime += (double)(_calcFileParser.scans()[i].dur);
-                }
-                log.getData().setScanTime( totalTime );
-            }
-            log.getData().setHeadnode(null);
-            for ( Iterator<BrowserNode> iter = _dataSourcesPane.browserTopNode().children().iterator();
-                    iter.hasNext(); ) {
-                DataSource thisNode = (DataSource)(iter.next());
-                DifxJobLog.Data.SourceNodes node = factory.createDifxJobLogDataSourceNodes();
-                node.setNode( thisNode.name() );
-                node.setThreads( _settings.threadsPerDataSource() );
-                log.getData().getSourceNodes().add( node );
-            }
-            for ( Iterator<BrowserNode> iter = _processorsPane.browserTopNode().children().iterator();
-                    iter.hasNext(); ) {
-                PaneProcessorNode thisNode = (PaneProcessorNode)(iter.next());
-                if ( thisNode.selected() ) {                    
-                    DifxJobLog.Data.ProcessingNodes node = factory.createDifxJobLogDataProcessingNodes();
-                    node.setNode( thisNode.name() );
-                    node.setThreads( Integer.parseInt( thisNode.threadsText() ) );
-                    log.getData().getProcessingNodes().add( node );
-                }
-            }
-            log.getData().setState( _jobNode.state().getText() );
-            log.getData().setTotalTime( Double.parseDouble( _jobNode.correlationTime() ) );
-            log.getData().setDifxVersion( _settings.difxVersion() );
-            //  Convert the log information to XML and append to the current log file.
-            try {
-                javax.xml.bind.JAXBContext jaxbCtx = 
-                    javax.xml.bind.JAXBContext.newInstance( log.getClass().getPackage().getName() );
-                Marshaller marshaller = jaxbCtx.createMarshaller();
-                marshaller.setProperty( Marshaller.JAXB_ENCODING, "UTF-8" );
-                marshaller.setProperty( Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE );
-                if ( new java.io.File( _settings.runLogFile() ).isFile() )
-                    marshaller.setProperty( Marshaller.JAXB_FRAGMENT, Boolean.TRUE );
-                StringWriter writer = new StringWriter();
-                marshaller.marshal( log, writer );
-                String xmlString = writer.toString();
-                //  This appends to the run log file.
-                try {
-                    PrintWriter out = new PrintWriter( new BufferedWriter( new FileWriter( _settings.runLogFile(), true ) ) );
-                    out.println( xmlString );
-                    out.close();
-                } catch ( Exception e ) {
-                }
-            } catch ( Exception e ) {
-            }
-        }
-        //  Try reading the run log file.
-//        java.io.File theFile = new java.io.File( _settings.runLogFile() );
-//        if ( theFile.isFile() ) {
-//            //  Now parse the thing, or try to.
-//            ObjectFactory factory = new ObjectFactory();
-//            DifxJobLog log = factory.createDifxJobLog();
-//            try {
-//                javax.xml.bind.JAXBContext jaxbCtx =
-//                        javax.xml.bind.JAXBContext.newInstance( log.getClass().getPackage().getName() );
-//                javax.xml.bind.Unmarshaller unmarshaller = jaxbCtx.createUnmarshaller();
-//                log = (DifxJobLog)(unmarshaller.unmarshal( theFile ));
-////                System.out.println( "got a job log " + log.getData().getActiveID() );
-//            } catch ( Exception e ) {
-////                System.out.println( e.toString() );
-//            }
-//        }
-    }
-    
     
     /*
      * Set the "state" of this job.  The state appears on both the editor/monitor

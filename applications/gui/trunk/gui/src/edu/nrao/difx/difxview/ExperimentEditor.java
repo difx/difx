@@ -3243,22 +3243,6 @@ public class ExperimentEditor extends JFrame {
                     String passDir = "";
                     if ( createPass() )
                         passDir = passDirectory() + "/";
-//                    //  Create a directory for log files.
-//                    DiFXCommand_mkdir mkdir = new DiFXCommand_mkdir( directory() + "/" + passDir + "guiLogs", _settings );
-//                    try {
-//                        mkdir.send();
-//                        //  Delay for a second to make sure mk5daemon has a chance to do this and recover.
-//                        try { Thread.sleep( 1000 ); } catch ( Exception e ) {}
-//                    } catch ( java.net.UnknownHostException e ) {
-//                        JOptionPane.showMessageDialog( _this, "Error - DiFX host \"" + _settings.difxControlAddress()
-//                             + "\" unknown.",
-//                                "Host Unknown", JOptionPane.ERROR_MESSAGE );
-//                        continueRun = false;
-//                    } 
-//                    //  Create a "pass log" for this set of jobs.
-//                    _passLog = new ActivityLogFile( directory() + "/" + passDir + "guiLogs/" + passLogFileName() );
-//                    _newPass.logFile( _passLog );
-//                    _statusLabel.setText( "Writing file \"" + directory() + "/" + passDir + vexFileName() + "\"" );
                     //  Prepare the .vex file content for sending.  This includes removing EOP data if necessary,
                     //  removing stations within scans if they have a "-1" code and eliminating scans that
                     //  are not actually used.
@@ -3276,7 +3260,6 @@ public class ExperimentEditor extends JFrame {
                     Point pt = _okButton.getLocationOnScreen();
                     SendFileMonitor sendVex = new SendFileMonitor( (Frame)comp, pt.x + 25, pt.y + 25,
                             directory() + "/" + passDir + vexFileName(), newVexData, _settings );
-//                    _passLog.addLabelItem( "VEX FILE", directory() + "/" + passDir + vexFileName() );
                     //  Delay for a bit to avoid having the following operation step on the end of this
                     //  one.  Mk5daemon may still be busy.
                     try { Thread.sleep( 1000 ); } catch ( Exception e ) {}
@@ -3284,7 +3267,6 @@ public class ExperimentEditor extends JFrame {
                     //  exists, or the main experiment directory if not.
                     SendFileMonitor sendV2d = new SendFileMonitor( (Frame)comp, pt.x + 25, pt.y + 25,
                             directory() + "/" + passDir + v2dFileName(), _v2dEditor.text(), _settings );
-//                    _passLog.addLabelItem( "V2D FILE", directory() + "/" + passDir + v2dFileName() );
                     try { Thread.sleep( 1000 ); } catch ( Exception e ) {}
                     //  Run vex2difx on the new pass and v2d file.
                     passDir = directory();
@@ -3415,18 +3397,6 @@ public class ExperimentEditor extends JFrame {
                     //  we expect soon!).
                     newJob.state().setText( "await .im file" );
                     newJob.state().setBackground( Color.YELLOW );
-//                    //  Add the .input file name to the pass log file.
-//                    _passLog.addLabelItem( "INPUT FILE", newFile.trim() );
-//                    //  Create a new log file for this job.
-//                    newJob.logFile( new ActivityLogFile( newFile.trim().substring( 0, newFile.lastIndexOf( "/" ) ) + "/guiLogs/" + jobName + ".jobLog" ) );
-//                    newJob.logFile().addLabelItem( "INPUT FILE", newFile.trim() );
-//                    //  Send the log file to the DiFX host.
-//                    Component comp = _this;
-//                    while ( comp.getParent() != null )
-//                        comp = comp.getParent();
-//                    Point pt = new Point( 100, 100 );
-//                    SendFileMonitor sendLog = new SendFileMonitor( (Frame)comp, pt.x + 25, pt.y + 25,
-//                            newJob.logFile().filename(), newJob.logFile().content(), _settings );
                     //  Apply the input file data to the job.
                     newJob.inputFile( newFile.trim(), false );
                     //_fileReadQueue.queueRead( newJob, newFile.trim() );
@@ -3464,22 +3434,7 @@ public class ExperimentEditor extends JFrame {
          */
         synchronized public void endCallback( String newFile ) {
             _newPass.stateLabel( "", Color.yellow, false );
-//            //  Send the pass log file to the DiFX host.
-//            Component comp = _this;
-//            while ( comp.getParent() != null )
-//                comp = comp.getParent();
-//            Point pt = new Point( 100, 100 );
-//            SendFileMonitor sendLog = new SendFileMonitor( (Frame)comp, pt.x + 25, pt.y + 25,
-//                    _passLog.filename(), _passLog.content(), _settings );
-//            try { Thread.sleep( 1000 ); } catch ( Exception e ) {}
             _statusLabel.setText( "vex2difx process completed!" );
-//            ArrayDeque<ActivityLogFile.LogItem> itemList = _passLog.getItem( "FILE" );
-//            if ( itemList != null ) {
-//                for ( Iterator<ActivityLogFile.LogItem> iter = itemList.iterator(); iter.hasNext(); ) {
-//                    ActivityLogFile.LogItem logItem = iter.next();
-//                    System.out.println( "\"" + logItem.label + "\"  \"" + logItem.time + "\"  \"" + logItem.text + "\"" );
-//                }
-//            }
         }
         
         PassNode _newPass;
@@ -3696,7 +3651,6 @@ public class ExperimentEditor extends JFrame {
     protected double _bandwidth;
     protected Calendar _eopMinTime;
     protected Calendar _eopMaxTime;
-//    protected ActivityLogFile _passLog;
     protected VexFileParser _vexData;
     protected V2dFileParser _v2dFileParser;
     

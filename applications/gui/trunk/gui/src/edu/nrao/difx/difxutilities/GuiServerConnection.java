@@ -69,7 +69,7 @@ public class GuiServerConnection {
     public final int CHANNEL_DATA                   = 22;
     public final int GENERATE_FILELIST              = 23;
 
-    public GuiServerConnection( SystemSettings settings, String IP, int port, int timeout ) {
+    public GuiServerConnection( SystemSettings settings, String IP, int port ) {
         _settings = settings;
         _connectListeners = new EventListenerList();
         _sendListeners = new EventListenerList();

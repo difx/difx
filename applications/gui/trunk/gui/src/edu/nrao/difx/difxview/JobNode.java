@@ -1227,56 +1227,6 @@ public class JobNode extends QueueBrowserNode {
         _lockState = newVal;
     }
     
-//    /*
-//     * Add a new item to the log file and (optionally) upload it to the DiFX host
-//     * (uploading it immediately is time consuming but assures that changes are
-//     * up to date on the host).  If the log file does not yet exist (which is
-//     * possible for any number of reasons) create a new one.
-//     */
-//    void logItem( String label, String text, boolean uploadNow ) {
-//        //  Create a new log file if required.
-//        if ( logFile() == null ) {
-//            logFile( new ActivityLogFile( inputFile().substring( 0, inputFile().lastIndexOf( "/" ) ) + "/guiLogs"
-//                    + inputFile().substring( inputFile().lastIndexOf( "/" ) ).replace( ".input", ".jobLog" ) ) );
-//        }
-//        //  See if this file requires us to download its existing content first.  This
-//        //  would occur if we have loaded the filename from an existing job on the
-//        //  DiFX host.
-//        else if ( logFile().downloadExisting() ) {
-//            Component comp = _this;
-//            while ( comp.getParent() != null )
-//                comp = comp.getParent();
-//            Point pt = new Point( 100, 100 );
-//            GetFileMonitor getLog = new GetFileMonitor( (Frame)comp, pt.x + 25, pt.y + 25,
-//                    logFile().filename(), _settings, true );
-//            if ( getLog.inString().length() > 0 )
-//                logFile().content( getLog.inString() );
-//            //  Create the log file if it didn't exist.
-//            else {
-//                logFile( new ActivityLogFile( inputFile().substring( 0, inputFile().lastIndexOf( "/" ) ) + "/guiLogs"
-//                        + inputFile().substring( inputFile().lastIndexOf( "/" ) ).replace( ".input", ".jobLog" ) ) );
-//                _settings.messageCenter().warning( 0, "JobNode::logItem()", 
-//                        inputFile().substring( 0, inputFile().lastIndexOf( "/" ) ) + "/guiLogs"
-//                        + inputFile().substring( inputFile().lastIndexOf( "/" ) ).replace( ".input", ".jobLog" ) + " does not exist - creating it");
-//            }
-//            logFile().downloadExisting( false );
-//        }
-//        //  Finally, add the new item.
-//        logFile().addLabelItem( label, text );
-//        //  And upload the changed file if requested.
-//        if ( uploadNow ) {
-//            Component comp = _this;
-//            while ( comp.getParent() != null )
-//                comp = comp.getParent();
-//            Point pt = new Point( 100, 100 );
-//            SendFileMonitor sendLog = new SendFileMonitor( (Frame)comp, pt.x + 25, pt.y + 25,
-//                    logFile().filename(), logFile().content(), _settings );
-//        }
-//    }
-    
-//    public void logFile( ActivityLogFile logFile ) { _logFile = logFile; }
-//    public ActivityLogFile logFile() { return _logFile; }
-
     public ColumnTextArea state() { return _state; }
     public JProgressBar progress() { return _progress; }
     

@@ -708,39 +708,6 @@ public class LiveMonitorWindow extends JFrame implements WindowListener {
         _connected = false;
     }
 
-    /*
-     * Try making a connection to the DiFX monitor server using the current settings
-     * for host and port.
-     */
-    void makeConnectionFOO() {
-        _connectionLight.warning();
-        _connectionLabel.setText( "connecting..." );
-        try {
-            _socket = new Socket( _settings.difxMonitorHost(), _usingPort );
-            _socket.setSoTimeout( _settings.timeout() );
-            if ( _socket.isConnected() ) {
-                _in = new ExtendedDataInputStream( _socket.getInputStream() );
-                _out = new DataOutputStream( _socket.getOutputStream() );
-                //  Read the connection status message from the server.  This should match
-                //  the "no error" message.
-                _connectionLight.on( true );
-                _connectionLabel.setText( "connected" );
-                _connected = true;
-            }
-            else {
-                _connected = false;
-                _connectionLabel.setText( "connection failed" );
-                _connectionLight.alert();
-            }
-        } catch ( java.net.UnknownHostException e ) {
-            _connectionLight.alert();
-            _connected = false;
-        } catch ( java.io.IOException e ) {
-            _connectionLight.alert();
-            _connected = false;
-        }
-    }
-    
     //  Packet types used in the communications exchange with guiServer.
     protected final int MESSAGE                            = 100;
     protected final int WARNING                            = 101;

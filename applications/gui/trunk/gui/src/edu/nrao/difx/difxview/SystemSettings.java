@@ -612,8 +612,11 @@ public class SystemSettings extends JFrame {
                 generateBroadcastChangeEvent();
             }
         } );
+        _timeout.setToolTipText( "The interval, in milliseconds, before the monitor decides it has\n"
+                + "not received data.  This (mostly) effects the drawing speed of the\n"
+                + "monitor plot, as the monitor will immediately look for data again." );
         networkPanel.add( _timeout );
-        JLabel timeoutLabel = new JLabel( "Timeout (ms):" );
+        JLabel timeoutLabel = new JLabel( "Monitor Timeout (ms):" );
         timeoutLabel.setBounds( 10, 145, 150, 25 );
         timeoutLabel.setHorizontalAlignment( JLabel.RIGHT );
         networkPanel.add( timeoutLabel );
@@ -740,19 +743,6 @@ public class SystemSettings extends JFrame {
         _workingDirectory.setToolTipText( "Root directory on the DiFX host for Experiment data." );
         jobCreationPanel.add( workingDirectoryLabel );
         jobCreationPanel.add( _workingDirectory );
-//        _stagingArea = new JFormattedTextField();
-//        _stagingArea.setFocusLostBehavior( JFormattedTextField.COMMIT );
-//        _stagingArea.setToolTipText( "Staging area root directory on the DiFX host." );
-//        jobCreationPanel.add( _stagingArea );
-//        JLabel useStagingAreaLabel = new JLabel( "Use Staging Area:" );
-//        useStagingAreaLabel.setBounds( 10, 55, 120, 25 );
-//        useStagingAreaLabel.setHorizontalAlignment( JLabel.RIGHT );
-//        useStagingAreaLabel.setToolTipText( "Use the staging area to run jobs (or don't)." );
-//        _useStagingArea = new ZCheckBox( "" );
-//        _useStagingArea.setBounds( 133, 55, 25, 25 );
-//        _useStagingArea.setToolTipText( "Use the staging area to run jobs (or don't)." );
-//        jobCreationPanel.add( useStagingAreaLabel );
-//        jobCreationPanel.add( _useStagingArea );
         //  This is the display for antenna data defaults, used below.
         _antennaDefaultsDisplay = new AntennaDefaultsDisplay( 0, 0, _settings );
         ZButton antennaDefaultsButton = new ZButton( "Antenna Defaults" );
@@ -780,7 +770,7 @@ public class SystemSettings extends JFrame {
         jobCreationPanel.add( _exciseUnusedScansCheck );
 
         IndexedPanel jobProcessingPanel = new IndexedPanel( "Job Processing Settings" );
-        jobProcessingPanel.openHeight( 385 );
+        jobProcessingPanel.openHeight( 305 );
         jobProcessingPanel.closedHeight( 20 );
         jobProcessingPanel.labelWidth( 300 );
         _scrollPane.addNode( jobProcessingPanel );
@@ -1113,24 +1103,6 @@ public class SystemSettings extends JFrame {
         JLabel maxSecondsForProcessingLabel = new JLabel( "Processing Time Limit (Seconds)" );
         maxSecondsForProcessingLabel.setBounds( 580, 265, 300, 25 );
         jobProcessingPanel.add( maxSecondsForProcessingLabel );
-        JLabel runLogLabel = new JLabel( "Run Log Settings:" );
-        runLogLabel.setBounds( 30, 295, 200, 25 );
-        runLogLabel.setFont( new Font( processingLabel.getFont().getFamily(), Font.BOLD, processingLabel.getFont().getSize() ) );
-        jobProcessingPanel.add( runLogLabel );
-        _runLogCheck = new ZCheckBox( "Log Run Data" );
-        _runLogCheck.setBounds( 165, 320, 125, 25 );
-        _runLogCheck.toolTip( "Collect performance statistics in the \"Run Log\" file\n"
-                + "for each job run.", null );
-        jobProcessingPanel.add( _runLogCheck );
-        JLabel runLogFileLabel = new JLabel( "Run Log File:" );
-        runLogFileLabel.setBounds( 10, 345, 150, 25 );
-        runLogFileLabel.setHorizontalAlignment( JLabel.RIGHT );
-        runLogFileLabel.setToolTipText( "File containing run log statistics." );
-        _runLogFile = new FormattedTextField();
-        _runLogFile.setFocusLostBehavior( JFormattedTextField.COMMIT );
-        _runLogFile.setToolTipText( "Root directory on the DiFX host for Experiment data." );
-        jobProcessingPanel.add( runLogFileLabel );
-        jobProcessingPanel.add( _runLogFile );
 
         IndexedPanel databasePanel = new IndexedPanel( "Database Configuration" );
         databasePanel.openHeight( 305 );
@@ -1485,6 +1457,9 @@ public class SystemSettings extends JFrame {
             _threadsPerCheck.setSelected( true );
             _nodesPer.setEnabled( false );
         }
+        //  If all nodes is selected, disable the "nodes per" box.
+        if ( _allNodesCheck.isSelected() )
+            _nodesPer.setEnabled( false );
         //  If all threads is checked, enable the minimum number of threads.
         if ( _allThreadsCheck.isSelected() ) {
             _threadsPerNode.setEnabled( false );
@@ -1557,13 +1532,11 @@ public class SystemSettings extends JFrame {
             _difxSVN.setBounds( 115, 115, w - 145, 25 );
             //  Job settings
             _workingDirectory.setBounds( 165, 25, w - 195, 25 );
-//            _stagingArea.setBounds( 165, 55, w - 195, 25 );
             _eopURL.setBounds( 165, 25, w - 305, 25 );
             _viewEOPFile.setBounds( w - 135, 25, 105, 25 );
             _leapSecondsURL.setBounds( 165, 55, w - 305, 25 );
             _viewLeapSecondsFile.setBounds( w - 135, 55, 105, 25 );
             _updateEOPNow.setBounds( w - 260, 115, 120, 25 );
-            _runLogFile.setBounds( 165, 345, w - 195, 25 );
         }
     }
     
@@ -1630,7 +1603,7 @@ public class SystemSettings extends JFrame {
                     }
                     //  Make a new guiServer connection.
                     _guiServerConnection = new GuiServerConnection( _this, difxControlAddress(), 
-                            difxControlPort(), timeout() );
+                            difxControlPort() );
                     //  Add callbacks for various actions.
                     _guiServerConnection.addConnectionListener( new ActionListener() {
                         public void actionPerformed( ActionEvent e ) {
@@ -2081,17 +2054,16 @@ public class SystemSettings extends JFrame {
     public void setDefaults() {
         _jaxbPackage = "edu.nrao.difx.xmllib.difxmessage";
         _home = "/home/swc/difx";
-        _loggingEnabled = false;
         _statusValidDuration = 2000l;
-        _useTCPRelayCheck.setSelected( false );
+        _useTCPRelayCheck.setSelected( true );
         _identifyMark5sCheck.setSelected( true );
         _mark5Pattern.setText( "mark5.*" );
         _requestAllMessages.setSelected( true );
         _requestSpecificMessages.setSelected( false );
         if ( _difxMessageListDisplay == null )
             _difxMessageListDisplay = new DiFXMessageListDisplay( 0, 0, _settings );
-        _inactivityWarning.intValue( 20 );
-        _inactivityError.intValue( 60 );
+        _inactivityWarning.intValue( 60 );
+        _inactivityError.intValue( 180 );
         generateMark5PatternList();
         _ipAddress.setText( "224.2.2.1" );
         _port.intValue( 52525 );
@@ -2107,7 +2079,7 @@ public class SystemSettings extends JFrame {
         maxTransferPorts();
         _difxMonitorPort.intValue( 52300 );
         _difxMonitorHost.setText( "guiServer.hostname" );
-        _difxBase.setText( "/usr/local/swc/difx" );
+        _difxBase.setText( "N/A" );
         _useDefaultStartScript.setSelected( true );
         _dbUseDataBase.setSelected( false );
         _dbVersion.setText( "unknown" );
@@ -2149,15 +2121,13 @@ public class SystemSettings extends JFrame {
         _dbAutoUpdate.setSelected( false );
         _dbAutoUpdateInterval.intValue( 100 );
         _workingDirectory.setText( "/" );
-//        _stagingArea.setText( "/queue" );
-//        _useStagingArea.setSelected( false );
         _eliminateCodeStationsCheck.setSelected( true );
         _exciseUnusedScansCheck.setSelected( false );
         _headNode.setText( _difxControlAddress.getText() );
         _nodesPer.value( 2 );
-        _nodesPerCheck.setSelected( true );
-        _allNodesCheck.setSelected( false );
-        _allThreadsCheck.setSelected( false );
+        _nodesPerCheck.setSelected( false );
+        _allNodesCheck.setSelected( true );
+        _allThreadsCheck.setSelected( true );
         _uniqueDataSource.setSelected( true );
         _assignBasedOnPath.setSelected( false );
         _shareDataSourcesAsProcessors.setSelected( false );
@@ -2165,18 +2135,16 @@ public class SystemSettings extends JFrame {
         _threadsPerDataSource.value( 1 );
         _threadsPerNode.value( 8 );
         _minThreadsPerNode.value( 1 );
-        _threadsPerCheck.setSelected( true );
-        _baselineCheck.setSelected( true );
-        _jobCheck.setSelected( false );
-        _sequentialCheck.setSelected( false );
-        _simultaneousCheck.setSelected( true );
+        _threadsPerCheck.setSelected( false );
+        _baselineCheck.setSelected( false );
+        _jobCheck.setSelected( true );
+        _sequentialCheck.setSelected( true );
+        _simultaneousCheck.setSelected( false );
         _maxJobs.intValue( 3 );
         _maxSecondsForHardware.intValue( 600 );
         _useMaxSecondsForHardware.setSelected( false );
         _maxSecondsForProcessing.intValue( 1800 );
         _useMaxSecondsForProcessing.setSelected( false );
-        _runLogCheck.setSelected( true );
-        _runLogFile.setText( System.getProperty( "user.home" ) + "/.difxGuiRunLog" );
         _queueBrowserSettings.showCompleted = true;
         _queueBrowserSettings.showIncomplete = true;
         _queueBrowserSettings.showSelected = true;
@@ -2525,9 +2493,6 @@ public class SystemSettings extends JFrame {
     public void home( String newVal ) { _home = newVal; }
     public String home() { return _home; }
     
-    public void loggingEnabled( boolean newVal ) { _loggingEnabled = newVal; }
-    public boolean loggingEnabled() { return _loggingEnabled; }
-    
     public void statusValidDuration( long newVal ) { _statusValidDuration = newVal; }
     public long statusValidDuration() { return _statusValidDuration; }
     
@@ -2757,12 +2722,6 @@ public class SystemSettings extends JFrame {
     
     public boolean eliminateCodeStationsCheck() { return _eliminateCodeStationsCheck.isSelected(); }
     public boolean exciseUnusedScansCheck() { return _exciseUnusedScansCheck.isSelected(); }
-    
-//    public String stagingArea() { return _stagingArea.getText(); }
-//    public void stagingArea( String newVal ) { _stagingArea.setText( newVal ); }
-    
-//    public boolean useStagingArea() { return _useStagingArea.isSelected(); }
-//    public void useStagingArea( boolean newVal ) { _useStagingArea.setSelected( newVal ); }
     
     public String headNode() { return _headNode.getText(); }
     public void headNode( String newVal ) { _headNode.setText( newVal ); }
@@ -3017,7 +2976,6 @@ public class SystemSettings extends JFrame {
                     _difxMessageListDisplay = new DiFXMessageListDisplay( 0, 0, _settings );
                 _difxMessageListDisplay.selectMessage( iter.next().getType() );
             }
-            this.loggingEnabled( doiConfig.isLoggingEnabled() );
             if ( doiConfig.getStatusValidDuration() != 0 )
                 this.statusValidDuration( doiConfig.getStatusValidDuration() );
             _channelAllData.setSelected( doiConfig.isChannelAllData() );
@@ -3083,9 +3041,6 @@ public class SystemSettings extends JFrame {
                 _workingDirectory.setText( doiConfig.getWorkingDirectory() );
             _eliminateCodeStationsCheck.setSelected( !doiConfig.isEliminateCodeStationsCheck() );
             _exciseUnusedScansCheck.setSelected( doiConfig.isExciseUnusedScansCheck() );
-//            if ( doiConfig.getStagingArea() != null )
-//                _stagingArea.setText( doiConfig.getStagingArea() );
-//            _useStagingArea.setSelected( doiConfig.isUseStagingArea() );
             if ( doiConfig.getDifxHeadNode() != null )
                 this.headNode( doiConfig.getDifxHeadNode() );
 
@@ -3269,9 +3224,6 @@ public class SystemSettings extends JFrame {
                 _maxSecondsForProcessing.intValue( doiConfig.getMaxSecondsForProcessing() );
             _useMaxSecondsForProcessing.setSelected( doiConfig.isUseMaxSecondsForProcessing() );
 
-            _runLogCheck.setSelected( !doiConfig.isRunLogCheck() );
-            if ( doiConfig.getRunLogFile() != null )
-                _runLogFile.setText( doiConfig.getRunLogFile() );
             for ( Iterator<DoiSystemConfig.PathNodePair> iter = doiConfig.getPathNodePair().iterator(); iter.hasNext(); ) {
                 DoiSystemConfig.PathNodePair pathNodePair = iter.next();
                 //  Create a list for the source/path pairs.  We can't add them to the
@@ -3649,7 +3601,6 @@ public class SystemSettings extends JFrame {
             }
         }
         doiConfig.setMark5Pattern( _mark5Pattern.getText() );
-        doiConfig.setLoggingEnabled( this.loggingEnabled() );
         doiConfig.setStatusValidDuration( this.statusValidDuration() );
         doiConfig.setChannelAllData( _channelAllData.isSelected() );
         
@@ -3693,8 +3644,6 @@ public class SystemSettings extends JFrame {
         doiConfig.setQueueShowPassScheduled( _queueBrowserSettings.showPassScheduled );
         
         doiConfig.setWorkingDirectory( _workingDirectory.getText() );
-//        doiConfig.setStagingArea( _stagingArea.getText() );
-//        doiConfig.setUseStagingArea( _useStagingArea.isSelected() );
         doiConfig.setEliminateCodeStationsCheck( !_eliminateCodeStationsCheck.isSelected() );
         doiConfig.setExciseUnusedScansCheck( _exciseUnusedScansCheck.isSelected() );
         doiConfig.setDifxHeadNode( this.headNode() );
@@ -4020,8 +3969,6 @@ public class SystemSettings extends JFrame {
         doiConfig.setMaxSecondsForProcessing( _maxSecondsForProcessing.intValue() );
         doiConfig.setUseMaxSecondsForProcessing( _useMaxSecondsForProcessing.isSelected() );
         doiConfig.setSimultaneousCheck( !_simultaneousCheck.isSelected() );
-        doiConfig.setRunLogCheck( !_runLogCheck.isSelected() );
-        doiConfig.setRunLogFile( _runLogFile.getText() );
 
         if ( _sourceBasedOnPathDisplay != null && _sourceBasedOnPathDisplay.panels() != null ) {
             for ( Iterator<SourceBasedOnPathDisplay.PanelItem> iter = _sourceBasedOnPathDisplay.panels().iterator(); iter.hasNext(); ) {
@@ -4739,7 +4686,6 @@ public class SystemSettings extends JFrame {
     
     protected String _jaxbPackage;
     protected String _home;
-    protected boolean _loggingEnabled;
     protected long _statusValidDuration;
     //  DiFX Control Connection
     protected ZCheckBox _difxUDPCheck;
@@ -4804,8 +4750,6 @@ public class SystemSettings extends JFrame {
     protected JFormattedTextField _workingDirectory;
     protected ZCheckBox _eliminateCodeStationsCheck;
     protected ZCheckBox _exciseUnusedScansCheck;
-//    protected JFormattedTextField _stagingArea;
-//    protected ZCheckBox _useStagingArea;
     protected SaneTextField _headNode;
     
     //  EOP Settings items.
@@ -5973,8 +5917,6 @@ public class SystemSettings extends JFrame {
     protected ZCheckBox _useMaxSecondsForHardware;
     protected NumberBox _maxSecondsForProcessing;
     protected ZCheckBox _useMaxSecondsForProcessing;
-    protected ZCheckBox _runLogCheck;
-    protected FormattedTextField _runLogFile;
     
     public boolean useHeadNodeCheck() { return _useHeadNodeCheck.isSelected(); }
     public boolean restrictSources() { return _restrictSourcesCheck.isSelected(); }
@@ -5994,8 +5936,6 @@ public class SystemSettings extends JFrame {
     public boolean jobCheck() { return _jobCheck.isSelected(); }
     public boolean sequentialCheck() { return _sequentialCheck.isSelected(); }
     public boolean simultaneousCheck() { return _simultaneousCheck.isSelected(); }
-    public boolean runLogCheck() { return _runLogCheck.isSelected(); }
-    public String runLogFile() { return _runLogFile.getText(); }
     public int maxJobs() { return _maxJobs.intValue(); }
     public int maxSecondsForHardware() { return _maxSecondsForHardware.intValue(); }
     public int maxSecondsForProcessing() { return _maxSecondsForProcessing.intValue(); }
@@ -6375,48 +6315,4 @@ public class SystemSettings extends JFrame {
 
     }
 
-    /*
-     * This stuff maintains an "active ID list" of unique (integer) job identifiers.
-     * The list contains each job that is actively running, and, for each, a list
-     * of all the jobs that have been at any time actively running while they were
-     * running.
-     */
-    protected HashMap<Long,ArrayList<Long>> _activeIDList;
-    
-    /*
-     * Add a new active ID to the active ID list.  This ID must first be added to
-     * every job already in the list.  Then a new list entry is created for the
-     * job itself.
-     */
-    public void addActiveID( long newID ) {
-        //  First make sure there is an active ID list.
-        if ( _activeIDList == null )
-            _activeIDList = new HashMap<Long,ArrayList<Long>>();
-        synchronized ( _activeIDList ) {
-            //  Add this ID to each list in the active ID list (this is a new, running
-            //  job, so it should be added to the lists of running job for each job that
-            //  is already running.
-            for ( Iterator<Long> iter = _activeIDList.keySet().iterator(); iter.hasNext(); ) {
-                _activeIDList.get( iter.next() ).add( newID );
-            }
-            //  Then create a new list for this job and add it to the main list.
-            _activeIDList.put( newID, new ArrayList<Long>() );
-        }
-    }
-    
-    /*
-     * Take an active ID out of the list of active IDs and return a list of all other
-     * IDs that were active while it was active.
-     */
-    public ArrayList<Long> endActiveID( long newID ) {
-        ArrayList<Long> ret = null;
-        //  First make sure there is an active ID list.
-        if ( _activeIDList == null )
-            _activeIDList = new HashMap<Long,ArrayList<Long>>();
-        synchronized ( _activeIDList ) {
-            if ( _activeIDList == null )
-                ret = _activeIDList.remove( newID );
-            }
-        return ret;
-    }
 }

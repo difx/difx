@@ -111,7 +111,6 @@
                 <xsd:element ref="ipAddress"/>
                 <xsd:element ref="port"/>
                 <xsd:element ref="bufferSize"/>
-                <xsd:element ref="loggingEnabled"/>
                 <xsd:element ref="statusValidDuration"/>
                 <xsd:element ref="channelAllData"/>
                 
@@ -152,8 +151,6 @@
                 <xsd:element ref="inactivityError"/>
                 
                 <xsd:element ref="workingDirectory"/>
-                <xsd:element ref="stagingArea"/>
-                <xsd:element ref="useStagingArea"/>
                 
                 <xsd:element ref="windowConfigMainX"/>
                 <xsd:element ref="windowConfigMainY"/>
@@ -360,8 +357,6 @@
                 <xsd:element ref="maxSecondsForProcessing" />
                 <xsd:element ref="useMaxSecondsForProcessing" />
                 <xsd:element ref="simultaneousCheck" />
-                <xsd:element ref="runLogCheck" />
-                <xsd:element ref="runLogFile" />
                 <xsd:element name="pathNodePair" maxOccurs="unbounded" minOccurs="0">
                     <xsd:complexType>
                         <xsd:attribute name="node" type="xsd:string"/>
@@ -398,7 +393,6 @@
     <xsd:element name="ipAddress" type="xsd:string"></xsd:element>
     <xsd:element name="port" type="xsd:int"></xsd:element>
     <xsd:element name="bufferSize" type="xsd:int"></xsd:element>
-    <xsd:element name="loggingEnabled" type="xsd:boolean"></xsd:element>
     <xsd:element name="statusValidDuration" type="xsd:unsignedInt"></xsd:element>
     <xsd:element name="channelAllData" type="xsd:boolean"></xsd:element>
                 
@@ -439,8 +433,6 @@
     <xsd:element name="inactivityError" type="xsd:int"></xsd:element>
                 
     <xsd:element name="workingDirectory" type="xsd:string"></xsd:element>
-    <xsd:element name="stagingArea" type="xsd:string"></xsd:element>
-    <xsd:element name="useStagingArea" type="xsd:boolean"></xsd:element>
     
     <xsd:element name="windowConfigMainX" type="xsd:int"></xsd:element>
     <xsd:element name="windowConfigMainY" type="xsd:int"></xsd:element>
@@ -642,8 +634,6 @@
     <xsd:element name="maxSecondsForProcessing" type="xsd:int"></xsd:element>
     <xsd:element name="useMaxSecondsForProcessing" type="xsd:boolean"></xsd:element>
     <xsd:element name="simultaneousCheck" type="xsd:boolean"></xsd:element>
-    <xsd:element name="runLogCheck" type="xsd:boolean"></xsd:element>
-    <xsd:element name="runLogFile" type="xsd:string"></xsd:element>
 
     <xsd:complexType name="mark5Status">
         <xsd:sequence>
