@@ -36,6 +36,9 @@ parser.add_option( "--taroptions", "-t",
 parser.add_option( "--verbose", "-v",
         dest="verbose", action="store_true", default=False,
         help='Be verbose' )
+parser.add_option( "--keeparch", "-k",
+        dest="keeparch", action="store_true", default=False,
+        help="Keep the tar archive directory after it's been transferred" )
 
 (options, args) = parser.parse_args()
 
@@ -52,30 +55,37 @@ if len(args) < 2:
 
 #archdir = args[1] 
 expname = os.path.normpath(args[0]).split('/')[-1]
-archdir = '/data/corr/Archive/' + expname + os.sep
+archdir = os.environ.get('ARCHTMP') + expname + os.sep
 mark4file = str()
 os.chdir(args[0])
 tarlist = str()
 transfer = []
 for filename in os.listdir(os.curdir):
 
-    # deal with Mark4 output, clocks and test as special cases
+    # deal with Mark4 output, clocks, test and old runs as special cases
     if re.search('^\d\d\d\d$', filename):
+        # deal with this later in its own tar file
         mark4file = filename
         continue
     if filename == 'clocks':
+        # deal with this later in its own tar file
         continue
     if filename == 'test':
+        # ignore this one
+        continue
+    if re.match('\d\d\d\d-\d\d-\d\d-\d\d-\d\d-\d\d', filename):
+        # ignore these (old, superseded jobs).
         continue
 
     # certain file names never get tarred 
-    notar_ext = ['.fits', '.mark4', '.tar']
+    notar_ext = ['.fits', '.mark4', '.tar', expname+'.v2d', expname+'.vex', 'corr_notes.txt']
     fileWithPath = os.path.join(os.path.abspath(os.curdir), filename)
     notar = False
     for extension in notar_ext:
         if re.search(extension, filename, re.IGNORECASE):
             notar = True
             break
+
 
     # only tar small files
     if os.path.getsize(fileWithPath)/1e6 > options.maxtarsize:
@@ -116,7 +126,7 @@ if mark4file:
 
 
 # now archive the lot to data.ivec.org
-os.chdir(archdir)
+#os.chdir(archdir)
 #command = " ".join(["ashell.py login + delegate 100"])
 #subprocess.check_call(command, shell=True, stdout=sys.stdout, stderr=sys.stderr)
 while True:
@@ -126,11 +136,12 @@ while True:
         break
     except KeyboardInterrupt:
         raise Exception('Forced quit')
-    else:
+    except:
         print 'trying again'
         #command = " ".join(['ashell.py "login + delegate 100"'])
         #subprocess.check_call(command, shell=True, stdout=sys.stdout, stderr=sys.stderr)
 
-shutil.rmtree(archdir)
+if not options.keeparch:
+    shutil.rmtree(archdir)
 
 print 'All done!'
