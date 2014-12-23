@@ -55,7 +55,7 @@ if len(args) < 2:
 
 #archdir = args[1] 
 expname = os.path.normpath(args[0]).split('/')[-1]
-archdir = os.environ.get('ARCHTMP') + expname + os.sep
+archdir = os.environ.get('ARCHTMP') + os.sep + expname + os.sep
 mark4file = str()
 os.chdir(args[0])
 tarlist = str()
