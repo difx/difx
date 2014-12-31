@@ -19,6 +19,10 @@ parser.add_option("-v", "--verbose", dest="verbose", action="store_true", defaul
                   help="Turn verbose printing on")
 parser.add_option("-i", "--inputfile", dest="inputfile", default="",
                   help="An input file to use as guide for number of channels for each freq")
+parser.add_option("-Z", "--nozero", dest="nozero", action="store_true", default=False,
+                  help="Do not show visibilities on zero-baselines (e.g., exclude cross-pol autocorrs)")
+parser.add_option("-z", "--zero", dest="zero", action="store_true", default=False,
+                  help="Show only visibilities on zero-baselines (e.g., cross-pol autocorrs)")
 parser.add_option("--minsnr", dest="minsnr", default="6.5", help="Minimum S/N to print detection")
 (options, args) = parser.parse_args()
 
@@ -31,6 +35,8 @@ maxchannels    = int(options.maxchannels)
 verbose        = options.verbose
 inputfile      = options.inputfile
 minsnr         = float(options.minsnr)
+nozero         = options.nozero
+dozero         = options.zero
 
 if inputfile == "":
     parser.error("You must supply an input file!")
@@ -68,6 +74,8 @@ while not len(nextheader) == 0:
     freqindex = nextheader[5]
     polpair   = nextheader[6]
     nchan     = freqs[freqindex].numchan/freqs[freqindex].specavg
+    ant1      = baseline % 256
+    ant2      = (baseline-ant1)/256
     if nchan > maxchannels:
         print "How embarrassing - you have tried to read files with more than " + \
             str(maxchannels) + " channels.  Please rerun with --maxchannels=<bigger number>!"
@@ -79,6 +87,8 @@ while not len(nextheader) == 0:
         amp[j] = math.sqrt(cvis[0]*cvis[0] + cvis[1]*cvis[1])
         phase[j] = math.atan2(cvis[1], cvis[0])*180.0/math.pi
     if (targetbaseline < 0 or targetbaseline == baseline) and \
+       not (nozero and (ant1 == ant2)) and \
+       not (dozero and (ant1 != ant2)) and \
        (targetfreq < 0 or targetfreq == freqindex):
         lag = fft.ifft(vis, nchan)
         for j in range(nchan/2):
