@@ -20,13 +20,13 @@ parser.add_option("-v", "--verbose", dest="verbose", action="store_true", defaul
                   help="Turn verbose printing on")
 parser.add_option("-i", "--inputfile", dest="inputfile", default="",
                   help="An input file to use as guide for number of channels for each freq")
-parser.add_option("--toscreen", dest="toscreen", default=False, action="store_true",
+parser.add_option("-x", "--toscreen", dest="toscreen", default=False, action="store_true",
                   help="Plot to the screen, otherwise to png files")
 parser.add_option("--singlevis", dest="singlevis", default=False, action="store_true",
                   help="Stop plotting as soon as there is a time change")
 parser.add_option("--firstpermatch", dest="firstpermatch", default=False, action="store_true",
                   help="For each baseline plot only the first matching entry")
-parser.add_option("--singleplot", dest="singleplot", default=False, action="store_true",
+parser.add_option("-1", "--singleplot", dest="singleplot", default=False, action="store_true",
                   help="Plot everything on one axis")
 parser.add_option("--unwrap", dest="unwrap", default=False, action="store_true",
                   help="Unwrap the phase")
@@ -54,6 +54,14 @@ firstpermatch  = options.firstpermatch
 amprange       = options.amprange.split(',')
 unwrap         = options.unwrap
 noauto         = options.noauto
+
+try:
+    import matplotlib as mpl
+    # Must disable path simplifcation to allow fringe peaks to be seen even in dense plots
+    # http://stackoverflow.com/questions/15795720/matplotlib-major-display-issue-with-dense-data-sets
+    mpl.rcParams['path.simplify'] = False
+except:
+    pass
 
 if inputfile == "":
     parser.error("You must supply an input file!")
@@ -175,7 +183,8 @@ while not len(nextheader[0]) == 0 and keeplooping:
             phase[i][j] = math.atan2(cvis[1], cvis[0])
 
         if unwrap:
-	    phase[i] = (numpy.unwrap(phase[i]))*180.0/math.pi
+	    phase[i] = (numpy.unwrap(phase[i]))
+        phase[i] = numpy.array(phase[i])*180.0/math.pi
 
 	if (targetbaseline < 0 or targetbaseline == baseline[i]) and \
 	    (targetfreq < 0 or targetfreq == freqindex[i]) and (polpair[i] in pollist) and \
@@ -198,21 +207,26 @@ while not len(nextheader[0]) == 0 and keeplooping:
                (targetfreq < 0 or freqindex[0] == targetfreq) and (polpair[0] in pollist):
                 maxlag = max(lagamp[i])
                 maxindex = lagamp[i].index(maxlag)
-                delayoffsetus = (maxindex - nchan[i]/2) * 1.0/(freqs[freqindex[0]].bandwidth*2)
+                delayoffsetus = (maxindex - nchan[i]/2) * 1.0/(freqs[freqindex[0]].bandwidth)
 		if singleplot:
 		    ls = linestyles[count%len(linestyles)]
 		    print "Setting linestyle to " + ls
 		    count += 1
 		else:
 		    ls = linestyles[i]
+                pylab.gcf().set_facecolor('white')
                 pylab.subplot(311)
 		if amprange[1] > 0:
 		    pylab.ylim(amprange)
                 pylab.plot(chans[:nchan[i]], amp[i][:nchan[i]], ls)
+                pylab.xlim([0, nchan[i]])
                 pylab.subplot(312)
                 pylab.plot(chans[:nchan[i]], phase[i][:nchan[i]], ls+'+')
+                pylab.ylim([-200, 200])
+                pylab.xlim([0, nchan[i]])
                 pylab.subplot(313)
                 pylab.plot(chans[:nchan[i]], lagamp[i][:nchan[i]], ls)
+                pylab.xlim([0, nchan[i]])
                 lagamp[i][maxindex] = 0
                 if maxindex > 0:
                     lagamp[i][maxindex-1] = 0
@@ -253,7 +267,7 @@ while not len(nextheader[0]) == 0 and keeplooping:
 	    pylab.subplot(311)
             pylab.title(titlestr)
 	    pylab.subplot(313)
-            pylab.figtext(0.0,0.0,"Fringe S/N %0.2f @ offset %0.2f us (%s)" % \
+            pylab.figtext(0.0,0.0,"Fringe S/N %0.2f @ offset %0.3f us (%s)" % \
                           (snr, delayoffsetus, "raw S/N is overestimated - corrected value ~%0.2f" % ((snr-3)/2)))
             if toscreen:
                 pylab.show()
