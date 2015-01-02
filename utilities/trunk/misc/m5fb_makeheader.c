@@ -15,6 +15,8 @@
 #include <math.h>
 #include <string.h>
 
+int strings_equal (const char *, const char *);
+
 void error_message(char *message) /*includefile */
 {
   fprintf(stderr,"ERROR: %s\n",message);
@@ -207,6 +209,7 @@ char  inpfile[80], outfile[80];
 char rawdatafile[80], source_name[80];
 int machine_id, telescope_id, data_type, nchans, nbits, nifs, scan_number,
   barycentric,pulsarcentric; /* these two added Aug 20, 2004 DRL */
+int is_bary, is_pulsarcentric;
 double tstart,mjdobs,tsamp,fch1,foff,refdm,az_start,za_start,src_raj,src_dej;
 double gal_l,gal_b,header_tobs,raw_fch1,raw_foff;
 int nbeams, ibeam;
@@ -282,17 +285,18 @@ void send_coords(double raj, double dej, double az, double za) /*includefile*/
   if ((az != 0.0)  || (az != -1.0))  send_double("az_start",az);
   if ((za != 0.0)  || (za != -1.0))  send_double("za_start",za);
 }
-int strings_equal (char *string1, char *string2) /* includefile */
+
+int strings_equal (const char *string1, const char *string2) /* includefile */
 {
   if (!strcmp(string1,string2)) {
     return 1;
-  } else {
-    return 0;
   }
+  return 0;
 }
-main (int argc, char *argv[])
+
+int main (int argc, char *argv[])
 {
-  int i,j;
+  int i;
   output=stdout;
   strcpy(source_name,"ATJ1745-2900");
   machine_id=0;     /* you will need to edit+align with aliases.c in sigproc */
@@ -308,6 +312,8 @@ main (int argc, char *argv[])
   tsamp=32.0e-3;       /* sampling time (s) */
   nbits=8;             /* number of bits per sample */
   nifs=1;
+  is_bary=0;
+  is_pulsarcentric=0;
 
   i=1;
   while (i<argc) {
@@ -335,8 +341,11 @@ main (int argc, char *argv[])
       nifs=atoi(argv[++i]);
     } else if (strings_equal(argv[i],"-telescope_id")) {
       telescope_id=atoi(argv[++i]);
+    } else if (strings_equal(argv[i],"-bary")) {
+      is_bary=1;
+    } else if (strings_equal(argv[i],"-pcentric")) {
+      is_pulsarcentric=1;
     }
-    
     i++;
   }
 
@@ -349,8 +358,8 @@ main (int argc, char *argv[])
   send_int("machine_id",machine_id);
   send_int("telescope_id",telescope_id);
   send_coords(src_raj,src_dej,az_start,za_start);
-  send_int("data_type",1);
-  send_double("fch1",fch1);
+  send_int("data_type",1);  // 1=filterbank, 2=time series, ...
+  send_double("fch1",fch1); // f[ch] = fch1 + ch * foff
   send_double("foff",foff);
   send_int("nchans",nchans);
   send_int("nbits",nbits);
@@ -359,6 +368,9 @@ main (int argc, char *argv[])
   send_double("tstart",tstart);
   send_double("tsamp",tsamp);
   send_int("nifs",nifs);
+  send_int("barycentric",is_bary);
+  send_int("pulsarcentric",is_pulsarcentric);
   send_string("HEADER_END");
-  
+
+  return 0;
 }
