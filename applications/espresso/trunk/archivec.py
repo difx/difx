@@ -58,9 +58,20 @@ expname = os.path.normpath(args[0]).split('/')[-1]
 archdir = os.environ.get('ARCHTMP') + os.sep + expname + os.sep
 mark4file = str()
 os.chdir(args[0])
-tarlist = str()
+tarlists = dict()
 transfer = []
+
+
 for filename in os.listdir(os.curdir):
+
+    # tar separate passes independently, so figure out pass names in use.
+    # Default is just the expname.
+    passname = expname
+    if '-' in filename:
+        passname = re.sub('[_\.].*', '', filename)
+
+    if not passname in tarlists.keys():
+        tarlists[passname] = str()
 
     # deal with Mark4 output, clocks, test and old runs as special cases
     if re.search('^\d\d\d\d$', filename):
@@ -78,7 +89,7 @@ for filename in os.listdir(os.curdir):
         continue
 
     # certain file names never get tarred 
-    notar_ext = ['.fits', '.mark4', '.tar', expname+'.v2d', expname+'.vex', 'corr_notes.txt']
+    notar_ext = ['.fits', '.mark4', '.tar', expname+'.v2d', expname+'.vex', 'notes.txt']
     fileWithPath = os.path.join(os.path.abspath(os.curdir), filename)
     notar = False
     for extension in notar_ext:
@@ -96,19 +107,21 @@ for filename in os.listdir(os.curdir):
         transfer.append(re.escape(fileWithPath))
     else:
         # add to list of files to be tarred
-        tarlist += ' ' + re.escape(filename)
+         tarlists[passname] +=  " " + re.escape(filename)
 
-tarfile =  os.path.basename(os.path.abspath(os.curdir)) + '.tar'
-#tardir = archdir + os.sep 
+
 
 # create the output directory
 command = " ".join(['mkdir -p', archdir ])
 subprocess.check_call(command, shell=True, stdout=sys.stdout)
 
 
-# tar up small files in this directory to Archive area
-if tarlist:
-    taritup(archdir, tarfile, tarlist)
+# tar up small files in this directory to Archive area, one correlator pass at
+# a time
+for passname in tarlists.keys():
+    tarfile =  passname + '.tar'
+    print "tarring up", tarfile
+    taritup(archdir, tarfile, tarlists[passname])
 
 # transfer each of the large files in turn
 for srcfile in transfer:
@@ -118,7 +131,8 @@ for srcfile in transfer:
     subprocess.check_call(command, shell=True, stdout=sys.stdout)
 
 # now tar up the clocks subdirectory
-taritup(archdir, 'clocks.tar', 'clocks')
+if os.path.exists('clocks'):
+    taritup(archdir, 'clocks.tar', 'clocks')
 
 # and the mark4 output dir
 if mark4file:
@@ -131,7 +145,8 @@ if mark4file:
 #subprocess.check_call(command, shell=True, stdout=sys.stdout, stderr=sys.stderr)
 while True:
     try:
-        command = " ".join(['ashell.py "cf', args[1], "+ put", archdir, '"'])
+        command = " ".join(['ashell.py "login + cf', args[1], "+ put", archdir, '"'])
+        print command
         subprocess.check_call(command, shell=True, stdout=sys.stdout, stderr=sys.stderr)
         break
     except KeyboardInterrupt:
