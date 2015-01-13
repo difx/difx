@@ -67,7 +67,7 @@ for filename in os.listdir(os.curdir):
     # tar separate passes independently, so figure out pass names in use.
     # Default is just the expname.
     passname = expname
-    if '-' in filename:
+    if expname+'-' in filename:
         passname = re.sub('[_\.].*', '', filename)
 
     if not passname in tarlists.keys():
