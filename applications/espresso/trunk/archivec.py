@@ -93,7 +93,7 @@ for filename in os.listdir(os.curdir):
         continue
 
     # certain file names never get tarred 
-    notar_ext = ['.fits', '.mark4', '.tar', expname+'.v2d', expname+'.vex', 'notes.txt']
+    notar_ext = ['.fits', '.rpf', '.mark4', '.tar', expname+'.v2d', expname+'.vex', 'notes.txt']
     fileWithPath = os.path.join(os.path.abspath(os.curdir), filename)
     notar = False
     for extension in notar_ext:
