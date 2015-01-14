@@ -7,6 +7,7 @@ import optparse, os, re, subprocess, sys, shutil
 
 def taritup(tardir, tarfile, infile, gzip=False):
 
+    print "tarring up", tarfile
     taroptions = options.taroptions
     if gzip:
         taroptions = " ".join([taroptions, '-z'])
@@ -16,6 +17,7 @@ def taritup(tardir, tarfile, infile, gzip=False):
     subprocess.check_call(command, shell=True, stdout=sys.stdout, stderr=subprocess.PIPE)
 
     # and print tar listing for reference
+    print "creating listing for", tarfile
     command = " ".join(["tar -tf", tardir+tarfile, ">", tardir+tarfile+'.list'])
     subprocess.check_call(command, shell=True, stdout=sys.stdout, stderr=subprocess.PIPE)
 
@@ -82,9 +84,11 @@ for filename in os.listdir(os.curdir):
         # deal with this later in its own tar file
         continue
     if filename == 'test':
+        print 'skipping', filename
         # ignore this one
         continue
     if re.match('\d\d\d\d-\d\d-\d\d-\d\d-\d\d-\d\d', filename):
+        print 'skipping', filename
         # ignore these (old, superseded jobs).
         continue
 
@@ -120,10 +124,10 @@ subprocess.check_call(command, shell=True, stdout=sys.stdout)
 # a time
 for passname in tarlists.keys():
     tarfile =  passname + '.tar'
-    print "tarring up", tarfile
     taritup(archdir, tarfile, tarlists[passname])
 
 # transfer each of the large files in turn
+print "copying files"
 for srcfile in transfer:
     command = " ".join(["cp -l", srcfile, archdir])
     if options.verbose:
