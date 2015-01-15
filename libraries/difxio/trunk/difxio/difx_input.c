@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2014 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2007-2015 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -1701,7 +1701,7 @@ static DifxInput *parseDifxInputNetworkTable(DifxInput *D,
 
 static DifxInput *deriveDifxInputValues(DifxInput *D)
 {
-	int fqId, c;
+	int c;
 	
 	if(!D)
 	{
@@ -2496,7 +2496,9 @@ static DifxInput *populateIM(DifxInput *D, DifxParameters *mp)
 	for(s = 0; s < nScan; ++s)
 	{
 		DifxScan *scan;
+		double delta;	/* either (m) or (rad) depending on application */
 		int p;
+		int r2;
 
 		scan = D->scan + s;
 
@@ -2511,6 +2513,45 @@ static DifxInput *populateIM(DifxInput *D, DifxParameters *mp)
 
 		scan->nPoly = atoi(DifxParametersvalue(mp, r));
 		scan->im = newDifxPolyModelArray(scan->nAntenna, scan->nPhaseCentres + 1, scan->nPoly);
+
+		r2 = DifxParametersfind1(mp, r, "SCAN %d DELTA LM (rad)", s);
+		if(r2 > 0)
+		{
+			/* allocate the LM extension to delay model */
+			scan->imLM = newDifxPolyModelLMExtensionArray(scan->nAntenna, scan->nPhaseCentres + 1, scan->nPoly);
+			if(!scan->imLM)
+			{
+				fprintf(stderr, "Error: populateIM: Could not allocate LM Extension\n");
+				free(antennaMap);
+
+				return 0;
+			}
+			delta = atof(DifxParametersvalue(mp, r2));
+			if(DifxParametersfind1(mp, r, "SCAN %d DELTA XYZ (m)", s) > 0)
+			{
+				fprintf(stderr, "Error: Both DELTA XYZ and DELTA LM are given for scan %d\n", s);
+				free(antennaMap);
+
+				return 0;
+			}
+		}
+		else
+		{
+			r2 = DifxParametersfind1(mp, r, "SCAN %d DELTA XYZ (m)", s);
+			if(r2 > 0)
+			{
+				/* allocate the XYZ extension to delay model */
+				scan->imXYZ = newDifxPolyModelXYZExtensionArray(scan->nAntenna, scan->nPhaseCentres + 1, scan->nPoly);
+				if(!scan->imXYZ)
+				{
+					fprintf(stderr, "Error: populateIM: Could not allocate XYZ Extension\n");
+					free(antennaMap);
+
+					return 0;
+				}
+				delta = atof(DifxParametersvalue(mp, r2));
+			}
+		}
 
 		for(p = 0; p < scan->nPoly; ++p)
 		{
@@ -2588,6 +2629,42 @@ static DifxInput *populateIM(DifxInput *D, DifxParameters *mp)
 						fprintf(stderr, "Error: populateIM: Could not find SRC %d ANT %d W (m)\n", src, t);
 						
 						return 0;
+					}
+					if(scan->imLM)
+					{
+						r2 = r;	/* save for error message if needed */
+						r = parsePoly1(mp, r, "SRC %d ANT %d dDELAYdL", src, t, scan->imLM[a][src][p].dDelay_dl, order+1);
+						if(r > 0) r = parsePoly1(mp, r, "SRC %d ANT %d dDELAYdM", src, t, scan->imLM[a][src][p].dDelay_dm, order+1);
+						if(r > 0) r = parsePoly1(mp, r, "SRC %d ANT %d d2DELAYdLdL", src, t, scan->imLM[a][src][p].d2Delay_dldl, order+1);
+						if(r > 0) r = parsePoly1(mp, r, "SRC %d ANT %d d2DELAYdLdM", src, t, scan->imLM[a][src][p].d2Delay_dldm, order+1);
+						if(r > 0) r = parsePoly1(mp, r, "SRC %d ANT %d d2DELAYdMdM", src, t, scan->imLM[a][src][p].d2Delay_dmdm, order+1);
+						if(r < 0)
+						{
+							fprintf(stderr, "Error: populateIM: At least one of the LM extension values is missing around line %d\n", r2);
+
+							return 0;
+						}
+						scan->imLM[a][src][p].delta = delta;
+					}
+					else if(scan->imXYZ)
+					{
+						r2 = r;	/* save for error message if needed */
+						r = parsePoly1(mp, r, "SRC %d ANT %d dDELAYdX", src, t, scan->imXYZ[a][src][p].dDelay_dX, order+1);
+						if(r > 0) r = parsePoly1(mp, r, "SRC %d ANT %d dDELAYdY", src, t, scan->imXYZ[a][src][p].dDelay_dY, order+1);
+						if(r > 0) r = parsePoly1(mp, r, "SRC %d ANT %d dDELAYdZ", src, t, scan->imXYZ[a][src][p].dDelay_dZ, order+1);
+						if(r > 0) r = parsePoly1(mp, r, "SRC %d ANT %d d2DELAYdXdX", src, t, scan->imXYZ[a][src][p].d2Delay_dXdX, order+1);
+						if(r > 0) r = parsePoly1(mp, r, "SRC %d ANT %d d2DELAYdXdY", src, t, scan->imXYZ[a][src][p].d2Delay_dXdY, order+1);
+						if(r > 0) r = parsePoly1(mp, r, "SRC %d ANT %d d2DELAYdXdZ", src, t, scan->imXYZ[a][src][p].d2Delay_dXdZ, order+1);
+						if(r > 0) r = parsePoly1(mp, r, "SRC %d ANT %d d2DELAYdYdY", src, t, scan->imXYZ[a][src][p].d2Delay_dYdY, order+1);
+						if(r > 0) r = parsePoly1(mp, r, "SRC %d ANT %d d2DELAYdYdZ", src, t, scan->imXYZ[a][src][p].d2Delay_dYdZ, order+1);
+						if(r > 0) r = parsePoly1(mp, r, "SRC %d ANT %d d2DELAYdZdZ", src, t, scan->imXYZ[a][src][p].d2Delay_dZdZ, order+1);
+						if(r < 0)
+						{
+							fprintf(stderr, "Error: populateIM: At least one of the XYZ extension values is missing around line %d\n", r2);
+
+							return 0;
+						}
+						scan->imXYZ[a][src][p].delta = delta;
 					}
 				}
 			}

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2014 by Walter Brisken                             *
+ *   Copyright (C) 2008-2015 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -116,6 +116,14 @@ int writeDifxIM(const DifxInput *D)
 		}
 
 		writeDifxLineInt1(out, "SCAN %d NUM POLY", s, scan->nPoly);
+		if(scan->imLM)
+		{
+			writeDifxLineDouble1(out, "SCAN %d DELTA LM (rad)", s, "%10.8f", scan->imLM[refAnt][0][0].delta);
+		}
+		else if(scan->imXYZ)
+		{
+			writeDifxLineDouble1(out, "SCAN %d DELTA XYZ (m)", s, "%5.3f", scan->imXYZ[refAnt][0][0].delta);
+		}
 		
 		for(p = 0; p < scan->nPoly; ++p)
 		{
@@ -140,6 +148,27 @@ int writeDifxIM(const DifxInput *D)
 					writeDifxLineArray2(out, "SRC %d ANT %d U (m)", i, a, scan->im[a][i][p].u, order+1);
 					writeDifxLineArray2(out, "SRC %d ANT %d V (m)", i, a, scan->im[a][i][p].v, order+1);
 					writeDifxLineArray2(out, "SRC %d ANT %d W (m)", i, a, scan->im[a][i][p].w, order+1);
+					if(scan->imLM)
+					{
+						writeDifxLineArray2(out, "SRC %d ANT %d dDELAYdL", i, a, scan->imLM[a][i][p].dDelay_dl, order+1);
+						writeDifxLineArray2(out, "SRC %d ANT %d dDELAYdM", i, a, scan->imLM[a][i][p].dDelay_dm, order+1);
+						writeDifxLineArray2(out, "SRC %d ANT %d d2DELAYdLdL", i, a, scan->imLM[a][i][p].d2Delay_dldl, order+1);
+						writeDifxLineArray2(out, "SRC %d ANT %d d2DELAYdLdM", i, a, scan->imLM[a][i][p].d2Delay_dldm, order+1);
+						writeDifxLineArray2(out, "SRC %d ANT %d d2DELAYdMdM", i, a, scan->imLM[a][i][p].d2Delay_dmdm, order+1);
+					}
+					else if(scan->imXYZ)
+					{
+						writeDifxLineArray2(out, "SRC %d ANT %d dDELAYdX", i, a, scan->imXYZ[a][i][p].dDelay_dX, order+1);
+						writeDifxLineArray2(out, "SRC %d ANT %d dDELAYdY", i, a, scan->imXYZ[a][i][p].dDelay_dY, order+1);
+						writeDifxLineArray2(out, "SRC %d ANT %d dDELAYdZ", i, a, scan->imXYZ[a][i][p].dDelay_dZ, order+1);
+						writeDifxLineArray2(out, "SRC %d ANT %d d2DELAYdXdX", i, a, scan->imXYZ[a][i][p].d2Delay_dXdX, order+1);
+						writeDifxLineArray2(out, "SRC %d ANT %d d2DELAYdXdY", i, a, scan->imXYZ[a][i][p].d2Delay_dXdY, order+1);
+						writeDifxLineArray2(out, "SRC %d ANT %d d2DELAYdXdZ", i, a, scan->imXYZ[a][i][p].d2Delay_dXdZ, order+1);
+						writeDifxLineArray2(out, "SRC %d ANT %d d2DELAYdYdY", i, a, scan->imXYZ[a][i][p].d2Delay_dYdY, order+1);
+						writeDifxLineArray2(out, "SRC %d ANT %d d2DELAYdYdZ", i, a, scan->imXYZ[a][i][p].d2Delay_dYdZ, order+1);
+						writeDifxLineArray2(out, "SRC %d ANT %d d2DELAYdZdZ", i, a, scan->imXYZ[a][i][p].d2Delay_dZdZ, order+1);
+					}
+
 				}
 			}
 		}

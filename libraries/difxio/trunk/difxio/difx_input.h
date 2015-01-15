@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2014 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2007-2015 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -377,6 +377,34 @@ typedef struct
 
 typedef struct
 {
+	/* essentially a matrix of partial derivatives with respect to source l, m */
+	/* of the full delay (including atmosphere) */
+	double delta;		/* (rad) displacement used in calculating derivatives */
+	double dDelay_dl[MAX_MODEL_ORDER+1];	/* (us/sec^n/rad); n=[0, order] (should be equiv to U but in time units) */
+	double dDelay_dm[MAX_MODEL_ORDER+1];	/* (us/sec^n/rad); n=[0, order] (should be equiv to V but in time units) */
+	double d2Delay_dldl[MAX_MODEL_ORDER+1];	/* (us/sec^n/rad^2); n=[0, order] */
+	double d2Delay_dldm[MAX_MODEL_ORDER+1];	/* (us/sec^n/rad^2); n=[0, order] */
+	double d2Delay_dmdm[MAX_MODEL_ORDER+1];	/* (us/sec^n/rad^2); n=[0, order] */
+} DifxPolyModelLMExtension;
+
+typedef struct
+{
+	/* essentially a matrix of partial derivatives with respect to source XYZ */
+	/* of the full delay (including atmosphere) */
+	double delta;		/* (m) displacement used in calculating derivatives */
+	double dDelay_dX[MAX_MODEL_ORDER+1];	/* (us/sec^n/m); n=[0, order] */
+	double dDelay_dY[MAX_MODEL_ORDER+1];	/* (us/sec^n/m); n=[0, order] */
+	double dDelay_dZ[MAX_MODEL_ORDER+1];	/* (us/sec^n/m); n=[0, order] */
+	double d2Delay_dXdX[MAX_MODEL_ORDER+1];	/* (us/sec^n/m^2); n=[0, order] */
+	double d2Delay_dXdY[MAX_MODEL_ORDER+1];	/* (us/sec^n/m^2); n=[0, order] */
+	double d2Delay_dXdZ[MAX_MODEL_ORDER+1];	/* (us/sec^n/m^2); n=[0, order] */
+	double d2Delay_dYdY[MAX_MODEL_ORDER+1];	/* (us/sec^n/m^2); n=[0, order] */
+	double d2Delay_dYdZ[MAX_MODEL_ORDER+1];	/* (us/sec^n/m^2); n=[0, order] */
+	double d2Delay_dZdZ[MAX_MODEL_ORDER+1];	/* (us/sec^n/m^2); n=[0, order] */
+} DifxPolyModelXYZExtension;
+
+typedef struct
+{
 	double mjdStart;			/* (day) */
 	double mjdEnd;				/* (day) */
 	int startSeconds;			/* Since model reference (top of calc file) */
@@ -398,6 +426,8 @@ typedef struct
 				/*   src ranges over [0...nPhaseCentres] */
 				/*   poly ranges over [0 .. nPoly-1] */
 				/* NOTE : im[ant] can be zero -> no data */
+	DifxPolyModelLMExtension ***imLM;	/* Experimental feature; not usually used */
+	DifxPolyModelXYZExtension ***imXYZ;	/* Experimental feature; not usually used */
 } DifxScan;
 
 typedef struct
@@ -712,6 +742,14 @@ DifxPolyModel *dupDifxPolyModelColumn(const DifxPolyModel *src, int nPoly);
 void deleteDifxPolyModelArray(DifxPolyModel ***dpm, int nAntenna, int nSrcs);
 void printDifxPolyModel(const DifxPolyModel *dpm);
 void fprintDifxPolyModel(FILE *fp, const DifxPolyModel *dpm);
+
+DifxPolyModelLMExtension ***newDifxPolyModelLMExtensionArray(int nAntenna, int nSrcs, int nPoly);
+DifxPolyModelLMExtension *dupDifxPolyModelLMExtensionColumn(const DifxPolyModelLMExtension *src, int nPoly);
+void deleteDifxPolyModelLMExtensionArray(DifxPolyModelLMExtension ***lme, int nAntenna, int nSrcs);
+
+DifxPolyModelXYZExtension ***newDifxPolyModelXYZExtensionArray(int nAntenna, int nSrcs, int nPoly);
+DifxPolyModelXYZExtension *dupDifxPolyModelXYZExtensionColumn(const DifxPolyModelXYZExtension *src, int nPoly);
+void deleteDifxPolyModelXYZExtensionArray(DifxPolyModelXYZExtension ***xyze, int nAntenna, int nSrcs);
 
 /* DifxScan functions */
 DifxScan *newDifxScanArray(int nScan);
