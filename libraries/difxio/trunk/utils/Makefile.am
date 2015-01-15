@@ -10,10 +10,18 @@ endif
 
 bin_PROGRAMS = \
 	$(fftw_progs) \
-	difxcalculator
+	calcderiv \
+	difxcalculator \
+	fitdelay
+
+calcderiv_SOURCES = \
+	calcderiv.c
 
 difxcalculator_SOURCES = \
 	difxcalculator.c
+
+fitdelay_SOURCES = \
+	fitdelay.c
 	
 if WITH_FFTW
 psrflag_SOURCES = \
