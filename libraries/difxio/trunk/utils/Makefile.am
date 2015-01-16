@@ -21,6 +21,8 @@ difxcalculator_SOURCES = \
 	difxcalculator.c
 
 fitdelay_SOURCES = \
+	delayderivatives.c \
+	delayderivatives.h \
 	fitdelay.c
 	
 if WITH_FFTW
