@@ -54,13 +54,20 @@ def m5_to_vextime(m5time):
     
     m5time = m5time.split('=')[1]
     m5time = m5time.strip()
-    mjd, hms = m5time.split('/')
-    vexday = espressolib.convertdate(mjd, 'vex')
-    vexhms = hms.replace(':', 'h', 1)
-    vexhms = vexhms.replace(':', 'm', 1)
-    vexhms = vexhms[0:-3] + 's'
+    # convert m5time to constitute parts, noting this match truncates the seconds (which vextime requires anyway)
+    day, hours, mins, secs = re.match('(\d+)/(\d+):(\d+):(\d+)', m5time).groups()
+    day = int(day)
+    hours = int(hours)
+    mins = int(mins)
+    secs = int(secs)
 
-    vextime = vexday[0:9] + vexhms
+    # account for fact that sometimes day wraps in m5time aren't recognised so get times like: 56990/24:00:01.00 instead of the expected 56991/00:00:01.00
+    while hours >= 24:
+        hours -= 24
+        day += 1
+
+    fracday = hours/24. + mins/(24.*60.) + secs/(24.*60.*60.)
+    vextime = espressolib.convertdate(day + fracday, outformat='vex')
 
     return vextime
 
@@ -82,7 +89,7 @@ def check_file(infile):
         starttime, endtime = lbafile_timerange(infile, header);
 
         # the last file should always get in the input so we can be sure the
-        # D/STREAM is not empty (let's just hope it's not corrupt...).
+        # D/STREAM is not empty (let's just hope it's not corrupt...). 
         comment = '';
         if (infile == filelist[len(filelist)-1]):
             comment = '#';
@@ -115,14 +122,18 @@ def check_file(infile):
         if starttime_m5 and endtime_m5:
             starttime = m5_to_vextime(starttime_m5);
             endtime = m5_to_vextime(endtime_m5);
-            # comment out the start time for the last file
+            # the last file should always get in the input so we can be sure the
+            # D/STREAM is not empty (let's just hope it's not corrupt...). 
             comment = '';
             if (infile == filelist[len(filelist)-1]):
                 comment = '#';
-
             outfile += " "  * 3 + comment + starttime + " " + endtime
+        else:
+            sys.stderr.write("cannot decode time for " + infile + "\n\n")
+            outfile = '#' + outfile;
 
     return outfile
+
 
 if __name__ == '__main__':
     # read the list of files
