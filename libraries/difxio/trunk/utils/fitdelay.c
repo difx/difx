@@ -43,6 +43,14 @@ const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
 const char version[] = "0.1";
 const char verdate[] = "20150114";
 
+typedef struct
+{
+	/* all quantities in seconds */
+	double modelDelay;
+	double modelDelayDeriv[3];
+	double modelDelayDeriv2[3][3];
+} DelayDerivatives;
+
 void usage()
 {
 	printf("%s  ver. %s  %s  %s\n\n", program, version, author, verdate);
@@ -54,6 +62,20 @@ void usage()
 	printf("-h         print help information and quit\n\n");
 	printf("<residdelayfile> is the name of a file containing residual delays (format TBD).\n\n");
 	printf("<inputfilebaseN> is the base name of a difx fileset.\n\n");
+}
+
+void printDelayDerivatives(const DelayDerivatives *dd)
+{
+	printf("  T = %10.8e\n", dd->modelDelay);
+	printf("  dT/dX =  %10.8e\n", dd->modelDelayDeriv[0]);
+	printf("  dT/dY =  %10.8e\n", dd->modelDelayDeriv[1]);
+	printf("  dT/dZ =  %10.8e\n", dd->modelDelayDeriv[2]);
+	printf("  d2T/dXdX =  %10.8e\n", dd->modelDelayDeriv2[0][0]);
+	printf("  d2T/dXdY =  %10.8e\n", dd->modelDelayDeriv2[0][1]);
+	printf("  d2T/dXdZ =  %10.8e\n", dd->modelDelayDeriv2[0][2]);
+	printf("  d2T/dYdY =  %10.8e\n", dd->modelDelayDeriv2[1][1]);
+	printf("  d2T/dYdZ =  %10.8e\n", dd->modelDelayDeriv2[1][2]);
+	printf("  d2T/dZdZ =  %10.8e\n", dd->modelDelayDeriv2[2][2]);
 }
 
 double interpolate(double x0, double y0, double x1, double y1, double x)
@@ -69,14 +91,16 @@ double interpolate(double x0, double y0, double x1, double y1, double x)
 	return y0 + (y1-y0)*(x-x0)/(x1-x0);
 }
 
-double getDelay(const DifxInput *D, int antennaId, int scanId, int pc, int mjd, double sec)
+double getDelay(const DifxInput *D, int antennaId, int scanId, int pc, int mjd, double sec, DelayDerivatives *dd)
 {
 	int p;
 	DifxPolyModel *im;
-	double dt;
+	DifxPolyModelXYZExtension *imXYZ;
+	double dt, dt2, dt3, dt4;
 	double rv;
 
 	im = D->scan[scanId].im[antennaId][pc];
+	imXYZ = D->scan[scanId].imXYZ[antennaId][pc];
 
 	for(p = 0; p < D->scan[scanId].nPoly; ++p)
 	{
@@ -92,13 +116,27 @@ double getDelay(const DifxInput *D, int antennaId, int scanId, int pc, int mjd, 
 	}
 
 	dt = sec - im[p].sec;
+	dt2 = dt*dt;
+	dt3 = dt*dt2;
+	dt4 = dt2*dt2;
 
-	rv = im[p].delay[0] + im[p].delay[1]*dt + im[p].delay[2]*dt*dt + im[p].delay[3]*dt*dt*dt;
-	rv -= im[p].dry[0] + im[p].dry[1]*dt + im[p].dry[2]*dt*dt + im[p].dry[3]*dt*dt*dt;
-	rv -= im[p].wet[0] + im[p].wet[1]*dt + im[p].wet[2]*dt*dt + im[p].wet[3]*dt*dt*dt;
-	rv = rv*0.000001;	/* convert us to sec */
+	dd->modelDelay = (im[p].delay[0] + im[p].delay[1]*dt + im[p].delay[2]*dt2 + im[p].delay[3]*dt3 + im[p].delay[4]*dt4)*0.000001;
 
-	//printf("ANT %d  mjd %d sec %f -> %10.6f   im.sec = %d  dt=%f d[0]=%10.8e d[1]=%10.8e -> rv = %10.8e\n", antennaId, mjd, sec, mjd+sec/86400.0, im[p].sec, dt, im[p].delay[0], im[p].delay[1], rv);
+	/* And derivatives over space, interpolated in time */
+	dd->modelDelayDeriv[0] = (imXYZ[p].dDelay_dX[0] + imXYZ[p].dDelay_dX[1]*dt + imXYZ[p].dDelay_dX[2]*dt2 + imXYZ[p].dDelay_dX[3]*dt3 + imXYZ[p].dDelay_dX[4]*dt4)*0.000001;
+	dd->modelDelayDeriv[1] = (imXYZ[p].dDelay_dY[0] + imXYZ[p].dDelay_dY[1]*dt + imXYZ[p].dDelay_dY[2]*dt2 + imXYZ[p].dDelay_dY[3]*dt3 + imXYZ[p].dDelay_dY[4]*dt4)*0.000001;
+	dd->modelDelayDeriv[2] = (imXYZ[p].dDelay_dZ[0] + imXYZ[p].dDelay_dZ[1]*dt + imXYZ[p].dDelay_dZ[2]*dt2 + imXYZ[p].dDelay_dZ[3]*dt3 + imXYZ[p].dDelay_dZ[4]*dt4)*0.000001;
+
+	/* And second derivatives over space, interpolated in time */
+	dd->modelDelayDeriv2[0][0] = (imXYZ[p].d2Delay_dXdX[0] + imXYZ[p].d2Delay_dXdX[1]*dt + imXYZ[p].d2Delay_dXdX[2]*dt2 + imXYZ[p].d2Delay_dXdX[3]*dt3 + imXYZ[p].d2Delay_dXdX[4]*dt4)*0.000001;
+	dd->modelDelayDeriv2[1][1] = (imXYZ[p].d2Delay_dYdY[0] + imXYZ[p].d2Delay_dYdY[1]*dt + imXYZ[p].d2Delay_dYdY[2]*dt2 + imXYZ[p].d2Delay_dYdY[3]*dt3 + imXYZ[p].d2Delay_dYdY[4]*dt4)*0.000001;
+	dd->modelDelayDeriv2[2][2] = (imXYZ[p].d2Delay_dZdZ[0] + imXYZ[p].d2Delay_dZdZ[1]*dt + imXYZ[p].d2Delay_dZdZ[2]*dt2 + imXYZ[p].d2Delay_dZdZ[3]*dt3 + imXYZ[p].d2Delay_dZdZ[4]*dt4)*0.000001;
+	dd->modelDelayDeriv2[1][0] = dd->modelDelayDeriv2[0][1] = (imXYZ[p].d2Delay_dXdY[0] + imXYZ[p].d2Delay_dXdY[1]*dt + imXYZ[p].d2Delay_dXdY[2]*dt2 + imXYZ[p].d2Delay_dXdY[3]*dt3 + imXYZ[p].d2Delay_dXdY[4]*dt4)*0.000001;
+	dd->modelDelayDeriv2[2][0] = dd->modelDelayDeriv2[0][2] = (imXYZ[p].d2Delay_dXdZ[0] + imXYZ[p].d2Delay_dXdZ[1]*dt + imXYZ[p].d2Delay_dXdZ[2]*dt2 + imXYZ[p].d2Delay_dXdZ[3]*dt3 + imXYZ[p].d2Delay_dXdZ[4]*dt4)*0.000001;
+	dd->modelDelayDeriv2[2][1] = dd->modelDelayDeriv2[1][2] = (imXYZ[p].d2Delay_dYdZ[0] + imXYZ[p].d2Delay_dYdZ[1]*dt + imXYZ[p].d2Delay_dYdZ[2]*dt2 + imXYZ[p].d2Delay_dYdZ[3]*dt3 + imXYZ[p].d2Delay_dYdZ[4]*dt4)*0.000001;
+	
+	printf("Delays for ant %d\n", antennaId);
+	printDelayDerivatives(dd);
 
 	return rv;
 }
@@ -163,7 +201,7 @@ double getV(const DifxInput *D, int antennaId, int scanId, int pc, int mjd, doub
 	return rv;
 }
 
-double misfit(int nAnt, const double srcPos[3], const double *antPos[3], const double *modelDelay, const double *residDelay)
+double misfit(int nAnt, const double srcOffset[3], const DelayDerivatives *dd, const double *residDelay)
 {
 	int a1, a2;
 	double rv = 0.0;
@@ -175,16 +213,23 @@ double misfit(int nAnt, const double srcPos[3], const double *antPos[3], const d
 			
 		}
 	}
+
+	return rv;
 }
 
 /* residDelay in seconds */
 void solve1(const DifxInput *D, double mjd, const double *residDelay)
 {
+	DifxSource *source;
+	DifxScan *scan;
+	DifxSpacecraft *sc;
+	int sourceId;
+	sixVector interpolatedInitialPosition;
+
+	DelayDerivatives *dd;
 	double antPos[MAX_ANTENNAS][3];
 	double sourcePos[3];
-	double modelDelay[MAX_ANTENNAS];
-	double U[MAX_ANTENNAS];
-	double V[MAX_ANTENNAS];
+	double sourceOffset[3];	/* solve for this, then add to the above to get the final answer */
 	int a, i;
 	int mjdDay;
 	double mjdSec;
@@ -192,27 +237,67 @@ void solve1(const DifxInput *D, double mjd, const double *residDelay)
 	mjdDay = mjd;
 	mjdSec = (mjd - mjdDay)*86400.0;
 
+	dd = (DelayDerivatives *)calloc(D->nAntenna, sizeof(DelayDerivatives));
+
 	for(a = 0; a < D->nAntenna; ++a)
 	{
 		antPos[a][0] = D->antenna[a].X/C_LIGHT;
 		antPos[a][1] = D->antenna[a].Y/C_LIGHT;
 		antPos[a][2] = D->antenna[a].Z/C_LIGHT;
 		/* FIXME: first 0 below should refer to actual scan number */
-		modelDelay[a] = getDelay(D, a, 0, 0, mjdDay, mjdSec);
+		getDelay(D, a, 0, 0, mjdDay, mjdSec, dd + a);
 
-		printf("Ant %d : pos = %f %f %f  model = %10.8f  resid = %10.8f\n", a+1, antPos[a][0], antPos[a][1], antPos[a][2], modelDelay[a], residDelay[a]);
+		printf("Ant %d : pos = %f %f %f  model = %10.8f  resid = %10.8f\n", a+1, antPos[a][0], antPos[a][1], antPos[a][2], dd[a].modelDelay, residDelay[a]);
 	}
 
+	scan = D->scan + 0;	/* Only support one scan per job, at least now */
+	if(scan->imXYZ == 0)
+	{
+		fprintf(stderr, "Error: .im file needs the XYZ Extension data!\n");
+		free(dd);
+
+		return;
+	}
+	sourceId = scan->phsCentreSrcs[0];
+	source = D->source + sourceId;
+	if(source->spacecraftId < 0)
+	{
+		printf("Error: source %s is not a spacecraft!\n", source->name);
+		free(dd);
+
+		return;
+	}
+	sc = D->spacecraft + source->spacecraftId;
+	
+	/* use ephemeris as starting point */
+	evaluateDifxSpacecraft(sc, mjdDay, mjdSec/86400.0, &interpolatedInitialPosition);
+	sourcePos[0] = interpolatedInitialPosition.X/C_LIGHT;
+	sourcePos[1] = interpolatedInitialPosition.Y/C_LIGHT;
+	sourcePos[2] = interpolatedInitialPosition.Z/C_LIGHT;
 	for(i = 0; i < 3; ++i)
 	{
-		sourcePos[i] = antPos[8][i]*20.0/C_LIGHT;	/* FIXME! now just using 20x PT as starting source position */
+		sourceOffset[i] = 0.0;
 	}
+
+	printf("Starting position at mjd %14.8f for SC = %10.8f %10.8f %10.5f (sec) = %5.3f %5.3f %5.3f (m)\n",
+		mjd, sourcePos[0], sourcePos[1], sourcePos[2],
+		sourcePos[0]*C_LIGHT, sourcePos[1]*C_LIGHT, sourcePos[2]*C_LIGHT);
+
 
 	for(i = 0; i < 100; ++i)
 	{
-		
+		double score;
+
+		score = misfit(D->nAntenna, sourceOffset, dd, residDelay);
+
+		printf("Offset = %5.3f %5.3f %5.3f (m) -> score = %5.3f (m)\n",
+			sourceOffset[0]*C_LIGHT, 
+			sourceOffset[1]*C_LIGHT, 
+			sourceOffset[2]*C_LIGHT, 
+			score);
 	}
 
+	free(dd);
 }
 
 void testsolve(const DifxInput *D)
