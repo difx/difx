@@ -380,6 +380,7 @@ int main(int argc, char **argv)
 		}
 		else
 		{
+			printf("Running on file %s\n", argv[a]);
 			run(argv[a], verbose, deltaLM, deltaXYZ);
 		}
 	}

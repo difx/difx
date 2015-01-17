@@ -194,43 +194,59 @@ void invert3x3(double A[3][3], double result[3][3])
 }
 
 /* residDelay in seconds */
-void solve1(const DifxInput *D, double mjd, const double *residDelay)
+void solve1(const DifxInput *D, double mjd, const double *residDelay, const double *clockNS)
 {
 	DifxSource *source;
 	DifxScan *scan;
 	DifxSpacecraft *sc;
-	int sourceId;
+	int scanId, sourceId;
 	sixVector interpolatedInitialPosition;
 
 	DelayDerivatives *dd;
 	double antPos[MAX_ANTENNAS][3];
 	double sourcePos[3];
 	double sourceOffset[3];	/* solve for this, then add to the above to get the final answer */
+	double correctedResidDelay[MAX_ANTENNAS];	/* (s) */
 	int a, i;
 	int mjdDay;
 	double mjdSec;
+	double score;
+
+	for(scanId = 0; scanId < D->nScan; ++scanId)
+	{
+		if(mjd >= D->scan[scanId].mjdStart && mjd <= D->scan[scanId].mjdEnd)
+		{
+			break;
+		}
+	}
+
+	if(scanId >= D->nScan)
+	{
+		printf("mjd %14.8f not in a scan\n", mjd);
+
+		return;
+	}
+
+	scan = D->scan + scanId;
+
+	if(scan->imXYZ == 0)
+	{
+		fprintf(stderr, "Error: .im file needs the XYZ Extension data! (scanId = %d)\n", scanId);
+
+		return;
+	}
 
 	mjdDay = mjd;
 	mjdSec = (mjd - mjdDay)*86400.0;
 
 	dd = (DelayDerivatives *)calloc(D->nAntenna, sizeof(DelayDerivatives));
-
 	for(a = 0; a < D->nAntenna; ++a)
 	{
+		correctedResidDelay[a] = residDelay[a] - clockNS[a]*1.0e-9;
 		antPos[a][0] = D->antenna[a].X/C_LIGHT;
 		antPos[a][1] = D->antenna[a].Y/C_LIGHT;
 		antPos[a][2] = D->antenna[a].Z/C_LIGHT;
-		/* FIXME: first 0 below should refer to actual scan number */
-		getDelay(D, a, 0, 0, mjdDay, mjdSec, dd + a);
-	}
-
-	scan = D->scan + 0;	/* Only support one scan per job, at least now */
-	if(scan->imXYZ == 0)
-	{
-		fprintf(stderr, "Error: .im file needs the XYZ Extension data!\n");
-		free(dd);
-
-		return;
+		getDelay(D, a, scanId, 0, mjdDay, mjdSec, dd + a);
 	}
 	sourceId = scan->phsCentreSrcs[0];
 	source = D->source + sourceId;
@@ -242,7 +258,7 @@ void solve1(const DifxInput *D, double mjd, const double *residDelay)
 		return;
 	}
 	sc = D->spacecraft + source->spacecraftId;
-	
+
 	/* use ephemeris as starting point */
 	evaluateDifxSpacecraft(sc, mjdDay, mjdSec/86400.0, &interpolatedInitialPosition);
 	sourcePos[0] = interpolatedInitialPosition.X/C_LIGHT;
@@ -253,9 +269,9 @@ void solve1(const DifxInput *D, double mjd, const double *residDelay)
 		sourceOffset[i] = 0.0;
 	}
 
-	printf("Starting position at mjd %14.8f for SC = %10.8f %10.8f %10.5f (sec) = %5.3f %5.3f %5.3f (m)\n",
-		mjd, sourcePos[0], sourcePos[1], sourcePos[2],
-		sourcePos[0]*C_LIGHT, sourcePos[1]*C_LIGHT, sourcePos[2]*C_LIGHT);
+//	printf("Starting position at mjd %14.8f for SC = %10.8f %10.8f %10.5f (sec) = %5.3f %5.3f %5.3f (m)\n",
+//		mjd, sourcePos[0], sourcePos[1], sourcePos[2],
+//		sourcePos[0]*C_LIGHT, sourcePos[1]*C_LIGHT, sourcePos[2]*C_LIGHT);
 
 	for(i = 0; i < 5; ++i)
 	{
@@ -263,9 +279,8 @@ void solve1(const DifxInput *D, double mjd, const double *residDelay)
 		double M1[3];
 		double M2[3][3];
 		double M2inverse[3][3];
-		double score;
 
-		M = misfit(D->nAntenna, sourceOffset, dd, residDelay, M1, M2);
+		M = misfit(D->nAntenna, sourceOffset, dd, correctedResidDelay, M1, M2);
 		
 		invert3x3(M2, M2inverse);
 
@@ -273,12 +288,12 @@ void solve1(const DifxInput *D, double mjd, const double *residDelay)
 		
 		score = sqrt(2.0*M/(D->nAntenna*(D->nAntenna-1)))*C_LIGHT;
 
-		printf("%d  Offset = %5.3f %5.3f %5.3f (m) -> score = %5.3f (m)\n",
-			i,
-			sourceOffset[0], 
-			sourceOffset[1], 
-			sourceOffset[2], 
-			score);
+//		printf("%d  Offset = %5.3f %5.3f %5.3f (m) -> score = %5.3f (m)\n",
+//			i,
+//			sourceOffset[0], 
+//			sourceOffset[1], 
+//			sourceOffset[2], 
+//			score);
 
 		sourceOffset[0] -= M2inverse[0][0]*M1[0] + M2inverse[0][1]*M1[1] + M2inverse[0][2]*M1[2];
 		sourceOffset[1] -= M2inverse[1][0]*M1[0] + M2inverse[1][1]*M1[1] + M2inverse[1][2]*M1[2];
@@ -286,10 +301,8 @@ void solve1(const DifxInput *D, double mjd, const double *residDelay)
 
 
 	}
-	printf("Ending position at mjd %14.8f for SC = %10.8f %10.8f %10.5f (sec) = %5.3f %5.3f %5.3f (m)\n",
-		mjd, sourcePos[0]+sourceOffset[0]/C_LIGHT, sourcePos[1]+sourceOffset[1]/C_LIGHT, sourcePos[2]+sourceOffset[2]/C_LIGHT,
-		sourcePos[0]*C_LIGHT+sourceOffset[0], sourcePos[1]*C_LIGHT+sourceOffset[1], sourcePos[2]*C_LIGHT+sourceOffset[2]);
-	printf("\n");
+	printf("mjd = %14.8f  score = %f  offset = %5.3f %5.3f %5.3f m  pos = %5.3f %5.3f %5.3f m\n",
+		mjd, score, sourceOffset[0], sourceOffset[1], sourceOffset[2], sourcePos[0]*C_LIGHT+sourceOffset[0], sourcePos[1]*C_LIGHT+sourceOffset[1], sourcePos[2]*C_LIGHT+sourceOffset[2]);
 
 	free(dd);
 }
@@ -331,6 +344,9 @@ void testsolve(const DifxInput *D)
      278      16:00:57.0      00:00:01.5         10          2.885403E-06
 
 */
+
+	double clockNS [10] = {16, 90, -93, 0, 33, 38, -19, -5.6, 0, -45 };
+
 	double delays1[10] = { -9.649785e-07, 4.650725e-07, 2.207024e-06, -2.259683e-07, 2.110347e-07, -5.328458e-06, 1.267747e-06, -9.634513e-07, 0.0, 2.853595e-06 };
 	double mjd1 = 56999.666921;
 	double delays2[10] = { -9.665882E-07, 4.662891E-07, 2.219105E-06, -2.290494E-07, 2.117527E-07, -5.338962E-06, 1.273706E-06, -9.663453E-07, 0.0, 2.761165E-06 };
@@ -338,9 +354,37 @@ void testsolve(const DifxInput *D)
 	double delays3[10] = { -9.681762E-07, 4.674806E-07, 2.231192E-06, -2.281470E-07, 2.124021E-07, -5.349444E-06, 1.279670E-06, -9.692022E-07, 0.0, 2.885403E-06 };
 	double mjd3 = 56999.667326;
 
-	solve1(D, mjd1, delays1);
-	solve1(D, mjd2, delays2);
-	solve1(D, mjd3, delays3);
+	solve1(D, mjd1, delays1, clockNS);
+	solve1(D, mjd2, delays2, clockNS);
+	solve1(D, mjd3, delays3, clockNS);
+}
+
+void runfile(const DifxInput *D, const char *delayFile)
+{
+	double clockNS [10] = {16, 90, -93, 0, 33, 38, -19, -5.6, 0, -45 };
+	FILE *in;
+	double mjd, delays[10];
+	
+	in = fopen(delayFile, "r");
+	if(!in)
+	{
+		fprintf(stderr, "Cannot open %s\n", delayFile);
+		
+		return;
+	}
+
+	for(;;)
+	{
+		int n;
+		n = fscanf(in, "%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf", &mjd, delays+0, delays+1, delays+2, delays+3, delays+4, delays+5, delays+6, delays+7, delays+8, delays+9);
+		if(n != 11)
+		{
+			break;
+		}
+		solve1(D, mjd, delays, clockNS);
+	}
+
+	fclose(in);
 }
 
 int main(int argc, char **argv)
@@ -446,7 +490,7 @@ int main(int argc, char **argv)
 	//printDifxInput(D);
 
 	printf("Delay filename to read in: %s\n", delayFilename);
-	testsolve(D);
+	runfile(D, delayFilename);
 
 	deleteDifxInput(D);
 
