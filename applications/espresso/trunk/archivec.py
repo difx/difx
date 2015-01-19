@@ -58,6 +58,9 @@ if len(args) < 2:
 #archdir = args[1] 
 expname = os.path.normpath(args[0]).split('/')[-1]
 archdir = os.environ.get('ARCHTMP') + os.sep + expname + os.sep
+if not archdir:
+    print '$ARCHTMP not set - using /tmp instead. Setting $ARCHTMP to a directory on the same filesystem as the data is preferable'
+    archdir = '/tmp/'
 mark4file = str()
 os.chdir(args[0])
 tarlists = dict()
@@ -123,8 +126,9 @@ subprocess.check_call(command, shell=True, stdout=sys.stdout)
 # tar up small files in this directory to Archive area, one correlator pass at
 # a time
 for passname in tarlists.keys():
-    tarfile =  passname + '.tar'
-    taritup(archdir, tarfile, tarlists[passname])
+    if tarlists[passname]:
+        tarfile =  passname + '.tar'
+        taritup(archdir, tarfile, tarlists[passname])
 
 # transfer each of the large files in turn
 print "copying files"
