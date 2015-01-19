@@ -57,34 +57,132 @@ void usage()
 
 int computeLMDerivatives(DifxInput *D, double deltaLM, int verbose)
 {
-#if 0
 	const int CommandLength = 1024;
 	const int NumCalcRuns = 9;
-	const int ops[9][3] = 
+	const int ops[9][2] = 
 	{
-		{  0,  0,  0 },
-		{  1,  0,  0 },
-		{ -1,  0,  0 },
-		{  0,  1,  0 },
-		{  0, -1,  0 },
-		{  1,  1,  0 },
-		{  1, -1,  0 },
-		{ -1,  1,  0 },
-		{ -1, -1,  0 }
+		{  0,  0 },
+		{  1,  0 },
+		{ -1,  0 },
+		{  0,  1 },
+		{  0, -1 },
+		{  1,  1 },
+		{  1, -1 },
+		{ -1,  1 },
+		{ -1, -1 }
 	};
 
+	DifxScan *scan;
+	int scanId;
 	char command[CommandLength];
-
 	DifxInput *DD[NumCalcRuns];
 	int i;
 
 	for(i = 0; i < NumCalcRuns; ++i)
 	{
-	}
-#endif
-	fprintf(stderr, "LM not yet supported (%s)\n", D->job->calcFile);
+		int s;
 
-	return -1;
+		/* nudge the sources */
+		for(s = 0; s < D->nSource; ++s)
+		{
+			DifxSource *source;
+
+			source = D->source + s;
+			source->ra += ops[i][0]*deltaLM*cos(source->dec);
+			source->dec += ops[i][1]*deltaLM;
+		}
+
+		/* write new .calc file */
+		writeDifxCalc(D);
+
+		/* run calc11 */
+		snprintf(command, CommandLength, "rm %s", D->job->imFile);
+		system(command);
+		snprintf(command, CommandLength, "difxcalc %s", D->job->calcFile);
+		system(command);
+		/* FIXME: vex2difx should put calc version info in .calc file */
+		/* FIXME: option for calc 9 */
+
+		/* make copes for inspection */
+		snprintf(command, CommandLength, "cp %s %s.%02d\n", D->job->calcFile, D->job->calcFile, i);
+		system(command);
+		snprintf(command, CommandLength, "cp %s %s.%02d\n", D->job->imFile, D->job->imFile, i);
+		system(command);
+
+		/* load the updated version */
+		DD[i] = loadDifxInput(D->job->inputFile);
+		if(!DD[i])
+		{
+			fprintf(stderr, "Error: cannot open fileset %s number %d\n", D->job->inputFile, i);
+			
+			return -1;
+		}
+		DD[i] = updateDifxInput(DD[i]);
+		if(!DD[i])
+		{
+			fprintf(stderr, "Update failed for fileset %s number %d\n", D->job->inputFile, i);
+			
+			return -2;
+		}
+
+		/* undo the motion */
+		for(s = 0; s < D->nSource; ++s)
+		{
+			DifxSource *source;
+
+			source = D->source + s;
+			source->dec -= ops[i][1]*deltaLM;
+			source->ra -= ops[i][0]*deltaLM*cos(source->dec);
+		}
+	}
+
+	/* Now take the new info and compute the derivatives */
+	for(scanId = 0; scanId < D->nScan; ++scanId)
+	{
+		int a, c, p;
+
+		scan = D->scan + scanId;
+		scan->imLM = newDifxPolyModelLMExtensionArray(scan->nAntenna, scan->nPhaseCentres + 1, scan->nPoly);
+
+		for(a = 0; a < scan->nAntenna; ++a)
+		{
+			for(c = 0; c <= scan->nPhaseCentres; ++c)
+			{
+				for(p = 0; p < scan->nPoly; ++p)
+				{
+					double *d[NumCalcRuns];
+
+					scan->imLM[a][c][p].delta = deltaLM;
+
+					for(i = 0; i < NumCalcRuns; ++i)
+					{
+						d[i] = DD[i]->scan[scanId].im[a][c][p].delay;
+					}
+					for(i = 0; i <= D->job->polyOrder; ++i)
+					{
+						scan->imLM[a][c][p].dDelay_dl[i] = (d[1][i]-d[2][i])/(2.0*deltaLM);
+						scan->imLM[a][c][p].dDelay_dm[i] = (d[3][i]-d[4][i])/(2.0*deltaLM);
+
+						scan->imLM[a][c][p].d2Delay_dldl[i] = (d[1][i]+d[2][i]-2.0*d[0][i])/(deltaLM*deltaLM);
+						scan->imLM[a][c][p].d2Delay_dmdm[i] = (d[3][i]+d[4][i]-2.0*d[0][i])/(deltaLM*deltaLM);
+
+						scan->imLM[a][c][p].d2Delay_dldm[i] = (d[5][i]-d[6][i]-d[7][i]+d[8][i])/(deltaLM*deltaLM);
+					}
+				}
+			}
+		}
+	}
+
+	/* Write the updated .im file */
+	writeDifxIM(D);
+
+	/* Clean up intermediate data */
+	for(i = 0; i < NumCalcRuns; ++i)
+	{
+		deleteDifxInput(DD[i]);
+	}
+
+	return 0;
 }
 
 int computeXYZDerivatives(DifxInput *D, double deltaXYZ, int verbose)
@@ -254,6 +352,11 @@ int run(const char *fileBase, int verbose, double deltaLM, double deltaXYZ)
 	int nXYZ = 0;
 	char command[CommandLength];
 	int rv;
+
+	/* 0. Run calc9 to get starting point */
+	snprintf(command, CommandLength, "calcif2 -f %s", fileBase);
+	printf("Executing command: %s\n", command);
+	system(command);
 
 	/* 1. load fileset */
 	D = loadDifxInput(fileBase);

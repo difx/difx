@@ -12,7 +12,11 @@ bin_PROGRAMS = \
 	$(fftw_progs) \
 	calcderiv \
 	difxcalculator \
-	fitdelay
+	fitdelay \
+	fitxyz
+
+dist_bin_SCRIPTS = \
+	convertdelay
 
 calcderiv_SOURCES = \
 	calcderiv.c
@@ -24,6 +28,9 @@ fitdelay_SOURCES = \
 	delayderivatives.c \
 	delayderivatives.h \
 	fitdelay.c
+
+fitxyz_SOURCES = \
+	fitxyz.c
 	
 if WITH_FFTW
 psrflag_SOURCES = \

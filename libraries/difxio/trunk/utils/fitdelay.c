@@ -42,7 +42,7 @@
 const char program[] = "fitdelay";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
 const char version[] = "0.1";
-const char verdate[] = "20150114";
+const char verdate[] = "20150119";
 
 void usage()
 {
@@ -53,18 +53,82 @@ void usage()
 	printf("-v         be a bit more verbose\n\n");
 	printf("--help\n");
 	printf("-h         print help information and quit\n\n");
-	printf("<residdelayfile> is the name of a file containing residual delays (format TBD).\n\n");
+	printf("<residdelayfile> is the name of a file containing residual delays.\n\n");
 	printf("<inputfilebaseN> is the base name of a difx fileset.\n\n");
+	printf("The <residdelayfile> is in free-form text format with:\n");
+	printf("  Comments start with #\n");
+	printf("  First number on a row is MJD + fractional MJD\n");
+	printf("  Then one number per antenna containing delay in units of seconds\n");
+	printf("  This file can be make by the associated python program \"convertdelay\"\n");
+	printf("  with input from AIPS PRTAB on a FRING SN table with BOX = 1,2,4,12\n\n");
 }
 
-/* goes to DifxInput object and interpolates the partial derivatives in time, filling the DelayDerivatives structure in the end */
-double getDelay(const DifxInput *D, int antennaId, int scanId, int pc, int mjd, double sec, DelayDerivatives *dd)
+/* Use Cramer's rule to evaluate polynomial */
+double evaluatePoly(const double *coef, int n, double t)
+{
+	double v;
+	int i;
+
+	if(n == 1)
+	{
+		return coef[0];
+	}
+
+	v = coef[n-1];
+
+	for(i = n-2; i >= 0; i--)
+	{
+		v = t*v + coef[i];
+	}
+
+	return v;
+}
+
+/* goes to DifxInput object and interpolates the partial derivatives in time, filling the DelayLMDerivatives structure in the end */
+void getDelayLM(const DifxInput *D, int antennaId, int scanId, int pc, int mjd, double sec, DelayLMDerivatives *dd)
+{
+	int p;
+	DifxPolyModel *im;
+	DifxPolyModelLMExtension *imLM;
+	double dt;
+
+	im = D->scan[scanId].im[antennaId][pc];
+	imLM = D->scan[scanId].imLM[antennaId][pc];
+
+	for(p = 0; p < D->scan[scanId].nPoly; ++p)
+	{
+		if(im[p].mjd == mjd && im[p].sec <= sec && im[p].sec+im[p].validDuration >= sec)
+		{
+			break;
+		}
+	}
+
+	if(p == D->scan[scanId].nPoly)
+	{
+		/* time not found in the scan */
+
+		return;
+	}
+
+	dt = sec - im[p].sec;
+
+	/* 0.000001 converts from us to s */
+	dd->delay             = 0.000001*evaluatePoly(im[p].delay,          D->job->polyOrder+1, dt);
+	dd->delayDeriv[0]     = 0.000001*evaluatePoly(imLM[p].dDelay_dl,    D->job->polyOrder+1, dt);
+	dd->delayDeriv[1]     = 0.000001*evaluatePoly(imLM[p].dDelay_dm,    D->job->polyOrder+1, dt);
+	dd->delayDeriv2[0][0] = 0.000001*evaluatePoly(imLM[p].d2Delay_dldl, D->job->polyOrder+1, dt);
+	dd->delayDeriv2[1][1] = 0.000001*evaluatePoly(imLM[p].d2Delay_dmdm, D->job->polyOrder+1, dt);
+	dd->delayDeriv2[0][1] = 0.000001*evaluatePoly(imLM[p].d2Delay_dldm, D->job->polyOrder+1, dt);
+	dd->delayDeriv2[1][0] = dd->delayDeriv2[0][1];	/* by symmetry */
+}
+
+/* goes to DifxInput object and interpolates the partial derivatives in time, filling the DelayXYZDerivatives structure in the end */
+void getDelayXYZ(const DifxInput *D, int antennaId, int scanId, int pc, int mjd, double sec, DelayXYZDerivatives *dd)
 {
 	int p;
 	DifxPolyModel *im;
 	DifxPolyModelXYZExtension *imXYZ;
-	double dt, dt2, dt3, dt4;
-	double rv;
+	double dt;
 
 	im = D->scan[scanId].im[antennaId][pc];
 	imXYZ = D->scan[scanId].imXYZ[antennaId][pc];
@@ -79,37 +143,87 @@ double getDelay(const DifxInput *D, int antennaId, int scanId, int pc, int mjd, 
 
 	if(p == D->scan[scanId].nPoly)
 	{
-		return -1e9;
+		/* time not found in the scan */
+
+		return;
 	}
 
 	dt = sec - im[p].sec;
-	dt2 = dt*dt;
-	dt3 = dt*dt2;
-	dt4 = dt2*dt2;
 
-	dd->modelDelay = (im[p].delay[0] + im[p].delay[1]*dt + im[p].delay[2]*dt2 + im[p].delay[3]*dt3 + im[p].delay[4]*dt4)*0.000001;
-
-	/* And derivatives over space, interpolated in time */
-	dd->modelDelayDeriv[0] = (imXYZ[p].dDelay_dX[0] + imXYZ[p].dDelay_dX[1]*dt + imXYZ[p].dDelay_dX[2]*dt2 + imXYZ[p].dDelay_dX[3]*dt3 + imXYZ[p].dDelay_dX[4]*dt4)*0.000001;
-	dd->modelDelayDeriv[1] = (imXYZ[p].dDelay_dY[0] + imXYZ[p].dDelay_dY[1]*dt + imXYZ[p].dDelay_dY[2]*dt2 + imXYZ[p].dDelay_dY[3]*dt3 + imXYZ[p].dDelay_dY[4]*dt4)*0.000001;
-	dd->modelDelayDeriv[2] = (imXYZ[p].dDelay_dZ[0] + imXYZ[p].dDelay_dZ[1]*dt + imXYZ[p].dDelay_dZ[2]*dt2 + imXYZ[p].dDelay_dZ[3]*dt3 + imXYZ[p].dDelay_dZ[4]*dt4)*0.000001;
-
-	/* And second derivatives over space, interpolated in time */
-	dd->modelDelayDeriv2[0][0] = (imXYZ[p].d2Delay_dXdX[0] + imXYZ[p].d2Delay_dXdX[1]*dt + imXYZ[p].d2Delay_dXdX[2]*dt2 + imXYZ[p].d2Delay_dXdX[3]*dt3 + imXYZ[p].d2Delay_dXdX[4]*dt4)*0.000001;
-	dd->modelDelayDeriv2[1][1] = (imXYZ[p].d2Delay_dYdY[0] + imXYZ[p].d2Delay_dYdY[1]*dt + imXYZ[p].d2Delay_dYdY[2]*dt2 + imXYZ[p].d2Delay_dYdY[3]*dt3 + imXYZ[p].d2Delay_dYdY[4]*dt4)*0.000001;
-	dd->modelDelayDeriv2[2][2] = (imXYZ[p].d2Delay_dZdZ[0] + imXYZ[p].d2Delay_dZdZ[1]*dt + imXYZ[p].d2Delay_dZdZ[2]*dt2 + imXYZ[p].d2Delay_dZdZ[3]*dt3 + imXYZ[p].d2Delay_dZdZ[4]*dt4)*0.000001;
-	dd->modelDelayDeriv2[1][0] = dd->modelDelayDeriv2[0][1] = (imXYZ[p].d2Delay_dXdY[0] + imXYZ[p].d2Delay_dXdY[1]*dt + imXYZ[p].d2Delay_dXdY[2]*dt2 + imXYZ[p].d2Delay_dXdY[3]*dt3 + imXYZ[p].d2Delay_dXdY[4]*dt4)*0.000001;
-	dd->modelDelayDeriv2[2][0] = dd->modelDelayDeriv2[0][2] = (imXYZ[p].d2Delay_dXdZ[0] + imXYZ[p].d2Delay_dXdZ[1]*dt + imXYZ[p].d2Delay_dXdZ[2]*dt2 + imXYZ[p].d2Delay_dXdZ[3]*dt3 + imXYZ[p].d2Delay_dXdZ[4]*dt4)*0.000001;
-	dd->modelDelayDeriv2[2][1] = dd->modelDelayDeriv2[1][2] = (imXYZ[p].d2Delay_dYdZ[0] + imXYZ[p].d2Delay_dYdZ[1]*dt + imXYZ[p].d2Delay_dYdZ[2]*dt2 + imXYZ[p].d2Delay_dYdZ[3]*dt3 + imXYZ[p].d2Delay_dYdZ[4]*dt4)*0.000001;
-	
-//	printf("Delays for ant %d\n", antennaId);
-//	printDelayDerivatives(dd);
-
-	return rv;
+	/* 0.000001 converts from us to s */
+	dd->delay             = 0.000001*evaluatePoly(im[p].delay,           D->job->polyOrder+1, dt);
+	dd->delayDeriv[0]     = 0.000001*evaluatePoly(imXYZ[p].dDelay_dX,    D->job->polyOrder+1, dt);
+	dd->delayDeriv[1]     = 0.000001*evaluatePoly(imXYZ[p].dDelay_dY,    D->job->polyOrder+1, dt);
+	dd->delayDeriv[1]     = 0.000001*evaluatePoly(imXYZ[p].dDelay_dZ,    D->job->polyOrder+1, dt);
+	dd->delayDeriv2[0][0] = 0.000001*evaluatePoly(imXYZ[p].d2Delay_dXdX, D->job->polyOrder+1, dt);
+	dd->delayDeriv2[1][1] = 0.000001*evaluatePoly(imXYZ[p].d2Delay_dYdY, D->job->polyOrder+1, dt);
+	dd->delayDeriv2[2][2] = 0.000001*evaluatePoly(imXYZ[p].d2Delay_dZdZ, D->job->polyOrder+1, dt);
+	dd->delayDeriv2[0][1] = 0.000001*evaluatePoly(imXYZ[p].d2Delay_dXdY, D->job->polyOrder+1, dt);
+	dd->delayDeriv2[0][2] = 0.000001*evaluatePoly(imXYZ[p].d2Delay_dXdZ, D->job->polyOrder+1, dt);
+	dd->delayDeriv2[1][2] = 0.000001*evaluatePoly(imXYZ[p].d2Delay_dYdZ, D->job->polyOrder+1, dt);
+	dd->delayDeriv2[1][0] = dd->delayDeriv2[0][1];	/* by symmetry */
+	dd->delayDeriv2[2][0] = dd->delayDeriv2[0][2];	/* by symmetry */
+	dd->delayDeriv2[2][1] = dd->delayDeriv2[1][2];	/* by symmetry */
 }
 
 /* return value in units of s^2 */
-double misfit(int nAnt, const double srcOffset[3], const DelayDerivatives *dd, const double *residDelay, double M1[3], double M2[3][3])
+double misfitLM(int nAnt, const double sourceOffset[2], const DelayLMDerivatives *dd, const double *residDelay, double M1[2], double M2[2][2])
+{
+	int a1, a2, i, j;
+	double T[MAX_ANTENNAS];
+	double T1[MAX_ANTENNAS][2];
+	double T2[MAX_ANTENNAS][2][2];
+	double M = 0;
+	const double *R = residDelay;
+
+	for(i = 0; i < 2; ++i)
+	{
+		M1[i] = 0.0;
+		for(j = 0; j < 2; ++j)
+		{
+			M2[i][j] = 0;
+		}
+	}
+
+	for(a1 = 0; a1 < nAnt; ++a1)
+	{
+		T[a1] = calcDelayLM(dd+a1, sourceOffset);
+		T1[a1][0] = calcDelayLM1(dd+a1, sourceOffset, 0);
+		T1[a1][1] = calcDelayLM1(dd+a1, sourceOffset, 1);
+		T2[a1][0][0] = calcDelayLM2(dd+a1, sourceOffset, 0, 0);
+		T2[a1][1][1] = calcDelayLM2(dd+a1, sourceOffset, 1, 1);
+		T2[a1][0][1] = T2[a1][1][0] = calcDelayLM2(dd+a1, sourceOffset, 0, 1);
+	}
+
+	for(a2 = 1; a2 < nAnt; ++a2)
+	{
+		for(a1 = 0; a1 < a2; ++a1)
+		{
+			/* g and h are common subexpressions */
+			double g;
+			double h[2];
+
+			g = (T[a1] - T[a2]) - (R[a1] - R[a2]);
+			h[0] = T1[a1][0] - T1[a2][0];
+			h[1] = T1[a1][1] - T1[a2][1];
+
+			M += g*g;
+			M1[0] += 2.0*g*h[0];
+			M1[1] += 2.0*g*h[1];
+			M2[0][0] += 2.0*(g*(T2[a1][0][0] - T2[a2][0][0]) + h[0]*h[0]);
+			M2[1][1] += 2.0*(g*(T2[a1][1][1] - T2[a2][1][1]) + h[1]*h[1]);
+			M2[0][1] += 2.0*(g*(T2[a1][0][1] - T2[a2][0][1]) + h[0]*h[1]);
+		}
+	}
+
+	/* symmetries */
+	M2[1][0] = M2[0][1];
+
+	return M;
+}
+
+/* return value in units of s^2 */
+double misfitXYZ(int nAnt, const double sourceOffset[3], const DelayXYZDerivatives *dd, const double *residDelay, double M1[3], double M2[3][3])
 {
 	int a1, a2, i, j;
 	double T[MAX_ANTENNAS];
@@ -127,30 +241,35 @@ double misfit(int nAnt, const double srcOffset[3], const DelayDerivatives *dd, c
 		}
 	}
 
-
 	for(a1 = 0; a1 < nAnt; ++a1)
 	{
-		T[a1] = calcDelay(dd+a1, srcOffset);
-		T1[a1][0] = calcDelay1(dd+a1, srcOffset, 0);
-		T1[a1][1] = calcDelay1(dd+a1, srcOffset, 1);
-		T1[a1][2] = calcDelay1(dd+a1, srcOffset, 2);
-		T2[a1][0][0] = calcDelay2(dd+a1, srcOffset, 0, 0);
-		T2[a1][1][1] = calcDelay2(dd+a1, srcOffset, 1, 1);
-		T2[a1][2][2] = calcDelay2(dd+a1, srcOffset, 2, 2);
-		T2[a1][0][1] = T2[a1][1][0] = calcDelay2(dd+a1, srcOffset, 0, 1);
-		T2[a1][0][2] = T2[a1][2][0] = calcDelay2(dd+a1, srcOffset, 0, 2);
-		T2[a1][1][2] = T2[a1][2][1] = calcDelay2(dd+a1, srcOffset, 1, 2);
+		T[a1] = calcDelayXYZ(dd+a1, sourceOffset);
+		T1[a1][0] = calcDelayXYZ1(dd+a1, sourceOffset, 0);
+		T1[a1][1] = calcDelayXYZ1(dd+a1, sourceOffset, 1);
+		T1[a1][2] = calcDelayXYZ1(dd+a1, sourceOffset, 2);
+		T2[a1][0][0] = calcDelayXYZ2(dd+a1, sourceOffset, 0, 0);
+		T2[a1][1][1] = calcDelayXYZ2(dd+a1, sourceOffset, 1, 1);
+		T2[a1][2][2] = calcDelayXYZ2(dd+a1, sourceOffset, 2, 2);
+		T2[a1][0][1] = T2[a1][1][0] = calcDelayXYZ2(dd+a1, sourceOffset, 0, 1);
+		T2[a1][0][2] = T2[a1][2][0] = calcDelayXYZ2(dd+a1, sourceOffset, 0, 2);
+		T2[a1][1][2] = T2[a1][2][1] = calcDelayXYZ2(dd+a1, sourceOffset, 1, 2);
 	}
-
 
 	for(a2 = 1; a2 < nAnt; ++a2)
 	{
 		for(a1 = 0; a1 < a2; ++a1)
 		{
+			/* g and h are common subexpressions */
 			double g;
 			double h[3];
 
-			g = (T[a1] - T[a2]) - (R[a1] - R[a2]);	/* FIXME: the middle sign is in question */
+			/* FIXME: handle antenna flagging better */
+			if(a1 == 3 || a1 == 4 || a2 == 3 || 2 == 4)
+			{
+				continue;
+			}
+
+			g = (T[a1] - T[a2]) - (R[a1] - R[a2]);
 			h[0] = T1[a1][0] - T1[a2][0];
 			h[1] = T1[a1][1] - T1[a2][1];
 			h[2] = T1[a1][2] - T1[a2][2];
@@ -176,12 +295,22 @@ double misfit(int nAnt, const double srcOffset[3], const DelayDerivatives *dd, c
 	return M;
 }
 
+void invert2x2(double A[2][2], double result[2][2])
+{
+	double determinant = A[0][0]*A[1][1] -A[0][1]*A[1][0];
+	double invdet = 1.0/determinant;
+	result[0][0] =  A[1][1]*invdet;
+	result[1][0] = -A[1][0]*invdet;
+	result[0][1] = -A[0][1]*invdet;
+	result[1][1] =  A[0][0]*invdet;
+}
+
 void invert3x3(double A[3][3], double result[3][3])
 {
-	double determinant =     A[0][0]*(A[1][1]*A[2][2]-A[2][1]*A[1][2])
-        	                -A[0][1]*(A[1][0]*A[2][2]-A[1][2]*A[2][0])
-                	        +A[0][2]*(A[1][0]*A[2][1]-A[1][1]*A[2][0]);
-	double invdet = 1/determinant;
+	double determinant = A[0][0]*(A[1][1]*A[2][2]-A[2][1]*A[1][2])
+                            -A[0][1]*(A[1][0]*A[2][2]-A[1][2]*A[2][0])
+                            +A[0][2]*(A[1][0]*A[2][1]-A[1][1]*A[2][0]);
+	double invdet = 1.0/determinant;
 	result[0][0] =  (A[1][1]*A[2][2]-A[2][1]*A[1][2])*invdet;
 	result[1][0] = -(A[0][1]*A[2][2]-A[0][2]*A[2][1])*invdet;
 	result[2][0] =  (A[0][1]*A[1][2]-A[0][2]*A[1][1])*invdet;
@@ -198,19 +327,12 @@ void solve1(const DifxInput *D, double mjd, const double *residDelay, const doub
 {
 	DifxSource *source;
 	DifxScan *scan;
-	DifxSpacecraft *sc;
 	int scanId, sourceId;
-	sixVector interpolatedInitialPosition;
 
-	DelayDerivatives *dd;
-	double antPos[MAX_ANTENNAS][3];
-	double sourcePos[3];
-	double sourceOffset[3];	/* solve for this, then add to the above to get the final answer */
 	double correctedResidDelay[MAX_ANTENNAS];	/* (s) */
 	int a, i;
 	int mjdDay;
 	double mjdSec;
-	double score;
 
 	for(scanId = 0; scanId < D->nScan; ++scanId)
 	{
@@ -222,129 +344,143 @@ void solve1(const DifxInput *D, double mjd, const double *residDelay, const doub
 
 	if(scanId >= D->nScan)
 	{
-		printf("mjd %14.8f not in a scan\n", mjd);
+		fprintf(stderr, "Warning: mjd %14.8f not in a scan.  Skipping.\n", mjd);
 
 		return;
 	}
 
 	scan = D->scan + scanId;
 
-	if(scan->imXYZ == 0)
-	{
-		fprintf(stderr, "Error: .im file needs the XYZ Extension data! (scanId = %d)\n", scanId);
-
-		return;
-	}
-
 	mjdDay = mjd;
 	mjdSec = (mjd - mjdDay)*86400.0;
+	sourceId = scan->phsCentreSrcs[0];
+	source = D->source + sourceId;
 
-	dd = (DelayDerivatives *)calloc(D->nAntenna, sizeof(DelayDerivatives));
+	/* Apply clock offsets */
 	for(a = 0; a < D->nAntenna; ++a)
 	{
 		correctedResidDelay[a] = residDelay[a] - clockNS[a]*1.0e-9;
-		antPos[a][0] = D->antenna[a].X/C_LIGHT;
-		antPos[a][1] = D->antenna[a].Y/C_LIGHT;
-		antPos[a][2] = D->antenna[a].Z/C_LIGHT;
-		getDelay(D, a, scanId, 0, mjdDay, mjdSec, dd + a);
 	}
-	sourceId = scan->phsCentreSrcs[0];
-	source = D->source + sourceId;
-	if(source->spacecraftId < 0)
+
+	if(scan->imLM != 0)
 	{
-		printf("Error: source %s is not a spacecraft!\n", source->name);
+		fprintf(stderr, "Error: .im uses LM Extension but that is not yet supported here\n");
+
+		return;
+
+		DelayLMDerivatives *dd;
+		double sourcePos[2];	/* (rad) [0] is RA, [1] is Dec */
+		double sourceOffset[2];	/* (rad) solve for this, then add to the initial source position to get the final answer */
+		double score;		/* (rad) metric to be minimized */
+
+		/* compute delay model partial derivatives */
+		dd = (DelayLMDerivatives *)calloc(D->nAntenna, sizeof(DelayLMDerivatives));
+		for(a = 0; a < D->nAntenna; ++a)
+		{
+			getDelayLM(D, a, scanId, 0, mjdDay, mjdSec, dd + a);
+		}
+
+		/* use RA and Dec as starting point */
+		sourcePos[0] = source->ra;
+		sourcePos[1] = source->dec;
+		for(i = 0; i < 2; ++i)
+		{
+			sourceOffset[i] = 0.0;
+		}
+
+		for(i = 0; i < 5; ++i)	/* FIXME: use real convergence test.  But this converges _really_ fast so 5 iterations is overkill */
+		{
+			double M;
+			double M1[2];
+			double M2[2][2];
+			double M2inverse[2][2];
+
+			/* calculate fit metric and its first and second partial derivatives w.r.t. source position at sourceOffset from nominal position */
+			M = misfitLM(D->nAntenna, sourceOffset, dd, correctedResidDelay, M1, M2);
+			
+			invert2x2(M2, M2inverse);
+
+			score = sqrt(2.0*M/(D->nAntenna*(D->nAntenna-1)))*C_LIGHT;
+
+			sourceOffset[0] -= M2inverse[0][0]*M1[0] + M2inverse[0][1]*M1[1];
+			sourceOffset[1] -= M2inverse[1][0]*M1[0] + M2inverse[1][1]*M1[1];
+		}
+		printf("mjd = %14.8f  score = %f  offset = %5.3f %5.3f rad  pos = %5.3f %5.3f rad\n",
+			mjd, score,
+			sourceOffset[0], sourceOffset[1],
+			sourcePos[0]+sourceOffset[0]/cos(sourcePos[1]), sourcePos[1]+sourceOffset[1]);
+
 		free(dd);
+	}
+	else if(scan->imXYZ != 0)
+	{
+		DelayXYZDerivatives *dd;
+		double sourcePos[3];	/* (m) */
+		double sourceOffset[3];	/* (m) solve for this, then add to the above to get the final answer */
+		DifxSpacecraft *sc;
+		sixVector interpolatedInitialPosition;
+		double score;		/* (m) metric to be minimized */
+
+		if(source->spacecraftId < 0)
+		{
+			fprintf(stderr, "Error: source %s is not a spacecraft!\n", source->name);
+
+			return;
+		}
+		sc = D->spacecraft + source->spacecraftId;
+		
+		/* compute delay model partial derivatives */
+		dd = (DelayXYZDerivatives *)calloc(D->nAntenna, sizeof(DelayXYZDerivatives));
+		for(a = 0; a < D->nAntenna; ++a)
+		{
+			getDelayXYZ(D, a, scanId, 0, mjdDay, mjdSec, dd + a);
+		}
+
+		/* use ephemeris as starting point */
+		evaluateDifxSpacecraft(sc, mjdDay, mjdSec/86400.0, &interpolatedInitialPosition);
+		sourcePos[0] = interpolatedInitialPosition.X;
+		sourcePos[1] = interpolatedInitialPosition.Y;
+		sourcePos[2] = interpolatedInitialPosition.Z;
+		for(i = 0; i < 3; ++i)
+		{
+			sourceOffset[i] = 0.0;
+		}
+
+		for(i = 0; i < 5; ++i)	/* FIXME: use real convergence test.  But this converges _really_ fast so 5 iterations is overkill */
+		{
+			double M;
+			double M1[3];
+			double M2[3][3];
+			double M2inverse[3][3];
+
+			/* calculate fit metric and its first and second partial derivatives w.r.t. source position at sourceOffset from nominal position */
+			M = misfitXYZ(D->nAntenna, sourceOffset, dd, correctedResidDelay, M1, M2);
+			
+			invert3x3(M2, M2inverse);
+
+			score = sqrt(2.0*M/(D->nAntenna*(D->nAntenna-1)))*C_LIGHT;
+
+			sourceOffset[0] -= M2inverse[0][0]*M1[0] + M2inverse[0][1]*M1[1] + M2inverse[0][2]*M1[2];
+			sourceOffset[1] -= M2inverse[1][0]*M1[0] + M2inverse[1][1]*M1[1] + M2inverse[1][2]*M1[2];
+			sourceOffset[2] -= M2inverse[2][0]*M1[0] + M2inverse[2][1]*M1[1] + M2inverse[2][2]*M1[2];
+		}
+		printf("mjd = %14.8f  score = %f  offset = %5.3f %5.3f %5.3f m  pos = %5.3f %5.3f %5.3f m\n",
+			mjd, score,
+			sourceOffset[0], sourceOffset[1], sourceOffset[2],
+			sourcePos[0]+sourceOffset[0], sourcePos[1]+sourceOffset[1], sourcePos[2]+sourceOffset[2]);
+
+		free(dd);
+	}
+	else
+	{
+		fprintf(stderr, "Error: .im file needs either LM or XYZ Extension data! (scanId = %d)\n", scanId);
 
 		return;
 	}
-	sc = D->spacecraft + source->spacecraftId;
-
-	/* use ephemeris as starting point */
-	evaluateDifxSpacecraft(sc, mjdDay, mjdSec/86400.0, &interpolatedInitialPosition);
-	sourcePos[0] = interpolatedInitialPosition.X/C_LIGHT;
-	sourcePos[1] = interpolatedInitialPosition.Y/C_LIGHT;
-	sourcePos[2] = interpolatedInitialPosition.Z/C_LIGHT;
-	for(i = 0; i < 3; ++i)
-	{
-		sourceOffset[i] = 0.0;
-	}
-
-//	printf("Starting position at mjd %14.8f for SC = %10.8f %10.8f %10.5f (sec) = %5.3f %5.3f %5.3f (m)\n",
-//		mjd, sourcePos[0], sourcePos[1], sourcePos[2],
-//		sourcePos[0]*C_LIGHT, sourcePos[1]*C_LIGHT, sourcePos[2]*C_LIGHT);
-
-	for(i = 0; i < 5; ++i)
-	{
-		double M;
-		double M1[3];
-		double M2[3][3];
-		double M2inverse[3][3];
-
-		M = misfit(D->nAntenna, sourceOffset, dd, correctedResidDelay, M1, M2);
-		
-		invert3x3(M2, M2inverse);
-
-//		printf("M = %e M1 = %e,%e,%e\n", M, M1[0], M1[1], M1[2]);
-		
-		score = sqrt(2.0*M/(D->nAntenna*(D->nAntenna-1)))*C_LIGHT;
-
-//		printf("%d  Offset = %5.3f %5.3f %5.3f (m) -> score = %5.3f (m)\n",
-//			i,
-//			sourceOffset[0], 
-//			sourceOffset[1], 
-//			sourceOffset[2], 
-//			score);
-
-		sourceOffset[0] -= M2inverse[0][0]*M1[0] + M2inverse[0][1]*M1[1] + M2inverse[0][2]*M1[2];
-		sourceOffset[1] -= M2inverse[1][0]*M1[0] + M2inverse[1][1]*M1[1] + M2inverse[1][2]*M1[2];
-		sourceOffset[2] -= M2inverse[2][0]*M1[0] + M2inverse[2][1]*M1[1] + M2inverse[2][2]*M1[2];
-
-
-	}
-	printf("mjd = %14.8f  score = %f  offset = %5.3f %5.3f %5.3f m  pos = %5.3f %5.3f %5.3f m\n",
-		mjd, score, sourceOffset[0], sourceOffset[1], sourceOffset[2], sourcePos[0]*C_LIGHT+sourceOffset[0], sourcePos[1]*C_LIGHT+sourceOffset[1], sourcePos[2]*C_LIGHT+sourceOffset[2]);
-
-	free(dd);
 }
 
 void testsolve(const DifxInput *D)
 {
-/*
-      69      16:00:22.0      00:00:01.5          1         -9.649785E-07
-      70      16:00:22.0      00:00:01.5          2          4.650725E-07
-      71      16:00:22.0      00:00:01.5          3          2.207024E-06
-      72      16:00:22.0      00:00:01.5          4         -2.259683E-07
-      73      16:00:22.0      00:00:01.5          5          2.110347E-07
-      74      16:00:22.0      00:00:01.5          6         -5.328458E-06
-      75      16:00:22.0      00:00:01.5          7          1.267747E-06
-      76      16:00:22.0      00:00:01.5          8         -9.634513E-07
-      77      16:00:22.0      00:00:01.5          9          0.000000E+00
-      78      16:00:22.0      00:00:01.5         10          2.853595E-06
-
-     169      16:00:39.5      00:00:01.5          1         -9.665882E-07
-     170      16:00:39.5      00:00:01.5          2          4.662891E-07
-     171      16:00:39.5      00:00:01.5          3          2.219105E-06
-     172      16:00:39.5      00:00:01.5          4         -2.290494E-07
-     173      16:00:39.5      00:00:01.5          5          2.117527E-07
-     174      16:00:39.5      00:00:01.5          6         -5.338962E-06
-     175      16:00:39.5      00:00:01.5          7          1.273706E-06
-     176      16:00:39.5      00:00:01.5          8         -9.663453E-07
-     177      16:00:39.5      00:00:01.5          9          0.000000E+00
-     178      16:00:39.5      00:00:01.5         10          2.761165E-06
-
-     269      16:00:57.0      00:00:01.5          1         -9.681762E-07
-     270      16:00:57.0      00:00:01.5          2          4.674806E-07
-     271      16:00:57.0      00:00:01.5          3          2.231192E-06
-     272      16:00:57.0      00:00:01.5          4         -2.281470E-07
-     273      16:00:57.0      00:00:01.5          5          2.124021E-07
-     274      16:00:57.0      00:00:01.5          6         -5.349444E-06
-     275      16:00:57.0      00:00:01.5          7          1.279670E-06
-     276      16:00:57.0      00:00:01.5          8         -9.692022E-07
-     277      16:00:57.0      00:00:01.5          9          0.000000E+00
-     278      16:00:57.0      00:00:01.5         10          2.885403E-06
-
-*/
-
 	double clockNS [10] = {16, 90, -93, 0, 33, 38, -19, -5.6, 0, -45 };
 
 	double delays1[10] = { -9.649785e-07, 4.650725e-07, 2.207024e-06, -2.259683e-07, 2.110347e-07, -5.328458e-06, 1.267747e-06, -9.634513e-07, 0.0, 2.853595e-06 };
@@ -359,11 +495,22 @@ void testsolve(const DifxInput *D)
 	solve1(D, mjd3, delays3, clockNS);
 }
 
+/* The delay file here is in a free format text format with:
+ * Comments starting with #
+ * First number on a row is MJD + fractional MJD
+ * Then one number per antenna containing delay in units of seconds
+ * This file can be make by the associated python program "convertdelay"
+ * with input from AIPS PRTAB on a FRING SN table with BOX = 1,2,4,12 
+ */
 void runfile(const DifxInput *D, const char *delayFile)
 {
-	double clockNS [10] = {16, 90, -93, 0, 33, 38, -19, -5.6, 0, -45 };
+	/* FIXME: handle != 10 antennas */
+	/* FIXME: hard coded clock offsets here */
+	const int LineLength = 2048;
+	char line[LineLength];
+	double clockNS[10] = {16, 90, -93, 0, 33, 38, -19, -5.6, 0, -45 };	/* (ns) Same sign sense as AIPS FRING produces */
 	FILE *in;
-	double mjd, delays[10];
+	double mjd, delays[10];		/* (s) Same sign sense as AIPS FRING produces */
 	
 	in = fopen(delayFile, "r");
 	if(!in)
@@ -376,7 +523,17 @@ void runfile(const DifxInput *D, const char *delayFile)
 	for(;;)
 	{
 		int n;
-		n = fscanf(in, "%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf", &mjd, delays+0, delays+1, delays+2, delays+3, delays+4, delays+5, delays+6, delays+7, delays+8, delays+9);
+
+		fgets(line, LineLength, in);
+		if(feof(in))
+		{
+			break;
+		}
+		if(line[0] == '#')
+		{
+			continue;
+		}
+		n = sscanf(line, "%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf", &mjd, delays+0, delays+1, delays+2, delays+3, delays+4, delays+5, delays+6, delays+7, delays+8, delays+9);
 		if(n != 11)
 		{
 			break;
@@ -395,6 +552,8 @@ int main(int argc, char **argv)
 	int mergable, compatible;
 	int nJob = 0;
 	const char *delayFilename = 0;
+
+	printf("# File written by %s ver. %s\n", program, version);
 	
 	for(a = 1; a < argc; ++a)
 	{
@@ -404,6 +563,7 @@ int main(int argc, char **argv)
 			   strcmp(argv[a], "--verbose") == 0)
 			{
 				++verbose;
+
 				continue;
 			}
 			else if(strcmp(argv[a], "-h") == 0 ||
@@ -428,12 +588,14 @@ int main(int argc, char **argv)
 		}
 		else if(D == 0)
 		{
+			printf("# Loading DiFX fileset: %s\n", argv[a]);
 			D = loadDifxInput(argv[a]);
 		}
 		else
 		{
 			DifxInput *D1, *D2;
 
+			printf("# Loading DiFX fileset: %s\n", argv[a]);
 			D1 = D;
 			D2 = loadDifxInput(argv[a]);
 			if(D2)
@@ -448,7 +610,7 @@ int main(int argc, char **argv)
 				}
 				else
 				{
-					printf("cannot merge job %s: mergable=%d compatible=%d\n", argv[a], mergable, compatible);
+					fprintf(stderr, "cannot merge job %s: mergable=%d compatible=%d\n", argv[a], mergable, compatible);
 					deleteDifxInput(D1);
 					deleteDifxInput(D2);
 					D = 0;
@@ -474,7 +636,7 @@ int main(int argc, char **argv)
 
 	if(nJob == 0)
 	{
-		printf("Nothing to do!  Quitting.  Run with -h for help information\n");
+		fprintf(stderr, "Nothing to do!  Quitting.  Run with -h for help information\n");
 
 		return EXIT_SUCCESS;
 	}
@@ -487,9 +649,7 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
-	//printDifxInput(D);
-
-	printf("Delay filename to read in: %s\n", delayFilename);
+	printf("# Delay filename to read in: %s\n", delayFilename);
 	runfile(D, delayFilename);
 
 	deleteDifxInput(D);
