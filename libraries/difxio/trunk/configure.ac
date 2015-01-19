@@ -44,6 +44,8 @@ else
 fi
 AM_CONDITIONAL(HAVE_SPICE, $spice_enabled)
 
+PKG_CHECK_MODULES(GSL, gsl, [hasgsl=true], [hasgsl=false])
+
 spicelibs="$SPICE_LIBS"
 AC_SUBST(spicelibs)
 
@@ -61,8 +63,8 @@ if test "$with_fftw" == "yes"; then
 	fi
 	AM_CONDITIONAL(WITH_FFTW, $hasfftw)
 
-	LIBS="${LIBS} ${FFTW3_LIBS}"
-	CFLAGS="${CFLAGS} ${FFTW3_CFLAGS}"
+	LIBS="${LIBS} ${FFTW3_LIBS} ${GSL_LIBS}"
+	CFLAGS="${CFLAGS} ${FFTW3_CFLAGS} ${GSL_CFLAGS}"
 	AC_SUBST(FFTW3_CFLAGS)
 	AC_SUBST(FFTW3_LIBS)
 else
