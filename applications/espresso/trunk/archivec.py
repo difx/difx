@@ -159,7 +159,7 @@ if mark4file:
 #subprocess.check_call(command, shell=True, stdout=sys.stdout, stderr=sys.stderr)
 while True:
     try:
-        command = " ".join(['ashell.py "login cormac Snuff1:since + cf', args[1], "+ put", archdir, '"'])
+        command = " ".join(['ashell.py "login + cf', args[1], "+ put", archdir, '"'])
         print command
         subprocess.check_call(command, shell=True, stdout=sys.stdout, stderr=sys.stderr)
         break

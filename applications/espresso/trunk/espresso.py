@@ -188,6 +188,9 @@ parser.add_option( "--no_rmaps_seq", "-M",
 parser.add_option( "--no_email", "-E",
         dest="noemail", action="store_true", default=False,
         help="Don't prompt for notification email"  )
+parser.add_option( "--no_difxwatch", "-D",
+        dest="nodifxwatch", action="store_true", default=False,
+        help="Don't run difxwatch"  )
 
 (options, args) = parser.parse_args()
 
@@ -351,13 +354,28 @@ for jobname in sorted(corrjoblist.keys()):
     print "copying the vex file", vexfilename, "to", outputvex, "\n"
     shutil.copy2(vexfilename, outputvex)
 
+    # and copy the .vex and .v2d unaltered for ease of reference in the output dir
+    shutil.copy2(vexfilename, outdir)
+    shutil.copy2(v2dfilename, outdir)
+
 if not options.nopause:
     raw_input('Press return to initiate the correlator job or ^C to quit ')
 
 logfiles = []
 # run each job
 try:
+    difxwatch = None
     for jobname in sorted(corrjoblist.keys()):
+        if not options.nodifxwatch:
+            print "starting difxwatch in the background"
+            difxwatch = subprocess.Popen(['difxwatch', '-i 600'])
+        else:
+            try:
+                command = ["pkill", "-2", "-f", "difxwatch"]
+                code = subprocess.call(command, stdout=sys.stdout, stderr=sys.stderr)
+            except:
+                pass
+
         # start the correlator log
         print "starting errormon2 in the background"
         errormon2 = subprocess.Popen('errormon2')
@@ -368,6 +386,15 @@ try:
             runfile = './run_' + runfile
             print "starting the correlator running", runfile
             subprocess.check_call(runfile, shell=True, stdout=sys.stdout)
+        except subprocess.CalledProcessError:
+            # would probably prefer just a 'finally' here so everything falls
+            # over in case of failure, but if difxwatch kills the jobs we want
+            # to continue
+            pass
+        except:
+            # a ^C is likely to be the only thing that gets us here.
+            #raise
+            pass
         finally:
             # we're finished with the log...
             os.kill(errormon2.pid, 9)
@@ -380,7 +407,14 @@ try:
             for line in open("log"):
                 if jobname in line:
                     print>>logfile, line,
+            logfile.close()
 finally:
+
+    ## kill the difxwatch process (kill -INT so it cleans itself up)
+    #if difxwatch:
+    #    # if no difxwatch was started because one was already running then this
+    #    # does nothing
+    #    os.kill(difxwatch.pid, 2)
 
     # plot the speedup factor (this forks a process - must clean up later)
     try:
