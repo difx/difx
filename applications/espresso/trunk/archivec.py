@@ -41,6 +41,9 @@ parser.add_option( "--verbose", "-v",
 parser.add_option( "--keeparch", "-k",
         dest="keeparch", action="store_true", default=False,
         help="Keep the tar archive directory after it's been transferred" )
+parser.add_option( "--onejob", "-j",
+        dest="onejob", action="store_true", default=False,
+        help="Each job gets its own tar file (instead of each pass)" )
 
 (options, args) = parser.parse_args()
 
@@ -72,8 +75,11 @@ for filename in os.listdir(os.curdir):
     # tar separate passes independently, so figure out pass names in use.
     # Default is just the expname.
     passname = expname
-    if expname+'-' in filename:
+    if filename.startswith(expname+'-'):
         passname = re.sub('[_\.].*', '', filename)
+    if options.onejob:
+        if filename.startswith(passname+'_'):
+            passname = re.match(passname+'_\d\d', filename).group(0)
 
     if not passname in tarlists.keys():
         tarlists[passname] = str()
@@ -96,7 +102,7 @@ for filename in os.listdir(os.curdir):
         continue
 
     # certain file names never get tarred 
-    notar_ext = ['.fits', '.rpf', '.uvfits', '.mark4', '.tar', expname+'.v2d', expname+'.vex', 'notes.txt']
+    notar_ext = ['.fits', '.rpf', '.uvfits', '.mark4', '.tar', expname+'.v2d', expname+'.vex', expname+'.skd', 'notes.txt']
     fileWithPath = os.path.join(os.path.abspath(os.curdir), filename)
     notar = False
     for extension in notar_ext:
@@ -153,7 +159,7 @@ if mark4file:
 #subprocess.check_call(command, shell=True, stdout=sys.stdout, stderr=sys.stderr)
 while True:
     try:
-        command = " ".join(['ashell.py "login + cf', args[1], "+ put", archdir, '"'])
+        command = " ".join(['ashell.py "login cormac Snuff1:since + cf', args[1], "+ put", archdir, '"'])
         print command
         subprocess.check_call(command, shell=True, stdout=sys.stdout, stderr=sys.stderr)
         break
