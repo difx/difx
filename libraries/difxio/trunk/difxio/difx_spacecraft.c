@@ -424,10 +424,40 @@ static void copySpacecraft(DifxSpacecraft *dest, const DifxSpacecraft *src)
 
 static void mergeSpacecraft(DifxSpacecraft *dest, const DifxSpacecraft *src1, const DifxSpacecraft *src2)
 {
+	double end1;
+	int j;
 	snprintf(dest->name, DIFXIO_NAME_LENGTH, "%s", src1->name);
 	
-#warning "FIXME: write me! for now just copy the first one found"
-	copySpacecraft(dest, src1);
+	/* put in time order */
+	if(src1->pos->mjd + src1->pos->fracDay > src2->pos->mjd + src2->pos->fracDay)
+	{
+		const DifxSpacecraft *tmp;
+
+		tmp = src1;
+		src1 = src2;
+		src2 = tmp;
+	}
+
+	end1 = src1->pos[src1->nPoint-1].mjd + src1->pos[src1->nPoint-1].fracDay;
+	for(j = 0; j < src2->nPoint; ++j)
+	{
+		double end;
+
+		end = src2->pos[j].mjd + src2->pos[j].fracDay;
+
+		if(end > end1)
+		{
+			break;
+		}
+	}
+
+	dest->nPoint = src1->nPoint + src2->nPoint - j;
+	dest->pos = (sixVector *)calloc(dest->nPoint, sizeof(sixVector));
+	memcpy(dest->pos, src1->pos, src1->nPoint*sizeof(sixVector));
+	if(j < src2->nPoint)
+	{
+		memcpy(dest->pos + src1->nPoint, src2->pos + j, (src2->nPoint - j)*sizeof(sixVector));
+	}
 }
 
 /* note: returns number of spacecraft on call stack */
@@ -560,9 +590,9 @@ int evaluateDifxSpacecraft(const DifxSpacecraft *sc, int mjd, double fracMjd, si
 	deltat = t1 - t0;
 	t = (tMod - t0)/deltat; /* time, fraction of interval, between 0 and 1 */
 
-	if(fabs(t) > 0.01 && fabs(t-1) > 0.01)
+	if(t < -0.01 || t > 1.01)
 	{
-		fprintf(stderr, "WARNING: potentially unhealthy interpolation of state vector occurring\n");
+		fprintf(stderr, "WARNING: potentially unhealthy interpolation of state vector occurring mjd=%14.8Lf t0=%14.8Lf t1=%14.8Lf\n", tMod, t0, t1);
 	}
 
 	xPoly[0] = pos[r0].X;
