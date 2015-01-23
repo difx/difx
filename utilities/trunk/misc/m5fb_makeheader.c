@@ -345,6 +345,8 @@ int main (int argc, char *argv[])
       is_bary=1;
     } else if (strings_equal(argv[i],"-pcentric")) {
       is_pulsarcentric=1;
+    } else if (strings_equal(argv[i],"-nbits")) {
+      nbits=atoi(argv[++i]);
     }
     i++;
   }
