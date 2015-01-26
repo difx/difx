@@ -1,6 +1,6 @@
 aclocal
 autoconf
 automake -a
-./configure --prefix=${DIFXROOT} CXX=${MPICXX}
+./configure --prefix=${DIFXROOT}
 make
 make install
