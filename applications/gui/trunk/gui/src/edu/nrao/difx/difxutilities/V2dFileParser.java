@@ -90,13 +90,30 @@ public class V2dFileParser {
                 int firstChar = equal + 1;
                 while ( firstChar < bigStr.length() && bigStr.charAt( firstChar ) == ' ' )
                     ++firstChar;
-                int endPtr = bigStr.indexOf( " ", firstChar );
+                //  Locate the first space character that does not follow a comma.
+                boolean done = false;
+                int endPtr = firstChar + 1;
+                boolean commaOn = false;
+                while ( !done ) {
+                    if ( endPtr == bigStr.length() )
+                        done = true;
+                    if ( bigStr.charAt( endPtr ) == ',' )
+                        commaOn = true;
+                    else if ( bigStr.charAt( endPtr ) == ' ' ) {
+                        if ( !commaOn )
+                            done = true;
+                    }
+                    else
+                        commaOn = false;
+                    if ( !done )
+                        ++endPtr;
+                }
                 if ( endPtr < 0 )
                     endPtr = bigStr.length();
                 GenericParameter newParam = new GenericParameter();
                 newParam.name = bigStr.substring( ptr, equal ).trim();
                 newParam.value = bigStr.substring( firstChar, endPtr );
-                //System.out.println( "Setting \"" + settingName + "\" to \"" + settingValue + "\"" );
+                //System.out.println( "Setting \"" + newParam.name + "\" to \"" + newParam.value + "\"" );
                 ptr = endPtr;
                 //  Stick the setting in the appropriate section structure.  There are
                 //  specific sections and specific parameters we know something about,
@@ -168,6 +185,8 @@ public class V2dFileParser {
                         antenna.Z = Double.parseDouble( newParam.value );
                     else if ( newParam.name.contentEquals( "deltaClock" ) )
                         antenna.deltaClock = Double.parseDouble( newParam.value );
+                    else if ( newParam.name.contentEquals( "fake" ) )
+                        antenna.fake = Boolean.parseBoolean( newParam.value );
                 }
                 else if ( _sectionType == SETUP_SECTION ) {
                     SetupSection setup = (SetupSection)_currentSection;
@@ -401,6 +420,8 @@ public class V2dFileParser {
                         str += "    Z = " + antenna.Z + "\n";
                     if ( antenna.deltaClock != null )
                         str += "    deltaClock = " + antenna.deltaClock + "\n";
+                    if ( antenna.fake != null )
+                        str += "    fake = " + antenna.fake + "\n";
                 }
                 else if ( section.type == SOURCE_SECTION ) {
                 }
@@ -453,15 +474,37 @@ public class V2dFileParser {
     public Integer startSeries() { return _startSeries; }
     
     /*
-     * Add a generic global parameter value.
+     * Add a generic global parameter value, or set one if the parameter
+     * already exists.
      */
     public void globalParameter( String name, String value ) {
-        GenericParameter param = new GenericParameter();
-        param.name = name;
-        param.value = value;
+        GenericParameter param = null;
         if ( _globalParameters == null )
             _globalParameters = new Vector<GenericParameter>();
+        for ( Iterator<GenericParameter> iter = _globalParameters.iterator(); iter.hasNext() && param == null; ) {
+            GenericParameter tryParam = iter.next();
+            if ( tryParam.name.contentEquals( name ) )
+                param = tryParam;
+        }
+        if ( param == null )
+            param = new GenericParameter();
+        param.name = name;
+        param.value = value;
         _globalParameters.add( param );
+    }
+    
+    /*
+     * Obtain a global parameter (as a String).
+     */
+    public String globalParameter( String name ) {
+        if ( _globalParameters == null )
+            return null;
+        for ( Iterator<GenericParameter> iter = _globalParameters.iterator(); iter.hasNext(); ) {
+            GenericParameter param = iter.next();
+            if ( param.name.contentEquals( name ) )
+                return param.value;
+        }
+        return null;
     }
 
     /*
@@ -496,6 +539,32 @@ public class V2dFileParser {
             if ( _sections == null )
                 _sections = new Vector<GenericSection>();
             _sections.add( section );
+        }
+    }
+    
+    /*
+     * Return a vector of all antenna names.
+     */
+    public Vector<String> antennaList() {
+        Vector<String> vec = new Vector<String>();
+        for ( Iterator<GenericSection> iter = _sections.iterator(); iter.hasNext(); ) {
+            GenericSection section = iter.next();
+            if ( section.type == ANTENNA_SECTION )
+                vec.add( section.name );
+        }
+        return vec;
+    }
+    
+    /*
+     * Delete an antenna by name.
+     */
+    public void removeAntenna( String name ) {
+        if ( _sections == null )
+            return;
+        for ( Iterator<GenericSection> iter = _sections.iterator(); iter.hasNext(); ) {
+            GenericSection section = iter.next();
+            if ( section.type == ANTENNA_SECTION && section.name.contentEquals( name ) )
+                iter.remove();
         }
     }
     
@@ -604,6 +673,15 @@ public class V2dFileParser {
             return null;
         else
             return antennaSection( name ).networkPort;
+    }
+    public void antennaFake( String name, Boolean newVal ) {
+        findAntenna( name ).fake = newVal;
+    }
+    public Boolean antennaFake( String name ) {
+        if ( antennaSection( name ) == null )
+            return null;
+        else
+            return antennaSection( name ).fake;
     }
     public void antennaX( String name, Double newVal ) {
         findAntenna( name ).X = newVal;
@@ -986,6 +1064,7 @@ public class V2dFileParser {
         public String filelist;
         public Vector<String> file;
         public Integer networkPort;
+        public Boolean fake;
         public Double X;
         public Double Y;
         public Double Z;

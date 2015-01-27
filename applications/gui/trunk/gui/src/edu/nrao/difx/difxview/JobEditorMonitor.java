@@ -14,7 +14,11 @@ import javax.swing.plaf.basic.BasicComboPopup;
 import edu.nrao.difx.difxutilities.DiFXCommand;
 import edu.nrao.difx.difxutilities.InputFileParser;
 import edu.nrao.difx.difxutilities.CalcFileParser;
+import edu.nrao.difx.difxutilities.V2dFileParser;
 import edu.nrao.difx.difxutilities.ChannelServerSocket;
+import edu.nrao.difx.difxutilities.DiFXCommand_ls;
+import edu.nrao.difx.difxutilities.DiFXCommand_mv;
+import edu.nrao.difx.difxutilities.DiFXCommand_vex2difx;
 
 import edu.nrao.difx.xmllib.difxmessage.DifxMessage;
 import edu.nrao.difx.xmllib.difxmessage.DifxMachinesDefinition;
@@ -41,6 +45,8 @@ import javax.swing.BorderFactory;
 import javax.swing.border.Border;
 import javax.swing.event.PopupMenuEvent;
 import javax.swing.event.PopupMenuListener;
+
+import java.text.SimpleDateFormat;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -72,6 +78,8 @@ import mil.navy.usno.widgetlib.SimpleTextEditor;
 import mil.navy.usno.widgetlib.MessageDisplayPanel;
 import mil.navy.usno.widgetlib.JulianCalendar;
 import mil.navy.usno.widgetlib.ZButton;
+import mil.navy.usno.widgetlib.ZCheckBox;
+import mil.navy.usno.widgetlib.ZLabel;
 
 public class JobEditorMonitor extends JFrame {
     
@@ -224,9 +232,14 @@ public class JobEditorMonitor extends JFrame {
         _dataSourcesPane.setBackground( Color.WHITE );
         _dataSourcesPane.decayCount( 5 );
         machinesListPanel.add( _dataSourcesPane );
-        _dataSourcesLabel = new JLabel( "Data Sources:" );
+        _dataSourcesLabel = new ZLabel( "Data Sources:" );
         _dataSourcesLabel.setHorizontalAlignment( JLabel.LEFT );
         machinesListPanel.add( _dataSourcesLabel );
+        _skipStationLabel = new ZLabel( "Skip" );
+        _skipStationLabel.toolTip( "Eliminate checked stations from the job processing.  This requires\n"
+                + "rebuilding the job using the \"Rebuild Job\" button.", null );
+        _skipStationLabel.setHorizontalAlignment( JLabel.LEFT );
+        machinesListPanel.add( _skipStationLabel );
         _processorsPane = new NodeBrowserScrollPane();
         _processorsPane.setBackground( Color.WHITE );
         _processorsPane.decayCount( 5 );
@@ -329,6 +342,15 @@ public class JobEditorMonitor extends JFrame {
                 + "base on user preferences and current node usage.\n"
                 + "This will replace any user-selected nodes.", null );
         machinesListPanel.add( _defaultMachinesButton );
+        _removeSkippedStationsButton = new ZButton( "Rebuild Job" );
+        _removeSkippedStationsButton.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                removeSkippedStations( false );
+            }
+        } );
+        _removeSkippedStationsButton.toolTip( "Rebuild the job with \"skipped\" stations eliminated from\n"
+                + "the processing.", null );
+        machinesListPanel.add( _removeSkippedStationsButton );
         _selectAllProcessorsButton = new JButton( "Select All" );
         _selectAllProcessorsButton.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
@@ -596,9 +618,11 @@ public class JobEditorMonitor extends JFrame {
             _scrollPane.setBounds( 0, 25, w, h - 25 );
             int thirdSize = ( w - 60 ) / 3;
             _dataSourcesLabel.setBounds( 10, 25, 2 * thirdSize, 25 );
+            _skipStationLabel.setBounds( 220, 25, 50, 25 );
             _dataSourcesPane.setBounds( 10, 50, 2 * thirdSize, 150 );
-            _defaultMachinesButton.setBounds( 30 + 2 * thirdSize, 175, thirdSize/2 - 5, 25 );
             _chooseBasedOnModule.setBounds( 30 + 2 * thirdSize, 50, thirdSize, 25 );
+            _defaultMachinesButton.setBounds( 30 + 2 * thirdSize, 80, thirdSize/2 - 5, 25 );
+            _removeSkippedStationsButton.setBounds( 30 + 2 * thirdSize, 110, thirdSize/2 - 5, 25 );
             _processorsLabel.setBounds( 10, 205, 2 * thirdSize, 25 );
             _processorsPane.setBounds( 10, 230, 2 * thirdSize, 150 );
             _threadsLabel.setBounds( 170, 205, 80, 25 );
@@ -729,6 +753,223 @@ public class JobEditorMonitor extends JFrame {
                 iter.hasNext(); ) {
             PaneProcessorNode thisNode = (PaneProcessorNode)(iter.next());
             thisNode.threads( 0 );
+        }
+    }
+    
+    /*
+     * Examine the list of stations used for this job and "skip" any that do no currently
+     * have a good data source associated with them.  This process will also "not skip"
+     * stations that DO have data (i.e. it will check them all).  A station is "skipped"
+     * if its skip checkbox is checked.  Return an indication of whether the job is still
+     * "runnable" after removing the missing data - i.e. there are at least two stations
+     * left.
+     */
+    public boolean skipStationsMissingData() {
+        int goodCount = 0;
+        for ( Iterator<BrowserNode> iter = _dataSourcesPane.browserTopNode().children().iterator();
+                iter.hasNext(); ) {
+            DataSource thisSource = (DataSource)(iter.next());
+            if ( thisSource.missing() )
+                thisSource.skipStation( true );
+            if ( !thisSource.skipStation() )
+                goodCount += 1;
+        }
+        return ( goodCount > 1 );
+    }
+    
+    protected boolean _rebuildSuccess;
+    protected boolean _rebuildFailed;
+    public boolean rebuildSuccess() { return _rebuildSuccess; }
+    public boolean rebuildFailed() { return _rebuildFailed; }
+    public void rebuildSuccess( boolean newVal ) { _rebuildSuccess = newVal; }
+    public void rebuildFailed( boolean newVal ) { _rebuildFailed = newVal; }
+    
+    /*
+     * Using the existing "general" .v2d file, create a .v2d file that is specific to this job
+     * and includes only those stations in the data source list that have not been "skipped".
+     * Old versions of files (.calc, .input, .difx, etc) are moved to new locations and given
+     * a "version" number.  
+     */
+    public void removeSkippedStations( boolean externalOperation ) {
+        boolean _rebuildSuccess = false;
+        boolean _rebuildFailed = false;
+        //  Get the existing .v2d file for this experiment.
+        _messageDisplayPanel.message( 0, "Job Editor/Monitor", "Rebuilding job with current station specifications" );
+        Component comp = this;
+        while ( comp.getParent() != null )
+            comp = comp.getParent();
+        final Frame frm = (Frame)comp;
+        final Point pt = _jobNode.getLocationOnScreen();
+        _removedList = null;
+        GetFileMonitor fileGet = new GetFileMonitor( (Frame)comp, pt.x + 25, pt.y + 25, 
+                _jobNode.passNode().fullPath() + "/" + _jobNode.passNode().v2dFileName(), _settings, false );
+        //  We only use the content of the file if it was read successfully.
+        if ( fileGet.success() ) {
+            V2dFileParser v2dParser = new V2dFileParser( fileGet.inString() );
+            //  Eliminate stations in the .v2d file that are not selected.
+            Vector<String> stationList = v2dParser.antennaList();
+            for ( Iterator<String> iter = stationList.iterator(); iter.hasNext(); ) {
+                String v2dAntenna = iter.next();
+                //  First we have to locate each antenna in our .v2d in the source list.  Many of these
+                //  might not be found, in which case they should be eliminated.
+                DataSource foundSource = null;
+                for ( Iterator<BrowserNode> iter1 = _dataSourcesPane.browserTopNode().children().iterator();
+                        iter1.hasNext() && foundSource == null; ) {
+                    DataSource thisSource = (DataSource)(iter1.next());
+                    if ( thisSource.antenna().equalsIgnoreCase( v2dAntenna ) ) {
+                        foundSource = thisSource;
+                    }
+                }
+                //  If the antenna was not among our sources, remove it silently from the .v2d.
+                if ( foundSource == null )
+                    v2dParser.removeAntenna( v2dAntenna );
+                //  If it was "skipped", remove it as well.  This produces a message.
+                else if ( foundSource.skipStation() ) {
+                    v2dParser.removeAntenna( v2dAntenna );
+                    _messageDisplayPanel.message( 0, "Job Editor/Monitor", "removing station \"" + foundSource.antenna() + "\"" );
+                    if ( _removedList == null ) {
+                        _removedList = foundSource.antenna();
+                    }
+                    else {
+                        _removedList += ", " + foundSource.antenna();
+                    }
+                }
+            }
+            //  Get the "root" name of the files associated with this job.
+            String inputFile = _inputFileName.getText();
+            String scanFileName = inputFile.substring( inputFile.lastIndexOf( '/' ) + 1, inputFile.lastIndexOf( '.' ) );
+            //  Use this to find the "jobSeries" and "startSeries" values.
+            v2dParser.jobSeries( scanFileName.substring( 0, scanFileName.indexOf( "_" ) ) );
+            v2dParser.startSeries( Integer.valueOf( scanFileName.substring( scanFileName.indexOf( "_" ) + 1 ) ) );
+            //  Use only the scan name(s) for this job in the .v2d file.
+            String scanList = "";
+            for ( int i = 0; i < _calcFileParser.numScans(); ++i ) {
+                if ( i > 0 )
+                    scanList += ", ";
+                scanList += _calcFileParser.scans()[i].identifier;
+            }
+            v2dParser.ruleScan( "scansubset", scanList );
+            v2dParser.headerComment( "#   -- Configuration file for vex2difx --\n"
+                    + "#   This file was automatically generated by the DiFX GUI\n"
+                    + "#   specifically to run a new session of the job " 
+                    + v2dParser.jobSeries() + "_" + v2dParser.startSeries() + ".\n"
+                    + "#   Created: " + new SimpleDateFormat( "MMMMM dd, yyyy hh:mm:ss z" ).format( new Date() ) + "\n"
+                    + "#   By:      " + System.getProperty("user.name") + "\n\n" );                    
+            final String newV2dName = _jobNode.passNode().fullPath() + "/" + v2dParser.jobSeries()
+                    + "-" + v2dParser.startSeries();
+            final String newDataName = _jobNode.passNode().fullPath() + "/" + v2dParser.jobSeries()
+                    + "_" + v2dParser.startSeries();
+            final String v2dContent = v2dParser.content();
+            //  Move existing output files and any job-specific .v2d files to new names
+            //  that have a "run index" stuck on the end of them.  The run index will be
+            //  0 unless we've already gone through this process.  To see if we have, get
+            //  a list of all .v2d files that are specific to this job (if there are any).
+            //  Note that because this is a remote operation, it is done in a thread and
+            //  the results may not occur immediately.
+            final ArrayList<String> v2dList = new ArrayList<String>();
+            DiFXCommand_ls ls = new DiFXCommand_ls( _jobNode.passNode().fullPath() + "/" + v2dParser.jobSeries()
+                    + "-" + v2dParser.startSeries() + ".v2d*", _settings );
+            ls.addEndListener( new ActionListener() {
+                public void actionPerformed( ActionEvent e ) {
+                    //  This is called when the "ls" is done.  There should be a list of
+                    //  all .v2d files associated with this job.  Possibly there are zero.
+                    //  The purpose of all of this is to rename existing output files and
+                    //  .v2d files (if there are any) to names with numeric extension indicating
+                    //  the order in which they were run...first run will be .0, second .1, etc.
+                    //  The most recent run will have no extension at all.
+                    String runExtension = ".0";
+                    if ( v2dList.size() > 0 ) {
+                        int ext = 0;
+                        for ( Iterator<String> iter = v2dList.iterator(); iter.hasNext(); ) {
+                            String newStr = iter.next();
+                            //  Find any integer appended to this - we need the largest one.
+                            try {
+                                Integer tryNum = Integer.parseInt( newStr.substring( newStr.lastIndexOf( "." ) + 1 ) );
+                                if ( tryNum > ext )
+                                    ext = tryNum;
+                            } catch ( java.lang.NumberFormatException ex ) {}
+                        }
+                        //  Form a string out of the highest number we found.
+                        runExtension = "." + ( ext + 1 );
+                    }
+                    //  Move existing output files and .v2d file to this new extension.
+                    _messageDisplayPanel.message( 0, "Job Editor/Monitor", 
+                            "Moving existing job files to have extension \"" + runExtension + "\"" );
+                    DiFXCommand_mv mv1 = new DiFXCommand_mv( newV2dName + ".v2d", newV2dName + ".v2d" + runExtension, _settings );
+                    try { mv1.send(); } catch ( Exception ex1 ) {}
+                    DiFXCommand_mv mv2 = new DiFXCommand_mv( newDataName + ".calc", newDataName + ".calc" + runExtension, _settings );
+                    try { mv2.send(); } catch ( Exception ex1 ) {}
+                    DiFXCommand_mv mv3 = new DiFXCommand_mv( newDataName + ".difxlog", newDataName + ".difxlog" + runExtension, _settings );
+                    try { mv3.send(); } catch ( Exception ex1 ) {}
+                    DiFXCommand_mv mv4 = new DiFXCommand_mv( newDataName + ".flag", newDataName + ".flag" + runExtension, _settings );
+                    try { mv4.send(); } catch ( Exception ex1 ) {}
+                    DiFXCommand_mv mv5 = new DiFXCommand_mv( newDataName + ".im", newDataName + ".im" + runExtension, _settings );
+                    try { mv5.send(); } catch ( Exception ex1 ) {}
+                    DiFXCommand_mv mv6 = new DiFXCommand_mv( newDataName + ".difx", newDataName + ".difx" + runExtension, _settings );
+                    try { mv6.send(); } catch ( Exception ex1 ) {}
+                    DiFXCommand_mv mv7 = new DiFXCommand_mv( newDataName + ".input", newDataName + ".input" + runExtension, _settings );
+                    try { mv7.send(); } catch ( Exception ex1 ) {}
+                    DiFXCommand_mv mv8 = new DiFXCommand_mv( newDataName + ".machines", newDataName + ".machines" + runExtension, _settings );
+                    try { mv8.send(); } catch ( Exception ex1 ) {}
+                    DiFXCommand_mv mv9 = new DiFXCommand_mv( newDataName + ".threads", newDataName + ".threads" + runExtension, _settings );
+                    try { mv9.send(); } catch ( Exception ex1 ) {}
+                    //  Wait a moment to make sure that's done!
+                    try { Thread.sleep( 100 ); } catch ( Exception ex1 ) {}
+                    //  Make a new .v2d file specific to this job.
+                    _messageDisplayPanel.message( 0, "Job Editor/Monitor", 
+                            "Creating new .v2d file." + runExtension + "\"" );
+                    SendFileMonitor sendFile = new SendFileMonitor(  frm, pt.x + 25, pt.y + 25,
+                            newV2dName + ".v2d", v2dContent, _settings );
+                    //  Run vex2difx and calcif2 on this new .v2d file.
+                    _messageDisplayPanel.message( 0, "Job Editor/Monitor", "Running vex2difx and calcif2." );
+                    DiFXCommand_vex2difx v2d = new DiFXCommand_vex2difx( _jobNode.passNode().fullPath(),
+                            newV2dName.substring( newV2dName.lastIndexOf( "/" ) + 1 ) + ".v2d", _settings, false );
+                    v2d.addEndListener( new ActionListener() {
+                        public void actionPerformed( ActionEvent action ) {
+                            _messageDisplayPanel.message( 0, "Job Editor/Monitor", "Vex2difx completed" );
+                            //  Download .input and .calc files.
+                            GetFileMonitor getFile = new GetFileMonitor( frm, pt.x + 25, pt.y + 25,
+                                    _inputFileName.getText(), _settings, false );
+                            if ( getFile.inString() != null && getFile.inString().length() > 0 ) {
+                                _inputFileEditor.text( getFile.inString() );
+//                                parseInputFile();
+                            }
+                            getFile = new GetFileMonitor(  frm, pt.x + 25, pt.y + 25,
+                                    _calcFileName.getText(), _settings, false );
+                            if ( getFile.inString() != null && getFile.inString().length() > 0 ) {
+                                _calcFileEditor.text( getFile.inString() );
+//                                parseCalcFile( _calcFileEditor.text() );
+                            }
+                            _messageDisplayPanel.message( 0, "Job Editor/Monitor", "Rebuild complete!" );
+                            rebuildSuccess( true );
+                        }
+                    });
+                    try {
+                        v2d.send();
+                        try { Thread.sleep( 1000 ); } catch ( Exception ex ) {}
+                    } catch ( java.net.UnknownHostException ex ) {
+                        _messageDisplayPanel.error( 0, "Job Editor/Monitor", "Error - DiFX host \"" + _settings.difxControlAddress()
+                             + "\" unknown." );
+                        rebuildFailed( true );
+                    }
+                }
+            });
+            ls.addIncrementalListener( new ActionListener() {
+                public void actionPerformed( ActionEvent e ) {
+                    v2dList.add( e.getActionCommand().trim() );
+                }
+            });
+            try {
+                ls.send();
+            } catch ( java.net.UnknownHostException e ) {
+                //  BLAT handle this
+                rebuildFailed( true );
+            }            
+        }
+        else {
+            _messageDisplayPanel.error( 0, "Job Editor/Monitor", "No source .v2d file to work with (" +
+                    _jobNode.passNode().fullPath() + "/" + _jobNode.passNode().v2dFileName() + ")" );
+            rebuildFailed( true );
         }
     }
     
@@ -1987,65 +2228,72 @@ public class JobEditorMonitor extends JFrame {
                 _jobNode.correlationTime( 24.0 * 3600.0 * ( thisTime.mjd() - _startTime.mjd() ) );
         }
 
-        //  See what kind of message this is...try status first.
-        if ( difxMsg.getBody().getDifxStatus() != null ) {
-            if ( difxMsg.getBody().getDifxStatus().getVisibilityMJD() != null &&
-                    difxMsg.getBody().getDifxStatus().getJobstartMJD() != null &&
-                    difxMsg.getBody().getDifxStatus().getJobstopMJD() != null ) {
-                _progress.setValue( (int)( 0.5 + 100.0 * ( Double.valueOf( difxMsg.getBody().getDifxStatus().getVisibilityMJD() ) -
-                        Double.valueOf( difxMsg.getBody().getDifxStatus().getJobstartMJD() ) ) /
-                        ( Double.valueOf( difxMsg.getBody().getDifxStatus().getJobstopMJD() ) -
-                        Double.valueOf( difxMsg.getBody().getDifxStatus().getJobstartMJD() ) ) ) );
-                //  Set the restart value.  Possibly some number of seconds should be added
-                //  to this in the event a bad disk sector is causing a crash?
-                _restartSeconds.value( ( Double.valueOf( difxMsg.getBody().getDifxStatus().getJobstopMJD() ) -
-                        Double.valueOf( difxMsg.getBody().getDifxStatus().getJobstartMJD() ) ) / 3600.0 / 24.0 );
-            }
-            else if ( !difxMsg.getBody().getDifxStatus().getState().equalsIgnoreCase( "ending" ) )
-                _progress.setValue( 0 );
-            //  Only change the "state" of this job if it hasn't been "locked" by the GUI.  This
-            //  happens when the GUI detects an error.  If this job is "starting" the state should
-            //  be unlocked - it means another attempt is being made to run it.
-//            if ( difxMsg.getBody().getDifxStatus().getState().equalsIgnoreCase( "starting" ) ) {
-//                _jobNode.lockState( false );
-//                _restartSeconds.value( 0.0 );
+//        //  See what kind of message this is...try status first.
+//        if ( difxMsg.getBody().getDifxStatus() != null ) {
+//            if ( difxMsg.getBody().getDifxStatus().getVisibilityMJD() != null &&
+//                    difxMsg.getBody().getDifxStatus().getJobstartMJD() != null &&
+//                    difxMsg.getBody().getDifxStatus().getJobstopMJD() != null ) {
+//                _progress.setValue( (int)( 0.5 + 100.0 * ( Double.valueOf( difxMsg.getBody().getDifxStatus().getVisibilityMJD() ) -
+//                        Double.valueOf( difxMsg.getBody().getDifxStatus().getJobstartMJD() ) ) /
+//                        ( Double.valueOf( difxMsg.getBody().getDifxStatus().getJobstopMJD() ) -
+//                        Double.valueOf( difxMsg.getBody().getDifxStatus().getJobstartMJD() ) ) ) );
+//                //  Set the restart value.  Possibly some number of seconds should be added
+//                //  to this in the event a bad disk sector is causing a crash?
+//                _restartSeconds.value( ( Double.valueOf( difxMsg.getBody().getDifxStatus().getJobstopMJD() ) -
+//                        Double.valueOf( difxMsg.getBody().getDifxStatus().getJobstartMJD() ) ) / 3600.0 / 24.0 );
 //            }
-            if ( !_jobNode.lockState() ) {
-                _state.setText( difxMsg.getBody().getDifxStatus().getState() );
-                if ( _state.getText().equalsIgnoreCase( "done" ) || _state.getText().equalsIgnoreCase( "mpidone" ) ) {
-                    _restartSeconds.value( 0.0 );
-                    if ( _doneWithErrors )  {
-                        _state.setText( "Complete with Errors" );
-                        _state.setBackground( Color.ORANGE );
-                    }
-                    else
-                        _state.setBackground( Color.GREEN );
-                    _progress.setValue( 100 );  
-                }
-                else if ( _state.getText().equalsIgnoreCase( "running" ) || _state.getText().equalsIgnoreCase( "starting" )
-                         || _state.getText().equalsIgnoreCase( "ending" ) )
-                    _state.setBackground( Color.YELLOW );
-                else {
-                    _state.setBackground( Color.LIGHT_GRAY );
-                }
-                _state.updateUI();
-            }
-//            List<DifxStatus.Weight> weightList = difxMsg.getBody().getDifxStatus().getWeight();
-            //  Create a new list of antennas/weights if one hasn't been created yet.
-//            if ( _weights == null )
-//                newWeightDisplay( weightList.size() );
-//            for ( Iterator<DifxStatus.Weight> iter = weightList.iterator(); iter.hasNext(); ) {
-//                DifxStatus.Weight thisWeight = iter.next();
-//                weight( thisWeight.getAnt(), thisWeight.getWt() );
+//            else if ( !difxMsg.getBody().getDifxStatus().getState().equalsIgnoreCase( "ending" ) )
+//                _progress.setValue( 0 );
+//            //  Only change the "state" of this job if it hasn't been "locked" by the GUI.  This
+//            //  happens when the GUI detects an error.  If this job is "starting" the state should
+//            //  be unlocked - it means another attempt is being made to run it.
+////            if ( difxMsg.getBody().getDifxStatus().getState().equalsIgnoreCase( "starting" ) ) {
+////                _jobNode.lockState( false );
+////                _restartSeconds.value( 0.0 );
+////            }
+//            if ( !_jobNode.lockState() ) {
+//                _state.setText( difxMsg.getBody().getDifxStatus().getState() );
+//                if ( _state.getText().equalsIgnoreCase( "done" ) || _state.getText().equalsIgnoreCase( "mpidone" ) ) {
+//                    _restartSeconds.value( 0.0 );
+//                    if ( _doneWithErrors )  {
+//                        _state.setText( "Complete with Errors" );
+//                        _state.setBackground( Color.ORANGE );
+//                    }
+//                    else if ( _removedList != null ) {
+//                        setState( "Complete w/o " + _removedList, Color.ORANGE );
+//                        _jobNode.state().setText( "Complete w/o " + _removedList );
+//                        _jobNode.state().setBackground( Color.ORANGE );
+//                        _jobNode.lockState( true );
+//                        _jobNode.state().updateUI();
+//                    }
+//                    else
+//                        _state.setBackground( Color.GREEN );
+//                    _progress.setValue( 100 );  
+//                }
+//                else if ( _state.getText().equalsIgnoreCase( "running" ) || _state.getText().equalsIgnoreCase( "starting" )
+//                         || _state.getText().equalsIgnoreCase( "ending" ) )
+//                    _state.setBackground( Color.YELLOW );
+//                else {
+//                    _state.setBackground( Color.LIGHT_GRAY );
+//                }
+//                _state.updateUI();
 //            }
-        }
-        else if ( difxMsg.getBody().getDifxAlert() != null ) {
-            //System.out.println( "this is an alert" );
-            //System.out.println( difxMsg.getBody().getDifxAlert().getAlertMessage() );
-            //System.out.println( difxMsg.getBody().getDifxAlert().getSeverity() );
-        }
-        
-        //_messageDisplayPanel.message( 0, "mk5daemon", difxMsg.getBody().toString() );
+////            List<DifxStatus.Weight> weightList = difxMsg.getBody().getDifxStatus().getWeight();
+//            //  Create a new list of antennas/weights if one hasn't been created yet.
+////            if ( _weights == null )
+////                newWeightDisplay( weightList.size() );
+////            for ( Iterator<DifxStatus.Weight> iter = weightList.iterator(); iter.hasNext(); ) {
+////                DifxStatus.Weight thisWeight = iter.next();
+////                weight( thisWeight.getAnt(), thisWeight.getWt() );
+////            }
+//        }
+//        else if ( difxMsg.getBody().getDifxAlert() != null ) {
+//            //System.out.println( "this is an alert" );
+//            //System.out.println( difxMsg.getBody().getDifxAlert().getAlertMessage() );
+//            //System.out.println( difxMsg.getBody().getDifxAlert().getSeverity() );
+//        }
+//        
+//        //_messageDisplayPanel.message( 0, "mk5daemon", difxMsg.getBody().toString() );
 
     }
     
@@ -2370,6 +2618,19 @@ public class JobEditorMonitor extends JFrame {
                 }
             });
             this.add( _sourceNode );
+            _this = this;
+            _skipStation = new ZCheckBox( "" );
+            _skipStation.addActionListener( new ActionListener() {
+                public void actionPerformed( ActionEvent e ) {
+                    if ( _skipStation.isSelected() ) {
+                        _this.setForeground( Color.LIGHT_GRAY );
+                    }
+                    else {
+                        _this.setForeground( Color.BLACK );
+                    }
+                }
+            });
+            this.add( _skipStation );
             _antenna = new JLabel( "" );
             _antenna.setHorizontalAlignment( JLabel.CENTER );
             this.add( _antenna );
@@ -2385,9 +2646,10 @@ public class JobEditorMonitor extends JFrame {
         public void positionItems() {
             super.positionItems();
             _sourceNode.setBounds( 0, 1, 210, 18 );
-            _antenna.setBounds( 210, 1, 40, 18 );
-            _sourceFormat.setBounds( 250, 1, 70, 18 );
-            _sourceType.setBounds( 330, 1, 70, 18 );
+            _skipStation.setBounds( 210, 1, 18, 18 );
+            _antenna.setBounds( 230, 1, 40, 18 );
+            _sourceFormat.setBounds( 270, 1, 70, 18 );
+            _sourceType.setBounds( 350, 1, 70, 18 );
         }
         
         /*
@@ -2436,6 +2698,10 @@ public class JobEditorMonitor extends JFrame {
         public String sourceType() { return _sourceType.getText(); }
         public String antenna() { return _antenna.getText(); }
         public boolean missing() { return _missing; }
+        public boolean skipStation() { return _skipStation.isSelected(); };
+        public void skipStation( boolean newVal ) {
+            _skipStation.setSelected( newVal );
+        }
         
         protected int _index;
         protected boolean _missing;
@@ -2443,6 +2709,8 @@ public class JobEditorMonitor extends JFrame {
         protected JLabel _antenna;
         protected JLabel _sourceType;
         protected JLabel _sourceFormat;
+        protected ZCheckBox _skipStation;
+        protected DataSource _this;
  
         //  This class and the next make the popup list for the combo box as big as
         //  the items in it (as opposed to the same size as the combo box itself).
@@ -2618,8 +2886,10 @@ public class JobEditorMonitor extends JFrame {
             //  File data can include a list of files, each of which we display.
             //  Find out how many files we have and create a label for each one.
             int n = _inputFile.dataTable().idx[index].numFiles;
-            if ( n == 0 )
+            if ( n == 0 ) {
                 _missing = true;
+                this.setBackground( new Color( 255, 100, 100 ) );
+            }
             else
                 _missing = false;
             _file = new JLabel[n];
@@ -2902,7 +3172,8 @@ public class JobEditorMonitor extends JFrame {
     protected JFormattedTextField _headNode;
     protected JLabel _headNodeLabel;
     protected NodeBrowserScrollPane _dataSourcesPane;
-    protected JLabel _dataSourcesLabel;
+    protected ZLabel _dataSourcesLabel;
+    protected ZLabel _skipStationLabel;
     protected NodeBrowserScrollPane _processorsPane;
     protected JLabel _processorsLabel;
     protected JLabel _threadsLabel;
@@ -2917,6 +3188,7 @@ public class JobEditorMonitor extends JFrame {
     protected JButton _applyToButton;
     protected JButton _applyMachinesButton;
     protected ZButton _defaultMachinesButton;
+    protected ZButton _removeSkippedStationsButton;
     protected boolean _machinesAppliedByHand;
     protected JCheckBox _machinesLock;
     protected JCheckBox _forceOverwrite;
@@ -2986,6 +3258,11 @@ public class JobEditorMonitor extends JFrame {
     protected JulianCalendar _startTime;
     
     protected JobEditorMonitor _this;
+    
+    protected int _doneCount;
+    
+    protected String _removedList;
+    public String removedList() { return _removedList; }
     
     protected boolean _inputFileParsed;
     protected boolean _calcFileParsed;

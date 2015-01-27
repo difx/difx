@@ -331,13 +331,15 @@ public class TimeLimitPanel extends JPanel implements MouseMotionListener,
                     duration = station.duration + station.delay;
             }
         }
-        Calendar calc = new GregorianCalendar();
-        calc.setTimeInMillis( scan.start.getTimeInMillis() );
-        calc.add( Calendar.SECOND, delay );
-        newInfo.start = calc.getTimeInMillis();
-        calc.setTimeInMillis( scan.start.getTimeInMillis() );
-        calc.add( Calendar.SECOND, duration );
-        newInfo.end = calc.getTimeInMillis();
+        if ( delay != null ) {
+            Calendar calc = new GregorianCalendar();
+            calc.setTimeInMillis( scan.start.getTimeInMillis() );
+            calc.add( Calendar.SECOND, delay );
+            newInfo.start = calc.getTimeInMillis();
+            calc.setTimeInMillis( scan.start.getTimeInMillis() );
+            calc.add( Calendar.SECOND, duration );
+            newInfo.end = calc.getTimeInMillis();
+        }
         _buttonList.add( newInfo );
     }
     

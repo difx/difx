@@ -1634,6 +1634,9 @@ public class ExperimentEditor extends JFrame {
                             antenna.useEVLBI( true );
                             antenna.networkPort( _v2dFileParser.antennaNetworkPort( antenna.name() ) );
                         }
+                        else if ( _v2dFileParser.antennaFake( antenna.name() ) != null ) {
+                            antenna.useFake( _v2dFileParser.antennaFake( antenna.name() ) );
+                        }
                         //  Position changes.
                         if ( _v2dFileParser.antennaX( antenna.name() ) != null )
                             antenna.positionX( _v2dFileParser.antennaX( antenna.name() ) );
@@ -2951,6 +2954,8 @@ public class ExperimentEditor extends JFrame {
                             }
                             else if ( antenna.useEVLBI() )
                                 v2dFileParser.antennaNetworkPort( antenna.name(), antenna.networkPort() );
+                            else if ( antenna.useFake() )
+                                v2dFileParser.antennaFake( antenna.name(), true );
                             //  Position changes.
                             if ( antenna.positionXChange() )
                                 v2dFileParser.antennaX( antenna.name(), antenna.positionX() );
@@ -3273,6 +3278,9 @@ public class ExperimentEditor extends JFrame {
                     if ( createPass() )
                         passDir += "/" + passDirectory();
                     _newPass.stateLabel( "Creating Jobs on Host", Color.yellow, true );
+                    //_newPass.fullPath( directory() + "/" + passDir );
+                    _newPass.fullPath( passDir );
+                    _newPass.v2dFileName( v2dFileName() );
                     DiFXCommand_vex2difx v2d = new DiFXCommand_vex2difx( passDir, v2dFileName(), _settings, false );
                     v2d.addIncrementalListener( new ActionListener() {
                         public void actionPerformed( ActionEvent e ) {

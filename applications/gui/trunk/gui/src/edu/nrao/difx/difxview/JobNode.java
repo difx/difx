@@ -533,8 +533,33 @@ public class JobNode extends QueueBrowserNode {
                         //  Run a "data" check to see if, for whatever reason, data are not
                         //  available for this job.
                         if ( !_editorMonitor.dataAvailableCheck() ) {
-                            autostate( AUTOSTATE_FAILED );
-                            return;
+                            //  See if it is possible to skip stations and continue running
+                            //  if the appropriate setting allows this.
+                            if ( _settings.tryToSkipMissingStations() && _editorMonitor.skipStationsMissingData() ) {
+                                _editorMonitor.removeSkippedStations( true );
+                                _editorMonitor.setState( "Rebuilding Job", Color.YELLOW );
+                                state().setText( "Rebuilding Job" );
+                                state().setBackground( Color.ORANGE );
+                                state().updateUI();
+                                while ( autostate() != AUTOSTATE_RESOURCE_TIMEOUT && !_editorMonitor.rebuildFailed() &&
+                                        !_editorMonitor.rebuildSuccess() ) {
+                                    try { Thread.sleep( 100 ); } catch ( Exception e ) {}
+                                }
+                                if ( autostate() == AUTOSTATE_RESOURCE_TIMEOUT ) {
+                                    return;
+                                }
+                                else if ( _editorMonitor.rebuildFailed() ) {
+                                    _editorMonitor.setState( "Rebuild Failed", Color.RED );
+                                    state().setText( "Rebuild Failed" );
+                                    state().setBackground( Color.RED );
+                                    state().updateUI();
+                                    autostate( AUTOSTATE_FAILED );
+                                }
+                            }
+                            else {
+                                autostate( AUTOSTATE_FAILED );
+                                return;
+                            }
                         }
                         _editorMonitor.loadHardwareLists();
                     }
@@ -898,27 +923,37 @@ public class JobNode extends QueueBrowserNode {
         
         //  See what kind of message this is...try status first.
         if ( difxMsg.getBody().getDifxStatus() != null ) {
-            if ( difxMsg.getBody().getDifxStatus().getVisibilityMJD() != null &&
-                    difxMsg.getBody().getDifxStatus().getJobstartMJD() != null &&
-                    difxMsg.getBody().getDifxStatus().getJobstopMJD() != null )
-                _progress.setValue( (int)( 0.5 + 100.0 * ( Double.valueOf( difxMsg.getBody().getDifxStatus().getVisibilityMJD() ) -
-                        Double.valueOf( difxMsg.getBody().getDifxStatus().getJobstartMJD() ) ) /
-                        ( Double.valueOf( difxMsg.getBody().getDifxStatus().getJobstopMJD() ) -
-                        Double.valueOf( difxMsg.getBody().getDifxStatus().getJobstartMJD() ) ) ) );
-            else if ( !difxMsg.getBody().getDifxStatus().getState().equalsIgnoreCase( "ending" ) )
-                _progress.setValue( 0 );
             //  Only change the "state" of this job if it hasn't been "locked" by the GUI.  This
-            //  happens when the GUI detects an error.  If this job is "starting" the state should
+            //  happens when the GUI detects an error or completes.  If this job is "starting" the state should
             //  be unlocked - it means another attempt is being made to run it.
-            if ( difxMsg.getBody().getDifxStatus().getState().equalsIgnoreCase( "starting" ) )
+            if ( difxMsg.getBody().getDifxStatus().getState().equalsIgnoreCase( "starting" ) ) {
+                _progress.setValue( 0 );
                 lockState( false );
+            }
             if ( !lockState() ) {
+                //  Set the "complete" percentage.
+                if ( difxMsg.getBody().getDifxStatus().getVisibilityMJD() != null &&
+                        difxMsg.getBody().getDifxStatus().getJobstartMJD() != null &&
+                        difxMsg.getBody().getDifxStatus().getJobstopMJD() != null )
+                    _progress.setValue( (int)( 0.5 + 100.0 * ( Double.valueOf( difxMsg.getBody().getDifxStatus().getVisibilityMJD() ) -
+                            Double.valueOf( difxMsg.getBody().getDifxStatus().getJobstartMJD() ) ) /
+                            ( Double.valueOf( difxMsg.getBody().getDifxStatus().getJobstopMJD() ) -
+                            Double.valueOf( difxMsg.getBody().getDifxStatus().getJobstartMJD() ) ) ) );
+//                else if ( !difxMsg.getBody().getDifxStatus().getState().equalsIgnoreCase( "ending" ) )
+//                    _progress.setValue( 0 );
+                //  And the state itself.  We try to report some information upon completion.
                 _state.setText( difxMsg.getBody().getDifxStatus().getState() );
-                if ( _state.getText().equalsIgnoreCase( "done" ) || _state.getText().equalsIgnoreCase( "mpidone" ) ) {
+                if ( _state.getText().trim().equalsIgnoreCase( "done" ) || _state.getText().trim().equalsIgnoreCase( "mpidone" ) ) {
                     if ( _editorMonitor != null && _editorMonitor.doneWithErrors() ) {
                         _state.setBackground( Color.ORANGE );
                         _state.setText( "complete w/errors");
                         _state.setToolTipText( "The job completed with some errors." );
+                    }
+                    else if ( _editorMonitor != null && _editorMonitor.removedList() != null ) {
+                        _editorMonitor.setState( "Complete w/o " + _editorMonitor.removedList(), Color.ORANGE );
+                        _state.setText( "Complete w/o " + _editorMonitor.removedList() );
+                        _state.setBackground( Color.ORANGE );
+                        lockState( true );
                     }
                     else {
                         _state.setBackground( Color.GREEN );

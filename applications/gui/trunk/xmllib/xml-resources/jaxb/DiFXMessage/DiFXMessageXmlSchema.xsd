@@ -357,6 +357,7 @@
                 <xsd:element ref="maxSecondsForProcessing" />
                 <xsd:element ref="useMaxSecondsForProcessing" />
                 <xsd:element ref="simultaneousCheck" />
+                <xsd:element ref="tryToSkipMissingStationsCheck" />
                 <xsd:element name="pathNodePair" maxOccurs="unbounded" minOccurs="0">
                     <xsd:complexType>
                         <xsd:attribute name="node" type="xsd:string"/>
@@ -634,6 +635,7 @@
     <xsd:element name="maxSecondsForProcessing" type="xsd:int"></xsd:element>
     <xsd:element name="useMaxSecondsForProcessing" type="xsd:boolean"></xsd:element>
     <xsd:element name="simultaneousCheck" type="xsd:boolean"></xsd:element>
+    <xsd:element name="tryToSkipMissingStationsCheck" type="xsd:boolean"></xsd:element>
 
     <xsd:complexType name="mark5Status">
         <xsd:sequence>

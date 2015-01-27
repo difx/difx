@@ -1103,6 +1103,11 @@ public class SystemSettings extends JFrame {
         JLabel maxSecondsForProcessingLabel = new JLabel( "Processing Time Limit (Seconds)" );
         maxSecondsForProcessingLabel.setBounds( 580, 265, 300, 25 );
         jobProcessingPanel.add( maxSecondsForProcessingLabel );
+        _tryToSkipMissingStations = new ZCheckBox( "Try To Skip Missing Stations" );
+        _tryToSkipMissingStations.setToolTipText( "If a job was unable to run because station data are missing,\n"
+                + "try to rebuild and rerun the job without the offending station(s)." );
+        _tryToSkipMissingStations.setBounds( 850, 240, 200, 25 );
+        jobProcessingPanel.add( _tryToSkipMissingStations );
 
         IndexedPanel databasePanel = new IndexedPanel( "Database Configuration" );
         databasePanel.openHeight( 305 );
@@ -2145,6 +2150,7 @@ public class SystemSettings extends JFrame {
         _useMaxSecondsForHardware.setSelected( false );
         _maxSecondsForProcessing.intValue( 1800 );
         _useMaxSecondsForProcessing.setSelected( false );
+        _tryToSkipMissingStations.setSelected( true );
         _queueBrowserSettings.showCompleted = true;
         _queueBrowserSettings.showIncomplete = true;
         _queueBrowserSettings.showSelected = true;
@@ -3223,6 +3229,7 @@ public class SystemSettings extends JFrame {
             if ( doiConfig.getMaxSecondsForProcessing() != 0 )
                 _maxSecondsForProcessing.intValue( doiConfig.getMaxSecondsForProcessing() );
             _useMaxSecondsForProcessing.setSelected( doiConfig.isUseMaxSecondsForProcessing() );
+            _tryToSkipMissingStations.setSelected( !doiConfig.isTryToSkipMissingStationsCheck() );
 
             for ( Iterator<DoiSystemConfig.PathNodePair> iter = doiConfig.getPathNodePair().iterator(); iter.hasNext(); ) {
                 DoiSystemConfig.PathNodePair pathNodePair = iter.next();
@@ -3241,7 +3248,13 @@ public class SystemSettings extends JFrame {
                 if ( _restrictedSourceList == null ) {
                     _restrictedSourceList = new ArrayList<String>();
                 }
-                _restrictedSourceList.add( allowedNode.getNode() );
+                boolean found = false;
+                for ( Iterator<String> iter1 = _restrictedSourceList.iterator(); iter1.hasNext() && !found; ) {
+                    if ( iter1.next().contentEquals( allowedNode.getNode() ) )
+                        found = true;
+                }
+                if ( !found )
+                    _restrictedSourceList.add( allowedNode.getNode() );
             }
             for ( Iterator<DoiSystemConfig.AntennaDefault> iter = doiConfig.getAntennaDefault().iterator(); iter.hasNext(); ) {
                 DoiSystemConfig.AntennaDefault antennaDefault = iter.next();
@@ -3969,6 +3982,7 @@ public class SystemSettings extends JFrame {
         doiConfig.setMaxSecondsForProcessing( _maxSecondsForProcessing.intValue() );
         doiConfig.setUseMaxSecondsForProcessing( _useMaxSecondsForProcessing.isSelected() );
         doiConfig.setSimultaneousCheck( !_simultaneousCheck.isSelected() );
+        doiConfig.setTryToSkipMissingStationsCheck( !_tryToSkipMissingStations.isSelected() );
 
         if ( _sourceBasedOnPathDisplay != null && _sourceBasedOnPathDisplay.panels() != null ) {
             for ( Iterator<SourceBasedOnPathDisplay.PanelItem> iter = _sourceBasedOnPathDisplay.panels().iterator(); iter.hasNext(); ) {
@@ -5917,6 +5931,7 @@ public class SystemSettings extends JFrame {
     protected ZCheckBox _useMaxSecondsForHardware;
     protected NumberBox _maxSecondsForProcessing;
     protected ZCheckBox _useMaxSecondsForProcessing;
+    protected ZCheckBox _tryToSkipMissingStations;
     
     public boolean useHeadNodeCheck() { return _useHeadNodeCheck.isSelected(); }
     public boolean restrictSources() { return _restrictSourcesCheck.isSelected(); }
@@ -5941,6 +5956,7 @@ public class SystemSettings extends JFrame {
     public int maxSecondsForProcessing() { return _maxSecondsForProcessing.intValue(); }
     public boolean useMaxSecondsForHardware() { return _useMaxSecondsForHardware.isSelected(); }
     public boolean useMaxSecondsForProcessing() { return _useMaxSecondsForProcessing.isSelected(); }
+    public boolean tryToSkipMissingStations() { return _tryToSkipMissingStations.isSelected(); }
     
     protected ZCheckBox _requestAllMessages;
     protected ZCheckBox _requestSpecificMessages;

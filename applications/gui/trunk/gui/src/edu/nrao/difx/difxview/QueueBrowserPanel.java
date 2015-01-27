@@ -2068,10 +2068,49 @@ public class QueueBrowserPanel extends TearOffPanel {
             thisPass.experimentNode( thisExperiment );
             thisPass.statsVisible( _showPassScheduledItem.isSelected() );
             thisExperiment.addChild( thisPass );      
-            //  Try to grab the Pass log file from the DiFX host, if it exists.  This
-            //  is a bit icky - we have to figure out how to create the proper file
-            //  name.  To do this, get a list of all files in the directory of the input
-            //  file that end in "*.passLog".  There should only be one!
+            //  Get the full path to the pass using the .input file.
+            thisPass.fullPath( inputFile.substring( 0, inputFile.lastIndexOf( '/' ) ) );
+            //  Locate the "original" .v2d file name.  There can be a bunch of .v2d files due to
+            //  user actions on individual jobs.  However such actions create .v2d files that have
+            //  names based on the original, all of which are LONGER.  So hopefully the original
+            //  file will be the one with the shortest name.  Kind of ugly.
+            final ArrayList<String> v2dList = new ArrayList<String>();
+            final PassNode searchPass = thisPass;
+            DiFXCommand_ls ls = new DiFXCommand_ls( thisPass.fullPath() + "/*.v2d", _settings );
+            ls.addEndListener( new ActionListener() {
+                public void actionPerformed( ActionEvent e ) {
+                    //  Found anything at all?
+                    if ( v2dList.size() > 0 ) {
+                        Integer len = null;
+                        String saveStr = null;
+                        for ( Iterator<String> iter = v2dList.iterator(); iter.hasNext(); ) {
+                            String newStr = iter.next();
+                            if ( len == null ) {
+                                len = newStr.length();
+                                saveStr = newStr;
+                            }
+                            else if ( len > newStr.length() ) {
+                                len = newStr.length();
+                                saveStr = newStr;
+                            }
+                        }
+                        if ( saveStr != null )
+                            searchPass.v2dFileName( saveStr.substring( saveStr.lastIndexOf( '/' ) + 1 ) );
+                    }
+                    else
+                        _settings.messageCenter().error( 0, "Queue Browser", "no .v2d files found in " + searchPass.fullPath() );
+                }
+            });
+            ls.addIncrementalListener( new ActionListener() {
+                public void actionPerformed( ActionEvent e ) {
+                    v2dList.add( e.getActionCommand().trim() );
+                }
+            });
+            try {
+                ls.send();
+            } catch ( java.net.UnknownHostException e ) {
+                //  BLAT handle this
+            }            
         }
         
         //  Then locate the job, if there.

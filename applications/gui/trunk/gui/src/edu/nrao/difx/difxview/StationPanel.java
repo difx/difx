@@ -215,7 +215,7 @@ public class StationPanel extends IndexedPanel {
         for ( ; iter.hasNext(); )
             _vsnList.addItem( iter.next().name );
         _fileCheck = new JCheckBox( "" );
-        _fileCheck.setBounds( 200, 120, 25, 25 );
+        _fileCheck.setBounds( 200, 150, 25, 25 );
         _fileCheck.setSelected( false );
         _fileCheck.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent evt ) {
@@ -225,7 +225,7 @@ public class StationPanel extends IndexedPanel {
         } );
         _dataSourcePanel.add( _fileCheck );
         JLabel fileLabel = new JLabel( "Files: " );
-        fileLabel.setBounds( 100, 120, 95, 25 );
+        fileLabel.setBounds( 100, 150, 95, 25 );
         fileLabel.setHorizontalAlignment( JLabel.RIGHT );
         _dataSourcePanel.add( fileLabel );
         _fileFilter = new SaneTextField();
@@ -267,7 +267,7 @@ public class StationPanel extends IndexedPanel {
         _dataSourcePanel.add( _fileList );
         JLabel fileFilterLabel = new JLabel( "Filter:" );
         fileFilterLabel.setHorizontalAlignment( JLabel.RIGHT );
-        fileFilterLabel.setBounds( 195, 120, 80, 25 );
+        fileFilterLabel.setBounds( 195, 150, 80, 25 );
         _dataSourcePanel.add( fileFilterLabel );
         _eVLBICheck = new JCheckBox( "" );
         _eVLBICheck.setBounds( 200, 90, 25, 25 );
@@ -298,6 +298,22 @@ public class StationPanel extends IndexedPanel {
         _eVLBIPort.intValue( 5000 );
         _eVLBIPort.minimum( 0 );
         _dataSourcePanel.add( _eVLBIPort );
+        _fakeCheck = new ZCheckBox( "" );
+        _fakeCheck.setBounds( 200, 120, 25, 25 );
+        _fakeCheck.setToolTipText( "Generate fake (uncorrelated) data for this station.\n"
+                + "This is used to test data flow and processing times." );
+        _fakeCheck.setSelected( false );
+        _fakeCheck.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent evt ) {
+                setEnabledItems( _fakeCheck );
+                dispatchChangeCallback();
+            }
+        } );
+        _dataSourcePanel.add( _fakeCheck );
+        JLabel fakeLabel = new JLabel( "Fake: " );
+        fakeLabel.setBounds( 100, 120, 95, 25 );
+        fakeLabel.setHorizontalAlignment( JLabel.RIGHT );
+        _dataSourcePanel.add( fakeLabel );
         setEnabledItems( null );
         
         //  Set defaults for the data source if those are available in the setting menu.
@@ -306,6 +322,7 @@ public class StationPanel extends IndexedPanel {
             _vsnCheck.setSelected( false );
             _fileCheck.setSelected( false );
             _eVLBICheck.setSelected( false );
+            _fakeCheck.setSelected( false );
             if ( antennaSource.contentEquals( "Files" ) ) {
                 _fileCheck.setSelected( true );
                 setEnabledItems( _fileCheck );
@@ -322,9 +339,13 @@ public class StationPanel extends IndexedPanel {
                 _eVLBICheck.setSelected( true );
                 setEnabledItems( _eVLBICheck );
             }
+            else if ( antennaSource.contentEquals( "Fake" ) ) {
+                _fakeCheck.setSelected( true );
+                setEnabledItems( _fakeCheck );
+            }
             else if ( antennaSource.contentEquals( "Module" ) ) {
                 _vsnCheck.setSelected( true );
-                setEnabledItems( _eVLBICheck );
+                setEnabledItems( _vsnCheck );
                 String antennaDataPath = _settings.antennaDefaultDataPath( station.name );
                 if ( antennaDataPath != null )
                     _vsnList.setSelectedItem( antennaDataPath );
@@ -468,13 +489,14 @@ public class StationPanel extends IndexedPanel {
         _vsnCheck.setSelected( false );
         _fileCheck.setSelected( false );
         _eVLBICheck.setSelected( false );
+        _fakeCheck.setSelected( false );
         _vsnList.setEnabled( false );
         _dirListLocation.setEnabled( false );
         _fileFilter.setEnabled( false );
         _fileListCheck.setEnabled( false );
         _generateFileList.setEnabled( false );
         _fileList.setVisible( false );
-        _dataSourcePanel.staticHeight( 135 );
+        _dataSourcePanel.staticHeight( 165 );
         //  Then turn appropriate stuff back on.
         if ( selector == _vsnCheck ) {
             _vsnCheck.setSelected( true );
@@ -494,11 +516,15 @@ public class StationPanel extends IndexedPanel {
             _fileListCheck.setEnabled( true );
             _generateFileList.setEnabled( true );
             _fileList.setVisible( true );
-            _dataSourcePanel.staticHeight( 265 );
+            _dataSourcePanel.staticHeight( 295 );
         }
         else if ( selector == _eVLBICheck ) {
             _eVLBICheck.setSelected( true );
             _dataSourcePanel.name( "Data Source: network (port " + networkPort() + ")" );
+        }
+        else if ( selector == _fakeCheck ) {
+            _fakeCheck.setSelected( true );
+            _dataSourcePanel.name( "Data Source: fake" );
         }
         else {
             _dataSourcePanel.name( "Data Source: not set" );
@@ -629,10 +655,10 @@ public class StationPanel extends IndexedPanel {
      */
     public void newWidth( int w ) {
         _sourceNodeChoice.setBounds( 480, 30, w - 505, 25 );
-        _fileFilter.setBounds( 280, 120, w - 560, 25 );
-        _fileListCheck.setBounds( w - 105, 120, 100, 25 );
-        _generateFileList.setBounds( w - 275, 120, 150, 25 );
-        _fileList.setBounds( 230, 155, w - 255, 120 );
+        _fileFilter.setBounds( 280, 150, w - 560, 25 );
+        _fileListCheck.setBounds( w - 105, 150, 100, 25 );
+        _generateFileList.setBounds( w - 275, 150, 150, 25 );
+        _fileList.setBounds( 230, 185, w - 255, 120 );
         _dirListLocation.setBounds( 480, 60, w - 505, 25 );
         _contentPane.setBounds( 0, 20, w - 2, _contentPane.dataHeight() );
     }
@@ -820,6 +846,8 @@ public class StationPanel extends IndexedPanel {
     public void useFile( boolean newVal ) { setEnabledItems( _fileCheck ); }
     public boolean useEVLBI() { return _eVLBICheck.isSelected(); }
     public void useEVLBI( boolean newVal ) { setEnabledItems( _eVLBICheck ); }
+    public boolean useFake() { return _fakeCheck.isSelected(); }
+    public void useFake( boolean newVal ) { setEnabledItems( _fakeCheck ); }
     public String vsnSource() { return (String)_vsnList.getSelectedItem(); }
     public String toneSelection() { return (String)_toneSelection.getSelectedItem(); }
     public void toneSelection( String newVal ) {
@@ -1316,6 +1344,7 @@ public class StationPanel extends IndexedPanel {
     protected JCheckBox _vsnCheck;
     protected JCheckBox _fileCheck;
     protected JCheckBox _eVLBICheck;
+    protected ZCheckBox _fakeCheck;
     protected NumberBox _eVLBIPort;
     //  Stupid Java tricks...the following line produces warnings under later versions, but
     //  the next line (which fixes the warnings) will not compile under earlier versions.

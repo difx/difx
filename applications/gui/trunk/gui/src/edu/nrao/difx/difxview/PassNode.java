@@ -414,9 +414,13 @@ public class PassNode extends QueueBrowserContainerNode {
     public void fullPath( String newPath ) { _fullPath = newPath; }
     public String fullPath() { return _fullPath; }
     
+    public void v2dFileName( String newPath ) { _v2dFileName = newPath; }
+    public String v2dFileName() { return _v2dFileName; }
+    
     protected ExperimentNode _experimentNode;
     protected String _name;
     protected String _type;
+    protected String _v2dFileName;
     protected JCheckBoxMenuItem _productionItem;
     protected JCheckBoxMenuItem _clockItem;
     protected JCheckBoxMenuItem _testItem;
