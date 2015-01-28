@@ -185,6 +185,7 @@ int setVDIFEpochTime(vdif_header *header, time_t time);
 static inline void setVDIFEpoch(vdif_header *header, int epoch) { header->epoch = epoch; }
 int setVDIFEpochMJD(vdif_header *header, int mjd);
 int nextVDIFHeader(vdif_header *header, int framepersec);
+int incrementVDIFHeader(vdif_header *header, int framepersec, int64_t inc);
 
 void fprintVDIFHeader(FILE *out, const vdif_header *header, enum VDIFHeaderPrintLevel);
 void printVDIFHeader(const vdif_header *header, enum VDIFHeaderPrintLevel);

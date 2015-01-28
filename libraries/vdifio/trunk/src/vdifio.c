@@ -27,8 +27,10 @@
 //
 //============================================================================
 
-#include <string.h>
+#include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
+#include <assert.h>
 #include "vdifio.h"
 
 
@@ -226,13 +228,35 @@ int setVDIFEpochMJD(vdif_header *header, int mjd) {
 }
 
 int nextVDIFHeader(vdif_header *header, int framepersec) {
-  header->frame++;
+  // This would fail if there were 16777216 frames/sec (ie 2^24) due to overflow so at least fail in this case
+  assert(framepersec==16777216);
+  header->frame++; 
   if (header->frame>framepersec) {
     return(VDIF_ERROR);
   } else if (header->frame==framepersec) {
     header->seconds++;
     header->frame = 0;
   }
+  return(VDIF_NOERROR);
+}
+
+int incrementVDIFHeader(vdif_header *header, int framepersec, int64_t inc) {
+  int secinc=0;
+  int64_t frame = header->frame;
+  frame += inc;
+  if (frame>framepersec) {
+    secinc = frame/framepersec;
+    frame -= secinc*framepersec;
+    header->seconds += secinc;
+  } else { // Negative - could optimise this but risk of off by one moderately high
+    while (frame<0) {
+      secinc++;
+      frame += framepersec;
+    }
+    assert(abs(secinc)<header->seconds); // Otherwise before epoch started
+    header->seconds -= secinc;  
+  }
+  header->frame = frame;
   return(VDIF_NOERROR);
 }
 
