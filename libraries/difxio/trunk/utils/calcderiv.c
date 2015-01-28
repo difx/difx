@@ -35,7 +35,6 @@
 #include <time.h>
 #include "difx_input.h"
 
-#define MAX_ANTENNAS 40
 #define C_LIGHT	299792458.0
 
 const char program[] = "calcderiv";
@@ -166,7 +165,7 @@ int computeLMDerivatives(DifxInput *D, double deltaLM, int verbose)
 						scan->imLM[a][c][p].d2Delay_dldl[i] = (d[1][i]+d[2][i]-2.0*d[0][i])/(deltaLM*deltaLM);
 						scan->imLM[a][c][p].d2Delay_dmdm[i] = (d[3][i]+d[4][i]-2.0*d[0][i])/(deltaLM*deltaLM);
 
-						scan->imLM[a][c][p].d2Delay_dldm[i] = (d[5][i]-d[6][i]-d[7][i]+d[8][i])/(deltaLM*deltaLM);
+						scan->imLM[a][c][p].d2Delay_dldm[i] = (d[5][i]-d[6][i]-d[7][i]+d[8][i])/(4.0*deltaLM*deltaLM);
 					}
 				}
 			}
@@ -294,6 +293,7 @@ int computeXYZDerivatives(DifxInput *D, double deltaXYZ, int verbose)
 		int a, c, p;
 
 		scan = D->scan + scanId;
+		scan->nPoly = DD[0]->scan[scanId].nPoly;
 		scan->imXYZ = newDifxPolyModelXYZExtensionArray(scan->nAntenna, scan->nPhaseCentres + 1, scan->nPoly);
 
 		for(a = 0; a < scan->nAntenna; ++a)
@@ -320,9 +320,9 @@ int computeXYZDerivatives(DifxInput *D, double deltaXYZ, int verbose)
 						scan->imXYZ[a][c][p].d2Delay_dYdY[i] = (d[3][i]+d[4][i]-2.0*d[0][i])/(deltaXYZ*deltaXYZ);
 						scan->imXYZ[a][c][p].d2Delay_dZdZ[i] = (d[5][i]+d[6][i]-2.0*d[0][i])/(deltaXYZ*deltaXYZ);
 
-						scan->imXYZ[a][c][p].d2Delay_dXdY[i] = (d[7][i] -d[8][i] -d[9][i] +d[10][i])/(deltaXYZ*deltaXYZ);
-						scan->imXYZ[a][c][p].d2Delay_dXdZ[i] = (d[11][i]-d[12][i]-d[13][i]+d[14][i])/(deltaXYZ*deltaXYZ);
-						scan->imXYZ[a][c][p].d2Delay_dYdZ[i] = (d[15][i]-d[16][i]-d[17][i]+d[18][i])/(deltaXYZ*deltaXYZ);
+						scan->imXYZ[a][c][p].d2Delay_dXdY[i] = (d[7][i] -d[8][i] -d[9][i] +d[10][i])/(4.0*deltaXYZ*deltaXYZ);
+						scan->imXYZ[a][c][p].d2Delay_dXdZ[i] = (d[11][i]-d[12][i]-d[13][i]+d[14][i])/(4.0*deltaXYZ*deltaXYZ);
+						scan->imXYZ[a][c][p].d2Delay_dYdZ[i] = (d[15][i]-d[16][i]-d[17][i]+d[18][i])/(4.0*deltaXYZ*deltaXYZ);
 					}
 				}
 			}
