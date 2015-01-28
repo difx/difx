@@ -1,12 +1,11 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
-<html>
-  <head>
-    <meta content="text/html; charset=windows-1252"
-      http-equiv="Content-Type">
-    <title>Queue Browser</title>
-    <link type="text/css" rel="stylesheet" href="style.css">
-  </head>
-  <body>
+<html><head>
+
+
+  
+    <meta content="text/html; charset=windows-1252" http-equiv="Content-Type"><title>Queue Browser</title>
+    
+    <link type="text/css" rel="stylesheet" href="style.css"></head><body>
     <h1>How to Run DiFX With the GUI<br>
     </h1>
     <h3> </h3>
@@ -39,8 +38,7 @@
     <br>
     This document is <i>not</i> a comprehensive tutorial on all of the
     functionality of DiFX itself.&nbsp; A good place to start looking
-    for that sort of thing is <a
-      href="http://cira.ivec.org/docuwiki/doku.php/difx/start">here</a>.<br>
+    for that sort of thing is <a href="http://cira.ivec.org/docuwiki/doku.php/difx/start">here</a>.<br>
     <h3><a name="Startup"></a>Startup and Connecting to the DiFX Host<br>
     </h3>
     Starting the GUI and setting up a connection such that it can
@@ -112,8 +110,7 @@
       Cluster</h3>
     <h3><a name="Monitoring_DiFX_Jobs"></a>Monitoring DiFX Jobs</h3>
     <h5>The Contents of the Queue Browser</h5>
-    <p>The Queue Browser is described in greater detail <a
-        href="mainWindow_content.html#Queue_Browser">here</a>.<br>
+    <p>The Queue Browser is described in greater detail <a href="mainWindow_content.html#Queue_Browser">here</a>.<br>
     </p>
     <p>The Queue Browser organizes DiFX jobs under a three-level
       hierarchy with "Experiments" at the top level.<br>
@@ -129,13 +126,10 @@
         involved antenna, and a "Production Pass" run on all scans with
         those time delays in place.</li>
       <li>Within each Pass is a series of <b>Jobs</b>, each controlling
-        the processing of at least one scan.&nbsp; DiFX is run on one
-        Job at a time.<br>
+        the processing of at least one scan.<br>
       </li>
     </ul>
-    <div align="center"><img alt=""
-        src="images/how_to_run_things/queueBrowser1.png" height="299"
-        width="800"></div>
+    <div align="center"><img alt="" src="images/how_to_run_things/queueBrowser1.png" height="299" width="800"></div>
     <h5>Adding Existing Experiments to the Queue Browser</h5>
     <p><br>
     </p>
@@ -201,7 +195,7 @@
       and/or the total time processing takes.&nbsp; Adjustments to many
       of these values is something of an art in itself, and the details
       of what things do and what their "best" values should be is not
-      covered here (some talks at the DiFX Users Meetings have covered
+      covered here (some talks at DiFX Users Meetings have covered
       the subject - slides can be viewed here).<br>
     </p>
     <p>Each item has an associated "apply" check box.&nbsp; If this box
@@ -219,8 +213,7 @@
       data triggers the creation of a panel in the "Stations"
       section.&nbsp; The two-letter code station/antenna code is used as
       a panel title (associated with each station is a check box that
-      can be used to eliminate the station from the experiment - see <a
-        href="#Eliminating_Stations_in_the_Stations">below</a>).&nbsp;
+      can be used to eliminate the station from the experiment - see <a href="#Eliminating_Stations_in_the_Stations">below</a>).&nbsp;
       Each station panel contains four sub-sections: Data Source;
       Antenna; Site; and Settings.<br>
       <b>IMAGE OF A STATION PANEL<br>
@@ -264,18 +257,18 @@
     the scan).&nbsp; <br>
     <h5>&nbsp;&nbsp;&nbsp; Eliminating Stations in the "Source" .vex
       Data</h5>
-    <p>Stations can be eliminated from individual scans by putting a
-      "-1" in the "code" column within the appropriate "scan" section in
-      the "source" .vex data.&nbsp; When the GUI encounters the "-1", it
-      will remove the station from the scan.&nbsp; This duplicates
-      hardware correlator behavior.&nbsp; Starting with the .vex data
-      example below, the final .vex file will not include the station
-      BLAT because of the "-1" in the final column.<br>
+    <p>Stations
+can be eliminated from individual scans by putting a "-1" in the "code"
+column within the appropriate "scan" section in the "source" .vex
+data.&nbsp; When the GUI encounters the "-1", it will remove the
+station from the scan.&nbsp; This duplicates hardware correlator
+behavior.&nbsp; Starting with the .vex file snippet below, the final
+.vex file will not include the station "Bd" because of the "-1" in the
+final column.<br>
     </p>
-    <pre>gslkadfglkdgflksdgflkjsdfgklsjdfkgl<br>fdsgl;jsdfgljkdsfgklsdfkjlkjfgsdkjdfsgkjldf<br>dfs;lgjsdgfjksdjkfjksdfjkdsfgjkdfsgj<br></pre>
-    If you do not want the GUI to pay attention to the "-1" code in this
-    way, un-check the <a
-      href="settings_content.html#Eliminate_Stations_With_Code">Eliminate
+<pre style="font-family: monospace;">&nbsp; scan 128-1703;<br>&nbsp;&nbsp;&nbsp; start = 2014y128d17h03m34s;<br>&nbsp;&nbsp;&nbsp; mode = GEOSX8N.8F;<br>&nbsp;&nbsp;&nbsp; source = 1846+322;<br>&nbsp;&nbsp;&nbsp; station = Bd :&nbsp;&nbsp;&nbsp; 0 sec :&nbsp;&nbsp;&nbsp; 20 sec :&nbsp;&nbsp;&nbsp;&nbsp; 0 ft : 1A : &amp;n : -1;<br>&nbsp;&nbsp;&nbsp; station = Ho :&nbsp;&nbsp;&nbsp; 0 sec :&nbsp;&nbsp;&nbsp; 20 sec :&nbsp;&nbsp;&nbsp;&nbsp; 0 ft : 1A : &amp;n : 1;<br>&nbsp;&nbsp;&nbsp; station = Kk :&nbsp;&nbsp;&nbsp; 0 sec :&nbsp;&nbsp;&nbsp; 20 sec :&nbsp;&nbsp;&nbsp;&nbsp; 0 ft : 1A : &amp;cw : 1;<br>&nbsp;&nbsp;&nbsp; station = Ny :&nbsp;&nbsp;&nbsp; 0 sec :&nbsp;&nbsp;&nbsp; 20 sec :&nbsp;&nbsp;&nbsp;&nbsp; 0 ft : 1A : &amp;ccw : 1;<br>&nbsp;&nbsp;&nbsp; station = Ts :&nbsp;&nbsp;&nbsp; 0 sec :&nbsp;&nbsp;&nbsp; 20 sec :&nbsp;&nbsp;&nbsp;&nbsp; 0 ft : 1A : &amp;cw : 1;<br>&nbsp; endscan;</pre>
+If you do not want the GUI to pay attention to the "-1" code in this
+    way, un-check the <a href="settings_content.html#Eliminate_Stations_With_Code">Eliminate
       Stations With "-1" Code</a> box in the Settings menu.<br>
     <h5><a name="Eliminating_Stations_in_the_Stations"></a>&nbsp;&nbsp;&nbsp;
       Eliminating Stations in the "Stations" Section<br>
@@ -361,6 +354,60 @@
     </h3>
     <h3><a name="Using_the_Real-Time_Monitor"></a>Using the Real-Time
       Monitor</h3>
+<h3>Running DiFX Remotely</h3>
+The GUI/guiServer communications link, which handles all interaction
+between the GUI and DiFX, is based on insecure TCP socket
+connections.&nbsp; This works fine if you run the GUI on the same LAN
+as the software correlator, but breaks down if you move outside
+firewalls.&nbsp; To get around such restrictions, an "ssh tunnel" can
+be set up through a firewall as long as you can ssh to the
+firewall.&nbsp; Running a DiFX cluster that is located behind a
+firewall using a GUI running on a machine outside the firewall can be
+accomplished using the following steps (the order of which is
+unimportant):<br>
+<br>
+<div style="margin-left: 40px;">1. Start <span style="font-style: italic;">guiServer</span> normally on the head node of the DiFX cluster.&nbsp; The TCP connection port will be referred to as the "connection port" in the following steps.</div>
+<div style="margin-left: 40px;">2. Start an ssh tunnel from the
+location where you wish to run the GUI through the firewall.&nbsp; This
+is done using an ssh command with some options: <br>
+</div>
+<pre>		ssh -N -L [LOCALPORT]:[WHAT FIREWALL CALLS DIFX HEADNODE]:[CONNECTION PORT] USER@FIREWALL<br></pre>
+<div style="margin-left: 40px;">
+<ul>
+  <li>USER@FIREWALL is how you would log into the firewall from your local machine</li>
+  <li>CONNECTION PORT is the TCP connection port used by <span style="font-style: italic;">guiServer</span> on the head node</li>
+  <li>WHAT FIREWALL CALLS DIFX HEADNODE is the node name of the head
+node as the firewall sees it (what you would use if logging into the
+head node from the firewall)</li>
+  <li>LOCALPORT is a port on the machine where the GUI is being run.</li>
+</ul>
+3.&nbsp; Start the GUI on the machine outside the firewall.&nbsp; In
+the "DiFX Control Connection" section of the "Settings" window, set
+"DiFX Host" to "localhost" and "Control Port" to the value of LOCALPORT
+you used in the ssh tunnel.&nbsp; The "guiServer Connection" light
+should turn green and you should start seeing data from the nodes in
+the DiFX cluser.<br>
+4.&nbsp; Click on "Channel All Data" in the "DiFX Control Connection" section of the "Settings" window.<br>
+</div>
+<h5>What is "Channel All Data" Doing?<br>
+</h5>
+The GUI/guiServer does not use a single socket for communication.&nbsp;
+Many activities, including creating/running jobs, examining directory
+structures on the correlator, and even tab completion for many GUI text
+fields, require opening new sockets.&nbsp; The port numbers for these
+sockets are all within a specific range, which you can control (see
+BLAH), so in theory you could set up tunnels for all of them.&nbsp;
+Instead, the GUI allows you to "channel" all of these exchanges through
+to single, tunnelled primary connection.&nbsp; To do this, turn on the
+"Channel All Data" setting in the "DiFX Control Connection" of the
+Settings window.&nbsp; The GUI and <span style="font-style: italic;">guiServer</span>
+handle the organization of packets on either side of the connection so
+the change should be seamless, and all activities that normally require
+independent sockets should act normally.&nbsp; This arrangement has
+reassuringly little impact on the performance of the single connection
+socket.<br>
+<br>
+
     <h3><a name="Problems_you_May_Encounter_and_What_to"></a>Problems
       you May Encounter (and What to Do About Them)</h3>
     <ul>
@@ -392,8 +439,7 @@
     <p>Okay, let's say you can't.&nbsp; What do you do about it?.&nbsp;
       The following may work (or you may wish to bother a system
       administrator or somebody who knows what they are doing). &nbsp;
-      Make sure you have an RSA key (in the file <span
-        style="font-family: monospace;">.ssh/id_rsa.pub</span> in DiFX
+      Make sure you have an RSA key (in the file <span style="font-family: monospace;">.ssh/id_rsa.pub</span> in DiFX
       user's home directory).&nbsp; If you don't, create one with the
       following command (answer any questions by hitting "return"):<br>
     </p>
@@ -421,5 +467,4 @@
     These changes should survive reboots, as well as RSA key stuff ever
     does.
     <p></p>
-  </body>
-</html>
+  </body></html>
