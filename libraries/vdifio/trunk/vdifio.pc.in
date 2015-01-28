@@ -8,4 +8,4 @@ Description: Library for parsing header info of VDIF frames
 Requires:
 Version: @PACKAGE_VERSION@
 Libs: -L${libdir} -lvdifio
-Cflags: -I${includedir}/vdifio
+Cflags: -I${includedir}

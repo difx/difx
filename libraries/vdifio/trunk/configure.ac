@@ -1,4 +1,4 @@
-AC_INIT([VDIFIO], [1.0], [difxusers at googlegroups.com])
+AC_INIT([VDIFIO], [1.1], [difxusers at googlegroups.com])
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 

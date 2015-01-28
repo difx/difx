@@ -1,3 +1,6 @@
+Version 1.1
+* Added incrementVDIFHeader
+
 Version 1.0
 ~~~~~~~~~~~
 * ******* NOTE CHANGES TO THE API *********
