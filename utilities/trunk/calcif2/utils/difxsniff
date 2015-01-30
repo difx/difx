@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #**************************************************************************
-#   Copyright (C) 2008-2013 by Walter Brisken                             *
+#   Copyright (C) 2008-2015 by Walter Brisken                             *
 #                                                                         *
 #   This program is free software; you can redistribute it and/or modify  *
 #   it under the terms of the GNU General Public License as published by  *
@@ -36,7 +36,7 @@ from time import sleep
 
 program = 'difxsniff'
 version = '2.1'
-verdate = '20130508'
+verdate = '20150130'
 author  = 'Walter Brisken'
 
 def usage():
@@ -69,6 +69,7 @@ def run(pgm, args):
 	for a in args:
 		sleep(0.05)
 		p.write('%s\n' % a)
+		p.write( '\n\n\n\n\n\n\n\n\n\n' )	# Schlake's magic incantation
 	p.close()
 
 def sniff(filebases, refants, dir, newNames):
