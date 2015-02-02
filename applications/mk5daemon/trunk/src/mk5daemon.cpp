@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2013 by Walter Brisken                             *
+ *   Copyright (C) 2008-2015 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -976,6 +976,11 @@ int main(int argc, char **argv)
 	int justStarted = 1;
 	int recordFD;
 	int isMk5 = 1;
+
+	if(XLRDeviceFind() < 1)
+	{
+		isMk5 = 0;
+	}
 #else
 	int isMk5 = 0;
 #endif
