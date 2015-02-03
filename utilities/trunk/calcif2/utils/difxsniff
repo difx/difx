@@ -184,7 +184,7 @@ def sniff(filebases, refants, dir, newNames):
 		acbfilename = 'acbandfile.ps'
 		xcbfilename = 'xcbandfile.ps'
 
-	run('plotapd', ['datafile.lis',    '%s/vps' % apdfilename, 'ALL', 'ALL'])
+	run('plotapd', ['datafile.lis',    '%s/vps' % apdfilename, 'ALL', 'ALL', ''])
 	run('plotwt',  ['wtsfile.lis.sum', '%s/vps' % wtsfilename])
 	run('plotbp',  ['acbandfile.lis',  '%s/vps' % acbfilename, ''])
 	run('plotbp',  ['xcbandfile.lis',  '%s/vps' % xcbfilename, ''])
