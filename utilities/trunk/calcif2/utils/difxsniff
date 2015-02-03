@@ -62,15 +62,21 @@ def reverseapd(dataline):
 
 # Executes a program wanting command line input.  The args here are those
 # inputs in order.
-def run(pgm, args):
+def runold(pgm, args):
 	print pgm
 	p = popen(pgm, 'w')
 	sleep(0.1)
 	for a in args:
 		sleep(0.05)
 		p.write('%s\n' % a)
-		p.write( '\n\n\n\n\n\n\n\n\n\n' )	# Schlake's magic incantation
 	p.close()
+
+def run(pgm, args):
+	cmd = pgm
+	for a in args:
+		cmd += ' %s' % a
+	print 'Executing: %s' % cmd
+	system(cmd)
 
 def sniff(filebases, refants, dir, newNames):
 
