@@ -474,7 +474,7 @@ int isNumber(const char *str)
 		{
 			continue;
 		}
-		if(str[i] == '.')
+		else if(str[i] == '.')
 		{
 			++nDot;
 			if(nDot > 1)
@@ -482,10 +482,10 @@ int isNumber(const char *str)
 				return 0;
 			}
 		}
-		if(str[i] == '-')
+		else if(str[i] == '-')
 		{
 			++nDash;
-			if(nDash > 1)
+			if(nDash > 1 || i != 0)
 			{
 				return 0;
 			}
