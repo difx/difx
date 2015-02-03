@@ -3,7 +3,8 @@ SUBDIRS = \
 	plotapd \
 	plotbp \
 	plotgps \
-	plotwt
+	plotwt \
+	utilities
 
 DIST_SUBDIRS = \
 	clockhist \

@@ -1,6 +1,7 @@
 Version 0.993
 -------------
 * Allow plotwt, plotbp and plotapd to send params though command line
+* Move difxsniff from calcif2 into this module
 
 Version 0.992
 -------------

@@ -69,6 +69,7 @@ C
 
 
       CALL UPCASE( DOSTA )
+      DOSTA2 = ' '
       IF( INDEX( DOSTA, ':' ) .GT. 1 )  THEN
          ICH = INDEX( DOSTA, ':' ) + 1
          ICH2 = LEN1( DOSTA )

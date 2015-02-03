@@ -18,4 +18,5 @@ AC_OUTPUT([ \
 	plotbp/Makefile \
 	plotgps/Makefile \
 	plotwt/Makefile \
+	utilities/Makefile \
 ])
