@@ -5,7 +5,6 @@ dist_bin_SCRIPTS = \
 	genmachines.py \
 	joblist \
 	jobstatus \
-	difxsniff \
 	listmodules \
 	listcpus \
 	startdifx \

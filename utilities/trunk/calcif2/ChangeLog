@@ -1,5 +1,9 @@
 calcif2
 ~~~~~~~
+Version 2.5.0
+* Post DiFX 2.4
+* move difxsniff to SniffTools
+
 Version 2.3.0
 * vlog: split ANTAB file into antenna-specific files
 * Version for DiFX-2.3, Dec 20, 2013
