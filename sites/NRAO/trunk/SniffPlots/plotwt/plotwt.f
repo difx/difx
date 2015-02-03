@@ -17,10 +17,19 @@ C -------------------------------------------------------------------
 C     Get the file names.
 C
       GOTSUM = .FALSE.
-100   WRITE(*,*) 'Name of weights file (<80 char): '
-      READ(*,'(A)') WTFILE
-      IER = VLBOPE( INUNIT, WTFILE, 'TEXT', 'OLD', CBUFF )
-      IF( IER .NE. 1 ) GO TO 100
+      IF( IARGC() .GE. 1 ) THEN
+        CALL GETARG(1, WTFILE)
+        IER = VLBOPE( INUNIT, WTFILE, 'TEXT', 'OLD', CBUFF )
+        IF( IER .NE. 1 ) THEN
+          WRITE(*,*) ' File not found'
+          GO TO 999
+        END IF
+      ELSE
+100     WRITE(*,*) 'Name of weights file (<80 char): '
+        READ(*,'(A)') WTFILE
+        IER = VLBOPE( INUNIT, WTFILE, 'TEXT', 'OLD', CBUFF )
+        IF( IER .NE. 1 ) GO TO 100
+      END IF
       NWORDS = MWORDS
       CALL RDLINE( WORD, WLEN, NWORDS, INUNIT, 6 )
       IF( NWORDS .EQ. -1 ) THEN
@@ -36,36 +45,49 @@ C
 C
 C     Open the plot file.
 C
-      WRITE(*,*) 'Name of plot file (eg wtsfile.ps/vps or /xs '//
-     1               '(interactive)):'
-      READ(*,'(A)') PLTFILE
+      IF( IARGC() .GE. 2 ) THEN
+        CALL GETARG(2, PLTFILE)
+      ELSE
+        WRITE(*,*) 'Name of plot file (eg wtsfile.ps/vps or /xs '//
+     1                 '(interactive)):'
+        READ(*,'(A)') PLTFILE
+      END IF
 C
 C     Get the desired time range.
-C
-      WRITE(*,*) 'Time range to plot (dd hh mm ss dd mm hh ss, '//
-     1     'first day is day 0.  Blank for all.):'
-      NWORDS = MWORDS
-      CALL RDLINE( WORD, WLEN, NWORDS, 5, 6 )
-      DO I = 1, 8
-         IF( I .LE. NWORDS ) THEN
-            TIN(I) = GETNUM( WORD(I), 1, WLEN(I) )
-         ELSE
-            TIN(I) = 0
-         END IF
-      END DO
-      TMINA = TIN(1)*24*3600 + TIN(2)*3600 + TIN(3)*60 + TIN(4)
-      TMAXA = TIN(5)*24*3600 + TIN(6)*3600 + TIN(7)*60 + TIN(8)
-      IF( TMAXA .EQ. 0 ) TMAXA = 1.E10
+C     Note: no time selection possible via command line
+      IF( IARGC() .EQ. 0 ) THEN
+        WRITE(*,*) 'Time range to plot (dd hh mm ss dd mm hh ss, '//
+     1       'first day is day 0.  Blank for all.):'
+        NWORDS = MWORDS
+        CALL RDLINE( WORD, WLEN, NWORDS, 5, 6 )
+        DO I = 1, 8
+           IF( I .LE. NWORDS ) THEN
+              TIN(I) = GETNUM( WORD(I), 1, WLEN(I) )
+           ELSE
+              TIN(I) = 0
+           END IF
+        END DO
+        TMINA = TIN(1)*24*3600 + TIN(2)*3600 + TIN(3)*60 + TIN(4)
+        TMAXA = TIN(5)*24*3600 + TIN(6)*3600 + TIN(7)*60 + TIN(8)
+        IF( TMAXA .EQ. 0 ) TMAXA = 1.E10
+      ELSE
+        TMINA = 0
+        TMAXA = 1.E10
+      END IF
 C
 C     Get the desired average time per point.
-C
-      WRITE(*,*) 'Time average for each point (Sec. - Default 30)'
-      NWORDS = MWORDS
-      CALL RDLINE( WORD, WLEN, NWORDS, 5, 6 )
-      IF( NWORDS .LE. 0 ) THEN
-         TAVG = 30.0
+C     Note: default of 30 sec used if by command line
+      IF( IARGC() .EQ. 0) THEN
+        WRITE(*,*) 'Time average for each point (Sec. - Default 30)'
+        NWORDS = MWORDS
+        CALL RDLINE( WORD, WLEN, NWORDS, 5, 6 )
+        IF( NWORDS .LE. 0 ) THEN
+           TAVG = 30.0
+        ELSE
+           TAVG = GETNUM( WORD(1), 1, WLEN(1) )
+        END IF
       ELSE
-         TAVG = GETNUM( WORD(1), 1, WLEN(1) )
+        TAVG = 30.0
       END IF
 C
 C     Open the summary output file.

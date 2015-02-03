@@ -21,10 +21,19 @@ C
 C
 C     Get the file names and open the data file.
 C
-  100 WRITE(*,*) 'Name of input file: '
-      READ(*,'(A)') DATFILE
-      IER = VLBOPE( INUNIT, DATFILE, 'TEXT', 'OLD', CBUFF )
-      IF( IER .NE. 1 ) GO TO 100
+      IF( IARGC() .GE. 1) THEN
+        CALL GETARG(1, DATFILE)
+        IER = VLBOPE( INUNIT, DATFILE, 'TEXT', 'OLD', CBUFF )
+        IF( IER .NE. 1 ) THEN
+          WRITE(*,*) ' File not found'
+          GO TO 999
+        END IF
+      ELSE
+  100   WRITE(*,*) 'Name of input file: '
+        READ(*,'(A)') DATFILE
+        IER = VLBOPE( INUNIT, DATFILE, 'TEXT', 'OLD', CBUFF )
+        IF( IER .NE. 1 ) GO TO 100
+      END IF
   150 NWORDS = MWORDS
       CALL RDLINE( WORD, WLEN, NWORDS, INUNIT, 6 )
       IF( NWORDS .EQ. -1 ) THEN
@@ -35,92 +44,130 @@ C
 C
 C     Initialize PGPLOT
 C
-  200 WRITE(*,*) 'Name of plot file (eg bm14_apd.ps/vps):'
-      READ(*,'(A)') PLTFILE
-      PTF = PLTFILE
-      CALL UPCASE( PTF )
-      IF( INDEX( PTF, "/X" ) .NE. 0 ) THEN
-         NX = 1
-         NY = 1
-         XWIN = .TRUE.
+      IF( IARGC() .GE. 2) THEN
+        CALL GETARG(2, PLTFILE)
+        PTF = PLTFILE
+        CALL UPCASE( PTF )
+        IF( INDEX( PTF, "/X" ) .NE. 0 ) THEN
+           NX = 1
+           NY = 1
+           XWIN = .TRUE.
+        ELSE
+           NX = 1
+           NY = 3
+           XWIN = .FALSE.
+        END IF
+        IER = PGBEG( 0, PLTFILE, NX, NY )
+        IF( IER .NE. 1 ) THEN
+          WRITE(*,*) ' Error initializing output'
+          GO TO 999
+        END IF
       ELSE
-         NX = 1
-         NY = 3
-         XWIN = .FALSE.
+  200   WRITE(*,*) 'Name of plot file (eg bm14_apd.ps/vps):'
+        READ(*,'(A)') PLTFILE
+        PTF = PLTFILE
+        CALL UPCASE( PTF )
+        IF( INDEX( PTF, "/X" ) .NE. 0 ) THEN
+           NX = 1
+           NY = 1
+           XWIN = .TRUE.
+        ELSE
+           NX = 1
+           NY = 3
+           XWIN = .FALSE.
+        END IF
+        IER = PGBEG( 0, PLTFILE, NX, NY )
+        IF( IER .NE. 1 ) GO TO 200
       END IF
-      IER = PGBEG( 0, PLTFILE, NX, NY )
-      IF( IER .NE. 1 ) GO TO 200
 C
 C     Get channels to plot.
 C
-  250 WRITE(*,*) 'Baseband channels to plot (eg: 1 3 8  or ''ALL'' or',
-     1      ' ''END'' (first and last)) '
-      NWORDS = MWORDS
-      CALL RDLINE( WORD, WLEN, NWORDS, 5, 6 )
-      NDOCH = NWORDS
-      IF( NWORDS .LE. 0 ) THEN
-         WRITE(*,*) '  Give SOME value'
-         GO TO 250
-      ELSE IF( NWORDS .EQ. 1 ) THEN
-         CALL UPCASE( WORD(1) )
-         IF( WORD(1)(1:3) .EQ. 'ALL' ) THEN
+      IF( IARGC() .EQ. 0) THEN
+  250   WRITE(*,*) 'Baseband chans to plot (eg: 1 3 8  or ''ALL'' or',
+     1        ' ''END'' (first and last)) '
+        NWORDS = MWORDS
+        CALL RDLINE( WORD, WLEN, NWORDS, 5, 6 )
+        NDOCH = NWORDS
+        IF( NWORDS .LE. 0 ) THEN
+           WRITE(*,*) '  Give SOME value'
+           GO TO 250
+        ELSE IF( NWORDS .EQ. 1 ) THEN
+           CALL UPCASE( WORD(1) )
+           IF( WORD(1)(1:3) .EQ. 'ALL' ) THEN
 C
 C           Will reset this NDOCH later depending on data.
 C
-            NDOCH = MCHAN
-            DO I = 1, MCHAN
-               DOCH(I) = I
-            END DO
-         ELSE IF( WORD(1)(1:3) .EQ. 'END' ) THEN
-            NDOCH = 2
-            DOCH(1) = 1
-            DOCH(2) = 100    ! a flag
-         ELSE
-            NDOCH = 1
-            DOCH(1) = GETNUM( WORD(1), 1, WLEN(1) )
-         END IF
+              NDOCH = MCHAN
+              DO I = 1, MCHAN
+                 DOCH(I) = I
+              END DO
+           ELSE IF( WORD(1)(1:3) .EQ. 'END' ) THEN
+              NDOCH = 2
+              DOCH(1) = 1
+              DOCH(2) = 100    ! a flag
+           ELSE
+              NDOCH = 1
+              DOCH(1) = GETNUM( WORD(1), 1, WLEN(1) )
+           END IF
+        ELSE
+           NDOCH = NWORDS
+           DO I = 1, NDOCH
+              DOCH(I) = GETNUM( WORD(I), 1, WLEN(I) )
+           END DO
+        END IF
       ELSE
-         NDOCH = NWORDS
-         DO I = 1, NDOCH
-            DOCH(I) = GETNUM( WORD(I), 1, WLEN(I) )
-         END DO
+C       Will reset this NDOCH later depending on data.
+        NDOCH = MCHAN
+        DO I = 1, MCHAN
+           DOCH(I) = I
+        END DO
       END IF
 C
 C     Get antennas to plot.
 C
-      WRITE(*,*) 'Antennas to plot (''ALL'', or up to 10 separate).'
-      WRITE(*,*) 'Blank means ALL.'
-      WRITE(*,*) 'Will plot any baseline with listed antennas.'
-      NWORDS = MWORDS
-      CALL RDLINE( WORD, WLEN, NWORDS, 5, 6 )
-      IF( NWORDS .EQ. 0 ) THEN
-         NANT = 1
-         DOANT(1) = 'ALL'      
+      IF( IARGC() .EQ. 0) THEN
+        WRITE(*,*) 'Antennas to plot (''ALL'', or up to 10 separate).'
+        WRITE(*,*) 'Blank means ALL.'
+        WRITE(*,*) 'Will plot any baseline with listed antennas.'
+        NWORDS = MWORDS
+        CALL RDLINE( WORD, WLEN, NWORDS, 5, 6 )
+        IF( NWORDS .EQ. 0 ) THEN
+           NANT = 1
+           DOANT(1) = 'ALL'      
+        ELSE
+           NANT = NWORDS
+           DO I = 1, NANT
+              DOANT(I) = WORD(I)
+              CALL UPCASE( DOANT(I) )
+           END DO
+        END IF
       ELSE
-         NANT = NWORDS
-         DO I = 1, NANT
-            DOANT(I) = WORD(I)
-            CALL UPCASE( DOANT(I) )
-         END DO
+        NANT = 1
+        DOANT(1) = 'ALL'      
       END IF
 C
 C
 C     Get time range to plot.
 C
-      WRITE(*,*) 'Time range to plot (dd hh mm ss dd mm hh ss, '//
-     1     'first day is day 0.  Blank for all.):'
-      NWORDS = MWORDS
-      CALL RDLINE( WORD, WLEN, NWORDS, 5, 6 )
-      DO I = 1, 8
-         IF( I .LE. NWORDS ) THEN
-            TIN(I) = GETNUM( WORD(I), 1, WLEN(I) )
-         ELSE
-            TIN(I) = 0
-         END IF
-      END DO
-      TMINA = TIN(1)*24*3600 + TIN(2)*3600 + TIN(3)*60 + TIN(4)
-      TMAXA = TIN(5)*24*3600 + TIN(6)*3600 + TIN(7)*60 + TIN(8)
-      IF( TMAXA .EQ. 0 ) TMAXA = 1.E10
+      IF( IARGC() .EQ. 0) THEN
+        WRITE(*,*) 'Time range to plot (dd hh mm ss dd mm hh ss, '//
+     1       'first day is day 0.  Blank for all.):'
+        NWORDS = MWORDS
+        CALL RDLINE( WORD, WLEN, NWORDS, 5, 6 )
+        DO I = 1, 8
+           IF( I .LE. NWORDS ) THEN
+              TIN(I) = GETNUM( WORD(I), 1, WLEN(I) )
+           ELSE
+              TIN(I) = 0
+           END IF
+        END DO
+        TMINA = TIN(1)*24*3600 + TIN(2)*3600 + TIN(3)*60 + TIN(4)
+        TMAXA = TIN(5)*24*3600 + TIN(6)*3600 + TIN(7)*60 + TIN(8)
+        IF( TMAXA .EQ. 0 ) TMAXA = 1.E10
+      ELSE
+        TMINA = 0
+        TMAXA = 1.E10
+      END IF
 C
 C     Get the data.  This all has to be in a loop since the
 C     arrays to hold all possible data could be too big.

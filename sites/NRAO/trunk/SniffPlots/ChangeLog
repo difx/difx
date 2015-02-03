@@ -1,3 +1,7 @@
+Version 0.993
+-------------
+* Allow plotwt, plotbp and plotapd to send params though command line
+
 Version 0.992
 -------------
 * Post DiFX-2.2 / DiFX-2.3

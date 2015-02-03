@@ -18,25 +18,56 @@ C
 C ---------------------------------------------------------------------
 C     Open file
 C
-100   WRITE(*,*) ' Bandpass file: '
-      READ(*,'(A)') BPFILE
-      IER = VLBOPE( INUNIT, BPFILE, 'TEXT', 'OLD', CBUFF )
-      IF( IER .NE. 1 ) GO TO 100
+
+      IF( IARGC() .GE. 1 ) THEN
+        CALL GETARG(1, BPFILE) 
+        IER = VLBOPE( INUNIT, BPFILE, 'TEXT', 'OLD', CBUFF )
+        IF( IER .NE. 1 ) THEN
+          WRITE(*,*) ' File not found'
+          GO TO 999
+        END IF
+      ELSE
+ 100    WRITE(*,*) ' Bandpass file: '
+        READ(*,'(A)') BPFILE
+        IER = VLBOPE( INUNIT, BPFILE, 'TEXT', 'OLD', CBUFF )
+        IF( IER .NE. 1 ) GO TO 100
+      END IF
 C
 C     Get the plot file name and open the file.
 C
- 200  WRITE(*,*) 'Name of plot file (eg bm14_bp.ps/vps):'
-      READ(*,'(A)') PLTFILE
-      TF = PLTFILE
-      CALL UPCASE( TF )
-      IER = PGOPEN( PLTFILE )
-      IF( IER .NE. 1 ) GO TO 200
+      IF( IARGC() .GE. 2 ) THEN
+        CALL GETARG(2, PLTFILE)
+        TF = PLTFILE
+        CALL UPCASE( TF )
+        IER = PGOPEN( PLTFILE )
+        IF( IER .NE. 1 ) THEN
+          WRITE(*,*) ' Cannot open output file'
+          GO TO 999
+        END IF
+      ELSE
+ 200    WRITE(*,*) 'Name of plot file (eg bm14_bp.ps/vps):'
+        READ(*,'(A)') PLTFILE
+        TF = PLTFILE
+        CALL UPCASE( TF )
+        IER = PGOPEN( PLTFILE )
+        IF( IER .NE. 1 ) GO TO 200
+      END IF
 C
 C     Get station to plot.
 C
-      WRITE(*,*) 'Station to plot '//
-     1     '(blank for all.  eg PT:LA for a baseline):'
-      READ(*,'(A)') DOSTA
+      IF( IARGC() .GE. 3 ) THEN
+        CALL GETARG(3, DOSTA)
+      ELSE
+        IF( IARGC() .EQ. 0 ) THEN
+          WRITE(*,*) 'Station to plot '//
+     1       '(blank for all.  eg PT:LA for a baseline):'
+          READ(*,'(A)') DOSTA
+        ELSE
+          DOSTA = ''
+        END IF
+      END IF
+
+
       CALL UPCASE( DOSTA )
       IF( INDEX( DOSTA, ':' ) .GT. 1 )  THEN
          ICH = INDEX( DOSTA, ':' ) + 1
