@@ -1,0 +1,344 @@
+#!/usr/bin/env python
+
+#**************************************************************************
+#   Copyright (C) 2014 by Walter Brisken                                  *
+#                                                                         *
+#   This program is free software; you can redistribute it and/or modify  *
+#   it under the terms of the GNU General Public License as published by  *
+#   the Free Software Foundation; either version 3 of the License, or     *
+#   (at your option) any later version.                                   *
+#                                                                         *
+#   This program is distributed in the hope that it will be useful,       *
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+#   GNU General Public License for more details.                          *
+#                                                                         *
+#   You should have received a copy of the GNU General Public License     *
+#   along with this program; if not, write to the                         *
+#   Free Software Foundation, Inc.,                                       *
+#   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+#**************************************************************************
+
+
+from sys import argv, exit
+from string import split, strip
+from math import *
+from pylab import np, plot, show, scatter, xlabel, ylabel, title, axes, savefig
+
+program = 'plotpcal2'
+author = 'Walter Brisken <wbrisken@nrao.edu>'
+version = '0.1'
+
+legalOps = ['amp', 'phase', 'delay', 'xy']
+
+def usage(prog):
+	print '\n%s ver. %s  %s\n' % (program, version, author)
+	print 'Usage: %s [options] operation toneSelections dataFiles\n' % prog
+
+class Tone:
+	def __init__(self, recBand, toneNum, freq, re, im):
+		self.recBand = recBand
+		self.toneNum = toneNum
+		self.freq = freq
+		self.re = re
+		self.im = im
+	def amp(self):
+		return sqrt(self.re*self.re + self.im*self.im)
+	def phase(self):
+		return atan2(self.im, self.re)
+
+class Record:	# all tones for one time from one file
+	def __init__(self, mjd, tones):
+		self.mjd = mjd
+		self.tones = tones
+	
+	def getRecBands(self):
+		rbs = []
+
+
+class File:
+	def __init__(self, filename):
+		s = split(strip(filename), ':')
+		self.filename = s[-1]
+		if len(s) > 1:
+			self.antenna = s[0]
+		else:
+			self.antenna = None
+		self.pcalVersion = None	# file version
+		self.records = []
+		self.mjdStart = 0.0
+		self.mjdStop = 0.0
+		self.load()
+		self.recBands = {}	# number of tones in recBand of given index
+		for r in self.records[0].tones:
+			if r.recBand in self.recBands:
+				self.recBands[r.recBand] += 1
+			else:
+				self.recBands[r.recBand] = 1
+		self.recBands.keys().sort()
+		self.nRecBand = len(self.recBands)
+
+	def __lt__(self, other):
+		return self.mjdStart < other.mjdStart
+
+	def summary(self):
+		print 'Data file:'
+		print '  File = %s' % self.filename
+		if self.antenna != None:
+			print '  Antenna = %s' % self.antenna
+		else:
+			print '  No antenna specified'
+		if self.pcalVersion != None:
+			print '  Pcal file version = %d' % self.pcalVersion
+		else:
+			print '  Weird: no Pcal version determined!'
+		print '  Num records = %d' % len(self.records)
+		print '  Time range: %14.8f to %14.8f' % (self.mjdStart, self.mjdStop)
+		print '  Tone counts: ', self.recBands
+	
+	def load(self):
+		# here choose how to load based on extension
+		# FIXME: for now, just uncompressed text
+		raw = open(self.filename).readlines()
+		extracts = {}	# dictionary; text of MJD is key
+		for r in raw:
+			s = split(strip(r))
+			if len(s) < 1:
+				continue
+			if self.pcalVersion == None:
+				if r[:17] == '# File version = ':
+					self.pcalVersion = int(r[17:])
+				elif r[0] != '#':
+					if len(s[0]) > 5:
+						# not version 0
+						self.pcalVersion = -1
+					else:
+						self.pcalVersion = 0
+			if r[0] == '#':
+				continue
+			if self.pcalVersion == -1:
+				if s[0] in extracts:
+					record = extracts[s[0]]
+				else:
+					extracts[s[0]] = []
+					record = extracts[s[0]]
+				mjd = float(s[0])
+				totalTones = (len(s)-4)/7
+				lastRB = -1
+				toneNum = 0
+				for t in range(totalTones):
+					i = t*7+4
+					rb = int(s[i+3])
+					if lastRB != rb:
+						lastRB = rb
+						toneNum = 0
+					record.append(Tone(100*int(s[i+2])+rb, toneNum, int(s[i+6]), float(s[i]), float(s[i+1])))
+					toneNum += 1
+					
+			elif self.pcalVersion == 0:
+				pass
+			elif self.pcalVersion == 1:
+				pass
+
+		keys = extracts.keys()
+		keys.sort()
+		self.mjdStart = float(keys[0])
+		self.mjdStop = float(keys[-1])
+		for k in keys:
+			self.records.append(Record(float(k), extracts[k]))
+
+# returns: op, toneSelect, files, options
+def parseCommandLine():
+	op = None
+	toneSelect = []
+	fileList = []
+	options = {}
+	options['verbose'] = 1
+	options['subday'] = 0
+	for a in argv[1:]:
+		if a[0] == '-':
+			# this is an option
+			if a in ['-h', '--help']:
+				usage(argv[0])
+				exit(0)
+			elif a in ['-v', '--verbose']:
+				options['verbose'] += 1
+			elif a in ['-q', '--quiet']:
+				options['verbose'] -= 1
+			elif a in ['-d1']:
+				options['subday'] = 1
+			elif a in ['-d2']:
+				options['subday'] = 2
+			else:
+				if len(a) > 2 and a[1] == '-':
+					options[a[2:]] = 1
+				else:
+					options[a[1:]] = 1
+		elif '=' in a:	
+			# this is a tone selector
+			toneSelect.append(a)
+		elif op == None:
+			op = a
+		else:
+			fileList.append(a)
+	
+	die = False
+	if len(fileList) == 0:
+		print 'Error: no data files provided'
+		die = True
+	if len(toneSelect) == 0:
+		print 'Error: no tone selection'
+		die = True
+	if op == None:
+		print 'Error: operation not specified'
+		die = True
+	elif not op in legalOps:
+		print 'Error: operation must be one of ', legalOps
+		die = True
+
+	if die:
+		print '\nRun with --help for more info\n'
+		exit(0)
+
+	if options['verbose'] > 1:
+		print 'op = %s' % op
+		print 'toneSection =', toneSelect
+		print 'data files =', fileList
+		print 'options =', options
+
+	return op, toneSelect, fileList, options
+
+def antList(fileData):
+	antennas = []
+	for f in fileData:
+		if not f.antenna in antennas:
+			antennas.append(f.antenna)
+	antennas.sort()
+	return antennas
+
+def getAntennaData(fileData, A):
+	D = []
+	for f in fileData:
+		if f.antenna == A:
+			D.append(f)
+	D.sort()
+	return D
+
+def calculateAmplitudes(plotData, row, rec, toneColumns):
+	plotData[0][row] = rec.mjd
+	for i in range(len(toneColumns)):
+		plotData[i+1][row] = rec.tones[i].amp()
+
+def calculatePhases(plotData, row, rec, toneColumns):
+	plotData[0][row] = rec.mjd
+	for i in range(len(toneColumns)):
+		plotData[i+1][row] = rec.tones[i].phase()
+
+def unwrapPhases(phaseData):
+	lastPhase = phaseData[0]
+	for i in range(1, len(phaseData)):
+		while phaseData[i] > lastPhase+pi:
+			phaseData[i] -= 2*pi
+		while phaseData[i] < lastPhase-pi:
+			phaseData[i] += 2*pi
+		lastPhase = phaseData[i]
+
+def unwrapDelays(delayData, ambig):
+	lastDelay = 0
+	for i in range(len(delayData)):
+		while delayData[i] > lastDelay + ambig/2:
+			delayData[i] -= ambig
+		while delayData[i] < lastDelay - ambig/2:
+			delayData[i] += ambig
+		lastDelay = delayData[i]
+
+
+def generatePlots(op, toneSelect, data, options):
+	colors = ['red', 'orange', 'green', 'blue', 'purple', 'brown', 'cyan', 'magenta']
+
+	start = data[0].mjdStart
+	stop = data[-1].mjdStop
+
+	antenna = data[0].antenna
+
+	title('Pulse cal %s for antenna %s' % (op, antenna))
+
+	for d in data:
+		if op == 'amp':
+			#toneColumns = getOneToneColumns(toneSelect, d)
+			toneColumns = [1,2]
+			if options['verbose'] > 0:
+				print 'From %s, the following tone columns will be used:' % d.filename, toneColumns
+			nColumn = 1+len(toneColumns)
+			nRow = len(d.records)
+			plotData = np.zeros((nColumn, nRow))
+			for row in range(nRow):
+				calculateAmplitudes(plotData, row, d.records[row], toneColumns)
+
+			if options['subday'] > 0:
+				if options['subday'] == 1:
+					d0 = int(start)
+				elif options['subday'] == 2:
+					d0 = start
+				for row in range(nRow):
+					plotData[0][row] -= d0
+				xlabel('Time (Days since MJD %14.8f)' % d0)
+			else:
+				xlabel('Time (Day of Year)')
+			ylabel('Amplitude')
+			for i in range(1, nColumn):
+				if 'lines' in options:
+					plot(plotData[0], plotData[i], color=colors[(i-1)%len(colors)], linewidth=1)
+				else:
+					scatter(plotData[0], plotData[i], color=colors[(i-1)%len(colors)], s=3)
+		elif op == 'phase':
+			#toneColumns = getOneToneColumns(toneSelect, d)
+			toneColumns = [1,2]
+			if options['verbose'] > 0:
+				print 'From %s, the following tone columns will be used:' % d.filename, toneColumns
+			nColumn = 1+len(toneColumns)
+			nRow = len(d.records)
+			plotData = np.zeros((nColumn, nRow))
+			for row in range(nRow):
+				calculatePhases(plotData, row, d.records[row], toneColumns)
+
+			for i in range(1, nColumn):
+				unwrapPhases(plotData[i])
+
+			if options['subday'] > 0:
+				if options['subday'] == 1:
+					d0 = int(start)
+				elif options['subday'] == 2:
+					d0 = start
+				for row in range(nRow):
+					plotData[0][row] -= d0
+				xlabel('Time (Days since MJD %14.8f)' % d0)
+			else:
+				xlabel('Time (Day of Year)')
+			ylabel('Phase (rad):')
+			for i in range(1, nColumn):
+				if 'lines' in options:
+					plot(plotData[0], plotData[i], color=colors[(i-1)%len(colors)], linewidth=1)
+				else:
+					scatter(plotData[0], plotData[i], color=colors[(i-1)%len(colors)], s=3)
+			
+
+	#savefig('%s-pcal-%s.pdf' % (a, op), bbox_inches='tight')
+	show()
+
+
+
+op, toneSelect, fileList, options = parseCommandLine()
+
+data = []
+for f in fileList:
+	fd = File(f)
+	fd.summary()
+	data.append(fd)
+
+antennas = antList(data)
+
+for A in antennas:
+	D = getAntennaData(data, A)
+	print 'Processing %s: %d files' % (A, len(D))
+	generatePlots(op, toneSelect, D, options)
