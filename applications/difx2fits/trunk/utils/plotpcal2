@@ -54,6 +54,12 @@ class Record:	# all tones for one time from one file
 	
 	def getRecBands(self):
 		rbs = []
+	
+	def getFreqs(self):
+		freqs = []
+		for t in self.tones:
+			freqs.append(t.freq)
+		return freqs
 
 
 class File:
@@ -69,6 +75,10 @@ class File:
 		self.mjdStart = 0.0
 		self.mjdStop = 0.0
 		self.load()
+		self.index()
+		self.section = '0'
+
+	def index(self):
 		self.recBands = {}	# number of tones in recBand of given index
 		for r in self.records[0].tones:
 			if r.recBand in self.recBands:
@@ -77,6 +87,37 @@ class File:
 				self.recBands[r.recBand] = 1
 		self.recBands.keys().sort()
 		self.nRecBand = len(self.recBands)
+		self.totalTones = len(self.records[0].tones)
+		self.mjdStart = self.records[0].mjd
+		self.mjdStop = self.records[-1].mjd
+
+	def split(self):
+		breaks = []
+		freqs = self.records[0].getFreqs()
+		for r in range(1, len(self.records)):
+			fq = self.records[r].getFreqs()
+			if fq != freqs:
+				breaks.append(r)
+				freqs = fq
+		breaks.append(len(self.records))
+		if len(breaks) == 1:
+			return [self]
+		else:
+			sections = []
+			s = 0
+			secNum = 0
+			for b in breaks:
+				nf = File(self.filename)
+				nf.antenna = self.antenna
+				nf.pcalVersion = self.pcalVersion
+				nf.records = self.records[s:b]
+				nf.index()
+				nf.section = self.section + '.%d' % secNum
+				sections.append(nf)
+				s = b
+				secNum += 1
+			return sections
+
 
 	def __lt__(self, other):
 		return self.mjdStart < other.mjdStart
@@ -84,6 +125,7 @@ class File:
 	def summary(self):
 		print 'Data file:'
 		print '  File = %s' % self.filename
+		print '  Section = %s' % self.section
 		if self.antenna != None:
 			print '  Antenna = %s' % self.antenna
 		else:
@@ -108,42 +150,62 @@ class File:
 			if self.pcalVersion == None:
 				if r[:17] == '# File version = ':
 					self.pcalVersion = int(r[17:])
+					mjdColumn = 1
+					extraColumns = 4
+					columnsPerTone = 4
+					dbeColumn = -1
+					recBandColumn = 6
+					freqColumn = 7
+					toneColumn = 8
 				elif r[0] != '#':
 					if len(s[0]) > 5:
-						# not version 0
+						# not versioned / from Xcube
 						self.pcalVersion = -1
+						mjdColumn = 0
+						extraColumns = 4
+						columnsPerTone = 7
+						recBandColumn = 3
+						dbeColumn = 2
+						freqColumn = 6
+						toneColumn = 0
 					else:
 						self.pcalVersion = 0
+						mjdColumn = 1
+						extraColumns = 4
+						columnsPerTone = 4
+						recBandColumn = 9
+						freqColumn = 10
+						toneColumn = 11
 			if r[0] == '#':
 				continue
-			if self.pcalVersion == -1:
+			if self.pcalVersion != -1 and self.antenna == None:
+				self.antenna = s[0]
+
+			if self.pcalVersion != None:
 				if s[0] in extracts:
-					record = extracts[s[0]]
+					record = extracts[s[mjdColumn]]
 				else:
-					extracts[s[0]] = []
-					record = extracts[s[0]]
-				mjd = float(s[0])
-				totalTones = (len(s)-4)/7
+					extracts[s[mjdColumn]] = []
+					record = extracts[s[mjdColumn]]
+				mjd = float(s[mjdColumn])
+				totalTones = (len(s)-extraColumns)/columnsPerTone
 				lastRB = -1
 				toneNum = 0
 				for t in range(totalTones):
-					i = t*7+4
-					rb = int(s[i+3])
+					i = t*columnsPerTone + extraColumns
+					rb = int(s[i+recBandColumn])
+					if dbeColumn >= 0:
+						rb += 100*int(s[i+dbeColumn])
 					if lastRB != rb:
 						lastRB = rb
 						toneNum = 0
-					record.append(Tone(100*int(s[i+2])+rb, toneNum, int(s[i+6]), float(s[i]), float(s[i+1])))
-					toneNum += 1
+					freq = int(s[i+freqColumn])
+					if rb >= 0 and freq >= 0:
+						record.append(Tone(rb, toneNum, freq, float(s[i+toneColumn]), float(s[i+toneColumn+1])))
+						toneNum += 1
 					
-			elif self.pcalVersion == 0:
-				pass
-			elif self.pcalVersion == 1:
-				pass
-
 		keys = extracts.keys()
 		keys.sort()
-		self.mjdStart = float(keys[0])
-		self.mjdStop = float(keys[-1])
 		for k in keys:
 			self.records.append(Record(float(k), extracts[k]))
 
@@ -155,6 +217,7 @@ def parseCommandLine():
 	options = {}
 	options['verbose'] = 1
 	options['subday'] = 0
+	options['minsectionsize'] = 10
 	for a in argv[1:]:
 		if a[0] == '-':
 			# this is an option
@@ -252,6 +315,35 @@ def unwrapDelays(delayData, ambig):
 			delayData[i] += ambig
 		lastDelay = delayData[i]
 
+def getOneToneColumns(toneSelect, d):
+	columns = []
+	record = d.records[0]
+	for ts in toneSelect:
+		tss = split(ts, '=')
+		if tss[0] == 'rt':
+			# look for specific tone number.  Should be unambiguous
+			cd = split(tss[1], ',')	# column identifying data
+			rbi = int(cd[0])	# rec band (0 based)
+			if rbi < 0:
+				rbi += d.nRecBand
+			if rbi < 0 or rbi >= d.nRecBand:
+				print 'selection %s is invalid for %s sec. %s.  Skipping.' % (ts, d.filename, d.section)
+				continue
+			rb = d.recBands.keys()[rbi]
+			tn = int(cd[1])		# tone num
+			if tn < 0:
+				# negative number means count from back, python style
+				tn += d.recBands[rbi]
+			if tn < 0 or tn >= d.recBands[rbi]:
+				print 'selection %s is invalid for %s sec. %s.  Skipping.' % (ts, d.filename, d.section)
+				continue
+			for t in range(d.totalTones):
+				tone = record.tones[t]
+				if tone.recBand == rb and tone.toneNum == tn:
+					columns.append(t)
+
+	return columns
+		
 
 def generatePlots(op, toneSelect, data, options):
 	colors = ['red', 'orange', 'green', 'blue', 'purple', 'brown', 'cyan', 'magenta']
@@ -264,9 +356,12 @@ def generatePlots(op, toneSelect, data, options):
 	title('Pulse cal %s for antenna %s' % (op, antenna))
 
 	for d in data:
+		if len(d.records) < options['minsectionsize']:
+			print 'skipping %s sec. %s because it has only %d records' % (d.filename, d.section, len(d.records))
+			continue
 		if op == 'amp':
-			#toneColumns = getOneToneColumns(toneSelect, d)
-			toneColumns = [1,2]
+			toneColumns = getOneToneColumns(toneSelect, d)
+			#toneColumns = [0,1]
 			if options['verbose'] > 0:
 				print 'From %s, the following tone columns will be used:' % d.filename, toneColumns
 			nColumn = 1+len(toneColumns)
@@ -293,7 +388,7 @@ def generatePlots(op, toneSelect, data, options):
 					scatter(plotData[0], plotData[i], color=colors[(i-1)%len(colors)], s=3)
 		elif op == 'phase':
 			#toneColumns = getOneToneColumns(toneSelect, d)
-			toneColumns = [1,2]
+			toneColumns = [0,1]
 			if options['verbose'] > 0:
 				print 'From %s, the following tone columns will be used:' % d.filename, toneColumns
 			nColumn = 1+len(toneColumns)
@@ -333,8 +428,10 @@ op, toneSelect, fileList, options = parseCommandLine()
 data = []
 for f in fileList:
 	fd = File(f)
-	fd.summary()
-	data.append(fd)
+	sections = fd.split()
+	for s in sections:
+		s.summary()
+		data.append(s)
 
 antennas = antList(data)
 
