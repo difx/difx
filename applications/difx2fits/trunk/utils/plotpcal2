@@ -341,6 +341,81 @@ def getOneToneColumns(toneSelect, d):
 				tone = record.tones[t]
 				if tone.recBand == rb and tone.toneNum == tn:
 					columns.append(t)
+		elif tss[0] == 'rf':
+			# look for frequency within a specific record band.  Should be unambiguous
+			cd = split(tss[1], ',')	# column identifying data
+			rbi = int(cd[0])	# rec band (0 based)
+			if rbi < 0:
+				rbi += d.nRecBand
+			if rbi < 0 or rbi >= d.nRecBand:
+				print 'selection %s is invalid for %s sec. %s.  Skipping.' % (ts, d.filename, d.section)
+				continue
+			rb = d.recBands.keys()[rbi]
+			if cd[1][0] == '%':		# freq modulo this amount, not absolute freq
+				fq = int(cd[1][1:])	# freq (MHz)
+				for t in range(d.totalTones):
+					tone = record.tones[t]
+					if tone.recBand == rb and tone.freq % fq == 0:
+						columns.append(t)
+			else:				# absolute frequency
+				fq = int(cd[1])		# freq (MHz)
+				for t in range(d.totalTones):
+					tone = record.tones[t]
+					if tone.recBand == rb and tone.freq ==fq:
+						columns.append(t)
+		elif tss[0] == 'f':
+			# look for specific frequency.  There could be many
+			cd = split(tss[1], ',')	# column identifying data
+			for c in cd:
+				if c[0] == '%':		# freq modulo this amount, not absolute freq
+					fq = int(c[1:])	# freq (MHz)
+					for t in range(d.totalTones):
+						tone = record.tones[t]
+						if tone.freq % fq == 0:
+							columns.append(t)
+				else:				# absolute frequency
+					fq = int(c)		# freq (MHz)
+					for t in range(d.totalTones):
+						tone = record.tones[t]
+						if tone.freq == fq:
+							columns.append(t)
+		elif tss[0] == 'r':
+			# look for all tones in given record band
+			cd = split(tss[1], ',')	# column identifying data
+			rbList = []
+			for c in cd:
+				rbi = int(c)	# rec band (0 based)
+				if rbi < 0:
+					rbi += d.nRecBand
+				if rbi < 0 or rbi >= d.nRecBand:
+					continue
+				rb = d.recBands.keys()[rbi]
+				rbList.append(rb)
+			if len(rbList) == 0:
+				print 'selection %s is invalid for %s sec. %s.  Skipping.' % (ts, d.filename, d.section)
+				continue
+			for t in range(d.totalTones):
+				tone = record.tones[t]
+				if tone.recBand in rbList:
+					columns.append(t)
+		elif tss[0] == 't':
+			# look for specific tone number.  Should be unambiguous
+			cd = split(tss[1], ',')	# column identifying data
+			tnList = []
+			for c in cd:
+				tnList.append(int(c))		# tone num
+
+			for t in range(d.totalTones):
+				tone = record.tones[t]
+				rbi = -1
+				for rbii in range(d.nRecBand):
+					if d.recBands.keys()[rbii] == tone.recBand:
+						rbi = rbii
+				if rbi < 0:
+					continue
+				if tone.toneNum in tnList or tone.toneNum-d.recBands[rbi] in tnList:
+					columns.append(t)
+			
 
 	return columns
 		
@@ -361,7 +436,6 @@ def generatePlots(op, toneSelect, data, options):
 			continue
 		if op == 'amp':
 			toneColumns = getOneToneColumns(toneSelect, d)
-			#toneColumns = [0,1]
 			if options['verbose'] > 0:
 				print 'From %s, the following tone columns will be used:' % d.filename, toneColumns
 			nColumn = 1+len(toneColumns)
@@ -387,8 +461,7 @@ def generatePlots(op, toneSelect, data, options):
 				else:
 					scatter(plotData[0], plotData[i], color=colors[(i-1)%len(colors)], s=3)
 		elif op == 'phase':
-			#toneColumns = getOneToneColumns(toneSelect, d)
-			toneColumns = [0,1]
+			toneColumns = getOneToneColumns(toneSelect, d)
 			if options['verbose'] > 0:
 				print 'From %s, the following tone columns will be used:' % d.filename, toneColumns
 			nColumn = 1+len(toneColumns)
