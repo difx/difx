@@ -79,26 +79,30 @@ class File:
 		self.section = '0'
 
 	def index(self):
-		self.recBands = {}	# number of tones in recBand of given index
+		self.tonesInRecBand = {}	# number of tones in recBand of given index
 		for r in self.records[0].tones:
-			if r.recBand in self.recBands:
-				self.recBands[r.recBand] += 1
+			if r.recBand in self.tonesInRecBand:
+				self.tonesInRecBand[r.recBand] += 1
 			else:
-				self.recBands[r.recBand] = 1
-		self.recBands.keys().sort()
-		self.nRecBand = len(self.recBands)
+				self.tonesInRecBand[r.recBand] = 1
+		self.tonesInRecBand.keys().sort()
+		self.nRecBand = len(self.tonesInRecBand)
 		self.totalTones = len(self.records[0].tones)
 		self.mjdStart = self.records[0].mjd
 		self.mjdStop = self.records[-1].mjd
 
-	def split(self):
+	def split(self, maxGapSec):
+		maxGapDay = maxGapSec/86400.0
 		breaks = []
 		freqs = self.records[0].getFreqs()
+                lastmjd = self.records[0].mjd
 		for r in range(1, len(self.records)):
 			fq = self.records[r].getFreqs()
-			if fq != freqs:
+                        mjd = self.records[r].mjd
+			if fq != freqs or mjd > lastmjd + maxGapDay:
 				breaks.append(r)
 				freqs = fq
+			lastmjd = mjd
 		breaks.append(len(self.records))
 		if len(breaks) == 1:
 			return [self]
@@ -118,6 +122,12 @@ class File:
 				secNum += 1
 			return sections
 
+	def quack(self, skip):
+		self.records = self.records[skip:]
+		self.index()
+
+	def average(self, aveSec):
+		pass
 
 	def __lt__(self, other):
 		return self.mjdStart < other.mjdStart
@@ -136,7 +146,7 @@ class File:
 			print '  Weird: no Pcal version determined!'
 		print '  Num records = %d' % len(self.records)
 		print '  Time range: %14.8f to %14.8f' % (self.mjdStart, self.mjdStop)
-		print '  Tone counts: ', self.recBands
+		print '  Tone counts: ', self.tonesInRecBand
 	
 	def load(self):
 		# here choose how to load based on extension
@@ -216,8 +226,12 @@ def parseCommandLine():
 	fileList = []
 	options = {}
 	options['verbose'] = 1
-	options['subday'] = 0
+	options['subday'] = 1
 	options['minsectionsize'] = 10
+	options['maxgap'] = 10 # seconds
+	options['average'] = 6 # seconds
+	options['timeunits'] = 'Hours'
+	options['quack'] = 1
 	for a in argv[1:]:
 		if a[0] == '-':
 			# this is an option
@@ -297,6 +311,15 @@ def calculatePhases(plotData, row, rec, toneColumns):
 	for i in range(len(toneColumns)):
 		plotData[i+1][row] = rec.tones[i].phase()
 
+# in units of picoseconds
+def calculateDelays(plotData, row, rec, toneColumns):
+	plotData[0][row] = rec.mjd
+	for i in range(len(toneColumns)):
+		tone1 = rec.tones[toneColumns[i][0]]
+		tone2 = rec.tones[toneColumns[i][1]]
+		df = tone1.freq-tone2.freq
+		plotData[i+1][row] = 1.0e6*(tone1.phase()-tone2.phase())/(2*pi*df)
+
 def unwrapPhases(phaseData):
 	lastPhase = phaseData[0]
 	for i in range(1, len(phaseData)):
@@ -327,15 +350,15 @@ def getOneToneColumns(toneSelect, d):
 			if rbi < 0:
 				rbi += d.nRecBand
 			if rbi < 0 or rbi >= d.nRecBand:
-				print 'selection %s is invalid for %s sec. %s.  Skipping.' % (ts, d.filename, d.section)
+				print 'selection %s is invalid for %s section %s.  Skipping.' % (ts, d.filename, d.section)
 				continue
-			rb = d.recBands.keys()[rbi]
+			rb = d.tonesInRecBand.keys()[rbi]
 			tn = int(cd[1])		# tone num
 			if tn < 0:
 				# negative number means count from back, python style
-				tn += d.recBands[rbi]
-			if tn < 0 or tn >= d.recBands[rbi]:
-				print 'selection %s is invalid for %s sec. %s.  Skipping.' % (ts, d.filename, d.section)
+				tn += d.tonesInRecBand[rbi]
+			if tn < 0 or tn >= d.tonesInRecBand[rbi]:
+				print 'selection %s is invalid for %s section %s.  Skipping.' % (ts, d.filename, d.section)
 				continue
 			for t in range(d.totalTones):
 				tone = record.tones[t]
@@ -348,9 +371,9 @@ def getOneToneColumns(toneSelect, d):
 			if rbi < 0:
 				rbi += d.nRecBand
 			if rbi < 0 or rbi >= d.nRecBand:
-				print 'selection %s is invalid for %s sec. %s.  Skipping.' % (ts, d.filename, d.section)
+				print 'selection %s is invalid for %s section %s.  Skipping.' % (ts, d.filename, d.section)
 				continue
-			rb = d.recBands.keys()[rbi]
+			rb = d.tonesInRecBand.keys()[rbi]
 			if cd[1][0] == '%':		# freq modulo this amount, not absolute freq
 				fq = int(cd[1][1:])	# freq (MHz)
 				for t in range(d.totalTones):
@@ -389,7 +412,7 @@ def getOneToneColumns(toneSelect, d):
 					rbi += d.nRecBand
 				if rbi < 0 or rbi >= d.nRecBand:
 					continue
-				rb = d.recBands.keys()[rbi]
+				rb = d.tonesInRecBand.keys()[rbi]
 				rbList.append(rb)
 			if len(rbList) == 0:
 				print 'selection %s is invalid for %s sec. %s.  Skipping.' % (ts, d.filename, d.section)
@@ -407,18 +430,125 @@ def getOneToneColumns(toneSelect, d):
 
 			for t in range(d.totalTones):
 				tone = record.tones[t]
-				rbi = -1
-				for rbii in range(d.nRecBand):
-					if d.recBands.keys()[rbii] == tone.recBand:
-						rbi = rbii
-				if rbi < 0:
-					continue
-				if tone.toneNum in tnList or tone.toneNum-d.recBands[rbi] in tnList:
+				if tone.toneNum in tnList or tone.toneNum-d.tonesInRecBand[tone.recBand] in tnList:
 					columns.append(t)
 			
-
 	return columns
 		
+def getTwoToneColumns(toneSelect, d):
+	columns = []
+	record = d.records[0]
+	for ts in toneSelect:
+		tss = split(ts, '=')
+		if tss[0] == 'rt':
+			# look for specific tone number.  Should be unambiguous
+			cd = split(tss[1], ',')	# column identifying data
+			rbi = int(cd[0])	# rec band (0 based)
+			if rbi < 0:
+				rbi += d.nRecBand
+			if rbi < 0 or rbi >= d.nRecBand:
+				print 'selection %s is invalid for %s section %s.  Skipping.' % (ts, d.filename, d.section)
+				continue
+			rb = d.tonesInRecBand.keys()[rbi]
+			nTone = d.tonesInRecBand[rb]
+			if nTone < 2:
+				print 'selection %s is invalid for %s section %s.  Too few tones.  Skipping.' % (ts, d.filename, d.section)
+				continue
+			if cd[1] == 'pairs':
+				for t in range(d.totalTones, 2):
+					tone1 = record.tones[t]
+					tone2 = record.tones[t+1]
+					if tone1.recBand == rb and tone2.recBand == rb:
+						columns.append([t,t+1])
+			else:
+				if cd[1] == 'ends':
+					tn1 = 0
+					tn2 = nTone-1
+				elif cd[1] == 'good':
+					if nTone < 4:
+						tn1 = 0
+						tn2 = nTone-1
+					elif nTone < 8:
+						tn1 = 1
+						tn2 = nTone-2
+					else:
+						tn1 = nTone/8
+						tn2 = nTone-1-tn1
+				else:
+					tn1 = int(cd[1])
+					tn2 = int(cd[2])
+				if tn1 < 0:
+					tn1 += nTone
+				if tn2 < 0:
+					tn2 += nTone
+				tns = []
+				for t in range(d.totalTones):
+					tone = record.tones[t]
+					if tone.recBand == rb:
+						if tone.toneNum in [tn1, tn2]:
+							tns.append(t)
+				if len(tns) == 2:
+					columns.append(tns)
+		elif tss[0] == 't':
+			# look for specific tone number.  Should be unambiguous
+			cd = split(tss[1], ',')	# column identifying data
+			for rbi in range(d.nRecBand):
+				rb = d.tonesInRecBand.keys()[rbi]
+				nTone = d.tonesInRecBand[rb]
+				if nTone < 2:
+					print 'selection %s is invalid for %s section %s.  Too few tones.  Skipping.' % (ts, d.filename, d.section)
+					continue
+				if cd[0] == 'pairs':
+					for t in range(d.totalTones, 2):
+						tone1 = record.tones[t]
+						tone2 = record.tones[t+1]
+						if tone1.recBand == rb and tone2.recBand == rb:
+							columns.append([t,t+1])
+				else:
+					if cd[0] == 'ends':
+						tn1 = 0
+						tn2 = nTone-1
+					elif cd[0] == 'good':
+						if nTone < 4:
+							tn1 = 0
+							tn2 = nTone-1
+						elif nTone < 8:
+							tn1 = 1
+							tn2 = nTone-2
+						else:
+							tn1 = nTone/8
+							tn2 = nTone-1-tn1
+					else:
+						tn1 = int(cd[0])
+						tn2 = int(cd[1])
+					if tn1 < 0:
+						tn1 += nTone
+					if tn2 < 0:
+						tn2 += nTone
+					tns = []
+					for t in range(d.totalTones):
+						tone = record.tones[t]
+						if tone.recBand == rb:
+							if tone.toneNum in [tn1, tn2]:
+								tns.append(t)
+					if len(tns) == 2:
+						columns.append(tns)
+
+	return columns
+
+def makeTimeAxis(options, plotData, nRow, start):
+	if options['subday'] > 0:
+		factors = {'Days':1.0, 'Hours':24.0, 'Minutes':1440.0, 'Seconds':86400.0}
+		factor = factors[options['timeunits']]
+		if options['subday'] == 1:
+			d0 = int(start)
+		elif options['subday'] == 2:
+			d0 = start
+		for row in range(nRow):
+			plotData[0][row] = (plotData[0][row]-d0)*factor
+		xlabel('Time (%s since MJD %14.8f)' % (options['timeunits'], d0))
+	else:
+		xlabel('Time (Day of Year)')
 
 def generatePlots(op, toneSelect, data, options):
 	colors = ['red', 'orange', 'green', 'blue', 'purple', 'brown', 'cyan', 'magenta']
@@ -430,6 +560,8 @@ def generatePlots(op, toneSelect, data, options):
 
 	title('Pulse cal %s for antenna %s' % (op, antenna))
 
+	nPoints = 0
+
 	for d in data:
 		if len(d.records) < options['minsectionsize']:
 			print 'skipping %s sec. %s because it has only %d records' % (d.filename, d.section, len(d.records))
@@ -440,20 +572,12 @@ def generatePlots(op, toneSelect, data, options):
 				print 'From %s, the following tone columns will be used:' % d.filename, toneColumns
 			nColumn = 1+len(toneColumns)
 			nRow = len(d.records)
+			nPoints += nRow * len(toneColumns)
 			plotData = np.zeros((nColumn, nRow))
 			for row in range(nRow):
 				calculateAmplitudes(plotData, row, d.records[row], toneColumns)
 
-			if options['subday'] > 0:
-				if options['subday'] == 1:
-					d0 = int(start)
-				elif options['subday'] == 2:
-					d0 = start
-				for row in range(nRow):
-					plotData[0][row] -= d0
-				xlabel('Time (Days since MJD %14.8f)' % d0)
-			else:
-				xlabel('Time (Day of Year)')
+			makeTimeAxis(options, plotData, nRow, start)
 			ylabel('Amplitude')
 			for i in range(1, nColumn):
 				if 'lines' in options:
@@ -467,30 +591,41 @@ def generatePlots(op, toneSelect, data, options):
 			nColumn = 1+len(toneColumns)
 			nRow = len(d.records)
 			plotData = np.zeros((nColumn, nRow))
+			nPoints += nRow * len(toneColumns)
 			for row in range(nRow):
 				calculatePhases(plotData, row, d.records[row], toneColumns)
 
 			for i in range(1, nColumn):
 				unwrapPhases(plotData[i])
 
-			if options['subday'] > 0:
-				if options['subday'] == 1:
-					d0 = int(start)
-				elif options['subday'] == 2:
-					d0 = start
-				for row in range(nRow):
-					plotData[0][row] -= d0
-				xlabel('Time (Days since MJD %14.8f)' % d0)
-			else:
-				xlabel('Time (Day of Year)')
+			makeTimeAxis(options, plotData, nRow, start)
 			ylabel('Phase (rad):')
 			for i in range(1, nColumn):
 				if 'lines' in options:
 					plot(plotData[0], plotData[i], color=colors[(i-1)%len(colors)], linewidth=1)
 				else:
 					scatter(plotData[0], plotData[i], color=colors[(i-1)%len(colors)], s=3)
-			
+		elif op == 'delay':
+			toneColumns = getTwoToneColumns(toneSelect, d)
+			if options['verbose'] > 0:
+				print 'From %s:%s, the following tone columns will be used:' % (d.filename, d.section), toneColumns
+			nColumn = 1+len(toneColumns)
+			nRow = len(d.records)
+			plotData = np.zeros((nColumn, nRow))
+			nPoints += nRow * len(toneColumns)
+			for row in range(nRow):
+				calculateDelays(plotData, row, d.records[row], toneColumns)
 
+			makeTimeAxis(options, plotData, nRow, start)
+			ylabel('Delay (ps):')
+			for i in range(1, nColumn):
+				if 'lines' in options:
+					plot(plotData[0], plotData[i], color=colors[(i-1)%len(colors)], linewidth=1)
+				else:
+					scatter(plotData[0], plotData[i], color=colors[(i-1)%len(colors)], s=3)
+
+			
+	print 'Plotted %d points' % nPoints
 	#savefig('%s-pcal-%s.pdf' % (a, op), bbox_inches='tight')
 	show()
 
@@ -501,10 +636,16 @@ op, toneSelect, fileList, options = parseCommandLine()
 data = []
 for f in fileList:
 	fd = File(f)
-	sections = fd.split()
+	sections = fd.split(options['maxgap'])
 	for s in sections:
-		s.summary()
-		data.append(s)
+		if len(s.records) > options['quack']+2:
+			if options['quack'] > 0:
+				print 'Quacking %d records' % options['quack']
+				s.quack(options['quack'])
+			s.summary()
+			data.append(s)
+		else:
+			print 'Dropping %s:%s because it has only %d records' % (s.filename, s.section, len(s.records))
 
 antennas = antList(data)
 
@@ -512,3 +653,5 @@ for A in antennas:
 	D = getAntennaData(data, A)
 	print 'Processing %s: %d files' % (A, len(D))
 	generatePlots(op, toneSelect, D, options)
+
+# vim: tabstop=8:softtabstop=8:shiftwidth=8:noexpandtab

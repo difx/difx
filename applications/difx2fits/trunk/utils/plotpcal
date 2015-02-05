@@ -677,3 +677,5 @@ if options['verbose'] > 0:
 	summarizeData(dataDict)
 
 generatePlots(op, toneSelect, dataDict, options)
+
+# vim: tabstop=8:softtabstop=8:shiftwidth=8:noexpandtab
