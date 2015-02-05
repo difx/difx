@@ -23,6 +23,8 @@
 from sys import argv, exit
 from string import split, strip
 from math import *
+from os import popen
+import gzip
 from pylab import np, plot, show, scatter, xlabel, ylabel, title, axes, savefig
 
 program = 'plotpcal2'
@@ -150,8 +152,12 @@ class File:
 	
 	def load(self):
 		# here choose how to load based on extension
-		# FIXME: for now, just uncompressed text
-		raw = open(self.filename).readlines()
+		if self.filename[-3:] == '.gz':
+			raw = gzip.open(self.filename).readlines()
+		elif self.filename[-3:] == '.xz':
+			raw = popen('xzcat %s' % self.filename).readlines()
+		else:
+			raw = open(self.filename).readlines()
 		extracts = {}	# dictionary; text of MJD is key
 		for r in raw:
 			s = split(strip(r))
@@ -161,12 +167,12 @@ class File:
 				if r[:17] == '# File version = ':
 					self.pcalVersion = int(r[17:])
 					mjdColumn = 1
-					extraColumns = 4
+					extraColumns = 6
 					columnsPerTone = 4
 					dbeColumn = -1
-					recBandColumn = 6
-					freqColumn = 7
-					toneColumn = 8
+					recBandColumn = -1
+					freqColumn = 0
+					toneColumn = 2
 				elif r[0] != '#':
 					if len(s[0]) > 5:
 						# not versioned / from Xcube
@@ -181,11 +187,12 @@ class File:
 					else:
 						self.pcalVersion = 0
 						mjdColumn = 1
-						extraColumns = 4
+						extraColumns = 9
 						columnsPerTone = 4
-						recBandColumn = 9
-						freqColumn = 10
-						toneColumn = 11
+						dbeColumn = -1
+						recBandColumn = 0
+						freqColumn = 1
+						toneColumn = 2
 			if r[0] == '#':
 				continue
 			if self.pcalVersion != -1 and self.antenna == None:
@@ -201,11 +208,16 @@ class File:
 				totalTones = (len(s)-extraColumns)/columnsPerTone
 				lastRB = -1
 				toneNum = 0
+				if self.pcalVersion == 1:
+					tonesPerRecBand = int(s[5])
 				for t in range(totalTones):
 					i = t*columnsPerTone + extraColumns
-					rb = int(s[i+recBandColumn])
-					if dbeColumn >= 0:
-						rb += 100*int(s[i+dbeColumn])
+					if self.pcalVersion == 1:
+						rb = t/tonesPerRecBand
+					else:
+						rb = int(s[i+recBandColumn])
+						if dbeColumn >= 0:
+							rb += 100*int(s[i+dbeColumn])
 					if lastRB != rb:
 						lastRB = rb
 						toneNum = 0
@@ -310,6 +322,11 @@ def calculatePhases(plotData, row, rec, toneColumns):
 	plotData[0][row] = rec.mjd
 	for i in range(len(toneColumns)):
 		plotData[i+1][row] = rec.tones[i].phase()
+
+def calculateComplex(plotDataX, plotDataY, row, rec, toneColumns):
+	for i in range(len(toneColumns)):
+		plotDataX[i][row] = rec.tones[i].re
+		plotDataY[i][row] = rec.tones[i].im
 
 # in units of picoseconds
 def calculateDelays(plotData, row, rec, toneColumns):
@@ -499,7 +516,7 @@ def getTwoToneColumns(toneSelect, d):
 					print 'selection %s is invalid for %s section %s.  Too few tones.  Skipping.' % (ts, d.filename, d.section)
 					continue
 				if cd[0] == 'pairs':
-					for t in range(d.totalTones, 2):
+					for t in range(0, d.totalTones, 2):
 						tone1 = record.tones[t]
 						tone2 = record.tones[t+1]
 						if tone1.recBand == rb and tone2.recBand == rb:
@@ -623,6 +640,25 @@ def generatePlots(op, toneSelect, data, options):
 					plot(plotData[0], plotData[i], color=colors[(i-1)%len(colors)], linewidth=1)
 				else:
 					scatter(plotData[0], plotData[i], color=colors[(i-1)%len(colors)], s=3)
+		elif op == 'xy':
+			toneColumns = getOneToneColumns(toneSelect, d)
+			if options['verbose'] > 0:
+				print 'From %s:%s, the following tone columns will be used:' % (d.filename, d.section), toneColumns
+			nColumn = len(toneColumns)
+			nRow = len(d.records)
+			plotDataX = np.zeros((nColumn, nRow))
+			plotDataY = np.zeros((nColumn, nRow))
+			nPoints += nRow * nColumn
+			for row in range(nRow):
+				calculateComplex(plotDataX, plotDataY, row, d.records[row], toneColumns)
+
+			xlabel('Real:')
+			ylabel('Imag:')
+			for i in range(nColumn):
+				if 'lines' in options:
+					plot(plotDataX[i], plotDataY[i], color=colors[(i-1)%len(colors)], linewidth=1)
+				else:
+					scatter(plotDataX[i], plotDataY[i], color=colors[(i-1)%len(colors)], s=3)
 
 			
 	print 'Plotted %d points' % nPoints
