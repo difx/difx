@@ -29,13 +29,14 @@ from pylab import np, plot, show, scatter, xlabel, ylabel, title, axes, savefig
 
 program = 'plotpcal2'
 author = 'Walter Brisken <wbrisken@nrao.edu>'
-version = '0.1'
+version = '0.2'
 
 legalOps = ['amp', 'phase', 'delay', 'xy']
 
 def usage(prog):
 	print '\n%s ver. %s  %s\n' % (program, version, author)
 	print 'Usage: %s [options] operation toneSelections dataFiles\n' % prog
+	print 'Some more details are at: http://cira.ivec.org/dokuwiki/doku.php/difx/plotpcal\n'
 
 class Tone:
 	def __init__(self, recBand, toneNum, freq, re, im):
@@ -316,17 +317,17 @@ def getAntennaData(fileData, A):
 def calculateAmplitudes(plotData, row, rec, toneColumns):
 	plotData[0][row] = rec.mjd
 	for i in range(len(toneColumns)):
-		plotData[i+1][row] = rec.tones[i].amp()
+		plotData[i+1][row] = rec.tones[toneColumns[i]].amp()
 
 def calculatePhases(plotData, row, rec, toneColumns):
 	plotData[0][row] = rec.mjd
 	for i in range(len(toneColumns)):
-		plotData[i+1][row] = rec.tones[i].phase()
+		plotData[i+1][row] = rec.tones[toneColumns[i]].phase()
 
 def calculateComplex(plotDataX, plotDataY, row, rec, toneColumns):
 	for i in range(len(toneColumns)):
-		plotDataX[i][row] = rec.tones[i].re
-		plotDataY[i][row] = rec.tones[i].im
+		plotDataX[i][row] = rec.tones[toneColumns[i]].re
+		plotDataY[i][row] = rec.tones[toneColumns[i]].im
 
 # in units of picoseconds
 def calculateDelays(plotData, row, rec, toneColumns):
@@ -482,7 +483,7 @@ def getTwoToneColumns(toneSelect, d):
 					tn1 = 0
 					tn2 = nTone-1
 				elif cd[1] == 'good':
-					if nTone < 4:
+					if nTone <= 4:
 						tn1 = 0
 						tn2 = nTone-1
 					elif nTone < 8:
@@ -491,6 +492,9 @@ def getTwoToneColumns(toneSelect, d):
 					else:
 						tn1 = nTone/8
 						tn2 = nTone-1-tn1
+				elif cd[1] == 'mid':
+					tn1 = (nTone-1)/2
+					tn2 = tn1+1
 				else:
 					tn1 = int(cd[1])
 					tn2 = int(cd[2])
@@ -660,10 +664,12 @@ def generatePlots(op, toneSelect, data, options):
 				else:
 					scatter(plotDataX[i], plotDataY[i], color=colors[(i-1)%len(colors)], s=3)
 
-			
-	print 'Plotted %d points' % nPoints
-	#savefig('%s-pcal-%s.pdf' % (a, op), bbox_inches='tight')
-	show()
+	if nPoints == 0:
+		print 'Nothing to see!  No data points generated.'
+	else:		
+		print 'Plotted %d points' % nPoints
+		#savefig('%s-pcal-%s.pdf' % (a, op), bbox_inches='tight')
+		show()
 
 
 
