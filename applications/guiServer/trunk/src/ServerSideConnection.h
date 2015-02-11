@@ -555,6 +555,9 @@ namespace guiServer {
                 case DIFX_MESSAGE_MK5CONTROL:
                     mk5Control( &G );
                     break;
+                case DIFX_MESSAGE_MARK5COPY:
+                    mark5Copy( &G );
+                    break;
                 case DIFX_MESSAGE_COMMAND:
                     relayCommand( data, nBytes );
                     break;
