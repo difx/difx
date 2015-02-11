@@ -19,6 +19,7 @@ guiServer_SOURCES = \
 	DifxMonitorExchange.h \
 	ExecuteSystem.h \
 	mk5Control.cpp \
+	mark5Copy.cpp \
 	mk5ControlConnection.h \
 	GUIClient.h
 

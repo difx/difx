@@ -2,8 +2,8 @@
 //
 //   ServerSideConnection::getDirectory Function (and associated functions)
 //
-//!  Called when an instruction to either obtain an existing VSN directory
-//!  or generate a new one.
+//!  Called when an instruction is received to either obtain an existing VSN
+//!  directory or generate a new one.
 //
 //=============================================================================
 #include <ServerSideConnection.h>
@@ -80,22 +80,87 @@ void ServerSideConnection::getDirectoryThread( GetDirectoryInfo* info ) {
 	else
 		mpiWrapper = "mpirun";
 
+    bool noErrors = true;
 	
-	    bool noErrors = true;
-  		
-  		//  Find the directory path on the Mark5 where the VSN lives.
-  		char fullPath[DIFX_MESSAGE_FILENAME_LENGTH];
-  		fullPath[0] = 0;
+	//  Find the directory path on the Mark5 where the VSN lives.
+	char fullPath[DIFX_MESSAGE_FILENAME_LENGTH];
+	fullPath[0] = 0;
+    snprintf( command, MAX_COMMAND_SIZE, 
+        "%s -host %s /bin/echo $MARK5_DIR_PATH", mpiWrapper, S->mark5 );
+    info->ssc->diagnostic( WARNING, "executing: %s\n", command );
+    ExecuteSystem* executor = new ExecuteSystem( command );
+    if ( executor->pid() > -1 ) {
+        while ( int ret = executor->nextOutput( message, DIFX_MESSAGE_LENGTH ) ) {
+            if ( ret == 1 ) { // stdout
+                //  The only (non-error) return we expect from this command is the
+                //  value of the environment variable.
+                snprintf( fullPath, DIFX_MESSAGE_FILENAME_LENGTH, "%s", message );
+            }
+            else {            // stderr
+                gc->sendPacket( MPIRUN_ERROR, message, strlen( message ) );
+                info->ssc->diagnostic( ERROR, "%s", message );
+            }
+        }
+    }
+    delete executor;
+
+    //  Construct a complete path for the directory.  This requires that something
+    //  was returned with the environment variable request above.
+    if ( noErrors ) {
+        if ( fullPath[0] != 0 ) {
+            snprintf( fullPath + strlen( fullPath ), DIFX_MESSAGE_FILENAME_LENGTH - strlen( fullPath ), "/%s.dir", S->vsn );
+            gc->sendPacket( GETDIRECTORY_FULLPATH, fullPath, strlen( fullPath ) );
+        }
+        else {
+            gc->sendPacket( NO_ENVIRONMENT_VARIABLE, NULL, 0 );
+            noErrors = false;
+        }
+    }
+
+    //  Generate a new directory if that was requested.
+    if ( S->generateNew ) {
+        gc->sendPacket( GENERATE_DIRECTORY_STARTED, NULL, 0 );
         snprintf( command, MAX_COMMAND_SIZE, 
-            "%s -host %s /bin/echo $MARK5_DIR_PATH", mpiWrapper, S->mark5 );
+            "%s -host %s %s mk5dir -n -f %s",
+            mpiWrapper, S->mark5, info->ssc->difxSetupPath(), S->vsn );
         info->ssc->diagnostic( WARNING, "executing: %s\n", command );
-        ExecuteSystem* executor = new ExecuteSystem( command );
+        executor = new ExecuteSystem( command );
+        bool thereWereErrors = false;
         if ( executor->pid() > -1 ) {
             while ( int ret = executor->nextOutput( message, DIFX_MESSAGE_LENGTH ) ) {
                 if ( ret == 1 ) { // stdout
-                    //  The only (non-error) return we expect from this command is the
-                    //  value of the environment variable.
-                    snprintf( fullPath, DIFX_MESSAGE_FILENAME_LENGTH, "%s", message );
+                    //  Each line represents file content.
+                    gc->sendPacket( GENERATE_DIRECTORY_INFO, message, strlen( message ) );
+                    info->ssc->diagnostic( INFORMATION, "%s", message );
+                }
+                else {            // stderr
+                    gc->sendPacket( MPIRUN_ERROR, message, strlen( message ) );
+                    info->ssc->diagnostic( ERROR, "%s", message );
+                    thereWereErrors = true;
+                }
+            }
+        }
+        if ( thereWereErrors )
+            gc->sendPacket( GENERATE_DIRECTORY_ERRORS, NULL, 0 );
+        else
+            gc->sendPacket( GENERATE_DIRECTORY_COMPLETED, NULL, 0 );
+        delete executor;
+    }
+
+    //  Get the creation date for the file, if it exists.
+    if ( noErrors ) {
+        creationDate[0] = 0;
+        snprintf( command, MAX_COMMAND_SIZE, 
+            "%s -host %s /bin/ls -l %s", mpiWrapper, S->mark5, fullPath );
+        info->ssc->diagnostic( WARNING, "executing: %s\n", command );
+        executor = new ExecuteSystem( command );
+        if ( executor->pid() > -1 ) {
+            while ( int ret = executor->nextOutput( message, DIFX_MESSAGE_LENGTH ) ) {
+                if ( ret == 1 ) { // stdout
+                    //  One line should be returned, containing the date the directory was
+                    //  last updated.
+                    snprintf( creationDate, DIFX_MESSAGE_FILENAME_LENGTH, "%s", message + 29 );
+                    creationDate[12] = 0;
                 }
                 else {            // stderr
                     gc->sendPacket( MPIRUN_ERROR, message, strlen( message ) );
@@ -104,116 +169,50 @@ void ServerSideConnection::getDirectoryThread( GetDirectoryInfo* info ) {
             }
         }
         delete executor;
-
-        //  Construct a complete path for the directory.  This requires that something
-        //  was returned with the environment variable request above.
-        if ( noErrors ) {
-            if ( fullPath[0] != 0 ) {
-                snprintf( fullPath + strlen( fullPath ), DIFX_MESSAGE_FILENAME_LENGTH - strlen( fullPath ), "/%s.dir", S->vsn );
-                gc->sendPacket( GETDIRECTORY_FULLPATH, fullPath, strlen( fullPath ) );
-            }
-            else {
-                gc->sendPacket( NO_ENVIRONMENT_VARIABLE, NULL, 0 );
-                noErrors = false;
-            }
+    }
+    
+    //  Send the creation date for this file if it exists.  If it doesn't exist,
+    //  send that information.
+    if ( noErrors ) {
+        if ( creationDate[0] != 0 ) {
+            gc->sendPacket( GETDIRECTORY_DATE, creationDate, strlen( creationDate ) );
         }
+        else {
+            gc->sendPacket( FILE_NOT_FOUND, NULL, 0 );
+            noErrors = false;
+        }
+    }
 
-        //  Generate a new directory if that was requested.
-        if ( S->generateNew ) {
-            gc->sendPacket( GENERATE_DIRECTORY_STARTED, NULL, 0 );
-            snprintf( command, MAX_COMMAND_SIZE, 
-                "%s -host %s %s mk5dir -n -f %s",
-                mpiWrapper, S->mark5, info->ssc->difxSetupPath(), S->vsn );
-            info->ssc->diagnostic( WARNING, "executing: %s\n", command );
-            executor = new ExecuteSystem( command );
-            bool thereWereErrors = false;
-            if ( executor->pid() > -1 ) {
-                while ( int ret = executor->nextOutput( message, DIFX_MESSAGE_LENGTH ) ) {
-                    if ( ret == 1 ) { // stdout
-                        //  Each line represents file content.
-                        gc->sendPacket( GENERATE_DIRECTORY_INFO, message, strlen( message ) );
-                        info->ssc->diagnostic( INFORMATION, "%s", message );
-                    }
-                    else {            // stderr
-                        gc->sendPacket( MPIRUN_ERROR, message, strlen( message ) );
-                        info->ssc->diagnostic( ERROR, "%s", message );
-                        thereWereErrors = true;
-                    }
+    //  Get the file contents.
+    if ( noErrors ) {
+        gc->sendPacket( GETDIRECTORY_FILESTART, NULL, 0 );
+        snprintf( command, MAX_COMMAND_SIZE, 
+            "%s -host %s /bin/cat %s", mpiWrapper, S->mark5, fullPath );
+        info->ssc->diagnostic( WARNING, "executing: %s\n", command );
+        executor = new ExecuteSystem( command );
+        if ( executor->pid() > -1 ) {
+            while ( int ret = executor->nextOutput( message, DIFX_MESSAGE_LENGTH ) ) {
+                if ( ret == 1 ) { // stdout
+                    //  Each line represents file content.
+                    gc->sendPacket( GETDIRECTORY_FILEDATA, message, strlen( message ) );
+                }
+                else {            // stderr
+                    gc->sendPacket( MPIRUN_ERROR, message, strlen( message ) );
+                    info->ssc->diagnostic( ERROR, "%s", message );
+                    noErrors = false;
                 }
             }
-            if ( thereWereErrors )
-                gc->sendPacket( GENERATE_DIRECTORY_ERRORS, NULL, 0 );
-            else
-                gc->sendPacket( GENERATE_DIRECTORY_COMPLETED, NULL, 0 );
-            delete executor;
         }
+        delete executor;
+    }
 
-        //  Get the creation date for the file, if it exists.
-        if ( noErrors ) {
-            creationDate[0] = 0;
-            snprintf( command, MAX_COMMAND_SIZE, 
-                "%s -host %s /bin/ls -l %s", mpiWrapper, S->mark5, fullPath );
-            info->ssc->diagnostic( WARNING, "executing: %s\n", command );
-            executor = new ExecuteSystem( command );
-            if ( executor->pid() > -1 ) {
-                while ( int ret = executor->nextOutput( message, DIFX_MESSAGE_LENGTH ) ) {
-                    if ( ret == 1 ) { // stdout
-                        //  One line should be returned, containing the date the directory was
-                        //  last updated.
-                        snprintf( creationDate, DIFX_MESSAGE_FILENAME_LENGTH, "%s", message + 29 );
-                        creationDate[12] = 0;
-                    }
-                    else {            // stderr
-                        gc->sendPacket( MPIRUN_ERROR, message, strlen( message ) );
-                        info->ssc->diagnostic( ERROR, "%s", message );
-                    }
-                }
-            }
-            delete executor;
-        }
-        
-        //  Send the creation date for this file if it exists.  If it doesn't exist,
-        //  send that information.
-        if ( noErrors ) {
-            if ( creationDate[0] != 0 ) {
-                gc->sendPacket( GETDIRECTORY_DATE, creationDate, strlen( creationDate ) );
-            }
-            else {
-                gc->sendPacket( FILE_NOT_FOUND, NULL, 0 );
-                noErrors = false;
-            }
-        }
-
-        //  Get the file contents.
-        if ( noErrors ) {
-            gc->sendPacket( GETDIRECTORY_FILESTART, NULL, 0 );
-            snprintf( command, MAX_COMMAND_SIZE, 
-                "%s -host %s /bin/cat %s", mpiWrapper, S->mark5, fullPath );
-            info->ssc->diagnostic( WARNING, "executing: %s\n", command );
-            executor = new ExecuteSystem( command );
-            if ( executor->pid() > -1 ) {
-                while ( int ret = executor->nextOutput( message, DIFX_MESSAGE_LENGTH ) ) {
-                    if ( ret == 1 ) { // stdout
-                        //  Each line represents file content.
-                        gc->sendPacket( GETDIRECTORY_FILEDATA, message, strlen( message ) );
-                    }
-                    else {            // stderr
-                        gc->sendPacket( MPIRUN_ERROR, message, strlen( message ) );
-                        info->ssc->diagnostic( ERROR, "%s", message );
-                        noErrors = false;
-                    }
-                }
-            }
-            delete executor;
-        }
-
-  		//  Clean up litter and exit.
-  		if ( noErrors )
-	        gc->sendPacket( GETDIRECTORY_COMPLETED, NULL, 0 );
-	    else
-	        gc->sendPacket( GETDIRECTORY_FAILED, NULL, 0 );
-	    sleep( 1 );
-	    delete gc;
+	//  Clean up litter and exit.
+	if ( noErrors )
+        gc->sendPacket( GETDIRECTORY_COMPLETED, NULL, 0 );
+    else
+        gc->sendPacket( GETDIRECTORY_FAILED, NULL, 0 );
+    sleep( 1 );
+    delete gc;
 			    
 }
 

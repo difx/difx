@@ -931,6 +931,27 @@ namespace guiServer {
             return NULL;
         }
         
+        //-----------------------------------------------------------------------------
+        //!  This is the structure used to pass information used by the "mark5Copy"
+        //!  thread, which is used to pull data off a Mark5 module and write them to
+        //!  files.
+        //-----------------------------------------------------------------------------
+        struct Mark5CopyInfo {
+            pthread_t threadId;
+            ServerSideConnection* ssc;
+            DifxMessageMark5Copy mark5Copy;
+        };
+
+        //-----------------------------------------------------------------------------
+        //!  Static function called to start the getDirectory thread.
+        //-----------------------------------------------------------------------------	
+        static void* staticMark5CopyThread( void* a ) {
+            Mark5CopyInfo* info = (Mark5CopyInfo*)a;
+            info->ssc->mark5CopyThread( info );
+            delete info;
+            return NULL;
+        }
+        
         //---------------------------------------------------------------------
         //!  Structure used to generate file lists.
         //---------------------------------------------------------------------
@@ -1057,6 +1078,8 @@ namespace guiServer {
         void runFileOperation( DifxFileOperation* fileOperation );
         void getDirectory( DifxMessageGeneric* G );
         void getDirectoryThread( GetDirectoryInfo* info );
+        void mark5Copy( DifxMessageGeneric* G );
+        void mark5CopyThread( Mark5CopyInfo* info );
         void vex2difxRun( DifxMessageGeneric* G );
         void runVex2Difx( Vex2DifxInfo* v2dRun );   //  in vex2difxRun.cpp
         ulong fileTimeStamp( bool& someError, const char* path = NULL );  //  in vex2difxRun.cpp
