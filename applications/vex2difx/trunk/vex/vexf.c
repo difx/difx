@@ -344,7 +344,7 @@ integer *vex;
 /* susequent calls use 0. The call with vex nonzero should specify */
 /* the station, mode, statement, and primitive block (containing the */
 /* statement). When vex is zero, station, mode, statement, and primitive */
-/* are ignored.
+/* are ignored. */
 
 /* When this routine does not return an error, the fields can be accessed */
 /*   using fvex_field. */
@@ -357,7 +357,7 @@ integer *vex;
 /*   character*(*) station     - station def name, null terminated */
 /*   character*(*) mode        - mode def name, null terminated */
 /*   character*(*) statement   - the statement to be retrieved, */
-/*                               null terminated
+/*                               null terminated                */
 /*   character*(*) primitive   - primitive block from which the statement */
 /*                               should be retrieved. omit the leading "$" */
 /*                               null terminated */
@@ -535,7 +535,7 @@ integer *start_len, *mode_len, *scanid_len, *vex;
 
 /*  input: */
 /*   character*(*) station     - the station to reurn statements for */
-/*                               null terminated
+/*                               null terminated                     */
 /*   integer vex               - vex file reference */
 /*                               use value returned open_vex for first call */
 /*                               use 0 for subsequent calls */
@@ -614,7 +614,7 @@ integer *start_len, *mode_len, *scanid_len, *vex;
 
 /*  input: */
 /*   character*(*) station     - the station to reurn statements for */
-/*                               null terminated
+/*                               null terminated    */
 /*   integer vex               - vex file reference */
 /*                               use value returned open_vex for first call */
 /*                               use 0 for subsequent calls */
@@ -675,7 +675,7 @@ integer *start_len, *mode_len, *scanid_len,*vex;
 /*     &                           ptr_ch(scanid),len(scanid), */
 /*     &                                   vex)               >*/
 /*<     implicit none                                         >*/
-/*<      character*(*) start,mode,station,scanid
+/*<      character*(*) start,mode,station,scanid               */
 /*<      integer vex                                          >*/
 
 /* This routine can be used to retrieve all of the station statments */
@@ -1363,7 +1363,7 @@ integer *int__;
 /*   integer (return value)    - error code, zero indicates no error */
 /*                               -7 = field was not a valid int */
 {
-  if(1!=sscanf(*field,"%d",int__))
+  if(1!=sscanf(*field,"%ld",int__))
     return -7;
 
   return 0;
@@ -1405,7 +1405,7 @@ doublereal *seconds;
 {
   int count;
 
-  count=sscanf(*field,"%dy%dd%dh%dm%lfs",
+  count=sscanf(*field,"%ldy%ldd%ldh%ldm%lfs",
 	       iarray,iarray+1,iarray+2,iarray+3,seconds);
 
   if (count<2)

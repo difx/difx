@@ -1109,6 +1109,20 @@ create_s2_recording_mode(char *str);
 void *
 create_s2_data_source(char *str, char *str2, char *str3);
 
+/* Missing functions added by CJP */
+void * 
+end_def();
+
+void *
+create_ref(char *str, char *str2);
+
+void *
+end_scan();
+
+void *
+create_headstack_pos(char *str, char *str2);
+
+
 /*--------------------------- TEST PILOT ----------------------------*/
 void *
 create_test(struct llist *start, char *str);

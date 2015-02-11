@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "vex.h"
 #include "vex_parse.tab.h"
@@ -1876,6 +1877,7 @@ get_site_position_field(Site_position *site_position,int n,int *link,
   }
   return 0;
 }
+static int
 get_site_velocity_field(Site_velocity *site_velocity,int n,int *link,
 		 int *name, char **value, char **units)
 {

@@ -18,6 +18,8 @@ AM_SANITY_CHECK
 
 AC_CHECK_LIB(m, erf,,[AC_MSG_ERROR("need libm")])
 
+AC_CONFIG_MACRO_DIRS([m4])
+ 
 PKG_CHECK_MODULES(DIFXIO, difxio >= 3.4.0)
 PKG_CHECK_MODULES(DIFXMESSAGE, [difxmessage >= 2.4.0 difxmessage < 7])
 PKG_CHECK_MODULES(GPSTK, gpstk, [hasgpstk=true], [hasgpstk=false])

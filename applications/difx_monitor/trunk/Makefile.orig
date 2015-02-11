@@ -17,8 +17,8 @@ CPPFLAGS =  -D__PWD=\"$$PWD\"
 F77 = g77
 
 INCS = -I$(DIFXROOT)/include/ -I$(IPPROOT)/include 
-LIBS =  -L$(DIFXROOT)/lib/ -L$(IPPROOT)/sharedlib -lmpifxcorr -lmark5access -ldifxmessage $(IPPLINKLIBS) 
-PGPLOTLIBS = -lcpgplot -lpgplot -lX11 -lpng 
+LIBS =  -L$(DIFXROOT)/lib/ -L$(IPPROOT)/Libraries -lmpifxcorr -lmark5access -ldifxmessage $(IPPLINKLIBS) 
+PGPLOTLIBS = -lcpgplot -lpgplot 
 
 difx_monitor : difx_monitor.cpp monserver.cpp monserver.h
 	$(CXX) $(CPPFLAGS) $(INCS) -o $@ $^ $(LIBS) $(PGPLOTLIBS)

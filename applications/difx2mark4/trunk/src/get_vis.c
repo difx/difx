@@ -139,11 +139,11 @@ int get_vis (char *vf_name,                   // name of input file
             if (opts->verbose > 1)
                 {
                 if (sizeof(size_t) == 4)
-                    printf ("realloc another mem chunk for visibilities, nvrec %d size %u\n",
+                    printf ("realloc another mem chunk for visibilities, nvrec %d size %lu\n",
                             *nvrec, (size_t) (*nvrec + CHUNK) * (long int) vrsize);
                 else
                     printf ("realloc another Mem chunk for visibilities, nvrec %d size %llu\n",
-                            *nvrec, (size_t) (*nvrec + CHUNK) * (long int) vrsize);
+                            *nvrec, (size_t) (*nvrec + CHUNK) * (long long int) vrsize);
                 }
             *vrec = realloc (*vrec, (size_t) (*nvrec + CHUNK) * (long int) vrsize);
             if (*vrec == NULL)

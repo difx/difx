@@ -985,15 +985,14 @@ int AntennaSetup::setkv(const std::string &key, const std::string &value, ZoomFr
     for (i=0 ; i<value.length(); i++) {
       what = whatChar(value[i]);
       
-      if (what==CHARERROR) {
-	std::cerr << "Error parsing character in \"" << value << "\" at : '" << value[i] << "':" << i << std::endl;
-	value = "";
-	return 1; 
-      }
-      
       switch (state) {
       case START:
 	switch (what) {
+	case CHARERROR:
+	  std::cerr << "Error parsing character in \"" << value << "\" at : '" << value[i] << "':" << i << std::endl;
+	  value = "";
+	  return 1; 
+	  break;
 	case SIGN:
 	  state = STARTINT;
 	  break;
@@ -1013,6 +1012,11 @@ int AntennaSetup::setkv(const std::string &key, const std::string &value, ZoomFr
 	
       case STARTINT:
 	switch (what) {
+	case CHARERROR:
+	  std::cerr << "Error parsing character in \"" << value << "\" at : '" << value[i] << "':" << i << std::endl;
+	  value = "";
+	  return 1; 
+	  break;
 	case SIGN:
 	case E:
 	  state = ERROR;
@@ -1029,6 +1033,11 @@ int AntennaSetup::setkv(const std::string &key, const std::string &value, ZoomFr
 
       case INTEGER:
 	switch (what) {
+	case CHARERROR:
+	  std::cerr << "Error parsing character in \"" << value << "\" at : '" << value[i] << "':" << i << std::endl;
+	  value = "";
+	  return 1; 
+	  break;
 	case DIGIT:
 	  break;
 	case SIGN:
@@ -1045,6 +1054,11 @@ int AntennaSetup::setkv(const std::string &key, const std::string &value, ZoomFr
 	
       case DECIMAL:
 	switch (what) {
+	case CHARERROR:
+	  std::cerr << "Error parsing character in \"" << value << "\" at : '" << value[i] << "':" << i << std::endl;
+	  value = "";
+	  return 1; 
+	  break;
 	case DIGIT:
 	  break;
 	case SIGN:
@@ -1062,6 +1076,11 @@ int AntennaSetup::setkv(const std::string &key, const std::string &value, ZoomFr
 	
       case STARTEXP:
 	switch (what) {
+	case CHARERROR:
+	  std::cerr << "Error parsing character in \"" << value << "\" at : '" << value[i] << "':" << i << std::endl;
+	  value = "";
+	  return 1; 
+	  break;
 	case SIGN:
 	case DIGIT:
 	  state = EXPONENT;
@@ -1076,6 +1095,11 @@ int AntennaSetup::setkv(const std::string &key, const std::string &value, ZoomFr
 	
       case EXPONENT:
 	switch (what) {
+	case CHARERROR:
+	  std::cerr << "Error parsing character in \"" << value << "\" at : '" << value[i] << "':" << i << std::endl;
+	  value = "";
+	  return 1; 
+	  break;
 	case SPACE:
 	case SIGN:
 	  state = END;
@@ -1087,6 +1111,10 @@ int AntennaSetup::setkv(const std::string &key, const std::string &value, ZoomFr
 	  state = ERROR;
 	  break;
 	}
+	break;
+
+      case ERROR:
+      case END:
 	break;
 	
       }

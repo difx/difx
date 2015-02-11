@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2012 by Chris Phillips                             *
+ *   Copyright (C) 2009 by Chris Phillips                                  *
  *                                                                         *
  *  This program is free software; you can redistribute it and/or          *
  *  modify it under the terms of the GNU General Public License as         *
@@ -13,11 +13,9 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-
+#include <cpgplot.h>
 #include <complex>
 
-#define PL_DOUBLE
-#include <plplot/plplot.h>
 #include "architecture.h"
 #include "configuration.h"
 
@@ -25,33 +23,26 @@
 
 #define MAX_PROD 4
 
-PLFLT arraymax(PLFLT *array[], int nchan, int nprod);
-PLFLT arraymin(PLFLT *a[], int nchan, int nprod);
+float arraymax(float *array[], int nchan, int nprod);
+float arraymin(float *a[], int nchan, int nprod);
 void mjd2cal(int mjd, int *day, int *month, int *year);
 
 int main(int argc, const char * argv[]) {
-  int status, i, ivis, nchan=0, nprod, cols[MAX_PROD] = {1,3,9,11};
+  int status, i, ivis, nchan=0, nprod, cols[MAX_PROD] = {2,3,4,5};
   int mjd, startsec, currentconfig, currentscan, numchan;
   int iprod[MAX_PROD];
   char polpair[3], timestr[20];
   struct monclient monserver;
+  float *xval=NULL, *amp[MAX_PROD], *phase[MAX_PROD], *lags[MAX_PROD], *lagx=NULL;
   float delta, min, max, temp;
-  PLFLT *xval=NULL, *phase[MAX_PROD], *amp[MAX_PROD], *lags[MAX_PROD], *lagx=NULL;
-  cf32 *vis32;
-  Ipp64fc *vis64;
+  cf32 *vis;
   string sourcename;
   ostringstream ss;
-  IppsFFTSpec_R_64f* fftspec=NULL;
+  IppsFFTSpec_R_32f* fftspec=NULL;
   Configuration *config;
   Model * model;
   vector<DIFX_ProdConfig> products;
   struct product_offset plotprod[MAX_PROD];
-
-  if (sizeof(PLFLT)!=sizeof(f64)) {
-    fprintf(stderr, "PLFLT is not the size of a float (%d/%d) - aborting\n", 
-	    (int)sizeof(PLFLT), (int)sizeof(f64));
-    return(EXIT_FAILURE);
-  }
 
   if(argc < 4)  {
     cerr << "Error - invoke with mon_sample <host> <inputfile> <product#> [<product#> ...]" << endl;
@@ -86,13 +77,12 @@ int main(int argc, const char * argv[]) {
     lags[i] = NULL;
   }
 
-  char  ver[80];
-  plgver( ver );
-  fprintf( stdout, "PLplot library version: %s\n", ver );
-
   // Open PGPLOT first, as pgplot server seems to inherit monitor socket
-  plstart("xwin", 1,3);  //??RETURN
-  plspause(0);
+  status = cpgbeg(0,"/xs",1,3);
+  if (status != 1) {
+    cerr << "Error opening pgplot device" << endl;
+  }
+  cpgask(0);
 
   status  = monserver_connect(&monserver, (char*)argv[1], -1);
   if (status) exit(1);
@@ -138,7 +128,7 @@ int main(int argc, const char * argv[]) {
       }
 
       ivis = 0;
-      while (!monserver_nextvis(&monserver, (int*)&iprod[ivis], &numchan, &vis32)) {
+      while (!monserver_nextvis(&monserver, (int*)&iprod[ivis], &numchan, &vis)) {
 	if (nchan!=numchan) {
 	  if (ivis==0) {
 	    // (Re)allocate arrays if number of channels changes, including first time
@@ -146,21 +136,19 @@ int main(int argc, const char * argv[]) {
 	    cout << "Number of channels = " << nchan << endl;
 	    if (xval!=NULL) vectorFree(xval);
 	    if (lagx!=NULL) vectorFree(lagx);
-	    if (vis64!=NULL) vectorFree(fftspec);
-	    if (fftspec!=NULL) ippsFFTFree_R_64f(fftspec);
+	    if (fftspec!=NULL) ippsFFTFree_R_32f(fftspec);
 	    for (i=0; i<nprod; i++) {
 	      if (amp[i]!=NULL) vectorFree(amp[i]);
 	      if (phase[i]!=NULL) vectorFree(phase[i]);
 	      if (lags[i]!=NULL) vectorFree(lags[i]);
 	    }
 
-	    xval = vectorAlloc_f64(nchan);
-	    lagx = vectorAlloc_f64(nchan*2);
-	    vis64 = vectorAlloc_cf64(nchan);
+	    xval = vectorAlloc_f32(nchan);
+	    lagx = vectorAlloc_f32(nchan*2);
 	    for (i=0; i<nprod; i++) {
-	      amp[i] = vectorAlloc_f64(nchan);
-	      phase[i] = vectorAlloc_f64(nchan);
-	      lags[i] = vectorAlloc_f64(nchan*2);
+	      amp[i] = vectorAlloc_f32(nchan);
+	      phase[i] = vectorAlloc_f32(nchan);
+	      lags[i] = vectorAlloc_f32(nchan*2);
 	      if (amp[i]==NULL || phase[i]==NULL || lags[i]==NULL) {
 		cerr << "Failed to allocate memory for plotting arrays" << endl;
 		exit(1);
@@ -180,22 +168,18 @@ int main(int argc, const char * argv[]) {
 	    int order = 0;
 	    while(((nchan*2) >> order) > 1)
 	      order++;
-	    ippsFFTInitAlloc_R_64f(&fftspec, order, IPP_FFT_NODIV_BY_ANY, ippAlgHintFast);
+	    ippsFFTInitAlloc_R_32f(&fftspec, order, IPP_FFT_NODIV_BY_ANY, ippAlgHintFast);
 	  } else  {
 	    cerr << "Does not support mixed number of channels between products" << endl;
 	    exit(1); // Should do a cleaner exit
 	  }
 	}
 
-	for (i=0;i<nchan;i++) {
-	  vis64[i].re = vis32[i].re;
-	  vis64[i].im = vis32[i].im;
-	}
-	ippsMagnitude_64fc(vis64, amp[ivis], nchan);
-	ippsPhase_64fc(vis64, phase[ivis], nchan);
-	vectorMulC_f64_I(180/M_PI, phase[ivis], nchan);
+	ippsMagnitude_32fc(vis, amp[ivis], nchan);
+	ippsPhase_32fc(vis, phase[ivis], nchan);
+	vectorMulC_f32_I(180/M_PI, phase[ivis], nchan);
 
-	ippsFFTInv_CCSToR_64f((Ipp64f*)vis64, lags[ivis], fftspec, 0);
+	ippsFFTInv_CCSToR_32f((Ipp32f*)vis, lags[ivis], fftspec, 0);
 	//rearrange the lags into order
 	for(i=0;i<nchan;i++) {
 	  temp = lags[ivis][i];
@@ -206,7 +190,7 @@ int main(int argc, const char * argv[]) {
       }
 
       // Plot all the data
-      //cpgbbuf();
+      cpgbbuf();
 
       max = arraymax(amp, nchan, nprod);
       min = arraymin(amp, nchan, nprod);
@@ -215,21 +199,21 @@ int main(int argc, const char * argv[]) {
       min -= delta;
       max += delta;
 
-      plschr(0,0.8);
-      plcol0(15);
-      plenv(0,nchan,min,max,0,0);
-      pllab("Channel", "Amplitude", "");
+      cpgsci(1);
+      cpgenv(0,nchan,min,max,0,0);
+      cpglab("Channel", "Amplitude", "");
 
       for (i=0; i<nprod; i++) {
-	plcol0(cols[i]);
-	plline(nchan, xval, amp[i]);
+	cpgsci(cols[i]);
+	cpgline(nchan, xval, amp[i]);
       }
 
       // Source name
+      //sourcename = model->getScanIdentifier(currentscan);
       sourcename = model->getScanPointingCentreSource(currentscan)->name;
-      plcol0(1);
-      plschr(0,1);
-      plmtex("t", -1.5, 0.02, 0, sourcename.c_str());	    
+      cpgsci(2);
+      cpgsch(4);
+      cpgmtxt("T", -1.5, 0.02, 0, sourcename.c_str());	    
 
       // Time 
       int seconds = atseconds+config->getStartSeconds();
@@ -243,9 +227,9 @@ int main(int argc, const char * argv[]) {
       mjd2cal(mjd, &day, &month, &year);
 
       sprintf(timestr, "%d/%d %02d:%02d:%02d", day, month, hours, minutes, seconds);
-      plmtex("t", -1.5,0.98,1,timestr);
+      cpgmtxt("T", -1.5,0.98,1,timestr);
 
-      plschr(0,1);
+      cpgsch(1);
 
       max = arraymax(phase, nchan, nprod);
       min = arraymin(phase, nchan, nprod);
@@ -253,15 +237,14 @@ int main(int argc, const char * argv[]) {
       if (delta==0.0) delta = 0.5;
       min -= delta;
       max += delta;
-      plcol0(15);
-      plschr(0,0.8);
-      plenv(0,nchan,min,max,0,0);
-      pllab("Channel", "Phase", "");
+      cpgsci(1);
+      cpgenv(0,nchan,min,max,0,0);
+      cpglab("Channel", "Phase", "");
 
 
       for (i=0; i<nprod; i++) {
-	plcol0(cols[i]);
-	plsym(nchan, xval, phase[i], 17);
+	cpgsci(cols[i]);
+	cpgpt(nchan, xval, phase[i], 17);
       }
 
       max = arraymax(lags, nchan*2, nprod);
@@ -270,14 +253,13 @@ int main(int argc, const char * argv[]) {
       if (delta<1e-10) delta = 0.5;
       min -= delta;
       max += delta;
-      plcol0(15);
-      plschr(0,0.8);
-      plenv(-nchan,nchan,min,max,0,0);
-      pllab("Channel", "Delay", "");
+      cpgsci(1);
+      cpgenv(-nchan,nchan,min,max,0,0);
+      cpglab("Channel", "Delay", "");
 
       for (i=0; i<nprod; i++) {
-	plcol0(cols[i]);
-	plline(nchan*2, lagx, lags[i]);
+	cpgsci(cols[i]);
+	cpgline(nchan*2, lagx, lags[i]);
       }
 
       for (i=0; i<nprod; i++) {
@@ -295,49 +277,48 @@ int main(int argc, const char * argv[]) {
 	else 
 	  ss << "USB";
 
-	plschr(0,1);
-	plcol0(cols[i]);
+	cpgsch(3);
+	cpgsci(cols[i]);
 	if (i==0) {
-	  plmtex("t", -1.5, 0.02, 0, ss.str().c_str());	    
+	  cpgmtxt("T", -1.5, 0.02, 0, ss.str().c_str());	    
 	} else if (i==1) { 
-	  plmtex("t", -1.5, 0.98, 1, ss.str().c_str());	    
+	  cpgmtxt("T", -1.5, 0.98, 1, ss.str().c_str());	    
 	} else if (i==2) { 
-	  plmtex("b", -1.5, 0.02, 0, ss.str().c_str());	    
+	  cpgmtxt("B", -1.5, 0.02, 0, ss.str().c_str());	    
 	} else if (i==3) { 
-	  plmtex("b", -1.5, 0.98, 1, ss.str().c_str());	    
+	  cpgmtxt("B", -1.5, 0.98, 1, ss.str().c_str());	    
 	}
 	ss.str("");
       }
-      plschr(0,1);
-      //cpgebuf();
+      cpgsch(1);
+      cpgebuf();
 
     }
   }
 
-  plend();
   monserver_close(&monserver);
 }
 
 
-PLFLT arraymax(PLFLT *a[], int nchan, int nprod) {
-  PLFLT max, thismax;
+float arraymax(float *a[], int nchan, int nprod) {
+  float max, thismax;
   int i;
 
   max = a[0][0];
   for (i=0; i<nprod; i++)  {
-    ippsMax_64f(a[i], nchan, &thismax);
+    ippsMax_32f(a[i], nchan, &thismax);
     if (thismax>max) max = thismax;
   }
   return max;
 }
 
-PLFLT arraymin(PLFLT *a[], int nchan, int nprod) {
-  PLFLT min, thismin;
+float arraymin(float *a[], int nchan, int nprod) {
+  float min, thismin;
   int i;
 
   min = a[0][0];
   for (i=0; i<nprod; i++)  {
-    ippsMin_64f(a[i], nchan, &thismin);
+    ippsMin_32f(a[i], nchan, &thismin);
     if (thismin<min) min = thismin;
   }
   return min;

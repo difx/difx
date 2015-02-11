@@ -1225,7 +1225,7 @@ static void populateFreqTable(DifxInput *D, const vector<freq>& freqs, const vec
 			df->overSamp = df->decimation;
 		}
 
-		if(freqs[f].toneSetId < 0 || freqs[f].toneSetId >= toneSets.size())
+		if(freqs[f].toneSetId >= toneSets.size())
 		{
 			cerr << "Developer error: populateFreqTable: toneSetId=" << freqs[f].toneSetId << " nToneSet=" << toneSets.size() << endl;
 		}

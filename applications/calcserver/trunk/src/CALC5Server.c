@@ -330,7 +330,7 @@ SVCXPRT *pTransport;
     /* handle null procedure */
     if (pRequest->rq_proc == NULLPROC)
 	{
-	if (!svc_sendreply (pTransport, xdr_void, NULL))
+	  if (!svc_sendreply (pTransport, (xdrproc_t)xdr_void, NULL))
 	    svcerr_systemerr (pTransport);
 	return;
 	}
@@ -377,7 +377,7 @@ SVCXPRT *pTransport;
 
     for (i = 0; i < 5; i++)
     {
-        date2str (argument.EOP_time[i], &mjd_str);
+        date2str (argument.EOP_time[i], mjd_str);
         printf ("request arg: %s %5.1f %8.5f %8.5f %8.5f\n",
                  mjd_str, argument.tai_utc[i], argument.ut1_utc[i],
                           argument.xpole[i], argument.ypole[i]);
@@ -434,7 +434,7 @@ SVCXPRT *pTransport;
     if (strcmp(getenv("SERVERLOG"), "ON") == 0)
     {
        mjd_time = (double)argument.date + argument.time;
-       date2str (mjd_time, &mjd_str);
+       date2str (mjd_time, mjd_str);
     fprintf (flog, "request from %s:  for args  %5d %4s %4s %10s %s (dly = %20.12e) at %s", 
              destdotaddr,
              (int)(argument.request_id), argument.station_a, argument.station_b,
@@ -1046,7 +1046,7 @@ char *err;	       /* some sort of error message */
        {
           mjdtime = (double)p_request->date + p_request->time;
           if (ilog_Horizons == 1) {
-             date2str (mjdtime, &mjd_str);
+             date2str (mjdtime, mjd_str);
 	     fprintf (flog,"recognized  horizons source : %s %s %f\n", p_request->source, 
                   in_keyword, mjdtime);
           }
