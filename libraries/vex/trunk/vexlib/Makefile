@@ -10,7 +10,7 @@ CC=gcc -g
 CFLAGS=-fPIC
 #
 
-default: libvex.a libvex.so
+default: y.tab.h libvex.a libvex.so 
 
 libvex.a: $(OBJECTS)
 	touch $@
@@ -21,11 +21,14 @@ libvex.a: $(OBJECTS)
 libvex.so: $(OBJECTS)
 	ld -G -ztext -o $@ -share $(OBJECTS)
 
-vex.yy.o:	vex.yy.l y.tab.h
+vex.tab.c vex.tab.h: vex.y
+	$(YACC) vex.y
 
-y.tab.h:	vex.y
+vex.yy.o: 	vex.yy.l y.tab.h
 
-vex_util.o:	y.tab.h
+y.tab.c y.tab.h: vex.y
+
+vex_util.o: 	y.tab.h
 
 print_vex.o:	y.tab.h
 
