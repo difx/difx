@@ -556,7 +556,6 @@ int readheader(vhead *header, int file, char *buf) {
 
     if (value==0 || strlen(value)==0) {
       fprintf(stderr, "No value for %s\n", keystr);
-      fclose(filestream);
       return(NOVALUE);
     }
 
@@ -580,7 +579,6 @@ int readheader(vhead *header, int file, char *buf) {
 		      &header->antennaid[1]);
       if (status!=2) {
 	fprintf(stderr, "Error interpreting %s %s\n", keystr, value);
-	fclose(filestream);
 	return(BADVALUE);
       }
 

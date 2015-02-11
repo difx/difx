@@ -44,7 +44,7 @@ int main(int argc, char *argv[])
     return EXIT_FAILURE;
   }
 
-  cout << setprecision << 15 << endl;
+  cout << &setprecision << 15 << endl;
   for(int i=1;i<=njobs;i++) {
     cout << "Processing file " << i << "/" << njobs << endl;
 
