@@ -104,7 +104,8 @@ const char DifxMessageTypeStrings[][24] =
 	"DifxVex2DifxRun",
 	"DifxMachinesDefinition",
 	"DifxGetDirectory",
-        "DifxMk5Control",
+	"DifxMk5Control",
+	"DifxMark5Copy",
 };
 
 /* Note! Keep this in sync with enum DifxDiagnosticType in difxmessage.h */

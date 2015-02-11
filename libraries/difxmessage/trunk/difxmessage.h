@@ -206,7 +206,8 @@ enum DifxMessageType
 	DIFX_MESSAGE_VEX2DIFXRUN,
 	DIFX_MESSAGE_MACHINESDEFINITION,
 	DIFX_MESSAGE_GETDIRECTORY,
-        DIFX_MESSAGE_MK5CONTROL,
+	DIFX_MESSAGE_MK5CONTROL,
+	DIFX_MESSAGE_MARK5COPY,
 	NUM_DIFX_MESSAGE_TYPES	/* this needs to be the last line of enum */
 };
 
@@ -408,6 +409,18 @@ typedef struct
 {
 	char mpiWrapper[DIFX_MESSAGE_FILENAME_LENGTH];
 	char difxVersion[DIFX_MESSAGE_VERSION_LENGTH];
+	char mark5[DIFX_MESSAGE_PARAM_LENGTH];
+	char bank[DIFX_MESSAGE_PARAM_LENGTH];
+	char scans[DIFX_MESSAGE_PARAM_LENGTH];
+	char destination[DIFX_MESSAGE_FILENAME_LENGTH];
+	char address[DIFX_MESSAGE_PARAM_LENGTH];
+	int port;
+} DifxMessageMark5Copy;
+
+typedef struct
+{
+	char mpiWrapper[DIFX_MESSAGE_FILENAME_LENGTH];
+	char difxVersion[DIFX_MESSAGE_VERSION_LENGTH];
 	char difxProgram[DIFX_MESSAGE_FILENAME_LENGTH];
 	char inputFilename[DIFX_MESSAGE_FILENAME_LENGTH];
 } DifxMessageStop;
@@ -496,6 +509,7 @@ typedef struct
 		DifxMessageMachinesDefinition   machinesDefinition;
 		DifxMessageGetDirectory  getDirectory;
 		DifxMessageMk5Control  mk5Control;
+		DifxMessageMark5Copy  mark5Copy;
 	} body;
 	int _xml_level;			/* internal use only here and below */
 	char _xml_element[5][32];

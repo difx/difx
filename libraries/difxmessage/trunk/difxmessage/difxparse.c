@@ -924,6 +924,47 @@ static void XMLCALL endElement(void *userData, const char *name)
 						G->body.getDirectory.generateNew = atoi( s );
 					}
 					break;
+				case DIFX_MESSAGE_MARK5COPY:
+					if(strcmp(elem, "mark5") == 0 )
+					{
+						strncpy(G->body.mark5Copy.mark5, s, DIFX_MESSAGE_PARAM_LENGTH-1);
+						G->body.mark5Copy.mark5[DIFX_MESSAGE_PARAM_LENGTH-1] = 0;
+					}
+					else if(strcmp(elem, "difxVersion") == 0)
+					{
+						strncpy(G->body.mark5Copy.difxVersion, s, DIFX_MESSAGE_VERSION_LENGTH-1);
+						G->body.mark5Copy.difxVersion[DIFX_MESSAGE_VERSION_LENGTH-1] = 0;
+					}
+					else if(strcmp(elem, "mpiWrapper") == 0)
+					{
+						strncpy(G->body.mark5Copy.mpiWrapper, s, DIFX_MESSAGE_FILENAME_LENGTH-1);
+						G->body.mark5Copy.mpiWrapper[DIFX_MESSAGE_FILENAME_LENGTH-1] = 0;
+					}
+					else if(strcmp(elem, "banks") == 0 )
+					{
+						strncpy(G->body.mark5Copy.bank, s, DIFX_MESSAGE_PARAM_LENGTH-1);
+						G->body.mark5Copy.bank[DIFX_MESSAGE_PARAM_LENGTH-1] = 0;
+					}
+					else if(strcmp(elem, "scans") == 0 )
+					{
+						strncpy(G->body.mark5Copy.scans, s, DIFX_MESSAGE_PARAM_LENGTH-1);
+						G->body.mark5Copy.scans[DIFX_MESSAGE_PARAM_LENGTH-1] = 0;
+					}
+					else if(strcmp(elem, "destination") == 0)
+					{
+						strncpy(G->body.mark5Copy.destination, s, DIFX_MESSAGE_FILENAME_LENGTH-1);
+						G->body.mark5Copy.destination[DIFX_MESSAGE_FILENAME_LENGTH-1] = 0;
+					}
+					else if(strcmp(elem, "address") == 0 )
+					{
+						strncpy(G->body.mark5Copy.address, s, DIFX_MESSAGE_PARAM_LENGTH-1);
+						G->body.mark5Copy.address[DIFX_MESSAGE_PARAM_LENGTH-1] = 0;
+					}
+					else if(strcmp(elem, "port") == 0 )
+					{
+						G->body.mark5Copy.port = atoi( s );
+					}
+					break;
 				case DIFX_MESSAGE_VEX2DIFXRUN:
 					if(strcmp(elem, "user") == 0 )
 					{
