@@ -357,7 +357,7 @@ static int pcal(const char *inFile, const char *format, int nInt, int nFreq, con
 		{
 			if(verbose >= -1)
 			{
-				printf("%Ld / %Ld samples unpacked\n", unpacked, total);
+				printf("%lld / %lld samples unpacked\n", unpacked, total);
 			}
 
 			/* normalize */

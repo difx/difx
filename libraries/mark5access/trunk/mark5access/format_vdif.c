@@ -275,7 +275,7 @@ static int vdif_decode_1channel_1bit_decimation1(struct mark5_stream *ms, int ns
 static int vdif_decode_2channel_1bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
 	const unsigned char *buf;
-	const const float *fp;
+	const float *fp;
 	int o, i;
 	int nblank = 0;
 
@@ -328,7 +328,7 @@ static int vdif_decode_2channel_1bit_decimation1(struct mark5_stream *ms, int ns
 static int vdif_decode_3channel_1bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
 	const unsigned char *buf;
-	const const float *fp;
+	const float *fp;
 	int o, i;
 	int nblank = 0;
 
@@ -376,7 +376,7 @@ static int vdif_decode_3channel_1bit_decimation1(struct mark5_stream *ms, int ns
 static int vdif_decode_4channel_1bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
 {
 	const unsigned char *buf;
-	const const float *fp;
+	const float *fp;
 	int o, i;
 	int nblank = 0;
 

@@ -287,7 +287,7 @@ void printDataStream(const DataStream *ds)
 	}
 	printf("    input file = %s\n", ds->inputFile);
 	printf("    data format = %s\n", ds->dataFormat);
-	printf("    file offset = %Ld\n", ds->offset);
+	printf("    file offset = %lld\n", ds->offset);
 	printf("    sub band to process = %d\n", ds->subBand);
 	printf("    fft size = %d\n", ds->fftSize);
 	printf("    start channel = %d\n", ds->startChan);

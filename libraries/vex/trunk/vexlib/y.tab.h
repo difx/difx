@@ -411,7 +411,7 @@ struct vlba_frmtr_sys_trk	*fsptr;
 struct s2_data_source  *dsptr;
 
 }
-/* Line 1489 of yacc.c.  */
+/* Line 1529 of yacc.c.  */
 #line 416 "y.tab.h"
 	YYSTYPE;
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */

@@ -1,9 +1,9 @@
 
-/*#define YYSTYPE PERLSTYPE*/ /* Remove these comments it you get compile problems */
+//#define YYSTYPE PERLSTYPE /* Remove these comments it you get compile problems */
 #include "EXTERN.h"
 #include "perl.h"
 #include "XSUB.h"
-/*#undef YYSTYPE*/ /* Remove these comments it you get compile problems */
+//#undef YYSTYPE /* Remove these comments it you get compile problems */
 
 #define block vexblock
 #include <vex.h>

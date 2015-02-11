@@ -105,7 +105,7 @@ struct mark5_stream *openmk5(const char *filename, const char *formatname, long 
                 {
 			if (*offset < (offset0 + 32*43500L))
 			{
-                        	fprintf(stderr, "problem at initial decode of %s at offset %ld, trying new offset\n", filename, (int64_t)(*offset));
+                        	fprintf(stderr, "problem at initial decode of %s at offset %lld, trying new offset\n", filename, (int64_t)(*offset));
 				*offset += 43500;
 				did_fail = 1;
 				continue;
@@ -120,7 +120,7 @@ struct mark5_stream *openmk5(const char *filename, const char *formatname, long 
                 {
 			if (did_fail)
 			{
-				fprintf(stderr, "decode %s at offset %ld succeeded\n\n", filename, (int64_t)(*offset));
+				fprintf(stderr, "decode %s at offset %lld succeeded\n\n", filename, (int64_t)(*offset));
 			}
                         break;
                 }

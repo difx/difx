@@ -1223,7 +1223,7 @@ void delete_mark5_stream(struct mark5_stream *ms)
 	{
 		if(ms->nvalidatefail > 0)
 		{
-			fprintf(m5stderr, "Warning: %d validation failures on %s framenum=%Ld -> bytepos=%Ld\n",
+			fprintf(m5stderr, "Warning: %d validation failures on %s framenum=%lld -> bytepos=%lld\n",
 				ms->nvalidatefail, ms->streamname, ms->framenum, ms->framenum*ms->framebytes);
 		}
 		if(ms->final_stream)
@@ -1297,7 +1297,7 @@ int mark5_stream_print(const struct mark5_stream *ms)
 		fprintf(m5stdout, "  start mjd/sec = %d %05d.%09d\n", 
 			ms->mjd, ms->sec, ms->ns);
 		fprintf(m5stdout, "  frame duration = %8.2f ns\n", ms->framens);
-		fprintf(m5stdout, "  framenum = %Ld\n", ms->framenum);
+		fprintf(m5stdout, "  framenum = %lld\n", ms->framenum);
 	}
 	if(ms->samprate > 0)
 	{
@@ -1313,7 +1313,7 @@ int mark5_stream_print(const struct mark5_stream *ms)
 	fprintf(m5stdout, "  read position = %d\n", ms->readposition);
 	if(ms->datawindow)
 	{
-		fprintf(m5stdout, "  data window size = %Ld bytes\n", ms->datawindowsize);
+		fprintf(m5stdout, "  data window size = %lld bytes\n", ms->datawindowsize);
 	}
 
 	return 0;

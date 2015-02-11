@@ -1161,7 +1161,7 @@ void difxMessageGenericPrint(const DifxMessageGeneric *G)
 		printf("    model number = %s\n", G->body.driveStats.modelNumber);
 		printf("    disk size = %d GB\n", G->body.driveStats.diskSize);
 		printf("    disk stat type = %s\n", DriveStatsTypeStrings[G->body.driveStats.type]);
-		printf("    startbyte = %Ld\n", G->body.driveStats.startByte);
+		printf("    startbyte = %lld\n", G->body.driveStats.startByte);
 		printf("    module VSN = %s\n", G->body.driveStats.moduleVSN);
 		printf("    drive slot = %d\n", G->body.driveStats.moduleSlot);
 		printf("    MJD = %7.5f to %7.5f\n", G->body.driveStats.startMJD, G->body.driveStats.stopMJD);
@@ -1265,7 +1265,7 @@ void difxMessageGenericPrint(const DifxMessageGeneric *G)
 		printf("    module slot = %d\n", G->body.smart.moduleSlot);
 		for(i = 0; i < G->body.smart.nValue; i++)
 		{
-			printf("      SMART id = %d  value = %Ld\n", G->body.smart.id[i], G->body.smart.value[i]);
+			printf("      SMART id = %d  value = %lld\n", G->body.smart.id[i], G->body.smart.value[i]);
 		}
 		break;
 	default:

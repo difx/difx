@@ -2840,7 +2840,7 @@ static int mark5_format_d2k_init(struct mark5_stream *ms)
 
 		if(ms->datawindowsize < ms->framebytes)
 		{
-			fprintf(m5stderr, "mark5_format_d2k_init: windowsize too small: %Ld < %d\n", ms->datawindowsize, ms->framebytes);
+			fprintf(m5stderr, "mark5_format_d2k_init: windowsize too small: %lld < %d\n", ms->datawindowsize, ms->framebytes);
 
 			return -1;
 		}

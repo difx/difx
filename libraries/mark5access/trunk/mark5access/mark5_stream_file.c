@@ -300,7 +300,7 @@ static int mark5_stream_file_seek(struct mark5_stream *ms, long long framenum)
 	sook = lseek(F->in, pos, SEEK_SET);
 	if(sook < 0)
 	{
-		fprintf(stderr, "Seek error: pos=%Ld\n", (long long int)pos);
+		fprintf(stderr, "Seek error: pos=%lld\n", (long long int)pos);
 
 		return -1;
 	}

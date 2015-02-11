@@ -123,9 +123,9 @@ int calcpower(const char *filename, const char *formatname, long long offset, lo
 
 	if(n % (long long)(ms->samplegranularity) > 0LL)
 	{
-		printf("Warning: reducing read size from %Ld", n);
+		printf("Warning: reducing read size from %lld", n);
 		n -= (n % (long long)(ms->samplegranularity));
-		printf(" to %Ld\n", n);
+		printf(" to %lld\n", n);
 	}
 
 	mark5_stream_get_frame_time(ms, &mjd, &sec, &ns);

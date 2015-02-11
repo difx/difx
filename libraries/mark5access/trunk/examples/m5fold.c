@@ -280,7 +280,7 @@ static int fold(const char *filename, const char *formatname, int nbin, int nint
 	      }
 	  }
 
-	fprintf(stderr, "%Ld / %Ld samples unpacked\n", unpacked, total);
+	fprintf(stderr, "%lld / %lld samples unpacked\n", unpacked, total);
 
 	/* normalize */
 	for(k = 0; k < nbin; k++)

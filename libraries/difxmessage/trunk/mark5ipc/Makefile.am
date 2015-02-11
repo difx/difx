@@ -4,7 +4,7 @@ c_sources = \
 library_includedir = $(includedir)/mark5ipc
 library_include_HEADERS = $(h_sources)
 
-INCLUDES = -I$(top_srcdir)
+AM_CPPFLAGS = -I$(top_srcdir)
 
 lib_LTLIBRARIES = \
 	libmark5ipc.la

@@ -188,9 +188,6 @@ static int timeaverage(const char *filename, const char *formatname, double tint
   totalsamples = (ms->samprate * time);  // Total number of samples to process
   nint  = (ms->samprate * tint/1000.0);  // Samples per itergration
 
-  printf("DEBUG: %Ld samples per integration\n", (long long)nint);
-  printf("DEBUG: %Ld total number of samples\n", (long long)totalsamples);
-
   if (docomplex)  {
     cdata = (complex double **)malloc(nif*sizeof(double complex*));
     for(i = 0; i < nif; i++) {

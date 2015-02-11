@@ -148,7 +148,7 @@ int verify(const char *filename, const char *formatname, long long offset, int r
 
                         if (report_interval == 0)
 			{
-				printf("frame_num=%Ld mjd=%d sec=%d ns=%011.1f n_valid=%d n_invalid=%d %Lu\n",
+				printf("frame_num=%lld mjd=%d sec=%d ns=%011.1f n_valid=%d n_invalid=%d %llu\n",
 					ms->framenum, mjd, sec, ns,
 					ms->nvalidatepass, ms->nvalidatefail, offset);
                         } 
@@ -156,7 +156,7 @@ int verify(const char *filename, const char *formatname, long long offset, int r
 			{
 				if (sec != osec) 
 				{
-					printf("frame_num=%Ld mjd=%d sec=%d ns=%011.1f n_valid=%Ld n_invalid=%Ld total=%Lu unp=%Lu\n",
+					printf("frame_num=%lld mjd=%d sec=%d ns=%011.1f n_valid=%lld n_invalid=%lld total=%llu unp=%llu\n",
 						ms->framenum, mjd, sec, ns,
 						nvalidatepass, nvalidatefail, total, unpacked);
 					nvalidatepass = 0;
@@ -177,7 +177,7 @@ int verify(const char *filename, const char *formatname, long long offset, int r
 		}
 	}
 
-	fprintf(stderr, "%Ld / %Ld samples unpacked\n", unpacked, total);
+	fprintf(stderr, "%lld / %lld samples unpacked\n", unpacked, total);
 
 	for(i = 0; i < ms->nchan; ++i)
 	{

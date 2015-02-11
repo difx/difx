@@ -377,12 +377,12 @@ void fprintmark5bfixstatistics(FILE *out, const struct mark5b_fix_statistics *st
 	{
 		fprintf(out, "Mark5B fixer statistics:\n");
 		fprintf(out, "  Number of calls to fixmark5b       = %d\n", stats->nCall);
-		fprintf(out, "  Number of valid input frames       = %Ld\n", stats->nValidFrame);
-		fprintf(out, "  Number of invalid input frames     = %Ld\n", stats->nInvalidFrame);
-		fprintf(out, "  Number of skipped interloper bytes = %Ld\n", stats->nSkippedByte);
-		fprintf(out, "  Number of fill pattern bytes       = %Ld\n", stats->nFillByte);
-		fprintf(out, "  Number of lost packets             = %Ld\n", stats->nLostPacket);
-		fprintf(out, "  Number of bytes processed          = %Ld\n", stats->dataProcessed);
+		fprintf(out, "  Number of valid input frames       = %lld\n", stats->nValidFrame);
+		fprintf(out, "  Number of invalid input frames     = %lld\n", stats->nInvalidFrame);
+		fprintf(out, "  Number of skipped interloper bytes = %lld\n", stats->nSkippedByte);
+		fprintf(out, "  Number of fill pattern bytes       = %lld\n", stats->nFillByte);
+		fprintf(out, "  Number of lost packets             = %lld\n", stats->nLostPacket);
+		fprintf(out, "  Number of bytes processed          = %lld\n", stats->dataProcessed);
 		fprintf(out, "Properties of output data from recent call:\n");
 		fprintf(out, "  Start output frame number          = %d\n", stats->startFrameNumber);
 		fprintf(out, "  Start output frame seconds         = %d\n", stats->startFrameSeconds);

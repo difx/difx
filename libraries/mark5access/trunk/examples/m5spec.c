@@ -375,7 +375,7 @@ int spec(const char *filename, const char *formatname, int nchan, int nint, cons
 	  harvestRealData(ms, spec, zdata, zx, nchan, nint, chunk, &total, &unpacked, polmode);
 	}
 
-	fprintf(stderr, "%Ld / %Ld samples unpacked\n", unpacked, total);
+	fprintf(stderr, "%lld / %lld samples unpacked\n", unpacked, total);
 
 	/* normalize across all ifs/channels */
 	sum = 0.0;

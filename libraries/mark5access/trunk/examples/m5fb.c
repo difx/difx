@@ -556,7 +556,7 @@ int spec(const char *filename, const char *formatname, int nchan, int nint, cons
 				}
 			}
 			ssize_t nwr = fwrite(tmp,sizeof(char),nchan*nif,out);
-			printf("%d/%d samples: \r", nwr, count++);
+			printf("%ld/%d samples: \r", (long)nwr, count++);
 			//fwrite(tmp,sizeof(char),nchan*4,out);
 		}
 		else

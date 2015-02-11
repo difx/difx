@@ -1,4 +1,4 @@
-INCLUDES = \
+AM_CPPFLAGS = \
         -I$(top_srcdir)/difxio
 
 LDADD = $(top_builddir)/difxio/libdifxio.la -lm

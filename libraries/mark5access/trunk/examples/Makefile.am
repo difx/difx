@@ -1,11 +1,11 @@
-INCLUDES = -I$(top_srcdir)/mark5access -I$(srcdir)/..
+AM_CPPFLAGS = -I$(top_srcdir)/mark5access -I$(srcdir)/..
 LDADD =    $(top_builddir)/mark5access/libmark5access.la -lm
 
 if WITH_FFTW
 fftw_programs = \
 	m5pcal \
 	m5spec \
-        m5fb \
+	m5fb \
 	zerocorr
 m5spec_CFLAGS = $(FFTW3_CFLAGS) $(INCLUDES)
 m5spec_LDADD = $(FFTW3_LIBS) $(LDADD)

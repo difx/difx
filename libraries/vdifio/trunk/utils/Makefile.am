@@ -1,4 +1,4 @@
-INCLUDES = \
+AM_CPPFLAGS  = \
 	-I$(top_srcdir)/src -D_FILE_OFFSET_BITS=64
 
 LDADD = \

@@ -59,7 +59,7 @@ void resetmark5bfilesummary(struct mark5b_file_summary *sum)
 void printmark5bfilesummary(const struct mark5b_file_summary *sum)
 {
 	printf("Mark5B file: %s\n", sum->fileName);
-	printf("  size = %Ld bytes\n", sum->fileSize);
+	printf("  size = %lld bytes\n", sum->fileSize);
 	if(sum->framesPerSecond > 0)
 	{
 		printf("  frame rate = %d per second\n", sum->framesPerSecond);

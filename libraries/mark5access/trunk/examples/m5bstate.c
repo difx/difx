@@ -58,7 +58,7 @@ int usage(const char *pgm)
 	return 0;
 }
 
-int process_realdata(struct mark5_stream *ms, int nframes, int nstates) {
+void process_realdata(struct mark5_stream *ms, int nframes, int nstates) {
   int i, j, k, status, sum;
   long long total, unpacked;
   double x;
@@ -144,7 +144,7 @@ int process_realdata(struct mark5_stream *ms, int nframes, int nstates) {
 	      
   }
 
-  fprintf(stderr, "%Ld / %Ld samples unpacked\n", unpacked, total);
+  fprintf(stderr, "%lld / %lld samples unpacked\n", unpacked, total);
 
   /* header of the output bstate table based on Haystack bstate output*/
   if (ms->nbit == 1)
@@ -195,7 +195,7 @@ int process_realdata(struct mark5_stream *ms, int nframes, int nstates) {
   free(bstate);
 }
 
-int process_complexdata(struct mark5_stream *ms, int nframes, int nstates) {
+void process_complexdata(struct mark5_stream *ms, int nframes, int nstates) {
   int i, j, k, status, sum;
   long long total, unpacked;
   double x;
@@ -285,7 +285,7 @@ int process_complexdata(struct mark5_stream *ms, int nframes, int nstates) {
       }
   }    
    
-  fprintf(stderr, "%Ld / %Ld samples unpacked\n", unpacked, total);
+  fprintf(stderr, "%lld / %lld samples unpacked\n", unpacked, total);
     
   /* header of the output bstate table based on Haystack bstate output*/
   if (ms->nbit == 1)

@@ -353,7 +353,7 @@ int difxMessageSendDriveStats(const DifxMessageDriveStats *driveStats)
 	char startByteString[48];
 	int b = 0;
 
-	if(driveStats->type < 0 || driveStats->type >= NUM_DRIVE_STATS_TYPES)
+	if(driveStats->type >= NUM_DRIVE_STATS_TYPES)
 	{
 		fprintf(stderr, "difxMessageSendDriveStats: illegal type number=%d; needs to be in [0, %d)\n", driveStats->type, NUM_DRIVE_STATS_TYPES);
 
@@ -401,7 +401,7 @@ int difxMessageSendDriveStats(const DifxMessageDriveStats *driveStats)
 
 		if(driveStats->startByte != 0LL)
 		{
-			sprintf(startByteString, "<startByte>%Ld</startByte>", driveStats->startByte);
+			sprintf(startByteString, "<startByte>%lld</startByte>", driveStats->startByte);
 		}
 		else
 		{
@@ -1473,7 +1473,7 @@ int difxMessageSendDifxSmart(double mjdData, const char *vsn, int slot, int nVal
 	for(i = 0; i < nValue; ++i)
 	{
 		n += snprintf(smartstr+n, DIFX_MESSAGE_LENGTH-n,
-			"<smart id=\"%d\" value=\"%Ld\"/>",
+			"<smart id=\"%d\" value=\"%lld\"/>",
 			ids[i], values[i]);
 		if(n >= DIFX_MESSAGE_LENGTH)
 		{

@@ -88,9 +88,9 @@ static int decode(const char *filename, const char *formatname, const char *f,
 
 	if(n % (long long)(ms->samplegranularity) > 0LL)
 	{
-		printf("EOF reached; reducing read size from %Ld", n);
+		printf("EOF reached; reducing read size from %lld", n);
 		n -= (n % (long long)(ms->samplegranularity));
-		printf(" to %Ld\n", n);
+		printf(" to %lld\n", n);
 	}
 
 	for(; n > 0; n -= chunk)
@@ -123,7 +123,7 @@ static int decode(const char *filename, const char *formatname, const char *f,
 		}
 	}
 
-	fprintf(stderr, "%Ld / %Ld samples unpacked\n", unpacked, total);
+	fprintf(stderr, "%lld / %lld samples unpacked\n", unpacked, total);
 
 	for(i = 0; i < ms->nchan; i++)
 	{

@@ -19,7 +19,7 @@ c_sources = \
 library_includedir = $(includedir)/difxmessage
 library_include_HEADERS = $(h_sources)
 
-INCLUDES = -I$(top_srcdir)
+Am_CPPFLAGS = -I$(top_srcdir)
 
 lib_LTLIBRARIES = \
 	libdifxmessage.la
