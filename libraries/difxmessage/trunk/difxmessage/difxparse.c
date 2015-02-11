@@ -940,10 +940,10 @@ static void XMLCALL endElement(void *userData, const char *name)
 						strncpy(G->body.mark5Copy.mpiWrapper, s, DIFX_MESSAGE_FILENAME_LENGTH-1);
 						G->body.mark5Copy.mpiWrapper[DIFX_MESSAGE_FILENAME_LENGTH-1] = 0;
 					}
-					else if(strcmp(elem, "banks") == 0 )
+					else if(strcmp(elem, "vsn") == 0 )
 					{
-						strncpy(G->body.mark5Copy.bank, s, DIFX_MESSAGE_PARAM_LENGTH-1);
-						G->body.mark5Copy.bank[DIFX_MESSAGE_PARAM_LENGTH-1] = 0;
+						strncpy(G->body.mark5Copy.vsn, s, DIFX_MESSAGE_PARAM_LENGTH-1);
+						G->body.mark5Copy.vsn[DIFX_MESSAGE_PARAM_LENGTH-1] = 0;
 					}
 					else if(strcmp(elem, "scans") == 0 )
 					{
