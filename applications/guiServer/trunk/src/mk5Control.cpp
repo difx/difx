@@ -23,8 +23,6 @@ using namespace guiServer;
 //-----------------------------------------------------------------------------
 void ServerSideConnection::mk5Control( DifxMessageGeneric* G ) {
     int childPid;
-    char command[MAX_COMMAND_SIZE];
-    char targetNode[MAX_COMMAND_SIZE];
     const DifxMessageMk5Control *S;
     Mk5ControlConnection* monitor;
 
@@ -57,11 +55,9 @@ void ServerSideConnection::mk5Control( DifxMessageGeneric* G ) {
         snprintf( mk5ControlCommand, ServerSideConnection::MAX_COMMAND_SIZE, "%s mk5control %s %s",
                 _difxSetupPath, S->command, S->targetNode );
         ExecuteSystem* executor = new ExecuteSystem( mk5ControlCommand );
-        bool found = false;
         if ( executor->pid() > -1 ) {
             while ( int ret = executor->nextOutput( message, DIFX_MESSAGE_LENGTH ) ) {
                 if ( ret == 1 ) { // stdout
-                    int portNum = -1;
                     int len = strlen( message );
                     if ( len >= 0 ) {
                         monitor->formatPacket( INFORMATION, "%s\n", message );

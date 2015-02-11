@@ -80,6 +80,7 @@ namespace guiServer {
             _relayFileOperationPackets = false;
             _relayFileTransferPackets = false;
             _relayGetDirectoryPackets = false;
+            _relayMark5CopyPackets = false;
             _relayInfoPackets = false;
             _relayLoadPackets = false;
             _relayMachinesDefinitionPackets = false;
@@ -206,6 +207,8 @@ namespace guiServer {
                                 else if ( _relayFileTransferPackets && G.type == DIFX_MESSAGE_FILETRANSFER )
                                     relayThis = true;
                                 else if ( _relayGetDirectoryPackets && G.type == DIFX_MESSAGE_GETDIRECTORY )
+                                    relayThis = true;
+                                else if ( _relayMark5CopyPackets && G.type == DIFX_MESSAGE_MARK5COPY )
                                     relayThis = true;
                                 else if ( _relayInfoPackets && G.type == DIFX_MESSAGE_INFO )
                                     relayThis = true;
@@ -395,6 +398,7 @@ namespace guiServer {
             _relayFileOperationPackets = false;
             _relayFileTransferPackets = false;
             _relayGetDirectoryPackets = false;
+            _relayMark5CopyPackets = false;
             _relayInfoPackets = false;
             _relayLoadPackets = false;
             _relayMachinesDefinitionPackets = false;
@@ -427,6 +431,9 @@ namespace guiServer {
                 } 
                 else if ( strstr( thisPtr, "GETDIRECTORY_MESSAGES" ) != NULL ) {
                     _relayGetDirectoryPackets = true;
+                } 
+                else if ( strstr( thisPtr, "MARK5COPY_MESSAGES" ) != NULL ) {
+                    _relayMark5CopyPackets = true;
                 } 
                 else if ( strstr( thisPtr, "INFO_MESSAGES" ) != NULL ) {
                     _relayInfoPackets = true;
@@ -904,6 +911,26 @@ namespace guiServer {
             return NULL;
         }
         
+        //-----------------------------------------------------------------------------
+        //!  This is the structure used to pass information used by the "getDirectory"
+        //!  thread.  It obtains and/or generates a directory of a VSN (module).
+        //-----------------------------------------------------------------------------
+        struct GetDirectoryInfo {
+            pthread_t threadId;
+            ServerSideConnection* ssc;
+            DifxMessageGetDirectory getDirectory;
+        };
+
+        //-----------------------------------------------------------------------------
+        //!  Static function called to start the getDirectory thread.
+        //-----------------------------------------------------------------------------	
+        static void* staticGetDirectoryThread( void* a ) {
+            GetDirectoryInfo* info = (GetDirectoryInfo*)a;
+            info->ssc->getDirectoryThread( info );
+            delete info;
+            return NULL;
+        }
+        
         //---------------------------------------------------------------------
         //!  Structure used to generate file lists.
         //---------------------------------------------------------------------
@@ -1029,6 +1056,7 @@ namespace guiServer {
         void difxFileOperation( DifxMessageGeneric* G );
         void runFileOperation( DifxFileOperation* fileOperation );
         void getDirectory( DifxMessageGeneric* G );
+        void getDirectoryThread( GetDirectoryInfo* info );
         void vex2difxRun( DifxMessageGeneric* G );
         void runVex2Difx( Vex2DifxInfo* v2dRun );   //  in vex2difxRun.cpp
         ulong fileTimeStamp( bool& someError, const char* path = NULL );  //  in vex2difxRun.cpp
@@ -1084,6 +1112,7 @@ namespace guiServer {
         bool _relayFileOperationPackets;
         bool _relayFileTransferPackets;
         bool _relayGetDirectoryPackets;
+        bool _relayMark5CopyPackets;
         bool _relayInfoPackets;
         bool _relayLoadPackets;
         bool _relayMachinesDefinitionPackets;

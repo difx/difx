@@ -7,20 +7,8 @@
 //
 //=============================================================================
 #include <ServerSideConnection.h>
-#include <sys/statvfs.h>
-#include <network/TCPClient.h>
-#include <network/ActivePacketExchange.h>
-#include <signal.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/time.h>
-#include <stdlib.h>
-#include <stdio.h>
+#include <GUIClient.h>
 #include <unistd.h>
-#include <dirent.h>
-#include <set>
-#include <vector>
-#include <fcntl.h>
 #include <ExecuteSystem.h>
 
 using namespace guiServer;
@@ -32,20 +20,32 @@ using namespace guiServer;
 //!  connection and a limited command protocol is provided.
 //-----------------------------------------------------------------------------
 void ServerSideConnection::getDirectory( DifxMessageGeneric* G ) {
-	const DifxMessageGetDirectory *S;
+
+    //  Cast the argument to a getDirectory message format.
+	const DifxMessageGetDirectory *S = &G->body.getDirectory;
+	//  Make a copy of all data in the message.
+	GetDirectoryInfo* info = new GetDirectoryInfo;	
+	snprintf( info->getDirectory.mpiWrapper, DIFX_MESSAGE_FILENAME_LENGTH, "%s", S->mpiWrapper );
+	snprintf( info->getDirectory.difxVersion, DIFX_MESSAGE_VERSION_LENGTH, "%s", S->difxVersion );
+	snprintf( info->getDirectory.mark5, DIFX_MESSAGE_PARAM_LENGTH, "%s", S->mark5 );
+	snprintf( info->getDirectory.vsn, DIFX_MESSAGE_PARAM_LENGTH, "%s", S->vsn );
+	snprintf( info->getDirectory.address, DIFX_MESSAGE_PARAM_LENGTH, "%s", S->address );
+	info->getDirectory.generateNew = S->generateNew;
+	info->getDirectory.port = S->port;
+	info->ssc = this;
+    pthread_create( &(info->threadId), NULL, staticGetDirectoryThread, (void*)info );      
+}	
+	
+//-----------------------------------------------------------------------------
+//!  Thread to actually run the get directory operations.
+//-----------------------------------------------------------------------------
+void ServerSideConnection::getDirectoryThread( GetDirectoryInfo* info ) {
+
 	char message[DIFX_MESSAGE_LENGTH];
 	char command[MAX_COMMAND_SIZE];
-	pid_t childPid;
-    char mark5[DIFX_MESSAGE_PARAM_LENGTH];
-    char vsn[DIFX_MESSAGE_PARAM_LENGTH];
-    char address[DIFX_MESSAGE_PARAM_LENGTH];
-    char fullPath[DIFX_MESSAGE_FILENAME_LENGTH];
-    char difxVersion[DIFX_MESSAGE_VERSION_LENGTH];
     char creationDate[DIFX_MESSAGE_FILENAME_LENGTH];
-    int port;
-    int generateNew;
     const char* mpiWrapper;
-    network::ActivePacketExchange* packetExchange;
+	const DifxMessageGetDirectory *S = &(info->getDirectory);
     
     static const int GETDIRECTORY_STARTED                = 301;
     static const int GETDIRECTORY_COMPLETED              = 302;
@@ -62,31 +62,15 @@ void ServerSideConnection::getDirectory( DifxMessageGeneric* G ) {
     static const int GENERATE_DIRECTORY_COMPLETED        = 313;
     static const int GENERATE_DIRECTORY_ERRORS           = 314;
 	
-	//  Cast the message to a GetDirectory message, then make a copy of all
-	//  parameters included.  We are entering a fork and we can't depend on the
-	//  structure not being over-written.
-	S = &G->body.getDirectory;
-	strncpy( mark5, S->mark5, DIFX_MESSAGE_PARAM_LENGTH );
-	strncpy( vsn, S->vsn, DIFX_MESSAGE_PARAM_LENGTH );
-	strncpy( address, S->address, DIFX_MESSAGE_PARAM_LENGTH );
-	strncpy( difxVersion, S->difxVersion, DIFX_MESSAGE_VERSION_LENGTH );
-	port = S->port;
-	generateNew = S->generateNew;
-	
-	//  Open a TCP socket connection to the server that should be running for us on the
-    //  host that requested this directory information (the GUI, presumably).  This socket is used
-    //  for diagnostic messages and to show progress on this specific job.  It can
-    //  also be used for some rudimentary control of the job.
-    network::TCPClient* guiSocket = new network::TCPClient( S->address, S->port );
-    guiSocket->waitForConnect();
-    //  Create a Job Monitor Connection out of this new socket if it connected properly.
-    //  If it did not connect, we need to bail out now.
-    if ( guiSocket->connected() ) {
-        packetExchange = new network::ActivePacketExchange( guiSocket );
-        packetExchange->sendPacket( GETDIRECTORY_STARTED, NULL, 0 );
+    //  Open a client connection to the server that should be running for us on the
+    //  remote host.
+    GUIClient* gc = new GUIClient( info->ssc, S->address, S->port );
+    if ( gc->okay() ) {
+        gc->packetExchange();
+        gc->sendPacket( GETDIRECTORY_STARTED, NULL, 0 );
     }
     else {
-        diagnostic( ERROR, "client socket connection from guiServer to GUI failed - unable to start job" );
+        info->ssc->diagnostic( ERROR, "client socket connection from guiServer to GUI failed - unable to start job" );
         return;
     }
     
@@ -96,18 +80,15 @@ void ServerSideConnection::getDirectory( DifxMessageGeneric* G ) {
 	else
 		mpiWrapper = "mpirun";
 
-	//  Fork a process to do everything from here.
-	signal( SIGCHLD, SIG_IGN );
-	childPid = fork();
-	if( childPid == 0 ) {
 	
 	    bool noErrors = true;
   		
   		//  Find the directory path on the Mark5 where the VSN lives.
+  		char fullPath[DIFX_MESSAGE_FILENAME_LENGTH];
   		fullPath[0] = 0;
         snprintf( command, MAX_COMMAND_SIZE, 
-            "%s -host %s /bin/echo $MARK5_DIR_PATH", mpiWrapper, mark5 );
-        diagnostic( WARNING, "executing: %s\n", command );
+            "%s -host %s /bin/echo $MARK5_DIR_PATH", mpiWrapper, S->mark5 );
+        info->ssc->diagnostic( WARNING, "executing: %s\n", command );
         ExecuteSystem* executor = new ExecuteSystem( command );
         if ( executor->pid() > -1 ) {
             while ( int ret = executor->nextOutput( message, DIFX_MESSAGE_LENGTH ) ) {
@@ -117,8 +98,8 @@ void ServerSideConnection::getDirectory( DifxMessageGeneric* G ) {
                     snprintf( fullPath, DIFX_MESSAGE_FILENAME_LENGTH, "%s", message );
                 }
                 else {            // stderr
-                    packetExchange->sendPacket( MPIRUN_ERROR, message, strlen( message ) );
-                    diagnostic( ERROR, "%s", message );
+                    gc->sendPacket( MPIRUN_ERROR, message, strlen( message ) );
+                    info->ssc->diagnostic( ERROR, "%s", message );
                 }
             }
         }
@@ -128,42 +109,42 @@ void ServerSideConnection::getDirectory( DifxMessageGeneric* G ) {
         //  was returned with the environment variable request above.
         if ( noErrors ) {
             if ( fullPath[0] != 0 ) {
-                snprintf( fullPath + strlen( fullPath ), DIFX_MESSAGE_FILENAME_LENGTH - strlen( fullPath ), "/%s.dir", vsn );
-                packetExchange->sendPacket( GETDIRECTORY_FULLPATH, fullPath, strlen( fullPath ) );
+                snprintf( fullPath + strlen( fullPath ), DIFX_MESSAGE_FILENAME_LENGTH - strlen( fullPath ), "/%s.dir", S->vsn );
+                gc->sendPacket( GETDIRECTORY_FULLPATH, fullPath, strlen( fullPath ) );
             }
             else {
-                packetExchange->sendPacket( NO_ENVIRONMENT_VARIABLE, NULL, 0 );
+                gc->sendPacket( NO_ENVIRONMENT_VARIABLE, NULL, 0 );
                 noErrors = false;
             }
         }
 
         //  Generate a new directory if that was requested.
-        if ( generateNew ) {
-            packetExchange->sendPacket( GENERATE_DIRECTORY_STARTED, NULL, 0 );
+        if ( S->generateNew ) {
+            gc->sendPacket( GENERATE_DIRECTORY_STARTED, NULL, 0 );
             snprintf( command, MAX_COMMAND_SIZE, 
                 "%s -host %s %s mk5dir -n -f %s",
-                mpiWrapper, mark5, _difxSetupPath, vsn );
-            diagnostic( WARNING, "executing: %s\n", command );
+                mpiWrapper, S->mark5, info->ssc->difxSetupPath(), S->vsn );
+            info->ssc->diagnostic( WARNING, "executing: %s\n", command );
             executor = new ExecuteSystem( command );
             bool thereWereErrors = false;
             if ( executor->pid() > -1 ) {
                 while ( int ret = executor->nextOutput( message, DIFX_MESSAGE_LENGTH ) ) {
                     if ( ret == 1 ) { // stdout
                         //  Each line represents file content.
-                        packetExchange->sendPacket( GENERATE_DIRECTORY_INFO, message, strlen( message ) );
-                        diagnostic( INFORMATION, "%s", message );
+                        gc->sendPacket( GENERATE_DIRECTORY_INFO, message, strlen( message ) );
+                        info->ssc->diagnostic( INFORMATION, "%s", message );
                     }
                     else {            // stderr
-                        packetExchange->sendPacket( MPIRUN_ERROR, message, strlen( message ) );
-                        diagnostic( ERROR, "%s", message );
+                        gc->sendPacket( MPIRUN_ERROR, message, strlen( message ) );
+                        info->ssc->diagnostic( ERROR, "%s", message );
                         thereWereErrors = true;
                     }
                 }
             }
             if ( thereWereErrors )
-                packetExchange->sendPacket( GENERATE_DIRECTORY_ERRORS, NULL, 0 );
+                gc->sendPacket( GENERATE_DIRECTORY_ERRORS, NULL, 0 );
             else
-                packetExchange->sendPacket( GENERATE_DIRECTORY_COMPLETED, NULL, 0 );
+                gc->sendPacket( GENERATE_DIRECTORY_COMPLETED, NULL, 0 );
             delete executor;
         }
 
@@ -171,8 +152,8 @@ void ServerSideConnection::getDirectory( DifxMessageGeneric* G ) {
         if ( noErrors ) {
             creationDate[0] = 0;
             snprintf( command, MAX_COMMAND_SIZE, 
-                "%s -host %s /bin/ls -l %s", mpiWrapper, mark5, fullPath );
-            diagnostic( WARNING, "executing: %s\n", command );
+                "%s -host %s /bin/ls -l %s", mpiWrapper, S->mark5, fullPath );
+            info->ssc->diagnostic( WARNING, "executing: %s\n", command );
             executor = new ExecuteSystem( command );
             if ( executor->pid() > -1 ) {
                 while ( int ret = executor->nextOutput( message, DIFX_MESSAGE_LENGTH ) ) {
@@ -183,8 +164,8 @@ void ServerSideConnection::getDirectory( DifxMessageGeneric* G ) {
                         creationDate[12] = 0;
                     }
                     else {            // stderr
-                        packetExchange->sendPacket( MPIRUN_ERROR, message, strlen( message ) );
-                        diagnostic( ERROR, "%s", message );
+                        gc->sendPacket( MPIRUN_ERROR, message, strlen( message ) );
+                        info->ssc->diagnostic( ERROR, "%s", message );
                     }
                 }
             }
@@ -195,30 +176,30 @@ void ServerSideConnection::getDirectory( DifxMessageGeneric* G ) {
         //  send that information.
         if ( noErrors ) {
             if ( creationDate[0] != 0 ) {
-                packetExchange->sendPacket( GETDIRECTORY_DATE, creationDate, strlen( creationDate ) );
+                gc->sendPacket( GETDIRECTORY_DATE, creationDate, strlen( creationDate ) );
             }
             else {
-                packetExchange->sendPacket( FILE_NOT_FOUND, NULL, 0 );
+                gc->sendPacket( FILE_NOT_FOUND, NULL, 0 );
                 noErrors = false;
             }
         }
 
         //  Get the file contents.
         if ( noErrors ) {
-            packetExchange->sendPacket( GETDIRECTORY_FILESTART, NULL, 0 );
+            gc->sendPacket( GETDIRECTORY_FILESTART, NULL, 0 );
             snprintf( command, MAX_COMMAND_SIZE, 
-                "%s -host %s /bin/cat %s", mpiWrapper, mark5, fullPath );
-            diagnostic( WARNING, "executing: %s\n", command );
+                "%s -host %s /bin/cat %s", mpiWrapper, S->mark5, fullPath );
+            info->ssc->diagnostic( WARNING, "executing: %s\n", command );
             executor = new ExecuteSystem( command );
             if ( executor->pid() > -1 ) {
                 while ( int ret = executor->nextOutput( message, DIFX_MESSAGE_LENGTH ) ) {
                     if ( ret == 1 ) { // stdout
                         //  Each line represents file content.
-                        packetExchange->sendPacket( GETDIRECTORY_FILEDATA, message, strlen( message ) );
+                        gc->sendPacket( GETDIRECTORY_FILEDATA, message, strlen( message ) );
                     }
                     else {            // stderr
-                        packetExchange->sendPacket( MPIRUN_ERROR, message, strlen( message ) );
-                        diagnostic( ERROR, "%s", message );
+                        gc->sendPacket( MPIRUN_ERROR, message, strlen( message ) );
+                        info->ssc->diagnostic( ERROR, "%s", message );
                         noErrors = false;
                     }
                 }
@@ -228,14 +209,11 @@ void ServerSideConnection::getDirectory( DifxMessageGeneric* G ) {
 
   		//  Clean up litter and exit.
   		if ( noErrors )
-	        packetExchange->sendPacket( GETDIRECTORY_COMPLETED, NULL, 0 );
+	        gc->sendPacket( GETDIRECTORY_COMPLETED, NULL, 0 );
 	    else
-	        packetExchange->sendPacket( GETDIRECTORY_FAILED, NULL, 0 );
+	        gc->sendPacket( GETDIRECTORY_FAILED, NULL, 0 );
 	    sleep( 1 );
-	    delete guiSocket;
-		exit(EXIT_SUCCESS);
-		
-	}
-	    
+	    delete gc;
+			    
 }
 
