@@ -86,7 +86,7 @@ int main(int argc, char **argv)
 
 	if(rank == 0)
 	{
-		printf("Total memory transferred = %Ld bytes in %1.0f seconds\n", NumSends*BufferSize, dt);
+		printf("Total memory transferred = %lld bytes in %1.0f seconds\n", NumSends*BufferSize, dt);
 	
 		printf("Transfer rate was %f Mbps\n", NumSends*BufferSize*8.0/1000000.0/dt);
 	}
