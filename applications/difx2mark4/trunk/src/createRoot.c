@@ -574,7 +574,7 @@ int createRoot (DifxInput *D,           // difx input structure pointer
                     else            // neither antenna is first use, skip to next product
                         continue;
                                     // print out a chan_def line
-                    fprintf (fout, "   chan_def = %s : : %9.2f MHz : %c : %8.3f MHz"
+                    fprintf (fout, "   chan_def = %s : : %13.6f MHz : %c : %12.6f MHz"
                                    " : &Ch%02d : &BBC%c%1d;\n", 
                              pfb[i].stn[k].chan_id,
                              fabs (pfb[i].stn[k].freq),
