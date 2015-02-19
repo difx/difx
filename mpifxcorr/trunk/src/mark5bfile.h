@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2006-2013 by Adam Deller and Walter Brisken             *
+ *   Copyright (C) 2006-2015 by Adam Deller and Walter Brisken             *
  *                                                                         *
  *   This program is free for non-commercial use: see the license file     *
  *   at http://astronomy.swin.edu.au:~adeller/software/difx/ for more      *
@@ -101,6 +101,7 @@ protected:
   struct mark5b_fix_statistics m5bstats;
   int startOutputFrameNumber;   // This is the Mark5B frame number within 1 second.  It should always be in [0, 25600) or -1.
   int invalidtime;
+  int framegranularity;         // How many Mark5B data frames (e.g., units of 10016 bytes) must be processed at one time to avoid timing roundoff errors
 
   int nbits, framespersecond, framebytes;
 };

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2006-2013 by Adam Deller and Walter Brisken             *
+ *   Copyright (C) 2006-2015 by Adam Deller and Walter Brisken             *
  *                                                                         *
  *   This program is free for non-commercial use: see the license file     *
  *   at http://astronomy.swin.edu.au:~adeller/software/difx/ for more      *
@@ -65,6 +65,9 @@ Mark5BDataStream::Mark5BDataStream(const Configuration * conf, int snum, int id,
 	{
 		switchedpower = 0;
 	}
+
+	// By default assume frame granularity of 2 (the most common case, e.g., 2048 Mbps), but maybe override later
+	framegranularity = 2;
 
 	// Set some Mark5B fixer parameters
 	startOutputFrameNumber = -1;
@@ -200,6 +203,11 @@ int Mark5BDataStream::calculateControlParams(int scan, int offsetsec, int offset
 	// bufferindex was previously computed assuming no framing overhead
 	framesin = vlbaoffset/payloadbytes;
 
+	// here we enforce frame granularity.  We simply back up to the previous frame that is a multiple of the frame granularity.
+	if(framesin % framegranularity != 0)
+	{
+		framesin -= (framesin % framegranularity);
+	}
 
 	// Note here a time is needed, so we only count payloadbytes
 	long long segoffns = bufferinfo[atsegment].scanns + static_cast<long long>((1000000000LL*framesin)/framespersecond);
@@ -277,6 +285,12 @@ void Mark5BDataStream::initialiseFile(int configindex, int fileindex)
 	nrecordedbands = config->getDNumRecordedBands(configindex, streamnum);
 	framebytes = config->getFrameBytes(configindex, streamnum);
 	framespersecond = config->getFramesPerSecond(configindex, streamnum);
+
+	framegranularity = framespersecond/12800;
+	if(framegranularity < 1)
+	{
+		framegranularity = 1;
+	}
 
 	bw = config->getDRecordedBandwidth(configindex, streamnum, 0);
 
