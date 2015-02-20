@@ -32,7 +32,7 @@ void ServerSideConnection::mark5Copy( DifxMessageGeneric* G ) {
 	snprintf( info->mark5Copy.address, DIFX_MESSAGE_PARAM_LENGTH, "%s", S->address );
 	info->mark5Copy.port = S->port;
 	info->ssc = this;
-    pthread_create( &(info->threadId), NULL, staticGetDirectoryThread, (void*)info );      
+    pthread_create( &(info->threadId), NULL, staticMark5CopyThread, (void*)info );      
 }	
 	
 //-----------------------------------------------------------------------------
@@ -103,7 +103,7 @@ void ServerSideConnection::mark5CopyThread( Mark5CopyInfo* info ) {
     delete executor;
 
 	//  Clean up litter and exit.
-	if ( noErrors )
+    if ( noErrors )
         gc->sendPacket( MARK5COPY_COMPLETED, NULL, 0 );
     else
         gc->sendPacket( MARK5COPY_FAILED, NULL, 0 );

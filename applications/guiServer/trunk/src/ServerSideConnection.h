@@ -158,6 +158,7 @@ namespace guiServer {
                     _monitorSocket = NULL;
                 }
                 else if ( ret > 0 && ret <= ((int)(sizeof( DifxMessageGeneric ))) ) {
+                    message[ret] = 0;
                     //  Decide what to do with this message.
                     DifxMessageGeneric G;
                     if ( !difxMessageParse( &G, message ) ) {
@@ -191,7 +192,7 @@ namespace guiServer {
 //                        default:
 //                            break;
 //                        }
-                        
+
                          if ( _relayDifxMulticasts ) {
                             //  Relay the packet if it is one of the types the GUI has selected.
                             bool relayThis = false;
