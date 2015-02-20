@@ -371,6 +371,28 @@ static int computeDifxSpacecraftEphemeris_tle(DifxSpacecraft *ds, double mjd0, d
 			}
 		}
 
+		if(1)
+		{
+			/* Rotate from ECI to J2000 frame */
+			doublereal precm[36];
+			doublereal invprecm[36];
+			doublereal tmpstate[6];
+			int six = 6;
+			int i;
+
+			/* Get rotation matrix from TEME @ET (sec past J2000 epoch) to J2000 */
+			/* PRECM is 6x6, goes from J2000 -> TEME */
+			zzteme_(&et, precm);
+			/* Invert state transformation matrix to go from TEME -> J2000 */
+			invstm_(precm, invprecm);
+			/* Do transformation of state from EV2LIN's TEME to J2000 */
+			mxvg_(invprecm, state, &six, &six, tmpstate);
+			for(i = 0; i < 6; ++i)
+			{
+				state[i] = tmpstate[i];
+			}
+		}
+
 		ds->pos[p].mjd = mjd;
 		ds->pos[p].fracDay = mjd - ds->pos[p].mjd;
 		ds->pos[p].X = state[0]*1000.0;	/* Convert to m and m/s from km and km/s */
