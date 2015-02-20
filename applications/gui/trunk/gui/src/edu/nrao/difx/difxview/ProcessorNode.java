@@ -474,6 +474,7 @@ public class ProcessorNode extends BrowserNode {
      * particularly interesting in the message for us.
      */
     public void statusMessage( DifxMessage difxMsg ) {
+        _networkActivity.data();
         _state.setText( difxMsg.getBody().getMark5Status().getState() );
     }
     

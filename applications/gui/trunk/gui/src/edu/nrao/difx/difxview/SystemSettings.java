@@ -6059,6 +6059,16 @@ public class SystemSettings extends JFrame {
                 }
             });
             this.add( _getDirectoryItem );
+            _mark5CopyItem = new ZCheckBox( "DifxMark5CopyMessage" );
+            _mark5CopyItem.setBounds( 10, ny, 300, 25 );
+            ny += 25;
+            _mark5CopyItem.addActionListener( new ActionListener() {
+                public void actionPerformed( ActionEvent e ) {
+                    if ( _requestSpecificMessages.isSelected() )
+                        changeCallback();
+                }
+            });
+            this.add( _mark5CopyItem );
             _infoItem = new ZCheckBox( "DifxInfoMessage" );
             _infoItem.setBounds( 10, ny, 300, 25 );
             ny += 25;
@@ -6205,6 +6215,8 @@ public class SystemSettings extends JFrame {
                     messStr += "FILETRANSFER_MESSAGES\n";
                 if ( _getDirectoryItem.isSelected() )
                     messStr += "GETDIRECTORY_MESSAGES\n";
+                if ( _mark5CopyItem.isSelected() )
+                    messStr += "MARK5COPY_MESSAGES\n";
                 if ( _infoItem.isSelected() )
                     messStr += "INFO_MESSAGES\n";
                 if ( _loadItem.isSelected() )
@@ -6245,6 +6257,8 @@ public class SystemSettings extends JFrame {
                 _fileTransferItem.setSelected( true );
             else if ( messStr.contentEquals( "GETDIRECTORY_MESSAGES" ) )
                 _getDirectoryItem.setSelected( true );
+            else if ( messStr.contentEquals( "MARK5COPY_MESSAGES" ) )
+                _mark5CopyItem.setSelected( true );
             else if ( messStr.contentEquals( "INFO_MESSAGES" ) )
                 _infoItem.setSelected( true );
             else if ( messStr.contentEquals( "LOAD_MESSAGES" ) )
@@ -6285,6 +6299,8 @@ public class SystemSettings extends JFrame {
                 newList.add( "FILETRANSFER_MESSAGES" );
             if ( _getDirectoryItem.isSelected() )
                 newList.add( "GETDIRECTORY_MESSAGES" );
+            if ( _mark5CopyItem.isSelected() )
+                newList.add( "MARK5COPY_MESSAGES" );
             if ( _infoItem.isSelected() )
                 newList.add( "INFO_MESSAGES" );
             if ( _loadItem.isSelected() )
@@ -6316,6 +6332,7 @@ public class SystemSettings extends JFrame {
         protected ZCheckBox _fileOperationItem;
         protected ZCheckBox _fileTransferItem;
         protected ZCheckBox _getDirectoryItem;
+        protected ZCheckBox _mark5CopyItem;
         protected ZCheckBox _infoItem;
         protected ZCheckBox _loadItem;
         protected ZCheckBox _machinesDefinitionItem;

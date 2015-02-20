@@ -26,6 +26,7 @@
     <xsd:element name="difxFileTransfer" type="difxFileTransfer"></xsd:element>
     <xsd:element name="difxFileOperation" type="difxFileOperation"></xsd:element>
     <xsd:element name="difxGetDirectory" type="difxGetDirectory"></xsd:element>
+    <xsd:element name="difxMark5Copy" type="difxMark5Copy"></xsd:element>
     <xsd:element name="difxVex2difxRun" type="difxVex2difxRun"></xsd:element>
     <xsd:element name="difxMk5Control" type="difxMk5Control"></xsd:element>
     <xsd:element name="difxCommand" type="difxCommand"></xsd:element>
@@ -67,6 +68,7 @@
                 <xsd:element ref="difxFileTransfer"/>
                 <xsd:element ref="difxFileOperation"/>
                 <xsd:element ref="difxGetDirectory"/>
+                <xsd:element ref="difxMark5Copy"/>
                 <xsd:element ref="difxVex2difxRun"/>
                 <xsd:element ref="difxMk5Control"/>
                 <xsd:element ref="difxSmart"/>
@@ -811,6 +813,18 @@
             <xsd:element name="address" type="xsd:string"></xsd:element>
             <xsd:element name="port" type="xsd:int"></xsd:element>
             <xsd:element name="generateNew" type="xsd:int"></xsd:element>
+        </xsd:sequence>
+    </xsd:complexType>
+
+    <xsd:complexType name="difxMark5Copy">
+        <xsd:sequence>
+            <xsd:element name="difxVersion" type="xsd:string"></xsd:element>
+            <xsd:element name="mark5" type="xsd:string"></xsd:element>
+            <xsd:element name="vsn" type="xsd:string"></xsd:element>
+            <xsd:element name="scans" type="xsd:string"></xsd:element>
+            <xsd:element name="destination" type="xsd:string"></xsd:element>
+            <xsd:element name="address" type="xsd:string"></xsd:element>
+            <xsd:element name="port" type="xsd:int"></xsd:element>
         </xsd:sequence>
     </xsd:complexType>
 

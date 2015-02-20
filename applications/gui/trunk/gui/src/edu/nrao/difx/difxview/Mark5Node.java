@@ -396,6 +396,21 @@ public class Mark5Node extends ProcessorNode {
     public String bankAVSN() { return _bankAVSN.getText(); }
     public String bankBVSN() { return _bankBVSN.getText(); }
     public String activeBank() { return _activeBank.getText(); }
+    public Integer scanNumber() {
+        if ( _scanNumber == null )
+            return null;
+        if ( _scanNumber.getText() == null || _scanNumber.getText().length() <= 0 )
+            return null;
+        return Integer.parseInt( _scanNumber.getText().trim() );
+    }
+    public String scanName() {
+        if ( _scanName == null )
+            return null;
+        if ( _scanName.getText() == null || _scanName.getText().length() <= 0 )
+            return null;
+        else
+            return _scanName.getText();
+    }
     
     protected ActivityMonitorLight _stateChanged;
     protected boolean _showStateChanged;

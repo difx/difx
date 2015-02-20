@@ -191,112 +191,119 @@ public class GuiServerConnection {
             while ( _connected ) {
                 byte[] data = null;
                 try {
-                    int packetId = _in.readInt();
-                    int nBytes = _in.readInt();
-                    if ( nBytes > WARNING_SIZE || nBytes < 0 ) {
-                        //  Only report this error if there have been packets received
-                        //  already - otherwise it may just indicate a connection/handshaking
-                        //  issue.
-                        if ( lastID != 0 ) {
-                            java.util.logging.Logger.getLogger("global").log(java.util.logging.Level.WARNING, 
-                                    "trying to read (" + nBytes + " of data) - packetID is " + packetId + " last is " + lastID + "(" + lastNBytes + ")" );
-                            java.util.logging.Logger.getLogger("global").log(java.util.logging.Level.WARNING, 
-                                    "Message has NOT BEEN READ" );
+                    if ( _in.available() >= 8 ) {
+                        int packetId = _in.readInt();
+                        int nBytes = _in.readInt();
+                        if ( nBytes > WARNING_SIZE || nBytes < 0 ) {
+                            //  Only report this error if there have been packets received
+                            //  already - otherwise it may just indicate a connection/handshaking
+                            //  issue.
+                            if ( lastID != 0 ) {
+                                java.util.logging.Logger.getLogger("global").log(java.util.logging.Level.WARNING, 
+                                        "trying to read (" + nBytes + " of data) - packetID is " + packetId + " last is " + lastID + "(" + lastNBytes + ")" );
+                                java.util.logging.Logger.getLogger("global").log(java.util.logging.Level.WARNING, 
+                                        "Message has NOT BEEN READ" );
+                            }
+                        }
+                        else {
+                            lastID = packetId;
+                            lastNBytes = nBytes;
+                            data = new byte[nBytes];
+                            try {
+                                while ( _in.available() < nBytes )
+                                    try { Thread.sleep( 100 ); } catch ( Exception toe ) {}
+                                _in.readFully( data );
+                            } catch ( java.io.EOFException e ) {
+                                System.out.println( "EOFException!" );
+                            }
+                            //  Sort out what to do with this packet.
+                            if ( packetId == RELAY_PACKET && data != null ) {
+                                if ( _difxRelayStack == null )
+                                    _difxRelayStack = new ArrayDeque<byte[]>();
+                                synchronized ( _difxRelayStack ) {
+                                    _difxRelayStack.addLast( data );
+                                }
+                            }
+                            else if ( packetId == GUISERVER_VERSION ) {
+                                //  This is a report of the version of guiServer that is running.
+                                _settings.guiServerVersion( new String( data ) );
+                                //  Assuming the above message indicates a new connection, clear the
+                                //  list of guiServer environment variables - we will get new ones.
+                                _settings.clearGuiServerEnvironment();
+                            }
+                            else if ( packetId == GUISERVER_DIFX_VERSION ) {
+                                //  This is the difx version for which the guiServer was compiled.  Not
+                                //  currently used.
+                                _settings.guiServerDifxVersion( new String( data ) );
+                            }
+                            else if ( packetId == GUISERVER_USER ) {
+                                //  This is the username used to start guiServer.
+                                _settings.difxControlUser( new String( data ) );
+                            }
+                            else if ( packetId == AVAILABLE_DIFX_VERSION ) {
+                                //  Add an available DiFX version to the list in settings.
+                                _settings.addDifxVersion( new String( data ) );
+                            }
+                            else if ( packetId == INFORMATION_PACKET ) {
+                                _settings.messageCenter().message( 0, "guiServer", new String( data ) );
+                            }
+                            else if ( packetId == WARNING_PACKET ) {
+                                _settings.messageCenter().warning( 0, "guiServer", new String( data ) );
+                            }
+                            else if ( packetId == ERROR_PACKET ) {
+                                _settings.messageCenter().error( 0, "guiServer", new String( data ) );
+                            }
+                            else if ( packetId == DIFX_BASE ) {
+                                //  The DiFX base is the path below which all "setup" files
+                                //  exist.
+                                _settings.clearDifxVersion();
+                                _settings.difxBase( new String( data ) );
+                            }
+                            else if ( packetId == GUISERVER_ENVIRONMENT ) {
+                                //  These are environment variables from the guiServer
+                                _settings.addGuiServerEnvironment( new String( data ) );
+                            }
+                            else if ( packetId == CHANNEL_ALL_DATA ) {
+                                //  Indicates the guiServer has the ability to "channel" all data
+                                //  through a single TCP port.
+                                _settings.channelAllDataAvailable( true );
+                                //  Tell guiServer whether we want to do this based on the current
+                                //  setting.
+                                if ( _settings.channelAllData() )
+                                    sendPacket( CHANNEL_ALL_DATA_ON, 0, null );
+                                else
+                                    sendPacket( CHANNEL_ALL_DATA_OFF, 0, null );
+                            }
+                            else if ( packetId == CHANNEL_CONNECTION ) {
+                                //  A "channelled" TCP connection is requested.  
+                                ByteBuffer b = ByteBuffer.wrap( data, 0, 4 );
+                                b.order( ByteOrder.BIG_ENDIAN );
+                                int port = b.getInt();
+                                synchronized ( _channelConnected ) {
+                                    if ( _channelConnected.containsKey( port ) ) {
+                                        _channelConnected.put( port, true );
+                                        //  Create a "map" for data on this channel.
+                                        _channelMap.put( port, new ArrayDeque<ByteBuffer>() );
+                                    }
+                                    else
+                                        java.util.logging.Logger.getLogger("global").log(java.util.logging.Level.WARNING, 
+                                                "guiServer trying to connect to port " + port + " for a channel TCP connection, but this port doesn't exist" );
+                                }
+                            }
+                            else if ( packetId == CHANNEL_DATA ) {
+                                //  Data over a "channelled" TCP connection.
+                                ByteBuffer b = ByteBuffer.wrap( data, 0, nBytes );
+                                b.order( ByteOrder.BIG_ENDIAN );
+                                int port = b.getInt();
+                                synchronized ( _channelConnected ) {
+                                    _channelMap.get( port ).add( b );  
+                                }
+                            }
+                            receiveEvent( data.length );
                         }
                     }
                     else {
-                        lastID = packetId;
-                        lastNBytes = nBytes;
-                        data = new byte[nBytes];
-                        try {
-                        _in.readFully( data );
-                        } catch ( java.io.EOFException e ) {
-                            System.out.println( "EOFException!" );
-                        }
-                        //  Sort out what to do with this packet.
-                        if ( packetId == RELAY_PACKET && data != null ) {
-                            if ( _difxRelayStack == null )
-                                _difxRelayStack = new ArrayDeque<byte[]>();
-                            synchronized ( _difxRelayStack ) {
-                                _difxRelayStack.addLast( data );
-                            }
-                        }
-                        else if ( packetId == GUISERVER_VERSION ) {
-                            //  This is a report of the version of guiServer that is running.
-                            _settings.guiServerVersion( new String( data ) );
-                            //  Assuming the above message indicates a new connection, clear the
-                            //  list of guiServer environment variables - we will get new ones.
-                            _settings.clearGuiServerEnvironment();
-                        }
-                        else if ( packetId == GUISERVER_DIFX_VERSION ) {
-                            //  This is the difx version for which the guiServer was compiled.  Not
-                            //  currently used.
-                            _settings.guiServerDifxVersion( new String( data ) );
-                        }
-                        else if ( packetId == GUISERVER_USER ) {
-                            //  This is the username used to start guiServer.
-                            _settings.difxControlUser( new String( data ) );
-                        }
-                        else if ( packetId == AVAILABLE_DIFX_VERSION ) {
-                            //  Add an available DiFX version to the list in settings.
-                            _settings.addDifxVersion( new String( data ) );
-                        }
-                        else if ( packetId == INFORMATION_PACKET ) {
-                            _settings.messageCenter().message( 0, "guiServer", new String( data ) );
-                        }
-                        else if ( packetId == WARNING_PACKET ) {
-                            _settings.messageCenter().warning( 0, "guiServer", new String( data ) );
-                        }
-                        else if ( packetId == ERROR_PACKET ) {
-                            _settings.messageCenter().error( 0, "guiServer", new String( data ) );
-                        }
-                        else if ( packetId == DIFX_BASE ) {
-                            //  The DiFX base is the path below which all "setup" files
-                            //  exist.
-                            _settings.clearDifxVersion();
-                            _settings.difxBase( new String( data ) );
-                        }
-                        else if ( packetId == GUISERVER_ENVIRONMENT ) {
-                            //  These are environment variables from the guiServer
-                            _settings.addGuiServerEnvironment( new String( data ) );
-                        }
-                        else if ( packetId == CHANNEL_ALL_DATA ) {
-                            //  Indicates the guiServer has the ability to "channel" all data
-                            //  through a single TCP port.
-                            _settings.channelAllDataAvailable( true );
-                            //  Tell guiServer whether we want to do this based on the current
-                            //  setting.
-                            if ( _settings.channelAllData() )
-                                sendPacket( CHANNEL_ALL_DATA_ON, 0, null );
-                            else
-                                sendPacket( CHANNEL_ALL_DATA_OFF, 0, null );
-                        }
-                        else if ( packetId == CHANNEL_CONNECTION ) {
-                            //  A "channelled" TCP connection is requested.  
-                            ByteBuffer b = ByteBuffer.wrap( data, 0, 4 );
-                            b.order( ByteOrder.BIG_ENDIAN );
-                            int port = b.getInt();
-                            synchronized ( _channelConnected ) {
-                                if ( _channelConnected.containsKey( port ) ) {
-                                    _channelConnected.put( port, true );
-                                    //  Create a "map" for data on this channel.
-                                    _channelMap.put( port, new ArrayDeque<ByteBuffer>() );
-                                }
-                                else
-                                    java.util.logging.Logger.getLogger("global").log(java.util.logging.Level.WARNING, 
-                                            "guiServer trying to connect to port " + port + " for a channel TCP connection, but this port doesn't exist" );
-                            }
-                        }
-                        else if ( packetId == CHANNEL_DATA ) {
-                            //  Data over a "channelled" TCP connection.
-                            ByteBuffer b = ByteBuffer.wrap( data, 0, nBytes );
-                            b.order( ByteOrder.BIG_ENDIAN );
-                            int port = b.getInt();
-                            synchronized ( _channelConnected ) {
-                                _channelMap.get( port ).add( b );  
-                            }
-                        }
-                        receiveEvent( data.length );
+                        try { Thread.sleep( _settings.timeout() ); } catch ( Exception exc ) {}
                     }
                 } catch ( SocketTimeoutException e ) {
                     //  Timeouts are actually expected and should not cause alarm.

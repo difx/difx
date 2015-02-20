@@ -15,12 +15,14 @@ import javax.swing.JOptionPane;
 import edu.nrao.difx.difxutilities.DiFXCommand;
 import edu.nrao.difx.xmllib.difxmessage.DifxMessage;
 import edu.nrao.difx.xmllib.difxmessage.DifxGetDirectory;
+import edu.nrao.difx.xmllib.difxmessage.DifxMark5Copy;
 
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
 
 import java.awt.event.ComponentEvent;
 
+import java.util.Iterator;
 import java.util.Date;
 import java.util.StringTokenizer;
 
@@ -28,6 +30,7 @@ import java.net.SocketTimeoutException;
 
 import mil.navy.usno.widgetlib.Spinner;
 import mil.navy.usno.widgetlib.SaneTextField;
+import mil.navy.usno.widgetlib.BrowserNode;
 
 import edu.nrao.difx.difxutilities.DiFXCommand_mark5Control;
 import edu.nrao.difx.difxutilities.ChannelServerSocket;
@@ -278,7 +281,7 @@ public class DirectoryDisplay extends JFrame {
             _refreshButton.setBounds( w - 160, 50, 150, 25 );
             _generateDirectoryButton.setBounds( w - 160, 80, 150, 25 );
             _createFileButton.setBounds( w - 160, 110, 150, 25 );
-            _scrollPane.setBounds( 0, 210, w, h - 180 );
+            _scrollPane.setBounds( 0, 210, w, h - 210 );
         }
     }
 
@@ -286,11 +289,9 @@ public class DirectoryDisplay extends JFrame {
     public String vsn() { return _vsn; }
     
     public void getDirectory() {
-        if ( !_lockActivityLabel ) {
-            _activitySpinner.setVisible( true );
-            _activitySpinner.ok();
-            _activityLabel.setText( "Downloading directory for " + _vsn + " from " + hostName() );
-        }
+        _activitySpinner.setVisible( true );
+        _activitySpinner.ok();
+        _activityLabel.setText( "Downloading directory for " + _vsn + " from " + hostName() );
 
         //  Construct a Get Directory command.
         DiFXCommand command = new DiFXCommand( _settings );
@@ -343,6 +344,7 @@ public class DirectoryDisplay extends JFrame {
         
         public GetDirectoryMonitor( int port ) {
             _port = port;
+            _watchingScans = false;
         }
         
         /*
@@ -404,10 +406,9 @@ public class DirectoryDisplay extends JFrame {
                             _fast.setText( "" );
                         }
                         else if ( packetType == GETDIRECTORY_COMPLETED ) {
-                            if ( !_lockActivityLabel ) {
-                                _activityLabel.setText( "" );
-                                _activitySpinner.setVisible( false );
-                            }
+                            _watchingScans = false;
+                            _activitySpinner.setVisible( false );
+                            _activityLabel.setText( "" );
                             connected = false;
                         }
                         else if ( packetType == GETDIRECTORY_FULLPATH ) {
@@ -417,35 +418,54 @@ public class DirectoryDisplay extends JFrame {
                             _activitySpinner.error();
                         }
                         else if ( packetType == MPIRUN_ERROR ) {
-                            if ( !_lockActivityLabel )
+                            if ( data != null && data.length > 0 )
                                 _activityLabel.setText( "mpirun error: " + new String( data ) );
                         }
                         else if ( packetType == NO_ENVIRONMENT_VARIABLE ) {
-                            if ( !_lockActivityLabel )
-                                _activityLabel.setText( "No MARK5_DIR_PATH environment variable on " + hostName() );
+                            _activityLabel.setText( "No MARK5_DIR_PATH environment variable on " + hostName() );
                         }
                         else if ( packetType == GENERATE_DIRECTORY_STARTED ) {
-                            if ( !_lockActivityLabel )
-                                _activityLabel.setText( "Generating directory...this may take a while" );
+                            _activityLabel.setText( "Generating directory...this may take a while" );
                         }
                         else if ( packetType == GENERATE_DIRECTORY_INFO ) {
-                            if ( !_lockActivityLabel )
-                                _activityLabel.setText( new String( data ) );
+                            //  Try to pull out the number of scans in the data.  This may not work perfectly!
+                            if ( data != null && data.length > 0 ) {
+                                String str = new String( data );
+                                if ( str.contains( "Number of scans" ) ) {
+                                    _numScans = Integer.parseInt( str.substring( str.indexOf( "=" ) + 1 ).trim() );
+                                    _activityLabel.setText( "Generating directory of " + _numScans + " scans." );
+                                    _watchingScans = true;
+                                    //  Start a thread to monitor the scans being worked on.  This can be
+                                    //  used to (hopefully) create useful messages.
+                                    Thread scanThread = new Thread() {
+                                        public void run() {
+                                            while ( _watchingScans ) {
+                                                try { Thread.sleep( 300 ); } catch ( Exception to ) {}
+                                                if ( _host.scanNumber() != null ) {
+                                                    int num = _host.scanNumber();
+                                                    if ( _watchingScans )
+                                                        _activityLabel.setText( "Generating directory of " + _numScans + " scans, " + num + " complete." );
+                                                }
+                                            }
+                                        }
+                                    };
+                                    scanThread.start();
+                                }
+                            }
                         }
                         else if ( packetType == GENERATE_DIRECTORY_COMPLETED ) {
-                            if ( !_lockActivityLabel )
-                                _activityLabel.setText( "Generating directory complete!" );
+                            _watchingScans = false;
+                            _activityLabel.setText( "Directory generation complete!" );
                         }
                         else if ( packetType == GENERATE_DIRECTORY_ERRORS ) {
-                            if ( !_lockActivityLabel )
-                                _activityLabel.setText( "Generating directory complete with errors." );
+                            _watchingScans = false;
+                            _activityLabel.setText( "Directory generation complete with error messages received." );
                         }
                         else if ( packetType == GETDIRECTORY_DATE ) {
                             _creationDate.setText( new String( data ) );
                         }
                         else if ( packetType == FILE_NOT_FOUND ) {
-                            if ( !_lockActivityLabel )
-                                _activityLabel.setText( "File \"" + _directoryPath.getText() + "\" was not found on " + hostName() );
+                            _activityLabel.setText( "File \"" + _directoryPath.getText() + "\" was not found on " + hostName() );
                         }
                         else if ( packetType == GETDIRECTORY_FILESTART ) {
                             _absorbHeader = true;
@@ -456,7 +476,7 @@ public class DirectoryDisplay extends JFrame {
                                 _absorbHeader = false;
                                 int i = 0;
                                 StringTokenizer strtok = new StringTokenizer( new String( data ) );
-                                while ( strtok.hasMoreTokens() ) {
+                                while ( i < 7 ) {
                                     //  The header contains a bunch of different items that we use to fill
                                     //  fields above our table.
                                     if ( i == 0 ) //  ignore the label - we know it already
@@ -501,7 +521,7 @@ public class DirectoryDisplay extends JFrame {
             }
             _settings.releaseTransferPort( _port );
             _cancelActivated = false;
-            _lockActivityLabel = false;
+            _watchingScans = false;
             _cancelButton.setVisible( false );
             _refreshButton.setEnabled( true );
             _generateDirectoryButton.setEnabled( true );
@@ -510,6 +530,8 @@ public class DirectoryDisplay extends JFrame {
         }
         
         protected int _port;
+        protected int _numScans;
+        protected boolean _watchingScans;
         
     }
     
@@ -521,21 +543,16 @@ public class DirectoryDisplay extends JFrame {
         int n = JOptionPane.showOptionDialog( this, "Generating directory for " + _vsn +".\nThis can take a long time - do you wish to continue?",
                 "Generate Directory for " + _vsn, JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE, null, null, null );
         if ( n == 0 ) {
-//            GenerateDirectoryThread generateDirectoryThread = new GenerateDirectoryThread();
-//            generateDirectoryThread.start();
-            if ( !_lockActivityLabel ) {
-                _runningGetDirectory = true;
-                _activitySpinner.setVisible( true );
-                _activitySpinner.ok();
-                _activityLabel.setText( "Generating a new directory for " + _vsn + " on " + hostName() );
-                //  Lock other buttons and make the "cancel" button visible.
-                _cancelActivated = false;
-                _lockActivityLabel = true;
-                _cancelButton.setVisible( true );
-                _refreshButton.setEnabled( false );
-                _generateDirectoryButton.setEnabled( false );
-                _createFileButton.setEnabled( false );
-            }
+            _runningGetDirectory = true;
+            _activitySpinner.setVisible( true );
+            _activitySpinner.ok();
+            _activityLabel.setText( "Generating a new directory for " + _vsn + " on " + hostName() );
+            //  Lock other buttons and make the "cancel" button visible.
+            _cancelActivated = false;
+            _cancelButton.setVisible( true );
+            _refreshButton.setEnabled( false );
+            _generateDirectoryButton.setEnabled( false );
+            _createFileButton.setEnabled( false );
 
             //  Construct a Get Directory command.
             DiFXCommand command = new DiFXCommand( _settings );
@@ -580,70 +597,6 @@ public class DirectoryDisplay extends JFrame {
     }
     
     /*
-     * Thread used while generating a directory.
-     */
-    protected class GenerateDirectoryThread extends Thread {
-        
-        @Override
-        public void run() {
-            //  Set up buttons, spinners, etc.
-            _runningGetDirectory = true;
-            _activitySpinner.setVisible( true );
-            _activitySpinner.ok();
-            _activityLabel.setText( "Generating a new directory for " + _vsn + " on " + hostName() );
-            //  Lock other buttons and make the "cancel" button visible.
-            _cancelActivated = false;
-            _lockActivityLabel = true;
-            _cancelButton.setVisible( true );
-            _refreshButton.setEnabled( false );
-            _generateDirectoryButton.setEnabled( false );
-            _createFileButton.setEnabled( false );
-            //  Send the command to generate the directory.
-            String commandStr = "getdirA";
-            if ( _vsn.trim().equalsIgnoreCase( _host.bankBVSN().trim() ) )
-                commandStr = "getdirB";
-            DiFXCommand_mark5Control command = new DiFXCommand_mark5Control( commandStr, hostName(), _settings, false );
-            try {
-                command.send();
-                //  Sleep for a bit to give this command a chance to take effect.
-                int i = 0;
-                while ( !_cancelActivated && i < 5 ) {
-                    ++i;
-                    try { Thread.sleep( 1000 ); } catch ( Exception e ) {}
-                }
-                //  Loop while the Mark5 status is "GetDirectory".  Allow the user to cancel
-                //  this activity.
-                getDirectory();
-                while ( !_cancelActivated && _host.currentState().trim().equalsIgnoreCase( "GetDirectory" ) ) {
-                    try { Thread.sleep( 1000 ); } catch ( Exception e ) {}
-                    getDirectory();
-                }
-                try { Thread.sleep( 1000 ); } catch ( Exception e ) {}
-                //  Reset buttons, spinners, etc. based on whether the task completed.
-                if ( _cancelActivated ) {
-                    _activityLabel.setText( "Generate Directory Cancelled" );
-                    _activitySpinner.error();
-                }
-                else {
-                    _activitySpinner.setVisible( false );
-                    _activityLabel.setText( "" );
-                }
-            } catch ( Exception e ) {
-                _activitySpinner.error();
-                _activityLabel.setText( "Error enountered issuing mark5Control \"" + commandStr + "\": " + e.getMessage() );
-            }
-            _cancelActivated = false;
-            _lockActivityLabel = false;
-            _cancelButton.setVisible( false );
-            _refreshButton.setEnabled( true );
-            _generateDirectoryButton.setEnabled( true );
-            _createFileButton.setEnabled( true );
-            _runningGetDirectory = false;
-        }
-        
-    }
-    
-    /*
      * Dump highlighted scans to a file.  The user is prompted for a filename.
      */
     public void createFile() {
@@ -654,6 +607,7 @@ public class DirectoryDisplay extends JFrame {
                     + "(this path must be writable by " + _settings.difxControlUser() + " on " + hostName() + "):", "Specify Destination", 
                     JOptionPane.QUESTION_MESSAGE );
             _createFileScans = " " + ( rows[0] + 1);
+            _firstScan = rows[0] + 1;
             if ( rows.length > 1 )
                 _createFileScans += "-" + ( rows[rows.length-1] + 1);
             int n = JOptionPane.showOptionDialog( this, "Creating file \"" + _createFileDestination + "\"."
@@ -663,8 +617,59 @@ public class DirectoryDisplay extends JFrame {
                     + "\nThis can take a long time - do you wish to continue?",
                     "Copy Scans from " + _vsn, JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE, null, null, null );
             if ( n == 0 ) {
-                CreateFileThread createFileThread = new CreateFileThread();
-                createFileThread.start();
+                //  Set up buttons, spinners, etc.
+                _runningCreateFile = true;
+                _activitySpinner.setVisible( true );
+                _activitySpinner.ok();
+                _activityLabel.setText( "Creating files in \"" + _createFileDestination + "\" from scans " + _createFileScans + " on " + _vsn );
+                //  Lock other buttons and make the "cancel" button visible.
+                _cancelActivated = false;
+                _cancelButton.setVisible( true );
+                _refreshButton.setEnabled( false );
+                _generateDirectoryButton.setEnabled( false );
+                _createFileButton.setEnabled( false );
+          
+                //  Construct a Get Directory command.
+                DiFXCommand command = new DiFXCommand( _settings );
+                command.header().setType( "DifxMark5Copy" );
+                command.mpiProcessId( "-1" );
+                command.identifier( "gui" );
+                int monitorPort = 0;
+
+                // Specifics of the get directory command.
+                DifxMark5Copy cmd = command.factory().createDifxMark5Copy();
+                cmd.setMark5( hostName() );
+                cmd.setVsn( _vsn );
+                cmd.setDifxVersion( _settings.difxVersion() );
+                cmd.setScans( _createFileScans );
+                cmd.setDestination( _createFileDestination );
+
+                // If we are using the TCP connection, set the address and port for diagnostic
+                // reporting.
+                if ( _settings.sendCommandsViaTCP() ) {
+                    cmd.setAddress( _settings.guiServerConnection().myIPAddress() );
+                    monitorPort = _settings.newDifxTransferPort( 0, 100, true, true );
+                    cmd.setPort( monitorPort );
+                }
+
+                //  Set up a monitor thread to collect and interpret diagnostic messages from
+                //  guiServer as it sets up the threads and machine files.
+                Mark5CopyMonitor monitor = null;
+                if ( _settings.sendCommandsViaTCP() ) {
+                    monitor = new Mark5CopyMonitor( monitorPort );
+                    monitor.start();
+                }
+
+                // -- Create the XML defined messages and process through the system
+                command.body().setDifxMark5Copy( cmd );
+                try {
+                    //command.sendPacket( _settings.guiServerConnection().COMMAND_PACKET );
+                    command.send();
+                } catch ( java.net.UnknownHostException e ) {
+                    java.util.logging.Logger.getLogger("global").log(java.util.logging.Level.SEVERE, null,
+                            e.getMessage() );  //BLAT should be a pop-up
+                }            
+
             }
         }
         else {
@@ -676,70 +681,124 @@ public class DirectoryDisplay extends JFrame {
     /*
      * Thread used to create a file from scans.
      */
-    protected class CreateFileThread extends Thread {
+    protected class Mark5CopyMonitor extends Thread {
+        
+        public Mark5CopyMonitor( int port ) {
+            _port = port;
+            _currentScan = 0;
+        }
+        
+        protected final int MARK5COPY_STARTED                   = 301;
+        protected final int MARK5COPY_COMPLETED                 = 302;
+        protected final int MARK5COPY_FAILED                    = 304;
+        protected final int MPIRUN_ERROR                        = 305;
+        protected final int NO_ENVIRONMENT_VARIABLE             = 306;
+        protected final int DIRECTORY_NOT_FOUND                 = 308;
+        protected final int MARK5COPY_INFO                      = 312;
+        protected final int MARK5COPY_ERRORS                    = 314;
         
         @Override
         public void run() {
-            //  Set up buttons, spinners, etc.
-            _runningCreateFile = true;
-            _activitySpinner.setVisible( true );
-            _activitySpinner.ok();
-            _activityLabel.setText( "Creating files in \"" + _createFileDestination + "\" from scans " + _createFileScans + " on " + _vsn );
-            //  Lock other buttons and make the "cancel" button visible.
-            _cancelActivated = false;
-            _lockActivityLabel = true;
-            _cancelButton.setVisible( true );
-            _refreshButton.setEnabled( false );
-            _generateDirectoryButton.setEnabled( false );
-            _createFileButton.setEnabled( false );
-            //  Send the command to generate the directory.
-            String commandStr = "copy A";
-            if ( _vsn.trim().equalsIgnoreCase( _host.bankBVSN().trim() ) )
-                commandStr = "copy B";
-            commandStr += _createFileScans + " " + _createFileDestination;
-            DiFXCommand_mark5Control command = new DiFXCommand_mark5Control( commandStr, hostName(), _settings, false );
+            //  Open a new server socket and await a connection.  The connection
+            //  will timeout after a given number of seconds (nominally 10).
             try {
-                command.send();
-                //  Sleep for a bit to give this command a chance to take effect.
-                int i = 0;
-                while ( !_cancelActivated && i < 5 ) {
-                    ++i;
-                    try { Thread.sleep( 1000 ); } catch ( Exception e ) {}
+                ChannelServerSocket ssock = new ChannelServerSocket( _port, _settings );
+                ssock.setSoTimeout( 10000 );  //  timeout is in millisec
+                try {
+                    ssock.accept();
+                    //  Loop collecting diagnostic packets from the guiServer.  These
+                    //  are identified by an initial integer, and then are followed
+                    //  by a data length, then data.
+                    boolean connected = true;
+                    while ( connected ) {
+                        //  Read the packet type as an integer.  The packet types
+                        //  are defined above (within this class).
+                        int packetType = ssock.readInt();
+                        //  Read the size of the incoming data (bytes).
+                        int packetSize = ssock.readInt();
+                        //  Read the data (as raw bytes)
+                        byte [] data = null;
+                        if ( packetSize > 0 ) {
+                            data = new byte[packetSize];
+                            ssock.readFully( data, 0, packetSize );
+                        }
+                        //  Interpret the packet type.
+                        if ( packetType == MARK5COPY_STARTED ) {
+                            connected = true;
+                            _watchingScans = true;
+                            //  Start a thread to monitor the scans being worked on.  This can be
+                            //  used to (hopefully) create useful messages.
+                            Thread scanThread = new Thread() {
+                                public void run() {
+                                    while ( _watchingScans ) {
+                                        try { Thread.sleep( 300 ); } catch ( Exception to ) {}
+                                        String scanName = _host.scanName();
+                                        if ( scanName != null ) {
+                                            String percent = scanName.substring( scanName.indexOf( "[" ) + 1, scanName.indexOf( "]" ) );
+                                            if ( _watchingScans )
+                                                _activityLabel.setText( "Copying scan " + _currentScan + " to " + _outName + ": " + percent + " complete." );
+                                        }
+                                    }
+                                }
+                            };
+                            scanThread.start();
+                        }
+                        else if ( packetType == MARK5COPY_COMPLETED ) {
+                            _watchingScans = false;
+                            _activitySpinner.setVisible( false );
+                            _activityLabel.setText( "Mark5 copy complete." );
+                            connected = false;
+                        }
+                        else if ( packetType == MARK5COPY_FAILED ) {
+                            _watchingScans = false;
+                            _activitySpinner.error();
+                        }
+                        else if ( packetType == MPIRUN_ERROR ) {
+                            //_activityLabel.setText( "mpirun error: " + new String( data ) );
+                            //  Useful (and non-error) messages are being sent to stderr...we are interested
+                            //  in the output file name.
+                            String str = new String( data );
+                            if ( str.contains( "outName =" ) ) {
+                                _outName = str.substring( str.indexOf( "=" ) + 1 ).trim();
+                                if ( _currentScan == 0 )
+                                    _currentScan = _firstScan;
+                                else
+                                    ++_currentScan;
+                            }
+                        }
+                        else if ( packetType == NO_ENVIRONMENT_VARIABLE ) {
+                            _activityLabel.setText( "No MARK5_DIR_PATH environment variable on " + hostName() );
+                        }
+                        else if ( packetType == MARK5COPY_INFO ) {
+                            _activityLabel.setText( new String( data ) );
+                        }
+                        else if ( packetType == MARK5COPY_ERRORS ) {
+                            _watchingScans = false;
+                            _activityLabel.setText( "Mark5 copy complete." );
+                            _activitySpinner.setVisible( false );
+                            connected = false;
+                        }
+                    }
+                } catch ( SocketTimeoutException e ) {
                 }
-                //  Loop while the Mark5 status is "Copy".  Allow the user to cancel
-                //  this activity.  The Mark5 status will actually swap between "Copy" and
-                //  "Idle" while it is copying.  This "_stillCopy" business tries to make
-                //  certain that the Mark5 is done copying.
-                int _stillCopy = 15;
-                while ( !_cancelActivated && _stillCopy > 0 ) {
-                    --_stillCopy;
-                    if ( _host.currentState().trim().equalsIgnoreCase( "Copy" ) )
-                        _stillCopy = 15;
-                    try { Thread.sleep( 100 ); } catch ( Exception e ) {}
-                }
-                try { Thread.sleep( 1000 ); } catch ( Exception e ) {}
-                //  Reset buttons, spinners, etc. based on whether the task completed.
-                if ( _cancelActivated ) {
-                    _activityLabel.setText( "Create File Operation Cancelled" );
-                    _activitySpinner.error();
-                }
-                else {
-                    _activitySpinner.setVisible( false );
-                    _activityLabel.setText( "" );
-                }
-            } catch ( Exception e ) {
-                _activitySpinner.error();
-                _activityLabel.setText( "Error enountered issuing mark5Control \"" + commandStr + "\": " + e.getMessage() );
+                ssock.close();
+            } catch ( java.io.IOException e ) {
+                e.printStackTrace();
             }
+            _settings.releaseTransferPort( _port );
             _cancelActivated = false;
-            _lockActivityLabel = false;
             _cancelButton.setVisible( false );
             _refreshButton.setEnabled( true );
             _generateDirectoryButton.setEnabled( true );
             _createFileButton.setEnabled( true );
-            _runningCreateFile = false;
+            _runningGetDirectory = false;
         }
         
+        protected int _port;
+        protected String _outName;
+        protected int _currentScan;
+        protected boolean _watchingScans;
+                
     }
     
     /*
@@ -816,10 +875,10 @@ public class DirectoryDisplay extends JFrame {
     protected JButton _generateDirectoryButton;
     protected JButton _createFileButton;
     protected boolean _cancelActivated;
-    protected boolean _lockActivityLabel;
     protected boolean _runningGetDirectory;
     protected boolean _runningCreateFile;
     protected String _createFileDestination;
     protected String _createFileScans;
+    protected int _firstScan;
 
 }
