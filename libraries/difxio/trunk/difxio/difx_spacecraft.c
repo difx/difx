@@ -232,15 +232,31 @@ void evaluateTLE(doublereal et, doublereal *elems, doublereal *state)
 		1.0			/* AE: Distance units/earth radius (normally 1) */
 	};
 
-	ev2lin_(&et, geophysConsts, elems, state);
+	if(elems[8] >= 2.0*M_PI/225.0)
+	{
+		ev2lin_(&et, geophysConsts, elems, state);
 
-	R = sqrt(state[0]*state[0] + state[1]*state[1] + state[2]*state[2]);
+		R = sqrt(state[0]*state[0] + state[1]*state[1] + state[2]*state[2]);
 
-	/* Adjust for light travel time from Earth Center to object */
-	/* R comes out in km, et is in seconds */
-	et -= R/299792.458;
+		/* Adjust for light travel time from Earth Center to object */
+		/* R comes out in km, et is in seconds */
+		et -= R/299792.458;
 
-	ev2lin_(&et, geophysConsts, elems, state);
+		ev2lin_(&et, geophysConsts, elems, state);
+	}
+	else
+	{
+		dpspce_(&et, geophysConsts, elems, state);
+
+		R = sqrt(state[0]*state[0] + state[1]*state[1] + state[2]*state[2]);
+
+		/* Adjust for light travel time from Earth Center to object */
+		/* R comes out in km, et is in seconds */
+		et -= R/299792.458;
+
+		dpspce_(&et, geophysConsts, elems, state);
+	}
+
 }
 #endif
 
