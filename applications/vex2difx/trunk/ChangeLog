@@ -1,3 +1,7 @@
+Version 2.5.0
+~~~~~~~~~~~~~
+* Users can now supply comments in one or more COMMENT { } blocks
+
 Version 2.4.0
 ~~~~~~~~~~~~~
 * Support axis offset argument for ANTENNAs

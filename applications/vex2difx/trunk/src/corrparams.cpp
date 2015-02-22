@@ -981,7 +981,7 @@ int AntennaSetup::setkv(const std::string &key, const std::string &value, ZoomFr
     enum stateType state = START;
     enum charType what;
 
-    int i;
+    unsigned int i;
     for (i=0 ; i<value.length(); i++) {
       what = whatChar(value[i]);
       
@@ -1145,7 +1145,7 @@ int AntennaSetup::setkv(const std::string &key, const std::string &value, ZoomFr
   int getOp(std::string &value, int &plus) {
     enum charType what;
 
-    int i;
+    unsigned int i;
     for (i=0 ; i<value.length(); i++) {
       what = whatChar(value[i]);
       
@@ -2021,7 +2021,8 @@ int CorrParams::load(const std::string &fileName)
 		PARSE_MODE_SOURCE,
 		PARSE_MODE_ANTENNA,
 		PARSE_MODE_GLOBAL_ZOOM,
-		PARSE_MODE_EOP
+		PARSE_MODE_EOP,
+		PARSE_MODE_COMMENT
 	};
 
 	const int MaxLineLength = 4*1024;
@@ -2092,7 +2093,20 @@ int CorrParams::load(const std::string &fileName)
 	for(std::vector<std::string>::const_iterator i = tokens.begin(); i != tokens.end(); ++i)
 	{
 		keyWaitingTemp = false;
-		if(*i == "SETUP")
+		if(parseMode == PARSE_MODE_COMMENT)
+		{
+			if(*i == "}")
+			{
+				v2dComment += '\n';
+				parseMode = PARSE_MODE_GLOBAL;
+			}
+			else
+			{
+				v2dComment += *i;
+				v2dComment += ' ';
+			}
+		}
+		else if(*i == "SETUP")
 		{
 			if(parseMode != PARSE_MODE_GLOBAL)
 			{
@@ -2190,6 +2204,25 @@ int CorrParams::load(const std::string &fileName)
 			key = "";
 			parseMode = PARSE_MODE_ANTENNA;
 		}
+		else if(*i == "COMMENT")
+		{
+			if(parseMode != PARSE_MODE_GLOBAL)
+			{
+				std::cerr << "Error: COMMENT out of place." << std::endl;
+
+				exit(EXIT_FAILURE);
+			}
+			++i;
+			if(*i != "{")
+			{
+				std::cerr << "Error: COMMENT: '{' expected." << std::endl;
+
+				exit(EXIT_FAILURE);
+			}
+			key = "";
+			v2dComment += "\n";
+			parseMode = PARSE_MODE_COMMENT;
+		}
 		else if(*i == "ZOOM")
 		{
 			if(parseMode != PARSE_MODE_GLOBAL)
@@ -2280,6 +2313,9 @@ int CorrParams::load(const std::string &fileName)
 				break;
 			case PARSE_MODE_GLOBAL_ZOOM:
 				nWarn += globalZoom->setkv(key, value);
+				break;
+			case PARSE_MODE_COMMENT:
+				// nothing to do here
 				break;
 			}
 		}

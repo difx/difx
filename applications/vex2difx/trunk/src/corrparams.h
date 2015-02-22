@@ -314,6 +314,7 @@ public:
 	int visBufferLength;
 	int overSamp;		// A user supplied override to oversample factor
 	enum OutputFormatType outputFormat; // DIFX or ASCII
+	std::string v2dComment;
 
 	std::list<std::string> antennaList;
 	std::list<std::pair<std::string,std::string> > baselineList;

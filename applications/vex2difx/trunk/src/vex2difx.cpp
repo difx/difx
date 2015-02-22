@@ -3674,23 +3674,6 @@ int main(int argc, char **argv)
 		{
 			cout << *j;
 		}
-		//const VexScan *S = V->getScanByDefName(j->scans[0]);
-		//const VexMode *M = V->getModeByDefName(S->modeDefName);
-		//int n = 0;
-		//for(list<int>::const_iterator k = M->overSamp.begin(); k != M->overSamp.end(); ++k)
-		//{
-		//	char ext=0;
-		//	if(M->overSamp.size() > 1)
-		//	{
-		//		ext='a'+n;
-		//	}
-		//	nJob += writeJob(*j, V, P, *k, verbose, &of, nDigit, ext);
-		//	++n;
-		//}
-		//if(M->overSamp.size() > 1)
-		//{
-		//	++nMulti;
-		//}
 		nJob += writeJob(*j, V, P, -1, verbose, &of, nDigit, 0, strict);
 	}
 	of.close();
@@ -3708,6 +3691,13 @@ int main(int argc, char **argv)
 		cout << "spectral lines or integration times).  Consider explicitly making multiple" << endl;
 		cout << ".v2d files, one for each oversample factor, that operate only on the" << endl;
 		cout << "relavant baseband channels." << endl;
+	}
+
+	if(nJob > 0 && P->v2dComment.length() > 0)
+	{
+		cout << endl;
+		cout << "The user supplied the following comments in the .v2d file:" << endl;
+		cout << P->v2dComment << endl;
 	}
 
 	delete V;
