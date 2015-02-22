@@ -207,6 +207,10 @@ int Mark5BDataStream::calculateControlParams(int scan, int offsetsec, int offset
 	if(framesin % framegranularity != 0)
 	{
 		framesin -= (framesin % framegranularity);
+		if(framesin < 0)
+		{
+			framesin += framegranularity;
+		}
 	}
 
 	// Note here a time is needed, so we only count payloadbytes

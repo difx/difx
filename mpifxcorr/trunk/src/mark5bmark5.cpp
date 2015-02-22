@@ -400,6 +400,12 @@ void Mark5BMark5DataStream::initialiseFile(int configindex, int fileindex)
 	framespersecond = config->getFramesPerSecond(configindex, streamnum);
         bw = config->getDRecordedBandwidth(configindex, streamnum, 0);
 
+	framegranularity = framespersecond/12800;
+	if(framegranularity < 1)
+	{
+		framegranularity = 1;
+	}
+
 	startOutputFrameNumber = -1;
 
 	fanout = config->genMk5FormatName(format, nrecordedbands, bw, nbits, sampling, framebytes, config->getDDecimationFactor(configindex, streamnum), config->getDNumMuxThreads(configindex, streamnum), formatname);
