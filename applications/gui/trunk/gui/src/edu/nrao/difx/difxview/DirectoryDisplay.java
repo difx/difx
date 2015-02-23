@@ -11,8 +11,10 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
+import javax.swing.JDialog;
 
 import edu.nrao.difx.difxutilities.DiFXCommand;
+import edu.nrao.difx.difxutilities.DiFXCommand_sendFile;
 import edu.nrao.difx.xmllib.difxmessage.DifxMessage;
 import edu.nrao.difx.xmllib.difxmessage.DifxGetDirectory;
 import edu.nrao.difx.xmllib.difxmessage.DifxMark5Copy;
@@ -25,16 +27,19 @@ import java.awt.event.ComponentEvent;
 import java.util.Iterator;
 import java.util.Date;
 import java.util.StringTokenizer;
+import java.util.Vector;
 
 import java.net.SocketTimeoutException;
 
 import mil.navy.usno.widgetlib.Spinner;
 import mil.navy.usno.widgetlib.SaneTextField;
 import mil.navy.usno.widgetlib.BrowserNode;
+import mil.navy.usno.widgetlib.ZButton;
 
 import edu.nrao.difx.difxutilities.DiFXCommand_mark5Control;
 import edu.nrao.difx.difxutilities.ChannelServerSocket;
 import edu.nrao.difx.difxcontroller.AttributedMessageListener;
+import edu.nrao.difx.difxutilities.TabCompletedTextField;
 
 public class DirectoryDisplay extends JFrame {
     
@@ -174,8 +179,8 @@ public class DirectoryDisplay extends JFrame {
         //  The Cancel button stops (or tries to) whatever activity the widget is currently
         //  engaged in (getting directories, saving files).  The button is made invisible
         //  when there is nothing running.
-        _cancelButton = new JButton( "Cancel" );
-        _cancelButton.setToolTipText( "Cancel current activity." );
+        _cancelButton = new ZButton( "Cancel" );
+        _cancelButton.setToolTipText( "Cancel (or attempt to cancel) the current activity." );
         _cancelButton.setVisible( false );
         _cancelButton.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
@@ -186,7 +191,7 @@ public class DirectoryDisplay extends JFrame {
         
         //  The "refresh" button obtains the existing directory as the Mark5 unit sees it.  It
         //  DOES NOT regenerate it (so it should be quick!).
-        _refreshButton = new JButton( "Refresh Directory" );
+        _refreshButton = new ZButton( "Refresh Directory" );
         _refreshButton.setToolTipText( "Download the VSN directory as it currently exists." );
         _refreshButton.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
@@ -195,9 +200,8 @@ public class DirectoryDisplay extends JFrame {
         } );
         this.add( _refreshButton );
         
-        //  The "refresh" button obtains the existing directory as the Mark5 unit sees it.  It
-        //  DOES NOT regenerate it (so it should be quick!).
-        _generateDirectoryButton = new JButton( "Generate Directory" );
+        //  Generate a new directory for this VSN.
+        _generateDirectoryButton = new ZButton( "Generate Directory" );
         _generateDirectoryButton.setToolTipText( "Generate a new directory for this VSN.  This takes a while!" );
         _generateDirectoryButton.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
@@ -206,9 +210,8 @@ public class DirectoryDisplay extends JFrame {
         } );
         this.add( _generateDirectoryButton );
         
-        //  The "refresh" button obtains the existing directory as the Mark5 unit sees it.  It
-        //  DOES NOT regenerate it (so it should be quick!).
-        _createFileButton = new JButton( "Create File" );
+        //  Create files out of selected scans.
+        _createFileButton = new ZButton( "Create File" );
         _createFileButton.setToolTipText( "Create a file from selected scans." );
         _createFileButton.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
@@ -216,6 +219,18 @@ public class DirectoryDisplay extends JFrame {
             }
         } );
         this.add( _createFileButton );
+        
+        //  Delete selected lines from the directory file.
+        _removeEntriesButton = new ZButton( "Remove Entries" );
+        _removeEntriesButton.setToolTipText( "Remove the selected lines from the directory file.\n"
+                + "The file is permanently changed - however you can rebuild\n"
+                + "the original using the \"Generate Directory\" button." );
+        _removeEntriesButton.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                removeEntries();
+            }
+        } );
+        this.add( _removeEntriesButton );
         
         _tableModel = new DefaultTableModel();
         _table = new JTable( _tableModel );
@@ -281,6 +296,7 @@ public class DirectoryDisplay extends JFrame {
             _refreshButton.setBounds( w - 160, 50, 150, 25 );
             _generateDirectoryButton.setBounds( w - 160, 80, 150, 25 );
             _createFileButton.setBounds( w - 160, 110, 150, 25 );
+            _removeEntriesButton.setBounds( w - 160, 140, 150, 25 );
             _scrollPane.setBounds( 0, 210, w, h - 210 );
         }
     }
@@ -292,6 +308,7 @@ public class DirectoryDisplay extends JFrame {
         _activitySpinner.setVisible( true );
         _activitySpinner.ok();
         _activityLabel.setText( "Downloading directory for " + _vsn + " from " + hostName() );
+        _fileContents = null;
 
         //  Construct a Get Directory command.
         DiFXCommand command = new DiFXCommand( _settings );
@@ -471,7 +488,13 @@ public class DirectoryDisplay extends JFrame {
                             _absorbHeader = true;
                         }
                         else if ( packetType == GETDIRECTORY_FILEDATA ) {
-                            // The first line is a header containing general information.
+                            //  Here we receive the contents of the directory file, one line at a time.
+                            //  Each line is saved for later transmission in the event the user edits
+                            //  the file (see removeEntries()).
+                            if ( _fileContents == null )
+                                _fileContents = new Vector<String>();
+                            _fileContents.add( new String( data ) );
+                            //  The first line is a header containing general information.
                             if ( _absorbHeader ) {
                                 _absorbHeader = false;
                                 int i = 0;
@@ -596,16 +619,96 @@ public class DirectoryDisplay extends JFrame {
         }
     }
     
+    public void removeEntries() {
+        int[] rows = _table.getSelectedRows();
+        if ( rows.length > 0 ) {
+            _activitySpinner.setVisible( true );
+            _activityLabel.setText( "Removing selected lines from the directory contents." );
+            //  Remove the lines from the file contents (which we saved last time we
+            //  downloaded it).
+            if ( _fileContents != null ) {
+                for ( int i = rows[0] + 1; i < rows[rows.length - 1] + 2; ++i )
+                    _fileContents.remove( rows[0] + 1 );
+            }
+            String outputFile = "";
+            for ( Iterator<String> iter = _fileContents.iterator(); iter.hasNext(); ) {
+                outputFile += iter.next() + "\n";
+            }
+            //  Download the result to the directory file location.
+            _activityLabel.setText( "Sending the new directory to DiFX. \"" + _directoryPath.getText() + "\"" );
+            DiFXCommand_sendFile sendFile = new DiFXCommand_sendFile( _directoryPath.getText(), _settings );
+            sendFile.addEndListener( new ActionListener() {
+                public void actionPerformed( ActionEvent e ) {
+                    //  Reload the directory to reflect the changes.
+                    getDirectory();
+                }
+            } );
+            try { 
+                sendFile.sendString( outputFile );
+            }
+            catch ( Exception e ) {
+                _activityLabel.setText( "An error was encountered when trying to upload the new"
+                        + " directory contents." );
+                _activitySpinner.error();
+            }
+        }
+        else {
+            JOptionPane.showMessageDialog( this, "No scans have been selected for removal.",
+                    "No scans selected", JOptionPane.WARNING_MESSAGE );
+        }
+    }
+    
+    protected boolean _okayPushed;
+    protected JDialog _pathDialog;
+    protected TabCompletedTextField _pathField;
+    
     /*
      * Dump highlighted scans to a file.  The user is prompted for a filename.
      */
     public void createFile() {
         int[] rows = _table.getSelectedRows();
         if ( rows.length > 0 ) {
+            _okayPushed = false;
             _createFileDestination = "";
-            _createFileDestination = JOptionPane.showInputDialog( this, "Specify a destination directory for the scans\n"
-                    + "(this path must be writable by " + _settings.difxControlUser() + " on " + hostName() + "):", "Specify Destination", 
-                    JOptionPane.QUESTION_MESSAGE );
+            _pathDialog = new JDialog( this, "Specify File Destination", JDialog.DEFAULT_MODALITY_TYPE );
+            _pathDialog.setLayout( null );
+            _pathDialog.setSize( 500, 150 );
+            _pathDialog.setLocationRelativeTo( null );
+            _pathDialog.setResizable( false );
+            JLabel label1 = new JLabel( "Specify a destination directory for the scans" );
+            label1.setBounds( 20, 10, 460, 25 );
+            _pathDialog.getContentPane().add( label1 );
+            JLabel label2 = new JLabel( "(this path must be writable by " + _settings.difxControlUser() + " on " + hostName() + "):" );
+            label2.setBounds( 20, 25, 460, 25 );
+            _pathDialog.getContentPane().add( label2 );
+            _pathField = new TabCompletedTextField( _settings );
+            _pathField.setBounds( 20, 50, 460, 25 );
+            _pathField.setText( _createFileDestination );
+            _pathDialog.getContentPane().add( _pathField );
+            ZButton okButton = new ZButton( "OK" );
+            okButton.addActionListener( new ActionListener() {
+                public void actionPerformed( ActionEvent e ) {
+                    _okayPushed = true;
+                    _pathDialog.setVisible( false );
+                }
+            });
+            okButton.setBounds( 290, 80, 80, 25 );
+            _pathDialog.getContentPane().add( okButton );
+            ZButton cancelButton = new ZButton( "Cancel" );
+            cancelButton.addActionListener( new ActionListener() {
+                public void actionPerformed( ActionEvent e ) {
+                    _okayPushed = false;
+                    _pathDialog.setVisible( false );
+                }
+            });
+            cancelButton.setBounds( 380, 80, 80, 25 );
+            _pathDialog.getContentPane().add( cancelButton );
+            
+            _pathDialog.setVisible(true);
+            if ( !_okayPushed )
+                return;
+            
+            _createFileDestination = _pathField.getText();
             _createFileScans = " " + ( rows[0] + 1);
             _firstScan = rows[0] + 1;
             if ( rows.length > 1 )
@@ -849,7 +952,7 @@ public class DirectoryDisplay extends JFrame {
     protected DirectoryDisplay _this;
     protected Mark5Node _host;
     protected String _vsn;
-    protected JButton _refreshButton;
+    protected ZButton _refreshButton;
     protected JScrollPane _scrollPane;
     protected JTable _table;
     protected DefaultTableModel _tableModel;
@@ -871,14 +974,16 @@ public class DirectoryDisplay extends JFrame {
     protected JLabel _modeNameLabel;
     protected SaneTextField _fast;
     protected JLabel _fastLabel;
-    protected JButton _cancelButton;
-    protected JButton _generateDirectoryButton;
-    protected JButton _createFileButton;
+    protected ZButton _cancelButton;
+    protected ZButton _generateDirectoryButton;
+    protected ZButton _createFileButton;
+    protected ZButton _removeEntriesButton;
     protected boolean _cancelActivated;
     protected boolean _runningGetDirectory;
     protected boolean _runningCreateFile;
     protected String _createFileDestination;
     protected String _createFileScans;
     protected int _firstScan;
+    protected Vector<String> _fileContents;
 
 }
