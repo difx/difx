@@ -15,7 +15,7 @@ using namespace guiServer;
 
 //-----------------------------------------------------------------------------
 //!  Called in response to a user request for the contents of a VSN directory
-//!  OR a request for to create that contents.  A forked process opens a two-way
+//!  OR a request for to create that contents.  A thread opens a two-way
 //!  TCP connection to the source of the request.  Data are transfered over this
 //!  connection and a limited command protocol is provided.
 //-----------------------------------------------------------------------------

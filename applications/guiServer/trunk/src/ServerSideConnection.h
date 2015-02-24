@@ -554,7 +554,7 @@ namespace guiServer {
                     getDirectory( &G );
                     break;
                 case DIFX_MESSAGE_MK5CONTROL:
-                    mk5Control( &G );
+                    mark5Control( &G );
                     break;
                 case DIFX_MESSAGE_MARK5COPY:
                     mark5Copy( &G );
@@ -947,11 +947,30 @@ namespace guiServer {
         };
 
         //-----------------------------------------------------------------------------
-        //!  Static function called to start the getDirectory thread.
+        //!  Static function called to start the mark5Copy thread.
         //-----------------------------------------------------------------------------	
         static void* staticMark5CopyThread( void* a ) {
             Mark5CopyInfo* info = (Mark5CopyInfo*)a;
             info->ssc->mark5CopyThread( info );
+            delete info;
+            return NULL;
+        }
+        
+        //-----------------------------------------------------------------------------
+        //!  Structure used to pass data to a mark5Control thread.
+        //-----------------------------------------------------------------------------
+        struct Mark5ControlInfo {
+            pthread_t threadId;
+            ServerSideConnection* ssc;
+            DifxMessageMk5Control mark5Control;
+        };
+
+        //-----------------------------------------------------------------------------
+        //!  Static function called to start the mark5Control thread.
+        //-----------------------------------------------------------------------------	
+        static void* staticMark5ControlThread( void* a ) {
+            Mark5ControlInfo* info = (Mark5ControlInfo*)a;
+            info->ssc->mark5ControlThread( info );
             delete info;
             return NULL;
         }
@@ -1094,7 +1113,8 @@ namespace guiServer {
         int verify( const char *filename, const char *formatname, double& startmjd, double& stopmjd, int refMJD );  // in generateFileList.cpp
         struct mark5_stream* openmk5( const char *filename, const char *formatname, long *offset );  // in generateFileList.cpp
         int is_reasonable_timediff( double startmjd, double stopmjd );  // in generateFileList.cpp
-        void mk5Control( DifxMessageGeneric* G );
+        void mark5Control( DifxMessageGeneric* G );
+        void mark5ControlThread( Mark5ControlInfo* info );  //  in mark5Control.cpp
         void diagnostic( const int severity, const char *fmt, ... );
         int popenRWE( int *rwepipe, const char *exe, const char *const argv[] );
         int pcloseRWE( int pid, int *rwepipe );
