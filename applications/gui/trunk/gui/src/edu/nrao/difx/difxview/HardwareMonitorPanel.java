@@ -63,7 +63,7 @@ public class HardwareMonitorPanel extends TearOffPanel {
         } );
         _clusterNodes.backgroundColor( new Color( 255, 204, 153 ) );
         _browserPane.addNode( _clusterNodes );
-        _mk5Modules = new Mark5NodesHeader( "Mark5 Modules", _settings );
+        _mk5Modules = new Mark5NodesHeader( "Mark5 Nodes", _settings );
         _mk5Modules.addColumnChangeListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
                 _clusterNodes.initializeDisplaySettings();

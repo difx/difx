@@ -133,7 +133,7 @@ public class DiFXCommand_mark5Control extends DiFXCommand {
                         //  Respond to the packet based on its type.
                         switch ( packetType ) {
                             case TASK_STARTED:
-                                System.out.println( "task has started" );
+                                //System.out.println( "task has started" );
                                 break;
                             case INFORMATION:
                                 System.out.println( "mk5control info: " + _inLine );
@@ -142,7 +142,7 @@ public class DiFXCommand_mark5Control extends DiFXCommand {
                                 System.out.println( "mk5control info: " + _inLine );
                                 break;
                             case TASK_ENDED_GRACEFULLY:
-                                System.out.println( "task completed" );
+                                //System.out.println( "task completed" );
                                 break;
                             default:
                                 break;

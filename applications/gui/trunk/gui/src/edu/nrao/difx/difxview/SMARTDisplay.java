@@ -46,7 +46,7 @@ public class SMARTDisplay extends JFrame {
                 newSize();
             }
         });
-        this.setTitle( "SMART Display for " + vsn + " on " + host );
+        this.setTitle( "S.M.A.R.T. Display for " + vsn + " on " + host );
         _vsn = vsn;
         _host = host;
         _smartMonitor.addNewDataListener( new ActionListener() {
@@ -58,7 +58,7 @@ public class SMARTDisplay extends JFrame {
         //  this button whatever SMART data we have for this module/host combination is
         //  used.
         _refreshButton = new JButton( "Refresh" );
-        _refreshButton.setToolTipText( "Generate new SMART data for this host/VSN combination" );
+        _refreshButton.setToolTipText( "Generate new S.M.A.R.T. data for this host/VSN combination" );
         _refreshButton.addActionListener( new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
                 _smartMonitor.generate( _host );

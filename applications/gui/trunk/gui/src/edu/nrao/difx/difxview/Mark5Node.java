@@ -164,7 +164,7 @@ public class Mark5Node extends ProcessorNode {
         public VSNMenu( String vsn ) {
             super( vsn );
             _vsn = vsn;
-            JMenuItem smartItem = new JMenuItem( "SMART Monitor" );
+            JMenuItem smartItem = new JMenuItem( "S.M.A.R.T. Monitor" );
             smartItem.addActionListener(new ActionListener() {
                 public void actionPerformed( ActionEvent e ) {
                     showSMARTDisplay( _vsn );
@@ -196,7 +196,7 @@ public class Mark5Node extends ProcessorNode {
             JMenuItem title = new JMenuItem( vsn + " Controls" );
             add( title );
             add( new JSeparator() );
-            JMenuItem smartItem = new JMenuItem( "SMART Monitor" );
+            JMenuItem smartItem = new JMenuItem( "S.M.A.R.T. Monitor" );
             smartItem.addActionListener(new ActionListener() {
                 public void actionPerformed( ActionEvent e ) {
                     showSMARTDisplay( _vsn );

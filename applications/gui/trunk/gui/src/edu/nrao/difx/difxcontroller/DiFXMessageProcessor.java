@@ -757,7 +757,7 @@ public class DiFXMessageProcessor extends Thread
             _smartPanel.add( _smartSlot );
             _smartMJD = new TextField( "MJD: ", 150 );
             _smartPanel.add( _smartMJD );
-            JLabel smartTableLabel = new JLabel( "SMART Values" );
+            JLabel smartTableLabel = new JLabel( "S.M.A.R.T. Values" );
             smartTableLabel.setHorizontalAlignment( JLabel.LEFT );
             smartTableLabel.setBounds( 10, 40, 200, 25 );
             _smartPanel.add( smartTableLabel );

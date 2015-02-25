@@ -1,11 +1,11 @@
 /*
- * The SMARTMonitor class maintains a list of SMART results for different Mark5
+ * The SMARTMonitor class maintains a list of S.M.A.R.T. results for different Mark5
  * disks.  To do this it requests callbacks from the DiFXMessageProcessor when
  * DifxSmartMessage messages are received.  Disks are identified by VSN and host
  * name - if a disk is moved from one host to another it becomes a "new disk" in
  * the eyes of this class.
  * 
- * External calls for SMART information on a disk/host pair either return a pointer
+ * External calls for S.M.A.R.T. information on a disk/host pair either return a pointer
  * to that information or generate a new request (via DiFXCommand_mark5Control) a
  * "getsmart" command on the DiFX host.  This will (hopefully) generate DifxSmartMessages
  * that this class will receive.
