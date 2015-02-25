@@ -32,7 +32,7 @@ void ServerSideConnection::mark5Control( DifxMessageGeneric* G ) {
 	snprintf( info->mark5Control.address, DIFX_MESSAGE_PARAM_LENGTH, "%s", S->address );
 	info->mark5Control.port = S->port;
 	info->ssc = this;
-    pthread_create( &(info->threadId), NULL, staticGetDirectoryThread, (void*)info );      
+    pthread_create( &(info->threadId), NULL, staticMark5ControlThread, (void*)info );      
 }	
 
 //-----------------------------------------------------------------------------
