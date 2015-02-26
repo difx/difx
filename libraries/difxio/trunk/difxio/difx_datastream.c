@@ -27,6 +27,7 @@
 //
 //============================================================================
 
+#define _POSIX_C_SOURCE 200809L
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -625,7 +626,7 @@ void copyDifxDatastream(DifxDatastream *dest, const DifxDatastream *src, const i
 		DifxDatastreamAllocFiles(dest, src->nFile);
 		for(f = 0; f < src->nFile; ++f)
 		{
-			dest->file[f] = strdup(src->file[f]);
+			dest->file[f] = strndup(src->file[f], DIFXIO_FILENAME_LENGTH);
 		}
 	}
 	snprintf(dest->networkPort, DIFXIO_ETH_DEV_SIZE, "%s", src->networkPort);

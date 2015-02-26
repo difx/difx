@@ -4069,3 +4069,25 @@ int DifxInputGetPointingCentreSource(const DifxInput *D, int sourceId)
 
 	return -1;
 }
+
+const DifxSource *DifxInputGetSource(const DifxInput *D, const char *sourceName)
+{
+	if(D)
+	{
+		int s;
+
+		for(s = 0; s < D->nSource; ++s)
+		{
+			if(strcmp(D->source[s].name, sourceName) == 0)
+			{
+				return D->source + s;
+			}
+		}
+
+		return 0;
+	}
+	else
+	{
+		return 0;
+	}
+}

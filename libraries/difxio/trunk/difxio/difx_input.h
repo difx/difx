@@ -845,6 +845,7 @@ DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2, int verbose
 int isAntennaFlagged(const DifxJob *J, double mjd, int antennaId);
 int DifxInputGetPointingSourceIdByJobId(const DifxInput *D, double mjd, int jobId);
 int DifxInputGetPointingSourceIdByAntennaId(const DifxInput *D, double mjd, int antennaId);
+const DifxSource *DifxInputGetSource(const DifxInput *D, const char *sourceName);
 int DifxInputGetScanIdByJobId(const DifxInput *D, double mjd, int jobId);
 int DifxInputGetScanIdByAntennaId(const DifxInput *D, double mjd, int antennaId);
 int DifxInputGetAntennaId(const DifxInput *D, const char *antennaName);

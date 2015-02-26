@@ -27,6 +27,9 @@
 //
 //============================================================================
 
+/* need _POSIX_SOURCE set for gmtime_r */
+#define _POSIX_SOURCE
+
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
