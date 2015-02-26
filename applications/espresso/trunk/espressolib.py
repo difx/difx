@@ -157,7 +157,28 @@ def convertdate(indate, outformat='mjd'):
     vexformat = '%Yy%jd%Hh%Mm%Ss'
     vlbaformat = '%Y%b%d-%H:%M:%S'
     isoformat = '%Y-%m-%dT%H:%M:%S'
-    timeformats = [vexformat, vlbaformat, isoformat]
+
+    # vex format can truncate from the right, have 2 digits for the year, and
+    # decimal seconds
+    vexformat_in = vexformat
+    if 'y' in indate:
+        if indate[2] == 'y':
+            vexformat_in = vexformat_in.replace('%Y', '%y')
+        vexlen = 3
+        if 'd' in indate:
+            vexlen = 6
+            if 'h' in indate:
+                vexlen = 9
+                if 'm' in indate:
+                    vexlen = 12
+                    if 's' in indate:
+                        vexlen = 15
+        vexformat_in = vexformat_in[0:vexlen]
+        if '.' in indate:
+            vexformat_in = vexformat_in.replace('s', '.%fs')
+
+    timeformats = [vexformat_in, vlbaformat, isoformat]
+
 
     # convert the input time to a datetime
 
