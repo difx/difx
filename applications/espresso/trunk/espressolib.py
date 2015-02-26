@@ -161,7 +161,7 @@ def convertdate(indate, outformat='mjd'):
     # vex format can truncate from the right, have 2 digits for the year, and
     # decimal seconds
     vexformat_in = vexformat
-    if 'y' in indate:
+    if type(indate) is str and 'y' in indate:
         if indate[2] == 'y':
             vexformat_in = vexformat_in.replace('%Y', '%y')
         vexlen = 3
