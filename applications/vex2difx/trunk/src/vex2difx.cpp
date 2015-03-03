@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2014 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2009-2015 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -44,27 +44,6 @@
 #include "vexload.h"
 #include "util.h"
 #include "../config.h"
-
-#if HAVE_GPSTK
-#include <IERSConventions.hpp>
-#include <IERS.hpp>
-#include <UTCTime.hpp>
-#include <FileFilterFrame.hpp>
-#include <BasicFramework.hpp>
-#include <StringUtils.hpp>
-#include <GPSEphemerisStore.hpp>
-#include <Epoch.hpp>
-#include <TimeString.hpp>
-#include <UTCTime.hpp>
-#include <GPSWeekSecond.hpp>
-#include <ReferenceFrames.hpp>
-#include <ASConstant.hpp>
-#include <SP3EphemerisStore.hpp>
-#include <PvtStore.hpp>
-#include <SatID.hpp>
-#include <EOPDataStore.hpp>
-using namespace gpstk;
-#endif
 
 using namespace std;
 
@@ -2682,70 +2661,6 @@ static int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int 
 		double fracday0, deltat;
 		int mjdint, n0, nPoint, v;
 		double mjd0;
-		bool hasGPS = false;
-#if HAVE_GPSTK
-		SP3EphemerisStore store;
-#endif
-
-		for(set<string>::const_iterator s = spacecraftSet.begin(); s != spacecraftSet.end(); ++s)
-		{
-			if(P->getPhaseCentre(*s)->gpsId > 0)
-			{
-				hasGPS = true;
-			}
-		}
-#if HAVE_GPSTK
-		if(hasGPS)
-		{
-			string sp3Path;
-			int mjdStart, mjdStop;
-			char *e;
-			
-			e = getenv("SP3PATH");
-			if(e == 0)
-			{
-				sp3Path = ".";
-			}
-			else
-			{
-				sp3Path = e;
-			}
-
-			mjdStart = static_cast<int>(D->mjdStart - 4.5/24.0);
-			mjdStop = static_cast<int>(D->mjdStop + 4.5/24.0);
-
-			for(int m = mjdStart; m <= mjdStop; ++m)
-			{
-				CommonTime T;
-				char sp3Filename[256];
-
-				T.set(m + 2400001, 43200, 0.0, TimeSystem(TimeSystem::UTC));
-				GPSWeekSecond gpstime(T);
-				sprintf(sp3Filename, "%s/igs%04d%d.sp3", sp3Path.c_str(), gpstime.week, gpstime.getDayOfWeek());
-				FILE *f = fopen(sp3Filename, "r");
-				if(!f)
-				{
-					// Download file
-					char url[512];
-					char cmd[600];
-
-					sprintf(url, "http://igscb.jpl.nasa.gov/igscb/product/%04d/igs%04d%d.sp3.Z", gpstime.week, gpstime.week, gpstime.getDayOfWeek());
-					sprintf(cmd, "wget %s -O %s.Z", url, sp3Filename);
-					cout << "Executing: " << cmd << endl;
-					system(cmd);
-					sprintf(cmd, "gunzip %s.Z", sp3Filename);
-					cout << "Executing: " << cmd << endl;
-					system(cmd);
-				}
-				else
-				{
-					fclose(f);
-				}
-
-				store.loadSP3File(sp3Filename);	
-			}
-		}
-#endif
 
 		D->spacecraft = newDifxSpacecraftArray(spacecraftSet.size());
 		D->nSpacecraft = spacecraftSet.size();
@@ -2794,202 +2709,24 @@ static int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int 
 					exit(EXIT_FAILURE);
 				}
 			}
-			else if(phaseCentre->gpsId > 0)
-			{
-#if HAVE_GPSTK
-				EOPDataStore eopDataTable;
-				Matrix<double> S(3,3,0.0);
-				int mjd = static_cast<int>(D->mjdStart);
-				// start time in seconds rounded down to nearest 2 minute boundary
-				int sec = static_cast<int>((D->mjdStart - mjd)*720.0)*120;
-				long int gps_utc = D->eop[2].tai_utc - TAImGPST();
-				long int deltaT = 24;	// seconds
-
-				int nPoint;
-				SatID sat(phaseCentre->gpsId, SatID::systemGPS);
-				Xvt xvt;
-
-				S(0,1) = 1.0;
-				S(1,0) = -1.0;
-
-				for(int e = 0; e < D->nEOP; ++e)
-				{
-					CommonTime T_UTC;
-					T_UTC.set(D->eop[e].mjd + 2400001, 0, 0.0, TimeSystem(TimeSystem::UTC));
-
-					/* Note that gpstk wants ut1-utc in arcsec, not seconds, hence the 15. */
-					eopDataTable.addEOPData(T_UTC, EOPDataStore::EOPData(D->eop[e].xPole, D->eop[e].yPole, D->eop[e].ut1_utc*15.0));
-				}
-
-				CommonTime T_UTC;
-				T_UTC.set(mjd + 2400001, sec, 0.0, TimeSystem(TimeSystem::UTC));
-
-				CommonTime T_GPS;
-				T_GPS.set(mjd + 2400001, sec, 0.0, TimeSystem(TimeSystem::GPS));
-				T_GPS.addSeconds(gps_utc);
-
-				nPoint = (D->mjdStop - D->mjdStart) * (86400/deltaT) + 20;
-
-				ds->nPoint = nPoint;
-				ds->pos = (sixVector *)calloc(nPoint, sizeof(sixVector));
-
-				for(int p = 0; p < nPoint; ++p)
-				{
-					double M = mjd + (sec + p*deltaT)/86400.0;
-					double dera;
-					
-					try
-					{
-						xvt = store.getXvt(sat, T_GPS);
-						if(1)	// do light travel time correction
-						{
-							double x, y, z, r;
-							x = xvt.x.theArray[0];
-							y = xvt.x.theArray[1];
-							z = xvt.x.theArray[2];
-							r = sqrt(x*x+y*y+z*z);
-							xvt = store.getXvt(sat, T_GPS - r/ASConstant::SPEED_OF_LIGHT);
-						}
-					}
-					catch(gpstk::Exception& e)
-					{
-						cerr << "Error: GPSTK failure: " << e << endl;
-
-						exit(EXIT_FAILURE);
-					}
-
-					
-					Vector<double> x_ECEF(3);
-					Vector<double> v_ECEF(3);
-					x_ECEF[0] = xvt.x.theArray[0];
-					x_ECEF[1] = xvt.x.theArray[1];
-					x_ECEF[2] = xvt.x.theArray[2];
-					v_ECEF[0] = xvt.v.theArray[0];
-					v_ECEF[1] = xvt.v.theArray[1];
-					v_ECEF[2] = xvt.v.theArray[2];
-					
-					EOPDataStore::EOPData ERP = eopDataTable.getEOPData(T_UTC);
-					Matrix<double> POM, Theta, NP;
-					J2kToECEFMatrix(T_UTC, ERP, POM, Theta, NP);
-					
-					double TT = (M-51544.0 + (TTmTAI() + D->eop[2].tai_utc)/86400.0)/36525.0;
-					dera = (1.002737909350795 + 5.9006e-11 * TT - 5.9e-15 * TT * TT ) * 2.0*M_PI/ 86400.0;
-
-					// Derivative of Earth rotation 
-					Matrix<double> dTheta = dera * S * Theta;
-					Matrix<double> c2t = POM * Theta * NP;
-					Matrix<double> dc2t = POM * dTheta * NP;
-
-					Vector<double> x_J2000 = transpose(c2t)*x_ECEF;
-					Vector<double> v_J2000 = transpose(c2t)*v_ECEF + transpose(dc2t)*x_ECEF;
-
-					ds->pos[p].mjd = static_cast<int>(M);
-					ds->pos[p].fracDay = M - ds->pos[p].mjd;
-					ds->pos[p].X  = x_J2000[0];
-					ds->pos[p].Y  = x_J2000[1];
-					ds->pos[p].Z  = x_J2000[2];
-					ds->pos[p].dX = v_J2000[0];
-					ds->pos[p].dY = v_J2000[1];
-					ds->pos[p].dZ = v_J2000[2];
-
-					T_GPS.addSeconds(deltaT);
-					T_UTC.addSeconds(deltaT);
-				}
-
-#else
-				cerr << "Error: gpsId set but gpstk support not compiled in." << endl;
-
-				exit(EXIT_FAILURE);
-#endif
-			}
 			else if(phaseCentre->isGeosync())
 			{
-#if HAVE_GPSTK
-				EOPDataStore eopDataTable;
-				Matrix<double> S(3,3,0.0);
-				int mjd = static_cast<int>(D->mjdStart);
-				// start time in seconds rounded down to nearest 10 minute boundary
-				int sec = static_cast<int>((D->mjdStart - mjd)*144.0)*600;
-				long int gps_utc = D->eop[2].tai_utc - TAImGPST();
-				long int deltaT = 24;	// seconds
+				/* Note: these calculations are extremely naive and don't yield a model good for VLBI correlation */
 
-				int nPoint;
-
-				S(0,1) = 1.0;
-				S(1,0) = -1.0;
-
-				for(int e = 0; e < D->nEOP; ++e)
+				v = computeDifxSpacecraftEphemerisFromXYZ(ds, mjd0, deltat, nPoint, 
+					phaseCentre->X, phaseCentre->Y, phaseCentre->Z,
+					phaseCentre->naifFile.c_str(),
+					phaseCentre->ephemClockError);
+				if(v != 0)
 				{
-					CommonTime T_UTC;
-					T_UTC.set(D->eop[e].mjd + 2400001, 0, 0.0, TimeSystem(TimeSystem::UTC));
-
-					/* Note that gpstk wants ut1-utc in arcsec, not seconds, hence the 15. */
-					eopDataTable.addEOPData(T_UTC, EOPDataStore::EOPData(D->eop[e].xPole, D->eop[e].yPole, D->eop[e].ut1_utc*15.0));
+					cerr << "Error: ephemeris calculation failed.  Must stop." << endl;
+					
+					exit(EXIT_FAILURE);
 				}
-
-				CommonTime T_UTC;
-				T_UTC.set(mjd + 2400001, sec, 0.0, TimeSystem(TimeSystem::UTC));
-
-				CommonTime T_GPS;
-				T_GPS.set(mjd + 2400001, sec, 0.0, TimeSystem(TimeSystem::GPS));
-				T_GPS.addSeconds(gps_utc);
-
-				nPoint = (D->mjdStop - D->mjdStart) * (86400/deltaT) + 100;
-
-				ds->nPoint = nPoint;
-				ds->pos = (sixVector *)calloc(nPoint, sizeof(sixVector));
-
-				for(int p = 0; p < nPoint; ++p)
-				{
-					double M = mjd + (sec + p*deltaT)/86400.0;
-					double dera;
-					
-					Vector<double> x_ECEF(3);
-					Vector<double> v_ECEF(3);
-					x_ECEF[0] = phaseCentre->X;
-					x_ECEF[1] = phaseCentre->Y;
-					x_ECEF[2] = phaseCentre->Z;
-					v_ECEF[0] = 0.0;
-					v_ECEF[1] = 0.0;
-					v_ECEF[2] = 0.0;
-					
-					EOPDataStore::EOPData ERP = eopDataTable.getEOPData(T_UTC);
-					Matrix<double> POM, Theta, NP;
-					J2kToECEFMatrix(T_UTC, ERP, POM, Theta, NP);
-					
-					double TT = (M-51544.0 + (TTmTAI() + D->eop[2].tai_utc)/86400.0)/36525.0;
-					dera = (1.002737909350795 + 5.9006e-11 * TT - 5.9e-15 * TT * TT ) * 2.0*M_PI/ 86400.0;
-
-					// Derivative of Earth rotation 
-					Matrix<double> dTheta = dera * S * Theta;
-					Matrix<double> c2t = POM * Theta * NP;
-					Matrix<double> dc2t = POM * dTheta * NP;
-
-					Vector<double> x_J2000 = transpose(c2t)*x_ECEF;
-					Vector<double> v_J2000 = transpose(c2t)*v_ECEF + transpose(dc2t)*x_ECEF;
-
-					ds->pos[p].mjd = static_cast<int>(M);
-					ds->pos[p].fracDay = M - ds->pos[p].mjd;
-					ds->pos[p].X  = x_J2000[0];
-					ds->pos[p].Y  = x_J2000[1];
-					ds->pos[p].Z  = x_J2000[2];
-					ds->pos[p].dX = v_J2000[0];
-					ds->pos[p].dY = v_J2000[1];
-					ds->pos[p].dZ = v_J2000[2];
-
-					T_GPS.addSeconds(deltaT);
-					T_UTC.addSeconds(deltaT);
-				}
-
-#else
-				cerr << "Error: geosync satellite set but gpstk support not compiled in." << endl;
-
-				exit(EXIT_FAILURE);
-#endif
 			}
 			else
 			{
-				cerr << "Developer error: not bsp or gps or geosync spacecraft type." << endl;
+				cerr << "Developer error: not bsp or geosync spacecraft type." << endl;
 
 				exit(EXIT_FAILURE);
 			}
@@ -3203,10 +2940,6 @@ static int sanityCheckConsistency(const VexData *V, const CorrParams *P)
 		{
 			cerr << "Warning: source " << s->vexName << " seems to have an incomplete set of ephemeris parameters.  All or none of ephemObject, ephemFile, naifFile must be given.  Error code = " << n << endl;
 			++nWarn;
-		}
-		if(n != 0 && s->pointingCentre.gpsId > 0)
-		{
-			cerr << "Warning: source " << s->vexName << " has both gpsId and regular ephemeris information." << endl;
 		}
 	}
 

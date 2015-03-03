@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2014 by Walter Brisken                             *
+ *   Copyright (C) 2009-2015 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -44,6 +44,8 @@ extern const double MJD_UNIX0;	// MJD at beginning of unix time
 extern const double SEC_DAY;
 extern const double MUSEC_DAY;
 
+#define MAX_DX_ORDER	4
+
 enum V2D_Mode
 {
 	V2D_MODE_NORMAL = 0,	// for almost all purposes
@@ -67,7 +69,7 @@ public:
 	//methods
 	void initialise(double ra, double dec, std::string name);
 	bool isGeosync() const { return (X != 0.0 || Y != 0.0 || Z != 0.0); };
-	bool isSpacecraft() const { return (isGeosync() || gpsId != 0 || !ephemFile.empty()); };
+	bool isSpacecraft() const { return (isGeosync() || !ephemFile.empty()); };
 
 	//variables
 	double ra;	//radians
@@ -82,7 +84,6 @@ public:
 	double ephemDeltaT;	// tabulated ephem. nterval (seconds, default 60)
 	double ephemStellarAber;	// 0 = don't apply (default), 1 = apply, other: scale correction accordingly
 	double ephemClockError;		// (sec) 0.0 is no error
-	int gpsId;		// GPS satellite number [0 means not a GPS satellite]
 	double X, Y, Z;			// For geosync satellite [0, 0, 0 means not a geosync]
 };
 
@@ -135,7 +136,7 @@ public:
 
 	std::string vexName;		// Antenna name as it appears in vex file
 	std::string difxName;	// Antenna name (if different) to appear in difx
-	double X, Y, Z;		// Station coordinates to override vex
+	double X, Y, Z;		// [m] Station coordinates to override vex
 	double axisOffset;	// [m]
 	int clockorder;		// Order of clock poly (if overriding)
 	double clock2, clock3, clock4, clock5;	// Clock coefficients (if overriding)

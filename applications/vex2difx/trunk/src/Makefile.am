@@ -17,10 +17,12 @@ vex2difx_SOURCES = \
 	vex2difx.cpp 
 
 vexpeek_SOURCES = \
-	vexpeek.cpp \
 	vextables.cpp \
 	vextables.h \
 	vexload.cpp \
 	vexload.h \
 	corrparams.cpp \
-	corrparams.h
+	corrparams.h \
+	util.h \
+	util.cpp \
+	vexpeek.cpp

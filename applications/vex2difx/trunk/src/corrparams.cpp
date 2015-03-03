@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2014 by Walter Brisken                             *
+ *   Copyright (C) 2009-2015 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -724,7 +724,6 @@ void PhaseCentre::initialise(double r, double d, std::string name)
 	ephemObject = "";
 	ephemFile = "";
 	naifFile = "";  
-	gpsId = 0;		// not a GPS satellite
 	X = Y = Z = 0.0;	// not a geosyncronous satellite
 }
 
@@ -793,10 +792,6 @@ int SourceSetup::setkv(const std::string &key, const std::string &value, PhaseCe
 	else if(key == "ephemClockError")
 	{
 		ss >> pc->ephemClockError;
-	}
-	else if(key == "gpsId")
-	{
-		ss >> pc->gpsId;
 	}
 	else if(key == "X" || key == "x")
 	{
