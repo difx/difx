@@ -54,7 +54,7 @@ void usage()
 	printf("<inputfilebaseN> is the base name of a difx fileset.\n\n");
 }
 
-int computeLMDerivatives(DifxInput *D, double deltaLM, int verbose)
+int computeLMDerivatives(DifxInput *D, double deltaLM, const char *calcProgram, int verbose)
 {
 	const int CommandLength = 1024;
 	const int NumCalcRuns = 9;
@@ -97,7 +97,7 @@ int computeLMDerivatives(DifxInput *D, double deltaLM, int verbose)
 		/* run calc11 */
 		snprintf(command, CommandLength, "rm %s", D->job->imFile);
 		system(command);
-		snprintf(command, CommandLength, "difxcalc %s", D->job->calcFile);
+		snprintf(command, CommandLength, "%s %s", calcProgram, D->job->calcFile);
 		system(command);
 		/* FIXME: vex2difx should put calc version info in .calc file */
 		/* FIXME: option for calc 9 */
@@ -184,7 +184,7 @@ int computeLMDerivatives(DifxInput *D, double deltaLM, int verbose)
 	return 0;
 }
 
-int computeXYZDerivatives(DifxInput *D, double deltaXYZ, int verbose)
+int computeXYZDerivatives(DifxInput *D, double deltaXYZ, const char *calcProgram, int verbose)
 {
 	const int CommandLength = 1024;
 	const int NumCalcRuns = 19;
@@ -243,7 +243,7 @@ int computeXYZDerivatives(DifxInput *D, double deltaXYZ, int verbose)
 		/* run calc11 */
 		snprintf(command, CommandLength, "rm %s", D->job->imFile);
 		system(command);
-		snprintf(command, CommandLength, "difxcalc %s", D->job->calcFile);
+		snprintf(command, CommandLength, "%s %s", calcProgram, D->job->calcFile);
 		system(command);
 		/* FIXME: vex2difx should put calc version info in .calc file */
 		/* FIXME: option for calc 9 */
@@ -352,6 +352,20 @@ int run(const char *fileBase, int verbose, double deltaLM, double deltaXYZ)
 	int nXYZ = 0;
 	char command[CommandLength];
 	int rv;
+	char calcProgram[CommandLength];
+	char *s;
+
+	s = getenv("DIFX_CALC_PROGRAM");
+	if(s == 0)
+	{
+		snprintf(calcProgram, CommandLength, "%s", "calcif2");
+	}
+	else
+	{
+		snprintf(calcProgram, CommandLength, "%s", s);
+	}
+
+	printf("Using %s to generate models\n", calcProgram);
 
 	/* 0. Run calc9 to get starting point */
 	snprintf(command, CommandLength, "calcif2 -f %s", fileBase);
@@ -423,11 +437,11 @@ int run(const char *fileBase, int verbose, double deltaLM, double deltaXYZ)
 	/* 4. Do the calculations */
 	if(nLM > 0)
 	{
-		rv = computeLMDerivatives(D, deltaLM, verbose);
+		rv = computeLMDerivatives(D, deltaLM, calcProgram, verbose);
 	}
 	else
 	{
-		rv = computeXYZDerivatives(D, deltaXYZ, verbose);
+		rv = computeXYZDerivatives(D, deltaXYZ, calcProgram, verbose);
 	}
 
 	/* 5. Restore the .calc file */

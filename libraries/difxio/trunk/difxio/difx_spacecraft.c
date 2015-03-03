@@ -116,6 +116,79 @@ void printDifxSpacecraft(const DifxSpacecraft *ds)
 	fprintDifxSpacecraft(stdout, ds);
 }
 
+#if HAVE_SPICE
+static void ECI2J2000(doublereal et, doublereal state[6])
+{
+	doublereal precm[36];
+	doublereal invprecm[36];
+	doublereal tmpstate[6];
+	int six = 6;
+	int i;
+
+	/* Rotate from ECI to J2000 frame */
+	/* Get rotation matrix from TEME @ET (sec past J2000 epoch) to J2000 */
+	/* PRECM is 6x6, goes from J2000 -> TEME */
+	zzteme_(&et, precm);
+	/* Invert state transformation matrix to go from TEME -> J2000 */
+	invstm_(precm, invprecm);
+	/* Do transformation of state from EV2LIN's TEME to J2000 */
+	mxvg_(invprecm, state, &six, &six, tmpstate);
+	for(i = 0; i < 6; ++i)
+	{
+		state[i] = tmpstate[i];
+	}
+}
+#endif
+
+int computeDifxSpacecraftEphemerisFromXYZ(DifxSpacecraft *ds, double mjd0, double deltat, int nPoint, double X, double Y, double Z, const char *naifFile, double ephemClockError)
+{
+#if HAVE_SPICE
+	doublereal state[6];
+	int p;
+
+	ds->nPoint = nPoint;
+	ds->pos = (sixVector *)calloc(nPoint, sizeof(sixVector));
+
+	state[0] = X/1000.0;
+	state[1] = Y/1000.0;
+	state[2] = Z/1000.0;
+	state[3] = state[4] = state[5] = 0.0;
+
+	ldpool_c(naifFile);
+
+	for(p = 0; p < nPoint; ++p)
+	{
+		long double mjd, jd;
+		char jdstr[24];
+		doublereal et;
+
+		mjd = mjd0 + p*deltat;
+		jd = mjd + 2400000.5 + ephemClockError/86400.0;
+		sprintf(jdstr, "JD %18.12Lf", jd);
+		str2et_c(jdstr, &et);
+
+		ECI2J2000(et, state);
+
+		ds->pos[p].mjd = mjd;
+		ds->pos[p].fracDay = mjd - ds->pos[p].mjd;
+		ds->pos[p].X = state[0]*1000.0;	/* Convert to m and m/s from km and km/s */
+		ds->pos[p].Y = state[1]*1000.0;
+		ds->pos[p].Z = state[2]*1000.0;
+		ds->pos[p].dX = state[3]*1000.0;
+		ds->pos[p].dY = state[4]*1000.0;
+		ds->pos[p].dZ = state[5]*1000.0;
+	}
+
+	clpool_c();
+
+	return 0;
+#else
+	fprintf(stderr, "Error: computeDifxSpacecraftEphemerisFromXYZ: spice not compiled into difxio.\n");
+	
+	return -1;
+#endif
+}
+
 static int computeDifxSpacecraftEphemeris_bsp(DifxSpacecraft *ds, double mjd0, double deltat, int nPoint, const char *objectName, const char *naifFile, const char *ephemFile, double ephemStellarAber, double ephemClockError)
 {
 #if HAVE_SPICE
@@ -387,27 +460,7 @@ static int computeDifxSpacecraftEphemeris_tle(DifxSpacecraft *ds, double mjd0, d
 			}
 		}
 
-		if(1)
-		{
-			/* Rotate from ECI to J2000 frame */
-			doublereal precm[36];
-			doublereal invprecm[36];
-			doublereal tmpstate[6];
-			int six = 6;
-			int i;
-
-			/* Get rotation matrix from TEME @ET (sec past J2000 epoch) to J2000 */
-			/* PRECM is 6x6, goes from J2000 -> TEME */
-			zzteme_(&et, precm);
-			/* Invert state transformation matrix to go from TEME -> J2000 */
-			invstm_(precm, invprecm);
-			/* Do transformation of state from EV2LIN's TEME to J2000 */
-			mxvg_(invprecm, state, &six, &six, tmpstate);
-			for(i = 0; i < 6; ++i)
-			{
-				state[i] = tmpstate[i];
-			}
-		}
+		ECI2J2000(et, state);
 
 		ds->pos[p].mjd = mjd;
 		ds->pos[p].fracDay = mjd - ds->pos[p].mjd;
