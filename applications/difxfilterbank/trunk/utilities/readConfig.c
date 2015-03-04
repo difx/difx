@@ -102,7 +102,7 @@ int readFlagsFile(char *filename, FB_Config *fb_config) {
             if (chan < 0 || chan >= fb_config->n_chans) {
                 fprintf(stderr,"ERROR: ALLCHAN flag specified for chan %d. Max %d\n",chan,fb_config->n_chans);
                 returnValue = 1;
-		break;
+                break;
             }
             fprintf(stderr,"Flagging channel %d on all stream/bands\n",chan);
             // flag the same chan on all streams/bands
@@ -117,12 +117,12 @@ int readFlagsFile(char *filename, FB_Config *fb_config) {
             if(stream < 0 || stream >= fb_config->n_streams) {
                 fprintf(stderr,"ERROR: bad stream id for stream/band flagging: %d. \n",stream);
                 returnValue = 1;
-		break;
+                break;
             }
             if(band < 0 || band >= fb_config->n_bands) {
                 fprintf(stderr,"ERROR: bad band id for stream/band flagging: %d.\n",band);
                 returnValue = 1;
-		break;
+                break;
             }
             fprintf(stderr,"Flagging all chans for stream/band %d/%d\n",stream,band);
             for (chan=0; chan < fb_config->n_chans; chan++) {
@@ -134,7 +134,7 @@ int readFlagsFile(char *filename, FB_Config *fb_config) {
             if(stream < 0 || stream >= fb_config->n_streams) {
                 fprintf(stderr,"ERROR: bad stream id for full-stream flagging: %d.\n",stream);
                 returnValue = 1;
-		break;
+                break;
             }
             fprintf(stderr,"Flagging all bands/chans for stream %d\n",stream);
             for(band=0; band<fb_config->n_bands; band++) {
@@ -142,7 +142,42 @@ int readFlagsFile(char *filename, FB_Config *fb_config) {
                     fb_config->flags[stream][band][chan] = 1;
                 }
             }
-        }    
+        }
+        if (sscanf(line,"STREAM_BAND_CHAN %d %d %d",&stream,&band,&chan)==3) {
+            if(stream < 0 || stream >= fb_config->n_streams) {
+                fprintf(stderr,"ERROR: bad stream id for STREAM_BAND_CHAN: %d.\n",stream);
+                returnValue = 1;
+                break;
+            }
+            if(band < 0 || band >= fb_config->n_bands) {
+                fprintf(stderr,"ERROR: bad band id for STREAM_BAND_CHAN: %d.\n",band);
+                returnValue = 1;
+                break;
+            }
+            if (chan < 0 || chan >= fb_config->n_chans) {
+                fprintf(stderr,"ERROR: bad chan for STREAM_BAND_CHAN: %d. Max %d\n",chan,fb_config->n_chans);
+                returnValue = 1;
+                break;
+            }
+            fprintf(stderr,"Flagging chan %d, in band %d for stream %d\n",chan,band,stream);
+            fb_config->flags[stream][band][chan] = 1;
+        }
+        if (sscanf(line,"BAND_CHAN %d %d",&band,&chan)==2) {
+            if(band < 0 || band >= fb_config->n_bands) {
+                fprintf(stderr,"ERROR: bad band id for STREAM_BAND_CHAN: %d.\n",band);
+                returnValue = 1;
+                break;
+            }
+            if (chan < 0 || chan >= fb_config->n_chans) {
+                fprintf(stderr,"ERROR: bad chan for STREAM_BAND_CHAN: %d. Max %d\n",chan,fb_config->n_chans);
+                returnValue = 1;
+                break;
+            }
+            fprintf(stderr,"Flagging chan %d, in band %d for all streamsd\n",chan,band);
+            for (stream=0; stream < fb_config->n_streams; stream++) {
+                fb_config->flags[stream][band][chan] = 1;
+            }
+        }
     }
     fclose(fp);
     return returnValue;
