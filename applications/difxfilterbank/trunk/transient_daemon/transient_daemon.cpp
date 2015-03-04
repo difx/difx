@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
 #include <signal.h>
 #include <stdlib.h>
 #include <time.h>
@@ -103,6 +104,7 @@ typedef struct
 	double tDM;
 	double maxDispersionDelay;
 	int TCPPort;
+    char *approvedJobs;
 } TransientDaemonConf;
 
 TransientDaemonState::TransientDaemonState()
@@ -323,12 +325,14 @@ TransientDaemonConf *newTransientDaemonConf()
 	conf->tDM = defaultTDM;
 	conf->TCPPort = defaultTCPPort;
 	conf->maxDispersionDelay = defaultMaxDispersionDelay;
+    conf->approvedJobs = NULL;
 
 	return conf;
 }
 
 void deleteTransientDaemonConf(TransientDaemonConf *conf)
 {
+    if (conf->approvedJobs != NULL) free(conf->approvedJobs);
 	free(conf);
 }
 
@@ -439,6 +443,11 @@ int setTransientDaemonConf(TransientDaemonConf *conf, const char *A, const char 
 	{
 		conf->TCPPort = atoi(B);
 	}
+	else if(strcmp(A, "approved_jobs") == 0)
+	{
+        if(conf->approvedJobs != NULL) free(conf->approvedJobs);
+		conf->approvedJobs = strdup(B);
+	}
 	else
 	{
 		return -1;
@@ -523,6 +532,7 @@ void fprintTransientDaemonConf(FILE *out, const TransientDaemonConf *conf)
 	fprintf(out, "  dm_delta_t = %f # ms\n", conf->tDM);
 	fprintf(out, "  max_dispersion_delay = %f # sec\n", conf->maxDispersionDelay);
 	fprintf(out, "  TCP_port = %d\n", conf->TCPPort);
+    fprintf(out, "  Approved jobs: %s\n",conf->approvedJobs);
 
 	fflush(out);
 }
@@ -686,6 +696,51 @@ static int isTrue(const char *str)
 	}
 }
 
+/* look for approved job codes */
+static int isApprovedJob(const char  *approvedJobs, const char *id) {
+    char *job=NULL,*jobs=NULL,*p,*id_upper;
+    int result = 0;
+
+    if (approvedJobs==NULL || approvedJobs[0] == '\0') return 1;    // empty approved list means approve everything
+
+    /* make an uppercase job ID */
+    id_upper = strdup(id);
+    p=id_upper;
+    while (*p != '\0') {
+        *p = toupper(*p);
+        p++;
+    }
+    /* copy approved job IDs and make upper case */
+    jobs=strdup(approvedJobs);
+    p=jobs;
+    while (*p != '\0') {
+        *p = toupper(*p);
+        p++;
+    }
+    job=jobs;
+    while ((p=strpbrk(job,",")) !=NULL) {
+        /* terminate job string */
+        *p='\0';
+
+        /* check for match */
+        if(strncmp(job,id_upper,strlen(id_upper))==0) result=1;
+
+        /* move to next */
+        job = p+1;
+    }
+
+    /* check remaining job name */
+    if(strncmp(job,id_upper,strlen(id_upper))==0) result=1;
+
+    printf("Job ID %s is %s found in approved jobs: <%s>\n",id,(result ?  "": "NOT"),approvedJobs);
+
+    if (jobs!=NULL) free(jobs);
+    if (id_upper!=NULL) free(id_upper);
+
+    return result;
+}
+
+
 static int handleMessage(const char *message, TransientDaemonState *state, const TransientDaemonConf *conf)
 {
 	DifxMessageGeneric G;
@@ -709,10 +764,21 @@ static int handleMessage(const char *message, TransientDaemonState *state, const
 	case DIFX_MESSAGE_START:
 		if(conf->vfastrEnable)
 		{
+            time_t thetime;
+            thetime = time(NULL);
+            printf("Got START message for job ID %s at %s",G.identifier,ctime(&thetime));
+
+            /* check for approved job codes */
+            if(!isApprovedJob(conf->approvedJobs,G.identifier)) {
+                printf("Job ID %s is not approved. Not starting dispatcher.\n",G.identifier);
+                fflush(stdout);
+                break;
+            }
+
  			if(!diskSpaceIsAvailable(conf))
 			{
  				printf("Received start message, but not enough space is left on disk. Ignoring\n");
-			
+                fflush(stdout);
 				return -3;
 			}
 			state->lastCommand[0] = 0;
