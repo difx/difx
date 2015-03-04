@@ -723,14 +723,14 @@ static int isApprovedJob(const char  *approvedJobs, const char *id) {
         *p='\0';
 
         /* check for match */
-        if(strncmp(job,id_upper,strlen(id_upper))==0) result=1;
+        if(strncmp(job,id_upper,strlen(job))==0) result=1;
 
         /* move to next */
         job = p+1;
     }
 
     /* check remaining job name */
-    if(strncmp(job,id_upper,strlen(id_upper))==0) result=1;
+    if(strncmp(job,id_upper,strlen(job))==0) result=1;
 
     printf("Job ID %s is %s found in approved jobs: <%s>\n",id,(result ?  "": "NOT"),approvedJobs);
 
