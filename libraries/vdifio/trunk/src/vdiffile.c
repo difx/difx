@@ -73,9 +73,9 @@ void printvdiffilesummary(const struct vdif_file_summary *sum)
 	printf("  bits per sample = %d\n", sum->nBit);
 	printf("  VDIF epoch = %d\n", sum->epoch);
 	printf("  start MJD = %d\n", vdiffilesummarygetstartmjd(sum));
-	printf("  start second = %d\n", sum->startSecond);
+	printf("  start second = %d\n", sum->startSecond % 86400);
 	printf("  start frame = %d\n", sum->startFrame);
-	printf("  end second = %d\n", sum->endSecond);
+	printf("  end second = %d\n", sum->endSecond % 86400);
 	printf("  end frame = %d\n", sum->endFrame);
 	printf("  first frame offset = %d bytes\n", sum->firstFrameOffset);
 }
