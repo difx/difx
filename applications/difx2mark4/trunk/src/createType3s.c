@@ -551,7 +551,7 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                                             continue;
 
                                         // trap potential array overwrites
-                                        if (nochan >= NPC_FREQS)
+                                        if (nochan > NPC_FREQS)
                                             {
                                             printf ("skipping write for tone %d since channel %d too large\n", i, b);
                                             break;
