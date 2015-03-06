@@ -12,9 +12,22 @@ my ($invalid, $legacy, $seconds, $refepoch, $frame, $version, $nchan, $frameleng
 
 my $once = 0;
 my $check = 0;
-GetOptions('once'=>\$once, 'check'=>\$check);
+my $help = 0;
+my $skip = 0;
+GetOptions('once'=>\$once, 'check'=>\$check, 'help'=>\$help, 'skip=i'=>\$skip);
 
 my ($lastframe, $lastsec);
+
+if ($help || @ARGV==0) {
+  print<<EOF;
+Usage: vdifheader.pl [options] <vdiffile>
+
+Options:
+   -once          Print only the first header
+   -check         Do check frames increase monotonically with no gaps (single thread only?)
+   -skip <bytes>  Skip <bytes> bytes at the start of each file    
+EOF
+}
 
 foreach (@ARGV) {
   open(VDIF, $_) || die "Could not open $_: $!\n";
@@ -24,7 +37,17 @@ foreach (@ARGV) {
   my $first = 1;
   while (1) {
 
-
+    if ($skip>0) {
+      my $status = sysseek VDIF, $skip, SEEK_SET;
+      if (! defined $status) {
+	warn "Error trying to skip $skip bytes - skipping file\n";
+	last;
+      } elsif ($status != $skip) {
+	warn "Failed to skip $skip bytes - is this a VDIF file?\n";
+	last;
+      }
+    }
+      
     ($invalid, $legacy, $seconds, $refepoch, $frame, $version, $nchan, $framelength, $complex, 
      $nbits, $threadid, $antid, $edv, $eud1, $eud2, $edu3, $eud4) = 
        readheader(*VDIF);
