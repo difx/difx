@@ -21,6 +21,7 @@
 #define MAXCHAN 32
 #define MAXSTR 256
 
+#include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <signal.h>
@@ -31,6 +32,7 @@
 #include <getopt.h>
 #include <netdb.h>  
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <sys/socket.h>
 #include <sys/time.h>
 #include <errno.h>
