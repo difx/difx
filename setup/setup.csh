@@ -63,11 +63,17 @@ if ($DIFXOS == "darwin") then
 else
   PREPEND LD_LIBRARY_PATH  ${DIFXROOT}/lib
   PREPEND LD_LIBRARY_PATH  ${PGPLOTDIR}
+  if ( $arch == "x86_64" ) then #64 bit
+    PREPEND LD_LIBRARY_PATH  ${DIFXROOT}/lib64
+  endif
 endif
 if ($?PKG_CONFIG_PATH) then
   PREPEND PKG_CONFIG_PATH  ${DIFXROOT}/lib/pkgconfig
 else
   setenv PKG_CONFIG_PATH  ${DIFXROOT}/lib/pkgconfig
+endif
+if ( $arch == "x86_64" ) then #64 bit
+  PREPEND PKG_CONFIG_PATH  ${DIFXROOT}/lib64/pkgconfig
 endif
 
 echo " DiFX version $DIFX_VERSION is selected"

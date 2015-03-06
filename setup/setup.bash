@@ -91,8 +91,16 @@ then
 else
   PrependPath LD_LIBRARY_PATH  ${DIFXROOT}/lib
   PrependPath LD_LIBRARY_PATH  ${PGPLOTDIR}
+  if [ $arch = "x86_64" ] #64 bit
+  then
+    PrependPath LD_LIBRARY_PATH  ${DIFXROOT}/lib64
+  fi  
 fi
 PrependPath PKG_CONFIG_PATH  ${DIFXROOT}/lib/pkgconfig
+if [ $arch = "x86_64" ] #64 bit
+then
+  PrependPath PKG_CONFIG_PATH  ${DIFXROOT}/lib64/pkgconfig
+fi  
 if test "$PS1" != ""; then
   echo " DiFX version $DIFX_VERSION is selected"
   export PS1="\u@\h $DIFX_VERSION \W> "
