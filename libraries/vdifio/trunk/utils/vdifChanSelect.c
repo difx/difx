@@ -62,15 +62,17 @@ static void usage()
 {
   fprintf(stderr, "\n%s ver. %s  %s  %s\n\n", program, version, author, verdate);
   fprintf(stderr, "A program select a subset of channels from a VDIF file. Assumes all threads have the same # channels\n");
-  fprintf(stderr, "\nUsage: %s <VDIF input file> <VDIF output file>\n", program);
+  fprintf(stderr, "\nUsage: %s -o <Output directory> <VDIF input file> [<VDIF output file> ...]\n", program);
   fprintf(stderr, "\n<VDIF input file> is the name of the VDIF file to read\n");
-  fprintf(stderr, "\n<VDIF output file> is the name of the VDIF file to write\n");
+  fprintf(stderr, "\n<Output directory> is the name of a directory to write all the files to\n");
+  fprintf(stderr, "\nOptions:\n");
+  fprintf(stderr, "\n-skip <bytes>    Skip <bytes> bytes a the start of each file\n");
 }
 
 int main (int argc, char * const argv[]) {
   int framesize, nfile, infile, outfile, rate, opt, frameperbuf, nframe, i;
   int nread, status, nwrote, tmp, nchan, bits, isComplex, legacy, headersize, datasize;
-  int nextract, first, sock, bufsize, odatasize, oframesize, obufsize;
+  int nextract, first, sock, bufsize, odatasize, oframesize, obufsize, oheadersize;
   float ftmp;
   double t0, t1;
   char outname[MAXSTR+1] = "";
@@ -84,6 +86,7 @@ int main (int argc, char * const argv[]) {
   unsigned long long filesize, totalframe, totalsent;
   
   int offset = 0;
+  int outlegacy = 0;
   int concat = 0;
   int net = 0;
   char postfix[MAXSTR+1] = ".m5b";
@@ -98,13 +101,15 @@ int main (int argc, char * const argv[]) {
   struct option options[] = {
     {"outdir", 1, 0, 'o'},
     {"dir", 1, 0, 'o'},
-    //    {"offset", 1, 0, 'O'},
+    {"offset", 1, 0, 's'},
+    {"skip", 1, 0, 's'},
+    {"legacy", 0, 0, 'l'},
     {"outfile", 1, 0, 'f'},
     {"port", 1, 0, 'p'},
     {"host", 1, 0, 'H'},
     {"hostname", 1, 0, 'H'},
     {"window", 1, 0, 'w'},
-    {"server", 0, 0, 's'},
+    {"server", 0, 0, 'S'},
     {"concat", 0, 0, 'c'},
     {"help", 0, 0, 'h'},
     {0, 0, 0, 0}
@@ -121,8 +126,7 @@ int main (int argc, char * const argv[]) {
 
     switch (opt) {
 
-/*
-    case 'O':
+    case 's':
       status = sscanf(optarg, "%d", &tmp);
       if (status!=1)
 	fprintf(stderr, "Bad offset value %s\n", optarg);
@@ -130,7 +134,7 @@ int main (int argc, char * const argv[]) {
 	offset = tmp;
       }
       break;
-*/            
+
     case 'o':
       if (strlen(optarg)>MAXSTR) {
 	fprintf(stderr, "Outdir too long\n");
@@ -140,6 +144,10 @@ int main (int argc, char * const argv[]) {
       if (outdir[strlen(outdir)-1] == '/')  {// Remove trailing "/"
 	outdir[strlen(outdir)-1] = 0;
       }
+      break;
+
+    case 'l':
+      outlegacy = 1;
       break;
 
     case 'f':
@@ -177,7 +185,7 @@ int main (int argc, char * const argv[]) {
       net = 1;
       break;
 
-    case 's':
+    case 'S':
       server = 1;
       net = 1;
       break;
@@ -198,9 +206,9 @@ int main (int argc, char * const argv[]) {
     }
   }
 
-
   if (strlen(outdir)==0) {
-    fprintf(stderr, "Must support output dirtectory - aborting\n");
+    fprintf(stderr, "Must supply output dirtectory - aborting\n");
+    return 1;
   }
 
   // Malloc enough data for one frame first
@@ -237,9 +245,26 @@ int main (int argc, char * const argv[]) {
     }
     printf("Reading %s\n", argv[nfile]);
 
+    if (offset>0) {
+      off_t ss = lseek(infile, offset, SEEK_SET);
+      if (ss<0) {
+	sprintf(msg, "Trying to skip %d bytes at start of file", offset);
+	perror(msg);
+	close(infile);
+	return(1);
+      } else if (ss!=offset) {
+	fprintf(stderr, "Could not skip %d bytes at start of file - aborting", offset);
+	close(infile);
+	return(1);
+      }
+    } else {
+      offset = 0; // To be sure
+    }
+    
+
     if (first) {
       // Read first header
-      nread = read(infile, buf, VDIF_HEADER_BYTES);
+      nread = read(infile, buf, VDIF_LEGACY_HEADER_BYTES);
       if (nread==0) {  // EOF
 	perror("Empty file - aborting\n");
 	close(infile);
@@ -253,7 +278,7 @@ int main (int argc, char * const argv[]) {
 	close(infile);
 	break;
       }
-      lseek(infile, 0, SEEK_SET); // Reset file
+      lseek(infile, offset, SEEK_SET); // Reset file
       
       nchan = getVDIFNumChannels(header);
       bits = getVDIFBitsPerSample(header);
@@ -263,9 +288,14 @@ int main (int argc, char * const argv[]) {
       framesize = getVDIFFrameBytes(header);
       datasize = framesize-headersize;
       if (isComplex) bits *=2;
+      if (legacy && outlegacy)
+	oheadersize = VDIF_LEGACY_HEADER_BYTES;
+      else
+	oheadersize = VDIF_HEADER_BYTES;
 
       free(buf);
       buf = NULL;
+      if (outlegacy && !legacy) outlegacy = 0;
       
       nextract = encodeShift(channels, bits, shift);
       if (nextract==-1) {
@@ -322,7 +352,11 @@ int main (int argc, char * const argv[]) {
       }
 
       odatasize = datasize/(nchan/nextract);
-      oframesize = odatasize+headersize; /// Should check multiple of 8 still
+      oframesize = odatasize+oheadersize; 
+      if (oframesize%8) { // Not multiple of 8
+	fprintf(stderr, "Using output frame size of %d. This is not valid - aborting\n", oframesize);
+	return(1);
+      }
       obufsize = frameperbuf*oframesize;
       obuf = malloc(bufsize);
       if (obuf==NULL) {
@@ -330,9 +364,16 @@ int main (int argc, char * const argv[]) {
 	perror(msg);
 	break;
       }
-
       printf("Reading in chunks of %d kB\n", bufsize/1024);
 
+      if (!outlegacy) {
+	// Initialize header
+	pout = obuf + VDIF_LEGACY_HEADER_BYTES;
+	for (i=0; i<frameperbuf; i++) {
+	  bzero(pout, VDIF_LEGACY_HEADER_BYTES);
+	  pout += oframesize;
+	}
+      }
       
       first = 0;
     }
@@ -364,7 +405,6 @@ int main (int argc, char * const argv[]) {
       perror(msg);
       continue;
     }
-    printf("writing %s\n", outname);
     
     // Loop until EOF
     while (1) {
@@ -376,10 +416,18 @@ int main (int argc, char * const argv[]) {
 	break;
       } else if (nread==-1) {
 	perror("Error reading file");
+	time_to_quit = 1;
 	break;
       } else if (nread%framesize!=0) {
-	fprintf(stderr, "Error: Read partial frame - aborting  (%d/%d)\n", nread, framesize);
-	break;
+	fprintf(stderr, "Warning: Read partial frame (%d/%d)\n", nread, framesize);
+	if (net) {
+	  fprintf(stderr, " - aborting\n");
+	  time_to_quit = 1;
+	  break;
+	} else {
+	  fprintf(stderr, "\n");
+	  nread = (nread / framesize) * framesize;
+	}
       }
 
       header = (vdif_header*)buf;
@@ -393,28 +441,33 @@ int main (int argc, char * const argv[]) {
 	    legacy    != getVDIFLegacy(header) ||
 	    framesize != getVDIFFrameBytes(header)) {
 	  fprintf(stderr, "Error: VDIF frame parameters have changed - aborting\n");
+	  time_to_quit = 1;
 	  break;
 	}
-
+	
 	setVDIFFrameBytes(header, oframesize);
 	setVDIFNumChannels(header, nextract);
+	if (legacy && ! outlegacy) header->legacymode = 0;
 	memcpy(pout, header, headersize);
-	pout += headersize;
+	pout += oheadersize;
 	extract(pin, pout, datasize, shift);
 		
 	header = (vdif_header*)((char*)header+framesize);
 	pin += framesize;
 	pout += odatasize;
       }
+      if (time_to_quit) break;
 
       // Write data
       nwrote = write(outfile, obuf, nframe*oframesize);
       if (nwrote==-1) {
 	perror("Error writing outfile");
+	time_to_quit = 1;
 	break;
       } else if (nwrote!=nframe*oframesize) {
 	fprintf(stderr, "Warning: Did not write all bytes! (%d/%d)\n",
 		nwrote, nframe*oframesize);
+	time_to_quit = 1;
 	break;
       }
     
