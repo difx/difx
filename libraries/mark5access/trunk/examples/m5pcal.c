@@ -40,12 +40,17 @@
 
 const char program[] = "m5pcal";
 const char author[]  = "Walter Brisken";
-const char version[] = "0.5";
+const char version[] = "0.6";
 const char verdate[] = "20130510";
 
-const int ChunkSize = 6400;
-const int MaxTones = 64;
+int ChunkSize = 0;
+const int MaxTones = 4096;
 const int MaxFreqs = 64;
+
+#define max(a,b) \
+   ({ __typeof__ (a) _a = (a); \
+       __typeof__ (b) _b = (b); \
+     _a > _b ? _a : _b; })
 
 int die = 0;
 
@@ -75,7 +80,7 @@ static void usage(const char *pgm)
 	printf("    Mark5B-512-16-2\n");
 	printf("    VDIF_1000-64-1-2 (here 1000 is payload size in bytes)\n\n");
 	printf("  <freq1> ... is/are the frequencies (MHz) relative to baseband of the first\n");
-	printf("      tone to detect; there should be one specified per baseband channel\n\n");
+	printf("      tone to detect; there should be one specified per baseband channel (IF)\n\n");
 	printf("  <outfile> is the name of the output file\n\n");
 	printf("Options can include:\n\n");
 	printf("  --verbose\n");
@@ -84,6 +89,8 @@ static void usage(const char *pgm)
 	printf("  -q           Be quieter\n\n");
 	printf("  --help\n");
 	printf("  -h           Print this help info and quit\n\n");
+	printf("  --chunksize <number>\n");
+	printf("  -c <number>  Use a fixed rather than automatic chunk size (6400 in version 0.5).\n\n");
 	printf("  -n <number>  Integrate over <number> chunks of data [1000]\n\n");
 	printf("  -N <number>  Number of outer loops to perform\n\n");
 	printf("  --offset <number>\n");
@@ -94,7 +101,7 @@ static void usage(const char *pgm)
 	printf("  -e <number>  Don't use channels closer than <number> MHz to the edge in delay calc.\n\n");
 }
 
-static double calcDelay(int nTone, int *toneFreq_MHz, double *toneAmp, double *tonePhase, double bandCenter, double bandValid)
+static double calcDelay(int nTone, double *toneFreq_MHz, double *toneAmp, double *tonePhase, double bandCenter, double bandValid)
 {
 	int i, n=0;
 	double d, sum=0.0;
@@ -119,7 +126,7 @@ static double calcDelay(int nTone, int *toneFreq_MHz, double *toneAmp, double *t
 		{
 			continue;
 		}
-		
+
 		d = tonePhase[i] - tonePhase[i-1];
 		if(d - ref > M_PI)
 		{
@@ -163,14 +170,45 @@ static double mod2pi(double x)
 	return x - n*2.0*M_PI;
 }
 
-static int getTones(int freq_kHz, double complex *spectrum, int nChan, double bw_MHz, int interval_MHz, int ns, int *toneFreq_MHz, double *toneAmp, double *tonePhase)
+int gcd(int a, int b)
+{
+	if (a == 0 || b == 0)
+	{
+		return max(a,b);
+	}
+	while (1)
+	{
+		a = a % b;
+		if (a == 0)
+		{
+			return b;
+		}
+		b = b % a;
+		if (b == 0)
+		{
+			return a;
+		}
+	}
+	return 1;
+}
+
+static int getTones(int freq_kHz, double complex *spectrum, int nChan, double bw_MHz, int interval_MHz, int ns, double *toneFreq_MHz, double *toneAmp, double *tonePhase)
 {
 	int nTone;
 	int startTone;
-	int f0_kHz, f1_kHz, df_kHz, f;
+	int f0_kHz, f1_kHz, df_kHz, f, flsb;
 	int bw_kHz;
 	int chan;
 	complex double z;
+
+	df_kHz = interval_MHz*1000;
+
+	if (abs(freq_kHz) >= abs(df_kHz))
+	{
+		fprintf(stderr, "Error: tones offsets >= tone interval are not supported\n");
+
+		return 0;
+	}
 
 	if(bw_MHz < 0.1)
 	{
@@ -181,20 +219,22 @@ static int getTones(int freq_kHz, double complex *spectrum, int nChan, double bw
 
 	bw_kHz = (int)(bw_MHz*1000.0+0.5);
 
-	if(freq_kHz > 0.0)
+	if(freq_kHz >= 0.0)
 	{
-		df_kHz = interval_MHz*1000;
-		startTone = freq_kHz / df_kHz + 1;
 		f1_kHz = freq_kHz + bw_kHz;
+
+		/* don't allow a tone at 0 freq */
+		startTone = (freq_kHz == 0) ? 1 : 0;
 
 		for(nTone = 0; nTone < MaxTones; nTone++)
 		{
-			f = (startTone + nTone)*df_kHz;
+			f = (startTone + nTone)*df_kHz + freq_kHz;
 			if(f >= f1_kHz)
 			{
 				break;
 			}
-			chan = (f - freq_kHz)*nChan/bw_kHz;
+			chan = f*nChan/bw_kHz;
+			//fprintf(stderr, "Tone %2d with f=%5d in chan %d/%d=%.4f MHz\n", nTone, f, chan, nChan, chan*bw_MHz/nChan);
 			z = spectrum[chan];
 			toneFreq_MHz[nTone] = f/1000.0;
 			toneAmp[nTone] = sqrt(z*~z);
@@ -204,23 +244,21 @@ static int getTones(int freq_kHz, double complex *spectrum, int nChan, double bw
 	}
 	else
 	{
-		df_kHz = interval_MHz*1000;
-		startTone = -freq_kHz / df_kHz;
-		if(startTone * df_kHz == -freq_kHz)
-		{
-			/* don't allow a tone at 0 freq */
-			startTone -= 1;
-		}
 		f0_kHz = -freq_kHz - bw_kHz;
+
+		/* don't allow a tone at 0 freq */
+		startTone = (abs(df_kHz) == abs(freq_kHz)) ? 1 : 0;
 
 		for(nTone = 0; nTone < MaxTones; ++nTone)
 		{
-			f = (startTone - nTone)*df_kHz;
+			f = (startTone - nTone)*df_kHz + freq_kHz;
 			if(f <= f0_kHz)
 			{
 				break;
 			}
-			chan = (-freq_kHz - f)*nChan/bw_kHz;
+                        flsb = (startTone + nTone + 1)*df_kHz + freq_kHz;
+			chan = abs(flsb)*nChan/bw_kHz;
+			//fprintf(stderr, "Tone %2d with f=%5d in chan %d/%d=%.4f MHz\n", nTone, f, chan, nChan, chan*bw_MHz/nChan);
 			z = spectrum[chan];
 			toneFreq_MHz[nTone] = f/1000.0;
 			toneAmp[nTone] = sqrt(z*~z);
@@ -232,7 +270,7 @@ static int getTones(int freq_kHz, double complex *spectrum, int nChan, double bw
 	return nTone;
 }
 
-static int pcal(const char *inFile, const char *format, int nInt, int nFreq, const int *freq_kHz, int interval_MHz, const char *outFile, long long offset, double edge_MHz, int verbose, int nDelay)
+static int pcal(const char *inFile, const char *format, int nInt, int nFreq, const int *freq_kHz, const int interval_MHz, const char *outFile, const long long offset, double edge_MHz, const int verbose, const int nDelay)
 {
 	struct mark5_stream *ms;
 	double bw_MHz;
@@ -244,7 +282,8 @@ static int pcal(const char *inFile, const char *format, int nInt, int nFreq, con
 	int nTone;
 	double toneAmp[MaxTones];
 	double tonePhase[MaxTones];
-	int toneFreq[MaxTones];
+	double toneFreq[MaxTones];
+	int DFTlen;
 	fftw_plan plan;
 	int ns;
 	double startSec, stopSec;
@@ -256,12 +295,42 @@ static int pcal(const char *inFile, const char *format, int nInt, int nFreq, con
 	if(!ms)
 	{
 		fprintf(stderr, "Error: problem opening %s\n", inFile);
-		
+
 		return EXIT_FAILURE;
 	}
 
 	bw_MHz = ms->samprate/2.0e6;
 	ns = ms->ns;
+
+	DFTlen = 0;
+	for(i = 0; i < nFreq; ++i)
+	{
+		int DFTlen_curr;
+		int foffset = abs(freq_kHz[i]);
+		if (foffset == 0)
+		{
+			DFTlen_curr = 2 * bw_MHz/gcd(interval_MHz, bw_MHz);
+		}
+		else
+		{
+			DFTlen_curr = 2 * 1000*bw_MHz / gcd(foffset, 1000*bw_MHz);
+		}
+		if (DFTlen == 0 || DFTlen == DFTlen_curr)
+		{
+			DFTlen = DFTlen_curr;
+			continue;
+		}
+		DFTlen = DFTlen*DFTlen_curr / gcd(DFTlen,DFTlen_curr); // LCM(a,b)=a*b/GCD(a,b)
+	}
+	if (ChunkSize <= 0)
+	{
+		fprintf(stderr, "Determined optimal DFT length to be %d points over %.2f MHz.\n", DFTlen, bw_MHz);
+	}
+	else
+	{
+		fprintf(stderr, "Using a DFT length of %d points (vs. auto-determined %d points) over %.2f MHz.\n", ChunkSize, DFTlen, bw_MHz);
+		DFTlen = ChunkSize;
+	}
 
 	if(edge_MHz < 0.0)
 	{
@@ -288,13 +357,13 @@ static int pcal(const char *inFile, const char *format, int nInt, int nFreq, con
 	data = (double **)malloc(ms->nchan*sizeof(double *));
 	for(i = 0; i < ms->nchan; ++i)
 	{
-		data[i] = (double *)malloc(ChunkSize*sizeof(double));
+		data[i] = (double *)malloc(DFTlen*sizeof(double));
 	}
 
 	bins = (double complex **)malloc(nFreq*sizeof(double *));
 	for(i = 0; i < nFreq; ++i)
 	{
-		bins[i] = (double complex *)malloc(ChunkSize*sizeof(double complex));
+		bins[i] = (double complex *)malloc(DFTlen*sizeof(double complex));
 	}
 
 	stopSec = ms->sec + ms->ns*1.0e-9;
@@ -305,7 +374,7 @@ static int pcal(const char *inFile, const char *format, int nInt, int nFreq, con
 
 		for(i = 0; i < nFreq; ++i)
 		{
-			memset(bins[i], 0, ChunkSize*sizeof(double complex));
+			memset(bins[i], 0, DFTlen*sizeof(double complex));
 		}
 
 		for(k = 0; k < nInt; ++k)
@@ -314,7 +383,7 @@ static int pcal(const char *inFile, const char *format, int nInt, int nFreq, con
 			{
 				break;
 			}
-			status = mark5_stream_decode_double(ms, ChunkSize, data);
+			status = mark5_stream_decode_double(ms, DFTlen, data);
 			
 			if(status < 0)
 			{
@@ -322,7 +391,7 @@ static int pcal(const char *inFile, const char *format, int nInt, int nFreq, con
 			}
 			else
 			{
-				total += ChunkSize;
+				total += DFTlen;
 				unpacked += status;
 			}
 
@@ -334,7 +403,7 @@ static int pcal(const char *inFile, const char *format, int nInt, int nFreq, con
 			
 			for(i = 0; i < nFreq; ++i)
 			{
-				for(j = 0; j < ChunkSize; ++j)
+				for(j = 0; j < DFTlen; ++j)
 				{
 					bins[i][j] += data[i][j];
 				}
@@ -357,13 +426,13 @@ static int pcal(const char *inFile, const char *format, int nInt, int nFreq, con
 		{
 			if(verbose >= -1)
 			{
-				printf("%lld / %lld samples unpacked\n", unpacked, total);
+				printf("%Ld / %Ld samples unpacked\n", unpacked, total);
 			}
 
 			/* normalize */
 			for(i = 0; i < nFreq; ++i)
 			{
-				for(j = 0; j < ChunkSize; ++j)
+				for(j = 0; j < DFTlen; ++j)
 				{
 					bins[i][j] /= nInt;	/* FIXME: correct for FFT size? */
 				}
@@ -375,16 +444,16 @@ static int pcal(const char *inFile, const char *format, int nInt, int nFreq, con
 				double sum = 0.0;
 				double factor;
 
-				plan = fftw_plan_dft_1d(ChunkSize, bins[i], bins[i], FFTW_FORWARD, FFTW_ESTIMATE);
+				plan = fftw_plan_dft_1d(DFTlen, bins[i], bins[i], FFTW_FORWARD, FFTW_ESTIMATE);
 				fftw_execute(plan);
 				fftw_destroy_plan(plan);
 
-				for(j = 0; j < ChunkSize/2; ++j)
+				for(j = 0; j < DFTlen/2; ++j)
 				{
  				        sum += creal(bins[i][j]*~bins[i][j]);
 				}
 				factor = 1.0/sqrt(sum);
-				for(j = 0; j < ChunkSize; ++j)
+				for(j = 0; j < DFTlen; ++j)
 				{
 					bins[i][j] *= factor;
 				}
@@ -403,7 +472,7 @@ static int pcal(const char *inFile, const char *format, int nInt, int nFreq, con
 				bandCenter = 0.5*(f0+f1);
 				bandValid = 0.5*fabs(bw_MHz) - edge_MHz;
 
-				nTone = getTones(freq_kHz[i], bins[i], ChunkSize/2, bw_MHz, interval_MHz, ns, toneFreq, toneAmp, tonePhase);
+				nTone = getTones(freq_kHz[i], bins[i], DFTlen/2, bw_MHz, interval_MHz, ns, toneFreq, toneAmp, tonePhase);
 
 				delay = calcDelay(nTone, toneFreq, toneAmp, tonePhase, bandCenter, bandValid);
 
@@ -422,10 +491,10 @@ static int pcal(const char *inFile, const char *format, int nInt, int nFreq, con
 					{
 						if(verbose >= 0)
 						{
-							printf("  Sample %3d  Tone %2d  Freq=%d MHz  Amp=%6.4f  Phase=%6.2f deg\n",
+							printf("  Sample %3d  Tone %2d  Freq=%.3f MHz  Amp=%6.4f  Phase=%6.2f deg\n",
 								N, j, toneFreq[j], toneAmp[j], tonePhase[j]*180.0/M_PI);
 						}
-						fprintf(out, "%d %f %d %d %6.4f %6.2f %f\n",
+						fprintf(out, "%d %f %.3f %d %6.4f %6.2f %f\n",
 							N, 0.5*(startSec+stopSec), j, toneFreq[j], toneAmp[j], tonePhase[j]*180.0/M_PI, delay);
 					}
 					if(nTone > 1)
@@ -537,6 +606,7 @@ int main(int argc, char **argv)
 				{
 					freq_kHz[nFreq] = (int)(v*1000.0 - 0.5);
 				}
+				fprintf(stderr, "freq_kHz[%d] = %d\n", nFreq, freq_kHz[nFreq]);
 				nFreq++;
 			}
 		}
@@ -570,6 +640,12 @@ int main(int argc, char **argv)
 				{
 					++i;
 					nDelay = atol(argv[i]);
+				}
+				else if(strcmp(argv[i], "--chunksize") == 0 ||
+					strcmp(argv[i], "-c") == 0)
+				{
+					++i;
+					ChunkSize = atoi(argv[i]);
 				}
 				else if(strcmp(argv[i], "--offset") == 0 ||
 					strcmp(argv[i], "-o") == 0)
