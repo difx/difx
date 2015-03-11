@@ -1442,10 +1442,10 @@ A file called {\tt pcal} is created when program {\tt vlog} operates on the {\tt
 This file contains three measurements: the cable length calibration, pulse calibration, and state counts.
 This file contains two kinds of lines.
 Comment lines begin with an octothorpe (\#) and contain no vital information.
-Data lines always contain 9 fixed-size fields:
+Data lines always begin with 9 fields describing the content of that data line:
 \begin{enumerate}
 \item {\em antId} : Station name abbreviation, e.g., {\tt LA}
-\item {\em day} : Time centroid of measurement (day of year, including fractional portion)
+\item {\em day} : Time centroid of measurement (MJD or day of year, including fractional portion)
 \item {\em dur} : Duration of measurement (days)
 \item {\em cableCal} : Cable calibration measurement (picoseconds)
 \item {\em nPol} : Number of polarizations with measurements 
@@ -1566,10 +1566,10 @@ A file called {\tt weather} is created when program {\tt vlog} operates on the {
 This file contains tabulated values of various meteorological measurements.
 This file contains two finds of lines.
 Comment lines begin with an octothorpe (\#) and contain no vital information.
-Data lines always contain 8 fixed-size fields:
+Data lines always contain 9 fixed-size fields:
 \begin{enumerate}
 \item {\em antId} : Station name abbreviation, e.g., {\tt LA}
-\item {\em day} : Time of measurement (day of year, including fractional portion)
+\item {\em day} : Time of measurement (MJD or day of year, including fractional portion)
 \item {\em T} : Ambient temperature (Centigrade)
 \item {\em P} : Pressure (mbar)
 \item {\em dewPoint} : Dew point (Centigrade)
