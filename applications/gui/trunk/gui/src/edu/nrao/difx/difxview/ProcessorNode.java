@@ -356,7 +356,6 @@ public class ProcessorNode extends BrowserNode {
      * mark5daemon code to see allowed commands.
      */
     protected void sendDiFXCommandMessage( String cmd ) {
-        System.out.println( cmd );
         DiFXCommand_mark5Control command = new DiFXCommand_mark5Control( cmd, name(), _settings, false );
         try {
             command.send();
