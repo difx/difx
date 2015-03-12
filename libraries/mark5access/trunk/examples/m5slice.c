@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2012 by Chris Phillips                                  *
+ *   Copyright (C) 2012-2015 by Chris Phillips                             *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
  *   the Free Software Foundation; either version 3 of the License, or     *
@@ -60,8 +60,8 @@
 
 const char program[] = "m5slice";
 const char author[]  = "Chris Phillips";
-const char version[] = "0.1";
-const char verdate[] = "20120522";
+const char version[] = "0.2";
+const char verdate[] = "20150312";
 
 double printMJD(struct mark5_stream *ms);
 
@@ -118,7 +118,7 @@ int main(int argc, char **argv) {
 
   framens = ms->framens;
 
-  offsetbytes = (off_t)ms->frameoffset + (off_t)offset/framens*1e9*(off_t)ms->framebytes;
+  offsetbytes = (off_t)(ms->frameoffset + offset/framens*1e9*ms->framebytes);
 
   readbytes = length/framens*1e9*ms->framebytes;
 
