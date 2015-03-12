@@ -1,3 +1,6 @@
+Verion 1.5.3
+* Integer rounding error in m5slice
+
 Version 1.5.2
 * Post DiFX-2.4
 * Detect Legacy VDIF
