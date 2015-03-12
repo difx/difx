@@ -36,5 +36,6 @@ string line, difxfile;
 int njobs, nbins, nchannels, baseline, bin, freqindex;
 int startmjd, atmjd, startsec, atsec, nextsec, runsec, runcount;
 double profiletotal, weight;
+//float * weightsum;
 
 //functions
