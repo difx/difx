@@ -2459,7 +2459,7 @@ static int vdif_complex_decode_64channel_2bit_decimation1(struct mark5_stream *m
 		{
   		        for (j=0; j<32; j++) fcp[j] = complex_zeros;
 		        nblank++;
-		        i+=16;
+		        i+=32;
 		}
 		else
 		{
