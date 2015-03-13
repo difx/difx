@@ -1803,12 +1803,15 @@ int Mark5Module::getCachedDirectory(SSHANDLE xlrDevice,
 
 	if(v >= 0)
 	{
-		error.str("");
-
-		v = save(filename);
-		if(v < 0)
+		if(!cacheOnly)
 		{
-			error << "Saving directory file " << filename << " failed.  Error code=" << v << "\n";
+			error.str("");
+
+			v = save(filename);
+			if(v < 0)
+			{
+				error << "Saving directory file " << filename << " failed.  Error code=" << v << "\n";
+			}
 		}
 	}
 	else if(v == DIRECTORY_NOT_CACHED)

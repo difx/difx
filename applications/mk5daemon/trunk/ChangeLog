@@ -2,6 +2,7 @@ Version 2.5.0
 ~~~~~~~~~~~~~
 * Post DiFX-2.4
 * Count number of streamstor cards and if < 1, don't consider the unit to be a Mark5 unit.
+* mk5cp: don't rewrite directory file unnecessarily
 
 Version 2.4.0
 ~~~~~~~~~~~~~
