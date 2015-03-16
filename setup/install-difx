@@ -544,8 +544,10 @@ if not noinstall:
             print
         else:
             print "Creating "+pkgdir+"ipp.pc"
+            os_chdir(pkgdir)
             run(startdir+"/genipppc "+ipproot)
-            run("mv ipp.pc "+pkgdir)
+            os_chdir(topdir)
+            #run("mv ipp.pc "+pkgdir)
             print
 
 ##### Compile non-standard libraries ####################
