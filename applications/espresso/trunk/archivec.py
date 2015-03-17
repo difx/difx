@@ -78,8 +78,8 @@ for filename in os.listdir(os.curdir):
     if filename.startswith(expname+'-'):
         passname = re.sub('[_\.].*', '', filename)
     if options.onejob:
-        if filename.startswith(passname+'_'):
-            passname = re.match(passname+'_\d\d', filename).group(0)
+        if re.match(passname+'_\d', filename):
+            passname = re.match(passname+'_\d+', filename).group(0)
 
     if not passname in tarlists.keys():
         tarlists[passname] = str()
