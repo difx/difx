@@ -50,7 +50,7 @@ def vsib_header(filename):
     return header;
 
 def m5_to_vextime(m5time):
-    '''Convert from m5time (MJD/hh:mm:ss.ss) to vex time'''
+    '''Convert from m5time (MJD = MJD/hh:mm:ss.ss) to vex time'''
     
     m5time = m5time.split('=')[1]
     m5time = m5time.strip()
@@ -94,11 +94,16 @@ def check_file(infile):
         if (infile == filelist[len(filelist)-1]):
             comment = '#';
         outfile += " "  * 3 + comment + starttime + " " + endtime
+    #elif re.search(r'.vdif$', infile):
+    #    # arbitrary vdif format to get the time (not precise, but good enough).
+    #    vdif_format = 'VDIF_1000-64-1-2'
+    #    command = " ".join([m5time, infile, vdif_format])
+
     elif m5time:
-        # assume it is a mark5 file of some description. Details of the format
-        # are not important for extracting the start time. If we don't have
-        # m5time in our path we simply will not do this.
-        m5formats = ['VLBA1_2-256-8-2', 'Mark5B-512-16-2']
+        # assume it is a mark5 or vdif file of some description. Details of
+        # the format are not important for extracting the start time. If we
+        # don't have m5time in our path we simply will not do this.
+        m5formats = ['VLBA1_2-256-8-2', 'Mark5B-512-16-2', 'VDIF_1000-64-1-2']
         # for MkIV must get both fanout and number of bits correct to determine time. Check nbits=2 formats first as they are much more common.
         for nbits in [2,1]:
             for fanout in [1,2,4]:
@@ -113,13 +118,18 @@ def check_file(infile):
             if starttime_m5:
                 # we have the right format. Find the time of a sample near
                 # the end of the file (1 MB should be enough data)
-                filesize = os.path.getsize(infile)
-                command = " ".join([m5time, infile, m5format, str(filesize-1000000)])
-                endtime_m5, error = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
+                lastsample = 1000000
+                if 'VDIF' in m5format:
+                    # our own little millennium bug
+                    endtime_m5 = 'MJD = 88069/00:00:00.00'
+                else:
+                    filesize = os.path.getsize(infile)
+                    command = " ".join([m5time, infile, m5format, str(filesize-lastsample)])
+                    endtime_m5, error = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
 
                 break
 
-        if starttime_m5 and endtime_m5:
+        if starttime_m5:
             starttime = m5_to_vextime(starttime_m5);
             endtime = m5_to_vextime(endtime_m5);
             # the last file should always get in the input so we can be sure the
