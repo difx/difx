@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2013 by Walter Brisken                                  *
+ *   Copyright (C) 2013-2015 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -35,8 +35,8 @@
 
 const char program[] = "vsum";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
-const char version[] = "0.2";
-const char verdate[] = "20130909";
+const char version[] = "0.3";
+const char verdate[] = "20150318";
 
 static void usage(const char *pgm)
 {
@@ -84,7 +84,7 @@ int main(int argc, char **argv)
 
 				if(r < 0)
 				{
-					printf("File %s VDIF summary failed with return value %d\n\n", argv[a], r);
+					fprintf(stderr, "File %s VDIF summary failed with return value %d\n\n", argv[a], r);
 				}
 				else if(shortsum)
 				{
