@@ -647,18 +647,18 @@ bool Model::readPolynomialSamples(ifstream * input)
   for(int i=0;i<numscans;i++) {
     config->getinputline(input, &line, "SCAN ", i);
     if(line.compare((scantable[i].pointingcentre)->name) != 0) {
-      cfatal << startl << "IM file and CALC file disagree on scan " << i << " pointing centre - aborting!!!" << endl;
+      cfatal << startl << "IM file and CALC file disagree on scan " << i << " pointing centre (" << line << " vs. " << (scantable[i].pointingcentre)->name << ") - aborting!!!" << endl;
       return false;
     }
     config->getinputline(input, &line, "SCAN ", i);
     if(scantable[i].numphasecentres != atoi(line.c_str())) {
-      cfatal << startl << "IM file and CALC file disagree on scan " << i << " number of phase centres - aborting!!!" << endl;
+      cfatal << startl << "IM file and CALC file disagree on scan " << i << " number of phase centres (" << line << " vs. " << scantable[i].numphasecentres << ") - aborting!!!" << endl;
       return false;
     }
     for(int j=0;j<scantable[i].numphasecentres;j++) {
       config->getinputline(input, &line, "SCAN ", i);
       if(line.compare((scantable[i].phasecentres[j])->name) != 0) {
-        cfatal << startl << "IM file and CALC file disagree on scan " << i << " phase centre " << j << " - aborting!!!" << endl;
+        cfatal << startl << "IM file and CALC file disagree on scan " << i << " phase centre " << j << " (" << line << " vs. " << (scantable[i].phasecentres[j])->name << ") - aborting!!!" << endl;
         return false;
       }
     }

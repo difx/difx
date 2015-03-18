@@ -1,6 +1,7 @@
 Version 2.5
 ~~~~~~~~~~~
 * Another 0.5ns jitter was found in Mark5B processing for data rates >= 2 Gbps.  This is now filed (2015 Feb 22 -- WFB)
+* Slightly more instructive messages when model files have disagreements with .calc files.
 
 Version 2.4
 ~~~~~~~~~~~
