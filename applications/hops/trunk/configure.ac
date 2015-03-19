@@ -176,10 +176,16 @@ AC_C_BIGENDIAN(
 )
 
 # additional items for hops_config
+# available if svn is the source and svn is installed and of proper version
 svnexec=`type -p svn`
 if [test -d $srcdir/.svn -a -n "$svnexec" -a -x "$svnexec"] ; then
-    # only available if svn is the source and svn is installed
-    hops_svn_rev=`(cd $srcdir ; svn info . ) | grep Revision | cut -d' ' -f2`
+    hops_svn_data=`"$svnexec" info "$srcdir" 2>&-` || hops_svn_data=''
+else
+    hops_svn_data=''
+fi
+if [test -n "$hops_svn_data"] ; then
+    # provided by the svn repository: hops OR difx
+    hops_svn_rev=`echo "$hops_svn_data" | grep Revision | cut -d' ' -f2`
 elif [test -f $srcdir/svnrev.txt] ; then
     # provided by disthook for tarballs
     hops_svn_rev=`cat $srcdir/svnrev.txt`
