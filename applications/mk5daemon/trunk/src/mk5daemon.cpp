@@ -81,6 +81,7 @@ const int defaultStatsRange[] = { 75000, 150000, 300000, 600000, 1200000, 240000
 int *signalDie = 0;
 typedef void (*sighandler_t)(int);
 sighandler_t oldsigintHandler;
+sighandler_t oldsigtermHandler;
 
 
 const char recordStateStrings[][10] =
@@ -595,6 +596,7 @@ void sigintHandler(int j)
 		*signalDie = 1;
 	}
 	signal(SIGINT, oldsigintHandler);
+	signal(SIGTERM, oldsigtermHandler);
 }
 
 void Mk5Daemon_addVSIError(Mk5Daemon *D, const char *errorMessage)
@@ -1132,6 +1134,7 @@ int main(int argc, char **argv)
 	Logger_logData(D->log, message);
 
 	oldsigintHandler = signal(SIGINT, sigintHandler);
+	oldsigtermHandler = signal(SIGTERM, sigintHandler);
 
 	lastTime = time(0);
 
