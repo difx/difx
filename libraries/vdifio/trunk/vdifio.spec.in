@@ -9,6 +9,8 @@ Requires: gcc >= 4.1.0
 Prefix: /usr
 Source: vdifio-@version@.tar.gz
 
+%define debug_package %{nil}
+
 %description
 DiFX library and utilities for working with VDIF data
 
@@ -51,6 +53,8 @@ make
 %{_bindir}/vdifspec
 %{_bindir}/vdiffold
 %{_bindir}/vdifbstate
+%{_bindir}/printVDIFgaps
+%{_bindir}/vdifChanSelect
 
 
 %changelog
