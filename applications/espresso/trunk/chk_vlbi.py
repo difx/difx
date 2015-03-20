@@ -107,13 +107,11 @@ def check_file(infile):
         # for MkIV must get a matching (but not necessarily correct)
         # combination of fanout, number of bits and number channels. Check
         # nbits=2 formats first as they are much more common. Assume even
-        # number channels. Datarate doesn't matter. I think this will match all possible formats
-        # (without actually trying them).
+        # number channels. Datarate doesn't matter. I think this will match all
+        # possible formats (without actually trying them).
         for nbits in [2,1]:
             for fanout in [1,2,4]:
-                for nchan in range(2,17,2):
-                    #datarate = fanout*nchan*nbits*16
-                    #m4format = 'MKIV1_' + str(fanout) + '-1024-' + str(nchan) '-' + str(nbits)
+                for nchan in [2,4,8,16]:
                     m4format = 'MKIV1_{0}-1024-{1}-{2}'.format(str(fanout), str(nchan), str(nbits))
                     m5formats.append(m4format)
 
@@ -132,7 +130,11 @@ def check_file(infile):
                 else:
                     filesize = os.path.getsize(infile)
                     command = " ".join([m5time, infile, m5format, str(filesize-lastsample)])
-                    endtime_m5, error = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
+                    try:
+                        endtime_m5, error = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
+                    except:
+                        # old versions of m5time don't accept the byte offset
+                        endtime_m5 = 'MJD = 88069/00:00:00.00'
 
                 break
 
