@@ -449,8 +449,9 @@ typedef struct
 typedef struct
 {
 	char name[DIFXIO_NAME_LENGTH];	/* name of spacecraft */
-	int nPoint;		/* number of entries in ephemeris */
-	sixVector *pos;		/* array of positions and velocities */
+	int nPoint;			/* number of entries in ephemeris */
+	sixVector *pos;			/* array of positions and velocities */
+	char frame[DIFXIO_NAME_LENGTH];	/* coordinate frame */
 } DifxSpacecraft;
 
 typedef struct

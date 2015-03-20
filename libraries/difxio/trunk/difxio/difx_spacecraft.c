@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2013 by Walter Brisken                             *
+ *   Copyright (C) 2008-2015 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -745,6 +745,10 @@ int writeDifxSpacecraftArray(FILE *out, int nSpacecraft, DifxSpacecraft *ds)
 	n = 1;
 	for(i = 0; i < nSpacecraft; ++i)
 	{
+		if(ds[i].frame[0])
+		{
+			writeDifxLine(out, "FRAME", ds[i].frame);
+		}
 		writeDifxLine1(out, "SPACECRAFT %d NAME", i, ds[i].name);
 		writeDifxLineInt1(out, "SPACECRAFT %d ROWS", i, ds[i].nPoint);
 		for(j = 0; j < ds[i].nPoint; ++j)

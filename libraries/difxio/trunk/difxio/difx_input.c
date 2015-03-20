@@ -2235,6 +2235,15 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 
 		for(s = 0; s < D->nSpacecraft; ++s)
 		{
+			row = DifxParametersfind(cp, row, "FRAME");
+			if(row > 0)
+			{
+				snprintf(D->spacecraft[s].frame, DIFXIO_NAME_LENGTH, "%s", DifxParametersvalue(cp, row));
+			}
+			else
+			{
+				D->spacecraft[s].frame[0] = 0;
+			}
 			N = DifxParametersbatchfind1(cp, rows[N_SPACECRAFT_ROWS-1], spacecraftKeys, s, N_SPACECRAFT_ROWS, rows);
 			if(N < N_SPACECRAFT_ROWS)
 			{
