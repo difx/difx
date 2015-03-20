@@ -31,8 +31,7 @@ void ServerSideConnection::vex2difxRun( DifxMessageGeneric* G ) {
     Vex2DifxInfo* vex2DifxInfo = new Vex2DifxInfo;
     vex2DifxInfo->ssc = this;
     memcpy( &(vex2DifxInfo->v2dRun), &(G->body.vex2DifxRun), sizeof( DifxMessageVex2DifxRun ) );
-//    pthread_attr_init( &(vex2DifxInfo->threadAttr) );
-    pthread_create( &(vex2DifxInfo->threadId), NULL, //&(vex2DifxInfo->threadAttr), 
+    pthread_create( &(vex2DifxInfo->threadId), NULL, 
                     staticRunVex2Difx, (void*)vex2DifxInfo );      
 }
 
@@ -60,23 +59,9 @@ void ServerSideConnection::runVex2Difx( Vex2DifxInfo* vex2DifxInfo ) {
     //  to communicate which .input files have been created.
     guiClient = new GUIClient( vex2DifxInfo->ssc, S->address, S->port );
     guiClient->packetExchange();
-    
-    //  Start the monitoring thread.  This will report results of the commands below
-    //  as they appear.
-    Vex2DifxMonitorInfo* monitorInfo = new Vex2DifxMonitorInfo;
-    monitorInfo->ssc = vex2DifxInfo->ssc;
-    monitorInfo->S = S;
-    monitorInfo->guiClient = guiClient;
-    monitorInfo->modTime = modTime;
-    pthread_mutex_t monitorMutex;
-    pthread_mutex_init( &monitorMutex, NULL );
-    pthread_cond_t done;
-    monitorInfo->done = &done;
-    pthread_cond_init( &done, NULL );
-    pthread_create( &(monitorInfo->threadId), NULL, 
-                    staticRunVex2DifxMonitor, (void*)monitorInfo ); 
-        
-	//  This is where we actually run vex2difx - this creates the input files.
+
+	//  This is where we actually run vex2difx - this creates the .input and .calc files.
+	//  It also creates some other things we don't care about (.flag files and a .joblist).
 	snprintf( command, MAX_COMMAND_SIZE, "cd %s; %s vex2difx -f %s", 
 			  S->passPath,
 			  _difxSetupPath,
@@ -97,119 +82,88 @@ void ServerSideConnection::runVex2Difx( Vex2DifxInfo* vex2DifxInfo ) {
     else
         diagnostic( ERROR, "vex2difx RETURNED ERRORS" );
     delete executor;
-
-	//  Next thing to run - calcif2.
-	snprintf( command, MAX_COMMAND_SIZE, "cd %s; %s calcif2 -f -a", 
-			  S->passPath,
-			  _difxSetupPath );
-	
-	diagnostic( WARNING, "Executing: %s", command );
-    executor = new ExecuteSystem( command );
-    while ( int ret = executor->nextOutput( message, DIFX_MESSAGE_LENGTH ) ) {
-        if ( ret == 1 )  // stdout
-            diagnostic( INFORMATION, "calcif2... %s", message );
-        else             // stderr
-            diagnostic( ERROR, "calcif2... %s", message );
-    }
-    if ( executor->noErrors() )
-        diagnostic( WARNING, "calcif2 complete" );
-    else
-        diagnostic( ERROR, "calcif2 RETURNED ERRORS" );
-    delete executor;
     
-    //  Wait here for the monitoring thread to die, then delete resources.
-    pthread_mutex_lock( &monitorMutex );
-    pthread_cond_wait( &done, &monitorMutex );
-    pthread_mutex_unlock( &monitorMutex );
-    pthread_cond_destroy( &done );
-    pthread_mutex_destroy( &monitorMutex );
-    delete guiClient;
-    
-	//difxMessageSendDifxAlert("vex2difx completed", DIFX_ALERT_LEVEL_INFO);
-}
-
-//-----------------------------------------------------------------------------
-//!  This thread monitors the creation of products of the vex2difx and calcif2
-//!  processes.  It is a continuously-looping but self-destoying thread, looking
-//!  for changes but giving up after a certain amount of time and exiting.
-//-----------------------------------------------------------------------------
-void ServerSideConnection::runVex2DifxMonitor( Vex2DifxMonitorInfo* monitorInfo ) {
-	char message[DIFX_MESSAGE_LENGTH];
-	static const int INITIAL_WAIT = 180;
-	static const int UPDATE_WAIT = 20;
-	int waitTime = INITIAL_WAIT;
-	std::set<std::string> knownList;
-	bool gotItem = false;
-
-    if ( monitorInfo->guiClient->okay() ) {
-    
-        //  This process repeats forever unless it hits some time limits during which there are
-        //  no new files.  There is an INITIAL_WAIT and an UPDATE_WAIT, both measured in seconds.
-        //  The INITIAL_WAIT is how long the thread will wait for the first file to be created
-        //  before it gives up and bails out.  The UPDATE_WAIT is how long it will wait
-        //  for each subsequent file to be created before it bails out.  There is a one second
-        //  interval between each check for new files, which should be fast enough that the user
-        //  will be satisfied with visible progress.
-        while ( waitTime > 0 ) {
-        
-    	    //  Produce a list of the files in the target directory.  These are filtered using the
-    	    //  function vex2DifxFilter(), which, annoyingly, is static and stored in ServerSideConnection.h.
-    	    //  It limits us to .input and .im files, the previous telling us when a job has been created,
-    	    //  the latter when calcif2 has been successfully run on it.
-            struct dirent **namelist;
-            int n = scandir( monitorInfo->S->passPath, &namelist, vex2DifxFilter, alphasort );
-            int sentFiles = 0;
-            if ( n < 0 ) {
-                snprintf( message, DIFX_MESSAGE_LENGTH, "%s", strerror( errno ) );
-                difxMessageSendDifxAlert( message, DIFX_ALERT_LEVEL_ERROR );
-            } else {
-                while ( n-- ) {
-                	char fullPath[DIFX_MESSAGE_FILENAME_LENGTH];
-                	snprintf( fullPath, DIFX_MESSAGE_FILENAME_LENGTH, "%s/%s", monitorInfo->S->passPath, namelist[n]->d_name );
-                	struct stat buf;
-                	stat( fullPath, &buf );
-                	//  Compare the last modification time of each file in the pass directory
-                	//  with the "gettimeofday" result at the top of this function.  This *should*
-                	//  limit us to the files created since we started this process - and eliminate
-                	//  files in this directory that were created earlier (unless someone is insidiously
-                	//  running vex2difx during the same second).
-                	if ( (ulong)buf.st_mtime >= monitorInfo->modTime ) {
-                	    //  See if this is a "new" file name - not in the list of files we have
-                	    //  already encountered in a previous loop.
-                	    if ( knownList.find( std::string( fullPath ) ) == knownList.end() ) {
-                    	    //  Send the full path name of this file.
-                    	    //  Each separate file is preceded by its string length.
-                    	    int sz = htonl( strlen( fullPath ) );
-                    	    monitorInfo->guiClient->writer( &sz, sizeof( int ) );
-                    	    monitorInfo->guiClient->writer( fullPath, strlen( fullPath ) );
-                    	    //  Add this file to the "known" list so we don't repeat it.
-                    	    knownList.insert( std::string( fullPath ) );
-                    	    waitTime = UPDATE_WAIT;
-                    	    sentFiles += 1;
-                	    }
-                	}
-                    free( namelist[n] );
-                    gotItem = true;
-                }
-                free( namelist );
-            }
-            //  This is a dummy file name that is used to indicate that we think there are no more
-            //  files to send.
-            if ( gotItem && sentFiles == 0 ) {
-                int sz = htonl( strlen( "a.dummyfile" ) );
-                monitorInfo->guiClient->writer( &sz, sizeof( int ) );
-                monitorInfo->guiClient->writer( "a.dummyfile", strlen( "a.dummyfile" ) );
-            }
-            --waitTime;
-            sleep( 1 );
+    //  List all of the .input files created.  These names are sent to the GUI (in full path
+    //  form).
+    struct dirent **inputList;
+    int n = scandir( S->passPath, &inputList, inputFilter, alphasort );
+    if ( n >= 0 ) {
+        for ( int i = 0; i < n; ++i ) {
+        	char fullPath[DIFX_MESSAGE_FILENAME_LENGTH];
+        	snprintf( fullPath, DIFX_MESSAGE_FILENAME_LENGTH, "%s/%s", S->passPath, inputList[i]->d_name );
+        	struct stat buf;
+        	stat( fullPath, &buf );
+        	if ( (ulong)buf.st_mtime >= modTime ) {
+        	    //  Each file path is preceded by its string length.
+        	    int sz = htonl( strlen( fullPath ) );
+        	    guiClient->writer( &sz, sizeof( int ) );
+        	    guiClient->writer( fullPath, strlen( fullPath ) );
+        	}
         }
-	} 
+        free( inputList );
+    }
+
+    //  Run calcif2 on each .calc file that is new - i.e. that has a modification time matching
+    //  or after the "modTime" found at the start of this function. 
+    diagnostic( WARNING, "running calcif2 on all new .calc files" );
+    struct dirent **calclist;
+    n = scandir( S->passPath, &calclist, calcFilter, alphasort );
+    if ( n >= 0 ) {
+        for ( int i = 0; i < n; ++i ) {
+        	char fullPath[DIFX_MESSAGE_FILENAME_LENGTH];
+        	snprintf( fullPath, DIFX_MESSAGE_FILENAME_LENGTH, "%s/%s", S->passPath, calclist[i]->d_name );
+        	struct stat buf;
+        	stat( fullPath, &buf );
+        	if ( (ulong)buf.st_mtime >= modTime ) {
+	            snprintf( command, MAX_COMMAND_SIZE, "cd %s; %s calcif2 -f %s", 
+			              S->passPath,
+			              _difxSetupPath,
+			              calclist[i]->d_name );	
+                executor = new ExecuteSystem( command );
+                while ( int ret = executor->nextOutput( message, DIFX_MESSAGE_LENGTH ) ) {
+                    if ( ret != 1 )  // stderr
+                        diagnostic( ERROR, "calcif2... %s", message );
+                }
+                if ( !executor->noErrors() )
+                    diagnostic( ERROR, "calcif2 RETURNED ERRORS" );
+                delete executor;
+                //  See if we can stat the .im file that should have been just created.
+                int len = strlen( fullPath ) - 1;
+                while ( fullPath[len] != '.' && len != 0 )
+                    --len;
+                fullPath[len+1] = 0;
+                strncat( fullPath, "im", 2 );
+                if ( !stat( fullPath, &buf ) ) {
+                    //  If we find a file that is new and greater than zero length, send the
+                    //  full path to the GUI.
+                    if ( (ulong)buf.st_mtime >= modTime && buf.st_size > 0 ) {
+                	    int sz = htonl( strlen( fullPath ) );
+                	    guiClient->writer( &sz, sizeof( int ) );
+                	    guiClient->writer( fullPath, strlen( fullPath ) );
+                    }
+                    else {
+                        if ( buf.st_size <= 0 )
+                            diagnostic( ERROR, "calcif2 product %s is zero length\n", fullPath );
+                        else
+                            diagnostic( ERROR, "calcif2 product %s exists but looks old\n", fullPath );
+                    }
+                }
+                else
+                    diagnostic( ERROR, "calcif2 failed to create %s\n", fullPath );
+        	}
+        }
+        free( calclist );
+    }
+    diagnostic( WARNING, "calcif2 complete" );
+
     //  Sending a zero length tells the GUI that the list is finished.
     int zero = 0;
-    monitorInfo->guiClient->writer( &zero, sizeof( int ) );
-	knownList.clear();
-	//  Let the main thread know we are done, so it can clean up resources.
-    pthread_cond_broadcast( monitorInfo->done );
+    guiClient->writer( &zero, sizeof( int ) );
+    
+    //  Sleep for a moment for all of that to clear, then shut down the connection.
+    sleep( 2 );
+    delete guiClient;
+
 }
 
 //-----------------------------------------------------------------------------
