@@ -547,12 +547,22 @@ bool Model::readEOPData(ifstream * input)
 bool Model::readSpacecraftData(ifstream * input)
 {
   string line = "";
+  string key = "";
 
   config->getinputline(input, &line, "NUM SPACECRAFT");
   numspacecraft = atoi(line.c_str());
   spacecrafttable = new spacecraft[numspacecraft];
   for(int i=0;i<numspacecraft;i++) {
-    config->getinputline(input, &spacecrafttable[i].name, "SPACECRAFT ", i);
+    config->getinputkeyval(input, &key, &line);
+    if(key.find("FRAME") != string::npos) { //look for the FRAME line, skip it if present
+      config->getinputline(input, &spacecrafttable[i].name, "SPACECRAFT ", i);
+    }
+    else {
+      if(key.find("SPACECRAFT ", i) == string::npos) {
+        cerror << startl << "Went looking for SPACECRAFT " << i << " NAME (or maybe FRAME), but got " << key << endl;
+      }
+    }
+    spacecrafttable[i].name = line;
     config->getinputline(input, &line, "SPACECRAFT ", i);
     spacecrafttable[i].numsamples = atoi(line.c_str());
     spacecrafttable[i].samplemjd = new double[spacecrafttable[i].numsamples];
