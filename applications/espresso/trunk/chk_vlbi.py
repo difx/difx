@@ -103,8 +103,8 @@ def check_file(infile):
         # assume it is a mark5 or vdif file of some description. Details of
         # the format are not important for extracting the start time. If we
         # don't have m5time in our path we simply will not do this.
-        m5formats = ['VLBA1_2-256-8-2', 'Mark5B-512-16-2', 'VDIF_1000-64-1-2']
-        # for MkIV must get a matching (but not necessarily correct)
+        m5formats = ['Mark5B-512-16-2', 'VDIF_1000-64-1-2']
+        # for MkIV and VLBA must get a matching (but not necessarily correct)
         # combination of fanout, number of bits and number channels. Check
         # nbits=2 formats first as they are much more common. Assume even
         # number channels. Datarate doesn't matter. I think this will match all
@@ -114,7 +114,9 @@ def check_file(infile):
                 for nchan in [2,4,8,16]:
                     m4format = 'MKIV1_{0}-1024-{1}-{2}'.format(str(fanout), str(nchan), str(nbits))
                     m5formats.append(m4format)
-
+                    vlbaformat = 'VLBA1_{0}-1024-{1}-{2}'.format(str(fanout), str(nchan), str(nbits))
+                    m5formats.append(vlbaformat)
+        sys.stderr.write(str(m5formats))
         starttime_m5 = []
         error = None
         for m5format in m5formats:
