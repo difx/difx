@@ -1,329 +1,403 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
-<html>
-  <head>
-    <meta content="text/html; charset=ISO-8859-1"
-      http-equiv="Content-Type">
-    <title>Queue Browser</title>
-    <link type="text/css" rel="stylesheet" href="style.css">
-  </head>
-  <body>
-    <h1>Job Control Window<br>
-    </h1>
-    Each Job in the Queue Browser Window has a Job "Control/Monitor"
-    Window associated with it.&nbsp; This window, which can be produced
-    by picking the "Control/Monitor for [JOB NAME]" option in the Job
-    menu (right click on a job in the Queue browser to raise this menu),
-    contains all items required to tailor a DiFX job, and controls to
-    actually run and monitor it.<br>
-    <span style="font-weight: bold;"><br>
-    </span>Like<span style="font-weight: bold;"> </span>many DiFX GUI
-    windows, the Control/Monitor Window is organized into "Sections"
-    that can be opened or closed depending on whether you are interested
-    in the details they contain.&nbsp; To open a section, click on its
-    title bar.&nbsp; Click in the same location to close it.<br>
-    <span style="font-weight: bold;"></span>
-    <h3>"Input File" Section</h3>
-    <p>This section has an editable window containing the text of the
-      DiFX "input" file - the file read by <span style="font-style:
-        italic;">difx</span> that governs a run.&nbsp; There is also a
-      field showing the full path to the input file on the DiFX host,
-      and two buttons:<br>
-    </p>
-    <ol>
-      <li><span style="font-weight: bold;">Save</span> uploads the exact
-        context of the text window to the DiFX host and places it in the
-        location given by the full path.&nbsp; This can be done if any
-        hand-editing changes have been made to the Input file (see the
-        warning below about edits!).&nbsp; Unless this button is pushed,
-        any editing changes you have made will have no effect.<br>
-      </li>
-      <li><span style="font-weight: bold;">Refresh</span> obtains the
-        contents of the file (given by the full path) on the DiFX host
-        and puts it in the editable text window.&nbsp; This can be done
-        if you make changes that you don't like or are unsure of.&nbsp;
-        All of your changes will be lost.&nbsp; Note that "Refresh" can
-        only undo changes made since that last "Save".<br>
-      </li>
-    </ol>
-    <span style="font-style: italic;">Warning:</span>&nbsp; The text
-    field allows you to edit the Input file, but remember that <span
-      style="font-style: italic;">difx</span> depends on this file to
-    run properly.&nbsp; Because the original is automatically generated
-    there is not a lot of format-checking of the content or clear and
-    concise error reporting if anything you put in there is incorrect -
-    <span style="font-style: italic;">difx</span> may just blow
-    up.&nbsp; Don't mess around with this file unless you really know
-    what you are doing.<br>
-    <h3>"Calc File" Section</h3>
-    <p>This section is identical to the "Input File" section except that
-      it holds the "calc" file (used for...uh...what is it used
-      for?).&nbsp; The same controls are available and the same warnings
-      apply.<br>
-    </p>
-    <h3>"Machines List" Section</h3>
-    <p>The Machines List section provides controls that can be used to
-      select the data sources and processors used to process the
-      job.&nbsp; Selections are used to produce "Machines" and "Threads"
-      files on the DiFX host which are used by <i>mpirun</i> to control
-      multiprocessing.&nbsp; The Machines and Threads files can be
-      generated using the "Apply" button, and then examined in the "<a
-        href="#MACHINES_FILE_SECTION">Machines File</a>" and "<a
-        href="#THREADS_FILE_SECTION">Threads File</a>" sections as
-      outlined below.&nbsp; Alternatively the "Apply" button can be
-      ignored and the Machines and Threads files will be generated
-      automatically when the job is started.<br>
-    </p>
-    <p>The Machines List Section has two primary panels which govern
-      "Data Sources" (which machines are used as the source of data for
-      each antenna involved in a correlation) and "Processors" (which
-      machines are devoted to round-robin DiFX processing).<br>
-    </p>
-    <blockquote>
-      <h5>Data Sources</h5>
-      <p>The purpose of the Data Sources section is to allow the user to
-        select the machines that will serve as the "source" of data for
-        each antenna involved in a correlation.&nbsp; For "MODULE" data
-        types the data source will be the Mark5 unit that contains the
-        required module.&nbsp; For "FILE" data types the data source
-        will be the machine that reads the data files off of disk.&nbsp;
-        A "NETWORK" data source is the machine that serves as the
-        network destination of a data stream from a remote source.&nbsp;
-        Each antenna involved in a correlation can have only one data
-        source machine assigned to it, and ideally each antenna will
-        have a <i>different</i> machine assigned to it.<br>
-      </p>
-      <span style="font-weight: bold;"></span>
-      <p>The Data Sources panel includes a section for each
-        antenna.&nbsp; These sections differ somewhat depending on the
-        type of data source being used.&nbsp; Different antennas can use
-        different data source types, however for the moment it is
-        assumed that all of the data for a particular antenna will be
-        using the same data source type.<br>
-      </p>
-      The following image shows the Data Sources panel for a two-antenna
-      correlation.&nbsp; The first antenna uses a FILE data source, and
-      the second antenna uses a MODULE data source:<br>
-      <br>
-      <div align="left">
-        <div align="center"><img alt=""
-            src="images/jobEditor/dataSources1.png" height="189"
-            width="703"><br>
-        </div>
-        <br>
-        For each data source a pull-down menu is provided from which any
-        appropriate available machine can be selected.&nbsp; This is the
-        actual data source that will be included in the resulting
-        Machines file.&nbsp; Following it is a column for the antenna
-        involved (two letter abbreviation), the format for the data, and
-        the data source type.&nbsp; Subsequent columns differ based on
-        the data source type.<br>
-      </div>
-      <br>
-      <span style="font-weight: bold;">FILE Data Sources</span><span
-        style="font-weight: bold;"></span>
-      <dl>
-        <dd>A file can be read by any data source on the network, thus
-          the pull-down menu provides everything seen on the DiFX
-          cluster, including processors and Mark5 units.&nbsp; Whichever
-          machine is chosen as the data source <i>must</i> have access
-          to the file(s) containing the data (hopefully the GUI will
-          actually check that this is true...soon).</dd>
-      </dl>
-      <p align="center"><img alt=""
-          src="images/jobEditor/dataSources2.png" height="185"
-          width="701"><br>
-      </p>
-      <blockquote>
-        <p>The last column of a FILE data source line shows the first in
-          the list of files that contain the data for the antenna
-          (usually one file for each scan).&nbsp; This list can be
-          expanded to see all of the files.<br>
-        </p>
-        <p align="center"><img alt=""
-            src="images/jobEditor/dataSources3.png" height="185"
-            width="702"><br>
-        </p>
-      </blockquote>
-      <span style="font-weight: bold;"><br>
-      </span><span style="font-weight: bold;">MODULE </span><span
-        style="font-weight: bold;">Data Sources</span><span
-        style="font-weight: bold;"></span>
-      <dl>
-        <dd>A module data source can only be a machine capable of
-          reading a module - a Mark5 unit.&nbsp; The pull down menu for
-          a module data type includes only the Mark5 machines that can
-          be seen on the DiFX cluster.</dd>
-      </dl>
-      <p align="center"><img alt=""
-          src="images/jobEditor/dataSources4.png" height="190"
-          width="701"><br>
-      </p>
-      <blockquote>
-        <p align="left">The VSNs of modules installed in each Mark5 are
-          listed in the pull down menu - the Mark5 unit containing the
-          VSN required for the experiment and antenna should be chosen
-          as the data source.&nbsp; If the required VSN is not installed
-          in the current data source the VSN name will be colored <font
-            color="#ff0000">red</font>, as in the image above.&nbsp; If
-          the data source does contain the correct module the VSN name
-          will be colored <font color="#3333ff">blue</font> (see the
-          previous images).<br>
-        </p>
-      </blockquote>
-      <blockquote></blockquote>
-      <span style="font-weight: bold;"><br>
-      </span><span style="font-weight: bold;">NETWORK </span><span
-        style="font-weight: bold;">Data Sources</span><span
-        style="font-weight: bold;"></span>
-      <dl>
-        <dd>Currently a work in progress.<br>
-        </dd>
-      </dl>
-      <span style="font-weight: bold;"><br>
-      </span><span style="font-weight: bold;"> </span><span
-        style="font-weight: bold;">Choose Data Source Based on Module</span></blockquote>
-    <blockquote>
-      <dl>
-        <dd>When this option is checked, the GUI will attempt to pick
-          Mark5 data sources that contain the modules required for the
-          job.&nbsp; If the proper modules are not present they will
-          appear in red in the data source list.&nbsp; If you are not
-          using Mark5 modules as your data source this option will have
-          no effect.&nbsp; I might get rid of this check box - instead
-          make this behavior a quiet and constant default.<br>
-        </dd>
-      </dl>
-      <h5>Processors<br>
-      </h5>
-    </blockquote>
-    <dl>
-    </dl>
-    <dl>
-    </dl>
-    <dl>
-    </dl>
-    <dl>
-    </dl>
-    <dl>
-    </dl>
-    <dl>
-    </dl>
-    <dl>
-    </dl>
-    <dl>
-    </dl>
-    <dl>
-    </dl>
-    <dl>
-    </dl>
-    <blockquote>
-      <dl>
-        <dt><b>Eliminate Non-Responding Processors</b></dt>
-        <dd>When <i>guiServer</i> on the DiFX host creates the Machines
-          and Threads files, it will run a quick check on each processor
-          and data source (if applicable) to make sure it has the proper
-          permissions to execute an <i>mpirun</i> on the specific
-          host.&nbsp; If a processor fails this test and this option is
-          selected, it will be automatically removed from the list of
-          processors used on the job.<br>
-        </dd>
-      </dl>
-    </blockquote>
-    <dl>
-    </dl>
-    <dl>
-    </dl>
-    <dl>
-    </dl>
-    <dl>
-    </dl>
-    <dl>
-    </dl>
-    <dl>
-    </dl>
-    <dl>
-    </dl>
-    <dl>
-    </dl>
-    <dl>
-    </dl>
-    <dl>
-    </dl>
-    <blockquote>
-      <dl>
-        <dt><b>Eliminate Processors Over ____ % Busy</b></dt>
-        <dd>This option will de-select any processors that have more
-          than a given percentage of their CPU time consumed.</dd>
-        <dt><br>
-        </dt>
-      </dl>
-      <h5>General Guidelines<br>
-      </h5>
-      <dl>
-        <dt>In general you have complete flexibility in which machines
-          you choose to do what, although the GUI will try to alert you
-          if you request something that won't work.&nbsp; Given that,
-          there are a number of ways you can wisely choose your machines
-          such that your correlation processing is more efficient.<br>
-        </dt>
-      </dl>
-      <ul>
-        <li>With some exceptions (such as situations where you have no
-          choice) a machine should not appear in both the Data Sources
-          and Processors list.</li>
-        <li>Each antenna should, if possible, have an independent data
-          source associated with it.&nbsp; The nature of correlation
-          requires that data will be required for all antennas <i>simultaneously</i>
-          and having more than one antenna on a data source will cause
-          that source to swap inefficiently between files.</li>
-        <li>If possible the head node should have a dedicated machine
-          (not just a single thread on a machine).&nbsp; The head node
-          should not appear in the list of processors.</li>
-        <li>If a processor machine has <i>n</i> cores, assign at most <i>n
-            - 1</i> threads to it.&nbsp; The GUI will try to do this
-          automatically.<br>
-        </li>
-      </ul>
-      <dl>
-      </dl>
-    </blockquote>
-    <h3><a name="MACHINES_FILE_SECTION"></a>"Machines File" Section</h3>
-    <p>Slightly different - changes to the "Machines List" settings will
-      cause the regeneration of this file.<br>
-    </p>
-    <h3><a name="THREADS_FILE_SECTION"></a>"Threads File" Section</h3>
-    <p>more of the same<br>
-    </p>
-    <h3><a name="RUN_CONTROLS"></a>"Run Controls" Section <br>
-    </h3>
-    <p>This section contains the controls for starting and stopping
-      jobs.<br>
-    </p>
-    <h3>Status Bar</h3>
-    <p>The Status Bar contains the current run state of the job.&nbsp;
-      Progress and some simple information are included.&nbsp; This
-      section has no label, and cannot be opened or closed.&nbsp; It
-      resides just below the "Run Controls" section.<br>
-    </p>
-    <h3>Real Time Monitors</h3>
-    <p>The Real Time Monitors section can be used to produce plots of
-      job output data as they are produced (reasonably close to real
-      time).&nbsp; Some first-level analysis can also be done.&nbsp; The
-      primary aim of these plots is not to produce final, reduced
-      results, but to quickly give the user an idea whether a job was a
-      success, or in what ways its parameters need to be adjusted to
-      make it better.<br>
-    </p>
-    <h3>Message Monitor</h3>
-    <p>The message monitor captures and displays all messages that
-      relate to the job.<br>
-      <br>
-    </p>
-    <p><br>
-    </p>
-    <p><span style="font-weight: bold;"></span><span style="font-weight:
-        bold;"></span></p>
-    <span style="font-weight: bold;"> </span>
-    <p></p>
-  </body>
-</html>
+<html><head>
+
+  
+  <meta content="text/html; charset=ISO-8859-1" http-equiv="Content-Type"><title>Queue Browser</title>
+  
+
+  
+  
+  <link type="text/css" rel="stylesheet" href="style.css"></head><body>
+<h1>Job Control Window<br>
+</h1>
+
+Each Job in the Queue Browser Window has a Job "Control/Monitor" Window
+associated with it.&nbsp; This window, which can be produced by picking
+the "Control/Monitor for [JOB NAME]" option in the Job menu (right
+click on a job in the Queue browser to raise this menu), contains all
+items required to tailor a DiFX job, and controls to actually run and
+monitor it.<br>
+
+<span style="font-weight: bold;"><br>
+</span>Like<span style="font-weight: bold;"> </span>many DiFX GUI
+windows, the Control/Monitor Window is organized into "Sections" that
+can be opened or closed depending on whether you are interested in the
+details they contain.&nbsp; To open a section, click on its title
+bar.&nbsp; Click in the same location to close it.<br>
+
+<span style="font-weight: bold;"></span>
+<h3>"Input File" Section</h3>
+
+<p>This section has an editable window containing the text of the DiFX
+"input" file - the file read by <span style="font-style: italic;">difx</span>
+that governs a run.&nbsp; There is also a field showing the full path
+to the input file on the DiFX host, and two buttons:<br>
+</p>
+
+<ol>
+
+  <li><span style="font-weight: bold;">Save</span> uploads the exact
+context of the text window to the DiFX host and places it in the
+location given by the full path.&nbsp; This can be done if any
+hand-editing changes have been made to the Input file (see the warning
+below about edits!).&nbsp; Unless this button is pushed, any editing
+changes you have made will have no effect.<br>
+  </li>
+  <li><span style="font-weight: bold;">Refresh</span> obtains the
+contents of the file (given by the full path) on the DiFX host and puts
+it in the editable text window.&nbsp; This can be done if you make
+changes that you don't like or are unsure of.&nbsp; All of your changes
+will be lost.&nbsp; Note that "Refresh" can only undo changes made
+since that last "Save".<br>
+  </li>
+</ol>
+
+<span style="font-style: italic;">Warning:</span>&nbsp; The text field
+allows you to edit the Input file, but remember that <span style="font-style: italic;">difx</span> depends on this file to run
+properly.&nbsp; Because the original is automatically generated there
+is not a lot of format-checking of the content or clear and concise
+error reporting if anything you put in there is incorrect - <span style="font-style: italic;">difx</span> may just blow up.&nbsp; Don't
+mess around with this file unless you really know what you are doing.<br>
+
+<h3>"Calc File" Section</h3>
+
+<p>This section is identical to the "Input File" section except that it
+holds the "calc" file (used for...uh...what is it used for?).&nbsp; The
+same controls are available and the same warnings apply.<br>
+</p>
+
+<h3>"Machines List" Section</h3>
+
+<p>The Machines List section provides controls that can be used to
+select the data sources and processors used to process the job.&nbsp;
+Selections are used to produce "Machines" and "Threads" files on the
+DiFX host which are used by <i>mpirun</i> to control
+multiprocessing.&nbsp; The .machines and .threads files can be
+generated using the "Apply" button, and then examined in the "<a href="#MACHINES_FILE_SECTION">Machines File</a>" and "<a href="#THREADS_FILE_SECTION">Threads File</a>" sections as outlined
+below.&nbsp; Alternatively the "Apply" button can be ignored and the
+.machines and .threads files will be generated automatically when the
+job is started.<br>
+</p>
+
+<p>The Machines List Section has two primary panels which govern "Data
+Sources" (which machines are used as the source of data for each
+antenna involved in a correlation) and "Processors" (which machines are
+devoted to round-robin DiFX processing).<br>
+</p>
+
+<blockquote> </blockquote>
+
+<h4>Data Sources</h4>
+
+<p>The purpose of the Data Sources section is to allow the user to
+select the machines that will serve as the "source" of data for each
+station involved in a correlation.&nbsp; For "MODULE" data types the
+data source will be the Mark5 unit that contains the required
+module.&nbsp; For "FILE" data types the data source will be the machine
+that reads the data files off of disk.&nbsp; A "NETWORK" data source is
+the machine that serves as the network destination of a data stream
+from a remote source.&nbsp; Each station involved in a correlation can
+have only one data source machine assigned to it, and ideally each
+station will have a <i>different</i> machine assigned to it.<br>
+</p>
+
+<span style="font-weight: bold;"></span>
+<p>The Data Sources panel includes a section for each station.&nbsp;
+These sections differ somewhat depending on the type of data source
+being used.&nbsp; Different stations can use different data source
+types, however for the moment it is assumed that all of the data for a
+particular station will be using the same data source type.<br>
+</p>
+
+The following image shows the Data Sources panel for a two-station
+correlation.&nbsp; The first station uses a FILE data source, and the
+second station uses a MODULE data source:<br>
+
+<br>
+
+<div align="left">
+<div align="center"><img alt="" src="images/jobEditor/dataSources1.png" height="189" width="703"><br>
+</div>
+<br>
+For each data source a pull-down menu is provided from which any
+appropriate available machine can be selected.&nbsp; This is the actual
+data source that will be included in the resulting .machines
+file.&nbsp; Following it is a checkbox labelled "Skip" that can be used
+to remove the station from the job (see <a href="#Removing_Stations_From_a_Job">Removing Stations From a Job</a>
+below), a column for the station involved (two letter abbreviation),
+the format for the data, and the data source type.&nbsp; Subsequent
+columns differ based on the data source type.<br>
+<h5>Initial Data Source Choice<br>
+</h5>
+When the Job Control Window is first opened, the GUI will have chosen
+what it feels are logical machine picks for each data source.&nbsp; For
+module data, a MarkV with the appropriate module will be used if it can
+be found.&nbsp; The machine for file data will be chosen based on
+several user settings (see <a href="settings_content.html#Data_Source_Defaults">Data Source Defaults</a>
+in the Job Processing Settings of the Settings Window), an option among
+which is a specific assignment based on path.<br>
+</div>
+
+<h5><span style="font-weight: bold;">FILE Data Sources</span><span style="font-weight: bold;"></span> </h5>
+
+A file can be read by any data source that has access to the file, thus
+the source selection pull-down menu provides everything seen on the
+DiFX cluster, including processors and Mark5 units (some of these
+machines may not have access to the storage system containing the file,
+but unfortunately the GUI has no way of knowing this).&nbsp;&nbsp;
+<p align="center"><img alt="" src="images/jobEditor/dataSources2.png" height="185" width="701"><br>
+</p>
+
+<p>The last column of a FILE data source line shows the first in the
+list of files that contain the data for the antenna (usually one file
+for each scan).&nbsp; This list can be expanded to see all of the
+files.&nbsp; The names of the files are obtained from the "DATA TABLE"
+section of the .input file.&nbsp; </p>
+
+<p align="center"><img alt="" src="images/jobEditor/dataSources3.png" height="185" width="702"><br>
+</p>
+
+<span style="font-weight: bold;"></span>If the "DATA TABLE" section of
+the .input file does not contain anything (this can happen of the data
+for a station were listed in a <a href="experimentEditor_content.html#Using_a_File_List">File List</a>
+and <span style="font-style: italic;">vex2difx</span> failed to find
+appropriate data files), the data are considered "missing" and the data
+source will be outlined in red.<br>
+
+<div style="text-align: center;"><img style="width: 768px; height: 187px;" alt="" src="images/jobEditor/missing_data_source.png"><br>
+</div>
+
+<br>
+
+This job will not process correctly, however there is a way to repair
+it - see <a href="#Removing_Stations_From_a_Job">Removing Stations
+From a Job</a> below.<br>
+
+<span style="font-weight: bold;"> </span>
+<h5><span style="font-weight: bold;">MODULE </span><span style="font-weight: bold;">Data Sources</span><span style="font-weight: bold;"></span> </h5>
+
+A module data source can only be a machine capable of reading a module
+- a Mark5 unit.&nbsp; The pull down menu for a module data type
+includes only the Mark5 machines that can be seen on the DiFX cluster.
+<p align="center"><img alt="" src="images/jobEditor/dataSources4.png" height="190" width="701"><br>
+</p>
+
+<p align="left">The VSNs of modules installed in each Mark5 are listed
+in the pull down menu - the Mark5 unit containing the VSN required for
+the experiment and antenna should be chosen as the data source.&nbsp;
+If the required VSN is not installed in the current data source the VSN
+name will be colored <font color="#ff0000">red</font>, as in the image
+above.&nbsp; If the data source does contain the correct module the VSN
+name will be colored <font color="#3333ff">blue</font> (see the
+previous images).<br>
+</p>
+
+<blockquote> </blockquote>
+
+<h5><span style="font-weight: bold;">NETWORK </span><span style="font-weight: bold;">Data Sources</span><span style="font-weight: bold;"></span> <br>
+</h5>
+
+Currently a work in progress.<br>
+
+<dl>
+
+</dl>
+
+<span style="font-weight: bold;"></span><br>
+
+<span style="font-weight: bold;"> </span><span style="font-weight: bold;"> </span><span style="font-weight: bold;">Choose
+Data Source Based on Module</span>
+<dl>
+
+  <dd>When this option is checked, the GUI will attempt to pick Mark5
+data sources that contain the modules required for the job.&nbsp; If
+the proper modules are not present they will appear in red in the data
+source list.&nbsp; If you are not using Mark5 modules as your data
+source this option will have no effect.&nbsp; I might get rid of this
+check box - instead make this behavior a quiet and constant default.</dd>
+</dl>
+
+<h5><a name="Removing_Stations_From_a_Job"></a>Removing Stations From a
+Job<br>
+</h5>
+
+<dl>
+
+  <dt>It may become desireable to run a job without one of its
+associated stations.&nbsp; The most obvious situation where this would
+be the case would be when the data for a station was "missing" for some
+reason.&nbsp; In the example pictured below, the data source for the
+station "KE" is missing because the .input file had no data associated
+with it (it would have been "D/STREAM 1" in the .input file).&nbsp;
+Running DiFX on this job will result in an error.&nbsp; To draw
+attention to this situation, the Data Source menu has outlined the KE
+station data in red.</dt>
+  <dd><br>
+  </dd>
+  <dd style="text-align: center;"><img style="width: 1120px; height: 621px;" alt="" src="images/jobEditor/missing_ke.png"></dd>
+</dl>
+
+To remove the missing station from the experiment (or to remove any
+other station, if desired), check the "Skip" box associated with it,
+and then click "Rebuild Job".&nbsp; The job can then be re-run normally.<br>
+
+<div style="text-align: center;"><img style="width: 1041px; height: 235px;" alt="" src="images/jobEditor/rebuild_ke.png"><br>
+<div style="text-align: left;"><br>
+</div>
+</div>
+
+<h5 style="font-style: italic;">&nbsp;&nbsp;&nbsp; What is the GUI Doing When it Rebuilds a Job?</h5>
+To "rebuild" a job that runs with a different set of stations, the GUI
+has to
+create an entirely new set of job-specific files, including the .input
+file, the
+.calc file, and some others.&nbsp; This is done by creating a new,
+job-specific .v2d file (based on the .v2d file for the experiment) with
+the station selections, then running <span style="font-style: italic;">vex2difx</span> on it to create the new job files.&nbsp; Before running <span style="font-style: italic;">vex2difx</span>,
+existing files are first renamed with ".0" appended to their original
+name for the first rebuild, ".1" for the second rebuild, etc, so
+nothing is thrown away.&nbsp; The list of files for a job named "JOB
+NAME" that are renamed (if they exist) are [JOB NAME].calc, [JOB
+NAME].difxlog, [JOB NAME].flag, [JOB NAME].im, [JOB NAME].difx (a
+directory), [JOB NAME].input, [JOB NAME].machines, [JOB NAME].threads,
+and [MANGLED JOB NAME].v2d (from a previous rebuild).&nbsp; The "MANGED
+JOB NAME" of the .v2d file matches the JOB NAME of other files except
+that all underscores have been replaced by hyphens (<span style="font-style: italic;">vex2difx</span> does not permit underscores in the .v2d file name).<br>
+<h5>&nbsp;&nbsp;&nbsp; <span style="font-style: italic;">Automating the Rebuild Procedure</span></h5>
+When data for a station are missing from a job it is often the case
+that the job is part of a large, many-job experiment, where, for
+whatever reason, some portion of the data for a scheduled station does
+not exist.&nbsp; In this case it may be many jobs that will have to be
+rebuilt and re-run.&nbsp; The GUI scheduling system can be set to
+recognize when a scheduled job fails to run due to missing data,
+rebuild the job with the offending station omitted, and re-run the job
+automatically.&nbsp; In fact, this is the default behavior of the
+scheduler.&nbsp; See <a href="how_to_run_things_content.html#Running_Jobs_With_the_Scheduler">Running Jobs With the Scheduler</a> and <a href="settings_content.html#Scheduler_Settings">Scheduler Settings</a>.<br>
+
+  
+<h4>Processors<br>
+
+</h4>
+
+<dl>
+
+  <dt><b>Eliminate Non-Responding Processors</b></dt>
+  <dd>When <i>guiServer</i> on the DiFX host creates the Machines and
+Threads files, it will run a quick check on each processor and data
+source (if applicable) to make sure it has the proper permissions to
+execute an <i>mpirun</i> on the specific host.&nbsp; If a processor
+fails this test and this option is selected, it will be automatically
+removed from the list of processors used on the job.<br>
+  </dd>
+</dl>
+
+<dl>
+
+  <dt><b>Eliminate Processors Over ____ % Busy</b></dt>
+  <dd>This option will de-select any processors that have more than a
+given percentage of their CPU time consumed.</dd>
+  <dt><br>
+  </dt>
+</dl>
+
+<h5>General Guidelines<br>
+</h5>
+
+<dl>
+
+  <dt>In general you have complete flexibility in which machines you
+choose to do what, although the GUI will try to alert you if you
+request something that won't work.&nbsp; Given that, there are a number
+of ways you can wisely choose your machines such that your correlation
+processing is more efficient.<br>
+  </dt>
+</dl>
+
+<ul>
+
+</ul>
+
+<blockquote>With some exceptions (such as situations where you have no
+choice) a machine should not appear in both the Data Sources and
+Processors list.</blockquote>
+
+<ul>
+
+</ul>
+
+<blockquote>Each antenna should, if possible, have an independent data
+source associated with it.&nbsp; The nature of correlation requires
+that data will be required for all antennas <i>simultaneously</i> and
+having more than one antenna on a data source will cause that source to
+swap inefficiently between files.</blockquote>
+
+<ul>
+
+</ul>
+
+<blockquote>If possible the head node should have a dedicated machine
+(not just a single thread on a machine).&nbsp; The head node should not
+appear in the list of processors.</blockquote>
+
+<ul>
+
+</ul>
+
+<blockquote>If a processor machine has <i>n</i> cores, assign at most <i>n
+- 1</i> threads to it.&nbsp; The GUI will try to do this automatically.<br>
+  <ul>
+  </ul>
+  <dl>
+  </dl>
+</blockquote>
+
+<h3><a name="MACHINES_FILE_SECTION"></a>"Machines File" Section</h3>
+
+<p>Slightly different - changes to the "Machines List" settings will
+cause the regeneration of this file.<br>
+</p>
+
+<h3><a name="THREADS_FILE_SECTION"></a>"Threads File" Section</h3>
+
+<p>more of the same<br>
+</p>
+
+<h3><a name="RUN_CONTROLS"></a>"Run Controls" Section <br>
+</h3>
+
+<p>This section contains the controls for starting and stopping jobs.<br>
+</p>
+
+<h3>Status Bar</h3>
+
+<p>The Status Bar contains the current run state of the job.&nbsp;
+Progress and some simple information are included.&nbsp; This section
+has no label, and cannot be opened or closed.&nbsp; It resides just
+below the "Run Controls" section.<br>
+</p>
+
+<h3>Real Time Monitors</h3>
+
+<p>The Real Time Monitors section can be used to produce plots of job
+output data as they are produced (reasonably close to real time).&nbsp;
+Some first-level analysis can also be done.&nbsp; The primary aim of
+these plots is not to produce final, reduced results, but to quickly
+give the user an idea whether a job was a success, or in what ways its
+parameters need to be adjusted to make it better.<br>
+</p>
+
+<h3>Message Monitor</h3>
+
+<p>The message monitor captures and displays all messages that relate
+to the job.<br>
+<br>
+</p>
+
+<p><br>
+</p>
+
+<p><span style="font-weight: bold;"></span><span style="font-weight: bold;"></span></p>
+
+<span style="font-weight: bold;"> </span>
+
+</body></html>

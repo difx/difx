@@ -1,12 +1,10 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
-<html>
-  <head>
-    <meta content="text/html; charset=ISO-8859-1"
-      http-equiv="Content-Type">
-    <title>Real-Time Job Monitor</title>
-    <link type="text/css" rel="stylesheet" href="style.css">
-  </head>
-  <body>
+<html><head>
+
+  
+    <meta content="text/html; charset=ISO-8859-1" http-equiv="Content-Type"><title>Real-Time Job Monitor</title>
+    
+    <link type="text/css" rel="stylesheet" href="style.css"></head><body>
     <h1>Real-Time Job Monitor<br>
     </h1>
     <ul>
@@ -34,21 +32,15 @@
     what good they are.&nbsp; But they're pretty anyway.&nbsp; Good for
     demos to impress relatives or uninformed visitors.<br>
     <br>
-    <div align="center"><img alt=""
-        src="images/real_time_monitor/sample.png" height="547"
-        width="700"><br>
+    <div align="center"><img alt="" src="images/real_time_monitor/sample.png" height="547" width="700"><br>
     </div>
     <h3><a name="Running_a_Job_to_Allow_Real-Time"></a>Running a Job to
       Allow Real-Time Monitoring</h3>
     <p>For real-time monitoring to work on a running job, it must be
       started with real-time monitoring enabled.&nbsp; This is done by
-      checking the "Run With Monitor" check box on the <a
-        href="Job_Control_content.html">Run Controls</a> panel in the <a
-        href="Job_Controls_content.html">Job Control Window</a>:<br>
+      checking the "Run With Monitor" check box on the <a href="Job_Control_content.html">Run Controls</a> panel in the <a href="Job_Controls_content.html">Job Control Window</a>:<br>
     </p>
-    <div align="center"><img alt=""
-        src="images/real_time_monitor/run_with_monitor.png" height="176"
-        width="805"><br>
+    <div align="center"><img alt="" src="images/real_time_monitor/run_with_monitor.png" height="176" width="805"><br>
       <br>
     </div>
     <br>
@@ -56,8 +48,7 @@
       monitoring, it only triggers the hooks that allow it.&nbsp; In the
       background what it is doing is triggering <i>guiServer</i> to
       start <i>mpirun</i> with the "-M" option enabled (the details of
-      this are described in the DiFX documentation <a
-        href="http://cira.ivec.org/dokuwiki/doku.php/difx/difx_monitor">here</a>).&nbsp;
+      this are described in the DiFX documentation <a href="http://cira.ivec.org/dokuwiki/doku.php/difx/difx_monitor">here</a>).&nbsp;
       This permits the <i>monitor_server</i> process to then be able to
       access the products of the running job.&nbsp; The <i>monitor_server</i>
       process will also be started, if it is not already running.<br>
@@ -80,13 +71,9 @@
       <li>Right click on the specific job entry in the Queue Browser
         then pick "Real-Time Job Monitor" from the pop-up menu:</li>
     </ol>
-    <div align="center"><img alt=""
-        src="images/real_time_monitor/queue_browser_ping.png"
-        height="201" width="850"><br>
+    <div align="center"><img alt="" src="images/real_time_monitor/queue_browser_ping.png" height="201" width="850"><br>
       <div align="left"><br>
-        The Job Monitor window is divided into four panels showing <a
-          href="#Connection_Controls">Connection Controls</a>, <a
-          href="#Messages">Messages</a> relating to the connection and
+        The Job Monitor window is divided into four panels showing <a href="#Connection_Controls">Connection Controls</a>, <a href="#Messages">Messages</a> relating to the connection and
         data transfer, <a href="#Selecting_Data_Products">Data Controls</a>
         for choosing the data "products" that are to be monitored, and
         the real time <a href="#Plot_Controls">Plots</a>
@@ -105,9 +92,7 @@
           you can seen data transfers on the plot, which has some
           value).<br>
         </p>
-        <div align="center"><img alt=""
-            src="images/real_time_monitor/connection.png" height="97"
-            width="850"></div>
+        <div align="center"><img alt="" src="images/real_time_monitor/connection.png" height="97" width="850"></div>
         <h3><a name="Messages"></a>Messages</h3>
         <p>The Messages panel shows messages, most of which originate
           with <i>guiServer</i>, that are specific to the Real-Time
@@ -116,9 +101,7 @@
           are yellow, and errors are red.&nbsp; Standard message window
           controls for clearing items, displaying different message
           types, and limiting the buffer of messages are provided.</p>
-        <p align="center"><img alt=""
-            src="images/real_time_monitor/messages2.png" height="96"
-            width="850"><i><br>
+        <p align="center"><img alt="" src="images/real_time_monitor/messages2.png" height="96" width="850"><i><br>
           </i></p>
         <h5 align="left"><i>Warning: real-time monitor thread has timed
             out after ## seconds of inactivity</i></h5>
@@ -153,9 +136,7 @@
       associated with a job, buttons that correspond to the product
       specifications for that job are provided:<br>
     </p>
-    <div align="center"><img alt=""
-        src="images/real_time_monitor/dataControls0.png" height="136"
-        width="700"><br>
+    <div align="center"><img alt="" src="images/real_time_monitor/dataControls0.png" height="136" width="700"><br>
       <br>
       <div align="left">In the above example, the telescopes "MK" and
         "PT" were used for the observation contained in the named <tt>.input</tt>
@@ -186,8 +167,7 @@
         produce:<br>
       </div>
       <br>
-      <img alt="" src="images/real_time_monitor/dataControls1.png"
-        height="219" width="700"><br>
+      <img alt="" src="images/real_time_monitor/dataControls1.png" height="219" width="700"><br>
       <br>
       <div align="left">Note that every combination of your selected
         specifications will be among the data products the real-time
@@ -214,8 +194,7 @@
         made).<br>
       </div>
       <br>
-      <img alt="" src="images/real_time_monitor/dataControls2.png"
-        height="247" width="700"><br>
+      <img alt="" src="images/real_time_monitor/dataControls2.png" height="247" width="700"><br>
       <br>
       <div align="left">Once you are satisfied with your product
         selections, click the "Apply" button.&nbsp; This will transmit
@@ -254,9 +233,7 @@
       your needs at any time.<br>
       <br>
     </p>
-    <p align="center"><img alt=""
-        src="images/real_time_monitor/showMenu.png" height="506"
-        width="700"><br>
+    <p align="center"><img alt="" src="images/real_time_monitor/showMenu.png" height="506" width="700"><br>
     </p>
     <p align="left">The check boxes under the "Show" menu are described
       below:<br>
@@ -327,8 +304,7 @@
       Encapsulated PostScript can be embedded in documents, saved for
       comparison, emailed, or printed.<br>
     </p>
-    <div align="center"><img alt=""
-        src="images/real_time_monitor/eps.png" height="437" width="700"></div>
+    <div align="center"><img alt="" src="images/real_time_monitor/eps.png" height="437" width="700"></div>
     <p><br>
       The saved PostScript representation is (almost) identical to the
       screen (there are some font scaling differences and the background
@@ -411,8 +387,7 @@
     <h5><i>Can I Start Real-Time Monitoring on a Job That is Already
         Running?</i></h5>
     <p>Yes, as long as a job was started with the "Run With Monitor"
-      check box selected (see <a
-        href="#Running_a_Job_to_Allow_Real-Time">above</a>), <i>monitor_server</i>
+      check box selected (see <a href="#Running_a_Job_to_Allow_Real-Time">above</a>), <i>monitor_server</i>
       should have access to that job.&nbsp; It should even be possible
       to monitor a job started by another user, assuming you have access
       to the .input file associated with it.<br>
@@ -426,9 +401,27 @@
       extension of the current design to handle multiple scans
       gracefully is in the works.<br>
     </p>
-    <br>
+    <b><i>monitor_server</i></b><i><br>
+      </i><br>
+
+      If you wish to monitor running jobs through the GUI's real-time
+      plotting capabilities, the DiFX application <i>monitor_server</i>
+      needs to be running.&nbsp; This program provides a TCP server at
+      which real-time data from running DiFX processes can be
+      obtained.&nbsp; The absence of this process is not usually a
+      problem - if you request the real-time plotting it should be
+      started automatically.&nbsp; However if you find that real-time
+      plotting isn't working, this could be a cause.&nbsp; For details,
+      see the<a href="file:///home/jspitzak/difx/difx/applications/gui/trunk/doc/realtime_monitor_content.html"> Real-Time Monitor
+        Documentation</a>.&nbsp; Note that at this time real-time
+      monitoring is best considered "experimental".<br>
+
+    
+    
+<h5><br>
+</h5>
+
     <p><br>
     </p>
     <p></p>
-  </body>
-</html>
+  </body></html>

@@ -5,6 +5,8 @@
       http-equiv="Content-Type">
     <title>Settings Window</title>
     <link type="text/css" rel="stylesheet" href="style.css">
+    <meta http-equiv="content-type" content="text/html;
+      charset=windows-1252">
   </head>
   <body>
     <h1>DiFX GUI System Settings Window</h1>
@@ -25,11 +27,13 @@
         - used to set up the TCP connection to the <i>guiServer</i>
         (and DiFX).</li>
       <li><a href="#DiFX_Message_Traffic">DiFX Message Traffic</a> -
-        controls which messages are sent to/from DiFX.<br>
+        controls which messages are sent to/from DiFX.</li>
+      <li><a href="#Job_Creation_Settings">Job Creation Settings</a> -
+        controls how .vex files are used to create experiments.<br>
       </li>
       <li><a href="#Job%20Settings">Job Processing Settings</a> - used
-        to control where and how jobs are processed, and how scheduled
-        jobs are run.<br>
+        to control how jobs are processed and how scheduled jobs are
+        run.<br>
       </li>
       <li><a href="#Database_Configuration">Database Configuration</a> -
         governs the use and configuration of a database for tracking
@@ -65,9 +69,8 @@
       load a previously saved state:<br>
       <br>
     </p>
-    <p align="center"><img alt=""
-        src="images/settings/settings_file.png" height="78" width="700"><br>
-    </p>
+    <div align="center"><img alt=""
+        src="images/settings/settings_file.png" height="87" width="800"></div>
     <div align="left">
       <h5>Current</h5>
       <p>This field shows the full path to the XML file that was most
@@ -86,13 +89,16 @@
       </p>
       <h5>Save As...</h5>
       <p>This button produces a file browser from which a path for the
-        XML file can be picked.&nbsp; The XML file is written
-        immediately.<br>
+        XML file can be picked.&nbsp; The XML file is written using the
+        current settings.<br>
       </p>
       <h5>Defaults</h5>
       <p>The Defaults button will restore the GUI to internal defaults
-        (not the default XML file settings).&nbsp; <br>
-        <br>
+        (not the default XML file settings).&nbsp;&nbsp;</p>
+      <h5>GUI Title</h5>
+      <p>The GUI Title is a simple text string that can be used to
+        uniquely identify a settings configuration.&nbsp; The title will
+        be applied to the top-level GUI window.<br>
       </p>
     </div>
     <h2><a name="DiFX_Control_Connection"></a>DiFX Control Connection</h2>
@@ -110,6 +116,7 @@
         traffic is collected by <span style="font-style: italic;">guiServer</span>
         and relayed over the TCP socket to the GUI (for more information
         about message traffic, see the <a href="#Broadcast_Network">DiFX
+
 
 
 
@@ -152,24 +159,27 @@
     DiFX, as well as port and version specifications.&nbsp; Details
     about each control/display item are outlined below.<br>
     <br>
-    <div style="text-align: center;"><img style=" width: 902px; height:
-        243px;" alt="" src="images/settings/DifxControlConnection.png"
-        height="191" width="700"><br>
+    <div align="center">&nbsp; <img alt=""
+        src="images/settings/DifxControlConnection.png" height="207"
+        width="893"><br>
     </div>
-    <br>
     <ul>
       <li> <a href="#MulticastguiServer_Check_Boxes">Multicast/guiServer
+
 
 
           Check Boxes</a></li>
       <li><a href="#guiServer_Connection_Light">guiServer Connection
           Light</a></li>
+      <li><a href="#Channel_All_Data">Channel All Data</a><br>
+      </li>
       <li><a href="#DiFX_Host">DiFX Host</a></li>
       <li><a href="#Control_Port">Control Port</a></li>
       <li><a href="#TRANSFER_PORTS">Transfer Port and Max Open Ports</a></li>
       <li><a href="#Monitor_Host_and_Port">Monitor Host and Port</a></li>
       <li><a href="#guiServer_Version_">guiServer Version</a></li>
-      <li><a href="#built_wDiFX">built w/DiFX</a></li>
+      <li><a href="#built_wDiFX">GUI Version</a><br>
+      </li>
       <li><a href="#Host_Environment_Vars">Host Environment Vars</a></li>
       <li><a href="#Username_">Username</a></li>
       <li><a href="#DiFX_Base">DiFX Base</a></li>
@@ -187,12 +197,14 @@
       connection to <i>guiServer</i> (preferred, obviously).&nbsp; You
       will almost always want to use the <i>guiServer </i>option - the
       Multicast option exists for historical reasons and is maintained
-      because it has some utility in testing.<br>
+      because it has some utility in testing.&nbsp; By default the <i>guiServer</i>
+      option is checked.<br>
     </p>
     <h5><a name="guiServer_Connection_Light"></a>guiServer Connection
       Light</h5>
     <p>The guiServer Connection light gives an immediate indication
       whether a healthy TCP connection exists between the GUI and <i>guiServer</i>.&nbsp;
+
 
 
       A green light means a good connection.&nbsp; Red means a broken
@@ -201,6 +213,18 @@
       that a connection is in the process of being made (these usually
       turn green quickly).<br>
     </p>
+    <h5><a name="Channel_All_Data"></a>Channel All Data</h5>
+    <p>In "normal" operation the GUI and <i>guiServer</i> transfer data
+      using a number of TCP ports that are opened and closed as needed -
+      the port numbers and total number of these ports that can be
+      simultaneously opened are controlled by the Transfer Port and Max
+      Open Ports settings.&nbsp; If "Channel All Data" is selected, the
+      GUI and <i>guiServer</i> will communicate and transfer all data
+      over a single port - "channeling" all data transfers through that
+      port.&nbsp; Channeling data is critical when operating the GUI/<i>guiServer</i>
+      connection through an "ssh tunnel" where tunneling is required for
+      each TCP connection, however the GUI operates perfectly well when
+      channeling data under other circumstances.</p>
     <h5><a name="DiFX_Host"></a>DiFX Host</h5>
     This is the hostname of the node on which <i>guiServer</i> is
     running, or will run.&nbsp; Changes to this field will trigger a
@@ -254,33 +278,36 @@
     </p>
     <p> </p>
     <h5><a name="guiServer_Version_"></a>guiServer Version </h5>
-    <p>The "guiServer Version" is a version number in a version scheme
-      that is specific to <i>guiServer</i>.&nbsp; It should match the
-      version number of the GUI itself to assure that they are
-      compatible, however there is no need for it to match the DiFX
-      version (in general it won't).&nbsp; This is not a field the user
-      can change - it is reported by <i>guiServer</i> when a new TCP
-      connection is made.<br>
+    <p>The "guiServer Version" is the version of the DiFX software that
+      was used to build <i>guiServer</i>.&nbsp;&nbsp;<i>GuiServer</i>
+      depends on a number of DiFX header files and libraries (primarily
+      for file parsing) when it builds so in a perfect world it would
+      match the the
+      <a href="#built_wDiFX"> version of the GUI itself</a> to assure
+      that they are compatible.&nbsp; However this is not, in general,
+      critical, as the file parsing libraries a fairly stable (and
+      almost always backward compatible) between DiFX versions.&nbsp;
+      There is no need for the <i>guiServer</i> Version to match the <a
+        href="#Run_wDiFX_Version">DiFX version used to run correlator
+        operations</a>.&nbsp; <br>
     </p>
-    <h5><a name="built_wDiFX"></a>built w/DiFX</h5>
+    <p>This is not a field the user can change - it is reported by <i>guiServer</i>
+      when a new TCP connection is made.<br>
+    </p>
+    <h5><a name="built_wDiFX"></a>GUI Version<br>
+    </h5>
     <p>This field shows the version of the DiFX software that was used
-      to build the <i>guiServer</i>.&nbsp; <i>GuiServer</i> depends on
-      a number of DiFX header files and libraries (primarily for file
-      parsing) when it builds so in a perfect world it would match the
-      "Run w/DiFX Version" (see below).&nbsp; However this is not, in
-      general, critical, as the file parsing libraries a fairly stable
-      (and almost always backward compatible) between DiFX
-      versions.&nbsp; This field cannot be changed by the user.&nbsp; It
-      will be filled automatically when a TCP connection is made.<br>
+      to build the GUI.&nbsp; This field cannot be changed by the
+      user.&nbsp; It will be filled automatically when a TCP connection
+      is made.<br>
     </p>
     <h5><a name="Host_Environment_Vars"></a>Host Environment Vars</h5>
     <p>The "Host Environment Vars" button creates a display of DiFX Host
       environment variables as seen by <i>guiServer</i>:<br>
     </p>
-    <p align="center"><img alt=""
-src="file:///Users/johnspitzak/difx/applications/gui/trunk/doc/images/settings/EnvironmentVars.png"
-        height="387" width="687"><br>
-    </p>
+    <div align="center"><img alt=""
+        src="images/settings/EnvironmentVars.png" height="387"
+        width="687"></div>
     <div align="left">All environment variables regardless of their
       applicability can be displayed, or only those that apply to DiFX
       may be selected (at the moment this distinction is determined
@@ -295,13 +322,16 @@ src="file:///Users/johnspitzak/difx/applications/gui/trunk/doc/images/settings/E
     This field shows the name of the user under which <i>guiServer</i>
     was started.&nbsp; All DiFX processes that <i>guiServer</i> starts
     will also be run under this user (which means the username must have
-    permission to do so on the host running <i>guiServer</i>).<br>
+    permission to do so on the host running <i>guiServer</i>).&nbsp;
+    This is not a user-settable field.<br>
     <h5><a name="DiFX_Base"></a>DiFX Base</h5>
     <p>The "DiFX Base" is a path on the DiFX host under which the DiFX
       software resides.&nbsp; The DiFX Base is actually just one of the
       environment variables (see above) found on the DiFX host.&nbsp;
       Below this directory will be "bin" directories and source
-      directories for each installed DiFX version.<br>
+      directories for each installed DiFX version.&nbsp; The DiFX Base
+      is reported when a connection is made to <i>guiServer</i> - the
+      field is not user-settable.<br>
     </p>
     <h5><a name="Run_wDiFX_Version"></a>Run w/DiFX Version</h5>
     <p>The GUI does a number of things, such as organizing jobs and
@@ -338,8 +368,8 @@ src="file:///Users/johnspitzak/difx/applications/gui/trunk/doc/images/settings/E
     up or environment variable definition that must take place for DiFX
     processes to run correctly.&nbsp; For instance, if you are running <i>vex2difx</i>,
     which is run on the DiFX host, and you have the DiFX execute script
-    defined as <i>rungeneric.DIFX_DEVEL</i>, guiServer will execute the
-    command:<br>
+    defined as "rungeneric.DIFX_DEVEL", <i>guiServer</i> will execute
+    the command:<br>
     <pre><tt>	</tt>rungeneric.DIFX_DEVEL vex2difx [args...]</pre>
     When running <i>mpifxcorr</i>, which uses <i>mpirun</i> to run on
     multiple nodes, <i>guiServer</i> will run the following:<br>
@@ -350,13 +380,13 @@ src="file:///Users/johnspitzak/difx/applications/gui/trunk/doc/images/settings/E
     In all cases, the node involved must be able to execute the named
     script.<br>
     <br>
-    If you do nothing, guiServer will choose "rungeneric.[DiFX Version]"
-    as a default name for the execute script (Walter Brisken's <i>difxbuild</i>
-    procedure will automatically create this script for each DiFX
-    version that it builds).&nbsp; You can, however, put anything in
-    this field that you want, including nothing at all.&nbsp; The
-    contents of the field is inserted as a string in the commands
-    (examples just above) before they are executed.<br>
+    If you do nothing, <i>guiServer</i> will choose "rungeneric.[DiFX
+    Version]" as a default name for the execute script (Walter Brisken's
+    <i>difxbuild</i> procedure will automatically create this script for
+    each DiFX version that it builds).&nbsp; You can, however, put
+    anything in this field that you want, including nothing at
+    all.&nbsp; The contents of the field is inserted as a string in the
+    commands (examples just above) before they are executed.<br>
     <br>
     Note that because the script is run on each node you can actually
     have a different script on each node doing different things, as long
@@ -378,11 +408,12 @@ src="file:///Users/johnspitzak/difx/applications/gui/trunk/doc/images/settings/E
 
 
 
+
     communicate with <span style="font-style: italic;">mk5daemon</span>
     and control the components of the software correlator.&nbsp; <br>
     <br>
     <div align="center"><img alt=""
-        src="images/settings/multiMessages.png" height="214" width="900"><br>
+        src="images/settings/multiMessages.png" height="214" width="922"><br>
       <div align="left">
         <ul>
           <li><a href="#Relay_Using_guiServer_Connection_">Relay Using <i>guiServer</i>
@@ -390,11 +421,15 @@ src="file:///Users/johnspitzak/difx/applications/gui/trunk/doc/images/settings/E
           <li><a href="#Group_Address">Group Address</a></li>
           <li><a href="#Port">Port</a></li>
           <li><a href="#Buffer_Size">Buffer Size</a></li>
-          <li><a href="#Timeout_ms">Timeout</a></li>
-          <li><a href="#Packet_Traffic_Plot">Packet Traffic</a></li>
+          <li><a href="#Timeout_ms">Monitor Timeout</a></li>
+          <li><a href="#Packet_Traffic_Plot">Packet Traffic Plot<br>
+            </a></li>
           <li><a href="#Suppress_Unknown_Message_Warnings">Suppress
               "Unknown Message" Warnings</a></li>
           <li><a href="#View_DiFX_Messages">View DiFX Messages</a></li>
+          <li><a href="#Request_AllSelected_Messages">Request
+              All/Selected Messages</a><br>
+          </li>
           <li><a href="#Identify_Mark5_Unit_Names_by_Pattern">Identify
               Mark5 Unit Names by Pattern</a></li>
           <li><a href="#Inactivity_WarningError_Settings">Inactivity
@@ -406,19 +441,22 @@ src="file:///Users/johnspitzak/difx/applications/gui/trunk/doc/images/settings/E
     <h4><a name="Relay_Using_guiServer_Connection_"></a>Relay Using <i>guiServer</i>
       Connection<br>
     </h4>
-    Being based on UDP, the multicasts will only work within a local
-    area network.&nbsp; However, if you are connecting to the <span
-      style="font-style: italic;">guiServer</span> to control DiFX you
-    can elect this option to "relay" all multicast messages through the
-    TCP connection between the user interface and <span
+    Being based on UDP, DiFX multicast messages will only work within a
+    local area network.&nbsp; However, if you are connecting to the <span
+      style="font-style: italic;">guiServer</span> to control DiFX
+    you&nbsp; should select this option to "relay" all multicast
+    messages through the TCP connection between the user interface and <span
       style="font-style: italic;">guiServer</span>.&nbsp; All messages
-    on the DiFX subnet are collected by <span style="font-style:
-      italic;">guiServer</span> and retransmitted to the user interface
-    where they are parsed and displayed exactly as if the user interface
-    were on the subnet.&nbsp; This option is only available if the DiFX
-    Control Connection is set to "guiServer" (see above).&nbsp; As the
-    purely multicast operation of the GUI is archaic and running with <i>guiServer</i>
-    is assumed, this setting should always be checked.<br>
+    on the DiFX subnet will then be collected by <span
+      style="font-style: italic;">guiServer</span> and retransmitted to
+    the user interface where they are parsed and displayed exactly as if
+    the user interface were on a LAN with the DiFX cluster.&nbsp; If
+    this "relay" option is not selected only messages received directly
+    via UDP will be collected - a capacity that is intact (for the time
+    being) for historical and (possibly) diagnostic reasons.&nbsp; As
+    the purely multicast operation of the GUI is archaic and running
+    with <i>guiServer</i> is assumed, this setting should always be
+    checked.<br>
     <h4><a name="Group_Address"></a>Group Address</h4>
     This address is used to identify the UDP multicast "group" that <span
       style="font-style: italic;">mk5daemon</span> is using.&nbsp; It
@@ -429,21 +467,22 @@ src="file:///Users/johnspitzak/difx/applications/gui/trunk/doc/images/settings/E
     for details).&nbsp; At the moment the default value for this
     environment variable, and thus the setting you should probably use
     here, is "224.2.2.1".&nbsp; This setting has no impact if messages
-    are being relayed from <i>guiServer</i>.
+    are being relayed from <i>guiServer</i>. <br>
     <h4><a name="Port"></a>Port</h4>
-    The port is used for UDP multicasts.&nbsp; This should match the
-    value of the DIFX_MESSAGE_PORT environment variable in place when <span
-      style="font-style: italic;">mk5daemon</span> was started on each
-    node.&nbsp; At the moment the default value for the environment
-    variable, and thus this field, is 50200.&nbsp; This setting has no
-    impact if messages are being relayed from <i>guiServer</i>.<br>
+    The port is used for directly receiving UDP multicasts.&nbsp; This
+    should match the value of the DIFX_MESSAGE_PORT environment variable
+    in place when <span style="font-style: italic;">mk5daemon</span>
+    was started on each node.&nbsp; At the moment the default value for
+    the environment variable, and thus this field, is 50200.&nbsp; This
+    setting has no impact if messages are being relayed from <i>guiServer</i>.<br>
     <h4><a name="Buffer_Size"></a>Buffer Size</h4>
     This is the maximum size of a broadcast message, in bytes.&nbsp;
     Probably this shouldn't be fiddled with too much - making it too
     small will cause UDP messages to be incompletely read.&nbsp; It is a
     block of memory that must be allocated for each incoming message, so
-    it shouldn't be huge either.&nbsp; <br>
-    <h4><a name="Timeout_ms"></a>Timeout (ms)</h4>
+    it shouldn't be huge either.&nbsp; 1500 appears to be a perfectly
+    safe value.<br>
+    <h4><a name="Timeout_ms"></a>Monitor Timeout (ms)</h4>
     The timeout is the number of milliseconds that the system will wait
     for an incoming broadcast message.&nbsp; It can be set to 0, which
     means "wait forever", although this might be unhealthy (killing the
@@ -452,19 +491,15 @@ src="file:///Users/johnspitzak/difx/applications/gui/trunk/doc/images/settings/E
     Traffic Plot (see below).<br>
     <h4><a name="Packet_Traffic_Plot"></a>Packet Traffic Plot</h4>
     The Packet Traffic Plot shows all received DiFX messages as they are
-    read in real time.&nbsp; If you are receiving messages (i.e. all of
-    the above settings are set properly) this should have a heartbeat
-    appearance - there should be occasional spikes as messages come in
-    (the height of the spikes is the size of messages relative to the
-    Buffer Size).&nbsp; If, on the other hand, you get a "flat line",
-    your settings are wrong, or <span style="font-style: italic;">mk5daemon</span>
-    isn't running anywhere visible on the local area network.<br>
-    <br>
-    Below is a "healthy" Packet Traffic Plot showing a series of UDP
-    messages over time:<br>
-    <img style=" width: 302px; height: 124px;" alt=""
-      src="images/settings/good_packet_traffic_plot.gif"><br>
-    <br>
+    read in real time, either via TCP from <i>guiServer</i> or UDP
+    directly.&nbsp; If you are receiving messages (i.e. all of the above
+    settings are set properly) the plot should show activity - there
+    should be occasional spikes as messages come in (the height of the
+    spikes is the size of messages relative to the Buffer Size).&nbsp;
+    If, on the other hand, you get a "flat line", your settings are
+    wrong, your connection to <i>guiServer</i> is bad, or possibly <span
+      style="font-style: italic;">mk5daemon</span> isn't running
+    anywhere visible on the DiFX cluster network.<br>
     <h4><a name="Suppress_Unknown_Message_Warnings"></a>Suppress
       "Unknown Message" Warnings</h4>
     <p>This check box was put in place to avoid annoying error messages
@@ -475,7 +510,7 @@ src="file:///Users/johnspitzak/difx/applications/gui/trunk/doc/images/settings/E
     <p>The "View DiFX Messages" button will bring up the "DiFX Message
       Traffic Monitor".&nbsp; This window lists all (recognized) DiFX
       message types that are received by the GUI (either directly via
-      UDP, for relayed from the <i>guiServer</i>), displays their "raw"
+      UDP, or relayed from the <i>guiServer</i>), displays their "raw"
       XML code, and parses them according to their type.&nbsp; A buffer
       of messages is stored.&nbsp; Users can select the types of
       messages they wish to see, examine any message in the buffer, and
@@ -486,9 +521,25 @@ src="file:///Users/johnspitzak/difx/applications/gui/trunk/doc/images/settings/E
         src="images/settings/trafficMonitor.png" height="670"
         width="900"><br>
     </p>
-    <p> </p>
-    <h4><a name="Identify_Mark5_Unit_Names_by_Pattern"></a>Identify
-      Mark5 Unit Names by Pattern</h4>
+    <div align="left">
+      <h4><a name="Request_AllSelected_Messages"></a>Request
+        All/Selected Messages</h4>
+      <p>Using the "Request All" or "Request Selected" check boxes, <i>guiServer</i>
+        can be instructed to relay all (default) or a selected subset of
+        DiFX message traffic.&nbsp; The selection of desired message
+        types can be controlled through a pop-up checklist obtained
+        using the "Selected Messages" button:</p>
+      <p align="center">&nbsp;<img alt=""
+          src="images/settings/selectedMessages.png" height="385"
+          width="259"><br>
+      </p>
+      <div align="left">Selecting a subset of all message traffic may be
+        useful if a TCP connection appears unable to handle it
+        all.&nbsp; It can also serve some diagnostic purposes.<br>
+      </div>
+      <h4><a name="Identify_Mark5_Unit_Names_by_Pattern"></a>Identify
+        Mark5 Unit Names by Pattern</h4>
+    </div>
     <p>This check box and text field cause the GUI (primarily in the
       Hardware Monitor Window) to determine whether multicast messages
       are from Mark 5 Nodes or Processor Nodes based on machine
@@ -524,14 +575,32 @@ src="file:///Users/johnspitzak/difx/applications/gui/trunk/doc/images/settings/E
       messages before the lights change.&nbsp; They should be adjusted
       to what works for your installation.<br>
     </p>
-    <p><br>
-    </p>
-    <h2>Job Creation Settings</h2>
+    <h2><a name="Job_Creation_Settings"></a>Job Creation Settings</h2>
     <p>Job Creation Settings govern how experiments, passes, and jobs
       are created using the <a href="experimentEditor_content.html">Experiment
-        Editor</a>.<br>
+
+        Editor</a>.&nbsp; These are general settings - the editor itself
+      has many settings that can be applied to individual experiments
+      when they are being created and also allows these settings to be
+      overridden.<br>
     </p>
-    <h5>Working Directory</h5>
+    <div align="center"><img alt=""
+        src="images/settings/jobCreationSettings.png" height="124"
+        width="895"><br>
+      <div align="left">
+        <ul>
+          <li><a href="#Working_Directory">Working Directory</a></li>
+          <li><a href="#ANTENNA_DEFAULTS">Antenna Defaults</a></li>
+          <li><a href="#Eliminate_Stations_With_Code">Eliminate Stations
+              With "-1" Code</a></li>
+          <li><a href="#Excise_Unused_Scans_from_.vex_File">Excise
+              Unused Scans From .vex File</a><br>
+          </li>
+        </ul>
+      </div>
+    </div>
+    <p> </p>
+    <h5><a name="Working_Directory"></a>Working Directory</h5>
     <p>The working directory is the default path where a directory
       devoted to a new experiment will be created.&nbsp; For instance,
       if the Working Directory is defined as:<br>
@@ -543,19 +612,24 @@ src="file:///Users/johnspitzak/difx/applications/gui/trunk/doc/images/settings/E
     <p></p>
     <p>This is just the default - the actual path can be changed to
       whatever the user wants in the Experiment Editor <a
-        href="experimentEditor_content.html#IDENTIFICATION_DATE">Identification
+        href="experimentEditor_content.html#IDENTIFICATION_DATA">Identification
+
         Data</a> section.<br>
     </p>
     <h5><a name="ANTENNA_DEFAULTS"></a>Antenna Defaults</h5>
     <p>The Antenna Defaults button shows the "Default Source Settings
-      Based on Antenna" window which can be used to connect settings for
-      data format and data sources to particular antennas based on their
-      two-character code names.&nbsp; These specifications are applied
-      to antennas that appear in the "Stations" section of the
-      Experiment Editor and, if done properly, can eliminate tedious and
-      error-prone user settings.<br>
-      <b>IMAGE</b><br>
-      The controls in the window are pretty straight-forward.&nbsp; To
+      Based on Antenna" window which can be used to connect commonly
+      used data source locations to particular antennas based on
+      two-character code station names (these code names match those
+      that appear in .vex files).&nbsp; These specifications are applied
+      to antennas that appear in the <a
+        href="experimentEditor_content.html#Stations">Stations</a>
+      section of the Experiment Editor and, if done properly, can
+      eliminate tedious and error-prone user settings.</p>
+    <p align="center"> <img alt=""
+        src="images/settings/antennaDefaultsWindow.png" height="215"
+        width="693"></p>
+    <p> The controls in the window are pretty straight-forward.&nbsp; To
       add a new specification, click the "Add" button and edit the line
       that appears.&nbsp; To remove a specification click the "X" button
       associated with it.&nbsp; Only one specification for each antenna
@@ -564,10 +638,12 @@ src="file:///Users/johnspitzak/difx/applications/gui/trunk/doc/images/settings/E
       but this is not guaranteed behavior).&nbsp; The first field in a
       new specification should be filled in with the (upper case) two
       letter code for the antenna.&nbsp; A pull-down list provides
-      choices among data types a text field allows path or node
-      specification depending on data type (the former for "file" data,
-      the latter for "module" data).&nbsp; A check box indicates that
-      the specified file path is a file list.<br>
+      choices among data source types (files, module, or network).&nbsp;
+      A text field allows path or node name specification depending on
+      data type (the former for "files" data, the latter for "module"
+      data).&nbsp; A check box indicates that a file path is a file
+      list.&nbsp; If the data type is "Files" and "FileList" is not
+      checked, the path can include wildcards.<br>
     </p>
     <p>The Antenna Defaults will be applied to the Stations section of
       the Experiment Editor when a new .vex file is used.&nbsp; They are
@@ -581,18 +657,27 @@ src="file:///Users/johnspitzak/difx/applications/gui/trunk/doc/images/settings/E
       scans are either deleted if "Excise Unused Scans from .vex File"
       is checked (see below), or are commented out if it is not
       checked.&nbsp; Examples:</p>
-    <p><b>The following lines:</b></p>
-    <p><b>are replaced by this if "Excise Unused Scans from .vex File"
-        is checked:</b></p>
-    <p><b>or this if it is not checked:<br>
+    <p><b>The following lines from the $SCHED section of a .vex file
+        (note -1 in final column of station "Hb" line):<br>
       </b></p>
+    <pre>&nbsp; scan 329-1830b;<br>&nbsp;&nbsp;&nbsp; start = 2014y329d18h30m00s;<br>&nbsp;&nbsp;&nbsp; mode = GEOSX-SX;<br>&nbsp;&nbsp;&nbsp; source = 0537-441;<br>&nbsp;&nbsp;&nbsp; station = Hb :&nbsp;&nbsp;&nbsp; 0 sec :&nbsp;&nbsp;&nbsp; 60 sec :&nbsp;&nbsp;&nbsp;&nbsp; 0 ft : 1A : &amp;ccw : -1;<br>&nbsp;&nbsp;&nbsp; station = Ke :&nbsp;&nbsp;&nbsp; 0 sec :&nbsp;&nbsp;&nbsp; 93 sec :&nbsp;&nbsp;&nbsp;&nbsp; 0 ft : 1A : &amp;ccw : 1;<br>&nbsp;&nbsp;&nbsp; station = Ww :&nbsp;&nbsp;&nbsp; 0 sec :&nbsp;&nbsp; 122 sec :&nbsp;&nbsp;&nbsp;&nbsp; 0 ft : 1A : &amp;ccw : 1;<br>&nbsp;&nbsp;&nbsp; station = Yg :&nbsp;&nbsp;&nbsp; 0 sec :&nbsp;&nbsp; 122 sec :&nbsp;&nbsp;&nbsp;&nbsp; 0 ft : 1A : &amp;ccw : 1;<br>&nbsp; endscan;</pre>
+    <p><b>are replaced by this if "Excise Unused Scans from .vex File"
+        is checked:<br>
+      </b></p>
+    <pre>&nbsp; scan 329-1830b;<br>&nbsp;&nbsp;&nbsp; start = 2014y329d18h30m00s;<br>&nbsp;&nbsp;&nbsp; mode = GEOSX-SX;<br>&nbsp;&nbsp;&nbsp; source = 0537-441;<br>&nbsp;&nbsp;&nbsp; station = Ke :&nbsp;&nbsp;&nbsp; 0 sec :&nbsp;&nbsp;&nbsp; 93 sec :&nbsp;&nbsp;&nbsp;&nbsp; 0 ft : 1A : &amp;ccw : 1;<br>&nbsp;&nbsp;&nbsp; station = Ww :&nbsp;&nbsp;&nbsp; 0 sec :&nbsp;&nbsp; 122 sec :&nbsp;&nbsp;&nbsp;&nbsp; 0 ft : 1A : &amp;ccw : 1;<br>&nbsp;&nbsp;&nbsp; station = Yg :&nbsp;&nbsp;&nbsp; 0 sec :&nbsp;&nbsp; 122 sec :&nbsp;&nbsp;&nbsp;&nbsp; 0 ft : 1A : &amp;ccw : 1;<br>&nbsp; endscan;</pre>
+    <p><br>
+    </p>
+    <p><b>or this if it is not checked:</b><br>
+    </p>
+    <pre>&nbsp; scan 329-1830b;<br>&nbsp;&nbsp;&nbsp; start = 2014y329d18h30m00s;<br>&nbsp;&nbsp;&nbsp; mode = GEOSX-SX;<br>&nbsp;&nbsp;&nbsp; source = 0537-441;<br>#&nbsp;&nbsp;&nbsp; station = Hb :&nbsp;&nbsp;&nbsp; 0 sec :&nbsp;&nbsp;&nbsp; 60 sec :&nbsp;&nbsp;&nbsp;&nbsp; 0 ft : 1A : &amp;ccw : -1;<br>&nbsp;&nbsp;&nbsp; station = Ke :&nbsp;&nbsp;&nbsp; 0 sec :&nbsp;&nbsp;&nbsp; 93 sec :&nbsp;&nbsp;&nbsp;&nbsp; 0 ft : 1A : &amp;ccw : 1;<br>&nbsp;&nbsp;&nbsp; station = Ww :&nbsp;&nbsp;&nbsp; 0 sec :&nbsp;&nbsp; 122 sec :&nbsp;&nbsp;&nbsp;&nbsp; 0 ft : 1A : &amp;ccw : 1;<br>&nbsp;&nbsp;&nbsp; station = Yg :&nbsp;&nbsp;&nbsp; 0 sec :&nbsp;&nbsp; 122 sec :&nbsp;&nbsp;&nbsp;&nbsp; 0 ft : 1A : &amp;ccw : 1;<br>&nbsp; endscan;</pre>
     <p>Doing this duplicates behavior found in hardware
       correlators.&nbsp; Stations removed in this manner may be restored
       by hand using the Scans/Station Timeline settings.&nbsp; By
       default this box is checked - uncheck it if you don't want this
       behavior.<br>
     </p>
-    <h5>Excise Unused Scans from .vex File</h5>
+    <h5><a name="Excise_Unused_Scans_from_.vex_File"></a>Excise Unused
+      Scans from .vex File</h5>
     <p>When creating a new experiment the user often eliminates scans
       contained in the original .vex file.&nbsp; When this happens the
       .v2d file must create a list of all remaining scans.&nbsp;
@@ -623,97 +708,128 @@ src="file:///Users/johnspitzak/difx/applications/gui/trunk/doc/images/settings/E
     <h2><a name="Job Settings"></a>Job Processing Settings</h2>
     The Job Settings govern how individual jobs are run, both when
     started directly by the user and when automatically run by the
-    scheduler.
-    <h3>Data Source Defaults</h3>
-    <h3>Processing Defaults</h3>
-    <h3>Scheduler Settings</h3>
+    scheduler.&nbsp; When applied to a job that is started individually
+    using the <a href="Job_Control_content.html">Job Control Window</a>
+    these settings are simply initial "suggestions" that can be changed
+    by the user.&nbsp; Scheduled jobs, however, will implement them as
+    set.<br>
+    <br>
+    <div align="center"><img alt=""
+        src="images/settings/jobProcessingSettings.png" height="235"
+        width="894"><br>
+      <br>
+      <div align="left">
+        <ul>
+          <li><a href="#Head_Node">Head Node</a></li>
+          <li><a href="#Use_Head_Node_in_Processing">Use Head Node in
+              Processing</a></li>
+          <li><a href="#Data_Source_Defaults">Data Source Defaults</a></li>
+          <ul>
+            <li><a href="#Unique_Node_per_Data_SourceAssign_Based">Unique
+                Node per Data Source/Assign Based on Path</a></li>
+            <li><a href="#Share_Data_Nodes_With_Processing">Share Data
+                Nodes With Processing</a></li>
+            <li><a href="#Share_Data_Nodes_Between_Jobs">Share Data
+                Nodes Between Jobs</a></li>
+            <li><a href="#Threads_Per_Data_Source">Threads Per Data
+                Source</a></li>
+            <li><a href="#Restrict_Data_Sources">Restrict Data Sources</a></li>
+          </ul>
+          <li><a href="#Processor_Defaults">Processor Defaults</a></li>
+          <ul>
+            <li><a href="#Run_Using_AllSpecified_Number_of_Nodes">Run
+                Using All/Specified Number of Nodes</a></li>
+            <li><a href="#With_AllSpecified_Number_of_Threads">With
+                All/Specified Number of Threads</a></li>
+            <li><a href="#For_Each_BaselineJob">For Each Baseline/Job</a></li>
+          </ul>
+          <li><a href="#Scheduler_Settings">Scheduler Settings</a></li>
+          <ul>
+            <li><a href="#Run_Scheduled_Jobs">Run Scheduled Jobs
+                Sequentially/Simultaneously</a></li>
+            <li><a href="#Resource_and_Processing_Time_Limits">Resource
+                and Processing Time Limits</a></li>
+            <li><a href="#Try_To_Skip_Missing_Stations">Try To Skip
+                Missing Stations</a></li>
+          </ul>
+        </ul>
+        <h4><a name="Head_Node"></a>Head Node</h4>
+        <h4><a name="Use_Head_Node_in_Processing"></a>Use Head Node in
+          Processing<br>
+        </h4>
+      </div>
+    </div>
+    <h3><a name="Data_Source_Defaults"></a>Data Source Defaults</h3>
+    <h4><a name="Unique_Node_per_Data_SourceAssign_Based"></a>Unique
+      Node per Data Source/Assign Based on Path</h4>
+    <h4><a name="Share_Data_Nodes_With_Processing"></a>Share Data Nodes
+      With Processing</h4>
+    <h4><a name="Share_Data_Nodes_Between_Jobs"></a>Share Data Nodes
+      Between Jobs</h4>
+    <h4><a name="Threads_Per_Data_Source"></a>Threads Per Data Source</h4>
+    <h4><a name="Restrict_Data_Sources"></a>Restrict Data Sources<br>
+    </h4>
+    <h3><a name="Processor_Defaults"></a>Processor Defaults</h3>
+    <h4><a name="Run_Using_AllSpecified_Number_of_Nodes"></a>Run Using
+      All/Specified Number of Nodes</h4>
+    <h4><a name="With_AllSpecified_Number_of_Threads"></a>With
+      All/Specified Number of Threads</h4>
+    <h4><a name="For_Each_BaselineJob"></a>For Each Baseline/Job<br>
+    </h4>
+    <h3><a name="Scheduler_Settings"></a>Scheduler Settings</h3>
     Scheduler Settings govern the operation of the job scheduler. The
     job scheduler can be set to run a large number of jobs
-    automatically. For details on running jobs using the scheduler, see
-    BLAT.
-    <h3>Run Log Settings</h3>
-    The GUI is designed to collect information about every job that is
-    run. The purpose of this, as designed at least, is to generate
-    statistics that allow the user, or possibly the GUI itself (if it
-    ever gets that so clever) to determine the "best" way to run jobs in
-    the future. The log may have other purposes as well. The run log is
-    meant to be (mostly) invisible during regular use. It will grow
-    continuously, and consume disk space in doing so. If this proves
-    annoying, run logging can be shut off at the cost of losing any
-    information the run log contains.
-    <h5>Log Run Data</h5>
-    This is a simple check box that turns logging on and off.
-    <h5>Run Log File</h5>
-    The name of the run log file is by default ".difxGuiRunLog", in the
-    user's home directory. Changing the name of the file will
-    essentially create a new log file, as the log data for each run
-    operation is simply appended to the run log file name specified
-    here.gui
-    <h5>Analyzing Run Log Data</h5>
-    The run log data are stored in XML format - not especially human
-    readable, but flexible and easy for the GUI to read and write. For
-    each job that is run, they contain the following information (XML
-    keyword and variable type in parenthesis):
-    <ul>
-      <li><b>Active ID</b> ("active_id" - long): This is a unique long
-        integer identifier assigned to the job - current the data nd
-        time of the run in milliseconds since January 1, 1970. </li>
-      <li><b>Date/Time</b> ("time" - double): Start time of the job in
-        seconds since January 1, 1970. </li>
-      <li><b>Input File</b> ("inputFile" - string): Full path (as the
-        head node sees it) to the input file associated with the job.
-        The input file contains detailed information about the job - if
-        it is deleted you will lose that. </li>
-      <li><b>Baselines</b> ("baselines" - int): Number of baselines in
-        the job. </li>
-      <li><b>Total Scan Data Measurement?</b> (scan_time): Some way of
-        measuring the total processing volume that is required. Not sure
-        what this is yet. </li>
-      <li><b>Scans</b> ("scans" - int): Number of scans in the job. </li>
-      <li><b>Head Node</b> ("headnode" - string): Name of the head node
-        used. </li>
-      <li><b>Source Nodes</b> ("sourceNodes"): List of the source nodes
-        used in the job. Each item contains the following:
-        <ul>
-          <li><b>Source Node</b> ("node" - string): Node name of the
-            source. </li>
-          <li><b>Threads</b> ("threads" - int): Number of threads used
-            for data. </li>
-        </ul>
-      </li>
-      <li><b>Processing Nodes</b> ("processingNodes"): List of the nodes
-        used for processing. Each item has:
-        <ul>
-          <li><b>Processing Node</b> ("node" - string): Node name of
-            processor. </li>
-          <li><b>Threads</b> ("threads" - int): Number of threads used
-            for processing. </li>
-        </ul>
-      </li>
-      <li><b>Other Active IDs</b> ("activeIDs"): A list of the other
-        jobs that were running at some point during the processing of
-        this job. </li>
-      <li><b>Total Time</b> ("totalTime" - double): The "wall clock"
-        time used to process the job. This is a measure of how fast it
-        ran for the user under the conditions it was subject to (other
-        processes running, etc.). </li>
-      <li><b>Final State</b> ("state" - string): The "state" that the
-        job terminated in - completed, failed, whatever. </li>
-      <li><b>DiFX Version</b> ("difxVersion" - string): Version of DiFX
-        used for the processing. </li>
-    </ul>
-    Because the run log is in development and it isn't certain what its
-    final use will be, each entry is contained in a "wrapper" that
-    identifies the GUI version used to create it. This will allow
-    changes to be made to the logged data in the future, if that proves
-    necessary, without rendering existing data useless. This wrapper
-    looks like this:
-    <ul>
-      <li><b>GUI Version</b> (gui_version): Version of the GUI used to
-        run the job, and generate the XML. </li>
-      <li><b>Job Data</b> (data): This contains the complete list of XML
-        items above. </li>
-    </ul>
+    automatically. For details on scheduling jobs and monitoring the
+    process of the scheduler, see <a
+      href="main_window_content.html#Running_Jobs_With_the_Scheduler">Running
+      Jobs With the Scheduler</a>.&nbsp; Note that the scheduler also
+    implements all of the other Job Processing Settings in setting up
+    scheduled jobs - those settings here apply only to their actual
+    running.<br>
+    <h4><a name="Run_Scheduled_Jobs"></a>Run Scheduled Jobs
+      Sequentially/Simultaneously</h4>
+    <p>When more than one job is scheduled (this is generally the case
+      when using the scheduler), should each be run on its own, i.e.
+      with the entire DiFX processing cluster to itself, of should more
+      than one be run at a time?&nbsp; If you choose "Sequentially" the
+      scheduler will run each job on its own, started each subsequent
+      job only after the previous one has completed.&nbsp; If you choose
+      "Simultaneously" any number of jobs may be run at the same
+      time.&nbsp; You must set a maximum number that can be run
+      simultaneously.<br>
+    </p>
+    <p>In testing at USNO it was determined that, for the most part,
+      there is no advantage to running more than one job at a time, and
+      there may be a slight penalty.&nbsp; But it is not difficult to
+      imagine that simultaneous processing may be advantageous under
+      some circumstances and/or at different installations.<br>
+    </p>
+    <h4><a name="Resource_and_Processing_Time_Limits"></a>Resource and
+      Processing Time Limits</h4>
+    <p>The scheduler can only plow through a long list of jobs if jobs
+      themselves complete, especially if they are being run
+      sequentially.&nbsp; That being said, it is not unheard of for a
+      job to hang up for any number of reasons.&nbsp; The Resource
+      Allocation Time Limit and Processing Time Limit specify a number
+      of seconds the scheduler should wait, after not receiving any
+      feedback (messages, data, whatever) from a job before "giving up"
+      on the job and moving on in the schedule.&nbsp; "Resource
+      Allocation" applies to the set up of processors and data sources,
+      and "Processing" applies to actual DiFX processing.&nbsp; Any job
+      that is abandoned is appropriately labeled in the Queue Browser.<br>
+    </p>
+    <p>The Resource and Processing Time Limits are applied only if their
+      associated check boxes are selected.<br>
+    </p>
+    <h4><a name="Try_To_Skip_Missing_Stations"></a>Try To Skip Missing
+      Stations</h4>
+    <p>When this option is selected the scheduler will attempt to alter
+      and reschedule jobs that fail due to non-existent data for one or
+      more required stations.&nbsp; It does this by rebuilding the job
+      such that it no longer includes the missing station(s).&nbsp;
+      Details are <a
+        href="main_window_content.html#Skipping_Missing_Stations">here</a>.<br>
+    </p>
     <h2><a name="Database_Configuration"></a>Database Configuration</h2>
     Database trouble?&nbsp; See <a
       href="#Testing_the_Database_Configuration"><span
@@ -804,11 +920,9 @@ src="file:///Users/johnspitzak/difx/applications/gui/trunk/doc/images/settings/E
     system, and must be something Java has access to.&nbsp; The GUI is
     delivered with drivers appropriate for a couple of popular (and
     free) management systems, as outlined in the table below.<br>
-    <meta http-equiv="content-type" content="text/html;
-      charset=windows-1252">
     <br>
     <table style="text-align: left; width: 814px; height: 91px;"
-      cellpadding="2" cellspacing="2" border="1">
+      border="1" cellpadding="2" cellspacing="2">
       <tbody>
         <tr>
           <td style="vertical-align: top;"><span style="font-weight:
@@ -880,6 +994,7 @@ src="file:///Users/johnspitzak/difx/applications/gui/trunk/doc/images/settings/E
 
 
 
+
       the Database Configuration</h2>
     A number of things can go wrong when trying to access the DiFX
     database remotely.&nbsp; The Database Configuration panel contains a
@@ -898,7 +1013,7 @@ src="file:///Users/johnspitzak/difx/applications/gui/trunk/doc/images/settings/E
     test will return statistics for each of the pings along with an
     overall statistical summary:<br>
     <br>
-    <img style=" width: 476px; height: 196px;" alt=""
+    <img style="width: 476px; height: 196px;" alt=""
       src="images/settings/good_ping_test.gif"><br>
     <br>
     Ping Test failures will produce alarming red text in the results
@@ -907,20 +1022,20 @@ src="file:///Users/johnspitzak/difx/applications/gui/trunk/doc/images/settings/E
     hostname cannot be resolved, either by your local host table or by
     your name server:<br>
     <br>
-    <img style=" width: 456px; height: 191px;" alt=""
+    <img style="width: 456px; height: 191px;" alt=""
       src="images/settings/bad_hostname_ping_test.gif"><br>
     <br>
     The following screen would indicate a bad network connection at the
     GUI machine:<br>
     <br>
-    <img style=" width: 465px; height: 189px;" alt=""
+    <img style="width: 465px; height: 189px;" alt=""
       src="images/settings/bad_network_ping_test.gif"><br>
     <br>
     Finally, the name may be resolved and the network may be good but
     the named host may not answer either because it is down or it is not
     properly connected to the network:<br>
     <br>
-    <img style=" width: 501px; height: 186px;" alt=""
+    <img style="width: 501px; height: 186px;" alt=""
       src="images/settings/lost_host_ping_test.gif"><br>
     <br>
     <h3>Database Connection Test</h3>
@@ -936,7 +1051,7 @@ src="file:///Users/johnspitzak/difx/applications/gui/trunk/doc/images/settings/E
     jobs.&nbsp; The Database Connection Test reports the number of jobs
     in the queue and exits.<br>
     <br>
-    <img style=" width: 646px; height: 188px;" alt=""
+    <img style="width: 646px; height: 188px;" alt=""
       src="images/settings/good_database_test.gif"><br>
     <h3><a name="Database_Remote_Access"></a>Problems with Database
       Remote Access</h3>
@@ -987,12 +1102,12 @@ src="file:///Users/johnspitzak/difx/applications/gui/trunk/doc/images/settings/E
 
 
 
+
     Then remote log into that host and see if the mySQL server is
     runing:<br>
     <ul style="margin-left: 40px;">
     </ul>
-    <pre style="margin-left: 40px;">ps -ef | grep mysql
-</pre>
+    <pre style="margin-left: 40px;">ps -ef | grep mysql<br></pre>
     Both <span style="font-style: italic;">mysql_safe</span> and <span
       style="font-style: italic;">mysqld</span> should be running.&nbsp;
     The latter is the mySQL server, the former is used to start it
@@ -1045,6 +1160,7 @@ src="file:///Users/johnspitzak/difx/applications/gui/trunk/doc/images/settings/E
     <br>
     <br>
     <h6> <span style="font-weight: bold; font-family: monospace;">&nbsp;&nbsp;&nbsp;
+
 
 
 
