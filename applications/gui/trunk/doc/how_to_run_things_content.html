@@ -196,9 +196,8 @@ Control
       Below
       is a list of some of the settings that are more likely to require
       user
-      changes (each item is linked to detailed explanations in the
-      Settings Documentation).&nbsp; A comprehensive list of all
-      settings and their options is
+      changes (each item is linked to detailed explanations).&nbsp; A
+      comprehensive list of all settings and their options is
       contained in the <a href="settings_content.html">Settings
         Documentation</a>.<br>
     </p>
@@ -217,10 +216,29 @@ Control
           href="port_information">port number</a> given by guiServer
         when it is started.&nbsp; <br>
       </li>
-      <li><b>Run w/DiFX Version</b></li>
-      <li><b>DiFX Execute Script<br>
+      <li><a href="settings_content.html#Run_wDiFX_Version"><b>Run w/DiFX
+            Version</b></a> is the version of DiFX software that will be
+        run by the GUI.&nbsp; This version does not need to match that
+        of the GUI or <i>guiServer</i>, however it does need to be
+        installed on the DiFX cluster.<br>
+      </li>
+      <li><a href="settings_content.html#DiFX_Execute_Script"><b>DiFX
+            Execute Script</b></a> is a script on the DiFX processing
+        nodes that is used to execute all DiFX and mpi commands.&nbsp;
+        The script defines environment variables and performs any other
+        necessary setup before running things.&nbsp; Most of the time
+        the script selected automatically by the GUI should be fine.<b><br>
         </b></li>
-      <li><b>Relay Using guiServer Connection</b></li>
+      <li><a
+          href="settings_content.html#Relay_Using_guiServer_Connection"><b>Relay
+            Using guiServer Connection</b></a> determines whether the
+        GUI gathers DiFX messages using UDP directly or "relayed" via
+        TCP from guiServer.&nbsp; It is selected by default, and generally
+        should remain so.&nbsp; UDP messaging only works if the GUI is
+        on the same LAN as the DiFX nodes and leaves the GUI in a
+        strictly monitoring role, without the capacity to control
+        anything.<b><br>
+        </b></li>
       <li><a href="settings_content.html@Working_Directory"><b>Working
             Directory</b></a> is the path under which new directories
         are stored for DiFX experiments that the user creates using the
@@ -232,7 +250,9 @@ Control
       you
       have things set up and running properly you should be able to
       restart
-      the GUI and have it run properly right away.<br>
+      the GUI and have it run properly right away.&nbsp; You can also
+      save specific setting configurations to files that can later be
+      loaded.&nbsp; See here.<br>
     </p>
     <h3><a name="Monitoring_the_DiFX_Cluster"></a>Monitoring the DiFX
       Cluster</h3>

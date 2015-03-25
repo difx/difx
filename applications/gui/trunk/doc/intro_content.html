@@ -18,12 +18,6 @@
     reading this documentation) requires some understanding of DiFX and
     its components.<br>
     <ul>
-      <li><a
-          href="file:///Users/jspitzak/gui/doc/intro_content.html#WHAT_IT_DOES">What
-          the GUI Does<br>
-        </a></li>
-      <li><a href="#WHERE_TO_FIND_IT">Download/Install</a></li>
-      <li><a href="#RUNNING_THE_GUI">How to Run It</a></li>
     </ul>
     <h3><a name="WHAT_IT_DOES"></a>What the GUI Does<br>
     </h3>
@@ -54,76 +48,6 @@
     The GUI can also be used to perform some of the maintenance tasks
     associated with software correlators.<br>
     <h3> </h3>
-    <h3><a name="WHERE_TO_FIND_IT"></a>Downloading and Installing the
-      GUI<br>
-    </h3>
-    The DiFX GUI is part of the DiFX software tree, currently located in
-    the sub-directory:<br>
-    <pre><tt>	applications/gui</tt></pre>
-    The Java archive (".jar") file used to run the GUI itself is in:<br>
-    <pre>	applications/gui/gui/dist/gui.jar<br></pre>
-    And the top-level of this documentation:<br>
-    <pre>	applications/gui/doc/intro.html<br></pre>
-    The guiServer application is also part of the DiFX software tree,
-    in:<br>
-    <pre>	application/guiServer<br></pre>
-    Using DiFX build procedures (such as <a
-      href="https://safe.nrao.edu/wiki/bin/view/HPC/UsnoDifxInstallation"><i>difxbuild</i></a>)
-    will compile <i>guiServer</i> and install it and gui.jar file in
-    the appropriate bin directories.&nbsp; The gui.jar file does not
-    need compilation.<br>
-    <h3><a name="RUNNING_THE_GUI"></a>Running the GUI</h3>
-    There are two components to the DiFX GUI.&nbsp; A single instance of
-    the application <span style="font-style: italic;">guiServer</span>
-    runs on one of the processing nodes in the DiFX cluster&nbsp; (the
-    processor running <span style="font-style: italic;">guiServer</span>
-    is often referred to in the documentation as the "DiFX Host" or
-    the&nbsp; "DiFX head node").&nbsp; <i>GuiServer </i>must by run by
-    a user (not root for security reasons) that has read/write
-    permissions over all data directories used by DiFX.&nbsp; This user
-    must also be able to start processes on all other nodes using <span
-      style="font-style: italic;">mpirun.</span>&nbsp; It probably makes
-    most sense to have the user that you normally use to run DiFX from
-    the command line run <i>guiServer</i>.<br>
-    <br>
-    <i>GuiServer</i> is run from the command line on the DiFX Host:<br>
-    <pre>	guiServer [PORT #]
-</pre>
-    The optional port number is the TCP connection port used to
-    communicate with the GUI.&nbsp; If it is not specified, <i>guiServer</i>
-    will use a default port number (it uses the value given by the
-    DIFX_MESSAGE_PORT environment variable, or 50200 if that is not
-    available).&nbsp; As soon as it is started, <i>guiServer</i> will
-    give a message indicating the port it is using:<br>
-    <pre>	server at port 50200
-</pre>
-    The GUI itself is a Java program that can be run anywhere that a
-    network connection to the DiFX cluster is available (not necessarily
-    on the LAN of the DiFX cluster) on any platform that can run Java
-    using its ".jar" file:<br>
-    <pre>	java -jar gui.jar<br></pre>
-    Once the GUI is running, the address of the DiFX Host (where <span
-      style="font-style: italic;">guiServer</span> is running) and the
-    port number (what <span style="font-style: italic;">guiServer</span>
-    told you above) can be entered in the Settings menu to connect the
-    two (see <a
-href="file:///Users/johnspitzak/NetBeansProjects/doi/USNO/doc/settings_content.html#DiFX_Control_Connection">DiFX
-
-
-
-      Control Connection</a> in the Settings documentation for
-    details).&nbsp; A proper connection will be pretty obvious - the
-    "guiServer Connection" light will turn green, a "connection
-    successful" message will appear, and, assuming you have other items
-    operating properly, the GUI should start displaying information
-    about the components of the DiFX cluster.<br>
-    <h3>&lt;IMAGE HERE&gt;<br>
-    </h3>
-    The GUI and <span style="font-style: italic;">guiServer</span> can
-    be started in any order - the GUI will connect as soon as a <span
-      style="font-style: italic;">guiServer</span> becomes
-    available.&nbsp; Any number of GUI sessions can be run
-    simultaneously using the same <span style="font-style: italic;">guiServer</span>.<br>
     <br>
     <br>
   </body>
