@@ -63,8 +63,7 @@ const char version[] = VERSION;
 const int DefaultDifxMonitorPort = 50200;
 const char DefaultDifxGroup[] = "224.2.2.1";
 const char DefaultLogPath[] = "/tmp";
-const char headNode[] = "swc000";
-const char difxUser[] = "difx";
+const char DefaultDifxUser[] = "difx";
 
 const int maxIdle = 25;		/* if streamstor card is idle this long */
 				/* set current process to NONE */
@@ -76,6 +75,7 @@ const int defaultPSNMode = 0;
 const int defaultPSNOffset = 0;
 const int defaultMACFilterControl = 1;
 
+// For Mark5 module performance
 const int defaultStatsRange[] = { 75000, 150000, 300000, 600000, 1200000, 2400000, 4800000, -1 };
 
 int *signalDie = 0;
@@ -162,7 +162,7 @@ static void usage(const char *pgm)
 		"from default [%d]\n", DefaultDifxMonitorPort);
 	fprintf(stderr, "  STREAMSTOR_BIB_PATH : change streamstor firmware "
 		"path from default\n");
-	fprintf(stderr, "  DIFX_USER_ID : change user account for executing remote commands from default [%s]\n", difxUser);
+	fprintf(stderr, "  DIFX_USER_ID : change user account for executing remote commands from default [%s]\n", DefaultDifxUser);
 	fprintf(stderr, "\n");
 	fprintf(stderr, "IPv6 compliance: VSIS TCP port: likely\n");
 	fprintf(stderr, "                 DiFX multicast: yes, vis difxmessage\n");
@@ -347,6 +347,7 @@ void getLocalAddresses(std::list<std::string> *addrList)
 Mk5Daemon *newMk5Daemon(const char *logPath, const char *userID, int isMk5)
 {
 	Mk5Daemon *D;
+	int n;
 
 	D = (Mk5Daemon *)calloc(1, sizeof(Mk5Daemon));
 	
@@ -367,8 +368,19 @@ Mk5Daemon *newMk5Daemon(const char *logPath, const char *userID, int isMk5)
 	{
 		D->isMk5 = 1;
 	}
-	strncpy(D->userID, userID, 255);
+	n = snprintf(D->userID, MAX_USERID_LENGTH, "%s", userID);
+	if(n >= MAX_USERID_LENGTH)
+	{
+		fprintf(stderr, "Error: userID = %s is too long.  Won't use it!\n", userID);
+
+		snprintf(D->userID, MAX_USERID_LENGTH, "%s", DefaultDifxUser);
+	}
+	else
+	{
+		snprintf(D->userID, MAX_USERID_LENGTH, "%s", userID);
+	}
 	printf("isMk5 = %d hostname = %s\n", D->isMk5, D->hostName);
+	printf("spawned process userid = %s\n", D->userID);
 	signalDie = &D->dieNow;
 	Mk5Daemon_startMonitor(D);
 	Mk5Daemon_startVSIS(D);
@@ -385,7 +397,6 @@ Mk5Daemon *newMk5Daemon(const char *logPath, const char *userID, int isMk5)
 	D->fillPattern = MARK5_FILL_PATTERN;
 	D->netProtocol = NET_PROTOCOL_UDP;
 	strcpy(D->dataSource, "ext");
-	//strcpy(D->format, "mark5b");
 	D->bitstreamMask = 0xFFFFFFFF;
 	D->decimationRatio = 1;
 
@@ -961,9 +972,9 @@ int main(int argc, char **argv)
 	int isEmbedded = 0;
 	int noSu = 0;
 	int i;
-	char logPath[256];
+	const char *logPath;
 	const char *p, *u;
-	char userID[256];
+	const char *userID;
 	const char *providedHostname = 0;
 	double mjd;
 	fd_set socks;
@@ -993,22 +1004,21 @@ int main(int argc, char **argv)
 	p = getenv("DIFX_LOG_PATH");
 	if(p)
 	{
-		strcpy(logPath, p);
+		logPath = p;
 	}
 	else
 	{
-		strcpy(logPath, DefaultLogPath);
+		logPath = DefaultLogPath;
 	}
 
 	u = getenv("DIFX_USER_ID");
-	if (u)
+	if(u)
 	{
-		strcpy(userID, u);
+		userID = u;
 	}
 	else
 	{
-                strcpy(userID, difxUser);
-
+                userID = DefaultDifxUser;
 	}
 
 	sprintf(str, "%d", DefaultDifxMonitorPort);
@@ -1025,7 +1035,7 @@ int main(int argc, char **argv)
 		else if(strcmp(argv[i], "-e") == 0 || strcmp(argv[i], "--embedded") == 0)
 		{
 			isEmbedded = 1;
-			logPath[0] = 0;
+			logPath = "";
 		}
 		else if(strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0)
 		{
@@ -1050,12 +1060,24 @@ int main(int argc, char **argv)
 			if(strcmp(argv[i], "-l") == 0 || strcmp(argv[i], "--log-path") == 0)
 			{
 				++i;
-				strcpy(logPath, argv[i]);
+				if(strlen(argv[i]) >= MAX_FILENAME_SIZE)
+				{
+					fprintf(stderr, "Error: logpath is longer than %d chars.\n", MAX_FILENAME_SIZE);
+
+					return EXIT_FAILURE;
+				}
+				logPath = argv[i];
 			}
 			else if(strcmp(argv[i], "-u") == 0 || strcmp(argv[i], "--user") == 0)
 			{
 				++i;
-				strcpy(userID, argv[i]);
+				if(strlen(argv[i]) >= MAX_USERID_LENGTH)
+				{
+					fprintf(stderr, "Error: userID is longer than %d chars.\n", MAX_USERID_LENGTH);
+
+					return EXIT_FAILURE;
+				}
+				userID = argv[i];
 			}
 			else if(strcmp(argv[i], "-N") == 0 || strcmp(argv[i], "--hostname") == 0)
 			{

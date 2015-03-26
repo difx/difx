@@ -57,6 +57,7 @@ const int MaxConnections = 8;
 #define N_BANK				2
 #define N_DRIVE				8
 #define MAX_MACLIST_LENGTH		16
+#define MAX_USERID_LENGTH		32
 #define MK5DAEMON_HOSTNAME_LENGTH	32
 
 enum RecordState
@@ -155,7 +156,7 @@ typedef struct
 	int nXLROpen;
 	int skipGetModule;
 	char streamstorLockIdentifer[DIFX_MESSAGE_IDENTIFIER_LENGTH];
-	char userID[256];
+	char userID[MAX_USERID_LENGTH];
 	unsigned int fillPattern;
 
 	int difxSock;	/* for difxmessage receives */

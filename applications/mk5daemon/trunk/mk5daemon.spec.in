@@ -5,12 +5,14 @@ Release: 1
 License: GPL3
 Group: VLBI
 BuildRoot: /var/tmp/mk5daemon-@version@-buildroot
-Requires: streamstor >= 8.2
+Requires: streamstor >= 9.0
 Requires: difxmessage >= 2.4.0
 Requires: mark5access >= 1.5
 Requires: expat
 Prefix: /usr
 Source: mk5daemon-@version@.tar.gz
+
+%define debug_package %{nil}
 
 %description
 Originally this consisted only of several useful utilites for working with Mark5 units.

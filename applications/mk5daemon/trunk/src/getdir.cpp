@@ -49,12 +49,15 @@ static void *mk5dirRun(void *ptr)
 
 	Logger_logData(params->D->log, "mk5dir starting\n");
 
-	mk5dirOpts = getenv ("MK5DIR_OPTS");
-        if (mk5dirOpts!=NULL)
+	mk5dirOpts = getenv("MK5DIR_OPTS");
+        if(mk5dirOpts != 0)
+	{
                 snprintf(command, MAX_COMMAND_SIZE, "su -l %s -c 'mk5dir %s %s'", params->D->userID, mk5dirOpts, params->bank);
+	}
         else
+	{
                 snprintf(command, MAX_COMMAND_SIZE, "su -l %s -c 'mk5dir %s'", params->D->userID, params->bank);
-
+	}
 
 	Mk5Daemon_system(params->D, command, 1);
 
