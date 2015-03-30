@@ -2,8 +2,15 @@
      1       TIMERANGE, TCAL, FT, TSYS, DPFU, POLY, STATION,
      2       BANDNAME, IS, IB, IP, COMMENT )
 C
-C     Subroutine for PLOSUM that reads the gain records file.
+C     Subroutine for PLOTSUM that reads the gain records file.
 C     It is adapted from GETGAIN for PTANAL.
+C     This routine seems to have been replaced by GETPGAIN which
+C     reads a newer format.  On Sept. 17, 2014, I could not find
+C     any current program that uses it.  I'll leave it here, but
+C     it can probably be deleted at some point.  I was looking 
+C     at this hard because I was converting YR1 and YR2 in the
+C     GETxGAIN routines and the programs that call them to 
+C     double precision.
 C
 C     Call parameters:
 C       Inputs:
@@ -12,7 +19,7 @@ C       Inputs:
 C       Outputs:
           INTEGER  IER       !  0-ok, 1-eof.
           REAL     FREQ      !  Observing frequency (MHz).
-          REAL     YR1, YR2  ! Time range for data fractional years.
+          DOUBLE PRECISION  YR1, YR2  ! Time range for data fractional years.
           INTEGER  TIMERANGE(*) ! Time range from file (y,m,d,h,y,m,d,h)
           REAL     TCAL      !  Cal temperature.
           REAL     FT        !  Scale factor required for cal and Tsys.
@@ -132,7 +139,7 @@ C
       ELSE IF( VALUE(12) .EQ. 0.D0 ) THEN
          IP = 2
       ELSE
-         WRITE(*,*) ' GETGAIN: No polarization specified'//
+         WRITE(*,*) ' GETNGAIN: No polarization specified'//
      +           ' for an entry in the gain file.'
          WRITE(*,*) '          Station: ', STATION(IS)
          STOP

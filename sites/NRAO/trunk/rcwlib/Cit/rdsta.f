@@ -48,11 +48,12 @@ C     Internal variables.
 C
       INTEGER        MODE, IER, VLBOPE, LEN1, IDB
       LOGICAL        FOPEN, NOLOC, LOCWARN, LOCNONE, GOTLOC
-      REAL*8         NONAME, XX, NONE, ALTAZ, CVLBA, BLANK, CCONT
+      REAL*8         NONAME, XX, NONE, ALTAZ, CVLBA, BLANK, CGAP
+      REAL*8         ASTRO
       CHARACTER      CNAME*50, LOCTST*80
       CHARACTER      RESULT*255
       SAVE           FOPEN, NONAME, XX, NONE, ALTAZ, CVLBA, BLANK
-      SAVE           NOLOC, LOCWARN, CCONT
+      SAVE           NOLOC, LOCWARN, CGAP, ASTRO
 C
 C     Catalog input parameters.
 C
@@ -71,6 +72,9 @@ C
 C --------------------------------------------------------------------
 C     Establish the key names if required.
 C
+C     When any are added, be sure to include in the lists in stations.dat
+C     and in the manual.  Try to keep the same order in all lists.
+C
       IF( .NOT. GOTKEYS ) THEN
          CALL KPACK( '/       ', ENDMRK )
          CALL KPACK( 'NONAME  ', NONAME )
@@ -78,13 +82,16 @@ C
          CALL KPACK( 'NONE    ', NONE )
          CALL KPACK( 'ALTAZ   ', ALTAZ )
          CALL KPACK( 'VLBA    ', CVLBA )
-         CALL KPACK( 'CONT    ', CCONT )
+         CALL KPACK( 'GAP     ', CGAP )
+         CALL KPACK( 'ASTRO   ', ASTRO )
          CALL KPACK( '        ', BLANK )
+C
          CALL KEYCHR( 'VERSION', ' ', 20, KD, KC, KI )
          CALL KEYCHR( 'STAtion', ' ', 8, KD, KC, KI )
          CALL KEYCHR( 'STCode', ' ', 3, KD, KC, KI )
          CALL KEYCHR( 'DBNAME', ' ', 10, KD, KC, KI )
          CALL KEYCHR( 'DBCODE', ' ', 4, KD, KC, KI )
+C
          CALL KEYCHR( 'FRAME', ' ', 80, KD, KC, KI )
          CALL KEYADD( 'ELev', 0.D0, 1, KD, KC, KI )
          CALL KEYADD( 'LAT', 0.D0, 1, KD, KC, KI )
@@ -98,6 +105,7 @@ C
          CALL KEYADD( 'DZDT', 0.D0, 1, KD, KC, KI )
          CALL KEYADD( 'EPOCH', 0.D0, 1, KD, KC, KI )
          CALL KEYCHR( 'DEScrip', ' ', 80, KD, KC, KI )
+C
          CALL KEYCHR( 'CONtrol', ' ', 5, KD, KC, KI )
          CALL KEYCHR( 'DAR', ' ', 5, KD, KC, KI )
          CALL KEYCHR( 'RECORDER', ' ', 6, KD, KC, KI )
@@ -107,8 +115,11 @@ C
          CALL KEYCHR( 'DISC', ' ', 6, KD, KC, KI )
          CALL KEYCHR( 'MEDIADEF', ' ', 6, KD, KC, KI )
          CALL KEYADD( 'NBBC', 0.D0, 1, KD, KC, KI )
+         CALL KEYCHR( 'DBBCVER', 'ASTRO', 8, KD, KC, KI )
+C
          CALL KEYADD( 'HOR_AZ', 0.D0, MHOR, KD, KC, KI )
          CALL KEYADD( 'HOR_EL', 0.D0, MHOR, KD, KC, KI )
+C
          CALL KEYADD( 'AX1LIM', 0.D0, 6, KD, KC, KI )
          CALL KEYADD( 'AX2LIM', 0.D0, 6, KD, KC, KI )
          CALL KEYADD( 'AX1RATE', 0.D0, 1, KD, KC, KI )
@@ -118,10 +129,12 @@ C
          CALL KEYADD( 'MOUNT', 0.D0, 1, KD, KC, KI )
          CALL KEYADD( 'AXISTYPE', 0.D0, 1, KD, KC, KI )
          CALL KEYADD( 'AXISOFF', 0.D0, 1, KD, KC, KI )
+C
          CALL KEYADD( 'TSETTLE', 0.D0, 1, KD, KC, KI )
          CALL KEYADD( 'MINSETUP', 0.D0, 1, KD, KC, KI )
+         CALL KEYCHR( 'TSCAL', 'GAP', 4, KD, KC, KI )
          CALL KEYADD( 'MAXSRCHR', 1.D6, 1, KD, KC, KI )
-         CALL KEYCHR( 'TSCAL', 'CONT', 4, KD, KC, KI )
+         CALL KEYADD( 'TLEVSET', 0.D0, 1, KD, KC, KI )
          CALL KEYADD( 'ENDCAT', 0.D0, 1, KD, KC, KI )
          GOTKEYS = .TRUE.
          WARNXYZ = .TRUE.
@@ -168,7 +181,7 @@ C
          FOPEN = .TRUE. 
       END IF
 C
-C     Read the catalog line with KEYIN.  
+C     Read the regular station catalog line with KEYIN.  
 C
 C     Reset all parameters before start (except version).
 C     Use defaults that are ok for the VLBA to 
@@ -205,8 +218,10 @@ C
       KD( KEYPTR( 'TSETTLE', KC, KI ) ) = 0.0D0
       KD( KEYPTR( 'MINSETUP', KC, KI ) ) = 0.0D0
       KD( KEYPTR( 'MAXSRCHR', KC, KI ) ) = 1.0D6
-      KD( KEYPTR( 'TSCAL', KC, KI ) ) = CCONT
+      KD( KEYPTR( 'TLEVSET', KC, KI ) ) = 0.0D6
+      KD( KEYPTR( 'TSCAL', KC, KI ) ) = CGAP
       KD( KEYPTR( 'ENDCAT', KC, KI ) ) = UNSET
+      KD( KEYPTR( 'DBBCVER', KC, KI ) ) = ASTRO
 C
 C     Reset the horizon mask.
 C
@@ -284,6 +299,7 @@ C
       STANBC = KD( KEYPTR( 'NBBC', KC, KI ) )
       STADBA = KCHAR( 'AXISTYPE', 5, .FALSE., KD, KC, KI )
       STAOFF = KD( KEYPTR( 'AXISOFF', KC, KI ) )
+      STADBBCV = KCHAR( 'DBBCVER', 8, .TRUE., KD, KC, KI )
 C
 C     Note that STADBA and STAOFF will be changed if we have to get
 C     positions from the locations catalog.
@@ -342,11 +358,20 @@ C              Get data from the stations catalog.
 C              Note that the mount type is given in both the 
 C              stations catalog and the locations catalog.  For now,
 C              ignore the one in the locations catalog.  Someday,
-C              perhaps check for consistency.
+C              perhaps check for consistency, although that parameter
+C              may no longer be in the locations catalog (Sept 2011).
 C              Also note that the locations catalog, and the VLBA
-C              data base, has 4 character station codes.
+C              data base, has 4 character station codes.  Those
+C              are also no longer present after Sept. 2011.
+C              Note that the parameter used in the rest of Sched 
+C              for the axis type is STAMNT, not STADBA.
 C
-               IF( STADBN .EQ. DBNAME(IDB) ) THEN
+C              Deal with possible episodic motion here by checking
+C              OBSTIM against DBBEG and DBEND
+C
+               IF( STADBN .EQ. DBNAME(IDB) .AND.
+     1             OBSDATE .GE. DBBEG(IDB) .AND.
+     2             OBSDATE .LT. DBEND(IDB) ) THEN
                   STADBC = DBCODE(IDB)
                   STAX = DBX(IDB)
                   STAY = DBY(IDB)
@@ -371,11 +396,14 @@ C
                CALL GEOXYZ( 1, STALON, STALAT, STAEL, 
      1                      STAX, STAY, STAZ, IER )
                IF( IER .NE. 0 ) CALL PUTOUT( 
-     1             'RDSTA: Problem with locations file coordinate '//
-     2             'conversions for '// STANAM )
+     1           'RDSTA: Problem with locations file coordinate '//
+     2           'conversions for '// STANAM )
             ELSE
                CALL PUTOUT( 'RDSTA: No coordinates in stations or' //
-     1                ' locations file for '//STANAM )
+     1                ' locations file for '//STANAM // ' dbname:' //
+     2                STADBN )
+               CALL PUTOUT( 'RDSTA: Check date range in addition' //
+     1                ' to names.' )
             END IF
          END IF
       END IF
@@ -406,15 +434,20 @@ C
          END IF
       END DO
 C
-C     Settling time, minimum setup time, and max sources per hour.
+C     Settling time, minimum setup time, and max sources per hour
+C     and time for setting levels for first scan with a setup.
 C     STASTL is the number of seconds to be added to the time for a 
 C     slew.  STAMSU is the minimum time for a scan change.
 C     STAMSH is the maximum number of sources (slews) per hour.  That
 C     is something needed for Jodrell.
+C     STATLS is the time needed to do the set-and-remember operation
+C     to set the analog power levels at the VLBA or VLA.  It is only
+C     done once per setup per observation.
 C
       STASTL = KD( KEYPTR( 'TSETTLE', KC, KI ) )
       STAMSU = KD( KEYPTR( 'MINSETUP', KC, KI ) )
       STAMSH = KD( KEYPTR( 'MAXSRCHR', KC, KI ) )
+      STATLS = KD( KEYPTR( 'TLEVSET', KC, KI ) )
 C
 C     An indicator of how the Tsys measrurements are done.
 C

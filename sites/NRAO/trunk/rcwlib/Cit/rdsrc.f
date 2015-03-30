@@ -33,6 +33,8 @@ C    of large catalogs.
 C
 C    R. C. Walker, Dec. 19, 1988.
 C    12 character source names, Nov. 10, 1994
+C    Make the final "R" on DECERR and RAERR optional to match Petrov's
+C    catalogs.  Mar 7, 2014  RCW.
 C
 C
 C    Include file.
@@ -99,8 +101,8 @@ C
          END DO
          CALL KEYADD( 'RA', 0.D0, 1, KD, KC, KI )
          CALL KEYADD( 'DEc', 0.D0, 1, KD, KC, KI )
-         CALL KEYADD( 'RAERR', 0.D0, 1, KD, KC, KI )
-         CALL KEYADD( 'DECERR', 0.D0, 1, KD, KC, KI )
+         CALL KEYADD( 'RAERr', 0.D0, 1, KD, KC, KI )
+         CALL KEYADD( 'DECERr', 0.D0, 1, KD, KC, KI )
          CALL KEYADD( 'EPoch', 0.D0, 1, KD, KC, KI )
          CALL KEYCHR( 'EQuinox', ' ', 8, KD, KC, KI )
          CALL KEYCHR( 'Calcode', ' ', 1, KD, KC, KI )
@@ -130,8 +132,8 @@ C
          PTSO   = KEYPTR( 'SOURCE', KC, KI )
          PTRA   = KEYPTR( 'RA', KC, KI )
          PTDEC  = KEYPTR( 'DEc', KC, KI )
-         PTRAE  = KEYPTR( 'RAERR', KC, KI )
-         PTDECE = KEYPTR( 'DECERR', KC, KI )
+         PTRAE  = KEYPTR( 'RAERr', KC, KI )
+         PTDECE = KEYPTR( 'DECERr', KC, KI )
          PTC    = KEYPTR( 'Calcode', KC, KI )
          PTV    = KEYPTR( 'VElocity', KC, KI )
          PTVR   = KEYPTR( 'VRef', KC, KI )

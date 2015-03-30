@@ -4,6 +4,7 @@ cit_sources = \
 	geoxyz.f \
 	julda.f \
 	kchar.f \
+	kchara.f \
 	kctod.f \
 	kctoi.f \
 	kctor.f \
@@ -11,6 +12,7 @@ cit_sources = \
 	keyadd.f \
 	keychk.f \
 	keychr.f \
+	keychra.f \
 	keycmp.f \
 	keyfnd.f \
 	keyhlp.f \

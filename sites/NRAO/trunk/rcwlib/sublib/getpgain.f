@@ -4,16 +4,18 @@
      3                     DPFUR, DPFUL, POLY, 
      4                     STATION, BANDNAME, COMMENT )
 C
-C     Subroutine for PLOSUM others that reads a record from the
+C     Subroutine for PLOTSUM others that reads a record from the
 C     the gain records file (eg vlba_gains.key).
 C     Modified from GETNGAIN for new format.
-C     It is adapted from GETGAIN for PTANAL.
+C     It is adapted from GETGAIN for PTANAL and is now called by GETGAIN.
+C
+C     Sept. 17, 2014.  Convert YR1 and YR2 to double precision.
 C
 C     Call output parameters:
 C
       INTEGER   IER          ! 0-ok, 1-eof.
       REAL      FREQ         ! Observing frequency (MHz).
-      REAL      YR1, YR2     ! Time range for data fractional years.
+      DOUBLE PRECISION   YR1, YR2     ! Time range for data fractional years.
       INTEGER   TIMERANGE(*) ! Time range (y,m,d,h,y,m,d,h).
       REAL      TCALR, TCALL ! Cal temperature (R and L).
       REAL      FTR, FTL     ! Scale factors for cal and Tsys.

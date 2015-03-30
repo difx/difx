@@ -92,7 +92,15 @@ C     STAOFF  R4     -  Axis offset (m)
 C     STASTL  R4     -  "Settling time" in seconds (time to add to slew)
 C     STAMSU  R4     -  Minimum time to start new scan.
 C     STAMSH  R4     -  Maximum number of slews per hour (for Jodrell).
+C     STATLS  R4     -  Time to set analog levels at VLBA and VLA on the
+C                       first scan for a setup.
 C     STATSC  C4     -  Method of Tsys measurement (GAP, CONT).
+C     STADBBCV C8    -  DBBC version (astro, geo, hybrid)
+C
+C     OBSDATE R8     -  MJD of observations - this is set in the routines
+C                       that call the reader.  It is needed because the
+C                       station catalog may have multiple, date dependent
+C                       entries thanks to earthquakes etc.
 C     
 C     Note double precisions are at front of commons to prevent 
 C     word boundary problems.
@@ -115,6 +123,8 @@ C     DBEPO   I4     -  MJD of XYZ.
 C     DBFRM   C80    -  Reference frame.
 C     DBDBA   C5     -  Axis type (correlator data base).
 C     DBOFF   R4     -  Axis offset (m)
+C     DBBEG   R8     -  Begin MJD of applicability.
+C     DBEND   R8     -  End MJD of applicability.
 C---------------------------------------------------------------------
 C
 C     For source catalog.
@@ -141,14 +151,14 @@ C
       CHARACTER         STANAM*8, STACOD*3, STADBN*10, STADBC*4
       CHARACTER         STAFRM*80, STACTL*5, STAMNT*5, STADBA*5
       CHARACTER         STADAR*5, STAREC*6, STADSK*6, STAMD*6
-      CHARACTER         STATSC*4
+      CHARACTER         STATSC*4, STADBBCV*8
       REAL              STAHAZ(MHOR), STAHEL(MHOR)
       REAL              STAAX1(6), STAAX2(6)
       REAL              STARA1, STARA2, STAAC1(2), STAAC2(2)
       REAL              STAZAL, STAHAL, STASTL, STAMSU, STAOFF
-      REAL              STAMSH
+      REAL              STAMSH, STATLS
       DOUBLE PRECISION  STALON, STALAT, STAEL, STAX, STAY, STAZ
-      DOUBLE PRECISION  STADX, STADY, STADZ
+      DOUBLE PRECISION  STADX, STADY, STADZ, OBSDATE
 C
 C     For the optional locations file.  Make this array size big 
 C     enough that we shouldn't hit it for a while.  There are no
@@ -159,6 +169,7 @@ C
       PARAMETER         (MDB=1000) 
       DOUBLE PRECISION  DBX(MDB), DBY(MDB), DBZ(MDB)
       DOUBLE PRECISION  DBDX(MDB), DBDY(MDB), DBDZ(MDB)
+      DOUBLE PRECISION  DBBEG(MDB), DBEND(MDB)
       INTEGER           DBEPO(MDB), NDB
       REAL              DBOFF(MDB)
       CHARACTER         LOCFILE*80, DBNAME(MDB)*10, DBCODE(MDB)*4
@@ -175,14 +186,14 @@ C
 C
       COMMON /RDCATN/ SRCPMRA, SRCPMDEC, SRCPARA, SRCRA, SRCDEC, 
      1                SRCPMT, SRCEPOT, STALON, STALAT, STAEL, 
-     2                STAX, STAY, STAZ, STADX,  STADY,  STADZ, 
-     3                DBX, DBY, DBZ, DBDX, DBDY, DBDZ,
+     2                STAX, STAY, STAZ, STADX,  STADY,  STADZ, OBSDATE, 
+     3                DBX, DBY, DBZ, DBDX, DBDY, DBDZ, DBBEG, DBEND,
      4                STAEPO, SRCPMY, SRCPMM, SRCPMD, SRCVEL, 
      5                SRCDRA, SRCDDEC, SRCRAE, SRCDECE, SRCFLUX,
      6                STANHO, STANAX, STANBC, STANDR, STANHD,
      7                STAHAZ, STAHEL, STAAX1, STAAX2, 
      8                STARA1, STARA2, STAAC1, STAAC2,
      9                STAZAL, STAHAL, STASTL, STAMSU, STAOFF,
-     A                STAMSH, DBEPO, NDB, DBOFF
+     A                STAMSH, STATLS, STADBBCV, DBEPO, NDB, DBOFF
 C
 C   --------  End of RDCAT.INC ------------
