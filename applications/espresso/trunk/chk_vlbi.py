@@ -116,13 +116,13 @@ def check_file(infile):
                     m5formats.append(m4format)
                     vlbaformat = 'VLBA1_{0}-1024-{1}-{2}'.format(str(fanout), str(nchan), str(nbits))
                     m5formats.append(vlbaformat)
-        sys.stderr.write(str(m5formats))
         starttime_m5 = []
         error = None
         for m5format in m5formats:
             command = " ".join([m5time, infile, m5format])
             starttime_m5, error = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
             if starttime_m5:
+                sys.stderr.write(m5format + '\n')
                 # we have the right format. Find the time of a sample near
                 # the end of the file (1 MB should be enough data)
                 lastsample = 1000000
