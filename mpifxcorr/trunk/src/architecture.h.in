@@ -495,7 +495,7 @@ inline vecStatus genericConvert_32f64f(const f32 * src, f64 * dest, int length)
 
 /* #define vectorDivide_f32(src1, src2, dest, length)                          ippsDiv_32f(src1, src2, dest, length) */
 inline vecStatus genericDivide_32f(const f32* src1,const f32 *src2, f32 *dest, int length)
-{ for(int i=0;i<length;i++) dest[i] = src1[i]/src2[i]; return vecNoErr; }
+{ for(int i=0;i<length;i++) dest[i] = src2[i]/src1[i]; return vecNoErr; }
 
 //#define vectorDivC_cf32_I(val, srcdest, length)                             ippsDivC_32fc_I(val, srcdest, length)
 inline vecStatus genericDivC_32fc_I(const cf32 val, cf32 *srcdest, int length)
