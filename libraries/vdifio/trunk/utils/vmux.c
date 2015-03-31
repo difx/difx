@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2013 by Walter Brisken                                  *
+ *   Copyright (C) 2013-2015 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -34,8 +34,8 @@
 
 const char program[] = "vmux";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
-const char version[] = "0.3";
-const char verdate[] = "20140820";
+const char version[] = "0.4";
+const char verdate[] = "20150331";
 
 const int defaultChunkSize = 2000000;
 
@@ -78,7 +78,7 @@ int main(int argc, char **argv)
 		fprintf(stderr, "<threadList> is a comma-separated list of integers in range 0 to 1023;\n    the order of the numbers is significant and dictates the order of\n    channels in the output data\n\n");
 		fprintf(stderr, "<outputFile> is the name of the output, single-thread VDIF file,\n    or - for stdout\n\n");
 		fprintf(stderr, "<offset> is an optional offset into the input file (in bytes)\n\n");
-		fprintf(stderr, "<nbit> is number of bits per sample (default = %d)\n", nBit);
+		fprintf(stderr, "<nbit> is number of bits per sample (default = %d)\n\n", nBit);
 		fprintf(stderr, "<chunkSize> is (roughly) how many bytes to operate on at a time\n    [default=%d]\n\n", defaultChunkSize);
 
 		return 0;
