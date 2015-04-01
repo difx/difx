@@ -127,7 +127,7 @@
 #define vectorAdd_f32(src1, src2, dest, length)                             ippsAdd_32f(src1, src2, dest, length)
 #define vectorAdd_f64(src1, src2, dest, length)                             ippsAdd_64f(src1, src2, dest, length)
 #define vectorAdd_s16(src1, src2, dest, length)                             ippsAdd_16s(src1, src2, dest, length)
-#define vectorAdd_s32(src1, src2, dest, length)                             ippsAdd_32sc_Sfs(src1, src2, dest, length, 0)
+#define vectorAdd_s32(src1, src2, dest, length)                             ippsAdd_32s_Sfs(src1, src2, dest, length, 0)
 #define vectorAdd_cf32(src1, src2, dest, length)                            ippsAdd_32fc_I(src1, src2, dest, length)
 #define vectorAdd_cf64(src1, src2, dest, length)                            ippsAdd_64fc_I(src1, src2, dest, length)
 
