@@ -4,6 +4,10 @@ SUBDIRS = \
 	examples \
 	doc
 
+if ENABLE_PYTHON_CTYPES
+SUBDIRS += python
+endif
+
 EXTRA_DIST = \
 	TODO \
 	mark5access.spec.in

@@ -40,6 +40,17 @@ AC_SUBST(FFTW3_CFLAGS)
 AC_SUBST(FFTW3_LIBS)
 AM_CONDITIONAL(WITH_FFTW, $hasfftw)
 
+AC_MSG_CHECKING([whether to create Python ctypes interface])
+AC_ARG_ENABLE([python], 
+	AS_HELP_STRING([--enable-python],[enable the Python ctypes interface for mark5access]),
+	[case "${enableval}" in 
+           yes | no ) ENABLE_PYTHON_CTYPES="${enableval}" ;;
+           *        ) AC_MSG_ERROR(bad value ${enableval} for --enable-python) ;;
+         esac],[ENABLE_PYTHON_CTYPES="no"]
+)
+AM_CONDITIONAL([ENABLE_PYTHON_CTYPES], [test "x$ENABLE_PYTHON_CTYPES" = "xyes"])
+AC_MSG_RESULT($ENABLE_PYTHON_CTYPES)
+
 version=AC_PACKAGE_VERSION
 AC_SUBST(version)
 
