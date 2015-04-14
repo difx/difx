@@ -99,6 +99,7 @@ if __name__ == "__main__":
                 continue
                     
             expCodes.add(experiment.code)
+
         
         totalCapacity = 0
         moduleCount = 0
@@ -145,6 +146,9 @@ if __name__ == "__main__":
             totalCapacity += slot.module.capacity
             moduleCount += 1 
         
+	# sort experiments alphabetically
+	expCodes = sorted(expCodes)
+
         if (options.extended):
             for code in expCodes:
 
