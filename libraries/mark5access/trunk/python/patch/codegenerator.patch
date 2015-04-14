@@ -1,0 +1,15 @@
+--- /usr/lib/pymodules/python2.5/ctypeslib/codegen/codegenerator.py	2009-01-17 03:50:18.000000000 +0900
++++ codegenerator.py	2015-04-08 18:34:06.000000000 +0900
+@@ -859,6 +859,12 @@
+                 if match and match.group() == i.name:
+                     todo.append(i)
+                     break
++		# JanW: allow matching any part of name with regexp (makes more sense!)
++		match = s.search(i.name)
++		if match:
++                    todo.append(i)
++                    break
++
+     if symbols or expressions:
+         items = todo
+ 

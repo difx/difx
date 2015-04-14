@@ -1,0 +1,16 @@
+
+ - check again why ctypes does not like C++ std::complex,
+   and whether there is any workaround, if necessary
+
+ - setup.py is using ancient distutils.core or setuptools 
+   because setup.py was intended to also run on a Mark6 (Debian 
+   Sid). Could consider moving to a much more modern setup 
+   system. Would need testing.
+
+ - convert Makefile into a better build system, possibly
+   using ./configure --ctypes-dir=<dir> so that manual
+   editing of Makefile 'CTYPESLIBHOME' is not required
+
+ - consider whether or not the ./python/examples/ should
+   be installed somewhere as well upon "make install"
+

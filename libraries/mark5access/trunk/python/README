@@ -1,0 +1,203 @@
+
+
+        Python ctypes Interface to mark5_access
+
+            Jan Wagner <jwagner@kasi.re.kr>
+
+                  April 14, 2015
+
+
+0 Introduction
+~~~~~~~~~~~~~~
+
+This Python module provides an interface to the C/C++ mark5_access
+library and its VLBI data inspection and fast data decoding functions.
+
+The main intention of this Python interface is to allow one to prototype
+algorithms, and process raw VLBI data in numerical packages such as Numpy 
+and Scipy that offer higher-level numerical computing.
+
+Note that there are also other options to use mark5_access from Python.
+These include SWIG or a hybrid language such as cython. The current interface 
+ctypes-based due to the low complexity, and the one-way data path of mark5_access.
+
+
+1 Preqrequisites
+~~~~~~~~~~~~~~~~
+
+1.1 Prerequisites for using the Python wrapper
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The mark5_access Python interface makes use of a standard Python
+module called 'ctypes'. The ctypes project describes itself as 
+"a foreign function library for Python. It provides C compatible 
+data types, and allows calling functions in DLLs or shared libraries. 
+It can be used to wrap these libraries in pure Python."
+  https://docs.python.org/library/ctypes.html
+
+You may install it with, for example,
+  
+  $ sudo aptitude install python-ctypes
+
+In your Python script that calls mark5_access, use
+
+  import ctypes
+  import mark5access as m5lib
+
+
+1.2 Prerequisites for re-generating the Python wrapper
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In the event that the C/C++ interface of mark5_access has
+changed it is necessary to re-generate the Python wrapper code.
+
+This wrapper is based on code generators that convert C header 
+files into ctypes interfaces. These generators are part of the 
+ctypes library utilities, specifically, h2xml.py and xml2py.py.
+
+To install:
+
+  $ sudo aptitude install python-ctypeslib
+
+Note that ctypeslib version 0.5.6 has a buggy implementation 
+of regexp handling related to command line option "-r <regexp>".
+This option is used to extract C library function names.
+
+In that version, a patch may need to be applied to 
+the ctypeslib file 'codegenerator.py'. The patch is 
+included here under ./patch/codegenerator.patch
+
+
+2 Compiling and installing the mark5_access Python wrapper
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+First, compile and install the mark5access library.
+
+Next, make sure you patched ctypeslib file codegenerator.py
+if necessary, see above.
+
+Compile and install the mark5access Python wrapper by
+
+  $ make                 # generates the ctypes interface
+  $ sudo make install    # installs the Python interface
+
+
+3 Calling mark5access from Python
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Import the mark5access library Python interface via
+
+  import ctypes
+  import mark5access as m5lib
+
+The mark5access functions have the same names and parameters 
+as you would expect from the C/C++ library interface. 
+
+Please refer to the "DeveloperGuide" and "UserGuide" documents
+for details on the mark5_access library.
+
+Usage in Python should be relatively straightforward.
+
+You might, however, want to consult the examples in the ctypes
+documentation at https://docs.python.org/library/ctypes.html,
+or see an online "ctypes tutorial".
+
+3.1 Some peculiarities worth pointing out
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  1) mark5access library function arguments in Python will
+     have 'ctypes' data types, such as ctypes.c_int.
+
+  2) buffers passed between Python and the mark5access library
+     are often declared as type ctypes.POINTER(<ctypes data type>)
+
+  3) the contents of mark5access C data structures can be accessed
+     via '<variablename>.contents.<name of structure field>'
+
+
+3.2 Basic usage
+~~~~~~~~~~~~~~~
+
+An existing file on disk can be opened as follows
+
+ try:
+     m5file = m5lib.new_mark5_stream_file(filename, ctypes.c_longlong(offset))
+     m5fmt  = m5lib.new_mark5_format_generic_from_string(fileformat)
+     ms     = m5lib.new_mark5_stream_absorb(m5file, m5fmt)
+     dms    = ms.contents  # access to C structure fields like 'nchan', 'mjd' and others
+ except:
+     print ("Error: problem opening or decoding %s\n" % (fn));
+     return EXIT_FAILURE
+
+The array to be filled with new sample data can be allocated as follows
+
+     FLT32ARR = ctypes.c_float*nsamples
+     PFLT32ARR = ctypes.POINTER(ctypes.c_float)*dms.nchan
+     pdata = PFLT32ARR()
+     for i in range(dms.nchan):
+         pdata[i] = FLT32ARR()
+
+New data can then be read with
+
+     m5lib.mark5_stream_decode(ms, nsamples, pdata)
+
+To process decoded raw data of a particular channel in NumPy/SciPy/stats,
+
+     chdata = pdata[channel_nr][0:nsamples]
+     m = numpy.mean(chdata)
+
+Alternatively, to access the same data but as a numpy array,
+
+     chdata_p = ctypes.cast(pdata[channel_nr], ctypes.POINTER(FLT32ARR))
+     chdata = numpy.frombuffer(chdata_p.contents, dtype='float32')
+
+3.3 Example programs
+~~~~~~~~~~~~~~~~~~~~
+
+A few example Python scripts can be found under ./examples/
+
+   m5stat.py : A data statistics checker for raw VLBI data. 
+
+               Has the same command line arguments as the C program 'm5bstate'.
+               It performs a similar statistical analysis of the sample data 
+               distribution (histogram) as m5bstate. In addition, it reports
+               other moments such as standard deviation, skewness, and kurtosis
+               that especially for >2-bit data allow a better check of the signal
+               Gaussianity in each recorded channel.
+
+               Example output for a VDIF_8192-8192-4-2 format file with poor thresholds:
+
+               Ch     mean    std    skew  kurt    gfact   state counts from -HiMag to +HiMag
+                0    +0.01  +1.08   -0.40 +2.19    +2.62    1.5 / 46.3 / 52.1 /  0.1
+                1    -0.11  +1.29   -0.53 +3.10    +1.96    5.7 / 44.4 / 48.9 /  1.0
+                2    +0.02  +1.16   -0.26 +2.86    +2.29    2.2 / 45.7 / 51.0 /  1.2
+                3    +0.03  +1.07   -0.23 +2.13    +2.65    1.0 / 46.9 / 51.7 /  0.4
+               based on 81920 samples (0 invalid)
+
+   m5time.py : Reports the first timestamp of a raw VLBI recording.
+
+               In addition, it checks a few subsequent data frames in an attempt
+               to verify the validity of the first timestamp and that the specified
+               data format was indeed correct for the file. This check helps
+               in particular with formats like VDIF that, unlike Mark5B,
+               do not contain well identified magic bytes or "sync words"
+               in their headers. 
+
+   m5subband.py : Extracts a narrow subband using Fourier filtering methods.
+
+               Performs DFT-based filtering. A specified channel in the raw
+               VLBI recording is Fourier transformed and the desired bins of 
+               the transform are copied and inverse Fourier transformed to 
+               produce a time-domain narrow-band output signal.
+
+               In order to improve the filter steepness and reduce sidelobes,
+               the narrowband output signal is generated using windowed
+               overlapped (I)DFTs, with zero padding, and phase coherent 
+               overlap-add. Overlap factors of 2 (50%), 4 (75%), or more can
+               be used. The bandwidth reduction ratio is quite freely selectable.
+
+               For example, m5subband.py can output the time domain signal 
+               from a 64 kHz wide band around, say, a maser line that is found
+               in a 512 MHz wide recording.
+
+               The narrow band output signal can be processed in other tools.

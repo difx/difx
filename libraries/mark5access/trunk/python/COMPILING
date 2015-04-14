@@ -1,0 +1,8 @@
+The basic steps are:
+
+sudo aptitude install python-ctypes python-ctypeslib
+make
+sudo make install
+
+For details see README.
+
