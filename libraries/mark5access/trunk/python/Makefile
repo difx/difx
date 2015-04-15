@@ -1,30 +1,36 @@
-### Location of ctypeslib installation
-
-# FIXME: get this from "./configure --ctypeslib-dir=..." if defined
-CTYPESLIBHOME=/usr/share/pyshared/ctypeslib/
-
-
 ### Standard targets
+FILES := mark5_stream_tmp.h mark5access_api.xml mark5access/mark5access.py
 
-XML2PY_V := $(shell python $(CTYPESLIBHOME)/xml2py.py --help 2>/dev/null)
-H2XML_V := $(shell python $(CTYPESLIBHOME)/h2xml.py --help 2>/dev/null)
-
-all: depcheck mark5access/mark5access.py
-
-depcheck:
-ifndef XML2PY_V
-	$(error Cannot find required Python ctypes utility xml2py.py. You might need to edit CTYPESLIBHOME=$CTYPESLIBHOME in $(CURDIR)/Makefile)
-endif
-ifndef H2XML_V
-	$(error Cannot find required Python ctypes utility h2xml.py. You might need to edit CTYPESLIBHOME=$CTYPESLIBHOME in $(CURDIR)/Makefile)
-endif
+all: depcheck mark5access/mark5access.py 
 
 clean:
-	rm -f mark5_stream_tmp.h mark5access_api.xml mark5access/mark5access.py
+	rm -f $(FILES)
 
 install: mark5access/mark5access.py
 	python setup.py install	
 
+
+### Checks
+
+XML2PY_V := $(shell xml2py --help 2>/dev/null)
+H2XML_V := $(shell h2xml --help 2>/dev/null)
+
+depcheck:
+ifndef H2XML_V
+	$(error Cannot find Python ctypes utility h2xml (h2xml.py) required to parse C/C++ header file.)
+endif
+ifndef XML2PY_V
+	$(error Cannot find Python ctypes utility xml2py (xml2py.py) required for Python interface code generation.)
+endif
+
+XML2PY_BUGCHECK_V := $(shell grep new_mark5_stream_absorb mark5access/mark5access.py 2>/dev/null)
+
+check: 
+ifndef XML2PY_BUGCHECK_V
+	$(error The ctypes code generator 'xml2py' did not produce function wrappers, may need to be patched)
+else
+	$(info The generated Python interface seems okay.)
+endif
 
 ### Convert mark5access C header into API description (XML) using 'h2xml.py' from ctypeslib
 
@@ -38,7 +44,7 @@ mark5_stream_tmp.h: ../mark5access/mark5_stream.h depcheck
 	@grep -v complex ../mark5access/mark5_stream.h >> mark5_stream_tmp.h
 
 mark5access_api.xml: mark5_stream_tmp.h depcheck
-	python $(CTYPESLIBHOME)/h2xml.py mark5_stream_tmp.h -o mark5access_api.xml  -I $(CURDIR)
+	h2xml mark5_stream_tmp.h -o mark5access_api.xml  -I $(CURDIR)
 	@rm -f mark5_stream_tmp.h
 
 
@@ -59,4 +65,4 @@ X2P_FLAGS += -l ../mark5access/.libs/libmark5access.so  # or: libmark5access.so
 X2P_FLAGS += -r "mark5"  
 
 mark5access/mark5access.py: mark5access_api.xml
-	python $(CTYPESLIBHOME)/xml2py.py mark5access_api.xml $(X2P_FLAGS) > mark5access/mark5access.py
+	xml2py mark5access_api.xml $(X2P_FLAGS) > mark5access/mark5access.py

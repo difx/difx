@@ -2,6 +2,7 @@ The basic steps are:
 
 sudo aptitude install python-ctypes python-ctypeslib
 make
+make check          # to verify the interface file looks fine
 sudo make install
 
 For details see README.

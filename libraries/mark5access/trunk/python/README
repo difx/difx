@@ -79,7 +79,8 @@ if necessary, see above.
 Compile and install the mark5access Python wrapper by
 
   $ make                 # generates the ctypes interface
-  $ sudo make install    # installs the Python interface
+  $ make check           # checks if the generated file looks ok
+  $ sudo make install    # installs the Python binding
 
 
 3 Calling mark5access from Python
