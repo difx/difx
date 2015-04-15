@@ -61,8 +61,13 @@ X2P_FLAGS += -s mark5_stream -s mark5_stream_generic -s mark5_format_generic -s 
 
 # Functions to include in wrapper, select with "regular expression"
 # Note: for -r <regex> to work properly xml2py.py v0.5.6 must be patched (see README)
-X2P_FLAGS += -l ../mark5access/.libs/libmark5access.so  # or: libmark5access.so
 X2P_FLAGS += -r "mark5"  
+
+# For the code generation should use libmark5access.so from the build tree.
+# The user may not yet have done a 'make install' on libmark5access.so.
+X2P_FLAGS += -l ../mark5access/.libs/libmark5access.so
 
 mark5access/mark5access.py: mark5access_api.xml
 	xml2py mark5access_api.xml $(X2P_FLAGS) > mark5access/mark5access.py
+	# remove the library path from the generated .py file
+	sed -i "s/..\/mark5access\/.libs\///g" mark5access/mark5access.py
