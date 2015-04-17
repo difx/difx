@@ -1,7 +1,6 @@
 #!/usr/bin/python
 import sys, numpy, ctypes
 import mark5access as m5lib
-from datetime import datetime
 from scipy import stats
 
 def usage():
