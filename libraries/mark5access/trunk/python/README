@@ -121,22 +121,25 @@ or see an online "ctypes tutorial".
 
 An existing file on disk can be opened as follows
 
- try:
-     m5file = m5lib.new_mark5_stream_file(filename, ctypes.c_longlong(offset))
-     m5fmt  = m5lib.new_mark5_format_generic_from_string(fileformat)
-     ms     = m5lib.new_mark5_stream_absorb(m5file, m5fmt)
-     dms    = ms.contents  # access to C structure fields like 'nchan', 'mjd' and others
- except:
-     print ("Error: problem opening or decoding %s\n" % (fn));
-     return EXIT_FAILURE
+     try:
+         m5file = m5lib.new_mark5_stream_file(filename, ctypes.c_longlong(offset))
+         m5fmt  = m5lib.new_mark5_format_generic_from_string(fileformat)
+         ms     = m5lib.new_mark5_stream_absorb(m5file, m5fmt)
+     except:
+         print ("Error: problem opening or decoding %s\n" % (fn));
+         return EXIT_FAILURE
 
 The array to be filled with new sample data can be allocated as follows
 
      FLT32ARR = ctypes.c_float*nsamples
-     PFLT32ARR = ctypes.POINTER(ctypes.c_float)*dms.nchan
+     PFLT32ARR = ctypes.POINTER(ctypes.c_float)*ms.contents.nchan
      pdata = PFLT32ARR()
-     for i in range(dms.nchan):
+     for i in range(ms.contents.nchan):
          pdata[i] = FLT32ARR()
+
+or alternatively by using a helper function in mark5access.helpers
+
+     pdata = mark5access.helpers.make_decoder_array(ms, nsamples)
 
 New data can then be read with
 
@@ -149,10 +152,51 @@ To process decoded raw data of a particular channel in NumPy/SciPy/stats,
 
 Alternatively, to access the same data but as a numpy array,
 
-     chdata_p = ctypes.cast(pdata[channel_nr], ctypes.POINTER(FLT32ARR))
+     chdata_p = ctypes.cast(pdata[channel_nr], ctypes.POINTER(ctypes.c_float*nsamples))
      chdata = numpy.frombuffer(chdata_p.contents, dtype='float32')
 
-3.3 Example programs
+
+3.3 Helper functions in mark5access.helpers
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The sub-module 'mark5access.helpers' offers some additional functions.
+They wrap and pythonize certain mark5access library functions that store 
+their return values in arguments passed by pointers. 
+
+
+3.3.1 mark5access.helpers.get_frame_time(ms)
+
+Returns the timestamp of the most recently read data frame as a tuple.
+
+Example: (mjd,sec,ns) = mark5access.helpers.get_frame_time(ms)
+
+
+3.3.2 mark5access.helpers.get_sample_time(ms)
+
+Returns the timestamp of the next sample to be decoded as a tuple.
+
+Example: (mjd,sec,ns) = mark5access.helpers.get_sample_time(ms)
+
+
+3.3.3 mark5access.helpers.count_high_states(ms, nsamples)
+
+Returns the high-state counts of the next 'nsample' samples
+in each recorded channel.
+
+Example: counts = mark5access.helpers.count_high_states(ms, 8192)
+
+
+3.3.4 mark5access.helpers.make_decoder_array(ms, nsamples, [dtype=ctypes data type])
+
+Returns Returns a 'nchan x nsamples' array that can be passed to 
+one of the mark5_stream_decode variants. The default data type
+of ctypes.c_float can be used in conjunction with mark5_stream_decode(), 
+while ctypes.c_double is required for mark5_stream_decode_double().
+
+Example: pdata = mark5access.helpers.make_decoder_array(ms, 8192)
+
+
+3.4 Example programs
 ~~~~~~~~~~~~~~~~~~~~
 
 A few example Python scripts can be found under ./examples/
