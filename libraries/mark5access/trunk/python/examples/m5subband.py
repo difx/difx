@@ -43,9 +43,6 @@ def m5subband(fn, fmt, fout, if_nr, factor, Ldft, start_bin, stop_bin, offset):
 		m5fmt  = m5lib.new_mark5_format_generic_from_string(fmt)
 		ms     = m5lib.new_mark5_stream_absorb(m5file, m5fmt)
 		dms    = ms.contents
-		mjd = ctypes.c_int(0) # for a later get_frame_time()
-		sec = ctypes.c_int(0)
-		ns  = ctypes.c_double(0.0)
 	except:
 		print ('Error: problem opening or decoding %s\n' % (fn))
 		return 1
@@ -61,13 +58,9 @@ def m5subband(fn, fmt, fout, if_nr, factor, Ldft, start_bin, stop_bin, offset):
 		print ('Error: length derived for output IDFT (Lout=%u) does not divide the overlap-add factor (factor=%u)' % (Lout,factor))
 		return 1
 
-	# Collection of vectors for mark5access raw sample data
-	FLT32ARR = ctypes.c_float*nin
-	PFLT32ARR = ctypes.POINTER(ctypes.c_float)*dms.nchan
-	pdata = PFLT32ARR()
-	for i in range(dms.nchan):
-		pdata[i] = FLT32ARR()
-	if_data = ctypes.cast(pdata[if_nr], ctypes.POINTER(FLT32ARR))
+	# Get storage for raw sample data from m5lib.mark5_stream_decode()
+	pdata = m5lib.helpers.make_decoder_array(ms, nin, dtype=ctypes.c_float)
+	if_data = ctypes.cast(pdata[if_nr], ctypes.POINTER(ctypes.c_float*nin))
 
 	# Numpy 2D arrays for processed data
 	fp = 'float32'
@@ -152,10 +145,10 @@ def m5subband(fn, fmt, fout, if_nr, factor, Ldft, start_bin, stop_bin, offset):
 
 		# Reporting
 		if (iter % 100)==0:
-			m5lib.mark5_stream_get_frame_time(ms, mjd,sec,ns)
-			T_abs = sec.value+1e-9*ns.value
+			(mjd,sec,ns) = m5lib.helpers.get_frame_time(ms)
+			T_abs = sec + 1e-9*ns
 			T_count = 1e-9*dms.framens * dms.nvalidatepass
-			print ('Iter %7d : %u/%f : %u : %f sec\r' % (iter, mjd.value,T_abs, dms.nvalidatepass, T_count)),
+			print ('Iter %7d : %u/%f : %u : %f sec\r' % (iter, mjd,T_abs, dms.nvalidatepass, T_count)),
 		iter = iter + 1
 
 	return 0

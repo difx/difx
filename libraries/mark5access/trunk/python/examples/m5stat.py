@@ -36,11 +36,7 @@ def m5stat(fn, fmt, nframes, offset):
 
 	# Read sample data
 	nsamples = dms.framesamples*nframes
-	FLT32ARR = ctypes.c_float*nsamples
-	PFLT32ARR = ctypes.POINTER(ctypes.c_float)*dms.nchan
-	pdata = PFLT32ARR()
-	for i in range(dms.nchan):
-		pdata[i] = FLT32ARR()
+	pdata = m5lib.helpers.make_decoder_array(ms, nsamples, dtype=ctypes.c_float)
 	m5lib.mark5_stream_decode(ms, nsamples, pdata)
 
 	# Statistics
