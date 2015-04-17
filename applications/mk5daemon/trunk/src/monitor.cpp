@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2012 by Walter Brisken                             *
+ *   Copyright (C) 2008-2015 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -32,6 +32,7 @@
 #include <cstring>
 #include <cstdlib>
 #include <unistd.h>
+#include <signal.h>
 #include <difxmessage.h>
 #include <net/if.h>
 #include <arpa/inet.h>
@@ -628,12 +629,11 @@ void Mk5Daemon_killJob(Mk5Daemon *D, const char *jobName)
 		}
 		if(sscanf(line, "%*s%d", &pid) == 1)
 		{
-			snprintf(cmd, CommandLength, "kill -9 %d", pid);
-			snprintf(message, DIFX_MESSAGE_LENGTH, "Mk5Daemon_killJob: executing %s\n", cmd);
+			snprintf(message, DIFX_MESSAGE_LENGTH, "Mk5Daemon_killJob: executing kill(%d, SIGKILL)\n", pid);
 			Logger_logData(D->log, message);
 			snprintf(message, CommandLength, "Killing mpifxcorr for job %s with process ID %d", jobName, pid);
 			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
-			system(cmd);
+			kill(pid, SIGKILL);
 		}
 	}
 	pclose(pin);
