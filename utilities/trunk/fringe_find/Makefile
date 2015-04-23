@@ -1,6 +1,6 @@
 .PHONY : all clean
 
-TARGETS := fringe_plotDiFX fringe_find
+TARGETS := fringe_find
 
 all   : $(TARGETS)
 
@@ -13,11 +13,11 @@ CPPFLAGS = -O2 -D__PWD=\"$$PWD\"
 F77 = g77
 
 MPIFXROOT = /home/ssi/adeller/correlator/mpifxcorr/
-IPPROOT = /usr/local/intel/ipp41/ia32_itanium/
+IPPROOT = /opt/intel
 VLBAUTILSROOT = /home/ssi/adeller/correlator/vlba_utils/
 
-IPPINC = -I$(IPPROOT)/include
-IPPLIB = -L$(IPPROOT)/sharedlib -L$(IPPROOT)/sharedlib/linux32 -lippvm -lguide -lipps -lippcore
+IPPINC = -I$(IPPROOT)/ipp/include
+IPPLIB = -Wl,-rpath,${IPPROOT}/ipp/lib, -L$(IPPROOT)/ipp/lib -lippvm -lipps -lippcore
 
 INCS = -I.
 LIBS = -L.
