@@ -48,11 +48,13 @@ Options:
 
    --withfb        Build filterbank (which requires pgplot)
 
+   --withguiserver Build guiServer
+
    --withhops      Build HOPS (which requires pgplot)
 
    --withm6support Build Mark6 support (which requires FUSE)
 
-   --withguiserver Build guiServer
+   --withpython    Build Python bindings for certain libraries (requires ctypes)
 
    --noinstall     Don't install, only build.
 
@@ -98,7 +100,7 @@ try:
     opts, args = getopt.gnu_getopt(sys.argv[1:], "fhv",
         ["force", "help", "verb",
         "mk5daemon", "withmonitor", "rpfits", "perl", "withfb",
-        "withhops", "withm6support", "withguiserver",
+        "withhops", "withm6support", "withguiserver", "withpython",
         "noinstall", "reconf", "noconf", "clean",
         "g77", "extraflags=", "makeflags=", 
          "noipp", "ipp", "nodoc", "cache=", "targ=", "pristine" ])
@@ -134,6 +136,7 @@ dofb = False
 dohops = False
 dom6support = False
 doguiserver = False
+dopybindings = False
 dodoc = True
 doipp = 0
 orgcwd = os.getcwd()
@@ -164,6 +167,8 @@ if len(opts) > 0:
             dom6support = True
         if o == "--withguiserver":
             doguiserver = True
+        if o == "--withpython":
+            dopybindings = True
         if o == "--noinstall":
             noinstall = True
         if o == "--reconf":
@@ -401,6 +406,8 @@ def auto_compile(doreconf, dolibtoolize, doautoheader, prefix, dompicxx):
             if cache != 'none':
                 configstring += "-CXX"
             configstring += " CXX=" + mpicxx
+        if dopybindings:
+            configstring += " --enable-python --with-python "
         run(configstring)
 
     run(MAKEcommand + target)
