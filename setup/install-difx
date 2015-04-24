@@ -406,14 +406,25 @@ def auto_compile(doreconf, dolibtoolize, doautoheader, prefix, dompicxx):
             if cache != 'none':
                 configstring += "-CXX"
             configstring += " CXX=" + mpicxx
-        if dopybindings:
-            configstring += " --enable-python --with-python "
+        if dopybindings and check_configureAC_has(cfp+"/configure.ac", "enable-python"):
+            configstring += " --enable-python "
+        if dopybindings and check_configureAC_has(cfp+"/configure.ac", "with-python"):
+            configstring += " --with-python "
         run(configstring)
 
     run(MAKEcommand + target)
     if not noinstall:
         run(MAKEcommand + "install")
     os_chdir(thisdir)
+
+def check_configureAC_has(cfpath, key):
+    try:
+        for line in open(cfpath,'r'):
+            if key in line:
+                return True
+    except:
+        print "Warning: could not check %s for %s\n."
+    return False
 
 ###### Subroutine to set up documentation area ##########
 def make_doc_area(basedocdir):
