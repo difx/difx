@@ -116,7 +116,6 @@ int createRoot (DifxInput *D,           // difx input structure pointer
     void fake_bocf_period(char [256], DifxConfig *);
     int isValidAntenna(const DifxInput *, char *, int);
     double frt (double, double, int);
-    void insert_zoom_sequence (DifxInput *, char *, FILE *);
     int fill_fblock (DifxInput *, struct CommandLineOptions *, struct fblock_tag *);
 
                                     // initialize memory as necessary
@@ -763,49 +762,4 @@ double frt (double mjd, double fract, int midpt_offset)
     if (mjd - epoch > 0.0)
         epoch = mjd;
     return epoch;
-    }
-
-// inserts a frequency sequence for all zoom bands based upon
-// information in the .input file
-void insert_zoom_sequence (DifxInput *D, char *line, FILE *fout)
-    {
-    int n,
-        ifr;
-    char buff[80];
-
-    fputs (line, fout);             // write this def statement out
-                                    // loop over zoom channels, creating a chan_def for each
-    for (n=0; n<D->datastream[0].nZoomFreq; n++)
-        {
-        ifr = *(D->datastream[0].zoomFreqId);
-        sprintf (buff, "    chan_def = X%02d%c : &X : %8.2lf MHz : %c : %6.3lf MHz : "
-                       "&Ch%02d : &BBC%02d : &L_cal;\n",
-                 n, D->freq[ifr].sideband, D->freq[ifr].freq, D->freq[ifr].sideband, 
-                 D->freq[ifr].bw, n+1, n+1);
-                                    // write the line out
-        fputs (buff, fout); 
-        }
-                                    // also insert the sample rate line
-    sprintf (buff, "    sample_rate = %4.1lf Ms/sec;\n", 2.0 * D->freq[ifr].bw);
-    fputs (buff, fout); 
-    sprintf (buff, "  enddef;\n");
-    fputs (buff, fout); 
-    }
-
-// check to see if this frequency sequence is used within the current mode
-
-int fseq_unused (char *pseq, char fseq_list[MAX_FS][80], int nfs)
-    {
-    int i,
-        unused = 1;                 // unused unless we find a match
-
-    for (i=0; i<nfs; i++)
-        {
-        if (strcmp (pseq, fseq_list[i]) == 0)
-            {
-            unused = 0;             // found a match - mark as not unused
-            break;
-            }
-        }
-    return unused;
     }
