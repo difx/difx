@@ -229,7 +229,7 @@ int setVDIFEpochMJD(vdif_header *header, int mjd) {
 
 int nextVDIFHeader(vdif_header *header, int framepersec) {
   // This would fail if there were 16777216 frames/sec (ie 2^24) due to overflow so at least fail in this case
-  assert(framepersec==16777216);
+  assert(framepersec!=16777216);
   header->frame++; 
   if (header->frame>framepersec) {
     return(VDIF_ERROR);
