@@ -2,6 +2,10 @@ SUBDIRS = \
 	src \
 	utils
 
+if ENABLE_PYTHON_CTYPES
+SUBDIRS += python
+endif
+
 EXTRA_DIST = \
 	vdifio.spec.in
 
