@@ -17,7 +17,7 @@ def usage():
 	print (' ')
 	print ('A time decoder for raw VLBI data. Reads formats supported by the mark5access library.')
 	print (' ')
-	print ('Usage : m5time <file> <dataformat> <offset>')
+	print ('Usage : m5time.py <file> <dataformat> <offset>')
 	print (' ')
 	print ('  <dataformat> should be of the form: <FORMAT>-<Mbps>-<nchan>-<nbit>, e.g.:')
 	print ('    VLBA1_2-256-8-2')

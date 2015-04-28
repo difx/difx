@@ -7,7 +7,7 @@ def usage():
 	print (' ')
 	print ('A data statistics checker for raw VLBI data. Reads formats supported by the mark5access library.')
 	print (' ')
-	print ('Usage : m5stat <file> <dataformat> <nframes> [<offset>]')
+	print ('Usage : m5stat.py <file> <dataformat> <nframes> [<offset>]')
 	print (' ')
 	print ('  <dataformat> should be of the form: <FORMAT>-<Mbps>-<nchan>-<nbit>, e.g.:')
 	print ('    VLBA1_2-256-8-2')

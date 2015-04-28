@@ -6,11 +6,11 @@ from scipy import stats
 
 def usage():
 	print (' ')
-	print ('m5subband ver. 1.0   Jan Wagner  20150413')
+	print ('m5subband.py ver. 1.0   Jan Wagner  20150413')
 	print (' ')
 	print ('Extracts a narrow subband via filtering raw VLBI data. Reads formats supported by the mark5access library.')
 	print (' ')
-	print ('Usage : m5subband <infile> <dataformat> <outfile> <if_nr> <factor> <Ldft> <start_bin> <stop_binN> [<offset>]')
+	print ('Usage : m5subband.py <infile> <dataformat> <outfile> <if_nr> <factor> <Ldft> <start_bin> <stop_binN> [<offset>]')
 	print (' ')
 	print ('  <dataformat> should be of the form: <FORMAT>-<Mbps>-<nchan>-<nbit>, e.g.:')
 	print ('    VLBA1_2-256-8-2')

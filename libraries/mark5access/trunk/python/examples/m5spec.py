@@ -11,11 +11,11 @@ except:
 
 def usage():
 	print (' ')
-	print ('m5spec ver. 1.0   Jan Wagner  20150427')
+	print ('m5spec.py ver. 1.0   Jan Wagner  20150427')
 	print (' ')
 	print ('Shows time-averaged autocorrelation spectra of raw VLBI data.')
 	print ('')
-	print ('Usage : m5spec <infile> <dataformat> <T_int(ms)> <Ldft> [offset]')
+	print ('Usage : m5spec.py <infile> <dataformat> <T_int(ms)> <Ldft> [offset]')
 	print (' ')
 	print ('  <dataformat> should be of the form: <FORMAT>-<Mbps>-<nchan>-<nbit>, e.g.:')
 	print ('    VLBA1_2-256-8-2')
