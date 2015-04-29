@@ -1,3 +1,7 @@
+Version 3.5.0
+* Post DiFX 2.4
+* Remove duplicate RDATE keywords from AG and ML tables
+
 Version 3.4.0
 * Add command line option --primary-band.  This causes a keyword to be added to the output FITS file.  Intended for VLITE.
 * makefits: check for files being multiple of 2880 bytes

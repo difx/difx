@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2012 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2008-2015 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -141,7 +141,6 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D, struct fits_keywords *p_fi
 	fitsWriteFloat(out, "GSTIA0", 0.0, "");
 	fitsWriteFloat(out, "DEGPDY", 0.0, "");
 	mjd2fits(p_fits_keys->ref_date, str);
-	fitsWriteString(out, "RDATE", str, "");
 	mjd2fits((int)current_mjd(), str);
 	fitsWriteString(out, "CDATE", str, ""); 
 	fitsWriteInteger(out, "NPOLY", array_N_POLY, "");

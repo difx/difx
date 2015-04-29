@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2014 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2008-2015 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -124,7 +124,6 @@ const DifxInput *DifxInput2FitsAG(const DifxInput *D, struct fits_keywords *p_fi
 	fitsWriteFloat(out, "ARRAYZ", 0.0, "");
 	fitsWriteString(out, "ARRNAM", "VLBA", "");
 	fitsWriteInteger(out, "NUMORB", 0, "");
-	fitsWriteString(out, "RDATE", ref_date, "");
 	fitsWriteFloat(out, "FREQ", p_fits_keys->ref_freq, "");
 	fitsWriteString(out, "FRAME", "GEOCENTRIC", "");
 	fitsWriteString(out, "TIMSYS", "UTC", "");
