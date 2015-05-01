@@ -132,6 +132,40 @@ public class ProcessorNode extends BrowserNode {
 //        _alertWindow.setBounds( 200, 200, 700, 300 );
         //  Create a popup menu appropriate to a "job".
         _popup = new JPopupMenu();
+        _activeJob = new ColumnTextArea();
+        _activeJob.justify( ColumnTextArea.RIGHT );
+        _activeJob.flashActive( true );
+        _activeJob.flashTime( 600 );
+        _activeJob.expireTime( 600 );
+        _activeJob.expireActive( true );
+        this.add( _activeJob );
+        _dataConsumed = new ColumnTextArea();
+        _dataConsumed.justify( ColumnTextArea.RIGHT );
+        this.add( _dataConsumed );
+        _inputDatarate = new ColumnTextArea();
+        _inputDatarate.justify( ColumnTextArea.RIGHT );
+        this.add( _inputDatarate );
+        _memoryUsage = new ColumnTextArea();
+        _memoryUsage.justify( ColumnTextArea.RIGHT );
+        this.add( _memoryUsage );
+        _numBufElements = new ColumnTextArea();
+        _numBufElements.justify( ColumnTextArea.RIGHT );
+        this.add( _numBufElements );
+        _startBufElement = new ColumnTextArea();
+        _startBufElement.justify( ColumnTextArea.RIGHT );
+        this.add( _startBufElement );
+        _activeBufElement = new ColumnTextArea();
+        _activeBufElement.justify( ColumnTextArea.RIGHT );
+        this.add( _activeBufElement );
+        _threadID = new ColumnTextArea();
+        _threadID.justify( ColumnTextArea.RIGHT );
+        this.add( _threadID );
+        _processMicrosec = new ColumnTextArea();
+        _processMicrosec.justify( ColumnTextArea.RIGHT );
+        this.add( _processMicrosec );
+        _subintsLost = new ColumnTextArea();
+        _subintsLost.justify( ColumnTextArea.RIGHT );
+        this.add( _subintsLost );
         generatePopupMenu();
     }
     
@@ -295,6 +329,27 @@ public class ProcessorNode extends BrowserNode {
             setTextArea( _netRxRate, _widthNetRxRate );
         if ( _showNetTxRate )
             setTextArea( _netTxRate, _widthNetTxRate );
+        
+        if ( _showActiveJob )
+            setTextArea( _activeJob, _widthActiveJob );
+        if ( _showDataConsumed )
+            setTextArea( _dataConsumed, _widthDataConsumed );
+        if ( _showInputDatarate )
+            setTextArea( _inputDatarate, _widthInputDatarate );
+        if ( _showMemoryUsage )
+            setTextArea( _memoryUsage, _widthMemoryUsage );
+        if ( _showNumBufElements )
+            setTextArea( _numBufElements, _widthNumBufElements );
+        if ( _showStartBufElement )
+            setTextArea( _startBufElement, _widthStartBufElement );
+        if ( _showActiveBufElement )
+            setTextArea( _activeBufElement, _widthActiveBufElement );
+        if ( _showThreadID )
+            setTextArea( _threadID, _widthThreadID );
+        if ( _showProcessMicrosec )
+            setTextArea( _processMicrosec, _widthProcessMicrosec );
+        if ( _showSubintsLost )
+            setTextArea( _subintsLost, _widthSubintsLost );
     }
     
     /*
@@ -449,6 +504,57 @@ public class ProcessorNode extends BrowserNode {
         _netTxRate.setVisible( newVal );
     }
 
+    public void showActiveJob( boolean newVal ) {
+        _activeJob.setVisible( newVal );
+        _showActiveJob = newVal;
+    }
+    
+    public void showDataConsumed( boolean newVal ) {
+        _dataConsumed.setVisible( newVal );
+        _showDataConsumed = newVal;
+    }
+
+    public void showInputDatarate( boolean newVal ) {
+        _inputDatarate.setVisible( newVal );
+        _showInputDatarate = newVal;
+    }
+
+    public void showMemoryUsage( boolean newVal ) {
+        _memoryUsage.setVisible( newVal );
+        _showMemoryUsage = newVal;
+    }
+
+    public void showNumBufElements( boolean newVal ) {
+        _numBufElements.setVisible( newVal );
+        _showNumBufElements = newVal;
+    }
+
+    public void showStartBufElement( boolean newVal ) {
+        _startBufElement.setVisible( newVal );
+        _showStartBufElement = newVal;
+    }
+
+    public void showActiveBufElement( boolean newVal ) {
+        _activeBufElement.setVisible( newVal );
+        _showActiveBufElement = newVal;
+    }
+
+    public void showThreadID( boolean newVal ) {
+        _threadID.setVisible( newVal );
+        _showThreadID = newVal;
+    }
+
+    public void showProcessMicrosec( boolean newVal ) {
+        _processMicrosec.setVisible( newVal );
+        _showProcessMicrosec = newVal;
+    }
+
+    public void showSubintsLost( boolean newVal ) {
+        _subintsLost.setVisible( newVal );
+        _showSubintsLost = newVal;
+    }
+
+
     public void widthNumCPUs( int newVal ) { _widthNumCPUs = newVal; }
     public void widthThreadsUsed( int newVal ) { _widthThreadsUsed = newVal; }
     public void widthNumCores( int newVal ) { _widthNumCores = newVal; }
@@ -465,6 +571,17 @@ public class ProcessorNode extends BrowserNode {
     public void widthMemLoadPlot( int newVal ) { _widthMemLoadPlot = newVal; }
     public void widthNetRxRate( int newVal ) { _widthNetRxRate = newVal; }
     public void widthNetTxRate( int newVal ) { _widthNetTxRate = newVal; }
+    
+    public void widthActiveJob( int newVal ) { _widthActiveJob = newVal; }
+    public void widthDataConsumed( int newVal ) { _widthDataConsumed = newVal; }
+    public void widthInputDatarate( int newVal ) { _widthInputDatarate = newVal; }
+    public void widthMemoryUsage( int newVal ) { _widthMemoryUsage = newVal; }
+    public void widthNumBufElements( int newVal ) { _widthNumBufElements = newVal; }
+    public void widthStartBufElement( int newVal ) { _widthStartBufElement = newVal; }
+    public void widthActiveBufElement( int newVal ) { _widthActiveBufElement = newVal; }
+    public void widthThreadID( int newVal ) { _widthThreadID = newVal; }
+    public void widthProcessMicrosec( int newVal ) { _widthProcessMicrosec = newVal; }
+    public void widthSubintsLost( int newVal ) { _widthSubintsLost = newVal; }
 
     /*
      * Absorb the data from a Mark5 status message.  These are used from time to time to convey
@@ -485,7 +602,10 @@ public class ProcessorNode extends BrowserNode {
         _bogusGHz.setText( "0" );
         _type.setText( "0" );
         _typeString.setText( "processor" );
-        _state.setText( "Online" );
+        //  If this is a Mark5, avoid setting this uninformative state...Mark5 messages have much
+        //  more interesting state values.
+        if ( !_isMark5 )
+            _state.setText( "Online" );
         _cpuLoad.setText( String.format( "%10.1f", 100.0 * difxMsg.getBody().getDifxLoad().getCpuLoad()
                     / ( (float)(difxMsg.getBody().getDifxLoad().getNCore() ) ) ) );
         _cpuPlot.limits( (double)(_cpuTrackSize - 100), (double)(_cpuTrackSize), 0.0, 100.0 );
@@ -529,6 +649,50 @@ public class ProcessorNode extends BrowserNode {
             _monitor.setNetTxRate( newTx );
         }
         updateUI();
+    }
+    
+    //--------------------------------------------------------------------------
+    //!  Process a diagnostic message associated with this node.
+    //--------------------------------------------------------------------------
+    public void diagnosticMessage( DifxMessage difxMsg ) {
+        _networkActivity.data();
+        _activeJob.setText( difxMsg.getHeader().getIdentifier() );
+        if ( difxMsg.getBody().getDifxDiagnostic().getDiagnosticType().equalsIgnoreCase( "DataConsumed" ) ) {
+            _dataConsumed.setText( "" + difxMsg.getBody().getDifxDiagnostic().getBytes() );
+        }
+        else if ( difxMsg.getBody().getDifxDiagnostic().getDiagnosticType().equalsIgnoreCase( "InputDatarate" ) ) {
+            _inputDatarate.setText( "" + difxMsg.getBody().getDifxDiagnostic().getBytes() );
+        }
+        else if ( difxMsg.getBody().getDifxDiagnostic().getDiagnosticType().equalsIgnoreCase( "MemoryUsage" ) ) {
+            _memoryUsage.setText( "" + difxMsg.getBody().getDifxDiagnostic().getBytes() );
+        }
+        else if ( difxMsg.getBody().getDifxDiagnostic().getDiagnosticType().equalsIgnoreCase( "NumSubintsLost" ) ) {
+            _subintsLost.setText( "" + difxMsg.getBody().getDifxDiagnostic().getNumSubintsLost() );
+        }
+        else if ( difxMsg.getBody().getDifxDiagnostic().getDiagnosticType().equalsIgnoreCase( "ProcessingTime" ) ) {
+            _threadID.setText( "" + difxMsg.getBody().getDifxDiagnostic().getThreadId() );
+            _processMicrosec.setText( String.format( "%10.3f", difxMsg.getBody().getDifxDiagnostic().getMicrosec() ) );
+        }
+        else if ( difxMsg.getBody().getDifxDiagnostic().getDiagnosticType().equalsIgnoreCase( "BufferStatus" ) ) {
+            _numBufElements.setText( "" + difxMsg.getBody().getDifxDiagnostic().getNumBufElements() );
+            _startBufElement.setText( "" + difxMsg.getBody().getDifxDiagnostic().getStartBufElement() );
+            _activeBufElement.setText( "" + difxMsg.getBody().getDifxDiagnostic().getActiveBufElements() );
+        }
+    }
+    
+    //--------------------------------------------------------------------------
+    //!  Process an "alert" message associated with this node.
+    //--------------------------------------------------------------------------
+    public void alertMessage( DifxMessage difxMsg ) {
+        _networkActivity.data();
+        //  See if this alert indicates a job termination.  For this we key on a string
+        //  sequence, which seems....non-optimal.
+        if ( difxMsg.getBody().getDifxAlert().getAlertMessage().contains( "says BYE!" ) ) {
+            _activeJob.flashOff();
+            _activeJob.expireNow();
+        }
+        else
+            _activeJob.setText( difxMsg.getHeader().getIdentifier() );
     }
 
 //    public void newAlert( DifxMessage difxMsg ) {
@@ -591,7 +755,7 @@ public class ProcessorNode extends BrowserNode {
     boolean _showCpuLoadPlot;
     ColumnTextArea _usedMem;
     boolean _showUsedMem;
-    ColumnTextArea _totalMem;
+    ColumnTextArea _totalMem;      //  Comes from load messages
     boolean _showTotalMem;
     ColumnTextArea _memLoad;
     boolean _showMemLoad;
@@ -604,6 +768,28 @@ public class ProcessorNode extends BrowserNode {
     boolean _showNetRxRate;
     ColumnTextArea _netTxRate;
     boolean _showNetTxRate;
+    boolean _isMark5;
+    
+    ColumnTextArea _activeJob;
+    boolean _showActiveJob;
+    ColumnTextArea _dataConsumed;
+    boolean _showDataConsumed;
+    ColumnTextArea _inputDatarate;
+    boolean _showInputDatarate;
+    ColumnTextArea _memoryUsage;     //  Comes from diagnostic messages
+    boolean _showMemoryUsage;
+    ColumnTextArea _numBufElements;
+    boolean _showNumBufElements;
+    ColumnTextArea _startBufElement;
+    boolean _showStartBufElement;
+    ColumnTextArea _activeBufElement;
+    boolean _showActiveBufElement;
+    ColumnTextArea _threadID;
+    boolean _showThreadID;
+    ColumnTextArea _processMicrosec;
+    boolean _showProcessMicrosec;
+    ColumnTextArea _subintsLost;
+    boolean _showSubintsLost;
     
     boolean _ignoreState;
     
@@ -632,6 +818,17 @@ public class ProcessorNode extends BrowserNode {
     int _widthNetRxRate;
     int _widthNetTxRate;
 
+    int _widthActiveJob;
+    int _widthDataConsumed;
+    int _widthInputDatarate;
+    int _widthMemoryUsage;
+    int _widthNumBufElements;
+    int _widthStartBufElement;
+    int _widthActiveBufElement;
+    int _widthThreadID;
+    int _widthProcessMicrosec;
+    int _widthSubintsLost;
+    
     protected SystemSettings _settings;
 
     //  Used to keep track of a "use" of this processor by a job.  The job is

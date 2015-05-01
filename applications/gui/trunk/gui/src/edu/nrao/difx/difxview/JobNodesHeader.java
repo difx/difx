@@ -205,6 +205,13 @@ public class JobNodesHeader extends BrowserNode {
             }
         });
         _popup.add( _showSpeedUpFactor );
+        _showTimeRemaining = new JCheckBoxMenuItem( "Time Remaining" );
+        _showTimeRemaining.addActionListener(new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                updateDisplayedData();
+            }
+        });
+        _popup.add( _showTimeRemaining );
         _showNumAntennas = new JCheckBoxMenuItem( "# Antennas" );
         _showNumAntennas.addActionListener(new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
@@ -386,6 +393,14 @@ public class JobNodesHeader extends BrowserNode {
             }
         });
         this.add( _speedUpFactor );
+        _timeRemaining = new ColumnTextArea( "Time Remaining" );
+        _timeRemaining.addKillButton(new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                _showTimeRemaining.setState( false );
+                updateDisplayedData();
+            }
+        });
+        this.add( _timeRemaining );
         _numAntennas = new ColumnTextArea( "# Antennas" );
         _numAntennas.addKillButton(new ActionListener() {
             public void actionPerformed( ActionEvent e ) {
@@ -471,6 +486,7 @@ public class JobNodesHeader extends BrowserNode {
         _showOutputSize.setState( true );
         _showDifxVersion.setState( true );
         _showSpeedUpFactor.setState( true );
+        _showTimeRemaining.setState( true );
         _showNumAntennas.setState( true );
         _showNumForeignAntennas.setState( true );
         _showDutyCycle.setState( true );
@@ -596,6 +612,12 @@ public class JobNodesHeader extends BrowserNode {
         }
         else
             _positionSpeedUpFactor = -100;
+        if ( _showTimeRemaining.getState() ) {
+            setTextArea( _timeRemaining, _settings.jobColumnSpecs().timeRemaining.width );
+            _positionTimeRemaining = _xOff;
+        }
+        else
+            _positionTimeRemaining = -100;
         if ( _showNumAntennas.getState() ) {
             setTextArea( _numAntennas, _settings.jobColumnSpecs().numAntennas.width );
             _positionNumAntennas = _xOff;
@@ -668,6 +690,7 @@ public class JobNodesHeader extends BrowserNode {
         _showOutputSize.setState( _settings.jobColumnSpecs().outputSize.show );
         _showDifxVersion.setState( _settings.jobColumnSpecs().difxVersion.show );
         _showSpeedUpFactor.setState( _settings.jobColumnSpecs().speedUpFactor.show );
+        _showTimeRemaining.setState( _settings.jobColumnSpecs().timeRemaining.show );
         _showNumAntennas.setState( _settings.jobColumnSpecs().numAntennas.show );
         _showNumForeignAntennas.setState( _settings.jobColumnSpecs().numForeignAntennas.show );
         _showDutyCycle.setState( _settings.jobColumnSpecs().dutyCycle.show );
@@ -704,6 +727,7 @@ public class JobNodesHeader extends BrowserNode {
                 thisJob.widthOutputSize( _settings.jobColumnSpecs().outputSize.width );
                 thisJob.widthDifxVersion( _settings.jobColumnSpecs().difxVersion.width );
                 thisJob.widthSpeedUpFactor( _settings.jobColumnSpecs().speedUpFactor.width );
+                thisJob.widthTimeRemaining( _settings.jobColumnSpecs().timeRemaining.width );
                 thisJob.widthNumAntennas( _settings.jobColumnSpecs().numAntennas.width );
                 thisJob.widthNumForeignAntennas( _settings.jobColumnSpecs().numForeignAntennas.width );
                 thisJob.widthDutyCycle( _settings.jobColumnSpecs().dutyCycle.width );
@@ -749,6 +773,7 @@ public class JobNodesHeader extends BrowserNode {
         _adjustOutputSize = false;
         _adjustDifxVersion = false;
         _adjustSpeedUpFactor = false;
+        _adjustTimeRemaining = false;
         _adjustNumAntennas = false;
         _adjustNumForeignAntennas = false;
         _adjustDutyCycle = false;
@@ -823,6 +848,10 @@ public class JobNodesHeader extends BrowserNode {
         else if ( e.getX() > _positionSpeedUpFactor - 3 && e.getX() < _positionSpeedUpFactor + 2 ) {
             setCursor( _columnAdjustCursor );
             _adjustSpeedUpFactor = true;
+        }
+        else if ( e.getX() > _positionTimeRemaining - 3 && e.getX() < _positionTimeRemaining + 2 ) {
+            setCursor( _columnAdjustCursor );
+            _adjustTimeRemaining = true;
         }
         else if ( e.getX() > _positionNumAntennas - 3 && e.getX() < _positionNumAntennas + 2 ) {
             setCursor( _columnAdjustCursor );
@@ -931,6 +960,10 @@ public class JobNodesHeader extends BrowserNode {
             _startWidth = _settings.jobColumnSpecs().speedUpFactor.width;
             _startX = e.getX();
         }
+        else if ( _adjustTimeRemaining ) {
+            _startWidth = _settings.jobColumnSpecs().timeRemaining.width;
+            _startX = e.getX();
+        }
         else if ( _adjustNumAntennas ) {
             _startWidth = _settings.jobColumnSpecs().numAntennas.width;
             _startX = e.getX();
@@ -1036,6 +1069,10 @@ public class JobNodesHeader extends BrowserNode {
             if ( e.getX() - _startX + _startWidth > 5 )
                 _settings.jobColumnSpecs().speedUpFactor.width = _startWidth + e.getX() - _startX;
         }
+        else if ( _adjustTimeRemaining ) {
+            if ( e.getX() - _startX + _startWidth > 5 )
+                _settings.jobColumnSpecs().timeRemaining.width = _startWidth + e.getX() - _startX;
+        }
         else if ( _adjustNumAntennas ) {
             if ( e.getX() - _startX + _startWidth > 5 )
                 _settings.jobColumnSpecs().numAntennas.width = _startWidth + e.getX() - _startX;
@@ -1092,6 +1129,7 @@ public class JobNodesHeader extends BrowserNode {
                 thisJob.showOutputSize( _showOutputSize.getState() );
                 thisJob.showDifxVersion( _showDifxVersion.getState() );
                 thisJob.showSpeedUpFactor( _showSpeedUpFactor.getState() );
+                thisJob.showTimeRemaining( _showTimeRemaining.getState() );
                 thisJob.showNumAntennas( _showNumAntennas.getState() );
                 thisJob.showNumForeignAntennas( _showNumForeignAntennas.getState() );
                 thisJob.showDutyCycle( _showDutyCycle.getState() );
@@ -1121,6 +1159,7 @@ public class JobNodesHeader extends BrowserNode {
         _outputSize.setVisible( _showOutputSize.getState() );
         _difxVersion.setVisible( _showDifxVersion.getState() );
         _speedUpFactor.setVisible( _showSpeedUpFactor.getState() );
+        _timeRemaining.setVisible( _showTimeRemaining.getState() );
         _numAntennas.setVisible( _showNumAntennas.getState() );
         _numForeignAntennas.setVisible( _showNumForeignAntennas.getState() );
         _dutyCycle.setVisible( _showDutyCycle.getState() );
@@ -1146,6 +1185,7 @@ public class JobNodesHeader extends BrowserNode {
         _settings.jobColumnSpecs().outputSize.show = _showOutputSize.getState();
         _settings.jobColumnSpecs().difxVersion.show = _showDifxVersion.getState();
         _settings.jobColumnSpecs().speedUpFactor.show = _showSpeedUpFactor.getState();
+        _settings.jobColumnSpecs().timeRemaining.show = _showTimeRemaining.getState();
         _settings.jobColumnSpecs().numAntennas.show = _showNumAntennas.getState();
         _settings.jobColumnSpecs().numForeignAntennas.show = _showNumForeignAntennas.getState();
         _settings.jobColumnSpecs().dutyCycle.show = _showDutyCycle.getState();
@@ -1208,6 +1248,7 @@ public class JobNodesHeader extends BrowserNode {
     protected JCheckBoxMenuItem _showCorrelationTime;
     protected int _positionCorrelationTime;
     protected boolean _adjustCorrelationTime;
+    public int positionCorrelationTime() { return _positionCorrelationTime; }
     
     protected ColumnTextArea _jobStart;
     protected JCheckBoxMenuItem _showJobStart;
@@ -1243,6 +1284,12 @@ public class JobNodesHeader extends BrowserNode {
     protected JCheckBoxMenuItem _showSpeedUpFactor;
     protected int _positionSpeedUpFactor;
     protected boolean _adjustSpeedUpFactor;
+    
+    protected ColumnTextArea _timeRemaining;
+    protected JCheckBoxMenuItem _showTimeRemaining;
+    protected int _positionTimeRemaining;
+    protected boolean _adjustTimeRemaining;
+    public int positionTimeRemaining() { return _positionTimeRemaining; }
     
     protected ColumnTextArea _numAntennas;
     protected JCheckBoxMenuItem _showNumAntennas;

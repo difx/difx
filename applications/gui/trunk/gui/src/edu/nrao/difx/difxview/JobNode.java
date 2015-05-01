@@ -1,28 +1,23 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
 package edu.nrao.difx.difxview;
 
 import mil.navy.usno.widgetlib.BrowserNode;
 import mil.navy.usno.widgetlib.ActivityMonitorLight;
 import mil.navy.usno.widgetlib.ZMenuItem;
+import mil.navy.usno.widgetlib.JulianCalendar;
+
+import java.util.Date;
 
 import mil.navy.usno.plotlib.PlotWindow;
 import mil.navy.usno.plotlib.Plot2DObject;
 import mil.navy.usno.plotlib.Track2D;
 
-import edu.nrao.difx.difxutilities.DiFXCommand_getFile;
 import edu.nrao.difx.difxutilities.DiFXCommand_rm;
-import edu.nrao.difx.difxutilities.V2dFileParser;
 
 import javax.swing.JButton;
 import javax.swing.JPopupMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JProgressBar;
 import javax.swing.JSeparator;
-import javax.swing.JTextField;
-import javax.swing.SwingUtilities;
 
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
@@ -36,16 +31,12 @@ import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.Color;
 import java.awt.Component;
-import java.awt.Insets;
 
 import java.io.File;
 
 import edu.nrao.difx.xmllib.difxmessage.DifxMessage;
 import edu.nrao.difx.xmllib.difxmessage.DifxAlert;
 import edu.nrao.difx.xmllib.difxmessage.DifxStatus;
-import java.awt.Font;
-
-import java.lang.Runtime;
 
 import edu.nrao.difx.difxdatabase.QueueDBConnection;
 import javax.swing.JOptionPane;
@@ -160,6 +151,11 @@ public class JobNode extends QueueBrowserNode {
         _speedUpFactor.setText( "" );
         showSpeedUpFactor( true );
         this.add( _speedUpFactor );
+        _timeRemaining = new ColumnTextArea();
+        _timeRemaining.justify( ColumnTextArea.RIGHT );
+        _timeRemaining.setText( "" );
+        showTimeRemaining( true );
+        this.add( _timeRemaining );
         _numAntennas = new ColumnTextArea();
         _numAntennas.justify( ColumnTextArea.RIGHT );
         _numAntennas.setText( "" );
@@ -366,6 +362,8 @@ public class JobNode extends QueueBrowserNode {
             setTextArea( _difxVersion, _widthDifxVersion );
         if ( _speedUpFactor.isVisible() )
             setTextArea( _speedUpFactor, _widthSpeedUpFactor );
+        if ( _timeRemaining.isVisible() )
+            setTextArea( _timeRemaining, _widthTimeRemaining );
         if ( _numAntennas.isVisible() )
             setTextArea( _numAntennas, _widthNumAntennas );
         if ( _numForeignAntennas.isVisible() )
@@ -484,28 +482,13 @@ public class JobNode extends QueueBrowserNode {
     }
     
     /*
-     * Set this item to an "unscheduled" state.  This WILL NOT remove the item
-     * from the schedule list - it simply changes the state readout and sets the
-     * internal status.
-     */
-    public void setUnscheduledState() {
-        if ( _editorMonitor != null )
-            _editorMonitor.setState( "Unscheduled", Color.GRAY );
-        else {
-            state().setText( "Unscheduled" );
-            state().setBackground( Color.GRAY );
-            state().updateUI();
-        }
-    }
-    
-    /*
-     * Actually unschedule a job - this will only do things (like changing the state
+     * Unschedule a job - this will only do things (like changing the state
      * readout) if the job is actually scheduled.
      */
     public void unschedule() {
         autostate( AUTOSTATE_UNSCHEDULED );
         if ( _settings.queueBrowser().removeJobFromSchedule( _this ) ) {
-            setUnscheduledState();
+            setState( "Unscheduled", Color.GRAY );
             _scheduleJobItem.setEnabled( true );
         }
     }
@@ -519,17 +502,15 @@ public class JobNode extends QueueBrowserNode {
         public void run() {
             if ( autostate() != AUTOSTATE_RESOURCE_TIMEOUT ) {
                 if ( autostate() == AUTOSTATE_UNSCHEDULED )
-                    setUnscheduledState();
+                    setState( "Unscheduled", Color.GRAY );
                 else {
-                    state().setText( "Check Resources" );
-                    state().setBackground( Color.YELLOW );
-                    state().updateUI();
+                    setState( "Check Resources", Color.YELLOW );
                 }
                 if ( updateEditorMonitor( 1000 ) ) {
                     if ( autostate() == AUTOSTATE_UNSCHEDULED )
-                        setUnscheduledState();
+                        setState( "Unscheduled", Color.GRAY );
                     else {
-                        _editorMonitor.setState( "Check Resources", Color.YELLOW );
+                        setState( "Check Resources", Color.YELLOW );
                         //  Run a "data" check to see if, for whatever reason, data are not
                         //  available for this job.
                         if ( !_editorMonitor.dataAvailableCheck() ) {
@@ -537,10 +518,7 @@ public class JobNode extends QueueBrowserNode {
                             //  if the appropriate setting allows this.
                             if ( _settings.tryToSkipMissingStations() && _editorMonitor.skipStationsMissingData() ) {
                                 _editorMonitor.removeSkippedStations( true );
-                                _editorMonitor.setState( "Rebuilding Job", Color.YELLOW );
-                                state().setText( "Rebuilding Job" );
-                                state().setBackground( Color.ORANGE );
-                                state().updateUI();
+                                setState( "Rebuilding Job", Color.YELLOW );
                                 while ( autostate() != AUTOSTATE_RESOURCE_TIMEOUT && !_editorMonitor.rebuildFailed() &&
                                         !_editorMonitor.rebuildSuccess() ) {
                                     try { Thread.sleep( 100 ); } catch ( Exception e ) {}
@@ -549,10 +527,7 @@ public class JobNode extends QueueBrowserNode {
                                     return;
                                 }
                                 else if ( _editorMonitor.rebuildFailed() ) {
-                                    _editorMonitor.setState( "Rebuild Failed", Color.RED );
-                                    state().setText( "Rebuild Failed" );
-                                    state().setBackground( Color.RED );
-                                    state().updateUI();
+                                    setState( "Rebuild Failed", Color.RED );
                                     autostate( AUTOSTATE_FAILED );
                                 }
                             }
@@ -565,36 +540,34 @@ public class JobNode extends QueueBrowserNode {
                     }
                     if ( _editorMonitor.selectNodeDefaults( false, true ) ) {
                         if ( autostate() == AUTOSTATE_UNSCHEDULED )
-                            setUnscheduledState();
+                            setState( "Unscheduled", Color.GRAY );
                         else {
-                            _editorMonitor.setState( "Pre-Start", Color.YELLOW );
+                            setState( "Pre-Start", Color.YELLOW );
                             autostate( AUTOSTATE_READY );
                         }
                     }
                     else if ( autostate() == AUTOSTATE_UNSCHEDULED )
-                        setUnscheduledState();
+                        setState( "Unscheduled", Color.GRAY );
                     else {
                         if ( !_editorMonitor.dataSourcesTested() ) {
-                            _editorMonitor.setState( "Data Source Fail", Color.RED );
+                            setState( "Data Source Fail", Color.RED );
                             autostate( AUTOSTATE_FAILED );
                         }
                         else if ( !_editorMonitor.processorsSufficient() ) {
-                            _editorMonitor.setState( "Processor Fail", Color.RED );
+                            setState( "Processor Fail", Color.RED );
                             autostate( AUTOSTATE_FAILED );
                         }
                         else {
-                            _editorMonitor.setState( "Resource Wait", Color.YELLOW );
+                            setState( "Resource Wait", Color.YELLOW );
                             autostate( AUTOSTATE_SCHEDULED );
                         }
                     }
                 }
                 else {
                     if ( autostate() == AUTOSTATE_UNSCHEDULED )
-                        setUnscheduledState();
+                        setState( "Unscheduled", Color.GRAY );
                     else {
-                        state().setText( "Monitor Error" );
-                        state().setBackground( Color.RED );
-                        state().updateUI();
+                        setState( "Monitor Error", Color.RED );
                         autostate( AUTOSTATE_FAILED );
                     }
                 }
@@ -821,8 +794,7 @@ public class JobNode extends QueueBrowserNode {
             _thisJobNode.setEnabled( false );
             _saveStateText = _state.getText();
             _saveStateColor = _state.getBackground();
-            _state.setText( "reading data" );
-            _state.setBackground( Color.YELLOW );
+            setState( "reading data", Color.YELLOW );
         }
     }
     
@@ -864,21 +836,17 @@ public class JobNode extends QueueBrowserNode {
             //  Set the state to reflect which files have been parsed - there should be
             //  both a .input and a .calc file.
             if ( _editorMonitor.inputFileParsed() && _editorMonitor.calcFileParsed() ) {
-                _state.setText( _saveStateText );
-                _state.setBackground( _saveStateColor );
+                setState( _saveStateText, _saveStateColor );
             }
             else if ( _editorMonitor.inputFileParsed() ) {
-                _state.setText( "No Calc File" );
-                _state.setBackground( Color.orange );
+                setState( "No Calc File", Color.orange );
             }
             else if ( _editorMonitor.calcFileParsed() ) {
-                _state.setText( "No Input File" );
-                _state.setBackground( Color.orange );
+                setState( "No Input File", Color.orange );
             }
         }
         else {
-            _state.setText( "file xfer error" );
-            _state.setBackground( Color.ORANGE );
+            setState( "file xfer error", Color.ORANGE );
         }
         _readingDataFile = false;
     }
@@ -886,12 +854,14 @@ public class JobNode extends QueueBrowserNode {
     protected boolean _readingDataFile;
     public boolean readingDataFile() { return _readingDataFile; }
     
-    /*
-     *   Test if this message is intended for a job or not.
-     */
+    //--------------------------------------------------------------------------
+    //  Test if this message is intended for a job or not.  Currently we recognize
+    //  Status, Alert, and Diagnostic messages as being for jobs.
+    //--------------------------------------------------------------------------
     static boolean testJobMessage( DifxMessage difxMsg ) {
         if ( ( difxMsg.getBody().getDifxStatus() != null ) ||
-             ( difxMsg.getBody().getDifxAlert() != null ) ) {
+             ( difxMsg.getBody().getDifxAlert() != null ) || 
+             ( difxMsg.getBody().getDifxDiagnostic() != null ) ) {
             //  Eliminate some identifiers that are not jobs.  The only trouble with this is
             //  a user theoretically *can* name their jobs one of these things, but if they do
             //  do they get what they deserve.
@@ -904,6 +874,9 @@ public class JobNode extends QueueBrowserNode {
         return false;
     }
     
+    //--------------------------------------------------------------------------
+    //  Interpret a (presumably) job-related message.
+    //--------------------------------------------------------------------------
     public void consumeMessage( DifxMessage difxMsg, boolean unknown ) {
         
         resetIdleTime();
@@ -915,8 +888,14 @@ public class JobNode extends QueueBrowserNode {
         if ( !unknown )
             updateEditorMonitor( 1000 );
         
-        if ( _editorMonitor != null )
-            _editorMonitor.consumeMessage( difxMsg );
+        if ( !lockState() ) {
+            JulianCalendar thisTime = new JulianCalendar();
+            thisTime.setTime( new Date() );
+            if ( _startTime != null ) {
+                _jobCorrelationTime = 24.0 * 3600.0 * ( thisTime.mjd() - _startTime.mjd() );
+                correlationTime( _jobCorrelationTime );
+            }
+        }
         
         //  Got something...
         _networkActivity.data();
@@ -927,50 +906,90 @@ public class JobNode extends QueueBrowserNode {
             //  happens when the GUI detects an error or completes.  If this job is "starting" the state should
             //  be unlocked - it means another attempt is being made to run it.
             if ( difxMsg.getBody().getDifxStatus().getState().equalsIgnoreCase( "starting" ) ) {
-                _progress.setValue( 0 );
+                setProgress( 0 );
                 lockState( false );
             }
             if ( !lockState() ) {
                 //  Set the "complete" percentage.
                 if ( difxMsg.getBody().getDifxStatus().getVisibilityMJD() != null &&
                         difxMsg.getBody().getDifxStatus().getJobstartMJD() != null &&
-                        difxMsg.getBody().getDifxStatus().getJobstopMJD() != null )
-                    _progress.setValue( (int)( 0.5 + 100.0 * ( Double.valueOf( difxMsg.getBody().getDifxStatus().getVisibilityMJD() ) -
+                        difxMsg.getBody().getDifxStatus().getJobstopMJD() != null ) {
+                    _jobTotalTime = 24.0 * 3600.0 * ( Double.valueOf( difxMsg.getBody().getDifxStatus().getJobstopMJD() ) -
+                            Double.valueOf( difxMsg.getBody().getDifxStatus().getJobstartMJD() ) );
+                    _fractionComplete = ( Double.valueOf( difxMsg.getBody().getDifxStatus().getVisibilityMJD() ) -
                             Double.valueOf( difxMsg.getBody().getDifxStatus().getJobstartMJD() ) ) /
                             ( Double.valueOf( difxMsg.getBody().getDifxStatus().getJobstopMJD() ) -
-                            Double.valueOf( difxMsg.getBody().getDifxStatus().getJobstartMJD() ) ) ) );
-//                else if ( !difxMsg.getBody().getDifxStatus().getState().equalsIgnoreCase( "ending" ) )
-//                    _progress.setValue( 0 );
+                            Double.valueOf( difxMsg.getBody().getDifxStatus().getJobstartMJD() ) );
+                    setProgress( (int)( 0.5 + 100.0 * _fractionComplete ) );
+                    //  Take a stab at figuring out how much time is left in this job.  We use the fraction
+                    //  of the job completed, but need to account for the (rather long in some cases) block
+                    //  of time that occurs before any "fraction" of the job is processed (the fraction is
+                    //  based on the timestamps of date being processed and does not account for setup time).
+                    //  Until we have a first couple of "fraction complete" values, things are less accurate.
+                    //  We really only can do this if we started the job (which we figure out by looking at
+                    //  _jobStartTime).
+                    if ( _jobStartTime != null ) {
+                        if ( _firstFraction == null || _firstTime == null ) {
+                            _firstFraction = _fractionComplete;
+                            _firstTime = (double)System.currentTimeMillis() / 1000.0;
+                        }
+                        else if ( _fractionComplete > _firstFraction && _fractionComplete < 0.8) {
+                            //  We can now figure out how fast the fractiong completed is going by in
+                            //  time, the size of the start buffer, and a reasonable estimate of the
+                            //  time remaining.
+                            _timeRemainingTime = (double)System.currentTimeMillis() / 1000.0;
+                            _timePerFrac = ( _timeRemainingTime - _firstTime ) / ( _fractionComplete - _firstFraction );
+                            _startTimeBuffer = _firstTime - _jobStartTime / 1000.0 - _timePerFrac * _firstFraction;
+                            _currentTimeRemaining = _timePerFrac * ( 1.0 - _fractionComplete );// + _startTimeBuffer - _settings.queueBrowser().estimateExtraTime();
+                        }
+                        else {
+                            _timeRemainingTime = (double)System.currentTimeMillis() / 1000.0;
+                            _currentTimeRemaining = _timePerFrac * ( 1.0 - _fractionComplete );// + _startTimeBuffer - _settings.queueBrowser().estimateExtraTime();
+                        }
+                    }
+                    //  Take a stab at figuring out how much time is left in this job.  We use the fraction
+                    //  of the job completed, but need to account for the (rather long in some cases) block
+                    //  of time that occurs before any "fraction" of the job is processed (the fraction is
+                    //  based on the timestamps of date being processed and does not account for setup time).
+                    //  Until we have a first "fraction complete", things are complicated and less accurate.
+//                    if ( _computationalStartTime == null ) {
+//                        _currentTimeRemaining = _jobCorrelationTime * ( 1.0 - _fractionComplete ) / _fractionComplete;
+//                        _computationalStartTime = _timeRemainingTime;
+//                        _computationalFraction = _fractionComplete;
+//                    }
+//                    else {
+//                        //  If we already have a fractional measurement, we can base what remains on the 
+//                        //  time it has taken for processing since that first measurement.
+//                        _currentTimeRemaining = ( _timeRemainingTime - _computationalStartTime ) * ( 1.0 - _fractionComplete ) /
+//                                ( _fractionComplete - _computationalFraction );
+//                    }
+                    //System.out.println( _fractionComplete + "   " + _jobCorrelationTime );
+                }
                 //  And the state itself.  We try to report some information upon completion.
-                _state.setText( difxMsg.getBody().getDifxStatus().getState() );
+                setState( difxMsg.getBody().getDifxStatus().getState(), Color.GREEN );
                 if ( _state.getText().trim().equalsIgnoreCase( "done" ) || _state.getText().trim().equalsIgnoreCase( "mpidone" ) ) {
                     if ( _editorMonitor != null && _editorMonitor.doneWithErrors() ) {
-                        _state.setBackground( Color.ORANGE );
-                        _state.setText( "complete w/errors");
+                        setState( "complete w/errors", Color.ORANGE );
                         _state.setToolTipText( "The job completed with some errors." );
                     }
                     else if ( _editorMonitor != null && _editorMonitor.removedList() != null ) {
-                        _editorMonitor.setState( "Complete w/o " + _editorMonitor.removedList(), Color.ORANGE );
-                        _state.setText( "Complete w/o " + _editorMonitor.removedList() );
-                        _state.setBackground( Color.ORANGE );
+                        setState( "Complete w/o " + _editorMonitor.removedList(), Color.ORANGE );
                         lockState( true );
                     }
                     else {
-                        _state.setBackground( Color.GREEN );
                         _state.setToolTipText( "The job completed gracefully." );
                     }
-                    _progress.setValue( 100 );  
+                    setProgress( 100 );  
                 }
                 else if ( _state.getText().equalsIgnoreCase( "running" ) || _state.getText().equalsIgnoreCase( "Starting" ) 
                         || _state.getText().equalsIgnoreCase( "ending" ) ) {
-                    _state.setBackground( Color.YELLOW );
+                    setState( _state.getText(), Color.YELLOW );
                     _state.setToolTipText( "" );
                 }
                 else {
-                    _state.setBackground( Color.LIGHT_GRAY );
+                    setState( _state.getText(), Color.LIGHT_GRAY );
                     _state.setToolTipText( "" );
                 }
-                _state.updateUI();
             }
             List<DifxStatus.Weight> weightList = difxMsg.getBody().getDifxStatus().getWeight();
             //  Create a new list of antennas/weights if one hasn't been created yet.
@@ -988,7 +1007,54 @@ public class JobNode extends QueueBrowserNode {
             //System.out.println( difxMsg.getBody().getDifxAlert().getAlertMessage() );
             //System.out.println( difxMsg.getBody().getDifxAlert().getSeverity() );
         }
+        else if ( difxMsg.getBody().getDifxDiagnostic() != null ) {
+//            if ( difxMsg.getBody().getDifxDiagnostic().getDiagnosticType().equalsIgnoreCase( "DataConsumed" ) ) {
+//                long bytes = difxMsg.getBody().getDifxDiagnostic().getBytes();
+//                System.out.println( "data consumed: " + bytes + " bytes" );
+//            }
+//            else if ( difxMsg.getBody().getDifxDiagnostic().getDiagnosticType().equalsIgnoreCase( "InputDatarate" ) ) {
+//                long bytes = difxMsg.getBody().getDifxDiagnostic().getBytes();
+//                System.out.println( "input data rate: " + bytes + " bytes" );
+//            }
+//            else if ( difxMsg.getBody().getDifxDiagnostic().getDiagnosticType().equalsIgnoreCase( "MemoryUsage" ) ) {
+//                long bytes = difxMsg.getBody().getDifxDiagnostic().getBytes();
+//                System.out.println( "memory usage: " + bytes + " bytes" );
+//            }
+//            else if ( difxMsg.getBody().getDifxDiagnostic().getDiagnosticType().equalsIgnoreCase( "NumSubintsLost" ) ) {
+//                long n = difxMsg.getBody().getDifxDiagnostic().getNumSubintsLost();
+//                System.out.println( "num subints lost: " + n );
+//            }
+//            else if ( difxMsg.getBody().getDifxDiagnostic().getDiagnosticType().equalsIgnoreCase( "ProcessingTime" ) ) {
+//                int threadId = difxMsg.getBody().getDifxDiagnostic().getThreadId();
+//                double microsec = difxMsg.getBody().getDifxDiagnostic().getMicrosec();
+//                System.out.println( "processing time (thread " + threadId + ": " + microsec );
+//            }
+//            else if ( difxMsg.getBody().getDifxDiagnostic().getDiagnosticType().equalsIgnoreCase( "BufferStatus" ) ) {
+//                int nbuff = difxMsg.getBody().getDifxDiagnostic().getNumBufElements();
+//                int startbuff = difxMsg.getBody().getDifxDiagnostic().getStartBufElement();
+//                int activebuff = difxMsg.getBody().getDifxDiagnostic().getActiveBufElements();
+//                System.out.println( "buffer status num: " + nbuff + " start: " + startbuff + " active: " + activebuff );
+//            }
+        }
+        
+        //  Figure out the speed up factor and time remaining, if we can.
+        if ( _jobCorrelationTime != null && _fractionComplete != null && _jobTotalTime != null ) {
+            _speedUp = ( _fractionComplete * _jobTotalTime )  / _jobCorrelationTime;
+            speedUpFactor( _speedUp );
+        }
+        timeRemaining( _currentTimeRemaining - ( (double)System.currentTimeMillis() / 1000.0 - _timeRemainingTime ) 
+            - _settings.queueBrowser().estimateExtraTime() );
+        _calculatedTimeRemaining = _currentTimeRemaining - ( (double)System.currentTimeMillis() / 1000.0 - _timeRemainingTime ) 
+            - _settings.queueBrowser().estimateExtraTime();
 
+    }
+    
+    //  Set the progress bar of this job node and the editor/monitor progress bar.
+    void setProgress( int i ) {
+        _progress.setValue( i );
+        if ( _editorMonitor != null ) {
+            _editorMonitor.setProgress( i );
+        }
     }
     
     /*
@@ -1049,33 +1115,72 @@ public class JobNode extends QueueBrowserNode {
     public void correlationStart( String newVal ) { _correlationStart.setText( newVal ); }
     public String correlationStart() { return _correlationStart.getText(); }
     public void correlationStart( double newVal ) { 
-        _correlationStart.setText( String.format( "%10.3f", newVal ) );
+        _correlationStart.setText( String.format( "%10.5f", newVal ) );
         _correlationStart.updateUI();
     }
     public void correlationEnd( String newVal ) { _correlationEnd.setText( newVal ); }
     public void correlationEnd( double newVal ) { 
-        _correlationEnd.setText( String.format( "%10.3f", newVal ) );
+        _correlationEnd.setText( String.format( "%10.5f", newVal ) );
         _correlationEnd.updateUI();
     }
     public String correlationEnd() { return _correlationEnd.getText(); }
     public void correlationTime( String newVal ) { _correlationTime.setText( newVal ); }
     public void correlationTime( double newVal ) { 
-        _correlationTime.setText( String.format( "%10.3f", newVal ) );
+        _correlationTime.setText( fromSeconds( newVal ) );
         _correlationTime.updateUI();
     }
     public String correlationTime() { return _correlationTime.getText(); }
     public void jobStart( double newVal ) { 
-        _jobStartText.setText( String.format( "%10.3f", newVal ) );
+        _jobStartText.setText( String.format( "%10.5f", newVal ) );
         _jobStart = newVal;
     }
     public Double jobStart() { 
         return _jobStart;
     }
     public void jobDuration( Double newVal ) { 
-        _jobDurationText.setText( String.format( "%10.3f", newVal ) );
+        _jobDurationText.setText( fromSeconds( newVal ) );//String.format( "%10.1f", newVal ) );
         _jobDuration = newVal;
     }
     public Double jobDuration() { return _jobDuration; }
+    
+    //--------------------------------------------------------------------------
+    //!  Convert a double-precision number of seconds into a number of hours, minutes,
+    //!  and seconds (with single-digit precision).  
+    //--------------------------------------------------------------------------
+    public static String fromSeconds( double seconds ) {
+        String ret = "";
+        if ( seconds <= 0.0 )
+            return ret;
+        //  Figure out the number of hours, minutes and seconds.
+        int hours = (int)(seconds/3600.0);
+        seconds -= 3600.0 * (double)hours;
+        int minutes = (int)(seconds/60.0);
+        seconds -= 60.0 * (double)minutes;
+        if ( hours > 0 ) {
+            ret += hours + ":";
+            if ( minutes > 9 )
+                ret += minutes + ":";
+            else if ( minutes > 0 )
+                ret += "0" + minutes + ":";
+            else
+                ret += "00:";
+            if ( (int)seconds > 9 )
+                ret += String.format( "%2.1f", seconds );
+            else
+                ret += "0" + String.format( "%3.1f", seconds );
+        }
+        else if ( minutes > 0 ) {
+            ret += minutes + ":";
+            if ( (int)seconds > 9 )
+                ret += String.format( "%2.1f", seconds );
+            else
+                ret += "0" + String.format( "%3.1f", seconds );
+        }
+        else
+            ret += String.format( "%3.1f", seconds );
+        return ret;
+    }
+    
     public void inputFile( String newVal, boolean loadNow ) { 
         _inputFile.setText( newVal );
         //  Convert to a file to extract the directory path...
@@ -1109,6 +1214,7 @@ public class JobNode extends QueueBrowserNode {
     public void difxVersion( String newVal ) { _difxVersion.setText( newVal ); }
     public String difxVersion() { return _difxVersion.getText(); }
     public void speedUpFactor( double newVal ) { _speedUpFactor.setText( String.format( "%10.3f", newVal ) ); }
+    public void timeRemaining( double newVal ) { _timeRemaining.setText( fromSeconds( newVal ) ); }
     public double speedUpFactor() { return new Double( _speedUpFactor.getText() ).doubleValue(); }
     public void numAntennas( int newVal ) {
         _numAntennas.setText( String.format( "%10d", newVal ) );
@@ -1202,6 +1308,7 @@ public class JobNode extends QueueBrowserNode {
     public void showOutputSize( boolean newVal ) { _outputSize.setVisible( newVal ); }
     public void showDifxVersion( boolean newVal ) { _difxVersion.setVisible( newVal ); }
     public void showSpeedUpFactor( boolean newVal ) { _speedUpFactor.setVisible( newVal ); }
+    public void showTimeRemaining( boolean newVal ) { _timeRemaining.setVisible( newVal ); }
     public void showNumAntennas( boolean newVal ) { _numAntennas.setVisible( newVal ); }
     public void showNumForeignAntennas( boolean newVal ) { _numForeignAntennas.setVisible( newVal ); }
     public void showDutyCycle( boolean newVal ) { _dutyCycleText.setVisible( newVal ); }
@@ -1234,6 +1341,7 @@ public class JobNode extends QueueBrowserNode {
     public void widthOutputSize( int newVal ) { _widthOutputSize = newVal; }
     public void widthDifxVersion( int newVal ) { _widthDifxVersion = newVal; }
     public void widthSpeedUpFactor( int newVal ) { _widthSpeedUpFactor = newVal; }
+    public void widthTimeRemaining( int newVal ) { _widthTimeRemaining = newVal; }
     public void widthNumAntennas( int newVal ) { _widthNumAntennas = newVal; }
     public void widthNumForeignAntennas( int newVal ) { _widthNumForeignAntennas = newVal; }
     public void widthDutyCycle( int newVal ) { _widthDutyCycle = newVal; }
@@ -1266,12 +1374,91 @@ public class JobNode extends QueueBrowserNode {
     }
     public void lockState( boolean newVal ) {
         _lockState = newVal;
+        _stopJobItem.setEnabled( !newVal );
+        _editorMonitor.lockState( newVal );
+    }
+    
+    //--------------------------------------------------------------------------
+    //  Called to set all displayed items ("state" values, progress bars, etc.) both
+    //  in the JobNode and the Editor/Monitor to indicate a job is starting.
+    //--------------------------------------------------------------------------
+    public void setJobStart() {
+        _startTime = new JulianCalendar();
+        _startTime.setTime( new Date() );
+        correlationStart( _startTime.mjd() );
+        running( true );
+        setState( "Initializing", Color.YELLOW );
+        setProgress( 0 );
+        _jobTotalTime = null;
+        _jobCorrelationTime = null;
+        _fractionComplete = null;
+        _computationalStartTime = null;
+        _speedUp = null;
+        _jobStartTime = (double)System.currentTimeMillis();
+        
+        _firstFraction = null;
+        _timePerFrac = null;
+        _firstTime = null;
+        _startTimeBuffer = _settings.queueBrowser().estimateStartBuffer();
+        
+        //  Initial estimate the time remaining based on previous work.  Might be good,
+        //  might really stink.
+        _timeRemainingTime = (double)System.currentTimeMillis() / 1000.0;
+        _currentTimeRemaining = _settings.queueBrowser().estimateProcessTime( editorMonitor()._inputFile.baselineTable().num,
+                    _jobDuration ) + _settings.queueBrowser().estimateStartBuffer();
+        timeRemaining( _currentTimeRemaining );
+        lockState( false );
+    }
+    
+    //--------------------------------------------------------------------------
+    //  Called to indicate in the displays that a job has completed.
+    //--------------------------------------------------------------------------
+    public void setJobEnd() {
+        running( false );
+        JulianCalendar endTime = new JulianCalendar();
+        endTime.setTime( new Date() );
+        correlationEnd( endTime.mjd() );
+        correlationTime( 24.0 * 3600.0 * ( endTime.mjd() - _startTime.mjd() ) );
+        //  Send statistics to the queue browser.  These are used to provide initial estimates
+        //  of the time required for future jobs.
+        _settings.queueBrowser().jobRunStats( _startTimeBuffer, 
+                (double)System.currentTimeMillis() / 1000.0 - _jobStartTime / 1000.0,
+                editorMonitor()._inputFile.baselineTable().num,
+                _jobDuration,
+                _currentTimeRemaining - ( (double)System.currentTimeMillis() / 1000.0 - _timeRemainingTime ) );
+        timeRemaining( 0.0 );
+        _calculatedTimeRemaining = 0.0;
+    }
+    
+    /*
+     * Set the "state" of this job.  The state appears on both the editor/monitor
+     * and the queue browser line.  It has a background color.
+     */
+    public void setState( String newState, Color newColor ) {
+        _state.setText( newState );
+        _state.setBackground( newColor );
+        _state.updateUI();  //  necessary??
+        if ( _editorMonitor != null )
+            _editorMonitor.setState( newState, newColor );
     }
     
     public ColumnTextArea state() { return _state; }
     public JProgressBar progress() { return _progress; }
     
     protected PassNode _passNode;
+    
+    protected Double _jobTotalTime;
+    protected Double _fractionComplete;
+    protected Double _jobStartTime;
+    protected Double _speedUp;
+    protected Double _jobCorrelationTime;
+    
+    protected Double _firstFraction;
+    protected Double _timePerFrac;
+    protected Double _firstTime;
+    protected Double _startTimeBuffer;
+    
+    protected JulianCalendar _startTime;
     
     protected JButton _startButton;
     protected JButton _editButton;
@@ -1313,6 +1500,8 @@ public class JobNode extends QueueBrowserNode {
     protected int _widthDifxVersion;
     protected ColumnTextArea _speedUpFactor;
     protected int _widthSpeedUpFactor;
+    protected ColumnTextArea _timeRemaining;
+    protected int _widthTimeRemaining;
     protected ColumnTextArea _numAntennas;
     protected int _widthNumAntennas;
     protected ColumnTextArea _numForeignAntennas;
@@ -1365,4 +1554,15 @@ public class JobNode extends QueueBrowserNode {
     
     protected Object _antennaLock;
         
+    protected double _timeRemainingTime;
+    protected double _currentTimeRemaining;
+    protected Double _computationalStartTime;
+    protected double _computationalFraction;
+    
+    protected Double _calculatedTimeRemaining;
+    
+    public Double calculatedTimeRemaining() { return _calculatedTimeRemaining; }
+    public void initializeTimeRemaining() {
+        _calculatedTimeRemaining = null;
+    }
 }

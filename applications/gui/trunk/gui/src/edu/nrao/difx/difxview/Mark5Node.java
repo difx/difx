@@ -1,5 +1,5 @@
 /*
- * This is a browser node used to display Mark5 data.  It inherits the "ClusterNode"
+ * This is a browser node used to display Mark5 data.  It inherits the "ProcessorNode"
  * class, as it shares many of the data display traits with that class.
  */
 package edu.nrao.difx.difxview;
@@ -26,10 +26,6 @@ import java.util.Iterator;
 
 import edu.nrao.difx.difxutilities.SMARTMonitor;
 
-/**
- *
- * @author jspitzak
- */
 public class Mark5Node extends ProcessorNode {
     
     public Mark5Node( String name, SystemSettings settings, SMARTMonitor smartMonitor ) {
@@ -37,6 +33,7 @@ public class Mark5Node extends ProcessorNode {
         _smartMonitor = smartMonitor;
         _smartDisplayList = new ArrayList<SMARTDisplay>();
         _directoryDisplayList = new ArrayList<DirectoryDisplay>();
+        _isMark5 = true;
     }
     
     @Override

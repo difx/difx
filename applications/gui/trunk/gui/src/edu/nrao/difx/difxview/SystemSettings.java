@@ -2271,14 +2271,15 @@ public class SystemSettings extends JFrame {
         _jobColumnSpecs.queueTime.show = false;
         _jobColumnSpecs.correlationStart.show = false;
         _jobColumnSpecs.correlationEnd.show = false;
-        _jobColumnSpecs.correlationTime.show = false;
+        _jobColumnSpecs.correlationTime.show = true;
         _jobColumnSpecs.jobStart.show = false;
         _jobColumnSpecs.jobDuration.show = false;
-        _jobColumnSpecs.inputFile.show = true;
+        _jobColumnSpecs.inputFile.show = false;
         _jobColumnSpecs.outputFile.show = false;
         _jobColumnSpecs.outputSize.show = false;
         _jobColumnSpecs.difxVersion.show = false;
         _jobColumnSpecs.speedUpFactor.show = false;
+        _jobColumnSpecs.timeRemaining.show = true;
         _jobColumnSpecs.numAntennas.show = false;
         _jobColumnSpecs.numForeignAntennas.show = false;
         _jobColumnSpecs.dutyCycle.show = false;
@@ -2307,6 +2308,7 @@ public class SystemSettings extends JFrame {
         _jobColumnSpecs.outputSize.width = 100;
         _jobColumnSpecs.difxVersion.width = 100;
         _jobColumnSpecs.speedUpFactor.width = 100;
+        _jobColumnSpecs.timeRemaining.width = 100;
         _jobColumnSpecs.numAntennas.width = 100;
         _jobColumnSpecs.numForeignAntennas.width = 100;
         _jobColumnSpecs.dutyCycle.width = 100;
@@ -2346,6 +2348,16 @@ public class SystemSettings extends JFrame {
         _hardwareColumnSpecs.PlayRate.show = false;
         _hardwareColumnSpecs.DataMJD.show = false;
         _hardwareColumnSpecs.CurrentJob.show = true;
+        _hardwareColumnSpecs.ActiveJob.show = true;
+        _hardwareColumnSpecs.DataConsumed.show = false;
+        _hardwareColumnSpecs.InputDatarate.show = false;
+        _hardwareColumnSpecs.MemoryUsage.show = false;
+        _hardwareColumnSpecs.NumBufElements.show = false;
+        _hardwareColumnSpecs.StartBufElement.show = false;
+        _hardwareColumnSpecs.ActiveBufElement.show = false;
+        _hardwareColumnSpecs.ThreadID.show = false;
+        _hardwareColumnSpecs.ProcessMicrosec.show = false;
+        _hardwareColumnSpecs.SubintsLost.show = false;
 
         _hardwareColumnSpecs.broadcastMonitor.width = 70;
         _hardwareColumnSpecs.NumCPUs.width = 70;
@@ -2375,6 +2387,16 @@ public class SystemSettings extends JFrame {
         _hardwareColumnSpecs.PlayRate.width = 70;
         _hardwareColumnSpecs.DataMJD.width = 70;
         _hardwareColumnSpecs.CurrentJob.width = 200;
+        _hardwareColumnSpecs.ActiveJob.width = 70;
+        _hardwareColumnSpecs.DataConsumed.width = 70;
+        _hardwareColumnSpecs.InputDatarate.width = 70;
+        _hardwareColumnSpecs.MemoryUsage.width = 70;
+        _hardwareColumnSpecs.NumBufElements.width = 70;
+        _hardwareColumnSpecs.StartBufElement.width = 70;
+        _hardwareColumnSpecs.ActiveBufElement.width = 70;
+        _hardwareColumnSpecs.ThreadID.width = 70;
+        _hardwareColumnSpecs.ProcessMicrosec.width = 70;
+        _hardwareColumnSpecs.SubintsLost.width = 70;
 
         _moduleFormatList = new ArrayList<String>();
         addModuleFormat( "Mark5B" );
@@ -3394,6 +3416,10 @@ public class SystemSettings extends JFrame {
                 _jobColumnSpecs.speedUpFactor.show = doiConfig.getJobSpeedUpFactor().isShow();
                 _jobColumnSpecs.speedUpFactor.width = doiConfig.getJobSpeedUpFactor().getWidth();                
             }
+            if ( doiConfig.getJobTimeRemaining() != null ) {
+                _jobColumnSpecs.timeRemaining.show = doiConfig.getJobTimeRemaining().isShow();
+                _jobColumnSpecs.timeRemaining.width = doiConfig.getJobTimeRemaining().getWidth();                
+            }
             if ( doiConfig.getJobNumAntennas() != null ) {
                 _jobColumnSpecs.numAntennas.show = doiConfig.getJobNumAntennas().isShow();
                 _jobColumnSpecs.numAntennas.width = doiConfig.getJobNumAntennas().getWidth();                
@@ -3502,6 +3528,46 @@ public class SystemSettings extends JFrame {
                 _hardwareColumnSpecs.NetTxRate.show = doiConfig.getHardwareNetTxRate().isShow();
                 _hardwareColumnSpecs.NetTxRate.width = doiConfig.getHardwareNetTxRate().getWidth();
             }
+            if ( doiConfig.getHardwareActiveJob() != null ) {
+                _hardwareColumnSpecs.ActiveJob.show = doiConfig.getHardwareActiveJob().isShow();
+                _hardwareColumnSpecs.ActiveJob.width = doiConfig.getHardwareActiveJob().getWidth();
+            }
+            if ( doiConfig.getHardwareDataConsumed() != null ) {
+                _hardwareColumnSpecs.DataConsumed.show = doiConfig.getHardwareDataConsumed().isShow();
+                _hardwareColumnSpecs.DataConsumed.width = doiConfig.getHardwareDataConsumed().getWidth();
+            }
+            if ( doiConfig.getHardwareInputDatarate() != null ) {
+                _hardwareColumnSpecs.InputDatarate.show = doiConfig.getHardwareInputDatarate().isShow();
+                _hardwareColumnSpecs.InputDatarate.width = doiConfig.getHardwareInputDatarate().getWidth();
+            }
+            if ( doiConfig.getHardwareMemoryUsage() != null ) {
+                _hardwareColumnSpecs.MemoryUsage.show = doiConfig.getHardwareMemoryUsage().isShow();
+                _hardwareColumnSpecs.MemoryUsage.width = doiConfig.getHardwareMemoryUsage().getWidth();
+            }
+            if ( doiConfig.getHardwareNumBufElements() != null ) {
+                _hardwareColumnSpecs.NumBufElements.show = doiConfig.getHardwareNumBufElements().isShow();
+                _hardwareColumnSpecs.NumBufElements.width = doiConfig.getHardwareNumBufElements().getWidth();
+            }
+            if ( doiConfig.getHardwareStartBufElement() != null ) {
+                _hardwareColumnSpecs.StartBufElement.show = doiConfig.getHardwareStartBufElement().isShow();
+                _hardwareColumnSpecs.StartBufElement.width = doiConfig.getHardwareStartBufElement().getWidth();
+            }
+            if ( doiConfig.getHardwareActiveBufElement() != null ) {
+                _hardwareColumnSpecs.ActiveBufElement.show = doiConfig.getHardwareActiveBufElement().isShow();
+                _hardwareColumnSpecs.ActiveBufElement.width = doiConfig.getHardwareActiveBufElement().getWidth();
+            }
+            if ( doiConfig.getHardwareThreadID() != null ) {
+                _hardwareColumnSpecs.ThreadID.show = doiConfig.getHardwareThreadID().isShow();
+                _hardwareColumnSpecs.ThreadID.width = doiConfig.getHardwareThreadID().getWidth();
+            }
+            if ( doiConfig.getHardwareProcessMicrosec() != null ) {
+                _hardwareColumnSpecs.ProcessMicrosec.show = doiConfig.getHardwareProcessMicrosec().isShow();
+                _hardwareColumnSpecs.ProcessMicrosec.width = doiConfig.getHardwareProcessMicrosec().getWidth();
+            }
+            if ( doiConfig.getHardwareSubintsLost() != null ) {
+                _hardwareColumnSpecs.SubintsLost.show = doiConfig.getHardwareSubintsLost().isShow();
+                _hardwareColumnSpecs.SubintsLost.width = doiConfig.getHardwareSubintsLost().getWidth();
+            }
             if ( doiConfig.getHardwareStateChanged() != null ) {
                 _hardwareColumnSpecs.StateChanged.show = doiConfig.getHardwareStateChanged().isShow();
                 _hardwareColumnSpecs.StateChanged.width = doiConfig.getHardwareStateChanged().getWidth();
@@ -3546,6 +3612,7 @@ public class SystemSettings extends JFrame {
                 _hardwareColumnSpecs.CurrentJob.show = doiConfig.getHardwareCurrentJob().isShow();
                 _hardwareColumnSpecs.CurrentJob.width = doiConfig.getHardwareCurrentJob().getWidth();
             }
+            
 
             if ( doiConfig.getJobLocationDefaultsFileFilter() != null )
                 _jobLocationDefaults.fileFilter = doiConfig.getJobLocationDefaultsFileFilter();
@@ -3835,6 +3902,9 @@ public class SystemSettings extends JFrame {
         doiConfig.setJobSpeedUpFactor( factory.createColumnSpec() );
         doiConfig.getJobSpeedUpFactor().setShow( _jobColumnSpecs.speedUpFactor.show );
         doiConfig.getJobSpeedUpFactor().setWidth( _jobColumnSpecs.speedUpFactor.width );                
+        doiConfig.setJobTimeRemaining( factory.createColumnSpec() );
+        doiConfig.getJobTimeRemaining().setShow( _jobColumnSpecs.timeRemaining.show );
+        doiConfig.getJobTimeRemaining().setWidth( _jobColumnSpecs.timeRemaining.width );                
         doiConfig.setJobNumAntennas( factory.createColumnSpec() );
         doiConfig.getJobNumAntennas().setShow( _jobColumnSpecs.numAntennas.show );
         doiConfig.getJobNumAntennas().setWidth( _jobColumnSpecs.numAntennas.width );                
@@ -3917,6 +3987,36 @@ public class SystemSettings extends JFrame {
         doiConfig.setHardwareNetTxRate( factory.createColumnSpec() );
         doiConfig.getHardwareNetTxRate().setShow( _hardwareColumnSpecs.NetTxRate.show );
         doiConfig.getHardwareNetTxRate().setWidth( _hardwareColumnSpecs.NetTxRate.width );
+        doiConfig.setHardwareActiveJob( factory.createColumnSpec() );
+        doiConfig.getHardwareActiveJob().setShow( _hardwareColumnSpecs.ActiveJob.show );
+        doiConfig.getHardwareActiveJob().setWidth( _hardwareColumnSpecs.ActiveJob.width );
+        doiConfig.setHardwareDataConsumed( factory.createColumnSpec() );
+        doiConfig.getHardwareDataConsumed().setShow( _hardwareColumnSpecs.DataConsumed.show );
+        doiConfig.getHardwareDataConsumed().setWidth( _hardwareColumnSpecs.DataConsumed.width );
+        doiConfig.setHardwareInputDatarate( factory.createColumnSpec() );
+        doiConfig.getHardwareInputDatarate().setShow( _hardwareColumnSpecs.InputDatarate.show );
+        doiConfig.getHardwareInputDatarate().setWidth( _hardwareColumnSpecs.InputDatarate.width );
+        doiConfig.setHardwareMemoryUsage( factory.createColumnSpec() );
+        doiConfig.getHardwareMemoryUsage().setShow( _hardwareColumnSpecs.MemoryUsage.show );
+        doiConfig.getHardwareMemoryUsage().setWidth( _hardwareColumnSpecs.MemoryUsage.width );
+        doiConfig.setHardwareNumBufElements( factory.createColumnSpec() );
+        doiConfig.getHardwareNumBufElements().setShow( _hardwareColumnSpecs.NumBufElements.show );
+        doiConfig.getHardwareNumBufElements().setWidth( _hardwareColumnSpecs.NumBufElements.width );
+        doiConfig.setHardwareStartBufElement( factory.createColumnSpec() );
+        doiConfig.getHardwareStartBufElement().setShow( _hardwareColumnSpecs.StartBufElement.show );
+        doiConfig.getHardwareStartBufElement().setWidth( _hardwareColumnSpecs.StartBufElement.width );
+        doiConfig.setHardwareActiveBufElement( factory.createColumnSpec() );
+        doiConfig.getHardwareActiveBufElement().setShow( _hardwareColumnSpecs.ActiveBufElement.show );
+        doiConfig.getHardwareActiveBufElement().setWidth( _hardwareColumnSpecs.ActiveBufElement.width );
+        doiConfig.setHardwareThreadID( factory.createColumnSpec() );
+        doiConfig.getHardwareThreadID().setShow( _hardwareColumnSpecs.ThreadID.show );
+        doiConfig.getHardwareThreadID().setWidth( _hardwareColumnSpecs.ThreadID.width );
+        doiConfig.setHardwareProcessMicrosec( factory.createColumnSpec() );
+        doiConfig.getHardwareProcessMicrosec().setShow( _hardwareColumnSpecs.ProcessMicrosec.show );
+        doiConfig.getHardwareProcessMicrosec().setWidth( _hardwareColumnSpecs.ProcessMicrosec.width );
+        doiConfig.setHardwareSubintsLost( factory.createColumnSpec() );
+        doiConfig.getHardwareSubintsLost().setShow( _hardwareColumnSpecs.SubintsLost.show );
+        doiConfig.getHardwareSubintsLost().setWidth( _hardwareColumnSpecs.SubintsLost.width );        
         doiConfig.setHardwareStateChanged( factory.createColumnSpec() );
         doiConfig.getHardwareStateChanged().setShow( _hardwareColumnSpecs.StateChanged.show );
         doiConfig.getHardwareStateChanged().setWidth( _hardwareColumnSpecs.StateChanged.width );
@@ -4956,6 +5056,7 @@ public class SystemSettings extends JFrame {
         ColumnSpec outputSize = new ColumnSpec();
         ColumnSpec difxVersion = new ColumnSpec();
         ColumnSpec speedUpFactor = new ColumnSpec();
+        ColumnSpec timeRemaining = new ColumnSpec();
         ColumnSpec numAntennas = new ColumnSpec();
         ColumnSpec numForeignAntennas = new ColumnSpec();
         ColumnSpec dutyCycle = new ColumnSpec();
@@ -4997,7 +5098,17 @@ public class SystemSettings extends JFrame {
         ColumnSpec Position = new ColumnSpec();
         ColumnSpec PlayRate = new ColumnSpec();
         ColumnSpec DataMJD = new ColumnSpec();
-        ColumnSpec CurrentJob = new ColumnSpec();
+        ColumnSpec CurrentJob = new ColumnSpec();        
+        ColumnSpec ActiveJob = new ColumnSpec();
+        ColumnSpec DataConsumed = new ColumnSpec();
+        ColumnSpec InputDatarate = new ColumnSpec();
+        ColumnSpec MemoryUsage = new ColumnSpec();
+        ColumnSpec NumBufElements = new ColumnSpec();
+        ColumnSpec StartBufElement = new ColumnSpec();
+        ColumnSpec ActiveBufElement = new ColumnSpec();
+        ColumnSpec ThreadID = new ColumnSpec();
+        ColumnSpec ProcessMicrosec = new ColumnSpec();
+        ColumnSpec SubintsLost = new ColumnSpec();
     }
     protected HardwareColumnSpecs _hardwareColumnSpecs;
     

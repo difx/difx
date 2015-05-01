@@ -14,6 +14,7 @@
     <xsd:element name="header" type="header"></xsd:element>
     <xsd:element name="body" type="body"></xsd:element>
     <xsd:element name="mark5Status" type="mark5Status"></xsd:element>
+    <xsd:element name="difxDiagnostic" type="difxDiagnostic"></xsd:element>
     <xsd:element name="difxLoad" type="difxLoad"></xsd:element>
     <xsd:element name="difxAlert" type="difxAlert"></xsd:element>
     <xsd:element name="difxStatus" type="difxStatus"></xsd:element>
@@ -58,6 +59,7 @@
             <xsd:element name="seqNumber" type="xsd:string"></xsd:element>
             <xsd:choice>
                 <xsd:element ref="mark5Status"/>
+                <xsd:element ref="difxDiagnostic"/>
                 <xsd:element ref="difxLoad"/>
                 <xsd:element ref="difxAlert"/>
                 <xsd:element ref="difxStatus"/>
@@ -282,6 +284,7 @@
                 <xsd:element ref="jobOutputSize" />
                 <xsd:element ref="jobDifxVersion" />
                 <xsd:element ref="jobSpeedUpFactor" />
+                <xsd:element ref="jobTimeRemaining" />
                 <xsd:element ref="jobNumAntennas" />
                 <xsd:element ref="jobNumForeignAntennas" />
                 <xsd:element ref="jobDutyCycle" />
@@ -321,6 +324,16 @@
                 <xsd:element ref="hardwarePlayRate" />
                 <xsd:element ref="hardwareDataMJD" />
                 <xsd:element ref="hardwareCurrentJob" />
+                <xsd:element ref="hardwareActiveJob" />
+                <xsd:element ref="hardwareDataConsumed" />
+                <xsd:element ref="hardwareInputDatarate" />
+                <xsd:element ref="hardwareMemoryUsage" />
+                <xsd:element ref="hardwareNumBufElements" />
+                <xsd:element ref="hardwareStartBufElement" />
+                <xsd:element ref="hardwareActiveBufElement" />
+                <xsd:element ref="hardwareThreadID" />
+                <xsd:element ref="hardwareProcessMicrosec" />
+                <xsd:element ref="hardwareSubintsLost" />
                 
                 <xsd:element ref="jobLocationDefaultsFileFilter" />
                 <xsd:element ref="jobLocationDefaultsExperimentBasedOnPathFalse" />
@@ -560,6 +573,7 @@
     <xsd:element name="jobOutputSize" type="columnSpec"></xsd:element>
     <xsd:element name="jobDifxVersion" type="columnSpec"></xsd:element>
     <xsd:element name="jobSpeedUpFactor" type="columnSpec"></xsd:element>
+    <xsd:element name="jobTimeRemaining" type="columnSpec"></xsd:element>
     <xsd:element name="jobNumAntennas" type="columnSpec"></xsd:element>
     <xsd:element name="jobNumForeignAntennas" type="columnSpec"></xsd:element>
     <xsd:element name="jobDutyCycle" type="columnSpec"></xsd:element>
@@ -599,6 +613,16 @@
     <xsd:element name="hardwarePlayRate" type="columnSpec"></xsd:element>
     <xsd:element name="hardwareDataMJD" type="columnSpec"></xsd:element>
     <xsd:element name="hardwareCurrentJob" type="columnSpec"></xsd:element>
+    <xsd:element name="hardwareActiveJob" type="columnSpec"></xsd:element>
+    <xsd:element name="hardwareDataConsumed" type="columnSpec"></xsd:element>
+    <xsd:element name="hardwareInputDatarate" type="columnSpec"></xsd:element>
+    <xsd:element name="hardwareMemoryUsage" type="columnSpec"></xsd:element>
+    <xsd:element name="hardwareNumBufElements" type="columnSpec"></xsd:element>
+    <xsd:element name="hardwareStartBufElement" type="columnSpec"></xsd:element>
+    <xsd:element name="hardwareActiveBufElement" type="columnSpec"></xsd:element>
+    <xsd:element name="hardwareThreadID" type="columnSpec"></xsd:element>
+    <xsd:element name="hardwareProcessMicrosec" type="columnSpec"></xsd:element>
+    <xsd:element name="hardwareSubintsLost" type="columnSpec"></xsd:element>
                 
     <xsd:element name="jobLocationDefaultsFileFilter" type="xsd:string"></xsd:element>
     <xsd:element name="jobLocationDefaultsExperimentBasedOnPathFalse" type="xsd:boolean"></xsd:element>
@@ -651,6 +675,20 @@
             <xsd:element name="position" type="xsd:long"></xsd:element>
             <xsd:element name="playRate" type="xsd:float"></xsd:element>
             <xsd:element name="dataMJD" type="xsd:string"></xsd:element>
+        </xsd:sequence>
+    </xsd:complexType>
+
+    <xsd:complexType name="difxDiagnostic">
+        <xsd:sequence>
+            <xsd:element name="diagnosticType" type="xsd:string"></xsd:element>
+            <xsd:element name="threadId" type="xsd:int"></xsd:element>
+            <xsd:element name="numBufElements" type="xsd:int"></xsd:element>
+            <xsd:element name="startBufElement" type="xsd:int"></xsd:element>
+            <xsd:element name="activeBufElements" type="xsd:int"></xsd:element>
+            <xsd:element name="bytespersec" type="xsd:double"></xsd:element>
+            <xsd:element name="bytes" type="xsd:long"></xsd:element>
+            <xsd:element name="numSubintsLost" type="xsd:long"></xsd:element>
+            <xsd:element name="microsec" type="xsd:double"></xsd:element>
         </xsd:sequence>
     </xsd:complexType>
 

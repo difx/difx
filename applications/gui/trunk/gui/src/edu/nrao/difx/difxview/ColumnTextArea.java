@@ -23,6 +23,15 @@ public class ColumnTextArea extends JPanel implements MouseListener, MouseMotion
         _text = "";
         _margin = 2;
         _justify = CENTER;
+        _flashActive = false;
+        _expireActive = false;
+        _flashColor = Color.YELLOW;
+        _flashTime = 2;
+        _flashCount = 0;
+        _expireCount = 0;
+        _expireTime = 60;
+        _flashThreadActive = false;
+        _this = this;
     }
     
     public ColumnTextArea( String newText ) {
@@ -40,6 +49,44 @@ public class ColumnTextArea extends JPanel implements MouseListener, MouseMotion
     
     public void setText( String newText ) {
         _text = newText;
+        //  See if we should be changing the background color or expiring the value.
+        if ( _flashActive || _expireActive ) {
+            synchronized ( _flashThreadActive ) {
+                if ( !_flashThreadActive ) {
+                    //  Create a new thread if one isn't running.
+                    _flashThread = new Thread() {
+                        public void run() {
+                            _flashThreadActive = true;
+                            while ( _flashCount > 0 || _expireCount > 0 ) {
+                                try { Thread.sleep( 1000 ); } catch ( Exception e ) {}
+                                _flashCount -= 1;
+                                _expireCount -= 1;
+                                if ( _expireCount <= 0 ) {
+                                    _this._text = "";
+                                    _this.updateUI();
+                                }
+                            }
+                            _flashThreadActive = false;
+                        }
+                    };
+                    _flashThread.start();
+                }
+            }
+            if ( _flashActive ) {
+                _flashCount = _flashTime;
+            }
+            if ( _expireActive )
+                _expireCount = _expireTime;
+        }
+    }
+    
+    @Override
+    public void setBackground( Color newColor ) {
+        _backgroundColor = newColor;
+        if ( _flashCount > 0 )
+            super.setBackground( _flashColor );
+        else
+            super.setBackground( _backgroundColor );
     }
     
     public String getText() {
@@ -55,6 +102,8 @@ public class ColumnTextArea extends JPanel implements MouseListener, MouseMotion
     @Override
     public void paintComponent( Graphics g1 ) {
         Graphics2D g = (Graphics2D)g1;
+        g.setRenderingHint( RenderingHints.KEY_ANTIALIASING,
+                     RenderingHints.VALUE_ANTIALIAS_ON );
         super.paintComponent( g );
         Dimension d = this.getSize();
         int height = g.getFontMetrics().getHeight();
@@ -175,6 +224,29 @@ public class ColumnTextArea extends JPanel implements MouseListener, MouseMotion
         this.setToolTipText( str );
         this.toolTipDynamicLinkPath( textField );
     }
+    
+    //--------------------------------------------------------------------------
+    //!  Determine whether to turn on the "flash" background when new data are
+    //!  added.  This colors the background with the flash color and keeps the
+    //!  background there for _flashTime seconds.  Then revert to the old background.
+    //--------------------------------------------------------------------------
+    void flashActive( boolean newVal ) { _flashActive = newVal; }
+    void flashTime( int newVal ) { _flashTime = newVal; }
+    void flashColor( Color newColor ) { _flashColor = newColor; }
+    void flashOff() {
+        _flashCount = 0;
+    }
+    
+    //--------------------------------------------------------------------------
+    //!  Determine whether to make information "expire".  If on, a value is
+    //!  displayed only for _expireTime seconds, then it goes away.  Changing
+    //!  the value resets the clock.
+    //--------------------------------------------------------------------------
+    void expireActive( boolean newVal ) { _expireActive = newVal; }
+    void expireTime( int newVal ) { _expireTime = newVal; }
+    void expireNow() {
+        _expireCount = 0;
+    }
 
     ComplexToolTip _tip;
     JTextComponent _dynamicLinkPath;
@@ -189,4 +261,15 @@ public class ColumnTextArea extends JPanel implements MouseListener, MouseMotion
     boolean _showKillButton;
     boolean _darkKillButton;
     ActionListener _killListener;
+    boolean _flashActive;
+    boolean _expireActive;
+    int _flashTime;
+    int _expireTime;
+    int _flashCount;
+    int _expireCount;
+    Color _flashColor;
+    Color _backgroundColor;
+    Thread _flashThread;
+    Boolean _flashThreadActive;
+    ColumnTextArea _this;
 }

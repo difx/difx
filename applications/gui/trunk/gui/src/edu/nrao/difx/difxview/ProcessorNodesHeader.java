@@ -182,6 +182,88 @@ public class ProcessorNodesHeader extends BrowserNode {
             }
         });
         this.add( _netTxRate );
+
+        _activeJob = new ColumnTextArea( "Active Job" );
+        _activeJob.addKillButton(new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                _showActiveJob.setState( false );
+                columnChangeActivity();
+            }
+        });
+        this.add( _activeJob );
+        _dataConsumed = new ColumnTextArea( "Consumed" );
+        _dataConsumed.addKillButton(new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                _showDataConsumed.setState( false );
+                columnChangeActivity();
+            }
+        });
+        this.add( _dataConsumed );
+        _inputDatarate = new ColumnTextArea( "Input Rate" );
+        _inputDatarate.addKillButton(new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                _showInputDatarate.setState( false );
+                columnChangeActivity();
+            }
+        });
+        this.add( _inputDatarate );
+        _memoryUsage = new ColumnTextArea( "Mem Usage" );
+        _memoryUsage.addKillButton(new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                _showMemoryUsage.setState( false );
+                columnChangeActivity();
+            }
+        });
+        this.add( _memoryUsage );
+        _numBufElements = new ColumnTextArea( "Buf Elements" );
+        _numBufElements.addKillButton(new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                _showNumBufElements.setState( false );
+                columnChangeActivity();
+            }
+        });
+        this.add( _numBufElements );
+        _startBufElement = new ColumnTextArea( "Start Element" );
+        _startBufElement.addKillButton(new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                _showStartBufElement.setState( false );
+                columnChangeActivity();
+            }
+        });
+        this.add( _startBufElement );
+        _activeBufElement = new ColumnTextArea( "Active Element" );
+        _activeBufElement.addKillButton(new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                _showActiveBufElement.setState( false );
+                columnChangeActivity();
+            }
+        });
+        this.add( _activeBufElement );
+        _threadID = new ColumnTextArea( "Thread ID" );
+        _threadID.addKillButton(new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                _showThreadID.setState( false );
+                columnChangeActivity();
+            }
+        });
+        this.add( _threadID );
+        _processMicrosec = new ColumnTextArea( "Process microsec" );
+        _processMicrosec.addKillButton(new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                _showProcessMicrosec.setState( false );
+                columnChangeActivity();
+            }
+        });
+        this.add( _processMicrosec );
+        _subintsLost = new ColumnTextArea( "Subints Lost" );
+        _subintsLost.addKillButton(new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                _showSubintsLost.setState( false );
+                columnChangeActivity();
+            }
+        });
+        this.add( _subintsLost );
+        
         //  Create a popup menu that allows us to turn things on and off
         _popup = new JPopupMenu();
         JMenuItem selectAllItem = new JMenuItem( "Select All" );
@@ -406,6 +488,77 @@ public class ProcessorNodesHeader extends BrowserNode {
             }
         });
         _popup.add( _showNetTxRate );
+        
+        _showActiveJob = new JCheckBoxMenuItem( "Active Job" );
+        _showActiveJob.addActionListener(new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                columnChangeActivity();
+            }
+        });
+        _popup.add( _showActiveJob );
+        _showDataConsumed = new JCheckBoxMenuItem( "Data Consumed" );
+        _showDataConsumed.addActionListener(new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                columnChangeActivity();
+            }
+        });
+        _popup.add( _showDataConsumed );
+        _showInputDatarate = new JCheckBoxMenuItem( "Input Data Rate" );
+        _showInputDatarate.addActionListener(new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                columnChangeActivity();
+            }
+        });
+        _popup.add( _showInputDatarate );
+        _showMemoryUsage = new JCheckBoxMenuItem( "Memory Usage (from diagnostics messages)" );
+        _showMemoryUsage.addActionListener(new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                columnChangeActivity();
+            }
+        });
+        _popup.add( _showMemoryUsage );
+        _showNumBufElements = new JCheckBoxMenuItem( "Buffer Status: Num Elements" );
+        _showNumBufElements.addActionListener(new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                columnChangeActivity();
+            }
+        });
+        _popup.add( _showNumBufElements );
+        _showStartBufElement = new JCheckBoxMenuItem( "Buffer Status: Start Element" );
+        _showStartBufElement.addActionListener(new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                columnChangeActivity();
+            }
+        });
+        _popup.add( _showStartBufElement );
+        _showActiveBufElement = new JCheckBoxMenuItem( "Buffer Status: Active Element" );
+        _showActiveBufElement.addActionListener(new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                columnChangeActivity();
+            }
+        });
+        _popup.add( _showActiveBufElement );
+        _showThreadID = new JCheckBoxMenuItem( "Processing Time: Thread ID" );
+        _showThreadID.addActionListener(new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                columnChangeActivity();
+            }
+        });
+        _popup.add( _showThreadID );
+        _showProcessMicrosec = new JCheckBoxMenuItem( "Processing Time: microsec" );
+        _showProcessMicrosec.addActionListener(new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                columnChangeActivity();
+            }
+        });
+        _popup.add( _showProcessMicrosec );
+        _showSubintsLost = new JCheckBoxMenuItem( "Number of Subints Lost" );
+        _showSubintsLost.addActionListener(new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                columnChangeActivity();
+            }
+        });
+        _popup.add( _showSubintsLost );
     }
     
     /*
@@ -429,6 +582,16 @@ public class ProcessorNodesHeader extends BrowserNode {
         _showMemLoadPlot.setState( true );
         _showNetRxRate.setState( true );
         _showNetTxRate.setState( true );
+        _showActiveJob.setState( true );
+        _showDataConsumed.setState( true );
+        _showInputDatarate.setState( true );
+        _showMemoryUsage.setState( true );
+        _showNumBufElements.setState( true );
+        _showStartBufElement.setState( true );
+        _showActiveBufElement.setState( true );
+        _showThreadID.setState( true );
+        _showProcessMicrosec.setState( true );
+        _showSubintsLost.setState( true );
         columnChangeActivity();
     }
 
@@ -547,7 +710,67 @@ public class ProcessorNodesHeader extends BrowserNode {
             _positionNetTxRate = _xOff;
         }
         else
-            _positionNetTxRate = -100;
+            _positionNetTxRate = -100;        
+        if ( _showActiveJob.getState() ) {
+            setTextArea( _activeJob, _settings.hardwareColumnSpecs().ActiveJob.width );
+            _positionActiveJob = _xOff;
+        }
+        else
+            _positionActiveJob = -100;
+        if ( _showDataConsumed.getState() ) {
+            setTextArea( _dataConsumed, _settings.hardwareColumnSpecs().DataConsumed.width );
+            _positionDataConsumed = _xOff;
+        }
+        else
+            _positionDataConsumed = -100;
+        if ( _showInputDatarate.getState() ) {
+            setTextArea( _inputDatarate, _settings.hardwareColumnSpecs().InputDatarate.width );
+            _positionInputDatarate = _xOff;
+        }
+        else
+            _positionInputDatarate = -100;
+        if ( _showMemoryUsage.getState() ) {
+            setTextArea( _memoryUsage, _settings.hardwareColumnSpecs().MemoryUsage.width );
+            _positionMemoryUsage = _xOff;
+        }
+        else
+            _positionMemoryUsage = -100;
+        if ( _showNumBufElements.getState() ) {
+            setTextArea( _numBufElements, _settings.hardwareColumnSpecs().NumBufElements.width );
+            _positionNumBufElements = _xOff;
+        }
+        else
+            _positionNumBufElements = -100;
+        if ( _showStartBufElement.getState() ) {
+            setTextArea( _startBufElement, _settings.hardwareColumnSpecs().StartBufElement.width );
+            _positionStartBufElement = _xOff;
+        }
+        else
+            _positionStartBufElement = -100;
+        if ( _showActiveBufElement.getState() ) {
+            setTextArea( _activeBufElement, _settings.hardwareColumnSpecs().ActiveBufElement.width );
+            _positionActiveBufElement = _xOff;
+        }
+        else
+            _positionActiveBufElement = -100;
+        if ( _showThreadID.getState() ) {
+            setTextArea( _threadID, _settings.hardwareColumnSpecs().ThreadID.width );
+            _positionThreadID = _xOff;
+        }
+        else
+            _positionThreadID = -100;
+        if ( _showProcessMicrosec.getState() ) {
+            setTextArea( _processMicrosec, _settings.hardwareColumnSpecs().ProcessMicrosec.width );
+            _positionProcessMicrosec = _xOff;
+        }
+        else
+            _positionProcessMicrosec = -100;
+        if ( _showSubintsLost.getState() ) {
+            setTextArea( _subintsLost, _settings.hardwareColumnSpecs().SubintsLost.width );
+            _positionSubintsLost = _xOff;
+        }
+        else
+            _positionSubintsLost = -100;
     }
     
     public void setTextArea( Component area, int xSize ) {
@@ -583,6 +806,16 @@ public class ProcessorNodesHeader extends BrowserNode {
         _showMemLoadPlot.setState( _settings.hardwareColumnSpecs().MemLoadPlot.show );
         _showNetRxRate.setState( _settings.hardwareColumnSpecs().NetRxRate.show );
         _showNetTxRate.setState( _settings.hardwareColumnSpecs().NetTxRate.show );
+        _showActiveJob.setState( _settings.hardwareColumnSpecs().ActiveJob.show );
+        _showDataConsumed.setState( _settings.hardwareColumnSpecs().DataConsumed.show );
+        _showInputDatarate.setState( _settings.hardwareColumnSpecs().InputDatarate.show );
+        _showMemoryUsage.setState( _settings.hardwareColumnSpecs().MemoryUsage.show );
+        _showNumBufElements.setState( _settings.hardwareColumnSpecs().NumBufElements.show );
+        _showStartBufElement.setState( _settings.hardwareColumnSpecs().StartBufElement.show );
+        _showActiveBufElement.setState( _settings.hardwareColumnSpecs().ActiveBufElement.show );
+        _showThreadID.setState( _settings.hardwareColumnSpecs().ThreadID.show );
+        _showProcessMicrosec.setState( _settings.hardwareColumnSpecs().ProcessMicrosec.show );
+        _showSubintsLost.setState( _settings.hardwareColumnSpecs().SubintsLost.show );
     }
     
     /*
@@ -608,6 +841,16 @@ public class ProcessorNodesHeader extends BrowserNode {
             thisNode.widthMemLoadPlot( _settings.hardwareColumnSpecs().MemLoadPlot.width );
             thisNode.widthNetRxRate( _settings.hardwareColumnSpecs().NetRxRate.width );
             thisNode.widthNetTxRate( _settings.hardwareColumnSpecs().NetTxRate.width );
+            thisNode.widthActiveJob( _settings.hardwareColumnSpecs().ActiveJob.width );
+            thisNode.widthDataConsumed( _settings.hardwareColumnSpecs().DataConsumed.width );
+            thisNode.widthInputDatarate( _settings.hardwareColumnSpecs().InputDatarate.width );
+            thisNode.widthMemoryUsage( _settings.hardwareColumnSpecs().MemoryUsage.width );
+            thisNode.widthNumBufElements( _settings.hardwareColumnSpecs().NumBufElements.width );
+            thisNode.widthStartBufElement( _settings.hardwareColumnSpecs().StartBufElement.width );
+            thisNode.widthActiveBufElement( _settings.hardwareColumnSpecs().ActiveBufElement.width );
+            thisNode.widthThreadID( _settings.hardwareColumnSpecs().ThreadID.width );
+            thisNode.widthProcessMicrosec( _settings.hardwareColumnSpecs().ProcessMicrosec.width );
+            thisNode.widthSubintsLost( _settings.hardwareColumnSpecs().SubintsLost.width );
             thisNode.updateUI();
         }
     }
@@ -853,6 +1096,16 @@ public class ProcessorNodesHeader extends BrowserNode {
         _adjustMemLoadPlot = false;
         _adjustNetRxRate = false;
         _adjustNetTxRate = false;
+        _adjustActiveJob = false;
+        _adjustDataConsumed = false;
+        _adjustInputDatarate = false;
+        _adjustMemoryUsage = false;
+        _adjustNumBufElements = false;
+        _adjustStartBufElement = false;
+         _adjustActiveBufElement = false;
+        _adjustThreadID = false;
+        _adjustProcessMicrosec = false;
+        _adjustSubintsLost = false;
         if ( e.getX() > _positionNumCPUs - 3 && e.getX() < _positionNumCPUs + 2 ) {
             setCursor( _columnAdjustCursor );
             _adjustNumCPUs = true;
@@ -916,6 +1169,46 @@ public class ProcessorNodesHeader extends BrowserNode {
         else if ( e.getX() > _positionNetTxRate - 3 && e.getX() < _positionNetTxRate + 2 ) {
             setCursor( _columnAdjustCursor );
             _adjustNetTxRate = true;
+        }        
+        else if ( e.getX() > _positionActiveJob - 3 && e.getX() < _positionActiveJob + 2 ) {
+            setCursor( _columnAdjustCursor );
+            _adjustActiveJob = true;
+        }
+        else if ( e.getX() > _positionDataConsumed - 3 && e.getX() < _positionDataConsumed + 2 ) {
+            setCursor( _columnAdjustCursor );
+            _adjustDataConsumed = true;
+        }
+        else if ( e.getX() > _positionInputDatarate - 3 && e.getX() < _positionInputDatarate + 2 ) {
+            setCursor( _columnAdjustCursor );
+            _adjustInputDatarate = true;
+        }
+        else if ( e.getX() > _positionMemoryUsage - 3 && e.getX() < _positionMemoryUsage + 2 ) {
+            setCursor( _columnAdjustCursor );
+            _adjustMemoryUsage = true;
+        }
+        else if ( e.getX() > _positionNumBufElements - 3 && e.getX() < _positionNumBufElements + 2 ) {
+            setCursor( _columnAdjustCursor );
+            _adjustNumBufElements = true;
+        }
+        else if ( e.getX() > _positionStartBufElement - 3 && e.getX() < _positionStartBufElement + 2 ) {
+            setCursor( _columnAdjustCursor );
+            _adjustStartBufElement = true;
+        }
+        else if ( e.getX() > _positionActiveBufElement - 3 && e.getX() < _positionActiveBufElement + 2 ) {
+            setCursor( _columnAdjustCursor );
+            _adjustActiveBufElement = true;
+        }
+        else if ( e.getX() > _positionThreadID - 3 && e.getX() < _positionThreadID + 2 ) {
+            setCursor( _columnAdjustCursor );
+            _adjustThreadID = true;
+        }
+        else if ( e.getX() > _positionProcessMicrosec - 3 && e.getX() < _positionProcessMicrosec + 2 ) {
+            setCursor( _columnAdjustCursor );
+            _adjustProcessMicrosec = true;
+        }
+        else if ( e.getX() > _positionSubintsLost - 3 && e.getX() < _positionSubintsLost + 2 ) {
+            setCursor( _columnAdjustCursor );
+            _adjustSubintsLost = true;
         }
         else {
             super.mouseMoved( e );
@@ -992,6 +1285,46 @@ public class ProcessorNodesHeader extends BrowserNode {
             _startWidth = _settings.hardwareColumnSpecs().NetTxRate.width;
             _startX = e.getX();
         }
+        else if ( _adjustActiveJob ) {
+            _startWidth = _settings.hardwareColumnSpecs().ActiveJob.width;
+            _startX = e.getX();
+        }
+        else if ( _adjustDataConsumed ) {
+            _startWidth = _settings.hardwareColumnSpecs().DataConsumed.width;
+            _startX = e.getX();
+        }
+        else if ( _adjustInputDatarate ) {
+            _startWidth = _settings.hardwareColumnSpecs().InputDatarate.width;
+            _startX = e.getX();
+        }
+        else if ( _adjustMemoryUsage ) {
+            _startWidth = _settings.hardwareColumnSpecs().MemoryUsage.width;
+            _startX = e.getX();
+        }
+        else if ( _adjustNumBufElements ) {
+            _startWidth = _settings.hardwareColumnSpecs().NumBufElements.width;
+            _startX = e.getX();
+        }
+        else if ( _adjustStartBufElement ) {
+            _startWidth = _settings.hardwareColumnSpecs().StartBufElement.width;
+            _startX = e.getX();
+        }
+        else if ( _adjustActiveBufElement ) {
+            _startWidth = _settings.hardwareColumnSpecs().ActiveBufElement.width;
+            _startX = e.getX();
+        }
+        else if ( _adjustThreadID ) {
+            _startWidth = _settings.hardwareColumnSpecs().ThreadID.width;
+            _startX = e.getX();
+        }
+        else if ( _adjustProcessMicrosec ) {
+            _startWidth = _settings.hardwareColumnSpecs().ProcessMicrosec.width;
+            _startX = e.getX();
+        }
+        else if ( _adjustSubintsLost ) {
+            _startWidth = _settings.hardwareColumnSpecs().SubintsLost.width;
+            _startX = e.getX();
+        }
         else
             super.mousePressed( e );
     }
@@ -1065,6 +1398,48 @@ public class ProcessorNodesHeader extends BrowserNode {
             if ( e.getX() - _startX + _startWidth > 5 )
                 _settings.hardwareColumnSpecs().NetTxRate.width = _startWidth + e.getX() - _startX;
         }
+
+        else if ( _adjustActiveJob ) {
+            if ( e.getX() - _startX + _startWidth > 5 )
+                _settings.hardwareColumnSpecs().ActiveJob.width = _startWidth + e.getX() - _startX;
+        }
+        else if ( _adjustDataConsumed ) {
+            if ( e.getX() - _startX + _startWidth > 5 )
+                _settings.hardwareColumnSpecs().DataConsumed.width = _startWidth + e.getX() - _startX;
+        }
+        else if ( _adjustInputDatarate ) {
+            if ( e.getX() - _startX + _startWidth > 5 )
+                _settings.hardwareColumnSpecs().InputDatarate.width = _startWidth + e.getX() - _startX;
+        }
+        else if ( _adjustMemoryUsage ) {
+            if ( e.getX() - _startX + _startWidth > 5 )
+                _settings.hardwareColumnSpecs().MemoryUsage.width = _startWidth + e.getX() - _startX;
+        }
+        else if ( _adjustNumBufElements ) {
+            if ( e.getX() - _startX + _startWidth > 5 )
+                _settings.hardwareColumnSpecs().NumBufElements.width = _startWidth + e.getX() - _startX;
+        }
+        else if ( _adjustStartBufElement ) {
+            if ( e.getX() - _startX + _startWidth > 5 )
+                _settings.hardwareColumnSpecs().StartBufElement.width = _startWidth + e.getX() - _startX;
+        }
+        else if ( _adjustActiveBufElement ) {
+            if ( e.getX() - _startX + _startWidth > 5 )
+                _settings.hardwareColumnSpecs().ActiveBufElement.width = _startWidth + e.getX() - _startX;
+        }
+        else if ( _adjustThreadID ) {
+            if ( e.getX() - _startX + _startWidth > 5 )
+                _settings.hardwareColumnSpecs().ThreadID.width = _startWidth + e.getX() - _startX;
+        }
+        else if ( _adjustProcessMicrosec ) {
+            if ( e.getX() - _startX + _startWidth > 5 )
+                _settings.hardwareColumnSpecs().ProcessMicrosec.width = _startWidth + e.getX() - _startX;
+        }
+        else if ( _adjustSubintsLost ) {
+            if ( e.getX() - _startX + _startWidth > 5 )
+                _settings.hardwareColumnSpecs().SubintsLost.width = _startWidth + e.getX() - _startX;
+        }
+        
         setChildColumnWidths();
         Object[] listeners = _columnChangeListeners.getListenerList();
         int numListeners = listeners.length;
@@ -1112,6 +1487,16 @@ public class ProcessorNodesHeader extends BrowserNode {
             thisNode.showMemLoadPlot( _showMemLoadPlot.getState() );
             thisNode.showNetRxRate( _showNetRxRate.getState() );
             thisNode.showNetTxRate( _showNetTxRate.getState() );
+            thisNode.showActiveJob( _showActiveJob.getState() );
+            thisNode.showDataConsumed( _showDataConsumed.getState() );
+            thisNode.showInputDatarate( _showInputDatarate.getState() );
+            thisNode.showMemoryUsage( _showMemoryUsage.getState() );
+            thisNode.showNumBufElements( _showNumBufElements.getState() );
+            thisNode.showStartBufElement( _showStartBufElement.getState() );
+            thisNode.showActiveBufElement( _showActiveBufElement.getState() );
+            thisNode.showThreadID( _showThreadID.getState() );
+            thisNode.showProcessMicrosec( _showProcessMicrosec.getState() );
+            thisNode.showSubintsLost( _showSubintsLost.getState() );
             thisNode.updateUI();
         }
         //  Update the headers as well.
@@ -1131,6 +1516,16 @@ public class ProcessorNodesHeader extends BrowserNode {
         _memLoadPlot.setVisible( _showMemLoadPlot.getState() );
         _netRxRate.setVisible( _showNetRxRate.getState() );
         _netTxRate.setVisible( _showNetTxRate.getState() );
+        _activeJob.setVisible( _showActiveJob.getState() );
+        _dataConsumed.setVisible( _showDataConsumed.getState() );
+        _inputDatarate.setVisible( _showInputDatarate.getState() );
+        _memoryUsage.setVisible( _showMemoryUsage.getState() );
+        _numBufElements.setVisible( _showNumBufElements.getState() );
+        _startBufElement.setVisible( _showStartBufElement.getState() );
+        _activeBufElement.setVisible( _showActiveBufElement.getState() );
+        _threadID.setVisible( _showThreadID.getState() );
+        _processMicrosec.setVisible( _showProcessMicrosec.getState() );
+        _subintsLost.setVisible( _showSubintsLost.getState() );
         this.updateUI();
         //  And the saved settings.
         _settings.hardwareColumnSpecs().Ignored.show = _showIgnored.getState();
@@ -1151,6 +1546,16 @@ public class ProcessorNodesHeader extends BrowserNode {
         _settings.hardwareColumnSpecs().MemLoadPlot.show = _showMemLoadPlot.getState();
         _settings.hardwareColumnSpecs().NetRxRate.show = _showNetRxRate.getState();
         _settings.hardwareColumnSpecs().NetTxRate.show = _showNetTxRate.getState();        
+        _settings.hardwareColumnSpecs().ActiveJob.show = _showActiveJob.getState();
+        _settings.hardwareColumnSpecs().DataConsumed.show = _showDataConsumed.getState();
+        _settings.hardwareColumnSpecs().InputDatarate.show = _showInputDatarate.getState();
+        _settings.hardwareColumnSpecs().MemoryUsage.show = _showMemoryUsage.getState();
+        _settings.hardwareColumnSpecs().NumBufElements.show = _showNumBufElements.getState();
+        _settings.hardwareColumnSpecs().StartBufElement.show = _showStartBufElement.getState();
+        _settings.hardwareColumnSpecs().ActiveBufElement.show = _showActiveBufElement.getState();
+        _settings.hardwareColumnSpecs().ThreadID.show = _showThreadID.getState();
+        _settings.hardwareColumnSpecs().ProcessMicrosec.show = _showProcessMicrosec.getState();
+        _settings.hardwareColumnSpecs().SubintsLost.show = _showSubintsLost.getState();
     }
     
     protected JCheckBoxMenuItem _showIgnored;
@@ -1172,6 +1577,17 @@ public class ProcessorNodesHeader extends BrowserNode {
     protected JCheckBoxMenuItem _showNetRxRate;
     protected JCheckBoxMenuItem _showNetTxRate;
     
+    protected JCheckBoxMenuItem _showActiveJob;
+    protected JCheckBoxMenuItem _showDataConsumed;
+    protected JCheckBoxMenuItem _showInputDatarate;
+    protected JCheckBoxMenuItem _showMemoryUsage;
+    protected JCheckBoxMenuItem _showNumBufElements;
+    protected JCheckBoxMenuItem _showStartBufElement;
+    protected JCheckBoxMenuItem _showActiveBufElement;
+    protected JCheckBoxMenuItem _showThreadID;
+    protected JCheckBoxMenuItem _showProcessMicrosec;
+    protected JCheckBoxMenuItem _showSubintsLost;
+
     ColumnTextArea _numCPUs;
     ColumnTextArea _threadsUsed;
     ColumnTextArea _numCores;
@@ -1188,6 +1604,17 @@ public class ProcessorNodesHeader extends BrowserNode {
     ColumnTextArea _memLoadPlot;
     ColumnTextArea _netRxRate;
     ColumnTextArea _netTxRate;
+
+    ColumnTextArea _activeJob;
+    ColumnTextArea _dataConsumed;
+    ColumnTextArea _inputDatarate;
+    ColumnTextArea _memoryUsage;
+    ColumnTextArea _numBufElements;
+    ColumnTextArea _startBufElement;
+    ColumnTextArea _activeBufElement;
+    ColumnTextArea _threadID;
+    ColumnTextArea _processMicrosec;
+    ColumnTextArea _subintsLost;
 
     int _positionNumCPUs;
     int _positionThreadsUsed;
@@ -1206,6 +1633,17 @@ public class ProcessorNodesHeader extends BrowserNode {
     int _positionNetRxRate;
     int _positionNetTxRate;
 
+    int _positionActiveJob;
+    int _positionDataConsumed;
+    int _positionInputDatarate;
+    int _positionMemoryUsage;
+    int _positionNumBufElements;
+    int _positionStartBufElement;
+    int _positionActiveBufElement;
+    int _positionThreadID;
+    int _positionProcessMicrosec;
+    int _positionSubintsLost;
+
     boolean _adjustNumCPUs;
     boolean _adjustThreadsUsed;
     boolean _adjustNumCores;
@@ -1222,6 +1660,17 @@ public class ProcessorNodesHeader extends BrowserNode {
     boolean _adjustMemLoadPlot;
     boolean _adjustNetRxRate;
     boolean _adjustNetTxRate;
+
+    boolean _adjustActiveJob;
+    boolean _adjustDataConsumed;
+    boolean _adjustInputDatarate;
+    boolean _adjustMemoryUsage;
+    boolean _adjustNumBufElements;
+    boolean _adjustStartBufElement;
+    boolean _adjustActiveBufElement;
+    boolean _adjustThreadID;
+    boolean _adjustProcessMicrosec;
+    boolean _adjustSubintsLost;
 
     protected int _xOff;
     

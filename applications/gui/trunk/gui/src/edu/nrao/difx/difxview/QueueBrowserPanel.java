@@ -452,6 +452,12 @@ public class QueueBrowserPanel extends TearOffPanel {
                 processDifxAlertMessage( difxMsg );
             }
         } );
+        processor.addDifxDiagnosticMessageListener(new AttributedMessageListener() {
+            @Override
+            public void update( DifxMessage difxMsg ) {
+                processDifxDiagnosticMessage( difxMsg );
+            }
+        } );
     }
     
     protected class KeyEventListener extends KeyAdapter {    
@@ -1907,6 +1913,13 @@ public class QueueBrowserPanel extends TearOffPanel {
         serviceUpdate( difxMsg );
     }
     
+    //--------------------------------------------------------------------------
+    //!  Diagnostic messages are job-related.
+    //--------------------------------------------------------------------------
+    protected void processDifxDiagnosticMessage( DifxMessage difxMsg ) {
+        serviceUpdate( difxMsg );
+    }
+    
     /*
      * Process a DiFX Alert message.  Here we are only interested in the "alerts" that
      * appear to emerge from jobs.  For the moment I'm assuming any alert that does
@@ -2164,6 +2177,8 @@ public class QueueBrowserPanel extends TearOffPanel {
         _browserPane.updateUI();
     }   
     
+    public JobNodesHeader header() { return _header; }
+    
     protected NodeBrowserScrollPane _browserPane;
     protected NodeBrowserScrollPane _headerPane;
     protected JLabel _mainLabel;
@@ -2201,6 +2216,49 @@ public class QueueBrowserPanel extends TearOffPanel {
     protected DiskSearchRules _diskSearchRules;
     protected ArrayDeque<JobNode> _scheduleQueue;
     protected ScheduleThread _scheduleThread;
+    
+    protected Double _extraTime;
+    protected Double _startBuffer;
+    protected Double _timePerBaselinePerSecond;
+    protected Integer _lastBaselines;
+    protected Double _lastDuration;
+    
+    //--------------------------------------------------------------------------
+    //!  As jobs run they provide us with statistics that can be used to improve
+    //!  the estimates of how long jobs will take to run.
+    //--------------------------------------------------------------------------
+    public void jobRunStats( double startBuffer, double runTime, int baselines, double duration, double extraTime ) {
+        //  The "extra time" is the number of extra seconds a job had in its estimate
+        //  of how long a job needed to run when it actually ended.  This is used to
+        //  try to account for the "rapid completion" exhibited by DiFX jobs (where
+        //  the "fraction completed" jumps non-linearly in time to 100%).
+        _extraTime = extraTime;  //  crude estimate now...
+        _startBuffer = startBuffer;
+        _lastBaselines = baselines;
+        _lastDuration = duration;
+        _timePerBaselinePerSecond = ( runTime - startBuffer ) / duration / (double)baselines;
+    }
+    
+    public double estimateExtraTime() {
+        if ( _extraTime == null )
+            return 0.0;
+        else
+            return _extraTime;
+    }
+    
+    public double estimateStartBuffer() {
+        if ( _startBuffer == null )
+            return 0.0;
+        else
+            return _startBuffer;
+    }
+    
+    public double estimateProcessTime( int baselines, double duration ) {
+        if ( _timePerBaselinePerSecond == null )
+            return 0.0;
+        else
+            return _timePerBaselinePerSecond * duration * (double)baselines;
+    }
     
     /*
      * Add a new job to the scheduling queue.  Return true if this was successful, false if not
@@ -2241,6 +2299,7 @@ public class QueueBrowserPanel extends TearOffPanel {
         return found;
     }
     
+    
     class ScheduleThread extends Thread {
         public boolean keepGoing = true;
         @Override
@@ -2269,6 +2328,7 @@ public class QueueBrowserPanel extends TearOffPanel {
                         }
                         else if ( thisJob.autostate() == JobNode.AUTOSTATE_SCHEDULED ) {
                             ++scheduleCount;
+                            thisJob.initializeTimeRemaining();
                             thisJob.state().setText( "Scheduled (" + scheduleCount + ")" );
                             thisJob.state().updateUI();
                         }
@@ -2334,9 +2394,12 @@ public class QueueBrowserPanel extends TearOffPanel {
                     for ( Iterator<BrowserNode> iter = _browserPane.browserTopNode().childrenIterator(); iter.hasNext(); ) {
                         ExperimentNode thisExperiment = (ExperimentNode)(iter.next());
                         thisExperiment.clearCounters();
+                        boolean experimentRunning = false;
+                        double experimentTimeRemaining = 0.0;
                         for ( Iterator<BrowserNode> pIter = thisExperiment.childrenIterator(); pIter.hasNext(); ) {
                             PassNode thisPass = (PassNode)(pIter.next());
                             thisPass.clearCounters();
+                            double passTimeRemaining = 0.0;
                             for ( Iterator<BrowserNode> jIter = thisPass.childrenIterator(); jIter.hasNext(); ) {
                                 JobNode thisJob = (JobNode)(jIter.next());
                                 thisPass.addJobs( 1 );
@@ -2348,18 +2411,57 @@ public class QueueBrowserPanel extends TearOffPanel {
                                         thisPass.addFailed( 1 );
                                         break;
                                     case JobNode.AUTOSTATE_INITIALIZING:
-                                    case JobNode.AUTOSTATE_READY:
                                     case JobNode.AUTOSTATE_RUNNING:
                                     case JobNode.AUTOSTATE_SCHEDULED:
+                                    case JobNode.AUTOSTATE_READY:
                                         thisPass.addScheduled( 1 );
+                                        //  If this job has a "calculated" time remaining, use it.
+                                        if ( thisJob.calculatedTimeRemaining() != null )
+                                            passTimeRemaining += thisJob.calculatedTimeRemaining();
+                                        //  Otherwise, take a guess as it based on previous jobs.
+                                        else {
+                                            if ( _lastDuration != null && _lastBaselines != null )
+                                                passTimeRemaining += estimateProcessTime( _lastBaselines, _lastDuration )
+                                                        + estimateStartBuffer();
+//                                        timeRemaining += _settings.queueBrowser().estimateProcessTime( editorMonitor()._inputFile.baselineTable().num,
+//                    _jobDuration ) + _settings.queueBrowser().estimateStartBuffer();
+                                        }
                                         break;
                                 }
                             }
+                            thisPass.timeRemaining( passTimeRemaining );
+                            experimentTimeRemaining += passTimeRemaining;
+                            //  This stuff is used to isolate the correlation time for this pass.
+                            if ( thisPass.numScheduled() > 0 ) {
+                                if ( thisPass.correlating ) {
+                                    thisPass.correlationTime( (double)System.currentTimeMillis() / 1000.0 - thisPass.correlationStart );
+                                    experimentRunning = true;
+                                }
+                                else {
+                                    thisPass.correlating = true;
+                                    thisPass.correlationStart = (double)System.currentTimeMillis() / 1000.0;
+                                    experimentRunning = true;
+                                }
+                            }
+                            else {
+                                thisPass.correlating = false;
+                            }
                             thisPass.displayNow();
+                            thisExperiment.timeRemaining( experimentTimeRemaining );
                             thisExperiment.addJobs( thisPass.numJobs() );
                             thisExperiment.addScheduled( thisPass.numScheduled() );
                             thisExperiment.addCompleted( thisPass.numCompleted() );
                             thisExperiment.addFailed( thisPass.numFailed() );
+                            //  This stuff is used to isolate the correlation time for this experiment.
+                            if ( experimentRunning && !thisExperiment.correlating ) {
+                                thisExperiment.correlating = true;
+                                thisExperiment.correlationStart = (double)System.currentTimeMillis() / 1000.0;
+                            }
+                            else if ( experimentRunning && thisExperiment.correlating ) {
+                                thisExperiment.correlationTime( (double)System.currentTimeMillis() / 1000.0 - thisExperiment.correlationStart );
+                            }
+                            else
+                                thisExperiment.correlating = false;
                         }
                         thisExperiment.displayNow();
                     }

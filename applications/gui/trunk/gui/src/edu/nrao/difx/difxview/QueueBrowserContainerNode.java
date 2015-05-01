@@ -1,4 +1,5 @@
 package edu.nrao.difx.difxview;
+import static edu.nrao.difx.difxview.JobNode.fromSeconds;
 import javax.swing.JProgressBar;
 import javax.swing.JLabel;
 import java.awt.Color;
@@ -22,6 +23,18 @@ public class QueueBrowserContainerNode extends QueueBrowserNode {
         _progress.setStringPainted( true );
         _progress.setVisible( false );
         this.add( _progress );
+        _correlationTime = new ColumnTextArea();
+        _correlationTime.setVisible( false );
+        _correlationTime.setBackground( Color.WHITE );
+        _correlationTime.setToolTipText( "Time the scheduler has been continually running jobs." );
+        _correlationTime.justify( ColumnTextArea.RIGHT );
+        this.add( _correlationTime );
+        _timeRemaining = new ColumnTextArea();
+        _timeRemaining.setVisible( false );
+        _timeRemaining.setBackground( Color.WHITE );
+        _timeRemaining.setToolTipText( "An estimate of the time required to complete all scheduled jobs." );
+        _timeRemaining.justify( ColumnTextArea.RIGHT );
+        this.add( _timeRemaining );
         _failedLabel = new ColumnTextArea();
         _failedLabel.setBackground( Color.RED );
         _failedLabel.setVisible( false );
@@ -41,7 +54,27 @@ public class QueueBrowserContainerNode extends QueueBrowserNode {
             xOff += _settings.jobColumnSpecs().state.width;
             _progress.setBounds( xOff, 0, _settings.jobColumnSpecs().progressBar.width, _ySize );
             xOff += _settings.jobColumnSpecs().progressBar.width;
-            _failedLabel.setBounds( xOff, 0, _settings.jobColumnSpecs().correlationTime.width, _ySize );
+            if ( _settings.jobColumnSpecs().correlationTime.show ) {
+                if ( _settings.queueBrowser().header() != null ) {
+                    _correlationTime.setBounds( _settings.queueBrowser().header().positionCorrelationTime() - _settings.jobColumnSpecs().correlationTime.width,
+                            0, _settings.jobColumnSpecs().correlationTime.width, _ySize );
+                    xOff = _settings.queueBrowser().header().positionCorrelationTime();
+                    _correlationTime.setVisible( true );
+                }
+            }
+            else
+                _correlationTime.setVisible( false );
+            if ( _settings.jobColumnSpecs().timeRemaining.show ) {
+                if ( _settings.queueBrowser().header() != null ) {
+                    _timeRemaining.setBounds( _settings.queueBrowser().header().positionTimeRemaining() - _settings.jobColumnSpecs().timeRemaining.width,
+                            0, _settings.jobColumnSpecs().timeRemaining.width, _ySize );
+                    xOff = _settings.queueBrowser().header().positionTimeRemaining();
+                    _timeRemaining.setVisible( true );
+                }
+            }
+            else
+                _timeRemaining.setVisible( false );
+            _failedLabel.setBounds( xOff, 0, 200, _ySize );
         }
     }
     
@@ -82,6 +115,20 @@ public class QueueBrowserContainerNode extends QueueBrowserNode {
         }
     }
     
+    public void correlationTime( double newVal ) { 
+        _correlationTime.setText( fromSeconds( newVal ) );
+        _correlationTime.updateUI();
+    }
+    public String correlationTime() { return _correlationTime.getText(); }
+
+    public void timeRemaining( double newVal ) { 
+        _timeRemaining.setText( fromSeconds( newVal ) );
+        _timeRemaining.updateUI();
+    }
+    public String timeRemaining() { return _timeRemaining.getText(); }
+    public boolean correlating;
+    public double correlationStart;
+
     public void checkVisibility() {
         if ( !_showNothing && _statsVisible && !_overrideVisible && _numJobs > 0 )
             _jobsLabel.setVisible( true );
@@ -140,6 +187,8 @@ public class QueueBrowserContainerNode extends QueueBrowserNode {
     protected JProgressBar _progress;
     protected JLabel _jobsLabel;
     protected ColumnTextArea _failedLabel;
+    protected ColumnTextArea _correlationTime;
+    protected ColumnTextArea _timeRemaining;
     
     protected boolean _statsVisible;
     protected boolean _overrideVisible;

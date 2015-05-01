@@ -53,22 +53,22 @@ import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import javax.swing.event.EventListenerList;
 
-import java.io.PrintWriter;
-import java.io.FileWriter;
-import java.io.BufferedWriter;
+//import java.io.PrintWriter;
+//import java.io.FileWriter;
+//import java.io.BufferedWriter;
 import java.net.SocketTimeoutException;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
+//import java.net.InetAddress;
+//import java.net.UnknownHostException;
 
 import java.util.*;
 
 import java.awt.event.ComponentEvent;
-import java.io.IOException;
+//import java.io.IOException;
 
-import javax.xml.bind.Marshaller;
+//import javax.xml.bind.Marshaller;
 
-import java.io.StringWriter;
-import java.net.SocketException;
+//import java.io.StringWriter;
+//import java.net.SocketException;
 
 import mil.navy.usno.widgetlib.IndexedPanel;
 import mil.navy.usno.widgetlib.NodeBrowserScrollPane;
@@ -76,7 +76,7 @@ import mil.navy.usno.widgetlib.NumberBox;
 import mil.navy.usno.widgetlib.BrowserNode;
 import mil.navy.usno.widgetlib.SimpleTextEditor;
 import mil.navy.usno.widgetlib.MessageDisplayPanel;
-import mil.navy.usno.widgetlib.JulianCalendar;
+//import mil.navy.usno.widgetlib.JulianCalendar;
 import mil.navy.usno.widgetlib.ZButton;
 import mil.navy.usno.widgetlib.ZCheckBox;
 import mil.navy.usno.widgetlib.ZLabel;
@@ -482,6 +482,7 @@ public class JobEditorMonitor extends JFrame {
                 stopJob();
             }
         } );
+        _stopButton.setEnabled( false );
         runControlPanel.add( _stopButton );
         _restartAt = new JCheckBox( "Restart" );
         _restartAt.setBounds( 130, 30, 75, 25 );
@@ -1757,13 +1758,7 @@ public class JobEditorMonitor extends JFrame {
      * instruction is more of a "set and forget" kind of operation.
      */
     public void startJob( boolean applyMachinesInThread ) {
-        _startTime = new JulianCalendar();
-        _startTime.setTime( new Date() );
-        _jobNode.correlationStart( _startTime.mjd() );
-        _jobNode.running( true );
-        setState( "Initializing", Color.YELLOW );
-        setProgress( 0 );
-        _jobNode.lockState( false );
+        _jobNode.setJobStart();
         //  Has the user already generated .threads and .machines files (which is
         //  done when the "Apply" button in the Machines List settings is pushed)?
         //  Alternatively, has the use edited and uploaded .machines and .threads
@@ -1896,12 +1891,12 @@ public class JobEditorMonitor extends JFrame {
             } catch ( java.net.UnknownHostException e ) {
                 java.util.logging.Logger.getLogger("global").log(java.util.logging.Level.SEVERE, null,
                         e.getMessage() );  //BLAT should be a pop-up
-                setState( "Failed Start", Color.RED );
+                _jobNode.setState( "Failed Start", Color.RED );
                 _jobNode.autostate( JobNode.AUTOSTATE_FAILED );
             }
         }
         else {
-            setState( "Socket Failure", Color.RED );
+            _jobNode.setState( "Socket Failure", Color.RED );
             _jobNode.autostate( JobNode.AUTOSTATE_FAILED );
         }
     }
@@ -2029,7 +2024,7 @@ public class JobEditorMonitor extends JFrame {
                                 statusError( "job failed to complete" );
                                 statusPanelColor( _statusPanelBackground.darker()  );
                                 connected = false;
-                                setState( "Failed", Color.RED );
+                                _jobNode.setState( "Failed", Color.RED );
                                 _jobNode.lockState( true );
                             }
                             else if ( packetType == RUN_DIFX_JOB_TERMINATED ) {
@@ -2037,7 +2032,7 @@ public class JobEditorMonitor extends JFrame {
                                 statusWarning( "job terminated by user" );
                                 statusPanelColor( _statusPanelBackground.darker() );
                                 connected = false;
-                                setState( "Terminated", Color.RED );
+                                _jobNode.setState( "Terminated", Color.RED );
                                 _jobNode.lockState( true );
                             }
                             else if ( packetType == RUN_DIFX_JOB_ENDED_GRACEFULLY ) {
@@ -2092,7 +2087,7 @@ public class JobEditorMonitor extends JFrame {
                                 statusInfo( "DiFX running!" );
                                 _messageDisplayPanel.warning( 0, "job monitor", "DiFX started!" );
                                 statusPanelColor( Color.GREEN );                            //  turn the frame green!!!!
-                                setState( "Starting", Color.YELLOW );
+                                _jobNode.setState( "Starting", Color.YELLOW );
                             }
                             else if ( packetType == RUN_DIFX_DIFX_MESSAGE ) {
                                 if ( data != null )
@@ -2112,7 +2107,7 @@ public class JobEditorMonitor extends JFrame {
                                 else
                                     _messageDisplayPanel.error( 0, "job monitor", "" );
                                 statusPanelColor( Color.ORANGE );
-                                setState( "DiFX running with errors", Color.ORANGE );
+                                _jobNode.setState( "DiFX running with errors", Color.ORANGE );
                             }
                             else if ( packetType == RUN_DIFX_DIFX_COMPLETE ) {
                                 statusInfo( "DiFX compete!" );
@@ -2154,12 +2149,8 @@ public class JobEditorMonitor extends JFrame {
             //  We keep the state of this job "running" for a little bit so that we properly
             //  process any late messages.
             try { Thread.sleep( 1000 ); } catch ( Exception e ) {}
-            _jobNode.running( false );
             _settings.releaseTransferPort( _port );
-            JulianCalendar endTime = new JulianCalendar();
-            endTime.setTime( new Date() );
-            _jobNode.correlationEnd( endTime.mjd() );
-            _jobNode.correlationTime( 24.0 * 3600.0 * ( endTime.mjd() - _startTime.mjd() ) );
+            _jobNode.setJobEnd();
             //  This eliminates this job from any nodes where it is running.
             //  Note that this will not exactly work if you are running the same
             //  job multiple times, but if you are doing that many other things are
@@ -2195,112 +2186,38 @@ public class JobEditorMonitor extends JFrame {
         }
     }
     
-    /*
-     * Set the "state" of this job.  The state appears on both the editor/monitor
-     * and the queue browser line.  It has a background color.
-     */
+    //--------------------------------------------------------------------------
+    //  Set the text and color of the "state" display.  This should only be called
+    //  by a function setting the state both here in the monitor/editor and
+    //  on the JobNode.  See _jobNode.setState().
+    //--------------------------------------------------------------------------
     public void setState( String newState, Color newColor ) {
         _state.setText( newState );
         _state.setBackground( newColor );
-        _jobNode.state().setText( newState );
-        _jobNode.state().setBackground( newColor );
-        _jobNode.state().updateUI();
     }
     
-    /*
-     * Set the "progress" of this job.  Progress appears on both the editor/monitor
-     * and the queue browser line.
-     */
+    //--------------------------------------------------------------------------
+    //  Set the progress displayed on the progress bar.  This should only be called
+    //  by a function setting progress values both here in the monitor/editor and
+    //  on the JobNode.  See _jobNode.setProgress().
+    //--------------------------------------------------------------------------
     public void setProgress( int i ) {
         _progress.setValue( i );
-        _jobNode.progress().setValue( i );
     }
     
-    //  Consume a message for this job.  The source of these messages is mk5daemon
-    //  processes on different nodes.
-    public void consumeMessage( DifxMessage difxMsg ) {
-        
-        //  Update the correlation time, since its obviously still running.
-        if ( !_jobNode.lockState() ) {
-            JulianCalendar thisTime = new JulianCalendar();
-            thisTime.setTime( new Date() );
-            if ( _startTime != null )
-                _jobNode.correlationTime( 24.0 * 3600.0 * ( thisTime.mjd() - _startTime.mjd() ) );
-        }
-
-//        //  See what kind of message this is...try status first.
-//        if ( difxMsg.getBody().getDifxStatus() != null ) {
-//            if ( difxMsg.getBody().getDifxStatus().getVisibilityMJD() != null &&
-//                    difxMsg.getBody().getDifxStatus().getJobstartMJD() != null &&
-//                    difxMsg.getBody().getDifxStatus().getJobstopMJD() != null ) {
-//                _progress.setValue( (int)( 0.5 + 100.0 * ( Double.valueOf( difxMsg.getBody().getDifxStatus().getVisibilityMJD() ) -
-//                        Double.valueOf( difxMsg.getBody().getDifxStatus().getJobstartMJD() ) ) /
-//                        ( Double.valueOf( difxMsg.getBody().getDifxStatus().getJobstopMJD() ) -
-//                        Double.valueOf( difxMsg.getBody().getDifxStatus().getJobstartMJD() ) ) ) );
-//                //  Set the restart value.  Possibly some number of seconds should be added
-//                //  to this in the event a bad disk sector is causing a crash?
-//                _restartSeconds.value( ( Double.valueOf( difxMsg.getBody().getDifxStatus().getJobstopMJD() ) -
-//                        Double.valueOf( difxMsg.getBody().getDifxStatus().getJobstartMJD() ) ) / 3600.0 / 24.0 );
-//            }
-//            else if ( !difxMsg.getBody().getDifxStatus().getState().equalsIgnoreCase( "ending" ) )
-//                _progress.setValue( 0 );
-//            //  Only change the "state" of this job if it hasn't been "locked" by the GUI.  This
-//            //  happens when the GUI detects an error.  If this job is "starting" the state should
-//            //  be unlocked - it means another attempt is being made to run it.
-////            if ( difxMsg.getBody().getDifxStatus().getState().equalsIgnoreCase( "starting" ) ) {
-////                _jobNode.lockState( false );
-////                _restartSeconds.value( 0.0 );
-////            }
-//            if ( !_jobNode.lockState() ) {
-//                _state.setText( difxMsg.getBody().getDifxStatus().getState() );
-//                if ( _state.getText().equalsIgnoreCase( "done" ) || _state.getText().equalsIgnoreCase( "mpidone" ) ) {
-//                    _restartSeconds.value( 0.0 );
-//                    if ( _doneWithErrors )  {
-//                        _state.setText( "Complete with Errors" );
-//                        _state.setBackground( Color.ORANGE );
-//                    }
-//                    else if ( _removedList != null ) {
-//                        setState( "Complete w/o " + _removedList, Color.ORANGE );
-//                        _jobNode.state().setText( "Complete w/o " + _removedList );
-//                        _jobNode.state().setBackground( Color.ORANGE );
-//                        _jobNode.lockState( true );
-//                        _jobNode.state().updateUI();
-//                    }
-//                    else
-//                        _state.setBackground( Color.GREEN );
-//                    _progress.setValue( 100 );  
-//                }
-//                else if ( _state.getText().equalsIgnoreCase( "running" ) || _state.getText().equalsIgnoreCase( "starting" )
-//                         || _state.getText().equalsIgnoreCase( "ending" ) )
-//                    _state.setBackground( Color.YELLOW );
-//                else {
-//                    _state.setBackground( Color.LIGHT_GRAY );
-//                }
-//                _state.updateUI();
-//            }
-////            List<DifxStatus.Weight> weightList = difxMsg.getBody().getDifxStatus().getWeight();
-//            //  Create a new list of antennas/weights if one hasn't been created yet.
-////            if ( _weights == null )
-////                newWeightDisplay( weightList.size() );
-////            for ( Iterator<DifxStatus.Weight> iter = weightList.iterator(); iter.hasNext(); ) {
-////                DifxStatus.Weight thisWeight = iter.next();
-////                weight( thisWeight.getAnt(), thisWeight.getWt() );
-////            }
-//        }
-//        else if ( difxMsg.getBody().getDifxAlert() != null ) {
-//            //System.out.println( "this is an alert" );
-//            //System.out.println( difxMsg.getBody().getDifxAlert().getAlertMessage() );
-//            //System.out.println( difxMsg.getBody().getDifxAlert().getSeverity() );
-//        }
-//        
-//        //_messageDisplayPanel.message( 0, "mk5daemon", difxMsg.getBody().toString() );
-
+    //--------------------------------------------------------------------------
+    //  The "lockstate" indicates that running a job is "locked" - which means
+    //  you can't do it.  This is done when the job is running.  
+    //--------------------------------------------------------------------------
+    public void lockState( boolean newVal ) {
+        _startButton.setEnabled( newVal );
+        _stopButton.setEnabled( !newVal );
     }
     
     public void pauseJob() {}
     
     public void stopJob() {
-        setState( "Terminated", Color.RED );
+        _jobNode.setState( "Terminated", Color.RED );
         _jobNode.lockState( true );
         DiFXCommand command = new DiFXCommand( _settings );
         command.header().setType( "DifxStop" );
@@ -2491,10 +2408,7 @@ public class JobEditorMonitor extends JFrame {
             }
         }
         if ( !dataOK ) {
-            setState( dataMissing + " data Missing", Color.RED );
-            _jobNode.state().setText( dataMissing + " data Missing" );
-            _jobNode.state().setBackground( Color.RED );
-            _jobNode.state().updateUI();
+            _jobNode.setState( dataMissing + " data Missing", Color.RED );
         }
         return dataOK;
     }
@@ -3080,7 +2994,7 @@ public class JobEditorMonitor extends JFrame {
         
         
         _jobNode.jobStart( (double)startMJD() + (double)startSeconds() / 24.0 / 3600.0 );
-        _jobNode.jobDuration( (double)executeTime() / 24.0 / 3600.0 );
+        _jobNode.jobDuration( (double)executeTime() );
         _jobNode.updateDatabase( "outputFile", _jobNode.outputFile() );
         _jobNode.updateDatabase( "jobStart", _jobNode.jobStart().toString() );
         _jobNode.updateDatabase( "jobDuration", _jobNode.jobDuration().toString() );
@@ -3255,7 +3169,6 @@ public class JobEditorMonitor extends JFrame {
     public boolean doneWithErrors() { return _doneWithErrors; }
     
     protected InputFileParser _inputFile;
-    protected JulianCalendar _startTime;
     
     protected JobEditorMonitor _this;
     

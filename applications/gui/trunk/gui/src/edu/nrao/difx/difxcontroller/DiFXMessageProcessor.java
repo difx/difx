@@ -67,6 +67,7 @@ public class DiFXMessageProcessor extends Thread
     protected EventListenerList _mark5StatusMessageListeners;
     protected EventListenerList _difxSmartMessageListeners;
     protected EventListenerList _difxInfoMessageListeners;
+    protected EventListenerList _difxDiagnosticMessageListeners;
 
     public DiFXMessageProcessor( SystemSettings systemSettings )
     {
@@ -79,6 +80,7 @@ public class DiFXMessageProcessor extends Thread
         _mark5StatusMessageListeners = new EventListenerList();
         _difxSmartMessageListeners = new EventListenerList();
         _difxInfoMessageListeners = new EventListenerList();
+        _difxDiagnosticMessageListeners = new EventListenerList();
         _difxMessageWindow = new DiFXMessageWindow( 500, 500 );
     }
 
@@ -104,6 +106,10 @@ public class DiFXMessageProcessor extends Thread
 
     public void addDifxInfoMessageListener( AttributedMessageListener a ) {
         _difxInfoMessageListeners.add( AttributedMessageListener.class, a );
+    }
+
+    public void addDifxDiagnosticMessageListener( AttributedMessageListener a ) {
+        _difxDiagnosticMessageListeners.add( AttributedMessageListener.class, a );
     }
 
     public void shutDown() {
@@ -156,6 +162,9 @@ public class DiFXMessageProcessor extends Thread
 
             } else if ( header.getType().equalsIgnoreCase( "DifxInfoMessage" ) ) {
                 processDifxInfoMessage( difxMsg );
+
+            } else if ( header.getType().equalsIgnoreCase( "DifxDiagnosticMessage" ) ) {
+                processDifxDiagnosticMessage( difxMsg );
 
             } else {
                 if ( !_settings.suppressWarnings() ) {
@@ -300,6 +309,15 @@ public class DiFXMessageProcessor extends Thread
 
     protected void processDifxInfoMessage( DifxMessage difxMsg ) {
         Object[] listeners = _difxInfoMessageListeners.getListenerList();
+        int numListeners = listeners.length;
+        for ( int i = 0; i < numListeners; i+=2 ) {
+            if ( listeners[i] == AttributedMessageListener.class )
+                ((AttributedMessageListener)listeners[i+1]).update( difxMsg );
+        }
+    }
+    
+    protected void processDifxDiagnosticMessage( DifxMessage difxMsg ) {
+        Object[] listeners = _difxDiagnosticMessageListeners.getListenerList();
         int numListeners = listeners.length;
         for ( int i = 0; i < numListeners; i+=2 ) {
             if ( listeners[i] == AttributedMessageListener.class )
@@ -1334,7 +1352,8 @@ public class DiFXMessageProcessor extends Thread
                     _mark5StatusStatusWord.text( theMessage.difxMsg.getBody().getMark5Status().getStatusWord() );
                 }
                 else if ( _unknownItem.isSelected() ) {
-                    _displayedPanel.setVisible( false );
+                    if ( _displayedPanel != null )
+                        _displayedPanel.setVisible( false );
                     _displayedPanel = null;
                 }
             }

@@ -148,18 +148,49 @@ public class HardwareMonitorPanel extends TearOffPanel {
                 processDifxInfoMessage( difxMsg );
             }
         } );
+        //  Jobs are also interested in diagnostic messages as they pertain to a job.
+        processor.addDifxDiagnosticMessageListener(new AttributedMessageListener() {
+            @Override
+            public void update( DifxMessage difxMsg ) {
+                processDifxDiagnosticMessage( difxMsg );
+            }
+        } );
         _smartMonitor = new SMARTMonitor( _settings );
         _smartMonitor.difxMessageProcessor( processor );
     }
     
     protected void processDifxAlertMessage( DifxMessage difxMsg ) {
-        //  Hardware alerts *appear* to only come from mk5daemon, so we key on it
-        //  when deciding whether to use them.
-        if ( difxMsg.getHeader().getIdentifier().trim().equals( "mk5daemon" ) ) {
-            //serviceUpdate( difxMsg );
+        
+        if ( isFromMark5( difxMsg ) ) {
+            //  Find the node that created this message.
+            Mark5Node mk5Module = null;
+            for ( Iterator<BrowserNode> iter = _mk5Modules.children().iterator(); iter.hasNext() && mk5Module == null; ) {
+                BrowserNode thisModule = iter.next();
+                if ( thisModule.name().contentEquals( difxMsg.getHeader().getFrom() ) )
+                    mk5Module = (Mark5Node)thisModule;
+            }
+            if ( mk5Module == null ) {
+                mk5Module = new Mark5Node( difxMsg.getHeader().getFrom(), _settings, _smartMonitor );
+                _mk5Modules.addChild( mk5Module );
+            }
+            mk5Module.alertMessage( difxMsg );
         }
-//        else
-//            System.out.println( "Hardware Monitor Panel received DiFX Alert from " + difxMsg.getHeader().getIdentifier() + " - no idea what to do with this!" );
+            
+        else {
+
+            ProcessorNode processor = null;
+            for ( Iterator<BrowserNode> iter = _clusterNodes.children().iterator(); iter.hasNext() && processor == null; ) {
+                BrowserNode thisModule = iter.next();
+                if ( thisModule.name().contentEquals( difxMsg.getHeader().getFrom() ) )
+                    processor = (ProcessorNode)thisModule;
+            }
+            if ( processor == null ) {
+                processor = new ProcessorNode( difxMsg.getHeader().getFrom(), _settings );
+                _clusterNodes.addChild( processor );
+            }
+            processor.alertMessage( difxMsg );
+
+        }
     }
     
     /*
@@ -240,6 +271,46 @@ public class HardwareMonitorPanel extends TearOffPanel {
 
     }
 
+    //--------------------------------------------------------------------------
+    //!  Process a diagnostic message.  Diagnostic messages are produced by running
+    //!  jobs, but they have information that is specific to processing and data-reading
+    //!  nodes.  A nice side-benefit is that they can tell us what job(s) a node is
+    //!  working on.
+    //--------------------------------------------------------------------------
+    public synchronized void processDifxDiagnosticMessage( DifxMessage difxMsg ) {
+        
+        if ( isFromMark5( difxMsg ) ) {
+            //  Find the node that created this message.
+            Mark5Node mk5Module = null;
+            for ( Iterator<BrowserNode> iter = _mk5Modules.children().iterator(); iter.hasNext() && mk5Module == null; ) {
+                BrowserNode thisModule = iter.next();
+                if ( thisModule.name().contentEquals( difxMsg.getHeader().getFrom() ) )
+                    mk5Module = (Mark5Node)thisModule;
+            }
+            if ( mk5Module == null ) {
+                mk5Module = new Mark5Node( difxMsg.getHeader().getFrom(), _settings, _smartMonitor );
+                _mk5Modules.addChild( mk5Module );
+            }
+            mk5Module.diagnosticMessage( difxMsg );
+        }
+            
+        else {
+
+            ProcessorNode processor = null;
+            for ( Iterator<BrowserNode> iter = _clusterNodes.children().iterator(); iter.hasNext() && processor == null; ) {
+                BrowserNode thisModule = iter.next();
+                if ( thisModule.name().contentEquals( difxMsg.getHeader().getFrom() ) )
+                    processor = (ProcessorNode)thisModule;
+            }
+            if ( processor == null ) {
+                processor = new ProcessorNode( difxMsg.getHeader().getFrom(), _settings );
+                _clusterNodes.addChild( processor );
+            }
+            processor.diagnosticMessage( difxMsg );
+
+        }
+    }
+    
     /*
      * DiFX messages come from CPUs, either processors or the Mark5 systems.  At
      * the moment (and this is gross, and will be fixed) we are determining whether
