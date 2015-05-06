@@ -2,7 +2,6 @@
 import ctypes, numpy, sys, pylab
 import mark5access as m5lib
 from datetime import datetime
-from scipy import stats
 try:
 	import matplotlib as mpl
 	mpl.rcParams['path.simplify'] = False # http://stackoverflow.com/questions/15795720/matplotlib-major-display-issue-with-dense-data-sets
