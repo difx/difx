@@ -1779,6 +1779,7 @@ static int kvn5b_decode_16bitstream_2bit_decimation1(struct mark5_stream *ms, in
 		}
 
 		// Done explicitly .. 4 samples in 8 IFs, with 2 sampling times
+		/* FIXME: the below decoding of 8 x 32 MHz 2-bit is wrong if Mark5B bitmask was 0x0000ffff! */
 		data[0][o+0] = fp0[0];
 		data[0][o+1] = fp0[1];
 		data[1][o+0] = fp0[2];
