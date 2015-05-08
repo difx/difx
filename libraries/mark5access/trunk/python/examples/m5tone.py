@@ -1,35 +1,37 @@
 #!/usr/bin/python
+""" 
+m5tone.py ver. 1.0   Jan Wagner  20150413
+ 
+Extracts a single Phase Calibration tone from one channel in raw VLBI data.
+Reads the formats supported by the mark5access library.
+ 
+Usage : m5tone.py [--plot] <infile> <dataformat> <outfile>
+                  <if_nr> <Tint (s)> <tonefreq (Hz)> <Ldft> [<offset>]
+ 
+  --plot      plot the tone phase, amplitude, etc, against time
+ 
+  <dataformat> should be of the form: <FORMAT>-<Mbps>-<nchan>-<nbit>, e.g.:
+    VLBA1_2-256-8-2
+    MKIV1_4-128-2-1
+    Mark5B-512-16-2
+    VDIF_1000-64-1-2 (here 1000 is payload size in bytes)
+ 
+  <outfile>   note: dummy file, currently results not yet written to it
+  <if_nr>     the IF i.e. baseband channel that contains the tone
+  <Tint>      integration time in seconds, for example 0.256
+  <tonefreq>  baseband frequency in Hz of the tone, for example 125e3
+  <Ldft>      the desired length of the DFT/FFT across the baseband
+ 
+  <offset> is the byte offset into the file
+"""
+
 import ctypes, numpy, sys
 import pylab
 import mark5access as m5lib
 from datetime import datetime
 
 def usage():
-	print (' ')
-	print ('m5tone.py ver. 1.0   Jan Wagner  20150413')
-	print (' ')
-	print ('Extracts a single Phase Calibration tone from one channel in raw VLBI data.')
-	print ('Reads the formats supported by the mark5access library.')
-	print (' ')
-	print ('Usage : m5tone.py [--plot] <infile> <dataformat> <outfile>')
-	print ('                  <if_nr> <Tint> <tonefreq> <Ldft> [<offset>]')
-	print (' ')
-	print ('  --plot      plot the tone phase, amplitude, etc, against time')
-	print (' ')
-	print ('  <dataformat> should be of the form: <FORMAT>-<Mbps>-<nchan>-<nbit>, e.g.:')
-	print ('    VLBA1_2-256-8-2')
-	print ('    MKIV1_4-128-2-1')
-	print ('    Mark5B-512-16-2')
-	print ('    VDIF_1000-64-1-2 (here 1000 is payload size in bytes)')
-	print (' ')
-	print ('  <outfile>   note: dummy file, currently results not yet written to it')
-	print ('  <if_nr>     the IF i.e. baseband channel that contains the tone')
-	print ('  <Tint>      integration time in seconds, for example 0.256')
-	print ('  <tonefreq>  baseband frequency in Hz of the tone, for example 125e3')
-	print ('  <Ldft>      the desired length of the DFT/FFT across the baseband')
-	print (' ')
-	print ('  <offset> is the byte offset into the file')
-	print (' ')
+	print __doc__
 
 def m5tone(fn, fmt, fout, if_nr, Tint_sec, tonefreq_Hz, Ldft, offset, doPlot=False, doFast=True):
 	"""Extracts a single tone from the desired channel in a VLBI recording"""
