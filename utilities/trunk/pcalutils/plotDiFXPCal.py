@@ -36,7 +36,7 @@ def parsepcalfile(infile,band_tone_sel=()):
             # line = ['KY', '57092.6388948', '0.0000119', '1', '8', '16', <pcal data>]
             station = line[0]
             mjd = float(line[1])
-            tint = float(line[2])
+            tint = float(line[2])*86400.0 
             npol = int(line[3])
             nsubband = int(line[4])
             ntones = int(line[5])
@@ -55,7 +55,7 @@ def parsepcalfile(infile,band_tone_sel=()):
                 i = vals_per_tone * (pol*(nsubband/npol)*ntones + band*ntones + tonenr)
                 pc = tone[i:(i+vals_per_tone)]
 
-                id = pc[0] + pc[1] + '_' + str(tonenr)
+                id = pc[0] + pc[1] # + ' tone ' + str(tonenr)
                 if not(id in pcalvalues):
                    pcalvalues[id] = numpy.zeros(0)
                 pcalvalues[id] = numpy.append(pcalvalues[id], [float(pc[2]) + 1j*float(pc[3])])
@@ -71,10 +71,11 @@ def parsepcalfile(infile,band_tone_sel=()):
     markers = iter(markers * Nrep)
     handles = []
     ids     = sorted(pcalvalues.keys())
-    T       = (times - min(times)) * 24.0*60.0*60.0
+    T       = (times - min(times)) * 86400.0  # MJD into seconds
+    phstep  = float(30)
 
     # Actual plot
-    pylab.figure()
+    pylab.figure(figsize=(16,6))
     pylab.gcf().set_facecolor('white')
     for id in ids:
         A = abs(pcalvalues[id])
@@ -85,24 +86,44 @@ def parsepcalfile(infile,band_tone_sel=()):
         pylab.subplot(211)
         h = pylab.plot(T,A, m,c=c)
         handles.append(h)
-        pylab.axis('tight')
 
         pylab.subplot(212)
         pylab.plot(T,p,m, c=c)
-        pylab.axis('tight')
 
         # print '%s : %s' % (id, str(p))
 
-    pylab.subplot(211)
+    ax1 = pylab.subplot(211)
+    ax1.set_xticklabels([])
+    pylab.axis('tight')
     pylab.ylabel('Amplitude')
-    h = pylab.legend(handles,ids,loc='upper left',bbox_to_anchor=(1.0,1.0))
-    h.get_frame().set_linewidth(0.0)
+    pylab.title('PCAL data in %s' % (infile.name))
 
-    pylab.subplot(212)
+    ax2 = pylab.subplot(212)
+    pylab.axis('tight')
     pylab.ylabel('Phase (deg)')
-    pylab.xlabel('Time in Seconds since MJD %.6f)' % min(times))
-    pylab.show()
+    pylab.xlabel('Time in Seconds since MJD %.6f' % min(times))
 
+    ax1.set_xlim([min(T)-tint/2,max(T)+tint/2])
+    ax2.set_xlim([min(T)-tint/2,max(T)+tint/2])
+
+    # Adjust phase axis limits to a 'phstep' granularity
+    ylims2 = ax2.get_ylim()
+    ylims2 = [phstep*math.floor(ylims2[0]/phstep), phstep*math.ceil(ylims2[1]/phstep)] 
+    ax2.set_ylim(ylims2)
+
+    # Cram the legend box into the figure
+    pylab.subplots_adjust(left=0.05,right=0.95,bottom=0.2,top=0.90)
+    box1 = ax1.get_position()
+    box2 = ax2.get_position()
+    ax2.set_position([box1.x0, box1.y0 - box1.height*1.05, box1.width, box2.height])
+    h_leg = pylab.legend(handles,ids,loc='upper center', shadow=True,
+                        bbox_to_anchor=(0.5,-0.25),ncol=4,prop={'size':12},numpoints=1)
+
+    outfile = os.path.basename(infile.name) + '.pdf'
+    pylab.savefig(outfile, bbox_extra_artist=[h_leg])
+    print ('Saved plot to %s' % outfile)
+
+    pylab.show()
     return
 
 
