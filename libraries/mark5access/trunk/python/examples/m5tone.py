@@ -16,7 +16,7 @@ Usage : m5tone.py [--plot] <infile> <dataformat> <outfile>
     Mark5B-512-16-2
     VDIF_1000-64-1-2 (here 1000 is payload size in bytes)
  
-  <outfile>   note: dummy file, currently results not yet written to it
+  <outfile>   output text file for PCal time, amplitude, phase, coherence
   <if_nr>     the IF i.e. baseband channel that contains the tone
   <Tint>      integration time in seconds, for example 0.256
   <tonefreq>  baseband frequency in Hz of the tone, for example 125e3
