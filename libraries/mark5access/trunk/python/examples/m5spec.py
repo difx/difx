@@ -1,4 +1,22 @@
 #!/usr/bin/python
+"""
+m5spec.py ver. 1.0   Jan Wagner  20150427
+ 
+Shows time-averaged autocorrelation spectra of raw VLBI data.
+
+Usage : m5spec.py <infile> <dataformat> <T_int (ms)> <Ldft> [offset]
+ 
+  <dataformat> should be of the form: <FORMAT>-<Mbps>-<nchan>-<nbit>, e.g.:
+    VLBA1_2-256-8-2
+    MKIV1_4-128-2-1
+    Mark5B-512-16-2
+    VDIF_1000-64-1-2 (here 1000 is payload size in bytes)
+ 
+  <T_int>     approximate integration time per spectrum in milliseconds
+  <Ldft>      length in points of Fourier transform across full bandwidth
+ 
+  <offset>    is the byte offset into the file
+"""
 import ctypes, numpy, sys, pylab
 import mark5access as m5lib
 from datetime import datetime
@@ -9,24 +27,7 @@ except:
 	pass    
 
 def usage():
-	print (' ')
-	print ('m5spec.py ver. 1.0   Jan Wagner  20150427')
-	print (' ')
-	print ('Shows time-averaged autocorrelation spectra of raw VLBI data.')
-	print ('')
-	print ('Usage : m5spec.py <infile> <dataformat> <T_int(ms)> <Ldft> [offset]')
-	print (' ')
-	print ('  <dataformat> should be of the form: <FORMAT>-<Mbps>-<nchan>-<nbit>, e.g.:')
-	print ('    VLBA1_2-256-8-2')
-	print ('    MKIV1_4-128-2-1')
-	print ('    Mark5B-512-16-2')
-	print ('    VDIF_1000-64-1-2 (here 1000 is payload size in bytes)')
-	print (' ')
-	print ('  <T_int>     approximate integration time per spectrum in milliseconds')
-	print ('  <Ldft>      length in points of Fourier transform across full bandwidth')
-	print (' ')
-	print ('  <offset>    is the byte offset into the file')
-	print (' ')
+	print __doc__
 
 
 def m5spec(fn, fmt, fout, T_int_ms, nfft, offset):
