@@ -5,7 +5,7 @@ plotDiFXPCal.py version 1.0  Jan Wagner  20150508
 Usage: plotDiFXPCal.py <output_1.difx> <station> [<band>,<tone>]
                        [<band>,<tone>] [...]
 
-Currently supports the DiFX 2.3.0 format of PCAL files.
+Currently supports the DiFX 2.4 format of PCAL files.
 
 Plots the contents of the PCAL file of the given station,
 showing amplitude and phase against time for all tones.
@@ -18,7 +18,7 @@ a particular subset of PCal tones.
 import sys, os, glob, math, cmath
 import numpy, pylab
 
-pcalVersion = 230
+difxVersion = 240
 
 def parsepcalfile(infile,band_tone_sel=()):
 
@@ -28,11 +28,10 @@ def parsepcalfile(infile,band_tone_sel=()):
     for line in infile:
         line = line.split()
 
-        if (pcalVersion == 230) and line[0]=='#':
-            # Skip comments in PCal Version 1 file
+        if (difxVersion == 240) and line[0]=='#':
             continue
 
-        if (pcalVersion == 230):
+        if (difxVersion == 240):
             # line = ['KY', '57092.6388948', '0.0000119', '1', '8', '16', <pcal data>]
             station = line[0]
             mjd = float(line[1])
@@ -94,7 +93,6 @@ def parsepcalfile(infile,band_tone_sel=()):
 
     ax1 = pylab.subplot(211)
     ax1.set_xticklabels([])
-    pylab.axis('tight')
     pylab.ylabel('Amplitude')
     pylab.title('PCAL data in %s' % (infile.name))
 
