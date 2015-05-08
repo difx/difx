@@ -1,6 +1,6 @@
 ### Standard targets
 FILES := mark5_stream_tmp.h mark5access_api.xml mark5access/mark5access.py
-SCRIPTS := examples/m5iacorr.py examples/m5stat.py examples/m5subband.py examples/m5time.py examples/m5spec.py
+SCRIPTS := examples/m5stat.py examples/m5subband.py examples/m5time.py examples/m5spec.py examples/m5tone.py
 
 all: depcheck mark5access/mark5access.py 
 
