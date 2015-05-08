@@ -74,7 +74,7 @@ def m5tone(fn, fmt, fout, if_nr, Tint_sec, tonefreq_Hz, Ldft, offset, doPlot=Fal
 	spec  = numpy.zeros(shape=(Ldft), dtype='complex64') # Accumulated spectrum
 	tavg  = numpy.zeros(shape=(Ldft), dtype='float32')   # Accumulated time domain data
         pcamp = 0.0                                          # Total abs amplitude
-	history = {'amp':[], 'phase':[], 'coh':[], 'T':[]}
+	history = {'amp':[], 'phase':[], 'coh':[], 'T':[], 'MJD':[]}
 
 	# Plotting
 	Lsgram = 8
@@ -85,7 +85,8 @@ def m5tone(fn, fmt, fout, if_nr, Tint_sec, tonefreq_Hz, Ldft, offset, doPlot=Fal
 		pylab.gcf().set_facecolor('white')
 
 	# Report
-	print ('Tone at %.3f kHz in the %.3f MHz wide band lands in bin %u.' % (tonefreq_Hz*1e-3,dms.samprate*0.5e-6,pcbin))
+	print ('Tone at %.3f kHz in the %.3f MHz wide band lands in %.3f kHz-wide bin %u.' 
+		% (tonefreq_Hz*1e-3,dms.samprate*0.5e-6,1e-3*dms.samprate/float(Ldft),pcbin))
 	print ('Integrating for %.2f milliseconds with %u spectra per integration.' % (Tint*1e3,nint))
 	if doFast:
 		print ("Note: Using fast ingration, coherence 'r' will not actually be calculated.")
@@ -98,7 +99,6 @@ def m5tone(fn, fmt, fout, if_nr, Tint_sec, tonefreq_Hz, Ldft, offset, doPlot=Fal
 		rc = m5lib.mark5_stream_decode(ms, Ldft, pdata)
 		if (rc < 0):
 			print ('\n<EOF> status=%d' % (rc))
-			write_results(history,fout)
 			return 0
 		dd = numpy.frombuffer(if_data.contents, dtype='float32')
 
@@ -117,27 +117,34 @@ def m5tone(fn, fmt, fout, if_nr, Tint_sec, tonefreq_Hz, Ldft, offset, doPlot=Fal
 		iter = iter + 1
 		if (iter % nint)==0:
 
+			# Timestamp at mid-point of integration
+			T_count = Tint * ((iter/nint) - 0.5) # data-second, relative time
 			(mjd1,sec1,ns1) = m5lib.helpers.get_sample_time(ms)
-			T_count = Tint * ((iter/nint) - 0.5)
+			T_stamp = mjd1 + (sec1 + ns1*1e-9 - Tint/2.0)/86400.0 # fractional MJD, absolute time
 
+			# Extract final tone amp, phase, coherence
 			if doFast:
 				spec  = numpy.fft.fft(numpy.multiply(tavg,winf))
-				pcamp = numpy.abs(spec[pcbin])*float(nint*Ldft)
-
-			pctone = spec[pcbin] / float(nint*Ldft)
-			pcamp  = pcamp / float(nint*Ldft)
-
+			pctone    = spec[pcbin] / float(nint*Ldft)
+			pcamp     = pcamp / float(nint*Ldft)
 			pctone_A  = numpy.abs(pctone)
 			pctone_ph = numpy.angle(pctone,deg=True)
-			pctone_C  = pctone_A/pcamp
+			if doFast:
+				pctone_C = 1.0
+			else:
+				pctone_C = pctone_A/pcamp
+
+			# Store results
+			print ('%.9f mjd : %.6f sec : %e /_ %+.2f deg : r=%.3f' % (T_stamp, T_count, pctone_A,pctone_ph,pctone_C))
 			history['amp'].append(pctone_A)
 			history['phase'].append(pctone_ph)
 			history['coh'].append(pctone_C)
 			history['T'].append(T_count)
+			history['MJD'].append(T_stamp)
+			line = '%.9f %.6f %e %+.2f %.3f\n' % (T_stamp, T_count, pctone_A, pctone_ph, pctone_C)
+			fout.write(line)
 
-			print ('%.9f mjd : %.6f sec : %e /_ %+.2f deg : r=%.3f' 
-				% ((mjd1+(sec1 + ns1*1e-9 - Tint/2.0)/86400.0), T_count, pctone_A,pctone_ph,pctone_C))
-
+			# Plotting
 			if doPlot:
 				specgram[1:] = specgram[0:-1]
 				specgram[0] = numpy.abs(spec[0:Lnyq])
@@ -171,9 +178,6 @@ def m5tone(fn, fmt, fout, if_nr, Tint_sec, tonefreq_Hz, Ldft, offset, doPlot=Fal
 			pcamp = 0.0
 
 	return 0
-
-def write_results(h,fout):
-	print ('Wrote %d records to %s' % (len(h['T']),fout.name))
 
 def main(argv=sys.argv):
 	doPlot = False
