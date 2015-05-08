@@ -1,4 +1,18 @@
 #!/usr/bin/python
+"""
+A time decoder for raw VLBI data. Reads formats supported by the mark5access library.
+Verifies also that 10 subsequent timestamps are consistent with the first.
+
+Usage : m5time.py <file> <dataformat> <offset>
+ 
+  <dataformat> should be of the form: <FORMAT>-<Mbps>-<nchan>-<nbit>, e.g.:
+    VLBA1_2-256-8-2
+    MKIV1_4-128-2-1
+    Mark5B-512-16-2
+    VDIF_1000-64-1-2 (here 1000 is payload size in bytes)
+ 
+  <offset> is number of bytes into file to return time for
+"""
 import ctypes, sys
 import mark5access as m5lib
 from datetime import datetime
@@ -14,19 +28,7 @@ EXIT_FAILURE = 1   # sys.exit() return code on errors
 Ncheck = 10        # num of consecutive frames to check for consistent MJD
 
 def usage():
-	print (' ')
-	print ('A time decoder for raw VLBI data. Reads formats supported by the mark5access library.')
-	print (' ')
-	print ('Usage : m5time.py <file> <dataformat> <offset>')
-	print (' ')
-	print ('  <dataformat> should be of the form: <FORMAT>-<Mbps>-<nchan>-<nbit>, e.g.:')
-	print ('    VLBA1_2-256-8-2')
-	print ('    MKIV1_4-128-2-1')
-	print ('    Mark5B-512-16-2')
-	print ('    VDIF_1000-64-1-2 (here 1000 is payload size in bytes)')
-	print (' ')
-	print ('  <offset> is number of bytes into file to return time for')
-	print (' ')
+	print __doc__
 
 def m5time(fn, fmt, offset):
 	"""Reports first timestamp in file and verifies additional timestamps are consistent."""
