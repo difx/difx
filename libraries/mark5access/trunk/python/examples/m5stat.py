@@ -1,24 +1,29 @@
 #!/usr/bin/python
+"""
+m5stat.py ver. 1.0   Jan Wagner  20150413
+
+A data statistics checker for raw VLBI data. Reports the mean, 
+standard deviation, skewness, kurtosis, and the sample histogram.
+Reads formats supported by the mark5access library.
+ 
+Usage : m5stat.py <file> <dataformat> <nframes> [<offset>]
+ 
+  <dataformat> should be of the form: <FORMAT>-<Mbps>-<nchan>-<nbit>, e.g.:
+    VLBA1_2-256-8-2
+    MKIV1_4-128-2-1
+    Mark5B-512-16-2
+    VDIF_1000-64-1-2 (here 1000 is payload size in bytes)
+ 
+  <nframes> is number of data frames to read
+ 
+  <offset> is the byte offset into the file
+"""
 import sys, numpy, ctypes
 import mark5access as m5lib
 from scipy import stats
 
 def usage():
-	print (' ')
-	print ('A data statistics checker for raw VLBI data. Reads formats supported by the mark5access library.')
-	print (' ')
-	print ('Usage : m5stat.py <file> <dataformat> <nframes> [<offset>]')
-	print (' ')
-	print ('  <dataformat> should be of the form: <FORMAT>-<Mbps>-<nchan>-<nbit>, e.g.:')
-	print ('    VLBA1_2-256-8-2')
-	print ('    MKIV1_4-128-2-1')
-	print ('    Mark5B-512-16-2')
-	print ('    VDIF_1000-64-1-2 (here 1000 is payload size in bytes)')
-	print (' ')
-	print ('  <nframes> is number of data frames to read')
-	print (' ')
-	print ('  <offset> is the byte offset into the file')
-	print (' ')
+	print __doc__
 
 def m5stat(fn, fmt, nframes, offset):
 	"""Reports statistics for file"""
