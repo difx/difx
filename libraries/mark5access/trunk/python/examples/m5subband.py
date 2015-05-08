@@ -1,31 +1,37 @@
 #!/usr/bin/python
+"""
+m5subband.py ver. 1.0   Jan Wagner  20150413
+ 
+Extracts a narrow subband via filtering raw VLBI data. 
+Reads formats supported by the mark5access library.
+ 
+Usage : m5subband.py <infile> <dataformat> <outfile> 
+                     <if_nr> <factor> <Ldft> 
+                     <start_bin> <stop_binN> [<offset>]
+ 
+  <dataformat> should be of the form: <FORMAT>-<Mbps>-<nchan>-<nbit>, e.g.:
+    VLBA1_2-256-8-2
+    MKIV1_4-128-2-1
+    Mark5B-512-16-2
+    VDIF_1000-64-1-2 (here 1000 is payload size in bytes)
+
+  <outfile>   output file for 32-bit complex float subband data
+  <if_nr>     the IF i.e. baseband channel to be filtered
+  <factor>    overlap-add factor during filtering (typ. 4)
+  <Ldft>      length of DFT
+  <start_bin> take output starting from bin (0...Ldft-2)
+  <stop_bin>  take output ending with bin (start_bin...Ldft-1)
+ 
+  <offset> is the byte offset into the file
+"""
+
 import ctypes, numpy, sys
 import mark5access as m5lib
 from datetime import datetime
 from scipy import stats
 
 def usage():
-	print (' ')
-	print ('m5subband.py ver. 1.0   Jan Wagner  20150413')
-	print (' ')
-	print ('Extracts a narrow subband via filtering raw VLBI data. Reads formats supported by the mark5access library.')
-	print (' ')
-	print ('Usage : m5subband.py <infile> <dataformat> <outfile> <if_nr> <factor> <Ldft> <start_bin> <stop_binN> [<offset>]')
-	print (' ')
-	print ('  <dataformat> should be of the form: <FORMAT>-<Mbps>-<nchan>-<nbit>, e.g.:')
-	print ('    VLBA1_2-256-8-2')
-	print ('    MKIV1_4-128-2-1')
-	print ('    Mark5B-512-16-2')
-	print ('    VDIF_1000-64-1-2 (here 1000 is payload size in bytes)')
-	print (' ')
-	print ('  <if_nr>     the IF i.e. baseband channel to be filtered')
-	print ('  <factor>    overlap-add factor during filtering (typ. 4)')
-	print ('  <Ldft>      length of DFT')
-	print ('  <start_bin> take output starting from bin (0...Ldft-2)')
-	print ('  <stop_bin>  take output ending with bin (start_bin...Ldft-1)')
-	print (' ')
-	print ('  <offset> is the byte offset into the file')
-	print (' ')
+	print __doc__
 
 def m5subband(fn, fmt, fout, if_nr, factor, Ldft, start_bin, stop_bin, offset):
 	"""Extracts narrow-band signal out from file"""
