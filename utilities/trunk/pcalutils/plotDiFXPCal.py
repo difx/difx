@@ -2,17 +2,23 @@
 """
 plotDiFXPCal.py version 1.0  Jan Wagner  20150508
 
-Usage: plotDiFXPCal.py <output_1.difx> <station> [<band>,<tone>]
-                       [<band>,<tone>] [...]
+Usage: plotDiFXPCal.py [--pdf] [--txt] <output_1.difx> <station> 
+                       [<band>,<tone>] [<band>,<tone>] [...]
 
 Currently supports the DiFX 2.4 format of PCAL files.
 
 Plots the contents of the PCAL file of the given station,
 showing amplitude and phase against time for all tones.
 
-Optionally, one or several pairs of band number (1..n) and
-tone number (1..t) can be specified to limit plotting to
-a particular subset of PCal tones.
+Arguments:
+  <output_1.difx>  the DiFX output to read
+  <station>        the two-letter station name
+
+Optional arguments;
+  --pdf      to generate PDF file of plot
+  --txt      to store phases and amplitudes into a text file,
+             discarding details about frequency and polarization
+  band,tone  to select specific tones instead of all tones
 """
 
 import sys, os, glob, math, cmath
@@ -20,7 +26,7 @@ import numpy, pylab
 
 difxVersion = 240
 
-def parsepcalfile(infile,band_tone_sel=()):
+def parsepcalfile(infile,band_tone_sel=(),doPDF=False,doTxt=True):
 
     pcalvalues = {}
     times = numpy.zeros(0)
@@ -57,6 +63,7 @@ def parsepcalfile(infile,band_tone_sel=()):
                 id = pc[0] + pc[1] # + ' tone ' + str(tonenr)
                 if not(id in pcalvalues):
                    pcalvalues[id] = numpy.zeros(0)
+                   print ('New band added: %s' % (id))
                 pcalvalues[id] = numpy.append(pcalvalues[id], [float(pc[2]) + 1j*float(pc[3])])
 
                 #phase = math.atan2(float(pc[3]),float(pc[2])) * (180/math.pi)
@@ -117,35 +124,61 @@ def parsepcalfile(infile,band_tone_sel=()):
     h_leg = pylab.legend(handles,ids,loc='upper center', shadow=True,
                         bbox_to_anchor=(0.5,-0.25),ncol=4,prop={'size':12},numpoints=1)
 
-    outfile = os.path.basename(infile.name) + '.pdf'
-    pylab.savefig(outfile, bbox_extra_artist=[h_leg])
-    print ('Saved plot to %s' % outfile)
+    if doPDF:
+        outfile = os.path.basename(infile.name) + '.pdf'
+        pylab.savefig(outfile, bbox_extra_artist=[h_leg])
+        print ('Saved plot to %s' % outfile)
+    if doTxt:
+        outfile = os.path.basename(infile.name) + '.txt'
+        f = open(outfile,'w')
+        f.write('# MJD  %s\n' % (str(ids)))
+        for ii in range(len(times)):
+            f.write('%.7f ' % (times[ii]))
+            for jj in ids:
+                A = abs(pcalvalues[jj][ii])
+                p = numpy.angle(pcalvalues[jj][ii])*(180.0/math.pi)
+                f.write('%.3f %.1f ' % (A,p))
+            f.write('\n')
+        f.close()
+        print ('Saved PCAL data without polarization and frequency infos into %s' % (outfile))
 
     pylab.show()
     return
 
 
 def main(argv=sys.argv):
-    if len(argv)<3:
+    args = argv[1:]
+    doTxt = False
+    doPDF = False
+
+    # Optional args
+    while (len(args) > 0) and (args[0][0:2] == '--'):
+        if args[0] == '--pdf':
+            doPDF = True
+        if args[0] == '--txt':
+            doTxt = True
+        args = args[1:]
+
+    if len(args)<2:
        print __doc__
        sys.exit(1)
 
     # List the PCAL files (named like pcal-3_1.difx/PCAL_57092_055200_KT)
-    pattern = "%s/PCAL_*_%s" % (argv[1],argv[2]) 
+    pattern = "%s/PCAL_*_%s" % (args[0],args[1]) 
     antennafiles = glob.glob(pattern)
     if len(antennafiles) < 1:
         print "Error: no PCAL files found (pattern: %s)" % pattern
         sys.exit(1)
 
     sel = []
-    if len(argv)>3:
-        for bt in argv[3:]:
+    if len(args)>2:
+        for bt in args[2:]:
            bt = bt.split(',')
            sel.append( (int(bt[0])-1, int(bt[1])-1) )
 
     for af in antennafiles:
         infile = open(af, 'r')
-        parsepcalfile(infile,sel)
+        parsepcalfile(infile,sel,doPDF,doTxt)
         infile.close()
 
 if __name__ == '__main__':
