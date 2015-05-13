@@ -1385,6 +1385,9 @@ public class JobEditorMonitor extends JFrame {
     protected boolean _processorsSufficient;
     public boolean processorsSufficient() { return _processorsSufficient; }
 
+    protected int _threadsInUse;
+    public int threadsInUse() { return _threadsInUse; }
+    
     /*
      * Send the current machines and thread settings to guiServer to produce .machines
      * and .threads files.
@@ -1437,6 +1440,7 @@ public class JobEditorMonitor extends JFrame {
         // Add enabled processors and threads.  Don't include processors that have no
         // threads!  Also avoid the headnode if the user has indicated it should be
         // avoided (recommended if there are other processors).
+        _threadsInUse = 0;
         for ( Iterator<BrowserNode> iter = _processorsPane.browserTopNode().children().iterator();
                 iter.hasNext(); ) {
             PaneProcessorNode thisNode = (PaneProcessorNode)(iter.next());
@@ -1448,6 +1452,7 @@ public class JobEditorMonitor extends JFrame {
                     DifxMachinesDefinition.Process process = command.factory().createDifxMachinesDefinitionProcess();
                     process.setNodes( thisNode.name() );
                     process.setThreads( thisNode.threadsText() );
+                    _threadsInUse += thisNode.threads();
                     cmd.getProcess().add( process );
                 }
             }
@@ -1779,6 +1784,7 @@ public class JobEditorMonitor extends JFrame {
                 _machinesAppliedByHand = true;
             }
         }
+        _jobNode.estimateJobTime();
         DiFXCommand command = new DiFXCommand( _settings );
         command.header().setType( "DifxStart" );
         command.mpiProcessId( "-1" );

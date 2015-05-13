@@ -373,6 +373,8 @@
                 <xsd:element ref="useMaxSecondsForProcessing" />
                 <xsd:element ref="simultaneousCheck" />
                 <xsd:element ref="tryToSkipMissingStationsCheck" />
+                <xsd:element ref="correlationTimeSum" />
+                <xsd:element ref="correlationTimeN" />
                 <xsd:element name="pathNodePair" maxOccurs="unbounded" minOccurs="0">
                     <xsd:complexType>
                         <xsd:attribute name="node" type="xsd:string"/>
@@ -662,6 +664,8 @@
     <xsd:element name="useMaxSecondsForProcessing" type="xsd:boolean"></xsd:element>
     <xsd:element name="simultaneousCheck" type="xsd:boolean"></xsd:element>
     <xsd:element name="tryToSkipMissingStationsCheck" type="xsd:boolean"></xsd:element>
+    <xsd:element name="correlationTimeSum" type="xsd:double"></xsd:element>
+    <xsd:element name="correlationTimeN" type="xsd:double"></xsd:element>
 
     <xsd:complexType name="mark5Status">
         <xsd:sequence>

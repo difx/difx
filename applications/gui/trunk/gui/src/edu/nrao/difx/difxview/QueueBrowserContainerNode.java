@@ -116,13 +116,13 @@ public class QueueBrowserContainerNode extends QueueBrowserNode {
     }
     
     public void correlationTime( double newVal ) { 
-        _correlationTime.setText( fromSeconds( newVal ) );
+        _correlationTime.setText( fromSeconds( newVal, 1 ) );
         _correlationTime.updateUI();
     }
     public String correlationTime() { return _correlationTime.getText(); }
 
     public void timeRemaining( double newVal ) { 
-        _timeRemaining.setText( fromSeconds( newVal ) );
+        _timeRemaining.setText( fromSeconds( newVal, 0 ) );
         _timeRemaining.updateUI();
     }
     public String timeRemaining() { return _timeRemaining.getText(); }

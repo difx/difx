@@ -1108,6 +1108,17 @@ public class SystemSettings extends JFrame {
                 + "try to rebuild and rerun the job without the offending station(s)." );
         _tryToSkipMissingStations.setBounds( 850, 240, 200, 25 );
         jobProcessingPanel.add( _tryToSkipMissingStations );
+        _clearCorrelationStatisticsButton = new ZButton( "Clear Statistics" );
+        _clearCorrelationStatisticsButton.setToolTipText( "Zero the statistics used to estimate processing times.\n"
+                + "Subsequent estimates will have no knowledge of previous job execution times." );
+        _clearCorrelationStatisticsButton.setBounds( 850, 265, 140, 25 );
+        _clearCorrelationStatisticsButton.addActionListener( new ActionListener() {
+            public void actionPerformed( ActionEvent e ) {
+                _correlationTimeSum = null;
+                _correlationTimeN = null;
+            }
+        } );
+        jobProcessingPanel.add( _clearCorrelationStatisticsButton );
 
         IndexedPanel databasePanel = new IndexedPanel( "Database Configuration" );
         databasePanel.openHeight( 305 );
@@ -3252,6 +3263,10 @@ public class SystemSettings extends JFrame {
                 _maxSecondsForProcessing.intValue( doiConfig.getMaxSecondsForProcessing() );
             _useMaxSecondsForProcessing.setSelected( doiConfig.isUseMaxSecondsForProcessing() );
             _tryToSkipMissingStations.setSelected( !doiConfig.isTryToSkipMissingStationsCheck() );
+            if ( doiConfig.getCorrelationTimeSum() != 0.0 )
+                _correlationTimeSum = doiConfig.getCorrelationTimeSum();
+            if ( doiConfig.getCorrelationTimeN() != 0.0 )
+                _correlationTimeN = doiConfig.getCorrelationTimeN();
 
             for ( Iterator<DoiSystemConfig.PathNodePair> iter = doiConfig.getPathNodePair().iterator(); iter.hasNext(); ) {
                 DoiSystemConfig.PathNodePair pathNodePair = iter.next();
@@ -4083,6 +4098,10 @@ public class SystemSettings extends JFrame {
         doiConfig.setUseMaxSecondsForProcessing( _useMaxSecondsForProcessing.isSelected() );
         doiConfig.setSimultaneousCheck( !_simultaneousCheck.isSelected() );
         doiConfig.setTryToSkipMissingStationsCheck( !_tryToSkipMissingStations.isSelected() );
+        if ( _correlationTimeSum != null )
+            doiConfig.setCorrelationTimeSum( _correlationTimeSum );
+        if ( _correlationTimeN != null )
+            doiConfig.setCorrelationTimeN( _correlationTimeN );
 
         if ( _sourceBasedOnPathDisplay != null && _sourceBasedOnPathDisplay.panels() != null ) {
             for ( Iterator<SourceBasedOnPathDisplay.PanelItem> iter = _sourceBasedOnPathDisplay.panels().iterator(); iter.hasNext(); ) {
@@ -5598,6 +5617,29 @@ public class SystemSettings extends JFrame {
     
     protected SourceBasedOnPathDisplay _sourceBasedOnPathDisplay;
     protected HashMap<String,String> _sourceBasedOnPathList;
+    
+    //  These two items are used by the QueueBrowser to figure out how long jobs
+    //  are expected to run.  They are located here because we save them in the
+    //  system settings file.
+    protected Double _correlationTimeSum;
+    protected Double _correlationTimeN;
+    
+    public Double correlationTimeSum() { return _correlationTimeSum; }
+    public Double correlationTimeN() { return _correlationTimeN; }
+    public void addCorrelationTimeSum( double newVal ) {
+        if ( _correlationTimeSum == null )
+            _correlationTimeSum = newVal;
+        else
+            _correlationTimeSum += newVal;
+    }
+    public void addCorrelationTimeN( double newVal ) { 
+        if ( _correlationTimeN == null )
+            _correlationTimeN = newVal;
+        else
+            _correlationTimeN += newVal;
+    }
+    
+    protected ZButton _clearCorrelationStatisticsButton;
     
     /*
      * Class to display a list of nodes that are permitted to be used as source node.

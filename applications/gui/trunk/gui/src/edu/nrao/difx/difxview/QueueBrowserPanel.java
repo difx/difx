@@ -2222,12 +2222,13 @@ public class QueueBrowserPanel extends TearOffPanel {
     protected Double _timePerBaselinePerSecond;
     protected Integer _lastBaselines;
     protected Double _lastDuration;
+    protected Integer _lastThreads;
     
     //--------------------------------------------------------------------------
     //!  As jobs run they provide us with statistics that can be used to improve
     //!  the estimates of how long jobs will take to run.
     //--------------------------------------------------------------------------
-    public void jobRunStats( double startBuffer, double runTime, int baselines, double duration, double extraTime ) {
+    public void jobRunStats( double startBuffer, double runTime, int baselines, double duration, int threads, double extraTime ) {
         //  The "extra time" is the number of extra seconds a job had in its estimate
         //  of how long a job needed to run when it actually ended.  This is used to
         //  try to account for the "rapid completion" exhibited by DiFX jobs (where
@@ -2236,7 +2237,10 @@ public class QueueBrowserPanel extends TearOffPanel {
         _startBuffer = startBuffer;
         _lastBaselines = baselines;
         _lastDuration = duration;
-        _timePerBaselinePerSecond = ( runTime - startBuffer ) / duration / (double)baselines;
+        _lastThreads = threads;
+        _timePerBaselinePerSecond = runTime / duration / (double)baselines * (double)threads;
+        _settings.addCorrelationTimeSum( _timePerBaselinePerSecond );
+        _settings.addCorrelationTimeN( 1.0 );
     }
     
     public double estimateExtraTime() {
@@ -2253,11 +2257,11 @@ public class QueueBrowserPanel extends TearOffPanel {
             return _startBuffer;
     }
     
-    public double estimateProcessTime( int baselines, double duration ) {
-        if ( _timePerBaselinePerSecond == null )
+    public double estimateProcessTime( int baselines, double duration, int threads ) {
+        if ( _settings.correlationTimeN() == null )
             return 0.0;
         else
-            return _timePerBaselinePerSecond * duration * (double)baselines;
+            return _settings.correlationTimeSum() / _settings.correlationTimeN() * duration * (double)baselines / threads;
     }
     
     /*
@@ -2421,7 +2425,7 @@ public class QueueBrowserPanel extends TearOffPanel {
                                         //  Otherwise, take a guess as it based on previous jobs.
                                         else {
                                             if ( _lastDuration != null && _lastBaselines != null )
-                                                passTimeRemaining += estimateProcessTime( _lastBaselines, _lastDuration )
+                                                passTimeRemaining += estimateProcessTime( _lastBaselines, _lastDuration, _lastThreads )
                                                         + estimateStartBuffer();
 //                                        timeRemaining += _settings.queueBrowser().estimateProcessTime( editorMonitor()._inputFile.baselineTable().num,
 //                    _jobDuration ) + _settings.queueBrowser().estimateStartBuffer();

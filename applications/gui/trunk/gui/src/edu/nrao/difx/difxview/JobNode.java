@@ -32,7 +32,13 @@ import java.awt.RenderingHints;
 import java.awt.Color;
 import java.awt.Component;
 
+import java.text.NumberFormat;
+import java.math.RoundingMode;
+
 import java.io.File;
+
+import java.util.Vector;
+import java.util.Iterator;
 
 import edu.nrao.difx.xmllib.difxmessage.DifxMessage;
 import edu.nrao.difx.xmllib.difxmessage.DifxAlert;
@@ -936,34 +942,15 @@ public class JobNode extends QueueBrowserNode {
                         else if ( _fractionComplete > _firstFraction && _fractionComplete < 0.8) {
                             //  We can now figure out how fast the fractiong completed is going by in
                             //  time, the size of the start buffer, and a reasonable estimate of the
-                            //  time remaining.
+                            //  time remaining.  This calculation is only made until the job is 80%
+                            //  complete because "time remaining"/"fraction complete" goes totally
+                            //  non-linear after about then.
                             _timeRemainingTime = (double)System.currentTimeMillis() / 1000.0;
                             _timePerFrac = ( _timeRemainingTime - _firstTime ) / ( _fractionComplete - _firstFraction );
                             _startTimeBuffer = _firstTime - _jobStartTime / 1000.0 - _timePerFrac * _firstFraction;
-                            _currentTimeRemaining = _timePerFrac * ( 1.0 - _fractionComplete );// + _startTimeBuffer - _settings.queueBrowser().estimateExtraTime();
-                        }
-                        else {
-                            _timeRemainingTime = (double)System.currentTimeMillis() / 1000.0;
-                            _currentTimeRemaining = _timePerFrac * ( 1.0 - _fractionComplete );// + _startTimeBuffer - _settings.queueBrowser().estimateExtraTime();
+                            _currentTimeRemaining = _timePerFrac * ( 1.0 - _fractionComplete ) - _settings.queueBrowser().estimateExtraTime();
                         }
                     }
-                    //  Take a stab at figuring out how much time is left in this job.  We use the fraction
-                    //  of the job completed, but need to account for the (rather long in some cases) block
-                    //  of time that occurs before any "fraction" of the job is processed (the fraction is
-                    //  based on the timestamps of date being processed and does not account for setup time).
-                    //  Until we have a first "fraction complete", things are complicated and less accurate.
-//                    if ( _computationalStartTime == null ) {
-//                        _currentTimeRemaining = _jobCorrelationTime * ( 1.0 - _fractionComplete ) / _fractionComplete;
-//                        _computationalStartTime = _timeRemainingTime;
-//                        _computationalFraction = _fractionComplete;
-//                    }
-//                    else {
-//                        //  If we already have a fractional measurement, we can base what remains on the 
-//                        //  time it has taken for processing since that first measurement.
-//                        _currentTimeRemaining = ( _timeRemainingTime - _computationalStartTime ) * ( 1.0 - _fractionComplete ) /
-//                                ( _fractionComplete - _computationalFraction );
-//                    }
-                    //System.out.println( _fractionComplete + "   " + _jobCorrelationTime );
                 }
                 //  And the state itself.  We try to report some information upon completion.
                 setState( difxMsg.getBody().getDifxStatus().getState(), Color.GREEN );
@@ -1042,10 +1029,8 @@ public class JobNode extends QueueBrowserNode {
             _speedUp = ( _fractionComplete * _jobTotalTime )  / _jobCorrelationTime;
             speedUpFactor( _speedUp );
         }
-        timeRemaining( _currentTimeRemaining - ( (double)System.currentTimeMillis() / 1000.0 - _timeRemainingTime ) 
-            - _settings.queueBrowser().estimateExtraTime() );
-        _calculatedTimeRemaining = _currentTimeRemaining - ( (double)System.currentTimeMillis() / 1000.0 - _timeRemainingTime ) 
-            - _settings.queueBrowser().estimateExtraTime();
+        timeRemaining( _currentTimeRemaining - ( (double)System.currentTimeMillis() / 1000.0 - _timeRemainingTime ) );
+        _calculatedTimeRemaining = _currentTimeRemaining - ( (double)System.currentTimeMillis() / 1000.0 - _timeRemainingTime );
 
     }
     
@@ -1126,7 +1111,7 @@ public class JobNode extends QueueBrowserNode {
     public String correlationEnd() { return _correlationEnd.getText(); }
     public void correlationTime( String newVal ) { _correlationTime.setText( newVal ); }
     public void correlationTime( double newVal ) { 
-        _correlationTime.setText( fromSeconds( newVal ) );
+        _correlationTime.setText( fromSeconds( newVal, 1 ) );
         _correlationTime.updateUI();
     }
     public String correlationTime() { return _correlationTime.getText(); }
@@ -1138,17 +1123,22 @@ public class JobNode extends QueueBrowserNode {
         return _jobStart;
     }
     public void jobDuration( Double newVal ) { 
-        _jobDurationText.setText( fromSeconds( newVal ) );//String.format( "%10.1f", newVal ) );
+        _jobDurationText.setText( fromSeconds( newVal, 1 ) );//String.format( "%10.1f", newVal ) );
         _jobDuration = newVal;
     }
     public Double jobDuration() { return _jobDuration; }
     
     //--------------------------------------------------------------------------
     //!  Convert a double-precision number of seconds into a number of hours, minutes,
-    //!  and seconds (with single-digit precision).  
+    //!  and seconds (with specified precision).  
     //--------------------------------------------------------------------------
-    public static String fromSeconds( double seconds ) {
+    public static String fromSeconds( double seconds, int precision ) {
         String ret = "";
+        NumberFormat nf = NumberFormat.getInstance();
+        nf.setMaximumFractionDigits( precision );
+        nf.setRoundingMode( RoundingMode.FLOOR );
+        if ( precision > 0 )
+            nf.setMinimumFractionDigits( precision );
         if ( seconds <= 0.0 )
             return ret;
         //  Figure out the number of hours, minutes and seconds.
@@ -1165,19 +1155,19 @@ public class JobNode extends QueueBrowserNode {
             else
                 ret += "00:";
             if ( (int)seconds > 9 )
-                ret += String.format( "%2.1f", seconds );
+                ret += nf.format( seconds );
             else
-                ret += "0" + String.format( "%3.1f", seconds );
+                ret += "0" + nf.format( seconds );
         }
         else if ( minutes > 0 ) {
             ret += minutes + ":";
             if ( (int)seconds > 9 )
-                ret += String.format( "%2.1f", seconds );
+                ret += nf.format( seconds );
             else
-                ret += "0" + String.format( "%3.1f", seconds );
+                ret += "0" + nf.format( seconds );
         }
         else
-            ret += String.format( "%3.1f", seconds );
+            ret += nf.format( seconds );
         return ret;
     }
     
@@ -1214,7 +1204,7 @@ public class JobNode extends QueueBrowserNode {
     public void difxVersion( String newVal ) { _difxVersion.setText( newVal ); }
     public String difxVersion() { return _difxVersion.getText(); }
     public void speedUpFactor( double newVal ) { _speedUpFactor.setText( String.format( "%10.3f", newVal ) ); }
-    public void timeRemaining( double newVal ) { _timeRemaining.setText( fromSeconds( newVal ) ); }
+    public void timeRemaining( double newVal ) { _timeRemaining.setText( fromSeconds( newVal, 0 ) ); }
     public double speedUpFactor() { return new Double( _speedUpFactor.getText() ).doubleValue(); }
     public void numAntennas( int newVal ) {
         _numAntennas.setText( String.format( "%10d", newVal ) );
@@ -1400,14 +1390,18 @@ public class JobNode extends QueueBrowserNode {
         _timePerFrac = null;
         _firstTime = null;
         _startTimeBuffer = _settings.queueBrowser().estimateStartBuffer();
+        lockState( false );
+    }
         
-        //  Initial estimate the time remaining based on previous work.  Might be good,
-        //  might really stink.
+    //--------------------------------------------------------------------------
+    //  Initial estimate the time remaining based on previous work.  Might be good,
+    //  might really stink.
+    //--------------------------------------------------------------------------
+    public void estimateJobTime() {
         _timeRemainingTime = (double)System.currentTimeMillis() / 1000.0;
         _currentTimeRemaining = _settings.queueBrowser().estimateProcessTime( editorMonitor()._inputFile.baselineTable().num,
-                    _jobDuration ) + _settings.queueBrowser().estimateStartBuffer();
+                _jobDuration, editorMonitor().threadsInUse() );
         timeRemaining( _currentTimeRemaining );
-        lockState( false );
     }
     
     //--------------------------------------------------------------------------
@@ -1424,7 +1418,7 @@ public class JobNode extends QueueBrowserNode {
         _settings.queueBrowser().jobRunStats( _startTimeBuffer, 
                 (double)System.currentTimeMillis() / 1000.0 - _jobStartTime / 1000.0,
                 editorMonitor()._inputFile.baselineTable().num,
-                _jobDuration,
+                _jobDuration, editorMonitor().threadsInUse(),
                 _currentTimeRemaining - ( (double)System.currentTimeMillis() / 1000.0 - _timeRemainingTime ) );
         timeRemaining( 0.0 );
         _calculatedTimeRemaining = 0.0;
