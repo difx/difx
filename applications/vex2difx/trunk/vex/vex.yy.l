@@ -112,6 +112,7 @@ ANGLE		[+-]?([0-9]{1,2})d([0-9]{1,2})\'{SEC}\"
 <LINE>data_transfer	{BEGIN(INITIAL);return T_DATA_TRANSFER;}
 
 <LINE>antenna_diam	{BEGIN(INITIAL);return T_ANTENNA_DIAM;}
+<LINE>antenna_name	{BEGIN(INITIAL);return T_ANTENNA_NAME;}
 <LINE>axis_type	{BEGIN(INITIAL);return T_AXIS_TYPE;}
 <LINE>axis_offset	{BEGIN(INITIAL);return T_AXIS_OFFSET;}
 <LINE>antenna_motion	{BEGIN(INITIAL);return T_ANTENNA_MOTION;}

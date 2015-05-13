@@ -81,7 +81,7 @@ struct s2_data_source  *dsptr;
 
 %token <ival>	T_START T_SOURCE T_MODE T_STATION T_DATA_TRANSFER
 
-%token <ival>	T_ANTENNA_DIAM T_AXIS_OFFSET T_ANTENNA_MOTION T_POINTING_SECTOR
+%token <ival>	T_ANTENNA_DIAM T_ANTENNA_NAME T_AXIS_OFFSET T_ANTENNA_MOTION T_POINTING_SECTOR
 %token <ival>   T_AXIS_TYPE
 
 %token <ival>   T_BBC_ASSIGN
@@ -186,7 +186,7 @@ struct s2_data_source  *dsptr;
 %type  <llptr>  antenna_block antenna_defs antenna_lowls 
 %type  <dfptr>	antenna_def
 %type  <lwptr>  antenna_lowl antenna_defx
-%type  <dvptr>  antenna_diam axis_offset
+%type  <dvptr>  antenna_diam antenna_name axis_offset
 %type  <atptr>  axis_type
 %type  <amptr>  antenna_motion
 %type  <psptr>  pointing_sector
@@ -570,6 +570,7 @@ antenna_lowls:	antenna_lowls antenna_lowl	{$$=add_list($1,$2);}
 		| antenna_lowl		{$$=add_list(NULL,$1);}
 ;
 antenna_lowl:	antenna_diam		{$$=make_lowl(T_ANTENNA_DIAM,$1);}
+		| antenna_name		{$$=make_lowl(T_ANTENNA_NAME,$1);}
 		| axis_type		{$$=make_lowl(T_AXIS_TYPE,$1);}
 		| axis_offset		{$$=make_lowl(T_AXIS_OFFSET,$1);}
 		| antenna_motion	{$$=make_lowl(T_ANTENNA_MOTION,$1);}
@@ -579,6 +580,8 @@ antenna_lowl:	antenna_diam		{$$=make_lowl(T_ANTENNA_DIAM,$1);}
 		| T_COMMENT_TRAILING	{$$=make_lowl(T_COMMENT_TRAILING,$1);}
 ;
 antenna_diam:	T_ANTENNA_DIAM '=' unit_value ';'		{$$=$3;}
+;
+antenna_name:	T_ANTENNA_NAME '=' unit_value ';'		{$$=$3;}
 ;
 axis_type:	T_AXIS_TYPE '=' T_NAME ':' T_NAME ';'
 		{$$=make_axis_type($3,$5);}
