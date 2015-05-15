@@ -1365,7 +1365,8 @@ public class JobNode extends QueueBrowserNode {
     public void lockState( boolean newVal ) {
         _lockState = newVal;
         _stopJobItem.setEnabled( !newVal );
-        _editorMonitor.lockState( newVal );
+        if ( _editorMonitor != null )
+            _editorMonitor.lockState( newVal );
     }
     
     //--------------------------------------------------------------------------
