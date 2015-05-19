@@ -1014,6 +1014,10 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 				{
 					vif.phaseCalIntervalMHz = 5;
 				}
+				else if(fabs(phaseCal-200000000.0) < 1.0)
+				{
+					vif.phaseCalIntervalMHz = 200;
+				}
 				else
 				{
 					std::cerr << "Warning: Unsupported pulse cal interval of " << (phaseCal/1000000.0) << " MHz requested for antenna " << antName << "." << std::endl;
