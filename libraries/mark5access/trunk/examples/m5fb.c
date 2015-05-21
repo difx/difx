@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2011 by Walter Brisken & Chris Phillips            *
+ *   Copyright (C) 2008-2015 by Walter Brisken & Chris Phillips & Richard Dodson *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -47,8 +47,8 @@
 const char program[] = "m5fb";
 const char author[]  = "Richard Dodson";
 //  Copied extensively from m5spec by Walter Brisken & Chris Phillips
-const char version[] = "1.0";
-const char verdate[] = "20130606";
+const char version[] = "1.1";
+const char verdate[] = "20150521";
 
 int die = 0;
 
@@ -101,7 +101,7 @@ int harvestComplexData(struct mark5_stream *ms, double **spec, fftw_complex **zd
 {
 	fftw_plan *plan;
 	double complex **cdata;
-	int j,status,fftmode=0;
+	int j,status=0,fftmode=0;
 
 	if(nchan<0)
 	{
@@ -198,7 +198,7 @@ int harvestRealData(struct mark5_stream *ms, double **spec, fftw_complex **zdata
 {
 	static fftw_plan *plan=NULL;
 	static double **data=NULL;
-	int j, status,fftmode=0;
+	int j, status=0,fftmode=0;
 
 	if(nchan<0)
 	{
@@ -380,7 +380,7 @@ int print_header(struct mark5_stream *ms, struct hd_info hi,FILE *fo)
 	printf("Bit shift value : \n");
 
 	i = ftell(fo);
-	bzero(tmp,32);
+	memset(tmp,0,32);
 
 	return 0;
 }
@@ -395,7 +395,7 @@ int spec(const char *filename, const char *formatname, int nchan, int nint, cons
 	int chunk,count;
 	long long total, unpacked;
 	FILE *out;
-	double f, sum, max, min;
+	double f, sum, max = -1.0e32, min = 1.0e32;
 	double x, y;
 	int docomplex;
 	int fftmode=0;
@@ -489,7 +489,7 @@ int spec(const char *filename, const char *formatname, int nchan, int nint, cons
 			uplow[i] = (ifid[i]=='U')? 1 : -1;
 		}
 
-		char *tmp;
+		char *tmp = 0;
 		int nif=ms->nchan; // nif is introduced so that we can have blank IFs or short reads
 		if(strlen(ifid) < nif)
 		{
@@ -541,7 +541,7 @@ int spec(const char *filename, const char *formatname, int nchan, int nint, cons
 				first=print_header(ms,hinfo,out);
 			}
 
-			bzero(tmp,nchan*nif*sizeof(char));
+			memset(tmp,0,nchan*nif*sizeof(char));
 			for(i = 0; i<ms->nchan && i<nif; ++i)
 			{
 				for(c = 0; c < nchan; ++c)
@@ -585,12 +585,12 @@ int spec(const char *filename, const char *formatname, int nchan, int nint, cons
 		// Zero the integrations
 		for(i = 0; i < ms->nchan; ++i)
 		{
-			bzero(spec[i],nchan*sizeof(double));
-			bzero(zdata[i],(nchan+2)*sizeof(fftw_complex));
+			memset(spec[i],0,nchan*sizeof(double));
+			memset(zdata[i],0,(nchan+2)*sizeof(fftw_complex));
 		}
 		for(i = 0; i < ms->nchan/2; ++i)
 		{
-			bzero(zx[i],nchan*sizeof(fftw_complex));
+			memset(zx[i],0,nchan*sizeof(fftw_complex));
 		}
 
 	} // end of file

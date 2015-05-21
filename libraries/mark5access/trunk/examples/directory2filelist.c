@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2011 by Helge Rottmann                                  *
+ *   Copyright (C) 2011-2015 by Helge Rottmann                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -44,8 +44,8 @@
 
 const char program[] = "directory2filelist";
 const char author[]  = "Helge Rottmann";
-const char version[] = "1.3";
-const char verdate[] = "2013 Oct 18";
+const char version[] = "1.4";
+const char verdate[] = "2015 May 21";
 
 const int MJD_UNIX0 = 40587;	// MJD at beginning of unix time
 
@@ -105,7 +105,7 @@ struct mark5_stream *openmk5(const char *filename, const char *formatname, long 
                 {
 			if (*offset < (offset0 + 32*43500L))
 			{
-                        	fprintf(stderr, "problem at initial decode of %s at offset %lld, trying new offset\n", filename, (int64_t)(*offset));
+                        	fprintf(stderr, "problem at initial decode of %s at offset %lld, trying new offset\n", filename, (long long int)(*offset));
 				*offset += 43500;
 				did_fail = 1;
 				continue;
@@ -120,7 +120,7 @@ struct mark5_stream *openmk5(const char *filename, const char *formatname, long 
                 {
 			if (did_fail)
 			{
-				fprintf(stderr, "decode %s at offset %lld succeeded\n\n", filename, (int64_t)(*offset));
+				fprintf(stderr, "decode %s at offset %lld succeeded\n\n", filename, (long long int)(*offset));
 			}
                         break;
                 }

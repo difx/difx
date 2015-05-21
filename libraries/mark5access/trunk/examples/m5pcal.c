@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2010-2013 by Walter Brisken                             *
+ *   Copyright (C) 2010-2015 by Walter Brisken & Jan Wagner                *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -40,8 +40,8 @@
 
 const char program[] = "m5pcal";
 const char author[]  = "Walter Brisken";
-const char version[] = "0.6";
-const char verdate[] = "20130510";
+const char version[] = "0.7";
+const char verdate[] = "20130521";
 
 int ChunkSize = 0;
 const int MaxTones = 4096;
@@ -494,7 +494,7 @@ static int pcal(const char *inFile, const char *format, int nInt, int nFreq, con
 							printf("  Sample %3d  Tone %2d  Freq=%.3f MHz  Amp=%6.4f  Phase=%6.2f deg\n",
 								N, j, toneFreq[j], toneAmp[j], tonePhase[j]*180.0/M_PI);
 						}
-						fprintf(out, "%d %f %.3f %d %6.4f %6.2f %f\n",
+						fprintf(out, "%d %f %d %.3f %6.4f %6.2f %f\n",
 							N, 0.5*(startSec+stopSec), j, toneFreq[j], toneAmp[j], tonePhase[j]*180.0/M_PI, delay);
 					}
 					if(nTone > 1)

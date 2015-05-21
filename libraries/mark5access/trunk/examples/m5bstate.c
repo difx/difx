@@ -20,8 +20,8 @@
 
 const char program[] = "m5bstate";
 const char author[]  = "Alessandra Bertarini";
-const char version[] = "1.2";
-const char verdate[] = "2014 Oct 20";
+const char version[] = "1.3";
+const char verdate[] = "2015 May 21";
 
 int die = 0;
 
@@ -341,7 +341,6 @@ int bstate(const char *filename, const char *formatname, int nframes,
 	   long long offset)
 {
 	struct mark5_stream *ms;
-	int i, j, k, status;
 	int nstates;
 	int docomplex;
 
