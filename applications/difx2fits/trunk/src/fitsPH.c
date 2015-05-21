@@ -573,8 +573,6 @@ static int parseDifxPulseCal(const char *line,
 	int refDay, const DifxInput *D, int *configId, 
 	int phaseCentre, int year)
 {
-	static int tooMany[2][array_MAX_BANDS] = { {0} };	/* zeros the values */
-	static int tooFew[2][array_MAX_BANDS] = { {0} };	/* zeros the values */
 	static int lastDsId = -1;
 	const DifxFreq *df;
 	const DifxDatastream *dd;
@@ -608,14 +606,6 @@ static int parseDifxPulseCal(const char *line,
 	
 	if(dsId != lastDsId)
 	{
-		for(pol = 0; pol < 2; ++pol)
-		{
-			for(i = 0; i < array_MAX_BANDS; ++i)
-			{
-				tooMany[pol][i] = 0;
-				tooFew[pol][i] = 0;
-			}
-		}
 		lastDsId = dsId;
 	}
 
