@@ -36,6 +36,7 @@
 
 /* include spice files for spacecraft navigation if libraries are present */
 #if HAVE_SPICE
+#include "SpiceUsr.h"
 #include "SpiceCK.h"
 #include "SpiceZpr.h"
 #include "SpiceZfc.h"
@@ -117,7 +118,7 @@ void printDifxSpacecraft(const DifxSpacecraft *ds)
 }
 
 #if HAVE_SPICE
-static void ECI2J2000(doublereal et, doublereal state[6])
+static void TEME2J2000(doublereal et, doublereal state[6])
 {
 	doublereal precm[36];
 	doublereal invprecm[36];
@@ -125,7 +126,7 @@ static void ECI2J2000(doublereal et, doublereal state[6])
 	int six = 6;
 	int i;
 
-	/* Rotate from ECI to J2000 frame */
+	/* Rotate from TEME to J2000 frame */
 	/* Get rotation matrix from TEME @ET (sec past J2000 epoch) to J2000 */
 	/* PRECM is 6x6, goes from J2000 -> TEME */
 	zzteme_(&et, precm);
@@ -167,7 +168,7 @@ int computeDifxSpacecraftEphemerisFromXYZ(DifxSpacecraft *ds, double mjd0, doubl
 		sprintf(jdstr, "JD %18.12Lf", jd);
 		str2et_c(jdstr, &et);
 
-		ECI2J2000(et, state);
+		TEME2J2000(et, state);
 
 		ds->pos[p].mjd = mjd;
 		ds->pos[p].fracDay = mjd - ds->pos[p].mjd;
@@ -216,9 +217,14 @@ static int computeDifxSpacecraftEphemeris_bsp(DifxSpacecraft *ds, double mjd0, d
 		jd = mjd + 2400000.5 + ephemClockError/86400.0;
 		sprintf(jdstr, "JD %18.12Lf", jd);
 		str2et_c(jdstr, &et);
-		if(ephemStellarAber == 0.0)
+		/* 399 is the earth geocenter */
+		if(ephemStellarAber < -0.5)
 		{
-			spkezr_c(objectName, et, "J2000", "LT", "399", state, &range);	/* 399 is the earth geocenter */
+			spkezr_c(objectName, et, "J2000", "NONE", "399", state, &range);
+		}
+		else if(ephemStellarAber == 0.0)
+		{
+			spkezr_c(objectName, et, "J2000", "LT", "399", state, &range);
 		}
 		else if(ephemStellarAber == 1.0)
 		{
@@ -460,7 +466,7 @@ static int computeDifxSpacecraftEphemeris_tle(DifxSpacecraft *ds, double mjd0, d
 			}
 		}
 
-		ECI2J2000(et, state);
+		TEME2J2000(et, state);
 
 		ds->pos[p].mjd = mjd;
 		ds->pos[p].fracDay = mjd - ds->pos[p].mjd;

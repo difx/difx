@@ -358,7 +358,9 @@ int run(const char *fileBase, int verbose, double deltaLM, double deltaXYZ)
 	s = getenv("DIFX_CALC_PROGRAM");
 	if(s == 0)
 	{
-		snprintf(calcProgram, CommandLength, "%s", "calcif2");
+		fprintf(stderr, "Error! env var DIFX_CALC_PROGRAM needs to be set and point to your delay generator program!\n");
+
+		exit(0);
 	}
 	else
 	{

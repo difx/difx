@@ -2505,7 +2505,7 @@ static DifxInput *populateIM(DifxInput *D, DifxParameters *mp)
 	for(s = 0; s < nScan; ++s)
 	{
 		DifxScan *scan;
-		double delta;	/* either (m) or (rad) depending on application */
+		double delta = 0.0;	/* either (m) or (rad) depending on application */
 		int p;
 		int r2;
 
@@ -2641,6 +2641,12 @@ static DifxInput *populateIM(DifxInput *D, DifxParameters *mp)
 					}
 					if(scan->imLM)
 					{
+						if(delta == 0)
+						{
+							fprintf(stderr, "Error: imLM set but delta is not provided\n");
+
+							return 0;
+						}
 						r2 = r;	/* save for error message if needed */
 						r = parsePoly1(mp, r, "SRC %d ANT %d dDELAYdL", src, t, scan->imLM[a][src][p].dDelay_dl, order+1);
 						if(r > 0) r = parsePoly1(mp, r, "SRC %d ANT %d dDELAYdM", src, t, scan->imLM[a][src][p].dDelay_dm, order+1);
@@ -2657,6 +2663,12 @@ static DifxInput *populateIM(DifxInput *D, DifxParameters *mp)
 					}
 					else if(scan->imXYZ)
 					{
+						if(delta == 0)
+						{
+							fprintf(stderr, "Error: imXYZ set but delta is not provided\n");
+
+							return 0;
+						}
 						r2 = r;	/* save for error message if needed */
 						r = parsePoly1(mp, r, "SRC %d ANT %d dDELAYdX", src, t, scan->imXYZ[a][src][p].dDelay_dX, order+1);
 						if(r > 0) r = parsePoly1(mp, r, "SRC %d ANT %d dDELAYdY", src, t, scan->imXYZ[a][src][p].dDelay_dY, order+1);
