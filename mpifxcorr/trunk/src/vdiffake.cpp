@@ -117,18 +117,7 @@ int VDIFFakeDataStream::dataRead(int buffersegment)
 {
 	int bytes;
 	int muxReturn;
-	int muxBits;
 	unsigned int bytesvisible;
-
-	if(samplingtype == Configuration::COMPLEX)
-	{
-		// muxing complex data is exactly the same as muxing real data, except the number of bits per sample needs to be doubled so we keep real and imaginary parts together
-		muxBits = 2*nbits;
-	}
-	else
-	{
-		muxBits = nbits;
-	}
 
 	bytes = 0;
 	for(unsigned char *dest = readbuffer + readbufferleftover; dest <= readbuffer + readbuffersize - nthreads*inputframebytes; )

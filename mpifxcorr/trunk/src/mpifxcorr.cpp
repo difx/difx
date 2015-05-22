@@ -238,7 +238,6 @@ int main(int argc, char *argv[])
   int * coreids;
   int * datastreamids;
   bool monitor = false;
-  bool restart = false;
   string monitoropt;
   pthread_t commandthread;
   pthread_attr_t attr;
@@ -308,7 +307,6 @@ int main(int argc, char *argv[])
     else if(argv[i][0]=='-' && argv[i][1]=='r')
     {
       restartseconds = atof(argv[i] + 2);
-      restart = true;
     }
     else
     {

@@ -392,7 +392,7 @@ long long Core::getEstimatedBytes()
 
 void Core::loopprocess(int threadid)
 {
-  int perr, numprocessed, startblock, numblocks, lastconfigindex, numpolycos, maxbins, maxchan, maxpolycos, stadumpchannels, strideplussteplen, maxrotatestrideplussteplength, maxxmaclength, slen;
+  int perr, numprocessed, startblock, numblocks, lastconfigindex, numpolycos, maxchan, maxpolycos, stadumpchannels, strideplussteplen, maxrotatestrideplussteplength, maxxmaclength, slen;
   double sec;
   bool pulsarbin, somepulsarbin, somescrunch, dumpingsta, nowdumpingsta;
   processslot * currentslot;
@@ -422,7 +422,6 @@ void Core::loopprocess(int threadid)
   dumpingsta = false;
   maxpolycos = 0;
   maxchan = config->getMaxNumChannels();
-  maxbins = config->getMaxNumPulsarBins();	/* FIXME: This value is never used! */
   slen = config->getArrayStrideLength(0);
   if(slen>config->getXmacStrideLength(0))
     slen = config->getXmacStrideLength(0);
@@ -1407,7 +1406,7 @@ void Core::averageAndSendKurtosis(int index, int threadid, double nsoffset, doub
 
 void Core::uvshiftAndAverage(int index, int threadid, double nsoffset, double nswidth, Polyco * currentpolyco, threadscratchspace * scratchspace)
 {
-  int status, startbaselinefreq, atbaselinefreq, startbaseline, startfreq, endbaseline, binloop;
+  int status, startbaselinefreq, atbaselinefreq, startbaseline, startfreq, endbaseline;
   int localfreqindex, baselinefreqs;
   int numxmacstrides, xmaclen;
 
@@ -1466,11 +1465,6 @@ void Core::uvshiftAndAverage(int index, int threadid, double nsoffset, double ns
   //}
 
   startbaselinefreq = (threadid*baselinefreqs)/numprocessthreads;
-
-  /* FIXME: binloop calculated below is never used */
-  binloop = 1;
-  if(procslots[index].pulsarbin && !procslots[index].scrunchoutput)
-    binloop = procslots[index].numpulsarbins;
 
   atbaselinefreq = 0;
   startfreq = -1;
@@ -1574,7 +1568,7 @@ void Core::uvshiftAndAverage(int index, int threadid, double nsoffset, double ns
 
 void Core::uvshiftAndAverageBaselineFreq(int index, int threadid, double nsoffset, double nswidth, threadscratchspace * scratchspace, int freqindex, int baseline)
 {
-  int status, perr, threadbinloop, threadindex, threadstart, numstrides, numaverages;
+  int status, perr, threadbinloop, threadindex, threadstart, numstrides;
   int localfreqindex, freqchannels, coreindex, coreoffset, corebinloop, channelinc, rotatorlength, dest;
   int antenna1index, antenna2index;
   int rotatestridelen, rotatesperstride, xmacstridelen, xmaccopylen, stridestoaverage, averagesperstride, averagelength;
@@ -1647,7 +1641,6 @@ void Core::uvshiftAndAverageBaselineFreq(int index, int threadid, double nsoffse
   channelinc = config->getFChannelsToAverage(freqindex);
   bandwidth = config->getFreqTableBandwidth(freqindex);
   lofrequency = config->getFreqTableFreq(freqindex);
-  numaverages = freqchannels/channelinc;	/* FIXME: This value is never used */
   stridestoaverage = channelinc/xmacstridelen;
   rotatesperstride = xmacstridelen/rotatestridelen;
   if(stridestoaverage == 0)

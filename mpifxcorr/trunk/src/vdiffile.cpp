@@ -401,18 +401,7 @@ int VDIFDataStream::dataRead(int buffersegment)
 	unsigned char *destination;
 	int bytes;
 	int muxReturn;
-	int muxBits;
 	unsigned int bytesvisible;
-
-	if(samplingtype == Configuration::COMPLEX)
-	{
-		// muxing complex data is exactly the same as muxing real data, except the number of bits per sample needs to be doubled so we keep real and imaginary parts together
-		muxBits = 2*nbits;
-	}
-	else
-	{
-		muxBits = nbits;
-	}
 
 	destination = reinterpret_cast<unsigned char *>(&databuffer[buffersegment*(bufferbytes/numdatasegments)]);
 
