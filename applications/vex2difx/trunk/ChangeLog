@@ -7,6 +7,7 @@ Version 2.5.0
     antenna machine assignments and the usual head / core processor
     assignments will be drawn.
 * outPath global parameter added: all .difx/ output gets put here rather than ./
+* split vex2difx.cpp into smaller pieces (in progress)
 
 Version 2.4.0
 ~~~~~~~~~~~~~

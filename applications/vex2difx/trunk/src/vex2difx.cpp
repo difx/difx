@@ -42,7 +42,11 @@
 #include "vextables.h"
 #include "corrparams.h"
 #include "vexload.h"
+#include "freq.h"
 #include "util.h"
+#include "makejobs.h"
+#include "timeutils.h"
+#include "sanitycheck.h"
 #include "../config.h"
 
 using namespace std;
@@ -50,19 +54,10 @@ using namespace std;
 
 const string version(VERSION);
 const string program("vex2difx");
-const string verdate("20140701");
+const string verdate("20150527");
 const string author("Walter Brisken/Adam Deller");
 
 const int defaultMaxNSBetweenACAvg = 2000000;	// 2ms, good default for use with transient detection
-
-static double current_mjd()
-{
-	struct timeval t;
-
-	gettimeofday(&t, 0);
-
-	return MJD_UNIX0 + t.tv_sec/SEC_DAY + t.tv_usec/MUSEC_DAY;
-}
 
 static int calcDecimation(int overSamp)
 {
@@ -115,384 +110,6 @@ static int calculateWorstcaseGuardNS(double sampleRate, int subintNS)
 	}
 
 	return static_cast<int>(nsAccumulate + MaxEarthGeomSlipRate*subintNS*1.0e-9 + 1.0);
-}
-
-// A is assumed to be the first scan in time order
-static bool areScansCompatible(const VexScan *A, const VexScan *B, const CorrParams *P)
-{
-	if(((B->mjdStart < A->mjdStop) && (fabs(B->mjdStart-A->mjdStop) > 1.0e-8)) ||
-	   (B->mjdStart > A->mjdStop + P->maxGap))
-	{
-		return false;
-	}
-	if(A->overlap(*B) >= -0.1/86400.0)
-	{
-		return false;
-	}
-	if(P->singleScan)
-	{
-		return false;
-	}
-	if(P->singleSetup && A->modeDefName != B->modeDefName)
-	{
-		return false;
-	}
-	
-	return true;
-}
-
-// Divides scans into different groups where each group contains scans that can be correlated at the same time.
-// This does not pay attention to media or clock breaks
-static void genJobGroups(vector<VexJobGroup> &JGs, const VexData *V, const CorrParams *P, int verbose)
-{
-	unsigned int nNoRecordScan = 0;
-	list<string> scans;
-	V->getScanList(scans);
-
-	while(!scans.empty())
-	{
-		const VexScan *scan = V->getScanByDefName(scans.front());
-		int nRecordedAnt = scan->nAntennasWithRecordedData(V);
-
-		if(nRecordedAnt < P->minSubarraySize)
-		{
-			if(verbose > 2)
-			{
-				cout << "Skipping scan " << scans.front() << " because it has no recorded data." << endl;
-			}
-			
-			scans.pop_front();
-			++nNoRecordScan;
-
-			continue;
-		}
-		JGs.push_back(VexJobGroup());
-		VexJobGroup &JG = JGs.back();
-		JG.scans.push_back(scans.front());
-		JG.setTimeRange(*scan);
-		scans.pop_front();
-
-		const VexScan *scan1 = V->getScanByDefName(JG.scans.back());
-		const CorrSetup *corrSetup1 = P->getCorrSetup(scan1->corrSetupName);
-
-		for(list<string>::iterator it = scans.begin(); it != scans.end();)
-		{
-			const VexScan *scan2 = V->getScanByDefName(*it);
-			const CorrSetup *corrSetup2 = P->getCorrSetup(scan2->corrSetupName);
-
-			// Skip any scans that don't overlap with .v2d mjdStart and mjdStop
-			if(P->overlap(*scan2) <= 0.0)
-			{
-				++it;
-				continue;
-			}
-
-#warning "FIXME: verify modes are compatible"
-			if(areCorrSetupsCompatible(corrSetup1, corrSetup2, P) &&
-			   areScansCompatible(scan1, scan2, P))
-			{
-				JG.logicalOr(*scan2);	// expand jobGroup time to include this scan
-				JG.scans.push_back(*it);
-				it = scans.erase(it);
-				scan1 = scan2;
-				corrSetup1 = corrSetup2;
-			}
-			else
-			{	
-				++it;
-			}
-		}
-	}
-
-	if(verbose + nNoRecordScan > 0)
-	{
-		cout << nNoRecordScan << " scans dropped because they recorded no baseband data." << endl;
-	}
-
-	const list<VexEvent> *events = V->getEvents();
-	for(vector<VexJobGroup>::iterator jg = JGs.begin(); jg != JGs.end(); ++jg)
-	{
-		jg->genEvents(*events);
-		jg->logicalAnd(*P);		// possibly shrink job group to requested range
-	}
-}
-
-class MediaChange : public VexInterval
-{
-public:
-	MediaChange(string A, double start, double stop) : VexInterval(start, stop), ant(A) {}
-
-	string ant;
-};
-
-ostream& operator << (ostream& os, const MediaChange& x)
-{
-	int p = os.precision();
-
-	os.precision(12);
-	os << "MediaChange(" << x.ant << ", " << x.mjdStart << ", " << x.mjdStop << ")";
-	os.precision(p);
-
-	return os;
-}
-
-static int nGap(const list<MediaChange> &m, double mjd)
-{
-	int n = 0;
-
-	for(list<MediaChange>::const_iterator it = m.begin(); it != m.end(); ++it)
-	{
-		if(mjd >= it->mjdStart && mjd <= it->mjdStop)
-		{
-			++n;
-		}
-	}
-
-	return n;
-}
-
-static void genJobs(vector<VexJob> &Js, const VexJobGroup &JG, VexData *V, const CorrParams *P, int verbose)
-{
-	map<string,double> recordStop;
-	map<double,int> usage;
-	map<double,int> clockBreaks;
-	int nClockBreaks = 0;
-	list<MediaChange> changes;
-	list<double> times;
-	list<double> breaks;
-	double mjdLast = -1.0;
-	double mjdBest = 0.0;
-	double start;
-	int nAnt;
-	int nLoop = 0;
-	VexInterval scanRange;
-
-	// first initialize recordStop and usage
-	for(list<VexEvent>::const_iterator e = JG.events.begin(); e != JG.events.end(); ++e)
-	{
-		if(e->eventType == VexEvent::RECORD_START)
-		{
-			recordStop[e->name] = -1.0;
-		}
-		if(e->eventType == VexEvent::SCAN_START && (scanRange.mjdStart < 1.0 || e->mjd < scanRange.mjdStart))
-		{
-			scanRange.mjdStart = e->mjd;
-		}
-		if(e->eventType == VexEvent::SCAN_START && (scanRange.mjdStart < 1.0 || e->mjd > scanRange.mjdStop))
-		{
-			scanRange.mjdStop = e->mjd;
-		}
-
-		usage[e->mjd] = 0;
-		clockBreaks[e->mjd] = 0;
-	}
-	nAnt = recordStop.size();
-
-	scanRange.logicalAnd(*P);	// Shrink time range to v2d start / stop interval
-
-	// populate changes, times, and usage
-	for(list<VexEvent>::const_iterator e = JG.events.begin(); e != JG.events.end(); ++e)
-	{
-		if(mjdLast > 0.0 && e->mjd > mjdLast)
-		{
-			usage[e->mjd] = usage[mjdLast];
-			mjdLast = e->mjd;
-			if(JG.containsAbsolutely(e->mjd))
-			{
-				times.push_back(e->mjd);
-			}
-		}
-		else if(mjdLast < 0.0)
-		{
-			usage[e->mjd] = 0;
-			mjdLast = e->mjd;
-			if(JG.containsAbsolutely(e->mjd))
-			{
-				times.push_back(e->mjd);
-			}
-		}
-
-		if(e->eventType == VexEvent::RECORD_START)
-		{
-			if(recordStop[e->name] > 0.0)
-			{
-				if(JG.containsAbsolutely(recordStop[e->name]) &&
-				   JG.containsAbsolutely(e->mjd) &&
-				   scanRange.containsAbsolutely(e->mjd))
-				{
-					changes.push_back(MediaChange(e->name, recordStop[e->name], e->mjd));
-					if(verbose > 0)
-					{
-						cout << "Media change: " << e->name << " " << 
-							(VexInterval)(changes.back()) << endl;
-					}
-				}
-			}
-		}
-		else if(e->eventType == VexEvent::RECORD_STOP)
-		{
-			recordStop[e->name] = e->mjd;
-		}
-		else if(e->eventType == VexEvent::ANT_SCAN_START)
-		{
-			++usage[e->mjd];
-		}
-		else if(e->eventType == VexEvent::ANT_SCAN_STOP)
-		{
-			--usage[e->mjd];
-		}
-		else if(e->eventType == VexEvent::CLOCK_BREAK ||
-			e->eventType == VexEvent::LEAP_SECOND ||
-			e->eventType == VexEvent::ANTENNA_START ||
-			e->eventType == VexEvent::ANTENNA_STOP ||
-			e->eventType == VexEvent::MANUAL_BREAK)
-		{
-			if(JG.containsAbsolutely(e->mjd))
-			{
-				++clockBreaks[e->mjd];
-				++nClockBreaks;
-			}
-		}
-	}
-
-	// now go through and set breakpoints
-	while(!changes.empty() || nClockBreaks > 0)
-	{
-		int scoreBest;
-		int nEvent = JG.events.size();
-
-		++nLoop;
-		if(nLoop > nEvent+3) // There is clearly a problem converging!
-		{
-			cerr << "Developer error: jobs not converging after " << nLoop << " tries.\n" << endl;
-
-			cerr << "Events:" << endl;
-			list<VexEvent>::const_iterator iter;
-			for(iter = JG.events.begin(); iter != JG.events.end(); ++iter)
-			{
-				cerr << "   " << *iter << endl;
-			}
-
-			cerr << "nClockBreaks = " << nClockBreaks << endl;
-
-			cerr << "Media Changes remaining were:" << endl;
-			list<MediaChange>::const_iterator it;
-			for(it = changes.begin(); it != changes.end(); ++it)
-			{
-				cerr << "   " << *it << endl;
-			}
-
-			exit(EXIT_FAILURE);
-		}
-
-		// look for break with highest score
-		// Try as hard as possible to minimize number of breaks
-		scoreBest = -1;
-		for(list<double>::const_iterator t = times.begin(); t != times.end(); ++t)
-		{
-			int score = nGap(changes, *t) * (nAnt-usage[*t]+1) + 100*clockBreaks[*t];
-			if(score > scoreBest)
-			{
-				scoreBest = score;
-				mjdBest = *t;
-			}
-		}
-
-		breaks.push_back(mjdBest);
-		nClockBreaks -= clockBreaks[mjdBest];
-		clockBreaks[mjdBest] = 0;
-
-		// find modules that change in the new gap
-		for(list<MediaChange>::iterator c = changes.begin(); c != changes.end();)
-		{
-			if(c->mjdStart <= mjdBest && c->mjdStop >= mjdBest)
-			{
-				c = changes.erase(c);
-			}
-			else
-			{
-				++c;
-			}
-		}
-	}
-	breaks.sort();
-
-	// Add a break at end so num breaks = num jobs
-	breaks.push_back(JG.mjdStop);
-
-	// form jobs
-	start = JG.mjdStart;
-	for(list<double>::const_iterator t = breaks.begin(); t != breaks.end(); ++t)
-	{
-		VexInterval jobTimeRange(start, *t);
-		if(jobTimeRange.duration() > P->minLength)
-		{
-			JG.createJobs(Js, jobTimeRange, V, P->maxLength, P->maxSize);
-		}
-		else
-		{
-			cerr << "Warning: skipping short job of " << (jobTimeRange.duration()*86400.0) << " seconds duration." << endl;
-		}
-		start = *t;
-	}
-}
-
-static void makeJobs(vector<VexJob>& J, VexData *V, const CorrParams *P, int verbose)
-{
-	vector<VexJobGroup> JG;
-
-	// Add antenna start/stops
-
-	std::vector<AntennaSetup>::const_iterator as;
-	for(as = P->antennaSetups.begin(); as != P->antennaSetups.end(); ++as)
-	{
-		if(as->mjdStart > 0.0)
-		{
-			V->addEvent(as->mjdStart, VexEvent::ANTENNA_START, as->vexName);
-		}
-		if(as->mjdStop > 0.0)
-		{
-			V->addEvent(as->mjdStop, VexEvent::ANTENNA_STOP, as->vexName);
-		}
-	}
-	V->sortEvents();
-
-	// Do splitting of jobs
-	genJobGroups(JG, V, P, verbose);
-
-	if(verbose > 0)
-	{
-		cout << JG.size() << " job groups created:" << endl;
-		for(vector<VexJobGroup>::const_iterator jg = JG.begin(); jg != JG.end(); ++jg)
-		{
-			cout << "  " << *jg;
-		}
-	}
-
-	for(vector<VexJobGroup>::const_iterator jg = JG.begin(); jg != JG.end(); ++jg)
-	{
-		genJobs(J, *jg, V, P, verbose);
-	}
-
-	// Finalize all the new job structures
-	int jobId = P->startSeries;
-	for(vector<VexJob>::iterator j = J.begin(); j != J.end(); ++j)
-	{
-		ostringstream name;
-		j->jobSeries = P->jobSeries;
-		j->jobId = jobId;
-
-		// note: this is an internal name only, not the job prefix that 
-		// becomes part of the filenames
-		name << j->jobSeries << "_" << j->jobId;
-
-		V->addEvent(j->mjdStart, VexEvent::JOB_START, name.str());
-		V->addEvent(j->mjdStop,  VexEvent::JOB_STOP,  name.str());
-		j->assignVSNs(*V);
-
-		jobId++;
-	}
-	V->sortEvents();
 }
 
 static DifxJob *makeDifxJob(string directory, const VexJob& J, int nAntenna, const string& obsCode, int *n, int nDigit, char ext, const CorrParams *P)
@@ -790,49 +407,6 @@ static int next2(int x)
 	{
 		return 2<<m;
 	}
-}
-
-class freq
-{
-public:
-	freq(double f=0.0, double b=0.0, char s=' ', double isr=0.0, double osr=0.0, int os=0, int d=0, int iz=0, unsigned int t=0) 
-		: fq(f), bw(b), inputSpecRes(isr), outputSpecRes(osr), overSamp(os), decimation(d), isZoomFreq(iz), toneSetId(t), sideBand(s) {};
-	double fq;		// Hz
-	double bw;		// Hz
-	double inputSpecRes;	// Hz
-	double outputSpecRes;	// Hz
-	int overSamp;
-	int decimation;
-	int isZoomFreq;
-	unsigned int toneSetId;
-	char sideBand;
-
-	int specAvg() const { return static_cast<int>(outputSpecRes/inputSpecRes + 0.5); }
-};
-
-static int getFreqId(vector<freq>& freqs, double fq, double bw, char sb, double isr, double osr, int os, int d, int iz, unsigned int t)
-{
-	for(vector<freq>::const_iterator it = freqs.begin(); it != freqs.end(); ++it)
-	{
-		if(fq  == it->fq &&
-		   bw  == it->bw &&
-		   sb  == it->sideBand &&
-		   isr == it->inputSpecRes &&
-		   osr == it->outputSpecRes &&
-		   os  == it->overSamp &&
-		   d   == it->decimation &&
-		   iz  == it->isZoomFreq &&
-		   t   == it->toneSetId)
-		{
-			// use iterator math to get index
-			return it - freqs.begin();
-		}
-	}
-
-	// not in list yet, so add
-	freqs.push_back(freq(fq, bw, sb, isr, osr, os, d, iz, t));
-
-	return freqs.size() - 1;
 }
 
 static int getBand(vector<pair<int,int> >& bandMap, int fqId)
@@ -2045,44 +1619,44 @@ static bool matchingFreq(const ZoomFreq &zoomfreq, const DifxDatastream *dd, int
 {
 	const double epsilon = 0.000001;
 	double channeloffset;
-    double parent_bottom,
-           parent_top;
+	double parent_bottom,
+	parent_top;
 	const freq &f = freqs[dd->recFreqId[dfreqIndex]];
 
 	if(f.sideBand == 'L')           // is parent LSB?
 	{
 		channeloffset = (f.fq - zoomfreq.frequency - zoomfreq.bandwidth)/f.inputSpecRes;
-        parent_bottom = f.fq - f.bw;
-        parent_top = f.fq;
-    }
-    else                            // parent is USB
-    {
+		parent_bottom = f.fq - f.bw;
+		parent_top = f.fq;
+	}
+	else                            // parent is USB
+	{
 		channeloffset = (zoomfreq.frequency - f.fq)/f.inputSpecRes;
-        parent_bottom = f.fq;
-        parent_top = f.fq + f.bw;
-    }
+		parent_bottom = f.fq;
+		parent_top = f.fq + f.bw;
+	}
 
-    if(zoomfreq.frequency < parent_bottom - epsilon)
-    {
-        return false;
-    }
+	if(zoomfreq.frequency < parent_bottom - epsilon)
+	{
+		return false;
+	}
 
-    if(zoomfreq.frequency + zoomfreq.bandwidth > parent_top + epsilon)
-    {
-        return false;
-    }
+	if(zoomfreq.frequency + zoomfreq.bandwidth > parent_top + epsilon)
+	{
+		return false;
+	}
 
-    if(zoomfreq.spectralaverage > 0 && zoomfreq.spectralaverage != f.specAvg()) //0 means default to parent
-    {
-        return false;
-    }
+	if(zoomfreq.spectralaverage > 0 && zoomfreq.spectralaverage != f.specAvg()) //0 means default to parent
+	{
+		return false;
+	}
 
-    if(fabs(channeloffset - static_cast<int>(channeloffset+0.5)) > epsilon)
-    {
-        return false;
-    }
+	if(fabs(channeloffset - static_cast<int>(channeloffset+0.5)) > epsilon)
+	{
+		return false;
+	}
 
-    return true;
+	return true;
 }
 
 static int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int os, int verbose, ofstream *of, int nDigit, char ext, int strict)
@@ -2930,163 +2504,6 @@ static int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int 
 
 		return 0;
 	}
-}
-
-static bool illegalSourceName(const string &name)
-{
-	if(name.size() > VexSource::MAX_SRCNAME_LENGTH)
-	{
-		return true;
-	}
-	else if(name.find_first_of("/") != string::npos)
-	{
-		return true;
-	}
-	else
-	{
-		return false;
-	}
-}
-
-static int sanityCheckConsistency(const VexData *V, const CorrParams *P)
-{
-	vector<SourceSetup>::const_iterator s;
-	vector<AntennaSetup>::const_iterator a;
-	vector<CorrRule>::const_iterator r;
-	list<string>::const_iterator l;
-
-	int nWarn = 0;
-
-	for(s = P->sourceSetups.begin(); s != P->sourceSetups.end(); ++s)
-	{
-		int n = 0;
-
-		if(V->getSourceBySourceName(s->vexName) == 0)
-		{
-			cerr << "Warning: source " << s->vexName << " referenced in .v2d file but is not in vex file" << endl;
-			++nWarn;
-		}
-		if(!s->pointingCentre.ephemFile.empty())
-		{
-			n += 1;
-		}
-		if(!s->pointingCentre.ephemObject.empty())
-		{
-			n += 2;
-		}
-		if(!s->pointingCentre.naifFile.empty())
-		{
-			n += 4;
-		}
-		if(n != 0 && n != 7)
-		{
-			cerr << "Warning: source " << s->vexName << " seems to have an incomplete set of ephemeris parameters.  All or none of ephemObject, ephemFile, naifFile must be given.  Error code = " << n << endl;
-			++nWarn;
-		}
-	}
-
-	for(a = P->antennaSetups.begin(); a != P->antennaSetups.end(); ++a)
-	{
-		if(a->vexName == "DEFAULT")
-		{
-			cout << "FYI: Using a default antenna setup." << endl;
-		}
-	}
-
-	for(r = P->rules.begin(); r != P->rules.end(); ++r)
-	{
-		for(l = r->scanName.begin(); l != r->scanName.end(); ++l)
-		{
-			if(V->getScanByDefName(*l) == 0)
-			{
-				cerr << "Warning: scan " << *l << " referenced in RULE " << r->ruleName << " in .v2d file but is not in vex file" << endl;
-				++nWarn;
-			}
-		}
-		for(l = r->sourceName.begin(); l != r->sourceName.end(); ++l)
-		{
-			if(V->getSourceBySourceName(*l) == 0)
-			{
-				cerr << "Warning: source " << *l << " referenced in RULE " << r->ruleName << " in .v2d file but is not in vex file" << endl;
-				++nWarn;
-			}
-		}
-		for(l = r->modeName.begin(); l != r->modeName.end(); ++l)
-		{
-			if(V->getModeByDefName(*l) == 0)
-			{
-				cerr << "Warning: mode " << *l << " referenced in RULE " << r->ruleName << " in .v2d file but is not in vex file" << endl;
-				++nWarn;
-			}
-		}
-	}
-
-	// Verify that final source names are legal
-	for(unsigned int s = 0; s < V->nSource(); ++s)
-	{
-		const VexSource *S = V->getSource(s);
-
-		if(S->sourceNames.empty())
-		{
-			cout << "Warning: vex source def block " << S->defName << " has no source names!" << endl;
-			++nWarn;
-			continue;
-		}
-		else if(S->sourceNames.size() > 1)
-		{
-			cout << "Warning: vex source def block " << S->defName << " has more than 1 source names.  Only the first is being considered!" << endl;
-			++nWarn;
-		}
-
-		const SourceSetup *sourceSetup = P->getSourceSetup(S->sourceNames);
-		if(sourceSetup && !sourceSetup->pointingCentre.difxName.empty())
-		{
-			if(illegalSourceName(sourceSetup->pointingCentre.difxName))
-			{
-				cerr << "Warning: illegal source name (" << sourceSetup->pointingCentre.difxName << ") provided in SOURCE section for source " << S->defName << endl;
-				++nWarn;
-			}
-		}
-		else
-		{
-			if(illegalSourceName(S->sourceNames[0]))
-			{
-				cerr << "Warning: illegal source name (" << S->sourceNames[0] << ") in vex file.  Please correct by renaming in the SOURCE section of the .v2d file" << endl;
-				++nWarn;
-			}
-		}
-#warning "FIXME: check phase center names for legality"
-	}
-
-	// warn on two VexSources with the same sourceNames[] entries
-	if(V->nSource() > 1)
-	{
-		for(unsigned int s2 = 1; s2 < V->nSource(); ++s2) 
-		{
-			const VexSource *S2 = V->getSource(s2);
-			unsigned int ns2 = S2->sourceNames.size();
-			for(unsigned int s1 = 0; s1 < s2; ++s1)
-			{
-				const VexSource *S1 = V->getSource(s1);
-				unsigned int ns1 = S1->sourceNames.size();
-				for(unsigned int n2 = 0; n2 < ns2; ++n2)
-				{
-					for(unsigned int n1 = 0; n1 < ns1; ++n1)
-					{
-						if(S1->sourceNames[n1] == S2->sourceNames[n2])
-						{
-							cerr << "Warning: two sources with the same name:" << endl;
-							cerr << "  " << S1->defName << "[" << n1 << "] = " << S1->sourceNames[n1] << endl;
-							cerr << "  " << S2->defName << "[" << n2 << "] = " << S2->sourceNames[n2] << endl;
-							++nWarn;
-						}
-					}
-				}
-			}
-		}
-	}
-
-	return nWarn;
 }
 
 static void usage(int argc, char **argv)
