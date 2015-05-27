@@ -9,8 +9,8 @@ from time import sleep
 from math import sqrt
 
 program = 'difxspeed'
-version = '0.2'
-verdate = '20120719'
+version = '0.3'
+verdate = '20150526'
 author = 'Walter Brisken <wbrisken@nrao.edu>'
 
 inputFileExtension = '.difxspeed'
@@ -121,6 +121,11 @@ def runtest(fd, config, cluster, filebase, verbose, run):
 	dontWriteParams = ['nAnt']
 	writeparams(fd, config)
 
+	if environ.has_key('DIFX_CALC_PROGRAM'):
+		calcProgram = environ['DIFX_CALC_PROGRAM']
+	else:
+		calcProgram = 'calcif2'
+
 	nAnt = getnant(config, cluster)
 	nCore = getncore(config, cluster)
 	antennas = cluster['antennas']
@@ -175,7 +180,8 @@ def runtest(fd, config, cluster, filebase, verbose, run):
 		execute('vex2difx %s' % v2dfile, verbose, False)
 
 		# run calcif2
-		execute('calcif2 %s' % filebase, verbose, False)
+		execute('rm -f %s.im' % filebase, verbose, False)
+		execute('%s %s.calc' % (calcProgram, filebase), verbose, False)
 
 		# run difx
 		execute('startdifx -n -f %s' % filebase, verbose, False)

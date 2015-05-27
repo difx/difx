@@ -1,6 +1,12 @@
 Version 2.5.0
 ~~~~~~~~~~~~~
 * Users can now supply comments in one or more COMMENT { } blocks
+* In the ANTENNA { } blocks, one can specify  machine =  to force a datastream
+  process to be run on a particular machine for a particular antenna.
+  * NOTE: the global "machines" parameter must be set, from which missing
+    antenna machine assignments and the usual head / core processor
+    assignments will be drawn.
+* outPath global parameter added: all .difx/ output gets put here rather than ./
 
 Version 2.4.0
 ~~~~~~~~~~~~~

@@ -1395,6 +1395,10 @@ int AntennaSetup::setkv(const std::string &key, const std::string &value)
 
 		format = s;
 	}
+	else if(key == "machine")
+	{
+		ss >> machine;	// FIXME: when multiple datastreams per antenna are supported, this should be a list append
+	}
 	else if(key == "file" || key == "files")
 	{
 		if(dataSource != DataSourceFile && dataSource != DataSourceNone)
@@ -1711,7 +1715,6 @@ CorrParams::CorrParams(const std::string &fileName)
 void CorrParams::defaults()
 {
 	jobSeries = "job";
-	threadsFile = "";
 	minSubarraySize = 2;
 	maxGap = 180.0/86400.0;		// 3 minutes
 	singleScan = false;
@@ -1870,6 +1873,10 @@ int CorrParams::setkv(const std::string &key, const std::string &value)
 			
 			exit(EXIT_FAILURE);
 		}
+	}
+	else if(key == "outPath")
+	{
+		ss >> outPath;
 	}
 	else if(key == "dataBufferFactor")
 	{

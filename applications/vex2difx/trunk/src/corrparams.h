@@ -170,6 +170,8 @@ public:
 	// antenna-specific start and stop times
 	double mjdStart;
 	double mjdStop;
+	
+	std::string machine;	// If set, use specified machine as datastream node for this antenna	FIXME: eventually make this a std::list<std::string> for multi-datastream support
 };
 
 class CorrSetup
@@ -316,6 +318,7 @@ public:
 	int overSamp;		// A user supplied override to oversample factor
 	enum OutputFormatType outputFormat; // DIFX or ASCII
 	std::string v2dComment;
+	std::string outPath;	// If supplied, put the .difx/ output within the supplied directory rather in ./ .
 
 	std::list<std::string> antennaList;
 	std::list<std::pair<std::string,std::string> > baselineList;

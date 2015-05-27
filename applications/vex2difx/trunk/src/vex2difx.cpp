@@ -495,11 +495,12 @@ static void makeJobs(vector<VexJob>& J, VexData *V, const CorrParams *P, int ver
 	V->sortEvents();
 }
 
-static DifxJob *makeDifxJob(string directory, const VexJob& J, int nAntenna, const string& obsCode, int *n, int nDigit, char ext, const string &vexFile, const string &threadsFile)
+static DifxJob *makeDifxJob(string directory, const VexJob& J, int nAntenna, const string& obsCode, int *n, int nDigit, char ext, const CorrParams *P)
 {
 	DifxJob *job;
 	const char *difxVersion;
 	const char *difxLabel;
+	char jobName[DIFXIO_FILENAME_LENGTH];
 	char fileBase[DIFXIO_FILENAME_LENGTH];
 	int v;
 
@@ -523,7 +524,7 @@ static DifxJob *makeDifxJob(string directory, const VexJob& J, int nAntenna, con
 	{
 		job->difxLabel[0] = 0;
 	}
-	snprintf(job->vexFile, DIFXIO_FILENAME_LENGTH, "%s", vexFile.c_str());
+	snprintf(job->vexFile, DIFXIO_FILENAME_LENGTH, "%s", P->vexFile.c_str());
 	job->jobStart = J.mjdStart;
 	job->jobStop  = J.mjdStop;
 	job->mjdStart = J.mjdStart;
@@ -547,14 +548,14 @@ static DifxJob *makeDifxJob(string directory, const VexJob& J, int nAntenna, con
 		const int FormatLength = 20;
 		char format[FormatLength];
 
-		v = snprintf(format, FormatLength, "%%s/%%s_%%0%dd%%c", nDigit);
+		v = snprintf(format, FormatLength, "%%s_%%0%dd%%c", nDigit);
 		if(v >= FormatLength)
 		{
 			cerr << "Developer error: makeDifxJob: format being truncated.  Needed " << v << " bytes." << endl;
 
 			exit(EXIT_FAILURE);
 		}
-		v = snprintf(fileBase, DIFXIO_FILENAME_LENGTH, format, directory.c_str(), J.jobSeries.c_str(), J.jobId, ext);
+		v = snprintf(jobName, DIFXIO_FILENAME_LENGTH, format, J.jobSeries.c_str(), J.jobId, ext);
 	}
 	else
 	{
@@ -564,8 +565,9 @@ static DifxJob *makeDifxJob(string directory, const VexJob& J, int nAntenna, con
 
 			exit(EXIT_FAILURE);
 		}
-		v = snprintf(fileBase, DIFXIO_FILENAME_LENGTH, "%s/%s", directory.c_str(), J.jobSeries.c_str());
+		v = snprintf(jobName, DIFXIO_FILENAME_LENGTH, "%s", J.jobSeries.c_str());
 	}
+	v = snprintf(fileBase, DIFXIO_FILENAME_LENGTH, "%s/%s", directory.c_str(), jobName);
 	if(v >= DIFXIO_FILENAME_LENGTH)
 	{
 		cerr << "Developer error: makeDifxJob: fileBase needed " << v << " bytes." << endl;
@@ -577,14 +579,21 @@ static DifxJob *makeDifxJob(string directory, const VexJob& J, int nAntenna, con
 	snprintf(job->calcFile,    DIFXIO_FILENAME_LENGTH, "%s.calc",  fileBase);
 	snprintf(job->flagFile,    DIFXIO_FILENAME_LENGTH, "%s.flag",  fileBase);
 	snprintf(job->imFile,      DIFXIO_FILENAME_LENGTH, "%s.im",    fileBase);
-	snprintf(job->outputFile,  DIFXIO_FILENAME_LENGTH, "%s.difx",  fileBase);
-	if(threadsFile != "")
+	if(P->outPath.empty())
 	{
-		v = snprintf(job->threadsFile, DIFXIO_FILENAME_LENGTH, "%s", threadsFile.c_str());
+		snprintf(job->outputFile, DIFXIO_FILENAME_LENGTH, "%s.difx", fileBase);
 	}
 	else
 	{
+		snprintf(job->outputFile, DIFXIO_FILENAME_LENGTH, "%s/%s.difx", P->outPath.c_str(), jobName);
+	}
+	if(P->threadsFile.empty())
+	{
 		v = snprintf(job->threadsFile, DIFXIO_FILENAME_LENGTH, "%s.threads", fileBase);
+	}
+	else
+	{
+		v = snprintf(job->threadsFile, DIFXIO_FILENAME_LENGTH, "%s", P->threadsFile.c_str());
 	}
 	if(v >= DIFXIO_FILENAME_LENGTH)
 	{
@@ -1308,7 +1317,9 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 					nPol = 0;
 					for(int u = 0; u < n1; ++u)
 					{
-						for(int v = 0; v < n1; ++v)
+						int v;
+
+						for(v = 0; v < n1; ++v)
 						{
 							if(corrSetup->doPolar || (a1p[u] == a1p[v] && (corrSetup->onlyPol == ' ' || corrSetup->onlyPol == a1p[u])))
 							{
@@ -1337,6 +1348,13 @@ static double populateBaselineTable(DifxInput *D, const CorrParams *P, const Cor
 					DifxBaselineAllocPolProds(bl, nFreq, 4);
 
 					n1 = DifxDatastreamGetZoomBands(D->datastream+a1, freqId, a1p, a1c);
+
+					if(n1 < 0 || n1 > 2)
+					{
+						fprintf(stderr, "Developer error: n1 = %d for a1=%d freqId=%d\n", n1, a1, freqId);
+
+						exit(EXIT_FAILURE);
+					}
 
 					nPol = 0;
 					for(int u = 0; u < n1; ++u)
@@ -2150,7 +2168,7 @@ static int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int 
 	D->nDataSegments = P->nDataSegments;
 
 	D->antenna = makeDifxAntennas(J, V, P, &(D->nAntenna), antList);
-	D->job = makeDifxJob(V->getDirectory(), J, D->nAntenna, V->getExper()->name, &(D->nJob), nDigit, ext, P->vexFile, P->threadsFile);
+	D->job = makeDifxJob(V->getDirectory(), J, D->nAntenna, V->getExper()->name, &(D->nJob), nDigit, ext, P);
 	
 	D->nScan = J.scans.size();
 	D->scan = newDifxScanArray(D->nScan);
@@ -2818,7 +2836,31 @@ static int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int 
 			}
 			else
 			{
-				for(list<string>::const_iterator m = P->machines.begin(); m != P->machines.end(); ++m)
+				list<string>::const_iterator m = P->machines.begin();
+
+				fprintf(out, "%s\n", m->c_str());
+				++m;
+				
+				for(int a = 0; a < D->nAntenna; ++a)
+				{
+					const AntennaSetup *A = P->getAntennaSetup(D->antenna[a].name);
+					if(A && !A->machine.empty())
+					{
+						fprintf(out, "%s\n", A->machine.c_str());
+					}
+					else
+					{
+						if(m == P->machines.end())
+						{
+							cerr << "Warning: fewer than nAnt+1 machines specified in .v2d file" << endl;
+							break;
+						}
+						fprintf(out, "%s\n", m->c_str());
+						++m;
+					}
+				}
+
+				for( ;m != P->machines.end(); ++m)
 				{
 					fprintf(out, "%s\n", m->c_str());
 				}
