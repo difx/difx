@@ -37,6 +37,9 @@
 #include <string.h>
 #include <math.h>
 #include <stdint.h>
+#ifdef WORDS_BIGENDIAN
+#include <endian.h>
+#endif
 
 #include "mark5access/mark5_stream.h"
 
@@ -2008,6 +2011,53 @@ static int vdif_decode_4channel_8bit_decimation1(struct mark5_stream *ms, int ns
 	return nsamp - nblank;
 }
 
+static int vdif_decode_1channel_32bit_decimation1(struct mark5_stream *ms, int nsamp, float **data)
+{
+	const float *buf;
+	const float *fp;
+	int o, i;
+	int nblank = 0;
+
+	buf = (const float*)ms->payload;
+	i = ms->readposition/4;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		if(i*4 >= ms->blankzoneendvalid[0])
+		{
+			data[0][o] = zeros[0];
+			nblank++;
+		}
+		else
+		{
+#ifdef WORDS_BIGENDIAN
+			uint32_t v = *((const uint32_t*)buf + i);
+			v = le32toh(v);
+			data[0][o] = *((float*)&v);
+#else
+			data[0][o] = buf[i];
+#endif
+		}
+
+		i++;
+
+
+		if(i*4 >= ms->databytes)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = (const float*)ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i*4;
+
+	return nsamp - nblank;
+}
+
 // Complex
 
 static int vdif_complex_decode_1channel_1bit_decimation1(struct mark5_stream *ms, int nsamp, float complex **data)
@@ -3104,6 +3154,54 @@ static int vdif_complex_decode_16channel_16bit_decimation1(struct mark5_stream *
 	return nsamp - nblank;
 }
 
+static int vdif_complex_decode_1channel_32bit_decimation1(struct mark5_stream *ms, int nsamp, float complex **data)
+{
+	const float *buf;
+	int o, i;
+	int nblank = 0;
+
+	buf = (const float *)ms->payload;
+	i = ms->readposition/4;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		if(i*4 >= ms->blankzoneendvalid[0])
+		{
+			data[0][o] = complex_zeros[0];
+			nblank++;
+		}
+		else
+		{
+#ifdef WORDS_BIGENDIAN
+			uint32_t re = *((const uint32_t*)buf + i);
+			uint32_t im = *((const uint32_t*)buf + i + 1);
+			re = le32toh(re);
+			im = le32toh(im);
+			data[0][o] = *((float*)&re) + *((float*)&im)*I;
+#else
+			data[0][o] = buf[i] + buf[i+1]*I;
+#endif
+		}
+
+		i += 2;
+
+
+		if(i*4 >= ms->databytes)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = (const float *)ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i*4;
+
+	return nsamp - nblank;
+}
+
 /* Other decoders go here */
 
 /************************ 2-bit state counters *********************/
@@ -3886,9 +3984,13 @@ struct mark5_format_generic *new_mark5_format_vdif(int Mbps,
 	{
 		decoderindex += 4000;
 	}
+	else if(nbit == 32)
+	{
+		decoderindex += 5000;
+	}
 	else
 	{
-		fprintf(m5stderr, "VDIF nbit must be 1, 2, 4, 8 or 16 for now\n");
+		fprintf(m5stderr, "VDIF nbit must be 1, 2, 4, 8, 16 or 32 for now\n");
 		
 		return 0;
 	}
@@ -4038,6 +4140,10 @@ struct mark5_format_generic *new_mark5_format_vdif(int Mbps,
 		case 3004:
 			f->decode = vdif_decode_4channel_8bit_decimation1;
 			break;
+
+		case 5001:
+			f->decode = vdif_decode_1channel_32bit_decimation1;
+			break;
 	    }
 
 	    if(f->decode == 0)
@@ -4125,6 +4231,10 @@ struct mark5_format_generic *new_mark5_format_vdif(int Mbps,
 			break;
 		case 4016:
 			f->complex_decode = vdif_complex_decode_16channel_16bit_decimation1;
+			break;
+
+		case 5001:
+			f->complex_decode = vdif_complex_decode_1channel_32bit_decimation1;
 			break;
 	    }
 
