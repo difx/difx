@@ -1,0 +1,150 @@
+
+--------------------------------------------------------------------------------
+Introduction
+--------------------------------------------------------------------------------
+
+This set of utilities is intended for VDIF incoming in UDP/IP packets over 10 GbE.
+
+'vdifsnapshotUDP' makes a short near line-speed burst mode capture of VDIF data 
+for more detailed analysis of payload. Capture is done into memory first and 
+does not need a fast disk system.
+
+'vdiftimeUDP' monitors VDIF timestamps and frame counts per second in real-time. 
+It also compares the VDIF time against computer UT time. It allows to detect 
+glitches and bad time synchronization of backends like R2DBE, ROACH2, or FILA10G.
+
+
+--------------------------------------------------------------------------------
+Compile and install
+--------------------------------------------------------------------------------
+
+aclocal
+autoconf
+automake -a
+./configure --prefix=${DIFXROOT}
+make
+make install
+
+
+--------------------------------------------------------------------------------
+vdifsnapshotUDP
+--------------------------------------------------------------------------------
+
+Burst capture of UDP/IP data at near 10G line speed.
+
+Usage:
+
+   vdifsnapshotUDP [--cpu=<0..31>] [--offset=<n bytes to skip in UDP>]
+                   <size in Mbyte> <port> <output file.vdif>
+
+   --cpu=n     : limit the program to run on CPU core n (0-31), can help to reduce packet loss
+   --offset=n  : remove the first n bytes in the UDP packet (e.g., hop over a 8-byte PSN)
+
+   <size in Mbyte>  : the amount of data to capture into memory before disk write-out
+   <port>           : port number to listen on for UDP
+   <output file>    : name and path of output file to write to at end of capture
+
+A buffer of the specified size is allocated first and UDP/IP packets to the 
+specified port are then captured into this memory buffer.
+
+The program can be tied to a CPU (e.g., --cpu=2) to improve performance.
+The capture process can also strip the first n bytes of each UDP/IP payload.
+
+Example:
+
+ $ ./vdifsnapshotUDP --cpu=2 --offset=8  \
+      2048 46227 /mnt/disks/cap2014y287d07h59m-8Gbps.snapshot.vdif
+
+ Bound to CPU#2
+ Capturing 2048 MByte into memory...
+ ...................................................................
+ ..........
+ Memory capture ended, writing 2147418624 bytes to file...
+
+For continuous recording, refer to 'captureUDPVDIF' (DiFX vdifio; A. Deller).
+For capturing on a Mark5C, you can use 'record5c' (DiFX mk5daemon; W. Brisken). 
+
+
+--------------------------------------------------------------------------------
+vdiftimeUDP
+--------------------------------------------------------------------------------
+
+Decodes the time stamp of incoming UDP data containing VDIF.
+
+Also compares VDIF against computer UT time. This allows real-time monitoring
+of the time synchronization of the hardware that generates the UDP stream 
+containing VDIF, such as R2DBE, Roach2, or FILA10G. The computer must be 
+running NTP or PTP for a meaningful time comparison.
+
+ Usage: 
+
+   $ vdiftimeUDP [--offset=n|-o n] [--bigendian|-b] [--saveto=filename|-s filename]
+                 [--cpu=n|-c n] [--thread=n]  <port>
+
+   --offset=n  : remove the first n bytes in the UDP packet (e.g., hop over a 8-byte PSN)
+   --bigendian : specify for VDIF-like frames that have a Big Endian byte order (Japanese VOA)
+   --saveto=fn : at every 1-second change, store the single recent VDIF frame into given file
+   --cpu=n     : limit the program to run on CPU core n (0-31), can help to reduce packet loss
+   --thread=n  : show only VDIF thread <n>
+
+   port        : port to listen on for UDP
+
+If present, packet sequence numbers can be removed using --offset=<n>.
+
+The program can be tied to a CPU (e.g., --cpu=2) to improve performance.
+On a Mark6 this allows loss-free reception and decoding at 8 Gbps.
+
+For multi-threaded VDIF it may be necessary to select only one 
+specific thread (--thread=n) to get meaningful time reports.
+
+Use --saveto=<filename> to save the first VDIF frame at a data-second 
+change into a file. The frame can be inspected in detail using other tools.
+
+Examples:
+
+root@Mark6-4012:/mnt/disks# vdiftimeUDP --offset=8 --cpu=2 46227
+----- VDIF Time ------------------------------ Computer Time ---------Time Delta----Frames total/max-----Rate peak------Rate nominal----Rate actual---
+VDIF frame#545994 2014y287doy 02:48:56 : PC 2014y287doy 02:48:56.70 :  off -0.7s : 1/545995 fps : 1x5590.99 Mbps :    0.01 Mbps :   89.82 Mbps
+VDIF frame#0      2014y287doy 02:48:57 : PC 2014y287doy 02:48:57.01 :  off -0.0s : 253995/800000 fps : 1x8192.00 Mbps : 2600.91 Mbps : 8193.28 Mbps
+VDIF frame#0      2014y287doy 02:48:58 : PC 2014y287doy 02:48:58.01 :  off -0.0s : 800000/800000 fps : 1x8192.00 Mbps : 8192.00 Mbps : 8192.53 Mbps
+VDIF frame#0      2014y287doy 02:48:59 : PC 2014y287doy 02:48:59.01 :  off -0.0s : 800000/800000 fps : 1x8192.00 Mbps : 8192.00 Mbps : 8191.66 Mbps
+VDIF frame#0      2014y287doy 02:49:00 : PC 2014y287doy 02:49:00.01 :  off -0.0s : 800000/800000 fps : 1x8192.00 Mbps : 8192.00 Mbps : 8191.98 Mbps
+VDIF frame#0      2014y287doy 02:49:01 : PC 2014y287doy 02:49:01.01 :  off -0.0s : 800000/800000 fps : 1x8192.00 Mbps : 8192.00 Mbps : 8192.37 Mbps
+VDIF frame#0      2014y287doy 02:49:02 : PC 2014y287doy 02:49:02.01 :  off -0.0s : 800000/800000 fps : 1x8192.00 Mbps : 8192.00 Mbps : 8191.53 Mbps
+VDIF frame#0      2014y287doy 02:49:03 : PC 2014y287doy 02:49:03.01 :  off -0.0s : 800000/800000 fps : 1x8192.00 Mbps : 8192.00 Mbps : 8191.70 Mbps
+VDIF frame#0      2014y287doy 02:49:04 : PC 2014y287doy 02:49:04.01 :  off -0.0s : 800000/800000 fps : 1x8192.00 Mbps : 8192.00 Mbps : 8192.28 Mbps
+VDIF frame#0      2014y287doy 02:49:05 : PC 2014y287doy 02:49:05.01 :  off -0.0s : 800000/800000 fps : 1x8192.00 Mbps : 8192.00 Mbps : 8192.06 Mbps
+VDIF frame#0      2014y287doy 02:49:06 : PC 2014y287doy 02:49:06.01 :  off -0.0s : 800000/800000 fps : 1x8192.00 Mbps : 8192.00 Mbps : 8191.98 Mbps
+VDIF frame#0      2014y287doy 02:49:07 : PC 2014y287doy 02:49:07.01 :  off -0.0s : 800000/800000 fps : 1x8192.00 Mbps : 8192.00 Mbps : 8192.46 Mbps
+VDIF frame#0      2014y287doy 02:49:08 : PC 2014y287doy 02:49:08.01 :  off -0.0s : 800000/800000 fps : 1x8192.00 Mbps : 8192.00 Mbps : 8192.06 Mbps
+VDIF frame#0      2014y287doy 02:49:09 : PC 2014y287doy 02:49:09.01 :  off -0.0s : 800000/800000 fps : 1x8192.00 Mbps : 8192.00 Mbps : 8192.04 Mbps
+VDIF frame#0      2014y287doy 02:49:10 : PC 2014y287doy 02:49:10.01 :  off -0.0s : 800000/800000 fps : 1x8192.00 Mbps : 8192.00 Mbps : 8191.61 Mbps
+VDIF frame#0      2014y287doy 02:49:11 : PC 2014y287doy 02:49:11.01 :  off -0.0s : 800000/800000 fps : 1x8192.00 Mbps : 8192.00 Mbps : 8192.20 Mbps
+VDIF frame#0      2014y287doy 02:49:12 : PC 2014y287doy 02:49:12.01 :  off -0.0s : 800000/800000 fps : 1x8192.00 Mbps : 8192.00 Mbps : 8191.52 Mbps
+VDIF frame#0      2014y287doy 02:49:13 : PC 2014y287doy 02:49:13.01 :  off -0.0s : 800000/800000 fps : 1x8192.00 Mbps : 8192.00 Mbps : 8192.35 Mbps
+VDIF frame#0      2014y287doy 02:49:14 : PC 2014y287doy 02:49:14.01 :  off -0.0s : 800000/800000 fps : 1x8192.00 Mbps : 8192.00 Mbps : 8192.15 Mbps
+VDIF frame#0      2014y287doy 02:49:15 : PC 2014y287doy 02:49:15.01 :  off -0.0s : 800000/800000 fps : 1x8192.00 Mbps : 8192.00 Mbps : 8191.90 Mbps
+VDIF frame#0      2014y287doy 02:49:16 : PC 2014y287doy 02:49:16.01 :  off -0.0s : 800000/800000 fps : 1x8192.00 Mbps : 8192.00 Mbps : 8191.86 Mbps
+VDIF frame#0      2014y287doy 02:49:17 : PC 2014y287doy 02:49:17.01 :  off -0.0s : 800000/800000 fps : 1x8192.00 Mbps : 8192.00 Mbps : 8192.28 Mbps
+VDIF frame#0      2014y287doy 02:49:18 : PC 2014y287doy 02:49:18.01 :  off -0.0s : 800000/800000 fps : 1x8192.00 Mbps : 8192.00 Mbps : 8191.39 Mbps
+...
+
+Examples of hardware issues:
+
+Basic rate of 200000 frames per second but with sporadic loss of VSI 1PPS
+in the VSI<->10GbE converter, without sample loss, resulting in multiples
+of 200000 fps and a growing time offset between VDIF and computer UT time:
+----- VDIF Time ------------------------------ Computer Time ---------Time Delta----Frames total/max-----Rate peak------Rate nominal----Rate actual---
+VDIF frame#0      2014y287doy 00:55:23 : PC 2014y287doy 00:55:50.01 :  off -27.0s : 400000/400000 fps : 1x4096.00 Mbps : 4147.20 Mbps : 2073.70 Mbps
+VDIF frame#0      2014y287doy 00:55:24 : PC 2014y287doy 00:55:52.01 :  off -28.0s : 400000/400000 fps : 1x4096.00 Mbps : 4147.20 Mbps : 2073.55 Mbps
+VDIF frame#0      2014y287doy 00:55:25 : PC 2014y287doy 00:55:53.01 :  off -28.0s : 200000/200000 fps : 1x2048.00 Mbps : 2073.60 Mbps : 2073.64 Mbps
+VDIF frame#0      2014y287doy 00:55:26 : PC 2014y287doy 00:55:54.01 :  off -28.0s : 200000/200000 fps : 1x2048.00 Mbps : 2073.60 Mbps : 2073.57 Mbps
+VDIF frame#0      2014y287doy 00:55:27 : PC 2014y287doy 00:55:55.01 :  off -28.0s : 200000/200000 fps : 1x2048.00 Mbps : 2073.60 Mbps : 2073.56 Mbps
+VDIF frame#0      2014y287doy 00:55:28 : PC 2014y287doy 00:55:57.01 :  off -29.0s : 400000/400000 fps : 1x4096.00 Mbps : 4147.20 Mbps : 2073.62 Mbps
+VDIF frame#0      2014y287doy 00:55:29 : PC 2014y287doy 00:55:59.01 :  off -30.0s : 400000/400000 fps : 1x4096.00 Mbps : 4096.00 Mbps : 2048.01 Mbps
+VDIF frame#0      2014y287doy 00:55:30 : PC 2014y287doy 00:56:00.01 :  off -30.0s : 200000/200000 fps : 1x2048.00 Mbps : 2048.00 Mbps : 2047.85 Mbps
+VDIF frame#0      2014y287doy 00:55:31 : PC 2014y287doy 00:56:03.01 :  off -32.0s : 600000/600000 fps : 1x6144.00 Mbps : 6144.00 Mbps : 2048.05 Mbps
+VDIF frame#0      2014y287doy 00:55:32 : PC 2014y287doy 00:56:05.01 :  off -33.0s : 400000/400000 fps : 1x4096.00 Mbps : 4096.00 Mbps : 2047.98 Mbps
+VDIF frame#0      2014y287doy 00:55:33 : PC 2014y287doy 00:56:06.01 :  off -33.0s : 200000/200000 fps : 1x2048.00 Mbps : 2048.00 Mbps : 2048.04 Mbps
+VDIF frame#0      2014y287doy 00:55:34 : PC 2014y287doy 00:56:07.01 :  off -33.0s : 200000/200000 fps : 1x2048.00 Mbps : 2048.00 Mbps : 2047.97 Mbps
+...
