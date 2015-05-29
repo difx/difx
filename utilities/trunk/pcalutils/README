@@ -1,0 +1,9 @@
+
+Some utilities for DiFX PCAL data.
+
+Note that there are additiona PCAL utilities in
+
+  ./applications/difx2fits/trunk/utils/plotpcal
+  ./applications/difx2fits/trunk/utils/plotpcal2
+  ./applications/difx2fits/trunk/doc/plotpcal.txt
+

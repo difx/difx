@@ -19,6 +19,11 @@ Optional arguments;
   --txt      to store phases and amplitudes into a text file,
              discarding details about frequency and polarization
   band,tone  to select specific tone(s) of a band rather than all
+
+Has some similarity to 'plotpcal' from vex2difx: plotDiFXPCal.py
+has no automatic tone selection, and lacks x/y and delay plots,
+but is much faster, and produces optional PDF and ASCII output files.
+
 """
 
 import sys, os, glob, math, cmath
