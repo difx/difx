@@ -3,7 +3,7 @@
 plotDiFXPCal.py version 1.0  Jan Wagner  20150508
 
 Usage: plotDiFXPCal.py [--pdf] [--txt] <output_1.difx> <station> 
-                       [<band>,<tone>] [<band>,<tone>] [...]
+                       [<band>,<tone>[,<tone>,...]] [<band>,<tone>[...]] 
 
 Currently supports the DiFX 2.4 format of PCAL files.
 
@@ -18,7 +18,7 @@ Optional arguments;
   --pdf      to generate PDF file of plot
   --txt      to store phases and amplitudes into a text file,
              discarding details about frequency and polarization
-  band,tone  to select specific tones instead of all tones
+  band,tone  to select specific tone(s) of a band rather than all
 """
 
 import sys, os, glob, math, cmath
@@ -27,6 +27,7 @@ import numpy, pylab
 difxVersion = 240
 
 def parsepcalfile(infile,band_tone_sel=(),doPDF=False,doTxt=True):
+    """Loads selected (or all) PCal tones from a DiFX 2.4.x PCAL file"""
 
     pcalvalues = {}
     times = numpy.zeros(0)
@@ -57,6 +58,8 @@ def parsepcalfile(infile,band_tone_sel=(),doPDF=False,doTxt=True):
 
         for pol in range(npol):
             for (band,tonenr) in selected:
+                if (tonenr >= ntones) or (band >= nsubband):
+                   continue
                 i = vals_per_tone * (pol*(nsubband/npol)*ntones + band*ntones + tonenr)
                 pc = tone[i:(i+vals_per_tone)]
 
@@ -66,15 +69,22 @@ def parsepcalfile(infile,band_tone_sel=(),doPDF=False,doTxt=True):
                    print ('New band added: %s' % (id))
                 pcalvalues[id] = numpy.append(pcalvalues[id], [float(pc[2]) + 1j*float(pc[3])])
 
-                #phase = math.atan2(float(pc[3]),float(pc[2])) * (180/math.pi)
-                #print 'pol=%u band=%u tone=%u ' % (pol,band,tonenr),
-                #print ': f=%s %s-pol ph=%f' % (pc[0],pc[1],phase)
+    pcaldata = (pcalvalues,times,tint)
+    return pcaldata
+
+
+def plotpcal(pcaldata,infile,band_tone_sel=(),doPDF=False,doTxt=True):
+
+    pcalvalues = pcaldata[0]
+    times = pcaldata[1]
+    tint = pcaldata[2]
 
     # Settings for plot
-    colors  = iter(pylab.cm.jet(numpy.linspace(0,1,len(pcalvalues.keys()))))
+    colormp = pylab.cm.jet(numpy.linspace(0,1,len(pcalvalues.keys())))
     markers = ['o','x','+','s','p','*','h','H','D','d']
     Nrep    = 1 + len(pcalvalues.keys()) / len(markers)
     markers = iter(markers * Nrep)
+    colors  = iter(colormp)
     handles = []
     ids     = sorted(pcalvalues.keys())
     T       = (times - min(times)) * 86400.0  # MJD into seconds
@@ -95,8 +105,6 @@ def parsepcalfile(infile,band_tone_sel=(),doPDF=False,doTxt=True):
 
         pylab.subplot(212)
         pylab.plot(T,p,m, c=c)
-
-        # print '%s : %s' % (id, str(p))
 
     ax1 = pylab.subplot(211)
     ax1.set_xticklabels([])
@@ -123,6 +131,7 @@ def parsepcalfile(infile,band_tone_sel=(),doPDF=False,doTxt=True):
     ax2.set_position([box1.x0, box1.y0 - box1.height*1.05, box1.width, box2.height])
     h_leg = pylab.legend(handles,ids,loc='upper center', shadow=True,
                         bbox_to_anchor=(0.5,-0.25),ncol=4,prop={'size':12},numpoints=1)
+    print ('Plotted %u averaging periods x %u tones.' % (len(T),len(ids)))
 
     if doPDF:
         outfile = os.path.basename(infile.name) + '.pdf'
@@ -170,15 +179,19 @@ def main(argv=sys.argv):
         print "Error: no PCAL files found (pattern: %s)" % pattern
         sys.exit(1)
 
+    # Prepare the selection of bands and tones ([] means all tones)
     sel = []
     if len(args)>2:
         for bt in args[2:]:
            bt = bt.split(',')
-           sel.append( (int(bt[0])-1, int(bt[1])-1) )
+           for tt in bt[1:]:
+              sel.append( (int(bt[0])-1, int(tt)-1) )
 
+    # Plot each file
     for af in antennafiles:
         infile = open(af, 'r')
-        parsepcalfile(infile,sel,doPDF,doTxt)
+        pc = parsepcalfile(infile,sel)
+        plotpcal(pc,infile,sel,doPDF,doTxt)
         infile.close()
 
 if __name__ == '__main__':
