@@ -19,6 +19,7 @@ class VDIFEncapsulator:
 
 	def __init__(self):
 		self.file = None
+		self.fmt  = ''
 		self.hdr  = [int(0) for x in range(8)]
 		self.payloadbytes = 0
 		self.framenr  = 0
@@ -45,6 +46,7 @@ class VDIFEncapsulator:
 				self.payloadbytes -= 1
 				self.fps = ((Rmbps*1e6/8) / self.payloadbytes)
 			print ('*** Reduced to %u-byte payload.' % (self.payloadbytes))
+		self.fmt = 'VDIF_%u-%u-%u-%u' % (self.payloadbytes,Rmbps,nch,nbit)
 
 		## Create template header
 
@@ -91,6 +93,10 @@ class VDIFEncapsulator:
 	def get_fps(self):
 		"""Returns the frames rate (frames/sec)"""
 		return self.fps
+
+	def get_format(self):
+		"""Returns a mark5access-like format string"""
+		return self.fmt
 
 	def set_time(self, refep, refsec, framenr=0):
 		"""Sets the time stamp in the VDIF header to an integer second."""
