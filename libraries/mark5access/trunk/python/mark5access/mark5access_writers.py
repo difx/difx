@@ -34,12 +34,7 @@ class VDIFEncapsulator:
 
 		## Parse the mark5access-like format string
 		fmt = re.split('[\_|-]+', format)
-		fmt = [int(x) for x in fmt[1:]]
-
-		self.payloadbytes = fmt[0]
-		Rmbps = fmt[1]
-		nch = fmt[2]
-		nbit = fmt[3]
+		(self.payloadbytes,Rmbps,nch,nbit) = [int(x) for x in fmt[1:]]
 
 		## Check the data rate
 
@@ -97,11 +92,11 @@ class VDIFEncapsulator:
 		"""Returns the frames rate (frames/sec)"""
 		return self.fps
 
-	def set_time(self, refep, refsec):
+	def set_time(self, refep, refsec, framenr=0):
 		"""Sets the time stamp in the VDIF header to an integer second."""
 		self.refepoch = int(refep)
 		self.framesec = int(refsec)
-		self.framenr = 0
+		self.framenr  = int(framenr)
 		self.hdr[0] = self.framesec
 		self.hdr[1] = (self.refepoch << 24) + self.framenr
 
@@ -127,30 +122,27 @@ class VDIFEncapsulator:
 	def write(self, data_string):
 		"""Writes new data into VDIF file. Adds headers when necessary."""
 
-		N = len(data_string)
-		writepos = self.writepos
+		in_len = len(data_string)
 		in_idx = 0
 
-		while (in_idx < N):
+		while (in_idx < in_len):
 
 			if (self.writepos <= 0):
 				header = struct.pack('<8I', *(self.hdr))
 				self.file.write(header)
+				self.inc_header()
 
-			nremain = N - in_idx
-			nfit    = self.payloadbytes - writepos
+			nremain = in_len - in_idx
+			nfit    = self.payloadbytes - self.writepos
 			nwrite  = min(nremain, nfit)
-
+			
 			self.file.write(data_string[in_idx:(in_idx+nwrite)])
 
 			in_idx   += nwrite
-			writepos += nwrite
+			self.writepos += nwrite
 
-			if (writepos >= self.payloadbytes):
-				self.inc_header()
-				writepos = 0
-
-		self.writepos = writepos
+			if (self.writepos >= self.payloadbytes):
+				self.writepos = 0
 
 	def m_test(self):
 		N = 2*8192*8/32
