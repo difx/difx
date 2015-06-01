@@ -38,3 +38,28 @@ def count_high_states(ms, nsamples):
 	counts = DT_ARR()
 	mark5access.mark5_stream_count_high_states(ms, ctypes.c_int(nsamples), counts)
 	return counts
+
+def get_VDIF_time_from_MJD(mjd,sec):
+	"""Returns a VDIF timestamp (Ref Epoch, Seconds since Ref Epoch) for given MJD and second-of-day"""
+	C_VDIFrefMJDs = [
+		51544, 51726, 51910, 52091, 52275, 52456, 52640, 52821, 53005, 53187, 53371, 53552, 53736,
+		53917, 54101, 54282, 54466, 54648, 54832, 55013, 55197, 55378, 55562, 55743, 55927, 56109,
+		56293, 56474, 56658, 56839, 57023, 57204, 57388, 57570, 57754, 57935, 58119, 58300, 58484,
+		58665, 58849, 59031, 59215, 59396, 59580, 59761, 59945, 60126, 60310, 60492, 60676, 60857,
+		61041, 61222, 61406, 61587, 61771, 61953, 62137, 62318, 62502, 62683, 62867, 63048, 63232,
+		63414, 63598, 63779, 63963, 64144, 64328, 64509, 64693, 64875, 65059, 65240, 65424, 65605,
+		65789, 65970, 66154, 66336, 66520, 66701, 66885, 67066, 67250, 67431, 67615, 67797, 67981,
+		68162, 68346, 68527, 68711, 68892, 69076, 69258, 69442, 69623, 69807, 69988 ]
+
+	# Find largest ref.epoch MJD that is smaller than the given MJD
+	mjd = int(mjd)
+	refep = 0
+	for ii in range(len(C_VDIFrefMJDs)):
+		if (C_VDIFrefMJDs[ii] < mjd):
+			refep = ii
+		print refep, mjd, C_VDIFrefMJDs[refep]
+
+	ndays = mjd - C_VDIFrefMJDs[refep]
+	refsec = 86400.0*ndays + sec
+
+	return (refep,refsec)
