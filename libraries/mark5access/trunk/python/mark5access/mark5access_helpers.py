@@ -57,7 +57,7 @@ def get_VDIF_time_from_MJD(mjd,sec):
 	for ii in range(len(C_VDIFrefMJDs)):
 		if (C_VDIFrefMJDs[ii] < mjd):
 			refep = ii
-		print refep, mjd, C_VDIFrefMJDs[refep]
+		# print refep, mjd, C_VDIFrefMJDs[refep]
 
 	ndays = mjd - C_VDIFrefMJDs[refep]
 	refsec = 86400.0*ndays + sec
