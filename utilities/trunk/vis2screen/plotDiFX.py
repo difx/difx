@@ -216,9 +216,9 @@ while not len(nextheader[0]) == 0 and keeplooping:
 		    ls = linestyles[i]
                 pylab.gcf().set_facecolor('white')
                 pylab.subplot(311)
+                pylab.plot(chans[:nchan[i]], amp[i][:nchan[i]], ls)
 		if amprange[1] > 0:
 		    pylab.ylim(amprange)
-                pylab.plot(chans[:nchan[i]], amp[i][:nchan[i]], ls)
                 pylab.xlim([0, nchan[i]])
                 pylab.subplot(312)
                 pylab.plot(chans[:nchan[i]], phase[i][:nchan[i]], ls+'+')
